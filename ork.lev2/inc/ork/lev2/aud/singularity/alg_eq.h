@@ -9,7 +9,7 @@ struct PARABASS : public DspBlock {
   PARABASS(const DspBlockData* dbd);
   LoShelveEq _lsq;
   void compute(DspBuffer& dspbuf) final;
-  void doKeyOn(const DspKeyOnInfo& koi) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct STEEP_RESONANT_BASS : public DspBlock {
   STEEP_RESONANT_BASS(const DspBlockData* dbd);
@@ -17,19 +17,19 @@ struct STEEP_RESONANT_BASS : public DspBlock {
   TrapSVF _svf;
   float _filtFC;
   void compute(DspBuffer& dspbuf) final;
-  void doKeyOn(const DspKeyOnInfo& koi) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct PARAMID : public DspBlock {
   PARAMID(const DspBlockData* dbd);
   BiQuad _biquad;
   void compute(DspBuffer& dspbuf) final;
-  void doKeyOn(const DspKeyOnInfo& koi) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct PARATREBLE : public DspBlock {
   PARATREBLE(const DspBlockData* dbd);
   HiShelveEq _lsq;
   void compute(DspBuffer& dspbuf) final;
-  void doKeyOn(const DspKeyOnInfo& koi) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct PARAMETRIC_EQ : public DspBlock {
   PARAMETRIC_EQ(const DspBlockData* dbd);
@@ -40,7 +40,7 @@ struct PARAMETRIC_EQ : public DspBlock {
   float _smoothW;
   float _smoothG;
   void compute(DspBuffer& dspbuf) final;
-  void doKeyOn(const DspKeyOnInfo& koi) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
 };
 
 } // namespace ork::audio::singularity

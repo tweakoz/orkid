@@ -20,7 +20,7 @@ struct TWOPARAM_SHAPER : public DspBlock {
   TWOPARAM_SHAPER(const DspBlockData* dbd);
   void compute(DspBuffer& dspbuf) final;
   float ph1, ph2;
-  void doKeyOn(const DspKeyOnInfo& koi) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct WrapData : public DspBlockData {
   WrapData();

@@ -41,7 +41,7 @@ void PARABASS::compute(DspBuffer& dspbuf) // final
 
   // printf( "ff<%f> wid<%f>\n", ff, wid );
 }
-void PARABASS::doKeyOn(const DspKeyOnInfo& koi) // final
+void PARABASS::doKeyOn(const KeyOnInfo& koi) // final
 {
   _lsq.init();
 }
@@ -81,7 +81,7 @@ void STEEP_RESONANT_BASS::compute(DspBuffer& dspbuf) // final
   // printf( "ff<%f> res<%f>\n", ff, res );
 }
 
-void STEEP_RESONANT_BASS::doKeyOn(const DspKeyOnInfo& koi) // final
+void STEEP_RESONANT_BASS::doKeyOn(const KeyOnInfo& koi) // final
 {
   _lsq.init();
   _svf.Clear();
@@ -122,7 +122,7 @@ void PARATREBLE::compute(DspBuffer& dspbuf) // final
 
   // printf( "ff<%f> wid<%f>\n", ff, wid );
 }
-void PARATREBLE::doKeyOn(const DspKeyOnInfo& koi) // final
+void PARATREBLE::doKeyOn(const KeyOnInfo& koi) // final
 {
   _lsq.init();
 }
@@ -156,7 +156,7 @@ void PARAMID::compute(DspBuffer& dspbuf) // final
 
   // printf( "ff<%f> wid<%f>\n", ff, wid );
 }
-void PARAMID::doKeyOn(const DspKeyOnInfo& koi) // final
+void PARAMID::doKeyOn(const KeyOnInfo& koi) // final
 {
   _biquad.Clear();
 }
@@ -203,7 +203,7 @@ void PARAMETRIC_EQ::compute(DspBuffer& dspbuf) // final
       ubuf[i] = outp;
     }
 }
-void PARAMETRIC_EQ::doKeyOn(const DspKeyOnInfo& koi) // final
+void PARAMETRIC_EQ::doKeyOn(const KeyOnInfo& koi) // final
 {
   _biquad.Clear();
   _peq.init();

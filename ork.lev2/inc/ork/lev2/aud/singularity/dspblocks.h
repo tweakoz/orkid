@@ -145,12 +145,12 @@ struct DspBlock {
   virtual ~DspBlock() {
   }
 
-  void keyOn(const DspKeyOnInfo& koi);
+  void keyOn(const KeyOnInfo& koi);
   void keyOff(Layer* l);
 
   virtual void compute(DspBuffer& dspbuf) = 0;
 
-  virtual void doKeyOn(const DspKeyOnInfo& koi) {
+  virtual void doKeyOn(const KeyOnInfo& koi) {
   }
   virtual void doKeyOff() {
   }
@@ -232,7 +232,7 @@ struct Alg final {
 
   using stagefn_t = std::function<void(dspstage_ptr_t)>;
 
-  void keyOn(DspKeyOnInfo& koi);
+  void keyOn(KeyOnInfo& koi);
   void keyOff();
 
   void forEachStage(stagefn_t fn);
@@ -241,7 +241,7 @@ struct Alg final {
   void doComputePass();
   void endCompute();
 
-  virtual void doKeyOn(DspKeyOnInfo& koi);
+  virtual void doKeyOn(KeyOnInfo& koi);
   dspblk_ptr_t lastBlock() const;
 
   dspstage_ptr_t _stages[kmaxdspstagesperlayer];

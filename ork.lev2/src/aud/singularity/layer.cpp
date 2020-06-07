@@ -334,11 +334,10 @@ void Layer::keyOn(int note, int vel, lyrdata_constptr_t ld) {
 
   assert(ld != nullptr);
 
-  KeyOnInfo KOI;
-  KOI._key       = note;
-  KOI._vel       = vel;
-  KOI._layer     = this;
-  KOI._layerdata = ld;
+  _koi._key       = note;
+  _koi._vel       = vel;
+  _koi._layer     = this;
+  _koi._layerdata = ld;
 
   _HKF._miscText   = "";
   _HKF._note       = note;
@@ -367,7 +366,7 @@ void Layer::keyOn(int note, int vel, lyrdata_constptr_t ld) {
 
   if (ld->_ctrlBlock) {
     _ctrlBlock = new ControlBlockInst;
-    _ctrlBlock->keyOn(KOI, ld->_ctrlBlock);
+    _ctrlBlock->keyOn(_koi, ld->_ctrlBlock);
   }
 
   ///////////////////////////////////////
@@ -375,12 +374,7 @@ void Layer::keyOn(int note, int vel, lyrdata_constptr_t ld) {
   _alg = _layerdata->_algdata->createAlgInst();
   // assert(_alg);
   if (_alg) {
-    DspKeyOnInfo koi;
-    koi._key       = note;
-    koi._vel       = vel;
-    koi._layer     = this;
-    koi._layerdata = ld;
-    _alg->keyOn(koi);
+    _alg->keyOn(_koi);
   }
 
   _HKF._alg = _alg;

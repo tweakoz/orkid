@@ -40,7 +40,7 @@ void ScopeSource::notifySinksUpdated() {
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ScopeSource::notifySinksKeyOn(DspKeyOnInfo& koi) {
+void ScopeSource::notifySinksKeyOn(KeyOnInfo& koi) {
   for (auto s : _sinks) {
     s->sourceKeyOn(this, koi);
   }
@@ -79,7 +79,7 @@ void ScopeSink::sourceUpdated(const ScopeSource* src) {
     _onupdate(src);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ScopeSink::sourceKeyOn(const ScopeSource* src, DspKeyOnInfo& koi) {
+void ScopeSink::sourceKeyOn(const ScopeSource* src, KeyOnInfo& koi) {
   if (_onkeyon)
     _onkeyon(src, koi);
 }

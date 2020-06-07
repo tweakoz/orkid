@@ -40,7 +40,7 @@ void SINE::compute(DspBuffer& dspbuf) // final
     }
   }
 }
-void SINE::doKeyOn(const DspKeyOnInfo& koi) // final
+void SINE::doKeyOn(const KeyOnInfo& koi) // final
 {
 }
 
@@ -72,7 +72,7 @@ void SAW::compute(DspBuffer& dspbuf) // final
     }
   }
 }
-void SAW::doKeyOn(const DspKeyOnInfo& koi) // final
+void SAW::doKeyOn(const KeyOnInfo& koi) // final
 {
 }
 
@@ -104,7 +104,7 @@ void SQUARE::compute(DspBuffer& dspbuf) // final
     }
   }
 }
-void SQUARE::doKeyOn(const DspKeyOnInfo& koi) // final
+void SQUARE::doKeyOn(const KeyOnInfo& koi) // final
 {
 }
 
@@ -138,7 +138,7 @@ void SINEPLUS::compute(DspBuffer& dspbuf) // final
       ubuf[i]      = swplus;
     }
 }
-void SINEPLUS::doKeyOn(const DspKeyOnInfo& koi) // final
+void SINEPLUS::doKeyOn(const KeyOnInfo& koi) // final
 {
 }
 
@@ -177,7 +177,7 @@ void SAWPLUS::compute(DspBuffer& dspbuf) // final
     }
   }
 }
-void SAWPLUS::doKeyOn(const DspKeyOnInfo& koi) // final
+void SAWPLUS::doKeyOn(const KeyOnInfo& koi) // final
 {
 }
 
@@ -215,7 +215,7 @@ void SWPLUSSHP::compute(DspBuffer& dspbuf) // final
       ubuf[i]         = (swplusshp);
     }
 }
-void SWPLUSSHP::doKeyOn(const DspKeyOnInfo& koi) // final
+void SWPLUSSHP::doKeyOn(const KeyOnInfo& koi) // final
 {
 }
 
@@ -279,7 +279,7 @@ void SHAPEMODOSC::compute(DspBuffer& dspbuf) // final
   _fval[0] = centoff;
   _fval[1] = depth;
 }
-void SHAPEMODOSC::doKeyOn(const DspKeyOnInfo& koi) // final
+void SHAPEMODOSC::doKeyOn(const KeyOnInfo& koi) // final
 {
 }
 
@@ -356,7 +356,7 @@ void PLUSSHAPEMODOSC::compute(DspBuffer& dspbuf) // final
   _fval[0] = centoff;
   _fval[1] = depth;
 }
-void PLUSSHAPEMODOSC::doKeyOn(const DspKeyOnInfo& koi) // final
+void PLUSSHAPEMODOSC::doKeyOn(const KeyOnInfo& koi) // final
 {
 }
 
@@ -388,7 +388,7 @@ void SYNCM::compute(DspBuffer& dspbuf) // final
       _phase  = fmod(_phase + _phaseInc, 1.0f);
     }
 }
-void SYNCM::doKeyOn(const DspKeyOnInfo& koi) // final
+void SYNCM::doKeyOn(const KeyOnInfo& koi) // final
 {
   _phaseInc = 0.0f;
   _phase    = 0.0f;
@@ -433,7 +433,7 @@ void SYNCS::compute(DspBuffer& dspbuf) // final
       ubuf[i]   = saw;
     }
 }
-void SYNCS::doKeyOn(const DspKeyOnInfo& koi) // final
+void SYNCS::doKeyOn(const KeyOnInfo& koi) // final
 {
   _prvmaster = 0.0f;
 }
@@ -461,7 +461,7 @@ void PWM::compute(DspBuffer& dspbuf) // final
       ubuf[i]     = input + offset * 0.01f;
     }
 }
-void PWM::doKeyOn(const DspKeyOnInfo& koi) // final
+void PWM::doKeyOn(const KeyOnInfo& koi) // final
 {
 }
 
@@ -485,7 +485,7 @@ void NOISE::compute(DspBuffer& dspbuf) // final
   }
 }
 
-void NOISE::doKeyOn(const DspKeyOnInfo& koi) // final
+void NOISE::doKeyOn(const KeyOnInfo& koi) // final
 {
 }
 void NOISE::doKeyOff() // final

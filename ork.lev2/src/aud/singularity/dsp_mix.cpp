@@ -86,7 +86,7 @@ void MonoInStereoOut::compute(DspBuffer& dspbuf) // final
   _fval[0] = _filt;
 }
 
-void MonoInStereoOut::doKeyOn(const DspKeyOnInfo& koi) // final
+void MonoInStereoOut::doKeyOn(const KeyOnInfo& koi) // final
 {
   _filt    = 0.0f;
   auto LD  = koi._layer->_layerdata;
@@ -128,7 +128,7 @@ void StereoEnhancer::compute(DspBuffer& dspbuf) // final
   }
 }
 
-void StereoEnhancer::doKeyOn(const DspKeyOnInfo& koi) // final
+void StereoEnhancer::doKeyOn(const KeyOnInfo& koi) // final
 {
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -187,7 +187,7 @@ void StaticStereoEcho::compute(DspBuffer& dspbuf) // final
   _index += inumframes;
 }
 
-void StaticStereoEcho::doKeyOn(const DspKeyOnInfo& koi) // final
+void StaticStereoEcho::doKeyOn(const KeyOnInfo& koi) // final
 {
 }
 ///////////////////////////////////////////////////////////////////////////////

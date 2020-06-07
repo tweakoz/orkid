@@ -61,7 +61,7 @@ dspblk_ptr_t Alg::lastBlock() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Alg::keyOn(DspKeyOnInfo& koi) {
+void Alg::keyOn(KeyOnInfo& koi) {
   auto l = koi._layer;
   assert(l != nullptr);
 
@@ -180,16 +180,14 @@ void Alg::endCompute() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Alg::doKeyOn(DspKeyOnInfo& koi) {
+void Alg::doKeyOn(KeyOnInfo& koi) {
   auto l = koi._layer;
   assert(l != nullptr);
 
-  koi._prv = nullptr;
-  _layer   = l;
+  _layer = l;
 
   forEachStage([&](dspstage_ptr_t stage) {
     stage->forEachBlock([&](dspblk_ptr_t block) {
-      koi._prv = block;
       block->keyOn(koi);
       //////////////////////////////////////
       // SignalScope

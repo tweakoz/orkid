@@ -20,7 +20,7 @@ struct FmOsc {
   FmOsc();
   ~FmOsc();
 
-  void keyOn(const DspKeyOnInfo& koi, const Fm4OpData& opd);
+  void keyOn(const Fm4OpData& opd);
   void keyOff();
   float compute(float frq, float phase_offset);
 

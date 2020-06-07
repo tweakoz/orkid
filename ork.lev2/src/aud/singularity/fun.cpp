@@ -79,7 +79,8 @@ void FunInst::keyOn(const KeyOnInfo& KOI) // final
       float a    = this->_a();
       float b    = this->_b();
       float rval = a * b;
-      return (a * b);
+      // printf("a<%g> b<%g> a*b<%g>\n", a, b, rval);
+      return rval;
     };
   else if (op == "(a+b)/2")
     _op = [=]() -> float {

@@ -318,7 +318,7 @@ void CZX::compute(DspBuffer& dspbuf) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CZX::doKeyOn(const DspKeyOnInfo& koi) // final
+void CZX::doKeyOn(const KeyOnInfo& koi) // final
 {
   _oscdata       = _dbd->_vars.typedValueForKey<czxdata_constptr_t>("CZX").value();
   int dcochannel = _dbd->_vars.typedValueForKey<int>("dcochannel").value();

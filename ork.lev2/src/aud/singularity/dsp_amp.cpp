@@ -49,7 +49,7 @@ void AMP_MONOIO::compute(DspBuffer& dspbuf) { // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void AMP_MONOIO::doKeyOn(const DspKeyOnInfo& koi) // final
+void AMP_MONOIO::doKeyOn(const KeyOnInfo& koi) // final
 {
   _filt   = 0.0f;
   auto LD = koi._layer->_layerdata;
@@ -96,7 +96,7 @@ void PLUSAMP::compute(DspBuffer& dspbuf) // final
   _fval[0] = _filt;
 }
 
-void PLUSAMP::doKeyOn(const DspKeyOnInfo& koi) // final
+void PLUSAMP::doKeyOn(const KeyOnInfo& koi) // final
 {
   _filt = 0.0f;
 }
@@ -139,7 +139,7 @@ void XAMP::compute(DspBuffer& dspbuf) // final
   _fval[0] = _filt;
 }
 
-void XAMP::doKeyOn(const DspKeyOnInfo& koi) // final
+void XAMP::doKeyOn(const KeyOnInfo& koi) // final
 {
   _filt = 0.0f;
 }
@@ -203,7 +203,7 @@ void XFADE::compute(DspBuffer& dspbuf) // final
   }
 }
 
-void XFADE::doKeyOn(const DspKeyOnInfo& koi) // final
+void XFADE::doKeyOn(const KeyOnInfo& koi) // final
 {
   _plmix = 0.0f;
   _pumix = 0.0f;
@@ -238,7 +238,7 @@ void XGAIN::compute(DspBuffer& dspbuf) // final
     _fval[0] = _filt;
   }
 }
-void XGAIN::doKeyOn(const DspKeyOnInfo& koi) // final
+void XGAIN::doKeyOn(const KeyOnInfo& koi) // final
 {
   _filt = 0.0f;
 }
@@ -284,7 +284,7 @@ void AMPU_AMPL::compute(DspBuffer& dspbuf) // final
   _fval[1] = _filtL;
 }
 
-void AMPU_AMPL::doKeyOn(const DspKeyOnInfo& koi) // final
+void AMPU_AMPL::doKeyOn(const KeyOnInfo& koi) // final
 {
   _filtU      = 0.0f;
   _filtL      = 0.0f;
@@ -318,7 +318,7 @@ void BAL_AMP::compute(DspBuffer& dspbuf) // final
       ubuf[i]   = inp * linG;
     }
 }
-void BAL_AMP::doKeyOn(const DspKeyOnInfo& koi) // final
+void BAL_AMP::doKeyOn(const KeyOnInfo& koi) // final
 {
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -349,7 +349,7 @@ void PANNER::compute(DspBuffer& dspbuf) // final
       lbuf[i] = input * _prmix;
     }
 }
-void PANNER::doKeyOn(const DspKeyOnInfo& koi) // final
+void PANNER::doKeyOn(const KeyOnInfo& koi) // final
 {
   _plmix = 0.0f;
   _prmix = 0.0f;
@@ -390,7 +390,7 @@ void BANGAMP::compute(DspBuffer& dspbuf) // final
   _fval[0] = _smooth;
 }
 
-void BANGAMP::doKeyOn(const DspKeyOnInfo& koi) // final
+void BANGAMP::doKeyOn(const KeyOnInfo& koi) // final
 {
   _smooth = 0.0f;
 }

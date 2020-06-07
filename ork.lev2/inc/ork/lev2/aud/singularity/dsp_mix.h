@@ -25,7 +25,7 @@ struct MonoInStereoOut : public DspBlock {
   using dataclass_t = MonoInStereoOutData;
   MonoInStereoOut(const DspBlockData* dbd);
   void compute(DspBuffer& dspbuf) final;
-  void doKeyOn(const DspKeyOnInfo& koi) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
   float _filt;
   float _panbase;
 };
@@ -38,7 +38,7 @@ struct StereoEnhancer : public DspBlock {
   using dataclass_t = StereoEnhancerData;
   StereoEnhancer(const DspBlockData* dbd);
   void compute(DspBuffer& dspbuf) final;
-  void doKeyOn(const DspKeyOnInfo& koi) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct StaticStereoEchoData : public DspBlockData {
@@ -49,7 +49,7 @@ struct StaticStereoEcho : public DspBlock {
   using dataclass_t = StaticStereoEchoData;
   StaticStereoEcho(const DspBlockData* dbd);
   void compute(DspBuffer& dspbuf) final;
-  void doKeyOn(const DspKeyOnInfo& koi) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
   DspBuffer _delaybuffer;
   int64_t _index;
 };

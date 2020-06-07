@@ -37,7 +37,7 @@ void BANDPASS_FILT::compute(DspBuffer& dspbuf) // final
   // printf( "ff<%f> wid<%f>\n", ff, wid );
 }
 
-void BANDPASS_FILT::doKeyOn(const DspKeyOnInfo& koi) // final
+void BANDPASS_FILT::doKeyOn(const KeyOnInfo& koi) // final
 {
   _filter.Clear();
   _biquad.Clear();
@@ -70,7 +70,7 @@ void BAND2::compute(DspBuffer& dspbuf) // final
   // printf( "ff<%f> wid<%f>\n", ff, wid );
 }
 
-void BAND2::doKeyOn(const DspKeyOnInfo& koi) // final
+void BAND2::doKeyOn(const KeyOnInfo& koi) // final
 {
   _filter.Clear();
 }
@@ -103,7 +103,7 @@ void NOTCH_FILT::compute(DspBuffer& dspbuf) // final
   // printf( "ff<%f> wid<%f>\n", ff, wid );
 }
 
-void NOTCH_FILT::doKeyOn(const DspKeyOnInfo& koi) // final
+void NOTCH_FILT::doKeyOn(const KeyOnInfo& koi) // final
 {
   _filter.Clear();
 }
@@ -134,7 +134,7 @@ void NOTCH2::compute(DspBuffer& dspbuf) // final
   // printf( "ff<%f> res<%f>\n", ff, res );
 }
 
-void NOTCH2::doKeyOn(const DspKeyOnInfo& koi) // final
+void NOTCH2::doKeyOn(const KeyOnInfo& koi) // final
 {
   _filter1.Clear();
 }
@@ -172,7 +172,7 @@ void DOUBLE_NOTCH_W_SEP::compute(DspBuffer& dspbuf) // final
   // printf( "ff<%f> res<%f>\n", ff, res );
 }
 
-void DOUBLE_NOTCH_W_SEP::doKeyOn(const DspKeyOnInfo& koi) // final
+void DOUBLE_NOTCH_W_SEP::doKeyOn(const KeyOnInfo& koi) // final
 {
   _filter1.Clear();
   _filter2.Clear();
@@ -205,7 +205,7 @@ void LOPAS2::compute(DspBuffer& dspbuf) // final
   }
 }
 
-void LOPAS2::doKeyOn(const DspKeyOnInfo& koi) // final
+void LOPAS2::doKeyOn(const KeyOnInfo& koi) // final
 {
   _filter.Clear();
 }
@@ -238,7 +238,7 @@ void LP2RES::compute(DspBuffer& dspbuf) // final
   }
 }
 
-void LP2RES::doKeyOn(const DspKeyOnInfo& koi) // final
+void LP2RES::doKeyOn(const KeyOnInfo& koi) // final
 {
   _filter.Clear();
 }
@@ -281,7 +281,7 @@ void FOURPOLE_HIPASS_W_SEP::compute(DspBuffer& dspbuf) // final
   // printf( "ff<%f> res<%f>\n", ff, res );
 }
 
-void FOURPOLE_HIPASS_W_SEP::doKeyOn(const DspKeyOnInfo& koi) // final
+void FOURPOLE_HIPASS_W_SEP::doKeyOn(const KeyOnInfo& koi) // final
 {
   _filter1.Clear();
   _filter2.Clear();
@@ -317,7 +317,7 @@ void LOPASS::compute(DspBuffer& dspbuf) // final
   }
 }
 
-void LOPASS::doKeyOn(const DspKeyOnInfo& koi) // final
+void LOPASS::doKeyOn(const KeyOnInfo& koi) // final
 {
   _lpf.init();
 }
@@ -347,7 +347,7 @@ void LPCLIP::compute(DspBuffer& dspbuf) // final
   }
 }
 
-void LPCLIP::doKeyOn(const DspKeyOnInfo& koi) // final
+void LPCLIP::doKeyOn(const KeyOnInfo& koi) // final
 {
   _lpf.init();
 }
@@ -376,7 +376,7 @@ void HIPASS::compute(DspBuffer& dspbuf) // final
   _fval[0] = fc;
 }
 
-void HIPASS::doKeyOn(const DspKeyOnInfo& koi) // final
+void HIPASS::doKeyOn(const KeyOnInfo& koi) // final
 {
   _hpf.init();
 }
@@ -404,7 +404,7 @@ void LPGATE::compute(DspBuffer& dspbuf) // final
     }
 }
 
-void LPGATE::doKeyOn(const DspKeyOnInfo& koi) // final
+void LPGATE::doKeyOn(const KeyOnInfo& koi) // final
 {
   _filter.Clear();
 }
@@ -445,7 +445,7 @@ void HIFREQ_STIMULATOR::compute(DspBuffer& dspbuf) // final
   _fval[2] = amp;
 }
 
-void HIFREQ_STIMULATOR::doKeyOn(const DspKeyOnInfo& koi) // final
+void HIFREQ_STIMULATOR::doKeyOn(const KeyOnInfo& koi) // final
 {
   _filter1.Clear();
   _filter2.Clear();
@@ -478,7 +478,7 @@ void ALPASS::compute(DspBuffer& dspbuf) // final
   }
 }
 
-void ALPASS::doKeyOn(const DspKeyOnInfo& koi) // final
+void ALPASS::doKeyOn(const KeyOnInfo& koi) // final
 {
   _filter.Clear();
 }
@@ -520,7 +520,7 @@ void TwoPoleAllPass::compute(DspBuffer& dspbuf) // final
   // printf( "ff<%f> res<%f>\n", ff, res );
 }
 
-void TwoPoleAllPass::doKeyOn(const DspKeyOnInfo& koi) // final
+void TwoPoleAllPass::doKeyOn(const KeyOnInfo& koi) // final
 {
   _filterL.Clear();
   _filterH.Clear();
@@ -566,7 +566,7 @@ void TwoPoleLowPass::compute(DspBuffer& dspbuf) // final
   // printf( "ff<%f> res<%f>\n", ff, res );
 }
 
-void TwoPoleLowPass::doKeyOn(const DspKeyOnInfo& koi) // final
+void TwoPoleLowPass::doKeyOn(const KeyOnInfo& koi) // final
 {
   _filter.Clear();
   _smoothFC = 0.0f;
@@ -618,7 +618,7 @@ void FourPoleLowPassWithSep::compute(DspBuffer& dspbuf) // final
   // printf( "fc<%f> res<%f> sep<%f>\n", fc, res, sep );
 }
 
-void FourPoleLowPassWithSep::doKeyOn(const DspKeyOnInfo& koi) // final
+void FourPoleLowPassWithSep::doKeyOn(const KeyOnInfo& koi) // final
 {
   _filter1.Clear();
   _filter2.Clear();

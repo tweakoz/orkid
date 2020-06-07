@@ -13,50 +13,50 @@ struct BANDPASS_FILT : public DspBlock {
   TrapSVF _filter;
   BiQuad _biquad;
   void compute(DspBuffer& dspbuf) final;
-  void doKeyOn(const DspKeyOnInfo& koi) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct BAND2 : public DspBlock {
   BAND2(const DspBlockData* dbd);
   TrapSVF _filter;
   void compute(DspBuffer& dspbuf) final;
-  void doKeyOn(const DspKeyOnInfo& koi) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct NOTCH_FILT : public DspBlock {
   NOTCH_FILT(const DspBlockData* dbd);
   TrapSVF _filter;
   void compute(DspBuffer& dspbuf) final;
-  void doKeyOn(const DspKeyOnInfo& koi) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct NOTCH2 : public DspBlock {
   NOTCH2(const DspBlockData* dbd);
   TrapSVF _filter1;
   void compute(DspBuffer& dspbuf) final;
-  void doKeyOn(const DspKeyOnInfo& koi) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct DOUBLE_NOTCH_W_SEP : public DspBlock {
   DOUBLE_NOTCH_W_SEP(const DspBlockData* dbd);
   TrapSVF _filter1;
   TrapSVF _filter2;
   void compute(DspBuffer& dspbuf) final;
-  void doKeyOn(const DspKeyOnInfo& koi) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct LOPAS2 : public DspBlock {
   LOPAS2(const DspBlockData* dbd);
   TrapSVF _filter;
   void compute(DspBuffer& dspbuf) final;
-  void doKeyOn(const DspKeyOnInfo& koi) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct LP2RES : public DspBlock {
   LP2RES(const DspBlockData* dbd);
   TrapSVF _filter;
   void compute(DspBuffer& dspbuf) final;
-  void doKeyOn(const DspKeyOnInfo& koi) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct LPGATE : public DspBlock {
   LPGATE(const DspBlockData* dbd);
   TrapSVF _filter;
   void compute(DspBuffer& dspbuf) final;
-  void doKeyOn(const DspKeyOnInfo& koi) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct FOURPOLE_HIPASS_W_SEP : public DspBlock {
   FOURPOLE_HIPASS_W_SEP(const DspBlockData* dbd);
@@ -64,31 +64,31 @@ struct FOURPOLE_HIPASS_W_SEP : public DspBlock {
   TrapSVF _filter2;
   float _filtFC;
   void compute(DspBuffer& dspbuf) final;
-  void doKeyOn(const DspKeyOnInfo& koi) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct LOPASS : public DspBlock {
   LOPASS(const DspBlockData* dbd);
   OnePoleLoPass _lpf;
   void compute(DspBuffer& dspbuf) final;
-  void doKeyOn(const DspKeyOnInfo& koi) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct LPCLIP : public DspBlock {
   LPCLIP(const DspBlockData* dbd);
   OnePoleLoPass _lpf;
   void compute(DspBuffer& dspbuf) final;
-  void doKeyOn(const DspKeyOnInfo& koi) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct HIPASS : public DspBlock {
   HIPASS(const DspBlockData* dbd);
   OnePoleHiPass _hpf;
   void compute(DspBuffer& dspbuf) final;
-  void doKeyOn(const DspKeyOnInfo& koi) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct ALPASS : public DspBlock {
   ALPASS(const DspBlockData* dbd);
   TrapAllpass _filter;
   void compute(DspBuffer& dspbuf) final;
-  void doKeyOn(const DspKeyOnInfo& koi) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct HIFREQ_STIMULATOR : public DspBlock {
   HIFREQ_STIMULATOR(const DspBlockData* dbd);
@@ -96,7 +96,7 @@ struct HIFREQ_STIMULATOR : public DspBlock {
   TrapSVF _filter2;
   float _smoothFC;
   void compute(DspBuffer& dspbuf) final;
-  void doKeyOn(const DspKeyOnInfo& koi) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
 };
 /////////////////
 // newstyle
@@ -112,7 +112,7 @@ struct TwoPoleLowPass : public DspBlock {
   TrapSVF _filter;
   float _smoothFC;
   void compute(DspBuffer& dspbuf) final;
-  void doKeyOn(const DspKeyOnInfo& koi) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
 };
 
 struct TwoPoleAllPassData : public DspBlockData {
@@ -126,7 +126,7 @@ struct TwoPoleAllPass : public DspBlock {
   TrapAllpass _filterL;
   TrapAllpass _filterH;
   void compute(DspBuffer& dspbuf) final;
-  void doKeyOn(const DspKeyOnInfo& koi) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
 };
 
 struct FourPoleLowPassWithSepData : public DspBlockData {
@@ -141,7 +141,7 @@ struct FourPoleLowPassWithSep : public DspBlock {
   TrapSVF _filter2;
   float _filtFC;
   void compute(DspBuffer& dspbuf) final;
-  void doKeyOn(const DspKeyOnInfo& koi) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
 };
 
 } // namespace ork::audio::singularity

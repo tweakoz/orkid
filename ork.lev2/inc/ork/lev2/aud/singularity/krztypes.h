@@ -76,7 +76,6 @@ struct KeyOnInfo;
 struct IoMask;
 struct HudPanel;
 struct BlockModulationData;
-struct DspKeyOnInfo;
 struct DspParamData;
 struct DspBlockData;
 struct DspStageData;

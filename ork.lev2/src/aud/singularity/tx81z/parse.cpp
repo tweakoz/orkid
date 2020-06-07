@@ -263,7 +263,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       int dec1Lev     = bytes[op_base + 4]; // EG 0..15
       int levScaling  = bytes[op_base + 5]; // level scaling 0..99
       int _AEK        = bytes[op_base + 6];
-      bool opEnable   = (_AEK & 64) >> 6;                 // AME - bool (enable op?)
+      bool opEnable   = !((_AEK & 64) >> 6);              // AME - bool (enable op?)
       int egBiasSensa = (_AEK & 0x18) >> 3;               // eg bias sensitivity 0..7
       int kvSensa     = (_AEK & 0x07);                    // keyvel sensitivity 0..7
       int outLevel    = bytes[op_base + 7];               // out level 0..99
@@ -326,8 +326,13 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       // opd._modIndex = (4.0f*512.0f) *  powf(2.0,(-tlval/8.0f));
       opd._modIndex = 2.0f * powf(2.0, (-tlval / 8.0f));
 
-      ////////////////////////////
-      if (true) { // opEnable) {
+      ////////////////////////////////////////////////////////////////////////
+      // Operator Amplitude Control
+      ////////////////////////////////////////////////////////////////////////
+
+      printf("opEnable<%d:%d>\n", opindex, int(opEnable));
+
+      if (opEnable) {
 
         auto envname       = ork::FormatString("op%d-env", opindex);
         auto opaname       = ork::FormatString("op%d-amp", opindex);
@@ -345,44 +350,83 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
         float dc2time = model.transform(dec2Rate / 31.0);
         float reltime = model.transform(relRate / 15.0);
 
-        printf("ATK<%g> DC1<%g> DC2<%g> REL<%g>\n", atktime, dc1time, dc2time, reltime);
+        printf("egShift<%d> levsca<%d> ATK<%g> DC1<%g> DC2<%g> REL<%g>\n", egShift, levScaling, atktime, dc1time, dc2time, reltime);
 
-        auto levelshift = [](float inp) -> float { //
+        // todo (should eqShift mapping be done post eg ?)
+        auto levelshift = [egShift](float inp) -> float { //
           switch (egShift) {
             case 0:
               return inp;
               break;
-            case 1:
-              return inp;
+            case 1: {
+              float lo = decibel_to_linear_amp_ratio(-12);
+              return lerp(lo, 1.0, inp);
               break;
-            case 2:
-              return inp;
+            }
+            case 2: {
+              float lo = decibel_to_linear_amp_ratio(-24);
+              return lerp(lo, 1.0, inp);
               break;
-            case 3:
-              return inp;
+            }
+            case 3: {
+              float lo = decibel_to_linear_amp_ratio(-48);
+              return lerp(lo, 1.0, inp);
               break;
+            }
           }
+          return inp;
         };
 
         ENVELOPE->_sustainSegment = 2;
         ENVELOPE->_releaseSegment = 3;
-        ENVELOPE->_segments.push_back({atktime, levelshift(1), 0.5});         // atk1 (log - how interacts with egshift?)
+        // todo (attack-logshape - how interacts with egshift?)
+        ENVELOPE->_segments.push_back({atktime, levelshift(1), 0.5});         // atk1
         ENVELOPE->_segments.push_back({dc1time, levelshift(decaylevl), 1.0}); // atk2
         ENVELOPE->_segments.push_back({dc2time, levelshift(0), 1.0});         // dec
         ENVELOPE->_segments.push_back({reltime, levelshift(0), 1.0});         // rel1
 
-        OPAMP->_oncompute = [outLevel](CustomControllerInst* cci) { //
-          float rval   = float(outLevel / 99.0f);
-          cci->_curval = rval;
+        OPAMP->_oncompute = [outLevel, levScaling](CustomControllerInst* cci) { //
+          const auto& koi = cci->_layer->_koi;
+
+          float inplevel = float(outLevel / 99.0f);
+          inplevel       = powf(inplevel, 2.0);
+
+          //////////////////////////////////////////////////
+          // level scaling (operator amplitude key follow)
+          //  Level scaling operates on a curve from about c1.
+          //  When LS is 0, the operator output level will be
+          //  the same for all notes. When LS is 99 the opertaor
+          //  level will have dropped to 0 by the time you get to G6
+          // c1(24) .. g6(91) (91-24==67)
+          //////////////////////////////////////////////////
+
+          float unit_levscale = float(levScaling / 99.0f);
+          float unit_keyscale = float(koi._key - 24) / 67.0f;
+          unit_keyscale       = std::clamp(unit_keyscale, 0.0f, 1.0f);
+          float lindbscale    = unit_keyscale * unit_levscale;
+          float atten         = decibel_to_linear_amp_ratio(lindbscale * -12.0f);
+
+          if (0)
+            printf(
+                "inplevel<%g> unit_levscale<%g> unit_keyscale<%g> atten<%g>\n", //
+                inplevel,
+                unit_levscale,
+                unit_keyscale,
+                atten);
+
+          /////////////////////////////////
+
+          cci->_curval = inplevel * atten;
         };
 
+        ////////////////////////////////////////////////////////////////////////
         auto funname = ork::FormatString("op%d-fun", opindex);
         auto FUN     = layerdata->appendController<FunData>(funname);
         FUN->_a      = envname;
         FUN->_b      = opaname;
         FUN->_op     = "a*b";
 
-        amp_param._coarse          = 1.0f;
+        amp_param._coarse          = 0.0f;
         amp_param._mods._src1      = FUN;
         amp_param._mods._src1Depth = 1.0;
       }

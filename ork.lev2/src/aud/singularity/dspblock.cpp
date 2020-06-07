@@ -121,7 +121,7 @@ FPARAM DspBlock::initFPARAM(const DspParamData& dpd) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void DspBlock::keyOn(const DspKeyOnInfo& koi) {
+void DspBlock::keyOn(const KeyOnInfo& koi) {
   _layer = koi._layer;
   for (int i = 0; i < _numParams; i++) {
     _param[i] = initFPARAM(_dbd->_paramd[i]);

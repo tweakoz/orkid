@@ -71,7 +71,7 @@ signalscope_ptr_t create_spectrumanalyzer(hudvp_ptr_t vp) {
       analyzersurf->SetDirty();
     }
   };
-  instrument->_sink->_onkeyon = [analyzersurf](const ScopeSource* src, DspKeyOnInfo& koi) { //
+  instrument->_sink->_onkeyon = [analyzersurf](const ScopeSource* src, KeyOnInfo& koi) { //
     analyzersurf->_currentSource = src;
   };
   instrument->_sink->_onkeyoff = [analyzersurf](const ScopeSource* src) { //

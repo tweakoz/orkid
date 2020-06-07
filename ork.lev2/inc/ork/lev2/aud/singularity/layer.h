@@ -111,6 +111,7 @@ struct Layer {
   float _layerTime;
   dspblk_ptr_t _pchBlock;
   outbus_ptr_t _outbus;
+  KeyOnInfo _koi;
 
   ControlBlockInst* _ctrlBlock = nullptr;
 

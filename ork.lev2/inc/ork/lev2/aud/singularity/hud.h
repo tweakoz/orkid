@@ -106,7 +106,7 @@ struct ScopeSource {
   void updateController(const ControllerInst* controller);
 
   void notifySinksUpdated();
-  void notifySinksKeyOn(DspKeyOnInfo& koi);
+  void notifySinksKeyOn(KeyOnInfo& koi);
   void notifySinksKeyOff();
   void connect(scopesink_ptr_t sink);
   void disconnect(scopesink_ptr_t sink);
@@ -117,11 +117,11 @@ struct ScopeSource {
 };
 struct ScopeSink {
   void sourceUpdated(const ScopeSource* src);
-  void sourceKeyOn(const ScopeSource* src, DspKeyOnInfo& koi);
+  void sourceKeyOn(const ScopeSource* src, KeyOnInfo& koi);
   void sourceKeyOff(const ScopeSource* src);
-  std::function<void(const ScopeSource*)> _onupdate                   = nullptr;
-  std::function<void(const ScopeSource*, DspKeyOnInfo& koi)> _onkeyon = nullptr;
-  std::function<void(const ScopeSource*)> _onkeyoff                   = nullptr;
+  std::function<void(const ScopeSource*)> _onupdate                = nullptr;
+  std::function<void(const ScopeSource*, KeyOnInfo& koi)> _onkeyon = nullptr;
+  std::function<void(const ScopeSource*)> _onkeyoff                = nullptr;
 };
 struct SignalScope {
   void setRect(int iX, int iY, int iW, int iH, bool snap = false);

@@ -43,7 +43,7 @@ signalscope_ptr_t create_envelope_analyzer(hudvp_ptr_t vp) {
   ratelevsurf->_instrument    = instrument;
   instrument->_hudpanel       = hudpanel;
   instrument->_sink           = std::make_shared<ScopeSink>();
-  instrument->_sink->_onkeyon = [ratelevsurf](const ScopeSource* src, DspKeyOnInfo& koi) { //
+  instrument->_sink->_onkeyon = [ratelevsurf](const ScopeSource* src, KeyOnInfo& koi) { //
     auto ratelev = dynamic_cast<const RateLevelEnvInst*>(src->_controller);
     if (ratelev) { // attach
       ratelevsurf->_updatecount    = 0;

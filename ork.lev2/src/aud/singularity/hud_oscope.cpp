@@ -42,7 +42,7 @@ signalscope_ptr_t create_oscilloscope(hudvp_ptr_t vp) {
       scopesurf->SetDirty();
     }
   };
-  instrument->_sink->_onkeyon = [scopesurf](const ScopeSource* src, DspKeyOnInfo& koi) { //
+  instrument->_sink->_onkeyon = [scopesurf](const ScopeSource* src, KeyOnInfo& koi) { //
     scopesurf->_currentSource = src;
   };
   instrument->_sink->_onkeyoff = [scopesurf](const ScopeSource* src) { //

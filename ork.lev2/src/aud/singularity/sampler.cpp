@@ -109,7 +109,7 @@ void SAMPLER::compute(DspBuffer& dspbuf) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SAMPLER::doKeyOn(const DspKeyOnInfo& koi) // final
+void SAMPLER::doKeyOn(const KeyOnInfo& koi) // final
 {
   _spOsc.keyOn(koi);
 }
@@ -245,7 +245,7 @@ void sampleOsc::setSrRatio(float pbratio) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void sampleOsc::keyOn(const DspKeyOnInfo& koi) {
+void sampleOsc::keyOn(const KeyOnInfo& koi) {
   int note = koi._key;
 
   _lyr = koi._layer;
@@ -366,7 +366,7 @@ void sampleOsc::keyOff() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void sampleOsc::findRegion(const DspKeyOnInfo& koi) {
+void sampleOsc::findRegion(const KeyOnInfo& koi) {
   auto ld  = _lyr->_layerdata;
   auto KMP = ld->_kmpBlock;
 

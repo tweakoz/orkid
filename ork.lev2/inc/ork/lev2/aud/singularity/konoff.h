@@ -18,10 +18,4 @@ struct KeyOnInfo {
   ork::svarp_t _extdata;
 };
 
-///////////////////////////////////////////////////////////////////////////////
-
-struct DspKeyOnInfo : public KeyOnInfo {
-  dspblk_ptr_t _prv;
-};
-
 } // namespace ork::audio::singularity

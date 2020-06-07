@@ -126,10 +126,10 @@ struct NatEnv {
 struct sampleOsc {
   sampleOsc();
 
-  void keyOn(const DspKeyOnInfo& koi);
+  void keyOn(const KeyOnInfo& koi);
   void keyOff();
 
-  void findRegion(const DspKeyOnInfo& koi);
+  void findRegion(const KeyOnInfo& koi);
 
   void updateFreqRatio();
   void setSrRatio(float r);
@@ -203,7 +203,7 @@ struct SAMPLER final : public DspBlock {
   SAMPLER(const DspBlockData* dbd);
   void compute(DspBuffer& dspbuf);
 
-  void doKeyOn(const DspKeyOnInfo& koi);
+  void doKeyOn(const KeyOnInfo& koi);
   void doKeyOff();
   sampleOsc _spOsc;
   float _filtp;

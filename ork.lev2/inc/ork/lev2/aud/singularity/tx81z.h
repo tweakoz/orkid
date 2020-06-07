@@ -39,21 +39,7 @@ struct Fm4ProgData {
 
 using fm4prgdata_ptr_t = std::shared_ptr<Fm4ProgData>;
 
-struct DspKeyOnInfo;
 struct DspBuffer;
-struct fm4syn {
-  fm4syn();
-  void compute(Layer* layer);
-  void keyOn(const DspKeyOnInfo& koi);
-  void keyOff();
-
-  using fm4alg_t = std::function<void(Layer* layer)>;
-
-  Fm4ProgData _data;
-  ork::svarp_t _pimpl;
-  float _opAmp[4];
-  float _opPitch[4];
-};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -86,9 +72,9 @@ struct FM4 final : public DspBlock {
   using dataclass_t = FM4Data;
   FM4(const DspBlockData* dbd);
   void compute(DspBuffer& dspbuf) override;
-  void doKeyOn(const DspKeyOnInfo& koi) override;
+  void doKeyOn(const KeyOnInfo& koi) override;
   void doKeyOff() override;
-  fm4syn _fm4;
+  ork::svar16_t _pimpl;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

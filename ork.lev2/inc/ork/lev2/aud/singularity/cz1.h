@@ -82,7 +82,7 @@ struct CZX final : public DspBlock {
 
   using oscmethod_t = std::function<void(CZX& inst, DspBuffer& dspbuf)>;
 
-  void doKeyOn(const DspKeyOnInfo& koi) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
   void doKeyOff() final;
 
   bool isHsyncSource() const override {

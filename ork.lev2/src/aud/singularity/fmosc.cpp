@@ -34,7 +34,7 @@ void FmOsc::setWave(int iwave) {
   _waveform = fmwave[iwave];
 }
 ///////////////////////////////////////////////////////////
-void FmOsc::keyOn(const DspKeyOnInfo& koi, const Fm4OpData& opd) {
+void FmOsc::keyOn(const Fm4OpData& opd) {
   _pbIndex     = 0;
   _pbIndexNext = 0;
   _prevOutput  = 0.0f;
