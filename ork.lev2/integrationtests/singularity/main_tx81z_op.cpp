@@ -20,14 +20,6 @@ int main(int argc, char** argv) {
   auto& op1      = fmdata->_ops[1];
   auto& op2      = fmdata->_ops[2];
   auto& op3      = fmdata->_ops[3];
-  op0._opEnable  = true;
-  op1._opEnable  = true;
-  op2._opEnable  = true;
-  op3._opEnable  = true;
-  op0._outLevel  = 99.0f;
-  op1._outLevel  = 99.0f;
-  op2._outLevel  = 99.0f;
-  op3._outLevel  = 99.0f;
   op1._modIndex  = 0.125f;
   op2._modIndex  = 0.125f;
   op3._modIndex  = 0.125f;

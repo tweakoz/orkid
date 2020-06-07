@@ -58,7 +58,10 @@ void DspParamData::useDefaultEvaluator() {
   _mods._evaluator = [this](FPARAM& cec) -> float {
     float kt = _keyTrack * cec._keyOff;
     float vt = -_velTrack * cec._unitVel;
-    float rv = cec._coarse + cec._C1() + cec._C2() + kt + vt;
+    float rv = cec._coarse //
+               + cec._C1() //
+               + cec._C2() //
+               + kt + vt;
     // printf("kt<%f> vt<%f> rv<%f>\n", kt, vt, rv);
     return rv;
   };
@@ -72,7 +75,11 @@ void DspParamData::useAmplitudeEvaluator() {
     cec._vval  = lerp(-_velTrack, 0.0f, cec._unitVel);
     cec._s1val = cec._C1();
     cec._s2val = cec._C2();
-    float x    = (cec._coarse) + cec._s1val + cec._s2val + cec._kval + cec._vval;
+    float x    = (cec._coarse) //
+              + cec._s1val     //
+              + cec._s2val     //
+              + cec._kval      //
+              + cec._vval;
     // printf("vt<%f> kt<%f> x<%f>\n", _velTrack, _keyTrack, x);
     return x;
   };
@@ -127,7 +134,11 @@ void DspParamData::useKrzPosEvaluator() {
     cec._vval  = _velTrack * cec._unitVel;
     cec._s1val = cec._C1();
     cec._s2val = cec._C2();
-    float x    = (cec._coarse) + cec._s1val + cec._s2val + cec._kval + cec._vval;
+    float x    = (cec._coarse) //
+              + cec._s1val     //
+              + cec._s2val     //
+              + cec._kval      //
+              + cec._vval;
     return clip_float(x, -100, 100);
   };
 }
@@ -138,7 +149,11 @@ void DspParamData::useKrzEvnOddEvaluator() {
   _mods._evaluator = [this](FPARAM& cec) -> float {
     float kt = _keyTrack * cec._keyOff;
     float vt = lerp(-_velTrack, 0.0f, cec._unitVel);
-    float x  = (cec._coarse) + cec._C1() + cec._C2() + kt + vt;
+    float x  = (cec._coarse) //
+              + cec._C1()    //
+              + cec._C2()    //
+              + kt           //
+              + vt;
     // printf( "vt<%f> kt<%f> x<%f>\n", vt, kt, x );
     return clip_float(x, -10, 10);
   };

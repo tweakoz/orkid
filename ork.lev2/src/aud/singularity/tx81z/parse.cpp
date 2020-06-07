@@ -256,23 +256,23 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
       // ratio 0.5 .. 27.57
 
-      opd._atkRate     = bytes[op_base + 0]; // EG 0..31
-      opd._dec1Rate    = bytes[op_base + 1]; // EG 0..31
-      opd._dec2Rate    = bytes[op_base + 2]; // EG 0..31
-      opd._relRate     = bytes[op_base + 3]; // EG 0..15
-      opd._dec1Lev     = bytes[op_base + 4]; // EG 0..15
-      opd._levScaling  = bytes[op_base + 5]; // level scaling 0..99
-      int _AEK         = bytes[op_base + 6];
-      opd._opEnable    = (_AEK & 64) >> 6;                 // AME - bool (enable op?)
-      opd._egBiasSensa = (_AEK & 0x18) >> 3;               // eg bias sensitivity 0..7
-      opd._kvSensa     = (_AEK & 0x07);                    // keyvel sensitivity 0..7
-      opd._outLevel    = bytes[op_base + 7];               // out level 0..99
-      int coarseFrq    = bytes[op_base + 8] & 0x3f;        // coarse frequency 0..63
-      opd._ratScaling  = (bytes[op_base + 9] & 0x18) >> 3; // rate scaling 0..3
-      int detune       = (bytes[op_base + 9] & 7) - 3;     // detune ? -3..3
+      int atkRate     = bytes[op_base + 0]; // EG 0..31
+      int dec1Rate    = bytes[op_base + 1]; // EG 0..31
+      int dec2Rate    = bytes[op_base + 2]; // EG 0..31
+      int relRate     = bytes[op_base + 3]; // EG 0..15
+      int dec1Lev     = bytes[op_base + 4]; // EG 0..15
+      int levScaling  = bytes[op_base + 5]; // level scaling 0..99
+      int _AEK        = bytes[op_base + 6];
+      bool opEnable   = (_AEK & 64) >> 6;                 // AME - bool (enable op?)
+      int egBiasSensa = (_AEK & 0x18) >> 3;               // eg bias sensitivity 0..7
+      int kvSensa     = (_AEK & 0x07);                    // keyvel sensitivity 0..7
+      int outLevel    = bytes[op_base + 7];               // out level 0..99
+      int coarseFrq   = bytes[op_base + 8] & 0x3f;        // coarse frequency 0..63
+      int ratScaling  = (bytes[op_base + 9] & 0x18) >> 3; // rate scaling 0..3
+      int detune      = (bytes[op_base + 9] & 7) - 3;     // detune ? -3..3
 
       int _EFF         = bytes[73 + 2 * opindex] & 0x3f;
-      opd._egShift     = (_EFF & 0x30) >> 4;   // eg shift (off,48,24,12)
+      int egShift      = (_EFF & 0x30) >> 4;   // eg shift (off,48,24,12)
       bool fixdfrqmode = (_EFF & 0x08) >> 3;   // fixed mode ? bool
       int fixedRange   = (_EFF & 0x7);         // fixed range: 255,510,1k,2k,4k,8k,16k,32k
                                                // fixed step:  1,  2,  4, 8, 16,32,64, 128
@@ -280,9 +280,9 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       opd._waveform = (_OWF & 0x70) >> 4;      // waveform 0..7
       int fineFrq   = (_OWF & 0xf);            // fine frequency 0..15
 
-      opd._F   = bytes[op_base + 8];
-      opd._EFF = _EFF;
-      opd._OWF = _OWF;
+      // opd._F   = bytes[op_base + 8];
+      // opd._EFF = _EFF;
+      // opd._OWF = _OWF;
 
       ////////////////////////////
       // translate tx operator frequency params
@@ -291,8 +291,9 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       ////////////////////////////
 
       if (fixdfrqmode) {
-        int index             = (coarseFrq * 4); //|(fine&3);
-        float fixedfrq        = float(8 << fixedRange) + float(index << fixedRange);
+        int index      = (coarseFrq << 2);      //|(fine&3);
+        float fixedfrq = float(8 << fixedRange) //
+                         + float(index << fixedRange);
         pitch_param._coarse   = frequency_to_midi_note(fixedfrq) * 100.0;
         pitch_param._keyTrack = 0.0; // 0 cents/key
 
@@ -317,43 +318,74 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
           85,  84,  82,  81,
       };
 
-      int tlval = (opd._outLevel > 19) //
-                      ? 99 - opd._outLevel
-                      : op_mitltab[opd._outLevel];
+      int tlval = (outLevel > 19) //
+                      ? 99 - outLevel
+                      : op_mitltab[outLevel];
 
       // float MI = (4.0f*pi2) *  powf(2.0,(-tlval/8.0f));
       // opd._modIndex = (4.0f*512.0f) *  powf(2.0,(-tlval/8.0f));
       opd._modIndex = 2.0f * powf(2.0, (-tlval / 8.0f));
 
       ////////////////////////////
+      if (true) { // opEnable) {
 
-      auto envname       = ork::FormatString("OP%d.Amp", opindex);
-      auto ENVELOPE      = layerdata->appendController<RateLevelEnvData>(envname);
-      ENVELOPE->_ampenv  = true; //(opindex==0);
-      ENVELOPE->_envType = RlEnvType::ERLTYPE_DEFAULT;
+        auto envname       = ork::FormatString("op%d-env", opindex);
+        auto opaname       = ork::FormatString("op%d-amp", opindex);
+        auto ENVELOPE      = layerdata->appendController<RateLevelEnvData>(envname);
+        auto OPAMP         = layerdata->appendController<CustomControllerData>(opaname);
+        ENVELOPE->_ampenv  = true; //(opindex==0);
+        ENVELOPE->_envType = RlEnvType::ERLTYPE_DEFAULT;
 
-      amp_param._coarse          = 0.0f;
-      amp_param._mods._src1      = ENVELOPE;
-      amp_param._mods._src1Depth = 1.0;
+        float decaylevl = openv_declevels[dec1Lev];
+        float ddec      = fabs(1.0f - decaylevl);
+        ratelevmodel model;
+        model.txmodel();
+        float atktime = model.transform(atkRate / 31.0);
+        float dc1time = model.transform(dec1Rate / 31.0) * ddec;
+        float dc2time = model.transform(dec2Rate / 31.0);
+        float reltime = model.transform(relRate / 15.0);
 
-      float decaylevl = openv_declevels[opd._dec1Lev];
-      float ddec      = fabs(1.0f - decaylevl);
-      ratelevmodel model;
-      model.txmodel();
-      float atktime = model.transform(opd._atkRate / 31.0);
-      float dc1time = model.transform(opd._dec1Rate / 31.0) * ddec;
-      float dc2time = model.transform(opd._dec2Rate / 31.0);
-      float reltime = model.transform(opd._relRate / 15.0);
+        printf("ATK<%g> DC1<%g> DC2<%g> REL<%g>\n", atktime, dc1time, dc2time, reltime);
 
-      printf("ATK<%g> DC1<%g> DC2<%g> REL<%g>\n", atktime, dc1time, dc2time, reltime);
+        auto levelshift = [](float inp) -> float { //
+          switch (egShift) {
+            case 0:
+              return inp;
+              break;
+            case 1:
+              return inp;
+              break;
+            case 2:
+              return inp;
+              break;
+            case 3:
+              return inp;
+              break;
+          }
+        };
 
-      ENVELOPE->_sustainSegment = 2;
-      ENVELOPE->_releaseSegment = 3;
-      ENVELOPE->_segments.push_back({atktime, 1, 0.5});         // atk1 (log)
-      ENVELOPE->_segments.push_back({dc1time, decaylevl, 1.0}); // atk2
-      ENVELOPE->_segments.push_back({dc2time, 0, 1.0});         // dec
-      ENVELOPE->_segments.push_back({reltime, 0, 1.0});         // rel1
+        ENVELOPE->_sustainSegment = 2;
+        ENVELOPE->_releaseSegment = 3;
+        ENVELOPE->_segments.push_back({atktime, levelshift(1), 0.5});         // atk1 (log - how interacts with egshift?)
+        ENVELOPE->_segments.push_back({dc1time, levelshift(decaylevl), 1.0}); // atk2
+        ENVELOPE->_segments.push_back({dc2time, levelshift(0), 1.0});         // dec
+        ENVELOPE->_segments.push_back({reltime, levelshift(0), 1.0});         // rel1
 
+        OPAMP->_oncompute = [outLevel](CustomControllerInst* cci) { //
+          float rval   = float(outLevel / 99.0f);
+          cci->_curval = rval;
+        };
+
+        auto funname = ork::FormatString("op%d-fun", opindex);
+        auto FUN     = layerdata->appendController<FunData>(funname);
+        FUN->_a      = envname;
+        FUN->_b      = opaname;
+        FUN->_op     = "a*b";
+
+        amp_param._coarse          = 1.0f;
+        amp_param._mods._src1      = FUN;
+        amp_param._mods._src1Depth = 1.0;
+      }
       // printf( "OP<%d>\n", op );
       // printf( "    AR<%d> D1R<%d> D2R<%d> RR<%d> D1L<%d>\n", AR,D1R,D2R,RR,D1L);
       // printf( "    AME<%d> EBS<%d> KVS<%d>\n", AME,EBS,KVS);

@@ -167,8 +167,8 @@ struct fm4vcpriv {
         float o0 = _phasemodosc[0].compute(_op_frequency[0], phaseoff1);
 
         // printf( "_modindex[1]<%f>\n", _modindex[1] );
-        output[i] = o0 * _op_amplitude[0] * _olev[0] + //
-                    o2 * _op_amplitude[2] * _olev[2];
+        output[i] = o0 * _op_amplitude[0] + //
+                    o2 * _op_amplitude[2];
       }
     };
     /////////////////////////////////////////////////
@@ -280,7 +280,6 @@ struct fm4vcpriv {
 
       DspKeyOnInfo koi;
       _phasemodosc[i].keyOn(koi, opd);
-      _olev[i] = float(opd._outLevel) / 99.0f;
     }
 
     auto& HUDTEXT = l->_HKF._miscText;
@@ -290,8 +289,7 @@ struct fm4vcpriv {
     if (0)
       for (int i = 0; i < 4; i++) {
         const auto& opd = _data._ops[i];
-        HUDTEXT += ork::FormatString("op<%d> olev<%d> wav<%d>\n", i, opd._outLevel, opd._waveform);
-        HUDTEXT += ork::FormatString("       LS<%d> RS<%d>\n", i, opd._levScaling, opd._ratScaling);
+        HUDTEXT += ork::FormatString("op<%d> wav<%d>\n", i, opd._waveform);
       }
   }
   void keyOff() {
@@ -309,7 +307,6 @@ struct fm4vcpriv {
   float _op_frequency[4];
   float _ratio[4];
   float _fixed[4];
-  float _olev[4];
   bool _newnote = false;
   int _note;
   Layer* _curlayer;

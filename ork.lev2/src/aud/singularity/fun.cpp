@@ -69,14 +69,16 @@ void FunInst::keyOn(const KeyOnInfo& KOI) // final
     };
   else if (op == "a-b")
     _op = [=]() -> float {
-      float a = this->_a();
-      float b = this->_b();
-      return (a - b);
+      float a    = this->_a();
+      float b    = this->_b();
+      float rval = a - b;
+      return rval;
     };
   else if (op == "a*b")
     _op = [=]() -> float {
-      float a = this->_a();
-      float b = this->_b();
+      float a    = this->_a();
+      float b    = this->_b();
+      float rval = a * b;
       return (a * b);
     };
   else if (op == "(a+b)/2")
