@@ -63,7 +63,7 @@ fm4alg_t tx4op_algs[8] = {
         float o2        = op2._pmosc.compute(op2._frq, phaseoff3);
         float o1        = op1._pmosc.compute(op0._frq, phaseoff2);
         float o0        = op0._pmosc.compute(op0._frq, phaseoff1);
-        output[i]       = o0 * op0._amp;
+        output[i]       = clip_float(o0 * op0._amp, -2, 2);
       }
     },
     /////////////////////////////////////////////////
@@ -89,7 +89,7 @@ fm4alg_t tx4op_algs[8] = {
         float o2        = op2._pmosc.compute(op2._frq, phaseoff3);
         float o1        = op1._pmosc.compute(op1._frq, phaseoff2);
         float o0        = op0._pmosc.compute(op0._frq, phaseoff1);
-        output[i]       = o0 * op0._amp;
+        output[i]       = clip_float(o0 * op0._amp, -2, 2);
       }
     },
     /////////////////////////////////////////////////
@@ -116,7 +116,7 @@ fm4alg_t tx4op_algs[8] = {
         float o2        = op2._pmosc.compute(op2._frq, phaseoff3);
         float o1        = op1._pmosc.compute(op1._frq, phaseoff2);
         float o0        = op0._pmosc.compute(op0._frq, (phaseoff1 + phaseoff3));
-        output[i]       = o0 * op0._amp;
+        output[i]       = clip_float(o0 * op0._amp, -2, 2);
       }
     },
     /////////////////////////////////////////////////
@@ -143,7 +143,7 @@ fm4alg_t tx4op_algs[8] = {
         float o2        = op2._pmosc.compute(op2._frq, phaseoff3);
         float o1        = op1._pmosc.compute(op1._frq, 0.0f);
         float o0        = op0._pmosc.compute(op0._frq, (phaseoff1 + phaseoff2));
-        output[i]       = o0 * op0._amp;
+        output[i]       = clip_float(o0 * op0._amp, -2, 2);
       }
     },
     /////////////////////////////////////////////////
@@ -169,8 +169,11 @@ fm4alg_t tx4op_algs[8] = {
         float o1        = op1._pmosc.compute(op1._frq, 0.0f);
         float o0        = op0._pmosc.compute(op0._frq, phaseoff1);
         // printf( "_modindex[1]<%f>\n", _modindex[1] );
-        output[i] = o0 * op0._amp + //
-                    o2 * op2._amp;
+        output[i] = clip_float(
+            o0 * op0._amp + //
+                o2 * op2._amp,
+            -2,
+            2);
       }
     },
     /////////////////////////////////////////////////
@@ -195,9 +198,12 @@ fm4alg_t tx4op_algs[8] = {
         float o2        = op2._pmosc.compute(op2._frq, phaseoff3);
         float o1        = op1._pmosc.compute(op1._frq, 0.0f);
         float o0        = op0._pmosc.compute(op0._frq, phaseoff3);
-        output[i]       = o0 * op0._amp + //
-                    o1 * op1._amp +       //
-                    o2 * op2._amp;
+        output[i]       = clip_float(
+            o0 * op0._amp +     //
+                o1 * op1._amp + //
+                o2 * op2._amp,
+            -2,
+            2);
       }
     },
     /////////////////////////////////////////////////
@@ -221,9 +227,12 @@ fm4alg_t tx4op_algs[8] = {
         float o2        = op2._pmosc.compute(op2._frq, phaseoff3);
         float o1        = op1._pmosc.compute(op1._frq, 0.0f);
         float o0        = op0._pmosc.compute(op0._frq, 0.0f);
-        output[i]       = o0 * op0._amp + //
-                    o1 * op1._amp +       //
-                    o2 * op2._amp;
+        output[i]       = clip_float(
+            o0 * op0._amp +     //
+                o1 * op1._amp + //
+                o2 * op2._amp,
+            -2,
+            2);
       }
     },
     /////////////////////////////////////////////////
@@ -246,10 +255,13 @@ fm4alg_t tx4op_algs[8] = {
         float o2        = op2._pmosc.compute(op2._frq, 0.0f);
         float o1        = op1._pmosc.compute(op1._frq, 0.0f);
         float o0        = op0._pmosc.compute(op0._frq, 0.0f);
-        output[i]       = o0 * op0._amp + //
-                    o1 * op1._amp +       //
-                    o2 * op2._amp +       //
-                    o3 * op3._amp;
+        output[i]       = clip_float(
+            o0 * op0._amp +     //
+                o1 * op1._amp + //
+                o2 * op2._amp + //
+                o3 * op3._amp,
+            -2,
+            2);
       }
     },
 };

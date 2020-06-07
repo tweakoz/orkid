@@ -188,7 +188,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
     // 1/16 == PI/8 (2)
     // 1/32 == PI/16 (1)
     auto& feedback_param   = ops_block->param(8);
-    feedback_param._coarse = (FBL == 0) ? 0 : powf(2.0, FBL - 6);
+    feedback_param._coarse = (FBL == 0) ? 0 : powf(2.0, FBL - 7);
     ///////////////////////////////
 
     // printf( "ALG<%d> FBL<%d> SY<%d>\n", ALG, FBL, SY);
@@ -385,22 +385,44 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
         ENVELOPE->_segments.push_back({dc2time, levelshift(0), 1.0});         // dec
         ENVELOPE->_segments.push_back({reltime, levelshift(0), 1.0});         // rel1
 
+        //////////////////////////////////////////////////
+        // rate scaling (envelope rate key follow)
+        //  When RS is 0, the envelope will be the same
+        //  time length for all notes. When RS is 3,
+        //  high notes will have a shorter envelope
+        // c1(24) .. g6(91) (91-24==67)
+        //////////////////////////////////////////////////
+
+        ENVELOPE->_envadjust = [=](const EnvPoint& inp, //
+                                   int iseg,
+                                   const KeyOnInfo& KOI) -> EnvPoint { //
+          EnvPoint outp       = inp;
+          float unit_keyscale = float(KOI._key - 24) / 67.0f;
+          unit_keyscale       = std::clamp(unit_keyscale, 0.0f, 1.0f);
+          float power         = 1.0 / pow(2.0, unit_keyscale * 2.0);
+          outp._time *= power;
+          return outp;
+        };
+
+        //////////////////////////////////////////////////
+        // level scaling (operator amplitude key follow)
+        //  Level scaling operates on a curve from about c1.
+        //  When LS is 0, the operator output level will be
+        //  the same for all notes. When LS is 99 the opertaor
+        //  level will have dropped to 0 by the time you get to G6
+        // c1(24) .. g6(91) (91-24==67)
+        //////////////////////////////////////////////////
+
         OPAMP->_oncompute = [outLevel, levScaling](CustomControllerInst* cci) { //
           const auto& koi = cci->_layer->_koi;
 
           float inplevel = float(outLevel / 99.0f);
+          inplevel       = std::clamp(inplevel, 0.0f, 1.0f);
           inplevel       = powf(inplevel, 2.0);
 
-          //////////////////////////////////////////////////
-          // level scaling (operator amplitude key follow)
-          //  Level scaling operates on a curve from about c1.
-          //  When LS is 0, the operator output level will be
-          //  the same for all notes. When LS is 99 the opertaor
-          //  level will have dropped to 0 by the time you get to G6
-          // c1(24) .. g6(91) (91-24==67)
-          //////////////////////////////////////////////////
-
           float unit_levscale = float(levScaling / 99.0f);
+          unit_levscale       = std::clamp(unit_levscale, 0.0f, 1.0f);
+          unit_levscale       = powf(unit_levscale, 2.0);
           float unit_keyscale = float(koi._key - 24) / 67.0f;
           unit_keyscale       = std::clamp(unit_keyscale, 0.0f, 1.0f);
           float lindbscale    = unit_keyscale * unit_levscale;
