@@ -237,8 +237,8 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
     for (int opindex = 0; opindex < 4; opindex++) {
       int op_base = opindex * 10;
 
-      auto& amp_param   = ops_block->param(0 + opindex);
-      auto& pitch_param = ops_block->param(4 + opindex);
+      auto& pitch_param = ops_block->param(0 + opindex);
+      auto& amp_param   = ops_block->param(4 + opindex);
 
       const int kop[] = {3, 1, 2, 0};
       int op          = kop[opindex];
@@ -317,15 +317,14 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
       ////////////////////////////
 
-      auto envname = ork::FormatString("OP%d.Amp", opindex);
-      auto AE      = layerdata->appendController<RateLevelEnvData>(envname);
-      AE->_ampenv  = true; //(opindex==0);
-      AE->_envType = RlEnvType::ERLTYPE_DEFAULT;
+      auto envname       = ork::FormatString("OP%d.Amp", opindex);
+      auto ENVELOPE      = layerdata->appendController<RateLevelEnvData>(envname);
+      ENVELOPE->_ampenv  = true; //(opindex==0);
+      ENVELOPE->_envType = RlEnvType::ERLTYPE_DEFAULT;
 
-      auto& op_amp_par            = ops_block->param(opindex);
-      op_amp_par._coarse          = 0.0f;
-      op_amp_par._mods._src1      = AE;
-      op_amp_par._mods._src1Depth = 1.0;
+      amp_param._coarse          = 0.0f;
+      amp_param._mods._src1      = ENVELOPE;
+      amp_param._mods._src1Depth = 1.0;
 
       float decaylevl = openv_declevels[opd._dec1Lev];
       float ddec      = fabs(1.0f - decaylevl);
@@ -338,12 +337,12 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
       printf("ATK<%g> DC1<%g> DC2<%g> REL<%g>\n", atktime, dc1time, dc2time, reltime);
 
-      AE->_sustainSegment = 2;
-      AE->_releaseSegment = 3;
-      AE->_segments.push_back({atktime, 1, 0.5});         // atk1 (log)
-      AE->_segments.push_back({dc1time, decaylevl, 1.0}); // atk2
-      AE->_segments.push_back({dc2time, 0, 1.0});         // dec
-      AE->_segments.push_back({reltime, 0, 1.0});         // rel1
+      ENVELOPE->_sustainSegment = 2;
+      ENVELOPE->_releaseSegment = 3;
+      ENVELOPE->_segments.push_back({atktime, 1, 0.5});         // atk1 (log)
+      ENVELOPE->_segments.push_back({dc1time, decaylevl, 1.0}); // atk2
+      ENVELOPE->_segments.push_back({dc2time, 0, 1.0});         // dec
+      ENVELOPE->_segments.push_back({reltime, 0, 1.0});         // rel1
 
       // printf( "OP<%d>\n", op );
       // printf( "    AR<%d> D1R<%d> D2R<%d> RR<%d> D1L<%d>\n", AR,D1R,D2R,RR,D1L);

@@ -12,14 +12,14 @@ namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 FM4Data::FM4Data(fm4prgdata_ptr_t fmdata)
     : _fmdata(fmdata) {
-  addParam().useDefaultEvaluator(); // amp0
-  addParam().useDefaultEvaluator(); // amp1
-  addParam().useDefaultEvaluator(); // amp2
-  addParam().useDefaultEvaluator(); // amp3
   addParam().usePitchEvaluator();   // pitch0
   addParam().usePitchEvaluator();   // pitch1
   addParam().usePitchEvaluator();   // pitch2
   addParam().usePitchEvaluator();   // pitch3
+  addParam().useDefaultEvaluator(); // amp0
+  addParam().useDefaultEvaluator(); // amp1
+  addParam().useDefaultEvaluator(); // amp2
+  addParam().useDefaultEvaluator(); // amp3
   _vars.makeValueForKey<fm4prgdata_ptr_t>("FM4") = _fmdata;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -394,8 +394,8 @@ FM4::FM4(const DspBlockData* dbd)
 ///////////////////////////////////////////////////////////////////////////////
 void FM4::compute(DspBuffer& dspbuf) { // final
   for (int i = 0; i < 4; i++) {
-    _fm4._opAmp[i]   = _param[i].eval();
-    _fm4._opPitch[i] = _param[4 + i].eval();
+    _fm4._opPitch[i] = _param[0 + i].eval();
+    _fm4._opAmp[i]   = _param[4 + i].eval();
   }
   _fm4.compute(_layer);
 }

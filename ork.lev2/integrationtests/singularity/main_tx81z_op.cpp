@@ -39,18 +39,19 @@ int main(int argc, char** argv) {
   auto ops_stage = layerdata->stageByName("OPS");
   auto ops       = ops_stage->_blockdatas[0];
   //////////////////////////////////////
-  ops->param(0)._coarse   = 1.0f;   // op0 amp
-  ops->param(1)._coarse   = 1.0f;   // op1 amp
-  ops->param(2)._coarse   = 1.0f;   // op2 amp
-  ops->param(3)._coarse   = 1.0f;   // op3 amp
-  ops->param(4)._coarse   = 60.0f;  // op0 pitch
-  ops->param(5)._coarse   = 72.0f;  // op1 pitch
-  ops->param(6)._coarse   = 72.05f; // op2 pitch
-  ops->param(7)._coarse   = 84.09f; // op3 pitch
-  ops->param(4)._keyTrack = 100.0f; // op0 pitch keytrack
-  ops->param(5)._keyTrack = 100.0f; // op1 pitch keytrack
-  ops->param(6)._keyTrack = 100.0f; // op2 pitch keytrack
-  ops->param(7)._keyTrack = 100.0f; // op3 pitch keytrack
+  ops->param(0)._coarse   = 60.0f;  // op0 pitch
+  ops->param(1)._coarse   = 72.0f;  // op1 pitch
+  ops->param(2)._coarse   = 72.05f; // op2 pitch
+  ops->param(3)._coarse   = 84.09f; // op3 pitch
+  ops->param(0)._keyTrack = 100.0f; // op0 pitch keytrack
+  ops->param(1)._keyTrack = 100.0f; // op1 pitch keytrack
+  ops->param(2)._keyTrack = 100.0f; // op2 pitch keytrack
+  ops->param(3)._keyTrack = 100.0f; // op3 pitch keytrack
+  //////////////////////////////////////
+  ops->param(4)._coarse = 1.0f; // op0 amp
+  ops->param(5)._coarse = 1.0f; // op1 amp
+  ops->param(6)._coarse = 1.0f; // op2 amp
+  ops->param(7)._coarse = 1.0f; // op3 amp
   // auto ampstage       = layerdata->stageByName("AMP");
   // auto osc            = dcostage->appendTypedBlock<CZX>(czoscdata, 0);
   // auto amp            = ampstage->appendTypedBlock<AMP_MONOIO>();
