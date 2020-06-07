@@ -5,7 +5,7 @@
 namespace ork::audio::singularity {
 
 static std::map<std::string, Wavetable*> _wavemap;
-static const int ksize     = 4096;
+static const int ksize     = 65536;
 static const int ksizem64k = ksize << 16;
 static const int ksized2   = ksize / 2;
 static const int ksized4   = ksize / 4;
