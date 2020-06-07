@@ -169,14 +169,27 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
     ////////////
 
     configureTx81zAlgorithm(layerdata, fm4pd);
+    auto ops_stage = layerdata->stageByName("OPS");
+    auto ops_block = ops_stage->_blockdatas[0];
 
     int ALG = bytes[40] & 7;           // fm algoorithm 0..7
     int FBL = (bytes[40] & 0x38) >> 3; // fb level  0..7
     int SY  = (bytes[40] & 0x60) >> 6; // lfo sync (reset phase) bool
 
-    fm4pd->_alg      = ALG;
-    fm4pd->_feedback = FBL;
-    fm4pd->_lfoSync  = SY;
+    fm4pd->_alg     = ALG;
+    fm4pd->_lfoSync = SY;
+
+    ///////////////////////////////
+    // 2.0 == 4PI (7)
+    // 1.0 == 2PI (6)
+    // 1/2 == PI (5)
+    // 1/4 == PI/2 (4)
+    // 1/8 == PI/4 (3)
+    // 1/16 == PI/8 (2)
+    // 1/32 == PI/16 (1)
+    auto& feedback_param   = ops_block->param(8);
+    feedback_param._coarse = (FBL == 0) ? 0 : powf(2.0, FBL - 6);
+    ///////////////////////////////
 
     // printf( "ALG<%d> FBL<%d> SY<%d>\n", ALG, FBL, SY);
 
@@ -226,9 +239,6 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
                                  // printf( "PORT<%d>\n", PORT);
 
     fm4pd->_portRate = PORT;
-
-    auto ops_stage = layerdata->stageByName("OPS");
-    auto ops_block = ops_stage->_blockdatas[0];
 
     ////////////
     // per-operator data

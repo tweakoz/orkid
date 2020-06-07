@@ -20,6 +20,7 @@ FM4Data::FM4Data(fm4prgdata_ptr_t fmdata)
   addParam().useDefaultEvaluator(); // amp1
   addParam().useDefaultEvaluator(); // amp2
   addParam().useDefaultEvaluator(); // amp3
+  addParam().useDefaultEvaluator(); // feedback
   _vars.makeValueForKey<fm4prgdata_ptr_t>("FM4") = _fmdata;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -30,7 +31,6 @@ dspblk_ptr_t FM4Data::createInstance() const {
 typedef std::function<void(Layer* layer)> fm4alg_t;
 ////////////////////////////////////////////////////////////////////////////////
 struct fm4vcpriv {
-  int _dspchannel = 0;
   ///////////////////////////////////////////////////
   void callalg(Layer* layer) {
     _curalg(layer);
@@ -57,7 +57,7 @@ struct fm4vcpriv {
 
         // printf("phaseoff1<%g>\n", phaseoff1);
 
-        float o3 = _phasemodosc[3].compute(_op_frequency[3], phaseoff3 * FBL());
+        float o3 = _phasemodosc[3].compute(_op_frequency[3], phaseoff3 * _feedback);
         float o2 = _phasemodosc[2].compute(_op_frequency[2], phaseoff3);
         float o1 = _phasemodosc[1].compute(_op_frequency[0], phaseoff2);
         float o0 = _phasemodosc[0].compute(_op_frequency[0], phaseoff1);
@@ -83,7 +83,7 @@ struct fm4vcpriv {
         float phaseoff2 = l2 * _modindex[2] * _op_amplitude[2];
         float phaseoff1 = l1 * _modindex[1] * _op_amplitude[1];
 
-        float o3 = _phasemodosc[3].compute(_op_frequency[3], phaseoff3 * FBL());
+        float o3 = _phasemodosc[3].compute(_op_frequency[3], phaseoff3 * _feedback);
         float o2 = _phasemodosc[2].compute(_op_frequency[2], phaseoff3);
         float o1 = _phasemodosc[1].compute(_op_frequency[1], phaseoff2);
         float o0 = _phasemodosc[0].compute(_op_frequency[0], phaseoff1);
@@ -110,7 +110,7 @@ struct fm4vcpriv {
         float phaseoff2 = l2 * _modindex[2] * _op_amplitude[2];
         float phaseoff1 = l1 * _modindex[1] * _op_amplitude[1];
 
-        float o3 = _phasemodosc[3].compute(_op_frequency[3], phaseoff3 * FBL());
+        float o3 = _phasemodosc[3].compute(_op_frequency[3], phaseoff3 * _feedback);
         float o2 = _phasemodosc[2].compute(_op_frequency[2], phaseoff3);
         float o1 = _phasemodosc[1].compute(_op_frequency[1], phaseoff2);
         float o0 = _phasemodosc[0].compute(_op_frequency[0], (phaseoff1 + phaseoff3));
@@ -137,7 +137,7 @@ struct fm4vcpriv {
         float phaseoff2 = l2 * _modindex[2] * _op_amplitude[2];
         float phaseoff1 = l1 * _modindex[1] * _op_amplitude[1];
 
-        float o3 = _phasemodosc[3].compute(_op_frequency[3], phaseoff3 * FBL());
+        float o3 = _phasemodosc[3].compute(_op_frequency[3], phaseoff3 * _feedback);
         float o2 = _phasemodosc[2].compute(_op_frequency[2], phaseoff3);
         float o1 = _phasemodosc[1].compute(_op_frequency[1], 0.0f);
         float o0 = _phasemodosc[0].compute(_op_frequency[0], (phaseoff1 + phaseoff2));
@@ -161,7 +161,7 @@ struct fm4vcpriv {
         float phaseoff3 = l3 * _modindex[3] * _op_amplitude[3];
         float phaseoff1 = l1 * _modindex[1] * _op_amplitude[1];
 
-        float o3 = _phasemodosc[3].compute(_op_frequency[3], phaseoff3 * FBL());
+        float o3 = _phasemodosc[3].compute(_op_frequency[3], phaseoff3 * _feedback);
         float o2 = _phasemodosc[2].compute(_op_frequency[2], phaseoff3);
         float o1 = _phasemodosc[1].compute(_op_frequency[1], 0.0f);
         float o0 = _phasemodosc[0].compute(_op_frequency[0], phaseoff1);
@@ -186,7 +186,7 @@ struct fm4vcpriv {
         float l3        = _phasemodosc[3]._prevOutput;
         float phaseoff3 = l3 * _modindex[3] * _op_amplitude[3];
 
-        float o3 = _phasemodosc[3].compute(_op_frequency[3], phaseoff3 * FBL());
+        float o3 = _phasemodosc[3].compute(_op_frequency[3], phaseoff3 * _feedback);
         float o2 = _phasemodosc[2].compute(_op_frequency[2], phaseoff3);
         float o1 = _phasemodosc[1].compute(_op_frequency[1], 0.0f);
         float o0 = _phasemodosc[0].compute(_op_frequency[0], phaseoff3);
@@ -210,7 +210,7 @@ struct fm4vcpriv {
         float l3        = _phasemodosc[3]._prevOutput;
         float phaseoff3 = l3 * _modindex[3] * _op_amplitude[3];
 
-        float o3 = _phasemodosc[3].compute(_op_frequency[3], phaseoff3 * FBL());
+        float o3 = _phasemodosc[3].compute(_op_frequency[3], phaseoff3 * _feedback);
         float o2 = _phasemodosc[2].compute(_op_frequency[2], phaseoff3);
         float o1 = _phasemodosc[1].compute(_op_frequency[1], 0.0f);
         float o0 = _phasemodosc[0].compute(_op_frequency[0], 0.0f);
@@ -233,7 +233,7 @@ struct fm4vcpriv {
         float l3        = _phasemodosc[3]._prevOutput;
         float phaseoff3 = l3 * _modindex[3] * _op_amplitude[3];
 
-        float o3 = _phasemodosc[3].compute(_op_frequency[3], phaseoff3 * FBL());
+        float o3 = _phasemodosc[3].compute(_op_frequency[3], phaseoff3 * _feedback);
         float o2 = _phasemodosc[2].compute(_op_frequency[2], 0.0f);
         float o1 = _phasemodosc[1].compute(_op_frequency[1], 0.0f);
         float o0 = _phasemodosc[0].compute(_op_frequency[0], 0.0f);
@@ -245,21 +245,6 @@ struct fm4vcpriv {
       }
     };
     /////////////////////////////////////////////////
-  }
-  //////////////////////////////////////////////////////////////
-  float FBL() {
-    float fbl = 0.0f;
-    if (_data._feedback > 0) {
-      // 2.0 == 4PI (7)
-      // 1.0 == 2PI (6)
-      // 1/2 == PI (5)
-      // 1/4 == PI/2 (4)
-      // 1/8 == PI/4 (3)
-      // 1/16 == PI/8 (2)
-      // 1/32 == PI/16 (1)
-      fbl = powf(2.0, _data._feedback - 6);
-    }
-    return fbl;
   }
   //////////////////////////////////////////////////////////////
   void updateControllers() {
@@ -328,6 +313,8 @@ struct fm4vcpriv {
   bool _newnote = false;
   int _note;
   Layer* _curlayer;
+  int _dspchannel = 0;
+  float _feedback = 0.0f;
 };
 ///////////////////////////////////////////////////////////////////////////////
 fm4syn::fm4syn() {
@@ -370,12 +357,6 @@ void fm4syn::keyOn(const DspKeyOnInfo& koi) {
   priv->_curalg = priv->_alg[_data._alg];
   priv->_data   = *progd;
 
-  l->_HKF._miscText = ork::FormatString(
-      "FM4 alg<%d> fbl<%d>\n", //
-      _data._alg,
-      _data._feedback);
-  l->_HKF._useFm4 = true;
-
   priv->keyOn(l);
 }
 
@@ -393,10 +374,12 @@ FM4::FM4(const DspBlockData* dbd)
 
 ///////////////////////////////////////////////////////////////////////////////
 void FM4::compute(DspBuffer& dspbuf) { // final
+  auto priv = _fm4._pimpl.Get<fm4vcpriv*>();
   for (int i = 0; i < 4; i++) {
     _fm4._opPitch[i] = _param[0 + i].eval();
     _fm4._opAmp[i]   = _param[4 + i].eval();
   }
+  priv->_feedback = _param[8].eval();
   _fm4.compute(_layer);
 }
 

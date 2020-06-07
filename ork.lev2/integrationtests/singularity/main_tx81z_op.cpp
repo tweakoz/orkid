@@ -10,28 +10,27 @@ int main(int argc, char** argv) {
   //////////////////////////////////////////////////////////////////////////////
   // allocate program/layer data
   //////////////////////////////////////////////////////////////////////////////
-  auto program      = std::make_shared<ProgramData>();
-  auto layerdata    = program->newLayer();
-  auto fmdata       = std::make_shared<Fm4ProgData>();
-  program->_role    = "fm4";
-  program->_name    = "test";
-  fmdata->_alg      = 0;
-  fmdata->_feedback = 7.0f;
-  auto& op0         = fmdata->_ops[0];
-  auto& op1         = fmdata->_ops[1];
-  auto& op2         = fmdata->_ops[2];
-  auto& op3         = fmdata->_ops[3];
-  op0._opEnable     = true;
-  op1._opEnable     = true;
-  op2._opEnable     = true;
-  op3._opEnable     = true;
-  op0._outLevel     = 99.0f;
-  op1._outLevel     = 99.0f;
-  op2._outLevel     = 99.0f;
-  op3._outLevel     = 99.0f;
-  op1._modIndex     = 0.125f;
-  op2._modIndex     = 0.125f;
-  op3._modIndex     = 0.125f;
+  auto program   = std::make_shared<ProgramData>();
+  auto layerdata = program->newLayer();
+  auto fmdata    = std::make_shared<Fm4ProgData>();
+  program->_role = "fm4";
+  program->_name = "test";
+  fmdata->_alg   = 0;
+  auto& op0      = fmdata->_ops[0];
+  auto& op1      = fmdata->_ops[1];
+  auto& op2      = fmdata->_ops[2];
+  auto& op3      = fmdata->_ops[3];
+  op0._opEnable  = true;
+  op1._opEnable  = true;
+  op2._opEnable  = true;
+  op3._opEnable  = true;
+  op0._outLevel  = 99.0f;
+  op1._outLevel  = 99.0f;
+  op2._outLevel  = 99.0f;
+  op3._outLevel  = 99.0f;
+  op1._modIndex  = 0.125f;
+  op2._modIndex  = 0.125f;
+  op3._modIndex  = 0.125f;
   //////////////////////////////////////
   // setup dsp graph
   //////////////////////////////////////
@@ -52,6 +51,9 @@ int main(int argc, char** argv) {
   ops->param(5)._coarse = 1.0f; // op1 amp
   ops->param(6)._coarse = 1.0f; // op2 amp
   ops->param(7)._coarse = 1.0f; // op3 amp
+  //////////////////////////////////////
+  ops->param(8)._coarse = 1.0f; // feedback = 2PI
+  //////////////////////////////////////
   // auto ampstage       = layerdata->stageByName("AMP");
   // auto osc            = dcostage->appendTypedBlock<CZX>(czoscdata, 0);
   // auto amp            = ampstage->appendTypedBlock<AMP_MONOIO>();

@@ -29,7 +29,6 @@ struct Fm4OpData {
 
 struct Fm4ProgData {
   int _alg            = 0;
-  int _feedback       = 0;
   bool _lfoSync       = false;
   int _lfoSpeed       = 0;
   int _lfoDepth       = 0;
