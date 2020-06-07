@@ -100,9 +100,9 @@ struct fm4vcpriv {
       int inumframes = layer->_dspwritecount;
       float* output  = dspbuf.channel(_dspchannel) + layer->_dspwritebase;
 
+      updateControllers();
+      computeOpParms();
       for (int i = 0; i < inumframes; i++) {
-        updateControllers();
-        computeOpParms();
         float l3        = _phasemodosc[3]._prevOutput;
         float l2        = _phasemodosc[2]._prevOutput;
         float l1        = _phasemodosc[1]._prevOutput;
@@ -127,9 +127,9 @@ struct fm4vcpriv {
       int inumframes = layer->_dspwritecount;
       float* output  = dspbuf.channel(_dspchannel) + layer->_dspwritebase;
 
+      updateControllers();
+      computeOpParms();
       for (int i = 0; i < inumframes; i++) {
-        updateControllers();
-        computeOpParms();
         float l3        = _phasemodosc[3]._prevOutput;
         float l2        = _phasemodosc[2]._prevOutput;
         float l1        = _phasemodosc[1]._prevOutput;
@@ -153,9 +153,9 @@ struct fm4vcpriv {
       int inumframes = layer->_dspwritecount;
       float* output  = dspbuf.channel(_dspchannel) + layer->_dspwritebase;
 
+      updateControllers();
+      computeOpParms();
       for (int i = 0; i < inumframes; i++) {
-        updateControllers();
-        computeOpParms();
         float l3        = _phasemodosc[3]._prevOutput;
         float l1        = _phasemodosc[1]._prevOutput;
         float phaseoff3 = l3 * _modindex[3] * _op_amplitude[3];
@@ -180,9 +180,9 @@ struct fm4vcpriv {
       int inumframes = layer->_dspwritecount;
       float* output  = dspbuf.channel(_dspchannel) + layer->_dspwritebase;
 
+      updateControllers();
+      computeOpParms();
       for (int i = 0; i < inumframes; i++) {
-        updateControllers();
-        computeOpParms();
         float l3        = _phasemodosc[3]._prevOutput;
         float phaseoff3 = l3 * _modindex[3] * _op_amplitude[3];
 
@@ -204,9 +204,9 @@ struct fm4vcpriv {
       int inumframes = layer->_dspwritecount;
       float* output  = dspbuf.channel(_dspchannel) + layer->_dspwritebase;
 
+      updateControllers();
+      computeOpParms();
       for (int i = 0; i < inumframes; i++) {
-        updateControllers();
-        computeOpParms();
         float l3        = _phasemodosc[3]._prevOutput;
         float phaseoff3 = l3 * _modindex[3] * _op_amplitude[3];
 
@@ -227,9 +227,9 @@ struct fm4vcpriv {
       int inumframes = layer->_dspwritecount;
       float* output  = dspbuf.channel(_dspchannel) + layer->_dspwritebase;
 
+      updateControllers();
+      computeOpParms();
       for (int i = 0; i < inumframes; i++) {
-        updateControllers();
-        computeOpParms();
         float l3        = _phasemodosc[3]._prevOutput;
         float phaseoff3 = l3 * _modindex[3] * _op_amplitude[3];
 
