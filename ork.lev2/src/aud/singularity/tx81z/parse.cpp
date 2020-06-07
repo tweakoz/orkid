@@ -288,10 +288,14 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       // modulation Index
       ////////////////////////////
       constexpr int op_mitltab[20] = {
-          127, 122, 118, 114, 110, 107, 104, 102, 100, 98, 96, 94, 92, 90, 88, 86, 85, 84, 82, 81,
+          127, 122, 118, 114, 110, 107, 104, 102, //
+          100, 98,  96,  94,  92,  90,  88,  86,  //
+          85,  84,  82,  81,
       };
 
-      int tlval = (opd._outLevel > 19) ? 99 - opd._outLevel : op_mitltab[opd._outLevel];
+      int tlval = (opd._outLevel > 19) //
+                      ? 99 - opd._outLevel
+                      : op_mitltab[opd._outLevel];
 
       // float MI = (4.0f*pi2) *  powf(2.0,(-tlval/8.0f));
       // opd._modIndex = (4.0f*512.0f) *  powf(2.0,(-tlval/8.0f));
@@ -309,22 +313,23 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       op_amp_par._mods._src1      = AE;
       op_amp_par._mods._src1Depth = 1.0;
 
+      float decaylevl = openv_declevels[opd._dec1Lev];
+      float ddec      = fabs(1.0f - decaylevl);
       ratelevmodel model;
       model.txmodel();
-      float atktime   = model.transform(opd._atkRate / 31.0);
-      float dc1time   = model.transform(opd._dec1Rate / 31.0);
-      float dc2time   = model.transform(opd._dec2Rate / 31.0);
-      float reltime   = model.transform(opd._relRate / 15.0);
-      float decaylevl = openv_declevels[opd._dec1Lev];
+      float atktime = model.transform(opd._atkRate / 31.0);
+      float dc1time = model.transform(opd._dec1Rate / 31.0) * ddec;
+      float dc2time = model.transform(opd._dec2Rate / 31.0);
+      float reltime = model.transform(opd._relRate / 15.0);
 
       printf("ATK<%g> DC1<%g> DC2<%g> REL<%g>\n", atktime, dc1time, dc2time, reltime);
 
       AE->_sustainSegment = 2;
       AE->_releaseSegment = 3;
-      AE->_segments.push_back({atktime, 1});         // atk1
-      AE->_segments.push_back({dc1time, decaylevl}); // atk2
-      AE->_segments.push_back({dc2time, 0});         // dec
-      AE->_segments.push_back({reltime, 0});         // rel1
+      AE->_segments.push_back({atktime, 1, 0.5});         // atk1 (log)
+      AE->_segments.push_back({dc1time, decaylevl, 1.0}); // atk2
+      AE->_segments.push_back({dc2time, 0, 1.0});         // dec
+      AE->_segments.push_back({reltime, 0, 1.0});         // rel1
 
       // printf( "OP<%d>\n", op );
       // printf( "    AR<%d> D1R<%d> D2R<%d> RR<%d> D1L<%d>\n", AR,D1R,D2R,RR,D1L);

@@ -74,7 +74,7 @@ int main(int argc, char** argv) {
     layersource->connect(analyzer2->_sink);
     //////////////////////////////////////
     for (int n = 0; n <= 24; n += 3) {
-      enqueue_audio_event(prg, count * 0.5, 0.5, 48 + n);
+      enqueue_audio_event(prg, count * 0.75, 0.25, 48 + n);
       count++;
     }
   }
