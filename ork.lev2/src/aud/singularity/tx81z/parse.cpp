@@ -206,7 +206,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
     int TRPS = bytes[46] & 0x3f; // transpose 0..48 (middle-c)
     int PBR  = bytes[47] & 0x0f; // pitchbendrange 0..12
 
-    fm4pd->_middleC        = TRPS;
+    int middleC            = TRPS;
     fm4pd->_pitchBendRange = PBR;
 
     printf("TRPS<%d> PBR<%d>\n", TRPS, PBR);
@@ -237,6 +237,9 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
     for (int opindex = 0; opindex < 4; opindex++) {
       int op_base = opindex * 10;
 
+      auto& amp_param   = ops_block->param(0 + opindex);
+      auto& pitch_param = ops_block->param(4 + opindex);
+
       const int kop[] = {3, 1, 2, 0};
       int op          = kop[opindex];
       auto& opd       = fm4pd->_ops[op];
@@ -254,34 +257,45 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       opd._egBiasSensa = (_AEK & 0x18) >> 3;               // eg bias sensitivity 0..7
       opd._kvSensa     = (_AEK & 0x07);                    // keyvel sensitivity 0..7
       opd._outLevel    = bytes[op_base + 7];               // out level 0..99
-      opd._coarseFrq   = bytes[op_base + 8] & 0x3f;        // coarse frequency 0..63
+      int coarseFrq    = bytes[op_base + 8] & 0x3f;        // coarse frequency 0..63
       opd._ratScaling  = (bytes[op_base + 9] & 0x18) >> 3; // rate scaling 0..3
-      opd._detune      = (bytes[op_base + 9] & 7);         // detune ? -3..3
+      int detune       = (bytes[op_base + 9] & 7) - 3;     // detune ? -3..3
 
-      int _EFF          = bytes[73 + 2 * opindex] & 0x3f;
-      opd._egShift      = (_EFF & 0x30) >> 4;  // eg shift (off,48,24,12)
-      opd._fixedFrqMode = (_EFF & 0x08) >> 3;  // fixed mode ? bool
-      opd._fixedRange   = (_EFF & 0x7);        // fixed range: 255,510,1k,2k,4k,8k,16k,32k
+      int _EFF         = bytes[73 + 2 * opindex] & 0x3f;
+      opd._egShift     = (_EFF & 0x30) >> 4;   // eg shift (off,48,24,12)
+      bool fixdfrqmode = (_EFF & 0x08) >> 3;   // fixed mode ? bool
+      int fixedRange   = (_EFF & 0x7);         // fixed range: 255,510,1k,2k,4k,8k,16k,32k
                                                // fixed step:  1,  2,  4, 8, 16,32,64, 128
       int _OWF      = bytes[74 + 2 * opindex]; //&0x7f;
       opd._waveform = (_OWF & 0x70) >> 4;      // waveform 0..7
-      opd._fineFrq  = (_OWF & 0xf);            // fine frequency 0..15
+      int fineFrq   = (_OWF & 0xf);            // fine frequency 0..15
 
       opd._F   = bytes[op_base + 8];
       opd._EFF = _EFF;
       opd._OWF = _OWF;
 
       ////////////////////////////
+      // translate tx operator frequency params
+      //  to singularity style params
+      //  so we can use singularity modulation
+      ////////////////////////////
 
-      if (opd._fixedFrqMode) {
-        int fxrange   = opd._fixedRange;
-        int index     = (opd._coarseFrq * 4); //|(fine&3);
-        opd._frqFixed = float(8 << fxrange) + float(index << fxrange);
+      if (fixdfrqmode) {
+        int index             = (coarseFrq * 4); //|(fine&3);
+        float fixedfrq        = float(8 << fixedRange) + float(index << fixedRange);
+        pitch_param._coarse   = frequency_to_midi_note(fixedfrq) * 100.0;
+        pitch_param._keyTrack = 0.0; // 0 cents/key
+
       } else {
-        OrkAssert(opd._coarseFrq < 64);
-        float r = compute_ratio(opd._coarseFrq, opd._fineFrq);
-        printf("coarse<%d> fine<%d> ratio<%g>\n", opd._coarseFrq, opd._fineFrq, r);
-        opd._frqRatio = r;
+        OrkAssert(coarseFrq < 64);
+
+        int keybase = 60 + (middleC - 24);
+
+        float ratio           = compute_ratio(coarseFrq, fineFrq);
+        float cents           = linear_freq_ratio_to_cents(ratio);
+        pitch_param._coarse   = keybase + cents * 0.01; // middlec*ratio
+        pitch_param._fine     = float(detune) * 2.6 / 3.0;
+        pitch_param._keyTrack = 100.0; // 100 cents/key
       }
 
       ////////////////////////////

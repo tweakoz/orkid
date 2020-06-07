@@ -25,14 +25,6 @@ int main(int argc, char** argv) {
   op1._opEnable     = true;
   op2._opEnable     = true;
   op3._opEnable     = true;
-  op0._fixedFrqMode = false;
-  op1._fixedFrqMode = false;
-  op2._fixedFrqMode = false;
-  op3._fixedFrqMode = false;
-  op0._frqRatio     = 1.0;
-  op1._frqRatio     = 2.0;
-  op2._frqRatio     = 2.01;
-  op3._frqRatio     = 3.04;
   op0._outLevel     = 99.0f;
   op1._outLevel     = 99.0f;
   op2._outLevel     = 99.0f;
@@ -44,12 +36,21 @@ int main(int argc, char** argv) {
   // setup dsp graph
   //////////////////////////////////////
   configureTx81zAlgorithm(layerdata, fmdata);
-  auto ops_stage        = layerdata->stageByName("OPS");
-  auto ops              = ops_stage->_blockdatas[0];
-  ops->param(0)._coarse = 1.0f; // op0 amp
-  ops->param(1)._coarse = 1.0f; // op1 amp
-  ops->param(2)._coarse = 1.0f; // op2 amp
-  ops->param(3)._coarse = 1.0f; // op3 amp
+  auto ops_stage = layerdata->stageByName("OPS");
+  auto ops       = ops_stage->_blockdatas[0];
+  //////////////////////////////////////
+  ops->param(0)._coarse   = 1.0f;   // op0 amp
+  ops->param(1)._coarse   = 1.0f;   // op1 amp
+  ops->param(2)._coarse   = 1.0f;   // op2 amp
+  ops->param(3)._coarse   = 1.0f;   // op3 amp
+  ops->param(4)._coarse   = 60.0f;  // op0 pitch
+  ops->param(5)._coarse   = 72.0f;  // op1 pitch
+  ops->param(6)._coarse   = 72.05f; // op2 pitch
+  ops->param(7)._coarse   = 84.09f; // op3 pitch
+  ops->param(4)._keyTrack = 100.0f; // op0 pitch keytrack
+  ops->param(5)._keyTrack = 100.0f; // op1 pitch keytrack
+  ops->param(6)._keyTrack = 100.0f; // op2 pitch keytrack
+  ops->param(7)._keyTrack = 100.0f; // op3 pitch keytrack
   // auto ampstage       = layerdata->stageByName("AMP");
   // auto osc            = dcostage->appendTypedBlock<CZX>(czoscdata, 0);
   // auto amp            = ampstage->appendTypedBlock<AMP_MONOIO>();
