@@ -15,7 +15,7 @@
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 struct LayerData {
-  LayerData();
+  LayerData(const ProgramData* pdat);
 
   dspstagedata_ptr_t appendStage(const std::string& named);
   dspstagedata_ptr_t stageByIndex(int index);
@@ -35,19 +35,20 @@ struct LayerData {
   scopesource_ptr_t createScopeSource();
   ///////////////////////////////////////////////////
 
-  int _numdspblocks       = 0;
-  int _loKey              = 0;
-  int _hiKey              = 127;
-  int _loVel              = 0;
-  int _hiVel              = 127;
-  float _channelGains[4]  = {0, 0, 0, 0};
-  float _channelPans[4]   = {0, 0, 0, 0};
-  int _channelPanModes[4] = {0, 0, 0, 0};
-  bool _ignRels           = false;
-  bool _atk1Hold          = false; // ThrAtt
-  bool _atk3Hold          = false; // TilDec
-  bool _usenatenv         = false; // todo: move to krz
-  float _layerLinGain     = 1.0f;
+  const ProgramData* _programdata = nullptr;
+  int _numdspblocks               = 0;
+  int _loKey                      = 0;
+  int _hiKey                      = 127;
+  int _loVel                      = 0;
+  int _hiVel                      = 127;
+  float _channelGains[4]          = {0, 0, 0, 0};
+  float _channelPans[4]           = {0, 0, 0, 0};
+  int _channelPanModes[4]         = {0, 0, 0, 0};
+  bool _ignRels                   = false;
+  bool _atk1Hold                  = false; // ThrAtt
+  bool _atk3Hold                  = false; // TilDec
+  bool _usenatenv                 = false; // todo: move to krz
+  float _layerLinGain             = 1.0f;
 
   algdata_ptr_t _algdata;
   outbus_ptr_t _outbus;

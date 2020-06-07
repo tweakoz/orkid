@@ -25,6 +25,7 @@ struct fmoperator {
 struct fm4impl {
   //////////////////////////////////////////////////////////////
   fm4impl(FM4* fm4);
+  ~fm4impl();
   //////////////////////////////////////////////////////////////
   void compute();
   void keyOn();
@@ -39,6 +40,8 @@ struct fm4impl {
   FM4* _fm4        = nullptr;
   Layer* _curlayer = nullptr;
 };
+////////////////////////////////////////////////////////////////////////////////
+constexpr float kclamp = 1.2f;
 ////////////////////////////////////////////////////////////////////////////////
 fm4alg_t tx4op_algs[8] = {
     //// ALG 0 ////
@@ -63,7 +66,7 @@ fm4alg_t tx4op_algs[8] = {
         float o2        = op2._pmosc.compute(op2._frq, phaseoff3);
         float o1        = op1._pmosc.compute(op0._frq, phaseoff2);
         float o0        = op0._pmosc.compute(op0._frq, phaseoff1);
-        output[i]       = clip_float(o0 * op0._amp, -2, 2);
+        output[i]       = clip_float(o0 * op0._amp, -kclamp, kclamp);
       }
     },
     /////////////////////////////////////////////////
@@ -89,7 +92,7 @@ fm4alg_t tx4op_algs[8] = {
         float o2        = op2._pmosc.compute(op2._frq, phaseoff3);
         float o1        = op1._pmosc.compute(op1._frq, phaseoff2);
         float o0        = op0._pmosc.compute(op0._frq, phaseoff1);
-        output[i]       = clip_float(o0 * op0._amp, -2, 2);
+        output[i]       = clip_float(o0 * op0._amp, -kclamp, kclamp);
       }
     },
     /////////////////////////////////////////////////
@@ -116,7 +119,7 @@ fm4alg_t tx4op_algs[8] = {
         float o2        = op2._pmosc.compute(op2._frq, phaseoff3);
         float o1        = op1._pmosc.compute(op1._frq, phaseoff2);
         float o0        = op0._pmosc.compute(op0._frq, (phaseoff1 + phaseoff3));
-        output[i]       = clip_float(o0 * op0._amp, -2, 2);
+        output[i]       = clip_float(o0 * op0._amp, -kclamp, kclamp);
       }
     },
     /////////////////////////////////////////////////
@@ -143,7 +146,7 @@ fm4alg_t tx4op_algs[8] = {
         float o2        = op2._pmosc.compute(op2._frq, phaseoff3);
         float o1        = op1._pmosc.compute(op1._frq, 0.0f);
         float o0        = op0._pmosc.compute(op0._frq, (phaseoff1 + phaseoff2));
-        output[i]       = clip_float(o0 * op0._amp, -2, 2);
+        output[i]       = clip_float(o0 * op0._amp, -kclamp, kclamp);
       }
     },
     /////////////////////////////////////////////////
@@ -268,9 +271,9 @@ fm4alg_t tx4op_algs[8] = {
 ///////////////////////////////////////////////////
 fm4impl::fm4impl(FM4* fm4)
     : _fm4(fm4) {
-  /////////////////////////////////////////////////
-
-  /////////////////////////////////////////////////
+}
+fm4impl::~fm4impl() {
+  // printf("DESTROY fm4impl<%p>\n", this);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void fm4impl::compute() {
@@ -373,6 +376,9 @@ void FM4::compute(DspBuffer& dspbuf) { // final
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FM4::doKeyOn(const KeyOnInfo& koi) { // final
+  auto name = _layer->_layerdata->_programdata->_name;
+  printf("FM4 prog<%s> keyon\n", name.c_str());
+
   _pimpl.Get<implptr_t>()->keyOn();
 }
 ///////////////////////////////////////////////////////////////////////////////

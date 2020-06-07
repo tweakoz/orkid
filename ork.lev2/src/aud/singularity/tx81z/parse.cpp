@@ -332,7 +332,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
       printf("opEnable<%d:%d>\n", opindex, int(opEnable));
 
-      if (opEnable) {
+      if (true) {
 
         auto envname       = ork::FormatString("op%d-env", opindex);
         auto opaname       = ork::FormatString("op%d-amp", opindex);
@@ -442,15 +442,16 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
         };
 
         ////////////////////////////////////////////////////////////////////////
-        auto funname = ork::FormatString("op%d-fun", opindex);
-        auto FUN     = layerdata->appendController<FunData>(funname);
-        FUN->_a      = envname;
-        FUN->_b      = opaname;
-        FUN->_op     = "a*b";
-
-        amp_param._coarse          = 0.0f;
-        amp_param._mods._src1      = FUN;
-        amp_param._mods._src1Depth = 1.0;
+        amp_param._coarse = 0.0f;
+        if (opEnable) {
+          auto funname               = ork::FormatString("op%d-fun", opindex);
+          auto FUN                   = layerdata->appendController<FunData>(funname);
+          FUN->_a                    = envname;
+          FUN->_b                    = opaname;
+          FUN->_op                   = "a*b";
+          amp_param._mods._src1      = FUN;
+          amp_param._mods._src1Depth = 1.0;
+        }
       }
       // printf( "OP<%d>\n", op );
       // printf( "    AR<%d> D1R<%d> D2R<%d> RR<%d> D1L<%d>\n", AR,D1R,D2R,RR,D1L);

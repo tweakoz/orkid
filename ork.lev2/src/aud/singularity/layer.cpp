@@ -22,7 +22,8 @@ static synth_ptr_t the_synth = synth::instance();
 
 ///////////////////////////////////////////////////////////////////////////////
 
-LayerData::LayerData() {
+LayerData::LayerData(const ProgramData* pdata)
+    : _programdata(pdata) {
   _pchBlock    = nullptr;
   _algdata     = std::make_shared<AlgData>();
   _ctrlBlock   = std::make_shared<ControlBlockData>();
@@ -230,7 +231,7 @@ controller_t Layer::getController(const std::string& srcn) const {
   auto it = _controlMap.find(srcn);
   if (it != _controlMap.end()) {
     auto cinst = it->second;
-    printf("getcon<%s> -> %p\n", srcn.c_str(), cinst);
+    // printf("getcon<%s> -> %p\n", srcn.c_str(), cinst);
     return [cinst]() { return cinst->_curval; };
   } else if (srcn == "OFF")
     return [this]() { return 0.0f; };
