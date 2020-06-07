@@ -16,8 +16,10 @@ ensureDirectoryExists(dest_path/"tx81z")
 base_81zManuals = base_manuals/"yamaha"/"tx81z"
 manurl = base_81zManuals/"owners_manual"/"yamaha_tx81z_owners_manual_rvgm.pdf"
 base_81zurl = URL("http://nuxmicromedia.com/4ophq/files-4op-patches/")
+ym2151manurl = URL("http://map.grauw.nl/resources/sound/yamaha_ym2151_synthesis.pdf")
 batch_wget({
  manurl:(dest_path/"tx81z"/"tx81z_manual2.0.pdf","77290fc492848ddd7c574f23bad4686c"),
+ ym2151manurl:(dest_path/"tx81z"/"ym2151_manual.pdf","623a1279464a60ff9a01016af9f242e3"),
  base_81zurl/"TX81Z_Presets.zip": (dest_path/"tx81z"/"TX81Z_Presets.zip","d9f3a7c9eb721e7c06490905b4769829"),
 })
 (dest_path/"tx81z").chdir()
