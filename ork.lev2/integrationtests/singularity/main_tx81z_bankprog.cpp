@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
   int count = 0;
   for (int i = 0; i < 128; i++) { // 2 32 patch banks
     for (int n = 0; n <= 36; n++) {
-      enqueue_audio_event(program, count * 0.35, 0.15, 36 + n);
+      enqueue_audio_event(program, count * 0.35, 2.15, 36 + n);
       count++;
     }
   }
