@@ -192,8 +192,9 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
     // 1/8 == PI/4 (3)
     // 1/16 == PI/8 (2)
     // 1/32 == PI/16 (1)
-    auto& feedback_param   = ops_block->param(8);
-    feedback_param._coarse = 0.0; //(FBL == 0) ? 0 : powf(2.0, FBL - 16);
+    auto& feedback_param = ops_block->param(8);
+    // feedback_param._coarse = 0.0; //(FBL == 0) ? 0 : powf(2.0, FBL - 16);
+    feedback_param._coarse = float(FBL) / 7.0;
     ///////////////////////////////
 
     // printf( "ALG<%d> FBL<%d> SY<%d>\n", ALG, FBL, SY);
@@ -274,7 +275,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       bool opEnable    = !((_AEK & 64) >> 6);              // AME - bool (enable op?)
       int egBiasSensa  = (_AEK & 0x18) >> 3;               // eg bias sensitivity 0..7
       int kvSensa      = (_AEK & 0x07);                    // keyvel sensitivity 0..7
-      int outLevel     = bytes[op_base + 7];               // out level 0..99
+      int outLevel     = bytes[op_base + 7] & 0x7f;        // out level 0..99
       int coarseFrq    = bytes[op_base + 8] & 0x3f;        // coarse frequency 0..63
       int ratScaling   = (bytes[op_base + 9] & 0x18) >> 3; // rate scaling 0..3
       uint8_t usdetune = (bytes[op_base + 9] & 7);         // detune ? -3..3
@@ -292,6 +293,9 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       int _OWF     = bytes[op_additional_base + 1]; //&0x7f;
       int waveform = (_OWF & 0x70) >> 4;            // waveform 0..7
       int fineFrq  = (_OWF & 0xf);                  // - 7;              // fine frequency 0..15
+
+      // float fol = powf(float(outLevel) / 99.0f, 3.5);
+      // outLevel  = std::clamp(int(fol * 99.0), 0, 99);
 
       printf("prog<%s> op<%d> waveform<%d> level<%d> enable<%d>\n", name.c_str(), opindex, waveform, outLevel, int(opEnable));
 
@@ -365,7 +369,9 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
       // float MI = (4.0f*pi2) *  powf(2.0,(-tlval/8.0f));
       // opd._modIndex = (4.0f*512.0f) *  powf(2.0,(-tlval/8.0f));
-      opd._modIndex = 1.0f * powf(2.0, (-tlval / 10.0f));
+      // opd._modIndex = 1.0f * powf(2.0, (-tlval / 256.0f));
+      // float fol     = powf(float(outLevel) / 99.0f, 3.5);
+      // opd._modIndex = 0.2f * powf(2.0, fol * 2.0f);
 
       ////////////////////////////////////////////////////////////////////////
       // Operator Amplitude Control

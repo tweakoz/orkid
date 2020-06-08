@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
   bank->loadBank(basepath / "tx81z_3.syx");
   bank->loadBank(basepath / "tx81z_4.syx");
   //////////////////////////////////////////////////////////////////////////////
-  auto program   = bank->getProgramByName("LatelyBass");
+  auto program   = bank->getProgramByName("SoloViolin");
   auto layerdata = program->getLayer(0);
   //////////////////////////////////////
   // connect OPS to scope 1

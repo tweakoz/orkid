@@ -284,13 +284,18 @@ fm4impl::~fm4impl() {
 ///////////////////////////////////////////////////////////////////////////////
 void fm4impl::updateModulation() {
   for (int i = 0; i < 4; i++) {
-    float pitch       = _fm4->_param[0 + i].eval(); // cents
-    float frq         = midi_note_to_frequency(pitch * 0.01);
-    float amp         = _fm4->_param[4 + i].eval();
-    auto& dest_op     = _ops[i];
-    dest_op._frq      = frq;
-    dest_op._amp      = amp;
-    dest_op._modindex = _data._ops[i]._modIndex;
+    float pitch   = _fm4->_param[0 + i].eval(); // cents
+    float frq     = midi_note_to_frequency(pitch * 0.01);
+    float amp     = _fm4->_param[4 + i].eval();
+    auto& dest_op = _ops[i];
+    dest_op._frq  = frq;
+    dest_op._amp  = amp;
+
+    float modamp      = std::clamp(amp, 0.0f, 1.0f);
+    float fol         = powf(modamp, 2.0);
+    dest_op._modindex = 0.15f * powf(2.0, fol * 2.0f);
+
+    // dest_op._modindex = _data._ops[i]._modIndex;
   }
   _feedback = _fm4->_param[8].eval();
 }
