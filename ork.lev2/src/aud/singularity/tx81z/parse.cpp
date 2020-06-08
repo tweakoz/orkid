@@ -194,7 +194,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
     // 1/32 == PI/16 (1)
     auto& feedback_param = ops_block->param(8);
     // feedback_param._coarse = 0.0; //(FBL == 0) ? 0 : powf(2.0, FBL - 16);
-    feedback_param._coarse = float(FBL) / 7.0;
+    feedback_param._coarse = 0.3 * exp(log(2) * (double)(FBL - 7));
     ///////////////////////////////
 
     // printf( "ALG<%d> FBL<%d> SY<%d>\n", ALG, FBL, SY);
@@ -274,7 +274,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       int _AEK         = bytes[op_base + 6];
       bool opEnable    = !((_AEK & 64) >> 6);              // AME - bool (enable op?)
       int egBiasSensa  = (_AEK & 0x18) >> 3;               // eg bias sensitivity 0..7
-      int kvSensa      = (_AEK & 0x07);                    // keyvel sensitivity 0..7
+      int keyvelsense  = (_AEK & 0x07);                    // keyvel sensitivity 0..7
       int outLevel     = bytes[op_base + 7] & 0x7f;        // out level 0..99
       int coarseFrq    = bytes[op_base + 8] & 0x3f;        // coarse frequency 0..63
       int ratScaling   = (bytes[op_base + 9] & 0x18) >> 3; // rate scaling 0..3
@@ -354,25 +354,6 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
             cents);
       }
 
-      ////////////////////////////
-      // modulation Index
-      ////////////////////////////
-      constexpr int op_mitltab[20] = {
-          127, 122, 118, 114, 110, 107, 104, 102, //
-          100, 98,  96,  94,  92,  90,  88,  86,  //
-          85,  84,  82,  81,
-      };
-
-      int tlval = (outLevel > 19) //
-                      ? 99 - outLevel
-                      : op_mitltab[outLevel];
-
-      // float MI = (4.0f*pi2) *  powf(2.0,(-tlval/8.0f));
-      // opd._modIndex = (4.0f*512.0f) *  powf(2.0,(-tlval/8.0f));
-      // opd._modIndex = 1.0f * powf(2.0, (-tlval / 256.0f));
-      // float fol     = powf(float(outLevel) / 99.0f, 3.5);
-      // opd._modIndex = 0.2f * powf(2.0, fol * 2.0f);
-
       ////////////////////////////////////////////////////////////////////////
       // Operator Amplitude Control
       ////////////////////////////////////////////////////////////////////////
@@ -390,10 +371,22 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
         float ddec      = fabs(1.0f - decaylevl);
         ratelevmodel model;
         model.txmodel();
-        float atktime = model.transform(atkRate / 31.0) * 0.12;
-        float dc1time = model.transform(dec1Rate / 31.0) * ddec * 2.5;
-        float dc2time = model.transform(dec2Rate / 31.0) * 5.5;
-        float reltime = model.transform(relRate / 15.0) * 5.5;
+
+        ///////////////////////////////////////////////
+        // convert exponential decay rate to decay time
+        ///////////////////////////////////////////////
+
+        auto expdecayrate2time = [](float decrate,           // decay rate: frac/sec
+                                    float deslev) -> float { // desired linear level
+          return logf(deslev) / logf(decrate);               // return: time to reach deslev
+        };
+
+        ///////////////////////////////////////////////
+
+        float atktime = 10.4423f * expf(-0.353767f * atkRate);
+        float dc1time = model.transform(dec1Rate / 31.0) * ddec * 1.0;
+        float dc2time = model.transform(dec2Rate / 31.0) * 2.5;
+        float reltime = model.transform(relRate / 15.0) * 2.5;
 
         printf(
             "prog<%s> egShift<%d> levsca<%d> ATK<%g> DC1<%g> DC2<%g> REL<%g>\n", //
@@ -433,10 +426,10 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
         ENVELOPE->_sustainSegment = 2;
         ENVELOPE->_releaseSegment = 3;
         // todo (attack-logshape - how interacts with egshift?)
-        ENVELOPE->_segments.push_back({atktime, levelshift(1), 0.5});         // atk1
-        ENVELOPE->_segments.push_back({dc1time, levelshift(decaylevl), 1.0}); // atk2
-        ENVELOPE->_segments.push_back({dc2time, levelshift(0), 1.0});         // dec
-        ENVELOPE->_segments.push_back({reltime, levelshift(0), 1.0});         // rel1
+        ENVELOPE->_segments.push_back({atktime, levelshift(1), 0.5});          // atk1
+        ENVELOPE->_segments.push_back({dc1time, levelshift(decaylevl), 10.0}); // atk2
+        ENVELOPE->_segments.push_back({dc2time, levelshift(0), 10.0});         // dec
+        ENVELOPE->_segments.push_back({reltime, levelshift(0), 2.0});          // rel1
 
         //////////////////////////////////////////////////
         // rate scaling (envelope rate key follow)
@@ -449,10 +442,24 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
         ENVELOPE->_envadjust = [=](const EnvPoint& inp, //
                                    int iseg,
                                    const KeyOnInfo& KOI) -> EnvPoint { //
-          EnvPoint outp       = inp;
+          EnvPoint outp = inp;
+          switch (iseg) {
+            case 0: // attack
+              break;
+            case 1: // decay
+              outp._time = powf(outp._time, 1.5f);
+              break;
+            case 2: // decay2
+              outp._time = powf(outp._time, 1.5f);
+              break;
+            case 3: // release
+              outp._time = powf(outp._time, 1.2f);
+              break;
+          }
+
           float unit_keyscale = float(KOI._key - 24) / 67.0f;
           unit_keyscale       = std::clamp(unit_keyscale, 0.0f, 1.0f);
-          float power         = 1.0 / pow(2.0, unit_keyscale * 2.5);
+          float power         = 1.0 / pow(1.4, unit_keyscale * 2.0);
           outp._time *= power;
           return outp;
         };
@@ -466,34 +473,65 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
         // c1(24) .. g6(91) (91-24==67)
         //////////////////////////////////////////////////
 
-        OPAMP->_oncompute = [name, outLevel, levScaling](CustomControllerInst* cci) { //
+        float fkeyvelsense = expf(float(-keyvelsense) * logf(2.0f));
+
+        OPAMP->_oncompute = [name, //
+                             outLevel,
+                             levScaling,
+                             pitch_param,
+                             fkeyvelsense](CustomControllerInst* cci) { //
           const auto& koi = cci->_layer->_koi;
 
-          float inplevel = float(outLevel / 99.0f);
-          inplevel       = std::clamp(inplevel, 0.0f, 1.0f);
-          inplevel       = powf(inplevel, 2.0);
+          //////////////////////////////////
+          // map base operator level
+          //////////////////////////////////
+
+          float a       = logf(2.0f) * 0.1f;
+          float b       = 90.0f * a;
+          float baselev = expf(a * float(outLevel) - b);
+
+          //////////////////////////////////
+          // velocity scaling
+          //////////////////////////////////
+
+          float op_key   = pitch_param._coarse;
+          float velocity = 127.0f;
+          float velamp   = (fkeyvelsense + (1.0f - fkeyvelsense) * (velocity / 127.0f));
+
+          //////////////////////////////////
+          // key scaling
+          //////////////////////////////////
 
           float unit_levscale = float(levScaling / 99.0f);
           unit_levscale       = std::clamp(unit_levscale, 0.0f, 1.0f);
           unit_levscale       = powf(unit_levscale, 2.0);
-          float unit_keyscale = float(koi._key - 24) / 67.0f;
+          float unit_keyscale = float(op_key - 24) / 67.0f;
           unit_keyscale       = std::clamp(unit_keyscale, 0.0f, 1.0f);
           float lindbscale    = unit_keyscale * unit_levscale;
-          float atten         = decibel_to_linear_amp_ratio(lindbscale * -18.0f);
-          atten *= 1.0;
+          float keyamp        = decibel_to_linear_amp_ratio(lindbscale * -24.0f);
+
+          //////////////////////////////////
+          // final level
+          //////////////////////////////////
+
+          float final_amp = baselev * velamp * keyamp;
+
+          //////////////////////////////////
 
           if (0)
             printf(
-                "prog<%s> inplevel<%g> unit_levscale<%g> unit_keyscale<%g> atten<%g>\n", //
+                "prog<%s> outLevel<%d> final_amp<%g> velamp<%g> unit_levscale<%g> unit_keyscale<%g> keyamp<%g>\n", //
                 name.c_str(),
-                inplevel,
+                outLevel,
+                final_amp,
+                velamp,
                 unit_levscale,
                 unit_keyscale,
-                atten);
+                keyamp);
 
           /////////////////////////////////
 
-          cci->_curval = inplevel * atten;
+          cci->_curval = final_amp;
         };
 
         ////////////////////////////////////////////////////////////////////////
@@ -503,7 +541,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
           auto FUN                   = layerdata->appendController<FunData>(funname);
           FUN->_a                    = envname;
           FUN->_b                    = opaname;
-          FUN->_op                   = "a*a*b";
+          FUN->_op                   = "a*b";
           amp_param._mods._src1      = FUN;
           amp_param._mods._src1Depth = 1.0;
         }
@@ -516,7 +554,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       // printf( "    RS<%d> DBT<%d>\n", RS, DBT);
     }
   }
-}
+} // namespace ork::audio::singularity
 
 Tx81zData::Tx81zData()
     : SynthData()

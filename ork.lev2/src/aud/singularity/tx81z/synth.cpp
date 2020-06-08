@@ -12,6 +12,16 @@ namespace ork::audio::singularity {
 struct fm4impl;
 using fm4alg_t = std::function<void(fm4impl* impl)>;
 ////////////////////////////////////////////////////////////////////////////////
+
+inline float proc_out(float inp) {
+  constexpr float kclamp = 8.0f;
+  constexpr float kscale = 0.25f;
+  if (isfinite(inp) and not isnan(inp)) {
+    return clip_float(inp, -kclamp, kclamp) * kscale;
+  }
+  return 0.0f;
+}
+////////////////////////////////////////////////////////////////////////////////
 struct fmoperator {
   FmOsc _pmosc;
   float _amp      = 0.0f;
@@ -42,9 +52,6 @@ struct fm4impl {
   Layer* _curlayer = nullptr;
 };
 ////////////////////////////////////////////////////////////////////////////////
-constexpr float kclamp = 8.0f;
-constexpr float kscale = 0.5f;
-////////////////////////////////////////////////////////////////////////////////
 fm4alg_t tx4op_algs[8] = {
     //// ALG 0 ////
     [](fm4impl* impl) {
@@ -68,7 +75,7 @@ fm4alg_t tx4op_algs[8] = {
         float o2        = op2._pmosc.compute(op2._frq, phaseoff3);
         float o1        = op1._pmosc.compute(op0._frq, phaseoff2);
         float o0        = op0._pmosc.compute(op0._frq, phaseoff1);
-        output[i]       = clip_float(o0 * op0._amp, -kclamp, kclamp) * kscale;
+        output[i]       = proc_out(o0 * op0._amp);
       }
     },
     /////////////////////////////////////////////////
@@ -91,10 +98,10 @@ fm4alg_t tx4op_algs[8] = {
         float phaseoff2 = op2.phaseOffset();
         float phaseoff1 = op1.phaseOffset();
         float o3        = op3._pmosc.compute(op3._frq, phaseoff3 * feedback);
-        float o2        = op2._pmosc.compute(op2._frq, phaseoff3);
-        float o1        = op1._pmosc.compute(op1._frq, phaseoff2);
+        float o2        = op2._pmosc.compute(op2._frq, 0.0f);
+        float o1        = op1._pmosc.compute(op1._frq, (phaseoff2 + phaseoff3) * 0.5f);
         float o0        = op0._pmosc.compute(op0._frq, phaseoff1);
-        output[i]       = clip_float(o0 * op0._amp, -kclamp, kclamp) * kscale;
+        output[i]       = proc_out(o0 * op0._amp);
       }
     },
     /////////////////////////////////////////////////
@@ -118,10 +125,10 @@ fm4alg_t tx4op_algs[8] = {
         float phaseoff2 = op2.phaseOffset();
         float phaseoff1 = op1.phaseOffset();
         float o3        = op3._pmosc.compute(op3._frq, phaseoff3 * feedback);
-        float o2        = op2._pmosc.compute(op2._frq, phaseoff3);
+        float o2        = op2._pmosc.compute(op2._frq, 0.0f);
         float o1        = op1._pmosc.compute(op1._frq, phaseoff2);
-        float o0        = op0._pmosc.compute(op0._frq, (phaseoff1 + phaseoff3));
-        output[i]       = clip_float(o0 * op0._amp, -kclamp, kclamp) * kscale;
+        float o0        = op0._pmosc.compute(op0._frq, (phaseoff1 + phaseoff3) * 0.5f);
+        output[i]       = proc_out(o0 * op0._amp);
       }
     },
     /////////////////////////////////////////////////
@@ -147,8 +154,8 @@ fm4alg_t tx4op_algs[8] = {
         float o3        = op3._pmosc.compute(op3._frq, phaseoff3 * feedback);
         float o2        = op2._pmosc.compute(op2._frq, phaseoff3);
         float o1        = op1._pmosc.compute(op1._frq, 0.0f);
-        float o0        = op0._pmosc.compute(op0._frq, (phaseoff1 + phaseoff2));
-        output[i]       = clip_float(o0 * op0._amp, -kclamp, kclamp) * kscale;
+        float o0        = op0._pmosc.compute(op0._frq, (phaseoff1 + phaseoff2) * 0.5f);
+        output[i]       = proc_out(o0 * op0._amp);
       }
     },
     /////////////////////////////////////////////////
@@ -174,12 +181,10 @@ fm4alg_t tx4op_algs[8] = {
         float o1        = op1._pmosc.compute(op1._frq, 0.0f);
         float o0        = op0._pmosc.compute(op0._frq, phaseoff1);
         // printf( "_modindex[1]<%f>\n", _modindex[1] );
-        output[i] = clip_float(
-                        o0 * op0._amp + //
-                            o2 * op2._amp,
-                        -kclamp,
-                        kclamp) *
-                    kscale;
+        output[i] = proc_out(
+            (o0 * op0._amp + //
+             o2 * op2._amp) *
+            0.5);
       }
     },
     /////////////////////////////////////////////////
@@ -204,13 +209,11 @@ fm4alg_t tx4op_algs[8] = {
         float o2        = op2._pmosc.compute(op2._frq, phaseoff3);
         float o1        = op1._pmosc.compute(op1._frq, 0.0f);
         float o0        = op0._pmosc.compute(op0._frq, phaseoff3);
-        output[i]       = clip_float(
-                        o0 * op0._amp +     //
-                            o1 * op1._amp + //
-                            o2 * op2._amp,
-                        -kclamp,
-                        kclamp) *
-                    kscale;
+        output[i]       = proc_out(
+            (o0 * op0._amp + //
+             o1 * op1._amp + //
+             o2 * op2._amp) *
+            0.33333f);
       }
     },
     /////////////////////////////////////////////////
@@ -234,13 +237,11 @@ fm4alg_t tx4op_algs[8] = {
         float o2        = op2._pmosc.compute(op2._frq, phaseoff3);
         float o1        = op1._pmosc.compute(op1._frq, 0.0f);
         float o0        = op0._pmosc.compute(op0._frq, 0.0f);
-        output[i]       = clip_float(
-                        o0 * op0._amp +     //
-                            o1 * op1._amp + //
-                            o2 * op2._amp,
-                        -kclamp,
-                        kclamp) *
-                    kscale;
+        output[i]       = proc_out(
+            (o0 * op0._amp + //
+             o1 * op1._amp + //
+             o2 * op2._amp) *
+            0.3333f);
       }
     },
     /////////////////////////////////////////////////
@@ -263,14 +264,12 @@ fm4alg_t tx4op_algs[8] = {
         float o2        = op2._pmosc.compute(op2._frq, 0.0f);
         float o1        = op1._pmosc.compute(op1._frq, 0.0f);
         float o0        = op0._pmosc.compute(op0._frq, 0.0f);
-        output[i]       = clip_float(
-                        o0 * op0._amp +     //
-                            o1 * op1._amp + //
-                            o2 * op2._amp + //
-                            o3 * op3._amp,
-                        -kclamp,
-                        kclamp) *
-                    kscale;
+        output[i]       = proc_out(
+            (o0 * op0._amp + //
+             o1 * op1._amp + //
+             o2 * op2._amp + //
+             o3 * op3._amp) *
+            0.25f);
       }
     },
 };
@@ -284,16 +283,17 @@ fm4impl::~fm4impl() {
 ///////////////////////////////////////////////////////////////////////////////
 void fm4impl::updateModulation() {
   for (int i = 0; i < 4; i++) {
-    float pitch   = _fm4->_param[0 + i].eval(); // cents
-    float frq     = midi_note_to_frequency(pitch * 0.01);
+    float pitch = _fm4->_param[0 + i].eval(); // cents
+    float note  = pitch * 0.01;
+    float frq   = midi_note_to_frequency(note);
+
     float amp     = _fm4->_param[4 + i].eval();
     auto& dest_op = _ops[i];
     dest_op._frq  = frq;
     dest_op._amp  = amp;
 
-    float modamp      = std::clamp(amp, 0.0f, 1.0f);
-    float fol         = powf(modamp, 1.0);
-    dest_op._modindex = 0.35f * powf(2.0, (fol * 0.75) - 1.2);
+    float clamped     = std::clamp(amp, 0.0f, 1.0f);
+    dest_op._modindex = powf(clamped, 0.5); // 0.25 + 1.0f * powf(clamped, 2.0);
 
     // dest_op._modindex = _data._ops[i]._modIndex;
   }

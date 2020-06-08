@@ -40,33 +40,25 @@ float Wavetable::sampleLerp(float fi) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void initWavetablesTX81Z() {
-  /////////////////////
+void initWavetablesTX81Z() { /////////////////////
   // wave 2(1)
   /////////////////////
   {
     auto wave = new Wavetable(ksize);
     for (int i = 0; i < ksize; i++) {
-      int quadrant    = i / ksized4;
-      float fph       = float(i & (ksized4 - 1)) / float(ksized4);
-      auto& out_float = wave->_wavedata[i];
+      int quadrant = i / ksized4;
+      float fph    = float(i) / ksize;
       switch (quadrant) {
         case 0:
-          out_float = sqrtf(fph);
-          break;
         case 1:
-          out_float = sqrtf(1.0f - fph);
-          break;
         case 2:
-          out_float = -sqrtf(fph);
-          break;
         case 3:
-          out_float = -sqrtf(1.0f - fph);
+          wave->_wavedata[i] = fabs(sin(fph * pi2)) * sin(fph * pi2);
           break;
       }
     }
     _wavemap["tx81z.2"] = wave;
-  }
+  } // namespace ork::audio::singularity
   /////////////////////
   // wave 3(2)
   /////////////////////
@@ -75,14 +67,14 @@ void initWavetablesTX81Z() {
     for (int i = 0; i < ksize; i++) {
       int quadrant    = i / ksized4;
       float fph       = float(i) / ksize;
-      float fsine     = sinf(fph * pi2);
       auto& out_float = wave->_wavedata[i];
       switch (quadrant) {
         case 0:
         case 1:
-          out_float = fsine;
+          wave->_wavedata[i] = sin(fph * pi2);
           break;
         case 2:
+        case 3:
           out_float = 0.0f;
           break;
       }
@@ -96,16 +88,15 @@ void initWavetablesTX81Z() {
     auto wave = new Wavetable(ksize);
     for (int i = 0; i < ksize; i++) {
       int quadrant    = i / ksized4;
-      float fph       = float(i & (ksized4 - 1)) / float(ksized4);
+      float fph       = float(i) / ksize;
       auto& out_float = wave->_wavedata[i];
       switch (quadrant) {
         case 0:
-          out_float = sqrtf(fph);
-          break;
         case 1:
-          out_float = sqrtf(1.0f - fph);
+          wave->_wavedata[i] = fabs(sin(fph * pi2)) * sin(fph * pi2);
           break;
         case 2:
+        case 3:
           out_float = 0.0f;
           break;
       }
@@ -119,16 +110,15 @@ void initWavetablesTX81Z() {
     auto wave = new Wavetable(ksize);
     for (int i = 0; i < ksize; i++) {
       int quadrant    = i / ksized4;
-      float fph       = float(i & (ksized4 - 1)) / float(ksized4);
-      float fsine     = sinf(fph * pi2 * 2.0f);
+      float fph       = float(i) / ksize;
       auto& out_float = wave->_wavedata[i];
       switch (quadrant) {
         case 0:
         case 1:
-          out_float = fsine;
-          break;
+          wave->_wavedata[i] = sin(fph * pi2 * 2.0);
         case 2:
-          out_float = 0.0f;
+        case 3:
+          wave->_wavedata[i] = 0.0f;
           break;
       }
     }
@@ -140,23 +130,16 @@ void initWavetablesTX81Z() {
   {
     auto wave = new Wavetable(ksize);
     for (int i = 0; i < ksize; i++) {
-      int quadrant    = i / (ksized4 / 2);
-      float fph       = fmod(2.0f * float(i) / ksize, 1.0f);
+      int quadrant    = i / ksized4;
+      float fph       = float(i) / ksize;
       auto& out_float = wave->_wavedata[i];
       switch (quadrant) {
         case 0:
-          out_float = sqrtf(fph);
-          break;
         case 1:
-          out_float = sqrtf(1.0f - fph);
+          wave->_wavedata[i] = fabs(sin(fph * pi2 * 2.0)) * sin(fph * pi2 * 2.0);
           break;
         case 2:
-          out_float = -sqrtf(fph);
-          break;
         case 3:
-          out_float = -sqrtf(1.0f - fph);
-          break;
-        default:
           out_float = 0.0f;
           break;
       }
@@ -169,23 +152,16 @@ void initWavetablesTX81Z() {
   {
     auto wave = new Wavetable(ksize);
     for (int i = 0; i < ksize; i++) {
-      int quadrant    = i / (ksized4 / 2);
-      float fph       = fmod(4.0f * float(i) / ksize, 1.0f);
+      int quadrant    = i / ksized4;
+      float fph       = float(i) / ksize;
       auto& out_float = wave->_wavedata[i];
       switch (quadrant) {
         case 0:
-          out_float = sinf(fph);
-          break;
         case 1:
-          out_float = sinf(fph);
+          wave->_wavedata[i] = sin(fph * pi2 * 4.0);
           break;
         case 2:
-          out_float = sinf(fph);
-          break;
         case 3:
-          out_float = sinf(fph);
-          break;
-        default:
           out_float = 0.0f;
           break;
       }
@@ -205,20 +181,17 @@ void initWavetablesTX81Z() {
       switch (quadrant) {
         case 0:
         case 1:
-          out_float = sinf(fph * pi2);
+          wave->_wavedata[i] = fabs(sin(fph * pi2 * 4.0)) * sin(fph * pi2 * 4.0);
           break;
         case 2:
         case 3:
-          out_float = 0.0f;
-          break;
-        default:
           out_float = 0.0f;
           break;
       }
     }
     _wavemap["tx81z.8"] = wave;
   }
-}
+} // namespace ork::audio::singularity
 
 ///////////////////////////////////////////////////////////////////////////////
 

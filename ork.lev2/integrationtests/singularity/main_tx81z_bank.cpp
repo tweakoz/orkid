@@ -7,7 +7,7 @@ int main(int argc, char** argv) {
   ////////////////////////////////////////////////
   // main bus effect
   ////////////////////////////////////////////////
-  auto mainbus      = synth::instance()->outputBus("main");
+  /*auto mainbus      = synth::instance()->outputBus("main");
   auto bussource    = mainbus->createScopeSource();
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
   // echo->param(1)._coarse = 0.5; // feedback
   // echo->param(2)._coarse = 0.5; // wet/dry mix
   //
-  mainbus->setBusDSP(fxlayer);
+  mainbus->setBusDSP(fxlayer);*/
   ////////////////////////////////////////////////
   // create visualizers
   ////////////////////////////////////////////////
