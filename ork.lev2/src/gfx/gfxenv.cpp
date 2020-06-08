@@ -27,7 +27,7 @@
 #include <ork/reflect/RegisterProperty.h>
 
 namespace ork::lev2 {
-int G_MSAASAMPLES = 64;
+int G_MSAASAMPLES = 4;
 }
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::IManipInterface, "IManipInterface");
 
