@@ -82,6 +82,22 @@ void FunInst::keyOn(const KeyOnInfo& KOI) // final
       // printf("a<%g> b<%g> a*b<%g>\n", a, b, rval);
       return rval;
     };
+  else if (op == "a*a*b")
+    _op = [=]() -> float {
+      float a    = this->_a();
+      float b    = this->_b();
+      float rval = a * a * b;
+      // printf("a<%g> b<%g> a*b<%g>\n", a, b, rval);
+      return rval;
+    };
+  else if (op == "a*a*b*b")
+    _op = [=]() -> float {
+      float a    = this->_a();
+      float b    = this->_b();
+      float rval = a * a * b * b;
+      // printf("a<%g> b<%g> a*b<%g>\n", a, b, rval);
+      return rval;
+    };
   else if (op == "(a+b)/2")
     _op = [=]() -> float {
       float a = this->_a();

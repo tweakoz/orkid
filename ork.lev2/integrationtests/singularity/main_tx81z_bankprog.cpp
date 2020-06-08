@@ -51,30 +51,31 @@ int main(int argc, char** argv) {
   bank->loadBank(basepath / "tx81z_2.syx");
   bank->loadBank(basepath / "tx81z_3.syx");
   bank->loadBank(basepath / "tx81z_4.syx");
+  //////////////////////////////////////////////////////////////////////////////
+  auto program   = bank->getProgramByName("LatelyBass");
+  auto layerdata = program->getLayer(0);
+  //////////////////////////////////////
+  // connect OPS to scope 1
+  //////////////////////////////////////
+  auto ops_stage = layerdata->stageByName("OPS");
+  auto ops_block = ops_stage->_blockdatas[0];
+  if (ops_block) {
+    auto ops_source         = ops_block->createScopeSource();
+    ops_source->_dspchannel = 0;
+    ops_source->connect(scope1->_sink);
+    ops_source->connect(analyzer1->_sink);
+  }
+  //////////////////////////////////////
+  // connect layerout to scope 3
+  //////////////////////////////////////
+  auto layersource = layerdata->createScopeSource();
+  layersource->connect(scope2->_sink);
+  layersource->connect(analyzer2->_sink);
+  //////////////////////////////////////
   int count = 0;
   for (int i = 0; i < 128; i++) { // 2 32 patch banks
-    auto prg       = bank->getProgram(i);
-    auto layerdata = prg->getLayer(0);
-    //////////////////////////////////////
-    // connect OPS to scope 1
-    //////////////////////////////////////
-    auto ops_stage = layerdata->stageByName("OPS");
-    auto ops_block = ops_stage->_blockdatas[0];
-    if (ops_block) {
-      auto ops_source         = ops_block->createScopeSource();
-      ops_source->_dspchannel = 0;
-      ops_source->connect(scope1->_sink);
-      ops_source->connect(analyzer1->_sink);
-    }
-    //////////////////////////////////////
-    // connect layerout to scope 3
-    //////////////////////////////////////
-    auto layersource = layerdata->createScopeSource();
-    layersource->connect(scope2->_sink);
-    layersource->connect(analyzer2->_sink);
-    //////////////////////////////////////
-    for (int n = 0; n <= 24; n += 3) {
-      enqueue_audio_event(prg, count * 0.35, 0.15, 48 + n);
+    for (int n = 0; n <= 36; n++) {
+      enqueue_audio_event(program, count * 0.35, 0.15, 36 + n);
       count++;
     }
   }

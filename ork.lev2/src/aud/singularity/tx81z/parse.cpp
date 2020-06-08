@@ -27,7 +27,7 @@ struct ratelevmodel {
     _rorbias   = 0.0f;
     _basenumer = 1.0f;
     _power     = 1.0f;
-    _scalar    = 1.0f;
+    _scalar    = 0.5f;
   }
   float transform(float value) {
     float slope    = _inpbias + (value * _inpscale) / _inpdiv;
@@ -133,9 +133,10 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
   }
 
   for (int iv = 0; iv < programcount; iv++) {
-    auto prg                           = std::make_shared<ProgramData>();
-    zpmDB->_programs[outd->_lastprg++] = prg;
-    prg->_role                         = "fm4";
+    int progid               = outd->_lastprg++;
+    auto prg                 = std::make_shared<ProgramData>();
+    zpmDB->_programs[progid] = prg;
+    prg->_role               = "fm4";
 
     ///////////////////////////
     // collect bytes for program
@@ -156,13 +157,17 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       namebuf[n] = bytes[57 + n];
     namebuf[10] = 0;
 
-    prg->_name = namebuf;
+    auto name = std::regex_replace(std::string(namebuf), std::regex("^ +| +$|( ) +"), "$1");
+    // remove leading and trailing spaces from patch name
+    prg->_name = name;
+
+    zpmDB->_programsByName[name] = prg;
 
     auto fm4pd     = std::make_shared<Fm4ProgData>();
     auto layerdata = prg->newLayer();
 
     printf("////////////////////////////\n");
-    printf("V<%d:%s>\n", iv, namebuf);
+    printf("V<%d:%s>\n", progid, name.c_str());
 
     ////////////
     // voice global
@@ -188,7 +193,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
     // 1/16 == PI/8 (2)
     // 1/32 == PI/16 (1)
     auto& feedback_param   = ops_block->param(8);
-    feedback_param._coarse = (FBL == 0) ? 0 : powf(2.0, FBL - 7);
+    feedback_param._coarse = 0.0; //(FBL == 0) ? 0 : powf(2.0, FBL - 16);
     ///////////////////////////////
 
     // printf( "ALG<%d> FBL<%d> SY<%d>\n", ALG, FBL, SY);
@@ -222,7 +227,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
     int middleC            = TRPS;
     fm4pd->_pitchBendRange = PBR;
 
-    printf("TRPS<%d> PBR<%d>\n", TRPS, PBR);
+    printf("prog<%s> TRPS<%d> PBR<%d> ALG<%d> FBL<%d>\n", name.c_str(), TRPS, PBR, ALG, FBL);
 
     bool CH = bytes[48] & 0x10;
     bool MO = bytes[48] & 0x08; // mono mode ?
@@ -245,44 +250,56 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
     ////////////
 
     for (int opindex = 0; opindex < 4; opindex++) {
-      int op_base = opindex * 10;
+      const int src_op[] = {3, 1, 2, 0};
+      // const int src_op[] = {0, 2, 1, 3};
+      int op_base = src_op[opindex] * 10;
+      // 4 2 3 1
+      // 3 1 2 0
+      // const int kop[]     = {0, 2, 1, 3};
+      // const int kop[] = {0, 1, 2, 3};
 
+      auto& opd         = fm4pd->_ops[opindex];
       auto& pitch_param = ops_block->param(0 + opindex);
       auto& amp_param   = ops_block->param(4 + opindex);
 
-      const int kop[] = {3, 1, 2, 0};
-      int op          = kop[opindex];
-      auto& opd       = fm4pd->_ops[op];
-
       // ratio 0.5 .. 27.57
 
-      int atkRate     = bytes[op_base + 0]; // EG 0..31
-      int dec1Rate    = bytes[op_base + 1]; // EG 0..31
-      int dec2Rate    = bytes[op_base + 2]; // EG 0..31
-      int relRate     = bytes[op_base + 3]; // EG 0..15
-      int dec1Lev     = bytes[op_base + 4]; // EG 0..15
-      int levScaling  = bytes[op_base + 5]; // level scaling 0..99
-      int _AEK        = bytes[op_base + 6];
-      bool opEnable   = !((_AEK & 64) >> 6);              // AME - bool (enable op?)
-      int egBiasSensa = (_AEK & 0x18) >> 3;               // eg bias sensitivity 0..7
-      int kvSensa     = (_AEK & 0x07);                    // keyvel sensitivity 0..7
-      int outLevel    = bytes[op_base + 7];               // out level 0..99
-      int coarseFrq   = bytes[op_base + 8] & 0x3f;        // coarse frequency 0..63
-      int ratScaling  = (bytes[op_base + 9] & 0x18) >> 3; // rate scaling 0..3
-      int detune      = (bytes[op_base + 9] & 7) - 3;     // detune ? -3..3
+      int atkRate      = bytes[op_base + 0]; // EG 0..31
+      int dec1Rate     = bytes[op_base + 1]; // EG 0..31
+      int dec2Rate     = bytes[op_base + 2]; // EG 0..31
+      int relRate      = bytes[op_base + 3]; // EG 0..15
+      int dec1Lev      = bytes[op_base + 4]; // EG 0..15
+      int levScaling   = bytes[op_base + 5]; // level scaling 0..99
+      int _AEK         = bytes[op_base + 6];
+      bool opEnable    = !((_AEK & 64) >> 6);              // AME - bool (enable op?)
+      int egBiasSensa  = (_AEK & 0x18) >> 3;               // eg bias sensitivity 0..7
+      int kvSensa      = (_AEK & 0x07);                    // keyvel sensitivity 0..7
+      int outLevel     = bytes[op_base + 7];               // out level 0..99
+      int coarseFrq    = bytes[op_base + 8] & 0x3f;        // coarse frequency 0..63
+      int ratScaling   = (bytes[op_base + 9] & 0x18) >> 3; // rate scaling 0..3
+      uint8_t usdetune = (bytes[op_base + 9] & 7);         // detune ? -3..3
+      int detune       = int(usdetune & 3);
+      if (usdetune & 7)
+        detune = -detune;
 
-      int _EFF         = bytes[73 + 2 * opindex] & 0x3f;
-      int egShift      = (_EFF & 0x30) >> 4;   // eg shift (off,48,24,12)
-      bool fixdfrqmode = (_EFF & 0x08) >> 3;   // fixed mode ? bool
-      int fixedRange   = (_EFF & 0x7);         // fixed range: 255,510,1k,2k,4k,8k,16k,32k
-                                               // fixed step:  1,  2,  4, 8, 16,32,64, 128
-      int _OWF      = bytes[74 + 2 * opindex]; //&0x7f;
-      opd._waveform = (_OWF & 0x70) >> 4;      // waveform 0..7
-      int fineFrq   = (_OWF & 0xf);            // fine frequency 0..15
+      int op_additional_base = 73 + src_op[opindex] * 2;
 
-      // opd._F   = bytes[op_base + 8];
-      // opd._EFF = _EFF;
-      // opd._OWF = _OWF;
+      int _EFF         = bytes[op_additional_base] & 0x3f;
+      int egShift      = (_EFF & 0x30) >> 4;        // eg shift (off,48,24,12)
+      bool fixdfrqmode = (_EFF & 0x08) >> 3;        // fixed mode ? bool
+      int fixedRange   = (_EFF & 0x7);              // fixed range: 255,510,1k,2k,4k,8k,16k,32k
+                                                    // fixed step:  1,  2,  4, 8, 16,32,64, 128
+      int _OWF     = bytes[op_additional_base + 1]; //&0x7f;
+      int waveform = (_OWF & 0x70) >> 4;            // waveform 0..7
+      int fineFrq  = (_OWF & 0xf);                  // - 7;              // fine frequency 0..15
+
+      printf("prog<%s> op<%d> waveform<%d> level<%d> enable<%d>\n", name.c_str(), opindex, waveform, outLevel, int(opEnable));
+
+      if (opindex < 2) {
+        // outLevel = 0;
+      }
+
+      opd._waveform = waveform;
 
       ////////////////////////////
       // translate tx operator frequency params
@@ -291,11 +308,28 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       ////////////////////////////
 
       if (fixdfrqmode) {
-        int index      = (coarseFrq << 2);      //|(fine&3);
-        float fixedfrq = float(8 << fixedRange) //
-                         + float(index << fixedRange);
-        pitch_param._coarse   = frequency_to_midi_note(fixedfrq) * 100.0;
+        float detcents = float(detune) * 2.6 / 3.0;
+        float det_rat  = cents_to_linear_freq_ratio(detcents);
+        int frqindex   = (coarseFrq << 2) | fineFrq;
+        float fixedfrq = float(frqindex << (fixedRange)) * det_rat;
+
+        // fixedfrq += fineFrq * finestep;
+        // fixedfrq *= det_rat;
+
+        pitch_param._coarse   = frequency_to_midi_note(fixedfrq);
         pitch_param._keyTrack = 0.0; // 0 cents/key
+
+        printf(
+            "prog<%s> op<%d> fixed range<%d> coarseFrq<%d> fineFrq<%d> index<%d> fixedfrq<%g> detune<%d> cents<%g>\n", //
+            name.c_str(),
+            opindex,
+            fixedRange,
+            coarseFrq,
+            fineFrq,
+            frqindex,
+            fixedfrq,
+            detune,
+            pitch_param._coarse * 100.0);
 
       } else {
         OrkAssert(coarseFrq < 64);
@@ -305,8 +339,15 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
         float ratio           = compute_ratio(coarseFrq, fineFrq);
         float cents           = linear_freq_ratio_to_cents(ratio);
         pitch_param._coarse   = keybase + cents * 0.01; // middlec*ratio
-        pitch_param._fine     = float(detune) * 2.6 / 3.0;
+        pitch_param._fine     = float(detune) * 5.6 / 3.0;
         pitch_param._keyTrack = 100.0; // 100 cents/key
+
+        printf(
+            "prog<%s> op<%d> ratio<%g> cents<%g>\n", //
+            name.c_str(),
+            opindex,
+            ratio,
+            cents);
       }
 
       ////////////////////////////
@@ -324,13 +365,11 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
       // float MI = (4.0f*pi2) *  powf(2.0,(-tlval/8.0f));
       // opd._modIndex = (4.0f*512.0f) *  powf(2.0,(-tlval/8.0f));
-      opd._modIndex = 2.0f * powf(2.0, (-tlval / 8.0f));
+      opd._modIndex = 1.0f * powf(2.0, (-tlval / 10.0f));
 
       ////////////////////////////////////////////////////////////////////////
       // Operator Amplitude Control
       ////////////////////////////////////////////////////////////////////////
-
-      printf("opEnable<%d:%d>\n", opindex, int(opEnable));
 
       if (true) {
 
@@ -345,12 +384,20 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
         float ddec      = fabs(1.0f - decaylevl);
         ratelevmodel model;
         model.txmodel();
-        float atktime = model.transform(atkRate / 31.0);
-        float dc1time = model.transform(dec1Rate / 31.0) * ddec;
-        float dc2time = model.transform(dec2Rate / 31.0);
-        float reltime = model.transform(relRate / 15.0);
+        float atktime = model.transform(atkRate / 31.0) * 0.15;
+        float dc1time = model.transform(dec1Rate / 31.0) * ddec * 2.5;
+        float dc2time = model.transform(dec2Rate / 31.0) * 2.5;
+        float reltime = model.transform(relRate / 15.0) * 2.5;
 
-        printf("egShift<%d> levsca<%d> ATK<%g> DC1<%g> DC2<%g> REL<%g>\n", egShift, levScaling, atktime, dc1time, dc2time, reltime);
+        printf(
+            "prog<%s> egShift<%d> levsca<%d> ATK<%g> DC1<%g> DC2<%g> REL<%g>\n", //
+            name.c_str(),
+            egShift,
+            levScaling,
+            atktime,
+            dc1time,
+            dc2time,
+            reltime);
 
         // todo (should eqShift mapping be done post eg ?)
         auto levelshift = [egShift](float inp) -> float { //
@@ -399,7 +446,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
           EnvPoint outp       = inp;
           float unit_keyscale = float(KOI._key - 24) / 67.0f;
           unit_keyscale       = std::clamp(unit_keyscale, 0.0f, 1.0f);
-          float power         = 1.0 / pow(2.0, unit_keyscale * 2.0);
+          float power         = 1.0 / pow(2.0, unit_keyscale * 1.6);
           outp._time *= power;
           return outp;
         };
@@ -413,7 +460,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
         // c1(24) .. g6(91) (91-24==67)
         //////////////////////////////////////////////////
 
-        OPAMP->_oncompute = [outLevel, levScaling](CustomControllerInst* cci) { //
+        OPAMP->_oncompute = [name, outLevel, levScaling](CustomControllerInst* cci) { //
           const auto& koi = cci->_layer->_koi;
 
           float inplevel = float(outLevel / 99.0f);
@@ -427,10 +474,12 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
           unit_keyscale       = std::clamp(unit_keyscale, 0.0f, 1.0f);
           float lindbscale    = unit_keyscale * unit_levscale;
           float atten         = decibel_to_linear_amp_ratio(lindbscale * -12.0f);
+          atten *= 1.0;
 
           if (0)
             printf(
-                "inplevel<%g> unit_levscale<%g> unit_keyscale<%g> atten<%g>\n", //
+                "prog<%s> inplevel<%g> unit_levscale<%g> unit_keyscale<%g> atten<%g>\n", //
+                name.c_str(),
                 inplevel,
                 unit_levscale,
                 unit_keyscale,
@@ -443,12 +492,12 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
         ////////////////////////////////////////////////////////////////////////
         amp_param._coarse = 0.0f;
-        if (opEnable) {
+        if (true) { // opEnable) {
           auto funname               = ork::FormatString("op%d-fun", opindex);
           auto FUN                   = layerdata->appendController<FunData>(funname);
           FUN->_a                    = envname;
           FUN->_b                    = opaname;
-          FUN->_op                   = "a*b";
+          FUN->_op                   = "a*a*b";
           amp_param._mods._src1      = FUN;
           amp_param._mods._src1Depth = 1.0;
         }

@@ -199,20 +199,17 @@ void initWavetablesTX81Z() {
     auto wave = new Wavetable(ksize);
     for (int i = 0; i < ksize; i++) {
       int quadrant    = i / (ksized4 / 2);
-      float fph       = fmod(2.0f * float(i) / ksize, 1.0f);
+      int iph         = i % ksized4;
+      float fph       = float(iph) / float(ksized4);
       auto& out_float = wave->_wavedata[i];
       switch (quadrant) {
         case 0:
-          out_float = sqrtf(fph);
-          break;
         case 1:
-          out_float = sqrtf(1.0f - fph);
+          out_float = sinf(fph * pi2);
           break;
         case 2:
-          out_float = sqrtf(fph);
-          break;
         case 3:
-          out_float = sqrtf(1.0f - fph);
+          out_float = 0.0f;
           break;
         default:
           out_float = 0.0f;

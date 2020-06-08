@@ -31,6 +31,7 @@ struct fm4impl {
   void keyOn();
   void keyOff();
   void callalg();
+  void updateModulation();
   //////////////////////////////////////////////////////////////
   fmoperator _ops[4];
   Fm4ProgData _data;
@@ -41,7 +42,8 @@ struct fm4impl {
   Layer* _curlayer = nullptr;
 };
 ////////////////////////////////////////////////////////////////////////////////
-constexpr float kclamp = 1.2f;
+constexpr float kclamp = 8.0f;
+constexpr float kscale = 0.5f;
 ////////////////////////////////////////////////////////////////////////////////
 fm4alg_t tx4op_algs[8] = {
     //// ALG 0 ////
@@ -66,7 +68,7 @@ fm4alg_t tx4op_algs[8] = {
         float o2        = op2._pmosc.compute(op2._frq, phaseoff3);
         float o1        = op1._pmosc.compute(op0._frq, phaseoff2);
         float o0        = op0._pmosc.compute(op0._frq, phaseoff1);
-        output[i]       = clip_float(o0 * op0._amp, -kclamp, kclamp);
+        output[i]       = clip_float(o0 * op0._amp, -kclamp, kclamp) * kscale;
       }
     },
     /////////////////////////////////////////////////
@@ -92,7 +94,7 @@ fm4alg_t tx4op_algs[8] = {
         float o2        = op2._pmosc.compute(op2._frq, phaseoff3);
         float o1        = op1._pmosc.compute(op1._frq, phaseoff2);
         float o0        = op0._pmosc.compute(op0._frq, phaseoff1);
-        output[i]       = clip_float(o0 * op0._amp, -kclamp, kclamp);
+        output[i]       = clip_float(o0 * op0._amp, -kclamp, kclamp) * kscale;
       }
     },
     /////////////////////////////////////////////////
@@ -119,7 +121,7 @@ fm4alg_t tx4op_algs[8] = {
         float o2        = op2._pmosc.compute(op2._frq, phaseoff3);
         float o1        = op1._pmosc.compute(op1._frq, phaseoff2);
         float o0        = op0._pmosc.compute(op0._frq, (phaseoff1 + phaseoff3));
-        output[i]       = clip_float(o0 * op0._amp, -kclamp, kclamp);
+        output[i]       = clip_float(o0 * op0._amp, -kclamp, kclamp) * kscale;
       }
     },
     /////////////////////////////////////////////////
@@ -146,7 +148,7 @@ fm4alg_t tx4op_algs[8] = {
         float o2        = op2._pmosc.compute(op2._frq, phaseoff3);
         float o1        = op1._pmosc.compute(op1._frq, 0.0f);
         float o0        = op0._pmosc.compute(op0._frq, (phaseoff1 + phaseoff2));
-        output[i]       = clip_float(o0 * op0._amp, -kclamp, kclamp);
+        output[i]       = clip_float(o0 * op0._amp, -kclamp, kclamp) * kscale;
       }
     },
     /////////////////////////////////////////////////
@@ -173,10 +175,11 @@ fm4alg_t tx4op_algs[8] = {
         float o0        = op0._pmosc.compute(op0._frq, phaseoff1);
         // printf( "_modindex[1]<%f>\n", _modindex[1] );
         output[i] = clip_float(
-            o0 * op0._amp + //
-                o2 * op2._amp,
-            -2,
-            2);
+                        o0 * op0._amp + //
+                            o2 * op2._amp,
+                        -kclamp,
+                        kclamp) *
+                    kscale;
       }
     },
     /////////////////////////////////////////////////
@@ -202,11 +205,12 @@ fm4alg_t tx4op_algs[8] = {
         float o1        = op1._pmosc.compute(op1._frq, 0.0f);
         float o0        = op0._pmosc.compute(op0._frq, phaseoff3);
         output[i]       = clip_float(
-            o0 * op0._amp +     //
-                o1 * op1._amp + //
-                o2 * op2._amp,
-            -2,
-            2);
+                        o0 * op0._amp +     //
+                            o1 * op1._amp + //
+                            o2 * op2._amp,
+                        -kclamp,
+                        kclamp) *
+                    kscale;
       }
     },
     /////////////////////////////////////////////////
@@ -231,11 +235,12 @@ fm4alg_t tx4op_algs[8] = {
         float o1        = op1._pmosc.compute(op1._frq, 0.0f);
         float o0        = op0._pmosc.compute(op0._frq, 0.0f);
         output[i]       = clip_float(
-            o0 * op0._amp +     //
-                o1 * op1._amp + //
-                o2 * op2._amp,
-            -2,
-            2);
+                        o0 * op0._amp +     //
+                            o1 * op1._amp + //
+                            o2 * op2._amp,
+                        -kclamp,
+                        kclamp) *
+                    kscale;
       }
     },
     /////////////////////////////////////////////////
@@ -259,12 +264,13 @@ fm4alg_t tx4op_algs[8] = {
         float o1        = op1._pmosc.compute(op1._frq, 0.0f);
         float o0        = op0._pmosc.compute(op0._frq, 0.0f);
         output[i]       = clip_float(
-            o0 * op0._amp +     //
-                o1 * op1._amp + //
-                o2 * op2._amp + //
-                o3 * op3._amp,
-            -2,
-            2);
+                        o0 * op0._amp +     //
+                            o1 * op1._amp + //
+                            o2 * op2._amp + //
+                            o3 * op3._amp,
+                        -kclamp,
+                        kclamp) *
+                    kscale;
       }
     },
 };
@@ -276,10 +282,7 @@ fm4impl::~fm4impl() {
   // printf("DESTROY fm4impl<%p>\n", this);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void fm4impl::compute() {
-  //////////////////////////////////////////////
-  // update modulation
-  //////////////////////////////////////////////
+void fm4impl::updateModulation() {
   for (int i = 0; i < 4; i++) {
     float pitch       = _fm4->_param[0 + i].eval(); // cents
     float frq         = midi_note_to_frequency(pitch * 0.01);
@@ -290,9 +293,10 @@ void fm4impl::compute() {
     dest_op._modindex = _data._ops[i]._modIndex;
   }
   _feedback = _fm4->_param[8].eval();
-  //////////////////////////////////////////////
-  // audio computation
-  //////////////////////////////////////////////
+}
+///////////////////////////////////////////////////////////////////////////////
+void fm4impl::compute() {
+  updateModulation();
   _curalg(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -305,13 +309,14 @@ void fm4impl::keyOn() {
   _curalg     = tx4op_algs[_data._alg];
   _data       = *progd;
   _curlayer   = layer;
+  updateModulation();
   for (int i = 0; i < 4; i++) {
-    auto& dest_op     = _ops[i];
-    dest_op._frq      = 0.0f;
-    dest_op._amp      = 0.0f;
-    dest_op._modindex = 0.0f;
-    const auto& opd   = _data._ops[i];
-    _ops[i]._pmosc.keyOn(opd);
+    auto& dest_op   = _ops[i];
+    const auto& opd = _data._ops[i];
+    dest_op._pmosc.keyOn(opd);
+
+    float f = dest_op._frq;
+    printf("op<%d:%g>\n", i, f);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -377,9 +382,8 @@ void FM4::compute(DspBuffer& dspbuf) { // final
 ///////////////////////////////////////////////////////////////////////////////
 void FM4::doKeyOn(const KeyOnInfo& koi) { // final
   auto name = _layer->_layerdata->_programdata->_name;
-  printf("FM4 prog<%s> keyon\n", name.c_str());
-
   _pimpl.Get<implptr_t>()->keyOn();
+  printf("FM4 prog<%s> keyon\n", name.c_str());
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FM4::doKeyOff() { // final
