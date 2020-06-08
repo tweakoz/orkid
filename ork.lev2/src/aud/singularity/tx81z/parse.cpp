@@ -381,13 +381,25 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
           return logf(deslev) / logf(decrate);               // return: time to reach deslev
         };
 
+        auto procrate = [](float inprate, float a, float b) -> float {
+          if (inprate == 0.0f)
+            return 1.0;
+          else {
+            float dt    = a * expf(b * inprate);
+            float alpha = -logf(2.0f) / dt;
+            return expf(alpha);
+          }
+        };
+
         ///////////////////////////////////////////////
 
         float atktime = 10.4423f * expf(-0.353767f * atkRate);
-        float dc1time = model.transform(dec1Rate / 31.0) * ddec * 1.0;
-        float dc2time = model.transform(dec2Rate / 31.0) * 2.5;
-        float reltime = model.transform(relRate / 15.0) * 2.5;
-
+        float dc1time = expdecayrate2time(procrate(dec1Rate, 9.8f, -0.356f), 0.001f);
+        float dc2time = expdecayrate2time(procrate(dec2Rate, 9.8f, -0.356f), 0.001f);
+        float reltime = expdecayrate2time(procrate(relRate, 8.0f, -0.65f), 0.001f);
+        if (reltime > 1.0f) {
+          reltime = powf(reltime, 0.7f);
+        }
         printf(
             "prog<%s> egShift<%d> levsca<%d> ATK<%g> DC1<%g> DC2<%g> REL<%g>\n", //
             name.c_str(),
@@ -426,10 +438,10 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
         ENVELOPE->_sustainSegment = 2;
         ENVELOPE->_releaseSegment = 3;
         // todo (attack-logshape - how interacts with egshift?)
-        ENVELOPE->_segments.push_back({atktime, levelshift(1), 0.5});          // atk1
-        ENVELOPE->_segments.push_back({dc1time, levelshift(decaylevl), 10.0}); // atk2
-        ENVELOPE->_segments.push_back({dc2time, levelshift(0), 10.0});         // dec
-        ENVELOPE->_segments.push_back({reltime, levelshift(0), 2.0});          // rel1
+        ENVELOPE->_segments.push_back({atktime, levelshift(1), 0.5});         // atk1
+        ENVELOPE->_segments.push_back({dc1time, levelshift(decaylevl), 0.5}); // atk2
+        ENVELOPE->_segments.push_back({dc2time, levelshift(0), 0.5});         // dec
+        ENVELOPE->_segments.push_back({reltime, levelshift(0), 0.5});         // rel1
 
         //////////////////////////////////////////////////
         // rate scaling (envelope rate key follow)

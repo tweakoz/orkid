@@ -293,7 +293,7 @@ void fm4impl::updateModulation() {
     dest_op._amp  = amp;
 
     float clamped     = std::clamp(amp, 0.0f, 1.0f);
-    dest_op._modindex = powf(clamped, 0.5); // 0.25 + 1.0f * powf(clamped, 2.0);
+    dest_op._modindex = 1.7f * powf(clamped, 0.75); // 0.25 + 1.0f * powf(clamped, 2.0);
 
     // dest_op._modindex = _data._ops[i]._modIndex;
   }
