@@ -391,9 +391,9 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
         ratelevmodel model;
         model.txmodel();
         float atktime = model.transform(atkRate / 31.0) * 0.15;
-        float dc1time = model.transform(dec1Rate / 31.0) * ddec * 2.5;
-        float dc2time = model.transform(dec2Rate / 31.0) * 2.5;
-        float reltime = model.transform(relRate / 15.0) * 2.5;
+        float dc1time = model.transform(dec1Rate / 31.0) * ddec * 1.5;
+        float dc2time = model.transform(dec2Rate / 31.0) * 1.5;
+        float reltime = model.transform(relRate / 15.0) * 1.5;
 
         printf(
             "prog<%s> egShift<%d> levsca<%d> ATK<%g> DC1<%g> DC2<%g> REL<%g>\n", //
@@ -433,7 +433,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
         ENVELOPE->_sustainSegment = 2;
         ENVELOPE->_releaseSegment = 3;
         // todo (attack-logshape - how interacts with egshift?)
-        ENVELOPE->_segments.push_back({atktime, levelshift(1), 0.5});         // atk1
+        ENVELOPE->_segments.push_back({atktime, levelshift(1), 0.15});        // atk1
         ENVELOPE->_segments.push_back({dc1time, levelshift(decaylevl), 1.0}); // atk2
         ENVELOPE->_segments.push_back({dc2time, levelshift(0), 1.0});         // dec
         ENVELOPE->_segments.push_back({reltime, levelshift(0), 1.0});         // rel1
@@ -452,7 +452,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
           EnvPoint outp       = inp;
           float unit_keyscale = float(KOI._key - 24) / 67.0f;
           unit_keyscale       = std::clamp(unit_keyscale, 0.0f, 1.0f);
-          float power         = 1.0 / pow(2.0, unit_keyscale * 1.6);
+          float power         = 1.0 / pow(2.0, unit_keyscale * 0.5);
           outp._time *= power;
           return outp;
         };
@@ -479,7 +479,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
           float unit_keyscale = float(koi._key - 24) / 67.0f;
           unit_keyscale       = std::clamp(unit_keyscale, 0.0f, 1.0f);
           float lindbscale    = unit_keyscale * unit_levscale;
-          float atten         = decibel_to_linear_amp_ratio(lindbscale * -12.0f);
+          float atten         = decibel_to_linear_amp_ratio(lindbscale * -18.0f);
           atten *= 1.0;
 
           if (0)
