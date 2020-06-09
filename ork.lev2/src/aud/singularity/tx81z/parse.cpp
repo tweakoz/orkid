@@ -311,9 +311,9 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       //  so we can use singularity modulation
       ////////////////////////////
 
+      float detcents = float(detune) * 5.6 / 3.0;
+      float det_rat  = cents_to_linear_freq_ratio(detcents);
       if (fixdfrqmode) {
-        float detcents = float(detune) * 2.6 / 3.0;
-        float det_rat  = cents_to_linear_freq_ratio(detcents);
         int frqindex   = (coarseFrq << 2) | fineFrq;
         float fixedfrq = float(frqindex << (fixedRange)) * det_rat;
 
@@ -340,7 +340,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
         int keybase = 60 + (middleC - 24);
 
-        float ratio           = compute_ratio(coarseFrq, fineFrq);
+        float ratio           = compute_ratio(coarseFrq, fineFrq) * det_rat;
         float cents           = linear_freq_ratio_to_cents(ratio);
         pitch_param._coarse   = keybase + cents * 0.01; // middlec*ratio
         pitch_param._fine     = float(detune) * 5.6 / 3.0;
@@ -395,7 +395,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
         ENVELOPE->_attackTime = atktime;
 
         float decratepow       = 0.99997;
-        float relratepow       = 0.99965;
+        float relratepow       = 0.9995;
         ENVELOPE->_decay1Rate  = powf(decratepow, dec1Rate);
         ENVELOPE->_decay1Level = decaylevl;
         ENVELOPE->_decay2Rate  = powf(decratepow, dec2Rate);
@@ -460,8 +460,8 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
           float a       = logf(2.0f) * 0.1f;
           float b       = 90.0f * a;
-          float baselev = expf(a * float(outLevel) - b);
-          baselev       = powf(baselev, 1.0f);
+          float baselev = expf(a * float(outLevel) - b) / 1.86607;
+          baselev       = powf(baselev, 1.3f);
           //////////////////////////////////
           // velocity scaling
           //////////////////////////////////
@@ -469,6 +469,8 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
           float op_key   = pitch_param._coarse;
           float velocity = koi._vel;
           float velamp   = (fkeyvelsense + (1.0f - fkeyvelsense) * (velocity / 127.0f));
+          velamp         = powf(velamp, 1.7f);
+          // printf("velamp<%g>\n", velamp);
 
           //////////////////////////////////
           // key scaling
