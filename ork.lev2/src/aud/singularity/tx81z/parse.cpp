@@ -461,13 +461,13 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
             case 0: // attack
               break;
             case 1: // decay
-              outp._time = powf(outp._time, 1.5f);
+              outp._time = powf(outp._time, 0.5f);
               break;
             case 2: // decay2
-              outp._time = powf(outp._time, 1.5f);
+              outp._time = powf(outp._time, 0.5f);
               break;
             case 3: // release
-              outp._time = powf(outp._time, 1.2f);
+              outp._time = powf(outp._time, 0.5f);
               break;
           }
 

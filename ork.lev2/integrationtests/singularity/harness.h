@@ -58,6 +58,27 @@ inline void enqueue_audio_event(
 
 prgdata_constptr_t testpattern(syndata_ptr_t syndat, int argc, char** argv);
 
+struct Event {
+  float _time = 0.0f;
+  float _dur  = 0.0f;
+  int _note   = 0;
+  int _vel    = 0;
+};
+struct Sequence {
+  Sequence(float tempo);
+  std::vector<Event> _events;
+  float _tempo = 0.0f;
+  float mbs2time(int meas, int sixteenth, int clocks) const;
+  void addNote(
+      int meas, //
+      int sixteenth,
+      int clocks,
+      int note,
+      int vel,
+      int dur = 1);
+  void enqueue(prgdata_constptr_t program);
+};
+void seq1(float tempo, int basebar, prgdata_constptr_t program);
 ////////////////////////////////////////////////////////////////////////////////
 struct SingularityBenchMarkApp final : public OrkEzQtApp {
   static constexpr size_t KNUMFRAMES = 512;

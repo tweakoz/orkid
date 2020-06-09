@@ -73,12 +73,7 @@ int main(int argc, char** argv) {
     layersource->connect(scope2->_sink);
     layersource->connect(analyzer2->_sink);
     //////////////////////////////////////
-    for (int n = 0; n <= 24; n += 3) {
-      for (int velocity = 0; velocity <= 128; velocity += 32) {
-        enqueue_audio_event(prg, count * 0.25, 0.15, 48 + n, velocity);
-        count++;
-      }
-    }
+    seq1(180.0f, i * 4, prg);
   }
   //////////////////////////////////////////////////////////////////////////////
   app->setRefreshPolicy({EREFRESH_FASTEST, 0});
