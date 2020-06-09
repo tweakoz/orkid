@@ -454,6 +454,8 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
         ENVELOPE->_envadjust = [=](const EnvPoint& inp, //
                                    int iseg,
                                    const KeyOnInfo& KOI) -> EnvPoint { //
+          float velocity = KOI._vel;
+
           EnvPoint outp = inp;
           switch (iseg) {
             case 0: // attack

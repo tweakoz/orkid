@@ -464,11 +464,31 @@ prgdata_constptr_t testpattern(syndata_ptr_t syndat, int argc, char** argv) {
     }
     return nullptr;
   } else if (testpatternname == "vo") {
-    for (int i = 0; i < 12; i++) { // 2 32 patch banks
-      for (int velocity = 0; velocity <= 128; velocity += 8) {
-        for (int n = 0; n <= 64; n += 12) {
+    for (int i = 0; i < 12; i++) {                             // note length
+      for (int velocity = 0; velocity <= 128; velocity += 8) { // velocity
+        for (int n = 0; n <= 64; n += 12) {                    // note
           // printf("getProgramByName<%s>\n", program->_name.c_str());
           enqueue_audio_event(program, count * 0.15, (i + 1) * 0.05, 36 + n, velocity);
+          count++;
+        }
+      }
+    }
+  } else if (testpatternname == "vo2") {
+    for (int i = 0; i < 12; i++) {                               // note length
+      for (int n = 0; n <= 64; n += 12) {                        // note
+        for (int velocity = 0; velocity <= 128; velocity += 8) { // velocity
+          // printf("getProgramByName<%s>\n", program->_name.c_str());
+          enqueue_audio_event(program, count * 0.15, (i + 1) * 0.05, 36 + n, velocity);
+          count++;
+        }
+      }
+    }
+  } else if (testpatternname == "vo3") {
+    for (int i = 0; i < 12; i++) {                               // note length
+      for (int n = 0; n <= 64; n += 12) {                        // note
+        for (int velocity = 0; velocity <= 128; velocity += 8) { // velocity
+          // printf("getProgramByName<%s>\n", program->_name.c_str());
+          enqueue_audio_event(program, count * 0.15, (velocity / 128.0f) * 0.33, 36 + n, velocity);
           count++;
         }
       }
