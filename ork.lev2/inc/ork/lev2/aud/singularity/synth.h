@@ -17,7 +17,7 @@ struct programInst {
   programInst();
   ~programInst();
 
-  void keyOn(int note, prgdata_constptr_t pd);
+  void keyOn(int note, int velocity, prgdata_constptr_t pd);
   void keyOff();
 
   prgdata_constptr_t _progdata;
@@ -76,7 +76,7 @@ struct synth {
 
   void compute(int inumframes, const void* inputbuffer);
 
-  programInst* keyOn(int note, prgdata_constptr_t pd);
+  programInst* keyOn(int note, int velocity, prgdata_constptr_t pd);
   void keyOff(programInst* p);
 
   Layer* allocLayer();

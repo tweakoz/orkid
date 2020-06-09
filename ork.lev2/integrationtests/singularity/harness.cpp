@@ -32,12 +32,16 @@ SingularityTestApp::SingularityTestApp(int& argc, char** argv)
 SingularityTestApp::~SingularityTestApp() {
   tearDownAudio();
 }
+std::string testpatternname = "";
+std::string testprogramname = "";
 
 singularitytestapp_ptr_t createEZapp(int& argc, char** argv) {
 
   po::options_description desc("Allowed options");
-  desc.add_options()                   //
-      ("help", "produce help message") //
+  desc.add_options()                                                //
+      ("help", "produce help message")                              //
+      ("test", po::value<std::string>(), "test name (list,vo,nvo)") //
+      ("program", po::value<std::string>(), "program name")         //
       ("hidpi", "hidpi mode");
 
   po::variables_map vars;
@@ -47,6 +51,12 @@ singularitytestapp_ptr_t createEZapp(int& argc, char** argv) {
   if (vars.count("help")) {
     std::cout << desc << "\n";
     exit(0);
+  }
+  if (vars.count("test")) {
+    testpatternname = vars["test"].as<std::string>();
+  }
+  if (vars.count("program")) {
+    testprogramname = vars["program"].as<std::string>();
   }
   if (vars.count("hidpi")) {
 #if defined(__APPLE__)
@@ -438,4 +448,46 @@ singularitybenchapp_ptr_t createBenchmarkApp(int& argc, char** argv, prgdata_con
   /////////////////////////////////////////
   app->setRefreshPolicy({EREFRESH_FIXEDFPS, 60});
   return app;
+}
+
+prgdata_constptr_t testpattern(syndata_ptr_t syndat, int argc, char** argv) {
+
+  auto program = syndat->getProgramByName(testprogramname);
+
+  int count = 0;
+
+  if (testpatternname == "list") {
+    for (auto item : syndat->_bankdata->_programs) {
+      int id    = item.first;
+      auto prog = item.second;
+      printf("program<%d:%s>\n", id, prog->_name.c_str());
+    }
+    return nullptr;
+  } else if (testpatternname == "vo") {
+    for (int i = 0; i < 12; i++) { // 2 32 patch banks
+      for (int velocity = 0; velocity <= 128; velocity += 8) {
+        for (int n = 0; n <= 64; n += 12) {
+          // printf("getProgramByName<%s>\n", program->_name.c_str());
+          enqueue_audio_event(program, count * 0.15, (i + 1) * 0.05, 36 + n, velocity);
+          count++;
+        }
+      }
+    }
+  } else if (testpatternname == "nvo") {
+    for (int i = 0; i < 12; i++) { // 2 32 patch banks
+      for (int velocity = 0; velocity <= 128; velocity += 8) {
+        for (int n = 0; n <= 64; n += 12) {
+          // printf("getProgramByName<%s>\n", program->_name.c_str());
+          enqueue_audio_event(program, count * 0.20, (i + 1) * 0.05, 36 + n + i, velocity);
+          count++;
+        }
+      }
+    }
+  } else {
+    for (int velocity = 0; velocity <= 128; velocity += 8) {
+      enqueue_audio_event(program, count * 0.25, 0.1, 48, velocity);
+      count++;
+    }
+  }
+  return program;
 }

@@ -52,7 +52,11 @@ int main(int argc, char** argv) {
   bank->loadBank(basepath / "tx81z_3.syx");
   bank->loadBank(basepath / "tx81z_4.syx");
   //////////////////////////////////////////////////////////////////////////////
-  auto program   = bank->getProgramByName("Fuzz Piano");
+  // auto program   = bank->getProgramByName("LatelyBass");
+  auto program = testpattern(bank, argc, argv);
+  if (!program) {
+    return 0;
+  }
   auto layerdata = program->getLayer(0);
   //////////////////////////////////////
   // connect OPS to scope 1
@@ -72,13 +76,7 @@ int main(int argc, char** argv) {
   layersource->connect(scope2->_sink);
   layersource->connect(analyzer2->_sink);
   //////////////////////////////////////
-  int count = 0;
-  for (int i = 0; i < 128; i++) { // 2 32 patch banks
-    for (int n = 0; n <= 36; n++) {
-      enqueue_audio_event(program, count * 0.35, 2.15, 36 + n);
-      count++;
-    }
-  }
+
   //////////////////////////////////////////////////////////////////////////////
   app->setRefreshPolicy({EREFRESH_FASTEST, 0});
   app->exec();

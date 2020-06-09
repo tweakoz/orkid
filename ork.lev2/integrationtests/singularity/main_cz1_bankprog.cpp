@@ -5,12 +5,10 @@ int main(int argc, char** argv) {
   auto qtapp    = createEZapp(argc, argv);
   auto basepath = basePath() / "casioCZ";
   //////////////////////////////////////////////////////////////////////////////
-  auto bnk = CzData::load(basepath / "factoryA.bnk", "bank1");
-  auto prg = bnk->getProgramByName("ELEC.GUITAR");
-  OrkAssert(prg != nullptr);
-  for (int i = 0; i < 128; i++) {
-    int note = 36 + i % 24;
-    enqueue_audio_event(prg, 1 + float(i) * 1.0, 1.5, note);
+  auto bank    = CzData::load(basepath / "factoryA.bnk", "bank1");
+  auto program = testpattern(bank, argc, argv);
+  if (!program) {
+    return 0;
   }
   //////////////////////////////////////////////////////////////////////////////
   qtapp->setRefreshPolicy({EREFRESH_FASTEST, 0});

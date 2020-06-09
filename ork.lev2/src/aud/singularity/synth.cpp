@@ -177,7 +177,7 @@ void synth::deactivateVoices() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-programInst* synth::keyOn(int note, prgdata_constptr_t pdata) {
+programInst* synth::keyOn(int note, int velocity, prgdata_constptr_t pdata) {
   assert(pdata);
   auto it = _freeProgInst.begin();
   assert(it != _freeProgInst.end());
@@ -185,7 +185,11 @@ programInst* synth::keyOn(int note, prgdata_constptr_t pdata) {
   // printf("syn allocProgInst<%p>\n", pi);
   pi->_progdata = pdata;
   _freeProgInst.erase(it);
-  pi->keyOn(note, pdata);
+
+  int clampn = std::clamp(note, 0, 127);
+  int clampv = std::clamp(velocity, 0, 127);
+
+  pi->keyOn(clampn, clampv, pdata);
   _activeProgInst.insert(pi);
   _lnoteframe   = 0;
   _lnotetime    = 0.0f;
@@ -410,7 +414,7 @@ programInst::~programInst() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void programInst::keyOn(int note, prgdata_constptr_t pd) {
+void programInst::keyOn(int note, int velocity, prgdata_constptr_t pd) {
   int ilayer = 0;
 
   auto syn = synth::instance();
@@ -426,12 +430,10 @@ void programInst::keyOn(int note, prgdata_constptr_t pd) {
         continue;
     }
 
-    int vel = 96;
-
     // printf( "lovel<%d>\n", ld->_loVel );
     // printf( "hivel<%d>\n", ld->_hiVel );
 
-    if (vel < ld->_loVel || vel > ld->_hiVel)
+    if (velocity < ld->_loVel || velocity > ld->_hiVel)
       continue;
 
     // printf("KEYON L%d\n", ilayer);
@@ -443,7 +445,7 @@ void programInst::keyOn(int note, prgdata_constptr_t pd) {
 
     assert(ld != nullptr);
 
-    l->keyOn(note, vel, ld);
+    l->keyOn(note, velocity, ld);
     _layers.push_back(l);
   }
   int inuml = _layers.size();

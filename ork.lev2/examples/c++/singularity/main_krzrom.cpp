@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
                        int midinote) {
     synth::instance()->addEvent(time, [=]() {
       // NOTE ON
-      auto noteinstance = synth::instance()->keyOn(midinote, prog);
+      auto noteinstance = synth::instance()->keyOn(midinote, 127, prog);
       assert(noteinstance);
       // NOTE OFF
       synth::instance()->addEvent(time + duration, [=]() { //

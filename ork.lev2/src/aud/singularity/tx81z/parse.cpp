@@ -507,7 +507,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
           //////////////////////////////////
 
           float op_key   = pitch_param._coarse;
-          float velocity = 127.0f;
+          float velocity = koi._vel;
           float velamp   = (fkeyvelsense + (1.0f - fkeyvelsense) * (velocity / 127.0f));
 
           //////////////////////////////////

@@ -36,7 +36,8 @@ inline void enqueue_audio_event(
     prgdata_constptr_t prog, //
     float time,
     float duration,
-    int midinote) {
+    int midinote,
+    int velocity = 128) {
   auto s = synth::instance();
 
   if (time < s->_timeaccum) {
@@ -46,7 +47,7 @@ inline void enqueue_audio_event(
   s->addEvent(time, [=]() {
     // NOTE ON
     // printf("time<%g> note<%d> program<%s>\n", time, midinote, prog->_name.c_str());
-    auto noteinstance = s->keyOn(midinote, prog);
+    auto noteinstance = s->keyOn(midinote, velocity, prog);
     assert(noteinstance);
     // NOTE OFF
     s->addEvent(time + duration, [=]() { //
@@ -54,6 +55,9 @@ inline void enqueue_audio_event(
     });
   });
 }
+
+prgdata_constptr_t testpattern(syndata_ptr_t syndat, int argc, char** argv);
+
 ////////////////////////////////////////////////////////////////////////////////
 struct SingularityBenchMarkApp final : public OrkEzQtApp {
   static constexpr size_t KNUMFRAMES = 512;
