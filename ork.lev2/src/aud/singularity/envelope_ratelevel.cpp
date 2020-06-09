@@ -84,7 +84,7 @@ void RateLevelEnvInst::initSeg(int iseg) {
   _adjtime = adjusted_segment._time;
   //////////////////////////////////////////////
   if (_adjtime > 0.0f) {
-    _lerpincr  = getInverseControlRate() / _adjtime;
+    _lerpincr  = controlPeriod() / _adjtime;
     _lerpindex = 0.0f;
   } else {
     _lerpincr  = 0.0f;

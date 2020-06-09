@@ -49,57 +49,6 @@ struct RateLevelEnvData : public ControllerData {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct AsrData : public ControllerData {
-  AsrData();
-  ControllerInst* instantiate(Layer* layer) const final;
-
-  std::string _trigger;
-  std::string _mode;
-  float _delay;
-  float _attack;
-  float _release;
-  envadjust_method_t _envadjust;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct envframe {
-  std::string _name;
-  int _index                    = 0;
-  float _value                  = 0.0f;
-  int _curseg                   = 0;
-  const RateLevelEnvData* _data = nullptr;
-};
-struct asrframe {
-  int _index           = 0;
-  float _value         = 0.0f;
-  int _curseg          = 0;
-  const AsrData* _data = nullptr;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct AsrInst : public ControllerInst {
-  AsrInst(const AsrData* data, Layer* l);
-  void compute() final;
-  void keyOn(const KeyOnInfo& KOI) final;
-  void keyOff() final;
-  ////////////////////////////
-  void initSeg(int iseg);
-  bool isValid() const;
-  const AsrData* _data;
-  int _curseg;
-  int _mode;
-  float _dstval;
-  int _framesrem;
-  bool _released;
-  bool _ignoreRelease;
-  float _curslope_persamp;
-  KeyOnInfo _konoffinfo;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 struct RateLevelEnvInst : public ControllerInst {
   RateLevelEnvInst(const RateLevelEnvData* data, Layer* l);
   void compute() final;
@@ -133,6 +82,94 @@ struct RateLevelEnvInst : public ControllerInst {
   RlEnvType _envType;
   KeyOnInfo _konoffinfo;
   int _updatecount = 0;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct AsrData : public ControllerData {
+  AsrData();
+  ControllerInst* instantiate(Layer* layer) const final;
+
+  std::string _trigger;
+  std::string _mode;
+  float _delay;
+  float _attack;
+  float _release;
+  envadjust_method_t _envadjust;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct AsrInst : public ControllerInst {
+  AsrInst(const AsrData* data, Layer* l);
+  void compute() final;
+  void keyOn(const KeyOnInfo& KOI) final;
+  void keyOff() final;
+  ////////////////////////////
+  void initSeg(int iseg);
+  bool isValid() const;
+  const AsrData* _data;
+  int _curseg;
+  int _mode;
+  float _dstval;
+  int _framesrem;
+  bool _released;
+  bool _ignoreRelease;
+  float _curslope_persamp;
+  KeyOnInfo _konoffinfo;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct YmEnvData : public ControllerData {
+  YmEnvData();
+  ControllerInst* instantiate(Layer* layer) const final;
+
+  float _attackTime  = 2.0f; //
+  float _decay1Rate  = 0.5f; // exponential decay rate (/sec)
+  float _decay1Level = 0.5f;
+  float _decay2Rate  = 0.5f; // exponential decay rate (/sec)
+  float _releaseRate = 0.5f; // exponential decay rate (/sec)
+  int _egshift       = 0;
+  int _rateScale     = 0;
+  envadjust_method_t _envadjust;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct YmEnvInst : public ControllerInst {
+  YmEnvInst(const YmEnvData* data, Layer* l);
+  void compute() final;
+  void keyOn(const KeyOnInfo& KOI) final;
+  void keyOff() final;
+  ////////////////////////////
+  bool isValid() const;
+  const YmEnvData* _data = nullptr;
+  int _curseg            = 0;
+  KeyOnInfo _koi;
+  float _rawout         = 0.0f;
+  float _prcout         = 0.0f;
+  Layer* _layer         = nullptr;
+  float _atkinc         = 0.0f;
+  float _dec1ratefactor = 0.0f;
+  float _dec2ratefactor = 0.0f;
+  float _relratefactor  = 0.0f;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct envframe {
+  std::string _name;
+  int _index                    = 0;
+  float _value                  = 0.0f;
+  int _curseg                   = 0;
+  const RateLevelEnvData* _data = nullptr;
+};
+struct asrframe {
+  int _index           = 0;
+  float _value         = 0.0f;
+  int _curseg          = 0;
+  const AsrData* _data = nullptr;
 };
 
 } // namespace ork::audio::singularity

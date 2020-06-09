@@ -11,7 +11,7 @@ struct RateLevelSurf final : public ui::Surface {
   void DoInit(lev2::Context* pt) override;
   ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
   void setTimeWidth(float w) {
-    _timewidthsamples = int(samplesPerControlPeriod() * w);
+    _timewidthsamples = int(frames_per_controlpass * w);
     if (_timewidthsamples != _samples.size()) {
       _samples.resize(_timewidthsamples);
       memset(_samples.data(), 0, _timewidthsamples * sizeof(float));

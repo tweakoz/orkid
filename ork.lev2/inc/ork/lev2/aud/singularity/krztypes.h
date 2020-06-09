@@ -46,13 +46,10 @@ inline constexpr float getSampleRate() {
 inline constexpr float getInverseSampleRate() {
   return 1.0f / getSampleRate();
 }
-inline constexpr float getControlRate() {
-  return float(frames_per_controlpass) / getSampleRate();
-}
-inline constexpr float samplesPerControlPeriod() {
+inline constexpr float controlRate() {
   return getSampleRate() / float(frames_per_controlpass);
 }
-inline constexpr float getInverseControlRate() {
+inline constexpr float controlPeriod() {
   return float(frames_per_controlpass) / getSampleRate();
 }
 constexpr float PI_ISR = pi2 * getInverseSampleRate();

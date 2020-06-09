@@ -194,7 +194,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
     // 1/32 == PI/16 (1)
     auto& feedback_param = ops_block->param(8);
     // feedback_param._coarse = 0.0; //(FBL == 0) ? 0 : powf(2.0, FBL - 16);
-    feedback_param._coarse = 0.3 * exp(log(2) * (double)(FBL - 7));
+    feedback_param._coarse = 0.0; // 0.3 * exp(log(2) * (double)(FBL - 7));
     ///////////////////////////////
 
     // printf( "ALG<%d> FBL<%d> SY<%d>\n", ALG, FBL, SY);
@@ -360,17 +360,13 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
       if (true) {
 
-        auto envname       = ork::FormatString("op%d-env", opindex);
-        auto opaname       = ork::FormatString("op%d-amp", opindex);
-        auto ENVELOPE      = layerdata->appendController<RateLevelEnvData>(envname);
-        auto OPAMP         = layerdata->appendController<CustomControllerData>(opaname);
-        ENVELOPE->_ampenv  = true; //(opindex==0);
-        ENVELOPE->_envType = RlEnvType::ERLTYPE_DEFAULT;
+        auto envname  = ork::FormatString("op%d-env", opindex);
+        auto opaname  = ork::FormatString("op%d-amp", opindex);
+        auto ENVELOPE = layerdata->appendController<YmEnvData>(envname);
+        auto OPAMP    = layerdata->appendController<CustomControllerData>(opaname);
 
         float decaylevl = openv_declevels[dec1Lev];
         float ddec      = fabs(1.0f - decaylevl);
-        ratelevmodel model;
-        model.txmodel();
 
         ///////////////////////////////////////////////
         // convert exponential decay rate to decay time
@@ -378,7 +374,10 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
         auto expdecayrate2time = [](float decrate,           // decay rate: frac/sec
                                     float deslev) -> float { // desired linear level
-          return logf(deslev) / logf(decrate);               // return: time to reach deslev
+          if (decrate == 0.0f) {
+            return 0.0f;
+          }
+          return logf(deslev) / logf(decrate); // return: time to reach deslev
         };
 
         auto procrate = [](float inprate, float a, float b) -> float {
@@ -392,56 +391,28 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
         };
 
         ///////////////////////////////////////////////
+        float atktime         = 16.0f * expf(-0.35377f * atkRate);
+        ENVELOPE->_attackTime = atktime;
 
-        float atktime = 10.4423f * expf(-0.353767f * atkRate);
-        float dc1time = expdecayrate2time(procrate(dec1Rate, 9.8f, -0.356f), 0.001f);
-        float dc2time = expdecayrate2time(procrate(dec2Rate, 9.8f, -0.356f), 0.001f);
-        float reltime = expdecayrate2time(procrate(relRate, 8.0f, -0.65f), 0.001f);
-        if (reltime > 1.0f) {
-          reltime = powf(reltime, 0.7f);
-        }
+        float decratepow       = 0.99997;
+        float relratepow       = 0.99965;
+        ENVELOPE->_decay1Rate  = powf(decratepow, dec1Rate);
+        ENVELOPE->_decay1Level = decaylevl;
+        ENVELOPE->_decay2Rate  = powf(decratepow, dec2Rate);
+        ENVELOPE->_releaseRate = powf(relratepow, relRate);
+        ENVELOPE->_egshift     = egShift;
+        ENVELOPE->_rateScale   = ratScaling;
+
         printf(
-            "prog<%s> egShift<%d> levsca<%d> ATK<%g> DC1<%g> DC2<%g> REL<%g>\n", //
+            "prog<%s> op<%d> egShift<%d> levsca<%d> ATK<%d> DC1<%d> DC2<%d> REL<%d>\n", //
             name.c_str(),
+            opindex,
             egShift,
             levScaling,
-            atktime,
-            dc1time,
-            dc2time,
-            reltime);
-
-        // todo (should eqShift mapping be done post eg ?)
-        auto levelshift = [egShift](float inp) -> float { //
-          switch (egShift) {
-            case 0:
-              return inp;
-              break;
-            case 1: {
-              float lo = decibel_to_linear_amp_ratio(-12);
-              return lerp(lo, 1.0, inp);
-              break;
-            }
-            case 2: {
-              float lo = decibel_to_linear_amp_ratio(-24);
-              return lerp(lo, 1.0, inp);
-              break;
-            }
-            case 3: {
-              float lo = decibel_to_linear_amp_ratio(-48);
-              return lerp(lo, 1.0, inp);
-              break;
-            }
-          }
-          return inp;
-        };
-
-        ENVELOPE->_sustainSegment = 2;
-        ENVELOPE->_releaseSegment = 3;
-        // todo (attack-logshape - how interacts with egshift?)
-        ENVELOPE->_segments.push_back({atktime, levelshift(1), 0.5});         // atk1
-        ENVELOPE->_segments.push_back({dc1time, levelshift(decaylevl), 0.5}); // atk2
-        ENVELOPE->_segments.push_back({dc2time, levelshift(0), 0.5});         // dec
-        ENVELOPE->_segments.push_back({reltime, levelshift(0), 0.5});         // rel1
+            int(atkRate),
+            int(dec1Rate),
+            int(dec2Rate),
+            int(relRate));
 
         //////////////////////////////////////////////////
         // rate scaling (envelope rate key follow)
@@ -451,34 +422,19 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
         // c1(24) .. g6(91) (91-24==67)
         //////////////////////////////////////////////////
 
-        ENVELOPE->_envadjust = [=](const EnvPoint& inp, //
+        /*ENVELOPE->_envadjust = [=](const EnvPoint& inp, //
                                    int iseg,
                                    const KeyOnInfo& KOI) -> EnvPoint { //
           float velocity = KOI._vel;
 
-          EnvPoint outp = inp;
-          switch (iseg) {
-            case 0: // attack
-              break;
-            case 1: // decay
-              outp._time = powf(outp._time, 0.5f);
-              break;
-            case 2: // decay2
-              outp._time = powf(outp._time, 0.5f);
-              break;
-            case 3: // release
-              outp._time = powf(outp._time, 0.5f);
-              break;
-          }
-
-          int kb = KOI._key - 24; // - (middleC - 24);
-
+          EnvPoint outp       = inp;
+          int kb              = KOI._key - (middleC - 24);
           float unit_keyscale = float(kb) / 67.0f;
           unit_keyscale       = std::clamp(unit_keyscale, 0.0f, 1.0f);
           float power         = 1.0 / pow(1.4, unit_keyscale * 2.0);
           outp._time *= power;
           return outp;
-        };
+        };*/
 
         //////////////////////////////////////////////////
         // level scaling (operator amplitude key follow)
@@ -505,7 +461,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
           float a       = logf(2.0f) * 0.1f;
           float b       = 90.0f * a;
           float baselev = expf(a * float(outLevel) - b);
-
+          baselev       = powf(baselev, 1.0f);
           //////////////////////////////////
           // velocity scaling
           //////////////////////////////////

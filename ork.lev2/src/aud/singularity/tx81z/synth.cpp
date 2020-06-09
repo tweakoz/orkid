@@ -15,7 +15,7 @@ using fm4alg_t = std::function<void(fm4impl* impl)>;
 
 inline float proc_out(float inp) {
   constexpr float kclamp = 8.0f;
-  constexpr float kscale = 0.25f;
+  constexpr float kscale = 0.33f;
   if (isfinite(inp) and not isnan(inp)) {
     return clip_float(inp, -kclamp, kclamp) * kscale;
   }
@@ -293,7 +293,7 @@ void fm4impl::updateModulation() {
     dest_op._amp  = amp;
 
     float clamped     = std::clamp(amp, 0.0f, 1.0f);
-    dest_op._modindex = 1.0f; // * powf(clamped, 2.0); // 0.25 + 1.0f * powf(clamped, 2.0);
+    dest_op._modindex = 1.0f; // * powf(clamped, 0.5); // 0.25 + 1.0f * powf(clamped, 2.0);
 
     // dest_op._modindex = _data._ops[i]._modIndex;
   }
