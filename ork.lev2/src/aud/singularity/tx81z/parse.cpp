@@ -471,7 +471,9 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
               break;
           }
 
-          float unit_keyscale = float(KOI._key - 24) / 67.0f;
+          int kb = KOI._key - 24; // - (middleC - 24);
+
+          float unit_keyscale = float(kb) / 67.0f;
           unit_keyscale       = std::clamp(unit_keyscale, 0.0f, 1.0f);
           float power         = 1.0 / pow(1.4, unit_keyscale * 2.0);
           outp._time *= power;
