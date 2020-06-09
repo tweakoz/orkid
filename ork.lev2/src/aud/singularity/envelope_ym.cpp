@@ -99,6 +99,7 @@ void YmEnvInst::keyOn(const KeyOnInfo& KOI) {
   }
   int kb              = KOI._key - 24;
   float unit_keyscale = float(kb) / 67.0f;
+  float pow_keyscale  = powf(unit_keyscale, 2.0);
   switch (_data->_rateScale) {
     case 0:
       _dec1ratefactor = _data->_decay1Rate;
@@ -109,9 +110,9 @@ void YmEnvInst::keyOn(const KeyOnInfo& KOI) {
     case 2:
     case 3:
       float atkscale  = 1.0f + 2.0f * powf(unit_keyscale, 1.0 / _data->_rateScale);
-      _dec1ratefactor = powf(_data->_decay1Rate, unit_keyscale * (1 << (_data->_rateScale + 1)));
-      _dec2ratefactor = powf(_data->_decay2Rate, unit_keyscale * (1 << (_data->_rateScale + 1)));
-      _relratefactor  = powf(_data->_releaseRate, unit_keyscale * (1 << (_data->_rateScale + 1)));
+      _dec1ratefactor = powf(_data->_decay1Rate, pow_keyscale * (1 << (_data->_rateScale + 1)));
+      _dec2ratefactor = powf(_data->_decay2Rate, pow_keyscale * (1 << (_data->_rateScale + 1)));
+      _relratefactor  = powf(_data->_releaseRate, pow_keyscale * (1 << (_data->_rateScale + 1)));
       _atkinc *= atkscale;
       printf(
           "kb<%d> uk<%g> rs<%d> atkscale<%g> _decratefactor<%g>\n", //

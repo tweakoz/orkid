@@ -12,6 +12,11 @@ namespace ork::audio::singularity {
 struct fm4impl;
 using fm4alg_t = std::function<void(fm4impl* impl)>;
 ////////////////////////////////////////////////////////////////////////////////
+// the YM3812 avoids multiplications by operating on log-transformed
+// x*y = e^(ln(x)+ln(y))
+// 256-word ROM stores the exponential function as a
+// lookup table, used to convert the logarithmic scale
+// signal back to linear scale when required
 
 inline float proc_out(float inp) {
   constexpr float kclamp = 8.0f;
