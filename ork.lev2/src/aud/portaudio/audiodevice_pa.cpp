@@ -64,7 +64,7 @@ static int patestCallback(
     }
   } else if (ENABLE_OUTPUT) {
     const auto& obuf = the_synth->_obuf;
-    float gain       = the_synth->_masterGain * 8.0f;
+    float gain       = the_synth->_masterGain;
     for (i = 0; i < framesPerBuffer; i++) {
       *out++ = obuf._leftBuffer[i] * gain;  // interleaved
       *out++ = obuf._rightBuffer[i] * gain; // interleaved
@@ -83,7 +83,7 @@ void startupAudio() {
   float SR = getSampleRate();
 
   the_synth->setSampleRate(SR);
-  the_synth->_masterGain = 0.5f;
+  the_synth->_masterGain = 1.0f;
 
   printf("SingularitySynth<%p> SR<%g>\n", the_synth.get(), SR);
   // loadPrograms();

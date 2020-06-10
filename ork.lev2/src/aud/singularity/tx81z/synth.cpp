@@ -31,9 +31,9 @@ struct fmoperator {
   FmOsc _pmosc;
   float _amp      = 0.0f;
   float _frq      = 0.0f;
-  float _modindex = 0.0f;
+  float _modIndex = 0.0f;
   inline float phaseOffset() const {
-    return _pmosc._prevOutput * _modindex * _amp;
+    return _pmosc._prevOutput * _modIndex * _amp;
   }
 };
 ////////////////////////////////////////////////////////////////////////////////
@@ -185,8 +185,7 @@ fm4alg_t tx4op_algs[8] = {
         float o2        = op2._pmosc.compute(op2._frq, phaseoff3);
         float o1        = op1._pmosc.compute(op1._frq, 0.0f);
         float o0        = op0._pmosc.compute(op0._frq, phaseoff1);
-        // printf( "_modindex[1]<%f>\n", _modindex[1] );
-        output[i] = proc_out(
+        output[i]       = proc_out(
             (o0 * op0._amp + //
              o2 * op2._amp) *
             0.5);
@@ -296,7 +295,7 @@ void fm4impl::updateModulation() {
     auto& dest_op     = _ops[i];
     dest_op._frq      = frq;
     dest_op._amp      = amp;
-    dest_op._modindex = _data._ops[i]._modindex; // * powf(clamped, 0.5); // 0.25 + 1.0f * powf(clamped, 2.0);
+    dest_op._modIndex = _data._ops[i]._modIndex; // * powf(clamped, 0.5); // 0.25 + 1.0f * powf(clamped, 2.0);
 
     float clamped = std::clamp(amp, 0.0f, 1.0f);
 

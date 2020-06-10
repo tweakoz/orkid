@@ -7,17 +7,7 @@
 namespace ork::audio::singularity {
 
 struct Fm4OpData {
-  // bool _opEnable   = false;
-  // int _egBiasSensa = 0;
-  // int _kvSensa     = 0;
-  // int _outLevel    = 0;
-  // int _egShift     = 0;
   int _waveform   = 0;
-  float _modindex = 1.0f;
-  // int _OWF         = 0;
-  // int _EFF         = 0;
-  // int _F           = 0;
-
   float _modIndex = 0.0f;
 };
 
