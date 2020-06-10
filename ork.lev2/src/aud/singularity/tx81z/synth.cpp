@@ -20,7 +20,7 @@ using fm4alg_t = std::function<void(fm4impl* impl)>;
 
 inline float proc_out(float inp) {
   constexpr float kclamp = 8.0f;
-  constexpr float kscale = 0.5f;
+  constexpr float kscale = 1.0f;
   if (isfinite(inp) and not isnan(inp)) {
     return clip_float(inp, -kclamp, kclamp) * kscale;
   }
@@ -292,13 +292,13 @@ void fm4impl::updateModulation() {
     float note  = pitch * 0.01;
     float frq   = midi_note_to_frequency(note);
 
-    float amp     = _fm4->_param[4 + i].eval();
-    auto& dest_op = _ops[i];
-    dest_op._frq  = frq;
-    dest_op._amp  = amp;
+    float amp         = _fm4->_param[4 + i].eval();
+    auto& dest_op     = _ops[i];
+    dest_op._frq      = frq;
+    dest_op._amp      = amp;
+    dest_op._modindex = _data._ops[i]._modindex; // * powf(clamped, 0.5); // 0.25 + 1.0f * powf(clamped, 2.0);
 
-    float clamped     = std::clamp(amp, 0.0f, 1.0f);
-    dest_op._modindex = 2.0f; // * powf(clamped, 0.5); // 0.25 + 1.0f * powf(clamped, 2.0);
+    float clamped = std::clamp(amp, 0.0f, 1.0f);
 
     // dest_op._modindex = _data._ops[i]._modIndex;
   }

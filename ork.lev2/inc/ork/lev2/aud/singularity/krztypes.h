@@ -41,7 +41,7 @@ static const double sqrt2    = sqrt(2.0);
 static constexpr int frames_per_dsppass     = 256;
 static constexpr int frames_per_controlpass = 32;
 inline constexpr float getSampleRate() {
-  return 48000.0f;
+  return 44100.0f;
 }
 inline constexpr float getInverseSampleRate() {
   return 1.0f / getSampleRate();

@@ -304,6 +304,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       }
 
       opd._waveform = waveform;
+      opd._modIndex = 4.0f;
 
       ////////////////////////////
       // translate tx operator frequency params
@@ -461,7 +462,8 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
           float a       = logf(2.0f) * 0.1f;
           float b       = 90.0f * a;
           float baselev = expf(a * float(outLevel) - b) / 1.86607;
-          baselev       = powf(baselev, 1.3f);
+          baselev       = powf(baselev, 1.0f);
+          // printf("baselev<%g>\n", baselev);
           //////////////////////////////////
           // velocity scaling
           //////////////////////////////////
@@ -469,7 +471,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
           float op_key   = pitch_param._coarse;
           float velocity = koi._vel;
           float velamp   = (fkeyvelsense + (1.0f - fkeyvelsense) * (velocity / 127.0f));
-          velamp         = powf(velamp, 1.7f);
+          velamp         = powf(velamp, 1.5f);
           // printf("velamp<%g>\n", velamp);
 
           //////////////////////////////////
@@ -483,6 +485,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
           unit_keyscale       = std::clamp(unit_keyscale, 0.0f, 1.0f);
           float lindbscale    = unit_keyscale * unit_levscale;
           float keyamp        = decibel_to_linear_amp_ratio(lindbscale * -24.0f);
+          // printf("keyamp<%g>\n", keyamp);
 
           //////////////////////////////////
           // final level

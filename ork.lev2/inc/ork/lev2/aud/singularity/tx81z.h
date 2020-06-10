@@ -12,7 +12,8 @@ struct Fm4OpData {
   // int _kvSensa     = 0;
   // int _outLevel    = 0;
   // int _egShift     = 0;
-  int _waveform = 0;
+  int _waveform   = 0;
+  float _modindex = 1.0f;
   // int _OWF         = 0;
   // int _EFF         = 0;
   // int _F           = 0;

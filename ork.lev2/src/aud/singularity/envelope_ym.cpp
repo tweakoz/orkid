@@ -56,11 +56,13 @@ void YmEnvInst::compute() {
       _rawout *= _dec2ratefactor;
       _prcout = _rawout;
       break;
-    case 3: // release
-      _rawout *= _relratefactor;
+    case 3: // released ?
       if (_rawout < 0.0001f) {
         _layer->release();
+        _curseg = 4;
       }
+    case 4: // release
+      _rawout *= _relratefactor;
       _prcout = _rawout;
       break;
   }
