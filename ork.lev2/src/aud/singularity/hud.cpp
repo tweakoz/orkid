@@ -63,6 +63,11 @@ void HudViewport::onUpdateThreadTick(ui::updatedata_ptr_t updata) {
       syn->_curhud_kframe = hdata.Get<HudFrameControl>();
     }
   }
+  if ((_updcount & 0xff) == 0) {
+    printf("Synth CPULOAD<%0.1f%%>\n", syn->_cpuload * 100.0f);
+    fflush(stdout);
+  }
+  _updcount++;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void HudViewport::DoDraw(ui::drawevent_constptr_t drwev) {

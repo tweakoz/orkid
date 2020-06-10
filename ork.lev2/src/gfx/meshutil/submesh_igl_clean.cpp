@@ -13,8 +13,13 @@
 
 #include <Eigen/Core>
 
+// #define USE_CGAL
+
+#if defined(USE_CGAL)
 #include <igl/copyleft/cgal/remesh_self_intersections.h> // GNU GPL (todo move to external executable?)
 #include <igl/copyleft/cgal/extract_cells.h>             // GNU GPL (todo move to external executable?)
+#endif
+
 #include <igl/copyleft/tetgen/tetrahedralize.h>
 #include <igl/copyleft/tetgen/cdt.h>
 #include <igl/remove_unreferenced.h>
@@ -27,6 +32,7 @@
 namespace ork::meshutil {
 //////////////////////////////////////////////////////////////////////////////
 iglmesh_ptr_t IglMesh::cleaned() const {
+#if defined(USE_CGAL)
   auto rval = std::make_shared<IglMesh>(_verts, _faces);
   using namespace Eigen;
   using namespace igl;
@@ -124,6 +130,9 @@ iglmesh_ptr_t IglMesh::cleaned() const {
   rval->_verts = CV;
   rval->_faces = CF;
   return rval;
+#else
+  return nullptr;
+#endif
 }
 //////////////////////////////////////////////////////////////////////////////
 iglmesh_ptr_t IglMesh::reOriented() const {
@@ -161,6 +170,7 @@ iglmesh_ptr_t IglMesh::reOriented() const {
 }
 //////////////////////////////////////////////////////////////////////////////
 manifold_extraction_ptr_t IglMesh::extractManifolds() const {
+#if defined(USE_CGAL)
   auto ue   = uniqueEdges();
   auto rval = std::make_shared<ManifoldExtraction>();
   // Compute patches (F,EMAP,uE2E) --> (P)
@@ -180,6 +190,9 @@ manifold_extraction_ptr_t IglMesh::extractManifolds() const {
       ue->EMAP,
       rval->per_patch_cells);
   return rval;
+#else
+  return nullptr;
+#endif
 }
 //////////////////////////////////////////////////////////////////////////////
 } // namespace ork::meshutil

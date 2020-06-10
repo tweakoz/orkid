@@ -20,6 +20,7 @@
 #include <unistd.h>
 #include <math.h>
 
+#include <ork/orkstd.h>
 #include <ork/orktypes.h>
 #include <ork/math/audiomath.h>
 
@@ -38,10 +39,9 @@ static constexpr double pi2  = 3.141592654 * 2.0;
 static constexpr double pid2 = 3.141592654 * 0.5;
 static const double sqrt2    = sqrt(2.0);
 ///////////////////////////////////////////////////////////////////////////////
-static constexpr int frames_per_dsppass     = 256;
 static constexpr int frames_per_controlpass = 32;
 inline constexpr float getSampleRate() {
-  return 96000.0f;
+  return 44100.0f;
 }
 inline constexpr float getInverseSampleRate() {
   return 1.0f / getSampleRate();
@@ -163,5 +163,9 @@ struct outputBuffer {
   int _maxframes;
   int _numframes;
 };
+inline void validateSample(float inp) {
+  OrkAssert(not isnan(inp));
+  OrkAssert(isfinite(inp));
+}
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

@@ -62,6 +62,8 @@ struct synth {
   synth();
   ~synth();
 
+  using eventmap_t = std::multimap<float, void_lambda_t>;
+
   static synth_ptr_t instance();
 
   typedef std::vector<hudsample> hudsamples_t;
@@ -86,7 +88,7 @@ struct synth {
   void resetFenables();
 
   void addEvent(float time, void_lambda_t ev);
-  void tick(float dt);
+  void _tick(eventmap_t& emap, float dt);
   float _timeaccum;
 
   std::map<std::string, outbus_ptr_t> _outputBusses;
@@ -103,12 +105,13 @@ struct synth {
 
   std::set<Layer*> _freeVoices;
   std::set<Layer*> _activeVoices;
+  std::set<Layer*> _pendactVoices;
   std::queue<Layer*> _deactiveateVoiceQ;
   std::set<programInst*> _freeProgInst;
   std::set<programInst*> _activeProgInst;
   std::map<std::string, hudsamples_t> _hudsample_map;
 
-  std::multimap<float, void_lambda_t> _eventmap;
+  LockedResource<eventmap_t> _eventmap;
 
   void resize(int numframes);
 
@@ -121,16 +124,21 @@ struct synth {
   float _testtoneamp;
   float _testtoneampps;
   int _hudpage;
-  int _genmode      = 0;
-  float _ostriglev  = 0;
-  bool _ostrigdir   = false;
-  int _osgainmode   = 0;
-  int64_t _oswidth  = 0;
-  bool _bypassDSP   = false;
-  bool _doModWheel  = false;
-  bool _doPressure  = false;
-  bool _doInput     = false;
-  float _masterGain = 1.0;
+  int _genmode                  = 0;
+  float _ostriglev              = 0;
+  bool _ostrigdir               = false;
+  int _osgainmode               = 0;
+  int64_t _oswidth              = 0;
+  bool _bypassDSP               = false;
+  bool _doModWheel              = false;
+  bool _doPressure              = false;
+  bool _doInput                 = false;
+  float _masterGain             = 1.0;
+  int _dspwritebase             = 0;
+  int _dspwritecount            = 0;
+  int64_t _samplesuntilnexttick = 0;
+  bool _lock_compute            = true;
+  float _cpuload                = 0.0f;
 
   Layer* _hudLayer   = nullptr;
   bool _clearhuddata = true;

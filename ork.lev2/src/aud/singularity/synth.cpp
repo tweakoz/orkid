@@ -85,7 +85,9 @@ synth::synth()
 
   _hudvp = std::make_shared<HudViewport>();
 
-  resize(frames_per_dsppass);
+  resize(1);
+
+  _lock_compute = false;
 }
 
 void synth::setSampleRate(float sr) {
@@ -104,25 +106,27 @@ synth::~synth() {
 
 ///////////////////////////////////////////////////////////////////////////////
 void synth::addEvent(float time, void_lambda_t ev) {
-  _eventmap.insert(std::make_pair(time, ev));
+  _eventmap.atomicOp([time, ev](eventmap_t& emap) { //
+    emap.insert(std::make_pair(time, ev));
+  });
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void synth::tick(float dt) {
+void synth::_tick(eventmap_t& emap, float elapsed_this_tick) {
   bool done = false;
   while (false == done) {
     done    = true;
-    auto it = _eventmap.begin();
-    if (it != _eventmap.end() and //
+    auto it = emap.begin();
+    if (it != emap.end() and //
         it->first <= _timeaccum) {
       auto& event = it->second;
       event();
       done = false;
-      _eventmap.erase(it);
+      emap.erase(it);
     }
   }
-  _timeaccum += dt;
+  _timeaccum += elapsed_this_tick;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -135,7 +139,7 @@ Layer* synth::allocLayer() {
   _freeVoices.erase(it);
   it = _activeVoices.find(l);
   assert(it == _activeVoices.end());
-  _activeVoices.insert(l);
+  _pendactVoices.insert(l);
   return l;
 }
 
@@ -239,6 +243,10 @@ void synth::resize(int numframes) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void synth::compute(int inumframes, const void* inputBuffer) {
+
+  if (_lock_compute)
+    return;
+
   resize(inumframes);
 
   /////////////////////////////
@@ -261,15 +269,6 @@ void synth::compute(int inumframes, const void* inputBuffer) {
     }
 
   /////////////////////////////
-  // synth update tick
-  /////////////////////////////
-
-  float tick = float(inumframes) * _dt;
-  _lnoteframe++;
-  _lnotetime += tick;
-  this->tick(tick);
-
-  /////////////////////////////
   // clear output busses
   /////////////////////////////
 
@@ -289,23 +288,74 @@ void synth::compute(int inumframes, const void* inputBuffer) {
   //  (into output busses)
   /////////////////////////////
 
-  int inumv = 0;
-  for (auto l : _activeVoices) {
-    l->compute(inumframes);
-    inumv++;
-  }
+  constexpr int k_samples_per_tick = 128;
 
+  int ifrpending = inumframes;
+  _dspwritecount = frames_per_controlpass;
+  _dspwritebase  = 0;
+  //////////////////////////////////
+  for (auto l : _activeVoices)
+    l->beginCompute(inumframes);
+  //////////////////////////////////
+  auto& eventmap = _eventmap.LockForWrite();
+  while (ifrpending > 0) {
+    // printf("_dspwritecount<%d> _dspwritebase<%d>\n", _dspwritecount, _dspwritebase);
+    ////////////////////////////////
+    // update controllers
+    ////////////////////////////////
+    for (auto l : _activeVoices)
+      l->updateControllers();
+    ////////////////////////////////
+    // update dsp modules
+    ////////////////////////////////
+    for (auto l : _activeVoices)
+      l->compute(_dspwritebase, _dspwritecount);
+    /////////////////////////////
+    // synth update tick
+    /////////////////////////////
+    _samplesuntilnexttick -= frames_per_controlpass;
+    if (_samplesuntilnexttick < 0) {
+      float elapsed_this_tick = float(k_samples_per_tick) * getInverseSampleRate();
+      _lnoteframe++;
+      _lnotetime += elapsed_this_tick;
+      this->_tick(eventmap, elapsed_this_tick);
+      _samplesuntilnexttick += k_samples_per_tick;
+      ////////////////////////////////////////////
+      // process begin for newly spawned voices
+      ////////////////////////////////////////////
+      for (auto v : _pendactVoices) {
+        v->beginCompute(ifrpending - frames_per_controlpass);
+        v->updateControllers();
+        v->compute(_dspwritebase, _dspwritecount);
+        _activeVoices.insert(v);
+      }
+      _pendactVoices.clear();
+      ////////////////////////////////////////////
+      deactivateVoices();
+    }
+    ////////////////////////////////
+    // update indices
+    ////////////////////////////////
+    _dspwritebase += frames_per_controlpass;
+    ifrpending -= frames_per_controlpass;
+    /////////////////////////////
+  }
+  _eventmap.UnLock();
+  //////////////////////////////////
+  for (auto l : _activeVoices)
+    l->endCompute();
+  //////////////////////////////////
+  int inumv = _activeVoices.size();
   /////////////////////////////
   // clear synth main output mix buffer
   /////////////////////////////
-
   for (int i = 0; i < inumframes; i++) {
     master_left[i]  = 0.0f;
     master_right[i] = 0.0f;
   }
 
   /////////////////////////////
-  // compute DSP for output busses
+  // compute outputbus DSP
   /////////////////////////////
 
   for (auto busitem : _outputBusses) {
@@ -329,7 +379,10 @@ void synth::compute(int inumframes, const void* inputBuffer) {
       // compute dsp -> tempbus
       //////////////////////////////////////////
       bus->_dsplayer->_outbus = _tempbus;
-      bus->_dsplayer->compute(inumframes);
+      bus->_dsplayer->beginCompute(inumframes);
+      bus->_dsplayer->updateControllers();
+      bus->_dsplayer->compute(0, inumframes);
+      bus->_dsplayer->endCompute();
       //////////////////////////////////////////
       // tempbus -> bus out
       //////////////////////////////////////////
@@ -390,8 +443,6 @@ void synth::compute(int inumframes, const void* inputBuffer) {
   }
 
   /////////////////////////////
-
-  deactivateVoices();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

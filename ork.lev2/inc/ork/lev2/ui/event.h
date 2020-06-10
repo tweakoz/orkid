@@ -31,23 +31,23 @@ struct HandlerResult {
 };
 
 struct EventCooked {
-  int miEventCode;
-  int miKeyCode;
-  int miX;
-  int miY;
-  int mLastX;
-  int mLastY;
-  float mUnitX;
-  float mUnitY;
-  float mLastUnitX;
-  float mLastUnitY;
-  bool mBut0;
-  bool mBut1;
-  bool mBut2;
-  bool mCTRL;
-  bool mALT;
-  bool mSHIFT;
-  bool mMETA;
+  int miEventCode  = -1;
+  int miKeyCode    = -1;
+  int miX          = 0;
+  int miY          = 0;
+  int mLastX       = 0;
+  int mLastY       = 0;
+  float mUnitX     = 0.0f;
+  float mUnitY     = 0.0f;
+  float mLastUnitX = 0.0f;
+  float mLastUnitY = 0.0f;
+  bool mBut0       = false;
+  bool mBut1       = false;
+  bool mBut2       = false;
+  bool mCTRL       = false;
+  bool mALT        = false;
+  bool mSHIFT      = false;
+  bool mMETA       = false;
   ork::FixedString<64> mAction;
 
   void Reset();
@@ -55,44 +55,44 @@ struct EventCooked {
 
 struct Event final // RawEvent
 {
-  int mEventCode;
+  int mEventCode = -1;
 
-  lev2::OffscreenBuffer* mpGfxWin;
+  lev2::OffscreenBuffer* mpGfxWin = nullptr;
   Coordinate mUICoord;
 
-  int miEventCode;
-  int miX;
-  int miY;
-  int miRawX;
-  int miRawY;
-  int miLastX;
-  int miLastY;
-  int miMWY;
-  int miState;
-  int miKeyCode;
-  int miNumHits;
+  int miEventCode = -1;
+  int miX         = 0;
+  int miY         = 0;
+  int miRawX      = 0;
+  int miRawY      = 0;
+  int miLastX     = 0;
+  int miLastY     = 0;
+  int miMWY       = 0;
+  int miState     = 0;
+  int miKeyCode   = 0;
+  int miNumHits   = 0;
 
-  f32 mfX;
-  f32 mfY;
-  f32 mfUnitX;
-  f32 mfUnitY;
-  f32 mfLastUnitX;
-  f32 mfLastUnitY;
-  f32 mfPressure;
+  f32 mfX         = 0.0f;
+  f32 mfY         = 0.0f;
+  f32 mfUnitX     = 0.0f;
+  f32 mfUnitY     = 0.0f;
+  f32 mfLastUnitX = 0.0f;
+  f32 mfLastUnitY = 0.0f;
+  f32 mfPressure  = 0.0f;
 
-  bool mbCTRL;
-  bool mbALT;
-  bool mbSHIFT;
-  bool mbMETA;
+  bool mbCTRL  = false;
+  bool mbALT   = false;
+  bool mbSHIFT = false;
+  bool mbMETA  = false;
 
-  bool mbLeftButton;
-  bool mbMiddleButton;
-  bool mbRightButton;
+  bool mbLeftButton   = false;
+  bool mbMiddleButton = false;
+  bool mbRightButton  = false;
 
   fvec4 mvRayN;
   fvec4 mvRayF;
 
-  void* mpBlindEventData;
+  void* mpBlindEventData = nullptr;
 
   mutable EventCooked mFilteredEvent;
   fvec2 _vpdim;
@@ -100,7 +100,7 @@ struct Event final // RawEvent
   static const int kmaxmtpoints = 4;
 
   MultiTouchPoint mMultiTouchPoints[kmaxmtpoints];
-  int miNumMultiTouchPoints;
+  int miNumMultiTouchPoints = 0;
 
   bool isKeyDepressed(uint32_t key) const;
   lev2::Context* _context = nullptr;
@@ -113,31 +113,8 @@ struct Event final // RawEvent
   }
 
   Event()
-      : mUICoord()
-      , miEventCode(0)
-      , miX(0)
-      , miY(0)
-      , mfUnitX(0.0f)
-      , mfUnitY(0.0f)
-      , mfLastUnitX(0.0f)
-      , mfLastUnitY(0.0f)
-      , miLastX(0)
-      , miLastY(0)
-      , miState(0)
-      , miKeyCode(0)
-      , miNumHits(0)
-      , mbCTRL(false)
-      , mbALT(false)
-      , mbSHIFT(false)
-      , mbMETA(false)
-      , mbLeftButton(false)
-      , mbMiddleButton(false)
-      , mbRightButton(false)
-      , mvRayN(float(0.0f), float(0.0f), float(0.0f), float(0.0f))
-      , mvRayF(float(0.0f), float(0.0f), float(0.0f), float(0.0f))
-      , mpBlindEventData(0)
-      , mpGfxWin(0)
-      , miNumMultiTouchPoints(0) {
+      : mvRayN(float(0.0f), float(0.0f), float(0.0f), float(0.0f))
+      , mvRayF(float(0.0f), float(0.0f), float(0.0f), float(0.0f)) {
   }
 
   void GetFromOS(void);

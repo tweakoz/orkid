@@ -21,6 +21,7 @@ using fm4alg_t = std::function<void(fm4impl* impl)>;
 inline float proc_out(float inp) {
   constexpr float kclamp = 8.0f;
   constexpr float kscale = 0.25f;
+  validateSample(inp);
   if (isfinite(inp) and not isnan(inp)) {
     return clip_float(inp, -kclamp, kclamp) * kscale;
   }
@@ -325,7 +326,7 @@ void fm4impl::keyOn() {
     dest_op._pmosc.keyOn(opd);
 
     float f = dest_op._frq;
-    printf("op<%d:%g>\n", i, f);
+    // printf("op<%d:%g>\n", i, f);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -392,7 +393,7 @@ void FM4::compute(DspBuffer& dspbuf) { // final
 void FM4::doKeyOn(const KeyOnInfo& koi) { // final
   auto name = _layer->_layerdata->_programdata->_name;
   _pimpl.Get<implptr_t>()->keyOn();
-  printf("FM4 prog<%s> keyon\n", name.c_str());
+  // printf("FM4 prog<%s> keyon\n", name.c_str());
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FM4::doKeyOff() { // final

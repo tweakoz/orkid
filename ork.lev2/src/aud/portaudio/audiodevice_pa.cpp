@@ -34,7 +34,11 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 PaStream* pa_stream      = nullptr;
 const bool ENABLE_OUTPUT = true; // allow disabling for long debug sessions
-const int NUMFRAMES      = frames_per_dsppass;
+#if defined(__APPLE__)
+const int DESIRED_NUMFRAMES = 256;
+#else
+const int DESIRED_NUMFRAMES = 2048;
+#endif
 ///////////////////////////////////////////////////////////////////////////////
 
 static synth_ptr_t the_synth = synth::instance();
@@ -52,6 +56,8 @@ static int patestCallback(
   (void)inputBuffer; /* Prevent unused variable warning. */
 
   the_synth->compute(framesPerBuffer, inputBuffer);
+
+  the_synth->_cpuload = Pa_GetStreamCpuLoad(pa_stream);
 
   if (false) { // test tone ?
     static int64_t _testtoneph = 0;
@@ -98,16 +104,16 @@ void startupAudio() {
       2,         // stereo output
       paFloat32, // 32 bit floating point output
       SR,
-      NUMFRAMES,      /* frames per buffer, i.e. the number
-                       of sample frames that PortAudio will
-                       request from the callback. Many apps
-                       may want to use
-                       paFramesPerBufferUnspecified, which
-                       tells PortAudio to pick the best,
-                       possibly changing, buffer size.*/
-      patestCallback, // this is your callback function
-      nullptr);       // This is a pointer that will be passed to
-                      //         your callback
+      DESIRED_NUMFRAMES, /* frames per buffer, i.e. the number
+                  of sample frames that PortAudio will
+                  request from the callback. Many apps
+                  may want to use
+                  paFramesPerBufferUnspecified, which
+                  tells PortAudio to pick the best,
+                  possibly changing, buffer size.*/
+      patestCallback,    // this is your callback function
+      nullptr);          // This is a pointer that will be passed to
+                         //         your callback
 
   OrkAssert(err == paNoError);
 

@@ -69,7 +69,11 @@ struct Layer {
   ~Layer();
 
   void resize(int numframes);
-  void compute(int numframes);
+  void beginCompute(int numframes);
+  void updateControllers();
+  void compute(int base, int count);
+  void endCompute();
+
   void keyOn(int note, int vel, lyrdata_constptr_t ld);
   void keyOff();
   void reset();
@@ -92,6 +96,7 @@ struct Layer {
 
   int _dspwritebase;
   int _dspwritecount;
+  int _numFramesForBlock = 0;
 
   int _curnote;
   int _curvel;

@@ -51,8 +51,11 @@ DspParamData& DspBlockData::param(int index) {
 ///////////////////////////////////////////////////////////////////////////////
 
 DspBuffer::DspBuffer()
-    : _maxframes(0)
+    : _maxframes(16384)
     , _numframes(0) {
+  for (int i = 0; i < kmaxdspblocksperstage; i++) {
+    _channels[i].resize(_maxframes);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

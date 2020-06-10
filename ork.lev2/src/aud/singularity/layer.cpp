@@ -106,108 +106,99 @@ void Layer::release() {
   assert(_keepalive >= 0);
   // printf( "layer<%p> release cnt<%d>\n", this, _keepalive );
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
-void Layer::compute(int numframes) {
-
-  _dspbuffer->resize(numframes);
+void Layer::compute(int base, int count) {
+  _dspwritecount = count;
+  _dspwritebase  = base;
   ///////////////////////
-
   if (nullptr == _layerdata) {
     printf("gotnull ld layer<%p>\n", this);
     return;
   }
+  ////////////////////////////////////////
+  if (true) {
+    ///////////////////////
+    if (_alg)
+      _alg->doComputePass();
+    ///////////////////////
+    _layerTime += float(frames_per_controlpass) * getInverseSampleRate();
+  }
+  ////////////////////////////////////////
+}
+///////////////////////////////////////////////////////////////////////////////
+void Layer::updateControllers() {
+  if (_ctrlBlock)
+    _ctrlBlock->compute();
+}
+///////////////////////////////////////////////////////////////////////////////
+void Layer::beginCompute(int numframes) {
 
-  if (nullptr == _alg)
-    return;
+  _numFramesForBlock = numframes;
 
+  _dspbuffer->resize(numframes);
+
+  float* lyroutl = _dspbuffer->channel(0);
+  float* lyroutr = _dspbuffer->channel(1);
+
+  if (_is_bus_processor) {
+  } else {
+    for (int i = 0; i < numframes; i++) {
+      lyroutl[i] = 0.0f;
+      lyroutr[i] = 0.0f;
+    }
+  }
+
+  _dspwritecount = frames_per_controlpass;
+  _dspwritebase  = 0;
+
+  if (_alg)
+    _alg->beginCompute();
+}
+///////////////////////////////////////////////////////////////////////////////
+void Layer::endCompute() {
+  if (_alg)
+    _alg->endCompute();
+
+  float* lyroutl  = _dspbuffer->channel(0);
+  float* lyroutr  = _dspbuffer->channel(1);
   auto& out_buf   = _outbus->_buffer;
   float* bus_outl = out_buf._leftBuffer;
   float* bus_outr = out_buf._rightBuffer;
-
-  ////////////////////////////////////////
-
-  if (true) {
-
-    float* lyroutl = _dspbuffer->channel(0);
-    float* lyroutr = _dspbuffer->channel(1);
-
-    if (_is_bus_processor) {
-    } else {
-      for (int i = 0; i < numframes; i++) {
-        lyroutl[i] = 0.0f;
-        lyroutr[i] = 0.0f;
-      }
+  ///////////////////////////////////
+  // amp / out
+  ///////////////////////////////////
+  if (_is_bus_processor) {
+    for (int i = 0; i < _numFramesForBlock; i++) {
+      bus_outl[i] = lyroutl[i] * _layerLinGain;
+      bus_outr[i] = lyroutr[i] * _layerLinGain;
     }
-
-    ///////////////////////////////////
-    // DspAlgorithm
-    ///////////////////////////////////
-
-    int ifrpending = numframes;
-    _dspwritecount = frames_per_controlpass;
-    _dspwritebase  = 0;
-    _alg->beginCompute();
-    while (ifrpending > 0) {
-      // printf("_dspwritecount<%d> _dspwritebase<%d>\n", _dspwritecount, _dspwritebase);
-      ////////////////////////////////
-      // update controllers
-      ////////////////////////////////
-      if (_ctrlBlock)
-        _ctrlBlock->compute();
-      ////////////////////////////////
-      // update dsp modules
-      ////////////////////////////////
-      _alg->doComputePass();
-      ////////////////////////////////
-      // update indices
-      ////////////////////////////////
-      _dspwritebase += frames_per_controlpass;
-      ifrpending -= frames_per_controlpass;
-      ////////////////////////////////
-      _layerTime += float(frames_per_controlpass) * getInverseSampleRate();
+  } else {
+    for (int i = 0; i < _numFramesForBlock; i++) {
+      bus_outl[i] += lyroutl[i] * _layerLinGain;
+      bus_outr[i] += lyroutr[i] * _layerLinGain;
     }
-    _alg->endCompute();
-    ///////////////////////////////////
-    // amp / out
-    ///////////////////////////////////
-    if (_is_bus_processor) {
-      for (int i = 0; i < numframes; i++) {
-        bus_outl[i] = lyroutl[i] * _layerLinGain;
-        bus_outr[i] = lyroutr[i] * _layerLinGain;
-      }
-    } else {
-      for (int i = 0; i < numframes; i++) {
-        bus_outl[i] += lyroutl[i] * _layerLinGain;
-        bus_outr[i] += lyroutr[i] * _layerLinGain;
-      }
+  }
+  ///////////////////////////////////////////////
+  // test tone ?
+  ///////////////////////////////////////////////
+  if (0) {
+    for (int i = 0; i < _numFramesForBlock; i++) {
+      double phase = 60.0 * pi2 * double(_testtoneph) / getSampleRate();
+      float samp   = sinf(phase) * .6;
+      bus_outl[i]  = samp * _layerLinGain;
+      bus_outr[i]  = samp * _layerLinGain;
+      _testtoneph++;
     }
-    ///////////////////////////////////////////////
-    // test tone ?
-    ///////////////////////////////////////////////
-    if (0) {
-      for (int i = 0; i < numframes; i++) {
-        double phase = 60.0 * pi2 * double(_testtoneph) / getSampleRate();
-        float samp   = sinf(phase) * .6;
-        bus_outl[i]  = samp * _layerLinGain;
-        bus_outr[i]  = samp * _layerLinGain;
-        _testtoneph++;
-      }
+  }
+  //////////////////////////////////////
+  // SignalScope
+  //////////////////////////////////////
+  if (this == the_synth->_hudLayer) {
+    if (_layerdata and _layerdata->_scopesource) {
+      _layerdata->_scopesource->updateStereo(_numFramesForBlock, lyroutl, lyroutr);
     }
-    //////////////////////////////////////
-    // SignalScope
-    //////////////////////////////////////
-    if (this == the_synth->_hudLayer) {
-      if (_layerdata->_scopesource) {
-        _layerdata->_scopesource->updateStereo(numframes, lyroutl, lyroutr);
-      }
-    }
-    ///////////////////////////////////////////////
-  } // if(true)
-
-} // namespace ork::audio::singularity
-
+  }
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 bool Layer::isHudLayer() const {

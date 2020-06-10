@@ -57,6 +57,8 @@ ELSE()
     link_directories($ENV{OBT_STAGE}/qt5/lib )
 ENDIF()
 
+add_compile_options(-frounding-math) # CGAL!
+
 add_compile_definitions(QTVER=$ENV{QTVER})
 
 add_compile_options(-Wno-deprecated -Wno-register -fexceptions)

@@ -54,15 +54,25 @@ void ScopeSource::notifySinksKeyOff() {
 ///////////////////////////////////////////////////////////////////////////////
 void ScopeSource::updateMono(int numframes, const float* mono, bool notifysinks) {
   OrkAssert(numframes <= koscopelength);
-  float* dest = _scopebuffer._samples + _writehead;
+  float* dest = _scopebuffer._samples;
   if ((_writehead + numframes) > koscopelength) {
     int num2write = koscopelength - _writehead;
-    memcpy(dest, mono, num2write * sizeof(float));
+
+    printf(
+        "_writehead<%d> numframes<%d> wpn<%d> n2w<%d>\n", //
+        _writehead,
+        numframes,
+        (_writehead + numframes),
+        num2write);
+
+    OrkAssert(_writehead + num2write <= koscopelength);
+    memcpy(dest + _writehead, mono, num2write * sizeof(float));
     numframes -= num2write;
-    dest = _scopebuffer._samples;
     mono += num2write;
+    _writehead = 0;
   }
-  memcpy(dest, mono, numframes * sizeof(float));
+  OrkAssert(_writehead + numframes <= koscopelength);
+  memcpy(dest + _writehead, mono, numframes * sizeof(float));
   _writehead = (_writehead + numframes) % koscopelength;
   if (notifysinks)
     notifySinksUpdated();

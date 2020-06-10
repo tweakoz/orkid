@@ -86,6 +86,7 @@ void YmEnvInst::compute() {
       break;
     }
   }
+  validateSample(_curval);
 }
 void YmEnvInst::keyOn(const KeyOnInfo& KOI) {
   _koi    = KOI;
@@ -116,13 +117,14 @@ void YmEnvInst::keyOn(const KeyOnInfo& KOI) {
       _dec2ratefactor = powf(_data->_decay2Rate, pow_keyscale * (1 << (_data->_rateScale + 1)));
       _relratefactor  = powf(_data->_releaseRate, pow_keyscale * (1 << (_data->_rateScale + 1)));
       _atkinc *= atkscale;
-      printf(
-          "kb<%d> uk<%g> rs<%d> atkscale<%g> _decratefactor<%g>\n", //
-          kb,
-          unit_keyscale,
-          _data->_rateScale,
-          atkscale,
-          _dec1ratefactor);
+      if (0)
+        printf(
+            "kb<%d> uk<%g> rs<%d> atkscale<%g> _decratefactor<%g>\n", //
+            kb,
+            unit_keyscale,
+            _data->_rateScale,
+            atkscale,
+            _dec1ratefactor);
       break;
   }
 }

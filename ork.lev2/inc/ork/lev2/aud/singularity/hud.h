@@ -150,6 +150,7 @@ struct HudViewport final : public ui::Viewport {
   void DoDraw(ui::drawevent_constptr_t drwev) override;
   void onUpdateThreadTick(ui::updatedata_ptr_t updata);
   std::unordered_set<hudpanel_ptr_t> _hudpanels;
+  int _updcount = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

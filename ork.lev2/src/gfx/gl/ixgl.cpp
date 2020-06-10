@@ -375,9 +375,9 @@ ContextGL::ContextGL()
     , mTxI(*this)
     , mMtxI(*this)
     , mDWI(*this)
-    , mCI(*this) {
+    , mCI(*this)
+    , mTargetDrawableSizeDirty(true) {
   ContextGL::GLinit();
-
   FxInit();
 }
 
