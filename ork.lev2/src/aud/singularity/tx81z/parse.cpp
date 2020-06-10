@@ -304,7 +304,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       }
 
       opd._waveform = waveform;
-      opd._modIndex = 4.0f;
+      opd._modIndex = 1.0f;
 
       ////////////////////////////
       // translate tx operator frequency params
@@ -484,7 +484,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
           float unit_keyscale = float(op_key - 24) / 67.0f;
           unit_keyscale       = std::clamp(unit_keyscale, 0.0f, 1.0f);
           float lindbscale    = unit_keyscale * unit_levscale;
-          float keyamp        = decibel_to_linear_amp_ratio(lindbscale * -24.0f);
+          float keyamp        = decibel_to_linear_amp_ratio(lindbscale * -36.0f);
           // printf("keyamp<%g>\n", keyamp);
 
           //////////////////////////////////

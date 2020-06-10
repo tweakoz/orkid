@@ -20,7 +20,7 @@ using fm4alg_t = std::function<void(fm4impl* impl)>;
 
 inline float proc_out(float inp) {
   constexpr float kclamp = 8.0f;
-  constexpr float kscale = 1.0f;
+  constexpr float kscale = 0.25f;
   if (isfinite(inp) and not isnan(inp)) {
     return clip_float(inp, -kclamp, kclamp) * kscale;
   }

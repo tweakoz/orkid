@@ -149,8 +149,10 @@ void Alg::doComputePass() {
         //////////////////////////////////////
         auto scopesrc = block->_dbd->_scopesource;
         if (scopesrc) {
-          auto data = dspbuf.channel(scopesrc->_dspchannel) + ibase;
-          scopesrc->updateMono(inumframes, data, false);
+          if (scopesrc->_cursrcimpl == (void*)block.get()) {
+            auto data = dspbuf.channel(scopesrc->_dspchannel) + ibase;
+            scopesrc->updateMono(inumframes, data, false);
+          }
         }
         /////////////////////////////
       });
@@ -170,7 +172,9 @@ void Alg::endCompute() {
         //////////////////////////////////////
         auto scopesrc = block->_dbd->_scopesource;
         if (scopesrc) {
-          scopesrc->notifySinksUpdated();
+          if (scopesrc->_cursrcimpl == (void*)block.get()) {
+            scopesrc->notifySinksUpdated();
+          }
         }
         /////////////////////////////
       });
@@ -194,6 +198,7 @@ void Alg::doKeyOn(KeyOnInfo& koi) {
       //////////////////////////////////////
       auto scopesrc = block->_dbd->_scopesource;
       if (scopesrc) {
+        scopesrc->_cursrcimpl = block.get();
         scopesrc->notifySinksKeyOn(koi);
       }
       /////////////////////////////

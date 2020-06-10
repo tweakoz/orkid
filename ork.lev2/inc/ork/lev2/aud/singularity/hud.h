@@ -114,6 +114,8 @@ struct ScopeSource {
   ScopeBuffer _scopebuffer;
   const ControllerInst* _controller = nullptr;
   int _dspchannel                   = 0;
+  int _writehead                    = 0;
+  void* _cursrcimpl                 = nullptr;
 };
 struct ScopeSink {
   void sourceUpdated(const ScopeSource* src);

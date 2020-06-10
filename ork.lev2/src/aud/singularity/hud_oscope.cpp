@@ -72,6 +72,23 @@ void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   mRtGroup->_clearColor = _clearColor;
   fbi->rtGroupClear(mRtGroup);
 
+  float osgain = 1.0f;
+
+  switch (syn->_osgainmode & 3) {
+    case 0:
+      osgain = 0.5;
+      break;
+    case 1:
+      osgain = 1.0;
+      break;
+    case 2:
+      osgain = 2.0;
+      break;
+    case 3:
+      osgain = 4.0;
+      break;
+  }
+
   ///////////////////////////////////////////////
 
   hudlines_t lines;
@@ -159,7 +176,7 @@ void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   {
     float ly = _samples[0];
     for (int i = 0; i < koscopelength; i++) {
-      float y = _samples[i];
+      float y = _samples[i] * osgain;
       if (syn->_ostrigdir) {
         if (ly > triggerlevel and y <= triggerlevel)
           crossings.insert(i);
@@ -254,7 +271,7 @@ void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   // oscilloscope trace
   /////////////////////////////////////////////
 
-  float ampscale = 0.9 * -OSC_HH;
+  float ampscale = osgain * 0.9 * -OSC_HH;
 
   float x1 = OSC_X1;
   float y1 = OSC_CY + _samples[0] * ampscale;

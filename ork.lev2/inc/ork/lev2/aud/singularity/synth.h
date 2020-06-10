@@ -124,6 +124,7 @@ struct synth {
   int _genmode      = 0;
   float _ostriglev  = 0;
   bool _ostrigdir   = false;
+  int _osgainmode   = 0;
   int64_t _oswidth  = 0;
   bool _bypassDSP   = false;
   bool _doModWheel  = false;

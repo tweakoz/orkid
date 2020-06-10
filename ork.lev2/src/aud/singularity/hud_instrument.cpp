@@ -54,21 +54,38 @@ void ScopeSource::notifySinksKeyOff() {
 ///////////////////////////////////////////////////////////////////////////////
 void ScopeSource::updateMono(int numframes, const float* mono, bool notifysinks) {
   OrkAssert(numframes <= koscopelength);
-  int tailbegin = koscopelength - numframes;
-  float* dest   = _scopebuffer._samples;
-  memcpy(dest, dest + numframes, tailbegin * sizeof(float));
-  memcpy(dest + tailbegin, mono, numframes * sizeof(float));
+  float* dest = _scopebuffer._samples + _writehead;
+  if ((_writehead + numframes) > koscopelength) {
+    int num2write = koscopelength - _writehead;
+    memcpy(dest, mono, num2write * sizeof(float));
+    numframes -= num2write;
+    dest = _scopebuffer._samples;
+    mono += num2write;
+  }
+  memcpy(dest, mono, numframes * sizeof(float));
+  _writehead = (_writehead + numframes) % koscopelength;
   if (notifysinks)
     notifySinksUpdated();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ScopeSource::updateStereo(int numframes, const float* left, const float* right, bool notifysinks) {
   OrkAssert(numframes <= koscopelength);
-  int tailbegin = koscopelength - numframes;
-  float* dest   = _scopebuffer._samples;
-  memcpy(dest, dest + numframes, tailbegin * sizeof(float));
+  float* dest = _scopebuffer._samples + _writehead;
+  if ((_writehead + numframes) > koscopelength) {
+    int num2write = koscopelength - _writehead;
+    for (int i = 0; i < num2write; i++) {
+      dest[i] = (left[i] + right[i]) * 0.5f;
+    }
+    numframes -= num2write;
+    dest = _scopebuffer._samples;
+    left += num2write;
+    right += num2write;
+    _writehead = 0;
+  } else {
+    _writehead = (_writehead + numframes) % koscopelength;
+  }
   for (int i = 0; i < numframes; i++) {
-    dest[tailbegin + i] = (left[i] + right[i]) * 0.5f;
+    dest[i] = (left[i] + right[i]) * 0.5f;
   }
   if (notifysinks)
     notifySinksUpdated();

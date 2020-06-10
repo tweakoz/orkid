@@ -189,6 +189,10 @@ singularitytestapp_ptr_t createEZapp(int& argc, char** argv) {
             the_synth->_ostrigdir = !the_synth->_ostrigdir;
             break;
           }
+          case '\'': {
+            the_synth->_osgainmode++;
+            break;
+          }
           default:
             break;
         }
@@ -522,6 +526,13 @@ prgdata_constptr_t testpattern(syndata_ptr_t syndat, int argc, char** argv) {
     seq1(120.0f, 4, program);
     seq1(120.0f, 8, program);
     seq1(120.0f, 12, program);
+  } else if (testpatternname == "slow") {
+    for (int i = 0; i < 12; i++) {        // note length
+      for (int n = 0; n <= 64; n += 12) { // note
+        enqueue_audio_event(program, count * 3.0, 2.0, 36 + n, 128);
+        count++;
+      }
+    }
   } else if (testpatternname == "vo") {
     for (int i = 0; i < 12; i++) {                             // note length
       for (int velocity = 0; velocity <= 128; velocity += 8) { // velocity
