@@ -46,6 +46,8 @@ int main(int argc, char** argv) {
   scope2->setRect(-10, 480, 480, 240, true);
   analyzer1->setRect(480, 0, 810, 240, true);
   analyzer2->setRect(480, 480, 810, 240, true);
+  bussource->connect(scope2->_sink);
+  bussource->connect(analyzer2->_sink);
   //////////////////////////////////////////////////////////////////////////////
   auto basepath = basePath() / "tx81z";
   auto bank     = std::make_shared<Tx81zData>();
@@ -65,15 +67,15 @@ int main(int argc, char** argv) {
     if (ops_block) {
       auto ops_source         = ops_block->createScopeSource();
       ops_source->_dspchannel = 0;
-      ops_source->connect(scope1->_sink);
-      ops_source->connect(analyzer1->_sink);
+      // ops_source->connect(scope1->_sink);
+      // ops_source->connect(analyzer1->_sink);
     }
     //////////////////////////////////////
-    // connect layerout to scope 3
+    // connect layerout to scope 1
     //////////////////////////////////////
     auto layersource = layerdata->createScopeSource();
-    layersource->connect(scope2->_sink);
-    layersource->connect(analyzer2->_sink);
+    layersource->connect(scope1->_sink);
+    layersource->connect(analyzer1->_sink);
     //////////////////////////////////////
     seq1(180.0f, i * 4, prg);
   }

@@ -122,6 +122,7 @@ struct Layer {
   dspblk_ptr_t _pchBlock;
   outbus_ptr_t _outbus;
   KeyOnInfo _koi;
+  scopesource_ptr_t _scopesource;
 
   ControlBlockInst* _ctrlBlock = nullptr;
 

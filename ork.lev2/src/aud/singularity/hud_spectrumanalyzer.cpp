@@ -62,11 +62,21 @@ signalscope_ptr_t create_spectrumanalyzer(hudvp_ptr_t vp) {
     bool select = (analyzersurf->_currentSource == nullptr);
     select |= (src == analyzersurf->_currentSource);
     if (select) {
+      int64_t src_writehead = src->_writehead % koscopelength;
+      int64_t count1        = koscopelength - src_writehead;
+      int64_t count2        = src_writehead;
+      OrkAssert((count1 + count2) == koscopelength);
       auto dest_scopebuf = analyzersurf->_scopebuffers.begin_push();
+
       memcpy(
           dest_scopebuf->_samples, //
+          src->_scopebuffer._samples + count2,
+          count1 * sizeof(float));
+
+      memcpy(
+          dest_scopebuf->_samples + count1, //
           src->_scopebuffer._samples,
-          koscopelength * sizeof(float));
+          count2 * sizeof(float));
       analyzersurf->_scopebuffers.end_push(dest_scopebuf);
       analyzersurf->SetDirty();
     }

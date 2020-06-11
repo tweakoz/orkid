@@ -16,6 +16,7 @@ struct ScopeSurf final : public ui::Surface {
   ork::lev2::CTXBASE* _ctxbase = nullptr;
   concurrent_triple_buffer<ScopeBuffer> _scopebuffers;
   const ScopeSource* _currentSource = nullptr;
+  int _updatecount                  = 0;
 };
 ///////////////////////////////////////////////////////////////////////////////
 signalscope_ptr_t create_oscilloscope(hudvp_ptr_t vp) {
@@ -33,13 +34,27 @@ signalscope_ptr_t create_oscilloscope(hudvp_ptr_t vp) {
     bool select = (scopesurf->_currentSource == nullptr);
     select |= (src == scopesurf->_currentSource);
     if (select) {
+
+      int64_t src_writehead = src->_writehead % koscopelength;
+      int64_t count1        = koscopelength - src_writehead;
+      int64_t count2        = src_writehead;
+      OrkAssert((count1 + count2) == koscopelength);
       auto dest_scopebuf = scopesurf->_scopebuffers.begin_push();
+
       memcpy(
           dest_scopebuf->_samples, //
+          src->_scopebuffer._samples + count2,
+          count1 * sizeof(float));
+
+      memcpy(
+          dest_scopebuf->_samples + count1, //
           src->_scopebuffer._samples,
-          koscopelength * sizeof(float));
+          count2 * sizeof(float));
+
       scopesurf->_scopebuffers.end_push(dest_scopebuf);
       scopesurf->SetDirty();
+      scopesurf->_updatecount++;
+      // printf("updcount<%d>\n", scopesurf->_updatecount);
     }
   };
   instrument->_sink->_onkeyon = [scopesurf](const ScopeSource* src, KeyOnInfo& koi) { //

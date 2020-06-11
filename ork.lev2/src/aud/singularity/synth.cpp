@@ -410,7 +410,11 @@ void synth::compute(int inumframes, const void* inputBuffer) {
       // SignalScope
       //////////////////////////////////////
       if (bus->_scopesource) {
-        bus->_scopesource->updateStereo(_dspwritecount, bus_left, bus_right, true);
+        bus->_scopesource->updateStereo(
+            _dspwritecount, //
+            bus_left + _dspwritebase,
+            bus_right + _dspwritebase,
+            true);
       }
     }
     ////////////////////////////////

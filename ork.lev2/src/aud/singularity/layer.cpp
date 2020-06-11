@@ -202,10 +202,10 @@ void Layer::updateScopes(int ibase, int icount) {
       const float* lyroutl = _dspbuffer->channel(0) + ibase;
       const float* lyroutr = _dspbuffer->channel(1) + ibase;
       _layerdata->_scopesource->updateStereo(icount, lyroutl, lyroutr);
+      // if (_alg)
+      //_alg->notifySinks();
     }
   }
-  if (_alg)
-    _alg->notifySinks();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

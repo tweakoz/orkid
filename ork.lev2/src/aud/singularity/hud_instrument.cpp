@@ -84,23 +84,30 @@ void ScopeSource::updateStereo(
     const float* right,
     bool notifysinks) {
   OrkAssert(numframes <= koscopelength);
-  float* dest = _scopebuffer._samples + _writehead;
+  float* dest = _scopebuffer._samples;
   if ((_writehead + numframes) > koscopelength) {
     int num2write = koscopelength - _writehead;
+    printf(
+        "_writehead<%d> numframes<%d> wpn<%d> n2w<%d>\n", //
+        _writehead,
+        numframes,
+        (_writehead + numframes),
+        num2write);
+
+    OrkAssert(_writehead + num2write <= koscopelength);
     for (int i = 0; i < num2write; i++) {
-      dest[i] = (left[i] + right[i]) * 0.5f;
+      dest[i + _writehead] = (left[i] + right[i]) * 0.5f;
     }
     numframes -= num2write;
-    dest = _scopebuffer._samples;
     left += num2write;
     right += num2write;
     _writehead = 0;
-  } else {
-    _writehead = (_writehead + numframes) % koscopelength;
   }
+  OrkAssert(_writehead + numframes <= koscopelength);
   for (int i = 0; i < numframes; i++) {
-    dest[i] = (left[i] + right[i]) * 0.5f;
+    dest[i + _writehead] = (left[i] + right[i]) * 0.5f;
   }
+  _writehead = (_writehead + numframes) % koscopelength;
   if (notifysinks)
     notifySinksUpdated();
 }
