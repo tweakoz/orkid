@@ -170,6 +170,8 @@ void synth::deactivateVoices() {
 
     // printf("syn freeLayer<%p> curnumvoices<%d>\n", l, inumv);
 
+    l->endCompute();
+
     it = _freeVoices.find(l);
     assert(it == _freeVoices.end());
     _freeVoices.insert(l);
@@ -177,6 +179,18 @@ void synth::deactivateVoices() {
     done = (_deactiveateVoiceQ.size() == 0);
   }
   _numactivevoices = _activeVoices.size();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void synth::activateVoices(int ifrpending) {
+  for (auto v : _pendactVoices) {
+    v->beginCompute(ifrpending - frames_per_controlpass);
+    v->updateControllers();
+    v->compute(_dspwritebase, _dspwritecount);
+    _activeVoices.insert(v);
+  }
+  _pendactVoices.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -287,17 +301,16 @@ void synth::compute(int inumframes, const void* inputBuffer) {
   // compute/accumulate layer instances
   //  (into output busses)
   /////////////////////////////
-
   constexpr int k_samples_per_tick = 128;
-
-  int ifrpending = inumframes;
-  _dspwritecount = frames_per_controlpass;
-  _dspwritebase  = 0;
   //////////////////////////////////
   for (auto l : _activeVoices)
     l->beginCompute(inumframes);
   //////////////////////////////////
   auto& eventmap = _eventmap.LockForWrite();
+  int ifrpending = inumframes;
+  _dspwritecount = frames_per_controlpass;
+  _dspwritebase  = 0;
+  //////////////////////////////////
   while (ifrpending > 0) {
     // printf("_dspwritecount<%d> _dspwritebase<%d>\n", _dspwritecount, _dspwritebase);
     ////////////////////////////////
@@ -321,17 +334,84 @@ void synth::compute(int inumframes, const void* inputBuffer) {
       this->_tick(eventmap, elapsed_this_tick);
       _samplesuntilnexttick += k_samples_per_tick;
       ////////////////////////////////////////////
-      // process begin for newly spawned voices
-      ////////////////////////////////////////////
-      for (auto v : _pendactVoices) {
-        v->beginCompute(ifrpending - frames_per_controlpass);
-        v->updateControllers();
-        v->compute(_dspwritebase, _dspwritecount);
-        _activeVoices.insert(v);
-      }
-      _pendactVoices.clear();
-      ////////////////////////////////////////////
+      activateVoices(ifrpending);
       deactivateVoices();
+    }
+    /////////////////////////////
+    // clear synth main output mix buffer
+    /////////////////////////////
+    for (int i = 0; i < _dspwritecount; i++) {
+      int j           = _dspwritebase + i;
+      master_left[j]  = 0.0f;
+      master_right[j] = 0.0f;
+    }
+    /////////////////////////////
+    // accumulate layers into busses
+    /////////////////////////////
+    for (auto l : _activeVoices) {
+      l->mixToBus(_dspwritebase, _dspwritecount);
+      l->updateScopes(_dspwritebase, _dspwritecount);
+    }
+    /////////////////////////////
+    // compute/accumulate output busses
+    //  (into main output)
+    /////////////////////////////
+    for (auto busitem : _outputBusses) {
+      auto bus         = busitem.second;
+      auto& bus_buf    = bus->_buffer;
+      float* bus_left  = bus_buf._leftBuffer;
+      float* bus_right = bus_buf._rightBuffer;
+      //////////////////////////////////////////
+      // bus DSP fx
+      //////////////////////////////////////////
+      auto busdsplayer = bus->_dsplayer;
+      if (busdsplayer) {
+        auto dsp_buf = busdsplayer->_dspbuffer;
+        dsp_buf->resize(inumframes);
+        float* dsp_left  = dsp_buf->channel(0);
+        float* dsp_right = dsp_buf->channel(1);
+        //////////////////////////////////////////
+        // bus -> dsp buf input
+        //////////////////////////////////////////
+        for (int i = 0; i < _dspwritecount; i++) {
+          int j        = _dspwritebase + i;
+          dsp_left[i]  = bus_left[j];
+          dsp_right[i] = bus_right[j];
+        }
+        //////////////////////////////////////////
+        // compute dsp -> tempbus
+        //////////////////////////////////////////
+        busdsplayer->_outbus = nullptr;
+        busdsplayer->beginCompute(_dspwritecount);
+        busdsplayer->updateControllers();
+        busdsplayer->compute(0, _dspwritecount);
+        busdsplayer->endCompute();
+        //////////////////////////////////////////
+        // tempbus -> bus out
+        //////////////////////////////////////////
+        const float* fxlyroutl = busdsplayer->_dspbuffer->channel(0);
+        const float* fxlyroutr = busdsplayer->_dspbuffer->channel(1);
+        for (int i = 0; i < _dspwritecount; i++) {
+          int j        = _dspwritebase + i;
+          bus_left[j]  = fxlyroutl[i];
+          bus_right[j] = fxlyroutr[i];
+        }
+        //////////////////////////////////////////
+      }
+      //////////////////////////////////////////
+      // accumulate bus to master
+      //////////////////////////////////////////
+      for (int i = 0; i < _dspwritecount; i++) {
+        int j = _dspwritebase + i;
+        master_left[j] += bus_left[j];
+        master_right[j] += bus_right[j];
+      }
+      //////////////////////////////////////
+      // SignalScope
+      //////////////////////////////////////
+      if (bus->_scopesource) {
+        bus->_scopesource->updateStereo(_dspwritecount, bus_left, bus_right, true);
+      }
     }
     ////////////////////////////////
     // update indices
@@ -344,87 +424,12 @@ void synth::compute(int inumframes, const void* inputBuffer) {
   //////////////////////////////////
   for (auto l : _activeVoices)
     l->endCompute();
-  //////////////////////////////////
-  int inumv = _activeVoices.size();
-  /////////////////////////////
-  // clear synth main output mix buffer
-  /////////////////////////////
-  for (int i = 0; i < inumframes; i++) {
-    master_left[i]  = 0.0f;
-    master_right[i] = 0.0f;
-  }
-
-  /////////////////////////////
-  // compute outputbus DSP
-  /////////////////////////////
-
-  for (auto busitem : _outputBusses) {
-    auto bus = busitem.second;
-    if (bus->_dsplayer) {
-      auto& bus_buf = bus->_buffer;
-      auto dsp_buf  = bus->_dsplayer->_dspbuffer;
-      dsp_buf->resize(inumframes);
-      float* bus_left  = bus_buf._leftBuffer;
-      float* bus_right = bus_buf._rightBuffer;
-      float* dsp_left  = dsp_buf->channel(0);
-      float* dsp_right = dsp_buf->channel(1);
-      //////////////////////////////////////////
-      // bus -> dsp buf input
-      //////////////////////////////////////////
-      for (int i = 0; i < inumframes; i++) {
-        dsp_left[i]  = bus_left[i];
-        dsp_right[i] = bus_right[i];
-      }
-      //////////////////////////////////////////
-      // compute dsp -> tempbus
-      //////////////////////////////////////////
-      bus->_dsplayer->_outbus = _tempbus;
-      bus->_dsplayer->beginCompute(inumframes);
-      bus->_dsplayer->updateControllers();
-      bus->_dsplayer->compute(0, inumframes);
-      bus->_dsplayer->endCompute();
-      //////////////////////////////////////////
-      // tempbus -> bus out
-      //////////////////////////////////////////
-      float* tmp_left  = _tempbus->_buffer._leftBuffer;
-      float* tmp_right = _tempbus->_buffer._rightBuffer;
-      for (int i = 0; i < inumframes; i++) {
-        bus_left[i]  = tmp_left[i];
-        bus_right[i] = tmp_right[i];
-      }
-      //////////////////////////////////////////
-    }
-  }
-
-  /////////////////////////////
-  // compute/accumulate output busses
-  //  (into main output)
-  /////////////////////////////
-
-  for (auto busitem : _outputBusses) {
-    auto bus               = busitem.second;
-    auto& obuf             = bus->_buffer;
-    const float* bus_left  = obuf._leftBuffer;
-    const float* bus_right = obuf._rightBuffer;
-    for (int i = 0; i < inumframes; i++) {
-      master_left[i] += bus_left[i];
-      master_right[i] += bus_right[i];
-    }
-    //////////////////////////////////////
-    // SignalScope
-    //////////////////////////////////////
-    if (bus->_scopesource) {
-      bus->_scopesource->updateStereo(inumframes, bus_left, bus_right);
-    }
-  }
-
   /////////////////////////////
   // test tone ?
   /////////////////////////////
-
   if (0) {
     for (int i = 0; i < inumframes; i++) {
-      double phase = 60.0 * pi2 * double(_testtoneph) / getSampleRate();
+      double phase = 120.0f * pi2 * double(_testtoneph) * getInverseSampleRate();
       float samp   = sinf(phase) * .6;
       // printf("i<%d> samp<%g>\n", i, samp);
       master_left[i]  = samp;
@@ -432,16 +437,13 @@ void synth::compute(int inumframes, const void* inputBuffer) {
       _testtoneph++;
     }
   }
-
   /////////////////////////////
   // final clamping
   /////////////////////////////
-
   for (int i = 0; i < inumframes; i++) {
-    master_left[i]  = clip_float(master_left[i], -1, 1);
-    master_right[i] = clip_float(master_right[i], -1, 1);
+    master_left[i]  = clip_float(master_left[i], -2, 2);
+    master_right[i] = clip_float(master_right[i], -2, 2);
   }
-
   /////////////////////////////
 }
 

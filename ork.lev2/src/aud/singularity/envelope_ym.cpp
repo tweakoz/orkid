@@ -97,8 +97,8 @@ void YmEnvInst::keyOn(const KeyOnInfo& KOI) {
   float abas = controlPeriod();
   _atkinc    = abas / _data->_attackTime;
   if (_data->_attackTime < abas) {
-    _atkinc = 0.0f;
-    _rawout = 1.0f;
+    _atkinc = 0.1f;
+    _rawout = 0.0f;
   }
   int kb              = KOI._key - 24;
   float unit_keyscale = float(kb) / 67.0f;

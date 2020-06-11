@@ -37,7 +37,7 @@ const bool ENABLE_OUTPUT = true; // allow disabling for long debug sessions
 #if defined(__APPLE__)
 const int DESIRED_NUMFRAMES = 256;
 #else
-const int DESIRED_NUMFRAMES = 2048;
+const int DESIRED_NUMFRAMES = 4096;
 #endif
 ///////////////////////////////////////////////////////////////////////////////
 

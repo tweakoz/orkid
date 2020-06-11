@@ -84,6 +84,7 @@ struct synth {
   Layer* allocLayer();
   void freeLayer(Layer* l);
   void deactivateVoices();
+  void activateVoices(int ifrpending);
 
   void resetFenables();
 

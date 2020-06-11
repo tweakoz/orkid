@@ -52,10 +52,13 @@ struct fm4impl {
   fmoperator _ops[4];
   Fm4ProgData _data;
   fm4alg_t _curalg;
-  int _dspchannel  = 0;
-  float _feedback  = 0.0f;
-  FM4* _fm4        = nullptr;
-  Layer* _curlayer = nullptr;
+  int _dspchannel        = 0;
+  float _feedback        = 0.0f;
+  FM4* _fm4              = nullptr;
+  Layer* _curlayer       = nullptr;
+  int64_t _testtoneph[4] = {0, 0, 0, 0};
+  float _testamp[4]      = {0.0f, 0.0f, 0.0f, 0.0f};
+  int _teststate[4]      = {0, 0, 0, 0};
 };
 ////////////////////////////////////////////////////////////////////////////////
 fm4alg_t tx4op_algs[8] = {
@@ -307,7 +310,67 @@ void fm4impl::updateModulation() {
 ///////////////////////////////////////////////////////////////////////////////
 void fm4impl::compute() {
   updateModulation();
-  _curalg(this);
+  /////////////////////////////////////
+  // testmode ?
+  /////////////////////////////////////
+  if (0) {
+    auto& dspbuf   = *_curlayer->_dspbuffer;
+    int inumframes = _curlayer->_dspwritecount;
+    float* output  = dspbuf.channel(_dspchannel) + _curlayer->_dspwritebase;
+    for (int f = 0; f < inumframes; f++) {
+      float samp = 0.0f;
+      for (int o = 0; o < 4; o++) {
+        switch (_teststate[o]) {
+          case 0:
+            _testamp[o]   = 0.0f;
+            _teststate[o] = 1;
+            _curlayer->retain();
+            break;
+          case 1: // attack
+            _testamp[o] += 0.001f;
+            if (_testamp[o] >= 1.0f) {
+              _testamp[o]   = 1.0f;
+              _teststate[o] = 2;
+            }
+            break;
+          case 2: // sustain
+            break;
+          case 3: { // releasing
+            _testamp[o] *= 0.9998f;
+            if (_testamp[o] < 0.0001f) {
+              _teststate[o] = 4;
+            }
+            break;
+          }
+          case 4: { // kill
+            _testamp[o]   = 0.0f;
+            _teststate[o] = 5;
+            _curlayer->release();
+            break;
+          }
+          case 5: // dead
+            _testamp[o] = 0.0f;
+            break;
+        }
+
+        float pitch  = _fm4->_param[o].eval(); // cents
+        float note   = pitch * 0.01;
+        float frq    = midi_note_to_frequency(note);
+        double phase = frq * pi2 * double(_testtoneph[o]++) * getInverseSampleRate();
+        samp += sinf(phase) * _testamp[o];
+      }
+      samp *= 0.125f;
+      OrkAssert(samp >= -1.0f and samp <= 1.0f);
+      output[f] = proc_out(samp);
+    }
+  }
+  /////////////////////////////////////
+  // realmode..
+  /////////////////////////////////////
+  else {
+    _curalg(this);
+  }
+  /////////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////////////////////
 void fm4impl::keyOn() {
@@ -321,6 +384,9 @@ void fm4impl::keyOn() {
   _curlayer   = layer;
   updateModulation();
   for (int i = 0; i < 4; i++) {
+    _teststate[i]   = 0;
+    _teststate[i]   = 0;
+    _testamp[i]     = 0;
     auto& dest_op   = _ops[i];
     const auto& opd = _data._ops[i];
     dest_op._pmosc.keyOn(opd);
@@ -331,6 +397,9 @@ void fm4impl::keyOn() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void fm4impl::keyOff() {
+  for (int i = 0; i < 4; i++) {
+    _teststate[i] = 3;
+  }
 }
 ////////////////////////////////////////////////////////////////////////////////
 void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, fm4prgdata_ptr_t prgdata) {

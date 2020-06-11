@@ -241,6 +241,8 @@ struct Alg final {
   void doComputePass();
   void endCompute();
 
+  void notifySinks();
+
   virtual void doKeyOn(KeyOnInfo& koi);
   dspblk_ptr_t lastBlock() const;
 

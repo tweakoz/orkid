@@ -83,6 +83,10 @@ struct Layer {
   controller_t getSRC1(const BlockModulationData& mods);
   controller_t getSRC2(const BlockModulationData& mods);
 
+  void mixToBus(int base, int count);
+  void replaceBus(int base, int count);
+  void updateScopes(int ibase, int icount);
+
   void updateSampSRRatio();
 
   void retain();

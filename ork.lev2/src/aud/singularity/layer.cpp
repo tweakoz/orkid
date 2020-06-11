@@ -155,50 +155,59 @@ void Layer::beginCompute(int numframes) {
     _alg->beginCompute();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Layer::endCompute() {
-  if (_alg)
-    _alg->endCompute();
-
-  float* lyroutl  = _dspbuffer->channel(0);
-  float* lyroutr  = _dspbuffer->channel(1);
+void Layer::mixToBus(int base, int count) {
+  float* lyroutl  = _dspbuffer->channel(0) + base;
+  float* lyroutr  = _dspbuffer->channel(1) + base;
   auto& out_buf   = _outbus->_buffer;
-  float* bus_outl = out_buf._leftBuffer;
-  float* bus_outr = out_buf._rightBuffer;
-  ///////////////////////////////////
-  // amp / out
-  ///////////////////////////////////
-  if (_is_bus_processor) {
-    for (int i = 0; i < _numFramesForBlock; i++) {
-      bus_outl[i] = lyroutl[i] * _layerLinGain;
-      bus_outr[i] = lyroutr[i] * _layerLinGain;
-    }
-  } else {
-    for (int i = 0; i < _numFramesForBlock; i++) {
-      bus_outl[i] += lyroutl[i] * _layerLinGain;
-      bus_outr[i] += lyroutr[i] * _layerLinGain;
-    }
+  float* bus_outl = out_buf._leftBuffer + base;
+  float* bus_outr = out_buf._rightBuffer + base;
+  for (int i = 0; i < count; i++) {
+    bus_outl[i] += lyroutl[i] * _layerLinGain;
+    bus_outr[i] += lyroutr[i] * _layerLinGain;
   }
-  ///////////////////////////////////////////////
-  // test tone ?
-  ///////////////////////////////////////////////
   if (0) {
     for (int i = 0; i < _numFramesForBlock; i++) {
-      double phase = 60.0 * pi2 * double(_testtoneph) / getSampleRate();
+      double phase = 120.0 * pi2 * double(_testtoneph) / getSampleRate();
       float samp   = sinf(phase) * .6;
       bus_outl[i]  = samp * _layerLinGain;
       bus_outr[i]  = samp * _layerLinGain;
       _testtoneph++;
     }
   }
-  //////////////////////////////////////
-  // SignalScope
-  //////////////////////////////////////
-  if (this == the_synth->_hudLayer) {
-    if (_layerdata and _layerdata->_scopesource) {
-      _layerdata->_scopesource->updateStereo(_numFramesForBlock, lyroutl, lyroutr);
-    }
+}
+///////////////////////////////////////////////////////////////////////////////
+void Layer::replaceBus(int base, int count) {
+  OrkAssert(_is_bus_processor);
+  const float* lyroutl = _dspbuffer->channel(0);
+  const float* lyroutr = _dspbuffer->channel(1);
+  auto& out_buf        = _outbus->_buffer;
+  float* bus_outl      = out_buf._leftBuffer + base;
+  float* bus_outr      = out_buf._rightBuffer + base;
+  for (int i = 0; i < count; i++) {
+    bus_outl[i] = lyroutl[i] * _layerLinGain;
+    bus_outr[i] = lyroutr[i] * _layerLinGain;
   }
 }
+///////////////////////////////////////////////////////////////////////////////
+void Layer::endCompute() {
+  if (_alg)
+    _alg->endCompute();
+}
+//////////////////////////////////////
+// SignalScope
+//////////////////////////////////////
+void Layer::updateScopes(int ibase, int icount) {
+  if (this == the_synth->_hudLayer) {
+    if (_layerdata and _layerdata->_scopesource) {
+      const float* lyroutl = _dspbuffer->channel(0) + ibase;
+      const float* lyroutr = _dspbuffer->channel(1) + ibase;
+      _layerdata->_scopesource->updateStereo(icount, lyroutl, lyroutr);
+    }
+  }
+  if (_alg)
+    _alg->notifySinks();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 bool Layer::isHudLayer() const {

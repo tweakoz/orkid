@@ -78,7 +78,11 @@ void ScopeSource::updateMono(int numframes, const float* mono, bool notifysinks)
     notifySinksUpdated();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ScopeSource::updateStereo(int numframes, const float* left, const float* right, bool notifysinks) {
+void ScopeSource::updateStereo(
+    int numframes, //
+    const float* left,
+    const float* right,
+    bool notifysinks) {
   OrkAssert(numframes <= koscopelength);
   float* dest = _scopebuffer._samples + _writehead;
   if ((_writehead + numframes) > koscopelength) {
