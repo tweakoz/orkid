@@ -19,10 +19,11 @@ struct ScopeSurf final : public ui::Surface {
   int _updatecount                  = 0;
 };
 ///////////////////////////////////////////////////////////////////////////////
-signalscope_ptr_t create_oscilloscope(hudvp_ptr_t vp) {
-  auto hudpanel        = std::make_shared<HudPanel>();
-  auto scopesurf       = std::make_shared<ScopeSurf>();
-  hudpanel->_uipanel   = std::make_shared<ui::Panel>("scope", 0, 0, 32, 32);
+signalscope_ptr_t create_oscilloscope(hudvp_ptr_t vp, std::string named) {
+  auto hudpanel      = std::make_shared<HudPanel>();
+  auto scopesurf     = std::make_shared<ScopeSurf>();
+  hudpanel->_uipanel = std::make_shared<ui::Panel>("scope", 0, 0, 32, 32);
+  hudpanel->_uipanel->setTitle(named);
   hudpanel->_uisurface = scopesurf;
   hudpanel->_uipanel->setChild(hudpanel->_uisurface);
   hudpanel->_uipanel->snap();

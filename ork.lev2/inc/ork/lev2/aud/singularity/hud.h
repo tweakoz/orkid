@@ -141,9 +141,9 @@ struct SignalScope {
   varmap::VarMap _vars;
 };
 ///////////////////////////////////////////////////////////////////////////////
-signalscope_ptr_t create_oscilloscope(hudvp_ptr_t vp);
-signalscope_ptr_t create_spectrumanalyzer(hudvp_ptr_t vp);
-signalscope_ptr_t create_envelope_analyzer(hudvp_ptr_t vp);
+signalscope_ptr_t create_oscilloscope(hudvp_ptr_t vp, std::string named = "");
+signalscope_ptr_t create_spectrumanalyzer(hudvp_ptr_t vp, std::string named = "");
+signalscope_ptr_t create_envelope_analyzer(hudvp_ptr_t vp, std::string named = "");
 ///////////////////////////////////////////////////////////////////////////////
 struct HudViewport final : public ui::Viewport {
   HudViewport();

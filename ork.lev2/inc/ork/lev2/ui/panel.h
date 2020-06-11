@@ -14,6 +14,10 @@ struct Panel : public Group {
 
   void snap();
 
+  inline void setTitle(std::string t) {
+    _title = t;
+  }
+
 private:
   HandlerResult DoOnUiEvent(event_constptr_t Ev) override;
   void DoDraw(ui::drawevent_constptr_t drwev) override;
@@ -26,6 +30,7 @@ private:
   int mPanelUiState;
   bool mDockedAtTop;
   int mCloseX, mCloseY;
+  std::string _title;
 };
 
 }} // namespace ork::ui

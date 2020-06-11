@@ -29,7 +29,7 @@ struct RateLevelSurf final : public ui::Surface {
   int _timewidthsamples = 0;
 };
 ///////////////////////////////////////////////////////////////////////////////
-signalscope_ptr_t create_envelope_analyzer(hudvp_ptr_t vp) {
+signalscope_ptr_t create_envelope_analyzer(hudvp_ptr_t vp, std::string named) {
   auto hudpanel        = std::make_shared<HudPanel>();
   auto ratelevsurf     = std::make_shared<RateLevelSurf>();
   hudpanel->_uipanel   = std::make_shared<ui::Panel>("scope", 0, 0, 32, 32);

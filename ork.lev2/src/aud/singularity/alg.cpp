@@ -151,29 +151,7 @@ void Alg::doComputePass() {
         if (scopesrc) {
           if (scopesrc->_cursrcimpl == (void*)block.get()) {
             auto data = dspbuf.channel(scopesrc->_dspchannel) + ibase;
-            scopesrc->updateMono(inumframes, data, false);
-          }
-        }
-        /////////////////////////////
-      });
-    istage++;
-  });
-}
-///////////////////////////////////////////////////////////////////////////////
-void Alg::notifySinks() {
-  auto syn   = the_synth.get();
-  int istage = 0;
-  forEachStage([&](dspstage_ptr_t stage) {
-    bool ena = syn->_stageEnable[istage];
-    if (ena)
-      stage->forEachBlock([&](dspblk_ptr_t block) {
-        //////////////////////////////////////
-        // SignalScope
-        //////////////////////////////////////
-        auto scopesrc = block->_dbd->_scopesource;
-        if (scopesrc) {
-          if (scopesrc->_cursrcimpl == (void*)block.get()) {
-            scopesrc->notifySinksUpdated();
+            scopesrc->updateMono(inumframes, data, true);
           }
         }
         /////////////////////////////

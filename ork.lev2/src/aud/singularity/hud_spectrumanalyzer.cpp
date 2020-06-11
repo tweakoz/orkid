@@ -48,10 +48,11 @@ struct SpectraSurf final : public ui::Surface {
   const ScopeSource* _currentSource = nullptr;
 };
 ///////////////////////////////////////////////////////////////////////////////
-signalscope_ptr_t create_spectrumanalyzer(hudvp_ptr_t vp) {
+signalscope_ptr_t create_spectrumanalyzer(hudvp_ptr_t vp, std::string named) {
   auto hudpanel        = std::make_shared<HudPanel>();
   auto analyzersurf    = std::make_shared<SpectraSurf>();
   hudpanel->_uipanel   = std::make_shared<ui::Panel>("analyzer", 0, 0, 32, 32);
+  hudpanel->_uipanel->setTitle(named);
   hudpanel->_uisurface = analyzersurf;
   hudpanel->_uipanel->setChild(hudpanel->_uisurface);
   hudpanel->_uipanel->snap();

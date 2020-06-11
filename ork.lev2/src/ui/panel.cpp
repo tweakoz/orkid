@@ -103,6 +103,18 @@ void Panel::DoDraw(ui::drawevent_constptr_t drwev) {
     ren_line(ixr + 1, iyr + 1, ixr + kpanelw - 1, iyr + kpanelw - 1);
     ren_line(ixr + kpanelw - 1, iyr + 1, ixr + 1, iyr + kpanelw - 1);
     tgt->PopModColor();
+
+    if (_title.length()) {
+      tgt->PushModColor(fcolor4::Yellow());
+      auto font = lev2::FontMan::GetFont("i13");
+
+      lev2::FontMan::PushFont(font);
+      lev2::FontMan::beginTextBlock(tgt);
+      lev2::FontMan::DrawText(tgt, ixr + kpanelw + 2, iyr + 2, _title.c_str());
+      lev2::FontMan::endTextBlock(tgt);
+      lev2::FontMan::PopFont();
+      tgt->PopModColor();
+    }
   }
   mtxi->PopUIMatrix();
 

@@ -36,14 +36,18 @@ int main(int argc, char** argv) {
   ////////////////////////////////////////////////
   // create visualizers
   ////////////////////////////////////////////////
-  auto scope1    = create_oscilloscope(app->_hudvp);
-  auto scope2    = create_oscilloscope(app->_hudvp);
-  auto analyzer1 = create_spectrumanalyzer(app->_hudvp);
-  auto analyzer2 = create_spectrumanalyzer(app->_hudvp);
+  auto scope1    = create_oscilloscope(app->_hudvp, "fm4-op");
+  auto scope2    = create_oscilloscope(app->_hudvp, "layer");
+  auto scope3    = create_oscilloscope(app->_hudvp, "main-bus");
+  auto analyzer1 = create_spectrumanalyzer(app->_hudvp, "fm4-op");
+  auto analyzer2 = create_spectrumanalyzer(app->_hudvp, "layer");
+  auto analyzer3 = create_spectrumanalyzer(app->_hudvp, "main-bus");
   scope1->setRect(-10, 0, 480, 240, true);
-  scope2->setRect(-10, 480, 480, 240, true);
+  scope2->setRect(-10, 240, 480, 240, true);
+  scope3->setRect(-10, 480, 480, 240, true);
   analyzer1->setRect(480, 0, 810, 240, true);
-  analyzer2->setRect(480, 480, 810, 240, true);
+  analyzer2->setRect(480, 240, 810, 240, true);
+  analyzer3->setRect(480, 480, 810, 240, true);
   //////////////////////////////////////////////////////////////////////////////
   auto basepath = basePath() / "tx81z";
   auto bank     = std::make_shared<Tx81zData>();
@@ -70,13 +74,16 @@ int main(int argc, char** argv) {
     ops_source->connect(analyzer1->_sink);
   }
   //////////////////////////////////////
-  // connect layerout to scope 3
+  // connect layerout to scope 2
   //////////////////////////////////////
   auto layersource = layerdata->createScopeSource();
   layersource->connect(scope2->_sink);
   layersource->connect(analyzer2->_sink);
   //////////////////////////////////////
-
+  // connect mainbus to scope 3
+  //////////////////////////////////////
+  bussource->connect(scope3->_sink);
+  bussource->connect(analyzer3->_sink);
   //////////////////////////////////////////////////////////////////////////////
   app->setRefreshPolicy({EREFRESH_FASTEST, 0});
   app->exec();
