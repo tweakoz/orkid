@@ -9,15 +9,12 @@
 #include <ork/lev2/aud/singularity/dsp_mix.h>
 ////////////////////////////////////////////////////////////////////////////////
 namespace ork::audio::singularity {
-struct fm4impl;
-using fm4alg_t = std::function<void(fm4impl* impl)>;
 ////////////////////////////////////////////////////////////////////////////////
 // the YM3812 avoids multiplications by operating on log-transformed
 // x*y = e^(ln(x)+ln(y))
 // 256-word ROM stores the exponential function as a
 // lookup table, used to convert the logarithmic scale
 // signal back to linear scale when required
-
 inline float proc_out(float inp) {
   constexpr float kclamp = 8.0f;
   constexpr float kscale = 0.25f;
@@ -28,386 +25,13 @@ inline float proc_out(float inp) {
   return 0.0f;
 }
 ////////////////////////////////////////////////////////////////////////////////
-struct fmoperator {
-  FmOsc _pmosc;
-  float _amp      = 0.0f;
-  float _frq      = 0.0f;
-  float _modIndex = 0.0f;
-  inline float phaseOffset() const {
-    return _pmosc._prevOutput * _modIndex * _amp;
-  }
-};
-////////////////////////////////////////////////////////////////////////////////
-struct fm4impl {
-  //////////////////////////////////////////////////////////////
-  fm4impl(FM4* fm4);
-  ~fm4impl();
-  //////////////////////////////////////////////////////////////
-  void compute();
-  void keyOn();
-  void keyOff();
-  void callalg();
-  void updateModulation();
-  //////////////////////////////////////////////////////////////
-  fmoperator _ops[4];
-  Fm4ProgData _data;
-  fm4alg_t _curalg;
-  int _dspchannel        = 0;
-  float _feedback        = 0.0f;
-  FM4* _fm4              = nullptr;
-  Layer* _curlayer       = nullptr;
-  int64_t _testtoneph[4] = {0, 0, 0, 0};
-  float _testamp[4]      = {0.0f, 0.0f, 0.0f, 0.0f};
-  int _teststate[4]      = {0, 0, 0, 0};
-};
-////////////////////////////////////////////////////////////////////////////////
-fm4alg_t tx4op_algs[8] = {
-    //// ALG 0 ////
-    [](fm4impl* impl) {
-      //   (3)->2->1->0
-      auto layer     = impl->_curlayer;
-      auto& dspbuf   = *layer->_dspbuffer;
-      int inumframes = layer->_dspwritecount;
-      float* output  = dspbuf.channel(impl->_dspchannel) //
-                      + layer->_dspwritebase;
-      auto& ops      = impl->_ops;
-      auto& op0      = ops[0];
-      auto& op1      = ops[1];
-      auto& op2      = ops[2];
-      auto& op3      = ops[3];
-      float feedback = impl->_feedback;
-      for (int i = 0; i < inumframes; i++) {
-        float phaseoff1 = op1.phaseOffset();
-        float phaseoff2 = op2.phaseOffset();
-        float phaseoff3 = op3.phaseOffset();
-        float o3        = op3._pmosc.compute(op3._frq, phaseoff3 * feedback);
-        float o2        = op2._pmosc.compute(op2._frq, phaseoff3);
-        float o1        = op1._pmosc.compute(op0._frq, phaseoff2);
-        float o0        = op0._pmosc.compute(op0._frq, phaseoff1);
-        output[i]       = proc_out(o0 * op0._amp);
-      }
-    },
-    /////////////////////////////////////////////////
-    //// ALG 1 ////
-    [](fm4impl* impl) {
-      //     (3)
-      //   2->1->0
-      auto layer     = impl->_curlayer;
-      auto& dspbuf   = *layer->_dspbuffer;
-      int inumframes = layer->_dspwritecount;
-      float* output  = dspbuf.channel(impl->_dspchannel) + layer->_dspwritebase;
-      auto& ops      = impl->_ops;
-      auto& op0      = ops[0];
-      auto& op1      = ops[1];
-      auto& op2      = ops[2];
-      auto& op3      = ops[3];
-      float feedback = impl->_feedback;
-      for (int i = 0; i < inumframes; i++) {
-        float phaseoff3 = op3.phaseOffset();
-        float phaseoff2 = op2.phaseOffset();
-        float phaseoff1 = op1.phaseOffset();
-        float o3        = op3._pmosc.compute(op3._frq, phaseoff3 * feedback);
-        float o2        = op2._pmosc.compute(op2._frq, 0.0f);
-        float o1        = op1._pmosc.compute(op1._frq, (phaseoff2 + phaseoff3) * 0.5f);
-        float o0        = op0._pmosc.compute(op0._frq, phaseoff1);
-        output[i]       = proc_out(o0 * op0._amp);
-      }
-    },
-    /////////////////////////////////////////////////
-    //// ALG 2 ////
-    [](fm4impl* impl) {
-      //   2
-      //   1  (3)
-      //     0
-      auto layer     = impl->_curlayer;
-      auto& dspbuf   = *layer->_dspbuffer;
-      int inumframes = layer->_dspwritecount;
-      float* output  = dspbuf.channel(impl->_dspchannel) + layer->_dspwritebase;
-      auto& ops      = impl->_ops;
-      auto& op0      = ops[0];
-      auto& op1      = ops[1];
-      auto& op2      = ops[2];
-      auto& op3      = ops[3];
-      float feedback = impl->_feedback;
-      for (int i = 0; i < inumframes; i++) {
-        float phaseoff3 = op3.phaseOffset();
-        float phaseoff2 = op2.phaseOffset();
-        float phaseoff1 = op1.phaseOffset();
-        float o3        = op3._pmosc.compute(op3._frq, phaseoff3 * feedback);
-        float o2        = op2._pmosc.compute(op2._frq, 0.0f);
-        float o1        = op1._pmosc.compute(op1._frq, phaseoff2);
-        float o0        = op0._pmosc.compute(op0._frq, (phaseoff1 + phaseoff3) * 0.5f);
-        output[i]       = proc_out(o0 * op0._amp);
-      }
-    },
-    /////////////////////////////////////////////////
-    //// ALG 3 ////
-    [](fm4impl* impl) {
-      //      (3)
-      //   1   2
-      //     0
-      auto layer     = impl->_curlayer;
-      auto& dspbuf   = *layer->_dspbuffer;
-      int inumframes = layer->_dspwritecount;
-      float* output  = dspbuf.channel(impl->_dspchannel) + layer->_dspwritebase;
-      auto& ops      = impl->_ops;
-      auto& op0      = ops[0];
-      auto& op1      = ops[1];
-      auto& op2      = ops[2];
-      auto& op3      = ops[3];
-      float feedback = impl->_feedback;
-      for (int i = 0; i < inumframes; i++) {
-        float phaseoff3 = op3.phaseOffset();
-        float phaseoff2 = op2.phaseOffset();
-        float phaseoff1 = op1.phaseOffset();
-        float o3        = op3._pmosc.compute(op3._frq, phaseoff3 * feedback);
-        float o2        = op2._pmosc.compute(op2._frq, phaseoff3);
-        float o1        = op1._pmosc.compute(op1._frq, 0.0f);
-        float o0        = op0._pmosc.compute(op0._frq, (phaseoff1 + phaseoff2) * 0.5f);
-        output[i]       = proc_out(o0 * op0._amp);
-      }
-    },
-    /////////////////////////////////////////////////
-    //// ALG 4 ////
-    [](fm4impl* impl) {
-      // 1 (3)
-      // 0  2
-      auto layer     = impl->_curlayer;
-      auto& dspbuf   = *layer->_dspbuffer;
-      int inumframes = layer->_dspwritecount;
-      float* output  = dspbuf.channel(impl->_dspchannel) + layer->_dspwritebase;
-      auto& ops      = impl->_ops;
-      auto& op0      = ops[0];
-      auto& op1      = ops[1];
-      auto& op2      = ops[2];
-      auto& op3      = ops[3];
-      float feedback = impl->_feedback;
-      for (int i = 0; i < inumframes; i++) {
-        float phaseoff3 = op3.phaseOffset();
-        float phaseoff1 = op1.phaseOffset();
-        float o3        = op3._pmosc.compute(op3._frq, phaseoff3 * feedback);
-        float o2        = op2._pmosc.compute(op2._frq, phaseoff3);
-        float o1        = op1._pmosc.compute(op1._frq, 0.0f);
-        float o0        = op0._pmosc.compute(op0._frq, phaseoff1);
-        output[i]       = proc_out(
-            (o0 * op0._amp + //
-             o2 * op2._amp) *
-            0.5);
-      }
-    },
-    /////////////////////////////////////////////////
-    //// ALG 5 ////
-    [](fm4impl* impl) {
-      //   (3)
-      //   / \
-      // 0  1  2
-      auto layer     = impl->_curlayer;
-      auto& dspbuf   = *layer->_dspbuffer;
-      int inumframes = layer->_dspwritecount;
-      float* output  = dspbuf.channel(impl->_dspchannel) + layer->_dspwritebase;
-      auto& ops      = impl->_ops;
-      auto& op0      = ops[0];
-      auto& op1      = ops[1];
-      auto& op2      = ops[2];
-      auto& op3      = ops[3];
-      float feedback = impl->_feedback;
-      for (int i = 0; i < inumframes; i++) {
-        float phaseoff3 = op3.phaseOffset();
-        float o3        = op3._pmosc.compute(op3._frq, phaseoff3 * feedback);
-        float o2        = op2._pmosc.compute(op2._frq, phaseoff3);
-        float o1        = op1._pmosc.compute(op1._frq, 0.0f);
-        float o0        = op0._pmosc.compute(op0._frq, phaseoff3);
-        output[i]       = proc_out(
-            (o0 * op0._amp + //
-             o1 * op1._amp + //
-             o2 * op2._amp) *
-            0.33333f);
-      }
-    },
-    /////////////////////////////////////////////////
-    //// ALG 6 ////
-    [](fm4impl* impl) {
-      //      (3)
-      // 0  1  2
-      auto layer     = impl->_curlayer;
-      auto& dspbuf   = *layer->_dspbuffer;
-      int inumframes = layer->_dspwritecount;
-      float* output  = dspbuf.channel(impl->_dspchannel) + layer->_dspwritebase;
-      auto& ops      = impl->_ops;
-      auto& op0      = ops[0];
-      auto& op1      = ops[1];
-      auto& op2      = ops[2];
-      auto& op3      = ops[3];
-      float feedback = impl->_feedback;
-      for (int i = 0; i < inumframes; i++) {
-        float phaseoff3 = op3.phaseOffset();
-        float o3        = op3._pmosc.compute(op3._frq, phaseoff3 * feedback);
-        float o2        = op2._pmosc.compute(op2._frq, phaseoff3);
-        float o1        = op1._pmosc.compute(op1._frq, 0.0f);
-        float o0        = op0._pmosc.compute(op0._frq, 0.0f);
-        output[i]       = proc_out(
-            (o0 * op0._amp + //
-             o1 * op1._amp + //
-             o2 * op2._amp) *
-            0.3333f);
-      }
-    },
-    /////////////////////////////////////////////////
-    //// ALG 7 ////
-    [](fm4impl* impl) {
-      //   0  1  2 (3)
-      auto layer     = impl->_curlayer;
-      auto& dspbuf   = *layer->_dspbuffer;
-      int inumframes = layer->_dspwritecount;
-      float* output  = dspbuf.channel(impl->_dspchannel) + layer->_dspwritebase;
-      auto& ops      = impl->_ops;
-      auto& op0      = ops[0];
-      auto& op1      = ops[1];
-      auto& op2      = ops[2];
-      auto& op3      = ops[3];
-      float feedback = impl->_feedback;
-      for (int i = 0; i < inumframes; i++) {
-        float phaseoff3 = op3.phaseOffset();
-        float o3        = op3._pmosc.compute(op3._frq, phaseoff3 * feedback);
-        float o2        = op2._pmosc.compute(op2._frq, 0.0f);
-        float o1        = op1._pmosc.compute(op1._frq, 0.0f);
-        float o0        = op0._pmosc.compute(op0._frq, 0.0f);
-        output[i]       = proc_out(
-            (o0 * op0._amp + //
-             o1 * op1._amp + //
-             o2 * op2._amp + //
-             o3 * op3._amp) *
-            0.25f);
-      }
-    },
-};
-///////////////////////////////////////////////////
-fm4impl::fm4impl(FM4* fm4)
-    : _fm4(fm4) {
-}
-fm4impl::~fm4impl() {
-  // printf("DESTROY fm4impl<%p>\n", this);
-}
-///////////////////////////////////////////////////////////////////////////////
-void fm4impl::updateModulation() {
-  for (int i = 0; i < 4; i++) {
-    float pitch = _fm4->_param[0 + i].eval(); // cents
-    float note  = pitch * 0.01;
-    float frq   = midi_note_to_frequency(note);
-
-    float amp         = _fm4->_param[4 + i].eval();
-    auto& dest_op     = _ops[i];
-    dest_op._frq      = frq;
-    dest_op._amp      = amp;
-    dest_op._modIndex = _data._ops[i]._modIndex; // * powf(clamped, 0.5); // 0.25 + 1.0f * powf(clamped, 2.0);
-
-    float clamped = std::clamp(amp, 0.0f, 1.0f);
-
-    // dest_op._modindex = _data._ops[i]._modIndex;
-  }
-  _feedback = _fm4->_param[8].eval();
-}
-///////////////////////////////////////////////////////////////////////////////
-void fm4impl::compute() {
-  updateModulation();
-  /////////////////////////////////////
-  // testmode ?
-  /////////////////////////////////////
-  if (0) {
-    auto& dspbuf   = *_curlayer->_dspbuffer;
-    int inumframes = _curlayer->_dspwritecount;
-    float* output  = dspbuf.channel(_dspchannel) + _curlayer->_dspwritebase;
-    for (int f = 0; f < inumframes; f++) {
-      float samp = 0.0f;
-      for (int o = 0; o < 4; o++) {
-        switch (_teststate[o]) {
-          case 0:
-            _testamp[o]   = 0.0f;
-            _teststate[o] = 1;
-            _curlayer->retain();
-            break;
-          case 1: // attack
-            _testamp[o] += 0.001f;
-            if (_testamp[o] >= 1.0f) {
-              _testamp[o]   = 1.0f;
-              _teststate[o] = 2;
-            }
-            break;
-          case 2: // sustain
-            break;
-          case 3: { // releasing
-            _testamp[o] *= 0.9998f;
-            if (_testamp[o] < 0.0001f) {
-              _teststate[o] = 4;
-            }
-            break;
-          }
-          case 4: { // kill
-            _testamp[o]   = 0.0f;
-            _teststate[o] = 5;
-            _curlayer->release();
-            break;
-          }
-          case 5: // dead
-            _testamp[o] = 0.0f;
-            break;
-        }
-
-        float pitch  = _fm4->_param[o].eval(); // cents
-        float note   = pitch * 0.01;
-        float frq    = midi_note_to_frequency(note);
-        double phase = frq * pi2 * double(_testtoneph[o]++) * getInverseSampleRate();
-        samp += sinf(phase) * _testamp[o];
-      }
-      samp *= 0.125f;
-      OrkAssert(samp >= -1.0f and samp <= 1.0f);
-      output[f] = proc_out(samp);
-    }
-  }
-  /////////////////////////////////////
-  // realmode..
-  /////////////////////////////////////
-  else {
-    _curalg(this);
-  }
-  /////////////////////////////////////
-}
-///////////////////////////////////////////////////////////////////////////////
-void fm4impl::keyOn() {
-  auto layer  = _fm4->_layer;
-  auto dbd    = _fm4->_dbd;
-  auto progd  = dbd->_vars.typedValueForKey<fm4prgdata_ptr_t>("FM4").value();
-  _data       = *progd;
-  _dspchannel = dbd->_dspchannel[0];
-  _curalg     = tx4op_algs[_data._alg];
-  _data       = *progd;
-  _curlayer   = layer;
-  updateModulation();
-  for (int i = 0; i < 4; i++) {
-    _teststate[i]   = 0;
-    _teststate[i]   = 0;
-    _testamp[i]     = 0;
-    auto& dest_op   = _ops[i];
-    const auto& opd = _data._ops[i];
-    dest_op._pmosc.keyOn(opd);
-
-    float f = dest_op._frq;
-    // printf("op<%d:%g>\n", i, f);
-  }
-}
-///////////////////////////////////////////////////////////////////////////////
-void fm4impl::keyOff() {
-  for (int i = 0; i < 4; i++) {
-    _teststate[i] = 3;
-  }
-}
-////////////////////////////////////////////////////////////////////////////////
-void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, fm4prgdata_ptr_t prgdata) {
+void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, pm4prgdata_ptr_t prgdata) {
   auto algdout        = std::make_shared<AlgData>();
   layerdata->_algdata = algdout;
   algdout->_name      = ork::FormatString("tx81z<%d>", prgdata->_alg);
   //////////////////////////////////////////
   auto stage_ops       = algdout->appendStage("OPS");
+  auto stage_opmix     = algdout->appendStage("OPMIX");
   auto stage_amp       = algdout->appendStage("AMP");
   auto stage_modindexx = algdout->appendStage("MIX"); // todo : quadraphonic, 3d?
   //////////////////////////////////////////
@@ -415,12 +39,105 @@ void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, fm4prgdata_ptr_t prgdata) 
   stage_amp->setNumIos(1, 1);
   stage_modindexx->setNumIos(1, 2); // 1 in, 2 out
   /////////////////////////////////////////////////
-  auto ops = stage_ops->appendTypedBlock<FM4>(prgdata);
+  auto op3            = stage_ops->appendTypedBlock<PMX>();
+  auto op2            = stage_ops->appendTypedBlock<PMX>();
+  auto op1            = stage_ops->appendTypedBlock<PMX>();
+  auto op0            = stage_ops->appendTypedBlock<PMX>();
+  auto opmix          = stage_opmix->appendTypedBlock<PMXMix>();
+  op3->_dspchannel[0] = 3;
+  op2->_dspchannel[0] = 2;
+  op1->_dspchannel[0] = 1;
+  op0->_dspchannel[0] = 0;
+  op3->_pmoscdata     = prgdata->_ops[3];
+  op2->_pmoscdata     = prgdata->_ops[2];
+  op1->_pmoscdata     = prgdata->_ops[1];
+  op0->_pmoscdata     = prgdata->_ops[0];
+  /////////////////////////////////////////////////
+  switch (prgdata->_alg) {
+    case 0:
+      //   (3)->2->1->0
+      op0->_pmInpChannels[0] = 1;
+      op1->_pmInpChannels[0] = 2;
+      op2->_pmInpChannels[0] = 3;
+      stage_opmix->setNumIos(1, 1);
+      opmix->_pmixInpChannels[0] = 0;
+      break;
+    case 1:
+      //   (3)
+      // 2->1->0
+      op0->_pmInpChannels[0] = 1;
+      op1->_pmInpChannels[0] = 2;
+      op1->_pmInpChannels[1] = 3;
+      op1->_modIndex         = 0.5f; // 2 inputs
+      stage_opmix->setNumIos(1, 1);
+      opmix->_pmixInpChannels[0] = 0;
+      break;
+    case 2:
+      //  2
+      //  1 (3)
+      //   0
+      op0->_pmInpChannels[0] = 1;
+      op0->_pmInpChannels[1] = 3;
+      op1->_pmInpChannels[0] = 2;
+      op0->_modIndex         = 0.5f; // 2 inputs
+      stage_opmix->setNumIos(1, 1);
+      opmix->_pmixInpChannels[0] = 0;
+      break;
+    case 3:
+      // (3)
+      //  1   2
+      //    0
+      op0->_pmInpChannels[0] = 1;
+      op0->_pmInpChannels[1] = 2;
+      op1->_pmInpChannels[0] = 3;
+      op0->_modIndex         = 0.5f; // 2 inputs
+      stage_opmix->setNumIos(1, 1);
+      opmix->_pmixInpChannels[0] = 0;
+      break;
+    case 4:
+      // 1 (3)
+      // 0  2
+      op0->_pmInpChannels[0] = 1;
+      op2->_pmInpChannels[0] = 3;
+      stage_opmix->setNumIos(2, 1);
+      opmix->_pmixInpChannels[0] = 0;
+      opmix->_pmixInpChannels[1] = 2;
+      break;
+    case 5:
+      //   (3)
+      //   / \
+      // 0  1  2
+      op0->_pmInpChannels[0] = 3;
+      op1->_pmInpChannels[0] = 3;
+      op2->_pmInpChannels[0] = 3;
+      stage_opmix->setNumIos(3, 1);
+      opmix->_pmixInpChannels[0] = 0;
+      opmix->_pmixInpChannels[1] = 1;
+      opmix->_pmixInpChannels[2] = 2;
+      break;
+    case 6:
+      //      (3)
+      // 0  1  2
+      op2->_pmInpChannels[0] = 3;
+      stage_opmix->setNumIos(3, 1);
+      opmix->_pmixInpChannels[0] = 0;
+      opmix->_pmixInpChannels[1] = 1;
+      opmix->_pmixInpChannels[2] = 2;
+      break;
+    case 7:
+      //   0  1  2 (3)
+      stage_opmix->setNumIos(4, 1);
+      opmix->_pmixInpChannels[0] = 0;
+      opmix->_pmixInpChannels[1] = 1;
+      opmix->_pmixInpChannels[2] = 2;
+      opmix->_pmixInpChannels[3] = 3;
+      break;
+  }
   /////////////////////////////////////////////////
   // stereo mix out
   /////////////////////////////////////////////////
   auto stereoout        = stage_modindexx->appendTypedBlock<MonoInStereoOut>();
-  auto STEREOC          = layerdata->appendController<CustomControllerData>("DCO1DETUNE");
+  auto STEREOC          = layerdata->appendController<CustomControllerData>("STEREOMIX");
   auto& stereo_mod      = stereoout->_paramd[0]._mods;
   stereo_mod._src1      = STEREOC;
   stereo_mod._src1Depth = 1.0f;
@@ -430,43 +147,104 @@ void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, fm4prgdata_ptr_t prgdata) 
   };
 }
 ///////////////////////////////////////////////////////////////////////////////
-FM4Data::FM4Data(fm4prgdata_ptr_t fmdata)
-    : _fmdata(fmdata) {
-  addParam().usePitchEvaluator();   // pitch0
-  addParam().usePitchEvaluator();   // pitch1
-  addParam().usePitchEvaluator();   // pitch2
-  addParam().usePitchEvaluator();   // pitch3
-  addParam().useDefaultEvaluator(); // amp0
-  addParam().useDefaultEvaluator(); // amp1
-  addParam().useDefaultEvaluator(); // amp2
-  addParam().useDefaultEvaluator(); // amp3
+PMXData::PMXData() {
+  addParam().usePitchEvaluator();   // pitch
+  addParam().useDefaultEvaluator(); // amp
   addParam().useDefaultEvaluator(); // feedback
-  _vars.makeValueForKey<fm4prgdata_ptr_t>("FM4") = _fmdata;
 }
 ///////////////////////////////////////////////////////////////////////////////
-dspblk_ptr_t FM4Data::createInstance() const {
-  return std::make_shared<FM4>(this);
+dspblk_ptr_t PMXData::createInstance() const {
+  return std::make_shared<PMX>(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
-FM4::FM4(const DspBlockData* dbd)
+PMX::PMX(const DspBlockData* dbd)
     : DspBlock(dbd) {
-  _pimpl.makeShared<fm4impl>(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
-using implptr_t = std::shared_ptr<fm4impl>;
-///////////////////////////////////////////////////////////////////////////////
-void FM4::compute(DspBuffer& dspbuf) { // final
-  _pimpl.Get<implptr_t>()->compute();
+void PMX::compute(DspBuffer& dspbuf) { // final
+  int inumframes   = _layer->_dspwritecount;
+  float* output    = dspbuf.channel(_dspchannel[0]) + _layer->_dspwritebase;
+  float pitch      = _param[0].eval(); // cents
+  float amp        = _param[1].eval();
+  float fbl        = _param[2].eval();
+  float note       = pitch * 0.01;
+  float frq        = midi_note_to_frequency(note);
+  float clampedamp = std::clamp(amp, 0.0f, 1.0f);
+  float clampefbl  = std::clamp(fbl, 0.0f, 1.0f);
+  ///////////////////////////////////////////////////////////////
+  const float* modinputs[PMXData::kmaxmodulators] = {
+      nullptr,
+      nullptr,
+      nullptr,
+      nullptr, //
+      nullptr,
+      nullptr,
+      nullptr,
+      nullptr};
+  for (int m = 0; m < PMXData::kmaxmodulators; m++) {
+    int inpchi = _pmxdata->_pmInpChannels[m];
+    if (inpchi >= 0) {
+      modinputs[m] = dspbuf.channel(inpchi) + _layer->_dspwritebase;
+    }
+  }
+  ///////////////////////////////////////////////////////////////
+  for (int i = 0; i < inumframes; i++) {
+    float phase_offset = _pmosc._prevOutput * fbl;
+    for (int m = 0; m < PMXData::kmaxmodulators; m++) {
+      auto modinp = modinputs[m];
+      if (modinp != nullptr) {
+        phase_offset += modinp[i];
+      }
+    }
+    output[i] = _pmosc.compute(frq, phase_offset * _modIndex) * amp;
+  }
+  ///////////////////////////////////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////////////////////
-void FM4::doKeyOn(const KeyOnInfo& koi) { // final
-  auto name = _layer->_layerdata->_programdata->_name;
-  _pimpl.Get<implptr_t>()->keyOn();
-  // printf("FM4 prog<%s> keyon\n", name.c_str());
+void PMX::doKeyOn(const KeyOnInfo& koi) { // final
+  _pmxdata = (const PMXData*)_dbd;
+  _pmosc.keyOn(_pmxdata->_pmoscdata);
+  _modIndex = _pmxdata->_modIndex;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void FM4::doKeyOff() { // final
-  _pimpl.Get<implptr_t>()->keyOff();
+void PMX::doKeyOff() { // final
+  _pmosc.keyOff();
+}
+///////////////////////////////////////////////////////////////////////////////
+PMXMixData::PMXMixData() {
+  addParam().usePitchEvaluator();   // pitch
+  addParam().useDefaultEvaluator(); // amp
+  addParam().useDefaultEvaluator(); // feedback
+}
+///////////////////////////////////////////////////////////////////////////////
+dspblk_ptr_t PMXMixData::createInstance() const {
+  return std::make_shared<PMXMix>(this);
+}
+///////////////////////////////////////////////////////////////////////////////
+PMXMix::PMXMix(const DspBlockData* dbd)
+    : DspBlock(dbd) {
+}
+///////////////////////////////////////////////////////////////////////////////
+void PMXMix::compute(DspBuffer& dspbuf) { // final
+  int inumframes = _layer->_dspwritecount;
+  float* output  = dspbuf.channel(_dspchannel[0]) + _layer->_dspwritebase;
+  ///////////////////////////////////////////////////////////////
+  for (int m = 0; m < PMXMixData::kmaxinputs; m++) {
+    int inpchi = _pmixdata->_pmixInpChannels[m];
+    if (inpchi >= 0) {
+      auto input = dspbuf.channel(inpchi) + _layer->_dspwritebase;
+      for (int i = 0; i < inumframes; i++) {
+        output[i] += input[i];
+      }
+    }
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+void PMXMix::doKeyOn(const KeyOnInfo& koi) { // final
+  _pmixdata = (const PMXMixData*)_dbd;
+}
+///////////////////////////////////////////////////////////////////////////////
+void PMXMix::doKeyOff() { // final
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

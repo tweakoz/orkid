@@ -12,31 +12,6 @@ using namespace ork;
 namespace ork::audio::singularity {
 
 ///////////////////////////////////////////
-struct ratelevmodel {
-  float _inpbias   = 0.0f;
-  float _inpscale  = 0.0f;
-  float _inpdiv    = 0.0f;
-  float _rorbias   = 0.0f;
-  float _basenumer = 0.0f;
-  float _power     = 0.0f;
-  float _scalar    = 0.0f;
-  void txmodel() {
-    _inpbias   = 0.01f;
-    _inpscale  = 89.9f;
-    _inpdiv    = 1.0f;
-    _rorbias   = 0.0f;
-    _basenumer = 1.0f;
-    _power     = 1.0f;
-    _scalar    = 0.5f;
-  }
-  float transform(float value) {
-    float slope    = _inpbias + (value * _inpscale) / _inpdiv;
-    float ror      = env_slope2ror(slope, _rorbias);
-    float computed = powf(_basenumer / ror, _power) * _scalar;
-    return std::clamp(computed, 0.004f, 250.0f);
-  }
-};
-
 static const float openv_declevels[16] = {
     0,
     .0625,
@@ -163,7 +138,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
     zpmDB->_programsByName[name] = prg;
 
-    auto fm4pd     = std::make_shared<Fm4ProgData>();
+    auto fm4pd     = std::make_shared<Pm4ProgData>();
     auto layerdata = prg->newLayer();
 
     printf("////////////////////////////\n");

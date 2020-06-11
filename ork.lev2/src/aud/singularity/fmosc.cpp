@@ -5,7 +5,7 @@
 
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////
-FmOsc::FmOsc()
+PmOsc::PmOsc()
     : _pbIndex(0)
     , _pbIndexNext(0)
     , _pbIncrBase(0)
@@ -13,10 +13,10 @@ FmOsc::FmOsc()
   setWave(0);
 }
 ///////////////////////////////////////////////////////////
-FmOsc::~FmOsc() {
+PmOsc::~PmOsc() {
 }
 ///////////////////////////////////////////////////////////
-void FmOsc::setWave(int iwave) {
+void PmOsc::setWave(int iwave) {
   assert(iwave >= 0 and iwave < 8);
   static const Wavetable* fmwave[8];
   static bool ginit = true;
@@ -34,7 +34,7 @@ void FmOsc::setWave(int iwave) {
   _waveform = fmwave[iwave];
 }
 ///////////////////////////////////////////////////////////
-void FmOsc::keyOn(const Fm4OpData& opd) {
+void PmOsc::keyOn(const PmOscData& opd) {
   _pbIndex     = 0;
   _pbIndexNext = 0;
   _prevOutput  = 0.0f;
@@ -42,16 +42,16 @@ void FmOsc::keyOn(const Fm4OpData& opd) {
   setWave(opd._waveform);
 }
 ///////////////////////////////////////////////////////////
-void FmOsc::keyOff() {
+void PmOsc::keyOff() {
 }
 ///////////////////////////////////////////////////////////
-// FmOsc::compute(float frequency, float phase_offset)
+// PmOsc::compute(float frequency, float phase_offset)
 //  frequency: frequency of operator in hertz
 //  phase_offset: normalized phase offset
 //    -1: -2 PI radians
 //    +1: _2 PI radians
 ///////////////////////////////////////////////////////////
-float FmOsc::compute(float frequency, float phase_offset) {
+float PmOsc::compute(float frequency, float phase_offset) {
   const float* sblk = _waveform->_wavedata.data();
   int64_t wtsize    = _waveform->_wavedata.size();
 

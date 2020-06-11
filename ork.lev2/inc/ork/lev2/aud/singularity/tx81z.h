@@ -2,16 +2,12 @@
 #include <ork/kernel/svariant.h>
 #include "synthdata.h"
 #include "dspblocks.h"
+#include "fmosc.h"
 #include <ork/file/path.h>
 
 namespace ork::audio::singularity {
 
-struct Fm4OpData {
-  int _waveform   = 0;
-  float _modIndex = 0.0f;
-};
-
-struct Fm4ProgData {
+struct Pm4ProgData {
   int _alg            = 0;
   bool _lfoSync       = false;
   int _lfoSpeed       = 0;
@@ -25,10 +21,10 @@ struct Fm4ProgData {
   bool _mono          = false;
   bool _portMode      = false;
   int _portRate       = 0;
-  Fm4OpData _ops[4];
+  PmOscData _ops[4];
 };
 
-using fm4prgdata_ptr_t = std::shared_ptr<Fm4ProgData>;
+using pm4prgdata_ptr_t = std::shared_ptr<Pm4ProgData>;
 
 struct DspBuffer;
 
@@ -53,24 +49,48 @@ struct op4frame {
 hudpanel_ptr_t create_op4panel();
 
 ///////////////////////////////////////////////////////////////////////////////
-struct FM4Data final : public DspBlockData {
-  FM4Data(fm4prgdata_ptr_t fmdata);
+// PMX - 1-8 input PM operator
+///////////////////////////////////////////////////////////////////////////////
+struct PMXData final : public DspBlockData {
+  PMXData();
   dspblk_ptr_t createInstance() const override;
-  fm4prgdata_ptr_t _fmdata;
+  int _inpchannel                     = 0;
+  float _feedback                     = 0.0f;
+  float _modIndex                     = 1.0f;
+  static constexpr int kmaxmodulators = 8;
+  int _pmInpChannels[kmaxmodulators]  = {-1, -1, -1, -1, -1, -1, -1, -1};
+  PmOscData _pmoscdata;
 };
 
-struct FM4 final : public DspBlock {
-  using dataclass_t = FM4Data;
-  FM4(const DspBlockData* dbd);
+struct PMX final : public DspBlock {
+  using dataclass_t = PMXData;
+  PMX(const DspBlockData* dbd);
   void compute(DspBuffer& dspbuf) override;
   void doKeyOn(const KeyOnInfo& koi) override;
   void doKeyOff() override;
-  ork::svar16_t _pimpl;
+  PmOsc _pmosc;
+  float _modIndex         = 1.0f;
+  const PMXData* _pmxdata = nullptr;
+};
+///////////////////////////////////////////////////////////////////////////////
+struct PMXMixData final : public DspBlockData {
+  PMXMixData();
+  dspblk_ptr_t createInstance() const override;
+  static constexpr int kmaxinputs  = 8;
+  int _pmixInpChannels[kmaxinputs] = {-1, -1, -1, -1, -1, -1, -1, -1};
 };
 
+struct PMXMix final : public DspBlock {
+  using dataclass_t = PMXMixData;
+  PMXMix(const DspBlockData* dbd);
+  void compute(DspBuffer& dspbuf) override;
+  void doKeyOn(const KeyOnInfo& koi) override;
+  void doKeyOff() override;
+  const PMXMixData* _pmixdata = nullptr;
+};
 ///////////////////////////////////////////////////////////////////////////////
 
-void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, fm4prgdata_ptr_t fmdata);
+void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, pm4prgdata_ptr_t fmdata);
 
 ///////////////////////////////////////////////////////////////////////////////
 

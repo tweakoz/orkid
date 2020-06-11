@@ -12,7 +12,7 @@ int main(int argc, char** argv) {
   //////////////////////////////////////////////////////////////////////////////
   auto program   = std::make_shared<ProgramData>();
   auto layerdata = program->newLayer();
-  auto fmdata    = std::make_shared<Fm4ProgData>();
+  auto fmdata    = std::make_shared<Pm4ProgData>();
   program->_role = "fm4";
   program->_name = "test";
   fmdata->_alg   = 0;
