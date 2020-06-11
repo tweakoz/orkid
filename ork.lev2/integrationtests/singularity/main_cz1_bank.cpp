@@ -36,12 +36,12 @@ int main(int argc, char** argv) {
   ////////////////////////////////////////////////
   // create visualizers
   ////////////////////////////////////////////////
-  auto scope1    = create_oscilloscope(app->_hudvp);
-  auto scope2    = create_oscilloscope(app->_hudvp);
-  auto scope3    = create_oscilloscope(app->_hudvp);
-  auto analyzer1 = create_spectrumanalyzer(app->_hudvp);
-  auto analyzer2 = create_spectrumanalyzer(app->_hudvp);
-  auto analyzer3 = create_spectrumanalyzer(app->_hudvp);
+  auto scope1    = create_oscilloscope(app->_hudvp, "dco-1");
+  auto scope2    = create_oscilloscope(app->_hudvp, "dco-2");
+  auto scope3    = create_oscilloscope(app->_hudvp, "layer");
+  auto analyzer1 = create_spectrumanalyzer(app->_hudvp, "dco-1");
+  auto analyzer2 = create_spectrumanalyzer(app->_hudvp, "dco-2");
+  auto analyzer3 = create_spectrumanalyzer(app->_hudvp, "layer");
   scope1->setRect(-10, 0, 480, 240, true);
   scope2->setRect(-10, 240, 480, 240, true);
   scope3->setRect(-10, 480, 480, 240, true);

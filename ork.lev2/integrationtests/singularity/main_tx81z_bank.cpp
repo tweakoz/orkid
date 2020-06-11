@@ -38,10 +38,10 @@ int main(int argc, char** argv) {
   ////////////////////////////////////////////////
   // create visualizers
   ////////////////////////////////////////////////
-  auto scope1    = create_oscilloscope(app->_hudvp);
-  auto scope2    = create_oscilloscope(app->_hudvp);
-  auto analyzer1 = create_spectrumanalyzer(app->_hudvp);
-  auto analyzer2 = create_spectrumanalyzer(app->_hudvp);
+  auto scope1    = create_oscilloscope(app->_hudvp, "layer");
+  auto scope2    = create_oscilloscope(app->_hudvp, "main-bus");
+  auto analyzer1 = create_spectrumanalyzer(app->_hudvp, "layer");
+  auto analyzer2 = create_spectrumanalyzer(app->_hudvp, "main-bus");
   scope1->setRect(-10, 0, 480, 240, true);
   scope2->setRect(-10, 480, 480, 240, true);
   analyzer1->setRect(480, 0, 810, 240, true);
