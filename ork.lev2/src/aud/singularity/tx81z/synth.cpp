@@ -32,11 +32,8 @@ void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, pm4prgdata_ptr_t prgdata) 
   //////////////////////////////////////////
   auto stage_ops       = algdout->appendStage("OPS");
   auto stage_opmix     = algdout->appendStage("OPMIX");
-  auto stage_amp       = algdout->appendStage("AMP");
   auto stage_modindexx = algdout->appendStage("MIX"); // todo : quadraphonic, 3d?
   //////////////////////////////////////////
-  stage_ops->setNumIos(1, 1);
-  stage_amp->setNumIos(1, 1);
   stage_modindexx->setNumIos(1, 2); // 1 in, 2 out
   /////////////////////////////////////////////////
   auto op3            = stage_ops->appendTypedBlock<PMX>();
@@ -59,6 +56,7 @@ void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, pm4prgdata_ptr_t prgdata) 
       op0->_pmInpChannels[0] = 1;
       op1->_pmInpChannels[0] = 2;
       op2->_pmInpChannels[0] = 3;
+      stage_ops->setNumIos(1, 1);
       stage_opmix->setNumIos(1, 1);
       opmix->_pmixInpChannels[0] = 0;
       break;
@@ -69,6 +67,7 @@ void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, pm4prgdata_ptr_t prgdata) 
       op1->_pmInpChannels[0] = 2;
       op1->_pmInpChannels[1] = 3;
       op1->_modIndex         = 0.5f; // 2 inputs
+      stage_ops->setNumIos(1, 1);
       stage_opmix->setNumIos(1, 1);
       opmix->_pmixInpChannels[0] = 0;
       break;
@@ -80,6 +79,7 @@ void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, pm4prgdata_ptr_t prgdata) 
       op0->_pmInpChannels[1] = 3;
       op1->_pmInpChannels[0] = 2;
       op0->_modIndex         = 0.5f; // 2 inputs
+      stage_ops->setNumIos(1, 1);
       stage_opmix->setNumIos(1, 1);
       opmix->_pmixInpChannels[0] = 0;
       break;
@@ -91,6 +91,7 @@ void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, pm4prgdata_ptr_t prgdata) 
       op0->_pmInpChannels[1] = 2;
       op1->_pmInpChannels[0] = 3;
       op0->_modIndex         = 0.5f; // 2 inputs
+      stage_ops->setNumIos(1, 1);
       stage_opmix->setNumIos(1, 1);
       opmix->_pmixInpChannels[0] = 0;
       break;
@@ -99,6 +100,7 @@ void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, pm4prgdata_ptr_t prgdata) 
       // 0  2
       op0->_pmInpChannels[0] = 1;
       op2->_pmInpChannels[0] = 3;
+      stage_ops->setNumIos(1, 2);
       stage_opmix->setNumIos(2, 1);
       opmix->_pmixInpChannels[0] = 0;
       opmix->_pmixInpChannels[1] = 2;
@@ -110,6 +112,7 @@ void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, pm4prgdata_ptr_t prgdata) 
       op0->_pmInpChannels[0] = 3;
       op1->_pmInpChannels[0] = 3;
       op2->_pmInpChannels[0] = 3;
+      stage_ops->setNumIos(1, 3);
       stage_opmix->setNumIos(3, 1);
       opmix->_pmixInpChannels[0] = 0;
       opmix->_pmixInpChannels[1] = 1;
@@ -119,6 +122,7 @@ void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, pm4prgdata_ptr_t prgdata) 
       //      (3)
       // 0  1  2
       op2->_pmInpChannels[0] = 3;
+      stage_ops->setNumIos(1, 3);
       stage_opmix->setNumIos(3, 1);
       opmix->_pmixInpChannels[0] = 0;
       opmix->_pmixInpChannels[1] = 1;
@@ -126,6 +130,7 @@ void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, pm4prgdata_ptr_t prgdata) 
       break;
     case 7:
       //   0  1  2 (3)
+      stage_ops->setNumIos(1, 4);
       stage_opmix->setNumIos(4, 1);
       opmix->_pmixInpChannels[0] = 0;
       opmix->_pmixInpChannels[1] = 1;
