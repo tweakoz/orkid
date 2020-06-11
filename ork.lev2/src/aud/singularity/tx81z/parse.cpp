@@ -148,28 +148,14 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
     // voice global
     ////////////
 
-    configureTx81zAlgorithm(layerdata, fm4pd);
-    auto ops_stage = layerdata->stageByName("OPS");
-    auto ops_block = ops_stage->_blockdatas[0];
-
     int ALG = bytes[40] & 7;           // fm algoorithm 0..7
     int FBL = (bytes[40] & 0x38) >> 3; // fb level  0..7
     int SY  = (bytes[40] & 0x60) >> 6; // lfo sync (reset phase) bool
 
     fm4pd->_alg     = ALG;
     fm4pd->_lfoSync = SY;
+    fm4pd->_name    = name;
 
-    ///////////////////////////////
-    // 2.0 == 4PI (7)
-    // 1.0 == 2PI (6)
-    // 1/2 == PI (5)
-    // 1/4 == PI/2 (4)
-    // 1/8 == PI/4 (3)
-    // 1/16 == PI/8 (2)
-    // 1/32 == PI/16 (1)
-    auto& feedback_param = ops_block->param(8);
-    // feedback_param._coarse = 0.0; //(FBL == 0) ? 0 : powf(2.0, FBL - 16);
-    feedback_param._coarse = 0.0; // 0.3 * exp(log(2) * (double)(FBL - 7));
     ///////////////////////////////
 
     // printf( "ALG<%d> FBL<%d> SY<%d>\n", ALG, FBL, SY);
@@ -225,18 +211,33 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
     // per-operator data
     ////////////
 
+    configureTx81zAlgorithm(layerdata, fm4pd);
+    auto ops_stage = layerdata->stageByName("OPS");
+
     for (int opindex = 0; opindex < 4; opindex++) {
       const int src_op[] = {3, 1, 2, 0};
-      // const int src_op[] = {0, 2, 1, 3};
-      int op_base = src_op[opindex] * 10;
-      // 4 2 3 1
-      // 3 1 2 0
-      // const int kop[]     = {0, 2, 1, 3};
-      // const int kop[] = {0, 1, 2, 3};
+      int op_base        = src_op[opindex] * 10;
 
-      auto& opd         = fm4pd->_ops[opindex];
-      auto& pitch_param = ops_block->param(0 + opindex);
-      auto& amp_param   = ops_block->param(4 + opindex);
+      auto ops_block = ops_stage->_blockdatas[3 - opindex];
+      if (opindex == 0) {
+        auto as_pmx            = dynamic_cast<PMXData*>(ops_block.get());
+        as_pmx->_txprogramdata = fm4pd;
+      }
+      auto& opd            = fm4pd->_ops[opindex];
+      auto& pitch_param    = ops_block->param(0);
+      auto& amp_param      = ops_block->param(1);
+      auto& feedback_param = ops_block->param(2);
+      // feedback_param._coarse = 0.0; //(FBL == 0) ? 0 : powf(2.0, FBL - 16);
+      feedback_param._coarse = 0.0; // 0.3 * exp(log(2) * (double)(FBL - 7));
+      ///////////////////////////////
+      // 2.0 == 4PI (7)
+      // 1.0 == 2PI (6)
+      // 1/2 == PI (5)
+      // 1/4 == PI/2 (4)
+      // 1/8 == PI/4 (3)
+      // 1/16 == PI/8 (2)
+      // 1/32 == PI/16 (1)
+      ///////////////////////////////
 
       // ratio 0.5 .. 27.57
 
@@ -247,8 +248,8 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       int dec1Lev      = bytes[op_base + 4]; // EG 0..15
       int levScaling   = bytes[op_base + 5]; // level scaling 0..99
       int _AEK         = bytes[op_base + 6];
-      bool opEnable    = !((_AEK & 64) >> 6);              // AME - bool (enable op?)
-      int egBiasSensa  = (_AEK & 0x18) >> 3;               // eg bias sensitivity 0..7
+      bool AME         = !((_AEK & 64) >> 6);              // AME - bool (amp modulation for op)
+      int EBS          = (_AEK & 0x18) >> 3;               // eg bias sensitivity 0..7
       int keyvelsense  = (_AEK & 0x07);                    // keyvel sensitivity 0..7
       int outLevel     = bytes[op_base + 7] & 0x7f;        // out level 0..99
       int coarseFrq    = bytes[op_base + 8] & 0x3f;        // coarse frequency 0..63
@@ -272,14 +273,9 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       // float fol = powf(float(outLevel) / 99.0f, 3.5);
       // outLevel  = std::clamp(int(fol * 99.0), 0, 99);
 
-      printf("prog<%s> op<%d> waveform<%d> level<%d> enable<%d>\n", name.c_str(), opindex, waveform, outLevel, int(opEnable));
-
-      if (opindex < 2) {
-        // outLevel = 0;
-      }
+      printf("prog<%s> op<%d> waveform<%d> level<%d> ame<%d> ebs<%d>\n", name.c_str(), opindex, waveform, outLevel, int(AME), EBS);
 
       opd._waveform = waveform;
-      opd._modIndex = 1.0f;
 
       ////////////////////////////
       // translate tx operator frequency params
@@ -487,16 +483,14 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
         };
 
         ////////////////////////////////////////////////////////////////////////
-        amp_param._coarse = 0.0f;
-        if (true) { // opEnable) {
-          auto funname               = ork::FormatString("op%d-fun", opindex);
-          auto FUN                   = layerdata->appendController<FunData>(funname);
-          FUN->_a                    = envname;
-          FUN->_b                    = opaname;
-          FUN->_op                   = "a*b";
-          amp_param._mods._src1      = FUN;
-          amp_param._mods._src1Depth = 1.0;
-        }
+        amp_param._coarse          = 0.0f;
+        auto funname               = ork::FormatString("op%d-fun", opindex);
+        auto FUN                   = layerdata->appendController<FunData>(funname);
+        FUN->_a                    = envname;
+        FUN->_b                    = opaname;
+        FUN->_op                   = "a*b";
+        amp_param._mods._src1      = FUN;
+        amp_param._mods._src1Depth = 1.0;
       }
       // printf( "OP<%d>\n", op );
       // printf( "    AR<%d> D1R<%d> D2R<%d> RR<%d> D1L<%d>\n", AR,D1R,D2R,RR,D1L);

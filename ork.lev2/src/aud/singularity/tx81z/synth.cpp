@@ -36,106 +36,113 @@ void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, pm4prgdata_ptr_t prgdata) 
   //////////////////////////////////////////
   stage_stereo->setNumIos(1, 2); // 1 in, 2 out
   /////////////////////////////////////////////////
-  auto op3            = stage_ops->appendTypedBlock<PMX>();
-  auto op2            = stage_ops->appendTypedBlock<PMX>();
-  auto op1            = stage_ops->appendTypedBlock<PMX>();
-  auto op0            = stage_ops->appendTypedBlock<PMX>();
-  auto opmix          = stage_opmix->appendTypedBlock<PMXMix>();
-  op3->_dspchannel[0] = 3;
-  op2->_dspchannel[0] = 2;
-  op1->_dspchannel[0] = 1;
-  op0->_dspchannel[0] = 0;
-  op3->_pmoscdata     = prgdata->_ops[3];
-  op2->_pmoscdata     = prgdata->_ops[2];
-  op1->_pmoscdata     = prgdata->_ops[1];
+  // instantiate ops in reverse order
+  //  because of order of operations (3,2,1,0)
+  /////////////////////////////////////////////////
+  auto op3 = stage_ops->appendTypedBlock<PMX>();
+  auto op2 = stage_ops->appendTypedBlock<PMX>();
+  auto op1 = stage_ops->appendTypedBlock<PMX>();
+  auto op0 = stage_ops->appendTypedBlock<PMX>();
+  /////////////////////////////////////////////////
+  int opchanbase      = 2;
+  op0->_dspchannel[0] = opchanbase + 0;
+  op1->_dspchannel[0] = opchanbase + 1;
+  op2->_dspchannel[0] = opchanbase + 2;
+  op3->_dspchannel[0] = opchanbase + 3;
   op0->_pmoscdata     = prgdata->_ops[0];
+  op1->_pmoscdata     = prgdata->_ops[1];
+  op2->_pmoscdata     = prgdata->_ops[2];
+  op3->_pmoscdata     = prgdata->_ops[3];
+  /////////////////////////////////////////////////
+  auto opmix            = stage_opmix->appendTypedBlock<PMXMix>();
+  opmix->_dspchannel[0] = 0;
   /////////////////////////////////////////////////
   switch (prgdata->_alg) {
     case 0:
       //   (3)->2->1->0
-      op0->_pmInpChannels[0] = 1;
-      op1->_pmInpChannels[0] = 2;
-      op2->_pmInpChannels[0] = 3;
       stage_ops->setNumIos(1, 1);
       stage_opmix->setNumIos(1, 1);
-      opmix->_pmixInpChannels[0] = 0;
+      op0->_pmInpChannels[0]     = opchanbase + 1;
+      op1->_pmInpChannels[0]     = opchanbase + 2;
+      op2->_pmInpChannels[0]     = opchanbase + 3;
+      opmix->_pmixInpChannels[0] = opchanbase + 0;
       break;
     case 1:
       //   (3)
       // 2->1->0
-      op0->_pmInpChannels[0] = 1;
-      op1->_pmInpChannels[0] = 2;
-      op1->_pmInpChannels[1] = 3;
-      op1->_modIndex         = 0.5f; // 2 inputs
+      op1->_modIndex = 0.5f; // 2 inputs
       stage_ops->setNumIos(1, 1);
       stage_opmix->setNumIos(1, 1);
-      opmix->_pmixInpChannels[0] = 0;
+      op0->_pmInpChannels[0]     = opchanbase + 1;
+      op1->_pmInpChannels[0]     = opchanbase + 2;
+      op1->_pmInpChannels[1]     = opchanbase + 3;
+      opmix->_pmixInpChannels[0] = opchanbase + 0;
       break;
     case 2:
       //  2
       //  1 (3)
       //   0
-      op0->_pmInpChannels[0] = 1;
-      op0->_pmInpChannels[1] = 3;
-      op1->_pmInpChannels[0] = 2;
-      op0->_modIndex         = 0.5f; // 2 inputs
+      op0->_modIndex = 0.5f; // 2 inputs
       stage_ops->setNumIos(1, 1);
       stage_opmix->setNumIos(1, 1);
-      opmix->_pmixInpChannels[0] = 0;
+      op0->_pmInpChannels[0]     = opchanbase + 1;
+      op0->_pmInpChannels[1]     = opchanbase + 3;
+      op1->_pmInpChannels[0]     = opchanbase + 2;
+      opmix->_pmixInpChannels[0] = opchanbase + 0;
       break;
     case 3:
       // (3)
       //  1   2
       //    0
-      op0->_pmInpChannels[0] = 1;
-      op0->_pmInpChannels[1] = 2;
-      op1->_pmInpChannels[0] = 3;
       op0->_modIndex         = 0.5f; // 2 inputs
+      op0->_pmInpChannels[0] = opchanbase + 1;
+      op0->_pmInpChannels[1] = opchanbase + 2;
+      op1->_pmInpChannels[0] = opchanbase + 3;
       stage_ops->setNumIos(1, 1);
       stage_opmix->setNumIos(1, 1);
-      opmix->_pmixInpChannels[0] = 0;
+      opmix->_pmixInpChannels[0] = opchanbase + 0;
       break;
     case 4:
       // 1 (3)
       // 0  2
-      op0->_pmInpChannels[0] = 1;
-      op2->_pmInpChannels[0] = 3;
       stage_ops->setNumIos(1, 2);
       stage_opmix->setNumIos(2, 1);
-      opmix->_pmixInpChannels[0] = 0;
-      opmix->_pmixInpChannels[1] = 2;
+      op0->_pmInpChannels[0]     = opchanbase + 1;
+      op2->_pmInpChannels[0]     = opchanbase + 3;
+      opmix->_pmixInpChannels[0] = opchanbase + 0;
+      opmix->_pmixInpChannels[1] = opchanbase + 2;
       break;
     case 5:
       //   (3)
       //   / \
       // 0  1  2
-      op0->_pmInpChannels[0] = 3;
-      op1->_pmInpChannels[0] = 3;
-      op2->_pmInpChannels[0] = 3;
       stage_ops->setNumIos(1, 3);
       stage_opmix->setNumIos(3, 1);
-      opmix->_pmixInpChannels[0] = 0;
-      opmix->_pmixInpChannels[1] = 1;
-      opmix->_pmixInpChannels[2] = 2;
+      op0->_pmInpChannels[0]     = opchanbase + 3;
+      op1->_pmInpChannels[0]     = opchanbase + 3;
+      op2->_pmInpChannels[0]     = opchanbase + 3;
+      opmix->_pmixInpChannels[0] = opchanbase + 0;
+      opmix->_pmixInpChannels[1] = opchanbase + 1;
+      opmix->_pmixInpChannels[2] = opchanbase + 2;
       break;
     case 6:
       //      (3)
       // 0  1  2
-      op2->_pmInpChannels[0] = 3;
       stage_ops->setNumIos(1, 3);
       stage_opmix->setNumIos(3, 1);
-      opmix->_pmixInpChannels[0] = 0;
-      opmix->_pmixInpChannels[1] = 1;
-      opmix->_pmixInpChannels[2] = 2;
+      op2->_pmInpChannels[0]     = opchanbase + 3;
+      opmix->_pmixInpChannels[0] = opchanbase + 0;
+      opmix->_pmixInpChannels[1] = opchanbase + 1;
+      opmix->_pmixInpChannels[2] = opchanbase + 2;
       break;
     case 7:
       //   0  1  2 (3)
       stage_ops->setNumIos(1, 4);
       stage_opmix->setNumIos(4, 1);
-      opmix->_pmixInpChannels[0] = 0;
-      opmix->_pmixInpChannels[1] = 1;
-      opmix->_pmixInpChannels[2] = 2;
-      opmix->_pmixInpChannels[3] = 3;
+      opmix->_pmixInpChannels[0] = opchanbase + 0;
+      opmix->_pmixInpChannels[1] = opchanbase + 1;
+      opmix->_pmixInpChannels[2] = opchanbase + 2;
+      opmix->_pmixInpChannels[3] = opchanbase + 3;
       break;
   }
   /////////////////////////////////////////////////
@@ -177,6 +184,8 @@ void PMX::compute(DspBuffer& dspbuf) { // final
   float clampedamp = std::clamp(amp, 0.0f, 1.0f);
   float clampefbl  = std::clamp(fbl, 0.0f, 1.0f);
   ///////////////////////////////////////////////////////////////
+  // printf("frq<%g> amp<%g> fbl<%g>\n", frq, amp, fbl);
+  ///////////////////////////////////////////////////////////////
   const float* modinputs[PMXData::kmaxmodulators] = {
       nullptr,
       nullptr,
@@ -189,7 +198,8 @@ void PMX::compute(DspBuffer& dspbuf) { // final
   for (int m = 0; m < PMXData::kmaxmodulators; m++) {
     int inpchi = _pmxdata->_pmInpChannels[m];
     if (inpchi >= 0) {
-      modinputs[m] = dspbuf.channel(inpchi) + _layer->_dspwritebase;
+      modinputs[m] = dspbuf.channel(inpchi) //
+                     + _layer->_dspwritebase;
     }
   }
   ///////////////////////////////////////////////////////////////
@@ -201,7 +211,8 @@ void PMX::compute(DspBuffer& dspbuf) { // final
         phase_offset += modinp[i];
       }
     }
-    output[i] = _pmosc.compute(frq, phase_offset * _modIndex) * amp;
+    float osc_out = _pmosc.compute(frq, phase_offset * _modIndex);
+    output[i]     = osc_out * amp;
   }
   ///////////////////////////////////////////////////////////////
 }
@@ -210,6 +221,11 @@ void PMX::doKeyOn(const KeyOnInfo& koi) { // final
   _pmxdata = (const PMXData*)_dbd;
   _pmosc.keyOn(_pmxdata->_pmoscdata);
   _modIndex = _pmxdata->_modIndex;
+  if (_pmxdata->_txprogramdata) {
+    auto name = _pmxdata->_txprogramdata->_name;
+    int alg   = _pmxdata->_txprogramdata->_alg;
+    printf("keyon prog<%s> alg<%d>\n", name.c_str(), alg);
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void PMX::doKeyOff() { // final
@@ -239,14 +255,24 @@ void PMXMix::compute(DspBuffer& dspbuf) { // final
     if (inpchi >= 0) {
       auto input = dspbuf.channel(inpchi) + _layer->_dspwritebase;
       for (int i = 0; i < inumframes; i++) {
-        output[i] += input[i];
+        output[i] += input[i] * _finalamp;
       }
     }
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void PMXMix::doKeyOn(const KeyOnInfo& koi) { // final
-  _pmixdata = (const PMXMixData*)_dbd;
+  _pmixdata      = (const PMXMixData*)_dbd;
+  int numoutputs = 0;
+  for (int m = 0; m < PMXMixData::kmaxinputs; m++) {
+    int inpchi = _pmixdata->_pmixInpChannels[m];
+    if (inpchi >= 0) {
+      numoutputs++;
+    }
+  }
+  _finalamp = (numoutputs == 0) //
+                  ? 1.0f
+                  : 1.0f / float(numoutputs);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void PMXMix::doKeyOff() { // final

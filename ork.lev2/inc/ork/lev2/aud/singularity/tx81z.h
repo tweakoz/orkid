@@ -8,6 +8,7 @@
 namespace ork::audio::singularity {
 
 struct Pm4ProgData {
+  std::string _name;
   int _alg            = 0;
   bool _lfoSync       = false;
   int _lfoSpeed       = 0;
@@ -60,6 +61,7 @@ struct PMXData final : public DspBlockData {
   static constexpr int kmaxmodulators = 8;
   int _pmInpChannels[kmaxmodulators]  = {-1, -1, -1, -1, -1, -1, -1, -1};
   PmOscData _pmoscdata;
+  pm4prgdata_ptr_t _txprogramdata; // temp for debugging
 };
 
 struct PMX final : public DspBlock {
@@ -87,6 +89,7 @@ struct PMXMix final : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) override;
   void doKeyOff() override;
   const PMXMixData* _pmixdata = nullptr;
+  float _finalamp             = 1.0f;
 };
 ///////////////////////////////////////////////////////////////////////////////
 

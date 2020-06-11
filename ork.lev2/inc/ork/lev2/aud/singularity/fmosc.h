@@ -16,8 +16,7 @@ struct Wavetable;
 ///////////////////////////////////////////////////////////
 
 struct PmOscData {
-  int _waveform   = 0;
-  float _modIndex = 0.0f;
+  int _waveform = 0;
 };
 
 struct PmOsc {

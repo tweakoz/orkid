@@ -20,9 +20,6 @@ int main(int argc, char** argv) {
   auto& op1      = fmdata->_ops[1];
   auto& op2      = fmdata->_ops[2];
   auto& op3      = fmdata->_ops[3];
-  op1._modIndex  = 0.125f;
-  op2._modIndex  = 0.125f;
-  op3._modIndex  = 0.125f;
   //////////////////////////////////////
   // setup dsp graph
   //////////////////////////////////////
