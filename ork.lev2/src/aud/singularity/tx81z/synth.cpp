@@ -30,11 +30,11 @@ void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, pm4prgdata_ptr_t prgdata) 
   layerdata->_algdata = algdout;
   algdout->_name      = ork::FormatString("tx81z<%d>", prgdata->_alg);
   //////////////////////////////////////////
-  auto stage_ops       = algdout->appendStage("OPS");
-  auto stage_opmix     = algdout->appendStage("OPMIX");
-  auto stage_modindexx = algdout->appendStage("MIX"); // todo : quadraphonic, 3d?
+  auto stage_ops    = algdout->appendStage("OPS");
+  auto stage_opmix  = algdout->appendStage("OPMIX");
+  auto stage_stereo = algdout->appendStage("STMIX"); // todo : quadraphonic, 3d?
   //////////////////////////////////////////
-  stage_modindexx->setNumIos(1, 2); // 1 in, 2 out
+  stage_stereo->setNumIos(1, 2); // 1 in, 2 out
   /////////////////////////////////////////////////
   auto op3            = stage_ops->appendTypedBlock<PMX>();
   auto op2            = stage_ops->appendTypedBlock<PMX>();
@@ -141,7 +141,7 @@ void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, pm4prgdata_ptr_t prgdata) 
   /////////////////////////////////////////////////
   // stereo mix out
   /////////////////////////////////////////////////
-  auto stereoout        = stage_modindexx->appendTypedBlock<MonoInStereoOut>();
+  auto stereoout        = stage_stereo->appendTypedBlock<MonoInStereoOut>();
   auto STEREOC          = layerdata->appendController<CustomControllerData>("STEREOMIX");
   auto& stereo_mod      = stereoout->_paramd[0]._mods;
   stereo_mod._src1      = STEREOC;
