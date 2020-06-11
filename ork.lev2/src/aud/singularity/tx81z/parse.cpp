@@ -215,20 +215,16 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
     auto ops_stage = layerdata->stageByName("OPS");
 
     for (int opindex = 0; opindex < 4; opindex++) {
-      const int src_op[] = {3, 1, 2, 0};
-      int op_base        = src_op[opindex] * 10;
-
-      auto ops_block = ops_stage->_blockdatas[3 - opindex];
-      if (opindex == 0) {
-        auto as_pmx            = dynamic_cast<PMXData*>(ops_block.get());
-        as_pmx->_txprogramdata = fm4pd;
-      }
+      const int src_op[]   = {3, 1, 2, 0};
+      int op_base          = src_op[opindex] * 10;
+      auto ops_block       = ops_stage->_blockdatas[3 - opindex];
+      auto as_pmx          = dynamic_cast<PMXData*>(ops_block.get());
       auto& opd            = fm4pd->_ops[opindex];
       auto& pitch_param    = ops_block->param(0);
       auto& amp_param      = ops_block->param(1);
       auto& feedback_param = ops_block->param(2);
-      // feedback_param._coarse = 0.0; //(FBL == 0) ? 0 : powf(2.0, FBL - 16);
-      feedback_param._coarse = 0.0; // 0.3 * exp(log(2) * (double)(FBL - 7));
+      // feedback_param._coarse = (FBL == 0) ? 0 : powf(2.0, FBL - 7);
+      feedback_param._coarse = 0.0f; // 0.3 * exp(log(2) * (double)(FBL - 7));
       ///////////////////////////////
       // 2.0 == 4PI (7)
       // 1.0 == 2PI (6)
@@ -419,22 +415,35 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
         float fkeyvelsense = expf(float(-keyvelsense) * logf(2.0f));
 
+        //////////////////////////////////
+        // map base operator level
+        //////////////////////////////////
+
+        float a       = logf(2.0f) * 0.1f;
+        float b       = 90.0f * a;
+        float baselev = expf(a * float(outLevel) - b) / 1.86607;
+        baselev       = powf(baselev, 1.0f);
+
+        printf(
+            "prog<%s> op<%d> outLevel<%d> a<%g> b<%g> baselev<%g>\n", //
+            name.c_str(),
+            opindex,
+            outLevel,
+            a,
+            b,
+            baselev);
+
+        //////////////////////////////////
+
         OPAMP->_oncompute = [name, //
-                             outLevel,
+                             opindex,
+                             baselev,
                              levScaling,
                              pitch_param,
+                             as_pmx,
                              fkeyvelsense](CustomControllerInst* cci) { //
           const auto& koi = cci->_layer->_koi;
 
-          //////////////////////////////////
-          // map base operator level
-          //////////////////////////////////
-
-          float a       = logf(2.0f) * 0.1f;
-          float b       = 90.0f * a;
-          float baselev = expf(a * float(outLevel) - b) / 1.86607;
-          baselev       = powf(baselev, 1.0f);
-          // printf("baselev<%g>\n", baselev);
           //////////////////////////////////
           // velocity scaling
           //////////////////////////////////
@@ -464,19 +473,6 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
           float final_amp = baselev * velamp * keyamp;
 
-          //////////////////////////////////
-
-          if (0)
-            printf(
-                "prog<%s> outLevel<%d> final_amp<%g> velamp<%g> unit_levscale<%g> unit_keyscale<%g> keyamp<%g>\n", //
-                name.c_str(),
-                outLevel,
-                final_amp,
-                velamp,
-                unit_levscale,
-                unit_keyscale,
-                keyamp);
-
           /////////////////////////////////
 
           cci->_curval = final_amp;
@@ -498,6 +494,11 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       // printf( "    OUT<%d> WAV<%d>\n", OUT, WAV);
       // printf( "    FCOA<%d> FFIN<%d> FIX<%d> FIXRG<%d>\n", FCOA, FFIN, FIX, FIXRG );
       // printf( "    RS<%d> DBT<%d>\n", RS, DBT);
+      if (opindex == 0) {
+        as_pmx->_txprogramdata = fm4pd;
+        as_pmx->_pmoscdata     = opd;
+        as_pmx->_opindex       = opindex;
+      }
     }
   }
 } // namespace ork::audio::singularity

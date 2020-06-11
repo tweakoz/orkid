@@ -61,7 +61,9 @@ struct PMXData final : public DspBlockData {
   static constexpr int kmaxmodulators = 8;
   int _pmInpChannels[kmaxmodulators]  = {-1, -1, -1, -1, -1, -1, -1, -1};
   PmOscData _pmoscdata;
+  int _opindex = 0;
   pm4prgdata_ptr_t _txprogramdata; // temp for debugging
+  bool _modulator = false;
 };
 
 struct PMX final : public DspBlock {
@@ -73,6 +75,7 @@ struct PMX final : public DspBlock {
   PmOsc _pmosc;
   float _modIndex         = 1.0f;
   const PMXData* _pmxdata = nullptr;
+  bool _modulator         = false;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct PMXMixData final : public DspBlockData {

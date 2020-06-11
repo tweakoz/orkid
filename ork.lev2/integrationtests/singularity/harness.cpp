@@ -574,9 +574,11 @@ prgdata_constptr_t testpattern(syndata_ptr_t syndat, int argc, char** argv) {
       }
     }
   } else {
-    for (int velocity = 0; velocity <= 128; velocity += 8) {
-      enqueue_audio_event(program, count * 0.25, 0.1, 48, velocity);
-      count++;
+    for (int rep = 0; rep <= 16; rep++) {
+      for (int velocity = 0; velocity <= 128; velocity += 8) {
+        enqueue_audio_event(program, count * 0.25, 0.1, 48, velocity);
+        count++;
+      }
     }
   }
   return program;

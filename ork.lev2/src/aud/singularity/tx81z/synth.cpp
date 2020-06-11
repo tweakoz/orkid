@@ -49,10 +49,6 @@ void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, pm4prgdata_ptr_t prgdata) 
   op1->_dspchannel[0] = opchanbase + 1;
   op2->_dspchannel[0] = opchanbase + 2;
   op3->_dspchannel[0] = opchanbase + 3;
-  op0->_pmoscdata     = prgdata->_ops[0];
-  op1->_pmoscdata     = prgdata->_ops[1];
-  op2->_pmoscdata     = prgdata->_ops[2];
-  op3->_pmoscdata     = prgdata->_ops[3];
   /////////////////////////////////////////////////
   auto opmix            = stage_opmix->appendTypedBlock<PMXMix>();
   opmix->_dspchannel[0] = 0;
@@ -62,6 +58,9 @@ void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, pm4prgdata_ptr_t prgdata) 
       //   (3)->2->1->0
       stage_ops->setNumIos(1, 1);
       stage_opmix->setNumIos(1, 1);
+      op1->_modulator            = true;
+      op2->_modulator            = true;
+      op3->_modulator            = true;
       op0->_pmInpChannels[0]     = opchanbase + 1;
       op1->_pmInpChannels[0]     = opchanbase + 2;
       op2->_pmInpChannels[0]     = opchanbase + 3;
@@ -73,6 +72,9 @@ void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, pm4prgdata_ptr_t prgdata) 
       op1->_modIndex = 0.5f; // 2 inputs
       stage_ops->setNumIos(1, 1);
       stage_opmix->setNumIos(1, 1);
+      op1->_modulator            = true;
+      op2->_modulator            = true;
+      op3->_modulator            = true;
       op0->_pmInpChannels[0]     = opchanbase + 1;
       op1->_pmInpChannels[0]     = opchanbase + 2;
       op1->_pmInpChannels[1]     = opchanbase + 3;
@@ -85,6 +87,9 @@ void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, pm4prgdata_ptr_t prgdata) 
       op0->_modIndex = 0.5f; // 2 inputs
       stage_ops->setNumIos(1, 1);
       stage_opmix->setNumIos(1, 1);
+      op1->_modulator            = true;
+      op2->_modulator            = true;
+      op3->_modulator            = true;
       op0->_pmInpChannels[0]     = opchanbase + 1;
       op0->_pmInpChannels[1]     = opchanbase + 3;
       op1->_pmInpChannels[0]     = opchanbase + 2;
@@ -100,6 +105,9 @@ void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, pm4prgdata_ptr_t prgdata) 
       op1->_pmInpChannels[0] = opchanbase + 3;
       stage_ops->setNumIos(1, 1);
       stage_opmix->setNumIos(1, 1);
+      op1->_modulator            = true;
+      op2->_modulator            = true;
+      op3->_modulator            = true;
       opmix->_pmixInpChannels[0] = opchanbase + 0;
       break;
     case 4:
@@ -107,6 +115,8 @@ void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, pm4prgdata_ptr_t prgdata) 
       // 0  2
       stage_ops->setNumIos(1, 2);
       stage_opmix->setNumIos(2, 1);
+      op1->_modulator            = true;
+      op3->_modulator            = true;
       op0->_pmInpChannels[0]     = opchanbase + 1;
       op2->_pmInpChannels[0]     = opchanbase + 3;
       opmix->_pmixInpChannels[0] = opchanbase + 0;
@@ -118,6 +128,7 @@ void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, pm4prgdata_ptr_t prgdata) 
       // 0  1  2
       stage_ops->setNumIos(1, 3);
       stage_opmix->setNumIos(3, 1);
+      op3->_modulator            = true;
       op0->_pmInpChannels[0]     = opchanbase + 3;
       op1->_pmInpChannels[0]     = opchanbase + 3;
       op2->_pmInpChannels[0]     = opchanbase + 3;
@@ -130,6 +141,7 @@ void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, pm4prgdata_ptr_t prgdata) 
       // 0  1  2
       stage_ops->setNumIos(1, 3);
       stage_opmix->setNumIos(3, 1);
+      op3->_modulator            = true;
       op2->_pmInpChannels[0]     = opchanbase + 3;
       opmix->_pmixInpChannels[0] = opchanbase + 0;
       opmix->_pmixInpChannels[1] = opchanbase + 1;
@@ -183,6 +195,8 @@ void PMX::compute(DspBuffer& dspbuf) { // final
   float frq        = midi_note_to_frequency(note);
   float clampedamp = std::clamp(amp, 0.0f, 1.0f);
   float clampefbl  = std::clamp(fbl, 0.0f, 1.0f);
+  float amppow     = _modulator ? 1.0f : 1.0f;
+  float ampsca     = _modulator ? 1.0f : 1.0f;
   ///////////////////////////////////////////////////////////////
   // printf("frq<%g> amp<%g> fbl<%g>\n", frq, amp, fbl);
   ///////////////////////////////////////////////////////////////
@@ -204,7 +218,7 @@ void PMX::compute(DspBuffer& dspbuf) { // final
   }
   ///////////////////////////////////////////////////////////////
   for (int i = 0; i < inumframes; i++) {
-    float phase_offset = _pmosc._prevOutput * fbl;
+    float phase_offset = _pmosc._prevOutput * fbl * amp * ampsca;
     for (int m = 0; m < PMXData::kmaxmodulators; m++) {
       auto modinp = modinputs[m];
       if (modinp != nullptr) {
@@ -212,7 +226,7 @@ void PMX::compute(DspBuffer& dspbuf) { // final
       }
     }
     float osc_out = _pmosc.compute(frq, phase_offset * _modIndex);
-    output[i]     = osc_out * amp;
+    output[i]     = osc_out * powf(ampsca * amp, amppow);
   }
   ///////////////////////////////////////////////////////////////
 }
@@ -220,7 +234,8 @@ void PMX::compute(DspBuffer& dspbuf) { // final
 void PMX::doKeyOn(const KeyOnInfo& koi) { // final
   _pmxdata = (const PMXData*)_dbd;
   _pmosc.keyOn(_pmxdata->_pmoscdata);
-  _modIndex = _pmxdata->_modIndex;
+  _modIndex  = _pmxdata->_modIndex;
+  _modulator = _pmxdata->_modulator;
   if (_pmxdata->_txprogramdata) {
     auto name = _pmxdata->_txprogramdata->_name;
     int alg   = _pmxdata->_txprogramdata->_alg;
@@ -258,6 +273,9 @@ void PMXMix::compute(DspBuffer& dspbuf) { // final
         output[i] += input[i] * _finalamp;
       }
     }
+  }
+  for (int i = 0; i < inumframes; i++) {
+    output[i] = proc_out(output[i]);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////

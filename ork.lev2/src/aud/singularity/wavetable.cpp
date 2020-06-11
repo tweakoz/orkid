@@ -5,12 +5,12 @@
 namespace ork::audio::singularity {
 
 static std::map<std::string, Wavetable*> _wavemap;
-static const int ksize     = 65536;
-static const int ksizem64k = ksize << 16;
-static const int ksized2   = ksize / 2;
-static const int ksized4   = ksize / 4;
-static const int ksized8   = ksize / 8;
-static const float kinv64k = 1.0f / 65536.0f;
+static const int64_t ksize     = 65536;
+static const int64_t ksizem64k = ksize << 16;
+static const int64_t ksized2   = ksize / 2;
+static const int64_t ksized4   = ksize / 4;
+static const int64_t ksized8   = ksize / 8;
+static const float kinv64k     = 1.0f / 65536.0f;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -174,15 +174,17 @@ void initWavetablesTX81Z() { /////////////////////
   {
     auto wave = new Wavetable(ksize);
     for (int i = 0; i < ksize; i++) {
-      int quadrant    = i / (ksized4 / 2);
-      int iph         = i % ksized4;
-      float fph       = float(iph) / float(ksized4);
+      int quadrant    = i / (ksized4);
+      int iph         = i;
+      float fph       = float(iph) / float(ksize);
       auto& out_float = wave->_wavedata[i];
       switch (quadrant) {
         case 0:
-        case 1:
-          wave->_wavedata[i] = fabs(sin(fph * pi2 * 4.0)) * sin(fph * pi2 * 4.0);
+        case 1: {
+          float phase        = fph * pi2 * 2.0f; // * 4.0;
+          wave->_wavedata[i] = fabs(sin(phase)) * sin(phase);
           break;
+        }
         case 2:
         case 3:
           out_float = 0.0f;

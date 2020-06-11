@@ -116,6 +116,9 @@ void YmEnvInst::keyOn(const KeyOnInfo& KOI) {
       _dec1ratefactor = powf(_data->_decay1Rate, pow_keyscale * (1 << (_data->_rateScale + 1)));
       _dec2ratefactor = powf(_data->_decay2Rate, pow_keyscale * (1 << (_data->_rateScale + 1)));
       _relratefactor  = powf(_data->_releaseRate, pow_keyscale * (1 << (_data->_rateScale + 1)));
+      //_dec1ratefactor = _data->_decay1Rate;
+      //_dec2ratefactor = _data->_decay2Rate;
+      //_relratefactor  = _data->_releaseRate;
       _atkinc *= atkscale;
       if (0)
         printf(
