@@ -381,12 +381,12 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
           return res;
         };
         auto relrateFromIndex = [](float index) -> float { //
-          float dec = powf(0.968, 15.0f * (index * 0.06f));
+          float dec = powf(0.970, 15.0f * (index * 0.06f));
           float res = powf(dec, 1.0f / float(frames_per_controlpass));
           return res;
         };
         ///////////////////////////////////////////////
-        float atktime         = 16.0f * expf(-0.35377f * atkRate);
+        float atktime         = 14.0f * expf(-0.35377f * atkRate);
         ENVELOPE->_attackTime = atktime;
 
         ENVELOPE->_decay1Rate  = decrateFromIndex(dec1Rate);
@@ -422,7 +422,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
         // map base operator level
         //////////////////////////////////
 
-        float a       = logf(2.0f) * 0.1f;
+        float a       = logf(2.0f) * 0.08f;
         float b       = 90.0f * a;
         float baselev = expf(a * float(outLevel) - b); // / 1.86607;
         baselev       = powf(baselev, 1.0f);
@@ -462,16 +462,19 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
           // key scaling
           //////////////////////////////////
 
-          float op_key        = keyprod(koi._key);
           float unit_levscale = float(levScaling / 99.0f);
           unit_levscale       = std::clamp(unit_levscale, 0.0f, 1.0f);
-          unit_levscale       = powf(unit_levscale, 2.0);
-          float unit_keyscale = float(op_key) / 67.0f;
-          unit_keyscale       = std::clamp(unit_keyscale, 0.0f, 1.0f);
-          float lindbscale    = unit_keyscale * unit_levscale;
-          float keyamp        = decibel_to_linear_amp_ratio(lindbscale * -36.0f);
+
+          float op_key         = keyprod(koi._key - 24);
+          float number_octaves = float(op_key) / 12.0f;
+
+          float dbfalloff_per_octave = -4.5f * (0.15 + unit_levscale);
+          float db_falloff           = number_octaves * dbfalloff_per_octave;
+
+          float keyamp = decibel_to_linear_amp_ratio(db_falloff);
+
           if (0)
-            printf("uls<%g> uks<%g> ldb<%g> keyamp<%g>\n", unit_levscale, unit_keyscale, lindbscale, keyamp);
+            printf("uls<%g> numoct<%g> dbfalloff<%g> keyamp<%g>\n", unit_levscale, number_octaves, db_falloff, keyamp);
 
           //////////////////////////////////
           // final level
