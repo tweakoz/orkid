@@ -197,6 +197,7 @@ void PMX::compute(DspBuffer& dspbuf) { // final
   float clampefbl  = std::clamp(fbl, 0.0f, 1.0f);
   float amppow     = _modulator ? 1.0f : 1.0f;
   float ampsca     = _modulator ? 1.0f : 1.0f;
+
   ///////////////////////////////////////////////////////////////
   // printf("frq<%g> amp<%g> fbl<%g>\n", frq, amp, fbl);
   ///////////////////////////////////////////////////////////////
@@ -218,17 +219,21 @@ void PMX::compute(DspBuffer& dspbuf) { // final
   }
   ///////////////////////////////////////////////////////////////
   for (int i = 0; i < inumframes; i++) {
-    float phase_offset = _pmosc._prevOutput * fbl * amp * ampsca;
+    float famp         = lerp(_amp, amp, float(i) * kfpc);
+    float ffrq         = lerp(_frq, frq, float(i) * kfpc);
+    float phase_offset = _pmosc._prevOutput * fbl * famp * ampsca;
     for (int m = 0; m < PMXData::kmaxmodulators; m++) {
       auto modinp = modinputs[m];
       if (modinp != nullptr) {
         phase_offset += modinp[i];
       }
     }
-    float osc_out = _pmosc.compute(frq, phase_offset * _modIndex);
-    output[i]     = osc_out * powf(ampsca * amp, amppow);
+    float osc_out = _pmosc.compute(ffrq, phase_offset * _modIndex);
+    output[i]     = osc_out * powf(ampsca * famp, amppow);
   }
   ///////////////////////////////////////////////////////////////
+  _amp = amp;
+  _frq = frq;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void PMX::doKeyOn(const KeyOnInfo& koi) { // final

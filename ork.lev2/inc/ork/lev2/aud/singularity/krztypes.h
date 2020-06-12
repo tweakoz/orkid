@@ -40,6 +40,7 @@ static constexpr double pid2 = 3.141592654 * 0.5;
 static const double sqrt2    = sqrt(2.0);
 ///////////////////////////////////////////////////////////////////////////////
 static constexpr int frames_per_controlpass = 32;
+static constexpr float kfpc                 = 1.0f / float(frames_per_controlpass);
 inline constexpr float getSampleRate() {
   return 44100.0f;
 }

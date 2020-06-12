@@ -91,15 +91,11 @@ void YmEnvInst::compute() {
 void YmEnvInst::keyOn(const KeyOnInfo& KOI) {
   _koi    = KOI;
   _curseg = 0;
-  _rawout = 0.00001f;
+  _rawout = 0.0f;
   _layer  = KOI._layer;
   _layer->retain();
-  float abas = controlPeriod();
-  _atkinc    = abas / _data->_attackTime;
-  if (_data->_attackTime < abas) {
-    _atkinc = 0.1f;
-    _rawout = 0.0f;
-  }
+  float abas          = controlPeriod();
+  _atkinc             = abas / _data->_attackTime;
   int kb              = KOI._key - 24;
   float unit_keyscale = float(kb) / 67.0f;
   float pow_keyscale  = powf(unit_keyscale, 2.0);
@@ -129,6 +125,9 @@ void YmEnvInst::keyOn(const KeyOnInfo& KOI) {
             atkscale,
             _dec1ratefactor);
       break;
+  }
+  if (_atkinc > 0.3f) {
+    _atkinc = 0.3f;
   }
 }
 void YmEnvInst::keyOff() {

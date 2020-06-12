@@ -76,6 +76,8 @@ struct PMX final : public DspBlock {
   float _modIndex         = 1.0f;
   const PMXData* _pmxdata = nullptr;
   bool _modulator         = false;
+  float _amp              = 0.0f;
+  float _frq              = 0.0f;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct PMXMixData final : public DspBlockData {
