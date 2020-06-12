@@ -79,8 +79,9 @@ struct StereoDynamicEcho : public DspBlock {
 // Feedback Delay Network Reverb (4 nodes)
 ///////////////////////////////////////////////////////////////////////////////
 struct Fdn4ReverbData : public DspBlockData {
-  Fdn4ReverbData();
+  Fdn4ReverbData(float tscale);
   dspblk_ptr_t createInstance() const override;
+  float _tscale;
 };
 struct Fdn4Reverb : public DspBlock {
   using dataclass_t = Fdn4ReverbData;

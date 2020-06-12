@@ -32,9 +32,10 @@ void appendStereoChorus(lyrdata_ptr_t layer, dspstagedata_ptr_t stage) {
   /////////////////
 }
 ///////////////////////////////////////////////////////////////////////////////
-void appendStereoReverb(lyrdata_ptr_t layer, dspstagedata_ptr_t stage) {
-  auto fdn4              = stage->appendTypedBlock<Fdn4Reverb>();
+dspblkdata_ptr_t appendStereoReverb(lyrdata_ptr_t layer, dspstagedata_ptr_t stage, float tscale) {
+  auto fdn4              = stage->appendTypedBlock<Fdn4Reverb>(tscale);
   fdn4->param(0)._coarse = 0.5f; // wet/dry mix
+  return fdn4;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void appendStereoEnhancer(lyrdata_ptr_t layer, dspstagedata_ptr_t stage) {
@@ -79,7 +80,7 @@ lyrdata_ptr_t fxpreset_fdn4reverb() {
   fxstage->setNumIos(2, 2); // stereo in, stereo out
   /////////////////
   appendStereoEnhancer(fxlayer, fxstage);
-  appendStereoReverb(fxlayer, fxstage);
+  appendStereoReverb(fxlayer, fxstage, 0.47);
   /////////////////
   return fxlayer;
 }
@@ -95,10 +96,15 @@ lyrdata_ptr_t fxpreset_multitest() {
   /////////////////
   auto fxstage = fxalg->appendStage("FX");
   fxstage->setNumIos(2, 2); // stereo in, stereo out
-  /////////////////
-  appendStereoEnhancer(fxlayer, fxstage);
+                            /////////////////
+                            // appendStereoEnhancer(fxlayer, fxstage);
   appendStereoChorus(fxlayer, fxstage);
-  appendStereoReverb(fxlayer, fxstage);
+  auto rv2              = appendStereoReverb(fxlayer, fxstage, 0.77);
+  auto rv1              = appendStereoReverb(fxlayer, fxstage, 0.47);
+  auto rv0              = appendStereoReverb(fxlayer, fxstage, 0.27);
+  rv0->param(0)._coarse = 0.11f; // wet/dry mix
+  rv1->param(0)._coarse = 0.11f; // wet/dry mix
+  rv2->param(0)._coarse = 0.11f; // wet/dry mix
   /////////////////
   return fxlayer;
 }

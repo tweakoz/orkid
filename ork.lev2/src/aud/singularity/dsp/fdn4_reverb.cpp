@@ -16,7 +16,8 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Fdn4ReverbData::Fdn4ReverbData() {
+Fdn4ReverbData::Fdn4ReverbData(float tscale)
+    : _tscale(tscale) {
   _blocktype      = "Fdn4Reverb";
   auto& mix_param = addParam();
   mix_param.useDefaultEvaluator();
@@ -35,10 +36,10 @@ Fdn4Reverb::Fdn4Reverb(const Fdn4ReverbData* dbd)
   ///////////////////////////
   float input_g  = 0.75f;
   float output_g = 0.75f;
-  float tscale   = 0.47f;
+  float tscale   = dbd->_tscale;
   ///////////////////////////
-  matrixHadamard(0.0);
-  // matrixHouseholder();
+  // matrixHadamard(0.0);
+  matrixHouseholder();
   ///////////////////////////
   _inputGainsL  = fvec4(input_g, input_g, input_g, input_g);
   _inputGainsR  = fvec4(input_g, input_g, input_g, input_g);
