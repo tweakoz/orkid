@@ -359,15 +359,24 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
         };
 
         ///////////////////////////////////////////////
+        auto decrateFromIndex = [](float index) -> float { //
+          float dec = powf(0.9920, 30.0f * (index * 0.03f));
+          float res = powf(dec, 1.0f / float(frames_per_controlpass));
+          return res;
+        };
+        auto relrateFromIndex = [](float index) -> float { //
+          float dec = powf(0.97, 15.0f * (index * 0.06f));
+          float res = powf(dec, 1.0f / float(frames_per_controlpass));
+          return res;
+        };
+        ///////////////////////////////////////////////
         float atktime         = 16.0f * expf(-0.35377f * atkRate);
         ENVELOPE->_attackTime = atktime;
 
-        float decratepow       = 0.99997;
-        float relratepow       = 0.9995;
-        ENVELOPE->_decay1Rate  = powf(decratepow, dec1Rate);
+        ENVELOPE->_decay1Rate  = decrateFromIndex(dec1Rate);
         ENVELOPE->_decay1Level = decaylevl;
-        ENVELOPE->_decay2Rate  = powf(decratepow, dec2Rate);
-        ENVELOPE->_releaseRate = powf(relratepow, relRate);
+        ENVELOPE->_decay2Rate  = decrateFromIndex(dec2Rate);
+        ENVELOPE->_releaseRate = relrateFromIndex(relRate);
         ENVELOPE->_egshift     = egShift;
         ENVELOPE->_rateScale   = ratScaling;
 
