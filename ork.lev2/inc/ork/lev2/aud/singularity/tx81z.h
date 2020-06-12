@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2020, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #pragma once
 #include <ork/kernel/svariant.h>
 #include "synthdata.h"
@@ -10,7 +17,25 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, pm4prgdata_ptr_t fmdata);
+void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, tx81zprgdata_ptr_t fmdata);
+
+struct Tx81zProgData {
+  std::string _name;
+  int _alg            = 0;
+  bool _lfoSync       = false;
+  int _lfoSpeed       = 0;
+  int _lfoDepth       = 0;
+  int _pchDepth       = 0;
+  int _ampDepth       = 0;
+  int _lfoWave        = 0;
+  int _ampSensa       = 0;
+  int _pchSensa       = 0;
+  int _pitchBendRange = 0;
+  bool _mono          = false;
+  bool _portMode      = false;
+  int _portRate       = 0;
+  PmOscData _ops[4];
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 

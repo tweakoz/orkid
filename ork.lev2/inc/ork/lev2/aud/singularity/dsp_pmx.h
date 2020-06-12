@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2020, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #pragma once
 #include <ork/kernel/svariant.h>
 #include "synthdata.h"
@@ -7,25 +14,8 @@
 
 namespace ork::audio::singularity {
 
-struct Pm4ProgData {
-  std::string _name;
-  int _alg            = 0;
-  bool _lfoSync       = false;
-  int _lfoSpeed       = 0;
-  int _lfoDepth       = 0;
-  int _pchDepth       = 0;
-  int _ampDepth       = 0;
-  int _lfoWave        = 0;
-  int _ampSensa       = 0;
-  int _pchSensa       = 0;
-  int _pitchBendRange = 0;
-  bool _mono          = false;
-  bool _portMode      = false;
-  int _portRate       = 0;
-  PmOscData _ops[4];
-};
-
-using pm4prgdata_ptr_t = std::shared_ptr<Pm4ProgData>;
+struct Tx81zProgData;
+using tx81zprgdata_ptr_t = std::shared_ptr<Tx81zProgData>;
 
 struct DspBuffer;
 
@@ -49,9 +39,15 @@ struct op4frame {
 
 hudpanel_ptr_t create_op4panel();
 
-///////////////////////////////////////////////////////////////////////////////
-// PMX - 1-8 input PM operator
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+// PMX : Yamaha (Dx/Tx) Style Phase Modulation Oscillator
+//  supports:
+//   up to 8 modulator inputs
+//   definable waveforms
+//   arbitrary modulation inputs
+//    (can be samples, or any other singularity 1-8ch dspblock)
+////////////////////////////////////////////////////////////////
+
 struct PMXData final : public DspBlockData {
   PMXData();
   dspblk_ptr_t createInstance() const override;
@@ -62,7 +58,7 @@ struct PMXData final : public DspBlockData {
   int _pmInpChannels[kmaxmodulators]  = {-1, -1, -1, -1, -1, -1, -1, -1};
   PmOscData _pmoscdata;
   int _opindex = 0;
-  pm4prgdata_ptr_t _txprogramdata; // temp for debugging
+  tx81zprgdata_ptr_t _txprogramdata; // temp for debugging
   bool _modulator = false;
 };
 
@@ -79,7 +75,12 @@ struct PMX final : public DspBlock {
   float _amp              = 0.0f;
   float _frq              = 0.0f;
 };
-///////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////
+// PMXMix : Yamaha (Dx/Tx) Style Phase Modulation Oscillator mixer
+//  mix up to 8PM oscillators (each on their own dsp-channel) into 1 dsp-channel
+////////////////////////////////////////////////////////////////
+
 struct PMXMixData final : public DspBlockData {
   PMXMixData();
   dspblk_ptr_t createInstance() const override;

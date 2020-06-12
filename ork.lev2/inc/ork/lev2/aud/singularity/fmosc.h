@@ -29,13 +29,12 @@ struct PmOsc {
 
   void setWave(int iw);
 
-  static constexpr float kinv64k = 1.0f / 65536.0f;
-  static constexpr float kinv32k = 1.0f / 32768.0f;
-
   int64_t _pbIndex;
   int64_t _pbIndexNext;
   int64_t _pbIncrBase;
   float _prevOutput;
+  float _wtsXisr;
+  int64_t _wtsize;
 
   const Wavetable* _waveform;
 };

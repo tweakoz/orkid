@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2020, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <stdio.h>
 #include <ork/orktypes.h>
 #include <ork/math/audiomath.h>
@@ -139,7 +146,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
     zpmDB->_programsByName[name] = prg;
 
-    auto fm4pd     = std::make_shared<Pm4ProgData>();
+    auto fm4pd     = std::make_shared<Tx81zProgData>();
     auto layerdata = prg->newLayer();
 
     printf("////////////////////////////\n");
@@ -459,10 +466,10 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
           float unit_levscale = float(levScaling / 99.0f);
           unit_levscale       = std::clamp(unit_levscale, 0.0f, 1.0f);
           unit_levscale       = powf(unit_levscale, 2.0);
-          float unit_keyscale = float(op_key - 24) / 67.0f;
+          float unit_keyscale = float(op_key) / 67.0f;
           unit_keyscale       = std::clamp(unit_keyscale, 0.0f, 1.0f);
           float lindbscale    = unit_keyscale * unit_levscale;
-          float keyamp        = decibel_to_linear_amp_ratio(lindbscale * -48.0f);
+          float keyamp        = decibel_to_linear_amp_ratio(lindbscale * -36.0f);
           if (0)
             printf("uls<%g> uks<%g> ldb<%g> keyamp<%g>\n", unit_levscale, unit_keyscale, lindbscale, keyamp);
 
@@ -513,7 +520,7 @@ void Tx81zData::loadBank(const file::Path& syxpath) {
   parse_tx81z(this, syxpath);
 }
 ////////////////////////////////////////////////////////////////////////////////
-void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, pm4prgdata_ptr_t prgdata) {
+void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, tx81zprgdata_ptr_t prgdata) {
   auto algdout        = std::make_shared<AlgData>();
   layerdata->_algdata = algdout;
   algdout->_name      = ork::FormatString("tx81z<%d>", prgdata->_alg);
