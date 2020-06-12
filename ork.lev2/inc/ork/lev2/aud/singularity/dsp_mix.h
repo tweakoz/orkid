@@ -2,6 +2,7 @@
 #pragma once
 
 #include "dspblocks.h"
+#include <ork/math/cmatrix4.h>
 
 namespace ork::audio::singularity {
 
@@ -48,7 +49,7 @@ struct StereoDynamicEchoData : public DspBlockData {
 };
 struct StereoDynamicEcho : public DspBlock {
   using dataclass_t = StereoDynamicEchoData;
-  StereoDynamicEcho(const DspBlockData* dbd);
+  StereoDynamicEcho(const StereoDynamicEchoData* dbd);
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
   DspBuffer _delaybuffer;
@@ -56,6 +57,27 @@ struct StereoDynamicEcho : public DspBlock {
   int64_t _maxdelaylen = 0;
   float _delaylenL     = 0.0f;
   float _delaylenR     = 0.0f;
+};
+///////////////////////////////////////////////////////////////////////////////
+struct Fdn4ReverbData : public DspBlockData {
+  Fdn4ReverbData();
+  dspblk_ptr_t createInstance() const override;
+  int64_t _maxdelaylen = 1 << 20;
+};
+struct Fdn4Reverb : public DspBlock {
+  using dataclass_t = Fdn4ReverbData;
+  Fdn4Reverb(const Fdn4ReverbData*);
+  void compute(DspBuffer& dspbuf) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
+  DspBuffer _delaybufferA;
+  DspBuffer _delaybufferB;
+  DspBuffer _delaybufferC;
+  DspBuffer _delaybufferD;
+  int64_t _indexA;
+  int64_t _indexB;
+  int64_t _indexC;
+  int64_t _indexD;
+  fmtx4 _feedbackMatrix;
 };
 
 } // namespace ork::audio::singularity
