@@ -2,7 +2,6 @@
 
 #include <stdint.h>
 #include <vector>
-#include "tx81z.h"
 #include <stdint.h>
 
 namespace ork::audio::singularity {
@@ -16,23 +15,26 @@ struct Wavetable;
 //  technically, its phase modulation...
 ///////////////////////////////////////////////////////////
 
-struct FmOsc {
-  FmOsc();
-  ~FmOsc();
+struct PmOscData {
+  int _waveform = 0;
+};
 
-  void keyOn(const Fm4OpData& opd);
+struct PmOsc {
+  PmOsc();
+  ~PmOsc();
+
+  void keyOn(const PmOscData& opd);
   void keyOff();
   float compute(float frq, float phase_offset);
 
   void setWave(int iw);
 
-  static constexpr float kinv64k = 1.0f / 65536.0f;
-  static constexpr float kinv32k = 1.0f / 32768.0f;
-
   int64_t _pbIndex;
   int64_t _pbIndexNext;
   int64_t _pbIncrBase;
   float _prevOutput;
+  float _wtsXisr;
+  int64_t _wtsize;
 
   const Wavetable* _waveform;
 };

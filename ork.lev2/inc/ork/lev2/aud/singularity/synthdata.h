@@ -12,12 +12,17 @@ file::Path basePath();
 
 struct ProgramData {
   lyrdata_ptr_t newLayer();
-  lyrdata_ptr_t getLayer(int i) const {
+  inline lyrdata_ptr_t getLayer(int i) const {
     return _layerdatas[i];
   }
+  inline void addHudInfo(std::string str) {
+    _hudinfos.push_back(str);
+  }
+
   std::string _name;
   std::string _role;
   std::vector<lyrdata_ptr_t> _layerdatas;
+  std::vector<std::string> _hudinfos;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

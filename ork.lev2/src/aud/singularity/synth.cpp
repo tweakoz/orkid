@@ -63,8 +63,8 @@ synth::synth()
     , _soloLayer(-1)
     , _timeaccum(0.0f)
     , _hudpage(0)
-    , _oswidth(0.0333333f * getSampleRate()) //
-    , _ostriglev(0.05f) {                    //
+    , _oswidth(0.030f * getSampleRate()) //
+    , _ostriglev(0.0f) {                 //
 
   _tempbus         = std::make_shared<OutputBus>();
   _tempbus->_name  = "temp-dsp";
@@ -212,6 +212,11 @@ programInst* synth::keyOn(int note, int velocity, prgdata_constptr_t pdata) {
   _lnoteframe   = 0;
   _lnotetime    = 0.0f;
   _clearhuddata = true;
+
+  for (auto h : _onkey_subscribers) {
+    h(clampn, clampv, pi);
+  }
+
   if (0) //_testtone )
   {
     float frq      = midi_note_to_frequency(note);
@@ -262,6 +267,25 @@ void synth::compute(int inumframes, const void* inputBuffer) {
     return;
 
   resize(inumframes);
+
+  /////////////////////////////
+
+  if (_onprofilerframe) {
+    SynthProfilerFrame frame;
+    frame._samplerate  = getSampleRate();
+    frame._controlrate = controlRate();
+    frame._cpuload     = _cpuload;
+    frame._numlayers   = _activeVoices.size();
+
+    int numdspblocks = 0;
+    for (auto v : _activeVoices) {
+      auto ld = v->_layerdata;
+      numdspblocks += ld->numDspBlocks();
+    }
+
+    frame._numdspblocks = numdspblocks;
+    _onprofilerframe(frame);
+  }
 
   /////////////////////////////
   // clear output buffer

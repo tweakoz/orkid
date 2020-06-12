@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2020, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <string>
 #include <assert.h>
 #include <unistd.h>
@@ -91,15 +98,11 @@ void YmEnvInst::compute() {
 void YmEnvInst::keyOn(const KeyOnInfo& KOI) {
   _koi    = KOI;
   _curseg = 0;
-  _rawout = 0.00001f;
+  _rawout = 0.0f;
   _layer  = KOI._layer;
   _layer->retain();
-  float abas = controlPeriod();
-  _atkinc    = abas / _data->_attackTime;
-  if (_data->_attackTime < abas) {
-    _atkinc = 0.1f;
-    _rawout = 0.0f;
-  }
+  float abas          = controlPeriod();
+  _atkinc             = abas / _data->_attackTime;
   int kb              = KOI._key - 24;
   float unit_keyscale = float(kb) / 67.0f;
   float pow_keyscale  = powf(unit_keyscale, 2.0);
@@ -116,6 +119,9 @@ void YmEnvInst::keyOn(const KeyOnInfo& KOI) {
       _dec1ratefactor = powf(_data->_decay1Rate, pow_keyscale * (1 << (_data->_rateScale + 1)));
       _dec2ratefactor = powf(_data->_decay2Rate, pow_keyscale * (1 << (_data->_rateScale + 1)));
       _relratefactor  = powf(_data->_releaseRate, pow_keyscale * (1 << (_data->_rateScale + 1)));
+      //_dec1ratefactor = _data->_decay1Rate;
+      //_dec2ratefactor = _data->_decay2Rate;
+      //_relratefactor  = _data->_releaseRate;
       _atkinc *= atkscale;
       if (0)
         printf(
@@ -126,6 +132,9 @@ void YmEnvInst::keyOn(const KeyOnInfo& KOI) {
             atkscale,
             _dec1ratefactor);
       break;
+  }
+  if (_atkinc > 0.3f) {
+    _atkinc = 0.3f;
   }
 }
 void YmEnvInst::keyOff() {

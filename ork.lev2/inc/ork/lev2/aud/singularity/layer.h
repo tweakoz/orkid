@@ -34,6 +34,7 @@ struct LayerData {
   ///////////////////////////////////////////////////
   scopesource_ptr_t createScopeSource();
   ///////////////////////////////////////////////////
+  int numDspBlocks() const;
 
   const ProgramData* _programdata = nullptr;
   int _numdspblocks               = 0;

@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2020, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <ork/lev2/aud/singularity/fmosc.h>
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
@@ -5,7 +12,7 @@
 
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////
-FmOsc::FmOsc()
+PmOsc::PmOsc()
     : _pbIndex(0)
     , _pbIndexNext(0)
     , _pbIncrBase(0)
@@ -13,10 +20,10 @@ FmOsc::FmOsc()
   setWave(0);
 }
 ///////////////////////////////////////////////////////////
-FmOsc::~FmOsc() {
+PmOsc::~PmOsc() {
 }
 ///////////////////////////////////////////////////////////
-void FmOsc::setWave(int iwave) {
+void PmOsc::setWave(int iwave) {
   assert(iwave >= 0 and iwave < 8);
   static const Wavetable* fmwave[8];
   static bool ginit = true;
@@ -34,34 +41,37 @@ void FmOsc::setWave(int iwave) {
   _waveform = fmwave[iwave];
 }
 ///////////////////////////////////////////////////////////
-void FmOsc::keyOn(const Fm4OpData& opd) {
+void PmOsc::keyOn(const PmOscData& opd) {
   _pbIndex     = 0;
   _pbIndexNext = 0;
   _prevOutput  = 0.0f;
   _pbIncrBase  = 0;
   setWave(opd._waveform);
+  _wtsize  = _waveform->_wavedata.size();
+  _wtsXisr = float(_wtsize) * getInverseSampleRate();
 }
 ///////////////////////////////////////////////////////////
-void FmOsc::keyOff() {
+void PmOsc::keyOff() {
 }
 ///////////////////////////////////////////////////////////
-// FmOsc::compute(float frequency, float phase_offset)
+// PmOsc::compute(float frequency, float phase_offset)
 //  frequency: frequency of operator in hertz
 //  phase_offset: normalized phase offset
 //    -1: -2 PI radians
 //    +1: _2 PI radians
 ///////////////////////////////////////////////////////////
-float FmOsc::compute(float frequency, float phase_offset) {
+static constexpr float kinv64k = 1.0f / 65536.0f;
+static constexpr float kinv32k = 1.0f / 32768.0f;
+float PmOsc::compute(float frequency, float phase_offset) {
   const float* sblk = _waveform->_wavedata.data();
-  int64_t wtsize    = _waveform->_wavedata.size();
+  validateSample(frequency);
+  validateSample(phase_offset);
 
-  float phaseinc = float(wtsize) //
-                   * frequency   //
-                   * getInverseSampleRate();
+  float phaseinc = _wtsXisr * frequency;
 
   _pbIncrBase           = int64_t(phaseinc * 65536.0f);
   _pbIndexNext          = _pbIndex + _pbIncrBase;
-  int64_t scaled_offset = wtsize * int64_t(phase_offset * 65536.0f);
+  int64_t scaled_offset = _wtsize * int64_t(phase_offset * 65536.0f);
   int64_t this_phase    = _pbIndex + scaled_offset;
 
   /*printf(
@@ -73,8 +83,15 @@ float FmOsc::compute(float frequency, float phase_offset) {
   float fract = float(this_phase & 0xffff) * kinv64k;
   float invfr = 1.0f - fract;
 
-  int64_t iiA = (this_phase >> 16) % wtsize;
-  int64_t iiB = (iiA + 1) % wtsize;
+  int64_t iiA = (this_phase >> 16) % _wtsize;
+  int64_t iiB = (iiA + 1) % _wtsize;
+
+  while (iiA < 0) {
+    iiA += _wtsize;
+  }
+  while (iiB < 0) {
+    iiB += _wtsize;
+  }
   /*printf(
       "phase_offset<%g> scaled_offset<%zd> iiA<%zd> iiB<%zd>\n", //
       phase_offset,
@@ -88,7 +105,9 @@ float FmOsc::compute(float frequency, float phase_offset) {
 
   _pbIndex = _pbIndexNext;
 
-  return softsat(_prevOutput, 1.1f);
+  // float output = softsat(_prevOutput, 1.1f);
+  validateSample(_prevOutput);
+  return _prevOutput;
 }
 ///////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

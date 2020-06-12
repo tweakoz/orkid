@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2020, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include "harness.h"
 #include <boost/program_options.hpp>
 #include <iostream>
@@ -574,9 +581,11 @@ prgdata_constptr_t testpattern(syndata_ptr_t syndat, int argc, char** argv) {
       }
     }
   } else {
-    for (int velocity = 0; velocity <= 128; velocity += 8) {
-      enqueue_audio_event(program, count * 0.25, 0.1, 48, velocity);
-      count++;
+    for (int rep = 0; rep <= 16; rep++) {
+      for (int velocity = 0; velocity <= 128; velocity += 8) {
+        enqueue_audio_event(program, count * 0.25, 0.1, 48, velocity);
+        count++;
+      }
     }
   }
   return program;

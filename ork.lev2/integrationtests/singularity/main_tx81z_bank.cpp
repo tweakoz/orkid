@@ -9,30 +9,10 @@ int main(int argc, char** argv) {
   ////////////////////////////////////////////////
   auto mainbus   = synth::instance()->outputBus("main");
   auto bussource = mainbus->createScopeSource();
-  if (0) { // create mixbus effect ?
-    auto fxprog       = std::make_shared<ProgramData>();
-    auto fxlayer      = fxprog->newLayer();
-    auto fxalg        = std::make_shared<AlgData>();
-    fxlayer->_algdata = fxalg;
-    fxalg->_name      = ork::FormatString("FxAlg");
-    /////////////////
-    // output effect
-    /////////////////
-    auto fxstage = fxalg->appendStage("FX");
-    fxstage->setNumIos(2, 2); // stereo in, stereo out
-    auto stereoenh           = fxstage->appendTypedBlock<StaticStereoEcho>();
-    auto& width_mod          = stereoenh->param(0)._mods;
-    auto WIDTHCONTROL        = fxlayer->appendController<CustomControllerData>("WIDTH");
-    width_mod._src1          = WIDTHCONTROL;
-    width_mod._src1Depth     = 1.0;
-    WIDTHCONTROL->_oncompute = [](CustomControllerInst* cci) { //
-      cci->_curval = 0.7f;
-    };
-    auto echo              = fxstage->appendTypedBlock<StaticStereoEcho>();
-    echo->param(0)._coarse = 120.0f / 8.0f / 180.0f; // delay time ()
-    echo->param(1)._coarse = 0.75;                   // feedback
-    echo->param(2)._coarse = 0.5;                    // wet/dry mix
-
+  if (1) { // create mixbus effect ?
+    // auto fxlayer = fxpreset_stereochorus();
+    // auto fxlayer = fxpreset_fdn4reverb();
+    auto fxlayer = fxpreset_multitest();
     mainbus->setBusDSP(fxlayer);
   }
   ////////////////////////////////////////////////
@@ -48,6 +28,11 @@ int main(int argc, char** argv) {
   analyzer2->setRect(480, 480, 810, 240, true);
   bussource->connect(scope2->_sink);
   bussource->connect(analyzer2->_sink);
+  //////////////////////////////////////////////////////////////////////////////
+  auto progview = createProgramView(app->_hudvp, "program");
+  auto perfview = createProfilerView(app->_hudvp, "profiler");
+  progview->setRect(-10, 240, 890, 240, true);
+  perfview->setRect(900, 240, 1290 - 900, 240, true);
   //////////////////////////////////////////////////////////////////////////////
   auto basepath = basePath() / "tx81z";
   auto bank     = std::make_shared<Tx81zData>();

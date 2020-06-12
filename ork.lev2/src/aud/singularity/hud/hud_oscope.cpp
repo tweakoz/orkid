@@ -98,11 +98,23 @@ void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
       osgain = 1.0;
       break;
     case 2:
-      osgain = 2.0;
-      break;
-    case 3:
       osgain = 4.0;
       break;
+    case 3: {
+      float _min = 1e6;
+      float _max = -1e6;
+      for (int i = 0; i < koscopelength; i++) {
+        float s = _samples[i];
+        if (s > _max)
+          _max = s;
+        if (s < _min)
+          _min = s;
+      }
+      float range = _max - _min;
+      float midp  = (_max + _min) * 0.5f;
+      osgain      = 0.8f / (range * 0.5);
+      break;
+    }
   }
 
   ///////////////////////////////////////////////

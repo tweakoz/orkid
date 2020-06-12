@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
   /////////////////
   // stereo echo
   /////////////////
-  auto echo              = fxstage->appendTypedBlock<StaticStereoEcho>();
+  auto echo              = fxstage->appendTypedBlock<StereoDynamicEcho>();
   echo->param(0)._coarse = 2.0;  // delay time (sec)
   echo->param(1)._coarse = 0.25; // feedback
   echo->param(2)._coarse = 0.15; // wet/dry mix

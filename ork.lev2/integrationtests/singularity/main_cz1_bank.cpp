@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
   /////////////////
   auto fxstage = fxalg->appendStage("FX");
   fxstage->setNumIos(2, 2); // stereo in, stereo out
-  auto stereoenh           = fxstage->appendTypedBlock<StaticStereoEcho>();
+  auto stereoenh           = fxstage->appendTypedBlock<StereoDynamicEcho>();
   auto& width_mod          = stereoenh->param(0)._mods;
   auto WIDTHCONTROL        = fxlayer->appendController<CustomControllerData>("WIDTH");
   width_mod._src1          = WIDTHCONTROL;
@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
   WIDTHCONTROL->_oncompute = [](CustomControllerInst* cci) { //
     cci->_curval = 0.7f;
   };
-  // auto echo              = fxstage->appendTypedBlock<StaticStereoEcho>();
+  // auto echo              = fxstage->appendTypedBlock<StereoDynamicEcho>();
   // echo->param(0)._coarse = 0.5; // delay time
   // echo->param(1)._coarse = 0.5; // feedback
   // echo->param(2)._coarse = 0.5; // wet/dry mix
