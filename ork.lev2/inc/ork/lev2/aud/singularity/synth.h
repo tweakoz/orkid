@@ -25,6 +25,24 @@ struct programInst {
   std::vector<Layer*> _layers;
 };
 
+using onkey_t = std::function<void(
+    int note, //
+    int velocity,
+    programInst* pinst)>;
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct SynthProfilerFrame {
+  float _samplerate  = 0;
+  float _controlrate = 0;
+  int _buffersize    = 0;
+  float _cpuload     = 0.0f;
+  int _numlayers     = 0;
+  int _numdspblocks  = 0;
+};
+
+using onprofframe_t = std::function<void(const SynthProfilerFrame& profframe)>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct SynthData;
@@ -63,7 +81,6 @@ struct synth {
   ~synth();
 
   using eventmap_t = std::multimap<float, void_lambda_t>;
-
   static synth_ptr_t instance();
 
   typedef std::vector<hudsample> hudsamples_t;
@@ -93,6 +110,8 @@ struct synth {
   float _timeaccum;
 
   std::map<std::string, outbus_ptr_t> _outputBusses;
+  std::vector<onkey_t> _onkey_subscribers;
+  onprofframe_t _onprofilerframe = nullptr;
 
   outbus_ptr_t _tempbus;
 
@@ -128,7 +147,7 @@ struct synth {
   int _genmode                  = 0;
   float _ostriglev              = 0;
   bool _ostrigdir               = false;
-  int _osgainmode               = 0;
+  int _osgainmode               = 3; // auto
   int64_t _oswidth              = 0;
   bool _bypassDSP               = false;
   bool _doModWheel              = false;

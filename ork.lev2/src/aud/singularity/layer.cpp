@@ -32,6 +32,15 @@ LayerData::LayerData(const ProgramData* pdata)
   _outbus      = the_synth->outputBus("main");
 }
 ///////////////////////////////////////////////////////////////////////////////
+int LayerData::numDspBlocks() const {
+  int dspb = 0;
+  for (int istage = 0; istage < _algdata->_numstages; istage++) {
+    auto stage = _algdata->_stages[istage];
+    dspb += stage->_numblocks;
+  }
+  return dspb;
+}
+///////////////////////////////////////////////////////////////////////////////
 controllerdata_ptr_t LayerData::controllerByName(const std::string& named) const {
   auto it = _controllermap.find(named);
   return it != _controllermap.end() ? it->second : nullptr;

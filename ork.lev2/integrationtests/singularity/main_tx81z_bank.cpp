@@ -49,6 +49,11 @@ int main(int argc, char** argv) {
   bussource->connect(scope2->_sink);
   bussource->connect(analyzer2->_sink);
   //////////////////////////////////////////////////////////////////////////////
+  auto progview = createProgramView(app->_hudvp, "program");
+  auto perfview = createProfilerView(app->_hudvp, "profiler");
+  progview->setRect(-10, 240, 890, 240, true);
+  perfview->setRect(900, 240, 1290 - 900, 240, true);
+  //////////////////////////////////////////////////////////////////////////////
   auto basepath = basePath() / "tx81z";
   auto bank     = std::make_shared<Tx81zData>();
   bank->loadBank(basepath / "tx81z_1.syx");

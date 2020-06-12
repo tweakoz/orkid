@@ -117,9 +117,9 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
   for (int iv = 0; iv < programcount; iv++) {
     int progid               = outd->_lastprg++;
-    auto prg                 = std::make_shared<ProgramData>();
-    zpmDB->_programs[progid] = prg;
-    prg->_role               = "fm4";
+    auto zpmprg              = std::make_shared<ProgramData>();
+    zpmDB->_programs[progid] = zpmprg;
+    zpmprg->_role            = "fm4";
 
     ///////////////////////////
     // collect bytes for program
@@ -142,12 +142,12 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
     auto name = std::regex_replace(std::string(namebuf), std::regex("^ +| +$|( ) +"), "$1");
     // remove leading and trailing spaces from patch name
-    prg->_name = name;
+    zpmprg->_name = name;
 
-    zpmDB->_programsByName[name] = prg;
+    zpmDB->_programsByName[name] = zpmprg;
 
     auto fm4pd     = std::make_shared<Tx81zProgData>();
-    auto layerdata = prg->newLayer();
+    auto layerdata = zpmprg->newLayer();
 
     printf("////////////////////////////\n");
     printf("V<%d:%s>\n", progid, name.c_str());
@@ -215,6 +215,13 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
     fm4pd->_portRate = PORT;
 
+    ///////////////////////////////
+
+    zpmprg->addHudInfo(FormatString("ProgramType: TX81Z"));
+    zpmprg->addHudInfo(FormatString("TX-ALG: %d", ALG));
+    zpmprg->addHudInfo(FormatString("FBL: %d", FBL));
+    zpmprg->addHudInfo(FormatString("TRANSPOSE: %d", TRPS));
+
     ////////////
     // per-operator data
     ////////////
@@ -249,7 +256,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       int dec1Rate     = bytes[op_base + 1]; // EG 0..31
       int dec2Rate     = bytes[op_base + 2]; // EG 0..31
       int relRate      = bytes[op_base + 3]; // EG 0..15
-      int dec1Lev      = bytes[op_base + 4]; // EG 0..15
+      int susLev       = bytes[op_base + 4]; // EG 0..15
       int levScaling   = bytes[op_base + 5]; // level scaling 0..99
       int _AEK         = bytes[op_base + 6];
       bool AME         = !((_AEK & 64) >> 6);              // AME - bool (amp modulation for op)
@@ -277,9 +284,28 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       // float fol = powf(float(outLevel) / 99.0f, 3.5);
       // outLevel  = std::clamp(int(fol * 99.0), 0, 99);
 
-      printf("prog<%s> op<%d> waveform<%d> level<%d> ame<%d> ebs<%d>\n", name.c_str(), opindex, waveform, outLevel, int(AME), EBS);
+      // printf("prog<%s> op<%d> waveform<%d> level<%d> ame<%d> ebs<%d>\n", name.c_str(), opindex, waveform, outLevel, int(AME),
+      // EBS);
 
       opd._waveform = waveform;
+
+      //////////////////////////////////
+      // map base operator level
+      //////////////////////////////////
+
+      float a       = logf(2.0f) * 0.08f;
+      float b       = 90.0f * a;
+      float baselev = expf(a * float(outLevel) - b); // / 1.86607;
+      baselev       = powf(baselev, 1.0f);
+
+      printf(
+          "prog<%s> op<%d> outLevel<%d> a<%g> b<%g> baselev<%g>\n", //
+          name.c_str(),
+          opindex,
+          outLevel,
+          a,
+          b,
+          baselev);
 
       ////////////////////////////
       // translate tx operator frequency params
@@ -304,17 +330,15 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
         pitch_param._keyTrack = 0.0; // 0 cents/key
         keyprod               = [coarse](float inpkey) { return coarse; };
 
-        printf(
-            "prog<%s> op<%d> fixed range<%d> coarseFrq<%d> fineFrq<%d> index<%d> fixedfrq<%g> detune<%d> cents<%g>\n", //
-            name.c_str(),
+        zpmprg->addHudInfo(FormatString(
+            "OP%d waveform<%d> fixed-frequency<%g> outlev<%d> a<%g> b<%g> baselev<%g>", //
             opindex,
-            fixedRange,
-            coarseFrq,
-            fineFrq,
-            frqindex,
+            waveform,
             fixedfrq,
-            detune,
-            pitch_param._coarse * 100.0);
+            outLevel,
+            a,
+            b,
+            baselev));
 
       } else {
         OrkAssert(coarseFrq < 64);
@@ -330,12 +354,15 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
           return inpkey + (cents * 0.01);
         };
 
-        printf(
-            "prog<%s> op<%d> ratio<%g> cents<%g>\n", //
-            name.c_str(),
+        zpmprg->addHudInfo(FormatString(
+            "OP%d waveform<%d> ratio<%g> outlev<%d> a<%g> b<%g> baselev<%g>", //
             opindex,
+            waveform,
             ratio,
-            cents);
+            outLevel,
+            a,
+            b,
+            baselev));
       }
 
       ////////////////////////////////////////////////////////////////////////
@@ -343,13 +370,12 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       ////////////////////////////////////////////////////////////////////////
 
       if (true) {
-
         auto envname  = ork::FormatString("op%d-env", opindex);
         auto opaname  = ork::FormatString("op%d-amp", opindex);
         auto ENVELOPE = layerdata->appendController<YmEnvData>(envname);
         auto OPAMP    = layerdata->appendController<CustomControllerData>(opaname);
 
-        float decaylevl = openv_declevels[dec1Lev];
+        float decaylevl = openv_declevels[susLev];
         float ddec      = fabs(1.0f - decaylevl);
 
         ///////////////////////////////////////////////
@@ -396,16 +422,21 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
         ENVELOPE->_egshift     = egShift;
         ENVELOPE->_rateScale   = ratScaling;
 
-        printf(
-            "prog<%s> op<%d> egShift<%d> levsca<%d> ATK<%d> DC1<%d> DC2<%d> REL<%d>\n", //
-            name.c_str(),
+        zpmprg->addHudInfo(FormatString(
+            "OP%d atk<%d:%g> dc1<%d:%g> suslev<%d:%g> dc2<%d:%g> rel<%d:%g> egShift<%d> levsca<%d>", //
             opindex,
+            atkRate,
+            atktime,
+            dec1Rate,
+            ENVELOPE->_decay1Rate,
+            susLev,
+            decaylevl,
+            dec2Rate,
+            ENVELOPE->_decay2Rate,
+            relRate,
+            ENVELOPE->_releaseRate,
             egShift,
-            levScaling,
-            int(atkRate),
-            int(dec1Rate),
-            int(dec2Rate),
-            int(relRate));
+            levScaling));
 
         //////////////////////////////////////////////////
         // level scaling (operator amplitude key follow)
@@ -417,24 +448,6 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
         //////////////////////////////////////////////////
 
         float fkeyvelsense = expf(float(-keyvelsense) * logf(2.0f));
-
-        //////////////////////////////////
-        // map base operator level
-        //////////////////////////////////
-
-        float a       = logf(2.0f) * 0.08f;
-        float b       = 90.0f * a;
-        float baselev = expf(a * float(outLevel) - b); // / 1.86607;
-        baselev       = powf(baselev, 1.0f);
-
-        printf(
-            "prog<%s> op<%d> outLevel<%d> a<%g> b<%g> baselev<%g>\n", //
-            name.c_str(),
-            opindex,
-            outLevel,
-            a,
-            b,
-            baselev);
 
         //////////////////////////////////
 
@@ -510,7 +523,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       }
     }
   }
-} // namespace ork::audio::singularity
+}
 
 Tx81zData::Tx81zData()
     : SynthData()
