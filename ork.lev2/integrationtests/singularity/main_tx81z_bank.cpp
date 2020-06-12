@@ -10,49 +10,9 @@ int main(int argc, char** argv) {
   auto mainbus   = synth::instance()->outputBus("main");
   auto bussource = mainbus->createScopeSource();
   if (1) { // create mixbus effect ?
-    auto fxprog       = std::make_shared<ProgramData>();
-    auto fxlayer      = fxprog->newLayer();
-    auto fxalg        = std::make_shared<AlgData>();
-    fxlayer->_algdata = fxalg;
-    fxalg->_name      = ork::FormatString("FxAlg");
-    /////////////////
-    // output effect
-    /////////////////
-    auto fxstage = fxalg->appendStage("FX");
-    fxstage->setNumIos(2, 2); // stereo in, stereo out
-    auto stereoenh           = fxstage->appendTypedBlock<StereoDynamicEcho>();
-    auto& width_mod          = stereoenh->param(0)._mods;
-    auto WIDTHCONTROL        = fxlayer->appendController<CustomControllerData>("WIDTH");
-    width_mod._src1          = WIDTHCONTROL;
-    width_mod._src1Depth     = 1.0;
-    WIDTHCONTROL->_oncompute = [](CustomControllerInst* cci) { //
-      cci->_curval = 0.7f;
-    };
-    /////////////////
-    // stereo chorus
-    /////////////////
-    auto chorus               = fxstage->appendTypedBlock<StereoDynamicEcho>();
-    chorus->param(0)._coarse  = 0.0f; // delay time (L)
-    chorus->param(1)._coarse  = 0.0f; // delay time (R)
-    chorus->param(2)._coarse  = 0.15; // feedback
-    chorus->param(3)._coarse  = 0.4;  // wet/dry mix
-    auto& delaytime_modL      = chorus->param(0)._mods;
-    auto& delaytime_modR      = chorus->param(1)._mods;
-    auto DELAYTIMEMODL        = fxlayer->appendController<CustomControllerData>("DELAYTIME");
-    auto DELAYTIMEMODR        = fxlayer->appendController<CustomControllerData>("DELAYTIME");
-    delaytime_modL._src1      = DELAYTIMEMODL;
-    delaytime_modL._src1Depth = 1.0;
-    DELAYTIMEMODL->_oncompute = [](CustomControllerInst* cci) { //
-      float time   = cci->_layer->_layerTime;
-      cci->_curval = 0.030f + sinf(time * pi2 * 1.1) * 0.001f;
-    };
-    delaytime_modR._src1      = DELAYTIMEMODR;
-    delaytime_modR._src1Depth = 1.0;
-    DELAYTIMEMODR->_oncompute = [](CustomControllerInst* cci) { //
-      float time   = cci->_layer->_layerTime;
-      cci->_curval = 0.030f + sinf(time * pi2 * 0.9) * 0.001f;
-    };
-    /////////////////
+    // auto fxlayer = fxpreset_stereochorus();
+    // auto fxlayer = fxpreset_fdn4reverb();
+    auto fxlayer = fxpreset_multitest();
     mainbus->setBusDSP(fxlayer);
   }
   ////////////////////////////////////////////////
