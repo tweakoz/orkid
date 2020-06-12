@@ -7,6 +7,7 @@
 #include <ork/lev2/aud/singularity/krzobjects.h>
 #include <ork/lev2/aud/singularity/tx81z.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
+#include <ork/lev2/aud/singularity/dsp_mix.h>
 
 using namespace ork;
 namespace ork::audio::singularity {
@@ -279,6 +280,10 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       //  so we can use singularity modulation
       ////////////////////////////
 
+      using keyprod_t = std::function<float(float inkey)>;
+
+      keyprod_t keyprod = [](float inpkey) -> float { return 0.0f; };
+
       float detcents = float(detune) * 5.6 / 3.0;
       float det_rat  = cents_to_linear_freq_ratio(detcents);
       if (fixdfrqmode) {
@@ -287,9 +292,10 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
         // fixedfrq += fineFrq * finestep;
         // fixedfrq *= det_rat;
-
-        pitch_param._coarse   = frequency_to_midi_note(fixedfrq);
+        float coarse          = frequency_to_midi_note(fixedfrq);
+        pitch_param._coarse   = coarse;
         pitch_param._keyTrack = 0.0; // 0 cents/key
+        keyprod               = [coarse](float inpkey) { return coarse; };
 
         printf(
             "prog<%s> op<%d> fixed range<%d> coarseFrq<%d> fineFrq<%d> index<%d> fixedfrq<%g> detune<%d> cents<%g>\n", //
@@ -312,7 +318,10 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
         float cents           = linear_freq_ratio_to_cents(ratio);
         pitch_param._coarse   = keybase + cents * 0.01; // middlec*ratio
         pitch_param._fine     = float(detune) * 5.6 / 3.0;
-        pitch_param._keyTrack = 100.0; // 100 cents/key
+        pitch_param._keyTrack = 100.0;                           // 100 cents/key
+        keyprod               = [cents, middleC](float inpkey) { //
+          return inpkey + (cents * 0.01);
+        };
 
         printf(
             "prog<%s> op<%d> ratio<%g> cents<%g>\n", //
@@ -360,12 +369,12 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
         ///////////////////////////////////////////////
         auto decrateFromIndex = [](float index) -> float { //
-          float dec = powf(0.9920, 30.0f * (index * 0.03f));
+          float dec = powf(0.9925, 30.0f * (index * 0.03f));
           float res = powf(dec, 1.0f / float(frames_per_controlpass));
           return res;
         };
         auto relrateFromIndex = [](float index) -> float { //
-          float dec = powf(0.97, 15.0f * (index * 0.06f));
+          float dec = powf(0.968, 15.0f * (index * 0.06f));
           float res = powf(dec, 1.0f / float(frames_per_controlpass));
           return res;
         };
@@ -392,28 +401,6 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
             int(relRate));
 
         //////////////////////////////////////////////////
-        // rate scaling (envelope rate key follow)
-        //  When RS is 0, the envelope will be the same
-        //  time length for all notes. When RS is 3,
-        //  high notes will have a shorter envelope
-        // c1(24) .. g6(91) (91-24==67)
-        //////////////////////////////////////////////////
-
-        /*ENVELOPE->_envadjust = [=](const EnvPoint& inp, //
-                                   int iseg,
-                                   const KeyOnInfo& KOI) -> EnvPoint { //
-          float velocity = KOI._vel;
-
-          EnvPoint outp       = inp;
-          int kb              = KOI._key - (middleC - 24);
-          float unit_keyscale = float(kb) / 67.0f;
-          unit_keyscale       = std::clamp(unit_keyscale, 0.0f, 1.0f);
-          float power         = 1.0 / pow(1.4, unit_keyscale * 2.0);
-          outp._time *= power;
-          return outp;
-        };*/
-
-        //////////////////////////////////////////////////
         // level scaling (operator amplitude key follow)
         //  Level scaling operates on a curve from about c1.
         //  When LS is 0, the operator output level will be
@@ -430,7 +417,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
         float a       = logf(2.0f) * 0.1f;
         float b       = 90.0f * a;
-        float baselev = expf(a * float(outLevel) - b) / 1.86607;
+        float baselev = expf(a * float(outLevel) - b); // / 1.86607;
         baselev       = powf(baselev, 1.0f);
 
         printf(
@@ -448,6 +435,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
                              opindex,
                              baselev,
                              levScaling,
+                             keyprod,
                              pitch_param,
                              as_pmx,
                              fkeyvelsense](CustomControllerInst* cci) { //
@@ -457,24 +445,26 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
           // velocity scaling
           //////////////////////////////////
 
-          float op_key   = pitch_param._coarse;
           float velocity = koi._vel;
-          float velamp   = (fkeyvelsense + (1.0f - fkeyvelsense) * (velocity / 127.0f));
-          velamp         = powf(velamp, 1.5f);
+          float velamp   = fkeyvelsense //
+                         + (1.0f - fkeyvelsense) * (velocity / 127.0f);
+          // velamp         = powf(velamp, 0.5f);
           // printf("velamp<%g>\n", velamp);
 
           //////////////////////////////////
           // key scaling
           //////////////////////////////////
 
+          float op_key        = keyprod(koi._key);
           float unit_levscale = float(levScaling / 99.0f);
           unit_levscale       = std::clamp(unit_levscale, 0.0f, 1.0f);
           unit_levscale       = powf(unit_levscale, 2.0);
           float unit_keyscale = float(op_key - 24) / 67.0f;
           unit_keyscale       = std::clamp(unit_keyscale, 0.0f, 1.0f);
           float lindbscale    = unit_keyscale * unit_levscale;
-          float keyamp        = decibel_to_linear_amp_ratio(lindbscale * -36.0f);
-          // printf("keyamp<%g>\n", keyamp);
+          float keyamp        = decibel_to_linear_amp_ratio(lindbscale * -48.0f);
+          if (0)
+            printf("uls<%g> uks<%g> ldb<%g> keyamp<%g>\n", unit_levscale, unit_keyscale, lindbscale, keyamp);
 
           //////////////////////////////////
           // final level
@@ -522,5 +512,156 @@ Tx81zData::~Tx81zData() {
 void Tx81zData::loadBank(const file::Path& syxpath) {
   parse_tx81z(this, syxpath);
 }
-
+////////////////////////////////////////////////////////////////////////////////
+void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, pm4prgdata_ptr_t prgdata) {
+  auto algdout        = std::make_shared<AlgData>();
+  layerdata->_algdata = algdout;
+  algdout->_name      = ork::FormatString("tx81z<%d>", prgdata->_alg);
+  //////////////////////////////////////////
+  auto stage_ops    = algdout->appendStage("OPS");
+  auto stage_opmix  = algdout->appendStage("OPMIX");
+  auto stage_stereo = algdout->appendStage("STMIX"); // todo : quadraphonic, 3d?
+  //////////////////////////////////////////
+  stage_stereo->setNumIos(1, 2); // 1 in, 2 out
+  /////////////////////////////////////////////////
+  // instantiate ops in reverse order
+  //  because of order of operations (3,2,1,0)
+  /////////////////////////////////////////////////
+  auto op3 = stage_ops->appendTypedBlock<PMX>();
+  auto op2 = stage_ops->appendTypedBlock<PMX>();
+  auto op1 = stage_ops->appendTypedBlock<PMX>();
+  auto op0 = stage_ops->appendTypedBlock<PMX>();
+  /////////////////////////////////////////////////
+  int opchanbase      = 2;
+  op0->_dspchannel[0] = opchanbase + 0;
+  op1->_dspchannel[0] = opchanbase + 1;
+  op2->_dspchannel[0] = opchanbase + 2;
+  op3->_dspchannel[0] = opchanbase + 3;
+  /////////////////////////////////////////////////
+  auto opmix            = stage_opmix->appendTypedBlock<PMXMix>();
+  opmix->_dspchannel[0] = 0;
+  /////////////////////////////////////////////////
+  float basemodindex = 2.05f;
+  op0->_modIndex     = basemodindex;
+  op1->_modIndex     = basemodindex;
+  op2->_modIndex     = basemodindex;
+  op3->_modIndex     = basemodindex;
+  /////////////////////////////////////////////////
+  switch (prgdata->_alg) {
+    case 0:
+      //   (3)->2->1->0
+      stage_ops->setNumIos(1, 1);
+      stage_opmix->setNumIos(1, 1);
+      op1->_modulator            = true;
+      op2->_modulator            = true;
+      op3->_modulator            = true;
+      op0->_pmInpChannels[0]     = opchanbase + 1;
+      op1->_pmInpChannels[0]     = opchanbase + 2;
+      op2->_pmInpChannels[0]     = opchanbase + 3;
+      opmix->_pmixInpChannels[0] = opchanbase + 0;
+      break;
+    case 1:
+      //   (3)
+      // 2->1->0
+      op1->_modIndex = basemodindex * 0.5f; // 2 inputs
+      stage_ops->setNumIos(1, 1);
+      stage_opmix->setNumIos(1, 1);
+      op1->_modulator            = true;
+      op2->_modulator            = true;
+      op3->_modulator            = true;
+      op0->_pmInpChannels[0]     = opchanbase + 1;
+      op1->_pmInpChannels[0]     = opchanbase + 2;
+      op1->_pmInpChannels[1]     = opchanbase + 3;
+      opmix->_pmixInpChannels[0] = opchanbase + 0;
+      break;
+    case 2:
+      //  2
+      //  1 (3)
+      //   0
+      op0->_modIndex = basemodindex * 0.5f; // 2 inputs
+      stage_ops->setNumIos(1, 1);
+      stage_opmix->setNumIos(1, 1);
+      op1->_modulator            = true;
+      op2->_modulator            = true;
+      op3->_modulator            = true;
+      op0->_pmInpChannels[0]     = opchanbase + 1;
+      op0->_pmInpChannels[1]     = opchanbase + 3;
+      op1->_pmInpChannels[0]     = opchanbase + 2;
+      opmix->_pmixInpChannels[0] = opchanbase + 0;
+      break;
+    case 3:
+      // (3)
+      //  1   2
+      //    0
+      op0->_modIndex         = basemodindex * 0.5f; // 2 inputs
+      op0->_pmInpChannels[0] = opchanbase + 1;
+      op0->_pmInpChannels[1] = opchanbase + 2;
+      op1->_pmInpChannels[0] = opchanbase + 3;
+      stage_ops->setNumIos(1, 1);
+      stage_opmix->setNumIos(1, 1);
+      op1->_modulator            = true;
+      op2->_modulator            = true;
+      op3->_modulator            = true;
+      opmix->_pmixInpChannels[0] = opchanbase + 0;
+      break;
+    case 4:
+      // 1 (3)
+      // 0  2
+      stage_ops->setNumIos(1, 2);
+      stage_opmix->setNumIos(2, 1);
+      op1->_modulator            = true;
+      op3->_modulator            = true;
+      op0->_pmInpChannels[0]     = opchanbase + 1;
+      op2->_pmInpChannels[0]     = opchanbase + 3;
+      opmix->_pmixInpChannels[0] = opchanbase + 0;
+      opmix->_pmixInpChannels[1] = opchanbase + 2;
+      break;
+    case 5:
+      //   (3)
+      //   / \
+      // 0  1  2
+      stage_ops->setNumIos(1, 3);
+      stage_opmix->setNumIos(3, 1);
+      op3->_modulator            = true;
+      op0->_pmInpChannels[0]     = opchanbase + 3;
+      op1->_pmInpChannels[0]     = opchanbase + 3;
+      op2->_pmInpChannels[0]     = opchanbase + 3;
+      opmix->_pmixInpChannels[0] = opchanbase + 0;
+      opmix->_pmixInpChannels[1] = opchanbase + 1;
+      opmix->_pmixInpChannels[2] = opchanbase + 2;
+      break;
+    case 6:
+      //      (3)
+      // 0  1  2
+      stage_ops->setNumIos(1, 3);
+      stage_opmix->setNumIos(3, 1);
+      op3->_modulator            = true;
+      op2->_pmInpChannels[0]     = opchanbase + 3;
+      opmix->_pmixInpChannels[0] = opchanbase + 0;
+      opmix->_pmixInpChannels[1] = opchanbase + 1;
+      opmix->_pmixInpChannels[2] = opchanbase + 2;
+      break;
+    case 7:
+      //   0  1  2 (3)
+      stage_ops->setNumIos(1, 4);
+      stage_opmix->setNumIos(4, 1);
+      opmix->_pmixInpChannels[0] = opchanbase + 0;
+      opmix->_pmixInpChannels[1] = opchanbase + 1;
+      opmix->_pmixInpChannels[2] = opchanbase + 2;
+      opmix->_pmixInpChannels[3] = opchanbase + 3;
+      break;
+  }
+  /////////////////////////////////////////////////
+  // stereo mix out
+  /////////////////////////////////////////////////
+  auto stereoout        = stage_stereo->appendTypedBlock<MonoInStereoOut>();
+  auto STEREOC          = layerdata->appendController<CustomControllerData>("STEREOMIX");
+  auto& stereo_mod      = stereoout->_paramd[0]._mods;
+  stereo_mod._src1      = STEREOC;
+  stereo_mod._src1Depth = 1.0f;
+  STEREOC->_onkeyon     = [](CustomControllerInst* cci, //
+                         const KeyOnInfo& KOI) {    //
+    cci->_curval = 1.0f;                            // amplitude to unity
+  };
+}
 } // namespace ork::audio::singularity
