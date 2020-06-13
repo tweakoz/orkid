@@ -7,14 +7,15 @@ int main(int argc, char** argv) {
   ////////////////////////////////////////////////
   // main bus effect
   ////////////////////////////////////////////////
-  auto mainbus   = synth::instance()->outputBus("main");
-  auto bussource = mainbus->createScopeSource();
+  synth::instance()->_masterGain = decibel_to_linear_amp_ratio(20.0f);
+  auto mainbus                   = synth::instance()->outputBus("main");
+  auto bussource                 = mainbus->createScopeSource();
   if (1) { // create mixbus effect ?
            // auto fxlayer = fxpreset_stereochorus();
            // auto fxlayer = fxpreset_fdn4reverb();
            // auto fxlayer = fxpreset_multitest();
-    auto fxlayer = fxpreset_niceverb();
-    // auto fxlayer = fxpreset_echoverb();
+           // auto fxlayer = fxpreset_niceverb();
+    auto fxlayer = fxpreset_echoverb();
     mainbus->setBusDSP(fxlayer);
   }
   ////////////////////////////////////////////////

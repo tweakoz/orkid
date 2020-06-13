@@ -89,7 +89,6 @@ void startupAudio() {
   float SR = getSampleRate();
 
   the_synth->setSampleRate(SR);
-  the_synth->_masterGain = 1.0f;
 
   printf("SingularitySynth<%p> SR<%g>\n", the_synth.get(), SR);
   // loadPrograms();

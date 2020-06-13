@@ -134,6 +134,11 @@ struct Fdn4ReverbX : public DspBlock {
   DelayContext _delayB;
   DelayContext _delayC;
   DelayContext _delayD;
+  ParaOne _filterA;
+  ParaOne _filterB;
+  ParaOne _filterC;
+  ParaOne _filterD;
+
   fmtx4 _feedbackMatrix;
   fvec4 _inputGainsL;
   fvec4 _inputGainsR;

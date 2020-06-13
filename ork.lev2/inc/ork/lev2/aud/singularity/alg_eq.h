@@ -31,8 +31,16 @@ struct PARATREBLE : public DspBlock {
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
 };
-struct PARAMETRIC_EQ : public DspBlock {
-  PARAMETRIC_EQ(const DspBlockData* dbd);
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+struct ParametricEqData : public DspBlockData {
+  ParametricEqData();
+  // krzname  "PARAMETRIC EQ"
+  dspblk_ptr_t createInstance() const override;
+};
+struct ParametricEq : public DspBlock {
+  using dataclass_t = ParametricEqData;
+  ParametricEq(const ParametricEqData* dbd);
   BiQuad _biquad;
   Fil4Paramsect _peq;
   ParaOne _peq1;

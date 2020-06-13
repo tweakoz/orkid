@@ -162,12 +162,23 @@ void PARAMID::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+ParametricEqData::ParametricEqData() {
+  auto& fc_param    = addParam();
+  auto& width_param = addParam();
+  auto& gain_param  = addParam();
+  fc_param.useDefaultEvaluator();
+  width_param.useDefaultEvaluator();
+  gain_param.useDefaultEvaluator();
+}
+dspblk_ptr_t ParametricEqData::createInstance() const {
+  return std::make_shared<ParametricEq>(this);
+}
 
-PARAMETRIC_EQ::PARAMETRIC_EQ(const DspBlockData* dbd)
+ParametricEq::ParametricEq(const ParametricEqData* dbd)
     : DspBlock(dbd) {
 }
 
-void PARAMETRIC_EQ::compute(DspBuffer& dspbuf) // final
+void ParametricEq::compute(DspBuffer& dspbuf) // final
 {
   int inumframes = _layer->_dspwritecount;
   float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
@@ -190,8 +201,8 @@ void PARAMETRIC_EQ::compute(DspBuffer& dspbuf) // final
 
   if (1)
     for (int i = 0; i < inumframes; i++) {
-      _smoothFC = fc; // kf2*_smoothFC + kf1*fc;
-      _smoothW  = kf2 * _smoothW + kf1 * wid;
+      _smoothFC = fc;   // kf2*_smoothFC + kf1*fc;
+      _smoothW  = wid;  // kf2 * _smoothW + kf1 * wid;
       _smoothG  = gain; // kf2*_smoothG + kf1*gain;
 
       _peq1.Set(_smoothFC, _smoothW, _smoothG);
@@ -203,7 +214,7 @@ void PARAMETRIC_EQ::compute(DspBuffer& dspbuf) // final
       ubuf[i] = outp;
     }
 }
-void PARAMETRIC_EQ::doKeyOn(const KeyOnInfo& koi) // final
+void ParametricEq::doKeyOn(const KeyOnInfo& koi) // final
 {
   _biquad.Clear();
   _peq.init();

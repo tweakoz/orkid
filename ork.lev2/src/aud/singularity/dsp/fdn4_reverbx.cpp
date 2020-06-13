@@ -127,6 +127,8 @@ void Fdn4ReverbX::compute(DspBuffer& dspbuf) // final
     float inl = ilbuf[i];
     float inr = irbuf[i];
 
+    float finl = _filterA.compute(inl);
+    float finr = _filterB.compute(inr);
     /////////////////////////////////////
     // do fdn4 operation
     /////////////////////////////////////
@@ -138,10 +140,10 @@ void Fdn4ReverbX::compute(DspBuffer& dspbuf) // final
 
     auto abcd_out = fvec4(aout, bout, cout, dout);
 
-    float ainp = inl * _inputGainsL.x + inr * _inputGainsR.x;
-    float binp = inl * _inputGainsL.y + inr * _inputGainsR.y;
-    float cinp = inl * _inputGainsL.z + inr * _inputGainsR.z;
-    float dinp = inl * _inputGainsL.w + inr * _inputGainsR.w;
+    float ainp = finl * _inputGainsL.x + finr * _inputGainsR.x;
+    float binp = finl * _inputGainsL.y + finr * _inputGainsR.y;
+    float cinp = finl * _inputGainsL.z + finr * _inputGainsR.z;
+    float dinp = finl * _inputGainsL.w + finr * _inputGainsR.w;
 
     ainp += grp0.Dot(abcd_out) + 1e-9;
     binp += grp1.Dot(abcd_out) + 1e-9;
@@ -176,5 +178,13 @@ void Fdn4ReverbX::compute(DspBuffer& dspbuf) // final
 
 void Fdn4ReverbX::doKeyOn(const KeyOnInfo& koi) // final
 {
+  _filterA.Clear();
+  _filterB.Clear();
+  _filterC.Clear();
+  _filterD.Clear();
+  _filterA.Set(60, 8, -12.0);
+  _filterB.Set(60, 8, -12.0);
+  _filterC.Set(60, 8, 12.0);
+  _filterD.Set(60, 8, 12.0);
 }
 } // namespace ork::audio::singularity

@@ -64,7 +64,8 @@ synth::synth()
     , _timeaccum(0.0f)
     , _hudpage(0)
     , _oswidth(0.030f * getSampleRate()) //
-    , _ostriglev(0.0f) {                 //
+    , _ostriglev(0.0f)
+    , _masterGain(1.0f) { //
 
   _tempbus         = std::make_shared<OutputBus>();
   _tempbus->_name  = "temp-dsp";

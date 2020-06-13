@@ -24,7 +24,7 @@ namespace ork::audio::singularity {
 // signal back to linear scale when required
 inline float proc_out(float inp) {
   constexpr float kclamp = 8.0f;
-  constexpr float kscale = 0.5f;
+  constexpr float kscale = 0.25f;
   validateSample(inp);
   if (isfinite(inp) and not isnan(inp)) {
     return clip_float(inp, -kclamp, kclamp) * kscale;

@@ -251,8 +251,6 @@ dspblk_ptr_t createDspBlock(const DspBlockData* dbd) {
     rval = std::make_shared<PARAMID>(dbd);
   if (dbd->_blocktype == "PARA TREBLE")
     rval = std::make_shared<PARATREBLE>(dbd);
-  if (dbd->_blocktype == "PARAMETRIC EQ")
-    rval = std::make_shared<PARAMETRIC_EQ>(dbd);
 
   ////////////////////////
   // filter

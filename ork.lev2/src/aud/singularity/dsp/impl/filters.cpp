@@ -6,8 +6,8 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static const float OSR     = 96000.0f;
-static const float OISR    = 1.0f / OSR;
+static const float OSR     = getSampleRate();
+static const float OISR    = getInverseSampleRate();
 static const float OPI2ISR = pi2 * OISR;
 
 ///////////////////////////////////////////////////////////////////////////////

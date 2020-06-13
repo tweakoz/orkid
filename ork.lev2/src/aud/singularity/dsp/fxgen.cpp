@@ -1,10 +1,11 @@
 #include <ork/lev2/aud/singularity/synth.h>
 #include <assert.h>
 #include <ork/lev2/aud/singularity/dsp_mix.h>
+#include <ork/lev2/aud/singularity/alg_eq.h>
 
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
-void appendStereoChorus(lyrdata_ptr_t layer, dspstagedata_ptr_t stage) {
+dspblkdata_ptr_t appendStereoChorus(lyrdata_ptr_t layer, dspstagedata_ptr_t stage) {
   /////////////////
   // stereo chorus
   /////////////////
@@ -30,12 +31,31 @@ void appendStereoChorus(lyrdata_ptr_t layer, dspstagedata_ptr_t stage) {
     cci->_curval = 0.030f + sinf(time * pi2 * 0.9) * 0.001f;
   };
   /////////////////
+  return chorus;
 }
 ///////////////////////////////////////////////////////////////////////////////
 dspblkdata_ptr_t appendStereoReverb(lyrdata_ptr_t layer, dspstagedata_ptr_t stage, float tscale) {
   auto fdn4              = stage->appendTypedBlock<Fdn4Reverb>(tscale);
   fdn4->param(0)._coarse = 0.5f; // wet/dry mix
   return fdn4;
+}
+///////////////////////////////////////////////////////////////////////////////
+void appendStereoParaEQ(
+    lyrdata_ptr_t layer, //
+    dspstagedata_ptr_t stage,
+    float fc,
+    float w,
+    float gain) {
+  auto eql              = stage->appendTypedBlock<ParametricEq>();
+  auto eqr              = stage->appendTypedBlock<ParametricEq>();
+  eql->param(0)._coarse = fc;
+  eql->param(1)._coarse = w;
+  eql->param(2)._coarse = gain;
+  eqr->param(0)._coarse = fc;
+  eqr->param(1)._coarse = w;
+  eqr->param(2)._coarse = gain;
+  eql->_dspchannel[0]   = 0;
+  eqr->_dspchannel[0]   = 1;
 }
 ///////////////////////////////////////////////////////////////////////////////
 dspblkdata_ptr_t appendStereoReverbX(
@@ -174,12 +194,20 @@ lyrdata_ptr_t fxpreset_echoverb() {
   auto fxstage = fxalg->appendStage("FX");
   fxstage->setNumIos(2, 2); // stereo in, stereo out
   /////////////////
-  auto rv2              = appendStereoReverbX(fxlayer, fxstage, 10, 3.77, 0.01, 0.15, 0.0001, 0.01);
-  auto rv1              = appendStereoReverbX(fxlayer, fxstage, 11, 1.47, 0.01, 0.15, 0.00001, 0.001);
-  auto rv0              = appendStereoReverbX(fxlayer, fxstage, 12, 0.27, 0.01, 0.15, 0.00001, 0.001);
-  rv0->param(0)._coarse = 0.1f; // wet/dry mix
-  rv1->param(0)._coarse = 0.1f; // wet/dry mix
-  rv2->param(0)._coarse = 0.1f; // wet/dry mix
+  auto chorus              = appendStereoChorus(fxlayer, fxstage);
+  chorus->param(3)._coarse = 0.2; // wet/dry mix
+  /////////////////
+  auto rv2 = appendStereoReverbX(fxlayer, fxstage, 10, 5.0, 0.01, 0.15, 0.0001, 0.1);
+  auto rv1 = appendStereoReverbX(fxlayer, fxstage, 11, 1.47, 0.01, 0.15, 0.00001, 0.01);
+  auto rv0 = appendStereoReverbX(fxlayer, fxstage, 12, 0.17, 0.01, 0.15, 0.00001, 0.001);
+  /////////////////
+  appendStereoParaEQ(fxlayer, fxstage, 10, 8, -36);
+  appendStereoParaEQ(fxlayer, fxstage, 20, 8, -12);
+  // appendStereoParaEQ(fxlayer, fxstage, 30, 8, -3);
+  /////////////////
+  rv0->param(0)._coarse = 0.07f; // wet/dry mix
+  rv1->param(0)._coarse = 0.07f; // wet/dry mix
+  rv2->param(0)._coarse = 0.07f; // wet/dry mix
   /////////////////
   return fxlayer;
 }
