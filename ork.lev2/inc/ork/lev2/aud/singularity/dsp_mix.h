@@ -79,8 +79,9 @@ struct StereoDynamicEcho : public DspBlock {
 // Feedback Delay Network Reverb (4 nodes)
 ///////////////////////////////////////////////////////////////////////////////
 struct Fdn4ReverbData : public DspBlockData {
-  Fdn4ReverbData();
+  Fdn4ReverbData(float tscale);
   dspblk_ptr_t createInstance() const override;
+  float _tscale;
 };
 struct Fdn4Reverb : public DspBlock {
   using dataclass_t = Fdn4ReverbData;
@@ -100,12 +101,39 @@ struct Fdn4Reverb : public DspBlock {
   fvec4 _outputGainsL;
   fvec4 _outputGainsR;
 };
+///////////////////////////////////////////////////////////////////////////////
+// Feedback Delay Network Reverb (4 nodes) with rotation matrix
+///////////////////////////////////////////////////////////////////////////////
+struct Fdn4ReverbXData : public DspBlockData {
+  Fdn4ReverbXData(float tscale);
+  dspblk_ptr_t createInstance() const override;
+  float _tscale;
+};
+struct Fdn4ReverbX : public DspBlock {
+  using dataclass_t = Fdn4ReverbXData;
+  Fdn4ReverbX(const Fdn4ReverbXData*);
+  void compute(DspBuffer& dspbuf) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
+  void matrixHadamard(float fblevel);
+  void matrixHouseholder();
 
+  DelayContext _delayA;
+  DelayContext _delayB;
+  DelayContext _delayC;
+  DelayContext _delayD;
+  fmtx4 _feedbackMatrix;
+  fmtx4 _rotMatrix;
+  fvec4 _inputGainsL;
+  fvec4 _inputGainsR;
+  fvec4 _outputGainsL;
+  fvec4 _outputGainsR;
+};
 ///////////////////////////////////////////////////////////////////////////////
 // fx presets
 ///////////////////////////////////////////////////////////////////////////////
 lyrdata_ptr_t fxpreset_stereochorus();
 lyrdata_ptr_t fxpreset_fdn4reverb();
 lyrdata_ptr_t fxpreset_multitest();
+lyrdata_ptr_t fxpreset_wackiverb();
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

@@ -16,27 +16,33 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Fdn4ReverbData::Fdn4ReverbData(float tscale)
+Fdn4ReverbXData::Fdn4ReverbXData(float tscale)
     : _tscale(tscale) {
-  _blocktype      = "Fdn4Reverb";
+  _blocktype      = "Fdn4ReverbX";
   auto& mix_param = addParam();
   mix_param.useDefaultEvaluator();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-dspblk_ptr_t Fdn4ReverbData::createInstance() const { // override
-  return std::make_shared<Fdn4Reverb>(this);
+dspblk_ptr_t Fdn4ReverbXData::createInstance() const { // override
+  return std::make_shared<Fdn4ReverbX>(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Fdn4Reverb::Fdn4Reverb(const Fdn4ReverbData* dbd)
+Fdn4ReverbX::Fdn4ReverbX(const Fdn4ReverbXData* dbd)
     : DspBlock(dbd) {
+  ///////////////////////////
+  math::FRANDOMGEN rg;
   ///////////////////////////
   float input_g  = 0.75f;
   float output_g = 0.75f;
   float tscale   = dbd->_tscale;
+  float t1       = tscale * rg.rangedf(0.01, 0.15);
+  float t2       = tscale * rg.rangedf(0.01, 0.15);
+  float t3       = tscale * rg.rangedf(0.01, 0.15);
+  float t4       = tscale * rg.rangedf(0.01, 0.15);
   ///////////////////////////
   // matrixHadamard(0.0);
   matrixHouseholder();
@@ -45,15 +51,25 @@ Fdn4Reverb::Fdn4Reverb(const Fdn4ReverbData* dbd)
   _inputGainsR  = fvec4(input_g, input_g, input_g, input_g);
   _outputGainsL = fvec4(output_g, output_g, 0, 0);
   _outputGainsR = fvec4(0, 0, output_g, output_g);
-  _delayA.setStaticDelayTime(tscale * 0.01f);
-  _delayB.setStaticDelayTime(tscale * 0.03f);
-  _delayC.setStaticDelayTime(tscale * 0.07f);
-  _delayD.setStaticDelayTime(tscale * 0.11f);
+  _delayA.setStaticDelayTime(t1);
+  _delayB.setStaticDelayTime(t2);
+  _delayC.setStaticDelayTime(t3);
+  _delayD.setStaticDelayTime(t4);
+
+  fvec3 axis;
+  axis.x = rg.rangedf(-1, 1);
+  axis.y = rg.rangedf(-1, 1);
+  axis.z = rg.rangedf(-1, 1);
+  axis.Normalize();
+  float speed = rg.rangedf(0.00001, 0.001);
+  fquat q;
+  q.fromAxisAngle(fvec4(axis, speed));
+  _rotMatrix = q.ToMatrix();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Fdn4Reverb::matrixHadamard(float fblevel) {
+void Fdn4ReverbX::matrixHadamard(float fblevel) {
   float fbgain = lerp(0.40, 0.49, fblevel);
   _feedbackMatrix.SetRow(0, fvec4(+fbgain, +fbgain, +fbgain, +fbgain));
   _feedbackMatrix.SetRow(1, fvec4(+fbgain, -fbgain, +fbgain, -fbgain));
@@ -63,7 +79,7 @@ void Fdn4Reverb::matrixHadamard(float fblevel) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Fdn4Reverb::matrixHouseholder() {
+void Fdn4ReverbX::matrixHouseholder() {
   float fbgain = 0.5f;
   _feedbackMatrix.SetRow(0, fvec4(+fbgain, -fbgain, -fbgain, -fbgain));
   _feedbackMatrix.SetRow(1, fvec4(-fbgain, +fbgain, -fbgain, -fbgain));
@@ -73,7 +89,7 @@ void Fdn4Reverb::matrixHouseholder() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Fdn4Reverb::compute(DspBuffer& dspbuf) // final
+void Fdn4ReverbX::compute(DspBuffer& dspbuf) // final
 {
   int inumframes = _layer->_dspwritecount;
   int ibase      = _layer->_dspwritebase;
@@ -86,13 +102,15 @@ void Fdn4Reverb::compute(DspBuffer& dspbuf) // final
 
   float invfr = 1.0f / inumframes;
 
-  fvec4 grp0 = _feedbackMatrix.GetColumn(0);
-  fvec4 grp1 = _feedbackMatrix.GetColumn(1);
-  fvec4 grp2 = _feedbackMatrix.GetColumn(2);
-  fvec4 grp3 = _feedbackMatrix.GetColumn(3);
-
   for (int i = 0; i < inumframes; i++) {
     float fi = float(i) * invfr;
+
+    fvec4 grp0 = _feedbackMatrix.GetColumn(0);
+    fvec4 grp1 = _feedbackMatrix.GetColumn(1);
+    fvec4 grp2 = _feedbackMatrix.GetColumn(2);
+    fvec4 grp3 = _feedbackMatrix.GetColumn(3);
+
+    _feedbackMatrix = _feedbackMatrix * _rotMatrix;
 
     /////////////////////////////////////
     // input from dsp channels
@@ -148,7 +166,7 @@ void Fdn4Reverb::compute(DspBuffer& dspbuf) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Fdn4Reverb::doKeyOn(const KeyOnInfo& koi) // final
+void Fdn4ReverbX::doKeyOn(const KeyOnInfo& koi) // final
 {
 }
 } // namespace ork::audio::singularity
