@@ -500,8 +500,8 @@ inline float lerpf(float a, float b, float index) {
 struct FRANDOMGEN {
   std::mt19937 _gen;
   std::uniform_int_distribution<> _rdist;
-  FRANDOMGEN()
-      : _gen(10)
+  FRANDOMGEN(int seed = 10)
+      : _gen(seed)
       , _rdist(0, 1000000) {
   }
   inline int irandom() {
