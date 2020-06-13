@@ -56,15 +56,11 @@ Fdn4ReverbX::Fdn4ReverbX(const Fdn4ReverbXData* dbd)
   _delayC.setStaticDelayTime(t3);
   _delayD.setStaticDelayTime(t4);
 
-  fvec3 axis;
-  axis.x = rg.rangedf(-1, 1);
-  axis.y = rg.rangedf(-1, 1);
-  axis.z = rg.rangedf(-1, 1);
-  axis.Normalize();
-  float speed = rg.rangedf(0.00001, 0.001);
-  fquat q;
-  q.fromAxisAngle(fvec4(axis, speed));
-  _rotMatrix = q.ToMatrix();
+  _axis.x = rg.rangedf(-1, 1);
+  _axis.y = rg.rangedf(-1, 1);
+  _axis.z = rg.rangedf(-1, 1);
+  _axis.Normalize();
+  _speed = rg.rangedf(0.00001, 0.0001);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -103,14 +99,20 @@ void Fdn4ReverbX::compute(DspBuffer& dspbuf) // final
   float invfr = 1.0f / inumframes;
 
   for (int i = 0; i < inumframes; i++) {
-    float fi = float(i) * invfr;
+    float fi   = float(i) * invfr;
+    float time = float(_layer->_sampleindex + i) * getInverseSampleRate();
 
-    fvec4 grp0 = _feedbackMatrix.GetColumn(0);
-    fvec4 grp1 = _feedbackMatrix.GetColumn(1);
-    fvec4 grp2 = _feedbackMatrix.GetColumn(2);
-    fvec4 grp3 = _feedbackMatrix.GetColumn(3);
+    fquat q;
+    q.fromAxisAngle(fvec4(_axis, _speed * time));
+    auto rotMatrix = q.ToMatrix();
+    auto curmatrix = _feedbackMatrix * rotMatrix;
 
-    _feedbackMatrix = _feedbackMatrix * _rotMatrix;
+    fvec4 grp0 = curmatrix.GetColumn(0);
+    fvec4 grp1 = curmatrix.GetColumn(1);
+    fvec4 grp2 = curmatrix.GetColumn(2);
+    fvec4 grp3 = curmatrix.GetColumn(3);
+
+    // todo: renormalize the matrix, it eventually goes unstable...
 
     /////////////////////////////////////
     // input from dsp channels
