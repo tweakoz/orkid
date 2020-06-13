@@ -13,6 +13,7 @@
 #include <ork/math/polar.h>
 #include <algorithm>
 #include <ork/orktypes.h>
+#include <random>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -491,6 +492,29 @@ private:
 inline bool areValuesClose(double a, double b, double tolerance) {
   return abs(a - b) < tolerance;
 }
+
+inline float lerpf(float a, float b, float index) {
+  return a + index * (b - a);
+}
+
+struct FRANDOMGEN {
+  std::mt19937 _gen;
+  std::uniform_int_distribution<> _rdist;
+  FRANDOMGEN()
+      : _gen(10)
+      , _rdist(0, 1000000) {
+  }
+  inline int irandom() {
+    return _rdist(_gen);
+  };
+  inline float frandom() {
+    return double(_rdist(_gen)) * 0.000001f;
+  };
+  inline float rangedf(float fmin, float fmax) {
+    return lerpf(fmin, fmax, frandom());
+  };
+};
+
 } // namespace math
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork

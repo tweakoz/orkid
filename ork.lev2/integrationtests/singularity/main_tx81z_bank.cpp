@@ -12,7 +12,8 @@ int main(int argc, char** argv) {
   if (1) { // create mixbus effect ?
     // auto fxlayer = fxpreset_stereochorus();
     // auto fxlayer = fxpreset_fdn4reverb();
-    auto fxlayer = fxpreset_multitest();
+    // auto fxlayer = fxpreset_multitest();
+    auto fxlayer = fxpreset_wackiverb();
     mainbus->setBusDSP(fxlayer);
   }
   ////////////////////////////////////////////////

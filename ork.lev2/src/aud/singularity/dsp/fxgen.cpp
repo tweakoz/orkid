@@ -38,6 +38,12 @@ dspblkdata_ptr_t appendStereoReverb(lyrdata_ptr_t layer, dspstagedata_ptr_t stag
   return fdn4;
 }
 ///////////////////////////////////////////////////////////////////////////////
+dspblkdata_ptr_t appendStereoReverbX(lyrdata_ptr_t layer, dspstagedata_ptr_t stage, float tscale) {
+  auto fdn4              = stage->appendTypedBlock<Fdn4ReverbX>(tscale);
+  fdn4->param(0)._coarse = 0.5f; // wet/dry mix
+  return fdn4;
+}
+///////////////////////////////////////////////////////////////////////////////
 void appendStereoEnhancer(lyrdata_ptr_t layer, dspstagedata_ptr_t stage) {
   auto stereoenh           = stage->appendTypedBlock<StereoDynamicEcho>();
   auto& width_mod          = stereoenh->param(0)._mods;
@@ -105,6 +111,28 @@ lyrdata_ptr_t fxpreset_multitest() {
   rv0->param(0)._coarse = 0.11f; // wet/dry mix
   rv1->param(0)._coarse = 0.11f; // wet/dry mix
   rv2->param(0)._coarse = 0.11f; // wet/dry mix
+  /////////////////
+  return fxlayer;
+}
+///////////////////////////////////////////////////////////////////////////////
+lyrdata_ptr_t fxpreset_wackiverb() {
+  auto fxprog       = std::make_shared<ProgramData>();
+  auto fxlayer      = fxprog->newLayer();
+  auto fxalg        = std::make_shared<AlgData>();
+  fxlayer->_algdata = fxalg;
+  fxalg->_name      = ork::FormatString("FxAlg");
+  /////////////////
+  // output effect
+  /////////////////
+  auto fxstage = fxalg->appendStage("FX");
+  fxstage->setNumIos(2, 2); // stereo in, stereo out
+  /////////////////
+  auto rv2              = appendStereoReverbX(fxlayer, fxstage, 0.77);
+  auto rv1              = appendStereoReverbX(fxlayer, fxstage, 0.47);
+  auto rv0              = appendStereoReverbX(fxlayer, fxstage, 0.27);
+  rv0->param(0)._coarse = 0.1f; // wet/dry mix
+  rv1->param(0)._coarse = 0.1f; // wet/dry mix
+  rv2->param(0)._coarse = 0.1f; // wet/dry mix
   /////////////////
   return fxlayer;
 }
