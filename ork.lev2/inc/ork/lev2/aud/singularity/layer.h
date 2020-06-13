@@ -111,7 +111,8 @@ struct Layer {
   float _centsPerKey;
   int _lyrPhase;
   bool _ignoreRelease;
-  int64_t _testtoneph = 0;
+  int64_t _testtoneph  = 0;
+  int64_t _sampleindex = 0;
 
   int _layerBasePitch; // in cents
 

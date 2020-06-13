@@ -130,7 +130,8 @@ void Layer::compute(int base, int count) {
     if (_alg)
       _alg->doComputePass();
     ///////////////////////
-    _layerTime += float(frames_per_controlpass) * getInverseSampleRate();
+    _sampleindex += frames_per_controlpass;
+    _layerTime = float(_sampleindex) * getInverseSampleRate();
   }
   ////////////////////////////////////////
 }

@@ -117,12 +117,15 @@ struct Fdn4ReverbX : public DspBlock {
   void matrixHadamard(float fblevel);
   void matrixHouseholder();
 
+  fvec3 _axis;
+  float _angle;
+  float _speed = 0.0f;
+
   DelayContext _delayA;
   DelayContext _delayB;
   DelayContext _delayC;
   DelayContext _delayD;
   fmtx4 _feedbackMatrix;
-  fmtx4 _rotMatrix;
   fvec4 _inputGainsL;
   fvec4 _inputGainsR;
   fvec4 _outputGainsL;
