@@ -48,13 +48,14 @@ struct DelayContext {
   float out(float fi) const;
   void inp(float inp);
   void setStaticDelayTime(float dt);
+  void setNextDelayTime(float dt);
   static constexpr float kinv64k     = 1.0f / 65536.0f;
   static constexpr int64_t _maxdelay = 1 << 20;
   static constexpr int64_t _maxx     = _maxdelay << 16;
 
   int64_t _index     = 0;
-  float _basDelayLen = 0.5f;
-  float _tgtDelayLen = 0.5f;
+  float _basDelayLen = 0.0f;
+  float _tgtDelayLen = 0.0f;
   DspBuffer _buffer;
   float* _bufdata = nullptr;
 };
@@ -62,18 +63,14 @@ struct DelayContext {
 struct StereoDynamicEchoData : public DspBlockData {
   StereoDynamicEchoData();
   dspblk_ptr_t createInstance() const override;
-  int64_t _maxdelaylen = 1 << 20;
 };
 struct StereoDynamicEcho : public DspBlock {
   using dataclass_t = StereoDynamicEchoData;
   StereoDynamicEcho(const StereoDynamicEchoData* dbd);
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
-  DspBuffer _delaybuffer;
-  int64_t _index;
-  int64_t _maxdelaylen = 0;
-  float _delaylenL     = 0.0f;
-  float _delaylenR     = 0.0f;
+  DelayContext _delayL;
+  DelayContext _delayR;
 };
 ///////////////////////////////////////////////////////////////////////////////
 // Feedback Delay Network Reverb (4 nodes)
@@ -113,7 +110,6 @@ struct Fdn4ReverbXData : public DspBlockData {
   fvec4 _inputGainsR;
   fvec4 _outputGainsL;
   fvec4 _outputGainsR;
-  fvec4 _delayTimes;
   fvec3 _axis;
   float _angle;
   float _speed = 0.0f;
@@ -154,5 +150,6 @@ lyrdata_ptr_t fxpreset_fdn4reverb();
 lyrdata_ptr_t fxpreset_multitest();
 lyrdata_ptr_t fxpreset_niceverb();
 lyrdata_ptr_t fxpreset_echoverb();
+lyrdata_ptr_t fxpreset_wackiverb();
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

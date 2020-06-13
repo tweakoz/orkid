@@ -38,8 +38,6 @@ dspblk_ptr_t StereoDynamicEchoData::createInstance() const { // override
 
 StereoDynamicEcho::StereoDynamicEcho(const StereoDynamicEchoData* dbd)
     : DspBlock(dbd) {
-  _maxdelaylen = dbd->_maxdelaylen;
-  _delaybuffer.resize(_maxdelaylen);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -60,79 +58,30 @@ void StereoDynamicEcho::compute(DspBuffer& dspbuf) // final
   auto irbuf = getInpBuf(dspbuf, 1) + ibase;
   auto olbuf = getOutBuf(dspbuf, 0) + ibase;
   auto orbuf = getOutBuf(dspbuf, 1) + ibase;
-  auto dlbuf = _delaybuffer.channel(0);
-  auto drbuf = _delaybuffer.channel(1);
-
-  float final_delaylenL = delaytimeL * getSampleRate();
-  OrkAssert(int(final_delaylenL) < _maxdelaylen);
-  float final_delaylenR = delaytimeR * getSampleRate();
-  OrkAssert(int(final_delaylenR) < _maxdelaylen);
 
   float invfr = 1.0f / inumframes;
 
-  int64_t maxx = (_maxdelaylen << 16);
-
+  _delayL.setNextDelayTime(delaytimeL);
+  _delayR.setNextDelayTime(delaytimeR);
   for (int i = 0; i < inumframes; i++) {
     float fi = float(i) * invfr;
 
     float inl = ilbuf[i];
     float inr = irbuf[i];
 
-    int64_t index64 = _index << 16;
-
     /////////////////////////////////////
-    // read delayed signal L
+    // read delayed signal
     /////////////////////////////////////
 
-    float inner_delaylenL  = lerp(_delaylenL, final_delaylenL, fi);
-    int64_t outdelayindexL = index64 - int64_t(inner_delaylenL * 65536.0f);
-
-    while (outdelayindexL < 0)
-      outdelayindexL += maxx;
-    while (outdelayindexL >= maxx)
-      outdelayindexL -= maxx;
-
-    float fract     = float(outdelayindexL & 0xffff) * kinv64k;
-    float invfr     = 1.0f - fract;
-    int64_t iiA     = (outdelayindexL >> 16) % _maxdelaylen;
-    int64_t iiB     = (iiA + 1) % _maxdelaylen;
-    float sampA     = dlbuf[iiA];
-    float sampB     = dlbuf[iiB];
-    float delayoutL = (sampB * fract + sampA * invfr);
-
-    /////////////////////////////////////
-    // read delayed signal R
-    /////////////////////////////////////
-
-    float inner_delaylenR  = lerp(_delaylenR, final_delaylenR, fi);
-    int64_t outdelayindexR = index64 - int64_t(inner_delaylenR * 65536.0f);
-
-    while (outdelayindexR < 0)
-      outdelayindexR += maxx;
-    while (outdelayindexR >= maxx)
-      outdelayindexR -= maxx;
-
-    fract = float(outdelayindexR & 0xffff) * kinv64k;
-    invfr = 1.0f - fract;
-    iiA   = (outdelayindexR >> 16) % _maxdelaylen;
-    iiB   = (iiA + 1) % _maxdelaylen;
-
-    sampA           = drbuf[iiA];
-    sampB           = drbuf[iiB];
-    float delayoutR = (sampB * fract + sampA * invfr);
+    float delayoutL = _delayL.out(fi);
+    float delayoutR = _delayR.out(fi);
 
     /////////////////////////////////////
     // input to delayline
     /////////////////////////////////////
 
-    int64_t inpdelayindex = _index;
-    while (inpdelayindex < 0)
-      inpdelayindex += _maxdelaylen;
-    while (inpdelayindex >= _maxdelaylen)
-      inpdelayindex -= _maxdelaylen;
-
-    dlbuf[inpdelayindex] = inl + delayoutL * feedback;
-    drbuf[inpdelayindex] = inr + delayoutR * feedback;
+    _delayL.inp(inl + delayoutL * feedback);
+    _delayR.inp(inr + delayoutR * feedback);
 
     /////////////////////////////////////
     // output to dsp channels
@@ -140,12 +89,7 @@ void StereoDynamicEcho::compute(DspBuffer& dspbuf) // final
 
     olbuf[i] = lerp(inl, delayoutL, mix);
     orbuf[i] = lerp(inr, delayoutR, mix);
-
-    _index++;
   }
-
-  _delaylenL = final_delaylenL;
-  _delaylenR = final_delaylenR;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

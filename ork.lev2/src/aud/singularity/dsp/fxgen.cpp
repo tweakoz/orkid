@@ -16,19 +16,19 @@ dspblkdata_ptr_t appendStereoChorus(lyrdata_ptr_t layer, dspstagedata_ptr_t stag
   chorus->param(3)._coarse  = 0.4;  // wet/dry mix
   auto& delaytime_modL      = chorus->param(0)._mods;
   auto& delaytime_modR      = chorus->param(1)._mods;
-  auto DELAYTIMEMODL        = layer->appendController<CustomControllerData>("DELAYTIME");
-  auto DELAYTIMEMODR        = layer->appendController<CustomControllerData>("DELAYTIME");
+  auto DELAYTIMEMODL        = layer->appendController<CustomControllerData>("DELAYTIMEL");
+  auto DELAYTIMEMODR        = layer->appendController<CustomControllerData>("DELAYTIMER");
   delaytime_modL._src1      = DELAYTIMEMODL;
   delaytime_modL._src1Depth = 1.0;
   DELAYTIMEMODL->_oncompute = [](CustomControllerInst* cci) { //
     float time   = cci->_layer->_layerTime;
-    cci->_curval = 0.030f + sinf(time * pi2 * 1.1) * 0.001f;
+    cci->_curval = 0.010f + sinf(time * pi2 * .1) * 0.001f;
   };
   delaytime_modR._src1      = DELAYTIMEMODR;
   delaytime_modR._src1Depth = 1.0;
   DELAYTIMEMODR->_oncompute = [](CustomControllerInst* cci) { //
     float time   = cci->_layer->_layerTime;
-    cci->_curval = 0.030f + sinf(time * pi2 * 0.9) * 0.001f;
+    cci->_curval = 0.005f + sinf(time * pi2 * 0.09) * 0.0047f;
   };
   /////////////////
   return chorus;
@@ -74,11 +74,10 @@ dspblkdata_ptr_t appendStereoReverbX(
   fdn4->_axis.z = rg.rangedf(-1, 1);
   fdn4->_axis.Normalize();
   fdn4->_speed           = rg.rangedf(minspeed, maxspeed);
-  float t1               = tscale * rg.rangedf(mint, maxt);
-  float t2               = tscale * rg.rangedf(mint, maxt);
-  float t3               = tscale * rg.rangedf(mint, maxt);
-  float t4               = tscale * rg.rangedf(mint, maxt);
-  fdn4->_delayTimes      = fvec4(t1, t2, t3, t4);
+  fdn4->param(1)._coarse = tscale * rg.rangedf(mint, maxt);
+  fdn4->param(2)._coarse = tscale * rg.rangedf(mint, maxt);
+  fdn4->param(3)._coarse = tscale * rg.rangedf(mint, maxt);
+  fdn4->param(4)._coarse = tscale * rg.rangedf(mint, maxt);
   float input_g          = 0.75f;
   float output_g         = 0.75f;
   fdn4->_inputGainsL     = fvec4(input_g, input_g, input_g, input_g);
@@ -195,7 +194,8 @@ lyrdata_ptr_t fxpreset_echoverb() {
   fxstage->setNumIos(2, 2); // stereo in, stereo out
   /////////////////
   auto chorus              = appendStereoChorus(fxlayer, fxstage);
-  chorus->param(3)._coarse = 0.2; // wet/dry mix
+  chorus->param(2)._coarse = 0.5;  // feedback
+  chorus->param(3)._coarse = 0.35; // wet/dry mix
   /////////////////
   auto rv2 = appendStereoReverbX(fxlayer, fxstage, 10, 5.0, 0.01, 0.15, 0.0001, 0.1);
   auto rv1 = appendStereoReverbX(fxlayer, fxstage, 11, 1.47, 0.01, 0.15, 0.00001, 0.01);
@@ -212,4 +212,94 @@ lyrdata_ptr_t fxpreset_echoverb() {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
+lyrdata_ptr_t fxpreset_wackiverb() {
+  auto fxprog       = std::make_shared<ProgramData>();
+  auto fxlayer      = fxprog->newLayer();
+  auto fxalg        = std::make_shared<AlgData>();
+  fxlayer->_algdata = fxalg;
+  fxalg->_name      = ork::FormatString("FxAlg");
+  /////////////////
+  // output effect
+  /////////////////
+  auto fxstage = fxalg->appendStage("FX");
+  fxstage->setNumIos(2, 2); // stereo in, stereo out
+  /////////////////
+  auto chorus              = appendStereoChorus(fxlayer, fxstage);
+  chorus->param(2)._coarse = 0.5;  // feedback
+  chorus->param(3)._coarse = 0.35; // wet/dry mix
+  /////////////////
+  // auto rv2              = appendStereoReverbX(fxlayer, fxstage, 10, 5.0, 0.01, 0.15, 0.0001, 0.1);
+  // auto rv1              = appendStereoReverbX(fxlayer, fxstage, 11, 1.47, 0.01, 0.15, 0.00001, 0.01);
+
+  auto crverb = [fxlayer, fxstage](int seed, float mint, float maxt, float mins, float maxs) {
+    math::FRANDOMGEN rg(seed);
+    auto rv              = appendStereoReverbX(fxlayer, fxstage, seed, 0.0f, 0.00, 0.0, 0.00001, 0.001);
+    rv->param(0)._coarse = 0.5f; // wet/dry mix
+    rv->param(1)._coarse = 0.0f;
+    rv->param(2)._coarse = 0.0f;
+    rv->param(3)._coarse = 0.0f;
+    rv->param(4)._coarse = 0.0f;
+    /////////////////
+    auto basename = FormatString("crverb-%d-", seed);
+    /////////////////
+    float midt = (mint + maxt) * 0.5f;
+    float rang = (maxt - mint) * 0.5f;
+    /////////////////
+    auto RV0DTMODA        = fxlayer->appendController<CustomControllerData>(basename + "RV0DTA");
+    auto& rvmoda          = rv->param(1)._mods;
+    rvmoda._src1          = RV0DTMODA;
+    rvmoda._src1Depth     = 1.0;
+    float speed           = rg.rangedf(mins, maxs);
+    RV0DTMODA->_oncompute = [speed, midt, rang](CustomControllerInst* cci) { //
+      float time   = cci->_layer->_layerTime;
+      cci->_curval = midt + sinf(time * pi2 * speed) * rang;
+      return cci->_curval;
+    };
+    /////////////////
+    auto RV0DTMODB        = fxlayer->appendController<CustomControllerData>(basename + "RV0DTB");
+    auto& rvmodb          = rv->param(2)._mods;
+    rvmodb._src1          = RV0DTMODB;
+    rvmodb._src1Depth     = 1.0;
+    speed                 = rg.rangedf(mins, maxs);
+    RV0DTMODB->_oncompute = [speed, midt, rang](CustomControllerInst* cci) { //
+      float time   = cci->_layer->_layerTime;
+      cci->_curval = midt + sinf(time * pi2 * speed) * rang;
+      return cci->_curval;
+    };
+    /////////////////
+    auto RV0DTMODC        = fxlayer->appendController<CustomControllerData>(basename + "RV0DTC");
+    auto& rvmodc          = rv->param(3)._mods;
+    rvmodc._src1          = RV0DTMODC;
+    rvmodc._src1Depth     = 1.0;
+    speed                 = rg.rangedf(mins, maxs);
+    RV0DTMODC->_oncompute = [speed, midt, rang](CustomControllerInst* cci) { //
+      float time   = cci->_layer->_layerTime;
+      cci->_curval = midt + sinf(time * pi2 * speed) * rang;
+      return cci->_curval;
+    };
+    /////////////////
+    auto RV0DTDMOD        = fxlayer->appendController<CustomControllerData>(basename + "RV0DTD");
+    auto& rvmodd          = rv->param(4)._mods;
+    rvmodd._src1          = RV0DTDMOD;
+    rvmodd._src1Depth     = 1.0;
+    speed                 = rg.rangedf(mins, maxs);
+    RV0DTDMOD->_oncompute = [speed, midt, rang](CustomControllerInst* cci) { //
+      float time   = cci->_layer->_layerTime;
+      cci->_curval = midt + sinf(time * pi2 * speed) * rang;
+      return cci->_curval;
+    };
+  };
+  crverb(11, 0.09, 0.13, 0.1, 0.17);
+  crverb(112, 0.017, 0.037, 0.1, 0.5);
+  crverb(113, 0.007, 0.009, 0.5, 1.5);
+  /////////////////
+  appendStereoParaEQ(fxlayer, fxstage, 10, 8, -36);
+  appendStereoParaEQ(fxlayer, fxstage, 20, 8, -12);
+  // appendStereoParaEQ(fxlayer, fxstage, 30, 8, -3);
+  /////////////////
+  // rv1->param(0)._coarse = 0.27f; // wet/dry mix
+  // rv2->param(0)._coarse = 0.27f; // wet/dry mix
+  /////////////////
+  return fxlayer;
+} ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

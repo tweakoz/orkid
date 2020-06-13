@@ -456,7 +456,6 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
                              baselev,
                              levScaling,
                              keyprod,
-                             pitch_param,
                              as_pmx,
                              fkeyvelsense](CustomControllerInst* cci) { //
           const auto& koi = cci->_layer->_koi;

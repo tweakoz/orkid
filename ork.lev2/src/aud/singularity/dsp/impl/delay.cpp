@@ -61,6 +61,14 @@ void DelayContext::setStaticDelayTime(float dt) {
   _basDelayLen   = delaylen;
   _tgtDelayLen   = delaylen;
 }
+///////////////////////////////////////////////////////////////////////////////
+
+void DelayContext::setNextDelayTime(float dt) {
+  // printf("dt<%g>\n", dt);
+  float delaylen = dt * getSampleRate();
+  _basDelayLen   = _tgtDelayLen;
+  _tgtDelayLen   = delaylen;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

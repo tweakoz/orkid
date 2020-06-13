@@ -20,18 +20,29 @@ Fdn4ReverbXData::Fdn4ReverbXData(float tscale)
     : _tscale(tscale) {
   _blocktype      = "Fdn4ReverbX";
   auto& mix_param = addParam();
+  auto& dta_param = addParam();
+  auto& dtb_param = addParam();
+  auto& dtc_param = addParam();
+  auto& dtd_param = addParam();
+
   mix_param.useDefaultEvaluator();
-  math::FRANDOMGEN rg;
+  dta_param.useDefaultEvaluator();
+  dtb_param.useDefaultEvaluator();
+  dtc_param.useDefaultEvaluator();
+  dtd_param.useDefaultEvaluator();
+
+  math::FRANDOMGEN rg(10);
+
+  dta_param._coarse = tscale * rg.rangedf(0.01, 0.15);
+  dtb_param._coarse = tscale * rg.rangedf(0.01, 0.15);
+  dtc_param._coarse = tscale * rg.rangedf(0.01, 0.15);
+  dtd_param._coarse = tscale * rg.rangedf(0.01, 0.15);
+
   _axis.x = rg.rangedf(-1, 1);
   _axis.y = rg.rangedf(-1, 1);
   _axis.z = rg.rangedf(-1, 1);
   _axis.Normalize();
   _speed         = rg.rangedf(0.00001, 0.001);
-  float t1       = tscale * rg.rangedf(0.01, 0.15);
-  float t2       = tscale * rg.rangedf(0.01, 0.15);
-  float t3       = tscale * rg.rangedf(0.01, 0.15);
-  float t4       = tscale * rg.rangedf(0.01, 0.15);
-  _delayTimes    = fvec4(t1, t2, t3, t4);
   float input_g  = 0.75f;
   float output_g = 0.75f;
   _inputGainsL   = fvec4(input_g, input_g, input_g, input_g);
@@ -55,7 +66,6 @@ Fdn4ReverbX::Fdn4ReverbX(const Fdn4ReverbXData* dbd)
   _inputGainsR  = dbd->_inputGainsR;
   _outputGainsL = dbd->_outputGainsL;
   _outputGainsR = dbd->_outputGainsR;
-  _delayTimes   = dbd->_delayTimes;
   _axis         = dbd->_axis;
   _angle        = dbd->_angle;
   _speed        = dbd->_speed;
@@ -63,10 +73,10 @@ Fdn4ReverbX::Fdn4ReverbX(const Fdn4ReverbXData* dbd)
   // matrixHadamard(0.0);
   matrixHouseholder();
   ///////////////////////////
-  _delayA.setStaticDelayTime(_delayTimes.x);
-  _delayB.setStaticDelayTime(_delayTimes.y);
-  _delayC.setStaticDelayTime(_delayTimes.z);
-  _delayD.setStaticDelayTime(_delayTimes.w);
+  _delayA.setStaticDelayTime(_param[1].eval());
+  _delayB.setStaticDelayTime(_param[2].eval());
+  _delayC.setStaticDelayTime(_param[3].eval());
+  _delayD.setStaticDelayTime(_param[4].eval());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -103,6 +113,11 @@ void Fdn4ReverbX::compute(DspBuffer& dspbuf) // final
   auto orbuf = getOutBuf(dspbuf, 1) + ibase;
 
   float invfr = 1.0f / inumframes;
+
+  _delayA.setNextDelayTime(_param[1].eval());
+  _delayB.setNextDelayTime(_param[2].eval());
+  _delayC.setNextDelayTime(_param[3].eval());
+  _delayD.setNextDelayTime(_param[4].eval());
 
   for (int i = 0; i < inumframes; i++) {
     float fi   = float(i) * invfr;

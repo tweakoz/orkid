@@ -37,6 +37,11 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 
 struct BlockModulationData final {
+
+  BlockModulationData() {
+  }
+  BlockModulationData(const BlockModulationData&) = delete;
+
   controllerdata_ptr_t _src1;
   controllerdata_ptr_t _src2;
   controllerdata_ptr_t _src2DepthCtrl;
