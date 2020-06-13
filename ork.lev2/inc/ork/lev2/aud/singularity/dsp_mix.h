@@ -107,7 +107,16 @@ struct Fdn4Reverb : public DspBlock {
 struct Fdn4ReverbXData : public DspBlockData {
   Fdn4ReverbXData(float tscale);
   dspblk_ptr_t createInstance() const override;
-  float _tscale;
+  float _tscale = 1.0f;
+
+  fvec4 _inputGainsL;
+  fvec4 _inputGainsR;
+  fvec4 _outputGainsL;
+  fvec4 _outputGainsR;
+  fvec4 _delayTimes;
+  fvec3 _axis;
+  float _angle;
+  float _speed = 0.0f;
 };
 struct Fdn4ReverbX : public DspBlock {
   using dataclass_t = Fdn4ReverbXData;
@@ -130,6 +139,7 @@ struct Fdn4ReverbX : public DspBlock {
   fvec4 _inputGainsR;
   fvec4 _outputGainsL;
   fvec4 _outputGainsR;
+  fvec4 _delayTimes;
 };
 ///////////////////////////////////////////////////////////////////////////////
 // fx presets
@@ -137,6 +147,7 @@ struct Fdn4ReverbX : public DspBlock {
 lyrdata_ptr_t fxpreset_stereochorus();
 lyrdata_ptr_t fxpreset_fdn4reverb();
 lyrdata_ptr_t fxpreset_multitest();
-lyrdata_ptr_t fxpreset_wackiverb();
+lyrdata_ptr_t fxpreset_niceverb();
+lyrdata_ptr_t fxpreset_echoverb();
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

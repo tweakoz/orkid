@@ -21,6 +21,23 @@ Fdn4ReverbXData::Fdn4ReverbXData(float tscale)
   _blocktype      = "Fdn4ReverbX";
   auto& mix_param = addParam();
   mix_param.useDefaultEvaluator();
+  math::FRANDOMGEN rg;
+  _axis.x = rg.rangedf(-1, 1);
+  _axis.y = rg.rangedf(-1, 1);
+  _axis.z = rg.rangedf(-1, 1);
+  _axis.Normalize();
+  _speed         = rg.rangedf(0.00001, 0.001);
+  float t1       = tscale * rg.rangedf(0.01, 0.15);
+  float t2       = tscale * rg.rangedf(0.01, 0.15);
+  float t3       = tscale * rg.rangedf(0.01, 0.15);
+  float t4       = tscale * rg.rangedf(0.01, 0.15);
+  _delayTimes    = fvec4(t1, t2, t3, t4);
+  float input_g  = 0.75f;
+  float output_g = 0.75f;
+  _inputGainsL   = fvec4(input_g, input_g, input_g, input_g);
+  _inputGainsR   = fvec4(input_g, input_g, input_g, input_g);
+  _outputGainsL  = fvec4(output_g, output_g, 0, 0);
+  _outputGainsR  = fvec4(0, 0, output_g, output_g);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -33,34 +50,23 @@ dspblk_ptr_t Fdn4ReverbXData::createInstance() const { // override
 
 Fdn4ReverbX::Fdn4ReverbX(const Fdn4ReverbXData* dbd)
     : DspBlock(dbd) {
-  ///////////////////////////
-  math::FRANDOMGEN rg;
-  ///////////////////////////
-  float input_g  = 0.75f;
-  float output_g = 0.75f;
-  float tscale   = dbd->_tscale;
-  float t1       = tscale * rg.rangedf(0.01, 0.15);
-  float t2       = tscale * rg.rangedf(0.01, 0.15);
-  float t3       = tscale * rg.rangedf(0.01, 0.15);
-  float t4       = tscale * rg.rangedf(0.01, 0.15);
+
+  _inputGainsL  = dbd->_inputGainsL;
+  _inputGainsR  = dbd->_inputGainsR;
+  _outputGainsL = dbd->_outputGainsL;
+  _outputGainsR = dbd->_outputGainsR;
+  _delayTimes   = dbd->_delayTimes;
+  _axis         = dbd->_axis;
+  _angle        = dbd->_angle;
+  _speed        = dbd->_speed;
   ///////////////////////////
   // matrixHadamard(0.0);
   matrixHouseholder();
   ///////////////////////////
-  _inputGainsL  = fvec4(input_g, input_g, input_g, input_g);
-  _inputGainsR  = fvec4(input_g, input_g, input_g, input_g);
-  _outputGainsL = fvec4(output_g, output_g, 0, 0);
-  _outputGainsR = fvec4(0, 0, output_g, output_g);
-  _delayA.setStaticDelayTime(t1);
-  _delayB.setStaticDelayTime(t2);
-  _delayC.setStaticDelayTime(t3);
-  _delayD.setStaticDelayTime(t4);
-
-  _axis.x = rg.rangedf(-1, 1);
-  _axis.y = rg.rangedf(-1, 1);
-  _axis.z = rg.rangedf(-1, 1);
-  _axis.Normalize();
-  _speed = rg.rangedf(0.00001, 0.0001);
+  _delayA.setStaticDelayTime(_delayTimes.x);
+  _delayB.setStaticDelayTime(_delayTimes.y);
+  _delayC.setStaticDelayTime(_delayTimes.z);
+  _delayD.setStaticDelayTime(_delayTimes.w);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
