@@ -49,7 +49,6 @@ struct DelayContext {
   void inp(float inp);
   void setStaticDelayTime(float dt);
   void setNextDelayTime(float dt);
-  static constexpr float kinv64k     = 1.0f / 65536.0f;
   static constexpr int64_t _maxdelay = 1 << 20;
   static constexpr int64_t _maxx     = _maxdelay << 16;
 
@@ -58,6 +57,27 @@ struct DelayContext {
   float _tgtDelayLen = 0.0f;
   DspBuffer _buffer;
   float* _bufdata = nullptr;
+};
+///////////////////////////////////////////////////////////////////////////////
+struct PitchShifterData : public DspBlockData {
+  PitchShifterData();
+  dspblk_ptr_t createInstance() const override;
+};
+struct PitchShifter : public DspBlock {
+  using dataclass_t = PitchShifterData;
+  PitchShifter(const PitchShifterData* dbd);
+  void compute(DspBuffer& dspbuf) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
+
+  int64_t _phaseA;
+  int64_t _phaseB;
+  int64_t _phaseC;
+  int64_t _phaseD;
+
+  DelayContext _delayA;
+  DelayContext _delayB;
+  DelayContext _delayC;
+  DelayContext _delayD;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct StereoDynamicEchoData : public DspBlockData {
@@ -151,5 +171,7 @@ lyrdata_ptr_t fxpreset_multitest();
 lyrdata_ptr_t fxpreset_niceverb();
 lyrdata_ptr_t fxpreset_echoverb();
 lyrdata_ptr_t fxpreset_wackiverb();
+lyrdata_ptr_t fxpreset_pitchoctup();
+lyrdata_ptr_t fxpreset_pitchwave();
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

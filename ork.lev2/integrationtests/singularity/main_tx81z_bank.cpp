@@ -16,7 +16,9 @@ int main(int argc, char** argv) {
            // auto fxlayer = fxpreset_multitest();
            // auto fxlayer = fxpreset_niceverb();
     // auto fxlayer = fxpreset_echoverb();
-    auto fxlayer = fxpreset_wackiverb();
+    // auto fxlayer = fxpreset_wackiverb();
+    // auto fxlayer = fxpreset_pitchoctup();
+    auto fxlayer = fxpreset_pitchwave();
     mainbus->setBusDSP(fxlayer);
   }
   ////////////////////////////////////////////////

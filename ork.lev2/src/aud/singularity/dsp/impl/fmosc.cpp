@@ -60,8 +60,6 @@ void PmOsc::keyOff() {
 //    -1: -2 PI radians
 //    +1: _2 PI radians
 ///////////////////////////////////////////////////////////
-static constexpr float kinv64k = 1.0f / 65536.0f;
-static constexpr float kinv32k = 1.0f / 32768.0f;
 float PmOsc::compute(float frequency, float phase_offset) {
   const float* sblk = _waveform->_wavedata.data();
   validateSample(frequency);

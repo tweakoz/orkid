@@ -42,8 +42,6 @@ StereoDynamicEcho::StereoDynamicEcho(const StereoDynamicEchoData* dbd)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static constexpr float kinv64k = 1.0f / 65536.0f;
-
 void StereoDynamicEcho::compute(DspBuffer& dspbuf) // final
 {
   float delaytimeL = _param[0].eval();

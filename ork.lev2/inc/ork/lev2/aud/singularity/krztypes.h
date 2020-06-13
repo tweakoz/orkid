@@ -34,10 +34,16 @@ static constexpr int kmaxctrlperblock      = 16;
 static constexpr int kmaxparmperblock      = 16;
 static constexpr int kmaxlayerspersynth    = 512;
 ///////////////////////////////////////////////////////////////////////////////
-static constexpr double pi   = 3.141592654;
-static constexpr double pi2  = 3.141592654 * 2.0;
-static constexpr double pid2 = 3.141592654 * 0.5;
-static const double sqrt2    = sqrt(2.0);
+static constexpr double pi      = 3.141592654;
+static constexpr double pi2     = 3.141592654 * 2.0;
+static constexpr double pid2    = 3.141592654 * 0.5;
+static const double sqrt2       = sqrt(2.0);
+static constexpr double kinv256 = 1.0 / double(1 << 8);
+static constexpr double kinv4k  = 1.0 / double(1 << 12);
+static constexpr double kinv32k = 1.0 / double(1 << 15);
+static constexpr double kinv64k = 1.0 / double(1 << 16);
+static constexpr double kinv24m = 1.0 / double(1 << 24);
+static constexpr double kinv4g  = 1.0 / double(1L << 32);
 ///////////////////////////////////////////////////////////////////////////////
 static constexpr int frames_per_controlpass = 32;
 static constexpr float kfpc                 = 1.0f / float(frames_per_controlpass);

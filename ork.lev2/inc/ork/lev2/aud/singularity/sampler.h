@@ -151,9 +151,6 @@ struct sampleOsc {
   int64_t _blk_loopend;
   int64_t _blk_end;
 
-  static constexpr float kinv64k = 1.0f / 65536.0f;
-  static constexpr float kinv32k = 1.0f / 32768.0f;
-
   const sample* _sample;
 
   int _sampselnote;

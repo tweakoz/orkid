@@ -10,7 +10,6 @@ static const int64_t ksizem64k = ksize << 16;
 static const int64_t ksized2   = ksize / 2;
 static const int64_t ksized4   = ksize / 4;
 static const int64_t ksized8   = ksize / 8;
-static const float kinv64k     = 1.0f / 65536.0f;
 
 ///////////////////////////////////////////////////////////////////////////////
 
