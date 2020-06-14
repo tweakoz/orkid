@@ -100,7 +100,7 @@ void CZX::compute(DspBuffer& dspbuf) // final
   if (0) {
     int inumframes = _layer->_dspwritecount;
     for (int i = 0; i < inumframes; i++) {
-      double phase  = 60.0 * PI_ISR * double(_phase);
+      double phase  = 60.0 * PI2XISR * double(_phase);
       float samp    = sinf(phase) * .6;
       outsamples[i] = samp;
       _phase++;

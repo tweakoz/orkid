@@ -1,6 +1,6 @@
 #include "harness.h"
 #include <ork/lev2/aud/singularity/cz1.h>
-#include <ork/lev2/aud/singularity/dsp_mix.h>
+#include <ork/lev2/aud/singularity/fxgen.h>
 
 int main(int argc, char** argv) {
   auto app = createEZapp(argc, argv);
@@ -18,8 +18,9 @@ int main(int argc, char** argv) {
   // output effect
   /////////////////
   if (1) { // create mixbus effect ?
-    auto fxlayer = fxpreset_niceverb();
+    // auto fxlayer = fxpreset_niceverb();
     // auto fxlayer = fxpreset_echoverb();
+    auto fxlayer = fxpreset_pitchchorus();
     mainbus->setBusDSP(fxlayer);
   }
   ////////////////////////////////////////////////

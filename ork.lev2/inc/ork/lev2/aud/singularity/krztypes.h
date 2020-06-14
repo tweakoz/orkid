@@ -59,7 +59,7 @@ inline constexpr float controlRate() {
 inline constexpr float controlPeriod() {
   return float(frames_per_controlpass) / getSampleRate();
 }
-constexpr float PI_ISR = pi2 * getInverseSampleRate();
+constexpr float PI2XISR = pi2 * getInverseSampleRate();
 ///////////////////////////////////////////////////////////////////////////////
 struct ProgramData;
 struct LayerData;

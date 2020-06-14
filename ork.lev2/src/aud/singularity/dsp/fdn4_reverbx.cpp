@@ -197,9 +197,9 @@ void Fdn4ReverbX::doKeyOn(const KeyOnInfo& koi) // final
   _filterB.Clear();
   _filterC.Clear();
   _filterD.Clear();
-  _filterA.Set(60, 8, -12.0);
-  _filterB.Set(60, 8, -12.0);
-  _filterC.Set(60, 8, 12.0);
-  _filterD.Set(60, 8, 12.0);
+  _filterA.SetHpf(200);
+  _filterB.SetHpf(200);
+  _filterC.SetHpf(200);
+  _filterD.SetHpf(200);
 }
 } // namespace ork::audio::singularity

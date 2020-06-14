@@ -10,9 +10,8 @@
 
 namespace ork::audio::singularity {
 
-static const float SR     = getSampleRate();
-static const float ISR    = 1.0f / SR;
-static const float PI2ISR = pi2 * ISR;
+static constexpr float SR  = getSampleRate();
+static constexpr float ISR = getInverseSampleRate();
 
 float BW2Q(float fc, float BWoct);
 

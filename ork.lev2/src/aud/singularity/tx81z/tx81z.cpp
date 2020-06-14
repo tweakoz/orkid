@@ -563,7 +563,7 @@ void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, tx81zprgdata_ptr_t prgdata
   auto opmix            = stage_opmix->appendTypedBlock<PMXMix>();
   opmix->_dspchannel[0] = 0;
   /////////////////////////////////////////////////
-  float basemodindex = 4.0f;
+  float basemodindex = 3.5f;
   op0->_modIndex     = basemodindex;
   op1->_modIndex     = basemodindex;
   op2->_modIndex     = basemodindex;

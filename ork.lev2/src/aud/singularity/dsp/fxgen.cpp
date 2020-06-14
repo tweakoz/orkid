@@ -1,7 +1,5 @@
-#include <ork/lev2/aud/singularity/synth.h>
-#include <assert.h>
-#include <ork/lev2/aud/singularity/dsp_mix.h>
-#include <ork/lev2/aud/singularity/alg_eq.h>
+#include <ork/lev2/aud/singularity/fxgen.h>
+#include <ork/lev2/aud/singularity/alg_filters.h>
 
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
@@ -64,6 +62,36 @@ void appendStereoParaEQ(
   eqr->_dspchannel[0]   = 1;
 }
 ///////////////////////////////////////////////////////////////////////////////
+void appendStereoHighPass(
+    lyrdata_ptr_t layer, //
+    dspstagedata_ptr_t stage,
+    float fc) {
+  auto eql              = stage->appendTypedBlock<HighPass>();
+  auto eqr              = stage->appendTypedBlock<HighPass>();
+  eql->param(0)._coarse = fc;
+  eqr->param(0)._coarse = fc;
+  eql->_dspchannel[0]   = 0;
+  eqr->_dspchannel[0]   = 1;
+}
+///////////////////////////////////////////////////////////////////////////////
+void appendStereoHighFreqStimulator(
+    lyrdata_ptr_t layer, //
+    dspstagedata_ptr_t stage,
+    float fc,
+    float drive,
+    float amp) {
+  auto eql              = stage->appendTypedBlock<HighFreqStimulator>();
+  auto eqr              = stage->appendTypedBlock<HighFreqStimulator>();
+  eql->param(0)._coarse = fc;
+  eqr->param(0)._coarse = fc;
+  eql->param(1)._coarse = drive;
+  eqr->param(1)._coarse = drive;
+  eql->param(2)._coarse = amp;
+  eqr->param(2)._coarse = amp;
+  eql->_dspchannel[0]   = 0;
+  eqr->_dspchannel[0]   = 1;
+}
+///////////////////////////////////////////////////////////////////////////////
 dspblkdata_ptr_t appendStereoReverbX(
     lyrdata_ptr_t layer, //
     dspstagedata_ptr_t stage,
@@ -105,138 +133,53 @@ void appendStereoEnhancer(lyrdata_ptr_t layer, dspstagedata_ptr_t stage) {
   };
 }
 ///////////////////////////////////////////////////////////////////////////////
-
-lyrdata_ptr_t fxpreset_stereochorus() {
-  auto fxprog       = std::make_shared<ProgramData>();
-  auto fxlayer      = fxprog->newLayer();
-  auto fxalg        = std::make_shared<AlgData>();
-  fxlayer->_algdata = fxalg;
-  fxalg->_name      = ork::FormatString("FxAlg");
-  /////////////////
-  // output effect
-  /////////////////
-  auto fxstage = fxalg->appendStage("FX");
-  fxstage->setNumIos(2, 2); // stereo in, stereo out
-  /////////////////
-  appendStereoEnhancer(fxlayer, fxstage);
-  appendStereoChorus(fxlayer, fxstage);
-  return fxlayer;
-}
-///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_fdn4reverb() {
-  auto fxprog       = std::make_shared<ProgramData>();
-  auto fxlayer      = fxprog->newLayer();
-  auto fxalg        = std::make_shared<AlgData>();
-  fxlayer->_algdata = fxalg;
-  fxalg->_name      = ork::FormatString("FxAlg");
-  /////////////////
-  // output effect
-  /////////////////
-  auto fxstage = fxalg->appendStage("FX");
-  fxstage->setNumIos(2, 2); // stereo in, stereo out
-  /////////////////
-  appendStereoEnhancer(fxlayer, fxstage);
-  appendStereoReverb(fxlayer, fxstage, 0.47);
-  /////////////////
-  return fxlayer;
-}
-///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_multitest() {
-  auto fxprog       = std::make_shared<ProgramData>();
-  auto fxlayer      = fxprog->newLayer();
-  auto fxalg        = std::make_shared<AlgData>();
-  fxlayer->_algdata = fxalg;
-  fxalg->_name      = ork::FormatString("FxAlg");
-  /////////////////
-  // output effect
-  /////////////////
-  auto fxstage = fxalg->appendStage("FX");
-  fxstage->setNumIos(2, 2); // stereo in, stereo out
-                            /////////////////
-                            // appendStereoEnhancer(fxlayer, fxstage);
-  appendStereoChorus(fxlayer, fxstage);
-  auto rv2              = appendStereoReverb(fxlayer, fxstage, 0.77);
-  auto rv1              = appendStereoReverb(fxlayer, fxstage, 0.47);
-  auto rv0              = appendStereoReverb(fxlayer, fxstage, 0.27);
-  rv0->param(0)._coarse = 0.11f; // wet/dry mix
-  rv1->param(0)._coarse = 0.11f; // wet/dry mix
-  rv2->param(0)._coarse = 0.11f; // wet/dry mix
-  /////////////////
-  return fxlayer;
-}
-///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_niceverb() {
-  auto fxprog       = std::make_shared<ProgramData>();
-  auto fxlayer      = fxprog->newLayer();
-  auto fxalg        = std::make_shared<AlgData>();
-  fxlayer->_algdata = fxalg;
-  fxalg->_name      = ork::FormatString("FxAlg");
-  /////////////////
-  // output effect
-  /////////////////
-  auto fxstage = fxalg->appendStage("FX");
-  fxstage->setNumIos(2, 2); // stereo in, stereo out
-  /////////////////
+void appendNiceVerb(
+    lyrdata_ptr_t fxlayer, //
+    dspstagedata_ptr_t fxstage,
+    float wetness) {
   auto rv2              = appendStereoReverbX(fxlayer, fxstage, 10, 1.77, 0.01, 0.15, 0.00001, 0.001);
   auto rv1              = appendStereoReverbX(fxlayer, fxstage, 10, 0.47, 0.01, 0.15, 0.00001, 0.001);
   auto rv0              = appendStereoReverbX(fxlayer, fxstage, 10, 0.27, 0.01, 0.15, 0.00001, 0.001);
-  rv0->param(0)._coarse = 0.1f; // wet/dry mix
-  rv1->param(0)._coarse = 0.1f; // wet/dry mix
-  rv2->param(0)._coarse = 0.1f; // wet/dry mix
-  /////////////////
-  return fxlayer;
+  rv0->param(0)._coarse = wetness; // wet/dry mix
+  rv1->param(0)._coarse = wetness; // wet/dry mix
+  rv2->param(0)._coarse = wetness; // wet/dry mix
 }
 ///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_echoverb() {
-  auto fxprog       = std::make_shared<ProgramData>();
-  auto fxlayer      = fxprog->newLayer();
-  auto fxalg        = std::make_shared<AlgData>();
-  fxlayer->_algdata = fxalg;
-  fxalg->_name      = ork::FormatString("FxAlg");
+void appendPitchChorus(
+    lyrdata_ptr_t fxlayer, //
+    dspstagedata_ptr_t fxstage,
+    float wetness,
+    float cents) {
   /////////////////
-  // output effect
+  auto shifterL              = appendPitchShifter(fxlayer, fxstage);
+  auto shifterR              = appendPitchShifter(fxlayer, fxstage);
+  shifterL->param(0)._coarse = wetness; // wet/dry mix
+  shifterR->param(0)._coarse = wetness; // wet/dry mix
   /////////////////
-  auto fxstage = fxalg->appendStage("FX");
-  fxstage->setNumIos(2, 2); // stereo in, stereo out
+  shifterL->_dspchannel[0] = 0; // chorus voice 1 on left
+  shifterR->_dspchannel[0] = 1; // chorus voice 2 on right
   /////////////////
-  auto chorus              = appendStereoChorus(fxlayer, fxstage);
-  chorus->param(2)._coarse = 0.5;  // feedback
-  chorus->param(3)._coarse = 0.35; // wet/dry mix
-  /////////////////
-  auto rv2 = appendStereoReverbX(fxlayer, fxstage, 10, 5.0, 0.01, 0.15, 0.0001, 0.1);
-  auto rv1 = appendStereoReverbX(fxlayer, fxstage, 11, 1.47, 0.01, 0.15, 0.00001, 0.01);
-  auto rv0 = appendStereoReverbX(fxlayer, fxstage, 12, 0.17, 0.01, 0.15, 0.00001, 0.001);
-  /////////////////
-  appendStereoParaEQ(fxlayer, fxstage, 10, 8, -36);
-  appendStereoParaEQ(fxlayer, fxstage, 20, 8, -12);
-  // appendStereoParaEQ(fxlayer, fxstage, 30, 8, -3);
-  /////////////////
-  rv0->param(0)._coarse = 0.07f; // wet/dry mix
-  rv1->param(0)._coarse = 0.07f; // wet/dry mix
-  rv2->param(0)._coarse = 0.07f; // wet/dry mix
-  /////////////////
-  return fxlayer;
+  auto PITCHMODL        = fxlayer->appendController<CustomControllerData>("PITCHSHIFT1");
+  auto PITCHMODR        = fxlayer->appendController<CustomControllerData>("PITCHSHIFT2");
+  auto& pmodL           = shifterL->param(1)._mods;
+  auto& pmodR           = shifterR->param(1)._mods;
+  pmodL._src1           = PITCHMODL;
+  pmodL._src1Depth      = 1.0;
+  pmodR._src1           = PITCHMODR;
+  pmodR._src1Depth      = 1.0;
+  PITCHMODL->_oncompute = [cents](CustomControllerInst* cci) { //
+    float time   = cci->_layer->_layerTime;
+    cci->_curval = sinf(time * pi2 * 0.03f) * cents;
+    return cci->_curval;
+  };
+  PITCHMODR->_oncompute = [cents](CustomControllerInst* cci) { //
+    float time   = cci->_layer->_layerTime;
+    cci->_curval = sinf(time * pi2 * 0.07f) * cents;
+    return cci->_curval;
+  };
 }
 ///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_wackiverb() {
-  auto fxprog       = std::make_shared<ProgramData>();
-  auto fxlayer      = fxprog->newLayer();
-  auto fxalg        = std::make_shared<AlgData>();
-  fxlayer->_algdata = fxalg;
-  fxalg->_name      = ork::FormatString("FxAlg");
-  /////////////////
-  // output effect
-  /////////////////
-  auto fxstage = fxalg->appendStage("FX");
-  fxstage->setNumIos(2, 2); // stereo in, stereo out
-  /////////////////
-  auto chorus              = appendStereoChorus(fxlayer, fxstage);
-  chorus->param(2)._coarse = 0.5;  // feedback
-  chorus->param(3)._coarse = 0.35; // wet/dry mix
-  /////////////////
-  // auto rv2              = appendStereoReverbX(fxlayer, fxstage, 10, 5.0, 0.01, 0.15, 0.0001, 0.1);
-  // auto rv1              = appendStereoReverbX(fxlayer, fxstage, 11, 1.47, 0.01, 0.15, 0.00001, 0.01);
-
+void appendWackiVerb(lyrdata_ptr_t fxlayer, dspstagedata_ptr_t fxstage) {
   auto crverb = [fxlayer, fxstage](int seed, float mint, float maxt, float mins, float maxs) {
     math::FRANDOMGEN rg(seed);
     auto rv              = appendStereoReverbX(fxlayer, fxstage, seed, 0.0f, 0.00, 0.0, 0.00001, 0.001);
@@ -298,105 +241,8 @@ lyrdata_ptr_t fxpreset_wackiverb() {
   crverb(11, 0.09, 0.13, 0.1, 0.17);
   crverb(112, 0.017, 0.037, 0.1, 0.5);
   crverb(113, 0.007, 0.009, 0.5, 1.5);
-  /////////////////
-  appendStereoParaEQ(fxlayer, fxstage, 10, 8, -36);
-  appendStereoParaEQ(fxlayer, fxstage, 20, 8, -12);
-  // appendStereoParaEQ(fxlayer, fxstage, 30, 8, -3);
-  /////////////////
-  // rv1->param(0)._coarse = 0.27f; // wet/dry mix
-  // rv2->param(0)._coarse = 0.27f; // wet/dry mix
-  /////////////////
-  return fxlayer;
 }
-///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_pitchoctup() {
-  auto fxprog       = std::make_shared<ProgramData>();
-  auto fxlayer      = fxprog->newLayer();
-  auto fxalg        = std::make_shared<AlgData>();
-  fxlayer->_algdata = fxalg;
-  fxalg->_name      = ork::FormatString("FxAlg");
-  /////////////////
-  // output effect
-  /////////////////
-  auto fxstage = fxalg->appendStage("FX");
-  fxstage->setNumIos(2, 2); // stereo in, stereo out
-  /////////////////
-  auto shifter              = appendPitchShifter(fxlayer, fxstage);
-  shifter->param(0)._coarse = 0.5;  // wet/dry mix
-  shifter->param(1)._coarse = 1200; // 1 octave up
-  /////////////////
-  return fxlayer;
-}
-///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_pitchwave() {
-  auto fxprog       = std::make_shared<ProgramData>();
-  auto fxlayer      = fxprog->newLayer();
-  auto fxalg        = std::make_shared<AlgData>();
-  fxlayer->_algdata = fxalg;
-  fxalg->_name      = ork::FormatString("FxAlg");
-  /////////////////
-  // output effect
-  /////////////////
-  auto fxstage = fxalg->appendStage("FX");
-  fxstage->setNumIos(2, 2); // stereo in, stereo out
-  /////////////////
-  auto shifter              = appendPitchShifter(fxlayer, fxstage);
-  shifter->param(0)._coarse = 0.5; // wet/dry mix
-  /////////////////
-  auto PITCHMOD        = fxlayer->appendController<CustomControllerData>("PITCHSHIFT");
-  auto& pmod           = shifter->param(1)._mods;
-  pmod._src1           = PITCHMOD;
-  pmod._src1Depth      = 1.0;
-  PITCHMOD->_oncompute = [](CustomControllerInst* cci) { //
-    float time   = cci->_layer->_layerTime;
-    cci->_curval = (1.0f + sinf(time * pi2 * 0.03f)) * 2400.0f;
-    return cci->_curval;
-  };
-  /////////////////
-  return fxlayer;
-}
-///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_pitchchorus() {
-  auto fxprog       = std::make_shared<ProgramData>();
-  auto fxlayer      = fxprog->newLayer();
-  auto fxalg        = std::make_shared<AlgData>();
-  fxlayer->_algdata = fxalg;
-  fxalg->_name      = ork::FormatString("FxAlg");
-  /////////////////
-  // output effect
-  /////////////////
-  auto fxstage = fxalg->appendStage("FX");
-  fxstage->setNumIos(2, 2); // stereo in, stereo out
-  /////////////////
-  auto shifterL              = appendPitchShifter(fxlayer, fxstage);
-  auto shifterR              = appendPitchShifter(fxlayer, fxstage);
-  shifterL->param(0)._coarse = 0.5; // wet/dry mix
-  shifterR->param(0)._coarse = 0.5; // wet/dry mix
-  /////////////////
-  shifterL->_dspchannel[0] = 0; // chorus voice 1 on left
-  shifterR->_dspchannel[0] = 1; // chorus voice 2 on right
-  /////////////////
-  auto PITCHMODL        = fxlayer->appendController<CustomControllerData>("PITCHSHIFT1");
-  auto PITCHMODR        = fxlayer->appendController<CustomControllerData>("PITCHSHIFT2");
-  auto& pmodL           = shifterL->param(1)._mods;
-  auto& pmodR           = shifterR->param(1)._mods;
-  pmodL._src1           = PITCHMODL;
-  pmodL._src1Depth      = 1.0;
-  pmodR._src1           = PITCHMODR;
-  pmodR._src1Depth      = 1.0;
-  PITCHMODL->_oncompute = [](CustomControllerInst* cci) { //
-    float time   = cci->_layer->_layerTime;
-    cci->_curval = sinf(time * pi2 * 0.03f) * 35.0f;
-    return cci->_curval;
-  };
-  PITCHMODR->_oncompute = [](CustomControllerInst* cci) { //
-    float time   = cci->_layer->_layerTime;
-    cci->_curval = sinf(time * pi2 * 0.07f) * 35.0f;
-    return cci->_curval;
-  };
-  /////////////////
-  return fxlayer;
-}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 } // namespace ork::audio::singularity

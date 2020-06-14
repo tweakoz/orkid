@@ -1,25 +1,26 @@
 #include "harness.h"
 #include <ork/lev2/aud/singularity/tx81z.h>
-#include <ork/lev2/aud/singularity/dsp_mix.h>
+#include <ork/lev2/aud/singularity/fxgen.h>
 
 int main(int argc, char** argv) {
   auto app = createEZapp(argc, argv);
   ////////////////////////////////////////////////
   // main bus effect
   ////////////////////////////////////////////////
-  synth::instance()->_masterGain = decibel_to_linear_amp_ratio(24.0f);
+  synth::instance()->_masterGain = decibel_to_linear_amp_ratio(30.0f);
   auto mainbus                   = synth::instance()->outputBus("main");
   auto bussource                 = mainbus->createScopeSource();
   if (1) { // create mixbus effect ?
-           // auto fxlayer = fxpreset_stereochorus();
-           // auto fxlayer = fxpreset_fdn4reverb();
-           // auto fxlayer = fxpreset_multitest();
-           // auto fxlayer = fxpreset_niceverb();
+
+    // auto fxlayer = fxpreset_stereochorus();
+    // auto fxlayer = fxpreset_fdn4reverb();
+    auto fxlayer = fxpreset_multitest();
+    // auto fxlayer = fxpreset_niceverb();
     // auto fxlayer = fxpreset_echoverb();
     // auto fxlayer = fxpreset_wackiverb();
     // auto fxlayer = fxpreset_pitchoctup();
     // auto fxlayer = fxpreset_pitchwave();
-    auto fxlayer = fxpreset_pitchchorus();
+    // auto fxlayer = fxpreset_pitchchorus();
     mainbus->setBusDSP(fxlayer);
   }
   ////////////////////////////////////////////////

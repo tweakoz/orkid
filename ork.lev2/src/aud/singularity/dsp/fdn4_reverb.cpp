@@ -98,8 +98,10 @@ void Fdn4Reverb::compute(DspBuffer& dspbuf) // final
     // input from dsp channels
     /////////////////////////////////////
 
-    float inl = ilbuf[i];
-    float inr = irbuf[i];
+    float inl  = ilbuf[i];
+    float inr  = irbuf[i];
+    float finl = _hipassfilterL.compute(inl);
+    float finr = _hipassfilterR.compute(inr);
 
     /////////////////////////////////////
     // do fdn4 operation
@@ -112,10 +114,10 @@ void Fdn4Reverb::compute(DspBuffer& dspbuf) // final
 
     auto abcd_out = fvec4(aout, bout, cout, dout);
 
-    float ainp = inl * _inputGainsL.x + inr * _inputGainsR.x;
-    float binp = inl * _inputGainsL.y + inr * _inputGainsR.y;
-    float cinp = inl * _inputGainsL.z + inr * _inputGainsR.z;
-    float dinp = inl * _inputGainsL.w + inr * _inputGainsR.w;
+    float ainp = finl * _inputGainsL.x + finr * _inputGainsR.x;
+    float binp = finl * _inputGainsL.y + finr * _inputGainsR.y;
+    float cinp = finl * _inputGainsL.z + finr * _inputGainsR.z;
+    float dinp = finl * _inputGainsL.w + finr * _inputGainsR.w;
 
     ainp += grp0.Dot(abcd_out) + 1e-9;
     binp += grp1.Dot(abcd_out) + 1e-9;
@@ -150,5 +152,9 @@ void Fdn4Reverb::compute(DspBuffer& dspbuf) // final
 
 void Fdn4Reverb::doKeyOn(const KeyOnInfo& koi) // final
 {
+  _hipassfilterL.Clear();
+  _hipassfilterR.Clear();
+  _hipassfilterL.SetHpf(200.0f);
+  _hipassfilterR.SetHpf(200.0f);
 }
 } // namespace ork::audio::singularity

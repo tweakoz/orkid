@@ -289,40 +289,6 @@ void FOURPOLE_HIPASS_W_SEP::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// LOPASS : 1 pole! lowpass
-///////////////////////////////////////////////////////////////////////////////
-
-LOPASS::LOPASS(const DspBlockData* dbd)
-    : DspBlock(dbd) {
-}
-
-void LOPASS::compute(DspBuffer& dspbuf) // final
-{
-  float pad      = _dbd->_inputPad;
-  int inumframes = _layer->_dspwritecount;
-  float fc       = _param[0].eval();
-  if (fc > 16000.0f)
-    fc = 16000.0f;
-  _fval[0] = fc;
-  _lpf.set(fc);
-
-  auto inpbuf = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
-
-  if (1) {
-    auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
-    for (int i = 0; i < inumframes; i++) {
-      float inp     = inpbuf[i] * pad;
-      outputchan[i] = _lpf.compute(inp);
-    }
-  }
-}
-
-void LOPASS::doKeyOn(const KeyOnInfo& koi) // final
-{
-  _lpf.init();
-}
-
-///////////////////////////////////////////////////////////////////////////////
 // LPCLIP : 1 pole! lowpass
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -350,35 +316,6 @@ void LPCLIP::compute(DspBuffer& dspbuf) // final
 void LPCLIP::doKeyOn(const KeyOnInfo& koi) // final
 {
   _lpf.init();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-HIPASS::HIPASS(const DspBlockData* dbd)
-    : DspBlock(dbd) {
-}
-
-void HIPASS::compute(DspBuffer& dspbuf) // final
-{
-  float pad      = _dbd->_inputPad;
-  int inumframes = _layer->_dspwritecount;
-  float fc       = _param[0].eval();
-  _hpf.set(fc);
-
-  if (1) {
-    auto inputchan  = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
-    auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
-    for (int i = 0; i < inumframes; i++) {
-      float inp     = inputchan[i] * pad;
-      outputchan[i] = _hpf.compute(inp);
-    }
-  }
-  _fval[0] = fc;
-}
-
-void HIPASS::doKeyOn(const KeyOnInfo& koi) // final
-{
-  _hpf.init();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -410,57 +347,141 @@ void LPGATE::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// LOPASS : 1 pole! lowpass
+///////////////////////////////////////////////////////////////////////////////
+LowPassData::LowPassData() {
+}
+dspblk_ptr_t LowPassData::createInstance() const {
+  return std::make_shared<LowPass>(this);
+}
 
-HIFREQ_STIMULATOR::HIFREQ_STIMULATOR(const DspBlockData* dbd)
+LowPass::LowPass(const LowPassData* dbd)
     : DspBlock(dbd) {
 }
 
-void HIFREQ_STIMULATOR::compute(DspBuffer& dspbuf) // final
+void LowPass::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
   int inumframes = _layer->_dspwritecount;
-  float* ubuf    = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
   float fc       = _param[0].eval();
-  float drv      = _param[1].eval();
-  float amp      = _param[2].eval();
-  float ling     = decibel_to_linear_amp_ratio(amp);
-  float drvg     = decibel_to_linear_amp_ratio(drv);
+  if (fc > 16000.0f)
+    fc = 16000.0f;
+  _fval[0] = fc;
+  _lpf.set(fc);
+
+  auto inpbuf = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
+
+  if (1) {
+    auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+    for (int i = 0; i < inumframes; i++) {
+      float inp     = inpbuf[i] * pad;
+      outputchan[i] = _lpf.compute(inp);
+    }
+  }
+}
+
+void LowPass::doKeyOn(const KeyOnInfo& koi) // final
+{
+  _lpf.init();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+HighPassData::HighPassData() {
+  addParam().useDefaultEvaluator(); // cutoff
+}
+dspblk_ptr_t HighPassData::createInstance() const {
+  return std::make_shared<HighPass>(this);
+}
+HighPass::HighPass(const HighPassData* dbd)
+    : DspBlock(dbd) {
+}
+
+void HighPass::compute(DspBuffer& dspbuf) // final
+{
+  float pad      = _dbd->_inputPad;
+  int inumframes = _layer->_dspwritecount;
+  float fc       = _param[0].eval();
+  _hpf.set(fc);
+
+  if (1) {
+    auto inputchan  = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
+    auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+    for (int i = 0; i < inumframes; i++) {
+      float inp     = inputchan[i] * pad;
+      outputchan[i] = _hpf.compute(inp);
+    }
+  }
+  _fval[0] = fc;
+}
+
+void HighPass::doKeyOn(const KeyOnInfo& koi) // final
+{
+  _hpf.init();
+}
+///////////////////////////////////////////////////////////////////////////////
+
+HighFreqStimulatorData::HighFreqStimulatorData() {
+  addParam().useDefaultEvaluator(); // cutoff
+  addParam().useDefaultEvaluator(); // drive
+  addParam().useDefaultEvaluator(); // outgain
+}
+dspblk_ptr_t HighFreqStimulatorData::createInstance() const {
+  return std::make_shared<HighFreqStimulator>(this);
+}
+
+HighFreqStimulator::HighFreqStimulator(const HighFreqStimulatorData* dbd)
+    : DspBlock(dbd) {
+}
+
+void HighFreqStimulator::compute(DspBuffer& dspbuf) // final
+{
+  float pad         = _dbd->_inputPad;
+  int inumframes    = _layer->_dspwritecount;
+  const float* ibuf = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
+  float* obuf       = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
+  float fc          = _param[0].eval();
+  float drv         = _param[1].eval();
+  float amp         = _param[2].eval();
+  float drvg        = decibel_to_linear_amp_ratio(drv);
+  float ling        = decibel_to_linear_amp_ratio(amp);
   if (1)
     for (int i = 0; i < inumframes; i++) {
-      float input = ubuf[i] * pad;
-      _smoothFC   = _smoothFC * .99 + fc * .01;
-      _filter1.SetWithRes(EM_HPF, _smoothFC, 0.0f);
+      float input = ibuf[i] * pad;
+      _filter1.SetWithRes(EM_HPF, fc, 0.0f);
       _filter1.Tick(input);
-      float postf = _filter1.output * drvg;
-      // float cc = clip_float(postf,-.1,.1);
+      float postf     = _filter1.output * drvg;
       float saturated = softsat(postf, 0.9f);
-      _filter2.SetWithRes(EM_HPF, _smoothFC, 0.0f);
+      _filter2.SetWithRes(EM_HPF, fc, 0.0f);
       _filter2.Tick(saturated);
       float stimmed = _filter2.output;
 
-      ubuf[i] = clip_float(input + stimmed * 0.01, -1, 1); //*ling;
+      obuf[i] = (input + stimmed * ling);
     }
-  _fval[0] = _smoothFC;
-  _fval[1] = drv;
-  _fval[2] = amp;
 }
 
-void HIFREQ_STIMULATOR::doKeyOn(const KeyOnInfo& koi) // final
+void HighFreqStimulator::doKeyOn(const KeyOnInfo& koi) // final
 {
   _filter1.Clear();
   _filter2.Clear();
-  _smoothFC = 0.0f;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // 2pole allpass (for phasers, etc..)
 ///////////////////////////////////////////////////////////////////////////////
 
-ALPASS::ALPASS(const DspBlockData* dbd)
+AllPassData::AllPassData() {
+  addParam().useDefaultEvaluator(); // cutoff
+}
+dspblk_ptr_t AllPassData::createInstance() const {
+  return std::make_shared<AllPass>(this);
+}
+
+AllPass::AllPass(const AllPassData* dbd)
     : DspBlock(dbd) {
 }
 
-void ALPASS::compute(DspBuffer& dspbuf) // final
+void AllPass::compute(DspBuffer& dspbuf) // final
 {
   float pad      = _dbd->_inputPad;
   int inumframes = _layer->_dspwritecount;
@@ -478,7 +499,7 @@ void ALPASS::compute(DspBuffer& dspbuf) // final
   }
 }
 
-void ALPASS::doKeyOn(const KeyOnInfo& koi) // final
+void AllPass::doKeyOn(const KeyOnInfo& koi) // final
 {
   _filter.Clear();
 }

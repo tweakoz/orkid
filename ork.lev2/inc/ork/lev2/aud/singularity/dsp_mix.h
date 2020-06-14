@@ -122,6 +122,8 @@ struct Fdn4Reverb : public DspBlock {
   DelayContext _delayB;
   DelayContext _delayC;
   DelayContext _delayD;
+  BiQuad _hipassfilterL;
+  BiQuad _hipassfilterR;
   fmtx4 _feedbackMatrix;
   fvec4 _inputGainsL;
   fvec4 _inputGainsR;
@@ -160,10 +162,10 @@ struct Fdn4ReverbX : public DspBlock {
   DelayContext _delayB;
   DelayContext _delayC;
   DelayContext _delayD;
-  ParaOne _filterA;
-  ParaOne _filterB;
-  ParaOne _filterC;
-  ParaOne _filterD;
+  BiQuad _filterA;
+  BiQuad _filterB;
+  BiQuad _filterC;
+  BiQuad _filterD;
 
   fmtx4 _feedbackMatrix;
   fvec4 _inputGainsL;
@@ -172,17 +174,5 @@ struct Fdn4ReverbX : public DspBlock {
   fvec4 _outputGainsR;
   fvec4 _delayTimes;
 };
-///////////////////////////////////////////////////////////////////////////////
-// fx presets
-///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_stereochorus();
-lyrdata_ptr_t fxpreset_fdn4reverb();
-lyrdata_ptr_t fxpreset_multitest();
-lyrdata_ptr_t fxpreset_niceverb();
-lyrdata_ptr_t fxpreset_echoverb();
-lyrdata_ptr_t fxpreset_wackiverb();
-lyrdata_ptr_t fxpreset_pitchoctup();
-lyrdata_ptr_t fxpreset_pitchwave();
-lyrdata_ptr_t fxpreset_pitchchorus();
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

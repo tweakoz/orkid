@@ -275,20 +275,10 @@ dspblk_ptr_t createDspBlock(const DspBlockData* dbd) {
     rval = std::make_shared<LOPAS2>(dbd);
   if (dbd->_blocktype == "LP2RES")
     rval = std::make_shared<LP2RES>(dbd);
-  if (dbd->_blocktype == "LOPASS")
-    rval = std::make_shared<LOPASS>(dbd);
   if (dbd->_blocktype == "LPCLIP")
     rval = std::make_shared<LPCLIP>(dbd);
   if (dbd->_blocktype == "LPGATE")
     rval = std::make_shared<LPGATE>(dbd);
-
-  if (dbd->_blocktype == "HIPASS")
-    rval = std::make_shared<HIPASS>(dbd);
-  if (dbd->_blocktype == "ALPASS")
-    rval = std::make_shared<ALPASS>(dbd);
-
-  if (dbd->_blocktype == "HIFREQ STIMULATOR")
-    rval = std::make_shared<HIFREQ_STIMULATOR>(dbd);
 
   ////////////////////////
   // nonlin

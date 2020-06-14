@@ -66,41 +66,65 @@ struct FOURPOLE_HIPASS_W_SEP : public DspBlock {
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
 };
-struct LOPASS : public DspBlock {
-  LOPASS(const DspBlockData* dbd);
-  OnePoleLoPass _lpf;
-  void compute(DspBuffer& dspbuf) final;
-  void doKeyOn(const KeyOnInfo& koi) final;
-};
 struct LPCLIP : public DspBlock {
   LPCLIP(const DspBlockData* dbd);
   OnePoleLoPass _lpf;
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
 };
-struct HIPASS : public DspBlock {
-  HIPASS(const DspBlockData* dbd);
+/////////////////
+// newstyle
+/////////////////
+struct LowPassData : public DspBlockData {
+  LowPassData();
+  dspblk_ptr_t createInstance() const override;
+};
+struct LowPass : public DspBlock {
+  // krzname: LOPASS
+  using dataclass_t = LowPassData;
+  LowPass(const LowPassData* dbd);
+  OnePoleLoPass _lpf;
+  void compute(DspBuffer& dspbuf) final;
+  void doKeyOn(const KeyOnInfo& koi) final;
+};
+struct HighPassData : public DspBlockData {
+  HighPassData();
+  dspblk_ptr_t createInstance() const override;
+};
+struct HighPass : public DspBlock {
+  // krzname: HighPass
+  using dataclass_t = HighPassData;
+  HighPass(const HighPassData* dbd);
   OnePoleHiPass _hpf;
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
 };
-struct ALPASS : public DspBlock {
-  ALPASS(const DspBlockData* dbd);
+struct AllPassData : public DspBlockData {
+  AllPassData();
+  dspblk_ptr_t createInstance() const override;
+};
+struct AllPass : public DspBlock {
+  // krzname: ALPASS
+  using dataclass_t = AllPassData;
+  AllPass(const AllPassData* dbd);
   TrapAllpass _filter;
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
 };
-struct HIFREQ_STIMULATOR : public DspBlock {
-  HIFREQ_STIMULATOR(const DspBlockData* dbd);
+struct HighFreqStimulatorData : public DspBlockData {
+  HighFreqStimulatorData();
+  dspblk_ptr_t createInstance() const override;
+};
+struct HighFreqStimulator : public DspBlock {
+  // krzname: HIFREQ_STIMULATOR
+  using dataclass_t = HighFreqStimulatorData;
+  HighFreqStimulator(const HighFreqStimulatorData* dbd);
   TrapSVF _filter1;
   TrapSVF _filter2;
   float _smoothFC;
   void compute(DspBuffer& dspbuf) final;
   void doKeyOn(const KeyOnInfo& koi) final;
 };
-/////////////////
-// newstyle
-/////////////////
 struct TwoPoleLowPassData : public DspBlockData {
   // krzname: "2POLE LOWPASS"
   TwoPoleLowPassData();
