@@ -125,10 +125,10 @@ void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
   const float OSC_X1 = 0;
   const float OSC_Y1 = 0;
-  const float OSC_W  = miW;
-  const float OSC_H  = miH;
-  const float OSC_X2 = miW;
-  const float OSC_Y2 = miH;
+  const float OSC_W  = width();
+  const float OSC_H  = height();
+  const float OSC_X2 = width();
+  const float OSC_Y2 = height();
   const float OSC_HH = OSC_H * 0.5;
   const float OSC_CY = OSC_Y1 + OSC_HH;
 
@@ -328,7 +328,7 @@ void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ScopeSurf::DoInit(lev2::Context* pt) {
-  _pickbuffer = new lev2::PickBuffer(this, pt, miW, miH);
+  _pickbuffer = new lev2::PickBuffer(this, pt, width(), height());
   _ctxbase    = pt->GetCtxBase();
 }
 ///////////////////////////////////////////////////////////////////////////////

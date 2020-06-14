@@ -32,22 +32,19 @@ void Widget::Describe() {
 Widget::Widget(const std::string& name, int x, int y, int w, int h)
     : msName(name)
     , mpTarget(0)
-    , miX(x)
-    , miY(y)
-    , miLX(x)
-    , miLY(y)
-    , miW(w)
-    , miH(h)
-    , miLW(w)
-    , miLH(h)
-    , miX2(x + w)
-    , miY2(y + h)
     , mbInit(true)
     , mbKeyboardFocus(false)
     , mParent(nullptr)
     , mDirty(true)
     , mSizeDirty(true)
     , mPosDirty(true) {
+
+  _geometry._x  = x;
+  _geometry._y  = y;
+  _geometry._w  = w;
+  _geometry._h  = h;
+  _prevGeometry = _geometry;
+
   pushEventFilter<ui::NopEventFilter>();
 }
 Widget::~Widget() {
@@ -59,6 +56,13 @@ void Widget::Init(lev2::Context* pT) {
   DoInit(pT);
 }
 
+void Widget::setGeometry(Rect newgeo) {
+  _prevGeometry = _geometry;
+  _geometry     = newgeo;
+  mSizeDirty    = true;
+  ReLayout();
+}
+
 HandlerResult Widget::HandleUiEvent(event_constptr_t Ev) {
   HandlerResult ret;
 
@@ -68,18 +72,6 @@ HandlerResult Widget::HandleUiEvent(event_constptr_t Ev) {
     ret = gFastPath->RouteUiEvent(Ev);
   } else {
     bool binside = IsEventInside(Ev);
-    if (0)
-      printf(
-          "Widget::HandleUiEvent::SLOWPATH ev<%d,%d> widget<%p:%s> dim<%d %d %d %d> inside<%d>\n",
-          Ev->miX,
-          Ev->miY,
-          this,
-          msName.c_str(),
-          miX,
-          miY,
-          miW,
-          miH,
-          int(binside));
 
     if (binside) {
       ret = RouteUiEvent(Ev);
@@ -387,8 +379,10 @@ bool Widget::IsEventInside(event_constptr_t Ev) const {
   int ix = 0;
   int iy = 0;
   RootToLocal(rx, ry, ix, iy);
-
-  bool inside = (ix >= 0) && (iy >= 0) && (ix <= miW) && (iy <= miH);
+  auto ngeo   = _geometry;
+  ngeo._x     = 0;
+  ngeo._y     = 0;
+  bool inside = ngeo.isPointInside(ix, iy);
   return inside;
 }
 
@@ -399,12 +393,12 @@ void Widget::LocalToRoot(int lx, int ly, int& rx, int& ry) const {
   ry = ly;
 
   const Widget* w = this;
-  while (w) //->GetParent() )
+  while (w) //->parent() )
   {
-    rx += w->miX;
-    ry += w->miY;
+    rx += w->x();
+    ry += w->y();
 
-    w = w->GetParent();
+    w = w->parent();
   }
   bool ishidpi = mpTarget ? mpTarget->hiDPI() : false;
 }
@@ -414,12 +408,12 @@ void Widget::RootToLocal(int rx, int ry, int& lx, int& ly) const {
   ly = ry;
 
   const Widget* w = this;
-  while (w) //->GetParent() )
+  while (w) //->parent() )
   {
-    lx -= w->miX;
-    ly -= w->miY;
+    lx -= w->x();
+    ly -= w->y();
 
-    w = w->GetParent();
+    w = w->parent();
   }
 }
 
@@ -445,12 +439,9 @@ void Widget::Draw(ui::drawevent_constptr_t drwev) {
 
   if (mSizeDirty) {
     OnResize();
-    mPosDirty  = false;
-    mSizeDirty = false;
-    miLX       = miX;
-    miLY       = miY;
-    miLW       = miW;
-    miLH       = miH;
+    mPosDirty     = false;
+    mSizeDirty    = false;
+    _prevGeometry = _geometry;
   }
 
   DoDraw(drwev);
@@ -462,19 +453,19 @@ void Widget::Draw(ui::drawevent_constptr_t drwev) {
 
 float Widget::logicalWidth() const {
   bool ishidpi = mpTarget ? mpTarget->hiDPI() : false;
-  return ishidpi ? miW * 2 : miW;
+  return ishidpi ? width() * 2 : width();
 }
 float Widget::logicalHeight() const {
   bool ishidpi = mpTarget ? mpTarget->hiDPI() : false;
-  return ishidpi ? miH * 2 : miH;
+  return ishidpi ? height() * 2 : height();
 }
 float Widget::logicalX() const {
   bool ishidpi = mpTarget ? mpTarget->hiDPI() : false;
-  return ishidpi ? miX * 2 : miX;
+  return ishidpi ? x() * 2 : x();
 }
 float Widget::logicalY() const {
   bool ishidpi = mpTarget ? mpTarget->hiDPI() : false;
-  return ishidpi ? miY * 2 : miY;
+  return ishidpi ? y() * 2 : y();
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -494,13 +485,10 @@ void Widget::ExtDraw(lev2::Context* pTARG) {
 /////////////////////////////////////////////////////////////////////////
 
 void Widget::SetPos(int iX, int iY) {
-  mPosDirty = (miLX != iX) || (miLY != iY);
-  miLX      = miX;
-  miLY      = miY;
-  miX       = iX;
-  miY       = iY;
-  miX2      = miX + miW;
-  miY2      = miY + miH;
+  mPosDirty |= (x() != iX) || (y() != iY);
+  _prevGeometry = _geometry;
+  _geometry._x  = iX;
+  _geometry._y  = iY;
 
   if (mPosDirty)
     ReLayout();
@@ -509,14 +497,10 @@ void Widget::SetPos(int iX, int iY) {
 /////////////////////////////////////////////////////////////////////////
 
 void Widget::SetSize(int iW, int iH) {
-  mSizeDirty = (miLW != iW) || (miLH != iH);
-  miLW       = miW;
-  miLH       = miH;
-  miW        = iW;
-  miH        = iH;
-  miX2       = miX + miW;
-  miY2       = miY + miH;
-
+  mSizeDirty |= (width() != iW) || (height() != iH);
+  _prevGeometry = _geometry;
+  _geometry._w  = iW;
+  _geometry._h  = iH;
   if (mSizeDirty)
     ReLayout();
 }
@@ -524,20 +508,13 @@ void Widget::SetSize(int iW, int iH) {
 /////////////////////////////////////////////////////////////////////////
 
 void Widget::SetRect(int iX, int iY, int iW, int iH) {
-  mPosDirty |= (miLX != iX) || (miLY != iY);
-  miLX = miX;
-  miLY = miY;
-  miX  = iX;
-  miY  = iY;
-
-  mSizeDirty |= (miLW != iW) || (miLH != iH);
-  miLW = miW;
-  miLH = miH;
-  miW  = iW;
-  miH  = iH;
-
-  miX2 = iX + iW;
-  miY2 = iY + iH;
+  mPosDirty |= (x() != iX) || (y() != iY);
+  mSizeDirty |= (width() != iW) || (height() != iH);
+  _prevGeometry = _geometry;
+  _geometry._x  = iX;
+  _geometry._y  = iY;
+  _geometry._w  = iW;
+  _geometry._h  = iH;
 
   if (mPosDirty || mSizeDirty)
     ReLayout();
@@ -583,6 +560,88 @@ bool Widget::IsHotKeyDepressed(const HotKey& hk) {
   }
 
   return HotKeyManager::IsDepressed(hk);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+Rect::Rect(int x, int y, int w, int h) {
+  _x = OldStlSchoolClampToRange(x, 0, 16384);
+  _y = OldStlSchoolClampToRange(y, 0, 16384);
+  _w = OldStlSchoolClampToRange(w, 32, 16384);
+  _h = OldStlSchoolClampToRange(h, 32, 16384);
+}
+Rect::Rect() {
+  _x = 0;
+  _y = 0;
+  _w = 32;
+  _h = 32;
+}
+SRect Rect::asSRect() const {
+  SRect rval(_x, _y, _w, _h);
+  return rval;
+}
+int Rect::x2() const {
+  return _x + _w;
+}
+int Rect::y2() const {
+  return _y + _h;
+}
+int Rect::center_x() const {
+  return _x + (_w >> 1);
+}
+int Rect::center_y() const {
+  return _y + (_h >> 1);
+}
+void Rect::moveTop(int y) {
+  int dy = _y - y;
+  _y     = y;
+  _h += dy;
+}
+void Rect::moveLeft(int x) {
+  int dx = _x - x;
+  _x     = x;
+  _w += dx;
+}
+void Rect::moveBottom(int y) {
+  int dy = _y - y;
+  _y     = y;
+  _h += dy;
+}
+void Rect::moveRight(int x) {
+  int dx = _x - x;
+  _x     = x;
+  _w += dx;
+}
+void Rect::moveCenter(int x, int y) {
+}
+void Rect::setTop(int y) {
+  int dy = _y - y;
+  _y     = y;
+  _h += dy;
+}
+void Rect::setLeft(int x) {
+  int dx = _x - x;
+  _x     = x;
+  _w += dx;
+}
+void Rect::setBottom(int y) {
+  int dy = _y - y;
+  _y     = y;
+  _h += dy;
+}
+void Rect::setRight(int x) {
+  int dx = _x - x;
+  _x     = x;
+  _w += dx;
+}
+void Rect::reset() {
+  _x = 0;
+  _y = 0;
+  _w = 0;
+  _h = 0;
+}
+bool Rect::isPointInside(int x, int y) const {
+  return true;
 }
 
 /////////////////////////////////////////////////////////////////////////

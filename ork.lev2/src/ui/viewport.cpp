@@ -40,7 +40,11 @@ void Viewport::BeginFrame(lev2::Context* pTARG) {
   auto MatOrtho = fmtx4::Identity();
   MatOrtho.Ortho(0.0f, (F32)width(), 0.0f, (F32)height(), 0.0f, 1.0f);
   pTARG->MTXI()->SetOrthoMatrix(MatOrtho);
-  ork::lev2::ViewportRect SciRect(miX, miY, miW, miH);
+  ork::lev2::ViewportRect SciRect;
+  SciRect._x = _geometry._x;
+  SciRect._y = _geometry._y;
+  SciRect._w = _geometry._w;
+  SciRect._h = _geometry._h;
   pTARG->FBI()->pushScissor(SciRect);
   pTARG->MTXI()->PushPMatrix(pTARG->MTXI()->GetOrthoMatrix());
 

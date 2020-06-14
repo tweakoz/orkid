@@ -112,7 +112,7 @@ void GraphVP::draw_connections(Context* pTARG) {
   float fh(kvppickdimw);
   float fwd2    = fw * 0.5f;
   float fhd2    = fh * 0.5f;
-  float faspect = float(miW) / float(miH);
+  float faspect = float(width()) / float(height());
   if (false == is_pick) {
     /////////////////////////////////
     // wires
@@ -206,8 +206,8 @@ void GraphVP::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   RenderContextFrameData RCFD(ctx);
 
   if (nullptr == GetTopGraph()) {
-    fbi->pushScissor(ViewportRect(0, 0, miW, miH));
-    fbi->pushViewport(ViewportRect(0, 0, miW, miH));
+    fbi->pushScissor(ViewportRect(0, 0, width(), height()));
+    fbi->pushViewport(ViewportRect(0, 0, width(), height()));
     fbi->Clear(fvec4::Black(), 1.0f);
     fbi->popViewport();
     fbi->popScissor();
@@ -215,7 +215,7 @@ void GraphVP::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   }
   _nodematerial.gpuInit(ctx, "orkshader://solid");
 
-  mGrid.updateMatrices(ctx, miW, miH);
+  mGrid.updateMatrices(ctx, width(), height());
 
   ctx->debugPushGroup("GraphVP");
 
@@ -246,8 +246,8 @@ void GraphVP::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////
-  fbi->pushScissor(ViewportRect(0, 0, miW, miH));
-  fbi->pushViewport(ViewportRect(0, 0, miW, miH));
+  fbi->pushScissor(ViewportRect(0, 0, width(), height()));
+  fbi->pushViewport(ViewportRect(0, 0, width(), height()));
   {
 
     vector<regstr> regstrs;
@@ -314,7 +314,7 @@ void GraphVP::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
       ///////////////////////////////////////////////////////
 
       if (false == is_pick)
-        mGrid.Render(ctx, miW, miH);
+        mGrid.Render(ctx, width(), height());
 
       ///////////////////////////////////////////////////////
 
@@ -421,7 +421,7 @@ void GraphVP::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
     ////////////////////////////////////////////////////////////////
 
-    mtxi->PushUIMatrix(miW, miH);
+    mtxi->PushUIMatrix(width(), height());
     if (false == is_pick) {
       lev2::FontMan::beginTextBlock(ctx);
       ctx->PushModColor(fcolor4::Yellow());
@@ -438,8 +438,8 @@ void GraphVP::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
         float fyb   = mGrid.GetBotRight().GetY();
         float fgw   = fxb - fxa;
         float fgh   = fyb - fya;
-        float ftw   = miW;
-        float fth   = miH;
+        float ftw   = width();
+        float fth   = height();
         float fwr   = ftw / fgw;
         float fhr   = fth / fgh;
         float fzoom = mGrid.GetZoom();

@@ -45,6 +45,30 @@ using splitpanel_ptr_t = std::shared_ptr<SplitPanel>;
 using panel_ptr_t      = std::shared_ptr<Panel>;
 using viewport_ptr_t   = std::shared_ptr<Viewport>;
 
+////////////////////////////////////////////////////////////////////////////////
+
+struct Rect {
+  Rect();
+  Rect(int x, int y, int w, int h);
+  SRect asSRect() const;
+  void reset();
+  bool isPointInside(int x, int y) const;
+  int x2() const;
+  int y2() const;
+  int center_x() const;
+  int center_y() const;
+  void moveCenter(int x, int y);
+  void moveTop(int y);
+  void moveLeft(int x);
+  void moveBottom(int y);
+  void moveRight(int x);
+  void setTop(int y);
+  void setLeft(int x);
+  void setBottom(int y);
+  void setRight(int x);
+  int _x, _y, _w, _h;
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
 } // namespace ui

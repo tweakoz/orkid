@@ -13,6 +13,7 @@ struct Panel : public Group {
   void setChild(widget_ptr_t w);
 
   void snap();
+  void unsnap();
 
   inline void setTitle(std::string t) {
     _title = t;
@@ -31,6 +32,13 @@ private:
   bool mDockedAtTop;
   int mCloseX, mCloseY;
   std::string _title;
+
+  int _downx  = 0;
+  int _downy  = 0;
+  int _prevpx = 0;
+  int _prevpy = 0;
+  int _prevpw = 0;
+  int _prevph = 0;
 };
 
 }} // namespace ork::ui

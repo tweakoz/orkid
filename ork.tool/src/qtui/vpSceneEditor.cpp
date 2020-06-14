@@ -838,8 +838,8 @@ void SceneEditorVP::DrawManip(lev2::CompositorDrawData& CDD, ork::lev2::Context*
   auto CIMPL                        = RCFD._cimpl;
   ork::lev2::Context* pOutputTarget = RCFD.GetTarget();
 
-  CDD._properties["OutputWidth"_crcu].Set<int>(miW);
-  CDD._properties["OutputHeight"_crcu].Set<int>(miH);
+  CDD._properties["OutputWidth"_crcu].Set<int>(width());
+  CDD._properties["OutputHeight"_crcu].Set<int>(height());
   CDD._properties["StereoEnable"_crcu].Set<bool>(false);
   lev2::CompositingPassData myCPD;
   myCPD.defaultSetup(CDD);
@@ -849,7 +849,7 @@ void SceneEditorVP::DrawManip(lev2::CompositorDrawData& CDD, ork::lev2::Context*
   if (DB) {
     auto spncam = (CameraData*)DB->cameraData("spawncam"_pool);
     if (spncam) {
-      (*_overlayCamMatrices.get()) = spncam->computeMatrices(float(miW) / float(miH));
+      (*_overlayCamMatrices.get()) = spncam->computeMatrices(float(width()) / float(height()));
     }
     CDD._properties["defcammtx"_crcu].Set<const CameraMatrices*>(_overlayCamMatrices.get());
     DrawableBuffer::releaseFromRead(DB); // mDbLock.Aquire(7);

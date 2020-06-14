@@ -84,7 +84,7 @@ void Panel::DoDraw(ui::drawevent_constptr_t drwev) {
 
     defmtl->_rasterstate.SetBlending(lev2::EBLENDING_ALPHA);
     tgt->PushModColor(clr);
-    ren_quad(ixr, iyr, ixr + miW, iyr + miH);
+    ren_quad(ixr, iyr, ixr + _geometry._w, iyr + _geometry._h);
     tgt->PopModColor();
     defmtl->_rasterstate.SetBlending(lev2::EBLENDING_OFF);
 
@@ -125,16 +125,17 @@ void Panel::DoDraw(ui::drawevent_constptr_t drwev) {
 /////////////////////////////////////////////////////////////////////////
 
 void Panel::DoLayout() {
-  mDockedAtTop = (miY == -kpanelw);
+  mDockedAtTop = (_geometry._y == -kpanelw);
   printf("mDockedAtTop<%d>\n", int(mDockedAtTop));
 
   mCloseX = kpanelw;
-  mCloseY = mDockedAtTop ? miH - kpanelw : 0;
+  mCloseY = mDockedAtTop ? _geometry._h - kpanelw : 0;
 
-  int cw = miW - (kpanelw * 2);
-  int ch = miH - (kpanelw * 2);
+  int cw = _geometry._w - (kpanelw * 2);
+  int ch = _geometry._h - (kpanelw * 2);
 
-  // printf( "Panel<%s>::DoLayout x<%d> y<%d> w<%d> h<%d>\n", msName.c_str(), miX, miY, miW, miH );
+  // printf( "Panel<%s>::DoLayout x<%d> y<%d> w<%d> h<%d>\n", msName.c_str(), _geometry._x, _geometry._y, _geometry._w, _geometry._h
+  // );
   if (_child) {
     _child->SetRect(kpanelw, kpanelw, cw, ch);
   }
@@ -155,44 +156,57 @@ HandlerResult Panel::DoRouteUiEvent(event_constptr_t Ev) {
 
 /////////////////////////////////////////////////////////////////////////
 
-static int idownx  = 0;
-static int idowny  = 0;
-static int iprevpx = 0;
-static int iprevpy = 0;
-static int iprevpw = 0;
-static int iprevph = 0;
+void Panel::unsnap() {
+  if (nullptr == mParent)
+    return;
+  mParent->_snapped.erase(this);
+}
+
+/////////////////////////////////////////////////////////////////////////
 
 void Panel::snap() {
   if (nullptr == mParent)
     return;
 
-  int x2 = GetX2();
   int pw = mParent->width();
-  int xd = abs(x2 - pw);
-  int y2 = GetY2();
+  int xd = abs(x2() - pw);
   int ph = mParent->height();
-  int yd = abs(y2 - ph);
+  int yd = abs(y2() - ph);
   // printf( "x2<%d> pw<%d> xd<%d>\n", x2, pw, xd );
   // printf( "y2<%d> ph<%d> yd<%d>\n", y2, ph, yd );
-  bool snapl = (miX < kpanelw);
+  bool snapl = (_geometry._x < kpanelw);
   bool snapr = (xd < kpanelw);
-  bool snapt = (miY < kpanelw);
+  bool snapt = (_geometry._y < kpanelw);
   bool snapb = (yd < kpanelw);
+
+  bool was_snapped = false;
+
   if (snapt && snapb) {
     SetY(-kpanelw);
     SetH(ph + 2 * kpanelw);
-  } else if (snapt)
+    was_snapped = true;
+  } else if (snapt) {
     SetY(-kpanelw);
-  else if (snapb)
+    was_snapped = true;
+  } else if (snapb) {
     SetY(ph + kpanelw - height());
+    was_snapped = true;
+  }
   if (snapl && snapr) {
     SetX(-kpanelw);
     SetW(pw + 2 * kpanelw);
+    was_snapped = true;
   }
-  if (snapl)
+  if (snapl) {
     SetX(-kpanelw);
-  else if (snapr)
+    was_snapped = true;
+  } else if (snapr) {
+    was_snapped = true;
     SetX(pw + kpanelw - width());
+  }
+  if (was_snapped) {
+    mParent->_snapped.insert(this);
+  }
 }
 
 HandlerResult Panel::DoOnUiEvent(event_constptr_t Ev) {
@@ -209,12 +223,12 @@ HandlerResult Panel::DoOnUiEvent(event_constptr_t Ev) {
   const auto& filtev = Ev->mFilteredEvent;
   switch (filtev.miEventCode) {
     case ui::UIEV_PUSH: // idle
-      idownx         = evx;
-      idowny         = evy;
-      iprevpx        = miX;
-      iprevpy        = miY;
-      iprevpw        = miW;
-      iprevph        = miH;
+      _downx         = evx;
+      _downy         = evy;
+      _prevpx        = _geometry._x;
+      _prevpy        = _geometry._y;
+      _prevpw        = _geometry._w;
+      _prevph        = _geometry._h;
       ret.mHoldFocus = true;
       if (filtev.mBut0) {
         printf("ilocx<%d> mCloseX<%d>\n", ilocx, mCloseX);
@@ -231,11 +245,11 @@ HandlerResult Panel::DoOnUiEvent(event_constptr_t Ev) {
       } else if (filtev.mBut1 || filtev.mBut2) {
         if (abs(ilocy) < kpanelw) // top
           mPanelUiState = 2;
-        else if (abs(ilocy - miH) < kpanelw) // bot
+        else if (abs(ilocy - _geometry._h) < kpanelw) // bot
           mPanelUiState = 3;
         else if (abs(ilocx) < kpanelw) // lft
           mPanelUiState = 4;
-        else if (abs(ilocx - miW) < kpanelw) // rht
+        else if (abs(ilocx - _geometry._w) < kpanelw) // rht
           mPanelUiState = 5;
       }
       break;
@@ -255,26 +269,26 @@ HandlerResult Panel::DoOnUiEvent(event_constptr_t Ev) {
       break;
   }
 
-  int dx = evx - idownx;
-  int dy = evy - idowny;
+  int dx = evx - _downx;
+  int dy = evy - _downy;
 
   switch (mPanelUiState) {
     case 0:
       break;
     case 1: // move
-      SetPos(iprevpx + dx, iprevpy + dy);
+      SetPos(_prevpx + dx, _prevpy + dy);
       break;
     case 2: // resize h
-      SetRect(iprevpx, iprevpy + dy, iprevpw, iprevph - dy);
+      SetRect(_prevpx, _prevpy + dy, _prevpw, _prevph - dy);
       break;
     case 3: // resize w
-      SetSize(iprevpw, iprevph + dy);
+      SetSize(_prevpw, _prevph + dy);
       break;
     case 4:
-      SetRect(iprevpx + dx, iprevpy, iprevpw - dx, iprevph);
+      SetRect(_prevpx + dx, _prevpy, _prevpw - dx, _prevph);
       break;
     case 5:
-      SetSize(iprevpw + dx, iprevph);
+      SetSize(_prevpw + dx, _prevph);
       break;
   }
 

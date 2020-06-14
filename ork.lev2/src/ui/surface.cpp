@@ -52,7 +52,7 @@ void Surface::GetPixel(int ix, int iy, lev2::PixelFetchContext& ctx) {
 /////////////////////////////////////////////////////////////////////////
 
 void Surface::OnResize(void) {
-  /*printf( "Surface<%s>::OnResize x<%d> y<%d> w<%d> h<%d>\n", msName.c_str(), miX, miY, miW, miH );
+  /*printf( "Surface<%s>::OnResize x<%d> y<%d> w<%d> h<%d>\n", msName.c_str(), miX, miY, _geometry._w, _geometry._h );
 
   if( mRtGroup )
   {
@@ -76,7 +76,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   auto defmtl = lev2::defaultUIMaterial();
 
   if (nullptr == mRtGroup) {
-    mRtGroup  = new lev2::RtGroup(tgt, miW, miH, 1);
+    mRtGroup  = new lev2::RtGroup(tgt, _geometry._w, _geometry._h, 1);
     auto mrt0 = new lev2::RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA8, 1280, 720);
     mRtGroup->SetMrt(0, mrt0);
   }
@@ -129,16 +129,16 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
     int iy_root = 0;
     LocalToRoot(0, 0, ix_root, iy_root);
 
-    // printf( "Surface<%s>::Draw wx<%d> wy<%d> w<%d> h<%d>\n", msName.c_str(), ix_root, iy_root, miW, miH );
+    // printf( "Surface<%s>::Draw wx<%d> wy<%d> w<%d> h<%d>\n", msName.c_str(), ix_root, iy_root, _geometry._w, _geometry._h );
 
     primi.RenderQuadAtZ(
         material.get(),
         tgt,
         ix_root,
-        ix_root + miW, // x0, x1
+        ix_root + _geometry._w, // x0, x1
         iy_root,
-        iy_root + miH, // y0, y1
-        0.0f,          // z
+        iy_root + _geometry._h, // y0, y1
+        0.0f,                   // z
         0.0f,
         1.0f, // u0, u1
         1.0f,

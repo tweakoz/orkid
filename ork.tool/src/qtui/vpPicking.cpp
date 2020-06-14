@@ -249,8 +249,8 @@ void SceneEditorVP::GetPixel(int ix, int iy, lev2::PixelFetchContext& ctx) {
   if (nullptr == _pickbuffer)
     return;
 
-  float fx = float(ix) / float(miW);
-  float fy = float(iy) / float(miH);
+  float fx = float(ix) / float(width());
+  float fy = float(iy) / float(height());
 
   ctx.mRtGroup = _pickbuffer->_rtgroup;
 

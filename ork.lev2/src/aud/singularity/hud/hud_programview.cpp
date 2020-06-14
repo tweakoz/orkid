@@ -90,7 +90,7 @@ void ProgramView::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ProgramView::DoInit(lev2::Context* pt) {
-  _pickbuffer = new lev2::PickBuffer(this, pt, miW, miH);
+  _pickbuffer = new lev2::PickBuffer(this, pt, width(), height());
   _ctxbase    = pt->GetCtxBase();
 }
 ///////////////////////////////////////////////////////////////////////////////

@@ -215,16 +215,16 @@ void RateLevelSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   ///////////////////////
 
   if (bipolar) {
-    float fy = miH / 2.0;
+    float fy = height() / 2.0;
     float x1 = 64;
-    float x2 = miW;
+    float x2 = width();
     lines.push_back(HudLine{fvec2(x1, fy), fvec2(x2, fy), fvec3(.5, .2, .5)});
   }
 
   ///////////////////////
 
-  fvec2 scale(miW, -miH / 2);
-  fvec2 bias(0.0, miH);
+  fvec2 scale(width(), -height() / 2);
+  fvec2 bias(0.0, height());
 
   ///////////////////////
   // timegrid lines
@@ -425,7 +425,7 @@ void RateLevelSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
 ///////////////////////////////////////////////////////////////////////////////
 void RateLevelSurf::DoInit(lev2::Context* pt) {
-  _pickbuffer = new lev2::PickBuffer(this, pt, miW, miH);
+  _pickbuffer = new lev2::PickBuffer(this, pt, width(), height());
   _ctxbase    = pt->GetCtxBase();
 }
 ///////////////////////////////////////////////////////////////////////////////

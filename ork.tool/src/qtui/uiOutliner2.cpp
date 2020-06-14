@@ -310,7 +310,7 @@ int Outliner2Surface::kitemh() const {
 ///////////////////////////////////////////////////////////////////////////////
 void Outliner2Surface::DoInit(lev2::Context* pt) {
   auto par    = pt->FBI()->GetThisBuffer();
-  _pickbuffer = new lev2::PickBuffer(this, pt, miW, miH);
+  _pickbuffer = new lev2::PickBuffer(this, pt, width(), height());
   ///////////////////////////////////////////////
   mFont          = lev2::FontMan::GetFont("i13");
   auto& fontdesc = mFont->GetFontDesc();
@@ -361,8 +361,8 @@ void Outliner2Surface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
   //////////////////////////////////////////////////
 
-  fbi->pushScissor(ViewportRect(0, 0, miW, miH));
-  fbi->pushViewport(ViewportRect(0, 0, miW, miH));
+  fbi->pushScissor(ViewportRect(0, 0, width(), height()));
+  fbi->pushViewport(ViewportRect(0, 0, width(), height()));
 
   {
     fbi->Clear(fvec4::Blue(), 1.0f);
@@ -409,7 +409,7 @@ void Outliner2Surface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
       else
         _material->begin(_tekmodcolor, RCFD);
       //////////////////////////////////////
-      auto uimatrix = mtxi->uiMatrix(miW, miH);
+      auto uimatrix = mtxi->uiMatrix(width(), height());
       _material->bindParamMatrix(_parmvp, uimatrix);
       //////////////////////////////////////
 
@@ -444,7 +444,7 @@ void Outliner2Surface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
         primi.RenderEMLQuadAtZV16T16C16(
             tgt,
             0,
-            miW, // x0, x1
+            width(), // x0, x1
             iy,
             iy + kitemh(), // y0, y1
             0.0f,          // z
@@ -463,7 +463,7 @@ void Outliner2Surface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
       //////////////////////////////////////
 
       if (false == is_pick) {
-        mtxi->PushUIMatrix(miW, miH);
+        mtxi->PushUIMatrix(width(), height());
         lev2::FontMan::PushFont(mFont);
         tgt->PushModColor(mDark ? fcolor4(0.7f, 0.7f, 0.8f) : fcolor4::Black());
         lev2::FontMan::beginTextBlock(tgt);
@@ -511,9 +511,9 @@ void Outliner2Surface::SetNameOfSelectedItem() {
   tool::ged::GedInputDialog dialog;
   dialog.setModal(true);
 
-  dialog.setGeometry(g.GetX(), g.GetY(), miW, kitemh());
+  dialog.setGeometry(g.GetX(), g.GetY(), width(), kitemh());
   dialog.clear();
-  dialog.mTextEdit.setGeometry(0, 0, miW, kitemh());
+  dialog.mTextEdit.setGeometry(0, 0, width(), kitemh());
   dialog.mTextEdit._setText(item.mName.c_str());
 
   if (0 == dialog.exec() && dialog.wasChanged()) {
@@ -683,7 +683,7 @@ ui::HandlerResult Outliner2Surface::DoOnUiEvent(ui::event_constptr_t EV) {
       int idelta = EV->miMWY;
       miScrollY += idelta;
 
-      int scrollb = -(mContentH - miH);
+      int scrollb = -(mContentH - height());
       // printf("miScrollY<%d> mContentH<%d> scrollb<%d>\n", miScrollY, mContentH, scrollb);
       if (miScrollY < scrollb)
         miScrollY = scrollb;

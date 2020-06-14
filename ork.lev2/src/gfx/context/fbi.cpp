@@ -118,21 +118,11 @@ void FrameBufferInterface::EndFrame(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ViewportRect::ViewportRect(int x, int y, int w, int h) {
-  _x = OldStlSchoolClampToRange(x, 0, 16384);
-  _y = OldStlSchoolClampToRange(y, 0, 16384);
-  _w = OldStlSchoolClampToRange(w, 32, 16384);
-  _h = OldStlSchoolClampToRange(h, 32, 16384);
+ViewportRect::ViewportRect()
+    : ui::Rect() {
 }
-ViewportRect::ViewportRect() {
-  _x = 0;
-  _y = 0;
-  _w = 32;
-  _h = 32;
-}
-SRect ViewportRect::asSRect() const {
-  SRect rval(_x, _y, _w, _h);
-  return rval;
+ViewportRect::ViewportRect(int x, int y, int w, int h)
+    : ui::Rect(x, y, w, h) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -74,7 +74,8 @@ void Group::OnResize() {
 /////////////////////////////////////////////////////////////////////////
 
 void Group::DoLayout() {
-  // printf( "Group<%s>::DoLayout x<%d> y<%d> w<%d> h<%d>\n", msName.c_str(), miX, miY, miW, miH );
+  const auto& g = _geometry;
+  printf("Group<%s>::DoLayout x<%d> y<%d> w<%d> h<%d>\n", msName.c_str(), g._x, g._y, g._w, g._h);
   for (auto& it : _children) {
     it->ReLayout();
   }

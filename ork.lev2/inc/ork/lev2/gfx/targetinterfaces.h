@@ -56,11 +56,9 @@ class TextureAsset;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-struct ViewportRect {
+struct ViewportRect : public ui::Rect {
   ViewportRect();
   ViewportRect(int x, int y, int w, int h);
-  SRect asSRect() const;
-  int _x, _y, _w, _h;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -69,7 +67,8 @@ class IManipInterface : public ork::Object {
   RttiDeclareAbstract(IManipInterface, ork::Object);
 
 public:
-  IManipInterface() {}
+  IManipInterface() {
+  }
 
   virtual const TransformNode& GetTransform(rtti::ICastable* pobj)            = 0;
   virtual void SetTransform(rtti::ICastable* pobj, const TransformNode& node) = 0;
@@ -90,16 +89,20 @@ struct CaptureBuffer {
 
   int GetStride() const;
   int CalcDataIndex(int ix, int iy) const;
-  size_t length() const { return _buffersize; }
+  size_t length() const {
+    return _buffersize;
+  }
   void SetWidth(int iw);
   void SetHeight(int ih);
   int width() const;
   int height() const;
   EBufferFormat format() const;
-  const void* GetData() const { return _data; }
+  const void* GetData() const {
+    return _data;
+  }
   void CopyData(const void* pfrom, int isize);
   ////////////////////////////
-  void setFormatAndSize(EBufferFormat fmt,int w, int h);
+  void setFormatAndSize(EBufferFormat fmt, int w, int h);
   ////////////////////////////
   CaptureBuffer();
   ~CaptureBuffer();
@@ -110,7 +113,7 @@ struct CaptureBuffer {
   void* _data;
   std::vector<uint8_t> _tempbuffer;
   size_t _buffersize;
-  //CaptureBuffer* _conversionBuffer = nullptr;
+  // CaptureBuffer* _conversionBuffer = nullptr;
   ////////////////////////////
 };
 
@@ -143,7 +146,6 @@ struct PixelFetchContext {
   anyp mUserData;
 };
 
-
 #include "fxi.h"
 #include "imi.h"
 #include "mtxi.h"
@@ -153,8 +155,6 @@ struct PixelFetchContext {
 #include "rsi.h"
 #include "ci.h"
 #include "dwi.h"
-
-
 
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2

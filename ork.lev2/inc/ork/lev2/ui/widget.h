@@ -81,41 +81,41 @@ public:
     return mpTarget;
   }
 
-  int GetX(void) const {
-    return miX;
+  int x(void) const {
+    return _geometry._x;
   }
-  int GetY(void) const {
-    return miY;
+  int y(void) const {
+    return _geometry._y;
   }
-  int GetX2(void) const {
-    return miX2;
+  int x2(void) const {
+    return _geometry.x2();
   }
-  int GetY2(void) const {
-    return miY2;
+  int y2(void) const {
+    return _geometry.y2();
   }
   int width(void) const {
-    return miW;
+    return _geometry._w;
   }
   int height(void) const {
-    return miH;
+    return _geometry._h;
   }
   void SetX(int X) {
-    SetPos(X, miY);
+    SetPos(X, y());
   }
   void SetY(int Y) {
-    SetPos(miX, Y);
+    SetPos(x(), Y);
   }
   void SetX2(int X2) {
-    SetSize((X2 - miX), miH);
+    SetSize((X2 - x()), height());
   }
   void SetY2(int Y2) {
-    SetSize(miW, (Y2 - miY));
+    SetSize(x(), (Y2 - y()));
   }
   void SetW(int W) {
-    SetSize(W, miH);
+    SetSize(W, height());
   }
   void SetH(int H) {
-    SetSize(miW, H);
+    SetSize(width(), H);
   }
 
   void LocalToRoot(int lx, int ly, int& rx, int& ry) const;
@@ -160,7 +160,7 @@ public:
   bool IsDirty() const {
     return mDirty;
   }
-  Group* GetParent() const {
+  Group* parent() const {
     return mParent;
   }
   // CWidgetFlags &GetFlagsRef( void ) { return mWidgetFlags; }
@@ -180,11 +180,16 @@ public:
   float logicalX() const;
   float logicalY() const;
 
+  Rect geometry() const {
+    return _geometry;
+  }
+  void setGeometry(Rect geo);
+
 protected:
   bool mbInit;
   bool mbKeyboardFocus;
-  int miX, miY, miW, miH, miX2, miY2;
-  int miLX, miLY, miLW, miLH, miLX2, miLY2;
+  Rect _geometry;
+  Rect _prevGeometry;
   std::string msName;
   lev2::Context* mpTarget;
   drawevent_constptr_t _drawEvent;
@@ -225,8 +230,10 @@ public:
 
   void drawChildren(ui::drawevent_constptr_t drwev);
 
-protected:
+  std::set<Widget*> _snapped;
   std::vector<widget_ptr_t> _children;
+
+protected:
   HandlerResult DoRouteUiEvent(event_constptr_t Ev) override;
 
 private:

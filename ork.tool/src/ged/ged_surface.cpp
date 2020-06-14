@@ -67,10 +67,10 @@ void GedSurface::DoInit(lev2::Context* pt) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void GedSurface::DoSurfaceResize() {
-  mWidget.SetDims(miW, miH);
+  mWidget.SetDims(width(), height());
 
   if (0 == _pickbuffer && (nullptr != mpTarget)) {
-    _pickbuffer->resize(miW, miH);
+    _pickbuffer->resize(width(), height());
   }
   // TODO: _pickbuffer->Resize()
 }
@@ -88,7 +88,7 @@ void GedSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   int pickstate = fbi->miPickState;
   // bool bispick = framedata().IsPickMode();
 
-  // printf("GedSurface<%p>::Draw x<%d> y<%d> w<%d> h<%d> pickstate<%d>\n", this, miX, miY, miW, miH, pickstate);
+  // printf("GedSurface<%p>::Draw x<%d> y<%d> w<%d> h<%d> pickstate<%d>\n", this, miX, miY, width(), height(), pickstate);
 
   //////////////////////////////////////////////////
   // Compute Scoll Transform
@@ -99,8 +99,8 @@ void GedSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
   //////////////////////////////////////////////////
 
-  fbi->pushScissor(ViewportRect(0, 0, miW, miH));
-  fbi->pushViewport(ViewportRect(0, 0, miW, miH));
+  fbi->pushScissor(ViewportRect(0, 0, width(), height()));
+  fbi->pushViewport(ViewportRect(0, 0, width(), height()));
   mtxi->PushMMatrix(matSCROLL);
   {
     fbi->Clear(GetClearColorRef(), 1.0f);
@@ -109,7 +109,7 @@ void GedSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     if (pobj) {
       GedWidget* pw = mModel.GetGedWidget();
 
-      pw->Draw(tgt, miW, miH, miScrollY);
+      pw->Draw(tgt, width(), height(), miScrollY);
     }
   }
   mtxi->PopMMatrix();

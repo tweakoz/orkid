@@ -49,9 +49,9 @@ struct SpectraSurf final : public ui::Surface {
 };
 ///////////////////////////////////////////////////////////////////////////////
 signalscope_ptr_t create_spectrumanalyzer(hudvp_ptr_t vp, std::string named) {
-  auto hudpanel        = std::make_shared<HudPanel>();
-  auto analyzersurf    = std::make_shared<SpectraSurf>();
-  hudpanel->_uipanel   = std::make_shared<ui::Panel>("analyzer", 0, 0, 32, 32);
+  auto hudpanel      = std::make_shared<HudPanel>();
+  auto analyzersurf  = std::make_shared<SpectraSurf>();
+  hudpanel->_uipanel = std::make_shared<ui::Panel>("analyzer", 0, 0, 32, 32);
   hudpanel->_uipanel->setTitle(named);
   hudpanel->_uisurface = analyzersurf;
   hudpanel->_uipanel->setChild(hudpanel->_uisurface);
@@ -112,9 +112,9 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
   const float ANA_X1 = 32;
   const float ANA_Y1 = 32;
-  const float ANA_W  = miW - 64;
-  const float ANA_H  = miH - 64;
-  const float ANA_X2 = miW;
+  const float ANA_W  = width() - 64;
+  const float ANA_H  = height() - 64;
+  const float ANA_X2 = width();
   const float ANA_Y2 = ANA_H;
   const float ANA_HH = ANA_H * 0.5;
   const float ANA_CY = ANA_Y1 + ANA_HH;

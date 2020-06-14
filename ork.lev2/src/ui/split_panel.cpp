@@ -104,7 +104,7 @@ void SplitPanel::DoDraw(ui::drawevent_constptr_t drwev) {
 
     defmtl->_rasterstate.SetBlending(lev2::EBLENDING_ALPHA);
     tgt->PushModColor(clr);
-    ren_quad(ixr, iyr, ixr + miW, iyr + miH);
+    ren_quad(ixr, iyr, ixr + _geometry._w, iyr + _geometry._h);
     tgt->PopModColor();
     defmtl->_rasterstate.SetBlending(lev2::EBLENDING_OFF);
 
@@ -139,19 +139,20 @@ void SplitPanel::DoDraw(ui::drawevent_constptr_t drwev) {
 /////////////////////////////////////////////////////////////////////////
 
 void SplitPanel::DoLayout() {
-  mDockedAtTop = (miY == -kpanelw);
+  mDockedAtTop = (_geometry._y == -kpanelw);
   mCloseX      = kpanelw;
-  mCloseY      = mDockedAtTop ? miH - kpanelw : 0;
+  mCloseY      = mDockedAtTop ? _geometry._h - kpanelw : 0;
 
-  int cw = miW - (kpanelw * 2);
+  int cw = _geometry._w - (kpanelw * 2);
 
-  int ch  = miH / 2;
+  int ch  = _geometry._h / 2;
   int p1y = kpanelw;
-  int p1h = int(float(miH) * mSplitVal) - ksplith;
+  int p1h = int(float(_geometry._h) * mSplitVal) - ksplith;
   int p2y = p1y + p1h + ksplith;
-  int p2h = miH - kpanelw - p2y;
+  int p2h = _geometry._h - kpanelw - p2y;
 
-  // printf( "Panel<%s>::DoLayout x<%d> y<%d> w<%d> h<%d>\n", msName.c_str(), miX, miY, miW, miH );
+  // printf( "Panel<%s>::DoLayout x<%d> y<%d> w<%d> h<%d>\n", msName.c_str(), _geometry._x, _geometry._y, _geometry._w, _geometry._h
+  // );
   if (_child1) {
     _child1->SetRect(kpanelw, p1y, cw, p1h);
   }
@@ -163,7 +164,7 @@ void SplitPanel::DoLayout() {
 /////////////////////////////////////////////////////////////////////////
 
 HandlerResult SplitPanel::DoRouteUiEvent(event_constptr_t Ev) {
-  // printf( "Panel::DoRouteUiEvent xy<%d %d> mPanelUiState<%d>\n", Ev->miX, Ev->miY, mPanelUiState );
+  // printf( "Panel::DoRouteUiEvent xy<%d %d> mPanelUiState<%d>\n", Ev->_geometry._x, Ev->_geometry._y, mPanelUiState );
 
   if (_child1 && _child1->IsEventInside(Ev) && mPanelUiState == 0) {
     // printf( "Child1\n");
@@ -193,17 +194,15 @@ void SplitPanel::snap() {
   if (nullptr == mParent)
     return;
 
-  int x2 = GetX2();
   int pw = mParent->width();
-  int xd = abs(x2 - pw);
-  int y2 = GetY2();
+  int xd = abs(x2() - pw);
   int ph = mParent->height();
-  int yd = abs(y2 - ph);
+  int yd = abs(y2() - ph);
   // printf( "x2<%d> pw<%d> xd<%d>\n", x2, pw, xd );
   // printf( "y2<%d> ph<%d> yd<%d>\n", y2, ph, yd );
-  bool snapl = (miX < kpanelw);
+  bool snapl = (_geometry._x < kpanelw);
   bool snapr = (xd < kpanelw);
-  bool snapt = (miY < kpanelw);
+  bool snapt = (_geometry._y < kpanelw);
   bool snapb = (yd < kpanelw);
   if (snapt && snapb) {
     SetY(-kpanelw);
@@ -240,18 +239,18 @@ HandlerResult SplitPanel::DoOnUiEvent(event_constptr_t Ev) {
     {
       idownx         = evx;
       idowny         = evy;
-      iprevpx        = miX;
-      iprevpy        = miY;
-      iprevpw        = miW;
-      iprevph        = miH;
+      iprevpx        = _geometry._x;
+      iprevpy        = _geometry._y;
+      iprevpw        = _geometry._w;
+      iprevph        = _geometry._h;
       ret.mHoldFocus = true;
 
-      float funity  = float(ilocy) / float(miH);
-      float funitks = float(kpanelw) / float(miH);
+      float funity  = float(ilocy) / float(_geometry._h);
+      float funitks = float(kpanelw) / float(_geometry._h);
 
-      bool is_splitter = (fabs(funity - mSplitVal) < funitks) && (ilocy < (miH - kpanelw * 2));
+      bool is_splitter = (fabs(funity - mSplitVal) < funitks) && (ilocy < (_geometry._h - kpanelw * 2));
 
-      is_splitter &= (ilocx > kpanelw) && (ilocx < (miW - kpanelw)); // x check
+      is_splitter &= (ilocx > kpanelw) && (ilocx < (_geometry._w - kpanelw)); // x check
 
       // printf( "ilocy<%d> funity<%f> funitks<%f> mSplitVal<%f> is_splitter<%d> b0<%d>\n", ilocy, funity, funitks, mSplitVal,
       // int(is_splitter), int(filtev.mBut0) );
@@ -269,11 +268,11 @@ HandlerResult SplitPanel::DoOnUiEvent(event_constptr_t Ev) {
           mPanelUiState = 6;
         else if (abs(ilocy) < kpanelw) // top
           mPanelUiState = 2;
-        else if (abs(ilocy - miH) < kpanelw) // bot
+        else if (abs(ilocy - _geometry._h) < kpanelw) // bot
           mPanelUiState = 3;
         else if (abs(ilocx) < kpanelw) // lft
           mPanelUiState = 4;
-        else if (abs(ilocx - miW) < kpanelw) // rht
+        else if (abs(ilocx - _geometry._w) < kpanelw) // rht
           mPanelUiState = 5;
       }
       break;
@@ -317,7 +316,7 @@ HandlerResult SplitPanel::DoOnUiEvent(event_constptr_t Ev) {
       break;
     case 6: // set splitter
     {
-      mSplitVal = float(ilocy - ksplith) / float(miH);
+      mSplitVal = float(ilocy - ksplith) / float(_geometry._h);
       DoLayout();
       SetDirty();
       break;
