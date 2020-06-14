@@ -98,6 +98,9 @@ struct synth {
   programInst* keyOn(int note, int velocity, prgdata_constptr_t pd);
   void keyOff(programInst* p);
 
+  programInst* liveKeyOn(int note, int velocity, prgdata_constptr_t pd);
+  void liveKeyOff(programInst* p);
+
   Layer* allocLayer();
   void freeLayer(Layer* l);
   void deactivateVoices();
@@ -120,6 +123,8 @@ struct synth {
   float _sampleRate;
   float _dt;
 
+  using proginstset_t = std::set<programInst*>;
+
   std::set<Layer*> _allVoices;
   std::set<programInst*> _allProgInsts;
 
@@ -127,13 +132,19 @@ struct synth {
   std::set<Layer*> _activeVoices;
   std::set<Layer*> _pendactVoices;
   std::queue<Layer*> _deactiveateVoiceQ;
-  std::set<programInst*> _freeProgInst;
-  std::set<programInst*> _activeProgInst;
+  LockedResource<proginstset_t> _freeProgInst;
+  LockedResource<proginstset_t> _activeProgInst;
   std::map<std::string, hudsamples_t> _hudsample_map;
 
   LockedResource<eventmap_t> _eventmap;
 
   void resize(int numframes);
+
+  prgdata_constptr_t _globalprog;
+  bankdata_ptr_t _globalbank;
+  std::map<int, prgdata_ptr_t>::iterator _globalprgit;
+  void nextProgram();
+  void prevProgram();
 
   int _soloLayer       = -1;
   bool _stageEnable[5] = {true, true, true, true, true};

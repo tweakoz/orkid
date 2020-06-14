@@ -200,6 +200,14 @@ singularitytestapp_ptr_t createEZapp(int& argc, char** argv) {
             the_synth->_osgainmode++;
             break;
           }
+          case '6': {
+            the_synth->nextProgram();
+            break;
+          }
+          case '4': {
+            the_synth->prevProgram();
+            break;
+          }
           default:
             break;
         }
@@ -475,9 +483,10 @@ prgdata_constptr_t testpattern(syndata_ptr_t syndat, int argc, char** argv) {
     }
     return nullptr;
   } else if (testpatternname == "midi") {
-    void midi_main();
-    midi_main();
-    return nullptr;
+    void startMidi();
+    startMidi();
+    the_synth->_globalprog = program;
+    return program;
   } else if (testpatternname == "sq1") {
     seq1(120.0f, 0, program);
     seq1(120.0f, 4, program);

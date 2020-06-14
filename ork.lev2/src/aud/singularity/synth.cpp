@@ -80,7 +80,7 @@ synth::synth()
 
   for (int i = 0; i < kmaxlayerspersynth; i++) {
     auto pi = new programInst();
-    _freeProgInst.insert(pi);
+    _freeProgInst.atomicOp([&pi](proginstset_t& piset) { piset.insert(pi); });
     _allProgInsts.insert(pi);
   }
 
@@ -195,21 +195,94 @@ void synth::activateVoices(int ifrpending) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+void synth::nextProgram() {
+  if (_globalprgit == _globalbank->_programs.end()) {
+    _globalprgit = _globalbank->_programs.begin();
+  } else {
+    _globalprgit++;
+  }
+  _globalprog = _globalprgit->second;
+}
+void synth::prevProgram() {
+  if (_globalprgit == _globalbank->_programs.rend().base()) {
+    _globalprgit = _globalbank->_programs.rend().base();
+  } else {
+    _globalprgit--;
+  }
+  _globalprog = _globalprgit->second;
+}
+///////////////////////////////////////////////////////////////////////////////
+programInst* synth::liveKeyOn(int note, int velocity, prgdata_constptr_t pdata) {
+  assert(pdata);
+  programInst* pi = nullptr;
+  _freeProgInst.atomicOp([&pi](proginstset_t& piset) {
+    auto it = piset.begin();
+    assert(it != piset.end());
+    pi = *it;
+    piset.erase(it);
+  });
+  pi->_progdata = pdata;
+
+  addEvent(0.0f, [note, velocity, pdata, this, pi]() {
+    // printf("syn allocProgInst<%p>\n", pi);
+
+    int clampn = std::clamp(note, 0, 127);
+    int clampv = std::clamp(velocity, 0, 127);
+
+    pi->keyOn(clampn, clampv, pdata);
+
+    _activeProgInst.atomicOp([pi](proginstset_t& piset) { //
+      piset.insert(pi);
+    });
+
+    _lnoteframe   = 0;
+    _lnotetime    = 0.0f;
+    _clearhuddata = true;
+
+    for (auto h : _onkey_subscribers) {
+      h(clampn, clampv, pi);
+    }
+  });
+  return pi;
+}
+///////////////////////////////////////////////////////////////////////////////
+void synth::liveKeyOff(programInst* pinst) {
+  addEvent(0.0f, [pinst, this]() {
+    pinst->keyOff();
+    _activeProgInst.atomicOp([pinst](proginstset_t& piset) { //
+      auto it = piset.find(pinst);
+      assert(it != piset.end());
+      piset.erase(it);
+    });
+    _freeProgInst.atomicOp([pinst](proginstset_t& piset) { //
+      piset.insert(pinst);
+    });
+  });
+}
+///////////////////////////////////////////////////////////////////////////////
 
 programInst* synth::keyOn(int note, int velocity, prgdata_constptr_t pdata) {
   assert(pdata);
-  auto it = _freeProgInst.begin();
-  assert(it != _freeProgInst.end());
-  auto pi = *it;
-  // printf("syn allocProgInst<%p>\n", pi);
+  programInst* pi = nullptr;
+
+  _freeProgInst.atomicOp([&pi](proginstset_t& piset) {
+    auto it = piset.begin();
+    assert(it != piset.end());
+    pi = *it;
+    piset.erase(it);
+  });
   pi->_progdata = pdata;
-  _freeProgInst.erase(it);
+  // printf("syn allocProgInst<%p>\n", pi);
 
   int clampn = std::clamp(note, 0, 127);
   int clampv = std::clamp(velocity, 0, 127);
 
   pi->keyOn(clampn, clampv, pdata);
-  _activeProgInst.insert(pi);
+
+  _activeProgInst.atomicOp([pi](proginstset_t& piset) { //
+    piset.insert(pi);
+  });
+
   _lnoteframe   = 0;
   _lnotetime    = 0.0f;
   _clearhuddata = true;
@@ -218,14 +291,6 @@ programInst* synth::keyOn(int note, int velocity, prgdata_constptr_t pdata) {
     h(clampn, clampv, pi);
   }
 
-  if (0) //_testtone )
-  {
-    float frq      = midi_note_to_frequency(note);
-    _testtonepi    = pi2 * frq / _sampleRate;
-    _testtoneph    = 0.0f;
-    _testtoneamp   = 1.0f;
-    _testtoneampps = slopeDBPerSample(-6, _sampleRate);
-  }
   return pi;
 }
 
@@ -233,14 +298,14 @@ programInst* synth::keyOn(int note, int velocity, prgdata_constptr_t pdata) {
 
 void synth::keyOff(programInst* pinst) {
   pinst->keyOff();
-  auto it = _activeProgInst.find(pinst);
-  assert(it != _activeProgInst.end());
-  _activeProgInst.erase(it);
-  _freeProgInst.insert(pinst);
-  if (0) // _testtone )
-  {
-    _testtoneampps = slopeDBPerSample(-18, _sampleRate);
-  }
+  _activeProgInst.atomicOp([pinst](proginstset_t& piset) { //
+    auto it = piset.find(pinst);
+    assert(it != piset.end());
+    piset.erase(it);
+  });
+  _freeProgInst.atomicOp([pinst](proginstset_t& piset) { //
+    piset.insert(pinst);
+  });
 }
 
 ///////////////////////////////////////////////////////////////////////////////

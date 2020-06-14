@@ -1,38 +1,20 @@
 #include "harness.h"
 #include <ork/lev2/aud/singularity/tx81z.h>
 #include <ork/lev2/aud/singularity/dsp_mix.h>
+#include <ork/lev2/aud/singularity/fxgen.h>
 
 int main(int argc, char** argv) {
-  auto app = createEZapp(argc, argv);
+  auto app                       = createEZapp(argc, argv);
+  synth::instance()->_masterGain = decibel_to_linear_amp_ratio(30.0f);
   ////////////////////////////////////////////////
   // main bus effect
   ////////////////////////////////////////////////
-  auto mainbus      = synth::instance()->outputBus("main");
-  auto bussource    = mainbus->createScopeSource();
-  auto fxprog       = std::make_shared<ProgramData>();
-  auto fxlayer      = fxprog->newLayer();
-  auto fxalg        = std::make_shared<AlgData>();
-  fxlayer->_algdata = fxalg;
-  fxalg->_name      = ork::FormatString("FxAlg");
-  /////////////////
-  // output effect
-  /////////////////
-  auto fxstage = fxalg->appendStage("FX");
-  fxstage->setNumIos(2, 2); // stereo in, stereo out
-  auto stereoenh           = fxstage->appendTypedBlock<StereoDynamicEcho>();
-  auto& width_mod          = stereoenh->param(0)._mods;
-  auto WIDTHCONTROL        = fxlayer->appendController<CustomControllerData>("WIDTH");
-  width_mod._src1          = WIDTHCONTROL;
-  width_mod._src1Depth     = 1.0;
-  WIDTHCONTROL->_oncompute = [](CustomControllerInst* cci) { //
-    cci->_curval = 0.7f;
-  };
-  // auto echo              = fxstage->appendTypedBlock<StereoDynamicEcho>();
-  // echo->param(0)._coarse = 0.5; // delay time
-  // echo->param(1)._coarse = 0.5; // feedback
-  // echo->param(2)._coarse = 0.5; // wet/dry mix
-  //
-  mainbus->setBusDSP(fxlayer);
+  auto mainbus   = synth::instance()->outputBus("main");
+  auto bussource = mainbus->createScopeSource();
+  if (1) { // create mixbus effect ?
+    auto fxlayer = fxpreset_multitest();
+    mainbus->setBusDSP(fxlayer);
+  }
   ////////////////////////////////////////////////
   // create visualizers
   ////////////////////////////////////////////////
@@ -55,6 +37,8 @@ int main(int argc, char** argv) {
   bank->loadBank(basepath / "tx81z_2.syx");
   bank->loadBank(basepath / "tx81z_3.syx");
   bank->loadBank(basepath / "tx81z_4.syx");
+  synth::instance()->_globalbank  = bank->_bankdata;
+  synth::instance()->_globalprgit = synth::instance()->_globalbank->_programs.begin();
   //////////////////////////////////////////////////////////////////////////////
   // auto program   = bank->getProgramByName("LatelyBass");
   auto program = testpattern(bank, argc, argv);
