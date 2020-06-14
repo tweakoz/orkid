@@ -4,6 +4,7 @@
 #include "dspblocks.h"
 #include <ork/math/cmatrix4.h>
 #include <ork/math/cvector4.h>
+#include "shelveeq.h"
 
 namespace ork::audio::singularity {
 
@@ -73,6 +74,15 @@ struct PitchShifter : public DspBlock {
   int64_t _phaseB;
   int64_t _phaseC;
   int64_t _phaseD;
+  BiQuad _hipassfilter;
+  BiQuad _lopassAfilter;
+  BiQuad _lopassBfilter;
+  BiQuad _lopassCfilter;
+  BiQuad _lopassDfilter;
+  BiQuad _lopassEfilter;
+  BiQuad _lopassFfilter;
+  BiQuad _lopassGfilter;
+  BiQuad _lopassHfilter;
 
   DelayContext _delayA;
   DelayContext _delayB;
@@ -173,5 +183,6 @@ lyrdata_ptr_t fxpreset_echoverb();
 lyrdata_ptr_t fxpreset_wackiverb();
 lyrdata_ptr_t fxpreset_pitchoctup();
 lyrdata_ptr_t fxpreset_pitchwave();
+lyrdata_ptr_t fxpreset_pitchchorus();
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

@@ -61,23 +61,41 @@ void PitchShifter::compute(DspBuffer& dspbuf) // final
 
   float invfr = 1.0f / inumframes;
 
-  float dbase      = 0.000;
-  float dscale     = 0.030;
-  float ratio      = cents_to_linear_freq_ratio(shift);
+  float dbase  = 0.000;
+  float dscale = 0.030;
+  float ratio  = cents_to_linear_freq_ratio(shift);
+
+  _hipassfilter.SetHpf(60.0f);
+
+  float aafilter_frq = (getSampleRate() * 0.5f) / ratio;
+  aafilter_frq       = std::clamp(aafilter_frq, 2000.0f, 12000.0f);
+  float basef        = 6000.0f;
+  _lopassAfilter.SetLpf(basef / ratio);
+  _lopassBfilter.SetLpf(basef / ratio);
+  _lopassCfilter.SetLpf(basef / ratio);
+  _lopassDfilter.SetLpf(basef / ratio);
+  _lopassEfilter.SetLpf(basef / ratio);
+  _lopassFfilter.SetLpf(basef / ratio);
+  _lopassGfilter.SetLpf(basef / ratio);
+  _lopassHfilter.SetLpf(basef / ratio);
+
   float s          = (dbase + dscale) * getSampleRate();
   double frq       = 1.0f * (ratio - 1.0f) * getSampleRate() / s;
   int64_t phaseinc = frq * -double(1L << 48) * getInverseSampleRate(); // * (getSampleRate() * kinv24m);
   // printf("ratio<%g> frq<%g> pi<%lld>\n", ratio, frq, phaseinc);
+
+  float outgain = 0.3;
+
   for (int i = 0; i < inumframes; i++) {
     float fi     = float(i) * invfr;
     int64_t pha  = (_phaseA >> 24) & 0xffffff;
     int64_t phb  = (_phaseB >> 24) & 0xffffff;
     int64_t phc  = (_phaseC >> 24) & 0xffffff;
     int64_t phd  = (_phaseD >> 24) & 0xffffff;
-    float maska  = trienv(pha) * .5f;
-    float maskb  = trienv(phb) * .5f;
-    float maskc  = trienv(phc) * .5f;
-    float maskd  = trienv(phd) * .5f;
+    float maska  = trienv(pha);
+    float maskb  = trienv(phb);
+    float maskc  = trienv(phc);
+    float maskd  = trienv(phd);
     double rampa = kinv24m * double(pha);
     double rampb = kinv24m * double(phb);
     double rampc = kinv24m * double(phc);
@@ -98,7 +116,17 @@ void PitchShifter::compute(DspBuffer& dspbuf) // final
     // input from dsp channels
     /////////////////////////////////////
 
-    float inp = ibuf[i];
+    float oinp = ibuf[i];
+    float inp  = oinp;
+    inp        = _hipassfilter.compute(inp);
+    inp        = _lopassAfilter.compute(inp);
+    inp        = _lopassBfilter.compute(inp);
+    inp        = _lopassCfilter.compute(inp);
+    inp        = _lopassDfilter.compute(inp);
+    inp        = _lopassEfilter.compute(inp);
+    inp        = _lopassFfilter.compute(inp);
+    inp        = _lopassGfilter.compute(inp);
+    inp        = _lopassHfilter.compute(inp);
 
     /////////////////////////////////////
     // do fdn4 operation
@@ -123,8 +151,8 @@ void PitchShifter::compute(DspBuffer& dspbuf) // final
                 cout * maskc + //
                 dout * maskd;
 
-    obufL[i] = lerp(inp, out, mix);
-    obufR[i] = lerp(inp, out, mix);
+    obufL[i] = lerp(oinp, out * outgain, mix);
+    obufR[i] = lerp(oinp, out * outgain, mix);
   }
 }
 
@@ -136,5 +164,14 @@ void PitchShifter::doKeyOn(const KeyOnInfo& koi) // final
   _phaseB = (1L << 47);
   _phaseC = (2L << 47);
   _phaseD = (3L << 47);
+  _hipassfilter.Clear();
+  _lopassAfilter.Clear();
+  _lopassBfilter.Clear();
+  _lopassCfilter.Clear();
+  _lopassDfilter.Clear();
+  _lopassEfilter.Clear();
+  _lopassFfilter.Clear();
+  _lopassGfilter.Clear();
+  _lopassHfilter.Clear();
 }
 } // namespace ork::audio::singularity

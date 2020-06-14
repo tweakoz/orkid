@@ -18,7 +18,8 @@ int main(int argc, char** argv) {
     // auto fxlayer = fxpreset_echoverb();
     // auto fxlayer = fxpreset_wackiverb();
     // auto fxlayer = fxpreset_pitchoctup();
-    auto fxlayer = fxpreset_pitchwave();
+    // auto fxlayer = fxpreset_pitchwave();
+    auto fxlayer = fxpreset_pitchchorus();
     mainbus->setBusDSP(fxlayer);
   }
   ////////////////////////////////////////////////

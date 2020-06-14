@@ -74,8 +74,8 @@ struct BiQuad {
   float compute(float input);
   float compute2(float input);
   void SetLpfReson(float kfco, float krez);
-  void SetLpfWithPeakGain(float kfco, float peakg);
-  void SetHpfWithPeakGain(float kfco, float peakg);
+  void SetLpf(float kfco);
+  void SetHpf(float kfco);
   void SetBpfWithQ(float kfco, float Q, float peakGain);
   void SetBpfWithBWoct(float kfco, float BWoct, float peakGain);
   void SetBpfMeth2(float kfco);

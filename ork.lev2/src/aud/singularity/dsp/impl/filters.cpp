@@ -368,50 +368,29 @@ void BiQuad::SetLpfNoQ(float kfco) {
   _mfa2 = (1.0f + KK - KdQ) * norm;
 }
 
-void BiQuad::SetLpfWithPeakGain(float kfco, float peakGain) {
+void BiQuad::SetLpf(float kfco) {
   float Q    = 0.5f;
-  float V    = decibel_to_linear_amp_ratio(peakGain);
-  float K    = std::tan(pi * kfco * ISR);
+  float K    = std::tan(pi * kfco * getInverseSampleRate());
   float KK   = K * K;
   float KdQ  = K / Q;
   float norm = 1.0f / (1.0f + KdQ + KK);
-  // printf( "V<%f> K<%f> Q<%f>\n", V, K, Q );
-  _mfb0 = (KK)*norm;
-  _mfb1 = 2 * _mfb0;
-  _mfb2 = _mfb0;
-
-  _mfa1 = 2 * (KK - 1) * norm;
-  _mfa2 = (1 - KdQ + KK) * norm;
-
-  // norm = 1 / (1 + K / Q + K * K);
-  // a0 = K * K * norm;
-  // a1 = 2 * a0;
-  // a2 = a0;
-
-  // b1 = 2 * (K * K - 1) * norm;
-  // b2 = (1 - K / Q + K * K) * norm;
+  _mfb0      = (KK)*norm;
+  _mfb1      = 2 * _mfb0;
+  _mfb2      = _mfb0;
+  _mfa1      = 2 * (KK - 1) * norm;
+  _mfa2      = (1 - KdQ + KK) * norm;
 }
-void BiQuad::SetHpfWithPeakGain(float kfco, float peakGain) {
+void BiQuad::SetHpf(float kfco) {
   float Q    = 0.5f;
-  float V    = decibel_to_linear_amp_ratio(peakGain);
-  float K    = std::tan(pi * kfco * ISR);
+  float K    = std::tan(pi * kfco * getInverseSampleRate());
   float KK   = K * K;
   float KdQ  = K / Q;
   float norm = 1.0f / (1.0f + KdQ + KK);
-  // printf( "V<%f> K<%f> Q<%f>\n", V, K, Q );
-  _mfb0 = norm;
-  _mfb1 = -2.0f * _mfb0;
-  _mfb2 = _mfb0;
-
-  _mfa1 = 2 * (KK - 1) * norm;
-  _mfa2 = (1 - KdQ + KK) * norm;
-
-  // norm = 1 / (1 + K / Q + K * K);
-  // a0 = 1 * norm;
-  // a1 = -2 * a0;
-  // a2 = a0;
-  // b1 = 2 * (K * K - 1) * norm;
-  // b2 = (1 - K / Q + K * K) * norm;
+  _mfb0      = norm;
+  _mfb1      = -2.0f * _mfb0;
+  _mfb2      = _mfb0;
+  _mfa1      = 2 * (KK - 1) * norm;
+  _mfa2      = (1 - KdQ + KK) * norm;
 }
 
 void BiQuad::SetParametric(float kfco, float wid, float peakGain) {
@@ -519,7 +498,7 @@ void BiQuad::SetLowShelf(float kfco, float peakGain) {
   if (kfco > 16000.0f)
     kfco = 16000.0f;
   float V = decibel_to_linear_amp_ratio(peakGain);
-  float K = std::tan(pi * kfco * ISR);
+  float K = std::tan(pi * kfco * getInverseSampleRate());
   if (peakGain >= 0) { // boost
     float norm = 1 / (1 + sqrtf(2) * K + K * K);
     _mfb0      = (1 + sqrtf(2 * V) * K + V * K * K) * norm;
@@ -541,7 +520,7 @@ void BiQuad::SetHighShelf(float kfco, float peakGain) {
   if (kfco > 16000.0f)
     kfco = 16000.0f;
   float V = decibel_to_linear_amp_ratio(peakGain);
-  float K = std::tan(pi * kfco * ISR);
+  float K = std::tan(pi * kfco * getInverseSampleRate());
   if (peakGain >= 0) { // boost
     float norm = 1 / (1 + sqrtf(2) * K + K * K);
     _mfb0      = (V + sqrtf(2 * V) * K + K * K) * norm;

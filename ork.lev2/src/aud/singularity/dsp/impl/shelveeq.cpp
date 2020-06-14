@@ -17,13 +17,13 @@ namespace ork::audio::singularity {
 ///////////////////////////////////////////
 
 void ShelveEq::init() {
-  SPN = 0;
-  yl = x1l = x2l = y1l = y2l = yr = x1r = x2r = y1r = y2r = 0;
+  _SPN = 0;
+  _yl = _x1l = _x2l = _y1l = _y2l = _yr = _x1r = _x2r = _y1r = _y2r = 0;
 }
 
 void LoShelveEq::set(float cf, float peakg) {
   float freq1 = cf;
-  cf *= ISR;
+  cf *= getInverseSampleRate();
 
   float sa  = tanf(pi * (cf - 0.25));
   float asq = sa * sa;
@@ -34,7 +34,7 @@ void LoShelveEq::set(float cf, float peakg) {
   float F2  = F * F;
   float tmp = A * A - F2;
 
-  float gammad = (fabs(tmp) <= SPN) ? 1.0 : powf((F2 - 1.0) / tmp, 0.25);
+  float gammad = (fabs(tmp) <= _SPN) ? 1.0 : powf((F2 - 1.0) / tmp, 0.25);
 
   float gamman  = sqrt(A) * gammad;
   float gamma2  = gamman * gamman;
@@ -67,16 +67,15 @@ void LoShelveEq::set(float cf, float peakg) {
   b1 *= recipb0;
   b2 *= recipb0;
 
-  a0 = a0;
-  a1 = a1;
-  a2 = a2;
-  b1 = -b1;
-  b2 = -b2;
+  _a0 = a0;
+  _a1 = a1;
+  _a2 = a2;
+  _b1 = -b1;
+  _b2 = -b2;
 }
 
 void HiShelveEq::set(float cf, float peakg) {
-  float freq2 = cf;
-  cf *= ISR;
+  cf *= getInverseSampleRate();
   float boost = -peakg;
 
   float sa  = tan(pi * (cf - 0.25));
@@ -86,7 +85,7 @@ void HiShelveEq::set(float cf, float peakg) {
 
   float F2      = F * F;
   float tmp     = A * A - F2;
-  float gammad  = (fabs(tmp) <= SPN) ? 1.0 : powf((F2 - 1.0) / tmp, 0.25);
+  float gammad  = (fabs(tmp) <= _SPN) ? 1.0 : powf((F2 - 1.0) / tmp, 0.25);
   float gamman  = sqrt(A) * gammad;
   float gamma2  = gamman * gamman;
   float gam2p1  = 1.0 + gamma2;
@@ -119,11 +118,11 @@ void HiShelveEq::set(float cf, float peakg) {
   b2 *= recipb0;
 
   float gain = powf(10.0f, (boost / 20.0));
-  a0         = a0 / gain;
-  a1         = a1 / gain;
-  a2         = a2 / gain;
-  b1         = -b1;
-  b2         = -b2;
+  _a0        = a0 / gain;
+  _a1        = a1 / gain;
+  _a2        = a2 / gain;
+  _b1        = -b1;
+  _b2        = -b2;
 }
 
 ///////////////////////////////////////////
@@ -131,13 +130,18 @@ void HiShelveEq::set(float cf, float peakg) {
 float LoShelveEq::compute(float inp) {
   float xl = inp;
 
-  yl  = a0 * xl + a1 * x1l + a2 * x2l + b1 * y1l + b2 * y2l;
-  x2l = x1l;
-  x1l = xl;
-  y2l = y1l;
-  y1l = yl;
+  _yl = _a0 * xl +   //
+        _a1 * _x1l + //
+        _a2 * _x2l + //
+        _b1 * _y1l + //
+        _b2 * _y2l;
 
-  return yl;
+  _x2l = _x1l;
+  _x1l = xl;
+  _y2l = _y1l;
+  _y1l = _yl;
+
+  return _yl;
 }
 
 ///////////////////////////////////////////
@@ -145,13 +149,17 @@ float LoShelveEq::compute(float inp) {
 float HiShelveEq::compute(float inp) {
   float xl = inp;
 
-  yl  = a0 * xl + a1 * x1l + a2 * x2l + b1 * y1l + b2 * y2l;
-  x2l = x1l;
-  x1l = xl;
-  y2l = y1l;
-  y1l = yl;
+  _yl = _a0 * xl +   //
+        _a1 * _x1l + //
+        _a2 * _x2l + //
+        _b1 * _y1l + //
+        _b2 * _y2l;
+  _x2l = _x1l;
+  _x1l = xl;
+  _y2l = _y1l;
+  _y1l = _yl;
 
-  return yl;
+  return _yl;
 }
 
 } // namespace ork::audio::singularity

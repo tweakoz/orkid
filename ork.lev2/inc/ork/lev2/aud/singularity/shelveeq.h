@@ -2,25 +2,22 @@
 
 namespace ork::audio::singularity {
 
-struct ShelveEq
-{
-    void init();
-    float SPN;
-    float x1l,x2l;
-    float x1r,x2r;
-    float yl,y1l,y2l;
-    float yr,y1r,y2r;
-    float a0, a1, a2, b1, b2;
+struct ShelveEq {
+  void init();
+  float _SPN;
+  float _x1l, _x2l;
+  float _x1r, _x2r;
+  float _y1l, _y2l;
+  float _yl, _yr, _y1r, _y2r;
+  float _a0, _a1, _a2, _b1, _b2;
 };
-struct LoShelveEq : public ShelveEq
-{
-    void set( float fc, float peakg );
-    float compute(float inp);
+struct LoShelveEq : public ShelveEq {
+  void set(float fc, float peakg);
+  float compute(float inp);
 };
-struct HiShelveEq : public ShelveEq
-{
-    void set( float cf, float peakg );
-    float compute(float inp);
+struct HiShelveEq : public ShelveEq {
+  void set(float cf, float peakg);
+  float compute(float inp);
 };
 
-}
+} // namespace ork::audio::singularity
