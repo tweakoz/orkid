@@ -55,9 +55,8 @@ void PitchShifter::compute(DspBuffer& dspbuf) // final
   float mix      = _param[0].eval();
   float shift    = _param[1].eval(); // cents
 
-  auto ibuf  = getInpBuf(dspbuf, 0) + ibase;
-  auto obufL = getOutBuf(dspbuf, 0) + ibase;
-  auto obufR = getOutBuf(dspbuf, 1) + ibase;
+  auto ibuf = getInpBuf(dspbuf, 0) + ibase;
+  auto obuf = getOutBuf(dspbuf, 0) + ibase;
 
   float invfr = 1.0f / inumframes;
 
@@ -151,8 +150,7 @@ void PitchShifter::compute(DspBuffer& dspbuf) // final
                 cout * maskc + //
                 dout * maskd;
 
-    obufL[i] = lerp(oinp, out * outgain, mix);
-    obufR[i] = lerp(oinp, out * outgain, mix);
+    obuf[i] = lerp(oinp, out * outgain, mix);
   }
 }
 

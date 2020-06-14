@@ -368,27 +368,30 @@ lyrdata_ptr_t fxpreset_pitchchorus() {
   auto fxstage = fxalg->appendStage("FX");
   fxstage->setNumIos(2, 2); // stereo in, stereo out
   /////////////////
-  auto shifter1              = appendPitchShifter(fxlayer, fxstage);
-  auto shifter2              = appendPitchShifter(fxlayer, fxstage);
-  shifter1->param(0)._coarse = 0.5; // wet/dry mix
-  shifter2->param(0)._coarse = 0.5; // wet/dry mix
+  auto shifterL              = appendPitchShifter(fxlayer, fxstage);
+  auto shifterR              = appendPitchShifter(fxlayer, fxstage);
+  shifterL->param(0)._coarse = 0.5; // wet/dry mix
+  shifterR->param(0)._coarse = 0.5; // wet/dry mix
   /////////////////
-  auto PITCHMOD1        = fxlayer->appendController<CustomControllerData>("PITCHSHIFT1");
-  auto PITCHMOD2        = fxlayer->appendController<CustomControllerData>("PITCHSHIFT2");
-  auto& pmod1           = shifter1->param(1)._mods;
-  auto& pmod2           = shifter2->param(1)._mods;
-  pmod1._src1           = PITCHMOD1;
-  pmod1._src1Depth      = 1.0;
-  pmod2._src1           = PITCHMOD2;
-  pmod2._src1Depth      = 1.0;
-  PITCHMOD2->_oncompute = [](CustomControllerInst* cci) { //
+  shifterL->_dspchannel[0] = 0; // chorus voice 1 on left
+  shifterR->_dspchannel[0] = 1; // chorus voice 2 on right
+  /////////////////
+  auto PITCHMODL        = fxlayer->appendController<CustomControllerData>("PITCHSHIFT1");
+  auto PITCHMODR        = fxlayer->appendController<CustomControllerData>("PITCHSHIFT2");
+  auto& pmodL           = shifterL->param(1)._mods;
+  auto& pmodR           = shifterR->param(1)._mods;
+  pmodL._src1           = PITCHMODL;
+  pmodL._src1Depth      = 1.0;
+  pmodR._src1           = PITCHMODR;
+  pmodR._src1Depth      = 1.0;
+  PITCHMODL->_oncompute = [](CustomControllerInst* cci) { //
     float time   = cci->_layer->_layerTime;
-    cci->_curval = sinf(time * pi2 * 0.03f) * 25.0f;
+    cci->_curval = sinf(time * pi2 * 0.03f) * 35.0f;
     return cci->_curval;
   };
-  PITCHMOD2->_oncompute = [](CustomControllerInst* cci) { //
+  PITCHMODR->_oncompute = [](CustomControllerInst* cci) { //
     float time   = cci->_layer->_layerTime;
-    cci->_curval = sinf(time * pi2 * 0.07f) * 25.0f;
+    cci->_curval = sinf(time * pi2 * 0.07f) * 35.0f;
     return cci->_curval;
   };
   /////////////////
