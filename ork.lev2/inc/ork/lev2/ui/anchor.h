@@ -77,6 +77,8 @@ struct Layout {
   guide_ptr_t centerH();
   guide_ptr_t centerV();
 
+  void dump();
+
   int _margin = 0;
 
   widget_ptr_t _widget;
@@ -111,13 +113,15 @@ struct Guide {
   void _disassociate(Guide* other);
   void _associate(Guide* other);
 
+  void dump();
+
   std::set<Guide*> _associates;
-  Layout* _layout = nullptr;
-  Guide* _parent  = nullptr;
-  Edge _edge      = Edge::Top;
-  int _margin     = 0;
-  int _sign       = 1; // sign of offset: -1 or 1
-  float _unito    = 0.0f;
+  Layout* _layout  = nullptr;
+  Guide* _relative = nullptr;
+  Edge _edge       = Edge::Top;
+  int _margin      = 0;
+  int _sign        = 1; // sign of offset: -1 or 1
+  float _unito     = 0.0f;
 };
 
 } // namespace ork::ui::anchor

@@ -11,46 +11,103 @@
 
 namespace ork::ui::anchor {
 /////////////////////////////////////////////////////////////////////////
+std::string rel2str(Relationship r) {
+  std::string rval;
+  switch (r) {
+    case Relationship::None:
+      rval = "None";
+      break;
+    case Relationship::Sibling:
+      rval = "Sibling";
+      break;
+    case Relationship::ParentChild:
+      rval = "ParentChild";
+      break;
+  }
+  return rval;
+}
+/////////////////////////////////////////////////////////////////////////
+std::string edge2str(Edge e) {
+  std::string rval;
+  switch (e) {
+    case Edge::BaseLine:
+      rval = "BaseLine";
+      break;
+    case Edge::Top:
+      rval = "Top";
+      break;
+    case Edge::Left:
+      rval = "Left";
+      break;
+    case Edge::Bottom:
+      rval = "Bottom";
+      break;
+    case Edge::Right:
+      rval = "Right";
+      break;
+    case Edge::HorizontalCenter:
+      rval = "HorizontalCenter";
+      break;
+    case Edge::VerticalCenter:
+      rval = "VerticalCenter";
+      break;
+    case Edge::Horizontal:
+      rval = "Horizontal";
+      break;
+    case Edge::Vertical:
+      rval = "Vertical";
+      break;
+  }
+  return rval;
+}
+/////////////////////////////////////////////////////////////////////////
 Guide::Guide(Layout* layout, Edge edge)
     : _layout(layout)
     , _edge(edge) {
 }
 /////////////////////////////////////////////////////////////////////////
-
 void Guide::setMargin(int margin) {
   _margin = margin;
   updateAssociates();
 }
-
 /////////////////////////////////////////////////////////////////////////
-
 void Guide::updateAssociates() {
   for (auto g : _associates)
     g->updateGeometry();
 }
-
 /////////////////////////////////////////////////////////////////////////
-
 void Guide::updateGeometry() {
-  if (_parent == nullptr)
+  if (_relative == nullptr)
     return;
 
-  auto rel = _relationshipWith(_parent);
+  auto rel = _relationshipWith(_relative);
   if (rel == Relationship::None)
     return;
 
   auto geo = _layout->_widget->geometry();
 
   auto relguide = (Relationship::Sibling == rel) //
-                      ? _parent->line(Mode::Geometry)
-                      : _parent->line(Mode::Rect);
+                      ? _relative->line(Mode::Geometry)
+                      : _relative->line(Mode::Rect);
 
   int signed_offset = _margin * _sign;
+
+  int basex = relguide._from.x;
+  int basey = relguide._from.y;
+  printf(
+      "guide<%p> relative<%p> rel<%s> edge<%s> offs<%d> base<%d,%d>\n", //
+      this,
+      _relative,
+      rel2str(rel).c_str(),
+      edge2str(_edge).c_str(),
+      signed_offset,
+      basex,
+      basey);
 
   switch (_edge) {
     case Edge::Top: {
       int top = relguide._from.y + signed_offset;
-      if (_layout->_bottom->_parent)
+      if (_layout->_bottom->_relative)
         geo.setTop(top);
       else
         geo.moveTop(top);
@@ -58,7 +115,7 @@ void Guide::updateGeometry() {
     }
     case Edge::Left: {
       int left = relguide._from.x + signed_offset;
-      if (_layout->_right->_parent)
+      if (_layout->_right->_relative)
         geo.setLeft(left);
       else
         geo.moveLeft(left);
@@ -66,7 +123,7 @@ void Guide::updateGeometry() {
     }
     case Edge::Bottom: {
       int bottom = relguide._from.y + signed_offset;
-      if (_layout->_top->_parent)
+      if (_layout->_top->_relative)
         geo.setBottom(bottom);
       else
         geo.moveBottom(bottom);
@@ -74,7 +131,7 @@ void Guide::updateGeometry() {
     }
     case Edge::Right: {
       int right = relguide._from.x + signed_offset;
-      if (_layout->_left->_parent)
+      if (_layout->_left->_relative)
         geo.setRight(right);
       else
         geo.moveRight(right);
@@ -94,18 +151,14 @@ void Guide::updateGeometry() {
 
   updateAssociates();
 }
-
 /////////////////////////////////////////////////////////////////////////
-
 void Guide::_associate(Guide* other) {
   OrkAssert(other);
   OrkAssert(_associates.find(other) == _associates.end());
   _associates.insert(other);
   //_layout->update();
 }
-
 /////////////////////////////////////////////////////////////////////////
-
 void Guide::_disassociate(Guide* other) {
   OrkAssert(other);
   auto it = _associates.find(other);
@@ -113,25 +166,24 @@ void Guide::_disassociate(Guide* other) {
   _associates.erase(it);
   //_layout->update();
 }
-
 /////////////////////////////////////////////////////////////////////////
 void Guide::anchorTo(guide_ptr_t other) {
   anchorTo(other.get());
 }
-
+/////////////////////////////////////////////////////////////////////////
 void Guide::anchorTo(Guide* other) {
   if (_edge == Edge::Horizontal or _edge == Edge::Vertical)
     return;
 
-  if (other == _parent)
+  if (other == _relative)
     return;
 
   if (other != nullptr and _layout == other->_layout)
     return;
 
-  if (_parent != nullptr) {
-    _parent->_disassociate(this);
-    _parent = nullptr;
+  if (_relative != nullptr) {
+    _relative->_disassociate(this);
+    _relative = nullptr;
   }
 
   if (other == nullptr)
@@ -144,30 +196,24 @@ void Guide::anchorTo(Guide* other) {
   if (this->isHorizontal() and not other->isHorizontal())
     return;
 
-  _parent = other;
-  _parent->_associate(this);
+  _relative = other;
+  _relative->_associate(this);
 }
-
 /////////////////////////////////////////////////////////////////////////
-
 bool Guide::isVertical() const {
   return _edge == Edge::Left or             //
          _edge == Edge::Right or            //
          _edge == Edge::HorizontalCenter or //
          _edge == Edge::Vertical;
 }
-
 /////////////////////////////////////////////////////////////////////////
-
 bool Guide::isHorizontal() const {
   return _edge == Edge::Top or            //
          _edge == Edge::Bottom or         //
          _edge == Edge::VerticalCenter or //
          _edge == Edge::Horizontal;
 }
-
 /////////////////////////////////////////////////////////////////////////
-
 Relationship Guide::_relationshipWith(Guide* other) const {
 
   auto mywidget    = _layout->_widget;
@@ -181,7 +227,6 @@ Relationship Guide::_relationshipWith(Guide* other) const {
 
   return Relationship::None;
 }
-
 /////////////////////////////////////////////////////////////////////////
 Line Guide::line(Mode mode) const {
   auto widget_geo = _layout->_widget->geometry();
@@ -191,6 +236,8 @@ Line Guide::line(Mode mode) const {
                   : Rect(0, 0, widget_geo._w, widget_geo._h);
 
   Line outline;
+
+  int m = _margin * _sign;
 
   switch (_edge) {
     case Edge::BaseLine:
@@ -236,6 +283,23 @@ Line Guide::line(Mode mode) const {
   }
 
   return outline;
+}
+/////////////////////////////////////////////////////////////////////////
+void Guide::dump() {
+  printf(
+      "//   Guide<%p> edge<%s> margin<%d> relative<%p>\n", //
+      this,
+      edge2str(_edge).c_str(),
+      _margin,
+      _relative);
+  for (auto g : _associates) {
+    printf(
+        "//     associate<%p> layout<%p> edge<%s> margin<%d>\n", //
+        g,
+        g->_layout,
+        edge2str(g->_edge).c_str(),
+        g->_margin);
+  }
 }
 /////////////////////////////////////////////////////////////////////////
 } // namespace ork::ui::anchor

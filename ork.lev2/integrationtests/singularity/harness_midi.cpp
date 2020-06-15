@@ -1,7 +1,12 @@
 #include "harness.h"
 #include <iostream>
 #include <cstdlib>
+
+#if defined(__APPLE__)
+#include <RtMidi.h>
+#else
 #include <rtmidi/RtMidi.h>
+#endif
 
 void mycallback(double deltatime, std::vector<unsigned char>* message, void* userData) {
   auto numbytes = message->size();

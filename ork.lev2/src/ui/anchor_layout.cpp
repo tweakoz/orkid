@@ -67,17 +67,17 @@ guide_ptr_t Layout::centerV() {
 /////////////////////////////////////////////////////////////////////////
 void Layout::updateAll() {
   if (_top)
-    _top->updateGeometry();
+    _top->updateAssociates();
   if (_left)
-    _left->updateGeometry();
+    _left->updateAssociates();
   if (_bottom)
-    _bottom->updateGeometry();
+    _bottom->updateAssociates();
   if (_right)
-    _right->updateGeometry();
+    _right->updateAssociates();
   if (_centerH)
-    _centerH->updateGeometry();
+    _centerH->updateAssociates();
   if (_centerV)
-    _centerV->updateGeometry();
+    _centerV->updateAssociates();
 }
 /////////////////////////////////////////////////////////////////////////
 void Layout::setMargin(int margin) {
@@ -170,6 +170,24 @@ bool Layout::isAnchorAllowed(Layout* layout) const {
 
   return layout->_widget.get() == _widget->parent() or //
          layout->_widget->parent() == _widget->parent();
+}
+/////////////////////////////////////////////////////////////////////////
+void Layout::dump() {
+  printf("//////////////////////////\n");
+  printf("// Layout<%p> margin<%d>\n", this, _margin);
+  if (_top)
+    _top->dump();
+  if (_left)
+    _left->dump();
+  if (_bottom)
+    _bottom->dump();
+  if (_right)
+    _right->dump();
+  if (_centerH)
+    _centerH->dump();
+  if (_centerV)
+    _centerV->dump();
+  printf("//////////////////////////\n");
 }
 /////////////////////////////////////////////////////////////////////////
 } // namespace ork::ui::anchor
