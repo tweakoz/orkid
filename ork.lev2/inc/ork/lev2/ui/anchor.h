@@ -4,6 +4,7 @@
 // port of
 // https://github.com/pnudupa/anchorlayout
 // Original Author: Prashanth Udupa
+// LGPL3
 /////////////////////////////////////////////////////////////////////////
 
 #include <ork/lev2/ui/event.h>
