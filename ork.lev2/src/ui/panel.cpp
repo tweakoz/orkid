@@ -126,7 +126,7 @@ void Panel::DoDraw(ui::drawevent_constptr_t drwev) {
 
 void Panel::DoLayout() {
   mDockedAtTop = (_geometry._y == -kpanelw);
-  printf("mDockedAtTop<%d>\n", int(mDockedAtTop));
+  // printf("mDockedAtTop<%d>\n", int(mDockedAtTop));
 
   mCloseX = kpanelw;
   mCloseY = mDockedAtTop ? _geometry._h - kpanelw : 0;

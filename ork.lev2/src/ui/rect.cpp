@@ -47,21 +47,25 @@ int Rect::center_y() const {
 ///////////////////////////////////////////////////////////////////////////////
 void Rect::moveTop(int y) {
   _y = y;
+  printf("rect<%p> moveTop<%d>\n", this, y);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Rect::moveLeft(int x) {
   int dx = x - _x;
   _x += dx;
+  printf("rect<%p> moveLeft<%d>\n", this, x);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Rect::moveBottom(int y) {
   int dy = y - y2();
   _y += dy;
+  printf("rect<%p> moveBottom<%d>\n", this, y);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Rect::moveRight(int x) {
   int dx = x - x2();
   _x += dx;
+  printf("rect<%p> moveRight<%d>\n", this, x);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Rect::moveCenter(int x, int y) {
@@ -75,22 +79,26 @@ void Rect::setTop(int y) {
   int dy = y - _y;
   _y += dy;
   _h -= dy;
+  printf("rect<%p> setTop<%d>\n", this, y);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Rect::setLeft(int x) {
   int dx = x - _x;
   _x += dx;
   _w -= dx;
+  printf("rect<%p> setLeft<%d>\n", this, x);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Rect::setBottom(int y) {
   int dy = y - y2();
   _h += dy;
+  printf("rect<%p> setBottom<%d>\n", this, y);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Rect::setRight(int x) {
   int dx = x - x2();
   _w += dx;
+  printf("rect<%p> setRight<%d>\n", this, x);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Rect::reset() {

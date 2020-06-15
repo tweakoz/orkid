@@ -80,6 +80,7 @@ struct Layout {
   void dump();
 
   int _margin = 0;
+  int _name   = -1;
 
   widget_ptr_t _widget;
 
@@ -116,6 +117,7 @@ struct Guide {
   void dump();
 
   std::set<Guide*> _associates;
+  int _name        = -1;
   Layout* _layout  = nullptr;
   Guide* _relative = nullptr;
   Edge _edge       = Edge::Top;

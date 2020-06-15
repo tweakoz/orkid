@@ -13,6 +13,8 @@ namespace ork::ui::anchor {
 /////////////////////////////////////////////////////////////////////////
 Layout::Layout(widget_ptr_t w)
     : _widget(w) {
+  static int _names = 0;
+  _name             = _names++;
 }
 Layout::~Layout() {
 }
@@ -174,7 +176,7 @@ bool Layout::isAnchorAllowed(Layout* layout) const {
 /////////////////////////////////////////////////////////////////////////
 void Layout::dump() {
   printf("//////////////////////////\n");
-  printf("// Layout<%p> margin<%d>\n", this, _margin);
+  printf("// Layout<%d> margin<%d>\n", _name, _margin);
   if (_top)
     _top->dump();
   if (_left)

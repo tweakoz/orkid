@@ -64,6 +64,8 @@ std::string edge2str(Edge e) {
 Guide::Guide(Layout* layout, Edge edge)
     : _layout(layout)
     , _edge(edge) {
+  static int _names = 0;
+  _name             = _names++;
 }
 /////////////////////////////////////////////////////////////////////////
 void Guide::setMargin(int margin) {
@@ -95,9 +97,9 @@ void Guide::updateGeometry() {
   int basex = relguide._from.x;
   int basey = relguide._from.y;
   printf(
-      "guide<%p> relative<%p> rel<%s> edge<%s> offs<%d> base<%d,%d>\n", //
-      this,
-      _relative,
+      "guide<%d> relative<%d> rel<%s> edge<%s> offs<%d> base<%d,%d>\n", //
+      _name,
+      _relative ? _relative->_name : -1,
       rel2str(rel).c_str(),
       edge2str(_edge).c_str(),
       signed_offset,
@@ -122,7 +124,7 @@ void Guide::updateGeometry() {
       break;
     }
     case Edge::Bottom: {
-      int bottom = relguide._from.y + signed_offset;
+      int bottom = relguide._from.y - signed_offset;
       if (_layout->_top->_relative)
         geo.setBottom(bottom);
       else
@@ -130,7 +132,7 @@ void Guide::updateGeometry() {
       break;
     }
     case Edge::Right: {
-      int right = relguide._from.x + signed_offset;
+      int right = relguide._from.x - signed_offset;
       if (_layout->_left->_relative)
         geo.setRight(right);
       else
@@ -273,8 +275,8 @@ Line Guide::line(Mode mode) const {
       break;
     };
     case Edge::HorizontalCenter:
-      outline._from = fvec2(rect._x, rect._y);
-      outline._to   = fvec2(rect._x, rect.y2());
+      outline._from = fvec2(rect.center_x(), rect._y);
+      outline._to   = fvec2(rect.center_x(), rect.y2());
       break;
     case Edge::VerticalCenter:
       outline._from = fvec2(rect._x, rect.center_y());
@@ -287,16 +289,16 @@ Line Guide::line(Mode mode) const {
 /////////////////////////////////////////////////////////////////////////
 void Guide::dump() {
   printf(
-      "//   Guide<%p> edge<%s> margin<%d> relative<%p>\n", //
-      this,
+      "//   Guide<%d> edge<%s> margin<%d> relative<%d>\n", //
+      _name,
       edge2str(_edge).c_str(),
       _margin,
-      _relative);
+      _relative ? _relative->_name : -1);
   for (auto g : _associates) {
     printf(
-        "//     associate<%p> layout<%p> edge<%s> margin<%d>\n", //
-        g,
-        g->_layout,
+        "//     associate<%d> layout<%d> edge<%s> margin<%d>\n", //
+        g->_name,
+        g->_layout->_name,
         edge2str(g->_edge).c_str(),
         g->_margin);
   }
