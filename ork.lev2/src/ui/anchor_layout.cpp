@@ -65,6 +65,21 @@ guide_ptr_t Layout::centerV() {
   return _centerV;
 }
 /////////////////////////////////////////////////////////////////////////
+void Layout::updateAll() {
+  if (_top)
+    _top->updateGeometry();
+  if (_left)
+    _left->updateGeometry();
+  if (_bottom)
+    _bottom->updateGeometry();
+  if (_right)
+    _right->updateGeometry();
+  if (_centerH)
+    _centerH->updateGeometry();
+  if (_centerV)
+    _centerV->updateGeometry();
+}
+/////////////////////////////////////////////////////////////////////////
 void Layout::setMargin(int margin) {
 
   _margin = margin;

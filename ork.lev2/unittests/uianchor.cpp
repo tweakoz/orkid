@@ -25,4 +25,12 @@ TEST(uianchor1) {
   l1->bottom()->setMargin(10);
   l1->right()->anchorTo(vplayout->right());
   l1->right()->setMargin(10);
+
+  vplayout->updateAll();
+
+  auto vpg = vp->geometry();
+  auto w1g = w1->geometry();
+
+  printf("vp x<%d> y<%d> w<%d> h<%d>\n", vpg._x, vpg._y, vpg._w, vpg._h);
+  printf("w1 x<%d> y<%d> w<%d> h<%d>\n", w1g._x, w1g._y, w1g._w, w1g._h);
 }

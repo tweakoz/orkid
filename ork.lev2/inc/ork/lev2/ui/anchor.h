@@ -68,6 +68,8 @@ struct Layout {
   bool isAnchorAllowed(Layout* guide) const;
   void fill(Layout* other);
 
+  void updateAll();
+
   guide_ptr_t top();
   guide_ptr_t left();
   guide_ptr_t bottom();
