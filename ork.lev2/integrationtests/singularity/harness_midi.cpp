@@ -1,7 +1,7 @@
 #include "harness.h"
 #include <iostream>
 #include <cstdlib>
-#include "RtMidi.h"
+#include <rtmidi/RtMidi.h>
 
 void mycallback(double deltatime, std::vector<unsigned char>* message, void* userData) {
   auto numbytes = message->size();
