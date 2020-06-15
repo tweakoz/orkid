@@ -2,35 +2,23 @@
 #include <ork/lev2/ui/anchor.h>
 #include <ork/lev2/ui/widget.h>
 
+/////////////////////////////////////////////////////////////////////////
 // port of
 // https://github.com/pnudupa/anchorlayout
+// Original Author: Prashanth Udupa
 // LGPL3
+/////////////////////////////////////////////////////////////////////////
 
 namespace ork::ui::anchor {
-
 /////////////////////////////////////////////////////////////////////////
-
-void Layout::setMargin(int margin) {
-
-  _margin = margin;
-
-  if (_left)
-    _left->setOffset(margin);
-
-  if (_top)
-    _top->setOffset(margin);
-
-  if (_right)
-    _right->setOffset(margin);
-
-  if (_bottom)
-    _bottom->setOffset(margin);
+Guide::Guide(Layout* layout, Edge edge)
+    : _layout(layout)
+    , _edge(edge) {
 }
-
 /////////////////////////////////////////////////////////////////////////
 
-void Guide::setOffset(int offset) {
-  _offset = offset;
+void Guide::setMargin(int margin) {
+  _margin = margin;
   updateAssociates();
 }
 
@@ -41,11 +29,13 @@ void Guide::updateAssociates() {
     g->updateGeometry();
 }
 
+/////////////////////////////////////////////////////////////////////////
+
 void Guide::updateGeometry() {
   if (_parent == nullptr)
     return;
 
-  auto rel = relationshipWith(_parent);
+  auto rel = _relationshipWith(_parent);
   if (rel == Relationship::None)
     return;
 
@@ -55,7 +45,7 @@ void Guide::updateGeometry() {
                       ? _parent->line(Mode::Geometry)
                       : _parent->line(Mode::Rect);
 
-  int signed_offset = _offset * _sign;
+  int signed_offset = _margin * _sign;
 
   switch (_edge) {
     case Edge::Top: {
@@ -107,30 +97,83 @@ void Guide::updateGeometry() {
 
 /////////////////////////////////////////////////////////////////////////
 
+void Guide::_associate(Guide* other) {
+  OrkAssert(other);
+  OrkAssert(_associates.find(other) == _associates.end());
+  _associates.insert(other);
+  //_layout->update();
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+void Guide::_disassociate(Guide* other) {
+  OrkAssert(other);
+  auto it = _associates.find(other);
+  OrkAssert(it != _associates.end());
+  _associates.erase(it);
+  //_layout->update();
+}
+
+/////////////////////////////////////////////////////////////////////////
+void Guide::anchorTo(guide_ptr_t other) {
+  anchorTo(other.get());
+}
+
+void Guide::anchorTo(Guide* other) {
+  if (_edge == Edge::Horizontal or _edge == Edge::Vertical)
+    return;
+
+  if (other == _parent)
+    return;
+
+  if (other != nullptr and _layout == other->_layout)
+    return;
+
+  if (_parent != nullptr) {
+    _parent->_disassociate(this);
+    _parent = nullptr;
+  }
+
+  if (other == nullptr)
+    return;
+
+  if (this->isVertical() and not other->isVertical())
+    return;
+
+  // paranoia check
+  if (this->isHorizontal() and not other->isHorizontal())
+    return;
+
+  _parent = other;
+  _parent->_associate(this);
+}
+
+/////////////////////////////////////////////////////////////////////////
+
 bool Guide::isVertical() const {
-  return _edge == Edge::Left ||             //
-         _edge == Edge::Right ||            //
-         _edge == Edge::HorizontalCenter || //
+  return _edge == Edge::Left or             //
+         _edge == Edge::Right or            //
+         _edge == Edge::HorizontalCenter or //
          _edge == Edge::Vertical;
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 bool Guide::isHorizontal() const {
-  return _edge == Edge::Top ||            //
-         _edge == Edge::Bottom ||         //
-         _edge == Edge::VerticalCenter || //
+  return _edge == Edge::Top or            //
+         _edge == Edge::Bottom or         //
+         _edge == Edge::VerticalCenter or //
          _edge == Edge::Horizontal;
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-Relationship Guide::relationshipWith(const Guide* other) const {
+Relationship Guide::_relationshipWith(Guide* other) const {
 
   auto mywidget    = _layout->_widget;
   auto otherwidget = other->_layout->_widget;
 
-  if (otherwidget == mywidget->parent())
+  if (otherwidget.get() == mywidget->parent())
     return Relationship::ParentChild;
 
   if (otherwidget->parent() == mywidget->parent())
