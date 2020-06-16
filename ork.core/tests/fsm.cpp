@@ -12,6 +12,9 @@ static void logstate(const char* pstr) {
 }
 
 struct ROOT : public State {
+  ROOT(StateMachine* machine)
+      : State(machine) {
+  }
   void OnEnter() {
     logstate("ROOT.enter\n");
   }

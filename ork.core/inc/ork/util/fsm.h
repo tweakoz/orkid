@@ -20,6 +20,7 @@
 namespace ork::fsm {
 
 struct State;
+struct StateMachine;
 using state_ptr_t = std::shared_ptr<State>;
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -48,8 +49,9 @@ template <typename T> const std::type_info* trans_key() {
 /////////////////////////////////////////////////////////////////////////////////////
 
 struct State {
-  State(state_ptr_t p = nullptr)
-      : _parent(p) {
+  State(StateMachine* machine, state_ptr_t p = nullptr)
+      : _machine(machine)
+      , _parent(p) {
   }
 
   typedef const std::type_info* event_key_t;
@@ -64,12 +66,13 @@ struct State {
 
   trans_map_t mTransitions;
   state_ptr_t _parent;
+  StateMachine* _machine = nullptr;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////
 
 struct LambdaState : public State {
-  LambdaState(state_ptr_t p);
+  LambdaState(StateMachine* machine, state_ptr_t p);
   void OnEnter();
   void OnExit();
   void OnUpdate();
@@ -117,7 +120,7 @@ private:
 /////////////////////////////////////////////////////////////////////////////////////
 
 template <typename T> std::shared_ptr<T> StateMachine::NewState(state_ptr_t par) {
-  auto pst = std::make_shared<T>(par);
+  auto pst = std::make_shared<T>(this, par);
   AddState(pst);
   return pst;
 }
@@ -125,7 +128,7 @@ template <typename T> std::shared_ptr<T> StateMachine::NewState(state_ptr_t par)
 /////////////////////////////////////////////////////////////////////////////////////
 
 template <typename T> std::shared_ptr<T> StateMachine::NewState() {
-  auto pst = std::make_shared<T>();
+  auto pst = std::make_shared<T>(this);
   AddState(pst);
   return pst;
 }

@@ -181,8 +181,8 @@ void StateMachine::Update() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-LambdaState::LambdaState(state_ptr_t p)
-    : State(p) {
+LambdaState::LambdaState(StateMachine* machine, state_ptr_t p)
+    : State(machine, p) {
 }
 void LambdaState::OnEnter() {
   if (_onenter)
