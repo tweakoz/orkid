@@ -1,6 +1,6 @@
 #include <ork/pch.h>
 #include <ork/lev2/ui/anchor.h>
-#include <ork/lev2/ui/widget.h>
+#include <ork/lev2/ui/box.h>
 #include <ork/lev2/ui/split_panel.h>
 #include <ork/lev2/ui/viewport.h>
 #include <ork/lev2/ui/layoutgroup.inl>
@@ -93,5 +93,6 @@ int main(int argc, char** argv) {
   //////////////////////////////////////
   auto app   = createEZapp(argc, argv);
   app->_uivp = vp;
+  app->setRefreshPolicy({EREFRESH_FIXEDFPS, 60});
   return app->exec();
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ork/lev2/ui/widget.h>
+#include <ork/lev2/ui/group.h>
 
 namespace ork { namespace ui {
 

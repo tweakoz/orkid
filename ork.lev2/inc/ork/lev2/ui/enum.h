@@ -11,14 +11,14 @@ namespace ork { namespace ui {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enum EUIWidgetState { //																					Keyboard	Mouse
-                      //Joystick
+enum EUIWidgetState { //
+                      //                                      Joystick Keyboard	Mouse
 
-  EUI_WIDGET_OFF = 0, // 'visually' off									yes		yes		yes
-  EUI_WIDGET_HOVER,   // focus has stayed here for a certain time			yes		yes		yes
-  EUI_WIDGET_ENTER,   // this widget just recieved focus					yes		yes		yes
-  EUI_WIDGET_EXIT,    // this widget just lost focus						yes		yes		yes
-  EUI_WIDGET_DRAG,    // mouse is dragging widget							no		yes		no
+  EUI_WIDGET_OFF = 0, // 'visually' off									           yes		yes		yes
+  EUI_WIDGET_HOVER,   // focus has stayed here for a certain time	 yes		yes		yes
+  EUI_WIDGET_ENTER,   // this widget just recieved focus					 yes		yes		yes
+  EUI_WIDGET_EXIT,    // this widget just lost focus						   yes		yes		yes
+  EUI_WIDGET_DRAG,    // mouse is dragging widget							      no		yes		no
 };                    // 3 bits
 
 enum EUIEventCode {

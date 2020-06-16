@@ -1,12 +1,11 @@
 #include <ork/pch.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/rtgroup.h>
-#include <ork/lev2/ui/viewport.h>
-#include <ork/lev2/ui/event.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/util/hotkey.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
+#include <ork/lev2/ui/box.h>
 
 namespace ork::ui {
 
@@ -168,6 +167,7 @@ void EvTestBox::DoDraw(drawevent_constptr_t drwev) {
 
     defmtl->_rasterstate.SetBlending(lev2::EBLENDING_ALPHA);
     defmtl->_rasterstate.SetDepthTest(lev2::EDEPTHTEST_OFF);
+    ///////////////////////////////
     tgt->PushModColor(color);
     primi.RenderQuadAtZ(
         defmtl.get(),
@@ -182,6 +182,24 @@ void EvTestBox::DoDraw(drawevent_constptr_t drwev) {
         0.0f,
         1.0f // v0, v1
     );
+    tgt->PopModColor();
+    ///////////////////////////////
+    if (not HasMouseFocus()) {
+      tgt->PushModColor(color * 0.5f);
+      primi.RenderQuadAtZ(
+          defmtl.get(),
+          tgt,
+          ix1 + 1, // x0
+          ix2 - 2, // x1
+          iy1 + 1, // y0
+          iy2 - 2, // y1
+          0.0f,    // z
+          0.0f,
+          1.0f, // u0, u1
+          0.0f,
+          1.0f // v0, v1
+      );
+    }
     tgt->PopModColor();
   }
   mtxi->PopUIMatrix();

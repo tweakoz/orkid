@@ -46,6 +46,8 @@ Widget::Widget(const std::string& name, int x, int y, int w, int h)
   _prevGeometry = _geometry;
 
   pushEventFilter<ui::NopEventFilter>();
+
+  //_eventRoutingFSM
 }
 Widget::~Widget() {
   if (gFastPath == this)
@@ -336,7 +338,7 @@ void Widget::UpdateMouseFocus(const HandlerResult& r, event_constptr_t Ev) {
 
   Widget* plfp = gFastPath;
 
-  switch (filtev.miEventCode) {
+  switch (Ev->miEventCode) {
     case ui::UIEV_PUSH:
       gMouseFocus = r.mHandler;
       gFastPath   = r.mHandler;
@@ -353,18 +355,18 @@ void Widget::UpdateMouseFocus(const HandlerResult& r, event_constptr_t Ev) {
       break;
   }
   if (plfp != gFastPath) {
-    // if( plfp )
-    //	printf( "widget<%p:%s> has lost the fastpath\n", plfp, plfp->msName.c_str() );
+    if (plfp)
+      printf("widget<%p:%s> has lost the fastpath\n", plfp, plfp->msName.c_str());
 
-    // if( gFastPath )
-    //	printf( "widget<%p:%s> now has the fastpath\n", gFastPath, gFastPath->msName.c_str() );
+    if (gFastPath)
+      printf("widget<%p:%s> now has the fastpath\n", gFastPath, gFastPath->msName.c_str());
   }
 
   if (ponexit)
-    ponexit->DoOnExit();
+    ponexit->exit();
 
   if (ponenter)
-    ponenter->DoOnEnter();
+    ponenter->enter();
 }
 
 HandlerResult Widget::DoOnUiEvent(event_constptr_t Ev) {
@@ -387,30 +389,25 @@ bool Widget::IsEventInside(event_constptr_t Ev) const {
 /////////////////////////////////////////////////////////////////////////
 
 void Widget::LocalToRoot(int lx, int ly, int& rx, int& ry) const {
-  rx = lx;
-  ry = ly;
-
+  bool ishidpi    = mpTarget ? mpTarget->hiDPI() : false;
+  rx              = lx;
+  ry              = ly;
   const Widget* w = this;
-  while (w) //->parent() )
-  {
+  while (w) {
     rx += w->x();
     ry += w->y();
-
     w = w->parent();
   }
-  bool ishidpi = mpTarget ? mpTarget->hiDPI() : false;
 }
 
 void Widget::RootToLocal(int rx, int ry, int& lx, int& ly) const {
-  lx = rx;
-  ly = ry;
-
+  bool ishidpi    = mpTarget ? mpTarget->hiDPI() : false;
+  lx              = rx;
+  ly              = ry;
   const Widget* w = this;
-  while (w) //->parent() )
-  {
+  while (w) {
     lx -= w->x();
     ly -= w->y();
-
     w = w->parent();
   }
 }
@@ -558,6 +555,19 @@ bool Widget::IsHotKeyDepressed(const HotKey& hk) {
   }
 
   return HotKeyManager::IsDepressed(hk);
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+Group* Widget::root() const {
+  Group* node = mParent;
+  while (node) {
+    if (node->mParent == nullptr)
+      return node;
+    else
+      node = node->mParent;
+  }
+  return nullptr;
 }
 
 /////////////////////////////////////////////////////////////////////////
