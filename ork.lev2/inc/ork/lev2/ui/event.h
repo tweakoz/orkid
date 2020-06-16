@@ -31,23 +31,23 @@ struct HandlerResult {
 };
 
 struct EventCooked {
-  int miEventCode  = -1;
-  int miKeyCode    = -1;
-  int miX          = 0;
-  int miY          = 0;
-  int mLastX       = 0;
-  int mLastY       = 0;
-  float mUnitX     = 0.0f;
-  float mUnitY     = 0.0f;
-  float mLastUnitX = 0.0f;
-  float mLastUnitY = 0.0f;
-  bool mBut0       = false;
-  bool mBut1       = false;
-  bool mBut2       = false;
-  bool mCTRL       = false;
-  bool mALT        = false;
-  bool mSHIFT      = false;
-  bool mMETA       = false;
+  EventCode _eventcode = EventCode::UNKNOWN;
+  int miKeyCode        = -1;
+  int miX              = 0;
+  int miY              = 0;
+  int mLastX           = 0;
+  int mLastY           = 0;
+  float mUnitX         = 0.0f;
+  float mUnitY         = 0.0f;
+  float mLastUnitX     = 0.0f;
+  float mLastUnitY     = 0.0f;
+  bool mBut0           = false;
+  bool mBut1           = false;
+  bool mBut2           = false;
+  bool mCTRL           = false;
+  bool mALT            = false;
+  bool mSHIFT          = false;
+  bool mMETA           = false;
   ork::FixedString<64> mAction;
 
   void Reset();
@@ -55,22 +55,20 @@ struct EventCooked {
 
 struct Event final // RawEvent
 {
-  int mEventCode = -1;
-
   lev2::OffscreenBuffer* mpGfxWin = nullptr;
   Coordinate mUICoord;
 
-  int miEventCode = -1;
-  int miX         = 0;
-  int miY         = 0;
-  int miRawX      = 0;
-  int miRawY      = 0;
-  int miLastX     = 0;
-  int miLastY     = 0;
-  int miMWY       = 0;
-  int miState     = 0;
-  int miKeyCode   = 0;
-  int miNumHits   = 0;
+  EventCode _eventcode = EventCode::UNKNOWN;
+  int miX              = 0;
+  int miY              = 0;
+  int miRawX           = 0;
+  int miRawY           = 0;
+  int miLastX          = 0;
+  int miLastY          = 0;
+  int miMWY            = 0;
+  int miState          = 0;
+  int miKeyCode        = 0;
+  int miNumHits        = 0;
 
   f32 mfX         = 0.0f;
   f32 mfY         = 0.0f;

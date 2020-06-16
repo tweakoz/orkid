@@ -165,9 +165,9 @@ singularitytestapp_ptr_t createEZapp(int& argc, char** argv) {
   qtapp->onUiEvent([=](ui::event_constptr_t ev) -> ui::HandlerResult {
     bool isalt  = ev->mbALT;
     bool isctrl = ev->mbCTRL;
-    switch (ev->miEventCode) {
-      case ui::UIEV_KEY:
-      case ui::UIEV_KEY_REPEAT:
+    switch (ev->_eventcode) {
+      case ui::EventCode::KEY:
+      case ui::EventCode::KEY_REPEAT:
         switch (ev->miKeyCode) {
           case 'p':
             the_synth->_hudpage = (the_synth->_hudpage + 1) % 2;
@@ -213,7 +213,7 @@ singularitytestapp_ptr_t createEZapp(int& argc, char** argv) {
         }
         break;
       default:
-        return qtapp->_hudvp->HandleUiEvent(ev);
+        return qtapp->_hudvp->handleUiEvent(ev);
         break;
     }
     ui::HandlerResult rval;

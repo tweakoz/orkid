@@ -152,7 +152,7 @@ public:
   bool IsHotKeyDepressed(const char* pact);
   bool IsHotKeyDepressed(const HotKey& hk);
 
-  HandlerResult HandleUiEvent(event_constptr_t Ev);
+  HandlerResult handleUiEvent(event_constptr_t Ev);
 
   bool IsEventInside(event_constptr_t Ev) const;
 
@@ -170,12 +170,12 @@ public:
   virtual void OnResize(void);
   HandlerResult OnUiEvent(event_constptr_t Ev);
 
-  bool HasMouseFocus() const;
+  bool hasMouseFocus() const;
   void SetParent(Group* p) {
     mParent = p;
   }
 
-  HandlerResult RouteUiEvent(event_constptr_t Ev);
+  Widget* routeUiEvent(event_constptr_t Ev);
 
   float logicalWidth() const;
   float logicalHeight() const;
@@ -186,6 +186,8 @@ public:
     return _geometry;
   }
   void setGeometry(Rect geo);
+
+  Context* _uicontext = nullptr;
 
 protected:
   fsm::StateMachine _eventRoutingFSM;
@@ -216,7 +218,7 @@ private:
   void ReLayout();
   virtual void DoLayout() {
   }
-  virtual HandlerResult DoRouteUiEvent(event_constptr_t Ev);
+  virtual Widget* doRouteUiEvent(event_constptr_t Ev);
 };
 
 } // namespace ork::ui

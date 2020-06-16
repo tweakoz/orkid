@@ -21,7 +21,7 @@ public:
   fvec4 _color;
 
 private:
-  HandlerResult DoRouteUiEvent(event_constptr_t Ev) override;
+  HandlerResult DoOnUiEvent(event_constptr_t Ev) override;
   void DoDraw(ui::drawevent_constptr_t drwev) override;
 };
 
@@ -56,10 +56,10 @@ public:
   fvec4 _colorClick;
   fvec4 _colorDoubleClick;
   fvec4 _colorDrag;
-  int _colorsel = 0;
+  EventCode _colorsel = EventCode::UNKNOWN;
 
 private:
-  HandlerResult DoRouteUiEvent(event_constptr_t Ev) override;
+  HandlerResult DoOnUiEvent(event_constptr_t Ev) override;
   void DoDraw(ui::drawevent_constptr_t drwev) override;
 };
 

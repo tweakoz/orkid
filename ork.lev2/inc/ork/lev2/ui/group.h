@@ -22,7 +22,7 @@ public:
   Widget* _eventstealer = nullptr;
 
 protected:
-  HandlerResult DoRouteUiEvent(event_constptr_t Ev) override;
+  Widget* doRouteUiEvent(event_constptr_t Ev) override;
 
 private:
   void OnResize() override;

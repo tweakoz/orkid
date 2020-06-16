@@ -170,7 +170,6 @@ void EzViewport::DoSurfaceResize() {
 }
 /////////////////////////////////////////////////
 ui::HandlerResult EzViewport::DoOnUiEvent(ui::event_constptr_t ev) {
-  OrkAssert(ev->mEventCode != ui::UIEV_KEY);
   if (_mainwin->_onUiEvent) {
     return _mainwin->_onUiEvent(ev);
   } else

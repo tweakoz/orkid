@@ -20,6 +20,7 @@
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 ///////////////////////////////////////////////////////////////////////////////
+#include <ork/lev2/ui/context.h>
 
 namespace po = boost::program_options;
 
@@ -35,7 +36,10 @@ UiTestApp::UiTestApp(int& argc, char** argv)
 UiTestApp::~UiTestApp() {
 }
 
-uitestapp_ptr_t createEZapp(int& argc, char** argv) {
+uitestapp_ptr_t createEZapp(
+    ui::context_ptr_t uicontext, //
+    int& argc,
+    char** argv) {
 
   //////////////////////////////////////////////////////////////////////////////
   // boot up debug HUD
@@ -131,9 +135,9 @@ uitestapp_ptr_t createEZapp(int& argc, char** argv) {
   qtapp->onUiEvent([=](ui::event_constptr_t ev) -> ui::HandlerResult {
     bool isalt  = ev->mbALT;
     bool isctrl = ev->mbCTRL;
-    switch (ev->miEventCode) {
-      case ui::UIEV_KEY:
-      case ui::UIEV_KEY_REPEAT:
+    switch (ev->_eventcode) {
+      case ui::EventCode::KEY:
+      case ui::EventCode::KEY_REPEAT:
         switch (ev->miKeyCode) {
           case 'p':
             break;
@@ -142,7 +146,8 @@ uitestapp_ptr_t createEZapp(int& argc, char** argv) {
         }
         break;
       default:
-        return qtapp->_uivp->HandleUiEvent(ev);
+        return uicontext->handleEvent(ev);
+        // return qtapp->_uivp->HandleUiEvent(ev);
         break;
     }
     ui::HandlerResult rval;

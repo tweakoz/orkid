@@ -34,7 +34,6 @@ private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;
   void OnResize() override;
   void DoLayout() override;
-  HandlerResult DoRouteUiEvent(event_constptr_t Ev) override;
 };
 
 } // namespace ork::ui

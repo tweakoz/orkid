@@ -356,8 +356,8 @@ public:
     CheckVis();
   }
   void OnUiEvent(ork::ui::event_constptr_t ev) final {
-    switch (ev->miEventCode) {
-      case ui::UIEV_DOUBLECLICK: {
+    switch (ev->_eventcode) {
+      case ui::EventCode::DOUBLECLICK: {
         const int klabh = get_charh();
         const int kdim  = klabh - 2;
 
@@ -491,9 +491,9 @@ public:
         }
         break;
       }
-      case ui::UIEV_DRAG:
-      case ui::UIEV_MOVE:
-      case ui::UIEV_RELEASE:
+      case ui::EventCode::DRAG:
+      case ui::EventCode::MOVE:
+      case ui::EventCode::RELEASE:
         mFloatSlider.OnUiEvent(ev);
         mModel.SigRepaint();
         break;

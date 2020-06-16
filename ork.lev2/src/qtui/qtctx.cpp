@@ -71,7 +71,7 @@ void QCtxWidget::SendOrkUiEvent() {
   auto uiev = uievent();
   if (uiev->mpGfxWin) {
     uiev->_vpdim = fvec2(miWidth, miHeight);
-    uiev->mpGfxWin->GetRootWidget()->HandleUiEvent(uiev);
+    uiev->mpGfxWin->GetRootWidget()->handleUiEvent(uiev);
   }
 }
 
@@ -204,9 +204,9 @@ void QCtxWidget::mouseMoveEvent(QMouseEvent* event) {
 
   bool isbutton = (Buttons != Qt::NoButton);
 
-  uiev->miEventCode = (isbutton and _pushTimer.SecsSinceStart() > 0.125) //
-                          ? ork::ui::UIEV_DRAG
-                          : ork::ui::UIEV_MOVE;
+  uiev->_eventcode = (isbutton and _pushTimer.SecsSinceStart() > 0.125) //
+                         ? ork::ui::EventCode::DRAG
+                         : ork::ui::EventCode::MOVE;
 
   if (vp) {
     uiev->_vpdim = fvec2(vp->width(), vp->height());
@@ -214,7 +214,7 @@ void QCtxWidget::mouseMoveEvent(QMouseEvent* event) {
       uiev->_vpdim *= 0.5;
     }
     // gpos.x /= 2.0f;
-    vp->HandleUiEvent(uiev);
+    vp->handleUiEvent(uiev);
   }
   if (mpCtxBase)
     mpCtxBase->SlotRepaint();
@@ -224,17 +224,17 @@ void QCtxWidget::mouseMoveEvent(QMouseEvent* event) {
 
 void QCtxWidget::mousePressEvent(QMouseEvent* event) {
   MouseEventCommon(event);
-  auto uiev         = uievent();
-  auto gfxwin       = uiev->mpGfxWin;
-  auto vp           = gfxwin ? gfxwin->GetRootWidget() : nullptr;
-  uiev->miEventCode = ork::ui::UIEV_PUSH;
+  auto uiev        = uievent();
+  auto gfxwin      = uiev->mpGfxWin;
+  auto vp          = gfxwin ? gfxwin->GetRootWidget() : nullptr;
+  uiev->_eventcode = ork::ui::EventCode::PUSH;
   if (vp) {
 
     uiev->_vpdim = fvec2(vp->width(), vp->height());
     if (_HIDPI()) {
       uiev->_vpdim *= 0.5;
     }
-    vp->HandleUiEvent(uiev);
+    vp->handleUiEvent(uiev);
 
     _pushTimer.Start();
   }
@@ -246,17 +246,17 @@ void QCtxWidget::mousePressEvent(QMouseEvent* event) {
 
 void QCtxWidget::mouseDoubleClickEvent(QMouseEvent* event) {
   MouseEventCommon(event);
-  auto uiev         = uievent();
-  auto gfxwin       = uiev->mpGfxWin;
-  auto vp           = gfxwin ? gfxwin->GetRootWidget() : nullptr;
-  uiev->miEventCode = ork::ui::UIEV_DOUBLECLICK;
+  auto uiev        = uievent();
+  auto gfxwin      = uiev->mpGfxWin;
+  auto vp          = gfxwin ? gfxwin->GetRootWidget() : nullptr;
+  uiev->_eventcode = ork::ui::EventCode::DOUBLECLICK;
 
   if (vp) {
     uiev->_vpdim = fvec2(vp->width(), vp->height());
     if (_HIDPI()) {
       uiev->_vpdim *= 0.5;
     }
-    vp->HandleUiEvent(uiev);
+    vp->handleUiEvent(uiev);
   }
   if (mpCtxBase)
     mpCtxBase->SlotRepaint();
@@ -267,10 +267,10 @@ void QCtxWidget::mouseDoubleClickEvent(QMouseEvent* event) {
 void QCtxWidget::mouseReleaseEvent(QMouseEvent* event) {
   printf("gotrelease\n");
   MouseEventCommon(event);
-  auto uiev         = uievent();
-  auto gfxwin       = uiev->mpGfxWin;
-  auto vp           = gfxwin ? gfxwin->GetRootWidget() : nullptr;
-  uiev->miEventCode = ork::ui::UIEV_RELEASE;
+  auto uiev        = uievent();
+  auto gfxwin      = uiev->mpGfxWin;
+  auto vp          = gfxwin ? gfxwin->GetRootWidget() : nullptr;
+  uiev->_eventcode = ork::ui::EventCode::RELEASE;
 
   //////////////////////////////////////
 
@@ -279,7 +279,7 @@ void QCtxWidget::mouseReleaseEvent(QMouseEvent* event) {
     if (_HIDPI()) {
       uiev->_vpdim *= 0.5;
     }
-    vp->HandleUiEvent(uiev);
+    vp->handleUiEvent(uiev);
   }
 
   _evstealwidget = nullptr;
@@ -312,7 +312,7 @@ void QCtxWidget::wheelEvent(QWheelEvent* qem) {
   uiev->mbSHIFT = (modifiers & Qt::ShiftModifier);
   uiev->mbMETA  = (modifiers & Qt::MetaModifier);
 
-  uiev->miEventCode = ork::ui::UIEV_MOUSEWHEEL;
+  uiev->_eventcode = ork::ui::EventCode::MOUSEWHEEL;
 
   uiev->miMWY = idelta;
 
@@ -321,7 +321,7 @@ void QCtxWidget::wheelEvent(QWheelEvent* qem) {
     if (_HIDPI()) {
       uiev->_vpdim *= 0.5;
     }
-    vp->HandleUiEvent(uiev);
+    vp->handleUiEvent(uiev);
   }
 
   if (mpCtxBase)
@@ -337,9 +337,9 @@ void QCtxWidget::keyPressEvent(QKeyEvent* event) {
   auto vp     = gfxwin ? gfxwin->GetRootWidget() : nullptr;
 
   uiev->mpBlindEventData = (void*)event;
-  uiev->miEventCode      = event->isAutoRepeat() //
-                          ? ork::ui::UIEV_KEY_REPEAT
-                          : ork::ui::UIEV_KEY;
+  uiev->_eventcode       = event->isAutoRepeat() //
+                         ? ork::ui::EventCode::KEY_REPEAT
+                         : ork::ui::EventCode::KEY;
 
   int ikeyUNI = event->key();
 
@@ -368,7 +368,7 @@ void QCtxWidget::keyPressEvent(QKeyEvent* event) {
     if (_HIDPI()) {
       uiev->_vpdim *= 0.5;
     }
-    vp->HandleUiEvent(uiev);
+    vp->handleUiEvent(uiev);
   }
 
   if (mpCtxBase)
@@ -386,7 +386,7 @@ void QCtxWidget::keyReleaseEvent(QKeyEvent* event) {
   auto vp     = gfxwin ? gfxwin->GetRootWidget() : nullptr;
 
   uiev->mpBlindEventData = (void*)event;
-  uiev->miEventCode      = ork::ui::UIEV_KEYUP;
+  uiev->_eventcode       = ork::ui::EventCode::KEYUP;
 
   int ikeyUNI = event->key();
 
@@ -409,7 +409,7 @@ void QCtxWidget::keyReleaseEvent(QKeyEvent* event) {
     if (_HIDPI()) {
       uiev->_vpdim *= 0.5;
     }
-    vp->HandleUiEvent(uiev);
+    vp->handleUiEvent(uiev);
   }
 
   if (mpCtxBase)
@@ -421,11 +421,11 @@ void QCtxWidget::focusInEvent(QFocusEvent* event) {
   auto uiev              = uievent();
   auto gfxwin            = uiev->mpGfxWin;
   auto vp                = gfxwin ? gfxwin->GetRootWidget() : nullptr;
-  uiev->miEventCode      = ork::ui::UIEV_GOT_KEYFOCUS;
+  uiev->_eventcode       = ork::ui::EventCode::GOT_KEYFOCUS;
   uiev->mpBlindEventData = (void*)event;
   if (Target()) {
     if (vp)
-      vp->HandleUiEvent(uiev);
+      vp->handleUiEvent(uiev);
   }
   // orkprintf( "CTQT %08x got keyboard focus\n", this );
   QWidget::focusInEvent(event);
@@ -440,10 +440,10 @@ void QCtxWidget::focusOutEvent(QFocusEvent* event) {
   auto uiev              = uievent();
   auto gfxwin            = uiev->mpGfxWin;
   auto vp                = gfxwin ? gfxwin->GetRootWidget() : nullptr;
-  uiev->miEventCode      = ork::ui::UIEV_LOST_KEYFOCUS;
+  uiev->_eventcode       = ork::ui::EventCode::LOST_KEYFOCUS;
   uiev->mpBlindEventData = (void*)event;
   if (vp) {
-    vp->HandleUiEvent(uiev);
+    vp->handleUiEvent(uiev);
   }
   // orkprintf( "CTQT %08x lost keyboard focus\n", this );
   QWidget::focusOutEvent(event);

@@ -164,8 +164,8 @@ bool ManipRot::UIEventHandler(ui::event_constptr_t EV) {
   bool isshift = false; // OldSchool::IsKeyDepressed(VK_SHIFT );
   bool isctrl  = false; // OldSchool::IsKeyDepressed(VK_CONTROL );
 
-  switch (EV->miEventCode) {
-    case ui::UIEV_PUSH: {
+  switch (EV->_eventcode) {
+    case ui::EventCode::PUSH: {
       mManager.mManipHandler.Init(posubp, pcam->_curMatrices.GetIVPMatrix(), pcam->QuatC);
       mBaseTransform = mManager.mCurTransform;
 
@@ -174,13 +174,13 @@ bool ManipRot::UIEventHandler(ui::event_constptr_t EV) {
       brval = true;
     } break;
 
-    case ui::UIEV_RELEASE: {
+    case ui::EventCode::RELEASE: {
       mManager.DisableManip();
 
       brval = true;
     } break;
 
-    case ui::UIEV_DRAG: {
+    case ui::EventCode::DRAG: {
       IntersectWithPlanes(posubp);
 
       if (CheckIntersect()) {

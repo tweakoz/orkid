@@ -53,8 +53,8 @@ void CQtWindow::GotFocus(void) {
     mRootWidget->GotKeyboardFocus();
 
     auto uievent        = std::make_shared<ui::Event>();
-    uievent->mEventCode = ork::ui::UIEV_GOT_KEYFOCUS;
-    mRootWidget->HandleUiEvent(uievent);
+    uievent->_eventcode = ork::ui::EventCode::GOT_KEYFOCUS;
+    mRootWidget->handleUiEvent(uievent);
   }
   mbHasFocus = true;
 }
@@ -66,8 +66,8 @@ void CQtWindow::LostFocus(void) {
     mRootWidget->LostKeyboardFocus();
 
     auto uievent        = std::make_shared<ui::Event>();
-    uievent->mEventCode = ork::ui::UIEV_LOST_KEYFOCUS;
-    mRootWidget->HandleUiEvent(uievent);
+    uievent->_eventcode = ork::ui::EventCode::LOST_KEYFOCUS;
+    mRootWidget->handleUiEvent(uievent);
   }
   mbHasFocus = false;
 }

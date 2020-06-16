@@ -3,32 +3,24 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/ui/viewport.h>
 #include <ork/lev2/ui/event.h>
+#include <ork/lev2/ui/context.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/util/hotkey.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
-
+///////////////////////////////////////////////////////////
 INSTANTIATE_TRANSPARENT_RTTI(ork::ui::Widget, "ui::Widget");
-
-namespace ork { namespace ui {
-
-static Widget* gMouseFocus = nullptr;
-static Widget* gFastPath   = nullptr;
-
+///////////////////////////////////////////////////////////
+namespace ork::ui {
 /////////////////////////////////////////////////////////////////////////
-
 HandlerResult::HandlerResult(Widget* ph)
     : mHandler(ph)
     , mHoldFocus(false) {
 }
-
 /////////////////////////////////////////////////////////////////////////
-
 void Widget::Describe() {
 }
-
 /////////////////////////////////////////////////////////////////////////
-
 Widget::Widget(const std::string& name, int x, int y, int w, int h)
     : msName(name)
     , mpTarget(0)
@@ -54,41 +46,41 @@ Widget::Widget(const std::string& name, int x, int y, int w, int h)
   childdragging->_onexit   = []() {};
   childdragging->_onupdate = []() {};
 }
+///////////////////////////////////////////////////////////
 Widget::~Widget() {
-  if (gFastPath == this)
-    gFastPath = nullptr;
 }
-
+///////////////////////////////////////////////////////////
 void Widget::Init(lev2::Context* pT) {
   DoInit(pT);
 }
-
+///////////////////////////////////////////////////////////
 void Widget::setGeometry(Rect newgeo) {
   _prevGeometry = _geometry;
   _geometry     = newgeo;
   mSizeDirty    = true;
   ReLayout();
 }
-
-HandlerResult Widget::HandleUiEvent(event_constptr_t Ev) {
-  HandlerResult ret;
-
-  if (gFastPath) {
-    ret = gFastPath->RouteUiEvent(Ev);
-  } else {
-    bool binside = IsEventInside(Ev);
-
-    if (binside) {
-      ret = RouteUiEvent(Ev);
-    }
-  }
+///////////////////////////////////////////////////////////
+HandlerResult Widget::handleUiEvent(event_constptr_t ev) {
+  Widget* target = this;
+  if (IsEventInside(ev))
+    target = routeUiEvent(ev);
+  return target ? target->OnUiEvent(ev) : HandlerResult();
+}
+///////////////////////////////////////////////////////////
+Widget* Widget::routeUiEvent(event_constptr_t Ev) {
+  auto ret = doRouteUiEvent(Ev);
   return ret;
 }
-
-bool Widget::HasMouseFocus() const {
-  return (this == gMouseFocus);
+///////////////////////////////////////////////////////////
+Widget* Widget::doRouteUiEvent(event_constptr_t Ev) {
+  return this;
 }
-
+///////////////////////////////////////////////////////////
+bool Widget::hasMouseFocus() const {
+  return _uicontext->hasMouseFocus(this);
+}
+///////////////////////////////////////////////////////////
 HandlerResult Widget::OnUiEvent(event_constptr_t Ev) {
   Ev->mFilteredEvent.Reset();
   // printf("Widget<%p>::OnUiEvent\n", this);
@@ -96,99 +88,22 @@ HandlerResult Widget::OnUiEvent(event_constptr_t Ev) {
   if (_eventfilterstack.size()) {
     auto top = _eventfilterstack.top();
     top->Filter(Ev);
-    if (Ev->mFilteredEvent.miEventCode == 0)
+    if (Ev->mFilteredEvent._eventcode == EventCode::UNKNOWN)
       return HandlerResult();
   }
   return DoOnUiEvent(Ev);
 }
-HandlerResult Widget::RouteUiEvent(event_constptr_t Ev) {
-  auto ret = DoRouteUiEvent(Ev);
-  UpdateMouseFocus(ret, Ev);
-  return ret;
-}
-
-HandlerResult Widget::DoRouteUiEvent(event_constptr_t Ev) {
-  auto ret = OnUiEvent(Ev);
-  // printf( "Widget::RouteUiEvent<%p:%s>\n", this, msName.c_str() );
-  return ret;
-}
-
-void EventCooked::Reset() {
-  miEventCode = 0;
-  miKeyCode   = 0;
-
-  miX        = 0;
-  miY        = 0;
-  mLastX     = 0;
-  mLastY     = 0;
-  mUnitX     = 0.0f;
-  mUnitY     = 0.0f;
-  mLastUnitX = 0.0f;
-  mLastUnitY = 0.0f;
-
-  mBut0   = false;
-  mBut1   = false;
-  mBut2   = false;
-  mCTRL   = false;
-  mALT    = false;
-  mSHIFT  = false;
-  mMETA   = false;
-  mAction = "";
-}
-
-IWidgetEventFilter::IWidgetEventFilter(Widget& w)
-    : mWidget(w)
-    , mShiftDown(false)
-    , mCtrlDown(false)
-    , mMetaDown(false)
-    , mAltDown(false)
-    , mLeftDown(false)
-    , mMiddleDown(false)
-    , mRightDown(false)
-    , mCapsDown(false)
-    , mLastKeyCode(0)
-    , mBut0Down(false)
-    , mBut1Down(false)
-    , mBut2Down(false) {
-  mKeyTimer.Start();
-  mDoubleTimer.Start();
-  mMoveTimer.Start();
-}
-
-void IWidgetEventFilter::Filter(event_constptr_t Ev) {
-  auto& fev       = Ev->mFilteredEvent;
-  fev.miEventCode = Ev->miEventCode;
-  fev.mBut0       = Ev->mbLeftButton;
-  fev.mBut1       = Ev->mbMiddleButton;
-  fev.mBut2       = Ev->mbRightButton;
-
-  fev.miX        = Ev->miX;
-  fev.miY        = Ev->miY;
-  fev.mLastX     = Ev->miLastX;
-  fev.mLastY     = Ev->miLastY;
-  fev.mUnitX     = Ev->mfUnitX;
-  fev.mUnitY     = Ev->mfUnitX;
-  fev.mLastUnitX = Ev->mfLastUnitX;
-  fev.mLastUnitY = Ev->mfLastUnitY;
-
-  fev.miKeyCode = Ev->miKeyCode;
-  fev.mCTRL     = Ev->mbCTRL;
-  fev.mALT      = Ev->mbALT;
-  fev.mSHIFT    = Ev->mbSHIFT;
-  fev.mMETA     = Ev->mbMETA;
-
-  DoFilter(Ev);
-}
+///////////////////////////////////////////////////////////
 void NopEventFilter::DoFilter(event_constptr_t Ev) {
 }
-
+///////////////////////////////////////////////////////////
 void Apple3ButtonMouseEmulationFilter::DoFilter(event_constptr_t Ev) {
   auto& fev = Ev->mFilteredEvent;
 
   fev.mAction = "none";
 
-  switch (Ev->miEventCode) {
-    case ui::UIEV_KEY: {
+  switch (Ev->_eventcode) {
+    case ui::EventCode::KEY: {
       float kt = mKeyTimer.SecsSinceStart();
       float dt = mDoubleTimer.SecsSinceStart();
       float mt = mMoveTimer.SecsSinceStart();
@@ -197,13 +112,13 @@ void Apple3ButtonMouseEmulationFilter::DoFilter(event_constptr_t Ev) {
 
       // printf("keydown<%d> lk<%d> kt<%f> dt<%f> mt<%f>\n", mLastKeyCode, Ev->miKeyCode, kt, dt, mt);
 
-      auto evc = bdouble ? ui::UIEV_DOUBLECLICK : ui::UIEV_PUSH;
+      auto evc = bdouble ? ui::EventCode::DOUBLECLICK : ui::EventCode::PUSH;
 
       mKeyTimer.Start();
       switch (Ev->miKeyCode) {
         case 'z': // synthetic left button
-          fev.miEventCode = evc;
-          if (fev.miEventCode == ui::UIEV_DOUBLECLICK) {
+          fev._eventcode = evc;
+          if (fev._eventcode == ui::EventCode::DOUBLECLICK) {
             printf("SYNTH DOUBLECLICK\n");
           } else {
             bdouble = false;
@@ -213,8 +128,8 @@ void Apple3ButtonMouseEmulationFilter::DoFilter(event_constptr_t Ev) {
           fev.mAction = "keypush";
           break;
         case 'x': // synthetic middle button
-          fev.miEventCode = mBut1Down ? 0 : evc;
-          if (fev.miEventCode == ui::UIEV_DOUBLECLICK) {
+          fev._eventcode = mBut1Down ? EventCode::UNKNOWN : evc;
+          if (fev._eventcode == ui::EventCode::DOUBLECLICK) {
           } // printf( "SYNTH DOUBLECLICK\n" );
           else {
             bdouble = false;
@@ -224,8 +139,8 @@ void Apple3ButtonMouseEmulationFilter::DoFilter(event_constptr_t Ev) {
           fev.mAction = "keypush";
           break;
         case 'c': // synthetic right button
-          fev.miEventCode = mBut2Down ? 0 : evc;
-          if (fev.miEventCode == ui::UIEV_DOUBLECLICK) {
+          fev._eventcode = mBut2Down ? EventCode::UNKNOWN : evc;
+          if (fev._eventcode == ui::EventCode::DOUBLECLICK) {
           } // printf( "SYNTH DOUBLECLICK\n" );
           else {
             bdouble = false;
@@ -255,26 +170,26 @@ void Apple3ButtonMouseEmulationFilter::DoFilter(event_constptr_t Ev) {
       }
       break;
     }
-    case ui::UIEV_KEYUP:
+    case ui::EventCode::KEYUP:
       // printf( "keyup<%d>\n", Ev->miKeyCode );
       switch (Ev->miKeyCode) {
         case 49:
         case 122: // z
-          fev.miEventCode = ui::UIEV_RELEASE;
-          fev.mBut0       = false;
-          mBut0Down       = false;
+          fev._eventcode = ui::EventCode::RELEASE;
+          fev.mBut0      = false;
+          mBut0Down      = false;
           break;
         case 120: // x
         case 50:
-          fev.miEventCode = ui::UIEV_RELEASE;
-          fev.mBut1       = false;
-          mBut1Down       = false;
+          fev._eventcode = ui::EventCode::RELEASE;
+          fev.mBut1      = false;
+          mBut1Down      = false;
           break;
         case 99: // c
         case 51:
-          fev.miEventCode = ui::UIEV_RELEASE;
-          fev.mBut2       = false;
-          mBut2Down       = false;
+          fev._eventcode = ui::EventCode::RELEASE;
+          fev.mBut2      = false;
+          mBut2Down      = false;
           break;
         case Widget::keycode_shift:
           mShiftDown = false;
@@ -292,9 +207,9 @@ void Apple3ButtonMouseEmulationFilter::DoFilter(event_constptr_t Ev) {
           break;
       }
       break;
-    case ui::UIEV_MOVE:
+    case ui::EventCode::MOVE:
       if (mBut0Down or mBut1Down or mBut2Down) {
-        fev.miEventCode = ui::UIEV_DRAG;
+        fev._eventcode = ui::EventCode::DRAG;
         // printf( "SYNTH DRAG\n" );
         fev.mBut0 = mBut0Down;
         fev.mBut1 = mBut1Down;
@@ -302,7 +217,7 @@ void Apple3ButtonMouseEmulationFilter::DoFilter(event_constptr_t Ev) {
       }
       mMoveTimer.Start();
       break;
-    case ui::UIEV_PUSH:
+    case ui::EventCode::PUSH:
       fev.mBut0   = Ev->mbLeftButton;
       fev.mBut1   = Ev->mbMiddleButton;
       fev.mBut2   = Ev->mbRightButton;
@@ -314,7 +229,7 @@ void Apple3ButtonMouseEmulationFilter::DoFilter(event_constptr_t Ev) {
       mRightDown  = Ev->mbRightButton;
       mMoveTimer.Start();
       break;
-    case ui::UIEV_RELEASE:
+    case ui::EventCode::RELEASE:
       fev.mBut0   = Ev->mbLeftButton;
       fev.mBut1   = Ev->mbMiddleButton;
       fev.mBut2   = Ev->mbRightButton;
@@ -325,59 +240,17 @@ void Apple3ButtonMouseEmulationFilter::DoFilter(event_constptr_t Ev) {
       mMiddleDown = Ev->mbMiddleButton;
       mRightDown  = Ev->mbRightButton;
       break;
-    case ui::UIEV_DRAG:
+    case ui::EventCode::DRAG:
       break;
     default:
       break;
   }
 }
-
-void Widget::UpdateMouseFocus(const HandlerResult& r, event_constptr_t Ev) {
-  Widget* ponenter = nullptr;
-  Widget* ponexit  = nullptr;
-
-  const auto& filtev = Ev->mFilteredEvent;
-
-  if (r.mHandler != gMouseFocus) {
-  }
-
-  Widget* plfp = gFastPath;
-
-  switch (Ev->miEventCode) {
-    case ui::UIEV_PUSH:
-      gMouseFocus = r.mHandler;
-      gFastPath   = r.mHandler;
-      break;
-    case ui::UIEV_RELEASE:
-      if (gFastPath)
-        ponexit = gFastPath;
-      gFastPath   = nullptr;
-      gMouseFocus = nullptr;
-      break;
-    case ui::UIEV_MOVE:
-    case ui::UIEV_DRAG:
-    default:
-      break;
-  }
-  if (plfp != gFastPath) {
-    if (plfp)
-      printf("widget<%p:%s> has lost the fastpath\n", plfp, plfp->msName.c_str());
-
-    if (gFastPath)
-      printf("widget<%p:%s> now has the fastpath\n", gFastPath, gFastPath->msName.c_str());
-  }
-
-  if (ponexit)
-    ponexit->exit();
-
-  if (ponenter)
-    ponenter->enter();
-}
-
+///////////////////////////////////////////////////////////
 HandlerResult Widget::DoOnUiEvent(event_constptr_t Ev) {
   return HandlerResult();
 }
-
+///////////////////////////////////////////////////////////
 bool Widget::IsEventInside(event_constptr_t Ev) const {
   int rx = Ev->miX;
   int ry = Ev->miY;
@@ -390,9 +263,7 @@ bool Widget::IsEventInside(event_constptr_t Ev) const {
   bool inside = ngeo.isPointInside(ix, iy);
   return inside;
 }
-
 /////////////////////////////////////////////////////////////////////////
-
 void Widget::LocalToRoot(int lx, int ly, int& rx, int& ry) const {
   bool ishidpi    = mpTarget ? mpTarget->hiDPI() : false;
   rx              = lx;
@@ -404,7 +275,7 @@ void Widget::LocalToRoot(int lx, int ly, int& rx, int& ry) const {
     w = w->parent();
   }
 }
-
+///////////////////////////////////////////////////////////
 void Widget::RootToLocal(int rx, int ry, int& lx, int& ly) const {
   bool ishidpi    = mpTarget ? mpTarget->hiDPI() : false;
   lx              = rx;
@@ -416,17 +287,13 @@ void Widget::RootToLocal(int rx, int ry, int& lx, int& ly) const {
     w = w->parent();
   }
 }
-
 /////////////////////////////////////////////////////////////////////////
-
 void Widget::SetDirty() {
   mDirty = true;
   if (mParent)
     mParent->mDirty = true;
 }
-
 /////////////////////////////////////////////////////////////////////////
-
 void Widget::Draw(ui::drawevent_constptr_t drwev) {
   _drawEvent = drwev;
   mpTarget   = drwev->GetTarget();
@@ -448,28 +315,27 @@ void Widget::Draw(ui::drawevent_constptr_t drwev) {
   mpTarget   = 0;
   _drawEvent = nullptr;
 }
-
 /////////////////////////////////////////////////////////////////////////
-
 float Widget::logicalWidth() const {
   bool ishidpi = mpTarget ? mpTarget->hiDPI() : false;
   return ishidpi ? width() * 2 : width();
 }
+///////////////////////////////////////////////////////////
 float Widget::logicalHeight() const {
   bool ishidpi = mpTarget ? mpTarget->hiDPI() : false;
   return ishidpi ? height() * 2 : height();
 }
+///////////////////////////////////////////////////////////
 float Widget::logicalX() const {
   bool ishidpi = mpTarget ? mpTarget->hiDPI() : false;
   return ishidpi ? x() * 2 : x();
 }
+///////////////////////////////////////////////////////////
 float Widget::logicalY() const {
   bool ishidpi = mpTarget ? mpTarget->hiDPI() : false;
   return ishidpi ? y() * 2 : y();
 }
-
 /////////////////////////////////////////////////////////////////////////
-
 void Widget::ExtDraw(lev2::Context* pTARG) {
   if (mbInit) {
     ork::lev2::FontMan::GetRef();
@@ -481,9 +347,7 @@ void Widget::ExtDraw(lev2::Context* pTARG) {
   DoDraw(ev);
   mpTarget = 0;
 }
-
 /////////////////////////////////////////////////////////////////////////
-
 void Widget::SetPos(int iX, int iY) {
   mPosDirty |= (x() != iX) or (y() != iY);
   _prevGeometry = _geometry;
@@ -493,9 +357,7 @@ void Widget::SetPos(int iX, int iY) {
   if (mPosDirty)
     ReLayout();
 }
-
 /////////////////////////////////////////////////////////////////////////
-
 void Widget::SetSize(int iW, int iH) {
   mSizeDirty |= (width() != iW) or (height() != iH);
   _prevGeometry = _geometry;
@@ -504,9 +366,7 @@ void Widget::SetSize(int iW, int iH) {
   if (mSizeDirty)
     ReLayout();
 }
-
 /////////////////////////////////////////////////////////////////////////
-
 void Widget::SetRect(int iX, int iY, int iW, int iH) {
   mPosDirty |= (x() != iX) or (y() != iY);
   mSizeDirty |= (width() != iW) or (height() != iH);
@@ -519,21 +379,15 @@ void Widget::SetRect(int iX, int iY, int iW, int iH) {
   if (mPosDirty or mSizeDirty)
     ReLayout();
 }
-
 /////////////////////////////////////////////////////////////////////////
-
 void Widget::ReLayout() {
   DoLayout();
 }
-
 /////////////////////////////////////////////////////////////////////////
-
 void Widget::OnResize(void) {
   // printf("Widget<%s>::OnResize x<%d> y<%d> w<%d> h<%d>\n", msName.c_str(), miX, miY, miW, miH);
 }
-
 /////////////////////////////////////////////////////////////////////////
-
 bool Widget::IsKeyDepressed(int ch) {
   if (false == HasKeyboardFocus()) {
     return false;
@@ -541,9 +395,7 @@ bool Widget::IsKeyDepressed(int ch) {
 
   return OldSchool::GetRef().IsKeyDepressed(ch);
 }
-
 /////////////////////////////////////////////////////////////////////////
-
 bool Widget::IsHotKeyDepressed(const char* pact) {
   if (false == HasKeyboardFocus()) {
     return false;
@@ -551,9 +403,7 @@ bool Widget::IsHotKeyDepressed(const char* pact) {
 
   return HotKeyManager::IsDepressed(pact);
 }
-
 /////////////////////////////////////////////////////////////////////////
-
 bool Widget::IsHotKeyDepressed(const HotKey& hk) {
   if (false == HasKeyboardFocus()) {
     return false;
@@ -561,9 +411,7 @@ bool Widget::IsHotKeyDepressed(const HotKey& hk) {
 
   return HotKeyManager::IsDepressed(hk);
 }
-
 /////////////////////////////////////////////////////////////////////////
-
 Group* Widget::root() const {
   Group* node = mParent;
   while (node) {
@@ -574,6 +422,5 @@ Group* Widget::root() const {
   }
   return nullptr;
 }
-
 /////////////////////////////////////////////////////////////////////////
-}} // namespace ork::ui
+} // namespace ork::ui

@@ -346,7 +346,7 @@ void Outliner2Surface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   lev2::DynamicVertexBuffer<vtx_t>& VB = lev2::GfxEnv::GetSharedDynamicV16T16C16();
   SceneEditorBase& ed                  = mOutlinerModel.Editor();
   auto scene_data                      = ed.GetSceneData();
-  bool has_foc                         = HasMouseFocus();
+  bool has_foc                         = hasMouseFocus();
   bool is_pick                         = fbi->isPickState();
 
   // printf("Outliner2Surface<%p>::DoRePaintSurface is_pick<%d>\n", this, int(is_pick));
@@ -550,8 +550,8 @@ ui::HandlerResult Outliner2Surface::DoOnUiEvent(ui::event_constptr_t EV) {
 
   bool bisshift = EV->mbSHIFT;
 
-  switch (filtev.miEventCode) {
-    case ui::UIEV_KEY: {
+  switch (filtev._eventcode) {
+    case ui::EventCode::KEY: {
       int ikeyc = filtev.miKeyCode;
       printf("ikeyc<%d>\n", ikeyc);
 
@@ -653,11 +653,11 @@ ui::HandlerResult Outliner2Surface::DoOnUiEvent(ui::event_constptr_t EV) {
       }
       break;
     }
-    case ui::UIEV_PUSH:
-    case ui::UIEV_RELEASE: {
+    case ui::EventCode::PUSH:
+    case ui::EventCode::RELEASE: {
       int idelta = EV->miMWY;
 
-      // printf("Outliner2Surface<%p>::DoOnUiEvent UIEV_PUSH\n", this);
+      // printf("Outliner2Surface<%p>::DoOnUiEvent EventCode::PUSH\n", this);
 
       GetPixel(ilocx, ilocy, ctx);
       float fx                   = float(ilocx) / float(width());
@@ -675,11 +675,11 @@ ui::HandlerResult Outliner2Surface::DoOnUiEvent(ui::event_constptr_t EV) {
       }
       break;
     }
-    case ui::UIEV_DOUBLECLICK: {
+    case ui::EventCode::DOUBLECLICK: {
       SetNameOfSelectedItem();
       break;
     }
-    case ui::UIEV_MOUSEWHEEL: {
+    case ui::EventCode::MOUSEWHEEL: {
       int idelta = EV->miMWY;
       miScrollY += idelta;
 

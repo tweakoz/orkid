@@ -7,7 +7,9 @@
 
 #pragma once
 
+#include <ork/orktypes.h>
 #include <ork/lev2/ui/enum.h>
+#include <memory>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -27,6 +29,7 @@ class RenderContextFrameData;
 
 namespace ui {
 
+struct Context;
 struct Widget;
 struct Group;
 struct Surface;
@@ -40,6 +43,7 @@ struct MultiTouchPoint;
 struct IWidgetEventFilter;
 struct LayoutGroup;
 
+using context_ptr_t     = std::shared_ptr<Context>;
 using widget_ptr_t      = std::shared_ptr<Widget>;
 using widget_weakptr_t  = std::weak_ptr<Widget>;
 using group_ptr_t       = std::shared_ptr<Group>;

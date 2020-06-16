@@ -33,7 +33,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
           .def_property_readonly(
               "code",                         //
               [](ui::event_ptr_t ev) -> int { //
-                return ev->miEventCode;
+                return int(ev->_eventcode);
               })
           .def_property_readonly(
               "shift",                        //

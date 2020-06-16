@@ -181,8 +181,8 @@ ui::HandlerResult vp_cons::DoOnUiEvent(ui::event_constptr_t EV) {
     mInputLine = newl->mBuffer;
   };
 
-  switch (EV->miEventCode) {
-    case ui::UIEV_KEY: {
+  switch (EV->_eventcode) {
+    case ui::EventCode::KEY: {
       int mikeyc = filtev.miKeyCode;
       // printf( "%c\n", (char) mikeyc );
       switch (mikeyc) {

@@ -116,9 +116,9 @@ void ManipManager::SlotClearSelection() {
 bool ManipManager::UIEventHandler(ui::event_constptr_t EV) {
   bool rval = false;
 
-  switch (EV->miEventCode) {
-    case ui::UIEV_KEY:
-    case ui::UIEV_KEYUP: {
+  switch (EV->_eventcode) {
+    case ui::EventCode::KEY:
+    case ui::EventCode::KEYUP: {
       if (EV->mbSHIFT)
         mDualAxis = true;
       else

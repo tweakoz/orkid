@@ -115,8 +115,8 @@ ui::HandlerResult DefaultUiHandler::DoOnUiEvent(ui::event_constptr_t EV) {
   bool AreAnyMoveKeysDown = OldSchool::IsKeyDepressed('W') | OldSchool::IsKeyDepressed('A') | OldSchool::IsKeyDepressed('S') |
                             OldSchool::IsKeyDepressed('D');
 
-  switch (EV->miEventCode) {
-    case ui::UIEV_SHOW: {
+  switch (EV->_eventcode) {
+    case ui::EventCode::SHOW: {
       if (GetViewport()->GetTarget()) {
         Context* pTARG         = GetViewport()->GetTarget();
         lev2::CTXBASE* CtxBase = pTARG->GetCtxBase();
@@ -124,10 +124,10 @@ ui::HandlerResult DefaultUiHandler::DoOnUiEvent(ui::event_constptr_t EV) {
       }
       break;
     }
-    case ui::UIEV_GOT_KEYFOCUS: {
+    case ui::EventCode::GOT_KEYFOCUS: {
       break;
     }
-    case ui::UIEV_KEY: {
+    case ui::EventCode::KEY: {
       switch (EV->miKeyCode) {
         case 0x01000007: // delete
         {
@@ -158,11 +158,11 @@ ui::HandlerResult DefaultUiHandler::DoOnUiEvent(ui::event_constptr_t EV) {
       }
       break;
     }
-    case ui::UIEV_RELEASE: {
+    case ui::EventCode::RELEASE: {
       ret.mHoldFocus = false;
       break;
     }
-    case ui::UIEV_DRAG: {
+    case ui::EventCode::DRAG: {
       if (false == GetViewport()->HasKeyboardFocus())
         break;
       if (AreAnyMoveKeysDown)
@@ -174,7 +174,7 @@ ui::HandlerResult DefaultUiHandler::DoOnUiEvent(ui::event_constptr_t EV) {
     /////////////////////////////////////////
     // set cursor
     /////////////////////////////////////////
-    case ui::UIEV_DOUBLECLICK: {
+    case ui::EventCode::DOUBLECLICK: {
 
       if (false == GetViewport()->HasKeyboardFocus())
         break;
@@ -209,7 +209,7 @@ ui::HandlerResult DefaultUiHandler::DoOnUiEvent(ui::event_constptr_t EV) {
       break;
     }
     /////////////////////////////////////////
-    case ui::UIEV_PUSH: {
+    case ui::EventCode::PUSH: {
       if (false == GetViewport()->HasKeyboardFocus())
         break;
 

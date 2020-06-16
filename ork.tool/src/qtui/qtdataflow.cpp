@@ -200,7 +200,7 @@ void GraphVP::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   auto& primi   = lev2::GfxPrimitives::GetRef();
   auto defmtl   = lev2::defaultUIMaterial();
   auto& VB      = lev2::GfxEnv::GetSharedDynamicV16T16C16();
-  bool has_foc  = HasMouseFocus();
+  bool has_foc  = hasMouseFocus();
   bool is_pick  = fbi->isPickState();
   auto& modules = GetTopGraph()->Modules();
   RenderContextFrameData RCFD(ctx);
@@ -541,17 +541,17 @@ ui::HandlerResult GraphVP::DoOnUiEvent(ui::event_constptr_t EV) {
   static fvec2 gbasexym;
   static fvec2 gbasexy;
 
-  switch (filtev.miEventCode) {
-    case ui::UIEV_KEY: {
+  switch (filtev._eventcode) {
+    case ui::EventCode::KEY: {
       if (filtev.miKeyCode == 'a') {
         ReCenter();
       }
     }
-    case ui::UIEV_MOVE: {
+    case ui::EventCode::MOVE: {
       SetDirty();
       break;
     }
-    case ui::UIEV_DRAG: {
+    case ui::EventCode::DRAG: {
       if (bisalt || filtev.mBut1) {
         mGrid.SetCenter(gbasexy - (fvec2(ix, iy) - gbasexym));
       } else if (gpmodule) {
@@ -562,11 +562,11 @@ ui::HandlerResult GraphVP::DoOnUiEvent(ui::event_constptr_t EV) {
       SetDirty();
       break;
     }
-    case ui::UIEV_RELEASE: {
+    case ui::EventCode::RELEASE: {
       gpmodule = 0;
       break;
     }
-    case ui::UIEV_PUSH: {
+    case ui::EventCode::PUSH: {
       if (false == bisctrl && filtev.mBut0) {
         GetPixel(ilocx, ilocy, ctx);
         ork::Object* pobj = (ork::Object*)ctx.GetObject(_pickbuffer, 0);
@@ -583,7 +583,7 @@ ui::HandlerResult GraphVP::DoOnUiEvent(ui::event_constptr_t EV) {
       SetDirty();
       break;
     }
-    case ui::UIEV_DOUBLECLICK: {
+    case ui::EventCode::DOUBLECLICK: {
       GetPixel(ilocx, ilocy, ctx);
       ork::rtti::ICastable* pobj = ctx.GetObject(_pickbuffer, 0);
       gpmodule                   = rtti::autocast(pobj);
@@ -602,7 +602,7 @@ ui::HandlerResult GraphVP::DoOnUiEvent(ui::event_constptr_t EV) {
       SetDirty();
       break;
     }
-    case ui::UIEV_MOUSEWHEEL: {
+    case ui::EventCode::MOUSEWHEEL: {
       QWheelEvent* qem = (QWheelEvent*)qip;
 
       int idelta = qem->delta();

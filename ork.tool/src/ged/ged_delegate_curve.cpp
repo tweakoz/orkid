@@ -65,8 +65,8 @@ public:
   void OnUiEvent(ork::ui::event_constptr_t ev) final {
     const auto& filtev = ev->mFilteredEvent;
 
-    switch (filtev.miEventCode) {
-      case ui::UIEV_DRAG: {
+    switch (filtev._eventcode) {
+      case ui::EventCode::DRAG: {
         if (mParent && mCurveObject) {
           orklut<float, float>& data = mCurveObject->GetVertices();
           const int knumpoints       = (int)data.size();

@@ -791,17 +791,17 @@ void ObjectExportDelegate::Describe() {
 }
 
 void GedObject::OnUiEvent(ork::ui::event_constptr_t ev) {
-  switch (ev->miEventCode) {
-    case ui::UIEV_DRAG:
+  switch (ev->_eventcode) {
+    case ui::EventCode::DRAG:
       OnMouseDragged(ev);
       break;
-    case ui::UIEV_MOVE:
+    case ui::EventCode::MOVE:
       OnMouseMoved(ev);
       break;
-    case ui::UIEV_DOUBLECLICK:
+    case ui::EventCode::DOUBLECLICK:
       OnMouseDoubleClicked(ev);
       break;
-    case ui::UIEV_RELEASE:
+    case ui::EventCode::RELEASE:
       OnMouseReleased(ev);
       break;
   }

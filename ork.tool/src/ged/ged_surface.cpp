@@ -162,8 +162,8 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
   if (mpActiveNode)
     mpActiveNode->OnUiEvent(locEV);
 
-  switch (filtev.miEventCode) {
-    case ui::UIEV_KEY: {
+  switch (filtev._eventcode) {
+    case ui::EventCode::KEY: {
       int mikeyc = filtev.miKeyCode;
       if (mikeyc == '!') {
         mWidget.IncrementSkin();
@@ -171,7 +171,7 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
       }
       break;
     }
-    case ui::UIEV_MOUSEWHEEL: {
+    case ui::EventCode::MOUSEWHEEL: {
       int iscrollamt = bisshift ? 32 : 8;
 
       // if( pobj )
@@ -214,7 +214,7 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
       mNeedsSurfaceRepaint = true;
       break;
     }
-    case ui::UIEV_MOVE: {
+    case ui::EventCode::MOVE: {
       QMouseEvent* qem = (QMouseEvent*)qip;
       static int gctr  = 0;
       if (0 == gctr % 4) {
@@ -234,7 +234,7 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
       gctr++;
       break;
     }
-    case ui::UIEV_DRAG: {
+    case ui::EventCode::DRAG: {
       if (mpActiveNode) {
         if (GedItemNode* as_inode = ork::rtti::autocast(mpActiveNode)) {
           locEV->miX -= as_inode->GetX();
@@ -247,9 +247,9 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
       }
       break;
     }
-    case ui::UIEV_PUSH:
-    case ui::UIEV_RELEASE:
-    case ui::UIEV_DOUBLECLICK: {
+    case ui::EventCode::PUSH:
+    case ui::EventCode::RELEASE:
+    case ui::EventCode::DOUBLECLICK: {
 
       QMouseEvent* qem = (QMouseEvent*)qip;
 
@@ -283,18 +283,18 @@ ui::HandlerResult GedSurface::DoOnUiEvent(ui::event_constptr_t EV) {
           locEV->miY -= as_inode->GetY();
         }
 
-        switch (filtev.miEventCode) {
-          case ui::UIEV_PUSH:
+        switch (filtev._eventcode) {
+          case ui::EventCode::PUSH:
             mpActiveNode = pnode;
             if (pnode)
               pnode->OnUiEvent(locEV);
             break;
-          case ui::UIEV_RELEASE:
+          case ui::EventCode::RELEASE:
             if (pnode)
               pnode->OnUiEvent(locEV);
             mpActiveNode = nullptr;
             break;
-          case ui::UIEV_DOUBLECLICK:
+          case ui::EventCode::DOUBLECLICK:
             if (pnode)
               pnode->OnUiEvent(locEV);
             break;

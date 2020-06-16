@@ -23,7 +23,7 @@ Box::Box(
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-HandlerResult Box::DoRouteUiEvent(event_constptr_t Ev) {
+HandlerResult Box::DoOnUiEvent(event_constptr_t Ev) {
   return HandlerResult();
 }
 
@@ -111,14 +111,14 @@ EvTestBox::EvTestBox(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-HandlerResult EvTestBox::DoRouteUiEvent(event_constptr_t Ev) {
+HandlerResult EvTestBox::DoOnUiEvent(event_constptr_t Ev) {
 
-  switch (Ev->miEventCode) {
-    case UIEV_PUSH:
-    case UIEV_DOUBLECLICK:
-    case UIEV_RELEASE:
-    case UIEV_DRAG:
-      _colorsel = Ev->miEventCode;
+  switch (Ev->_eventcode) {
+    case EventCode::PUSH:
+    case EventCode::DOUBLECLICK:
+    case EventCode::RELEASE:
+    case EventCode::DRAG:
+      _colorsel = Ev->_eventcode;
       break;
   }
   return HandlerResult();
@@ -152,13 +152,13 @@ void EvTestBox::DoDraw(drawevent_constptr_t drwev) {
 
     fvec4 color = _colorNormal;
     switch (_colorsel) {
-      case UIEV_PUSH:
+      case EventCode::PUSH:
         color = _colorClick;
         break;
-      case UIEV_DOUBLECLICK:
+      case EventCode::DOUBLECLICK:
         color = _colorDoubleClick;
         break;
-      case UIEV_DRAG:
+      case EventCode::DRAG:
         color = _colorDrag;
         break;
       default:
@@ -184,7 +184,7 @@ void EvTestBox::DoDraw(drawevent_constptr_t drwev) {
     );
     tgt->PopModColor();
     ///////////////////////////////
-    if (not HasMouseFocus()) {
+    if (not hasMouseFocus()) {
       tgt->PushModColor(color * 0.5f);
       primi.RenderQuadAtZ(
           defmtl.get(),

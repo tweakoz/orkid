@@ -92,14 +92,14 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent(ui::event_constptr_t EV) {
   bool ismeta  = EV->mbMETA;
   bool ismulti = false;
 
-  switch (EV->miEventCode) {
-    case ui::UIEV_GOT_KEYFOCUS: {
+  switch (EV->_eventcode) {
+    case ui::EventCode::GOT_KEYFOCUS: {
       break;
     }
-    case ui::UIEV_LOST_KEYFOCUS: {
+    case ui::EventCode::LOST_KEYFOCUS: {
       break;
     }
-    case ui::UIEV_MULTITOUCH:
+    case ui::EventCode::MULTITOUCH:
       ismulti = true;
       break;
   }
@@ -113,16 +113,16 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent(ui::event_constptr_t EV) {
     }
   }
 
-  if (0 == EV->miEventCode)
+  if (ui::EventCode::UNKNOWN == EV->_eventcode)
     return ret;
 
   ////////////////////////////////////////////////////////////////
 
-  switch (EV->miEventCode) {
-    case ui::UIEV_KEYUP: {
+  switch (EV->_eventcode) {
+    case ui::EventCode::KEYUP: {
       break;
     }
-    case ui::UIEV_KEY: {
+    case ui::EventCode::KEY: {
       int icode = EV->miKeyCode;
 
       switch (icode) {
@@ -265,7 +265,7 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent(ui::event_constptr_t EV) {
       }
       break;
     }
-    case ui::UIEV_PUSH: {
+    case ui::EventCode::PUSH: {
       printf("scenevp::uiev_push\n");
       int ix = EV->miX;
       int iy = EV->miY;

@@ -25,7 +25,7 @@ private:
   void DoLayout(void) override;
   void DoOnEnter() override;
   void DoOnExit() override;
-  HandlerResult DoRouteUiEvent(event_constptr_t Ev) override;
+  Widget* doRouteUiEvent(event_constptr_t Ev) override;
 
   widget_ptr_t _child;
   int mPanelUiState;

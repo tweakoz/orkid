@@ -296,8 +296,8 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
 
   _vpdim = EV->_vpdim;
 
-  switch (filtev.miEventCode) {
-    case UIEV_PUSH: {
+  switch (filtev._eventcode) {
+    case EventCode::PUSH: {
 
       QuatCPushed = QuatC;
 
@@ -360,7 +360,7 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
 
       break;
     }
-    case UIEV_RELEASE: {
+    case EventCode::RELEASE: {
       CommonPostSetup();
       // could do fall-through or maybe even but this outside of switch
       leftbutton   = filtev.mBut0;
@@ -380,7 +380,7 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
 
       break;
     }
-    case UIEV_MOVE: {
+    case EventCode::MOVE: {
 
       float fx   = float(esx) / _vpdim.x - 0.5f;
       float fy   = float(esy) / _vpdim.y - 0.5f;
@@ -390,7 +390,7 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
 
       break;
     }
-    case UIEV_DRAG: {
+    case EventCode::DRAG: {
       //////////////////////////////////////////////////
       // intersect ray with worlds XZ/XY/YZ planes
 
@@ -520,7 +520,7 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
       }
       break;
     }
-    case UIEV_MOUSEWHEEL: {
+    case EventCode::MOUSEWHEEL: {
       float zmoveamt = 0.003f;
       if (isctrl)
         zmoveamt *= 0.2f;

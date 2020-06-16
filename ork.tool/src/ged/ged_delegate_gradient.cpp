@@ -56,8 +56,8 @@ public:
   void OnUiEvent(ork::ui::event_constptr_t ev) final {
     const auto& filtev = ev->mFilteredEvent;
 
-    switch (filtev.miEventCode) {
-      case ui::UIEV_DRAG: {
+    switch (filtev._eventcode) {
+      case ui::EventCode::DRAG: {
         if (mParent && mGradientObject) {
           orklut<float, ork::fvec4>& data = mGradientObject->Data();
           const int knumpoints            = (int)data.size();
@@ -92,7 +92,7 @@ public:
         }
         break;
       }
-      case ui::UIEV_DOUBLECLICK: {
+      case ui::EventCode::DOUBLECLICK: {
 
         if (mParent && mGradientObject) {
           orklut<float, ork::fvec4>& data = mGradientObject->Data();
@@ -148,8 +148,8 @@ public:
   void OnUiEvent(ork::ui::event_constptr_t ev) final {
     const auto& filtev = ev->mFilteredEvent;
 
-    switch (filtev.miEventCode) {
-      case ui::UIEV_DOUBLECLICK: {
+    switch (filtev._eventcode) {
+      case ui::EventCode::DOUBLECLICK: {
         // printf( "GradSplit par<%p> go<%p>\n", mParent, mGradientObject );
         if (mParent && mGradientObject) {
           orklut<float, ork::fvec4>& data = mGradientObject->Data();

@@ -60,15 +60,15 @@ ui::HandlerResult ManipHandler::DoOnUiEvent(ui::event_constptr_t EV) {
 
   mEditor.ManipManager().SetGridSnap(isshift);
 
-  switch (EV->miEventCode) {
-    case ui::UIEV_RELEASE: {
+  switch (EV->_eventcode) {
+    case ui::EventCode::RELEASE: {
       if (false == GetViewport()->HasKeyboardFocus())
         break;
       mEditor.ManipManager().DisableManip();
       mEditor.ManipManager().SetActiveCamera(0);
       ret.setHandled(this);
     } break;
-    case ui::UIEV_DOUBLECLICK: {
+    case ui::EventCode::DOUBLECLICK: {
       if (false == GetViewport()->HasKeyboardFocus())
         break;
 
@@ -99,7 +99,7 @@ ui::HandlerResult ManipHandler::DoOnUiEvent(ui::event_constptr_t EV) {
       };
       OuterPickOp(pickctx);
     } break;
-    case ui::UIEV_PUSH: {
+    case ui::EventCode::PUSH: {
       if (false == GetViewport()->HasKeyboardFocus())
         break;
 
@@ -152,14 +152,14 @@ ui::HandlerResult ManipHandler::DoOnUiEvent(ui::event_constptr_t EV) {
       ret.setHandled(this);
     } break;
 
-    case ui::UIEV_DRAG: {
+    case ui::EventCode::DRAG: {
       if (false == GetViewport()->HasKeyboardFocus())
         break;
       if (mEditor.ManipManager().UIEventHandler(EV))
         ret.setHandled(this);
     } break;
 
-    case ui::UIEV_MOVE: {
+    case ui::EventCode::MOVE: {
       if (false == GetViewport()->HasKeyboardFocus())
         break;
       if (!mEditor.ManipManager().IsVisible())

@@ -87,7 +87,7 @@ void SplitPanel::DoDraw(ui::drawevent_constptr_t drwev) {
   lev2::SRasterState defstate;
   tgt->RSI()->BindRasterState(defstate);
 
-  bool has_foc = HasMouseFocus();
+  bool has_foc = hasMouseFocus();
   tgt->PushModColor(has_foc ? fcolor4::White() : fcolor4::Red());
   mtxi->PushUIMatrix();
   {
@@ -190,28 +190,23 @@ void SplitPanel::DoLayout() {
 
 /////////////////////////////////////////////////////////////////////////
 
-HandlerResult SplitPanel::DoRouteUiEvent(event_constptr_t Ev) {
-  // printf( "Panel::DoRouteUiEvent xy<%d %d> mPanelUiState<%d>\n", Ev->_geometry._x, Ev->_geometry._y, mPanelUiState );
-
+Widget* SplitPanel::doRouteUiEvent(event_constptr_t ev) {
+  Widget* target = nullptr;
   switch (mPanelUiState) {
     case 0:
-      if (_child1 and _child1->IsEventInside(Ev)) {
-        // printf( "Child1\n");
-        HandlerResult res = _child1->RouteUiEvent(Ev);
-        if (res.mHandler != nullptr)
-          return res;
-      } else if (_child2 and _child2->IsEventInside(Ev)) {
-        // printf( "Child2\n");
-        HandlerResult res = _child2->RouteUiEvent(Ev);
-        if (res.mHandler != nullptr)
-          return res;
+      if (_child1 and _child1->IsEventInside(ev)) {
+        target = _child1->routeUiEvent(ev);
+      } else if (_child2 and _child2->IsEventInside(ev)) {
+        target = _child2->routeUiEvent(ev);
       }
       break;
     default:
       break;
   }
-
-  return OnUiEvent(Ev);
+  if (nullptr == target and IsEventInside(ev)) {
+    target = this;
+  }
+  return target;
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -263,8 +258,8 @@ HandlerResult SplitPanel::DoOnUiEvent(event_constptr_t Ev) {
   RootToLocal(evx, evy, ilocx, ilocy);
   //////////////////////////////
   const auto& filtev = Ev->mFilteredEvent;
-  switch (filtev.miEventCode) {
-    case ui::UIEV_PUSH: // idle
+  switch (filtev._eventcode) {
+    case ui::EventCode::PUSH: // idle
     {
       _downx         = evx;
       _downy         = evy;
@@ -312,7 +307,7 @@ HandlerResult SplitPanel::DoOnUiEvent(event_constptr_t Ev) {
       }
       break;
     }
-    case ui::UIEV_RELEASE: // idle
+    case ui::EventCode::RELEASE: // idle
       ret.mHoldFocus = false;
 
       if (mPanelUiState) // moving or sizing w
@@ -321,7 +316,7 @@ HandlerResult SplitPanel::DoOnUiEvent(event_constptr_t Ev) {
       mPanelUiState = 0;
 
       break;
-    case ui::UIEV_DRAG:
+    case ui::EventCode::DRAG:
       ret.mHoldFocus = true;
       break;
     default:

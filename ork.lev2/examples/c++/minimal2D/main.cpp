@@ -53,8 +53,8 @@ int main(int argc, char** argv) {
   qtapp->onResize([&](int w, int h) { printf("GOTRESIZE<%d %d>\n", w, h); });
   //////////////////////////////////////////////////////////
   qtapp->onUiEvent([&](ui::event_constptr_t ev) -> ui::HandlerResult {
-    switch (ev->mEventCode) {
-      case ui::UIEV_DOUBLECLICK:
+    switch (ev->_eventcode) {
+      case ui::EventCode::DOUBLECLICK:
         OrkAssert(false);
         break;
       default:

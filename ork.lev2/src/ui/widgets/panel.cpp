@@ -42,7 +42,7 @@ void Panel::DoDraw(ui::drawevent_constptr_t drwev) {
   lev2::SRasterState defstate;
   tgt->RSI()->BindRasterState(defstate);
 
-  bool has_foc = HasMouseFocus();
+  bool has_foc = hasMouseFocus();
 
   auto ren_quad = [&](int x, int y, int x2, int y2) {
     primi.RenderQuadAtZ(
@@ -143,15 +143,14 @@ void Panel::DoLayout() {
 
 /////////////////////////////////////////////////////////////////////////
 
-HandlerResult Panel::DoRouteUiEvent(event_constptr_t Ev) {
-  // printf("Panel::DoRouteUiEvent mPanelUiState<%d>\n", mPanelUiState);
-
-  if (_child && _child->IsEventInside(Ev) && mPanelUiState == 0) {
-    HandlerResult res = _child->RouteUiEvent(Ev);
-    if (res.mHandler != nullptr)
-      return res;
+Widget* Panel::doRouteUiEvent(event_constptr_t ev) {
+  Widget* target = nullptr;
+  if (_child && _child->IsEventInside(ev) && mPanelUiState == 0) {
+    target = _child->routeUiEvent(ev);
+  } else if (IsEventInside(ev)) {
+    target = this;
   }
-  return OnUiEvent(Ev);
+  return target;
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -221,8 +220,8 @@ HandlerResult Panel::DoOnUiEvent(event_constptr_t Ev) {
   RootToLocal(evx, evy, ilocx, ilocy);
   //////////////////////////////
   const auto& filtev = Ev->mFilteredEvent;
-  switch (filtev.miEventCode) {
-    case ui::UIEV_PUSH: // idle
+  switch (filtev._eventcode) {
+    case ui::EventCode::PUSH: // idle
       _downx         = evx;
       _downy         = evy;
       _prevpx        = _geometry._x;
@@ -253,7 +252,7 @@ HandlerResult Panel::DoOnUiEvent(event_constptr_t Ev) {
           mPanelUiState = 5;
       }
       break;
-    case ui::UIEV_RELEASE: // idle
+    case ui::EventCode::RELEASE: // idle
       ret.mHoldFocus = false;
 
       if (mPanelUiState) // moving or sizing w
@@ -262,7 +261,7 @@ HandlerResult Panel::DoOnUiEvent(event_constptr_t Ev) {
       mPanelUiState = 0;
 
       break;
-    case ui::UIEV_DRAG:
+    case ui::EventCode::DRAG:
       ret.mHoldFocus = true;
       break;
     default:

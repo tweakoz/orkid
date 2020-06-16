@@ -132,11 +132,11 @@ void Slider<T>::OnUiEvent(ork::ui::event_constptr_t ev) // final
 {
   const auto& filtev = ev->mFilteredEvent;
 
-  switch (filtev.miEventCode) {
-    case ui::UIEV_PUSH: {
+  switch (filtev._eventcode) {
+    case ui::EventCode::PUSH: {
       break;
     }
-    case ui::UIEV_DRAG: {
+    case ui::EventCode::DRAG: {
       mbUpdateOnDrag = ev->mbCTRL;
 
       bool bleft  = ev->IsButton0DownF();
@@ -170,7 +170,7 @@ void Slider<T>::OnUiEvent(ork::ui::event_constptr_t ev) // final
       }
       break;
     }
-    case ui::UIEV_DOUBLECLICK: {
+    case ui::EventCode::DOUBLECLICK: {
       std::string RangeStr = CreateFormattedString("v:[%f..%f]", float(mmin), float(mmax));
       // QString qstr = QInputDialog::getText ( 0, "Set Value", RangeStr.c_str() );
 
@@ -456,8 +456,8 @@ GedSimpleNode<IODriver, T>::GedSimpleNode(ObjModel& mdl, const char* name, const
 template <typename IODriver, typename T> void GedSimpleNode<IODriver, T>::OnUiEvent(ork::ui::event_constptr_t ev) {
   const auto& filtev = ev->mFilteredEvent;
 
-  switch (filtev.miEventCode) {
-    case ui::UIEV_DOUBLECLICK: {
+  switch (filtev._eventcode) {
+    case ui::EventCode::DOUBLECLICK: {
 
       T val;
 

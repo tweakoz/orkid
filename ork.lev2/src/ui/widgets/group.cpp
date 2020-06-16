@@ -23,7 +23,8 @@ Group::Group(const std::string& name, int x, int y, int w, int h)
 void Group::addChild(widget_ptr_t w) {
   assert(w->GetParent() == nullptr);
   _children.push_back(w);
-  w->mParent = this;
+  w->mParent    = this;
+  w->_uicontext = this->_uicontext;
   DoLayout();
 }
 
@@ -85,39 +86,26 @@ void Group::DoLayout() {
 
 /////////////////////////////////////////////////////////////////////////
 
-HandlerResult Group::DoRouteUiEvent(event_constptr_t Ev) {
-  HandlerResult res;
+Widget* Group::doRouteUiEvent(event_constptr_t ev) {
+  Widget* target = nullptr;
   for (auto& child : _children) {
-    if (res.mHandler == nullptr) {
-      bool binside = child->IsEventInside(Ev);
-      /*printf(
-          "Group::RouteUiEvent ev<%d,%d> child<%p> inside<%d>\n", //
-          Ev->miX,
-          Ev->miY,
-          child.get(),
-          int(binside));*/
+    if (target == nullptr) {
+      bool binside = child->IsEventInside(ev);
       if (binside) {
-        auto child_res = child->RouteUiEvent(Ev);
-        if (child_res.wasHandled()) {
-          res = child_res;
+        auto child_target = child->routeUiEvent(ev);
+        if (child_target) {
+          target = child_target;
         }
       }
     }
   }
-  if (res.mHandler == nullptr) {
-    res = OnUiEvent(Ev);
-  }
-  return res;
+  return target;
 }
 
 /////////////////////////////////////////////////////////////////////////
 LayoutGroup::LayoutGroup(const std::string& name, int x, int y, int w, int h)
     : Group(name, x, y, w, h) {
   _layout = std::make_shared<anchor::Layout>(this);
-}
-/////////////////////////////////////////////////////////////////////////
-HandlerResult LayoutGroup::DoRouteUiEvent(event_constptr_t Ev) {
-  return Group::DoRouteUiEvent(Ev);
 }
 /////////////////////////////////////////////////////////////////////////
 void LayoutGroup::OnResize() {

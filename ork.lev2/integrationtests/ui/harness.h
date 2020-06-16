@@ -28,4 +28,7 @@ struct UiTestApp final : public OrkEzQtApp {
 };
 using uitestapp_ptr_t = std::shared_ptr<UiTestApp>;
 
-uitestapp_ptr_t createEZapp(int& argc, char** argv);
+uitestapp_ptr_t createEZapp(
+    ui::context_ptr_t uicontext, //
+    int& argc,
+    char** argv);
