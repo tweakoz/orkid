@@ -9,6 +9,11 @@ namespace ork::ui {
 // LayoutGroup :  collection of widgets which are layed out...
 ////////////////////////////////////////////////////////////////////
 
+template <typename T> struct LayoutItem {
+  std::shared_ptr<T> _widget;
+  anchor::layout_ptr_t _layout;
+};
+
 struct LayoutGroup : public Group {
 
   LayoutGroup(const std::string& name, int x = 0, int y = 0, int w = 0, int h = 0);
@@ -16,20 +21,11 @@ struct LayoutGroup : public Group {
   anchor::layout_ptr_t _layout;
 
   //////////////////////////////////////
-  template <typename T, typename... A>
-  std::pair<
-      std::shared_ptr<T>, //
-      anchor::layout_ptr_t>
-  makeChild(A&&... args) {
-    std::pair<
-        std::shared_ptr<T>, //
-        anchor::layout_ptr_t>
-        rval;
-
-    rval.first  = std::make_shared<T>(std::forward<A>(args)...);
-    rval.second = _layout->childLayout(rval.first.get());
-
-    addChild(rval.first);
+  template <typename T, typename... A> LayoutItem<T> makeChild(A&&... args) {
+    LayoutItem<T> rval;
+    rval._widget = std::make_shared<T>(std::forward<A>(args)...);
+    rval._layout = _layout->childLayout(rval._widget.get());
+    addChild(rval._widget);
     return rval;
   }
   //////////////////////////////////////
