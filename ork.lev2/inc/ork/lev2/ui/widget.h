@@ -207,6 +207,7 @@ protected:
   static void UpdateMouseFocus(const HandlerResult& e, event_constptr_t Ev);
 
 private:
+  friend struct ui::Context;
   virtual void DoInit(lev2::Context* pTARG) {
   }
   virtual void DoOnEnter() {

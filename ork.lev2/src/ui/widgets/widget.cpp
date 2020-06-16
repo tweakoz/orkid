@@ -62,39 +62,41 @@ void Widget::setGeometry(Rect newgeo) {
 }
 ///////////////////////////////////////////////////////////
 HandlerResult Widget::handleUiEvent(event_constptr_t ev) {
-  Widget* target = this;
-  if (IsEventInside(ev))
-    target = routeUiEvent(ev);
+  Widget* target = doRouteUiEvent(ev);
+  printf("handleuiev target<%s>\n", target ? target->msName.c_str() : "none");
   return target ? target->OnUiEvent(ev) : HandlerResult();
 }
 ///////////////////////////////////////////////////////////
-Widget* Widget::routeUiEvent(event_constptr_t Ev) {
-  auto ret = doRouteUiEvent(Ev);
+Widget* Widget::routeUiEvent(event_constptr_t ev) {
+  auto ret = doRouteUiEvent(ev);
   return ret;
 }
 ///////////////////////////////////////////////////////////
-Widget* Widget::doRouteUiEvent(event_constptr_t Ev) {
-  return this;
+Widget* Widget::doRouteUiEvent(event_constptr_t ev) {
+  bool inside    = IsEventInside(ev);
+  Widget* target = inside ? this : nullptr;
+  printf("Widget::doRouteUiEvent w<%s> inside<%d> target<%p>\n", msName.c_str(), int(inside), target);
+  return target;
 }
 ///////////////////////////////////////////////////////////
 bool Widget::hasMouseFocus() const {
   return _uicontext->hasMouseFocus(this);
 }
 ///////////////////////////////////////////////////////////
-HandlerResult Widget::OnUiEvent(event_constptr_t Ev) {
-  Ev->mFilteredEvent.Reset();
+HandlerResult Widget::OnUiEvent(event_constptr_t ev) {
+  ev->mFilteredEvent.Reset();
   // printf("Widget<%p>::OnUiEvent\n", this);
 
   if (_eventfilterstack.size()) {
     auto top = _eventfilterstack.top();
-    top->Filter(Ev);
-    if (Ev->mFilteredEvent._eventcode == EventCode::UNKNOWN)
+    top->Filter(ev);
+    if (ev->mFilteredEvent._eventcode == EventCode::UNKNOWN)
       return HandlerResult();
   }
-  return DoOnUiEvent(Ev);
+  return DoOnUiEvent(ev);
 }
 ///////////////////////////////////////////////////////////
-void NopEventFilter::DoFilter(event_constptr_t Ev) {
+void NopEventFilter::DoFilter(event_constptr_t ev) {
 }
 ///////////////////////////////////////////////////////////
 void Apple3ButtonMouseEmulationFilter::DoFilter(event_constptr_t Ev) {

@@ -112,7 +112,7 @@ qtezapp_ptr_t OrkEzQtApp::createWithScene(varmap::varmap_ptr_t sceneparams) {
 ///////////////////////////////////////////////////////////////////////////////
 
 EzViewport::EzViewport(EzMainWin* mainwin)
-    : ui::Viewport("yo", 1, 1, 1, 1, fvec3(0, 0, 0), 1.0f)
+    : ui::Viewport("ezviewport", 1, 1, 1, 1, fvec3(0, 0, 0), 1.0f)
     , _mainwin(mainwin) {
   lev2::DrawableBuffer::ClearAndSyncWriters();
   _mainwin->_render_timer.Start();

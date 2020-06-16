@@ -11,23 +11,19 @@
 #include <ork/lev2/ui/layoutgroup.inl>
 
 namespace ork { namespace ui {
-
 /////////////////////////////////////////////////////////////////////////
-
 Group::Group(const std::string& name, int x, int y, int w, int h)
     : Widget(name, x, y, w, h) {
 }
-
 /////////////////////////////////////////////////////////////////////////
-
 void Group::addChild(widget_ptr_t w) {
-  assert(w->GetParent() == nullptr);
+  assert(w->parent() == nullptr);
   _children.push_back(w);
   w->mParent    = this;
   w->_uicontext = this->_uicontext;
   DoLayout();
 }
-
+/////////////////////////////////////////////////////////////////////////
 void Group::removeChild(widget_ptr_t w) {
   _children.erase(
       std::remove_if(
@@ -41,6 +37,7 @@ void Group::removeChild(widget_ptr_t w) {
 
   DoLayout();
 }
+/////////////////////////////////////////////////////////////////////////
 void Group::removeChild(Widget* w) {
   _children.erase(
       std::remove_if(
@@ -54,17 +51,13 @@ void Group::removeChild(Widget* w) {
 
   DoLayout();
 }
-
 /////////////////////////////////////////////////////////////////////////
-
 void Group::drawChildren(ui::drawevent_constptr_t drwev) {
   for (auto child : _children) {
     child->Draw(drwev);
   }
 }
-
 /////////////////////////////////////////////////////////////////////////
-
 void Group::OnResize() {
   // printf( "Group<%s>::OnResize x<%d> y<%d> w<%d> h<%d>\n", msName.c_str(), miX, miY, miW, miH );
   for (auto& it : _children) {
@@ -72,9 +65,7 @@ void Group::OnResize() {
       it->OnResize();
   }
 }
-
 /////////////////////////////////////////////////////////////////////////
-
 void Group::DoLayout() {
   const auto& g = _geometry;
   if (0)
@@ -83,25 +74,22 @@ void Group::DoLayout() {
     it->ReLayout();
   }
 }
-
 /////////////////////////////////////////////////////////////////////////
-
 Widget* Group::doRouteUiEvent(event_constptr_t ev) {
-  Widget* target = nullptr;
+  printf("Group<%s>::doRouteUiEvent\n", msName.c_str());
   for (auto& child : _children) {
-    if (target == nullptr) {
-      bool binside = child->IsEventInside(ev);
-      if (binside) {
-        auto child_target = child->routeUiEvent(ev);
-        if (child_target) {
-          target = child_target;
-        }
-      }
+    bool inside = child->IsEventInside(ev);
+    printf("Group<%s>::doRouteUiEvent ch<%p> inside<%d>\n", msName.c_str(), child.get(), int(inside));
+    if (inside) {
+      auto child_target = child->routeUiEvent(ev);
+      if (child_target)
+        return child_target;
     }
   }
-  return target;
+  if (IsEventInside(ev))
+    return this;
+  return nullptr;
 }
-
 /////////////////////////////////////////////////////////////////////////
 LayoutGroup::LayoutGroup(const std::string& name, int x, int y, int w, int h)
     : Group(name, x, y, w, h) {
@@ -137,6 +125,5 @@ void LayoutGroup::DoLayout() {
 void LayoutGroup::DoDraw(drawevent_constptr_t drwev) {
   drawChildren(drwev);
 }
-
 /////////////////////////////////////////////////////////////////////////
 }} // namespace ork::ui

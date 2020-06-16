@@ -136,6 +136,6 @@ TEST(hfsm_probalistic_1) {
 
     the_SM.QueueStateChange(nullptr);
     the_SM.Update();
-    assert(the_SM.GetCurrentState() == nullptr);
+    assert(the_SM.currentState() == nullptr);
   }
 }

@@ -53,6 +53,8 @@ using splitpanel_ptr_t  = std::shared_ptr<SplitPanel>;
 using panel_ptr_t       = std::shared_ptr<Panel>;
 using viewport_ptr_t    = std::shared_ptr<Viewport>;
 using eventfilter_ptr_t = std::shared_ptr<IWidgetEventFilter>;
+using event_ptr_t       = std::shared_ptr<Event>;
+using event_constptr_t  = std::shared_ptr<const Event>;
 
 ////////////////////////////////////////////////////////////////////////////////
 

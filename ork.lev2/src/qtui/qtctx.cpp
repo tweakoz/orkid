@@ -67,16 +67,6 @@ QCtxWidget::~QCtxWidget() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void QCtxWidget::SendOrkUiEvent() {
-  auto uiev = uievent();
-  if (uiev->mpGfxWin) {
-    uiev->_vpdim = fvec2(miWidth, miHeight);
-    uiev->mpGfxWin->GetRootWidget()->handleUiEvent(uiev);
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 bool QCtxWidget::event(QEvent* event) {
   return QWidget::event(event);
 }
@@ -188,9 +178,10 @@ void QCtxWidget::MouseEventCommon(QMouseEvent* event) {
 
 static fvec2 gpos;
 void QCtxWidget::mouseMoveEvent(QMouseEvent* event) {
-  auto uiev   = uievent();
-  auto gfxwin = uiev->mpGfxWin;
-  auto vp     = gfxwin ? gfxwin->GetRootWidget() : nullptr;
+  auto uiev        = uievent();
+  auto gfxwin      = uiev->mpGfxWin;
+  auto root        = gfxwin ? gfxwin->GetRootWidget() : nullptr;
+  uiev->_uicontext = root ? root->_uicontext : nullptr;
 
   gpos.x = event->x();
   gpos.y = event->y();
@@ -208,13 +199,9 @@ void QCtxWidget::mouseMoveEvent(QMouseEvent* event) {
                          ? ork::ui::EventCode::DRAG
                          : ork::ui::EventCode::MOVE;
 
-  if (vp) {
-    uiev->_vpdim = fvec2(vp->width(), vp->height());
-    if (_HIDPI()) {
-      uiev->_vpdim *= 0.5;
-    }
-    // gpos.x /= 2.0f;
-    vp->handleUiEvent(uiev);
+  if (root) {
+    uiev->setvpDim(root);
+    ui::Event::sendToContext(uiev);
   }
   if (mpCtxBase)
     mpCtxBase->SlotRepaint();
@@ -226,16 +213,12 @@ void QCtxWidget::mousePressEvent(QMouseEvent* event) {
   MouseEventCommon(event);
   auto uiev        = uievent();
   auto gfxwin      = uiev->mpGfxWin;
-  auto vp          = gfxwin ? gfxwin->GetRootWidget() : nullptr;
+  auto root        = gfxwin ? gfxwin->GetRootWidget() : nullptr;
+  uiev->_uicontext = root ? root->_uicontext : nullptr;
   uiev->_eventcode = ork::ui::EventCode::PUSH;
-  if (vp) {
-
-    uiev->_vpdim = fvec2(vp->width(), vp->height());
-    if (_HIDPI()) {
-      uiev->_vpdim *= 0.5;
-    }
-    vp->handleUiEvent(uiev);
-
+  if (root) {
+    uiev->setvpDim(root);
+    ui::Event::sendToContext(uiev);
     _pushTimer.Start();
   }
   if (mpCtxBase)
@@ -248,15 +231,13 @@ void QCtxWidget::mouseDoubleClickEvent(QMouseEvent* event) {
   MouseEventCommon(event);
   auto uiev        = uievent();
   auto gfxwin      = uiev->mpGfxWin;
-  auto vp          = gfxwin ? gfxwin->GetRootWidget() : nullptr;
+  auto root        = gfxwin ? gfxwin->GetRootWidget() : nullptr;
+  uiev->_uicontext = root ? root->_uicontext : nullptr;
   uiev->_eventcode = ork::ui::EventCode::DOUBLECLICK;
 
-  if (vp) {
-    uiev->_vpdim = fvec2(vp->width(), vp->height());
-    if (_HIDPI()) {
-      uiev->_vpdim *= 0.5;
-    }
-    vp->handleUiEvent(uiev);
+  if (root) {
+    uiev->setvpDim(root);
+    ui::Event::sendToContext(uiev);
   }
   if (mpCtxBase)
     mpCtxBase->SlotRepaint();
@@ -269,17 +250,15 @@ void QCtxWidget::mouseReleaseEvent(QMouseEvent* event) {
   MouseEventCommon(event);
   auto uiev        = uievent();
   auto gfxwin      = uiev->mpGfxWin;
-  auto vp          = gfxwin ? gfxwin->GetRootWidget() : nullptr;
+  auto root        = gfxwin ? gfxwin->GetRootWidget() : nullptr;
+  uiev->_uicontext = root ? root->_uicontext : nullptr;
   uiev->_eventcode = ork::ui::EventCode::RELEASE;
 
   //////////////////////////////////////
 
-  if (vp) {
-    uiev->_vpdim = fvec2(vp->width(), vp->height());
-    if (_HIDPI()) {
-      uiev->_vpdim *= 0.5;
-    }
-    vp->handleUiEvent(uiev);
+  if (root) {
+    uiev->setvpDim(root);
+    ui::Event::sendToContext(uiev);
   }
 
   _evstealwidget = nullptr;
@@ -291,9 +270,10 @@ void QCtxWidget::mouseReleaseEvent(QMouseEvent* event) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void QCtxWidget::wheelEvent(QWheelEvent* qem) {
-  auto uiev   = uievent();
-  auto gfxwin = uiev->mpGfxWin;
-  auto vp     = gfxwin ? gfxwin->GetRootWidget() : nullptr;
+  auto uiev        = uievent();
+  auto gfxwin      = uiev->mpGfxWin;
+  auto root        = gfxwin ? gfxwin->GetRootWidget() : nullptr;
+  uiev->_uicontext = root ? root->_uicontext : nullptr;
 
   uiev->mpBlindEventData = (void*)qem;
   static avg_filter<3> gScrollFilter;
@@ -316,12 +296,9 @@ void QCtxWidget::wheelEvent(QWheelEvent* qem) {
 
   uiev->miMWY = idelta;
 
-  if (vp && idelta != 0) {
-    uiev->_vpdim = fvec2(vp->width(), vp->height());
-    if (_HIDPI()) {
-      uiev->_vpdim *= 0.5;
-    }
-    vp->handleUiEvent(uiev);
+  if (root && idelta != 0) {
+    uiev->setvpDim(root);
+    ui::Event::sendToContext(uiev);
   }
 
   if (mpCtxBase)
@@ -332,9 +309,10 @@ void QCtxWidget::wheelEvent(QWheelEvent* qem) {
 
 void QCtxWidget::keyPressEvent(QKeyEvent* event) {
 
-  auto uiev   = uievent();
-  auto gfxwin = uiev->mpGfxWin;
-  auto vp     = gfxwin ? gfxwin->GetRootWidget() : nullptr;
+  auto uiev        = uievent();
+  auto gfxwin      = uiev->mpGfxWin;
+  auto root        = gfxwin ? gfxwin->GetRootWidget() : nullptr;
+  uiev->_uicontext = root ? root->_uicontext : nullptr;
 
   uiev->mpBlindEventData = (void*)event;
   uiev->_eventcode       = event->isAutoRepeat() //
@@ -363,12 +341,9 @@ void QCtxWidget::keyPressEvent(QKeyEvent* event) {
     uiev->miKeyCode = 13;
   }
 
-  if (vp) {
-    uiev->_vpdim = fvec2(vp->width(), vp->height());
-    if (_HIDPI()) {
-      uiev->_vpdim *= 0.5;
-    }
-    vp->handleUiEvent(uiev);
+  if (root) {
+    uiev->setvpDim(root);
+    ui::Event::sendToContext(uiev);
   }
 
   if (mpCtxBase)
@@ -381,9 +356,10 @@ void QCtxWidget::keyReleaseEvent(QKeyEvent* event) {
   if (event->isAutoRepeat())
     return;
 
-  auto uiev   = uievent();
-  auto gfxwin = uiev->mpGfxWin;
-  auto vp     = gfxwin ? gfxwin->GetRootWidget() : nullptr;
+  auto uiev        = uievent();
+  auto gfxwin      = uiev->mpGfxWin;
+  auto root        = gfxwin ? gfxwin->GetRootWidget() : nullptr;
+  uiev->_uicontext = root ? root->_uicontext : nullptr;
 
   uiev->mpBlindEventData = (void*)event;
   uiev->_eventcode       = ork::ui::EventCode::KEYUP;
@@ -404,12 +380,9 @@ void QCtxWidget::keyReleaseEvent(QKeyEvent* event) {
     uiev->miKeyCode = 13;
   }
 
-  if (vp) {
-    uiev->_vpdim = fvec2(vp->width(), vp->height());
-    if (_HIDPI()) {
-      uiev->_vpdim *= 0.5;
-    }
-    vp->handleUiEvent(uiev);
+  if (root) {
+    uiev->setvpDim(root);
+    ui::Event::sendToContext(uiev);
   }
 
   if (mpCtxBase)
@@ -420,12 +393,12 @@ void QCtxWidget::keyReleaseEvent(QKeyEvent* event) {
 void QCtxWidget::focusInEvent(QFocusEvent* event) {
   auto uiev              = uievent();
   auto gfxwin            = uiev->mpGfxWin;
-  auto vp                = gfxwin ? gfxwin->GetRootWidget() : nullptr;
+  auto root              = gfxwin ? gfxwin->GetRootWidget() : nullptr;
+  uiev->_uicontext       = root ? root->_uicontext : nullptr;
   uiev->_eventcode       = ork::ui::EventCode::GOT_KEYFOCUS;
   uiev->mpBlindEventData = (void*)event;
   if (Target()) {
-    if (vp)
-      vp->handleUiEvent(uiev);
+    ui::Event::sendToContext(uiev);
   }
   // orkprintf( "CTQT %08x got keyboard focus\n", this );
   QWidget::focusInEvent(event);
@@ -439,11 +412,13 @@ void QCtxWidget::focusInEvent(QFocusEvent* event) {
 void QCtxWidget::focusOutEvent(QFocusEvent* event) {
   auto uiev              = uievent();
   auto gfxwin            = uiev->mpGfxWin;
-  auto vp                = gfxwin ? gfxwin->GetRootWidget() : nullptr;
+  auto root              = gfxwin ? gfxwin->GetRootWidget() : nullptr;
+  uiev->_uicontext       = root ? root->_uicontext : nullptr;
   uiev->_eventcode       = ork::ui::EventCode::LOST_KEYFOCUS;
   uiev->mpBlindEventData = (void*)event;
-  if (vp) {
-    vp->handleUiEvent(uiev);
+  if (root) {
+    uiev->setvpDim(root);
+    ui::Event::sendToContext(uiev);
   }
   // orkprintf( "CTQT %08x lost keyboard focus\n", this );
   QWidget::focusOutEvent(event);

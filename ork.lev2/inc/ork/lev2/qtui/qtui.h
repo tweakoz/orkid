@@ -115,7 +115,6 @@ protected:
   int miHeight;
 
 private:
-  void SendOrkUiEvent();
   ui::Widget* _evstealwidget = nullptr;
 };
 

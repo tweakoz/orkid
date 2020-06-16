@@ -5,23 +5,39 @@ namespace ork::ui {
 
 HandlerResult Context::handleEvent(event_constptr_t ev) {
   OrkAssert(_top);
+  HandlerResult rval;
   /////////////////////////////////
   // drag operations always target
   //  the widget they started on..
   /////////////////////////////////
   switch (ev->_eventcode) {
-    case EventCode::DRAG:
+    case EventCode::DRAG: {
       if (_prevevent._eventcode != EventCode::DRAG) { // start drag
+        auto target   = _top->routeUiEvent(ev);
+        _evdragtarget = target;
+      }
+      if (_evdragtarget) {
+        _evdragtarget->OnUiEvent(ev);
+      } else {
+        rval = _top->handleUiEvent(ev);
       }
       break;
+    }
     default:
+      //////////
+      // and a release on drag always go to the same..
+      //////////
+      if (_evdragtarget and ev->_eventcode == EventCode::RELEASE)
+        _evdragtarget->OnUiEvent(ev);
+      else
+        rval = _top->handleUiEvent(ev);
+      //////////
       if (_prevevent._eventcode == EventCode::DRAG) { // end drag
         _evdragtarget = nullptr;
       }
       break;
   }
   /////////////////////////////////
-  auto rval  = _top->handleUiEvent(ev);
   _prevevent = *ev;
 
   // UpdateMouseFocus(ret, Ev);

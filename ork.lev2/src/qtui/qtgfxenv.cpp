@@ -14,6 +14,7 @@
 #include <ork/lev2/qtui/qtui.h>
 #include <ork/lev2/ui/event.h>
 #include <ork/lev2/ui/widget.h>
+#include <ork/lev2/ui/context.h>
 
 #if !defined(_CYGWIN)
 
@@ -54,7 +55,9 @@ void CQtWindow::GotFocus(void) {
 
     auto uievent        = std::make_shared<ui::Event>();
     uievent->_eventcode = ork::ui::EventCode::GOT_KEYFOCUS;
-    mRootWidget->handleUiEvent(uievent);
+    auto uictx          = mRootWidget->_uicontext;
+    if (uictx)
+      uictx->handleEvent(uievent);
   }
   mbHasFocus = true;
 }
@@ -67,7 +70,9 @@ void CQtWindow::LostFocus(void) {
 
     auto uievent        = std::make_shared<ui::Event>();
     uievent->_eventcode = ork::ui::EventCode::LOST_KEYFOCUS;
-    mRootWidget->handleUiEvent(uievent);
+    auto uictx          = mRootWidget->_uicontext;
+    if (uictx)
+      uictx->handleEvent(uievent);
   }
   mbHasFocus = false;
 }

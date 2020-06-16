@@ -1,7 +1,21 @@
 #include <ork/lev2/ui/event.h>
 #include <ork/lev2/ui/widget.h>
+#include <ork/lev2/ui/context.h>
 
 namespace ork::ui {
+HandlerResult Event::sendToContext(event_constptr_t ev) {
+  if (ev->_uicontext)
+    return ev->_uicontext->handleEvent(ev);
+  else
+    return HandlerResult();
+}
+void Event::setvpDim(Widget* w) {
+  _vpdim = fvec2(w->width(), w->height());
+  if (lev2::_HIDPI()) {
+    _vpdim *= 0.5;
+  }
+}
+
 ///////////////////////////////////////////////////////////
 void EventCooked::Reset() {
   _eventcode = EventCode::UNKNOWN;

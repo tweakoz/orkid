@@ -58,6 +58,7 @@ struct Event final // RawEvent
   lev2::OffscreenBuffer* mpGfxWin = nullptr;
   Coordinate mUICoord;
 
+  Context* _uicontext  = nullptr;
   EventCode _eventcode = EventCode::UNKNOWN;
   int miX              = 0;
   int miY              = 0;
@@ -109,7 +110,7 @@ struct Event final // RawEvent
     rval.SetY(-(2.0f * mfUnitY - 1.0f));
     return rval;
   }
-
+  void setvpDim(Widget* w);
   Event()
       : mvRayN(float(0.0f), float(0.0f), float(0.0f), float(0.0f))
       , mvRayF(float(0.0f), float(0.0f), float(0.0f), float(0.0f)) {
@@ -126,10 +127,9 @@ struct Event final // RawEvent
   bool IsButton2DownF() const {
     return mbRightButton || mFilteredEvent.mBut2;
   }
-};
 
-using event_ptr_t      = std::shared_ptr<Event>;
-using event_constptr_t = std::shared_ptr<const Event>;
+  static HandlerResult sendToContext(event_constptr_t ev);
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 

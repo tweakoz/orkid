@@ -8,9 +8,7 @@
 #include <ork/lev2/ui/box.h>
 
 namespace ork::ui {
-
 ///////////////////////////////////////////////////////////////////////////////
-
 Box::Box(
     const std::string& name, //
     fvec4 color,
@@ -21,14 +19,7 @@ Box::Box(
     : Widget(name, x, y, w, h)
     , _color(color) {
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-HandlerResult Box::DoOnUiEvent(event_constptr_t Ev) {
-  return HandlerResult();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 void Box::DoDraw(drawevent_constptr_t drwev) {
 
   auto tgt    = drwev->GetTarget();
@@ -73,9 +64,7 @@ void Box::DoDraw(drawevent_constptr_t drwev) {
   }
   mtxi->PopUIMatrix();
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 EvTestBox::EvTestBox(
     const std::string& name, //
     fvec4 colornormal,
@@ -92,7 +81,7 @@ EvTestBox::EvTestBox(
     , _colorDoubleClick(colordoubleclick)
     , _colorDrag(colordrag) {
 }
-
+///////////////////////////////////////////////////////////////////////////////
 EvTestBox::EvTestBox(
     const std::string& name, //
     fvec4 color,
@@ -101,18 +90,14 @@ EvTestBox::EvTestBox(
     int w,
     int h)
     : Widget(name, x, y, w, h) {
-
   _colorNormal      = (color);
   _colorClick       = (color * 0.75f);
   _colorDoubleClick = (color * 0.5f);
   _colorDrag        = fvec4(1, 1, 1, 0) - color;
   _colorDrag.w      = color.w;
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 HandlerResult EvTestBox::DoOnUiEvent(event_constptr_t Ev) {
-
   switch (Ev->_eventcode) {
     case EventCode::PUSH:
     case EventCode::DOUBLECLICK:
@@ -123,17 +108,13 @@ HandlerResult EvTestBox::DoOnUiEvent(event_constptr_t Ev) {
   }
   return HandlerResult();
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 void EvTestBox::DoDraw(drawevent_constptr_t drwev) {
-
   auto tgt    = drwev->GetTarget();
   auto fbi    = tgt->FBI();
   auto mtxi   = tgt->MTXI();
   auto& primi = lev2::GfxPrimitives::GetRef();
   auto defmtl = lev2::defaultUIMaterial();
-
   mtxi->PushUIMatrix();
   {
     int ix1, iy1, ix2, iy2;
@@ -204,4 +185,5 @@ void EvTestBox::DoDraw(drawevent_constptr_t drwev) {
   }
   mtxi->PopUIMatrix();
 }
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::ui

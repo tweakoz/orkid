@@ -4,7 +4,6 @@
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
-
 #include "harness.h"
 #include <boost/program_options.hpp>
 #include <iostream>
@@ -21,21 +20,22 @@
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/ui/context.h>
-
+///////////////////////////////////////////////////////////////////////////////
 namespace po = boost::program_options;
-
+///////////////////////////////////////////////////////////////////////////////
 #if defined(__APPLE__)
 namespace ork::lev2 {
 extern bool _macosUseHIDPI;
 }
 #endif
-
+///////////////////////////////////////////////////////////////////////////////
 UiTestApp::UiTestApp(int& argc, char** argv)
     : OrkEzQtApp(argc, argv) {
 }
+///////////////////////////////////////////////////////////////////////////////
 UiTestApp::~UiTestApp() {
 }
-
+///////////////////////////////////////////////////////////////////////////////
 uitestapp_ptr_t createEZapp(
     ui::context_ptr_t uicontext, //
     int& argc,
@@ -46,9 +46,10 @@ uitestapp_ptr_t createEZapp(
   //////////////////////////////////////////////////////////////////////////////
   static auto& qti = qtinit(argc, argv);
   QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
-  auto qtapp  = std::make_shared<UiTestApp>(qti._argc, qti._argvp);
-  auto qtwin  = qtapp->_mainWindow;
-  auto gfxwin = qtwin->_gfxwin;
+  auto qtapp                      = std::make_shared<UiTestApp>(qti._argc, qti._argvp);
+  auto qtwin                      = qtapp->_mainWindow;
+  auto gfxwin                     = qtwin->_gfxwin;
+  gfxwin->mRootWidget->_uicontext = uicontext.get();
   //////////////////////////////////////////////////////////
   // create references to various items scoped by qtapp
   //////////////////////////////////////////////////////////
@@ -146,7 +147,8 @@ uitestapp_ptr_t createEZapp(
         }
         break;
       default:
-        return uicontext->handleEvent(ev);
+        OrkAssert(false);
+        // return uicontext->handleEvent(ev);
         // return qtapp->_uivp->HandleUiEvent(ev);
         break;
     }

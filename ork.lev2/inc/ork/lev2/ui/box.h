@@ -17,11 +17,9 @@ public:
       int y = 0,
       int w = 0,
       int h = 0);
-
   fvec4 _color;
 
 private:
-  HandlerResult DoOnUiEvent(event_constptr_t Ev) override;
   void DoDraw(ui::drawevent_constptr_t drwev) override;
 };
 
