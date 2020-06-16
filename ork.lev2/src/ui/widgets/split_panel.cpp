@@ -167,17 +167,18 @@ void SplitPanel::DoLayout() {
   int p2y = p1y + p1h + ksplith;
   int p2h = _geometry._h - kpanelw - p2y;
 
-  printf(
-      "Panel<%s>::DoLayout x<%d> y<%d> w<%d> h<%d> p1y<%d> p1h<%d> p2y<%d> p2h<%d>\n", //
-      msName.c_str(),
-      _geometry._x,
-      _geometry._y,
-      _geometry._w,
-      _geometry._h,
-      p1y,
-      p1h,
-      p2y,
-      p2h);
+  if (0)
+    printf(
+        "SplitPanel<%s>::DoLayout x<%d> y<%d> w<%d> h<%d> p1y<%d> p1h<%d> p2y<%d> p2h<%d>\n", //
+        msName.c_str(),
+        _geometry._x,
+        _geometry._y,
+        _geometry._w,
+        _geometry._h,
+        p1y,
+        p1h,
+        p2y,
+        p2h);
 
   if (_child1) {
     _child1->SetRect(kpanelw, p1y, cw, p1h);

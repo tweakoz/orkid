@@ -112,7 +112,8 @@ void QCtxWidget::resizeEvent(QResizeEvent* event) {
     H *= 2;
   }
 #endif
-  printf("W<%d> H<%d>\n", W, H);
+  if (0)
+    printf("W<%d> H<%d>\n", W, H);
   miWidth  = W;
   miHeight = H;
   if (mpCtxBase)

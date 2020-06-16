@@ -76,7 +76,8 @@ void Group::OnResize() {
 
 void Group::DoLayout() {
   const auto& g = _geometry;
-  printf("Group<%s>::DoLayout x<%d> y<%d> w<%d> h<%d>\n", msName.c_str(), g._x, g._y, g._w, g._h);
+  if (0)
+    printf("Group<%s>::DoLayout x<%d> y<%d> w<%d> h<%d>\n", msName.c_str(), g._x, g._y, g._w, g._h);
   for (auto& it : _children) {
     it->ReLayout();
   }
@@ -131,14 +132,15 @@ void LayoutGroup::DoLayout() {
   //  either manually or driven indirectly through the resize
   //  of a parent..
   const auto& g = _geometry;
-  printf(
-      "LayoutGroup<%s>::DoLayout l<%p> x<%d> y<%d> w<%d> h<%d>\n", //
-      msName.c_str(),
-      _layout.get(),
-      g._x,
-      g._y,
-      g._w,
-      g._h);
+  if (0)
+    printf(
+        "LayoutGroup<%s>::DoLayout l<%p> x<%d> y<%d> w<%d> h<%d>\n", //
+        msName.c_str(),
+        _layout.get(),
+        g._x,
+        g._y,
+        g._w,
+        g._h);
   if (_layout)
     _layout->updateAll();
   //
