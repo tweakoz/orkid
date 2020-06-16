@@ -4,32 +4,27 @@
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
-
 #include <ork/kernel/opq.h>
 #include <ork/lev2/gfx/ctxbase.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/input/inputdevice.h>
 #include <ork/pch.h>
-//
+////////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/camera/uicam.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/qtui/qtui.h>
 #include <ork/lev2/ui/viewport.h>
-
+///////////////////////////////////////////////////////////////////////////////
 #include <QtGui/QCursor>
 #include <QtWidgets/QGesture>
 #include <QtWidgets/QMainWindow>
 #include <ork/kernel/msgrouter.inl>
 #include <ork/math/basicfilters.h>
-
+///////////////////////////////////////////////////////////////////////////////
 extern "C" void StartTouchReciever(void* tr);
-
 ///////////////////////////////////////////////////////////////////////////////
-
-namespace ork { namespace lev2 {
-
+namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-
 QCtxWidget::QCtxWidget(CTQT* pctxbase, QWidget* parent)
     : QWidget(parent)
     , mpCtxBase(pctxbase)
@@ -55,36 +50,28 @@ QCtxWidget::QCtxWidget(CTQT* pctxbase, QWidget* parent)
 
   _pushTimer.Start();
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 QCtxWidget::~QCtxWidget() {
   if (mpCtxBase) {
     delete mpCtxBase;
     // delete
   }
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 bool QCtxWidget::event(QEvent* event) {
   return QWidget::event(event);
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 void QCtxWidget::showEvent(QShowEvent* event) {
   uievent()->mpBlindEventData = (void*)event;
   QWidget::showEvent(event);
   parentWidget()->show();
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 #if defined(__APPLE__)
 extern bool _macosUseHIDPI;
 #endif
-
+///////////////////////////////////////////////////////////////////////////////
 void QCtxWidget::resizeEvent(QResizeEvent* event) {
   if (nullptr == event)
     return;
@@ -109,9 +96,7 @@ void QCtxWidget::resizeEvent(QResizeEvent* event) {
   if (mpCtxBase)
     mpCtxBase->Resize(X, Y, W, H);
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 void QCtxWidget::paintEvent(QPaintEvent* event) {
   static int gistackctr = 0;
   static int gictr      = 0;
@@ -127,9 +112,7 @@ void QCtxWidget::paintEvent(QPaintEvent* event) {
   gistackctr--;
   gictr++;
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 void QCtxWidget::MouseEventCommon(QMouseEvent* event) {
   auto uiev = uievent();
 
@@ -173,9 +156,7 @@ void QCtxWidget::MouseEventCommon(QMouseEvent* event) {
   //   printf( "UNITX<%f> UNITY<%f>\n", unitX, unitY );
   //    printf( "ix<%d %d>\n", ix, iy );
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 static fvec2 gpos;
 void QCtxWidget::mouseMoveEvent(QMouseEvent* event) {
   auto uiev        = uievent();
@@ -195,7 +176,7 @@ void QCtxWidget::mouseMoveEvent(QMouseEvent* event) {
 
   bool isbutton = (Buttons != Qt::NoButton);
 
-  uiev->_eventcode = (isbutton and _pushTimer.SecsSinceStart() > 0.125) //
+  uiev->_eventcode = (isbutton) //
                          ? ork::ui::EventCode::DRAG
                          : ork::ui::EventCode::MOVE;
 
@@ -206,9 +187,7 @@ void QCtxWidget::mouseMoveEvent(QMouseEvent* event) {
   if (mpCtxBase)
     mpCtxBase->SlotRepaint();
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 void QCtxWidget::mousePressEvent(QMouseEvent* event) {
   MouseEventCommon(event);
   auto uiev        = uievent();
@@ -224,9 +203,7 @@ void QCtxWidget::mousePressEvent(QMouseEvent* event) {
   if (mpCtxBase)
     mpCtxBase->SlotRepaint();
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 void QCtxWidget::mouseDoubleClickEvent(QMouseEvent* event) {
   MouseEventCommon(event);
   auto uiev        = uievent();
@@ -242,9 +219,7 @@ void QCtxWidget::mouseDoubleClickEvent(QMouseEvent* event) {
   if (mpCtxBase)
     mpCtxBase->SlotRepaint();
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 void QCtxWidget::mouseReleaseEvent(QMouseEvent* event) {
   printf("gotrelease\n");
   MouseEventCommon(event);
@@ -266,9 +241,7 @@ void QCtxWidget::mouseReleaseEvent(QMouseEvent* event) {
   if (mpCtxBase)
     mpCtxBase->SlotRepaint();
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 void QCtxWidget::wheelEvent(QWheelEvent* qem) {
   auto uiev        = uievent();
   auto gfxwin      = uiev->mpGfxWin;
@@ -304,9 +277,7 @@ void QCtxWidget::wheelEvent(QWheelEvent* qem) {
   if (mpCtxBase)
     mpCtxBase->SlotRepaint();
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 void QCtxWidget::keyPressEvent(QKeyEvent* event) {
 
   auto uiev        = uievent();
@@ -349,9 +320,7 @@ void QCtxWidget::keyPressEvent(QKeyEvent* event) {
   if (mpCtxBase)
     mpCtxBase->SlotRepaint();
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 void QCtxWidget::keyReleaseEvent(QKeyEvent* event) {
   if (event->isAutoRepeat())
     return;
@@ -388,7 +357,6 @@ void QCtxWidget::keyReleaseEvent(QKeyEvent* event) {
   if (mpCtxBase)
     mpCtxBase->SlotRepaint();
 }
-
 ///////////////////////////////////////////////////////////////////////////////
 void QCtxWidget::focusInEvent(QFocusEvent* event) {
   auto uiev              = uievent();
@@ -408,7 +376,7 @@ void QCtxWidget::focusInEvent(QFocusEvent* event) {
   if (mpCtxBase)
     mpCtxBase->SlotRepaint();
 }
-
+///////////////////////////////////////////////////////////////////////////////
 void QCtxWidget::focusOutEvent(QFocusEvent* event) {
   auto uiev              = uievent();
   auto gfxwin            = uiev->mpGfxWin;
@@ -428,36 +396,31 @@ void QCtxWidget::focusOutEvent(QFocusEvent* event) {
   if (mpCtxBase)
     mpCtxBase->SlotRepaint();
 }
-
+///////////////////////////////////////////////////////////////////////////////
 ui::event_ptr_t QCtxWidget::uievent() {
   return mpCtxBase->_uievent;
 }
+///////////////////////////////////////////////////////////////////////////////
 ui::event_constptr_t QCtxWidget::uievent() const {
   return mpCtxBase->_uievent;
 }
-
+///////////////////////////////////////////////////////////////////////////////
 Context* QCtxWidget::Target() const {
   return mpCtxBase->mpTarget;
 }
-
+///////////////////////////////////////////////////////////////////////////////
 Window* QCtxWidget::GetWindow() const {
   return mpCtxBase->mpWindow;
 }
-
+///////////////////////////////////////////////////////////////////////////////
 bool QCtxWidget::AlwaysRun() const {
   return mpCtxBase->mbAlwaysRun;
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
 QTimer& CTQT::Timer() const {
   return mpQtWidget->mQtTimer;
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 void CTQT::Show() {
   mParent->show();
   if (mbInitialize) {
@@ -467,13 +430,11 @@ void CTQT::Show() {
     mbInitialize = false;
   }
 }
-
+///////////////////////////////////////////////////////////////////////////////
 void CTQT::Hide() {
   mParent->hide();
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 inline int to_qtmillis(RefreshPolicyItem policy) {
   int user_millis = 0;
 
@@ -497,9 +458,7 @@ inline int to_qtmillis(RefreshPolicyItem policy) {
   }
   return qt_millis;
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 void CTQT::_setRefreshPolicy(RefreshPolicyItem newpolicy) { // final
 
   auto prev         = _curpolicy;
@@ -517,9 +476,7 @@ void CTQT::_setRefreshPolicy(RefreshPolicyItem newpolicy) { // final
 
   _curpolicy = newpolicy;
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 CTQT::CTQT(Window* pwin, QWidget* pparent)
     : CTXBASE(pwin)
     , mbAlwaysRun(false)
@@ -534,12 +491,10 @@ CTQT::CTQT(Window* pwin, QWidget* pparent)
 
   SetParent(pparent);
 }
-
+///////////////////////////////////////////////////////////////////////////////
 CTQT::~CTQT() {
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 void CTQT::SetParent(QWidget* pparent) {
   printf("CTQT::SetParent() pparent<%p>\n", pparent);
   QMainWindow* mainwin = 0;
@@ -559,17 +514,13 @@ void CTQT::SetParent(QWidget* pparent) {
 
   mpWindow->SetDirty(true);
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 fvec2 CTQT::MapCoordToGlobal(const fvec2& v) const {
   QPoint p(v.GetX(), v.GetY());
   QPoint p2 = mpQtWidget->mapToGlobal(p);
   return fvec2(p2.x(), p2.y());
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 void CTQT::Resize(int X, int Y, int W, int H) {
   //////////////////////////////////////////////////////////
   lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
@@ -585,9 +536,7 @@ void CTQT::Resize(int X, int Y, int W, int H) {
   }
   lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
 void CTQT::SlotRepaint() {
   auto lamb = [&]() {
     if (not GfxEnv::initialized())
@@ -632,5 +581,5 @@ void CTQT::SlotRepaint() {
     opq::mainSerialQueue()->enqueue(lamb);
   }
 }
-
-}} // namespace ork::lev2
+///////////////////////////////////////////////////////////////////////////////
+} // namespace ork::lev2
