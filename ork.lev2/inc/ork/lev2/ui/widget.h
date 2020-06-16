@@ -5,8 +5,6 @@
 
 namespace ork { namespace ui {
 
-struct Group;
-
 struct IWidgetEventFilter {
   IWidgetEventFilter(Widget& w);
   void Filter(event_constptr_t Ev);
@@ -31,7 +29,6 @@ struct IWidgetEventFilter {
   Timer mDoubleTimer;
   Timer mMoveTimer;
 };
-using eventfilter_ptr_t = std::shared_ptr<IWidgetEventFilter>;
 struct Apple3ButtonMouseEmulationFilter : public IWidgetEventFilter {
   Apple3ButtonMouseEmulationFilter(Widget& w)
       : IWidgetEventFilter(w) {
@@ -56,7 +53,7 @@ public:
   static const int keycode_alt   = 16777251;
   static const int keycode_ctrl  = 16777250;
 
-  Widget(const std::string& name, int x, int y, int w, int h);
+  Widget(const std::string& name, int x = 0, int y = 0, int w = 0, int h = 0);
   ~Widget();
 
   void Init(lev2::Context* pTARG);
@@ -222,7 +219,7 @@ private:
 
 struct Group : public Widget {
 public:
-  Group(const std::string& name, int x, int y, int w, int h);
+  Group(const std::string& name, int x = 0, int y = 0, int w = 0, int h = 0);
 
   void addChild(widget_ptr_t w);
   void removeChild(widget_ptr_t w);
@@ -239,6 +236,82 @@ protected:
 private:
   void OnResize() override;
   void DoLayout() override;
+};
+
+////////////////////////////////////////////////////////////////////
+// Group : abstract collection of widgets
+////////////////////////////////////////////////////////////////////
+
+struct LayoutGroup : public Group {
+
+  LayoutGroup(const std::string& name, int x = 0, int y = 0, int w = 0, int h = 0);
+
+  anchor::layout_ptr_t _layout;
+
+private:
+  void DoDraw(ui::drawevent_constptr_t drwev) override;
+  void OnResize() override;
+  void DoLayout() override;
+  HandlerResult DoRouteUiEvent(event_constptr_t Ev) override;
+};
+
+////////////////////////////////////////////////////////////////////
+// Simple (Colored) Box Widget
+//  mostly used for testing, but if you need a colored box...
+////////////////////////////////////////////////////////////////////
+
+struct Box final : public Widget {
+public:
+  Box(const std::string& name, //
+      fvec4 color,
+      int x = 0,
+      int y = 0,
+      int w = 0,
+      int h = 0);
+
+  fvec4 _color;
+
+private:
+  HandlerResult DoRouteUiEvent(event_constptr_t Ev) override;
+  void DoDraw(ui::drawevent_constptr_t drwev) override;
+};
+
+////////////////////////////////////////////////////////////////////
+// Simple (Colored) Box Widget
+//  the color changes depending on the last input event
+//  mostly used for ui event testing,
+// but if you need a colored box...
+////////////////////////////////////////////////////////////////////
+
+struct EvTestBox final : public Widget {
+public:
+  EvTestBox(
+      const std::string& name, //
+      fvec4 color,
+      int x = 0,
+      int y = 0,
+      int w = 0,
+      int h = 0);
+  EvTestBox(
+      const std::string& name, //
+      fvec4 colornormal,
+      fvec4 colorclick,
+      fvec4 colordoubleclick,
+      fvec4 colordrag,
+      int x = 0,
+      int y = 0,
+      int w = 0,
+      int h = 0);
+
+  fvec4 _colorNormal;
+  fvec4 _colorClick;
+  fvec4 _colorDoubleClick;
+  fvec4 _colorDrag;
+  int _colorsel = 0;
+
+private:
+  HandlerResult DoRouteUiEvent(event_constptr_t Ev) override;
+  void DoDraw(ui::drawevent_constptr_t drwev) override;
 };
 
 }} // namespace ork::ui

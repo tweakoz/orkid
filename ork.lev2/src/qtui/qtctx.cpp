@@ -51,6 +51,7 @@ QCtxWidget::QCtxWidget(CTQT* pctxbase, QWidget* parent)
   // show();
   // setAttribute( Qt::WA_AcceptTouchEvents );
   // grabGesture(Qt::PanGesture);
+  _evstealwidget = nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -198,7 +199,9 @@ void QCtxWidget::mouseMoveEvent(QMouseEvent* event) {
 
   Qt::MouseButtons Buttons = event->buttons();
 
-  uiev->miEventCode = (Buttons == Qt::NoButton) ? ork::ui::UIEV_MOVE : ork::ui::UIEV_DRAG;
+  uiev->miEventCode = (Buttons == Qt::NoButton) //
+                          ? ork::ui::UIEV_MOVE
+                          : ork::ui::UIEV_DRAG;
 
   if (vp) {
     uiev->_vpdim = fvec2(vp->width(), vp->height());
@@ -221,6 +224,7 @@ void QCtxWidget::mousePressEvent(QMouseEvent* event) {
   auto vp           = gfxwin ? gfxwin->GetRootWidget() : nullptr;
   uiev->miEventCode = ork::ui::UIEV_PUSH;
   if (vp) {
+
     uiev->_vpdim = fvec2(vp->width(), vp->height());
     if (_HIDPI()) {
       uiev->_vpdim *= 0.5;
@@ -254,11 +258,14 @@ void QCtxWidget::mouseDoubleClickEvent(QMouseEvent* event) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void QCtxWidget::mouseReleaseEvent(QMouseEvent* event) {
+  printf("gotrelease\n");
   MouseEventCommon(event);
   auto uiev         = uievent();
   auto gfxwin       = uiev->mpGfxWin;
   auto vp           = gfxwin ? gfxwin->GetRootWidget() : nullptr;
   uiev->miEventCode = ork::ui::UIEV_RELEASE;
+
+  //////////////////////////////////////
 
   if (vp) {
     uiev->_vpdim = fvec2(vp->width(), vp->height());
@@ -267,6 +274,8 @@ void QCtxWidget::mouseReleaseEvent(QMouseEvent* event) {
     }
     vp->HandleUiEvent(uiev);
   }
+
+  _evstealwidget = nullptr;
 
   if (mpCtxBase)
     mpCtxBase->SlotRepaint();

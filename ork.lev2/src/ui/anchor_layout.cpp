@@ -19,6 +19,12 @@ Layout::Layout(widget_ptr_t w)
 Layout::~Layout() {
 }
 /////////////////////////////////////////////////////////////////////////
+layout_ptr_t Layout::childLayout(widget_ptr_t w) {
+  auto l = std::make_shared<Layout>(w);
+  _childlayouts.push_back(l);
+  return l;
+}
+/////////////////////////////////////////////////////////////////////////
 guide_ptr_t Layout::top() {
   if (_top == nullptr) {
     _top = std::make_shared<Guide>(this, Edge::Top);
@@ -68,18 +74,29 @@ guide_ptr_t Layout::centerV() {
 }
 /////////////////////////////////////////////////////////////////////////
 void Layout::updateAll() {
+  visit_set vset;
+  _doUpdateAll(vset);
+}
+/////////////////////////////////////////////////////////////////////////
+void Layout::_doUpdateAll(visit_set& vset) {
   if (_top)
-    _top->updateAssociates();
+    _top->updateAssociates(vset);
   if (_left)
-    _left->updateAssociates();
+    _left->updateAssociates(vset);
   if (_bottom)
-    _bottom->updateAssociates();
+    _bottom->updateAssociates(vset);
   if (_right)
-    _right->updateAssociates();
+    _right->updateAssociates(vset);
   if (_centerH)
-    _centerH->updateAssociates();
+    _centerH->updateAssociates(vset);
   if (_centerV)
-    _centerV->updateAssociates();
+    _centerV->updateAssociates(vset);
+  for (auto g : _customguides)
+    g->updateAssociates(vset);
+
+  for (auto l : _childlayouts) {
+    l->_doUpdateAll(vset);
+  }
 }
 /////////////////////////////////////////////////////////////////////////
 void Layout::setMargin(int margin) {
@@ -97,6 +114,10 @@ void Layout::setMargin(int margin) {
 
   if (_right)
     _right->setMargin(margin);
+
+  for (auto g : _customguides) {
+    g->setMargin(margin);
+  }
 }
 /////////////////////////////////////////////////////////////////////////
 void Layout::centerIn(Layout* other) {
@@ -155,8 +176,38 @@ void Layout::fill(Layout* other) {
 
   if (_centerV)
     _centerV->anchorTo(nullptr);
+  for (auto g : _customguides)
+    g->anchorTo(nullptr);
 
   return;
+}
+/////////////////////////////////////////////////////////////////////////
+guide_ptr_t Layout::proportionalHorizontalGuide(float proportion) {
+  auto guide         = std::make_shared<Guide>(this, Edge::CustomHorizontal);
+  guide->_proportion = proportion;
+  _customguides.insert(guide);
+  return guide;
+}
+/////////////////////////////////////////////////////////////////////////
+guide_ptr_t Layout::proportionalVerticalGuide(float proportion) {
+  auto guide         = std::make_shared<Guide>(this, Edge::CustomVertical);
+  guide->_proportion = proportion;
+  _customguides.insert(guide);
+  return guide;
+}
+/////////////////////////////////////////////////////////////////////////
+guide_ptr_t Layout::fixedHorizontalGuide(int fixed) {
+  auto guide    = std::make_shared<Guide>(this, Edge::CustomHorizontal);
+  guide->_fixed = fixed;
+  _customguides.insert(guide);
+  return guide;
+}
+/////////////////////////////////////////////////////////////////////////
+guide_ptr_t Layout::fixedVerticalGuide(int fixed) {
+  auto guide    = std::make_shared<Guide>(this, Edge::CustomVertical);
+  guide->_fixed = fixed;
+  _customguides.insert(guide);
+  return guide;
 }
 /////////////////////////////////////////////////////////////////////////
 bool Layout::isAnchorAllowed(guide_ptr_t guide) const {
@@ -189,6 +240,10 @@ void Layout::dump() {
     _centerH->dump();
   if (_centerV)
     _centerV->dump();
+  for (auto g : _customguides)
+    g->dump();
+  for (auto l : _childlayouts)
+    l->dump();
   printf("//////////////////////////\n");
 }
 /////////////////////////////////////////////////////////////////////////

@@ -86,7 +86,7 @@ uitestapp_ptr_t createEZapp(int& argc, char** argv) {
     auto DB = DrawableBuffer::acquireForWrite(0);
     DB->Reset();
     DB->copyCameras(*cameras);
-    qtapp->_uivp->onUpdateThreadTick(updata);
+    // qtapp->_uivp->onUpdateThreadTick(updata);
     DrawableBuffer::releaseFromWrite(DB);
   });
   //////////////////////////////////////////////////////////
@@ -115,7 +115,7 @@ uitestapp_ptr_t createEZapp(int& argc, char** argv) {
     compositorimpl->pushCPD(*CPD);
     context->beginFrame();
     mtxi->PushUIMatrix();
-    // qtapp->_uivp->Draw(drwev);
+    qtapp->_uivp->Draw(drwev);
     mtxi->PopUIMatrix();
     context->endFrame();
     ////////////////////////////////////////////////////

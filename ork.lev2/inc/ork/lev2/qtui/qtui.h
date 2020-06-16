@@ -74,8 +74,12 @@ protected:
   int miHeight;
 
 public:
-  void Enable() { mbEnabled = true; }
-  bool IsEnabled() const { return mbEnabled; }
+  void Enable() {
+    mbEnabled = true;
+  }
+  bool IsEnabled() const {
+    return mbEnabled;
+  }
 
   bool event(QEvent* event) final;
 
@@ -102,13 +106,16 @@ public:
   Window* GetWindow() const;
   bool AlwaysRun() const;
 
-  QPaintEngine* paintEngine() const final { return nullptr; }
+  QPaintEngine* paintEngine() const final {
+    return nullptr;
+  }
 
   QCtxWidget(CTQT* pctxbase, QWidget* parent);
   ~QCtxWidget();
 
 private:
   void SendOrkUiEvent();
+  ui::Widget* _evstealwidget = nullptr;
 };
 
 class CTQT : public CTXBASE {
@@ -134,10 +141,18 @@ public:
 
   void Resize(int X, int Y, int W, int H);
   void SetParent(QWidget* pw);
-  void SetAlwaysRun(bool brun) { mbAlwaysRun = brun; }
-  void* winId() const { return (void*)mpQtWidget->winId(); }
-  QCtxWidget* GetQWidget() const { return mpQtWidget; }
-  QWidget* GetParent() const { return mParent; }
+  void SetAlwaysRun(bool brun) {
+    mbAlwaysRun = brun;
+  }
+  void* winId() const {
+    return (void*)mpQtWidget->winId();
+  }
+  QCtxWidget* GetQWidget() const {
+    return mpQtWidget;
+  }
+  QWidget* GetParent() const {
+    return mParent;
+  }
 
   fvec2 MapCoordToGlobal(const fvec2& v) const override;
 };
@@ -156,7 +171,8 @@ public:
   // virtual void Show( void );
   virtual void GotFocus(void);
   virtual void LostFocus(void);
-  virtual void Hide(void) {}
+  virtual void Hide(void) {
+  }
   /*virtual*/ void OnShow();
 };
 

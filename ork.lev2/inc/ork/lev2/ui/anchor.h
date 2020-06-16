@@ -9,20 +9,9 @@
 
 #include <ork/lev2/ui/event.h>
 #include <functional>
-
-namespace ork::ui {
-struct Widget;
-}
+#include <unordered_set>
 
 namespace ork::ui::anchor {
-
-struct Guide;
-struct Layout;
-
-using guide_ptr_t       = std::shared_ptr<Guide>;
-using guide_constptr_t  = std::shared_ptr<const Guide>;
-using layout_ptr_t      = std::shared_ptr<Layout>;
-using layout_constptr_t = std::shared_ptr<const Layout>;
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -34,8 +23,8 @@ enum class Edge { //
   Right,
   HorizontalCenter,
   VerticalCenter,
-  Horizontal,
-  Vertical
+  CustomHorizontal,
+  CustomVertical,
 };
 
 enum class Mode { //
@@ -47,6 +36,8 @@ struct Line {
   fvec2 _from, _to;
 };
 
+using line_ptr_t = std::shared_ptr<Line>;
+
 /////////////////////////////////////////////////////////////////////////
 
 enum class Relationship { //
@@ -57,12 +48,18 @@ enum class Relationship { //
 
 /////////////////////////////////////////////////////////////////////////
 
+using visit_set = std::unordered_set<int>;
+
 struct Layout {
 
   Layout(widget_ptr_t w);
   ~Layout();
 
+  layout_ptr_t childLayout(widget_ptr_t w);
+
   void setMargin(int margin);
+  void setAllBoundingMargins(int margin);
+
   void centerIn(Layout* other);
   bool isAnchorAllowed(guide_ptr_t guide) const;
   bool isAnchorAllowed(Layout* guide) const;
@@ -70,12 +67,19 @@ struct Layout {
 
   void updateAll();
 
+  void _doUpdateAll(visit_set& vset);
+
   guide_ptr_t top();
   guide_ptr_t left();
   guide_ptr_t bottom();
   guide_ptr_t right();
   guide_ptr_t centerH();
   guide_ptr_t centerV();
+
+  guide_ptr_t proportionalHorizontalGuide(float proportion);
+  guide_ptr_t proportionalVerticalGuide(float proportion);
+  guide_ptr_t fixedHorizontalGuide(int fixed);
+  guide_ptr_t fixedVerticalGuide(int fixed);
 
   void dump();
 
@@ -93,6 +97,9 @@ struct Layout {
   guide_ptr_t _right   = nullptr;
   guide_ptr_t _centerH = nullptr;
   guide_ptr_t _centerV = nullptr;
+
+  std::set<guide_ptr_t> _customguides;
+  std::vector<layout_ptr_t> _childlayouts;
 };
 
 /////////////////////////////////////////////////////////////////////////
@@ -106,7 +113,7 @@ struct Guide {
   void setMargin(int margin);
   bool isVertical() const;
   bool isHorizontal() const;
-  void updateAssociates();
+  void updateAssociates(visit_set& vset);
   void updateGeometry();
   Relationship _relationshipWith(Guide* other) const;
   Line line(Mode mode) const;
@@ -117,13 +124,14 @@ struct Guide {
   void dump();
 
   std::set<Guide*> _associates;
-  int _name        = -1;
-  Layout* _layout  = nullptr;
-  Guide* _relative = nullptr;
-  Edge _edge       = Edge::Top;
-  int _margin      = 0;
-  int _sign        = 1; // sign of offset: -1 or 1
-  float _unito     = 0.0f;
+  int _name         = -1;
+  Layout* _layout   = nullptr;
+  Guide* _relative  = nullptr;
+  Edge _edge        = Edge::Top;
+  int _margin       = 0;
+  int _sign         = 1; // sign of offset: -1 or 1
+  float _proportion = 0.0f;
+  int _fixed        = 0.0f;
 };
 
 } // namespace ork::ui::anchor

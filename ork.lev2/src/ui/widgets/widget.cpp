@@ -67,8 +67,6 @@ HandlerResult Widget::HandleUiEvent(event_constptr_t Ev) {
   HandlerResult ret;
 
   if (gFastPath) {
-    // printf( "Widget::HandleUiEvent::FASTPATH ev<%d,%d> widget<%p:%s>\n", Ev->miX, Ev->miY, gFastPath, gFastPath->msName.c_str()
-    // );
     ret = gFastPath->RouteUiEvent(Ev);
   } else {
     bool binside = IsEventInside(Ev);

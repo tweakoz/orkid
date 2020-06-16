@@ -90,7 +90,6 @@ protected:
 
   Context* mpTarget;
   Window* mpWindow;
-
   ui::event_ptr_t _uievent;
   CTFLXID mxidThis;
   CTFLXID mxidTopLevel;

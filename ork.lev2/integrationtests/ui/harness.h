@@ -24,7 +24,7 @@ using testvp_ptr_t = std::shared_ptr<TestViewport>;
 struct UiTestApp final : public OrkEzQtApp {
   UiTestApp(int& argc, char** argv);
   ~UiTestApp() override;
-  testvp_ptr_t _uivp;
+  ui::group_ptr_t _uivp;
 };
 using uitestapp_ptr_t = std::shared_ptr<UiTestApp>;
 

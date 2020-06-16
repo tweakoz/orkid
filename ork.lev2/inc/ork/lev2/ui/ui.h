@@ -37,13 +37,15 @@ struct Coordinate;
 struct Event;
 struct DrawEvent;
 struct MultiTouchPoint;
+struct IWidgetEventFilter;
 
-using widget_ptr_t     = std::shared_ptr<Widget>;
-using group_ptr_t      = std::shared_ptr<Group>;
-using surface_ptr_t    = std::shared_ptr<Surface>;
-using splitpanel_ptr_t = std::shared_ptr<SplitPanel>;
-using panel_ptr_t      = std::shared_ptr<Panel>;
-using viewport_ptr_t   = std::shared_ptr<Viewport>;
+using widget_ptr_t      = std::shared_ptr<Widget>;
+using group_ptr_t       = std::shared_ptr<Group>;
+using surface_ptr_t     = std::shared_ptr<Surface>;
+using splitpanel_ptr_t  = std::shared_ptr<SplitPanel>;
+using panel_ptr_t       = std::shared_ptr<Panel>;
+using viewport_ptr_t    = std::shared_ptr<Viewport>;
+using eventfilter_ptr_t = std::shared_ptr<IWidgetEventFilter>;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -68,6 +70,15 @@ struct Rect {
   void setRight(int x);
   int _x, _y, _w, _h;
 };
+
+namespace anchor {
+struct Layout;
+struct Guide;
+using guide_ptr_t       = std::shared_ptr<Guide>;
+using guide_constptr_t  = std::shared_ptr<const Guide>;
+using layout_ptr_t      = std::shared_ptr<Layout>;
+using layout_constptr_t = std::shared_ptr<const Layout>;
+} // namespace anchor
 
 ///////////////////////////////////////////////////////////////////////////////
 

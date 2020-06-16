@@ -51,11 +51,11 @@ std::string edge2str(Edge e) {
     case Edge::VerticalCenter:
       rval = "VerticalCenter";
       break;
-    case Edge::Horizontal:
-      rval = "Horizontal";
+    case Edge::CustomHorizontal:
+      rval = "CustomHorizontal";
       break;
-    case Edge::Vertical:
-      rval = "Vertical";
+    case Edge::CustomVertical:
+      rval = "CustomVertical";
       break;
   }
   return rval;
@@ -70,45 +70,69 @@ Guide::Guide(Layout* layout, Edge edge)
 /////////////////////////////////////////////////////////////////////////
 void Guide::setMargin(int margin) {
   _margin = margin;
-  updateAssociates();
+  visit_set vset;
+  updateAssociates(vset);
 }
 /////////////////////////////////////////////////////////////////////////
-void Guide::updateAssociates() {
-  for (auto g : _associates)
-    g->updateGeometry();
+void Guide::updateAssociates(visit_set& vset) {
+  for (auto g : _associates) {
+    auto it = vset.find(g->_name);
+    if (it == vset.end()) {
+      vset.insert(g->_name);
+      g->updateGeometry();
+      g->updateAssociates(vset);
+    }
+  }
 }
 /////////////////////////////////////////////////////////////////////////
 void Guide::updateGeometry() {
+
   if (_relative == nullptr)
     return;
 
-  auto rel = _relationshipWith(_relative);
-  if (rel == Relationship::None)
+  int signed_offset = _margin * _sign;
+
+  auto relationship = _relationshipWith(_relative);
+
+  printf(
+      "guide<%d> relative<%d> rel<%s> edge<%s> offs<%d>\n", //
+      _name,
+      _relative ? _relative->_name : -1,
+      rel2str(relationship).c_str(),
+      edge2str(_edge).c_str(),
+      signed_offset);
+
+  if (relationship == Relationship::None)
     return;
 
   auto geo = _layout->_widget->geometry();
 
-  auto relguide = (Relationship::Sibling == rel) //
-                      ? _relative->line(Mode::Geometry)
-                      : _relative->line(Mode::Rect);
+  ///////////////////
 
-  int signed_offset = _margin * _sign;
+  Line line;
+  switch (relationship) {
+    case Relationship::Sibling:
+      line = _relative->line(Mode::Geometry);
+      break;
+    default:
+      line = _relative->line(Mode::Rect);
+      break;
+  }
 
-  int basex = relguide._from.x;
-  int basey = relguide._from.y;
+  ///////////////////
+
+  int basex = line._from.x;
+  int basey = line._from.y;
+
   printf(
-      "guide<%d> relative<%d> rel<%s> edge<%s> offs<%d> base<%d,%d>\n", //
+      "guide<%d> base<%d,%d>\n", //
       _name,
-      _relative ? _relative->_name : -1,
-      rel2str(rel).c_str(),
-      edge2str(_edge).c_str(),
-      signed_offset,
       basex,
       basey);
 
   switch (_edge) {
     case Edge::Top: {
-      int top = relguide._from.y + signed_offset;
+      int top = line._from.y + signed_offset;
       if (_layout->_bottom->_relative)
         geo.setTop(top);
       else
@@ -116,7 +140,7 @@ void Guide::updateGeometry() {
       break;
     }
     case Edge::Left: {
-      int left = relguide._from.x + signed_offset;
+      int left = line._from.x + signed_offset;
       if (_layout->_right->_relative)
         geo.setLeft(left);
       else
@@ -124,7 +148,7 @@ void Guide::updateGeometry() {
       break;
     }
     case Edge::Bottom: {
-      int bottom = relguide._from.y - signed_offset;
+      int bottom = line._from.y - signed_offset;
       if (_layout->_top->_relative)
         geo.setBottom(bottom);
       else
@@ -132,7 +156,7 @@ void Guide::updateGeometry() {
       break;
     }
     case Edge::Right: {
-      int right = relguide._from.x - signed_offset;
+      int right = line._from.x - signed_offset;
       if (_layout->_left->_relative)
         geo.setRight(right);
       else
@@ -140,25 +164,22 @@ void Guide::updateGeometry() {
       break;
     }
     case Edge::HorizontalCenter:
-      geo.moveCenter(relguide._from.x + signed_offset, geo.center_y());
+      geo.moveCenter(line._from.x + signed_offset, geo.center_y());
       break;
     case Edge::VerticalCenter:
-      geo.moveCenter(geo.center_x(), relguide._from.y + signed_offset);
+      geo.moveCenter(geo.center_x(), line._from.y + signed_offset);
       break;
     default:
       break;
   }
 
   _layout->_widget->setGeometry(geo);
-
-  updateAssociates();
 }
 /////////////////////////////////////////////////////////////////////////
 void Guide::_associate(Guide* other) {
   OrkAssert(other);
-  OrkAssert(_associates.find(other) == _associates.end());
   _associates.insert(other);
-  //_layout->update();
+  //_layout->updateAll();
 }
 /////////////////////////////////////////////////////////////////////////
 void Guide::_disassociate(Guide* other) {
@@ -166,7 +187,7 @@ void Guide::_disassociate(Guide* other) {
   auto it = _associates.find(other);
   OrkAssert(it != _associates.end());
   _associates.erase(it);
-  //_layout->update();
+  //_layout->updateAll();
 }
 /////////////////////////////////////////////////////////////////////////
 void Guide::anchorTo(guide_ptr_t other) {
@@ -174,46 +195,51 @@ void Guide::anchorTo(guide_ptr_t other) {
 }
 /////////////////////////////////////////////////////////////////////////
 void Guide::anchorTo(Guide* other) {
-  if (_edge == Edge::Horizontal or _edge == Edge::Vertical)
-    return;
 
-  if (other == _relative)
-    return;
+  //////////////////////////////////////////
+  // sanity checks
+  //////////////////////////////////////////
 
-  if (other != nullptr and _layout == other->_layout)
-    return;
+  // custom guides (by definition)
+  //  are not driven by anchors
+
+  OrkAssert(_edge != Edge::CustomHorizontal);
+  OrkAssert(_edge != Edge::CustomVertical);
+
+  //////////////////////////////////////////
 
   if (_relative != nullptr) {
     _relative->_disassociate(this);
     _relative = nullptr;
   }
 
-  if (other == nullptr)
-    return;
+  //////////////////////////////////////////
 
-  if (this->isVertical() and not other->isVertical())
-    return;
+  if (other) {
+    OrkAssert(this->isVertical() == other->isVertical());
+    OrkAssert(this->isHorizontal() == other->isHorizontal());
+    OrkAssert(other != _relative);
+    // OrkAssert(_layout == other->_layout);
 
-  // paranoia check
-  if (this->isHorizontal() and not other->isHorizontal())
-    return;
+    _relative = other;
+    _relative->_associate(this);
 
-  _relative = other;
-  _relative->_associate(this);
+  } else
+    _relative = nullptr;
 }
 /////////////////////////////////////////////////////////////////////////
 bool Guide::isVertical() const {
   return _edge == Edge::Left or             //
          _edge == Edge::Right or            //
          _edge == Edge::HorizontalCenter or //
-         _edge == Edge::Vertical;
+         _edge == Edge::CustomVertical;
 }
 /////////////////////////////////////////////////////////////////////////
 bool Guide::isHorizontal() const {
   return _edge == Edge::Top or            //
          _edge == Edge::Bottom or         //
          _edge == Edge::VerticalCenter or //
-         _edge == Edge::Horizontal;
+         _edge == Edge::CustomHorizontal;
 }
 /////////////////////////////////////////////////////////////////////////
 Relationship Guide::_relationshipWith(Guide* other) const {
@@ -262,16 +288,32 @@ Line Guide::line(Mode mode) const {
       outline._from = fvec2(rect.x2(), rect._y);
       outline._to   = fvec2(rect.x2(), rect.y2());
       break;
-    case Edge::Horizontal: {
-      float y       = float(rect._y) + float(rect._h) * _unito;
-      outline._from = fvec2(rect._x, y);
-      outline._to   = fvec2(rect.x2(), y);
+    case Edge::CustomHorizontal: {
+      if (_proportion != 0.0f) {
+        float y       = float(rect._y) + float(rect._h) * _proportion;
+        outline._from = fvec2(rect._x, y);
+        outline._to   = fvec2(rect.x2(), y);
+      } else if (_fixed > 0) {
+        outline._from = fvec2(rect._x, _fixed);
+        outline._to   = fvec2(rect.x2(), _fixed);
+      } else if (_fixed < 0) {
+        outline._from = fvec2(rect._x, rect._h + _fixed);
+        outline._to   = fvec2(rect.x2(), rect._h + _fixed);
+      }
       break;
     };
-    case Edge::Vertical: {
-      float x       = float(rect._x) + float(rect._w) * _unito;
-      outline._from = fvec2(x, rect._y);
-      outline._to   = fvec2(x, rect.y2());
+    case Edge::CustomVertical: {
+      if (_proportion != 0.0f) {
+        float x       = float(rect._x) + float(rect._w) * _proportion;
+        outline._from = fvec2(x, rect._y);
+        outline._to   = fvec2(x, rect.y2());
+      } else if (_fixed > 0) {
+        outline._from = fvec2(_fixed, rect._y);
+        outline._to   = fvec2(_fixed, rect.y2());
+      } else if (_fixed < 0) {
+        outline._from = fvec2(rect._w + _fixed, rect._y);
+        outline._to   = fvec2(rect._w + _fixed, rect.y2());
+      }
       break;
     };
     case Edge::HorizontalCenter:
@@ -285,7 +327,7 @@ Line Guide::line(Mode mode) const {
   }
 
   return outline;
-}
+} // namespace ork::ui::anchor
 /////////////////////////////////////////////////////////////////////////
 void Guide::dump() {
   printf(

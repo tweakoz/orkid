@@ -3,6 +3,7 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/ui/viewport.h>
 #include <ork/lev2/ui/event.h>
+#include <ork/lev2/ui/anchor.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/util/hotkey.h>
 #include <ork/lev2/gfx/dbgfontman.h>
@@ -64,7 +65,6 @@ void Group::drawChildren(ui::drawevent_constptr_t drwev) {
 
 void Group::OnResize() {
   // printf( "Group<%s>::OnResize x<%d> y<%d> w<%d> h<%d>\n", msName.c_str(), miX, miY, miW, miH );
-
   for (auto& it : _children) {
     if (it->mSizeDirty)
       it->OnResize();
@@ -109,5 +109,33 @@ HandlerResult Group::DoRouteUiEvent(event_constptr_t Ev) {
 }
 
 /////////////////////////////////////////////////////////////////////////
+LayoutGroup::LayoutGroup(const std::string& name, int x, int y, int w, int h)
+    : Group(name, x, y, w, h) {
+}
+/////////////////////////////////////////////////////////////////////////
+HandlerResult LayoutGroup::DoRouteUiEvent(event_constptr_t Ev) {
+  return Group::DoRouteUiEvent(Ev);
+}
+/////////////////////////////////////////////////////////////////////////
+void LayoutGroup::OnResize() {
+}
+/////////////////////////////////////////////////////////////////////////
+void LayoutGroup::DoLayout() {
+  // in this case, the layout is responsible
+  // for laying out all children, recursively..
+  // note that the layout will use the geometry of this group
+  //  to compute the layout of all children
+  // So it is expected that you set the size of this group
+  //  either manually or driven indirectly through the resize
+  //  of a parent..
+  if (_layout)
+    _layout->updateAll();
+  //
+}
+/////////////////////////////////////////////////////////////////////////
+void LayoutGroup::DoDraw(drawevent_constptr_t drwev) {
+  drawChildren(drwev);
+}
 
+/////////////////////////////////////////////////////////////////////////
 }} // namespace ork::ui

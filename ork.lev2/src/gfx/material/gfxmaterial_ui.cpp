@@ -46,7 +46,7 @@ GfxMaterialUI::GfxMaterialUI(Context* pTarg)
   _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
   _rasterstate.SetAlphaTest(EALPHATEST_OFF);
   _rasterstate.SetBlending(EBLENDING_OFF);
-  _rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
+  _rasterstate.SetDepthTest(EDEPTHTEST_OFF);
   _rasterstate.SetZWriteMask(false);
   _rasterstate.SetCullTest(ECULLTEST_OFF);
 
