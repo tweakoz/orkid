@@ -204,8 +204,8 @@ void QCtxWidget::mouseMoveEvent(QMouseEvent* event) {
   bool isbutton = (Buttons != Qt::NoButton);
 
   uiev->miEventCode = (isbutton and _pushTimer.SecsSinceStart() > 0.125) //
-                          ? ork::ui::UIEV_MOVE
-                          : ork::ui::UIEV_DRAG;
+                          ? ork::ui::UIEV_DRAG
+                          : ork::ui::UIEV_MOVE;
 
   if (vp) {
     uiev->_vpdim = fvec2(vp->width(), vp->height());
