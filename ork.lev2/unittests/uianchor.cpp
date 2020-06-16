@@ -3,6 +3,7 @@
 #include <ork/lev2/ui/widget.h>
 #include <ork/lev2/ui/panel.h>
 #include <ork/lev2/ui/viewport.h>
+#include <ork/lev2/ui/layoutgroup.inl>
 #include <utpp/UnitTest++.h>
 
 using namespace ork::ui;
@@ -14,9 +15,9 @@ TEST(uianchor1) {
   auto w2 = std::make_shared<Panel>("w2", 0, 0, 0, 0);
   auto vp = std::make_shared<Viewport>("vp", 20, 20, 100, 100, ork::fvec3(), 1.0f);
   //////////////////////////////////////
-  auto vplayout = std::make_shared<anchor::Layout>(vp);
-  auto l1       = std::make_shared<anchor::Layout>(w1);
-  auto l2       = std::make_shared<anchor::Layout>(w2);
+  auto vplayout = std::make_shared<anchor::Layout>(vp.get());
+  auto l1       = std::make_shared<anchor::Layout>(w1.get());
+  auto l2       = std::make_shared<anchor::Layout>(w2.get());
   //////////////////////////////////////
   l1->top()->setMargin(4);
   l1->left()->setMargin(4);

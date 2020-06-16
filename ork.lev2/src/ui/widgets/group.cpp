@@ -1,13 +1,14 @@
 #include <ork/pch.h>
 #include <ork/lev2/gfx/gfxenv.h>
-#include <ork/lev2/gfx/rtgroup.h>
-#include <ork/lev2/ui/viewport.h>
+//#include <ork/lev2/gfx/rtgroup.h>
+//#include <ork/lev2/ui/viewport.h>
 #include <ork/lev2/ui/event.h>
-#include <ork/lev2/ui/anchor.h>
-#include <ork/lev2/gfx/gfxmaterial_ui.h>
-#include <ork/util/hotkey.h>
-#include <ork/lev2/gfx/dbgfontman.h>
-#include <ork/lev2/gfx/gfxprimitives.h>
+//#include <ork/lev2/ui/anchor.h>
+//#include <ork/lev2/gfx/gfxmaterial_ui.h>
+//#include <ork/util/hotkey.h>
+//#include <ork/lev2/gfx/dbgfontman.h>
+//#include <ork/lev2/gfx/gfxprimitives.h>
+#include <ork/lev2/ui/layoutgroup.inl>
 
 namespace ork { namespace ui {
 
@@ -111,6 +112,7 @@ HandlerResult Group::DoRouteUiEvent(event_constptr_t Ev) {
 /////////////////////////////////////////////////////////////////////////
 LayoutGroup::LayoutGroup(const std::string& name, int x, int y, int w, int h)
     : Group(name, x, y, w, h) {
+  _layout = std::make_shared<anchor::Layout>(this);
 }
 /////////////////////////////////////////////////////////////////////////
 HandlerResult LayoutGroup::DoRouteUiEvent(event_constptr_t Ev) {
@@ -128,6 +130,15 @@ void LayoutGroup::DoLayout() {
   // So it is expected that you set the size of this group
   //  either manually or driven indirectly through the resize
   //  of a parent..
+  const auto& g = _geometry;
+  printf(
+      "LayoutGroup<%s>::DoLayout l<%p> x<%d> y<%d> w<%d> h<%d>\n", //
+      msName.c_str(),
+      _layout.get(),
+      g._x,
+      g._y,
+      g._w,
+      g._h);
   if (_layout)
     _layout->updateAll();
   //

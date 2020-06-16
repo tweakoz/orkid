@@ -38,9 +38,12 @@ struct Event;
 struct DrawEvent;
 struct MultiTouchPoint;
 struct IWidgetEventFilter;
+struct LayoutGroup;
 
 using widget_ptr_t      = std::shared_ptr<Widget>;
+using widget_weakptr_t  = std::weak_ptr<Widget>;
 using group_ptr_t       = std::shared_ptr<Group>;
+using layoutgroup_ptr_t = std::shared_ptr<LayoutGroup>;
 using surface_ptr_t     = std::shared_ptr<Surface>;
 using splitpanel_ptr_t  = std::shared_ptr<SplitPanel>;
 using panel_ptr_t       = std::shared_ptr<Panel>;

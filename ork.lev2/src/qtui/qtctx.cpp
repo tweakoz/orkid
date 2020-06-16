@@ -52,6 +52,8 @@ QCtxWidget::QCtxWidget(CTQT* pctxbase, QWidget* parent)
   // setAttribute( Qt::WA_AcceptTouchEvents );
   // grabGesture(Qt::PanGesture);
   _evstealwidget = nullptr;
+
+  _pushTimer.Start();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -199,7 +201,9 @@ void QCtxWidget::mouseMoveEvent(QMouseEvent* event) {
 
   Qt::MouseButtons Buttons = event->buttons();
 
-  uiev->miEventCode = (Buttons == Qt::NoButton) //
+  bool isbutton = (Buttons != Qt::NoButton);
+
+  uiev->miEventCode = (isbutton and _pushTimer.SecsSinceStart() > 0.125) //
                           ? ork::ui::UIEV_MOVE
                           : ork::ui::UIEV_DRAG;
 
@@ -230,6 +234,8 @@ void QCtxWidget::mousePressEvent(QMouseEvent* event) {
       uiev->_vpdim *= 0.5;
     }
     vp->HandleUiEvent(uiev);
+
+    _pushTimer.Start();
   }
   if (mpCtxBase)
     mpCtxBase->SlotRepaint();

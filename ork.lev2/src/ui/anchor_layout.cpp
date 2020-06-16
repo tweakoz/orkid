@@ -11,7 +11,7 @@
 
 namespace ork::ui::anchor {
 /////////////////////////////////////////////////////////////////////////
-Layout::Layout(widget_ptr_t w)
+Layout::Layout(Widget* w)
     : _widget(w) {
   static int _names = 0;
   _name             = _names++;
@@ -19,7 +19,7 @@ Layout::Layout(widget_ptr_t w)
 Layout::~Layout() {
 }
 /////////////////////////////////////////////////////////////////////////
-layout_ptr_t Layout::childLayout(widget_ptr_t w) {
+layout_ptr_t Layout::childLayout(Widget* w) {
   auto l = std::make_shared<Layout>(w);
   _childlayouts.push_back(l);
   return l;
@@ -221,7 +221,7 @@ bool Layout::isAnchorAllowed(Layout* layout) const {
   if (layout == nullptr)
     return false;
 
-  return layout->_widget.get() == _widget->parent() or //
+  return layout->_widget == _widget->parent() or //
          layout->_widget->parent() == _widget->parent();
 }
 /////////////////////////////////////////////////////////////////////////

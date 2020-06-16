@@ -45,7 +45,7 @@ void Box::DoDraw(drawevent_constptr_t drwev) {
     ix2 = ix1 + _geometry._w;
     iy2 = iy1 + _geometry._h;
 
-    if (0)
+    if (1)
       printf(
           "drawbox<%s> xy1<%d,%d> xy2<%d,%d>\n", //
           msName.c_str(),

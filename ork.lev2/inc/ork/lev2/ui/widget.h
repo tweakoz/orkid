@@ -239,23 +239,6 @@ private:
 };
 
 ////////////////////////////////////////////////////////////////////
-// Group : abstract collection of widgets
-////////////////////////////////////////////////////////////////////
-
-struct LayoutGroup : public Group {
-
-  LayoutGroup(const std::string& name, int x = 0, int y = 0, int w = 0, int h = 0);
-
-  anchor::layout_ptr_t _layout;
-
-private:
-  void DoDraw(ui::drawevent_constptr_t drwev) override;
-  void OnResize() override;
-  void DoLayout() override;
-  HandlerResult DoRouteUiEvent(event_constptr_t Ev) override;
-};
-
-////////////////////////////////////////////////////////////////////
 // Simple (Colored) Box Widget
 //  mostly used for testing, but if you need a colored box...
 ////////////////////////////////////////////////////////////////////

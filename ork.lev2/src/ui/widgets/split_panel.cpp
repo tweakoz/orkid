@@ -99,8 +99,24 @@ void SplitPanel::DoDraw(ui::drawevent_constptr_t drwev) {
     /////////////
 
     fvec4 clr = fcolor4(1.0f, 0.0f, 1.0f, 0.4f);
-    if (has_foc)
-      clr = fcolor4::White();
+
+    switch (mPanelUiState) {
+      case 0:
+        break;
+      case 1: // move
+        break;
+      case 2: // resize h
+        break;
+      case 3: // resize w
+        break;
+      case 4: // ?
+        break;
+      case 5: // ?
+        break;
+      case 6: // set splitter
+        clr = fcolor4(1, 1, 1, 1);
+        break;
+    }
 
     defmtl->_rasterstate.SetBlending(lev2::EBLENDING_ALPHA);
     tgt->PushModColor(clr);
@@ -151,8 +167,18 @@ void SplitPanel::DoLayout() {
   int p2y = p1y + p1h + ksplith;
   int p2h = _geometry._h - kpanelw - p2y;
 
-  // printf( "Panel<%s>::DoLayout x<%d> y<%d> w<%d> h<%d>\n", msName.c_str(), _geometry._x, _geometry._y, _geometry._w, _geometry._h
-  // );
+  printf(
+      "Panel<%s>::DoLayout x<%d> y<%d> w<%d> h<%d> p1y<%d> p1h<%d> p2y<%d> p2h<%d>\n", //
+      msName.c_str(),
+      _geometry._x,
+      _geometry._y,
+      _geometry._w,
+      _geometry._h,
+      p1y,
+      p1h,
+      p2y,
+      p2h);
+
   if (_child1) {
     _child1->SetRect(kpanelw, p1y, cw, p1h);
   }
@@ -166,16 +192,22 @@ void SplitPanel::DoLayout() {
 HandlerResult SplitPanel::DoRouteUiEvent(event_constptr_t Ev) {
   // printf( "Panel::DoRouteUiEvent xy<%d %d> mPanelUiState<%d>\n", Ev->_geometry._x, Ev->_geometry._y, mPanelUiState );
 
-  if (_child1 && _child1->IsEventInside(Ev) && mPanelUiState == 0) {
-    // printf( "Child1\n");
-    HandlerResult res = _child1->RouteUiEvent(Ev);
-    if (res.mHandler != nullptr)
-      return res;
-  } else if (_child2 && _child2->IsEventInside(Ev) && mPanelUiState == 0) {
-    // printf( "Child2\n");
-    HandlerResult res = _child2->RouteUiEvent(Ev);
-    if (res.mHandler != nullptr)
-      return res;
+  switch (mPanelUiState) {
+    case 0:
+      if (_child1 and _child1->IsEventInside(Ev)) {
+        // printf( "Child1\n");
+        HandlerResult res = _child1->RouteUiEvent(Ev);
+        if (res.mHandler != nullptr)
+          return res;
+      } else if (_child2 and _child2->IsEventInside(Ev)) {
+        // printf( "Child2\n");
+        HandlerResult res = _child2->RouteUiEvent(Ev);
+        if (res.mHandler != nullptr)
+          return res;
+      }
+      break;
+    default:
+      break;
   }
 
   return OnUiEvent(Ev);
@@ -183,15 +215,10 @@ HandlerResult SplitPanel::DoRouteUiEvent(event_constptr_t Ev) {
 
 /////////////////////////////////////////////////////////////////////////
 
-static int idownx  = 0;
-static int idowny  = 0;
-static int iprevpx = 0;
-static int iprevpy = 0;
-static int iprevpw = 0;
-static int iprevph = 0;
-
 void SplitPanel::snap() {
   if (nullptr == mParent)
+    return;
+  if (not _moveEnabled)
     return;
 
   int pw = mParent->width();
@@ -204,14 +231,14 @@ void SplitPanel::snap() {
   bool snapr = (xd < kpanelw);
   bool snapt = (_geometry._y < kpanelw);
   bool snapb = (yd < kpanelw);
-  if (snapt && snapb) {
+  if (snapt and snapb) {
     SetY(-kpanelw);
     SetH(ph + 2 * kpanelw);
   } else if (snapt)
     SetY(-kpanelw);
   else if (snapb)
     SetY(ph + kpanelw - height());
-  if (snapl && snapr) {
+  if (snapl and snapr) {
     SetX(-kpanelw);
     SetW(pw + 2 * kpanelw);
   }
@@ -222,6 +249,7 @@ void SplitPanel::snap() {
 }
 
 HandlerResult SplitPanel::DoOnUiEvent(event_constptr_t Ev) {
+
   HandlerResult ret(this);
 
   int evx      = Ev->miX;
@@ -237,43 +265,49 @@ HandlerResult SplitPanel::DoOnUiEvent(event_constptr_t Ev) {
   switch (filtev.miEventCode) {
     case ui::UIEV_PUSH: // idle
     {
-      idownx         = evx;
-      idowny         = evy;
-      iprevpx        = _geometry._x;
-      iprevpy        = _geometry._y;
-      iprevpw        = _geometry._w;
-      iprevph        = _geometry._h;
+      _downx         = evx;
+      _downy         = evy;
+      _prevpx        = _geometry._x;
+      _prevpy        = _geometry._y;
+      _prevpw        = _geometry._w;
+      _prevph        = _geometry._h;
       ret.mHoldFocus = true;
 
       float funity  = float(ilocy) / float(_geometry._h);
       float funitks = float(kpanelw) / float(_geometry._h);
 
-      bool is_splitter = (fabs(funity - mSplitVal) < funitks) && (ilocy < (_geometry._h - kpanelw * 2));
+      bool is_splitter = (fabs(funity - mSplitVal) < funitks) and (ilocy < (_geometry._h - kpanelw * 2));
 
-      is_splitter &= (ilocx > kpanelw) && (ilocx < (_geometry._w - kpanelw)); // x check
+      is_splitter &= (ilocx > kpanelw) and (ilocx < (_geometry._w - kpanelw)); // x check
 
       // printf( "ilocy<%d> funity<%f> funitks<%f> mSplitVal<%f> is_splitter<%d> b0<%d>\n", ilocy, funity, funitks, mSplitVal,
       // int(is_splitter), int(filtev.mBut0) );
 
       if (filtev.mBut0) {
-        if (mEnableCloseButton && (ilocx >= mCloseX) && ((ilocx - mCloseX) < kpanelw) && (ilocy >= mCloseY) &&
+        if (mEnableCloseButton and (ilocx >= mCloseX) and ((ilocx - mCloseX) < kpanelw) and (ilocy >= mCloseY) and
             ((ilocy - mCloseY) < kpanelw)) {
           auto lamb = [=]() { delete this; };
           opq::Op(lamb).QueueASync(opq::mainSerialQueue());
 
-        } else
-          mPanelUiState = is_splitter ? 6 : 1;
+        } else {
+          if (is_splitter)
+            mPanelUiState = 6;
+          else if (_moveEnabled)
+            mPanelUiState = 1;
+        }
       } else if (filtev.mBut1 || filtev.mBut2) {
         if (is_splitter)
           mPanelUiState = 6;
-        else if (abs(ilocy) < kpanelw) // top
-          mPanelUiState = 2;
-        else if (abs(ilocy - _geometry._h) < kpanelw) // bot
-          mPanelUiState = 3;
-        else if (abs(ilocx) < kpanelw) // lft
-          mPanelUiState = 4;
-        else if (abs(ilocx - _geometry._w) < kpanelw) // rht
-          mPanelUiState = 5;
+        else if (_moveEnabled) {
+          if (abs(ilocy) < kpanelw) // top
+            mPanelUiState = 2;
+          else if (abs(ilocy - _geometry._h) < kpanelw) // bot
+            mPanelUiState = 3;
+          else if (abs(ilocx) < kpanelw) // lft
+            mPanelUiState = 4;
+          else if (abs(ilocx - _geometry._w) < kpanelw) // rht
+            mPanelUiState = 5;
+        }
       }
       break;
     }
@@ -293,30 +327,33 @@ HandlerResult SplitPanel::DoOnUiEvent(event_constptr_t Ev) {
       break;
   }
 
-  int dx = evx - idownx;
-  int dy = evy - idowny;
+  int dx = evx - _downx;
+  int dy = evy - _downy;
 
   switch (mPanelUiState) {
     case 0:
       break;
     case 1: // move
-      SetPos(iprevpx + dx, iprevpy + dy);
+      SetPos(_prevpx + dx, _prevpy + dy);
       break;
     case 2: // resize h
-      SetRect(iprevpx, iprevpy + dy, iprevpw, iprevph - dy);
+      SetRect(_prevpx, _prevpy + dy, _prevpw, _prevph - dy);
       break;
     case 3: // resize w
-      SetSize(iprevpw, iprevph + dy);
+      SetSize(_prevpw, _prevph + dy);
       break;
     case 4:
-      SetRect(iprevpx + dx, iprevpy, iprevpw - dx, iprevph);
+      SetRect(_prevpx + dx, _prevpy, _prevpw - dx, _prevph);
       break;
     case 5:
-      SetSize(iprevpw + dx, iprevph);
+      SetSize(_prevpw + dx, _prevph);
       break;
     case 6: // set splitter
     {
       mSplitVal = float(ilocy - ksplith) / float(_geometry._h);
+
+      mSplitVal = std::clamp(mSplitVal, 0.1f, 0.9f);
+
       DoLayout();
       SetDirty();
       break;

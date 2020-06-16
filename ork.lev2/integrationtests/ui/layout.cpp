@@ -1,8 +1,9 @@
 #include <ork/pch.h>
 #include <ork/lev2/ui/anchor.h>
 #include <ork/lev2/ui/widget.h>
-#include <ork/lev2/ui/panel.h>
+#include <ork/lev2/ui/split_panel.h>
 #include <ork/lev2/ui/viewport.h>
+#include <ork/lev2/ui/layoutgroup.inl>
 #include "harness.h"
 
 using namespace ork::ui;
@@ -15,22 +16,23 @@ void TestViewport::onUpdateThreadTick(ui::updatedata_ptr_t updata) {
 
 int main(int argc, char** argv) {
   //////////////////////////////////////
-  auto w0 = std::make_shared<EvTestBox>("w0", fvec4(1, 1, 0, 1));
-  auto w1 = std::make_shared<EvTestBox>("w1", fvec4(1, 0, 0, 1));
-  auto w2 = std::make_shared<LayoutGroup>("w2", 0, 0, 0, 0);
-  auto w3 = std::make_shared<EvTestBox>("w3", fvec4(0, 1, 0, 1));
-  auto vp = std::make_shared<LayoutGroup>("layoutgroup", 0, 0, 1280, 720);
-  vp->addChild(w0);
-  vp->addChild(w1);
-  vp->addChild(w2);
-  vp->addChild(w3);
+  auto vp                = std::make_shared<LayoutGroup>("layoutgroup", 0, 0, 1280, 720);
+  auto w0                = vp->makeChild<EvTestBox>("w0", fvec4(1, 1, 0, 1));
+  auto w1                = vp->makeChild<SplitPanel>("w1");
+  auto w2                = vp->makeChild<LayoutGroup>("w2", 0, 0, 0, 0);
+  auto w3                = vp->makeChild<EvTestBox>("w3", fvec4(0, 1, 0, 1));
+  w1.first->_moveEnabled = false;
   //////////////////////////////////////
-  auto root_layout = std::make_shared<anchor::Layout>(vp);
-  auto l0          = root_layout->childLayout(w0);
-  auto l1          = root_layout->childLayout(w1);
-  auto l2          = root_layout->childLayout(w2);
-  auto l3          = root_layout->childLayout(w3);
-  vp->_layout      = root_layout;
+  auto panel_w0 = std::make_shared<EvTestBox>("panel-w0", fvec4(0, 1, 1, 1));
+  auto panel_w1 = std::make_shared<LayoutGroup>("panel-w1");
+  w1.first->setChild1(panel_w0);
+  w1.first->setChild2(panel_w1);
+  //////////////////////////////////////
+  auto root_layout = vp->_layout;
+  auto l0          = w0.second;
+  auto l1          = w1.second;
+  auto l2          = w2.second;
+  auto l3          = w3.second;
   //////////////////////////////////////
   l0->setMargin(4);
   l1->setMargin(4);
@@ -60,28 +62,31 @@ int main(int argc, char** argv) {
   l3->bottom()->anchorTo(root_layout->bottom()); // 20,21
   l3->right()->anchorTo(root_layout->right());   // 22
   //////////////////////////////////////
-  if (1)
+  auto makegrid = [](layoutgroup_ptr_t layout_widget, fvec4 color) {
+    auto lname  = layout_widget->GetName();
+    auto layout = layout_widget->_layout;
     for (int x = 0; x < 4; x++) {
       float fxa = float(x) / 4.0f;
       float fxb = float(x + 1) / 4.0f;
-      auto gxa  = l2->proportionalVerticalGuide(fxa); // 23,27,31,35
-      auto gxb  = l2->proportionalVerticalGuide(fxb); // 24,28,32,36
+      auto gxa  = layout->proportionalVerticalGuide(fxa); // 23,27,31,35
+      auto gxb  = layout->proportionalVerticalGuide(fxb); // 24,28,32,36
       for (int y = 0; y < 4; y++) {
         float fya = float(y) / 4.0f;
         float fyb = float(y + 1) / 4.0f;
-        auto gya  = l2->proportionalHorizontalGuide(fya); // 25,29,33,37
-        auto gyb  = l2->proportionalHorizontalGuide(fyb); // 26,30,34,38
-        auto name = FormatString("ch-%d", (y * 4 + x));
-        auto ch   = std::make_shared<EvTestBox>(name, fvec4(1, 1, 1, 1));
-        auto lch  = l2->childLayout(ch);
-        lch->setMargin(2);
-        w2->addChild(ch);
-        lch->top()->anchorTo(gya);
-        lch->left()->anchorTo(gxa);
-        lch->bottom()->anchorTo(gyb);
-        lch->right()->anchorTo(gxb);
+        auto gya  = layout->proportionalHorizontalGuide(fya); // 25,29,33,37
+        auto gyb  = layout->proportionalHorizontalGuide(fyb); // 26,30,34,38
+        auto name = lname + FormatString("-ch-%d", (y * 4 + x));
+        auto ch   = layout_widget->makeChild<EvTestBox>(name, color);
+        ch.second->setMargin(2);
+        ch.second->top()->anchorTo(gya);
+        ch.second->left()->anchorTo(gxa);
+        ch.second->bottom()->anchorTo(gyb);
+        ch.second->right()->anchorTo(gxb);
       }
     }
+  };
+  makegrid(w2.first, fvec4(1, 1, 1, 1));
+  makegrid(panel_w1, fvec4(0.25, 0, 0.4, 1));
   //////////////////////////////////////
   root_layout->dump();
   // exit(0);

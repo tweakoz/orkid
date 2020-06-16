@@ -52,10 +52,10 @@ using visit_set = std::unordered_set<int>;
 
 struct Layout {
 
-  Layout(widget_ptr_t w);
+  Layout(Widget* w);
   ~Layout();
 
-  layout_ptr_t childLayout(widget_ptr_t w);
+  layout_ptr_t childLayout(Widget* w);
 
   void setMargin(int margin);
   void setAllBoundingMargins(int margin);
@@ -86,7 +86,7 @@ struct Layout {
   int _margin = 0;
   int _name   = -1;
 
-  widget_ptr_t _widget;
+  Widget* _widget = nullptr;
 
   layout_ptr_t _fill   = nullptr;
   layout_ptr_t _center = nullptr;

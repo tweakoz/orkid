@@ -94,13 +94,14 @@ void Guide::updateGeometry() {
 
   auto relationship = _relationshipWith(_relative);
 
-  printf(
-      "guide<%d> relative<%d> rel<%s> edge<%s> offs<%d>\n", //
-      _name,
-      _relative ? _relative->_name : -1,
-      rel2str(relationship).c_str(),
-      edge2str(_edge).c_str(),
-      signed_offset);
+  if (0)
+    printf(
+        "guide<%d> relative<%d> rel<%s> edge<%s> offs<%d>\n", //
+        _name,
+        _relative ? _relative->_name : -1,
+        rel2str(relationship).c_str(),
+        edge2str(_edge).c_str(),
+        signed_offset);
 
   if (relationship == Relationship::None)
     return;
@@ -124,11 +125,12 @@ void Guide::updateGeometry() {
   int basex = line._from.x;
   int basey = line._from.y;
 
-  printf(
-      "guide<%d> base<%d,%d>\n", //
-      _name,
-      basex,
-      basey);
+  if (0)
+    printf(
+        "guide<%d> base<%d,%d>\n", //
+        _name,
+        basex,
+        basey);
 
   switch (_edge) {
     case Edge::Top: {
@@ -247,7 +249,7 @@ Relationship Guide::_relationshipWith(Guide* other) const {
   auto mywidget    = _layout->_widget;
   auto otherwidget = other->_layout->_widget;
 
-  if (otherwidget.get() == mywidget->parent())
+  if (otherwidget == mywidget->parent())
     return Relationship::ParentChild;
 
   if (otherwidget->parent() == mywidget->parent())

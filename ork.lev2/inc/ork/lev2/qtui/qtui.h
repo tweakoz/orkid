@@ -65,14 +65,6 @@ class CTQT;
 class QCtxWidget : public QWidget {
   friend class CTQT;
 
-protected:
-  QTimer mQtTimer;
-  bool mbSignalConnected;
-  CTQT* mpCtxBase;
-  bool mbEnabled;
-  int miWidth;
-  int miHeight;
-
 public:
   void Enable() {
     mbEnabled = true;
@@ -112,6 +104,15 @@ public:
 
   QCtxWidget(CTQT* pctxbase, QWidget* parent);
   ~QCtxWidget();
+
+protected:
+  QTimer mQtTimer;
+  ork::Timer _pushTimer;
+  bool mbSignalConnected;
+  CTQT* mpCtxBase;
+  bool mbEnabled;
+  int miWidth;
+  int miHeight;
 
 private:
   void SendOrkUiEvent();

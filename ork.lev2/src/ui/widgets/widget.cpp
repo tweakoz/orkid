@@ -286,7 +286,7 @@ void Apple3ButtonMouseEmulationFilter::DoFilter(event_constptr_t Ev) {
       }
       break;
     case ui::UIEV_MOVE:
-      if (mBut0Down || mBut1Down || mBut2Down) {
+      if (mBut0Down or mBut1Down or mBut2Down) {
         fev.miEventCode = ui::UIEV_DRAG;
         // printf( "SYNTH DRAG\n" );
         fev.mBut0 = mBut0Down;
@@ -483,7 +483,7 @@ void Widget::ExtDraw(lev2::Context* pTARG) {
 /////////////////////////////////////////////////////////////////////////
 
 void Widget::SetPos(int iX, int iY) {
-  mPosDirty |= (x() != iX) || (y() != iY);
+  mPosDirty |= (x() != iX) or (y() != iY);
   _prevGeometry = _geometry;
   _geometry._x  = iX;
   _geometry._y  = iY;
@@ -495,7 +495,7 @@ void Widget::SetPos(int iX, int iY) {
 /////////////////////////////////////////////////////////////////////////
 
 void Widget::SetSize(int iW, int iH) {
-  mSizeDirty |= (width() != iW) || (height() != iH);
+  mSizeDirty |= (width() != iW) or (height() != iH);
   _prevGeometry = _geometry;
   _geometry._w  = iW;
   _geometry._h  = iH;
@@ -506,15 +506,15 @@ void Widget::SetSize(int iW, int iH) {
 /////////////////////////////////////////////////////////////////////////
 
 void Widget::SetRect(int iX, int iY, int iW, int iH) {
-  mPosDirty |= (x() != iX) || (y() != iY);
-  mSizeDirty |= (width() != iW) || (height() != iH);
+  mPosDirty |= (x() != iX) or (y() != iY);
+  mSizeDirty |= (width() != iW) or (height() != iH);
   _prevGeometry = _geometry;
   _geometry._x  = iX;
   _geometry._y  = iY;
   _geometry._w  = iW;
   _geometry._h  = iH;
 
-  if (mPosDirty || mSizeDirty)
+  if (mPosDirty or mSizeDirty)
     ReLayout();
 }
 
