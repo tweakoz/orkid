@@ -47,7 +47,12 @@ Widget::Widget(const std::string& name, int x, int y, int w, int h)
 
   pushEventFilter<ui::NopEventFilter>();
 
-  //_eventRoutingFSM
+  auto rootstate           = _eventRoutingFSM.NewState<fsm::LambdaState>(nullptr);
+  auto normal              = _eventRoutingFSM.NewState<fsm::LambdaState>(rootstate);
+  auto childdragging       = _eventRoutingFSM.NewState<fsm::LambdaState>(rootstate);
+  childdragging->_onenter  = []() {};
+  childdragging->_onexit   = []() {};
+  childdragging->_onupdate = []() {};
 }
 Widget::~Widget() {
   if (gFastPath == this)
