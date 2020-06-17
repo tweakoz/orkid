@@ -5,6 +5,7 @@
 
 int main(int argc, char** argv) {
   auto app                       = createEZapp(argc, argv);
+  auto layoutgroup               = app->_layoutgroup;
   synth::instance()->_masterGain = decibel_to_linear_amp_ratio(30.0f);
   ////////////////////////////////////////////////
   // main bus effect

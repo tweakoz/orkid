@@ -75,7 +75,7 @@ Widget* Widget::doRouteUiEvent(event_constptr_t ev) {
 }
 ///////////////////////////////////////////////////////////
 bool Widget::hasMouseFocus() const {
-  return _uicontext->hasMouseFocus(this);
+  return _uicontext ? _uicontext->hasMouseFocus(this) : false;
 }
 ///////////////////////////////////////////////////////////
 HandlerResult Widget::OnUiEvent(event_constptr_t ev) {

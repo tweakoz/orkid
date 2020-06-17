@@ -19,29 +19,33 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
+#include <ork/lev2/ui/layoutgroup.inl>
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace po = boost::program_options;
-
+///////////////////////////////////////////////////////////////////////////////
 #if defined(__APPLE__)
 namespace ork::lev2 {
 extern bool _macosUseHIDPI;
 }
 #endif
-
+///////////////////////////////////////////////////////////////////////////////
 static auto the_synth = synth::instance();
-
+///////////////////////////////////////////////////////////////////////////////
 SingularityTestApp::SingularityTestApp(int& argc, char** argv)
     : OrkEzQtApp(argc, argv) {
   _hudvp = the_synth->_hudvp;
   startupAudio();
 }
+///////////////////////////////////////////////////////////////////////////////
 SingularityTestApp::~SingularityTestApp() {
   tearDownAudio();
 }
+///////////////////////////////////////////////////////////////////////////////
 std::string testpatternname = "";
 std::string testprogramname = "";
-
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 singularitytestapp_ptr_t createEZapp(int& argc, char** argv) {
 
   po::options_description desc("Allowed options");
@@ -79,6 +83,11 @@ singularitytestapp_ptr_t createEZapp(int& argc, char** argv) {
   auto qtapp  = std::make_shared<SingularityTestApp>(qti._argc, qti._argvp);
   auto qtwin  = qtapp->_mainWindow;
   auto gfxwin = qtwin->_gfxwin;
+
+  auto lg = qtapp->_topLayoutGroup;
+  lg->_layout->childLayout(qtapp->_hudvp.get());
+  lg->addChild(qtapp->_hudvp);
+
   //////////////////////////////////////////////////////////
   // create references to various items scoped by qtapp
   //////////////////////////////////////////////////////////
@@ -222,13 +231,22 @@ singularitytestapp_ptr_t createEZapp(int& argc, char** argv) {
   return qtapp;
 }
 //////////////////////////////////////////////////////////////////////////////
-singularitybenchapp_ptr_t createBenchmarkApp(int& argc, char** argv, prgdata_constptr_t program) {
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+singularitybenchapp_ptr_t createBenchmarkApp(
+    int& argc, //
+    char** argv,
+    prgdata_constptr_t program) {
   //////////////////////////////////////////////////////////////////////////////
   // benchmark
   //////////////////////////////////////////////////////////////////////////////
   constexpr size_t histosize = 65536;
   /////////////////////////////////////////
-  auto app = std::make_shared<SingularityBenchMarkApp>(argc, argv);
+  auto uicontext                  = std::make_shared<ui::Context>();
+  auto app                        = std::make_shared<SingularityBenchMarkApp>(argc, argv);
+  auto qtwin                      = app->_mainWindow;
+  auto gfxwin                     = qtwin->_gfxwin;
+  gfxwin->mRootWidget->_uicontext = uicontext.get();
   //////////////////////////////////////////////////////////////////////////////
   app->onGpuInit([=](Context* ctx) { //
     app->_material = std::make_shared<ork::lev2::FreestyleMaterial>();

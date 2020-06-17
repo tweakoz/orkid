@@ -1,5 +1,6 @@
 #include <ork/lev2/ezapp.h>
 #include <ork/lev2/ui/viewport.h>
+#include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/vr/vr.h>
@@ -196,6 +197,8 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
     : OrkEzQtAppBase(argc, argv)
     , _updateThread("updatethread")
     , _mainWindow(0) {
+
+  _uicontext   = std::make_shared<ui::Context>();
   _update_data = std::make_shared<ui::UpdateData>();
   _appstate    = 0;
 
@@ -229,8 +232,12 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
   _mainWindow->_gfxwin = new CQtWindow(nullptr);
   GfxEnv::GetRef().RegisterWinContext(_mainWindow->_gfxwin);
   //////////////////////////////////////
+  //////////////////////////////////////
   auto vp                           = new EzViewport(_mainWindow);
+  vp->_uicontext                    = _uicontext.get();
   _mainWindow->_gfxwin->mRootWidget = vp;
+  vp->_topLayoutGroup               = _uicontext->makeTop<ui::LayoutGroup>("top-layoutgroup", 0, 0, 1280, 720);
+  _topLayoutGroup                   = vp->_topLayoutGroup;
 
   _mainWindow->_ctqt = new CTQT(_mainWindow->_gfxwin, _mainWindow);
   _mainWindow->_ctqt->Show();

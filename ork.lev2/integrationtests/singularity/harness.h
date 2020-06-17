@@ -11,6 +11,7 @@
 #include <ork/lev2/aud/singularity/krzobjects.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/material_freestyle.h>
+#include <ork/lev2/ui/context.h>
 #include <ork/kernel/timer.h>
 
 using namespace std::string_literals;
@@ -27,6 +28,7 @@ struct SingularityTestApp final : public OrkEzQtApp {
   SingularityTestApp(int& argc, char** argv);
   ~SingularityTestApp() override;
   hudvp_ptr_t _hudvp;
+  ui::layoutgroup_ptr_t _layoutgroup;
 };
 using singularitytestapp_ptr_t = std::shared_ptr<SingularityTestApp>;
 
