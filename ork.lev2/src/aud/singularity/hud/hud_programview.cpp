@@ -18,7 +18,10 @@ struct ProgramView final : public ui::Surface {
   prgdata_constptr_t _curprogram;
 };
 ///////////////////////////////////////////////////////////////////////////////
-hudpanel_ptr_t createProgramView(hudvp_ptr_t vp, std::string named) {
+hudpanel_ptr_t createProgramView(
+    hudvp_ptr_t vp, //
+    const ui::anchor::Bounds& bounds,
+    std::string named) {
   auto hudpanel      = std::make_shared<HudPanel>();
   auto programview   = std::make_shared<ProgramView>();
   hudpanel->_uipanel = std::make_shared<ui::Panel>("progview", 0, 0, 32, 32);

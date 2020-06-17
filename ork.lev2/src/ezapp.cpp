@@ -233,11 +233,11 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
   GfxEnv::GetRef().RegisterWinContext(_mainWindow->_gfxwin);
   //////////////////////////////////////
   //////////////////////////////////////
-  auto vp                           = new EzViewport(_mainWindow);
-  vp->_uicontext                    = _uicontext.get();
-  _mainWindow->_gfxwin->mRootWidget = vp;
-  vp->_topLayoutGroup               = _uicontext->makeTop<ui::LayoutGroup>("top-layoutgroup", 0, 0, 1280, 720);
-  _topLayoutGroup                   = vp->_topLayoutGroup;
+  _ezviewport                       = std::make_shared<EzViewport>(_mainWindow);
+  _ezviewport->_uicontext           = _uicontext.get();
+  _mainWindow->_gfxwin->mRootWidget = _ezviewport.get();
+  _ezviewport->_topLayoutGroup      = _uicontext->makeTop<ui::LayoutGroup>("top-layoutgroup", 0, 0, 1280, 720);
+  _topLayoutGroup                   = _ezviewport->_topLayoutGroup;
 
   _mainWindow->_ctqt = new CTQT(_mainWindow->_gfxwin, _mainWindow);
   _mainWindow->_ctqt->Show();

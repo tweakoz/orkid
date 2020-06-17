@@ -144,15 +144,29 @@ struct SignalScope {
   varmap::VarMap _vars;
 };
 ///////////////////////////////////////////////////////////////////////////////
-signalscope_ptr_t create_oscilloscope(hudvp_ptr_t vp, std::string named = "");
-signalscope_ptr_t create_spectrumanalyzer(hudvp_ptr_t vp, std::string named = "");
-signalscope_ptr_t create_envelope_analyzer(hudvp_ptr_t vp, std::string named = "");
-hudpanel_ptr_t createProgramView(hudvp_ptr_t vp, std::string named = "");
-hudpanel_ptr_t createProfilerView(hudvp_ptr_t vp, std::string named = "");
+signalscope_ptr_t create_oscilloscope(
+    hudvp_ptr_t vp, //
+    const ui::anchor::Bounds& bounds,
+    std::string named = "");
+signalscope_ptr_t create_spectrumanalyzer(
+    hudvp_ptr_t vp, //
+    const ui::anchor::Bounds& bounds,
+    std::string named = "");
+signalscope_ptr_t create_envelope_analyzer(
+    hudvp_ptr_t vp, //
+    const ui::anchor::Bounds& bounds,
+    std::string named = "");
+hudpanel_ptr_t createProgramView(
+    hudvp_ptr_t vp, //
+    const ui::anchor::Bounds& bounds,
+    std::string named = "");
+hudpanel_ptr_t createProfilerView(
+    hudvp_ptr_t vp, //
+    const ui::anchor::Bounds& bounds,
+    std::string named = "");
 ///////////////////////////////////////////////////////////////////////////////
-struct HudViewport final : public ui::Viewport {
-  HudViewport();
-  void DoDraw(ui::drawevent_constptr_t drwev) override;
+struct HudLayoutGroup final : public ui::LayoutGroup {
+  HudLayoutGroup();
   void onUpdateThreadTick(ui::updatedata_ptr_t updata);
   std::unordered_set<hudpanel_ptr_t> _hudpanels;
   int _updcount = 0;

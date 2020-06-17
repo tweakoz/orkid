@@ -84,7 +84,7 @@ synth::synth()
     _allProgInsts.insert(pi);
   }
 
-  _hudvp = std::make_shared<HudViewport>();
+  _hudvp = std::make_shared<HudLayoutGroup>();
 
   resize(1);
 

@@ -107,7 +107,7 @@ struct OutputBus;
 ///////////////////////////////////////////////////////////////////////////////
 struct HudFrameAudio;
 struct HudFrameControl;
-struct HudViewport;
+struct HudLayoutGroup;
 struct SignalScope;
 struct ScopeSource;
 struct ScopeSink;
@@ -151,7 +151,7 @@ using controlblockdata_constptr_t = std::shared_ptr<const ControlBlockData>;
 using kmpblockdata_ptr_t          = std::shared_ptr<KmpBlockData>;
 using hudframeaud_ptr_t           = std::shared_ptr<HudFrameAudio>;
 using hudframectrl_ptr_t          = std::shared_ptr<HudFrameControl>;
-using hudvp_ptr_t                 = std::shared_ptr<HudViewport>;
+using hudvp_ptr_t                 = std::shared_ptr<HudLayoutGroup>;
 using hudpanel_ptr_t              = std::shared_ptr<HudPanel>;
 using scopesource_ptr_t           = std::shared_ptr<ScopeSource>;
 using scopesink_ptr_t             = std::shared_ptr<ScopeSink>;

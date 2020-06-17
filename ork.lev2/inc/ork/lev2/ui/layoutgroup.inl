@@ -10,6 +10,19 @@ namespace ork::ui {
 ////////////////////////////////////////////////////////////////////
 
 template <typename T> struct LayoutItem {
+
+  inline void applyBounds(const anchor::Bounds& bounds) {
+    if (bounds._top)
+      _layout->top()->anchorTo(bounds._top);
+    if (bounds._left)
+      _layout->left()->anchorTo(bounds._left);
+    if (bounds._bottom)
+      _layout->bottom()->anchorTo(bounds._bottom);
+    if (bounds._right)
+      _layout->right()->anchorTo(bounds._right);
+    _layout->setMargin(bounds._margin);
+  }
+
   std::shared_ptr<T> _widget;
   anchor::layout_ptr_t _layout;
 };

@@ -48,10 +48,18 @@ struct SpectraSurf final : public ui::Surface {
   const ScopeSource* _currentSource = nullptr;
 };
 ///////////////////////////////////////////////////////////////////////////////
-signalscope_ptr_t create_spectrumanalyzer(hudvp_ptr_t vp, std::string named) {
-  auto hudpanel      = std::make_shared<HudPanel>();
-  auto analyzersurf  = std::make_shared<SpectraSurf>();
-  hudpanel->_uipanel = std::make_shared<ui::Panel>("analyzer", 0, 0, 32, 32);
+signalscope_ptr_t create_spectrumanalyzer(
+    hudvp_ptr_t vp, //
+    const ui::anchor::Bounds& bounds,
+    std::string named) {
+  auto hudpanel    = std::make_shared<HudPanel>();
+  auto uipanelitem = vp->makeChild<ui::Panel>("analyzer", 0, 0, 32, 32);
+  uipanelitem.applyBounds(bounds);
+  auto analyzersurf                 = std::make_shared<SpectraSurf>();
+  hudpanel->_uipanel                = uipanelitem._widget;
+  hudpanel->_panelLayout            = uipanelitem._layout;
+  hudpanel->_uipanel->_closeEnabled = false;
+  hudpanel->_uipanel->_moveEnabled  = false;
   hudpanel->_uipanel->setTitle(named);
   hudpanel->_uisurface = analyzersurf;
   hudpanel->_uipanel->setChild(hudpanel->_uisurface);
@@ -87,7 +95,7 @@ signalscope_ptr_t create_spectrumanalyzer(hudvp_ptr_t vp, std::string named) {
   };
   instrument->_sink->_onkeyoff = [analyzersurf](const ScopeSource* src) { //
   };
-  vp->addChild(hudpanel->_uipanel);
+  // vp->addChild(hudpanel->_uipanel);
   vp->_hudpanels.insert(hudpanel);
   return instrument;
 }

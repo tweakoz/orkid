@@ -18,7 +18,10 @@ struct ProfilerView final : public ui::Surface {
   SynthProfilerFrame _curprofframe;
 };
 ///////////////////////////////////////////////////////////////////////////////
-hudpanel_ptr_t createProfilerView(hudvp_ptr_t vp, std::string named) {
+hudpanel_ptr_t createProfilerView(
+    hudvp_ptr_t vp, //
+    const ui::anchor::Bounds& bounds,
+    std::string named) {
   auto hudpanel      = std::make_shared<HudPanel>();
   auto programview   = std::make_shared<ProfilerView>();
   hudpanel->_uipanel = std::make_shared<ui::Panel>("progview", 0, 0, 32, 32);

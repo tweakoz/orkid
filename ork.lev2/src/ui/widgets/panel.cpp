@@ -96,7 +96,7 @@ void Panel::DoDraw(ui::drawevent_constptr_t drwev) {
     // close button
     /////////////
 
-    if (_enableClose) {
+    if (_closeEnabled) {
       tgt->PushModColor(fcolor4(0.3f, 0.0f, 0.0f));
       ren_quad(ixr + 1, iyr + 1, ixr + kpanelw - 1, iyr + kpanelw - 1);
       tgt->PopModColor();
@@ -235,8 +235,10 @@ HandlerResult Panel::DoOnUiEvent(event_constptr_t Ev) {
       _prevph        = _geometry._h;
       ret.mHoldFocus = true;
       if (filtev.mBut0) {
-        mPanelUiState = 1;
-        if (_enableClose) {
+        if (_moveEnabled) {
+          mPanelUiState = 1;
+        }
+        if (_closeEnabled) {
           printf("ilocx<%d> mCloseX<%d>\n", ilocx, mCloseX);
           if ((ilocx >= mCloseX) && ((ilocx - mCloseX) < kpanelw) && (ilocy >= mCloseY) && ((ilocy - mCloseY) < kpanelw)) {
             auto lamb = [=]() {
@@ -248,14 +250,16 @@ HandlerResult Panel::DoOnUiEvent(event_constptr_t Ev) {
           }
         }
       } else if (filtev.mBut1 || filtev.mBut2) {
-        if (abs(ilocy) < kpanelw) // top
-          mPanelUiState = 2;
-        else if (abs(ilocy - _geometry._h) < kpanelw) // bot
-          mPanelUiState = 3;
-        else if (abs(ilocx) < kpanelw) // lft
-          mPanelUiState = 4;
-        else if (abs(ilocx - _geometry._w) < kpanelw) // rht
-          mPanelUiState = 5;
+        if (_moveEnabled) {
+          if (abs(ilocy) < kpanelw) // top
+            mPanelUiState = 2;
+          else if (abs(ilocy - _geometry._h) < kpanelw) // bot
+            mPanelUiState = 3;
+          else if (abs(ilocx) < kpanelw) // lft
+            mPanelUiState = 4;
+          else if (abs(ilocx - _geometry._w) < kpanelw) // rht
+            mPanelUiState = 5;
+        }
       }
       break;
     case ui::EventCode::RELEASE: // idle

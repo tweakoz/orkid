@@ -74,9 +74,10 @@ int main(int argc, char** argv) {
   //////////////////////////////////////
   // create and connect oscilloscope
   //////////////////////////////////////
+  ui::anchor::Bounds nobounds;
   auto source   = layerdata->createScopeSource();
-  auto scope    = create_oscilloscope(app->_hudvp);
-  auto analyzer = create_spectrumanalyzer(app->_hudvp);
+  auto scope    = create_oscilloscope(app->_hudvp, nobounds);
+  auto analyzer = create_spectrumanalyzer(app->_hudvp, nobounds);
   source->connect(scope->_sink);
   source->connect(analyzer->_sink);
   scope->setRect(0, 0, 1280, 256);

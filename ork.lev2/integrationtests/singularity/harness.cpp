@@ -83,9 +83,10 @@ singularitytestapp_ptr_t createEZapp(int& argc, char** argv) {
   auto qtapp  = std::make_shared<SingularityTestApp>(qti._argc, qti._argvp);
   auto qtwin  = qtapp->_mainWindow;
   auto gfxwin = qtwin->_gfxwin;
-
-  qtapp->_topLayoutGroup->layoutAndAddChild(qtapp->_hudvp);
-
+  //////////////////////////////////////////////////////////
+  // a wee bit convoluted, TODO: fixme
+  auto hudvplayout       = qtapp->_topLayoutGroup->layoutAndAddChild(qtapp->_hudvp);
+  qtapp->_hudvp->_layout = hudvplayout;
   //////////////////////////////////////////////////////////
   // create references to various items scoped by qtapp
   //////////////////////////////////////////////////////////
@@ -156,7 +157,8 @@ singularitytestapp_ptr_t createEZapp(int& argc, char** argv) {
     compositorimpl->pushCPD(*CPD);
     context->beginFrame();
     mtxi->PushUIMatrix();
-    qtapp->_hudvp->Draw(drwev);
+    // qtapp->_hudvp->Draw(drwev);
+    qtapp->_ezviewport->_topLayoutGroup->Draw(drwev);
     mtxi->PopUIMatrix();
     context->endFrame();
     ////////////////////////////////////////////////////
@@ -164,7 +166,8 @@ singularitytestapp_ptr_t createEZapp(int& argc, char** argv) {
   });
   //////////////////////////////////////////////////////////
   qtapp->onResize([=](int w, int h) { //
-    // printf("GOTRESIZE<%d %d>\n", w, h);
+                                      // printf("GOTRESIZE<%d %d>\n", w, h);
+                                      // qtapp->_ezviewport->_topLayoutGroup->SetSize(w, h);
     qtapp->_hudvp->SetSize(w, h);
   });
   //////////////////////////////////////////////////////////

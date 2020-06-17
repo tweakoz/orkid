@@ -26,10 +26,11 @@ int main(int argc, char** argv) {
   ////////////////////////////////////////////////
   // create visualizers
   ////////////////////////////////////////////////
-  auto scope1    = create_oscilloscope(app->_hudvp, "layer");
-  auto scope2    = create_oscilloscope(app->_hudvp, "main-bus");
-  auto analyzer1 = create_spectrumanalyzer(app->_hudvp, "layer");
-  auto analyzer2 = create_spectrumanalyzer(app->_hudvp, "main-bus");
+  ui::anchor::Bounds nobounds;
+  auto scope1    = create_oscilloscope(app->_hudvp, nobounds, "layer");
+  auto scope2    = create_oscilloscope(app->_hudvp, nobounds, "main-bus");
+  auto analyzer1 = create_spectrumanalyzer(app->_hudvp, nobounds, "layer");
+  auto analyzer2 = create_spectrumanalyzer(app->_hudvp, nobounds, "main-bus");
   scope1->setRect(-10, 0, 480, 240, true);
   scope2->setRect(-10, 480, 480, 240, true);
   analyzer1->setRect(480, 0, 810, 240, true);
@@ -37,8 +38,8 @@ int main(int argc, char** argv) {
   bussource->connect(scope2->_sink);
   bussource->connect(analyzer2->_sink);
   //////////////////////////////////////////////////////////////////////////////
-  auto progview = createProgramView(app->_hudvp, "program");
-  auto perfview = createProfilerView(app->_hudvp, "profiler");
+  auto progview = createProgramView(app->_hudvp, nobounds, "program");
+  auto perfview = createProfilerView(app->_hudvp, nobounds, "profiler");
   progview->setRect(-10, 240, 890, 240, true);
   perfview->setRect(900, 240, 1290 - 900, 240, true);
   //////////////////////////////////////////////////////////////////////////////

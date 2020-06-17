@@ -36,10 +36,7 @@ UiTestApp::UiTestApp(int& argc, char** argv)
 UiTestApp::~UiTestApp() {
 }
 ///////////////////////////////////////////////////////////////////////////////
-uitestapp_ptr_t createEZapp(
-    ui::context_ptr_t uicontext, //
-    int& argc,
-    char** argv) {
+uitestapp_ptr_t createEZapp(int& argc, char** argv) {
 
   //////////////////////////////////////////////////////////////////////////////
   // boot up debug HUD
@@ -49,6 +46,7 @@ uitestapp_ptr_t createEZapp(
   auto qtapp                      = std::make_shared<UiTestApp>(qti._argc, qti._argvp);
   auto qtwin                      = qtapp->_mainWindow;
   auto gfxwin                     = qtwin->_gfxwin;
+  auto uicontext                  = qtapp->_uicontext;
   gfxwin->mRootWidget->_uicontext = uicontext.get();
   //////////////////////////////////////////////////////////
   // create references to various items scoped by qtapp
@@ -92,7 +90,7 @@ uitestapp_ptr_t createEZapp(
     if (DB) {
       DB->Reset();
       DB->copyCameras(*cameras);
-      // qtapp->_uivp->onUpdateThreadTick(updata);
+      // qtapp->_ezviewport->onUpdateThreadTick(updata);
       DrawableBuffer::releaseFromWrite(DB);
     }
   });
@@ -122,7 +120,7 @@ uitestapp_ptr_t createEZapp(
     compositorimpl->pushCPD(*CPD);
     context->beginFrame();
     mtxi->PushUIMatrix();
-    qtapp->_uivp->Draw(drwev);
+    qtapp->_ezviewport->_topLayoutGroup->Draw(drwev);
     mtxi->PopUIMatrix();
     context->endFrame();
     ////////////////////////////////////////////////////
@@ -131,7 +129,8 @@ uitestapp_ptr_t createEZapp(
   //////////////////////////////////////////////////////////
   qtapp->onResize([=](int w, int h) { //
     // printf("GOTRESIZE<%d %d>\n", w, h);
-    qtapp->_uivp->SetSize(w, h);
+    qtapp->_ezviewport->SetSize(w, h);
+    qtapp->_ezviewport->_topLayoutGroup->SetSize(w, h);
   });
   //////////////////////////////////////////////////////////
   const int64_t trackMAX = (4095 << 16);
@@ -151,7 +150,7 @@ uitestapp_ptr_t createEZapp(
       default:
         OrkAssert(false);
         // return uicontext->handleEvent(ev);
-        // return qtapp->_uivp->HandleUiEvent(ev);
+        // return qtapp->_ezviewport->HandleUiEvent(ev);
         break;
     }
     ui::HandlerResult rval;

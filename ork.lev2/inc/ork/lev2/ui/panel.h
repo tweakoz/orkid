@@ -29,7 +29,8 @@ struct Panel : public Group {
   bool mDockedAtTop;
   int mCloseX, mCloseY;
   std::string _title;
-  bool _enableClose = true;
+  bool _closeEnabled = true;
+  bool _moveEnabled  = true;
 
   int _downx  = 0;
   int _downy  = 0;

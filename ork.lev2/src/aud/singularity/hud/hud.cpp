@@ -44,11 +44,11 @@ void Rect::PopOrtho(Context* context) const {
   context->MTXI()->PopUIMatrix();
 }
 ///////////////////////////////////////////////////////////////////////////////
-HudViewport::HudViewport() //
-    : ui::Viewport("HUD", 0, 0, 1280, 720, fvec3::Red(), 1.0) {
+HudLayoutGroup::HudLayoutGroup() //
+    : ui::LayoutGroup("HUD", 0, 0, 1280, 720) {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void HudViewport::onUpdateThreadTick(ui::updatedata_ptr_t updata) {
+void HudLayoutGroup::onUpdateThreadTick(ui::updatedata_ptr_t updata) {
   ///////////////////////////////////////////
   // pull hud frame data
   ///////////////////////////////////////////
@@ -68,12 +68,6 @@ void HudViewport::onUpdateThreadTick(ui::updatedata_ptr_t updata) {
     fflush(stdout);
   }
   _updcount++;
-}
-///////////////////////////////////////////////////////////////////////////////
-void HudViewport::DoDraw(ui::drawevent_constptr_t drwev) {
-
-  drawChildren(drwev);
-  ///////////////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////////////////////
 void drawtext(

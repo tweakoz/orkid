@@ -161,6 +161,7 @@ public:
   ui::updatedata_ptr_t _update_data;
   ui::context_ptr_t _uicontext;
   ui::layoutgroup_ptr_t _topLayoutGroup;
+  std::shared_ptr<EzViewport> _ezviewport;
 };
 
 } // namespace ork::lev2

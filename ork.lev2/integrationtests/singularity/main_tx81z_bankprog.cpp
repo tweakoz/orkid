@@ -4,19 +4,9 @@
 #include <ork/lev2/aud/singularity/fxgen.h>
 
 int main(int argc, char** argv) {
-  auto app                       = createEZapp(argc, argv);
-  auto toplayoutgroup            = app->_topLayoutGroup;
-  auto toplayout                 = toplayoutgroup->_layout;
+  auto app = createEZapp(argc, argv);
+  // auto toplayoutgroup            = app->_topLayoutGroup;
   synth::instance()->_masterGain = decibel_to_linear_amp_ratio(30.0f);
-  ////////////////////////////////////////////////
-  auto guidehl = toplayout->left();
-  auto guidehm = toplayout->centerH();
-  auto guidehr = toplayout->right();
-
-  auto guidevt = toplayout->top();
-  auto guidev0 = toplayout->proportionalHorizontalGuide(0.333333);
-  auto guidev1 = toplayout->proportionalHorizontalGuide(0.666666);
-  auto guidevb = toplayout->bottom();
   ////////////////////////////////////////////////
   // main bus effect
   ////////////////////////////////////////////////
@@ -27,34 +17,53 @@ int main(int argc, char** argv) {
     mainbus->setBusDSP(fxlayer);
   }
   ////////////////////////////////////////////////
+  auto toplayout = app->_hudvp->_layout;
+  auto guidehl   = toplayout->left();
+  auto guidehm   = toplayout->centerH();
+  auto guidehr   = toplayout->right();
+
+  auto guidevt = toplayout->top();
+  auto guidev0 = toplayout->proportionalHorizontalGuide(0.333333);
+  auto guidev1 = toplayout->proportionalHorizontalGuide(0.666666);
+  auto guidevb = toplayout->bottom();
+  ////////////////////////////////////////////////
   // create visualizers
   ////////////////////////////////////////////////
-  auto scope1    = create_oscilloscope(app->_hudvp, "fm4-op");
-  auto scope2    = create_oscilloscope(app->_hudvp, "layer");
-  auto scope3    = create_oscilloscope(app->_hudvp, "main-bus");
-  auto analyzer1 = create_spectrumanalyzer(app->_hudvp, "fm4-op");
-  auto analyzer2 = create_spectrumanalyzer(app->_hudvp, "layer");
-  auto analyzer3 = create_spectrumanalyzer(app->_hudvp, "main-bus");
-  ///////////////////////////////
-  // attach to layout
-  ///////////////////////////////
-  auto a3panel                    = analyzer3->_hudpanel;
-  auto a3layout                   = toplayoutgroup->layoutAndAddChild(a3panel->_uipanel);
-  a3panel->_panelLayout           = a3layout;
-  a3panel->_uipanel->_enableClose = false;
-  ///////////////////////////////
-  a3layout->top()->anchorTo(guidev1);
-  a3layout->bottom()->anchorTo(guidevb);
-  a3layout->left()->anchorTo(guidehm);
-  a3layout->right()->anchorTo(guidehr);
-  ///////////////////////////////
+  ui::anchor::Bounds top_left, middle_left, bottom_left;
+  ui::anchor::Bounds top_right, middle_right, bottom_right;
 
-  scope1->setRect(-10, 0, 480, 240, true);
-  scope2->setRect(-10, 240, 480, 240, true);
-  scope3->setRect(-10, 480, 480, 240, true);
-  analyzer1->setRect(480, 0, 810, 240, true);
-  analyzer2->setRect(480, 240, 810, 240, true);
-  analyzer3->setRect(480, 480, 810, 240, true);
+  top_left._top    = guidevt;
+  top_left._left   = guidehl;
+  top_left._bottom = guidev0;
+  top_left._right  = guidehm;
+
+  middle_left         = top_left;
+  middle_left._top    = guidev0;
+  middle_left._bottom = guidev1;
+
+  bottom_left         = top_left;
+  bottom_left._top    = guidev1;
+  bottom_left._bottom = guidevb;
+
+  top_right._top    = guidevt;
+  top_right._left   = guidehm;
+  top_right._bottom = guidev0;
+  top_right._right  = guidehr;
+
+  middle_right         = top_right;
+  middle_right._top    = guidev0;
+  middle_right._bottom = guidev1;
+
+  bottom_right         = top_right;
+  bottom_right._top    = guidev1;
+  bottom_right._bottom = guidevb;
+
+  auto scope1    = create_oscilloscope(app->_hudvp, top_left, "fm4-op");
+  auto scope2    = create_oscilloscope(app->_hudvp, middle_left, "layer");
+  auto scope3    = create_oscilloscope(app->_hudvp, bottom_left, "main-bus");
+  auto analyzer1 = create_spectrumanalyzer(app->_hudvp, top_right, "fm4-op");
+  auto analyzer2 = create_spectrumanalyzer(app->_hudvp, middle_right, "layer");
+  auto analyzer3 = create_spectrumanalyzer(app->_hudvp, bottom_right, "main-bus");
   //////////////////////////////////////////////////////////////////////////////
   auto basepath = basePath() / "tx81z";
   auto bank     = std::make_shared<Tx81zData>();
