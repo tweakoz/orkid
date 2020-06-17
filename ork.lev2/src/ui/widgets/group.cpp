@@ -10,7 +10,9 @@ Group::Group(const std::string& name, int x, int y, int w, int h)
 }
 /////////////////////////////////////////////////////////////////////////
 void Group::addChild(widget_ptr_t w) {
-  assert(w->parent() == nullptr);
+  if (w->parent()) {
+    w->parent()->removeChild(w);
+  }
   _children.push_back(w);
   w->mParent    = this;
   w->_uicontext = this->_uicontext;

@@ -5,8 +5,18 @@
 
 int main(int argc, char** argv) {
   auto app                       = createEZapp(argc, argv);
-  auto layoutgroup               = app->_layoutgroup;
+  auto toplayoutgroup            = app->_topLayoutGroup;
+  auto toplayout                 = toplayoutgroup->_layout;
   synth::instance()->_masterGain = decibel_to_linear_amp_ratio(30.0f);
+  ////////////////////////////////////////////////
+  auto guidehl = toplayout->left();
+  auto guidehm = toplayout->centerH();
+  auto guidehr = toplayout->right();
+
+  auto guidevt = toplayout->top();
+  auto guidev0 = toplayout->proportionalHorizontalGuide(0.333333);
+  auto guidev1 = toplayout->proportionalHorizontalGuide(0.666666);
+  auto guidevb = toplayout->bottom();
   ////////////////////////////////////////////////
   // main bus effect
   ////////////////////////////////////////////////
@@ -25,6 +35,20 @@ int main(int argc, char** argv) {
   auto analyzer1 = create_spectrumanalyzer(app->_hudvp, "fm4-op");
   auto analyzer2 = create_spectrumanalyzer(app->_hudvp, "layer");
   auto analyzer3 = create_spectrumanalyzer(app->_hudvp, "main-bus");
+  ///////////////////////////////
+  // attach to layout
+  ///////////////////////////////
+  auto a3panel                    = analyzer3->_hudpanel;
+  auto a3layout                   = toplayoutgroup->layoutAndAddChild(a3panel->_uipanel);
+  a3panel->_panelLayout           = a3layout;
+  a3panel->_uipanel->_enableClose = false;
+  ///////////////////////////////
+  a3layout->top()->anchorTo(guidev1);
+  a3layout->bottom()->anchorTo(guidevb);
+  a3layout->left()->anchorTo(guidehm);
+  a3layout->right()->anchorTo(guidehr);
+  ///////////////////////////////
+
   scope1->setRect(-10, 0, 480, 240, true);
   scope2->setRect(-10, 240, 480, 240, true);
   scope3->setRect(-10, 480, 480, 240, true);

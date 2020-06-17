@@ -84,9 +84,7 @@ singularitytestapp_ptr_t createEZapp(int& argc, char** argv) {
   auto qtwin  = qtapp->_mainWindow;
   auto gfxwin = qtwin->_gfxwin;
 
-  auto lg = qtapp->_topLayoutGroup;
-  lg->_layout->childLayout(qtapp->_hudvp.get());
-  lg->addChild(qtapp->_hudvp);
+  qtapp->_topLayoutGroup->layoutAndAddChild(qtapp->_hudvp);
 
   //////////////////////////////////////////////////////////
   // create references to various items scoped by qtapp

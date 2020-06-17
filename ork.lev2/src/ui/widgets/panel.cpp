@@ -89,20 +89,25 @@ void Panel::DoDraw(ui::drawevent_constptr_t drwev) {
     defmtl->_rasterstate.SetBlending(lev2::EBLENDING_OFF);
 
     /////////////
+
+    LocalToRoot(mCloseX, mCloseY, ixr, iyr);
+
+    /////////////
     // close button
     /////////////
 
-    LocalToRoot(mCloseX, mCloseY, ixr, iyr);
-    tgt->PushModColor(fcolor4(0.3f, 0.0f, 0.0f));
-    ren_quad(ixr + 1, iyr + 1, ixr + kpanelw - 1, iyr + kpanelw - 1);
-    tgt->PopModColor();
-    tgt->PushModColor(fcolor4(1.0f, 0.3f, 0.3f));
-    ren_quad(ixr + 2, iyr + 2, ixr + kpanelw - 2, iyr + kpanelw - 2);
-    tgt->PopModColor();
-    tgt->PushModColor(fcolor4(0.3f, 0.0f, 0.0f));
-    ren_line(ixr + 1, iyr + 1, ixr + kpanelw - 1, iyr + kpanelw - 1);
-    ren_line(ixr + kpanelw - 1, iyr + 1, ixr + 1, iyr + kpanelw - 1);
-    tgt->PopModColor();
+    if (_enableClose) {
+      tgt->PushModColor(fcolor4(0.3f, 0.0f, 0.0f));
+      ren_quad(ixr + 1, iyr + 1, ixr + kpanelw - 1, iyr + kpanelw - 1);
+      tgt->PopModColor();
+      tgt->PushModColor(fcolor4(1.0f, 0.3f, 0.3f));
+      ren_quad(ixr + 2, iyr + 2, ixr + kpanelw - 2, iyr + kpanelw - 2);
+      tgt->PopModColor();
+      tgt->PushModColor(fcolor4(0.3f, 0.0f, 0.0f));
+      ren_line(ixr + 1, iyr + 1, ixr + kpanelw - 1, iyr + kpanelw - 1);
+      ren_line(ixr + kpanelw - 1, iyr + 1, ixr + 1, iyr + kpanelw - 1);
+      tgt->PopModColor();
+    }
 
     if (_title.length()) {
       tgt->PushModColor(fcolor4::Yellow());
@@ -230,17 +235,18 @@ HandlerResult Panel::DoOnUiEvent(event_constptr_t Ev) {
       _prevph        = _geometry._h;
       ret.mHoldFocus = true;
       if (filtev.mBut0) {
-        printf("ilocx<%d> mCloseX<%d>\n", ilocx, mCloseX);
-        if ((ilocx >= mCloseX) && ((ilocx - mCloseX) < kpanelw) && (ilocy >= mCloseY) && ((ilocy - mCloseY) < kpanelw)) {
-          auto lamb = [=]() {
-            if (mParent) {
-              mParent->removeChild(this);
-            }
-          };
-          opq::Op(lamb).QueueASync(opq::mainSerialQueue());
-
-        } else
-          mPanelUiState = 1;
+        mPanelUiState = 1;
+        if (_enableClose) {
+          printf("ilocx<%d> mCloseX<%d>\n", ilocx, mCloseX);
+          if ((ilocx >= mCloseX) && ((ilocx - mCloseX) < kpanelw) && (ilocy >= mCloseY) && ((ilocy - mCloseY) < kpanelw)) {
+            auto lamb = [=]() {
+              if (mParent) {
+                mParent->removeChild(this);
+              }
+            };
+            opq::Op(lamb).QueueASync(opq::mainSerialQueue());
+          }
+        }
       } else if (filtev.mBut1 || filtev.mBut2) {
         if (abs(ilocy) < kpanelw) // top
           mPanelUiState = 2;
@@ -294,5 +300,4 @@ HandlerResult Panel::DoOnUiEvent(event_constptr_t Ev) {
   return ret;
 }
 //
-
 }} // namespace ork::ui

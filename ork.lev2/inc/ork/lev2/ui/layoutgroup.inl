@@ -29,6 +29,12 @@ struct LayoutGroup : public Group {
     return rval;
   }
   //////////////////////////////////////
+  inline anchor::layout_ptr_t layoutAndAddChild(widget_ptr_t w) {
+    auto layout = _layout->childLayout(w.get());
+    addChild(w);
+    return layout;
+  }
+  //////////////////////////////////////
 
 private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;

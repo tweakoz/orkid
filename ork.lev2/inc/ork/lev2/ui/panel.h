@@ -19,7 +19,6 @@ struct Panel : public Group {
     _title = t;
   }
 
-private:
   HandlerResult DoOnUiEvent(event_constptr_t Ev) override;
   void DoDraw(ui::drawevent_constptr_t drwev) override;
   void DoLayout(void) override;
@@ -30,6 +29,7 @@ private:
   bool mDockedAtTop;
   int mCloseX, mCloseY;
   std::string _title;
+  bool _enableClose = true;
 
   int _downx  = 0;
   int _downy  = 0;

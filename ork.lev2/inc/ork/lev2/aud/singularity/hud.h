@@ -15,6 +15,7 @@
 #include <ork/lev2/ui/surface.h>
 #include <ork/lev2/ui/viewport.h>
 #include <ork/lev2/ui/panel.h>
+#include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/lev2/ui/event.h>
 #include <ork/lev2/ezapp.h> // todo move updatedata_ptr_t out..
 
@@ -91,6 +92,7 @@ struct ItemDrawReq {
 ///////////////////////////////////////////////////////////////////////////////
 struct HudPanel {
   void setRect(int iX, int iY, int iW, int iH, bool snap = false);
+  ui::anchor::layout_ptr_t _panelLayout;
   ui::panel_ptr_t _uipanel;
   ui::surface_ptr_t _uisurface;
 };

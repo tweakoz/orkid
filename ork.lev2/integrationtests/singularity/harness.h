@@ -28,7 +28,6 @@ struct SingularityTestApp final : public OrkEzQtApp {
   SingularityTestApp(int& argc, char** argv);
   ~SingularityTestApp() override;
   hudvp_ptr_t _hudvp;
-  ui::layoutgroup_ptr_t _layoutgroup;
 };
 using singularitytestapp_ptr_t = std::shared_ptr<SingularityTestApp>;
 
