@@ -38,13 +38,6 @@ Widget::Widget(const std::string& name, int x, int y, int w, int h)
   _prevGeometry = _geometry;
 
   pushEventFilter<ui::NopEventFilter>();
-
-  auto rootstate           = _eventRoutingFSM.NewState<fsm::LambdaState>(nullptr);
-  auto normal              = _eventRoutingFSM.NewState<fsm::LambdaState>(rootstate);
-  auto childdragging       = _eventRoutingFSM.NewState<fsm::LambdaState>(rootstate);
-  childdragging->_onenter  = []() {};
-  childdragging->_onexit   = []() {};
-  childdragging->_onupdate = []() {};
 }
 ///////////////////////////////////////////////////////////
 Widget::~Widget() {
@@ -63,7 +56,8 @@ void Widget::setGeometry(Rect newgeo) {
 ///////////////////////////////////////////////////////////
 HandlerResult Widget::handleUiEvent(event_constptr_t ev) {
   Widget* target = doRouteUiEvent(ev);
-  printf("handleuiev target<%s>\n", target ? target->msName.c_str() : "none");
+  if (0)
+    printf("handleuiev target<%s>\n", target ? target->msName.c_str() : "none");
   return target ? target->OnUiEvent(ev) : HandlerResult();
 }
 ///////////////////////////////////////////////////////////
@@ -75,7 +69,8 @@ Widget* Widget::routeUiEvent(event_constptr_t ev) {
 Widget* Widget::doRouteUiEvent(event_constptr_t ev) {
   bool inside    = IsEventInside(ev);
   Widget* target = inside ? this : nullptr;
-  printf("Widget::doRouteUiEvent w<%s> inside<%d> target<%p>\n", msName.c_str(), int(inside), target);
+  if (0)
+    printf("Widget::doRouteUiEvent w<%s> inside<%d> target<%p>\n", msName.c_str(), int(inside), target);
   return target;
 }
 ///////////////////////////////////////////////////////////

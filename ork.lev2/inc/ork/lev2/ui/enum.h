@@ -28,7 +28,9 @@ enum class EventCode {
   PUSH,
   DOUBLECLICK,
   RELEASE,
+  BEGIN_DRAG,
   DRAG,
+  END_DRAG,
   MOVE,
   KEY,
   KEY_REPEAT,
@@ -39,6 +41,8 @@ enum class EventCode {
   TABLET_BRUSH,
   GOT_KEYFOCUS,
   LOST_KEYFOCUS,
+  MOUSE_ENTER,
+  MOUSE_LEAVE,
   ACTION,
 };
 

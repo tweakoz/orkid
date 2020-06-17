@@ -131,13 +131,6 @@ public:
   void ExtDraw(lev2::Context* pTARG);
   virtual void Draw(ui::drawevent_constptr_t drwev);
 
-  inline void enter(void) {
-    DoOnEnter();
-  }
-  inline void exit(void) {
-    DoOnExit();
-  }
-
   void GotKeyboardFocus(void) {
     mbKeyboardFocus = true;
   }
@@ -190,7 +183,6 @@ public:
   Context* _uicontext = nullptr;
 
 protected:
-  fsm::StateMachine _eventRoutingFSM;
   bool mbInit;
   bool mbKeyboardFocus;
   Rect _geometry;
@@ -204,15 +196,9 @@ protected:
   Group* mParent;
   std::stack<eventfilter_ptr_t> _eventfilterstack;
 
-  static void UpdateMouseFocus(const HandlerResult& e, event_constptr_t Ev);
-
 private:
   friend struct ui::Context;
   virtual void DoInit(lev2::Context* pTARG) {
-  }
-  virtual void DoOnEnter() {
-  }
-  virtual void DoOnExit() {
   }
   virtual void DoDraw(ui::drawevent_constptr_t drwev) = 0;
   virtual HandlerResult DoOnUiEvent(event_constptr_t Ev);

@@ -54,6 +54,7 @@ public:
   fvec4 _colorClick;
   fvec4 _colorDoubleClick;
   fvec4 _colorDrag;
+  fvec4 _colorKeyDown;
   EventCode _colorsel = EventCode::UNKNOWN;
 
 private:

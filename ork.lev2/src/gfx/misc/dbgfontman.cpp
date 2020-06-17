@@ -42,6 +42,10 @@ FontMan::~FontMan() {
     delete item;
   GetRef().mFontMap.clear();
 }
+int FontMan::stringWidth(int numchars) {
+  auto font = GetRef().mpCurrentFont;
+  return font->mFontDesc.stringWidth(numchars);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -73,6 +77,9 @@ void FontMan::_beginTextBlock(Context* pTARG, int imaxcharcount) {
   }
   vw.Lock(pTARG, &pTARG->IMI()->RefTextVB(), inumv);
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 void FontMan::_endTextBlock(Context* pTARG) {
   OrkAssert(pTARG->IMI()->RefTextVB().IsLocked());
   mTextWriter.UnLock(pTARG);

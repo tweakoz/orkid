@@ -360,10 +360,4 @@ HandlerResult SplitPanel::DoOnUiEvent(event_constptr_t Ev) {
 }
 //
 
-void SplitPanel::DoOnEnter() {
-}
-
-void SplitPanel::DoOnExit() {
-}
-
 }} // namespace ork::ui

@@ -38,8 +38,6 @@ private:
   HandlerResult DoOnUiEvent(event_constptr_t Ev) override;
   void DoDraw(ui::drawevent_constptr_t drwev) override;
   void DoLayout(void) override;
-  void DoOnEnter() override;
-  void DoOnExit() override;
   Widget* doRouteUiEvent(event_constptr_t Ev) override;
 };
 

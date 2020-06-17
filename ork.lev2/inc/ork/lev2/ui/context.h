@@ -7,7 +7,7 @@
 namespace ork::ui {
 
 struct Context {
-
+  Context();
   //////////////////////////////////////
   template <typename T, typename... A> std::shared_ptr<T> makeTop(A&&... args) {
     OrkAssert(not _top);
@@ -27,6 +27,7 @@ struct Context {
   Widget* _evdragtarget           = nullptr;
   const Widget* _mousefocuswidget = nullptr;
   Event _prevevent;
+  event_ptr_t _tempevent;
 };
 
 } // namespace ork::ui

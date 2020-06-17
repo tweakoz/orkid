@@ -1,13 +1,6 @@
 #include <ork/pch.h>
 #include <ork/lev2/gfx/gfxenv.h>
-//#include <ork/lev2/gfx/rtgroup.h>
-//#include <ork/lev2/ui/viewport.h>
 #include <ork/lev2/ui/event.h>
-//#include <ork/lev2/ui/anchor.h>
-//#include <ork/lev2/gfx/gfxmaterial_ui.h>
-//#include <ork/util/hotkey.h>
-//#include <ork/lev2/gfx/dbgfontman.h>
-//#include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/ui/layoutgroup.inl>
 
 namespace ork { namespace ui {
@@ -76,10 +69,12 @@ void Group::DoLayout() {
 }
 /////////////////////////////////////////////////////////////////////////
 Widget* Group::doRouteUiEvent(event_constptr_t ev) {
-  printf("Group<%s>::doRouteUiEvent\n", msName.c_str());
+  if (0)
+    printf("Group<%s>::doRouteUiEvent\n", msName.c_str());
   for (auto& child : _children) {
     bool inside = child->IsEventInside(ev);
-    printf("Group<%s>::doRouteUiEvent ch<%p> inside<%d>\n", msName.c_str(), child.get(), int(inside));
+    if (0)
+      printf("Group<%s>::doRouteUiEvent ch<%p> inside<%d>\n", msName.c_str(), child.get(), int(inside));
     if (inside) {
       auto child_target = child->routeUiEvent(ev);
       if (child_target)

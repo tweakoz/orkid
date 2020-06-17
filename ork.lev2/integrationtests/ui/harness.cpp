@@ -89,10 +89,12 @@ uitestapp_ptr_t createEZapp(
   qtapp->onUpdate([=](ui::updatedata_ptr_t updata) {
     ///////////////////////////////////////
     auto DB = DrawableBuffer::acquireForWrite(0);
-    DB->Reset();
-    DB->copyCameras(*cameras);
-    // qtapp->_uivp->onUpdateThreadTick(updata);
-    DrawableBuffer::releaseFromWrite(DB);
+    if (DB) {
+      DB->Reset();
+      DB->copyCameras(*cameras);
+      // qtapp->_uivp->onUpdateThreadTick(updata);
+      DrawableBuffer::releaseFromWrite(DB);
+    }
   });
   //////////////////////////////////////////////////////////
   qtapp->onDraw([=](ui::drawevent_constptr_t drwev) {

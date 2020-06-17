@@ -124,6 +124,8 @@ struct FontMan { //: public NoRttiSingleton<FontMan> {
 
   //////////////////////////////////////////////////////
 
+  static int stringWidth(int numchars);
+
   static void gpuInit(Context* pTARG);
 
   static void DrawText(Context* pTARG, int iX, int iY, const char* pFmt, ...);

@@ -295,10 +295,4 @@ HandlerResult Panel::DoOnUiEvent(event_constptr_t Ev) {
 }
 //
 
-void Panel::DoOnEnter() {
-}
-
-void Panel::DoOnExit() {
-}
-
 }} // namespace ork::ui
