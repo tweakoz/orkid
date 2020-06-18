@@ -56,6 +56,22 @@ void appendStereoDistortion(
   r->_dspchannel[0]   = 1;
 }
 ///////////////////////////////////////////////////////////////////////////////
+void appendStereoStereoDynamicEcho(
+    lyrdata_ptr_t layer, //
+    dspstagedata_ptr_t stage,
+    float dtL,
+    float dtR,
+    float feedback,
+    float wetness) {
+  auto echo              = stage->appendTypedBlock<StereoDynamicEcho>();
+  echo->param(0)._coarse = dtL;
+  echo->param(1)._coarse = dtR;
+  echo->param(2)._coarse = feedback;
+  echo->param(3)._coarse = wetness;
+  echo->_dspchannel[0]   = 0;
+  echo->_dspchannel[1]   = 1;
+}
+///////////////////////////////////////////////////////////////////////////////
 void appendStereoParaEQ(
     lyrdata_ptr_t layer, //
     dspstagedata_ptr_t stage,

@@ -19,6 +19,14 @@ void appendStereoParaEQ(
     float w,
     float gain);
 ///////////////////////////////////////////////////////////////////////////////
+void appendStereoStereoDynamicEcho(
+    lyrdata_ptr_t layer, //
+    dspstagedata_ptr_t stage,
+    float dtL,
+    float dtR,
+    float feedback,
+    float wetness);
+///////////////////////////////////////////////////////////////////////////////
 void appendStereoDistortion(
     lyrdata_ptr_t layer, //
     dspstagedata_ptr_t stage,

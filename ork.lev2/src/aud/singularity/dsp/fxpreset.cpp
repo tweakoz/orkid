@@ -2,7 +2,7 @@
 
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
-lyrdata_ptr_t fxpreset_distortion() {
+lyrdata_ptr_t fxpreset_distortionpluschorus() {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
   auto fxalg        = std::make_shared<AlgData>();
@@ -26,7 +26,34 @@ lyrdata_ptr_t fxpreset_distortion() {
   appendStereoChorus(fxlayer, fxstage);
   return fxlayer;
 }
-
+///////////////////////////////////////////////////////////////////////////////
+lyrdata_ptr_t fxpreset_distortionplusecho() {
+  auto fxprog       = std::make_shared<ProgramData>();
+  auto fxlayer      = fxprog->newLayer();
+  auto fxalg        = std::make_shared<AlgData>();
+  fxlayer->_algdata = fxalg;
+  fxalg->_name      = ork::FormatString("FxAlg");
+  /////////////////
+  // output effect
+  /////////////////
+  auto fxstage = fxalg->appendStage("FX");
+  fxstage->setNumIos(2, 2); // stereo in, stereo out
+  /////////////////
+  appendStereoEnhancer(fxlayer, fxstage);
+  /////////////////
+  appendStereoStereoDynamicEcho(fxlayer, fxstage, 0.25, 0.5, 0.5, 0.5);
+  /////////////////
+  appendStereoHighFreqStimulator(
+      fxlayer, //
+      fxstage,
+      1000.0f, // cutoff
+      36.0f,   // drive
+      -6.0f);  // output gain
+  appendStereoDistortion(fxlayer, fxstage, 24.0f);
+  appendStereoChorus(fxlayer, fxstage);
+  return fxlayer;
+}
+///////////////////////////////////////////////////////////////////////////////
 lyrdata_ptr_t fxpreset_stereochorus() {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
@@ -239,7 +266,8 @@ lyrdata_ptr_t fxpreset_multitest() {
 }
 void loadAllFxPresets() {
   auto s                             = synth::instance();
-  s->_fxpresets["distorted-chorus"]  = fxpreset_distortion();
+  s->_fxpresets["distortion+chorus"] = fxpreset_distortionpluschorus();
+  s->_fxpresets["distortion+echo"]   = fxpreset_distortionplusecho();
   s->_fxpresets["stereo-chorus"]     = fxpreset_stereochorus();
   s->_fxpresets["fdn4reverb"]        = fxpreset_fdn4reverb();
   s->_fxpresets["niceverb"]          = fxpreset_niceverb();
