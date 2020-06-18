@@ -19,6 +19,7 @@ struct Dial final : public Widget {
   fvec4 _indcolor;
   fvec4 _textcolor;
   std::string _label;
+  std::string _font = "i14";
 
   void setParams(int numsteps, float curval, float minval, float maxval, float power);
 

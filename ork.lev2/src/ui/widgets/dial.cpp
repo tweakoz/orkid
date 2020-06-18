@@ -53,7 +53,7 @@ void Dial::DoDraw(drawevent_constptr_t drwev) {
     );
     tgt->PopModColor();
     tgt->PushModColor(_textcolor);
-    ork::lev2::FontMan::PushFont("i14");
+    ork::lev2::FontMan::PushFont(_font);
     lev2::FontMan::beginTextBlock(tgt, 256);
     //
     int y  = iyc - 6 - 7;

@@ -62,6 +62,11 @@ hudpanel_ptr_t createEnvYmEditView(
   dc1levelitem._widget->_label = "DecayLevel(%%)";
   dc2rateitem._widget->_label  = "Decay2Rate(x)";
   relrateitem._widget->_label  = "ReleaseRata(x)";
+  atktimeitem._widget->_font   = "i13";
+  dc1rateitem._widget->_font   = "i13";
+  dc1levelitem._widget->_font  = "i13";
+  dc2rateitem._widget->_font   = "i13";
+  relrateitem._widget->_font   = "i13";
   //
   atktimeitem._widget->setParams(251, ymenvdata->_attackTime, 0, 4, 2.0);
   dc1rateitem._widget->setParams(1001, ymenvdata->_decay1Rate, 0.99, 0.9999, 0.1);

@@ -55,7 +55,7 @@ void Label::DoDraw(drawevent_constptr_t drwev) {
     tgt->PopModColor();
 
     tgt->PushModColor(_textcolor);
-    ork::lev2::FontMan::PushFont("i14");
+    ork::lev2::FontMan::PushFont(_font);
     lev2::FontMan::beginTextBlock(tgt, 256);
     int sw = lev2::FontMan::stringWidth(_label.length());
     lev2::FontMan::DrawText(

@@ -18,6 +18,7 @@ public:
   fvec4 _color;
   fvec4 _textcolor;
   std::string _label;
+  std::string _font = "i14";
 
 private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;
