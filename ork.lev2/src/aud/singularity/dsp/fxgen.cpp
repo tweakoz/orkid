@@ -192,10 +192,15 @@ void appendPitchChorus(
 }
 ///////////////////////////////////////////////////////////////////////////////
 void appendWackiVerb(lyrdata_ptr_t fxlayer, dspstagedata_ptr_t fxstage) {
-  auto crverb = [fxlayer, fxstage](int seed, float mint, float maxt, float mins, float maxs) {
+  auto crverb = [fxlayer, fxstage](
+                    int seed, //
+                    float mint,
+                    float maxt,
+                    float mins,
+                    float maxs) {
     math::FRANDOMGEN rg(seed);
     auto rv              = appendStereoReverbX(fxlayer, fxstage, seed, 0.0f, 0.00, 0.0, 0.00001, 0.001);
-    rv->param(0)._coarse = 0.5f; // wet/dry mix
+    rv->param(0)._coarse = 0.25f; // wet/dry mix
     rv->param(1)._coarse = 0.0f;
     rv->param(2)._coarse = 0.0f;
     rv->param(3)._coarse = 0.0f;

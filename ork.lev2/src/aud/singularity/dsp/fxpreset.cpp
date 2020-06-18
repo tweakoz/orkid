@@ -15,15 +15,15 @@ lyrdata_ptr_t fxpreset_distortion() {
   fxstage->setNumIos(2, 2); // stereo in, stereo out
   /////////////////
   appendStereoEnhancer(fxlayer, fxstage);
-  appendStereoDistortion(fxlayer, fxstage, 18.0f);
-  appendStereoChorus(fxlayer, fxstage);
   /////////////////
   appendStereoHighFreqStimulator(
       fxlayer, //
       fxstage,
-      2000.0f, // cutoff
+      1000.0f, // cutoff
       36.0f,   // drive
-      -12.0f); // output gain
+      -6.0f);  // output gain
+  appendStereoDistortion(fxlayer, fxstage, 18.0f);
+  appendStereoChorus(fxlayer, fxstage);
   return fxlayer;
 }
 
@@ -128,7 +128,7 @@ lyrdata_ptr_t fxpreset_wackiverb() {
   fxstage->setNumIos(2, 2); // stereo in, stereo out
   /////////////////
   auto chorus              = appendStereoChorus(fxlayer, fxstage);
-  chorus->param(2)._coarse = 0.5;  // feedback
+  chorus->param(2)._coarse = 0.35; // feedback
   chorus->param(3)._coarse = 0.35; // wet/dry mix
   /////////////////
   appendWackiVerb(fxlayer, fxstage);
@@ -238,16 +238,16 @@ lyrdata_ptr_t fxpreset_multitest() {
   return fxlayer;
 }
 void loadAllFxPresets() {
-  auto s                           = synth::instance();
-  s->_fxpresets["distortedchorus"] = fxpreset_distortion();
-  s->_fxpresets["stereochorus"]    = fxpreset_stereochorus();
-  s->_fxpresets["fdn4reverb"]      = fxpreset_fdn4reverb();
-  s->_fxpresets["niceverb"]        = fxpreset_niceverb();
-  s->_fxpresets["echoverb"]        = fxpreset_echoverb();
-  s->_fxpresets["wackiverb"]       = fxpreset_wackiverb();
-  s->_fxpresets["pitchoctup"]      = fxpreset_pitchoctup();
-  s->_fxpresets["pitchwave"]       = fxpreset_pitchwave();
-  s->_fxpresets["pitchchorus"]     = fxpreset_pitchchorus();
-  s->_fxpresets["multitest"]       = fxpreset_multitest();
+  auto s                             = synth::instance();
+  s->_fxpresets["distorted-chorus"]  = fxpreset_distortion();
+  s->_fxpresets["stereo-chorus"]     = fxpreset_stereochorus();
+  s->_fxpresets["fdn4reverb"]        = fxpreset_fdn4reverb();
+  s->_fxpresets["niceverb"]          = fxpreset_niceverb();
+  s->_fxpresets["echoverb"]          = fxpreset_echoverb();
+  s->_fxpresets["wackiverb"]         = fxpreset_wackiverb();
+  s->_fxpresets["shifter-octave-up"] = fxpreset_pitchoctup();
+  s->_fxpresets["shifter-wave"]      = fxpreset_pitchwave();
+  s->_fxpresets["shifter-chorus"]    = fxpreset_pitchchorus();
+  s->_fxpresets["multitest"]         = fxpreset_multitest();
 }
 } // namespace ork::audio::singularity
