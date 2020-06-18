@@ -502,12 +502,12 @@ void Outliner2Surface::SetNameOfSelectedItem() {
 
   const Outliner2Item& item = items[ilastsel];
 
-  // int irootx = mParent->miX;
-  // int ipary = mParent->miY;
+  // int irootx = _parent->miX;
+  // int ipary = _parent->miY;
 
   auto g = mCtxBase->MapCoordToGlobal(fvec2(irx, iry));
 
-  // QString qstr = tool::ged::GedInputDialog::getText ( &qev, & mParent, ptsg.c_str(), 2, 2, mParent.width()-3, iheight );
+  // QString qstr = tool::ged::GedInputDialog::getText ( &qev, & _parent, ptsg.c_str(), 2, 2, _parent.width()-3, iheight );
   tool::ged::GedInputDialog dialog;
   dialog.setModal(true);
 

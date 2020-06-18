@@ -501,7 +501,7 @@ public:
   GedItemNode* GetItem(int idx) const;
   int GetNumItems() const;
   GedItemNode* GetParent() const {
-    return mParent;
+    return _parent;
   }
   ///////////////////////////////////////////////////
   virtual int CalcHeight(void);
@@ -552,7 +552,7 @@ public:
   bool mbcollapsed;
   ork::ArrayString<kmaxgedstring> mvalue;
   orkvector<GedItemNode*> mItems;
-  GedItemNode* mParent;
+  GedItemNode* _parent;
   orkmap<std::string, std::string> mTags;
   GedWidget* mRoot;
   int micalch;

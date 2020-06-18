@@ -80,7 +80,7 @@ public:
   }
 
 private:
-  T& mParent;
+  T& _parent;
   datatype mval;
   datatype mmin;
   datatype mmax;
@@ -367,11 +367,11 @@ class IOpsDelegate;
 
 struct OpsTask {
   IOpsDelegate* mpDelegate;
-  ork::Object* mpTarget;
+  ork::Object* _target;
 
   OpsTask()
       : mpDelegate(0)
-      , mpTarget(0) {
+      , _target(0) {
   }
 };
 

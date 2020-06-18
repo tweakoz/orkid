@@ -52,7 +52,7 @@ void Surface::GetPixel(int ix, int iy, lev2::PixelFetchContext& ctx) {
 /////////////////////////////////////////////////////////////////////////
 
 void Surface::OnResize(void) {
-  /*printf( "Surface<%s>::OnResize x<%d> y<%d> w<%d> h<%d>\n", msName.c_str(), miX, miY, _geometry._w, _geometry._h );
+  /*printf( "Surface<%s>::OnResize x<%d> y<%d> w<%d> h<%d>\n", _name.c_str(), miX, miY, _geometry._w, _geometry._h );
 
   if( mRtGroup )
   {
@@ -95,7 +95,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
     RePaintSurface(drwev);
     fbi->PopRtGroup();
     mNeedsSurfaceRepaint = false;
-    mDirty               = false;
+    _dirty               = false;
   }
   ///////////////////////////////////
   // pickbuffer debug ?
@@ -129,7 +129,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
     int iy_root = 0;
     LocalToRoot(0, 0, ix_root, iy_root);
 
-    // printf( "Surface<%s>::Draw wx<%d> wy<%d> w<%d> h<%d>\n", msName.c_str(), ix_root, iy_root, _geometry._w, _geometry._h );
+    // printf( "Surface<%s>::Draw wx<%d> wy<%d> w<%d> h<%d>\n", _name.c_str(), ix_root, iy_root, _geometry._w, _geometry._h );
 
     primi.RenderQuadAtZ(
         material.get(),
@@ -186,7 +186,7 @@ void Surface::RenderCached() {
 
 void Surface::Clear() {
   // const fcolor3 &rCol = (surf!=nullptr) ? surf->GetClearColorRef() : fcolor3::Black();
-  auto fbi = mpTarget->FBI();
+  auto fbi = _target->FBI();
 
   fbi->Clear(GetClearColorRef(), 1.0f);
 }

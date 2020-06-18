@@ -22,10 +22,16 @@ struct Context {
   // void updateMouseFocus(const HandlerResult& r, event_constptr_t Ev);
   bool hasMouseFocus(const Widget* w) const;
   //////////////////////////////////////
+  bool hasKeyboardFocus() const {
+    return _hasKeyboardFocus;
+  }
+  //////////////////////////////////////
 
   group_ptr_t _top;
-  Widget* _evdragtarget           = nullptr;
-  const Widget* _mousefocuswidget = nullptr;
+  bool _hasKeyboardFocus             = false;
+  Widget* _evdragtarget              = nullptr;
+  const Widget* _mousefocuswidget    = nullptr;
+  const Widget* _keyboardFocusWidget = nullptr;
   Event _prevevent;
   event_ptr_t _tempevent;
 };

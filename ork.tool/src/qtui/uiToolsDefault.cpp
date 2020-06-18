@@ -28,6 +28,7 @@
 #include <pkg/ent/scene.h>
 
 #include <ork/lev2/gfx/camera/uicam.h>
+#include <ork/lev2/ui/context.h>
 
 #include "uiToolHandler.inl"
 
@@ -163,7 +164,7 @@ ui::HandlerResult DefaultUiHandler::DoOnUiEvent(ui::event_constptr_t EV) {
       break;
     }
     case ui::EventCode::DRAG: {
-      if (false == GetViewport()->HasKeyboardFocus())
+      if (false == GetViewport()->_uicontext->hasKeyboardFocus())
         break;
       if (AreAnyMoveKeysDown)
         break;
@@ -176,7 +177,7 @@ ui::HandlerResult DefaultUiHandler::DoOnUiEvent(ui::event_constptr_t EV) {
     /////////////////////////////////////////
     case ui::EventCode::DOUBLECLICK: {
 
-      if (false == GetViewport()->HasKeyboardFocus())
+      if (false == GetViewport()->_uicontext->hasKeyboardFocus())
         break;
       if (AreAnyMoveKeysDown)
         break;
@@ -210,7 +211,7 @@ ui::HandlerResult DefaultUiHandler::DoOnUiEvent(ui::event_constptr_t EV) {
     }
     /////////////////////////////////////////
     case ui::EventCode::PUSH: {
-      if (false == GetViewport()->HasKeyboardFocus())
+      if (false == GetViewport()->_uicontext->hasKeyboardFocus())
         break;
 
       if (AreAnyMoveKeysDown)

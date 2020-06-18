@@ -30,7 +30,7 @@ GedItemNode::GedItemNode(ObjModel& mdl, const char* name, const reflect::IObject
     , miW(0)
     , miH(0)
     , mbVisible(true)
-    , mParent(0)
+    , _parent(0)
     , mbInvalid(true) {
 
   int stack_depth = mdl.GetGedWidget()->GetStackDepth();
@@ -132,7 +132,7 @@ int GedItemNode::get_text_center_y() const {
 void GedItemNode::AddItem(GedItemNode* w) {
   w->SetDecoIndex(int(mItems.size()));
   mItems.push_back(w);
-  w->mParent = this;
+  w->_parent = this;
 }
 //////////////////////////////////////////////////////////////////////////////
 GedItemNode* GedItemNode::GetItem(int idx) const {

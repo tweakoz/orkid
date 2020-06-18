@@ -17,53 +17,57 @@ int main(int argc, char** argv) {
     mainbus->setBusDSP(fxlayer);
   }
   ////////////////////////////////////////////////
+  // UI layout
+  ////////////////////////////////////////////////
   auto toplayout = app->_hudvp->_layout;
   auto guidehl   = toplayout->left();
-  auto guidehm   = toplayout->centerH();
+  auto guidehc   = toplayout->centerH();
   auto guidehr   = toplayout->right();
+  auto guidevt   = toplayout->top();
+  auto guidev0   = toplayout->fixedHorizontalGuide(240);
+  auto guidev1   = toplayout->fixedHorizontalGuide(480);
+  auto guidehd   = toplayout->proportionalVerticalGuide(0.75);
+  auto guidevb   = toplayout->bottom();
 
-  auto guidevt = toplayout->top();
-  auto guidev0 = toplayout->proportionalHorizontalGuide(0.333333);
-  auto guidev1 = toplayout->proportionalHorizontalGuide(0.666666);
-  auto guidevb = toplayout->bottom();
-  ////////////////////////////////////////////////
-  // create visualizers
-  ////////////////////////////////////////////////
   ui::anchor::Bounds top_left, middle_left, bottom_left;
   ui::anchor::Bounds top_right, middle_right, bottom_right;
 
   top_left._top    = guidevt;
   top_left._left   = guidehl;
   top_left._bottom = guidev0;
-  top_left._right  = guidehm;
-
-  middle_left         = top_left;
-  middle_left._top    = guidev0;
-  middle_left._bottom = guidev1;
-
-  bottom_left         = top_left;
-  bottom_left._top    = guidev1;
-  bottom_left._bottom = guidevb;
+  top_left._right  = guidehd;
 
   top_right._top    = guidevt;
-  top_right._left   = guidehm;
+  top_right._left   = guidehd;
   top_right._bottom = guidev0;
   top_right._right  = guidehr;
 
-  middle_right         = top_right;
-  middle_right._top    = guidev0;
-  middle_right._bottom = guidev1;
+  middle_left._top    = guidev0;
+  middle_left._left   = guidehl;
+  middle_left._bottom = guidev1;
+  middle_left._right  = guidehc;
 
-  bottom_right         = top_right;
+  middle_right._top    = guidev0;
+  middle_right._left   = guidehc;
+  middle_right._bottom = guidev1;
+  middle_right._right  = guidehr;
+
+  bottom_left         = middle_left;
+  bottom_left._top    = guidev1;
+  bottom_left._bottom = guidevb;
+
+  bottom_right         = middle_right;
   bottom_right._top    = guidev1;
   bottom_right._bottom = guidevb;
-
-  auto scope1    = create_oscilloscope(app->_hudvp, top_left, "fm4-op");
-  auto scope2    = create_oscilloscope(app->_hudvp, middle_left, "layer");
-  auto scope3    = create_oscilloscope(app->_hudvp, bottom_left, "main-bus");
-  auto analyzer1 = create_spectrumanalyzer(app->_hudvp, top_right, "fm4-op");
-  auto analyzer2 = create_spectrumanalyzer(app->_hudvp, middle_right, "layer");
-  auto analyzer3 = create_spectrumanalyzer(app->_hudvp, bottom_right, "main-bus");
+  ////////////////////////////////////////////////
+  // create visualizers
+  ////////////////////////////////////////////////
+  auto progview  = createProgramView(app->_hudvp, top_left, "program");
+  auto perfview  = createProfilerView(app->_hudvp, top_right, "profiler");
+  auto scope1    = create_oscilloscope(app->_hudvp, middle_left, "layer");
+  auto scope2    = create_oscilloscope(app->_hudvp, bottom_left, "main-bus");
+  auto analyzer1 = create_spectrumanalyzer(app->_hudvp, middle_right, "layer");
+  auto analyzer2 = create_spectrumanalyzer(app->_hudvp, bottom_right, "main-bus");
   //////////////////////////////////////////////////////////////////////////////
   auto basepath = basePath() / "tx81z";
   auto bank     = std::make_shared<Tx81zData>();
@@ -79,29 +83,33 @@ int main(int argc, char** argv) {
   if (!program) {
     return 0;
   }
-  auto layerdata = program->getLayer(0);
   //////////////////////////////////////
   // connect OPS to scope 1
   //////////////////////////////////////
-  auto ops_stage = layerdata->stageByName("OPS");
+  /*auto ops_stage = layerdata->stageByName("OPS");
   auto ops_block = ops_stage->_blockdatas[0];
   if (ops_block) {
     auto ops_source         = ops_block->createScopeSource();
     ops_source->_dspchannel = 0;
     ops_source->connect(scope1->_sink);
     ops_source->connect(analyzer1->_sink);
+  }*/
+  //////////////////////////////////////
+  // connect all program layers to scope 1
+  //////////////////////////////////////
+  for (auto item : bank->_bankdata->_programs) {
+    int id           = item.first;
+    auto program     = item.second;
+    auto layerdata   = program->getLayer(0);
+    auto layersource = layerdata->createScopeSource();
+    layersource->connect(scope1->_sink);
+    layersource->connect(analyzer1->_sink);
   }
   //////////////////////////////////////
-  // connect layerout to scope 2
+  // connect mainbus to scope 2
   //////////////////////////////////////
-  auto layersource = layerdata->createScopeSource();
-  layersource->connect(scope2->_sink);
-  layersource->connect(analyzer2->_sink);
-  //////////////////////////////////////
-  // connect mainbus to scope 3
-  //////////////////////////////////////
-  bussource->connect(scope3->_sink);
-  bussource->connect(analyzer3->_sink);
+  bussource->connect(scope2->_sink);
+  bussource->connect(analyzer2->_sink);
   //////////////////////////////////////////////////////////////////////////////
   app->setRefreshPolicy({EREFRESH_FASTEST, 0});
   app->exec();

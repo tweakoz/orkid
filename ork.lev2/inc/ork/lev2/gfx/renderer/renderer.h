@@ -39,7 +39,7 @@ public:
   static const int kmaxrablessm  = 64;
 
 protected:
-  Context* mpTarget;
+  Context* _target;
 
   ork::fixedvector<U32, RenderQueue::krqmaxsize> mQueueSortKeys;
   ork::fixedvector<const RenderQueue::Node*, RenderQueue::krqmaxsize> mQueueSortNodes;
@@ -87,10 +87,10 @@ public:
   }
 
   Context* GetTarget() const {
-    return mpTarget;
+    return _target;
   }
   void setContext(Context* ptarg) {
-    mpTarget = ptarg;
+    _target = ptarg;
   }
 
   void FakeDraw() {

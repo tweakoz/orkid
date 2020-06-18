@@ -27,10 +27,10 @@ enum EMCSEGTYPE {
 
 template <typename T> class ObjProxy : public ork::Object {
 public:
-  T* mParent;
+  T* _parent;
 
   ObjProxy(T* val)
-      : mParent(val) {
+      : _parent(val) {
   }
 };
 

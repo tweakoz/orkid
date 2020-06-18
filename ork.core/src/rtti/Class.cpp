@@ -28,7 +28,7 @@ std::set<Class*> Class::_explicitLinkClasses;
 static int counter = 0;
 
 Class::Class(const RTTIData& rtti)
-    : mParentClass(rtti.ParentClass())
+    : _parentClass(rtti.ParentClass())
     , mClassInitializer(rtti.ClassInitializer())
     , mFactory(0)
 
@@ -37,15 +37,15 @@ Class::Class(const RTTIData& rtti)
     , mPrevSiblingClass(this)
     , mChildClass(NULL) {
 
-  assert(not(mParentClass==nullptr and counter==2));
+  assert(not(_parentClass==nullptr and counter==2));
 
   sLastClass = this;
 }
 
 void Class::Initialize() {
   _initialized = true;
-  if (mParentClass)
-    mParentClass->AddChild(this);
+  if (_parentClass)
+    _parentClass->AddChild(this);
 
   if (mClassInitializer != NULL) {
     (*mClassInitializer)();
@@ -104,9 +104,9 @@ void Class::SetName(ConstString name, bool badd2map) {
 
 void Class::SetFactory(rtti::ICastable* (*factory)()) { mFactory = factory; }
 
-Class* Class::Parent() { return mParentClass; }
+Class* Class::Parent() { return _parentClass; }
 
-const Class* Class::Parent() const { return mParentClass; }
+const Class* Class::Parent() const { return _parentClass; }
 
 Class* Class::FirstChild() { return mChildClass; }
 
@@ -133,11 +133,11 @@ void Class::RemoveFromHierarchy() {
   mNextSiblingClass->mPrevSiblingClass = mPrevSiblingClass;
   mPrevSiblingClass->mNextSiblingClass = mNextSiblingClass;
 
-  if (mParentClass->mChildClass == this)
-    mParentClass->mChildClass = mNextSiblingClass;
+  if (_parentClass->mChildClass == this)
+    _parentClass->mChildClass = mNextSiblingClass;
 
-  if (mParentClass->mChildClass == this)
-    mParentClass->mChildClass = NULL;
+  if (_parentClass->mChildClass == this)
+    _parentClass->mChildClass = NULL;
 
   mNextSiblingClass = mPrevSiblingClass = this;
 }

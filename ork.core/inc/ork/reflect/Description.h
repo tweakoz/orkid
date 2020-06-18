@@ -70,7 +70,7 @@ public:
 	const FunctorMapType&	GetFunctors() const { return mFunctions; }
 
 private:
-	const Description *mParentDescription;
+	const Description *_parentDescription;
 
 	PropertyMapType		mProperties;
 	FunctorMapType		mFunctions;

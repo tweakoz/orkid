@@ -32,6 +32,9 @@ struct Panel : public Group {
   bool _closeEnabled = true;
   bool _moveEnabled  = true;
 
+  fvec4 _stdcolor   = fvec4(1.0f, 0.0f, 1.0f, 0.4f);
+  fvec4 _focuscolor = fvec4(1, 1, 1, 1);
+
   int _downx  = 0;
   int _downy  = 0;
   int _prevpx = 0;

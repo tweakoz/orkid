@@ -27,6 +27,7 @@
 #include <QtCore/QSettings>
 #include <pkg/ent/scene.h>
 #include <ork/lev2/gfx/camera/uicam.h>
+#include <ork/lev2/ui/context.h>
 
 #include "uiToolHandler.inl"
 
@@ -62,14 +63,14 @@ ui::HandlerResult ManipHandler::DoOnUiEvent(ui::event_constptr_t EV) {
 
   switch (EV->_eventcode) {
     case ui::EventCode::RELEASE: {
-      if (false == GetViewport()->HasKeyboardFocus())
+      if (false == GetViewport()->_uicontext->hasKeyboardFocus())
         break;
       mEditor.ManipManager().DisableManip();
       mEditor.ManipManager().SetActiveCamera(0);
       ret.setHandled(this);
     } break;
     case ui::EventCode::DOUBLECLICK: {
-      if (false == GetViewport()->HasKeyboardFocus())
+      if (false == GetViewport()->_uicontext->hasKeyboardFocus())
         break;
 
       if (isleft && false == isright) {
@@ -100,7 +101,7 @@ ui::HandlerResult ManipHandler::DoOnUiEvent(ui::event_constptr_t EV) {
       OuterPickOp(pickctx);
     } break;
     case ui::EventCode::PUSH: {
-      if (false == GetViewport()->HasKeyboardFocus())
+      if (false == GetViewport()->_uicontext->hasKeyboardFocus())
         break;
 
       ///////////////////////////////////////////////////////////
@@ -153,14 +154,14 @@ ui::HandlerResult ManipHandler::DoOnUiEvent(ui::event_constptr_t EV) {
     } break;
 
     case ui::EventCode::DRAG: {
-      if (false == GetViewport()->HasKeyboardFocus())
+      if (false == GetViewport()->_uicontext->hasKeyboardFocus())
         break;
       if (mEditor.ManipManager().UIEventHandler(EV))
         ret.setHandled(this);
     } break;
 
     case ui::EventCode::MOVE: {
-      if (false == GetViewport()->HasKeyboardFocus())
+      if (false == GetViewport()->_uicontext->hasKeyboardFocus())
         break;
       if (!mEditor.ManipManager().IsVisible())
         return ret;

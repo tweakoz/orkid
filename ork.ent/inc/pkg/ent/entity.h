@@ -146,7 +146,7 @@ public:
 class SceneDagObject : public SceneObject {
   RttiDeclareConcrete(SceneDagObject, SceneObject);
   DagNode mDagNode;
-  PoolString mParentName;
+  PoolString _parentName;
 
 public:
   SceneDagObject();
@@ -154,7 +154,7 @@ public:
 
   void SetParentName(const PoolString& pname);
   const PoolString& GetParentName() const {
-    return mParentName;
+    return _parentName;
   }
 
   DagNode& GetDagNode() {

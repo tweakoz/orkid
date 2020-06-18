@@ -76,7 +76,7 @@ class TetherCamControllerInst : public ent::ComponentInst
 	RttiDeclareAbstract( TetherCamControllerInst, ent::ComponentInst );
 
 	const TetherCamControllerData&			mCD;
-	Entity*									mpTarget = nullptr;
+	Entity*									_target = nullptr;
 	lev2::CameraData*				_cameraData = nullptr;
 
 	void DoUpdate(ent::Simulation* sinst) final;

@@ -45,7 +45,7 @@ private:
 	void UnLock() const { mStringPoolMutex.UnLock(); }
 
 protected:
-	const StringPool *mParent;
+	const StringPool *_parent;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

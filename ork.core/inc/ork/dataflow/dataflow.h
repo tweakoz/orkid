@@ -683,10 +683,10 @@ class  dgmodule : public module
 public:
 	dgmodule();
 	////////////////////////////////////////////
-	void SetParent( graph_data* par ) { mParent=par; }
+	void SetParent( graph_data* par ) { _parent=par; }
 	nodekey& Key() { return mKey; }
 	const nodekey& Key() const { return mKey; }
-	graph_data* GetParent() const { return mParent; }
+	graph_data* GetParent() const { return _parent; }
 	////////////////////////////////////////////
 	//bool IsOutputDirty( const outplugbase* pplug ) const;
 	////////////////////////////////////////////
@@ -713,7 +713,7 @@ protected:
 private:
 
 	Affinity		mAffinity;
-	graph_data*		mParent;
+	graph_data*		_parent;
 	nodekey			mKey;
 	fvec2		mgvpos;
 };

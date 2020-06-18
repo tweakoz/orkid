@@ -522,7 +522,7 @@ void dgmodule::Describe() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 dgmodule::dgmodule()
-    : mAffinity(dataflow::scheduler::CpuAffinity), mParent(0), mKey() {}
+    : mAffinity(dataflow::scheduler::CpuAffinity), _parent(0), mKey() {}
 ///////////////////////////////////////////////////////////////////////////////
 void dgmodule::DivideWork(const scheduler &sch, cluster *clus) {
   clus->AddModule(this);

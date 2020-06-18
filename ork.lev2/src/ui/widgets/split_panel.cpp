@@ -34,8 +34,8 @@ SplitPanel::~SplitPanel() {
     _child2->SetParent(nullptr);
     _child2 = nullptr;
   }
-  if (mParent)
-    mParent->removeChild(this);
+  if (_parent)
+    _parent->removeChild(this);
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -170,7 +170,7 @@ void SplitPanel::DoLayout() {
   if (0)
     printf(
         "SplitPanel<%s>::DoLayout x<%d> y<%d> w<%d> h<%d> p1y<%d> p1h<%d> p2y<%d> p2h<%d>\n", //
-        msName.c_str(),
+        _name.c_str(),
         _geometry._x,
         _geometry._y,
         _geometry._w,
@@ -212,14 +212,14 @@ Widget* SplitPanel::doRouteUiEvent(event_constptr_t ev) {
 /////////////////////////////////////////////////////////////////////////
 
 void SplitPanel::snap() {
-  if (nullptr == mParent)
+  if (nullptr == _parent)
     return;
   if (not _moveEnabled)
     return;
 
-  int pw = mParent->width();
+  int pw = _parent->width();
   int xd = abs(x2() - pw);
-  int ph = mParent->height();
+  int ph = _parent->height();
   int yd = abs(y2() - ph);
   // printf( "x2<%d> pw<%d> xd<%d>\n", x2, pw, xd );
   // printf( "y2<%d> ph<%d> yd<%d>\n", y2, ph, yd );

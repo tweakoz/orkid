@@ -37,13 +37,13 @@ OffscreenBuffer::OffscreenBuffer(
     EBufferFormat efmt,
     const std::string& name)
     : mpContext(nullptr)
-    , mParent(Parent)
+    , _parent(Parent)
     , miWidth(iW)
     , miHeight(iH)
     , mbDirty(true)
-    , msName(name)
+    , _name(name)
     , meFormat(efmt)
-    , mParentRtGroup(nullptr)
+    , _parentRtGroup(nullptr)
     , mpTexture(nullptr)
     , mRootWidget(nullptr)
     , mbSizeIsDirty(true) {

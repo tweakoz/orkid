@@ -30,7 +30,7 @@ static const int kh       = 128;
 class GedCurveEditPoint : public GedObject {
   RttiDeclareAbstract(GedCurveEditPoint, GedObject);
   MultiCurve1D* mCurveObject;
-  GedItemNode* mParent;
+  GedItemNode* _parent;
   int miPoint;
 
 public:
@@ -39,17 +39,17 @@ public:
   }
   GedCurveEditPoint()
       : mCurveObject(0)
-      , mParent(0)
+      , _parent(0)
       , miPoint(-1) {
   }
   void SetCurveObject(MultiCurve1D* pgrad) {
     mCurveObject = pgrad;
   }
   void SetParent(GedItemNode* ppar) {
-    mParent = ppar;
+    _parent = ppar;
   }
   void OnMouseDoubleClicked(ork::ui::event_constptr_t ev) final {
-    if (mParent && mCurveObject) {
+    if (_parent && mCurveObject) {
       orklut<float, float>& data        = mCurveObject->GetVertices();
       orklut<float, float>::iterator it = data.begin() + miPoint;
       if (ev->IsButton0DownF()) {
@@ -57,7 +57,7 @@ public:
       } else if (ev->IsButton2DownF()) {
         if (it->first != 0.0f && it->first != 1.0f) {
           mCurveObject->MergeSegment(miPoint);
-          mParent->SigInvalidateProperty();
+          _parent->SigInvalidateProperty();
         }
       }
     }
@@ -67,14 +67,14 @@ public:
 
     switch (filtev._eventcode) {
       case ui::EventCode::DRAG: {
-        if (mParent && mCurveObject) {
+        if (_parent && mCurveObject) {
           orklut<float, float>& data = mCurveObject->GetVertices();
           const int knumpoints       = (int)data.size();
           const int ksegs            = knumpoints - 1;
           if (miPoint >= 0 && miPoint < knumpoints) {
-            int mouseposX = ev->miX - mParent->GetX();
-            int mouseposY = ev->miY - mParent->GetY();
-            float fx      = float(mouseposX) / float(mParent->width());
+            int mouseposX = ev->miX - _parent->GetX();
+            int mouseposY = ev->miY - _parent->GetY();
+            float fx      = float(mouseposX) / float(_parent->width());
             float fy      = 1.0f - float(mouseposY) / float(kh);
             if (miPoint == 0)
               fx = 0.0f;
@@ -90,7 +90,7 @@ public:
             if (miPoint != 0 && miPoint != (knumpoints - 1)) {
               orklut<float, float>::iterator itp = it - 1;
               orklut<float, float>::iterator itn = it + 1;
-              const float kfbound                = float(kpntsize) / mParent->width();
+              const float kfbound                = float(kpntsize) / _parent->width();
               if (itp != data.end()) {
                 if (fx < (itp->first + kfbound)) {
                   fx = (itp->first + kfbound);
@@ -104,7 +104,7 @@ public:
             }
             data.RemoveItem(it);
             data.AddSorted(fx, fy);
-            mParent->SigInvalidateProperty();
+            _parent->SigInvalidateProperty();
           }
         }
         break;
@@ -122,15 +122,15 @@ class GedCurveEditSeg : public GedObject {
   RttiDeclareAbstract(GedCurveEditSeg, GedObject);
 
   MultiCurve1D* mCurveObject;
-  GedItemNode* mParent;
+  GedItemNode* _parent;
   int miSeg;
 
 public:
   void OnMouseDoubleClicked(ork::ui::event_constptr_t ev) final {
-    if (mParent && mCurveObject) {
+    if (_parent && mCurveObject) {
       if (ev->IsButton0DownF()) {
         mCurveObject->SplitSegment(miSeg);
-        mParent->SigInvalidateProperty();
+        _parent->SigInvalidateProperty();
       } else if (ev->IsButton2DownF()) {
         QMenu* pMenu         = new QMenu(0);
         QAction* pchildmenu0 = pMenu->addAction("Seg:Lin");
@@ -157,7 +157,7 @@ public:
             mCurveObject->SetSegmentType(miSeg, EMCST_LOG);
           if (sval == "exp")
             mCurveObject->SetSegmentType(miSeg, EMCST_EXP);
-          mParent->SigInvalidateProperty();
+          _parent->SigInvalidateProperty();
         }
       }
     }
@@ -169,7 +169,7 @@ public:
 
   GedCurveEditSeg()
       : mCurveObject(0)
-      , mParent(0)
+      , _parent(0)
       , miSeg(-1) {
   }
 
@@ -177,7 +177,7 @@ public:
     mCurveObject = pgrad;
   }
   void SetParent(GedItemNode* ppar) {
-    mParent = ppar;
+    _parent = ppar;
   }
 };
 
@@ -461,7 +461,7 @@ public:
     if (0 == mCurveObject) {
       const reflect::IObjectPropertyObject* pprop = rtti::autocast(GetOrkProp());
       ObjProxy<MultiCurve1D>* proxy               = rtti::autocast(pprop->Access(GetOrkObj()));
-      mCurveObject                                = proxy->mParent;
+      mCurveObject                                = proxy->_parent;
     }
   }
 };

@@ -156,10 +156,6 @@ struct synth {
   float _testtoneampps;
   int _hudpage;
   int _genmode                  = 0;
-  float _ostriglev              = 0;
-  bool _ostrigdir               = false;
-  int _osgainmode               = 3; // auto
-  int64_t _oswidth              = 0;
   bool _bypassDSP               = false;
   bool _doModWheel              = false;
   bool _doPressure              = false;

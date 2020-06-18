@@ -57,19 +57,19 @@ void SceneDagObject::Describe() {
   reflect::annotateClassForEditor<SceneDagObject>("editor.3dxfable", true);
   reflect::annotateClassForEditor<SceneDagObject>("editor.3dxfinterface", ConstString("SceneDagObjectManipInterface"));
   reflect::RegisterProperty("DagNode", &SceneDagObject::AccessDagNode);
-  reflect::RegisterProperty("Parent", &SceneDagObject::mParentName);
+  reflect::RegisterProperty("Parent", &SceneDagObject::_parentName);
 
   // reflect::annotatePropertyForEditor<SceneDagObject>("DagNode", "editor.visible", "false");
   reflect::annotatePropertyForEditor<SceneDagObject>("Parent", "editor.visible", "false");
 }
 SceneDagObject::SceneDagObject()
     : mDagNode(this)
-    , mParentName(AddPooledString("scene")) {
+    , _parentName(AddPooledString("scene")) {
 }
 SceneDagObject::~SceneDagObject() {
 }
 void SceneDagObject::SetParentName(const PoolString& pname) {
-  mParentName = pname;
+  _parentName = pname;
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

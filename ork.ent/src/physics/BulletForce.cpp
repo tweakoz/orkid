@@ -124,7 +124,7 @@ struct TestForceControllerInst : public BulletObjectForceControllerInst {
 
   MyPid mPIDsteering;
   MyPid mPIDroll;
-  Entity* mpTarget;
+  Entity* _target;
   const TestForceControllerData& mTestData;
 };
 
@@ -151,11 +151,11 @@ BulletObjectForceControllerInst* TestForceControllerData::CreateForceControllerI
 ///////////////////////////////////////////////////////////////////////////////
 
 TestForceControllerInst::TestForceControllerInst(const TestForceControllerData& data)
-    : BulletObjectForceControllerInst(data), mTestData(data), mpTarget(0) {}
+    : BulletObjectForceControllerInst(data), mTestData(data), _target(0) {}
 TestForceControllerInst::~TestForceControllerInst() {}
 
 bool TestForceControllerInst::DoLink(Simulation* psi) {
-  mpTarget = psi->FindEntity(mTestData.mTarget);
+  _target = psi->FindEntity(mTestData.mTarget);
   return true;
 }
 
@@ -172,8 +172,8 @@ void TestForceControllerInst::UpdateForces(ork::ent::Simulation* inst, BulletObj
 
   /////////////////////////////
 
-  if (mpTarget) {
-    DagNode& dnode = mpTarget->GetDagNode();
+  if (_target) {
+    DagNode& dnode = _target->GetDagNode();
     TransformNode& t3d = dnode.GetTransformNode();
     fmtx4 mtx = t3d.GetTransform().GetMatrix();
     ORIGIN = mtx.GetTranslation();
@@ -339,7 +339,7 @@ DirectionalForceInst::DirectionalForceInst(const DirectionalForceData& data) : B
 DirectionalForceInst::~DirectionalForceInst() {}
 
 bool DirectionalForceInst::DoLink(Simulation* psi) {
-  // mpTarget = psi->FindEntity(mTestData.GetTarget());
+  // _target = psi->FindEntity(mTestData.GetTarget());
   return true;
 }
 

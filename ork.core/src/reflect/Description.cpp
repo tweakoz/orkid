@@ -16,11 +16,11 @@
 namespace ork { namespace reflect {
 
 Description::Description()
-    : mParentDescription(NULL) {
+    : _parentDescription(NULL) {
 }
 
 void Description::SetParentDescription(const Description* parent) {
-  mParentDescription = parent;
+  _parentDescription = parent;
 }
 
 void Description::AddProperty(const char* key, IObjectProperty* value) {
@@ -36,7 +36,7 @@ const Description::PropertyMapType& Description::Properties() const {
 }
 
 const IObjectProperty* Description::FindProperty(const ConstString& name) const {
-  for (const Description* description = this; description != NULL; description = description->mParentDescription) {
+  for (const Description* description = this; description != NULL; description = description->_parentDescription) {
     const PropertyMapType& map         = description->Properties();
     PropertyMapType::const_iterator it = map.find(name);
 
@@ -56,7 +56,7 @@ void Description::AddFunctor(const char* key, IObjectFunctor* functor) {
 }
 
 const IObjectFunctor* Description::FindFunctor(const ConstString& name) const {
-  for (const Description* description = this; description != NULL; description = description->mParentDescription) {
+  for (const Description* description = this; description != NULL; description = description->_parentDescription) {
     const FunctorMapType& map         = description->mFunctions;
     FunctorMapType::const_iterator it = map.find(name);
 
@@ -79,7 +79,7 @@ void Description::AddAutoSlot(const char* key, object::AutoSlot Object::*pmember
 }
 
 object::Signal Object::*Description::FindSignal(const ConstString& key) const {
-  for (const Description* description = this; description != NULL; description = description->mParentDescription) {
+  for (const Description* description = this; description != NULL; description = description->_parentDescription) {
     const SignalMapType& map         = description->mSignals;
     SignalMapType::const_iterator it = map.find(key);
 
@@ -92,7 +92,7 @@ object::Signal Object::*Description::FindSignal(const ConstString& key) const {
 }
 
 object::AutoSlot Object::*Description::FindAutoSlot(const ConstString& key) const {
-  for (const Description* description = this; description != NULL; description = description->mParentDescription) {
+  for (const Description* description = this; description != NULL; description = description->_parentDescription) {
     const AutoSlotMapType& map         = description->mAutoSlots;
     AutoSlotMapType::const_iterator it = map.find(key);
 
@@ -118,7 +118,7 @@ void Description::annotateProperty(const ConstString& propname, const ConstStrin
 }
 
 ConstString Description::propertyAnnotation(const ConstString& propname, const ConstString& key) const {
-  for (const Description* description = this; description != NULL; description = description->mParentDescription) {
+  for (const Description* description = this; description != NULL; description = description->_parentDescription) {
     const PropertyMapType& map         = description->Properties();
     PropertyMapType::const_iterator it = map.find(propname);
     if (it != map.end()) {
@@ -138,7 +138,7 @@ void Description::annotateClass(const ConstString& key, const Description::anno_
 }
 
 const Description::anno_t& Description::classAnnotation(const ConstString& key) const {
-  for (const Description* description = this; description != NULL; description = description->mParentDescription) {
+  for (const Description* description = this; description != NULL; description = description->_parentDescription) {
     orklut<ConstString, anno_t>::const_iterator it = description->mClassAnnotations.find(key);
     if (it != description->mClassAnnotations.end()) {
       return (*it).second;
@@ -154,8 +154,8 @@ const Description::anno_t& Description::classAnnotation(const ConstString& key) 
 bool Description::SerializeProperties(ISerializer& serializer, const Object* object) const {
   bool result = true;
 
-  if (mParentDescription) {
-    if (!mParentDescription->SerializeProperties(serializer, object))
+  if (_parentDescription) {
+    if (!_parentDescription->SerializeProperties(serializer, object))
       result = false;
   }
 

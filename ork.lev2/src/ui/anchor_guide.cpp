@@ -94,7 +94,7 @@ void Guide::updateGeometry() {
 
   auto relationship = _relationshipWith(_relative);
 
-  if (1)
+  if (0)
     printf(
         "guide<%d> relative<%d> rel<%s> edge<%s> offs<%d>\n", //
         _name,
@@ -125,7 +125,7 @@ void Guide::updateGeometry() {
   int basex = line._from.x;
   int basey = line._from.y;
 
-  if (1)
+  if (0)
     printf(
         "guide<%d> base<%d,%d>\n", //
         _name,

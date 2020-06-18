@@ -94,7 +94,7 @@ void ObserverCamControllerInst::Describe() {
 ObserverCamControllerInst::ObserverCamControllerInst(const ObserverCamControllerData& occd, Entity* pent)
     : ComponentInst(&occd, pent)
     , mCD(occd)
-    , mpTarget(0)
+    , _target(0)
     , mpEye(0) {
   _cameraData = new lev2::CameraData;
   _cameraData->Persp(0.1f, 1.0f, 45.0f);
@@ -110,7 +110,7 @@ ObserverCamControllerInst::~ObserverCamControllerInst() {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool ObserverCamControllerInst::DoLink(Simulation* psi) {
-  mpTarget = psi->FindEntity(mCD.GetTarget());
+  _target = psi->FindEntity(mCD.GetTarget());
   mpEye    = psi->FindEntity(mCD.GetEye());
   return true;
 }
@@ -146,8 +146,8 @@ void ObserverCamControllerInst::DoUpdate(Simulation* psi) {
     cam_EYE                     = fvec4(mCD.GetEyeOffset()).Transform(mtxEYE).xyz();
   }
 
-  if (mpTarget) {
-    DagNode& dnodeTGT           = mpTarget->GetDagNode();
+  if (_target) {
+    DagNode& dnodeTGT           = _target->GetDagNode();
     const TransformNode& t3dTGT = dnodeTGT.GetTransformNode();
     fmtx4 mtxTGT                = t3dTGT.GetTransform().GetMatrix();
     fvec3 cam_TGT               = fvec4(mCD.GetTgtOffset()).Transform(mtxTGT).xyz();

@@ -78,9 +78,9 @@ void Panel::DoDraw(ui::drawevent_constptr_t drwev) {
     // panel outline (resize/moving)
     /////////////
 
-    fvec4 clr = fcolor4(1.0f, 0.0f, 1.0f, 0.4f);
+    fvec4 clr = _stdcolor;
     if (has_foc)
-      clr = fcolor4::White();
+      clr = _focuscolor;
 
     defmtl->_rasterstate.SetBlending(lev2::EBLENDING_ALPHA);
     tgt->PushModColor(clr);
@@ -139,7 +139,7 @@ void Panel::DoLayout() {
   int cw = _geometry._w - (kpanelw * 2);
   int ch = _geometry._h - (kpanelw * 2);
 
-  // printf( "Panel<%s>::DoLayout x<%d> y<%d> w<%d> h<%d>\n", msName.c_str(), _geometry._x, _geometry._y, _geometry._w, _geometry._h
+  // printf( "Panel<%s>::DoLayout x<%d> y<%d> w<%d> h<%d>\n", _name.c_str(), _geometry._x, _geometry._y, _geometry._w, _geometry._h
   // );
   if (_child) {
     _child->SetRect(kpanelw, kpanelw, cw, ch);
@@ -161,20 +161,20 @@ Widget* Panel::doRouteUiEvent(event_constptr_t ev) {
 /////////////////////////////////////////////////////////////////////////
 
 void Panel::unsnap() {
-  if (nullptr == mParent)
+  if (nullptr == _parent)
     return;
-  mParent->_snapped.erase(this);
+  _parent->_snapped.erase(this);
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 void Panel::snap() {
-  if (nullptr == mParent)
+  if (nullptr == _parent)
     return;
 
-  int pw = mParent->width();
+  int pw = _parent->width();
   int xd = abs(x2() - pw);
-  int ph = mParent->height();
+  int ph = _parent->height();
   int yd = abs(y2() - ph);
   // printf( "x2<%d> pw<%d> xd<%d>\n", x2, pw, xd );
   // printf( "y2<%d> ph<%d> yd<%d>\n", y2, ph, yd );
@@ -209,7 +209,7 @@ void Panel::snap() {
     SetX(pw + kpanelw - width());
   }
   if (was_snapped) {
-    mParent->_snapped.insert(this);
+    _parent->_snapped.insert(this);
   }
 }
 
@@ -242,8 +242,8 @@ HandlerResult Panel::DoOnUiEvent(event_constptr_t Ev) {
           printf("ilocx<%d> mCloseX<%d>\n", ilocx, mCloseX);
           if ((ilocx >= mCloseX) && ((ilocx - mCloseX) < kpanelw) && (ilocy >= mCloseY) && ((ilocy - mCloseY) < kpanelw)) {
             auto lamb = [=]() {
-              if (mParent) {
-                mParent->removeChild(this);
+              if (_parent) {
+                _parent->removeChild(this);
               }
             };
             opq::Op(lamb).QueueASync(opq::mainSerialQueue());

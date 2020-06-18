@@ -397,7 +397,7 @@ void PBRMaterial::Update() {
 ////////////////////////////////////////////
 
 void PBRMaterial::setupCamera(const RenderContextFrameData& RCFD) {
-  auto target     = RCFD.mpTarget;
+  auto target     = RCFD._target;
   auto MTXI       = target->MTXI();
   auto FXI        = target->FXI();
   auto CIMPL      = RCFD._cimpl;

@@ -135,13 +135,13 @@ struct Event final // RawEvent
 
 struct DrawEvent {
   DrawEvent(lev2::Context* ptarg)
-      : mpTarget(ptarg) {
+      : _target(ptarg) {
   }
   lev2::Context* GetTarget() const {
-    return mpTarget;
+    return _target;
   }
 
-  lev2::Context* mpTarget;
+  lev2::Context* _target;
 };
 
 using drawevent_constptr_t = std::shared_ptr<const DrawEvent>;

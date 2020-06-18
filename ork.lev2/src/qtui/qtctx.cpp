@@ -406,7 +406,7 @@ ui::event_constptr_t QCtxWidget::uievent() const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 Context* QCtxWidget::Target() const {
-  return mpCtxBase->mpTarget;
+  return mpCtxBase->_target;
 }
 ///////////////////////////////////////////////////////////////////////////////
 Window* QCtxWidget::GetWindow() const {
@@ -422,7 +422,7 @@ QTimer& CTQT::Timer() const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CTQT::Show() {
-  mParent->show();
+  _parent->show();
   if (mbInitialize) {
     printf("CreateCONTEXT\n");
     mpWindow->initContext();
@@ -432,7 +432,7 @@ void CTQT::Show() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CTQT::Hide() {
-  mParent->hide();
+  _parent->hide();
 }
 ///////////////////////////////////////////////////////////////////////////////
 inline int to_qtmillis(RefreshPolicyItem policy) {
@@ -484,7 +484,7 @@ CTQT::CTQT(Window* pwin, QWidget* pparent)
     , miy(0)
     , miw(0)
     , mih(0)
-    , mParent(0)
+    , _parent(0)
     , mDrawLock(0) {
   this->SetThisXID(CTFLXID(0));
   this->SetTopXID(CTFLXID(0));
@@ -503,7 +503,7 @@ void CTQT::SetParent(QWidget* pparent) {
     pparent = mainwin;
   }
 
-  mParent    = pparent;
+  _parent    = pparent;
   mpQtWidget = new QCtxWidget(this, pparent);
   if (mainwin) {
     mainwin->setCentralWidget(mpQtWidget);
@@ -527,10 +527,10 @@ void CTQT::Resize(int X, int Y, int W, int H) {
   //////////////////////////////////////////////////////////
 
   this->SetThisXID((CTFLXID)winId());
-  // printf( "CTQT::Resize() mpTarget<%p>\n", mpTarget );
-  if (mpTarget) {
-    mpTarget->resizeMainSurface(W, H);
-    _uievent->mpGfxWin = (Window*)mpTarget->FBI()->GetThisBuffer();
+  // printf( "CTQT::Resize() _target<%p>\n", _target );
+  if (_target) {
+    _target->resizeMainSurface(W, H);
+    _uievent->mpGfxWin = (Window*)_target->FBI()->GetThisBuffer();
     if (_uievent->mpGfxWin)
       _uievent->mpGfxWin->Resize(X, Y, W, H);
   }
@@ -557,14 +557,14 @@ void CTQT::SlotRepaint() {
 
     this->mDrawLock++;
     if (this->mDrawLock == 1) {
-      // printf( "CTQT::SlotRepaint() mpTarget<%p>\n", mpTarget );
-      if (this->mpTarget) {
-        mpTarget->makeCurrentContext();
+      // printf( "CTQT::SlotRepaint() _target<%p>\n", _target );
+      if (this->_target) {
+        _target->makeCurrentContext();
         auto gfxwin = _uievent->mpGfxWin;
         auto vp     = gfxwin ? gfxwin->GetRootWidget() : nullptr;
 
-        // this->UIEvent->mpGfxWin = (Window*) this->mpTarget->FBI()->GetThisBuffer();
-        auto drwev = std::make_shared<ui::DrawEvent>(this->mpTarget);
+        // this->UIEvent->mpGfxWin = (Window*) this->_target->FBI()->GetThisBuffer();
+        auto drwev = std::make_shared<ui::DrawEvent>(this->_target);
 
         if (vp)
           vp->Draw(drwev);

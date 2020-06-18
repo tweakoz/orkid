@@ -182,42 +182,6 @@ singularitytestapp_ptr_t createEZapp(int& argc, char** argv) {
           case 'p':
             the_synth->_hudpage = (the_synth->_hudpage + 1) % 2;
             break;
-          case '-': {
-            int64_t amt         = isalt ? 100 : (isctrl ? 1 : 10);
-            the_synth->_oswidth = std::clamp(the_synth->_oswidth - amt, int64_t(0), int64_t(4095));
-            break;
-          }
-          case '=': {
-            int64_t amt         = isalt ? 100 : (isctrl ? 1 : 10);
-            the_synth->_oswidth = std::clamp(the_synth->_oswidth + amt, int64_t(0), int64_t(4095));
-            break;
-          }
-          case '[': {
-            float amt             = isalt ? 0.1 : (isctrl ? 0.001 : 0.01);
-            the_synth->_ostriglev = std::clamp(the_synth->_ostriglev - amt, -1.0f, 1.0f);
-            break;
-          }
-          case ']': {
-            float amt             = isalt ? 0.1 : (isctrl ? 0.001 : 0.01);
-            the_synth->_ostriglev = std::clamp(the_synth->_ostriglev + amt, -1.0f, 1.0f);
-            break;
-          }
-          case '\\': {
-            the_synth->_ostrigdir = !the_synth->_ostrigdir;
-            break;
-          }
-          case '\'': {
-            the_synth->_osgainmode++;
-            break;
-          }
-          case '6': {
-            the_synth->nextProgram();
-            break;
-          }
-          case '4': {
-            the_synth->prevProgram();
-            break;
-          }
           default:
             break;
         }
@@ -501,6 +465,9 @@ prgdata_constptr_t testpattern(syndata_ptr_t syndat, int argc, char** argv) {
       printf("program<%d:%s>\n", id, prog->_name.c_str());
     }
     return nullptr;
+  } else if (testpatternname == "none") {
+    the_synth->_globalprog = program;
+    return program;
   } else if (testpatternname == "midi") {
     void startMidi();
     startMidi();

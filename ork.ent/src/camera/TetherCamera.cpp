@@ -99,7 +99,7 @@ void TetherCamControllerInst::Describe() {
 TetherCamControllerInst::TetherCamControllerInst(const TetherCamControllerData& occd, Entity* pent)
     : ComponentInst(&occd, pent)
     , mCD(occd)
-    , mpTarget(0)
+    , _target(0)
 //, mpEye(0)
 {
   _cameraData = new lev2::CameraData;
@@ -116,7 +116,7 @@ TetherCamControllerInst::~TetherCamControllerInst() {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool TetherCamControllerInst::DoLink(Simulation* psi) {
-  mpTarget = psi->FindEntity(mCD.GetTarget());
+  _target = psi->FindEntity(mCD.GetTarget());
   // mpEye = psi->FindEntity(mCD.GetEye());
   return true;
 }
@@ -137,7 +137,7 @@ void TetherCamControllerInst::DoUpdate(Simulation* psi) {
   fvec3 cam_EYE = fvec3(0.0f, 0.0f, 0.0f);
   fvec3 eye_up  = mCD.GetEyeUp();
 
-  if (GetEntity() && mpTarget) {
+  if (GetEntity() && _target) {
     DagNode& dnodeEYE     = GetEntity()->GetDagNode();
     TransformNode& t3dEYE = dnodeEYE.GetTransformNode();
     fmtx4 mtxEYE          = t3dEYE.GetTransform().GetMatrix();
@@ -150,7 +150,7 @@ void TetherCamControllerInst::DoUpdate(Simulation* psi) {
 
     //////////
 
-    DagNode& dnodeTGT     = mpTarget->GetDagNode();
+    DagNode& dnodeTGT     = _target->GetDagNode();
     TransformNode& t3dTGT = dnodeTGT.GetTransformNode();
     fmtx4 mtxTGT          = t3dTGT.GetTransform().GetMatrix();
     fvec3 cam_TGT         = mtxTGT.GetTranslation();

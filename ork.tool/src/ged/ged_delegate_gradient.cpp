@@ -32,7 +32,7 @@ class GedGradientEditPoint : public GedObject {
   RttiDeclareAbstract(GedGradientEditPoint, GedObject);
 
   ork::Gradient<ork::fvec4>* mGradientObject;
-  GedItemNode* mParent;
+  GedItemNode* _parent;
   int miPoint;
 
 public:
@@ -42,7 +42,7 @@ public:
 
   GedGradientEditPoint()
       : mGradientObject(0)
-      , mParent(0)
+      , _parent(0)
       , miPoint(-1) {
   }
 
@@ -50,7 +50,7 @@ public:
     mGradientObject = pgrad;
   }
   void SetParent(GedItemNode* ppar) {
-    mParent = ppar;
+    _parent = ppar;
   }
 
   void OnUiEvent(ork::ui::event_constptr_t ev) final {
@@ -58,21 +58,21 @@ public:
 
     switch (filtev._eventcode) {
       case ui::EventCode::DRAG: {
-        if (mParent && mGradientObject) {
+        if (_parent && mGradientObject) {
           orklut<float, ork::fvec4>& data = mGradientObject->Data();
           const int knumpoints            = (int)data.size();
           const int ksegs                 = knumpoints - 1;
 
           if (miPoint > 0 && miPoint < (knumpoints - 1)) {
-            int mousepos = ev->miX - mParent->GetX();
-            float fx     = float(mousepos) / float(mParent->width());
+            int mousepos = ev->miX - _parent->GetX();
+            float fx     = float(mousepos) / float(_parent->width());
 
             orklut<float, ork::fvec4>::iterator it  = data.begin() + miPoint;
             orklut<float, ork::fvec4>::iterator itp = it - 1;
             orklut<float, ork::fvec4>::iterator itn = it + 1;
 
             if (fx > 0.0f && fx < 1.0f) {
-              const float kfbound = float(kpntsize) / mParent->width();
+              const float kfbound = float(kpntsize) / _parent->width();
               if (itp != data.end()) {
                 if (fx < (itp->first + kfbound)) {
                   fx = (itp->first + kfbound);
@@ -94,7 +94,7 @@ public:
       }
       case ui::EventCode::DOUBLECLICK: {
 
-        if (mParent && mGradientObject) {
+        if (_parent && mGradientObject) {
           orklut<float, ork::fvec4>& data = mGradientObject->Data();
 
           bool is_left  = filtev.mBut0;
@@ -141,7 +141,7 @@ class GedGradientEditSeg : public GedObject {
   RttiDeclareAbstract(GedGradientEditSeg, GedObject);
 
   ork::Gradient<ork::fvec4>* mGradientObject;
-  GedItemNode* mParent;
+  GedItemNode* _parent;
   int miSeg;
 
 public:
@@ -150,8 +150,8 @@ public:
 
     switch (filtev._eventcode) {
       case ui::EventCode::DOUBLECLICK: {
-        // printf( "GradSplit par<%p> go<%p>\n", mParent, mGradientObject );
-        if (mParent && mGradientObject) {
+        // printf( "GradSplit par<%p> go<%p>\n", _parent, mGradientObject );
+        if (_parent && mGradientObject) {
           orklut<float, ork::fvec4>& data = mGradientObject->Data();
           bool bok                        = false;
 
@@ -174,7 +174,7 @@ public:
 
   GedGradientEditSeg()
       : mGradientObject(0)
-      , mParent(0)
+      , _parent(0)
       , miSeg(-1) {
   }
 
@@ -182,7 +182,7 @@ public:
     mGradientObject = pgrad;
   }
   void SetParent(GedItemNode* ppar) {
-    mParent = ppar;
+    _parent = ppar;
   }
 };
 

@@ -63,8 +63,6 @@ synth::synth()
     , _soloLayer(-1)
     , _timeaccum(0.0f)
     , _hudpage(0)
-    , _oswidth(0.030f * getSampleRate()) //
-    , _ostriglev(0.0f)
     , _masterGain(1.0f) { //
 
   _tempbus         = std::make_shared<OutputBus>();

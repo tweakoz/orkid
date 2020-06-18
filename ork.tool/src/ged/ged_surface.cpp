@@ -69,7 +69,7 @@ void GedSurface::DoInit(lev2::Context* pt) {
 void GedSurface::DoSurfaceResize() {
   mWidget.SetDims(width(), height());
 
-  if (0 == _pickbuffer && (nullptr != mpTarget)) {
+  if (0 == _pickbuffer && (nullptr != _target)) {
     _pickbuffer->resize(width(), height());
   }
   // TODO: _pickbuffer->Resize()

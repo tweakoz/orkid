@@ -78,7 +78,7 @@ struct RtGroup final {
     return mbSizeDirty;
   }
   Context* ParentTarget() const {
-    return mParentTarget;
+    return _parentTarget;
   }
   /////////////////////////////////////////
   int width() const {
@@ -96,7 +96,7 @@ struct RtGroup final {
   /////////////////////////////////////////
   static const int kmaxmrts = 4;
 
-  Context* mParentTarget;
+  Context* _parentTarget;
   RtBuffer* mMrt[kmaxmrts];
   OffscreenBuffer* mDepth;
   Texture* _depthTexture = nullptr;

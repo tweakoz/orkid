@@ -251,7 +251,7 @@ void IOpsDelegate::AddTask(ork::object::ObjectClass* pdelegclass, ork::Object* p
     if (deleg) {
       OpsTask* ptask    = new OpsTask;
       ptask->mpDelegate = deleg;
-      ptask->mpTarget   = ptarget;
+      ptask->_target   = ptarget;
 
       TaskList& tsklist = gCurrentTasks.LockForWrite();
       { tsklist.push_back(ptask); }
@@ -292,7 +292,7 @@ OpsTask* IOpsDelegate::GetTask(ork::object::ObjectClass* pdelegclass, ork::Objec
       OpsTask* ptask = (*it);
 
       if (ptask->mpDelegate->GetClass() == pdelegclass) {
-        if (ptask->mpTarget == ptarget) {
+        if (ptask->_target == ptarget) {
           pret = ptask;
         }
       }

@@ -20,7 +20,7 @@ namespace ork { namespace tool { namespace ged {
 template <typename T>
 Slider<T>::Slider(T& ParentW, datatype min, datatype max, datatype def)
     : SliderBase()
-    , mParent(ParentW)
+    , _parent(ParentW)
     , mval(def)
     , mmin(min)
     , mmax(max)
@@ -120,7 +120,7 @@ template <typename T> void Slider<T>::SetVal(datatype val) {
   if (val > mmax)
     val = mmax;
   mval = val;
-  mParent.RefIODriver().SetValue(val);
+  _parent.RefIODriver().SetValue(val);
   PropType<datatype>::ToString(mval, mValStr);
   Refresh();
 }
@@ -164,8 +164,8 @@ void Slider<T>::OnUiEvent(ork::ui::event_constptr_t ev) // final
 
         if (mbUpdateOnDrag) {
           SetVal(mval);
-          IoDriverBase& iod = mParent.RefIODriver();
-          mParent.SigInvalidateProperty();
+          IoDriverBase& iod = _parent.RefIODriver();
+          _parent.SigInvalidateProperty();
         }
       }
       break;
@@ -174,13 +174,13 @@ void Slider<T>::OnUiEvent(ork::ui::event_constptr_t ev) // final
       std::string RangeStr = CreateFormattedString("v:[%f..%f]", float(mmin), float(mmax));
       // QString qstr = QInputDialog::getText ( 0, "Set Value", RangeStr.c_str() );
 
-      int ilabw = mParent.propnameWidth() + 16;
+      int ilabw = _parent.propnameWidth() + 16;
 
-      int iwidth = mParent.width() - ilabw;
+      int iwidth = _parent.width() - ilabw;
       if (iwidth < 64)
         iwidth = 64;
 
-      int iheight = mParent.height() - 3;
+      int iheight = _parent.height() - 3;
       if (iheight < 12)
         iheight = 12;
 
@@ -194,7 +194,7 @@ void Slider<T>::OnUiEvent(ork::ui::event_constptr_t ev) // final
       PropTypeString ptsg;
       PropType<datatype>::ToString(mval, ptsg);
 
-      QString qstr = GedInputDialog::getText(ev, &mParent, ptsg.c_str(), 2, 2, mParent.width() - 3, iheight);
+      QString qstr = GedInputDialog::getText(ev, &_parent, ptsg.c_str(), 2, 2, _parent.width() - 3, iheight);
 
       std::string sstr = qstr.toStdString();
       if (sstr.length()) {
@@ -210,8 +210,8 @@ void Slider<T>::OnUiEvent(ork::ui::event_constptr_t ev) // final
     }
   }
   SetVal(mval);
-  IoDriverBase& iod = mParent.RefIODriver();
-  mParent.SigInvalidateProperty();
+  IoDriverBase& iod = _parent.RefIODriver();
+  _parent.SigInvalidateProperty();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

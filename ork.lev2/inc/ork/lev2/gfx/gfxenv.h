@@ -377,7 +377,7 @@ public:
   //////////////////////////////////////////////
 
   RtGroup* GetParentMrt(void) const {
-    return mParentRtGroup;
+    return _parentRtGroup;
   }
   ui::Widget* GetRootWidget(void) const {
     return mRootWidget;
@@ -389,13 +389,13 @@ public:
     return mbSizeIsDirty;
   }
   const std::string& GetName(void) const {
-    return msName;
+    return _name;
   }
   const fcolor4& GetClearColor() const {
     return mClearColor;
   }
   OffscreenBuffer* GetParent(void) const {
-    return mParent;
+    return _parent;
   }
   ETargetType GetTargetType(void) const {
     return meTargetType;
@@ -440,7 +440,7 @@ public:
     mbSizeIsDirty = bv;
   }
   void SetParentMrt(RtGroup* ParentMrt) {
-    mParentRtGroup = ParentMrt;
+    _parentRtGroup = ParentMrt;
   }
   fcolor4& RefClearColor() {
     return mClearColor;
@@ -490,10 +490,10 @@ protected:
   ETargetType meTargetType;
   bool mbDirty;
   bool mbSizeIsDirty;
-  std::string msName;
+  std::string _name;
   fcolor4 mClearColor;
-  OffscreenBuffer* mParent;
-  RtGroup* mParentRtGroup;
+  OffscreenBuffer* _parent;
+  RtGroup* _parentRtGroup;
   void* mPlatformHandle;
 };
 

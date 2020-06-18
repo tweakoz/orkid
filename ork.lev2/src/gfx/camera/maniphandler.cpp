@@ -18,7 +18,7 @@ namespace ork::lev2 {
 
 ManipHandler::ManipHandler() // const Camera& pcam)
     : Origin(float(0.0f), float(0.0f), float(0.0f))
-//	, mParentCamera(pcam)
+//	, _parentCamera(pcam)
 {}
 
 void ManipHandler::Init(const ork::fvec2& posubp, const fmtx4& RCurIMVPMat, const fquat& RCurQuat) {

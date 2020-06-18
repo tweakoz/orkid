@@ -18,14 +18,14 @@ class RTTIData
 {
 public:
 	RTTIData(Class *parent, void (*initializer)())
-		: mParentClass(parent)
+		: _parentClass(parent)
 		, mClassInitializer(initializer)
 	{}
 
-	Class *ParentClass() const { return mParentClass; }
+	Class *ParentClass() const { return _parentClass; }
 	void (*ClassInitializer() const)() { return mClassInitializer; }
 private:
-	Class *mParentClass;
+	Class *_parentClass;
 	void (*mClassInitializer)();
 };
 

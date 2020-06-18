@@ -22,13 +22,19 @@ hudpanel_ptr_t createProfilerView(
     hudvp_ptr_t vp, //
     const ui::anchor::Bounds& bounds,
     std::string named) {
-  auto hudpanel      = std::make_shared<HudPanel>();
-  auto programview   = std::make_shared<ProfilerView>();
-  hudpanel->_uipanel = std::make_shared<ui::Panel>("progview", 0, 0, 32, 32);
+  auto hudpanel    = std::make_shared<HudPanel>();
+  auto programview = std::make_shared<ProfilerView>();
+  auto uipanelitem = vp->makeChild<ui::Panel>("profiler", 0, 0, 32, 32);
+  uipanelitem.applyBounds(bounds);
+  hudpanel->_uipanel                = uipanelitem._widget;
+  hudpanel->_panelLayout            = uipanelitem._layout;
+  hudpanel->_uipanel->_closeEnabled = false;
+  hudpanel->_uipanel->_moveEnabled  = false;
   hudpanel->_uipanel->setTitle(named);
   hudpanel->_uisurface = programview;
   hudpanel->_uipanel->setChild(hudpanel->_uisurface);
-  hudpanel->_uipanel->snap();
+  hudpanel->_uipanel->_stdcolor   = fvec4(0.2, 0.2, 0.3f, 0.5f);
+  hudpanel->_uipanel->_focuscolor = fvec4(0.3, 0.2, 0.4f, 0.5f);
   ///////////////////////////////////////////////////////////////////////
   vp->addChild(hudpanel->_uipanel);
   vp->_hudpanels.insert(hudpanel);

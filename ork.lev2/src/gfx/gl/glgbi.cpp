@@ -49,13 +49,13 @@ typedef ork::MpMcBoundedQueue<GlVtxBufMapData*> vtxbufmapdata_q_t;
 ///////////////////////////////////////////////////////////
 
 struct GlVtxBufMapData {
-  vtxbufmapdata_q_t& mParentQ;
+  vtxbufmapdata_q_t& _parentQ;
   int mPotSize;
   int mCurSize;
   void* mpData;
 
   GlVtxBufMapData(vtxbufmapdata_q_t& oq, int potsize)
-      : mParentQ(oq)
+      : _parentQ(oq)
       , mPotSize(potsize)
       , mCurSize(0) {
     mpData = malloc(potsize);
@@ -64,7 +64,7 @@ struct GlVtxBufMapData {
     free(mpData);
   }
   void ReturnToPool() {
-    mParentQ.push(this);
+    _parentQ.push(this);
   }
 };
 

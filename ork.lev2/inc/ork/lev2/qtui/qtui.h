@@ -124,7 +124,7 @@ class CTQT : public CTXBASE {
   bool mbAlwaysRun;
   QCtxWidget* mpQtWidget;
   int mix, miy, miw, mih;
-  QWidget* mParent;
+  QWidget* _parent;
   int mDrawLock;
 
   void SlotRepaint() final;
@@ -151,7 +151,7 @@ public:
     return mpQtWidget;
   }
   QWidget* GetParent() const {
-    return mParent;
+    return _parent;
   }
 
   fvec2 MapCoordToGlobal(const fvec2& v) const override;

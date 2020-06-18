@@ -27,7 +27,7 @@ RtBuffer::RtBuffer(ERtgSlot slot, EBufferFormat efmt, int iW, int iH)
 ///////////////////////////////////////////////////////////////////////////////
 
 RtGroup::RtGroup(Context* ptgt, int iW, int iH, int iSamples)
-    : mParentTarget(ptgt)
+    : _parentTarget(ptgt)
     , miW(iW)
     , miH(iH)
     , mNumMrts(0)

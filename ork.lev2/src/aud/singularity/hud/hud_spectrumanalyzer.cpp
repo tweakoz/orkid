@@ -63,11 +63,12 @@ signalscope_ptr_t create_spectrumanalyzer(
   hudpanel->_uipanel->setTitle(named);
   hudpanel->_uisurface = analyzersurf;
   hudpanel->_uipanel->setChild(hudpanel->_uisurface);
-  hudpanel->_uipanel->snap();
-  auto instrument              = std::make_shared<SignalScope>();
-  instrument->_hudpanel        = hudpanel;
-  instrument->_sink            = std::make_shared<ScopeSink>();
-  instrument->_sink->_onupdate = [analyzersurf](const ScopeSource* src) { //
+  hudpanel->_uipanel->_stdcolor   = fvec4(0.2, 0.2, 0.3f, 0.5f);
+  hudpanel->_uipanel->_focuscolor = fvec4(0.3, 0.2, 0.4f, 0.5f);
+  auto instrument                 = std::make_shared<SignalScope>();
+  instrument->_hudpanel           = hudpanel;
+  instrument->_sink               = std::make_shared<ScopeSink>();
+  instrument->_sink->_onupdate    = [analyzersurf](const ScopeSource* src) { //
     bool select = (analyzersurf->_currentSource == nullptr);
     select |= (src == analyzersurf->_currentSource);
     if (select) {

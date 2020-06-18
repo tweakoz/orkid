@@ -55,20 +55,20 @@ public:
     tex->_dirty = true;
   }
   void DoRePaintSurface(ork::ui::drawevent_constptr_t ev) override {
-    mpTarget->FBI()->SetAutoClear(true);
-    auto tgtrect = mpTarget->mainSurfaceRectAtOrigin();
+    _target->FBI()->SetAutoClear(true);
+    auto tgtrect = _target->mainSurfaceRectAtOrigin();
 
-    mpTarget->FBI()->setViewport(tgtrect);
-    mpTarget->FBI()->setScissor(tgtrect);
-    mpTarget->beginFrame();
+    _target->FBI()->setViewport(tgtrect);
+    _target->FBI()->setScissor(tgtrect);
+    _target->beginFrame();
     {
-      // mpTarget->TXI()->VRamUpload(tex);
+      // _target->TXI()->VRamUpload(tex);
       ork::fvec4 clr1(1.0f, 1.0f, 1.0f, 1.0f);
       mtl.SetTexture(tex.get());
       // mtl.SetColorMode( GfxMaterial3DSolid::EMODE_MOD_COLOR );
       mtl.SetColorMode(GfxMaterial3DSolid::EMODE_TEX_COLOR);
       mtl._rasterstate.SetBlending(EBLENDING_OFF);
-      mpTarget->FBI()->GetThisBuffer()->RenderMatOrthoQuad(
+      _target->FBI()->GetThisBuffer()->RenderMatOrthoQuad(
           tgtrect.asSRect(), tgtrect.asSRect(), &mtl, 0.0f, 0.0f, 1.0f, 1.0f, 0, clr1);
 
       GLint curtex = 0;
@@ -99,7 +99,7 @@ public:
     /////////////////////////////////////////////////////////////////////
     // DrawHUD(the_renderer.framedata());
     /////////////////////////////////////////////////////////////////////
-    mpTarget->endFrame(); // the_renderer );*/
+    _target->endFrame(); // the_renderer );*/
   }
 
   GfxMaterial3DSolid mtl;

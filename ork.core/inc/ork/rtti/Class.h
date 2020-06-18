@@ -72,7 +72,7 @@ private:
 
     void (*mClassInitializer)();
 
-	Class *mParentClass;
+	Class *_parentClass;
     Class *mChildClass;
     Class *mNextSiblingClass;
     Class *mPrevSiblingClass;
