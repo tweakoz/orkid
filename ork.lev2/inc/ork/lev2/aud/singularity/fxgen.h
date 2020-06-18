@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <ork/lev2/aud/singularity/dsp_mix.h>
 #include <ork/lev2/aud/singularity/alg_eq.h>
+#include <ork/lev2/aud/singularity/alg_nonlin.h>
 
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
@@ -17,6 +18,11 @@ void appendStereoParaEQ(
     float fc,
     float w,
     float gain);
+///////////////////////////////////////////////////////////////////////////////
+void appendStereoDistortion(
+    lyrdata_ptr_t layer, //
+    dspstagedata_ptr_t stage,
+    float adj);
 ///////////////////////////////////////////////////////////////////////////////
 void appendStereoHighPass(
     lyrdata_ptr_t layer, //
@@ -79,5 +85,6 @@ lyrdata_ptr_t fxpreset_wackiverb();
 lyrdata_ptr_t fxpreset_pitchoctup();
 lyrdata_ptr_t fxpreset_pitchwave();
 lyrdata_ptr_t fxpreset_pitchchorus();
+void loadAllFxPresets();
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

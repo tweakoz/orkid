@@ -156,6 +156,7 @@ using hudpanel_ptr_t              = std::shared_ptr<HudPanel>;
 using scopesource_ptr_t           = std::shared_ptr<ScopeSource>;
 using scopesink_ptr_t             = std::shared_ptr<ScopeSink>;
 using signalscope_ptr_t           = std::shared_ptr<SignalScope>;
+using fxpresetmap_t               = std::map<std::string, lyrdata_ptr_t>;
 ///////////////////////////////////////////////////////////////////////////////
 typedef std::function<float()> controller_t;
 typedef std::function<float(float)> mapper_t;

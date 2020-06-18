@@ -120,6 +120,22 @@ void ProfilerView::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
       0);
   ycursor += hud_lineheight();
 
+  for (auto b : syn->_outputBusses) {
+    auto busname = b.first;
+    auto fxname  = b.second->_fxname;
+    drawtext(
+        this,
+        context, //
+        FormatString("OutputBus<%s>: fx<%s>", busname.c_str(), fxname.c_str()),
+        0,
+        ycursor,
+        fontscale,
+        1,
+        1,
+        0);
+    ycursor += hud_lineheight();
+  }
+
   /*for (auto l : _curprogram->_hudinfos) {
     drawtext(
         this,

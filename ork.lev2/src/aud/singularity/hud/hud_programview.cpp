@@ -136,6 +136,10 @@ ui::HandlerResult ProgramView::DoOnUiEvent(ui::event_constptr_t ev) {
   switch (ev->_eventcode) {
     case ui::EventCode::KEY:
       switch (ev->miKeyCode) {
+        case '5': {
+          synth::instance()->nextEffect();
+          break;
+        }
         case '9': {
           _velocity += 16;
           _velocity = std::clamp(_velocity, 0, 127);

@@ -70,6 +70,7 @@ struct OutputBus {
   lyrdata_ptr_t _dsplayerdata;
   Layer* _dsplayer = nullptr;
   scopesource_ptr_t _scopesource;
+  std::string _fxname;
 
   /////////////////////////
 };
@@ -111,6 +112,11 @@ struct synth {
   void addEvent(float time, void_lambda_t ev);
   void _tick(eventmap_t& emap, float dt);
   float _timeaccum;
+
+  void nextEffect(); // temporary
+
+  fxpresetmap_t _fxpresets;
+  fxpresetmap_t::iterator _fxcurpreset;
 
   std::map<std::string, outbus_ptr_t> _outputBusses;
   std::vector<onkey_t> _onkey_subscribers;

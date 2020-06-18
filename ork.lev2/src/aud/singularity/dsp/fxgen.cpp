@@ -44,6 +44,18 @@ dspblkdata_ptr_t appendStereoReverb(lyrdata_ptr_t layer, dspstagedata_ptr_t stag
   return fdn4;
 }
 ///////////////////////////////////////////////////////////////////////////////
+void appendStereoDistortion(
+    lyrdata_ptr_t layer, //
+    dspstagedata_ptr_t stage,
+    float adj) {
+  auto l              = stage->appendTypedBlock<Distortion>();
+  auto r              = stage->appendTypedBlock<Distortion>();
+  l->param(0)._coarse = adj;
+  r->param(0)._coarse = adj;
+  l->_dspchannel[0]   = 0;
+  r->_dspchannel[0]   = 1;
+}
+///////////////////////////////////////////////////////////////////////////////
 void appendStereoParaEQ(
     lyrdata_ptr_t layer, //
     dspstagedata_ptr_t stage,
