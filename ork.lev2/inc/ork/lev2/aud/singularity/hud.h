@@ -93,6 +93,7 @@ struct ItemDrawReq {
 struct HudPanel {
   void setRect(int iX, int iY, int iW, int iH, bool snap = false);
   ui::anchor::layout_ptr_t _panelLayout;
+  ui::layoutgroup_ptr_t _layoutgroup;
   ui::panel_ptr_t _uipanel;
   ui::surface_ptr_t _uisurface;
 };
@@ -164,6 +165,11 @@ hudpanel_ptr_t createProfilerView(
     hudvp_ptr_t vp, //
     const ui::anchor::Bounds& bounds,
     std::string named = "");
+hudpanel_ptr_t createEnvYmEditView(
+    hudvp_ptr_t vp, //
+    std::string named,
+    controllerdata_ptr_t envdata,
+    const ui::anchor::Bounds& bounds);
 ///////////////////////////////////////////////////////////////////////////////
 struct HudLayoutGroup final : public ui::LayoutGroup {
   HudLayoutGroup();

@@ -230,7 +230,8 @@ lyrdata_ptr_t fxpreset_pitchchorus() {
   /////////////////
   appendPitchChorus(fxlayer, fxstage, 0.5, 35.0f);
   return fxlayer;
-} ///////////////////////////////////////////////////////////////////////////////
+}
+///////////////////////////////////////////////////////////////////////////////
 lyrdata_ptr_t fxpreset_multitest() {
   auto fxprog       = std::make_shared<ProgramData>();
   auto fxlayer      = fxprog->newLayer();
@@ -264,8 +265,25 @@ lyrdata_ptr_t fxpreset_multitest() {
   /////////////////
   return fxlayer;
 }
+///////////////////////////////////////////////////////////////////////////////
+lyrdata_ptr_t fxpreset_none() {
+  auto fxprog       = std::make_shared<ProgramData>();
+  auto fxlayer      = fxprog->newLayer();
+  auto fxalg        = std::make_shared<AlgData>();
+  fxlayer->_algdata = fxalg;
+  fxalg->_name      = ork::FormatString("FxAlg");
+  /////////////////
+  // output effect
+  /////////////////
+  auto fxstage = fxalg->appendStage("FX");
+  fxstage->setNumIos(2, 2); // stereo in, stereo out
+  /////////////////
+  return fxlayer;
+}
+///////////////////////////////////////////////////////////////////////////////
 void loadAllFxPresets() {
   auto s                             = synth::instance();
+  s->_fxpresets["none"]              = fxpreset_none();
   s->_fxpresets["distortion+chorus"] = fxpreset_distortionpluschorus();
   s->_fxpresets["distortion+echo"]   = fxpreset_distortionplusecho();
   s->_fxpresets["stereo-chorus"]     = fxpreset_stereochorus();

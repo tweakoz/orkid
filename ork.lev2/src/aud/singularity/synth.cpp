@@ -27,7 +27,6 @@ void synth::nextEffect() {
         auto it = _fxcurpreset;
         if (it == _fxpresets.end()) {
           it = _fxpresets.begin();
-          it++;
         } else {
           it++;
         }
@@ -95,7 +94,7 @@ synth::synth()
     , _timeaccum(0.0f)
     , _hudpage(0)
     , _masterGain(1.0f) { //
-  _fxcurpreset = _fxpresets.begin();
+  _fxcurpreset = _fxpresets.rbegin().base();
 
   _tempbus         = std::make_shared<OutputBus>();
   _tempbus->_name  = "temp-dsp";
