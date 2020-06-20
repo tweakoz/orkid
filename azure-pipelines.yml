@@ -18,3 +18,10 @@ jobs:
       echo "HomeBrew setup"
       ./ork.build/bin/obt.osx.installdeps.py
     displayName: 'HomeBrew setup'
+  - script: |
+      echo "Init Orkid Build Container"
+      ./ork.build/bin/init_env.py --create $(Agent.BuildDirectory)
+    displayName: 'Init Orkid Build Container'
+    
+    
+    
