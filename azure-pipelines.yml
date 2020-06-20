@@ -13,7 +13,7 @@ jobs:
   steps:
   - checkout: self
     fetchDepth: 50
-    submodules: false
+    submodules: true
   - script: |
       echo "HomeBrew setup"
       ./ork.build/bin/obt.osx.installdeps.py
