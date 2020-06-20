@@ -6,14 +6,15 @@
 trigger:
 - master
 
-pool:
-  vmImage: 'ubuntu-latest'
-
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
-
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+jobs:
+- job: macOS
+  pool:
+    vmImage: 'macOS-10.15'
+  steps:
+  - checkout: self
+    fetchDepth: 50
+    submodules: false
+  - script: |
+      echo "HomeBrew setup"
+      ./ork.build/bin/obt.osx.installdeps.py
+    displayName: 'HomeBrew setup'
