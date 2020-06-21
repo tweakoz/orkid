@@ -6,6 +6,9 @@
 
 namespace ork::ui {
 
+using evrouter_t  = std::function<Widget*(event_constptr_t ev)>;
+using evhandler_t = std::function<HandlerResult(event_constptr_t ev)>;
+
 struct IWidgetEventFilter {
   IWidgetEventFilter(Widget& w);
   void Filter(event_constptr_t Ev);
@@ -182,6 +185,10 @@ public:
   lev2::Context* _target = nullptr;
   Context* _uicontext    = nullptr;
   std::stack<eventfilter_ptr_t> _eventfilterstack;
+  evrouter_t _evrouter   = nullptr;
+  evhandler_t _evhandler = nullptr;
+
+  virtual Widget* doRouteUiEvent(event_constptr_t Ev);
 
 private:
   friend struct ui::Context;
@@ -192,7 +199,6 @@ private:
   void ReLayout();
   virtual void DoLayout() {
   }
-  virtual Widget* doRouteUiEvent(event_constptr_t Ev);
 };
 
 } // namespace ork::ui

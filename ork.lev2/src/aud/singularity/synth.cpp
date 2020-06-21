@@ -242,7 +242,8 @@ void synth::prevProgram() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 programInst* synth::liveKeyOn(int note, int velocity, prgdata_constptr_t pdata) {
-  assert(pdata);
+  if (not pdata)
+    return nullptr;
   programInst* pi = nullptr;
   _freeProgInst.atomicOp([&pi](proginstset_t& piset) {
     auto it = piset.begin();

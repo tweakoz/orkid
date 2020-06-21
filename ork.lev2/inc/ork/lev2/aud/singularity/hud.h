@@ -175,7 +175,12 @@ struct HudLayoutGroup final : public ui::LayoutGroup {
   HudLayoutGroup();
   void onUpdateThreadTick(ui::updatedata_ptr_t updata);
   std::unordered_set<hudpanel_ptr_t> _hudpanels;
-  int _updcount = 0;
+  std::map<char, int> _notemap;
+  std::map<char, int> _handledkeymap;
+  std::map<int, programInst*> _activenotes;
+  int _updcount    = 0;
+  int _velocity    = 127;
+  int _octaveshift = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

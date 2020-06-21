@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
   auto bussource = mainbus->createScopeSource();
   if (1) { // create mixbus effect ?
     loadAllFxPresets();
-    synth::instance()->nextEffect();
+    // synth::instance()->nextEffect();
   }
   //////////////////////////////////////////////////////////////////////////////
   // allocate program/layer data

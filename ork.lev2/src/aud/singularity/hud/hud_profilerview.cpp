@@ -120,16 +120,17 @@ void ProfilerView::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
       0);
   ycursor += hud_lineheight();
 
-  drawtext(
-      this,
-      context, //
-      FormatString("CurrentProgram: %s", syn->_globalprog->_name.c_str()),
-      0,
-      ycursor,
-      fontscale,
-      1,
-      1,
-      0);
+  if (syn->_globalprog)
+    drawtext(
+        this,
+        context, //
+        FormatString("CurrentProgram: %s", syn->_globalprog->_name.c_str()),
+        0,
+        ycursor,
+        fontscale,
+        1,
+        1,
+        0);
   ycursor += hud_lineheight();
 
   for (auto b : syn->_outputBusses) {

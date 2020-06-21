@@ -106,106 +106,14 @@ void ProgramView::DoInit(lev2::Context* pt) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-const std::map<char, int> __notemap = {
-    {'z', 36},
-    {'s', 37},
-    {'x', 38},
-    {'d', 39},
-    {'c', 40},
-    {'v', 41},
-    {'g', 42},
-    {'b', 43},
-    {'h', 44},
-    {'n', 45},
-    {'j', 46},
-    {'m', 47},
-    {',', 48},
-    {'l', 49},
-    {'.', 50},
-    {';', 51},
-    {'/', 52},
-};
-std::map<int, programInst*> _activenotes;
-///////////////////////////////////////////////////////////////////////////////
-
 ui::HandlerResult ProgramView::DoOnUiEvent(ui::event_constptr_t ev) {
-  ui::HandlerResult ret(this);
+  ui::HandlerResult ret;
   bool isalt  = ev->mbALT;
   bool isctrl = ev->mbCTRL;
-
   switch (ev->_eventcode) {
     case ui::EventCode::KEY:
-      switch (ev->miKeyCode) {
-        case '5': {
-          synth::instance()->nextEffect();
-          break;
-        }
-        case '9': {
-          _velocity += 16;
-          _velocity = std::clamp(_velocity, 0, 127);
-          break;
-        }
-        case '7': {
-          _velocity -= 16;
-          _velocity = std::clamp(_velocity, 0, 127);
-          break;
-        }
-        case '6': {
-          synth::instance()->nextProgram();
-          break;
-        }
-        case '4': {
-          synth::instance()->prevProgram();
-          break;
-        }
-        case '3': {
-          _octaveshift++;
-          _octaveshift = std::clamp(_octaveshift, -1, 4);
-          break;
-        }
-        case '1': {
-          _octaveshift--;
-          _octaveshift = std::clamp(_octaveshift, -1, 4);
-          break;
-        }
-        case ' ': {
-          for (auto item : _activenotes) {
-            auto pi = item.second;
-            synth::instance()->liveKeyOff(pi);
-          }
-          _activenotes.clear();
-          break;
-        }
-        default: {
-          auto prog = synth::instance()->_globalprog;
-          auto it   = __notemap.find(ev->miKeyCode);
-          if (it != __notemap.end()) {
-            int note = it->second;
-            note += (_octaveshift * 12);
-            auto pi            = synth::instance()->liveKeyOn(note, _velocity, prog);
-            _activenotes[note] = pi;
-          }
-          break;
-        }
-      }
       break;
     case ui::EventCode::KEYUP: {
-      switch (ev->miKeyCode) {
-        default: {
-          auto it = __notemap.find(ev->miKeyCode);
-          if (it != __notemap.end()) {
-            int note = it->second;
-            note += (_octaveshift * 12);
-            auto it2 = _activenotes.find(note);
-            if (it2 != _activenotes.end()) {
-              auto pi = it2->second;
-              synth::instance()->liveKeyOff(pi);
-              _activenotes.erase(it2);
-            }
-          }
-          break;
-        }
-      }
     } break;
   }
   return ret;

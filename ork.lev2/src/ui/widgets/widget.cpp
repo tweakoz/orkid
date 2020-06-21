@@ -61,7 +61,8 @@ HandlerResult Widget::handleUiEvent(event_constptr_t ev) {
 }
 ///////////////////////////////////////////////////////////
 Widget* Widget::routeUiEvent(event_constptr_t ev) {
-  auto ret = doRouteUiEvent(ev);
+  auto ret = _evrouter ? _evrouter(ev) // lambda takes preference
+                       : doRouteUiEvent(ev);
   return ret;
 }
 ///////////////////////////////////////////////////////////
@@ -86,6 +87,9 @@ HandlerResult Widget::OnUiEvent(event_constptr_t ev) {
     top->Filter(ev);
     if (ev->mFilteredEvent._eventcode == EventCode::UNKNOWN)
       return HandlerResult();
+  }
+  if (_evhandler) {
+    return _evhandler(ev);
   }
   return DoOnUiEvent(ev);
 }

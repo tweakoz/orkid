@@ -148,6 +148,7 @@ struct synth {
 
   prgdata_constptr_t _globalprog;
   bankdata_ptr_t _globalbank;
+
   std::map<int, prgdata_ptr_t>::iterator _globalprgit;
   void nextProgram();
   void prevProgram();

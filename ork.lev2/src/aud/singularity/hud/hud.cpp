@@ -44,9 +44,152 @@ void Rect::PopOrtho(Context* context) const {
   context->MTXI()->PopUIMatrix();
 }
 ///////////////////////////////////////////////////////////////////////////////
+auto the_synth = synth::instance();
+///////////////////////////////////////////////////////////////////////////////
 HudLayoutGroup::HudLayoutGroup() //
     : ui::LayoutGroup("HUD", 0, 0, 1280, 720) {
-}
+
+  /////////////////////////////////
+  // route musical kb events to here
+  //  all other events route as normal
+  /////////////////////////////////
+
+  _notemap = {
+      {'z', 36},
+      {'s', 37},
+      {'x', 38},
+      {'d', 39},
+      {'c', 40},
+      {'v', 41},
+      {'g', 42},
+      {'b', 43},
+      {'h', 44},
+      {'n', 45},
+      {'j', 46},
+      {'m', 47},
+      {',', 48},
+      {'l', 49},
+      {'.', 50},
+      {';', 51},
+      {'/', 52},
+  };
+  _handledkeymap = _notemap;
+  for (int i = 0; i <= 9; i++)
+    _handledkeymap['0' + i] = 0;
+
+  _evrouter = [this](ui::event_constptr_t ev) -> ui::Widget* { //
+    switch (ev->_eventcode) {
+      case ui::EventCode::KEY:
+      case ui::EventCode::KEYUP: {
+        int key = ev->miKeyCode;
+        auto it = _handledkeymap.find(key);
+        if (it != _handledkeymap.end()) {
+          printf("hudevroute<%p>\n", this);
+          return this;
+        }
+        break;
+      }
+    }
+    return doRouteUiEvent(ev);
+  };
+
+  _evhandler = [this](ui::event_constptr_t ev) -> ui::HandlerResult { //
+    bool was_handled = false;
+    printf("hudlg evh\n");
+    switch (ev->_eventcode) {
+      case ui::EventCode::KEY: {
+        switch (ev->miKeyCode) {
+          case '5': {
+            the_synth->nextEffect();
+            was_handled = true;
+            break;
+          }
+          case '9': {
+            _velocity += 16;
+            _velocity   = std::clamp(_velocity, 0, 127);
+            was_handled = true;
+            break;
+          }
+          case '7': {
+            _velocity -= 16;
+            _velocity   = std::clamp(_velocity, 0, 127);
+            was_handled = true;
+            break;
+          }
+          case '6': {
+            the_synth->nextProgram();
+            was_handled = true;
+            break;
+          }
+          case '4': {
+            the_synth->prevProgram();
+            was_handled = true;
+            break;
+          }
+          case '3': {
+            _octaveshift++;
+            _octaveshift = std::clamp(_octaveshift, -1, 4);
+            was_handled  = true;
+            break;
+          }
+          case '1': {
+            _octaveshift--;
+            _octaveshift = std::clamp(_octaveshift, -1, 4);
+            was_handled  = true;
+            break;
+          }
+          case ' ': {
+            for (auto item : _activenotes) {
+              auto pi = item.second;
+              the_synth->liveKeyOff(pi);
+            }
+            _activenotes.clear();
+            was_handled = true;
+            break;
+          }
+          default: {
+            auto prog = the_synth->_globalprog;
+            auto it   = _notemap.find(ev->miKeyCode);
+            if (it != _notemap.end()) {
+              int note = it->second;
+              note += (_octaveshift * 12);
+              printf("note<%d>\n", note);
+              auto pi            = the_synth->liveKeyOn(note, _velocity, prog);
+              _activenotes[note] = pi;
+              was_handled        = true;
+            }
+            break;
+          }
+        } // switch (ev->miKeyCode) {
+        break;
+      }
+      case ui::EventCode::KEYUP: {
+        switch (ev->miKeyCode) {
+          default: {
+            auto it = _notemap.find(ev->miKeyCode);
+            if (it != _notemap.end()) {
+              was_handled = true;
+              int note    = it->second;
+              note += (_octaveshift * 12);
+              auto it2 = _activenotes.find(note);
+              if (it2 != _activenotes.end()) {
+                auto pi = it2->second;
+                if (pi)
+                  the_synth->liveKeyOff(pi);
+                _activenotes.erase(it2);
+              }
+            }
+            break;
+          }
+        }
+        break;
+      } // case ui::EventCode::KEYUP: {
+    }   // switch (ev->_eventcode) {
+    return ui::HandlerResult(this);
+  };
+
+  /////////////////////////////////
+} // namespace ork::audio::singularity
 ///////////////////////////////////////////////////////////////////////////////
 void HudLayoutGroup::onUpdateThreadTick(ui::updatedata_ptr_t updata) {
   ///////////////////////////////////////////
