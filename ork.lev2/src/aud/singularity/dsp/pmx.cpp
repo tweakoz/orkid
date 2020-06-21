@@ -39,11 +39,10 @@ PMXData::PMXData(std::string name)
   pitch->usePitchEvaluator(); // pitch
   auto amp = addParam();
   amp->useDefaultEvaluator(); // amp
-  amp->_edit_coarse_numsteps = 1000;
-  amp->_edit_coarse_shape    = 2.0f;
-  auto fbl                   = addParam();
+  amp->_units = "0-1";
+  auto fbl    = addParam();
+  fbl->_units = "0-1";
   fbl->useDefaultEvaluator(); // feedback
-  fbl->_edit_coarse_numsteps = 100;
 }
 ///////////////////////////////////////////////////////////////////////////////
 dspblk_ptr_t PMXData::createInstance() const {

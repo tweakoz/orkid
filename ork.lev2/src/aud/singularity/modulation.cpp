@@ -55,14 +55,25 @@ float DspParam::eval(bool dump) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void DspParamData::useDefaultEvaluator() {
-  _mods->_evaluator = [this](DspParam& cec) -> float {
+  _edit_coarse_min        = -1.0f;
+  _edit_coarse_max        = 1.0f;
+  _edit_coarse_numsteps   = 102;
+  _edit_fine_min          = -0.01f;
+  _edit_fine_max          = 0.01f;
+  _edit_fine_numsteps     = 102;
+  _edit_keytrack_min      = -1.0f;
+  _edit_keytrack_max      = 1.0f;
+  _edit_keytrack_numsteps = 402;
+  _edit_keytrack_shape    = 2.0f;
+  _mods->_evaluator       = [this](DspParam& cec) -> float {
     float kt = _keyTrack * cec._keyOff;
     float vt = -_velTrack * cec._unitVel;
     float rv = _coarse     //
+               + _fine     //
                + cec._C1() //
                + cec._C2() //
                + kt + vt;
-    // printf("kt<%f> vt<%f> rv<%f>\n", kt, vt, rv);
+    printf("cec._keyOff<%g> rv<%g>\n", cec._keyOff, rv);
     return rv;
   };
 }
@@ -89,9 +100,11 @@ void DspParamData::useAmplitudeEvaluator() {
 
 void DspParamData::usePitchEvaluator() {
 
+  _units = "cents";
+
   _edit_coarse_min        = 0.0f;
-  _edit_coarse_max        = 84.0f;
-  _edit_coarse_numsteps   = 84;
+  _edit_coarse_numsteps   = 120;
+  _edit_coarse_max        = _edit_coarse_numsteps * 100.0f;
   _edit_fine_min          = -50.0f;
   _edit_fine_max          = 50.0f;
   _edit_fine_numsteps     = 102;
@@ -103,11 +116,11 @@ void DspParamData::usePitchEvaluator() {
   _mods->_evaluator = [this](DspParam& cec) -> float {
     float kt       = _keyTrack * cec._keyOff;
     float vt       = _velTrack * cec._unitVel;
-    float totcents = (_coarse * 100.0f) //
-                     + _fine            //
-                     + cec._C1()        //
-                     + cec._C2()        //
-                     + kt               //
+    float totcents = (_coarse)   //
+                     + _fine     //
+                     + cec._C1() //
+                     + cec._C2() //
+                     + kt        //
                      + vt;
     // float ratio = cents_to_linear_freq_ratio(totcents);
     // printf( "rat<%f>\n", ratio);

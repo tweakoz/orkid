@@ -37,7 +37,12 @@ void Dial::DoDraw(drawevent_constptr_t drwev) {
 
     defmtl->_rasterstate.SetBlending(lev2::EBLENDING_ALPHA);
     defmtl->_rasterstate.SetDepthTest(lev2::EDEPTHTEST_OFF);
-    tgt->PushModColor(_bgcolor);
+
+    fvec4 color = _bgcolor;
+    if (not hasMouseFocus())
+      color *= 0.9f;
+
+    tgt->PushModColor(color);
     primi.RenderQuadAtZ(
         defmtl.get(),
         tgt,
@@ -51,22 +56,31 @@ void Dial::DoDraw(drawevent_constptr_t drwev) {
         0.0f,
         1.0f // v0, v1
     );
+    //////////////////////////////
     tgt->PopModColor();
+    //////////////////////////////
     tgt->PushModColor(_textcolor);
     ork::lev2::FontMan::PushFont(_font);
-    lev2::FontMan::beginTextBlock(tgt, 256);
-    //
-    int y  = iyc - 6 - 7;
-    int sw = lev2::FontMan::stringWidth(_label.length());
-    lev2::FontMan::DrawText(
-        tgt, //
-        ixc - (sw >> 1),
-        y,
-        _label.c_str());
-    //
-    y += 14;
-    auto str = FormatString("%g", _curvalue);
-    sw       = lev2::FontMan::stringWidth(str.length());
+    //////////////////////////////
+    int lablen = _label.length();
+    auto str   = FormatString("%g", _curvalue);
+    //////////////////////////////
+    int y = iyc - 6;
+    lev2::FontMan::beginTextBlock(tgt, lablen + str.length());
+    if (lablen) {
+      //
+      y -= 7;
+      int sw = lev2::FontMan::stringWidth(lablen);
+      lev2::FontMan::DrawText(
+          tgt, //
+          ixc - (sw >> 1),
+          y,
+          _label.c_str());
+      //
+      y += 14;
+    }
+
+    int sw = lev2::FontMan::stringWidth(str.length());
     lev2::FontMan::DrawText(
         tgt, //
         ixc - (sw >> 1),
@@ -104,19 +118,35 @@ HandlerResult Dial::DoOnUiEvent(event_constptr_t ev) {
 constexpr int stepshift = 3;
 ///////////////////////////////////////////////////////////////////////////////
 void Dial::selValFromStep(int step) {
-  _cursteps   = std::clamp(step, 0, _numsteps);
-  int actstep = _cursteps >> stepshift;
-  float fi    = float(actstep) / int(_numsteps >> stepshift);
-  _curvalue   = audiomath::lerp(_minval, _maxval, powf(fi, _power));
+  _cursteps = std::clamp(step, 0, _numsteps);
+  if (_isbipolar) {
+    int hcurstepsP = (_numsteps >> 1);
+    if (_cursteps >= (_numsteps >> 1)) { // positive
+      int hnumsteps = (_numsteps >> 1);
+      int actstep   = (hcurstepsP - hnumsteps) >> stepshift;
+      float fi      = float(actstep) / int(hnumsteps >> stepshift);
+      _curvalue     = audiomath::lerp(_ctrval, _maxval, powf(fi, _power));
+    } else { // negative
+    }
+  } else {
+    int actstep = _cursteps >> stepshift;
+    float fi    = float(actstep) / int(_numsteps >> stepshift);
+    _curvalue   = audiomath::lerp(_minval, _maxval, powf(fi, _power));
+  }
   if (_onupdate) {
     _onupdate(_curvalue);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Dial::setParams(int numsteps, float curval, float minval, float maxval, float power) {
+
+  _isbipolar = (_minval < 0.0f) and (_maxval > 1.0f);
+
   _numsteps  = numsteps << stepshift;
   _minval    = minval;
   _maxval    = maxval;
+  _ctrval    = (minval + maxval * 0.5f);
+  _range     = (maxval - maxval);
   _power     = power;
   _curvalue  = curval;
   float nfip = (_curvalue - _minval) / (_maxval - _minval);

@@ -54,19 +54,22 @@ void Label::DoDraw(drawevent_constptr_t drwev) {
     );
     tgt->PopModColor();
 
-    tgt->PushModColor(_textcolor);
-    ork::lev2::FontMan::PushFont(_font);
-    lev2::FontMan::beginTextBlock(tgt, 256);
-    int sw = lev2::FontMan::stringWidth(_label.length());
-    lev2::FontMan::DrawText(
-        tgt, //
-        ixc - (sw >> 1),
-        iyc - 6,
-        _label.c_str());
-    //
-    lev2::FontMan::endTextBlock(tgt);
-    ork::lev2::FontMan::PopFont();
-    tgt->PopModColor();
+    int lablen = _label.length();
+    if (lablen) {
+      tgt->PushModColor(_textcolor);
+      ork::lev2::FontMan::PushFont(_font);
+      lev2::FontMan::beginTextBlock(tgt, lablen);
+      int sw = lev2::FontMan::stringWidth(lablen);
+      lev2::FontMan::DrawText(
+          tgt, //
+          ixc - (sw >> 1),
+          iyc - 6,
+          _label.c_str());
+      //
+      lev2::FontMan::endTextBlock(tgt);
+      ork::lev2::FontMan::PopFont();
+      tgt->PopModColor();
+    }
   }
   mtxi->PopUIMatrix();
 }

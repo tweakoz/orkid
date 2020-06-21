@@ -26,9 +26,12 @@ struct Dial final : public Widget {
   int _numsteps   = 1001;
   int _cursteps   = 0;
   float _minval   = 0.0f;
+  float _ctrval   = 0.5f;
   float _maxval   = 1.0f;
+  float _range    = 1.0f;
   float _curvalue = 0.0f;
   float _power    = 1.0f;
+  bool _isbipolar = false;
   updatefn_t _onupdate;
 
 private:
