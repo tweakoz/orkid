@@ -170,6 +170,11 @@ hudpanel_ptr_t createEnvYmEditView(
     std::string named,
     controllerdata_ptr_t envdata,
     const ui::anchor::Bounds& bounds);
+hudpanel_ptr_t createPmxEditView(
+    hudvp_ptr_t vp, //
+    std::string named,
+    dspblkdata_ptr_t dbdata,
+    const ui::anchor::Bounds& bounds);
 ///////////////////////////////////////////////////////////////////////////////
 struct HudLayoutGroup final : public ui::LayoutGroup {
   HudLayoutGroup();

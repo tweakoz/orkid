@@ -49,7 +49,7 @@ void YmEnvInst::compute() {
         _rawout = 1.0f;
         _curseg = 1;
       }
-      _prcout = powf(_rawout, 0.5);
+      _prcout = powf(_rawout, _data->_attackShape);
       break;
     case 1: // decay1
       _rawout *= _dec1ratefactor;
@@ -102,7 +102,7 @@ void YmEnvInst::keyOn(const KeyOnInfo& KOI) {
   _layer  = KOI._layer;
   _layer->retain();
   float abas          = controlPeriod();
-  _atkinc             = abas / _data->_attackTime;
+  _atkinc             = abas / (_data->_attackTime * 10.0f);
   int kb              = KOI._key - 24;
   float unit_keyscale = float(kb) / 67.0f;
   float pow_keyscale  = powf(unit_keyscale, 2.0);
@@ -114,8 +114,11 @@ void YmEnvInst::keyOn(const KeyOnInfo& KOI) {
       break;
     case 1:
     case 2:
-    case 3:
-      float atkscale  = 1.0f + 2.0f * powf(unit_keyscale, 1.0 / _data->_rateScale);
+    case 3: {
+      float atkscale = 1.0f;
+      if (_data->_rateScale > 0) {
+        atkscale += 2.0f * powf(unit_keyscale, 1.0 / float(_data->_rateScale));
+      }
       _dec1ratefactor = powf(_data->_decay1Rate, pow_keyscale * (1 << (_data->_rateScale + 1)));
       _dec2ratefactor = powf(_data->_decay2Rate, pow_keyscale * (1 << (_data->_rateScale + 1)));
       _relratefactor  = powf(_data->_releaseRate, pow_keyscale * (1 << (_data->_rateScale + 1)));
@@ -132,6 +135,7 @@ void YmEnvInst::keyOn(const KeyOnInfo& KOI) {
             atkscale,
             _dec1ratefactor);
       break;
+    }
   }
   if (_atkinc > 0.3f) {
     _atkinc = 0.3f;

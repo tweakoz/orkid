@@ -7,7 +7,7 @@ dspblkdata_ptr_t appendStereoChorus(lyrdata_ptr_t layer, dspstagedata_ptr_t stag
   /////////////////
   // stereo chorus
   /////////////////
-  auto chorus               = stage->appendTypedBlock<StereoDynamicEcho>();
+  auto chorus               = stage->appendTypedBlock<StereoDynamicEcho>("echo");
   chorus->param(0)._coarse  = 0.0f; // delay time (L)
   chorus->param(1)._coarse  = 0.0f; // delay time (R)
   chorus->param(2)._coarse  = 0.15; // feedback
@@ -33,13 +33,13 @@ dspblkdata_ptr_t appendStereoChorus(lyrdata_ptr_t layer, dspstagedata_ptr_t stag
 }
 ///////////////////////////////////////////////////////////////////////////////
 dspblkdata_ptr_t appendPitchShifter(lyrdata_ptr_t layer, dspstagedata_ptr_t stage) {
-  auto shifter              = stage->appendTypedBlock<PitchShifter>();
+  auto shifter              = stage->appendTypedBlock<PitchShifter>("shifter");
   shifter->param(0)._coarse = 0.5f; // wet/dry mix
   return shifter;
 }
 ///////////////////////////////////////////////////////////////////////////////
 dspblkdata_ptr_t appendStereoReverb(lyrdata_ptr_t layer, dspstagedata_ptr_t stage, float tscale) {
-  auto fdn4              = stage->appendTypedBlock<Fdn4Reverb>(tscale);
+  auto fdn4              = stage->appendTypedBlock<Fdn4Reverb>("reverb", tscale);
   fdn4->param(0)._coarse = 0.5f; // wet/dry mix
   return fdn4;
 }
@@ -48,8 +48,8 @@ void appendStereoDistortion(
     lyrdata_ptr_t layer, //
     dspstagedata_ptr_t stage,
     float adj) {
-  auto l              = stage->appendTypedBlock<Distortion>();
-  auto r              = stage->appendTypedBlock<Distortion>();
+  auto l              = stage->appendTypedBlock<Distortion>("distorion-L");
+  auto r              = stage->appendTypedBlock<Distortion>("distorion-R");
   l->param(0)._coarse = adj;
   r->param(0)._coarse = adj;
   l->_dspchannel[0]   = 0;
@@ -63,7 +63,7 @@ void appendStereoStereoDynamicEcho(
     float dtR,
     float feedback,
     float wetness) {
-  auto echo              = stage->appendTypedBlock<StereoDynamicEcho>();
+  auto echo              = stage->appendTypedBlock<StereoDynamicEcho>("echo");
   echo->param(0)._coarse = dtL;
   echo->param(1)._coarse = dtR;
   echo->param(2)._coarse = feedback;
@@ -78,8 +78,8 @@ void appendStereoParaEQ(
     float fc,
     float w,
     float gain) {
-  auto eql              = stage->appendTypedBlock<ParametricEq>();
-  auto eqr              = stage->appendTypedBlock<ParametricEq>();
+  auto eql              = stage->appendTypedBlock<ParametricEq>("peq-L");
+  auto eqr              = stage->appendTypedBlock<ParametricEq>("peq-R");
   eql->param(0)._coarse = fc;
   eql->param(1)._coarse = w;
   eql->param(2)._coarse = gain;
@@ -94,8 +94,8 @@ void appendStereoHighPass(
     lyrdata_ptr_t layer, //
     dspstagedata_ptr_t stage,
     float fc) {
-  auto eql              = stage->appendTypedBlock<HighPass>();
-  auto eqr              = stage->appendTypedBlock<HighPass>();
+  auto eql              = stage->appendTypedBlock<HighPass>("Highpass-L");
+  auto eqr              = stage->appendTypedBlock<HighPass>("Highpass-R");
   eql->param(0)._coarse = fc;
   eqr->param(0)._coarse = fc;
   eql->_dspchannel[0]   = 0;
@@ -108,8 +108,8 @@ void appendStereoHighFreqStimulator(
     float fc,
     float drive,
     float amp) {
-  auto eql              = stage->appendTypedBlock<HighFreqStimulator>();
-  auto eqr              = stage->appendTypedBlock<HighFreqStimulator>();
+  auto eql              = stage->appendTypedBlock<HighFreqStimulator>("Stim-L");
+  auto eqr              = stage->appendTypedBlock<HighFreqStimulator>("Stim-R");
   eql->param(0)._coarse = fc;
   eqr->param(0)._coarse = fc;
   eql->param(1)._coarse = drive;
@@ -129,7 +129,7 @@ dspblkdata_ptr_t appendStereoReverbX(
     float maxt,
     float minspeed,
     float maxspeed) {
-  auto fdn4 = stage->appendTypedBlock<Fdn4ReverbX>(tscale);
+  auto fdn4 = stage->appendTypedBlock<Fdn4ReverbX>("reverb", tscale);
   math::FRANDOMGEN rg(seed);
   fdn4->_axis.x = rg.rangedf(-1, 1);
   fdn4->_axis.y = rg.rangedf(-1, 1);
@@ -151,7 +151,7 @@ dspblkdata_ptr_t appendStereoReverbX(
 }
 ///////////////////////////////////////////////////////////////////////////////
 void appendStereoEnhancer(lyrdata_ptr_t layer, dspstagedata_ptr_t stage) {
-  auto stereoenh           = stage->appendTypedBlock<StereoDynamicEcho>();
+  auto stereoenh           = stage->appendTypedBlock<StereoDynamicEcho>("echo");
   auto& width_mod          = stereoenh->param(0)._mods;
   auto WIDTHCONTROL        = layer->appendController<CustomControllerData>("WIDTH");
   width_mod._src1          = WIDTHCONTROL;

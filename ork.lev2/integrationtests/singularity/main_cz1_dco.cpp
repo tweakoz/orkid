@@ -21,8 +21,8 @@ int main(int argc, char** argv) {
   layerdata->_algdata = configureCz1Algorithm(layerdata, 1);
   auto dcostage       = layerdata->stageByName("DCO");
   auto ampstage       = layerdata->stageByName("AMP");
-  auto osc            = dcostage->appendTypedBlock<CZX>(czoscdata, 0);
-  auto amp            = ampstage->appendTypedBlock<AMP_MONOIO>();
+  auto osc            = dcostage->appendTypedBlock<CZX>("dco", czoscdata, 0);
+  auto amp            = ampstage->appendTypedBlock<AMP_MONOIO>("amp");
   //////////////////////////////////////
   // setup modulators
   //////////////////////////////////////

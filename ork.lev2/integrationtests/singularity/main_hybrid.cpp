@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
   /////////////////
   auto fxstage = fxalg->appendStage("FX");
   fxstage->setNumIos(2, 2); // stereo in, stereo out
-  auto stereoenh           = fxstage->appendTypedBlock<StereoEnhancer>();
+  auto stereoenh           = fxstage->appendTypedBlock<StereoEnhancer>("enhancer");
   auto WIDTHCONTROL        = fxlayer->appendController<CustomControllerData>("STEREOWIDTH");
   auto& width_mod          = stereoenh->param(0)._mods;
   width_mod._src1          = WIDTHCONTROL;
@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
   /////////////////
   // stereo echo
   /////////////////
-  auto echo              = fxstage->appendTypedBlock<StereoDynamicEcho>();
+  auto echo              = fxstage->appendTypedBlock<StereoDynamicEcho>("echo");
   echo->param(0)._coarse = 2.0;  // delay time (sec)
   echo->param(1)._coarse = 0.25; // feedback
   echo->param(2)._coarse = 0.15; // wet/dry mix
@@ -95,12 +95,12 @@ int main(int argc, char** argv) {
 
     auto make_dco = [&](int dcochannel) {
       auto czoscdata  = std::make_shared<CzOscData>();
-      auto dco        = dcostage->appendTypedBlock<CZX>(czoscdata, dcochannel);
-      auto distortion = ampstage->appendTypedBlock<Distortion>(); //  Kurzweil Distorion
-      auto allpass    = ampstage->appendTypedBlock<TwoPoleAllPass>();
-      auto lopass1    = ampstage->appendTypedBlock<FourPoleLowPassWithSep>();
+      auto dco        = dcostage->appendTypedBlock<CZX>("dco", czoscdata, dcochannel);
+      auto distortion = ampstage->appendTypedBlock<Distortion>("dist"); //  Kurzweil Distorion
+      auto allpass    = ampstage->appendTypedBlock<TwoPoleAllPass>("allpass");
+      auto lopass1    = ampstage->appendTypedBlock<FourPoleLowPassWithSep>("lowpass");
       // auto lopass2               = ampstage->appendTypedBlock<FourPoleLowPassWithSep>();
-      auto amp                   = ampstage->appendTypedBlock<AMP_MONOIO>();
+      auto amp                   = ampstage->appendTypedBlock<AMP_MONOIO>("amp");
       dco->_dspchannel[0]        = dcochannel;
       distortion->_dspchannel[0] = dcochannel;
       allpass->_dspchannel[0]    = dcochannel;
@@ -221,7 +221,7 @@ int main(int argc, char** argv) {
     };
     make_dco(0);
     make_dco(1);
-    modstage->appendTypedBlock<RingMod>();
+    modstage->appendTypedBlock<RingMod>("ringmod");
     //////////////////////////////////////
     // pan controller
     //////////////////////////////////////

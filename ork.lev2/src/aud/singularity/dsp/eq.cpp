@@ -162,7 +162,8 @@ void PARAMID::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-ParametricEqData::ParametricEqData() {
+ParametricEqData::ParametricEqData(std::string name)
+    : DspBlockData(name) {
   auto& fc_param    = addParam();
   auto& width_param = addParam();
   auto& gain_param  = addParam();

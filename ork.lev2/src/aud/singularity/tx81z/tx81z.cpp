@@ -535,10 +535,12 @@ void Tx81zData::loadBank(const file::Path& syxpath) {
   parse_tx81z(this, syxpath);
 }
 ////////////////////////////////////////////////////////////////////////////////
-void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, tx81zprgdata_ptr_t prgdata) {
+void configureTx81zAlgorithm(
+    lyrdata_ptr_t layerdata, //
+    tx81zprgdata_ptr_t prgdata81z) {
   auto algdout        = std::make_shared<AlgData>();
   layerdata->_algdata = algdout;
-  algdout->_name      = ork::FormatString("tx81z<%d>", prgdata->_alg);
+  algdout->_name      = ork::FormatString("tx81z<%d>", prgdata81z->_alg);
   //////////////////////////////////////////
   auto stage_ops    = algdout->appendStage("OPS");
   auto stage_opmix  = algdout->appendStage("OPMIX");
@@ -549,10 +551,10 @@ void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, tx81zprgdata_ptr_t prgdata
   // instantiate ops in reverse order
   //  because of order of operations (3,2,1,0)
   /////////////////////////////////////////////////
-  auto op3 = stage_ops->appendTypedBlock<PMX>();
-  auto op2 = stage_ops->appendTypedBlock<PMX>();
-  auto op1 = stage_ops->appendTypedBlock<PMX>();
-  auto op0 = stage_ops->appendTypedBlock<PMX>();
+  auto op3 = stage_ops->appendTypedBlock<PMX>("op3");
+  auto op2 = stage_ops->appendTypedBlock<PMX>("op2");
+  auto op1 = stage_ops->appendTypedBlock<PMX>("op1");
+  auto op0 = stage_ops->appendTypedBlock<PMX>("op0");
   /////////////////////////////////////////////////
   int opchanbase      = 2;
   op0->_dspchannel[0] = opchanbase + 0;
@@ -560,7 +562,7 @@ void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, tx81zprgdata_ptr_t prgdata
   op2->_dspchannel[0] = opchanbase + 2;
   op3->_dspchannel[0] = opchanbase + 3;
   /////////////////////////////////////////////////
-  auto opmix            = stage_opmix->appendTypedBlock<PMXMix>();
+  auto opmix            = stage_opmix->appendTypedBlock<PMXMix>("opmixer");
   opmix->_dspchannel[0] = 0;
   /////////////////////////////////////////////////
   float basemodindex = 3.5f;
@@ -569,7 +571,7 @@ void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, tx81zprgdata_ptr_t prgdata
   op2->_modIndex     = basemodindex;
   op3->_modIndex     = basemodindex;
   /////////////////////////////////////////////////
-  switch (prgdata->_alg) {
+  switch (prgdata81z->_alg) {
     case 0:
       //   (3)->2->1->0
       stage_ops->setNumIos(1, 1);
@@ -676,7 +678,7 @@ void configureTx81zAlgorithm(lyrdata_ptr_t layerdata, tx81zprgdata_ptr_t prgdata
   /////////////////////////////////////////////////
   // stereo mix out
   /////////////////////////////////////////////////
-  auto stereoout        = stage_stereo->appendTypedBlock<MonoInStereoOut>();
+  auto stereoout        = stage_stereo->appendTypedBlock<MonoInStereoOut>("monoin-stereoout");
   auto STEREOC          = layerdata->appendController<CustomControllerData>("STEREOMIX");
   auto& stereo_mod      = stereoout->_paramd[0]._mods;
   stereo_mod._src1      = STEREOC;

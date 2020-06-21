@@ -26,18 +26,18 @@ int main(int argc, char** argv) {
   bank->_bankdata->_programs[0]          = program;
   bank->_bankdata->_programsByName["yo"] = program;
   auto layerdata                         = program->newLayer();
-  auto fmdata                            = std::make_shared<Tx81zProgData>();
+  auto prgdata81z                        = std::make_shared<Tx81zProgData>();
   program->_role                         = "fm4";
   program->_name                         = "test";
-  fmdata->_alg                           = 0;
-  auto& opd0                             = fmdata->_ops[0];
-  auto& opd1                             = fmdata->_ops[1];
-  auto& opd2                             = fmdata->_ops[2];
-  auto& opd3                             = fmdata->_ops[3];
+  prgdata81z->_alg                       = 0;
+  auto& opd0                             = prgdata81z->_ops[0];
+  auto& opd1                             = prgdata81z->_ops[1];
+  auto& opd2                             = prgdata81z->_ops[2];
+  auto& opd3                             = prgdata81z->_ops[3];
   //////////////////////////////////////
   // setup dsp graph
   //////////////////////////////////////
-  configureTx81zAlgorithm(layerdata, fmdata);
+  configureTx81zAlgorithm(layerdata, prgdata81z);
   auto ops_stage = layerdata->stageByName("OPS");
   auto op0       = ops_stage->_blockdatas[0];
   auto op1       = ops_stage->_blockdatas[1];
@@ -95,9 +95,11 @@ int main(int argc, char** argv) {
   auto guidehc   = toplayout->centerH();
   auto guidehr   = toplayout->right();
   auto guidevt   = toplayout->top();
-  auto guidev0   = toplayout->proportionalHorizontalGuide(0.25);
-  auto guidev1   = toplayout->proportionalHorizontalGuide(0.5);
-  auto guidev2   = toplayout->proportionalHorizontalGuide(0.75);
+  auto guidev0   = toplayout->proportionalHorizontalGuide(1.0f / 6.0f);
+  auto guidev1   = toplayout->proportionalHorizontalGuide(2.0f / 6.0f);
+  auto guidev2   = toplayout->proportionalHorizontalGuide(3.0f / 6.0f);
+  auto guidev3   = toplayout->proportionalHorizontalGuide(4.0f / 6.0f);
+  auto guidev4   = toplayout->proportionalHorizontalGuide(5.0f / 6.0f);
   auto guidehd   = toplayout->proportionalVerticalGuide(0.75);
   auto guidevb   = toplayout->bottom();
 
@@ -118,29 +120,49 @@ int main(int argc, char** argv) {
   //////////////////////////////////////
   auto progview = createProgramView(app->_hudvp, top_left, "program");
   auto perfview = createProfilerView(app->_hudvp, top_right, "profiler");
+  auto pmxedit0 = createPmxEditView(
+      app->_hudvp, //
+      "pmxedit0",
+      op0,
+      {guidev0, guidehl, guidev1, guidehc, 2});
+  auto pmxedit1 = createPmxEditView(
+      app->_hudvp, //
+      "pmxedit1",
+      op1,
+      {guidev0, guidehc, guidev1, guidehr, 2});
+  auto pmxedit2 = createPmxEditView(
+      app->_hudvp, //
+      "pmxedit2",
+      op2,
+      {guidev1, guidehl, guidev2, guidehc, 2});
+  auto pmxedit3 = createPmxEditView(
+      app->_hudvp, //
+      "pmxedit3",
+      op3,
+      {guidev1, guidehc, guidev2, guidehr, 2});
   auto envedit0 = createEnvYmEditView(
       app->_hudvp, //
       "envedit0",
       op0env,
-      {guidev0, guidehl, guidev1, guidehc, 2});
+      {guidev2, guidehl, guidev3, guidehc, 2});
   auto envedit1 = createEnvYmEditView(
       app->_hudvp, //
       "envedit1",
       op1env,
-      {guidev0, guidehc, guidev1, guidehr, 2});
+      {guidev2, guidehc, guidev3, guidehr, 2});
   auto envedit2 = createEnvYmEditView(
       app->_hudvp, //
       "envedit2",
       op2env,
-      {guidev1, guidehl, guidev2, guidehc, 2});
+      {guidev3, guidehl, guidev4, guidehc, 2});
   auto envedit3 = createEnvYmEditView(
       app->_hudvp, //
       "envedit3",
       op3env,
-      {guidev1, guidehc, guidev2, guidehr, 2});
+      {guidev3, guidehc, guidev4, guidehr, 2});
   auto source   = layerdata->createScopeSource();
-  auto scope    = create_oscilloscope(app->_hudvp, {guidev2, guidehl, guidevb, guidehc, 2});
-  auto analyzer = create_spectrumanalyzer(app->_hudvp, {guidev2, guidehc, guidevb, guidehr, 2});
+  auto scope    = create_oscilloscope(app->_hudvp, {guidev4, guidehl, guidevb, guidehc, 2});
+  auto analyzer = create_spectrumanalyzer(app->_hudvp, {guidev4, guidehc, guidevb, guidehr, 2});
   source->connect(scope->_sink);
   source->connect(analyzer->_sink);
   //////////////////////////////////////

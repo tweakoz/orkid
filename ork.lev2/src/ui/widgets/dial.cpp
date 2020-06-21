@@ -87,14 +87,9 @@ HandlerResult Dial::DoOnUiEvent(event_constptr_t ev) {
       float fy   = float(abs(ev->miMWY)) / 300.0f;
       fy         = std::clamp(powf(fy, 0.2f), 0.0f, 1.0f);
       fy *= isneg ? -1.0f : 1.0f;
-      int step = (fy * 4.0);
-      _cursteps += step;
-      _cursteps = std::clamp(_cursteps, 0, _numsteps);
-      float fi  = float(_cursteps) / float(_numsteps);
-      _curvalue = audiomath::lerp(_minval, _maxval, powf(fi, _power));
-      if (_onupdate) {
-        _onupdate(_curvalue);
-      }
+      int step     = (fy * 4.0);
+      int nextstep = _cursteps + step;
+      selValFromStep(nextstep);
       // printf("wheely<%g> _curvalue<%g>\n", fy, _curvalue);
       break;
     }
@@ -102,6 +97,15 @@ HandlerResult Dial::DoOnUiEvent(event_constptr_t ev) {
       break;
   }
   return HandlerResult();
+}
+///////////////////////////////////////////////////////////////////////////////
+void Dial::selValFromStep(int step) {
+  _cursteps = std::clamp(step, 0, _numsteps);
+  float fi  = float(_cursteps) / float(_numsteps);
+  _curvalue = audiomath::lerp(_minval, _maxval, powf(fi, _power));
+  if (_onupdate) {
+    _onupdate(_curvalue);
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Dial::setParams(int numsteps, float curval, float minval, float maxval, float power) {
@@ -112,7 +116,7 @@ void Dial::setParams(int numsteps, float curval, float minval, float maxval, flo
   _curvalue  = curval;
   float nfip = (_curvalue - _minval) / (_maxval - _minval);
   float nfi  = powf(nfip, 1.0 / _power);
-  _cursteps  = int(_numsteps * nfi);
+  selValFromStep(int(_numsteps * nfi));
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::ui

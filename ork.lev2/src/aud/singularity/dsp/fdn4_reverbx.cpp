@@ -16,8 +16,9 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Fdn4ReverbXData::Fdn4ReverbXData(float tscale)
-    : _tscale(tscale) {
+Fdn4ReverbXData::Fdn4ReverbXData(std::string name, float tscale)
+    : DspBlockData(name)
+    , _tscale(tscale) {
   _blocktype      = "Fdn4ReverbX";
   auto& mix_param = addParam();
   auto& dta_param = addParam();

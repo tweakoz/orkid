@@ -21,7 +21,8 @@
 
 namespace ork::audio::singularity {
 
-DspBlockData::DspBlockData() {
+DspBlockData::DspBlockData(std::string name)
+    : _name(name) {
   for (int i = 0; i < kmaxdspblocksperstage; i++)
     _dspchannel[i] = i;
 }

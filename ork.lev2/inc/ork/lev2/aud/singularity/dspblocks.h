@@ -100,7 +100,7 @@ struct IoMask final {
 
 struct DspBlockData {
 
-  DspBlockData();
+  DspBlockData(std::string name = "");
   virtual ~DspBlockData() {
   }
 
@@ -115,6 +115,7 @@ struct DspBlockData {
   DspParamData& addParam();
   DspParamData& param(int index);
 
+  std::string _name;
   int _dspchannel[kmaxdspblocksperstage];
   int _numParams  = 0;
   float _inputPad = 1.0f;
@@ -195,15 +196,16 @@ struct DspStageData final {
   DspStageData();
   dspblkdata_ptr_t appendBlock();
 
-  template <typename T, typename... A> std::shared_ptr<typename T::dataclass_t> appendTypedBlock(A&&... args) {
+  template <typename T, typename... A> std::shared_ptr<typename T::dataclass_t> appendTypedBlock(std::string name, A&&... args) {
     OrkAssert(_numblocks < kmaxdspblocksperstage);
-    auto blkdata              = std::make_shared<typename T::dataclass_t>(std::forward<A>(args)...);
+    auto blkdata              = std::make_shared<typename T::dataclass_t>(name, std::forward<A>(args)...);
     _blockdatas[_numblocks++] = blkdata;
     return blkdata;
   }
   void setNumIos(int numinp, int numout);
 
   dspblkdata_ptr_t _blockdatas[kmaxdspblocksperstage];
+  std::map<std::string, dspblkdata_ptr_t> _namedblockdatas;
   iomask_ptr_t _iomask;
   int _numblocks = 0;
 };

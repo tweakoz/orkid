@@ -22,7 +22,7 @@ struct Dial final : public Widget {
   std::string _font = "i14";
 
   void setParams(int numsteps, float curval, float minval, float maxval, float power);
-
+  void selValFromStep(int step);
   int _numsteps   = 1001;
   int _cursteps   = 0;
   float _minval   = 0.0f;

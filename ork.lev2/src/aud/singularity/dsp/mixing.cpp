@@ -15,7 +15,8 @@
 namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
-Sum2Data::Sum2Data() {
+Sum2Data::Sum2Data(std::string name)
+    : DspBlockData(name) {
   _blocktype = "SUM2";
 }
 dspblk_ptr_t Sum2Data::createInstance() const { // override
@@ -44,7 +45,8 @@ void SUM2::compute(DspBuffer& dspbuf) { // final
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-MonoInStereoOutData::MonoInStereoOutData() {
+MonoInStereoOutData::MonoInStereoOutData(std::string name)
+    : DspBlockData(name) {
   _blocktype      = "MonoInStereoOut";
   auto& amp_param = addParam();
   amp_param.useAmplitudeEvaluator();
@@ -95,7 +97,8 @@ void MonoInStereoOut::doKeyOn(const KeyOnInfo& koi) // final
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-StereoEnhancerData::StereoEnhancerData() {
+StereoEnhancerData::StereoEnhancerData(std::string name)
+    : DspBlockData(name) {
   _blocktype        = "StereoEnhancer";
   auto& width_param = addParam();
   width_param.useDefaultEvaluator();

@@ -12,7 +12,8 @@ float wrap(float inp, float adj);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-AMP_MONOIO_DATA::AMP_MONOIO_DATA() {
+AMP_MONOIO_DATA::AMP_MONOIO_DATA(std::string name)
+    : DspBlockData(name) {
   _blocktype  = "AMP_MONOIO";
   auto& param = addParam();
   param.useAmplitudeEvaluator();

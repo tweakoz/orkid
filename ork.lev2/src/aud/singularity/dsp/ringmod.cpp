@@ -5,7 +5,8 @@
 #include <ork/lev2/aud/singularity/modulation.h>
 
 namespace ork::audio::singularity {
-RingModData::RingModData() {
+RingModData::RingModData(std::string name)
+    : DspBlockData(name) {
   _blocktype  = "RingMod";
   auto& param = addParam();
   param.useAmplitudeEvaluator();
@@ -14,7 +15,8 @@ dspblk_ptr_t RingModData::createInstance() const { // override
   return std::make_shared<RingMod>(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
-RingModSumAData::RingModSumAData() {
+RingModSumAData::RingModSumAData(std::string name)
+    : DspBlockData(name) {
   _blocktype  = "RingModSumA";
   auto& param = addParam();
   param.useAmplitudeEvaluator();

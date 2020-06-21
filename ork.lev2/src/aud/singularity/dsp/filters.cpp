@@ -349,7 +349,8 @@ void LPGATE::doKeyOn(const KeyOnInfo& koi) // final
 ///////////////////////////////////////////////////////////////////////////////
 // LOPASS : 1 pole! lowpass
 ///////////////////////////////////////////////////////////////////////////////
-LowPassData::LowPassData() {
+LowPassData::LowPassData(std::string name)
+    : DspBlockData(name) {
 }
 dspblk_ptr_t LowPassData::createInstance() const {
   return std::make_shared<LowPass>(this);
@@ -387,7 +388,8 @@ void LowPass::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-HighPassData::HighPassData() {
+HighPassData::HighPassData(std::string name)
+    : DspBlockData(name) {
   addParam().useDefaultEvaluator(); // cutoff
 }
 dspblk_ptr_t HighPassData::createInstance() const {
@@ -421,7 +423,8 @@ void HighPass::doKeyOn(const KeyOnInfo& koi) // final
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-HighFreqStimulatorData::HighFreqStimulatorData() {
+HighFreqStimulatorData::HighFreqStimulatorData(std::string name)
+    : DspBlockData(name) {
   addParam().useDefaultEvaluator(); // cutoff
   addParam().useDefaultEvaluator(); // drive
   addParam().useDefaultEvaluator(); // outgain
@@ -470,7 +473,8 @@ void HighFreqStimulator::doKeyOn(const KeyOnInfo& koi) // final
 // 2pole allpass (for phasers, etc..)
 ///////////////////////////////////////////////////////////////////////////////
 
-AllPassData::AllPassData() {
+AllPassData::AllPassData(std::string name)
+    : DspBlockData(name) {
   addParam().useDefaultEvaluator(); // cutoff
 }
 dspblk_ptr_t AllPassData::createInstance() const {
@@ -505,7 +509,8 @@ void AllPass::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-TwoPoleAllPassData::TwoPoleAllPassData() {
+TwoPoleAllPassData::TwoPoleAllPassData(std::string name)
+    : DspBlockData(name) {
   _blocktype = "TwoPoleAllPass";
   addParam().useDefaultEvaluator(); // center
   addParam().useDefaultEvaluator(); // width
@@ -548,7 +553,8 @@ void TwoPoleAllPass::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-TwoPoleLowPassData::TwoPoleLowPassData() {
+TwoPoleLowPassData::TwoPoleLowPassData(std::string name)
+    : DspBlockData(name) {
   _blocktype      = "TwoPoleLowPassData";
   auto& cutoff    = addParam();
   auto& resonance = addParam();
@@ -595,7 +601,8 @@ void TwoPoleLowPass::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-FourPoleLowPassWithSepData::FourPoleLowPassWithSepData() {
+FourPoleLowPassWithSepData::FourPoleLowPassWithSepData(std::string name)
+    : DspBlockData(name) {
   _blocktype = "FourPoleLowPassWithSep";
   addParam().useDefaultEvaluator(); // cutoff
   addParam().useDefaultEvaluator(); // resonance

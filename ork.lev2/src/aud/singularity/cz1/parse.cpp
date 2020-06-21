@@ -449,10 +449,12 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
     //////////////////////////////////////
     // setup dsp graph
     //////////////////////////////////////
+    auto dconame        = FormatString("dco%d", dcochannel);
+    auto dcoampname     = FormatString("amp%d", dcochannel);
     auto dcostage       = layerdata->stageByName("DCO");
     auto ampstage       = layerdata->stageByName("AMP");
-    auto dco            = dcostage->appendTypedBlock<CZX>(oscdata, dcochannel);
-    auto amp            = ampstage->appendTypedBlock<AMP_MONOIO>();
+    auto dco            = dcostage->appendTypedBlock<CZX>(dconame, oscdata, dcochannel);
+    auto amp            = ampstage->appendTypedBlock<AMP_MONOIO>(dcoampname);
     dco->_dspchannel[0] = dcochannel;
     amp->_dspchannel[0] = dcochannel;
     //////////////////////////////////////
@@ -523,7 +525,7 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
     case 1: { // none
       if (czprogdata->numOscs() == 2) {
         auto modstage = layerdata->stageByName("MOD");
-        auto mix      = modstage->appendTypedBlock<SUM2>();
+        auto mix      = modstage->appendTypedBlock<SUM2>("nomod");
       }
       break;
     }
@@ -535,7 +537,7 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
       OrkAssert(czprogdata->numOscs() == 2);
       czprogdata->_oscData[1]->_noisemod = true;
       auto modstage                      = layerdata->stageByName("MOD");
-      auto mix                           = modstage->appendTypedBlock<SUM2>();
+      auto mix                           = modstage->appendTypedBlock<SUM2>("noisemod-1");
       break;
     }
     case 4:                           // ring 1
@@ -544,9 +546,9 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
         return nullptr;
       auto modstage = layerdata->stageByName("MOD");
       if (modulation_nomix)
-        modstage->appendTypedBlock<RingMod>();
+        modstage->appendTypedBlock<RingMod>("ringmod");
       else
-        modstage->appendTypedBlock<RingModSumA>();
+        modstage->appendTypedBlock<RingModSumA>("ringmod-1");
       break;
     }
     case 6: // ring 3
@@ -558,7 +560,7 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
       OrkAssert(czprogdata->numOscs() == 2);
       czprogdata->_oscData[1]->_noisemod = true;
       auto modstage                      = layerdata->stageByName("MOD");
-      auto mix                           = modstage->appendTypedBlock<SUM2>();
+      auto mix                           = modstage->appendTypedBlock<SUM2>("noisemod-2");
       break;
     }
   }

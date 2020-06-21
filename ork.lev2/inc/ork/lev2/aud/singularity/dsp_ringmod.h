@@ -5,11 +5,11 @@
 namespace ork::audio::singularity {
 
 struct RingModData final : public DspBlockData {
-  RingModData();
+  RingModData(std::string name);
   dspblk_ptr_t createInstance() const override;
 };
 struct RingModSumAData final : public DspBlockData {
-  RingModSumAData();
+  RingModSumAData(std::string name);
   dspblk_ptr_t createInstance() const override;
 };
 

@@ -32,7 +32,8 @@ inline float proc_out(float inp) {
   return 0.0f;
 }
 ///////////////////////////////////////////////////////////////////////////////
-PMXData::PMXData() {
+PMXData::PMXData(std::string name)
+    : DspBlockData(name) {
   addParam().usePitchEvaluator();   // pitch
   addParam().useDefaultEvaluator(); // amp
   addParam().useDefaultEvaluator(); // feedback
@@ -110,7 +111,8 @@ void PMX::doKeyOff() { // final
   _pmosc.keyOff();
 }
 ///////////////////////////////////////////////////////////////////////////////
-PMXMixData::PMXMixData() {
+PMXMixData::PMXMixData(std::string name)
+    : DspBlockData(name) {
   addParam().usePitchEvaluator();   // pitch
   addParam().useDefaultEvaluator(); // amp
   addParam().useDefaultEvaluator(); // feedback

@@ -23,7 +23,7 @@ struct TWOPARAM_SHAPER : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct WrapData : public DspBlockData {
-  WrapData();
+  WrapData(std::string name);
   dspblk_ptr_t createInstance() const override;
 };
 struct Wrap : public DspBlock {
@@ -32,7 +32,7 @@ struct Wrap : public DspBlock {
   void compute(DspBuffer& dspbuf) final;
 };
 struct DistortionData : public DspBlockData {
-  DistortionData();
+  DistortionData(std::string name);
   dspblk_ptr_t createInstance() const override;
 };
 struct Distortion : public DspBlock {

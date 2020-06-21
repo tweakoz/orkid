@@ -58,7 +58,7 @@ algdata_ptr_t configureCz1Algorithm(lyrdata_ptr_t layerdata, int numosc) {
   /////////////////////////////////////////////////
   // stereo mix out
   /////////////////////////////////////////////////
-  auto stereoout        = stage_mix->appendTypedBlock<MonoInStereoOut>();
+  auto stereoout        = stage_mix->appendTypedBlock<MonoInStereoOut>("MonoInStereoOut");
   auto STEREOC          = layerdata->appendController<CustomControllerData>("DCO1DETUNE");
   auto& stereo_mod      = stereoout->_paramd[0]._mods;
   stereo_mod._src1      = STEREOC;
@@ -350,8 +350,9 @@ void CZX::doKeyOff() // final
   // printf("CZX<%p> dcochannel<%d> keyoff\n", this, dcochannel);
 }
 ///////////////////////////////////////////////////////////////////////////////
-CZXDATA::CZXDATA(czxdata_constptr_t czdata, int dcochannel)
-    : _cxzdata(czdata)
+CZXDATA::CZXDATA(std::string name, czxdata_constptr_t czdata, int dcochannel)
+    : DspBlockData(name)
+    , _cxzdata(czdata)
     , _dcochannel(dcochannel) {
   _blocktype = "CZX";
   addParam().usePitchEvaluator();

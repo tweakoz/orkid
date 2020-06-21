@@ -16,7 +16,8 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-StereoDynamicEchoData::StereoDynamicEchoData() {
+StereoDynamicEchoData::StereoDynamicEchoData(std::string name)
+    : DspBlockData(name) {
   _blocktype             = "StereoDynamicEcho";
   auto& delaytime_paramL = addParam();
   auto& delaytime_paramR = addParam();

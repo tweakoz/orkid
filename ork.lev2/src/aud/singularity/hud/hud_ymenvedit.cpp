@@ -34,10 +34,11 @@ hudpanel_ptr_t createEnvYmEditView(
   auto guidev0 = toplayout->fixedHorizontalGuide(32);
   auto guidev1 = toplayout->fixedHorizontalGuide(-32);
   //
-  auto guideh0 = toplayout->proportionalVerticalGuide(1.0f / 5.0f);
-  auto guideh1 = toplayout->proportionalVerticalGuide(2.0f / 5.0f);
-  auto guideh2 = toplayout->proportionalVerticalGuide(3.0f / 5.0f);
-  auto guideh3 = toplayout->proportionalVerticalGuide(4.0f / 5.0f);
+  auto guideh0 = toplayout->proportionalVerticalGuide(1.0f / 6.0f);
+  auto guideh1 = toplayout->proportionalVerticalGuide(2.0f / 6.0f);
+  auto guideh2 = toplayout->proportionalVerticalGuide(3.0f / 6.0f);
+  auto guideh3 = toplayout->proportionalVerticalGuide(4.0f / 6.0f);
+  auto guideh4 = toplayout->proportionalVerticalGuide(5.0f / 6.0f);
   ////////////////////////////////////////////////
   auto color = fvec4(0.7, 0.1, 0.5, 1);
   //
@@ -45,18 +46,21 @@ hudpanel_ptr_t createEnvYmEditView(
   auto headeritem = envviewitem._widget->makeChild<ui::Label>("header", color, hdrstr);
   headeritem.applyBounds({guidevt, guidehl, guidev0, guidehr, 2});
   //
+  auto atkshapeitem = envviewitem._widget->makeChild<ui::Dial>("atkshape", color);
   auto atktimeitem  = envviewitem._widget->makeChild<ui::Dial>("atktime", color);
   auto dc1rateitem  = envviewitem._widget->makeChild<ui::Dial>("dc1rate", color);
   auto dc1levelitem = envviewitem._widget->makeChild<ui::Dial>("dc1level", color);
   auto dc2rateitem  = envviewitem._widget->makeChild<ui::Dial>("dc2rate", color);
   auto relrateitem  = envviewitem._widget->makeChild<ui::Dial>("relrate", color);
   //
-  atktimeitem.applyBounds({guidev0, guidehl, guidevb, guideh0, 2});
-  dc1rateitem.applyBounds({guidev0, guideh0, guidevb, guideh1, 2});
-  dc1levelitem.applyBounds({guidev0, guideh1, guidevb, guideh2, 2});
-  dc2rateitem.applyBounds({guidev0, guideh2, guidevb, guideh3, 2});
-  relrateitem.applyBounds({guidev0, guideh3, guidevb, guidehr, 2});
+  atkshapeitem.applyBounds({guidev0, guidehl, guidevb, guideh0, 2});
+  atktimeitem.applyBounds({guidev0, guideh0, guidevb, guideh1, 2});
+  dc1rateitem.applyBounds({guidev0, guideh1, guidevb, guideh2, 2});
+  dc1levelitem.applyBounds({guidev0, guideh2, guidevb, guideh3, 2});
+  dc2rateitem.applyBounds({guidev0, guideh3, guidevb, guideh4, 2});
+  relrateitem.applyBounds({guidev0, guideh4, guidevb, guidehr, 2});
   //
+  atkshapeitem._widget->_label = "AttackShape";
   atktimeitem._widget->_label  = "AttackTime(s)";
   dc1rateitem._widget->_label  = "Decay1Rate(x)";
   dc1levelitem._widget->_label = "DecayLevel(%%)";
@@ -68,12 +72,14 @@ hudpanel_ptr_t createEnvYmEditView(
   dc2rateitem._widget->_font   = "i13";
   relrateitem._widget->_font   = "i13";
   //
-  atktimeitem._widget->setParams(251, ymenvdata->_attackTime, 0, 4, 2.0);
+  atkshapeitem._widget->setParams(251, ymenvdata->_attackShape, 0, 10, 2.0);
+  atktimeitem._widget->setParams(251, ymenvdata->_attackTime, 0, 60, 2.0);
   dc1rateitem._widget->setParams(1001, ymenvdata->_decay1Rate, 0.99, 0.9999, 0.1);
   dc1levelitem._widget->setParams(101, ymenvdata->_decay1Level, 0, 100, 1.0);
   dc2rateitem._widget->setParams(1001, ymenvdata->_decay2Rate, 0.99, 0.9999, 0.1);
   relrateitem._widget->setParams(1001, ymenvdata->_releaseRate, 0.99, 0.9999, 0.1);
   //
+  atkshapeitem._widget->_onupdate = [ymenvdata](float v) { ymenvdata->_attackShape = v; };
   atktimeitem._widget->_onupdate  = [ymenvdata](float v) { ymenvdata->_attackTime = v; };
   dc1rateitem._widget->_onupdate  = [ymenvdata](float v) { ymenvdata->_decay1Rate = v; };
   dc1levelitem._widget->_onupdate = [ymenvdata](float v) { ymenvdata->_decay1Level = v; };
