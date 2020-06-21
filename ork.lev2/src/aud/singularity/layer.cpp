@@ -307,12 +307,12 @@ controller_t Layer::getController(const std::string& srcn) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-controller_t Layer::getSRC1(const BlockModulationData& mods) {
-  auto src1       = this->getController(mods._src1);
-  float src1depth = mods._src1Depth;
+controller_t Layer::getSRC1(dspparammod_constptr_t mods) {
+  auto src1 = this->getController(mods->_src1);
 
   auto it = [=]() -> float {
-    float out = src1() * src1depth;
+    float src1depth = mods->_src1Depth;
+    float out       = src1() * src1depth;
     // printf( "src1out<%f>\n", out );
     return out;
   };
@@ -320,16 +320,16 @@ controller_t Layer::getSRC1(const BlockModulationData& mods) {
   return it;
 }
 
-controller_t Layer::getSRC2(const BlockModulationData& mods) {
-  auto src2      = this->getController(mods._src2);
-  auto depthcon  = this->getController(mods._src2DepthCtrl);
-  float mindepth = mods._src2MinDepth;
-  float maxdepth = mods._src2MaxDepth;
+controller_t Layer::getSRC2(dspparammod_constptr_t mods) {
+  auto src2     = this->getController(mods->_src2);
+  auto depthcon = this->getController(mods->_src2DepthCtrl);
 
   auto it = [=]() -> float {
-    float dc    = clip_float(depthcon(), 0, 1);
-    float depth = lerp(mindepth, maxdepth, dc);
-    float out   = src2() * depth;
+    float mindepth = mods->_src2MinDepth;
+    float maxdepth = mods->_src2MaxDepth;
+    float dc       = clip_float(depthcon(), 0, 1);
+    float depth    = lerp(mindepth, maxdepth, dc);
+    float out      = src2() * depth;
     return out;
   };
 

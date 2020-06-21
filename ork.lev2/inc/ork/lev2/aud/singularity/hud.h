@@ -168,11 +168,13 @@ hudpanel_ptr_t createProfilerView(
 hudpanel_ptr_t createEnvYmEditView(
     hudvp_ptr_t vp, //
     std::string named,
+    fvec4 color,
     controllerdata_ptr_t envdata,
     const ui::anchor::Bounds& bounds);
 hudpanel_ptr_t createPmxEditView(
     hudvp_ptr_t vp, //
     std::string named,
+    fvec4 color,
     dspblkdata_ptr_t dbdata,
     const ui::anchor::Bounds& bounds);
 ///////////////////////////////////////////////////////////////////////////////

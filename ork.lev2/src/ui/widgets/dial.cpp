@@ -81,13 +81,15 @@ void Dial::DoDraw(drawevent_constptr_t drwev) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 HandlerResult Dial::DoOnUiEvent(event_constptr_t ev) {
+  bool isshift = ev->mbSHIFT;
   switch (ev->_eventcode) {
     case EventCode::MOUSEWHEEL: {
       bool isneg = ev->miMWY < 0;
       float fy   = float(abs(ev->miMWY)) / 300.0f;
       fy         = std::clamp(powf(fy, 0.2f), 0.0f, 1.0f);
       fy *= isneg ? -1.0f : 1.0f;
-      int step     = (fy * 4.0);
+      float inc    = isshift ? 40.0f : 4.0f;
+      int step     = (fy * inc);
       int nextstep = _cursteps + step;
       selValFromStep(nextstep);
       // printf("wheely<%g> _curvalue<%g>\n", fy, _curvalue);
@@ -99,17 +101,20 @@ HandlerResult Dial::DoOnUiEvent(event_constptr_t ev) {
   return HandlerResult();
 }
 ///////////////////////////////////////////////////////////////////////////////
+constexpr int stepshift = 3;
+///////////////////////////////////////////////////////////////////////////////
 void Dial::selValFromStep(int step) {
-  _cursteps = std::clamp(step, 0, _numsteps);
-  float fi  = float(_cursteps) / float(_numsteps);
-  _curvalue = audiomath::lerp(_minval, _maxval, powf(fi, _power));
+  _cursteps   = std::clamp(step, 0, _numsteps);
+  int actstep = _cursteps >> stepshift;
+  float fi    = float(actstep) / int(_numsteps >> stepshift);
+  _curvalue   = audiomath::lerp(_minval, _maxval, powf(fi, _power));
   if (_onupdate) {
     _onupdate(_curvalue);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Dial::setParams(int numsteps, float curval, float minval, float maxval, float power) {
-  _numsteps  = numsteps;
+  _numsteps  = numsteps << stepshift;
   _minval    = minval;
   _maxval    = maxval;
   _power     = power;

@@ -230,16 +230,16 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
     auto ops_stage = layerdata->stageByName("OPS");
 
     for (int opindex = 0; opindex < 4; opindex++) {
-      const int src_op[]   = {3, 1, 2, 0};
-      int op_base          = src_op[opindex] * 10;
-      auto ops_block       = ops_stage->_blockdatas[3 - opindex];
-      auto as_pmx          = dynamic_cast<PMXData*>(ops_block.get());
-      auto& opd            = fm4pd->_ops[opindex];
-      auto& pitch_param    = ops_block->param(0);
-      auto& amp_param      = ops_block->param(1);
-      auto& feedback_param = ops_block->param(2);
-      // feedback_param._coarse = (FBL == 0) ? 0 : powf(2.0, FBL - 7);
-      feedback_param._coarse = 0.0f; // 0.3 * exp(log(2) * (double)(FBL - 7));
+      const int src_op[]  = {3, 1, 2, 0};
+      int op_base         = src_op[opindex] * 10;
+      auto ops_block      = ops_stage->_blockdatas[3 - opindex];
+      auto as_pmx         = dynamic_cast<PMXData*>(ops_block.get());
+      auto& opd           = fm4pd->_ops[opindex];
+      auto pitch_param    = ops_block->param(0);
+      auto amp_param      = ops_block->param(1);
+      auto feedback_param = ops_block->param(2);
+      // feedback_param->_coarse = (FBL == 0) ? 0 : powf(2.0, FBL - 7);
+      feedback_param->_coarse = 0.0f; // 0.3 * exp(log(2) * (double)(FBL - 7));
       ///////////////////////////////
       // 2.0 == 4PI (7)
       // 1.0 == 2PI (6)
@@ -325,10 +325,10 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
         // fixedfrq += fineFrq * finestep;
         // fixedfrq *= det_rat;
-        float coarse          = frequency_to_midi_note(fixedfrq);
-        pitch_param._coarse   = coarse;
-        pitch_param._keyTrack = 0.0; // 0 cents/key
-        keyprod               = [coarse](float inpkey) { return coarse; };
+        float coarse           = frequency_to_midi_note(fixedfrq);
+        pitch_param->_coarse   = coarse;
+        pitch_param->_keyTrack = 0.0; // 0 cents/key
+        keyprod                = [coarse](float inpkey) { return coarse; };
 
         zpmprg->addHudInfo(FormatString(
             "OP%d waveform<%d> fixed-frequency<%g> outlev<%d> a<%g> b<%g> baselev<%g>", //
@@ -345,12 +345,12 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
         int keybase = 60 + (middleC - 24);
 
-        float ratio           = compute_ratio(coarseFrq, fineFrq) * det_rat;
-        float cents           = linear_freq_ratio_to_cents(ratio);
-        pitch_param._coarse   = keybase + cents * 0.01; // middlec*ratio
-        pitch_param._fine     = float(detune) * 5.6 / 3.0;
-        pitch_param._keyTrack = 100.0;                           // 100 cents/key
-        keyprod               = [cents, middleC](float inpkey) { //
+        float ratio            = compute_ratio(coarseFrq, fineFrq) * det_rat;
+        float cents            = linear_freq_ratio_to_cents(ratio);
+        pitch_param->_coarse   = keybase + cents * 0.01; // middlec*ratio
+        pitch_param->_fine     = float(detune) * 5.6 / 3.0;
+        pitch_param->_keyTrack = 100.0;                           // 100 cents/key
+        keyprod                = [cents, middleC](float inpkey) { //
           return inpkey + (cents * 0.01);
         };
 
@@ -500,14 +500,14 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
         };
 
         ////////////////////////////////////////////////////////////////////////
-        amp_param._coarse          = 0.0f;
-        auto funname               = ork::FormatString("op%d-fun", opindex);
-        auto FUN                   = layerdata->appendController<FunData>(funname);
-        FUN->_a                    = envname;
-        FUN->_b                    = opaname;
-        FUN->_op                   = "a*b";
-        amp_param._mods._src1      = FUN;
-        amp_param._mods._src1Depth = 1.0;
+        amp_param->_coarse           = 0.0f;
+        auto funname                 = ork::FormatString("op%d-fun", opindex);
+        auto FUN                     = layerdata->appendController<FunData>(funname);
+        FUN->_a                      = envname;
+        FUN->_b                      = opaname;
+        FUN->_op                     = "a*b";
+        amp_param->_mods->_src1      = FUN;
+        amp_param->_mods->_src1Depth = 1.0;
       }
       // printf( "OP<%d>\n", op );
       // printf( "    AR<%d> D1R<%d> D2R<%d> RR<%d> D1L<%d>\n", AR,D1R,D2R,RR,D1L);
@@ -678,12 +678,12 @@ void configureTx81zAlgorithm(
   /////////////////////////////////////////////////
   // stereo mix out
   /////////////////////////////////////////////////
-  auto stereoout        = stage_stereo->appendTypedBlock<MonoInStereoOut>("monoin-stereoout");
-  auto STEREOC          = layerdata->appendController<CustomControllerData>("STEREOMIX");
-  auto& stereo_mod      = stereoout->_paramd[0]._mods;
-  stereo_mod._src1      = STEREOC;
-  stereo_mod._src1Depth = 1.0f;
-  STEREOC->_onkeyon     = [](CustomControllerInst* cci, //
+  auto stereoout         = stage_stereo->appendTypedBlock<MonoInStereoOut>("monoin-stereoout");
+  auto STEREOC           = layerdata->appendController<CustomControllerData>("STEREOMIX");
+  auto stereo_mod        = stereoout->_paramd[0]->_mods;
+  stereo_mod->_src1      = STEREOC;
+  stereo_mod->_src1Depth = 1.0f;
+  STEREOC->_onkeyon      = [](CustomControllerInst* cci, //
                          const KeyOnInfo& KOI) {    //
     cci->_curval = 1.0f;                            // amplitude to unity
   };

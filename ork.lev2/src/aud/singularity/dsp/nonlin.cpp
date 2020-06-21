@@ -117,7 +117,7 @@ void TWOPARAM_SHAPER::compute(DspBuffer& dspbuf) // final
 WrapData::WrapData(std::string name)
     : DspBlockData(name) {
   _blocktype = "WRAP";
-  addParam().useDefaultEvaluator();
+  addParam()->useDefaultEvaluator();
 }
 dspblk_ptr_t WrapData::createInstance() const {
   return std::make_shared<Wrap>(this);
@@ -144,7 +144,7 @@ void Wrap::compute(DspBuffer& dspbuf) // final
 DistortionData::DistortionData(std::string name)
     : DspBlockData(name) {
   _blocktype = "DIST";
-  addParam().useDefaultEvaluator();
+  addParam()->useDefaultEvaluator();
 }
 dspblk_ptr_t DistortionData::createInstance() const {
   return std::make_shared<Distortion>(this);

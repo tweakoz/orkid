@@ -19,25 +19,25 @@ namespace ork::audio::singularity {
 Fdn4ReverbXData::Fdn4ReverbXData(std::string name, float tscale)
     : DspBlockData(name)
     , _tscale(tscale) {
-  _blocktype      = "Fdn4ReverbX";
-  auto& mix_param = addParam();
-  auto& dta_param = addParam();
-  auto& dtb_param = addParam();
-  auto& dtc_param = addParam();
-  auto& dtd_param = addParam();
+  _blocktype     = "Fdn4ReverbX";
+  auto mix_param = addParam();
+  auto dta_param = addParam();
+  auto dtb_param = addParam();
+  auto dtc_param = addParam();
+  auto dtd_param = addParam();
 
-  mix_param.useDefaultEvaluator();
-  dta_param.useDefaultEvaluator();
-  dtb_param.useDefaultEvaluator();
-  dtc_param.useDefaultEvaluator();
-  dtd_param.useDefaultEvaluator();
+  mix_param->useDefaultEvaluator();
+  dta_param->useDefaultEvaluator();
+  dtb_param->useDefaultEvaluator();
+  dtc_param->useDefaultEvaluator();
+  dtd_param->useDefaultEvaluator();
 
   math::FRANDOMGEN rg(10);
 
-  dta_param._coarse = tscale * rg.rangedf(0.01, 0.15);
-  dtb_param._coarse = tscale * rg.rangedf(0.01, 0.15);
-  dtc_param._coarse = tscale * rg.rangedf(0.01, 0.15);
-  dtd_param._coarse = tscale * rg.rangedf(0.01, 0.15);
+  dta_param->_coarse = tscale * rg.rangedf(0.01, 0.15);
+  dtb_param->_coarse = tscale * rg.rangedf(0.01, 0.15);
+  dtc_param->_coarse = tscale * rg.rangedf(0.01, 0.15);
+  dtd_param->_coarse = tscale * rg.rangedf(0.01, 0.15);
 
   _axis.x = rg.rangedf(-1, 1);
   _axis.y = rg.rangedf(-1, 1);

@@ -29,9 +29,9 @@ int main(int argc, char** argv) {
   fxstage->setNumIos(2, 2); // stereo in, stereo out
   auto stereoenh           = fxstage->appendTypedBlock<StereoEnhancer>("enhancer");
   auto WIDTHCONTROL        = fxlayer->appendController<CustomControllerData>("STEREOWIDTH");
-  auto& width_mod          = stereoenh->param(0)._mods;
-  width_mod._src1          = WIDTHCONTROL;
-  width_mod._src1Depth     = 1.0;
+  auto& width_mod          = stereoenh->param(0)->_mods;
+  width_mod->_src1         = WIDTHCONTROL;
+  width_mod->_src1Depth    = 1.0;
   WIDTHCONTROL->_oncompute = [](CustomControllerInst* cci) { //
     float index  = cci->_layer->_layerTime;
     float wave   = (0.5f + sinf(index) * 0.5);
@@ -40,10 +40,10 @@ int main(int argc, char** argv) {
   /////////////////
   // stereo echo
   /////////////////
-  auto echo              = fxstage->appendTypedBlock<StereoDynamicEcho>("echo");
-  echo->param(0)._coarse = 2.0;  // delay time (sec)
-  echo->param(1)._coarse = 0.25; // feedback
-  echo->param(2)._coarse = 0.15; // wet/dry mix
+  auto echo               = fxstage->appendTypedBlock<StereoDynamicEcho>("echo");
+  echo->param(0)->_coarse = 2.0;  // delay time (sec)
+  echo->param(1)->_coarse = 0.25; // feedback
+  echo->param(2)->_coarse = 0.15; // wet/dry mix
   //
   mainbus->setBusDSP(fxlayer);
   ////////////////////////////////////////////////
@@ -114,21 +114,21 @@ int main(int argc, char** argv) {
       dco_source->connect(isch1 ? scope2->_sink : scope1->_sink);
       dco_source->connect(isch1 ? analyzer2->_sink : analyzer1->_sink);
       //////////////////////////////////////
-      distortion->param(0)._coarse = rangedf(-30.0f, -21.0f);
+      distortion->param(0)->_coarse = rangedf(-30.0f, -21.0f);
       //////////////////////////////////////
       // 2 4poles in series == 48db/octave
       //////////////////////////////////////
-      allpass->_inputPad        = 0.75f;
-      allpass->param(0)._coarse = 5500.0f; // center
-      allpass->param(1)._coarse = 0.0f;    // width
-      lopass1->_inputPad        = 0.75f;
-      lopass1->param(0)._coarse = 4500.0f; // cutoff
-      lopass1->param(1)._coarse = 0.0f;    // resonance
-      lopass1->param(2)._coarse = 1200.0f; // sep
+      allpass->_inputPad         = 0.75f;
+      allpass->param(0)->_coarse = 5500.0f; // center
+      allpass->param(1)->_coarse = 0.0f;    // width
+      lopass1->_inputPad         = 0.75f;
+      lopass1->param(0)->_coarse = 4500.0f; // cutoff
+      lopass1->param(1)->_coarse = 0.0f;    // resonance
+      lopass1->param(2)->_coarse = 1200.0f; // sep
       // lopass2->_inputPad        = 0.75f;
-      // lopass2->param(0)._coarse = 4500.0f; // cutoff
-      // lopass2->param(1)._coarse = 0.0f;    // resonance
-      // lopass2->param(2)._coarse = 1200.0f; // sep
+      // lopass2->param(0)->_coarse = 4500.0f; // cutoff
+      // lopass2->param(1)->_coarse = 0.0f;    // resonance
+      // lopass2->param(2)->_coarse = 1200.0f; // sep
       //////////////////////////////////////
       auto envname_dca = FormatString("DCAENV%d", dcochannel);
       auto envname_dcw = FormatString("DCWENV%d", dcochannel);
@@ -185,39 +185,39 @@ int main(int argc, char** argv) {
       //////////////////////////////////////
       // setup modulation routing
       //////////////////////////////////////
-      auto& pitch_mod      = dco->_paramd[0]._mods;
-      pitch_mod._src1      = DCOENV;
-      pitch_mod._src1Depth = 1.0f;
+      auto pitch_mod        = dco->_paramd[0]->_mods;
+      pitch_mod->_src1      = DCOENV;
+      pitch_mod->_src1Depth = 1.0f;
       //////////////////////////////////////
       if (dcochannel == 1) { // add detune
-        auto DETUNE             = layerdata->appendController<CustomControllerData>("DCO1DETUNE");
-        pitch_mod._src2         = DETUNE;
-        pitch_mod._src2MinDepth = 1.0;
-        pitch_mod._src2MaxDepth = 1.0;
-        DETUNE->_onkeyon        = [&](CustomControllerInst* cci, //
+        auto DETUNE              = layerdata->appendController<CustomControllerData>("DCO1DETUNE");
+        pitch_mod->_src2         = DETUNE;
+        pitch_mod->_src2MinDepth = 1.0;
+        pitch_mod->_src2MaxDepth = 1.0;
+        DETUNE->_onkeyon         = [&](CustomControllerInst* cci, //
                                const KeyOnInfo& KOI) {    //
           cci->_curval = rangedf(-50, 50);
         };
       }
       //////////////////////////////////////
-      auto& modulation_index_param          = dco->_paramd[1]._mods;
-      modulation_index_param._src1          = DCWENV;
-      modulation_index_param._src1Depth     = 1.0;
-      modulation_index_param._src2          = LFO1;
-      modulation_index_param._src2DepthCtrl = LFO2;
-      modulation_index_param._src2MinDepth  = 0.5;
-      modulation_index_param._src2MaxDepth  = 0.1;
+      auto dcwmod            = dco->_paramd[1]->_mods;
+      dcwmod->_src1          = DCWENV;
+      dcwmod->_src1Depth     = 1.0;
+      dcwmod->_src2          = LFO1;
+      dcwmod->_src2DepthCtrl = LFO2;
+      dcwmod->_src2MinDepth  = 0.5;
+      dcwmod->_src2MaxDepth  = 0.1;
       //////////////////////////////////////
       czoscdata->_octaveScale  = 0.5;
       czoscdata->_dcoBaseWaveA = irandom() & 0x7;
       czoscdata->_dcoBaseWaveB = irandom() & 0x7;
       czoscdata->_dcoWindow    = irandom() % 3;
       //////////////////////////////////////
-      auto& amp_param   = amp->_paramd[0];
-      amp_param._coarse = 0.0f;
-      amp_param.useDefaultEvaluator();
-      amp_param._mods._src1      = DCAENV;
-      amp_param._mods._src1Depth = 1.0;
+      auto amp_param     = amp->_paramd[0];
+      amp_param->_coarse = 0.0f;
+      amp_param->useDefaultEvaluator();
+      amp_param->_mods->_src1      = DCAENV;
+      amp_param->_mods->_src1Depth = 1.0;
     };
     make_dco(0);
     make_dco(1);
@@ -227,10 +227,10 @@ int main(int argc, char** argv) {
     //////////////////////////////////////
     auto mixstage          = layerdata->stageByName("MIX");
     auto stereomix         = mixstage->_blockdatas[0];
-    auto& panmod           = stereomix->param(1)._mods;
+    auto panmod            = stereomix->param(1)->_mods;
     auto PANCONTROL        = layerdata->appendController<CustomControllerData>("PAN");
-    panmod._src1           = PANCONTROL;
-    panmod._src1Depth      = 1.0;
+    panmod->_src1          = PANCONTROL;
+    panmod->_src1Depth     = 1.0;
     PANCONTROL->_oncompute = [](CustomControllerInst* cci) { //
       float index  = cci->_layer->_layerTime / 3.0f;
       index        = std::clamp(index, 0.0f, 1.0f);

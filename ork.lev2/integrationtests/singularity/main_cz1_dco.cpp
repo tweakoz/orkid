@@ -60,23 +60,23 @@ int main(int argc, char** argv) {
   //////////////////////////////////////
   // setup modulation routing
   //////////////////////////////////////
-  auto& modulation_index_param      = osc->_paramd[0]._mods;
-  modulation_index_param._src1      = DCWENV;
-  modulation_index_param._src1Depth = 1.0;
-  // modulation_index_param._src2      = LFO1;
-  // modulation_index_param._src2DepthCtrl = LFO2;
-  modulation_index_param._src2MinDepth = 0.5;
-  modulation_index_param._src2MaxDepth = 0.1;
+  auto dcwmodulation        = osc->_paramd[0]->_mods;
+  dcwmodulation->_src1      = DCWENV;
+  dcwmodulation->_src1Depth = 1.0;
+  // dcwmodulation->_src2      = LFO1;
+  // dcwmodulation->_src2DepthCtrl = LFO2;
+  dcwmodulation->_src2MinDepth = 0.5;
+  dcwmodulation->_src2MaxDepth = 0.1;
   //////////////////////////////////////
   czoscdata->_dcoBaseWaveA = 6;
   czoscdata->_dcoBaseWaveB = 7;
   czoscdata->_dcoWindow    = 2;
   //////////////////////////////////////
-  auto& amp_param   = amp->_paramd[0];
-  amp_param._coarse = 0.0f;
-  amp_param.useDefaultEvaluator();
-  amp_param._mods._src1      = DCAENV;
-  amp_param._mods._src1Depth = 1.0;
+  auto amp_param     = amp->_paramd[0];
+  amp_param->_coarse = 0.0f;
+  amp_param->useDefaultEvaluator();
+  amp_param->_mods->_src1      = DCAENV;
+  amp_param->_mods->_src1Depth = 1.0;
   //////////////////////////////////////
   // create and connect oscilloscope
   //////////////////////////////////////

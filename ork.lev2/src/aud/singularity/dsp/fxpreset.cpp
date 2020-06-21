@@ -101,12 +101,12 @@ lyrdata_ptr_t fxpreset_niceverb() {
   auto fxstage = fxalg->appendStage("FX");
   fxstage->setNumIos(2, 2); // stereo in, stereo out
   /////////////////
-  auto rv2              = appendStereoReverbX(fxlayer, fxstage, 10, 1.77, 0.01, 0.15, 0.00001, 0.001);
-  auto rv1              = appendStereoReverbX(fxlayer, fxstage, 10, 0.47, 0.01, 0.15, 0.00001, 0.001);
-  auto rv0              = appendStereoReverbX(fxlayer, fxstage, 10, 0.27, 0.01, 0.15, 0.00001, 0.001);
-  rv0->param(0)._coarse = 0.1f; // wet/dry mix
-  rv1->param(0)._coarse = 0.1f; // wet/dry mix
-  rv2->param(0)._coarse = 0.1f; // wet/dry mix
+  auto rv2               = appendStereoReverbX(fxlayer, fxstage, 10, 1.77, 0.01, 0.15, 0.00001, 0.001);
+  auto rv1               = appendStereoReverbX(fxlayer, fxstage, 10, 0.47, 0.01, 0.15, 0.00001, 0.001);
+  auto rv0               = appendStereoReverbX(fxlayer, fxstage, 10, 0.27, 0.01, 0.15, 0.00001, 0.001);
+  rv0->param(0)->_coarse = 0.1f; // wet/dry mix
+  rv1->param(0)->_coarse = 0.1f; // wet/dry mix
+  rv2->param(0)->_coarse = 0.1f; // wet/dry mix
   /////////////////
   return fxlayer;
 }
@@ -123,9 +123,9 @@ lyrdata_ptr_t fxpreset_echoverb() {
   auto fxstage = fxalg->appendStage("FX");
   fxstage->setNumIos(2, 2); // stereo in, stereo out
   /////////////////
-  auto chorus              = appendStereoChorus(fxlayer, fxstage);
-  chorus->param(2)._coarse = 0.5;  // feedback
-  chorus->param(3)._coarse = 0.35; // wet/dry mix
+  auto chorus               = appendStereoChorus(fxlayer, fxstage);
+  chorus->param(2)->_coarse = 0.5;  // feedback
+  chorus->param(3)->_coarse = 0.35; // wet/dry mix
   /////////////////
   auto rv2 = appendStereoReverbX(fxlayer, fxstage, 10, 5.0, 0.01, 0.15, 0.0001, 0.1);
   auto rv1 = appendStereoReverbX(fxlayer, fxstage, 11, 1.47, 0.01, 0.15, 0.00001, 0.01);
@@ -135,9 +135,9 @@ lyrdata_ptr_t fxpreset_echoverb() {
   appendStereoParaEQ(fxlayer, fxstage, 20, 8, -12);
   // appendStereoParaEQ(fxlayer, fxstage, 30, 8, -3);
   /////////////////
-  rv0->param(0)._coarse = 0.07f; // wet/dry mix
-  rv1->param(0)._coarse = 0.07f; // wet/dry mix
-  rv2->param(0)._coarse = 0.07f; // wet/dry mix
+  rv0->param(0)->_coarse = 0.07f; // wet/dry mix
+  rv1->param(0)->_coarse = 0.07f; // wet/dry mix
+  rv2->param(0)->_coarse = 0.07f; // wet/dry mix
   /////////////////
   return fxlayer;
 }
@@ -154,17 +154,17 @@ lyrdata_ptr_t fxpreset_wackiverb() {
   auto fxstage = fxalg->appendStage("FX");
   fxstage->setNumIos(2, 2); // stereo in, stereo out
   /////////////////
-  auto chorus              = appendStereoChorus(fxlayer, fxstage);
-  chorus->param(2)._coarse = 0.35; // feedback
-  chorus->param(3)._coarse = 0.35; // wet/dry mix
+  auto chorus               = appendStereoChorus(fxlayer, fxstage);
+  chorus->param(2)->_coarse = 0.35; // feedback
+  chorus->param(3)->_coarse = 0.35; // wet/dry mix
   /////////////////
   appendWackiVerb(fxlayer, fxstage);
   appendStereoParaEQ(fxlayer, fxstage, 10, 8, -36);
   appendStereoParaEQ(fxlayer, fxstage, 20, 8, -12);
   // appendStereoParaEQ(fxlayer, fxstage, 30, 8, -3);
   /////////////////
-  // rv1->param(0)._coarse = 0.27f; // wet/dry mix
-  // rv2->param(0)._coarse = 0.27f; // wet/dry mix
+  // rv1->param(0)->_coarse = 0.27f; // wet/dry mix
+  // rv2->param(0)->_coarse = 0.27f; // wet/dry mix
   /////////////////
   return fxlayer;
 }
@@ -181,9 +181,9 @@ lyrdata_ptr_t fxpreset_pitchoctup() {
   auto fxstage = fxalg->appendStage("FX");
   fxstage->setNumIos(2, 2); // stereo in, stereo out
   /////////////////
-  auto shifter              = appendPitchShifter(fxlayer, fxstage);
-  shifter->param(0)._coarse = 0.5;  // wet/dry mix
-  shifter->param(1)._coarse = 1200; // 1 octave up
+  auto shifter               = appendPitchShifter(fxlayer, fxstage);
+  shifter->param(0)->_coarse = 0.5;  // wet/dry mix
+  shifter->param(1)->_coarse = 1200; // 1 octave up
   /////////////////
   return fxlayer;
 }
@@ -200,13 +200,13 @@ lyrdata_ptr_t fxpreset_pitchwave() {
   auto fxstage = fxalg->appendStage("FX");
   fxstage->setNumIos(2, 2); // stereo in, stereo out
   /////////////////
-  auto shifter              = appendPitchShifter(fxlayer, fxstage);
-  shifter->param(0)._coarse = 0.5; // wet/dry mix
+  auto shifter               = appendPitchShifter(fxlayer, fxstage);
+  shifter->param(0)->_coarse = 0.5; // wet/dry mix
   /////////////////
   auto PITCHMOD        = fxlayer->appendController<CustomControllerData>("PITCHSHIFT");
-  auto& pmod           = shifter->param(1)._mods;
-  pmod._src1           = PITCHMOD;
-  pmod._src1Depth      = 1.0;
+  auto pmod            = shifter->param(1)->_mods;
+  pmod->_src1          = PITCHMOD;
+  pmod->_src1Depth     = 1.0;
   PITCHMOD->_oncompute = [](CustomControllerInst* cci) { //
     float time   = cci->_layer->_layerTime;
     cci->_curval = (1.0f + sinf(time * pi2 * 0.03f)) * 2400.0f;

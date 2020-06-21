@@ -7,9 +7,9 @@
 namespace ork::audio::singularity {
 RingModData::RingModData(std::string name)
     : DspBlockData(name) {
-  _blocktype  = "RingMod";
-  auto& param = addParam();
-  param.useAmplitudeEvaluator();
+  _blocktype = "RingMod";
+  auto param = addParam();
+  param->useAmplitudeEvaluator();
 }
 dspblk_ptr_t RingModData::createInstance() const { // override
   return std::make_shared<RingMod>(this);
@@ -17,9 +17,9 @@ dspblk_ptr_t RingModData::createInstance() const { // override
 ///////////////////////////////////////////////////////////////////////////////
 RingModSumAData::RingModSumAData(std::string name)
     : DspBlockData(name) {
-  _blocktype  = "RingModSumA";
-  auto& param = addParam();
-  param.useAmplitudeEvaluator();
+  _blocktype = "RingModSumA";
+  auto param = addParam();
+  param->useAmplitudeEvaluator();
 }
 dspblk_ptr_t RingModSumAData::createInstance() const { // override
   return std::make_shared<RingModSumA>(this);

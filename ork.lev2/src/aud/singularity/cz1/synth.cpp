@@ -58,12 +58,12 @@ algdata_ptr_t configureCz1Algorithm(lyrdata_ptr_t layerdata, int numosc) {
   /////////////////////////////////////////////////
   // stereo mix out
   /////////////////////////////////////////////////
-  auto stereoout        = stage_mix->appendTypedBlock<MonoInStereoOut>("MonoInStereoOut");
-  auto STEREOC          = layerdata->appendController<CustomControllerData>("DCO1DETUNE");
-  auto& stereo_mod      = stereoout->_paramd[0]._mods;
-  stereo_mod._src1      = STEREOC;
-  stereo_mod._src1Depth = 1.0f;
-  STEREOC->_onkeyon     = [](CustomControllerInst* cci, //
+  auto stereoout         = stage_mix->appendTypedBlock<MonoInStereoOut>("MonoInStereoOut");
+  auto STEREOC           = layerdata->appendController<CustomControllerData>("DCO1DETUNE");
+  auto stereo_mod        = stereoout->_paramd[0]->_mods;
+  stereo_mod->_src1      = STEREOC;
+  stereo_mod->_src1Depth = 1.0f;
+  STEREOC->_onkeyon      = [](CustomControllerInst* cci, //
                          const KeyOnInfo& KOI) {    //
     cci->_curval = 1.0f;                            // amplitude to unity
   };
@@ -355,8 +355,8 @@ CZXDATA::CZXDATA(std::string name, czxdata_constptr_t czdata, int dcochannel)
     , _cxzdata(czdata)
     , _dcochannel(dcochannel) {
   _blocktype = "CZX";
-  addParam().usePitchEvaluator();
-  addParam().useDefaultEvaluator();
+  addParam()->usePitchEvaluator();
+  addParam()->useDefaultEvaluator();
   _vars.makeValueForKey<czxdata_constptr_t>("CZX") = _cxzdata;
   _vars.makeValueForKey<int>("dcochannel")         = dcochannel;
 }

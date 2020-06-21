@@ -38,8 +38,7 @@ private:
 
 struct BlockModulationData final {
 
-  BlockModulationData() {
-  }
+  BlockModulationData();
   BlockModulationData(const BlockModulationData&) = delete;
 
   controllerdata_ptr_t _src1;
@@ -49,7 +48,7 @@ struct BlockModulationData final {
   float _src1Depth    = 0.0f;
   float _src2MinDepth = 0.0f;
   float _src2MaxDepth = 0.0f;
-  evalit_t _evaluator = [](FPARAM& cec) -> float { return cec._coarse; };
+  evalit_t _evaluator;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -67,6 +66,22 @@ struct DspParamData final {
 
   std::string _name;
   std::string _units;
+
+  int _edit_coarse_numsteps = 1;
+  float _edit_coarse_shape  = 1.0f;
+  float _edit_coarse_min    = 0.0f;
+  float _edit_coarse_max    = 1.0f;
+
+  int _edit_fine_numsteps = 1;
+  float _edit_fine_shape  = 1.0f;
+  float _edit_fine_min    = 0.0f;
+  float _edit_fine_max    = 1.0f;
+
+  int _edit_keytrack_numsteps = 1;
+  float _edit_keytrack_shape  = 1.0f;
+  float _edit_keytrack_min    = 0.0f;
+  float _edit_keytrack_max    = 1.0f;
+
   float _coarse         = 0.0f;
   float _fine           = 0.0f;
   float _fineHZ         = 0.0f;
@@ -75,7 +90,7 @@ struct DspParamData final {
   int _keystartNote     = 60;
   bool _keystartBipolar = true; // false==unipolar
   // evalit_t _evaluator;
-  BlockModulationData _mods;
+  dspparammod_ptr_t _mods;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -112,8 +127,8 @@ struct DspBlockData {
 
   std::string _blocktype;
 
-  DspParamData& addParam();
-  DspParamData& param(int index);
+  dspparam_ptr_t addParam();
+  dspparam_ptr_t param(int index);
 
   std::string _name;
   int _dspchannel[kmaxdspblocksperstage];
@@ -121,7 +136,7 @@ struct DspBlockData {
   float _inputPad = 1.0f;
   int _blockIndex = -1;
   varmap::VarMap _vars;
-  DspParamData _paramd[kmaxparmperblock];
+  dspparam_ptr_t _paramd[kmaxparmperblock];
   scopesource_ptr_t _scopesource;
 };
 
@@ -164,7 +179,7 @@ struct DspBlock {
   const float* getInpBuf(DspBuffer& dspbuf, int chanindex);
   float* getOutBuf(DspBuffer& dspbuf, int chanindex);
 
-  FPARAM initFPARAM(const DspParamData& dpd);
+  DspParam initDspParam(dspparam_constptr_t dpd);
 
   virtual bool isHsyncSource() const {
     return false;
@@ -184,7 +199,7 @@ struct DspBlock {
 
   int _dspchannel[kmaxdspblocksperstage];
   float _fval[kmaxparmperblock];
-  FPARAM _param[kmaxparmperblock];
+  DspParam _param[kmaxparmperblock];
   iomask_constptr_t _iomask;
 };
 

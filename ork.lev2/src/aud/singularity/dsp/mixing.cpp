@@ -47,11 +47,11 @@ void SUM2::compute(DspBuffer& dspbuf) { // final
 
 MonoInStereoOutData::MonoInStereoOutData(std::string name)
     : DspBlockData(name) {
-  _blocktype      = "MonoInStereoOut";
-  auto& amp_param = addParam();
-  amp_param.useAmplitudeEvaluator();
-  auto& pan_param = addParam();
-  pan_param.useDefaultEvaluator();
+  _blocktype     = "MonoInStereoOut";
+  auto amp_param = addParam();
+  amp_param->useAmplitudeEvaluator();
+  auto pan_param = addParam();
+  pan_param->useDefaultEvaluator();
 }
 dspblk_ptr_t MonoInStereoOutData::createInstance() const { // override
   return std::make_shared<MonoInStereoOut>(this);
@@ -99,9 +99,9 @@ void MonoInStereoOut::doKeyOn(const KeyOnInfo& koi) // final
 
 StereoEnhancerData::StereoEnhancerData(std::string name)
     : DspBlockData(name) {
-  _blocktype        = "StereoEnhancer";
-  auto& width_param = addParam();
-  width_param.useDefaultEvaluator();
+  _blocktype       = "StereoEnhancer";
+  auto width_param = addParam();
+  width_param->useDefaultEvaluator();
 }
 dspblk_ptr_t StereoEnhancerData::createInstance() const { // override
   return std::make_shared<StereoEnhancer>(this);

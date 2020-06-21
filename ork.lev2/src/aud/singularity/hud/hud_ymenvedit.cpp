@@ -14,6 +14,7 @@ namespace ork::audio::singularity {
 hudpanel_ptr_t createEnvYmEditView(
     hudvp_ptr_t vp, //
     std::string named,
+    fvec4 color,
     controllerdata_ptr_t envdata,
     const ui::anchor::Bounds& bounds) {
   auto hudpanel    = std::make_shared<HudPanel>();
@@ -40,7 +41,6 @@ hudpanel_ptr_t createEnvYmEditView(
   auto guideh3 = toplayout->proportionalVerticalGuide(4.0f / 6.0f);
   auto guideh4 = toplayout->proportionalVerticalGuide(5.0f / 6.0f);
   ////////////////////////////////////////////////
-  auto color = fvec4(0.7, 0.1, 0.5, 1);
   //
   auto hdrstr     = FormatString("YmEnv: %s", ymenvdata->_name.c_str());
   auto headeritem = envviewitem._widget->makeChild<ui::Label>("header", color, hdrstr);

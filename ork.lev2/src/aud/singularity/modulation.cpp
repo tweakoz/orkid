@@ -12,42 +12,42 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-FPARAM::FPARAM()
-    : _coarse(0.0f) {
+DspParam::DspParam() {
+  _data = std::make_shared<DspParamData>();
   reset();
 }
 
-void FPARAM::reset() {
-  _evaluator = [](FPARAM& cec) { return 0.0f; };
+void DspParam::reset() {
+  _evaluator = [](DspParam& cec) { return 0.0f; };
   _C1        = []() { return 0.0f; };
   _C2        = []() { return 0.0f; };
 }
 
-void FPARAM::keyOn(int ikey, int ivel) {
-  _keyOff  = float(ikey - _kstartNote);
+void DspParam::keyOn(int ikey, int ivel) {
+  _keyOff  = float(ikey - _data->_keystartNote);
   _unitVel = float(ivel) / 127.0f;
 
-  if (false == _kstartBipolar) {
+  if (false == _data->_keystartBipolar) {
     if (_keyOff < 0)
       _keyOff = 0;
 
-    if (_kstartNote == 0)
+    if (_data->_keystartNote == 0)
       _keyOff = 0;
 
-    // printf( "ikey<%d> ksn<%d> ko<%d>\n", ikey, _kstartNote, int(_keyOff) );
+    // printf( "ikey<%d> ksn<%d> ko<%d>\n", ikey, _keystartNote, int(_keyOff) );
   }
 
-  // printf( "_kstartNote<%d>\n", _kstartNote );
+  // printf( "_keystartNote<%d>\n", _keystartNote );
   // printf( "_keyOff<%f>\n", _keyOff );
   // printf( "_unitVel<%f>\n", _unitVel );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-float FPARAM::eval(bool dump) {
+float DspParam::eval(bool dump) {
   float tot = _evaluator(*this);
   if (dump)
-    printf("coarse<%g> c1<%g> c2<%g> tot<%g>\n", _coarse, _C1(), _C2(), tot);
+    printf("coarse<%g> c1<%g> c2<%g> tot<%g>\n", _data->_coarse, _C1(), _C2(), tot);
 
   return tot;
 }
@@ -55,10 +55,10 @@ float FPARAM::eval(bool dump) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void DspParamData::useDefaultEvaluator() {
-  _mods._evaluator = [this](FPARAM& cec) -> float {
+  _mods->_evaluator = [this](DspParam& cec) -> float {
     float kt = _keyTrack * cec._keyOff;
     float vt = -_velTrack * cec._unitVel;
-    float rv = cec._coarse //
+    float rv = _coarse     //
                + cec._C1() //
                + cec._C2() //
                + kt + vt;
@@ -70,15 +70,15 @@ void DspParamData::useDefaultEvaluator() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void DspParamData::useAmplitudeEvaluator() {
-  _mods._evaluator = [this](FPARAM& cec) -> float {
+  _mods->_evaluator = [this](DspParam& cec) -> float {
     cec._kval  = _keyTrack * cec._keyOff;
     cec._vval  = lerp(-_velTrack, 0.0f, cec._unitVel);
     cec._s1val = cec._C1();
     cec._s2val = cec._C2();
-    float x    = (cec._coarse) //
-              + cec._s1val     //
-              + cec._s2val     //
-              + cec._kval      //
+    float x    = (_coarse) //
+              + cec._s1val //
+              + cec._s2val //
+              + cec._kval  //
               + cec._vval;
     // printf("vt<%f> kt<%f> x<%f>\n", _velTrack, _keyTrack, x);
     return x;
@@ -88,14 +88,26 @@ void DspParamData::useAmplitudeEvaluator() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void DspParamData::usePitchEvaluator() {
-  _mods._evaluator = [this](FPARAM& cec) -> float {
+
+  _edit_coarse_min        = 0.0f;
+  _edit_coarse_max        = 84.0f;
+  _edit_coarse_numsteps   = 84;
+  _edit_fine_min          = -50.0f;
+  _edit_fine_max          = 50.0f;
+  _edit_fine_numsteps     = 102;
+  _edit_keytrack_numsteps = 402;
+  _edit_keytrack_min      = -200.0f;
+  _edit_keytrack_max      = 200.0f;
+  _edit_keytrack_numsteps = 400;
+
+  _mods->_evaluator = [this](DspParam& cec) -> float {
     float kt       = _keyTrack * cec._keyOff;
     float vt       = _velTrack * cec._unitVel;
-    float totcents = (cec._coarse * 100) //
-                     + cec._fine         //
-                     + cec._C1()         //
-                     + cec._C2()         //
-                     + kt                //
+    float totcents = (_coarse * 100.0f) //
+                     + _fine            //
+                     + cec._C1()        //
+                     + cec._C2()        //
+                     + kt               //
                      + vt;
     // float ratio = cents_to_linear_freq_ratio(totcents);
     // printf( "rat<%f>\n", ratio);
@@ -114,7 +126,7 @@ void DspParamData::usePitchEvaluator() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void DspParamData::useFrequencyEvaluator() {
-  _mods._evaluator = [this](FPARAM& cec) -> float {
+  _mods->_evaluator = [this](DspParam& cec) -> float {
     float ktcents  = _keyTrack * cec._keyOff;
     cec._vval      = _velTrack * cec._unitVel;
     float vtcents  = cec._vval;
@@ -122,22 +134,22 @@ void DspParamData::useFrequencyEvaluator() {
     float ratio    = cents_to_linear_freq_ratio(totcents);
     // printf( "vtcents<%f> ratio<%f>\n", vtcents, ratio );
     // printf( "ratio<%f>\n", ratio);
-    return cec._coarse * ratio;
+    return _coarse * ratio;
   };
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void DspParamData::useKrzPosEvaluator() {
-  _mods._evaluator = [this](FPARAM& cec) -> float {
+  _mods->_evaluator = [this](DspParam& cec) -> float {
     cec._kval  = _keyTrack * cec._keyOff;
     cec._vval  = _velTrack * cec._unitVel;
     cec._s1val = cec._C1();
     cec._s2val = cec._C2();
-    float x    = (cec._coarse) //
-              + cec._s1val     //
-              + cec._s2val     //
-              + cec._kval      //
+    float x    = (_coarse) //
+              + cec._s1val //
+              + cec._s2val //
+              + cec._kval  //
               + cec._vval;
     return clip_float(x, -100, 100);
   };
@@ -146,13 +158,13 @@ void DspParamData::useKrzPosEvaluator() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void DspParamData::useKrzEvnOddEvaluator() {
-  _mods._evaluator = [this](FPARAM& cec) -> float {
+  _mods->_evaluator = [this](DspParam& cec) -> float {
     float kt = _keyTrack * cec._keyOff;
     float vt = lerp(-_velTrack, 0.0f, cec._unitVel);
-    float x  = (cec._coarse) //
-              + cec._C1()    //
-              + cec._C2()    //
-              + kt           //
+    float x  = (_coarse)  //
+              + cec._C1() //
+              + cec._C2() //
+              + kt        //
               + vt;
     // printf( "vt<%f> kt<%f> x<%f>\n", vt, kt, x );
     return clip_float(x, -10, 10);

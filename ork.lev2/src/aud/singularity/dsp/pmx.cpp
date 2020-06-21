@@ -34,9 +34,16 @@ inline float proc_out(float inp) {
 ///////////////////////////////////////////////////////////////////////////////
 PMXData::PMXData(std::string name)
     : DspBlockData(name) {
-  addParam().usePitchEvaluator();   // pitch
-  addParam().useDefaultEvaluator(); // amp
-  addParam().useDefaultEvaluator(); // feedback
+
+  auto pitch = addParam();
+  pitch->usePitchEvaluator(); // pitch
+  auto amp = addParam();
+  amp->useDefaultEvaluator(); // amp
+  amp->_edit_coarse_numsteps = 1000;
+  amp->_edit_coarse_shape    = 2.0f;
+  auto fbl                   = addParam();
+  fbl->useDefaultEvaluator(); // feedback
+  fbl->_edit_coarse_numsteps = 100;
 }
 ///////////////////////////////////////////////////////////////////////////////
 dspblk_ptr_t PMXData::createInstance() const {
@@ -113,9 +120,9 @@ void PMX::doKeyOff() { // final
 ///////////////////////////////////////////////////////////////////////////////
 PMXMixData::PMXMixData(std::string name)
     : DspBlockData(name) {
-  addParam().usePitchEvaluator();   // pitch
-  addParam().useDefaultEvaluator(); // amp
-  addParam().useDefaultEvaluator(); // feedback
+  addParam()->usePitchEvaluator();   // pitch
+  addParam()->useDefaultEvaluator(); // amp
+  addParam()->useDefaultEvaluator(); // feedback
 }
 ///////////////////////////////////////////////////////////////////////////////
 dspblk_ptr_t PMXMixData::createInstance() const {
