@@ -24,6 +24,7 @@ struct Dial final : public Widget {
   void setParams(int numsteps, float curval, float minval, float maxval, float power);
   void selValFromStep(int step);
   int _numsteps   = 1001;
+  int _ctrsteps   = 1001 >> 1;
   int _cursteps   = 0;
   float _minval   = 0.0f;
   float _ctrval   = 0.5f;

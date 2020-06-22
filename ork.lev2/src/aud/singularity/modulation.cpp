@@ -64,7 +64,7 @@ void DspParamData::useDefaultEvaluator() {
   _edit_keytrack_min      = -1.0f;
   _edit_keytrack_max      = 1.0f;
   _edit_keytrack_numsteps = 402;
-  _edit_keytrack_shape    = 2.0f;
+  _edit_keytrack_shape    = 1.0f;
   _mods->_evaluator       = [this](DspParam& cec) -> float {
     float kt = _keyTrack * cec._keyOff;
     float vt = -_velTrack * cec._unitVel;

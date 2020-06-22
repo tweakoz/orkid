@@ -120,13 +120,16 @@ constexpr int stepshift = 3;
 void Dial::selValFromStep(int step) {
   _cursteps = std::clamp(step, 0, _numsteps);
   if (_isbipolar) {
-    int hcurstepsP = (_numsteps >> 1);
-    if (_cursteps >= (_numsteps >> 1)) { // positive
-      int hnumsteps = (_numsteps >> 1);
-      int actstep   = (hcurstepsP - hnumsteps) >> stepshift;
-      float fi      = float(actstep) / int(hnumsteps >> stepshift);
-      _curvalue     = audiomath::lerp(_ctrval, _maxval, powf(fi, _power));
+    if (_cursteps >= _ctrsteps) { // positive
+      int actstep = (_cursteps - _ctrsteps);
+      float fi    = float(actstep) / float(_ctrsteps);
+      // printf("_isbipolar P _cursteps<%d> _ctrsteps<%d> actstep<%d> fi<%g>\n", _cursteps, _ctrsteps, actstep, fi);
+      _curvalue = audiomath::lerp(_ctrval, _maxval, powf(fi, _power));
     } else { // negative
+      int actstep = (_ctrsteps - _cursteps);
+      float fi    = float(actstep) / float(_ctrsteps);
+      _curvalue   = audiomath::lerp(_ctrval, _minval, powf(fi, _power));
+      // printf("_isbipolar N _cursteps<%d> _ctrsteps<%d> actstep<%d> fi<%g>\n", _cursteps, _ctrsteps, actstep, fi);
     }
   } else {
     int actstep = _cursteps >> stepshift;
@@ -140,18 +143,34 @@ void Dial::selValFromStep(int step) {
 ///////////////////////////////////////////////////////////////////////////////
 void Dial::setParams(int numsteps, float curval, float minval, float maxval, float power) {
 
-  _isbipolar = (_minval < 0.0f) and (_maxval > 1.0f);
+  _isbipolar = (minval < 0.0f) and (maxval > 0.0f);
 
-  _numsteps  = numsteps << stepshift;
-  _minval    = minval;
-  _maxval    = maxval;
-  _ctrval    = (minval + maxval * 0.5f);
-  _range     = (maxval - maxval);
-  _power     = power;
-  _curvalue  = curval;
-  float nfip = (_curvalue - _minval) / (_maxval - _minval);
-  float nfi  = powf(nfip, 1.0 / _power);
-  selValFromStep(int(_numsteps * nfi));
+  _numsteps = numsteps << stepshift;
+  _ctrsteps = _numsteps >> 1;
+  _minval   = minval;
+  _maxval   = maxval;
+  _ctrval   = (minval + maxval) * 0.5f;
+
+  _range    = (maxval - maxval);
+  _power    = power;
+  _curvalue = curval;
+  if (_isbipolar) {
+    if (curval >= _ctrval) { // positive
+      float nfip = (curval - _ctrval) / (_maxval - _ctrval);
+      float nfi  = powf(nfip, 1.0 / _power);
+      printf("_isbipolar P curval<%g> _ctrval<%g> nfip<%g> nfi<%g>\n", curval, _ctrval, nfip, nfi);
+      selValFromStep(_ctrsteps + int(_numsteps * nfi));
+    } else { // negative
+      float nfip = (_ctrval - curval) / (_ctrval - _minval);
+      float nfi  = powf(nfip, 1.0 / _power);
+      printf("_isbipolar N curval<%g> _ctrval<%g> nfip<%g> nfi<%g>\n", curval, _ctrval, nfip, nfi);
+      selValFromStep(_ctrsteps - int(_numsteps * nfi));
+    }
+  } else {
+    float nfip = (_curvalue - _minval) / (_maxval - _minval);
+    float nfi  = powf(nfip, 1.0 / _power);
+    selValFromStep(int(_numsteps * nfi));
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::ui

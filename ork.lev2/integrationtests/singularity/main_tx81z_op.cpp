@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
   op1->param(0)->_coarse   = 7200.0f; // op1 pitch
   op2->param(0)->_coarse   = 7200.0f; // op2 pitch
   op3->param(0)->_coarse   = 8400.0f; // op3 pitch
-  op0->param(0)->_keyTrack = 100.0f;  // op0 pitch keytrack
+  op0->param(0)->_keyTrack = -100.0f; // op0 pitch keytrack
   op1->param(0)->_keyTrack = 100.0f;  // op1 pitch keytrack
   op2->param(0)->_keyTrack = 100.0f;  // op2 pitch keytrack
   op3->param(0)->_keyTrack = 100.0f;  // op3 pitch keytrack
