@@ -17,6 +17,14 @@ TEST(SlashNodeWalkToRoot) {
   CHECK_EQUAL(node_1->pathAsString(), "/one");
   CHECK_EQUAL(node_r->pathAsString(), "/");
 
+  CHECK_EQUAL(node_r->_parent, (const ork::SlashNode*)nullptr);
+
+  auto node_4 = slashtree->add_node("/one/two/four", (void*)0x1234);
+
+  CHECK_EQUAL(node_3->_parent, node_4->_parent);
+  CHECK_EQUAL(node_4->pathAsString(), "/one/two/four");
+  CHECK_EQUAL(node_4->_data, (void*)0x1234);
+
   // printf("n3: %s\n", node_3->pathAsString().c_str());
   // printf("n2: %s\n", node_2->pathAsString().c_str());
   // printf("n1: %s\n", node_1->pathAsString().c_str());
