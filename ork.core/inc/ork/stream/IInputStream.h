@@ -5,21 +5,19 @@
 #ifndef _ORK_STREAM_IINPUTSTREAM_H_
 #define _ORK_STREAM_IINPUTSTREAM_H_
 
-#include<cstddef>
+#include <cstddef>
 
 namespace ork { namespace stream {
 
-class IInputStream
-{
+class IInputStream {
 public:
-    typedef size_t size_type;
-    static const size_t kEOF = (0xffffffff);
+  typedef size_t size_type;
+  static const size_t kEOF = 0xffffffffffffffff;
 
-    virtual size_t Read(unsigned char *buffer, size_type bufmax) = 0;
-    virtual ~IInputStream();
+  virtual size_t Read(unsigned char* buffer, size_type bufmax) = 0;
+  virtual ~IInputStream();
 };
 
-} }
-
+}} // namespace ork::stream
 
 #endif

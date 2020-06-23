@@ -26,7 +26,7 @@ void TextDeserializer::Advance() {
 }
 
 void TextDeserializer::EatSpace() {
-  while (Peek() != stream::IInputStream::kEOF && isspace(Peek()))
+  while (Peek() != stream::IInputStream::kEOF and isspace(Peek()))
     Advance();
 }
 
@@ -37,7 +37,12 @@ size_t TextDeserializer::ReadWord(MutableString string) {
 
   while (Peek() != stream::IInputStream::kEOF) {
     int next = Peek();
-    if (isspace(next) || next == '"' || next == '\'' || next == '<' || next == '>' || next == '=') {
+    if (isspace(next) or //
+        next == '"' or   //
+        next == '\'' or  //
+        next == '<' or   //
+        next == '>' or   //
+        next == '=') {
       break;
     } else {
       string += char(next);
@@ -141,10 +146,10 @@ bool TextDeserializer::Deserialize(bool& value) {
   MutableString word(buffer);
 
   if (ReadWord(word) > 0) {
-    if (strieq(word.c_str(), "false") || strieq(word.c_str(), "0")) {
+    if (strieq(word.c_str(), "false") or strieq(word.c_str(), "0")) {
       value  = false;
       result = true;
-    } else if (strieq(word.c_str(), "true") || strieq(word.c_str(), "1")) {
+    } else if (strieq(word.c_str(), "true") or strieq(word.c_str(), "1")) {
       value  = true;
       result = true;
     }
@@ -157,7 +162,7 @@ bool TextDeserializer::Deserialize(const IProperty* prop) {
   return prop->Deserialize(*this);
 }
 
-bool TextDeserializer::Deserialize(const IObjectProperty* prop, Object* object) {
+bool TextDeserializer::deserializeObjectProperty(const IObjectProperty* prop, Object* object) {
   return prop->Deserialize(*this, object);
 }
 
@@ -165,7 +170,7 @@ bool TextDeserializer::ReferenceObject(rtti::ICastable* object) {
   return false;
 }
 
-bool TextDeserializer::Deserialize(rtti::ICastable*& object) {
+bool TextDeserializer::deserializeObject(rtti::ICastable*& object) {
   ArrayString<128> buffer;
   MutableString word(buffer);
   if (ReadWord(word) > 0) {
@@ -177,7 +182,7 @@ bool TextDeserializer::Deserialize(rtti::ICastable*& object) {
 }
 
 bool TextDeserializer::Deserialize(MutableString& text) {
-  while (Peek() != stream::IInputStream::kEOF && isspace(Peek())) {
+  while (Peek() != stream::IInputStream::kEOF and isspace(Peek())) {
     text += char(Peek());
     Advance();
   }
@@ -185,7 +190,7 @@ bool TextDeserializer::Deserialize(MutableString& text) {
 }
 
 bool TextDeserializer::Deserialize(ResizableString& text) {
-  while (Peek() != stream::IInputStream::kEOF && isspace(Peek())) {
+  while (Peek() != stream::IInputStream::kEOF and isspace(Peek())) {
     text += char(Peek());
     Advance();
   }
@@ -204,11 +209,11 @@ bool TextDeserializer::EndCommand(const Command& command) {
   return false;
 }
 
-int TextDeserializer::Peek() {
+size_t TextDeserializer::Peek() {
   unsigned char c;
 
   if (mStream.Peek(&c, sizeof(c)) != stream::IInputStream::kEOF) {
-    return int(c);
+    return size_t(c);
   }
 
   return stream::IInputStream::kEOF;

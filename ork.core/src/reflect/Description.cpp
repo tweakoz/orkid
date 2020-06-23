@@ -161,14 +161,14 @@ bool Description::SerializeProperties(ISerializer& serializer, const Object* obj
 
   const PropertyMapType& map = Properties();
 
-  for (PropertyMapType::const_iterator it = map.begin(); it != map.end(); ++it) {
-    ConstString name      = (*it).first;
-    IObjectProperty* prop = (*it).second;
+  for (auto it : map) {
+    ConstString name      = it.first;
+    IObjectProperty* prop = it.second;
 
     Command command(Command::EPROPERTY, name);
 
     serializer.BeginCommand(command);
-    if (false == serializer.Serialize(prop, object))
+    if (false == serializer.serializeObjectProperty(prop, object))
       result = false;
     serializer.EndCommand(command);
   }
@@ -198,7 +198,7 @@ bool Description::DeserializeProperties(IDeserializer& deserializer, Object* obj
 
       if (prop) {
         deserializer._currentProperty = prop;
-        if (false == deserializer.Deserialize(prop, object)) {
+        if (false == deserializer.deserializeObjectProperty(prop, object)) {
           deserializer.EndCommand(command);
           deserializer._currentProperty = nullptr;
           deserializer._currentObject   = nullptr;

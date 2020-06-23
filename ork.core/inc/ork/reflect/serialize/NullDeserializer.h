@@ -29,16 +29,15 @@ public:
   bool Deserialize(long&) override;
   bool Deserialize(float&) override;
   bool Deserialize(double&) override;
-  bool Deserialize(rtti::ICastable*&) override;
-
-  bool Deserialize(const IProperty*) override;
-  bool Deserialize(const IObjectProperty*, Object*) override;
 
   bool Deserialize(MutableString&) override;
   bool Deserialize(ResizableString&) override;
   bool DeserializeData(unsigned char*, size_t) override;
 
+  bool Deserialize(const IProperty*) override;
+  bool deserializeObject(rtti::ICastable*&) override;
   bool deserializeObject(rtti::castable_ptr_t&) override;
+  bool deserializeObjectProperty(const IObjectProperty*, Object*) override;
 
   bool ReferenceObject(rtti::ICastable*) override;
   bool BeginCommand(Command&) override;

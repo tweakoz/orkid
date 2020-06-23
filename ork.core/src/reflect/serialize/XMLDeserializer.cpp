@@ -176,7 +176,7 @@ bool XMLDeserializer::Deserialize(const IProperty* prop) {
   return prop->Deserialize(*this);
 }
 
-bool XMLDeserializer::Deserialize(const IObjectProperty* prop, Object* object) {
+bool XMLDeserializer::deserializeObjectProperty(const IObjectProperty* prop, Object* object) {
   return prop->Deserialize(*this, object);
 }
 
@@ -229,7 +229,7 @@ int XMLDeserializer::FindObject(rtti::ICastable* object) {
   return -1;
 }
 
-bool XMLDeserializer::Deserialize(rtti::ICastable*& object) {
+bool XMLDeserializer::deserializeObject(rtti::ICastable*& object) {
   if (mbReadingAttributes)
     return false;
 
@@ -425,7 +425,7 @@ bool XMLDeserializer::DiscardData() {
   rtti::ICastable* a_castable;
   MutableString a_string(a_string_buffer);
 
-  while (Deserialize(a_string) || Deserialize(a_castable) ||
+  while (Deserialize(a_string) || deserializeObject(a_castable) ||
          (!mbReadingAttributes && ((ReadWord(a_string) != 0) || EatBinaryData()))) {
     result = true;
 
@@ -533,10 +533,10 @@ bool XMLDeserializer::Match(const PieceString& s) {
   }
 }
 
-int XMLDeserializer::Peek() {
+size_t XMLDeserializer::Peek() {
   unsigned char c;
   if (mStream.Peek(&c, sizeof(c)) != stream::IInputStream::kEOF) {
-    return int(c);
+    return size_t(c);
   }
   return stream::IInputStream::kEOF;
 }

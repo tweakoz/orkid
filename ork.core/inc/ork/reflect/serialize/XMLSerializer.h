@@ -29,18 +29,19 @@ public:
   bool Serialize(const long&) override;
   bool Serialize(const float&) override;
   bool Serialize(const double&) override;
-  bool Serialize(const rtti::ICastable*) override;
   bool Serialize(const PieceString&) override;
   void Hint(const PieceString&) override;
   void Hint(const PieceString&, intptr_t ival) override {
   }
 
-  bool serializeObject(rtti::castable_constptr_t) override;
+  bool serializeObject(const rtti::ICastable*) override;
+  bool serializeObjectProperty(const IObjectProperty*, const Object*) override;
+  // bool serializeObjectWithCategory(
+  //  const rtti::Category* cat, //
+  // const rtti::ICastable* object) override;
+  bool Serialize(const IProperty*) override;
 
   bool SerializeData(unsigned char*, size_t size) override;
-
-  bool Serialize(const IProperty*) override;
-  bool Serialize(const IObjectProperty*, const Object*) override;
 
   bool ReferenceObject(const rtti::ICastable*) override;
   bool BeginCommand(const Command&) override;

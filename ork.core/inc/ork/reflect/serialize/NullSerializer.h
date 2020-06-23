@@ -24,19 +24,22 @@ public:
   bool Serialize(const long&) override;
   bool Serialize(const float&) override;
   bool Serialize(const double&) override;
-  bool Serialize(const rtti::ICastable*) override;
   bool Serialize(const PieceString&) override;
 
-  bool serializeObject(rtti::castable_constptr_t);
+  bool serializeObject(const rtti::ICastable*) override;
+  // bool serializeObjectWithCategory(
+  //  const rtti::Category* cat, //
+  // const rtti::ICastable* object) override;
+  bool serializeObjectProperty(
+      const IObjectProperty* prop, //
+      const Object* object) override;
+
+  bool Serialize(const IProperty* prop) override;
 
   void Hint(const PieceString&) override;
   void Hint(const PieceString&, intptr_t ival) override;
 
   bool SerializeData(unsigned char*, size_t) override;
-
-  bool Serialize(const IProperty* prop) override;
-  bool Serialize(const IObjectProperty* prop, const Object* object) override;
-  bool Serialize(const rtti::Category* cat, const rtti::ICastable* object) override;
 
   bool ReferenceObject(const rtti::ICastable*) override;
 

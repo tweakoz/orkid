@@ -74,8 +74,13 @@ struct const_string {
 
 namespace rtti {
 struct ICastable;
-using castable_ptr_t      = std::shared_ptr<ICastable>;
-using castable_constptr_t = std::shared_ptr<const ICastable>;
+using castable_ptr_t         = std::shared_ptr<ICastable>;
+using castable_constptr_t    = std::shared_ptr<const ICastable>;
+using castable_rawptr_t      = ICastable*;
+using castable_rawconstptr_t = const ICastable*;
+
+class Category;
+
 } // namespace rtti
 
 class Object;

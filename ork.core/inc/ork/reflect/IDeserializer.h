@@ -28,18 +28,18 @@ class IObjectProperty;
 class Command;
 
 struct IDeserializer {
-  virtual bool Deserialize(bool&)                       = 0;
-  virtual bool Deserialize(char&)                       = 0;
-  virtual bool Deserialize(short&)                      = 0;
-  virtual bool Deserialize(int&)                        = 0;
-  virtual bool Deserialize(long&)                       = 0;
-  virtual bool Deserialize(float&)                      = 0;
-  virtual bool Deserialize(double&)                     = 0;
-  virtual bool Deserialize(rtti::ICastable*&)           = 0;
-  virtual bool deserializeObject(rtti::castable_ptr_t&) = 0;
+  virtual bool Deserialize(bool&)   = 0;
+  virtual bool Deserialize(char&)   = 0;
+  virtual bool Deserialize(short&)  = 0;
+  virtual bool Deserialize(int&)    = 0;
+  virtual bool Deserialize(long&)   = 0;
+  virtual bool Deserialize(float&)  = 0;
+  virtual bool Deserialize(double&) = 0;
 
-  virtual bool Deserialize(const IProperty*)                = 0;
-  virtual bool Deserialize(const IObjectProperty*, Object*) = 0;
+  virtual bool Deserialize(const IProperty*)                              = 0;
+  virtual bool deserializeObject(rtti::ICastable*&)                       = 0;
+  virtual bool deserializeObject(rtti::castable_ptr_t&)                   = 0;
+  virtual bool deserializeObjectProperty(const IObjectProperty*, Object*) = 0;
 
   virtual bool Deserialize(MutableString&)             = 0;
   virtual bool Deserialize(ResizableString&)           = 0;

@@ -57,7 +57,7 @@ public:
 
   virtual Object* Clone() const;
   virtual object_ptr_t cloneShared() const;
-  void _clone(Object* into) const;
+  void _cloneInto(Object* into) const;
 
   Md5Sum CalcMd5() const;
 

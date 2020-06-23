@@ -232,8 +232,39 @@ bool XMLSerializer::Serialize(const IProperty* prop) {
   return prop->Serialize(*this);
 }
 
-bool XMLSerializer::Serialize(const IObjectProperty* prop, const Object* object) {
+bool XMLSerializer::serializeObjectProperty(const IObjectProperty* prop, const Object* object) {
   return prop->Serialize(*this, object);
+}
+
+bool XMLSerializer::serializeObject(const rtti::ICastable* object) {
+  bool result = true;
+  FlushHeader();
+  if (object == NULL) {
+    result = WriteText("<backreference id='-1'/>");
+  } else {
+    int object_index = FindObject(object);
+
+    if (object_index != -1) {
+      result = WriteText("<backreference id='%d'/>", object_index);
+    } else {
+      const rtti::Category* category = rtti::downcast<rtti::Category*>(object->GetClass()->GetClass());
+      Lined();
+      result = WriteText("<reference category='");
+      result = WriteText(category->Name().c_str());
+      result = WriteText("'>");
+      Lined();
+      mIndent++;
+      if (!category->SerializeReference(*this, object)) {
+        result = false;
+      }
+      mIndent--;
+      Lined();
+      if (!WriteText("</reference>"))
+        result = false;
+      Lined();
+    }
+  }
+  return result;
 }
 
 bool XMLSerializer::ReferenceObject(const rtti::ICastable* object) {
@@ -260,44 +291,6 @@ int XMLSerializer::FindObject(const rtti::ICastable* object) {
   }
 
   // orkprintf("FindObject(%p) => %d\n", object, result);
-
-  return result;
-}
-
-bool XMLSerializer::Serialize(const rtti::ICastable* object) {
-  bool result = true;
-  FlushHeader();
-
-  if (object == NULL) {
-    result = WriteText("<backreference id='-1'/>");
-  } else {
-    int object_index = FindObject(object);
-
-    if (object_index != -1) {
-      result = WriteText("<backreference id='%d'/>", object_index);
-    } else {
-      const rtti::Category* category = rtti::downcast<rtti::Category*>(object->GetClass()->GetClass());
-
-      Lined();
-      result = WriteText("<reference category='");
-      result = WriteText(category->Name().c_str());
-      result = WriteText("'>");
-      Lined();
-      mIndent++;
-
-      if (!category->SerializeReference(*this, object)) {
-        result = false;
-      }
-
-      mIndent--;
-      Lined();
-
-      if (!WriteText("</reference>"))
-        result = false;
-
-      Lined();
-    }
-  }
 
   return result;
 }

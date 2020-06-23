@@ -25,21 +25,28 @@ class Command;
 
 class ISerializer {
 public:
-  virtual bool Serialize(const bool&)                     = 0;
-  virtual bool Serialize(const char&)                     = 0;
-  virtual bool Serialize(const short&)                    = 0;
-  virtual bool Serialize(const int&)                      = 0;
-  virtual bool Serialize(const long&)                     = 0;
-  virtual bool Serialize(const float&)                    = 0;
-  virtual bool Serialize(const double&)                   = 0;
-  virtual bool Serialize(const rtti::ICastable*)          = 0;
-  virtual bool serializeObject(rtti::castable_constptr_t) = 0;
-  virtual bool Serialize(const PieceString&)              = 0;
-  virtual void Hint(const PieceString&)                   = 0;
-  virtual void Hint(const PieceString&, intptr_t ival)    = 0;
+  virtual bool Serialize(const bool&)   = 0;
+  virtual bool Serialize(const char&)   = 0;
+  virtual bool Serialize(const short&)  = 0;
+  virtual bool Serialize(const int&)    = 0;
+  virtual bool Serialize(const long&)   = 0;
+  virtual bool Serialize(const float&)  = 0;
+  virtual bool Serialize(const double&) = 0;
 
-  virtual bool Serialize(const IProperty*)                      = 0;
-  virtual bool Serialize(const IObjectProperty*, const Object*) = 0;
+  virtual bool Serialize(const PieceString&)           = 0;
+  virtual void Hint(const PieceString&)                = 0;
+  virtual void Hint(const PieceString&, intptr_t ival) = 0;
+
+  virtual bool Serialize(const IProperty*) = 0;
+
+  virtual bool serializeObject(const rtti::ICastable*) = 0;
+  inline bool serializeObject(rtti::castable_constptr_t obj) {
+    return serializeObject(obj.get());
+  }
+  // virtual bool serializeObjectWithCategory(
+  //  const rtti::Category* cat, //
+  // const rtti::ICastable* object)                                          = 0;
+  virtual bool serializeObjectProperty(const IObjectProperty*, const Object*) = 0;
 
   virtual bool SerializeData(unsigned char*, size_t) = 0;
 

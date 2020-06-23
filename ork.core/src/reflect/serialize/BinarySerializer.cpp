@@ -128,7 +128,7 @@ bool BinarySerializer::Serialize(const IProperty* prop) {
   return prop->Serialize(*this);
 }
 
-bool BinarySerializer::Serialize(const IObjectProperty* prop, const Object* object) {
+bool BinarySerializer::serializeObjectProperty(const IObjectProperty* prop, const Object* object) {
   return prop->Serialize(*this, object);
 }
 
@@ -153,7 +153,7 @@ int BinarySerializer::FindObject(const rtti::ICastable* object) {
   return result;
 }
 
-bool BinarySerializer::Serialize(const rtti::ICastable* object) {
+bool BinarySerializer::serializeObject(const rtti::ICastable* object) {
   bool result = true;
 
   if (object == NULL) {

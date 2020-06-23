@@ -18,9 +18,7 @@ class ICastable;
 
 namespace ork { namespace reflect {
 
-using castable_rawptr_t      = rtti::ICastable*;
-using castable_rawconstptr_t = const rtti::ICastable*;
-using ObjectPointer          = ork::Object*;
+using ObjectPointer = ork::Object*;
 
 //////////////////////////////////////////////////
 template <typename T>
@@ -44,15 +42,15 @@ inline //
 }
 
 //////////////////////////////////////////////////
-template <typename T>
-inline //
-    void
-    BidirectionalSerializer::serializeObject(std::shared_ptr<const T>&) {
+void BidirectionalSerializer::serializeObject(rtti::castable_constptr_t) {
 }
-template <typename T>
-inline //
-    void
-    BidirectionalSerializer::deserializeObject(std::shared_ptr<T>&) {
+void BidirectionalSerializer::deserializeObject(rtti::castable_ptr_t&) {
+}
+
+//////////////////////////////////////////////////
+void BidirectionalSerializer::serializeObject(rtti::castable_rawconstptr_t) {
+}
+void BidirectionalSerializer::deserializeObject(rtti::castable_rawptr_t&) {
 }
 
 //////////////////////////////////////////////////
@@ -107,43 +105,43 @@ void Serialize(
   }
 }*/
 
-template <>
+/*template <>
 void Serialize(
     object_ptr_t const* in, //
     object_ptr_t* out,
     BidirectionalSerializer& bidi) {
   if (bidi.Serializing()) {
-    bidi.Serialize(in->get());
+    bidi.serializeObject(in->get());
   } else {
-    // bidi.Deserialize(*out->get());
+    bidi.deserializeObject(*out->get());
+  }
+}*/
+
+template <>
+void Serialize(
+    rtti::castable_rawptr_t const* in, //
+    rtti::castable_rawptr_t* out,
+    BidirectionalSerializer& bidi) {
+  if (bidi.Serializing()) {
+    // bidi.serializeObject(*in);
+  } else {
+    // rtti::ICastable* result = NULL;
+    // bidi.deserializeObject(result);
+    //*out = result;
   }
 }
 
 template <>
 void Serialize(
-    castable_rawptr_t const* in, //
-    castable_rawptr_t* out,
+    rtti::castable_rawconstptr_t const* in, //
+    rtti::castable_rawconstptr_t* out,
     BidirectionalSerializer& bidi) {
   if (bidi.Serializing()) {
-    bidi.Serialize(*in);
+    // bidi.serializeObject(*in);
   } else {
-    rtti::ICastable* result = NULL;
-    bidi.Deserialize(result);
-    *out = result;
-  }
-}
-
-template <>
-void Serialize(
-    castable_rawconstptr_t const* in, //
-    castable_rawconstptr_t* out,
-    BidirectionalSerializer& bidi) {
-  if (bidi.Serializing()) {
-    bidi.Serialize(*in);
-  } else {
-    rtti::ICastable* result = NULL;
-    bidi.Deserialize(result);
-    *out = result;
+    // rtti::ICastable* result = NULL;
+    // bidi.deserializeObject(result);
+    //*out = result;
   }
 }
 

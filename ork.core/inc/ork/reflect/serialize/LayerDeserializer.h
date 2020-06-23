@@ -31,23 +31,22 @@ public:
   bool Deserialize(long&) override;
   bool Deserialize(float&) override;
   bool Deserialize(double&) override;
-  bool Deserialize(rtti::ICastable*&) override;
-
-  bool Deserialize(const IProperty*) override;
-  bool Deserialize(const IObjectProperty*, Object*) override;
 
   bool Deserialize(MutableString&) override;
   bool Deserialize(ResizableString&) override;
   bool DeserializeData(unsigned char*, size_t) override;
 
+  bool Deserialize(const IProperty*) override;
+  bool deserializeObject(rtti::ICastable*&) override;
   bool deserializeObject(rtti::castable_ptr_t&) override;
+  bool deserializeObjectProperty(const IObjectProperty*, Object*) override;
 
   bool ReferenceObject(rtti::ICastable*) override;
   bool BeginCommand(Command&) override;
   bool EndCommand(const Command&) override;
 
 protected:
-  bool Deserialize(const rtti::Category*, rtti::ICastable*&) override;
+  bool _deserialize(const rtti::Category*, rtti::ICastable*&);
 
 protected:
   IDeserializer& mDeserializer;
@@ -87,19 +86,19 @@ inline bool LayerDeserializer::Deserialize(double& value) {
   return mDeserializer.Deserialize(value);
 }
 
-inline bool LayerDeserializer::Deserialize(rtti::ICastable*& value) {
-  return mDeserializer.Deserialize(value);
+inline bool LayerDeserializer::deserializeObject(rtti::ICastable*& value) {
+  return mDeserializer.deserializeObject(value);
 }
 
 inline bool LayerDeserializer::Deserialize(const IProperty* prop) {
   return prop->Deserialize(*this);
 }
 
-inline bool LayerDeserializer::Deserialize(const IObjectProperty* prop, Object* object) {
+inline bool LayerDeserializer::deserializeObjectProperty(const IObjectProperty* prop, Object* object) {
   return prop->Deserialize(*this, object);
 }
 
-inline bool LayerDeserializer::Deserialize(const rtti::Category* category, rtti::ICastable*& object) {
+inline bool LayerDeserializer::_deserialize(const rtti::Category* category, rtti::ICastable*& object) {
   return category->DeserializeReference(*this, object);
 }
 

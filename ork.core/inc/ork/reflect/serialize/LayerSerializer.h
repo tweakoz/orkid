@@ -30,7 +30,6 @@ public:
   bool Serialize(const long&) override;
   bool Serialize(const float&) override;
   bool Serialize(const double&) override;
-  bool Serialize(const rtti::ICastable*) override;
   bool Serialize(const PieceString&) override;
   void Hint(const PieceString&) override;
   void Hint(const PieceString&, intptr_t ival) override;
@@ -38,11 +37,11 @@ public:
   bool SerializeData(unsigned char*, size_t) override;
 
   bool Serialize(const IProperty*) override;
-  bool Serialize(const IObjectProperty*, const Object*) override;
-
-  bool _Serialize(const rtti::Category*, const rtti::ICastable*);
-
-  bool serializeObject(rtti::castable_constptr_t) override;
+  bool serializeObject(const rtti::ICastable*) override;
+  bool serializeObjectProperty(const IObjectProperty*, const Object*) override;
+  // bool serializeObjectWithCategory(
+  //  const rtti::Category*, //
+  // const rtti::ICastable*) override;
 
   bool ReferenceObject(const rtti::ICastable*) override;
   bool BeginCommand(const Command&) override;
@@ -86,10 +85,6 @@ inline bool LayerSerializer::Serialize(const double& value) {
   return mSerializer.Serialize(value);
 }
 
-inline bool LayerSerializer::Serialize(const rtti::ICastable* object) {
-  return mSerializer.Serialize(object);
-}
-
 inline bool LayerSerializer::Serialize(const PieceString& text) {
   return mSerializer.Serialize(text);
 }
@@ -109,13 +104,17 @@ inline bool LayerSerializer::Serialize(const IProperty* prop) {
   return prop->Serialize(*this);
 }
 
-inline bool LayerSerializer::Serialize(const IObjectProperty* prop, const Object* object) {
+inline bool LayerSerializer::serializeObject(const rtti::ICastable* object) {
+  return mSerializer.Serialize(object);
+}
+
+inline bool LayerSerializer::serializeObjectProperty(const IObjectProperty* prop, const Object* object) {
   return prop->Serialize(*this, object);
 }
 
-inline bool LayerSerializer::_Serialize(const rtti::Category* category, const rtti::ICastable* object) {
-  return category->SerializeReference(*this, object);
-}
+// inline bool LayerSerializer::serializeObjectWithCategory(const rtti::Category* category, const rtti::ICastable* object) {
+// return category->SerializeReference(*this, object);
+//}
 
 inline bool LayerSerializer::ReferenceObject(const rtti::ICastable* object) {
   return mSerializer.ReferenceObject(object);

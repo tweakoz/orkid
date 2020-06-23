@@ -156,29 +156,30 @@ bool Object::PostDeserialize(reflect::IDeserializer&) {
 }
 
 Object* Object::Clone() const {
-  printf("slowclone class<%s>\n", GetClass()->Name().c_str());
-
-  if (Object* clone = rtti::autocast(GetClass()->CreateObject())) {
-    ork::ResizableString str;
-    ork::stream::ResizableStringOutputStream ostream(str);
-    ork::reflect::serialize::BinarySerializer binoser(ostream);
-    ork::reflect::serialize::ShallowSerializer oser(binoser);
-
-    GetClass()->Description().SerializeProperties(oser, this);
-
-    ork::stream::StringInputStream istream(str);
-    ork::reflect::serialize::BinaryDeserializer biniser(istream);
-    ork::reflect::serialize::ShallowDeserializer iser(biniser);
-
-    GetClass()->Description().DeserializeProperties(iser, clone);
-
-    return clone;
-  }
-  return NULL;
+  auto the_clone = dynamic_cast<Object*>(GetClass()->CreateObject());
+  _cloneInto(the_clone);
+  return the_clone;
 }
 object_ptr_t Object::cloneShared() const {
+  auto the_clone = std::dynamic_pointer_cast<Object>(GetClass()->createShared());
+  _cloneInto(the_clone.get());
+  return the_clone;
 }
-void Object::_clone(Object* into) const {
+void Object::_cloneInto(Object* into) const {
+  printf("slowclone class<%s>\n", GetClass()->Name().c_str());
+
+  ork::ResizableString str;
+  ork::stream::ResizableStringOutputStream ostream(str);
+  ork::reflect::serialize::BinarySerializer binoser(ostream);
+  ork::reflect::serialize::ShallowSerializer oser(binoser);
+
+  GetClass()->Description().SerializeProperties(oser, this);
+
+  ork::stream::StringInputStream istream(str);
+  ork::reflect::serialize::BinaryDeserializer biniser(istream);
+  ork::reflect::serialize::ShallowDeserializer iser(biniser);
+
+  GetClass()->Description().DeserializeProperties(iser, into);
 }
 
 Md5Sum Object::CalcMd5() const {
