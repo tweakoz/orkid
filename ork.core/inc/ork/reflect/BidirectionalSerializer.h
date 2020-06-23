@@ -55,6 +55,9 @@ public:
   // only used in (and defined in) Serialize.cpp
   template <typename T> void Deserialize(T&);
 
+  template <typename T> void serializeObject(std::shared_ptr<const T>&);
+  template <typename T> void deserializeObject(std::shared_ptr<T>&);
+
   operator bool() const;
 
 private:

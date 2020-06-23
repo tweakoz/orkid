@@ -26,14 +26,14 @@ bool ObjectCategory::SerializeReference(
   return object->Serialize(serializer);
 }
 ////////////////////////////////////////////////////////////////
-bool ObjectCategory::serializeReference(
+bool ObjectCategory::serializeObject(
     reflect::ISerializer& serializer, //
     rtti::castable_constptr_t value) const {
   auto object = rtti::downcast<const Object*>(value.get());
   return object->Serialize(serializer);
 }
 ////////////////////////////////////////////////////////////////
-bool ObjectCategory::deserializeReference(
+bool ObjectCategory::deserializeObject(
     reflect::IDeserializer& deserializer, //
     rtti::castable_ptr_t& outvalue) const {
   reflect::Command command;
@@ -55,7 +55,9 @@ bool ObjectCategory::deserializeReference(
   return true;
 }
 ////////////////////////////////////////////////////////////////
-bool ObjectCategory::DeserializeReference(reflect::IDeserializer& deserializer, rtti::ICastable*& value) const {
+bool ObjectCategory::DeserializeReference(
+    reflect::IDeserializer& deserializer, //
+    rtti::ICastable*& value) const {
   reflect::Command command;
   bool cmdok = deserializer.BeginCommand(command);
   OrkAssert(cmdok);

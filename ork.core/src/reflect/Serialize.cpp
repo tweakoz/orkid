@@ -42,6 +42,19 @@ inline //
   if (false == result)
     Fail();
 }
+
+//////////////////////////////////////////////////
+template <typename T>
+inline //
+    void
+    BidirectionalSerializer::serializeObject(std::shared_ptr<const T>&) {
+}
+template <typename T>
+inline //
+    void
+    BidirectionalSerializer::deserializeObject(std::shared_ptr<T>&) {
+}
+
 //////////////////////////////////////////////////
 
 template <typename T>
@@ -71,7 +84,7 @@ void Serialize(
 
 FOREACH_BASIC_SERIALIZATION_TYPE(INSTANTIATE_SERIALIZE_FUNCTION)
 
-template <typename T>
+/*template <typename T>
 void Serialize(
     std::shared_ptr<const T> const* in, //
     std::shared_ptr<T>* out,
@@ -81,7 +94,7 @@ void Serialize(
   } else {
     bidi.Deserialize(*out->get());
   }
-}
+}*/
 
 /*void Serialize(
     rtti::castable_constptr_t const* in, //

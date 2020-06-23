@@ -25,7 +25,4 @@ struct ICastable {
   };
 };
 
-using castable_ptr_t      = std::shared_ptr<ICastable>;
-using castable_constptr_t = std::shared_ptr<const ICastable>;
-
 }} // namespace ork::rtti

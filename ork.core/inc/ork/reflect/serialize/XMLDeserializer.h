@@ -3,7 +3,7 @@
 // Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -14,76 +14,76 @@
 
 namespace ork { namespace reflect { namespace serialize {
 
-class XMLDeserializer : public IDeserializer
-{
+class XMLDeserializer : public IDeserializer {
 public:
-	XMLDeserializer(stream::IInputStream &stream);
+  XMLDeserializer(stream::IInputStream& stream);
 
-    /*virtual*/ bool Deserialize(bool &);
-	/*virtual*/ bool Deserialize(char &);
-    /*virtual*/ bool Deserialize(short &);
-    /*virtual*/ bool Deserialize(int &);
-    /*virtual*/ bool Deserialize(long &);
-    /*virtual*/ bool Deserialize(float &);
-    /*virtual*/ bool Deserialize(double &);
-	/*virtual*/ bool Deserialize(rtti::ICastable *&);
+  bool Deserialize(bool&) override;
+  bool Deserialize(char&) override;
+  bool Deserialize(short&) override;
+  bool Deserialize(int&) override;
+  bool Deserialize(long&) override;
+  bool Deserialize(float&) override;
+  bool Deserialize(double&) override;
+  bool Deserialize(rtti::ICastable*&) override;
 
-	/*virtual*/ bool Deserialize(const IProperty *);
-	/*virtual*/ bool Deserialize(const IObjectProperty *, Object *);
+  bool Deserialize(const IProperty*) override;
+  bool Deserialize(const IObjectProperty*, Object*) override;
 
-    /*virtual*/ bool Deserialize(MutableString &); 
-    /*virtual*/ bool Deserialize(ResizableString &); 
-    /*virtual*/ bool DeserializeData(unsigned char *, size_t);
+  bool Deserialize(MutableString&);
+  bool Deserialize(ResizableString&);
+  bool DeserializeData(unsigned char*, size_t) override;
 
-    /*virtual*/ bool ReferenceObject(rtti::ICastable *);
-    /*virtual*/ bool BeginCommand(Command &);
-    /*virtual*/ bool EndCommand(const Command &);
+  bool deserializeObject(rtti::castable_ptr_t&) = 0;
+
+  bool ReferenceObject(rtti::ICastable*) override;
+  bool BeginCommand(Command&) override;
+  bool EndCommand(const Command&) override;
 
 private:
-	bool EatBinaryData();
-	bool DiscardData();
-	bool DiscardCommandOrData(bool &error);
+  bool EatBinaryData();
+  bool DiscardData();
+  bool DiscardCommandOrData(bool& error);
 
-	int mLineNo;
-	stream::InputStreamBuffer<1024*4> mStream;
-	orkvector<rtti::ICastable *> mDeserializedObjects;
+  int mLineNo;
+  stream::InputStreamBuffer<1024 * 4> mStream;
+  orkvector<rtti::ICastable*> mDeserializedObjects;
 
-    void EatSpace();
-    void Advance(int n = 1);
+  void EatSpace();
+  void Advance(int n = 1);
 
-    int Peek();
+  int Peek();
 
-	bool CheckLoose(const PieceString &s, size_t &matchlen);
-	bool MatchLoose(const PieceString &s);
+  bool CheckLoose(const PieceString& s, size_t& matchlen);
+  bool MatchLoose(const PieceString& s);
 
-	bool Check(const PieceString &s);
-    bool Match(const PieceString &s);
+  bool Check(const PieceString& s);
+  bool Match(const PieceString& s);
 
-    bool ReadNumber(long &);
-    bool ReadNumber(double &);
+  bool ReadNumber(long&);
+  bool ReadNumber(double&);
 
-    size_t ReadWord(MutableString word);
-	bool MatchEndTag(const ConstString &tagname);
+  size_t ReadWord(MutableString word);
+  bool MatchEndTag(const ConstString& tagname);
 
-    bool mbReadingAttributes;
-	char mAttributeEndChar;
-    const Command *mCurrentCommand;
+  bool mbReadingAttributes;
+  char mAttributeEndChar;
+  const Command* mCurrentCommand;
 
-	int FindObject(rtti::ICastable *object);
+  int FindObject(rtti::ICastable* object);
 
-	////////////////////////////////////////////
+  ////////////////////////////////////////////
 
-	bool CheckExternalRead();
-	bool BeginTag(const PieceString &tagname);
-	bool EndTag(const PieceString &tagname);
-	bool BeginAttribute(MutableString name);
-	bool EndAttribute();
-	bool ReadAttribute(MutableString name, MutableString value);
-	
-	template<typename StringType>
-	bool ReadText(StringType &text);
-	bool ReadBinary(unsigned char [], size_t);
-	void ReadUntil(MutableString value, char terminator);
+  bool CheckExternalRead();
+  bool BeginTag(const PieceString& tagname);
+  bool EndTag(const PieceString& tagname);
+  bool BeginAttribute(MutableString name);
+  bool EndAttribute();
+  bool ReadAttribute(MutableString name, MutableString value);
+
+  template <typename StringType> bool ReadText(StringType& text);
+  bool ReadBinary(unsigned char[], size_t);
+  void ReadUntil(MutableString value, char terminator);
 };
 
-} } }
+}}} // namespace ork::reflect::serialize

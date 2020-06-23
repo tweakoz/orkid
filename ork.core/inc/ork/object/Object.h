@@ -7,10 +7,10 @@
 
 #pragma once
 
+#include <ork/orktypes.h>
 #include <ork/rtti/RTTI.h>
 #include <ork/reflect/Serializable.h>
 #include <ork/object/ObjectClass.h>
-#include <ork/config/config.h>
 #include <ork/util/md5.h>
 
 namespace ork {
@@ -30,8 +30,6 @@ class BidirectionalSerializer;
 } // namespace reflect
 
 struct Object;
-using object_ptr_t      = std::shared_ptr<Object>;
-using object_constptr_t = std::shared_ptr<const Object>;
 
 // typedef rtti::RTTI<Object, rtti::ICastable, rtti::DefaultPolicy, object::ObjectClass> ObjectBase;
 

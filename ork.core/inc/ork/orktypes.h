@@ -10,6 +10,7 @@
 #include <ork/orkconfig.h>
 #include <stdint.h>
 #include <functional>
+#include <memory>
 
 typedef double f64;
 typedef double F64;
@@ -51,13 +52,9 @@ typedef int64_t fx64, FX64;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined(__cplusplus)
 namespace ork {
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#if defined(__cplusplus)
 
 struct const_string {
   const char* mpstr;
@@ -73,9 +70,19 @@ struct const_string {
   }
 };
 
-#endif
+///////////////////////////////////////////////////////////////////////////////
+
+namespace rtti {
+struct ICastable;
+using castable_ptr_t      = std::shared_ptr<ICastable>;
+using castable_constptr_t = std::shared_ptr<const ICastable>;
+} // namespace rtti
 
 class Object;
+using object_ptr_t      = std::shared_ptr<Object>;
+using object_constptr_t = std::shared_ptr<const Object>;
+
+///////////////////////////////////////////////////////////////////////////////
 
 class AssetHandle {
 public: //
@@ -95,9 +102,7 @@ using FileStampH = size_t; // (Y6M4D5:H5M6S6) (15:17) Base Year 2000 6 bits for 
 using LibraryH   = size_t;
 using FunctionH  = size_t;
 
-#if defined(__cplusplus)
-}
-#endif
+} // namespace ork
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -121,8 +126,6 @@ constexpr double EPSILON = 0.0001;
 // C++ Only Types
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined(__cplusplus)
-
 inline bool AreBitsEnabled(U32 uval, U32 bittest) {
   return (bittest == (uval & bittest));
 }
@@ -139,5 +142,3 @@ struct SRect {
       , miH(y2 - y) {
   }
 };
-
-#endif

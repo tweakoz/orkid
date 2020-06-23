@@ -3,7 +3,7 @@
 // Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -14,168 +14,131 @@
 
 #include <ork/rtti/Category.h>
 
-namespace ork { namespace stream { class IOutputStream; } }
+namespace ork { namespace stream {
+class IOutputStream;
+}} // namespace ork::stream
 
 namespace ork { namespace reflect { namespace serialize {
 
-class LayerDeserializer : public IDeserializer
-{
+class LayerDeserializer : public IDeserializer {
 public:
-	LayerDeserializer(IDeserializer &deserializer);
+  LayerDeserializer(IDeserializer& deserializer);
 
-    /*virtual*/ bool Deserialize(bool &);
-	/*virtual*/ bool Deserialize(char &);
-    /*virtual*/ bool Deserialize(short &);
-    /*virtual*/ bool Deserialize(int &);
-    /*virtual*/ bool Deserialize(long &);
-    /*virtual*/ bool Deserialize(float &);
-    /*virtual*/ bool Deserialize(double &);
-	/*virtual*/ bool Deserialize(rtti::ICastable *&);
+  bool Deserialize(bool&) override;
+  bool Deserialize(char&) override;
+  bool Deserialize(short&) override;
+  bool Deserialize(int&) override;
+  bool Deserialize(long&) override;
+  bool Deserialize(float&) override;
+  bool Deserialize(double&) override;
+  bool Deserialize(rtti::ICastable*&) override;
 
-	/*virtual*/ bool Deserialize(const IProperty *);
-	/*virtual*/ bool Deserialize(const IObjectProperty *, Object *);
+  bool Deserialize(const IProperty*) override;
+  bool Deserialize(const IObjectProperty*, Object*) override;
 
-    /*virtual*/ bool Deserialize(MutableString &); 
-    /*virtual*/ bool Deserialize(ResizableString &); 
-    /*virtual*/ bool DeserializeData(unsigned char *, size_t);
+  bool Deserialize(MutableString&) override;
+  bool Deserialize(ResizableString&) override;
+  bool DeserializeData(unsigned char*, size_t) override;
 
-    /*virtual*/ bool ReferenceObject(rtti::ICastable *);
-    /*virtual*/ bool BeginCommand(Command &);
-    /*virtual*/ bool EndCommand(const Command &);
-	
+  bool deserializeObject(rtti::castable_ptr_t&) override;
+
+  bool ReferenceObject(rtti::ICastable*) override;
+  bool BeginCommand(Command&) override;
+  bool EndCommand(const Command&) override;
+
 protected:
-	/*virtual*/ bool Deserialize(const rtti::Category *, rtti::ICastable *&);
+  bool Deserialize(const rtti::Category*, rtti::ICastable*&) override;
 
 protected:
-    IDeserializer &mDeserializer;
-	const Command *mCurrentCommand;
+  IDeserializer& mDeserializer;
+  const Command* mCurrentCommand;
 };
 
-inline
-LayerDeserializer::LayerDeserializer(IDeserializer &deserializer)
-	: mDeserializer(deserializer)
-	, mCurrentCommand(NULL)
-{
+inline LayerDeserializer::LayerDeserializer(IDeserializer& deserializer)
+    : mDeserializer(deserializer)
+    , mCurrentCommand(NULL) {
 }
 
-inline
-bool LayerDeserializer::Deserialize(bool &value)
-{
-	return mDeserializer.Deserialize(value);
+inline bool LayerDeserializer::Deserialize(bool& value) {
+  return mDeserializer.Deserialize(value);
 }
 
-inline
-bool LayerDeserializer::Deserialize(char &value)
-{
-	return mDeserializer.Deserialize(value);
+inline bool LayerDeserializer::Deserialize(char& value) {
+  return mDeserializer.Deserialize(value);
 }
 
-inline
-bool LayerDeserializer::Deserialize(short &value)
-{
-	return mDeserializer.Deserialize(value);
+inline bool LayerDeserializer::Deserialize(short& value) {
+  return mDeserializer.Deserialize(value);
 }
 
-inline
-bool LayerDeserializer::Deserialize(int &value)
-{
-	return mDeserializer.Deserialize(value);
+inline bool LayerDeserializer::Deserialize(int& value) {
+  return mDeserializer.Deserialize(value);
 }
 
-inline
-bool LayerDeserializer::Deserialize(long &value)
-{
-	return mDeserializer.Deserialize(value);
+inline bool LayerDeserializer::Deserialize(long& value) {
+  return mDeserializer.Deserialize(value);
 }
 
-inline
-bool LayerDeserializer::Deserialize(float &value)
-{
-	return mDeserializer.Deserialize(value);
+inline bool LayerDeserializer::Deserialize(float& value) {
+  return mDeserializer.Deserialize(value);
 }
 
-inline
-bool LayerDeserializer::Deserialize(double &value)
-{
-	return mDeserializer.Deserialize(value);
+inline bool LayerDeserializer::Deserialize(double& value) {
+  return mDeserializer.Deserialize(value);
 }
 
-inline
-bool LayerDeserializer::Deserialize(rtti::ICastable *&value)
-{
-	return mDeserializer.Deserialize(value);
+inline bool LayerDeserializer::Deserialize(rtti::ICastable*& value) {
+  return mDeserializer.Deserialize(value);
 }
 
-
-inline
-bool LayerDeserializer::Deserialize(const IProperty *prop)
-{
-	return prop->Deserialize(*this);
+inline bool LayerDeserializer::Deserialize(const IProperty* prop) {
+  return prop->Deserialize(*this);
 }
 
-inline
-bool LayerDeserializer::Deserialize(const IObjectProperty *prop, Object *object)
-{
-	return prop->Deserialize(*this, object);
+inline bool LayerDeserializer::Deserialize(const IObjectProperty* prop, Object* object) {
+  return prop->Deserialize(*this, object);
 }
 
-inline
-bool LayerDeserializer::Deserialize(const rtti::Category *category, rtti::ICastable *&object)
-{
-	return category->DeserializeReference(*this, object);
+inline bool LayerDeserializer::Deserialize(const rtti::Category* category, rtti::ICastable*& object) {
+  return category->DeserializeReference(*this, object);
 }
 
-inline
-bool LayerDeserializer::Deserialize(MutableString &text)
-{
-	return mDeserializer.Deserialize(text);
-}
- 
-inline
-bool LayerDeserializer::Deserialize(ResizableString &text)
-{
-	return mDeserializer.Deserialize(text);
-}
- 
-inline
-bool LayerDeserializer::DeserializeData(unsigned char *data, size_t size)
-{
-	return mDeserializer.DeserializeData(data, size);
+inline bool LayerDeserializer::Deserialize(MutableString& text) {
+  return mDeserializer.Deserialize(text);
 }
 
-
-inline
-bool LayerDeserializer::ReferenceObject(rtti::ICastable *object)
-{
-	return mDeserializer.ReferenceObject(object);
+inline bool LayerDeserializer::Deserialize(ResizableString& text) {
+  return mDeserializer.Deserialize(text);
 }
 
-inline
-bool LayerDeserializer::BeginCommand(Command &command)
-{
-	const Command *previous_command = mCurrentCommand;
-
-	command.PreviousCommand() = previous_command;
-	
-	if(mDeserializer.BeginCommand(command))
-	{
-		mCurrentCommand = &command;
-		OrkAssert(command.PreviousCommand() == previous_command);
-		return true;
-	}
-
-	return false;
+inline bool LayerDeserializer::DeserializeData(unsigned char* data, size_t size) {
+  return mDeserializer.DeserializeData(data, size);
 }
 
-inline
-bool LayerDeserializer::EndCommand(const Command &command)
-{	
-	OrkAssert(mCurrentCommand == &command);
-	
-	mCurrentCommand = mCurrentCommand->PreviousCommand();
-	
-	return mDeserializer.EndCommand(command);
+inline bool LayerDeserializer::ReferenceObject(rtti::ICastable* object) {
+  return mDeserializer.ReferenceObject(object);
 }
 
-} } }
+inline bool LayerDeserializer::BeginCommand(Command& command) {
+  const Command* previous_command = mCurrentCommand;
 
+  command.PreviousCommand() = previous_command;
+
+  if (mDeserializer.BeginCommand(command)) {
+    mCurrentCommand = &command;
+    OrkAssert(command.PreviousCommand() == previous_command);
+    return true;
+  }
+
+  return false;
+}
+
+inline bool LayerDeserializer::EndCommand(const Command& command) {
+  OrkAssert(mCurrentCommand == &command);
+
+  mCurrentCommand = mCurrentCommand->PreviousCommand();
+
+  return mDeserializer.EndCommand(command);
+}
+
+}}} // namespace ork::reflect::serialize

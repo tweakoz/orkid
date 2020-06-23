@@ -3,7 +3,7 @@
 // Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -11,59 +11,63 @@
 #include <ork/orkstl.h>
 #include <ork/rtti/Category.h>
 
-namespace ork { namespace stream { class IOutputStream; } }
+namespace ork { namespace stream {
+class IOutputStream;
+}} // namespace ork::stream
 
 namespace ork { namespace reflect { namespace serialize {
 
-class XMLSerializer : public ISerializer
-{
+class XMLSerializer : public ISerializer {
 public:
-	XMLSerializer(stream::IOutputStream &stream);
+  XMLSerializer(stream::IOutputStream& stream);
 
-    /*virtual*/ bool Serialize(const bool            &);
-    /*virtual*/ bool Serialize(const char            &);
-    /*virtual*/ bool Serialize(const short           &);
-    /*virtual*/ bool Serialize(const int             &);
-	/*virtual*/ bool Serialize(const unsigned int    &);
-    /*virtual*/ bool Serialize(const long            &);
-    /*virtual*/ bool Serialize(const float           &);
-    /*virtual*/ bool Serialize(const double          &);
-	/*virtual*/ bool Serialize(const rtti::ICastable *);
-    /*virtual*/ bool Serialize(const PieceString     &);
-	/*virtual*/ void Hint(const PieceString &);
-	/*virtual*/ void Hint(const PieceString &, intptr_t ival) {}
+  bool Serialize(const bool&) override;
+  bool Serialize(const char&) override;
+  bool Serialize(const short&) override;
+  bool Serialize(const int&) override;
+  // bool Serialize(const unsigned int&) override;
+  bool Serialize(const long&) override;
+  bool Serialize(const float&) override;
+  bool Serialize(const double&) override;
+  bool Serialize(const rtti::ICastable*) override;
+  bool Serialize(const PieceString&) override;
+  void Hint(const PieceString&) override;
+  void Hint(const PieceString&, intptr_t ival) override {
+  }
 
-    /*virtual*/ bool SerializeData(unsigned char *, size_t size);
+  bool serializeObject(rtti::castable_constptr_t) override;
 
-	/*virtual*/ bool Serialize(const IProperty *);
-	/*virtual*/ bool Serialize(const IObjectProperty *, const Object *);
+  bool SerializeData(unsigned char*, size_t size) override;
 
-	/*virtual*/ bool ReferenceObject(const rtti::ICastable *);
-    /*virtual*/ bool BeginCommand(const Command &);
-    /*virtual*/ bool EndCommand(const Command &);
+  bool Serialize(const IProperty*) override;
+  bool Serialize(const IObjectProperty*, const Object*) override;
 
-	bool Serialize(const rtti::Category *category, const rtti::ICastable *object);
+  bool ReferenceObject(const rtti::ICastable*) override;
+  bool BeginCommand(const Command&) override;
+  bool EndCommand(const Command&) override;
+
+  bool Serialize(const rtti::Category* category, const rtti::ICastable* object);
 
 private:
-    stream::IOutputStream &mStream;
-	orkvector<const rtti::ICastable *> mSerializedObjects;
-    int mIndent;
-    bool mbWritingAttributes;
-    bool mbNeedSpace;
-    bool mbNeedLine;
-    const Command *mCurrentCommand;
-    void Spaced();
-	void Lined();
-	void Unspaced();
-    
-	bool Write(char *text, size_t size);
-	bool WriteText(const char *format, ...);
-    
-	bool FlushHeader();
+  stream::IOutputStream& mStream;
+  orkvector<const rtti::ICastable*> mSerializedObjects;
+  int mIndent;
+  bool mbWritingAttributes;
+  bool mbNeedSpace;
+  bool mbNeedLine;
+  const Command* mCurrentCommand;
+  void Spaced();
+  void Lined();
+  void Unspaced();
 
-	bool StartObject(PieceString name);
-    bool EndObject();
-	int FindObject(const rtti::ICastable *);
+  bool Write(char* text, size_t size);
+  bool WriteText(const char* format, ...);
+
+  bool FlushHeader();
+
+  bool StartObject(PieceString name);
+  bool EndObject();
+  int FindObject(const rtti::ICastable*);
 };
 
-} } }
+}}} // namespace ork::reflect::serialize

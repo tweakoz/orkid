@@ -3,7 +3,7 @@
 // Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -11,48 +11,47 @@
 #include <ork/stream/InputStreamBuffer.h>
 #include <ork/kernel/string/StringPool.h>
 
-
 namespace ork { namespace reflect { namespace serialize {
 
-class BinaryDeserializer : public IDeserializer
-{
+class BinaryDeserializer final : public IDeserializer {
 public:
-	BinaryDeserializer(stream::IInputStream &stream);
-	~BinaryDeserializer();
+  BinaryDeserializer(stream::IInputStream& stream);
+  ~BinaryDeserializer();
 
-    /*virtual*/ bool Deserialize(bool   &);
-	/*virtual*/ bool Deserialize(char   &);
-    /*virtual*/ bool Deserialize(short  &);
-    /*virtual*/ bool Deserialize(int    &);
-    /*virtual*/ bool Deserialize(long   &);
-    /*virtual*/ bool Deserialize(float  &);
-    /*virtual*/ bool Deserialize(double &);
-	/*virtual*/ bool Deserialize(rtti::ICastable *&);
+  bool Deserialize(bool&) override;
+  bool Deserialize(char&) override;
+  bool Deserialize(short&) override;
+  bool Deserialize(int&) override;
+  bool Deserialize(long&) override;
+  bool Deserialize(float&) override;
+  bool Deserialize(double&) override;
+  bool Deserialize(rtti::ICastable*&) override;
 
-	/*virtual*/ bool Deserialize(const IProperty *);
-	/*virtual*/ bool Deserialize(const IObjectProperty *, Object *);
+  bool Deserialize(const IProperty*) override;
+  bool Deserialize(const IObjectProperty*, Object*) override;
 
-    /*virtual*/ bool Deserialize(MutableString &);
-    /*virtual*/ bool Deserialize(ResizableString &);
-    /*virtual*/ bool DeserializeData(unsigned char *, size_t);
+  bool Deserialize(MutableString&) override;
+  bool Deserialize(ResizableString&) override;
+  bool DeserializeData(unsigned char*, size_t) override;
 
-    /*virtual*/ bool ReferenceObject(rtti::ICastable *);
-    /*virtual*/ bool BeginCommand(Command &);
-    /*virtual*/ bool EndCommand(const Command &);
+  bool deserializeObject(rtti::castable_ptr_t&) override;
+
+  bool ReferenceObject(rtti::ICastable*) override;
+  bool BeginCommand(Command&) override;
+  bool EndCommand(const Command&) override;
+
 private:
-	int FindObject(rtti::ICastable *object);
+  int FindObject(rtti::ICastable* object);
 
-	template<typename T>
-	bool Read(T &);
+  template <typename T> bool Read(T&);
 
-	char Peek();
-	bool Match(char c);
+  char Peek();
+  bool Match(char c);
 
-	stream::InputStreamBuffer<1> mStream;
-	orkvector<rtti::ICastable *> mDeserializedObjects;
-	const Command *mCurrentCommand;
-	StringPool mStringPool;
+  stream::InputStreamBuffer<1> mStream;
+  orkvector<rtti::ICastable*> mDeserializedObjects;
+  const Command* mCurrentCommand;
+  StringPool mStringPool;
 };
 
-} } }
-
+}}} // namespace ork::reflect::serialize

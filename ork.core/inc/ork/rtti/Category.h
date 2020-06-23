@@ -26,8 +26,8 @@ class Category : public Class {
 
   virtual bool SerializeReference(reflect::ISerializer&, const ICastable*) const;
   virtual bool DeserializeReference(reflect::IDeserializer&, ICastable*&) const;
-  virtual bool serializeReference(reflect::ISerializer&, castable_constptr_t) const;
-  virtual bool deserializeReference(reflect::IDeserializer&, castable_ptr_t&) const;
+  virtual bool serializeObject(reflect::ISerializer&, castable_constptr_t) const;
+  virtual bool deserializeObject(reflect::IDeserializer&, castable_ptr_t&) const;
 };
 
 }} // namespace ork::rtti

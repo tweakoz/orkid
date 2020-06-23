@@ -18,11 +18,11 @@ bool Category::SerializeReference(reflect::ISerializer& serializer, const ICasta
 bool Category::DeserializeReference(reflect::IDeserializer& deserializer, ICastable*& value) const {
   return false;
 }
-bool Category::serializeReference(reflect::ISerializer& serializer, castable_constptr_t value) const {
+bool Category::serializeObject(reflect::ISerializer& serializer, castable_constptr_t value) const {
   return false;
 }
 
-bool Category::deserializeReference(reflect::IDeserializer& deserializer, castable_ptr_t& value) const {
+bool Category::deserializeObject(reflect::IDeserializer& deserializer, castable_ptr_t& value) const {
   return false;
 }
 

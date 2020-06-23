@@ -30,8 +30,8 @@ private:
   using dispatch_fn_t = std::function<Object*(Class* clazz)>;
   bool SerializeReference(reflect::ISerializer&, const rtti::ICastable*) const override;
   bool DeserializeReference(reflect::IDeserializer&, rtti::ICastable*&) const override;
-  bool serializeReference(reflect::ISerializer&, rtti::castable_constptr_t) const override;
-  bool deserializeReference(reflect::IDeserializer&, rtti::castable_ptr_t&) const override;
+  bool serializeObject(reflect::ISerializer&, rtti::castable_constptr_t) const override;
+  bool deserializeObject(reflect::IDeserializer&, rtti::castable_ptr_t&) const override;
 };
 
 }} // namespace ork::object

@@ -3,54 +3,47 @@
 // Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
-
+////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
 #include <ork/reflect/BidirectionalSerializer.h>
 
 namespace ork { namespace reflect {
 
-BidirectionalSerializer::BidirectionalSerializer(IDeserializer &deserializer)
-	: mDeserializer(&deserializer)
-	, mSerializer(NULL)
-	, mSuccess(true)
-{}
-
-BidirectionalSerializer::BidirectionalSerializer(ISerializer &serializer)
-	: mDeserializer(NULL)
-	, mSerializer(&serializer)
-	, mSuccess(true)
-{}
-
-bool BidirectionalSerializer::Succeeded() const
-{
-	return mSuccess;
+BidirectionalSerializer::BidirectionalSerializer(IDeserializer& deserializer)
+    : mDeserializer(&deserializer)
+    , mSerializer(NULL)
+    , mSuccess(true) {
 }
 
-bool BidirectionalSerializer::Serializing() const
-{
-	return mSerializer != NULL;
+BidirectionalSerializer::BidirectionalSerializer(ISerializer& serializer)
+    : mDeserializer(NULL)
+    , mSerializer(&serializer)
+    , mSuccess(true) {
 }
 
-ISerializer *BidirectionalSerializer::Serializer() const
-{
-	return mSerializer;
+bool BidirectionalSerializer::Succeeded() const {
+  return mSuccess;
 }
 
-IDeserializer *BidirectionalSerializer::Deserializer() const
-{	
-	return mDeserializer;
+bool BidirectionalSerializer::Serializing() const {
+  return mSerializer != NULL;
 }
 
-void BidirectionalSerializer::Fail()
-{
-	mSuccess = false;
+ISerializer* BidirectionalSerializer::Serializer() const {
+  return mSerializer;
 }
 
-BidirectionalSerializer::operator bool() const
-{
-	return Succeeded();
+IDeserializer* BidirectionalSerializer::Deserializer() const {
+  return mDeserializer;
 }
 
-} }
+void BidirectionalSerializer::Fail() {
+  mSuccess = false;
+}
+
+BidirectionalSerializer::operator bool() const {
+  return Succeeded();
+}
+
+}} // namespace ork::reflect

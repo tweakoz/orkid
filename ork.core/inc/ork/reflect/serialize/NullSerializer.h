@@ -3,43 +3,45 @@
 // Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
 #include <ork/reflect/ISerializer.h> // for base
 
-namespace ork { namespace rtti { class Category; } }
+namespace ork { namespace rtti {
+class Category;
+}} // namespace ork::rtti
 
 namespace ork { namespace reflect { namespace serialize {
 
-class NullSerializer : public ISerializer
-{
+class NullSerializer final : public ISerializer {
 public:
-	/*virtual*/ bool Serialize(const bool   &);
-    /*virtual*/ bool Serialize(const char   &);
-    /*virtual*/ bool Serialize(const short  &);
-    /*virtual*/ bool Serialize(const int    &);
-    /*virtual*/ bool Serialize(const long   &);
-    /*virtual*/ bool Serialize(const float  &);
-    /*virtual*/ bool Serialize(const double &);
-    /*virtual*/ bool Serialize(const rtti::ICastable *);
-    /*virtual*/ bool Serialize(const PieceString &);
+  bool Serialize(const bool&) override;
+  bool Serialize(const char&) override;
+  bool Serialize(const short&) override;
+  bool Serialize(const int&) override;
+  bool Serialize(const long&) override;
+  bool Serialize(const float&) override;
+  bool Serialize(const double&) override;
+  bool Serialize(const rtti::ICastable*) override;
+  bool Serialize(const PieceString&) override;
 
-	/*virtual*/ void Hint(const PieceString &);
-    /*virtual*/ void Hint(const PieceString &, intptr_t ival);
+  bool serializeObject(rtti::castable_constptr_t);
 
-    /*virtual*/ bool SerializeData(unsigned char *, size_t);
+  void Hint(const PieceString&) override;
+  void Hint(const PieceString&, intptr_t ival) override;
 
-	/*virtual*/ bool Serialize(const IProperty *prop);
-	/*virtual*/ bool Serialize(const IObjectProperty *prop, const Object *object);
-	/*virtual*/ bool Serialize(const rtti::Category *cat, const rtti::ICastable *object);
+  bool SerializeData(unsigned char*, size_t) override;
 
-	/*virtual*/ bool ReferenceObject(const rtti::ICastable *);
+  bool Serialize(const IProperty* prop) override;
+  bool Serialize(const IObjectProperty* prop, const Object* object) override;
+  bool Serialize(const rtti::Category* cat, const rtti::ICastable* object) override;
 
-    /*virtual*/ bool BeginCommand(const Command &);
-	/*virtual*/ bool EndCommand(const Command &);
+  bool ReferenceObject(const rtti::ICastable*) override;
+
+  bool BeginCommand(const Command&) override;
+  bool EndCommand(const Command&) override;
 };
 
-} } }
-
+}}} // namespace ork::reflect::serialize
