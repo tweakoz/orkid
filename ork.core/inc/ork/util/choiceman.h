@@ -85,7 +85,7 @@ struct AttrChoiceValue {
   void SetName(const std::string& name) {
     mName = name;
   }
-  const std::string GetShortName(void) const {
+  const std::string shortname(void) const {
     return mShortName;
   }
   void SetShortName(const std::string& name) {
@@ -142,13 +142,13 @@ struct ChoiceListFilters {
 
 struct ChoiceList {
 
+  ChoiceList();
+  virtual ~ChoiceList();
+
   void UpdateHierarchy(void);
 
   void remove(const AttrChoiceValue& val);
   void clear(void);
-
-  ChoiceList();
-  virtual ~ChoiceList();
 
   void FindAssetChoices(const file::Path& sdir, const std::string& wildcard);
 
@@ -160,7 +160,8 @@ struct ChoiceList {
     return _hierarchy;
   }
 
-  virtual void EnumerateChoices(bool bforcenocache = false) = 0;
+  virtual void EnumerateChoices(bool bforcenocache = false) {
+  }
   void add(const AttrChoiceValue& val);
 
   bool DoesSlashNodePassFilter(

@@ -66,7 +66,7 @@ void ChoiceList::add(const AttrChoiceValue& val) {
 
   //////////////////////////////////////
 
-  auto pNewVal = std::make_shared<AttrChoiceValue>(LongName, val.GetValue(), val.GetShortName());
+  auto pNewVal = std::make_shared<AttrChoiceValue>(LongName, val.GetValue(), val.shortname());
   pNewVal->SetFunctor(val.GetFunctor());
   mChoicesVect.push_back(pNewVal);
   int nch               = (int)mChoicesVect.size() - 1;
@@ -78,7 +78,7 @@ void ChoiceList::add(const AttrChoiceValue& val) {
   pNewVal->SetCustomData(val.GetCustomData());
 
   OldStlSchoolMapInsert(mNameMap, LongName, pNewVal);
-  OldStlSchoolMapInsert(mShortNameMap, val.GetShortName(), pNewVal);
+  OldStlSchoolMapInsert(mShortNameMap, val.shortname(), pNewVal);
   OldStlSchoolMapInsert(mValueMap, val.GetValue(), pNewVal);
 }
 
@@ -90,7 +90,7 @@ void ChoiceList::remove(const AttrChoiceValue& val) {
   for (int iv = 0; iv < inumchoices; iv++) {
     auto ChcVal = mChoicesVect[iv];
 
-    if ((ChcVal->GetName() == val.GetName()) && (ChcVal->GetShortName() == val.GetShortName())) {
+    if ((ChcVal->GetName() == val.GetName()) && (ChcVal->shortname() == val.shortname())) {
       SlashNode* pnode = ChcVal->GetSlashNode();
 
       if (pnode) {
