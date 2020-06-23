@@ -38,7 +38,7 @@ ObjectModelNode::ObjectModelNode(
     objectmodel_ptr_t mdl, //
     const char* name,
     const reflect::IObjectProperty* prop,
-    ork::Object* obj)
+    ork::object_ptr_t obj)
     : _objectmodel(mdl)
     , mRoot(mdl->_observer)
     , _propname(name)
@@ -70,11 +70,11 @@ const reflect::IObjectProperty* ObjectModelNode::GetOrkProp() const {
   return mOrkProp;
 }
 ///////////////////////////////////////////////////
-void ObjectModelNode::SetOrkObj(ork::Object* obj) { // setObject
+void ObjectModelNode::SetOrkObj(ork::object_ptr_t obj) { // setObject
   mOrkObj = obj;
 }
 ///////////////////////////////////////////////////
-ork::Object* ObjectModelNode::GetOrkObj() const { // object()
+ork::object_ptr_t ObjectModelNode::GetOrkObj() const { // object()
   return mOrkObj;
 }
 ///////////////////////////////////

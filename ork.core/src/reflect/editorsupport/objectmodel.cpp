@@ -56,7 +56,7 @@ void ObjectModel::Describe() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ObjectModel::SlotRelayPropertyInvalidated(ork::Object* pobj, const reflect::IObjectProperty* prop) {
+void ObjectModel::SlotRelayPropertyInvalidated(ork::object_ptr_t pobj, const reflect::IObjectProperty* prop) {
   if (_observer)
     _observer->PropertyInvalidated(pobj, prop);
   // Attach( mCurrentObject );
@@ -156,7 +156,7 @@ void ObjectModel::SigPreNewObject() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void ObjectModel::SigPropertyInvalidated(
-    ork::Object* pobj, //
+    ork::object_ptr_t pobj, //
     const reflect::IObjectProperty* prop) {
   auto lamb = [=]() { this->mSignalPropertyInvalidated(&ObjectModel::SigPropertyInvalidated, pobj, prop); };
   opq::updateSerialQueue()->enqueue(lamb);
@@ -170,7 +170,7 @@ void ObjectModel::SigRepaint() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ObjectModel::SigNewObject(ork::Object* pobj) {
+void ObjectModel::SigNewObject(ork::object_ptr_t pobj) {
   SigPreNewObject();
   mSignalNewObject(&ObjectModel::SigNewObject, pobj);
   SigRepaint();
@@ -179,25 +179,25 @@ void ObjectModel::SigNewObject(ork::Object* pobj) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ObjectModel::SigPostNewObject(ork::Object* pobj) {
+void ObjectModel::SigPostNewObject(ork::object_ptr_t pobj) {
   mSignalPostNewObject(&ObjectModel::SigPostNewObject, pobj);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ObjectModel::SigSpawnNewGed(ork::Object* pOBJ) {
+void ObjectModel::SigSpawnNewGed(ork::object_ptr_t pOBJ) {
   mSignalSpawnNewGed(&ObjectModel::SigSpawnNewGed, pOBJ);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ObjectModel::SlotNewObject(ork::Object* pobj) {
+void ObjectModel::SlotNewObject(ork::object_ptr_t pobj) {
   Attach(mCurrentObject);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ObjectModel::SlotObjectDeleted(ork::Object* pobj) {
+void ObjectModel::SlotObjectDeleted(ork::object_ptr_t pobj) {
   Attach(0);
 }
 
@@ -211,25 +211,25 @@ void ObjectModel::ProcessQueue() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ObjectModel::SlotObjectSelected(ork::Object* pobj) {
+void ObjectModel::SlotObjectSelected(ork::object_ptr_t pobj) {
   // printf("ObjectModel<%p> Object<%p> selected\n", this, pobj);
   Attach(pobj);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ObjectModel::SlotObjectDeSelected(ork::Object* pobj) {
+void ObjectModel::SlotObjectDeSelected(ork::object_ptr_t pobj) {
   Attach(nullptr);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 /*objectmodelnode_ptr_t ObjectModel::Recurse(
-    ork::Object* root_object, //
+    ork::object_ptr_t root_object, //
     const char* pname,
     bool binline) {
 
   objectmodelnode_ptr_t rval = 0;
-  ork::Object* cur_obj       = root_object;
+  ork::object_ptr_t cur_obj       = root_object;
   if (cur_obj) {
     ObjectGedVisitEvent gev;
     cur_obj->Notify(&gev);
@@ -506,7 +506,7 @@ void ObjectModel::EnumerateNodes(
 GedItemNode* ObjectModel::CreateNode(
     const std::string& Name, //
     const reflect::IObjectProperty* prop,
-    Object* pobject) {
+    object_ptr_t pobject) {
   rtti::Class* AnnoEditorClass = 0;
   /////////////////////////////////////////////////////////////////////////
   // check editor class anno on property
@@ -567,8 +567,8 @@ GedItemNode* ObjectModel::CreateNode(
                                  : (GedItemNode*)new GedIntNode<GedIoDriver<int>>(*this, Name.c_str(), intprop, pobject);
   }
   /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::IObjectPropertyObject* objprop = rtti::autocast(prop)) {
-    ork::Object* psubobj = objprop->Access(pobject);
+  else if (const reflect::IObjectPropertyobject_ptr_t objprop = rtti::autocast(prop)) {
+    ork::object_ptr_t psubobj = objprop->Access(pobject);
     if (psubobj)
       Recurse(psubobj, Name.c_str());
     else
@@ -581,8 +581,8 @@ GedItemNode* ObjectModel::CreateNode(
       return new GedMapNode(*this, Name.c_str(), mapprop, pobject);
   }
   /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::DirectObjectPropertyType<ork::Object*>* dobjprop = rtti::autocast(prop)) {
-    ork::Object* psubobj = 0;
+  else if (const reflect::DirectObjectPropertyType<ork::object_ptr_t>* dobjprop = rtti::autocast(prop)) {
+    ork::object_ptr_t psubobj = 0;
     dobjprop->Get(psubobj, pobject);
     if (psubobj)
       Recurse(psubobj);
@@ -605,7 +605,7 @@ GedItemNode* ObjectModel::CreateNode(
 //////////////////////////////////////////////////////////////////////////////
 
 void ObjectModel::Attach(
-    ork::Object* root_object, //
+    ork::object_ptr_t root_object, //
     bool bclearstack,
     objectmodelnode_ptr_t top_root_item) {
   this->mRootObject = root_object;
@@ -638,7 +638,7 @@ void ObjectModel::Detach() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ObjectModel::PushBrowseStack(ork::Object* pobj) {
+void ObjectModel::PushBrowseStack(ork::object_ptr_t pobj) {
   mBrowseStack.push(pobj);
 }
 
@@ -646,8 +646,8 @@ void ObjectModel::PopBrowseStack() {
   mBrowseStack.pop();
 }
 
-ork::Object* ObjectModel::BrowseStackTop() const {
-  ork::Object* rval = 0;
+ork::object_ptr_t ObjectModel::BrowseStackTop() const {
+  ork::object_ptr_t rval = 0;
   if (mBrowseStack.size())
     rval = mBrowseStack.top();
   return rval;

@@ -25,7 +25,7 @@ using objectmodelobserver_ptr_t = std::shared_ptr<ObjectModelObserver>;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct PersistHashContext {
-  ork::Object* mObject;
+  ork::object_ptr_t mObject;
   const IObjectProperty* mProperty;
   const char* mString;
 
@@ -82,12 +82,12 @@ public:
     _observer = observer;
   }
   void Attach(
-      ork::Object* obj, //
+      ork::object_ptr_t obj, //
       bool bclearstack            = true,
       objectmodelnode_ptr_t rootw = 0);
 
   objectmodelnode_ptr_t Recurse(
-      ork::Object* obj, //
+      ork::object_ptr_t obj, //
       const char* pname = 0,
       bool binline      = false);
 
@@ -107,13 +107,13 @@ public:
 
   void Dump(const char* header) const;
 
-  void QueueObject(ork::Object* obj) {
+  void QueueObject(ork::object_ptr_t obj) {
     mQueueObject = obj;
   }
 
   void ProcessQueue();
 
-  ork::Object* CurrentObject() const {
+  ork::object_ptr_t CurrentObject() const {
     return mCurrentObject;
   }
 
@@ -124,9 +124,9 @@ public:
 
   void FlushQueue();
 
-  void PushBrowseStack(ork::Object* pobj);
+  void PushBrowseStack(ork::object_ptr_t pobj);
   void PopBrowseStack();
-  ork::Object* BrowseStackTop() const;
+  ork::object_ptr_t BrowseStackTop() const;
   int StackSize() const;
 
   PersistMapContainer& GetPersistMapContainer() {
@@ -141,11 +141,11 @@ public:
   }
 
   objectmodelobserver_ptr_t _observer = nullptr;
-  ork::Object* mCurrentObject         = nullptr;
-  ork::Object* mRootObject            = nullptr;
-  ork::Object* mQueueObject           = nullptr;
+  ork::object_ptr_t mCurrentObject    = nullptr;
+  ork::object_ptr_t mRootObject       = nullptr;
+  ork::object_ptr_t mQueueObject      = nullptr;
   util::choicemanager_ptr_t mChoiceManager;
-  orkstack<ork::Object*> mBrowseStack;
+  orkstack<ork::object_ptr_t> mBrowseStack;
   PersistMapContainer mPersistMapContainer;
   bool mbEnablePaint;
 
@@ -171,21 +171,21 @@ public:
 public:
   void SigModelInvalidated();
   void SigPreNewObject();
-  void SigPropertyInvalidated(ork::Object* pobj, const IObjectProperty* prop);
+  void SigPropertyInvalidated(ork::object_ptr_t pobj, const IObjectProperty* prop);
   void SigRepaint();
-  void SigSpawnNewGed(ork::Object* pobj);
-  void SigNewObject(ork::Object* pobj);
-  void SigPostNewObject(ork::Object* pobj);
+  void SigSpawnNewGed(ork::object_ptr_t pobj);
+  void SigNewObject(ork::object_ptr_t pobj);
+  void SigPostNewObject(ork::object_ptr_t pobj);
 
 private:
   //////////////////////////////////////////////////////////
 
-  void SlotNewObject(ork::Object* pobj);
+  void SlotNewObject(ork::object_ptr_t pobj);
   void SlotRelayModelInvalidated();
-  void SlotRelayPropertyInvalidated(ork::Object* pobj, const IObjectProperty* prop);
-  void SlotObjectDeleted(ork::Object* pobj);
-  void SlotObjectSelected(ork::Object* pobj);
-  void SlotObjectDeSelected(ork::Object* pobj);
+  void SlotRelayPropertyInvalidated(ork::object_ptr_t pobj, const IObjectProperty* prop);
+  void SlotObjectDeleted(ork::object_ptr_t pobj);
+  void SlotObjectSelected(ork::object_ptr_t pobj);
+  void SlotObjectDeSelected(ork::object_ptr_t pobj);
   void SlotRepaint();
 
   //////////////////////////////////////////////////////////
@@ -204,7 +204,7 @@ private:
   IInvokation* mModelInvalidatedInvoker = nullptr;
 
   // bool IsNodeVisible(const IObjectProperty* prop);
-  // objectmodelnode_ptr_t CreateNode(const std::string& Name, const IObjectProperty* prop, Object* pobject);
+  // objectmodelnode_ptr_t CreateNode(const std::string& Name, const IObjectProperty* prop, object_ptr_t pobject);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -216,7 +216,7 @@ public:
       objectmodel_ptr_t mdl, //
       const char* name,
       const reflect::IObjectProperty* prop,
-      ork::Object* obj);
+      ork::object_ptr_t obj);
 
   ~ObjectModelNode() override;
   ///////////////////////////////////
@@ -227,8 +227,8 @@ public:
   void releaseChildren();
   void SetOrkProp(const reflect::IObjectProperty* prop);
   const reflect::IObjectProperty* GetOrkProp() const;
-  void SetOrkObj(ork::Object* obj);
-  ork::Object* GetOrkObj() const;
+  void SetOrkObj(ork::object_ptr_t obj);
+  ork::object_ptr_t GetOrkObj() const;
   objectmodelobserver_ptr_t root() const;
   void AddItem(objectmodelnode_ptr_t w);
   ///////////////////////////////////
@@ -240,7 +240,7 @@ public:
   void SetDecoIndex(int idx);
   ///////////////////////////////////
   const reflect::IObjectProperty* mOrkProp;
-  ork::Object* mOrkObj;
+  ork::object_ptr_t mOrkObj;
   ObjectModelNode* _parent;
   objectmodelobserver_ptr_t mRoot;
   orkvector<objectmodelnode_ptr_t> mItems;
@@ -258,8 +258,8 @@ class ObjectModelObserver : public ork::AutoConnector { //
 
 public: //
   ObjectModelObserver();
-  void PropertyInvalidated(ork::Object* pobj, const reflect::IObjectProperty* prop);
-  void Attach(ork::Object* obj);
+  void PropertyInvalidated(ork::object_ptr_t pobj, const reflect::IObjectProperty* prop);
+  void Attach(ork::object_ptr_t obj);
   ///////////////////////////////////
   void PushItemNode(objectmodelnode_ptr_t qw);
   void PopItemNode(objectmodelnode_ptr_t qw);
@@ -275,19 +275,19 @@ public: //
   ///////////////////////////////////
   virtual void onModelInvalidated() {
   }
-  virtual void onObjectAttachedToModel(ork::Object* root_obj) {
+  virtual void onObjectAttachedToModel(ork::object_ptr_t root_obj) {
   }
   virtual objectmodelnode_ptr_t createGroup(
       ObjectModel* mdl,
       const char* name,
       const reflect::IObjectProperty* prop,
-      ork::Object* obj,
+      ork::object_ptr_t obj,
       bool is_obj_node = false) {
     return nullptr;
   }
   ///////////////////////////////////
   objectmodelnode_ptr_t _rootnode;
-  ork::Object* mRootObject;
+  ork::object_ptr_t mRootObject;
   objectmodel_ptr_t _objectmodel;
   std::deque<objectmodelnode_ptr_t> mItemStack;
   U64 mStackHash;
