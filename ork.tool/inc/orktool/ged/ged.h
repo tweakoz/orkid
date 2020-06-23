@@ -113,10 +113,10 @@ public:
   ObjModel();
   /*virtual*/ ~ObjModel();
 
-  void SetChoiceManager(ChoiceManager* chcman) {
+  void SetChoiceManager(util::choicemanager_ptr_t chcman) {
     mChoiceManager = chcman;
   }
-  ChoiceManager* GetChoiceManager(void) const {
+  util::choicemanager_ptr_t GetChoiceManager(void) const {
     return mChoiceManager;
   }
 
@@ -160,7 +160,7 @@ private:
   ork::Object* mCurrentObject;
   ork::Object* mRootObject;
   ork::Object* mQueueObject;
-  ChoiceManager* mChoiceManager;
+  util::choicemanager_ptr_t mChoiceManager;
   orkstack<ork::Object*> mBrowseStack;
   PersistMapContainer mPersistMapContainer;
   bool mbEnablePaint;

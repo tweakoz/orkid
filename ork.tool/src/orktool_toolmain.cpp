@@ -9,7 +9,7 @@
 #include <orktool/orktool_pch.h>
 #include <orktool/qtui/qtui_tool.h>
 #include <orktool/toolcore/selection.h>
-#include <orktool/toolcore/choiceman.h>
+#include <ork/util/choiceman.h>
 #include <ork/file/file.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/texman.h>

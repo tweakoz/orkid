@@ -6,7 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
-#include <orktool/toolcore/choiceman.h>
+#include <ork/util/choiceman.h>
 #include <orktool/toolcore/selection.h>
 
 #include <ork/object/Object.h>

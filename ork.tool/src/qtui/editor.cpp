@@ -165,16 +165,18 @@ SceneEditorBase::SceneEditorBase()
     , ConstructAutoSlot(NewObject) {
   SetupSignalsAndSlots();
 
-  mChoiceMan.AddChoiceList("chsm", mpChsmChoices);
-  mChoiceMan.AddChoiceList("xgmodel", mpMdlChoices);
-  mChoiceMan.AddChoiceList("xganim", mpAnmChoices);
-  mChoiceMan.AddChoiceList("lev2::audiostream", mpAudStreamChoices);
-  mChoiceMan.AddChoiceList("lev2::audiobank", mpAudBankChoices);
-  mChoiceMan.AddChoiceList("lev2tex", mpTexChoices);
-  mChoiceMan.AddChoiceList("script", mpScriptChoices);
-  mChoiceMan.AddChoiceList("archetype", mpArchChoices);
-  mChoiceMan.AddChoiceList("refarch", mpRefArchChoices);
-  mChoiceMan.AddChoiceList("FxShader", mpFxShaderChoices);
+  _choicemanager = std::make_shared<util::ChoiceManager>();
+
+  _choicemanager->AddChoiceList("chsm", mpChsmChoices);
+  _choicemanager->AddChoiceList("xgmodel", mpMdlChoices);
+  _choicemanager->AddChoiceList("xganim", mpAnmChoices);
+  _choicemanager->AddChoiceList("lev2::audiostream", mpAudStreamChoices);
+  _choicemanager->AddChoiceList("lev2::audiobank", mpAudBankChoices);
+  _choicemanager->AddChoiceList("lev2tex", mpTexChoices);
+  _choicemanager->AddChoiceList("script", mpScriptChoices);
+  _choicemanager->AddChoiceList("archetype", mpArchChoices);
+  _choicemanager->AddChoiceList("refarch", mpRefArchChoices);
+  _choicemanager->AddChoiceList("FxShader", mpFxShaderChoices);
 
   object::Connect(&this->GetSigObjectDeleted(), &mselectionManager.GetSlotObjectDeleted());
 

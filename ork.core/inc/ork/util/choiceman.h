@@ -12,21 +12,33 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class QMenu;
+// class QMenu;
 
-namespace ork { namespace tool {
+namespace ork { namespace util {
+
+struct ChoiceList;
+struct ChoiceManager;
+struct AttrChoiceValue;
+struct ChoiceListFilters;
+
+using ChoiceListFilter      = std::pair<std::string, std::string>;
+using choice_ptr_t          = std::shared_ptr<AttrChoiceValue>;
+using choicelist_ptr_t      = std::shared_ptr<ChoiceList>;
+using choicemanager_ptr_t   = std::shared_ptr<ChoiceManager>;
+using choicefilter_ptr_t    = std::shared_ptr<ChoiceListFilters>;
+using choice_constptr_t     = std::shared_ptr<const AttrChoiceValue>;
+using choicelist_constptr_t = std::shared_ptr<const ChoiceList>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class ChoiceFunctor {
-public:
+struct ChoiceFunctor {
   virtual std::string ComputeValue(const std::string& ValueStr) const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class AttrChoiceValue {
-public: //
+struct AttrChoiceValue {
+
   typedef ork::svar128_t variant_t;
 
   AttrChoiceValue()
@@ -106,7 +118,6 @@ public: //
     return mCustomData;
   }
 
-private:
   std::string mValue;
   std::string mName;
   std::string mShortName;
@@ -118,8 +129,6 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef std::pair<std::string, std::string> ChoiceListFilter;
-
 struct ChoiceListFilters {
   orkmultimap<std::string, std::string> mFilterMap;
 
@@ -129,30 +138,23 @@ struct ChoiceListFilters {
   bool KeyMatch(const std::string& key, const std::string& val) const;
 };
 
-class ChoiceList {
-private:
-  orkvector<AttrChoiceValue*> mChoicesVect;
-  orkmap<std::string, AttrChoiceValue*> mValueMap;
-  orkmap<std::string, AttrChoiceValue*> mNameMap;
-  orkmap<std::string, AttrChoiceValue*> mShortNameMap;
-  SlashTree* mHierarchy;
+///////////////////////////////////////////////////////////////////////////////
+
+struct ChoiceList {
 
   void UpdateHierarchy(void);
 
-protected:
   void remove(const AttrChoiceValue& val);
-
   void clear(void);
 
-public: //
   ChoiceList();
   virtual ~ChoiceList();
 
   void FindAssetChoices(const file::Path& sdir, const std::string& wildcard);
 
-  const AttrChoiceValue* FindFromLongName(const std::string& longname) const;
-  const AttrChoiceValue* FindFromShortName(const std::string& shortname) const;
-  const AttrChoiceValue* FindFromValue(const std::string& uval) const;
+  choice_constptr_t FindFromLongName(const std::string& longname) const;
+  choice_constptr_t FindFromShortName(const std::string& shortname) const;
+  choice_constptr_t FindFromValue(const std::string& uval) const;
 
   const SlashTree* GetHierarchy(void) const {
     return mHierarchy;
@@ -161,29 +163,37 @@ public: //
   virtual void EnumerateChoices(bool bforcenocache = false) = 0;
   void add(const AttrChoiceValue& val);
 
-  QMenu* CreateMenu(const ChoiceListFilters* Filter = 0) const;
-
-  bool DoesSlashNodePassFilter(const SlashNode* pnode, const ChoiceListFilters* Filter) const;
+  bool DoesSlashNodePassFilter(
+      const SlashNode* pnode, //
+      choicefilter_ptr_t Filter) const;
 
   void dump(void);
+
+  orkvector<choice_ptr_t> mChoicesVect;
+  orkmap<std::string, choice_ptr_t> mValueMap;
+  orkmap<std::string, choice_ptr_t> mNameMap;
+  orkmap<std::string, choice_ptr_t> mShortNameMap;
+  SlashTree* mHierarchy;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class ChoiceManager {
-  orkmap<std::string, ChoiceList*> mChoiceListMap;
+struct ChoiceManager {
 
-public:
-  void AddChoiceList(const std::string& ListName, ChoiceList* plist);
-  const ChoiceList* GetChoiceList(const std::string& ListName) const;
-  ChoiceList* GetChoiceList(const std::string& ListName);
+  void AddChoiceList(
+      const std::string& ListName, //
+      choicelist_ptr_t plist);
+  choicelist_constptr_t GetChoiceList(const std::string& ListName) const;
+  choicelist_ptr_t GetChoiceList(const std::string& ListName);
 
   ChoiceManager();
   ~ChoiceManager();
+
+  orkmap<std::string, choicelist_ptr_t> _choicelists;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-}} // namespace ork::tool
+}} // namespace ork::util
 
 ///////////////////////////////////////////////////////////////////////////////

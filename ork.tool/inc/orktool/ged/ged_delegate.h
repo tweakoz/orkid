@@ -10,17 +10,22 @@
 #include <ork/reflect/IObjectMapPropertyType.h>
 #include <ork/kernel/core_interface.h>
 #include <ork/kernel/any.h>
-#include <orktool/toolcore/choiceman.h>
+#include <ork/util/choiceman.h>
 
 namespace ork { namespace dataflow {
 class outplugbase;
 }} // namespace ork::dataflow
 namespace ork { namespace tool { namespace ged {
+
+///////////////////////////////////////////////////////////////////////////////
+QMenu* qmenuFromChoiceList(
+    util::choicelist_ptr_t chclist, //
+    util::choicefilter_ptr_t Filter = nullptr);
 ///////////////////////////////////////////////////////////////////////////////
 class SliderBase {
 public:
-  virtual void resize(int ix, int iy, int iw, int ih) = 0;
-  virtual void OnUiEvent(ork::ui::event_constptr_t ev)    = 0;
+  virtual void resize(int ix, int iy, int iw, int ih)  = 0;
+  virtual void OnUiEvent(ork::ui::event_constptr_t ev) = 0;
 
   void SetLogMode(bool bv) {
     mlogmode = bv;
@@ -344,7 +349,7 @@ private:
   }
 };
 ///////////////////////////////////////////////////////////////////////////////
-class UserChoices : public tool::ChoiceList {
+class UserChoices : public util::ChoiceList {
   IUserChoiceDelegate& mucd;
   orkmap<PoolString, IUserChoiceDelegate::ValueType> mUserChoices;
 
@@ -430,5 +435,4 @@ void EnumerateFactories(object::ObjectClass* pbaseclass, orkset<object::ObjectCl
 object::ObjectClass* FactoryMenu(orkset<object::ObjectClass*>& FactoryClasses);
 bool DeserializeInPlace(reflect::IDeserializer& deserializer, rtti::ICastable* value);
 QMenu* CreateFactoryMenu(const orkset<object::ObjectClass*>& FactoryClassVect);
-
 }}} // namespace ork::tool::ged

@@ -139,7 +139,7 @@ GedObjNode<PropSetterObj>::GedObjNode(ObjModel& mdl, const char* name, const ref
   ConstString anno = GetOrkProp()->GetAnnotation("editor.choicelist");
 
   if (anno.length()) {
-    ChoiceList* chclist = mModel.GetChoiceManager()->GetChoiceList(anno.c_str());
+    auto chclist = mModel.GetChoiceManager()->GetChoiceList(anno.c_str());
 
     if (chclist) {
       mbInteractive = true;
@@ -220,10 +220,8 @@ template <typename Setter> void GedObjNode<Setter>::OnCreateObject() {
   ConstString anno = GetOrkProp()->GetAnnotation("editor.choicelist");
 
   if (anno.length()) {
-    ChoiceList* chclist = 0;
-    ;
 
-    chclist = mModel.GetChoiceManager()->GetChoiceList(anno.c_str());
+    auto chclist = mModel.GetChoiceManager()->GetChoiceList(anno.c_str());
 
     chclist->EnumerateChoices();
 
@@ -235,7 +233,7 @@ template <typename Setter> void GedObjNode<Setter>::OnCreateObject() {
     pact2->setData(QVariant("reload"));
 
     if (chclist) {
-      QMenu* qm2 = chclist->CreateMenu();
+      QMenu* qm2 = qmenuFromChoiceList(chclist);
 
       qm.addMenu(qm2);
     }
@@ -246,7 +244,7 @@ template <typename Setter> void GedObjNode<Setter>::OnCreateObject() {
       QVariant UserData = pact->data();
       std::string pname = UserData.toString().toStdString();
 
-      const AttrChoiceValue* Chc = chclist->FindFromLongName(pname);
+      auto Chc = chclist->FindFromLongName(pname);
 
       if (Chc) {
         std::string valuestr = Chc->EvaluateValue();

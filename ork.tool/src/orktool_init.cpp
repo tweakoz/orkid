@@ -12,7 +12,7 @@
 #include <ork/rtti/Class.h>
 #include <orktool/orktool_pch.h>
 #include <orktool/toolcore/FunctionManager.h>
-#include <orktool/toolcore/choiceman.h>
+#include <ork/util/choiceman.h>
 #include <orktool/toolcore/selection.h>
 
 //#include <boost/python.hpp>

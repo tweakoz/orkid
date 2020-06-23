@@ -427,14 +427,14 @@ public:
                 IPlugChoiceDelegate::OutPlugMapType choices;
                 ucd->EnumerateChoices(this, choices);
                 ///////////////////////////////////////////////////////////////////////////////
-                class PlugChoices : public tool::ChoiceList {
+                class PlugChoices : public util::ChoiceList {
                 public:
                   const IPlugChoiceDelegate::OutPlugMapType& choices;
                   virtual void EnumerateChoices(bool bforcenocache = false) {
                     typedef IPlugChoiceDelegate::OutPlugMapType::const_iterator iter_t;
                     for (iter_t it = choices.begin(); it != choices.end(); it++) {
                       const std::string& name = it->first;
-                      AttrChoiceValue myval(name, name);
+                      util::AttrChoiceValue myval(name, name);
                       myval.SetCustomData(it->second);
                       add(myval);
                     }
@@ -442,26 +442,27 @@ public:
                   PlugChoices(const IPlugChoiceDelegate::OutPlugMapType& chc)
                       : choices(chc) {
                     EnumerateChoices();
-                    AttrChoiceValue none("none", "none");
+                    util::AttrChoiceValue none("none", "none");
                     add(none);
                   }
                 };
                 ///////////////////////////////////////////////////////////////////////////////
-                PlugChoices uchc(choices);
-                QMenu* qm = uchc.CreateMenu();
+                auto uchc = std::make_shared<PlugChoices>(choices);
+                QMenu* qm = qmenuFromChoiceList(uchc);
                 ///////////////////////////////////////////
                 QAction* pact = qm->exec(QCursor::pos());
                 if (pact) {
                   QVariant UserData   = pact->data();
                   QString UserName    = UserData.toString();
                   QVariant chcvalprop = pact->property("chcval");
-                  const AttrChoiceValue* chcval =
-                      chcvalprop.isValid() ? (const AttrChoiceValue*)chcvalprop.value<void*>() : (const AttrChoiceValue*)0;
+                  bool isvalid        = chcvalprop.isValid();
+                  auto chcval         = isvalid ? (const util::AttrChoiceValue*)chcvalprop.value<void*>() //
+                                        : (const util::AttrChoiceValue*)nullptr;
                   if (chcval) {
                     if (mInputPlug) {
                       const auto& customdata = chcval->GetCustomData();
-                      if (customdata.IsA<ork::dataflow::outplugbase*>()) {
-                        ork::dataflow::outplugbase* outplug = customdata.Get<ork::dataflow::outplugbase*>();
+                      if (customdata.template IsA<ork::dataflow::outplugbase*>()) {
+                        ork::dataflow::outplugbase* outplug = customdata.template Get<ork::dataflow::outplugbase*>();
 
                         dataflow::dgmodule* pmod = rtti::autocast(mInputPlug->GetModule());
                         if (pmod) {

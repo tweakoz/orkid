@@ -221,7 +221,7 @@ void UserChoices::EnumerateChoices(bool bforcenocache) {
   for (orkmap<PoolString, IUserChoiceDelegate::ValueType>::const_iterator it = mUserChoices.begin(); it != mUserChoices.end();
        it++) {
     const char* item = it->first.c_str();
-    AttrChoiceValue myval(item, item);
+    util::AttrChoiceValue myval(item, item);
     myval.SetCustomData(it->second);
     add(myval);
   }
@@ -251,7 +251,7 @@ void IOpsDelegate::AddTask(ork::object::ObjectClass* pdelegclass, ork::Object* p
     if (deleg) {
       OpsTask* ptask    = new OpsTask;
       ptask->mpDelegate = deleg;
-      ptask->_target   = ptarget;
+      ptask->_target    = ptarget;
 
       TaskList& tsklist = gCurrentTasks.LockForWrite();
       { tsklist.push_back(ptask); }

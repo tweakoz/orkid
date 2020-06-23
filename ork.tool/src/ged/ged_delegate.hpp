@@ -476,19 +476,19 @@ template <typename IODriver, typename T> void GedSimpleNode<IODriver, T>::OnUiEv
           ork::rtti::ICastable* ucdo          = the_class->CreateObject();
           IUserChoiceDelegate* ucd            = rtti::autocast(ucdo);
           if (ucd) {
-            UserChoices uchc(*ucd, pobj, this);
-            QMenu* qm     = uchc.CreateMenu();
+            auto uchc     = std::make_shared<UserChoices>(*ucd, pobj, this);
+            QMenu* qm     = qmenuFromChoiceList(uchc);
             QAction* pact = qm->exec(QCursor::pos());
             if (pact) {
               QVariant UserData = pact->data();
               QString UserName  = UserData.toString();
               std::string pname = UserName.toStdString();
 
-              const AttrChoiceValue* Chc = uchc.FindFromLongName(pname);
+              auto Chc = uchc->FindFromLongName(pname);
 
               if (Chc) {
-                if (Chc->GetCustomData().IsA<T>()) {
-                  const T& value = Chc->GetCustomData().Get<T>();
+                if (Chc->GetCustomData().template IsA<T>()) {
+                  const T& value = Chc->GetCustomData().template Get<T>();
                 }
                 std::string valuestr = Chc->EvaluateValue();
                 PropTypeString pts(valuestr.c_str());

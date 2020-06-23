@@ -8,86 +8,70 @@
 namespace ork { namespace tool {
 ///////////////////////////////////////////////////////////////////////////
 
-class ModelChoices : public ork::tool::ChoiceList
-{
+class ModelChoices : public ork::util::ChoiceList {
 public:
-
-	virtual void EnumerateChoices( bool bforcenocache=false );
-	ModelChoices();
+  virtual void EnumerateChoices(bool bforcenocache = false);
+  ModelChoices();
 };
 
 ///////////////////////////////////////////////////////////////////////////
 
-class AnimChoices : public ork::tool::ChoiceList
-{
+class AnimChoices : public ork::util::ChoiceList {
 public:
-
-	virtual void EnumerateChoices( bool bforcenocache=false );
-	AnimChoices();
+  virtual void EnumerateChoices(bool bforcenocache = false);
+  AnimChoices();
 };
 
 ///////////////////////////////////////////////////////////////////////////
 
-class AudioStreamChoices : public ork::tool::ChoiceList
-{
+class AudioStreamChoices : public ork::util::ChoiceList {
 public:
-
-	virtual void EnumerateChoices( bool bforcenocache=false );
-	AudioStreamChoices();
+  virtual void EnumerateChoices(bool bforcenocache = false);
+  AudioStreamChoices();
 };
 
 ///////////////////////////////////////////////////////////////////////////
 
-class AudioBankChoices : public ork::tool::ChoiceList
-{
+class AudioBankChoices : public ork::util::ChoiceList {
 public:
-
-	virtual void EnumerateChoices( bool bforcenocache=false );
-	AudioBankChoices();
+  virtual void EnumerateChoices(bool bforcenocache = false);
+  AudioBankChoices();
 };
 
 ///////////////////////////////////////////////////////////////////////////
 
-class TextureChoices : public ork::tool::ChoiceList
-{
+class TextureChoices : public ork::util::ChoiceList {
 public:
-
-	virtual void EnumerateChoices( bool bforcenocache=false );
-	TextureChoices();
+  virtual void EnumerateChoices(bool bforcenocache = false);
+  TextureChoices();
 };
 
 ///////////////////////////////////////////////////////////////////////////
 
-class FxShaderChoices : public ork::tool::ChoiceList
-{
+class FxShaderChoices : public ork::util::ChoiceList {
 public:
-
-	virtual void EnumerateChoices( bool bforcenocache=false );
-	FxShaderChoices();
+  virtual void EnumerateChoices(bool bforcenocache = false);
+  FxShaderChoices();
 };
 
 ///////////////////////////////////////////////////////////////////////////
 
-class ScriptChoices : public ork::tool::ChoiceList
-{
+class ScriptChoices : public ork::util::ChoiceList {
 public:
-
-	virtual void EnumerateChoices( bool bforcenocache=false );
-	ScriptChoices();
+  virtual void EnumerateChoices(bool bforcenocache = false);
+  ScriptChoices();
 };
 
 ///////////////////////////////////////////////////////////////////////////
 
-class ChsmChoices : public ork::tool::ChoiceList
-{
+class ChsmChoices : public ork::util::ChoiceList {
 public:
-
-	virtual void EnumerateChoices( bool bforcenocache=false );
-	ChsmChoices();
+  virtual void EnumerateChoices(bool bforcenocache = false);
+  ChsmChoices();
 };
 
 ///////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////
-}}
+}} // namespace ork::tool
 ///////////////////////////////////////////////////////////////////////////

@@ -188,7 +188,7 @@ EditorMainWindow::EditorMainWindow(QWidget* parent, const std::string& applicati
 
   mEditorBase.RegisterChoices();
 
-  mGedModelObj.SetChoiceManager(&mEditorBase.mChoiceMan);
+  mGedModelObj.SetChoiceManager(mEditorBase._choicemanager);
 
   /////////////////////////////////////////////////////////////////////
 
