@@ -30,20 +30,26 @@ class ArchSandBoxExporter : public AssetFilterBase {
   RttiDeclareConcrete(ArchSandBoxExporter, AssetFilterBase);
 
 public: //
-  ArchSandBoxExporter() {}
-  bool ConvertAsset(const tokenlist& toklist) final { return ConvertArchetypeSbox2Arch(toklist); }
+  ArchSandBoxExporter() {
+  }
+  bool ConvertAsset(const tokenlist& toklist) final {
+    return ConvertArchetypeSbox2Arch(toklist);
+  }
 };
 ///////////////////////////////////////////////////////////////////////////////
-void ArchSandBoxExporter::Describe() {}
+void ArchSandBoxExporter::Describe() {
+}
 ///////////////////////////////////////////////////////////////////////////////
-void RegisterArchFilters() { AssetFilter::RegisterFilter("sbox2arch", ArchSandBoxExporter::DesignNameStatic().c_str()); }
+void RegisterArchFilters() {
+  AssetFilter::RegisterFilter("sbox2arch", ArchSandBoxExporter::DesignNameStatic().c_str());
+}
 ///////////////////////////////////////////////////////////////////////////////
 bool ConvertArchetypeSbox2Arch(const tokenlist& toklist) {
   ork::tool::FilterOptMap options;
   options.SetDefault("--in", "yo");
   options.SetDefault("--out", "yo");
   options.SetOptions(toklist);
-  const std::string inf = options.GetOption("--in")->GetValue();
+  const std::string inf  = options.GetOption("--in")->GetValue();
   const std::string outf = options.GetOption("--out")->GetValue();
   printf("ArchSandBoxExporter says yo in<%s> out<%s>\n", inf.c_str(), outf.c_str());
 
@@ -60,7 +66,7 @@ bool ConvertArchetypeSbox2Arch(const tokenlist& toklist) {
   stream::FileInputStream istream(inf.c_str());
   reflect::serialize::XMLDeserializer iser(istream);
   rtti::ICastable* pcastable = 0;
-  bool bOK = iser.Deserialize(pcastable);
+  bool bOK                   = iser.deserializeObject(pcastable);
 
   if (bOK) {
     /////////////////////////////////////////
@@ -71,7 +77,7 @@ bool ConvertArchetypeSbox2Arch(const tokenlist& toklist) {
       const orkmap<PoolString, ent::SceneObject*>& sobjs = pscene->GetSceneObjects();
       printf("numofsobjs<%d>\n", int(sobjs.size()));
       for (orkmap<PoolString, ent::SceneObject*>::const_iterator item = sobjs.begin(); item != sobjs.end(); item++) {
-        std::string name = item->first.c_str();
+        std::string name             = item->first.c_str();
         const ent::SceneObject* pobj = item->second;
 
         const ent::Archetype* parch = ork::rtti::autocast(pobj);
@@ -83,7 +89,7 @@ bool ConvertArchetypeSbox2Arch(const tokenlist& toklist) {
       if (archs.size() != 1)
         return false;
       /////////////////////
-      const std::string& name = archs.begin()->first;
+      const std::string& name     = archs.begin()->first;
       const ent::Archetype* parch = archs.begin()->second;
       printf("exporting archetype<%s:%p>\n", name.c_str(), parch);
       if (parch) {

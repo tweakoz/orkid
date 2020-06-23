@@ -35,16 +35,16 @@ public:
   bool DeserializeData(unsigned char*, size_t) override;
 
   bool Deserialize(const IProperty*) override;
-  bool deserializeObject(rtti::ICastable*&) override;
+  bool deserializeObject(rtti::castable_rawptr_t&) override;
   bool deserializeObject(rtti::castable_ptr_t&) override;
   bool deserializeObjectProperty(const IObjectProperty*, Object*) override;
 
-  bool ReferenceObject(rtti::ICastable*) override;
+  bool ReferenceObject(rtti::castable_rawptr_t) override;
   bool BeginCommand(Command&) override;
   bool EndCommand(const Command&) override;
 
 protected:
-  /*virtual*/ bool Deserialize(const rtti::Category*, rtti::ICastable*&);
+  ///*virtual*/ bool Deserialize(const rtti::Category*, rtti::castable_rawptr_t&);
 };
 
 inline bool NullDeserializer::Deserialize(bool& value) {
@@ -75,7 +75,10 @@ inline bool NullDeserializer::Deserialize(double& value) {
   return false;
 }
 
-inline bool NullDeserializer::Deserialize(rtti::ICastable*& value) {
+inline bool NullDeserializer::deserializeObject(rtti::castable_rawptr_t& value) {
+  return false;
+}
+inline bool NullDeserializer::deserializeObject(rtti::castable_ptr_t& value) {
   return false;
 }
 
@@ -83,13 +86,13 @@ inline bool NullDeserializer::Deserialize(const IProperty* prop) {
   return prop->Deserialize(*this);
 }
 
-inline bool NullDeserializer::Deserialize(const IObjectProperty* prop, Object* object) {
+inline bool NullDeserializer::deserializeObjectProperty(const IObjectProperty* prop, Object* object) {
   return prop->Deserialize(*this, object);
 }
 
-inline bool NullDeserializer::Deserialize(const rtti::Category* category, rtti::ICastable*& object) {
-  return category->DeserializeReference(*this, object);
-}
+// inline bool NullDeserializer::Deserialize(const rtti::Category* category, rtti::castable_rawptr_t& object) {
+// return category->deserializeObject(*this, object);
+//}
 
 inline bool NullDeserializer::Deserialize(MutableString& text) {
   return false;
@@ -103,7 +106,7 @@ inline bool NullDeserializer::DeserializeData(unsigned char* data, size_t size) 
   return false;
 }
 
-inline bool NullDeserializer::ReferenceObject(rtti::ICastable* object) {
+inline bool NullDeserializer::ReferenceObject(rtti::castable_rawptr_t object) {
   return true;
 }
 

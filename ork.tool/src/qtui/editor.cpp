@@ -427,7 +427,7 @@ void SceneEditorBase::ImplLoadScene(std::string fname) {
       stream::FileInputStream istream(fname.c_str());
       reflect::serialize::XMLDeserializer iser(istream);
       rtti::ICastable* pcastable = nullptr;
-      bool bloadOK               = iser.Deserialize(pcastable);
+      bool bloadOK               = iser.deserializeObject(pcastable);
       ////////////////////////////////////
       auto post_load_op = [=]() {
         if (bloadOK) {
@@ -586,7 +586,7 @@ void SceneEditorBase::EditorArchImport() {
       reflect::serialize::XMLDeserializer iser(istream);
 
       rtti::ICastable* pcastable = 0;
-      bool bOK                   = iser.Deserialize(pcastable);
+      bool bOK                   = iser.deserializeObject(pcastable);
 
       if (ent::Archetype* archetype = rtti::autocast(pcastable)) {
         mpScene->AddSceneObject(archetype);

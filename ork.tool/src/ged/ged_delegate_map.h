@@ -113,19 +113,18 @@ public:
     return mbIsKey;
   }
 
-  /*virtual*/ bool Serialize(const bool&);
-  /*virtual*/ bool Serialize(const char&);
-  /*virtual*/ bool Serialize(const short&);
-  /*virtual*/ bool Serialize(const int&);
-  /*virtual*/ bool Serialize(const long&);
-  /*virtual*/ bool Serialize(const float&);
-  /*virtual*/ bool Serialize(const double&);
-  /*virtual*/ bool Serialize(const rtti::ICastable*);
-  /*virtual*/ bool Serialize(const PieceString&);
-  /*virtual*/ bool Serialize(const reflect::IObjectProperty*, const Object*);
+  bool Serialize(const bool&) override;
+  bool Serialize(const char&) override;
+  bool Serialize(const short&) override;
+  bool Serialize(const int&) override;
+  bool Serialize(const long&) override;
+  bool Serialize(const float&) override;
+  bool Serialize(const double&) override;
+  bool serializeObject(rtti::castable_rawconstptr_t) override;
+  bool Serialize(const PieceString&) override;
 
-  /*virtual*/ void Hint(const PieceString& pstr);
-  /*virtual*/ void Hint(const PieceString&, intptr_t ival);
+  void Hint(const PieceString& pstr) override;
+  void Hint(const PieceString&, intptr_t ival) override;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -18,7 +18,7 @@
 namespace ork { namespace object {
 ////////////////////////////////////////////////////////////////
 
-bool ObjectCategory::SerializeReference(
+bool ObjectCategory::serializeObject(
     reflect::ISerializer& serializer, //
     const rtti::ICastable* value) const {
   const Object* object = rtti::downcast<const Object*>(value);
@@ -55,7 +55,7 @@ bool ObjectCategory::deserializeObject(
   return true;
 }
 ////////////////////////////////////////////////////////////////
-bool ObjectCategory::DeserializeReference(
+bool ObjectCategory::deserializeObject(
     reflect::IDeserializer& deserializer, //
     rtti::ICastable*& value) const {
   reflect::Command command;

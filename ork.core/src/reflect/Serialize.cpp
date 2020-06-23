@@ -18,7 +18,17 @@ class ICastable;
 
 namespace ork { namespace reflect {
 
-using ObjectPointer = ork::Object*;
+//////////////////////////////////////////////////
+void BidirectionalSerializer::serializeObject(rtti::castable_constptr_t) {
+}
+void BidirectionalSerializer::deserializeObject(rtti::castable_ptr_t&) {
+}
+
+//////////////////////////////////////////////////
+void BidirectionalSerializer::serializeObject(rtti::castable_rawconstptr_t) {
+}
+void BidirectionalSerializer::deserializeObject(rtti::castable_rawptr_t&) {
+}
 
 //////////////////////////////////////////////////
 template <typename T>
@@ -42,21 +52,9 @@ inline //
 }
 
 //////////////////////////////////////////////////
-void BidirectionalSerializer::serializeObject(rtti::castable_constptr_t) {
-}
-void BidirectionalSerializer::deserializeObject(rtti::castable_ptr_t&) {
-}
-
-//////////////////////////////////////////////////
-void BidirectionalSerializer::serializeObject(rtti::castable_rawconstptr_t) {
-}
-void BidirectionalSerializer::deserializeObject(rtti::castable_rawptr_t&) {
-}
-
-//////////////////////////////////////////////////
 
 template <typename T>
-void Serialize(
+void Serialize(  // default serdes<>bidi handler
     const T* in, //
     T* out,
     BidirectionalSerializer& bidi) {
@@ -82,45 +80,40 @@ void Serialize(
 
 FOREACH_BASIC_SERIALIZATION_TYPE(INSTANTIATE_SERIALIZE_FUNCTION)
 
-/*template <typename T>
-void Serialize(
-    std::shared_ptr<const T> const* in, //
-    std::shared_ptr<T>* out,
-    BidirectionalSerializer& bidi) {
-  if (bidi.Serializing()) {
-    bidi.Serialize(*in->get());
-  } else {
-    bidi.Deserialize(*out->get());
-  }
-}*/
+//////////////////////////////////////////////////
 
-/*void Serialize(
-    rtti::castable_constptr_t const* in, //
-    rtti::castable_ptr_t* out,
-    BidirectionalSerializer& bidi) {
-  if (bidi.Serializing()) {
-    bidi.Serialize((in->get()));
-  } else {
-    bidi.Deserialize((out->get()));
-  }
-}*/
-
-/*template <>
+template <>
 void Serialize(
     object_ptr_t const* in, //
     object_ptr_t* out,
     BidirectionalSerializer& bidi) {
   if (bidi.Serializing()) {
-    bidi.serializeObject(in->get());
+    bidi.serializeObject(*in);
   } else {
-    bidi.deserializeObject(*out->get());
+    rtti::castable_ptr_t ptr;
+    bidi.deserializeObject(ptr);
+    (*out) = std::dynamic_pointer_cast<Object>(ptr);
   }
-}*/
+}
 
 template <>
 void Serialize(
     rtti::castable_rawptr_t const* in, //
     rtti::castable_rawptr_t* out,
+    BidirectionalSerializer& bidi) {
+  if (bidi.Serializing()) {
+    // bidi.serializeObject(*in);
+  } else {
+    // rtti::ICastable* result = NULL;
+    // bidi.deserializeObject(result);
+    //*out = result;
+  }
+}
+
+template <>
+void Serialize(
+    rtti::castable_ptr_t const* in, //
+    rtti::castable_ptr_t* out,
     BidirectionalSerializer& bidi) {
   if (bidi.Serializing()) {
     // bidi.serializeObject(*in);

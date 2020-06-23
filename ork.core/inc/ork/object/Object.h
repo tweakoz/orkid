@@ -83,7 +83,7 @@ reflect::BidirectionalSerializer& operator||(reflect::BidirectionalSerializer&, 
 template <typename T> inline bool DeserializeUnknownObject(ork::reflect::IDeserializer& deser, T*& value) {
   ork::rtti::ICastable* obj = NULL;
   bool result =
-      ork::rtti::safe_downcast<ork::rtti::Category*>(ork::Object::GetClassStatic()->GetClass())->DeserializeReference(deser, obj);
+      ork::rtti::safe_downcast<ork::rtti::Category*>(ork::Object::GetClassStatic()->GetClass())->deserializeObject(deser, obj);
   value = ork::rtti::safe_downcast<T*>(obj);
   return result;
 }

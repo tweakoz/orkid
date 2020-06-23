@@ -11,11 +11,11 @@
 
 namespace ork { namespace rtti {
 
-bool Category::SerializeReference(reflect::ISerializer& serializer, const ICastable* value) const {
+bool Category::serializeObject(reflect::ISerializer& serializer, const ICastable* value) const {
   return false;
 }
 
-bool Category::DeserializeReference(reflect::IDeserializer& deserializer, ICastable*& value) const {
+bool Category::deserializeObject(reflect::IDeserializer& deserializer, ICastable*& value) const {
   return false;
 }
 bool Category::serializeObject(reflect::ISerializer& serializer, castable_constptr_t value) const {

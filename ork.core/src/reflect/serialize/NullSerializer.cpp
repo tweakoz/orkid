@@ -71,7 +71,7 @@ bool NullSerializer::serializeObjectProperty(
 }
 
 // bool NullSerializer::serializeObjectWithCategory(const rtti::Category* cat, const rtti::ICastable* object) {
-// return cat->SerializeReference(*this, object);
+// return cat->serializeObject(*this, object);
 //}
 
 bool NullSerializer::ReferenceObject(const rtti::ICastable*) {

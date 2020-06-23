@@ -222,7 +222,7 @@ void EditorMainWindow::MergeFile() {
       reflect::serialize::XMLDeserializer dser(istream);
 
       rtti::ICastable* pcastable = 0;
-      bool bOK                   = dser.Deserialize(pcastable);
+      bool bOK                   = dser.deserializeObject(pcastable);
       if (bOK) {
         Archetype* parch = rtti::autocast(pcastable);
 

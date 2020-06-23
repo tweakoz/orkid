@@ -254,7 +254,7 @@ bool XMLSerializer::serializeObject(const rtti::ICastable* object) {
       result = WriteText("'>");
       Lined();
       mIndent++;
-      if (!category->SerializeReference(*this, object)) {
+      if (!category->serializeObject(*this, object)) {
         result = false;
       }
       mIndent--;

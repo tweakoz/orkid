@@ -9,10 +9,7 @@
 
 #include <ork/rtti/Category.h>
 
-#include <ork/config/config.h>
-
 namespace ork { namespace rtti {
-class ICastable;
 class RTTIData;
 }} // namespace ork::rtti
 namespace ork { namespace reflect {
@@ -28,8 +25,8 @@ public:
 
 private:
   using dispatch_fn_t = std::function<Object*(Class* clazz)>;
-  bool SerializeReference(reflect::ISerializer&, const rtti::ICastable*) const override;
-  bool DeserializeReference(reflect::IDeserializer&, rtti::ICastable*&) const override;
+  bool serializeObject(reflect::ISerializer&, rtti::castable_rawconstptr_t) const override;
+  bool deserializeObject(reflect::IDeserializer&, rtti::castable_rawptr_t&) const override;
   bool serializeObject(reflect::ISerializer&, rtti::castable_constptr_t) const override;
   bool deserializeObject(reflect::IDeserializer&, rtti::castable_ptr_t&) const override;
 };

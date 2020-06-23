@@ -113,7 +113,7 @@ inline bool LayerSerializer::serializeObjectProperty(const IObjectProperty* prop
 }
 
 // inline bool LayerSerializer::serializeObjectWithCategory(const rtti::Category* category, const rtti::ICastable* object) {
-// return category->SerializeReference(*this, object);
+// return category->serializeObject(*this, object);
 //}
 
 inline bool LayerSerializer::ReferenceObject(const rtti::ICastable* object) {

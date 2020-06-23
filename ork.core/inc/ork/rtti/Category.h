@@ -24,8 +24,8 @@ class Category : public Class {
       : Class(data) {
   }
 
-  virtual bool SerializeReference(reflect::ISerializer&, const ICastable*) const;
-  virtual bool DeserializeReference(reflect::IDeserializer&, ICastable*&) const;
+  virtual bool serializeObject(reflect::ISerializer&, castable_rawconstptr_t) const;
+  virtual bool deserializeObject(reflect::IDeserializer&, castable_rawptr_t&) const;
   virtual bool serializeObject(reflect::ISerializer&, castable_constptr_t) const;
   virtual bool deserializeObject(reflect::IDeserializer&, castable_ptr_t&) const;
 };

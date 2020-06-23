@@ -621,7 +621,7 @@ ProcTex* ProcTex::Load(const ork::file::Path& pth) {
   stream::FileInputStream istream(path.c_str());
   reflect::serialize::XMLDeserializer iser(istream);
   rtti::ICastable* pcastable = 0;
-  bool bOK                   = iser.Deserialize(pcastable);
+  bool bOK                   = iser.deserializeObject(pcastable);
   if (bOK) {
     ork::asset::AssetManager<ork::lev2::TextureAsset>::AutoLoad();
     rval = rtti::safe_downcast<ProcTex*>(pcastable);

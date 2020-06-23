@@ -166,11 +166,11 @@ bool TextDeserializer::deserializeObjectProperty(const IObjectProperty* prop, Ob
   return prop->Deserialize(*this, object);
 }
 
-bool TextDeserializer::ReferenceObject(rtti::ICastable* object) {
+bool TextDeserializer::ReferenceObject(rtti::castable_rawptr_t object) {
   return false;
 }
 
-bool TextDeserializer::deserializeObject(rtti::ICastable*& object) {
+bool TextDeserializer::deserializeObject(rtti::castable_rawptr_t& object) {
   ArrayString<128> buffer;
   MutableString word(buffer);
   if (ReadWord(word) > 0) {
@@ -178,6 +178,10 @@ bool TextDeserializer::deserializeObject(rtti::ICastable*& object) {
     sscanf(word.c_str(), "%p", &object);
     return true;
   }
+  return false;
+}
+bool TextDeserializer::deserializeObject(rtti::castable_ptr_t& object) {
+  OrkAssert(false);
   return false;
 }
 

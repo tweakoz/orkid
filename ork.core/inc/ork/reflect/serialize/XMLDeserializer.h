@@ -31,9 +31,16 @@ public:
   bool DeserializeData(unsigned char*, size_t) override;
 
   bool Deserialize(const IProperty*) override;
-  bool deserializeObject(rtti::ICastable*&) override;
+  bool deserializeObject(rtti::castable_rawptr_t&) override;
   bool deserializeObject(rtti::castable_ptr_t&) override;
   bool deserializeObjectProperty(const IObjectProperty*, Object*) override;
+
+  template <
+      typename ptrtype, //
+      typename dmtype>  //
+  bool _deserializeObject(
+      ptrtype&, //
+      dmtype&);
 
   bool ReferenceObject(rtti::ICastable*) override;
   bool BeginCommand(Command&) override;
@@ -41,12 +48,14 @@ public:
 
 private:
   bool EatBinaryData();
-  bool DiscardData();
-  bool DiscardCommandOrData(bool& error);
 
   int mLineNo;
+
+  using trackervect_t = orkvector<rtti::castable_rawptr_t>;
+
   stream::InputStreamBuffer<1024 * 4> mStream;
-  orkvector<rtti::ICastable*> mDeserializedObjects;
+  trackervect_t _reftracker;
+  // orkvector<rtti::castable_ptr_t> _deserializedSHARED;
 
   void EatSpace();
   void Advance(int n = 1);

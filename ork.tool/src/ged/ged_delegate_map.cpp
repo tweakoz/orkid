@@ -96,10 +96,6 @@ void MapTraverseSerializer::Hint(const PieceString& key, intptr_t ival) {
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool MapTraverseSerializer::Serialize(const reflect::IObjectProperty* prop, const Object* pser) {
-  return reflect::serialize::LayerSerializer::Serialize(prop, pser);
-}
-///////////////////////////////////////////////////////////////////////////////
 bool MapTraverseSerializer::Serialize(const bool& value) {
   OrkAssertNotImpl();
   bool iskey = IsKey();
@@ -178,7 +174,7 @@ bool MapTraverseSerializer::Serialize(const double& value) {
   return reflect::serialize::LayerSerializer::Serialize(value);
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool MapTraverseSerializer::Serialize(const rtti::ICastable* value) {
+bool MapTraverseSerializer::serializeObject(rtti::castable_rawconstptr_t value) {
   bool iskey = IsKey();
   if (iskey) {
     OrkAssertNotImpl();
@@ -755,7 +751,7 @@ GedMapNode::GedMapNode(ObjModel& mdl, const char* name, const reflect::IObjectPr
   {
     reflect::serialize::NullSerializer nser;
     MapTraverseSerializer mapser(*this, nser, mdl, obj, prop);
-    mapser.Serialize(prop, obj);
+    mapser.serializeObjectProperty(prop, obj);
   }
   mdl.GetGedWidget()->PopItemNode(this);
   //////////////////////////////////////////////////////////////////

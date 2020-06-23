@@ -170,7 +170,7 @@ bool BinarySerializer::serializeObject(const rtti::ICastable* object) {
       if (false == WriteHeader('R', category->Name()))
         result = false;
 
-      if (false == category->SerializeReference(*this, object))
+      if (false == category->serializeObject(*this, object))
         result = false;
 
       if (false == WriteFooter('r'))

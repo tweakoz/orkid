@@ -180,7 +180,7 @@ bool XMLDeserializer::deserializeObjectProperty(const IObjectProperty* prop, Obj
   return prop->Deserialize(*this, object);
 }
 
-bool XMLDeserializer::ReferenceObject(rtti::ICastable* object) {
+bool XMLDeserializer::ReferenceObject(rtti::castable_rawptr_t object) {
   int object_id = -1;
   Command referenceAttributeCommand;
 
@@ -206,10 +206,8 @@ bool XMLDeserializer::ReferenceObject(rtti::ICastable* object) {
       return false;
   }
 
-  OrkAssert(FindObject(object) == -1);
-
-  int assigned_id = int(mDeserializedObjects.size());
-  mDeserializedObjects.push_back(object);
+  int assigned_id = int(_reftracker.size());
+  _reftracker.push_back(object);
 
   if (object_id != -1) {
     OrkAssert(assigned_id == object_id);
@@ -220,16 +218,10 @@ bool XMLDeserializer::ReferenceObject(rtti::ICastable* object) {
   return true;
 }
 
-int XMLDeserializer::FindObject(rtti::ICastable* object) {
-  for (orkvector<rtti::ICastable*>::size_type index = 0; index < mDeserializedObjects.size(); index++) {
-    if (mDeserializedObjects[index] == object)
-      return int(index);
-  }
-
-  return -1;
-}
-
-bool XMLDeserializer::deserializeObject(rtti::ICastable*& object) {
+template <typename ptrtype, typename dmtype> //
+bool XMLDeserializer::_deserializeObject(
+    ptrtype& object, //
+    dmtype& dmethod) {
   if (mbReadingAttributes)
     return false;
 
@@ -252,8 +244,13 @@ bool XMLDeserializer::deserializeObject(rtti::ICastable*& object) {
 
     if (object_id == -1) {
       object = NULL;
-    } else if (object_id < int(mDeserializedObjects.size())) {
-      object = mDeserializedObjects[orkvector<rtti::ICastable*>::size_type(object_id)];
+    } else if (object_id < int(_reftracker.size())) {
+      auto index     = trackervect_t::size_type(object_id);
+      auto rawobject = _reftracker[index];
+      // object         = ;
+      OrkAssert(false);
+      // we need to paramterize object = rawobject; on ptrtype somehow
+      //  or we will need separate _deserializeObject methods for raw and sharedptr
     } else {
       ArrayString<32> buffer;
       MutableString error(buffer);
@@ -297,7 +294,7 @@ bool XMLDeserializer::deserializeObject(rtti::ICastable*& object) {
       return false;
     }
 
-    if (false == category->DeserializeReference(*this, object)) {
+    if (false == category->deserializeObject(*this, object)) {
       return false;
     }
 
@@ -311,6 +308,18 @@ bool XMLDeserializer::deserializeObject(rtti::ICastable*& object) {
     // orkprintf("XMLDeserializer:: expected <reference> or <backreference>\n");
     return false;
   }
+}
+
+bool XMLDeserializer::deserializeObject(rtti::castable_rawptr_t& object) {
+  // void (C::* p)(int) = &C::f;
+  using dmethod_t = bool (rtti::Category::*)(IDeserializer&, rtti::castable_rawptr_t&) const;
+  dmethod_t dm    = &rtti::Category::deserializeObject;
+  return _deserializeObject(object, dm);
+}
+bool XMLDeserializer::deserializeObject(rtti::castable_ptr_t& object) {
+  using dmethod_t = bool (rtti::Category::*)(IDeserializer&, rtti::castable_ptr_t&) const;
+  dmethod_t dm    = &rtti::Category::deserializeObject;
+  return _deserializeObject(object, dm);
 }
 
 bool XMLDeserializer::Deserialize(MutableString& text) {
@@ -418,64 +427,6 @@ bool XMLDeserializer::EatBinaryData() {
   return result;
 }
 
-bool XMLDeserializer::DiscardData() {
-  bool result = false;
-
-  ArrayString<16> a_string_buffer;
-  rtti::ICastable* a_castable;
-  MutableString a_string(a_string_buffer);
-
-  while (Deserialize(a_string) || deserializeObject(a_castable) ||
-         (!mbReadingAttributes && ((ReadWord(a_string) != 0) || EatBinaryData()))) {
-    result = true;
-
-    bool reading_attribute = mCurrentCommand && mCurrentCommand->Type() == Command::EATTRIBUTE;
-
-    if (reading_attribute && Peek() == mAttributeEndChar) {
-      return true;
-    }
-  }
-
-  return result;
-}
-
-bool XMLDeserializer::DiscardCommandOrData(bool& error) {
-  Command command;
-
-  error = false;
-
-  if (BeginCommand(command)) {
-    if (command.Type() == Command::EATTRIBUTE && command.Name() == "id" && command.PreviousCommand()->Type() == Command::EOBJECT) {
-      int assigned_id;
-      int expected_id = int(mDeserializedObjects.size());
-      bool result     = Deserialize(assigned_id);
-
-      OrkAssert(result);
-      OrkAssert(assigned_id == expected_id);
-
-      if (result == false || assigned_id != expected_id) {
-        error = true;
-
-        return false;
-      }
-
-      mDeserializedObjects.push_back(NULL);
-    }
-
-    DiscardData();
-
-    while (EndCommand(command) == false) {
-      if (false == DiscardCommandOrData(error)) {
-        return false;
-      }
-    }
-
-    return true;
-  } else {
-    return DiscardData();
-  }
-}
-
 bool XMLDeserializer::EndCommand(const Command& command) {
   bool result = false;
 
@@ -495,17 +446,7 @@ bool XMLDeserializer::EndCommand(const Command& command) {
           result = EndTag("item");
           break;
       }
-
-      if (result == false) {
-        bool error = false;
-
-        if (false == DiscardCommandOrData(error)) {
-          if (error)
-            return false;
-
-          break;
-        }
-      }
+      OrkAssert(result);
     }
 
     mCurrentCommand = mCurrentCommand->PreviousCommand();

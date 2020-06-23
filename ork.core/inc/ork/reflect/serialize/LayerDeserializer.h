@@ -37,16 +37,16 @@ public:
   bool DeserializeData(unsigned char*, size_t) override;
 
   bool Deserialize(const IProperty*) override;
-  bool deserializeObject(rtti::ICastable*&) override;
+  bool deserializeObject(rtti::castable_rawptr_t&) override;
   bool deserializeObject(rtti::castable_ptr_t&) override;
   bool deserializeObjectProperty(const IObjectProperty*, Object*) override;
 
-  bool ReferenceObject(rtti::ICastable*) override;
+  bool ReferenceObject(rtti::castable_rawptr_t) override;
   bool BeginCommand(Command&) override;
   bool EndCommand(const Command&) override;
 
 protected:
-  bool _deserialize(const rtti::Category*, rtti::ICastable*&);
+  bool _deserialize(const rtti::Category*, rtti::castable_rawptr_t&);
 
 protected:
   IDeserializer& mDeserializer;
@@ -86,8 +86,13 @@ inline bool LayerDeserializer::Deserialize(double& value) {
   return mDeserializer.Deserialize(value);
 }
 
-inline bool LayerDeserializer::deserializeObject(rtti::ICastable*& value) {
+inline bool LayerDeserializer::deserializeObject(rtti::castable_rawptr_t& value) {
   return mDeserializer.deserializeObject(value);
+}
+inline bool LayerDeserializer::deserializeObject(rtti::castable_ptr_t& value) {
+  OrkAssert(false);
+  return false;
+  // mDeserializer.deserializeObject(value);
 }
 
 inline bool LayerDeserializer::Deserialize(const IProperty* prop) {
@@ -98,8 +103,8 @@ inline bool LayerDeserializer::deserializeObjectProperty(const IObjectProperty* 
   return prop->Deserialize(*this, object);
 }
 
-inline bool LayerDeserializer::_deserialize(const rtti::Category* category, rtti::ICastable*& object) {
-  return category->DeserializeReference(*this, object);
+inline bool LayerDeserializer::_deserialize(const rtti::Category* category, rtti::castable_rawptr_t& object) {
+  return category->deserializeObject(*this, object);
 }
 
 inline bool LayerDeserializer::Deserialize(MutableString& text) {
@@ -114,7 +119,7 @@ inline bool LayerDeserializer::DeserializeData(unsigned char* data, size_t size)
   return mDeserializer.DeserializeData(data, size);
 }
 
-inline bool LayerDeserializer::ReferenceObject(rtti::ICastable* object) {
+inline bool LayerDeserializer::ReferenceObject(rtti::castable_rawptr_t object) {
   return mDeserializer.ReferenceObject(object);
 }
 

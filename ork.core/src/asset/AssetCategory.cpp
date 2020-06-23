@@ -26,7 +26,7 @@ AssetCategory::AssetCategory(const rtti::RTTIData& data)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool AssetCategory::SerializeReference(reflect::ISerializer& serializer, const rtti::ICastable* object) const {
+bool AssetCategory::serializeObject(reflect::ISerializer& serializer, const rtti::ICastable* object) const {
   const Asset* asset = rtti::safe_downcast<const Asset*>(object);
 
   PoolString name = asset->GetName();
@@ -50,7 +50,7 @@ bool AssetCategory::SerializeReference(reflect::ISerializer& serializer, const r
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool AssetCategory::DeserializeReference(reflect::IDeserializer& deserializer, rtti::ICastable*& value) const {
+bool AssetCategory::deserializeObject(reflect::IDeserializer& deserializer, rtti::ICastable*& value) const {
   bool result = true;
 
   ArrayString<1024> buffer1;

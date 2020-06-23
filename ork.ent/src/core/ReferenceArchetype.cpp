@@ -66,7 +66,7 @@ bool ArchetypeAssetLoader::LoadFileAsset(asset::asset_ptr_t asset, ConstString a
 #if defined(_XBOX) && defined(PROFILE)
   PIXBeginNamedEvent(0, "ArchetypeAssetLoader::LoadFileAsset(%s).Deserialize", archasset->GetName());
 #endif
-  bool bOK = iser.Deserialize(pcastable);
+  bool bOK = iser.deserializeObject(pcastable);
 #if defined(_XBOX) && defined(PROFILE)
   PIXEndNamedEvent();
 #endif

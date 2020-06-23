@@ -96,14 +96,14 @@ bool BinaryDeserializer::deserializeObjectProperty(const IObjectProperty* prop, 
   return prop->Deserialize(*this, object);
 }
 
-bool BinaryDeserializer::ReferenceObject(rtti::ICastable* object) {
+bool BinaryDeserializer::ReferenceObject(rtti::castable_rawptr_t object) {
   OrkAssert(FindObject(object) == -1);
   mDeserializedObjects.push_back(object);
   return true;
 }
 
-int BinaryDeserializer::FindObject(rtti::ICastable* object) {
-  for (orkvector<rtti::ICastable*>::size_type index = 0; index < mDeserializedObjects.size(); index++) {
+int BinaryDeserializer::FindObject(rtti::castable_rawptr_t object) {
+  for (orkvector<rtti::castable_rawptr_t>::size_type index = 0; index < mDeserializedObjects.size(); index++) {
     if (mDeserializedObjects[index] == object)
       return int(index);
   }
@@ -129,7 +129,11 @@ bool BinaryDeserializer::Match(char c) {
   }
 }
 
-bool BinaryDeserializer::deserializeObject(rtti::ICastable*& object) {
+bool BinaryDeserializer::deserializeObject(rtti::castable_ptr_t& object) {
+  OrkAssert(false);
+  return false;
+}
+bool BinaryDeserializer::deserializeObject(rtti::castable_rawptr_t& object) {
   if (Match('N')) {
     object = NULL;
     return true;
@@ -152,7 +156,7 @@ bool BinaryDeserializer::deserializeObject(rtti::ICastable*& object) {
 
     const rtti::Category* category = rtti::downcast<rtti::Category*>(rtti::Class::FindClass(name));
 
-    if (false == category->DeserializeReference(*this, object))
+    if (false == category->deserializeObject(*this, object))
       result = false;
 
     if (false == Match('r'))

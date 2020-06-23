@@ -21,7 +21,7 @@ TEST(SerdesObject) {
   FileInputStream istream(fname.c_str());
   serialize::XMLDeserializer iser(istream);
   ICastable* pcastable = nullptr;
-  bool bloadOK         = iser.Deserialize(pcastable);
+  bool bloadOK         = iser.deserializeObject(pcastable);
 }
 
 TEST(SerdesSharedObject) {
@@ -29,5 +29,5 @@ TEST(SerdesSharedObject) {
   FileInputStream istream(fname.c_str());
   serialize::XMLDeserializer iser(istream);
   castable_ptr_t pcastable;
-  bool bloadOK = iser.Deserialize(pcastable);
+  bool bloadOK = iser.deserializeObject(pcastable);
 }

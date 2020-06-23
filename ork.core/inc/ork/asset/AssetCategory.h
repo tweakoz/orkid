@@ -35,8 +35,8 @@ public:
   AssetClass* FindAssetClass(PieceString name) const;
 
 private:
-  /*virtual*/ bool SerializeReference(reflect::ISerializer&, const ICastable*) const;
-  /*virtual*/ bool DeserializeReference(reflect::IDeserializer&, ICastable*&) const;
+  /*virtual*/ bool serializeObject(reflect::ISerializer&, const ICastable*) const;
+  /*virtual*/ bool deserializeObject(reflect::IDeserializer&, ICastable*&) const;
 
   // COMPAT
   orkmap<PoolString, AssetClass*> mTypeAliasMap;
