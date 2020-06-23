@@ -156,8 +156,8 @@ struct ChoiceList {
   choice_constptr_t FindFromShortName(const std::string& shortname) const;
   choice_constptr_t FindFromValue(const std::string& uval) const;
 
-  const SlashTree* GetHierarchy(void) const {
-    return mHierarchy;
+  slashtree_constptr_t hierarchy(void) const {
+    return _hierarchy;
   }
 
   virtual void EnumerateChoices(bool bforcenocache = false) = 0;
@@ -173,7 +173,7 @@ struct ChoiceList {
   orkmap<std::string, choice_ptr_t> mValueMap;
   orkmap<std::string, choice_ptr_t> mNameMap;
   orkmap<std::string, choice_ptr_t> mShortNameMap;
-  SlashTree* mHierarchy;
+  slashtree_ptr_t _hierarchy;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

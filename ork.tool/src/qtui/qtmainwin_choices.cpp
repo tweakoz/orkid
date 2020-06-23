@@ -22,10 +22,10 @@ namespace ged {
 ///////////////////////////////////////////////////////////////////////////
 
 struct StackNode {
-  const SlashNode* mpnode;
+  slashnode_constptr_t _node;
   QMenu* mpmenu;
-  StackNode(const SlashNode* pnode, QMenu* pmenu) {
-    mpnode = pnode;
+  StackNode(slashnode_constptr_t pnode, QMenu* pmenu) {
+    _node  = pnode;
     mpmenu = pmenu;
   }
 };
@@ -37,9 +37,9 @@ QMenu* qmenuFromChoiceList(
     util::choicefilter_ptr_t Filter) {
   QMenu* pMenu = new QMenu(0);
 
-  const SlashTree* phier = chclist->GetHierarchy();
+  auto hier = chclist->hierarchy();
 
-  const SlashNode* prootnode = phier->GetRoot();
+  auto prootnode = hier->root();
   ;
 
   std::queue<StackNode> NodeStack;
@@ -51,12 +51,10 @@ QMenu* qmenuFromChoiceList(
 
     NodeStack.pop();
 
-    int inumchildren = snode.mpnode->GetNumChildren();
+    int inumchildren = snode._node->GetNumChildren();
 
-    const orkmap<std::string, SlashNode*>& children = snode.mpnode->GetChildren();
-
-    for (orkmap<std::string, SlashNode*>::const_iterator it = children.begin(); it != children.end(); it++) {
-      const SlashNode* pchild = it->second;
+    for (auto it : snode._node->GetChildren()) {
+      auto pchild = it.second;
 
       bool IsASlash = (pchild->GetNodeName() == "/");
 
@@ -93,7 +91,7 @@ QMenu* qmenuFromChoiceList(
           pchildact->setData(UserData);
         }
       } else {
-        if (chclist->DoesSlashNodePassFilter(pchild, Filter)) {
+        if (chclist->DoesSlashNodePassFilter(pchild.get(), Filter)) {
           if (IsASlash) {
             NodeStack.push(StackNode(pchild, snode.mpmenu));
           } else {

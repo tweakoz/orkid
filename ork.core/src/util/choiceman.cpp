@@ -17,13 +17,12 @@ std::string ChoiceFunctor::ComputeValue(const std::string& ValueStr) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 ChoiceList::ChoiceList()
-    : mHierarchy(new SlashTree) {
+    : _hierarchy(new SlashTree) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 ChoiceList::~ChoiceList() {
-  delete mHierarchy;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -70,11 +69,11 @@ void ChoiceList::add(const AttrChoiceValue& val) {
   auto pNewVal = std::make_shared<AttrChoiceValue>(LongName, val.GetValue(), val.GetShortName());
   pNewVal->SetFunctor(val.GetFunctor());
   mChoicesVect.push_back(pNewVal);
-  int nch          = (int)mChoicesVect.size() - 1;
-  auto ChcVal      = mChoicesVect[nch];
-  void* pData      = (void*)ChcVal.get();
-  SlashNode* pnode = mHierarchy->add_node(LongName.c_str(), pData);
-  pNewVal->SetSlashNode(pnode);
+  int nch               = (int)mChoicesVect.size() - 1;
+  auto ChcVal           = mChoicesVect[nch];
+  void* pData           = (void*)ChcVal.get();
+  slashnode_ptr_t pnode = _hierarchy->add_node(LongName.c_str(), pData);
+  pNewVal->SetSlashNode(pnode.get());
   pNewVal->CopyKeywords(val);
   pNewVal->SetCustomData(val.GetCustomData());
 
@@ -95,7 +94,7 @@ void ChoiceList::remove(const AttrChoiceValue& val) {
       SlashNode* pnode = ChcVal->GetSlashNode();
 
       if (pnode) {
-        mHierarchy->remove_node(pnode);
+        _hierarchy->remove_node(pnode);
       }
 
       inumchoices = (int)mChoicesVect.size();
@@ -110,14 +109,13 @@ void ChoiceList::remove(const AttrChoiceValue& val) {
 
 void ChoiceList::UpdateHierarchy(void) // update hierarchy
 {
-  delete mHierarchy;
-  mHierarchy = new SlashTree;
+  _hierarchy = std::make_shared<SlashTree>();
   mValueMap.clear();
 
   size_t nch = mChoicesVect.size();
   for (size_t i = 0; i < nch; i++) {
     auto val = mChoicesVect[i];
-    mHierarchy->add_node(val->GetName().c_str(), (void*)val.get());
+    _hierarchy->add_node(val->GetName().c_str(), (void*)val.get());
     OldStlSchoolMapInsert(mValueMap, val->GetValue(), val);
   }
 }
@@ -125,13 +123,13 @@ void ChoiceList::UpdateHierarchy(void) // update hierarchy
 ///////////////////////////////////////////////////////////////////////////////
 
 void ChoiceList::dump(void) {
-  mHierarchy->dump();
+  _hierarchy->dump();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void ChoiceList::clear(void) {
-  mHierarchy = new SlashTree;
+  _hierarchy = std::make_shared<SlashTree>();
   mChoicesVect.clear();
 
   mValueMap.clear();
@@ -160,11 +158,11 @@ bool ChoiceList::DoesSlashNodePassFilter(
 
       int inumchildren = snode->GetNumChildren();
 
-      const orkmap<std::string, SlashNode*>& children = snode->GetChildren();
+      auto children = snode->GetChildren();
 
-      for (orkmap<std::string, SlashNode*>::const_iterator it = children.begin(); it != children.end(); it++) {
+      for (auto it : children) {
 
-        SlashNode* pchild = it->second;
+        auto pchild = it.second;
 
         if (pchild->IsLeaf()) {
           if (Filter) {
@@ -184,7 +182,7 @@ bool ChoiceList::DoesSlashNodePassFilter(
             }
           }
         } else {
-          NodeStack.push(pchild);
+          NodeStack.push(pchild.get());
         }
       }
     }
