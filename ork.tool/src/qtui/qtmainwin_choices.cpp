@@ -65,7 +65,7 @@ QMenu* qmenuFromChoiceList(
           badd = false;
 
           if (Filter->mFilterMap.size()) {
-            util::choice_constptr_t chcval = chclist->FindFromLongName(pchild->getfullpath());
+            util::choice_constptr_t chcval = chclist->FindFromLongName(pchild->pathAsString());
 
             if (chcval) {
               for (orkmultimap<std::string, std::string>::const_iterator it = Filter->mFilterMap.begin();
@@ -82,11 +82,11 @@ QMenu* qmenuFromChoiceList(
         if (badd) {
           QAction* pchildact = snode.mpmenu->addAction(pchild->GetNodeName().c_str());
 
-          util::choice_constptr_t chcval = chclist->FindFromLongName(pchild->getfullpath());
+          util::choice_constptr_t chcval = chclist->FindFromLongName(pchild->pathAsString());
 
           pchildact->setProperty("chcval", QVariant::fromValue((void*)chcval.get()));
 
-          QVariant UserData(QString(pchild->getfullpath().c_str()));
+          QVariant UserData(QString(pchild->pathAsString().c_str()));
 
           pchildact->setData(UserData);
         }

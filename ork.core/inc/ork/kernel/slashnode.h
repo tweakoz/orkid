@@ -34,53 +34,49 @@ std::string::size_type str_cue_to_char(const std::string& str, char cch, int sta
 
 class SlashTree;
 
-class SlashNode {
-  friend class SlashTree;
+struct SlashNode {
 
   using children_t = orkmap<std::string, slashnode_ptr_t>;
 
-  std::string name;
-  SlashNode* parent;
-  children_t children_map;
-  void* data;
-
-public: //
   void add_child(slashnode_ptr_t child);
-  std::string getfullpath(void) const;
+  std::string pathAsString(void) const;
   SlashNode();
   ~SlashNode();
 
   int GetNumChildren() const {
-    return int(children_map.size());
+    return int(_children_map.size());
   }
   const children_t& GetChildren() const {
-    return children_map;
+    return _children_map;
   }
   const std::string& GetNodeName() const {
-    return name;
+    return _name;
   }
   bool IsLeaf(void) const {
     return (0 == GetNumChildren());
   }
-  void dump(void);
+  void dump(void) const;
+  void _dump(void) const;
 
   void SetData(void* pdata) {
-    data = pdata;
+    _data = pdata;
   }
   const void* GetData(void) const {
-    return data;
+    return _data;
   }
-
+  const SlashNode* root() const;
   void GetPath(orkvector<const SlashNode*>& pth) const;
+
+  std::string _name;
+  SlashNode* _parent;
+  children_t _children_map;
+  void* _data;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class SlashTree {
+struct SlashTree {
 
-  slashnode_ptr_t _root;
-
-public: //
   slashnode_ptr_t add_node(const char* instr, void* ndata);
   void remove_node(SlashNode* pnode);
   slashnode_ptr_t find_node(const std::string& instr) const;
@@ -91,6 +87,8 @@ public: //
   slashnode_constptr_t root(void) const {
     return _root;
   }
+
+  slashnode_ptr_t _root;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

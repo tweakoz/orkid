@@ -167,7 +167,7 @@ bool ChoiceList::DoesSlashNodePassFilter(
         if (pchild->IsLeaf()) {
           if (Filter) {
             if (Filter->mFilterMap.size()) {
-              choice_constptr_t chcval = FindFromLongName(pchild->getfullpath());
+              choice_constptr_t chcval = FindFromLongName(pchild->pathAsString());
 
               if (chcval) {
                 for (orkmultimap<std::string, std::string>::const_iterator it = Filter->mFilterMap.begin();

@@ -54,7 +54,7 @@ void breakup_slash_path(std::string str, orkvector<std::string>& outvec) {
     std::string::size_type idx  = 0;
     while ((idx < ilen) && (!bDone)) {
       if (str2[idx] == '/') {
-        outvec.push_back("/");
+        // outvec.push_back("/");
         idx++;
       } else {
         std::string::size_type Nidx = str_cue_to_char(str2, '/', int(idx + 1));
@@ -87,21 +87,26 @@ SlashNode::~SlashNode() {
 ///////////////////////////////////////////////////////////////////////////////
 
 SlashNode::SlashNode()
-    : name("default")
-    , parent(nullptr)
-    , data(nullptr) {
+    : _name("default")
+    , _parent(nullptr)
+    , _data(nullptr) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SlashNode::dump(void) {
+void SlashNode::dump(void) const {
+  printf("Node<%p>: ", this);
+  _dump();
+}
+
+void SlashNode::_dump(void) const {
   orkvector<std::string> path_vect;
 
-  SlashNode* par = this;
+  const SlashNode* par = this;
 
   while (par != 0) {
-    path_vect.push_back(par->name);
-    par = par->parent;
+    path_vect.push_back(par->_name);
+    par = par->_parent;
   }
 
   size_t npel = path_vect.size();
@@ -109,33 +114,44 @@ void SlashNode::dump(void) {
     size_t j  = npel - (i + 1);
     char* str = (char*)path_vect[j].c_str();
     if (strlen(str) != 0)
-      orkprintf("%s", str);
+      printf("/%s", str);
   }
 
-  orkprintf("\n");
+  printf("\n");
 
-  for (orkmap<std::string, slashnode_ptr_t>::iterator it = children_map.begin(); it != children_map.end(); it++) {
-    std::pair<const std::string, slashnode_ptr_t> pair = *it;
-    pair.second->dump();
-  }
+  for (auto it : _children_map)
+    it.second->_dump();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+const SlashNode* SlashNode::root() const {
+  return _parent ? _parent->root() : this;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void SlashNode::add_child(slashnode_ptr_t child) {
-  children_map[child->name] = child;
-  child->parent             = this;
+  _children_map[child->_name] = child;
+  child->_parent              = this;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-std::string SlashNode::getfullpath() const {
-  std::string rval;
+std::string SlashNode::pathAsString() const {
+
+  if (this == root()) {
+    return "/";
+  }
+
   orkvector<const SlashNode*> hier;
   GetPath(hier);
   int inumnodes = int(hier.size());
+  std::string rval;
   for (int i = 0; i < inumnodes; i++) {
-    rval += hier[i]->name;
+    if (hier[i] != root()) {
+      rval += "/" + hier[i]->_name;
+    }
   }
   return rval;
 }
@@ -147,7 +163,7 @@ void SlashNode::GetPath(orkvector<const SlashNode*>& pth) const {
   const SlashNode* cur = this;
   while (cur) {
     revpth.push_back(cur);
-    cur = cur->parent;
+    cur = cur->_parent;
   }
   int inumnodes = int(revpth.size());
   pth.resize(inumnodes);
@@ -161,25 +177,25 @@ void SlashNode::GetPath(orkvector<const SlashNode*>& pth) const {
 void SlashTree::remove_node(SlashNode* pnode) {
   bool bremoved = false;
 
-  auto pparent = pnode->parent;
+  auto pparent = pnode->_parent;
 
   if (pparent) {
 
-    for (auto it : pparent->children_map) {
+    for (auto it : pparent->_children_map) {
       slashnode_ptr_t tnode = it.second;
 
       if (tnode.get() == pnode) {
-        OldStlSchoolRemoveFromMap(pparent->children_map, pnode->name);
+        OldStlSchoolRemoveFromMap(pparent->_children_map, pnode->_name);
         bremoved = true;
         break;
       }
     }
 
     if (bremoved) {
-      int inumchildren = int(pparent->children_map.size());
+      int inumchildren = int(pparent->_children_map.size());
 
       if (0 == inumchildren) {
-        void* pdata = pparent->data;
+        void* pdata = pparent->_data;
 
         remove_node(pparent);
       }
@@ -205,22 +221,22 @@ slashnode_ptr_t SlashTree::add_node(const char* instr, void* ndata) {
 
   for (size_t idx = 0; idx < Nppath; idx++) {
     std::string mstr                                  = parsed_path[idx];
-    orkmap<std::string, slashnode_ptr_t>::iterator it = ptr->children_map.find(mstr);
-    if (it != ptr->children_map.end()) {
+    orkmap<std::string, slashnode_ptr_t>::iterator it = ptr->_children_map.find(mstr);
+    if (it != ptr->_children_map.end()) {
       std::pair<const std::string, slashnode_ptr_t>* pair = &(*it);
       ptr                                                 = pair->second;
     } else // not found
     {
-      auto nnod               = std::make_shared<SlashNode>();
-      nnod->name              = mstr;
-      ptr->children_map[mstr] = nnod;
-      nnod->parent            = ptr.get();
-      rval                    = nnod;
+      auto nnod                = std::make_shared<SlashNode>();
+      nnod->_name              = mstr;
+      ptr->_children_map[mstr] = nnod;
+      nnod->_parent            = ptr.get();
+      rval                     = nnod;
 
-      // orkprintf( "added node %08x %s parent %08x %s (Data %08x)\n", nnod, mstr.c_str(), ptr, ptr->name.c_str(), ndata );
+      // orkprintf( "added node %08x %s parent %08x %s (Data %08x)\n", nnod, mstr.c_str(), ptr, ptr->_name.c_str(), ndata );
 
-      nnod->data = ndata;
-      ptr        = nnod;
+      nnod->_data = ndata;
+      ptr         = nnod;
     }
   }
 
@@ -232,8 +248,8 @@ slashnode_ptr_t SlashTree::add_node(const char* instr, void* ndata) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void SlashTree::Clear(void) {
-  _root       = std::make_shared<SlashNode>();
-  _root->name = "";
+  _root        = std::make_shared<SlashNode>();
+  _root->_name = "";
 }
 
 ///////////////////////////////////////////////////////////////////////////////

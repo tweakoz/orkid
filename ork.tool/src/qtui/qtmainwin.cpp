@@ -238,7 +238,7 @@ void EditorModule::AddAction(const char* pname, QKeySequence ks) {
   orkvector<const SlashNode*> path;
 
   pnode->GetPath(path);
-  std::string pthstr = pnode->getfullpath();
+  std::string pthstr = pnode->pathAsString();
   int inumnodes      = int(path.size());
   QMenu* pcurmenu    = 0;
   for (int i = 0; i < inumnodes; i++) {
