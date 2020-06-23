@@ -73,7 +73,7 @@ void DspParamData::useDefaultEvaluator() {
                + cec._C1() //
                + cec._C2() //
                + kt + vt;
-    printf("cec._keyOff<%g> rv<%g>\n", cec._keyOff, rv);
+    // printf("cec._keyOff<%g> rv<%g>\n", cec._keyOff, rv);
     return rv;
   };
 }

@@ -43,6 +43,7 @@ SingularityTestApp::~SingularityTestApp() {
 ///////////////////////////////////////////////////////////////////////////////
 std::string testpatternname = "";
 std::string testprogramname = "";
+std::string midiportname    = "";
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -52,6 +53,7 @@ singularitytestapp_ptr_t createEZapp(int& argc, char** argv) {
   desc.add_options()                                                //
       ("help", "produce help message")                              //
       ("test", po::value<std::string>(), "test name (list,vo,nvo)") //
+      ("port", po::value<std::string>(), "midiport name (list)")    //
       ("program", po::value<std::string>(), "program name")         //
       ("hidpi", "hidpi mode");
 
@@ -62,6 +64,9 @@ singularitytestapp_ptr_t createEZapp(int& argc, char** argv) {
   if (vars.count("help")) {
     std::cout << desc << "\n";
     exit(0);
+  }
+  if (vars.count("port")) {
+    midiportname = vars["port"].as<std::string>();
   }
   if (vars.count("test")) {
     testpatternname = vars["test"].as<std::string>();
@@ -452,7 +457,18 @@ singularitybenchapp_ptr_t createBenchmarkApp(
   return app;
 }
 
-prgdata_constptr_t testpattern(syndata_ptr_t syndat, int argc, char** argv) {
+prgdata_constptr_t testpattern(
+    syndata_ptr_t syndat, //
+    int argc,
+    char** argv) {
+
+  auto midictx = MidiContext::instance();
+  if (midiportname == "list") {
+    for (auto portitem : midictx->_portmap) {
+      printf("midiport<%d:%s>\n", portitem.second, portitem.first.c_str());
+    }
+    exit(0);
+  }
 
   auto program = syndat->getProgramByName(testprogramname);
 
@@ -469,8 +485,7 @@ prgdata_constptr_t testpattern(syndata_ptr_t syndat, int argc, char** argv) {
     the_synth->_globalprog = program;
     return program;
   } else if (testpatternname == "midi") {
-    void startMidi();
-    startMidi();
+    midictx->startMidiInputByName(midiportname);
     the_synth->_globalprog = program;
     return program;
   } else if (testpatternname == "sq1") {
