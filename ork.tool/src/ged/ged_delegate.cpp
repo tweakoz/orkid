@@ -105,7 +105,7 @@ void EnumerateFactories(
         object::ObjectClass* pclass = FactoryStack.top();
         FactoryStack.pop();
 
-        if (pclass->HasFactory()) {
+        if (pclass->hasFactory()) {
           //////////////////////////////////////////////
           // check if class marked uninstantiable by editor
           //////////////////////////////////////////////
@@ -151,7 +151,7 @@ void EnumerateFactories(object::ObjectClass* pobjclass, orkset<object::ObjectCla
   while (FactoryStack.empty() == false) {
     object::ObjectClass* pclass = FactoryStack.top();
     FactoryStack.pop();
-    if (pclass->HasFactory()) { //////////////////////////////////////////////
+    if (pclass->hasFactory()) { //////////////////////////////////////////////
       // check if class marked uninstantiable by editor
       //////////////////////////////////////////////
 
@@ -168,7 +168,7 @@ void EnumerateFactories(object::ObjectClass* pobjclass, orkset<object::ObjectCla
           }
       }*/
       if (bok2add) {
-        if (pclass->HasFactory()) {
+        if (pclass->hasFactory()) {
           FactoryClassVect.insert(pclass);
         }
       }

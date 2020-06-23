@@ -39,9 +39,10 @@ public:
     return mDirection;
   }
 
-private:
   ~LocomotionForceData() final {
   }
+
+private:
   BulletObjectForceControllerInst*
   CreateForceControllerInst(const BulletObjectControllerData& data, ork::ent::Entity* pent) const final;
 

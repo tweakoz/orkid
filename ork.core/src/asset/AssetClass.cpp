@@ -95,7 +95,7 @@ AssetClass::asset_ptr_t AssetClass::CreateUnmanagedAsset(PieceString name, const
 
   AssetClass::asset_ptr_t asset;
 
-  if (false == Class::HasFactory()) {
+  if (false == Class::hasFactory()) {
     auto vasset = std::make_shared<VirtualAsset>();
     vasset->SetType(Name());
 

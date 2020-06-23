@@ -71,7 +71,7 @@ ObjectFactory::ObjectFactory(rtti::Class* pclass)
 ///////////////////////////////////////////////////////////////////////////////
 
 void BuildFactoryList(rtti::Class* root, orkvector<ObjectFactory*>& factories) {
-  if (root->HasFactory()) {
+  if (root->hasFactory()) {
     object::ObjectClass* pobjclass = rtti::autocast(root);
     auto instanno                  = pobjclass->Description().classAnnotation("editor.instantiable");
 

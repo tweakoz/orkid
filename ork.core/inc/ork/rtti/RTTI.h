@@ -33,10 +33,14 @@ public:
   static ICastable* Factory() {
     return new ClassType();
   }
+  static castable_ptr_t sharedFactory() {
+    return std::make_shared<ClassType>();
+  }
 
   static void Initialize() {
     ClassType::GetClassStatic()->SetName(ClassType::DesignNameStatic());
-    ClassType::GetClassStatic()->SetFactory(Factory);
+    ClassType::GetClassStatic()->setRawFactory(Factory);
+    ClassType::GetClassStatic()->setSharedFactory(sharedFactory);
     ClassType::RTTIType::RTTICategory::template InitializeType<ClassType>();
   }
 };

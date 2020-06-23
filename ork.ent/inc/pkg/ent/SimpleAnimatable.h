@@ -67,8 +67,9 @@ class SimpleAnimatableData final : public ork::ent::ComponentData {
 
   bool HasAnimation(ork::PoolString name) const;
 
-private:
   ~SimpleAnimatableData();
+
+private:
   ork::ent::ComponentInst* createComponent(ork::ent::Entity* pent) const final;
 
   AnimationMap mAnimationMap;

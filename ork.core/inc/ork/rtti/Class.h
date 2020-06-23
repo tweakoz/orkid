@@ -22,72 +22,85 @@ class RTTIData;
 
 class Category;
 
-class  Class : public ICastable
-{
+using shared_factory_t = std::function<rtti::castable_ptr_t()>;
+using raw_factory_t    = rtti::ICastable* (*)();
+
+class Class : public ICastable {
 public:
+  Class(const RTTIData&);
 
-    Class(const RTTIData &);
+  static void InitializeClasses();
 
-    static void InitializeClasses();
+  Class* Parent();
+  Class* FirstChild();
+  Class* NextSibling();
+  Class* PrevSibling();
+  const Class* Parent() const;
+  const PoolString& Name() const;
+  void SetName(ConstString name, bool badd2map = true);
 
-	Class *Parent();
-    Class *FirstChild();
-    Class *NextSibling();
-    Class *PrevSibling();
-	const Class *Parent() const;
-	const PoolString &Name() const;
-	void SetName(ConstString name,bool badd2map=true);
+  rtti::ICastable* CreateObject() const;
+  rtti::castable_ptr_t createShared() const;
+  void setRawFactory(raw_factory_t factory);
+  void setSharedFactory(shared_factory_t factory);
 
-	rtti::ICastable *CreateObject() const;
-	void SetFactory(rtti::ICastable *(*factory)());
+  bool hasFactory() const {
+    return hasRawFactory() or hasSharedFactory();
+  }
+  bool hasRawFactory() const {
+    return (_rawFactory != nullptr);
+  }
+  bool hasSharedFactory() const {
+    return (_sharedFactory != nullptr);
+  }
 
-	bool HasFactory() const { return (mFactory!=0); }
+  virtual void Initialize();
 
-	virtual void Initialize();
+  static Class* FindClass(const ConstString& name);
+  static Class* FindClassNoCase(const ConstString& name);
 
-	static Class *FindClass(const ConstString &name);
-    static Class *FindClassNoCase(const ConstString &name);
+  static ConstString DesignNameStatic();
+  static Category* category();
+  /*virtual*/ Class* GetClass() const;
 
-	static ConstString DesignNameStatic();
-	static Category* category();
-	/*virtual*/ Class *GetClass() const;
+  template <typename ClassType> static void InitializeType() {
+  }
 
-	template<typename ClassType>
-	static void InitializeType() {}
+  bool IsSubclassOf(const Class* other) const;
+  const ICastable* Cast(const ICastable* other) const;
+  ICastable* Cast(ICastable* other) const;
 
-	bool IsSubclassOf(const Class *other) const;
-	const ICastable *Cast(const ICastable *other) const;
-	ICastable *Cast(ICastable *other) const;
+  static void CreateClassAlias(ConstString name, Class*);
 
-	static void CreateClassAlias( ConstString name , Class * );
-
-  static inline void registerX(Class*clazz){_explicitLinkClasses.insert(clazz);}
+  static inline void registerX(Class* clazz) {
+    _explicitLinkClasses.insert(clazz);
+  }
 
   bool _initialized = false;
 
 private:
-	void AddChild(Class *pClass);
-	void FixSiblingLinks();
-	void RemoveFromHierarchy();
+  void AddChild(Class* pClass);
+  void FixSiblingLinks();
+  void RemoveFromHierarchy();
 
-    void (*mClassInitializer)();
+  void (*mClassInitializer)();
 
-	Class *_parentClass;
-    Class *mChildClass;
-    Class *mNextSiblingClass;
-    Class *mPrevSiblingClass;
+  Class* _parentClass;
+  Class* mChildClass;
+  Class* mNextSiblingClass;
+  Class* mPrevSiblingClass;
 
-	PoolString mClassName;
-	rtti::ICastable *(*mFactory)();
-	Class *mNextClass;
+  PoolString mClassName;
+  raw_factory_t _rawFactory;
+  shared_factory_t _sharedFactory;
 
-    static Class *sLastClass;
+  Class* mNextClass;
 
+  static Class* sLastClass;
 
-	typedef orklut<PoolString, Class *> ClassMapType;
-  static std::set<Class *> _explicitLinkClasses;
-	static ClassMapType mClassMap;
-
+  typedef orklut<PoolString, Class*> ClassMapType;
+  static std::set<Class*> _explicitLinkClasses;
+  static ClassMapType mClassMap;
 };
 
-} }
+}} // namespace ork::rtti
