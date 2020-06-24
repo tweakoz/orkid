@@ -294,7 +294,6 @@ bool XMLDeserializer::_deserializeObject(
       orkprintf("XMLDeserializer:: <reference ... expected 'category' attribute\n");
       return false;
     }
-
     if (false == category->deserializeObject(*this, object)) {
       return false;
     }
@@ -317,7 +316,7 @@ bool XMLDeserializer::deserializeObject(rtti::castable_rawptr_t& object) {
   dmethod_t dm    = &rtti::Category::deserializeObject;
   return _deserializeObject(object, dm);
 }
-bool XMLDeserializer::deserializeObject(rtti::castable_ptr_t& object) {
+bool XMLDeserializer::deserializeSharedObject(rtti::castable_ptr_t& object) {
   using dmethod_t = bool (rtti::Category::*)(IDeserializer&, rtti::castable_ptr_t&) const;
   dmethod_t dm    = &rtti::Category::deserializeObject;
   return _deserializeObject(object, dm);

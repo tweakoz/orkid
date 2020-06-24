@@ -57,8 +57,8 @@ public:
 
   void serializeObject(rtti::castable_rawconstptr_t);
   void deserializeObject(rtti::castable_rawptr_t&);
-  void serializeObject(rtti::castable_constptr_t);
-  void deserializeObject(rtti::castable_ptr_t&);
+  void serializeSharedObject(rtti::castable_constptr_t);
+  void deserializeSharedObject(rtti::castable_ptr_t&);
 
   operator bool() const;
 

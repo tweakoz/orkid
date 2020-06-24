@@ -246,7 +246,7 @@ EditorMainWindow::EditorMainWindow(QWidget* parent, const std::string& applicati
 
     stream::FileInputStream istream(collapse_filename.c_str());
     reflect::serialize::XMLDeserializer iser(istream);
-    bool bOK = container.DeserializeInPlace(iser);
+    bool bOK = ork::Object::xxxDeserializeInPlace(&container, iser);
     OrkAssert(bOK);
   }
 
@@ -264,7 +264,7 @@ EditorMainWindow::~EditorMainWindow() {
   ork::file::Path collapse_filename("collapse_state.cst");
   stream::FileOutputStream ostream(collapse_filename.c_str());
   reflect::serialize::XMLSerializer oser(ostream);
-  container.SerializeInPlace(oser);
+  ork::Object::xxxSerializeInPlace(&container, oser);
 }
 
 ///////////////////////////////////////////////////////////////////////////

@@ -36,7 +36,7 @@ public:
 
   bool Deserialize(const IProperty*) override;
   bool deserializeObject(rtti::castable_rawptr_t&) override;
-  bool deserializeObject(rtti::castable_ptr_t&) override;
+  bool deserializeSharedObject(rtti::castable_ptr_t&) override;
   bool deserializeObjectProperty(const IObjectProperty*, Object*) override;
 
   bool ReferenceObject(rtti::castable_rawptr_t) override;
@@ -78,7 +78,7 @@ inline bool NullDeserializer::Deserialize(double& value) {
 inline bool NullDeserializer::deserializeObject(rtti::castable_rawptr_t& value) {
   return false;
 }
-inline bool NullDeserializer::deserializeObject(rtti::castable_ptr_t& value) {
+inline bool NullDeserializer::deserializeSharedObject(rtti::castable_ptr_t& value) {
   return false;
 }
 

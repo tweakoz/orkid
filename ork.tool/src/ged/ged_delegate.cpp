@@ -712,7 +712,7 @@ class GraphImportDelegate : public IOpsDelegate {
         // ork::stream::FileOutputStream ostream(fname.c_str());
         // ork::reflect::serialize::XMLSerializer oser(ostream);
         // oser.Serialize(ptex);
-        pgraph->DeserializeInPlace(iser);
+        ork::Object::xxxDeserializeInPlace(pgraph, iser);
       }
       lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
     }
@@ -735,7 +735,7 @@ class GraphExportDelegate : public IOpsDelegate {
         ork::stream::FileOutputStream ostream(fname.c_str());
         ork::reflect::serialize::XMLSerializer oser(ostream);
         // oser.Serialize(ptex);
-        pgraph->SerializeInPlace(oser);
+        ork::Object::xxxSerializeInPlace(pgraph, oser);
       }
       lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
     }
@@ -756,7 +756,7 @@ void ObjectImportDelegate::Execute(ork::Object* ptarget) {
       // ork::stream::FileOutputStream ostream(fname.c_str());
       // ork::reflect::serialize::XMLSerializer oser(ostream);
       // oser.Serialize(ptex);
-      ptarget->DeserializeInPlace(iser);
+      ork::Object::xxxDeserializeInPlace(ptarget, iser);
     }
     lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
   }
@@ -775,7 +775,7 @@ void ObjectExportDelegate::Execute(ork::Object* ptarget) {
       ork::stream::FileOutputStream ostream(fname.c_str());
       ork::reflect::serialize::XMLSerializer oser(ostream);
       // oser.Serialize(ptex);
-      pobj->SerializeInPlace(oser);
+      ork::Object::xxxSerializeInPlace(pobj, oser);
     }
     lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
   }

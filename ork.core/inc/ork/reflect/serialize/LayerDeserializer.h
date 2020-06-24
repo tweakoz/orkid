@@ -38,7 +38,7 @@ public:
 
   bool Deserialize(const IProperty*) override;
   bool deserializeObject(rtti::castable_rawptr_t&) override;
-  bool deserializeObject(rtti::castable_ptr_t&) override;
+  bool deserializeSharedObject(rtti::castable_ptr_t&) override;
   bool deserializeObjectProperty(const IObjectProperty*, Object*) override;
 
   bool ReferenceObject(rtti::castable_rawptr_t) override;
@@ -89,10 +89,8 @@ inline bool LayerDeserializer::Deserialize(double& value) {
 inline bool LayerDeserializer::deserializeObject(rtti::castable_rawptr_t& value) {
   return mDeserializer.deserializeObject(value);
 }
-inline bool LayerDeserializer::deserializeObject(rtti::castable_ptr_t& value) {
-  OrkAssert(false);
-  return false;
-  // mDeserializer.deserializeObject(value);
+inline bool LayerDeserializer::deserializeSharedObject(rtti::castable_ptr_t& value) {
+  return mDeserializer.deserializeSharedObject(value);
 }
 
 inline bool LayerDeserializer::Deserialize(const IProperty* prop) {

@@ -180,7 +180,7 @@ bool TextDeserializer::deserializeObject(rtti::castable_rawptr_t& object) {
   }
   return false;
 }
-bool TextDeserializer::deserializeObject(rtti::castable_ptr_t& object) {
+bool TextDeserializer::deserializeSharedObject(rtti::castable_ptr_t& object) {
   OrkAssert(false);
   return false;
 }

@@ -23,14 +23,14 @@ bool ObjectCategory::serializeObject(
     const rtti::ICastable* value) const {
   const Object* object = rtti::downcast<const Object*>(value);
 
-  return object->Serialize(serializer);
+  return Object::xxxSerialize(object, serializer);
 }
 ////////////////////////////////////////////////////////////////
 bool ObjectCategory::serializeObject(
     reflect::ISerializer& serializer, //
     rtti::castable_constptr_t value) const {
   auto object = rtti::downcast<const Object*>(value.get());
-  return object->Serialize(serializer);
+  return Object::xxxSerialize(object, serializer);
 }
 ////////////////////////////////////////////////////////////////
 bool ObjectCategory::deserializeObject(
@@ -46,7 +46,7 @@ bool ObjectCategory::deserializeObject(
   OrkAssert(clazz);
   outvalue    = clazz->createShared();
   auto object = dynamic_cast<Object*>(outvalue.get());
-  if (false == object->Deserialize(deserializer)) {
+  if (false == Object::xxxDeserialize(object, deserializer)) {
     deserializer.EndCommand(command);
     return false;
   }
@@ -57,7 +57,7 @@ bool ObjectCategory::deserializeObject(
 ////////////////////////////////////////////////////////////////
 bool ObjectCategory::deserializeObject(
     reflect::IDeserializer& deserializer, //
-    rtti::ICastable*& value) const {
+    rtti::castable_rawptr_t& value) const {
   reflect::Command command;
   bool cmdok = deserializer.BeginCommand(command);
   OrkAssert(cmdok);
@@ -68,7 +68,7 @@ bool ObjectCategory::deserializeObject(
   OrkAssert(clazz);
   value       = clazz->CreateObject();
   auto object = dynamic_cast<Object*>(value);
-  if (false == object->Deserialize(deserializer)) {
+  if (false == Object::xxxDeserialize(object, deserializer)) {
     deserializer.EndCommand(command);
     return false;
   }

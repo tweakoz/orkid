@@ -38,7 +38,7 @@ struct IDeserializer {
 
   virtual bool Deserialize(const IProperty*)                              = 0;
   virtual bool deserializeObject(rtti::ICastable*&)                       = 0;
-  virtual bool deserializeObject(rtti::castable_ptr_t&)                   = 0;
+  virtual bool deserializeSharedObject(rtti::castable_ptr_t&)             = 0;
   virtual bool deserializeObjectProperty(const IObjectProperty*, Object*) = 0;
 
   virtual bool Deserialize(MutableString&)             = 0;

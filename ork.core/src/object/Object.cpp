@@ -29,106 +29,73 @@
 #include <ork/application/application.h>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::Object, "Object");
-INSTANTIATE_TRANSPARENT_RTTI(ork::AutoConnector, "AutoConnector");
 
 namespace ork {
 
 void Object::Describe() {
 }
-bool Object::Serialize(reflect::ISerializer& serializer) const {
-  bool result        = true;
-  rtti::Class* clazz = this->GetClass();
 
+///////////////////////////////////////////////////////////////////////////////
+
+bool Object::xxxSerialize(const Object* obj, reflect::ISerializer& serializer) {
+  rtti::Class* clazz = obj->GetClass();
   reflect::Command command(reflect::Command::EOBJECT, clazz->Name());
+  serializer.BeginCommand(command);
+  serializer.ReferenceObject(obj);
+  obj->PreSerialize(serializer);
+  if (not rtti::safe_downcast<object::ObjectClass*>(clazz)->Description().SerializeProperties(serializer, obj)) {
+    OrkAssert(false);
+  }
+  obj->PostSerialize(serializer);
+  serializer.EndCommand(command);
 
-  if (false == serializer.BeginCommand(command))
-    result = false;
-  if (false == serializer.ReferenceObject(this))
-    result = false;
-
-  if (false == this->PreSerialize(serializer))
-    result = false;
-
-  if (false == rtti::safe_downcast<object::ObjectClass*>(clazz)->Description().SerializeProperties(serializer, this))
-    result = false;
-
-  if (false == this->PostSerialize(serializer))
-    result = false;
-
-  if (false == serializer.EndCommand(command))
-    result = false;
-
-  return result;
+  return true;
 }
 
-bool Object::SerializeInPlace(reflect::ISerializer& serializer) const {
-  bool result        = true;
-  rtti::Class* clazz = this->GetClass();
+///////////////////////////////////////////////////////////////////////////////
 
+bool Object::xxxSerializeInPlace(const Object* obj, reflect::ISerializer& serializer) {
+  rtti::Class* clazz = obj->GetClass();
   reflect::Command command(reflect::Command::EOBJECT, clazz->Name());
-
-  if (false == serializer.BeginCommand(command))
-    result = false;
-  // if(false == serializer.ReferenceObject(this))
-  // result = false;
-
-  if (false == this->PreSerialize(serializer))
-    result = false;
-
-  if (false == rtti::safe_downcast<object::ObjectClass*>(clazz)->Description().SerializeProperties(serializer, this))
-    result = false;
-
-  if (false == this->PostSerialize(serializer))
-    result = false;
-
-  if (false == serializer.EndCommand(command))
-    result = false;
-
-  return result;
+  serializer.BeginCommand(command);
+  obj->PreSerialize(serializer);
+  if (not rtti::safe_downcast<object::ObjectClass*>(clazz)->Description().SerializeProperties(serializer, obj)) {
+    OrkAssert(false);
+  }
+  obj->PostSerialize(serializer);
+  serializer.EndCommand(command);
+  return true;
 }
 
-bool Object::Deserialize(reflect::IDeserializer& deserializer) {
-  bool result        = true;
-  rtti::Class* clazz = this->GetClass();
+///////////////////////////////////////////////////////////////////////////////
 
-  deserializer.ReferenceObject(this);
-
-  if (result)
-    result = this->PreDeserialize(deserializer);
-
-  if (false == rtti::safe_downcast<object::ObjectClass*>(clazz)->Description().DeserializeProperties(deserializer, this))
-    result = false;
-
-  if (result)
-    result = this->PostDeserialize(deserializer);
-
-  return result;
+bool Object::xxxDeserialize(Object* obj, reflect::IDeserializer& deserializer) {
+  rtti::Class* clazz = obj->GetClass();
+  deserializer.ReferenceObject(obj);
+  obj->PreDeserialize(deserializer);
+  if (not rtti::safe_downcast<object::ObjectClass*>(clazz)->Description().DeserializeProperties(deserializer, obj)) {
+    OrkAssert(false);
+  }
+  obj->PostDeserialize(deserializer);
+  return true;
 }
 
-bool Object::DeserializeInPlace(reflect::IDeserializer& deserializer) {
-  bool result        = true;
-  rtti::Class* clazz = this->GetClass();
+///////////////////////////////////////////////////////////////////////////////
 
+bool Object::xxxDeserializeInPlace(Object* obj, reflect::IDeserializer& deserializer) {
+  rtti::Class* clazz = obj->GetClass();
   reflect::Command command(reflect::Command::EOBJECT, clazz->Name());
-  if (false == deserializer.BeginCommand(command))
-    result = false;
-
-  // deserializer.ReferenceObject(this);
-
-  if (result)
-    result = this->PreDeserialize(deserializer);
-
-  if (false == rtti::safe_downcast<object::ObjectClass*>(clazz)->Description().DeserializeProperties(deserializer, this))
-    result = false;
-
-  if (result)
-    result = this->PostDeserialize(deserializer);
-
-  if (false == deserializer.EndCommand(command))
-    result = false;
-
-  return result;
+  deserializer.BeginCommand(command);
+  obj->PreDeserialize(deserializer);
+  if (not rtti::safe_downcast<object::ObjectClass*>(clazz)->Description().DeserializeProperties(deserializer, obj)) {
+    OrkAssert(false);
+  }
+  obj->PostDeserialize(deserializer);
+  deserializer.EndCommand(command);
+  return true;
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 object::Signal* Object::FindSignal(ConstString name) {
   object::Signal Object::*pSignal = rtti::downcast<object::ObjectClass*>(GetClass())->Description().FindSignal(name);
@@ -138,6 +105,8 @@ object::Signal* Object::FindSignal(ConstString name) {
   else
     return NULL;
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 bool Object::PreSerialize(reflect::ISerializer&) const {
   return true;
@@ -155,16 +124,24 @@ bool Object::PostDeserialize(reflect::IDeserializer&) {
   return true;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 Object* Object::Clone() const {
   auto the_clone = dynamic_cast<Object*>(GetClass()->CreateObject());
   _cloneInto(the_clone);
   return the_clone;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 object_ptr_t Object::cloneShared() const {
   auto the_clone = std::dynamic_pointer_cast<Object>(GetClass()->createShared());
   _cloneInto(the_clone.get());
   return the_clone;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 void Object::_cloneInto(Object* into) const {
   printf("slowclone class<%s>\n", GetClass()->Name().c_str());
 
@@ -182,6 +159,8 @@ void Object::_cloneInto(Object* into) const {
   GetClass()->Description().DeserializeProperties(iser, into);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 Md5Sum Object::CalcMd5() const {
   ork::ResizableString str;
   ork::stream::ResizableStringOutputStream ostream(str);
@@ -195,6 +174,8 @@ Md5Sum Object::CalcMd5() const {
 
   return md5_context.Result();
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 reflect::BidirectionalSerializer& operator||(reflect::BidirectionalSerializer& bidi, Object& object) {
   if (bidi.Serializing()) {
@@ -212,7 +193,7 @@ reflect::BidirectionalSerializer& operator||(reflect::BidirectionalSerializer& b
     OrkAssertI(object.GetClass()->IsSubclassOf(clazz), "Can't deserialize an X into a Y");
 
     if (object.GetClass()->IsSubclassOf(clazz)) {
-      if (false == object.Deserialize(deserializer))
+      if (false == Object::xxxDeserialize(&object, deserializer))
         bidi.Fail();
     }
 
@@ -223,16 +204,20 @@ reflect::BidirectionalSerializer& operator||(reflect::BidirectionalSerializer& b
   return bidi;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 reflect::BidirectionalSerializer& operator||(reflect::BidirectionalSerializer& bidi, const Object& object) {
   OrkAssertI(bidi.Serializing(), "can't deserialize to a non-const object");
 
   if (bidi.Serializing()) {
-    if (false == object.Serialize(*bidi.Serializer()))
+    if (false == Object::xxxSerialize(&object, *bidi.Serializer()))
       bidi.Fail();
   }
 
   return bidi;
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 static Object* LoadObjectFromFile(ConstString filename, bool binary) {
   float ftime1 = ork::OldSchool::GetRef().GetLoResRelTime();
@@ -296,93 +281,6 @@ Object* DeserializeObject(PieceString file) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
-void AutoConnector::Describe() {
-}
-
-AutoConnector::AutoConnector() {
-}
-AutoConnector::~AutoConnector() {
-}
-void AutoConnector::DisconnectAll() {
-  int inumcon = mConnections.size();
-
-  while (false == mConnections.empty()) {
-    Connection* conn = *mConnections.begin();
-
-    bool bOK = ork::object::Disconnect(conn->mpSender, conn->mSignal, conn->mpReciever, conn->mSlot);
-    OrkAssert(bOK);
-
-    ////////////////////////////////////////////////////
-    // remove from my connection list
-    ////////////////////////////////////////////////////
-    mConnections.erase(mConnections.begin());
-    ////////////////////////////////////////////////////
-
-    ////////////////////////////////////////////////////
-    // remove from recievers connection list
-    ////////////////////////////////////////////////////
-    orkset<Connection*>::iterator itoth;
-    if (this == conn->mpSender) {
-      itoth = conn->mpReciever->mConnections.find(conn);
-      if (itoth != conn->mpReciever->mConnections.end()) {
-        mConnections.erase(itoth); // remove from other connection list
-      }
-    } else if (this == conn->mpReciever) {
-      itoth = conn->mpSender->mConnections.find(conn);
-      if (itoth != conn->mpSender->mConnections.end()) {
-        mConnections.erase(itoth); // remove from other connection list
-      }
-    }
-    ////////////////////////////////////////////////////
-
-    delete conn;
-  }
-}
-
-void AutoConnector::Connect(const char* SignalName, AutoConnector* pReciever, const char* SlotName) {
-  ork::PoolString psigname = ork::AddPooledString(SignalName);
-  ork::PoolString psltname = ork::AddPooledString(SlotName);
-
-  bool bOK = ork::object::Connect(this, psigname, pReciever, psltname);
-
-  OrkAssert(bOK);
-
-  if (bOK) {
-    Connection* conn = new Connection;
-    conn->mpSender   = this;
-    conn->mpReciever = pReciever;
-    conn->mSignal    = psigname;
-    conn->mSlot      = psltname;
-    mConnections.insert(conn);
-    if (pReciever != this) {
-      pReciever->mConnections.insert(conn);
-    }
-  }
-}
-
-void AutoConnector::SetupSignalsAndSlots() {
-  object::ObjectClass* pclass                            = rtti::downcast<object::ObjectClass*>(GetClass());
-  const reflect::Description& descript                   = pclass->Description();
-  const reflect::Description::SignalMapType& signals     = descript.GetSignals();
-  const reflect::Description::AutoSlotMapType& autoslots = descript.GetAutoSlots();
-  const reflect::Description::FunctorMapType& functors   = descript.GetFunctors();
-
-  for (reflect::Description::AutoSlotMapType::const_iterator it = autoslots.begin(); it != autoslots.end(); it++) {
-    const ork::ConstString& slotname                     = it->first;
-    ork::object::AutoSlot ork::Object::*const ptr2slotmp = it->second;
-    ork::object::AutoSlot& slot                          = this->*ptr2slotmp;
-    slot.SetSlotName(ork::AddPooledString(slotname.c_str()));
-    slot.SetObject(this);
-  }
-  // for( reflect::Description::AutoSlotMapType::const_iterator it=autoslots.begin(); it!=autoslots.end(); it++ )
-  //{	const ork::PoolString& slotname = it->first;
-  //	AutoSlot* ptr2slot = it->second;
-  //	ptr2slot->SetName( slotname );
-  //	ptr2slot->SetObject( this );
-  //}
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

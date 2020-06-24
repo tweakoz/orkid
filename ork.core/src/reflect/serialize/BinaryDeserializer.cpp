@@ -129,7 +129,7 @@ bool BinaryDeserializer::Match(char c) {
   }
 }
 
-bool BinaryDeserializer::deserializeObject(rtti::castable_ptr_t& object) {
+bool BinaryDeserializer::deserializeSharedObject(rtti::castable_ptr_t& object) {
   OrkAssert(false);
   return false;
 }

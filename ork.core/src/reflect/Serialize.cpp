@@ -19,9 +19,9 @@ class ICastable;
 namespace ork { namespace reflect {
 
 //////////////////////////////////////////////////
-void BidirectionalSerializer::serializeObject(rtti::castable_constptr_t) {
+void BidirectionalSerializer::serializeSharedObject(rtti::castable_constptr_t) {
 }
-void BidirectionalSerializer::deserializeObject(rtti::castable_ptr_t&) {
+void BidirectionalSerializer::deserializeSharedObject(rtti::castable_ptr_t&) {
 }
 
 //////////////////////////////////////////////////
@@ -88,10 +88,10 @@ void Serialize(
     object_ptr_t* out,
     BidirectionalSerializer& bidi) {
   if (bidi.Serializing()) {
-    bidi.serializeObject(*in);
+    bidi.serializeSharedObject(*in);
   } else {
     rtti::castable_ptr_t ptr;
-    bidi.deserializeObject(ptr);
+    bidi.deserializeSharedObject(ptr);
     (*out) = std::dynamic_pointer_cast<Object>(ptr);
   }
 }
@@ -116,11 +116,11 @@ void Serialize(
     rtti::castable_ptr_t* out,
     BidirectionalSerializer& bidi) {
   if (bidi.Serializing()) {
-    // bidi.serializeObject(*in);
+    bidi.serializeSharedObject(*in);
   } else {
-    // rtti::ICastable* result = NULL;
-    // bidi.deserializeObject(result);
-    //*out = result;
+    rtti::castable_ptr_t result = nullptr;
+    bidi.deserializeSharedObject(result);
+    *out = result;
   }
 }
 

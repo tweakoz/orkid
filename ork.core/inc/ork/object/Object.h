@@ -43,10 +43,10 @@ public:
   virtual ~Object() {
   }
 
-  bool Serialize(reflect::ISerializer&) const;
-  bool SerializeInPlace(reflect::ISerializer& serializer) const;
-  bool Deserialize(reflect::IDeserializer&);
-  bool DeserializeInPlace(reflect::IDeserializer&);
+  static bool xxxSerialize(const Object* obj, reflect::ISerializer&);
+  static bool xxxSerializeInPlace(const Object* obj, reflect::ISerializer& serializer);
+  static bool xxxDeserialize(Object* obj, reflect::IDeserializer&);
+  static bool xxxDeserializeInPlace(Object* obj, reflect::IDeserializer&);
 
   object::Signal* FindSignal(ConstString name);
 

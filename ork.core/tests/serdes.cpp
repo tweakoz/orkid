@@ -70,6 +70,6 @@ TEST(DeserializeSharedObject) {
   stream::StringInputStream inp_stream(objstr.c_str());
   serialize::XMLDeserializer deser(inp_stream);
   rtti::castable_ptr_t pcastable = nullptr;
-  bool serok                     = deser.deserializeObject(pcastable);
+  bool serok                     = deser.deserializeSharedObject(pcastable);
   CHECK(serok);
 }

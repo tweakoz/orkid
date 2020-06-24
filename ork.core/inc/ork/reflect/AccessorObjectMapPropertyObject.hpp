@@ -3,7 +3,7 @@
 // Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -17,194 +17,167 @@
 
 namespace ork { namespace reflect {
 
-template<typename KeyType>
+template <typename KeyType>
 AccessorObjectMapPropertyObject<KeyType>::AccessorObjectMapPropertyObject(
-		const Object *(Object::*get)(const KeyType &, int) const,
-		Object *(Object::*access)(const KeyType &, int),
-		void (Object::*erase)(const KeyType &, int),
-		void (Object::*serializer)(
-			typename AccessorObjectMapPropertyObject<KeyType>::SerializationFunction,
-			BidirectionalSerializer &) const)
-	: mGetter(get)
-	, mAccessor(access)
-	, mEraser(erase)
-	, mSerializer(serializer)
-{
+    const Object* (Object::*get)(const KeyType&, int) const,
+    Object* (Object::*access)(const KeyType&, int),
+    void (Object::*erase)(const KeyType&, int),
+    void (Object::*serializer)(typename AccessorObjectMapPropertyObject<KeyType>::SerializationFunction, BidirectionalSerializer&)
+        const)
+    : mGetter(get)
+    , mAccessor(access)
+    , mEraser(erase)
+    , mSerializer(serializer) {
 }
 
+template <typename KeyType>
+Object*
+AccessorObjectMapPropertyObject<KeyType>::AccessItem(IDeserializer& key_deserializer, int multi_index, Object* object) const {
+  KeyType key;
 
-template<typename KeyType>
-Object *AccessorObjectMapPropertyObject<KeyType>::AccessItem(
-	IDeserializer &key_deserializer, int multi_index, Object *object) const
-{
-	KeyType key;
+  BidirectionalSerializer(key_deserializer) | key;
 
-	BidirectionalSerializer(key_deserializer) | key;
+  if ((object->*mGetter)(key, multi_index)) {
+    return (object->*mAccessor)(key, multi_index);
+  }
 
-	if((object->*mGetter)(key, multi_index))
-	{
-		return (object->*mAccessor)(key, multi_index);
-	}
-
-	return NULL;
+  return NULL;
 }
 
-template<typename KeyType>
-const Object *AccessorObjectMapPropertyObject<KeyType>::AccessItem(
-	IDeserializer &key_deserializer, int multi_index, const Object *object) const
-{
-	KeyType key;
+template <typename KeyType>
+const Object*
+AccessorObjectMapPropertyObject<KeyType>::AccessItem(IDeserializer& key_deserializer, int multi_index, const Object* object) const {
+  KeyType key;
 
-	BidirectionalSerializer(key_deserializer) | key;
+  BidirectionalSerializer(key_deserializer) | key;
 
-	return (object->*mGetter)(key, multi_index);
+  return (object->*mGetter)(key, multi_index);
 }
 
-template<typename KeyType>
+template <typename KeyType>
 bool AccessorObjectMapPropertyObject<KeyType>::DeserializeItem(
-	IDeserializer *value_deserializer, 
-	IDeserializer &key_deserializer,
-	int multi_index,
-	Object *object) const
-{
-	bool result = true;
+    IDeserializer* value_deserializer,
+    IDeserializer& key_deserializer,
+    int multi_index,
+    Object* object) const {
+  bool result = true;
 
-	KeyType key;
+  KeyType key;
 
-	BidirectionalSerializer(key_deserializer) | key;
+  BidirectionalSerializer(key_deserializer) | key;
 
-	if(value_deserializer)
-	{
-		Object *value = (object->*mAccessor)(key, multi_index);
-		
-		if(value)
-		{
-			result = value->Deserialize(*value_deserializer);
-		}
-		else
-		{
-			result = false;
-		}
-	}
-	else
-	{
-		(object->*mEraser)(key, multi_index);
-	}
+  if (value_deserializer) {
+    Object* value = (object->*mAccessor)(key, multi_index);
 
-	return result;
+    if (value) {
+      result = Object::xxxDeserialize(value, *value_deserializer);
+    } else {
+      result = false;
+    }
+  } else {
+    (object->*mEraser)(key, multi_index);
+  }
+
+  return result;
 }
 
-template<typename KeyType>
+template <typename KeyType>
 bool AccessorObjectMapPropertyObject<KeyType>::SerializeItem(
-	ISerializer &value_serializer,
-	IDeserializer &key_deserializer,
-	int multi_index,
-	const Object *object) const
-{
-	KeyType key;
+    ISerializer& value_serializer,
+    IDeserializer& key_deserializer,
+    int multi_index,
+    const Object* object) const {
+  KeyType key;
 
-	BidirectionalSerializer(key_deserializer) | key;
+  BidirectionalSerializer(key_deserializer) | key;
 
-	const Object *value = (object->*mGetter)(key, multi_index);
+  const Object* value = (object->*mGetter)(key, multi_index);
 
-	if(value)
-	{
-		return value->Serialize(value_serializer);
-	}
-	else
-	{
-		return false;
-	}
+  if (value) {
+    return Object::xxxSerialize(value, value_serializer);
+  } else {
+    return false;
+  }
 }
 
-template<typename KeyType>
-bool AccessorObjectMapPropertyObject<KeyType>::Deserialize(
-	IDeserializer &deserializer, Object *object) const
-{
-	Command item;
+template <typename KeyType>
+bool AccessorObjectMapPropertyObject<KeyType>::Deserialize(IDeserializer& deserializer, Object* object) const {
+  Command item;
 
-	if(deserializer.BeginCommand(item))
-	{
-		OrkAssert(item.Type() == Command::EITEM);
+  if (deserializer.BeginCommand(item)) {
+    OrkAssert(item.Type() == Command::EITEM);
 
-		if(item.Type() != Command::EITEM)
-		{
-			deserializer.EndCommand(item);
-			return false;
-		}
+    if (item.Type() != Command::EITEM) {
+      deserializer.EndCommand(item);
+      return false;
+    }
 
-		Command attribute;
-		if(false == deserializer.BeginCommand(attribute))
-			return false;
+    Command attribute;
+    if (false == deserializer.BeginCommand(attribute))
+      return false;
 
-		OrkAssert(attribute.Type() == Command::EATTRIBUTE);
-		OrkAssert(attribute.Name() == "key");
+    OrkAssert(attribute.Type() == Command::EATTRIBUTE);
+    OrkAssert(attribute.Name() == "key");
 
-		if(attribute.Type() != Command::EATTRIBUTE || attribute.Name() != "key")
-		{
-			deserializer.EndCommand(attribute);
-			return false;
-		}
+    if (attribute.Type() != Command::EATTRIBUTE || attribute.Name() != "key") {
+      deserializer.EndCommand(attribute);
+      return false;
+    }
 
-		KeyType key;
+    KeyType key;
 
-		BidirectionalSerializer(deserializer) | key;
+    BidirectionalSerializer(deserializer) | key;
 
-		if(false == deserializer.EndCommand(attribute))
-			return false;
+    if (false == deserializer.EndCommand(attribute))
+      return false;
 
-		Object *value = (object->*mAccessor)(key, IObjectMapProperty::kDeserializeInsertItem);
+    Object* value = (object->*mAccessor)(key, IObjectMapProperty::kDeserializeInsertItem);
 
-		if(false == value->Deserialize(deserializer))
-			return false;
+    if (false == Object::xxxDeserialize(value, deserializer))
+      return false;
 
-		if(false == deserializer.EndCommand(item))
-			return false;
+    if (false == deserializer.EndCommand(item))
+      return false;
 
-		return true;
-	}
+    return true;
+  }
 
-	return false;
+  return false;
 }
 
-template<typename KeyType>
-bool AccessorObjectMapPropertyObject<KeyType>::Serialize(
-	ISerializer &serializer, const Object *obj) const
-{
-	BidirectionalSerializer bidi(serializer);
-	(obj->*mSerializer)(DoSerialize, bidi);
+template <typename KeyType>
+bool AccessorObjectMapPropertyObject<KeyType>::Serialize(ISerializer& serializer, const Object* obj) const {
+  BidirectionalSerializer bidi(serializer);
+  (obj->*mSerializer)(DoSerialize, bidi);
 
-	return bidi.Succeeded();
+  return bidi.Succeeded();
 }
 
-template<typename KeyType>
-void AccessorObjectMapPropertyObject<KeyType>::DoSerialize(
-	BidirectionalSerializer &bidi, const KeyType &key, const Object *value)
-{
-	bool result = true;
-	ISerializer *serializer = bidi.Serializer();
+template <typename KeyType>
+void AccessorObjectMapPropertyObject<KeyType>::DoSerialize(BidirectionalSerializer& bidi, const KeyType& key, const Object* value) {
+  bool result             = true;
+  ISerializer* serializer = bidi.Serializer();
 
-	Command item(Command::EITEM);
+  Command item(Command::EITEM);
 
-	Command attribute(Command::EATTRIBUTE, "key");
+  Command attribute(Command::EATTRIBUTE, "key");
 
-	if(false == serializer->BeginCommand(item))
-		result = false;
-	if(false == serializer->BeginCommand(attribute))
-		result = false;
-	bidi | key;
-	if(false == serializer->EndCommand(attribute))
-		result = false;
+  if (false == serializer->BeginCommand(item))
+    result = false;
+  if (false == serializer->BeginCommand(attribute))
+    result = false;
+  bidi | key;
+  if (false == serializer->EndCommand(attribute))
+    result = false;
 
-	if(false == value->Serialize(*bidi.Serializer()))
-		result = false;
+  if (false == Object::xxxSerialize(value, *bidi.Serializer()))
+    result = false;
 
-	if(false == serializer->EndCommand(item))
-		result = false;
+  if (false == serializer->EndCommand(item))
+    result = false;
 
-	if(false == result)
-		bidi.Fail();
+  if (false == result)
+    bidi.Fail();
 }
 
-} }
-
+}} // namespace ork::reflect

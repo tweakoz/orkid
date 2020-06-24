@@ -32,7 +32,7 @@ public:
 
   bool Deserialize(const IProperty*) override;
   bool deserializeObject(rtti::castable_rawptr_t&) override;
-  bool deserializeObject(rtti::castable_ptr_t&) override;
+  bool deserializeSharedObject(rtti::castable_ptr_t&) override;
   bool deserializeObjectProperty(const IObjectProperty*, Object*) override;
 
   template <
