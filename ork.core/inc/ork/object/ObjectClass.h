@@ -34,20 +34,24 @@ class ObjectClass : public rtti::Class {
 public:
   typedef ork::reflect::Description::anno_t anno_t;
 
-  void annotate( const ConstString &key, const anno_t& val );
-  const anno_t& annotation( const ConstString &key );
+  void annotate(const ConstString& key, const anno_t& val);
+  const anno_t& annotation(const ConstString& key);
 
   reflect::Description& Description();
   const reflect::Description& Description() const;
 
-  template <typename ClassType> static void InitializeType() { ClassType::Describe(); }
+  template <typename ClassType> static void InitializeType() {
+    ClassType::Describe();
+  }
 
   template <typename ClassType, typename MemberType>
   inline PropertyModifier memberProperty(const char* name, MemberType ClassType::*member);
 
   template <typename ClassType, typename MemberType>
-  inline PropertyModifier
-  accessorProperty(const char* name, void (ClassType::*getter)(MemberType&) const, void (ClassType::*setter)(const MemberType&));
+  inline PropertyModifier accessorProperty(
+      const char* name, //
+      void (ClassType::*getter)(MemberType&) const,
+      void (ClassType::*setter)(const MemberType&));
 
   template <typename ClassType>
   inline PropertyModifier floatProperty(const char* name, float_range range, float ClassType::*member);
