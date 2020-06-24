@@ -40,7 +40,7 @@ public:
   virtual bool Serialize(const IProperty*) = 0;
 
   virtual bool serializeObject(const rtti::ICastable*) = 0;
-  inline bool serializeObject(rtti::castable_constptr_t obj) {
+  inline bool serializeSharedObject(rtti::castable_constptr_t obj) {
     return serializeObject(obj.get());
   }
   // virtual bool serializeObjectWithCategory(

@@ -236,7 +236,7 @@ bool XMLSerializer::serializeObjectProperty(const IObjectProperty* prop, const O
   return prop->Serialize(*this, object);
 }
 
-bool XMLSerializer::serializeObject(const rtti::ICastable* object) {
+bool XMLSerializer::serializeObject(rtti::castable_rawconstptr_t object) {
   bool result = true;
   FlushHeader();
   if (object == NULL) {

@@ -98,6 +98,7 @@ void NatEnv::initSeg(int iseg) {
     _decAdjust  = lerp(_decAdjust, 1.0 / DKT, flerp);
     _relAdjust  = lerp(_relAdjust, 1.0 / RKT, flerp);
   }
+   */
   /*
   switch (_state) {
     case 2:

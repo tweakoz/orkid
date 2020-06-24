@@ -34,7 +34,7 @@ public:
   void Hint(const PieceString&, intptr_t ival) override {
   }
 
-  bool serializeObject(const rtti::ICastable*) override;
+  bool serializeObject(rtti::castable_rawconstptr_t) override;
   bool serializeObjectProperty(const IObjectProperty*, const Object*) override;
   // bool serializeObjectWithCategory(
   //  const rtti::Category* cat, //
