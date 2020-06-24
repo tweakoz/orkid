@@ -176,9 +176,6 @@ Class* Class::FindClassNoCase(const ConstString& name) {
 rtti::ICastable* Class::CreateObject() const {
   return _rawFactory();
 }
-rtti::castable_ptr_t Class::createShared() const {
-  return _sharedFactory();
-}
 
 bool Class::IsSubclassOf(const Class* other) const {
   const Class* this_class = this;

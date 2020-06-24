@@ -46,13 +46,16 @@ TEST(ReflectionAccessorSharedProperty) {
   auto sht1        = std::make_shared<SharedTest>();
   auto clazz       = sht1->GetClass();
   auto clazzstatic = SharedTest::GetClassStatic();
-  auto sht2        = std::dynamic_pointer_cast<Object>(clazz->createShared());
+  auto sht2        = clazz->createShared();
   auto& desc       = clazz->Description();
   auto p           = desc.FindProperty("prop_sharedobj_accessor");
   using ptype      = AccessorObjectPropertyType<object_ptr_t>;
   auto passh       = dynamic_cast<const ptype*>(p);
   passh->Set(sht2, sht1.get());
   CHECK_EQUAL(sht1->_childObject, sht2);
+  object_ptr_t sht3;
+  passh->Get(sht3, sht1.get());
+  CHECK_EQUAL(sht1->_childObject, sht3);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -62,11 +65,14 @@ TEST(ReflectionDirectSharedProperty) {
   auto sht1        = std::make_shared<SharedTest>();
   auto clazz       = sht1->GetClass();
   auto clazzstatic = SharedTest::GetClassStatic();
-  auto sht2        = std::dynamic_pointer_cast<Object>(clazz->createShared());
+  auto sht2        = clazz->createShared();
   auto& desc       = clazz->Description();
   auto p           = desc.FindProperty("prop_sharedobj_direct");
   using ptype      = DirectObjectPropertySharedObject;
   auto passh       = dynamic_cast<const ptype*>(p);
   passh->set(sht2, sht1.get());
   CHECK_EQUAL(sht1->_childObject, sht2);
+  object_ptr_t sht3;
+  passh->get(sht3, sht1.get());
+  CHECK_EQUAL(sht1->_childObject, sht3);
 }

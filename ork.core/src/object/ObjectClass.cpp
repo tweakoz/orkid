@@ -5,8 +5,8 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-
 #include <ork/pch.h>
+#include <ork/object/Object.h>
 #include <ork/object/ObjectClass.h>
 #include <ork/rtti/downcast.h>
 #include <ork/reflect/IObjectProperty.h>
@@ -15,34 +15,33 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::object::ObjectClass, "ObjectClass");
 
 namespace ork { namespace object {
 
-static const reflect::Description *ParentClassDescription(const rtti::Class *clazz)
-{
-	const ObjectClass *object_class = rtti::downcast<const ObjectClass *>(clazz);
+static const reflect::Description* ParentClassDescription(const rtti::Class* clazz) {
+  const ObjectClass* object_class = rtti::downcast<const ObjectClass*>(clazz);
 
-	if(object_class)
-	{
-		return &object_class->Description();
-	}
-	else
-	{
-		return NULL;
-	}
+  if (object_class) {
+    return &object_class->Description();
+  } else {
+    return NULL;
+  }
 }
 
-void ObjectClass::Describe()
-{
+void ObjectClass::Describe() {
 }
 
-ObjectClass::ObjectClass(const rtti::RTTIData &data)
-	: rtti::Class(data)
-	, _description()
-{
+ObjectClass::ObjectClass(const rtti::RTTIData& data)
+    : rtti::Class(data)
+    , _description() {
 }
 
-void ObjectClass::annotate( const ConstString &key, const anno_t& val ) {
-  _description.annotateClass(key,val);
+object_ptr_t ObjectClass::createShared() const {
+  auto shcast = _sharedFactory();
+  return dynamic_pointer_cast<Object>(shcast);
 }
-const ObjectClass::anno_t& ObjectClass::annotation( const ConstString &key ) {
+
+void ObjectClass::annotate(const ConstString& key, const anno_t& val) {
+  _description.annotateClass(key, val);
+}
+const ObjectClass::anno_t& ObjectClass::annotation(const ConstString& key) {
   return _description.classAnnotation(key);
 }
 
@@ -62,14 +61,12 @@ void ObjectClass::Initialize() {
   }
 }
 
-reflect::Description &ObjectClass::Description()
-{
-	return _description;
+reflect::Description& ObjectClass::Description() {
+  return _description;
 }
 
-const reflect::Description &ObjectClass::Description() const
-{
-	return _description;
+const reflect::Description& ObjectClass::Description() const {
+  return _description;
 }
 
-} }
+}} // namespace ork::object

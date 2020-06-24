@@ -40,7 +40,6 @@ public:
   void SetName(ConstString name, bool badd2map = true);
 
   rtti::ICastable* CreateObject() const;
-  rtti::castable_ptr_t createShared() const;
   void setRawFactory(raw_factory_t factory);
   void setSharedFactory(shared_factory_t factory);
 
@@ -78,6 +77,9 @@ public:
 
   bool _initialized = false;
 
+protected:
+  shared_factory_t _sharedFactory;
+
 private:
   void AddChild(Class* pClass);
   void FixSiblingLinks();
@@ -92,7 +94,6 @@ private:
 
   PoolString mClassName;
   raw_factory_t _rawFactory;
-  shared_factory_t _sharedFactory;
 
   Class* mNextClass;
 
