@@ -7,6 +7,7 @@
 #include <ork/pch.h>
 
 #include <ork/reflect/IObjectPropertyObject.h>
+#include <ork/reflect/IObjectPropertySharedObject.h>
 #include <ork/reflect/IPropertyType.hpp>
 #include <ork/reflect/IObjectPropertyType.hpp>
 
@@ -120,6 +121,7 @@ typedef rtti::ICastable* ICastablePointer;
   MACRO(IProperty);                                                                                                                \
   MACRO(IObjectProperty);                                                                                                          \
   MACRO(IObjectPropertyObject);                                                                                                    \
+  MACRO(IObjectPropertySharedObject);                                                                                              \
   MACRO(IObjectArrayProperty);                                                                                                     \
   MACRO(IObjectArrayPropertyObject);                                                                                               \
   MACRO(IObjectMapProperty);                                                                                                       \
