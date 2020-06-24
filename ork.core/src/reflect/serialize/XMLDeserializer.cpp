@@ -222,6 +222,7 @@ template <typename ptrtype, typename dmtype> //
 bool XMLDeserializer::_deserializeObject(
     ptrtype& object, //
     dmtype& dmethod) {
+
   if (mbReadingAttributes)
     return false;
 
