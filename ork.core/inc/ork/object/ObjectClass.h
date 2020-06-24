@@ -54,6 +54,11 @@ public:
       void (ClassType::*setter)(const MemberType&));
 
   template <typename ClassType>
+  inline PropertyModifier sharedObjectProperty(
+      const char* name, //
+      object_ptr_t ClassType::*member);
+
+  template <typename ClassType>
   inline PropertyModifier floatProperty(const char* name, float_range range, float ClassType::*member);
 
 private:

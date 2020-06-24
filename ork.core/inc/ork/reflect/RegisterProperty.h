@@ -12,6 +12,7 @@
 #include <ork/reflect/AccessorObjectPropertyType.h>
 #include <ork/reflect/AccessorObjectPropertyVariant.h>
 #include <ork/reflect/DirectObjectPropertyType.h>
+#include <ork/reflect/DirectObjectPropertySharedObject.h>
 
 #include <ork/reflect/AccessorObjectArrayPropertyObject.h>
 #include <ork/reflect/AccessorObjectArrayPropertyType.h>
@@ -329,7 +330,19 @@ PropertyModifier* PropertyModifier::operator->() {
 template <typename ClassType, typename MemberType>
 inline object::PropertyModifier object::ObjectClass::memberProperty(const char* name, MemberType ClassType::*member) {
   object::PropertyModifier modder;
-  modder._property = new reflect::DirectObjectPropertyType<MemberType>(static_cast<MemberType Object::*>(member));
+  auto typed_member = static_cast<MemberType Object::*>(member);
+  modder._property = new reflect::DirectObjectPropertyType<MemberType>(typed_member);
+  _description.AddProperty(name, modder._property);
+  return modder;
+}
+
+template <typename ClassType>
+inline object::PropertyModifier object::ObjectClass::sharedObjectProperty( //
+  const char* name, //
+  object_ptr_t ClassType::*member) {
+  object::PropertyModifier modder;
+  auto typed_member = static_cast<object_ptr_t Object::*>(member);
+  modder._property = new reflect::DirectObjectPropertySharedObject(typed_member);
   _description.AddProperty(name, modder._property);
   return modder;
 }
@@ -340,8 +353,10 @@ inline object::PropertyModifier object::ObjectClass::accessorProperty(
     void (ClassType::*getter)(MemberType&) const,
     void (ClassType::*setter)(const MemberType&)) {
   object::PropertyModifier modder;
+  auto typed_getter = static_cast<void (Object::*)(MemberType&) const>(getter);
+  auto typed_setter = static_cast<void (Object::*)(const MemberType&)>(setter);
   modder._property = new reflect::AccessorObjectPropertyType<MemberType>(
-      static_cast<void (Object::*)(MemberType&) const>(getter), static_cast<void (Object::*)(const MemberType&)>(setter));
+      typed_getter, typed_setter);
   _description.AddProperty(name, modder._property);
   return modder;
 }
