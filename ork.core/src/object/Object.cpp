@@ -43,7 +43,28 @@ bool Object::xxxSerialize(const Object* obj, reflect::ISerializer& serializer) {
   serializer.BeginCommand(command);
   serializer.ReferenceObject(obj);
   obj->PreSerialize(serializer);
-  if (not rtti::safe_downcast<object::ObjectClass*>(clazz)->Description().SerializeProperties(serializer, obj)) {
+  auto objclass    = rtti::safe_downcast<object::ObjectClass*>(clazz);
+  const auto& desc = objclass->Description();
+  if (not desc.SerializeProperties(serializer, obj)) {
+    OrkAssert(false);
+  }
+  obj->PostSerialize(serializer);
+  serializer.EndCommand(command);
+
+  return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+bool Object::xxxSerializeShared(object_constptr_t obj, reflect::ISerializer& serializer) {
+  rtti::Class* clazz = obj->GetClass();
+  reflect::Command command(reflect::Command::EOBJECT, clazz->Name());
+  serializer.BeginCommand(command);
+  serializer.ReferenceObject(obj.get()); // probably wrong..
+  obj->PreSerialize(serializer);
+  auto objclass    = rtti::safe_downcast<object::ObjectClass*>(clazz);
+  const auto& desc = objclass->Description();
+  if (not desc.SerializeProperties(serializer, obj.get())) {
     OrkAssert(false);
   }
   obj->PostSerialize(serializer);
@@ -59,7 +80,9 @@ bool Object::xxxSerializeInPlace(const Object* obj, reflect::ISerializer& serial
   reflect::Command command(reflect::Command::EOBJECT, clazz->Name());
   serializer.BeginCommand(command);
   obj->PreSerialize(serializer);
-  if (not rtti::safe_downcast<object::ObjectClass*>(clazz)->Description().SerializeProperties(serializer, obj)) {
+  auto objclass    = rtti::safe_downcast<object::ObjectClass*>(clazz);
+  const auto& desc = objclass->Description();
+  if (not desc.SerializeProperties(serializer, obj)) {
     OrkAssert(false);
   }
   obj->PostSerialize(serializer);
@@ -73,7 +96,24 @@ bool Object::xxxDeserialize(Object* obj, reflect::IDeserializer& deserializer) {
   rtti::Class* clazz = obj->GetClass();
   deserializer.ReferenceObject(obj);
   obj->PreDeserialize(deserializer);
-  if (not rtti::safe_downcast<object::ObjectClass*>(clazz)->Description().DeserializeProperties(deserializer, obj)) {
+  auto objclass    = rtti::safe_downcast<object::ObjectClass*>(clazz);
+  const auto& desc = objclass->Description();
+  if (not desc.DeserializeProperties(deserializer, obj)) {
+    OrkAssert(false);
+  }
+  obj->PostDeserialize(deserializer);
+  return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+bool Object::xxxDeserializeShared(object_ptr_t obj, reflect::IDeserializer& deserializer) {
+  rtti::Class* clazz = obj->GetClass();
+  deserializer.ReferenceObject(obj.get()); // probably wrong...
+  obj->PreDeserialize(deserializer);
+  auto objclass    = rtti::safe_downcast<object::ObjectClass*>(clazz);
+  const auto& desc = objclass->Description();
+  if (not desc.DeserializeProperties(deserializer, obj.get())) {
     OrkAssert(false);
   }
   obj->PostDeserialize(deserializer);

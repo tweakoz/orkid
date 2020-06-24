@@ -44,8 +44,10 @@ public:
   }
 
   static bool xxxSerialize(const Object* obj, reflect::ISerializer&);
+  static bool xxxSerializeShared(object_constptr_t obj, reflect::ISerializer&);
   static bool xxxSerializeInPlace(const Object* obj, reflect::ISerializer& serializer);
   static bool xxxDeserialize(Object* obj, reflect::IDeserializer&);
+  static bool xxxDeserializeShared(object_ptr_t obj, reflect::IDeserializer&);
   static bool xxxDeserializeInPlace(Object* obj, reflect::IDeserializer&);
 
   object::Signal* FindSignal(ConstString name);
