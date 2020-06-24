@@ -8,6 +8,7 @@
 #include <ork/test/harness.h>
 #include <ork/application/application.h>
 #include <utpp/UnitTest++.h>
+#include "reflectionclasses.inl"
 
 using namespace ork;
 
@@ -19,6 +20,9 @@ using namespace ork;
 struct TestApplication final : public Application {
   TestApplication() {
     ApplicationStack::Push(this);
+
+    SharedTest::GetClassStatic();
+
     rtti::Class::InitializeClasses();
   }
 
