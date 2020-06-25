@@ -7,7 +7,7 @@
 
 #include <ork/pch.h>
 #include <ork/reflect/properties/DirectTyped.hpp>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/reflect/serialize/XMLDeserializer.h>
 #include <ork/stream/FileInputStream.h>
 #include <ork/application/application.h>

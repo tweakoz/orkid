@@ -11,7 +11,7 @@
 #include <ork/reflect/Command.h>
 #include <ork/reflect/ISerializer.h>
 #include <ork/reflect/IDeserializer.h>
-#include <ork/reflect/properties/DirectSharedObjectMap.h>
+#include "DirectSharedObjectMap.h"
 #include <ork/kernel/core_interface.h>
 
 namespace ork::reflect {

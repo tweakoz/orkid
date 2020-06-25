@@ -18,7 +18,7 @@
 #include <ork/kernel/string/StringBlock.h>
 #include <ork/math/audiomath.h>
 #include <ork/application/application.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/stream/FileInputStream.h>

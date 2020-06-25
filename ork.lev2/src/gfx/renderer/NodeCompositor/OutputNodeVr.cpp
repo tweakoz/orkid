@@ -14,7 +14,7 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/vr/vr.h>
 #include <ork/profiling.inl>
-#include <ork/reflect/RegisterPropertyX.inl>
+#include <ork/reflect/properties/registerX.inl>
 
 ImplementReflectionX(ork::lev2::VrCompositingNode, "VrCompositingNode");
 

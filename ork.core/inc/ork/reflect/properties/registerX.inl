@@ -6,8 +6,8 @@
 ////////////////////////////////////////////////////////////////
 
 #pragma once
-#include "RegisterProperty.h"
-#include <ork/reflect/properties/DirectSharedObjectMap.inl>
+#include "register.h"
+#include "DirectSharedObjectMap.inl"
 
 namespace ork::object {
 ///////////////////////////////////////////////////////////////////////////

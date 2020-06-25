@@ -12,7 +12,7 @@
 #include <ork/math/cvector4.h>
 #include <ork/math/gradient.h>
 #include <ork/kernel/orklut.hpp>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/reflect/enum_serializer.inl>
 #include <ork/reflect/properties/DirectTyped.h>
 #include <ork/reflect/properties/DirectTyped.hpp>

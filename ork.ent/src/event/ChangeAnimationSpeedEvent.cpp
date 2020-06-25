@@ -9,7 +9,7 @@
 
 #include <pkg/ent/event/ChangeAnimationSpeedEvent.h>
 
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::event::ChangeAnimationSpeedEvent, "ChangeAnimationSpeedEvent");
 

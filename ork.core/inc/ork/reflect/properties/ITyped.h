@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include <ork/reflect/properties/ObjectProperty.h>
-#include <ork/reflect/properties/ITyped.h>
+#include "ObjectProperty.h"
+#include "ITyped.h"
 
 #include <ork/config/config.h>
 

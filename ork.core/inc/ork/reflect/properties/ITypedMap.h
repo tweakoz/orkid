@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/reflect/properties/IMap.h>
+#include "IMap.h"
 #include <ork/reflect/BidirectionalSerializer.h>
 
 #include <ork/config/config.h>

@@ -8,7 +8,7 @@
 #include <ork/pch.h>
 #include <pkg/ent/AudioComponent.h>
 #include <pkg/ent/event/StartAudioEffectEvent.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/application/application.h>
 ///////////////////////////////////////////////////////////////////////////////
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::event::PlaySoundEvent, "PlaySoundEvent");

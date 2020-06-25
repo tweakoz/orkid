@@ -9,7 +9,7 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/particle/particle.h>
 #include <ork/lev2/gfx/particle/particle.hpp>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/reflect/properties/DirectTypedMap.h>
 #include <ork/reflect/properties/ITyped.hpp>
 #include <ork/reflect/properties/DirectTyped.hpp>

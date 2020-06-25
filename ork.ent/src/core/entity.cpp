@@ -15,7 +15,7 @@
 #include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/reflect/properties/DirectTypedVector.h>
 #include <ork/reflect/properties/DirectTypedVector.hpp>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/rtti/RTTI.h>
 #include <ork/rtti/downcast.h>
 #include <pkg/ent/bullet.h>

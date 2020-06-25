@@ -16,7 +16,7 @@
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/pch.h>
-#include <ork/reflect/RegisterPropertyX.inl>
+#include <ork/reflect/properties/registerX.inl>
 
 ImplementReflectionX(ork::lev2::RtGroupOutputCompositingNode, "RtGroupOutputCompositingNode");
 

@@ -13,7 +13,7 @@
 #include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/pch.h>
-#include <ork/reflect/RegisterPropertyX.inl>
+#include <ork/reflect/properties/registerX.inl>
 
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorPicking.h>
 

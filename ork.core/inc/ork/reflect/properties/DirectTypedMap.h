@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/reflect/properties/ITypedMap.h>
+#include "ITypedMap.h"
 
 #include <ork/config/config.h>
 

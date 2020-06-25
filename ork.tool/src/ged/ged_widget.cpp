@@ -10,7 +10,7 @@
 #include <orktool/qtui/qtmainwin.h>
 #include <ork/reflect/properties/AbstractProperty.h>
 #include <ork/reflect/properties/ObjectProperty.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <orktool/ged/ged.h>
 #include <ork/lev2/gfx/dbgfontman.h>

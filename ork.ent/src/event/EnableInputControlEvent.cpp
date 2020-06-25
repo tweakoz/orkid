@@ -9,7 +9,7 @@
 
 #include <pkg/ent/event/EnableInputControlEvent.h>
 
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::event::EnableInputControlEvent, "EnableInputControlEvent");
 

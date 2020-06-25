@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/reflect/properties/ISharedObject.h>
+#include "ISharedObject.h"
 
 #include <ork/config/config.h>
 

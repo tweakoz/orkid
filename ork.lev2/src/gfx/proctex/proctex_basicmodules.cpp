@@ -7,7 +7,7 @@
 
 #include <ork/reflect/properties/DirectTypedMap.h>
 #include <ork/reflect/properties/DirectTyped.hpp>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 
 #include <ork/file/file.h>
 #include <ork/math/plane.hpp>

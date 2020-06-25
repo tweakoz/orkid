@@ -15,7 +15,7 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/lev2_asset.h>
 #include <ork/math/basicfilters.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <orktool/ged/ged.h>
 #include <orktool/ged/ged_delegate.h>
 #include <orktool/qtui/qtdataflow.h>

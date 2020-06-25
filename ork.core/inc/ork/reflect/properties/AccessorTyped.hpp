@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/reflect/properties/AccessorTyped.h>
+#include "AccessorTyped.h"
 
 namespace ork { namespace reflect {
 

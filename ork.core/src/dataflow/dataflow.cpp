@@ -13,7 +13,7 @@
 #include <ork/kernel/orklut.hpp>
 #include <ork/reflect/properties/AccessorTyped.hpp>
 #include <ork/reflect/properties/DirectTypedMap.hpp>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 ///////////////////////////////////////////////////////////////////////////////
 template class ork::orklut<ork::PoolString, ork::dataflow::module *>;
 

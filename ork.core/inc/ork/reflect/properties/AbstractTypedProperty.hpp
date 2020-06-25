@@ -3,45 +3,41 @@
 // Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
-#include <ork/reflect/properties/AbstractTypedProperty.h>
+#include "AbstractTypedProperty.h"
 #include <ork/reflect/ISerializer.h>
 #include <ork/reflect/IDeserializer.h>
 #include <ork/reflect/BidirectionalSerializer.h>
 
 namespace ork { namespace reflect {
 
-template<typename T>
-/*virtual*/ bool AbstractTypedProperty<T>::Deserialize(IDeserializer &serializer) const
-{
-    T value;
-    bool result = serializer.Deserialize(value);
+template <typename T>
+/*virtual*/ bool AbstractTypedProperty<T>::Deserialize(IDeserializer& serializer) const {
+  T value;
+  bool result = serializer.Deserialize(value);
 
-    if(result)
-    {
-        Set(value);
-    }
+  if (result) {
+    Set(value);
+  }
 
-    return result;
+  return result;
 }
 
-template<typename T>
-/*virtual*/ bool AbstractTypedProperty<T>::Serialize(ISerializer &serializer) const
-{
-    T value;
-    Get(value);
+template <typename T>
+/*virtual*/ bool AbstractTypedProperty<T>::Serialize(ISerializer& serializer) const {
+  T value;
+  Get(value);
 
-	BidirectionalSerializer bidi(serializer);
+  BidirectionalSerializer bidi(serializer);
 
-	bidi | value;
+  bidi | value;
 
-//    bool result = serializer.Serialize(value);
+  //    bool result = serializer.Serialize(value);
 
-    return bidi.Succeeded();
+  return bidi.Succeeded();
 }
 
-} }
-
+}} // namespace ork::reflect

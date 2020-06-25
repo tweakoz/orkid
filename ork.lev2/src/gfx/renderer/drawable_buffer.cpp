@@ -16,7 +16,7 @@
 #include <ork/pch.h>
 #include <ork/reflect/properties/DirectTypedMap.h>
 #include <ork/reflect/properties/DirectTypedMap.hpp>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 
 #include <ork/kernel/orklut.hpp>
 #include <ork/lev2/gfx/camera/cameradata.h>

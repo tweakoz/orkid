@@ -4,7 +4,7 @@
 #include <ork/application/application.h>
 #include <ork/object/Object.h>
 #include <ork/rtti/downcast.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/util/Context.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <pkg/ent/entity.h>

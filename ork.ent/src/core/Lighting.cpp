@@ -13,7 +13,7 @@
 #include <pkg/ent/scene.hpp>
 #include <ork/lev2/gfx/camera/cameradata.h>
 
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/renderer/renderer.h>

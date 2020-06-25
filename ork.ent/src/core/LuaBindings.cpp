@@ -8,7 +8,7 @@
 #include <ork/kernel/any.h>
 #include <ork/math/cvector3.h>
 #include <ork/pch.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <pkg/ent/ScriptComponent.h>
 #include <pkg/ent/entity.h>
 #include <pkg/ent/entity.hpp>

@@ -10,7 +10,7 @@
 #include <ork/object/Object.h>
 #include <ork/object/connect.h>
 #include <ork/application/application.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 
 #include <ork/reflect/properties/ITyped.hpp>
 #include <ork/reflect/properties/DirectTyped.hpp>

@@ -16,7 +16,7 @@
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/kernel/timer.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/reflect/properties/DirectTypedMap.h>
 #include <ork/reflect/properties/DirectTypedMap.hpp>
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ork/reflect/RegisterPropertyX.inl>
+#include <ork/reflect/properties/registerX.inl>
 #include <ork/object/ObjectClass.h>
 #include <ork/rtti/RTTIX.inl>
 

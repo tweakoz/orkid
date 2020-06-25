@@ -13,7 +13,7 @@
 #include <ork/kernel/csystem.h>
 #include <ork/util/crc.h>
 #include <ork/application/application.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/object/Object.h>
 #include <ork/file/fileenv.h>
 #include <ork/file/filedevcontext.h>

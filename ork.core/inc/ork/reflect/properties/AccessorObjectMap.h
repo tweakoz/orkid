@@ -3,43 +3,40 @@
 // Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
-#include <ork/reflect/properties/IObjectMap.h>
+#include "IObjectMap.h"
 
 namespace ork { namespace reflect {
 
-template<typename KeyType>
-class AccessorObjectMap : public IObjectMap
-{
+template <typename KeyType> class AccessorObjectMap : public IObjectMap {
 public:
-	typedef void (*SerializationFunction)(BidirectionalSerializer &, const KeyType &, const Object *);
-	
-	AccessorObjectMap(
-		const Object *(Object::*get)(const KeyType &, int) const,
-		Object *(Object::*access)(const KeyType &, int),
-		void (Object::*erase)(const KeyType &, int),
-		void (Object::*mSerializer)(SerializationFunction, BidirectionalSerializer &) const
-		);
+  typedef void (*SerializationFunction)(BidirectionalSerializer&, const KeyType&, const Object*);
+
+  AccessorObjectMap(
+      const Object* (Object::*get)(const KeyType&, int) const,
+      Object* (Object::*access)(const KeyType&, int),
+      void (Object::*erase)(const KeyType&, int),
+      void (Object::*mSerializer)(SerializationFunction, BidirectionalSerializer&) const);
+
 private:
-	/*virtual*/ Object *AccessItem(IDeserializer &key, int, Object *) const;
-    /*virtual*/ const Object *AccessItem(IDeserializer &key, int, const Object *) const;
+  /*virtual*/ Object* AccessItem(IDeserializer& key, int, Object*) const;
+  /*virtual*/ const Object* AccessItem(IDeserializer& key, int, const Object*) const;
 
-	/*virtual*/ bool DeserializeItem(IDeserializer *value, IDeserializer &key, int, Object *) const;
-    /*virtual*/ bool SerializeItem(ISerializer &value, IDeserializer &key, int, const Object *) const;
-    
-	/*virtual*/ bool Deserialize(IDeserializer &serializer, Object *obj) const;
-    /*virtual*/ bool Serialize(ISerializer &serializer, const Object *obj) const;
+  /*virtual*/ bool DeserializeItem(IDeserializer* value, IDeserializer& key, int, Object*) const;
+  /*virtual*/ bool SerializeItem(ISerializer& value, IDeserializer& key, int, const Object*) const;
 
-	static void DoSerialize(BidirectionalSerializer &bidi, const KeyType &key, const Object *value);
+  /*virtual*/ bool Deserialize(IDeserializer& serializer, Object* obj) const;
+  /*virtual*/ bool Serialize(ISerializer& serializer, const Object* obj) const;
 
-	const Object *(Object::*mGetter)(const KeyType &, int) const;
-	Object *(Object::*mAccessor)(const KeyType &, int);
-	void (Object::*mEraser)(const KeyType &, int);
-	void (Object::*mSerializer)(SerializationFunction, BidirectionalSerializer &) const;
+  static void DoSerialize(BidirectionalSerializer& bidi, const KeyType& key, const Object* value);
+
+  const Object* (Object::*mGetter)(const KeyType&, int) const;
+  Object* (Object::*mAccessor)(const KeyType&, int);
+  void (Object::*mEraser)(const KeyType&, int);
+  void (Object::*mSerializer)(SerializationFunction, BidirectionalSerializer&) const;
 };
 
-} }
-
+}} // namespace ork::reflect

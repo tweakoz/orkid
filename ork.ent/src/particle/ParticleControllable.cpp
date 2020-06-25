@@ -11,7 +11,7 @@
 #include <pkg/ent/entity.hpp>
 #include <pkg/ent/scene.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/renderer/renderer.h>

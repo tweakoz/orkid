@@ -5,7 +5,7 @@
 #include <ork/kernel/fixedstring.hpp>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/application/application.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/object/Object.h>
 #include <ork/file/fileenv.h>
 #include <ork/file/filedevcontext.h>

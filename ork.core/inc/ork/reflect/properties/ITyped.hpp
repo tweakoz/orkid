@@ -3,11 +3,11 @@
 // Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
-#include <ork/reflect/properties/ITyped.h>
+#include "ITyped.h"
 #include <ork/reflect/ISerializer.h>
 #include <ork/reflect/BidirectionalSerializer.h>
 
@@ -20,52 +20,41 @@
 
 namespace ork { namespace reflect {
 
-template<typename T>
-bool ITyped<T>::Deserialize(IDeserializer &deserializer, Object *obj) const
-{
-    T value;
+template <typename T> bool ITyped<T>::Deserialize(IDeserializer& deserializer, Object* obj) const {
+  T value;
 
-	BidirectionalSerializer bidi(deserializer);
+  BidirectionalSerializer bidi(deserializer);
 
-	bidi | value;
+  bidi | value;
 
-	bool result = bidi.Succeeded();
+  bool result = bidi.Succeeded();
 
-    if(result)
-    {
-        Set(value, obj);
-    }
+  if (result) {
+    Set(value, obj);
+  }
 
-    return result;
+  return result;
 }
 
-template<typename T>
-bool ITyped<T>::Serialize(ISerializer &serializer, const Object *obj) const
-{
-    T value;
-    Get(value, obj);
+template <typename T> bool ITyped<T>::Serialize(ISerializer& serializer, const Object* obj) const {
+  T value;
+  Get(value, obj);
 
-	BidirectionalSerializer bidi(serializer);
+  BidirectionalSerializer bidi(serializer);
 
-	bidi | value;
+  bidi | value;
 
-    return bidi.Succeeded();
+  return bidi.Succeeded();
 }
 
-template<typename T>
-typename ITyped<T>::RTTITyped::RTTICategory ITyped<T>::sClass( ITyped<T>::RTTITyped::ClassRTTI() );
+template <typename T> typename ITyped<T>::RTTITyped::RTTICategory ITyped<T>::sClass(ITyped<T>::RTTITyped::ClassRTTI());
 
-template<typename T>
-typename ITyped<T>::RTTITyped::RTTICategory* ITyped<T>::GetClassStatic()
-{
-	return &sClass;
+template <typename T> typename ITyped<T>::RTTITyped::RTTICategory* ITyped<T>::GetClassStatic() {
+  return &sClass;
 }
 
-template<typename T>
-typename ITyped<T>::RTTITyped::RTTICategory* ITyped<T>::GetClass() const
-{
-	return GetClassStatic();
+template <typename T> typename ITyped<T>::RTTITyped::RTTICategory* ITyped<T>::GetClass() const {
+  return GetClassStatic();
 }
 
-} }
-
+}} // namespace ork::reflect

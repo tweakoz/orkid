@@ -26,7 +26,7 @@
 #include <ork/stream/StringInputStream.h>
 #include <ork/stream/StringOutputStream.h>
 ///////////////////////////////////////////////////////////////////////////
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 ///////////////////////////////////////////////////////////////////////////
 #include <QtWidgets/QFileDialog>
 #include <ork/application/application.h>

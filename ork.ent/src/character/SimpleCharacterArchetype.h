@@ -9,7 +9,7 @@
 
 #include <ork/pch.h>
 #include <pkg/ent/AudioComponent.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/rtti/downcast.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/texman.h>

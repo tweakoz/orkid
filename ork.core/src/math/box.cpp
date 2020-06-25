@@ -11,7 +11,7 @@
 
 #include <ork/math/box.h>
 #include <ork/math/sphere.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {

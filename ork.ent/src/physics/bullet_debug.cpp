@@ -23,7 +23,7 @@
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/reflect/properties/DirectTyped.hpp>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 
 using namespace ork::lev2;
 ///////////////////////////////////////////////////////////////////////////////

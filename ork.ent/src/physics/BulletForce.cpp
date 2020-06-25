@@ -24,7 +24,7 @@
 #include <ork/math/basicfilters.h>
 #include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/reflect/properties/DirectTyped.hpp>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 
 #include <ork/math/PIDController.h>
 

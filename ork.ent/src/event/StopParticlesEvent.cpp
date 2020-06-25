@@ -7,7 +7,7 @@
 
 #include <ork/pch.h>
 #include <pkg/ent/event/StopParticlesEvent.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/application/application.h>
 ///////////////////////////////////////////////////////////////////////////////
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::event::StopParticlesEvent, "StopParticlesEvent");

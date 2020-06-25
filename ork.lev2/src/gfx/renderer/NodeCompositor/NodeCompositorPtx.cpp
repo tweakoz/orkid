@@ -12,7 +12,7 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/lev2_asset.h>
 #include <ork/reflect/properties/DirectTyped.hpp>
-#include <ork/reflect/RegisterPropertyX.inl>
+#include <ork/reflect/properties/registerX.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::lev2::PtxCompositingNode, "PtxCompositingNode");

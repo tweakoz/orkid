@@ -12,7 +12,7 @@
 #include <ork/reflect/properties/IArray.h>
 #include <ork/reflect/properties/IObject.h>
 #include <ork/reflect/properties/DirectTyped.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/rtti/downcast.h>
 #include <ork/kernel/orklut.hpp>
 #include <ork/reflect/properties/DirectTypedMap.hpp>

@@ -20,7 +20,7 @@
 
 #include <ork/reflect/properties/DirectTypedMap.h>
 #include <ork/reflect/properties/DirectTypedMap.hpp>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <pkg/ent/ReferenceArchetype.h>
 #include <pkg/ent/entity.hpp>
 #include <pkg/ent/scene.h>

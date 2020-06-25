@@ -2,7 +2,7 @@
 #include <ork/kernel/prop.h>
 #include <ork/kernel/opq.h>
 #include <ork/reflect/Functor.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/pickbuffer.h>
 #include <ork/lev2/gfx/rtgroup.h>

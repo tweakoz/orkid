@@ -7,7 +7,7 @@
 #include <ork/kernel/timer.h>
 #include <ork/dataflow/dataflow.h>
 #include <ork/application/application.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 
 ////////////////////////////////////////////////////////////
 

@@ -18,7 +18,7 @@
 #include <ork/asset/FileAssetLoader.h>
 #include <ork/asset/FileAssetNamer.h>
 #include <ork/math/audiomath.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 

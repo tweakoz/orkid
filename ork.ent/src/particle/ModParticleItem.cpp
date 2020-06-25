@@ -14,7 +14,7 @@
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/pch.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/reflect/enum_serializer.inl>
 #include <pkg/ent/ParticleControllable.h>
 #include <pkg/ent/entity.h>

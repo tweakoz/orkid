@@ -12,7 +12,7 @@
 #include <ork/asset/AssetSetLevel.h>
 #include <ork/asset/AssetSetEntry.h>
 #include <ork/asset/AssetLoader.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace asset {

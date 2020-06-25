@@ -9,7 +9,7 @@
 
 #include <pkg/ent/event/MeshEvent.h>
 
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::event::MeshEnableEvent, "MeshEnableEvent");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::event::MeshLayerFxEvent, "MeshLayerFxEvent");

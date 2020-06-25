@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/reflect/properties/ObjectProperty.h>
+#include "ObjectProperty.h"
 #include <ork/reflect/Serializable.h>
 #include <ork/rtti/RTTI.h>
 

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/reflect/properties/ITypedArray.h>
+#include "ITypedArray.h"
 
 #include <ork/config/config.h>
 

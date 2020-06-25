@@ -16,7 +16,7 @@
 #include <ork/reflect/properties/ObjectProperty.h>
 #include <ork/reflect/properties/IObject.h>
 #include <ork/reflect/properties/AbstractProperty.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/rtti/downcast.h>
 #include <ork/reflect/editorsupport/objectmodel.h>
 

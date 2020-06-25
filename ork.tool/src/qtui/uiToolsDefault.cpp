@@ -16,7 +16,7 @@
 #include <ork/lev2/gfx/texman.h>
 #include <ork/reflect/properties/DirectTypedMap.h>
 #include <ork/reflect/properties/DirectTypedMap.hpp>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 
 #include <orktool/toolcore/dataflow.h>
 
