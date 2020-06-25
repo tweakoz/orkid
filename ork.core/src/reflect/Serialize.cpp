@@ -19,15 +19,21 @@ class ICastable;
 namespace ork { namespace reflect {
 
 //////////////////////////////////////////////////
-void BidirectionalSerializer::serializeSharedObject(rtti::castable_constptr_t) {
+void BidirectionalSerializer::serializeSharedObject(rtti::castable_constptr_t obj) {
+  // printf("bidi sershared<%p>\n", obj.get());
+  mSerializer->serializeSharedObject(obj);
 }
-void BidirectionalSerializer::deserializeSharedObject(rtti::castable_ptr_t&) {
+void BidirectionalSerializer::deserializeSharedObject(rtti::castable_ptr_t& obj) {
+  mDeserializer->deserializeSharedObject(obj);
 }
 
 //////////////////////////////////////////////////
-void BidirectionalSerializer::serializeObject(rtti::castable_rawconstptr_t) {
+void BidirectionalSerializer::serializeObject(rtti::castable_rawconstptr_t obj) {
+  // printf("bidi serraw<%p>\n", obj);
+  mSerializer->serializeObject(obj);
 }
-void BidirectionalSerializer::deserializeObject(rtti::castable_rawptr_t&) {
+void BidirectionalSerializer::deserializeObject(rtti::castable_rawptr_t& obj) {
+  mDeserializer->deserializeObject(obj);
 }
 
 //////////////////////////////////////////////////
@@ -36,7 +42,7 @@ inline //
     void
     BidirectionalSerializer::Serialize(const T& value) {
   bool result = mSerializer->Serialize(value);
-
+  // printf("bidi serprop result<%p>\n", int(result));
   if (false == result)
     Fail();
 }
@@ -102,11 +108,11 @@ void Serialize(
     rtti::castable_rawptr_t* out,
     BidirectionalSerializer& bidi) {
   if (bidi.Serializing()) {
-    // bidi.serializeObject(*in);
+    bidi.serializeObject(*in);
   } else {
-    // rtti::ICastable* result = NULL;
-    // bidi.deserializeObject(result);
-    //*out = result;
+    rtti::ICastable* result = NULL;
+    bidi.deserializeObject(result);
+    *out = result;
   }
 }
 
@@ -130,11 +136,11 @@ void Serialize(
     rtti::castable_rawconstptr_t* out,
     BidirectionalSerializer& bidi) {
   if (bidi.Serializing()) {
-    // bidi.serializeObject(*in);
+    bidi.serializeObject(*in);
   } else {
-    // rtti::ICastable* result = NULL;
-    // bidi.deserializeObject(result);
-    //*out = result;
+    rtti::ICastable* result = NULL;
+    bidi.deserializeObject(result);
+    *out = result;
   }
 }
 

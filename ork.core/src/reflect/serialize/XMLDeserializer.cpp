@@ -312,13 +312,17 @@ bool XMLDeserializer::_deserializeObject(
 
 bool XMLDeserializer::deserializeObject(rtti::castable_rawptr_t& object) {
   // void (C::* p)(int) = &C::f;
-  using dmethod_t = bool (rtti::Category::*)(IDeserializer&, rtti::castable_rawptr_t&) const;
-  dmethod_t dm    = &rtti::Category::deserializeObject;
+  using dmethod_t = bool (rtti::Category::*)(
+      IDeserializer&, //
+      rtti::castable_rawptr_t&) const;
+  dmethod_t dm = &rtti::Category::deserializeObject;
   return _deserializeObject(object, dm);
 }
 bool XMLDeserializer::deserializeSharedObject(rtti::castable_ptr_t& object) {
-  using dmethod_t = bool (rtti::Category::*)(IDeserializer&, rtti::castable_ptr_t&) const;
-  dmethod_t dm    = &rtti::Category::deserializeObject;
+  using dmethod_t = bool (rtti::Category::*)(
+      IDeserializer&, //
+      rtti::castable_ptr_t&) const;
+  dmethod_t dm = &rtti::Category::deserializeObject;
   return _deserializeObject(object, dm);
 }
 
@@ -551,8 +555,10 @@ bool XMLDeserializer::BeginTag(const PieceString& tagname) {
   if (MatchLoose(pattern)) {
     if (MatchLoose(" > "))
       mbReadingAttributes = false;
-    else
+    else {
       mbReadingAttributes = true;
+      // printf("BeginTag<%s>\n", tagname.c_str());
+    }
 
     return true;
   } else {

@@ -59,8 +59,11 @@ bool DirectSharedObjectMap<MapType>::ReadItem(
   const MapType& map                  = owner->*mProperty;
   typename MapType::const_iterator it = map.find(key);
 
-  if (it == map.end())
+  // printf("dsom read key<%s>\n", key.c_str());
+
+  if (it == map.end()) {
     return false;
+  }
 
   while (multi_index > 0) {
     it++;
@@ -170,6 +173,7 @@ bool DirectSharedObjectMap<MapType>::MapSerialization(
 
       object_ptr_t value = it->second;
 
+      // printf("ser key<%s> val<%p>\n", key.c_str(), value.get());
       (*serialization_func)(bidi, key, value);
     }
   }

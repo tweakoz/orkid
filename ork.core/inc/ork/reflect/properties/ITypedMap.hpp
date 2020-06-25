@@ -149,7 +149,7 @@ bool ITypedMap<KeyType, ValueType>::DoSerialize(BidirectionalSerializer& bidi, K
   return bidi.Succeeded();
 }
 
-template <typename KeyType, typename ValueType>
+/*template <typename KeyType, typename ValueType>
 typename ITypedMap<KeyType, ValueType>::RTTITyped::RTTICategory
     ITypedMap<KeyType, ValueType>::sClass(ITypedMap<KeyType, ValueType>::RTTITyped::ClassRTTI());
 
@@ -161,5 +161,5 @@ typename ITypedMap<KeyType, ValueType>::RTTITyped::RTTICategory* ITypedMap<KeyTy
 template <typename KeyType, typename ValueType>
 typename ITypedMap<KeyType, ValueType>::RTTITyped::RTTICategory* ITypedMap<KeyType, ValueType>::GetClass() const {
   return GetClassStatic();
-}
+}*/
 }} // namespace ork::reflect

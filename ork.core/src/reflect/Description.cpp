@@ -168,8 +168,11 @@ bool Description::SerializeProperties(ISerializer& serializer, const Object* obj
     Command command(Command::EPROPERTY, name);
 
     serializer.BeginCommand(command);
-    if (false == serializer.serializeObjectProperty(prop, object))
+    if (false == serializer.serializeObjectProperty(prop, object)) {
+      printf("name<%s> obj<%p> prop<%p>\n", name.c_str(), object, prop);
+      OrkAssert(false);
       result = false;
+    }
     serializer.EndCommand(command);
   }
 

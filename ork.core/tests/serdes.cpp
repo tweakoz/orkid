@@ -23,37 +23,86 @@ TEST(SerializeObject) {
   ork::HotKeyConfiguration hkeys;
   hkeys.Default();
 
-  ArrayString<1024> resultdata;
-  stream::StringOutputStream out_stream(resultdata);
+  auto resultdata = std::make_shared<ArrayString<65536>>();
+  stream::StringOutputStream out_stream(*resultdata);
   serialize::XMLSerializer ser(out_stream);
   ICastable* pcastable = nullptr;
   bool serok           = ser.serializeObject(&hkeys);
 
-  printf("mutstr<%s>\n", resultdata.c_str());
+  printf("mutstr<%s>\n", resultdata->c_str());
 }
 
 TEST(SerializeSharedObject) {
   auto hkeys = std::make_shared<ork::HotKeyConfiguration>();
   hkeys->Default();
-  ArrayString<1024> resultdata;
-  stream::StringOutputStream out_stream(resultdata);
+  auto resultdata = std::make_shared<ArrayString<65536>>();
+  stream::StringOutputStream out_stream(*resultdata);
   serialize::XMLSerializer ser(out_stream);
   bool serok = ser.serializeSharedObject(hkeys);
-  printf("mutstr<%s>\n", resultdata.c_str());
+  printf("mutstr<%s>\n", resultdata->c_str());
 }
 
 std::string getXmlStr() {
   return R"xxx(
-  <reference category='ObjectClass'>
-  <object type='HotKeyConfiguration' id='0'>
-   <property name='HotKeys'>
-     <item key='copy'></item>
-     <item key='open'></item>
-     <item key='paste'></item>
-     <item key='save'></item>
-   </property>
-  </object>
-  </reference>>)xxx";
+<reference category='ObjectClass'>
+ <object type='HotKeyConfiguration' id='0'>
+  <property name='HotKeys'>
+   <item key='copy'>
+    <reference category='ObjectClass'>
+     <object type='HotKey' id='1'>
+      <property name='Alt'>false</property>
+      <property name='Ctrl'>true</property>
+      <property name='KeyCode'>67</property>
+      <property name='LMB'>false</property>
+      <property name='MMB'>false</property>
+      <property name='RMB'>false</property>
+      <property name='Shift'>false</property>
+     </object>
+    </reference>
+   </item>
+   <item key='open'>
+    <reference category='ObjectClass'>
+     <object type='HotKey' id='2'>
+      <property name='Alt'>false</property>
+      <property name='Ctrl'>true</property>
+      <property name='KeyCode'>79</property>
+      <property name='LMB'>false</property>
+      <property name='MMB'>false</property>
+      <property name='RMB'>false</property>
+      <property name='Shift'>false</property>
+     </object>
+    </reference>
+   </item>
+   <item key='paste'>
+    <reference category='ObjectClass'>
+     <object type='HotKey' id='3'>
+      <property name='Alt'>false</property>
+      <property name='Ctrl'>true</property>
+      <property name='KeyCode'>86</property>
+      <property name='LMB'>false</property>
+      <property name='MMB'>false</property>
+      <property name='RMB'>false</property>
+      <property name='Shift'>false</property>
+     </object>
+    </reference>
+   </item>
+   <item key='save'>
+    <reference category='ObjectClass'>
+     <object type='HotKey' id='4'>
+      <property name='Alt'>false</property>
+      <property name='Ctrl'>true</property>
+      <property name='KeyCode'>83</property>
+      <property name='LMB'>false</property>
+      <property name='MMB'>false</property>
+      <property name='RMB'>false</property>
+      <property name='Shift'>false</property>
+     </object>
+    </reference>
+   </item>
+  </property>
+ </object>
+</reference>
+)xxx";
 }
 
 TEST(DeserializeObject) {
@@ -64,6 +113,11 @@ TEST(DeserializeObject) {
   rtti::castable_rawptr_t pcastable = nullptr;
   bool serok                        = deser.deserializeObject(pcastable);
   CHECK(serok);
+  auto as_hkc = dynamic_cast<HotKeyConfiguration*>(pcastable);
+  auto save   = as_hkc->GetHotKey("save");
+  CHECK_EQUAL(save->mbAlt, false);
+  CHECK_EQUAL(save->mbCtrl, true);
+  CHECK_EQUAL(save->miKeyCode, 83);
 }
 TEST(DeserializeSharedObject) {
 
@@ -73,4 +127,9 @@ TEST(DeserializeSharedObject) {
   rtti::castable_ptr_t pcastable = nullptr;
   bool serok                     = deser.deserializeSharedObject(pcastable);
   CHECK(serok);
+  auto as_hkc = std::dynamic_pointer_cast<HotKeyConfiguration>(pcastable);
+  auto save   = as_hkc->GetHotKey("save");
+  CHECK_EQUAL(save->mbAlt, false);
+  CHECK_EQUAL(save->mbCtrl, true);
+  CHECK_EQUAL(save->miKeyCode, 83);
 }

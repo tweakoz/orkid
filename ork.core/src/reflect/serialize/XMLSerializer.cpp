@@ -28,7 +28,9 @@ XMLSerializer::XMLSerializer(stream::IOutputStream& stream)
 }
 
 bool XMLSerializer::Write(char* text, size_t size) {
-  return mStream.Write(reinterpret_cast<unsigned char*>(text), size);
+  bool status = mStream.Write(reinterpret_cast<unsigned char*>(text), size);
+  OrkAssert(status);
+  return status;
 }
 
 void XMLSerializer::Spaced() {
@@ -51,7 +53,7 @@ bool XMLSerializer::WriteText(const char* format, ...) {
 
   if (mbNeedLine) {
     mbNeedLine = false;
-    WriteText("\n%*s", mIndent * 4, "");
+    WriteText("\n%*s", mIndent, "");
   }
 
   if (mbNeedSpace) {
@@ -221,10 +223,10 @@ bool XMLSerializer::Serialize(const double& value) {
 
 bool XMLSerializer::Serialize(const bool& value) {
   FlushHeader();
-
   bool result = WriteText("%s", value ? "true" : "false");
   Spaced();
-
+  OrkAssert(result);
+  // printf("xmlser bool result<%d>\n", int(result));
   return result;
 }
 
@@ -239,7 +241,7 @@ bool XMLSerializer::serializeObjectProperty(const ObjectProperty* prop, const Ob
 bool XMLSerializer::serializeObject(rtti::castable_rawconstptr_t object) {
   bool result = true;
   FlushHeader();
-  if (object == NULL) {
+  if (object == nullptr) {
     result = WriteText("<backreference id='-1'/>");
   } else {
     int object_index = FindObject(object);
@@ -254,6 +256,7 @@ bool XMLSerializer::serializeObject(rtti::castable_rawconstptr_t object) {
       result = WriteText("'>");
       Lined();
       mIndent++;
+      // printf("xmlser obj<%p>\n", object);
       if (!category->serializeObject(*this, object)) {
         result = false;
       }

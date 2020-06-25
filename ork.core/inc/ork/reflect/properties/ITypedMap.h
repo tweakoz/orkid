@@ -14,15 +14,16 @@
 
 namespace ork { namespace reflect {
 
-template <typename KeyType, typename ValueType> class ITypedMap : public IMap {
+template <typename KeyType, typename ValueType> //
+class ITypedMap : public IMap {
   // DECLARE_TRANSPARENT_TEMPLATE_CASTABLE(DirectTyped<T>, ITyped<T>)
-  DECLARE_TRANSPARENT_TEMPLATE_CASTABLE(ITypedMap, IMap)
+  // DECLARE_TRANSPARENT_TEMPLATE_CASTABLE(ITypedMap, IMap)
   // static void GetClassStatic(); // Kill inherited GetClassStatic()
 
 public:
   typedef bool (*ItemSerializeFunction)(BidirectionalSerializer&, KeyType&, ValueType&);
-  /*virtual*/ bool DeserializeItem(IDeserializer* value, IDeserializer& key, int, Object*) const;
-  /*virtual*/ bool SerializeItem(ISerializer& value, IDeserializer& key, int, const Object*) const;
+  bool DeserializeItem(IDeserializer* value, IDeserializer& key, int, Object*) const override;
+  bool SerializeItem(ISerializer& value, IDeserializer& key, int, const Object*) const override;
 
 protected:
   virtual bool GetKey(const Object*, int idx, KeyType&) const                                         = 0;
@@ -39,12 +40,8 @@ protected:
 private:
   static bool DoDeserialize(BidirectionalSerializer&, KeyType&, ValueType&);
   static bool DoSerialize(BidirectionalSerializer&, KeyType&, ValueType&);
-  /*virtual*/ bool Deserialize(IDeserializer&, Object*) const;
-  /*virtual*/ bool Serialize(ISerializer&, const Object*) const;
-  // virtual void DelItem( Object *, const PropTypeString& keystring, int imultiindex ) const;
-  // virtual void AddItem( Object *, const PropTypeString& keystring, const PropTypeString& valstring ) const;
-  // virtual void SetItem( Object *, const PropTypeString& keystring, int imultiindex, const PropTypeString& valstring ) const;
-  // virtual void GetItem( const Object *, const PropTypeString& keystring, int idx, PropTypeString& valstring ) const;
+  bool Deserialize(IDeserializer&, Object*) const override;
+  bool Serialize(ISerializer&, const Object*) const override;
 };
 
 }} // namespace ork::reflect

@@ -123,7 +123,6 @@ bool Object::xxxDeserializeShared(
   obj->PreDeserialize(deserializer);
   auto objclass    = dynamic_cast<object::ObjectClass*>(clazz);
   const auto& desc = objclass->Description();
-  OrkAssert(false);
   if (not desc.DeserializeProperties(deserializer, obj.get())) {
     OrkAssert(false);
   }

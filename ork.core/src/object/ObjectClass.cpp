@@ -14,6 +14,7 @@
 INSTANTIATE_TRANSPARENT_RTTI(ork::object::ObjectClass, "ObjectClass");
 
 namespace ork { namespace object {
+////////////////////////////////////////////////////////////////////////////////
 
 static const reflect::Description* ParentClassDescription(const rtti::Class* clazz) {
   const ObjectClass* object_class = rtti::downcast<const ObjectClass*>(clazz);
@@ -25,25 +26,38 @@ static const reflect::Description* ParentClassDescription(const rtti::Class* cla
   }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 void ObjectClass::Describe() {
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 ObjectClass::ObjectClass(const rtti::RTTIData& data)
     : rtti::Class(data)
     , _description() {
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 object_ptr_t ObjectClass::createShared() const {
   auto shcast = _sharedFactory();
   return dynamic_pointer_cast<Object>(shcast);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 void ObjectClass::annotate(const ConstString& key, const anno_t& val) {
   _description.annotateClass(key, val);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
 const ObjectClass::anno_t& ObjectClass::annotation(const ConstString& key) {
   return _description.classAnnotation(key);
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 void ObjectClass::Initialize() {
   Class::Initialize();
@@ -52,7 +66,7 @@ void ObjectClass::Initialize() {
   reflect::Description::PropertyMapType& propmap = _description.Properties();
 
   for (reflect::Description::PropertyMapType::iterator it = propmap.begin(); it != propmap.end(); it++) {
-    ConstString name               = it->first;
+    ConstString name              = it->first;
     reflect::ObjectProperty* prop = it->second;
 
     rtti::Class* propclass = prop->GetClass();
@@ -61,9 +75,13 @@ void ObjectClass::Initialize() {
   }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 reflect::Description& ObjectClass::Description() {
   return _description;
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 const reflect::Description& ObjectClass::Description() const {
   return _description;
