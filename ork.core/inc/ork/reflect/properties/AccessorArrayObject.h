@@ -7,13 +7,13 @@
 
 #pragma once
 
-#include <ork/reflect/IObjectArrayPropertyObject.h>
+#include <ork/reflect/properties/IObjectArray.h>
 
 #include <ork/config/config.h>
 
 namespace ork { namespace reflect {
 
-class  AccessorArrayObject : public IObjectArrayPropertyObject
+class  AccessorArrayObject : public IObjectArray
 {
 public:
     AccessorArrayObject(

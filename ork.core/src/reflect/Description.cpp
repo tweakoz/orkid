@@ -10,7 +10,7 @@
 #include <ork/reflect/Command.h>
 #include <ork/reflect/Description.h>
 #include <ork/reflect/IDeserializer.h>
-#include <ork/reflect/IObjectProperty.h>
+#include <ork/reflect/properties/I.h>
 #include <ork/reflect/ISerializer.h>
 
 namespace ork { namespace reflect {
@@ -23,7 +23,7 @@ void Description::SetParentDescription(const Description* parent) {
   _parentDescription = parent;
 }
 
-void Description::AddProperty(const char* key, IObjectProperty* value) {
+void Description::AddProperty(const char* key, I* value) {
   mProperties.AddSorted(key, value);
 }
 
@@ -35,7 +35,7 @@ const Description::PropertyMapType& Description::Properties() const {
   return mProperties;
 }
 
-const IObjectProperty* Description::FindProperty(const ConstString& name) const {
+const I* Description::FindProperty(const ConstString& name) const {
   for (const Description* description = this; description != NULL; description = description->_parentDescription) {
     const PropertyMapType& map         = description->Properties();
     PropertyMapType::const_iterator it = map.find(name);
@@ -163,7 +163,7 @@ bool Description::SerializeProperties(ISerializer& serializer, const Object* obj
 
   for (auto it : map) {
     ConstString name      = it.first;
-    IObjectProperty* prop = it.second;
+    I* prop = it.second;
 
     Command command(Command::EPROPERTY, name);
 
@@ -192,7 +192,7 @@ bool Description::DeserializeProperties(IDeserializer& deserializer, Object* obj
     OrkAssertI(command.Type() == Command::EPROPERTY, "Description::DeserializeProperties: expected a property!");
 
     if (command.Type() == Command::EPROPERTY) {
-      const reflect::IObjectProperty* prop = FindProperty(command.Name());
+      const reflect::I* prop = FindProperty(command.Name());
 
       // orkprintf( "deserialize prop<%s>\n", command.Name().c_str() );
 

@@ -12,9 +12,9 @@
 #include <orktool/ged/ged_io.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/reflect/IProperty.h>
-#include <ork/reflect/IObjectProperty.h>
-#include <ork/reflect/IObjectPropertyObject.h>
-#include <ork/reflect/IObjectPropertyType.h>
+#include <ork/reflect/properties/I.h>
+#include <ork/reflect/properties/IObject.h>
+#include <ork/reflect/properties/ITyped.h>
 #include "ged_delegate.hpp"
 #include <ork/math/gradient.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
@@ -365,14 +365,14 @@ class GedGradientV4Widget : public GedItemNode {
   } // virtual
 
 public:
-  GedGradientV4Widget(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj)
+  GedGradientV4Widget(ObjModel& mdl, const char* name, const reflect::I* prop, ork::Object* obj)
       : GedItemNode(mdl, name, prop, obj)
       , mGradientObject(0)
       , mVertexBuffer(256, 0, ork::lev2::EPrimitiveType::TRIANGLES)
       , mEditPoints(kpoolsize)
       , mEditSegs(kpoolsize) {
     if (prop) {
-      const reflect::IObjectPropertyObject* pprop = rtti::autocast(GetOrkProp());
+      const reflect::IObject* pprop = rtti::autocast(GetOrkProp());
       mGradientObject                             = rtti::autocast(pprop->Access(GetOrkObj()));
     } else {
       mGradientObject = rtti::autocast(obj);
@@ -388,7 +388,7 @@ void GedFactoryGradient::Describe() {
 }
 
 GedItemNode*
-GedFactoryGradient::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::IObjectProperty* prop, Object* obj)
+GedFactoryGradient::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::I* prop, Object* obj)
     const {
   GedItemNode* groupnode = new GedLabelNode(mdl, Name.c_str(), prop, obj);
 

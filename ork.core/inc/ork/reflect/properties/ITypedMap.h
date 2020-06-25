@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/reflect/IObjectMapProperty.h>
+#include <ork/reflect/properties/IMap.h>
 #include <ork/reflect/BidirectionalSerializer.h>
 
 #include <ork/config/config.h>
@@ -15,10 +15,10 @@
 namespace ork { namespace reflect {
 
 template<typename KeyType, typename ValueType>
-class  IObjectMapPropertyType : public IObjectMapProperty
+class  ITypedMap : public IMap
 {
-	//DECLARE_TRANSPARENT_TEMPLATE_CASTABLE(DirectPropertyType<T>, IObjectPropertyType<T>)
-	DECLARE_TRANSPARENT_TEMPLATE_CASTABLE(IObjectMapPropertyType, IObjectMapProperty)
+	//DECLARE_TRANSPARENT_TEMPLATE_CASTABLE(DirectPropertyType<T>, ITyped<T>)
+	DECLARE_TRANSPARENT_TEMPLATE_CASTABLE(ITypedMap, IMap)
 	//static void GetClassStatic(); // Kill inherited GetClassStatic()
 
 public:
@@ -36,8 +36,8 @@ protected:
 		BidirectionalSerializer &,
 		const Object *) const = 0;
 
-	IObjectMapPropertyType() 
-		: IObjectMapProperty()
+	ITypedMap() 
+		: IMap()
 	{
 	}
 

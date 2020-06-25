@@ -8,7 +8,7 @@
 #pragma once
 
 #include <ork/reflect/properties/DirectTyped.h>
-#include <ork/reflect/IObjectPropertyType.hpp>
+#include <ork/reflect/properties/ITyped.hpp>
 
 namespace ork { namespace reflect {
 
@@ -32,23 +32,23 @@ void DirectPropertyType<T>::Set(const T &value, Object *obj) const
 }
 
 template<typename T>
-typename DirectPropertyType<T>::RTTIType::RTTICategory DirectPropertyType<T>::sClass( DirectPropertyType<T>::RTTIType::ClassRTTI() );
+typename DirectPropertyType<T>::RTTITyped::RTTICategory DirectPropertyType<T>::sClass( DirectPropertyType<T>::RTTITyped::ClassRTTI() );
 
 template<typename T>
-typename DirectPropertyType<T>::RTTIType::RTTICategory* DirectPropertyType<T>::GetClassStatic()
+typename DirectPropertyType<T>::RTTITyped::RTTICategory* DirectPropertyType<T>::GetClassStatic()
 {
 	return &sClass;
 }
 
 template<typename T>
-typename DirectPropertyType<T>::RTTIType::RTTICategory* DirectPropertyType<T>::GetClass() const
+typename DirectPropertyType<T>::RTTITyped::RTTICategory* DirectPropertyType<T>::GetClass() const
 {
 	return GetClassStatic();
 }
 
 //INSTANTIATE_TRANSPARENT_TEMPLATE_CASTABLE( ClassName )
-//	ClassName::RTTIType::RTTIClassClass ClassName::sClass(ClassName::RTTIType::ClassRTTI()); \
-//	ClassName::RTTIType::RTTIClassClass *ClassName::GetClassStatic() { return &sClass; } \
+//	ClassName::RTTITyped::RTTIClassClass ClassName::sClass(ClassName::RTTITyped::ClassRTTI()); \
+//	ClassName::RTTITyped::RTTIClassClass *ClassName::GetClassStatic() { return &sClass; } \
 //	rtti::Class *ClassName::GetClass() const { return GetClassStatic(); }
 
 } }

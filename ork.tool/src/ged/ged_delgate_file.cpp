@@ -13,9 +13,9 @@
 #include <orktool/ged/ged_delegate.h>
 #include <orktool/ged/ged_io.h>
 #include <ork/reflect/IProperty.h>
-#include <ork/reflect/IObjectProperty.h>
+#include <ork/reflect/properties/I.h>
 #include <ork/reflect/properties/DirectMapTyped.h>
-#include <ork/reflect/IObjectPropertyObject.h>
+#include <ork/reflect/properties/IObject.h>
 #include <ork/reflect/IDeserializer.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 
@@ -29,7 +29,7 @@ namespace ork { namespace tool { namespace ged {
 
 void GedFactoryFileList::Describe() {}		
 
-GedItemNode* GedFactoryFileList::CreateItemNode(ObjModel&mdl,const ConstString& Name,const reflect::IObjectProperty *prop,Object* obj) const
+GedItemNode* GedFactoryFileList::CreateItemNode(ObjModel&mdl,const ConstString& Name,const reflect::I *prop,Object* obj) const
 {
 	GedFileNode<FilePathObjDriverType>* itemw = new GedFileNode<FilePathObjDriverType>( 
 		mdl, 

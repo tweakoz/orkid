@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/reflect/IObjectProperty.h>
+#include <ork/reflect/properties/I.h>
 #include <ork/reflect/Serializable.h>
 #include <ork/rtti/RTTI.h>
 
@@ -19,8 +19,8 @@ class Object;
 
 namespace ork { namespace reflect {
 
-class IObjectPropertySharedObject : public IObjectProperty {
-  DECLARE_TRANSPARENT_CASTABLE(IObjectPropertySharedObject, IObjectProperty)
+class ISharedObject : public I {
+  DECLARE_TRANSPARENT_CASTABLE(ISharedObject, I)
 public:
   virtual object_ptr_t Access(Object*) const            = 0;
   virtual object_constptr_t Access(const Object*) const = 0;

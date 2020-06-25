@@ -7,13 +7,13 @@
 
 #pragma once
 
-#include <ork/reflect/IObjectPropertyType.h>
+#include <ork/reflect/properties/ITyped.h>
 
 #include <ork/config/config.h>
 
 namespace ork { namespace reflect {
 
-template <typename T> class AccessorTyped : public IObjectPropertyType<T> {
+template <typename T> class AccessorTyped : public ITyped<T> {
 public:
   AccessorTyped(void (Object::*getter)(T&) const, void (Object::*setter)(const T&));
 

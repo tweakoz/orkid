@@ -11,7 +11,7 @@
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/math/misc_math.h>
-#include <ork/reflect/IObjectProperty.h>
+#include <ork/reflect/properties/I.h>
 #include <ork/reflect/IProperty.h>
 #include <orktool/ged/ged.h>
 #include <orktool/ged/ged_delegate.h>

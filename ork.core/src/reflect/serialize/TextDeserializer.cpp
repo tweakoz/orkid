@@ -9,7 +9,7 @@
 #include <ork/reflect/serialize/TextDeserializer.h>
 #include <ork/reflect/Command.h>
 #include <ork/reflect/IProperty.h>
-#include <ork/reflect/IObjectProperty.h>
+#include <ork/reflect/properties/I.h>
 #include <ork/rtti/Class.h>
 #include <ork/rtti/Category.h>
 #include <ork/rtti/downcast.h>
@@ -162,7 +162,7 @@ bool TextDeserializer::Deserialize(const IProperty* prop) {
   return prop->Deserialize(*this);
 }
 
-bool TextDeserializer::deserializeObjectProperty(const IObjectProperty* prop, Object* object) {
+bool TextDeserializer::deserializeObjectProperty(const I* prop, Object* object) {
   return prop->Deserialize(*this, object);
 }
 

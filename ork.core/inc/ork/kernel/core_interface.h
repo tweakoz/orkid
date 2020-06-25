@@ -21,7 +21,7 @@ dispatch_queue_t EditOnlyQueue();
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
-namespace reflect { class IObjectProperty; }
+namespace reflect { class I; }
 
 class IUserChoiceDelegate : public Object
 {
@@ -41,7 +41,7 @@ public:
 class ItemRemovalEvent : public event::Event
 {	RttiDeclareConcrete( ItemRemovalEvent, event::Event );
 	public:
-	const reflect::IObjectProperty*	mProperty;
+	const reflect::I*	mProperty;
 	int						miMultiIndex;
 	any64					mKey;
 	any64					mOldValue;
@@ -54,7 +54,7 @@ class ItemRemovalEvent : public event::Event
 class MapItemCreationEvent : public event::Event
 {	RttiDeclareConcrete( MapItemCreationEvent, event::Event );
 	public:
-	const reflect::IObjectProperty*	mProperty;
+	const reflect::I*	mProperty;
 	//int								miMultiIndex;
 	any64							mKey;
 	any64							mNewItem;
@@ -67,7 +67,7 @@ class MapItemCreationEvent : public event::Event
 class ObjectGedVisitEvent : public event::Event
 {	RttiDeclareConcrete( ObjectGedVisitEvent, event::Event );
 	public:
-	const reflect::IObjectProperty*	mProperty;
+	const reflect::I*	mProperty;
 	ObjectGedVisitEvent() : mProperty(0) {}
 };
 
@@ -76,7 +76,7 @@ class ObjectGedVisitEvent : public event::Event
 class ObjectGedEditEvent : public event::Event
 {	RttiDeclareConcrete( ObjectGedEditEvent, event::Event );
 	public:
-	const reflect::IObjectProperty*	mProperty;
+	const reflect::I*	mProperty;
 	ObjectGedEditEvent() : mProperty(0) {}
 };
 

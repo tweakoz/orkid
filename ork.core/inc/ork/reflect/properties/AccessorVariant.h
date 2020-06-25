@@ -7,13 +7,13 @@
 
 #pragma once
 
-#include <ork/reflect/IObjectProperty.h>
+#include <ork/reflect/properties/I.h>
 
 #include <ork/config/config.h>
 
 namespace ork { namespace reflect {
 
-class  AccessorVariant : public IObjectProperty
+class  AccessorVariant : public I
 {
 	static void GetClassStatic(); // Kill inherited GetClassStatic()
 public:

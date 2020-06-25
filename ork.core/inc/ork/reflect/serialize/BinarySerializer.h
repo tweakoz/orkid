@@ -38,7 +38,7 @@ public:
   bool Serialize(const IProperty*) override;
 
   bool serializeObject(const rtti::ICastable*) override;
-  bool serializeObjectProperty(const IObjectProperty*, const Object*) override;
+  bool serializeObjectProperty(const I*, const Object*) override;
   // bool serializeObjectWithCategory(
   //  const rtti::Category*, //
   // const rtti::ICastable*) override;

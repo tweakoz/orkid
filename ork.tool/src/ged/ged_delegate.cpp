@@ -12,8 +12,8 @@
 #include <orktool/ged/ged_io.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/reflect/IProperty.h>
-#include <ork/reflect/IObjectProperty.h>
-#include <ork/reflect/IObjectPropertyObject.h>
+#include <ork/reflect/properties/I.h>
+#include <ork/reflect/properties/IObject.h>
 #include <ork/dataflow/dataflow.h>
 #include <ork/file/file.h>
 #include <ork/stream/FileInputStream.h>
@@ -65,7 +65,7 @@ void GedFactory::Describe() {
 ///////////////////////////////////////////////////////////////////////////////
 
 GedItemNode*
-GedFactory::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::IObjectProperty* prop, Object* obj) const {
+GedFactory::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::I* prop, Object* obj) const {
   GedItemNode* PropContainerW = new GedLabelNode(mdl, Name.c_str(), prop, obj);
   return PropContainerW;
 }
@@ -75,7 +75,7 @@ GedFactory::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect
 
 void EnumerateFactories(
     const ork::Object* pdestobj,
-    const reflect::IObjectProperty* prop,
+    const reflect::I* prop,
     orkset<object::ObjectClass*>& FactoryClassSet) {
   /////////////////////////////////////////////////////////
 
@@ -407,7 +407,7 @@ void OpsNode::OnMouseClicked(ork::ui::event_constptr_t ev) {
   }
 }
 
-OpsNode::OpsNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj)
+OpsNode::OpsNode(ObjModel& mdl, const char* name, const reflect::I* prop, ork::Object* obj)
     : GedItemNode(mdl, name, prop, obj) {
   object::ObjectClass* objclass = rtti::downcast<object::ObjectClass*>(obj->GetClass());
 
@@ -542,7 +542,7 @@ void GedGroupNode::DoDraw(lev2::Context* pTARG) {
 GedGroupNode::GedGroupNode(
     ObjModel& mdl,
     const char* name,
-    const reflect::IObjectProperty* prop,
+    const reflect::I* prop,
     ork::Object* obj,
     bool is_obj_node)
     : GedItemNode(mdl, name, prop, obj)

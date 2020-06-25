@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/reflect/IObjectMapPropertyType.h>
+#include <ork/reflect/properties/ITypedMap.h>
 #include <ork/reflect/Command.h>
 #include <ork/reflect/IDeserializer.h>
 #include <ork/reflect/ISerializer.h>
@@ -16,7 +16,7 @@
 namespace ork { namespace reflect {
 
 template<typename KeyType, typename ValueType>
-bool IObjectMapPropertyType<KeyType, ValueType>::DeserializeItem(
+bool ITypedMap<KeyType, ValueType>::DeserializeItem(
 	IDeserializer *value_deserializer,
 	IDeserializer &key_deserializer,
 	int multi_index,
@@ -41,7 +41,7 @@ bool IObjectMapPropertyType<KeyType, ValueType>::DeserializeItem(
 }
 
 template<typename KeyType, typename ValueType>
-bool IObjectMapPropertyType<KeyType, ValueType>::SerializeItem(
+bool ITypedMap<KeyType, ValueType>::SerializeItem(
 	ISerializer &value_serializer,
 	IDeserializer &key_deserializer,
 	int multi_index,
@@ -65,7 +65,7 @@ bool IObjectMapPropertyType<KeyType, ValueType>::SerializeItem(
 }
 
 template<typename KeyType, typename ValueType>
-bool IObjectMapPropertyType<KeyType, ValueType>::Deserialize(
+bool ITypedMap<KeyType, ValueType>::Deserialize(
 	IDeserializer &deserializer, Object *object) const
 {
 	BidirectionalSerializer bidi(deserializer);
@@ -82,7 +82,7 @@ bool IObjectMapPropertyType<KeyType, ValueType>::Deserialize(
 }
 
 template<typename KeyType, typename ValueType>
-bool IObjectMapPropertyType<KeyType, ValueType>::Serialize(
+bool ITypedMap<KeyType, ValueType>::Serialize(
 	ISerializer &serializer, const Object *object) const
 {
 	BidirectionalSerializer bidi(serializer);
@@ -93,7 +93,7 @@ bool IObjectMapPropertyType<KeyType, ValueType>::Serialize(
 }
 
 template<typename KeyType, typename ValueType>
-bool IObjectMapPropertyType<KeyType, ValueType>::DoDeserialize(
+bool ITypedMap<KeyType, ValueType>::DoDeserialize(
 	BidirectionalSerializer &bidi, KeyType &key, ValueType &value)
 {
 	IDeserializer *deserializer = bidi.Deserializer();
@@ -139,7 +139,7 @@ bool IObjectMapPropertyType<KeyType, ValueType>::DoDeserialize(
 }
 
 template<typename KeyType, typename ValueType>
-bool IObjectMapPropertyType<KeyType, ValueType>::DoSerialize(
+bool ITypedMap<KeyType, ValueType>::DoSerialize(
 	BidirectionalSerializer &bidi, KeyType &key, ValueType &value)
 {
 	bool result = true;
@@ -171,16 +171,16 @@ bool IObjectMapPropertyType<KeyType, ValueType>::DoSerialize(
 }
 
 template<typename KeyType, typename ValueType>
-typename IObjectMapPropertyType<KeyType, ValueType>::RTTIType::RTTICategory IObjectMapPropertyType<KeyType, ValueType>::sClass( IObjectMapPropertyType<KeyType, ValueType>::RTTIType::ClassRTTI() );
+typename ITypedMap<KeyType, ValueType>::RTTITyped::RTTICategory ITypedMap<KeyType, ValueType>::sClass( ITypedMap<KeyType, ValueType>::RTTITyped::ClassRTTI() );
 
 template<typename KeyType, typename ValueType>
-typename IObjectMapPropertyType<KeyType, ValueType>::RTTIType::RTTICategory* IObjectMapPropertyType<KeyType, ValueType>::GetClassStatic()
+typename ITypedMap<KeyType, ValueType>::RTTITyped::RTTICategory* ITypedMap<KeyType, ValueType>::GetClassStatic()
 {
 	return &sClass;
 }
 
 template<typename KeyType, typename ValueType>
-typename IObjectMapPropertyType<KeyType, ValueType>::RTTIType::RTTICategory* IObjectMapPropertyType<KeyType, ValueType>::GetClass() const
+typename ITypedMap<KeyType, ValueType>::RTTITyped::RTTICategory* ITypedMap<KeyType, ValueType>::GetClass() const
 {
 	return GetClassStatic();
 }

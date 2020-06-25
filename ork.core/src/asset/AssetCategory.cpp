@@ -10,7 +10,7 @@
 #include <ork/asset/VirtualAsset.h>
 #include <ork/application/application.h>
 #include <ork/kernel/string/ArrayString.h>
-#include <ork/reflect/IObjectProperty.h>
+#include <ork/reflect/properties/I.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace asset {

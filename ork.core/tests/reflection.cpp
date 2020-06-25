@@ -4,7 +4,7 @@
 #include <string.h>
 
 #include "reflectionclasses.inl"
-#include <ork/reflect/IObjectPropertyType.hpp>
+#include <ork/reflect/properties/ITyped.hpp>
 #include <ork/reflect/properties/AccessorTyped.hpp>
 #include <ork/reflect/properties/DirectSharedObject.h>
 

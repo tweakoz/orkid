@@ -19,8 +19,8 @@ namespace ork { namespace reflect {
 class ISerializer;
 class IDeserializer;
 
-class IObjectProperty : public rtti::ICastable {
-  DECLARE_TRANSPARENT_CASTABLE(IObjectProperty, rtti::ICastable)
+class I : public rtti::ICastable {
+  DECLARE_TRANSPARENT_CASTABLE(I, rtti::ICastable)
 
 public:
 
@@ -61,7 +61,7 @@ public:
     return rval;
   }
   /////////////////////////////////////////////////////////////////
-  IObjectProperty() {}
+  I() {}
 private:
   orklut<ConstString, anno_t> _annotations;
 

@@ -29,7 +29,7 @@ public:
   bool DeserializeData(unsigned char*, size_t) override;
 
   bool Deserialize(const IProperty*) override;
-  bool deserializeObjectProperty(const IObjectProperty*, Object*) override;
+  bool deserializeObjectProperty(const I*, Object*) override;
   bool deserializeObject(rtti::ICastable*&) override;
   bool deserializeSharedObject(rtti::castable_ptr_t&) override;
 

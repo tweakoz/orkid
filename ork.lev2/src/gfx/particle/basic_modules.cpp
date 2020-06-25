@@ -324,10 +324,10 @@ void Constants::OnTopologyUpdate(void) {
 bool Constants::DoNotify(const ork::event::Event* event) {
   // invalidate topology when editor modified map
   if (const ItemRemovalEvent* pev = rtti::autocast(event)) {
-    const ork::reflect::IObjectProperty* prop = pev->mProperty;
+    const ork::reflect::I* prop = pev->mProperty;
     OnTopologyUpdate();
   } else if (const MapItemCreationEvent* pev = rtti::autocast(event)) {
-    const ork::reflect::IObjectProperty* prop = pev->mProperty;
+    const ork::reflect::I* prop = pev->mProperty;
     OnTopologyUpdate();
   }
   return true;

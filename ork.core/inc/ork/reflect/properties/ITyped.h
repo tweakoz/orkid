@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include <ork/reflect/IObjectProperty.h>
-#include <ork/reflect/IObjectPropertyType.h>
+#include <ork/reflect/properties/I.h>
+#include <ork/reflect/properties/ITyped.h>
 
 #include <ork/config/config.h>
 
@@ -19,16 +19,16 @@ namespace ork { namespace reflect {
 
 //#define DECLARE_TRANSPARENT_CASTABLE_INTERNAL(ClassType, RTTIImplementation) \
 //public: \
-//	typedef RTTIImplementation RTTIType; \
+//	typedef RTTIImplementation RTTITyped; \
 //	static RTTIImplementation::RTTIClassClass *GetClassStatic(); \
 //	virtual ::ork::rtti::Class *GetClass() const; \
 //private: \
 //	static RTTIImplementation::RTTIClassClass sClass;
 
 template<typename T>
-class  IObjectPropertyType : public IObjectProperty
+class  ITyped : public I
 {
-	DECLARE_TRANSPARENT_TEMPLATE_CASTABLE(IObjectPropertyType, IObjectProperty)
+	DECLARE_TRANSPARENT_TEMPLATE_CASTABLE(ITyped, I)
 
 	//static ork::rtti::Class* GetClassStatic(); // Kill inherited GetClassStatic()
 public:
@@ -38,7 +38,7 @@ private:
     /*virtual*/ bool Deserialize(IDeserializer &, Object *) const;
     /*virtual*/ bool Serialize(ISerializer &, const Object *) const;
 protected:
-	IObjectPropertyType() {}
+	ITyped() {}
 
 };
 

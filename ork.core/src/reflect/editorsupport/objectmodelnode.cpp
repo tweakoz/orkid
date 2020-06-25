@@ -11,10 +11,10 @@
 #include <queue>
 
 #include <ork/reflect/properties/DirectTyped.h>
-#include <ork/reflect/IObjectArrayProperty.h>
-#include <ork/reflect/IObjectMapProperty.h>
-#include <ork/reflect/IObjectProperty.h>
-#include <ork/reflect/IObjectPropertyObject.h>
+#include <ork/reflect/properties/IArray.h>
+#include <ork/reflect/properties/IMap.h>
+#include <ork/reflect/properties/I.h>
+#include <ork/reflect/properties/IObject.h>
 #include <ork/reflect/IProperty.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/rtti/downcast.h>
@@ -37,7 +37,7 @@ void ObjectModelNode::Describe() {
 ObjectModelNode::ObjectModelNode(
     objectmodel_ptr_t mdl, //
     const char* name,
-    const reflect::IObjectProperty* prop,
+    const reflect::I* prop,
     ork::object_ptr_t obj)
     : _objectmodel(mdl)
     , mRoot(mdl->_observer)
@@ -62,11 +62,11 @@ ObjectModelNode* ObjectModelNode::parent() const {
   return _parent;
 }
 ///////////////////////////////////////////////////
-void ObjectModelNode::SetOrkProp(const reflect::IObjectProperty* prop) {
+void ObjectModelNode::SetOrkProp(const reflect::I* prop) {
   mOrkProp = prop;
 }
 ///////////////////////////////////////////////////
-const reflect::IObjectProperty* ObjectModelNode::GetOrkProp() const {
+const reflect::I* ObjectModelNode::GetOrkProp() const {
   return mOrkProp;
 }
 ///////////////////////////////////////////////////

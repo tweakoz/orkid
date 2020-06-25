@@ -11,10 +11,10 @@
 #include <queue>
 
 #include <ork/reflect/properties/DirectTyped.h>
-#include <ork/reflect/IObjectArrayProperty.h>
-#include <ork/reflect/IObjectMapProperty.h>
-#include <ork/reflect/IObjectProperty.h>
-#include <ork/reflect/IObjectPropertyObject.h>
+#include <ork/reflect/properties/IArray.h>
+#include <ork/reflect/properties/IMap.h>
+#include <ork/reflect/properties/I.h>
+#include <ork/reflect/properties/IObject.h>
 #include <ork/reflect/IProperty.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/rtti/downcast.h>
@@ -37,7 +37,7 @@ void ObjectModelObserver::Describe() {
 ObjectModelObserver::ObjectModelObserver()
     : ConstructAutoSlot(ModelInvalidated) {
 }
-void ObjectModelObserver::PropertyInvalidated(ork::object_ptr_t pobj, const reflect::IObjectProperty* prop) {
+void ObjectModelObserver::PropertyInvalidated(ork::object_ptr_t pobj, const reflect::I* prop) {
 }
 void ObjectModelObserver::Attach(ork::object_ptr_t obj) {
 }

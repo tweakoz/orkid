@@ -157,7 +157,7 @@ template <typename IODriver> void GedAssetNode<IODriver>::SetLabel() {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename IODriver>
-GedAssetNode<IODriver>::GedAssetNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, Object* obj)
+GedAssetNode<IODriver>::GedAssetNode(ObjModel& mdl, const char* name, const reflect::I* prop, Object* obj)
     : GedItemNode(mdl, name, prop, obj)
     , mIoDriver(mdl, prop, obj) {
   mdl.GetGedWidget()->PushItemNode(this);

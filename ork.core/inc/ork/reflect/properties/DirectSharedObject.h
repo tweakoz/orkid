@@ -8,13 +8,13 @@
 
 #pragma once
 
-#include <ork/reflect/IObjectPropertySharedObject.h>
+#include <ork/reflect/properties/ISharedObject.h>
 
 #include <ork/config/config.h>
 
 namespace ork { namespace reflect {
 
-class DirectPropertySharedObject : public IObjectPropertySharedObject
+class DirectPropertySharedObject : public ISharedObject
 {
     object_ptr_t Object::*mProperty;
 

@@ -8,7 +8,7 @@
 #pragma once
 
 #include <ork/reflect/properties/AccessorMapType.h>
-#include <ork/reflect/IObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/ITypedMap.hpp>
 #include <ork/reflect/IDeserializer.h>
 #include <ork/reflect/ISerializer.h>
 #include <ork/reflect/BidirectionalSerializer.h>

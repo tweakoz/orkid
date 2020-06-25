@@ -16,7 +16,7 @@ class GedMapIoDriver : public IoDriverBase {
 public:
   KeyDecoName mDecoKey;
 
-  GedMapIoDriver(ObjModel& Model, const reflect::IObjectProperty* prop, Object* obj)
+  GedMapIoDriver(ObjModel& Model, const reflect::I* prop, Object* obj)
       : IoDriverBase(Model, prop, obj)
       , mDecoKey("", 0) {
   }
@@ -68,7 +68,7 @@ public:
     return mIoDriver;
   }
 
-  GedMapFactoryNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj)
+  GedMapFactoryNode(ObjModel& mdl, const char* name, const reflect::I* prop, ork::Object* obj)
       : GedItemNode(mdl, name, prop, obj)
       , mIoDriver(mdl, prop, obj) {
   }
@@ -85,7 +85,7 @@ public:
 
 class MapTraverseSerializer : public reflect::serialize::LayerSerializer {
   ObjModel& mModel;
-  const reflect::IObjectProperty* mProp;
+  const reflect::I* mProp;
   Object* mObject;
   PropTypeString mKeyString;
   KeyDecoName mKeyDeco;
@@ -107,7 +107,7 @@ public:
       ISerializer& serializer,
       ObjModel& model,
       ork::Object* pobj,
-      const reflect::IObjectProperty* prop);
+      const reflect::I* prop);
 
   bool IsKey() const {
     return mbIsKey;
@@ -135,7 +135,7 @@ class MapItemWriteSerializer : public reflect::serialize::LayerDeserializer {
     EWT_CVECTOR3,
   };
 
-  const reflect::IObjectMapProperty* mMapProp;
+  const reflect::IMap* mMapProp;
   reflect::serialize::NullDeserializer mNullDeser;
   GedMapIoDriver& mIoDriver;
   EWRITETYPE meWriteType;
@@ -198,7 +198,7 @@ class MapItemReadSerializer : public reflect::serialize::LayerSerializer {
   };
 
   /////////////////////////////////////////////////////
-  const reflect::IObjectMapProperty* mMapProp;
+  const reflect::IMap* mMapProp;
   reflect::serialize::NullSerializer mNullSer;
   const GedMapIoDriver& mIoDriver;
   /////////////////////////////////////////////////////

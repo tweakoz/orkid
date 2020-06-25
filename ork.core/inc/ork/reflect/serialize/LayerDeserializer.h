@@ -9,7 +9,7 @@
 
 #include <ork/reflect/IDeserializer.h>
 #include <ork/reflect/IProperty.h>
-#include <ork/reflect/IObjectProperty.h>
+#include <ork/reflect/properties/I.h>
 #include <ork/reflect/Command.h>
 
 #include <ork/rtti/Category.h>
@@ -39,7 +39,7 @@ public:
   bool Deserialize(const IProperty*) override;
   bool deserializeObject(rtti::castable_rawptr_t&) override;
   bool deserializeSharedObject(rtti::castable_ptr_t&) override;
-  bool deserializeObjectProperty(const IObjectProperty*, Object*) override;
+  bool deserializeObjectProperty(const I*, Object*) override;
 
   bool ReferenceObject(rtti::castable_rawptr_t) override;
   bool BeginCommand(Command&) override;
@@ -97,7 +97,7 @@ inline bool LayerDeserializer::Deserialize(const IProperty* prop) {
   return prop->Deserialize(*this);
 }
 
-inline bool LayerDeserializer::deserializeObjectProperty(const IObjectProperty* prop, Object* object) {
+inline bool LayerDeserializer::deserializeObjectProperty(const I* prop, Object* object) {
   return prop->Deserialize(*this, object);
 }
 

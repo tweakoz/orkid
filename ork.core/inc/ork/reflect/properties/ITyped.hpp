@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/reflect/IObjectPropertyType.h>
+#include <ork/reflect/properties/ITyped.h>
 #include <ork/reflect/ISerializer.h>
 #include <ork/reflect/BidirectionalSerializer.h>
 
@@ -21,7 +21,7 @@
 namespace ork { namespace reflect {
 
 template<typename T>
-bool IObjectPropertyType<T>::Deserialize(IDeserializer &deserializer, Object *obj) const
+bool ITyped<T>::Deserialize(IDeserializer &deserializer, Object *obj) const
 {
     T value;
 
@@ -40,7 +40,7 @@ bool IObjectPropertyType<T>::Deserialize(IDeserializer &deserializer, Object *ob
 }
 
 template<typename T>
-bool IObjectPropertyType<T>::Serialize(ISerializer &serializer, const Object *obj) const
+bool ITyped<T>::Serialize(ISerializer &serializer, const Object *obj) const
 {
     T value;
     Get(value, obj);
@@ -53,16 +53,16 @@ bool IObjectPropertyType<T>::Serialize(ISerializer &serializer, const Object *ob
 }
 
 template<typename T>
-typename IObjectPropertyType<T>::RTTIType::RTTICategory IObjectPropertyType<T>::sClass( IObjectPropertyType<T>::RTTIType::ClassRTTI() );
+typename ITyped<T>::RTTITyped::RTTICategory ITyped<T>::sClass( ITyped<T>::RTTITyped::ClassRTTI() );
 
 template<typename T>
-typename IObjectPropertyType<T>::RTTIType::RTTICategory* IObjectPropertyType<T>::GetClassStatic()
+typename ITyped<T>::RTTITyped::RTTICategory* ITyped<T>::GetClassStatic()
 {
 	return &sClass;
 }
 
 template<typename T>
-typename IObjectPropertyType<T>::RTTIType::RTTICategory* IObjectPropertyType<T>::GetClass() const
+typename ITyped<T>::RTTITyped::RTTICategory* ITyped<T>::GetClass() const
 {
 	return GetClassStatic();
 }

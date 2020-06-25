@@ -6,18 +6,18 @@
 
 #include <ork/pch.h>
 
-#include <ork/reflect/IObjectPropertyObject.h>
-#include <ork/reflect/IObjectPropertySharedObject.h>
+#include <ork/reflect/properties/IObject.h>
+#include <ork/reflect/properties/ISharedObject.h>
 #include <ork/reflect/IPropertyType.hpp>
-#include <ork/reflect/IObjectPropertyType.hpp>
+#include <ork/reflect/properties/ITyped.hpp>
 
-#include <ork/reflect/IObjectArrayProperty.h>
-#include <ork/reflect/IObjectMapProperty.h>
+#include <ork/reflect/properties/IArray.h>
+#include <ork/reflect/properties/IMap.h>
 #include <ork/reflect/properties/DirectMapTyped.hpp>
-#include <ork/reflect/IObjectArrayPropertyObject.h>
+#include <ork/reflect/properties/IObjectArray.h>
 
-#include <ork/reflect/IObjectPropertyType.hpp>
-#include <ork/reflect/IObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/ITyped.hpp>
+#include <ork/reflect/properties/ITypedMap.hpp>
 
 #include <ork/reflect/properties/DirectTyped.hpp>
 
@@ -25,7 +25,7 @@
 #include <ork/reflect/properties/AccessorMapObject.hpp>
 #include <ork/reflect/properties/AccessorMapType.hpp>
 
-#include <ork/reflect/IObjectArrayPropertyType.hpp>
+#include <ork/reflect/properties/ITypedArray.hpp>
 #include <ork/reflect/properties/DirectArrayTyped.hpp>
 #include <ork/reflect/properties/AccessorArrayType.hpp>
 
@@ -74,7 +74,7 @@ typedef rtti::ICastable* ICastablePointer;
 
 #define BUILD_RTTI_CLASS(X)                                                                                                        \
   namespace ork { namespace reflect {                                                                                              \
-  template <> rtti::Class X::RTTIType::sClass(X::RTTIType::ClassRTTI());                                                           \
+  template <> rtti::Class X::RTTITyped::sClass(X::RTTITyped::ClassRTTI());                                                           \
   }                                                                                                                                \
   }
 
@@ -110,7 +110,7 @@ typedef rtti::ICastable* ICastablePointer;
 // Lists //
 ///////////
 
-//   FOREACH_PRIMITIVE_TYPE(MACRO,IObjectPropertyType);
+//   FOREACH_PRIMITIVE_TYPE(MACRO,ITyped);
 #define FOREACH_INSTANTIATED_PROPERTY_TYPE(MACRO)                                                                                  \
   FOREACH_PRIMITIVE_TYPE(MACRO, DirectPropertyType);                                                                         \
   FOREACH_PRIMITIVE_TYPE(MACRO, DirectArrayPropertyType);                                                                    \
@@ -119,15 +119,15 @@ typedef rtti::ICastable* ICastablePointer;
 
 #define FOREACH_RTTI_PROPERTY_TYPE(MACRO)                                                                                          \
   MACRO(IProperty);                                                                                                                \
-  MACRO(IObjectProperty);                                                                                                          \
-  MACRO(IObjectPropertyObject);                                                                                                    \
-  MACRO(IObjectPropertySharedObject);                                                                                              \
-  MACRO(IObjectArrayProperty);                                                                                                     \
-  MACRO(IObjectArrayPropertyObject);                                                                                               \
-  MACRO(IObjectMapProperty);                                                                                                       \
-  MACRO(IObjectMapPropertyObject);
+  MACRO(I);                                                                                                          \
+  MACRO(IObject);                                                                                                    \
+  MACRO(ISharedObject);                                                                                              \
+  MACRO(IArray);                                                                                                     \
+  MACRO(IObjectArray);                                                                                               \
+  MACRO(IMap);                                                                                                       \
+  MACRO(IObjectMap);
 
-//	MACRO(IObjectArrayPropertyObject); \
+//	MACRO(IObjectArray); \
 
 ////////////////////
 // Instantiations //
@@ -139,7 +139,7 @@ ISerializer::~ISerializer() {
 IDeserializer::~IDeserializer() {
 }
 
-template class orklut<ConstString, IObjectProperty*>;
+template class orklut<ConstString, I*>;
 // template class orklut<ork::PoolString,ork::rtti::Class*>;
 template class orklut<ConstString, IObjectFunctor*>;
 template class orklut<ConstString, object::Signal Object::*>;
@@ -160,23 +160,23 @@ FOREACH_INSTANTIATED_PROPERTY_TYPE(INSTANTIATE);
 FOREACH_RTTI_PROPERTY_TYPE(INSTANTIATE_TRANSPARENT_CASTABLE);
 
 namespace ork { namespace reflect {
-template class IObjectPropertyType<int>;
-template class IObjectPropertyType<float>;
-template class IObjectPropertyType<fvec2>;
-template class IObjectPropertyType<fvec3>;
-template class IObjectPropertyType<fvec4>;
-template class IObjectPropertyType<fmtx4>;
-template class IObjectPropertyType<ork::rtti::ICastable*>;
-template class IObjectPropertyType<ork::Object*>;
-template class IObjectPropertyType<ork::file::Path>;
-template class IObjectPropertyType<PoolString>;
-template class IObjectPropertyType<std::string>;
-template class IObjectPropertyType<bool>;
+template class ITyped<int>;
+template class ITyped<float>;
+template class ITyped<fvec2>;
+template class ITyped<fvec3>;
+template class ITyped<fvec4>;
+template class ITyped<fmtx4>;
+template class ITyped<ork::rtti::ICastable*>;
+template class ITyped<ork::Object*>;
+template class ITyped<ork::file::Path>;
+template class ITyped<PoolString>;
+template class ITyped<std::string>;
+template class ITyped<bool>;
 template class DirectPropertyType<bool>;
 template class DirectPropertyType<ork::Object*>;
-template class IObjectPropertyType<Char4>;
+template class ITyped<Char4>;
 template class DirectPropertyType<Char4>;
-template class IObjectPropertyType<Char8>;
+template class ITyped<Char8>;
 template class DirectPropertyType<Char8>;
 template class DirectMapPropertyType<orkmap<int, int>>;
 template class DirectMapPropertyType<orklut<int, int>>;
@@ -189,7 +189,7 @@ template class AccessorMapType<int, char>;
 template class AccessorMapType<int, ICastablePointer>;
 template class DirectPropertyType<fmtx4>;
 template class DirectPropertyType<Quaternion<float>>;
-template class IObjectPropertyType<TransformNode>;
+template class ITyped<TransformNode>;
 template class DirectMapPropertyType<orkmap<float, fvec4>>;
 // template class DirectPropertyType<orkvector<fvec2> >;
 

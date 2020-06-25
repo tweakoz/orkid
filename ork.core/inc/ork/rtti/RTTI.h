@@ -41,7 +41,7 @@ public:
     ClassType::GetClassStatic()->SetName(ClassType::DesignNameStatic());
     ClassType::GetClassStatic()->setRawFactory(Factory);
     ClassType::GetClassStatic()->setSharedFactory(sharedFactory);
-    ClassType::RTTIType::RTTICategory::template InitializeType<ClassType>();
+    ClassType::RTTITyped::RTTICategory::template InitializeType<ClassType>();
   }
 };
 
@@ -51,7 +51,7 @@ template <typename ClassType> class AbstractPolicy {
 public:
   static void Initialize() {
     ClassType::GetClassStatic()->SetName(ClassType::DesignNameStatic());
-    ClassType::RTTIType::RTTICategory::template InitializeType<ClassType>();
+    ClassType::RTTITyped::RTTICategory::template InitializeType<ClassType>();
   }
 };
 
@@ -78,11 +78,11 @@ template <
     typename ClassType,
     typename BaseType                = ICastable,
     template <typename> class Policy = DefaultPolicy,
-    typename Category                = typename BaseType::RTTIType::RTTICategory>
+    typename Category                = typename BaseType::RTTITyped::RTTICategory>
 
 class RTTI : public BaseType {
 public:
-  typedef RTTI RTTIType;
+  typedef RTTI RTTITyped;
   typedef Category RTTICategory;
   typedef Policy<ClassType> policy_t;
   typedef BaseType basetype_t;
@@ -117,10 +117,10 @@ private:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename ClassType, typename BaseType = ICastable, typename Category = typename BaseType::RTTIType::RTTICategory>
+template <typename ClassType, typename BaseType = ICastable, typename Category = typename BaseType::RTTITyped::RTTICategory>
 class Castable : public BaseType {
 public:
-  typedef Castable RTTIType;
+  typedef Castable RTTITyped;
   typedef Category RTTICategory;
 
   static RTTICategory* GetClassStatic() {
@@ -143,50 +143,50 @@ private:
 
 #define __INTERNAL_RTTI_DECLARE_TRANSPARENT__(ClassType, RTTIImplementation)                                                       \
 public:                                                                                                                            \
-  typedef typename RTTIImplementation RTTIType;                                                                                    \
-  typedef typename RTTIType::basetype_t BaseType;                                                                                  \
+  typedef typename RTTIImplementation RTTITyped;                                                                                    \
+  typedef typename RTTITyped::basetype_t BaseType;                                                                                  \
   static ::ork::ConstString DesignNameStatic();                                                                                    \
   static void Describe();                                                                                                          \
-  static RTTIType::RTTICategory* GetClassStatic();                                                                                 \
-  RTTIType::RTTICategory* GetClass() const override;                                                                               \
+  static RTTITyped::RTTICategory* GetClassStatic();                                                                                 \
+  RTTITyped::RTTICategory* GetClass() const override;                                                                               \
                                                                                                                                    \
 private:                                                                                                                           \
-  static RTTIType::RTTICategory sClass;
+  static RTTITyped::RTTICategory sClass;
 
 //
 
 #define __INTERNAL_RTTI_DECLARE_TRANSPARENT_TEMPLATE__(ClassType, RTTIImplementation)                                              \
 public:                                                                                                                            \
-  typedef typename RTTIImplementation RTTIType;                                                                                    \
+  typedef typename RTTIImplementation RTTITyped;                                                                                    \
   static ::ork::ConstString DesignNameStatic();                                                                                    \
   static void Describe();                                                                                                          \
-  static typename RTTIType::RTTICategory* GetClassStatic();                                                                        \
-  virtual typename RTTIType::RTTICategory* GetClass() const;                                                                       \
+  static typename RTTITyped::RTTICategory* GetClassStatic();                                                                        \
+  virtual typename RTTITyped::RTTICategory* GetClass() const;                                                                       \
                                                                                                                                    \
 private:                                                                                                                           \
-  static typename RTTIType::RTTICategory sClass;
+  static typename RTTITyped::RTTICategory sClass;
 
 //
 
 #define __INTERNAL_RTTI_DECLARE_TRANSPARENT_CASTABLE__(ClassType, RTTIImplementation)                                              \
 public:                                                                                                                            \
-  typedef typename RTTIImplementation RTTIType;                                                                                    \
-  static RTTIType::RTTICategory* GetClassStatic();                                                                                 \
-  virtual RTTIType::RTTICategory* GetClass() const;                                                                                \
+  typedef typename RTTIImplementation RTTITyped;                                                                                    \
+  static RTTITyped::RTTICategory* GetClassStatic();                                                                                 \
+  virtual RTTITyped::RTTICategory* GetClass() const;                                                                                \
                                                                                                                                    \
 private:                                                                                                                           \
-  static RTTIType::RTTICategory sClass;
+  static RTTITyped::RTTICategory sClass;
 
 //
 
 #define __INTERNAL_RTTI_DECLARE_TRANSPARENT_TEMPLATE_CASTABLE__(ClassType, RTTIImplementation)                                     \
 public:                                                                                                                            \
-  typedef typename RTTIImplementation RTTIType;                                                                                    \
-  static typename RTTIType::RTTICategory* GetClassStatic();                                                                        \
-  virtual typename RTTIType::RTTICategory* GetClass() const;                                                                       \
+  typedef typename RTTIImplementation RTTITyped;                                                                                    \
+  static typename RTTITyped::RTTICategory* GetClassStatic();                                                                        \
+  virtual typename RTTITyped::RTTICategory* GetClass() const;                                                                       \
                                                                                                                                    \
 private:                                                                                                                           \
-  static typename RTTIType::RTTICategory sClass;
+  static typename RTTITyped::RTTICategory sClass;
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -312,10 +312,10 @@ Class* ForceLink(Class*);
 
 #define INSTANTIATE_RTTI(ClassName, TheDesignName)                                                                                 \
   namespace ork {                                                                                                                  \
-  ConstString ClassName::RTTIType::DesignNameStatic() {                                                                            \
+  ConstString ClassName::RTTITyped::DesignNameStatic() {                                                                            \
     return TheDesignName;                                                                                                          \
   }                                                                                                                                \
-  ClassName::RTTIType::RTTICategory ClassName::RTTIType::sClass(ClassName::ClassRTTI());                                           \
+  ClassName::RTTITyped::RTTICategory ClassName::RTTITyped::sClass(ClassName::ClassRTTI());                                           \
   }                                                                                                                                \
   INSTANTIATE_CASTABLE_SERIALIZE(ClassName)                                                                                        \
   INSTANTIATE_CASTABLE_SERIALIZE(const ClassName)                                                                                  \
@@ -327,11 +327,11 @@ Class* ForceLink(Class*);
   template <> ork::ConstString ClassName::DesignNameStatic() {                                                                     \
     return TheDesignName;                                                                                                          \
   }                                                                                                                                \
-  template <> ClassName::RTTIType::RTTICategory ClassName::sClass(ClassName::RTTIType::ClassRTTI());                               \
-  template <> ClassName::RTTIType::RTTICategory* ClassName::GetClassStatic() {                                                     \
+  template <> ClassName::RTTITyped::RTTICategory ClassName::sClass(ClassName::RTTITyped::ClassRTTI());                               \
+  template <> ClassName::RTTITyped::RTTICategory* ClassName::GetClassStatic() {                                                     \
     return &sClass;                                                                                                                \
   }                                                                                                                                \
-  template <> ClassName::RTTIType::RTTICategory* ClassName::GetClass() const {                                                     \
+  template <> ClassName::RTTITyped::RTTICategory* ClassName::GetClass() const {                                                     \
     return GetClassStatic();                                                                                                       \
   }                                                                                                                                \
   INSTANTIATE_CASTABLE_SERIALIZE(ClassName)                                                                                        \
@@ -344,11 +344,11 @@ Class* ForceLink(Class*);
   ::ork::ConstString ClassName::DesignNameStatic() {                                                                               \
     return TheDesignName;                                                                                                          \
   }                                                                                                                                \
-  ClassName::RTTIType::RTTICategory ClassName::sClass(ClassName::RTTIType::ClassRTTI());                                           \
-  ClassName::RTTIType::RTTICategory* ClassName::GetClassStatic() {                                                                 \
+  ClassName::RTTITyped::RTTICategory ClassName::sClass(ClassName::RTTITyped::ClassRTTI());                                           \
+  ClassName::RTTITyped::RTTICategory* ClassName::GetClassStatic() {                                                                 \
     return &sClass;                                                                                                                \
   }                                                                                                                                \
-  ClassName::RTTIType::RTTICategory* ClassName::GetClass() const {                                                                 \
+  ClassName::RTTITyped::RTTICategory* ClassName::GetClass() const {                                                                 \
     return GetClassStatic();                                                                                                       \
   }                                                                                                                                \
   INSTANTIATE_CASTABLE_SERIALIZE(ClassName)                                                                                        \
@@ -358,7 +358,7 @@ Class* ForceLink(Class*);
 ////////////////////////////////////////////////////////////////////////////////
 
 #define INSTANTIATE_CASTABLE(ClassName)                                                                                            \
-  template <> ClassName::RTTIType::RTTICategory ClassName::RTTIType::sClass(ClassName::ClassRTTI());                               \
+  template <> ClassName::RTTITyped::RTTICategory ClassName::RTTITyped::sClass(ClassName::ClassRTTI());                               \
   INSTANTIATE_CASTABLE_SERIALIZE(ClassName)                                                                                        \
   INSTANTIATE_CASTABLE_SERIALIZE(const ClassName)                                                                                  \
   INSTANTIATE_LINK_FUNCTION(ClassName)
@@ -366,11 +366,11 @@ Class* ForceLink(Class*);
 ////////////////////////////////////////////////////////////////////////////////
 
 #define INSTANTIATE_TRANSPARENT_CASTABLE(ClassName)                                                                                \
-  ClassName::RTTIType::RTTICategory ClassName::sClass(ClassName::RTTIType::ClassRTTI());                                           \
-  ClassName::RTTIType::RTTICategory* ClassName::GetClassStatic() {                                                                 \
+  ClassName::RTTITyped::RTTICategory ClassName::sClass(ClassName::RTTITyped::ClassRTTI());                                           \
+  ClassName::RTTITyped::RTTICategory* ClassName::GetClassStatic() {                                                                 \
     return &sClass;                                                                                                                \
   }                                                                                                                                \
-  ClassName::RTTIType::RTTICategory* ClassName::GetClass() const {                                                                 \
+  ClassName::RTTITyped::RTTICategory* ClassName::GetClass() const {                                                                 \
     return GetClassStatic();                                                                                                       \
   }                                                                                                                                \
   INSTANTIATE_CASTABLE_SERIALIZE(ClassName)                                                                                        \
@@ -380,11 +380,11 @@ Class* ForceLink(Class*);
 ////////////////////////////////////////////////////////////////////////////////
 
 #define INSTANTIATE_TRANSPARENT_TEMPLATE_CASTABLE(ClassName)                                                                       \
-  ClassName::RTTIType::RTTICategory ClassName::sClass(ClassName::RTTIType::ClassRTTI());                                           \
-  ClassName::RTTIType::RTTICategory* ClassName::GetClassStatic() {                                                                 \
+  ClassName::RTTITyped::RTTICategory ClassName::sClass(ClassName::RTTITyped::ClassRTTI());                                           \
+  ClassName::RTTITyped::RTTICategory* ClassName::GetClassStatic() {                                                                 \
     return &sClass;                                                                                                                \
   }                                                                                                                                \
-  ClassName::RTTIType::RTTICategory* ClassName::GetClass() const {                                                                 \
+  ClassName::RTTITyped::RTTICategory* ClassName::GetClass() const {                                                                 \
     return GetClassStatic();                                                                                                       \
   }                                                                                                                                \
   INSTANTIATE_CASTABLE_SERIALIZE(ClassName)                                                                                        \

@@ -8,15 +8,15 @@
 #pragma once
 
 #include <cstddef>
-#include <ork/reflect/IObjectArrayProperty.h>
+#include <ork/reflect/properties/IArray.h>
 
 namespace ork { namespace reflect {
 
 template<typename T>
-class  IObjectArrayPropertyType : public IObjectArrayProperty
+class  ITypedArray : public IArray
 {
 public:
-	IObjectArrayPropertyType() {}
+	ITypedArray() {}
     virtual void Get(T &value, const Object *obj, size_t index) const = 0;
     virtual void Set(const T &value, Object *obj, size_t index) const = 0;
 private:

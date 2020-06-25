@@ -20,7 +20,7 @@ struct ICastable {
   virtual Class* GetClass() const = 0;
   static Class* GetClassStatic();
 
-  struct RTTIType {
+  struct RTTITyped {
     typedef Class RTTICategory;
   };
 };

@@ -12,7 +12,7 @@
 #include <ork/application/application.h>
 #include <ork/reflect/RegisterProperty.h>
 
-#include <ork/reflect/IObjectPropertyType.hpp>
+#include <ork/reflect/properties/ITyped.hpp>
 #include <ork/reflect/properties/DirectTyped.hpp>
 
 #include <ork/object/ObjectClass.h>

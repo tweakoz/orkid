@@ -7,14 +7,14 @@
 
 #pragma once
 
-#include <ork/reflect/IObjectArrayPropertyType.h>
+#include <ork/reflect/properties/ITypedArray.h>
 
 #include <ork/config/config.h>
 
 namespace ork { namespace reflect {
 
 template<typename T>
-class  DirectArrayPropertyType : public IObjectArrayPropertyType<T>
+class  DirectArrayPropertyType : public ITypedArray<T>
 {
 public:
     DirectArrayPropertyType(T (Object::*)[], size_t);

@@ -7,14 +7,14 @@
 
 #pragma once
 
-#include <ork/reflect/IObjectArrayPropertyType.h>
+#include <ork/reflect/properties/ITypedArray.h>
 #include <ork/reflect/ISerializer.h>
 #include <ork/reflect/BidirectionalSerializer.h>
 
 namespace ork { namespace reflect {
 
 template<typename T>
-bool IObjectArrayPropertyType<T>::DeserializeItem(IDeserializer &deserializer, Object *obj, size_t index) const
+bool ITypedArray<T>::DeserializeItem(IDeserializer &deserializer, Object *obj, size_t index) const
 {
 	BidirectionalSerializer bidi(deserializer);
 
@@ -29,7 +29,7 @@ bool IObjectArrayPropertyType<T>::DeserializeItem(IDeserializer &deserializer, O
 }
 
 template<typename T>
-bool IObjectArrayPropertyType<T>::SerializeItem(ISerializer &serializer, const Object *obj, size_t index) const
+bool ITypedArray<T>::SerializeItem(ISerializer &serializer, const Object *obj, size_t index) const
 {
 	BidirectionalSerializer bidi(serializer);
 

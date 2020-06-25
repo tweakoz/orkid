@@ -9,7 +9,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <orktool/qtui/qtmainwin.h>
 #include <ork/reflect/IProperty.h>
-#include <ork/reflect/IObjectProperty.h>
+#include <ork/reflect/properties/I.h>
 #include <ork/reflect/RegisterProperty.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <orktool/ged/ged.h>
@@ -76,7 +76,7 @@ GedWidget::~GedWidget() {
   }
 }
 
-void GedWidget::PropertyInvalidated(ork::Object* pobj, const reflect::IObjectProperty* prop) {
+void GedWidget::PropertyInvalidated(ork::Object* pobj, const reflect::I* prop) {
   if (mRootItem) {
     orkstack<GedItemNode*> stackofnodes;
     stackofnodes.push(mRootItem);

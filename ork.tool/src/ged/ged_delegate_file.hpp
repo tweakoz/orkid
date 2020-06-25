@@ -67,7 +67,7 @@ template <typename IODriver> void GedFileNode<IODriver>::SetLabel() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 template <typename IODriver>
-GedFileNode<IODriver>::GedFileNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, Object* obj)
+GedFileNode<IODriver>::GedFileNode(ObjModel& mdl, const char* name, const reflect::I* prop, Object* obj)
     : GedItemNode(mdl, name, prop, obj)
     , mIoDriver(mdl, prop, obj) {
 }

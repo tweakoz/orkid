@@ -9,7 +9,7 @@
 #include <ork/reflect/serialize/BinaryDeserializer.h>
 #include <ork/reflect/Command.h>
 #include <ork/reflect/IProperty.h>
-#include <ork/reflect/IObjectProperty.h>
+#include <ork/reflect/properties/I.h>
 #include <ork/rtti/Class.h>
 #include <ork/rtti/Category.h>
 #include <ork/rtti/downcast.h>
@@ -92,7 +92,7 @@ bool BinaryDeserializer::Deserialize(const IProperty* prop) {
   return prop->Deserialize(*this);
 }
 
-bool BinaryDeserializer::deserializeObjectProperty(const IObjectProperty* prop, Object* object) {
+bool BinaryDeserializer::deserializeObjectProperty(const I* prop, Object* object) {
   return prop->Deserialize(*this, object);
 }
 

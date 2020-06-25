@@ -10,7 +10,7 @@
 #include <ork/reflect/serialize/NullSerializer.h>
 
 #include <ork/reflect/IProperty.h>
-#include <ork/reflect/IObjectProperty.h>
+#include <ork/reflect/properties/I.h>
 #include <ork/rtti/Category.h>
 
 namespace ork { namespace reflect { namespace serialize {
@@ -65,7 +65,7 @@ bool NullSerializer::Serialize(const IProperty* prop) {
 }
 
 bool NullSerializer::serializeObjectProperty(
-    const IObjectProperty* prop, //
+    const I* prop, //
     const Object* object) {
   return prop->Serialize(*this, object);
 }

@@ -8,15 +8,15 @@
 #pragma once
 
 #include <cstddef>
-#include <ork/reflect/IObjectProperty.h>
+#include <ork/reflect/properties/I.h>
 
 #include <ork/config/config.h>
 
 namespace ork { namespace reflect {
 
-class  IObjectArrayProperty : public IObjectProperty
+class  IArray : public I
 {
-	DECLARE_TRANSPARENT_CASTABLE(IObjectArrayProperty, IObjectProperty)
+	DECLARE_TRANSPARENT_CASTABLE(IArray, I)
 public:
     virtual bool DeserializeItem(IDeserializer &, Object *, size_t) const = 0;
     virtual bool SerializeItem(ISerializer &, const Object *, size_t) const = 0;
@@ -26,7 +26,7 @@ private:
     /*virtual*/ bool Deserialize(IDeserializer &, Object *) const;
     /*virtual*/ bool Serialize(ISerializer &, const Object *) const;
 protected:
-	IObjectArrayProperty() {}
+	IArray() {}
 };
 
 } }

@@ -12,9 +12,9 @@
 #include <orktool/ged/ged_io.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/reflect/IProperty.h>
-#include <ork/reflect/IObjectProperty.h>
-#include <ork/reflect/IObjectPropertyObject.h>
-#include <ork/reflect/IObjectPropertyType.h>
+#include <ork/reflect/properties/I.h>
+#include <ork/reflect/properties/IObject.h>
+#include <ork/reflect/properties/ITyped.h>
 #include <ork/reflect/properties/AccessorObject.h>
 #include "ged_delegate.hpp"
 #include <ork/dataflow/dataflow.h>
@@ -25,7 +25,7 @@ namespace ork { namespace tool { namespace ged {
 class GedPlugDriver : public IoDriverBase {
 public:
   typedef float datatype;
-  GedPlugDriver(ObjModel& Model, const reflect::IObjectProperty* prop, Object* obj)
+  GedPlugDriver(ObjModel& Model, const reflect::I* prop, Object* obj)
       : IoDriverBase(Model, prop, obj)
       , mPlugFloat(0) {
   }
@@ -232,7 +232,7 @@ private:
   }
 
 public:
-  GedPlugWidget(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj)
+  GedPlugWidget(ObjModel& mdl, const char* name, const reflect::I* prop, ork::Object* obj)
       : GedItemNode(mdl, name, prop, obj)
       , ValueStrings(0)
       , NumStrings(0)
@@ -522,7 +522,7 @@ class GedFactoryPlug : public GedFactory {
 
 public:
   GedItemNode*
-  CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::IObjectProperty* prop, Object* obj) const final {
+  CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::I* prop, Object* obj) const final {
     GedItemNode* PropContainerW = new GedPlugWidget(mdl, Name.c_str(), prop, obj);
     return PropContainerW;
   }

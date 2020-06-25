@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/reflect/IObjectPropertyObject.h>
+#include <ork/reflect/properties/IObject.h>
 
 #include <ork/config/config.h>
 
@@ -17,7 +17,7 @@ class Object;
 
 namespace reflect {
 
-class  AccessorObject : public IObjectPropertyObject
+class  AccessorObject : public IObject
 {
 public:
     AccessorObject(Object *(Object::*)());

@@ -8,14 +8,14 @@
 
 #include <ork/pch.h>
 
-#include <ork/reflect/IObjectArrayProperty.h>
+#include <ork/reflect/properties/IArray.h>
 #include <ork/reflect/ISerializer.h>
 #include <ork/reflect/IDeserializer.h>
 #include <ork/reflect/Command.h>
 
 namespace ork { namespace reflect {
 
-bool IObjectArrayProperty::Deserialize(IDeserializer &deserializer, Object *obj) const
+bool IArray::Deserialize(IDeserializer &deserializer, Object *obj) const
 {
 	bool result = true;
 	int deser_count;
@@ -64,7 +64,7 @@ bool IObjectArrayProperty::Deserialize(IDeserializer &deserializer, Object *obj)
 	return result;
 }
 
-bool IObjectArrayProperty::Serialize(ISerializer &serializer, const Object *obj) const
+bool IArray::Serialize(ISerializer &serializer, const Object *obj) const
 {
 	bool result = true;
 	size_t count = Count(obj);

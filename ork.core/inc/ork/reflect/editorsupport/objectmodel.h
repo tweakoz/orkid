@@ -26,7 +26,7 @@ using objectmodelobserver_ptr_t = std::shared_ptr<ObjectModelObserver>;
 
 struct PersistHashContext {
   ork::object_ptr_t mObject;
-  const IObjectProperty* mProperty;
+  const I* mProperty;
   const char* mString;
 
   PersistHashContext();
@@ -171,7 +171,7 @@ public:
 public:
   void SigModelInvalidated();
   void SigPreNewObject();
-  void SigPropertyInvalidated(ork::object_ptr_t pobj, const IObjectProperty* prop);
+  void SigPropertyInvalidated(ork::object_ptr_t pobj, const I* prop);
   void SigRepaint();
   void SigSpawnNewGed(ork::object_ptr_t pobj);
   void SigNewObject(ork::object_ptr_t pobj);
@@ -182,7 +182,7 @@ private:
 
   void SlotNewObject(ork::object_ptr_t pobj);
   void SlotRelayModelInvalidated();
-  void SlotRelayPropertyInvalidated(ork::object_ptr_t pobj, const IObjectProperty* prop);
+  void SlotRelayPropertyInvalidated(ork::object_ptr_t pobj, const I* prop);
   void SlotObjectDeleted(ork::object_ptr_t pobj);
   void SlotObjectSelected(ork::object_ptr_t pobj);
   void SlotObjectDeSelected(ork::object_ptr_t pobj);
@@ -192,7 +192,7 @@ private:
 
   struct sortnode {
     std::string Name;
-    orkvector<std::pair<std::string, IObjectProperty*>> PropVect;
+    orkvector<std::pair<std::string, I*>> PropVect;
     orkvector<std::pair<std::string, sortnode*>> GroupVect;
   };
 
@@ -203,8 +203,8 @@ private:
   //////////////////////////////////////////////////////////
   IInvokation* mModelInvalidatedInvoker = nullptr;
 
-  // bool IsNodeVisible(const IObjectProperty* prop);
-  // objectmodelnode_ptr_t CreateNode(const std::string& Name, const IObjectProperty* prop, object_ptr_t pobject);
+  // bool IsNodeVisible(const I* prop);
+  // objectmodelnode_ptr_t CreateNode(const std::string& Name, const I* prop, object_ptr_t pobject);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -215,7 +215,7 @@ public:
   ObjectModelNode(
       objectmodel_ptr_t mdl, //
       const char* name,
-      const reflect::IObjectProperty* prop,
+      const reflect::I* prop,
       ork::object_ptr_t obj);
 
   ~ObjectModelNode() override;
@@ -225,8 +225,8 @@ public:
   int GetNumItems() const;
   ObjectModelNode* parent() const;
   void releaseChildren();
-  void SetOrkProp(const reflect::IObjectProperty* prop);
-  const reflect::IObjectProperty* GetOrkProp() const;
+  void SetOrkProp(const reflect::I* prop);
+  const reflect::I* GetOrkProp() const;
   void SetOrkObj(ork::object_ptr_t obj);
   ork::object_ptr_t GetOrkObj() const;
   objectmodelobserver_ptr_t root() const;
@@ -239,7 +239,7 @@ public:
   int GetDecoIndex() const;
   void SetDecoIndex(int idx);
   ///////////////////////////////////
-  const reflect::IObjectProperty* mOrkProp;
+  const reflect::I* mOrkProp;
   ork::object_ptr_t mOrkObj;
   ObjectModelNode* _parent;
   objectmodelobserver_ptr_t mRoot;
@@ -258,7 +258,7 @@ class ObjectModelObserver : public ork::AutoConnector { //
 
 public: //
   ObjectModelObserver();
-  void PropertyInvalidated(ork::object_ptr_t pobj, const reflect::IObjectProperty* prop);
+  void PropertyInvalidated(ork::object_ptr_t pobj, const reflect::I* prop);
   void Attach(ork::object_ptr_t obj);
   ///////////////////////////////////
   void PushItemNode(objectmodelnode_ptr_t qw);
@@ -280,7 +280,7 @@ public: //
   virtual objectmodelnode_ptr_t createGroup(
       ObjectModel* mdl,
       const char* name,
-      const reflect::IObjectProperty* prop,
+      const reflect::I* prop,
       ork::object_ptr_t obj,
       bool is_obj_node = false) {
     return nullptr;

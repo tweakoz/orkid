@@ -8,7 +8,7 @@
 #pragma once
 
 #include <ork/reflect/properties/DirectMapTyped.h>
-#include <ork/reflect/IObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/ITypedMap.hpp>
 #include <ork/kernel/core_interface.h>
 
 namespace ork { namespace reflect {
@@ -105,7 +105,7 @@ bool DirectMapPropertyType<MapType>::WriteItem(
 	const typename DirectMapPropertyType<MapType>::ValueType *value) const
 {	MapType &map = object->*mProperty;
 	const int orig_multi_index = multi_index;
-	if(multi_index == IObjectMapProperty::kDeserializeInsertItem)
+	if(multi_index == IMap::kDeserializeInsertItem)
 	{	OrkAssert(value);
 		map.insert(std::make_pair(key, *value)); 
 	}

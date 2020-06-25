@@ -7,12 +7,12 @@
 
 #pragma once
 
-#include <ork/reflect/IObjectMapPropertyObject.h>
+#include <ork/reflect/properties/IObjectMap.h>
 
 namespace ork { namespace reflect {
 
 template<typename KeyType>
-class AccessorMapObject : public IObjectMapPropertyObject
+class AccessorMapObject : public IObjectMap
 {
 public:
 	typedef void (*SerializationFunction)(BidirectionalSerializer &, const KeyType &, const Object *);

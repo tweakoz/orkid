@@ -31,7 +31,7 @@ public:
   //  const rtti::Category* cat, //
   // const rtti::ICastable* object) override;
   bool serializeObjectProperty(
-      const IObjectProperty* prop, //
+      const I* prop, //
       const Object* object) override;
 
   bool Serialize(const IProperty* prop) override;

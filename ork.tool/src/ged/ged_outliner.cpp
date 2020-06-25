@@ -11,9 +11,9 @@
 #include <orktool/ged/ged_delegate.h>
 #include <orktool/ged/ged_io.h>
 #include <ork/reflect/IProperty.h>
-#include <ork/reflect/IObjectProperty.h>
+#include <ork/reflect/properties/I.h>
 #include <ork/reflect/properties/DirectMapTyped.h>
-#include <ork/reflect/IObjectPropertyObject.h>
+#include <ork/reflect/properties/IObject.h>
 #include <ork/reflect/IDeserializer.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/qtui/qtui.hpp>
@@ -61,13 +61,13 @@ class GedOutlinerWidget : public GedItemNode
 
 public:
 
-	GedOutlinerWidget( ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj )
+	GedOutlinerWidget( ObjModel& mdl, const char* name, const reflect::I* prop, ork::Object* obj )
 		: GedItemNode( mdl, name, prop, obj)
 		, mpSceneData(0)
 	{
 		if( prop )
 		{
-			const reflect::IObjectPropertyObject* pprop = rtti::autocast( GetOrkProp() );
+			const reflect::IObject* pprop = rtti::autocast( GetOrkProp() );
 			mpSceneData = rtti::autocast( pprop->Access(GetOrkObj()) );
 		}
 		else
@@ -84,7 +84,7 @@ public:
 
 void GedFactoryOutliner::Describe() {}		
 
-GedItemNode* GedFactoryOutliner::CreateItemNode(ObjModel&mdl,const ConstString& Name,const reflect::IObjectProperty *prop,Object* obj) const
+GedItemNode* GedFactoryOutliner::CreateItemNode(ObjModel&mdl,const ConstString& Name,const reflect::I *prop,Object* obj) const
 {
 	GedItemNode* groupnode = new GedLabelNode( mdl, Name.c_str(), prop, obj );
 

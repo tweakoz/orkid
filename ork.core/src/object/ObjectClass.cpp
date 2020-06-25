@@ -9,7 +9,7 @@
 #include <ork/object/Object.h>
 #include <ork/object/ObjectClass.h>
 #include <ork/rtti/downcast.h>
-#include <ork/reflect/IObjectProperty.h>
+#include <ork/reflect/properties/I.h>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::object::ObjectClass, "ObjectClass");
 
@@ -53,7 +53,7 @@ void ObjectClass::Initialize() {
 
   for (reflect::Description::PropertyMapType::iterator it = propmap.begin(); it != propmap.end(); it++) {
     ConstString name               = it->first;
-    reflect::IObjectProperty* prop = it->second;
+    reflect::I* prop = it->second;
 
     rtti::Class* propclass = prop->GetClass();
 

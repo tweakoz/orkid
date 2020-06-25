@@ -7,20 +7,20 @@
 
 #pragma once
 
-#include <cstddef>
-
-#include <ork/reflect/IObjectMapProperty.h>
+#include <ork/reflect/properties/IArray.h>
 
 #include <ork/config/config.h>
 
+namespace ork { class Object; }
+
 namespace ork { namespace reflect {
 
-class  IObjectMapPropertyObject : public IObjectMapProperty
+class  IObjectArray : public IArray
 {
-	DECLARE_TRANSPARENT_CASTABLE(IObjectMapPropertyObject, IObjectMapProperty)
+	DECLARE_TRANSPARENT_CASTABLE(IObjectArray, IArray)
 public:
-	virtual Object *AccessItem(IDeserializer &key, int, Object *) const = 0;
-    virtual const Object *AccessItem(IDeserializer &key, int, const Object *) const = 0;
+    virtual Object *AccessObject(Object *, size_t) const = 0;
+    virtual const Object *AccessObject(const Object *, size_t) const = 0;
 };
 
 } }

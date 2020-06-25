@@ -14,9 +14,9 @@
 #include "ged_delegate_asset.hpp"
 #include <orktool/ged/ged_io.h>
 #include <ork/reflect/IProperty.h>
-#include <ork/reflect/IObjectProperty.h>
-#include <ork/reflect/IObjectMapProperty.h>
-#include <ork/reflect/IObjectPropertyObject.h>
+#include <ork/reflect/properties/I.h>
+#include <ork/reflect/properties/IMap.h>
+#include <ork/reflect/properties/IObject.h>
 #include <ork/reflect/IDeserializer.h>
 #include <ork/reflect/serialize/XMLSerializer.h>
 #include <ork/reflect/serialize/XMLDeserializer.h>
@@ -50,7 +50,7 @@ MapTraverseSerializer::MapTraverseSerializer(
     ISerializer& serializer,
     ObjModel& model,
     ork::Object* pobj,
-    const reflect::IObjectProperty* prop)
+    const reflect::I* prop)
     : reflect::serialize::LayerSerializer(serializer)
     , mModel(model)
     , mProp(prop)
@@ -378,7 +378,7 @@ void MapItemWriteSerializer::Insert(const char* pchar) {
   MapKeyWriter keyser(mIoDriver);
   mIoDriver.SetKey(pchar);
   bool bok =
-      mMapProp->DeserializeItem(this, keyser, ork::reflect::IObjectMapProperty::kDeserializeInsertItem, mIoDriver.GetObject());
+      mMapProp->DeserializeItem(this, keyser, ork::reflect::IMap::kDeserializeInsertItem, mIoDriver.GetObject());
   OrkAssert(bok);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -427,7 +427,7 @@ void MapItemWriteSerializer::Move(const KeyDecoName& kdeco, const char* pname) {
   ork::stream::StringInputStream istream(pstr.c_str());
   ork::reflect::serialize::XMLDeserializer iser(istream);
 
-  bok = mMapProp->DeserializeItem(&iser, keyser2, ork::reflect::IObjectMapProperty::kDeserializeInsertItem, mIoDriver.GetObject());
+  bok = mMapProp->DeserializeItem(&iser, keyser2, ork::reflect::IMap::kDeserializeInsertItem, mIoDriver.GetObject());
 
   OrkAssert(bok);
 
@@ -469,7 +469,7 @@ void MapItemWriteSerializer::Duplicate(const KeyDecoName& kdeco, const char* pna
   ork::stream::StringInputStream istream(pstr.c_str());
   ork::reflect::serialize::XMLDeserializer iser(istream);
 
-  bok = mMapProp->DeserializeItem(&iser, keyser2, ork::reflect::IObjectMapProperty::kDeserializeInsertItem, mIoDriver.GetObject());
+  bok = mMapProp->DeserializeItem(&iser, keyser2, ork::reflect::IMap::kDeserializeInsertItem, mIoDriver.GetObject());
 
   OrkAssert(bok);
 
@@ -496,7 +496,7 @@ void MapItemWriteSerializer::Import(const KeyDecoName& kdeco, const char* pname)
       MapKeyWriter keyser2(niodriver);
 
       bool bok = mMapProp->DeserializeItem(
-          &iser, keyser2, ork::reflect::IObjectMapProperty::kDeserializeInsertItem, mIoDriver.GetObject());
+          &iser, keyser2, ork::reflect::IMap::kDeserializeInsertItem, mIoDriver.GetObject());
 
       OrkAssert(bok);
     }
@@ -692,7 +692,7 @@ fvec3 MapItemReadSerializer::Getfvec3() {
 void GedMapNode::Describe() {
 }
 ///////////////////////////////////////////////////////////////////////////////
-GedMapNode::GedMapNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, Object* obj)
+GedMapNode::GedMapNode(ObjModel& mdl, const char* name, const reflect::I* prop, Object* obj)
     : GedItemNode(mdl, name, prop, obj)
     , mMapProp(rtti::autocast(prop))
     , mKeyNode(0)

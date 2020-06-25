@@ -8,7 +8,7 @@
 #pragma once
 
 #include <ork/reflect/properties/AccessorArrayType.h>
-#include <ork/reflect/IObjectArrayPropertyType.hpp>
+#include <ork/reflect/properties/ITypedArray.hpp>
 
 namespace ork { namespace reflect {
 

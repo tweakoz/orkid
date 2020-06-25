@@ -13,10 +13,10 @@
 #include <ork/reflect/serialize/BinaryDeserializer.h>
 #include <ork/stream/ResizableStringOutputStream.h>
 #include <ork/stream/StringInputStream.h>
-#include <ork/reflect/IObjectMapProperty.h>
-#include <ork/reflect/IObjectArrayProperty.h>
-#include <ork/reflect/IObjectProperty.h>
-#include <ork/reflect/IObjectPropertyType.h>
+#include <ork/reflect/properties/IMap.h>
+#include <ork/reflect/properties/IArray.h>
+#include <ork/reflect/properties/I.h>
+#include <ork/reflect/properties/ITyped.h>
 #include <ork/reflect/properties/DirectTyped.h>
 #include <ork/rtti/downcast.h>
 
@@ -27,16 +27,16 @@ namespace ork { namespace tool { namespace ged {
 struct PropSetterObj 
 {
 	ork::Object*					mObject;
-	const reflect::IObjectProperty*	mProperty;
+	const reflect::I*	mProperty;
 
-	PropSetterObj( const reflect::IObjectProperty* prop, ork::Object* obj )
+	PropSetterObj( const reflect::I* prop, ork::Object* obj )
 		: mObject( obj ), mProperty(prop)
 	{
 	}
 
 	template <typename T> void SetValue( T val )
-	{	const reflect::IObjectPropertyType<T>* prop =
-		rtti::safe_downcast<const reflect::IObjectPropertyType<T>*>( mProperty );
+	{	const reflect::ITyped<T>* prop =
+		rtti::safe_downcast<const reflect::ITyped<T>*>( mProperty );
 		T curval;
 		prop->Get( curval, mObject );
 		if( curval != val )
@@ -48,8 +48,8 @@ struct PropSetterObj
 		mObject->Notify(&ev);
 	}
 	template <typename T> void GetValue( T& outval )
-	{	const reflect::IObjectPropertyType<T>* prop =
-		 rtti::safe_downcast<const reflect::IObjectPropertyType<T>*>( mProperty );
+	{	const reflect::ITyped<T>* prop =
+		 rtti::safe_downcast<const reflect::ITyped<T>*>( mProperty );
 		prop->Get( outval, mObject );
 	}
 };
@@ -58,16 +58,16 @@ struct PropSetterObj
 
 class IoDriverBase
 {
-	const reflect::IObjectProperty*			mprop;
+	const reflect::I*			mprop;
 	Object*									mobj;
 	ObjModel&								mmodel;
 
 public:
 
 	ork::Object* GetObject() const { return mobj; }
-	const ork::reflect::IObjectProperty* GetProp() const { return mprop; }
+	const ork::reflect::I* GetProp() const { return mprop; }
 	ObjModel& GetModel() const { return mmodel; }
-	IoDriverBase( ObjModel& Model, const reflect::IObjectProperty* prop, Object* obj );
+	IoDriverBase( ObjModel& Model, const reflect::I* prop, Object* obj );
 
 
 };
@@ -78,7 +78,7 @@ template <typename T> class GedIoDriver : public IoDriverBase
 {
 	PropSetterObj	mpso;
 public:
-	GedIoDriver( ObjModel& Model, const reflect::IObjectProperty* prop, Object* obj )
+	GedIoDriver( ObjModel& Model, const reflect::I* prop, Object* obj )
 		: IoDriverBase( Model, prop, obj )
 		, mpso( prop, obj )
 	{

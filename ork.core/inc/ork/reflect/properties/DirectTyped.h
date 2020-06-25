@@ -7,16 +7,16 @@
 
 #pragma once
 
-#include <ork/reflect/IObjectPropertyType.h>
+#include <ork/reflect/properties/ITyped.h>
 
 #include <ork/config/config.h>
 
 namespace ork { namespace reflect {
 
 template<typename T>
-class  DirectPropertyType : public IObjectPropertyType<T>
+class  DirectPropertyType : public ITyped<T>
 {
-	DECLARE_TRANSPARENT_TEMPLATE_CASTABLE(DirectPropertyType<T>, IObjectPropertyType<T>)
+	DECLARE_TRANSPARENT_TEMPLATE_CASTABLE(DirectPropertyType<T>, ITyped<T>)
     T Object::*mProperty;
 
 public:

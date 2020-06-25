@@ -12,9 +12,9 @@
 #include <orktool/ged/ged_io.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/reflect/IProperty.h>
-#include <ork/reflect/IObjectProperty.h>
-#include <ork/reflect/IObjectPropertyObject.h>
-#include <ork/reflect/IObjectPropertyType.h>
+#include <ork/reflect/properties/I.h>
+#include <ork/reflect/properties/IObject.h>
+#include <ork/reflect/properties/ITyped.h>
 #include "ged_delegate.hpp"
 #include <ork/math/TransformNode.h>
 //#include <ork/reflect/serialize/LayerDeserializer.h>
@@ -41,7 +41,7 @@ class GedTransformWidget : public GedItemNode {
   }
 
 public:
-  GedTransformWidget(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj)
+  GedTransformWidget(ObjModel& mdl, const char* name, const reflect::I* prop, ork::Object* obj)
       : GedItemNode(mdl, name, prop, obj) {
     //, ValueStrings(0)
     //, NumStrings(0)
@@ -87,7 +87,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 GedItemNode*
-GedFactoryTransform::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::IObjectProperty* prop, Object* obj)
+GedFactoryTransform::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::I* prop, Object* obj)
     const {
 
   /*ConstString anno_mkgroup = prop->GetAnnotation("editor.mktag");

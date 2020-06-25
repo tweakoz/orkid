@@ -20,13 +20,13 @@ BindObjectProperty<Interface,Implementation>::BindObjectProperty(Implementation 
 template<typename Interface, typename Implementation>
 bool BindObjectProperty<Interface,Implementation>::Serialize(ISerializer &serializer) const
 {
-    return static_cast<IObjectProperty&>(mObjectProperty).Serialize(serializer, mObject);
+    return static_cast<I&>(mObjectProperty).Serialize(serializer, mObject);
 }
 
 template<typename Interface, typename Implementation>
 bool BindObjectProperty<Interface,Implementation>::Deserialize(IDeserializer &serializer) const
 {
-    return static_cast<IObjectProperty&>(mObjectProperty).Deserialize(serializer, mObject);
+    return static_cast<I&>(mObjectProperty).Deserialize(serializer, mObject);
 }
 
 } }

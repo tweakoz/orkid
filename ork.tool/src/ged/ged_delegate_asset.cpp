@@ -14,9 +14,9 @@
 #include "ged_delegate_asset.hpp"
 #include <orktool/ged/ged_io.h>
 #include <ork/reflect/IProperty.h>
-#include <ork/reflect/IObjectProperty.h>
+#include <ork/reflect/properties/I.h>
 #include <ork/reflect/properties/DirectMapTyped.h>
-#include <ork/reflect/IObjectPropertyObject.h>
+#include <ork/reflect/properties/IObject.h>
 #include <ork/reflect/IDeserializer.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/asset/Asset.h>
@@ -33,7 +33,7 @@ namespace ork { namespace tool { namespace ged {
 
 class GedAssetObjIoDriver : public IoDriverBase {
 public:
-  GedAssetObjIoDriver(ObjModel& Model, const reflect::IObjectProperty* prop, Object* obj)
+  GedAssetObjIoDriver(ObjModel& Model, const reflect::I* prop, Object* obj)
       : IoDriverBase(Model, prop, obj) {
   }
   void SetValue(ork::Object* passet);
@@ -127,7 +127,7 @@ void GedFactoryAssetList::Describe() {
 }
 
 GedItemNode*
-GedFactoryAssetList::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::IObjectProperty* prop, Object* obj)
+GedFactoryAssetList::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::I* prop, Object* obj)
     const {
   GedAssetNode<GedAssetObjIoDriver>* itemnode = new GedAssetNode<GedAssetObjIoDriver>(mdl, Name.c_str(), prop, obj);
   itemnode->SetLabel();

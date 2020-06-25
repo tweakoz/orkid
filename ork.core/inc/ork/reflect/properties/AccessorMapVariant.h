@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/reflect/IObjectMapProperty.h>
+#include <ork/reflect/properties/IMap.h>
 #include <ork/reflect/Command.h>
 
 #include <ork/config/config.h>
@@ -31,7 +31,7 @@ private:
 	Command mAttributeCommand;
 };
 
-class  AccessorMapVariant : public IObjectMapProperty
+class  AccessorMapVariant : public IMap
 {
 	static void GetClassStatic(); // Kill inherited GetClassStatic()
 public:

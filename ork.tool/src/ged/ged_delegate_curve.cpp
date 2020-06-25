@@ -12,9 +12,9 @@
 #include <orktool/ged/ged_io.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/reflect/IProperty.h>
-#include <ork/reflect/IObjectProperty.h>
-#include <ork/reflect/IObjectPropertyObject.h>
-#include <ork/reflect/IObjectPropertyType.h>
+#include <ork/reflect/properties/I.h>
+#include <ork/reflect/properties/IObject.h>
+#include <ork/reflect/properties/ITyped.h>
 #include "ged_delegate.hpp"
 #include <ork/math/multicurve.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
@@ -445,7 +445,7 @@ class GedCurveV4Widget : public GedItemNode {
   } // virtual
 
 public:
-  GedCurveV4Widget(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj)
+  GedCurveV4Widget(ObjModel& mdl, const char* name, const reflect::I* prop, ork::Object* obj)
       : GedItemNode(mdl, name, prop, obj)
       , mCurveObject(0)
       //, mVertexBuffer( 512, 0, ork::lev2::EPrimitiveType::TRIANGLES )
@@ -454,12 +454,12 @@ public:
     mCurveObject = rtti::autocast(obj);
 
     if (0 == mCurveObject) {
-      const reflect::IObjectPropertyObject* pprop = rtti::autocast(GetOrkProp());
+      const reflect::IObject* pprop = rtti::autocast(GetOrkProp());
       mCurveObject                                = rtti::autocast(pprop->Access(GetOrkObj()));
     }
 
     if (0 == mCurveObject) {
-      const reflect::IObjectPropertyObject* pprop = rtti::autocast(GetOrkProp());
+      const reflect::IObject* pprop = rtti::autocast(GetOrkProp());
       ObjProxy<MultiCurve1D>* proxy               = rtti::autocast(pprop->Access(GetOrkObj()));
       mCurveObject                                = proxy->_parent;
     }
@@ -470,7 +470,7 @@ void GedFactoryCurve::Describe() {
 }
 
 GedItemNode*
-GedFactoryCurve::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::IObjectProperty* prop, Object* obj) const {
+GedFactoryCurve::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::I* prop, Object* obj) const {
   GedItemNode* groupnode = new GedLabelNode(mdl, "curve", prop, obj);
 
   mdl.GetGedWidget()->PushItemNode(groupnode);

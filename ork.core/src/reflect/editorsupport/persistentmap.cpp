@@ -7,10 +7,10 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/reflect/editorsupport/objectmodel.h>
 #include <ork/reflect/IProperty.h>
-#include <ork/reflect/IObjectProperty.h>
-#include <ork/reflect/IObjectMapProperty.h>
-#include <ork/reflect/IObjectArrayProperty.h>
-#include <ork/reflect/IObjectPropertyObject.h>
+#include <ork/reflect/properties/I.h>
+#include <ork/reflect/properties/IMap.h>
+#include <ork/reflect/properties/IArray.h>
+#include <ork/reflect/properties/IObject.h>
 #include <ork/reflect/properties/DirectTyped.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/rtti/downcast.h>

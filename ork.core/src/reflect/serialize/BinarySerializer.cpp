@@ -9,7 +9,7 @@
 #include <ork/reflect/serialize/BinarySerializer.h>
 #include <ork/reflect/Command.h>
 #include <ork/reflect/IProperty.h>
-#include <ork/reflect/IObjectProperty.h>
+#include <ork/reflect/properties/I.h>
 #include <ork/stream/IOutputStream.h>
 #include <ork/rtti/Category.h>
 #include <ork/rtti/downcast.h>
@@ -128,7 +128,7 @@ bool BinarySerializer::Serialize(const IProperty* prop) {
   return prop->Serialize(*this);
 }
 
-bool BinarySerializer::serializeObjectProperty(const IObjectProperty* prop, const Object* object) {
+bool BinarySerializer::serializeObjectProperty(const I* prop, const Object* object) {
   return prop->Serialize(*this, object);
 }
 

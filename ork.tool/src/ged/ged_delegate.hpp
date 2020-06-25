@@ -226,7 +226,7 @@ template <typename T> void Slider<T>::resize(int ix, int iy, int iw, int ih) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename Setter>
-GedBoolNode<Setter>::GedBoolNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj)
+GedBoolNode<Setter>::GedBoolNode(ObjModel& mdl, const char* name, const reflect::I* prop, ork::Object* obj)
     : GedItemNode(mdl, name, prop, obj)
     , mSetter(prop, obj) {
 }
@@ -284,7 +284,7 @@ template <typename Setter> void GedBoolNode<Setter>::OnMouseDoubleClicked(ork::u
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename IODriver>
-GedFloatNode<IODriver>::GedFloatNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj)
+GedFloatNode<IODriver>::GedFloatNode(ObjModel& mdl, const char* name, const reflect::I* prop, ork::Object* obj)
     : GedItemNode(mdl, name, prop, obj)
     , mIoDriver(mdl, prop, obj)
     , mLogMode(false) {
@@ -368,7 +368,7 @@ template <typename IoDriver> void GedFloatNode<IoDriver>::onDeactivate() {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename IODriver>
-GedIntNode<IODriver>::GedIntNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj)
+GedIntNode<IODriver>::GedIntNode(ObjModel& mdl, const char* name, const reflect::I* prop, ork::Object* obj)
     : GedItemNode(mdl, name, prop, obj)
     , mIoDriver(mdl, prop, obj)
     , mLogMode(false) {
@@ -448,7 +448,7 @@ template <typename IODriver> void GedFloatNode<IODriver>::OnUiEvent(ork::ui::eve
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 template <typename IODriver, typename T>
-GedSimpleNode<IODriver, T>::GedSimpleNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj)
+GedSimpleNode<IODriver, T>::GedSimpleNode(ObjModel& mdl, const char* name, const reflect::I* prop, ork::Object* obj)
     : GedItemNode(mdl, name, prop, obj)
     , mIoDriver(mdl, prop, obj) {
 }

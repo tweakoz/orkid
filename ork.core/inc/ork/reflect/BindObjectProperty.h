@@ -8,11 +8,11 @@
 #pragma once
 
 #include <ork/reflect/IProperty.h>
-#include <ork/reflect/IObjectProperty.h>
+#include <ork/reflect/properties/I.h>
 
 namespace ork { namespace reflect {
 
-template<typename Interface = IProperty, typename Implementation = IObjectProperty>
+template<typename Interface = IProperty, typename Implementation = I>
 class BindObjectProperty : public Interface
 {
 public:

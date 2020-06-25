@@ -7,13 +7,13 @@
 
 #pragma once
 
-#include <ork/reflect/IObjectArrayPropertyType.h>
+#include <ork/reflect/properties/ITypedArray.h>
 
 #include <ork/config/config.h>
 
 namespace ork { namespace reflect {
 
-template <typename T> class AccessorArrayType : public IObjectArrayPropertyType<T> {
+template <typename T> class AccessorArrayType : public ITypedArray<T> {
 public:
   AccessorArrayType(
       void (Object::*getter)(T&, size_t) const,

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/reflect/IObjectMapPropertyType.h>
+#include <ork/reflect/properties/ITypedMap.h>
 
 #include <ork/config/config.h>
 
@@ -15,12 +15,12 @@ namespace ork { namespace reflect {
 
 template<typename MapType>
 class  DirectMapPropertyType 
-	: public IObjectMapPropertyType<typename MapType::key_type, typename MapType::mapped_type>
+	: public ITypedMap<typename MapType::key_type, typename MapType::mapped_type>
 {
 public:
 	typedef typename MapType::key_type KeyType;
 	typedef typename MapType::mapped_type ValueType;
-	typedef typename IObjectMapPropertyType<KeyType, ValueType>::ItemSerializeFunction ItemSerializeFunction;
+	typedef typename ITypedMap<KeyType, ValueType>::ItemSerializeFunction ItemSerializeFunction;
 
 	DirectMapPropertyType(MapType Object::*);
 	

@@ -14,13 +14,13 @@
 #include <orktool/ged/ged_io.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/reflect/IProperty.h>
-#include <ork/reflect/IObjectProperty.h>
-#include <ork/reflect/IObjectPropertyObject.h>
+#include <ork/reflect/properties/I.h>
+#include <ork/reflect/properties/IObject.h>
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace tool { namespace ged {
 ///////////////////////////////////////////////////////////////////////////////
 
-IoDriverBase::IoDriverBase( ObjModel& Model, const reflect::IObjectProperty* prop, Object* obj )
+IoDriverBase::IoDriverBase( ObjModel& Model, const reflect::I* prop, Object* obj )
 	: mprop( prop )
 	, mmodel( Model )
 	, mobj( obj )

@@ -13,7 +13,7 @@
 #include <ork/config/config.h>
 
 namespace ork::reflect {
-class IObjectProperty;
+class I;
 }
 namespace ork { namespace object {
 
@@ -25,7 +25,7 @@ struct PropertyModifier {
   template <typename T> inline PropertyModifier* annotate(const ConstString& key, T value);
   inline PropertyModifier* Annotate(const ConstString& key, ConstString value);
   inline PropertyModifier* operator->();
-  reflect::IObjectProperty* _property = nullptr;
+  reflect::I* _property = nullptr;
 };
 
 class ObjectClass : public rtti::Class {

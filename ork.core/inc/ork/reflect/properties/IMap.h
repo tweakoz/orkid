@@ -7,15 +7,15 @@
 
 #pragma once
 
-#include <ork/reflect/IObjectProperty.h>
+#include <ork/reflect/properties/I.h>
 
 #include <ork/config/config.h>
 
 namespace ork { namespace reflect {
 
-class  IObjectMapProperty : public IObjectProperty
+class  IMap : public I
 {
-	DECLARE_TRANSPARENT_CASTABLE(IObjectMapProperty, IObjectProperty)
+	DECLARE_TRANSPARENT_CASTABLE(IMap, I)
 
 public:
 
@@ -33,7 +33,7 @@ private:
     /*virtual*/ bool Serialize(ISerializer &serializer, const Object *obj) const = 0;
 protected:
 
-	IObjectMapProperty() {}
+	IMap() {}
 };
 
 } }

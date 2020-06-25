@@ -131,7 +131,7 @@ bool AccessorMapObject<KeyType>::Deserialize(IDeserializer& deserializer, Object
     if (false == deserializer.EndCommand(attribute))
       return false;
 
-    Object* value = (object->*mAccessor)(key, IObjectMapProperty::kDeserializeInsertItem);
+    Object* value = (object->*mAccessor)(key, IMap::kDeserializeInsertItem);
 
     if (false == Object::xxxDeserialize(value, deserializer))
       return false;

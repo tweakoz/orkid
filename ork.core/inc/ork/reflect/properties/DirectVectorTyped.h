@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/reflect/IObjectArrayPropertyType.h>
+#include <ork/reflect/properties/ITypedArray.h>
 
 #include <ork/config/config.h>
 
@@ -15,7 +15,7 @@ namespace ork { namespace reflect {
 
 template<typename VectorType>
 class  DirectVectorPropertyType 
-	: public IObjectArrayPropertyType<typename VectorType::value_type>
+	: public ITypedArray<typename VectorType::value_type>
 {
 public:
 	typedef typename VectorType::value_type ValueType;

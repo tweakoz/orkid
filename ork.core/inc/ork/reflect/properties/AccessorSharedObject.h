@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/reflect/IObjectPropertySharedObject.h>
+#include <ork/reflect/properties/ISharedObject.h>
 
 #include <ork/config/config.h>
 
@@ -17,7 +17,7 @@ class Object;
 
 namespace reflect {
 
-class AccessorSharedObject : public IObjectPropertySharedObject {
+class AccessorSharedObject : public ISharedObject {
 public:
   AccessorSharedObject(object_ptr_t (Object::*)());
 

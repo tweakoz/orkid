@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/reflect/IObjectMapPropertyType.h>
+#include <ork/reflect/properties/ITypedMap.h>
 
 #include <ork/config/config.h>
 
@@ -16,10 +16,10 @@ namespace ork { namespace reflect {
 class BidirectionalSerializer;
 
 template<typename KeyType, typename ValueType>
-class  AccessorMapType : public IObjectMapPropertyType<KeyType, ValueType>
+class  AccessorMapType : public ITypedMap<KeyType, ValueType>
 {
 public:
-	typedef typename IObjectMapPropertyType<KeyType, ValueType>::ItemSerializeFunction
+	typedef typename ITypedMap<KeyType, ValueType>::ItemSerializeFunction
 		ItemSerializeFunction;
 
 	AccessorMapType(

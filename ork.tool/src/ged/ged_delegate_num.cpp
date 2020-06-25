@@ -12,9 +12,9 @@
 #include <orktool/ged/ged_io.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/reflect/IProperty.h>
-#include <ork/reflect/IObjectProperty.h>
-#include <ork/reflect/IObjectPropertyObject.h>
-#include <ork/reflect/IObjectPropertyType.h>
+#include <ork/reflect/properties/I.h>
+#include <ork/reflect/properties/IObject.h>
+#include <ork/reflect/properties/ITyped.h>
 #include "ged_delegate.hpp"
 ///////////////////////////////////////////////////////////////////////////////
 template class ork::tool::ged::GedBoolNode<ork::tool::ged::PropSetterObj>;
