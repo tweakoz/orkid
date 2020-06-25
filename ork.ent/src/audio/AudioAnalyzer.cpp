@@ -362,9 +362,9 @@ void EnumerateMidiDevices()
 	{
 		MIDIDeviceRef dev = MIDIGetExternalDevice(i);
 
-		MIDIObjectGetStringProperty(dev, kMIDIPropertyName, &pname);
-		MIDIObjectGetStringProperty(dev, kMIDIPropertyManufacturer, &pmanuf);
-		MIDIObjectGetStringProperty(dev, kMIDIPropertyModel, &pmodel);
+		MIDIObjectGetStringProperty(dev, kMIDAbstractPropertyName, &pname);
+		MIDIObjectGetStringProperty(dev, kMIDAbstractPropertyManufacturer, &pmanuf);
+		MIDIObjectGetStringProperty(dev, kMIDAbstractPropertyModel, &pmodel);
 		CFStringGetCString(pname, name, sizeof(name), 0);
 		CFStringGetCString(pmanuf, manuf, sizeof(manuf), 0);
 		CFStringGetCString(pmodel, model, sizeof(model), 0);

@@ -34,7 +34,7 @@ public:
       const ObjectProperty* prop, //
       const Object* object) override;
 
-  bool Serialize(const IProperty* prop) override;
+  bool Serialize(const AbstractProperty* prop) override;
 
   void Hint(const PieceString&) override;
   void Hint(const PieceString&, intptr_t ival) override;

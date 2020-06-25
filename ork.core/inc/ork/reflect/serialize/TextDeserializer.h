@@ -28,7 +28,7 @@ public:
   bool Deserialize(ResizableString&) override;
   bool DeserializeData(unsigned char*, size_t) override;
 
-  bool Deserialize(const IProperty*) override;
+  bool Deserialize(const AbstractProperty*) override;
   bool deserializeObjectProperty(const ObjectProperty*, Object*) override;
   bool deserializeObject(rtti::ICastable*&) override;
   bool deserializeSharedObject(rtti::castable_ptr_t&) override;

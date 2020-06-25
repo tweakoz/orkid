@@ -39,7 +39,7 @@ public:
   // bool serializeObjectWithCategory(
   //  const rtti::Category* cat, //
   // const rtti::ICastable* object) override;
-  bool Serialize(const IProperty*) override;
+  bool Serialize(const AbstractProperty*) override;
 
   bool SerializeData(unsigned char*, size_t size) override;
 

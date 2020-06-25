@@ -16,9 +16,9 @@ namespace ork { namespace reflect {
 class ISerializer;
 class IDeserializer;
 
-class  IProperty : public rtti::ICastable
+class  AbstractProperty : public rtti::ICastable
 {
-	DECLARE_TRANSPARENT_CASTABLE(IProperty, rtti::ICastable)
+	DECLARE_TRANSPARENT_CASTABLE(AbstractProperty, rtti::ICastable)
 public:
     virtual bool Deserialize(IDeserializer &) const = 0;
     virtual bool Serialize(ISerializer &) const = 0;

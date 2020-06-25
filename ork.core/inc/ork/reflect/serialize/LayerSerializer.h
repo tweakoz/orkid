@@ -8,7 +8,7 @@
 #pragma once
 
 #include <ork/reflect/ISerializer.h>
-#include <ork/reflect/properties/IProperty.h>
+#include <ork/reflect/properties/AbstractProperty.h>
 #include <ork/reflect/properties/ObjectProperty.h>
 #include <ork/reflect/Command.h>
 #include <ork/rtti/Category.h>
@@ -36,7 +36,7 @@ public:
 
   bool SerializeData(unsigned char*, size_t) override;
 
-  bool Serialize(const IProperty*) override;
+  bool Serialize(const AbstractProperty*) override;
   bool serializeObject(const rtti::ICastable*) override;
   bool serializeObjectProperty(const ObjectProperty*, const Object*) override;
   // bool serializeObjectWithCategory(
@@ -100,7 +100,7 @@ inline bool LayerSerializer::SerializeData(unsigned char* data, size_t size) {
   return mSerializer.SerializeData(data, size);
 }
 
-inline bool LayerSerializer::Serialize(const IProperty* prop) {
+inline bool LayerSerializer::Serialize(const AbstractProperty* prop) {
   return prop->Serialize(*this);
 }
 

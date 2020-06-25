@@ -8,7 +8,7 @@
 #include <ork/pch.h>
 #include <ork/reflect/serialize/BinarySerializer.h>
 #include <ork/reflect/Command.h>
-#include <ork/reflect/properties/IProperty.h>
+#include <ork/reflect/properties/AbstractProperty.h>
 #include <ork/reflect/properties/ObjectProperty.h>
 #include <ork/stream/IOutputStream.h>
 #include <ork/rtti/Category.h>
@@ -124,7 +124,7 @@ bool BinarySerializer::Serialize(const bool& value) {
   return Write(value);
 }
 
-bool BinarySerializer::Serialize(const IProperty* prop) {
+bool BinarySerializer::Serialize(const AbstractProperty* prop) {
   return prop->Serialize(*this);
 }
 

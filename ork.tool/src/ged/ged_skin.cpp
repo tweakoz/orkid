@@ -12,7 +12,7 @@
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/math/misc_math.h>
 #include <ork/reflect/properties/ObjectProperty.h>
-#include <ork/reflect/properties/IProperty.h>
+#include <ork/reflect/properties/AbstractProperty.h>
 #include <orktool/ged/ged.h>
 #include <orktool/ged/ged_delegate.h>
 #include <orktool/qtui/qtmainwin.h>

@@ -9,7 +9,7 @@
 
 #include <ork/reflect/serialize/NullSerializer.h>
 
-#include <ork/reflect/properties/IProperty.h>
+#include <ork/reflect/properties/AbstractProperty.h>
 #include <ork/reflect/properties/ObjectProperty.h>
 #include <ork/rtti/Category.h>
 
@@ -60,7 +60,7 @@ bool NullSerializer::SerializeData(unsigned char*, size_t) {
   return true;
 }
 
-bool NullSerializer::Serialize(const IProperty* prop) {
+bool NullSerializer::Serialize(const AbstractProperty* prop) {
   return prop->Serialize(*this);
 }
 

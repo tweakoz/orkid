@@ -17,7 +17,7 @@ class ICastable;
 
 namespace ork { namespace reflect {
 
-class IProperty;
+class AbstractProperty;
 class ObjectProperty;
 class IArray;
 class Command;
@@ -37,7 +37,7 @@ public:
   virtual void Hint(const PieceString&)                = 0;
   virtual void Hint(const PieceString&, intptr_t ival) = 0;
 
-  virtual bool Serialize(const IProperty*) = 0;
+  virtual bool Serialize(const AbstractProperty*) = 0;
 
   virtual bool serializeObject(const rtti::ICastable*) = 0;
   inline bool serializeSharedObject(rtti::castable_constptr_t obj) {

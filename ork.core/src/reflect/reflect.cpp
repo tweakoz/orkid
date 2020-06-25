@@ -8,7 +8,7 @@
 
 #include <ork/reflect/properties/IObject.h>
 #include <ork/reflect/properties/ISharedObject.h>
-#include <ork/reflect/properties/ITypedProperty.hpp>
+#include <ork/reflect/properties/AbstractTypedProperty.hpp>
 #include <ork/reflect/properties/ITyped.hpp>
 
 #include <ork/reflect/properties/IArray.h>
@@ -116,7 +116,7 @@ using namespace reflect;
   FOREACH_PRIMITIVE_TYPE(MACRO, AccessorTypedArray);
 
 #define FOREACH_RTTI_PROPERTY_TYPE(MACRO)                                                                                          \
-  MACRO(IProperty);                                                                                                                \
+  MACRO(AbstractProperty);                                                                                                                \
   MACRO(ObjectProperty);                                                                                                           \
   MACRO(IObject);                                                                                                                  \
   MACRO(ISharedObject);                                                                                                            \

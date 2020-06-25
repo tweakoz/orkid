@@ -8,7 +8,7 @@
 #include <ork/pch.h>
 #include <ork/reflect/serialize/XMLDeserializer.h>
 #include <ork/reflect/Command.h>
-#include <ork/reflect/properties/IProperty.h>
+#include <ork/reflect/properties/AbstractProperty.h>
 #include <ork/reflect/properties/ObjectProperty.h>
 #include <ork/rtti/Class.h>
 #include <ork/rtti/Category.h>
@@ -172,7 +172,7 @@ bool XMLDeserializer::Deserialize(bool& value) {
   return result;
 }
 
-bool XMLDeserializer::Deserialize(const IProperty* prop) {
+bool XMLDeserializer::Deserialize(const AbstractProperty* prop) {
   return prop->Deserialize(*this);
 }
 

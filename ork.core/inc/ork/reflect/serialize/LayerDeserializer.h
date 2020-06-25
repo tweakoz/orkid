@@ -8,7 +8,7 @@
 #pragma once
 
 #include <ork/reflect/IDeserializer.h>
-#include <ork/reflect/properties/IProperty.h>
+#include <ork/reflect/properties/AbstractProperty.h>
 #include <ork/reflect/properties/ObjectProperty.h>
 #include <ork/reflect/Command.h>
 
@@ -36,7 +36,7 @@ public:
   bool Deserialize(ResizableString&) override;
   bool DeserializeData(unsigned char*, size_t) override;
 
-  bool Deserialize(const IProperty*) override;
+  bool Deserialize(const AbstractProperty*) override;
   bool deserializeObject(rtti::castable_rawptr_t&) override;
   bool deserializeSharedObject(rtti::castable_ptr_t&) override;
   bool deserializeObjectProperty(const ObjectProperty*, Object*) override;
@@ -93,7 +93,7 @@ inline bool LayerDeserializer::deserializeSharedObject(rtti::castable_ptr_t& val
   return mDeserializer.deserializeSharedObject(value);
 }
 
-inline bool LayerDeserializer::Deserialize(const IProperty* prop) {
+inline bool LayerDeserializer::Deserialize(const AbstractProperty* prop) {
   return prop->Deserialize(*this);
 }
 

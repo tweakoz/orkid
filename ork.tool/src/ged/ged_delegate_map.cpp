@@ -13,7 +13,7 @@
 #include <orktool/ged/ged_delegate.h>
 #include "ged_delegate_asset.hpp"
 #include <orktool/ged/ged_io.h>
-#include <ork/reflect/properties/IProperty.h>
+#include <ork/reflect/properties/AbstractProperty.h>
 #include <ork/reflect/properties/ObjectProperty.h>
 #include <ork/reflect/properties/IMap.h>
 #include <ork/reflect/properties/IObject.h>

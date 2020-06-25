@@ -8,7 +8,7 @@
 #include <ork/pch.h>
 #include <ork/reflect/serialize/BinaryDeserializer.h>
 #include <ork/reflect/Command.h>
-#include <ork/reflect/properties/IProperty.h>
+#include <ork/reflect/properties/AbstractProperty.h>
 #include <ork/reflect/properties/ObjectProperty.h>
 #include <ork/rtti/Class.h>
 #include <ork/rtti/Category.h>
@@ -88,7 +88,7 @@ bool BinaryDeserializer::Deserialize(bool& value) {
   return Read(value);
 }
 
-bool BinaryDeserializer::Deserialize(const IProperty* prop) {
+bool BinaryDeserializer::Deserialize(const AbstractProperty* prop) {
   return prop->Deserialize(*this);
 }
 

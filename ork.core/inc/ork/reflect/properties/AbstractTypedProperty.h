@@ -7,14 +7,14 @@
 
 #pragma once
 
-#include <ork/reflect/properties/IProperty.h>
+#include <ork/reflect/properties/AbstractProperty.h>
 
 #include <ork/config/config.h>
 
 namespace ork { namespace reflect {
 
 template<typename T>
-class  ITypedProperty : public IProperty
+class  AbstractTypedProperty : public AbstractProperty
 {
 	static void GetClassStatic(); // Kill inherited GetClassStatic()
 public:

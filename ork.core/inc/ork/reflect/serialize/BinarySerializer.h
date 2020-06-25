@@ -35,7 +35,7 @@ public:
 
   bool SerializeData(unsigned char*, size_t size) override;
 
-  bool Serialize(const IProperty*) override;
+  bool Serialize(const AbstractProperty*) override;
 
   bool serializeObject(const rtti::ICastable*) override;
   bool serializeObjectProperty(const ObjectProperty*, const Object*) override;
