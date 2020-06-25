@@ -84,8 +84,10 @@ class Category;
 } // namespace rtti
 
 class Object;
-using object_ptr_t      = std::shared_ptr<Object>;
-using object_constptr_t = std::shared_ptr<const Object>;
+using object_ptr_t         = std::shared_ptr<Object>;
+using object_constptr_t    = std::shared_ptr<const Object>;
+using object_rawptr_t      = Object*;
+using object_rawconstptr_t = const Object*;
 
 ///////////////////////////////////////////////////////////////////////////////
 

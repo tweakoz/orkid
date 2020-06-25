@@ -43,16 +43,14 @@ public:
   inline bool serializeSharedObject(rtti::castable_constptr_t obj) {
     return serializeObject(obj.get());
   }
-  // virtual bool serializeObjectWithCategory(
-  //  const rtti::Category* cat, //
-  // const rtti::ICastable* object)                                          = 0;
   virtual bool serializeObjectProperty(const ObjectProperty*, const Object*) = 0;
 
   virtual bool SerializeData(unsigned char*, size_t) = 0;
 
-  virtual bool ReferenceObject(const rtti::ICastable*) = 0;
-  virtual bool BeginCommand(const Command&)            = 0;
-  virtual bool EndCommand(const Command&)              = 0;
+  virtual bool referenceObject(object_constptr_t)    = 0;
+  virtual bool referenceObject(object_rawconstptr_t) = 0;
+  virtual bool BeginCommand(const Command&)          = 0;
+  virtual bool EndCommand(const Command&)            = 0;
 
   virtual ~ISerializer();
 };

@@ -41,7 +41,7 @@ public:
 
   bool SerializeData(unsigned char*, size_t size) override;
 
-  bool ReferenceObject(const rtti::ICastable*) override;
+  bool referenceObject(const rtti::ICastable*) override;
   bool BeginCommand(const Command&) override;
   bool EndCommand(const Command&) override;
 
