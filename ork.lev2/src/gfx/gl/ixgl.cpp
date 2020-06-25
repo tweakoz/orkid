@@ -356,7 +356,8 @@ void ContextGL::GLinit() {
 std::string GetGlErrorString(void);
 
 void OpenGlContextInit() {
-  GfxEnv::setContextClass(ContextGL::GetClassStatic());
+  auto clazz = dynamic_cast<object::ObjectClass*>(ContextGL::GetClassStatic());
+  GfxEnv::setContextClass(clazz);
   ContextGL::GLinit();
   auto target = new ContextGL;
   target->initializeLoaderContext();
