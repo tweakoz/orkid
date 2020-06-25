@@ -9,8 +9,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <orktool/ged/ged.h>
 #include <orktool/ged/ged_delegate.h>
-#include <ork/reflect/IProperty.h>
-#include <ork/reflect/properties/I.h>
+#include <ork/reflect/properties/IProperty.h>
+#include <ork/reflect/properties/ObjectProperty.h>
 #include <ork/reflect/properties/IObject.h>
 #include <ork/lev2/gfx/pickbuffer.h>
 #include <ork/lev2/gfx/rtgroup.h>

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/reflect/IPropertyType.h>
+#include <ork/reflect/properties/ITypedProperty.h>
 #include <ork/reflect/properties/ITyped.h>
 #include <ork/reflect/BindObjectProperty.h>
 
@@ -20,7 +20,7 @@ namespace reflect {
 
 class ISerializer;
 
-template<typename T, typename Interface = IPropertyType<T>, typename Implementation = ITyped<T> >
+template<typename T, typename Interface = ITypedProperty<T>, typename Implementation = ITyped<T> >
 class BindObjectPropertyType : public BindObjectProperty<Interface, Implementation>
 {
 public:

@@ -8,8 +8,8 @@
 #pragma once
 
 #include <ork/reflect/IDeserializer.h>
-#include <ork/reflect/IProperty.h>
-#include <ork/reflect/properties/I.h>
+#include <ork/reflect/properties/IProperty.h>
+#include <ork/reflect/properties/ObjectProperty.h>
 #include <ork/reflect/Command.h>
 
 #include <ork/rtti/Category.h>

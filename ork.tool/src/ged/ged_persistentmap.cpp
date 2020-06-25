@@ -13,8 +13,8 @@
 #include <orktool/ged/ged.h>
 #include <orktool/ged/ged_delegate.h>
 #include <orktool/ged/ged_io.h>
-#include <ork/reflect/IProperty.h>
-#include <ork/reflect/properties/I.h>
+#include <ork/reflect/properties/IProperty.h>
+#include <ork/reflect/properties/ObjectProperty.h>
 #include <ork/reflect/properties/IMap.h>
 #include <ork/reflect/properties/IArray.h>
 #include <ork/reflect/properties/IObject.h>

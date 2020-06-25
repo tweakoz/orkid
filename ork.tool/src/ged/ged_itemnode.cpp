@@ -8,8 +8,8 @@
 #include <orktool/qtui/qtui_tool.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <orktool/qtui/qtmainwin.h>
-#include <ork/reflect/IProperty.h>
-#include <ork/reflect/properties/I.h>
+#include <ork/reflect/properties/IProperty.h>
+#include <ork/reflect/properties/ObjectProperty.h>
 #include <orktool/ged/ged.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 

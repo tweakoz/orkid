@@ -8,7 +8,7 @@
 #pragma once
 
 #include <cstddef>
-#include <ork/reflect/properties/I.h>
+#include <ork/reflect/properties/ObjectProperty.h>
 
 #include <ork/config/config.h>
 

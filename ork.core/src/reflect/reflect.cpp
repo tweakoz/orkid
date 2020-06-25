@@ -8,7 +8,7 @@
 
 #include <ork/reflect/properties/IObject.h>
 #include <ork/reflect/properties/ISharedObject.h>
-#include <ork/reflect/IPropertyType.hpp>
+#include <ork/reflect/properties/ITypedProperty.hpp>
 #include <ork/reflect/properties/ITyped.hpp>
 
 #include <ork/reflect/properties/IArray.h>

@@ -9,7 +9,7 @@
 #include <ork/object/Object.h>
 #include <ork/object/ObjectClass.h>
 #include <ork/rtti/downcast.h>
-#include <ork/reflect/properties/I.h>
+#include <ork/reflect/properties/ObjectProperty.h>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::object::ObjectClass, "ObjectClass");
 

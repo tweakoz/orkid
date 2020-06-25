@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/reflect/IPropertyType.h>
+#include <ork/reflect/properties/ITypedProperty.h>
 #include <ork/reflect/ISerializer.h>
 #include <ork/reflect/IDeserializer.h>
 #include <ork/reflect/BidirectionalSerializer.h>
@@ -15,7 +15,7 @@
 namespace ork { namespace reflect {
 
 template<typename T>
-/*virtual*/ bool IPropertyType<T>::Deserialize(IDeserializer &serializer) const
+/*virtual*/ bool ITypedProperty<T>::Deserialize(IDeserializer &serializer) const
 {
     T value;
     bool result = serializer.Deserialize(value);
@@ -29,7 +29,7 @@ template<typename T>
 }
 
 template<typename T>
-/*virtual*/ bool IPropertyType<T>::Serialize(ISerializer &serializer) const
+/*virtual*/ bool ITypedProperty<T>::Serialize(ISerializer &serializer) const
 {
     T value;
     Get(value);

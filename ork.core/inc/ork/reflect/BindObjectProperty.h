@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include <ork/reflect/IProperty.h>
-#include <ork/reflect/properties/I.h>
+#include <ork/reflect/properties/IProperty.h>
+#include <ork/reflect/properties/ObjectProperty.h>
 
 namespace ork { namespace reflect {
 

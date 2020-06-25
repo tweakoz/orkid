@@ -15,7 +15,7 @@
 #include <ork/stream/StringInputStream.h>
 #include <ork/reflect/properties/IMap.h>
 #include <ork/reflect/properties/IArray.h>
-#include <ork/reflect/properties/I.h>
+#include <ork/reflect/properties/ObjectProperty.h>
 #include <ork/reflect/properties/ITyped.h>
 #include <ork/reflect/properties/DirectTyped.h>
 #include <ork/rtti/downcast.h>
