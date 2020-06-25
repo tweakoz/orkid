@@ -57,7 +57,6 @@ private:
 
   stream::InputStreamBuffer<1024 * 4> mStream;
   trackervect_t _reftracker;
-  // orkvector<rtti::castable_ptr_t> _deserializedSHARED;
 
   void EatSpace();
   void Advance(int n = 1);

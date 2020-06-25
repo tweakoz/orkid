@@ -135,7 +135,7 @@ bool BinaryDeserializer::deserializeSharedObject(rtti::castable_ptr_t& object) {
 }
 bool BinaryDeserializer::deserializeObject(rtti::castable_rawptr_t& object) {
   if (Match('N')) {
-    object = NULL;
+    object = nullptr;
     return true;
   }
   if (Match('B')) {

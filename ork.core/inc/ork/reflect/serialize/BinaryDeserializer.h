@@ -48,7 +48,8 @@ private:
   bool Match(char c);
 
   stream::InputStreamBuffer<1> mStream;
-  orkvector<rtti::ICastable*> mDeserializedObjects;
+  using trackervect_t = std::unordered_map<std::string, rtti::castable_rawptr_t>;
+  trackervect_t _reftracker;
   const Command* mCurrentCommand;
   StringPool mStringPool;
 };
