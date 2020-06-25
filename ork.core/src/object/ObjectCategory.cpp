@@ -40,6 +40,7 @@ bool ObjectCategory::deserializeObject(
   bool cmdok = deserializer.BeginCommand(command);
   OrkAssert(cmdok);
   OrkAssert(command.Type() == reflect::Command::EOBJECT);
+  printf("classname<%s>\n", command.Name().c_str());
   Class* the_class = rtti::Class::FindClass(command.Name());
   OrkAssert(the_class);
   ObjectClass* clazz = rtti::downcast<ObjectClass*>(the_class);
@@ -62,6 +63,7 @@ bool ObjectCategory::deserializeObject(
   bool cmdok = deserializer.BeginCommand(command);
   OrkAssert(cmdok);
   OrkAssert(command.Type() == reflect::Command::EOBJECT);
+  printf("classname<%s>\n", command.Name().c_str());
   Class* the_class = rtti::Class::FindClass(command.Name());
   OrkAssert(the_class);
   ObjectClass* clazz = rtti::downcast<ObjectClass*>(the_class);

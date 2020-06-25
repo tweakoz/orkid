@@ -7,6 +7,8 @@
 
 #pragma once
 #include "RegisterProperty.h"
+#include <ork/reflect/properties/DirectSharedObjectMap.inl>
+
 namespace ork::object {
 ///////////////////////////////////////////////////////////////////////////
 template <typename T> inline PropertyModifier* PropertyModifier::annotate(const ConstString& key, T value) {
@@ -30,6 +32,15 @@ inline object::PropertyModifier object::ObjectClass::memberProperty(const char* 
   object::PropertyModifier modder;
   auto typed_member = static_cast<MemberType Object::*>(member);
   modder._property  = new reflect::DirectTyped<MemberType>(typed_member);
+  _description.AddProperty(name, modder._property);
+  return modder;
+}
+///////////////////////////////////////////////////////////////////////////
+template <typename ClassType, typename MemberType>
+inline object::PropertyModifier object::ObjectClass::sharedObjectMapProperty(const char* name, MemberType ClassType::*member) {
+  object::PropertyModifier modder;
+  auto typed_member = static_cast<MemberType Object::*>(member);
+  modder._property  = new reflect::DirectSharedObjectMap(typed_member);
   _description.AddProperty(name, modder._property);
   return modder;
 }

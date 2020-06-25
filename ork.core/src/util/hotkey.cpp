@@ -429,8 +429,9 @@ boost::Crc64 HotKey::GetHash() const {
 
 void HotKeyConfiguration::describeX(object::ObjectClass* clazz) {
 
-  //  clazz->memberProperty("HotKeys", &HotKeyConfiguration::_hotkeys);
-  // ork::reflect::annotatePropertyForEditor<HotKeyConfiguration>("HotKeys", "editor.factorylistbase", "HotKey");
+  clazz
+      ->sharedObjectMapProperty("HotKeys", &HotKeyConfiguration::_hotkeys) //
+      ->annotate<ConstString>("editor.factorylistbase", "HotKey");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
