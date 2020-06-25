@@ -13,8 +13,8 @@
 #include <pkg/ent/componenttable.h>
 
 #include <ork/kernel/orklut.hpp>
-#include <ork/reflect/properties/DirectMapTyped.hpp>
-#include <ork/reflect/properties/DirectVectorTyped.hpp>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
+#include <ork/reflect/properties/DirectTypedVector.hpp>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/application/application.h>
 

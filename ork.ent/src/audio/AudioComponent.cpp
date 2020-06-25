@@ -13,7 +13,7 @@
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/reflect/properties/DirectTyped.hpp>
-#include <ork/reflect/properties/DirectMapTyped.hpp>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/kernel/orklut.hpp>
 #include <ork/kernel/core_interface.h>
 #include <pkg/ent/event/StartAudioEffectEvent.h>

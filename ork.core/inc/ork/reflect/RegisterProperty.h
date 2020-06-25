@@ -17,13 +17,13 @@
 #include <ork/reflect/properties/AccessorArrayObject.h>
 #include <ork/reflect/properties/AccessorArrayType.h>
 #include <ork/reflect/properties/AccessorArrayVariant.h>
-#include <ork/reflect/properties/DirectArrayTyped.h>
-#include <ork/reflect/properties/DirectVectorTyped.h>
+#include <ork/reflect/properties/DirectTypedArray.h>
+#include <ork/reflect/properties/DirectTypedVector.h>
 
 #include <ork/reflect/properties/AccessorMapObject.h>
 #include <ork/reflect/properties/AccessorMapType.h>
 #include <ork/reflect/properties/AccessorMapVariant.h>
-#include <ork/reflect/properties/DirectMapTyped.h>
+#include <ork/reflect/properties/DirectTypedMap.h>
 #include <ork/reflect/Functor.h>
 
 #include <ork/object/Object.h>

@@ -22,7 +22,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/reflect/properties/AccessorTyped.hpp>
-#include <ork/reflect/properties/DirectMapTyped.hpp>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/reflect/properties/DirectTyped.hpp>
 ///////////////////////////////////////////////////////////////////////////////
 #include "Skybox.h"

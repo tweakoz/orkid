@@ -10,10 +10,10 @@
 #include <ork/lev2/gfx/particle/particle.h>
 #include <ork/lev2/gfx/particle/particle.hpp>
 #include <ork/reflect/RegisterProperty.h>
-#include <ork/reflect/properties/DirectMapTyped.h>
+#include <ork/reflect/properties/DirectTypedMap.h>
 #include <ork/reflect/properties/ITyped.hpp>
 #include <ork/reflect/properties/DirectTyped.hpp>
-#include <ork/reflect/properties/DirectMapTyped.hpp>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/reflect/enum_serializer.inl>
 #include <ork/kernel/orklut.hpp>
 #include <ork/kernel/fixedlut.hpp>

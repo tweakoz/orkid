@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/reflect/properties/DirectArrayTyped.h>
+#include <ork/reflect/properties/DirectTypedArray.h>
 #include <ork/reflect/properties/ITypedArray.hpp>
 
 namespace ork { namespace reflect {

@@ -21,7 +21,7 @@
 #include <ork/reflect/editorsupport/objectmodel.h>
 
 #include <ork/kernel/orklut.hpp>
-#include <ork/reflect/properties/DirectMapTyped.hpp>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
 
 #include <ork/file/path.h>
 #include <ork/util/crc.h>

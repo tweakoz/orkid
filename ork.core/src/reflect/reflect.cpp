@@ -13,7 +13,7 @@
 
 #include <ork/reflect/properties/IArray.h>
 #include <ork/reflect/properties/IMap.h>
-#include <ork/reflect/properties/DirectMapTyped.hpp>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/reflect/properties/IObjectArray.h>
 
 #include <ork/reflect/properties/ITyped.hpp>
@@ -26,7 +26,7 @@
 #include <ork/reflect/properties/AccessorMapType.hpp>
 
 #include <ork/reflect/properties/ITypedArray.hpp>
-#include <ork/reflect/properties/DirectArrayTyped.hpp>
+#include <ork/reflect/properties/DirectTypedArray.hpp>
 #include <ork/reflect/properties/AccessorArrayType.hpp>
 
 #include <ork/kernel/string/ConstString.h>

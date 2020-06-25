@@ -17,8 +17,8 @@
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/kernel/timer.h>
 #include <ork/reflect/RegisterProperty.h>
-#include <ork/reflect/properties/DirectMapTyped.h>
-#include <ork/reflect/properties/DirectMapTyped.hpp>
+#include <ork/reflect/properties/DirectTypedMap.h>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
 #include <orktool/toolcore/dataflow.h>

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/reflect/properties/DirectMapTyped.h>
+#include <ork/reflect/properties/DirectTypedMap.h>
 #include <ork/reflect/properties/ITypedMap.hpp>
 #include <ork/kernel/core_interface.h>
 

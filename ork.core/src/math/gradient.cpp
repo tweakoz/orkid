@@ -16,7 +16,7 @@
 #include <ork/reflect/enum_serializer.inl>
 #include <ork/reflect/properties/DirectTyped.h>
 #include <ork/reflect/properties/DirectTyped.hpp>
-#include <ork/reflect/properties/DirectMapTyped.hpp>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <math.h>
 
 ///////////////////////////////////////////////////////////////////////////////

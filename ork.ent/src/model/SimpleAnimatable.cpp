@@ -8,7 +8,7 @@
 #include <ork/pch.h>
 
 #include <ork/reflect/RegisterProperty.h>
-#include <ork/reflect/properties/DirectMapTyped.hpp>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/kernel/orklut.hpp>
 
 #include <pkg/ent/entity.h>

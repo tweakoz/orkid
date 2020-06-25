@@ -21,7 +21,7 @@
 #include <pkg/ent/ParticleControllable.h>
 #include <ork/reflect/enum_serializer.inl>
 #include <ork/reflect/properties/DirectTyped.hpp>
-#include <ork/reflect/properties/DirectMapTyped.hpp>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/kernel/orklut.hpp>
 #include <pkg/ent/dataflow.h>
 

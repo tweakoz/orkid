@@ -11,7 +11,7 @@
 #include <ork/math/collision_test.h>
 #include <ork/math/sphere.h>
 
-#include <ork/reflect/properties/DirectMapTyped.hpp>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/kernel/orklut.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////

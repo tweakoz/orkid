@@ -18,7 +18,7 @@
 #include <ork/stream/StringInputStream.h>
 #include <ork/reflect/serialize/XMLDeserializer.h>
 #include <ork/reflect/serialize/XMLSerializer.h>
-#include <ork/reflect/properties/DirectMapTyped.hpp>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/reflect/RegisterPropertyX.inl>
 
 #include <fcntl.h>

@@ -7,7 +7,7 @@
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 
 #include <ork/reflect/RegisterProperty.h>
-#include <ork/reflect/properties/DirectMapTyped.h>
+#include <ork/reflect/properties/DirectTypedMap.h>
 #include <ork/reflect/properties/DirectTyped.hpp>
 
 #include <ork/reflect/enum_serializer.inl>

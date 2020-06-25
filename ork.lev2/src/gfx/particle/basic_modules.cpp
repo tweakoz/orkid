@@ -16,7 +16,7 @@
 #include <ork/reflect/enum_serializer.inl>
 #include <ork/math/collision_test.h>
 #include <ork/reflect/properties/DirectTyped.hpp>
-#include <ork/reflect/properties/DirectMapTyped.hpp>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/kernel/orklut.hpp>
 #include <ork/lev2/gfx/particle/modular_particles.h>
 #include <ork/lev2/lev2_asset.h>

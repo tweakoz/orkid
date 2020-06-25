@@ -11,10 +11,10 @@
 #include <ork/application/application.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/reflect/properties/AccessorTyped.hpp>
-#include <ork/reflect/properties/DirectMapTyped.h>
-#include <ork/reflect/properties/DirectMapTyped.hpp>
-#include <ork/reflect/properties/DirectVectorTyped.h>
-#include <ork/reflect/properties/DirectVectorTyped.hpp>
+#include <ork/reflect/properties/DirectTypedMap.h>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
+#include <ork/reflect/properties/DirectTypedVector.h>
+#include <ork/reflect/properties/DirectTypedVector.hpp>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/rtti/RTTI.h>
 #include <ork/rtti/downcast.h>

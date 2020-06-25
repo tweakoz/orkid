@@ -10,8 +10,8 @@
 #include <ork/pch.h>
 #include <ork/math/multicurve.h>
 #include <ork/reflect/RegisterProperty.h>
-#include <ork/reflect/properties/DirectMapTyped.hpp>
-#include <ork/reflect/properties/DirectVectorTyped.hpp>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
+#include <ork/reflect/properties/DirectTypedVector.hpp>
 #include <ork/reflect/enum_serializer.inl>
 #include <math.h>
 

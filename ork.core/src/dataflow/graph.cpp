@@ -15,7 +15,7 @@
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/kernel/orklut.hpp>
 #include <ork/reflect/properties/AccessorTyped.hpp>
-#include <ork/reflect/properties/DirectMapTyped.hpp>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
 ///////////////////////////////////////////////////////////////////////////////
 INSTANTIATE_TRANSPARENT_RTTI(ork::dataflow::graph_data,"dflow/graphdata");
 INSTANTIATE_TRANSPARENT_RTTI(ork::dataflow::graph_inst,"dflow/graph");

@@ -23,7 +23,7 @@
 #include <orktool/ged/ged_io.h>
 
 #include <ork/kernel/orklut.hpp>
-#include <ork/reflect/properties/DirectMapTyped.hpp>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <pkg/ent/scene.h>
 
 #include <ork/util/crc.h>

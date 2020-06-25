@@ -23,7 +23,7 @@
 #include <ork/rtti/downcast.h>
 
 #include <ork/kernel/orklut.hpp>
-#include <ork/reflect/properties/DirectMapTyped.hpp>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
 
 #include <ork/util/crc.h>
 

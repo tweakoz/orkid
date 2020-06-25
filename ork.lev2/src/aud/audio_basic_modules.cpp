@@ -20,7 +20,7 @@
 #include <ork/application/application.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/reflect/properties/DirectTyped.hpp>
-#include <ork/reflect/properties/DirectMapTyped.hpp>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/stream/FileInputStream.h>
 #include <ork/stream/StringInputStream.h>
 #include <ork/reflect/serialize/XMLDeserializer.h>
