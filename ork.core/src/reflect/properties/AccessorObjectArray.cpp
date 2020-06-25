@@ -6,7 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
-#include <ork/reflect/properties/AccessorArrayObject.h>
+#include <ork/reflect/properties/AccessorObjectArray.h>
 #include <ork/reflect/Command.h>
 #include <ork/reflect/IDeserializer.h>
 #include <ork/reflect/ISerializer.h>
@@ -15,7 +15,7 @@
 namespace ork { namespace reflect {
 
 ////////////////////////////////////////////////////////////////
-AccessorArrayObject::AccessorArrayObject(
+AccessorObjectArray::AccessorObjectArray(
     Object* (Object::*accessor)(size_t),
     size_t (Object::*counter)() const,
     void (Object::*resizer)(size_t))
@@ -24,23 +24,23 @@ AccessorArrayObject::AccessorArrayObject(
     , mResizer(resizer) {
 }
 ////////////////////////////////////////////////////////////////
-Object* AccessorArrayObject::AccessObject(
+Object* AccessorObjectArray::AccessObject(
     Object* object, //
     size_t index) const {
   return (object->*mAccessor)(index);
 }
 ////////////////////////////////////////////////////////////////
-const Object* AccessorArrayObject::AccessObject(
+const Object* AccessorObjectArray::AccessObject(
     const Object* object, //
     size_t index) const {
   return (const_cast<Object*>(object)->*mAccessor)(index);
 }
 ////////////////////////////////////////////////////////////////
-size_t AccessorArrayObject::Count(const Object* object) const {
+size_t AccessorObjectArray::Count(const Object* object) const {
   return (object->*mCounter)();
 }
 ////////////////////////////////////////////////////////////////
-bool AccessorArrayObject::DeserializeItem(
+bool AccessorObjectArray::DeserializeItem(
     IDeserializer& deserializer, //
     Object* parent_object,
     size_t index) const {
@@ -67,7 +67,7 @@ bool AccessorArrayObject::DeserializeItem(
   return true;
 }
 ////////////////////////////////////////////////////////////////
-bool AccessorArrayObject::SerializeItem(
+bool AccessorObjectArray::SerializeItem(
     ISerializer& serializer, //
     const Object* object,
     size_t index) const {
@@ -75,7 +75,7 @@ bool AccessorArrayObject::SerializeItem(
   return Object::xxxSerialize(child_object, serializer);
 }
 ////////////////////////////////////////////////////////////////
-bool AccessorArrayObject::Resize(
+bool AccessorObjectArray::Resize(
     Object* obj, //
     size_t size) const {
   if (mResizer != 0) {
@@ -86,12 +86,12 @@ bool AccessorArrayObject::Resize(
   }
 }
 ////////////////////////////////////////////////////////////////
-bool AccessorArrayObject::Deserialize(ork::reflect::IDeserializer&, ork::Object*) const {
+bool AccessorObjectArray::Deserialize(ork::reflect::IDeserializer&, ork::Object*) const {
   OrkAssert(false);
   return false;
 }
 ////////////////////////////////////////////////////////////////
-bool AccessorArrayObject::Serialize(ork::reflect::ISerializer&, ork::Object const*) const {
+bool AccessorObjectArray::Serialize(ork::reflect::ISerializer&, ork::Object const*) const {
   OrkAssert(false);
   return false;
 }

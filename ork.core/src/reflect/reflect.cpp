@@ -22,12 +22,12 @@
 #include <ork/reflect/properties/DirectTyped.hpp>
 
 #include <ork/reflect/properties/AccessorTyped.hpp>
-#include <ork/reflect/properties/AccessorMapObject.hpp>
-#include <ork/reflect/properties/AccessorMapType.hpp>
+#include <ork/reflect/properties/AccessorObjectMap.hpp>
+#include <ork/reflect/properties/AccessorTypedMap.hpp>
 
 #include <ork/reflect/properties/ITypedArray.hpp>
 #include <ork/reflect/properties/DirectTypedArray.hpp>
-#include <ork/reflect/properties/AccessorArrayType.hpp>
+#include <ork/reflect/properties/AccessorTypedArray.hpp>
 
 #include <ork/kernel/string/ConstString.h>
 
@@ -115,7 +115,7 @@ typedef rtti::ICastable* ICastablePointer;
   FOREACH_PRIMITIVE_TYPE(MACRO, DirectPropertyType);                                                                         \
   FOREACH_PRIMITIVE_TYPE(MACRO, DirectArrayPropertyType);                                                                    \
   FOREACH_PRIMITIVE_TYPE(MACRO, AccessorTyped);                                                                       \
-  FOREACH_PRIMITIVE_TYPE(MACRO, AccessorArrayType);
+  FOREACH_PRIMITIVE_TYPE(MACRO, AccessorTypedArray);
 
 #define FOREACH_RTTI_PROPERTY_TYPE(MACRO)                                                                                          \
   MACRO(IProperty);                                                                                                                \
@@ -184,9 +184,9 @@ template class DirectMapPropertyType<orkmap<PoolString, PoolString>>;
 template class DirectMapPropertyType<orklut<PoolString, PoolString>>;
 template class DirectMapPropertyType<orkmap<std::string, std::string>>;
 template class DirectMapPropertyType<orklut<std::string, std::string>>;
-template class AccessorMapObject<int>;
-template class AccessorMapType<int, char>;
-template class AccessorMapType<int, ICastablePointer>;
+template class AccessorObjectMap<int>;
+template class AccessorTypedMap<int, char>;
+template class AccessorTypedMap<int, ICastablePointer>;
 template class DirectPropertyType<fmtx4>;
 template class DirectPropertyType<Quaternion<float>>;
 template class ITyped<TransformNode>;

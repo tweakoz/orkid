@@ -13,11 +13,11 @@
 
 namespace ork { namespace reflect {
 
-class  AccessorArrayVariant : public IArray
+class  AccessorVariantArray : public IArray
 {
 	static void GetClassStatic(); // Kill inherited GetClassStatic()
 public:
-	AccessorArrayVariant(
+	AccessorVariantArray(
 		bool (Object::*serialize_item)(ISerializer &, size_t) const,
 		bool (Object::*deserialize_item)(IDeserializer &, size_t),
 		size_t (Object::*count)() const,

@@ -12,12 +12,12 @@
 namespace ork { namespace reflect {
 
 template<typename KeyType>
-class AccessorMapObject : public IObjectMap
+class AccessorObjectMap : public IObjectMap
 {
 public:
 	typedef void (*SerializationFunction)(BidirectionalSerializer &, const KeyType &, const Object *);
 	
-	AccessorMapObject(
+	AccessorObjectMap(
 		const Object *(Object::*get)(const KeyType &, int) const,
 		Object *(Object::*access)(const KeyType &, int),
 		void (Object::*erase)(const KeyType &, int),

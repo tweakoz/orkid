@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/reflect/properties/AccessorMapType.h>
+#include <ork/reflect/properties/AccessorTypedMap.h>
 #include <ork/reflect/properties/ITypedMap.hpp>
 #include <ork/reflect/IDeserializer.h>
 #include <ork/reflect/ISerializer.h>
@@ -16,12 +16,12 @@
 namespace ork { namespace reflect {
 
 template<typename KeyType, typename ValueType>
-AccessorMapType<KeyType, ValueType>::AccessorMapType(
+AccessorTypedMap<KeyType, ValueType>::AccessorTypedMap(
 		bool (Object::*getter)(const KeyType &, int, ValueType &) const,
 		void (Object::*setter)(const KeyType &, int, const ValueType &),
 		void (Object::*eraser)(const KeyType &, int),
 		void (Object::*serializer)(
-			typename AccessorMapType<KeyType, ValueType>::ItemSerializeFunction,
+			typename AccessorTypedMap<KeyType, ValueType>::ItemSerializeFunction,
 			BidirectionalSerializer &) const)
 	: mGetter(getter)
 	, mSetter(setter)
@@ -32,14 +32,14 @@ AccessorMapType<KeyType, ValueType>::AccessorMapType(
 
 
 template<typename KeyType, typename ValueType>
-bool AccessorMapType<KeyType, ValueType>::ReadItem(
+bool AccessorTypedMap<KeyType, ValueType>::ReadItem(
 	const Object *object, const KeyType &key, int multi_index, ValueType &value) const
 {
 	return (object->*mGetter)(key, multi_index, value);
 }
 
 template<typename KeyType, typename ValueType>
-bool AccessorMapType<KeyType, ValueType>::WriteItem(
+bool AccessorTypedMap<KeyType, ValueType>::WriteItem(
 	Object *object, const KeyType &key, int multi_index, const ValueType *value) const
 {
 	if(value)
@@ -55,8 +55,8 @@ bool AccessorMapType<KeyType, ValueType>::WriteItem(
 }
 
 template<typename KeyType, typename ValueType>
-bool AccessorMapType<KeyType, ValueType>::MapSerialization(
-	typename AccessorMapType<KeyType, ValueType>::ItemSerializeFunction serialize_function,
+bool AccessorTypedMap<KeyType, ValueType>::MapSerialization(
+	typename AccessorTypedMap<KeyType, ValueType>::ItemSerializeFunction serialize_function,
 	BidirectionalSerializer &bidi,
 	const Object *object) const
 {

@@ -16,13 +16,13 @@ namespace ork { namespace reflect {
 class BidirectionalSerializer;
 
 template<typename KeyType, typename ValueType>
-class  AccessorMapType : public ITypedMap<KeyType, ValueType>
+class  AccessorTypedMap : public ITypedMap<KeyType, ValueType>
 {
 public:
 	typedef typename ITypedMap<KeyType, ValueType>::ItemSerializeFunction
 		ItemSerializeFunction;
 
-	AccessorMapType(
+	AccessorTypedMap(
 		bool (Object::*getter)(const KeyType &, int, ValueType &) const,
 		void (Object::*setter)(const KeyType &, int, const ValueType &),
 		void (Object::*eraser)(const KeyType &, int),

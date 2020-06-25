@@ -17,10 +17,10 @@ namespace ork { namespace reflect {
 class BidirectionalSerializer;
 class Command;
 
-class  AccessorMapVariantContext
+class  AccessorVariantMapContext
 {
 public:
-	AccessorMapVariantContext(BidirectionalSerializer &bidi);
+	AccessorVariantMapContext(BidirectionalSerializer &bidi);
 	BidirectionalSerializer &Bidi();
 	void BeginItem();
 	void BeginValue();
@@ -31,27 +31,27 @@ private:
 	Command mAttributeCommand;
 };
 
-class  AccessorMapVariant : public IMap
+class  AccessorVariantMap : public IMap
 {
 	static void GetClassStatic(); // Kill inherited GetClassStatic()
 public:
 
 	typedef void (*SerializerCallbackItem)(
-		AccessorMapVariantContext &ctx,
+		AccessorVariantMapContext &ctx,
 		BidirectionalSerializer &);
 
 	static const int kDeserializeInsertItem = -1;
 
-	AccessorMapVariant(
+	AccessorVariantMap(
 		bool (Object::*)(IDeserializer &, int, ISerializer &),
 		bool (Object::*)(IDeserializer &, int, IDeserializer *) const,
-		bool (Object::*)(AccessorMapVariantContext &) const
+		bool (Object::*)(AccessorVariantMapContext &) const
 		);
 
 private:
 	bool (Object::*mReadItem)(IDeserializer &key, int, ISerializer &value);
 	bool (Object::*mWriteItem)(IDeserializer &key, int, IDeserializer *value) const;
-	bool (Object::*mMapSerialization)(AccessorMapVariantContext &) const;
+	bool (Object::*mMapSerialization)(AccessorVariantMapContext &) const;
 
     /*virtual*/ bool Deserialize(IDeserializer &serializer, Object *obj) const;
     /*virtual*/ bool Serialize(ISerializer &serializer, const Object *obj) const;

@@ -7,12 +7,12 @@
 
 
 #include <ork/pch.h>
-#include <ork/reflect/properties/AccessorArrayVariant.h>
+#include <ork/reflect/properties/AccessorVariantArray.h>
 #include <ork/object/Object.h>
 
 namespace ork { namespace reflect {
 
-AccessorArrayVariant::AccessorArrayVariant(
+AccessorVariantArray::AccessorVariantArray(
 	bool (Object::*serialize_item)(ISerializer &, size_t) const,
 	bool (Object::*deserialize_item)(IDeserializer &, size_t),
 	size_t (Object::*count)() const,
@@ -23,24 +23,24 @@ AccessorArrayVariant::AccessorArrayVariant(
 	, mResize(resize)
 {}
 
-bool AccessorArrayVariant::DeserializeItem(
+bool AccessorVariantArray::DeserializeItem(
 	IDeserializer &deserializer, Object *object, size_t index) const
 {
 	return (object->*mDeserializeItem)(deserializer, index);
 }
 
-bool AccessorArrayVariant::SerializeItem(
+bool AccessorVariantArray::SerializeItem(
 	ISerializer &serializer, const Object *object, size_t index) const
 {
 	return (object->*mSerializeItem)(serializer, index);
 }
 
-size_t AccessorArrayVariant::Count( const Object *object ) const
+size_t AccessorVariantArray::Count( const Object *object ) const
 {
 	return (object->*mCount)();
 }
 
-bool AccessorArrayVariant::Resize( Object *object, size_t size ) const
+bool AccessorVariantArray::Resize( Object *object, size_t size ) const
 {
 	return (object->*mResize)(size);
 }
