@@ -175,10 +175,6 @@ Class* Class::FindClassNoCase(const ConstString& name) {
   return nullptr;
 }
 
-rtti::ICastable* Class::CreateObject() const {
-  return _rawFactory();
-}
-
 bool Class::IsSubclassOf(const Class* other) const {
   const Class* this_class = this;
 

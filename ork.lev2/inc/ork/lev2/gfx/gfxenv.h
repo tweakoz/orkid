@@ -577,10 +577,10 @@ public:
 
   static void atomicOp(recursive_mutex::atomicop_t op);
 
-  static void setContextClass(const rtti::Class* pclass) {
+  static void setContextClass(const object::ObjectClass* pclass) {
     gpTargetClass = pclass;
   }
-  static const rtti::Class* contextClass() {
+  static const object::ObjectClass* contextClass() {
     return gpTargetClass;
   }
   void SetRuntimeEnvironmentVariable(const std::string& key, const std::string& val);
@@ -621,7 +621,7 @@ protected:
   recursive_mutex mGfxEnvMutex;
   bool _initialized = false;
 
-  static const rtti::Class* gpTargetClass;
+  static const object::ObjectClass* gpTargetClass;
 };
 
 /// ////////////////////////////////////////////////////////////////////////////

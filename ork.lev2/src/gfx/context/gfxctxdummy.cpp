@@ -22,7 +22,8 @@ namespace ork { namespace lev2 {
 /////////////////////////////////////////////////////////////////////////
 
 void DummyContextInit() {
-  GfxEnv::setContextClass(ContextDummy::GetClassStatic());
+  auto clazz = dynamic_cast<const object::ObjectClass*>(ContextDummy::GetClassStatic());
+  GfxEnv::setContextClass(clazz);
 }
 
 DuRasterStateInterface::DuRasterStateInterface(Context& target)

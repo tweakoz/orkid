@@ -421,7 +421,7 @@ public:
             rtti::Class* the_class = rtti::Class::FindClass(anno_ucdclass);
             if (the_class) {
               ork::object::ObjectClass* pucdclass = rtti::autocast(the_class);
-              ork::rtti::ICastable* ucdo          = the_class->CreateObject();
+              ork::rtti::ICastable* ucdo          = pucdclass->CreateObject();
               IPlugChoiceDelegate* ucd            = rtti::autocast(ucdo);
               if (ucd) {
                 IPlugChoiceDelegate::OutPlugMapType choices;
@@ -551,7 +551,7 @@ private:
 void OutPlugChoiceDelegate::Describe() {
 }
 void OutPlugChoiceDelegate::EnumerateChoices(tool::ged::GedItemNode* pnode, OutPlugMapType& Choices) {
-  dataflow::inplugbase* pinputplug                        = 0;
+  dataflow::inplugbase* pinputplug          = 0;
   const ork::reflect::AccessorObject* pprop = rtti::autocast(pnode->GetOrkProp());
   if (pprop) {
     dataflow::inplugbase* pinpplug = rtti::autocast(pprop->Access(pnode->GetOrkObj()));

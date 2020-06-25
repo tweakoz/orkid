@@ -47,11 +47,15 @@ static boost::uuids::uuid genUUID() {
 ////////////////////////////////////////////////////////////////////////////////
 
 object_ptr_t ObjectClass::createShared() const {
-  auto shcast = _sharedFactory();
-  auto asobj  = dynamic_pointer_cast<Object>(shcast);
-
+  auto shcast  = _sharedFactory();
+  auto asobj   = dynamic_pointer_cast<Object>(shcast);
   asobj->_uuid = genUUID();
-
+  return asobj;
+}
+rtti::ICastable* ObjectClass::CreateObject() const {
+  auto shcast  = _rawFactory();
+  auto asobj   = dynamic_cast<Object*>(shcast);
+  asobj->_uuid = genUUID();
   return asobj;
 }
 

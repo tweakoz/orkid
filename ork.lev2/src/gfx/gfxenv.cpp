@@ -132,7 +132,7 @@ SRasterState::SRasterState() {
 
 /////////////////////////////////////////////////////////////////////////
 
-const ork::rtti::Class* GfxEnv::gpTargetClass = 0;
+const ork::object::ObjectClass* GfxEnv::gpTargetClass = nullptr;
 
 void GfxEnv::SetRuntimeEnvironmentVariable(const std::string& key, const std::string& val) {
   mRuntimeEnvironment[key] = val;

@@ -1201,9 +1201,10 @@ Archetype* SceneEditorBase::ImplNewArchetype(const std::string& classname, const
     SlotPreNewObject();
     std::string name         = CreateFormattedString("/arch/%s", classname.c_str());
     ork::rtti::Class* pclass = ork::rtti::Class::FindClassNoCase(classname.c_str());
-    printf("NewArchetype classname<%s> class<%p> aname<%s>\n", classname.c_str(), pclass, name.c_str());
-    if (pclass) {
-      rarch = rtti::autocast(pclass->CreateObject());
+    auto pclazz              = dynamic_cast<const object::ObjectClass*>(pclass);
+    printf("NewArchetype classname<%s> pclazz<%p> aname<%s>\n", classname.c_str(), pclazz, name.c_str());
+    if (pclazz) {
+      rarch = rtti::autocast(pclazz->CreateObject());
       rarch->SetName(name.c_str());
       SlotNewObject(rarch);
     }
@@ -1220,10 +1221,11 @@ SystemData* SceneEditorBase::ImplNewSystem(const std::string& classname) { /////
   SystemData* system = nullptr;
   auto lamb          = [&]() {
     SlotPreNewObject();
-    ork::rtti::Class* pclass = ork::rtti::Class::FindClassNoCase(classname.c_str());
-    printf("NewSystem classname<%s> class<%p>\n", classname.c_str(), pclass);
-    if (pclass) {
-      system = rtti::autocast(pclass->CreateObject());
+    auto pclass = ork::rtti::Class::FindClassNoCase(classname.c_str());
+    auto pclazz = dynamic_cast<const object::ObjectClass*>(pclass);
+    printf("NewSystem classname<%s> pclazz<%p>\n", classname.c_str(), pclazz);
+    if (pclazz) {
+      system = rtti::autocast(pclazz->CreateObject());
       SlotNewObject(system);
     }
   };

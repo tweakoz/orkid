@@ -299,9 +299,9 @@ void ManipManager::AttachObject(ork::Object* pobj) {
   if (auto as_cstr = anno.TryAs<ConstString>()) {
     ConstString classname       = as_cstr.value();
     const rtti::Class* pifclass = rtti::autocast(rtti::Class::FindClass(classname));
-
-    if (pifclass) {
-      mpCurrentInterface = rtti::autocast(pifclass->CreateObject());
+    auto clazz                  = dynamic_cast<const object::ObjectClass*>(pifclass);
+    if (clazz) {
+      mpCurrentInterface = rtti::autocast(clazz->CreateObject());
       mpCurrentObject    = pobj;
       RebaseMatrices();
     } else {

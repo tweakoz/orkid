@@ -119,7 +119,8 @@ Context* OffscreenBuffer::context(void) const {
 /////////////////////////////////////////////////////////////////////////
 
 void OffscreenBuffer::initContext() {
-  mpContext = ork::rtti::safe_downcast<Context*>(GfxEnv::GetRef().contextClass()->CreateObject());
+  auto ctxclazz = GfxEnv::GetRef().contextClass();
+  mpContext     = ork::rtti::safe_downcast<Context*>(ctxclazz->CreateObject());
   mpContext->initializeOffscreenContext(this);
 }
 

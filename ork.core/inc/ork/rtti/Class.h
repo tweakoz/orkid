@@ -39,7 +39,6 @@ public:
   const PoolString& Name() const;
   void SetName(ConstString name, bool badd2map = true);
 
-  rtti::ICastable* CreateObject() const;
   void setRawFactory(raw_factory_t factory);
   void setSharedFactory(shared_factory_t factory);
 
@@ -79,6 +78,7 @@ public:
 
 protected:
   shared_factory_t _sharedFactory;
+  raw_factory_t _rawFactory;
 
 private:
   void AddChild(Class* pClass);
@@ -93,7 +93,6 @@ private:
   Class* mPrevSiblingClass;
 
   PoolString mClassName;
-  raw_factory_t _rawFactory;
 
   Class* mNextClass;
 
