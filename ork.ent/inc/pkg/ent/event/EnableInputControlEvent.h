@@ -7,30 +7,19 @@
 
 #pragma once
 
-#include <ork/rtti/RTTI.h>
-#include <ork/object/Object.h>
-
 #include <ork/event/Event.h>
 
 namespace ork { namespace ent { namespace event {
 
-class EnableInputControlEvent : public ork::event::Event
-{
-	RttiDeclareAbstract(EnableInputControlEvent,ork::event::Event);
-
+class EnableInputControlEvent : public ork::event::Event {
 public:
+  EnableInputControlEvent(bool enable = true);
 
-	EnableInputControlEvent(bool enable = true);
-
-	void SetEnable(bool enable);
-	bool IsEnable() const;
+  void SetEnable(bool enable);
+  bool IsEnable() const;
 
 private:
-
-	bool mEnable;
-
-	Object *Clone() const final;
+  bool mEnable;
 };
 
-} } } // ork::ent::event
-
+}}} // namespace ork::ent::event

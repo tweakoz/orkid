@@ -5,32 +5,22 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef ORK_ENT_EVENT_CHANGEANIMATIONSPEED_H
-#define ORK_ENT_EVENT_CHANGEANIMATIONSPEED_H
-
-#include <ork/rtti/RTTI.h>
-#include <ork/object/Object.h>
+#pragma once
 
 #include <ork/event/Event.h>
 
 namespace ork { namespace ent { namespace event {
 
-class ChangeAnimationSpeedEvent : public ork::event::Event
-{
-	RttiDeclareAbstract(ChangeAnimationSpeedEvent,ork::event::Event);
+class ChangeAnimationSpeedEvent : public ork::event::Event {
 
 public:
+  ChangeAnimationSpeedEvent(float speed = 1.0f);
 
-	ChangeAnimationSpeedEvent(float speed = 1.0f);
-
-	void SetSpeed(float speed);
-	float GetSpeed() const;
+  void SetSpeed(float speed);
+  float GetSpeed() const;
 
 private:
-
-	float mSpeed;
+  float mSpeed;
 };
 
-} } } // ork::ent::event
-
-#endif // ORK_ENT_EVENT_CHANGEANIMATIONSPEED_H
+}}} // namespace ork::ent::event

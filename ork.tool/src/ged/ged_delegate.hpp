@@ -474,7 +474,7 @@ template <typename IODriver, typename T> void GedSimpleNode<IODriver, T>::OnUiEv
         if (the_class) {
           ork::object::ObjectClass* pucdclass = rtti::autocast(the_class);
           ork::rtti::ICastable* ucdo          = the_class->CreateObject();
-          IUserChoiceDelegate* ucd            = rtti::autocast(ucdo);
+          auto ucd                            = dynamic_cast<IUserChoiceDelegate*>(ucdo);
           if (ucd) {
             auto uchc     = std::make_shared<UserChoices>(*ucd, pobj, this);
             QMenu* qm     = qmenuFromChoiceList(uchc);

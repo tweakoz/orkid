@@ -9,23 +9,6 @@
 
 #include <pkg/ent/event/MeshEvent.h>
 
-#include <ork/reflect/properties/register.h>
-
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::event::MeshEnableEvent, "MeshEnableEvent");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::event::MeshLayerFxEvent, "MeshLayerFxEvent");
-
 namespace ork { namespace ent { namespace event {
-	
-void MeshEnableEvent::Describe()
-{
-	reflect::RegisterProperty("Name", &MeshEnableEvent::mName);
-	reflect::RegisterProperty("Enable", &MeshEnableEvent::mEnable);
-}
 
-void MeshLayerFxEvent::Describe()
-{
-	reflect::RegisterProperty("Name", &MeshLayerFxEvent::mName);
-	reflect::RegisterProperty("Enable", &MeshLayerFxEvent::mEnable);
-}
-
-} } } // ork::ent::event
+}}} // namespace ork::ent::event

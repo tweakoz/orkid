@@ -7,34 +7,21 @@
 
 #include <ork/pch.h>
 #include <pkg/ent/event/StartParticlesEvent.h>
-#include <ork/reflect/properties/register.h>
 #include <ork/application/application.h>
-///////////////////////////////////////////////////////////////////////////////
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::event::StartParticlesEvent, "StartParticlesEvent");
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent { namespace event {
 ///////////////////////////////////////////////////////////////////////////////
-void StartParticlesEvent::Describe()
-{
-	ork::reflect::RegisterProperty("Name", &StartParticlesEvent::mName);
-	//ork::reflect::RegisterProperty("Speed", &StartParticleEvent::mSpeed);
-	//ork::reflect::RegisterProperty("InterpDuration", &StartParticleEvent::mInterpDuration);
-}
-///////////////////////////////////////////////////////////////////////////////
 StartParticlesEvent::StartParticlesEvent(ork::PieceString name)
-	: mName(ork::AddPooledString(name))
-{
+    : mName(ork::AddPooledString(name)) {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void StartParticlesEvent::SetName(ork::PieceString name)
-{
-	mName = ork::AddPooledString(name);
+void StartParticlesEvent::SetName(ork::PieceString name) {
+  mName = ork::AddPooledString(name);
 }
 ///////////////////////////////////////////////////////////////////////////////
-ork::PoolString StartParticlesEvent::GetName() const
-{
-	return mName;
+ork::PoolString StartParticlesEvent::GetName() const {
+  return mName;
 }
 ///////////////////////////////////////////////////////////////////////////////
-} } } // namespace ork::ent::event
+}}} // namespace ork::ent::event
 ///////////////////////////////////////////////////////////////////////////////

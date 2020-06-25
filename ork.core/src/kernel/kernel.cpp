@@ -11,28 +11,6 @@
 #include <ork/kernel/core_interface.h>
 #include <ork/kernel/opq.h>
 
-///////////////////////////////////////////////////////////////////////////////
-
-INSTANTIATE_TRANSPARENT_RTTI(ork::IUserChoiceDelegate, "IUserChoiceDelegate");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ItemRemovalEvent, "ItemRemovalEvent");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ObjectGedVisitEvent, "ObjectGedVisitEvent");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ObjectGedEditEvent, "ObjectGedEditEvent");
-INSTANTIATE_TRANSPARENT_RTTI(ork::MapItemCreationEvent, "MapItemCreationEvent");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ObjectFactoryFilter, "ObjectFactoryFilter");
-
-void ork::IUserChoiceDelegate::Describe() {
-}
-void ork::ItemRemovalEvent::Describe() {
-}
-void ork::ObjectGedVisitEvent::Describe() {
-}
-void ork::ObjectGedEditEvent::Describe() {
-}
-void ork::MapItemCreationEvent::Describe() {
-}
-void ork::ObjectFactoryFilter::Describe() {
-}
-
 const std::string gstring_noval("");
 
 ///////////////////////////////////////////////////////////////////////////////

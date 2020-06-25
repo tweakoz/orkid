@@ -25,7 +25,6 @@ public:
   bool Serialize(const char&) override;
   bool Serialize(const short&) override;
   bool Serialize(const int&) override;
-  // bool Serialize(const unsigned int&) override;
   bool Serialize(const long&) override;
   bool Serialize(const float&) override;
   bool Serialize(const double&) override;
@@ -36,9 +35,6 @@ public:
 
   bool serializeObject(rtti::castable_rawconstptr_t) override;
   bool serializeObjectProperty(const ObjectProperty*, const Object*) override;
-  // bool serializeObjectWithCategory(
-  //  const rtti::Category* cat, //
-  // const rtti::ICastable* object) override;
   bool Serialize(const AbstractProperty*) override;
 
   bool SerializeData(unsigned char*, size_t size) override;

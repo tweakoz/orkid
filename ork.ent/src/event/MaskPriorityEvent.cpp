@@ -7,21 +7,13 @@
 
 #include <ork/pch.h>
 #include <pkg/ent/event/MaskPriorityEvent.h>
-#include <ork/reflect/properties/register.h>
 #include <ork/application/application.h>
-
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::event::MaskPriority, "MaskPriority");
 
 namespace ork { namespace ent { namespace event {
 
-void MaskPriority::Describe()
-{
-	ork::reflect::RegisterProperty("MaskName", &MaskPriority::mMaskName);
-	ork::reflect::RegisterProperty("Priority", &MaskPriority::mPriority);
+MaskPriority::MaskPriority(ork::PieceString maskname, int priority)
+    : mMaskName(ork::AddPooledString(maskname))
+    , mPriority(priority) {
 }
 
-MaskPriority::MaskPriority(ork::PieceString maskname, int priority) : mMaskName(ork::AddPooledString(maskname)), mPriority(priority)
-{
-}
-
-} } } // namespace ork::ent::event
+}}} // namespace ork::ent::event

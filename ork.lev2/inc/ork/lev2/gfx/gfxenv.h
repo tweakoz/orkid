@@ -629,7 +629,6 @@ protected:
 /// ////////////////////////////////////////////////////////////////////////////
 
 class DrawHudEvent : public ork::event::Event {
-  RttiDeclareConcrete(DrawHudEvent, ork::event::Event);
 
 public:
   DrawHudEvent(Context* target = NULL, int camera_number = 1)

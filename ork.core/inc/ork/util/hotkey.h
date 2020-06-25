@@ -43,7 +43,7 @@ public:
 class HotKeyConfiguration : public ork::Object {
   DeclareConcreteX(HotKeyConfiguration, ork::Object);
 
-  orklut<PoolString, ork::object_ptr_t> _hotkeys;
+  orklut<std::string, ork::object_ptr_t> _hotkeys;
   orkset<boost::Crc64> mHotKeysUsed;
 
   bool PostDeserialize(reflect::IDeserializer&) final;
@@ -57,7 +57,7 @@ public:
   void RemoveHotKey(const char* actionname);
   void RemoveHotKey(const HotKey& hkey);
   bool IsHotKeyPresent(const HotKey& hkey) const;
-  HotKey* GetHotKey(PoolString ps) const;
+  HotKey* GetHotKey(std::string ps) const;
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -92,7 +92,6 @@ public:
   void Save();
   void Load();
 
-  static bool IsDepressed(PoolString action);
   static bool IsDepressed(const char* action);
   static bool IsDepressed(const HotKey& action);
 

@@ -202,7 +202,7 @@ void ModelComponentInst::doNotify(const ComponentEvent& e) {
 }
 
 bool ModelComponentInst::DoNotify(const ork::event::Event* event) {
-  if (const event::MeshEnableEvent* meshenaev = ork::rtti::autocast(event)) {
+  if (auto meshenaev = dynamic_cast<const event::MeshEnableEvent*>(event)) {
     if (modelDrawable().GetModelInst()) {
       if (meshenaev->IsEnable())
         modelDrawable().GetModelInst()->EnableMesh(meshenaev->GetName());
@@ -210,7 +210,7 @@ bool ModelComponentInst::DoNotify(const ork::event::Event* event) {
         modelDrawable().GetModelInst()->DisableMesh(meshenaev->GetName());
       return true;
     }
-  } else if (const event::MeshLayerFxEvent* lfxev = ork::rtti::autocast(event)) {
+  } else if (auto lfxev = dynamic_cast<const event::MeshLayerFxEvent*>(event)) {
     if (modelDrawable().GetModelInst()) {
       /*lev2::GfxMaterialFx* pmaterial = 0;
       if (lfxev->IsEnable()) {

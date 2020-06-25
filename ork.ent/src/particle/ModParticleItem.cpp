@@ -39,7 +39,7 @@ namespace ork { namespace psys {
 static bool gbusetemplate = false;
 
 bool ModParticleItem::DoNotify(const event::Event* event) {
-  if (const ObjectGedVisitEvent* pev = rtti::autocast(event)) {
+  if (auto pev = dynamic_cast<const ObjectGedVisitEvent*>(event)) {
     gbusetemplate = true;
     return true;
   }

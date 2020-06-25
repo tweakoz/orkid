@@ -10,6 +10,7 @@
 #include <ork/object/ObjectClass.h>
 #include <ork/rtti/downcast.h>
 #include <ork/reflect/properties/ObjectProperty.h>
+#include <boost/uuid/random_generator.hpp>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::object::ObjectClass, "ObjectClass");
 
@@ -38,11 +39,20 @@ ObjectClass::ObjectClass(const rtti::RTTIData& data)
     , _description() {
 }
 
+static boost::uuids::uuid genUUID() {
+  static boost::uuids::random_generator generator;
+  return generator();
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 object_ptr_t ObjectClass::createShared() const {
   auto shcast = _sharedFactory();
-  return dynamic_pointer_cast<Object>(shcast);
+  auto asobj  = dynamic_pointer_cast<Object>(shcast);
+
+  asobj->_uuid = genUUID();
+
+  return asobj;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

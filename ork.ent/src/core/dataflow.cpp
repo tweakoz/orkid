@@ -25,7 +25,7 @@ namespace ork { namespace ent {
 static bool gbusepreview = false;
 
 bool DataflowRecieverComponentData::DoNotify(const event::Event* event) {
-  if (const ObjectGedVisitEvent* pev = rtti::autocast(event)) {
+  if (auto pev = dynamic_cast<const ObjectGedVisitEvent*>(event)) {
     gbusepreview = true;
     return true;
   }

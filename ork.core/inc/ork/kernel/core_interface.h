@@ -11,6 +11,7 @@
 
 #include <ork/kernel/any.h>
 #include <ork/event/Event.h>
+#include <ork/object/Object.h>
 
 #if defined(ORK_CONFIG_DARWIN)
 #include <dispatch/dispatch.h>
@@ -25,8 +26,7 @@ namespace reflect {
 class ObjectProperty;
 }
 
-class IUserChoiceDelegate : public Object {
-  RttiDeclareAbstract(IUserChoiceDelegate, Object);
+class IUserChoiceDelegate {
 
 public:
   typedef any64 ValueType;
@@ -38,7 +38,6 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class ItemRemovalEvent : public event::Event {
-  RttiDeclareConcrete(ItemRemovalEvent, event::Event);
 
 public:
   const reflect::ObjectProperty* mProperty;
@@ -55,7 +54,6 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class MapItemCreationEvent : public event::Event {
-  RttiDeclareConcrete(MapItemCreationEvent, event::Event);
 
 public:
   const reflect::ObjectProperty* mProperty;
@@ -71,7 +69,6 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class ObjectGedVisitEvent : public event::Event {
-  RttiDeclareConcrete(ObjectGedVisitEvent, event::Event);
 
 public:
   const reflect::ObjectProperty* mProperty;
@@ -83,7 +80,6 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class ObjectGedEditEvent : public event::Event {
-  RttiDeclareConcrete(ObjectGedEditEvent, event::Event);
 
 public:
   const reflect::ObjectProperty* mProperty;
@@ -95,7 +91,6 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class ObjectFactoryFilter : public event::Event {
-  RttiDeclareConcrete(ObjectFactoryFilter, event::Event);
 
 public:
   bool mbFactoryOK;

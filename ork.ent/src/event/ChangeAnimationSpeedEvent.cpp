@@ -11,27 +11,18 @@
 
 #include <ork/reflect/properties/register.h>
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::event::ChangeAnimationSpeedEvent, "ChangeAnimationSpeedEvent");
-
 namespace ork { namespace ent { namespace event {
-	
-void ChangeAnimationSpeedEvent::Describe()
-{
-	ork::reflect::RegisterProperty("Speed", &ChangeAnimationSpeedEvent::mSpeed);
+
+ChangeAnimationSpeedEvent::ChangeAnimationSpeedEvent(float speed)
+    : mSpeed(speed) {
 }
 
-ChangeAnimationSpeedEvent::ChangeAnimationSpeedEvent(float speed) : mSpeed(speed)
-{
+void ChangeAnimationSpeedEvent::SetSpeed(float speed) {
+  mSpeed = speed;
 }
 
-void ChangeAnimationSpeedEvent::SetSpeed(float speed)
-{
-	mSpeed = speed;
+float ChangeAnimationSpeedEvent::GetSpeed() const {
+  return mSpeed;
 }
 
-float ChangeAnimationSpeedEvent::GetSpeed() const
-{
-	return mSpeed;
-}
-
-} } } // namespace ork::ent::event
+}}} // namespace ork::ent::event

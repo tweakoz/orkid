@@ -10,23 +10,11 @@
 #include <ork/reflect/properties/register.h>
 #include <ork/application/application.h>
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::event::AnimationPriority, "AnimationPriority");
-
 namespace ork { namespace ent { namespace event {
 
-void AnimationPriority::Describe()
-{
-	ork::reflect::RegisterProperty("Name", &AnimationPriority::mName);
-	ork::reflect::RegisterProperty("Priority", &AnimationPriority::mPriority);
+AnimationPriority::AnimationPriority(ork::PieceString name, int priority)
+    : mName(ork::AddPooledString(name))
+    , mPriority(priority) {
 }
 
-AnimationPriority::AnimationPriority(ork::PieceString name, int priority) : mName(ork::AddPooledString(name)), mPriority(priority)
-{
-}
-
-Object* AnimationPriority::Clone() const // final
-{
-    return new AnimationPriority(mName,mPriority);
-}
-
-} } } // namespace ork::ent::event
+}}} // namespace ork::ent::event

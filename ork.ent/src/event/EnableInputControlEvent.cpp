@@ -9,34 +9,18 @@
 
 #include <pkg/ent/event/EnableInputControlEvent.h>
 
-#include <ork/reflect/properties/register.h>
-
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::event::EnableInputControlEvent, "EnableInputControlEvent");
-
 namespace ork { namespace ent { namespace event {
 
-void EnableInputControlEvent::Describe()
-{
-	ork::reflect::RegisterProperty("Enable", &EnableInputControlEvent::mEnable);
+EnableInputControlEvent::EnableInputControlEvent(bool enable)
+    : mEnable(enable) {
 }
 
-EnableInputControlEvent::EnableInputControlEvent(bool enable) : mEnable(enable)
-{
+void EnableInputControlEvent::SetEnable(bool enable) {
+  mEnable = enable;
 }
 
-void EnableInputControlEvent::SetEnable(bool enable)
-{
-	mEnable = enable;
+bool EnableInputControlEvent::IsEnable() const {
+  return mEnable;
 }
 
-bool EnableInputControlEvent::IsEnable() const
-{
-	return mEnable;
-}
-
-Object* EnableInputControlEvent::Clone() const // final
-{
-    return new EnableInputControlEvent(mEnable);
-}
-
-} } } // namespace prodigy::ent::event
+}}} // namespace ork::ent::event

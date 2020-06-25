@@ -8,29 +8,13 @@
 #include <ork/pch.h>
 #include <pkg/ent/AudioComponent.h>
 #include <pkg/ent/event/StartAudioEffectEvent.h>
-#include <ork/reflect/properties/register.h>
 #include <ork/application/application.h>
-///////////////////////////////////////////////////////////////////////////////
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::event::PlaySoundEvent, "PlaySoundEvent");
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent { namespace event {
 ///////////////////////////////////////////////////////////////////////////////
-void PlaySoundEvent::Describe()
-{
-	ork::reflect::RegisterProperty("SoundName", &PlaySoundEvent::mSoundName);
-	ork::reflect::annotatePropertyForEditor<PlaySoundEvent>( "SoundName",	"ged.userchoice.delegate", "AudioEventChoiceDelegate" );
-
-}
-///////////////////////////////////////////////////////////////////////////////
 PlaySoundEvent::PlaySoundEvent(ork::PieceString name)
-	: mSoundName(ork::AddPooledString(name))
-{
+    : mSoundName(ork::AddPooledString(name)) {
 }
 ///////////////////////////////////////////////////////////////////////////////
-Object* PlaySoundEvent::Clone() const // final
-{
-    return new PlaySoundEvent(mSoundName);
-}
-///////////////////////////////////////////////////////////////////////////////
-} } } // namespace ork::ent::event
+}}} // namespace ork::ent::event
 ///////////////////////////////////////////////////////////////////////////////

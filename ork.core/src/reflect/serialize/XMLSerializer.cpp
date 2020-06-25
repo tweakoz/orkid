@@ -286,7 +286,6 @@ bool XMLSerializer::ReferenceObject(const rtti::ICastable* object) {
 int XMLSerializer::FindObject(const rtti::ICastable* object) {
   int result = -1;
   for (orkvector<const rtti::ICastable*>::size_type index = 0; index < mSerializedObjects.size(); index++) {
-    // orkprintf("\tmSerializedObjects[%d] = %p\n", index, mSerializedObjects[index]);
     if (mSerializedObjects[index] == object) {
       result = int(index);
       break;

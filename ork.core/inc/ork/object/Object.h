@@ -12,6 +12,7 @@
 #include <ork/reflect/Serializable.h>
 #include <ork/object/ObjectClass.h>
 #include <ork/util/md5.h>
+#include <boost/uuid/uuid.hpp>
 
 namespace ork {
 
@@ -69,6 +70,8 @@ public:
   bool Query(event::Event* pEV) const {
     return DoQuery(pEV);
   }
+
+  boost::uuids::uuid _uuid;
 
 private:
   virtual bool DoNotify(const event::Event* pEV) {

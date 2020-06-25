@@ -8,7 +8,6 @@
 #include <ork/pch.h>
 #include <ork/util/hotkey.h>
 #include <ork/util/Context.hpp>
-#include <ork/kernel/string/PoolString.h>
 #include <ork/kernel/thread.h>
 #include <ork/application/application.h>
 #include <ork/file/path.h>
@@ -451,10 +450,9 @@ void HotKeyConfiguration::Default() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void HotKeyConfiguration::AddHotKey(const char* actionname, const HotKey& hkey) {
-  ork::PoolString psname = ork::AddPooledString(actionname);
   if (IsHotKeyPresent(hkey)) {
   } else {
-    _hotkeys.AddSorted(psname, std::make_shared<HotKey>(hkey));
+    _hotkeys.AddSorted(actionname, std::make_shared<HotKey>(hkey));
     mHotKeysUsed.insert(hkey.GetHash());
   }
 }
@@ -493,8 +491,8 @@ bool HotKeyConfiguration::IsHotKeyPresent(const HotKey& hkey) const {
   return (mHotKeysUsed.find(hash) != mHotKeysUsed.end());
 }
 
-HotKey* HotKeyConfiguration::GetHotKey(PoolString ps) const {
-  auto it = _hotkeys.find(ps);
+HotKey* HotKeyConfiguration::GetHotKey(std::string named) const {
+  auto it = _hotkeys.find(named);
   if (it != _hotkeys.end()) {
     auto pkey = std::dynamic_pointer_cast<HotKey>(it->second);
     return pkey.get();
@@ -554,9 +552,8 @@ void HotKeyManager::SetCurrentConfiguration(const char* configname) {
 ///////////////////////////////////////////////////////////////////////////////
 
 const HotKey& HotKeyManager::GetHotKey(const char* actionname) {
-  ork::PoolString psname = ork::AddPooledString(actionname);
   if (GetRef().mCurrent) {
-    HotKey* hkey = GetRef().mCurrent->GetHotKey(psname);
+    HotKey* hkey = GetRef().mCurrent->GetHotKey(actionname);
     if (hkey) {
       return *hkey;
     }
@@ -613,7 +610,7 @@ bool HotKeyManager::IsDepressed(const HotKey& hkey) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool HotKeyManager::IsDepressed(PoolString pact) {
+bool HotKeyManager::IsDepressed(const char* pact) {
   if (GetRef().mCurrent) {
     HotKey* hkey = GetRef().mCurrent->GetHotKey(pact);
     if (hkey) {
@@ -625,23 +622,10 @@ bool HotKeyManager::IsDepressed(PoolString pact) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool HotKeyManager::IsDepressed(const char* pact) {
-  // if( 0 == strcmp( pact, "camera_bwd" ) )
-  //{
-  //	int i = 0;
-  //}
-  //
-  return IsDepressed(ork::AddPooledString(pact));
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 FixedString<32> HotKeyManager::GetAcceleratorCode(const char* action) {
   FixedString<32> rval;
-
-  ork::PoolString psname = ork::AddPooledString(action);
   if (GetRef().mCurrent) {
-    HotKey* hkey = GetRef().mCurrent->GetHotKey(psname);
+    HotKey* hkey = GetRef().mCurrent->GetHotKey(action);
     if (hkey) {
       rval = hkey->GetAcceleratorCode();
     }

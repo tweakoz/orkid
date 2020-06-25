@@ -27,6 +27,8 @@
 
 #include <ork/lev2/gfx/gfxmodel.h>
 
+////////////////////////////////////////////////////////////////
+
 #define ANIMATE_VERBOSE (0)
 #define PRINT_CONDITION_NAME(__name) true //(ork::PieceString(__name).find("ship1") != ork::PieceString::npos)
 #define PRINT_CONDITION (PRINT_CONDITION_NAME(GetEntity()->GetEntData().GetName()))
@@ -741,7 +743,7 @@ void SimpleAnimatableInst::AnimData::BindAnim(const ork::lev2::XgmAnim* anim) {
 }
 
 bool SimpleAnimatableInst::DoNotify(const ork::event::Event* event) {
-  if (const event::PlayAnimationEvent* play = ork::rtti::autocast(event)) {
+  if (auto play = dynamic_cast<const event::PlayAnimationEvent*>(event)) {
     if (play->GetMaskName().empty())
       PlayAnimationEx(
           sEmptyString, play->GetName(), play->GetPriority(), play->GetSpeed(), play->GetInterpDuration(), play->IsLoop());
@@ -749,16 +751,16 @@ bool SimpleAnimatableInst::DoNotify(const ork::event::Event* event) {
       PlayAnimationEx(
           play->GetMaskName(), play->GetName(), play->GetPriority(), play->GetSpeed(), play->GetInterpDuration(), play->IsLoop());
     return true;
-  } else if (const event::ChangeAnimationSpeedEvent* change_speed = ork::rtti::autocast(event)) {
+  } else if (auto change_speed = dynamic_cast<const event::ChangeAnimationSpeedEvent*>(event)) {
     ChangeAnimationSpeed(change_speed->GetSpeed());
     return true;
-  } else if (const event::AnimationPriority* anim_priority = ork::rtti::autocast(event)) {
+  } else if (auto anim_priority = dynamic_cast<const event::AnimationPriority*>(event)) {
     ChangeAnimationPriority(anim_priority->GetName(), anim_priority->GetPriority());
     return true;
-  } else if (const event::MaskPriority* mask_priority = ork::rtti::autocast(event)) {
+  } else if (auto mask_priority = dynamic_cast<const event::MaskPriority*>(event)) {
     ChangeMaskPriority(mask_priority->GetMaskName(), mask_priority->GetPriority());
     return true;
-  } else if (const event::PriorityEvent* priority = ork::rtti::autocast(event)) {
+  } else if (auto priority = dynamic_cast<const event::PriorityEvent*>(event)) {
     ChangePriority(priority->GetPriority());
     return true;
   }

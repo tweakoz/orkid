@@ -1,4 +1,4 @@
-project (ork CXX)
+project (orktoolmain CXX)
 include (GenerateExportHeader)
 
 ###################################
@@ -20,6 +20,7 @@ add_executable (ork.tool.release ${src_tool})
 ###################################
 
 set( libs "" )
+list(APPEND libs boost_system )
 
 IF(${APPLE})
     list(APPEND libs m pthread )
@@ -33,7 +34,9 @@ ENDIF()
 target_link_libraries(ork.tool.release ${libs} ork_tool ork_ecs ork_lev2 ork_core ork_utpp ork_tuio ork_fcollada )
 
 target_include_directories (ork.tool.release PRIVATE ${COREINCD} )
-
+IF(${APPLE})
+ target_include_directories (ork.tool.release PRIVATE /usr/local/include)
+ENDIF()
 install(TARGETS ork.tool.release DESTINATION $ENV{OBT_STAGE}/bin )
 
 
