@@ -12,6 +12,8 @@
 #include <ork/kernel/string/ArrayString.h>
 #include <ork/util/hotkey.h>
 #include "reflectionclasses.inl"
+#include <boost/uuid/uuid_io.hpp>
+
 using namespace ork;
 using namespace ork::file;
 using namespace ork::reflect;
@@ -44,64 +46,64 @@ TEST(SerializeSharedObject) {
 
 std::string getXmlStr() {
   return R"xxx(
-<reference category='ObjectClass'>
- <object type='HotKeyConfiguration' id='0'>
-  <property name='HotKeys'>
-   <item key='copy'>
-    <reference category='ObjectClass'>
-     <object type='HotKey' id='1'>
-      <property name='Alt'>false</property>
-      <property name='Ctrl'>true</property>
-      <property name='KeyCode'>67</property>
-      <property name='LMB'>false</property>
-      <property name='MMB'>false</property>
-      <property name='RMB'>false</property>
-      <property name='Shift'>false</property>
-     </object>
-    </reference>
-   </item>
-   <item key='open'>
-    <reference category='ObjectClass'>
-     <object type='HotKey' id='2'>
-      <property name='Alt'>false</property>
-      <property name='Ctrl'>true</property>
-      <property name='KeyCode'>79</property>
-      <property name='LMB'>false</property>
-      <property name='MMB'>false</property>
-      <property name='RMB'>false</property>
-      <property name='Shift'>false</property>
-     </object>
-    </reference>
-   </item>
-   <item key='paste'>
-    <reference category='ObjectClass'>
-     <object type='HotKey' id='3'>
-      <property name='Alt'>false</property>
-      <property name='Ctrl'>true</property>
-      <property name='KeyCode'>86</property>
-      <property name='LMB'>false</property>
-      <property name='MMB'>false</property>
-      <property name='RMB'>false</property>
-      <property name='Shift'>false</property>
-     </object>
-    </reference>
-   </item>
-   <item key='save'>
-    <reference category='ObjectClass'>
-     <object type='HotKey' id='4'>
-      <property name='Alt'>false</property>
-      <property name='Ctrl'>true</property>
-      <property name='KeyCode'>83</property>
-      <property name='LMB'>false</property>
-      <property name='MMB'>false</property>
-      <property name='RMB'>false</property>
-      <property name='Shift'>false</property>
-     </object>
-    </reference>
-   </item>
-  </property>
- </object>
-</reference>
+  <reference category='ObjectClass'>
+   <object type='HotKeyConfiguration' id='07000000-0000-0020-0000-000000000020'>
+    <property name='HotKeys'>
+     <item key='copy'>
+      <reference category='ObjectClass'>
+       <object type='HotKey' id='0000e08b-c67f-0000-20f5-3d0500700000'>
+        <property name='Alt'>false</property>
+        <property name='Ctrl'>true</property>
+        <property name='KeyCode'>67</property>
+        <property name='LMB'>false</property>
+        <property name='MMB'>false</property>
+        <property name='RMB'>false</property>
+        <property name='Shift'>false</property>
+       </object>
+      </reference>
+     </item>
+     <item key='open'>
+      <reference category='ObjectClass'>
+       <object type='HotKey' id='30f63d05-0070-0000-30f6-3d0500700000'>
+        <property name='Alt'>false</property>
+        <property name='Ctrl'>true</property>
+        <property name='KeyCode'>79</property>
+        <property name='LMB'>false</property>
+        <property name='MMB'>false</property>
+        <property name='RMB'>false</property>
+        <property name='Shift'>false</property>
+       </object>
+      </reference>
+     </item>
+     <item key='paste'>
+      <reference category='ObjectClass'>
+       <object type='HotKey' id='f8f43d05-0070-0000-0100-000000000000'>
+        <property name='Alt'>false</property>
+        <property name='Ctrl'>true</property>
+        <property name='KeyCode'>86</property>
+        <property name='LMB'>false</property>
+        <property name='MMB'>false</property>
+        <property name='RMB'>false</property>
+        <property name='Shift'>false</property>
+       </object>
+      </reference>
+     </item>
+     <item key='save'>
+      <reference category='ObjectClass'>
+       <object type='HotKey' id='e0f43d05-0070-0000-d0f4-3d0500700000'>
+        <property name='Alt'>false</property>
+        <property name='Ctrl'>true</property>
+        <property name='KeyCode'>83</property>
+        <property name='LMB'>false</property>
+        <property name='MMB'>false</property>
+        <property name='RMB'>false</property>
+        <property name='Shift'>false</property>
+       </object>
+      </reference>
+     </item>
+    </property>
+   </object>
+  </reference>
 )xxx";
 }
 
@@ -118,6 +120,9 @@ TEST(DeserializeObject) {
   CHECK_EQUAL(save->mbAlt, false);
   CHECK_EQUAL(save->mbCtrl, true);
   CHECK_EQUAL(save->miKeyCode, 83);
+
+  std::string uuids = boost::uuids::to_string(save->_uuid);
+  CHECK_EQUAL(uuids, "e0f43d05-0070-0000-d0f4-3d0500700000");
 }
 TEST(DeserializeSharedObject) {
 
@@ -132,4 +137,7 @@ TEST(DeserializeSharedObject) {
   CHECK_EQUAL(save->mbAlt, false);
   CHECK_EQUAL(save->mbCtrl, true);
   CHECK_EQUAL(save->miKeyCode, 83);
+
+  std::string uuids = boost::uuids::to_string(save->_uuid);
+  CHECK_EQUAL(uuids, "e0f43d05-0070-0000-d0f4-3d0500700000");
 }

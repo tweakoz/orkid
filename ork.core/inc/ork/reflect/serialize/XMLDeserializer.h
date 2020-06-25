@@ -9,6 +9,8 @@
 
 #include <ork/reflect/IDeserializer.h>
 #include <ork/stream/InputStreamBuffer.h>
+#include <unordered_map>
+#include <boost/uuid/uuid.hpp>
 
 #include <ork/orkstl.h>
 
@@ -51,7 +53,7 @@ private:
 
   int mLineNo;
 
-  using trackervect_t = orkvector<rtti::castable_rawptr_t>;
+  using trackervect_t = std::unordered_map<std::string, rtti::castable_rawptr_t>;
 
   stream::InputStreamBuffer<1024 * 4> mStream;
   trackervect_t _reftracker;
@@ -78,7 +80,7 @@ private:
   char mAttributeEndChar;
   const Command* mCurrentCommand;
 
-  int FindObject(rtti::ICastable* object);
+  // int FindObject(rtti::ICastable* object);
 
   ////////////////////////////////////////////
 

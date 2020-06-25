@@ -13,6 +13,10 @@
 #include <ork/rtti/Class.h>
 #include <ork/rtti/Category.h>
 #include <ork/rtti/downcast.h>
+#include <ork/object/Object.h>
+#include <boost/lexical_cast.hpp>
+#include <boost/uuid/uuid_io.hpp>
+#include <boost/uuid/string_generator.hpp>
 
 #include <ork/orkprotos.h>
 #include <cstring>
@@ -180,9 +184,10 @@ bool XMLDeserializer::deserializeObjectProperty(const ObjectProperty* prop, Obje
   return prop->Deserialize(*this, object);
 }
 
-bool XMLDeserializer::ReferenceObject(rtti::castable_rawptr_t object) {
+bool XMLDeserializer::ReferenceObject(rtti::castable_rawptr_t castable) {
   int object_id = -1;
   Command referenceAttributeCommand;
+  std::string object_uuid_str;
 
   if (mbReadingAttributes) {
     bool result = false;
@@ -197,8 +202,13 @@ bool XMLDeserializer::ReferenceObject(rtti::castable_rawptr_t object) {
       if (referenceAttributeCommand.Name() != "id")
         return false;
 
-      result = Deserialize(object_id);
+      ArrayString<64> mutstrstorage;
+
+      MutableString oidpstr(mutstrstorage);
+      result = Deserialize(oidpstr);
       EndCommand(referenceAttributeCommand);
+
+      object_uuid_str = oidpstr.c_str();
     }
 
     OrkAssert(result);
@@ -206,13 +216,15 @@ bool XMLDeserializer::ReferenceObject(rtti::castable_rawptr_t object) {
       return false;
   }
 
-  int assigned_id = int(_reftracker.size());
-  _reftracker.push_back(object);
-
-  if (object_id != -1) {
-    OrkAssert(assigned_id == object_id);
-    if (assigned_id != object_id)
-      return false;
+  if (object_uuid_str != "0") {
+    boost::uuids::string_generator gen;
+    auto as_uuid = gen(object_uuid_str);
+    auto it      = _reftracker.find(object_uuid_str);
+    OrkAssert(it == _reftracker.end());
+    auto as_object   = dynamic_cast<Object*>(castable);
+    as_object->_uuid = as_uuid;
+    OrkAssert(as_object != nullptr);
+    _reftracker[object_uuid_str] = as_object;
   }
 
   return true;
@@ -227,10 +239,12 @@ bool XMLDeserializer::_deserializeObject(
     return false;
 
   OrkAssert(!mbReadingAttributes);
-
+  //////////////////////////////////////
+  // backreference
+  //////////////////////////////////////
   if (BeginTag("backreference")) {
     ArrayString<32> attrname;
-    ArrayString<32> attrvalue;
+    ArrayString<64> attrvalue;
 
     if (!ReadAttribute(attrname, attrvalue)) {
       while (attrname != "id") {
@@ -241,22 +255,27 @@ bool XMLDeserializer::_deserializeObject(
       }
     }
 
-    int object_id = std::atoi(attrvalue.c_str());
+    std::string object_uuid_str = attrvalue.c_str();
 
-    if (object_id == -1) {
-      object = NULL;
-    } else if (object_id < int(_reftracker.size())) {
-      auto index     = trackervect_t::size_type(object_id);
-      auto rawobject = _reftracker[index];
-      // object         = ;
-      OrkAssert(false);
-      // we need to paramterize object = rawobject; on ptrtype somehow
-      //  or we will need separate _deserializeObject methods for raw and sharedptr
+    if (object_uuid_str == "0") {
+      object = nullptr;
     } else {
-      ArrayString<32> buffer;
-      MutableString error(buffer);
-      error.format("backreference %d not available!", object_id);
-      OrkAssertI(false, error.c_str());
+      boost::uuids::string_generator gen;
+      auto as_uuid = gen(object_uuid_str);
+      auto it      = _reftracker.find(object_uuid_str);
+      if (it != _reftracker.end()) {
+
+        auto rawobject = it->second;
+        // object         = ;
+        OrkAssert(false);
+        // we need to paramterize object = rawobject; on ptrtype somehow
+        //  or we will need separate _deserializeObject methods for raw and sharedptr
+      } else {
+        ArrayString<32> buffer;
+        MutableString error(buffer);
+        error.format("backreference %s not available!", object_uuid_str.c_str());
+        OrkAssertI(false, error.c_str());
+      }
     }
 
     if (!EndTag("backreference")) {
@@ -265,7 +284,11 @@ bool XMLDeserializer::_deserializeObject(
     }
 
     return true;
-  } else if (BeginTag("reference")) {
+  }
+  //////////////////////////////////////
+  // first reference
+  //////////////////////////////////////
+  else if (BeginTag("reference")) {
 
     const rtti::Category* category = NULL;
 

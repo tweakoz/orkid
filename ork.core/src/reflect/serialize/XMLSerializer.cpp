@@ -14,6 +14,9 @@
 #include <ork/rtti/Category.h>
 #include <ork/rtti/downcast.h>
 #include <ork/kernel/string/string.h>
+#include <ork/object/Object.h>
+#include <boost/lexical_cast.hpp>
+#include <boost/uuid/uuid_io.hpp>
 #include <cstring>
 
 namespace ork { namespace reflect { namespace serialize {
@@ -238,18 +241,23 @@ bool XMLSerializer::serializeObjectProperty(const ObjectProperty* prop, const Ob
   return prop->Serialize(*this, object);
 }
 
-bool XMLSerializer::serializeObject(rtti::castable_rawconstptr_t object) {
-  bool result = true;
+bool XMLSerializer::serializeObject(rtti::castable_rawconstptr_t castable) {
+  auto as_object = dynamic_cast<const ork::Object*>(castable);
+  bool result    = true;
   FlushHeader();
-  if (object == nullptr) {
-    result = WriteText("<backreference id='-1'/>");
+  if (as_object == nullptr) {
+    result = WriteText("<backreference id='0'/>");
   } else {
-    int object_index = FindObject(object);
+    const auto& uuid  = as_object->_uuid;
+    std::string uuids = boost::uuids::to_string(uuid);
 
-    if (object_index != -1) {
-      result = WriteText("<backreference id='%d'/>", object_index);
+    auto it = _serialized.find(uuids);
+
+    if (it != _serialized.end()) {
+      result = WriteText("<backreference id='%s'/>", uuids.c_str());
     } else {
-      const rtti::Category* category = rtti::downcast<rtti::Category*>(object->GetClass()->GetClass());
+      auto objclazz = as_object->GetClass();
+      auto category = rtti::downcast<rtti::Category*>(objclazz->GetClass());
       Lined();
       result = WriteText("<reference category='");
       result = WriteText(category->Name().c_str());
@@ -257,7 +265,7 @@ bool XMLSerializer::serializeObject(rtti::castable_rawconstptr_t object) {
       Lined();
       mIndent++;
       // printf("xmlser obj<%p>\n", object);
-      if (!category->serializeObject(*this, object)) {
+      if (!category->serializeObject(*this, as_object)) {
         result = false;
       }
       mIndent--;
@@ -270,31 +278,19 @@ bool XMLSerializer::serializeObject(rtti::castable_rawconstptr_t object) {
   return result;
 }
 
-bool XMLSerializer::ReferenceObject(const rtti::ICastable* object) {
-  OrkAssert(FindObject(object) == -1);
-  int assigned_id = int(mSerializedObjects.size());
-  mSerializedObjects.push_back(object);
+bool XMLSerializer::ReferenceObject(const rtti::ICastable* castable) {
+  auto as_object    = dynamic_cast<const ork::Object*>(castable);
+  const auto& uuid  = as_object->_uuid;
+  std::string uuids = boost::uuids::to_string(uuid);
+  OrkAssert(_serialized.find(uuids) == _serialized.end());
+  _serialized.insert(uuids);
 
   Command referenceAttributeCommand(Command::EATTRIBUTE, "id");
   BeginCommand(referenceAttributeCommand);
-  Serialize(assigned_id);
+  Serialize(PieceString(uuids.c_str()));
   EndCommand(referenceAttributeCommand);
 
   return true;
-}
-
-int XMLSerializer::FindObject(const rtti::ICastable* object) {
-  int result = -1;
-  for (orkvector<const rtti::ICastable*>::size_type index = 0; index < mSerializedObjects.size(); index++) {
-    if (mSerializedObjects[index] == object) {
-      result = int(index);
-      break;
-    }
-  }
-
-  // orkprintf("FindObject(%p) => %d\n", object, result);
-
-  return result;
 }
 
 static const char* EncodeXMLAttributeChar(char c) {

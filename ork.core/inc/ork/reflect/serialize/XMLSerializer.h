@@ -10,6 +10,8 @@
 #include <ork/reflect/ISerializer.h>
 #include <ork/orkstl.h>
 #include <ork/rtti/Category.h>
+#include <unordered_set>
+#include <boost/uuid/uuid.hpp>
 
 namespace ork { namespace stream {
 class IOutputStream;
@@ -47,7 +49,7 @@ public:
 
 private:
   stream::IOutputStream& mStream;
-  orkvector<const rtti::ICastable*> mSerializedObjects;
+  std::unordered_set<std::string> _serialized;
   int mIndent;
   bool mbWritingAttributes;
   bool mbNeedSpace;
@@ -64,7 +66,6 @@ private:
 
   bool StartObject(PieceString name);
   bool EndObject();
-  int FindObject(const rtti::ICastable*);
 };
 
 }}} // namespace ork::reflect::serialize
