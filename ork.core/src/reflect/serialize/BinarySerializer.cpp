@@ -13,6 +13,8 @@
 #include <ork/stream/IOutputStream.h>
 #include <ork/rtti/Category.h>
 #include <ork/rtti/downcast.h>
+#include <ork/object/Object.h>
+#include <boost/uuid/uuid_io.hpp>
 
 namespace ork { namespace reflect { namespace serialize {
 
@@ -39,12 +41,12 @@ bool BinarySerializer::WriteFooter(char type) {
 
 template <typename T> bool BinarySerializer::Write(const T& datum) {
   // Endian issues come up here
-  return mStream.Write(reinterpret_cast<const unsigned char*>(&datum), sizeof(T));
+  return mStream.Write(
+      reinterpret_cast<const unsigned char*>(&datum), //
+      sizeof(T));
 }
 
 bool BinarySerializer::BeginCommand(const Command& command) {
-  bool result = false;
-
   switch (command.Type()) {
     case Command::EOBJECT:
       WriteHeader('O', command.Name());
@@ -59,15 +61,12 @@ bool BinarySerializer::BeginCommand(const Command& command) {
       Write('I');
       break;
   }
-
   command.PreviousCommand() = mCurrentCommand;
   mCurrentCommand           = &command;
-
-  return result;
+  return true;
 }
 
 bool BinarySerializer::EndCommand(const Command& command) {
-  bool result = false;
 
   if (mCurrentCommand == &command) {
     mCurrentCommand = mCurrentCommand->PreviousCommand();
@@ -93,7 +92,7 @@ bool BinarySerializer::EndCommand(const Command& command) {
       break;
   }
 
-  return result;
+  return true;
 }
 
 bool BinarySerializer::Serialize(const char& value) {
@@ -132,53 +131,46 @@ bool BinarySerializer::serializeObjectProperty(const ObjectProperty* prop, const
   return prop->Serialize(*this, object);
 }
 
-bool BinarySerializer::ReferenceObject(const rtti::ICastable* object) {
-  OrkAssert(FindObject(object) == -1);
-
-  mSerializedObjects.push_back(object);
-
+bool BinarySerializer::ReferenceObject(const rtti::ICastable* castable) {
+  auto as_object    = dynamic_cast<const ork::Object*>(castable);
+  const auto& uuid  = as_object->_uuid;
+  std::string uuids = boost::uuids::to_string(uuid);
+  OrkAssert(_serialized.find(uuids) == _serialized.end());
+  _serialized.insert(uuids);
   return true;
 }
 
-int BinarySerializer::FindObject(const rtti::ICastable* object) {
-  int result = -1;
-
-  for (orkvector<const rtti::ICastable*>::size_type index = 0; index < mSerializedObjects.size(); index++) {
-    if (mSerializedObjects[index] == object) {
-      result = int(index);
-      break;
-    }
-  }
-
-  return result;
-}
-
-bool BinarySerializer::serializeObject(const rtti::ICastable* object) {
-  bool result = true;
-
-  if (object == NULL) {
+bool BinarySerializer::serializeObject(const rtti::ICastable* castable) {
+  auto as_object = dynamic_cast<const ork::Object*>(castable);
+  if (as_object == nullptr) {
     Write('N');
   } else {
-    int object_index = FindObject(object);
+    const auto& uuid  = as_object->_uuid;
+    std::string uuids = boost::uuids::to_string(uuid);
 
-    if (object_index != -1) {
+    auto it = _serialized.find(uuids);
+
+    ////////////////////////////////////
+    // backreference
+    ////////////////////////////////////
+    if (it != _serialized.end()) {
       Write('B');
-      Write(int(object_index));
-    } else {
-      const rtti::Category* category = rtti::downcast<rtti::Category*>(object->GetClass()->GetClass());
-
-      if (false == WriteHeader('R', category->Name()))
-        result = false;
-
-      if (false == category->serializeObject(*this, object))
-        result = false;
-
-      if (false == WriteFooter('r'))
-        result = false;
+      Write(uuids.c_str());
+    }
+    ////////////////////////////////////
+    // firstreference
+    ////////////////////////////////////
+    else {
+      auto objclazz = as_object->GetClass();
+      auto category = rtti::downcast<rtti::Category*>(objclazz->GetClass());
+      WriteHeader('R', category->Name());
+      Write(uuids.c_str());
+      category->serializeObject(*this, as_object);
+      WriteFooter('r');
     }
   }
 
-  return result;
+  return true;
 }
 
 void BinarySerializer::Hint(const PieceString&) {

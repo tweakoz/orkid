@@ -15,7 +15,6 @@
 #include <ork/rtti/downcast.h>
 #include <ork/kernel/string/string.h>
 #include <ork/object/Object.h>
-#include <boost/lexical_cast.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <cstring>
 

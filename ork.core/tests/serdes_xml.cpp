@@ -20,7 +20,7 @@ using namespace ork::reflect;
 using namespace ork::rtti;
 using namespace ork::stream;
 
-TEST(SerializeObject) {
+TEST(SerializeObjectXML) {
 
   ork::HotKeyConfiguration hkeys;
   hkeys.Default();
@@ -34,7 +34,7 @@ TEST(SerializeObject) {
   printf("mutstr<%s>\n", resultdata->c_str());
 }
 
-TEST(SerializeSharedObject) {
+TEST(SerializeSharedObjectXML) {
   auto hkeys = std::make_shared<ork::HotKeyConfiguration>();
   hkeys->Default();
   auto resultdata = std::make_shared<ArrayString<65536>>();
@@ -107,7 +107,7 @@ std::string getXmlStr() {
 )xxx";
 }
 
-TEST(DeserializeObject) {
+TEST(DeserializeObjectXML) {
 
   auto objstr = getXmlStr();
   stream::StringInputStream inp_stream(objstr.c_str());
@@ -124,7 +124,7 @@ TEST(DeserializeObject) {
   std::string uuids = boost::uuids::to_string(save->_uuid);
   CHECK_EQUAL(uuids, "e0f43d05-0070-0000-d0f4-3d0500700000");
 }
-TEST(DeserializeSharedObject) {
+TEST(DeserializeSharedObjectXML) {
 
   auto objstr = getXmlStr();
   stream::StringInputStream inp_stream(objstr.c_str());

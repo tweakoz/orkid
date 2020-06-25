@@ -139,26 +139,4 @@ SynthData::SynthData()
   //_lpf.setup(330.0f,syn->);
 }
 
-void hexdumpbytes(std::vector<uint8_t> bytes) {
-  int numlines = bytes.size() / 16;
-  for (int r = 0; r < numlines; r++) {
-    int bidx = (r * 16);
-    printf("0x%02x: ", bidx);
-
-    for (int c = 0; c < 16; c++) {
-      u8 byte = bytes[bidx + c];
-      printf("%02x ", byte);
-    }
-
-    printf(" |");
-    for (int c = 0; c < 16; c++) {
-      char byte = (char)bytes[bidx + c];
-      if (false == isprint(byte))
-        byte = '.';
-      printf("%c", byte);
-    }
-    printf("|\n");
-  }
-}
-
 } // namespace ork::audio::singularity
