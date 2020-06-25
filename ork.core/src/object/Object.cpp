@@ -113,6 +113,7 @@ bool Object::xxxDeserializeShared(object_ptr_t obj, reflect::IDeserializer& dese
   obj->PreDeserialize(deserializer);
   auto objclass    = rtti::safe_downcast<object::ObjectClass*>(clazz);
   const auto& desc = objclass->Description();
+  OrkAssert(false);
   if (not desc.DeserializeProperties(deserializer, obj.get())) {
     OrkAssert(false);
   }

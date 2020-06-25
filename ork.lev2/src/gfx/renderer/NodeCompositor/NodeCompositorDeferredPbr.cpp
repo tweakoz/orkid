@@ -11,7 +11,7 @@
 #include <ork/kernel/opq.h>
 #include <ork/kernel/mutex.h>
 #include <ork/asset/AssetCategory.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/RegisterPropertyX.inl>
 #include <ork/application/application.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/rtgroup.h>

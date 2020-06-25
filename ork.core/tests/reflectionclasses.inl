@@ -1,8 +1,8 @@
 #pragma once
 
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/RegisterPropertyX.inl>
 #include <ork/object/ObjectClass.h>
-#include <ork/rtti/RTTI.h>
+#include <ork/rtti/RTTIX.inl>
 
 using namespace ork;
 using namespace ork::object;

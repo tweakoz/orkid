@@ -25,6 +25,7 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <OpenImageIO/imageio.h>
 #include <ork/kernel/datacache.h>
+#include <ork/reflect/RegisterPropertyX.inl>
 
 OIIO_NAMESPACE_USING
 

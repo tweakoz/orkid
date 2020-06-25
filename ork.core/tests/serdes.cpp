@@ -11,6 +11,7 @@
 #include <ork/stream/StringOutputStream.h>
 #include <ork/kernel/string/ArrayString.h>
 #include <ork/util/hotkey.h>
+#include "reflectionclasses.inl"
 using namespace ork;
 using namespace ork::file;
 using namespace ork::reflect;

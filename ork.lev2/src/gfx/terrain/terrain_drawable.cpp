@@ -27,6 +27,7 @@
 #include <ork/reflect/AccessorObjectPropertyType.hpp>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
 #include <ork/kernel/datacache.h>
+#include <ork/reflect/RegisterPropertyX.inl>
 ///////////////////////////////////////////////////////////////////////////////
 using namespace ork::lev2;
 ImplementReflectionX(ork::lev2::TerrainDrawableData, "TerrainDrawableData");

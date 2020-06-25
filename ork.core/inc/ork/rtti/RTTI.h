@@ -227,48 +227,6 @@ private:                                                                        
 
 ////////////////
 
-#define DeclareConcreteX(ClassType, BaseType)                                                                                      \
-public:                                                                                                                            \
-  typedef ::ork::rtti::RTTI<ClassType, BaseType, ::ork::rtti::DefaultPolicy, BaseType::RTTIType::RTTICategory> RTTIType;           \
-  typedef RTTIType::RTTICategory class_t;                                                                                          \
-  static void describeX(class_t* clazz);                                                                                           \
-  static void Describe();                                                                                                          \
-  static ::ork::ConstString DesignNameStatic();                                                                                    \
-  static class_t* GetClassStatic();                                                                                                \
-  class_t* GetClass() const override;                                                                                              \
-                                                                                                                                   \
-private:
-
-////////////////
-
-#define DeclareAbstractX(ClassType, BaseType)                                                                                      \
-public:                                                                                                                            \
-  typedef ::ork::rtti::RTTI<ClassType, BaseType, ::ork::rtti::AbstractPolicy, BaseType::RTTIType::RTTICategory> RTTIType;          \
-  typedef RTTIType::RTTICategory class_t;                                                                                          \
-  static void describeX(class_t* clazz);                                                                                           \
-  static void Describe();                                                                                                          \
-  static ::ork::ConstString DesignNameStatic();                                                                                    \
-  static class_t* GetClassStatic();                                                                                                \
-  class_t* GetClass() const override;                                                                                              \
-                                                                                                                                   \
-private:
-
-////////////////
-
-#define DeclareExplicitX(ClassType, BaseType, Policy, ClassImplementation)                                                         \
-public:                                                                                                                            \
-  typedef ::ork::rtti::RTTI<ClassType, BaseType, Policy, ClassImplementation> RTTIType;                                            \
-  typedef RTTIType::RTTICategory class_t;                                                                                          \
-  static void describeX(class_t* clazz);                                                                                           \
-  static void Describe();                                                                                                          \
-  static ::ork::ConstString DesignNameStatic();                                                                                    \
-  static class_t* GetClassStatic();                                                                                                \
-  class_t* GetClass() const override;                                                                                              \
-                                                                                                                                   \
-private:
-
-////////////////
-
 #define RttiDeclareConcretePublic(ClassType, BaseType)                                                                             \
   __INTERNAL_RTTI_DECLARE_TRANSPARENT__(ClassType, RTTI_2_ARG__(::ork::rtti::RTTI<ClassType, BaseType>))                           \
 public:
@@ -432,30 +390,6 @@ Class* ForceLink(Class*);
   INSTANTIATE_CASTABLE_SERIALIZE(ClassName)                                                                                        \
   INSTANTIATE_CASTABLE_SERIALIZE(const ClassName)                                                                                  \
   INSTANTIATE_LINK_FUNCTION(ClassName)
-
-////////////////////////////////////////////////////////////////////////////////
-// NewStyle
-////////////////////////////////////////////////////////////////////////////////
-
-#define ImplementReflectionX(ClassName, TheDesignName)                                                                             \
-  ::ork::ConstString ClassName::DesignNameStatic() {                                                                               \
-    return TheDesignName;                                                                                                          \
-  }                                                                                                                                \
-  void ClassName::Describe() {                                                                                                     \
-    describeX(GetClassStatic());                                                                                                   \
-  }                                                                                                                                \
-  ClassName::class_t* ClassName::GetClassStatic() {                                                                                \
-    static ClassName::class_t _clazz(ClassName::RTTIType::ClassRTTI());                                                            \
-    return &_clazz;                                                                                                                \
-  }                                                                                                                                \
-  ClassName::class_t* ClassName::GetClass() const {                                                                                \
-    return GetClassStatic();                                                                                                       \
-  }                                                                                                                                \
-  INSTANTIATE_CASTABLE_SERIALIZE(ClassName)                                                                                        \
-  INSTANTIATE_CASTABLE_SERIALIZE(const ClassName)                                                                                  \
-  INSTANTIATE_LINK_FUNCTION(ClassName)
-
-#define RegisterClassX(ClassName) ::ork::rtti::Class::registerX(ClassName::GetClassStatic());
 
 } // namespace ork::rtti
 

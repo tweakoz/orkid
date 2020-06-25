@@ -14,7 +14,7 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <ork/math/collision_test.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/RegisterPropertyX.inl>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::LightManagerData, "LightManagerData");
 ImplementReflectionX(ork::lev2::LightData, "LightData");

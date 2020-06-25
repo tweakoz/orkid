@@ -11,6 +11,7 @@
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/renderer/frametek.h>
 #include <ork/lev2/gfx/gfxenv_enum.h>
+#include <ork/rtti/RTTIX.inl>
 
 namespace ork::lev2 {
 

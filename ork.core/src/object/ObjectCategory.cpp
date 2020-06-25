@@ -44,9 +44,9 @@ bool ObjectCategory::deserializeObject(
   OrkAssert(the_class);
   ObjectClass* clazz = rtti::downcast<ObjectClass*>(the_class);
   OrkAssert(clazz);
-  outvalue    = clazz->createShared();
-  auto object = dynamic_cast<Object*>(outvalue.get());
-  if (false == Object::xxxDeserialize(object, deserializer)) {
+  auto sharedobject = clazz->createShared();
+  outvalue          = sharedobject;
+  if (false == Object::xxxDeserializeShared(sharedobject, deserializer)) {
     deserializer.EndCommand(command);
     return false;
   }
