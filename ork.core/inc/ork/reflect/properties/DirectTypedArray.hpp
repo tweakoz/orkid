@@ -13,32 +13,32 @@
 namespace ork { namespace reflect {
 
 template<typename T>
-DirectArrayPropertyType<T>::DirectArrayPropertyType(
+DirectTypedArray<T>::DirectTypedArray(
         T (Object::*prop)[], size_t size)
     : mProperty(prop)
     , mSize(size)
 {}
 
 template<typename T>
-void DirectArrayPropertyType<T>::Get(T &value, const Object *obj, size_t index) const
+void DirectTypedArray<T>::Get(T &value, const Object *obj, size_t index) const
 {
     value = (obj->*mProperty)[index];
 }
 
 template<typename T>
-void DirectArrayPropertyType<T>::Set(const T &value, Object *obj, size_t index) const
+void DirectTypedArray<T>::Set(const T &value, Object *obj, size_t index) const
 {
     (obj->*mProperty)[index] = value;
 }
 
 template<typename T>
-size_t DirectArrayPropertyType<T>::Count(const Object *) const 
+size_t DirectTypedArray<T>::Count(const Object *) const 
 {
     return mSize; 
 }
 
 template<typename T>
-bool DirectArrayPropertyType<T>::Resize(Object *, size_t size) const
+bool DirectTypedArray<T>::Resize(Object *, size_t size) const
 {
 	return size == mSize;
 }

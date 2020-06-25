@@ -13,7 +13,7 @@
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AnimSeqTable, "AnimSeqTable");
 
-template class ork::reflect::DirectMapPropertyType<ork::orklut<float, ork::event::Event*> >;
+template class ork::reflect::DirectTypedMap<ork::orklut<float, ork::event::Event*> >;
 
 namespace ork { namespace ent {
 

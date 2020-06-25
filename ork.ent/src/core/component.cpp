@@ -26,7 +26,7 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::EditorPropMapInst, "EditorPropMapInst");
 
 template class ork::orklut<ork::PoolString, orklist<ork::ent::ComponentInst*>>;
 template class ork::orklut<ork::PoolString, orklist<ork::ent::ComponentData*>>;
-template class ork::reflect::DirectVectorPropertyType<orkvector<ork::PoolString>>;
+template class ork::reflect::DirectTypedVector<orkvector<ork::PoolString>>;
 
 namespace ork { namespace ent {
 

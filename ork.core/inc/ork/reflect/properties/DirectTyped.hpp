@@ -15,33 +15,33 @@ namespace ork { namespace reflect {
 class ISerializer;
 
 template<typename T>
-DirectPropertyType<T>::DirectPropertyType(T Object::*property)
+DirectTyped<T>::DirectTyped(T Object::*property)
 	: mProperty(property)
 {}
 
 template<typename T>
-void DirectPropertyType<T>::Get(T &value, const Object *obj) const 
+void DirectTyped<T>::Get(T &value, const Object *obj) const 
 {
     value = obj->*mProperty;
 }
 
 template<typename T>
-void DirectPropertyType<T>::Set(const T &value, Object *obj) const 
+void DirectTyped<T>::Set(const T &value, Object *obj) const 
 {
     obj->*mProperty = value;
 }
 
 template<typename T>
-typename DirectPropertyType<T>::RTTITyped::RTTICategory DirectPropertyType<T>::sClass( DirectPropertyType<T>::RTTITyped::ClassRTTI() );
+typename DirectTyped<T>::RTTITyped::RTTICategory DirectTyped<T>::sClass( DirectTyped<T>::RTTITyped::ClassRTTI() );
 
 template<typename T>
-typename DirectPropertyType<T>::RTTITyped::RTTICategory* DirectPropertyType<T>::GetClassStatic()
+typename DirectTyped<T>::RTTITyped::RTTICategory* DirectTyped<T>::GetClassStatic()
 {
 	return &sClass;
 }
 
 template<typename T>
-typename DirectPropertyType<T>::RTTITyped::RTTICategory* DirectPropertyType<T>::GetClass() const
+typename DirectTyped<T>::RTTITyped::RTTICategory* DirectTyped<T>::GetClass() const
 {
 	return GetClassStatic();
 }

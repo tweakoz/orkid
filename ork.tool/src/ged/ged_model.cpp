@@ -563,13 +563,13 @@ GedItemNode* ObjModel::CreateNode(const std::string& Name, const reflect::I* pro
       return new GedObjNode<PropSetterObj>(*this, Name.c_str(), prop, pobject);
   }
   /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::DirectMapPropertyType<ent::SceneData::SystemDataLut>* MapProp = rtti::autocast(prop)) {
-    auto mapprop = rtti::downcast<const reflect::DirectMapPropertyType<ent::SceneData::SystemDataLut>*>(prop);
+  else if (const reflect::DirectTypedMap<ent::SceneData::SystemDataLut>* MapProp = rtti::autocast(prop)) {
+    auto mapprop = rtti::downcast<const reflect::DirectTypedMap<ent::SceneData::SystemDataLut>*>(prop);
     if (mapprop)
       return new GedMapNode(*this, Name.c_str(), mapprop, pobject);
   }
   /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::DirectPropertyType<ork::Object*>* dobjprop = rtti::autocast(prop)) {
+  else if (const reflect::DirectTyped<ork::Object*>* dobjprop = rtti::autocast(prop)) {
     ork::Object* psubobj = 0;
     dobjprop->Get(psubobj, pobject);
     if (psubobj)

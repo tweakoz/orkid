@@ -66,7 +66,7 @@ TEST(ReflectionDirectSharedProperty) {
   auto clazzstatic = SharedTest::GetClassStatic();
   auto sht2        = clazz->createShared();
   auto& desc       = clazz->Description();
-  using ptype      = DirectPropertySharedObject;
+  using ptype      = DirectSharedObject;
   auto passh       = desc.findTypedProperty<ptype>("prop_sharedobj_direct");
   passh->set(sht2, sht1.get());
   CHECK_EQUAL(sht1->_childObject, sht2);

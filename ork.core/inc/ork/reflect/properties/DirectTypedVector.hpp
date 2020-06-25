@@ -13,31 +13,31 @@
 namespace ork { namespace reflect {
 
 template<typename VectorType>
-DirectVectorPropertyType<VectorType>::DirectVectorPropertyType(
+DirectTypedVector<VectorType>::DirectTypedVector(
 	VectorType Object::*prop)
 	: mProperty(prop)
 {}
 
 template<typename VectorType>
-void DirectVectorPropertyType<VectorType>::Get(typename VectorType::value_type &value, const Object *object, size_t index) const
+void DirectTypedVector<VectorType>::Get(typename VectorType::value_type &value, const Object *object, size_t index) const
 {
 	value = (object->*mProperty)[index];
 }
 
 template<typename VectorType>
-void DirectVectorPropertyType<VectorType>::Set(const typename VectorType::value_type &value, Object *object, size_t index) const
+void DirectTypedVector<VectorType>::Set(const typename VectorType::value_type &value, Object *object, size_t index) const
 {
 	(object->*mProperty)[index] = value;
 }
 
 template<typename VectorType>
-size_t DirectVectorPropertyType<VectorType>::Count(const Object *object) const
+size_t DirectTypedVector<VectorType>::Count(const Object *object) const
 {
 	return size_t((object->*mProperty).size());
 }
 
 template<typename VectorType>
-bool DirectVectorPropertyType<VectorType>::Resize(Object *object, size_t size) const
+bool DirectTypedVector<VectorType>::Resize(Object *object, size_t size) const
 {
 	(object->*mProperty).resize(size);
 	return Count(object) == size;

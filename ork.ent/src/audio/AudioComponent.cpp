@@ -484,9 +484,9 @@ ork::lev2::AudioInstrumentPlayback* AudioMultiEffectPlayInstItemModular::DoPlay(
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-class SoundMapPropertyType : public ork::reflect::DirectMapPropertyType< ork::orklut<ork::PoolString, AudioEffectPlayDataBase*> >
+class SoundMapPropertyType : public ork::reflect::DirectTypedMap< ork::orklut<ork::PoolString, AudioEffectPlayDataBase*> >
 {
-	typedef ork::reflect::DirectMapPropertyType< ork::orklut<ork::PoolString, AudioEffectPlayDataBase*> > SuperType;
+	typedef ork::reflect::DirectTypedMap< ork::orklut<ork::PoolString, AudioEffectPlayDataBase*> > SuperType;
 	typedef ork::orklut<ork::PoolString, AudioEffectPlayDataBase*> MapType;
 
 public:

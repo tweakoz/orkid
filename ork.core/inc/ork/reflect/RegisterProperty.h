@@ -46,11 +46,11 @@ namespace reflect {
 ///////////////////////////////////////////////////////////////////////////
 
 template <typename ClassType, typename MemberType>
-static inline DirectPropertyType<MemberType>& RegisterProperty(
+static inline DirectTyped<MemberType>& RegisterProperty(
     const char* name,
     MemberType ClassType::*member,
     Description& description = ClassType::GetClassStatic()->Description()) {
-  auto prop = new DirectPropertyType<MemberType>(static_cast<MemberType Object::*>(member));
+  auto prop = new DirectTyped<MemberType>(static_cast<MemberType Object::*>(member));
 
   description.AddProperty(name, prop);
 
@@ -112,11 +112,11 @@ static inline AccessorVariant& RegisterProperty(
 }
 
 template <typename ClassType, typename MemberType, size_t size>
-static DirectArrayPropertyType<MemberType>& RegisterArrayProperty(
+static DirectTypedArray<MemberType>& RegisterArrayProperty(
     const char* name,
     MemberType (ClassType::*pmember)[size],
     Description& description = ClassType::GetClassStatic()->Description()) {
-  auto prop = new DirectArrayPropertyType<MemberType>(
+  auto prop = new DirectTypedArray<MemberType>(
       // reinterpret_cast is necessary here, the static_cast goes as far as
       // possible, the reinterpret_cast just removes the size info from the
       // array
@@ -129,11 +129,11 @@ static DirectArrayPropertyType<MemberType>& RegisterArrayProperty(
 }
 
 template <typename ClassType, typename MemberType>
-static DirectVectorPropertyType<MemberType>& RegisterArrayProperty(
+static DirectTypedVector<MemberType>& RegisterArrayProperty(
     const char* name,
     MemberType ClassType::*pmember,
     Description& description = ClassType::GetClassStatic()->Description()) {
-  auto prop = new DirectVectorPropertyType<MemberType>(static_cast<MemberType Object::*>(pmember));
+  auto prop = new DirectTypedVector<MemberType>(static_cast<MemberType Object::*>(pmember));
 
   description.AddProperty(name, prop);
 
@@ -196,11 +196,11 @@ static inline AccessorVariantArray& RegisterArrayProperty(
 }
 
 template <typename ClassType, typename MapType>
-static inline DirectMapPropertyType<MapType>& RegisterMapProperty(
+static inline DirectTypedMap<MapType>& RegisterMapProperty(
     const char* name,
     MapType ClassType::*member,
     Description& description = ClassType::GetClassStatic()->Description()) {
-  auto prop = new DirectMapPropertyType<MapType>(static_cast<MapType Object::*>(member));
+  auto prop = new DirectTypedMap<MapType>(static_cast<MapType Object::*>(member));
   description.AddProperty(name, prop);
   return *prop;
 }
