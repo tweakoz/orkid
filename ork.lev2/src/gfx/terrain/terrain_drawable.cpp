@@ -24,7 +24,7 @@
 #include <ork/lev2/gfx/meshutil/rigid_primitive.inl>
 #include <ork/lev2/gfx/meshutil/clusterizer.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/reflect/AccessorObjectPropertyType.hpp>
+#include <ork/reflect/properties/AccessorPropertyType.hpp>
 #include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/kernel/datacache.h>
 #include <ork/reflect/RegisterPropertyX.inl>

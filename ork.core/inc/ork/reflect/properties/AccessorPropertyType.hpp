@@ -7,23 +7,23 @@
 
 #pragma once
 
-#include <ork/reflect/AccessorObjectPropertyType.h>
+#include <ork/reflect/properties/AccessorPropertyType.h>
 
 namespace ork { namespace reflect {
 
 template <typename T>
-AccessorObjectPropertyType<T>::AccessorObjectPropertyType(void (Object::*getter)(T&) const, void (Object::*setter)(const T&))
+AccessorPropertyType<T>::AccessorPropertyType(void (Object::*getter)(T&) const, void (Object::*setter)(const T&))
     : mGetter(getter)
     , mSetter(setter) {
 }
 
 template <typename T> //
-void AccessorObjectPropertyType<T>::Get(T& value, const Object* obj) const {
+void AccessorPropertyType<T>::Get(T& value, const Object* obj) const {
   (obj->*mGetter)(value);
 }
 
 template <typename T> //
-void AccessorObjectPropertyType<T>::Set(const T& value, Object* obj) const {
+void AccessorPropertyType<T>::Set(const T& value, Object* obj) const {
   (obj->*mSetter)(value);
 }
 

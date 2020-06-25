@@ -7,22 +7,22 @@
 
 #pragma once
 
-#include <ork/reflect/AccessorObjectPropertyObject.h>
-#include <ork/reflect/AccessorObjectPropertySharedObject.h>
-#include <ork/reflect/AccessorObjectPropertyType.h>
-#include <ork/reflect/AccessorObjectPropertyVariant.h>
+#include <ork/reflect/properties/AccessorPropertyObject.h>
+#include <ork/reflect/properties/AccessorPropertySharedObject.h>
+#include <ork/reflect/properties/AccessorPropertyType.h>
+#include <ork/reflect/properties/AccessorPropertyVariant.h>
 #include <ork/reflect/properties/DirectTyped.h>
 #include <ork/reflect/properties/DirectSharedObject.h>
 
-#include <ork/reflect/AccessorObjectArrayPropertyObject.h>
-#include <ork/reflect/AccessorObjectArrayPropertyType.h>
-#include <ork/reflect/AccessorObjectArrayPropertyVariant.h>
+#include <ork/reflect/properties/AccessorArrayPropertyObject.h>
+#include <ork/reflect/properties/AccessorArrayPropertyType.h>
+#include <ork/reflect/properties/AccessorArrayPropertyVariant.h>
 #include <ork/reflect/properties/DirectArrayTyped.h>
 #include <ork/reflect/properties/DirectVectorTyped.h>
 
-#include <ork/reflect/AccessorObjectMapPropertyObject.h>
-#include <ork/reflect/AccessorObjectMapPropertyType.h>
-#include <ork/reflect/AccessorObjectMapPropertyVariant.h>
+#include <ork/reflect/properties/AccessorMapPropertyObject.h>
+#include <ork/reflect/properties/AccessorMapPropertyType.h>
+#include <ork/reflect/properties/AccessorMapPropertyVariant.h>
 #include <ork/reflect/properties/DirectMapTyped.h>
 #include <ork/reflect/Functor.h>
 
@@ -60,12 +60,12 @@ static inline DirectPropertyType<MemberType>& RegisterProperty(
 ///////////////////////////////////////////////////////////////////////////
 
 template <typename ClassType, typename MemberType>
-static inline AccessorObjectPropertyType<MemberType>& RegisterProperty(
+static inline AccessorPropertyType<MemberType>& RegisterProperty(
     const char* name,
     void (ClassType::*getter)(MemberType&) const,
     void (ClassType::*setter)(const MemberType&),
     Description& description = ClassType::GetClassStatic()->Description()) {
-  auto prop = new AccessorObjectPropertyType<MemberType>(
+  auto prop = new AccessorPropertyType<MemberType>(
       static_cast<void (Object::*)(MemberType&) const>(getter), static_cast<void (Object::*)(const MemberType&)>(setter));
 
   description.AddProperty(name, prop);
@@ -74,11 +74,11 @@ static inline AccessorObjectPropertyType<MemberType>& RegisterProperty(
 }
 
 template <typename ClassType>
-static inline AccessorObjectPropertyObject& RegisterProperty(
+static inline AccessorPropertyObject& RegisterProperty(
     const char* name,
     Object* (ClassType::*accessor)(),
     Description& description = ClassType::GetClassStatic()->Description()) {
-  auto prop = new AccessorObjectPropertyObject(static_cast<Object* (Object::*)()>(accessor));
+  auto prop = new AccessorPropertyObject(static_cast<Object* (Object::*)()>(accessor));
 
   description.AddProperty(name, prop);
 
@@ -86,11 +86,11 @@ static inline AccessorObjectPropertyObject& RegisterProperty(
 }
 
 template <typename ClassType>
-static inline AccessorObjectPropertySharedObject& RegisterProperty(
+static inline AccessorPropertySharedObject& RegisterProperty(
     const char* name,
     object_ptr_t (ClassType::*accessor)(),
     Description& description = ClassType::GetClassStatic()->Description()) {
-  auto prop = new AccessorObjectPropertySharedObject(static_cast<object_ptr_t (Object::*)()>(accessor));
+  auto prop = new AccessorPropertySharedObject(static_cast<object_ptr_t (Object::*)()>(accessor));
 
   description.AddProperty(name, prop);
 
@@ -98,12 +98,12 @@ static inline AccessorObjectPropertySharedObject& RegisterProperty(
 }
 
 template <typename ClassType>
-static inline AccessorObjectPropertyVariant& RegisterProperty(
+static inline AccessorPropertyVariant& RegisterProperty(
     const char* name,
     bool (ClassType::*serialize)(ISerializer&) const,
     bool (ClassType::*deserialize)(IDeserializer&),
     Description& description = ClassType::GetClassStatic()->Description()) {
-  auto prop = new AccessorObjectPropertyVariant(
+  auto prop = new AccessorPropertyVariant(
       static_cast<bool (Object::*)(ISerializer&) const>(serialize), static_cast<bool (Object::*)(IDeserializer&)>(deserialize));
 
   description.AddProperty(name, prop);
@@ -141,14 +141,14 @@ static DirectVectorPropertyType<MemberType>& RegisterArrayProperty(
 }
 
 template <typename ClassType, typename MemberType>
-static inline AccessorObjectArrayPropertyType<MemberType>& RegisterArrayProperty(
+static inline AccessorArrayPropertyType<MemberType>& RegisterArrayProperty(
     const char* name,
     void (ClassType::*getter)(MemberType&, size_t) const,
     void (ClassType::*setter)(const MemberType&, size_t),
     size_t (ClassType::*counter)() const,
     void (ClassType::*resizer)(size_t newsize) = nullptr,
     Description& description                   = ClassType::GetClassStatic()->Description()) {
-  auto prop = new AccessorObjectArrayPropertyType<MemberType>(
+  auto prop = new AccessorArrayPropertyType<MemberType>(
       static_cast<void (Object::*)(MemberType&, size_t) const>(getter),
       static_cast<void (Object::*)(const MemberType&, size_t)>(setter),
       static_cast<size_t (Object::*)() const>(counter),
@@ -160,13 +160,13 @@ static inline AccessorObjectArrayPropertyType<MemberType>& RegisterArrayProperty
 }
 
 template <typename ClassType>
-static inline AccessorObjectArrayPropertyObject& RegisterArrayProperty(
+static inline AccessorArrayPropertyObject& RegisterArrayProperty(
     const char* name,
     Object* (ClassType::*accessor)(size_t),
     size_t (ClassType::*counter)() const,
     void (ClassType::*resizer)(size_t newsize) = nullptr,
     Description& description                   = ClassType::GetClassStatic()->Description()) {
-  auto prop = new AccessorObjectArrayPropertyObject(
+  auto prop = new AccessorArrayPropertyObject(
       static_cast<Object* (Object::*)(size_t)>(accessor),
       static_cast<size_t (Object::*)() const>(counter),
       static_cast<void (Object::*)(size_t)>(resizer));
@@ -177,14 +177,14 @@ static inline AccessorObjectArrayPropertyObject& RegisterArrayProperty(
 }
 
 template <typename ClassType>
-static inline AccessorObjectArrayPropertyVariant& RegisterArrayProperty(
+static inline AccessorArrayPropertyVariant& RegisterArrayProperty(
     const char* name,
     bool (ClassType::*serialize_item)(ISerializer&, size_t) const,
     bool (ClassType::*deserialize_item)(IDeserializer&, size_t),
     size_t (ClassType::*count)() const,
     bool (ClassType::*resize)(size_t) = nullptr,
     Description& description          = ClassType::GetClassStatic()->Description()) {
-  AccessorObjectArrayPropertyVariant* prop = new AccessorObjectArrayPropertyVariant(
+  AccessorArrayPropertyVariant* prop = new AccessorArrayPropertyVariant(
       static_cast<bool (Object::*)(ISerializer&, size_t) const>(serialize_item),
       static_cast<bool (Object::*)(IDeserializer&, size_t)>(deserialize_item),
       static_cast<size_t (Object::*)() const>(count),
@@ -206,13 +206,13 @@ static inline DirectMapPropertyType<MapType>& RegisterMapProperty(
 }
 
 template <typename ClassType, typename KeyType, typename ValueType>
-static inline AccessorObjectMapPropertyType<KeyType, ValueType>& RegisterMapProperty(
+static inline AccessorMapPropertyType<KeyType, ValueType>& RegisterMapProperty(
     const char* name,
     bool (ClassType::*getter)(const KeyType&, int, ValueType&) const,
     void (ClassType::*setter)(const KeyType&, int, const ValueType&),
     void (ClassType::*eraser)(const KeyType&, int),
     void (ClassType::*serializer)(
-        typename AccessorObjectMapPropertyType<KeyType, ValueType>::SerializationFunction,
+        typename AccessorMapPropertyType<KeyType, ValueType>::SerializationFunction,
         BidirectionalSerializer&) const,
     Description& description = ClassType::GetClassStatic()->Description()) {
 
@@ -220,9 +220,9 @@ static inline AccessorObjectMapPropertyType<KeyType, ValueType>& RegisterMapProp
   auto _s = static_cast<void (Object::*)(const KeyType&, int, const ValueType&)>(setter);
   auto _e = static_cast<void (Object::*)(const KeyType&, int)>(eraser);
   auto _z = static_cast<void (Object::*)(
-      typename AccessorObjectMapPropertyType<KeyType, ValueType>::SerializationFunction, BidirectionalSerializer&) const>(
+      typename AccessorMapPropertyType<KeyType, ValueType>::SerializationFunction, BidirectionalSerializer&) const>(
       serializer);
-  auto prop = new AccessorObjectMapPropertyType<KeyType, ValueType>(_g, _s, _e, _z);
+  auto prop = new AccessorMapPropertyType<KeyType, ValueType>(_g, _s, _e, _z);
 
   description.AddProperty(name, prop);
 
@@ -230,21 +230,21 @@ static inline AccessorObjectMapPropertyType<KeyType, ValueType>& RegisterMapProp
 }
 
 template <typename ClassType, typename KeyType>
-static inline AccessorObjectMapPropertyObject<KeyType>& RegisterMapProperty(
+static inline AccessorMapPropertyObject<KeyType>& RegisterMapProperty(
     const char* name,
     const Object* (ClassType::*get)(const KeyType&, int) const,
     Object* (ClassType::*access)(const KeyType&, int),
     void (ClassType::*eraser)(const KeyType&, int),
     void (
-        ClassType::*serializer)(typename AccessorObjectMapPropertyObject<KeyType>::SerializationFunction, BidirectionalSerializer&)
+        ClassType::*serializer)(typename AccessorMapPropertyObject<KeyType>::SerializationFunction, BidirectionalSerializer&)
         const,
     Description& description = ClassType::GetClassStatic()->Description()) {
-  AccessorObjectMapPropertyObject<KeyType>* prop = new AccessorObjectMapPropertyObject<KeyType>(
+  AccessorMapPropertyObject<KeyType>* prop = new AccessorMapPropertyObject<KeyType>(
       static_cast<const Object* (Object::*)(const KeyType&, int) const>(get),
       static_cast<Object* (Object::*)(const KeyType&, int)>(access),
       static_cast<void (Object::*)(const KeyType&, int)>(eraser),
       static_cast<void (Object::*)(
-          typename AccessorObjectMapPropertyObject<KeyType>::SerializationFunction, BidirectionalSerializer&) const>(serializer));
+          typename AccessorMapPropertyObject<KeyType>::SerializationFunction, BidirectionalSerializer&) const>(serializer));
 
   description.AddProperty(name, prop);
 

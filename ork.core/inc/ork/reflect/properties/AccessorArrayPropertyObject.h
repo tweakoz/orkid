@@ -13,10 +13,10 @@
 
 namespace ork { namespace reflect {
 
-class  AccessorObjectArrayPropertyObject : public IObjectArrayPropertyObject
+class  AccessorArrayPropertyObject : public IObjectArrayPropertyObject
 {
 public:
-    AccessorObjectArrayPropertyObject(
+    AccessorArrayPropertyObject(
         Object *(Object::*accessor)(size_t),
         size_t (Object::*counter)() const,
 		void (Object::*resizer)(size_t) = 0

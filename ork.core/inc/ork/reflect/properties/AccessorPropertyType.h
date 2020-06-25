@@ -13,9 +13,9 @@
 
 namespace ork { namespace reflect {
 
-template <typename T> class AccessorObjectPropertyType : public IObjectPropertyType<T> {
+template <typename T> class AccessorPropertyType : public IObjectPropertyType<T> {
 public:
-  AccessorObjectPropertyType(void (Object::*getter)(T&) const, void (Object::*setter)(const T&));
+  AccessorPropertyType(void (Object::*getter)(T&) const, void (Object::*setter)(const T&));
 
   void Get(T& value, const Object* obj) const override;
   void Set(const T& value, Object* obj) const override;

@@ -10,7 +10,7 @@
 #include <pkg/ent/entity.h>
 #include <pkg/ent/scene.h>
 #include <ork/reflect/RegisterPropertyX.inl>
-#include <ork/reflect/AccessorObjectPropertyType.hpp>
+#include <ork/reflect/properties/AccessorPropertyType.hpp>
 #include <ork/rtti/downcast.h>
 #include <ork/reflect/properties/DirectVectorTyped.h>
 #include <ork/reflect/properties/DirectVectorTyped.hpp>

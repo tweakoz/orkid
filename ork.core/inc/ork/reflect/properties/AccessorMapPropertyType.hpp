@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/reflect/AccessorObjectMapPropertyType.h>
+#include <ork/reflect/properties/AccessorMapPropertyType.h>
 #include <ork/reflect/IObjectMapPropertyType.hpp>
 #include <ork/reflect/IDeserializer.h>
 #include <ork/reflect/ISerializer.h>
@@ -16,12 +16,12 @@
 namespace ork { namespace reflect {
 
 template<typename KeyType, typename ValueType>
-AccessorObjectMapPropertyType<KeyType, ValueType>::AccessorObjectMapPropertyType(
+AccessorMapPropertyType<KeyType, ValueType>::AccessorMapPropertyType(
 		bool (Object::*getter)(const KeyType &, int, ValueType &) const,
 		void (Object::*setter)(const KeyType &, int, const ValueType &),
 		void (Object::*eraser)(const KeyType &, int),
 		void (Object::*serializer)(
-			typename AccessorObjectMapPropertyType<KeyType, ValueType>::ItemSerializeFunction,
+			typename AccessorMapPropertyType<KeyType, ValueType>::ItemSerializeFunction,
 			BidirectionalSerializer &) const)
 	: mGetter(getter)
 	, mSetter(setter)
@@ -32,14 +32,14 @@ AccessorObjectMapPropertyType<KeyType, ValueType>::AccessorObjectMapPropertyType
 
 
 template<typename KeyType, typename ValueType>
-bool AccessorObjectMapPropertyType<KeyType, ValueType>::ReadItem(
+bool AccessorMapPropertyType<KeyType, ValueType>::ReadItem(
 	const Object *object, const KeyType &key, int multi_index, ValueType &value) const
 {
 	return (object->*mGetter)(key, multi_index, value);
 }
 
 template<typename KeyType, typename ValueType>
-bool AccessorObjectMapPropertyType<KeyType, ValueType>::WriteItem(
+bool AccessorMapPropertyType<KeyType, ValueType>::WriteItem(
 	Object *object, const KeyType &key, int multi_index, const ValueType *value) const
 {
 	if(value)
@@ -55,8 +55,8 @@ bool AccessorObjectMapPropertyType<KeyType, ValueType>::WriteItem(
 }
 
 template<typename KeyType, typename ValueType>
-bool AccessorObjectMapPropertyType<KeyType, ValueType>::MapSerialization(
-	typename AccessorObjectMapPropertyType<KeyType, ValueType>::ItemSerializeFunction serialize_function,
+bool AccessorMapPropertyType<KeyType, ValueType>::MapSerialization(
+	typename AccessorMapPropertyType<KeyType, ValueType>::ItemSerializeFunction serialize_function,
 	BidirectionalSerializer &bidi,
 	const Object *object) const
 {

@@ -21,7 +21,7 @@
 #include <pkg/ent/entity.hpp>
 #include <ork/lev2/gfx/renderer/drawable.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/reflect/AccessorObjectPropertyType.hpp>
+#include <ork/reflect/properties/AccessorPropertyType.hpp>
 #include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/reflect/properties/DirectMapTyped.hpp>
 #include <ork/lev2/gfx/camera/cameradata.h>

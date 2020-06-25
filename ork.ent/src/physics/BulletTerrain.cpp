@@ -16,7 +16,7 @@
 #include <pkg/ent/scene.h>
 #include <pkg/ent/scene.hpp>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/reflect/AccessorObjectPropertyType.hpp>
+#include <ork/reflect/properties/AccessorPropertyType.hpp>
 #include <ork/reflect/properties/DirectTyped.hpp>
 ///////////////////////////////////////////////////////////////////////////////
 #include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>

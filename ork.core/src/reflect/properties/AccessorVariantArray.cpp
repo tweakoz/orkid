@@ -7,12 +7,12 @@
 
 
 #include <ork/pch.h>
-#include <ork/reflect/AccessorObjectArrayPropertyVariant.h>
+#include <ork/reflect/properties/AccessorArrayPropertyVariant.h>
 #include <ork/object/Object.h>
 
 namespace ork { namespace reflect {
 
-AccessorObjectArrayPropertyVariant::AccessorObjectArrayPropertyVariant(
+AccessorArrayPropertyVariant::AccessorArrayPropertyVariant(
 	bool (Object::*serialize_item)(ISerializer &, size_t) const,
 	bool (Object::*deserialize_item)(IDeserializer &, size_t),
 	size_t (Object::*count)() const,
@@ -23,24 +23,24 @@ AccessorObjectArrayPropertyVariant::AccessorObjectArrayPropertyVariant(
 	, mResize(resize)
 {}
 
-bool AccessorObjectArrayPropertyVariant::DeserializeItem(
+bool AccessorArrayPropertyVariant::DeserializeItem(
 	IDeserializer &deserializer, Object *object, size_t index) const
 {
 	return (object->*mDeserializeItem)(deserializer, index);
 }
 
-bool AccessorObjectArrayPropertyVariant::SerializeItem(
+bool AccessorArrayPropertyVariant::SerializeItem(
 	ISerializer &serializer, const Object *object, size_t index) const
 {
 	return (object->*mSerializeItem)(serializer, index);
 }
 
-size_t AccessorObjectArrayPropertyVariant::Count( const Object *object ) const
+size_t AccessorArrayPropertyVariant::Count( const Object *object ) const
 {
 	return (object->*mCount)();
 }
 
-bool AccessorObjectArrayPropertyVariant::Resize( Object *object, size_t size ) const
+bool AccessorArrayPropertyVariant::Resize( Object *object, size_t size ) const
 {
 	return (object->*mResize)(size);
 }

@@ -21,7 +21,7 @@
 #include <pkg/ent/ModelComponent.h>
 #include <pkg/ent/event/MeshEvent.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/reflect/AccessorObjectPropertyType.hpp>
+#include <ork/reflect/properties/AccessorPropertyType.hpp>
 #include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/reflect/properties/DirectMapTyped.hpp>
 #include <ork/lev2/gfx/camera/cameradata.h>

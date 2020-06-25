@@ -10,7 +10,7 @@
 
 #include <ork/application/application.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
-#include <ork/reflect/AccessorObjectPropertyType.hpp>
+#include <ork/reflect/properties/AccessorPropertyType.hpp>
 #include <ork/reflect/properties/DirectMapTyped.h>
 #include <ork/reflect/properties/DirectMapTyped.hpp>
 #include <ork/reflect/properties/DirectVectorTyped.h>

@@ -13,9 +13,9 @@
 
 namespace ork { namespace reflect {
 
-template <typename T> class AccessorObjectArrayPropertyType : public IObjectArrayPropertyType<T> {
+template <typename T> class AccessorArrayPropertyType : public IObjectArrayPropertyType<T> {
 public:
-  AccessorObjectArrayPropertyType(
+  AccessorArrayPropertyType(
       void (Object::*getter)(T&, size_t) const,
       void (Object::*setter)(const T&, size_t),
       size_t (Object::*counter)() const,

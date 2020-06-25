@@ -7,23 +7,23 @@
 
 
 #include <ork/pch.h>
-#include <ork/reflect/AccessorObjectMapPropertyVariant.h>
+#include <ork/reflect/properties/AccessorMapPropertyVariant.h>
 #include <ork/reflect/BidirectionalSerializer.h>
 
 namespace ork { namespace reflect {
 
 
 #if 0 // don't allow instatiations yet, this class isn't finished!!!
-AccessorObjectMapPropertyVariant::AccessorObjectMapPropertyVariant(
+AccessorMapPropertyVariant::AccessorMapPropertyVariant(
 	bool (Object::*read)(IDeserializer &, int, ISerializer &),
 	bool (Object::*write)(IDeserializer &, int, IDeserializer *) const,
-	bool (Object::*map)(AccessorObjectMapPropertyVariantContext &) const)
+	bool (Object::*map)(AccessorMapPropertyVariantContext &) const)
 	: mReadItem(read)
 	, mWriteItem(write)
 	, mMapSerialization(map)
 {}
 
-bool AccessorObjectMapPropertyVariant::Deserialize(IDeserializer &deserializer, Object *object) const
+bool AccessorMapPropertyVariant::Deserialize(IDeserializer &deserializer, Object *object) const
 {
 	BidirectionalSerializer bidi(deserializer);
 
@@ -40,34 +40,34 @@ bool AccessorObjectMapPropertyVariant::Deserialize(IDeserializer &deserializer, 
 	return false;
 }
 
-bool AccessorObjectMapPropertyVariant::Serialize(ISerializer &serializer, const Object *object) const
+bool AccessorMapPropertyVariant::Serialize(ISerializer &serializer, const Object *object) const
 {
 	BidirectionalSerializer bidi(serializer);
-	AccessorObjectMapPropertyVariantContext ctx(bidi);
+	AccessorMapPropertyVariantContext ctx(bidi);
 
 	return (object->*mMapSerialization)(ctx);
 }
 
-bool AccessorObjectMapPropertyVariant::DeserializeItem(IDeserializer *value, IDeserializer &key, int, Object *) const
+bool AccessorMapPropertyVariant::DeserializeItem(IDeserializer *value, IDeserializer &key, int, Object *) const
 {
 	return false;
 }
 
-bool AccessorObjectMapPropertyVariant::SerializeItem(ISerializer &value, IDeserializer &key, int, const Object *) const
+bool AccessorMapPropertyVariant::SerializeItem(ISerializer &value, IDeserializer &key, int, const Object *) const
 {
 	return false;
 }
 
-AccessorObjectMapPropertyVariantContext::AccessorObjectMapPropertyVariantContext(BidirectionalSerializer &bidi)
+AccessorMapPropertyVariantContext::AccessorMapPropertyVariantContext(BidirectionalSerializer &bidi)
 	: mBidi(bidi)
 {}
 
-BidirectionalSerializer &AccessorObjectMapPropertyVariantContext::Bidi()
+BidirectionalSerializer &AccessorMapPropertyVariantContext::Bidi()
 {
 	return mBidi;
 }
 
-void AccessorObjectMapPropertyVariantContext::BeginItem()
+void AccessorMapPropertyVariantContext::BeginItem()
 {
 	mItemCommand.Setup(Command::EITEM);
 
@@ -80,13 +80,13 @@ void AccessorObjectMapPropertyVariantContext::BeginItem()
 		mBidi.Fail();
 }
 
-void AccessorObjectMapPropertyVariantContext::BeginValue()
+void AccessorMapPropertyVariantContext::BeginValue()
 {
 	if(false == mBidi.Serializer()->EndCommand(mAttributeCommand))
 		mBidi.Fail();
 }
 
-void AccessorObjectMapPropertyVariantContext::EndItem()
+void AccessorMapPropertyVariantContext::EndItem()
 {
 	if(false == mBidi.Serializer()->EndCommand(mItemCommand))
 		mBidi.Fail();

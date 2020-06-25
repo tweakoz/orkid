@@ -7,13 +7,13 @@
 
 #pragma once
 
-#include <ork/reflect/AccessorObjectArrayPropertyType.h>
+#include <ork/reflect/properties/AccessorArrayPropertyType.h>
 #include <ork/reflect/IObjectArrayPropertyType.hpp>
 
 namespace ork { namespace reflect {
 
 template<typename T>
-AccessorObjectArrayPropertyType<T>::AccessorObjectArrayPropertyType(
+AccessorArrayPropertyType<T>::AccessorArrayPropertyType(
             void (Object::*getter)(T &, size_t index) const,
             void (Object::*setter)(const T &, size_t index), 
             size_t (Object::*counter)() const,
@@ -25,25 +25,25 @@ AccessorObjectArrayPropertyType<T>::AccessorObjectArrayPropertyType(
 {}
 
 template<typename T>
-void AccessorObjectArrayPropertyType<T>::Get(T &value, const Object *obj, size_t index) const 
+void AccessorArrayPropertyType<T>::Get(T &value, const Object *obj, size_t index) const 
 {
     (obj->*mGetter)(value, index);
 }
 
 template<typename T>
-void AccessorObjectArrayPropertyType<T>::Set(const T &value, Object *obj, size_t index) const 
+void AccessorArrayPropertyType<T>::Set(const T &value, Object *obj, size_t index) const 
 {
     (obj->*mSetter)(value, index);
 }
 
 template<typename T>
-size_t AccessorObjectArrayPropertyType<T>::Count(const Object *obj) const
+size_t AccessorArrayPropertyType<T>::Count(const Object *obj) const
 {
     return (obj->*mCounter)();
 }
 
 template<typename T>
-bool AccessorObjectArrayPropertyType<T>::Resize(Object *obj, size_t size) const
+bool AccessorArrayPropertyType<T>::Resize(Object *obj, size_t size) const
 {
 	if(mResizer != 0)
 	{
