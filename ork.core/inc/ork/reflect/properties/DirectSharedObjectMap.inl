@@ -173,6 +173,7 @@ bool DirectSharedObjectMap<MapType>::MapSerialization(
       (*serialization_func)(bidi, key, value);
     }
   }
+  return true;
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
