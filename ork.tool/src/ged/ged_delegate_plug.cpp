@@ -15,7 +15,7 @@
 #include <ork/reflect/IObjectProperty.h>
 #include <ork/reflect/IObjectPropertyObject.h>
 #include <ork/reflect/IObjectPropertyType.h>
-#include <ork/reflect/properties/AccessorPropertyObject.h>
+#include <ork/reflect/properties/AccessorObject.h>
 #include "ged_delegate.hpp"
 #include <ork/dataflow/dataflow.h>
 ///////////////////////////////////////////////////////////////////////////////
@@ -189,7 +189,7 @@ private:
     GetSkin()->DrawBgBox(this, dbx1 + labw, miY + 2, dbw - labw, igdim - 3, GedSkin::ESTYLE_BACKGROUND_2);
     //////////////////////////////////////
 
-    const ork::reflect::AccessorPropertyObject* pprop = rtti::autocast(GetOrkProp());
+    const ork::reflect::AccessorObject* pprop = rtti::autocast(GetOrkProp());
 
     if (pprop) {
       dataflow::inplugbase* pinpplug = rtti::autocast(pprop->Access(GetOrkObj()));
@@ -282,7 +282,7 @@ public:
     }
     ///////////////////////////////////////////
 
-    const ork::reflect::AccessorPropertyObject* pprop = rtti::autocast(GetOrkProp());
+    const ork::reflect::AccessorObject* pprop = rtti::autocast(GetOrkProp());
     if (pprop) {
       mInputPlug = rtti::autocast(pprop->Access(obj));
     }
@@ -552,7 +552,7 @@ void OutPlugChoiceDelegate::Describe() {
 }
 void OutPlugChoiceDelegate::EnumerateChoices(tool::ged::GedItemNode* pnode, OutPlugMapType& Choices) {
   dataflow::inplugbase* pinputplug                        = 0;
-  const ork::reflect::AccessorPropertyObject* pprop = rtti::autocast(pnode->GetOrkProp());
+  const ork::reflect::AccessorObject* pprop = rtti::autocast(pnode->GetOrkProp());
   if (pprop) {
     dataflow::inplugbase* pinpplug = rtti::autocast(pprop->Access(pnode->GetOrkObj()));
     if (pinpplug) {

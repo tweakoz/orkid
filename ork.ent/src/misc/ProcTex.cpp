@@ -25,7 +25,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/kernel/opq.h>
-#include <ork/reflect/properties/AccessorPropertyType.hpp>
+#include <ork/reflect/properties/AccessorTyped.hpp>
 #include <ork/reflect/properties/DirectMapTyped.hpp>
 #include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/reflect/enum_serializer.inl>

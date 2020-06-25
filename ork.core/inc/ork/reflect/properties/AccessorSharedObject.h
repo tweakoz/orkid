@@ -17,9 +17,9 @@ class Object;
 
 namespace reflect {
 
-class AccessorPropertySharedObject : public IObjectPropertySharedObject {
+class AccessorSharedObject : public IObjectPropertySharedObject {
 public:
-  AccessorPropertySharedObject(object_ptr_t (Object::*)());
+  AccessorSharedObject(object_ptr_t (Object::*)());
 
   bool Serialize(ISerializer&, const Object*) const override;
   bool Deserialize(IDeserializer&, Object*) const override;

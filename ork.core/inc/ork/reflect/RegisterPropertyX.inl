@@ -53,7 +53,7 @@ inline object::PropertyModifier object::ObjectClass::accessorProperty(
   object::PropertyModifier modder;
   auto typed_getter = static_cast<void (Object::*)(MemberType&) const>(getter);
   auto typed_setter = static_cast<void (Object::*)(const MemberType&)>(setter);
-  modder._property  = new reflect::AccessorPropertyType<MemberType>(typed_getter, typed_setter);
+  modder._property  = new reflect::AccessorTyped<MemberType>(typed_getter, typed_setter);
   _description.AddProperty(name, modder._property);
   return modder;
 }

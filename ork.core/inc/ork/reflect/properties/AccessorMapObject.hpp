@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/reflect/properties/AccessorMapPropertyObject.h>
+#include <ork/reflect/properties/AccessorMapObject.h>
 
 #include <ork/reflect/IDeserializer.h>
 #include <ork/reflect/ISerializer.h>
@@ -18,11 +18,11 @@
 namespace ork { namespace reflect {
 
 template <typename KeyType>
-AccessorMapPropertyObject<KeyType>::AccessorMapPropertyObject(
+AccessorMapObject<KeyType>::AccessorMapObject(
     const Object* (Object::*get)(const KeyType&, int) const,
     Object* (Object::*access)(const KeyType&, int),
     void (Object::*erase)(const KeyType&, int),
-    void (Object::*serializer)(typename AccessorMapPropertyObject<KeyType>::SerializationFunction, BidirectionalSerializer&)
+    void (Object::*serializer)(typename AccessorMapObject<KeyType>::SerializationFunction, BidirectionalSerializer&)
         const)
     : mGetter(get)
     , mAccessor(access)
@@ -32,7 +32,7 @@ AccessorMapPropertyObject<KeyType>::AccessorMapPropertyObject(
 
 template <typename KeyType>
 Object*
-AccessorMapPropertyObject<KeyType>::AccessItem(IDeserializer& key_deserializer, int multi_index, Object* object) const {
+AccessorMapObject<KeyType>::AccessItem(IDeserializer& key_deserializer, int multi_index, Object* object) const {
   KeyType key;
 
   BidirectionalSerializer(key_deserializer) | key;
@@ -46,7 +46,7 @@ AccessorMapPropertyObject<KeyType>::AccessItem(IDeserializer& key_deserializer, 
 
 template <typename KeyType>
 const Object*
-AccessorMapPropertyObject<KeyType>::AccessItem(IDeserializer& key_deserializer, int multi_index, const Object* object) const {
+AccessorMapObject<KeyType>::AccessItem(IDeserializer& key_deserializer, int multi_index, const Object* object) const {
   KeyType key;
 
   BidirectionalSerializer(key_deserializer) | key;
@@ -55,7 +55,7 @@ AccessorMapPropertyObject<KeyType>::AccessItem(IDeserializer& key_deserializer, 
 }
 
 template <typename KeyType>
-bool AccessorMapPropertyObject<KeyType>::DeserializeItem(
+bool AccessorMapObject<KeyType>::DeserializeItem(
     IDeserializer* value_deserializer,
     IDeserializer& key_deserializer,
     int multi_index,
@@ -82,7 +82,7 @@ bool AccessorMapPropertyObject<KeyType>::DeserializeItem(
 }
 
 template <typename KeyType>
-bool AccessorMapPropertyObject<KeyType>::SerializeItem(
+bool AccessorMapObject<KeyType>::SerializeItem(
     ISerializer& value_serializer,
     IDeserializer& key_deserializer,
     int multi_index,
@@ -101,7 +101,7 @@ bool AccessorMapPropertyObject<KeyType>::SerializeItem(
 }
 
 template <typename KeyType>
-bool AccessorMapPropertyObject<KeyType>::Deserialize(IDeserializer& deserializer, Object* object) const {
+bool AccessorMapObject<KeyType>::Deserialize(IDeserializer& deserializer, Object* object) const {
   Command item;
 
   if (deserializer.BeginCommand(item)) {
@@ -146,7 +146,7 @@ bool AccessorMapPropertyObject<KeyType>::Deserialize(IDeserializer& deserializer
 }
 
 template <typename KeyType>
-bool AccessorMapPropertyObject<KeyType>::Serialize(ISerializer& serializer, const Object* obj) const {
+bool AccessorMapObject<KeyType>::Serialize(ISerializer& serializer, const Object* obj) const {
   BidirectionalSerializer bidi(serializer);
   (obj->*mSerializer)(DoSerialize, bidi);
 
@@ -154,7 +154,7 @@ bool AccessorMapPropertyObject<KeyType>::Serialize(ISerializer& serializer, cons
 }
 
 template <typename KeyType>
-void AccessorMapPropertyObject<KeyType>::DoSerialize(BidirectionalSerializer& bidi, const KeyType& key, const Object* value) {
+void AccessorMapObject<KeyType>::DoSerialize(BidirectionalSerializer& bidi, const KeyType& key, const Object* value) {
   bool result             = true;
   ISerializer* serializer = bidi.Serializer();
 

@@ -17,10 +17,10 @@ class Object;
 
 namespace reflect {
 
-class  AccessorPropertyObject : public IObjectPropertyObject
+class  AccessorObject : public IObjectPropertyObject
 {
 public:
-    AccessorPropertyObject(Object *(Object::*)());
+    AccessorObject(Object *(Object::*)());
 
     /*virtual*/ bool Serialize(ISerializer &, const Object *) const;
     /*virtual*/ bool Deserialize(IDeserializer &, Object *) const;

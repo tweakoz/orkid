@@ -21,7 +21,7 @@
 #include <pkg/ent/scene.hpp>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/camera/cameradata.h>
-#include <ork/reflect/properties/AccessorPropertyType.hpp>
+#include <ork/reflect/properties/AccessorTyped.hpp>
 #include <ork/reflect/properties/DirectMapTyped.hpp>
 #include <ork/reflect/properties/DirectTyped.hpp>
 ///////////////////////////////////////////////////////////////////////////////

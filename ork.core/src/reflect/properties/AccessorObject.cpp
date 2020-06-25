@@ -8,29 +8,29 @@
 #include <ork/pch.h>
 
 #include <ork/object/Object.h>
-#include <ork/reflect/properties/AccessorPropertyObject.h>
+#include <ork/reflect/properties/AccessorObject.h>
 #include <ork/reflect/Command.h>
 #include <ork/reflect/ISerializer.h>
 #include <ork/reflect/IDeserializer.h>
 
 namespace ork { namespace reflect {
 
-AccessorPropertyObject::AccessorPropertyObject(Object* (Object::*property)())
+AccessorObject::AccessorObject(Object* (Object::*property)())
     : mObjectAccessor(property) {
 }
 
-bool AccessorPropertyObject::Serialize(ISerializer& serializer, const Object* object) const {
+bool AccessorObject::Serialize(ISerializer& serializer, const Object* object) const {
   const Object* object_property = (const_cast<Object*>(object)->*mObjectAccessor)();
   Object::xxxSerialize(object_property, serializer);
   return true;
 }
 
-bool AccessorPropertyObject::Deserialize(IDeserializer& serializer, Object* object) const {
+bool AccessorObject::Deserialize(IDeserializer& serializer, Object* object) const {
   Object* object_property = (object->*mObjectAccessor)();
   Command command;
   serializer.BeginCommand(command);
 
-  OrkAssertI(command.Type() == Command::EOBJECT, "AccessorPropertyObject::Deserialize::Expected an Object command!\n");
+  OrkAssertI(command.Type() == Command::EOBJECT, "AccessorObject::Deserialize::Expected an Object command!\n");
 
   if (command.Type() == Command::EOBJECT) {
     Object::xxxDeserialize(object_property, serializer);
@@ -41,11 +41,11 @@ bool AccessorPropertyObject::Deserialize(IDeserializer& serializer, Object* obje
   return true;
 }
 
-Object* AccessorPropertyObject::Access(Object* object) const {
+Object* AccessorObject::Access(Object* object) const {
   return (object->*mObjectAccessor)();
 }
 
-const Object* AccessorPropertyObject::Access(const Object* object) const {
+const Object* AccessorObject::Access(const Object* object) const {
   return (const_cast<Object*>(object)->*mObjectAccessor)();
 }
 

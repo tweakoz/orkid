@@ -7,12 +7,12 @@
 
 
 #include <ork/pch.h>
-#include <ork/reflect/properties/AccessorPropertyVariant.h>
+#include <ork/reflect/properties/AccessorVariant.h>
 #include <ork/object/Object.h>
 
 namespace ork { namespace reflect {
 
-AccessorPropertyVariant::AccessorPropertyVariant(
+AccessorVariant::AccessorVariant(
 		bool (Object::*ser)(ISerializer &) const,
 		bool (Object::*deser)(IDeserializer &) )
 	: mDeserialize(deser)
@@ -21,12 +21,12 @@ AccessorPropertyVariant::AccessorPropertyVariant(
 
 }
 
-bool AccessorPropertyVariant::Deserialize(IDeserializer &deserializer, Object *object) const
+bool AccessorVariant::Deserialize(IDeserializer &deserializer, Object *object) const
 {
 	return (object->*mDeserialize)(deserializer);
 }
 
-bool AccessorPropertyVariant::Serialize(ISerializer &serializer, const Object *object) const
+bool AccessorVariant::Serialize(ISerializer &serializer, const Object *object) const
 {
 	return (object->*mSerialize)(serializer);
 }

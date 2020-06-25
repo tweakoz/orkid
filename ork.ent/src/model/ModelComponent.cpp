@@ -21,7 +21,7 @@
 #include <pkg/ent/event/MeshEvent.h>
 #include <pkg/ent/scene.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/reflect/properties/AccessorPropertyType.hpp>
+#include <ork/reflect/properties/AccessorTyped.hpp>
 #include <ork/reflect/properties/DirectMapTyped.hpp>
 #include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/kernel/string/deco.inl>

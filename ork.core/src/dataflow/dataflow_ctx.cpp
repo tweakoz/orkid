@@ -14,7 +14,7 @@
 #include <ork/dataflow/scheduler.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/kernel/orklut.hpp>
-#include <ork/reflect/properties/AccessorPropertyType.hpp>
+#include <ork/reflect/properties/AccessorTyped.hpp>
 #include <ork/reflect/properties/DirectMapTyped.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
