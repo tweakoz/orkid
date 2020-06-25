@@ -92,7 +92,7 @@ bool BinaryDeserializer::Deserialize(const IProperty* prop) {
   return prop->Deserialize(*this);
 }
 
-bool BinaryDeserializer::deserializeObjectProperty(const I* prop, Object* object) {
+bool BinaryDeserializer::deserializeObjectProperty(const ObjectProperty* prop, Object* object) {
   return prop->Deserialize(*this, object);
 }
 

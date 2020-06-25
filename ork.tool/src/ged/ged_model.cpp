@@ -59,7 +59,7 @@ void ObjModel::Describe() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ObjModel::SlotRelayPropertyInvalidated(ork::Object* pobj, const reflect::I* prop) {
+void ObjModel::SlotRelayPropertyInvalidated(ork::Object* pobj, const reflect::ObjectProperty* prop) {
   if (mpGedWidget)
     mpGedWidget->PropertyInvalidated(pobj, prop);
   // Attach( mCurrentObject );
@@ -158,7 +158,7 @@ void ObjModel::SigPreNewObject() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ObjModel::SigPropertyInvalidated(ork::Object* pobj, const reflect::I* prop) {
+void ObjModel::SigPropertyInvalidated(ork::Object* pobj, const reflect::ObjectProperty* prop) {
   auto lamb = [=]() { this->mSignalPropertyInvalidated(&ObjModel::SigPropertyInvalidated, pobj, prop); };
   opq::updateSerialQueue()->enqueue(lamb);
 }
@@ -317,7 +317,7 @@ GedItemNode* ObjModel::Recurse(ork::Object* root_object, const char* pname, bool
       ////////////////////////////////////////////////////////////////////////////////////////
       for (auto item : snode->PropVect) {
         const std::string& Name              = item.first;
-        const reflect::I* prop = item.second;
+        const reflect::ObjectProperty* prop = item.second;
         GedItemNode* PropContainerW          = 0;
         if (0 == prop)
           continue;
@@ -357,7 +357,7 @@ GedItemNode* ObjModel::Recurse(ork::Object* root_object, const char* pname, bool
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
-bool ObjModel::IsNodeVisible(const reflect::I* prop) {
+bool ObjModel::IsNodeVisible(const reflect::ObjectProperty* prop) {
   ConstString anno_vis       = prop->GetAnnotation("editor.visible");
   ConstString anno_ediftageq = prop->GetAnnotation("editor.iftageq");
   if (anno_vis.length()) {
@@ -452,7 +452,7 @@ void ObjModel::EnumerateNodes(sortnode& in_node, object::ObjectClass* the_class)
           for (; itp != iter_toklist.end(); itp++) {
             const std::string& str                                   = (*itp);
             ork::reflect::Description::PropertyMapType::iterator itf = propmap.find(str.c_str());
-            ork::reflect::I* prop                      = (itf != propmap.end()) ? itf->second : 0;
+            ork::reflect::ObjectProperty* prop                      = (itf != propmap.end()) ? itf->second : 0;
             if (prop) {
               pnode->PropVect.push_back(std::make_pair(str.c_str(), prop));
             }
@@ -482,7 +482,7 @@ void ObjModel::EnumerateNodes(sortnode& in_node, object::ObjectClass* the_class)
           prop_ok = allowed_props.find(namstr) != allowed_props.end();
         }
         if (prop_ok) {
-          ork::reflect::I* prop = it.second;
+          ork::reflect::ObjectProperty* prop = it.second;
           if (prop) {
             in_node.PropVect.push_back(std::make_pair(Name.c_str(), prop));
           }
@@ -494,7 +494,7 @@ void ObjModel::EnumerateNodes(sortnode& in_node, object::ObjectClass* the_class)
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
-GedItemNode* ObjModel::CreateNode(const std::string& Name, const reflect::I* prop, Object* pobject) {
+GedItemNode* ObjModel::CreateNode(const std::string& Name, const reflect::ObjectProperty* prop, Object* pobject) {
   rtti::Class* AnnoEditorClass = 0;
   /////////////////////////////////////////////////////////////////////////
   // check editor class anno on property

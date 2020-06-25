@@ -37,7 +37,7 @@ void ObjectModelObserver::Describe() {
 ObjectModelObserver::ObjectModelObserver()
     : ConstructAutoSlot(ModelInvalidated) {
 }
-void ObjectModelObserver::PropertyInvalidated(ork::object_ptr_t pobj, const reflect::I* prop) {
+void ObjectModelObserver::PropertyInvalidated(ork::object_ptr_t pobj, const reflect::ObjectProperty* prop) {
 }
 void ObjectModelObserver::Attach(ork::object_ptr_t obj) {
 }

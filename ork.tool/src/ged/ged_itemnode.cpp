@@ -20,7 +20,7 @@ namespace ork { namespace tool { namespace ged {
 void GedItemNode::Describe() {
 }
 //////////////////////////////////////////////////////////////////////////////
-GedItemNode::GedItemNode(ObjModel& mdl, const char* name, const reflect::I* prop, ork::Object* obj)
+GedItemNode::GedItemNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj)
     : mModel(mdl)
     , mbcollapsed(false)
     , mRoot(mdl.GetGedWidget())
@@ -186,7 +186,7 @@ void GedRootNode::DoDraw(lev2::Context* pTARG) {
   GetSkin()->DrawOutlineBox(this, miX, miY, miW, ih, GedSkin::ESTYLE_DEFAULT_OUTLINE);
 }
 
-GedRootNode::GedRootNode(ObjModel& mdl, const char* name, const reflect::I* prop, ork::Object* obj)
+GedRootNode::GedRootNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj)
     : GedItemNode(mdl, name, prop, obj) {
 }
 

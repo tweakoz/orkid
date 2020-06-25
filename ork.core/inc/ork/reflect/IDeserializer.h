@@ -24,7 +24,7 @@ namespace ork { namespace reflect {
 
 // typedef ork::Object Serializable;
 class IProperty;
-class I;
+class ObjectProperty;
 class Command;
 
 struct IDeserializer {
@@ -36,10 +36,10 @@ struct IDeserializer {
   virtual bool Deserialize(float&)  = 0;
   virtual bool Deserialize(double&) = 0;
 
-  virtual bool Deserialize(const IProperty*)                              = 0;
-  virtual bool deserializeObject(rtti::ICastable*&)                       = 0;
-  virtual bool deserializeSharedObject(rtti::castable_ptr_t&)             = 0;
-  virtual bool deserializeObjectProperty(const I*, Object*) = 0;
+  virtual bool Deserialize(const IProperty*)                             = 0;
+  virtual bool deserializeObject(rtti::ICastable*&)                      = 0;
+  virtual bool deserializeSharedObject(rtti::castable_ptr_t&)            = 0;
+  virtual bool deserializeObjectProperty(const ObjectProperty*, Object*) = 0;
 
   virtual bool Deserialize(MutableString&)             = 0;
   virtual bool Deserialize(ResizableString&)           = 0;
@@ -53,8 +53,8 @@ struct IDeserializer {
 
   virtual ~IDeserializer();
 
-  const reflect::I* _currentProperty = nullptr;
-  Object* _currentObject                           = nullptr;
+  const reflect::ObjectProperty* _currentProperty = nullptr;
+  Object* _currentObject                          = nullptr;
 };
 
 }} // namespace ork::reflect

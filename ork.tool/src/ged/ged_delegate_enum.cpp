@@ -28,7 +28,7 @@ namespace ork { namespace tool { namespace ged {
 class EnumReader : public reflect::serialize::LayerSerializer {
 public:
   /////////////////////////////////////////////////////
-  EnumReader(const ork::Object* pobj, const reflect::I* prop)
+  EnumReader(const ork::Object* pobj, const reflect::ObjectProperty* prop)
       : reflect::serialize::LayerSerializer(mNullSer) {
     prop->Serialize(*this, pobj);
   }
@@ -69,7 +69,7 @@ private:
 
 class EnumWriter : public reflect::serialize::LayerDeserializer {
 public:
-  EnumWriter(const ork::Object* pobj, const reflect::I* prop)
+  EnumWriter(const ork::Object* pobj, const reflect::ObjectProperty* prop)
       : reflect::serialize::LayerDeserializer(mNullDeser)
       , mObject(pobj)
       , mProp(prop)
@@ -85,7 +85,7 @@ public:
 private:
   reflect::serialize::NullDeserializer mNullDeser;
   const ork::Object* mObject;
-  const reflect::I* mProp;
+  const reflect::ObjectProperty* mProp;
   const char* mpSetValue;
 
   /*virtual*/ bool Deserialize(MutableString& val) {
@@ -117,7 +117,7 @@ class GedEnumWidget : public GedItemNode {
   }
 
 public:
-  GedEnumWidget(ObjModel& mdl, const char* name, const reflect::I* prop, ork::Object* obj)
+  GedEnumWidget(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj)
       : GedItemNode(mdl, name, prop, obj)
       , ValueStrings(0)
       , NumStrings(0)
@@ -161,7 +161,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 GedItemNode*
-GedFactoryEnum::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::I* prop, Object* obj) const {
+GedFactoryEnum::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::ObjectProperty* prop, Object* obj) const {
   ConstString anno_mkgroup = prop->GetAnnotation("editor.mktag");
 
   GedEnumWidget* PropContainerW = new GedEnumWidget(mdl, Name.c_str(), prop, obj);

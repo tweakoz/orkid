@@ -56,7 +56,7 @@ void ObjectModel::Describe() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ObjectModel::SlotRelayPropertyInvalidated(ork::object_ptr_t pobj, const reflect::I* prop) {
+void ObjectModel::SlotRelayPropertyInvalidated(ork::object_ptr_t pobj, const reflect::ObjectProperty* prop) {
   if (_observer)
     _observer->PropertyInvalidated(pobj, prop);
   // Attach( mCurrentObject );
@@ -157,7 +157,7 @@ void ObjectModel::SigPreNewObject() {
 
 void ObjectModel::SigPropertyInvalidated(
     ork::object_ptr_t pobj, //
-    const reflect::I* prop) {
+    const reflect::ObjectProperty* prop) {
   auto lamb = [=]() { this->mSignalPropertyInvalidated(&ObjectModel::SigPropertyInvalidated, pobj, prop); };
   opq::updateSerialQueue()->enqueue(lamb);
 }
@@ -325,7 +325,7 @@ void ObjectModel::SlotObjectDeSelected(ork::object_ptr_t pobj) {
       ////////////////////////////////////////////////////////////////////////////////////////
       for (auto item : snode->PropVect) {
         const std::string& Name              = item.first;
-        const reflect::I* prop = item.second;
+        const reflect::ObjectProperty* prop = item.second;
         GedItemNode* PropContainerW          = 0;
         if (0 == prop)
           continue;
@@ -364,7 +364,7 @@ void ObjectModel::SlotObjectDeSelected(ork::object_ptr_t pobj) {
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 /*
-bool ObjectModel::IsNodeVisible(const reflect::I* prop) {
+bool ObjectModel::IsNodeVisible(const reflect::ObjectProperty* prop) {
   ConstString anno_vis       = prop->GetAnnotation("editor.visible");
   ConstString anno_ediftageq = prop->GetAnnotation("editor.iftageq");
   if (anno_vis.length()) {
@@ -461,7 +461,7 @@ void ObjectModel::EnumerateNodes(
           for (; itp != iter_toklist.end(); itp++) {
             const std::string& str                                   = (*itp);
             ork::reflect::Description::PropertyMapType::iterator itf = propmap.find(str.c_str());
-            ork::reflect::I* prop                      = (itf != propmap.end()) ? itf->second : 0;
+            ork::reflect::ObjectProperty* prop                      = (itf != propmap.end()) ? itf->second : 0;
             if (prop) {
               pnode->PropVect.push_back(std::make_pair(str.c_str(), prop));
             }
@@ -491,7 +491,7 @@ void ObjectModel::EnumerateNodes(
           prop_ok = allowed_props.find(namstr) != allowed_props.end();
         }
         if (prop_ok) {
-          ork::reflect::I* prop = it.second;
+          ork::reflect::ObjectProperty* prop = it.second;
           if (prop) {
             in_node.PropVect.push_back(std::make_pair(Name.c_str(), prop));
           }
@@ -505,7 +505,7 @@ void ObjectModel::EnumerateNodes(
 /*
 GedItemNode* ObjectModel::CreateNode(
     const std::string& Name, //
-    const reflect::I* prop,
+    const reflect::ObjectProperty* prop,
     object_ptr_t pobject) {
   rtti::Class* AnnoEditorClass = 0;
   /////////////////////////////////////////////////////////////////////////

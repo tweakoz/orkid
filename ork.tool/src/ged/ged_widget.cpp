@@ -76,7 +76,7 @@ GedWidget::~GedWidget() {
   }
 }
 
-void GedWidget::PropertyInvalidated(ork::Object* pobj, const reflect::I* prop) {
+void GedWidget::PropertyInvalidated(ork::Object* pobj, const reflect::ObjectProperty* prop) {
   if (mRootItem) {
     orkstack<GedItemNode*> stackofnodes;
     stackofnodes.push(mRootItem);

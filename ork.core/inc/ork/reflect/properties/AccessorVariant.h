@@ -3,7 +3,7 @@
 // Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -13,19 +13,16 @@
 
 namespace ork { namespace reflect {
 
-class  AccessorVariant : public I
-{
-	static void GetClassStatic(); // Kill inherited GetClassStatic()
+class AccessorVariant : public ObjectProperty {
+  static void GetClassStatic(); // Kill inherited GetClassStatic()
 public:
-    AccessorVariant(
-		bool (Object::*getter)(ISerializer &) const,
-		bool (Object::*setter)(IDeserializer &));
+  AccessorVariant(bool (Object::*getter)(ISerializer&) const, bool (Object::*setter)(IDeserializer&));
+
 private:
-    /*virtual*/ bool Deserialize(IDeserializer &, Object *) const;
-    /*virtual*/ bool Serialize(ISerializer &, const Object *) const;
-    bool (Object::*mSerialize)(ISerializer &) const;
-    bool (Object::*mDeserialize)(IDeserializer &);
+  /*virtual*/ bool Deserialize(IDeserializer&, Object*) const;
+  /*virtual*/ bool Serialize(ISerializer&, const Object*) const;
+  bool (Object::*mSerialize)(ISerializer&) const;
+  bool (Object::*mDeserialize)(IDeserializer&);
 };
 
-} }
-
+}} // namespace ork::reflect

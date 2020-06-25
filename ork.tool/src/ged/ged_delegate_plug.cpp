@@ -25,7 +25,7 @@ namespace ork { namespace tool { namespace ged {
 class GedPlugDriver : public IoDriverBase {
 public:
   typedef float datatype;
-  GedPlugDriver(ObjModel& Model, const reflect::I* prop, Object* obj)
+  GedPlugDriver(ObjModel& Model, const reflect::ObjectProperty* prop, Object* obj)
       : IoDriverBase(Model, prop, obj)
       , mPlugFloat(0) {
   }
@@ -232,7 +232,7 @@ private:
   }
 
 public:
-  GedPlugWidget(ObjModel& mdl, const char* name, const reflect::I* prop, ork::Object* obj)
+  GedPlugWidget(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj)
       : GedItemNode(mdl, name, prop, obj)
       , ValueStrings(0)
       , NumStrings(0)
@@ -522,7 +522,7 @@ class GedFactoryPlug : public GedFactory {
 
 public:
   GedItemNode*
-  CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::I* prop, Object* obj) const final {
+  CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::ObjectProperty* prop, Object* obj) const final {
     GedItemNode* PropContainerW = new GedPlugWidget(mdl, Name.c_str(), prop, obj);
     return PropContainerW;
   }

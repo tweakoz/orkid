@@ -37,7 +37,7 @@ void ObjectModelNode::Describe() {
 ObjectModelNode::ObjectModelNode(
     objectmodel_ptr_t mdl, //
     const char* name,
-    const reflect::I* prop,
+    const reflect::ObjectProperty* prop,
     ork::object_ptr_t obj)
     : _objectmodel(mdl)
     , mRoot(mdl->_observer)
@@ -62,11 +62,11 @@ ObjectModelNode* ObjectModelNode::parent() const {
   return _parent;
 }
 ///////////////////////////////////////////////////
-void ObjectModelNode::SetOrkProp(const reflect::I* prop) {
+void ObjectModelNode::SetOrkProp(const reflect::ObjectProperty* prop) {
   mOrkProp = prop;
 }
 ///////////////////////////////////////////////////
-const reflect::I* ObjectModelNode::GetOrkProp() const {
+const reflect::ObjectProperty* ObjectModelNode::GetOrkProp() const {
   return mOrkProp;
 }
 ///////////////////////////////////////////////////

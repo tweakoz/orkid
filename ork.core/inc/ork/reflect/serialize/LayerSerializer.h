@@ -38,7 +38,7 @@ public:
 
   bool Serialize(const IProperty*) override;
   bool serializeObject(const rtti::ICastable*) override;
-  bool serializeObjectProperty(const I*, const Object*) override;
+  bool serializeObjectProperty(const ObjectProperty*, const Object*) override;
   // bool serializeObjectWithCategory(
   //  const rtti::Category*, //
   // const rtti::ICastable*) override;
@@ -108,7 +108,7 @@ inline bool LayerSerializer::serializeObject(const rtti::ICastable* object) {
   return mSerializer.Serialize(object);
 }
 
-inline bool LayerSerializer::serializeObjectProperty(const I* prop, const Object* object) {
+inline bool LayerSerializer::serializeObjectProperty(const ObjectProperty* prop, const Object* object) {
   return prop->Serialize(*this, object);
 }
 

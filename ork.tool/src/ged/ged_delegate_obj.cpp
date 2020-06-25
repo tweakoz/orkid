@@ -34,7 +34,7 @@ namespace ork { namespace tool { namespace ged {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <>
-GedObjNode<PropSetterObj>::GedObjNode(ObjModel& mdl, const char* name, const reflect::I* prop, Object* obj)
+GedObjNode<PropSetterObj>::GedObjNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, Object* obj)
     : GedItemNode(mdl, name, prop, obj)
     , mSetter(prop, obj)
     , mbInteractive(false)

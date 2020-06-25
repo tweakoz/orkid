@@ -65,7 +65,7 @@ bool NullSerializer::Serialize(const IProperty* prop) {
 }
 
 bool NullSerializer::serializeObjectProperty(
-    const I* prop, //
+    const ObjectProperty* prop, //
     const Object* object) {
   return prop->Serialize(*this, object);
 }

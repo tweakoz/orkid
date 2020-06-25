@@ -19,11 +19,10 @@ namespace ork { namespace reflect {
 class ISerializer;
 class IDeserializer;
 
-class I : public rtti::ICastable {
-  DECLARE_TRANSPARENT_CASTABLE(I, rtti::ICastable)
+class ObjectProperty : public rtti::ICastable {
+  DECLARE_TRANSPARENT_CASTABLE(ObjectProperty, rtti::ICastable)
 
 public:
-
   typedef ork::svar64_t anno_t;
 
   virtual bool Deserialize(IDeserializer&, Object*) const   = 0;
@@ -37,8 +36,8 @@ public:
     _annotations.AddSorted(key, wrapped);
   }
   ConstString GetAnnotation(const ConstString& key) const {
-    ConstString rval                                    = "";
-    auto it = _annotations.find(key);
+    ConstString rval = "";
+    auto it          = _annotations.find(key);
     if (it != _annotations.end()) {
       const anno_t& val = it->second;
       assert(val.IsA<ConstString>());
@@ -61,10 +60,11 @@ public:
     return rval;
   }
   /////////////////////////////////////////////////////////////////
-  I() {}
+  ObjectProperty() {
+  }
+
 private:
   orklut<ConstString, anno_t> _annotations;
-
 };
 
 }} // namespace ork::reflect

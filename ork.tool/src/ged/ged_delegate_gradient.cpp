@@ -365,7 +365,7 @@ class GedGradientV4Widget : public GedItemNode {
   } // virtual
 
 public:
-  GedGradientV4Widget(ObjModel& mdl, const char* name, const reflect::I* prop, ork::Object* obj)
+  GedGradientV4Widget(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj)
       : GedItemNode(mdl, name, prop, obj)
       , mGradientObject(0)
       , mVertexBuffer(256, 0, ork::lev2::EPrimitiveType::TRIANGLES)
@@ -388,7 +388,7 @@ void GedFactoryGradient::Describe() {
 }
 
 GedItemNode*
-GedFactoryGradient::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::I* prop, Object* obj)
+GedFactoryGradient::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::ObjectProperty* prop, Object* obj)
     const {
   GedItemNode* groupnode = new GedLabelNode(mdl, Name.c_str(), prop, obj);
 

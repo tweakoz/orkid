@@ -53,7 +53,7 @@ void ObjectClass::Initialize() {
 
   for (reflect::Description::PropertyMapType::iterator it = propmap.begin(); it != propmap.end(); it++) {
     ConstString name               = it->first;
-    reflect::I* prop = it->second;
+    reflect::ObjectProperty* prop = it->second;
 
     rtti::Class* propclass = prop->GetClass();
 

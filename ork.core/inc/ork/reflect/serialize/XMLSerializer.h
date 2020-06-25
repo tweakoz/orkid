@@ -35,7 +35,7 @@ public:
   }
 
   bool serializeObject(rtti::castable_rawconstptr_t) override;
-  bool serializeObjectProperty(const I*, const Object*) override;
+  bool serializeObjectProperty(const ObjectProperty*, const Object*) override;
   // bool serializeObjectWithCategory(
   //  const rtti::Category* cat, //
   // const rtti::ICastable* object) override;

@@ -117,7 +117,7 @@ using namespace reflect;
 
 #define FOREACH_RTTI_PROPERTY_TYPE(MACRO)                                                                                          \
   MACRO(IProperty);                                                                                                                \
-  MACRO(I);                                                                                                                        \
+  MACRO(ObjectProperty);                                                                                                           \
   MACRO(IObject);                                                                                                                  \
   MACRO(ISharedObject);                                                                                                            \
   MACRO(IArray);                                                                                                                   \
@@ -137,7 +137,7 @@ ISerializer::~ISerializer() {
 IDeserializer::~IDeserializer() {
 }
 
-template class orklut<ConstString, I*>;
+template class orklut<ConstString, ObjectProperty*>;
 // template class orklut<ork::PoolString,ork::rtti::Class*>;
 template class orklut<ConstString, IObjectFunctor*>;
 template class orklut<ConstString, object::Signal Object::*>;

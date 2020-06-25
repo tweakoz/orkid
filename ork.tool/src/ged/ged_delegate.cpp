@@ -65,7 +65,7 @@ void GedFactory::Describe() {
 ///////////////////////////////////////////////////////////////////////////////
 
 GedItemNode*
-GedFactory::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::I* prop, Object* obj) const {
+GedFactory::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::ObjectProperty* prop, Object* obj) const {
   GedItemNode* PropContainerW = new GedLabelNode(mdl, Name.c_str(), prop, obj);
   return PropContainerW;
 }
@@ -75,7 +75,7 @@ GedFactory::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect
 
 void EnumerateFactories(
     const ork::Object* pdestobj,
-    const reflect::I* prop,
+    const reflect::ObjectProperty* prop,
     orkset<object::ObjectClass*>& FactoryClassSet) {
   /////////////////////////////////////////////////////////
 
@@ -407,7 +407,7 @@ void OpsNode::OnMouseClicked(ork::ui::event_constptr_t ev) {
   }
 }
 
-OpsNode::OpsNode(ObjModel& mdl, const char* name, const reflect::I* prop, ork::Object* obj)
+OpsNode::OpsNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj)
     : GedItemNode(mdl, name, prop, obj) {
   object::ObjectClass* objclass = rtti::downcast<object::ObjectClass*>(obj->GetClass());
 
@@ -542,7 +542,7 @@ void GedGroupNode::DoDraw(lev2::Context* pTARG) {
 GedGroupNode::GedGroupNode(
     ObjModel& mdl,
     const char* name,
-    const reflect::I* prop,
+    const reflect::ObjectProperty* prop,
     ork::Object* obj,
     bool is_obj_node)
     : GedItemNode(mdl, name, prop, obj)

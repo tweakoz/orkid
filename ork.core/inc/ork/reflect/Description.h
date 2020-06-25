@@ -26,13 +26,13 @@ class AutoSlot;
 
 namespace reflect {
 
-class I;
+class ObjectProperty;
 class ISerializer;
 class IDeserializer;
 
 class Description {
 public:
-  typedef orklut<ConstString, I*> PropertyMapType;
+  typedef orklut<ConstString, ObjectProperty*> PropertyMapType;
   typedef orklut<ConstString, IObjectFunctor*> FunctorMapType;
   typedef orklut<ConstString, object::Signal Object::*> SignalMapType;
   typedef orklut<ConstString, object::AutoSlot Object::*> AutoSlotMapType;
@@ -40,7 +40,7 @@ public:
 
   Description();
 
-  void AddProperty(const char* key, I* value);
+  void AddProperty(const char* key, ObjectProperty* value);
   void AddFunctor(const char* key, IObjectFunctor* functor);
   void AddSignal(const char* key, object::Signal Object::*);
   void AddAutoSlot(const char* key, object::AutoSlot Object::*);
@@ -56,7 +56,7 @@ public:
   PropertyMapType& Properties();
   const PropertyMapType& Properties() const;
 
-  const I* FindProperty(const ConstString&) const;
+  const ObjectProperty* FindProperty(const ConstString&) const;
   const IObjectFunctor* FindFunctor(const ConstString&) const;
   object::Signal Object::*FindSignal(const ConstString&) const;
   object::AutoSlot Object::*FindAutoSlot(const ConstString&) const;

@@ -232,7 +232,7 @@ bool XMLSerializer::Serialize(const IProperty* prop) {
   return prop->Serialize(*this);
 }
 
-bool XMLSerializer::serializeObjectProperty(const I* prop, const Object* object) {
+bool XMLSerializer::serializeObjectProperty(const ObjectProperty* prop, const Object* object) {
   return prop->Serialize(*this, object);
 }
 

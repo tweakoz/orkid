@@ -33,7 +33,7 @@ namespace ork { namespace tool { namespace ged {
 
 class GedAssetObjIoDriver : public IoDriverBase {
 public:
-  GedAssetObjIoDriver(ObjModel& Model, const reflect::I* prop, Object* obj)
+  GedAssetObjIoDriver(ObjModel& Model, const reflect::ObjectProperty* prop, Object* obj)
       : IoDriverBase(Model, prop, obj) {
   }
   void SetValue(ork::Object* passet);
@@ -127,7 +127,7 @@ void GedFactoryAssetList::Describe() {
 }
 
 GedItemNode*
-GedFactoryAssetList::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::I* prop, Object* obj)
+GedFactoryAssetList::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::ObjectProperty* prop, Object* obj)
     const {
   GedAssetNode<GedAssetObjIoDriver>* itemnode = new GedAssetNode<GedAssetObjIoDriver>(mdl, Name.c_str(), prop, obj);
   itemnode->SetLabel();

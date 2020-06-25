@@ -162,7 +162,7 @@ bool TextDeserializer::Deserialize(const IProperty* prop) {
   return prop->Deserialize(*this);
 }
 
-bool TextDeserializer::deserializeObjectProperty(const I* prop, Object* object) {
+bool TextDeserializer::deserializeObjectProperty(const ObjectProperty* prop, Object* object) {
   return prop->Deserialize(*this, object);
 }
 

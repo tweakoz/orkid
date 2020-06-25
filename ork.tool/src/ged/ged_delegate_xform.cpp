@@ -41,7 +41,7 @@ class GedTransformWidget : public GedItemNode {
   }
 
 public:
-  GedTransformWidget(ObjModel& mdl, const char* name, const reflect::I* prop, ork::Object* obj)
+  GedTransformWidget(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj)
       : GedItemNode(mdl, name, prop, obj) {
     //, ValueStrings(0)
     //, NumStrings(0)
@@ -87,7 +87,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 GedItemNode*
-GedFactoryTransform::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::I* prop, Object* obj)
+GedFactoryTransform::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::ObjectProperty* prop, Object* obj)
     const {
 
   /*ConstString anno_mkgroup = prop->GetAnnotation("editor.mktag");

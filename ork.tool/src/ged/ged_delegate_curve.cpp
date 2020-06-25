@@ -445,7 +445,7 @@ class GedCurveV4Widget : public GedItemNode {
   } // virtual
 
 public:
-  GedCurveV4Widget(ObjModel& mdl, const char* name, const reflect::I* prop, ork::Object* obj)
+  GedCurveV4Widget(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj)
       : GedItemNode(mdl, name, prop, obj)
       , mCurveObject(0)
       //, mVertexBuffer( 512, 0, ork::lev2::EPrimitiveType::TRIANGLES )
@@ -470,7 +470,7 @@ void GedFactoryCurve::Describe() {
 }
 
 GedItemNode*
-GedFactoryCurve::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::I* prop, Object* obj) const {
+GedFactoryCurve::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::ObjectProperty* prop, Object* obj) const {
   GedItemNode* groupnode = new GedLabelNode(mdl, "curve", prop, obj);
 
   mdl.GetGedWidget()->PushItemNode(groupnode);

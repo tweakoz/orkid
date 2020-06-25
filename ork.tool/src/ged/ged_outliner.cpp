@@ -23,88 +23,79 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace tool { namespace ged {
 ///////////////////////////////////////////////////////////////////////////////
-template class GedSimpleNode< GedIoDriver<PoolString> , PoolString >;
+template class GedSimpleNode<GedIoDriver<PoolString>, PoolString>;
 ///////////////////////////////////////////////////////////////////////////////
 
-class GedOutlinerWidget : public GedItemNode
-{
-	static const int										kh = 48;
-	static const int										kpoolsize = 32;
-	ork::ent::SceneData*									mpSceneData;
-	
-	void DoDraw( lev2::Context* pTARG ) // virtual
-	{
-		GetSkin()->DrawBgBox( this, miX, miY+2, miW, kh-3, GedSkin::ESTYLE_BACKGROUND_1 );
-		
-		
-		if( mpSceneData )
-		{
-			static const int knodesize = 16;
-		
-			const orkmap<PoolString, ent::SceneObject*>& sceneObjs = mpSceneData->GetSceneObjects();
-	
-			int iy = (miY+2)+(kh-3);
-			
-			for( orkmap<PoolString, ent::SceneObject*>::const_iterator it=sceneObjs.begin(); it!=sceneObjs.end(); it++ )
-			{
-				const PoolString& psname = it->first;
-				const char* pccname = psname.c_str();
+class GedOutlinerWidget : public GedItemNode {
+  static const int kh        = 48;
+  static const int kpoolsize = 32;
+  ork::ent::SceneData* mpSceneData;
 
-				GetSkin()->DrawText( this, miX+4, miY+iy, pccname );
-				
-				iy += knodesize;
-			}
-		}
-	}
-		
-	int CalcHeight(void) { return kh; } // virtual 
+  void DoDraw(lev2::Context* pTARG) // virtual
+  {
+    GetSkin()->DrawBgBox(this, miX, miY + 2, miW, kh - 3, GedSkin::ESTYLE_BACKGROUND_1);
+
+    if (mpSceneData) {
+      static const int knodesize = 16;
+
+      const orkmap<PoolString, ent::SceneObject*>& sceneObjs = mpSceneData->GetSceneObjects();
+
+      int iy = (miY + 2) + (kh - 3);
+
+      for (orkmap<PoolString, ent::SceneObject*>::const_iterator it = sceneObjs.begin(); it != sceneObjs.end(); it++) {
+        const PoolString& psname = it->first;
+        const char* pccname      = psname.c_str();
+
+        GetSkin()->DrawText(this, miX + 4, miY + iy, pccname);
+
+        iy += knodesize;
+      }
+    }
+  }
+
+  int CalcHeight(void) {
+    return kh;
+  } // virtual
 
 public:
-
-	GedOutlinerWidget( ObjModel& mdl, const char* name, const reflect::I* prop, ork::Object* obj )
-		: GedItemNode( mdl, name, prop, obj)
-		, mpSceneData(0)
-	{
-		if( prop )
-		{
-			const reflect::IObject* pprop = rtti::autocast( GetOrkProp() );
-			mpSceneData = rtti::autocast( pprop->Access(GetOrkObj()) );
-		}
-		else
-		{
-			mpSceneData = rtti::autocast( obj );
-		}
-	}
-	bool DoDrawDefault() const // virtual
-	{
-		return false;
-	}
-
+  GedOutlinerWidget(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj)
+      : GedItemNode(mdl, name, prop, obj)
+      , mpSceneData(0) {
+    if (prop) {
+      const reflect::IObject* pprop = rtti::autocast(GetOrkProp());
+      mpSceneData                   = rtti::autocast(pprop->Access(GetOrkObj()));
+    } else {
+      mpSceneData = rtti::autocast(obj);
+    }
+  }
+  bool DoDrawDefault() const // virtual
+  {
+    return false;
+  }
 };
 
-void GedFactoryOutliner::Describe() {}		
+void GedFactoryOutliner::Describe() {
+}
 
-GedItemNode* GedFactoryOutliner::CreateItemNode(ObjModel&mdl,const ConstString& Name,const reflect::I *prop,Object* obj) const
-{
-	GedItemNode* groupnode = new GedLabelNode( mdl, Name.c_str(), prop, obj );
+GedItemNode* GedFactoryOutliner::CreateItemNode(
+    ObjModel& mdl, //
+    const ConstString& Name,
+    const reflect::ObjectProperty* prop,
+    Object* obj) const {
+  GedItemNode* groupnode = new GedLabelNode(mdl, Name.c_str(), prop, obj);
 
-	mdl.GetGedWidget()->PushItemNode( groupnode );
+  mdl.GetGedWidget()->PushItemNode(groupnode);
 
-	GedItemNode* itemnode = new GedOutlinerWidget( 
-		mdl, 
-		Name.c_str(),
-		prop,
-		obj
-		);
+  GedItemNode* itemnode = new GedOutlinerWidget(mdl, Name.c_str(), prop, obj);
 
-	mdl.GetGedWidget()->AddChild( itemnode );
+  mdl.GetGedWidget()->AddChild(itemnode);
 
-	mdl.GetGedWidget()->PopItemNode( groupnode );
+  mdl.GetGedWidget()->PopItemNode(groupnode);
 
-	return groupnode;
+  return groupnode;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-}}}
+}}} // namespace ork::tool::ged
 ///////////////////////////////////////////////////////////////////////////////
-INSTANTIATE_TRANSPARENT_RTTI(ork::tool::ged::GedFactoryOutliner,"ged.factory.outliner");
+INSTANTIATE_TRANSPARENT_RTTI(ork::tool::ged::GedFactoryOutliner, "ged.factory.outliner");

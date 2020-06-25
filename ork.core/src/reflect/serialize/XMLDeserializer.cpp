@@ -176,7 +176,7 @@ bool XMLDeserializer::Deserialize(const IProperty* prop) {
   return prop->Deserialize(*this);
 }
 
-bool XMLDeserializer::deserializeObjectProperty(const I* prop, Object* object) {
+bool XMLDeserializer::deserializeObjectProperty(const ObjectProperty* prop, Object* object) {
   return prop->Deserialize(*this, object);
 }
 

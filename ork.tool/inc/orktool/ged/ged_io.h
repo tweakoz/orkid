@@ -27,9 +27,9 @@ namespace ork { namespace tool { namespace ged {
 struct PropSetterObj 
 {
 	ork::Object*					mObject;
-	const reflect::I*	mProperty;
+	const reflect::ObjectProperty*	mProperty;
 
-	PropSetterObj( const reflect::I* prop, ork::Object* obj )
+	PropSetterObj( const reflect::ObjectProperty* prop, ork::Object* obj )
 		: mObject( obj ), mProperty(prop)
 	{
 	}
@@ -58,16 +58,16 @@ struct PropSetterObj
 
 class IoDriverBase
 {
-	const reflect::I*			mprop;
+	const reflect::ObjectProperty*			mprop;
 	Object*									mobj;
 	ObjModel&								mmodel;
 
 public:
 
 	ork::Object* GetObject() const { return mobj; }
-	const ork::reflect::I* GetProp() const { return mprop; }
+	const ork::reflect::ObjectProperty* GetProp() const { return mprop; }
 	ObjModel& GetModel() const { return mmodel; }
-	IoDriverBase( ObjModel& Model, const reflect::I* prop, Object* obj );
+	IoDriverBase( ObjModel& Model, const reflect::ObjectProperty* prop, Object* obj );
 
 
 };
@@ -78,7 +78,7 @@ template <typename T> class GedIoDriver : public IoDriverBase
 {
 	PropSetterObj	mpso;
 public:
-	GedIoDriver( ObjModel& Model, const reflect::I* prop, Object* obj )
+	GedIoDriver( ObjModel& Model, const reflect::ObjectProperty* prop, Object* obj )
 		: IoDriverBase( Model, prop, obj )
 		, mpso( prop, obj )
 	{

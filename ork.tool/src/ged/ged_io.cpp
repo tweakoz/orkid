@@ -20,7 +20,7 @@
 namespace ork { namespace tool { namespace ged {
 ///////////////////////////////////////////////////////////////////////////////
 
-IoDriverBase::IoDriverBase( ObjModel& Model, const reflect::I* prop, Object* obj )
+IoDriverBase::IoDriverBase( ObjModel& Model, const reflect::ObjectProperty* prop, Object* obj )
 	: mprop( prop )
 	, mmodel( Model )
 	, mobj( obj )

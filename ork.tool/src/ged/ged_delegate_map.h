@@ -16,7 +16,7 @@ class GedMapIoDriver : public IoDriverBase {
 public:
   KeyDecoName mDecoKey;
 
-  GedMapIoDriver(ObjModel& Model, const reflect::I* prop, Object* obj)
+  GedMapIoDriver(ObjModel& Model, const reflect::ObjectProperty* prop, Object* obj)
       : IoDriverBase(Model, prop, obj)
       , mDecoKey("", 0) {
   }
@@ -68,7 +68,7 @@ public:
     return mIoDriver;
   }
 
-  GedMapFactoryNode(ObjModel& mdl, const char* name, const reflect::I* prop, ork::Object* obj)
+  GedMapFactoryNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj)
       : GedItemNode(mdl, name, prop, obj)
       , mIoDriver(mdl, prop, obj) {
   }
@@ -85,7 +85,7 @@ public:
 
 class MapTraverseSerializer : public reflect::serialize::LayerSerializer {
   ObjModel& mModel;
-  const reflect::I* mProp;
+  const reflect::ObjectProperty* mProp;
   Object* mObject;
   PropTypeString mKeyString;
   KeyDecoName mKeyDeco;
@@ -107,7 +107,7 @@ public:
       ISerializer& serializer,
       ObjModel& model,
       ork::Object* pobj,
-      const reflect::I* prop);
+      const reflect::ObjectProperty* prop);
 
   bool IsKey() const {
     return mbIsKey;

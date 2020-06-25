@@ -18,7 +18,7 @@ class ICastable;
 namespace ork { namespace reflect {
 
 class IProperty;
-class I;
+class ObjectProperty;
 class IArray;
 class Command;
 // typedef ork::Object Serializable;
@@ -46,7 +46,7 @@ public:
   // virtual bool serializeObjectWithCategory(
   //  const rtti::Category* cat, //
   // const rtti::ICastable* object)                                          = 0;
-  virtual bool serializeObjectProperty(const I*, const Object*) = 0;
+  virtual bool serializeObjectProperty(const ObjectProperty*, const Object*) = 0;
 
   virtual bool SerializeData(unsigned char*, size_t) = 0;
 

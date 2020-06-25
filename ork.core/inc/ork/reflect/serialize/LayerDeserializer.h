@@ -39,7 +39,7 @@ public:
   bool Deserialize(const IProperty*) override;
   bool deserializeObject(rtti::castable_rawptr_t&) override;
   bool deserializeSharedObject(rtti::castable_ptr_t&) override;
-  bool deserializeObjectProperty(const I*, Object*) override;
+  bool deserializeObjectProperty(const ObjectProperty*, Object*) override;
 
   bool ReferenceObject(rtti::castable_rawptr_t) override;
   bool BeginCommand(Command&) override;
@@ -97,7 +97,7 @@ inline bool LayerDeserializer::Deserialize(const IProperty* prop) {
   return prop->Deserialize(*this);
 }
 
-inline bool LayerDeserializer::deserializeObjectProperty(const I* prop, Object* object) {
+inline bool LayerDeserializer::deserializeObjectProperty(const ObjectProperty* prop, Object* object) {
   return prop->Deserialize(*this, object);
 }
 

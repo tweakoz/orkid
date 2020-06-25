@@ -50,7 +50,7 @@ MapTraverseSerializer::MapTraverseSerializer(
     ISerializer& serializer,
     ObjModel& model,
     ork::Object* pobj,
-    const reflect::I* prop)
+    const reflect::ObjectProperty* prop)
     : reflect::serialize::LayerSerializer(serializer)
     , mModel(model)
     , mProp(prop)
@@ -692,7 +692,7 @@ fvec3 MapItemReadSerializer::Getfvec3() {
 void GedMapNode::Describe() {
 }
 ///////////////////////////////////////////////////////////////////////////////
-GedMapNode::GedMapNode(ObjModel& mdl, const char* name, const reflect::I* prop, Object* obj)
+GedMapNode::GedMapNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, Object* obj)
     : GedItemNode(mdl, name, prop, obj)
     , mMapProp(rtti::autocast(prop))
     , mKeyNode(0)
