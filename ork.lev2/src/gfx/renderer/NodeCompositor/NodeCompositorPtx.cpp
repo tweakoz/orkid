@@ -11,7 +11,7 @@
 #include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/lev2_asset.h>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/reflect/RegisterPropertyX.inl>
 
 ///////////////////////////////////////////////////////////////////////////////

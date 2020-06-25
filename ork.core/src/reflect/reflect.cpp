@@ -13,20 +13,20 @@
 
 #include <ork/reflect/IObjectArrayProperty.h>
 #include <ork/reflect/IObjectMapProperty.h>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/DirectMapTyped.hpp>
 #include <ork/reflect/IObjectArrayPropertyObject.h>
 
 #include <ork/reflect/IObjectPropertyType.hpp>
 #include <ork/reflect/IObjectMapPropertyType.hpp>
 
-#include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
 
 #include <ork/reflect/AccessorObjectPropertyType.hpp>
 #include <ork/reflect/AccessorObjectMapPropertyObject.hpp>
 #include <ork/reflect/AccessorObjectMapPropertyType.hpp>
 
 #include <ork/reflect/IObjectArrayPropertyType.hpp>
-#include <ork/reflect/DirectObjectArrayPropertyType.hpp>
+#include <ork/reflect/properties/DirectArrayTyped.hpp>
 #include <ork/reflect/AccessorObjectArrayPropertyType.hpp>
 
 #include <ork/kernel/string/ConstString.h>
@@ -112,8 +112,8 @@ typedef rtti::ICastable* ICastablePointer;
 
 //   FOREACH_PRIMITIVE_TYPE(MACRO,IObjectPropertyType);
 #define FOREACH_INSTANTIATED_PROPERTY_TYPE(MACRO)                                                                                  \
-  FOREACH_PRIMITIVE_TYPE(MACRO, DirectObjectPropertyType);                                                                         \
-  FOREACH_PRIMITIVE_TYPE(MACRO, DirectObjectArrayPropertyType);                                                                    \
+  FOREACH_PRIMITIVE_TYPE(MACRO, DirectPropertyType);                                                                         \
+  FOREACH_PRIMITIVE_TYPE(MACRO, DirectArrayPropertyType);                                                                    \
   FOREACH_PRIMITIVE_TYPE(MACRO, AccessorObjectPropertyType);                                                                       \
   FOREACH_PRIMITIVE_TYPE(MACRO, AccessorObjectArrayPropertyType);
 
@@ -149,12 +149,12 @@ template class orklut<ConstString, object::AutoSlot Object::*>;
 //"ork::reflect::AccessorObjectPropertyType<int>::AccessorObjectPropertyType(void (ork::Object::*)(int&) const, void
 //(ork::Object::*)(int const&))", referenced from: ork::reflect::AccessorObjectPropertyType<int>&
 // ork::reflect::RegisterProperty<TestObject, int>(char const*, void (TestObject::*)(int&) const, void (TestObject::*)(int const&),
-// ork::reflect::Description&)in main.o "ork::reflect::DirectObjectPropertyType<int>::DirectObjectPropertyType(int ork::Object::*)",
-// referenced from: ork::reflect::DirectObjectPropertyType<int>& ork::reflect::RegisterProperty<TestSubObject, int>(char const*, int
+// ork::reflect::Description&)in main.o "ork::reflect::DirectPropertyType<int>::DirectPropertyType(int ork::Object::*)",
+// referenced from: ork::reflect::DirectPropertyType<int>& ork::reflect::RegisterProperty<TestSubObject, int>(char const*, int
 // TestSubObject::*, ork::reflect::Description&)in main.o
 
 // template class AccessorObjectPropertyType<int>;
-// template class DirectObjectPropertyType<int>;
+// template class DirectPropertyType<int>;
 
 FOREACH_INSTANTIATED_PROPERTY_TYPE(INSTANTIATE);
 FOREACH_RTTI_PROPERTY_TYPE(INSTANTIATE_TRANSPARENT_CASTABLE);
@@ -172,26 +172,26 @@ template class IObjectPropertyType<ork::file::Path>;
 template class IObjectPropertyType<PoolString>;
 template class IObjectPropertyType<std::string>;
 template class IObjectPropertyType<bool>;
-template class DirectObjectPropertyType<bool>;
-template class DirectObjectPropertyType<ork::Object*>;
+template class DirectPropertyType<bool>;
+template class DirectPropertyType<ork::Object*>;
 template class IObjectPropertyType<Char4>;
-template class DirectObjectPropertyType<Char4>;
+template class DirectPropertyType<Char4>;
 template class IObjectPropertyType<Char8>;
-template class DirectObjectPropertyType<Char8>;
-template class DirectObjectMapPropertyType<orkmap<int, int>>;
-template class DirectObjectMapPropertyType<orklut<int, int>>;
-template class DirectObjectMapPropertyType<orkmap<PoolString, PoolString>>;
-template class DirectObjectMapPropertyType<orklut<PoolString, PoolString>>;
-template class DirectObjectMapPropertyType<orkmap<std::string, std::string>>;
-template class DirectObjectMapPropertyType<orklut<std::string, std::string>>;
+template class DirectPropertyType<Char8>;
+template class DirectMapPropertyType<orkmap<int, int>>;
+template class DirectMapPropertyType<orklut<int, int>>;
+template class DirectMapPropertyType<orkmap<PoolString, PoolString>>;
+template class DirectMapPropertyType<orklut<PoolString, PoolString>>;
+template class DirectMapPropertyType<orkmap<std::string, std::string>>;
+template class DirectMapPropertyType<orklut<std::string, std::string>>;
 template class AccessorObjectMapPropertyObject<int>;
 template class AccessorObjectMapPropertyType<int, char>;
 template class AccessorObjectMapPropertyType<int, ICastablePointer>;
-template class DirectObjectPropertyType<fmtx4>;
-template class DirectObjectPropertyType<Quaternion<float>>;
+template class DirectPropertyType<fmtx4>;
+template class DirectPropertyType<Quaternion<float>>;
 template class IObjectPropertyType<TransformNode>;
-template class DirectObjectMapPropertyType<orkmap<float, fvec4>>;
-// template class DirectObjectPropertyType<orkvector<fvec2> >;
+template class DirectMapPropertyType<orkmap<float, fvec4>>;
+// template class DirectPropertyType<orkvector<fvec2> >;
 
 bool SetInvokationParameter(IInvokation* invokation, int param, const char* paramdata) {
   if (param >= invokation->GetNumParameters())

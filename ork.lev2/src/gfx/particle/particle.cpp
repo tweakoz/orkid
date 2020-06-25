@@ -10,10 +10,10 @@
 #include <ork/lev2/gfx/particle/particle.h>
 #include <ork/lev2/gfx/particle/particle.hpp>
 #include <ork/reflect/RegisterProperty.h>
-#include <ork/reflect/DirectObjectMapPropertyType.h>
+#include <ork/reflect/properties/DirectMapTyped.h>
 #include <ork/reflect/IObjectPropertyType.hpp>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
+#include <ork/reflect/properties/DirectMapTyped.hpp>
 #include <ork/reflect/enum_serializer.inl>
 #include <ork/kernel/orklut.hpp>
 #include <ork/kernel/fixedlut.hpp>
@@ -22,9 +22,9 @@
 
 using namespace ork::lev2::particle;
 
-template class ork::reflect::DirectObjectMapPropertyType<orkmap<float, ork::fvec4>>;
-template class ork::reflect::DirectObjectPropertyType<ork::lev2::EBlending>;
-template class ork::reflect::DirectObjectPropertyType<ork::lev2::EPrimitiveType>;
+template class ork::reflect::DirectMapPropertyType<orkmap<float, ork::fvec4>>;
+template class ork::reflect::DirectPropertyType<ork::lev2::EBlending>;
+template class ork::reflect::DirectPropertyType<ork::lev2::EPrimitiveType>;
 namespace ork { namespace lev2 { namespace particle {
 template class Pool<BasicParticle>;
 template class BasicEmitter<BasicParticle>;

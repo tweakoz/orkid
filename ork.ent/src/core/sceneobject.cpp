@@ -12,10 +12,10 @@
 #include <ork/reflect/RegisterPropertyX.inl>
 #include <ork/reflect/AccessorObjectPropertyType.hpp>
 #include <ork/rtti/downcast.h>
-#include <ork/reflect/DirectObjectVectorPropertyType.h>
-#include <ork/reflect/DirectObjectVectorPropertyType.hpp>
-#include <ork/reflect/DirectObjectMapPropertyType.h>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/DirectVectorTyped.h>
+#include <ork/reflect/properties/DirectVectorTyped.hpp>
+#include <ork/reflect/properties/DirectMapTyped.h>
+#include <ork/reflect/properties/DirectMapTyped.hpp>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::SceneObjectClass, "SceneObjectClass")
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::SceneObject, "Ent3dSceneObject");

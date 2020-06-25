@@ -23,8 +23,8 @@
 #include <ork/kernel/Array.h>
 #include <ork/kernel/opq.h>
 #include <ork/kernel/orklut.hpp>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/properties/DirectMapTyped.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
 #include <pkg/ent/dataflow.h>
 
 ///////////////////////////////////////////////////////////////////////////////

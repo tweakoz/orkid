@@ -26,7 +26,7 @@
 #include <pkg/ent/entity.hpp>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <pkg/ent/AudioAnalyzer.h>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/reflect/enum_serializer.inl>
 ///////////////////////////////////////////////////////////////////////////////
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioAnalysisSystemData, "AudioAnalysisSystemData");

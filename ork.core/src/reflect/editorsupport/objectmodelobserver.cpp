@@ -10,7 +10,7 @@
 
 #include <queue>
 
-#include <ork/reflect/DirectObjectPropertyType.h>
+#include <ork/reflect/properties/DirectTyped.h>
 #include <ork/reflect/IObjectArrayProperty.h>
 #include <ork/reflect/IObjectMapProperty.h>
 #include <ork/reflect/IObjectProperty.h>
@@ -21,7 +21,7 @@
 #include <ork/reflect/editorsupport/objectmodel.h>
 
 #include <ork/kernel/orklut.hpp>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/DirectMapTyped.hpp>
 
 #include <ork/file/path.h>
 #include <ork/util/crc.h>

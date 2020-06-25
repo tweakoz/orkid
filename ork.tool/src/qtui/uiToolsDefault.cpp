@@ -14,8 +14,8 @@
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/gfx/texman.h>
-#include <ork/reflect/DirectObjectMapPropertyType.h>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/DirectMapTyped.h>
+#include <ork/reflect/properties/DirectMapTyped.hpp>
 #include <ork/reflect/RegisterProperty.h>
 
 #include <orktool/toolcore/dataflow.h>

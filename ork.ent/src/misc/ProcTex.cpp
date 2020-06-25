@@ -26,8 +26,8 @@
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/kernel/opq.h>
 #include <ork/reflect/AccessorObjectPropertyType.hpp>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/properties/DirectMapTyped.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/reflect/enum_serializer.inl>
 ///////////////////////////////////////////////////////////////////////////////
 #include "ProcTex.h"

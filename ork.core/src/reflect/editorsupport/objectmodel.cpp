@@ -10,7 +10,7 @@
 
 #include <queue>
 
-#include <ork/reflect/DirectObjectPropertyType.h>
+#include <ork/reflect/properties/DirectTyped.h>
 #include <ork/reflect/IObjectArrayProperty.h>
 #include <ork/reflect/IObjectMapProperty.h>
 #include <ork/reflect/IObjectProperty.h>
@@ -21,7 +21,7 @@
 #include <ork/reflect/editorsupport/objectmodel.h>
 
 #include <ork/kernel/orklut.hpp>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/DirectMapTyped.hpp>
 
 #include <ork/file/path.h>
 #include <ork/util/crc.h>
@@ -575,13 +575,13 @@ GedItemNode* ObjectModel::CreateNode(
       return new GedObjNode<PropSetterObj>(*this, Name.c_str(), prop, pobject);
   }
   /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::DirectObjectMapPropertyType<ent::SceneData::SystemDataLut>* MapProp = rtti::autocast(prop)) {
-    auto mapprop = rtti::downcast<const reflect::DirectObjectMapPropertyType<ent::SceneData::SystemDataLut>*>(prop);
+  else if (const reflect::DirectMapPropertyType<ent::SceneData::SystemDataLut>* MapProp = rtti::autocast(prop)) {
+    auto mapprop = rtti::downcast<const reflect::DirectMapPropertyType<ent::SceneData::SystemDataLut>*>(prop);
     if (mapprop)
       return new GedMapNode(*this, Name.c_str(), mapprop, pobject);
   }
   /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::DirectObjectPropertyType<ork::object_ptr_t>* dobjprop = rtti::autocast(prop)) {
+  else if (const reflect::DirectPropertyType<ork::object_ptr_t>* dobjprop = rtti::autocast(prop)) {
     ork::object_ptr_t psubobj = 0;
     dobjprop->Get(psubobj, pobject);
     if (psubobj)

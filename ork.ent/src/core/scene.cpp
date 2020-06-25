@@ -18,8 +18,8 @@
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/lev2_asset.h>
 
-#include <ork/reflect/DirectObjectMapPropertyType.h>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/DirectMapTyped.h>
+#include <ork/reflect/properties/DirectMapTyped.hpp>
 #include <ork/reflect/RegisterProperty.h>
 #include <pkg/ent/ReferenceArchetype.h>
 #include <pkg/ent/entity.hpp>

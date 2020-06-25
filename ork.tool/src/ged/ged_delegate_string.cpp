@@ -12,7 +12,7 @@
 #include <orktool/ged/ged_io.h>
 #include <ork/reflect/IProperty.h>
 #include <ork/reflect/IObjectProperty.h>
-#include <ork/reflect/DirectObjectMapPropertyType.h>
+#include <ork/reflect/properties/DirectMapTyped.h>
 #include <ork/reflect/IObjectPropertyObject.h>
 #include <ork/reflect/IDeserializer.h>
 #include <ork/lev2/gfx/dbgfontman.h>

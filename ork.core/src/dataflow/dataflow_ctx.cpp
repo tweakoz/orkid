@@ -15,7 +15,7 @@
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/kernel/orklut.hpp>
 #include <ork/reflect/AccessorObjectPropertyType.hpp>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/DirectMapTyped.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace dataflow {

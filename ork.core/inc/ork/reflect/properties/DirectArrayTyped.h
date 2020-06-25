@@ -14,10 +14,10 @@
 namespace ork { namespace reflect {
 
 template<typename T>
-class  DirectObjectArrayPropertyType : public IObjectArrayPropertyType<T>
+class  DirectArrayPropertyType : public IObjectArrayPropertyType<T>
 {
 public:
-    DirectObjectArrayPropertyType(T (Object::*)[], size_t);
+    DirectArrayPropertyType(T (Object::*)[], size_t);
     /*virtual*/ void Get(T &, const Object *, size_t) const;
     /*virtual*/ void Set(const T &, Object *, size_t) const;
     /*virtual*/ size_t Count(const Object *) const;

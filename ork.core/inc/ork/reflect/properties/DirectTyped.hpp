@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/reflect/DirectObjectPropertyType.h>
+#include <ork/reflect/properties/DirectTyped.h>
 #include <ork/reflect/IObjectPropertyType.hpp>
 
 namespace ork { namespace reflect {
@@ -15,33 +15,33 @@ namespace ork { namespace reflect {
 class ISerializer;
 
 template<typename T>
-DirectObjectPropertyType<T>::DirectObjectPropertyType(T Object::*property)
+DirectPropertyType<T>::DirectPropertyType(T Object::*property)
 	: mProperty(property)
 {}
 
 template<typename T>
-void DirectObjectPropertyType<T>::Get(T &value, const Object *obj) const 
+void DirectPropertyType<T>::Get(T &value, const Object *obj) const 
 {
     value = obj->*mProperty;
 }
 
 template<typename T>
-void DirectObjectPropertyType<T>::Set(const T &value, Object *obj) const 
+void DirectPropertyType<T>::Set(const T &value, Object *obj) const 
 {
     obj->*mProperty = value;
 }
 
 template<typename T>
-typename DirectObjectPropertyType<T>::RTTIType::RTTICategory DirectObjectPropertyType<T>::sClass( DirectObjectPropertyType<T>::RTTIType::ClassRTTI() );
+typename DirectPropertyType<T>::RTTIType::RTTICategory DirectPropertyType<T>::sClass( DirectPropertyType<T>::RTTIType::ClassRTTI() );
 
 template<typename T>
-typename DirectObjectPropertyType<T>::RTTIType::RTTICategory* DirectObjectPropertyType<T>::GetClassStatic()
+typename DirectPropertyType<T>::RTTIType::RTTICategory* DirectPropertyType<T>::GetClassStatic()
 {
 	return &sClass;
 }
 
 template<typename T>
-typename DirectObjectPropertyType<T>::RTTIType::RTTICategory* DirectObjectPropertyType<T>::GetClass() const
+typename DirectPropertyType<T>::RTTIType::RTTICategory* DirectPropertyType<T>::GetClass() const
 {
 	return GetClassStatic();
 }

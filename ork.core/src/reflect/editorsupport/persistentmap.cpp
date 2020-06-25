@@ -11,11 +11,11 @@
 #include <ork/reflect/IObjectMapProperty.h>
 #include <ork/reflect/IObjectArrayProperty.h>
 #include <ork/reflect/IObjectPropertyObject.h>
-#include <ork/reflect/DirectObjectPropertyType.h>
+#include <ork/reflect/properties/DirectTyped.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/rtti/downcast.h>
 #include <ork/kernel/orklut.hpp>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/DirectMapTyped.hpp>
 
 #include <ork/util/crc.h>
 #include <queue>

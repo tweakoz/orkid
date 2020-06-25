@@ -5,8 +5,8 @@
 #include <ork/lev2/gfx/proctex/proctex.h>
 #include <ork/pch.h>
 
-#include <ork/reflect/DirectObjectMapPropertyType.h>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/properties/DirectMapTyped.h>
+#include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/reflect/RegisterProperty.h>
 
 #include <ork/file/file.h>

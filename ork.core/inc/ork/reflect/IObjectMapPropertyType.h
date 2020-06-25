@@ -17,7 +17,7 @@ namespace ork { namespace reflect {
 template<typename KeyType, typename ValueType>
 class  IObjectMapPropertyType : public IObjectMapProperty
 {
-	//DECLARE_TRANSPARENT_TEMPLATE_CASTABLE(DirectObjectPropertyType<T>, IObjectPropertyType<T>)
+	//DECLARE_TRANSPARENT_TEMPLATE_CASTABLE(DirectPropertyType<T>, IObjectPropertyType<T>)
 	DECLARE_TRANSPARENT_TEMPLATE_CASTABLE(IObjectMapPropertyType, IObjectMapProperty)
 	//static void GetClassStatic(); // Kill inherited GetClassStatic()
 

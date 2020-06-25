@@ -16,8 +16,8 @@
 #include <ork/pch.h>
 #include <ork/reflect/RegisterPropertyX.inl>
 #include <ork/reflect/enum_serializer.inl>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
+#include <ork/reflect/properties/DirectMapTyped.hpp>
 
 ImplementReflectionX(ork::lev2::FileOutputCompositingNode, "FileOutputCompositingNode");
 

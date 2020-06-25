@@ -8,7 +8,7 @@
 #include <ork/pch.h>
 
 #include <ork/reflect/RegisterProperty.h>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/DirectMapTyped.hpp>
 #include <ork/kernel/orklut.hpp>
 
 #include <pkg/ent/entity.h>
@@ -47,7 +47,7 @@
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::SimpleAnimatableData, "SimpleAnimatableData");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::SimpleAnimatableInst, "SimpleAnimatableInst");
 
-template class ork::reflect::DirectObjectMapPropertyType<orkmap<ork::PoolString, ork::ent::AnimSeqTable*>>;
+template class ork::reflect::DirectMapPropertyType<orkmap<ork::PoolString, ork::ent::AnimSeqTable*>>;
 
 namespace ork { namespace ent {
 

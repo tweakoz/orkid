@@ -7,13 +7,13 @@
 
 #include <ork/pch.h>
 #include <ork/reflect/RegisterProperty.h>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/DirectMapTyped.hpp>
 #include <ork/kernel/orklut.hpp>
 #include <pkg/ent/AnimSeqTable.h>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AnimSeqTable, "AnimSeqTable");
 
-template class ork::reflect::DirectObjectMapPropertyType<ork::orklut<float, ork::event::Event*> >;
+template class ork::reflect::DirectMapPropertyType<ork::orklut<float, ork::event::Event*> >;
 
 namespace ork { namespace ent {
 

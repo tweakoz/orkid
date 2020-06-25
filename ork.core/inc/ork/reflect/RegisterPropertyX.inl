@@ -29,7 +29,7 @@ template <typename ClassType, typename MemberType>
 inline object::PropertyModifier object::ObjectClass::memberProperty(const char* name, MemberType ClassType::*member) {
   object::PropertyModifier modder;
   auto typed_member = static_cast<MemberType Object::*>(member);
-  modder._property  = new reflect::DirectObjectPropertyType<MemberType>(typed_member);
+  modder._property  = new reflect::DirectPropertyType<MemberType>(typed_member);
   _description.AddProperty(name, modder._property);
   return modder;
 }
@@ -40,7 +40,7 @@ inline object::PropertyModifier object::ObjectClass::sharedObjectProperty( //
     object_ptr_t ClassType::*member) {
   object::PropertyModifier modder;
   auto typed_member = static_cast<object_ptr_t Object::*>(member);
-  modder._property  = new reflect::DirectObjectPropertySharedObject(typed_member);
+  modder._property  = new reflect::DirectPropertySharedObject(typed_member);
   _description.AddProperty(name, modder._property);
   return modder;
 }

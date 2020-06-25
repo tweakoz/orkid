@@ -22,8 +22,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/reflect/AccessorObjectPropertyType.hpp>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/properties/DirectMapTyped.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/kernel/string/string.h>
 #include <pkg/ent/EditorCamera.h>

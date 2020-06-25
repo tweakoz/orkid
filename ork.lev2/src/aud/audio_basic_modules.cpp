@@ -19,8 +19,8 @@
 #include <ork/math/audiomath.h>
 #include <ork/application/application.h>
 #include <ork/reflect/RegisterProperty.h>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
+#include <ork/reflect/properties/DirectMapTyped.hpp>
 #include <ork/stream/FileInputStream.h>
 #include <ork/stream/StringInputStream.h>
 #include <ork/reflect/serialize/XMLDeserializer.h>

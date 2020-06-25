@@ -17,7 +17,7 @@
 #include <pkg/ent/scene.hpp>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/reflect/AccessorObjectPropertyType.hpp>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
 ///////////////////////////////////////////////////////////////////////////////
 #include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
 #include <ork/kernel/msgrouter.inl>

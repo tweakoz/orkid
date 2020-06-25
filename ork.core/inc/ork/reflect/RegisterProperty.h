@@ -11,19 +11,19 @@
 #include <ork/reflect/AccessorObjectPropertySharedObject.h>
 #include <ork/reflect/AccessorObjectPropertyType.h>
 #include <ork/reflect/AccessorObjectPropertyVariant.h>
-#include <ork/reflect/DirectObjectPropertyType.h>
-#include <ork/reflect/DirectObjectPropertySharedObject.h>
+#include <ork/reflect/properties/DirectTyped.h>
+#include <ork/reflect/properties/DirectSharedObject.h>
 
 #include <ork/reflect/AccessorObjectArrayPropertyObject.h>
 #include <ork/reflect/AccessorObjectArrayPropertyType.h>
 #include <ork/reflect/AccessorObjectArrayPropertyVariant.h>
-#include <ork/reflect/DirectObjectArrayPropertyType.h>
-#include <ork/reflect/DirectObjectVectorPropertyType.h>
+#include <ork/reflect/properties/DirectArrayTyped.h>
+#include <ork/reflect/properties/DirectVectorTyped.h>
 
 #include <ork/reflect/AccessorObjectMapPropertyObject.h>
 #include <ork/reflect/AccessorObjectMapPropertyType.h>
 #include <ork/reflect/AccessorObjectMapPropertyVariant.h>
-#include <ork/reflect/DirectObjectMapPropertyType.h>
+#include <ork/reflect/properties/DirectMapTyped.h>
 #include <ork/reflect/Functor.h>
 
 #include <ork/object/Object.h>
@@ -46,11 +46,11 @@ namespace reflect {
 ///////////////////////////////////////////////////////////////////////////
 
 template <typename ClassType, typename MemberType>
-static inline DirectObjectPropertyType<MemberType>& RegisterProperty(
+static inline DirectPropertyType<MemberType>& RegisterProperty(
     const char* name,
     MemberType ClassType::*member,
     Description& description = ClassType::GetClassStatic()->Description()) {
-  auto prop = new DirectObjectPropertyType<MemberType>(static_cast<MemberType Object::*>(member));
+  auto prop = new DirectPropertyType<MemberType>(static_cast<MemberType Object::*>(member));
 
   description.AddProperty(name, prop);
 
@@ -112,11 +112,11 @@ static inline AccessorObjectPropertyVariant& RegisterProperty(
 }
 
 template <typename ClassType, typename MemberType, size_t size>
-static DirectObjectArrayPropertyType<MemberType>& RegisterArrayProperty(
+static DirectArrayPropertyType<MemberType>& RegisterArrayProperty(
     const char* name,
     MemberType (ClassType::*pmember)[size],
     Description& description = ClassType::GetClassStatic()->Description()) {
-  auto prop = new DirectObjectArrayPropertyType<MemberType>(
+  auto prop = new DirectArrayPropertyType<MemberType>(
       // reinterpret_cast is necessary here, the static_cast goes as far as
       // possible, the reinterpret_cast just removes the size info from the
       // array
@@ -129,11 +129,11 @@ static DirectObjectArrayPropertyType<MemberType>& RegisterArrayProperty(
 }
 
 template <typename ClassType, typename MemberType>
-static DirectObjectVectorPropertyType<MemberType>& RegisterArrayProperty(
+static DirectVectorPropertyType<MemberType>& RegisterArrayProperty(
     const char* name,
     MemberType ClassType::*pmember,
     Description& description = ClassType::GetClassStatic()->Description()) {
-  auto prop = new DirectObjectVectorPropertyType<MemberType>(static_cast<MemberType Object::*>(pmember));
+  auto prop = new DirectVectorPropertyType<MemberType>(static_cast<MemberType Object::*>(pmember));
 
   description.AddProperty(name, prop);
 
@@ -196,11 +196,11 @@ static inline AccessorObjectArrayPropertyVariant& RegisterArrayProperty(
 }
 
 template <typename ClassType, typename MapType>
-static inline DirectObjectMapPropertyType<MapType>& RegisterMapProperty(
+static inline DirectMapPropertyType<MapType>& RegisterMapProperty(
     const char* name,
     MapType ClassType::*member,
     Description& description = ClassType::GetClassStatic()->Description()) {
-  auto prop = new DirectObjectMapPropertyType<MapType>(static_cast<MapType Object::*>(member));
+  auto prop = new DirectMapPropertyType<MapType>(static_cast<MapType Object::*>(member));
   description.AddProperty(name, prop);
   return *prop;
 }

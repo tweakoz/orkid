@@ -12,8 +12,8 @@
 #include <pkg/ent/scene.h>
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/reflect/RegisterProperty.h>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
+#include <ork/reflect/properties/DirectMapTyped.hpp>
 #include <ork/kernel/orklut.hpp>
 #include <ork/kernel/core_interface.h>
 #include <pkg/ent/event/StartAudioEffectEvent.h>
@@ -484,9 +484,9 @@ ork::lev2::AudioInstrumentPlayback* AudioMultiEffectPlayInstItemModular::DoPlay(
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-class SoundMapPropertyType : public ork::reflect::DirectObjectMapPropertyType< ork::orklut<ork::PoolString, AudioEffectPlayDataBase*> >
+class SoundMapPropertyType : public ork::reflect::DirectMapPropertyType< ork::orklut<ork::PoolString, AudioEffectPlayDataBase*> >
 {
-	typedef ork::reflect::DirectObjectMapPropertyType< ork::orklut<ork::PoolString, AudioEffectPlayDataBase*> > SuperType;
+	typedef ork::reflect::DirectMapPropertyType< ork::orklut<ork::PoolString, AudioEffectPlayDataBase*> > SuperType;
 	typedef ork::orklut<ork::PoolString, AudioEffectPlayDataBase*> MapType;
 
 public:

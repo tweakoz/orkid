@@ -13,7 +13,7 @@
 #include <ork/reflect/RegisterProperty.h>
 
 #include <ork/reflect/IObjectPropertyType.hpp>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
 
 #include <ork/object/ObjectClass.h>
 

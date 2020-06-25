@@ -18,8 +18,8 @@
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/input/inputdevice.h>
 #include <ork/pch.h>
-#include <ork/reflect/DirectObjectMapPropertyType.h>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/DirectMapTyped.h>
+#include <ork/reflect/properties/DirectMapTyped.hpp>
 #include <ork/reflect/RegisterProperty.h>
 #include <pkg/ent/CompositingSystem.h>
 #include <pkg/ent/ReferenceArchetype.h>

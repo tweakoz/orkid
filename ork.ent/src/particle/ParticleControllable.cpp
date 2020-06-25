@@ -20,8 +20,8 @@
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <pkg/ent/ParticleControllable.h>
 #include <ork/reflect/enum_serializer.inl>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
+#include <ork/reflect/properties/DirectMapTyped.hpp>
 #include <ork/kernel/orklut.hpp>
 #include <pkg/ent/dataflow.h>
 

@@ -14,13 +14,13 @@
 namespace ork { namespace reflect {
 
 template<typename VectorType>
-class  DirectObjectVectorPropertyType 
+class  DirectVectorPropertyType 
 	: public IObjectArrayPropertyType<typename VectorType::value_type>
 {
 public:
 	typedef typename VectorType::value_type ValueType;
 	
-	DirectObjectVectorPropertyType(VectorType Object::*);
+	DirectVectorPropertyType(VectorType Object::*);
 private:
     /*virtual*/ void Get(ValueType &, const Object *, size_t) const;
     /*virtual*/ void Set(const ValueType &, Object *, size_t) const;

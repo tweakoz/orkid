@@ -17,7 +17,7 @@
 #include <ork/reflect/IObjectArrayProperty.h>
 #include <ork/reflect/IObjectProperty.h>
 #include <ork/reflect/IObjectPropertyType.h>
-#include <ork/reflect/DirectObjectPropertyType.h>
+#include <ork/reflect/properties/DirectTyped.h>
 #include <ork/rtti/downcast.h>
 
 namespace ork { namespace tool { namespace ged {

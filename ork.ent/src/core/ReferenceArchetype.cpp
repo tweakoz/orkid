@@ -7,7 +7,7 @@
 
 #include <ork/pch.h>
 #include <pkg/ent/ReferenceArchetype.h>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/asset/FileAssetLoader.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/reflect/serialize/XMLDeserializer.h>

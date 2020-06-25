@@ -14,12 +14,12 @@
 
 namespace ork { namespace reflect {
 
-class DirectObjectPropertySharedObject : public IObjectPropertySharedObject
+class DirectPropertySharedObject : public IObjectPropertySharedObject
 {
     object_ptr_t Object::*mProperty;
 
 public:
-    DirectObjectPropertySharedObject(object_ptr_t Object::*);
+    DirectPropertySharedObject(object_ptr_t Object::*);
 
     void get(object_ptr_t& value, const Object* obj) const;
     void set(object_ptr_t const& value, Object* obj) const;

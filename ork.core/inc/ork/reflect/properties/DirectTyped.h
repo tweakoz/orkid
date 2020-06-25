@@ -14,13 +14,13 @@
 namespace ork { namespace reflect {
 
 template<typename T>
-class  DirectObjectPropertyType : public IObjectPropertyType<T>
+class  DirectPropertyType : public IObjectPropertyType<T>
 {
-	DECLARE_TRANSPARENT_TEMPLATE_CASTABLE(DirectObjectPropertyType<T>, IObjectPropertyType<T>)
+	DECLARE_TRANSPARENT_TEMPLATE_CASTABLE(DirectPropertyType<T>, IObjectPropertyType<T>)
     T Object::*mProperty;
 
 public:
-    DirectObjectPropertyType(T Object::*);
+    DirectPropertyType(T Object::*);
 
     /*virtual*/ void Get(T &, const Object *) const;
     /*virtual*/ void Set(const T &, Object *) const;

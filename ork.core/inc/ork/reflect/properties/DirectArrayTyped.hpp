@@ -7,38 +7,38 @@
 
 #pragma once
 
-#include <ork/reflect/DirectObjectArrayPropertyType.h>
+#include <ork/reflect/properties/DirectArrayTyped.h>
 #include <ork/reflect/IObjectArrayPropertyType.hpp>
 
 namespace ork { namespace reflect {
 
 template<typename T>
-DirectObjectArrayPropertyType<T>::DirectObjectArrayPropertyType(
+DirectArrayPropertyType<T>::DirectArrayPropertyType(
         T (Object::*prop)[], size_t size)
     : mProperty(prop)
     , mSize(size)
 {}
 
 template<typename T>
-void DirectObjectArrayPropertyType<T>::Get(T &value, const Object *obj, size_t index) const
+void DirectArrayPropertyType<T>::Get(T &value, const Object *obj, size_t index) const
 {
     value = (obj->*mProperty)[index];
 }
 
 template<typename T>
-void DirectObjectArrayPropertyType<T>::Set(const T &value, Object *obj, size_t index) const
+void DirectArrayPropertyType<T>::Set(const T &value, Object *obj, size_t index) const
 {
     (obj->*mProperty)[index] = value;
 }
 
 template<typename T>
-size_t DirectObjectArrayPropertyType<T>::Count(const Object *) const 
+size_t DirectArrayPropertyType<T>::Count(const Object *) const 
 {
     return mSize; 
 }
 
 template<typename T>
-bool DirectObjectArrayPropertyType<T>::Resize(Object *, size_t size) const
+bool DirectArrayPropertyType<T>::Resize(Object *, size_t size) const
 {
 	return size == mSize;
 }

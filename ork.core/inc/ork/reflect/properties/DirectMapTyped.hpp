@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/reflect/DirectObjectMapPropertyType.h>
+#include <ork/reflect/properties/DirectMapTyped.h>
 #include <ork/reflect/IObjectMapPropertyType.hpp>
 #include <ork/kernel/core_interface.h>
 
@@ -26,32 +26,32 @@ bool IsMultiMapDeducer( const ork::orklut<kt,vt>& map )
 }
 
 template<typename MapType>
-bool DirectObjectMapPropertyType<MapType>::IsMultiMap(const Object* obj) const
+bool DirectMapPropertyType<MapType>::IsMultiMap(const Object* obj) const
 {
 	return IsMultiMapDeducer(GetMap(obj));
 }
 
 template<typename MapType>
-DirectObjectMapPropertyType<MapType>::DirectObjectMapPropertyType( MapType Object::*prop )
+DirectMapPropertyType<MapType>::DirectMapPropertyType( MapType Object::*prop )
 	: mProperty(prop)
 {}
 
 template<typename MapType>
-MapType& DirectObjectMapPropertyType<MapType>::GetMap( Object* object ) const
+MapType& DirectMapPropertyType<MapType>::GetMap( Object* object ) const
 {
 	return object->*mProperty;
 }
 
 template<typename MapType>
-const MapType& DirectObjectMapPropertyType<MapType>::GetMap( const Object* object ) const
+const MapType& DirectMapPropertyType<MapType>::GetMap( const Object* object ) const
 {
 	return object->*mProperty;
 }
 
 template<typename MapType>
-bool DirectObjectMapPropertyType<MapType>::EraseItem(
+bool DirectMapPropertyType<MapType>::EraseItem(
 	Object *object,
-	const typename DirectObjectMapPropertyType<MapType>::KeyType &key,
+	const typename DirectMapPropertyType<MapType>::KeyType &key,
 	int multi_index ) const
 {
 	MapType &map = object->*mProperty;
@@ -75,11 +75,11 @@ bool DirectObjectMapPropertyType<MapType>::EraseItem(
 }
 
 template<typename MapType>
-bool DirectObjectMapPropertyType<MapType>::ReadItem(
+bool DirectMapPropertyType<MapType>::ReadItem(
 	const Object *object,
-	const typename DirectObjectMapPropertyType<MapType>::KeyType &key,
+	const typename DirectMapPropertyType<MapType>::KeyType &key,
 	int multi_index,
-	typename DirectObjectMapPropertyType<MapType>::ValueType &value) const
+	typename DirectMapPropertyType<MapType>::ValueType &value) const
 {
 	const MapType &map = object->*mProperty;
 	typename MapType::const_iterator it = map.find(key);
@@ -98,11 +98,11 @@ bool DirectObjectMapPropertyType<MapType>::ReadItem(
 }
 
 template<typename MapType>
-bool DirectObjectMapPropertyType<MapType>::WriteItem(
+bool DirectMapPropertyType<MapType>::WriteItem(
 	Object *object,
-	const typename DirectObjectMapPropertyType<MapType>::KeyType &key,
+	const typename DirectMapPropertyType<MapType>::KeyType &key,
 	int multi_index,
-	const typename DirectObjectMapPropertyType<MapType>::ValueType *value) const
+	const typename DirectMapPropertyType<MapType>::ValueType *value) const
 {	MapType &map = object->*mProperty;
 	const int orig_multi_index = multi_index;
 	if(multi_index == IObjectMapProperty::kDeserializeInsertItem)
@@ -119,7 +119,7 @@ bool DirectObjectMapPropertyType<MapType>::WriteItem(
 		{	it->second = *value;
 		}
 		else
-		{	typename DirectObjectMapPropertyType<MapType>::ValueType val2erase = it->second;
+		{	typename DirectMapPropertyType<MapType>::ValueType val2erase = it->second;
 			ItemRemovalEvent ev;
 			ev.mProperty = this;
 			ev.miMultiIndex = orig_multi_index;
@@ -134,8 +134,8 @@ bool DirectObjectMapPropertyType<MapType>::WriteItem(
 }
 
 template<typename MapType>
-bool DirectObjectMapPropertyType<MapType>::MapSerialization(
-		typename DirectObjectMapPropertyType<MapType>::ItemSerializeFunction serialization_func,
+bool DirectMapPropertyType<MapType>::MapSerialization(
+		typename DirectMapPropertyType<MapType>::ItemSerializeFunction serialization_func,
 		BidirectionalSerializer &bidi,
 		const Object *serialize_object) const
 {
@@ -190,7 +190,7 @@ bool DirectObjectMapPropertyType<MapType>::MapSerialization(
 }
 
 template<typename MapType>
-bool DirectObjectMapPropertyType<MapType>::GetKey(const Object *pser, int idx, KeyType &kt) const
+bool DirectMapPropertyType<MapType>::GetKey(const Object *pser, int idx, KeyType &kt) const
 {
 	const MapType &map = pser->*mProperty;
 	OrkAssert( idx < int(map.size()) );
@@ -200,7 +200,7 @@ bool DirectObjectMapPropertyType<MapType>::GetKey(const Object *pser, int idx, K
 	return true;
 }
 template<typename MapType>
-bool DirectObjectMapPropertyType<MapType>::GetVal(const Object *pser, const KeyType &k, ValueType &v) const
+bool DirectMapPropertyType<MapType>::GetVal(const Object *pser, const KeyType &k, ValueType &v) const
 {
 	const MapType &map = pser->*mProperty;
 	typename MapType::const_iterator it = map.find(k);

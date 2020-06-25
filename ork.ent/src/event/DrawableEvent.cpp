@@ -10,7 +10,7 @@
 #include <pkg/ent/event/DrawableEvent.h>
 
 #include <ork/reflect/RegisterProperty.h>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::event::DrawableEvent, "DrawableEvent");
 

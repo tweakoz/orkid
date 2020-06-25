@@ -24,8 +24,8 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorVr.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
 #include <ork/application/application.h>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/properties/DirectMapTyped.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::lev2::CompositingData, "CompositingData");

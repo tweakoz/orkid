@@ -17,7 +17,7 @@
 #include <pkg/ent/scene.hpp>
 
 #include <ork/reflect/RegisterProperty.h>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/DirectMapTyped.hpp>
 #include <ork/kernel/orklut.hpp>
 
 #include <ork/application/application.h>

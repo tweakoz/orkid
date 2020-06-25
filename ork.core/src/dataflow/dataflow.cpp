@@ -12,7 +12,7 @@
 #include <ork/dataflow/scheduler.h>
 #include <ork/kernel/orklut.hpp>
 #include <ork/reflect/AccessorObjectPropertyType.hpp>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/DirectMapTyped.hpp>
 #include <ork/reflect/RegisterProperty.h>
 ///////////////////////////////////////////////////////////////////////////////
 template class ork::orklut<ork::PoolString, ork::dataflow::module *>;

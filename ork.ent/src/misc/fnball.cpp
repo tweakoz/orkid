@@ -14,7 +14,7 @@
 #include <ork/lev2/gfx/camera/cameradata.h>
 
 #include <ork/reflect/RegisterProperty.h>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/lev2_asset.h>

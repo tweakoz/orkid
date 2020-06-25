@@ -22,8 +22,8 @@
 #include <pkg/ent/entity.hpp>
 
 #include <ork/reflect/RegisterProperty.h>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
+#include <ork/reflect/properties/DirectMapTyped.hpp>
 #include <ork/kernel/orklut.hpp>
 
 #define WRITE_DEBUG_TXT 0

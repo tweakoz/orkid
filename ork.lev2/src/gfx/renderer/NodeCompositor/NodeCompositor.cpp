@@ -18,7 +18,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <iostream>
 #include <ork/asset/DynamicAssetLoader.h>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/reflect/enum_serializer.inl>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/renderer/builtin_frameeffects.h>

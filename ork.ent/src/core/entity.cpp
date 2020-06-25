@@ -11,10 +11,10 @@
 #include <ork/application/application.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/reflect/AccessorObjectPropertyType.hpp>
-#include <ork/reflect/DirectObjectMapPropertyType.h>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
-#include <ork/reflect/DirectObjectVectorPropertyType.h>
-#include <ork/reflect/DirectObjectVectorPropertyType.hpp>
+#include <ork/reflect/properties/DirectMapTyped.h>
+#include <ork/reflect/properties/DirectMapTyped.hpp>
+#include <ork/reflect/properties/DirectVectorTyped.h>
+#include <ork/reflect/properties/DirectVectorTyped.hpp>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/rtti/RTTI.h>
 #include <ork/rtti/downcast.h>
@@ -56,7 +56,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template class ork::reflect::DirectObjectMapPropertyType<ork::orklut<ork::PoolString, ork::Object*>>;
+template class ork::reflect::DirectMapPropertyType<ork::orklut<ork::PoolString, ork::Object*>>;
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

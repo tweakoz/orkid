@@ -14,7 +14,7 @@
 namespace ork { namespace reflect {
 
 template<typename MapType>
-class  DirectObjectMapPropertyType 
+class  DirectMapPropertyType 
 	: public IObjectMapPropertyType<typename MapType::key_type, typename MapType::mapped_type>
 {
 public:
@@ -22,7 +22,7 @@ public:
 	typedef typename MapType::mapped_type ValueType;
 	typedef typename IObjectMapPropertyType<KeyType, ValueType>::ItemSerializeFunction ItemSerializeFunction;
 
-	DirectObjectMapPropertyType(MapType Object::*);
+	DirectMapPropertyType(MapType Object::*);
 	
 	MapType& GetMap( Object* obj ) const;
 	const MapType& GetMap( const Object* obj ) const;

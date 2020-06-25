@@ -22,8 +22,8 @@
 
 #include <ork/kernel/orklut.hpp>
 #include <ork/math/basicfilters.h>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/properties/DirectMapTyped.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/reflect/RegisterProperty.h>
 
 #include <ork/math/PIDController.h>

@@ -15,7 +15,7 @@
 #include <ork/rtti/downcast.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/renderer/drawable.h>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/reflect/enum_serializer.inl>
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
