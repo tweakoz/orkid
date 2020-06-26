@@ -93,15 +93,6 @@ void BinaryDeserializer::deserializeObjectProperty(
   prop->deserialize(*this, instance);
 }
 ////////////////////////////////////////////////////////////////////////////////
-int BinaryDeserializer::FindObject(rtti::castable_rawptr_t object) {
-  for (orkvector<rtti::castable_rawptr_t>::size_type index = 0; index < mDeserializedObjects.size(); index++) {
-    if (mDeserializedObjects[index] == object)
-      return int(index);
-  }
-
-  return -1;
-}
-////////////////////////////////////////////////////////////////////////////////
 char BinaryDeserializer::Peek() {
   char c;
   if (mStream.Peek(reinterpret_cast<unsigned char*>(&c), 1) == 1) {
@@ -127,7 +118,7 @@ void BinaryDeserializer::deserializeSharedObject(object_ptr_t& instance_out) {
   if (Match('B')) {
     int id;
     Read(id);
-    instance_out = mDeserializedObjects[id];
+    instance_out = _reftracker[id];
   } else if (Match('R')) {
     ConstString name;
     Read(name);
@@ -145,18 +136,16 @@ void BinaryDeserializer::deserialize(MutableString& text) {
   ConstString data;
   Read(data);
   text = data;
-  return true;
 }
 ////////////////////////////////////////////////////////////////////////////////
 void BinaryDeserializer::deserialize(ResizableString& text) {
   ConstString data;
   Read(data);
   text = data;
-  return true;
 }
 ////////////////////////////////////////////////////////////////////////////////
 void BinaryDeserializer::deserializeData(uint8_t* data, size_t size) {
-  return mStream.Read(data, size) == int(size);
+  mStream.Read(data, size) == int(size);
 }
 ////////////////////////////////////////////////////////////////////////////////
 void BinaryDeserializer::beginCommand(Command& command) {
