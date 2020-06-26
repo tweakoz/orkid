@@ -10,8 +10,6 @@
 #include <ork/reflect/ISerializer.h>
 #include <ork/kernel/orkvector.h>
 #include <ork/kernel/string/StringPool.h>
-#include <unordered_set>
-#include <boost/uuid/uuid.hpp>
 
 namespace ork { namespace stream {
 class IOutputStream;
@@ -43,8 +41,8 @@ public:
   bool serializeObjectProperty(const ObjectProperty*, const Object*) override;
 
   bool ReferenceObject(const rtti::ICastable*) override;
-  bool BeginCommand(const Command&) override;
-  bool EndCommand(const Command&) override;
+  bool beginCommand(const Command&) override;
+  bool endCommand(const Command&) override;
 
 private:
   int FindObject(const rtti::ICastable* object);
@@ -54,9 +52,7 @@ private:
   template <typename T> bool Write(const T& datum);
 
   stream::IOutputStream& mStream;
-  std::unordered_set<std::string> _serialized;
   StringPool mStringPool;
-  const Command* mCurrentCommand;
 };
 
 }}} // namespace ork::reflect::serialize

@@ -14,28 +14,15 @@
 
 namespace ork { namespace reflect {
 
-//#define DECLARE_TRANSPARENT_CASTABLE(ClassType, BaseType) \
-//DECLARE_TRANSPARENT_CASTABLE_INTERNAL(ClassType, RTTI_2_ARG__(::ork::rtti::Castable<ClassType, BaseType>))
-
-//#define DECLARE_TRANSPARENT_CASTABLE_INTERNAL(ClassType, RTTIImplementation) \
-//public: \
-//	typedef RTTIImplementation RTTITyped; \
-//	static RTTIImplementation::RTTIClassClass *GetClassStatic(); \
-//	virtual ::ork::rtti::Class *GetClass() const; \
-//private: \
-//	static RTTIImplementation::RTTIClassClass sClass;
-
 template <typename T> class ITyped : public ObjectProperty {
-  DECLARE_TRANSPARENT_TEMPLATE_CASTABLE(ITyped, ObjectProperty)
 
-  // static ork::rtti::Class* GetClassStatic(); // Kill inherited GetClassStatic()
 public:
-  virtual void Get(T& value, const Object* obj) const = 0;
-  virtual void Set(const T& value, Object* obj) const = 0;
+  virtual void get(T& value, const Object* obj) const = 0;
+  virtual void set(const T& value, Object* obj) const = 0;
 
 private:
-  /*virtual*/ bool Deserialize(IDeserializer&, Object*) const;
-  /*virtual*/ bool Serialize(ISerializer&, const Object*) const;
+  void deserialize(IDeserializer&, Object*) const override;
+  void serialize(ISerializer&, const Object*) const override;
 
 protected:
   ITyped() {

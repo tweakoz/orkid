@@ -14,21 +14,15 @@
 namespace ork { namespace reflect {
 
 class IMap : public ObjectProperty {
-  DECLARE_TRANSPARENT_CASTABLE(IMap, ObjectProperty)
 
 public:
-  virtual int GetSize(const Object* obj) const = 0;
+  virtual size_t itemCount(const Object* obj) const = 0;
 
   static const int kDeserializeInsertItem = -1;
 
-  virtual bool DeserializeItem(IDeserializer* value, IDeserializer& key, int, Object*) const   = 0;
-  virtual bool SerializeItem(ISerializer& value, IDeserializer& key, int, const Object*) const = 0;
-
-  virtual bool IsMultiMap(const Object* obj) const = 0;
-
-private:
-  /*virtual*/ bool Deserialize(IDeserializer& serializer, Object* obj) const   = 0;
-  /*virtual*/ bool Serialize(ISerializer& serializer, const Object* obj) const = 0;
+  virtual void deserializeItem(IDeserializer* value, IDeserializer& key, int, Object*) const   = 0;
+  virtual void serializeItem(ISerializer& value, IDeserializer& key, int, const Object*) const = 0;
+  virtual bool isMultiMap(const Object* obj) const                                             = 0;
 
 protected:
   IMap() {

@@ -16,14 +16,9 @@ namespace ork { namespace reflect {
 
 template <typename KeyType, typename ValueType> //
 class ITypedMap : public IMap {
-  // DECLARE_TRANSPARENT_TEMPLATE_CASTABLE(DirectTyped<T>, ITyped<T>)
-  // DECLARE_TRANSPARENT_TEMPLATE_CASTABLE(ITypedMap, IMap)
-  // static void GetClassStatic(); // Kill inherited GetClassStatic()
 
 public:
-  typedef bool (*ItemSerializeFunction)(BidirectionalSerializer&, KeyType&, ValueType&);
-  bool DeserializeItem(IDeserializer* value, IDeserializer& key, int, Object*) const override;
-  bool SerializeItem(ISerializer& value, IDeserializer& key, int, const Object*) const override;
+  using ItemSerializeFunction = void (*)(BidirectionalSerializer&, KeyType&, ValueType&);
 
 protected:
   virtual bool GetKey(const Object*, int idx, KeyType&) const                                         = 0;
@@ -38,10 +33,12 @@ protected:
   }
 
 private:
-  static bool DoDeserialize(BidirectionalSerializer&, KeyType&, ValueType&);
-  static bool DoSerialize(BidirectionalSerializer&, KeyType&, ValueType&);
-  bool Deserialize(IDeserializer&, Object*) const override;
-  bool Serialize(ISerializer&, const Object*) const override;
+  static void _doDeserialize(BidirectionalSerializer&, KeyType&, ValueType&);
+  static void _doSerialize(BidirectionalSerializer&, KeyType&, ValueType&);
+  void deserialize(IDeserializer&, Object*) const override;
+  void serialize(ISerializer&, const Object*) const override;
+  void deserializeItem(IDeserializer* value, IDeserializer& key, int, Object*) const override;
+  void serializeItem(ISerializer& value, IDeserializer& key, int, const Object*) const override;
 };
 
 }} // namespace ork::reflect

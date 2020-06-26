@@ -10,6 +10,8 @@
 #include <ork/orktypes.h>
 #include <ork/kernel/string/PieceString.h>
 #include <stdint.h>
+#include <unordered_set>
+#include <boost/uuid/uuid.hpp>
 
 namespace ork { namespace rtti {
 class ICastable;
@@ -25,34 +27,38 @@ class Command;
 
 class ISerializer {
 public:
-  virtual bool Serialize(const bool&)   = 0;
-  virtual bool Serialize(const char&)   = 0;
-  virtual bool Serialize(const short&)  = 0;
-  virtual bool Serialize(const int&)    = 0;
-  virtual bool Serialize(const long&)   = 0;
-  virtual bool Serialize(const float&)  = 0;
-  virtual bool Serialize(const double&) = 0;
+  void referenceObject(object_constptr_t);
+  void referenceObject(object_rawconstptr_t);
 
-  virtual bool Serialize(const PieceString&)           = 0;
+  virtual void Serialize(const bool&)        = 0;
+  virtual void Serialize(const char&)        = 0;
+  virtual void Serialize(const short&)       = 0;
+  virtual void Serialize(const int&)         = 0;
+  virtual void Serialize(const long&)        = 0;
+  virtual void Serialize(const float&)       = 0;
+  virtual void Serialize(const double&)      = 0;
+  virtual void Serialize(const PieceString&) = 0;
+
+  virtual void Serialize(const AbstractProperty*) = 0;
+
+  virtual void serializeObject(const rtti::ICastable*) = 0;
+  inline void serializeSharedObject(rtti::castable_constptr_t obj) {
+    return serializeObject(obj.get());
+  }
+  virtual void serializeObjectProperty(const ObjectProperty*, const Object*) = 0;
+
+  virtual void SerializeData(unsigned char*, size_t) = 0;
+
   virtual void Hint(const PieceString&)                = 0;
   virtual void Hint(const PieceString&, intptr_t ival) = 0;
 
-  virtual bool Serialize(const AbstractProperty*) = 0;
-
-  virtual bool serializeObject(const rtti::ICastable*) = 0;
-  inline bool serializeSharedObject(rtti::castable_constptr_t obj) {
-    return serializeObject(obj.get());
-  }
-  virtual bool serializeObjectProperty(const ObjectProperty*, const Object*) = 0;
-
-  virtual bool SerializeData(unsigned char*, size_t) = 0;
-
-  virtual bool referenceObject(object_constptr_t)    = 0;
-  virtual bool referenceObject(object_rawconstptr_t) = 0;
-  virtual bool BeginCommand(const Command&)          = 0;
-  virtual bool EndCommand(const Command&)            = 0;
+  virtual void beginCommand(const Command&) = 0;
+  virtual void endCommand(const Command&)   = 0;
 
   virtual ~ISerializer();
+
+  std::unordered_set<std::string> _serialized;
+  const Command* _currentCommand;
 };
 
 }} // namespace ork::reflect

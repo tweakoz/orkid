@@ -40,8 +40,8 @@ public:
   bool deserializeObjectProperty(const ObjectProperty*, Object*) override;
 
   bool ReferenceObject(rtti::castable_rawptr_t) override;
-  bool BeginCommand(Command&) override;
-  bool EndCommand(const Command&) override;
+  bool beginCommand(Command&) override;
+  bool endCommand(const Command&) override;
 
 protected:
   ///*virtual*/ bool Deserialize(const rtti::Category*, rtti::castable_rawptr_t&);
@@ -110,11 +110,11 @@ inline bool NullDeserializer::ReferenceObject(rtti::castable_rawptr_t object) {
   return true;
 }
 
-inline bool NullDeserializer::BeginCommand(Command& command) {
+inline bool NullDeserializer::beginCommand(Command& command) {
   return true;
 }
 
-inline bool NullDeserializer::EndCommand(const Command& command) {
+inline bool NullDeserializer::endCommand(const Command& command) {
   return true;
 }
 

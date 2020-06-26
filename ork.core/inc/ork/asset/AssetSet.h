@@ -10,7 +10,6 @@
 
 namespace ork { namespace asset {
 
-class AssetClass;
 class AssetEntry;
 class AssetLoader;
 class AssetSetLevel;
@@ -34,7 +33,7 @@ public:
 
   AssetSetLevel* GetTopLevel() const;
 
-  void PushLevel(AssetClass*);
+  void PushLevel(object::ObjectClass*);
   void PopLevel();
 
 private:

@@ -14,14 +14,14 @@
 namespace ork { namespace reflect {
 
 template <typename T> class DirectTyped : public ITyped<T> {
-  DECLARE_TRANSPARENT_TEMPLATE_CASTABLE(DirectTyped<T>, ITyped<T>)
+
   T Object::*mProperty;
 
 public:
   DirectTyped(T Object::*);
 
-  /*virtual*/ void Get(T&, const Object*) const;
-  /*virtual*/ void Set(const T&, Object*) const;
+  void get(T&, const Object*) const override;
+  void set(const T&, Object*) const override;
 };
 
 }} // namespace ork::reflect

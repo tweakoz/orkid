@@ -43,8 +43,8 @@ public:
 
   bool ReferenceObject(const rtti::ICastable*) override;
 
-  bool BeginCommand(const Command&) override;
-  bool EndCommand(const Command&) override;
+  bool beginCommand(const Command&) override;
+  bool endCommand(const Command&) override;
 };
 
 }}} // namespace ork::reflect::serialize

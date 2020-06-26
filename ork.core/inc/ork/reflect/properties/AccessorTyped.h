@@ -17,8 +17,8 @@ template <typename T> class AccessorTyped : public ITyped<T> {
 public:
   AccessorTyped(void (Object::*getter)(T&) const, void (Object::*setter)(const T&));
 
-  void Get(T& value, const Object* obj) const override;
-  void Set(const T& value, Object* obj) const override;
+  void get(T& value, const Object* obj) const override;
+  void set(const T& value, Object* obj) const override;
 
 private:
   void (Object::*mGetter)(T&) const;

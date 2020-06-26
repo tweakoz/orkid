@@ -15,18 +15,18 @@
 #include <ork/config/config.h>
 
 namespace ork { namespace reflect {
-
+////////////////////////////////////////////////////////////////////////////////
 class ISerializer;
 class IDeserializer;
-
+////////////////////////////////////////////////////////////////////////////////
 class ObjectProperty : public rtti::ICastable {
   DECLARE_TRANSPARENT_CASTABLE(ObjectProperty, rtti::ICastable)
 
 public:
   typedef ork::svar64_t anno_t;
 
-  virtual bool Deserialize(IDeserializer&, Object*) const   = 0;
-  virtual bool Serialize(ISerializer&, const Object*) const = 0;
+  virtual void deserialize(IDeserializer&, Object*) const   = 0;
+  virtual void serialize(ISerializer&, const Object*) const = 0;
   /////////////////////////////////////////////////////////////////
   // old string only annotations
   /////////////////////////////////////////////////////////////////
@@ -35,6 +35,7 @@ public:
     wrapped.Set<ConstString>(val);
     _annotations.AddSorted(key, wrapped);
   }
+  /////////////////////////////////////////////////////////////////
   ConstString GetAnnotation(const ConstString& key) const {
     ConstString rval = "";
     auto it          = _annotations.find(key);
@@ -51,6 +52,7 @@ public:
   void annotate(const ConstString& key, anno_t val) {
     _annotations.AddSorted(key, val);
   }
+  /////////////////////////////////////////////////////////////////
   anno_t annotation(const ConstString& key) const {
     anno_t rval(nullptr);
     auto it = _annotations.find(key);
@@ -62,9 +64,9 @@ public:
   /////////////////////////////////////////////////////////////////
   ObjectProperty() {
   }
-
+  /////////////////////////////////////////////////////////////////
 private:
   orklut<ConstString, anno_t> _annotations;
-};
-
+}; // namespace reflect
+////////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::reflect

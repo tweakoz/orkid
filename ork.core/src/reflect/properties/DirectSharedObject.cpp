@@ -30,7 +30,7 @@ bool DirectSharedObject::Deserialize(IDeserializer& serializer, Object* object) 
   OrkAssert(false);
   /*Object* object_property = (object->*mProperty)();
   Command command;
-  serializer.BeginCommand(command);
+  serializer.beginCommand(command);
 
   OrkAssertI(command.Type() == Command::EOBJECT, "DirectSharedObject::Deserialize::Expected an Object command!\n");
 
@@ -38,7 +38,7 @@ bool DirectSharedObject::Deserialize(IDeserializer& serializer, Object* object) 
     Object::xxxDeserialize(object_property, serializer);
   }
 
-  serializer.EndCommand(command);*/
+  serializer.endCommand(command);*/
 
   return true;
 }

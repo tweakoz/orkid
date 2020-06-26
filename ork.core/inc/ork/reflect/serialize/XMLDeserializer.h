@@ -45,8 +45,8 @@ public:
       dmtype&);
 
   bool ReferenceObject(rtti::ICastable*) override;
-  bool BeginCommand(Command&) override;
-  bool EndCommand(const Command&) override;
+  bool beginCommand(Command&) override;
+  bool endCommand(const Command&) override;
 
 private:
   bool EatBinaryData();

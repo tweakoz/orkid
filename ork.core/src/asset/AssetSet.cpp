@@ -58,7 +58,7 @@ AssetSet::AssetSet()
 
 void AssetSet::Register(PoolString name, asset_ptr_t asset, AssetLoader* loader) {
   if (NULL == mTopLevel)
-    PushLevel(ork::rtti::safe_downcast<AssetClass*>(asset->GetClass()));
+    PushLevel(ork::rtti::safe_downcast<object::ObjectClass*>(asset->GetClass()));
 
   std::pair<AssetSetEntry*, bool> result = FindAssetEntryInternal(mTopLevel, name);
   AssetSetEntry* entry                   = result.first;
@@ -162,7 +162,7 @@ bool AssetSet::UnLoad(int depth) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void AssetSet::PushLevel(AssetClass* type) {
+void AssetSet::PushLevel(object::ObjectClass* type) {
   Apply(mTopLevel, BuildExecutor(&AssetSetEntry::OnPush, mTopLevel));
 
   mTopLevel = new AssetSetLevel(mTopLevel);

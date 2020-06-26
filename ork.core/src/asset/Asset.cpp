@@ -15,8 +15,6 @@
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::asset::Asset, "Asset2");
 
-// template ork::rtti::RTTI<ork::asset::Asset, ork::Object, ork::rtti::AbstractPolicy, ork::asset::AssetClass>;
-
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace asset {
 ///////////////////////////////////////////////////////////////////////////////
@@ -41,21 +39,31 @@ PoolString Asset::GetName() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+assetset_ptr_t Asset::assetSet() const {
+  auto objclazz  = rtti::safe_downcast<object::ObjectClass*>(GetClass());
+  auto aset_anno = objclazz->annotation("AssetSet");
+  auto asset_set = aset_anno.Get<assetset_ptr_t>();
+  return asset_set;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 PoolString Asset::GetType() const {
-  return rtti::safe_downcast<AssetClass*>(GetClass())->Name();
+  auto objclazz = rtti::safe_downcast<object::ObjectClass*>(GetClass());
+  return objclazz->Name();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 bool Asset::Load() const {
   auto entry     = GetAssetSetEntry(this);
-  auto asset_set = GetClass()->assetSet();
+  auto asset_set = assetSet();
   return entry->Load(asset_set->GetTopLevel());
 }
 
 bool Asset::LoadUnManaged() const {
   AssetSetEntry* entry = GetAssetSetEntry(this);
-  auto asset_set       = GetClass()->assetSet();
+  auto asset_set       = assetSet();
   return entry->Load(asset_set->GetTopLevel());
 }
 

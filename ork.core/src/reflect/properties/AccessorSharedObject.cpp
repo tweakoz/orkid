@@ -29,7 +29,7 @@ bool AccessorSharedObject::Serialize(ISerializer& serializer, const Object* obje
 bool AccessorSharedObject::Deserialize(IDeserializer& serializer, Object* object) const {
   object_ptr_t object_property = (object->*mObjectAccessor)();
   Command command;
-  serializer.BeginCommand(command);
+  serializer.beginCommand(command);
 
   OrkAssertI(command.Type() == Command::EOBJECT, "AccessorSharedObject::Deserialize::Expected an Object command!\n");
 
@@ -37,7 +37,7 @@ bool AccessorSharedObject::Deserialize(IDeserializer& serializer, Object* object
     Object::xxxDeserializeShared(object_property, serializer);
   }
 
-  serializer.EndCommand(command);
+  serializer.endCommand(command);
 
   return true;
 }

@@ -44,8 +44,8 @@ public:
   // const rtti::ICastable*) override;
 
   bool ReferenceObject(const rtti::ICastable*) override;
-  bool BeginCommand(const Command&) override;
-  bool EndCommand(const Command&) override;
+  bool beginCommand(const Command&) override;
+  bool endCommand(const Command&) override;
 
 protected:
   ISerializer& mSerializer;
@@ -120,12 +120,12 @@ inline bool LayerSerializer::ReferenceObject(const rtti::ICastable* object) {
   return mSerializer.ReferenceObject(object);
 }
 
-inline bool LayerSerializer::BeginCommand(const Command& command) {
+inline bool LayerSerializer::beginCommand(const Command& command) {
   const Command* previous_command = mCurrentCommand;
 
   command.PreviousCommand() = previous_command;
 
-  if (mSerializer.BeginCommand(command)) {
+  if (mSerializer.beginCommand(command)) {
     mCurrentCommand = &command;
     OrkAssert(command.PreviousCommand() == previous_command);
     return true;
@@ -134,12 +134,12 @@ inline bool LayerSerializer::BeginCommand(const Command& command) {
   return false;
 }
 
-inline bool LayerSerializer::EndCommand(const Command& command) {
+inline bool LayerSerializer::endCommand(const Command& command) {
   if (&command == mCurrentCommand) {
     mCurrentCommand = mCurrentCommand->PreviousCommand();
   }
 
-  return mSerializer.EndCommand(command);
+  return mSerializer.endCommand(command);
 }
 
 }}} // namespace ork::reflect::serialize

@@ -37,7 +37,7 @@ bool ObjectCategory::deserializeObject(
     reflect::IDeserializer& deserializer, //
     rtti::castable_ptr_t& outvalue) const {
   reflect::Command command;
-  bool cmdok = deserializer.BeginCommand(command);
+  bool cmdok = deserializer.beginCommand(command);
   OrkAssert(cmdok);
   OrkAssert(command.Type() == reflect::Command::EOBJECT);
   // printf("classname<%s>\n", command.Name().c_str());
@@ -48,10 +48,10 @@ bool ObjectCategory::deserializeObject(
   auto sharedobject = clazz->createShared();
   outvalue          = sharedobject;
   if (false == Object::xxxDeserializeShared(sharedobject, deserializer)) {
-    deserializer.EndCommand(command);
+    deserializer.endCommand(command);
     return false;
   }
-  cmdok = deserializer.EndCommand(command);
+  cmdok = deserializer.endCommand(command);
   OrkAssert(cmdok);
   return true;
 }
@@ -60,7 +60,7 @@ bool ObjectCategory::deserializeObject(
     reflect::IDeserializer& deserializer, //
     rtti::castable_rawptr_t& value) const {
   reflect::Command command;
-  bool cmdok = deserializer.BeginCommand(command);
+  bool cmdok = deserializer.beginCommand(command);
   OrkAssert(cmdok);
   OrkAssert(command.Type() == reflect::Command::EOBJECT);
   printf("classname<%s>\n", command.Name().c_str());
@@ -71,11 +71,11 @@ bool ObjectCategory::deserializeObject(
   value       = clazz->CreateObject();
   auto object = dynamic_cast<Object*>(value);
   if (false == Object::xxxDeserialize(object, deserializer)) {
-    deserializer.EndCommand(command);
+    deserializer.endCommand(command);
     return false;
   }
   value = object;
-  cmdok = deserializer.EndCommand(command);
+  cmdok = deserializer.endCommand(command);
   OrkAssert(cmdok);
   return true;
 }

@@ -10,8 +10,6 @@
 #include <ork/reflect/ISerializer.h>
 #include <ork/orkstl.h>
 #include <ork/rtti/Category.h>
-#include <unordered_set>
-#include <boost/uuid/uuid.hpp>
 
 namespace ork { namespace stream {
 class IOutputStream;
@@ -42,19 +40,17 @@ public:
   bool SerializeData(unsigned char*, size_t size) override;
 
   bool referenceObject(const rtti::ICastable*) override;
-  bool BeginCommand(const Command&) override;
-  bool EndCommand(const Command&) override;
+  bool beginCommand(const Command&) override;
+  bool endCommand(const Command&) override;
 
   bool Serialize(const rtti::Category* category, const rtti::ICastable* object);
 
 private:
   stream::IOutputStream& mStream;
-  std::unordered_set<std::string> _serialized;
   int mIndent;
   bool mbWritingAttributes;
   bool mbNeedSpace;
   bool mbNeedLine;
-  const Command* mCurrentCommand;
   void Spaced();
   void Lined();
   void Unspaced();

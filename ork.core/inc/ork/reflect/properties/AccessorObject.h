@@ -21,10 +21,10 @@ class AccessorObject : public IObject {
 public:
   AccessorObject(Object* (Object::*)());
 
-  /*virtual*/ bool Serialize(ISerializer&, const Object*) const;
-  /*virtual*/ bool Deserialize(IDeserializer&, Object*) const;
-  /*virtual*/ Object* Access(Object*) const;
-  /*virtual*/ const Object* Access(const Object*) const;
+  void serialize(ISerializer&, const Object*) const override;
+  void deserialize(IDeserializer&, Object*) const override;
+  Object* Access(Object*) const override;
+  const Object* Access(const Object*) const override;
 
 private:
   Object* (Object::*mObjectAccessor)();

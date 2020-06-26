@@ -18,22 +18,21 @@ DirectTypedVector<VectorType>::DirectTypedVector(VectorType Object::*prop)
 }
 
 template <typename VectorType>
-void DirectTypedVector<VectorType>::Get(typename VectorType::value_type& value, const Object* object, size_t index) const {
+void DirectTypedVector<VectorType>::get(typename VectorType::value_type& value, const Object* object, size_t index) const {
   value = (object->*mProperty)[index];
 }
 
 template <typename VectorType>
-void DirectTypedVector<VectorType>::Set(const typename VectorType::value_type& value, Object* object, size_t index) const {
+void DirectTypedVector<VectorType>::set(const typename VectorType::value_type& value, Object* object, size_t index) const {
   (object->*mProperty)[index] = value;
 }
 
-template <typename VectorType> size_t DirectTypedVector<VectorType>::Count(const Object* object) const {
+template <typename VectorType> size_t DirectTypedVector<VectorType>::count(const Object* object) const {
   return size_t((object->*mProperty).size());
 }
 
-template <typename VectorType> bool DirectTypedVector<VectorType>::Resize(Object* object, size_t size) const {
+template <typename VectorType> void DirectTypedVector<VectorType>::resize(Object* object, size_t size) const {
   (object->*mProperty).resize(size);
-  return Count(object) == size;
 }
 
 }} // namespace ork::reflect

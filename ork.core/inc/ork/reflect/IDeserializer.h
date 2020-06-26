@@ -22,32 +22,31 @@ class Object;
 
 namespace ork { namespace reflect {
 
-// typedef ork::Object Serializable;
 class AbstractProperty;
 class ObjectProperty;
 class Command;
 
 struct IDeserializer {
-  virtual bool Deserialize(bool&)   = 0;
-  virtual bool Deserialize(char&)   = 0;
-  virtual bool Deserialize(short&)  = 0;
-  virtual bool Deserialize(int&)    = 0;
-  virtual bool Deserialize(long&)   = 0;
-  virtual bool Deserialize(float&)  = 0;
-  virtual bool Deserialize(double&) = 0;
+  virtual void deserialize(bool&)   = 0;
+  virtual void deserialize(char&)   = 0;
+  virtual void deserialize(short&)  = 0;
+  virtual void deserialize(int&)    = 0;
+  virtual void deserialize(long&)   = 0;
+  virtual void deserialize(float&)  = 0;
+  virtual void deserialize(double&) = 0;
 
-  virtual bool Deserialize(const AbstractProperty*)                             = 0;
-  virtual bool deserializeObject(rtti::ICastable*&)                      = 0;
-  virtual bool deserializeSharedObject(rtti::castable_ptr_t&)            = 0;
-  virtual bool deserializeObjectProperty(const ObjectProperty*, Object*) = 0;
+  virtual void deserialize(const AbstractProperty*)                      = 0;
+  virtual void deserializeObject(rtti::ICastable*&)                      = 0;
+  virtual void deserializeSharedObject(rtti::castable_ptr_t&)            = 0;
+  virtual void deserializeObjectProperty(const ObjectProperty*, Object*) = 0;
 
-  virtual bool Deserialize(MutableString&)             = 0;
-  virtual bool Deserialize(ResizableString&)           = 0;
-  virtual bool DeserializeData(unsigned char*, size_t) = 0;
+  virtual void deserialize(MutableString&)             = 0;
+  virtual void deserialize(ResizableString&)           = 0;
+  virtual void deserializeData(unsigned char*, size_t) = 0;
 
-  virtual bool ReferenceObject(rtti::ICastable*) = 0;
-  virtual bool BeginCommand(Command&)            = 0;
-  virtual bool EndCommand(const Command&)        = 0;
+  virtual void referenceObject(rtti::ICastable*) = 0;
+  virtual void beginCommand(Command&)            = 0;
+  virtual void endCommand(const Command&)        = 0;
   virtual void Hint(const PieceString&) {
   }
 
@@ -55,6 +54,7 @@ struct IDeserializer {
 
   const reflect::ObjectProperty* _currentProperty = nullptr;
   Object* _currentObject                          = nullptr;
+  const Command* _currentCommand                  = nullptr;
 };
 
 }} // namespace ork::reflect

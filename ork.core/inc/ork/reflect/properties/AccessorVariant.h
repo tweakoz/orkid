@@ -19,8 +19,8 @@ public:
   AccessorVariant(bool (Object::*getter)(ISerializer&) const, bool (Object::*setter)(IDeserializer&));
 
 private:
-  /*virtual*/ bool Deserialize(IDeserializer&, Object*) const;
-  /*virtual*/ bool Serialize(ISerializer&, const Object*) const;
+  void deserialize(IDeserializer&, Object*) const override;
+  void serialize(ISerializer&, const Object*) const override;
   bool (Object::*mSerialize)(ISerializer&) const;
   bool (Object::*mDeserialize)(IDeserializer&);
 };

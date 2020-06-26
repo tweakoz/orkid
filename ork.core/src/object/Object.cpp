@@ -42,7 +42,7 @@ bool Object::xxxSerialize(
     reflect::ISerializer& serializer) {
   rtti::Class* clazz = obj->GetClass();
   reflect::Command command(reflect::Command::EOBJECT, clazz->Name());
-  serializer.BeginCommand(command);
+  serializer.beginCommand(command);
   serializer.ReferenceObject(obj);
   obj->PreSerialize(serializer);
   auto objclass    = dynamic_cast<object::ObjectClass*>(clazz);
@@ -51,7 +51,7 @@ bool Object::xxxSerialize(
     OrkAssert(false);
   }
   obj->PostSerialize(serializer);
-  serializer.EndCommand(command);
+  serializer.endCommand(command);
 
   return true;
 }
@@ -63,7 +63,7 @@ bool Object::xxxSerializeShared(
     reflect::ISerializer& serializer) {
   rtti::Class* clazz = obj->GetClass();
   reflect::Command command(reflect::Command::EOBJECT, clazz->Name());
-  serializer.BeginCommand(command);
+  serializer.beginCommand(command);
   serializer.ReferenceObject(obj.get()); // probably wrong..
   obj->PreSerialize(serializer);
   auto objclass    = dynamic_cast<object::ObjectClass*>(clazz);
@@ -72,7 +72,7 @@ bool Object::xxxSerializeShared(
     OrkAssert(false);
   }
   obj->PostSerialize(serializer);
-  serializer.EndCommand(command);
+  serializer.endCommand(command);
 
   return true;
 }
@@ -84,7 +84,7 @@ bool Object::xxxSerializeInPlace(
     reflect::ISerializer& serializer) {
   rtti::Class* clazz = obj->GetClass();
   reflect::Command command(reflect::Command::EOBJECT, clazz->Name());
-  serializer.BeginCommand(command);
+  serializer.beginCommand(command);
   obj->PreSerialize(serializer);
   auto objclass    = dynamic_cast<object::ObjectClass*>(clazz);
   const auto& desc = objclass->Description();
@@ -92,7 +92,7 @@ bool Object::xxxSerializeInPlace(
     OrkAssert(false);
   }
   obj->PostSerialize(serializer);
-  serializer.EndCommand(command);
+  serializer.endCommand(command);
   return true;
 }
 
@@ -137,13 +137,13 @@ bool Object::xxxDeserializeInPlace(
     reflect::IDeserializer& deserializer) {
   rtti::Class* clazz = obj->GetClass();
   reflect::Command command(reflect::Command::EOBJECT, clazz->Name());
-  deserializer.BeginCommand(command);
+  deserializer.beginCommand(command);
   obj->PreDeserialize(deserializer);
   if (not dynamic_cast<object::ObjectClass*>(clazz)->Description().DeserializeProperties(deserializer, obj)) {
     OrkAssert(false);
   }
   obj->PostDeserialize(deserializer);
-  deserializer.EndCommand(command);
+  deserializer.endCommand(command);
   return true;
 }
 
@@ -246,7 +246,7 @@ reflect::BidirectionalSerializer& operator||(
 
     reflect::Command object_command;
 
-    if (false == deserializer.BeginCommand(object_command))
+    if (false == deserializer.beginCommand(object_command))
       bidi.Fail();
 
     rtti::Class* clazz = rtti::Class::FindClass(object_command.Name());
@@ -258,7 +258,7 @@ reflect::BidirectionalSerializer& operator||(
         bidi.Fail();
     }
 
-    if (false == deserializer.EndCommand(object_command))
+    if (false == deserializer.endCommand(object_command))
       bidi.Fail();
   }
 

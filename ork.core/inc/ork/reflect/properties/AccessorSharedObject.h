@@ -21,8 +21,8 @@ class AccessorSharedObject : public ISharedObject {
 public:
   AccessorSharedObject(object_ptr_t (Object::*)());
 
-  bool Serialize(ISerializer&, const Object*) const override;
-  bool Deserialize(IDeserializer&, Object*) const override;
+  void serialize(ISerializer&, const Object*) const override;
+  void deserialize(IDeserializer&, Object*) const override;
   object_ptr_t Access(Object*) const override;
   object_constptr_t Access(const Object*) const override;
 

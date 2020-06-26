@@ -71,24 +71,24 @@ void AccessorVariantMapContext::BeginItem()
 {
 	mItemCommand.Setup(Command::EITEM);
 
-	if(false == mBidi.Serializer()->BeginCommand(mItemCommand))
+	if(false == mBidi.Serializer()->beginCommand(mItemCommand))
 		mBidi.Fail();
 
 	mAttributeCommand.Setup(Command::EATTRIBUTE, "key");
 
-	if(false == mBidi.Serializer()->BeginCommand(mAttributeCommand))
+	if(false == mBidi.Serializer()->beginCommand(mAttributeCommand))
 		mBidi.Fail();
 }
 
 void AccessorVariantMapContext::BeginValue()
 {
-	if(false == mBidi.Serializer()->EndCommand(mAttributeCommand))
+	if(false == mBidi.Serializer()->endCommand(mAttributeCommand))
 		mBidi.Fail();
 }
 
 void AccessorVariantMapContext::EndItem()
 {
-	if(false == mBidi.Serializer()->EndCommand(mItemCommand))
+	if(false == mBidi.Serializer()->endCommand(mItemCommand))
 		mBidi.Fail();
 }
 #endif

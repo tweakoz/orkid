@@ -18,15 +18,15 @@ public:
   AccessorObjectArray(Object* (Object::*accessor)(size_t), size_t (Object::*counter)() const, void (Object::*resizer)(size_t) = 0);
 
 private:
-  /*virtual*/ Object* AccessObject(Object*, size_t) const;
-  /*virtual*/ const Object* AccessObject(const Object*, size_t) const;
-  /*virtual*/ size_t Count(const Object*) const;
-  /*virtual*/ bool Resize(Object* obj, size_t size) const;
+  Object* AccessObject(Object*, size_t) const override;
+  const Object* AccessObject(const Object*, size_t) const override;
+  size_t count(const Object*) const override;
+  void resize(Object* obj, size_t size) const override;
 
-  /*virtual*/ bool DeserializeItem(IDeserializer&, Object*, size_t) const;
-  /*virtual*/ bool SerializeItem(ISerializer&, const Object*, size_t) const;
-  /*virtual*/ bool Deserialize(IDeserializer&, Object*) const;
-  /*virtual*/ bool Serialize(ISerializer&, const Object*) const;
+  void deserializeItem(IDeserializer&, Object*, size_t) const override;
+  void serializeItem(ISerializer&, const Object*, size_t) const override;
+  void deserialize(IDeserializer&, Object*) const override;
+  void serialize(ISerializer&, const Object*) const override;
 
   Object* (Object::*mAccessor)(size_t);
   size_t (Object::*mCounter)() const;

@@ -16,37 +16,35 @@
 #include <ork/object/Object.h>
 #include <boost/uuid/uuid_io.hpp>
 
-namespace ork { namespace reflect { namespace serialize {
-
+namespace ork::reflect::serialize {
+////////////////////////////////////////////////////////////////////////////////
 BinarySerializer::BinarySerializer(stream::IOutputStream& stream)
     : mStream(stream) {
 }
-
+////////////////////////////////////////////////////////////////////////////////
 BinarySerializer::~BinarySerializer() {
   for (int i = 0; i < mStringPool.Size(); i++)
     delete mStringPool.FromIndex(i).c_str();
 }
-
-bool BinarySerializer::WriteHeader(char type, PieceString text) {
-  bool result = true;
-
-  result = Write(type);
-
-  return Serialize(text);
+////////////////////////////////////////////////////////////////////////////////
+void BinarySerializer::WriteHeader(char type, PieceString text) {
+  Write(type);
+  Serialize(text);
 }
-
-bool BinarySerializer::WriteFooter(char type) {
-  return Write(type);
+////////////////////////////////////////////////////////////////////////////////
+void BinarySerializer::WriteFooter(char type) {
+  Write(type);
 }
-
-template <typename T> bool BinarySerializer::Write(const T& datum) {
+////////////////////////////////////////////////////////////////////////////////
+template <typename T> void BinarySerializer::Write(const T& datum) {
   // Endian issues come up here
-  return mStream.Write(
+  bool ok = mStream.Write(
       reinterpret_cast<const unsigned char*>(&datum), //
       sizeof(T));
+  OrkAssert(ok);
 }
-
-bool BinarySerializer::BeginCommand(const Command& command) {
+////////////////////////////////////////////////////////////////////////////////
+void BinarySerializer::beginCommand(const Command& command) {
   switch (command.Type()) {
     case Command::EOBJECT:
       WriteHeader('O', command.Name());
@@ -61,22 +59,21 @@ bool BinarySerializer::BeginCommand(const Command& command) {
       Write('I');
       break;
   }
-  command.PreviousCommand() = mCurrentCommand;
-  mCurrentCommand           = &command;
+  command.PreviousCommand() = _currentCommand;
+  _currentCommand           = &command;
   return true;
 }
-
-bool BinarySerializer::EndCommand(const Command& command) {
-
-  if (mCurrentCommand == &command) {
-    mCurrentCommand = mCurrentCommand->PreviousCommand();
+////////////////////////////////////////////////////////////////////////////////
+void BinarySerializer::endCommand(const Command& command) {
+  if (_currentCommand == &command) {
+    _currentCommand = _currentCommand->PreviousCommand();
   } else {
     orkprintf(
         "Mismatched Serializer commands! expected: %s got: %s\n",
-        mCurrentCommand ? mCurrentCommand->Name().c_str() : "<no command>",
+        _currentCommand ? _currentCommand->Name().c_str() : "<no command>",
         command.Name().c_str());
+    OrkAssert(false);
   }
-
   switch (command.Type()) {
     case Command::EOBJECT:
       WriteFooter('o');
@@ -91,65 +88,52 @@ bool BinarySerializer::EndCommand(const Command& command) {
       WriteFooter('i');
       break;
   }
-
-  return true;
 }
-
-bool BinarySerializer::Serialize(const char& value) {
-  return Write(value);
+////////////////////////////////////////////////////////////////////////////////
+void BinarySerializer::Serialize(const char& value) {
+  Write(value);
 }
-
-bool BinarySerializer::Serialize(const short& value) {
-  return Write(value);
+////////////////////////////////////////////////////////////////////////////////
+void BinarySerializer::Serialize(const short& value) {
+  Write(value);
 }
-
-bool BinarySerializer::Serialize(const int& value) {
-  return Write(value);
+////////////////////////////////////////////////////////////////////////////////
+void BinarySerializer::Serialize(const int& value) {
+  Write(value);
 }
-
-bool BinarySerializer::Serialize(const long& value) {
-  return Write(value);
+////////////////////////////////////////////////////////////////////////////////
+void BinarySerializer::Serialize(const long& value) {
+  Write(value);
 }
-
-bool BinarySerializer::Serialize(const float& value) {
-  return Write(value);
+////////////////////////////////////////////////////////////////////////////////
+void BinarySerializer::Serialize(const float& value) {
+  Write(value);
 }
-
-bool BinarySerializer::Serialize(const double& value) {
-  return Write(value);
+////////////////////////////////////////////////////////////////////////////////
+void BinarySerializer::Serialize(const double& value) {
+  Write(value);
 }
-
-bool BinarySerializer::Serialize(const bool& value) {
-  return Write(value);
+////////////////////////////////////////////////////////////////////////////////
+void BinarySerializer::Serialize(const bool& value) {
+  Write(value);
 }
-
-bool BinarySerializer::Serialize(const AbstractProperty* prop) {
-  return prop->Serialize(*this);
+////////////////////////////////////////////////////////////////////////////////
+void BinarySerializer::Serialize(const AbstractProperty* prop) {
+  prop->Serialize(*this);
 }
-
-bool BinarySerializer::serializeObjectProperty(const ObjectProperty* prop, const Object* object) {
-  return prop->Serialize(*this, object);
+////////////////////////////////////////////////////////////////////////////////
+void BinarySerializer::serializeObjectProperty(const ObjectProperty* prop, const Object* object) {
+  prop->Serialize(*this, object);
 }
-
-bool BinarySerializer::ReferenceObject(const rtti::ICastable* castable) {
-  auto as_object    = dynamic_cast<const ork::Object*>(castable);
-  const auto& uuid  = as_object->_uuid;
-  std::string uuids = boost::uuids::to_string(uuid);
-  OrkAssert(_serialized.find(uuids) == _serialized.end());
-  _serialized.insert(uuids);
-  return true;
-}
-
-bool BinarySerializer::serializeObject(const rtti::ICastable* castable) {
+////////////////////////////////////////////////////////////////////////////////
+void BinarySerializer::serializeObject(const rtti::ICastable* castable) {
   auto as_object = dynamic_cast<const ork::Object*>(castable);
   if (as_object == nullptr) {
     Write('N');
   } else {
     const auto& uuid  = as_object->_uuid;
     std::string uuids = boost::uuids::to_string(uuid);
-
-    auto it = _serialized.find(uuids);
-
+    auto it           = _serialized.find(uuids);
     ////////////////////////////////////
     // backreference
     ////////////////////////////////////
@@ -169,38 +153,32 @@ bool BinarySerializer::serializeObject(const rtti::ICastable* castable) {
       WriteFooter('r');
     }
   }
-
-  return true;
 }
-
+////////////////////////////////////////////////////////////////////////////////
 void BinarySerializer::Hint(const PieceString&) {
 }
+////////////////////////////////////////////////////////////////////////////////
 void BinarySerializer::Hint(const PieceString&, intptr_t ival) {
 }
-
-bool BinarySerializer::Serialize(const PieceString& text) {
-  bool result = true;
-
+////////////////////////////////////////////////////////////////////////////////
+void BinarySerializer::Serialize(const PieceString& text) {
   int pooled_string_index = mStringPool.FindIndex(text);
 
   if (pooled_string_index == -1) {
-    result = Write(-int(text.length() + 1));
+    Write(-int(text.length() + 1));
     mStream.Write(reinterpret_cast<const unsigned char*>(text.c_str()), text.length());
-
     char* text_copy = new char[text.length() + 1];
     memcpy(text_copy, text.c_str(), text.length());
     text_copy[text.length()] = '\0';
     mStringPool.Literal(text_copy);
   } else {
-    result = Write(int(pooled_string_index));
+    Write(int(pooled_string_index));
   }
-
-  return result;
 }
-
-bool BinarySerializer::SerializeData(unsigned char* data, size_t size) {
-  bool result = mStream.Write(data, size);
-  return result;
+////////////////////////////////////////////////////////////////////////////////
+void BinarySerializer::SerializeData(unsigned char* data, size_t size) {
+  bool ok = mStream.Write(data, size);
+  OrkAssert(ok);
 }
-
-}}} // namespace ork::reflect::serialize
+////////////////////////////////////////////////////////////////////////////////
+} // namespace ork::reflect::serialize

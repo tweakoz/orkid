@@ -11,9 +11,13 @@
 
 #include <ork/config/config.h>
 
-namespace ork { namespace reflect {
+namespace ork::reflect {
 
-template <typename MapType> class DirectTypedMap : public ITypedMap<typename MapType::key_type, typename MapType::mapped_type> {
+template <typename MapType>
+class DirectTypedMap //
+    : public ITypedMap<
+          typename MapType::key_type, //
+          typename MapType::mapped_type> {
 public:
   typedef typename MapType::key_type KeyType;
   typedef typename MapType::mapped_type ValueType;
@@ -24,7 +28,7 @@ public:
   MapType& GetMap(Object* obj) const;
   const MapType& GetMap(const Object* obj) const;
 
-  bool IsMultiMap(const Object* obj) const override;
+  bool isMultiMap(const Object* obj) const override;
 
 protected:
   bool ReadItem(const Object*, const KeyType&, int, ValueType&) const override;
@@ -32,7 +36,7 @@ protected:
   bool EraseItem(Object*, const KeyType&, int) const override;
   bool MapSerialization(ItemSerializeFunction, BidirectionalSerializer&, const Object*) const override;
 
-  int GetSize(const Object* obj) const override {
+  size_t itemCount(const Object* obj) const override {
     return int(GetMap(obj).size());
   }
   bool GetKey(const Object*, int idx, KeyType&) const override;
@@ -42,4 +46,4 @@ private:
   MapType Object::*mProperty;
 };
 
-}} // namespace ork::reflect
+} // namespace ork::reflect

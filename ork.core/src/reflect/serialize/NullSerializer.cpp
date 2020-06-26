@@ -78,11 +78,11 @@ bool NullSerializer::ReferenceObject(const rtti::ICastable*) {
   return true;
 }
 
-bool NullSerializer::BeginCommand(const Command&) {
+bool NullSerializer::beginCommand(const Command&) {
   return true;
 }
 
-bool NullSerializer::EndCommand(const Command&) {
+bool NullSerializer::endCommand(const Command&) {
   return true;
 }
 

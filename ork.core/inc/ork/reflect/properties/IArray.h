@@ -15,16 +15,15 @@
 namespace ork { namespace reflect {
 
 class IArray : public ObjectProperty {
-  DECLARE_TRANSPARENT_CASTABLE(IArray, ObjectProperty)
 public:
-  virtual bool DeserializeItem(IDeserializer&, Object*, size_t) const   = 0;
-  virtual bool SerializeItem(ISerializer&, const Object*, size_t) const = 0;
-  virtual size_t Count(const Object*) const                             = 0;
-  virtual bool Resize(Object* obj, size_t size) const                   = 0;
+  virtual void deserializeItem(IDeserializer&, Object*, size_t) const   = 0;
+  virtual void serializeItem(ISerializer&, const Object*, size_t) const = 0;
+  virtual size_t count(const Object*) const                             = 0;
+  virtual void resize(Object* obj, size_t size) const                   = 0;
 
 private:
-  /*virtual*/ bool Deserialize(IDeserializer&, Object*) const;
-  /*virtual*/ bool Serialize(ISerializer&, const Object*) const;
+  void deserialize(IDeserializer&, Object*) const override;
+  void serialize(ISerializer&, const Object*) const override;
 
 protected:
   IArray() {

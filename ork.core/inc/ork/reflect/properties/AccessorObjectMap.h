@@ -22,16 +22,16 @@ public:
       void (Object::*mSerializer)(SerializationFunction, BidirectionalSerializer&) const);
 
 private:
-  /*virtual*/ Object* AccessItem(IDeserializer& key, int, Object*) const;
-  /*virtual*/ const Object* AccessItem(IDeserializer& key, int, const Object*) const;
+  Object* AccessItem(IDeserializer& key, int, Object*) const override;
+  const Object* AccessItem(IDeserializer& key, int, const Object*) const override;
 
-  /*virtual*/ bool DeserializeItem(IDeserializer* value, IDeserializer& key, int, Object*) const;
-  /*virtual*/ bool SerializeItem(ISerializer& value, IDeserializer& key, int, const Object*) const;
+  void deserializeItem(IDeserializer* value, IDeserializer& key, int, Object*) const override;
+  void serializeItem(ISerializer& value, IDeserializer& key, int, const Object*) const override;
 
-  /*virtual*/ bool Deserialize(IDeserializer& serializer, Object* obj) const;
-  /*virtual*/ bool Serialize(ISerializer& serializer, const Object* obj) const;
+  void deserialize(IDeserializer& serializer, Object* obj) const override;
+  void serialize(ISerializer& serializer, const Object* obj) const override;
 
-  static void DoSerialize(BidirectionalSerializer& bidi, const KeyType& key, const Object* value);
+  static void _doSerialize(BidirectionalSerializer& bidi, const KeyType& key, const Object* value);
 
   const Object* (Object::*mGetter)(const KeyType&, int) const;
   Object* (Object::*mAccessor)(const KeyType&, int);

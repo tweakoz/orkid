@@ -11,7 +11,7 @@
 
 #include <ork/config/config.h>
 
-namespace ork { namespace reflect {
+namespace ork::reflect {
 
 template <typename VectorType> class DirectTypedVector : public ITypedArray<typename VectorType::value_type> {
 public:
@@ -20,12 +20,12 @@ public:
   DirectTypedVector(VectorType Object::*);
 
 private:
-  /*virtual*/ void Get(ValueType&, const Object*, size_t) const;
-  /*virtual*/ void Set(const ValueType&, Object*, size_t) const;
-  /*virtual*/ size_t Count(const Object*) const;
-  /*virtual*/ bool Resize(Object*, size_t) const;
+  void get(ValueType&, const Object*, size_t) const override;
+  void set(const ValueType&, Object*, size_t) const override;
+  size_t count(const Object*) const override;
+  void resize(Object*, size_t) const override;
 
   VectorType Object::*mProperty;
 };
 
-}} // namespace ork::reflect
+} // namespace ork::reflect

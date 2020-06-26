@@ -14,7 +14,6 @@
 namespace ork { namespace reflect {
 
 class AccessorVariantArray : public IArray {
-  static void GetClassStatic(); // Kill inherited GetClassStatic()
 public:
   AccessorVariantArray(
       bool (Object::*serialize_item)(ISerializer&, size_t) const,
@@ -23,10 +22,10 @@ public:
       bool (Object::*resize)(size_t));
 
 private:
-  /*virtual*/ bool SerializeItem(ISerializer&, const Object*, size_t) const;
-  /*virtual*/ bool DeserializeItem(IDeserializer&, Object*, size_t) const;
-  /*virtual*/ size_t Count(const Object*) const;
-  /*virtual*/ bool Resize(Object*, size_t) const;
+  void serializeItem(ISerializer&, const Object*, size_t) const override;
+  void deserializeItem(IDeserializer&, Object*, size_t) const override;
+  size_t count(const Object*) const override;
+  void resize(Object*, size_t) const override;
 
   bool (Object::*mSerializeItem)(ISerializer&, size_t) const;
   bool (Object::*mDeserializeItem)(IDeserializer&, size_t);

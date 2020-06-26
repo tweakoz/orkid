@@ -167,13 +167,13 @@ bool Description::SerializeProperties(ISerializer& serializer, const Object* obj
 
     Command command(Command::EPROPERTY, name);
 
-    serializer.BeginCommand(command);
+    serializer.beginCommand(command);
     if (false == serializer.serializeObjectProperty(prop, object)) {
       printf("name<%s> obj<%p> prop<%p>\n", name.c_str(), object, prop);
       OrkAssert(false);
       result = false;
     }
-    serializer.EndCommand(command);
+    serializer.endCommand(command);
   }
 
   return result;
@@ -183,7 +183,7 @@ bool Description::DeserializeProperties(IDeserializer& deserializer, Object* obj
   Command command;
   deserializer._currentObject = object;
 
-  while (deserializer.BeginCommand(command)) {
+  while (deserializer.beginCommand(command)) {
     if (command.Type() != Command::EPROPERTY) {
       orkprintf(
           "Description::DeserializeProperties:: got command %s, wanted EPROPERTY\n",
@@ -202,7 +202,7 @@ bool Description::DeserializeProperties(IDeserializer& deserializer, Object* obj
       if (prop) {
         deserializer._currentProperty = prop;
         if (false == deserializer.deserializeObjectProperty(prop, object)) {
-          deserializer.EndCommand(command);
+          deserializer.endCommand(command);
           deserializer._currentProperty = nullptr;
           deserializer._currentObject   = nullptr;
           return false;
@@ -212,7 +212,7 @@ bool Description::DeserializeProperties(IDeserializer& deserializer, Object* obj
         orkprintf("Could not find property <%p>'%s'\n", command.Name().c_str(), command.Name().c_str());
       }
 
-      if (false == deserializer.EndCommand(command)) {
+      if (false == deserializer.endCommand(command)) {
         OrkAssertI(prop, "Description::DeserializeProperties: could not skip property!");
         deserializer._currentObject = nullptr;
         return false;

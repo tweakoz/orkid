@@ -22,7 +22,7 @@ bool IArray::Deserialize(IDeserializer &deserializer, Object *obj) const
 
 	Command command;
 
-	if(deserializer.BeginCommand(command))
+	if(deserializer.beginCommand(command))
 	{
 		if(command.Type() == Command::EATTRIBUTE && command.Name() == "size")
 		{
@@ -32,11 +32,11 @@ bool IArray::Deserialize(IDeserializer &deserializer, Object *obj) const
 		}
 		else
 		{
-			deserializer.EndCommand(command);
+			deserializer.endCommand(command);
 			return false;
 		}
 
-		if(false == deserializer.EndCommand(command))
+		if(false == deserializer.endCommand(command))
 		{
 			return false;
 		}
@@ -51,13 +51,13 @@ bool IArray::Deserialize(IDeserializer &deserializer, Object *obj) const
 	for(size_t index = 0; index < count; index++)
 	{
 		Command item;
-		if(false == deserializer.BeginCommand(item))
+		if(false == deserializer.beginCommand(item))
 			result = false;
 		if(item.Type() != Command::EITEM)
 			result = false;
 		if(false == DeserializeItem(deserializer, obj, index))
 			result = false;
-		if(false == deserializer.EndCommand(item))
+		if(false == deserializer.endCommand(item))
 			result = false;
 	}
 
@@ -71,21 +71,21 @@ bool IArray::Serialize(ISerializer &serializer, const Object *obj) const
 
 	Command command(Command::EATTRIBUTE, "size");
 
-	if(false == serializer.BeginCommand(command))
+	if(false == serializer.beginCommand(command))
 		result = false;
 	if(false == serializer.Serialize(int(count)))
 		result = false;
-	if(false == serializer.EndCommand(command))
+	if(false == serializer.endCommand(command))
 		result = false;
 
 	for(size_t index = 0; index < count; index++)
 	{
 		Command item(Command::EITEM);
-		if(false == serializer.BeginCommand(item))
+		if(false == serializer.beginCommand(item))
 			result = false;
 		if(false == SerializeItem(serializer, obj, index))
 			result = false;
-		if(false == serializer.EndCommand(item))
+		if(false == serializer.endCommand(item))
 			result = false;
 	}
 

@@ -18,38 +18,37 @@
 #include <boost/uuid/uuid_io.hpp>
 #include <cstring>
 
-namespace ork { namespace reflect { namespace serialize {
-
+namespace ork::reflect::serialize {
+////////////////////////////////////////////////////////////////////////////////
 XMLSerializer::XMLSerializer(stream::IOutputStream& stream)
     : mStream(stream)
     , mIndent(0)
     , mbWritingAttributes(false)
     , mbNeedSpace(false)
     , mbNeedLine(false)
-    , mCurrentCommand(NULL) {
+    , _currentCommand(NULL) {
 }
-
-bool XMLSerializer::Write(char* text, size_t size) {
+////////////////////////////////////////////////////////////////////////////////
+void XMLSerializer::Write(char* text, size_t size) {
   bool status = mStream.Write(reinterpret_cast<unsigned char*>(text), size);
   OrkAssert(status);
-  return status;
 }
-
+////////////////////////////////////////////////////////////////////////////////
 void XMLSerializer::Spaced() {
   if (mbNeedLine == false)
     mbNeedSpace = true;
 }
-
+////////////////////////////////////////////////////////////////////////////////
 void XMLSerializer::Unspaced() {
   mbNeedSpace = false;
 }
-
+////////////////////////////////////////////////////////////////////////////////
 void XMLSerializer::Lined() {
   mbNeedSpace = false;
   mbNeedLine  = true;
 }
-
-bool XMLSerializer::WriteText(const char* format, ...) {
+////////////////////////////////////////////////////////////////////////////////
+void XMLSerializer::WriteText(const char* format, ...) {
   if (NULL == format)
     format = "";
 
@@ -69,51 +68,43 @@ bool XMLSerializer::WriteText(const char* format, ...) {
   vsprintf(buffer, /*sizeof(buffer),*/ format, list);
   va_end(list);
   buffer[sizeof(buffer) - 1] = '\0';
-  return Write(buffer, std::strlen(buffer));
+  Write(buffer, std::strlen(buffer));
 }
-
-bool XMLSerializer::StartObject(PieceString name) {
+////////////////////////////////////////////////////////////////////////////////
+void XMLSerializer::StartObject(PieceString name) {
   FlushHeader();
   Lined();
-  bool result = WriteText("<object type='%.*s'", name.length(), name.c_str());
+  WriteText("<object type='%.*s'", name.length(), name.c_str());
   mIndent++;
-
   mbWritingAttributes = true;
-
-  return result;
 }
-
-bool XMLSerializer::EndObject() {
+////////////////////////////////////////////////////////////////////////////////
+void XMLSerializer::EndObject() {
   FlushHeader();
-
   Lined();
   mIndent--;
-  bool result = WriteText("</object>");
+  WriteText("</object>");
   Lined();
-
-  return result;
 }
-
-bool XMLSerializer::BeginCommand(const Command& command) {
-  bool result = false;
-
+////////////////////////////////////////////////////////////////////////////////
+void XMLSerializer::beginCommand(const Command& command) {
   switch (command.Type()) {
     case Command::EOBJECT:
-      result = StartObject(command.Name());
+      StartObject(command.Name());
       break;
     case Command::EATTRIBUTE:
       if (mbWritingAttributes)
-        result = WriteText(" %s='", command.Name().c_str());
+        WriteText(" %s='", command.Name().c_str());
       break;
     case Command::EPROPERTY:
-      result = FlushHeader();
+      FlushHeader();
       Lined();
       result              = WriteText("<property name='%s'", command.Name().c_str());
       mbWritingAttributes = true;
       mIndent++;
       break;
     case Command::EITEM:
-      result = FlushHeader();
+      FlushHeader();
       Lined();
       result              = WriteText("<item");
       mbWritingAttributes = true;
@@ -121,131 +112,109 @@ bool XMLSerializer::BeginCommand(const Command& command) {
       break;
   }
 
-  command.PreviousCommand() = mCurrentCommand;
-  mCurrentCommand           = &command;
-
-  return result;
+  command.PreviousCommand() = _currentCommand;
+  _currentCommand           = &command;
 }
-
-bool XMLSerializer::FlushHeader() {
-  bool result = true;
-
-  if (mbWritingAttributes && (!mCurrentCommand || mCurrentCommand->Type() != Command::EATTRIBUTE)) {
+////////////////////////////////////////////////////////////////////////////////
+void XMLSerializer::FlushHeader() {
+  if (mbWritingAttributes && (!_currentCommand || _currentCommand->Type() != Command::EATTRIBUTE)) {
     result              = WriteText(">");
     mbWritingAttributes = false;
   }
-
-  return result;
 }
-
-bool XMLSerializer::EndCommand(const Command& command) {
-  bool result(false);
-
-  if (mCurrentCommand == &command) {
-    mCurrentCommand = mCurrentCommand->PreviousCommand();
+////////////////////////////////////////////////////////////////////////////////
+void XMLSerializer::endCommand(const Command& command) {
+  if (_currentCommand == &command) {
+    _currentCommand = _currentCommand->PreviousCommand();
   } else {
     OrkAssertI(
         false,
         CreateFormattedString(
             "Mismatched Serializer commands! expected: %s got: %s\n",
-            mCurrentCommand ? mCurrentCommand->Name().c_str() : "<no command>",
+            _currentCommand ? _currentCommand->Name().c_str() : "<no command>",
             command.Name().c_str())
             .c_str());
-    return false;
   }
-
   switch (command.Type()) {
     case Command::EOBJECT:
-      result = EndObject();
+      EndObject();
       break;
     case Command::EATTRIBUTE:
       Unspaced();
-      result = WriteText("'");
+      WriteText("'");
       break;
     case Command::EPROPERTY:
       FlushHeader();
       mIndent--;
       Unspaced();
-      result = WriteText("</property>");
+      WriteText("</property>");
       Lined();
       break;
     case Command::EITEM:
       FlushHeader();
       mIndent--;
       Unspaced();
-      result = WriteText("</item>");
+      WriteText("</item>");
       Lined();
       break;
   }
-
-  return result;
 }
-
-bool XMLSerializer::Serialize(const char& value) {
+////////////////////////////////////////////////////////////////////////////////
+void XMLSerializer::Serialize(const char& value) {
   FlushHeader();
-  bool result = WriteText("%i", static_cast<unsigned char>(value));
+  WriteText("%i", static_cast<unsigned char>(value));
   Spaced();
-  return result;
 }
-
-bool XMLSerializer::Serialize(const short& value) {
+////////////////////////////////////////////////////////////////////////////////
+void XMLSerializer::Serialize(const short& value) {
   FlushHeader();
-  bool result = WriteText("%i", value);
+  WriteText("%i", value);
   Spaced();
-  return result;
 }
-
-bool XMLSerializer::Serialize(const int& value) {
+////////////////////////////////////////////////////////////////////////////////
+void XMLSerializer::Serialize(const int& value) {
   FlushHeader();
-  bool result = WriteText("%i", value);
+  WriteText("%i", value);
   Spaced();
-  return result;
 }
-
-bool XMLSerializer::Serialize(const long& value) {
+////////////////////////////////////////////////////////////////////////////////
+void XMLSerializer::Serialize(const long& value) {
   FlushHeader();
-  bool result = WriteText("%i", value);
+  WriteText("%i", value);
   Spaced();
-  return result;
 }
-
-bool XMLSerializer::Serialize(const float& value) {
+////////////////////////////////////////////////////////////////////////////////
+void XMLSerializer::Serialize(const float& value) {
   FlushHeader();
-  bool result = WriteText("%g", value);
+  WriteText("%g", value);
   Spaced();
-  return result;
 }
-
-bool XMLSerializer::Serialize(const double& value) {
+////////////////////////////////////////////////////////////////////////////////
+void XMLSerializer::Serialize(const double& value) {
   FlushHeader();
-  bool result = WriteText("%g", value);
+  WriteText("%g", value);
   Spaced();
-  return result;
 }
-
-bool XMLSerializer::Serialize(const bool& value) {
+////////////////////////////////////////////////////////////////////////////////
+void XMLSerializer::Serialize(const bool& value) {
   FlushHeader();
-  bool result = WriteText("%s", value ? "true" : "false");
+  WriteText("%s", value ? "true" : "false");
   Spaced();
-  OrkAssert(result);
-  // printf("xmlser bool result<%d>\n", int(result));
-  return result;
 }
-
-bool XMLSerializer::Serialize(const AbstractProperty* prop) {
-  return prop->Serialize(*this);
+////////////////////////////////////////////////////////////////////////////////
+void XMLSerializer::Serialize(const AbstractProperty* prop) {
+  prop->Serialize(*this);
 }
-
-bool XMLSerializer::serializeObjectProperty(const ObjectProperty* prop, const Object* object) {
-  return prop->Serialize(*this, object);
+////////////////////////////////////////////////////////////////////////////////
+void XMLSerializer::serializeObjectProperty(const ObjectProperty* prop, const Object* object) {
+  prop->Serialize(*this, object);
 }
-
-bool XMLSerializer::serializeObject(rtti::castable_rawconstptr_t castable) {
+////////////////////////////////////////////////////////////////////////////////
+void XMLSerializer::serializeObject(rtti::castable_rawconstptr_t castable) {
   auto as_object = dynamic_cast<const ork::Object*>(castable);
-  bool result    = true;
   FlushHeader();
   if (as_object == nullptr) {
-    result = WriteText("<backreference id='0'/>");
+    WriteText("<backreference id='0'/>");
   } else {
     const auto& uuid  = as_object->_uuid;
     std::string uuids = boost::uuids::to_string(uuid);
@@ -253,60 +222,42 @@ bool XMLSerializer::serializeObject(rtti::castable_rawconstptr_t castable) {
     auto it = _serialized.find(uuids);
 
     if (it != _serialized.end()) {
-      result = WriteText("<backreference id='%s'/>", uuids.c_str());
+      WriteText("<backreference id='%s'/>", uuids.c_str());
     } else {
       auto objclazz = as_object->GetClass();
       auto category = rtti::downcast<rtti::Category*>(objclazz->GetClass());
       Lined();
-      result = WriteText("<reference category='");
-      result = WriteText(category->Name().c_str());
-      result = WriteText("'>");
+      WriteText("<reference category='");
+      WriteText(category->Name().c_str());
+      WriteText("'>");
       Lined();
       mIndent++;
       // printf("xmlser obj<%p>\n", object);
-      if (!category->serializeObject(*this, as_object)) {
-        result = false;
-      }
+      category->serializeObject(*this, as_object);
       mIndent--;
       Lined();
-      if (!WriteText("</reference>"))
-        result = false;
+      WriteText("</reference>");
       Lined();
     }
   }
-  return result;
 }
-
-bool XMLSerializer::ReferenceObject(const rtti::ICastable* castable) {
-  auto as_object    = dynamic_cast<const ork::Object*>(castable);
-  const auto& uuid  = as_object->_uuid;
-  std::string uuids = boost::uuids::to_string(uuid);
-  OrkAssert(_serialized.find(uuids) == _serialized.end());
-  _serialized.insert(uuids);
-
-  Command referenceAttributeCommand(Command::EATTRIBUTE, "id");
-  BeginCommand(referenceAttributeCommand);
-  Serialize(PieceString(uuids.c_str()));
-  EndCommand(referenceAttributeCommand);
-
-  return true;
-}
-
+////////////////////////////////////////////////////////////////////////////////
 static const char* EncodeXMLAttributeChar(char c) {
   return c == '\'' ? "&apos;" : c == '&' ? "&amp;" : NULL;
 }
-
+////////////////////////////////////////////////////////////////////////////////
 static const char* EncodeXMLChar(char c) {
   return c == '<' ? "&lt;" : c == '>' ? "&gt;" : c == '"' ? "&quot;" : c == '&' ? "&amp;" : NULL;
 }
-
+////////////////////////////////////////////////////////////////////////////////
 void XMLSerializer::Hint(const PieceString&) {
 }
-
-bool XMLSerializer::Serialize(const PieceString& string) {
+////////////////////////////////////////////////////////////////////////////////
+void XMLSerializer::Serialize(const PieceString& string) {
   FlushHeader();
-  if (mCurrentCommand && mCurrentCommand->Type() == Command::EATTRIBUTE) {
-    for (PieceString::size_type i = 0; i < string.length(); i++) {
+  if (_currentCommand and //
+      _currentCommand->Type() == Command::EATTRIBUTE) {
+    for (size_t i = 0; i < string.length(); i++) {
       char c        = string.c_str()[i];
       const char* s = EncodeXMLAttributeChar(c);
       if (s)
@@ -314,8 +265,6 @@ bool XMLSerializer::Serialize(const PieceString& string) {
       else
         WriteText("%c", c);
     }
-
-    // return true; warning C4702: unreachable code
   } else {
     WriteText("\"");
     for (PieceString::size_type i = 0; i < string.length(); i++) {
@@ -329,18 +278,11 @@ bool XMLSerializer::Serialize(const PieceString& string) {
     }
     WriteText("\"");
     Spaced();
-
-    // return true; warning C4702: unreachable code
   }
-
-  // return false; warning C4702: unreachable code
-
-  return true;
 }
-
-bool XMLSerializer::SerializeData(unsigned char*, size_t) {
+////////////////////////////////////////////////////////////////////////////////
+void XMLSerializer::SerializeData(unsigned char*, size_t) {
   FlushHeader();
-  return false;
 }
-
-}}} // namespace ork::reflect::serialize
+////////////////////////////////////////////////////////////////////////////////
+} // namespace ork::reflect::serialize

@@ -4,17 +4,18 @@
 ///////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include <ork/asset/AssetClass.h>
 #include <ork/object/Object.h>
 #include <ork/kernel/varmap.inl>
 #include <ork/kernel/string/PoolString.h>
-
 #include <ork/config/config.h>
 
 namespace ork { namespace asset {
 
+class AssetSet;
+using assetset_ptr_t = std::shared_ptr<AssetSet>;
+
 class Asset : public Object {
-  RttiDeclareAbstractWithCategory(Asset, Object, AssetClass);
+  RttiDeclareAbstractWithCategory(Asset, Object, object::ObjectClass);
 
 public:
   Asset();
@@ -24,6 +25,7 @@ public:
   bool Load() const;
   bool LoadUnManaged() const;
   bool IsLoaded() const;
+  assetset_ptr_t assetSet() const;
 
   varmap::VarMap _varmap;
   PoolString mName;

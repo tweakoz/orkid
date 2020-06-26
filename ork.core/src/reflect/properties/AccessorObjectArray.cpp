@@ -46,7 +46,7 @@ bool AccessorObjectArray::DeserializeItem(
     size_t index) const {
   Command object_command;
 
-  if (false == deserializer.BeginCommand(object_command))
+  if (false == deserializer.beginCommand(object_command))
     return false;
 
   Object* child_object = AccessObject(parent_object, index);
@@ -54,14 +54,14 @@ bool AccessorObjectArray::DeserializeItem(
   if (object_command.Type() != Command::EOBJECT or //
       nullptr == child_object or                   //
       object_command.Name() != child_object->GetClass()->Name()) {
-    deserializer.EndCommand(object_command);
+    deserializer.endCommand(object_command);
     return false;
   }
 
   if (false == Object::xxxDeserialize(child_object, deserializer))
     return false;
 
-  if (false == deserializer.EndCommand(object_command))
+  if (false == deserializer.endCommand(object_command))
     return false;
 
   return true;

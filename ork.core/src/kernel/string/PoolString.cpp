@@ -235,15 +235,12 @@ PoolString StringPool::Find(const PieceString& s) const {
 namespace reflect {
 template <> void Serialize<PoolString>(const PoolString* in, PoolString* out, BidirectionalSerializer& bidi) {
   if (bidi.Serializing()) {
-    if (false == bidi.Serializer()->Serialize(PieceString(*in)))
-      bidi.Fail();
+    bidi.Serializer()->Serialize(PieceString(*in));
   } else {
     ArrayString<2048> buffer;
     MutableString string(buffer);
-    if (false == bidi.Deserializer()->Deserialize(string))
-      bidi.Fail();
-    else
-      *out = ork::AddPooledString(string);
+    bidi.Deserializer()->Deserialize(string);
+    *out = ork::AddPooledString(string);
   }
 }
 } // namespace reflect

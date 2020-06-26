@@ -187,7 +187,7 @@ bool BinaryDeserializer::DeserializeData(unsigned char* data, size_t size) {
   return mStream.Read(data, size) == int(size);
 }
 
-bool BinaryDeserializer::BeginCommand(Command& command) {
+bool BinaryDeserializer::beginCommand(Command& command) {
   bool result = false;
 
   if (Match('O')) {
@@ -218,7 +218,7 @@ bool BinaryDeserializer::BeginCommand(Command& command) {
   return result;
 }
 
-bool BinaryDeserializer::EndCommand(const Command& command) {
+bool BinaryDeserializer::endCommand(const Command& command) {
   bool result = true;
 
   if (mCurrentCommand == &command) {

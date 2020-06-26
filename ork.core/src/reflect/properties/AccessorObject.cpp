@@ -28,7 +28,7 @@ bool AccessorObject::Serialize(ISerializer& serializer, const Object* object) co
 bool AccessorObject::Deserialize(IDeserializer& serializer, Object* object) const {
   Object* object_property = (object->*mObjectAccessor)();
   Command command;
-  serializer.BeginCommand(command);
+  serializer.beginCommand(command);
 
   OrkAssertI(command.Type() == Command::EOBJECT, "AccessorObject::Deserialize::Expected an Object command!\n");
 
@@ -36,7 +36,7 @@ bool AccessorObject::Deserialize(IDeserializer& serializer, Object* object) cons
     Object::xxxDeserialize(object_property, serializer);
   }
 
-  serializer.EndCommand(command);
+  serializer.endCommand(command);
 
   return true;
 }

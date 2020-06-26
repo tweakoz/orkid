@@ -205,11 +205,11 @@ bool TextDeserializer::DeserializeData(unsigned char* data, size_t size) {
   return false;
 }
 
-bool TextDeserializer::BeginCommand(Command& command) {
+bool TextDeserializer::beginCommand(Command& command) {
   return false;
 }
 
-bool TextDeserializer::EndCommand(const Command& command) {
+bool TextDeserializer::endCommand(const Command& command) {
   return false;
 }
 

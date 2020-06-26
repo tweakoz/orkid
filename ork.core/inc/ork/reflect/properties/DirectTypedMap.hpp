@@ -25,7 +25,7 @@ template <typename kt, typename vt> bool IsMultiMapDeducer(const ork::orklut<kt,
   return map.GetKeyPolicy() == ork::EKEYPOLICY_MULTILUT;
 }
 
-template <typename MapType> bool DirectTypedMap<MapType>::IsMultiMap(const Object* obj) const {
+template <typename MapType> bool DirectTypedMap<MapType>::isMultiMap(const Object* obj) const {
   return IsMultiMapDeducer(GetMap(obj));
 }
 
@@ -128,39 +128,57 @@ bool DirectTypedMap<MapType>::MapSerialization(
   if (bidi.Serializing()) {
     const MapType& map = serialize_object->*mProperty;
 
+    size_t count = map.size();
+    bidi.Serializer()->Hint("Count", count);
+
     // const KeyType *last_key = NULL;
 
     typename MapType::const_iterator itprev;
 
-    int imultiindex = 0;
+    int item_index      = 0;
+    int item_multiindex = 0;
 
-    for (typename MapType::const_iterator it = map.begin(); it != map.end(); it++) {
+    for (auto it = map.begin(); //
+         it != map.end();
+         it++) {
+
       KeyType key = it->first;
 
+      //////////////////////////////////////////
+      // keep track of multimap
+      //  consecutive items with same key
+      //////////////////////////////////////////
+
       if (it != map.begin()) {
+
         const KeyType& ka = itprev->first;
         const KeyType& kb = it->first;
 
         if (ka == kb) {
-          imultiindex++;
+          item_multiindex++;
         } else {
-          imultiindex = 0;
+          item_multiindex = 0;
         }
       }
 
       itprev = it;
 
       ///////////////////////////////////////////////////
-      // multi index hint
+      // index hints
       ///////////////////////////////////////////////////
 
-      bidi.Serializer()->Hint("MultiIndex", imultiindex);
+      bidi.Serializer()->Hint("Index", item_index);
+      bidi.Serializer()->Hint("MultiIndex", item_multiindex);
 
+      ///////////////////////////////////////////////////
+      // serialize the item
       ///////////////////////////////////////////////////
 
       ValueType value = it->second;
 
       (*serialization_func)(bidi, key, value);
+
+      item_index++;
     }
   }
 

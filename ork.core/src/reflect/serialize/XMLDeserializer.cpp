@@ -192,7 +192,7 @@ bool XMLDeserializer::ReferenceObject(rtti::castable_rawptr_t castable) {
   if (mbReadingAttributes) {
     bool result = false;
 
-    if (BeginCommand(referenceAttributeCommand)) {
+    if (beginCommand(referenceAttributeCommand)) {
       OrkAssert(referenceAttributeCommand.Type() == Command::EATTRIBUTE);
       OrkAssert(referenceAttributeCommand.Name() == "id");
 
@@ -206,7 +206,7 @@ bool XMLDeserializer::ReferenceObject(rtti::castable_rawptr_t castable) {
 
       MutableString oidpstr(mutstrstorage);
       result = Deserialize(oidpstr);
-      EndCommand(referenceAttributeCommand);
+      endCommand(referenceAttributeCommand);
 
       object_uuid_str = oidpstr.c_str();
     }
@@ -367,7 +367,7 @@ bool XMLDeserializer::DeserializeData(unsigned char* data, size_t size) {
   return ReadBinary(data, size);
 }
 
-bool XMLDeserializer::BeginCommand(Command& command) {
+bool XMLDeserializer::beginCommand(Command& command) {
   size_t checksize;
   bool result = false;
 
@@ -417,7 +417,7 @@ bool XMLDeserializer::BeginCommand(Command& command) {
         MatchLoose(" < ")) {
       ArrayString<256> word;
       ReadWord(word);
-      orkprintf("XMLDeserializer::BeginCommand::[%d] unknown tag %s\n", mLineNo, word.c_str());
+      orkprintf("XMLDeserializer::beginCommand::[%d] unknown tag %s\n", mLineNo, word.c_str());
       return false;
     }
   } else if (BeginAttribute(attrname)) {
@@ -454,7 +454,7 @@ bool XMLDeserializer::EatBinaryData() {
   return result;
 }
 
-bool XMLDeserializer::EndCommand(const Command& command) {
+bool XMLDeserializer::endCommand(const Command& command) {
   bool result = false;
 
   if (mCurrentCommand == &command) {
@@ -486,7 +486,7 @@ bool XMLDeserializer::EndCommand(const Command& command) {
   }
 
   if (result == false) {
-    orkprintf("XMLDeserializer::EndCommand::[%d] failed to match end for tag '%s'\n", mLineNo, command.Name().c_str());
+    orkprintf("XMLDeserializer::endCommand::[%d] failed to match end for tag '%s'\n", mLineNo, command.Name().c_str());
   }
 
   return result;

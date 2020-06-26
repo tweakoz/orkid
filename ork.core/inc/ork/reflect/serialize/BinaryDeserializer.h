@@ -36,8 +36,8 @@ public:
   bool DeserializeData(unsigned char*, size_t) override;
 
   bool ReferenceObject(rtti::ICastable*) override;
-  bool BeginCommand(Command&) override;
-  bool EndCommand(const Command&) override;
+  bool beginCommand(Command&) override;
+  bool endCommand(const Command&) override;
 
 private:
   int FindObject(rtti::ICastable* object);

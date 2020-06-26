@@ -100,23 +100,23 @@ bool AccessorObjectMap<KeyType>::SerializeItem(
 template <typename KeyType> bool AccessorObjectMap<KeyType>::Deserialize(IDeserializer& deserializer, Object* object) const {
   Command item;
 
-  if (deserializer.BeginCommand(item)) {
+  if (deserializer.beginCommand(item)) {
     OrkAssert(item.Type() == Command::EITEM);
 
     if (item.Type() != Command::EITEM) {
-      deserializer.EndCommand(item);
+      deserializer.endCommand(item);
       return false;
     }
 
     Command attribute;
-    if (false == deserializer.BeginCommand(attribute))
+    if (false == deserializer.beginCommand(attribute))
       return false;
 
     OrkAssert(attribute.Type() == Command::EATTRIBUTE);
     OrkAssert(attribute.Name() == "key");
 
     if (attribute.Type() != Command::EATTRIBUTE || attribute.Name() != "key") {
-      deserializer.EndCommand(attribute);
+      deserializer.endCommand(attribute);
       return false;
     }
 
@@ -124,7 +124,7 @@ template <typename KeyType> bool AccessorObjectMap<KeyType>::Deserialize(IDeseri
 
     BidirectionalSerializer(deserializer) | key;
 
-    if (false == deserializer.EndCommand(attribute))
+    if (false == deserializer.endCommand(attribute))
       return false;
 
     Object* value = (object->*mAccessor)(key, IMap::kDeserializeInsertItem);
@@ -132,7 +132,7 @@ template <typename KeyType> bool AccessorObjectMap<KeyType>::Deserialize(IDeseri
     if (false == Object::xxxDeserialize(value, deserializer))
       return false;
 
-    if (false == deserializer.EndCommand(item))
+    if (false == deserializer.endCommand(item))
       return false;
 
     return true;
@@ -157,18 +157,18 @@ void AccessorObjectMap<KeyType>::DoSerialize(BidirectionalSerializer& bidi, cons
 
   Command attribute(Command::EATTRIBUTE, "key");
 
-  if (false == serializer->BeginCommand(item))
+  if (false == serializer->beginCommand(item))
     result = false;
-  if (false == serializer->BeginCommand(attribute))
+  if (false == serializer->beginCommand(attribute))
     result = false;
   bidi | key;
-  if (false == serializer->EndCommand(attribute))
+  if (false == serializer->endCommand(attribute))
     result = false;
 
   if (false == Object::xxxSerialize(value, *bidi.Serializer()))
     result = false;
 
-  if (false == serializer->EndCommand(item))
+  if (false == serializer->endCommand(item))
     result = false;
 
   if (false == result)
