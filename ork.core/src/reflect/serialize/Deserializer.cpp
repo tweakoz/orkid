@@ -21,5 +21,17 @@ namespace ork::reflect::serialize {
 void IDeserializer::referenceObject(object_ptr_t instance) {
   OrkAssert(false);
 }
+void IDeserializer::trackObject(boost::uuids : uuid id, object_ptr_t instance) {
+  std::string uuids = boost::uuids::to_string(id);
+  auto it           = _reftracker.find(uuids);
+  OrkAssert(it == _reftracker.end());
+  _reftracker[uuids] = instance;
+}
+object_ptr_t IDeserializer::findTrackedObject(boost::uuids::uuid id) const {
+  std::string uuids = boost::uuids::to_string(id);
+  auto it           = _reftracker.find(uuids);
+  OrkAssert(it != _reftracker.end());
+  return it.second;
+}
 ////////////////////////////////////////////////////////////////
 } // namespace ork::reflect::serialize

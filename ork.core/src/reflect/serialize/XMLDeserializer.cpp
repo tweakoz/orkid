@@ -14,7 +14,6 @@
 #include <ork/rtti/Category.h>
 #include <ork/rtti/downcast.h>
 #include <ork/object/Object.h>
-#include <boost/lexical_cast.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/uuid/string_generator.hpp>
 
@@ -200,90 +199,43 @@ void XMLDeserializer::deserializeObjectProperty(const ObjectProperty* prop, Obje
 
 //////////////////////////////////////////////////////////////////////////////
 
-bool XMLDeserializer::ReferenceObject(object_ptr_t instance) {
-  std::string object_uuid_str;
-
-  OrkAssert(_isReadingAttributes);
-  /////////////////////////////////
-
-  Command referenceAttributeCommand;
-  beginCommand(referenceAttributeCommand);
-  OrkAssert(referenceAttributeCommand.Type() == Command::EATTRIBUTE);
-  OrkAssert(referenceAttributeCommand.Name() == "id");
-
-  ArrayString<64> mutstrstorage;
-  MutableString oidpstr(mutstrstorage);
-  Deserialize(oidpstr);
-  endCommand(referenceAttributeCommand);
-
-  object_uuid_str = oidpstr.c_str();
-
-  /////////////////////////////////
-  if (object_uuid_str != "0") {
-    boost::uuids::string_generator gen;
-    auto as_uuid = gen(object_uuid_str);
-    auto it      = _reftracker.find(object_uuid_str);
-    OrkAssert(it == _reftracker.end());
-    instance->_uuid = as_uuid;
-    OrkAssert(as_object != nullptr);
-    _reftracker[object_uuid_str] = instance;
-  }
-
-  return true;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-void XMLDeserializer::deserializeSharedObject(rtti::castable_ptr_t& object) {
+void XMLDeserializer::deserializeSharedObject(object_ptr_t& instance_out) {
   OrkAssert(not _isReadingAttributes);
+  std::string object_uuid_str = attrvalue.c_str();
+
+  //////////////////////////////////////
+  ArrayString<32> attrname;
+  ArrayString<128> attrvalue;
+  auto TAG = getTag();
   //////////////////////////////////////
   // backreference
   //////////////////////////////////////
-  if (BeginTag("backreference")) {
-    ArrayString<32> attrname;
-    ArrayString<64> attrvalue;
-
+  if (TAG == "backreference") {
     ReadAttribute(attrname, attrvalue);
     OrkAssert(attrname == "id");
-
-    std::string object_uuid_str = attrvalue.c_str();
-
+    object_uuid_str = attrvalue;
     if (object_uuid_str == "0") {
-      object = nullptr;
+      instance_out = nullptr;
     } else {
       boost::uuids::string_generator gen;
       auto as_uuid = gen(object_uuid_str);
-      auto it      = _reftracker.find(object_uuid_str);
-      if (it != _reftracker.end()) {
-
-        auto rawobject = it->second;
-        // object         = ;
-        OrkAssert(false);
-        // we need to paramterize object = rawobject; on ptrtype somehow
-        //  or we will need separate _deserializeObject methods for raw and sharedptr
-      } else {
-        ArrayString<32> buffer;
-        MutableString error(buffer);
-        error.format("backreference %s not available!", object_uuid_str.c_str());
-        OrkAssertI(false, error.c_str());
-      }
+      instance_out = findTrackedObject(as_uuid); //
     }
 
-    if (!EndTag("backreference")) {
-      orkprintf("XMLDeserializer:: expected </backreference>\n");
-      OrkAssert(false);
-    }
+    EndTag("backreference");
 
   }
   //////////////////////////////////////
   // first reference
   //////////////////////////////////////
-  else if (BeginTag("reference")) {
+  else if (TAG == "reference") {
+    ReadAttribute(attrname, attrvalue);
+    OrkAssert(attrname == "id");
+    boost::uuids::string_generator gen;
+    auto as_uuid    = gen(object_uuid_str);
+    object_uuid_str = attrvalue;
 
     const rtti::Category* category = NULL;
-    OrkAssert(_isReadingAttributes);
-    ArrayString<32> attrname;
-    ArrayString<128> attrvalue;
 
     ReadAttribute(attrname, attrvalue);
     OrkAssert(attrname == "category");
@@ -291,12 +243,13 @@ void XMLDeserializer::deserializeSharedObject(rtti::castable_ptr_t& object) {
     OrkAssert(category);
 
     category->deserializeObject(*this, object);
+    trackObject(as_uuid, object);
 
     bool checkendtag = EndTag("reference");
     OrkAssert(checkendtag);
 
   } else {
-    // not ref, or backref
+    // bad tag
     OrkAssert(false);
   }
 }
@@ -644,6 +597,7 @@ void XMLDeserializer::EndAttribute() {
 //////////////////////////////////////////////////////////////////////////////
 
 void XMLDeserializer::ReadAttribute(MutableString name, MutableString value) {
+  OrkAssert(_isReadingAttributes);
   BeginAttribute(name);
   ReadUntil(value, mAttributeEndChar);
   EatSpace();

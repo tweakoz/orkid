@@ -41,6 +41,8 @@ struct IDeserializer {
   virtual void Hint(const PieceString&) {
   }
 
+  void trackObject(boost::uuids::uuid id, object_ptr_t instance);
+  object_ptr_t findTrackedObject(boost::uuids::uuid id) const;
   virtual ~IDeserializer();
 
   const reflect::ObjectProperty* _currentProperty = nullptr;

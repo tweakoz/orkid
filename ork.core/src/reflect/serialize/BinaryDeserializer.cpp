@@ -13,6 +13,8 @@
 #include <ork/rtti/Class.h>
 #include <ork/rtti/Category.h>
 #include <ork/rtti/downcast.h>
+#include <boost/uuid/uuid_io.hpp>
+#include <boost/uuid/string_generator.hpp>
 
 namespace ork::reflect::serialize {
 ////////////////////////////////////////////////////////////////////////////////
@@ -112,18 +114,25 @@ bool BinaryDeserializer::Match(char c) {
 }
 ////////////////////////////////////////////////////////////////////////////////
 void BinaryDeserializer::deserializeSharedObject(object_ptr_t& instance_out) {
+  std::string object_uuid_str;
   if (Match('N')) {
     instance_out = nullptr;
   }
   if (Match('B')) {
-    int id;
-    Read(id);
-    instance_out = _reftracker[id];
+    Read(object_uuid_str);
+    boost::uuids::string_generator gen;
+    auto as_uuid = gen(object_uuid_str);
+    instance_out = findTrackedObject(as_uuid); //
   } else if (Match('R')) {
-    ConstString name;
-    Read(name);
-    const rtti::Category* category = rtti::downcast<rtti::Category*>(rtti::Class::FindClass(name));
+    std::string object_uuid_str;
+    Read(object_uuid_str);
+    ConstString classname;
+    Read(classname);
+    auto category = rtti::downcast<rtti::Category*>(rtti::Class::FindClass(classname));
+    boost::uuids::string_generator gen;
+    auto as_uuid = gen(object_uuid_str);
     category->deserializeObject(*this, instance_out);
+    trackObject(as_uuid, instance_out);
     if (false == Match('r')) {
       OrkAssert(false);
     }
@@ -145,7 +154,8 @@ void BinaryDeserializer::deserialize(ResizableString& text) {
 }
 ////////////////////////////////////////////////////////////////////////////////
 void BinaryDeserializer::deserializeData(uint8_t* data, size_t size) {
-  mStream.Read(data, size) == int(size);
+  bool checkok = mStream.Read(data, size) == int(size);
+  OrkAssert(checkok);
 }
 ////////////////////////////////////////////////////////////////////////////////
 void BinaryDeserializer::beginCommand(Command& command) {
