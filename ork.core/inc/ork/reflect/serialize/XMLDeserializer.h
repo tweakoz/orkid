@@ -33,13 +33,6 @@ public:
   void deserializeSharedObject(object_ptr_t&) override;
   void deserializeObjectProperty(const ObjectProperty*, object_ptr_t) override;
 
-  template <
-      typename ptrtype, //
-      typename dmtype>  //
-  bool _deserializeObject(
-      ptrtype&, //
-      dmtype&);
-
   void beginCommand(Command&) override;
   void endCommand(const Command&) override;
 
@@ -61,13 +54,13 @@ private:
   bool Check(const PieceString& s);
   bool Match(const PieceString& s);
 
-  bool ReadNumber(long&);
-  bool ReadNumber(double&);
+  void ReadNumber(long&);
+  void ReadNumber(double&);
 
   size_t ReadWord(MutableString word);
-  bool MatchEndTag(const ConstString& tagname);
+  void MatchEndTag(const ConstString& tagname);
 
-  bool mbReadingAttributes;
+  bool _isReadingAttributes;
   char mAttributeEndChar;
 
   // int FindObject(rtti::ICastable* object);
@@ -81,8 +74,8 @@ private:
   bool EndAttribute();
   bool ReadAttribute(MutableString name, MutableString value);
 
-  template <typename StringType> bool ReadText(StringType& text);
-  bool ReadBinary(unsigned char[], size_t);
+  template <typename StringType> void ReadText(StringType& text);
+  void ReadBinary(unsigned char[], size_t);
   void ReadUntil(MutableString value, char terminator);
 };
 

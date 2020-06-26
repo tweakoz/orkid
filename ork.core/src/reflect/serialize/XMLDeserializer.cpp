@@ -21,16 +21,18 @@
 #include <ork/orkprotos.h>
 #include <cstring>
 
-namespace ork { namespace reflect { namespace serialize {
+namespace ork::reflect::serialize {
+//////////////////////////////////////////////////////////////////////////////
 
 static int unhex(char c);
 
 XMLDeserializer::XMLDeserializer(stream::IInputStream& stream)
     : mStream(stream)
-    , mbReadingAttributes(false)
-    , mCurrentCommand(NULL)
+    , _isReadingAttributes(false)
     , mLineNo(1) {
 }
+
+//////////////////////////////////////////////////////////////////////////////
 
 void XMLDeserializer::Advance(int n) {
   unsigned char c;
@@ -43,10 +45,14 @@ void XMLDeserializer::Advance(int n) {
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////
+
 void XMLDeserializer::EatSpace() {
   while (Peek() != stream::IInputStream::kEOF && isspace(Peek()))
     Advance();
 }
+
+//////////////////////////////////////////////////////////////////////////////
 
 size_t XMLDeserializer::ReadWord(MutableString string) {
   EatSpace();
@@ -66,83 +72,93 @@ size_t XMLDeserializer::ReadWord(MutableString string) {
   return string.size();
 }
 
+//////////////////////////////////////////////////////////////////////////////
+
 bool XMLDeserializer::CheckExternalRead() {
-  return NULL == mCurrentCommand || (mCurrentCommand->Type() == Command::EATTRIBUTE) == mbReadingAttributes;
+  return NULL == _currentCommand || (_currentCommand->Type() == Command::EATTRIBUTE) == _isReadingAttributes;
 }
 
-bool XMLDeserializer::ReadNumber(long& value) {
+//////////////////////////////////////////////////////////////////////////////
+
+void XMLDeserializer::ReadNumber(long& value) {
   ArrayString<128> buffer;
   MutableString word(buffer);
 
   if (CheckExternalRead() && ReadWord(word) > 0) {
     char* end = 0;
     value     = std::strtol(word.c_str(), &end, 10);
-    return end == word.c_str() + word.size();
+    OrkAssert(end == word.c_str() + word.size());
   }
-
-  return false;
 }
 
-bool XMLDeserializer::ReadNumber(double& value) {
+//////////////////////////////////////////////////////////////////////////////
+
+void XMLDeserializer::ReadNumber(double& value) {
   ArrayString<128> buffer;
   MutableString word(buffer);
 
   if (CheckExternalRead() && ReadWord(word) > 0) {
     char* end = 0;
     value     = std::strtod(word.c_str(), &end);
-    return end == word.c_str() + word.size();
+    OrkAssert(end == word.c_str() + word.size());
   }
-
-  return false;
 }
 
-bool XMLDeserializer::Deserialize(char& value) {
+//////////////////////////////////////////////////////////////////////////////
+
+void XMLDeserializer::deserialize(char& value) {
   bool result;
   long n;
-  result = ReadNumber(n);
-  value  = char(static_cast<unsigned char>(n));
-  return result;
+  ReadNumber(n);
+  value = char(static_cast<unsigned char>(n));
 }
 
-bool XMLDeserializer::Deserialize(short& value) {
+//////////////////////////////////////////////////////////////////////////////
+
+void XMLDeserializer::deserialize(short& value) {
   bool result;
   long n;
-  result = ReadNumber(n);
-  value  = short(n);
-  return result;
+  ReadNumber(n);
+  value = short(n);
 }
 
-bool XMLDeserializer::Deserialize(int& value) {
+//////////////////////////////////////////////////////////////////////////////
+
+void XMLDeserializer::deserialize(int& value) {
   bool result;
   long n;
-  result = ReadNumber(n);
-  value  = int(n);
-  return result;
+  ReadNumber(n);
+  value = int(n);
 }
 
-bool XMLDeserializer::Deserialize(long& value) {
+//////////////////////////////////////////////////////////////////////////////
+
+void XMLDeserializer::deserialize(long& value) {
   bool result;
   long n;
-  result = ReadNumber(n);
-  value  = n;
-  return result;
+  ReadNumber(n);
+  value = n;
 }
 
-bool XMLDeserializer::Deserialize(float& value) {
+//////////////////////////////////////////////////////////////////////////////
+
+void XMLDeserializer::deserialize(float& value) {
   bool result;
   double n;
-  result = ReadNumber(n);
-  value  = float(n);
-  return result;
+  ReadNumber(n);
+  value = float(n);
 }
 
-bool XMLDeserializer::Deserialize(double& value) {
+//////////////////////////////////////////////////////////////////////////////
+
+void XMLDeserializer::deserialize(double& value) {
   bool result;
   double n;
-  result = ReadNumber(n);
-  value  = n;
-  return result;
+  ReadNumber(n);
+  value = n;
 }
+
+//////////////////////////////////////////////////////////////////////////////
 
 static bool strieq(const PieceString& a, const PieceString& b) {
   if (a.length() != b.length())
@@ -157,7 +173,9 @@ static bool strieq(const PieceString& a, const PieceString& b) {
   return true;
 }
 
-bool XMLDeserializer::Deserialize(bool& value) {
+//////////////////////////////////////////////////////////////////////////////
+
+void XMLDeserializer::deserialize(bool& value) {
   bool result = false;
 
   ArrayString<128> buffer;
@@ -172,73 +190,52 @@ bool XMLDeserializer::Deserialize(bool& value) {
       result = true;
     }
   }
-
-  return result;
 }
 
-bool XMLDeserializer::Deserialize(const AbstractProperty* prop) {
-  return prop->Deserialize(*this);
+//////////////////////////////////////////////////////////////////////////////
+
+void XMLDeserializer::deserializeObjectProperty(const ObjectProperty* prop, Object* object) {
+  prop->deserialize(*this, object);
 }
 
-bool XMLDeserializer::deserializeObjectProperty(const ObjectProperty* prop, Object* object) {
-  return prop->Deserialize(*this, object);
-}
+//////////////////////////////////////////////////////////////////////////////
 
-bool XMLDeserializer::ReferenceObject(rtti::castable_rawptr_t castable) {
-  int object_id = -1;
-  Command referenceAttributeCommand;
+bool XMLDeserializer::ReferenceObject(object_ptr_t instance) {
   std::string object_uuid_str;
 
-  if (mbReadingAttributes) {
-    bool result = false;
+  OrkAssert(_isReadingAttributes);
+  /////////////////////////////////
 
-    if (beginCommand(referenceAttributeCommand)) {
-      OrkAssert(referenceAttributeCommand.Type() == Command::EATTRIBUTE);
-      OrkAssert(referenceAttributeCommand.Name() == "id");
+  Command referenceAttributeCommand;
+  beginCommand(referenceAttributeCommand);
+  OrkAssert(referenceAttributeCommand.Type() == Command::EATTRIBUTE);
+  OrkAssert(referenceAttributeCommand.Name() == "id");
 
-      if (referenceAttributeCommand.Type() != Command::EATTRIBUTE)
-        return false;
+  ArrayString<64> mutstrstorage;
+  MutableString oidpstr(mutstrstorage);
+  Deserialize(oidpstr);
+  endCommand(referenceAttributeCommand);
 
-      if (referenceAttributeCommand.Name() != "id")
-        return false;
+  object_uuid_str = oidpstr.c_str();
 
-      ArrayString<64> mutstrstorage;
-
-      MutableString oidpstr(mutstrstorage);
-      result = Deserialize(oidpstr);
-      endCommand(referenceAttributeCommand);
-
-      object_uuid_str = oidpstr.c_str();
-    }
-
-    OrkAssert(result);
-    if (result == false)
-      return false;
-  }
-
+  /////////////////////////////////
   if (object_uuid_str != "0") {
     boost::uuids::string_generator gen;
     auto as_uuid = gen(object_uuid_str);
     auto it      = _reftracker.find(object_uuid_str);
     OrkAssert(it == _reftracker.end());
-    auto as_object   = dynamic_cast<Object*>(castable);
-    as_object->_uuid = as_uuid;
+    instance->_uuid = as_uuid;
     OrkAssert(as_object != nullptr);
-    _reftracker[object_uuid_str] = as_object;
+    _reftracker[object_uuid_str] = instance;
   }
 
   return true;
 }
 
-template <typename ptrtype, typename dmtype> //
-bool XMLDeserializer::_deserializeObject(
-    ptrtype& object, //
-    dmtype& dmethod) {
+//////////////////////////////////////////////////////////////////////////////
 
-  if (mbReadingAttributes)
-    return false;
-
-  OrkAssert(!mbReadingAttributes);
+void XMLDeserializer::deserializeSharedObject(rtti::castable_ptr_t& object) {
+  OrkAssert(not _isReadingAttributes);
   //////////////////////////////////////
   // backreference
   //////////////////////////////////////
@@ -246,14 +243,8 @@ bool XMLDeserializer::_deserializeObject(
     ArrayString<32> attrname;
     ArrayString<64> attrvalue;
 
-    if (!ReadAttribute(attrname, attrvalue)) {
-      while (attrname != "id") {
-        orkprintf("XMLDeserializer:: <backreference ... expected id attribute\n");
-        if (false == ReadAttribute(attrname, attrvalue)) {
-          return false;
-        }
-      }
-    }
+    ReadAttribute(attrname, attrvalue);
+    OrkAssert(attrname == "id");
 
     std::string object_uuid_str = attrvalue.c_str();
 
@@ -280,10 +271,9 @@ bool XMLDeserializer::_deserializeObject(
 
     if (!EndTag("backreference")) {
       orkprintf("XMLDeserializer:: expected </backreference>\n");
-      return false;
+      OrkAssert(false);
     }
 
-    return true;
   }
   //////////////////////////////////////
   // first reference
@@ -291,83 +281,53 @@ bool XMLDeserializer::_deserializeObject(
   else if (BeginTag("reference")) {
 
     const rtti::Category* category = NULL;
+    OrkAssert(_isReadingAttributes);
+    ArrayString<32> attrname;
+    ArrayString<128> attrvalue;
 
-    if (mbReadingAttributes) {
-      ArrayString<32> attrname;
-      ArrayString<128> attrvalue;
+    ReadAttribute(attrname, attrvalue);
+    OrkAssert(attrname == "category");
+    category = rtti::downcast<const rtti::Category*>(rtti::Class::FindClass(attrvalue));
+    OrkAssert(category);
 
-      ReadAttribute(attrname, attrvalue);
+    category->deserializeObject(*this, object);
 
-      while (attrname != "category") {
-        orkprintf("XMLDeserializer:: <reference ... unknown attribute '%s'\n", attrname.c_str());
-        if (mbReadingAttributes) {
-          ReadAttribute(attrname, attrvalue);
-        } else {
-          return false;
-        }
-      }
+    bool checkendtag = EndTag("reference");
+    OrkAssert(checkendtag);
 
-      category = rtti::downcast<const rtti::Category*>(rtti::Class::FindClass(attrvalue));
-
-      if (category == NULL) {
-        orkprintf("XMLDeserializer:: <reference ... unknown category='%s'\n", attrvalue.c_str());
-        return false;
-      }
-    } else {
-      orkprintf("XMLDeserializer:: <reference ... expected 'category' attribute\n");
-      return false;
-    }
-    if (false == category->deserializeObject(*this, object)) {
-      return false;
-    }
-
-    if (!EndTag("reference")) {
-      orkprintf("XMLDeserializer:: expected </reference>\n");
-      return false;
-    }
-
-    return true;
   } else {
-    // orkprintf("XMLDeserializer:: expected <reference> or <backreference>\n");
-    return false;
+    // not ref, or backref
+    OrkAssert(false);
   }
 }
 
-bool XMLDeserializer::deserializeObject(rtti::castable_rawptr_t& object) {
-  // void (C::* p)(int) = &C::f;
-  using dmethod_t = bool (rtti::Category::*)(
-      IDeserializer&, //
-      rtti::castable_rawptr_t&) const;
-  dmethod_t dm = &rtti::Category::deserializeObject;
-  return _deserializeObject(object, dm);
-}
-bool XMLDeserializer::deserializeSharedObject(rtti::castable_ptr_t& object) {
-  using dmethod_t = bool (rtti::Category::*)(
-      IDeserializer&, //
-      rtti::castable_ptr_t&) const;
-  dmethod_t dm = &rtti::Category::deserializeObject;
-  return _deserializeObject(object, dm);
-}
+//////////////////////////////////////////////////////////////////////////////
 
-bool XMLDeserializer::Deserialize(MutableString& text) {
+void XMLDeserializer::deserialize(MutableString& text) {
   CheckExternalRead();
 
   return ReadText(text);
 }
 
-bool XMLDeserializer::Deserialize(ResizableString& text) {
+//////////////////////////////////////////////////////////////////////////////
+
+void XMLDeserializer::deserialize(ResizableString& text) {
   CheckExternalRead();
 
   return ReadText(text);
 }
 
-bool XMLDeserializer::DeserializeData(unsigned char* data, size_t size) {
+//////////////////////////////////////////////////////////////////////////////
+
+void XMLDeserializer::deserializeData(unsigned char* data, size_t size) {
   CheckExternalRead();
 
   return ReadBinary(data, size);
 }
 
-bool XMLDeserializer::beginCommand(Command& command) {
+//////////////////////////////////////////////////////////////////////////////
+
+void XMLDeserializer::beginCommand(Command& command) {
   size_t checksize;
   bool result = false;
 
@@ -376,17 +336,14 @@ bool XMLDeserializer::beginCommand(Command& command) {
 
   EatSpace();
 
-  // if( mStream.NumAvailable() == 0 )
-  //{
-  //	return false;
-  //}
+  OrkAssert(mStream.NumAvailable());
 
-  if (!mbReadingAttributes) {
+  if (!_isReadingAttributes) {
     if (BeginTag("property")) {
       if (ReadAttribute(attrname, attrvalue)) {
         while (attrname != "name") {
           orkprintf("XMLDeserializer::unrecognized first property attribute '%s'\n", attrname.c_str());
-          if (mbReadingAttributes)
+          if (_isReadingAttributes)
             ReadAttribute(attrname, attrvalue);
           else
             return false;
@@ -403,7 +360,7 @@ bool XMLDeserializer::beginCommand(Command& command) {
       if (ReadAttribute(attrname, attrvalue)) {
         while (attrname != "type") {
           orkprintf("XMLDeserializer::unrecognized first object attribute '%s'\n", attrname.c_str());
-          if (mbReadingAttributes)
+          if (_isReadingAttributes)
             ReadAttribute(attrname, attrvalue);
           else
             return false;
@@ -417,8 +374,7 @@ bool XMLDeserializer::beginCommand(Command& command) {
         MatchLoose(" < ")) {
       ArrayString<256> word;
       ReadWord(word);
-      orkprintf("XMLDeserializer::beginCommand::[%d] unknown tag %s\n", mLineNo, word.c_str());
-      return false;
+      OrkAssert(false);
     }
   } else if (BeginAttribute(attrname)) {
     command.Setup(Command::EATTRIBUTE, attrname);
@@ -428,14 +384,14 @@ bool XMLDeserializer::beginCommand(Command& command) {
   }
 
   if (result) {
-    command.PreviousCommand() = mCurrentCommand;
-    mCurrentCommand           = &command;
+    command.PreviousCommand() = _currentCommand;
+    _currentCommand           = &command;
   }
-
-  return result;
 }
 
-bool XMLDeserializer::EatBinaryData() {
+//////////////////////////////////////////////////////////////////////////////
+
+void XMLDeserializer::EatBinaryData() {
   char byte[2];
   EatSpace();
   bool result = false;
@@ -450,14 +406,12 @@ bool XMLDeserializer::EatBinaryData() {
 
     EatSpace();
   }
-
-  return result;
 }
 
-bool XMLDeserializer::endCommand(const Command& command) {
-  bool result = false;
+//////////////////////////////////////////////////////////////////////////////
 
-  if (mCurrentCommand == &command) {
+void XMLDeserializer::endCommand(const Command& command) {
+  if (_currentCommand == &command) {
     while (result == false) {
       switch (command.Type()) {
         case Command::EPROPERTY:
@@ -476,11 +430,11 @@ bool XMLDeserializer::endCommand(const Command& command) {
       OrkAssert(result);
     }
 
-    mCurrentCommand = mCurrentCommand->PreviousCommand();
+    _currentCommand = _currentCommand->PreviousCommand();
   } else {
     orkprintf(
         "Mismatched Serializer commands! expected: %s got: %s\n",
-        mCurrentCommand ? mCurrentCommand->Name().c_str() : "<no command>",
+        _currentCommand ? _currentCommand->Name().c_str() : "<no command>",
         command.Name().c_str());
     return false;
   }
@@ -488,9 +442,9 @@ bool XMLDeserializer::endCommand(const Command& command) {
   if (result == false) {
     orkprintf("XMLDeserializer::endCommand::[%d] failed to match end for tag '%s'\n", mLineNo, command.Name().c_str());
   }
-
-  return result;
 }
+
+//////////////////////////////////////////////////////////////////////////////
 
 bool XMLDeserializer::Match(const PieceString& s) {
   if (Check(s)) {
@@ -501,6 +455,8 @@ bool XMLDeserializer::Match(const PieceString& s) {
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////
+
 size_t XMLDeserializer::Peek() {
   unsigned char c;
   if (mStream.Peek(&c, sizeof(c)) != stream::IInputStream::kEOF) {
@@ -508,6 +464,8 @@ size_t XMLDeserializer::Peek() {
   }
   return stream::IInputStream::kEOF;
 }
+
+//////////////////////////////////////////////////////////////////////////////
 
 bool XMLDeserializer::Check(const PieceString& s) {
   char buf[64];
@@ -523,6 +481,8 @@ bool XMLDeserializer::Check(const PieceString& s) {
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////
+
 bool XMLDeserializer::MatchLoose(const PieceString& s) {
   size_t len;
   bool result = CheckLoose(s, len);
@@ -532,9 +492,9 @@ bool XMLDeserializer::MatchLoose(const PieceString& s) {
 
   if (result && s.c_str()[s.length() - 1] == ' ')
     EatSpace();
-
-  return result;
 }
+
+//////////////////////////////////////////////////////////////////////////////
 
 bool XMLDeserializer::CheckLoose(const PieceString& str, size_t& matchlen) {
   PieceString s = str;
@@ -566,9 +526,11 @@ bool XMLDeserializer::CheckLoose(const PieceString& str, size_t& matchlen) {
 
   return true;
 }
-// yp
-bool XMLDeserializer::BeginTag(const PieceString& tagname) {
-  OrkAssert(!mbReadingAttributes);
+
+//////////////////////////////////////////////////////////////////////////////
+
+void XMLDeserializer::BeginTag(const PieceString& tagname) {
+  OrkAssert(!_isReadingAttributes);
 
   EatSpace();
   ArrayString<128> buffer;
@@ -577,9 +539,9 @@ bool XMLDeserializer::BeginTag(const PieceString& tagname) {
 
   if (MatchLoose(pattern)) {
     if (MatchLoose(" > "))
-      mbReadingAttributes = false;
+      _isReadingAttributes = false;
     else {
-      mbReadingAttributes = true;
+      _isReadingAttributes = true;
       // printf("BeginTag<%s>\n", tagname.c_str());
     }
 
@@ -589,12 +551,14 @@ bool XMLDeserializer::BeginTag(const PieceString& tagname) {
   }
 }
 
-bool XMLDeserializer::EndTag(const PieceString& tagname) {
+//////////////////////////////////////////////////////////////////////////////
+
+void XMLDeserializer::EndTag(const PieceString& tagname) {
   EatSpace();
 
-  if (mbReadingAttributes) {
+  if (_isReadingAttributes) {
     if (MatchLoose(" /> ")) {
-      mbReadingAttributes = false;
+      _isReadingAttributes = false;
       return true;
     }
   }
@@ -609,6 +573,8 @@ bool XMLDeserializer::EndTag(const PieceString& tagname) {
     return false;
   }
 }
+
+//////////////////////////////////////////////////////////////////////////////
 
 void XMLDeserializer::ReadUntil(MutableString value, char terminator) {
   char c;
@@ -628,21 +594,23 @@ void XMLDeserializer::ReadUntil(MutableString value, char terminator) {
   }
 }
 
-bool XMLDeserializer::BeginAttribute(MutableString name) {
+//////////////////////////////////////////////////////////////////////////////
+
+void XMLDeserializer::BeginAttribute(MutableString name) {
   size_t checksize;
   EatSpace();
 
-  OrkAssert(mbReadingAttributes);
+  OrkAssert(_isReadingAttributes);
 
   if (CheckLoose(" /> ", checksize)) {
-    return false;
+    OrkAssert(false);
   }
 
   ReadWord(name);
 
   if (!MatchLoose(" = ")) {
     orkprintf("XMLDeserializer::BeginAttribute::[%d] expected '=' after '%s'\n", mLineNo, name.c_str());
-    return false;
+    OrkAssert(false);
   }
 
   if (Match("'")) {
@@ -652,14 +620,12 @@ bool XMLDeserializer::BeginAttribute(MutableString name) {
   } else {
     mAttributeEndChar = '\0';
   }
-
-  return true;
 }
 
-bool XMLDeserializer::EndAttribute() {
-  bool result = false;
+//////////////////////////////////////////////////////////////////////////////
 
-  OrkAssert(mbReadingAttributes);
+void XMLDeserializer::EndAttribute() {
+  OrkAssert(_isReadingAttributes);
 
   EatSpace();
 
@@ -671,27 +637,22 @@ bool XMLDeserializer::EndAttribute() {
     result = true;
 
   if (result && MatchLoose(" > ")) {
-    mbReadingAttributes = false;
+    _isReadingAttributes = false;
   }
-
-  return result;
 }
 
-bool XMLDeserializer::ReadAttribute(MutableString name, MutableString value) {
-  if (BeginAttribute(name)) {
-    ReadUntil(value, mAttributeEndChar);
+//////////////////////////////////////////////////////////////////////////////
 
-    EatSpace();
-
-    if (MatchLoose(" > ")) {
-      mbReadingAttributes = false;
-    }
-
-    return true;
+void XMLDeserializer::ReadAttribute(MutableString name, MutableString value) {
+  BeginAttribute(name);
+  ReadUntil(value, mAttributeEndChar);
+  EatSpace();
+  if (MatchLoose(" > ")) {
+    _isReadingAttributes = false;
   }
-
-  return false;
 }
+
+//////////////////////////////////////////////////////////////////////////////
 
 static PieceString ExpandEntity(const PieceString& entity) {
   if (entity == "amp")
@@ -707,16 +668,19 @@ static PieceString ExpandEntity(const PieceString& entity) {
   return "?";
 }
 
-template <typename StringType> bool XMLDeserializer::ReadText(StringType& text) {
+//////////////////////////////////////////////////////////////////////////////
+
+template <typename StringType> //
+void XMLDeserializer::ReadText(StringType& text) {
   char c;
-  bool reading_attribute = mCurrentCommand && mCurrentCommand->Type() == Command::EATTRIBUTE;
+  bool reading_attribute = _currentCommand && _currentCommand->Type() == Command::EATTRIBUTE;
 
   text = "";
 
   if (false == reading_attribute) {
     EatSpace();
     if (Peek() != '"') {
-      return false;
+      OrkAssert(false);
     } else {
       Advance();
     }
@@ -726,16 +690,17 @@ template <typename StringType> bool XMLDeserializer::ReadText(StringType& text) 
     if (reading_attribute) {
       if (mAttributeEndChar != '\0') {
         if (c == mAttributeEndChar) {
-          return true;
+          return;
         }
       } else {
         if (isspace(c) || '>' == c) {
-          return 0 != text.size();
+          OrkAssert(0 != text.size());
+          return;
         }
       }
     } else if (c == '"') {
       Advance();
-      return true;
+      return;
     }
 
     if (Match("&")) {
@@ -748,12 +713,10 @@ template <typename StringType> bool XMLDeserializer::ReadText(StringType& text) 
       text += c;
     }
   }
-
-  return true;
 }
 
-template bool XMLDeserializer::ReadText<MutableString>(MutableString& text);
-template bool XMLDeserializer::ReadText<ResizableString>(ResizableString& text);
+template void XMLDeserializer::ReadText<MutableString>(MutableString& text);
+template void XMLDeserializer::ReadText<ResizableString>(ResizableString& text);
 
 static int unhex(char c) {
   if ('0' <= c && c <= '9')
@@ -766,28 +729,30 @@ static int unhex(char c) {
     return -1;
 }
 
-bool XMLDeserializer::ReadBinary(unsigned char data[], size_t size) {
+//////////////////////////////////////////////////////////////////////////////
+
+void XMLDeserializer::ReadBinary(unsigned char data[], size_t size) {
   char byte[2];
   EatSpace();
 
   unsigned char* edata = data + size;
 
   while (stream::IInputStream::kEOF != mStream.Peek((unsigned char*)byte, sizeof(byte))) {
-    if (unhex(byte[0]) == -1 || unhex(byte[1]) == -1)
-      return false;
+    if (unhex(byte[0]) == -1 || unhex(byte[1]) == -1) {
+      OrkAssert(false);
+    }
 
     int value = (unhex(byte[0]) << 4) + unhex(byte[1]);
 
     if (data < edata) {
       *data++ = (unsigned char)value;
     } else {
-      return true;
+      return;
     }
 
     EatSpace();
   }
-
-  return true;
 }
 
-}}} // namespace ork::reflect::serialize
+//////////////////////////////////////////////////////////////////////////////
+} // namespace ork::reflect::serialize
