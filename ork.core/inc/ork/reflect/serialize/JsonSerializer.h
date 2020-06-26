@@ -10,6 +10,8 @@
 #include <ork/reflect/ISerializer.h>
 #include <ork/orkstl.h>
 #include <ork/rtti/Category.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/document.h>
 
 namespace ork { namespace stream {
 class IOutputStream;
@@ -46,21 +48,7 @@ public:
 
 private:
   stream::IOutputStream& mStream;
-  int mIndent;
-  bool mbWritingAttributes;
-  bool mbNeedSpace;
-  bool mbNeedLine;
-  void Spaced();
-  void Lined();
-  void Unspaced();
-
-  bool Write(char* text, size_t size);
-  bool WriteText(const char* format, ...);
-
-  bool FlushHeader();
-
-  bool StartObject(PieceString name);
-  bool EndObject();
+  rapidjson::Document _document;
 };
 
 }}} // namespace ork::reflect::serialize

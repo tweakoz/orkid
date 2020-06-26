@@ -11,6 +11,8 @@
 #include <ork/stream/InputStreamBuffer.h>
 
 #include <ork/orkstl.h>
+#include <rapidjson/reader.h>
+#include <rapidjson/document.h>
 
 namespace ork { namespace reflect { namespace serialize {
 
@@ -37,47 +39,11 @@ public:
   void endCommand(const Command&) override;
 
 private:
-  bool EatBinaryData();
-
-  int mLineNo;
-
   stream::InputStreamBuffer<1024 * 4> mStream;
-
-  void EatSpace();
-  void Advance(int n = 1);
-
-  size_t Peek();
-
-  bool CheckLoose(const PieceString& s, size_t& matchlen);
-  bool MatchLoose(const PieceString& s);
-
-  bool Check(const PieceString& s);
-  bool Match(const PieceString& s);
-
-  void ReadNumber(long&);
-  void ReadNumber(double&);
-
-  size_t ReadWord(MutableString word);
-  void MatchEndTag(const ConstString& tagname);
-
-  bool _isReadingAttributes;
-  char mAttributeEndChar;
-
-  // int FindObject(rtti::ICastable* object);
 
   ////////////////////////////////////////////
 
-  bool CheckExternalRead();
-  PieceString nextTag();
-  bool BeginTag(const PieceString& tagname);
-  bool EndTag(const PieceString& tagname);
-  bool BeginAttribute(MutableString name);
-  bool EndAttribute();
-  bool ReadAttribute(MutableString name, MutableString value);
-
-  template <typename StringType> void ReadText(StringType& text);
-  void ReadBinary(unsigned char[], size_t);
-  void ReadUntil(MutableString value, char terminator);
+  rapidjson::Document _document;
 };
 
 }}} // namespace ork::reflect::serialize

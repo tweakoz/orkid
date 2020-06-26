@@ -23,94 +23,18 @@
 namespace ork::reflect::serialize {
 ////////////////////////////////////////////////////////////////////////////////
 JsonSerializer::JsonSerializer(stream::IOutputStream& stream)
-    : mStream(stream)
-    , mIndent(0)
-    , mbWritingAttributes(false)
-    , mbNeedSpace(false)
-    , mbNeedLine(false)
-    , _currentCommand(NULL) {
-}
-////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::Write(char* text, size_t size) {
-  bool status = mStream.Write(reinterpret_cast<unsigned char*>(text), size);
-  OrkAssert(status);
-}
-////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::Spaced() {
-  if (mbNeedLine == false)
-    mbNeedSpace = true;
-}
-////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::Unspaced() {
-  mbNeedSpace = false;
-}
-////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::Lined() {
-  mbNeedSpace = false;
-  mbNeedLine  = true;
-}
-////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::WriteText(const char* format, ...) {
-  if (NULL == format)
-    format = "";
-
-  if (mbNeedLine) {
-    mbNeedLine = false;
-    WriteText("\n%*s", mIndent, "");
-  }
-
-  if (mbNeedSpace) {
-    mbNeedSpace = false;
-    WriteText(" ");
-  }
-
-  char buffer[4096];
-  va_list list;
-  va_start(list, format);
-  vsprintf(buffer, /*sizeof(buffer),*/ format, list);
-  va_end(list);
-  buffer[sizeof(buffer) - 1] = '\0';
-  Write(buffer, std::strlen(buffer));
-}
-////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::StartObject(PieceString name) {
-  FlushHeader();
-  Lined();
-  WriteText("<object type='%.*s'", name.length(), name.c_str());
-  mIndent++;
-  mbWritingAttributes = true;
-}
-////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::EndObject() {
-  FlushHeader();
-  Lined();
-  mIndent--;
-  WriteText("</object>");
-  Lined();
+    : mStream(stream) {
 }
 ////////////////////////////////////////////////////////////////////////////////
 void JsonSerializer::beginCommand(const Command& command) {
   switch (command.Type()) {
     case Command::EOBJECT:
-      StartObject(command.Name());
       break;
     case Command::EATTRIBUTE:
-      if (mbWritingAttributes)
-        WriteText(" %s='", command.Name().c_str());
       break;
     case Command::EPROPERTY:
-      FlushHeader();
-      Lined();
-      result              = WriteText("<property name='%s'", command.Name().c_str());
-      mbWritingAttributes = true;
-      mIndent++;
       break;
     case Command::EITEM:
-      FlushHeader();
-      Lined();
-      result              = WriteText("<item");
-      mbWritingAttributes = true;
-      mIndent++;
       break;
   }
 
@@ -118,173 +42,57 @@ void JsonSerializer::beginCommand(const Command& command) {
   _currentCommand           = &command;
 }
 ////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::FlushHeader() {
-  if (mbWritingAttributes && (!_currentCommand || _currentCommand->Type() != Command::EATTRIBUTE)) {
-    result              = WriteText(">");
-    mbWritingAttributes = false;
-  }
-}
-////////////////////////////////////////////////////////////////////////////////
 void JsonSerializer::endCommand(const Command& command) {
-  if (_currentCommand == &command) {
-    _currentCommand = _currentCommand->PreviousCommand();
-  } else {
-    OrkAssertI(
-        false,
-        CreateFormattedString(
-            "Mismatched Serializer commands! expected: %s got: %s\n",
-            _currentCommand ? _currentCommand->Name().c_str() : "<no command>",
-            command.Name().c_str())
-            .c_str());
-  }
+  OrkAssert(_currentCommand == &command);
   switch (command.Type()) {
     case Command::EOBJECT:
-      EndObject();
       break;
     case Command::EATTRIBUTE:
-      Unspaced();
-      WriteText("'");
       break;
     case Command::EPROPERTY:
-      FlushHeader();
-      mIndent--;
-      Unspaced();
-      WriteText("</property>");
-      Lined();
       break;
     case Command::EITEM:
-      FlushHeader();
-      mIndent--;
-      Unspaced();
-      WriteText("</item>");
-      Lined();
       break;
   }
 }
 ////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::Serialize(const char& value) {
-  FlushHeader();
-  WriteText("%i", static_cast<unsigned char>(value));
-  Spaced();
+void JsonSerializer::serialize(const char& value) {
 }
 ////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::Serialize(const short& value) {
-  FlushHeader();
-  WriteText("%i", value);
-  Spaced();
+void JsonSerializer::serialize(const short& value) {
 }
 ////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::Serialize(const int& value) {
-  FlushHeader();
-  WriteText("%i", value);
-  Spaced();
+void JsonSerializer::serialize(const int& value) {
 }
 ////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::Serialize(const long& value) {
-  FlushHeader();
-  WriteText("%i", value);
-  Spaced();
+void JsonSerializer::serialize(const long& value) {
 }
 ////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::Serialize(const float& value) {
-  FlushHeader();
-  WriteText("%g", value);
-  Spaced();
+void JsonSerializer::serialize(const float& value) {
 }
 ////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::Serialize(const double& value) {
-  FlushHeader();
-  WriteText("%g", value);
-  Spaced();
+void JsonSerializer::serialize(const double& value) {
 }
 ////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::Serialize(const bool& value) {
-  FlushHeader();
-  WriteText("%s", value ? "true" : "false");
-  Spaced();
+void JsonSerializer::serialize(const bool& value) {
 }
 ////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::Serialize(const AbstractProperty* prop) {
-  prop->Serialize(*this);
+void JsonSerializer::serializeObjectProperty(
+    const ObjectProperty* prop, //
+    object_constptr_t instance) {
+  prop->serialize(*this, instance);
 }
 ////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::serializeObjectProperty(const ObjectProperty* prop, const Object* object) {
-  prop->Serialize(*this, object);
-}
-////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::serializeObject(rtti::castable_rawconstptr_t castable) {
-  auto as_object = dynamic_cast<const ork::Object*>(castable);
-  FlushHeader();
-  if (as_object == nullptr) {
-    WriteText("<backreference id='0'/>");
-  } else {
-    const auto& uuid  = as_object->_uuid;
-    std::string uuids = boost::uuids::to_string(uuid);
-
-    auto it = _serialized.find(uuids);
-
-    if (it != _serialized.end()) {
-      WriteText("<backreference id='%s'/>", uuids.c_str());
-    } else {
-      auto objclazz = as_object->GetClass();
-      auto category = rtti::downcast<rtti::Category*>(objclazz->GetClass());
-      Lined();
-      WriteText("<reference category='");
-      WriteText(category->Name().c_str());
-      WriteText("'>");
-      Lined();
-      mIndent++;
-      // printf("xmlser obj<%p>\n", object);
-      category->serializeObject(*this, as_object);
-      mIndent--;
-      Lined();
-      WriteText("</reference>");
-      Lined();
-    }
-  }
-}
-////////////////////////////////////////////////////////////////////////////////
-static const char* EncodeXMLAttributeChar(char c) {
-  return c == '\'' ? "&apos;" : c == '&' ? "&amp;" : NULL;
-}
-////////////////////////////////////////////////////////////////////////////////
-static const char* EncodeXMLChar(char c) {
-  return c == '<' ? "&lt;" : c == '>' ? "&gt;" : c == '"' ? "&quot;" : c == '&' ? "&amp;" : NULL;
+void JsonSerializer::serializeSharedObject(object_constptr_t instance) {
 }
 ////////////////////////////////////////////////////////////////////////////////
 void JsonSerializer::Hint(const PieceString&) {
 }
 ////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::Serialize(const PieceString& string) {
-  FlushHeader();
-  if (_currentCommand and //
-      _currentCommand->Type() == Command::EATTRIBUTE) {
-    for (size_t i = 0; i < string.length(); i++) {
-      char c        = string.c_str()[i];
-      const char* s = EncodeXMLAttributeChar(c);
-      if (s)
-        WriteText("%s", s);
-      else
-        WriteText("%c", c);
-    }
-  } else {
-    WriteText("\"");
-    for (PieceString::size_type i = 0; i < string.length(); i++) {
-      char c = string.c_str()[i];
-
-      const char* s = EncodeXMLChar(c);
-      if (s)
-        WriteText("%s", s);
-      else
-        WriteText("%c", c);
-    }
-    WriteText("\"");
-    Spaced();
-  }
+void JsonSerializer::serialize(const PieceString& string) {
 }
 ////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::SerializeData(unsigned char*, size_t) {
-  FlushHeader();
+void JsonSerializer::serializeData(const uint8_t*, size_t) {
 }
 ////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::reflect::serialize

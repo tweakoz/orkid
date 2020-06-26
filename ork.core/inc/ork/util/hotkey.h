@@ -75,12 +75,6 @@ class HotKeyManager : public ork::Object {
   bool PostDeserialize(reflect::IDeserializer&) final;
 
 public:
-  static HotKeyManager gHotKeyManager;
-
-  static HotKeyManager& GetRef() {
-    return gHotKeyManager;
-  }
-
   void AddHotKeyConfiguration(const char* configname, const HotKeyConfiguration& HotKeyConfiguration);
   void RemoveHotKeyConfiguration(const char* actionname);
   HotKeyConfiguration* GetConfiguration(const char* actionname);
@@ -89,8 +83,8 @@ public:
 
   static const HotKey& GetHotKey(const char* actionname);
 
-  void Save();
-  void Load();
+  static void Save(std::shared_ptr<HotKeyManager> hkm);
+  static std::shared_ptr<HotKeyManager> Load(std::string path);
 
   static bool IsDepressed(const char* action);
   static bool IsDepressed(const HotKey& action);

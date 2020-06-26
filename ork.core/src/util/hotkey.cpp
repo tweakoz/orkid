@@ -504,8 +504,6 @@ HotKey* HotKeyConfiguration::GetHotKey(std::string named) const {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-HotKeyManager HotKeyManager::gHotKeyManager;
-
 void HotKeyManager::Describe() {
   ork::reflect::RegisterMapProperty("Configurations", &HotKeyManager::mHotKeyConfigurations);
   ork::reflect::annotatePropertyForEditor<HotKeyManager>("Configurations", "editor.factorylistbase", "HotKeyConfiguration");
@@ -566,22 +564,26 @@ const HotKey& HotKeyManager::GetHotKey(const char* actionname) {
 
 static const char* HotKeyFileName = "hotkeys.ork";
 
-void HotKeyManager::Save() {
+void HotKeyManager::Save(std::shared_ptr<HotKeyManager> hkm) {
   ork::stream::FileOutputStream istream(HotKeyFileName);
   ork::reflect::serialize::JsonSerializer ser(istream);
-  GetClass()->Description().SerializeProperties(ser, this);
+  ser.serializeSharedObject(hkm);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void HotKeyManager::Load() {
-  mHotKeyConfigurations.clear();
-  file::Path pth(HotKeyFileName);
+std::shared_ptr<HotKeyManager> //
+HotKeyManager::Load(std::string path) {
+
+  file::Path pth(path.c_str());
   if (ork::FileEnv::GetRef().DoesFileExist(pth)) {
     ork::stream::FileInputStream istream(pth.c_str());
     ork::reflect::serialize::JsonDeserializer deser(istream);
-    GetClass()->Description().DeserializeProperties(deser, this);
+    object_ptr_t instance;
+    dser.deserializeSharedObject(instance);
+    return std::dynamic_pointer_cast<HotKeyManager>(instance);
   }
+  return nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
