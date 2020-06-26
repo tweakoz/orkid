@@ -20,22 +20,21 @@ class XMLDeserializer : public IDeserializer {
 public:
   XMLDeserializer(stream::IInputStream& stream);
 
-  bool Deserialize(bool&) override;
-  bool Deserialize(char&) override;
-  bool Deserialize(short&) override;
-  bool Deserialize(int&) override;
-  bool Deserialize(long&) override;
-  bool Deserialize(float&) override;
-  bool Deserialize(double&) override;
+  void deserialize(bool&) override;
+  void deserialize(char&) override;
+  void deserialize(short&) override;
+  void deserialize(int&) override;
+  void deserialize(long&) override;
+  void deserialize(float&) override;
+  void deserialize(double&) override;
 
-  bool Deserialize(MutableString&) override;
-  bool Deserialize(ResizableString&) override;
-  bool DeserializeData(unsigned char*, size_t) override;
+  void deserialize(MutableString&) override;
+  void deserialize(ResizableString&) override;
+  void deserializeData(unsigned char*, size_t) override;
 
-  bool Deserialize(const AbstractProperty*) override;
-  bool deserializeObject(rtti::castable_rawptr_t&) override;
-  bool deserializeSharedObject(rtti::castable_ptr_t&) override;
-  bool deserializeObjectProperty(const ObjectProperty*, Object*) override;
+  void deserialize(const AbstractProperty*) override;
+  void deserializeSharedObject(object_ptr_t&) override;
+  void deserializeObjectProperty(const ObjectProperty*, object_ptr_t) override;
 
   template <
       typename ptrtype, //
@@ -44,9 +43,9 @@ public:
       ptrtype&, //
       dmtype&);
 
-  bool ReferenceObject(rtti::ICastable*) override;
-  bool beginCommand(Command&) override;
-  bool endCommand(const Command&) override;
+  void referenceObject(object_ptr_t) override;
+  void beginCommand(Command&) override;
+  void endCommand(const Command&) override;
 
 private:
   bool EatBinaryData();

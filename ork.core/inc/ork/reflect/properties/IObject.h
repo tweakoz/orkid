@@ -20,7 +20,6 @@ class Object;
 namespace ork { namespace reflect {
 
 class IObject : public ObjectProperty {
-  DECLARE_TRANSPARENT_CASTABLE(IObject, ObjectProperty)
 public:
   virtual Object* Access(Object*) const             = 0;
   virtual const Object* Access(const Object*) const = 0;

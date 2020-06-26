@@ -26,8 +26,8 @@ public:
   object_ptr_t Access(Object*) const override;
   object_constptr_t Access(const Object*) const override;
 
-  void deserialize(IDeserializer&, Object*) const override;
-  void serialize(ISerializer&, const Object*) const override;
+  void deserialize(IDeserializer&, object_ptr_t) const override;
+  void serialize(ISerializer&, object_constptr_t) const override;
 };
 
 }} // namespace ork::reflect

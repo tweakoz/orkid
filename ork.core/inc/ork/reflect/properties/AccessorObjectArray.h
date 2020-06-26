@@ -25,8 +25,8 @@ private:
 
   void deserializeItem(IDeserializer&, Object*, size_t) const override;
   void serializeItem(ISerializer&, const Object*, size_t) const override;
-  void deserialize(IDeserializer&, Object*) const override;
-  void serialize(ISerializer&, const Object*) const override;
+  void deserialize(IDeserializer&, object_ptr_t) const override;
+  void serialize(ISerializer&, object_constptr_t) const override;
 
   Object* (Object::*mAccessor)(size_t);
   size_t (Object::*mCounter)() const;

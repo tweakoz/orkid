@@ -14,19 +14,18 @@
 
 #include <ork/config/config.h>
 
-namespace ork { namespace reflect {
+namespace ork::reflect {
 ////////////////////////////////////////////////////////////////////////////////
 class ISerializer;
 class IDeserializer;
 ////////////////////////////////////////////////////////////////////////////////
-class ObjectProperty : public rtti::ICastable {
-  DECLARE_TRANSPARENT_CASTABLE(ObjectProperty, rtti::ICastable)
+class ObjectProperty {
 
 public:
   typedef ork::svar64_t anno_t;
 
-  virtual void deserialize(IDeserializer&, Object*) const   = 0;
-  virtual void serialize(ISerializer&, const Object*) const = 0;
+  virtual void deserialize(IDeserializer&, object_ptr_t) const  = 0;
+  virtual void serialize(ISerializer&, object_constptr_t) const = 0;
   /////////////////////////////////////////////////////////////////
   // old string only annotations
   /////////////////////////////////////////////////////////////////
@@ -69,4 +68,4 @@ private:
   orklut<ConstString, anno_t> _annotations;
 }; // namespace reflect
 ////////////////////////////////////////////////////////////////////////////////
-}} // namespace ork::reflect
+} // namespace ork::reflect

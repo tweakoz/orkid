@@ -48,10 +48,10 @@ private:
   bool (Object::*mWriteItem)(IDeserializer& key, int, IDeserializer* value) const;
   bool (Object::*mMapSerialization)(AccessorVariantMapContext&) const;
 
-  void deserialize(IDeserializer& serializer, Object* obj) const override;
-  void serialize(ISerializer& serializer, const Object* obj) const override;
-  void deserializeItem(IDeserializer* value, IDeserializer& key, int, Object*) const override;
-  void serializeItem(ISerializer& value, IDeserializer& key, int, const Object*) const override;
+  void deserialize(IDeserializer& serializer, object_ptr_t) const override;
+  void serialize(ISerializer& serializer, object_constptr_t) const override;
+  void deserializeItem(IDeserializer* value, IDeserializer& key, int, object_ptr_t) const override;
+  void serializeItem(ISerializer& value, IDeserializer& key, int, object_constptr_t) const override;
 };
 
 }} // namespace ork::reflect

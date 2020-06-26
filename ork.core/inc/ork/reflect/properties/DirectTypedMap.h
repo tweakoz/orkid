@@ -25,22 +25,22 @@ public:
 
   DirectTypedMap(MapType Object::*);
 
-  MapType& GetMap(Object* obj) const;
-  const MapType& GetMap(const Object* obj) const;
+  MapType& GetMap(object_ptr_t obj) const;
+  const MapType& GetMap(object_constptr_t obj) const;
 
-  bool isMultiMap(const Object* obj) const override;
+  bool isMultiMap(object_constptr_t obj) const override;
 
 protected:
-  bool ReadItem(const Object*, const KeyType&, int, ValueType&) const override;
-  bool WriteItem(Object*, const KeyType&, int, const ValueType*) const override;
-  bool EraseItem(Object*, const KeyType&, int) const override;
-  bool MapSerialization(ItemSerializeFunction, BidirectionalSerializer&, const Object*) const override;
+  bool ReadItem(object_constptr_t, const KeyType&, int, ValueType&) const override;
+  bool WriteItem(object_ptr_t, const KeyType&, int, const ValueType*) const override;
+  bool EraseItem(object_ptr_t, const KeyType&, int) const override;
+  bool MapSerialization(ItemSerializeFunction, BidirectionalSerializer&, object_constptr_t) const override;
 
-  size_t itemCount(const Object* obj) const override {
+  size_t itemCount(object_constptr_t obj) const override {
     return int(GetMap(obj).size());
   }
-  bool GetKey(const Object*, int idx, KeyType&) const override;
-  bool GetVal(const Object*, const KeyType& k, ValueType& v) const override;
+  bool GetKey(object_constptr_t, int idx, KeyType&) const override;
+  bool GetVal(object_constptr_t, const KeyType& k, ValueType& v) const override;
 
 private:
   MapType Object::*mProperty;

@@ -16,10 +16,9 @@
 namespace ork { namespace reflect {
 
 class IObjectMap : public IMap {
-  DECLARE_TRANSPARENT_CASTABLE(IObjectMap, IMap)
 public:
-  virtual Object* AccessItem(IDeserializer& key, int, Object*) const             = 0;
-  virtual const Object* AccessItem(IDeserializer& key, int, const Object*) const = 0;
+  virtual object_ptr_t AccessItem(IDeserializer& key, int, object_ptr_t) const           = 0;
+  virtual object_constptr_t AccessItem(IDeserializer& key, int, object_constptr_t) const = 0;
 };
 
 }} // namespace ork::reflect

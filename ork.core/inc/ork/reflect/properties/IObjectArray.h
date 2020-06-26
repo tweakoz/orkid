@@ -18,7 +18,6 @@ class Object;
 namespace ork { namespace reflect {
 
 class IObjectArray : public IArray {
-  DECLARE_TRANSPARENT_CASTABLE(IObjectArray, IArray)
 public:
   virtual Object* AccessObject(Object*, size_t) const             = 0;
   virtual const Object* AccessObject(const Object*, size_t) const = 0;

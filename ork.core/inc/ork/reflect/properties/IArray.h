@@ -22,8 +22,8 @@ public:
   virtual void resize(Object* obj, size_t size) const                   = 0;
 
 private:
-  void deserialize(IDeserializer&, Object*) const override;
-  void serialize(ISerializer&, const Object*) const override;
+  void deserialize(IDeserializer&, object_ptr_t) const override;
+  void serialize(ISerializer&, object_constptr_t) const override;
 
 protected:
   IArray() {

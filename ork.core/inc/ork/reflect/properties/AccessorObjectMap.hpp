@@ -141,7 +141,7 @@ template <typename KeyType> bool AccessorObjectMap<KeyType>::Deserialize(IDeseri
   return false;
 }
 
-template <typename KeyType> bool AccessorObjectMap<KeyType>::Serialize(ISerializer& serializer, const Object* obj) const {
+template <typename KeyType> bool AccessorObjectMap<KeyType>::Serialize(ISerializer& serializer, object_constptr_t) const {
   BidirectionalSerializer bidi(serializer);
   (obj->*mSerializer)(DoSerialize, bidi);
 

@@ -18,7 +18,7 @@ namespace ork::reflect {
 template <typename KeyType, typename ValueType>
 void ITypedMap<KeyType, ValueType>::serialize(
     ISerializer& serializer, //
-    const Object* object) const {
+    object_constptr_t object) const {
   BidirectionalSerializer bidi(serializer);
   MapSerialization(_doSerialize, bidi, object);
 }
@@ -28,7 +28,7 @@ void ITypedMap<KeyType, ValueType>::serializeItem(
     ISerializer& value_serializer,
     IDeserializer& key_deserializer,
     int multi_index,
-    const Object* object) const {
+    object_constptr_t object) const {
   KeyType key;
   ValueType value;
   BidirectionalSerializer(key_deserializer) | key;
@@ -38,7 +38,10 @@ void ITypedMap<KeyType, ValueType>::serializeItem(
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename KeyType, typename ValueType>
-void ITypedMap<KeyType, ValueType>::_doSerialize(BidirectionalSerializer& bidi, KeyType& key, ValueType& value) {
+void ITypedMap<KeyType, ValueType>::_doSerialize(
+    BidirectionalSerializer& bidi, //
+    KeyType& key,
+    ValueType& value) {
   ISerializer* serializer = bidi.Serializer();
   Command item(Command::EITEM);
   Command attribute(Command::EATTRIBUTE, "key");
@@ -55,7 +58,7 @@ void ITypedMap<KeyType, ValueType>::_doSerialize(BidirectionalSerializer& bidi, 
 template <typename KeyType, typename ValueType>
 void ITypedMap<KeyType, ValueType>::deserialize(
     IDeserializer& deserializer, //
-    Object* object) const {
+    object_ptr_t object) const {
   BidirectionalSerializer bidi(deserializer);
   KeyType key;
   ValueType value;
@@ -71,7 +74,7 @@ void ITypedMap<KeyType, ValueType>::deserializeItem(
     IDeserializer* value_deserializer,
     IDeserializer& key_deserializer,
     int multi_index,
-    Object* object) const {
+    object_ptr_t object) const {
   KeyType key;
   ValueType value;
   BidirectionalSerializer(key_deserializer) | key;
@@ -84,7 +87,10 @@ void ITypedMap<KeyType, ValueType>::deserializeItem(
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename KeyType, typename ValueType>
-void ITypedMap<KeyType, ValueType>::_doDeserialize(BidirectionalSerializer& bidi, KeyType& key, ValueType& value) {
+void ITypedMap<KeyType, ValueType>::_doDeserialize(
+    BidirectionalSerializer& bidi, //
+    KeyType& key,
+    ValueType& value) {
   IDeserializer* deserializer = bidi.Deserializer();
   Command item;
   deserializer->beginCommand(item);

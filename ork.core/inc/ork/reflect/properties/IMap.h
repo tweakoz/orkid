@@ -16,13 +16,13 @@ namespace ork { namespace reflect {
 class IMap : public ObjectProperty {
 
 public:
-  virtual size_t itemCount(const Object* obj) const = 0;
+  virtual size_t itemCount(object_constptr_t obj) const = 0;
 
   static const int kDeserializeInsertItem = -1;
 
-  virtual void deserializeItem(IDeserializer* value, IDeserializer& key, int, Object*) const   = 0;
-  virtual void serializeItem(ISerializer& value, IDeserializer& key, int, const Object*) const = 0;
-  virtual bool isMultiMap(const Object* obj) const                                             = 0;
+  virtual void deserializeItem(IDeserializer* value, IDeserializer& key, int, object_ptr_t) const  = 0;
+  virtual void serializeItem(ISerializer& value, IDeserializer& key, int, object_constptr_t) const = 0;
+  virtual bool isMultiMap(object_constptr_t obj) const                                             = 0;
 
 protected:
   IMap() {

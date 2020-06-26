@@ -18,104 +18,79 @@ namespace ork { namespace stream {
 class IOutputStream;
 }} // namespace ork::stream
 
-namespace ork { namespace reflect { namespace serialize {
+namespace ork::reflect::serialize {
 
 class NullDeserializer final : public IDeserializer {
 public:
-  bool Deserialize(bool&) override;
-  bool Deserialize(char&) override;
-  bool Deserialize(short&) override;
-  bool Deserialize(int&) override;
-  bool Deserialize(long&) override;
-  bool Deserialize(float&) override;
-  bool Deserialize(double&) override;
+  void deserialize(bool&) override;
+  void deserialize(char&) override;
+  void deserialize(short&) override;
+  void deserialize(int&) override;
+  void deserialize(long&) override;
+  void deserialize(float&) override;
+  void deserialize(double&) override;
 
-  bool Deserialize(MutableString&) override;
-  bool Deserialize(ResizableString&) override;
-  bool DeserializeData(unsigned char*, size_t) override;
+  void deserialize(MutableString&) override;
+  void deserialize(ResizableString&) override;
+  void deserializeData(unsigned char*, size_t) override;
 
-  bool Deserialize(const AbstractProperty*) override;
-  bool deserializeObject(rtti::castable_rawptr_t&) override;
-  bool deserializeSharedObject(rtti::castable_ptr_t&) override;
-  bool deserializeObjectProperty(const ObjectProperty*, Object*) override;
+  void deserialize(const AbstractProperty*) override;
+  void deserializeSharedObject(object_ptr_t&) override;
+  void deserializeObjectProperty(const ObjectProperty*, object_ptr_t) override;
 
-  bool ReferenceObject(rtti::castable_rawptr_t) override;
-  bool beginCommand(Command&) override;
-  bool endCommand(const Command&) override;
-
-protected:
-  ///*virtual*/ bool Deserialize(const rtti::Category*, rtti::castable_rawptr_t&);
+  void referenceObject(rtti::castable_rawptr_t) override;
+  void beginCommand(Command&) override;
+  void endCommand(const Command&) override;
 };
 
-inline bool NullDeserializer::Deserialize(bool& value) {
-  return false;
+inline void NullDeserializer::deserialize(bool& value) {
 }
 
-inline bool NullDeserializer::Deserialize(char& value) {
-  return false;
+inline void NullDeserializer::deserialize(char& value) {
 }
 
-inline bool NullDeserializer::Deserialize(short& value) {
-  return false;
+inline void NullDeserializer::deserialize(short& value) {
 }
 
-inline bool NullDeserializer::Deserialize(int& value) {
-  return false;
+inline void NullDeserializer::deserialize(int& value) {
 }
 
-inline bool NullDeserializer::Deserialize(long& value) {
-  return false;
+inline void NullDeserializer::deserialize(long& value) {
 }
 
-inline bool NullDeserializer::Deserialize(float& value) {
-  return false;
+inline void NullDeserializer::deserialize(float& value) {
 }
 
-inline bool NullDeserializer::Deserialize(double& value) {
-  return false;
+inline void NullDeserializer::deserialize(double& value) {
 }
 
-inline bool NullDeserializer::deserializeObject(rtti::castable_rawptr_t& value) {
-  return false;
-}
-inline bool NullDeserializer::deserializeSharedObject(rtti::castable_ptr_t& value) {
-  return false;
+inline void NullDeserializer::deserializeSharedObject(object_ptr_t& value_out) {
 }
 
-inline bool NullDeserializer::Deserialize(const AbstractProperty* prop) {
-  return prop->Deserialize(*this);
+inline void NullDeserializer::deserialize(const AbstractProperty* prop) {
+  prop->Deserialize(*this);
 }
 
-inline bool NullDeserializer::deserializeObjectProperty(const ObjectProperty* prop, Object* object) {
-  return prop->Deserialize(*this, object);
+inline void NullDeserializer::deserializeObjectProperty(const ObjectProperty* prop, object_ptr_t object) {
+  prop->Deserialize(*this, object);
 }
 
-// inline bool NullDeserializer::Deserialize(const rtti::Category* category, rtti::castable_rawptr_t& object) {
-// return category->deserializeObject(*this, object);
-//}
-
-inline bool NullDeserializer::Deserialize(MutableString& text) {
-  return false;
+inline void NullDeserializer::deserialize(MutableString& text) {
 }
 
-inline bool NullDeserializer::Deserialize(ResizableString& text) {
-  return false;
+inline void NullDeserializer::deserialize(ResizableString& text) {
 }
 
-inline bool NullDeserializer::DeserializeData(unsigned char* data, size_t size) {
-  return false;
+inline void NullDeserializer::deserializeData(unsigned char* data, size_t size) {
 }
 
-inline bool NullDeserializer::ReferenceObject(rtti::castable_rawptr_t object) {
-  return true;
+inline void NullDeserializer::referenceObject(rtti::castable_rawptr_t object) {
 }
 
-inline bool NullDeserializer::beginCommand(Command& command) {
-  return true;
+inline void NullDeserializer::beginCommand(Command& command) {
 }
 
-inline bool NullDeserializer::endCommand(const Command& command) {
-  return true;
+inline void NullDeserializer::endCommand(const Command& command) {
 }
 
-}}} // namespace ork::reflect::serialize
+} // namespace ork::reflect::serialize

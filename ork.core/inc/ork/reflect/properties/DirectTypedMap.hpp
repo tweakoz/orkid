@@ -25,7 +25,7 @@ template <typename kt, typename vt> bool IsMultiMapDeducer(const ork::orklut<kt,
   return map.GetKeyPolicy() == ork::EKEYPOLICY_MULTILUT;
 }
 
-template <typename MapType> bool DirectTypedMap<MapType>::isMultiMap(const Object* obj) const {
+template <typename MapType> bool DirectTypedMap<MapType>::isMultiMap(object_constptr_t obj) const {
   return IsMultiMapDeducer(GetMap(obj));
 }
 
@@ -34,18 +34,20 @@ DirectTypedMap<MapType>::DirectTypedMap(MapType Object::*prop)
     : mProperty(prop) {
 }
 
-template <typename MapType> MapType& DirectTypedMap<MapType>::GetMap(Object* object) const {
-  return object->*mProperty;
+template <typename MapType> MapType& DirectTypedMap<MapType>::GetMap(object_ptr_t object) const {
+  return object.get()->*mProperty;
 }
 
-template <typename MapType> const MapType& DirectTypedMap<MapType>::GetMap(const Object* object) const {
-  return object->*mProperty;
+template <typename MapType> const MapType& DirectTypedMap<MapType>::GetMap(object_constptr_t object) const {
+  return object.get()->*mProperty;
 }
 
 template <typename MapType>
-bool DirectTypedMap<MapType>::EraseItem(Object* object, const typename DirectTypedMap<MapType>::KeyType& key, int multi_index)
-    const {
-  MapType& map                  = object->*mProperty;
+bool DirectTypedMap<MapType>::EraseItem(
+    object_ptr_t object, //
+    const typename DirectTypedMap<MapType>::KeyType& key,
+    int multi_index) const {
+  MapType& map                  = object.get()->*mProperty;
   typename MapType::iterator it = map.find(key);
 
   if (it != map.end()) {
@@ -65,11 +67,11 @@ bool DirectTypedMap<MapType>::EraseItem(Object* object, const typename DirectTyp
 
 template <typename MapType>
 bool DirectTypedMap<MapType>::ReadItem(
-    const Object* object,
+    object_constptr_t object,
     const typename DirectTypedMap<MapType>::KeyType& key,
     int multi_index,
     typename DirectTypedMap<MapType>::ValueType& value) const {
-  const MapType& map                  = object->*mProperty;
+  const MapType& map                  = object.get()->*mProperty;
   typename MapType::const_iterator it = map.find(key);
 
   if (it == map.end())
@@ -87,11 +89,11 @@ bool DirectTypedMap<MapType>::ReadItem(
 
 template <typename MapType>
 bool DirectTypedMap<MapType>::WriteItem(
-    Object* object,
+    object_ptr_t object,
     const typename DirectTypedMap<MapType>::KeyType& key,
     int multi_index,
     const typename DirectTypedMap<MapType>::ValueType* value) const {
-  MapType& map               = object->*mProperty;
+  MapType& map               = object.get()->*mProperty;
   const int orig_multi_index = multi_index;
   if (multi_index == IMap::kDeserializeInsertItem) {
     OrkAssert(value);
@@ -111,8 +113,7 @@ bool DirectTypedMap<MapType>::WriteItem(
       ev.miMultiIndex = orig_multi_index;
       ev.mKey.Set(key);
       ev.mOldValue.Set(val2erase);
-      ork::Object* pevl = static_cast<ork::Object*>(object);
-      pevl->Notify(&ev);
+      object->Notify(&ev);
       map.erase(it);
     }
   }
@@ -123,10 +124,10 @@ template <typename MapType>
 bool DirectTypedMap<MapType>::MapSerialization(
     typename DirectTypedMap<MapType>::ItemSerializeFunction serialization_func,
     BidirectionalSerializer& bidi,
-    const Object* serialize_object) const {
+    object_constptr_t serialize_object) const {
 
   if (bidi.Serializing()) {
-    const MapType& map = serialize_object->*mProperty;
+    const MapType& map = serialize_object.get()->*mProperty;
 
     size_t count = map.size();
     bidi.Serializer()->Hint("Count", count);
@@ -185,8 +186,12 @@ bool DirectTypedMap<MapType>::MapSerialization(
   return true;
 }
 
-template <typename MapType> bool DirectTypedMap<MapType>::GetKey(const Object* pser, int idx, KeyType& kt) const {
-  const MapType& map = pser->*mProperty;
+template <typename MapType>
+bool DirectTypedMap<MapType>::GetKey(
+    object_constptr_t pser, //
+    int idx,
+    KeyType& kt) const {
+  const MapType& map = pser.get()->*mProperty;
   OrkAssert(idx < int(map.size()));
   typename MapType::const_iterator it = map.begin();
   for (int i = 0; i < idx; i++)
@@ -194,8 +199,12 @@ template <typename MapType> bool DirectTypedMap<MapType>::GetKey(const Object* p
   kt = (*it).first;
   return true;
 }
-template <typename MapType> bool DirectTypedMap<MapType>::GetVal(const Object* pser, const KeyType& k, ValueType& v) const {
-  const MapType& map                  = pser->*mProperty;
+template <typename MapType>
+bool DirectTypedMap<MapType>::GetVal(
+    object_constptr_t pser, //
+    const KeyType& k,
+    ValueType& v) const {
+  const MapType& map                  = pser.get()->*mProperty;
   typename MapType::const_iterator it = map.find(k);
   if (it == map.end())
     return false;

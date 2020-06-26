@@ -12,15 +12,7 @@
 
 #include <ork/orktypes.h>
 
-namespace ork { namespace rtti {
-class ICastable;
-}} // namespace ork::rtti
-
-namespace ork {
-class Object;
-}
-
-namespace ork { namespace reflect {
+namespace ork::reflect {
 
 class AbstractProperty;
 class ObjectProperty;
@@ -35,26 +27,25 @@ struct IDeserializer {
   virtual void deserialize(float&)  = 0;
   virtual void deserialize(double&) = 0;
 
-  virtual void deserialize(const AbstractProperty*)                      = 0;
-  virtual void deserializeObject(rtti::ICastable*&)                      = 0;
-  virtual void deserializeSharedObject(rtti::castable_ptr_t&)            = 0;
-  virtual void deserializeObjectProperty(const ObjectProperty*, Object*) = 0;
+  virtual void deserialize(const AbstractProperty*)                           = 0;
+  virtual void deserializeSharedObject(object_ptr_t&)                         = 0;
+  virtual void deserializeObjectProperty(const ObjectProperty*, object_ptr_t) = 0;
 
   virtual void deserialize(MutableString&)             = 0;
   virtual void deserialize(ResizableString&)           = 0;
   virtual void deserializeData(unsigned char*, size_t) = 0;
 
-  virtual void referenceObject(rtti::ICastable*) = 0;
-  virtual void beginCommand(Command&)            = 0;
-  virtual void endCommand(const Command&)        = 0;
+  virtual void referenceObject(object_ptr_t) = 0;
+  virtual void beginCommand(Command&)        = 0;
+  virtual void endCommand(const Command&)    = 0;
   virtual void Hint(const PieceString&) {
   }
 
   virtual ~IDeserializer();
 
   const reflect::ObjectProperty* _currentProperty = nullptr;
-  Object* _currentObject                          = nullptr;
+  object_ptr_t _currentObject                     = nullptr;
   const Command* _currentCommand                  = nullptr;
 };
 
-}} // namespace ork::reflect
+} // namespace ork::reflect

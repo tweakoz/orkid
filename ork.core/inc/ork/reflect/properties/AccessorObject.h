@@ -21,8 +21,8 @@ class AccessorObject : public IObject {
 public:
   AccessorObject(Object* (Object::*)());
 
-  void serialize(ISerializer&, const Object*) const override;
-  void deserialize(IDeserializer&, Object*) const override;
+  void serialize(ISerializer&, object_constptr_t) const override;
+  void deserialize(IDeserializer&, object_ptr_t) const override;
   Object* Access(Object*) const override;
   const Object* Access(const Object*) const override;
 

@@ -36,7 +36,7 @@ template <typename T> bool ITyped<T>::Deserialize(IDeserializer& deserializer, O
   return result;
 }
 
-template <typename T> bool ITyped<T>::Serialize(ISerializer& serializer, const Object* obj) const {
+template <typename T> bool ITyped<T>::Serialize(ISerializer& serializer, object_constptr_t) const {
   T value;
   Get(value, obj);
 

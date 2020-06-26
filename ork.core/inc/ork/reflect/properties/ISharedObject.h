@@ -20,7 +20,6 @@ class Object;
 namespace ork { namespace reflect {
 
 class ISharedObject : public ObjectProperty {
-  DECLARE_TRANSPARENT_CASTABLE(ISharedObject, ObjectProperty)
 public:
   virtual object_ptr_t Access(Object*) const            = 0;
   virtual object_constptr_t Access(const Object*) const = 0;

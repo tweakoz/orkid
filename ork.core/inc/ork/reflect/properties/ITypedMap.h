@@ -21,12 +21,12 @@ public:
   using ItemSerializeFunction = void (*)(BidirectionalSerializer&, KeyType&, ValueType&);
 
 protected:
-  virtual bool GetKey(const Object*, int idx, KeyType&) const                                         = 0;
-  virtual bool GetVal(const Object*, const KeyType& k, ValueType& v) const                            = 0;
-  virtual bool ReadItem(const Object*, const KeyType&, int, ValueType&) const                         = 0;
-  virtual bool EraseItem(Object*, const KeyType&, int) const                                          = 0;
-  virtual bool WriteItem(Object*, const KeyType&, int, const ValueType*) const                        = 0;
-  virtual bool MapSerialization(ItemSerializeFunction, BidirectionalSerializer&, const Object*) const = 0;
+  virtual bool GetKey(object_constptr_t, int idx, KeyType&) const                                         = 0;
+  virtual bool GetVal(object_constptr_t, const KeyType& k, ValueType& v) const                            = 0;
+  virtual bool ReadItem(object_constptr_t, const KeyType&, int, ValueType&) const                         = 0;
+  virtual bool EraseItem(object_ptr_t, const KeyType&, int) const                                         = 0;
+  virtual bool WriteItem(object_ptr_t, const KeyType&, int, const ValueType*) const                       = 0;
+  virtual bool MapSerialization(ItemSerializeFunction, BidirectionalSerializer&, object_constptr_t) const = 0;
 
   ITypedMap()
       : IMap() {
@@ -35,10 +35,10 @@ protected:
 private:
   static void _doDeserialize(BidirectionalSerializer&, KeyType&, ValueType&);
   static void _doSerialize(BidirectionalSerializer&, KeyType&, ValueType&);
-  void deserialize(IDeserializer&, Object*) const override;
-  void serialize(ISerializer&, const Object*) const override;
-  void deserializeItem(IDeserializer* value, IDeserializer& key, int, Object*) const override;
-  void serializeItem(ISerializer& value, IDeserializer& key, int, const Object*) const override;
+  void deserialize(IDeserializer&, object_ptr_t) const override;
+  void serialize(ISerializer&, object_constptr_t) const override;
+  void deserializeItem(IDeserializer* value, IDeserializer& key, int, object_ptr_t) const override;
+  void serializeItem(ISerializer& value, IDeserializer& key, int, object_constptr_t) const override;
 };
 
 }} // namespace ork::reflect

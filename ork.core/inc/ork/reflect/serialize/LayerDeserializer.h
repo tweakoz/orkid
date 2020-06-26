@@ -37,16 +37,15 @@ public:
   void deserializeData(unsigned char*, size_t) override;
 
   void deserialize(const AbstractProperty*) override;
-  bool deserializeObject(rtti::castable_rawptr_t&) override;
-  bool deserializeSharedObject(rtti::castable_ptr_t&) override;
-  bool deserializeObjectProperty(const ObjectProperty*, Object*) override;
+  void deserializeSharedObject(object_ptr_t&) override;
+  void deserializeObjectProperty(const ObjectProperty*, object_ptr_t) override;
 
-  void referenceObject(rtti::castable_rawptr_t) override;
+  void referenceObject(object_ptr_t) override;
   void beginCommand(Command&) override;
   void endCommand(const Command&) override;
 
 protected:
-  bool _deserialize(const rtti::Category*, rtti::castable_rawptr_t&);
+  void _deserialize(const rtti::Category*, object_ptr_t&);
 
 protected:
   IDeserializer& mDeserializer;
@@ -57,37 +56,33 @@ inline LayerDeserializer::LayerDeserializer(IDeserializer& deserializer)
 }
 
 inline void LayerDeserializer::deserialize(bool& value) {
-  mDeserializer.Deserialize(value);
+  mDeserializer.deserialize(value);
 }
 
 inline void LayerDeserializer::deserialize(char& value) {
-  mDeserializer.Deserialize(value);
+  mDeserializer.deserialize(value);
 }
 
 inline void LayerDeserializer::deserialize(short& value) {
-  mDeserializer.Deserialize(value);
+  mDeserializer.deserialize(value);
 }
 
 inline void LayerDeserializer::deserialize(int& value) {
-  mDeserializer.Deserialize(value);
+  mDeserializer.deserialize(value);
 }
 
 inline void LayerDeserializer::deserialize(long& value) {
-  mDeserializer.Deserialize(value);
+  mDeserializer.deserialize(value);
 }
 
 inline void LayerDeserializer::deserialize(float& value) {
-  mDeserializer.Deserialize(value);
+  mDeserializer.deserialize(value);
 }
 
 inline void LayerDeserializer::deserialize(double& value) {
-  mDeserializer.Deserialize(value);
+  mDeserializer.deserialize(value);
 }
-
-inline void LayerDeserializer::deserializeObject(rtti::castable_rawptr_t& value) {
-  mDeserializer.deserializeObject(value);
-}
-inline void LayerDeserializer::deserializeSharedObject(rtti::castable_ptr_t& value) {
+inline void LayerDeserializer::deserializeSharedObject(object_ptr_t& value) {
   mDeserializer.deserializeSharedObject(value);
 }
 
@@ -95,24 +90,24 @@ inline void LayerDeserializer::deserialize(const AbstractProperty* prop) {
   prop->Deserialize(*this);
 }
 
-inline void LayerDeserializer::deserializeObjectProperty(const ObjectProperty* prop, Object* object) {
+inline void LayerDeserializer::deserializeObjectProperty(const ObjectProperty* prop, object_ptr_t object) {
   prop->deserialize(*this, object);
 }
 
-inline void LayerDeserializer::_deserialize(const rtti::Category* category, rtti::castable_rawptr_t& object) {
+inline void LayerDeserializer::_deserialize(const rtti::Category* category, object_ptr_t& object) {
   category->deserializeObject(*this, object);
 }
 
 inline void LayerDeserializer::deserialize(MutableString& text) {
-  mDeserializer.Deserialize(text);
+  mDeserializer.deserialize(text);
 }
 
 inline void LayerDeserializer::deserialize(ResizableString& text) {
-  mDeserializer.Deserialize(text);
+  mDeserializer.deserialize(text);
 }
 
 inline void LayerDeserializer::deserializeData(unsigned char* data, size_t size) {
-  mDeserializer.DeserializeData(data, size);
+  mDeserializer.deserializeData(data, size);
 }
 
 inline void LayerDeserializer::ReferenceObject(rtti::castable_rawptr_t object) {
