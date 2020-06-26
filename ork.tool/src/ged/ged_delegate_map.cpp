@@ -18,8 +18,8 @@
 #include <ork/reflect/properties/IMap.h>
 #include <ork/reflect/properties/IObject.h>
 #include <ork/reflect/IDeserializer.h>
-#include <ork/reflect/serialize/XMLSerializer.h>
-#include <ork/reflect/serialize/XMLDeserializer.h>
+#include <ork/reflect/serialize/JsonSerializer.h>
+#include <ork/reflect/serialize/JsonDeserializer.h>
 #include <ork/stream/StringOutputStream.h>
 #include <ork/stream/StringInputStream.h>
 #include <ork/stream/FileOutputStream.h>
@@ -405,7 +405,7 @@ void MapItemWriteSerializer::Move(const KeyDecoName& kdeco, const char* pname) {
   ArrayString<16384> astr;
   MutableString pstr(astr);
   ork::stream::StringOutputStream ostream(pstr);
-  ork::reflect::serialize::XMLSerializer oser(ostream);
+  ork::reflect::serialize::JsonSerializer oser(ostream);
   bool bok = mMapProp->SerializeItem(oser, keyser, kdeco.miMultiIndex, mIoDriver.GetObject());
 
   if (false == bok)
@@ -425,7 +425,7 @@ void MapItemWriteSerializer::Move(const KeyDecoName& kdeco, const char* pname) {
   niodriver.SetKey(KeyDecoName(pname, 0));
   MapKeyWriter keyser2(niodriver);
   ork::stream::StringInputStream istream(pstr.c_str());
-  ork::reflect::serialize::XMLDeserializer iser(istream);
+  ork::reflect::serialize::JsonDeserializer iser(istream);
 
   bok = mMapProp->DeserializeItem(&iser, keyser2, ork::reflect::IMap::kDeserializeInsertItem, mIoDriver.GetObject());
 
@@ -447,7 +447,7 @@ void MapItemWriteSerializer::Duplicate(const KeyDecoName& kdeco, const char* pna
   ArrayString<16384> astr;
   MutableString pstr(astr);
   ork::stream::StringOutputStream ostream(pstr);
-  ork::reflect::serialize::XMLSerializer oser(ostream);
+  ork::reflect::serialize::JsonSerializer oser(ostream);
   bool bok = mMapProp->SerializeItem(oser, keyser, kdeco.miMultiIndex, mIoDriver.GetObject());
 
   if (false == bok)
@@ -467,7 +467,7 @@ void MapItemWriteSerializer::Duplicate(const KeyDecoName& kdeco, const char* pna
   niodriver.SetKey(KeyDecoName(pname, 0));
   MapKeyWriter keyser2(niodriver);
   ork::stream::StringInputStream istream(pstr.c_str());
-  ork::reflect::serialize::XMLDeserializer iser(istream);
+  ork::reflect::serialize::JsonDeserializer iser(istream);
 
   bok = mMapProp->DeserializeItem(&iser, keyser2, ork::reflect::IMap::kDeserializeInsertItem, mIoDriver.GetObject());
 
@@ -489,7 +489,7 @@ void MapItemWriteSerializer::Import(const KeyDecoName& kdeco, const char* pname)
     lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
     {
       stream::FileInputStream istream(fname.c_str());
-      reflect::serialize::XMLDeserializer iser(istream);
+      reflect::serialize::JsonDeserializer iser(istream);
 
       GedMapIoDriver niodriver(mIoDriver.GetModel(), mIoDriver.GetProp(), mIoDriver.GetObject());
       niodriver.SetKey(KeyDecoName(pname, 0));
@@ -525,7 +525,7 @@ void MapItemWriteSerializer::Export(const KeyDecoName& kdeco, const char* pname)
       ////////////////////////////////////////////////
 
       ork::stream::FileOutputStream ostream(fname.c_str());
-      ork::reflect::serialize::XMLSerializer oser(ostream);
+      ork::reflect::serialize::JsonSerializer oser(ostream);
       bool bok = mMapProp->SerializeItem(oser, keyser, kdeco.miMultiIndex, mIoDriver.GetObject());
 
       ////////////////////////////////////////////////

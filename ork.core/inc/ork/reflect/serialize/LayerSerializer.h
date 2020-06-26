@@ -18,8 +18,8 @@ class IOutputStream;
 
 namespace ork { namespace reflect { namespace serialize {
 
-class LayerSerializer : public ISerializer {
-public:
+struct LayerSerializer : public ISerializer {
+
   LayerSerializer(ISerializer& serializer);
 
   void serialize(const bool&) override;
@@ -38,7 +38,6 @@ public:
   void serializeObjectProperty(const ObjectProperty*, object_constptr_t) override;
   void serializeSharedObject(object_constptr_t) override;
 
-  // void referenceObject(object_constptr_t) override;
   void beginCommand(const Command&) override;
   void endCommand(const Command&) override;
 

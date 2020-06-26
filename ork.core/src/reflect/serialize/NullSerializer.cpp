@@ -35,7 +35,7 @@ void NullSerializer::serialize(const float&) {
 void NullSerializer::serialize(const double&) {
 }
 
-void NullSerializer::serializeObject(object_constptr_t) {
+void NullSerializer::serializeSharedObject(object_constptr_t) {
 }
 
 void NullSerializer::serialize(const PieceString&) {
@@ -52,7 +52,7 @@ void NullSerializer::serializeData(const uint8_t*, size_t) {
 void NullSerializer::serializeObjectProperty(
     const ObjectProperty* prop, //
     object_constptr_t instance) {
-  return prop->Serialize(*this, instance);
+  return prop->serialize(*this, instance);
 }
 
 void NullSerializer::beginCommand(const Command&) {

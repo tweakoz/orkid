@@ -15,8 +15,8 @@ class Category;
 
 namespace ork { namespace reflect { namespace serialize {
 
-class NullSerializer final : public ISerializer {
-public:
+struct NullSerializer final : public ISerializer {
+
   void serialize(const bool&) override;
   void serialize(const char&) override;
   void serialize(const short&) override;
@@ -26,7 +26,7 @@ public:
   void serialize(const double&) override;
   void serialize(const PieceString&) override;
 
-  void serializeObject(object_constptr_t instance) override;
+  void serializeSharedObject(object_constptr_t instance) override;
   void serializeObjectProperty(
       const ObjectProperty* prop, //
       object_constptr_t instance) override;

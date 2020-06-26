@@ -10,7 +10,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/kernel/string/MutableString.h>
 #include <ork/kernel/string/PieceString.h>
-#include <ork/reflect/serialize/XMLDeserializer.h>
+#include <ork/reflect/serialize/JsonDeserializer.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace stream {

@@ -8,7 +8,7 @@
 #ifndef _ORKTOOL_GED_GEDIO_H
 #define _ORKTOOL_GED_GEDIO_H
 
-#include <ork/reflect/serialize/XMLSerializer.h>
+#include <ork/reflect/serialize/JsonSerializer.h>
 #include <ork/reflect/serialize/BinarySerializer.h>
 #include <ork/reflect/serialize/BinaryDeserializer.h>
 #include <ork/stream/ResizableStringOutputStream.h>

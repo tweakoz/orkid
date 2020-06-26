@@ -15,8 +15,8 @@
 #include <ork/file/file.h>
 #include <ork/stream/FileInputStream.h>
 #include <ork/stream/FileOutputStream.h>
-#include <ork/reflect/serialize/XMLSerializer.h>
-#include <ork/reflect/serialize/XMLDeserializer.h>
+#include <ork/reflect/serialize/JsonSerializer.h>
+#include <ork/reflect/serialize/JsonDeserializer.h>
 #include <ork/reflect/enum_serializer.inl>
 #include <ork/asset/AssetManager.h>
 
@@ -619,7 +619,7 @@ ProcTex* ProcTex::Load(const ork::file::Path& pth) {
   path.SetExtension("ptx");
   lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
   stream::FileInputStream istream(path.c_str());
-  reflect::serialize::XMLDeserializer iser(istream);
+  reflect::serialize::JsonDeserializer iser(istream);
   rtti::ICastable* pcastable = 0;
   bool bOK                   = iser.deserializeObject(pcastable);
   if (bOK) {

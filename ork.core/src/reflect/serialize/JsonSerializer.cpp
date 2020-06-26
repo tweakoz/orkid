@@ -6,7 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
-#include <ork/reflect/serialize/XMLSerializer.h>
+#include <ork/reflect/serialize/JsonSerializer.h>
 #include <ork/reflect/Command.h>
 
 #include <ork/reflect/properties/ObjectProperty.h>
@@ -17,10 +17,12 @@
 #include <ork/object/Object.h>
 #include <boost/uuid/uuid_io.hpp>
 #include <cstring>
+#include <rapidjson/writer.h>
+#include <rapidjson/document.h>
 
 namespace ork::reflect::serialize {
 ////////////////////////////////////////////////////////////////////////////////
-XMLSerializer::XMLSerializer(stream::IOutputStream& stream)
+JsonSerializer::JsonSerializer(stream::IOutputStream& stream)
     : mStream(stream)
     , mIndent(0)
     , mbWritingAttributes(false)
@@ -29,26 +31,26 @@ XMLSerializer::XMLSerializer(stream::IOutputStream& stream)
     , _currentCommand(NULL) {
 }
 ////////////////////////////////////////////////////////////////////////////////
-void XMLSerializer::Write(char* text, size_t size) {
+void JsonSerializer::Write(char* text, size_t size) {
   bool status = mStream.Write(reinterpret_cast<unsigned char*>(text), size);
   OrkAssert(status);
 }
 ////////////////////////////////////////////////////////////////////////////////
-void XMLSerializer::Spaced() {
+void JsonSerializer::Spaced() {
   if (mbNeedLine == false)
     mbNeedSpace = true;
 }
 ////////////////////////////////////////////////////////////////////////////////
-void XMLSerializer::Unspaced() {
+void JsonSerializer::Unspaced() {
   mbNeedSpace = false;
 }
 ////////////////////////////////////////////////////////////////////////////////
-void XMLSerializer::Lined() {
+void JsonSerializer::Lined() {
   mbNeedSpace = false;
   mbNeedLine  = true;
 }
 ////////////////////////////////////////////////////////////////////////////////
-void XMLSerializer::WriteText(const char* format, ...) {
+void JsonSerializer::WriteText(const char* format, ...) {
   if (NULL == format)
     format = "";
 
@@ -71,7 +73,7 @@ void XMLSerializer::WriteText(const char* format, ...) {
   Write(buffer, std::strlen(buffer));
 }
 ////////////////////////////////////////////////////////////////////////////////
-void XMLSerializer::StartObject(PieceString name) {
+void JsonSerializer::StartObject(PieceString name) {
   FlushHeader();
   Lined();
   WriteText("<object type='%.*s'", name.length(), name.c_str());
@@ -79,7 +81,7 @@ void XMLSerializer::StartObject(PieceString name) {
   mbWritingAttributes = true;
 }
 ////////////////////////////////////////////////////////////////////////////////
-void XMLSerializer::EndObject() {
+void JsonSerializer::EndObject() {
   FlushHeader();
   Lined();
   mIndent--;
@@ -87,7 +89,7 @@ void XMLSerializer::EndObject() {
   Lined();
 }
 ////////////////////////////////////////////////////////////////////////////////
-void XMLSerializer::beginCommand(const Command& command) {
+void JsonSerializer::beginCommand(const Command& command) {
   switch (command.Type()) {
     case Command::EOBJECT:
       StartObject(command.Name());
@@ -116,14 +118,14 @@ void XMLSerializer::beginCommand(const Command& command) {
   _currentCommand           = &command;
 }
 ////////////////////////////////////////////////////////////////////////////////
-void XMLSerializer::FlushHeader() {
+void JsonSerializer::FlushHeader() {
   if (mbWritingAttributes && (!_currentCommand || _currentCommand->Type() != Command::EATTRIBUTE)) {
     result              = WriteText(">");
     mbWritingAttributes = false;
   }
 }
 ////////////////////////////////////////////////////////////////////////////////
-void XMLSerializer::endCommand(const Command& command) {
+void JsonSerializer::endCommand(const Command& command) {
   if (_currentCommand == &command) {
     _currentCommand = _currentCommand->PreviousCommand();
   } else {
@@ -160,57 +162,57 @@ void XMLSerializer::endCommand(const Command& command) {
   }
 }
 ////////////////////////////////////////////////////////////////////////////////
-void XMLSerializer::Serialize(const char& value) {
+void JsonSerializer::Serialize(const char& value) {
   FlushHeader();
   WriteText("%i", static_cast<unsigned char>(value));
   Spaced();
 }
 ////////////////////////////////////////////////////////////////////////////////
-void XMLSerializer::Serialize(const short& value) {
+void JsonSerializer::Serialize(const short& value) {
   FlushHeader();
   WriteText("%i", value);
   Spaced();
 }
 ////////////////////////////////////////////////////////////////////////////////
-void XMLSerializer::Serialize(const int& value) {
+void JsonSerializer::Serialize(const int& value) {
   FlushHeader();
   WriteText("%i", value);
   Spaced();
 }
 ////////////////////////////////////////////////////////////////////////////////
-void XMLSerializer::Serialize(const long& value) {
+void JsonSerializer::Serialize(const long& value) {
   FlushHeader();
   WriteText("%i", value);
   Spaced();
 }
 ////////////////////////////////////////////////////////////////////////////////
-void XMLSerializer::Serialize(const float& value) {
+void JsonSerializer::Serialize(const float& value) {
   FlushHeader();
   WriteText("%g", value);
   Spaced();
 }
 ////////////////////////////////////////////////////////////////////////////////
-void XMLSerializer::Serialize(const double& value) {
+void JsonSerializer::Serialize(const double& value) {
   FlushHeader();
   WriteText("%g", value);
   Spaced();
 }
 ////////////////////////////////////////////////////////////////////////////////
-void XMLSerializer::Serialize(const bool& value) {
+void JsonSerializer::Serialize(const bool& value) {
   FlushHeader();
   WriteText("%s", value ? "true" : "false");
   Spaced();
 }
 ////////////////////////////////////////////////////////////////////////////////
-void XMLSerializer::Serialize(const AbstractProperty* prop) {
+void JsonSerializer::Serialize(const AbstractProperty* prop) {
   prop->Serialize(*this);
 }
 ////////////////////////////////////////////////////////////////////////////////
-void XMLSerializer::serializeObjectProperty(const ObjectProperty* prop, const Object* object) {
+void JsonSerializer::serializeObjectProperty(const ObjectProperty* prop, const Object* object) {
   prop->Serialize(*this, object);
 }
 ////////////////////////////////////////////////////////////////////////////////
-void XMLSerializer::serializeObject(rtti::castable_rawconstptr_t castable) {
+void JsonSerializer::serializeObject(rtti::castable_rawconstptr_t castable) {
   auto as_object = dynamic_cast<const ork::Object*>(castable);
   FlushHeader();
   if (as_object == nullptr) {
@@ -250,10 +252,10 @@ static const char* EncodeXMLChar(char c) {
   return c == '<' ? "&lt;" : c == '>' ? "&gt;" : c == '"' ? "&quot;" : c == '&' ? "&amp;" : NULL;
 }
 ////////////////////////////////////////////////////////////////////////////////
-void XMLSerializer::Hint(const PieceString&) {
+void JsonSerializer::Hint(const PieceString&) {
 }
 ////////////////////////////////////////////////////////////////////////////////
-void XMLSerializer::Serialize(const PieceString& string) {
+void JsonSerializer::Serialize(const PieceString& string) {
   FlushHeader();
   if (_currentCommand and //
       _currentCommand->Type() == Command::EATTRIBUTE) {
@@ -281,7 +283,7 @@ void XMLSerializer::Serialize(const PieceString& string) {
   }
 }
 ////////////////////////////////////////////////////////////////////////////////
-void XMLSerializer::SerializeData(unsigned char*, size_t) {
+void JsonSerializer::SerializeData(unsigned char*, size_t) {
   FlushHeader();
 }
 ////////////////////////////////////////////////////////////////////////////////

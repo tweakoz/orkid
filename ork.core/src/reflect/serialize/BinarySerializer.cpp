@@ -27,16 +27,16 @@ BinarySerializer::~BinarySerializer() {
     delete mStringPool.FromIndex(i).c_str();
 }
 ////////////////////////////////////////////////////////////////////////////////
-void BinarySerializer::WriteHeader(char type, PieceString text) {
-  Write(type);
-  Serialize(text);
+void BinarySerializer::_writeHeader(char type, PieceString text) {
+  _write(type);
+  serialize(text);
 }
 ////////////////////////////////////////////////////////////////////////////////
-void BinarySerializer::WriteFooter(char type) {
-  Write(type);
+void BinarySerializer::_writeFooter(char type) {
+  _write(type);
 }
 ////////////////////////////////////////////////////////////////////////////////
-template <typename T> void BinarySerializer::Write(const T& datum) {
+template <typename T> void BinarySerializer::_write(const T& datum) {
   // Endian issues come up here
   bool ok = mStream.Write(
       reinterpret_cast<const unsigned char*>(&datum), //
@@ -47,21 +47,20 @@ template <typename T> void BinarySerializer::Write(const T& datum) {
 void BinarySerializer::beginCommand(const Command& command) {
   switch (command.Type()) {
     case Command::EOBJECT:
-      WriteHeader('O', command.Name());
+      _writeHeader('O', command.Name());
       break;
     case Command::EATTRIBUTE:
-      WriteHeader('A', command.Name());
+      _writeHeader('A', command.Name());
       break;
     case Command::EPROPERTY:
-      WriteHeader('P', command.Name());
+      _writeHeader('P', command.Name());
       break;
     case Command::EITEM:
-      Write('I');
+      _write('I');
       break;
   }
   command.PreviousCommand() = _currentCommand;
   _currentCommand           = &command;
-  return true;
 }
 ////////////////////////////////////////////////////////////////////////////////
 void BinarySerializer::endCommand(const Command& command) {
@@ -76,81 +75,78 @@ void BinarySerializer::endCommand(const Command& command) {
   }
   switch (command.Type()) {
     case Command::EOBJECT:
-      WriteFooter('o');
+      _writeFooter('o');
       break;
     case Command::EATTRIBUTE:
-      WriteFooter('a');
+      _writeFooter('a');
       break;
     case Command::EPROPERTY:
-      WriteFooter('p');
+      _writeFooter('p');
       break;
     case Command::EITEM:
-      WriteFooter('i');
+      _writeFooter('i');
       break;
   }
 }
 ////////////////////////////////////////////////////////////////////////////////
-void BinarySerializer::Serialize(const char& value) {
-  Write(value);
+void BinarySerializer::serialize(const char& value) {
+  _write(value);
 }
 ////////////////////////////////////////////////////////////////////////////////
-void BinarySerializer::Serialize(const short& value) {
-  Write(value);
+void BinarySerializer::serialize(const short& value) {
+  _write(value);
 }
 ////////////////////////////////////////////////////////////////////////////////
-void BinarySerializer::Serialize(const int& value) {
-  Write(value);
+void BinarySerializer::serialize(const int& value) {
+  _write(value);
 }
 ////////////////////////////////////////////////////////////////////////////////
-void BinarySerializer::Serialize(const long& value) {
-  Write(value);
+void BinarySerializer::serialize(const long& value) {
+  _write(value);
 }
 ////////////////////////////////////////////////////////////////////////////////
-void BinarySerializer::Serialize(const float& value) {
-  Write(value);
+void BinarySerializer::serialize(const float& value) {
+  _write(value);
 }
 ////////////////////////////////////////////////////////////////////////////////
-void BinarySerializer::Serialize(const double& value) {
-  Write(value);
+void BinarySerializer::serialize(const double& value) {
+  _write(value);
 }
 ////////////////////////////////////////////////////////////////////////////////
-void BinarySerializer::Serialize(const bool& value) {
-  Write(value);
+void BinarySerializer::serialize(const bool& value) {
+  _write(value);
 }
 ////////////////////////////////////////////////////////////////////////////////
-void BinarySerializer::Serialize(const AbstractProperty* prop) {
-  prop->Serialize(*this);
+void BinarySerializer::serializeObjectProperty(
+    const ObjectProperty* prop, //
+    object_constptr_t instance) {
+  prop->serialize(*this, instance);
 }
 ////////////////////////////////////////////////////////////////////////////////
-void BinarySerializer::serializeObjectProperty(const ObjectProperty* prop, const Object* object) {
-  prop->Serialize(*this, object);
-}
-////////////////////////////////////////////////////////////////////////////////
-void BinarySerializer::serializeObject(const rtti::ICastable* castable) {
-  auto as_object = dynamic_cast<const ork::Object*>(castable);
-  if (as_object == nullptr) {
-    Write('N');
+void BinarySerializer::serializeSharedObject(object_constptr_t instance) {
+  if (instance == nullptr) {
+    _write('N');
   } else {
-    const auto& uuid  = as_object->_uuid;
+    const auto& uuid  = instance->_uuid;
     std::string uuids = boost::uuids::to_string(uuid);
-    auto it           = _serialized.find(uuids);
+    auto it           = _reftracker.find(uuids);
     ////////////////////////////////////
     // backreference
     ////////////////////////////////////
-    if (it != _serialized.end()) {
-      Write('B');
-      Write(uuids.c_str());
+    if (it != _reftracker.end()) {
+      _write('B');
+      _write(uuids.c_str());
     }
     ////////////////////////////////////
     // firstreference
     ////////////////////////////////////
     else {
-      auto objclazz = as_object->GetClass();
+      auto objclazz = instance->GetClass();
       auto category = rtti::downcast<rtti::Category*>(objclazz->GetClass());
-      WriteHeader('R', category->Name());
-      Write(uuids.c_str());
-      category->serializeObject(*this, as_object);
-      WriteFooter('r');
+      _writeHeader('R', category->Name());
+      _write(uuids.c_str());
+      category->serializeObject(*this, instance);
+      _writeFooter('r');
     }
   }
 }
@@ -161,22 +157,22 @@ void BinarySerializer::Hint(const PieceString&) {
 void BinarySerializer::Hint(const PieceString&, intptr_t ival) {
 }
 ////////////////////////////////////////////////////////////////////////////////
-void BinarySerializer::Serialize(const PieceString& text) {
+void BinarySerializer::serialize(const PieceString& text) {
   int pooled_string_index = mStringPool.FindIndex(text);
 
   if (pooled_string_index == -1) {
-    Write(-int(text.length() + 1));
+    _write(-int(text.length() + 1));
     mStream.Write(reinterpret_cast<const unsigned char*>(text.c_str()), text.length());
     char* text_copy = new char[text.length() + 1];
     memcpy(text_copy, text.c_str(), text.length());
     text_copy[text.length()] = '\0';
     mStringPool.Literal(text_copy);
   } else {
-    Write(int(pooled_string_index));
+    _write(int(pooled_string_index));
   }
 }
 ////////////////////////////////////////////////////////////////////////////////
-void BinarySerializer::SerializeData(unsigned char* data, size_t size) {
+void BinarySerializer::serializeData(const uint8_t* data, size_t size) {
   bool ok = mStream.Write(data, size);
   OrkAssert(ok);
 }

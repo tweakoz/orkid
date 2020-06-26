@@ -6,7 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
-#include <ork/reflect/serialize/XMLDeserializer.h>
+#include <ork/reflect/serialize/JsonDeserializer.h>
 #include <ork/reflect/Command.h>
 
 #include <ork/reflect/properties/ObjectProperty.h>
@@ -19,13 +19,15 @@
 
 #include <ork/orkprotos.h>
 #include <cstring>
+#include <rapidjson/reader.h>
+#include <rapidjson/document.h>
 
 namespace ork::reflect::serialize {
 //////////////////////////////////////////////////////////////////////////////
 
 static int unhex(char c);
 
-XMLDeserializer::XMLDeserializer(stream::IInputStream& stream)
+JsonDeserializer::JsonDeserializer(stream::IInputStream& stream)
     : mStream(stream)
     , _isReadingAttributes(false)
     , mLineNo(1) {
@@ -33,7 +35,7 @@ XMLDeserializer::XMLDeserializer(stream::IInputStream& stream)
 
 //////////////////////////////////////////////////////////////////////////////
 
-void XMLDeserializer::Advance(int n) {
+void JsonDeserializer::Advance(int n) {
   unsigned char c;
 
   for (int i = 0; i < n; i++) {
@@ -46,14 +48,14 @@ void XMLDeserializer::Advance(int n) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-void XMLDeserializer::EatSpace() {
+void JsonDeserializer::EatSpace() {
   while (Peek() != stream::IInputStream::kEOF && isspace(Peek()))
     Advance();
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-size_t XMLDeserializer::ReadWord(MutableString string) {
+size_t JsonDeserializer::ReadWord(MutableString string) {
   EatSpace();
 
   string = "";
@@ -73,13 +75,13 @@ size_t XMLDeserializer::ReadWord(MutableString string) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-bool XMLDeserializer::CheckExternalRead() {
+bool JsonDeserializer::CheckExternalRead() {
   return NULL == _currentCommand || (_currentCommand->Type() == Command::EATTRIBUTE) == _isReadingAttributes;
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-void XMLDeserializer::ReadNumber(long& value) {
+void JsonDeserializer::ReadNumber(long& value) {
   ArrayString<128> buffer;
   MutableString word(buffer);
 
@@ -92,7 +94,7 @@ void XMLDeserializer::ReadNumber(long& value) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-void XMLDeserializer::ReadNumber(double& value) {
+void JsonDeserializer::ReadNumber(double& value) {
   ArrayString<128> buffer;
   MutableString word(buffer);
 
@@ -105,7 +107,7 @@ void XMLDeserializer::ReadNumber(double& value) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-void XMLDeserializer::deserialize(char& value) {
+void JsonDeserializer::deserialize(char& value) {
   bool result;
   long n;
   ReadNumber(n);
@@ -114,7 +116,7 @@ void XMLDeserializer::deserialize(char& value) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-void XMLDeserializer::deserialize(short& value) {
+void JsonDeserializer::deserialize(short& value) {
   bool result;
   long n;
   ReadNumber(n);
@@ -123,7 +125,7 @@ void XMLDeserializer::deserialize(short& value) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-void XMLDeserializer::deserialize(int& value) {
+void JsonDeserializer::deserialize(int& value) {
   bool result;
   long n;
   ReadNumber(n);
@@ -132,7 +134,7 @@ void XMLDeserializer::deserialize(int& value) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-void XMLDeserializer::deserialize(long& value) {
+void JsonDeserializer::deserialize(long& value) {
   bool result;
   long n;
   ReadNumber(n);
@@ -141,7 +143,7 @@ void XMLDeserializer::deserialize(long& value) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-void XMLDeserializer::deserialize(float& value) {
+void JsonDeserializer::deserialize(float& value) {
   bool result;
   double n;
   ReadNumber(n);
@@ -150,7 +152,7 @@ void XMLDeserializer::deserialize(float& value) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-void XMLDeserializer::deserialize(double& value) {
+void JsonDeserializer::deserialize(double& value) {
   bool result;
   double n;
   ReadNumber(n);
@@ -174,7 +176,7 @@ static bool strieq(const PieceString& a, const PieceString& b) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-void XMLDeserializer::deserialize(bool& value) {
+void JsonDeserializer::deserialize(bool& value) {
   bool result = false;
 
   ArrayString<128> buffer;
@@ -193,20 +195,21 @@ void XMLDeserializer::deserialize(bool& value) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-void XMLDeserializer::deserializeObjectProperty(const ObjectProperty* prop, Object* object) {
+void JsonDeserializer::deserializeObjectProperty(
+    const ObjectProperty* prop, //
+    object_ptr_t object) {
   prop->deserialize(*this, object);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-void XMLDeserializer::deserializeSharedObject(object_ptr_t& instance_out) {
+void JsonDeserializer::deserializeSharedObject(object_ptr_t& instance_out) {
   OrkAssert(not _isReadingAttributes);
-  std::string object_uuid_str = attrvalue.c_str();
-
+  std::string object_uuid_str;
   //////////////////////////////////////
   ArrayString<32> attrname;
   ArrayString<128> attrvalue;
-  auto TAG = getTag();
+  auto TAG = nextTag();
   //////////////////////////////////////
   // backreference
   //////////////////////////////////////
@@ -256,7 +259,7 @@ void XMLDeserializer::deserializeSharedObject(object_ptr_t& instance_out) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-void XMLDeserializer::deserialize(MutableString& text) {
+void JsonDeserializer::deserialize(MutableString& text) {
   CheckExternalRead();
 
   return ReadText(text);
@@ -264,7 +267,7 @@ void XMLDeserializer::deserialize(MutableString& text) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-void XMLDeserializer::deserialize(ResizableString& text) {
+void JsonDeserializer::deserialize(ResizableString& text) {
   CheckExternalRead();
 
   return ReadText(text);
@@ -272,7 +275,7 @@ void XMLDeserializer::deserialize(ResizableString& text) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-void XMLDeserializer::deserializeData(unsigned char* data, size_t size) {
+void JsonDeserializer::deserializeData(unsigned char* data, size_t size) {
   CheckExternalRead();
 
   return ReadBinary(data, size);
@@ -280,7 +283,7 @@ void XMLDeserializer::deserializeData(unsigned char* data, size_t size) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-void XMLDeserializer::beginCommand(Command& command) {
+void JsonDeserializer::beginCommand(Command& command) {
   size_t checksize;
   bool result = false;
 
@@ -295,7 +298,7 @@ void XMLDeserializer::beginCommand(Command& command) {
     if (BeginTag("property")) {
       if (ReadAttribute(attrname, attrvalue)) {
         while (attrname != "name") {
-          orkprintf("XMLDeserializer::unrecognized first property attribute '%s'\n", attrname.c_str());
+          orkprintf("JsonDeserializer::unrecognized first property attribute '%s'\n", attrname.c_str());
           if (_isReadingAttributes)
             ReadAttribute(attrname, attrvalue);
           else
@@ -312,7 +315,7 @@ void XMLDeserializer::beginCommand(Command& command) {
 
       if (ReadAttribute(attrname, attrvalue)) {
         while (attrname != "type") {
-          orkprintf("XMLDeserializer::unrecognized first object attribute '%s'\n", attrname.c_str());
+          orkprintf("JsonDeserializer::unrecognized first object attribute '%s'\n", attrname.c_str());
           if (_isReadingAttributes)
             ReadAttribute(attrname, attrvalue);
           else
@@ -344,7 +347,7 @@ void XMLDeserializer::beginCommand(Command& command) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-void XMLDeserializer::EatBinaryData() {
+void JsonDeserializer::EatBinaryData() {
   char byte[2];
   EatSpace();
   bool result = false;
@@ -363,7 +366,7 @@ void XMLDeserializer::EatBinaryData() {
 
 //////////////////////////////////////////////////////////////////////////////
 
-void XMLDeserializer::endCommand(const Command& command) {
+void JsonDeserializer::endCommand(const Command& command) {
   if (_currentCommand == &command) {
     while (result == false) {
       switch (command.Type()) {
@@ -393,13 +396,13 @@ void XMLDeserializer::endCommand(const Command& command) {
   }
 
   if (result == false) {
-    orkprintf("XMLDeserializer::endCommand::[%d] failed to match end for tag '%s'\n", mLineNo, command.Name().c_str());
+    orkprintf("JsonDeserializer::endCommand::[%d] failed to match end for tag '%s'\n", mLineNo, command.Name().c_str());
   }
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-bool XMLDeserializer::Match(const PieceString& s) {
+bool JsonDeserializer::Match(const PieceString& s) {
   if (Check(s)) {
     Advance(int(s.length()));
     return true;
@@ -410,7 +413,7 @@ bool XMLDeserializer::Match(const PieceString& s) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-size_t XMLDeserializer::Peek() {
+size_t JsonDeserializer::Peek() {
   unsigned char c;
   if (mStream.Peek(&c, sizeof(c)) != stream::IInputStream::kEOF) {
     return size_t(c);
@@ -420,7 +423,7 @@ size_t XMLDeserializer::Peek() {
 
 //////////////////////////////////////////////////////////////////////////////
 
-bool XMLDeserializer::Check(const PieceString& s) {
+bool JsonDeserializer::Check(const PieceString& s) {
   char buf[64];
 
   size_t bufend = minimum(s.length(), PieceString::size_type(sizeof(buf) - 1));
@@ -436,7 +439,7 @@ bool XMLDeserializer::Check(const PieceString& s) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-bool XMLDeserializer::MatchLoose(const PieceString& s) {
+bool JsonDeserializer::MatchLoose(const PieceString& s) {
   size_t len;
   bool result = CheckLoose(s, len);
 
@@ -449,7 +452,7 @@ bool XMLDeserializer::MatchLoose(const PieceString& s) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-bool XMLDeserializer::CheckLoose(const PieceString& str, size_t& matchlen) {
+bool JsonDeserializer::CheckLoose(const PieceString& str, size_t& matchlen) {
   PieceString s = str;
   matchlen      = 0;
   char buf[128];
@@ -480,33 +483,27 @@ bool XMLDeserializer::CheckLoose(const PieceString& str, size_t& matchlen) {
   return true;
 }
 
+PieceString JsonDeserializer::nextTag() {
+}
+
 //////////////////////////////////////////////////////////////////////////////
 
-void XMLDeserializer::BeginTag(const PieceString& tagname) {
+void JsonDeserializer::BeginTag(const PieceString& tagname) {
   OrkAssert(!_isReadingAttributes);
-
   EatSpace();
   ArrayString<128> buffer;
   MutableString pattern(buffer);
   pattern.format(" < %.*s ", tagname.length(), tagname.c_str());
-
   if (MatchLoose(pattern)) {
-    if (MatchLoose(" > "))
-      _isReadingAttributes = false;
-    else {
-      _isReadingAttributes = true;
-      // printf("BeginTag<%s>\n", tagname.c_str());
-    }
-
-    return true;
+    _isReadingAttributes = not MatchLoose(" > ");
   } else {
-    return false;
+    OrkAssert(false);
   }
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-void XMLDeserializer::EndTag(const PieceString& tagname) {
+void JsonDeserializer::EndTag(const PieceString& tagname) {
   EatSpace();
 
   if (_isReadingAttributes) {
@@ -529,7 +526,7 @@ void XMLDeserializer::EndTag(const PieceString& tagname) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-void XMLDeserializer::ReadUntil(MutableString value, char terminator) {
+void JsonDeserializer::ReadUntil(MutableString value, char terminator) {
   char c;
 
   if ('\0' == terminator) {
@@ -549,7 +546,7 @@ void XMLDeserializer::ReadUntil(MutableString value, char terminator) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-void XMLDeserializer::BeginAttribute(MutableString name) {
+void JsonDeserializer::BeginAttribute(MutableString name) {
   size_t checksize;
   EatSpace();
 
@@ -562,7 +559,7 @@ void XMLDeserializer::BeginAttribute(MutableString name) {
   ReadWord(name);
 
   if (!MatchLoose(" = ")) {
-    orkprintf("XMLDeserializer::BeginAttribute::[%d] expected '=' after '%s'\n", mLineNo, name.c_str());
+    orkprintf("JsonDeserializer::BeginAttribute::[%d] expected '=' after '%s'\n", mLineNo, name.c_str());
     OrkAssert(false);
   }
 
@@ -577,7 +574,7 @@ void XMLDeserializer::BeginAttribute(MutableString name) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-void XMLDeserializer::EndAttribute() {
+void JsonDeserializer::EndAttribute() {
   OrkAssert(_isReadingAttributes);
 
   EatSpace();
@@ -596,7 +593,7 @@ void XMLDeserializer::EndAttribute() {
 
 //////////////////////////////////////////////////////////////////////////////
 
-void XMLDeserializer::ReadAttribute(MutableString name, MutableString value) {
+void JsonDeserializer::ReadAttribute(MutableString name, MutableString value) {
   OrkAssert(_isReadingAttributes);
   BeginAttribute(name);
   ReadUntil(value, mAttributeEndChar);
@@ -625,7 +622,7 @@ static PieceString ExpandEntity(const PieceString& entity) {
 //////////////////////////////////////////////////////////////////////////////
 
 template <typename StringType> //
-void XMLDeserializer::ReadText(StringType& text) {
+void JsonDeserializer::ReadText(StringType& text) {
   char c;
   bool reading_attribute = _currentCommand && _currentCommand->Type() == Command::EATTRIBUTE;
 
@@ -669,8 +666,8 @@ void XMLDeserializer::ReadText(StringType& text) {
   }
 }
 
-template void XMLDeserializer::ReadText<MutableString>(MutableString& text);
-template void XMLDeserializer::ReadText<ResizableString>(ResizableString& text);
+template void JsonDeserializer::ReadText<MutableString>(MutableString& text);
+template void JsonDeserializer::ReadText<ResizableString>(ResizableString& text);
 
 static int unhex(char c) {
   if ('0' <= c && c <= '9')
@@ -685,7 +682,7 @@ static int unhex(char c) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-void XMLDeserializer::ReadBinary(unsigned char data[], size_t size) {
+void JsonDeserializer::ReadBinary(unsigned char data[], size_t size) {
   char byte[2];
   EatSpace();
 

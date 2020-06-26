@@ -6,7 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
-#include <ork/reflect/serialize/ISerializer.h>
+#include <ork/reflect/IDeserializer.h>
 #include <ork/reflect/Command.h>
 
 #include <ork/reflect/properties/ObjectProperty.h>
@@ -16,22 +16,26 @@
 #include <ork/object/Object.h>
 #include <boost/uuid/uuid_io.hpp>
 ////////////////////////////////////////////////////////////////
-namespace ork::reflect::serialize {
+namespace ork::reflect {
 ////////////////////////////////////////////////////////////////
 void IDeserializer::referenceObject(object_ptr_t instance) {
   OrkAssert(false);
 }
-void IDeserializer::trackObject(boost::uuids : uuid id, object_ptr_t instance) {
+////////////////////////////////////////////////////////////////
+void IDeserializer::trackObject(
+    boost::uuids::uuid id, //
+    object_ptr_t instance) {
   std::string uuids = boost::uuids::to_string(id);
   auto it           = _reftracker.find(uuids);
   OrkAssert(it == _reftracker.end());
   _reftracker[uuids] = instance;
 }
+////////////////////////////////////////////////////////////////
 object_ptr_t IDeserializer::findTrackedObject(boost::uuids::uuid id) const {
   std::string uuids = boost::uuids::to_string(id);
   auto it           = _reftracker.find(uuids);
   OrkAssert(it != _reftracker.end());
-  return it.second;
+  return it->second;
 }
 ////////////////////////////////////////////////////////////////
-} // namespace ork::reflect::serialize
+} // namespace ork::reflect

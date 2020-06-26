@@ -8,8 +8,8 @@
 #include <orktool/filter/filter.h>
 #include <orktool/orktool_pch.h>
 ///////////////////////////////////////////////////////////////////////////
-#include <ork/reflect/serialize/XMLDeserializer.h>
-#include <ork/reflect/serialize/XMLSerializer.h>
+#include <ork/reflect/serialize/JsonDeserializer.h>
+#include <ork/reflect/serialize/JsonSerializer.h>
 ///////////////////////////////////////////////////////////////////////////
 #include <ork/stream/FileInputStream.h>
 #include <ork/stream/FileOutputStream.h>
@@ -64,7 +64,7 @@ bool ConvertArchetypeSbox2Arch(const tokenlist& toklist) {
   ///////////////////
 
   stream::FileInputStream istream(inf.c_str());
-  reflect::serialize::XMLDeserializer iser(istream);
+  reflect::serialize::JsonDeserializer iser(istream);
   rtti::ICastable* pcastable = 0;
   bool bOK                   = iser.deserializeObject(pcastable);
 
@@ -94,7 +94,7 @@ bool ConvertArchetypeSbox2Arch(const tokenlist& toklist) {
       printf("exporting archetype<%s:%p>\n", name.c_str(), parch);
       if (parch) {
         stream::FileOutputStream ostream(outf.c_str());
-        reflect::serialize::XMLSerializer oser(ostream);
+        reflect::serialize::JsonSerializer oser(ostream);
         oser.Serialize(parch);
       }
       /////////////////////

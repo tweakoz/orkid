@@ -6,7 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
-#include <ork/reflect/serialize/ISerializer.h>
+#include <ork/reflect/ISerializer.h>
 #include <ork/reflect/Command.h>
 
 #include <ork/reflect/properties/ObjectProperty.h>
@@ -18,7 +18,7 @@
 ////////////////////////////////////////////////////////////////
 namespace ork::reflect::serialize {
 ////////////////////////////////////////////////////////////////
-void ISerializer::referenceObject(object_constptr_t as_object) {
+/*void ISerializer::referenceObject(object_constptr_t as_object) {
   const auto& uuid  = as_object->_uuid;
   std::string uuids = boost::uuids::to_string(uuid);
   OrkAssert(_serialized.find(uuids) == _serialized.end());
@@ -28,18 +28,6 @@ void ISerializer::referenceObject(object_constptr_t as_object) {
   beginCommand(referenceAttributeCommand);
   Serialize(PieceString(uuids.c_str()));
   endCommand(referenceAttributeCommand);
-}
-////////////////////////////////////////////////////////////////
-void ISerializer::referenceObject(object_rawconstptr_t as_object) {
-  const auto& uuid  = as_object->_uuid;
-  std::string uuids = boost::uuids::to_string(uuid);
-  OrkAssert(_serialized.find(uuids) == _serialized.end());
-  _serialized.insert(uuids);
-
-  Command referenceAttributeCommand(Command::EATTRIBUTE, "id");
-  beginCommand(referenceAttributeCommand);
-  Serialize(PieceString(uuids.c_str()));
-  endCommand(referenceAttributeCommand);
-}
+}*/
 ////////////////////////////////////////////////////////////////
 } // namespace ork::reflect::serialize

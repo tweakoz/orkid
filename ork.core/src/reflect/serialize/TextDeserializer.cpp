@@ -30,11 +30,9 @@ void TextDeserializer::EatSpace() {
     Advance();
 }
 
-size_t TextDeserializer::ReadWord(MutableString string) {
+void TextDeserializer::ReadWord(MutableString string) {
   EatSpace();
-
   string = "";
-
   while (Peek() != stream::IInputStream::kEOF) {
     int next = Peek();
     if (isspace(next) or //
@@ -49,80 +47,56 @@ size_t TextDeserializer::ReadWord(MutableString string) {
       Advance();
     }
   }
-
-  return true;
 }
 
-bool TextDeserializer::ReadNumber(long& value) {
+void TextDeserializer::ReadNumber(long& value) {
   ArrayString<128> buffer;
   MutableString word(buffer);
-
-  if (ReadWord(word) > 0) {
-    value = std::atoi(word.c_str());
-    return true;
-  }
-
-  return false;
+  ReadWord(word);
+  value = std::atoi(word.c_str());
 }
 
-bool TextDeserializer::ReadNumber(double& value) {
+void TextDeserializer::ReadNumber(double& value) {
   ArrayString<128> buffer;
   MutableString word(buffer);
-
-  if (ReadWord(word) > 0) {
-    value = std::atof(word.c_str());
-    return true;
-  }
-
-  return false;
+  ReadWord(word);
+  value = std::atof(word.c_str());
 }
 
-bool TextDeserializer::Deserialize(char& value) {
-  bool result;
+void TextDeserializer::deserialize(char& value) {
   long n;
-  result = ReadNumber(n);
-  value  = char(static_cast<unsigned char>(n));
-  return result;
+  ReadNumber(n);
+  value = char(static_cast<unsigned char>(n));
 }
 
-bool TextDeserializer::Deserialize(short& value) {
-  bool result;
+void TextDeserializer::deserialize(short& value) {
   long n;
-  result = ReadNumber(n);
-  value  = short(n);
-  return result;
+  ReadNumber(n);
+  value = short(n);
 }
 
-bool TextDeserializer::Deserialize(int& value) {
-  bool result;
+void TextDeserializer::deserialize(int& value) {
   long n;
-  result = ReadNumber(n);
-  value  = int(n);
-  return result;
+  ReadNumber(n);
+  value = int(n);
 }
 
-bool TextDeserializer::Deserialize(long& value) {
-  bool result;
+void TextDeserializer::deserialize(long& value) {
   long n;
-  result = ReadNumber(n);
-  value  = n;
-  return result;
+  ReadNumber(n);
+  value = n;
 }
 
-bool TextDeserializer::Deserialize(float& value) {
-  bool result;
+void TextDeserializer::deserialize(float& value) {
   double n;
-  result = ReadNumber(n);
-  value  = float(n);
-  return result;
+  ReadNumber(n);
+  value = float(n);
 }
 
-bool TextDeserializer::Deserialize(double& value) {
-  bool result;
+void TextDeserializer::deserialize(double& value) {
   double n;
-  result = ReadNumber(n);
-  value  = n;
-  return result;
+  ReadNumber(n);
+  value = n;
 }
 
 static bool strieq(const PieceString& a, const PieceString& b) {
@@ -138,79 +112,55 @@ static bool strieq(const PieceString& a, const PieceString& b) {
   return true;
 }
 
-bool TextDeserializer::Deserialize(bool& value) {
-
-  bool result = false;
+void TextDeserializer::deserialize(bool& value) {
 
   ArrayString<128> buffer;
   MutableString word(buffer);
 
-  if (ReadWord(word) > 0) {
-    if (strieq(word.c_str(), "false") or strieq(word.c_str(), "0")) {
-      value  = false;
-      result = true;
-    } else if (strieq(word.c_str(), "true") or strieq(word.c_str(), "1")) {
-      value  = true;
-      result = true;
-    }
+  ReadWord(word);
+  if (strieq(word.c_str(), "false") or strieq(word.c_str(), "0"))
+    value = false;
+  else if (strieq(word.c_str(), "true") or strieq(word.c_str(), "1")) {
+    value = true;
   }
-
-  return result;
 }
 
-bool TextDeserializer::Deserialize(const AbstractProperty* prop) {
-  return prop->Deserialize(*this);
+void TextDeserializer::deserializeObjectProperty(
+    const ObjectProperty* prop, //
+    object_ptr_t object) {
+  prop->deserialize(*this, object);
 }
 
-bool TextDeserializer::deserializeObjectProperty(const ObjectProperty* prop, Object* object) {
-  return prop->Deserialize(*this, object);
-}
-
-bool TextDeserializer::ReferenceObject(rtti::castable_rawptr_t object) {
-  return false;
-}
-
-bool TextDeserializer::deserializeObject(rtti::castable_rawptr_t& object) {
+void TextDeserializer::deserializeSharedObject(object_ptr_t& instance_out) {
   ArrayString<128> buffer;
   MutableString word(buffer);
-  if (ReadWord(word) > 0) {
-    void* pdata = 0;
-    sscanf(word.c_str(), "%p", &object);
-    return true;
-  }
-  return false;
-}
-bool TextDeserializer::deserializeSharedObject(rtti::castable_ptr_t& object) {
-  OrkAssert(false);
-  return false;
+  ReadWord(word);
+  void* pdata = 0;
+  sscanf(word.c_str(), "%p", &pdata);
+  OrkAssert(false); // instance_out;
 }
 
-bool TextDeserializer::Deserialize(MutableString& text) {
+void TextDeserializer::deserialize(MutableString& text) {
   while (Peek() != stream::IInputStream::kEOF and isspace(Peek())) {
     text += char(Peek());
     Advance();
   }
-  return true;
 }
 
-bool TextDeserializer::Deserialize(ResizableString& text) {
+void TextDeserializer::deserialize(ResizableString& text) {
   while (Peek() != stream::IInputStream::kEOF and isspace(Peek())) {
     text += char(Peek());
     Advance();
   }
-  return true;
 }
 
-bool TextDeserializer::DeserializeData(unsigned char* data, size_t size) {
-  return false;
+void TextDeserializer::deserializeData(unsigned char* data, size_t size) {
 }
 
-bool TextDeserializer::beginCommand(Command& command) {
-  return false;
+void TextDeserializer::beginCommand(Command& command) {
 }
 
-bool TextDeserializer::endCommand(const Command& command) {
-  return false;
+void TextDeserializer::endCommand(const Command& command) {
 }
 
 size_t TextDeserializer::Peek() {
@@ -222,5 +172,4 @@ size_t TextDeserializer::Peek() {
 
   return stream::IInputStream::kEOF;
 }
-
 }}} // namespace ork::reflect::serialize

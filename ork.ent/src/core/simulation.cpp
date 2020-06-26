@@ -26,8 +26,8 @@
 #include <pkg/ent/entity.h>
 #include <pkg/ent/scene.h>
 
-#include <ork/reflect/serialize/XMLDeserializer.h>
-#include <ork/reflect/serialize/XMLSerializer.h>
+#include <ork/reflect/serialize/JsonDeserializer.h>
+#include <ork/reflect/serialize/JsonSerializer.h>
 #include <ork/stream/ResizableStringOutputStream.h>
 #include <ork/stream/StringInputStream.h>
 

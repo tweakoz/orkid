@@ -17,8 +17,8 @@ class IOutputStream;
 
 namespace ork { namespace reflect { namespace serialize {
 
-class BinarySerializer final : public ISerializer {
-public:
+struct BinarySerializer final : public ISerializer {
+
   BinarySerializer(stream::IOutputStream& stream);
   ~BinarySerializer();
 
@@ -45,11 +45,9 @@ public:
   void endCommand(const Command&) override;
 
 private:
-  // int FindObject(const rtti::ICastable* object);
-
-  bool WriteHeader(char type, PieceString text);
-  bool WriteFooter(char type);
-  template <typename T> bool Write(const T& datum);
+  void _writeHeader(char type, PieceString text);
+  void _writeFooter(char type);
+  template <typename T> void _write(const T& datum);
 
   stream::IOutputStream& mStream;
   StringPool mStringPool;

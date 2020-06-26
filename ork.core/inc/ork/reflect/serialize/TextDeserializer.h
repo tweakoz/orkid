@@ -41,9 +41,9 @@ private:
 
   void Advance();
   void EatSpace();
-  size_t ReadWord(MutableString string);
-  bool ReadNumber(long& value);
-  bool ReadNumber(double& value);
+  void ReadWord(MutableString string);
+  void ReadNumber(long& value);
+  void ReadNumber(double& value);
   size_t Peek();
 };
 

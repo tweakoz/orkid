@@ -15,8 +15,8 @@
 #include <ork/stream/FileInputStream.h>
 #include <ork/stream/FileOutputStream.h>
 #include <ork/stream/StringInputStream.h>
-#include <ork/reflect/serialize/XMLDeserializer.h>
-#include <ork/reflect/serialize/XMLSerializer.h>
+#include <ork/reflect/serialize/JsonDeserializer.h>
+#include <ork/reflect/serialize/JsonSerializer.h>
 #include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/reflect/properties/registerX.inl>
 
@@ -568,7 +568,7 @@ static const char* HotKeyFileName = "hotkeys.ork";
 
 void HotKeyManager::Save() {
   ork::stream::FileOutputStream istream(HotKeyFileName);
-  ork::reflect::serialize::XMLSerializer ser(istream);
+  ork::reflect::serialize::JsonSerializer ser(istream);
   GetClass()->Description().SerializeProperties(ser, this);
 }
 
@@ -579,7 +579,7 @@ void HotKeyManager::Load() {
   file::Path pth(HotKeyFileName);
   if (ork::FileEnv::GetRef().DoesFileExist(pth)) {
     ork::stream::FileInputStream istream(pth.c_str());
-    ork::reflect::serialize::XMLDeserializer deser(istream);
+    ork::reflect::serialize::JsonDeserializer deser(istream);
     GetClass()->Description().DeserializeProperties(deser, this);
   }
 }

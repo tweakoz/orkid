@@ -17,8 +17,8 @@
 #include <ork/reflect/properties/DirectTypedMap.h>
 #include <ork/reflect/properties/IObject.h>
 #include <ork/reflect/IDeserializer.h>
-#include <ork/reflect/serialize/XMLSerializer.h>
-#include <ork/reflect/serialize/XMLDeserializer.h>
+#include <ork/reflect/serialize/JsonSerializer.h>
+#include <ork/reflect/serialize/JsonDeserializer.h>
 #include <ork/reflect/Functor.h>
 #include <ork/stream/FileOutputStream.h>
 #include <ork/stream/FileInputStream.h>
@@ -81,7 +81,7 @@ GedObjNode<PropSetterObj>::GedObjNode(ObjModel& mdl, const char* name, const ref
               ArrayString<1024> result;
 
               stream::StringOutputStream ostream(result);
-              reflect::serialize::XMLSerializer serializer(ostream);
+              reflect::serialize::JsonSerializer serializer(ostream);
               reflect::BidirectionalSerializer result_bidi(serializer);
 
               functor->invoke(psubobj, invokation, &result_bidi);
@@ -118,7 +118,7 @@ GedObjNode<PropSetterObj>::GedObjNode(ObjModel& mdl, const char* name, const ref
         ArrayString<1024> result;
 
         stream::StringOutputStream ostream(result);
-        reflect::serialize::XMLSerializer serializer(ostream);
+        reflect::serialize::JsonSerializer serializer(ostream);
         reflect::BidirectionalSerializer result_bidi(serializer);
 
         functor->invoke(psubobj, invokation, &result_bidi);

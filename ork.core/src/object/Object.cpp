@@ -18,8 +18,8 @@
 
 #include <ork/stream/FileInputStream.h>
 #include <ork/stream/StringInputStream.h>
-#include <ork/reflect/serialize/XMLDeserializer.h>
-#include <ork/reflect/serialize/XMLSerializer.h>
+#include <ork/reflect/serialize/JsonDeserializer.h>
+#include <ork/reflect/serialize/JsonSerializer.h>
 #include <ork/reflect/serialize/BinaryDeserializer.h>
 #include <ork/reflect/serialize/BinarySerializer.h>
 #include <ork/stream/ResizableStringOutputStream.h>
@@ -207,7 +207,7 @@ static object_ptr_t LoadObjectFromFile(
 
     DeserializeUnknownObject(deserializer, object);
   } else {
-    reflect::serialize::XMLDeserializer deserializer(stream);
+    reflect::serialize::JsonDeserializer deserializer(stream);
 
     DeserializeUnknownObject(deserializer, object);
   }

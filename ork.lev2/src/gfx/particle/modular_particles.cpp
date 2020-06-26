@@ -26,8 +26,8 @@
 
 #include <ork/stream/FileInputStream.h>
 #include <ork/stream/StringInputStream.h>
-#include <ork/reflect/serialize/XMLDeserializer.h>
-#include <ork/reflect/serialize/XMLSerializer.h>
+#include <ork/reflect/serialize/JsonDeserializer.h>
+#include <ork/reflect/serialize/JsonSerializer.h>
 #include <ork/reflect/serialize/BinaryDeserializer.h>
 #include <ork/reflect/serialize/BinarySerializer.h>
 #include <ork/stream/ResizableStringOutputStream.h>

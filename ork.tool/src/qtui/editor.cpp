@@ -19,8 +19,8 @@
 #include <pkg/ent/editor/editor.h>
 #include <pkg/ent/entity.h>
 ///////////////////////////////////////////////////////////////////////////
-#include <ork/reflect/serialize/XMLDeserializer.h>
-#include <ork/reflect/serialize/XMLSerializer.h>
+#include <ork/reflect/serialize/JsonDeserializer.h>
+#include <ork/reflect/serialize/JsonSerializer.h>
 #include <ork/stream/FileInputStream.h>
 #include <ork/stream/FileOutputStream.h>
 #include <ork/stream/StringInputStream.h>
@@ -425,7 +425,7 @@ void SceneEditorBase::ImplLoadScene(std::string fname) {
     ////////////////////////////////////
     auto load_op = [=]() {
       stream::FileInputStream istream(fname.c_str());
-      reflect::serialize::XMLDeserializer iser(istream);
+      reflect::serialize::JsonDeserializer iser(istream);
       rtti::ICastable* pcastable = nullptr;
       bool bloadOK               = iser.deserializeObject(pcastable);
       ////////////////////////////////////
@@ -557,7 +557,7 @@ void SceneEditorBase::EditorArchExport() {
                 fname += ".mox";
 
               stream::FileOutputStream ostream(fname.c_str());
-              reflect::serialize::XMLSerializer oser(ostream);
+              reflect::serialize::JsonSerializer oser(ostream);
               oser.Serialize(archetype);
             }
           }
@@ -583,7 +583,7 @@ void SceneEditorBase::EditorArchImport() {
     std::string fname = FileName.toStdString().c_str();
     if (fname.length()) {
       stream::FileInputStream istream(fname.c_str());
-      reflect::serialize::XMLDeserializer iser(istream);
+      reflect::serialize::JsonDeserializer iser(istream);
 
       rtti::ICastable* pcastable = 0;
       bool bOK                   = iser.deserializeObject(pcastable);
@@ -629,7 +629,7 @@ void SceneEditorBase::EditorArchMakeReferenced() {
                 fname += ".mox";
 
               stream::FileOutputStream ostream(fname.c_str());
-              reflect::serialize::XMLSerializer oser(ostream);
+              reflect::serialize::JsonSerializer oser(ostream);
               oser.Serialize(archetype);
             }
           }
@@ -882,7 +882,7 @@ bool QueryArchetypeReferenced(ork::Object* pobj, const ent::Archetype* parch) {
 
       ArrayString<32> resultdata;
       stream::StringOutputStream ostream(resultdata);
-      reflect::serialize::XMLSerializer serializer(ostream);
+      reflect::serialize::JsonSerializer serializer(ostream);
       reflect::BidirectionalSerializer result_bidi(serializer);
       functor->invoke(pobj, invokation, &result_bidi);
 
@@ -959,7 +959,7 @@ void DynamicSignalArchetypeDeleted(ork::Object* pobj, ent::Archetype* parch) {
 
       ArrayString<32> resultdata;
       stream::StringOutputStream ostream(resultdata);
-      reflect::serialize::XMLSerializer serializer(ostream);
+      reflect::serialize::JsonSerializer serializer(ostream);
       reflect::BidirectionalSerializer result_bidi(serializer);
       functor->invoke(pobj, invokation, &result_bidi);
     }

@@ -10,8 +10,8 @@
 #include <ork/util/hotkey.h>
 #include <ork/stream/FileOutputStream.h>
 #include <ork/stream/FileInputStream.h>
-#include <ork/reflect/serialize/XMLSerializer.h>
-#include <ork/reflect/serialize/XMLDeserializer.h>
+#include <ork/reflect/serialize/JsonSerializer.h>
+#include <ork/reflect/serialize/JsonDeserializer.h>
 #include <ork/kernel/opq.h>
 #include <ork/application/application.h>
 ///////////////////////////////////////////////////////////////////////////////
@@ -245,7 +245,7 @@ EditorMainWindow::EditorMainWindow(QWidget* parent, const std::string& applicati
     ork::tool::ged::PersistMapContainer& container = mGedModelObj.GetPersistMapContainer();
 
     stream::FileInputStream istream(collapse_filename.c_str());
-    reflect::serialize::XMLDeserializer iser(istream);
+    reflect::serialize::JsonDeserializer iser(istream);
     bool bOK = ork::Object::xxxDeserializeInPlace(&container, iser);
     OrkAssert(bOK);
   }
@@ -263,7 +263,7 @@ EditorMainWindow::~EditorMainWindow() {
   ork::tool::ged::PersistMapContainer& container = mGedModelObj.GetPersistMapContainer();
   ork::file::Path collapse_filename("collapse_state.cst");
   stream::FileOutputStream ostream(collapse_filename.c_str());
-  reflect::serialize::XMLSerializer oser(ostream);
+  reflect::serialize::JsonSerializer oser(ostream);
   ork::Object::xxxSerializeInPlace(&container, oser);
 }
 
@@ -490,14 +490,14 @@ struct EntArchReRef final : public ork::tool::ged::IOpsDelegate {
             file::Path SrcFileName(absolutepath_raw);
             SrcFileName.SetExtension(".mox");
             stream::FileOutputStream ostream(SrcFileName.c_str());
-            reflect::serialize::XMLSerializer oser(ostream);
+            reflect::serialize::JsonSerializer oser(ostream);
             oser.Serialize(parch);
             /////////////////////////////////////////////////////////////////////
             find_and_replace<file::Path::NameType>(absolutepath_raw, "\\src\\", "\\pc\\");
             file::Path PcFileName(absolutepath_raw);
             PcFileName.SetExtension(".mox");
             stream::FileOutputStream ostream2(PcFileName.c_str());
-            reflect::serialize::XMLSerializer oser2(ostream2);
+            reflect::serialize::JsonSerializer oser2(ostream2);
             oser2.Serialize(parch);
             /////////////////////////////////////////////////////////////////////
             gEditorMainWindow->mEditorBase.mpArchChoices->EnumerateChoices();

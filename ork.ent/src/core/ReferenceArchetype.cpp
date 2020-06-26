@@ -10,7 +10,7 @@
 #include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/asset/FileAssetLoader.h>
 #include <ork/reflect/properties/register.h>
-#include <ork/reflect/serialize/XMLDeserializer.h>
+#include <ork/reflect/serialize/JsonDeserializer.h>
 #include <ork/stream/FileInputStream.h>
 #include <ork/application/application.h>
 #include <pkg/ent/scene.h>
@@ -60,7 +60,7 @@ bool ArchetypeAssetLoader::LoadFileAsset(asset::asset_ptr_t asset, ConstString a
 
   float ftime1 = ork::OldSchool::GetRef().GetLoResRelTime();
   stream::FileInputStream istream(asset_name.c_str());
-  reflect::serialize::XMLDeserializer iser(istream);
+  reflect::serialize::JsonDeserializer iser(istream);
   rtti::ICastable* pcastable = 0;
 
 #if defined(_XBOX) && defined(PROFILE)

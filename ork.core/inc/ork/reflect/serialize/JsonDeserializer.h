@@ -14,9 +14,9 @@
 
 namespace ork { namespace reflect { namespace serialize {
 
-class XMLDeserializer : public IDeserializer {
+class JsonDeserializer : public IDeserializer {
 public:
-  XMLDeserializer(stream::IInputStream& stream);
+  JsonDeserializer(stream::IInputStream& stream);
 
   void deserialize(bool&) override;
   void deserialize(char&) override;
@@ -68,6 +68,7 @@ private:
   ////////////////////////////////////////////
 
   bool CheckExternalRead();
+  PieceString nextTag();
   bool BeginTag(const PieceString& tagname);
   bool EndTag(const PieceString& tagname);
   bool BeginAttribute(MutableString name);

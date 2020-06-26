@@ -17,9 +17,9 @@ class IOutputStream;
 
 namespace ork { namespace reflect { namespace serialize {
 
-class XMLSerializer : public ISerializer {
+class JsonSerializer : public ISerializer {
 public:
-  XMLSerializer(stream::IOutputStream& stream);
+  JsonSerializer(stream::IOutputStream& stream);
 
   void serialize(const bool&) override;
   void serialize(const char&) override;

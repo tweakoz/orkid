@@ -18,8 +18,8 @@
 #include <ork/file/file.h>
 #include <ork/stream/FileInputStream.h>
 #include <ork/stream/FileOutputStream.h>
-#include <ork/reflect/serialize/XMLSerializer.h>
-#include <ork/reflect/serialize/XMLDeserializer.h>
+#include <ork/reflect/serialize/JsonSerializer.h>
+#include <ork/reflect/serialize/JsonDeserializer.h>
 #include <ork/kernel/fixedlut.hpp>
 #include <ork/kernel/Array.hpp>
 #include <QMenu>
@@ -708,9 +708,9 @@ class GraphImportDelegate : public IOpsDelegate {
         if (ork::FileEnv::filespec_to_extension(fname).length() == 0)
           fname += ".dfg";
         stream::FileInputStream istream(fname.c_str());
-        reflect::serialize::XMLDeserializer iser(istream);
+        reflect::serialize::JsonDeserializer iser(istream);
         // ork::stream::FileOutputStream ostream(fname.c_str());
-        // ork::reflect::serialize::XMLSerializer oser(ostream);
+        // ork::reflect::serialize::JsonSerializer oser(ostream);
         // oser.Serialize(ptex);
         ork::Object::xxxDeserializeInPlace(pgraph, iser);
       }
@@ -733,7 +733,7 @@ class GraphExportDelegate : public IOpsDelegate {
         if (ork::FileEnv::filespec_to_extension(fname).length() == 0)
           fname += ".dfg";
         ork::stream::FileOutputStream ostream(fname.c_str());
-        ork::reflect::serialize::XMLSerializer oser(ostream);
+        ork::reflect::serialize::JsonSerializer oser(ostream);
         // oser.Serialize(ptex);
         ork::Object::xxxSerializeInPlace(pgraph, oser);
       }
@@ -752,9 +752,9 @@ void ObjectImportDelegate::Execute(ork::Object* ptarget) {
       if (ork::FileEnv::filespec_to_extension(fname).length() == 0)
         fname += ".mox";
       stream::FileInputStream istream(fname.c_str());
-      reflect::serialize::XMLDeserializer iser(istream);
+      reflect::serialize::JsonDeserializer iser(istream);
       // ork::stream::FileOutputStream ostream(fname.c_str());
-      // ork::reflect::serialize::XMLSerializer oser(ostream);
+      // ork::reflect::serialize::JsonSerializer oser(ostream);
       // oser.Serialize(ptex);
       ork::Object::xxxDeserializeInPlace(ptarget, iser);
     }
@@ -773,7 +773,7 @@ void ObjectExportDelegate::Execute(ork::Object* ptarget) {
       if (ork::FileEnv::filespec_to_extension(fname).length() == 0)
         fname += ".mox";
       ork::stream::FileOutputStream ostream(fname.c_str());
-      ork::reflect::serialize::XMLSerializer oser(ostream);
+      ork::reflect::serialize::JsonSerializer oser(ostream);
       // oser.Serialize(ptex);
       ork::Object::xxxSerializeInPlace(pobj, oser);
     }

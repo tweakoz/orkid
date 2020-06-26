@@ -15,8 +15,8 @@
 #include <ork/stream/StringOutputStream.h>
 #include <ork/reflect/serialize/ShallowDeserializer.h>
 #include <ork/reflect/serialize/ShallowSerializer.h>
-#include <ork/reflect/serialize/XMLDeserializer.h>
-#include <ork/reflect/serialize/XMLSerializer.h>
+#include <ork/reflect/serialize/JsonDeserializer.h>
+#include <ork/reflect/serialize/JsonSerializer.h>
 
 namespace ork { namespace reflect {
 

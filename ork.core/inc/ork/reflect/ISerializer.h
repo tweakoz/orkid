@@ -24,7 +24,7 @@ class IArray;
 class Command;
 // typedef ork::Object Serializable;
 
-class ISerializer {
+struct ISerializer {
 public:
   void referenceObject(object_constptr_t);
 
@@ -50,7 +50,7 @@ public:
 
   virtual ~ISerializer();
 
-  std::unordered_set<std::string> _serialized;
+  std::unordered_set<std::string> _reftracker;
   const Command* _currentCommand = nullptr;
 };
 
