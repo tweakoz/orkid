@@ -16,21 +16,21 @@ namespace ork { namespace reflect {
 class AccessorVariantArray : public IArray {
 public:
   AccessorVariantArray(
-      bool (Object::*serialize_item)(ISerializer&, size_t) const,
-      bool (Object::*deserialize_item)(IDeserializer&, size_t),
+      void (Object::*serialize_item)(ISerializer&, size_t) const,
+      void (Object::*deserialize_item)(IDeserializer&, size_t),
       size_t (Object::*count)() const,
-      bool (Object::*resize)(size_t));
+      void (Object::*resize)(size_t));
 
 private:
-  void serializeItem(ISerializer&, const Object*, size_t) const override;
-  void deserializeItem(IDeserializer&, Object*, size_t) const override;
-  size_t count(const Object*) const override;
-  void resize(Object*, size_t) const override;
+  void serializeItem(ISerializer&, object_constptr_t, size_t) const override;
+  void deserializeItem(IDeserializer&, object_ptr_t, size_t) const override;
+  size_t count(object_constptr_t) const override;
+  void resize(object_ptr_t, size_t) const override;
 
-  bool (Object::*mSerializeItem)(ISerializer&, size_t) const;
-  bool (Object::*mDeserializeItem)(IDeserializer&, size_t);
+  void (Object::*mSerializeItem)(ISerializer&, size_t) const;
+  void (Object::*mDeserializeItem)(IDeserializer&, size_t);
   size_t (Object::*mCount)() const;
-  bool (Object::*mResize)(size_t);
+  void (Object::*mResize)(size_t);
 };
 
 }} // namespace ork::reflect

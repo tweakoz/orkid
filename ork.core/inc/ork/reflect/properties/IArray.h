@@ -16,10 +16,10 @@ namespace ork { namespace reflect {
 
 class IArray : public ObjectProperty {
 public:
-  virtual void deserializeItem(IDeserializer&, Object*, size_t) const   = 0;
-  virtual void serializeItem(ISerializer&, const Object*, size_t) const = 0;
-  virtual size_t count(const Object*) const                             = 0;
-  virtual void resize(Object* obj, size_t size) const                   = 0;
+  virtual void deserializeItem(IDeserializer&, object_ptr_t, size_t) const  = 0;
+  virtual void serializeItem(ISerializer&, object_constptr_t, size_t) const = 0;
+  virtual size_t count(object_constptr_t) const                             = 0;
+  virtual void resize(object_ptr_t obj, size_t size) const                  = 0;
 
 private:
   void deserialize(IDeserializer&, object_ptr_t) const override;

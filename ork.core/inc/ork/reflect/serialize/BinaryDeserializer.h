@@ -40,7 +40,8 @@ public:
 private:
   // int FindObject(rtti::ICastable* object);
 
-  template <typename T> bool Read(T&);
+  template <typename T> //
+  void Read(T&);
 
   char Peek();
   bool Match(char c);

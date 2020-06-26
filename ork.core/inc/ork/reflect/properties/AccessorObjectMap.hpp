@@ -1,9 +1,9 @@
-////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 // Orkid Media Engine
 // Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -15,164 +15,124 @@
 
 #include <ork/object/Object.h>
 
-namespace ork { namespace reflect {
-
+namespace ork::reflect {
+////////////////////////////////////////////////////////////////////////////////
 template <typename KeyType>
 AccessorObjectMap<KeyType>::AccessorObjectMap(
-    const Object* (Object::*get)(const KeyType&, int) const,
-    Object* (Object::*access)(const KeyType&, int),
+    object_constptr_t (Object::*get)(const KeyType&, int) const,
+    object_ptr_t (Object::*access)(const KeyType&, int),
     void (Object::*erase)(const KeyType&, int),
     void (Object::*serializer)(typename AccessorObjectMap<KeyType>::SerializationFunction, BidirectionalSerializer&) const)
-    : mGetter(get)
-    , mAccessor(access)
-    , mEraser(erase)
-    , mSerializer(serializer) {
+    : _getter(get)
+    , _accessor(access)
+    , _eraser(erase)
+    , _serializer(serializer) {
 }
-
+////////////////////////////////////////////////////////////////////////////////
 template <typename KeyType>
-Object* AccessorObjectMap<KeyType>::AccessItem(IDeserializer& key_deserializer, int multi_index, Object* object) const {
+object_ptr_t AccessorObjectMap<KeyType>::accessItem(
+    IDeserializer& key_deserializer, //
+    int multi_index,
+    object_ptr_t instance) const {
   KeyType key;
 
   BidirectionalSerializer(key_deserializer) | key;
 
-  if ((object->*mGetter)(key, multi_index)) {
-    return (object->*mAccessor)(key, multi_index);
+  if ((instance.get()->*_getter)(key, multi_index)) {
+    return (instance.get()->*_accessor)(key, multi_index);
   }
 
   return NULL;
 }
-
+////////////////////////////////////////////////////////////////////////////////
 template <typename KeyType>
-const Object* AccessorObjectMap<KeyType>::AccessItem(IDeserializer& key_deserializer, int multi_index, const Object* object) const {
+object_constptr_t AccessorObjectMap<KeyType>::accessItem(
+    IDeserializer& key_deserializer, //
+    int multi_index,
+    object_constptr_t instance) const {
   KeyType key;
 
   BidirectionalSerializer(key_deserializer) | key;
 
-  return (object->*mGetter)(key, multi_index);
+  return (instance.get()->*_getter)(key, multi_index);
 }
-
+////////////////////////////////////////////////////////////////////////////////
 template <typename KeyType>
-bool AccessorObjectMap<KeyType>::DeserializeItem(
+void AccessorObjectMap<KeyType>::deserializeItem(
     IDeserializer* value_deserializer,
     IDeserializer& key_deserializer,
     int multi_index,
-    Object* object) const {
-  bool result = true;
-
+    object_ptr_t instance) const {
   KeyType key;
-
   BidirectionalSerializer(key_deserializer) | key;
-
   if (value_deserializer) {
-    Object* value = (object->*mAccessor)(key, multi_index);
+    object_ptr_t value = (instance.get()->*_accessor)(key, multi_index);
 
     if (value) {
-      result = Object::xxxDeserialize(value, *value_deserializer);
-    } else {
-      result = false;
+      Object::xxxDeserializeShared(value, *value_deserializer);
     }
   } else {
-    (object->*mEraser)(key, multi_index);
+    (instance.get()->*_eraser)(key, multi_index);
   }
-
-  return result;
 }
-
+////////////////////////////////////////////////////////////////////////////////
 template <typename KeyType>
-bool AccessorObjectMap<KeyType>::SerializeItem(
+void AccessorObjectMap<KeyType>::serializeItem(
     ISerializer& value_serializer,
     IDeserializer& key_deserializer,
     int multi_index,
-    const Object* object) const {
+    object_constptr_t instance) const {
   KeyType key;
-
   BidirectionalSerializer(key_deserializer) | key;
-
-  const Object* value = (object->*mGetter)(key, multi_index);
-
+  object_constptr_t value = (instance.get()->*_getter)(key, multi_index);
   if (value) {
-    return Object::xxxSerialize(value, value_serializer);
-  } else {
-    return false;
+    Object::xxxSerializeShared(value, value_serializer);
   }
 }
-
-template <typename KeyType> bool AccessorObjectMap<KeyType>::Deserialize(IDeserializer& deserializer, Object* object) const {
-  Command item;
-
-  if (deserializer.beginCommand(item)) {
-    OrkAssert(item.Type() == Command::EITEM);
-
-    if (item.Type() != Command::EITEM) {
-      deserializer.endCommand(item);
-      return false;
-    }
-
-    Command attribute;
-    if (false == deserializer.beginCommand(attribute))
-      return false;
-
-    OrkAssert(attribute.Type() == Command::EATTRIBUTE);
-    OrkAssert(attribute.Name() == "key");
-
-    if (attribute.Type() != Command::EATTRIBUTE || attribute.Name() != "key") {
-      deserializer.endCommand(attribute);
-      return false;
-    }
-
-    KeyType key;
-
-    BidirectionalSerializer(deserializer) | key;
-
-    if (false == deserializer.endCommand(attribute))
-      return false;
-
-    Object* value = (object->*mAccessor)(key, IMap::kDeserializeInsertItem);
-
-    if (false == Object::xxxDeserialize(value, deserializer))
-      return false;
-
-    if (false == deserializer.endCommand(item))
-      return false;
-
-    return true;
-  }
-
-  return false;
-}
-
-template <typename KeyType> bool AccessorObjectMap<KeyType>::Serialize(ISerializer& serializer, object_constptr_t) const {
-  BidirectionalSerializer bidi(serializer);
-  (obj->*mSerializer)(DoSerialize, bidi);
-
-  return bidi.Succeeded();
-}
-
+////////////////////////////////////////////////////////////////////////////////
 template <typename KeyType>
-void AccessorObjectMap<KeyType>::DoSerialize(BidirectionalSerializer& bidi, const KeyType& key, const Object* value) {
+void AccessorObjectMap<KeyType>::deserialize(
+    IDeserializer& deserializer, //
+    object_ptr_t instance) const {
+  Command item;
+  deserializer.beginCommand(item);
+  OrkAssert(item.Type() == Command::EITEM);
+  Command attribute;
+  deserializer.beginCommand(attribute);
+  OrkAssert(attribute.Type() == Command::EATTRIBUTE);
+  OrkAssert(attribute.Name() == "key");
+  KeyType key;
+  BidirectionalSerializer(deserializer) | key;
+  deserializer.endCommand(attribute);
+  object_ptr_t value = (instance.get()->*_accessor)(key, IMap::kDeserializeInsertItem);
+  Object::xxxDeserializeShared(value, deserializer);
+  deserializer.endCommand(item);
+}
+////////////////////////////////////////////////////////////////////////////////
+template <typename KeyType>
+void AccessorObjectMap<KeyType>::serialize(
+    ISerializer& serializer, //
+    object_constptr_t instance) const {
+  BidirectionalSerializer bidi(serializer);
+  auto non_const = const_cast<Object*>(instance.get());
+  (non_const->*_serializer)(_serdesimpl, bidi);
+}
+////////////////////////////////////////////////////////////////////////////////
+template <typename KeyType>
+void AccessorObjectMap<KeyType>::_serdesimpl(
+    BidirectionalSerializer& bidi, //
+    const KeyType& key,
+    object_constptr_t value) {
   bool result             = true;
   ISerializer* serializer = bidi.Serializer();
-
   Command item(Command::EITEM);
-
   Command attribute(Command::EATTRIBUTE, "key");
-
-  if (false == serializer->beginCommand(item))
-    result = false;
-  if (false == serializer->beginCommand(attribute))
-    result = false;
+  serializer->beginCommand(item);
+  serializer->beginCommand(attribute);
   bidi | key;
-  if (false == serializer->endCommand(attribute))
-    result = false;
-
-  if (false == Object::xxxSerialize(value, *bidi.Serializer()))
-    result = false;
-
-  if (false == serializer->endCommand(item))
-    result = false;
-
-  if (false == result)
-    bidi.Fail();
+  serializer->endCommand(attribute);
+  Object::xxxSerializeShared(value, *bidi.Serializer());
+  serializer->endCommand(item);
 }
-
-}} // namespace ork::reflect
+////////////////////////////////////////////////////////////////////////////////
+} // namespace ork::reflect

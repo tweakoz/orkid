@@ -19,14 +19,13 @@ DirectObject::DirectObject(object_ptr_t Object::*property)
     : mProperty(property) {
 }
 
-bool DirectObject::Serialize(ISerializer& serializer, const Object* object) const {
+void DirectObject::serialize(ISerializer& serializer, object_constptr_t instance) const {
   // const Object* object_property = (const_cast<Object*>(object)->*mProperty)();
   // Object::xxxSerialize(object_property, serializer);
   OrkAssert(false);
-  return true;
 }
 
-bool DirectObject::Deserialize(IDeserializer& serializer, Object* object) const {
+void DirectObject::deserialize(IDeserializer& serializer, object_ptr_t instance) const {
   OrkAssert(false);
   /*Object* object_property = (object->*mProperty)();
   Command command;
@@ -39,27 +38,25 @@ bool DirectObject::Deserialize(IDeserializer& serializer, Object* object) const 
   }
 
   serializer.endCommand(command);*/
-
-  return true;
 }
 
-object_ptr_t DirectObject::Access(Object* object) const {
-  return (object->*mProperty);
+object_ptr_t DirectObject::access(object_ptr_t instance) const {
+  return (instance.get()->*mProperty);
 }
 
-object_constptr_t DirectObject::Access(const Object* object) const {
-  return (const_cast<Object*>(object)->*mProperty);
+object_constptr_t DirectObject::access(object_constptr_t instance) const {
+  return (const_cast<Object*>(instance.get())->*mProperty);
 }
 
 void DirectObject::get(
     object_ptr_t& value, //
-    const Object* object) const {
-  value = (object->*mProperty);
+    object_constptr_t instance) const {
+  value = (instance.get()->*mProperty);
 }
 void DirectObject::set(
     object_ptr_t const& value, //
-    Object* object) const {
-  (object->*mProperty) = value;
+    object_ptr_t instance) const {
+  (instance.get()->*mProperty) = value;
 }
 
 }} // namespace ork::reflect

@@ -19,8 +19,8 @@ namespace ork { namespace reflect {
 
 class IObjectArray : public IArray {
 public:
-  virtual Object* AccessObject(Object*, size_t) const             = 0;
-  virtual const Object* AccessObject(const Object*, size_t) const = 0;
+  virtual object_ptr_t accessObject(object_ptr_t, size_t) const           = 0;
+  virtual object_constptr_t accessObject(object_constptr_t, size_t) const = 0;
 };
 
 }} // namespace ork::reflect

@@ -16,84 +16,75 @@ namespace ork { namespace reflect {
 
 ////////////////////////////////////////////////////////////////
 AccessorObjectArray::AccessorObjectArray(
-    Object* (Object::*accessor)(size_t),
+    object_ptr_t (Object::*accessor)(size_t),
     size_t (Object::*counter)() const,
     void (Object::*resizer)(size_t))
-    : mAccessor(accessor)
-    , mCounter(counter)
-    , mResizer(resizer) {
+    : _accessor(accessor)
+    , _counter(counter)
+    , _resizer(resizer) {
 }
 ////////////////////////////////////////////////////////////////
-Object* AccessorObjectArray::AccessObject(
-    Object* object, //
+object_ptr_t AccessorObjectArray::accessObject(
+    object_ptr_t object, //
     size_t index) const {
-  return (object->*mAccessor)(index);
+  return (object.get()->*_accessor)(index);
 }
 ////////////////////////////////////////////////////////////////
-const Object* AccessorObjectArray::AccessObject(
-    const Object* object, //
+object_constptr_t AccessorObjectArray::accessObject(
+    object_constptr_t object, //
     size_t index) const {
-  return (const_cast<Object*>(object)->*mAccessor)(index);
+  return (const_cast<Object*>(object.get())->*_accessor)(index);
 }
 ////////////////////////////////////////////////////////////////
-size_t AccessorObjectArray::Count(const Object* object) const {
-  return (object->*mCounter)();
+size_t AccessorObjectArray::count(object_constptr_t object) const {
+  return (object.get()->*_counter)();
 }
 ////////////////////////////////////////////////////////////////
-bool AccessorObjectArray::DeserializeItem(
+void AccessorObjectArray::deserializeItem(
     IDeserializer& deserializer, //
-    Object* parent_object,
+    object_ptr_t parent_object,
     size_t index) const {
   Command object_command;
 
-  if (false == deserializer.beginCommand(object_command))
-    return false;
+  deserializer.beginCommand(object_command);
 
-  Object* child_object = AccessObject(parent_object, index);
+  auto child_object = accessObject(parent_object, index);
 
   if (object_command.Type() != Command::EOBJECT or //
       nullptr == child_object or                   //
       object_command.Name() != child_object->GetClass()->Name()) {
-    deserializer.endCommand(object_command);
-    return false;
+    OrkAssert(false);
   }
 
-  if (false == Object::xxxDeserialize(child_object, deserializer))
-    return false;
-
-  if (false == deserializer.endCommand(object_command))
-    return false;
-
-  return true;
+  Object::xxxDeserializeShared(child_object, deserializer);
+  deserializer.endCommand(object_command);
 }
 ////////////////////////////////////////////////////////////////
-bool AccessorObjectArray::SerializeItem(
+void AccessorObjectArray::serializeItem(
     ISerializer& serializer, //
-    const Object* object,
+    object_constptr_t object,
     size_t index) const {
-  auto child_object = AccessObject(object, index);
-  return Object::xxxSerialize(child_object, serializer);
+  auto child_object = accessObject(object, index);
+  return Object::xxxSerializeShared(child_object, serializer);
 }
 ////////////////////////////////////////////////////////////////
-bool AccessorObjectArray::Resize(
-    Object* obj, //
+void AccessorObjectArray::resize(
+    object_ptr_t obj, //
     size_t size) const {
-  if (mResizer != 0) {
-    (obj->*mResizer)(size);
-    return true;
-  } else {
-    return size == Count(obj);
-  }
+  OrkAssert(_resizer != nullptr);
+  (obj.get()->*_resizer)(size);
 }
 ////////////////////////////////////////////////////////////////
-bool AccessorObjectArray::Deserialize(ork::reflect::IDeserializer&, ork::Object*) const {
+void AccessorObjectArray::deserialize(
+    ork::reflect::IDeserializer&, //
+    object_ptr_t) const {
   OrkAssert(false);
-  return false;
 }
 ////////////////////////////////////////////////////////////////
-bool AccessorObjectArray::Serialize(ork::reflect::ISerializer&, ork::Object const*) const {
+void AccessorObjectArray::serialize(
+    ork::reflect::ISerializer&, //
+    object_constptr_t) const {
   OrkAssert(false);
-  return false;
 }
 ////////////////////////////////////////////////////////////////
 }} // namespace ork::reflect

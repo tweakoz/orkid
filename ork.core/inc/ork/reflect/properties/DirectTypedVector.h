@@ -13,19 +13,20 @@
 
 namespace ork::reflect {
 
-template <typename VectorType> class DirectTypedVector : public ITypedArray<typename VectorType::value_type> {
-public:
-  typedef typename VectorType::value_type ValueType;
+template <typename VectorType> //
+struct DirectTypedVector       //
+    : public ITypedArray<typename VectorType::value_type> {
+
+  using value_type = typename VectorType::value_type;
 
   DirectTypedVector(VectorType Object::*);
 
-private:
-  void get(ValueType&, const Object*, size_t) const override;
-  void set(const ValueType&, Object*, size_t) const override;
-  size_t count(const Object*) const override;
-  void resize(Object*, size_t) const override;
+  void get(value_type&, object_constptr_t, size_t) const override;
+  void set(const value_type&, object_ptr_t, size_t) const override;
+  size_t count(object_constptr_t) const override;
+  void resize(object_ptr_t, size_t) const override;
 
-  VectorType Object::*mProperty;
+  VectorType Object::*_member;
 };
 
 } // namespace ork::reflect

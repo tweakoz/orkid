@@ -23,8 +23,8 @@ public:
 
   void serialize(ISerializer&, object_constptr_t) const override;
   void deserialize(IDeserializer&, object_ptr_t) const override;
-  object_ptr_t Access(Object*) const override;
-  object_constptr_t Access(const Object*) const override;
+  object_ptr_t access(object_ptr_t) const override;
+  object_constptr_t access(object_constptr_t) const override;
 
 private:
   object_ptr_t (Object::*_accessor)();

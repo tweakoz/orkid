@@ -40,34 +40,34 @@ AutoConnector::AutoConnector() {
 }
 AutoConnector::~AutoConnector() {
 }
-void AutoConnector::DisconnectAll() {
-  int inumcon = mConnections.size();
+void AutoConnector::disconnectAll(autoconnector_ptr_t on) {
+  int inumcon = on->_connections.size();
 
-  while (false == mConnections.empty()) {
-    Connection* conn = *mConnections.begin();
+  while (false == on->_connections.empty()) {
+    Connection* conn = *on->_connections.begin();
 
-    bool bOK = ork::object::Disconnect(conn->mpSender, conn->mSignal, conn->mpReciever, conn->mSlot);
+    bool bOK = ork::object::Disconnect(conn->_sender, conn->mSignal, conn->_reciever, conn->mSlot);
     OrkAssert(bOK);
 
     ////////////////////////////////////////////////////
     // remove from my connection list
     ////////////////////////////////////////////////////
-    mConnections.erase(mConnections.begin());
+    on->_connections.erase(on->_connections.begin());
     ////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////
     // remove from recievers connection list
     ////////////////////////////////////////////////////
     orkset<Connection*>::iterator itoth;
-    if (this == conn->mpSender) {
-      itoth = conn->mpReciever->mConnections.find(conn);
-      if (itoth != conn->mpReciever->mConnections.end()) {
-        mConnections.erase(itoth); // remove from other connection list
+    if (on == conn->_sender) {
+      itoth = conn->_reciever->_connections.find(conn);
+      if (itoth != conn->_reciever->_connections.end()) {
+        on->_connections.erase(itoth); // remove from other connection list
       }
-    } else if (this == conn->mpReciever) {
-      itoth = conn->mpSender->mConnections.find(conn);
-      if (itoth != conn->mpSender->mConnections.end()) {
-        mConnections.erase(itoth); // remove from other connection list
+    } else if (on == conn->_reciever) {
+      itoth = conn->_sender->_connections.find(conn);
+      if (itoth != conn->_sender->_connections.end()) {
+        on->_connections.erase(itoth); // remove from other connection list
       }
     }
     ////////////////////////////////////////////////////
@@ -76,29 +76,36 @@ void AutoConnector::DisconnectAll() {
   }
 }
 
-void AutoConnector::Connect(const char* SignalName, AutoConnector* pReciever, const char* SlotName) {
+void AutoConnector::connect( // static
+    autoconnector_ptr_t sender,
+    const char* SignalName, //
+    autoconnector_ptr_t receiver,
+    const char* SlotName) {
+
+  OrkAssert(sender != nullptr);
+  OrkAssert(receiver != nullptr);
+  OrkAssert(sender != receiver);
+
   ork::PoolString psigname = ork::AddPooledString(SignalName);
   ork::PoolString psltname = ork::AddPooledString(SlotName);
 
-  bool bOK = ork::object::Connect(this, psigname, pReciever, psltname);
+  bool bOK = ork::object::Connect(sender, psigname, receiver, psltname);
 
   OrkAssert(bOK);
 
   if (bOK) {
     Connection* conn = new Connection;
-    conn->mpSender   = this;
-    conn->mpReciever = pReciever;
+    conn->_sender    = sender;
+    conn->_reciever  = receiver;
     conn->mSignal    = psigname;
     conn->mSlot      = psltname;
-    mConnections.insert(conn);
-    if (pReciever != this) {
-      pReciever->mConnections.insert(conn);
-    }
+    sender->_connections.insert(conn);
+    receiver->_connections.insert(conn);
   }
 }
 
-void AutoConnector::SetupSignalsAndSlots() {
-  object::ObjectClass* pclass                            = rtti::downcast<object::ObjectClass*>(GetClass());
+void AutoConnector::setupSignalsAndSlots(autoconnector_ptr_t on) {
+  object::ObjectClass* pclass                            = rtti::downcast<object::ObjectClass*>(on->GetClass());
   const reflect::Description& descript                   = pclass->Description();
   const reflect::Description::SignalMapType& signals     = descript.GetSignals();
   const reflect::Description::AutoSlotMapType& autoslots = descript.GetAutoSlots();
@@ -107,9 +114,9 @@ void AutoConnector::SetupSignalsAndSlots() {
   for (reflect::Description::AutoSlotMapType::const_iterator it = autoslots.begin(); it != autoslots.end(); it++) {
     const ork::ConstString& slotname                     = it->first;
     ork::object::AutoSlot ork::Object::*const ptr2slotmp = it->second;
-    ork::object::AutoSlot& slot                          = this->*ptr2slotmp;
+    ork::object::AutoSlot& slot                          = on->*ptr2slotmp;
     slot.SetSlotName(ork::AddPooledString(slotname.c_str()));
-    slot.SetObject(this);
+    slot.SetObject(on);
   }
   // for( reflect::Description::AutoSlotMapType::const_iterator it=autoslots.begin(); it!=autoslots.end(); it++ )
   //{	const ork::PoolString& slotname = it->first;

@@ -8,7 +8,7 @@
 #include <orktool/qtui/qtui_tool.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <orktool/qtui/qtmainwin.h>
-#include <ork/reflect/properties/AbstractProperty.h>
+
 #include <ork/reflect/properties/ObjectProperty.h>
 #include <ork/reflect/properties/register.h>
 ///////////////////////////////////////////////////////////////////////////////

@@ -11,7 +11,7 @@
 #include <orktool/ged/ged_delegate.h>
 #include <orktool/ged/ged_io.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/reflect/properties/AbstractProperty.h>
+
 #include <ork/reflect/properties/ObjectProperty.h>
 #include <ork/reflect/properties/IObject.h>
 #include <ork/dataflow/dataflow.h>

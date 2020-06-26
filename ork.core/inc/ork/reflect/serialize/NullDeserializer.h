@@ -8,7 +8,7 @@
 #pragma once
 
 #include <ork/reflect/IDeserializer.h>
-#include <ork/reflect/properties/AbstractProperty.h>
+
 #include <ork/reflect/properties/ObjectProperty.h>
 #include <ork/reflect/Command.h>
 
@@ -34,7 +34,6 @@ public:
   void deserialize(ResizableString&) override;
   void deserializeData(unsigned char*, size_t) override;
 
-  void deserialize(const AbstractProperty*) override;
   void deserializeSharedObject(object_ptr_t&) override;
   void deserializeObjectProperty(const ObjectProperty*, object_ptr_t) override;
 
@@ -65,10 +64,6 @@ inline void NullDeserializer::deserialize(double& value) {
 }
 
 inline void NullDeserializer::deserializeSharedObject(object_ptr_t& value_out) {
-}
-
-inline void NullDeserializer::deserialize(const AbstractProperty* prop) {
-  prop->Deserialize(*this);
 }
 
 inline void NullDeserializer::deserializeObjectProperty(const ObjectProperty* prop, object_ptr_t object) {

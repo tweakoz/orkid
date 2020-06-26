@@ -20,11 +20,11 @@ class DirectObject : public IObject {
 public:
   DirectObject(object_ptr_t Object::*);
 
-  void get(object_ptr_t& value, const Object* obj) const;
-  void set(object_ptr_t const& value, Object* obj) const;
+  void get(object_ptr_t& value, object_constptr_t instance) const;
+  void set(object_ptr_t const& value, object_ptr_t instance) const;
 
-  object_ptr_t Access(Object*) const override;
-  object_constptr_t Access(const Object*) const override;
+  object_ptr_t access(object_ptr_t) const override;
+  object_constptr_t access(object_constptr_t) const override;
 
   void deserialize(IDeserializer&, object_ptr_t) const override;
   void serialize(ISerializer&, object_constptr_t) const override;

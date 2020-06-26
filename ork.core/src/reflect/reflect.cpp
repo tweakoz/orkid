@@ -7,8 +7,6 @@
 #include <ork/pch.h>
 
 #include <ork/reflect/properties/IObject.h>
-#include <ork/reflect/properties/ISharedObject.h>
-#include <ork/reflect/properties/AbstractTypedProperty.hpp>
 #include <ork/reflect/properties/ITyped.hpp>
 
 #include <ork/reflect/properties/IArray.h>
@@ -115,16 +113,6 @@ using namespace reflect;
   FOREACH_PRIMITIVE_TYPE(MACRO, AccessorTyped);                                                                                    \
   FOREACH_PRIMITIVE_TYPE(MACRO, AccessorTypedArray);
 
-#define FOREACH_RTTI_PROPERTY_TYPE(MACRO)                                                                                          \
-  MACRO(AbstractProperty);                                                                                                                \
-  MACRO(ObjectProperty);                                                                                                           \
-  MACRO(IObject);                                                                                                                  \
-  MACRO(ISharedObject);                                                                                                            \
-  MACRO(IArray);                                                                                                                   \
-  MACRO(IObjectArray);                                                                                                             \
-  MACRO(IMap);                                                                                                                     \
-  MACRO(IObjectMap);
-
 //	MACRO(IObjectArray); \
 
 ////////////////////
@@ -138,24 +126,12 @@ IDeserializer::~IDeserializer() {
 }
 
 template class orklut<ConstString, ObjectProperty*>;
-// template class orklut<ork::PoolString,ork::rtti::Class*>;
 template class orklut<ConstString, IObjectFunctor*>;
 template class orklut<ConstString, object::Signal Object::*>;
 template class orklut<ConstString, object::AutoSlot Object::*>;
 } // namespace ork
 
-//"ork::reflect::AccessorTyped<int>::AccessorTyped(void (ork::Object::*)(int&) const, void
-//(ork::Object::*)(int const&))", referenced from: ork::reflect::AccessorTyped<int>&
-// ork::reflect::RegisterProperty<TestObject, int>(char const*, void (TestObject::*)(int&) const, void (TestObject::*)(int const&),
-// ork::reflect::Description&)in main.o "ork::reflect::DirectTyped<int>::DirectTyped(int ork::Object::*)",
-// referenced from: ork::reflect::DirectTyped<int>& ork::reflect::RegisterProperty<TestSubObject, int>(char const*, int
-// TestSubObject::*, ork::reflect::Description&)in main.o
-
-// template class AccessorTyped<int>;
-// template class DirectTyped<int>;
-
 FOREACH_INSTANTIATED_PROPERTY_TYPE(INSTANTIATE);
-FOREACH_RTTI_PROPERTY_TYPE(INSTANTIATE_TRANSPARENT_CASTABLE);
 
 namespace ork { namespace reflect {
 template class ITyped<int>;

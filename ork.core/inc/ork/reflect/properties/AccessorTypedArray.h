@@ -22,15 +22,15 @@ public:
       void (Object::*resizer)(size_t) = 0);
 
 private:
-  void Get(T&, const Object*, size_t) const override;
-  void Set(const T&, Object*, size_t) const override;
-  size_t Count(const Object*) const override;
-  bool Resize(Object* obj, size_t size) const override;
+  void get(T&, object_constptr_t, size_t) const override;
+  void set(const T&, object_ptr_t, size_t) const override;
+  size_t count(object_constptr_t) const override;
+  void resize(object_ptr_t obj, size_t size) const override;
 
-  void (Object::*mGetter)(T&, size_t) const;
-  void (Object::*mSetter)(const T&, size_t);
-  size_t (Object::*mCounter)() const;
-  void (Object::*mResizer)(size_t);
+  void (Object::*_getter)(T&, size_t) const;
+  void (Object::*_setter)(const T&, size_t);
+  size_t (Object::*_counter)() const;
+  void (Object::*_resizer)(size_t);
 };
 
 }} // namespace ork::reflect

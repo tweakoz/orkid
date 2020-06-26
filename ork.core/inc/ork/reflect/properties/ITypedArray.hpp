@@ -13,14 +13,22 @@
 
 namespace ork { namespace reflect {
 
-template <typename T> void ITypedArray<T>::deserializeItem(IDeserializer& deserializer, Object* obj, size_t index) const {
+template <typename T> //
+void ITypedArray<T>::deserializeItem(
+    IDeserializer& deserializer, //
+    object_ptr_t obj,
+    size_t index) const {
   BidirectionalSerializer bidi(deserializer);
   T value;
   bidi | value;
   set(value, obj, index);
 }
 
-template <typename T> void ITypedArray<T>::serializeItem(ISerializer& serializer, const Object* obj, size_t index) const {
+template <typename T> //
+void ITypedArray<T>::serializeItem(
+    ISerializer& serializer, //
+    object_constptr_t obj,
+    size_t index) const {
   BidirectionalSerializer bidi(serializer);
   T value;
   get(value, obj, index);

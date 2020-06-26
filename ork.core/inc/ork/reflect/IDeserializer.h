@@ -9,8 +9,9 @@
 
 #include <ork/kernel/string/ResizableString.h>
 #include <ork/kernel/string/MutableString.h>
-
 #include <ork/orktypes.h>
+#include <unordered_map>
+#include <boost/uuid/uuid.hpp>
 
 namespace ork::reflect {
 
@@ -30,9 +31,9 @@ struct IDeserializer {
   virtual void deserializeSharedObject(object_ptr_t&)                         = 0;
   virtual void deserializeObjectProperty(const ObjectProperty*, object_ptr_t) = 0;
 
-  virtual void deserialize(MutableString&)             = 0;
-  virtual void deserialize(ResizableString&)           = 0;
-  virtual void deserializeData(unsigned char*, size_t) = 0;
+  virtual void deserialize(MutableString&)       = 0;
+  virtual void deserialize(ResizableString&)     = 0;
+  virtual void deserializeData(uint8_t*, size_t) = 0;
 
   void referenceObject(object_ptr_t);
   virtual void beginCommand(Command&)     = 0;
@@ -45,6 +46,8 @@ struct IDeserializer {
   const reflect::ObjectProperty* _currentProperty = nullptr;
   object_ptr_t _currentObject                     = nullptr;
   const Command* _currentCommand                  = nullptr;
+  using trackervect_t                             = std::unordered_map<std::string, object_ptr_t>;
+  trackervect_t _reftracker;
 };
 
 } // namespace ork::reflect

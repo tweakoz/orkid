@@ -8,7 +8,7 @@
 #include <ork/pch.h>
 #include <ork/reflect/serialize/TextDeserializer.h>
 #include <ork/reflect/Command.h>
-#include <ork/reflect/properties/AbstractProperty.h>
+
 #include <ork/reflect/properties/ObjectProperty.h>
 #include <ork/rtti/Class.h>
 #include <ork/rtti/Category.h>

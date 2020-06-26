@@ -32,13 +32,9 @@ class BidirectionalSerializer;
 
 struct Object;
 
-// typedef rtti::RTTI<Object, rtti::ICastable, rtti::DefaultPolicy, object::ObjectClass> ObjectBase;
-
 struct Object : public rtti::ICastable {
 private:
   RttiDeclareAbstractWithCategory(Object, rtti::ICastable, object::ObjectClass);
-
-  // RttiDeclareConcrete( Object, ObjectBase );
 
 public:
   virtual ~Object() {
@@ -54,7 +50,6 @@ public:
   virtual bool PostSerialize(reflect::ISerializer&) const;
   virtual bool PostDeserialize(reflect::IDeserializer&);
 
-  // virtual Object* Clone() const;
   virtual object_ptr_t cloneShared() const;
   void _cloneInto(object_ptr_t& into) const;
 

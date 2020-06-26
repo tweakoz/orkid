@@ -11,7 +11,8 @@
 
 namespace ork { namespace reflect {
 
-template <typename KeyType> class AccessorObjectMap : public IObjectMap {
+template <typename KeyType> //
+class AccessorObjectMap : public IObjectMap {
 public:
   typedef void (*SerializationFunction)(BidirectionalSerializer&, const KeyType&, object_constptr_t);
 
@@ -22,21 +23,21 @@ public:
       void (Object::*mSerializer)(SerializationFunction, BidirectionalSerializer&) const);
 
 private:
-  object_ptr_t AccessItem(IDeserializer& key, int, object_ptr_t) const override;
-  object_constptr_t AccessItem(IDeserializer& key, int, object_constptr_t) const override;
+  object_ptr_t accessItem(IDeserializer& key, int, object_ptr_t instance) const override;
+  object_constptr_t accessItem(IDeserializer& key, int, object_constptr_t instance) const override;
 
-  void deserializeItem(IDeserializer* value, IDeserializer& key, int, object_ptr_t) const override;
-  void serializeItem(ISerializer& value, IDeserializer& key, int, object_constptr_t) const override;
+  void deserializeItem(IDeserializer* value, IDeserializer& key, int, object_ptr_t instance) const override;
+  void serializeItem(ISerializer& value, IDeserializer& key, int, object_constptr_t instance) const override;
 
-  void deserialize(IDeserializer& serializer, object_ptr_t) const override;
-  void serialize(ISerializer& serializer, object_constptr_t) const override;
+  void deserialize(IDeserializer& serializer, object_ptr_t instance) const override;
+  void serialize(ISerializer& serializer, object_constptr_t instance) const override;
 
-  static void _doSerialize(BidirectionalSerializer& bidi, const KeyType& key, object_constptr_t value);
+  static void _serdesimpl(BidirectionalSerializer& bidi, const KeyType& key, object_constptr_t value);
 
-  object_constptr_t (Object::*mGetter)(const KeyType&, int) const;
-  object_ptr_t (Object::*mAccessor)(const KeyType&, int);
-  void (Object::*mEraser)(const KeyType&, int);
-  void (Object::*mSerializer)(SerializationFunction, BidirectionalSerializer&) const;
+  object_constptr_t (Object::*_getter)(const KeyType&, int) const;
+  object_ptr_t (Object::*_accessor)(const KeyType&, int);
+  void (Object::*_eraser)(const KeyType&, int);
+  void (Object::*_serializer)(SerializationFunction, BidirectionalSerializer&) const;
 };
 
 }} // namespace ork::reflect

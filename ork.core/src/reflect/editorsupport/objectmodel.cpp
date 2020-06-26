@@ -15,7 +15,6 @@
 #include <ork/reflect/properties/IMap.h>
 #include <ork/reflect/properties/ObjectProperty.h>
 #include <ork/reflect/properties/IObject.h>
-#include <ork/reflect/properties/AbstractProperty.h>
 #include <ork/reflect/properties/register.h>
 #include <ork/rtti/downcast.h>
 #include <ork/reflect/editorsupport/objectmodel.h>
@@ -89,7 +88,7 @@ ObjectModel::ObjectModel()
     , ConstructAutoSlot(ObjectDeSelected)
     , ConstructAutoSlot(Repaint) {
 
-  SetupSignalsAndSlots();
+  AutoConnector::setupSignalsAndSlots(this);
   ///////////////////////////////////////////
   // A Touch Of Class
 
@@ -116,7 +115,7 @@ void ObjectModel::FlushAllQueues() {
 ///////////////////////////////////////////////////////////////////////////////
 
 ObjectModel::~ObjectModel() {
-  DisconnectAll();
+  AutoConnector::disconnectAll(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -461,7 +460,7 @@ void ObjectModel::EnumerateNodes(
           for (; itp != iter_toklist.end(); itp++) {
             const std::string& str                                   = (*itp);
             ork::reflect::Description::PropertyMapType::iterator itf = propmap.find(str.c_str());
-            ork::reflect::ObjectProperty* prop                      = (itf != propmap.end()) ? itf->second : 0;
+            ork::reflect::ObjectProperty* prop                       = (itf != propmap.end()) ? itf->second : 0;
             if (prop) {
               pnode->PropVect.push_back(std::make_pair(str.c_str(), prop));
             }

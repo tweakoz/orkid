@@ -6,7 +6,7 @@
 #include <ork/kernel/opq.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/reflect/editorsupport/objectmodel.h>
-#include <ork/reflect/properties/AbstractProperty.h>
+
 #include <ork/reflect/properties/ObjectProperty.h>
 #include <ork/reflect/properties/IMap.h>
 #include <ork/reflect/properties/IArray.h>

@@ -21,8 +21,8 @@ namespace ork { namespace reflect {
 
 class IObject : public ObjectProperty {
 public:
-  virtual object_ptr_t Access(Object*) const            = 0;
-  virtual object_constptr_t Access(const Object*) const = 0;
+  virtual object_ptr_t access(object_ptr_t) const           = 0;
+  virtual object_constptr_t access(object_constptr_t) const = 0;
 };
 
 }} // namespace ork::reflect

@@ -16,12 +16,12 @@ template <typename T> class ITypedArray : public IArray {
 public:
   ITypedArray() {
   }
-  virtual void get(T& value, const Object* obj, size_t index) const = 0;
-  virtual void set(const T& value, Object* obj, size_t index) const = 0;
+  virtual void get(T& value, object_constptr_t obj, size_t index) const  = 0;
+  virtual void set(const T& value, object_ptr_t obj, size_t index) const = 0;
 
 private:
-  void deserializeItem(IDeserializer& serializer, Object* obj, size_t index) const override;
-  void serializeItem(ISerializer& serializer, const Object* obj, size_t index) const override;
+  void deserializeItem(IDeserializer& serializer, object_ptr_t obj, size_t index) const override;
+  void serializeItem(ISerializer& serializer, object_constptr_t obj, size_t index) const override;
 };
 
 }} // namespace ork::reflect

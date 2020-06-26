@@ -9,8 +9,6 @@
 
 #include <ork/reflect/IDeserializer.h>
 #include <ork/stream/InputStreamBuffer.h>
-#include <unordered_map>
-#include <boost/uuid/uuid.hpp>
 
 #include <ork/orkstl.h>
 
@@ -32,7 +30,6 @@ public:
   void deserialize(ResizableString&) override;
   void deserializeData(unsigned char*, size_t) override;
 
-  // void deserialize(const AbstractProperty*) override;
   void deserializeSharedObject(object_ptr_t&) override;
   void deserializeObjectProperty(const ObjectProperty*, object_ptr_t) override;
 
@@ -43,7 +40,6 @@ public:
       ptrtype&, //
       dmtype&);
 
-  // void referenceObject(object_ptr_t) override;
   void beginCommand(Command&) override;
   void endCommand(const Command&) override;
 
@@ -52,10 +48,7 @@ private:
 
   int mLineNo;
 
-  using trackervect_t = std::unordered_map<std::string, rtti::castable_rawptr_t>;
-
   stream::InputStreamBuffer<1024 * 4> mStream;
-  trackervect_t _reftracker;
 
   void EatSpace();
   void Advance(int n = 1);
@@ -76,7 +69,6 @@ private:
 
   bool mbReadingAttributes;
   char mAttributeEndChar;
-  const Command* mCurrentCommand;
 
   // int FindObject(rtti::ICastable* object);
 

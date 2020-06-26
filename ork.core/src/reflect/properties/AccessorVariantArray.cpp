@@ -3,8 +3,7 @@
 // Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
-
+////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
 #include <ork/reflect/properties/AccessorVariantArray.h>
@@ -13,36 +12,36 @@
 namespace ork { namespace reflect {
 
 AccessorVariantArray::AccessorVariantArray(
-	bool (Object::*serialize_item)(ISerializer &, size_t) const,
-	bool (Object::*deserialize_item)(IDeserializer &, size_t),
-	size_t (Object::*count)() const,
-	bool (Object::*resize)(size_t))
-	: mSerializeItem(serialize_item)
-	, mDeserializeItem(deserialize_item)
-	, mCount(count)
-	, mResize(resize)
-{}
-
-bool AccessorVariantArray::DeserializeItem(
-	IDeserializer &deserializer, Object *object, size_t index) const
-{
-	return (object->*mDeserializeItem)(deserializer, index);
+    void (Object::*serialize_item)(ISerializer&, size_t) const,
+    void (Object::*deserialize_item)(IDeserializer&, size_t),
+    size_t (Object::*count)() const,
+    void (Object::*resize)(size_t))
+    : mSerializeItem(serialize_item)
+    , mDeserializeItem(deserialize_item)
+    , mCount(count)
+    , mResize(resize) {
 }
 
-bool AccessorVariantArray::SerializeItem(
-	ISerializer &serializer, const Object *object, size_t index) const
-{
-	return (object->*mSerializeItem)(serializer, index);
+void AccessorVariantArray::deserializeItem(
+    IDeserializer& deserializer, //
+    object_ptr_t instance,
+    size_t index) const {
+  return (instance.get()->*mDeserializeItem)(deserializer, index);
 }
 
-size_t AccessorVariantArray::Count( const Object *object ) const
-{
-	return (object->*mCount)();
+void AccessorVariantArray::serializeItem(
+    ISerializer& serializer, //
+    object_constptr_t instance,
+    size_t index) const {
+  return (instance.get()->*mSerializeItem)(serializer, index);
 }
 
-bool AccessorVariantArray::Resize( Object *object, size_t size ) const
-{
-	return (object->*mResize)(size);
+size_t AccessorVariantArray::count(object_constptr_t instance) const {
+  return (instance.get()->*mCount)();
 }
 
-} }
+void AccessorVariantArray::resize(object_ptr_t instance, size_t size) const {
+  return (instance.get()->*mResize)(size);
+}
+
+}} // namespace ork::reflect

@@ -149,12 +149,12 @@ static inline AccessorTypedArray<MemberType>& RegisterArrayProperty(
 template <typename ClassType>
 static inline AccessorObjectArray& RegisterArrayProperty(
     const char* name,
-    Object* (ClassType::*accessor)(size_t),
+    object_ptr_t (ClassType::*accessor)(size_t),
     size_t (ClassType::*counter)() const,
     void (ClassType::*resizer)(size_t newsize) = nullptr,
     Description& description                   = ClassType::GetClassStatic()->Description()) {
   auto prop = new AccessorObjectArray(
-      static_cast<Object* (Object::*)(size_t)>(accessor),
+      static_cast<object_ptr_t (Object::*)(size_t)>(accessor),
       static_cast<size_t (Object::*)() const>(counter),
       static_cast<void (Object::*)(size_t)>(resizer));
 
@@ -166,16 +166,16 @@ static inline AccessorObjectArray& RegisterArrayProperty(
 template <typename ClassType>
 static inline AccessorVariantArray& RegisterArrayProperty(
     const char* name,
-    bool (ClassType::*serialize_item)(ISerializer&, size_t) const,
-    bool (ClassType::*deserialize_item)(IDeserializer&, size_t),
+    void (ClassType::*serialize_item)(ISerializer&, size_t) const,
+    void (ClassType::*deserialize_item)(IDeserializer&, size_t),
     size_t (ClassType::*count)() const,
-    bool (ClassType::*resize)(size_t) = nullptr,
+    void (ClassType::*resize)(size_t) = nullptr,
     Description& description          = ClassType::GetClassStatic()->Description()) {
   AccessorVariantArray* prop = new AccessorVariantArray(
-      static_cast<bool (Object::*)(ISerializer&, size_t) const>(serialize_item),
-      static_cast<bool (Object::*)(IDeserializer&, size_t)>(deserialize_item),
+      static_cast<void (Object::*)(ISerializer&, size_t) const>(serialize_item),
+      static_cast<void (Object::*)(IDeserializer&, size_t)>(deserialize_item),
       static_cast<size_t (Object::*)() const>(count),
-      static_cast<bool (Object::*)(size_t)>(resize));
+      static_cast<void (Object::*)(size_t)>(resize));
 
   description.AddProperty(name, prop);
 

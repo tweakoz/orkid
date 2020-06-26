@@ -9,46 +9,36 @@
 
 #include <ork/reflect/serialize/NullSerializer.h>
 
-#include <ork/reflect/properties/AbstractProperty.h>
 #include <ork/reflect/properties/ObjectProperty.h>
 #include <ork/rtti/Category.h>
 
 namespace ork { namespace reflect { namespace serialize {
 
-bool NullSerializer::Serialize(const bool&) {
-  return true;
+void NullSerializer::serialize(const bool&) {
 }
 
-bool NullSerializer::Serialize(const char&) {
-  return true;
+void NullSerializer::serialize(const char&) {
 }
 
-bool NullSerializer::Serialize(const short&) {
-  return true;
+void NullSerializer::serialize(const short&) {
 }
 
-bool NullSerializer::Serialize(const int&) {
-  return true;
+void NullSerializer::serialize(const int&) {
 }
 
-bool NullSerializer::Serialize(const long&) {
-  return true;
+void NullSerializer::serialize(const long&) {
 }
 
-bool NullSerializer::Serialize(const float&) {
-  return true;
+void NullSerializer::serialize(const float&) {
 }
 
-bool NullSerializer::Serialize(const double&) {
-  return true;
+void NullSerializer::serialize(const double&) {
 }
 
-bool NullSerializer::serializeObject(const rtti::ICastable*) {
-  return true;
+void NullSerializer::serializeObject(object_constptr_t) {
 }
 
-bool NullSerializer::Serialize(const PieceString&) {
-  return true;
+void NullSerializer::serialize(const PieceString&) {
 }
 
 void NullSerializer::Hint(const PieceString&) {
@@ -56,34 +46,19 @@ void NullSerializer::Hint(const PieceString&) {
 void NullSerializer::Hint(const PieceString&, intptr_t ival) {
 }
 
-bool NullSerializer::SerializeData(unsigned char*, size_t) {
-  return true;
+void NullSerializer::serializeData(const uint8_t*, size_t) {
 }
 
-bool NullSerializer::Serialize(const AbstractProperty* prop) {
-  return prop->Serialize(*this);
-}
-
-bool NullSerializer::serializeObjectProperty(
+void NullSerializer::serializeObjectProperty(
     const ObjectProperty* prop, //
-    const Object* object) {
-  return prop->Serialize(*this, object);
+    object_constptr_t instance) {
+  return prop->Serialize(*this, instance);
 }
 
-// bool NullSerializer::serializeObjectWithCategory(const rtti::Category* cat, const rtti::ICastable* object) {
-// return cat->serializeObject(*this, object);
-//}
-
-bool NullSerializer::ReferenceObject(const rtti::ICastable*) {
-  return true;
+void NullSerializer::beginCommand(const Command&) {
 }
 
-bool NullSerializer::beginCommand(const Command&) {
-  return true;
-}
-
-bool NullSerializer::endCommand(const Command&) {
-  return true;
+void NullSerializer::endCommand(const Command&) {
 }
 
 }}} // namespace ork::reflect::serialize

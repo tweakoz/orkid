@@ -19,7 +19,6 @@ class ICastable;
 
 namespace ork { namespace reflect {
 
-class AbstractProperty;
 class ObjectProperty;
 class IArray;
 class Command;

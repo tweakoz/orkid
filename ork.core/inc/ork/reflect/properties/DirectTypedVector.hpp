@@ -12,27 +12,37 @@
 
 namespace ork { namespace reflect {
 
-template <typename VectorType>
+template <typename VectorType> //
 DirectTypedVector<VectorType>::DirectTypedVector(VectorType Object::*prop)
-    : mProperty(prop) {
+    : _member(prop) {
 }
 
-template <typename VectorType>
-void DirectTypedVector<VectorType>::get(typename VectorType::value_type& value, const Object* object, size_t index) const {
-  value = (object->*mProperty)[index];
+template <typename VectorType> //
+void DirectTypedVector<VectorType>::get(
+    value_type& value, //
+    object_constptr_t instance,
+    size_t index) const {
+  value = (instance.get()->*_member)[index];
 }
 
-template <typename VectorType>
-void DirectTypedVector<VectorType>::set(const typename VectorType::value_type& value, Object* object, size_t index) const {
-  (object->*mProperty)[index] = value;
+template <typename VectorType> //
+void DirectTypedVector<VectorType>::set(
+    const value_type& value, //
+    object_ptr_t instance,
+    size_t index) const {
+  (instance.get()->*_member)[index] = value;
 }
 
-template <typename VectorType> size_t DirectTypedVector<VectorType>::count(const Object* object) const {
-  return size_t((object->*mProperty).size());
+template <typename VectorType> //
+size_t DirectTypedVector<VectorType>::count(object_constptr_t instance) const {
+  return size_t((instance.get()->*_member).size());
 }
 
-template <typename VectorType> void DirectTypedVector<VectorType>::resize(Object* object, size_t size) const {
-  (object->*mProperty).resize(size);
+template <typename VectorType> //
+void DirectTypedVector<VectorType>::resize(
+    object_ptr_t instance, //
+    size_t size) const {
+  (instance.get()->*_member).resize(size);
 }
 
 }} // namespace ork::reflect

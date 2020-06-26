@@ -21,16 +21,16 @@ AccessorObject::AccessorObject(object_ptr_t (Object::*property)())
 ////////////////////////////////////////////////////////////////
 void AccessorObject::serialize(
     ISerializer& serializer, //
-    object_constptr_t owner) const {
-  auto nonconst  = std::const_pointer_cast<Object>(owner);
+    object_constptr_t instance) const {
+  auto nonconst  = std::const_pointer_cast<Object>(instance);
   auto subobject = (nonconst.get()->*_accessor)();
   Object::xxxSerializeShared(subobject, serializer);
 }
 ////////////////////////////////////////////////////////////////
 void AccessorObject::deserialize(
     IDeserializer& serializer, //
-    object_ptr_t owner) const {
-  auto subobject = (owner.get()->*_accessor)();
+    object_ptr_t instance) const {
+  auto subobject = (instance.get()->*_accessor)();
   Command command;
   serializer.beginCommand(command);
 
@@ -43,13 +43,13 @@ void AccessorObject::deserialize(
   serializer.endCommand(command);
 }
 ////////////////////////////////////////////////////////////////
-object_ptr_t AccessorObject::Access(Object* owner) const {
-  auto subobject = (owner->*_accessor)();
+object_ptr_t AccessorObject::access(object_ptr_t instance) const {
+  auto subobject = (instance.get()->*_accessor)();
   return subobject;
 }
 ////////////////////////////////////////////////////////////////
-object_constptr_t AccessorObject::Access(const Object* owner) const {
-  auto nonconst  = const_cast<Object*>(owner);
+object_constptr_t AccessorObject::access(object_constptr_t instance) const {
+  auto nonconst  = const_cast<Object*>(instance.get());
   auto subobject = (nonconst->*_accessor)();
   return subobject;
 }

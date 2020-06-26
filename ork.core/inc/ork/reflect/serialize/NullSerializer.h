@@ -17,34 +17,29 @@ namespace ork { namespace reflect { namespace serialize {
 
 class NullSerializer final : public ISerializer {
 public:
-  bool Serialize(const bool&) override;
-  bool Serialize(const char&) override;
-  bool Serialize(const short&) override;
-  bool Serialize(const int&) override;
-  bool Serialize(const long&) override;
-  bool Serialize(const float&) override;
-  bool Serialize(const double&) override;
-  bool Serialize(const PieceString&) override;
+  void serialize(const bool&) override;
+  void serialize(const char&) override;
+  void serialize(const short&) override;
+  void serialize(const int&) override;
+  void serialize(const long&) override;
+  void serialize(const float&) override;
+  void serialize(const double&) override;
+  void serialize(const PieceString&) override;
 
-  bool serializeObject(const rtti::ICastable*) override;
-  // bool serializeObjectWithCategory(
-  //  const rtti::Category* cat, //
-  // const rtti::ICastable* object) override;
-  bool serializeObjectProperty(
+  void serializeObject(object_constptr_t instance) override;
+  void serializeObjectProperty(
       const ObjectProperty* prop, //
-      const Object* object) override;
-
-  bool Serialize(const AbstractProperty* prop) override;
+      object_constptr_t instance) override;
 
   void Hint(const PieceString&) override;
   void Hint(const PieceString&, intptr_t ival) override;
 
-  bool SerializeData(unsigned char*, size_t) override;
+  void serializeData(const uint8_t*, size_t) override;
 
-  bool ReferenceObject(const rtti::ICastable*) override;
+  // void ReferenceObject(const rtti::ICastable*) override;
 
-  bool beginCommand(const Command&) override;
-  bool endCommand(const Command&) override;
+  void beginCommand(const Command&) override;
+  void endCommand(const Command&) override;
 };
 
 }}} // namespace ork::reflect::serialize

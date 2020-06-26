@@ -184,7 +184,7 @@ void LambdaSlot::RemoveSignal(Signal* psig) {
 //////////////////////////////////////////////////////////////////////
 
 void Signal::Describe() {
-  reflect::RegisterArrayProperty("Slots", &Signal::GetSlot, &Signal::GetSlotCount, &Signal::ResizeSlots);
+  // reflect::RegisterArrayProperty("Slots", &Signal::GetSlot, &Signal::GetSlotCount, &Signal::ResizeSlots);
 }
 
 Signal::Signal() {
@@ -283,7 +283,7 @@ reflect::IInvokation* Signal::CreateInvokation() const {
   return NULL;
 }
 
-Object* Signal::GetSlot(size_t index) {
+ISlot* Signal::GetSlot(size_t index) {
   auto& locked_slots = mSlots.LockForRead();
   auto num_slots     = locked_slots.size();
   bool in_range      = (index < num_slots);

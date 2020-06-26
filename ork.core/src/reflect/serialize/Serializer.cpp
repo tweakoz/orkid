@@ -8,7 +8,7 @@
 #include <ork/pch.h>
 #include <ork/reflect/serialize/ISerializer.h>
 #include <ork/reflect/Command.h>
-#include <ork/reflect/properties/AbstractProperty.h>
+
 #include <ork/reflect/properties/ObjectProperty.h>
 #include <ork/stream/IOutputStream.h>
 #include <ork/rtti/Category.h>
