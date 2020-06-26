@@ -19,10 +19,9 @@ namespace ork::reflect {
 class ISerializer;
 class IDeserializer;
 ////////////////////////////////////////////////////////////////////////////////
-class ObjectProperty {
+struct ObjectProperty {
 
-public:
-  typedef ork::svar64_t anno_t;
+  using anno_t = ork::svar64_t;
 
   virtual void deserialize(IDeserializer&, object_ptr_t) const  = 0;
   virtual void serialize(ISerializer&, object_constptr_t) const = 0;
@@ -64,8 +63,8 @@ public:
   ObjectProperty() {
   }
   /////////////////////////////////////////////////////////////////
-private:
   orklut<ConstString, anno_t> _annotations;
+  std::string _name;
 }; // namespace reflect
 ////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::reflect

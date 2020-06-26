@@ -37,114 +37,33 @@ void Object::Describe() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Object::xxxSerialize(
-    const Object* obj, //
-    reflect::ISerializer& serializer) {
-  rtti::Class* clazz = obj->GetClass();
-  reflect::Command command(reflect::Command::EOBJECT, clazz->Name());
-  serializer.beginCommand(command);
-  serializer.ReferenceObject(obj);
-  obj->PreSerialize(serializer);
-  auto objclass    = dynamic_cast<object::ObjectClass*>(clazz);
-  const auto& desc = objclass->Description();
-  if (not desc.SerializeProperties(serializer, obj)) {
-    OrkAssert(false);
-  }
-  obj->PostSerialize(serializer);
-  serializer.endCommand(command);
-
-  return true;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-bool Object::xxxSerializeShared(
+void Object::xxxSerializeShared(
     object_constptr_t obj, //
     reflect::ISerializer& serializer) {
   rtti::Class* clazz = obj->GetClass();
   reflect::Command command(reflect::Command::EOBJECT, clazz->Name());
   serializer.beginCommand(command);
-  serializer.ReferenceObject(obj.get()); // probably wrong..
+  serializer.referenceObject(obj); // probably wrong..
   obj->PreSerialize(serializer);
   auto objclass    = dynamic_cast<object::ObjectClass*>(clazz);
   const auto& desc = objclass->Description();
-  if (not desc.SerializeProperties(serializer, obj.get())) {
-    OrkAssert(false);
-  }
+  desc.serializeProperties(serializer, obj);
   obj->PostSerialize(serializer);
   serializer.endCommand(command);
-
-  return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Object::xxxSerializeInPlace(
-    const Object* obj, //
-    reflect::ISerializer& serializer) {
-  rtti::Class* clazz = obj->GetClass();
-  reflect::Command command(reflect::Command::EOBJECT, clazz->Name());
-  serializer.beginCommand(command);
-  obj->PreSerialize(serializer);
-  auto objclass    = dynamic_cast<object::ObjectClass*>(clazz);
-  const auto& desc = objclass->Description();
-  if (not desc.SerializeProperties(serializer, obj)) {
-    OrkAssert(false);
-  }
-  obj->PostSerialize(serializer);
-  serializer.endCommand(command);
-  return true;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-bool Object::xxxDeserialize(
-    Object* obj, //
-    reflect::IDeserializer& deserializer) {
-  rtti::Class* clazz = obj->GetClass();
-  deserializer.ReferenceObject(obj);
-  obj->PreDeserialize(deserializer);
-  auto objclass    = dynamic_cast<object::ObjectClass*>(clazz);
-  const auto& desc = objclass->Description();
-  if (not desc.DeserializeProperties(deserializer, obj)) {
-    OrkAssert(false);
-  }
-  obj->PostDeserialize(deserializer);
-  return true;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-bool Object::xxxDeserializeShared(
+void Object::xxxDeserializeShared(
     object_ptr_t obj, //
     reflect::IDeserializer& deserializer) {
   rtti::Class* clazz = obj->GetClass();
-  deserializer.ReferenceObject(obj.get()); // probably wrong...
+  deserializer.referenceObject(obj); // probably wrong...
   obj->PreDeserialize(deserializer);
   auto objclass    = dynamic_cast<object::ObjectClass*>(clazz);
   const auto& desc = objclass->Description();
-  if (not desc.DeserializeProperties(deserializer, obj.get())) {
-    OrkAssert(false);
-  }
+  desc.deserializeProperties(deserializer, obj);
   obj->PostDeserialize(deserializer);
-  return true;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-bool Object::xxxDeserializeInPlace(
-    Object* obj, //
-    reflect::IDeserializer& deserializer) {
-  rtti::Class* clazz = obj->GetClass();
-  reflect::Command command(reflect::Command::EOBJECT, clazz->Name());
-  deserializer.beginCommand(command);
-  obj->PreDeserialize(deserializer);
-  if (not dynamic_cast<object::ObjectClass*>(clazz)->Description().DeserializeProperties(deserializer, obj)) {
-    OrkAssert(false);
-  }
-  obj->PostDeserialize(deserializer);
-  deserializer.endCommand(command);
-  return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -185,52 +104,51 @@ bool Object::PostDeserialize(reflect::IDeserializer&) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Object* Object::Clone() const {
+/*Object* Object::Clone() const {
   auto the_clone = dynamic_cast<Object*>(GetClass()->CreateObject());
+  _cloneInto(the_clone);
+  return the_clone;
+}*/
+
+///////////////////////////////////////////////////////////////////////////////
+
+object_ptr_t Object::cloneShared() const {
+  auto the_clone = GetClass()->createShared();
   _cloneInto(the_clone);
   return the_clone;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-object_ptr_t Object::cloneShared() const {
-  auto the_clone = std::dynamic_pointer_cast<Object>(GetClass()->createShared());
-  _cloneInto(the_clone.get());
-  return the_clone;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void Object::_cloneInto(Object* into) const {
-  printf("slowclone class<%s>\n", GetClass()->Name().c_str());
+void Object::_cloneInto(object_ptr_t& into) const {
+  /*printf("slowclone class<%s>\n", GetClass()->Name().c_str());
 
   ork::ResizableString str;
   ork::stream::ResizableStringOutputStream ostream(str);
   ork::reflect::serialize::BinarySerializer binoser(ostream);
   ork::reflect::serialize::ShallowSerializer oser(binoser);
 
-  GetClass()->Description().SerializeProperties(oser, this);
+  GetClass()->Description().serializeProperties(oser, this);
 
   ork::stream::StringInputStream istream(str);
   ork::reflect::serialize::BinaryDeserializer biniser(istream);
   ork::reflect::serialize::ShallowDeserializer iser(biniser);
 
-  GetClass()->Description().DeserializeProperties(iser, into);
+  GetClass()->Description().DeserializeProperties(iser, into);*/
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 Md5Sum Object::CalcMd5() const {
-  ork::ResizableString str;
-  ork::stream::ResizableStringOutputStream ostream(str);
-  ork::reflect::serialize::BinarySerializer binoser(ostream);
+  // ork::ResizableString str;
+  // ork::stream::ResizableStringOutputStream ostream(str);
+  // ork::reflect::serialize::BinarySerializer binoser(ostream);
   // ork::reflect::serialize::ShallowSerializer oser(binoser);
-  GetClass()->Description().SerializeProperties(binoser, this);
+  // GetClass()->Description().SerializeProperties(binoser, this);
 
   CMD5 md5_context;
-  md5_context.update((const uint8_t*)str.data(), str.length());
-  md5_context.finalize();
-
+  // md5_context.update((const uint8_t*)str.data(), str.length());
+  // md5_context.finalize();
   return md5_context.Result();
 }
 
@@ -238,28 +156,24 @@ Md5Sum Object::CalcMd5() const {
 
 reflect::BidirectionalSerializer& operator||(
     reflect::BidirectionalSerializer& bidi, //
-    Object& object) {
+    object_ptr_t& object) {
   if (bidi.Serializing()) {
-    return bidi || static_cast<const Object&>(object);
+    bidi || object_constptr_t(object);
+    return bidi;
   } else {
     reflect::IDeserializer& deserializer = *bidi.Deserializer();
 
     reflect::Command object_command;
 
-    if (false == deserializer.beginCommand(object_command))
-      bidi.Fail();
+    deserializer.beginCommand(object_command);
+    auto clazz = rtti::Class::FindClass(object_command.Name());
+    OrkAssertI(object->GetClass()->IsSubclassOf(clazz), "Can't deserialize an X into a Y");
 
-    rtti::Class* clazz = rtti::Class::FindClass(object_command.Name());
-
-    OrkAssertI(object.GetClass()->IsSubclassOf(clazz), "Can't deserialize an X into a Y");
-
-    if (object.GetClass()->IsSubclassOf(clazz)) {
-      if (false == Object::xxxDeserialize(&object, deserializer))
-        bidi.Fail();
+    if (object->GetClass()->IsSubclassOf(clazz)) {
+      Object::xxxDeserializeShared(object, deserializer);
     }
 
-    if (false == deserializer.endCommand(object_command))
-      bidi.Fail();
+    deserializer.endCommand(object_command);
   }
 
   return bidi;
@@ -269,12 +183,11 @@ reflect::BidirectionalSerializer& operator||(
 
 reflect::BidirectionalSerializer& operator||(
     reflect::BidirectionalSerializer& bidi, //
-    const Object& object) {
+    object_constptr_t object) {
   OrkAssertI(bidi.Serializing(), "can't deserialize to a non-const object");
 
   if (bidi.Serializing()) {
-    if (false == Object::xxxSerialize(&object, *bidi.Serializer()))
-      bidi.Fail();
+    Object::xxxSerializeShared(object, *bidi.Serializer());
   }
 
   return bidi;
@@ -282,13 +195,13 @@ reflect::BidirectionalSerializer& operator||(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static Object* LoadObjectFromFile(
+static object_ptr_t LoadObjectFromFile(
     ConstString filename, //
     bool binary) {
   float ftime1 = ork::OldSchool::GetRef().GetLoResRelTime();
   stream::FileInputStream stream(filename.c_str());
 
-  Object* object = nullptr;
+  object_ptr_t object = nullptr;
   if (binary) {
     reflect::serialize::BinaryDeserializer deserializer(stream);
 
@@ -320,7 +233,7 @@ static Object* LoadObjectFromFile(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Object* DeserializeObject(PieceString file) {
+object_ptr_t DeserializeObject(PieceString file) {
   ArrayString<256> filename_data = file;
   MutableString filename(filename_data);
 

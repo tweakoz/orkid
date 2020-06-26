@@ -32,7 +32,7 @@ public:
   void deserialize(ResizableString&) override;
   void deserializeData(unsigned char*, size_t) override;
 
-  void deserialize(const AbstractProperty*) override;
+  // void deserialize(const AbstractProperty*) override;
   void deserializeSharedObject(object_ptr_t&) override;
   void deserializeObjectProperty(const ObjectProperty*, object_ptr_t) override;
 
@@ -43,7 +43,7 @@ public:
       ptrtype&, //
       dmtype&);
 
-  void referenceObject(object_ptr_t) override;
+  // void referenceObject(object_ptr_t) override;
   void beginCommand(Command&) override;
   void endCommand(const Command&) override;
 

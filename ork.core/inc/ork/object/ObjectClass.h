@@ -35,7 +35,6 @@ public:
   typedef ork::reflect::Description::anno_t anno_t;
 
   object_ptr_t createShared() const;
-  rtti::ICastable* CreateObject() const;
 
   void annotate(const ConstString& key, const anno_t& val);
   const anno_t& annotation(const ConstString& key);

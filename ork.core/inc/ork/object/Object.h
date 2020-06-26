@@ -44,12 +44,8 @@ public:
   virtual ~Object() {
   }
 
-  static bool xxxSerialize(const Object* obj, reflect::ISerializer&);
-  static bool xxxSerializeShared(object_constptr_t obj, reflect::ISerializer&);
-  static bool xxxSerializeInPlace(const Object* obj, reflect::ISerializer& serializer);
-  static bool xxxDeserialize(Object* obj, reflect::IDeserializer&);
-  static bool xxxDeserializeShared(object_ptr_t obj, reflect::IDeserializer&);
-  static bool xxxDeserializeInPlace(Object* obj, reflect::IDeserializer&);
+  static void xxxSerializeShared(object_constptr_t obj, reflect::ISerializer&);
+  static void xxxDeserializeShared(object_ptr_t obj, reflect::IDeserializer&);
 
   object::Signal* FindSignal(ConstString name);
 
@@ -58,9 +54,9 @@ public:
   virtual bool PostSerialize(reflect::ISerializer&) const;
   virtual bool PostDeserialize(reflect::IDeserializer&);
 
-  virtual Object* Clone() const;
+  // virtual Object* Clone() const;
   virtual object_ptr_t cloneShared() const;
-  void _cloneInto(Object* into) const;
+  void _cloneInto(object_ptr_t& into) const;
 
   Md5Sum CalcMd5() const;
 
@@ -85,14 +81,17 @@ private:
 reflect::BidirectionalSerializer& operator||(reflect::BidirectionalSerializer&, Object&);
 reflect::BidirectionalSerializer& operator||(reflect::BidirectionalSerializer&, const Object&);
 
-template <typename T> inline bool DeserializeUnknownObject(ork::reflect::IDeserializer& deser, T*& value) {
-  ork::rtti::ICastable* obj = NULL;
-  bool result =
-      ork::rtti::safe_downcast<ork::rtti::Category*>(ork::Object::GetClassStatic()->GetClass())->deserializeObject(deser, obj);
-  value = ork::rtti::safe_downcast<T*>(obj);
-  return result;
+template <typename T>
+inline void DeserializeUnknownObject(
+    ork::reflect::IDeserializer& deser, //
+    std::shared_ptr<T>& out_value) {
+  object_ptr_t obj = nullptr;
+  auto objclz      = object::ObjectClass::GetClassStatic();
+  auto objcat      = objclz->GetClass();
+  objcat->deserializeObject(deser, obj);
+  out_value = std::dynamic_pointer_cast<T>(obj);
 }
 
-Object* DeserializeObject(PieceString file);
+// Object* DeserializeObject(PieceString file);
 
 } // namespace ork

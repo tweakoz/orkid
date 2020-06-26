@@ -14,39 +14,44 @@
 #include <ork/reflect/IDeserializer.h>
 
 namespace ork { namespace reflect {
-
-AccessorObject::AccessorObject(Object* (Object::*property)())
-    : mObjectAccessor(property) {
+////////////////////////////////////////////////////////////////
+AccessorObject::AccessorObject(object_ptr_t (Object::*property)())
+    : _accessor(property) {
 }
-
-bool AccessorObject::Serialize(ISerializer& serializer, const Object* object) const {
-  const Object* object_property = (const_cast<Object*>(object)->*mObjectAccessor)();
-  Object::xxxSerialize(object_property, serializer);
-  return true;
+////////////////////////////////////////////////////////////////
+void AccessorObject::serialize(
+    ISerializer& serializer, //
+    object_constptr_t owner) const {
+  auto nonconst  = std::const_pointer_cast<Object>(owner);
+  auto subobject = (nonconst.get()->*_accessor)();
+  Object::xxxSerializeShared(subobject, serializer);
 }
-
-bool AccessorObject::Deserialize(IDeserializer& serializer, Object* object) const {
-  Object* object_property = (object->*mObjectAccessor)();
+////////////////////////////////////////////////////////////////
+void AccessorObject::deserialize(
+    IDeserializer& serializer, //
+    object_ptr_t owner) const {
+  auto subobject = (owner.get()->*_accessor)();
   Command command;
   serializer.beginCommand(command);
 
   OrkAssertI(command.Type() == Command::EOBJECT, "AccessorObject::Deserialize::Expected an Object command!\n");
 
   if (command.Type() == Command::EOBJECT) {
-    Object::xxxDeserialize(object_property, serializer);
+    Object::xxxDeserializeShared(subobject, serializer);
   }
 
   serializer.endCommand(command);
-
-  return true;
 }
-
-Object* AccessorObject::Access(Object* object) const {
-  return (object->*mObjectAccessor)();
+////////////////////////////////////////////////////////////////
+object_ptr_t AccessorObject::Access(Object* owner) const {
+  auto subobject = (owner->*_accessor)();
+  return subobject;
 }
-
-const Object* AccessorObject::Access(const Object* object) const {
-  return (const_cast<Object*>(object)->*mObjectAccessor)();
+////////////////////////////////////////////////////////////////
+object_constptr_t AccessorObject::Access(const Object* owner) const {
+  auto nonconst  = const_cast<Object*>(owner);
+  auto subobject = (nonconst->*_accessor)();
+  return subobject;
 }
 
 }} // namespace ork::reflect

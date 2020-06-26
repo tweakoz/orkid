@@ -19,15 +19,15 @@ namespace reflect {
 
 class AccessorObject : public IObject {
 public:
-  AccessorObject(Object* (Object::*)());
+  AccessorObject(object_ptr_t (Object::*)());
 
   void serialize(ISerializer&, object_constptr_t) const override;
   void deserialize(IDeserializer&, object_ptr_t) const override;
-  Object* Access(Object*) const override;
-  const Object* Access(const Object*) const override;
+  object_ptr_t Access(Object*) const override;
+  object_constptr_t Access(const Object*) const override;
 
 private:
-  Object* (Object::*mObjectAccessor)();
+  object_ptr_t (Object::*_accessor)();
 };
 
 } // namespace reflect

@@ -7,7 +7,7 @@
 
 #pragma once
 #include "register.h"
-#include "DirectSharedObjectMap.inl"
+#include "DirectObjectMap.inl"
 
 namespace ork::object {
 ///////////////////////////////////////////////////////////////////////////
@@ -40,7 +40,7 @@ template <typename ClassType, typename MemberType>
 inline object::PropertyModifier object::ObjectClass::sharedObjectMapProperty(const char* name, MemberType ClassType::*member) {
   object::PropertyModifier modder;
   auto typed_member = static_cast<MemberType Object::*>(member);
-  modder._property  = new reflect::DirectSharedObjectMap(typed_member);
+  modder._property  = new reflect::DirectObjectMap(typed_member);
   _description.AddProperty(name, modder._property);
   return modder;
 }
@@ -51,7 +51,7 @@ inline object::PropertyModifier object::ObjectClass::sharedObjectProperty( //
     object_ptr_t ClassType::*member) {
   object::PropertyModifier modder;
   auto typed_member = static_cast<object_ptr_t Object::*>(member);
-  modder._property  = new reflect::DirectSharedObject(typed_member);
+  modder._property  = new reflect::DirectObject(typed_member);
   _description.AddProperty(name, modder._property);
   return modder;
 }

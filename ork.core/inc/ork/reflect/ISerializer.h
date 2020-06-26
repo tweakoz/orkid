@@ -28,26 +28,20 @@ class Command;
 class ISerializer {
 public:
   void referenceObject(object_constptr_t);
-  void referenceObject(object_rawconstptr_t);
 
-  virtual void Serialize(const bool&)        = 0;
-  virtual void Serialize(const char&)        = 0;
-  virtual void Serialize(const short&)       = 0;
-  virtual void Serialize(const int&)         = 0;
-  virtual void Serialize(const long&)        = 0;
-  virtual void Serialize(const float&)       = 0;
-  virtual void Serialize(const double&)      = 0;
-  virtual void Serialize(const PieceString&) = 0;
+  virtual void serialize(const bool&)        = 0;
+  virtual void serialize(const char&)        = 0;
+  virtual void serialize(const short&)       = 0;
+  virtual void serialize(const int&)         = 0;
+  virtual void serialize(const long&)        = 0;
+  virtual void serialize(const float&)       = 0;
+  virtual void serialize(const double&)      = 0;
+  virtual void serialize(const PieceString&) = 0;
 
-  virtual void Serialize(const AbstractProperty*) = 0;
+  virtual void serializeSharedObject(object_constptr_t)                          = 0;
+  virtual void serializeObjectProperty(const ObjectProperty*, object_constptr_t) = 0;
 
-  virtual void serializeObject(const rtti::ICastable*) = 0;
-  inline void serializeSharedObject(rtti::castable_constptr_t obj) {
-    return serializeObject(obj.get());
-  }
-  virtual void serializeObjectProperty(const ObjectProperty*, const Object*) = 0;
-
-  virtual void SerializeData(unsigned char*, size_t) = 0;
+  virtual void serializeData(const uint8_t*, size_t) = 0;
 
   virtual void Hint(const PieceString&)                = 0;
   virtual void Hint(const PieceString&, intptr_t ival) = 0;
@@ -58,7 +52,7 @@ public:
   virtual ~ISerializer();
 
   std::unordered_set<std::string> _serialized;
-  const Command* _currentCommand;
+  const Command* _currentCommand = nullptr;
 };
 
 }} // namespace ork::reflect

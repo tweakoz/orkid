@@ -19,28 +19,12 @@ DirectTyped<T>::DirectTyped(T Object::*property)
     : mProperty(property) {
 }
 
-template <typename T> void DirectTyped<T>::Get(T& value, const Object* obj) const {
-  value = obj->*mProperty;
+template <typename T> void DirectTyped<T>::get(T& value, object_constptr_t obj) const {
+  value = obj.get()->*mProperty;
 }
 
-template <typename T> void DirectTyped<T>::Set(const T& value, Object* obj) const {
-  obj->*mProperty = value;
+template <typename T> void DirectTyped<T>::set(const T& value, object_ptr_t obj) const {
+  obj.get()->*mProperty = value;
 }
-
-template <typename T>
-typename DirectTyped<T>::RTTITyped::RTTICategory DirectTyped<T>::sClass(DirectTyped<T>::RTTITyped::ClassRTTI());
-
-template <typename T> typename DirectTyped<T>::RTTITyped::RTTICategory* DirectTyped<T>::GetClassStatic() {
-  return &sClass;
-}
-
-template <typename T> typename DirectTyped<T>::RTTITyped::RTTICategory* DirectTyped<T>::GetClass() const {
-  return GetClassStatic();
-}
-
-// INSTANTIATE_TRANSPARENT_TEMPLATE_CASTABLE( ClassName )
-//	ClassName::RTTITyped::RTTIClassClass ClassName::sClass(ClassName::RTTITyped::ClassRTTI()); \
-//	ClassName::RTTITyped::RTTIClassClass *ClassName::GetClassStatic() { return &sClass; } \
-//	rtti::Class *ClassName::GetClass() const { return GetClassStatic(); }
 
 }} // namespace ork::reflect

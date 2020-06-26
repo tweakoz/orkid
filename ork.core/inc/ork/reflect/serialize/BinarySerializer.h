@@ -22,30 +22,30 @@ public:
   BinarySerializer(stream::IOutputStream& stream);
   ~BinarySerializer();
 
-  bool Serialize(const bool&) override;
-  bool Serialize(const char&) override;
-  bool Serialize(const short&) override;
-  bool Serialize(const int&) override;
-  bool Serialize(const long&) override;
-  bool Serialize(const float&) override;
-  bool Serialize(const double&) override;
-  bool Serialize(const PieceString&) override;
+  void serialize(const bool&) override;
+  void serialize(const char&) override;
+  void serialize(const short&) override;
+  void serialize(const int&) override;
+  void serialize(const long&) override;
+  void serialize(const float&) override;
+  void serialize(const double&) override;
+  void serialize(const PieceString&) override;
   void Hint(const PieceString&) override;
   void Hint(const PieceString&, intptr_t ival) override;
 
-  bool SerializeData(unsigned char*, size_t size) override;
+  void serializeData(const uint8_t*, size_t size) override;
 
-  bool Serialize(const AbstractProperty*) override;
+  // void serialize(const AbstractProperty*) override;
 
-  bool serializeObject(const rtti::ICastable*) override;
-  bool serializeObjectProperty(const ObjectProperty*, const Object*) override;
+  void serializeSharedObject(object_constptr_t) override;
+  void serializeObjectProperty(const ObjectProperty*, object_constptr_t) override;
 
-  bool ReferenceObject(const rtti::ICastable*) override;
-  bool beginCommand(const Command&) override;
-  bool endCommand(const Command&) override;
+  // void ReferenceObject(const rtti::ICastable*) override;
+  void beginCommand(const Command&) override;
+  void endCommand(const Command&) override;
 
 private:
-  int FindObject(const rtti::ICastable* object);
+  // int FindObject(const rtti::ICastable* object);
 
   bool WriteHeader(char type, PieceString text);
   bool WriteFooter(char type);

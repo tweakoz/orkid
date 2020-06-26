@@ -17,8 +17,8 @@ namespace ork { namespace reflect {
 template <typename T> class ITyped : public ObjectProperty {
 
 public:
-  virtual void get(T& value, const Object* obj) const = 0;
-  virtual void set(const T& value, Object* obj) const = 0;
+  virtual void get(T& value, object_constptr_t obj) const  = 0;
+  virtual void set(const T& value, object_ptr_t obj) const = 0;
 
 private:
   void deserialize(IDeserializer&, object_ptr_t) const override;

@@ -42,13 +42,13 @@ PersistMapContainer::~PersistMapContainer() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void PersistMapContainer::CloneFrom(const PersistMapContainer& oth) {
+/*void PersistMapContainer::CloneFrom(const PersistMapContainer& oth) {
   for (auto item : oth.mPropPersistMap) {
     ork::Object* pclone       = item.second->Clone();
     PersistantMap* pclone_map = rtti::autocast(pclone);
     mPropPersistMap.AddSorted(item.first, pclone_map);
   }
-}
+}*/
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -74,22 +74,21 @@ PersistHashContext::PersistHashContext()
 ///////////////////////////////////////////////////////////////////////////////
 
 int PersistHashContext::GenerateHash() const {
-  U32 phash             = 0;
-  U32 ohash             = 0;
+  uint32_t phash        = 0;
+  uint32_t ohash        = 0;
   const char* classname = 0;
   if (mProperty) {
-    ork::rtti::Class* pclass    = mProperty->GetClass();
-    const ork::PoolString& name = pclass->Name();
-    const char* pname           = name.c_str();
-    phash                       = Crc32::HashMemory(pname, int(strlen(pname)));
+    phash = Crc32::HashMemory(
+        mProperty->_name.c_str(), //
+        mProperty->_name.length());
   }
   if (mObject) {
-    ork::rtti::Class* pclass    = mObject->GetClass();
+    auto pclass                 = mObject->GetClass();
     const ork::PoolString& name = pclass->Name();
     ohash                       = Crc32::HashMemory(name.c_str(), int(strlen(name.c_str())));
   }
-  U32 key  = phash ^ ohash;
-  int ikey = *reinterpret_cast<int*>(&key);
+  uint32_t key = phash ^ ohash;
+  int ikey     = *reinterpret_cast<int*>(&key);
   return ikey;
 }
 

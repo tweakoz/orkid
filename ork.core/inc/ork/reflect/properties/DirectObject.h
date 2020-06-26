@@ -1,3 +1,4 @@
+#pragma once
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
 // Copyright 1996-2020, Michael T. Mayers.
@@ -7,28 +8,26 @@
 
 #pragma once
 
-#include "ISharedObject.h"
+#include "IObject.h"
 
 #include <ork/config/config.h>
 
-namespace ork {
+namespace ork { namespace reflect {
 
-class Object;
+class DirectObject : public IObject {
+  object_ptr_t Object::*mProperty;
 
-namespace reflect {
-
-class AccessorSharedObject : public ISharedObject {
 public:
-  AccessorSharedObject(object_ptr_t (Object::*)());
+  DirectObject(object_ptr_t Object::*);
 
-  void serialize(ISerializer&, object_constptr_t) const override;
-  void deserialize(IDeserializer&, object_ptr_t) const override;
+  void get(object_ptr_t& value, const Object* obj) const;
+  void set(object_ptr_t const& value, Object* obj) const;
+
   object_ptr_t Access(Object*) const override;
   object_constptr_t Access(const Object*) const override;
 
-private:
-  object_ptr_t (Object::*mObjectAccessor)();
+  void deserialize(IDeserializer&, object_ptr_t) const override;
+  void serialize(ISerializer&, object_constptr_t) const override;
 };
 
-} // namespace reflect
-} // namespace ork
+}} // namespace ork::reflect

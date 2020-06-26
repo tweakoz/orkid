@@ -14,7 +14,6 @@
 
 namespace ork::reflect {
 
-class AbstractProperty;
 class ObjectProperty;
 class Command;
 
@@ -27,7 +26,7 @@ struct IDeserializer {
   virtual void deserialize(float&)  = 0;
   virtual void deserialize(double&) = 0;
 
-  virtual void deserialize(const AbstractProperty*)                           = 0;
+  // virtual void deserialize(const AbstractProperty*)                           = 0;
   virtual void deserializeSharedObject(object_ptr_t&)                         = 0;
   virtual void deserializeObjectProperty(const ObjectProperty*, object_ptr_t) = 0;
 
@@ -35,9 +34,9 @@ struct IDeserializer {
   virtual void deserialize(ResizableString&)           = 0;
   virtual void deserializeData(unsigned char*, size_t) = 0;
 
-  virtual void referenceObject(object_ptr_t) = 0;
-  virtual void beginCommand(Command&)        = 0;
-  virtual void endCommand(const Command&)    = 0;
+  void referenceObject(object_ptr_t);
+  virtual void beginCommand(Command&)     = 0;
+  virtual void endCommand(const Command&) = 0;
   virtual void Hint(const PieceString&) {
   }
 

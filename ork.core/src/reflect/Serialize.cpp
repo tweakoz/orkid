@@ -19,21 +19,12 @@ class ICastable;
 namespace ork { namespace reflect {
 
 //////////////////////////////////////////////////
-void BidirectionalSerializer::serializeSharedObject(rtti::castable_constptr_t obj) {
+void BidirectionalSerializer::serializeSharedObject(object_constptr_t obj) {
   // printf("bidi sershared<%p>\n", obj.get());
   mSerializer->serializeSharedObject(obj);
 }
-void BidirectionalSerializer::deserializeSharedObject(rtti::castable_ptr_t& obj) {
+void BidirectionalSerializer::deserializeSharedObject(object_ptr_t& obj) {
   mDeserializer->deserializeSharedObject(obj);
-}
-
-//////////////////////////////////////////////////
-void BidirectionalSerializer::serializeObject(rtti::castable_rawconstptr_t obj) {
-  // printf("bidi serraw<%p>\n", obj);
-  mSerializer->serializeObject(obj);
-}
-void BidirectionalSerializer::deserializeObject(rtti::castable_rawptr_t& obj) {
-  mDeserializer->deserializeObject(obj);
 }
 
 //////////////////////////////////////////////////
@@ -41,20 +32,14 @@ template <typename T>
 inline //
     void
     BidirectionalSerializer::Serialize(const T& value) {
-  bool result = mSerializer->Serialize(value);
-  // printf("bidi serprop result<%p>\n", int(result));
-  if (false == result)
-    Fail();
+  mSerializer->serialize(value);
 }
 
 template <typename T>
 inline //
     void
     BidirectionalSerializer::Deserialize(T& value) {
-  bool result = mDeserializer->Deserialize(value);
-
-  if (false == result)
-    Fail();
+  mDeserializer->deserialize(value);
 }
 
 //////////////////////////////////////////////////
@@ -96,51 +81,9 @@ void Serialize(
   if (bidi.Serializing()) {
     bidi.serializeSharedObject(*in);
   } else {
-    rtti::castable_ptr_t ptr;
+    object_ptr_t ptr;
     bidi.deserializeSharedObject(ptr);
-    (*out) = std::dynamic_pointer_cast<Object>(ptr);
-  }
-}
-
-template <>
-void Serialize(
-    rtti::castable_rawptr_t const* in, //
-    rtti::castable_rawptr_t* out,
-    BidirectionalSerializer& bidi) {
-  if (bidi.Serializing()) {
-    bidi.serializeObject(*in);
-  } else {
-    rtti::ICastable* result = NULL;
-    bidi.deserializeObject(result);
-    *out = result;
-  }
-}
-
-template <>
-void Serialize(
-    rtti::castable_ptr_t const* in, //
-    rtti::castable_ptr_t* out,
-    BidirectionalSerializer& bidi) {
-  if (bidi.Serializing()) {
-    bidi.serializeSharedObject(*in);
-  } else {
-    rtti::castable_ptr_t result = nullptr;
-    bidi.deserializeSharedObject(result);
-    *out = result;
-  }
-}
-
-template <>
-void Serialize(
-    rtti::castable_rawconstptr_t const* in, //
-    rtti::castable_rawconstptr_t* out,
-    BidirectionalSerializer& bidi) {
-  if (bidi.Serializing()) {
-    bidi.serializeObject(*in);
-  } else {
-    rtti::ICastable* result = NULL;
-    bidi.deserializeObject(result);
-    *out = result;
+    (*out) = ptr;
   }
 }
 

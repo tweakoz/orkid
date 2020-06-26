@@ -36,11 +36,11 @@ public:
   void deserialize(ResizableString&) override;
   void deserializeData(unsigned char*, size_t) override;
 
-  void deserialize(const AbstractProperty*) override;
+  // void deserialize(const AbstractProperty*) override;
   void deserializeSharedObject(object_ptr_t&) override;
   void deserializeObjectProperty(const ObjectProperty*, object_ptr_t) override;
 
-  void referenceObject(object_ptr_t) override;
+  // void referenceObject(object_ptr_t) override;
   void beginCommand(Command&) override;
   void endCommand(const Command&) override;
 
@@ -86,9 +86,9 @@ inline void LayerDeserializer::deserializeSharedObject(object_ptr_t& value) {
   mDeserializer.deserializeSharedObject(value);
 }
 
-inline void LayerDeserializer::deserialize(const AbstractProperty* prop) {
-  prop->Deserialize(*this);
-}
+// inline void LayerDeserializer::deserialize(const AbstractProperty* prop) {
+// prop->Deserialize(*this);
+//}
 
 inline void LayerDeserializer::deserializeObjectProperty(const ObjectProperty* prop, object_ptr_t object) {
   prop->deserialize(*this, object);
@@ -110,9 +110,9 @@ inline void LayerDeserializer::deserializeData(unsigned char* data, size_t size)
   mDeserializer.deserializeData(data, size);
 }
 
-inline void LayerDeserializer::ReferenceObject(rtti::castable_rawptr_t object) {
-  mDeserializer.ReferenceObject(object);
-}
+// inline void LayerDeserializer::referenceObject(object_ptr_t object) {
+// mDeserializer.referenceObject(object);
+//}
 
 inline void LayerDeserializer::beginCommand(Command& command) {
   const Command* previous_command = _currentCommand;

@@ -18,13 +18,13 @@ AccessorTyped<T>::AccessorTyped(void (Object::*getter)(T&) const, void (Object::
 }
 
 template <typename T> //
-void AccessorTyped<T>::get(T& value, const Object* obj) const {
-  (obj->*mGetter)(value);
+void AccessorTyped<T>::get(T& value, object_constptr_t obj) const {
+  (obj.get()->*mGetter)(value);
 }
 
 template <typename T> //
-void AccessorTyped<T>::set(const T& value, Object* obj) const {
-  (obj->*mSetter)(value);
+void AccessorTyped<T>::set(const T& value, object_ptr_t obj) const {
+  (obj.get()->*mSetter)(value);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

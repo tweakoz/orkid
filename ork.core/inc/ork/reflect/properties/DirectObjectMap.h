@@ -14,12 +14,12 @@
 namespace ork { namespace reflect {
 
 template <typename MapType> //
-class DirectSharedObjectMap : public ITypedMap<typename MapType::key_type, object_ptr_t> {
+class DirectObjectMap : public ITypedMap<typename MapType::key_type, object_ptr_t> {
 public:
   using KeyType               = typename MapType::key_type;
   using ItemSerializeFunction = typename ITypedMap<KeyType, object_ptr_t>::ItemSerializeFunction;
 
-  DirectSharedObjectMap(MapType Object::*);
+  DirectObjectMap(MapType Object::*);
 
   MapType& GetMap(Object* obj) const;
   const MapType& GetMap(const Object* obj) const;

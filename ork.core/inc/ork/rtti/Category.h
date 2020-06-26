@@ -24,10 +24,8 @@ class Category : public Class {
       : Class(data) {
   }
 
-  virtual bool serializeObject(reflect::ISerializer&, castable_rawconstptr_t) const;
-  virtual bool deserializeObject(reflect::IDeserializer&, castable_rawptr_t&) const;
-  virtual bool serializeObject(reflect::ISerializer&, castable_constptr_t) const;
-  virtual bool deserializeObject(reflect::IDeserializer&, castable_ptr_t&) const;
+  virtual void serializeObject(reflect::ISerializer&, ork::object_constptr_t) const;
+  virtual void deserializeObject(reflect::IDeserializer&, ork::object_ptr_t&) const;
 };
 
 }} // namespace ork::rtti

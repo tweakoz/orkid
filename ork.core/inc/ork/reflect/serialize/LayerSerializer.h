@@ -23,70 +23,64 @@ class LayerSerializer : public ISerializer {
 public:
   LayerSerializer(ISerializer& serializer);
 
-  bool Serialize(const bool&) override;
-  bool Serialize(const char&) override;
-  bool Serialize(const short&) override;
-  bool Serialize(const int&) override;
-  bool Serialize(const long&) override;
-  bool Serialize(const float&) override;
-  bool Serialize(const double&) override;
-  bool Serialize(const PieceString&) override;
+  void serialize(const bool&) override;
+  void serialize(const char&) override;
+  void serialize(const short&) override;
+  void serialize(const int&) override;
+  void serialize(const long&) override;
+  void serialize(const float&) override;
+  void serialize(const double&) override;
+  void serialize(const PieceString&) override;
   void Hint(const PieceString&) override;
   void Hint(const PieceString&, intptr_t ival) override;
 
-  bool SerializeData(unsigned char*, size_t) override;
+  void serializeData(const uint8_t*, size_t) override;
 
-  bool Serialize(const AbstractProperty*) override;
-  bool serializeObject(const rtti::ICastable*) override;
-  bool serializeObjectProperty(const ObjectProperty*, const Object*) override;
-  // bool serializeObjectWithCategory(
-  //  const rtti::Category*, //
-  // const rtti::ICastable*) override;
+  void serializeObjectProperty(const ObjectProperty*, object_constptr_t) override;
+  void serializeSharedObject(object_constptr_t) override;
 
-  bool ReferenceObject(const rtti::ICastable*) override;
-  bool beginCommand(const Command&) override;
-  bool endCommand(const Command&) override;
+  // void referenceObject(object_constptr_t) override;
+  void beginCommand(const Command&) override;
+  void endCommand(const Command&) override;
 
 protected:
   ISerializer& mSerializer;
-  const Command* mCurrentCommand;
 };
 
 inline LayerSerializer::LayerSerializer(ISerializer& serializer)
-    : mSerializer(serializer)
-    , mCurrentCommand(NULL) {
+    : mSerializer(serializer) {
 }
 
-inline bool LayerSerializer::Serialize(const bool& value) {
-  return mSerializer.Serialize(value);
+inline void LayerSerializer::serialize(const bool& value) {
+  mSerializer.serialize(value);
 }
 
-inline bool LayerSerializer::Serialize(const char& value) {
-  return mSerializer.Serialize(value);
+inline void LayerSerializer::serialize(const char& value) {
+  mSerializer.serialize(value);
 }
 
-inline bool LayerSerializer::Serialize(const short& value) {
-  return mSerializer.Serialize(value);
+inline void LayerSerializer::serialize(const short& value) {
+  mSerializer.serialize(value);
 }
 
-inline bool LayerSerializer::Serialize(const int& value) {
-  return mSerializer.Serialize(value);
+inline void LayerSerializer::serialize(const int& value) {
+  mSerializer.serialize(value);
 }
 
-inline bool LayerSerializer::Serialize(const long& value) {
-  return mSerializer.Serialize(value);
+inline void LayerSerializer::serialize(const long& value) {
+  mSerializer.serialize(value);
 }
 
-inline bool LayerSerializer::Serialize(const float& value) {
-  return mSerializer.Serialize(value);
+inline void LayerSerializer::serialize(const float& value) {
+  mSerializer.serialize(value);
 }
 
-inline bool LayerSerializer::Serialize(const double& value) {
-  return mSerializer.Serialize(value);
+inline void LayerSerializer::serialize(const double& value) {
+  mSerializer.serialize(value);
 }
 
-inline bool LayerSerializer::Serialize(const PieceString& text) {
-  return mSerializer.Serialize(text);
+inline void LayerSerializer::serialize(const PieceString& text) {
+  mSerializer.serialize(text);
 }
 
 inline void LayerSerializer::Hint(const PieceString& hint) {
@@ -96,50 +90,35 @@ inline void LayerSerializer::Hint(const PieceString& hint, intptr_t ival) {
   mSerializer.Hint(hint, ival);
 }
 
-inline bool LayerSerializer::SerializeData(unsigned char* data, size_t size) {
-  return mSerializer.SerializeData(data, size);
+inline void LayerSerializer::serializeData(const uint8_t* data, size_t size) {
+  mSerializer.serializeData(data, size);
 }
 
-inline bool LayerSerializer::Serialize(const AbstractProperty* prop) {
-  return prop->Serialize(*this);
+inline void LayerSerializer::serializeSharedObject(object_constptr_t object) {
+  mSerializer.serializeSharedObject(object);
 }
 
-inline bool LayerSerializer::serializeObject(const rtti::ICastable* object) {
-  return mSerializer.Serialize(object);
+inline void LayerSerializer::serializeObjectProperty(const ObjectProperty* prop, object_constptr_t object) {
+  prop->serialize(*this, object);
 }
 
-inline bool LayerSerializer::serializeObjectProperty(const ObjectProperty* prop, const Object* object) {
-  return prop->Serialize(*this, object);
-}
-
-// inline bool LayerSerializer::serializeObjectWithCategory(const rtti::Category* category, const rtti::ICastable* object) {
-// return category->serializeObject(*this, object);
+// inline void LayerSerializer::referenceObject(object_constptr_t object) {
+// mSerializer.referenceObject(object);
 //}
 
-inline bool LayerSerializer::ReferenceObject(const rtti::ICastable* object) {
-  return mSerializer.ReferenceObject(object);
+inline void LayerSerializer::beginCommand(const Command& command) {
+  const Command* previous_command = _currentCommand;
+  command.PreviousCommand()       = previous_command;
+  mSerializer.beginCommand(command);
+  _currentCommand = &command;
+  OrkAssert(command.PreviousCommand() == previous_command);
 }
 
-inline bool LayerSerializer::beginCommand(const Command& command) {
-  const Command* previous_command = mCurrentCommand;
-
-  command.PreviousCommand() = previous_command;
-
-  if (mSerializer.beginCommand(command)) {
-    mCurrentCommand = &command;
-    OrkAssert(command.PreviousCommand() == previous_command);
-    return true;
+inline void LayerSerializer::endCommand(const Command& command) {
+  if (&command == _currentCommand) {
+    _currentCommand = _currentCommand->PreviousCommand();
   }
-
-  return false;
-}
-
-inline bool LayerSerializer::endCommand(const Command& command) {
-  if (&command == mCurrentCommand) {
-    mCurrentCommand = mCurrentCommand->PreviousCommand();
-  }
-
-  return mSerializer.endCommand(command);
+  mSerializer.endCommand(command);
 }
 
 }}} // namespace ork::reflect::serialize

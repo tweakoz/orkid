@@ -20,41 +20,18 @@
 
 namespace ork { namespace reflect {
 
-template <typename T> bool ITyped<T>::Deserialize(IDeserializer& deserializer, Object* obj) const {
+template <typename T> void ITyped<T>::deserialize(IDeserializer& deserializer, object_ptr_t obj) const {
   T value;
-
   BidirectionalSerializer bidi(deserializer);
-
   bidi | value;
-
-  bool result = bidi.Succeeded();
-
-  if (result) {
-    Set(value, obj);
-  }
-
-  return result;
+  set(value, obj);
 }
 
-template <typename T> bool ITyped<T>::Serialize(ISerializer& serializer, object_constptr_t) const {
+template <typename T> void ITyped<T>::serialize(ISerializer& serializer, object_constptr_t obj) const {
   T value;
-  Get(value, obj);
-
+  get(value, obj);
   BidirectionalSerializer bidi(serializer);
-
   bidi | value;
-
-  return bidi.Succeeded();
-}
-
-template <typename T> typename ITyped<T>::RTTITyped::RTTICategory ITyped<T>::sClass(ITyped<T>::RTTITyped::ClassRTTI());
-
-template <typename T> typename ITyped<T>::RTTITyped::RTTICategory* ITyped<T>::GetClassStatic() {
-  return &sClass;
-}
-
-template <typename T> typename ITyped<T>::RTTITyped::RTTICategory* ITyped<T>::GetClass() const {
-  return GetClassStatic();
 }
 
 }} // namespace ork::reflect

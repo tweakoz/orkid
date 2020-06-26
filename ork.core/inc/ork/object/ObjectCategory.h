@@ -25,10 +25,8 @@ public:
 
 private:
   using dispatch_fn_t = std::function<Object*(Class* clazz)>;
-  bool serializeObject(reflect::ISerializer&, rtti::castable_rawconstptr_t) const override;
-  bool deserializeObject(reflect::IDeserializer&, rtti::castable_rawptr_t&) const override;
-  bool serializeObject(reflect::ISerializer&, rtti::castable_constptr_t) const override;
-  bool deserializeObject(reflect::IDeserializer&, rtti::castable_ptr_t&) const override;
+  void serializeObject(reflect::ISerializer&, object_constptr_t) const override;
+  void deserializeObject(reflect::IDeserializer&, object_ptr_t&) const override;
 };
 
 }} // namespace ork::object

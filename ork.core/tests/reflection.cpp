@@ -6,7 +6,7 @@
 #include "reflectionclasses.inl"
 #include <ork/reflect/properties/ITyped.hpp>
 #include <ork/reflect/properties/AccessorTyped.hpp>
-#include <ork/reflect/properties/DirectSharedObject.h>
+#include <ork/reflect/properties/DirectObject.h>
 
 using namespace ork;
 using namespace ork::object;
@@ -66,7 +66,7 @@ TEST(ReflectionDirectSharedProperty) {
   auto clazzstatic = SharedTest::GetClassStatic();
   auto sht2        = clazz->createShared();
   auto& desc       = clazz->Description();
-  using ptype      = DirectSharedObject;
+  using ptype      = DirectObject;
   auto passh       = desc.findTypedProperty<ptype>("prop_sharedobj_direct");
   passh->set(sht2, sht1.get());
   CHECK_EQUAL(sht1->_childObject, sht2);

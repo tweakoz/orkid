@@ -25,6 +25,7 @@ void Description::SetParentDescription(const Description* parent) {
 
 void Description::AddProperty(const char* key, ObjectProperty* value) {
   mProperties.AddSorted(key, value);
+  value->_name = key;
 }
 
 Description::PropertyMapType& Description::Properties() {
@@ -151,12 +152,13 @@ const Description::anno_t& Description::classAnnotation(const ConstString& key) 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Description::SerializeProperties(ISerializer& serializer, const Object* object) const {
+void Description::serializeProperties(
+    ISerializer& serializer, //
+    object_constptr_t object) const {
   bool result = true;
 
   if (_parentDescription) {
-    if (!_parentDescription->SerializeProperties(serializer, object))
-      result = false;
+    _parentDescription->serializeProperties(serializer, object);
   }
 
   const PropertyMapType& map = Properties();
@@ -168,21 +170,15 @@ bool Description::SerializeProperties(ISerializer& serializer, const Object* obj
     Command command(Command::EPROPERTY, name);
 
     serializer.beginCommand(command);
-    if (false == serializer.serializeObjectProperty(prop, object)) {
-      printf("name<%s> obj<%p> prop<%p>\n", name.c_str(), object, prop);
-      OrkAssert(false);
-      result = false;
-    }
+    serializer.serializeObjectProperty(prop, object);
     serializer.endCommand(command);
   }
-
-  return result;
 }
 
-bool Description::DeserializeProperties(IDeserializer& deserializer, Object* object) const {
+void Description::deserializeProperties(IDeserializer& deserializer, object_ptr_t object) const {
   Command command;
   deserializer._currentObject = object;
-
+  /*
   while (deserializer.beginCommand(command)) {
     if (command.Type() != Command::EPROPERTY) {
       orkprintf(
@@ -223,7 +219,7 @@ bool Description::DeserializeProperties(IDeserializer& deserializer, Object* obj
     }
   }
   deserializer._currentObject = nullptr;
-  return true;
+  return true;*/
 }
 
 }} // namespace ork::reflect

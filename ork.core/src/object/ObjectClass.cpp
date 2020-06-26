@@ -48,13 +48,7 @@ static boost::uuids::uuid genUUID() {
 
 object_ptr_t ObjectClass::createShared() const {
   auto shcast  = _sharedFactory();
-  auto asobj   = dynamic_pointer_cast<Object>(shcast);
-  asobj->_uuid = genUUID();
-  return asobj;
-}
-rtti::ICastable* ObjectClass::CreateObject() const {
-  auto shcast  = _rawFactory();
-  auto asobj   = dynamic_cast<Object*>(shcast);
+  auto asobj   = std::dynamic_pointer_cast<Object>(shcast);
   asobj->_uuid = genUUID();
   return asobj;
 }
@@ -79,13 +73,12 @@ void ObjectClass::Initialize() {
 
   reflect::Description::PropertyMapType& propmap = _description.Properties();
 
-  for (reflect::Description::PropertyMapType::iterator it = propmap.begin(); it != propmap.end(); it++) {
-    ConstString name              = it->first;
-    reflect::ObjectProperty* prop = it->second;
+  for (auto it : propmap) {
+    ConstString name              = it.first;
+    reflect::ObjectProperty* prop = it.second;
 
-    rtti::Class* propclass = prop->GetClass();
-
-    propclass->SetName(name, false);
+    // auto propclass = prop->GetClass();
+    // propclass->SetName(name, false);
   }
 }
 

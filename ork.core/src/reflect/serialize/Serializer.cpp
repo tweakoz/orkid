@@ -18,7 +18,7 @@
 ////////////////////////////////////////////////////////////////
 namespace ork::reflect::serialize {
 ////////////////////////////////////////////////////////////////
-void ILSerializer::referenceObject(object_constptr_t as_object) {
+void ISerializer::referenceObject(object_constptr_t as_object) {
   const auto& uuid  = as_object->_uuid;
   std::string uuids = boost::uuids::to_string(uuid);
   OrkAssert(_serialized.find(uuids) == _serialized.end());
@@ -30,7 +30,7 @@ void ILSerializer::referenceObject(object_constptr_t as_object) {
   endCommand(referenceAttributeCommand);
 }
 ////////////////////////////////////////////////////////////////
-void ILSerializer::referenceObject(object_rawconstptr_t as_object) {
+void ISerializer::referenceObject(object_rawconstptr_t as_object) {
   const auto& uuid  = as_object->_uuid;
   std::string uuids = boost::uuids::to_string(uuid);
   OrkAssert(_serialized.find(uuids) == _serialized.end());

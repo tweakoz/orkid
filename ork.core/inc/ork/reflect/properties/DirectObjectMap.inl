@@ -11,7 +11,7 @@
 #include <ork/reflect/Command.h>
 #include <ork/reflect/ISerializer.h>
 #include <ork/reflect/IDeserializer.h>
-#include "DirectSharedObjectMap.h"
+#include "DirectObjectMap.h"
 #include <ork/kernel/core_interface.h>
 
 namespace ork::reflect {
@@ -31,27 +31,27 @@ bool DSOM_IsMultiMapDeducer(const ork::orklut<kt, vt>& map) {
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
-DirectSharedObjectMap<MapType>::DirectSharedObjectMap(MapType Object::*prop) {
+DirectObjectMap<MapType>::DirectObjectMap(MapType Object::*prop) {
   mProperty = prop;
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
-MapType& DirectSharedObjectMap<MapType>::GetMap(Object* owner) const {
+MapType& DirectObjectMap<MapType>::GetMap(Object* owner) const {
   return owner->*mProperty;
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
-const MapType& DirectSharedObjectMap<MapType>::GetMap(const Object* owner) const {
+const MapType& DirectObjectMap<MapType>::GetMap(const Object* owner) const {
   return owner->*mProperty;
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
-bool DirectSharedObjectMap<MapType>::IsMultiMap(const Object* owner) const {
+bool DirectObjectMap<MapType>::IsMultiMap(const Object* owner) const {
   return DSOM_IsMultiMapDeducer(GetMap(owner));
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
-bool DirectSharedObjectMap<MapType>::ReadItem(
+bool DirectObjectMap<MapType>::ReadItem(
     const Object* owner, //
     const KeyType& key,
     int multi_index,
@@ -76,7 +76,7 @@ bool DirectSharedObjectMap<MapType>::ReadItem(
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
-bool DirectSharedObjectMap<MapType>::WriteItem(
+bool DirectObjectMap<MapType>::WriteItem(
     Object* owner, //
     const KeyType& key,
     int multi_index,
@@ -110,7 +110,7 @@ bool DirectSharedObjectMap<MapType>::WriteItem(
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
-bool DirectSharedObjectMap<MapType>::EraseItem(
+bool DirectObjectMap<MapType>::EraseItem(
     Object* owner, //
     const KeyType& key,
     int multi_index) const {
@@ -133,7 +133,7 @@ bool DirectSharedObjectMap<MapType>::EraseItem(
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
-bool DirectSharedObjectMap<MapType>::MapSerialization(
+bool DirectObjectMap<MapType>::MapSerialization(
     ItemSerializeFunction serialization_func, //
     BidirectionalSerializer& bidi,
     const Object* owner) const {
@@ -181,7 +181,7 @@ bool DirectSharedObjectMap<MapType>::MapSerialization(
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
-bool DirectSharedObjectMap<MapType>::GetKey(
+bool DirectObjectMap<MapType>::GetKey(
     const Object* owner, //
     int multi_index,
     KeyType& key_out) const {
@@ -195,7 +195,7 @@ bool DirectSharedObjectMap<MapType>::GetKey(
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
-bool DirectSharedObjectMap<MapType>::GetVal(
+bool DirectObjectMap<MapType>::GetVal(
     const Object* owner, //
     const KeyType& key,
     object_ptr_t& value_out) const {

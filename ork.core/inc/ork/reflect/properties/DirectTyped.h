@@ -20,8 +20,8 @@ template <typename T> class DirectTyped : public ITyped<T> {
 public:
   DirectTyped(T Object::*);
 
-  void get(T&, const Object*) const override;
-  void set(const T&, Object*) const override;
+  void get(T&, object_constptr_t) const override;
+  void set(const T&, object_ptr_t) const override;
 };
 
 }} // namespace ork::reflect
