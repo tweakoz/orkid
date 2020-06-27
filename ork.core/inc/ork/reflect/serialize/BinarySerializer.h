@@ -30,8 +30,7 @@ struct BinarySerializer final : public ISerializer {
   void serialize(const float&) override;
   void serialize(const double&) override;
   void serialize(const PieceString&) override;
-  void Hint(const PieceString&) override;
-  void Hint(const PieceString&, intptr_t ival) override;
+  void Hint(const PieceString&, hintvar_t val) override;
 
   void serializeData(const uint8_t*, size_t size) override;
 

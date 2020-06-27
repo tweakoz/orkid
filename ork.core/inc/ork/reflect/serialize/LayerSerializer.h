@@ -30,8 +30,7 @@ struct LayerSerializer : public ISerializer {
   void serialize(const float&) override;
   void serialize(const double&) override;
   void serialize(const PieceString&) override;
-  void Hint(const PieceString&) override;
-  void Hint(const PieceString&, intptr_t ival) override;
+  void Hint(const PieceString&, hintvar_t val) override;
 
   void serializeData(const uint8_t*, size_t) override;
 
@@ -81,11 +80,8 @@ inline void LayerSerializer::serialize(const PieceString& text) {
   mSerializer.serialize(text);
 }
 
-inline void LayerSerializer::Hint(const PieceString& hint) {
-  mSerializer.Hint(hint);
-}
-inline void LayerSerializer::Hint(const PieceString& hint, intptr_t ival) {
-  mSerializer.Hint(hint, ival);
+inline void LayerSerializer::Hint(const PieceString& hint, hintvar_t val) {
+  mSerializer.Hint(hint, val);
 }
 
 inline void LayerSerializer::serializeData(const uint8_t* data, size_t size) {

@@ -9,6 +9,7 @@
 
 #include <ork/orktypes.h>
 #include <ork/kernel/string/PieceString.h>
+#include <ork/kernel/svariant.h>
 #include <stdint.h>
 #include <unordered_set>
 #include <boost/uuid/uuid.hpp>
@@ -26,6 +27,8 @@ class Command;
 
 struct ISerializer {
 public:
+  using hintvar_t = svar64_t;
+
   void referenceObject(object_constptr_t);
 
   virtual void serialize(const bool&)        = 0;
@@ -42,8 +45,7 @@ public:
 
   virtual void serializeData(const uint8_t*, size_t) = 0;
 
-  virtual void Hint(const PieceString&)                = 0;
-  virtual void Hint(const PieceString&, intptr_t ival) = 0;
+  virtual void Hint(const PieceString&, hintvar_t val) = 0;
 
   virtual void beginCommand(const Command&) = 0;
   virtual void endCommand(const Command&)   = 0;

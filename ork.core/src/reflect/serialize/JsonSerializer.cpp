@@ -34,9 +34,6 @@ JsonSerializer::JsonSerializer(stream::IOutputStream& stream)
 }
 ////////////////////////////////////////////////////////////////////////////////
 JsonSerializer::~JsonSerializer() {
-
-  //_joprog.SetObject();
-  //_joprog.AddMember("KRZ", _joprogroot, _document);
 }
 ////////////////////////////////////////////////////////////////////////////////
 JsonSerializer::node_t JsonSerializer::pushObjectNode(std::string named) {
@@ -76,6 +73,7 @@ void JsonSerializer::finalize() {
 
   rapidjson::StringBuffer strbuf;
   rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(strbuf);
+  writer.SetIndent(' ', 1);
   _document.Accept(writer);
 
   auto outstr = strbuf.GetString();
@@ -88,9 +86,13 @@ void JsonSerializer::beginCommand(const Command& command) {
       break;
     case Command::EATTRIBUTE:
       break;
-    case Command::EPROPERTY:
+    case Command::EPROPERTY: {
+      auto propname = command.Name();
+      auto node     = pushObjectNode(propname.c_str());
       break;
+    }
     case Command::EITEM:
+      auto node = pushObjectNode("item");
       break;
   }
 
@@ -106,8 +108,10 @@ void JsonSerializer::endCommand(const Command& command) {
     case Command::EATTRIBUTE:
       break;
     case Command::EPROPERTY:
+      popNode();
       break;
     case Command::EITEM:
+      popNode();
       break;
   }
   _currentCommand = _currentCommand->PreviousCommand();
@@ -137,6 +141,7 @@ void JsonSerializer::serialize(const bool& value) {
 void JsonSerializer::serializeObjectProperty(
     const ObjectProperty* prop, //
     object_constptr_t instance) {
+
   prop->serialize(*this, instance);
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -145,43 +150,74 @@ void JsonSerializer::serializeSharedObject(object_constptr_t instance) {
     const auto& uuid  = instance->_uuid;
     std::string uuids = boost::uuids::to_string(uuid);
     auto it           = _reftracker.find(uuids);
-    ////////////////////////////////////
-    // backreference
-    ////////////////////////////////////
-    if (it != _reftracker.end()) {
-      //_write('B');
-      //_write(uuids.c_str());
-      auto node = pushObjectNode("backreference");
-      // /node->_value = rapidjson::Value("yo");
-      popNode();
-    }
+    rapidjson::Value uuidval(uuids.c_str(), *_allocator);
     ////////////////////////////////////
     // firstreference
     ////////////////////////////////////
-    else {
+    if (it == _reftracker.end()) {
+      _reftracker.insert(uuids);
+
       auto objclazz = instance->GetClass();
       auto category = rtti::downcast<rtti::Category*>(objclazz->GetClass());
 
       auto node = pushObjectNode("firstreference");
-      // node->_value = rapidjson::Value("whatup");
-      //_writeHeader('R', category->Name());
-      //_write(uuids.c_str());
+      node->_value.AddMember(
+          "uuid", //
+          uuidval,
+          *_allocator);
+
+      auto classname = objclazz->Name();
+      rapidjson::Value classval(classname.c_str(), *_allocator);
+      node->_value.AddMember(
+          "class", //
+          classval,
+          *_allocator);
+
+      auto propnode = pushObjectNode("properties");
+
       category->serializeObject(*this, instance);
-      //_writeFooter('r');
       popNode();
+
+      popNode();
+    }
+    ////////////////////////////////////
+    // backreference
+    ////////////////////////////////////
+    else {
+      topNode()->_value.AddMember(
+          "backreference", //
+          uuidval,
+          *_allocator);
     }
 
   } else {
-    auto node    = pushObjectNode("nil");
-    node->_value = rapidjson::Value("nil");
-    popNode();
+    topNode()->_value.AddMember(
+        "nil", //
+        "nil",
+        *_allocator);
   }
 }
 ////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::Hint(const PieceString&) {
+void JsonSerializer::Hint(const PieceString& name, hintvar_t val) {
+
+  if (name == "MultiIndex") {
+    _multiindex = val.Get<int>();
+  } else if (auto as_str = val.TryAs<std::string>()) {
+    rapidjson::Value nameval(name.c_str(), *_allocator);
+    rapidjson::Value valval(as_str.value().c_str(), *_allocator);
+    topNode()->_value.AddMember(
+        nameval, //
+        valval,
+        *_allocator);
+  }
 }
 ////////////////////////////////////////////////////////////////////////////////
 void JsonSerializer::serialize(const PieceString& string) {
+  rapidjson::Value strval(string.c_str(), *_allocator);
+  topNode()->_value.AddMember(
+      "str", //
+      strval,
+      *_allocator);
 }
 ////////////////////////////////////////////////////////////////////////////////
 void JsonSerializer::serializeData(const uint8_t*, size_t) {

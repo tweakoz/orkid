@@ -124,7 +124,7 @@ public:
   bool Serialize(const PieceString&) override;
 
   void Hint(const PieceString& pstr) override;
-  void Hint(const PieceString&, intptr_t ival) override;
+  void Hint(const PieceString&, hintvar_t val) override;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -31,9 +31,7 @@ public:
   void serialize(const float&) override;
   void serialize(const double&) override;
   void serialize(const PieceString&) override;
-  void Hint(const PieceString&) override;
-  void Hint(const PieceString&, intptr_t ival) override {
-  }
+  void Hint(const PieceString&, hintvar_t val) override;
 
   void serializeSharedObject(object_constptr_t) override;
   void serializeObjectProperty(const ObjectProperty*, object_constptr_t) override;
@@ -71,6 +69,7 @@ private:
   rapidjson::Document _document;
   node_t _objects;
   std::stack<node_t> _nodestack;
+  int _multiindex = -1;
 };
 
 }}} // namespace ork::reflect::serialize

@@ -78,8 +78,9 @@ template class PropType<fvec4>;
 namespace reflect {
 
 template <> void Serialize(const fvec4* in, fvec4* out, reflect::BidirectionalSerializer& bidi) {
+  using namespace std::literals;
   if (bidi.Serializing()) {
-    bidi.Serializer()->Hint("fvec4");
+    bidi.Serializer()->Hint("type", "fvec4"s);
     for (int i = 0; i < 4; i++) {
       bidi | in->GetArray()[i];
     }

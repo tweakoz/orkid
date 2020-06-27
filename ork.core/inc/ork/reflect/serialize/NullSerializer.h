@@ -31,8 +31,7 @@ struct NullSerializer final : public ISerializer {
       const ObjectProperty* prop, //
       object_constptr_t instance) override;
 
-  void Hint(const PieceString&) override;
-  void Hint(const PieceString&, intptr_t ival) override;
+  void Hint(const PieceString&, hintvar_t val) override;
 
   void serializeData(const uint8_t*, size_t) override;
 

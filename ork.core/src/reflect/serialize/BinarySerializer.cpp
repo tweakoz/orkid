@@ -151,10 +151,8 @@ void BinarySerializer::serializeSharedObject(object_constptr_t instance) {
   }
 }
 ////////////////////////////////////////////////////////////////////////////////
-void BinarySerializer::Hint(const PieceString&) {
-}
 ////////////////////////////////////////////////////////////////////////////////
-void BinarySerializer::Hint(const PieceString&, intptr_t ival) {
+void BinarySerializer::Hint(const PieceString&, hintvar_t val) {
 }
 ////////////////////////////////////////////////////////////////////////////////
 void BinarySerializer::serialize(const PieceString& text) {

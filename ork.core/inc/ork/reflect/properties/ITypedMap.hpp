@@ -47,10 +47,9 @@ void ITypedMap<KeyType, ValueType>::_doSerialize(
   Command attribute(Command::EATTRIBUTE, "key");
   serializer->beginCommand(item);
   serializer->beginCommand(attribute);
-  serializer->Hint("map_key");
-  bidi | key;
+  serializer->Hint("map_key", key);
   serializer->endCommand(attribute);
-  serializer->Hint("map_value");
+  serializer->Hint("map_value", value);
   bidi | value;
   serializer->endCommand(item);
 }

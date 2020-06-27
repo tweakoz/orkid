@@ -41,9 +41,7 @@ void NullSerializer::serializeSharedObject(object_constptr_t) {
 void NullSerializer::serialize(const PieceString&) {
 }
 
-void NullSerializer::Hint(const PieceString&) {
-}
-void NullSerializer::Hint(const PieceString&, intptr_t ival) {
+void NullSerializer::Hint(const PieceString&, hintvar_t ival) {
 }
 
 void NullSerializer::serializeData(const uint8_t*, size_t) {

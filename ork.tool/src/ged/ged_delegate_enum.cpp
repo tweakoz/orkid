@@ -48,7 +48,7 @@ private:
   orkmap<std::string, int> mEnumMap;
   std::string mCurrentValue;
   /////////////////////////////////////////////////////
-  void Hint(const PieceString&, intptr_t ival) {
+  void Hint(const PieceString&, hintvar_t val) {
     ork::reflect::EnumNameMap* penummap = reinterpret_cast<ork::reflect::EnumNameMap*>(ival);
     for (int i = 0; penummap[i].name; i++) {
       const char* pname = penummap[i].name;
