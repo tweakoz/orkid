@@ -31,11 +31,8 @@ public:
 
   void serializeData(const uint8_t*, size_t size) override;
 
-  // void referenceObject(const rtti::ICastable*) override;
   void beginCommand(const Command&) override;
   void endCommand(const Command&) override;
-
-  // bool Serialize(const rtti::Category* category, const rtti::ICastable* object);
 
   void finalize();
 
@@ -52,6 +49,8 @@ private:
   };
 
   using node_t = std::shared_ptr<Node>;
+
+  void _serializeNamedItem(std::string name, const hintvar_t&);
 
   node_t pushObjectNode(std::string named);
   void popNode();

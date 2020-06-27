@@ -117,25 +117,28 @@ void JsonSerializer::endCommand(const Command& command) {
   _currentCommand = _currentCommand->PreviousCommand();
 }
 ////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::serializeItem(const hintvar_t& value) {
+void JsonSerializer::_serializeNamedItem(
+    std::string named, //
+    const hintvar_t& value) {
+  rapidjson::Value nameval(named.c_str(), *_allocator);
   if (auto as_piecestr = value.TryAs<PieceString>()) {
     rapidjson::Value strval(as_piecestr.value().c_str(), *_allocator);
     topNode()->_value.AddMember(
-        "str", //
+        nameval, //
         strval,
         *_allocator);
   } else if (auto as_int = value.TryAs<int>()) {
     rapidjson::Value intval;
     intval.SetInt(as_int.value());
     topNode()->_value.AddMember(
-        "int", //
+        nameval, //
         intval,
         *_allocator);
   } else if (auto as_bool = value.TryAs<bool>()) {
     rapidjson::Value boolval;
     boolval.SetBool(as_bool.value());
     topNode()->_value.AddMember(
-        "bool", //
+        nameval, //
         boolval,
         *_allocator);
   } else if (auto as_object = value.TryAs<object_constptr_t>()) {
@@ -145,6 +148,9 @@ void JsonSerializer::serializeItem(const hintvar_t& value) {
   } else {
     OrkAssert(false);
   }
+}
+void JsonSerializer::serializeItem(const hintvar_t& value) {
+  _serializeNamedItem("item", value);
 }
 ////////////////////////////////////////////////////////////////////////////////
 void JsonSerializer::serializeObjectProperty(
@@ -216,16 +222,7 @@ void JsonSerializer::Hint(const PieceString& name, hintvar_t val) {
     _mapkey = val;
   } else if (name == "map_value") {
     auto kasstr = _mapkey.Get<std::string>();
-    rapidjson::Value keyval(kasstr.c_str(), *_allocator);
-    pushObjectNode(kasstr.c_str());
-    serializeItem(val);
-    popNode();
-    // rapidjson::Value valval(as_str.value().c_str(), *_allocator);
-    // topNode()->_value.AddMember(
-    //  nameval, //
-    // valval,
-    //*_allocator);
-
+    _serializeNamedItem(kasstr, val);
   } else if (auto as_str = val.TryAs<std::string>()) {
     rapidjson::Value nameval(name.c_str(), *_allocator);
     rapidjson::Value valval(as_str.value().c_str(), *_allocator);
