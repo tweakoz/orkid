@@ -155,17 +155,18 @@ void JsonSerializer::serializeSharedObject(object_constptr_t instance) {
       auto objclazz = instance->GetClass();
       auto category = rtti::downcast<rtti::Category*>(objclazz->GetClass());
 
-      auto node = pushObjectNode("firstreference");
-      node->_value.AddMember(
-          "uuid", //
-          uuidval,
-          *_allocator);
+      auto node = pushObjectNode("object");
 
       auto classname = objclazz->Name();
       rapidjson::Value classval(classname.c_str(), *_allocator);
       node->_value.AddMember(
           "class", //
           classval,
+          *_allocator);
+
+      node->_value.AddMember(
+          "uuid", //
+          uuidval,
           *_allocator);
 
       auto propnode = pushObjectNode("properties");
