@@ -22,18 +22,10 @@ struct LayerSerializer : public ISerializer {
 
   LayerSerializer(ISerializer& serializer);
 
-  void serialize(const bool&) override;
-  void serialize(const char&) override;
-  void serialize(const short&) override;
-  void serialize(const int&) override;
-  void serialize(const long&) override;
-  void serialize(const float&) override;
-  void serialize(const double&) override;
-  void serialize(const PieceString&) override;
   void Hint(const PieceString&, hintvar_t val) override;
 
   void serializeData(const uint8_t*, size_t) override;
-
+  void serializeItem(const hintvar_t&) override;
   void serializeObjectProperty(const ObjectProperty*, object_constptr_t) override;
   void serializeSharedObject(object_constptr_t) override;
 
@@ -48,36 +40,8 @@ inline LayerSerializer::LayerSerializer(ISerializer& serializer)
     : mSerializer(serializer) {
 }
 
-inline void LayerSerializer::serialize(const bool& value) {
-  mSerializer.serialize(value);
-}
-
-inline void LayerSerializer::serialize(const char& value) {
-  mSerializer.serialize(value);
-}
-
-inline void LayerSerializer::serialize(const short& value) {
-  mSerializer.serialize(value);
-}
-
-inline void LayerSerializer::serialize(const int& value) {
-  mSerializer.serialize(value);
-}
-
-inline void LayerSerializer::serialize(const long& value) {
-  mSerializer.serialize(value);
-}
-
-inline void LayerSerializer::serialize(const float& value) {
-  mSerializer.serialize(value);
-}
-
-inline void LayerSerializer::serialize(const double& value) {
-  mSerializer.serialize(value);
-}
-
-inline void LayerSerializer::serialize(const PieceString& text) {
-  mSerializer.serialize(text);
+inline void LayerSerializer::serializeItem(const hintvar_t& value) {
+  mSerializer.serializeItem(value);
 }
 
 inline void LayerSerializer::Hint(const PieceString& hint, hintvar_t val) {
@@ -95,10 +59,6 @@ inline void LayerSerializer::serializeSharedObject(object_constptr_t object) {
 inline void LayerSerializer::serializeObjectProperty(const ObjectProperty* prop, object_constptr_t object) {
   prop->serialize(*this, object);
 }
-
-// inline void LayerSerializer::referenceObject(object_constptr_t object) {
-// mSerializer.referenceObject(object);
-//}
 
 inline void LayerSerializer::beginCommand(const Command& command) {
   const Command* previous_command = _currentCommand;

@@ -29,7 +29,7 @@ BinarySerializer::~BinarySerializer() {
 ////////////////////////////////////////////////////////////////////////////////
 void BinarySerializer::_writeHeader(char type, PieceString text) {
   _write(type);
-  serialize(text);
+  serializeItem(text);
 }
 ////////////////////////////////////////////////////////////////////////////////
 void BinarySerializer::_writeFooter(char type) {
@@ -89,32 +89,23 @@ void BinarySerializer::endCommand(const Command& command) {
   }
 }
 ////////////////////////////////////////////////////////////////////////////////
-void BinarySerializer::serialize(const char& value) {
-  _write(value);
-}
+/*void BinarySerializer::serialize(const PieceString& text) {
+  int pooled_string_index = mStringPool.FindIndex(text);
+
+  if (pooled_string_index == -1) {
+    _write(-int(text.length() + 1));
+    mStream.Write(reinterpret_cast<const unsigned char*>(text.c_str()), text.length());
+    char* text_copy = new char[text.length() + 1];
+    memcpy(text_copy, text.c_str(), text.length());
+    text_copy[text.length()] = '\0';
+    mStringPool.Literal(text_copy);
+  } else {
+    _write(int(pooled_string_index));
+  }
+}*/
 ////////////////////////////////////////////////////////////////////////////////
-void BinarySerializer::serialize(const short& value) {
-  _write(value);
-}
-////////////////////////////////////////////////////////////////////////////////
-void BinarySerializer::serialize(const int& value) {
-  _write(value);
-}
-////////////////////////////////////////////////////////////////////////////////
-void BinarySerializer::serialize(const long& value) {
-  _write(value);
-}
-////////////////////////////////////////////////////////////////////////////////
-void BinarySerializer::serialize(const float& value) {
-  _write(value);
-}
-////////////////////////////////////////////////////////////////////////////////
-void BinarySerializer::serialize(const double& value) {
-  _write(value);
-}
-////////////////////////////////////////////////////////////////////////////////
-void BinarySerializer::serialize(const bool& value) {
-  _write(value);
+void BinarySerializer::serializeItem(const hintvar_t& value) {
+  //_write(value);
 }
 ////////////////////////////////////////////////////////////////////////////////
 void BinarySerializer::serializeObjectProperty(
@@ -151,23 +142,7 @@ void BinarySerializer::serializeSharedObject(object_constptr_t instance) {
   }
 }
 ////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
 void BinarySerializer::Hint(const PieceString&, hintvar_t val) {
-}
-////////////////////////////////////////////////////////////////////////////////
-void BinarySerializer::serialize(const PieceString& text) {
-  int pooled_string_index = mStringPool.FindIndex(text);
-
-  if (pooled_string_index == -1) {
-    _write(-int(text.length() + 1));
-    mStream.Write(reinterpret_cast<const unsigned char*>(text.c_str()), text.length());
-    char* text_copy = new char[text.length() + 1];
-    memcpy(text_copy, text.c_str(), text.length());
-    text_copy[text.length()] = '\0';
-    mStringPool.Literal(text_copy);
-  } else {
-    _write(int(pooled_string_index));
-  }
 }
 ////////////////////////////////////////////////////////////////////////////////
 void BinarySerializer::serializeData(const uint8_t* data, size_t size) {

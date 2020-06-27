@@ -55,7 +55,7 @@ void IArray::serialize(
   Command command(Command::EATTRIBUTE, "size");
 
   serializer.beginCommand(command);
-  serializer.serialize(int(numitems));
+  serializer.serializeItem(int(numitems));
   serializer.endCommand(command);
 
   for (size_t index = 0; index < numitems; index++) {

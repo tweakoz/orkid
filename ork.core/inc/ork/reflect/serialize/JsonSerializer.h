@@ -23,14 +23,7 @@ public:
   JsonSerializer(stream::IOutputStream& stream);
   ~JsonSerializer();
 
-  void serialize(const bool&) override;
-  void serialize(const char&) override;
-  void serialize(const short&) override;
-  void serialize(const int&) override;
-  void serialize(const long&) override;
-  void serialize(const float&) override;
-  void serialize(const double&) override;
-  void serialize(const PieceString&) override;
+  void serializeItem(const hintvar_t&) override;
   void Hint(const PieceString&, hintvar_t val) override;
 
   void serializeSharedObject(object_constptr_t) override;
@@ -70,6 +63,7 @@ private:
   node_t _objects;
   std::stack<node_t> _nodestack;
   int _multiindex = -1;
+  hintvar_t _mapkey;
 };
 
 }}} // namespace ork::reflect::serialize

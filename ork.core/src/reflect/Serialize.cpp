@@ -32,7 +32,7 @@ template <typename T>
 inline //
     void
     BidirectionalSerializer::Serialize(const T& value) {
-  mSerializer->serialize(value);
+  mSerializer->serializeItem(value);
 }
 
 template <typename T>

@@ -17,15 +17,7 @@ namespace ork { namespace reflect { namespace serialize {
 
 struct NullSerializer final : public ISerializer {
 
-  void serialize(const bool&) override;
-  void serialize(const char&) override;
-  void serialize(const short&) override;
-  void serialize(const int&) override;
-  void serialize(const long&) override;
-  void serialize(const float&) override;
-  void serialize(const double&) override;
-  void serialize(const PieceString&) override;
-
+  void serializeItem(const hintvar_t&) override;
   void serializeSharedObject(object_constptr_t instance) override;
   void serializeObjectProperty(
       const ObjectProperty* prop, //

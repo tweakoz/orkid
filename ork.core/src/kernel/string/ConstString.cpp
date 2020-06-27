@@ -41,7 +41,7 @@ ConstString::size_type ConstString::size() const {
 namespace reflect {
 template <> void Serialize(const ConstString* in, ConstString* out, reflect::BidirectionalSerializer& bidi) {
   if (bidi.Serializing()) {
-    bidi.Serializer()->serialize(PieceString(*in));
+    bidi.Serializer()->serializeItem(PieceString(*in));
   } else {
     PoolString pool_string;
     bidi | pool_string;

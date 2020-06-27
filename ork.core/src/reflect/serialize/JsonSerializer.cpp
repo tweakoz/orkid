@@ -92,7 +92,7 @@ void JsonSerializer::beginCommand(const Command& command) {
       break;
     }
     case Command::EITEM:
-      auto node = pushObjectNode("item");
+      // auto node = pushObjectNode("item");
       break;
   }
 
@@ -111,31 +111,20 @@ void JsonSerializer::endCommand(const Command& command) {
       popNode();
       break;
     case Command::EITEM:
-      popNode();
+      // popNode();
       break;
   }
   _currentCommand = _currentCommand->PreviousCommand();
 }
 ////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::serialize(const char& value) {
-}
-////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::serialize(const short& value) {
-}
-////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::serialize(const int& value) {
-}
-////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::serialize(const long& value) {
-}
-////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::serialize(const float& value) {
-}
-////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::serialize(const double& value) {
-}
-////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::serialize(const bool& value) {
+void JsonSerializer::serializeItem(const hintvar_t& value) {
+  if (auto as_piecestr = value.TryAs<PieceString>()) {
+    rapidjson::Value strval(as_piecestr.value().c_str(), *_allocator);
+    topNode()->_value.AddMember(
+        "str", //
+        strval,
+        *_allocator);
+  }
 }
 ////////////////////////////////////////////////////////////////////////////////
 void JsonSerializer::serializeObjectProperty(
@@ -202,6 +191,19 @@ void JsonSerializer::Hint(const PieceString& name, hintvar_t val) {
 
   if (name == "MultiIndex") {
     _multiindex = val.Get<int>();
+  } else if (name == "map_key") {
+    _mapkey = val;
+  } else if (name == "map_value") {
+    auto kasstr = _mapkey.Get<std::string>();
+    rapidjson::Value keyval(kasstr.c_str(), *_allocator);
+    pushObjectNode(kasstr.c_str());
+    popNode();
+    // rapidjson::Value valval(as_str.value().c_str(), *_allocator);
+    // topNode()->_value.AddMember(
+    //  nameval, //
+    // valval,
+    //*_allocator);
+
   } else if (auto as_str = val.TryAs<std::string>()) {
     rapidjson::Value nameval(name.c_str(), *_allocator);
     rapidjson::Value valval(as_str.value().c_str(), *_allocator);
@@ -210,14 +212,6 @@ void JsonSerializer::Hint(const PieceString& name, hintvar_t val) {
         valval,
         *_allocator);
   }
-}
-////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::serialize(const PieceString& string) {
-  rapidjson::Value strval(string.c_str(), *_allocator);
-  topNode()->_value.AddMember(
-      "str", //
-      strval,
-      *_allocator);
 }
 ////////////////////////////////////////////////////////////////////////////////
 void JsonSerializer::serializeData(const uint8_t*, size_t) {

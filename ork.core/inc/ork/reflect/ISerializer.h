@@ -31,14 +31,7 @@ public:
 
   void referenceObject(object_constptr_t);
 
-  virtual void serialize(const bool&)        = 0;
-  virtual void serialize(const char&)        = 0;
-  virtual void serialize(const short&)       = 0;
-  virtual void serialize(const int&)         = 0;
-  virtual void serialize(const long&)        = 0;
-  virtual void serialize(const float&)       = 0;
-  virtual void serialize(const double&)      = 0;
-  virtual void serialize(const PieceString&) = 0;
+  virtual void serializeItem(const hintvar_t&) = 0;
 
   virtual void serializeSharedObject(object_constptr_t)                          = 0;
   virtual void serializeObjectProperty(const ObjectProperty*, object_constptr_t) = 0;

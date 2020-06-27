@@ -50,7 +50,7 @@ void ITypedMap<KeyType, ValueType>::_doSerialize(
   serializer->Hint("map_key", key);
   serializer->endCommand(attribute);
   serializer->Hint("map_value", value);
-  bidi | value;
+  // bidi | value;
   serializer->endCommand(item);
 }
 ////////////////////////////////////////////////////////////////////////////////

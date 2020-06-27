@@ -14,31 +14,10 @@
 
 namespace ork { namespace reflect { namespace serialize {
 
-void NullSerializer::serialize(const bool&) {
-}
-
-void NullSerializer::serialize(const char&) {
-}
-
-void NullSerializer::serialize(const short&) {
-}
-
-void NullSerializer::serialize(const int&) {
-}
-
-void NullSerializer::serialize(const long&) {
-}
-
-void NullSerializer::serialize(const float&) {
-}
-
-void NullSerializer::serialize(const double&) {
+void NullSerializer::serializeItem(const hintvar_t&) {
 }
 
 void NullSerializer::serializeSharedObject(object_constptr_t) {
-}
-
-void NullSerializer::serialize(const PieceString&) {
 }
 
 void NullSerializer::Hint(const PieceString&, hintvar_t ival) {

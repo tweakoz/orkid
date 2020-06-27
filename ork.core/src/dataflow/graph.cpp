@@ -131,7 +131,7 @@ bool graph_data::SerializeConnections(ork::reflect::ISerializer& ser) const {
       }
     }
   }
-  ser.serialize(inumlinks);
+  ser.serializeItem(inumlinks);
   /////////////////////////////////////////////
   for (orklut<ork::PoolString, ork::Object*>::const_iterator it = mModules.begin(); it != mModules.end(); it++) {
     dgmodule* pmodule = rtti::autocast(it->second);
@@ -142,10 +142,10 @@ bool graph_data::SerializeConnections(ork::reflect::ISerializer& ser) const {
         const ork::dataflow::outplugbase* poutput = pinput->GetExternalOutput();
         if (poutput) {
           module* poutmodule = rtti::autocast(poutput->GetModule());
-          ser.serialize(ork::PieceString(pmodule->GetName().c_str()));
-          ser.serialize(ork::PieceString(pinput->GetName().c_str()));
-          ser.serialize(ork::PieceString(poutput->GetModule()->GetName().c_str()));
-          ser.serialize(ork::PieceString(poutput->GetName().c_str()));
+          ser.serializeItem(ork::PieceString(pmodule->GetName().c_str()));
+          ser.serializeItem(ork::PieceString(pinput->GetName().c_str()));
+          ser.serializeItem(ork::PieceString(poutput->GetModule()->GetName().c_str()));
+          ser.serializeItem(ork::PieceString(poutput->GetName().c_str()));
         }
       }
     }

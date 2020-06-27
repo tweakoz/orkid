@@ -22,14 +22,7 @@ struct BinarySerializer final : public ISerializer {
   BinarySerializer(stream::IOutputStream& stream);
   ~BinarySerializer();
 
-  void serialize(const bool&) override;
-  void serialize(const char&) override;
-  void serialize(const short&) override;
-  void serialize(const int&) override;
-  void serialize(const long&) override;
-  void serialize(const float&) override;
-  void serialize(const double&) override;
-  void serialize(const PieceString&) override;
+  void serializeItem(const hintvar_t&) override;
   void Hint(const PieceString&, hintvar_t val) override;
 
   void serializeData(const uint8_t*, size_t size) override;
