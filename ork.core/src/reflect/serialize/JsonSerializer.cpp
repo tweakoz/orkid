@@ -124,6 +124,20 @@ void JsonSerializer::serializeItem(const hintvar_t& value) {
         "str", //
         strval,
         *_allocator);
+  } else if (auto as_int = value.TryAs<int>()) {
+    rapidjson::Value intval;
+    intval.SetInt(as_int.value());
+    topNode()->_value.AddMember(
+        "int", //
+        intval,
+        *_allocator);
+  } else if (auto as_bool = value.TryAs<bool>()) {
+    rapidjson::Value boolval;
+    boolval.SetBool(as_bool.value());
+    topNode()->_value.AddMember(
+        "bool", //
+        boolval,
+        *_allocator);
   } else if (auto as_object = value.TryAs<object_constptr_t>()) {
     serializeSharedObject(as_object.value());
   } else if (auto as_object = value.TryAs<object_ptr_t>()) {

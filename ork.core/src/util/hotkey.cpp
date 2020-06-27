@@ -27,7 +27,7 @@
 #include <linux/input.h>
 #endif
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::HotKey, "HotKey");
+ImplementReflectionX(ork::HotKey, "HotKey");
 ImplementReflectionX(ork::HotKeyConfiguration, "HotKeyConfiguration");
 INSTANTIATE_TRANSPARENT_RTTI(ork::HotKeyManager, "HotKeyManager");
 
@@ -265,14 +265,14 @@ namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void HotKey::Describe() {
-  /*ork::reflect::RegisterProperty("KeyCode", &HotKey::miKeyCode);
-  ork::reflect::RegisterProperty("Alt", &HotKey::mbAlt);
-  ork::reflect::RegisterProperty("Ctrl", &HotKey::mbCtrl);
-  ork::reflect::RegisterProperty("Shift", &HotKey::mbShift);
-  ork::reflect::RegisterProperty("LMB", &HotKey::mbLeftMB);
-  ork::reflect::RegisterProperty("MMB", &HotKey::mbMiddleMB);
-  ork::reflect::RegisterProperty("RMB", &HotKey::mbRightMB);*/
+void HotKey::describeX(object::ObjectClass* clazz) {
+  clazz->memberProperty("KeyCode", &HotKey::miKeyCode);
+  clazz->memberProperty("Alt", &HotKey::mbAlt);
+  clazz->memberProperty("Ctrl", &HotKey::mbCtrl);
+  clazz->memberProperty("Shift", &HotKey::mbShift);
+  clazz->memberProperty("LMB", &HotKey::mbLeftMB);
+  clazz->memberProperty("MMB", &HotKey::mbMiddleMB);
+  clazz->memberProperty("RMB", &HotKey::mbRightMB);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

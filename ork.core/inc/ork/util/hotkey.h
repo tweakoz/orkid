@@ -19,7 +19,7 @@ namespace ork {
 ///////////////////////////////////////////////////////////////////////////
 
 class HotKey : public ork::Object {
-  RttiDeclareConcrete(HotKey, ork::Object);
+  DeclareConcreteX(HotKey, ork::Object);
 
 public:
   int miKeyCode;
