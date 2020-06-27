@@ -75,6 +75,46 @@ FOREACH_BASIC_SERIALIZATION_TYPE(INSTANTIATE_SERIALIZE_FUNCTION)
 
 template <>
 void Serialize(
+    rtti::castable_rawptr_t const* in, //
+    rtti::castable_rawptr_t* out,
+    BidirectionalSerializer& bidi) {
+  if (bidi.Serializing()) {
+    // bidi.serializeSharedObject(*in);
+  } else {
+    // object_ptr_t ptr;
+    // bidi.deserializeSharedObject(ptr);
+    //(*out) = ptr;
+  }
+}
+template <>
+void Serialize(
+    rtti::castable_rawconstptr_t const* in, //
+    rtti::castable_rawconstptr_t* out,
+    BidirectionalSerializer& bidi) {
+  if (bidi.Serializing()) {
+    // bidi.serializeSharedObject(*in);
+  } else {
+    // object_ptr_t ptr;
+    // bidi.deserializeSharedObject(ptr);
+    //(*out) = ptr;
+  }
+}
+template <>
+void Serialize(
+    const ObjectProperty* const* in, //
+    const ObjectProperty** out,
+    BidirectionalSerializer& bidi) {
+  if (bidi.Serializing()) {
+    // bidi.serializeSharedObject(*in);
+  } else {
+    // object_ptr_t ptr;
+    // bidi.deserializeSharedObject(ptr);
+    //(*out) = ptr;
+  }
+}
+
+template <>
+void Serialize(
     object_ptr_t const* in, //
     object_ptr_t* out,
     BidirectionalSerializer& bidi) {

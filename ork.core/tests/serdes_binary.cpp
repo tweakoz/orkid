@@ -23,7 +23,7 @@ using namespace ork::reflect;
 using namespace ork::rtti;
 using namespace ork::stream;
 using storage_type = ArrayString<65536>;
-
+/*
 ///////////////////////////////////////////////////////////////////////////////
 
 std::shared_ptr<storage_type> hkeyToStorage() {
@@ -73,5 +73,5 @@ TEST(DeserializeObjectBinary) {
   bool serok                        = deser.deserializeObject(pcastable);
   CHECK(serok);
 }
-
+*/
 ///////////////////////////////////////////////////////////////////////////////

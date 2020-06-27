@@ -32,31 +32,32 @@ bool DSOM_IsMultiMapDeducer(const ork::orklut<kt, vt>& map) {
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
 DirectObjectMap<MapType>::DirectObjectMap(MapType Object::*prop) {
-  mProperty = prop;
+  _member = prop;
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
-MapType& DirectObjectMap<MapType>::GetMap(Object* owner) const {
-  return owner->*mProperty;
+MapType& DirectObjectMap<MapType>::GetMap(object_ptr_t instance) const {
+  return instance->*_member;
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
-const MapType& DirectObjectMap<MapType>::GetMap(const Object* owner) const {
-  return owner->*mProperty;
+const MapType& DirectObjectMap<MapType>::GetMap(object_constptr_t instance) const {
+  auto non_const = const_cast<Object*>(instance.get());
+  return non_const->*_member;
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
-bool DirectObjectMap<MapType>::IsMultiMap(const Object* owner) const {
-  return DSOM_IsMultiMapDeducer(GetMap(owner));
+bool DirectObjectMap<MapType>::isMultiMap(object_constptr_t instance) const {
+  return DSOM_IsMultiMapDeducer(GetMap(instance));
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
 bool DirectObjectMap<MapType>::ReadItem(
-    const Object* owner, //
+    object_constptr_t instance, //
     const KeyType& key,
     int multi_index,
     object_ptr_t& value_out) const {
-  const MapType& map                  = owner->*mProperty;
+  const MapType& map                  = instance.get()->*_member;
   typename MapType::const_iterator it = map.find(key);
 
   // printf("dsom read key<%s>\n", key.c_str());
@@ -77,11 +78,11 @@ bool DirectObjectMap<MapType>::ReadItem(
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
 bool DirectObjectMap<MapType>::WriteItem(
-    Object* owner, //
+    object_ptr_t instance, //
     const KeyType& key,
     int multi_index,
     const object_ptr_t* value_inp) const {
-  MapType& map               = owner->*mProperty;
+  MapType& map               = instance.get()->*_member;
   const int orig_multi_index = multi_index;
   if (multi_index == IMap::kDeserializeInsertItem) {
     OrkAssert(value_inp);
@@ -101,7 +102,7 @@ bool DirectObjectMap<MapType>::WriteItem(
       ev.miMultiIndex = orig_multi_index;
       ev.mKey.Set(key);
       ev.mOldValue.Set(val2erase);
-      ork::Object* pevl = static_cast<ork::Object*>(owner);
+      ork::object_ptr_t pevl = static_cast<ork::object_ptr_t>(instance);
       pevl->Notify(&ev);
       map.erase(it);
     }
@@ -111,10 +112,10 @@ bool DirectObjectMap<MapType>::WriteItem(
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
 bool DirectObjectMap<MapType>::EraseItem(
-    Object* owner, //
+    object_ptr_t instance, //
     const KeyType& key,
     int multi_index) const {
-  MapType& map                  = owner->*mProperty;
+  MapType& map                  = instance.get()->*_member;
   typename MapType::iterator it = map.find(key);
 
   if (it != map.end()) {
@@ -136,10 +137,10 @@ template <typename MapType> //
 bool DirectObjectMap<MapType>::MapSerialization(
     ItemSerializeFunction serialization_func, //
     BidirectionalSerializer& bidi,
-    const Object* owner) const {
+    object_constptr_t instance) const {
 
   if (bidi.Serializing()) {
-    const MapType& map = owner->*mProperty;
+    const MapType& map = instance.get()->*_member;
 
     // const KeyType *last_key = NULL;
 
@@ -182,10 +183,11 @@ bool DirectObjectMap<MapType>::MapSerialization(
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
 bool DirectObjectMap<MapType>::GetKey(
-    const Object* owner, //
+    object_constptr_t instance, //
     int multi_index,
     KeyType& key_out) const {
-  const MapType& map = owner->*mProperty;
+  auto non_const     = const_cast<Object*>(instance.get());
+  const MapType& map = non_const->*_member;
   OrkAssert(multi_index < int(map.size()));
   typename MapType::const_iterator it = map.begin();
   for (int i = 0; i < multi_index; i++)
@@ -196,10 +198,11 @@ bool DirectObjectMap<MapType>::GetKey(
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
 bool DirectObjectMap<MapType>::GetVal(
-    const Object* owner, //
+    object_constptr_t instance, //
     const KeyType& key,
     object_ptr_t& value_out) const {
-  const MapType& map                  = owner->*mProperty;
+  auto non_const                      = const_cast<Object*>(instance.get());
+  const MapType& map                  = non_const->*_member;
   typename MapType::const_iterator it = map.find(key);
   if (it == map.end())
     return false;

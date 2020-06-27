@@ -56,8 +56,8 @@ namespace ork { namespace object {
 //////////////////////////////////////////////////////////////////////
 
 void ISlot::Describe() {
-  reflect::RegisterProperty("Object", &ISlot::mObject);
-  reflect::RegisterProperty("SlotName", &ISlot::mSlotName);
+  // reflect::RegisterProperty("Object", &ISlot::mObject);
+  // reflect::RegisterProperty("SlotName", &ISlot::mSlotName);
 }
 
 ISlot::ISlot(Object* object, PoolString name)

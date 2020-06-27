@@ -16,15 +16,15 @@ class ISerializer;
 
 template <typename T>
 DirectTyped<T>::DirectTyped(T Object::*property)
-    : mProperty(property) {
+    : _member(property) {
 }
 
 template <typename T> void DirectTyped<T>::get(T& value, object_constptr_t obj) const {
-  value = obj.get()->*mProperty;
+  value = obj.get()->*_member;
 }
 
 template <typename T> void DirectTyped<T>::set(const T& value, object_ptr_t obj) const {
-  obj.get()->*mProperty = value;
+  obj.get()->*_member = value;
 }
 
 }} // namespace ork::reflect

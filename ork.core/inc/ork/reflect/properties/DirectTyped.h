@@ -15,7 +15,7 @@ namespace ork { namespace reflect {
 
 template <typename T> class DirectTyped : public ITyped<T> {
 
-  T Object::*mProperty;
+  T Object::*_member;
 
 public:
   DirectTyped(T Object::*);

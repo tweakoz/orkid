@@ -141,13 +141,11 @@ template class ITyped<fvec3>;
 template class ITyped<fvec4>;
 template class ITyped<fmtx4>;
 template class ITyped<rtti::castable_rawptr_t>;
-template class ITyped<ork::Object*>;
 template class ITyped<ork::file::Path>;
 template class ITyped<PoolString>;
 template class ITyped<std::string>;
 template class ITyped<bool>;
 template class DirectTyped<bool>;
-template class DirectTyped<ork::Object*>;
 template class ITyped<Char4>;
 template class DirectTyped<Char4>;
 template class ITyped<Char8>;
@@ -166,6 +164,8 @@ template class DirectTyped<Quaternion<float>>;
 template class ITyped<TransformNode>;
 template class DirectTypedMap<orkmap<float, fvec4>>;
 // template class DirectTyped<orkvector<fvec2> >;
+// template class ITyped<ork::Object*>;
+// template class DirectTyped<ork::Object*>;
 
 bool SetInvokationParameter(IInvokation* invokation, int param, const char* paramdata) {
   if (param >= invokation->GetNumParameters())
@@ -177,4 +177,5 @@ bool SetInvokationParameter(IInvokation* invokation, int param, const char* para
   invokation->ApplyParam(bidi, param);
   return bidi.Succeeded();
 }
+
 }} // namespace ork::reflect

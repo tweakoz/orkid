@@ -19,7 +19,7 @@ using namespace ork::file;
 using namespace ork::reflect;
 using namespace ork::rtti;
 using namespace ork::stream;
-
+/*
 TEST(SerializeObjectJSON) {
 
   ork::HotKeyConfiguration hkeys;
@@ -108,3 +108,4 @@ TEST(DeserializeSharedObjectJSON) {
   std::string uuids = boost::uuids::to_string(save->_uuid);
   CHECK_EQUAL(uuids, "e0f43d05-0070-0000-d0f4-3d0500700000");
 }
+*/

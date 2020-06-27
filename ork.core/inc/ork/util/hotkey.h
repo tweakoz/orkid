@@ -38,13 +38,13 @@ public:
   FixedString<32> GetAcceleratorCode() const;
 };
 
+using hotkey_ptr_t      = std::shared_ptr<HotKey>;
+using hotkey_constptr_t = std::shared_ptr<const HotKey>;
+
 ///////////////////////////////////////////////////////////////////////////
 
 class HotKeyConfiguration : public ork::Object {
   DeclareConcreteX(HotKeyConfiguration, ork::Object);
-
-  orklut<std::string, ork::object_ptr_t> _hotkeys;
-  orkset<boost::Crc64> mHotKeysUsed;
 
   bool PostDeserialize(reflect::IDeserializer&) final;
 
@@ -58,21 +58,24 @@ public:
   void RemoveHotKey(const HotKey& hkey);
   bool IsHotKeyPresent(const HotKey& hkey) const;
   HotKey* GetHotKey(std::string ps) const;
+
+  orklut<std::string, ork::object_ptr_t> _hotkeys;
+  orkset<boost::Crc64> mHotKeysUsed;
 };
+
+using hotkeyconfig_ptr_t      = std::shared_ptr<HotKeyConfiguration>;
+using hotkeyconfig_constptr_t = std::shared_ptr<const HotKeyConfiguration>;
 
 ///////////////////////////////////////////////////////////////////////////
 
 class HotKeyManager : public ork::Object {
   RttiDeclareAbstract(HotKeyManager, ork::Object);
 
-  orklut<PoolString, ork::Object*> mHotKeyConfigurations;
+  orklut<PoolString, ork::object_ptr_t> _configurations;
 
-  HotKeyConfiguration* mCurrent;
+  hotkeyconfig_ptr_t _currentConfiguration;
 
   HotKeyManager();
-
-  bool PreDeserialize(reflect::IDeserializer&) final;
-  bool PostDeserialize(reflect::IDeserializer&) final;
 
 public:
   void AddHotKeyConfiguration(const char* configname, const HotKeyConfiguration& HotKeyConfiguration);
@@ -86,10 +89,9 @@ public:
   static void Save(std::shared_ptr<HotKeyManager> hkm);
   static std::shared_ptr<HotKeyManager> Load(std::string path);
 
-  static bool IsDepressed(const char* action);
-  static bool IsDepressed(const HotKey& action);
-
-  static FixedString<32> GetAcceleratorCode(const char* action);
+  // static bool IsDepressed(const char* action);
+  // static bool IsDepressed(const HotKey& action);
+  // static FixedString<32> GetAcceleratorCode(const char* action);
 };
 
 ///////////////////////////////////////////////////////////////////////////

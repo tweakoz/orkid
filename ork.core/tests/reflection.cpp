@@ -50,10 +50,10 @@ TEST(ReflectionAccessorSharedProperty) {
   auto& desc       = clazz->Description();
   using ptype      = AccessorTyped<object_ptr_t>;
   auto passh       = desc.findTypedProperty<ptype>("prop_sharedobj_accessor");
-  passh->Set(sht2, sht1.get());
+  passh->set(sht2, sht1);
   CHECK_EQUAL(sht1->_childObject, sht2);
   object_ptr_t sht3;
-  passh->Get(sht3, sht1.get());
+  passh->get(sht3, sht1);
   CHECK_EQUAL(sht1->_childObject, sht3);
 }
 
@@ -68,9 +68,9 @@ TEST(ReflectionDirectSharedProperty) {
   auto& desc       = clazz->Description();
   using ptype      = DirectObject;
   auto passh       = desc.findTypedProperty<ptype>("prop_sharedobj_direct");
-  passh->set(sht2, sht1.get());
+  passh->set(sht2, sht1);
   CHECK_EQUAL(sht1->_childObject, sht2);
   object_ptr_t sht3;
-  passh->get(sht3, sht1.get());
+  passh->get(sht3, sht1);
   CHECK_EQUAL(sht1->_childObject, sht3);
 }

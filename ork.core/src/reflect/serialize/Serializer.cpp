@@ -16,10 +16,10 @@
 #include <ork/object/Object.h>
 #include <boost/uuid/uuid_io.hpp>
 ////////////////////////////////////////////////////////////////
-namespace ork::reflect::serialize {
+namespace ork::reflect {
 ////////////////////////////////////////////////////////////////
-/*void ISerializer::referenceObject(object_constptr_t as_object) {
-  const auto& uuid  = as_object->_uuid;
+void ISerializer::referenceObject(object_constptr_t instance) {
+  /*const auto& uuid  = as_object->_uuid;
   std::string uuids = boost::uuids::to_string(uuid);
   OrkAssert(_serialized.find(uuids) == _serialized.end());
   _serialized.insert(uuids);
@@ -27,7 +27,7 @@ namespace ork::reflect::serialize {
   Command referenceAttributeCommand(Command::EATTRIBUTE, "id");
   beginCommand(referenceAttributeCommand);
   Serialize(PieceString(uuids.c_str()));
-  endCommand(referenceAttributeCommand);
-}*/
+  endCommand(referenceAttributeCommand);*/
+}
 ////////////////////////////////////////////////////////////////
-} // namespace ork::reflect::serialize
+} // namespace ork::reflect

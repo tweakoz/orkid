@@ -266,13 +266,13 @@ namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
 void HotKey::Describe() {
-  ork::reflect::RegisterProperty("KeyCode", &HotKey::miKeyCode);
+  /*ork::reflect::RegisterProperty("KeyCode", &HotKey::miKeyCode);
   ork::reflect::RegisterProperty("Alt", &HotKey::mbAlt);
   ork::reflect::RegisterProperty("Ctrl", &HotKey::mbCtrl);
   ork::reflect::RegisterProperty("Shift", &HotKey::mbShift);
   ork::reflect::RegisterProperty("LMB", &HotKey::mbLeftMB);
   ork::reflect::RegisterProperty("MMB", &HotKey::mbMiddleMB);
-  ork::reflect::RegisterProperty("RMB", &HotKey::mbRightMB);
+  ork::reflect::RegisterProperty("RMB", &HotKey::mbRightMB);*/
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -505,8 +505,8 @@ HotKey* HotKeyConfiguration::GetHotKey(std::string named) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void HotKeyManager::Describe() {
-  ork::reflect::RegisterMapProperty("Configurations", &HotKeyManager::mHotKeyConfigurations);
-  ork::reflect::annotatePropertyForEditor<HotKeyManager>("Configurations", "editor.factorylistbase", "HotKeyConfiguration");
+  // ork::reflect::RegisterMapProperty("Configurations", &HotKeyManager::mHotKeyConfigurations);
+  // ork::reflect::annotatePropertyForEditor<HotKeyManager>("Configurations", "editor.factorylistbase", "HotKeyConfiguration");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -515,7 +515,7 @@ HotKeyManager::HotKeyManager() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
+/*
 void HotKeyManager::AddHotKeyConfiguration(const char* configname, const HotKeyConfiguration& hkc) {
   ork::PoolString psname                              = ork::AddPooledString(configname);
   orklut<PoolString, ork::Object*>::const_iterator it = mHotKeyConfigurations.find(psname);
@@ -559,7 +559,7 @@ const HotKey& HotKeyManager::GetHotKey(const char* actionname) {
   static const HotKey gnull;
   return gnull;
 }
-
+*/
 ///////////////////////////////////////////////////////////////////////////////
 
 static const char* HotKeyFileName = "hotkeys.ork";
@@ -580,7 +580,7 @@ HotKeyManager::Load(std::string path) {
     ork::stream::FileInputStream istream(pth.c_str());
     ork::reflect::serialize::JsonDeserializer deser(istream);
     object_ptr_t instance;
-    dser.deserializeSharedObject(instance);
+    deser.deserializeSharedObject(instance);
     return std::dynamic_pointer_cast<HotKeyManager>(instance);
   }
   return nullptr;
@@ -588,7 +588,7 @@ HotKeyManager::Load(std::string path) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool HotKeyManager::IsDepressed(const HotKey& hkey) {
+/*bool HotKeyManager::IsDepressed(const HotKey& hkey) {
   if (GetRef().mCurrent) {
     int ikc = hkey.miKeyCode;
     if (ikc >= 0) {
@@ -609,7 +609,6 @@ bool HotKeyManager::IsDepressed(const HotKey& hkey) {
   }
   return false;
 }
-
 ///////////////////////////////////////////////////////////////////////////////
 
 bool HotKeyManager::IsDepressed(const char* pact) {
@@ -634,21 +633,7 @@ FixedString<32> HotKeyManager::GetAcceleratorCode(const char* action) {
   }
   return rval;
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
-bool HotKeyManager::PreDeserialize(reflect::IDeserializer&) // virtual
-{
-  mHotKeyConfigurations.clear();
-  return true;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-bool HotKeyManager::PostDeserialize(reflect::IDeserializer&) // virtual
-{
-  return true;
-}
+*/
 
 ///////////////////////////////////////////////////////////////////////////////
 

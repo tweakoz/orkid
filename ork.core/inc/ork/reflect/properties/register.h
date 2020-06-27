@@ -45,7 +45,7 @@ namespace reflect {
 ///////////////////////////////////////////////////////////////////////////
 
 template <typename ClassType, typename MemberType>
-static inline DirectTyped<MemberType>& RegisterProperty(
+static inline DirectTyped<MemberType>& RegisterPropertyO(
     const char* name,
     MemberType ClassType::*member,
     Description& description = ClassType::GetClassStatic()->Description()) {

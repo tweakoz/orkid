@@ -21,25 +21,25 @@ public:
 
   DirectObjectMap(MapType Object::*);
 
-  MapType& GetMap(Object* obj) const;
-  const MapType& GetMap(const Object* obj) const;
+  MapType& GetMap(object_ptr_t obj) const;
+  const MapType& GetMap(object_constptr_t obj) const;
 
-  bool IsMultiMap(const Object* obj) const override;
+  bool isMultiMap(object_constptr_t obj) const override;
 
 protected:
-  bool ReadItem(const Object*, const KeyType&, int, object_ptr_t&) const override;
-  bool WriteItem(Object*, const KeyType&, int, const object_ptr_t*) const override;
-  bool EraseItem(Object*, const KeyType&, int) const override;
-  bool MapSerialization(ItemSerializeFunction, BidirectionalSerializer&, const Object*) const override;
+  bool ReadItem(object_constptr_t, const KeyType&, int, object_ptr_t&) const override;
+  bool WriteItem(object_ptr_t, const KeyType&, int, const object_ptr_t*) const override;
+  bool EraseItem(object_ptr_t, const KeyType&, int) const override;
+  bool MapSerialization(ItemSerializeFunction, BidirectionalSerializer&, object_constptr_t) const override;
 
-  int GetSize(const Object* obj) const override {
-    return int(GetMap(obj).size());
+  size_t itemCount(object_constptr_t obj) const override {
+    return GetMap(obj).size();
   }
-  bool GetKey(const Object*, int idx, KeyType&) const override;
-  bool GetVal(const Object*, const KeyType& k, object_ptr_t& v) const override;
+  bool GetKey(object_constptr_t, int idx, KeyType&) const override;
+  bool GetVal(object_constptr_t, const KeyType& k, object_ptr_t& v) const override;
 
 private:
-  MapType Object::*mProperty;
+  MapType Object::*_member;
 };
 
 }} // namespace ork::reflect
