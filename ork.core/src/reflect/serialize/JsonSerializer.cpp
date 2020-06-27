@@ -124,6 +124,12 @@ void JsonSerializer::serializeItem(const hintvar_t& value) {
         "str", //
         strval,
         *_allocator);
+  } else if (auto as_object = value.TryAs<object_constptr_t>()) {
+    serializeSharedObject(as_object.value());
+  } else if (auto as_object = value.TryAs<object_ptr_t>()) {
+    serializeSharedObject(as_object.value());
+  } else {
+    OrkAssert(false);
   }
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -197,6 +203,7 @@ void JsonSerializer::Hint(const PieceString& name, hintvar_t val) {
     auto kasstr = _mapkey.Get<std::string>();
     rapidjson::Value keyval(kasstr.c_str(), *_allocator);
     pushObjectNode(kasstr.c_str());
+    serializeItem(val);
     popNode();
     // rapidjson::Value valval(as_str.value().c_str(), *_allocator);
     // topNode()->_value.AddMember(
