@@ -19,20 +19,6 @@ using namespace ork::file;
 using namespace ork::reflect;
 using namespace ork::rtti;
 using namespace ork::stream;
-/*
-TEST(SerializeObjectJSON) {
-
-  ork::HotKeyConfiguration hkeys;
-  hkeys.Default();
-
-  auto resultdata = std::make_shared<ArrayString<65536>>();
-  stream::StringOutputStream out_stream(*resultdata);
-  serialize::JsonSerializer ser(out_stream);
-  ICastable* pcastable = nullptr;
-  bool serok           = ser.serializeObject(&hkeys);
-
-  printf("mutstr<%s>\n", resultdata->c_str());
-}
 
 TEST(SerializeSharedObjectJSON) {
   auto hkeys = std::make_shared<ork::HotKeyConfiguration>();
@@ -40,10 +26,24 @@ TEST(SerializeSharedObjectJSON) {
   auto resultdata = std::make_shared<ArrayString<65536>>();
   stream::StringOutputStream out_stream(*resultdata);
   serialize::JsonSerializer ser(out_stream);
-  bool serok = ser.serializeSharedObject(hkeys);
+  ser.serializeSharedObject(hkeys);
+  ser.finalize();
   printf("mutstr<%s>\n", resultdata->c_str());
 }
 
+auto test = R"xxx(
+{
+  "objects": {
+    "ref": {
+      "uuid": "xxx",
+      "class": "Class",
+
+    }
+  }
+}
+)xxx";
+
+/*
 std::string getJsonStr() {
   return R"xxx(
 {
@@ -107,5 +107,4 @@ TEST(DeserializeSharedObjectJSON) {
 
   std::string uuids = boost::uuids::to_string(save->_uuid);
   CHECK_EQUAL(uuids, "e0f43d05-0070-0000-d0f4-3d0500700000");
-}
-*/
+}*/

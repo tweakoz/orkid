@@ -10,7 +10,6 @@
 #include <ork/reflect/ISerializer.h>
 #include <ork/orkstl.h>
 #include <ork/rtti/Category.h>
-#include <rapidjson/writer.h>
 #include <rapidjson/document.h>
 
 namespace ork { namespace stream {
@@ -22,6 +21,7 @@ namespace ork { namespace reflect { namespace serialize {
 class JsonSerializer : public ISerializer {
 public:
   JsonSerializer(stream::IOutputStream& stream);
+  ~JsonSerializer();
 
   void serialize(const bool&) override;
   void serialize(const char&) override;
@@ -46,9 +46,31 @@ public:
 
   // bool Serialize(const rtti::Category* category, const rtti::ICastable* object);
 
+  void finalize();
+
 private:
+  using allocator_t = rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>*;
+
+  struct Node {
+    Node(std::string name, rapidjson::Type type)
+        : _name(name)
+        , _value(type) {
+    }
+    std::string _name;
+    rapidjson::Value _value;
+  };
+
+  using node_t = std::shared_ptr<Node>;
+
+  node_t pushObjectNode(std::string named);
+  void popNode();
+  node_t topNode();
+
   stream::IOutputStream& mStream;
+  allocator_t _allocator;
   rapidjson::Document _document;
+  node_t _objects;
+  std::stack<node_t> _nodestack;
 };
 
 }}} // namespace ork::reflect::serialize
