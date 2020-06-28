@@ -115,7 +115,7 @@ object_ptr_t JsonDeserializer::_parseObjectNode(const rapidjson::Value& objnode)
       IDeserializer::Node dsernode;
       dsernode._deserializer = this;
       dsernode._instance     = instance_out;
-      auto dserjsonnode      = dsernode._data.makeShared<JsonDserNode>(propnode);
+      auto dserjsonnode      = dsernode._impl.makeShared<JsonDserNode>(propnode);
       // prop->deserialize(*this, object);
     } else { // drop property, no longer registered
       printf("dropping property<%s>\n", propname);

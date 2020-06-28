@@ -60,7 +60,7 @@ struct IDeserializer {
   struct Node {
     IDeserializer* _deserializer = nullptr;
     object_ptr_t _instance       = nullptr;
-    var_t _data;
+    var_t _impl;
     size_t _index = -1;
   };
 
