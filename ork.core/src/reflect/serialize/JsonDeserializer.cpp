@@ -52,6 +52,40 @@ void JsonDeserializer::deserializeObjectProperty(
 
 void JsonDeserializer::deserializeTop(object_ptr_t& instance_out) {
   const auto& rootnode = _document["top"]["object"];
+  instance_out         = _parseObjectNode(rootnode);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+object_ptr_t JsonDeserializer::_parseObjectNode(const rapidjson::Value& node) {
+
+  object_ptr_t instance_out = nullptr;
+
+  bool has_class = node.HasMember("class");
+  bool has_uuid  = node.HasMember("uuid");
+  OrkAssert(has_class);
+  OrkAssert(has_uuid);
+
+  auto classstr = node["class"].GetString();
+  auto uuidstr  = node["uuid"].GetString();
+
+  boost::uuids::string_generator gen;
+  auto uuid     = gen(uuidstr);
+  auto clazz    = rtti::Class::FindClass(classstr);
+  auto objclazz = dynamic_cast<object::ObjectClass*>(clazz);
+  OrkAssert(objclazz);
+
+  instance_out        = objclazz->createShared();
+  instance_out->_uuid = uuid;
+
+  ///////////////////////////////////
+  // deserialize properties
+  ///////////////////////////////////
+
+  ///////////////////////////////////
+
+  printf("instance_out<%p:%s>\n", instance_out.get(), uuidstr);
+  return instance_out;
 }
 
 //////////////////////////////////////////////////////////////////////////////
