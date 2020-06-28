@@ -88,7 +88,7 @@ bool DirectObjectMap<MapType>::WriteItem(
     OrkAssert(value_inp);
     map.insert(std::make_pair(key, *value_inp));
   } else {
-    typename MapType::iterator it = map.find(key);
+    auto it = map.find(key);
     while (multi_index > 0) {
       it++;
       multi_index--;
@@ -96,7 +96,7 @@ bool DirectObjectMap<MapType>::WriteItem(
     if (value_inp) {
       it->second = *value_inp;
     } else {
-      typename DirectTypedMap<MapType>::ValueType val2erase = it->second;
+      auto val2erase = it->second;
       ItemRemovalEvent ev;
       ev.mProperty    = this;
       ev.miMultiIndex = orig_multi_index;

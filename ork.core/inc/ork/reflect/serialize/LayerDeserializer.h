@@ -31,7 +31,7 @@ public:
   void deserializeItem() override;
 
 protected:
-  void _deserialize(const rtti::Category*, object_ptr_t&);
+  // void _deserialize(const rtti::Category*, object_ptr_t&);
 
 protected:
   IDeserializer& mDeserializer;
@@ -53,9 +53,9 @@ inline void LayerDeserializer::deserializeObjectProperty(const ObjectProperty* p
   prop->deserialize(*this, object);
 }
 
-inline void LayerDeserializer::_deserialize(const rtti::Category* category, object_ptr_t& object) {
-  category->deserializeObject(*this, object);
-}
+// inline void LayerDeserializer::_deserialize(const rtti::Category* category, object_ptr_t& object) {
+// category->deserializeObject(*this, object);
+//}
 
 inline void LayerDeserializer::beginCommand(Command& command) {
   const Command* previous_command = _currentCommand;

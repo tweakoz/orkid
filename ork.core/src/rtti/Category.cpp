@@ -11,12 +11,6 @@
 
 namespace ork { namespace rtti {
 
-void Category::serializeObject(reflect::ISerializer& serializer, object_constptr_t value) const {
-}
-
-void Category::deserializeObject(reflect::IDeserializer& deserializer, object_ptr_t& value) const {
-}
-
 }} // namespace ork::rtti
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::rtti::Category, "ClassCategory");

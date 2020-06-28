@@ -153,7 +153,7 @@ Md5Sum Object::CalcMd5() const {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
+/*
 reflect::BidirectionalSerializer& operator||(
     reflect::BidirectionalSerializer& bidi, //
     object_ptr_t& object) {
@@ -191,7 +191,7 @@ reflect::BidirectionalSerializer& operator||(
   }
 
   return bidi;
-}
+}*/
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -205,11 +205,11 @@ static object_ptr_t LoadObjectFromFile(
   if (binary) {
     reflect::serialize::BinaryDeserializer deserializer(stream);
 
-    DeserializeUnknownObject(deserializer, object);
+    // DeserializeUnknownObject(deserializer, object);
   } else {
     reflect::serialize::JsonDeserializer deserializer(stream);
 
-    DeserializeUnknownObject(deserializer, object);
+    // DeserializeUnknownObject(deserializer, object);
   }
 
   float ftime2 = ork::OldSchool::GetRef().GetLoResRelTime();

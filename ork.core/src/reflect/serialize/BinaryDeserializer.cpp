@@ -15,6 +15,7 @@
 #include <ork/rtti/downcast.h>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/uuid/string_generator.hpp>
+#include <ork/object/Object.h>
 
 namespace ork::reflect::serialize {
 ////////////////////////////////////////////////////////////////////////////////
@@ -102,10 +103,11 @@ void BinaryDeserializer::deserializeSharedObject(object_ptr_t& instance_out) {
     Read(object_uuid_str);
     ConstString classname;
     Read(classname);
-    auto category = rtti::downcast<rtti::Category*>(rtti::Class::FindClass(classname));
+    // auto category = rtti::downcast<rtti::Category*>(rtti::Class::FindClass(classname));
     boost::uuids::string_generator gen;
     auto as_uuid = gen(object_uuid_str);
-    category->deserializeObject(*this, instance_out);
+    // category->deserializeObject(*this, instance_out);
+    Object::xxxDeserializeShared(instance_out, *this);
     trackObject(as_uuid, instance_out);
     if (false == Match('r')) {
       OrkAssert(false);

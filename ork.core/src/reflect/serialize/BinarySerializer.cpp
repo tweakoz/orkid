@@ -132,11 +132,11 @@ void BinarySerializer::serializeSharedObject(object_constptr_t instance) {
     // firstreference
     ////////////////////////////////////
     else {
-      auto objclazz = instance->GetClass();
-      auto category = rtti::downcast<rtti::Category*>(objclazz->GetClass());
-      _writeHeader('R', category->Name());
+      // auto objclazz = instance->GetClass();
+      // auto category = rtti::downcast<rtti::Category*>(objclazz->GetClass());
+      _writeHeader('R', "Object");
       _write(uuids.c_str());
-      category->serializeObject(*this, instance);
+      Object::xxxSerializeShared(instance, *this);
       _writeFooter('r');
     }
   }

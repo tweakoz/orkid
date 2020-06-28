@@ -19,14 +19,6 @@ class IDeserializer;
 
 namespace ork { namespace object {
 
-class ObjectCategory : public rtti::Category {
-public:
-  ObjectCategory(const rtti::RTTIData&);
-
-private:
-  using dispatch_fn_t = std::function<Object*(Class* clazz)>;
-  void serializeObject(reflect::ISerializer&, object_constptr_t) const override;
-  void deserializeObject(reflect::IDeserializer&, object_ptr_t&) const override;
-};
+using ObjectCategory = rtti::Category;
 
 }} // namespace ork::object

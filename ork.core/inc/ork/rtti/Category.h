@@ -23,9 +23,6 @@ class Category : public Class {
   RttiDeclareExplicit(Category, Class, NamePolicy, Category) public : Category(const RTTIData& data)
       : Class(data) {
   }
-
-  virtual void serializeObject(reflect::ISerializer&, ork::object_constptr_t) const;
-  virtual void deserializeObject(reflect::IDeserializer&, ork::object_ptr_t&) const;
 };
 
 }} // namespace ork::rtti

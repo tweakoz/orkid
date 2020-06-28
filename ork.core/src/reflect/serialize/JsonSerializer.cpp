@@ -173,7 +173,6 @@ void JsonSerializer::serializeSharedObject(object_constptr_t instance) {
       _reftracker.insert(uuids);
 
       auto objclazz = instance->GetClass();
-      auto category = rtti::downcast<rtti::Category*>(objclazz->GetClass());
 
       auto node = pushObjectNode("object");
 
@@ -191,7 +190,8 @@ void JsonSerializer::serializeSharedObject(object_constptr_t instance) {
 
       auto propnode = pushObjectNode("properties");
 
-      category->serializeObject(*this, instance);
+      Object::xxxSerializeShared(instance, *this);
+
       popNode();
 
       popNode();

@@ -17,8 +17,6 @@ class ObjectProperty;
 }
 namespace ork { namespace object {
 
-class ObjectCategory;
-
 struct PropertyModifier;
 
 struct PropertyModifier {

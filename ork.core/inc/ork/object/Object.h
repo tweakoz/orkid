@@ -76,7 +76,7 @@ private:
 reflect::BidirectionalSerializer& operator||(reflect::BidirectionalSerializer&, Object&);
 reflect::BidirectionalSerializer& operator||(reflect::BidirectionalSerializer&, const Object&);
 
-template <typename T>
+/*template <typename T>
 inline void DeserializeUnknownObject(
     ork::reflect::IDeserializer& deser, //
     std::shared_ptr<T>& out_value) {
@@ -85,7 +85,7 @@ inline void DeserializeUnknownObject(
   auto objcat      = objclz->GetClass();
   objcat->deserializeObject(deser, obj);
   out_value = std::dynamic_pointer_cast<T>(obj);
-}
+}*/
 
 // Object* DeserializeObject(PieceString file);
 
