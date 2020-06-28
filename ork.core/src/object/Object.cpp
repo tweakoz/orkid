@@ -20,8 +20,6 @@
 #include <ork/stream/StringInputStream.h>
 #include <ork/reflect/serialize/JsonDeserializer.h>
 #include <ork/reflect/serialize/JsonSerializer.h>
-#include <ork/reflect/serialize/BinaryDeserializer.h>
-#include <ork/reflect/serialize/BinarySerializer.h>
 #include <ork/stream/ResizableStringOutputStream.h>
 #include <ork/reflect/serialize/ShallowSerializer.h>
 #include <ork/reflect/serialize/ShallowDeserializer.h>
@@ -203,12 +201,10 @@ static object_ptr_t LoadObjectFromFile(
 
   object_ptr_t object = nullptr;
   if (binary) {
-    reflect::serialize::BinaryDeserializer deserializer(stream);
-
+    // reflect::serialize::BinaryDeserializer deserializer(stream);
     // DeserializeUnknownObject(deserializer, object);
   } else {
     reflect::serialize::JsonDeserializer deserializer(stream);
-
     // DeserializeUnknownObject(deserializer, object);
   }
 

@@ -39,7 +39,6 @@
 #include <ork/math/TransformNode.h>
 
 #include <ork/stream/StringInputStream.h>
-#include <ork/reflect/serialize/TextDeserializer.h>
 
 #include <map>
 
@@ -170,12 +169,13 @@ template class DirectTypedMap<orkmap<float, fvec4>>;
 bool SetInvokationParameter(IInvokation* invokation, int param, const char* paramdata) {
   if (param >= invokation->GetNumParameters())
     return false;
-
-  ork::stream::StringInputStream stream(paramdata);
-  ork::reflect::serialize::TextDeserializer deser(stream);
-  BidirectionalSerializer bidi(deser);
-  invokation->ApplyParam(bidi, param);
-  return bidi.Succeeded();
+  /*
+ork::stream::StringInputStream stream(paramdata);
+ork::reflect::serialize::TextDeserializer deser(stream);
+BidirectionalSerializer bidi(deser);
+invokation->ApplyParam(bidi, param);
+return bidi.Succeeded();*/
+  return false;
 }
 
 }} // namespace ork::reflect
