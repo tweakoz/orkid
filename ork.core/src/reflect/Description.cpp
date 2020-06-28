@@ -185,7 +185,7 @@ void Description::deserializeProperties(IDeserializer& deserializer, object_ptr_
           "Description::DeserializeProperties:: got command %s, wanted EPROPERTY\n",
           command.Type() == Command::EOBJECT
               ? "EOBJECT"
-              : command.Type() == Command::EITEM ? "EITEM" : command.Type() == Command::EATTRIBUTE ? "EATTRIBUTE" : "???");
+              : command.Type() == Command::ELEMENT ? "ELEMENT" : command.Type() == Command::EATTRIBUTE ? "EATTRIBUTE" : "???");
     }
 
     OrkAssertI(command.Type() == Command::EPROPERTY, "Description::DeserializeProperties: expected a property!");

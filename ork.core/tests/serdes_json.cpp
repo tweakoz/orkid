@@ -20,7 +20,7 @@ using namespace ork::reflect;
 using namespace ork::rtti;
 using namespace ork::stream;
 
-TEST(SerializeSharedObjectJSON) {
+TEST(SerializeObjectJSON) {
   auto hkeys = std::make_shared<ork::HotKeyConfiguration>();
   hkeys->Default();
   auto resultdata = std::make_shared<ArrayString<65536>>();
@@ -31,58 +31,29 @@ TEST(SerializeSharedObjectJSON) {
   printf("mutstr<%s>\n", resultdata->c_str());
 }
 
-auto test = R"xxx(
-{
-  "objects": {
-    "ref": {
-      "uuid": "xxx",
-      "class": "Class",
-
-    }
-  }
-}
-)xxx";
-
-/*
 std::string getJsonStr() {
   return R"xxx(
-{
-  reference: {
-    id: "07000000-0000-0020-0000-000000000020",
-    category: "ObjectClass",
-    type: "HotKeyConfiguration",
-    properties: {
-      "HotKeys": {
-        "one": {
-          reference: {
-            id: "0700001-0000-0020-0000-000000000020",
-            category: "ObjectClass",
-            type: "HotKey",
-          }
-        },
-        "two": {
-          reference: {
-            id: "0700002-0000-0020-0000-000000000020",
-            category: "ObjectClass",
-            type: "HotKey",
-          }
-        },
+    {
+     "top": {
+      "object": {
+       "class": "HotKeyConfiguration",
+       "uuid": "e0f43d05-0070-0000-d0f4-3d0500700000",
+       "properties": {
+        "HotKeys": {}
+       }
       }
+     }
     }
-  }
-}
-)xxx";
+)xxx"; //
 }
 
 TEST(DeserializeObjectJSON) {
 
   auto objstr = getJsonStr();
-  stream::StringInputStream inp_stream(objstr.c_str());
-  serialize::JsonDeserializer deser(inp_stream);
-  rtti::castable_rawptr_t pcastable = nullptr;
-  bool serok                        = deser.deserializeObject(pcastable);
-  CHECK(serok);
-  auto as_hkc = dynamic_cast<HotKeyConfiguration*>(pcastable);
+  object_ptr_t instance_out;
+  serialize::JsonDeserializer deser(objstr.c_str());
+  deser.deserializeTop(instance_out);
+  auto as_hkc = std::dynamic_pointer_cast<HotKeyConfiguration>(instance_out);
   auto save   = as_hkc->GetHotKey("save");
   CHECK_EQUAL(save->mbAlt, false);
   CHECK_EQUAL(save->mbCtrl, true);
@@ -91,20 +62,3 @@ TEST(DeserializeObjectJSON) {
   std::string uuids = boost::uuids::to_string(save->_uuid);
   CHECK_EQUAL(uuids, "e0f43d05-0070-0000-d0f4-3d0500700000");
 }
-TEST(DeserializeSharedObjectJSON) {
-
-  auto objstr = getJsonStr();
-  stream::StringInputStream inp_stream(objstr.c_str());
-  serialize::JsonDeserializer deser(inp_stream);
-  rtti::castable_ptr_t pcastable = nullptr;
-  bool serok                     = deser.deserializeSharedObject(pcastable);
-  CHECK(serok);
-  auto as_hkc = std::dynamic_pointer_cast<HotKeyConfiguration>(pcastable);
-  auto save   = as_hkc->GetHotKey("save");
-  CHECK_EQUAL(save->mbAlt, false);
-  CHECK_EQUAL(save->mbCtrl, true);
-  CHECK_EQUAL(save->miKeyCode, 83);
-
-  std::string uuids = boost::uuids::to_string(save->_uuid);
-  CHECK_EQUAL(uuids, "e0f43d05-0070-0000-d0f4-3d0500700000");
-}*/

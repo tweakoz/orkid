@@ -55,7 +55,7 @@ void Object::xxxSerializeShared(
 void Object::xxxDeserializeShared(
     object_ptr_t obj, //
     reflect::IDeserializer& deserializer) {
-  rtti::Class* clazz = obj->GetClass();
+  auto clazz = obj->GetClass();
   deserializer.referenceObject(obj); // probably wrong...
   obj->PreDeserialize(deserializer);
   auto objclass    = dynamic_cast<object::ObjectClass*>(clazz);
@@ -193,20 +193,28 @@ reflect::BidirectionalSerializer& operator||(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static object_ptr_t LoadObjectFromFile(
-    ConstString filename, //
-    bool binary) {
-  float ftime1 = ork::OldSchool::GetRef().GetLoResRelTime();
-  stream::FileInputStream stream(filename.c_str());
-
-  object_ptr_t object = nullptr;
-  if (binary) {
-    // reflect::serialize::BinaryDeserializer deserializer(stream);
-    // DeserializeUnknownObject(deserializer, object);
-  } else {
-    reflect::serialize::JsonDeserializer deserializer(stream);
-    // DeserializeUnknownObject(deserializer, object);
+object_ptr_t LoadObjectFromFile(const char* filename) {
+  file::Path the_path(filename);
+  if (ork::FileEnv::GetRef().DoesFileExist(the_path)) {
+    File file(the_path.c_str(), EFM_READ);
+    size_t len = 0;
+    file.GetLength(len);
+    std::string jsondata;
+    jsondata.resize(len);
+    file.Read((void*)jsondata.c_str(), len);
+    return LoadObjectFromString(jsondata.c_str());
   }
+  return nullptr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+object_ptr_t LoadObjectFromString(const char* jsondata) {
+  float ftime1 = ork::OldSchool::GetRef().GetLoResRelTime();
+
+  object_ptr_t instance_out = nullptr;
+  reflect::serialize::JsonDeserializer deserializer(jsondata);
+  deserializer.deserializeTop(instance_out);
 
   float ftime2 = ork::OldSchool::GetRef().GetLoResRelTime();
 
@@ -219,16 +227,16 @@ static object_ptr_t LoadObjectFromFile(
 
   // if( itotaltime > iltotaltime )
   {
-    std::string outstr = ork::CreateFormattedString("MOX AccumTime<%f>\n", ftotaltime);
+    std::string outstr = ork::CreateFormattedString("MOJ AccumTime<%f>\n", ftotaltime);
     // OutputDebugString( outstr.c_str() );
     iltotaltime = itotaltime;
   }
 
-  return object;
+  return instance_out;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
+/*
 object_ptr_t DeserializeObject(PieceString file) {
   ArrayString<256> filename_data = file;
   MutableString filename(filename_data);
@@ -254,7 +262,7 @@ object_ptr_t DeserializeObject(PieceString file) {
   }
 
   return nullptr;
-}
+}*/
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -18,7 +18,9 @@ namespace ork { namespace reflect { namespace serialize {
 
 class JsonDeserializer : public IDeserializer {
 public:
-  JsonDeserializer(stream::IInputStream& stream);
+  void deserializeTop(object_ptr_t&) override;
+
+  JsonDeserializer(const std::string& jsondata);
 
   void deserializeSharedObject(object_ptr_t&) override;
   void deserializeObjectProperty(const ObjectProperty*, object_ptr_t) override;
@@ -28,11 +30,12 @@ public:
   void deserializeItem() override;
 
 private:
-  stream::InputStreamBuffer<1024 * 4> mStream;
+  using allocator_t = rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>*;
 
   ////////////////////////////////////////////
 
   rapidjson::Document _document;
+  allocator_t _allocator;
 };
 
 }}} // namespace ork::reflect::serialize

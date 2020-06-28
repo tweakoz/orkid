@@ -23,6 +23,7 @@ class LayerDeserializer : public IDeserializer {
 public:
   LayerDeserializer(IDeserializer& deserializer);
 
+  void deserializeTop(object_ptr_t&) override;
   void deserializeSharedObject(object_ptr_t&) override;
   void deserializeObjectProperty(const ObjectProperty*, object_ptr_t) override;
 
@@ -43,6 +44,10 @@ inline LayerDeserializer::LayerDeserializer(IDeserializer& deserializer)
 
 inline void LayerDeserializer::deserializeItem() {
   mDeserializer.deserializeItem();
+}
+
+inline void LayerDeserializer::deserializeTop(object_ptr_t& value) {
+  mDeserializer.deserializeTop(value);
 }
 
 inline void LayerDeserializer::deserializeSharedObject(object_ptr_t& value) {

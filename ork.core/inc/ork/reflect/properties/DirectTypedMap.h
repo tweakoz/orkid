@@ -22,8 +22,8 @@ public:
   typedef typename MapType::key_type KeyType;
   typedef typename MapType::mapped_type ValueType;
 
-  using ItemSerializeFunction   = typename ITypedMap<KeyType, ValueType>::ItemSerializeFunction;
-  using ItemDeserializeFunction = typename ITypedMap<KeyType, ValueType>::ItemDeserializeFunction;
+  using ElementSerializeFunction   = typename ITypedMap<KeyType, ValueType>::ElementSerializeFunction;
+  using ElementDeserializeFunction = typename ITypedMap<KeyType, ValueType>::ElementDeserializeFunction;
 
   DirectTypedMap(MapType Object::*);
 
@@ -33,14 +33,14 @@ public:
   bool isMultiMap(object_constptr_t obj) const override;
 
 protected:
-  bool ReadItem(object_constptr_t, const KeyType&, int, ValueType&) const override;
-  bool WriteItem(object_ptr_t, const KeyType&, int, const ValueType*) const override;
-  bool EraseItem(object_ptr_t, const KeyType&, int) const override;
-  // bool MapSerialization(ItemSerializeFunction, BidirectionalSerializer&, object_constptr_t) const override;
-  void MapSerialization(ItemSerializeFunction, ISerializer&, object_constptr_t) const override;
-  void MapDeserialization(ItemDeserializeFunction, IDeserializer&, object_ptr_t) const override;
+  bool ReadElement(object_constptr_t, const KeyType&, int, ValueType&) const override;
+  bool WriteElement(object_ptr_t, const KeyType&, int, const ValueType*) const override;
+  bool EraseElement(object_ptr_t, const KeyType&, int) const override;
+  // bool MapSerialization(ElementSerializeFunction, BidirectionalSerializer&, object_constptr_t) const override;
+  void MapSerialization(ElementSerializeFunction, ISerializer&, object_constptr_t) const override;
+  void MapDeserialization(ElementDeserializeFunction, IDeserializer&, object_ptr_t) const override;
 
-  size_t itemCount(object_constptr_t obj) const override {
+  size_t elementCount(object_constptr_t obj) const override {
     return int(GetMap(obj).size());
   }
   bool GetKey(object_constptr_t, int idx, KeyType&) const override;

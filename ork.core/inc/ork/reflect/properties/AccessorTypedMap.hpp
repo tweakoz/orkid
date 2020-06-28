@@ -20,7 +20,7 @@ AccessorTypedMap<KeyType, ValueType>::AccessorTypedMap(
     bool (Object::*getter)(const KeyType&, int, ValueType&) const,
     void (Object::*setter)(const KeyType&, int, const ValueType&),
     void (Object::*eraser)(const KeyType&, int),
-    void (Object::*serializer)(typename AccessorTypedMap<KeyType, ValueType>::ItemSerializeFunction, BidirectionalSerializer&)
+    void (Object::*serializer)(typename AccessorTypedMap<KeyType, ValueType>::ElementSerializeFunction, BidirectionalSerializer&)
         const)
     : mGetter(getter)
     , mSetter(setter)
@@ -29,13 +29,13 @@ AccessorTypedMap<KeyType, ValueType>::AccessorTypedMap(
 }
 
 template <typename KeyType, typename ValueType>
-bool AccessorTypedMap<KeyType, ValueType>::ReadItem(const Object* object, const KeyType& key, int multi_index, ValueType& value)
+bool AccessorTypedMap<KeyType, ValueType>::ReadElement(const Object* object, const KeyType& key, int multi_index, ValueType& value)
     const {
   return (object->*mGetter)(key, multi_index, value);
 }
 
 template <typename KeyType, typename ValueType>
-bool AccessorTypedMap<KeyType, ValueType>::WriteItem(Object* object, const KeyType& key, int multi_index, const ValueType* value)
+bool AccessorTypedMap<KeyType, ValueType>::WriteElement(Object* object, const KeyType& key, int multi_index, const ValueType* value)
     const {
   if (value) {
     (object->*mSetter)(key, multi_index, *value);
@@ -48,7 +48,7 @@ bool AccessorTypedMap<KeyType, ValueType>::WriteItem(Object* object, const KeyTy
 
 template <typename KeyType, typename ValueType>
 bool AccessorTypedMap<KeyType, ValueType>::MapSerialization(
-    typename AccessorTypedMap<KeyType, ValueType>::ItemSerializeFunction serialize_function,
+    typename AccessorTypedMap<KeyType, ValueType>::ElementSerializeFunction serialize_function,
     BidirectionalSerializer& bidi,
     const Object* object) const {
   (object->*mSerializer)(serialize_function, bidi);

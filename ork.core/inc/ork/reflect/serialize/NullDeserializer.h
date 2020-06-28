@@ -22,6 +22,7 @@ namespace ork::reflect::serialize {
 
 class NullDeserializer final : public IDeserializer {
 public:
+  void deserializeTop(object_ptr_t&) override;
   void deserializeSharedObject(object_ptr_t&) override;
   void deserializeObjectProperty(const ObjectProperty*, object_ptr_t) override;
 

@@ -19,18 +19,18 @@ class ITypedMap : public IMap {
 
 public:
   // using ItemBiSerializeFunction = void (*)(BidirectionalSerializer&, KeyType&, ValueType&);
-  using ItemSerializeFunction   = void (*)(ISerializer&, const KeyType&, const ValueType&);
-  using ItemDeserializeFunction = void (*)(IDeserializer&, KeyType&, ValueType&);
+  using ElementSerializeFunction   = void (*)(ISerializer&, const KeyType&, const ValueType&);
+  using ElementDeserializeFunction = void (*)(IDeserializer&, KeyType&, ValueType&);
 
 protected:
   virtual bool GetKey(object_constptr_t, int idx, KeyType&) const                   = 0;
   virtual bool GetVal(object_constptr_t, const KeyType& k, ValueType& v) const      = 0;
-  virtual bool ReadItem(object_constptr_t, const KeyType&, int, ValueType&) const   = 0;
-  virtual bool EraseItem(object_ptr_t, const KeyType&, int) const                   = 0;
-  virtual bool WriteItem(object_ptr_t, const KeyType&, int, const ValueType*) const = 0;
+  virtual bool ReadElement(object_constptr_t, const KeyType&, int, ValueType&) const   = 0;
+  virtual bool EraseElement(object_ptr_t, const KeyType&, int) const                   = 0;
+  virtual bool WriteElement(object_ptr_t, const KeyType&, int, const ValueType*) const = 0;
   // virtual bool MapBiSerialization(ItemBiSerializeFunction, BidirectionalSerializer&, object_constptr_t) const = 0;
-  virtual void MapSerialization(ItemSerializeFunction, ISerializer&, object_constptr_t) const  = 0;
-  virtual void MapDeserialization(ItemDeserializeFunction, IDeserializer&, object_ptr_t) const = 0;
+  virtual void MapSerialization(ElementSerializeFunction, ISerializer&, object_constptr_t) const  = 0;
+  virtual void MapDeserialization(ElementDeserializeFunction, IDeserializer&, object_ptr_t) const = 0;
 
   ITypedMap()
       : IMap() {
@@ -40,6 +40,7 @@ private:
   static void _doDeserialize(IDeserializer&, KeyType&, ValueType&);
   static void _doSerialize(ISerializer&, const KeyType&, const ValueType&);
 
+  // from ObjectProperty
   void deserialize(IDeserializer&, object_ptr_t) const override;
   void serialize(ISerializer&, object_constptr_t) const override;
 };

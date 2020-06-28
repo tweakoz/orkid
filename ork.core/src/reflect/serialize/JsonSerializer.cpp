@@ -30,7 +30,7 @@ JsonSerializer::JsonSerializer(stream::IOutputStream& stream)
   _allocator = &_document.GetAllocator();
   _document.SetObject();
 
-  _objects = pushObjectNode("objects");
+  _top = pushObjectNode("top");
 }
 ////////////////////////////////////////////////////////////////////////////////
 JsonSerializer::~JsonSerializer() {
@@ -91,7 +91,7 @@ void JsonSerializer::beginCommand(const Command& command) {
       auto node     = pushObjectNode(propname.c_str());
       break;
     }
-    case Command::EITEM:
+    case Command::ELEMENT:
       // auto node = pushObjectNode("item");
       break;
   }
@@ -110,7 +110,7 @@ void JsonSerializer::endCommand(const Command& command) {
     case Command::EPROPERTY:
       popNode();
       break;
-    case Command::EITEM:
+    case Command::ELEMENT:
       // popNode();
       break;
   }

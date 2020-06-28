@@ -16,6 +16,9 @@
 
 namespace ork {
 
+object_ptr_t LoadObjectFromFile(const char* filename);
+object_ptr_t LoadObjectFromString(const char* jsondata);
+
 namespace event {
 class Event;
 }

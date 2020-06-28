@@ -59,7 +59,7 @@ private:
   stream::IOutputStream& mStream;
   allocator_t _allocator;
   rapidjson::Document _document;
-  node_t _objects;
+  node_t _top;
   std::stack<node_t> _nodestack;
   int _multiindex = -1;
   hintvar_t _mapkey;

@@ -574,16 +574,8 @@ void HotKeyManager::Save(std::shared_ptr<HotKeyManager> hkm) {
 
 std::shared_ptr<HotKeyManager> //
 HotKeyManager::Load(std::string path) {
-
-  file::Path pth(path.c_str());
-  if (ork::FileEnv::GetRef().DoesFileExist(pth)) {
-    ork::stream::FileInputStream istream(pth.c_str());
-    ork::reflect::serialize::JsonDeserializer deser(istream);
-    object_ptr_t instance;
-    deser.deserializeSharedObject(instance);
-    return std::dynamic_pointer_cast<HotKeyManager>(instance);
-  }
-  return nullptr;
+  auto instance = LoadObjectFromFile(path.c_str());
+  return std::dynamic_pointer_cast<HotKeyManager>(instance);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

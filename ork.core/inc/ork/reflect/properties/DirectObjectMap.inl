@@ -52,7 +52,7 @@ bool DirectObjectMap<MapType>::isMultiMap(object_constptr_t instance) const {
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
-bool DirectObjectMap<MapType>::ReadItem(
+bool DirectObjectMap<MapType>::ReadElement(
     object_constptr_t instance, //
     const KeyType& key,
     int multi_index,
@@ -77,14 +77,14 @@ bool DirectObjectMap<MapType>::ReadItem(
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
-bool DirectObjectMap<MapType>::WriteItem(
+bool DirectObjectMap<MapType>::WriteElement(
     object_ptr_t instance, //
     const KeyType& key,
     int multi_index,
     const object_ptr_t* value_inp) const {
   MapType& map               = instance.get()->*_member;
   const int orig_multi_index = multi_index;
-  if (multi_index == IMap::kDeserializeInsertItem) {
+  if (multi_index == IMap::kDeserializeInsertElement) {
     OrkAssert(value_inp);
     map.insert(std::make_pair(key, *value_inp));
   } else {
@@ -111,7 +111,7 @@ bool DirectObjectMap<MapType>::WriteItem(
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
-bool DirectObjectMap<MapType>::EraseItem(
+bool DirectObjectMap<MapType>::EraseElement(
     object_ptr_t instance, //
     const KeyType& key,
     int multi_index) const {
@@ -135,21 +135,21 @@ bool DirectObjectMap<MapType>::EraseItem(
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
 void DirectObjectMap<MapType>::MapSerialization(
-    ItemSerializeFunction serialization_func, //
+    ElementSerializeFunction serialization_func, //
     ISerializer& iser,
     object_constptr_t instance) const {
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
 void DirectObjectMap<MapType>::MapDeserialization(
-    ItemDeserializeFunction serialization_func, //
+    ElementDeserializeFunction serialization_func, //
     IDeserializer& iser,
     object_ptr_t instance) const {
 }
 ////////////////////////////////////////////////////////////////////////////////
 /*template <typename MapType> //
 bool DirectObjectMap<MapType>::MapSerialization(
-    ItemSerializeFunction serialization_func, //
+    ElementSerializeFunction serialization_func, //
     BidirectionalSerializer& bidi,
     object_constptr_t instance) const {
 

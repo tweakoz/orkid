@@ -28,14 +28,14 @@ void ITypedMap<KeyType, ValueType>::_doSerialize(
     ISerializer& ser, //
     const KeyType& key,
     const ValueType& value) {
-  Command item(Command::EITEM);
+  Command element(Command::ELEMENT);
   Command attribute(Command::EATTRIBUTE, "key");
-  ser.beginCommand(item);
+  ser.beginCommand(element);
   ser.beginCommand(attribute);
   ser.Hint("map_key", key);
   ser.endCommand(attribute);
   ser.Hint("map_value", ValueType(value));
-  ser.endCommand(item);
+  ser.endCommand(element);
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename KeyType, typename ValueType>
@@ -44,10 +44,10 @@ void ITypedMap<KeyType, ValueType>::deserialize(
     object_ptr_t object) const {
   KeyType key;
   ValueType value;
-  size_t numitems = itemCount(object);
-  for (size_t i = 0; i < numitems; i++) {
+  size_t numelements = elementCount(object);
+  for (size_t i = 0; i < numelements; i++) {
     _doDeserialize(deserializer, key, value);
-    WriteItem(object, key, -1, &value);
+    WriteElement(object, key, -1, &value);
   }
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -56,10 +56,10 @@ void ITypedMap<KeyType, ValueType>::_doDeserialize(
     IDeserializer& dser, //
     KeyType& key,
     ValueType& value) {
-  Command item;
-  dser.beginCommand(item);
-  OrkAssert(item.Type() == Command::EITEM);
-  dser.endCommand(item);
+  Command element;
+  dser.beginCommand(element);
+  OrkAssert(element.Type() == Command::ELEMENT);
+  dser.endCommand(element);
 
   Command attribute;
   dser.beginCommand(attribute);
@@ -74,7 +74,7 @@ void ITypedMap<KeyType, ValueType>::_doDeserialize(
 
   dser.Hint("map_value");
   dser.deserializeItem();
-  dser.endCommand(item);
+  dser.endCommand(element);
 }
 ////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::reflect

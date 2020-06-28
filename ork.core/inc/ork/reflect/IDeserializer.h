@@ -19,6 +19,9 @@ class ObjectProperty;
 class Command;
 
 struct IDeserializer {
+
+  virtual void deserializeTop(object_ptr_t&) = 0;
+
   void deserialize(bool&) {
   }
   void deserialize(char&) {

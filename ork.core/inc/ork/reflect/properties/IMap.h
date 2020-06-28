@@ -16,9 +16,9 @@ namespace ork { namespace reflect {
 class IMap : public ObjectProperty {
 
 public:
-  virtual size_t itemCount(object_constptr_t obj) const = 0;
+  virtual size_t elementCount(object_constptr_t obj) const = 0;
 
-  static const int kDeserializeInsertItem = -1;
+  static const int kDeserializeInsertElement = -1;
 
   virtual bool isMultiMap(object_constptr_t obj) const = 0;
 

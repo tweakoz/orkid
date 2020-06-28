@@ -25,7 +25,7 @@ public:
 
 		for( int i=0; i<knumitems; i++ )
 		{	mWritesOut++;
-			mWriteItems.push( new T(0) );
+			mWriteElements.push( new T(0) );
 		}
 
 	}
@@ -47,7 +47,7 @@ public:
 		int iw = mWritesOut.fetch_add(-1);
 		//OrkAssert(iw>0);
 		//printf( "TRIPLEBUF BEGIN_PUSH iw<%d>\n", iw );
-		mWriteItems.pop( rval, kquanta );
+		mWriteElements.pop( rval, kquanta );
 		return rval;
 	}
 	/////////////////////////////
@@ -58,14 +58,14 @@ public:
 		int ir = mReadsOut.fetch_add(1);
 		//OrkAssert(ir<knumitems);
 		//printf( "TRIPLEBUF END_PUSH ir<%d>\n", ir );
-		mReadItems.push(pret,kquanta);
+		mReadElements.push(pret,kquanta);
 	}
 	/////////////////////////////
 	const T* BeginRead(void) const// get a read buffer
 	{
 		T* rval = nullptr;
 		int ir = mReadsOut.fetch_add(-1);
-		mReadItems.try_pop( rval );
+		mReadElements.try_pop( rval );
 		return (const T*) rval;
 	}
 	/////////////////////////////
@@ -76,7 +76,7 @@ public:
 		int iw = mWritesOut.fetch_add(1);
 		//OrkAssert(iw<knumitems);
 		//printf( "TRIPLEBUF END_PULL iw<%d>\n", iw );
-		mWriteItems.push((T*)pret,kquanta);
+		mWriteElements.push((T*)pret,kquanta);
 	}
 	/////////////////////////////	
 	void disable()
@@ -87,13 +87,13 @@ public:
 		{
 			T* item = nullptr;
 
-			if( mReadItems.try_pop(item) )
+			if( mReadElements.try_pop(item) )
 			{
 				int ir = mReadsOut.fetch_add(-1);
 				mDisabledItems.push(item);
 				icount++;
 			}
-			else if( mWriteItems.try_pop(item) )
+			else if( mWriteElements.try_pop(item) )
 			{
 				int iw = mWritesOut.fetch_add(-1);
 				mDisabledItems.push(item);
@@ -116,14 +116,14 @@ public:
 			{
 				int iw = mWritesOut.fetch_add(1);
 				//printf( "MULTIBUF ENABLE(a) iw<%d>\n", iw );
-				mWriteItems.push(item);
+				mWriteElements.push(item);
 				icount++;
 			}
-			else if( mWriteItems.try_pop(item) )
+			else if( mWriteElements.try_pop(item) )
 			{
 				int iw = mWritesOut.fetch_add(1);
 				//printf( "MULTIBUF ENABLE(b) iw<%d>\n", iw );
-				mWriteItems.push(item);
+				mWriteElements.push(item);
 				icount++;
 			}
 		}
@@ -131,8 +131,8 @@ public:
 	/////////////////////////////	
 	private: // 
 	/////////////////////////////
-	mutable ork::MpMcBoundedQueue<T*,knumitems> mReadItems; 						
-	mutable ork::MpMcBoundedQueue<T*,knumitems> mWriteItems; 						
+	mutable ork::MpMcBoundedQueue<T*,knumitems> mReadElements; 						
+	mutable ork::MpMcBoundedQueue<T*,knumitems> mWriteElements; 						
 	mutable ork::MpMcBoundedQueue<T*,knumitems> mDisabledItems; 						
 	mutable ork::atomic<int> mWritesOut;
 	mutable ork::atomic<int> mReadsOut;

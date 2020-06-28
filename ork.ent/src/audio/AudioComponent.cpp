@@ -462,7 +462,7 @@ public:
   }
 
 protected:
-  bool WriteItem(ork::Object* pobj, const ork::PoolString& key, int imulti, AudioEffectPlayDataBase* const* ppaepd) const // virtual
+  bool WriteElement(ork::Object* pobj, const ork::PoolString& key, int imulti, AudioEffectPlayDataBase* const* ppaepd) const // virtual
   {
     ork::Object* poobj = static_cast<ork::Object*>(pobj);
     if (ppaepd) {
@@ -472,7 +472,7 @@ protected:
       if (aepd)
         aepd->SetAECD(aecd);
     }
-    return SuperType::WriteItem(pobj, key, imulti, ppaepd);
+    return SuperType::WriteElement(pobj, key, imulti, ppaepd);
   }
 };
 ///////////////////////////////////////////////////////////////////////////////

@@ -18,8 +18,8 @@ AccessorVariantMap::AccessorVariantMap(
 	bool (Object::*read)(IDeserializer &, int, ISerializer &),
 	bool (Object::*write)(IDeserializer &, int, IDeserializer *) const,
 	bool (Object::*map)(AccessorVariantMapContext &) const)
-	: mReadItem(read)
-	, mWriteItem(write)
+	: mReadElement(read)
+	, mWriteElement(write)
 	, mMapSerialization(map)
 {}
 
@@ -32,7 +32,7 @@ bool AccessorVariantMap::Deserialize(IDeserializer &deserializer, Object *object
 
 	while(DoDeserialize(bidi, key, value))
 	{
-		WriteItem(object, key, -1, &value);
+		WriteElement(object, key, -1, &value);
 	}
 
 	return bidi.Succeeded();
@@ -69,7 +69,7 @@ BidirectionalSerializer &AccessorVariantMapContext::Bidi()
 
 void AccessorVariantMapContext::BeginItem()
 {
-	mItemCommand.Setup(Command::EITEM);
+	mItemCommand.Setup(Command::ELEMENT);
 
 	if(false == mBidi.Serializer()->beginCommand(mItemCommand))
 		mBidi.Fail();

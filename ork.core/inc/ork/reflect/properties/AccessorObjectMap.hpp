@@ -96,7 +96,7 @@ void AccessorObjectMap<KeyType>::deserialize(
     object_ptr_t instance) const {
   Command item;
   deserializer.beginCommand(item);
-  OrkAssert(item.Type() == Command::EITEM);
+  OrkAssert(item.Type() == Command::ELEMENT);
   Command attribute;
   deserializer.beginCommand(attribute);
   OrkAssert(attribute.Type() == Command::EATTRIBUTE);
@@ -104,7 +104,7 @@ void AccessorObjectMap<KeyType>::deserialize(
   KeyType key;
   BidirectionalSerializer(deserializer) | key;
   deserializer.endCommand(attribute);
-  object_ptr_t value = (instance.get()->*_accessor)(key, IMap::kDeserializeInsertItem);
+  object_ptr_t value = (instance.get()->*_accessor)(key, IMap::kDeserializeInsertElement);
   Object::xxxDeserializeShared(value, deserializer);
   deserializer.endCommand(item);
 }
@@ -125,7 +125,7 @@ void AccessorObjectMap<KeyType>::_serdesimpl(
     object_constptr_t value) {
   bool result             = true;
   ISerializer* serializer = bidi.Serializer();
-  Command item(Command::EITEM);
+  Command item(Command::ELEMENT);
   Command attribute(Command::EATTRIBUTE, "key");
   serializer->beginCommand(item);
   serializer->beginCommand(attribute);

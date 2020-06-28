@@ -43,7 +43,7 @@ template <typename MapType> const MapType& DirectTypedMap<MapType>::GetMap(objec
 }
 
 template <typename MapType>
-bool DirectTypedMap<MapType>::EraseItem(
+bool DirectTypedMap<MapType>::EraseElement(
     object_ptr_t object, //
     const typename DirectTypedMap<MapType>::KeyType& key,
     int multi_index) const {
@@ -66,7 +66,7 @@ bool DirectTypedMap<MapType>::EraseItem(
 }
 
 template <typename MapType>
-bool DirectTypedMap<MapType>::ReadItem(
+bool DirectTypedMap<MapType>::ReadElement(
     object_constptr_t object,
     const typename DirectTypedMap<MapType>::KeyType& key,
     int multi_index,
@@ -88,14 +88,14 @@ bool DirectTypedMap<MapType>::ReadItem(
 }
 
 template <typename MapType>
-bool DirectTypedMap<MapType>::WriteItem(
+bool DirectTypedMap<MapType>::WriteElement(
     object_ptr_t object,
     const typename DirectTypedMap<MapType>::KeyType& key,
     int multi_index,
     const typename DirectTypedMap<MapType>::ValueType* value) const {
   MapType& map               = object.get()->*mProperty;
   const int orig_multi_index = multi_index;
-  if (multi_index == IMap::kDeserializeInsertItem) {
+  if (multi_index == IMap::kDeserializeInsertElement) {
     OrkAssert(value);
     map.insert(std::make_pair(key, *value));
   } else {
@@ -121,14 +121,14 @@ bool DirectTypedMap<MapType>::WriteItem(
 }
 template <typename MapType>
 void DirectTypedMap<MapType>::MapDeserialization(
-    typename DirectTypedMap<MapType>::ItemDeserializeFunction func,
+    typename DirectTypedMap<MapType>::ElementDeserializeFunction func,
     IDeserializer& deser,
     object_ptr_t instance) const {
 }
 
 template <typename MapType>
 void DirectTypedMap<MapType>::MapSerialization(
-    typename DirectTypedMap<MapType>::ItemSerializeFunction serfunc,
+    typename DirectTypedMap<MapType>::ElementSerializeFunction serfunc,
     ISerializer& ser,
     object_constptr_t instance) const {
 
@@ -141,8 +141,8 @@ void DirectTypedMap<MapType>::MapSerialization(
 
   typename MapType::const_iterator itprev;
 
-  int item_index      = 0;
-  int item_multiindex = 0;
+  int element_index      = 0;
+  int element_multiindex = 0;
 
   for (auto it = map.begin(); //
        it != map.end();
@@ -152,7 +152,7 @@ void DirectTypedMap<MapType>::MapSerialization(
 
     //////////////////////////////////////////
     // keep track of multimap
-    //  consecutive items with same key
+    //  consecutive elements with same key
     //////////////////////////////////////////
 
     if (it != map.begin()) {
@@ -161,9 +161,9 @@ void DirectTypedMap<MapType>::MapSerialization(
       const KeyType& kb = it->first;
 
       if (ka == kb) {
-        item_multiindex++;
+        element_multiindex++;
       } else {
-        item_multiindex = 0;
+        element_multiindex = 0;
       }
     }
 
@@ -173,18 +173,18 @@ void DirectTypedMap<MapType>::MapSerialization(
     // index hints
     ///////////////////////////////////////////////////
 
-    ser.Hint("Index", item_index);
-    ser.Hint("MultiIndex", item_multiindex);
+    ser.Hint("Index", element_index);
+    ser.Hint("MultiIndex", element_multiindex);
 
     ///////////////////////////////////////////////////
-    // serialize the item
+    // serialize the element
     ///////////////////////////////////////////////////
 
     ValueType value = it->second;
 
     (*serfunc)(ser, key, value);
 
-    item_index++;
+    element_index++;
   }
 }
 

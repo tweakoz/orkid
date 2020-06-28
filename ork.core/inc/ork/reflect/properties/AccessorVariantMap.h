@@ -36,7 +36,7 @@ class AccessorVariantMap : public IMap {
 public:
   typedef void (*SerializerCallbackItem)(AccessorVariantMapContext& ctx, BidirectionalSerializer&);
 
-  static const int kDeserializeInsertItem = -1;
+  static const int kDeserializeInsertElement = -1;
 
   AccessorVariantMap(
       bool (Object::*)(IDeserializer&, int, ISerializer&),
@@ -44,8 +44,8 @@ public:
       bool (Object::*)(AccessorVariantMapContext&) const);
 
 private:
-  bool (Object::*mReadItem)(IDeserializer& key, int, ISerializer& value);
-  bool (Object::*mWriteItem)(IDeserializer& key, int, IDeserializer* value) const;
+  bool (Object::*mReadElement)(IDeserializer& key, int, ISerializer& value);
+  bool (Object::*mWriteElement)(IDeserializer& key, int, IDeserializer* value) const;
   bool (Object::*mMapSerialization)(AccessorVariantMapContext&) const;
 
   void deserialize(IDeserializer& serializer, object_ptr_t) const override;

@@ -21,7 +21,7 @@ public:
         EOBJECT,    // what == classname
         EATTRIBUTE, // what == attributename of object
         EPROPERTY,  // what == propname of object
-        EITEM,      // what == "%d" % index_of_item
+        ELEMENT,      // what == "%d" % index_of_item
     };
 
     Command()

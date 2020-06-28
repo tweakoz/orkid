@@ -39,7 +39,7 @@ void IArray::deserialize(
   for (size_t index = 0; index < numitems; index++) {
     Command item;
     deserializer.beginCommand(item);
-    OrkAssert(item.Type() == Command::EITEM);
+    OrkAssert(item.Type() == Command::ELEMENT);
     deserializeItem(deserializer, obj, index);
     deserializer.endCommand(item);
   }
@@ -59,7 +59,7 @@ void IArray::serialize(
   serializer.endCommand(command);
 
   for (size_t index = 0; index < numitems; index++) {
-    Command item(Command::EITEM);
+    Command item(Command::ELEMENT);
     serializer.beginCommand(item);
     serializeItem(serializer, obj, index);
     serializer.endCommand(item);
