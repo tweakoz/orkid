@@ -65,16 +65,15 @@ void JsonDeserializer::deserializeTop(object_ptr_t& instance_out) {
   auto topnode           = std::make_shared<IDeserializer::Node>();
   topnode->_deserializer = this;
   auto dserjsonnode      = topnode->_impl.makeShared<JsonDserNode>(rootnode);
-  instance_out           = _parseObjectNode(topnode, rootnode);
+  instance_out           = _parseObjectNode(topnode);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-object_ptr_t JsonDeserializer::_parseObjectNode(
-    IDeserializer::node_ptr_t dsernode, //
-    const rapidjson::Value& objnode) {
+object_ptr_t JsonDeserializer::_parseObjectNode(IDeserializer::node_ptr_t dsernode) {
 
-  object_ptr_t instance_out = nullptr;
+  const rapidjson::Value& objnode = dsernode->_impl.getShared<JsonDserNode>()->_jsonnode;
+  object_ptr_t instance_out       = nullptr;
 
   bool has_class = objnode.HasMember("class");
   bool has_uuid  = objnode.HasMember("uuid");
