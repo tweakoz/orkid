@@ -29,9 +29,13 @@ struct IDeserializer {
   object_ptr_t findTrackedObject(boost::uuids::uuid id) const;
   virtual ~IDeserializer();
 
+  struct Node;
+  using node_ptr_t = std::shared_ptr<Node>;
+
   ///////////////////////////////////////////
 
   struct Node {
+    node_ptr_t _parent                       = nullptr;
     const reflect::ObjectProperty* _property = nullptr;
     IDeserializer* _deserializer             = nullptr;
     object_ptr_t _instance                   = nullptr;

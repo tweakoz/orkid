@@ -61,13 +61,18 @@ void JsonDeserializer::deserializeObjectProperty(
 //////////////////////////////////////////////////////////////////////////////
 
 void JsonDeserializer::deserializeTop(object_ptr_t& instance_out) {
-  const auto& rootnode = _document["top"]["object"];
-  instance_out         = _parseObjectNode(rootnode);
+  const auto& rootnode   = _document["top"]["object"];
+  auto topnode           = std::make_shared<IDeserializer::Node>();
+  topnode->_deserializer = this;
+  auto dserjsonnode      = topnode->_impl.makeShared<JsonDserNode>(rootnode);
+  instance_out           = _parseObjectNode(topnode, rootnode);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-object_ptr_t JsonDeserializer::_parseObjectNode(const rapidjson::Value& objnode) {
+object_ptr_t JsonDeserializer::_parseObjectNode(
+    IDeserializer::node_ptr_t dsernode, //
+    const rapidjson::Value& objnode) {
 
   object_ptr_t instance_out = nullptr;
 
@@ -112,11 +117,14 @@ object_ptr_t JsonDeserializer::_parseObjectNode(const rapidjson::Value& objnode)
 
     if (prop) {
       printf("found propname<%s> prop<%p>\n", propname, prop);
-      IDeserializer::Node dsernode;
-      dsernode._property     = prop;
-      dsernode._deserializer = this;
-      dsernode._instance     = instance_out;
-      auto dserjsonnode      = dsernode._impl.makeShared<JsonDserNode>(propnode);
+      auto child_node = std::make_shared<IDeserializer::Node>();
+
+      child_node->_parent       = dsernode;
+      child_node->_property     = prop;
+      child_node->_deserializer = this;
+      child_node->_instance     = instance_out;
+
+      auto dserjsonnode = child_node->_impl.makeShared<JsonDserNode>(propnode);
       // prop->deserialize(*this, object);
     } else { // drop property, no longer registered
       printf("dropping property<%s>\n", propname);
