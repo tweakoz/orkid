@@ -39,7 +39,15 @@ std::string getJsonStr() {
        "class": "HotKeyConfiguration",
        "uuid": "e0f43d05-0070-0000-d0f4-3d0500700000",
        "properties": {
-        "HotKeys": {},
+        "HotKeys": {
+          "a": {
+            "object": {
+             "class": "HotKey",
+             "uuid": "ffffffff-0070-0000-d0f4-3d0500700000",
+             "properties": {}
+           }
+          }
+        },
         "DropProp": {"drop":"me"}
        }
       }

@@ -144,6 +144,7 @@ template <typename MapType> //
 void DirectObjectMap<MapType>::MapDeserialization(
     ElementDeserializeFunction serialization_func, //
     IDeserializer::node_ptr_t dser) const {
+  OrkAssert(false);
 }
 ////////////////////////////////////////////////////////////////////////////////
 /*template <typename MapType> //

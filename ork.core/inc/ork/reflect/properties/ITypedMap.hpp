@@ -42,8 +42,12 @@ template <typename KeyType, typename ValueType>
 void ITypedMap<KeyType, ValueType>::deserialize(IDeserializer::node_ptr_t dsernode) const {
   KeyType key;
   ValueType value;
-  size_t numelements = elementCount(dsernode->_instance);
+  auto deserializer  = dsernode->_deserializer;
+  size_t numelements = dsernode->_numchildren;
+
   for (size_t i = 0; i < numelements; i++) {
+    dsernode->_index = i;
+    deserializer->deserializeElement(dsernode);
     //_doDeserialize(deserializer, key, value);
     // WriteElement(object, key, -1, &value);
   }

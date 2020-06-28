@@ -22,15 +22,16 @@ class Command;
 struct IDeserializer {
 
   using var_t = svar64_t;
+  struct Node;
+  using node_ptr_t = std::shared_ptr<Node>;
 
   virtual void deserializeTop(object_ptr_t&) = 0;
+  virtual void deserializeElement(node_ptr_t elemnode) {
+  }
 
   void trackObject(boost::uuids::uuid id, object_ptr_t instance);
   object_ptr_t findTrackedObject(boost::uuids::uuid id) const;
   virtual ~IDeserializer();
-
-  struct Node;
-  using node_ptr_t = std::shared_ptr<Node>;
 
   ///////////////////////////////////////////
 
@@ -41,7 +42,8 @@ struct IDeserializer {
     object_ptr_t _instance                   = nullptr;
     var_t _impl;
     var_t _value;
-    size_t _index = -1;
+    size_t _index       = -1;
+    size_t _numchildren = 0;
   };
 
   ///////////////////////////////////////////

@@ -45,10 +45,9 @@
 
 namespace ork {
 #if defined(SVAR_DEBUG)
-template <typename T>
-inline std::string demangled_typename() {
+template <typename T> inline std::string demangled_typename() {
   auto typestr          = typeid(T).name();
-  int status = 0;
+  int status            = 0;
   const char* demangled = abi::__cxa_demangle(typestr, 0, 0, &status);
   return std::string(demangled);
 }
@@ -79,8 +78,11 @@ template <int tsize, typename T> struct static_variant_copier_t {
 
 template <typename T> struct attempt_cast {
   attempt_cast(T* d)
-      : _data(d) {}
-  operator bool() const { return (nullptr != _data); }
+      : _data(d) {
+  }
+  operator bool() const {
+    return (nullptr != _data);
+  }
   T& value() const {
     OrkAssert(_data != nullptr);
     return *_data;
@@ -90,8 +92,11 @@ template <typename T> struct attempt_cast {
 
 template <typename T> struct attempt_cast_const {
   attempt_cast_const(const T* d)
-      : _data(d) {}
-  operator bool() const { return (nullptr != _data); }
+      : _data(d) {
+  }
+  operator bool() const {
+    return (nullptr != _data);
+  }
   const T& value() const {
     OrkAssert(_data != nullptr);
     return *_data;
@@ -105,7 +110,7 @@ template <typename T> struct attempt_cast_const {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct TypeId {
-  using hashtype_t = uint64_t;
+  using hashtype_t   = uint64_t;
   hashtype_t _hashed = 0;
   std::string _typename;
   template <typename T> static TypeId of() {
@@ -113,25 +118,23 @@ struct TypeId {
     rval._typename = typeid(T).name();
     boost::Crc64 crcgen;
     crcgen.init();
-    crcgen.accumulate((const void*)rval._typename.c_str(),rval._typename.length());
+    crcgen.accumulate((const void*)rval._typename.c_str(), rval._typename.length());
     crcgen.finish();
     rval._hashed = crcgen.result();
     return rval;
-    }
+  }
 
-  static TypeId fromStdTypeInfo(const std::type_info* tinfo){
+  static TypeId fromStdTypeInfo(const std::type_info* tinfo) {
     TypeId rval;
     rval._typename = tinfo->name();
     boost::Crc64 crcgen;
     crcgen.init();
-    crcgen.accumulate((const void*)rval._typename.c_str(),rval._typename.length());
+    crcgen.accumulate((const void*)rval._typename.c_str(), rval._typename.length());
     crcgen.finish();
     rval._hashed = crcgen.result();
     return rval;
-
   }
 };
-
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -183,7 +186,7 @@ public:
     AssignCopier<T>();
 
     mtinfo = &typeid(T);
-# if defined(SVAR_DEBUG)
+#if defined(SVAR_DEBUG)
     _typestr = demangled_typename<T>();
 #endif
   }
@@ -193,8 +196,8 @@ public:
   ~static_variant() {
     Destroy();
     mDestroyer = nullptr;
-    mCopier = nullptr;
-    mtinfo = nullptr;
+    mCopier    = nullptr;
+    mtinfo     = nullptr;
   }
   //////////////////////////////////////////////////////////////
   // call the destroyer on contained object
@@ -226,6 +229,13 @@ public:
     return (mtinfo != 0) ? (*mtinfo) == typeid(T) : false;
   }
   //////////////////////////////////////////////////////////////
+  // return true if the contained object is a T
+  //////////////////////////////////////////////////////////////
+  template <typename T> bool IsShared() const {
+    static_assert(sizeof(T) <= ksize, "static_variant size violation");
+    return (mtinfo != 0) ? (*mtinfo) == typeid(std::shared_ptr<T>) : false;
+  }
+  //////////////////////////////////////////////////////////////
   // assign an object to the variant, assert if it does not fit
   //////////////////////////////////////////////////////////////
   template <typename T> void Set(const T& value) {
@@ -234,7 +244,7 @@ public:
     T* pval = (T*)&mbuffer[0];
     new (pval) T(value);
     mtinfo = &typeid(T);
-# if defined(SVAR_DEBUG)
+#if defined(SVAR_DEBUG)
     _typestr = demangled_typename<T>();
 #endif
     AssignDestroyer<T>();
@@ -277,7 +287,7 @@ public:
     auto pval = (T*)&mbuffer[0];
     new (pval) T(std::forward<A>(args)...);
     mtinfo = &typeid(T);
-# if defined(SVAR_DEBUG)
+#if defined(SVAR_DEBUG)
     _typestr = demangled_typename<T>();
 #endif
     AssignDestroyer<T>();
@@ -296,7 +306,7 @@ public:
     new (pval) sharedptr_t;
     (*pval) = std::make_shared<T>(std::forward<A>(args)...);
     mtinfo  = &typeid(sharedptr_t);
-# if defined(SVAR_DEBUG)
+#if defined(SVAR_DEBUG)
     _typestr = demangled_typename<T>();
 #endif
     AssignDestroyer<sharedptr_t>();
@@ -309,7 +319,7 @@ public:
   //////////////////////////////////////////////////////////////
   template <typename T> attempt_cast<T> TryAs() {
     static_assert(sizeof(T) <= ksize, "static_variant size violation");
-    bool type_ok = (mtinfo!=nullptr) ? (typeid(T) == *mtinfo) : false;
+    bool type_ok = (mtinfo != nullptr) ? (typeid(T) == *mtinfo) : false;
     return attempt_cast<T>((T*)(type_ok ? &mbuffer[0] : nullptr));
   }
   //////////////////////////////////////////////////////////////
@@ -317,7 +327,7 @@ public:
   //////////////////////////////////////////////////////////////
   template <typename T> attempt_cast_const<T> TryAs() const {
     static_assert(sizeof(T) <= ksize, "static_variant size violation");
-    bool type_ok = (mtinfo!=nullptr) ? (typeid(T) == *mtinfo) : false;
+    bool type_ok = (mtinfo != nullptr) ? (typeid(T) == *mtinfo) : false;
     return attempt_cast_const<T>((const T*)(type_ok ? &mbuffer[0] : nullptr));
   }
   //////////////////////////////////////////////////////////////
@@ -329,23 +339,29 @@ public:
     return rval;
   }
   //////////////////////////////////////////////////////////////
-  const std::type_info* GetTypeInfo() const { return mtinfo; }
+  const std::type_info* GetTypeInfo() const {
+    return mtinfo;
+  }
   //////////////////////////////////////////////////////////////
-  const char* GetTypeName() const { return mtinfo ? mtinfo->name() : ""; }
+  const char* GetTypeName() const {
+    return mtinfo ? mtinfo->name() : "";
+  }
   //////////////////////////////////////////////////////////////
   // return true if the variant has been set to something
   //////////////////////////////////////////////////////////////
-  bool IsSet() const { return (mtinfo != 0); }
-# if defined(SVAR_DEBUG)
+  bool IsSet() const {
+    return (mtinfo != 0);
+  }
+#if defined(SVAR_DEBUG)
   std::string typestr() const {
     return _typestr;
   }
 #endif
-//////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////
   uint64_t hash() const {
     boost::Crc64 crcgen;
     crcgen.init();
-    crcgen.accumulate((const void*)mbuffer,ksize);
+    crcgen.accumulate((const void*)mbuffer, ksize);
     crcgen.finish();
     return crcgen.result();
   }
@@ -353,16 +369,16 @@ public:
   TypeId getOrkTypeId() const {
     return TypeId::fromStdTypeInfo(mtinfo);
   }
-//////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////
 private:
   char mbuffer[ksize];
   size_t _curlength;
   ork::atomic<destroyer_t> mDestroyer;
   ork::atomic<copier_t> mCopier;
   const std::type_info* mtinfo;
-# if defined(SVAR_DEBUG)
+#if defined(SVAR_DEBUG)
   std::string _typestr;
-  #endif
+#endif
   //////////////////////////////////////////////////////////////
 };
 

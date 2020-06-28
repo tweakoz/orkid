@@ -26,11 +26,25 @@ namespace ork::reflect::serialize {
 
 //////////////////////////////////////////////////////////////////////////////
 
-struct JsonDserNode {
-  JsonDserNode(const rapidjson::Value& jn)
+struct JsonLeafNode {
+  JsonLeafNode(const rapidjson::Value& jn)
       : _jsonnode(jn) {
   }
   const rapidjson::Value& _jsonnode;
+};
+struct JsonObjectNode {
+  JsonObjectNode(const rapidjson::Value& jn)
+      : _jsonobjectnode(jn) {
+  }
+  const rapidjson::Value& _jsonobjectnode;
+  Value::ConstMemberIterator _iterator;
+};
+struct JsonArrayNode {
+  JsonArrayNode(const rapidjson::Value& jn)
+      : _jsonarraynode(jn) {
+  }
+  const rapidjson::Value& _jsonarraynode;
+  Value::ConstValueIterator _iterator;
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -64,15 +78,62 @@ void JsonDeserializer::deserializeTop(object_ptr_t& instance_out) {
   const auto& rootnode   = _document["top"]["object"];
   auto topnode           = std::make_shared<IDeserializer::Node>();
   topnode->_deserializer = this;
-  auto dserjsonnode      = topnode->_impl.makeShared<JsonDserNode>(rootnode);
+  auto dserjsonnode      = topnode->_impl.makeShared<JsonObjectNode>(rootnode);
   instance_out           = _parseObjectNode(topnode);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+void JsonDeserializer::deserializeElement(node_ptr_t elemnode) {
+
+  /////////////////////////////////////////////////////
+  // map element
+  /////////////////////////////////////////////////////
+  if (elemnode->_impl.IsShared<JsonObjectNode>()) {
+    auto implnode                   = elemnode->_impl.getShared<JsonObjectNode>();
+    const rapidjson::Value& objnode = implnode->_jsonobjectnode;
+
+    OrkAssert(implnode->_iterator != objnode.MemberEnd());
+
+    printf("objnode<%s>\n", implnode->_iterator->name.GetString());
+
+    implnode->_iterator++;
+
+  }
+  /////////////////////////////////////////////////////
+  // array element
+  /////////////////////////////////////////////////////
+  else if (elemnode->_impl.IsShared<JsonArrayNode>()) {
+    auto implnode                   = elemnode->_impl.getShared<JsonArrayNode>();
+    const rapidjson::Value& arynode = implnode->_jsonarraynode;
+    OrkAssert(implnode->_iterator != arynode.End());
+
+    printf("arynode<%zu>\n", elemnode->_index);
+
+    implnode->_iterator++;
+  }
+  /////////////////////////////////////////////////////
+  // leaf node
+  /////////////////////////////////////////////////////
+  // else if (elemnode->_impl.IsShared<JsonLeafNode>()) {
+  // auto implnode                = elemnode->_impl.getShared<JsonLeafNode>();
+  // const rapidjson::Value& node = implnode->_jsonnode;
+  //}
+  /////////////////////////////////////////////////////
+  // ???
+  /////////////////////////////////////////////////////
+  else {
+    OrkAssert(false);
+  }
+
+  // OrkAssert(false);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
 object_ptr_t JsonDeserializer::_parseObjectNode(IDeserializer::node_ptr_t dsernode) {
 
-  const rapidjson::Value& objnode = dsernode->_impl.getShared<JsonDserNode>()->_jsonnode;
+  const rapidjson::Value& objnode = dsernode->_impl.getShared<JsonObjectNode>()->_jsonobjectnode;
   object_ptr_t instance_out       = nullptr;
 
   bool has_class = objnode.HasMember("class");
@@ -123,9 +184,21 @@ object_ptr_t JsonDeserializer::_parseObjectNode(IDeserializer::node_ptr_t dserno
       child_node->_deserializer = this;
       child_node->_instance     = instance_out;
 
-      auto dserjsonnode = child_node->_impl.makeShared<JsonDserNode>(propnode);
+      auto jsonleafnode = child_node->_impl.makeShared<JsonLeafNode>(propnode);
 
       switch (propnode.GetType()) {
+        case rapidjson::kObjectType: {
+          child_node->_numchildren = propnode.MemberCount();
+          auto jsonobjnode         = child_node->_impl.makeShared<JsonObjectNode>(propnode);
+          jsonobjnode->_iterator   = propnode.MemberBegin();
+          break;
+        }
+        case rapidjson::kArrayType: {
+          child_node->_numchildren = propnode.MemberCount();
+          auto jsonarynode         = child_node->_impl.makeShared<JsonArrayNode>(propnode);
+          jsonarynode->_iterator   = propnode.Begin();
+          break;
+        }
         case rapidjson::kNullType:
           child_node->_value.Set<void*>(nullptr);
           break;
@@ -134,10 +207,6 @@ object_ptr_t JsonDeserializer::_parseObjectNode(IDeserializer::node_ptr_t dserno
           break;
         case rapidjson::kTrueType:
           child_node->_value.Set<bool>(true);
-          break;
-        case rapidjson::kObjectType:
-          break;
-        case rapidjson::kArrayType:
           break;
         case rapidjson::kStringType:
           child_node->_value.Set<std::string>(propnode.GetString());
