@@ -57,23 +57,24 @@ void JsonDeserializer::deserializeTop(object_ptr_t& instance_out) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-object_ptr_t JsonDeserializer::_parseObjectNode(const rapidjson::Value& node) {
+object_ptr_t JsonDeserializer::_parseObjectNode(const rapidjson::Value& objnode) {
 
   object_ptr_t instance_out = nullptr;
 
-  bool has_class = node.HasMember("class");
-  bool has_uuid  = node.HasMember("uuid");
+  bool has_class = objnode.HasMember("class");
+  bool has_uuid  = objnode.HasMember("uuid");
   OrkAssert(has_class);
   OrkAssert(has_uuid);
 
-  auto classstr = node["class"].GetString();
-  auto uuidstr  = node["uuid"].GetString();
+  auto classstr = objnode["class"].GetString();
+  auto uuidstr  = objnode["uuid"].GetString();
 
   boost::uuids::string_generator gen;
   auto uuid     = gen(uuidstr);
   auto clazz    = rtti::Class::FindClass(classstr);
   auto objclazz = dynamic_cast<object::ObjectClass*>(clazz);
   OrkAssert(objclazz);
+  const auto& description = objclazz->Description();
 
   instance_out        = objclazz->createShared();
   instance_out->_uuid = uuid;
@@ -81,6 +82,30 @@ object_ptr_t JsonDeserializer::_parseObjectNode(const rapidjson::Value& node) {
   ///////////////////////////////////
   // deserialize properties
   ///////////////////////////////////
+
+  const auto& propsnode = objnode["properties"];
+  OrkAssert(propsnode.IsObject());
+
+  ///////////////////////////////////
+
+  for (auto it = propsnode.MemberBegin(); //
+       it != propsnode.MemberEnd();
+       ++it) {
+
+    const auto& propnode = *it;
+
+    // OrkAssert(propnode.IsObject());
+
+    auto propname = propnode.name.GetString();
+    auto prop     = description.FindProperty(propname);
+
+    if (prop) {
+      printf("found propname<%s> prop<%p>\n", propname, prop);
+
+    } else { // drop property, no longer registered
+      printf("dropping property<%s>\n", propname);
+    }
+  }
 
   ///////////////////////////////////
 
