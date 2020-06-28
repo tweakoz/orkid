@@ -76,6 +76,9 @@ static bool strieq(const PieceString& a, const PieceString& b) {
   return true;
 }
 
+void TextDeserializer::deserializeItem() {
+}
+
 void TextDeserializer::deserializeObjectProperty(
     const ObjectProperty* prop, //
     object_ptr_t object) {

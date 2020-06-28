@@ -84,6 +84,8 @@ bool BinaryDeserializer::Match(char c) {
     return false;
   }
 }
+void BinaryDeserializer::deserializeItem() {
+}
 ////////////////////////////////////////////////////////////////////////////////
 void BinaryDeserializer::deserializeSharedObject(object_ptr_t& instance_out) {
   std::string object_uuid_str;

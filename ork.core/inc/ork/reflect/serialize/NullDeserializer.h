@@ -28,11 +28,10 @@ public:
   void referenceObject(rtti::castable_rawptr_t) override;
   void beginCommand(Command&) override;
   void endCommand(const Command&) override;
-  void LayerDeserializer::deserializeItem() override;
+  void deserializeItem() override;
 };
 
 inline void NullDeserializer::deserializeItem() {
-  mDeserializer.deserializeItem();
 }
 
 inline void NullDeserializer::deserialize(bool& value) {

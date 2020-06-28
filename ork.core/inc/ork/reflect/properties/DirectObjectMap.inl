@@ -133,6 +133,20 @@ bool DirectObjectMap<MapType>::EraseItem(
   return true;
 }
 ////////////////////////////////////////////////////////////////////////////////
+template <typename MapType> //
+void DirectObjectMap<MapType>::MapSerialization(
+    ItemSerializeFunction serialization_func, //
+    ISerializer& iser,
+    object_constptr_t instance) const {
+}
+////////////////////////////////////////////////////////////////////////////////
+template <typename MapType> //
+void DirectObjectMap<MapType>::MapDeserialization(
+    ItemDeserializeFunction serialization_func, //
+    IDeserializer& iser,
+    object_ptr_t instance) const {
+}
+////////////////////////////////////////////////////////////////////////////////
 /*template <typename MapType> //
 bool DirectObjectMap<MapType>::MapSerialization(
     ItemSerializeFunction serialization_func, //

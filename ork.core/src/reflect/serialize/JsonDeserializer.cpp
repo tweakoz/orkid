@@ -31,6 +31,9 @@ JsonDeserializer::JsonDeserializer(stream::IInputStream& stream)
     : mStream(stream) {
 }
 
+void JsonDeserializer::deserializeItem() {
+}
+
 //////////////////////////////////////////////////////////////////////////////
 
 void JsonDeserializer::deserializeObjectProperty(
