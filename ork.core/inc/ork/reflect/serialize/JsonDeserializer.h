@@ -22,12 +22,12 @@ public:
 
   JsonDeserializer(const std::string& jsondata);
 
-  void deserializeSharedObject(object_ptr_t&) override;
-  void deserializeObjectProperty(const ObjectProperty*, object_ptr_t) override;
+  // void deserializeSharedObject(object_ptr_t&) override;
+  // void deserializeObjectProperty(const ObjectProperty*, object_ptr_t) override;
 
-  void beginCommand(Command&) override;
-  void endCommand(const Command&) override;
-  void deserializeItem() override;
+  // void beginCommand(Command&) override;
+  // void endCommand(const Command&) override;
+  // void deserializeItem() override;
 
 private:
   using allocator_t = rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>*;

@@ -68,12 +68,12 @@ void ITypedMap<KeyType, ValueType>::_doDeserialize(
   OrkAssert(attribute.Name() == "key");
 
   dser.Hint("map_key");
-  dser.deserializeItem();
+  // dser.deserializeItem();
   // bidi | key;
   dser.endCommand(attribute);
 
   dser.Hint("map_value");
-  dser.deserializeItem();
+  // dser.deserializeItem();
   dser.endCommand(element);
 }
 ////////////////////////////////////////////////////////////////////////////////

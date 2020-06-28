@@ -36,7 +36,7 @@ JsonDeserializer::JsonDeserializer(const std::string& jsondata)
   OrkAssert(is_object);
   OrkAssert(has_top);
 }
-
+/*
 void JsonDeserializer::deserializeItem() {
 }
 
@@ -47,14 +47,15 @@ void JsonDeserializer::deserializeObjectProperty(
     object_ptr_t object) {
   prop->deserialize(*this, object);
 }
-
+*/
 //////////////////////////////////////////////////////////////////////////////
 
 void JsonDeserializer::deserializeTop(object_ptr_t& instance_out) {
+  const auto& rootnode = _document["top"]["object"];
 }
 
 //////////////////////////////////////////////////////////////////////////////
-
+/*
 void JsonDeserializer::deserializeSharedObject(object_ptr_t& instance_out) {
 }
 
@@ -66,7 +67,7 @@ void JsonDeserializer::beginCommand(Command& command) {
 //////////////////////////////////////////////////////////////////////////////
 
 void JsonDeserializer::endCommand(const Command& command) {
-}
+}*/
 
 //////////////////////////////////////////////////////////////////////////////
 } // namespace ork::reflect::serialize

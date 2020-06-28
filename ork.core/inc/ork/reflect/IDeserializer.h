@@ -41,15 +41,18 @@ struct IDeserializer {
   void deserialize(ResizableString&) {
   }
 
-  virtual void deserializeSharedObject(object_ptr_t&)                         = 0;
-  virtual void deserializeObjectProperty(const ObjectProperty*, object_ptr_t) = 0;
+  // virtual void deserializeSharedObject(object_ptr_t&)                         = 0;
+  // virtual void deserializeObjectProperty(const ObjectProperty*, object_ptr_t) = 0;
 
-  virtual void deserializeItem() = 0;
+  // virtual void deserializeItem() = 0;
 
-  void referenceObject(object_ptr_t);
-  virtual void beginCommand(Command&)     = 0;
-  virtual void endCommand(const Command&) = 0;
-  virtual void Hint(const PieceString&) {
+  void referenceObject(object_ptr_t) {
+  }
+  void beginCommand(Command&) {
+  }
+  void endCommand(const Command&) {
+  }
+  void Hint(const PieceString&) {
   }
 
   void trackObject(boost::uuids::uuid id, object_ptr_t instance);

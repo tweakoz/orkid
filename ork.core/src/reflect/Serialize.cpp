@@ -24,7 +24,7 @@ void BidirectionalSerializer::serializeSharedObject(object_constptr_t obj) {
   mSerializer->serializeSharedObject(obj);
 }
 void BidirectionalSerializer::deserializeSharedObject(object_ptr_t& obj) {
-  mDeserializer->deserializeSharedObject(obj);
+  // mDeserializer->deserializeSharedObject(obj);
 }
 
 //////////////////////////////////////////////////

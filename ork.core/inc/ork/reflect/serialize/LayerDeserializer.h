@@ -24,12 +24,12 @@ public:
   LayerDeserializer(IDeserializer& deserializer);
 
   void deserializeTop(object_ptr_t&) override;
-  void deserializeSharedObject(object_ptr_t&) override;
-  void deserializeObjectProperty(const ObjectProperty*, object_ptr_t) override;
+  // void deserializeSharedObject(object_ptr_t&) override;
+  // void deserializeObjectProperty(const ObjectProperty*, object_ptr_t) override;
 
-  void beginCommand(Command&) override;
-  void endCommand(const Command&) override;
-  void deserializeItem() override;
+  // void beginCommand(Command&) override;
+  // void endCommand(const Command&) override;
+  // void deserializeItem() override;
 
 protected:
   // void _deserialize(const rtti::Category*, object_ptr_t&);
@@ -42,14 +42,15 @@ inline LayerDeserializer::LayerDeserializer(IDeserializer& deserializer)
     : mDeserializer(deserializer) {
 }
 
-inline void LayerDeserializer::deserializeItem() {
-  mDeserializer.deserializeItem();
-}
+// inline void LayerDeserializer::deserializeItem() {
+// mDeserializer.deserializeItem();
+//}
 
 inline void LayerDeserializer::deserializeTop(object_ptr_t& value) {
   mDeserializer.deserializeTop(value);
 }
 
+/*
 inline void LayerDeserializer::deserializeSharedObject(object_ptr_t& value) {
   mDeserializer.deserializeSharedObject(value);
 }
@@ -57,10 +58,6 @@ inline void LayerDeserializer::deserializeSharedObject(object_ptr_t& value) {
 inline void LayerDeserializer::deserializeObjectProperty(const ObjectProperty* prop, object_ptr_t object) {
   prop->deserialize(*this, object);
 }
-
-// inline void LayerDeserializer::_deserialize(const rtti::Category* category, object_ptr_t& object) {
-// category->deserializeObject(*this, object);
-//}
 
 inline void LayerDeserializer::beginCommand(Command& command) {
   const Command* previous_command = _currentCommand;
@@ -75,5 +72,5 @@ inline void LayerDeserializer::endCommand(const Command& command) {
   _currentCommand = _currentCommand->PreviousCommand();
   mDeserializer.endCommand(command);
 }
-
+*/
 }}} // namespace ork::reflect::serialize

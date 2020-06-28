@@ -22,63 +22,14 @@ namespace ork::reflect::serialize {
 
 class NullDeserializer final : public IDeserializer {
 public:
-  void deserializeTop(object_ptr_t&) override;
-  void deserializeSharedObject(object_ptr_t&) override;
-  void deserializeObjectProperty(const ObjectProperty*, object_ptr_t) override;
-
-  void referenceObject(rtti::castable_rawptr_t) override;
-  void beginCommand(Command&) override;
-  void endCommand(const Command&) override;
-  void deserializeItem() override;
+  void deserializeTop(object_ptr_t&) override {
+  }
+  // void deserializeSharedObject(object_ptr_t&) override;
+  // void deserializeObjectProperty(const ObjectProperty*, object_ptr_t) override;
+  // void referenceObject(rtti::castable_rawptr_t) override;
+  // void beginCommand(Command&) override;
+  // void endCommand(const Command&) override;
+  // void deserializeItem() override;
 };
-
-inline void NullDeserializer::deserializeItem() {
-}
-
-inline void NullDeserializer::deserialize(bool& value) {
-}
-
-inline void NullDeserializer::deserialize(char& value) {
-}
-
-inline void NullDeserializer::deserialize(short& value) {
-}
-
-inline void NullDeserializer::deserialize(int& value) {
-}
-
-inline void NullDeserializer::deserialize(long& value) {
-}
-
-inline void NullDeserializer::deserialize(float& value) {
-}
-
-inline void NullDeserializer::deserialize(double& value) {
-}
-
-inline void NullDeserializer::deserializeSharedObject(object_ptr_t& value_out) {
-}
-
-inline void NullDeserializer::deserializeObjectProperty(const ObjectProperty* prop, object_ptr_t object) {
-  prop->Deserialize(*this, object);
-}
-
-inline void NullDeserializer::deserialize(MutableString& text) {
-}
-
-inline void NullDeserializer::deserialize(ResizableString& text) {
-}
-
-inline void NullDeserializer::deserializeData(unsigned char* data, size_t size) {
-}
-
-inline void NullDeserializer::referenceObject(rtti::castable_rawptr_t object) {
-}
-
-inline void NullDeserializer::beginCommand(Command& command) {
-}
-
-inline void NullDeserializer::endCommand(const Command& command) {
-}
 
 } // namespace ork::reflect::serialize
