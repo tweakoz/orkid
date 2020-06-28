@@ -113,6 +113,7 @@ object_ptr_t JsonDeserializer::_parseObjectNode(const rapidjson::Value& objnode)
     if (prop) {
       printf("found propname<%s> prop<%p>\n", propname, prop);
       IDeserializer::Node dsernode;
+      dsernode._property     = prop;
       dsernode._deserializer = this;
       dsernode._instance     = instance_out;
       auto dserjsonnode      = dsernode._impl.makeShared<JsonDserNode>(propnode);

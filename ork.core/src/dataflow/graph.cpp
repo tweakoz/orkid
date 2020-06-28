@@ -166,17 +166,17 @@ void graph_data::Describe() {
     /////////////////////////////////////////////
     // read number of links
     int inumlinks = 0;
-    deser.deserialize(inumlinks);
+    // deser.deserialize(inumlinks);
     /////////////////////////////////////////////
     for (int il = 0; il < inumlinks; il++) {
       ork::ResizableString inp_mod_name;
       ork::ResizableString inp_plg_name;
       ork::ResizableString out_mod_name;
       ork::ResizableString out_plg_name;
-      deser.deserialize(inp_mod_name);
-      deser.deserialize(inp_plg_name);
-      deser.deserialize(out_mod_name);
-      deser.deserialize(out_plg_name);
+      // deser.deserialize(inp_mod_name);
+      // deser.deserialize(inp_plg_name);
+      // deser.deserialize(out_mod_name);
+      // deser.deserialize(out_plg_name);
       /////////////////////////
       // make the connection
       /////////////////////////

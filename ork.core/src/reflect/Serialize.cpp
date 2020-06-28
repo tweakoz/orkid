@@ -39,7 +39,7 @@ template <typename T>
 inline //
     void
     BidirectionalSerializer::Deserialize(T& value) {
-  mDeserializer->deserialize(value);
+  // mDeserializer->deserialize(value);
 }
 
 //////////////////////////////////////////////////

@@ -54,25 +54,26 @@ void ITypedMap<KeyType, ValueType>::_doDeserialize(
     IDeserializer& dser, //
     KeyType& key,
     ValueType& value) {
-  Command element;
-  dser.beginCommand(element);
-  OrkAssert(element.Type() == Command::ELEMENT);
-  dser.endCommand(element);
+  /*
+Command element;
+dser.beginCommand(element);
+OrkAssert(element.Type() == Command::ELEMENT);
+dser.endCommand(element);
 
-  Command attribute;
-  dser.beginCommand(attribute);
+Command attribute;
+dser.beginCommand(attribute);
 
-  OrkAssert(attribute.Type() == Command::EATTRIBUTE);
-  OrkAssert(attribute.Name() == "key");
+OrkAssert(attribute.Type() == Command::EATTRIBUTE);
+OrkAssert(attribute.Name() == "key");
 
-  dser.Hint("map_key");
-  // dser.deserializeItem();
-  // bidi | key;
-  dser.endCommand(attribute);
+dser.Hint("map_key");
+// dser.deserializeItem();
+// bidi | key;
+dser.endCommand(attribute);
 
-  dser.Hint("map_value");
-  // dser.deserializeItem();
-  dser.endCommand(element);
+dser.Hint("map_value");
+// dser.deserializeItem();
+dser.endCommand(element);*/
 }
 ////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::reflect

@@ -239,7 +239,7 @@ template <> void Serialize<PoolString>(const PoolString* in, PoolString* out, Bi
   } else {
     ArrayString<2048> buffer;
     MutableString string(buffer);
-    bidi.Deserializer()->deserialize(string);
+    // bidi.Deserializer()->deserialize(string);
     *out = ork::AddPooledString(string);
   }
 }
