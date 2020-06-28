@@ -90,11 +90,8 @@ void AccessorObjectMap<KeyType>::serializeItem(
   }
 }*/
 ////////////////////////////////////////////////////////////////////////////////
-template <typename KeyType>
-void AccessorObjectMap<KeyType>::deserialize(
-    IDeserializer& deserializer, //
-    object_ptr_t instance) const {
-  Command item;
+template <typename KeyType> void AccessorObjectMap<KeyType>::deserialize(IDeserializer::Node& desernode) const {
+  /*Command item;
   deserializer.beginCommand(item);
   OrkAssert(item.Type() == Command::ELEMENT);
   Command attribute;
@@ -106,7 +103,7 @@ void AccessorObjectMap<KeyType>::deserialize(
   deserializer.endCommand(attribute);
   object_ptr_t value = (instance.get()->*_accessor)(key, IMap::kDeserializeInsertElement);
   Object::xxxDeserializeShared(value, deserializer);
-  deserializer.endCommand(item);
+  deserializer.endCommand(item);*/
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename KeyType>

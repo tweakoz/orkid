@@ -66,7 +66,7 @@ public:
   }
 
   void serializeProperties(ISerializer&, object_constptr_t) const;
-  void deserializeProperties(IDeserializer&, object_ptr_t) const;
+  void deserializeProperties(IDeserializer::Node&) const;
 
   const SignalMapType& GetSignals() const {
     return mSignals;

@@ -39,15 +39,13 @@ void ITypedMap<KeyType, ValueType>::_doSerialize(
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename KeyType, typename ValueType>
-void ITypedMap<KeyType, ValueType>::deserialize(
-    IDeserializer& deserializer, //
-    object_ptr_t object) const {
+void ITypedMap<KeyType, ValueType>::deserialize(IDeserializer::Node& dsernode) const {
   KeyType key;
   ValueType value;
-  size_t numelements = elementCount(object);
+  size_t numelements = elementCount(dsernode._instance);
   for (size_t i = 0; i < numelements; i++) {
-    _doDeserialize(deserializer, key, value);
-    WriteElement(object, key, -1, &value);
+    //_doDeserialize(deserializer, key, value);
+    // WriteElement(object, key, -1, &value);
   }
 }
 ////////////////////////////////////////////////////////////////////////////////

@@ -22,7 +22,7 @@ public:
   AccessorObject(object_ptr_t (Object::*)());
 
   void serialize(ISerializer&, object_constptr_t) const override;
-  void deserialize(IDeserializer&, object_ptr_t) const override;
+  void deserialize(IDeserializer::Node&) const override;
   object_ptr_t access(object_ptr_t) const override;
   object_constptr_t access(object_constptr_t) const override;
 

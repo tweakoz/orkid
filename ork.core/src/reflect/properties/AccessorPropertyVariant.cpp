@@ -16,8 +16,8 @@ AccessorVariant::AccessorVariant(bool (Object::*ser)(ISerializer&) const, bool (
     , mSerialize(ser) {
 }
 
-void AccessorVariant::deserialize(IDeserializer& deserializer, object_ptr_t object) const {
-  (object.get()->*mDeserialize)(deserializer);
+void AccessorVariant::deserialize(IDeserializer::Node& desernode) const {
+  //(object.get()->*mDeserialize)(deserializer);
 }
 
 void AccessorVariant::serialize(ISerializer& serializer, object_constptr_t object) const {

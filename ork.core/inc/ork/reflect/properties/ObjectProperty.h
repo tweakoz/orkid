@@ -9,21 +9,19 @@
 
 #include <ork/kernel/prop.h>
 #include <ork/kernel/tempstring.h>
-#include <ork/reflect/Serializable.h>
+#include <ork/reflect/ISerializer.h>
+#include <ork/reflect/IDeserializer.h>
 #include <ork/rtti/RTTI.h>
 
 #include <ork/config/config.h>
 
 namespace ork::reflect {
 ////////////////////////////////////////////////////////////////////////////////
-class ISerializer;
-class IDeserializer;
-////////////////////////////////////////////////////////////////////////////////
 struct ObjectProperty {
 
   using anno_t = ork::svar64_t;
 
-  virtual void deserialize(IDeserializer&, object_ptr_t) const  = 0;
+  virtual void deserialize(IDeserializer::Node&) const          = 0;
   virtual void serialize(ISerializer&, object_constptr_t) const = 0;
   /////////////////////////////////////////////////////////////////
   // old string only annotations

@@ -26,9 +26,9 @@ private:
   size_t count(object_constptr_t) const override;
   void resize(object_ptr_t obj, size_t size) const override;
 
-  void deserializeItem(IDeserializer&, object_ptr_t, size_t) const override;
+  void deserializeElement(IDeserializer::Node&) const override;
   void serializeItem(ISerializer&, object_constptr_t, size_t) const override;
-  void deserialize(IDeserializer&, object_ptr_t) const override;
+  void deserialize(IDeserializer::Node&) const override;
   void serialize(ISerializer&, object_constptr_t) const override;
 
   object_ptr_t (Object::*_accessor)(size_t);

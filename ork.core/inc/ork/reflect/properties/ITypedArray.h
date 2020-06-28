@@ -20,7 +20,7 @@ public:
   virtual void set(const T& value, object_ptr_t obj, size_t index) const = 0;
 
 private:
-  void deserializeItem(IDeserializer& serializer, object_ptr_t obj, size_t index) const override;
+  void deserializeElement(IDeserializer::Node&) const override;
   void serializeItem(ISerializer& serializer, object_constptr_t obj, size_t index) const override;
 };
 

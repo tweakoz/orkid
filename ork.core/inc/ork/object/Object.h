@@ -9,7 +9,8 @@
 
 #include <ork/orktypes.h>
 #include <ork/rtti/RTTI.h>
-#include <ork/reflect/Serializable.h>
+#include <ork/reflect/ISerializer.h>
+#include <ork/reflect/IDeserializer.h>
 #include <ork/object/ObjectClass.h>
 #include <ork/util/md5.h>
 #include <boost/uuid/uuid.hpp>
@@ -28,8 +29,6 @@ class Signal;
 }
 
 namespace reflect {
-class ISerializer;
-class IDeserializer;
 class BidirectionalSerializer;
 } // namespace reflect
 
@@ -44,7 +43,7 @@ public:
   }
 
   static void xxxSerializeShared(object_constptr_t obj, reflect::ISerializer&);
-  static void xxxDeserializeShared(object_ptr_t obj, reflect::IDeserializer&);
+  static void xxxDeserializeShared(reflect::IDeserializer::Node&);
 
   object::Signal* FindSignal(ConstString name);
 

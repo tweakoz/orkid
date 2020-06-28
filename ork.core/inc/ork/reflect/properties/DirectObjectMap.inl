@@ -143,8 +143,7 @@ void DirectObjectMap<MapType>::MapSerialization(
 template <typename MapType> //
 void DirectObjectMap<MapType>::MapDeserialization(
     ElementDeserializeFunction serialization_func, //
-    IDeserializer& iser,
-    object_ptr_t instance) const {
+    IDeserializer::Node& dser) const {
 }
 ////////////////////////////////////////////////////////////////////////////////
 /*template <typename MapType> //

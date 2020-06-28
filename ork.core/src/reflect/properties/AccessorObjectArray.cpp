@@ -40,24 +40,21 @@ size_t AccessorObjectArray::count(object_constptr_t object) const {
   return (object.get()->*_counter)();
 }
 ////////////////////////////////////////////////////////////////
-void AccessorObjectArray::deserializeItem(
-    IDeserializer& deserializer, //
-    object_ptr_t parent_object,
-    size_t index) const {
-  Command object_command;
+void AccessorObjectArray::deserializeElement(IDeserializer::Node& desernode) const {
+  // Command object_command;
 
-  deserializer.beginCommand(object_command);
+  // deserializer.beginCommand(object_command);
 
-  auto child_object = accessObject(parent_object, index);
+  // auto child_object = accessObject(parent_object, dsernode._index);
 
-  if (object_command.Type() != Command::EOBJECT or //
-      nullptr == child_object or                   //
-      object_command.Name() != child_object->GetClass()->Name()) {
-    OrkAssert(false);
-  }
+  // if (object_command.Type() != Command::EOBJECT or //
+  //  nullptr == child_object or                   //
+  // object_command.Name() != child_object->GetClass()->Name()) {
+  // OrkAssert(false);
+  //  }
 
-  Object::xxxDeserializeShared(child_object, deserializer);
-  deserializer.endCommand(object_command);
+  // Object::xxxDeserializeShared(child_object, deserializer);
+  // deserializer.endCommand(object_command);
 }
 ////////////////////////////////////////////////////////////////
 void AccessorObjectArray::serializeItem(
@@ -75,9 +72,7 @@ void AccessorObjectArray::resize(
   (obj.get()->*_resizer)(size);
 }
 ////////////////////////////////////////////////////////////////
-void AccessorObjectArray::deserialize(
-    ork::reflect::IDeserializer&, //
-    object_ptr_t) const {
+void AccessorObjectArray::deserialize(ork::reflect::IDeserializer::Node&) const {
   OrkAssert(false);
 }
 ////////////////////////////////////////////////////////////////

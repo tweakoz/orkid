@@ -15,20 +15,9 @@
 namespace ork::reflect {
 ///////////////////////////////////////////////////////////////////////////////
 
-void IArray::deserialize(
-    IDeserializer& deserializer, //
-    object_ptr_t obj) const {
+void IArray::deserialize(IDeserializer::Node& desernode) const {
 
-  Command command;
-
-  deserializer.beginCommand(command);
-
-  bool check =
-      (command.Type() == Command::EATTRIBUTE and //
-       command.Name() == "size");
-  OrkAssert(check);
-
-  int deser_count;
+  /*int deser_count;
   deserializer.deserialize(deser_count);
   resize(obj, size_t(deser_count));
 
@@ -42,7 +31,7 @@ void IArray::deserialize(
     OrkAssert(item.Type() == Command::ELEMENT);
     deserializeItem(deserializer, obj, index);
     deserializer.endCommand(item);
-  }
+  }*/
 }
 
 ///////////////////////////////////////////////////////////////////////////////

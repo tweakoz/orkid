@@ -38,7 +38,7 @@ protected:
   bool EraseElement(object_ptr_t, const KeyType&, int) const override;
   // bool MapSerialization(ElementSerializeFunction, BidirectionalSerializer&, object_constptr_t) const override;
   void MapSerialization(ElementSerializeFunction, ISerializer&, object_constptr_t) const override;
-  void MapDeserialization(ElementDeserializeFunction, IDeserializer&, object_ptr_t) const override;
+  void MapDeserialization(ElementDeserializeFunction, IDeserializer::Node&) const override;
 
   size_t elementCount(object_constptr_t obj) const override {
     return int(GetMap(obj).size());

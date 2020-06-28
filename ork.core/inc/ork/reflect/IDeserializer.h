@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <ork/kernel/svariant.h>
 #include <ork/kernel/string/ResizableString.h>
 #include <ork/kernel/string/MutableString.h>
 #include <ork/orktypes.h>
@@ -19,6 +20,8 @@ class ObjectProperty;
 class Command;
 
 struct IDeserializer {
+
+  using var_t = svar64_t;
 
   virtual void deserializeTop(object_ptr_t&) = 0;
 
@@ -41,11 +44,6 @@ struct IDeserializer {
   void deserialize(ResizableString&) {
   }
 
-  // virtual void deserializeSharedObject(object_ptr_t&)                         = 0;
-  // virtual void deserializeObjectProperty(const ObjectProperty*, object_ptr_t) = 0;
-
-  // virtual void deserializeItem() = 0;
-
   void referenceObject(object_ptr_t) {
   }
   void beginCommand(Command&) {
@@ -58,6 +56,13 @@ struct IDeserializer {
   void trackObject(boost::uuids::uuid id, object_ptr_t instance);
   object_ptr_t findTrackedObject(boost::uuids::uuid id) const;
   virtual ~IDeserializer();
+
+  struct Node {
+    IDeserializer* _deserializer = nullptr;
+    object_ptr_t _instance       = nullptr;
+    var_t _data;
+    size_t _index = -1;
+  };
 
   const reflect::ObjectProperty* _currentProperty = nullptr;
   object_ptr_t _currentObject                     = nullptr;

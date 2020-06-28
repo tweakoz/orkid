@@ -21,7 +21,7 @@ public:
   virtual void set(const T& value, object_ptr_t obj) const = 0;
 
 private:
-  void deserialize(IDeserializer&, object_ptr_t) const override;
+  void deserialize(IDeserializer::Node&) const override;
   void serialize(ISerializer&, object_constptr_t) const override;
 
 protected:

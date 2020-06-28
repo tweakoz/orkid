@@ -27,20 +27,19 @@ void AccessorObject::serialize(
   Object::xxxSerializeShared(subobject, serializer);
 }
 ////////////////////////////////////////////////////////////////
-void AccessorObject::deserialize(
-    IDeserializer& serializer, //
-    object_ptr_t instance) const {
+void AccessorObject::deserialize(IDeserializer::Node& dsernode) const {
+  auto instance  = dsernode._instance;
   auto subobject = (instance.get()->*_accessor)();
-  Command command;
-  serializer.beginCommand(command);
+  // Command command;
+  // serializer.beginCommand(command);
 
-  OrkAssertI(command.Type() == Command::EOBJECT, "AccessorObject::Deserialize::Expected an Object command!\n");
+  // OrkAssertI(command.Type() == Command::EOBJECT, "AccessorObject::Deserialize::Expected an Object command!\n");
 
-  if (command.Type() == Command::EOBJECT) {
-    Object::xxxDeserializeShared(subobject, serializer);
-  }
+  // if (command.Type() == Command::EOBJECT) {
+  // Object::xxxDeserializeShared(dsernode);
+  //}
 
-  serializer.endCommand(command);
+  // serializer.endCommand(command);
 }
 ////////////////////////////////////////////////////////////////
 object_ptr_t AccessorObject::access(object_ptr_t instance) const {

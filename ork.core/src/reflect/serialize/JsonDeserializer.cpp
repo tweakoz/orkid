@@ -23,6 +23,16 @@
 using namespace rapidjson;
 
 namespace ork::reflect::serialize {
+
+//////////////////////////////////////////////////////////////////////////////
+
+struct JsonDserNode {
+  JsonDserNode(const rapidjson::Value& jn)
+      : _jsonnode(jn) {
+  }
+  const rapidjson::Value& _jsonnode;
+};
+
 //////////////////////////////////////////////////////////////////////////////
 
 static int unhex(char c);
@@ -92,16 +102,21 @@ object_ptr_t JsonDeserializer::_parseObjectNode(const rapidjson::Value& objnode)
        it != propsnode.MemberEnd();
        ++it) {
 
-    const auto& propnode = *it;
+    const auto& propkey  = it->name;
+    const auto& propnode = it->value;
 
     // OrkAssert(propnode.IsObject());
 
-    auto propname = propnode.name.GetString();
+    auto propname = propkey.GetString();
     auto prop     = description.FindProperty(propname);
 
     if (prop) {
       printf("found propname<%s> prop<%p>\n", propname, prop);
-
+      IDeserializer::Node dsernode;
+      dsernode._deserializer = this;
+      dsernode._instance     = instance_out;
+      auto dserjsonnode      = dsernode._data.makeShared<JsonDserNode>(propnode);
+      // prop->deserialize(*this, object);
     } else { // drop property, no longer registered
       printf("dropping property<%s>\n", propname);
     }
