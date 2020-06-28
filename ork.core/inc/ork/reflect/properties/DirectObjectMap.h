@@ -16,8 +16,10 @@ namespace ork { namespace reflect {
 template <typename MapType> //
 class DirectObjectMap : public ITypedMap<typename MapType::key_type, object_ptr_t> {
 public:
-  using KeyType               = typename MapType::key_type;
-  using ItemSerializeFunction = typename ITypedMap<KeyType, object_ptr_t>::ItemSerializeFunction;
+  using KeyType = typename MapType::key_type;
+  // using ItemSerializeFunction = typename ITypedMap<KeyType, object_ptr_t>::ItemSerializeFunction;
+  using ItemSerializeFunction   = typename ITypedMap<KeyType, object_ptr_t>::ItemSerializeFunction;
+  using ItemDeserializeFunction = typename ITypedMap<KeyType, object_ptr_t>::ItemDeserializeFunction;
 
   DirectObjectMap(MapType Object::*);
 
@@ -30,7 +32,9 @@ protected:
   bool ReadItem(object_constptr_t, const KeyType&, int, object_ptr_t&) const override;
   bool WriteItem(object_ptr_t, const KeyType&, int, const object_ptr_t*) const override;
   bool EraseItem(object_ptr_t, const KeyType&, int) const override;
-  bool MapSerialization(ItemSerializeFunction, BidirectionalSerializer&, object_constptr_t) const override;
+  // bool MapSerialization(ItemSerializeFunction, BidirectionalSerializer&, object_constptr_t) const override;
+  void MapSerialization(ItemSerializeFunction, ISerializer&, object_constptr_t) const override;
+  void MapDeserialization(ItemDeserializeFunction, IDeserializer&, object_ptr_t) const override;
 
   size_t itemCount(object_constptr_t obj) const override {
     return GetMap(obj).size();

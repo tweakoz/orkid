@@ -26,9 +26,6 @@ private:
   object_ptr_t accessItem(IDeserializer& key, int, object_ptr_t instance) const override;
   object_constptr_t accessItem(IDeserializer& key, int, object_constptr_t instance) const override;
 
-  void deserializeItem(IDeserializer* value, IDeserializer& key, int, object_ptr_t instance) const override;
-  void serializeItem(ISerializer& value, IDeserializer& key, int, object_constptr_t instance) const override;
-
   void deserialize(IDeserializer& serializer, object_ptr_t instance) const override;
   void serialize(ISerializer& serializer, object_constptr_t instance) const override;
 

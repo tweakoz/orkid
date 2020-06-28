@@ -18,27 +18,30 @@ template <typename KeyType, typename ValueType> //
 class ITypedMap : public IMap {
 
 public:
-  using ItemSerializeFunction = void (*)(BidirectionalSerializer&, KeyType&, ValueType&);
+  // using ItemBiSerializeFunction = void (*)(BidirectionalSerializer&, KeyType&, ValueType&);
+  using ItemSerializeFunction   = void (*)(ISerializer&, const KeyType&, const ValueType&);
+  using ItemDeserializeFunction = void (*)(IDeserializer&, KeyType&, ValueType&);
 
 protected:
-  virtual bool GetKey(object_constptr_t, int idx, KeyType&) const                                         = 0;
-  virtual bool GetVal(object_constptr_t, const KeyType& k, ValueType& v) const                            = 0;
-  virtual bool ReadItem(object_constptr_t, const KeyType&, int, ValueType&) const                         = 0;
-  virtual bool EraseItem(object_ptr_t, const KeyType&, int) const                                         = 0;
-  virtual bool WriteItem(object_ptr_t, const KeyType&, int, const ValueType*) const                       = 0;
-  virtual bool MapSerialization(ItemSerializeFunction, BidirectionalSerializer&, object_constptr_t) const = 0;
+  virtual bool GetKey(object_constptr_t, int idx, KeyType&) const                   = 0;
+  virtual bool GetVal(object_constptr_t, const KeyType& k, ValueType& v) const      = 0;
+  virtual bool ReadItem(object_constptr_t, const KeyType&, int, ValueType&) const   = 0;
+  virtual bool EraseItem(object_ptr_t, const KeyType&, int) const                   = 0;
+  virtual bool WriteItem(object_ptr_t, const KeyType&, int, const ValueType*) const = 0;
+  // virtual bool MapBiSerialization(ItemBiSerializeFunction, BidirectionalSerializer&, object_constptr_t) const = 0;
+  virtual void MapSerialization(ItemSerializeFunction, ISerializer&, object_constptr_t) const  = 0;
+  virtual void MapDeserialization(ItemDeserializeFunction, IDeserializer&, object_ptr_t) const = 0;
 
   ITypedMap()
       : IMap() {
   }
 
 private:
-  static void _doDeserialize(BidirectionalSerializer&, KeyType&, ValueType&);
-  static void _doSerialize(BidirectionalSerializer&, KeyType&, ValueType&);
+  static void _doDeserialize(IDeserializer&, KeyType&, ValueType&);
+  static void _doSerialize(ISerializer&, const KeyType&, const ValueType&);
+
   void deserialize(IDeserializer&, object_ptr_t) const override;
   void serialize(ISerializer&, object_constptr_t) const override;
-  void deserializeItem(IDeserializer* value, IDeserializer& key, int, object_ptr_t) const override;
-  void serializeItem(ISerializer& value, IDeserializer& key, int, object_constptr_t) const override;
 };
 
 }} // namespace ork::reflect

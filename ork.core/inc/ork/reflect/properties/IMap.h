@@ -20,9 +20,7 @@ public:
 
   static const int kDeserializeInsertItem = -1;
 
-  virtual void deserializeItem(IDeserializer* value, IDeserializer& key, int, object_ptr_t) const  = 0;
-  virtual void serializeItem(ISerializer& value, IDeserializer& key, int, object_constptr_t) const = 0;
-  virtual bool isMultiMap(object_constptr_t obj) const                                             = 0;
+  virtual bool isMultiMap(object_constptr_t obj) const = 0;
 
 protected:
   IMap() {

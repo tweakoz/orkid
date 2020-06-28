@@ -63,42 +63,6 @@ void TextDeserializer::ReadNumber(double& value) {
   value = std::atof(word.c_str());
 }
 
-void TextDeserializer::deserialize(char& value) {
-  long n;
-  ReadNumber(n);
-  value = char(static_cast<unsigned char>(n));
-}
-
-void TextDeserializer::deserialize(short& value) {
-  long n;
-  ReadNumber(n);
-  value = short(n);
-}
-
-void TextDeserializer::deserialize(int& value) {
-  long n;
-  ReadNumber(n);
-  value = int(n);
-}
-
-void TextDeserializer::deserialize(long& value) {
-  long n;
-  ReadNumber(n);
-  value = n;
-}
-
-void TextDeserializer::deserialize(float& value) {
-  double n;
-  ReadNumber(n);
-  value = float(n);
-}
-
-void TextDeserializer::deserialize(double& value) {
-  double n;
-  ReadNumber(n);
-  value = n;
-}
-
 static bool strieq(const PieceString& a, const PieceString& b) {
   if (a.length() != b.length())
     return false;
@@ -110,19 +74,6 @@ static bool strieq(const PieceString& a, const PieceString& b) {
   }
 
   return true;
-}
-
-void TextDeserializer::deserialize(bool& value) {
-
-  ArrayString<128> buffer;
-  MutableString word(buffer);
-
-  ReadWord(word);
-  if (strieq(word.c_str(), "false") or strieq(word.c_str(), "0"))
-    value = false;
-  else if (strieq(word.c_str(), "true") or strieq(word.c_str(), "1")) {
-    value = true;
-  }
 }
 
 void TextDeserializer::deserializeObjectProperty(
@@ -138,23 +89,6 @@ void TextDeserializer::deserializeSharedObject(object_ptr_t& instance_out) {
   void* pdata = 0;
   sscanf(word.c_str(), "%p", &pdata);
   OrkAssert(false); // instance_out;
-}
-
-void TextDeserializer::deserialize(MutableString& text) {
-  while (Peek() != stream::IInputStream::kEOF and isspace(Peek())) {
-    text += char(Peek());
-    Advance();
-  }
-}
-
-void TextDeserializer::deserialize(ResizableString& text) {
-  while (Peek() != stream::IInputStream::kEOF and isspace(Peek())) {
-    text += char(Peek());
-    Advance();
-  }
-}
-
-void TextDeserializer::deserializeData(unsigned char* data, size_t size) {
 }
 
 void TextDeserializer::beginCommand(Command& command) {

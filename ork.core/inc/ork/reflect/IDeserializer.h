@@ -19,21 +19,29 @@ class ObjectProperty;
 class Command;
 
 struct IDeserializer {
-  virtual void deserialize(bool&)   = 0;
-  virtual void deserialize(char&)   = 0;
-  virtual void deserialize(short&)  = 0;
-  virtual void deserialize(int&)    = 0;
-  virtual void deserialize(long&)   = 0;
-  virtual void deserialize(float&)  = 0;
-  virtual void deserialize(double&) = 0;
+  void deserialize(bool&) {
+  }
+  void deserialize(char&) {
+  }
+  void deserialize(short&) {
+  }
+  void deserialize(int&) {
+  }
+  void deserialize(long&) {
+  }
+  void deserialize(float&) {
+  }
+  void deserialize(double&) {
+  }
+  void deserialize(MutableString&) {
+  }
+  void deserialize(ResizableString&) {
+  }
 
-  // virtual void deserialize(const AbstractProperty*)                           = 0;
   virtual void deserializeSharedObject(object_ptr_t&)                         = 0;
   virtual void deserializeObjectProperty(const ObjectProperty*, object_ptr_t) = 0;
 
-  virtual void deserialize(MutableString&)       = 0;
-  virtual void deserialize(ResizableString&)     = 0;
-  virtual void deserializeData(uint8_t*, size_t) = 0;
+  virtual void deserializeItem() = 0;
 
   void referenceObject(object_ptr_t);
   virtual void beginCommand(Command&)     = 0;

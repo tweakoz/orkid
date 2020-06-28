@@ -57,7 +57,7 @@ object_constptr_t AccessorObjectMap<KeyType>::accessItem(
   return (instance.get()->*_getter)(key, multi_index);
 }
 ////////////////////////////////////////////////////////////////////////////////
-template <typename KeyType>
+/*template <typename KeyType>
 void AccessorObjectMap<KeyType>::deserializeItem(
     IDeserializer* value_deserializer,
     IDeserializer& key_deserializer,
@@ -74,9 +74,9 @@ void AccessorObjectMap<KeyType>::deserializeItem(
   } else {
     (instance.get()->*_eraser)(key, multi_index);
   }
-}
+}*/
 ////////////////////////////////////////////////////////////////////////////////
-template <typename KeyType>
+/*template <typename KeyType>
 void AccessorObjectMap<KeyType>::serializeItem(
     ISerializer& value_serializer,
     IDeserializer& key_deserializer,
@@ -88,7 +88,7 @@ void AccessorObjectMap<KeyType>::serializeItem(
   if (value) {
     Object::xxxSerializeShared(value, value_serializer);
   }
-}
+}*/
 ////////////////////////////////////////////////////////////////////////////////
 template <typename KeyType>
 void AccessorObjectMap<KeyType>::deserialize(

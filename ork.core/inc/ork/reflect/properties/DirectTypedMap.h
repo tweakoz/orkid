@@ -21,7 +21,9 @@ class DirectTypedMap //
 public:
   typedef typename MapType::key_type KeyType;
   typedef typename MapType::mapped_type ValueType;
-  typedef typename ITypedMap<KeyType, ValueType>::ItemSerializeFunction ItemSerializeFunction;
+
+  using ItemSerializeFunction   = typename ITypedMap<KeyType, ValueType>::ItemSerializeFunction;
+  using ItemDeserializeFunction = typename ITypedMap<KeyType, ValueType>::ItemDeserializeFunction;
 
   DirectTypedMap(MapType Object::*);
 
@@ -34,7 +36,9 @@ protected:
   bool ReadItem(object_constptr_t, const KeyType&, int, ValueType&) const override;
   bool WriteItem(object_ptr_t, const KeyType&, int, const ValueType*) const override;
   bool EraseItem(object_ptr_t, const KeyType&, int) const override;
-  bool MapSerialization(ItemSerializeFunction, BidirectionalSerializer&, object_constptr_t) const override;
+  // bool MapSerialization(ItemSerializeFunction, BidirectionalSerializer&, object_constptr_t) const override;
+  void MapSerialization(ItemSerializeFunction, ISerializer&, object_constptr_t) const override;
+  void MapDeserialization(ItemDeserializeFunction, IDeserializer&, object_ptr_t) const override;
 
   size_t itemCount(object_constptr_t obj) const override {
     return int(GetMap(obj).size());

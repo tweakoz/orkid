@@ -22,25 +22,18 @@ namespace ork::reflect::serialize {
 
 class NullDeserializer final : public IDeserializer {
 public:
-  void deserialize(bool&) override;
-  void deserialize(char&) override;
-  void deserialize(short&) override;
-  void deserialize(int&) override;
-  void deserialize(long&) override;
-  void deserialize(float&) override;
-  void deserialize(double&) override;
-
-  void deserialize(MutableString&) override;
-  void deserialize(ResizableString&) override;
-  void deserializeData(unsigned char*, size_t) override;
-
   void deserializeSharedObject(object_ptr_t&) override;
   void deserializeObjectProperty(const ObjectProperty*, object_ptr_t) override;
 
   void referenceObject(rtti::castable_rawptr_t) override;
   void beginCommand(Command&) override;
   void endCommand(const Command&) override;
+  void LayerDeserializer::deserializeItem() override;
 };
+
+inline void NullDeserializer::deserializeItem() {
+  mDeserializer.deserializeItem();
+}
 
 inline void NullDeserializer::deserialize(bool& value) {
 }

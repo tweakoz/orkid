@@ -119,71 +119,73 @@ bool DirectTypedMap<MapType>::WriteItem(
   }
   return true;
 }
+template <typename MapType>
+void DirectTypedMap<MapType>::MapDeserialization(
+    typename DirectTypedMap<MapType>::ItemDeserializeFunction func,
+    IDeserializer& deser,
+    object_ptr_t instance) const {
+}
 
 template <typename MapType>
-bool DirectTypedMap<MapType>::MapSerialization(
-    typename DirectTypedMap<MapType>::ItemSerializeFunction serialization_func,
-    BidirectionalSerializer& bidi,
-    object_constptr_t serialize_object) const {
+void DirectTypedMap<MapType>::MapSerialization(
+    typename DirectTypedMap<MapType>::ItemSerializeFunction serfunc,
+    ISerializer& ser,
+    object_constptr_t instance) const {
 
-  if (bidi.Serializing()) {
-    const MapType& map = serialize_object.get()->*mProperty;
+  const MapType& map = instance.get()->*mProperty;
 
-    size_t count = map.size();
-    bidi.Serializer()->Hint("Count", count);
+  size_t count = map.size();
+  ser.Hint("Count", count);
 
-    // const KeyType *last_key = NULL;
+  // const KeyType *last_key = NULL;
 
-    typename MapType::const_iterator itprev;
+  typename MapType::const_iterator itprev;
 
-    int item_index      = 0;
-    int item_multiindex = 0;
+  int item_index      = 0;
+  int item_multiindex = 0;
 
-    for (auto it = map.begin(); //
-         it != map.end();
-         it++) {
+  for (auto it = map.begin(); //
+       it != map.end();
+       it++) {
 
-      KeyType key = it->first;
+    KeyType key = it->first;
 
-      //////////////////////////////////////////
-      // keep track of multimap
-      //  consecutive items with same key
-      //////////////////////////////////////////
+    //////////////////////////////////////////
+    // keep track of multimap
+    //  consecutive items with same key
+    //////////////////////////////////////////
 
-      if (it != map.begin()) {
+    if (it != map.begin()) {
 
-        const KeyType& ka = itprev->first;
-        const KeyType& kb = it->first;
+      const KeyType& ka = itprev->first;
+      const KeyType& kb = it->first;
 
-        if (ka == kb) {
-          item_multiindex++;
-        } else {
-          item_multiindex = 0;
-        }
+      if (ka == kb) {
+        item_multiindex++;
+      } else {
+        item_multiindex = 0;
       }
-
-      itprev = it;
-
-      ///////////////////////////////////////////////////
-      // index hints
-      ///////////////////////////////////////////////////
-
-      bidi.Serializer()->Hint("Index", item_index);
-      bidi.Serializer()->Hint("MultiIndex", item_multiindex);
-
-      ///////////////////////////////////////////////////
-      // serialize the item
-      ///////////////////////////////////////////////////
-
-      ValueType value = it->second;
-
-      (*serialization_func)(bidi, key, value);
-
-      item_index++;
     }
-  }
 
-  return true;
+    itprev = it;
+
+    ///////////////////////////////////////////////////
+    // index hints
+    ///////////////////////////////////////////////////
+
+    ser.Hint("Index", item_index);
+    ser.Hint("MultiIndex", item_multiindex);
+
+    ///////////////////////////////////////////////////
+    // serialize the item
+    ///////////////////////////////////////////////////
+
+    ValueType value = it->second;
+
+    (*serfunc)(ser, key, value);
+
+    item_index++;
+  }
 }
 
 template <typename MapType>

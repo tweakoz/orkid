@@ -18,28 +18,14 @@ public:
   BinaryDeserializer(stream::IInputStream& stream);
   ~BinaryDeserializer();
 
-  void deserialize(bool&) override;
-  void deserialize(char&) override;
-  void deserialize(short&) override;
-  void deserialize(int&) override;
-  void deserialize(long&) override;
-  void deserialize(float&) override;
-  void deserialize(double&) override;
-
   void deserializeSharedObject(object_ptr_t&) override;
   void deserializeObjectProperty(const ObjectProperty*, object_ptr_t) override;
 
-  void deserialize(MutableString&) override;
-  void deserialize(ResizableString&) override;
-  void deserializeData(unsigned char*, size_t) override;
-
-  // bool ReferenceObject(rtti::ICastable*) override;
   void beginCommand(Command&) override;
   void endCommand(const Command&) override;
+  void deserializeItem() override;
 
 private:
-  // int FindObject(rtti::ICastable* object);
-
   template <typename T> //
   void Read(T&);
 
@@ -47,9 +33,6 @@ private:
   bool Match(char c);
 
   stream::InputStreamBuffer<1> mStream;
-  // using trackervect_t = std::unordered_map<std::string, rtti::castable_rawptr_t>;
-  // trackervect_t _reftracker;
-  // const Command* mCurrentCommand;
   StringPool mStringPool;
 };
 

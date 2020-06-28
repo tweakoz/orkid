@@ -50,8 +50,6 @@ private:
 
   void deserialize(IDeserializer& serializer, object_ptr_t) const override;
   void serialize(ISerializer& serializer, object_constptr_t) const override;
-  void deserializeItem(IDeserializer* value, IDeserializer& key, int, object_ptr_t) const override;
-  void serializeItem(ISerializer& value, IDeserializer& key, int, object_constptr_t) const override;
 };
 
 }} // namespace ork::reflect

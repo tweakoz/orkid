@@ -133,7 +133,7 @@ bool DirectObjectMap<MapType>::EraseItem(
   return true;
 }
 ////////////////////////////////////////////////////////////////////////////////
-template <typename MapType> //
+/*template <typename MapType> //
 bool DirectObjectMap<MapType>::MapSerialization(
     ItemSerializeFunction serialization_func, //
     BidirectionalSerializer& bidi,
@@ -179,7 +179,7 @@ bool DirectObjectMap<MapType>::MapSerialization(
     }
   }
   return true;
-}
+}*/
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
 bool DirectObjectMap<MapType>::GetKey(

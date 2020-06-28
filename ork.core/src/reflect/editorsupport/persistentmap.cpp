@@ -30,7 +30,7 @@ namespace ork::reflect::editor {
 ///////////////////////////////////////////////////////////////////////////////
 
 void PersistMapContainer::Describe() {
-  ork::reflect::RegisterMapProperty("Maps", &PersistMapContainer::mPropPersistMap);
+  // ork::reflect::RegisterMapProperty("Maps", &PersistMapContainer::mPropPersistMap);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -53,7 +53,7 @@ PersistMapContainer::~PersistMapContainer() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void PersistantMap::Describe() {
-  ork::reflect::RegisterMapProperty("CollapeState", &PersistantMap::mProperties);
+  // ork::reflect::RegisterMapProperty("CollapeState", &PersistantMap::mProperties);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
