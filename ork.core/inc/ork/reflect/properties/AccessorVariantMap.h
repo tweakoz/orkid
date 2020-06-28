@@ -40,15 +40,15 @@ public:
 
   AccessorVariantMap(
       bool (Object::*)(IDeserializer&, int, ISerializer&),
-      bool (Object::*)(IDeserializer::Node&) const,
+      bool (Object::*)(IDeserializer::node_ptr_t) const,
       bool (Object::*)(AccessorVariantMapContext&) const);
 
 private:
   bool (Object::*mReadElement)(IDeserializer& key, int, ISerializer& value);
-  bool (Object::*_writeelement)(IDeserializer::Node&) const;
+  bool (Object::*_writeelement)(IDeserializer::node_ptr_t) const;
   bool (Object::*mMapSerialization)(AccessorVariantMapContext&) const;
 
-  void deserialize(IDeserializer::Node&) const override;
+  void deserialize(IDeserializer::node_ptr_t) const override;
   void serialize(ISerializer& serializer, object_constptr_t) const override;
 };
 

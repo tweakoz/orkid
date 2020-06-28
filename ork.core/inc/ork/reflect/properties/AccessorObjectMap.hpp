@@ -90,7 +90,7 @@ void AccessorObjectMap<KeyType>::serializeItem(
   }
 }*/
 ////////////////////////////////////////////////////////////////////////////////
-template <typename KeyType> void AccessorObjectMap<KeyType>::deserialize(IDeserializer::Node& desernode) const {
+template <typename KeyType> void AccessorObjectMap<KeyType>::deserialize(IDeserializer::node_ptr_t desernode) const {
   /*Command item;
   deserializer.beginCommand(item);
   OrkAssert(item.Type() == Command::ELEMENT);

@@ -26,7 +26,7 @@ private:
   object_ptr_t accessItem(IDeserializer& key, int, object_ptr_t instance) const override;
   object_constptr_t accessItem(IDeserializer& key, int, object_constptr_t instance) const override;
 
-  void deserialize(IDeserializer::Node&) const override;
+  void deserialize(IDeserializer::node_ptr_t) const override;
   void serialize(ISerializer& serializer, object_constptr_t instance) const override;
 
   static void _serdesimpl(BidirectionalSerializer& bidi, const KeyType& key, object_constptr_t value);

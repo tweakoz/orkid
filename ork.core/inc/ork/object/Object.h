@@ -43,7 +43,7 @@ public:
   }
 
   static void xxxSerializeShared(object_constptr_t obj, reflect::ISerializer&);
-  static void xxxDeserializeShared(reflect::IDeserializer::Node&);
+  static void xxxDeserializeShared(reflect::IDeserializer::node_ptr_t);
 
   object::Signal* FindSignal(ConstString name);
 

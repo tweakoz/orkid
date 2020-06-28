@@ -40,7 +40,7 @@ size_t AccessorObjectArray::count(object_constptr_t object) const {
   return (object.get()->*_counter)();
 }
 ////////////////////////////////////////////////////////////////
-void AccessorObjectArray::deserializeElement(IDeserializer::Node& desernode) const {
+void AccessorObjectArray::deserializeElement(IDeserializer::node_ptr_t desernode) const {
   // Command object_command;
 
   // deserializer.beginCommand(object_command);
@@ -72,7 +72,7 @@ void AccessorObjectArray::resize(
   (obj.get()->*_resizer)(size);
 }
 ////////////////////////////////////////////////////////////////
-void AccessorObjectArray::deserialize(ork::reflect::IDeserializer::Node&) const {
+void AccessorObjectArray::deserialize(ork::reflect::IDeserializer::node_ptr_t) const {
   OrkAssert(false);
 }
 ////////////////////////////////////////////////////////////////

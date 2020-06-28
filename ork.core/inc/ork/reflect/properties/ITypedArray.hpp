@@ -14,7 +14,7 @@
 namespace ork { namespace reflect {
 
 template <typename T> //
-void ITypedArray<T>::deserializeElement(IDeserializer::Node& desernode) const {
+void ITypedArray<T>::deserializeElement(IDeserializer::node_ptr_t desernode) const {
   // BidirectionalSerializer bidi(deserializer);
   // T value;
   // bidi | value;

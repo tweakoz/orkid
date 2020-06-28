@@ -15,7 +15,7 @@
 namespace ork::reflect {
 ///////////////////////////////////////////////////////////////////////////////
 
-void IArray::deserialize(IDeserializer::Node& desernode) const {
+void IArray::deserialize(IDeserializer::node_ptr_t desernode) const {
 
   /*int deser_count;
   deserializer.deserialize(deser_count);

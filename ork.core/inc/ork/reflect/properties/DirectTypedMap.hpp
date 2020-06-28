@@ -122,7 +122,7 @@ bool DirectTypedMap<MapType>::WriteElement(
 template <typename MapType>
 void DirectTypedMap<MapType>::MapDeserialization(
     typename DirectTypedMap<MapType>::ElementDeserializeFunction func,
-    IDeserializer::Node& desernode) const {
+    IDeserializer::node_ptr_t desernode) const {
 }
 
 template <typename MapType>

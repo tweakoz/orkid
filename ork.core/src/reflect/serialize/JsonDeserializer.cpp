@@ -124,7 +124,33 @@ object_ptr_t JsonDeserializer::_parseObjectNode(IDeserializer::node_ptr_t dserno
       child_node->_instance     = instance_out;
 
       auto dserjsonnode = child_node->_impl.makeShared<JsonDserNode>(propnode);
-      // prop->deserialize(*this, object);
+
+      switch (propnode.GetType()) {
+        case rapidjson::kNullType:
+          child_node->_value.Set<void*>(nullptr);
+          break;
+        case rapidjson::kFalseType:
+          child_node->_value.Set<bool>(false);
+          break;
+        case rapidjson::kTrueType:
+          child_node->_value.Set<bool>(true);
+          break;
+        case rapidjson::kObjectType:
+          break;
+        case rapidjson::kArrayType:
+          break;
+        case rapidjson::kStringType:
+          child_node->_value.Set<std::string>(propnode.GetString());
+          break;
+        case rapidjson::kNumberType:
+          child_node->_value.Set<double>(propnode.GetDouble());
+          break;
+        default:
+          OrkAssert(false);
+      }
+
+      prop->deserialize(child_node);
+
     } else { // drop property, no longer registered
       printf("dropping property<%s>\n", propname);
     }

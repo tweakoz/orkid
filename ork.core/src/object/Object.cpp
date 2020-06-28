@@ -52,15 +52,15 @@ void Object::xxxSerializeShared(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Object::xxxDeserializeShared(reflect::IDeserializer::Node& dsernode) {
-  auto obj   = dsernode._instance;
+void Object::xxxDeserializeShared(reflect::IDeserializer::node_ptr_t dsernode) {
+  auto obj   = dsernode->_instance;
   auto clazz = obj->GetClass();
   // deserializer.referenceObject(obj); // probably wrong...
-  obj->PreDeserialize(*dsernode._deserializer);
+  obj->PreDeserialize(*dsernode->_deserializer);
   auto objclass    = dynamic_cast<object::ObjectClass*>(clazz);
   const auto& desc = objclass->Description();
   // desc.deserializeProperties(deserializer, obj);
-  obj->PostDeserialize(*dsernode._deserializer);
+  obj->PostDeserialize(*dsernode->_deserializer);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

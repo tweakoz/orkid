@@ -17,18 +17,18 @@ class AccessorVariantArray : public IArray {
 public:
   AccessorVariantArray(
       void (Object::*serialize_item)(ISerializer&, size_t) const,
-      void (Object::*deserialize_element)(IDeserializer::Node&),
+      void (Object::*deserialize_element)(IDeserializer::node_ptr_t),
       size_t (Object::*count)() const,
       void (Object::*resize)(size_t));
 
 private:
   void serializeItem(ISerializer&, object_constptr_t, size_t) const override;
-  void deserializeElement(IDeserializer::Node&) const override;
+  void deserializeElement(IDeserializer::node_ptr_t) const override;
   size_t count(object_constptr_t) const override;
   void resize(object_ptr_t, size_t) const override;
 
   void (Object::*mSerializeItem)(ISerializer&, size_t) const;
-  void (Object::*_deserializeElement)(IDeserializer::Node&);
+  void (Object::*_deserializeElement)(IDeserializer::node_ptr_t);
   size_t (Object::*mCount)() const;
   void (Object::*mResize)(size_t);
 };

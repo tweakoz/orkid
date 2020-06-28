@@ -175,7 +175,7 @@ void Description::serializeProperties(
   }
 }
 
-void Description::deserializeProperties(IDeserializer::Node& desernode) const {
+void Description::deserializeProperties(IDeserializer::node_ptr_t desernode) const {
   // Command command;
   // deserializer._currentObject = object;
   /*

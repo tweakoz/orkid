@@ -30,7 +30,7 @@ protected:
   virtual bool WriteElement(object_ptr_t, const KeyType&, int, const ValueType*) const = 0;
   // virtual bool MapBiSerialization(ItemBiSerializeFunction, BidirectionalSerializer&, object_constptr_t) const = 0;
   virtual void MapSerialization(ElementSerializeFunction, ISerializer&, object_constptr_t) const  = 0;
-  virtual void MapDeserialization(ElementDeserializeFunction, IDeserializer::Node&) const = 0;
+  virtual void MapDeserialization(ElementDeserializeFunction, IDeserializer::node_ptr_t) const = 0;
 
   ITypedMap()
       : IMap() {
@@ -41,7 +41,7 @@ private:
   static void _doSerialize(ISerializer&, const KeyType&, const ValueType&);
 
   // from ObjectProperty
-  void deserialize(IDeserializer::Node&) const override;
+  void deserialize(IDeserializer::node_ptr_t) const override;
   void serialize(ISerializer&, object_constptr_t) const override;
 };
 

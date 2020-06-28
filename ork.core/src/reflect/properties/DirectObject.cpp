@@ -25,7 +25,7 @@ void DirectObject::serialize(ISerializer& serializer, object_constptr_t instance
   OrkAssert(false);
 }
 
-void DirectObject::deserialize(IDeserializer::Node& dsernode) const {
+void DirectObject::deserialize(IDeserializer::node_ptr_t dsernode) const {
   OrkAssert(false);
   /*Object* object_property = (object->*mProperty)();
   Command command;

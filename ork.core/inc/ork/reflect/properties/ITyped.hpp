@@ -20,7 +20,7 @@
 
 namespace ork { namespace reflect {
 
-template <typename T> void ITyped<T>::deserialize(IDeserializer::Node& desernodej) const {
+template <typename T> void ITyped<T>::deserialize(IDeserializer::node_ptr_t desernodej) const {
   // T value;
   // BidirectionalSerializer bidi(deserializer);
   // bidi | value;

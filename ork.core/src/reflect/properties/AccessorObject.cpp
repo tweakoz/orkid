@@ -27,8 +27,8 @@ void AccessorObject::serialize(
   Object::xxxSerializeShared(subobject, serializer);
 }
 ////////////////////////////////////////////////////////////////
-void AccessorObject::deserialize(IDeserializer::Node& dsernode) const {
-  auto instance  = dsernode._instance;
+void AccessorObject::deserialize(IDeserializer::node_ptr_t dsernode) const {
+  auto instance  = dsernode->_instance;
   auto subobject = (instance.get()->*_accessor)();
   // Command command;
   // serializer.beginCommand(command);
