@@ -27,6 +27,10 @@ private:
   using allocator_t = rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>*;
 
   object_ptr_t _parseObjectNode(IDeserializer::node_ptr_t dsernode);
+  node_ptr_t _parseSubNode(
+      IDeserializer::node_ptr_t parentnode, //
+      const rapidjson::Value& subvalue);
+
   ////////////////////////////////////////////
 
   rapidjson::Document _document;

@@ -40,11 +40,15 @@ std::string getJsonStr() {
        "uuid": "e0f43d05-0070-0000-d0f4-3d0500700000",
        "properties": {
         "HotKeys": {
-          "a": {
+          "save": {
             "object": {
              "class": "HotKey",
-             "uuid": "ffffffff-0070-0000-d0f4-3d0500700000",
-             "properties": {}
+             "uuid": "ffffffff-0123-4567-89ab-cdef01234567",
+             "properties": {
+               "Alt": true,
+               "Ctrl": false,
+               "KeyCode": 10
+             }
            }
           }
         },
@@ -64,9 +68,9 @@ TEST(DeserializeObjectJSON) {
   deser.deserializeTop(instance_out);
   auto as_hkc = std::dynamic_pointer_cast<HotKeyConfiguration>(instance_out);
   auto save   = as_hkc->GetHotKey("save");
-  // CHECK_EQUAL(save->mbAlt, false);
-  // CHECK_EQUAL(save->mbCtrl, true);
-  // CHECK_EQUAL(save->miKeyCode, 83);
+  CHECK_EQUAL(save->mbAlt, true);
+  CHECK_EQUAL(save->mbCtrl, true);
+  CHECK_EQUAL(save->miKeyCode, 10);
 
   std::string uuids = boost::uuids::to_string(as_hkc->_uuid);
   CHECK_EQUAL(uuids, "e0f43d05-0070-0000-d0f4-3d0500700000");
