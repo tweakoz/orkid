@@ -17,17 +17,13 @@
 #include <boost/uuid/uuid_io.hpp>
 ////////////////////////////////////////////////////////////////
 namespace ork::reflect {
-////////////////////////////////////////////////////////////////
-void ISerializer::referenceObject(object_constptr_t instance) {
-  /*const auto& uuid  = as_object->_uuid;
-  std::string uuids = boost::uuids::to_string(uuid);
-  OrkAssert(_serialized.find(uuids) == _serialized.end());
-  _serialized.insert(uuids);
-
-  Command referenceAttributeCommand(Command::EATTRIBUTE, "id");
-  beginCommand(referenceAttributeCommand);
-  Serialize(PieceString(uuids.c_str()));
-  endCommand(referenceAttributeCommand);*/
+////////////////////////////////////////////////////////////////////////////////
+ISerializer::node_ptr_t ISerializer::topNode() {
+  node_ptr_t n;
+  if (not _nodestack.empty()) {
+    n = _nodestack.top();
+  }
+  return n;
 }
 ////////////////////////////////////////////////////////////////
 } // namespace ork::reflect

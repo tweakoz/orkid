@@ -39,7 +39,7 @@ JsonSerializer::JsonSerializer()
 JsonSerializer::~JsonSerializer() {
 }
 ////////////////////////////////////////////////////////////////////////////////
-JsonSerializer::node_ptr_t JsonSerializer::pushObjectNode(std::string named) {
+ISerializer::node_ptr_t JsonSerializer::pushObjectNode(std::string named) {
   node_ptr_t n   = std::make_shared<Node>(); //)named, rapidjson::kObjectType);
   auto impl      = n->_impl.makeShared<JsonSerObjectNode>();
   n->_name       = named;
@@ -66,14 +66,6 @@ void JsonSerializer::popNode() {
         impl->_jsonvalue,
         *_allocator);
   }
-}
-////////////////////////////////////////////////////////////////////////////////
-JsonSerializer::node_ptr_t JsonSerializer::topNode() {
-  node_ptr_t n;
-  if (not _nodestack.empty()) {
-    n = _nodestack.top();
-  }
-  return n;
 }
 ////////////////////////////////////////////////////////////////////////////////
 std::string JsonSerializer::output() {
@@ -103,58 +95,44 @@ ISerializer::node_ptr_t JsonSerializer::serializeElement(ISerializer::node_ptr_t
   chnode->_instance = elemnode->_instance;
   chnode->_parent   = elemnode;
   if (auto as_obj = elemnode->_value.TryAs<object_ptr_t>()) {
-    auto objnode = serializeObject(chnode);
+    chnode->_instance = as_obj.value();
+    auto objnode      = serializeObject(chnode);
+    OrkAssert(objnode);
     if (objnode)
       objnode->_parent = chnode;
+  } else {
+    chnode->_value = elemnode->_value;
+    chnode->_name  = elemnode->_key;
+    serializeLeaf(chnode);
   }
 
-  // chnode->_parent = elemnode;
   popNode();
   return chnode;
 }
-////////////////////////////////////////////////////////////////////////////////
-/*
-void JsonSerializer::_serializeNamedItem(
-    std::string named, //
-    const hintvar_t& value) {
-  rapidjson::Value nameval(named.c_str(), *_allocator);
-  if (auto as_piecestr = value.TryAs<PieceString>()) {
-    rapidjson::Value strval(as_piecestr.value().c_str(), *_allocator);
-    topNode()->_value.AddMember(
-        nameval, //
-        strval,
-        *_allocator);
-  } else if (auto as_int = value.TryAs<int>()) {
-    rapidjson::Value intval;
-    intval.SetInt(as_int.value());
-    topNode()->_value.AddMember(
-        nameval, //
-        intval,
-        *_allocator);
-  } else if (auto as_bool = value.TryAs<bool>()) {
+void JsonSerializer::serializeLeaf(node_ptr_t leafnode) {
+  auto implnode = leafnode->_impl.getShared<JsonSerObjectNode>();
+  rapidjson::Value nameval(leafnode->_name.c_str(), *_allocator);
+  if (auto as_bool = leafnode->_value.TryAs<bool>()) {
     rapidjson::Value boolval;
     boolval.SetBool(as_bool.value());
-    topNode()->_value.AddMember(
+    implnode->_jsonvalue.AddMember(
         nameval, //
         boolval,
         *_allocator);
-  } else if (auto as_object = value.TryAs<object_constptr_t>()) {
-    serializeSharedObject(as_object.value());
-  } else if (auto as_object = value.TryAs<object_ptr_t>()) {
-    serializeSharedObject(as_object.value());
-  } else {
-    OrkAssert(false);
+  } else if (auto as_int = leafnode->_value.TryAs<int>()) {
+    rapidjson::Value intval;
+    intval.SetInt(as_int.value());
+    implnode->_jsonvalue.AddMember(
+        nameval, //
+        intval,
+        *_allocator);
   }
 }
-void JsonSerializer::serializeElement(const hintvar_t& value) {
-  _serializeNamedItem("item", value);
-}
-*/
 ////////////////////////////////////////////////////////////////////////////////
 ISerializer::node_ptr_t JsonSerializer::serializeObject(node_ptr_t parnode) {
 
   node_ptr_t onode;
-
+  OrkAssert(parnode->_instance);
   auto instance = parnode->_instance;
   if (instance) {
     auto parimplnode  = parnode->_impl.getShared<JsonSerObjectNode>();
@@ -192,27 +170,22 @@ ISerializer::node_ptr_t JsonSerializer::serializeObject(node_ptr_t parnode) {
       propsnode->_parent   = onode;
 
       for (auto prop_item : desc.Properties()) {
-
-        auto propname       = prop_item.first;
-        auto property       = prop_item.second;
-        auto propnode       = pushObjectNode(propname.c_str());
-        propnode->_property = property;
-        propnode->_instance = instance;
-        propnode->_parent   = propsnode;
-        property->serialize(propnode);
-        popNode();
+        auto propname        = prop_item.first;
+        auto property        = prop_item.second;
+        propsnode->_property = property;
+        propsnode->_name     = propname.c_str();
+        property->serialize(propsnode);
       }
-
-      // Object::xxxSerializeShared(instance, *this);
+      propsnode->_name = "properties";
 
       popNode(); // pop "properties"
-
       popNode(); // pop "object"
     }
     ////////////////////////////////////
     // backreference
     ////////////////////////////////////
     else {
+      OrkAssert(false);
       /*topNode()->_value.AddMember(
           "backreference", //
           uuidval,
@@ -226,28 +199,6 @@ ISerializer::node_ptr_t JsonSerializer::serializeObject(node_ptr_t parnode) {
         *_allocator);*/
   }
   return onode;
-} /*
- ////////////////////////////////////////////////////////////////////////////////
- void JsonSerializer::Hint(const PieceString& name, hintvar_t val) {
-
-   if (name == "MultiIndex") {
-     _multiindex = val.Get<int>();
-   } else if (name == "map_key") {
-     _mapkey = val;
-   } else if (name == "map_value") {
-     auto kasstr = _mapkey.Get<std::string>();
-     _serializeNamedItem(kasstr, val);
-   } else if (auto as_str = val.TryAs<std::string>()) {
-     rapidjson::Value nameval(name.c_str(), *_allocator);
-     rapidjson::Value valval(as_str.value().c_str(), *_allocator);
-     topNode()->_value.AddMember(
-         nameval, //
-         valval,
-         *_allocator);
-   }
- }
- ////////////////////////////////////////////////////////////////////////////////
- void JsonSerializer::serializeData(const uint8_t*, size_t) {
- }*/
+}
 ////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::reflect::serialize

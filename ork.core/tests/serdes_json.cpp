@@ -35,27 +35,74 @@ std::string getJsonStr() {
      "top": {
       "object": {
        "class": "HotKeyConfiguration",
-       "uuid": "e0f43d05-0070-0000-d0f4-3d0500700000",
+       "uuid": "6c499e0f-212d-465a-b88b-60b8cc6928ab",
        "properties": {
         "HotKeys": {
-          "save": {
-            "object": {
-             "class": "HotKey",
-             "uuid": "ffffffff-0123-4567-89ab-cdef01234567",
-             "properties": {
-               "Alt": true,
-               "Ctrl": false,
-               "KeyCode": 10
-             }
+         "copy": {
+          "object": {
+           "class": "HotKey",
+           "uuid": "2392ad12-d0c2-44fa-9395-9b94f5d8ff61",
+           "properties": {
+            "Alt": false,
+            "Ctrl": true,
+            "KeyCode": 67,
+            "LMB": false,
+            "MMB": false,
+            "RMB": false,
+            "Shift": false
            }
           }
-        },
-        "DropProp": {"drop":"me"}
+         },
+         "open": {
+          "object": {
+           "class": "HotKey",
+           "uuid": "a232d953-f883-4174-a7bf-d3672f19058a",
+           "properties": {
+            "Alt": false,
+            "Ctrl": true,
+            "KeyCode": 79,
+            "LMB": false,
+            "MMB": false,
+            "RMB": false,
+            "Shift": false
+           }
+          }
+         },
+         "paste": {
+          "object": {
+           "class": "HotKey",
+           "uuid": "c81b8de4-ba76-4953-a214-7c73b31f89c2",
+           "properties": {
+            "Alt": false,
+            "Ctrl": true,
+            "KeyCode": 86,
+            "LMB": false,
+            "MMB": false,
+            "RMB": false,
+            "Shift": false
+           }
+          }
+         },
+         "save": {
+          "object": {
+           "class": "HotKey",
+           "uuid": "9b82a7c8-dbb6-4475-8490-9ae212fc5b61",
+           "properties": {
+            "Alt": false,
+            "Ctrl": true,
+            "KeyCode": 83,
+            "LMB": false,
+            "MMB": false,
+            "RMB": false,
+            "Shift": false
+           }
+          }
+         }
+        }
        }
       }
      }
-    }
-)xxx"; //
+    })xxx"; //
 }
 
 TEST(DeserializeObjectJSON) {
@@ -67,10 +114,10 @@ TEST(DeserializeObjectJSON) {
   auto as_hkc = std::dynamic_pointer_cast<HotKeyConfiguration>(instance_out);
   auto save   = as_hkc->GetHotKey("save");
   printf("save<%p>\n", save);
-  CHECK_EQUAL(save->mbAlt, true);
-  CHECK_EQUAL(save->mbCtrl, false);
-  CHECK_EQUAL(save->miKeyCode, 10);
+  CHECK_EQUAL(save->mbAlt, false);
+  CHECK_EQUAL(save->mbCtrl, true);
+  CHECK_EQUAL(save->miKeyCode, 83);
 
-  CHECK_EQUAL(boost::uuids::to_string(as_hkc->_uuid), "e0f43d05-0070-0000-d0f4-3d0500700000");
-  CHECK_EQUAL(boost::uuids::to_string(save->_uuid), "ffffffff-0123-4567-89ab-cdef01234567");
+  CHECK_EQUAL(boost::uuids::to_string(as_hkc->_uuid), "6c499e0f-212d-465a-b88b-60b8cc6928ab");
+  CHECK_EQUAL(boost::uuids::to_string(save->_uuid), "9b82a7c8-dbb6-4475-8490-9ae212fc5b61");
 }

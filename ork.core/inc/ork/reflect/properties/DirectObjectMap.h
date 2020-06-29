@@ -14,7 +14,10 @@
 namespace ork { namespace reflect {
 
 template <typename MapType> //
-class DirectObjectMap : public ITypedMap<typename MapType::key_type, object_ptr_t> {
+class DirectObjectMap       //
+    : public ITypedMap<
+          typename MapType::key_type, //
+          object_ptr_t> {
 public:
   using KeyType = typename MapType::key_type;
 

@@ -19,10 +19,13 @@ namespace ork::reflect {
 template <typename KeyType, typename ValueType> //
 void ITypedMap<KeyType, ValueType>::serialize(ISerializer::node_ptr_t sernode) const {
   auto serializer       = sernode->_serializer;
-  int numelements       = elementCount(sernode->_instance);
-  auto elemnode         = std::make_shared<ISerializer::Node>();
-  elemnode->_parent     = sernode;
   auto instance         = sernode->_instance;
+  auto mapnode          = serializer->pushObjectNode(_name);
+  mapnode->_parent      = sernode;
+  mapnode->_instance    = instance;
+  int numelements       = elementCount(instance);
+  auto elemnode         = std::make_shared<ISerializer::Node>();
+  elemnode->_parent     = mapnode;
   elemnode->_instance   = instance;
   elemnode->_serializer = serializer;
   for (size_t i = 0; i < numelements; i++) {
@@ -33,9 +36,9 @@ void ITypedMap<KeyType, ValueType>::serialize(ISerializer::node_ptr_t sernode) c
     GetVal(instance, K, V);
     elemnode->_value.Set<ValueType>(V);
     encode_key(elemnode->_key, K);
-    // elemnode->_key
     auto childnode = serializer->serializeElement(elemnode);
   }
+  serializer->popNode();
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename KeyType, typename ValueType>

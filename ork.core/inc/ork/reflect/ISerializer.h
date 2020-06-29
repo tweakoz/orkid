@@ -29,8 +29,13 @@ public:
   struct Node;
   using node_ptr_t = std::shared_ptr<Node>;
 
-  void referenceObject(object_constptr_t);
+  node_ptr_t topNode();
 
+  virtual node_ptr_t pushObjectNode(std::string named) {
+    return nullptr;
+  }
+  virtual void popNode() {
+  }
   virtual node_ptr_t serializeTop(object_constptr_t) {
     return node_ptr_t(nullptr);
   }
@@ -40,10 +45,15 @@ public:
   virtual node_ptr_t serializeElement(node_ptr_t elemnode) {
     return node_ptr_t(nullptr);
   }
+  virtual void serializeLeaf(node_ptr_t leafnode) {
+    return;
+  }
 
   virtual ~ISerializer();
 
   std::unordered_set<std::string> _reftracker;
+  std::stack<node_ptr_t> _nodestack;
+  node_ptr_t _topnode;
 
   struct Node {
     node_ptr_t _parent                       = nullptr;

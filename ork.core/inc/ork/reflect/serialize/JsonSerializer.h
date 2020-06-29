@@ -26,6 +26,7 @@ public:
   node_ptr_t serializeTop(object_constptr_t) override;
   node_ptr_t serializeElement(node_ptr_t elemnode) override;
   node_ptr_t serializeObject(node_ptr_t objnode) override;
+  void serializeLeaf(node_ptr_t leafnode) override;
 
   std::string output();
 
@@ -34,13 +35,10 @@ private:
 
   void _serializeNamedItem(std::string name, const var_t&);
 
-  node_ptr_t pushObjectNode(std::string named);
-  void popNode();
-  node_ptr_t topNode();
+  node_ptr_t pushObjectNode(std::string named) override;
+  void popNode() override;
 
   allocator_t _allocator;
   rapidjson::Document _document;
-  node_ptr_t _topnode;
-  std::stack<node_ptr_t> _nodestack;
 };
 }}} // namespace ork::reflect::serialize
