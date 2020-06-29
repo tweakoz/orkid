@@ -21,6 +21,9 @@ using namespace ork::rtti;
 using namespace ork::stream;
 
 TEST(SerializeObjectJSON) {
+  ///////////////////////////////////////////
+  // serialize an object
+  ///////////////////////////////////////////
   auto hkeys = std::make_shared<ork::HotKeyConfiguration>();
   hkeys->Default();
   serialize::JsonSerializer ser;
@@ -109,6 +112,9 @@ std::string getJsonStr() {
 }
 
 TEST(DeserializeObjectJSON) {
+  ///////////////////////////////////////////
+  // deserialize an object
+  ///////////////////////////////////////////
 
   auto objstr = getJsonStr();
   object_ptr_t instance_out;
@@ -117,9 +123,18 @@ TEST(DeserializeObjectJSON) {
   auto as_hkc = std::dynamic_pointer_cast<HotKeyConfiguration>(instance_out);
   auto save   = as_hkc->GetHotKey("save");
   printf("save<%p>\n", save);
+
+  ///////////////////////////////////////////
+  // check that properties were correctly deserialized
+  ///////////////////////////////////////////
+
   CHECK_EQUAL(save->mbAlt, false);
   CHECK_EQUAL(save->mbCtrl, true);
   CHECK_EQUAL(save->miKeyCode, 83);
+
+  ///////////////////////////////////////////
+  // check that UUID's were correctly deserialized
+  ///////////////////////////////////////////
 
   CHECK_EQUAL(boost::uuids::to_string(as_hkc->_uuid), "6c499e0f-212d-465a-b88b-60b8cc6928ab");
   CHECK_EQUAL(boost::uuids::to_string(save->_uuid), "9b82a7c8-dbb6-4475-8490-9ae212fc5b61");

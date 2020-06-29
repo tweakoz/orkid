@@ -21,22 +21,34 @@ using namespace ork::rtti;
 using namespace ork::stream;
 
 TEST(ObjectClone) {
-  auto orig_as_hkc = std::make_shared<ork::HotKeyConfiguration>();
-  orig_as_hkc->Default();
-  auto orig_save = orig_as_hkc->GetHotKey("save");
+  ///////////////////////////////////////////
+  // create an object that we can clone from
+  ///////////////////////////////////////////
+  auto original = std::make_shared<ork::HotKeyConfiguration>();
+  original->Default();
+  auto orig_save = original->GetHotKey("save");
   printf("orig_save<%p>\n", orig_save);
 
   CHECK_EQUAL(orig_save->mbAlt, false);
   CHECK_EQUAL(orig_save->mbCtrl, true);
   CHECK_EQUAL(orig_save->miKeyCode, 83);
 
-  auto orig_UUID      = boost::uuids::to_string(orig_as_hkc->_uuid);
+  auto orig_UUID      = boost::uuids::to_string(original->_uuid);
   auto orig_save_UUID = boost::uuids::to_string(orig_save->_uuid);
 
-  auto clone        = Object::clone(orig_as_hkc);
+  ///////////////////////////////////////////
+  // clone the object
+  ///////////////////////////////////////////
+
+  auto clone        = Object::clone(original);
   auto clone_as_hkc = std::dynamic_pointer_cast<HotKeyConfiguration>(clone);
   auto clone_save   = clone_as_hkc->GetHotKey("save");
   printf("clone_save<%p>\n", clone_save);
+
+  ///////////////////////////////////////////
+  // compare clone to original
+  ///////////////////////////////////////////
+
   CHECK_EQUAL(clone_save->mbAlt, false);
   CHECK_EQUAL(clone_save->mbCtrl, true);
   CHECK_EQUAL(clone_save->miKeyCode, 83);
