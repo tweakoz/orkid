@@ -103,7 +103,7 @@ bool DirectObjectMap<MapType>::WriteElement(
       ev.mKey.Set(key);
       ev.mOldValue.Set(val2erase);
       ork::object_ptr_t pevl = static_cast<ork::object_ptr_t>(instance);
-      pevl->Notify(&ev);
+      pevl->notify(&ev);
       map.erase(it);
     }
   }

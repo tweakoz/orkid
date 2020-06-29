@@ -113,7 +113,7 @@ bool DirectTypedMap<MapType>::WriteElement(
       ev.miMultiIndex = orig_multi_index;
       ev.mKey.Set(key);
       ev.mOldValue.Set(val2erase);
-      object->Notify(&ev);
+      object->notify(&ev);
       map.erase(it);
     }
   }

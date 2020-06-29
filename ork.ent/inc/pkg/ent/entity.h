@@ -289,7 +289,7 @@ public:
   _rendermtxprovider_t _renderMtxProvider = nullptr;
 
 private:
-  bool DoNotify(const ork::event::Event* event) final;
+  void doNotify(const ork::event::Event* event) final;
 
   Simulation* mSimulation;
 

@@ -274,13 +274,13 @@ void graph_data::Describe() {
       , mExternal(0) {
   }
   ///////////////////////////////////////////////////////////////////////////////
-  bool graph_inst::DoNotify(const ork::event::Event* event) {
+  void graph_inst::doNotify(const ork::event::Event* event) {
     if (auto pev = dynamic_cast<const ItemRemovalEvent*>(event)) {
       if (pev->mProperty == graph_inst::GetClassStatic()->Description().FindProperty("Modules")) {
         ork::PoolString ps = pev->mKey.Get<ork::PoolString>();
         ork::Object* pobj  = pev->mOldValue.Get<ork::Object*>();
         delete pobj;
-        return true;
+        return;
       }
     } else if (auto pev = dynamic_cast<const MapItemCreationEvent*>(event)) {
       if (pev->mProperty == graph_inst::GetClassStatic()->Description().FindProperty("Modules")) {
@@ -292,7 +292,6 @@ void graph_data::Describe() {
         pdgmod->SetName(psname);
       }
     }
-    return true;
   }
   ///////////////////////////////////////////////////////////////////////////////
   void graph_inst::Clear() {

@@ -1035,7 +1035,7 @@ protected:
 
   std::set<int> mOutputRegisters;
 
-  bool DoNotify(const ork::event::Event* event) final; // virtual
+  void doNotify(const ork::event::Event* event) final; // virtual
 };
 
 ///////////////////////////////////////////////////////////////////////////////

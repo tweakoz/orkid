@@ -71,7 +71,7 @@ public:
 
 	void DoUpdate( ork::ent::Simulation* psi ) final;		// virtual 
 	bool DoLink(ork::ent::Simulation *psi) final;			// virtual
-	bool DoNotify(const ork::event::Event *event) final;	// virtual
+	void doNotify(const ork::event::Event *event) final;	// virtual
 	
 	const QuartzComposerData& mCD;
 	

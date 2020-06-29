@@ -39,7 +39,7 @@ private:
 	ork::orklut<ork::PoolString,float>		mFloatValues;
 	ork::orklut<ork::PoolString,fvec3>	mVect3Values;
 
-	bool DoNotify(const event::Event *event) final;
+	void doNotify(const event::Event *event) final;
 
 	const char* GetShortSelector() const final { return "dfr"; }
 
@@ -74,7 +74,7 @@ private:
 	orklut<PoolString,fvec3>				mMutableVect3Values;
 
 	void DoUpdate( ork::ent::Simulation* psi ) final;
-    bool DoNotify(const event::Event *event) final;
+    void doNotify(const event::Event *event) final;
 
 };
 

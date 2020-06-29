@@ -140,7 +140,7 @@ protected:
   }
 
   void DoUpdate(ork::ent::Simulation* psi) final;
-  bool DoNotify(const ork::event::Event* event) final;
+  void doNotify(const ork::event::Event* event) final;
   void DoStop(ork::ent::Simulation* psi) final;
   void doNotify(const ComponentEvent& e) final;
 };

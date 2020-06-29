@@ -345,7 +345,7 @@ const Pool<BasicParticle>* RendererModule::GetPool() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool SpriteRenderer::DoNotify(const ork::event::Event* event) {
+bool SpriteRenderer::doNotify(const ork::event::Event* event) {
   /*	if( const ork::ent::PerfControlEvent* pce = rtti::autocast(event) )
       {	const char* keyname = pce->mTarget.c_str();
           ////////////////////

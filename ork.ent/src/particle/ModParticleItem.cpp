@@ -38,7 +38,7 @@ namespace ork { namespace psys {
 
 static bool gbusetemplate = false;
 
-bool ModParticleItem::DoNotify(const event::Event* event) {
+bool ModParticleItem::doNotify(const event::Event* event) {
   if (auto pev = dynamic_cast<const ObjectGedVisitEvent*>(event)) {
     gbusetemplate = true;
     return true;
@@ -252,7 +252,7 @@ void ModularSystem::DoUpdate(float fdt) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool ModularSystem::DoNotify(const event::Event* event) {
+bool ModularSystem::doNotify(const event::Event* event) {
   return false;
 }
 

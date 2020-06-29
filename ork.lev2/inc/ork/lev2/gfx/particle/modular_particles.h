@@ -155,7 +155,7 @@ class Constants : public Module {
 
   void OnTopologyUpdate(void) final; // virtual
 
-  bool DoNotify(const ork::event::Event* event) final; // virtual
+  void doNotify(const ork::event::Event* event) final; // virtual
   bool postDeserialize(reflect::IDeserializer&) final; // virtual
 
 public:
@@ -956,7 +956,7 @@ class SpriteRenderer : public RendererModule {
       const ParticlePoolRenderBuffer& buffer,
       ork::lev2::Context* targ) final;
   void DoLink() final;
-  bool DoNotify(const ork::event::Event* event) final;
+  void doNotify(const ork::event::Event* event) final;
 
 public:
   SpriteRenderer();

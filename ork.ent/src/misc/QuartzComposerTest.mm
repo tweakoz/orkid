@@ -397,7 +397,7 @@ void QuartzComposerInst::DoUpdate( ork::ent::Simulation* psi )
 
 	miFrame++;
 }
-bool QuartzComposerInst::DoNotify(const ork::event::Event *event)
+bool QuartzComposerInst::doNotify(const ork::event::Event *event)
 {
 	return true;
 }

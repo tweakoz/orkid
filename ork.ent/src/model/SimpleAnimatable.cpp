@@ -742,7 +742,7 @@ void SimpleAnimatableInst::AnimData::BindAnim(const ork::lev2::XgmAnim* anim) {
   }
 }
 
-bool SimpleAnimatableInst::DoNotify(const ork::event::Event* event) {
+bool SimpleAnimatableInst::doNotify(const ork::event::Event* event) {
   if (auto play = dynamic_cast<const event::PlayAnimationEvent*>(event)) {
     if (play->GetMaskName().empty())
       PlayAnimationEx(

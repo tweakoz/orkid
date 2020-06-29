@@ -311,7 +311,7 @@ public:
 protected:
   shape_factory_t mShapeFactory;
 
-  bool DoNotify(const event::Event* event) override;
+  void doNotify(const event::Event* event) override;
 };
 
 struct BulletShapeBaseInst {
@@ -468,7 +468,7 @@ private:
   BulletShapeBaseInst* mShapeInst;
 
   void DoUpdate(ork::ent::Simulation* inst) final;
-  bool DoNotify(const ork::event::Event* event) final { return false; }
+  void doNotify(const ork::event::Event* event) final { return false; }
   bool DoLink(Simulation* psi) final;
   void DoStop(Simulation* psi) final;
 };

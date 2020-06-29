@@ -191,7 +191,7 @@ void ParticleControllableInst::DoUpdate(ork::ent::Simulation* inst) {
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool ParticleControllableInst::DoNotify(const ork::event::Event* event) {
+bool ParticleControllableInst::doNotify(const ork::event::Event* event) {
   return false;
 }
 ///////////////////////////////////////////////////////////////////////////////

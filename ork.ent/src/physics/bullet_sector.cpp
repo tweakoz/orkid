@@ -1314,7 +1314,7 @@ bool SectorTrackerInst::DoStart(ork::ent::Simulation *inst, const ork::fmtx4 &wo
 	return true;
 }
 
-bool SectorTrackerInst::DoNotify(const ork::event::Event *event)
+bool SectorTrackerInst::doNotify(const ork::event::Event *event)
 {
 	return true;
 }

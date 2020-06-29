@@ -280,7 +280,7 @@ void Entity::PrintName() {
   orkprintf("EntityName:%s: \n", name().c_str());
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool Entity::DoNotify(const ork::event::Event* event) {
+bool Entity::doNotify(const ork::event::Event* event) {
   bool result                  = false;
   ComponentTable::LutType& lut = mComponentTable.GetComponents();
   for (ComponentTable::LutType::const_iterator it = lut.begin(); it != lut.end(); it++) {

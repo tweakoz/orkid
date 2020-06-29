@@ -139,7 +139,7 @@ void SequenceCamControllerInst::DoUpdate(Simulation* psi) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool SequenceCamControllerInst::DoNotify(const ork::event::Event* event) {
+bool SequenceCamControllerInst::doNotify(const ork::event::Event* event) {
   return false;
 }
 

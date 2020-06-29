@@ -50,7 +50,7 @@ namespace ork { namespace ent {
 
 static bool gbusetemplate = false;
 
-bool AudioMultiEffectPlayDataItemModular::DoNotify(const ork::event::Event* event) {
+bool AudioMultiEffectPlayDataItemModular::doNotify(const ork::event::Event* event) {
   if (auto pev = dynamic_cast<const ork::ObjectGedVisitEvent*>(event)) {
     gbusetemplate = true;
     return true;
@@ -747,7 +747,7 @@ void AudioEffectComponentInst::RemovePlayback(ork::lev2::AudioInstrumentPlayback
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-bool AudioEffectComponentInst::DoNotify(const ork::event::Event* pev) {
+bool AudioEffectComponentInst::doNotify(const ork::event::Event* pev) {
   if (auto playevent = dynamic_cast<const event::PlaySoundEvent*>(pev)) {
     const ork::PoolString& sound_name = playevent->GetSoundName();
     PlaySound(sound_name);

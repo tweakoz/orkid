@@ -42,14 +42,20 @@ Object::~Object() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-object::Signal* Object::FindSignal(ConstString name) {
+object::Signal* Object::signal(ConstString name) {
   auto objclazz = rtti::downcast<object::ObjectClass*>(GetClass());
-  auto pSignal  = objclazz->Description().FindSignal(name);
+  auto pSignal  = objclazz->Description().signal(name);
 
   if (pSignal != 0)
     return &(this->*pSignal);
   else
     return nullptr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Object::notify(const event::Event* pEV) {
+  doNotify(pEV);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

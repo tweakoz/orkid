@@ -323,7 +323,7 @@ BulletShapeBaseInst* BulletShapeBaseData::CreateShape(const ShapeCreateData& dat
   return rval;
 }
 
-bool BulletShapeBaseData::DoNotify(const event::Event* event) {
+bool BulletShapeBaseData::doNotify(const event::Event* event) {
   if (auto pgev = dynamic_cast<const ObjectGedEditEvent*>(event)) {
     opq::updateSerialQueue()->enqueue([this]() { mShapeFactory._invalidate(this); });
   }

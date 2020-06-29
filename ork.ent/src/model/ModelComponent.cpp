@@ -201,7 +201,7 @@ void ModelComponentInst::doNotify(const ComponentEvent& e) {
   }
 }
 
-bool ModelComponentInst::DoNotify(const ork::event::Event* event) {
+bool ModelComponentInst::doNotify(const ork::event::Event* event) {
   if (auto meshenaev = dynamic_cast<const event::MeshEnableEvent*>(event)) {
     if (modelDrawable().GetModelInst()) {
       if (meshenaev->IsEnable())

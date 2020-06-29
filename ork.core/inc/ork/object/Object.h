@@ -35,38 +35,30 @@ class BidirectionalSerializer;
 struct Object;
 
 struct Object : public rtti::ICastable {
-private:
-  RttiDeclareAbstractWithCategory(Object, rtti::ICastable, object::ObjectClass);
 
-public:
   static object_ptr_t clone(object_constptr_t source);
   static Md5Sum md5sum(object_constptr_t source);
 
+  RttiDeclareAbstractWithCategory(Object, rtti::ICastable, object::ObjectClass);
+
+public:
   Object();
   virtual ~Object();
 
-  object::Signal* FindSignal(ConstString name);
+  object::Signal* signal(ConstString name);
 
   virtual bool preSerialize(reflect::ISerializer&) const;
   virtual bool preDeserialize(reflect::IDeserializer&);
   virtual bool postSerialize(reflect::ISerializer&) const;
   virtual bool postDeserialize(reflect::IDeserializer&);
 
-  bool Notify(const event::Event* pEV) {
-    return DoNotify(pEV);
-  }
-  bool Query(event::Event* pEV) const {
-    return DoQuery(pEV);
-  }
+  void notify(const event::Event* pEV);
 
   boost::uuids::uuid _uuid;
 
 private:
-  virtual bool DoNotify(const event::Event* pEV) {
-    return false;
-  }
-  virtual bool DoQuery(event::Event* pEV) const {
-    return false;
+  virtual void doNotify(const event::Event* pEV) {
+    return;
   }
 };
 

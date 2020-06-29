@@ -58,7 +58,7 @@ public:
 
   const ObjectProperty* FindProperty(const ConstString&) const;
   const IObjectFunctor* FindFunctor(const ConstString&) const;
-  object::Signal Object::*FindSignal(const ConstString&) const;
+  object::Signal Object::*signal(const ConstString&) const;
   object::AutoSlot Object::*FindAutoSlot(const ConstString&) const;
 
   template <typename T> inline const T* findTypedProperty(const ConstString& named) const {
