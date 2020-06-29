@@ -665,7 +665,7 @@ void CAPlayThroughHost::addDeviceListeners(AudioDeviceID input)
 				propSize = sizeof(UInt32);
 				err = AudioStreamGetProperty(streams[i], 0, kAudioStreamPropertyDirection, &propSize, &isInput);
 				if(!err && isInput)
-					err = AudioStreamAddPropertyListener(streams[i], 0, kAudioStreamPropertyPhysicalFormat, StreamListener, this);
+					err = AudioStreamaddPropertyListener(streams[i], 0, kAudioStreamPropertyPhysicalFormat, StreamListener, this);
 			}
 		}
 	}

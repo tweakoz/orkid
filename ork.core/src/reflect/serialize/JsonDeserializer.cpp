@@ -231,7 +231,7 @@ object_ptr_t JsonDeserializer::_parseObjectNode(IDeserializer::node_ptr_t dserno
     // OrkAssert(propnode.IsObject());
 
     auto propname = propkey.GetString();
-    auto prop     = description.FindProperty(propname);
+    auto prop     = description.property(propname);
 
     if (prop) {
       printf("found propname<%s> prop<%p>\n", propname, prop);

@@ -402,7 +402,7 @@ void ObjectModel::EnumerateNodes(
   int inumclasses = int(ClassVect.size());
   for (int ic = (inumclasses - 1); ic >= 0; ic--) {
     object::ObjectClass* pclass                         = ClassVect[ic];
-    ork::reflect::Description::PropertyMapType& propmap = pclass->Description().Properties();
+    ork::reflect::Description::PropertyMapType& propmap = pclass->Description().properties();
     auto eg_anno                                        = pclass->Description().classAnnotation("editor.prop.groups");
     auto as_conststr                                    = eg_anno.TryAs<const char*>();
     const char* eg                                      = "";

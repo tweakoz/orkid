@@ -162,7 +162,7 @@ ISerializer::node_ptr_t JsonSerializer::serializeObject(node_ptr_t parnode) {
       propsnode->_instance = instance;
       propsnode->_parent   = onode;
 
-      for (auto prop_item : desc.Properties()) {
+      for (auto prop_item : desc.properties()) {
         auto propname        = prop_item.first;
         auto property        = prop_item.second;
         propsnode->_property = property;

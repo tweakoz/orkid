@@ -276,14 +276,14 @@ void graph_data::Describe() {
   ///////////////////////////////////////////////////////////////////////////////
   void graph_inst::doNotify(const ork::event::Event* event) {
     if (auto pev = dynamic_cast<const ItemRemovalEvent*>(event)) {
-      if (pev->mProperty == graph_inst::GetClassStatic()->Description().FindProperty("Modules")) {
+      if (pev->mProperty == graph_inst::GetClassStatic()->Description().property("Modules")) {
         ork::PoolString ps = pev->mKey.Get<ork::PoolString>();
         ork::Object* pobj  = pev->mOldValue.Get<ork::Object*>();
         delete pobj;
         return;
       }
     } else if (auto pev = dynamic_cast<const MapItemCreationEvent*>(event)) {
-      if (pev->mProperty == graph_inst::GetClassStatic()->Description().FindProperty("Modules")) {
+      if (pev->mProperty == graph_inst::GetClassStatic()->Description().property("Modules")) {
         PoolString psname    = pev->mKey.Get<PoolString>();
         ork::Object* pnewobj = pev->mNewItem.Get<ork::Object*>();
         dgmodule* pdgmod     = rtti::autocast(pnewobj);

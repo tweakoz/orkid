@@ -131,7 +131,7 @@ template<typename T, typename P> template<typename S> void CQNoMoc<T,P>::AddSlot
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template<typename T, typename P> template<typename S> void CQNoMoc<T,P>::AddSignal0( const char *pname, S method )
+template<typename T, typename P> template<typename S> void CQNoMoc<T,P>::addSignal0( const char *pname, S method )
 {
 	MocFunctorBase *methrec = new MocMethodVoid<T,S>( pname, method );
 	mSignals.push_back( methrec );
@@ -145,7 +145,7 @@ template<typename T, typename P> template<typename R> void CQNoMoc<T,P>::AddSlot
 	mSlots.push_back( methrec );
 }
 
-template<typename T, typename P> template<typename R> void CQNoMoc<T,P>::AddSignal1( const char *pname, void(T::*method)(R) )
+template<typename T, typename P> template<typename R> void CQNoMoc<T,P>::addSignal1( const char *pname, void(T::*method)(R) )
 {
 	MocFunctorBase *methrec = new MocMethod1<T,void(T::*)(R),R>( pname, method );
 	mSignals.push_back( methrec );

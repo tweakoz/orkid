@@ -73,7 +73,7 @@ GedObjNode<PropSetterObj>::GedObjNode(ObjModel& mdl, const char* name, const ref
 
       mdl.GetGedWidget()->PushItemNode( this );
       const reflect::IObjectFunctor *functor =
-      rtti::downcast<object::ObjectClass*>(psubobj->GetClass())->Description().FindFunctor("GetName"); if( functor )
+      rtti::downcast<object::ObjectClass*>(psubobj->GetClass())->Description().findFunctor("GetName"); if( functor )
       {
           reflect::IInvokation *invokation = functor->CreateInvokation();
           if(invokation->GetNumParameters() == 0)
@@ -111,7 +111,7 @@ GedObjNode<PropSetterObj>::GedObjNode(ObjModel& mdl, const char* name, const ref
   // printf("GedObjNode<%s> psubobj<%p> 1\n", name, psubobj);
   if (psubobj) {
     const reflect::IObjectFunctor* functor =
-        rtti::downcast<object::ObjectClass*>(psubobj->GetClass())->Description().FindFunctor("GetName");
+        rtti::downcast<object::ObjectClass*>(psubobj->GetClass())->Description().findFunctor("GetName");
     if (functor) {
       reflect::IInvokation* invokation = functor->CreateInvokation();
       if (invokation->GetNumParameters() == 0) {

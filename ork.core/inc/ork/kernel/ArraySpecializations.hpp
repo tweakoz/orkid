@@ -26,7 +26,7 @@ void Array<Entity*>::ClassInit()
 {
 	GetClassStatic();
 
-	AddProperty(new CObjectVectorContainerProp("Array",
+	addProperty(new CObjectVectorContainerProp("Array",
 												CProp::EFLAG_NONE, 
 												PROP_OFFSET(Array<Entity*>, mArray), Entity::GetClassNameStatic()));
 

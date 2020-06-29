@@ -873,7 +873,7 @@ bool QueryArchetypeReferenced(ork::Object* pobj, const ent::Archetype* parch) {
 
   /////////////////////////////
   const reflect::IObjectFunctor* functor =
-      rtti::downcast<object::ObjectClass*>(pobj->GetClass())->Description().FindFunctor("SlotArchetypeReferenced");
+      rtti::downcast<object::ObjectClass*>(pobj->GetClass())->Description().findFunctor("SlotArchetypeReferenced");
   if (functor) {
     reflect::IInvokation* invokation = functor->CreateInvokation();
     if (invokation->GetNumParameters() == 1) {
@@ -950,7 +950,7 @@ void DynamicSignalArchetypeDeleted(ork::Object* pobj, ent::Archetype* parch) {
 
   /////////////////////////////
   const reflect::IObjectFunctor* functor =
-      rtti::downcast<object::ObjectClass*>(pobj->GetClass())->Description().FindFunctor("SlotArchetypeDeleted");
+      rtti::downcast<object::ObjectClass*>(pobj->GetClass())->Description().findFunctor("SlotArchetypeDeleted");
   if (functor) {
     reflect::IInvokation* invokation = functor->CreateInvokation();
     if (invokation->GetNumParameters() == 1) {

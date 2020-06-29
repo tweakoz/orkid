@@ -40,10 +40,10 @@ public:
 
   Description();
 
-  void AddProperty(const char* key, ObjectProperty* value);
-  void AddFunctor(const char* key, IObjectFunctor* functor);
-  void AddSignal(const char* key, object::Signal Object::*);
-  void AddAutoSlot(const char* key, object::AutoSlot Object::*);
+  void addProperty(const char* key, ObjectProperty* value);
+  void addFunctor(const char* key, IObjectFunctor* functor);
+  void addSignal(const char* key, object::Signal Object::*);
+  void addAutoSlot(const char* key, object::AutoSlot Object::*);
 
   void SetParentDescription(const Description*);
 
@@ -53,16 +53,16 @@ public:
   void annotateClass(const ConstString& key, const anno_t& val);
   const anno_t& classAnnotation(const ConstString& key) const;
 
-  PropertyMapType& Properties();
-  const PropertyMapType& Properties() const;
+  PropertyMapType& properties();
+  const PropertyMapType& properties() const;
 
-  const ObjectProperty* FindProperty(const ConstString&) const;
-  const IObjectFunctor* FindFunctor(const ConstString&) const;
+  const ObjectProperty* property(const ConstString&) const;
+  const IObjectFunctor* findFunctor(const ConstString&) const;
   object::Signal Object::*findSignal(const ConstString&) const;
   object::AutoSlot Object::*FindAutoSlot(const ConstString&) const;
 
   template <typename T> inline const T* findTypedProperty(const ConstString& named) const {
-    return dynamic_cast<const T*>(FindProperty(named));
+    return dynamic_cast<const T*>(property(named));
   }
 
   void serializeProperties(ISerializer::node_ptr_t) const;

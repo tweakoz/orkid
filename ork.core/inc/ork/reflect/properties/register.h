@@ -51,7 +51,7 @@ static inline DirectTyped<MemberType>& RegisterPropertyO(
     Description& description = ClassType::GetClassStatic()->Description()) {
   auto prop = new DirectTyped<MemberType>(static_cast<MemberType Object::*>(member));
 
-  description.AddProperty(name, prop);
+  description.addProperty(name, prop);
 
   return *prop;
 }
@@ -67,7 +67,7 @@ static inline AccessorTyped<MemberType>& RegisterProperty(
   auto prop = new AccessorTyped<MemberType>(
       static_cast<void (Object::*)(MemberType&) const>(getter), static_cast<void (Object::*)(const MemberType&)>(setter));
 
-  description.AddProperty(name, prop);
+  description.addProperty(name, prop);
 
   return *prop;
 }
@@ -79,7 +79,7 @@ static inline AccessorObject& RegisterProperty(
     Description& description = ClassType::GetClassStatic()->Description()) {
   auto prop = new AccessorObject(static_cast<object_ptr_t (Object::*)()>(accessor));
 
-  description.AddProperty(name, prop);
+  description.addProperty(name, prop);
 
   return *prop;
 }
@@ -93,7 +93,7 @@ static inline AccessorVariant& RegisterProperty(
   auto prop = new AccessorVariant(
       static_cast<bool (Object::*)(ISerializer&) const>(serialize), static_cast<bool (Object::*)(IDeserializer&)>(deserialize));
 
-  description.AddProperty(name, prop);
+  description.addProperty(name, prop);
 
   return *prop;
 }
@@ -110,7 +110,7 @@ static DirectTypedArray<MemberType>& RegisterArrayProperty(
       reinterpret_cast<MemberType(Object::*)[]>(static_cast<MemberType(Object::*)[size]>(pmember)),
       size);
 
-  description.AddProperty(name, prop);
+  description.addProperty(name, prop);
 
   return *prop;
 }
@@ -122,7 +122,7 @@ static DirectTypedVector<MemberType>& RegisterArrayProperty(
     Description& description = ClassType::GetClassStatic()->Description()) {
   auto prop = new DirectTypedVector<MemberType>(static_cast<MemberType Object::*>(pmember));
 
-  description.AddProperty(name, prop);
+  description.addProperty(name, prop);
 
   return *prop;
 }
@@ -141,7 +141,7 @@ static inline AccessorTypedArray<MemberType>& RegisterArrayProperty(
       static_cast<size_t (Object::*)() const>(counter),
       static_cast<void (Object::*)(size_t)>(resizer));
 
-  description.AddProperty(name, prop);
+  description.addProperty(name, prop);
 
   return *prop;
 }
@@ -158,7 +158,7 @@ static inline AccessorObjectArray& RegisterArrayProperty(
       static_cast<size_t (Object::*)() const>(counter),
       static_cast<void (Object::*)(size_t)>(resizer));
 
-  description.AddProperty(name, prop);
+  description.addProperty(name, prop);
 
   return *prop;
 }
@@ -177,7 +177,7 @@ static inline AccessorVariantArray& RegisterArrayProperty(
       static_cast<size_t (Object::*)() const>(count),
       static_cast<void (Object::*)(size_t)>(resize));
 
-  description.AddProperty(name, prop);
+  description.addProperty(name, prop);
 
   return *prop;
 }
@@ -188,7 +188,7 @@ static inline DirectTypedMap<MapType>& RegisterMapProperty(
     MapType ClassType::*member,
     Description& description = ClassType::GetClassStatic()->Description()) {
   auto prop = new DirectTypedMap<MapType>(static_cast<MapType Object::*>(member));
-  description.AddProperty(name, prop);
+  description.addProperty(name, prop);
   return *prop;
 }
 
@@ -208,7 +208,7 @@ static inline AccessorTypedMap<KeyType, ValueType>& RegisterMapProperty(
       typename AccessorTypedMap<KeyType, ValueType>::SerializationFunction, BidirectionalSerializer&) const>(serializer);
   auto prop = new AccessorTypedMap<KeyType, ValueType>(_g, _s, _e, _z);
 
-  description.AddProperty(name, prop);
+  description.addProperty(name, prop);
 
   return *prop;
 }
@@ -228,7 +228,7 @@ static inline AccessorObjectMap<KeyType>& RegisterMapProperty(
       static_cast<void (Object::*)(typename AccessorObjectMap<KeyType>::SerializationFunction, BidirectionalSerializer&) const>(
           serializer));
 
-  description.AddProperty(name, prop);
+  description.addProperty(name, prop);
 
   return *prop;
 }
@@ -238,19 +238,19 @@ static inline AccessorObjectMap<KeyType>& RegisterMapProperty(
 
 template <typename FunctionType> static inline void RegisterFunctor(const char* name, FunctionType function) {
   Description& description = Function<FunctionType>::ClassType::GetClassStatic()->Description();
-  description.AddFunctor(name, CreateObjectFunctor(function));
+  description.addFunctor(name, CreateObjectFunctor(function));
 }
 
 template <typename ClassType> static void RegisterSignal(const char* name, object::Signal ClassType::*pmember) {
   Description& description = ClassType::GetClassStatic()->Description();
-  description.AddSignal(name, static_cast<object::Signal Object::*>(pmember));
+  description.addSignal(name, static_cast<object::Signal Object::*>(pmember));
 }
 
 template <typename ClassType, typename FunctionType>
 static void RegisterSlot(const char* name, object::AutoSlot ClassType::*pmember, FunctionType function) {
   Description& description = ClassType::GetClassStatic()->Description();
   RegisterFunctor(name, function);
-  description.AddAutoSlot(name, static_cast<object::AutoSlot Object::*>(pmember));
+  description.addAutoSlot(name, static_cast<object::AutoSlot Object::*>(pmember));
 }
 
 ///////////////////////////////////////////////////////////////////////////////

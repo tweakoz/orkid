@@ -32,7 +32,7 @@ inline object::PropertyModifier object::ObjectClass::memberProperty(const char* 
   object::PropertyModifier modder;
   auto typed_member = static_cast<MemberType Object::*>(member);
   modder._property  = new reflect::DirectTyped<MemberType>(typed_member);
-  _description.AddProperty(name, modder._property);
+  _description.addProperty(name, modder._property);
   return modder;
 }
 ///////////////////////////////////////////////////////////////////////////
@@ -41,7 +41,7 @@ inline object::PropertyModifier object::ObjectClass::sharedObjectMapProperty(con
   object::PropertyModifier modder;
   auto typed_member = static_cast<MemberType Object::*>(member);
   modder._property  = new reflect::DirectObjectMap(typed_member);
-  _description.AddProperty(name, modder._property);
+  _description.addProperty(name, modder._property);
   return modder;
 }
 ///////////////////////////////////////////////////////////////////////////
@@ -52,7 +52,7 @@ inline object::PropertyModifier object::ObjectClass::sharedObjectProperty( //
   object::PropertyModifier modder;
   auto typed_member = static_cast<object_ptr_t Object::*>(member);
   modder._property  = new reflect::DirectObject(typed_member);
-  _description.AddProperty(name, modder._property);
+  _description.addProperty(name, modder._property);
   return modder;
 }
 ///////////////////////////////////////////////////////////////////////////
@@ -65,7 +65,7 @@ inline object::PropertyModifier object::ObjectClass::accessorProperty(
   auto typed_getter = static_cast<void (Object::*)(MemberType&) const>(getter);
   auto typed_setter = static_cast<void (Object::*)(const MemberType&)>(setter);
   modder._property  = new reflect::AccessorTyped<MemberType>(typed_getter, typed_setter);
-  _description.AddProperty(name, modder._property);
+  _description.addProperty(name, modder._property);
   return modder;
 }
 ///////////////////////////////////////////////////////////////////////////

@@ -92,7 +92,7 @@ const reflect::IObjectFunctor* Slot::GetFunctor() const {
   object::ObjectClass* clazz = rtti::autocast(mObject->GetClass());
   auto& desc                 = clazz->Description();
   auto classname             = clazz->Name();
-  auto f                     = desc.FindFunctor(mSlotName);
+  auto f                     = desc.findFunctor(mSlotName);
   return f;
 }
 
@@ -118,7 +118,7 @@ AutoSlot::AutoSlot(Object* object, const char* name)
   OrkAssert(object != 0);
 }
 
-void AutoSlot::AddSignal(Signal* psig) {
+void AutoSlot::addSignal(Signal* psig) {
   bool found = false;
   mConnectedSignals.atomicOp([&](sig_set_t& ss) {
     for (auto the_sig : ss)
@@ -165,7 +165,7 @@ const reflect::IObjectFunctor* LambdaSlot::GetFunctor() const {
   return nullptr;
 }
 
-void LambdaSlot::AddSignal(Signal* psig) {
+void LambdaSlot::addSignal(Signal* psig) {
   auto it = mConnectedSignals.find(psig);
   if (it != mConnectedSignals.end()) {
     OrkAssert(false);
@@ -313,7 +313,7 @@ void Signal::ResizeSlots(size_t sz) {
 bool Connect(Object* pSender, PoolString signal, Object* pReceiver, PoolString slot) {
   object::ObjectClass* pclass            = rtti::downcast<object::ObjectClass*>(pReceiver->GetClass());
   const reflect::Description& descript   = pclass->Description();
-  const reflect::IObjectFunctor* functor = descript.FindFunctor(slot);
+  const reflect::IObjectFunctor* functor = descript.findFunctor(slot);
   if (functor != NULL) {
     Signal* pSignal = pSender->findSignal(signal);
     if (pSignal)
@@ -325,7 +325,7 @@ bool Connect(Signal* psig, AutoSlot* pslot) {
   if (psig && pslot) {
     bool bsig = psig->AddSlot(pslot);
     bool bslt = true;
-    static_cast<Slot*>(pslot)->AddSignal(psig);
+    static_cast<Slot*>(pslot)->addSignal(psig);
     return (bsig & bslt);
   }
   return false;
@@ -344,7 +344,7 @@ bool ConnectToLambda(Object* pSender, PoolString signal, Object* pReceiver, cons
 bool Disconnect(Object* pSender, PoolString signal, Object* pReceiver, PoolString slot) {
   object::ObjectClass* pclass            = rtti::downcast<object::ObjectClass*>(pReceiver->GetClass());
   const reflect::Description& descript   = pclass->Description();
-  const reflect::IObjectFunctor* functor = descript.FindFunctor(slot);
+  const reflect::IObjectFunctor* functor = descript.findFunctor(slot);
   if (functor != NULL) {
     Signal* pSignal = pSender->findSignal(signal);
     if (pSignal)

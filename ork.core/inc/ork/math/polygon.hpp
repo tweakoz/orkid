@@ -216,7 +216,7 @@ mesh<vtx>::mesh()
 /*template <typename vtx>
 void mesh<vtx>::ClassInit()
 {
-	AddProperty( new CObjectReferenceProp(	"Vertices",
+	addProperty( new CObjectReferenceProp(	"Vertices",
 												CProp::EFLAG_NONE,
 												PROP_OFFSET(mesh<vtx>, mVertices),
 												component_pool< vtx >::GetClassNameStatic() ) );

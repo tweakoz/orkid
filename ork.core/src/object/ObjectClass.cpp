@@ -70,7 +70,7 @@ void ObjectClass::Initialize() {
   Class::Initialize();
   _description.SetParentDescription(ParentClassDescription(Parent()));
 
-  reflect::Description::PropertyMapType& propmap = _description.Properties();
+  reflect::Description::PropertyMapType& propmap = _description.properties();
 
   for (auto it : propmap) {
     ConstString name              = it.first;

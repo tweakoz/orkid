@@ -45,7 +45,7 @@ public:
     mSlotName = sname;
   }
 
-  virtual void AddSignal(Signal* psig) {
+  virtual void addSignal(Signal* psig) {
   }
   virtual void RemoveSignal(Signal* psig) {
   }
@@ -79,7 +79,7 @@ public:
 
 private:
   void RemoveSignal(Signal* psig) override;
-  void AddSignal(Signal* psig) override;
+  void addSignal(Signal* psig) override;
   LockedResource<sig_set_t> mConnectedSignals;
 };
 
@@ -93,7 +93,7 @@ struct LambdaSlot : public ISlot {
 private:
   orkset<Signal*> mConnectedSignals;
   void RemoveSignal(Signal* psig) override;
-  void AddSignal(Signal* psig) override;
+  void addSignal(Signal* psig) override;
 
   const reflect::IObjectFunctor* GetFunctor() const override;
   void Invoke(reflect::IInvokation* invokation) const override;
