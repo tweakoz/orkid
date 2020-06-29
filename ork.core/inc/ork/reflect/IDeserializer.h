@@ -21,7 +21,7 @@ class Command;
 
 struct IDeserializer {
 
-  using var_t = svar64_t;
+  using var_t = svar1024_t;
   struct Node;
   using node_ptr_t = std::shared_ptr<Node>;
 

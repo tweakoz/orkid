@@ -141,61 +141,6 @@ void DirectObjectMap<MapType>::MapSerialization(
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
-void DirectObjectMap<MapType>::MapDeserialization(
-    ElementDeserializeFunction serialization_func, //
-    IDeserializer::node_ptr_t dser) const {
-  OrkAssert(false);
-}
-////////////////////////////////////////////////////////////////////////////////
-/*template <typename MapType> //
-bool DirectObjectMap<MapType>::MapSerialization(
-    ElementSerializeFunction serialization_func, //
-    BidirectionalSerializer& bidi,
-    object_constptr_t instance) const {
-
-  if (bidi.Serializing()) {
-    const MapType& map = instance.get()->*_member;
-
-    // const KeyType *last_key = NULL;
-
-    typename MapType::const_iterator itprev;
-
-    int imultiindex = 0;
-
-    for (typename MapType::const_iterator it = map.begin(); it != map.end(); it++) {
-      KeyType key = it->first;
-
-      if (it != map.begin()) {
-        const KeyType& ka = itprev->first;
-        const KeyType& kb = it->first;
-
-        if (ka == kb) {
-          imultiindex++;
-        } else {
-          imultiindex = 0;
-        }
-      }
-
-      itprev = it;
-
-      ///////////////////////////////////////////////////
-      // multi index hint
-      ///////////////////////////////////////////////////
-
-      bidi.Serializer()->Hint("MultiIndex", imultiindex);
-
-      ///////////////////////////////////////////////////
-
-      object_ptr_t value = it->second;
-
-      // printf("ser key<%s> val<%p>\n", key.c_str(), value.get());
-      (*serialization_func)(bidi, key, value);
-    }
-  }
-  return true;
-}*/
-////////////////////////////////////////////////////////////////////////////////
-template <typename MapType> //
 bool DirectObjectMap<MapType>::GetKey(
     object_constptr_t instance, //
     int multi_index,

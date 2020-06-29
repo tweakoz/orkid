@@ -17,26 +17,41 @@
 #include <ork/reflect/serialize/ShallowSerializer.h>
 #include <ork/reflect/serialize/JsonDeserializer.h>
 #include <ork/reflect/serialize/JsonSerializer.h>
+#include "codec.inl"
 
 namespace ork { namespace reflect {
 
 template <typename T> void ITyped<T>::deserialize(IDeserializer::node_ptr_t desernode) const {
   auto instance   = desernode->_instance;
   const auto& var = desernode->_value;
-  OrkAssert(false);
+  T value;
+  decode_value<T>(var, value);
+  set(value, instance);
 }
 
-template <> //
-inline void ITyped<bool>::deserialize(IDeserializer::node_ptr_t desernode) const {
-  auto instance   = desernode->_instance;
-  const auto& var = desernode->_value;
-  set(var.Get<bool>(), instance);
-}
 template <> //
 inline void ITyped<int>::deserialize(IDeserializer::node_ptr_t desernode) const {
   auto instance   = desernode->_instance;
   const auto& var = desernode->_value;
   set(int(var.Get<double>()), instance);
+}
+template <> //
+inline void ITyped<uint32_t>::deserialize(IDeserializer::node_ptr_t desernode) const {
+  auto instance   = desernode->_instance;
+  const auto& var = desernode->_value;
+  set(uint32_t(var.Get<double>()), instance);
+}
+template <> //
+inline void ITyped<uint64_t>::deserialize(IDeserializer::node_ptr_t desernode) const {
+  auto instance   = desernode->_instance;
+  const auto& var = desernode->_value;
+  set(uint64_t(var.Get<double>()), instance);
+}
+template <> //
+inline void ITyped<size_t>::deserialize(IDeserializer::node_ptr_t desernode) const {
+  auto instance   = desernode->_instance;
+  const auto& var = desernode->_value;
+  set(size_t(var.Get<double>()), instance);
 }
 
 template <typename T> void ITyped<T>::serialize(ISerializer& serializer, object_constptr_t obj) const {

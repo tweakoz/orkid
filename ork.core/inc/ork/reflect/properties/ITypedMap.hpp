@@ -12,6 +12,7 @@
 #include <ork/reflect/IDeserializer.h>
 #include <ork/reflect/ISerializer.h>
 #include <ork/reflect/BidirectionalSerializer.h>
+#include "codec.inl"
 
 namespace ork::reflect {
 ////////////////////////////////////////////////////////////////////////////////
@@ -38,23 +39,6 @@ void ITypedMap<KeyType, ValueType>::_doSerialize(
   ser.endCommand(element);
 }
 ////////////////////////////////////////////////////////////////////////////////
-template <typename T> //
-inline void decode_key(std::string keystr, T& key_out) {
-  OrkAssert(false);
-}
-template <> //
-inline void decode_key(std::string keystr, int& key_out) {
-  OrkAssert(false);
-}
-template <> //
-inline void decode_key(std::string keystr, std::string& key_out) {
-  key_out = keystr;
-}
-template <typename T> //
-inline void decode_value(IDeserializer::var_t val_inp, T& val_out) {
-  val_out = val_inp.Get<T>();
-}
-////////////////////////////////////////////////////////////////////////////////
 template <typename KeyType, typename ValueType>
 void ITypedMap<KeyType, ValueType>::deserialize(IDeserializer::node_ptr_t dsernode) const {
   KeyType key;
@@ -77,52 +61,4 @@ void ITypedMap<KeyType, ValueType>::deserialize(IDeserializer::node_ptr_t dserno
   }
 }
 ////////////////////////////////////////////////////////////////////////////////
-/*template <typename KeyType> //
-void ITypedMap<KeyType, object_ptr_t>::deserialize(IDeserializer::node_ptr_t dsernode) const {
-  KeyType key;
-  object_ptr_t value;
-  auto deserializer  = dsernode->_deserializer;
-  size_t numelements = dsernode->_numchildren;
-  auto elemnode      = std::make_shared<IDeserializer::Node>();
-  elemnode->_parent  = dsernode;
-  auto instance      = dsernode->_instance;
-  for (size_t i = 0; i < numelements; i++) {
-    elemnode->_index = i;
-    deserializer->deserializeElement(elemnode);
-    const auto& key = elemnode->_key;
-    dsernode->WriteElement(
-        instance, //
-        key.c_str(),
-        -1,
-        &instance);
-  }
-}*.
-////////////////////////////////////////////////////////////////////////////////
-template <typename KeyType, typename ValueType>
-void ITypedMap<KeyType, ValueType>::_doDeserialize(
-    IDeserializer& dser, //
-    KeyType& key,
-    ValueType& value) {
-Command element;
-dser.beginCommand(element);
-OrkAssert(element.Type() == Command::ELEMENT);
-dser.endCommand(element);
-
-Command attribute;
-dser.beginCommand(attribute);
-
-OrkAssert(attribute.Type() == Command::EATTRIBUTE);
-OrkAssert(attribute.Name() == "key");
-
-dser.Hint("map_key");
-// dser.deserializeItem();
-// bidi | key;
-dser.endCommand(attribute);
-
-dser.Hint("map_value");
-// dser.deserializeItem();
-dser.endCommand(element);
-} // namespace ork::reflect
-////////////////////////////////////////////////////////////////////////////////
-*/
 } // namespace ork::reflect
