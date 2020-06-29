@@ -42,12 +42,6 @@ inline void ITyped<uint32_t>::deserialize(IDeserializer::node_ptr_t desernode) c
   set(uint32_t(var.Get<double>()), instance);
 }
 template <> //
-inline void ITyped<uint64_t>::deserialize(IDeserializer::node_ptr_t desernode) const {
-  auto instance   = desernode->_instance;
-  const auto& var = desernode->_value;
-  set(uint64_t(var.Get<double>()), instance);
-}
-template <> //
 inline void ITyped<size_t>::deserialize(IDeserializer::node_ptr_t desernode) const {
   auto instance   = desernode->_instance;
   const auto& var = desernode->_value;
