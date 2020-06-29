@@ -60,7 +60,7 @@ bool ArchetypeAssetLoader::LoadFileAsset(asset::asset_ptr_t asset, ConstString a
 
   float ftime1 = ork::OldSchool::GetRef().GetLoResRelTime();
   stream::FileInputStream istream(asset_name.c_str());
-  reflect::serialize::JsonDeserializer iser(istream);
+  reflect::serdes::JsonDeserializer iser(istream);
   rtti::ICastable* pcastable = 0;
 
 #if defined(_XBOX) && defined(PROFILE)

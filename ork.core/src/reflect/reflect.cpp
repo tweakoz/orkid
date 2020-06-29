@@ -171,7 +171,7 @@ bool SetInvokationParameter(IInvokation* invokation, int param, const char* para
     return false;
   /*
 ork::stream::StringInputStream stream(paramdata);
-ork::reflect::serialize::TextDeserializer deser(stream);
+ork::reflect::serdes::TextDeserializer deser(stream);
 BidirectionalSerializer bidi(deser);
 invokation->ApplyParam(bidi, param);
 return bidi.Succeeded();*/

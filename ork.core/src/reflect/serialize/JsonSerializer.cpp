@@ -22,7 +22,7 @@
 #include <rapidjson/writer.h>
 #include <rapidjson/prettywriter.h>
 
-namespace ork::reflect::serialize {
+namespace ork::reflect::serdes {
 struct JsonSerObjectNode {
   JsonSerObjectNode() {
     _jsonvalue.SetObject();

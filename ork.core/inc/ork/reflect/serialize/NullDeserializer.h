@@ -18,7 +18,7 @@ namespace ork { namespace stream {
 class IOutputStream;
 }} // namespace ork::stream
 
-namespace ork::reflect::serialize {
+namespace ork::reflect::serdes {
 
 class NullDeserializer final : public IDeserializer {
 public:

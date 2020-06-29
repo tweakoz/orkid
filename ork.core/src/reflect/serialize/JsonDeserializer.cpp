@@ -22,7 +22,7 @@
 
 using namespace rapidjson;
 
-namespace ork::reflect::serialize {
+namespace ork::reflect::serdes {
 
 //////////////////////////////////////////////////////////////////////////////
 

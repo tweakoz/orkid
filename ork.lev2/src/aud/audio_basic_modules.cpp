@@ -539,7 +539,7 @@ void AudioGraphPool::BindTemplate( const AudioGraph& InTemplate, int inumvoices 
 	////////////////////////////////////////////
 	ork::ResizableString str;
 	ork::stream::ResizableStringOutputStream ostream(str);
-	ork::reflect::serialize::BinarySerializer binoser(ostream);
+	ork::reflect::serdes::BinarySerializer binoser(ostream);
 	InTemplate.GetClass()->Description().SerializeProperties(binoser, & InTemplate);
 	////////////////////////////////////////////
 	for( int i=0; i<inumvoices; i++ )
@@ -548,7 +548,7 @@ void AudioGraphPool::BindTemplate( const AudioGraph& InTemplate, int inumvoices 
 		//clone.~AudioGraph();
 		//new (&clone) AudioGraph();
 		ork::stream::StringInputStream istream(str);
-		ork::reflect::serialize::BinaryDeserializer biniser(istream);
+		ork::reflect::serdes::BinaryDeserializer biniser(istream);
 		InTemplate.GetClass()->Description().DeserializeProperties(biniser, &clone);
 	}
 	mTemplate = & InTemplate;

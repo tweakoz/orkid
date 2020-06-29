@@ -12,6 +12,6 @@
 #include <ork/reflect/properties/ObjectProperty.h>
 #include <ork/rtti/Category.h>
 
-namespace ork { namespace reflect { namespace serialize {
+namespace ork { namespace reflect { namespace serdes {
 
 }}} // namespace ork::reflect::serialize

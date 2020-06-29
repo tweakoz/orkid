@@ -25,11 +25,11 @@
 namespace ork { namespace tool { namespace ged {
 ///////////////////////////////////////////////////////////////////////////////
 
-class EnumReader : public reflect::serialize::LayerSerializer {
+class EnumReader : public reflect::serdes::LayerSerializer {
 public:
   /////////////////////////////////////////////////////
   EnumReader(const ork::Object* pobj, const reflect::ObjectProperty* prop)
-      : reflect::serialize::LayerSerializer(mNullSer) {
+      : reflect::serdes::LayerSerializer(mNullSer) {
     prop->Serialize(*this, pobj);
   }
   const orkmap<std::string, int>& GetEnumMap() const {
@@ -42,7 +42,7 @@ public:
 private:
   /////////////////////////////////////////////////////
   const reflect::IMap* mMapProp;
-  reflect::serialize::NullSerializer mNullSer;
+  reflect::serdes::NullSerializer mNullSer;
   /////////////////////////////////////////////////////
   const ork::Object* mpObject;
   orkmap<std::string, int> mEnumMap;
@@ -60,17 +60,17 @@ private:
   bool Serialize(const PieceString& value) {
     ArrayString<128> astr(value);
     mCurrentValue = astr.c_str();
-    return reflect::serialize::LayerSerializer::Serialize(value);
+    return reflect::serdes::LayerSerializer::Serialize(value);
   }
   /////////////////////////////////////////////////////
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class EnumWriter : public reflect::serialize::LayerDeserializer {
+class EnumWriter : public reflect::serdes::LayerDeserializer {
 public:
   EnumWriter(const ork::Object* pobj, const reflect::ObjectProperty* prop)
-      : reflect::serialize::LayerDeserializer(mNullDeser)
+      : reflect::serdes::LayerDeserializer(mNullDeser)
       , mObject(pobj)
       , mProp(prop)
       , mpSetValue(0) {
@@ -83,7 +83,7 @@ public:
   }
 
 private:
-  reflect::serialize::NullDeserializer mNullDeser;
+  reflect::serdes::NullDeserializer mNullDeser;
   const ork::Object* mObject;
   const reflect::ObjectProperty* mProp;
   const char* mpSetValue;

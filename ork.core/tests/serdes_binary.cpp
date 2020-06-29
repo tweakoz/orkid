@@ -31,7 +31,7 @@ std::shared_ptr<storage_type> hkeyToStorage() {
   hkeys.Default();
   auto resultdata = std::make_shared<storage_type>();
   stream::StringOutputStream out_stream(*resultdata);
-  serialize::BinarySerializer ser(out_stream);
+  serdes::BinarySerializer ser(out_stream);
   bool serok = ser.serializeObject(&hkeys);
   OrkAssert(serok);
   return resultdata;
@@ -54,7 +54,7 @@ TEST(SerializeSharedObjectBinary) {
   hkeys->Default();
   auto resultdata = std::make_shared<storage_type>();
   stream::StringOutputStream out_stream(*resultdata);
-  serialize::BinarySerializer ser(out_stream);
+  serdes::BinarySerializer ser(out_stream);
   bool serok = ser.serializeSharedObject(hkeys);
   printf("////////////////////////////////////////////////////////////////////////\n");
   printf("SerializeSharedObjectBinary dump\n");
@@ -68,7 +68,7 @@ TEST(DeserializeObjectBinary) {
   auto resultdata = hkeyToStorage();
   auto pstr       = PieceString(resultdata->data(), resultdata->length());
   stream::StringInputStream inp_stream(pstr);
-  serialize::BinaryDeserializer deser(inp_stream);
+  serdes::BinaryDeserializer deser(inp_stream);
   rtti::castable_rawptr_t pcastable = nullptr;
   bool serok                        = deser.deserializeObject(pcastable);
   CHECK(serok);

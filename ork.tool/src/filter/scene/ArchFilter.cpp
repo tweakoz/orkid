@@ -64,7 +64,7 @@ bool ConvertArchetypeSbox2Arch(const tokenlist& toklist) {
   ///////////////////
 
   stream::FileInputStream istream(inf.c_str());
-  reflect::serialize::JsonDeserializer iser(istream);
+  reflect::serdes::JsonDeserializer iser(istream);
   rtti::ICastable* pcastable = 0;
   bool bOK                   = iser.deserializeObject(pcastable);
 
@@ -94,7 +94,7 @@ bool ConvertArchetypeSbox2Arch(const tokenlist& toklist) {
       printf("exporting archetype<%s:%p>\n", name.c_str(), parch);
       if (parch) {
         stream::FileOutputStream ostream(outf.c_str());
-        reflect::serialize::JsonSerializer oser(ostream);
+        reflect::serdes::JsonSerializer oser(ostream);
         oser.Serialize(parch);
       }
       /////////////////////

@@ -16,7 +16,7 @@ namespace ork { namespace stream {
 class IOutputStream;
 }} // namespace ork::stream
 
-namespace ork { namespace reflect { namespace serialize {
+namespace ork { namespace reflect { namespace serdes {
 
 class JsonSerializer : public ISerializer {
 public:

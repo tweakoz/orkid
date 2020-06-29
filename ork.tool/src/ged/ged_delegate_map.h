@@ -83,7 +83,7 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class MapTraverseSerializer : public reflect::serialize::LayerSerializer {
+class MapTraverseSerializer : public reflect::serdes::LayerSerializer {
   ObjModel& mModel;
   const reflect::ObjectProperty* mProp;
   Object* mObject;
@@ -129,14 +129,14 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class MapItemWriteSerializer : public reflect::serialize::LayerDeserializer {
+class MapItemWriteSerializer : public reflect::serdes::LayerDeserializer {
   enum EWRITETYPE {
     EWT_FLOAT = 0,
     EWT_CVECTOR3,
   };
 
   const reflect::IMap* mMapProp;
-  reflect::serialize::NullDeserializer mNullDeser;
+  reflect::serdes::NullDeserializer mNullDeser;
   GedMapIoDriver& mIoDriver;
   EWRITETYPE meWriteType;
   int miFloatIndex;
@@ -187,7 +187,7 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class MapItemReadSerializer : public reflect::serialize::LayerSerializer {
+class MapItemReadSerializer : public reflect::serdes::LayerSerializer {
   enum EREADTYPE {
     ERT_OBJECT = 0,
     ERT_NEWASSET,
@@ -199,7 +199,7 @@ class MapItemReadSerializer : public reflect::serialize::LayerSerializer {
 
   /////////////////////////////////////////////////////
   const reflect::IMap* mMapProp;
-  reflect::serialize::NullSerializer mNullSer;
+  reflect::serdes::NullSerializer mNullSer;
   const GedMapIoDriver& mIoDriver;
   /////////////////////////////////////////////////////
   const ork::Object* mpObject;
@@ -228,8 +228,8 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class MapKeyWriter : public reflect::serialize::LayerDeserializer {
-  reflect::serialize::NullDeserializer mNull;
+class MapKeyWriter : public reflect::serdes::LayerDeserializer {
+  reflect::serdes::NullDeserializer mNull;
   const GedMapIoDriver& mIoDriver;
 
   bool Deserialize(MutableString& mstr) {
@@ -247,7 +247,7 @@ class MapKeyWriter : public reflect::serialize::LayerDeserializer {
 
 public:
   MapKeyWriter(const GedMapIoDriver& ioDriver)
-      : reflect::serialize::LayerDeserializer(mNull)
+      : reflect::serdes::LayerDeserializer(mNull)
       , mIoDriver(ioDriver)
 
   {

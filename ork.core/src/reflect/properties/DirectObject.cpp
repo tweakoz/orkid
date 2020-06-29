@@ -31,7 +31,7 @@ void DirectObject::deserialize(IDeserializer::node_ptr_t dsernode) const {
   Command command;
   serializer.beginCommand(command);
 
-  OrkAssertI(command.Type() == Command::EOBJECT, "DirectObject::Deserialize::Expected an Object command!\n");
+  OrkAssertI(command.Type() == Command::EOBJECT, "DirectObject::Deserdes::Expected an Object command!\n");
 
   if (command.Type() == Command::EOBJECT) {
     Object::xxxDeserialize(object_property, serializer);

@@ -9,7 +9,7 @@
 
 #include <ork/reflect/serialize/LayerSerializer.h>
 
-namespace ork { namespace reflect { namespace serialize {
+namespace ork { namespace reflect { namespace serdes {
 
 class ShallowSerializer : public LayerSerializer {
 public:

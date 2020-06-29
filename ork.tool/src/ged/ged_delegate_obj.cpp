@@ -81,7 +81,7 @@ GedObjNode<PropSetterObj>::GedObjNode(ObjModel& mdl, const char* name, const ref
               ArrayString<1024> result;
 
               stream::StringOutputStream ostream(result);
-              reflect::serialize::JsonSerializer serializer(ostream);
+              reflect::serdes::JsonSerializer serializer(ostream);
               reflect::BidirectionalSerializer result_bidi(serializer);
 
               functor->invoke(psubobj, invokation, &result_bidi);
@@ -118,7 +118,7 @@ GedObjNode<PropSetterObj>::GedObjNode(ObjModel& mdl, const char* name, const ref
         ArrayString<1024> result;
 
         stream::StringOutputStream ostream(result);
-        reflect::serialize::JsonSerializer serializer(ostream);
+        reflect::serdes::JsonSerializer serializer(ostream);
         reflect::BidirectionalSerializer result_bidi(serializer);
 
         functor->invoke(psubobj, invokation, &result_bidi);

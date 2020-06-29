@@ -13,7 +13,7 @@ namespace ork { namespace rtti {
 class Category;
 }} // namespace ork::rtti
 
-namespace ork { namespace reflect { namespace serialize {
+namespace ork { namespace reflect { namespace serdes {
 
 struct NullSerializer final : public ISerializer {};
 

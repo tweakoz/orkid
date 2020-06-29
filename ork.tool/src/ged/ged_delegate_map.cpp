@@ -51,7 +51,7 @@ MapTraverseSerializer::MapTraverseSerializer(
     ObjModel& model,
     ork::Object* pobj,
     const reflect::ObjectProperty* prop)
-    : reflect::serialize::LayerSerializer(serializer)
+    : reflect::serdes::LayerSerializer(serializer)
     , mModel(model)
     , mProp(prop)
     , mObject(pobj)
@@ -99,19 +99,19 @@ void MapTraverseSerializer::Hint(const PieceString& key, intptr_t ival) {
 bool MapTraverseSerializer::Serialize(const bool& value) {
   OrkAssertNotImpl();
   bool iskey = IsKey();
-  return reflect::serialize::LayerSerializer::Serialize(value);
+  return reflect::serdes::LayerSerializer::Serialize(value);
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool MapTraverseSerializer::Serialize(const char& value) {
   OrkAssertNotImpl();
   bool iskey = IsKey();
-  return reflect::serialize::LayerSerializer::Serialize(value);
+  return reflect::serdes::LayerSerializer::Serialize(value);
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool MapTraverseSerializer::Serialize(const short& value) {
   OrkAssertNotImpl();
   bool iskey = IsKey();
-  return reflect::serialize::LayerSerializer::Serialize(value);
+  return reflect::serdes::LayerSerializer::Serialize(value);
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool MapTraverseSerializer::Serialize(const int& value) {
@@ -122,13 +122,13 @@ bool MapTraverseSerializer::Serialize(const int& value) {
     mKeyDeco = KeyDecoName(mKeyString.c_str(), miMultiIndex);
     mMapNode.AddKey(mKeyDeco);
   }
-  return reflect::serialize::LayerSerializer::Serialize(value);
+  return reflect::serdes::LayerSerializer::Serialize(value);
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool MapTraverseSerializer::Serialize(const long& value) {
   OrkAssertNotImpl();
   bool iskey = IsKey();
-  return reflect::serialize::LayerSerializer::Serialize(value);
+  return reflect::serdes::LayerSerializer::Serialize(value);
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool MapTraverseSerializer::Serialize(const float& value) {
@@ -165,13 +165,13 @@ bool MapTraverseSerializer::Serialize(const float& value) {
     }
   }
   miFloatCounter++;
-  return reflect::serialize::LayerSerializer::Serialize(value);
+  return reflect::serdes::LayerSerializer::Serialize(value);
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool MapTraverseSerializer::Serialize(const double& value) {
   OrkAssertNotImpl();
   bool iskey = IsKey();
-  return reflect::serialize::LayerSerializer::Serialize(value);
+  return reflect::serdes::LayerSerializer::Serialize(value);
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool MapTraverseSerializer::serializeObject(rtti::castable_rawconstptr_t value) {
@@ -207,7 +207,7 @@ bool MapTraverseSerializer::serializeObject(rtti::castable_rawconstptr_t value) 
       }
     }
   }
-  return reflect::serialize::LayerSerializer::Serialize(value);
+  return reflect::serdes::LayerSerializer::Serialize(value);
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool MapTraverseSerializer::Serialize(const PieceString& value) {
@@ -242,13 +242,13 @@ bool MapTraverseSerializer::Serialize(const PieceString& value) {
 
     mModel.GetGedWidget()->AddChild(itemnode);
   }
-  return reflect::serialize::LayerSerializer::Serialize(value);
+  return reflect::serdes::LayerSerializer::Serialize(value);
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 MapItemWriteSerializer::MapItemWriteSerializer(GedMapIoDriver& iodriver)
-    : reflect::serialize::LayerDeserializer(mNullDeser)
+    : reflect::serdes::LayerDeserializer(mNullDeser)
     , mIoDriver(iodriver)
     , mMapProp(0)
     , mValueCastable(0)
@@ -405,7 +405,7 @@ void MapItemWriteSerializer::Move(const KeyDecoName& kdeco, const char* pname) {
   ArrayString<16384> astr;
   MutableString pstr(astr);
   ork::stream::StringOutputStream ostream(pstr);
-  ork::reflect::serialize::JsonSerializer oser(ostream);
+  ork::reflect::serdes::JsonSerializer oser(ostream);
   bool bok = mMapProp->SerializeItem(oser, keyser, kdeco.miMultiIndex, mIoDriver.GetObject());
 
   if (false == bok)
@@ -425,7 +425,7 @@ void MapItemWriteSerializer::Move(const KeyDecoName& kdeco, const char* pname) {
   niodriver.SetKey(KeyDecoName(pname, 0));
   MapKeyWriter keyser2(niodriver);
   ork::stream::StringInputStream istream(pstr.c_str());
-  ork::reflect::serialize::JsonDeserializer iser(istream);
+  ork::reflect::serdes::JsonDeserializer iser(istream);
 
   bok = mMapProp->DeserializeElement(&iser, keyser2, ork::reflect::IMap::kDeserializeInsertElement, mIoDriver.GetObject());
 
@@ -447,7 +447,7 @@ void MapItemWriteSerializer::Duplicate(const KeyDecoName& kdeco, const char* pna
   ArrayString<16384> astr;
   MutableString pstr(astr);
   ork::stream::StringOutputStream ostream(pstr);
-  ork::reflect::serialize::JsonSerializer oser(ostream);
+  ork::reflect::serdes::JsonSerializer oser(ostream);
   bool bok = mMapProp->SerializeItem(oser, keyser, kdeco.miMultiIndex, mIoDriver.GetObject());
 
   if (false == bok)
@@ -467,7 +467,7 @@ void MapItemWriteSerializer::Duplicate(const KeyDecoName& kdeco, const char* pna
   niodriver.SetKey(KeyDecoName(pname, 0));
   MapKeyWriter keyser2(niodriver);
   ork::stream::StringInputStream istream(pstr.c_str());
-  ork::reflect::serialize::JsonDeserializer iser(istream);
+  ork::reflect::serdes::JsonDeserializer iser(istream);
 
   bok = mMapProp->DeserializeElement(&iser, keyser2, ork::reflect::IMap::kDeserializeInsertElement, mIoDriver.GetObject());
 
@@ -489,7 +489,7 @@ void MapItemWriteSerializer::Import(const KeyDecoName& kdeco, const char* pname)
     lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
     {
       stream::FileInputStream istream(fname.c_str());
-      reflect::serialize::JsonDeserializer iser(istream);
+      reflect::serdes::JsonDeserializer iser(istream);
 
       GedMapIoDriver niodriver(mIoDriver.GetModel(), mIoDriver.GetProp(), mIoDriver.GetObject());
       niodriver.SetKey(KeyDecoName(pname, 0));
@@ -525,7 +525,7 @@ void MapItemWriteSerializer::Export(const KeyDecoName& kdeco, const char* pname)
       ////////////////////////////////////////////////
 
       ork::stream::FileOutputStream ostream(fname.c_str());
-      ork::reflect::serialize::JsonSerializer oser(ostream);
+      ork::reflect::serdes::JsonSerializer oser(ostream);
       bool bok = mMapProp->SerializeItem(oser, keyser, kdeco.miMultiIndex, mIoDriver.GetObject());
 
       ////////////////////////////////////////////////
@@ -572,7 +572,7 @@ void MapItemWriteSerializer::SetValue(const fvec3& v3) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 MapItemReadSerializer::MapItemReadSerializer(const GedMapIoDriver& ioDriver)
-    : reflect::serialize::LayerSerializer(mNullSer)
+    : reflect::serdes::LayerSerializer(mNullSer)
     , mIoDriver(ioDriver)
     , mMapProp(0)
     , mpObject(0)
@@ -595,13 +595,13 @@ bool MapItemReadSerializer::Serialize(const PieceString& value) // virtual
     default:
       OrkAssert(false);
   }
-  return reflect::serialize::LayerSerializer::Serialize(value);
+  return reflect::serdes::LayerSerializer::Serialize(value);
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool MapItemReadSerializer::Serialize(const rtti::ICastable* value) // virtual
 {
   mpObject = rtti::autocast(value);
-  return reflect::serialize::LayerSerializer::Serialize(value);
+  return reflect::serdes::LayerSerializer::Serialize(value);
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool MapItemReadSerializer::Serialize(const float& value) {
@@ -628,7 +628,7 @@ bool MapItemReadSerializer::Serialize(const float& value) {
       break;
   }
 
-  return reflect::serialize::LayerSerializer::Serialize(value);
+  return reflect::serdes::LayerSerializer::Serialize(value);
 }
 ///////////////////////////////////////////////////////////////////////////////
 const ork::asset::Asset* MapItemReadSerializer::GetAsset() {
@@ -749,7 +749,7 @@ GedMapNode::GedMapNode(ObjModel& mdl, const char* name, const reflect::ObjectPro
   //////////////////////////////////////////////////////////////////
   mdl.GetGedWidget()->PushItemNode(this);
   {
-    reflect::serialize::NullSerializer nser;
+    reflect::serdes::NullSerializer nser;
     MapTraverseSerializer mapser(*this, nser, mdl, obj, prop);
     mapser.serializeObjectProperty(prop, obj);
   }

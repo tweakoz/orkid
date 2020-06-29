@@ -14,7 +14,7 @@
 #include <rapidjson/reader.h>
 #include <rapidjson/document.h>
 
-namespace ork { namespace reflect { namespace serialize {
+namespace ork { namespace reflect { namespace serdes {
 
 class JsonDeserializer : public IDeserializer {
 public:

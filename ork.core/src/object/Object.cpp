@@ -85,10 +85,10 @@ bool Object::postDeserialize(reflect::IDeserializer&) {
 ///////////////////////////////////////////////////////////////////////////////
 
 object_ptr_t Object::clone(object_constptr_t source) {
-  ork::reflect::serialize::JsonSerializer ser;
+  ork::reflect::serdes::JsonSerializer ser;
   ser.serializeRoot(source);
   auto serstream = ser.output();
-  ork::reflect::serialize::JsonDeserializer deser(serstream);
+  ork::reflect::serdes::JsonDeserializer deser(serstream);
   object_ptr_t copy;
   deser.deserializeTop(copy);
   return copy;
@@ -97,7 +97,7 @@ object_ptr_t Object::clone(object_constptr_t source) {
 ///////////////////////////////////////////////////////////////////////////////
 
 Md5Sum Object::md5sum(object_constptr_t source) {
-  ork::reflect::serialize::JsonSerializer ser;
+  ork::reflect::serdes::JsonSerializer ser;
   auto objnode   = ser.serializeRoot(source);
   auto serstream = ser.output();
   CMD5 md5_context;
@@ -169,7 +169,7 @@ object_ptr_t loadObjectFromString(const char* jsondata) {
   float ftime1 = ork::OldSchool::GetRef().GetLoResRelTime();
 
   object_ptr_t instance_out = nullptr;
-  reflect::serialize::JsonDeserializer deserializer(jsondata);
+  reflect::serdes::JsonDeserializer deserializer(jsondata);
   deserializer.deserializeTop(instance_out);
 
   float ftime2 = ork::OldSchool::GetRef().GetLoResRelTime();

@@ -249,14 +249,14 @@ void psys_graph_pool::BindTemplate(const psys_graph& InTemplate) {
   ////////////////////////////////////////////
   ork::ResizableString str;
   ork::stream::ResizableStringOutputStream ostream(str);
-  ork::reflect::serialize::BinarySerializer binoser(ostream);
+  ork::reflect::serdes::BinarySerializer binoser(ostream);
   InTemplate.GetClass()->Description().SerializeProperties(binoser, &InTemplate);
   ////////////////////////////////////////////
   for (int i = 0; i < miPoolSize; i++) {
     psys_graph& clone = mGraphPool->direct_access(i);
     new (&clone) psys_graph();
     ork::stream::StringInputStream istream(str);
-    ork::reflect::serialize::BinaryDeserializer biniser(istream);
+    ork::reflect::serdes::BinaryDeserializer biniser(istream);
     InTemplate.GetClass()->Description().DeserializeProperties(biniser, &clone);
   }
   mNewTemplate = &InTemplate;

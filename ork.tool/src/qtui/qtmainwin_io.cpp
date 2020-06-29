@@ -148,7 +148,7 @@ void EditorMainWindow::SaveSceneFile() {
       }
 
       stream::FileOutputStream ostream(fname.c_str());
-      reflect::serialize::JsonSerializer oser(ostream);
+      reflect::serdes::JsonSerializer oser(ostream);
       oser.Serialize(mEditorBase.mpScene);
 
       tokenlist hook;
@@ -198,7 +198,7 @@ void EditorMainWindow::SaveSelected() {
           SetRecentSceneFile(FileName.toStdString().c_str(), EXPORT_DIR);
 
           stream::FileOutputStream ostream(fname.c_str());
-          reflect::serialize::JsonSerializer oser(ostream);
+          reflect::serdes::JsonSerializer oser(ostream);
           oser.Serialize(pobj);
         }
       }
@@ -219,7 +219,7 @@ void EditorMainWindow::MergeFile() {
       SetRecentSceneFile(FileName.toStdString().c_str(), EXPORT_DIR);
 
       stream::FileInputStream istream(fname.c_str());
-      reflect::serialize::JsonDeserializer dser(istream);
+      reflect::serdes::JsonDeserializer dser(istream);
 
       rtti::ICastable* pcastable = 0;
       bool bOK                   = dser.deserializeObject(pcastable);

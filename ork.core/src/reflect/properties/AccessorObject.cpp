@@ -31,7 +31,7 @@ void AccessorObject::deserialize(IDeserializer::node_ptr_t dsernode) const {
   // Command command;
   // serializer.beginCommand(command);
 
-  // OrkAssertI(command.Type() == Command::EOBJECT, "AccessorObject::Deserialize::Expected an Object command!\n");
+  // OrkAssertI(command.Type() == Command::EOBJECT, "AccessorObject::Deserdes::Expected an Object command!\n");
 
   // if (command.Type() == Command::EOBJECT) {
   // Object::xxxDeserializeShared(dsernode);

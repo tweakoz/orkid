@@ -42,27 +42,27 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class AssLayerSerializer : public reflect::serialize::LayerSerializer {
+class AssLayerSerializer : public reflect::serdes::LayerSerializer {
   const GedAssetObjIoDriver& mIoDriver;
   const ork::asset::Asset* mpAsset;
-  reflect::serialize::NullSerializer mNullSer;
+  reflect::serdes::NullSerializer mNullSer;
   /////////////////////////////////////////////////////
   bool Serialize(const rtti::ICastable* value) /*virtual*/
   {
     mpAsset = rtti::autocast(value);
-    return reflect::serialize::LayerSerializer::Serialize(value);
+    return reflect::serdes::LayerSerializer::Serialize(value);
   }
   /////////////////////////////////////////////////////
 public:
   /////////////////////////////////////////////////////
   AssLayerSerializer(const GedAssetObjIoDriver& iodriver)
-      : reflect::serialize::LayerSerializer(mNullSer)
+      : reflect::serdes::LayerSerializer(mNullSer)
       , mpAsset(0)
       , mIoDriver(iodriver) {
   }
   /////////////////////////////////////////////////////
   const ork::asset::Asset* GetAsset() {
-    reflect::serialize::LayerSerializer::serializeObjectProperty(
+    reflect::serdes::LayerSerializer::serializeObjectProperty(
         mIoDriver.GetProp(), //
         mIoDriver.GetObject());
     return mpAsset;
@@ -72,9 +72,9 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class AssLayerDeserializer : public reflect::serialize::LayerDeserializer {
+class AssLayerDeserializer : public reflect::serdes::LayerDeserializer {
   ork::asset::Asset* mpAsset;
-  reflect::serialize::NullDeserializer mNullDeser;
+  reflect::serdes::NullDeserializer mNullDeser;
   GedAssetObjIoDriver& mIoDriver;
 
   /////////////////////////////////////////////////////
@@ -87,7 +87,7 @@ class AssLayerDeserializer : public reflect::serialize::LayerDeserializer {
 public:
   /////////////////////////////////////////////////////
   AssLayerDeserializer(GedAssetObjIoDriver& iodriver)
-      : reflect::serialize::LayerDeserializer(mNullDeser)
+      : reflect::serdes::LayerDeserializer(mNullDeser)
       , mpAsset(0)
       , mIoDriver(iodriver) {
   }
@@ -95,7 +95,7 @@ public:
   void SetAsset(ork::asset::Asset* passet) {
     // mIoDriver.GetModel().SigPreNewObject();
     mpAsset = passet;
-    reflect::serialize::LayerDeserializer::deserializeObjectProperty(
+    reflect::serdes::LayerDeserializer::deserializeObjectProperty(
         mIoDriver.GetProp(), //
         mIoDriver.GetObject());
     mIoDriver.GetModel().SigModelInvalidated();

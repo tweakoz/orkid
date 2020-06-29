@@ -619,7 +619,7 @@ ProcTex* ProcTex::Load(const ork::file::Path& pth) {
   path.SetExtension("ptx");
   lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
   stream::FileInputStream istream(path.c_str());
-  reflect::serialize::JsonDeserializer iser(istream);
+  reflect::serdes::JsonDeserializer iser(istream);
   rtti::ICastable* pcastable = 0;
   bool bOK                   = iser.deserializeObject(pcastable);
   if (bOK) {
