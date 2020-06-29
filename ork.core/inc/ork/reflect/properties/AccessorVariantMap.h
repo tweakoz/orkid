@@ -49,7 +49,7 @@ private:
   bool (Object::*mMapSerialization)(AccessorVariantMapContext&) const;
 
   void deserialize(IDeserializer::node_ptr_t) const override;
-  void serialize(ISerializer& serializer, object_constptr_t) const override;
+  void serialize(ISerializer::node_ptr_t) const override;
 };
 
 }} // namespace ork::reflect

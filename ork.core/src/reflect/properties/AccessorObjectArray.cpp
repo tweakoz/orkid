@@ -57,12 +57,9 @@ void AccessorObjectArray::deserializeElement(IDeserializer::node_ptr_t desernode
   // deserializer.endCommand(object_command);
 }
 ////////////////////////////////////////////////////////////////
-void AccessorObjectArray::serializeItem(
-    ISerializer& serializer, //
-    object_constptr_t object,
-    size_t index) const {
-  auto child_object = accessObject(object, index);
-  return Object::xxxSerializeShared(child_object, serializer);
+void AccessorObjectArray::serializeElement(ISerializer::node_ptr_t node) const {
+  // auto child_object = accessObject(object, index);
+  // return Object::xxxSerializeShared(child_object, serializer);
 }
 ////////////////////////////////////////////////////////////////
 void AccessorObjectArray::resize(
@@ -76,9 +73,7 @@ void AccessorObjectArray::deserialize(ork::reflect::IDeserializer::node_ptr_t) c
   OrkAssert(false);
 }
 ////////////////////////////////////////////////////////////////
-void AccessorObjectArray::serialize(
-    ork::reflect::ISerializer&, //
-    object_constptr_t) const {
+void AccessorObjectArray::serialize(ISerializer::node_ptr_t node) const {
   OrkAssert(false);
 }
 ////////////////////////////////////////////////////////////////

@@ -73,7 +73,7 @@ template class Vector2<double>; // explicit template instantiation
 template class PropType<fvec2>;
 
 ///////////////////////////////////////////////////////////////////////////////
-
+/*
 namespace reflect {
 template <> void Serialize(const fvec2* in, fvec2* out, reflect::BidirectionalSerializer& bidi) {
 
@@ -90,5 +90,5 @@ template <> void Serialize(const fvec2* in, fvec2* out, reflect::BidirectionalSe
   }
 }
 } // namespace reflect
-
+*/
 } // namespace ork

@@ -29,29 +29,20 @@ void IArray::deserialize(IDeserializer::node_ptr_t desernode) const {
     Command item;
     deserializer.beginCommand(item);
     OrkAssert(item.Type() == Command::ELEMENT);
-    deserializeItem(deserializer, obj, index);
+    deserializeElement(deserializer, obj, index);
     deserializer.endCommand(item);
   }*/
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void IArray::serialize(
-    ISerializer& serializer, //
-    object_constptr_t obj) const {
-  size_t numitems = count(obj);
-
-  Command command(Command::EATTRIBUTE, "size");
-
-  serializer.beginCommand(command);
-  serializer.serializeItem(int(numitems));
-  serializer.endCommand(command);
-
+void IArray::serialize(ISerializer::node_ptr_t sernode) const {
+  size_t numitems = count(sernode->_instance);
   for (size_t index = 0; index < numitems; index++) {
-    Command item(Command::ELEMENT);
-    serializer.beginCommand(item);
-    serializeItem(serializer, obj, index);
-    serializer.endCommand(item);
+    // Command item(Command::ELEMENT);
+    // serializer.beginCommand(item);
+    // serializeElement(serializer, obj, index);
+    // serializer.endCommand(item);
   }
 }
 

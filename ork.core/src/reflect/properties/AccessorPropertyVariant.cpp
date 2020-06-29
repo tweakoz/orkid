@@ -20,8 +20,8 @@ void AccessorVariant::deserialize(IDeserializer::node_ptr_t desernode) const {
   //(object.get()->*mDeserialize)(deserializer);
 }
 
-void AccessorVariant::serialize(ISerializer& serializer, object_constptr_t object) const {
-  (object.get()->*mSerialize)(serializer);
+void AccessorVariant::serialize(ISerializer::node_ptr_t desernode) const {
+  //(object.get()->*mSerialize)(serializer);
 }
 
 }} // namespace ork::reflect

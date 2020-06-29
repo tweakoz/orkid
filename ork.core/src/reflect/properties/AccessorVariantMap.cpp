@@ -48,7 +48,7 @@ bool AccessorVariantMap::Serialize(ISerializer &serializer, const Object *object
 	return (object->*mMapSerialization)(ctx);
 }
 
-bool AccessorVariantMap::DeserializeItem(IDeserializer *value, IDeserializer &key, int, Object *) const
+bool AccessorVariantMap::DeserializeElement(IDeserializer *value, IDeserializer &key, int, Object *) const
 {
 	return false;
 }

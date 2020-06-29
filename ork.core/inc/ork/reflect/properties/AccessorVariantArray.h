@@ -22,7 +22,7 @@ public:
       void (Object::*resize)(size_t));
 
 private:
-  void serializeItem(ISerializer&, object_constptr_t, size_t) const override;
+  void serializeElement(ISerializer::node_ptr_t) const override;
   void deserializeElement(IDeserializer::node_ptr_t) const override;
   size_t count(object_constptr_t) const override;
   void resize(object_ptr_t, size_t) const override;

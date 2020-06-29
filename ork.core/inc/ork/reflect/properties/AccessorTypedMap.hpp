@@ -19,13 +19,10 @@ template <typename KeyType, typename ValueType>
 AccessorTypedMap<KeyType, ValueType>::AccessorTypedMap(
     bool (Object::*getter)(const KeyType&, int, ValueType&) const,
     void (Object::*setter)(const KeyType&, int, const ValueType&),
-    void (Object::*eraser)(const KeyType&, int),
-    void (Object::*serializer)(typename AccessorTypedMap<KeyType, ValueType>::ElementSerializeFunction, BidirectionalSerializer&)
-        const)
+    void (Object::*eraser)(const KeyType&, int))
     : mGetter(getter)
     , mSetter(setter)
-    , mEraser(eraser)
-    , mSerializer(serializer) {
+    , mEraser(eraser) {
 }
 
 template <typename KeyType, typename ValueType>
@@ -44,16 +41,6 @@ bool AccessorTypedMap<KeyType, ValueType>::WriteElement(Object* object, const Ke
   }
 
   return true;
-}
-
-template <typename KeyType, typename ValueType>
-bool AccessorTypedMap<KeyType, ValueType>::MapSerialization(
-    typename AccessorTypedMap<KeyType, ValueType>::ElementSerializeFunction serialize_function,
-    BidirectionalSerializer& bidi,
-    const Object* object) const {
-  (object->*mSerializer)(serialize_function, bidi);
-
-  return bidi.Succeeded();
 }
 
 }} // namespace ork::reflect

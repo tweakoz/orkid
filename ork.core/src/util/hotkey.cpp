@@ -565,9 +565,9 @@ const HotKey& HotKeyManager::GetHotKey(const char* actionname) {
 static const char* HotKeyFileName = "hotkeys.ork";
 
 void HotKeyManager::Save(std::shared_ptr<HotKeyManager> hkm) {
-  ork::stream::FileOutputStream istream(HotKeyFileName);
-  ork::reflect::serialize::JsonSerializer ser(istream);
-  ser.serializeSharedObject(hkm);
+  // ork::stream::FileOutputStream istream(HotKeyFileName);
+  ork::reflect::serialize::JsonSerializer ser;
+  ser.serializeTop(hkm);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

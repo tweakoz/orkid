@@ -22,10 +22,7 @@ void ITypedArray<T>::deserializeElement(IDeserializer::node_ptr_t desernode) con
 }
 
 template <typename T> //
-void ITypedArray<T>::serializeItem(
-    ISerializer& serializer, //
-    object_constptr_t obj,
-    size_t index) const {
+void ITypedArray<T>::serializeElement(ISerializer::node_ptr_t sernode) const {
   // BidirectionalSerializer bidi(serializer);
   // T value;
   // get(value, obj, index);

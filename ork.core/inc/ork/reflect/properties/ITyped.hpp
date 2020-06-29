@@ -54,11 +54,11 @@ inline void ITyped<size_t>::deserialize(IDeserializer::node_ptr_t desernode) con
   set(size_t(var.Get<double>()), instance);
 }
 
-template <typename T> void ITyped<T>::serialize(ISerializer& serializer, object_constptr_t obj) const {
-  T value;
-  get(value, obj);
-  BidirectionalSerializer bidi(serializer);
-  bidi | value;
+template <typename T> void ITyped<T>::serialize(ISerializer::node_ptr_t) const {
+  // T value;
+  // get(value, obj);
+  // BidirectionalSerializer bidi(serializer);
+  // bidi | value;
 }
 
 }} // namespace ork::reflect

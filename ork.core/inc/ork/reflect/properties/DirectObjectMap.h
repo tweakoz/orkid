@@ -17,8 +17,6 @@ template <typename MapType> //
 class DirectObjectMap : public ITypedMap<typename MapType::key_type, object_ptr_t> {
 public:
   using KeyType = typename MapType::key_type;
-  // using ElementSerializeFunction = typename ITypedMap<KeyType, object_ptr_t>::ElementSerializeFunction;
-  using ElementSerializeFunction = typename ITypedMap<KeyType, object_ptr_t>::ElementSerializeFunction;
 
   DirectObjectMap(MapType Object::*);
 
@@ -31,7 +29,6 @@ protected:
   bool ReadElement(object_constptr_t, const KeyType&, int, object_ptr_t&) const override;
   bool WriteElement(object_ptr_t, const KeyType&, int, const object_ptr_t*) const override;
   bool EraseElement(object_ptr_t, const KeyType&, int) const override;
-  void MapSerialization(ElementSerializeFunction, ISerializer&, object_constptr_t) const override;
 
   size_t elementCount(object_constptr_t obj) const override {
     return GetMap(obj).size();

@@ -16,27 +16,8 @@
 
 namespace ork::reflect {
 ////////////////////////////////////////////////////////////////////////////////
-template <typename KeyType, typename ValueType>
-void ITypedMap<KeyType, ValueType>::serialize(
-    ISerializer& serializer, //
-    object_constptr_t object) const {
-  // BidirectionalSerializer bidi(serializer);
-  // MapSerialization(_doSerialize, bidi, object);
-}
-////////////////////////////////////////////////////////////////////////////////
-template <typename KeyType, typename ValueType>
-void ITypedMap<KeyType, ValueType>::_doSerialize(
-    ISerializer& ser, //
-    const KeyType& key,
-    const ValueType& value) {
-  Command element(Command::ELEMENT);
-  Command attribute(Command::EATTRIBUTE, "key");
-  ser.beginCommand(element);
-  ser.beginCommand(attribute);
-  ser.Hint("map_key", key);
-  ser.endCommand(attribute);
-  ser.Hint("map_value", ValueType(value));
-  ser.endCommand(element);
+template <typename KeyType, typename ValueType> //
+void ITypedMap<KeyType, ValueType>::serialize(ISerializer::node_ptr_t sernode) const {
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename KeyType, typename ValueType>

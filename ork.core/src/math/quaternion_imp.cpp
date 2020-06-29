@@ -48,6 +48,7 @@ template <> fquat PropType<fquat>::FromString(const PropTypeString& String) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+/*
 namespace reflect {
 
 template <> void Serialize(const fquat* in, fquat* out, reflect::BidirectionalSerializer& bidi) {
@@ -70,5 +71,5 @@ template <> void Serialize(const fquat* in, fquat* out, reflect::BidirectionalSe
   }
 }
 } // namespace reflect
-
+*/
 } // namespace ork

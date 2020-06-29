@@ -22,31 +22,37 @@ namespace ork { namespace reflect {
 
 class ObjectProperty;
 class IArray;
-class Command;
-// typedef ork::Object Serializable;
 
 struct ISerializer {
 public:
-  using hintvar_t = svar64_t;
+  using var_t = svar1024_t;
+  struct Node;
+  using node_ptr_t = std::shared_ptr<Node>;
 
   void referenceObject(object_constptr_t);
 
-  virtual void serializeItem(const hintvar_t&) = 0;
-
-  virtual void serializeSharedObject(object_constptr_t)                          = 0;
-  virtual void serializeObjectProperty(const ObjectProperty*, object_constptr_t) = 0;
-
-  virtual void serializeData(const uint8_t*, size_t) = 0;
-
-  virtual void Hint(const PieceString&, hintvar_t val) = 0;
-
-  virtual void beginCommand(const Command&) = 0;
-  virtual void endCommand(const Command&)   = 0;
+  virtual node_ptr_t serializeTop(object_constptr_t) {
+    return node_ptr_t(nullptr);
+  }
+  virtual node_ptr_t serializeElement(node_ptr_t elemnode) {
+    return node_ptr_t(nullptr);
+  }
 
   virtual ~ISerializer();
 
   std::unordered_set<std::string> _reftracker;
-  const Command* _currentCommand = nullptr;
-};
 
+  struct Node {
+    node_ptr_t _parent                       = nullptr;
+    const reflect::ObjectProperty* _property = nullptr;
+    ISerializer* _serializer                 = nullptr;
+    object_constptr_t _instance              = nullptr;
+    var_t _impl;
+    std::string _key;
+    var_t _value;
+    size_t _index       = 0;
+    size_t _multiindex  = 0;
+    size_t _numchildren = 0;
+  };
+};
 }} // namespace ork::reflect

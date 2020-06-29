@@ -38,17 +38,16 @@ ConstString::size_type ConstString::size() const {
 
 ///////////////////////////////////////////
 
-namespace reflect {
+/*namespace reflect {
 template <> void Serialize(const ConstString* in, ConstString* out, reflect::BidirectionalSerializer& bidi) {
   if (bidi.Serializing()) {
-    bidi.Serializer()->serializeItem(PieceString(*in));
+    bidi.Serializer()->serializeElement(PieceString(*in));
   } else {
     PoolString pool_string;
     bidi | pool_string;
     *out = pool_string.c_str();
   }
-}
-} // namespace reflect
+}*/
 
 ///////////////////////////////////////////
 

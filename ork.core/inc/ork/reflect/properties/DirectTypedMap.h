@@ -22,8 +22,6 @@ public:
   typedef typename MapType::key_type KeyType;
   typedef typename MapType::mapped_type ValueType;
 
-  using ElementSerializeFunction = typename ITypedMap<KeyType, ValueType>::ElementSerializeFunction;
-
   DirectTypedMap(MapType Object::*);
 
   MapType& GetMap(object_ptr_t obj) const;
@@ -35,7 +33,6 @@ protected:
   bool ReadElement(object_constptr_t, const KeyType&, int, ValueType&) const override;
   bool WriteElement(object_ptr_t, const KeyType&, int, const ValueType*) const override;
   bool EraseElement(object_ptr_t, const KeyType&, int) const override;
-  void MapSerialization(ElementSerializeFunction, ISerializer&, object_constptr_t) const override;
 
   size_t elementCount(object_constptr_t obj) const override {
     return int(GetMap(obj).size());

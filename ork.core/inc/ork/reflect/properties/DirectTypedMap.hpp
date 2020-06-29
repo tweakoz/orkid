@@ -121,68 +121,6 @@ bool DirectTypedMap<MapType>::WriteElement(
 }
 
 template <typename MapType>
-void DirectTypedMap<MapType>::MapSerialization(
-    typename DirectTypedMap<MapType>::ElementSerializeFunction serfunc,
-    ISerializer& ser,
-    object_constptr_t instance) const {
-
-  const MapType& map = instance.get()->*mProperty;
-
-  size_t count = map.size();
-  ser.Hint("Count", count);
-
-  // const KeyType *last_key = NULL;
-
-  typename MapType::const_iterator itprev;
-
-  int element_index      = 0;
-  int element_multiindex = 0;
-
-  for (auto it = map.begin(); //
-       it != map.end();
-       it++) {
-
-    KeyType key = it->first;
-
-    //////////////////////////////////////////
-    // keep track of multimap
-    //  consecutive elements with same key
-    //////////////////////////////////////////
-
-    if (it != map.begin()) {
-
-      const KeyType& ka = itprev->first;
-      const KeyType& kb = it->first;
-
-      if (ka == kb) {
-        element_multiindex++;
-      } else {
-        element_multiindex = 0;
-      }
-    }
-
-    itprev = it;
-
-    ///////////////////////////////////////////////////
-    // index hints
-    ///////////////////////////////////////////////////
-
-    ser.Hint("Index", element_index);
-    ser.Hint("MultiIndex", element_multiindex);
-
-    ///////////////////////////////////////////////////
-    // serialize the element
-    ///////////////////////////////////////////////////
-
-    ValueType value = it->second;
-
-    (*serfunc)(ser, key, value);
-
-    element_index++;
-  }
-}
-
-template <typename MapType>
 bool DirectTypedMap<MapType>::GetKey(
     object_constptr_t pser, //
     int idx,

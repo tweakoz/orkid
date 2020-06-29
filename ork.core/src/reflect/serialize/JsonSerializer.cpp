@@ -24,20 +24,19 @@
 
 namespace ork::reflect::serialize {
 ////////////////////////////////////////////////////////////////////////////////
-JsonSerializer::JsonSerializer(stream::IOutputStream& stream)
-    : mStream(stream)
-    , _document() {
+JsonSerializer::JsonSerializer()
+    : _document() {
   _allocator = &_document.GetAllocator();
   _document.SetObject();
 
-  _top = pushObjectNode("top");
+  _topnode = pushObjectNode("top");
 }
 ////////////////////////////////////////////////////////////////////////////////
 JsonSerializer::~JsonSerializer() {
 }
 ////////////////////////////////////////////////////////////////////////////////
-JsonSerializer::node_t JsonSerializer::pushObjectNode(std::string named) {
-  node_t n = std::make_shared<Node>(named, rapidjson::kObjectType);
+JsonSerializer::node_ptr_t JsonSerializer::pushObjectNode(std::string named) {
+  node_ptr_t n = std::make_shared<Node>(); //)named, rapidjson::kObjectType);
   _nodestack.push(n);
   return n;
 }
@@ -45,7 +44,7 @@ JsonSerializer::node_t JsonSerializer::pushObjectNode(std::string named) {
 void JsonSerializer::popNode() {
   auto n = topNode();
   _nodestack.pop();
-  rapidjson::Value key(n->_name.c_str(), *_allocator);
+  /*rapidjson::Value key(n->_name.c_str(), *_allocator);
   if (_nodestack.empty()) {
     _document.AddMember(
         key, //
@@ -56,18 +55,18 @@ void JsonSerializer::popNode() {
         key, //
         n->_value,
         *_allocator);
-  }
+  }*/
 }
 ////////////////////////////////////////////////////////////////////////////////
-JsonSerializer::node_t JsonSerializer::topNode() {
-  node_t n;
+JsonSerializer::node_ptr_t JsonSerializer::topNode() {
+  node_ptr_t n;
   if (not _nodestack.empty()) {
     n = _nodestack.top();
   }
   return n;
 }
 ////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::finalize() {
+std::string JsonSerializer::output() {
 
   popNode(); // pop objects
 
@@ -76,47 +75,10 @@ void JsonSerializer::finalize() {
   writer.SetIndent(' ', 1);
   _document.Accept(writer);
 
-  auto outstr = strbuf.GetString();
-  mStream.Write((const uint8_t*)outstr, strlen(outstr));
+  return strbuf.GetString();
 }
 ////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::beginCommand(const Command& command) {
-  switch (command.Type()) {
-    case Command::EOBJECT:
-      break;
-    case Command::EATTRIBUTE:
-      break;
-    case Command::EPROPERTY: {
-      auto propname = command.Name();
-      auto node     = pushObjectNode(propname.c_str());
-      break;
-    }
-    case Command::ELEMENT:
-      // auto node = pushObjectNode("item");
-      break;
-  }
-
-  command.PreviousCommand() = _currentCommand;
-  _currentCommand           = &command;
-}
-////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::endCommand(const Command& command) {
-  OrkAssert(_currentCommand == &command);
-  switch (command.Type()) {
-    case Command::EOBJECT:
-      break;
-    case Command::EATTRIBUTE:
-      break;
-    case Command::EPROPERTY:
-      popNode();
-      break;
-    case Command::ELEMENT:
-      // popNode();
-      break;
-  }
-  _currentCommand = _currentCommand->PreviousCommand();
-}
-////////////////////////////////////////////////////////////////////////////////
+/*
 void JsonSerializer::_serializeNamedItem(
     std::string named, //
     const hintvar_t& value) {
@@ -149,7 +111,7 @@ void JsonSerializer::_serializeNamedItem(
     OrkAssert(false);
   }
 }
-void JsonSerializer::serializeItem(const hintvar_t& value) {
+void JsonSerializer::serializeElement(const hintvar_t& value) {
   _serializeNamedItem("item", value);
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -234,6 +196,6 @@ void JsonSerializer::Hint(const PieceString& name, hintvar_t val) {
 }
 ////////////////////////////////////////////////////////////////////////////////
 void JsonSerializer::serializeData(const uint8_t*, size_t) {
-}
+}*/
 ////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::reflect::serialize

@@ -18,8 +18,6 @@ template <typename KeyType, typename ValueType> //
 class ITypedMap : public IMap {
 
 public:
-  using ElementSerializeFunction = void (*)(ISerializer&, const KeyType&, const ValueType&);
-
 protected:
   virtual bool GetKey(object_constptr_t, int idx, KeyType&) const              = 0;
   virtual bool GetVal(object_constptr_t, const KeyType& k, ValueType& v) const = 0;
@@ -37,21 +35,15 @@ protected:
       const KeyType&,
       int,
       const ValueType*) const = 0;
-  virtual void MapSerialization(
-      ElementSerializeFunction, //
-      ISerializer&,
-      object_constptr_t) const = 0;
 
   ITypedMap()
       : IMap() {
   }
 
 private:
-  static void _doSerialize(ISerializer&, const KeyType&, const ValueType&);
-
   // from ObjectProperty
   void deserialize(IDeserializer::node_ptr_t) const override;
-  void serialize(ISerializer&, object_constptr_t) const override;
+  void serialize(ISerializer::node_ptr_t sernode) const override;
 };
 
 }} // namespace ork::reflect

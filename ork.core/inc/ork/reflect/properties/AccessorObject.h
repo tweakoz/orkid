@@ -21,7 +21,7 @@ class AccessorObject : public IObject {
 public:
   AccessorObject(object_ptr_t (Object::*)());
 
-  void serialize(ISerializer&, object_constptr_t) const override;
+  void serialize(ISerializer::node_ptr_t) const override;
   void deserialize(IDeserializer::node_ptr_t) const override;
   object_ptr_t access(object_ptr_t) const override;
   object_constptr_t access(object_constptr_t) const override;

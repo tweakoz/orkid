@@ -19,7 +19,7 @@ public:
 
 private:
   void deserialize(IDeserializer::node_ptr_t) const override;
-  void serialize(ISerializer&, object_constptr_t) const override;
+  void serialize(ISerializer::node_ptr_t) const override;
   bool (Object::*mSerialize)(ISerializer&) const;
   bool (Object::*mDeserialize)(IDeserializer&);
 };

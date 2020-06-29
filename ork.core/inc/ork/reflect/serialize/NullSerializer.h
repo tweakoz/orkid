@@ -15,22 +15,6 @@ class Category;
 
 namespace ork { namespace reflect { namespace serialize {
 
-struct NullSerializer final : public ISerializer {
-
-  void serializeItem(const hintvar_t&) override;
-  void serializeSharedObject(object_constptr_t instance) override;
-  void serializeObjectProperty(
-      const ObjectProperty* prop, //
-      object_constptr_t instance) override;
-
-  void Hint(const PieceString&, hintvar_t val) override;
-
-  void serializeData(const uint8_t*, size_t) override;
-
-  // void ReferenceObject(const rtti::ICastable*) override;
-
-  void beginCommand(const Command&) override;
-  void endCommand(const Command&) override;
-};
+struct NullSerializer final : public ISerializer {};
 
 }}} // namespace ork::reflect::serialize

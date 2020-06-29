@@ -134,13 +134,6 @@ bool DirectObjectMap<MapType>::EraseElement(
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
-void DirectObjectMap<MapType>::MapSerialization(
-    ElementSerializeFunction serialization_func, //
-    ISerializer& iser,
-    object_constptr_t instance) const {
-}
-////////////////////////////////////////////////////////////////////////////////
-template <typename MapType> //
 bool DirectObjectMap<MapType>::GetKey(
     object_constptr_t instance, //
     int multi_index,

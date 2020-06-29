@@ -29,7 +29,7 @@ public:
 
   // void beginCommand(Command&) override;
   // void endCommand(const Command&) override;
-  // void deserializeItem() override;
+  // void deserializeElement() override;
 
 protected:
   // void _deserialize(const rtti::Category*, object_ptr_t&);
@@ -42,8 +42,8 @@ inline LayerDeserializer::LayerDeserializer(IDeserializer& deserializer)
     : mDeserializer(deserializer) {
 }
 
-// inline void LayerDeserializer::deserializeItem() {
-// mDeserializer.deserializeItem();
+// inline void LayerDeserializer::deserializeElement() {
+// mDeserializer.deserializeElement();
 //}
 
 inline void LayerDeserializer::deserializeTop(object_ptr_t& value) {

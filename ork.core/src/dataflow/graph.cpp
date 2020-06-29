@@ -131,7 +131,7 @@ void graph_data::Describe() {
         }
       }
     }
-    ser.serializeItem(inumlinks);
+    // ser.serializeElement(inumlinks);
     /////////////////////////////////////////////
     for (orklut<ork::PoolString, ork::Object*>::const_iterator it = mModules.begin(); it != mModules.end(); it++) {
       dgmodule* pmodule = rtti::autocast(it->second);
@@ -142,10 +142,10 @@ void graph_data::Describe() {
           const ork::dataflow::outplugbase* poutput = pinput->GetExternalOutput();
           if (poutput) {
             module* poutmodule = rtti::autocast(poutput->GetModule());
-            ser.serializeItem(ork::PieceString(pmodule->GetName().c_str()));
-            ser.serializeItem(ork::PieceString(pinput->GetName().c_str()));
-            ser.serializeItem(ork::PieceString(poutput->GetModule()->GetName().c_str()));
-            ser.serializeItem(ork::PieceString(poutput->GetName().c_str()));
+            // ser.serializeElement(ork::PieceString(pmodule->GetName().c_str()));
+            // ser.serializeElement(ork::PieceString(pinput->GetName().c_str()));
+            // ser.serializeElement(ork::PieceString(poutput->GetModule()->GetName().c_str()));
+            // ser.serializeElement(ork::PieceString(poutput->GetName().c_str()));
           }
         }
       }

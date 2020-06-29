@@ -378,7 +378,7 @@ void MapItemWriteSerializer::Insert(const char* pchar) {
   MapKeyWriter keyser(mIoDriver);
   mIoDriver.SetKey(pchar);
   bool bok =
-      mMapProp->DeserializeItem(this, keyser, ork::reflect::IMap::kDeserializeInsertElement, mIoDriver.GetObject());
+      mMapProp->DeserializeElement(this, keyser, ork::reflect::IMap::kDeserializeInsertElement, mIoDriver.GetObject());
   OrkAssert(bok);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -388,7 +388,7 @@ void MapItemWriteSerializer::Remove(const KeyDecoName& kdeco) {
   MapKeyWriter keyser(mIoDriver);
   mIoDriver.SetKey(kdeco.mActualKey.c_str());
   // mIoDriver.GetObject()->Notify( );
-  bool bok = mMapProp->DeserializeItem(0, keyser, kdeco.miMultiIndex, mIoDriver.GetObject());
+  bool bok = mMapProp->DeserializeElement(0, keyser, kdeco.miMultiIndex, mIoDriver.GetObject());
   OrkAssert(bok);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -415,7 +415,7 @@ void MapItemWriteSerializer::Move(const KeyDecoName& kdeco, const char* pname) {
   // delete old key
   ////////////////////////////////////////////////
 
-  bok = mMapProp->DeserializeItem(0, keyser, kdeco.miMultiIndex, mIoDriver.GetObject());
+  bok = mMapProp->DeserializeElement(0, keyser, kdeco.miMultiIndex, mIoDriver.GetObject());
 
   ////////////////////////////////////////////////
   // write temp item to new key
@@ -427,7 +427,7 @@ void MapItemWriteSerializer::Move(const KeyDecoName& kdeco, const char* pname) {
   ork::stream::StringInputStream istream(pstr.c_str());
   ork::reflect::serialize::JsonDeserializer iser(istream);
 
-  bok = mMapProp->DeserializeItem(&iser, keyser2, ork::reflect::IMap::kDeserializeInsertElement, mIoDriver.GetObject());
+  bok = mMapProp->DeserializeElement(&iser, keyser2, ork::reflect::IMap::kDeserializeInsertElement, mIoDriver.GetObject());
 
   OrkAssert(bok);
 
@@ -457,7 +457,7 @@ void MapItemWriteSerializer::Duplicate(const KeyDecoName& kdeco, const char* pna
   // delete old key
   ////////////////////////////////////////////////
 
-  // bok = mMapProp->DeserializeItem( 0, keyser, kdeco.miMultiIndex, mIoDriver.GetObject() );
+  // bok = mMapProp->DeserializeElement( 0, keyser, kdeco.miMultiIndex, mIoDriver.GetObject() );
 
   ////////////////////////////////////////////////
   // write temp item to new key
@@ -469,7 +469,7 @@ void MapItemWriteSerializer::Duplicate(const KeyDecoName& kdeco, const char* pna
   ork::stream::StringInputStream istream(pstr.c_str());
   ork::reflect::serialize::JsonDeserializer iser(istream);
 
-  bok = mMapProp->DeserializeItem(&iser, keyser2, ork::reflect::IMap::kDeserializeInsertElement, mIoDriver.GetObject());
+  bok = mMapProp->DeserializeElement(&iser, keyser2, ork::reflect::IMap::kDeserializeInsertElement, mIoDriver.GetObject());
 
   OrkAssert(bok);
 
@@ -495,7 +495,7 @@ void MapItemWriteSerializer::Import(const KeyDecoName& kdeco, const char* pname)
       niodriver.SetKey(KeyDecoName(pname, 0));
       MapKeyWriter keyser2(niodriver);
 
-      bool bok = mMapProp->DeserializeItem(
+      bool bok = mMapProp->DeserializeElement(
           &iser, keyser2, ork::reflect::IMap::kDeserializeInsertElement, mIoDriver.GetObject());
 
       OrkAssert(bok);
@@ -538,7 +538,7 @@ void MapItemWriteSerializer::SetValue(rtti::ICastable* castable) {
   mValueCastable = castable;
   ork::PropSetContext pctx(ork::PropSetContext::EPROPEDITOR);
   MapKeyWriter keyser(mIoDriver);
-  bool bok = mMapProp->DeserializeItem(this, keyser, mIoDriver.mDecoKey.miMultiIndex, mIoDriver.GetObject());
+  bool bok = mMapProp->DeserializeElement(this, keyser, mIoDriver.mDecoKey.miMultiIndex, mIoDriver.GetObject());
   OrkAssert(bok);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -547,7 +547,7 @@ void MapItemWriteSerializer::SetValue(const char* pstr) {
   ork::PropSetContext pctx(ork::PropSetContext::EPROPEDITOR);
   MapKeyWriter keyser(mIoDriver);
   mArrayString = ArrayString<1024>(pstr);
-  bool bok     = mMapProp->DeserializeItem(this, keyser, mIoDriver.mDecoKey.miMultiIndex, mIoDriver.GetObject());
+  bool bok     = mMapProp->DeserializeElement(this, keyser, mIoDriver.mDecoKey.miMultiIndex, mIoDriver.GetObject());
   OrkAssert(bok);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -556,7 +556,7 @@ void MapItemWriteSerializer::SetValue(float flt) {
   MapKeyWriter keyser(mIoDriver);
   meWriteType = EWT_FLOAT;
   mFloat      = flt;
-  bool bok    = mMapProp->DeserializeItem(this, keyser, mIoDriver.mDecoKey.miMultiIndex, mIoDriver.GetObject());
+  bool bok    = mMapProp->DeserializeElement(this, keyser, mIoDriver.mDecoKey.miMultiIndex, mIoDriver.GetObject());
   OrkAssert(bok);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -565,7 +565,7 @@ void MapItemWriteSerializer::SetValue(const fvec3& v3) {
   MapKeyWriter keyser(mIoDriver);
   meWriteType = EWT_CVECTOR3;
   mVector3    = v3;
-  bool bok    = mMapProp->DeserializeItem(this, keyser, mIoDriver.mDecoKey.miMultiIndex, mIoDriver.GetObject());
+  bool bok    = mMapProp->DeserializeElement(this, keyser, mIoDriver.mDecoKey.miMultiIndex, mIoDriver.GetObject());
   OrkAssert(bok);
 }
 ///////////////////////////////////////////////////////////////////////////////

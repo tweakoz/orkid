@@ -29,7 +29,7 @@ public:
   // void referenceObject(rtti::castable_rawptr_t) override;
   // void beginCommand(Command&) override;
   // void endCommand(const Command&) override;
-  // void deserializeItem() override;
+  // void deserializeElement() override;
 };
 
 } // namespace ork::reflect::serialize

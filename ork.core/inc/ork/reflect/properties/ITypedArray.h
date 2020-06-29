@@ -21,7 +21,7 @@ public:
 
 private:
   void deserializeElement(IDeserializer::node_ptr_t) const override;
-  void serializeItem(ISerializer& serializer, object_constptr_t obj, size_t index) const override;
+  void serializeElement(ISerializer::node_ptr_t) const override;
 };
 
 }} // namespace ork::reflect

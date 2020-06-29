@@ -65,7 +65,7 @@ public:
     return dynamic_cast<const T*>(FindProperty(named));
   }
 
-  void serializeProperties(ISerializer&, object_constptr_t) const;
+  void serializeProperties(ISerializer::node_ptr_t) const;
   void deserializeProperties(IDeserializer::node_ptr_t) const;
 
   const SignalMapType& GetSignals() const {

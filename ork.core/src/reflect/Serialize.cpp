@@ -21,7 +21,7 @@ namespace ork { namespace reflect {
 //////////////////////////////////////////////////
 void BidirectionalSerializer::serializeSharedObject(object_constptr_t obj) {
   // printf("bidi sershared<%p>\n", obj.get());
-  mSerializer->serializeSharedObject(obj);
+  // mSerializer->serializeSharedObject(obj);
 }
 void BidirectionalSerializer::deserializeSharedObject(object_ptr_t& obj) {
   // mDeserializer->deserializeSharedObject(obj);
@@ -32,7 +32,7 @@ template <typename T>
 inline //
     void
     BidirectionalSerializer::Serialize(const T& value) {
-  mSerializer->serializeItem(value);
+  // mSerializer->serializeElement(value);
 }
 
 template <typename T>
@@ -50,9 +50,9 @@ void Serialize(  // default serdes<>bidi handler
     T* out,
     BidirectionalSerializer& bidi) {
   if (bidi.Serializing()) {
-    bidi.Serialize(*in);
+    // bidi.Serialize(*in);
   } else {
-    bidi.Deserialize(*out);
+    // bidi.Deserialize(*out);
   }
 }
 

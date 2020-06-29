@@ -151,7 +151,7 @@ const Description::anno_t& Description::classAnnotation(const ConstString& key) 
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-
+/*
 void Description::serializeProperties(
     ISerializer& serializer, //
     object_constptr_t object) const {
@@ -178,7 +178,7 @@ void Description::serializeProperties(
 void Description::deserializeProperties(IDeserializer::node_ptr_t desernode) const {
   // Command command;
   // deserializer._currentObject = object;
-  /*
+
   while (deserializer.beginCommand(command)) {
     if (command.Type() != Command::EPROPERTY) {
       orkprintf(
@@ -219,7 +219,7 @@ void Description::deserializeProperties(IDeserializer::node_ptr_t desernode) con
     }
   }
   deserializer._currentObject = nullptr;
-  return true;*/
-}
+  return true;
+}*/
 
 }} // namespace ork::reflect

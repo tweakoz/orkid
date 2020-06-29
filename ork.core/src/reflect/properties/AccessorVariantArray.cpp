@@ -26,11 +26,8 @@ void AccessorVariantArray::deserializeElement(IDeserializer::node_ptr_t desernod
   // return (instance.get()->*_deserializeElement)(deserializer, index);
 }
 
-void AccessorVariantArray::serializeItem(
-    ISerializer& serializer, //
-    object_constptr_t instance,
-    size_t index) const {
-  return (instance.get()->*mSerializeItem)(serializer, index);
+void AccessorVariantArray::serializeElement(ISerializer::node_ptr_t sernode) const {
+  // return (instance.get()->*mSerializeItem)(serializer, index);
 }
 
 size_t AccessorVariantArray::count(object_constptr_t instance) const {

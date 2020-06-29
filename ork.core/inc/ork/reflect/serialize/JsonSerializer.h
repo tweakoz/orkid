@@ -20,49 +20,27 @@ namespace ork { namespace reflect { namespace serialize {
 
 class JsonSerializer : public ISerializer {
 public:
-  JsonSerializer(stream::IOutputStream& stream);
+  JsonSerializer();
   ~JsonSerializer();
 
-  void serializeItem(const hintvar_t&) override;
-  void Hint(const PieceString&, hintvar_t val) override;
+  node_ptr_t serializeTop(object_constptr_t) override;
+  node_ptr_t serializeElement(node_ptr_t elemnode) override;
 
-  void serializeSharedObject(object_constptr_t) override;
-  void serializeObjectProperty(const ObjectProperty*, object_constptr_t) override;
-
-  void serializeData(const uint8_t*, size_t size) override;
-
-  void beginCommand(const Command&) override;
-  void endCommand(const Command&) override;
-
-  void finalize();
+  std::string output();
 
 private:
   using allocator_t = rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>*;
 
-  struct Node {
-    Node(std::string name, rapidjson::Type type)
-        : _name(name)
-        , _value(type) {
-    }
-    std::string _name;
-    rapidjson::Value _value;
-  };
+  void _serializeNamedItem(std::string name, const var_t&);
 
-  using node_t = std::shared_ptr<Node>;
-
-  void _serializeNamedItem(std::string name, const hintvar_t&);
-
-  node_t pushObjectNode(std::string named);
+  node_ptr_t pushObjectNode(std::string named);
   void popNode();
-  node_t topNode();
+  node_ptr_t topNode();
 
-  stream::IOutputStream& mStream;
   allocator_t _allocator;
   rapidjson::Document _document;
-  node_t _top;
-  std::stack<node_t> _nodestack;
-  int _multiindex = -1;
-  hintvar_t _mapkey;
+  node_ptr_t _topnode;
+  std::stack<node_ptr_t> _nodestack;
 };
 
 }}} // namespace ork::reflect::serialize

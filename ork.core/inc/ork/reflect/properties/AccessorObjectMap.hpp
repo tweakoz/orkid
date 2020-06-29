@@ -36,13 +36,13 @@ object_ptr_t AccessorObjectMap<KeyType>::accessItem(
     object_ptr_t instance) const {
   KeyType key;
 
-  BidirectionalSerializer(key_deserializer) | key;
+  // BidirectionalSerializer(key_deserializer) | key;
 
-  if ((instance.get()->*_getter)(key, multi_index)) {
-    return (instance.get()->*_accessor)(key, multi_index);
-  }
+  // if ((instance.get()->*_getter)(key, multi_index)) {
+  // return (instance.get()->*_accessor)(key, multi_index);
+  //}
 
-  return NULL;
+  return nullptr;
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename KeyType>
@@ -50,45 +50,10 @@ object_constptr_t AccessorObjectMap<KeyType>::accessItem(
     IDeserializer& key_deserializer, //
     int multi_index,
     object_constptr_t instance) const {
-  KeyType key;
-
-  BidirectionalSerializer(key_deserializer) | key;
-
-  return (instance.get()->*_getter)(key, multi_index);
+  // KeyType key;
+  // BidirectionalSerializer(key_deserializer) | key;
+  return nullptr; //(instance.get()->*_getter)(key, multi_index);
 }
-////////////////////////////////////////////////////////////////////////////////
-/*template <typename KeyType>
-void AccessorObjectMap<KeyType>::deserializeItem(
-    IDeserializer* value_deserializer,
-    IDeserializer& key_deserializer,
-    int multi_index,
-    object_ptr_t instance) const {
-  KeyType key;
-  BidirectionalSerializer(key_deserializer) | key;
-  if (value_deserializer) {
-    object_ptr_t value = (instance.get()->*_accessor)(key, multi_index);
-
-    if (value) {
-      Object::xxxDeserializeShared(value, *value_deserializer);
-    }
-  } else {
-    (instance.get()->*_eraser)(key, multi_index);
-  }
-}*/
-////////////////////////////////////////////////////////////////////////////////
-/*template <typename KeyType>
-void AccessorObjectMap<KeyType>::serializeItem(
-    ISerializer& value_serializer,
-    IDeserializer& key_deserializer,
-    int multi_index,
-    object_constptr_t instance) const {
-  KeyType key;
-  BidirectionalSerializer(key_deserializer) | key;
-  object_constptr_t value = (instance.get()->*_getter)(key, multi_index);
-  if (value) {
-    Object::xxxSerializeShared(value, value_serializer);
-  }
-}*/
 ////////////////////////////////////////////////////////////////////////////////
 template <typename KeyType> void AccessorObjectMap<KeyType>::deserialize(IDeserializer::node_ptr_t desernode) const {
   /*Command item;
@@ -106,30 +71,10 @@ template <typename KeyType> void AccessorObjectMap<KeyType>::deserialize(IDeseri
   deserializer.endCommand(item);*/
 }
 ////////////////////////////////////////////////////////////////////////////////
-template <typename KeyType>
-void AccessorObjectMap<KeyType>::serialize(
-    ISerializer& serializer, //
-    object_constptr_t instance) const {
-  BidirectionalSerializer bidi(serializer);
-  auto non_const = const_cast<Object*>(instance.get());
-  (non_const->*_serializer)(_serdesimpl, bidi);
-}
-////////////////////////////////////////////////////////////////////////////////
-template <typename KeyType>
-void AccessorObjectMap<KeyType>::_serdesimpl(
-    BidirectionalSerializer& bidi, //
-    const KeyType& key,
-    object_constptr_t value) {
-  bool result             = true;
-  ISerializer* serializer = bidi.Serializer();
-  Command item(Command::ELEMENT);
-  Command attribute(Command::EATTRIBUTE, "key");
-  serializer->beginCommand(item);
-  serializer->beginCommand(attribute);
-  bidi | key;
-  serializer->endCommand(attribute);
-  Object::xxxSerializeShared(value, *bidi.Serializer());
-  serializer->endCommand(item);
+template <typename KeyType> void AccessorObjectMap<KeyType>::serialize(ISerializer::node_ptr_t sernode) const {
+  // BidirectionalSerializer bidi(serializer);
+  // auto non_const = const_cast<Object*>(instance.get());
+  //(non_const->*_serializer)(_serdesimpl, bidi);
 }
 ////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::reflect

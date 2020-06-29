@@ -19,7 +19,7 @@ DirectObject::DirectObject(object_ptr_t Object::*property)
     : mProperty(property) {
 }
 
-void DirectObject::serialize(ISerializer& serializer, object_constptr_t instance) const {
+void DirectObject::serialize(ISerializer::node_ptr_t sernode) const {
   // const Object* object_property = (const_cast<Object*>(object)->*mProperty)();
   // Object::xxxSerialize(object_property, serializer);
   OrkAssert(false);

@@ -231,11 +231,11 @@ PoolString StringPool::Find(const PieceString& s) const {
 }
 
 ///////////////////////////////////////////////////
-
+/*
 namespace reflect {
 template <> void Serialize<PoolString>(const PoolString* in, PoolString* out, BidirectionalSerializer& bidi) {
   if (bidi.Serializing()) {
-    bidi.Serializer()->serializeItem(PieceString(*in));
+    bidi.Serializer()->serializeElement(PieceString(*in));
   } else {
     ArrayString<2048> buffer;
     MutableString string(buffer);
@@ -243,5 +243,6 @@ template <> void Serialize<PoolString>(const PoolString* in, PoolString* out, Bi
     *out = ork::AddPooledString(string);
   }
 }
-} // namespace reflect
+} // namespace ork
+*/
 } // namespace ork
