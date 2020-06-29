@@ -18,6 +18,13 @@
 ////////////////////////////////////////////////////////////////
 namespace ork::reflect {
 ////////////////////////////////////////////////////////////////////////////////
+ISerializer::node_ptr_t ISerializer::serializeRoot(object_constptr_t instance) {
+  _rootnode            = pushObjectNode("root");
+  _rootnode->_instance = instance;
+  auto objnode         = serializeObject(_rootnode);
+  return _rootnode;
+}
+////////////////////////////////////////////////////////////////////////////////
 ISerializer::node_ptr_t ISerializer::topNode() {
   node_ptr_t n;
   if (not _nodestack.empty()) {

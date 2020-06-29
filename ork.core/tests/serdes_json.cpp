@@ -24,7 +24,7 @@ TEST(SerializeObjectJSON) {
   auto hkeys = std::make_shared<ork::HotKeyConfiguration>();
   hkeys->Default();
   serialize::JsonSerializer ser;
-  auto topnode    = ser.serializeTop(hkeys);
+  auto topnode    = ser.serializeRoot(hkeys);
   auto resultdata = ser.output();
   printf("mutstr<%s>\n", resultdata.c_str());
 }

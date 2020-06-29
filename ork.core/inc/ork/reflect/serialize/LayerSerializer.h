@@ -22,7 +22,7 @@ struct LayerSerializer : public ISerializer {
 
   LayerSerializer(ISerializer& serializer);
 
-  node_ptr_t serializeTop(object_constptr_t) override;
+  node_ptr_t layerSerializeRoot(object_constptr_t);
   node_ptr_t serializeElement(node_ptr_t elemnode) override;
 
 protected:
@@ -33,8 +33,8 @@ inline LayerSerializer::LayerSerializer(ISerializer& serializer)
     : _subserializer(serializer) {
 }
 
-inline ISerializer::node_ptr_t LayerSerializer::serializeTop(object_constptr_t instance) {
-  return _subserializer.serializeTop(instance);
+inline ISerializer::node_ptr_t LayerSerializer::layerSerializeRoot(object_constptr_t instance) {
+  return _subserializer.serializeRoot(instance);
 }
 inline ISerializer::node_ptr_t LayerSerializer::serializeElement(node_ptr_t elemnode) {
   return _subserializer.serializeElement(elemnode);

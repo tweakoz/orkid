@@ -30,14 +30,12 @@ public:
   using node_ptr_t = std::shared_ptr<Node>;
 
   node_ptr_t topNode();
+  node_ptr_t serializeRoot(object_constptr_t);
 
   virtual node_ptr_t pushObjectNode(std::string named) {
     return nullptr;
   }
   virtual void popNode() {
-  }
-  virtual node_ptr_t serializeTop(object_constptr_t) {
-    return node_ptr_t(nullptr);
   }
   virtual node_ptr_t serializeObject(node_ptr_t parnode) {
     return node_ptr_t(nullptr);
@@ -53,7 +51,7 @@ public:
 
   std::unordered_set<std::string> _reftracker;
   std::stack<node_ptr_t> _nodestack;
-  node_ptr_t _topnode;
+  node_ptr_t _rootnode;
 
   struct Node {
     node_ptr_t _parent                       = nullptr;

@@ -80,13 +80,6 @@ std::string JsonSerializer::output() {
   return strbuf.GetString();
 }
 ////////////////////////////////////////////////////////////////////////////////
-ISerializer::node_ptr_t JsonSerializer::serializeTop(object_constptr_t instance) {
-  _topnode            = pushObjectNode("top");
-  _topnode->_instance = instance;
-  auto objnode        = serializeObject(_topnode);
-  return _topnode;
-}
-////////////////////////////////////////////////////////////////////////////////
 ISerializer::node_ptr_t JsonSerializer::serializeElement(ISerializer::node_ptr_t elemnode) {
 
   OrkAssert(elemnode->_instance);
