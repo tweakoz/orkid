@@ -87,15 +87,27 @@ std::string JsonSerializer::output() {
 
   return strbuf.GetString();
 }
-
+////////////////////////////////////////////////////////////////////////////////
 ISerializer::node_ptr_t JsonSerializer::serializeTop(object_constptr_t instance) {
   _topnode            = pushObjectNode("top");
   _topnode->_instance = instance;
   auto objnode        = serializeObject(_topnode);
   return _topnode;
 }
+////////////////////////////////////////////////////////////////////////////////
 ISerializer::node_ptr_t JsonSerializer::serializeElement(ISerializer::node_ptr_t elemnode) {
-  auto chnode = pushObjectNode(elemnode->_key);
+
+  OrkAssert(elemnode->_instance);
+
+  auto chnode       = pushObjectNode(elemnode->_key);
+  chnode->_instance = elemnode->_instance;
+  chnode->_parent   = elemnode;
+  if (auto as_obj = elemnode->_value.TryAs<object_ptr_t>()) {
+    auto objnode = serializeObject(chnode);
+    if (objnode)
+      objnode->_parent = chnode;
+  }
+
   // chnode->_parent = elemnode;
   popNode();
   return chnode;
@@ -159,10 +171,11 @@ ISerializer::node_ptr_t JsonSerializer::serializeObject(node_ptr_t parnode) {
       auto objclazz = instance->GetClass();
       auto& desc    = objclazz->Description();
 
-      onode          = pushObjectNode("object");
-      onode->_parent = parnode;
-      auto oimplnode = onode->_impl.getShared<JsonSerObjectNode>();
-      auto classname = objclazz->Name();
+      onode            = pushObjectNode("object");
+      onode->_parent   = parnode;
+      onode->_instance = instance;
+      auto oimplnode   = onode->_impl.getShared<JsonSerObjectNode>();
+      auto classname   = objclazz->Name();
       rapidjson::Value classval(classname.c_str(), *_allocator);
       oimplnode->_jsonvalue.AddMember(
           "class", //
@@ -174,7 +187,9 @@ ISerializer::node_ptr_t JsonSerializer::serializeObject(node_ptr_t parnode) {
           uuidval,
           *_allocator);
 
-      auto propsnode = pushObjectNode("properties");
+      auto propsnode       = pushObjectNode("properties");
+      propsnode->_instance = instance;
+      propsnode->_parent   = onode;
 
       for (auto prop_item : desc.Properties()) {
 
@@ -183,6 +198,7 @@ ISerializer::node_ptr_t JsonSerializer::serializeObject(node_ptr_t parnode) {
         auto propnode       = pushObjectNode(propname.c_str());
         propnode->_property = property;
         propnode->_instance = instance;
+        propnode->_parent   = propsnode;
         property->serialize(propnode);
         popNode();
       }

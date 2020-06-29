@@ -33,6 +33,9 @@ namespace ork {
 void Object::Describe() {
 }
 
+Object::Object() {
+  _uuid = object::ObjectClass::genUUID();
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 object::Signal* Object::FindSignal(ConstString name) {

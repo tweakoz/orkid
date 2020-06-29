@@ -39,7 +39,7 @@ ObjectClass::ObjectClass(const rtti::RTTIData& data)
     , _description() {
 }
 
-static boost::uuids::uuid genUUID() {
+boost::uuids::uuid ObjectClass::genUUID() {
   static boost::uuids::random_generator generator;
   return generator();
 }
@@ -47,9 +47,8 @@ static boost::uuids::uuid genUUID() {
 ////////////////////////////////////////////////////////////////////////////////
 
 object_ptr_t ObjectClass::createShared() const {
-  auto shcast  = _sharedFactory();
-  auto asobj   = std::dynamic_pointer_cast<Object>(shcast);
-  asobj->_uuid = genUUID();
+  auto shcast = _sharedFactory();
+  auto asobj  = std::dynamic_pointer_cast<Object>(shcast);
   return asobj;
 }
 

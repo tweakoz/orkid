@@ -9,8 +9,8 @@
 
 #include <ork/object/ObjectCategory.h>
 #include <ork/rtti/RTTI.h>
-
 #include <ork/config/config.h>
+#include <boost/uuid/uuid.hpp>
 
 namespace ork::reflect {
 class ObjectProperty;
@@ -30,6 +30,8 @@ class ObjectClass : public rtti::Class {
   RttiDeclareExplicit(ObjectClass, rtti::Class, rtti::NamePolicy, ObjectCategory) public : ObjectClass(const rtti::RTTIData&);
 
 public:
+  static boost::uuids::uuid genUUID();
+
   typedef ork::reflect::Description::anno_t anno_t;
 
   object_ptr_t createShared() const;

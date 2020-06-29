@@ -39,6 +39,7 @@ private:
   RttiDeclareAbstractWithCategory(Object, rtti::ICastable, object::ObjectClass);
 
 public:
+  Object();
   virtual ~Object() {
   }
 
