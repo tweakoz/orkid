@@ -247,13 +247,13 @@ void MultiCurve1D::SetPoint(int ipoint, float fu, float fv) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool MultiCurve1D::PreDeserialize(ork::reflect::IDeserializer& deser) {
+bool MultiCurve1D::preDeserialize(ork::reflect::IDeserializer& deser) {
   mVertices.clear();
   mSegmentTypes.clear();
   return true;
 }
 
-bool MultiCurve1D::PostDeserialize(reflect::IDeserializer&) {
+bool MultiCurve1D::postDeserialize(reflect::IDeserializer&) {
   return (true);
 }
 

@@ -35,7 +35,7 @@ template <typename T> Gradient<T>::Gradient() {
   mData.AddSorted(1.0f, T());
 }
 
-template <typename T> bool Gradient<T>::PreDeserialize(ork::reflect::IDeserializer& deser) {
+template <typename T> bool Gradient<T>::preDeserialize(ork::reflect::IDeserializer& deser) {
   mData.clear();
   return true;
 }
@@ -98,7 +98,7 @@ template <typename T> GradientD2<T>::~GradientD2() {
   }
 }
 
-template <typename T> bool GradientD2<T>::PreDeserialize(ork::reflect::IDeserializer& deser) {
+template <typename T> bool GradientD2<T>::preDeserialize(ork::reflect::IDeserializer& deser) {
   mData.clear();
   return true;
 }

@@ -143,7 +143,7 @@ public:
 
   void OnSceneDataMode(ESceneDataMode emode);
   void PrepareForEdit();
-  bool PostDeserialize(reflect::IDeserializer&) final;
+  bool postDeserialize(reflect::IDeserializer&) final;
 
   //////////////////////////////////////////////////////////
 

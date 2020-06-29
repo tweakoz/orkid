@@ -467,7 +467,7 @@ void HotKeyConfiguration::RemoveHotKey(const char* actionname) {
   }
 }
 
-bool HotKeyConfiguration::PostDeserialize(reflect::IDeserializer&) // virtual
+bool HotKeyConfiguration::postDeserialize(reflect::IDeserializer&) // virtual
 {
   for (auto it : _hotkeys) {
     auto pobj = it.second;

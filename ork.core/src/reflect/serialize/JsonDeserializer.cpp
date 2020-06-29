@@ -56,7 +56,7 @@ JsonDeserializer::JsonDeserializer(const std::string& jsondata)
   _allocator = &_document.GetAllocator();
   _document.Parse(jsondata.c_str());
   bool is_object = _document.IsObject();
-  bool has_top   = _document.HasMember("top");
+  bool has_top   = _document.HasMember("root");
   OrkAssert(is_object);
   OrkAssert(has_top);
 }
@@ -64,7 +64,7 @@ JsonDeserializer::JsonDeserializer(const std::string& jsondata)
 //////////////////////////////////////////////////////////////////////////////
 
 void JsonDeserializer::deserializeTop(object_ptr_t& instance_out) {
-  const auto& rootnode   = _document["top"];
+  const auto& rootnode   = _document["root"];
   auto topnode           = std::make_shared<IDeserializer::Node>();
   topnode->_deserializer = this;
   // auto dserjsonnode      = topnode->_impl.makeShared<JsonObjectNode>(rootnode);

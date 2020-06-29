@@ -196,14 +196,14 @@ void graph_data::Describe() {
     return true;
   }
   ///////////////////////////////////////////////////////////////////////////////
-  bool graph_data::PreDeserialize(reflect::IDeserializer&) {
+  bool graph_data::preDeserialize(reflect::IDeserializer&) {
     LockTopoSortedChildrenForWrite(101);
     Clear();
     mModules.clear();
     UnLockTopoSortedChildren();
     return true;
   }
-  bool graph_data::PostDeserialize(reflect::IDeserializer&) {
+  bool graph_data::postDeserialize(reflect::IDeserializer&) {
     /////////////////////////////////
     // remove dangling null modules
     /////////////////////////////////

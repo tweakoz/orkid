@@ -30,11 +30,15 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::Object, "Object");
 
 namespace ork {
 
+///////////////////////////////////////////////////////////////////////////////
 void Object::Describe() {
 }
-
+///////////////////////////////////////////////////////////////////////////////
 Object::Object() {
   _uuid = object::ObjectClass::genUUID();
+}
+///////////////////////////////////////////////////////////////////////////////
+Object::~Object() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -50,75 +54,49 @@ object::Signal* Object::FindSignal(ConstString name) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Object::PreSerialize(reflect::ISerializer&) const {
+bool Object::preSerialize(reflect::ISerializer&) const {
   return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Object::PreDeserialize(reflect::IDeserializer&) {
+bool Object::preDeserialize(reflect::IDeserializer&) {
   return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Object::PostSerialize(reflect::ISerializer&) const {
+bool Object::postSerialize(reflect::ISerializer&) const {
   return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Object::PostDeserialize(reflect::IDeserializer&) {
+bool Object::postDeserialize(reflect::IDeserializer&) {
   return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-/*Object* Object::Clone() const {
-  auto the_clone = dynamic_cast<Object*>(GetClass()->CreateObject());
-  _cloneInto(the_clone);
-  return the_clone;
-}*/
-
-///////////////////////////////////////////////////////////////////////////////
-
-object_ptr_t Object::cloneShared() const {
-  auto the_clone = GetClass()->createShared();
-  _cloneInto(the_clone);
-  return the_clone;
+object_ptr_t Object::clone(object_constptr_t source) {
+  ork::reflect::serialize::JsonSerializer ser;
+  ser.serializeRoot(source);
+  auto serstream = ser.output();
+  ork::reflect::serialize::JsonDeserializer deser(serstream);
+  object_ptr_t copy;
+  deser.deserializeTop(copy);
+  return copy;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Object::_cloneInto(object_ptr_t& into) const {
-  /*printf("slowclone class<%s>\n", GetClass()->Name().c_str());
-
-  ork::ResizableString str;
-  ork::stream::ResizableStringOutputStream ostream(str);
-  ork::reflect::serialize::BinarySerializer binoser(ostream);
-  ork::reflect::serialize::ShallowSerializer oser(binoser);
-
-  GetClass()->Description().serializeProperties(oser, this);
-
-  ork::stream::StringInputStream istream(str);
-  ork::reflect::serialize::BinaryDeserializer biniser(istream);
-  ork::reflect::serialize::ShallowDeserializer iser(biniser);
-
-  GetClass()->Description().DeserializeProperties(iser, into);*/
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-Md5Sum Object::CalcMd5() const {
-  // ork::ResizableString str;
-  // ork::stream::ResizableStringOutputStream ostream(str);
-  // ork::reflect::serialize::BinarySerializer binoser(ostream);
-  // ork::reflect::serialize::ShallowSerializer oser(binoser);
-  // GetClass()->Description().SerializeProperties(binoser, this);
-
+Md5Sum Object::md5sum(object_constptr_t source) {
+  ork::reflect::serialize::JsonSerializer ser;
+  auto objnode   = ser.serializeRoot(source);
+  auto serstream = ser.output();
   CMD5 md5_context;
-  // md5_context.update((const uint8_t*)str.data(), str.length());
-  // md5_context.finalize();
+  md5_context.update((const uint8_t*)serstream.data(), serstream.length());
+  md5_context.finalize();
   return md5_context.Result();
 }
 

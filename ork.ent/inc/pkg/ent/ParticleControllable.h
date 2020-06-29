@@ -144,7 +144,7 @@ class ModParticleItem : public NovaParticleItemBase
 
 	bool DoNotify(const event::Event *event) override;
 
-	bool PostDeserialize(reflect::IDeserializer &ideser) override;
+	bool postDeserialize(reflect::IDeserializer &ideser) override;
 
 public:
 

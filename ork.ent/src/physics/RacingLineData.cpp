@@ -176,7 +176,7 @@ void RacingLineInst::Sample(int racing_line_index, float progress, RacingLineSam
 	}
 }
 
-bool RacingLineData::PostDeserialize(reflect::IDeserializer &)
+bool RacingLineData::postDeserialize(reflect::IDeserializer &)
 {
 	int re_idx = 0;
 	for(orklut<int, RacingLine *>::iterator it = mRacingLines.begin();

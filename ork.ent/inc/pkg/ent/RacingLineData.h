@@ -146,7 +146,7 @@ class RacingLineData : public ork::ent::ComponentData {
 
 private:
   ork::ent::ComponentInst* createComponent(ork::ent::Entity* pent) const final;
-  bool PostDeserialize(reflect::IDeserializer&) final;
+  bool postDeserialize(reflect::IDeserializer&) final;
 
   // Racing Lines by Racing Line Index
   orklut<int, RacingLine*> mRacingLines;

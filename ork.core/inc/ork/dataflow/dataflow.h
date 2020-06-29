@@ -991,8 +991,8 @@ protected:
 
   bool SerializeConnections(ork::reflect::ISerializer& ser) const;
   bool DeserializeConnections(ork::reflect::IDeserializer& deser);
-  bool PreDeserialize(reflect::IDeserializer&) override;
-  bool PostDeserialize(reflect::IDeserializer&) override;
+  bool preDeserialize(reflect::IDeserializer&) override;
+  bool postDeserialize(reflect::IDeserializer&) override;
 };
 
 class graph_inst : public graph_data {

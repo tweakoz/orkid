@@ -399,7 +399,7 @@ public:
 private:
 	ork::Object* _visualDataAccessor() { return & _visualData; }
 
-  bool PostDeserialize(reflect::IDeserializer&) final;
+  bool postDeserialize(reflect::IDeserializer&) final;
 
   file::Path mHeightMapName;
   float mWorldHeight;

@@ -39,21 +39,18 @@ private:
   RttiDeclareAbstractWithCategory(Object, rtti::ICastable, object::ObjectClass);
 
 public:
+  static object_ptr_t clone(object_constptr_t source);
+  static Md5Sum md5sum(object_constptr_t source);
+
   Object();
-  virtual ~Object() {
-  }
+  virtual ~Object();
 
   object::Signal* FindSignal(ConstString name);
 
-  virtual bool PreSerialize(reflect::ISerializer&) const;
-  virtual bool PreDeserialize(reflect::IDeserializer&);
-  virtual bool PostSerialize(reflect::ISerializer&) const;
-  virtual bool PostDeserialize(reflect::IDeserializer&);
-
-  virtual object_ptr_t cloneShared() const;
-  void _cloneInto(object_ptr_t& into) const;
-
-  Md5Sum CalcMd5() const;
+  virtual bool preSerialize(reflect::ISerializer&) const;
+  virtual bool preDeserialize(reflect::IDeserializer&);
+  virtual bool postSerialize(reflect::ISerializer&) const;
+  virtual bool postDeserialize(reflect::IDeserializer&);
 
   bool Notify(const event::Event* pEV) {
     return DoNotify(pEV);
@@ -72,21 +69,5 @@ private:
     return false;
   }
 };
-
-reflect::BidirectionalSerializer& operator||(reflect::BidirectionalSerializer&, Object&);
-reflect::BidirectionalSerializer& operator||(reflect::BidirectionalSerializer&, const Object&);
-
-/*template <typename T>
-inline void DeserializeUnknownObject(
-    ork::reflect::IDeserializer& deser, //
-    std::shared_ptr<T>& out_value) {
-  object_ptr_t obj = nullptr;
-  auto objclz      = object::ObjectClass::GetClassStatic();
-  auto objcat      = objclz->GetClass();
-  objcat->deserializeObject(deser, obj);
-  out_value = std::dynamic_pointer_cast<T>(obj);
-}*/
-
-// Object* DeserializeObject(PieceString file);
 
 } // namespace ork

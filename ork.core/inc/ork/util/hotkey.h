@@ -46,7 +46,7 @@ using hotkey_constptr_t = std::shared_ptr<const HotKey>;
 class HotKeyConfiguration : public ork::Object {
   DeclareConcreteX(HotKeyConfiguration, ork::Object);
 
-  bool PostDeserialize(reflect::IDeserializer&) final;
+  bool postDeserialize(reflect::IDeserializer&) final;
 
 public:
   HotKeyConfiguration();

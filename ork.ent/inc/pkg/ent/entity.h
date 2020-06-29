@@ -204,7 +204,7 @@ public:
   EntData();
   ~EntData();
 
-  bool PostDeserialize(reflect::IDeserializer&) final;
+  bool postDeserialize(reflect::IDeserializer&) final;
 
   const Archetype* GetArchetype() const {
     return mArchetype;
@@ -371,7 +371,7 @@ protected:
   ComponentDataTable::LutType mComponentDatas;
 
 private:
-  bool PostDeserialize(reflect::IDeserializer&) override;
+  bool postDeserialize(reflect::IDeserializer&) override;
 
   SceneData* mpSceneData;
 };

@@ -156,7 +156,7 @@ class Constants : public Module {
   void OnTopologyUpdate(void) final; // virtual
 
   bool DoNotify(const ork::event::Event* event) final; // virtual
-  bool PostDeserialize(reflect::IDeserializer&) final; // virtual
+  bool postDeserialize(reflect::IDeserializer&) final; // virtual
 
 public:
   Constants();
