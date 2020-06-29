@@ -32,7 +32,7 @@ TEST(SerializeObjectJSON) {
 std::string getJsonStr() {
   return R"xxx(
     {
-     "top": {
+     "root": {
       "object": {
        "class": "HotKeyConfiguration",
        "uuid": "6c499e0f-212d-465a-b88b-60b8cc6928ab",

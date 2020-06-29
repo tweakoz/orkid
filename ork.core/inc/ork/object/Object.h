@@ -17,8 +17,8 @@
 
 namespace ork {
 
-object_ptr_t LoadObjectFromFile(const char* filename);
-object_ptr_t LoadObjectFromString(const char* jsondata);
+object_ptr_t loadObjectFromFile(const char* filename);
+object_ptr_t loadObjectFromString(const char* jsondata);
 
 namespace event {
 class Event;
@@ -27,10 +27,6 @@ class Event;
 namespace object {
 class Signal;
 }
-
-namespace reflect {
-class BidirectionalSerializer;
-} // namespace reflect
 
 struct Object;
 

@@ -574,7 +574,7 @@ void HotKeyManager::Save(std::shared_ptr<HotKeyManager> hkm) {
 
 std::shared_ptr<HotKeyManager> //
 HotKeyManager::Load(std::string path) {
-  auto instance = LoadObjectFromFile(path.c_str());
+  auto instance = loadObjectFromFile(path.c_str());
   return std::dynamic_pointer_cast<HotKeyManager>(instance);
 }
 

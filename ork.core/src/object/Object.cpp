@@ -149,7 +149,7 @@ reflect::BidirectionalSerializer& operator||(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-object_ptr_t LoadObjectFromFile(const char* filename) {
+object_ptr_t loadObjectFromFile(const char* filename) {
   file::Path the_path(filename);
   if (ork::FileEnv::GetRef().DoesFileExist(the_path)) {
     File file(the_path.c_str(), EFM_READ);
@@ -158,14 +158,14 @@ object_ptr_t LoadObjectFromFile(const char* filename) {
     std::string jsondata;
     jsondata.resize(len);
     file.Read((void*)jsondata.c_str(), len);
-    return LoadObjectFromString(jsondata.c_str());
+    return loadObjectFromString(jsondata.c_str());
   }
   return nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-object_ptr_t LoadObjectFromString(const char* jsondata) {
+object_ptr_t loadObjectFromString(const char* jsondata) {
   float ftime1 = ork::OldSchool::GetRef().GetLoResRelTime();
 
   object_ptr_t instance_out = nullptr;
@@ -198,22 +198,22 @@ object_ptr_t DeserializeObject(PieceString file) {
   MutableString filename(filename_data);
 
   if (filename.substr(filename.length() - 4) == ".mox") {
-    return LoadObjectFromFile(filename, false);
+    return loadObjectFromFile(filename, false);
   } else if (filename.substr(filename.length() - 4) == ".mob") {
-    return LoadObjectFromFile(filename, true);
+    return loadObjectFromFile(filename, true);
   } else {
     filename = file;
     filename += ".mox";
 
     if (FileEnv::DoesFileExist(filename.c_str())) {
-      return LoadObjectFromFile(filename, false);
+      return loadObjectFromFile(filename, false);
     }
 
     filename = file;
     filename += ".mob";
 
     if (FileEnv::DoesFileExist(filename.c_str())) {
-      return LoadObjectFromFile(filename, true);
+      return loadObjectFromFile(filename, true);
     }
   }
 
