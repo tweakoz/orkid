@@ -23,20 +23,27 @@
 #include <rapidjson/prettywriter.h>
 
 namespace ork::reflect::serialize {
+struct JsonSerObjectNode {
+  JsonSerObjectNode() {
+    _jsonvalue.SetObject();
+  }
+  rapidjson::Value _jsonvalue;
+};
 ////////////////////////////////////////////////////////////////////////////////
 JsonSerializer::JsonSerializer()
     : _document() {
   _allocator = &_document.GetAllocator();
   _document.SetObject();
-
-  _topnode = pushObjectNode("top");
 }
 ////////////////////////////////////////////////////////////////////////////////
 JsonSerializer::~JsonSerializer() {
 }
 ////////////////////////////////////////////////////////////////////////////////
 JsonSerializer::node_ptr_t JsonSerializer::pushObjectNode(std::string named) {
-  node_ptr_t n = std::make_shared<Node>(); //)named, rapidjson::kObjectType);
+  node_ptr_t n   = std::make_shared<Node>(); //)named, rapidjson::kObjectType);
+  auto impl      = n->_impl.makeShared<JsonSerObjectNode>();
+  n->_name       = named;
+  n->_serializer = this;
   _nodestack.push(n);
   return n;
 }
@@ -44,18 +51,21 @@ JsonSerializer::node_ptr_t JsonSerializer::pushObjectNode(std::string named) {
 void JsonSerializer::popNode() {
   auto n = topNode();
   _nodestack.pop();
-  /*rapidjson::Value key(n->_name.c_str(), *_allocator);
+
+  auto impl = n->_impl.getShared<JsonSerObjectNode>();
+  rapidjson::Value key(n->_name.c_str(), *_allocator);
   if (_nodestack.empty()) {
     _document.AddMember(
         key, //
-        n->_value,
+        impl->_jsonvalue,
         *_allocator);
   } else {
-    topNode()->_value.AddMember(
+    auto topimpl = topNode()->_impl.getShared<JsonSerObjectNode>();
+    topimpl->_jsonvalue.AddMember(
         key, //
-        n->_value,
+        impl->_jsonvalue,
         *_allocator);
-  }*/
+  }
 }
 ////////////////////////////////////////////////////////////////////////////////
 JsonSerializer::node_ptr_t JsonSerializer::topNode() {
@@ -79,10 +89,16 @@ std::string JsonSerializer::output() {
 }
 
 ISerializer::node_ptr_t JsonSerializer::serializeTop(object_constptr_t instance) {
-  return nullptr;
+  _topnode            = pushObjectNode("top");
+  _topnode->_instance = instance;
+  auto objnode        = serializeObject(_topnode);
+  return _topnode;
 }
 ISerializer::node_ptr_t JsonSerializer::serializeElement(ISerializer::node_ptr_t elemnode) {
-  return nullptr;
+  auto chnode = pushObjectNode(elemnode->_key);
+  // chnode->_parent = elemnode;
+  popNode();
+  return chnode;
 }
 ////////////////////////////////////////////////////////////////////////////////
 /*
@@ -121,16 +137,15 @@ void JsonSerializer::_serializeNamedItem(
 void JsonSerializer::serializeElement(const hintvar_t& value) {
   _serializeNamedItem("item", value);
 }
+*/
 ////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::serializeObjectProperty(
-    const ObjectProperty* prop, //
-    object_constptr_t instance) {
+ISerializer::node_ptr_t JsonSerializer::serializeObject(node_ptr_t parnode) {
 
-  prop->serialize(*this, instance);
-}
-////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::serializeSharedObject(object_constptr_t instance) {
+  node_ptr_t onode;
+
+  auto instance = parnode->_instance;
   if (instance) {
+    auto parimplnode  = parnode->_impl.getShared<JsonSerObjectNode>();
     const auto& uuid  = instance->_uuid;
     std::string uuids = boost::uuids::to_string(uuid);
     auto it           = _reftracker.find(uuids);
@@ -142,67 +157,81 @@ void JsonSerializer::serializeSharedObject(object_constptr_t instance) {
       _reftracker.insert(uuids);
 
       auto objclazz = instance->GetClass();
+      auto& desc    = objclazz->Description();
 
-      auto node = pushObjectNode("object");
-
+      onode          = pushObjectNode("object");
+      onode->_parent = parnode;
+      auto oimplnode = onode->_impl.getShared<JsonSerObjectNode>();
       auto classname = objclazz->Name();
       rapidjson::Value classval(classname.c_str(), *_allocator);
-      node->_value.AddMember(
+      oimplnode->_jsonvalue.AddMember(
           "class", //
           classval,
           *_allocator);
 
-      node->_value.AddMember(
+      oimplnode->_jsonvalue.AddMember(
           "uuid", //
           uuidval,
           *_allocator);
 
-      auto propnode = pushObjectNode("properties");
+      auto propsnode = pushObjectNode("properties");
 
-      Object::xxxSerializeShared(instance, *this);
+      for (auto prop_item : desc.Properties()) {
 
-      popNode();
+        auto propname       = prop_item.first;
+        auto property       = prop_item.second;
+        auto propnode       = pushObjectNode(propname.c_str());
+        propnode->_property = property;
+        propnode->_instance = instance;
+        property->serialize(propnode);
+        popNode();
+      }
 
-      popNode();
+      // Object::xxxSerializeShared(instance, *this);
+
+      popNode(); // pop "properties"
+
+      popNode(); // pop "object"
     }
     ////////////////////////////////////
     // backreference
     ////////////////////////////////////
     else {
-      topNode()->_value.AddMember(
+      /*topNode()->_value.AddMember(
           "backreference", //
           uuidval,
-          *_allocator);
+          *_allocator);*/
     }
 
   } else {
-    topNode()->_value.AddMember(
+    /*topNode()->_value.AddMember(
         "nil", //
         "nil",
-        *_allocator);
+        *_allocator);*/
   }
-}
-////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::Hint(const PieceString& name, hintvar_t val) {
+  return onode;
+} /*
+ ////////////////////////////////////////////////////////////////////////////////
+ void JsonSerializer::Hint(const PieceString& name, hintvar_t val) {
 
-  if (name == "MultiIndex") {
-    _multiindex = val.Get<int>();
-  } else if (name == "map_key") {
-    _mapkey = val;
-  } else if (name == "map_value") {
-    auto kasstr = _mapkey.Get<std::string>();
-    _serializeNamedItem(kasstr, val);
-  } else if (auto as_str = val.TryAs<std::string>()) {
-    rapidjson::Value nameval(name.c_str(), *_allocator);
-    rapidjson::Value valval(as_str.value().c_str(), *_allocator);
-    topNode()->_value.AddMember(
-        nameval, //
-        valval,
-        *_allocator);
-  }
-}
-////////////////////////////////////////////////////////////////////////////////
-void JsonSerializer::serializeData(const uint8_t*, size_t) {
-}*/
+   if (name == "MultiIndex") {
+     _multiindex = val.Get<int>();
+   } else if (name == "map_key") {
+     _mapkey = val;
+   } else if (name == "map_value") {
+     auto kasstr = _mapkey.Get<std::string>();
+     _serializeNamedItem(kasstr, val);
+   } else if (auto as_str = val.TryAs<std::string>()) {
+     rapidjson::Value nameval(name.c_str(), *_allocator);
+     rapidjson::Value valval(as_str.value().c_str(), *_allocator);
+     topNode()->_value.AddMember(
+         nameval, //
+         valval,
+         *_allocator);
+   }
+ }
+ ////////////////////////////////////////////////////////////////////////////////
+ void JsonSerializer::serializeData(const uint8_t*, size_t) {
+ }*/
 ////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::reflect::serialize

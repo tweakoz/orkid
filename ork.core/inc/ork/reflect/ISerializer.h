@@ -34,6 +34,9 @@ public:
   virtual node_ptr_t serializeTop(object_constptr_t) {
     return node_ptr_t(nullptr);
   }
+  virtual node_ptr_t serializeObject(node_ptr_t parnode) {
+    return node_ptr_t(nullptr);
+  }
   virtual node_ptr_t serializeElement(node_ptr_t elemnode) {
     return node_ptr_t(nullptr);
   }
@@ -49,6 +52,7 @@ public:
     object_constptr_t _instance              = nullptr;
     var_t _impl;
     std::string _key;
+    std::string _name;
     var_t _value;
     size_t _index       = 0;
     size_t _multiindex  = 0;

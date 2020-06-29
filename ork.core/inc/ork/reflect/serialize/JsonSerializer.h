@@ -25,6 +25,7 @@ public:
 
   node_ptr_t serializeTop(object_constptr_t) override;
   node_ptr_t serializeElement(node_ptr_t elemnode) override;
+  node_ptr_t serializeObject(node_ptr_t objnode) override;
 
   std::string output();
 
@@ -42,5 +43,4 @@ private:
   node_ptr_t _topnode;
   std::stack<node_ptr_t> _nodestack;
 };
-
 }}} // namespace ork::reflect::serialize
