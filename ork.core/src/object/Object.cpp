@@ -42,7 +42,7 @@ Object::~Object() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-object::Signal* Object::signal(ConstString name) {
+object::Signal* Object::findSignal(ConstString name) {
   auto objclazz = rtti::downcast<object::ObjectClass*>(GetClass());
   auto pSignal  = objclazz->Description().signal(name);
 

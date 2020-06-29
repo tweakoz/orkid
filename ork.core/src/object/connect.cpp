@@ -315,7 +315,7 @@ bool Connect(Object* pSender, PoolString signal, Object* pReceiver, PoolString s
   const reflect::Description& descript   = pclass->Description();
   const reflect::IObjectFunctor* functor = descript.FindFunctor(slot);
   if (functor != NULL) {
-    Signal* pSignal = pSender->signal(signal);
+    Signal* pSignal = pSender->findSignal(signal);
     if (pSignal)
       return pSignal->AddSlot(pReceiver, slot);
   }
@@ -332,7 +332,7 @@ bool Connect(Signal* psig, AutoSlot* pslot) {
 }
 
 bool ConnectToLambda(Object* pSender, PoolString signal, Object* pReceiver, const slot_lambda_t& slt) {
-  Signal* pSignal = pSender->signal(signal);
+  Signal* pSignal = pSender->findSignal(signal);
   if (pSignal) {
     assert(false);
     // return pSignal->AddSlot(pReceiver, slot);
@@ -346,7 +346,7 @@ bool Disconnect(Object* pSender, PoolString signal, Object* pReceiver, PoolStrin
   const reflect::Description& descript   = pclass->Description();
   const reflect::IObjectFunctor* functor = descript.FindFunctor(slot);
   if (functor != NULL) {
-    Signal* pSignal = pSender->signal(signal);
+    Signal* pSignal = pSender->findSignal(signal);
     if (pSignal)
       return pSignal->RemoveSlot(pReceiver, slot);
   }

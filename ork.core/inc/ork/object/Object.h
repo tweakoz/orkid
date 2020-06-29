@@ -45,7 +45,7 @@ public:
   Object();
   virtual ~Object();
 
-  object::Signal* signal(ConstString name);
+  object::Signal* findSignal(ConstString name);
 
   virtual bool preSerialize(reflect::ISerializer&) const;
   virtual bool preDeserialize(reflect::IDeserializer&);
