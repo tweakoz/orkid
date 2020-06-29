@@ -44,7 +44,7 @@ Object::~Object() {
 
 object::Signal* Object::findSignal(ConstString name) {
   auto objclazz = rtti::downcast<object::ObjectClass*>(GetClass());
-  auto pSignal  = objclazz->Description().signal(name);
+  auto pSignal  = objclazz->Description().findSignal(name);
 
   if (pSignal != 0)
     return &(this->*pSignal);

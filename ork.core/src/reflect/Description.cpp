@@ -79,7 +79,7 @@ void Description::AddAutoSlot(const char* key, object::AutoSlot Object::*pmember
   mAutoSlots.AddSorted(key, pmember);
 }
 
-object::Signal Object::*Description::signal(const ConstString& key) const {
+object::Signal Object::*Description::findSignal(const ConstString& key) const {
   for (const Description* description = this; description != NULL; description = description->_parentDescription) {
     const SignalMapType& map         = description->mSignals;
     SignalMapType::const_iterator it = map.find(key);
