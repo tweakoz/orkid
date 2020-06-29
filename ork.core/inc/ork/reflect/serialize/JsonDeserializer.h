@@ -19,7 +19,7 @@ namespace ork { namespace reflect { namespace serialize {
 class JsonDeserializer : public IDeserializer {
 public:
   void deserializeTop(object_ptr_t&) override;
-  void deserializeElement(node_ptr_t elemnode) override;
+  node_ptr_t deserializeElement(node_ptr_t elemnode) override;
 
   JsonDeserializer(const std::string& jsondata);
 

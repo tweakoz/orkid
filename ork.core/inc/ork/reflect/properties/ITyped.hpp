@@ -20,11 +20,23 @@
 
 namespace ork { namespace reflect {
 
-template <typename T> void ITyped<T>::deserialize(IDeserializer::node_ptr_t desernodej) const {
-  // T value;
-  // BidirectionalSerializer bidi(deserializer);
-  // bidi | value;
-  // set(value, obj);
+template <typename T> void ITyped<T>::deserialize(IDeserializer::node_ptr_t desernode) const {
+  auto instance   = desernode->_instance;
+  const auto& var = desernode->_value;
+  OrkAssert(false);
+}
+
+template <> //
+inline void ITyped<bool>::deserialize(IDeserializer::node_ptr_t desernode) const {
+  auto instance   = desernode->_instance;
+  const auto& var = desernode->_value;
+  set(var.Get<bool>(), instance);
+}
+template <> //
+inline void ITyped<int>::deserialize(IDeserializer::node_ptr_t desernode) const {
+  auto instance   = desernode->_instance;
+  const auto& var = desernode->_value;
+  set(int(var.Get<double>()), instance);
 }
 
 template <typename T> void ITyped<T>::serialize(ISerializer& serializer, object_constptr_t obj) const {

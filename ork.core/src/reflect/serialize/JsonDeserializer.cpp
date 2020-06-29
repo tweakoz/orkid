@@ -68,8 +68,17 @@ void JsonDeserializer::deserializeTop(object_ptr_t& instance_out) {
   auto topnode           = std::make_shared<IDeserializer::Node>();
   topnode->_deserializer = this;
   // auto dserjsonnode      = topnode->_impl.makeShared<JsonObjectNode>(rootnode);
-  auto child_node = _parseSubNode(topnode, rootnode);
-  instance_out    = child_node->_instance;
+  auto child_node             = _parseSubNode(topnode, rootnode);
+  instance_out                = child_node->_instance;
+  auto instance_out_classname = instance_out->GetClass()->Name();
+  std::string uuids           = boost::uuids::to_string(instance_out->_uuid);
+
+  if (1)
+    printf(
+        "top instance<%p> class<%s> uuid<%s>\n", //
+        instance_out.get(),
+        instance_out_classname.c_str(),
+        uuids.c_str());
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -89,10 +98,19 @@ IDeserializer::node_ptr_t JsonDeserializer::_parseSubNode(
       if (subvalue.HasMember("object")) {
         const auto& jsonobjnode     = subvalue["object"];
         auto implnode               = child_node->_impl.makeShared<JsonObjectNode>(jsonobjnode);
-        child_node->_instance       = _parseObjectNode(child_node);
-        auto instance_out           = child_node->_instance;
+        auto instance_out           = _parseObjectNode(child_node);
         auto instance_out_classname = instance_out->GetClass()->Name();
-        printf("child instance<%p:%s>\n", instance_out.get(), instance_out_classname.c_str());
+        child_node->_instance       = instance_out;
+        std::string uuids           = boost::uuids::to_string(instance_out->_uuid);
+        child_node->_value.Set<object_ptr_t>(instance_out);
+        if (1)
+          printf(
+              "instance<%p> class<%s> uuid<%s>\n", //
+              instance_out.get(),
+              instance_out_classname.c_str(),
+              uuids.c_str());
+      } else {
+        OrkAssert(false);
       }
       break;
     }
@@ -124,8 +142,8 @@ IDeserializer::node_ptr_t JsonDeserializer::_parseSubNode(
 
 //////////////////////////////////////////////////////////////////////////////
 
-void JsonDeserializer::deserializeElement(node_ptr_t elemnode) {
-
+IDeserializer::node_ptr_t JsonDeserializer::deserializeElement(node_ptr_t elemnode) {
+  node_ptr_t childnode;
   /////////////////////////////////////////////////////
   // map element
   /////////////////////////////////////////////////////
@@ -133,9 +151,11 @@ void JsonDeserializer::deserializeElement(node_ptr_t elemnode) {
     auto implnode                   = elemnode->_impl.getShared<JsonObjectNode>();
     const rapidjson::Value& objnode = implnode->_jsonobjectnode;
     OrkAssert(implnode->_iterator != objnode.MemberEnd());
-    printf("objnode<%s>\n", implnode->_iterator->name.GetString());
+    printf("mapnode key<%s>\n", implnode->_iterator->name.GetString());
     const auto& childvalue = implnode->_iterator->value;
-    _parseSubNode(elemnode, childvalue);
+    childnode              = _parseSubNode(elemnode, childvalue);
+    childnode->_key        = implnode->_iterator->name.GetString();
+    childnode->_value      = childnode->_value;
     implnode->_iterator++;
   }
   /////////////////////////////////////////////////////
@@ -163,7 +183,7 @@ void JsonDeserializer::deserializeElement(node_ptr_t elemnode) {
   else {
     OrkAssert(false);
   }
-
+  return childnode;
   // OrkAssert(false);
 }
 
@@ -215,8 +235,8 @@ object_ptr_t JsonDeserializer::_parseObjectNode(IDeserializer::node_ptr_t dserno
 
     if (prop) {
       printf("found propname<%s> prop<%p>\n", propname, prop);
-      auto child_node = _parseSubNode(dsernode, propnode);
-      /*auto child_node = std::make_shared<IDeserializer::Node>();
+      dsernode->_property = prop;
+      auto child_node     = std::make_shared<IDeserializer::Node>();
 
       child_node->_parent       = dsernode;
       child_node->_property     = prop;
@@ -255,8 +275,7 @@ object_ptr_t JsonDeserializer::_parseObjectNode(IDeserializer::node_ptr_t dserno
           break;
         default:
           OrkAssert(false);
-      }*/
-
+      }
       prop->deserialize(child_node);
 
     } else { // drop property, no longer registered
@@ -265,8 +284,6 @@ object_ptr_t JsonDeserializer::_parseObjectNode(IDeserializer::node_ptr_t dserno
   }
 
   ///////////////////////////////////
-
-  printf("instance_out<%p:%s>\n", instance_out.get(), uuidstr);
   return instance_out;
 }
 

@@ -38,27 +38,71 @@ void ITypedMap<KeyType, ValueType>::_doSerialize(
   ser.endCommand(element);
 }
 ////////////////////////////////////////////////////////////////////////////////
+template <typename T> //
+inline void decode_key(std::string keystr, T& key_out) {
+  OrkAssert(false);
+}
+template <> //
+inline void decode_key(std::string keystr, int& key_out) {
+  OrkAssert(false);
+}
+template <> //
+inline void decode_key(std::string keystr, std::string& key_out) {
+  key_out = keystr;
+}
+template <typename T> //
+inline void decode_value(IDeserializer::var_t val_inp, T& val_out) {
+  val_out = val_inp.Get<T>();
+}
+////////////////////////////////////////////////////////////////////////////////
 template <typename KeyType, typename ValueType>
 void ITypedMap<KeyType, ValueType>::deserialize(IDeserializer::node_ptr_t dsernode) const {
   KeyType key;
   ValueType value;
   auto deserializer  = dsernode->_deserializer;
   size_t numelements = dsernode->_numchildren;
-
+  auto elemnode      = std::make_shared<IDeserializer::Node>();
+  elemnode->_parent  = dsernode;
+  auto instance      = dsernode->_instance;
   for (size_t i = 0; i < numelements; i++) {
     dsernode->_index = i;
-    deserializer->deserializeElement(dsernode);
-    //_doDeserialize(deserializer, key, value);
-    // WriteElement(object, key, -1, &value);
+    auto childnode   = deserializer->deserializeElement(dsernode);
+    decode_key<KeyType>(childnode->_key, key);
+    decode_value<ValueType>(childnode->_value, value);
+    this->WriteElement(
+        instance, //
+        key,
+        -1,
+        &value);
   }
 }
+////////////////////////////////////////////////////////////////////////////////
+/*template <typename KeyType> //
+void ITypedMap<KeyType, object_ptr_t>::deserialize(IDeserializer::node_ptr_t dsernode) const {
+  KeyType key;
+  object_ptr_t value;
+  auto deserializer  = dsernode->_deserializer;
+  size_t numelements = dsernode->_numchildren;
+  auto elemnode      = std::make_shared<IDeserializer::Node>();
+  elemnode->_parent  = dsernode;
+  auto instance      = dsernode->_instance;
+  for (size_t i = 0; i < numelements; i++) {
+    elemnode->_index = i;
+    deserializer->deserializeElement(elemnode);
+    const auto& key = elemnode->_key;
+    dsernode->WriteElement(
+        instance, //
+        key.c_str(),
+        -1,
+        &instance);
+  }
+}*.
 ////////////////////////////////////////////////////////////////////////////////
 template <typename KeyType, typename ValueType>
 void ITypedMap<KeyType, ValueType>::_doDeserialize(
     IDeserializer& dser, //
     KeyType& key,
     ValueType& value) {
-  /*
 Command element;
 dser.beginCommand(element);
 OrkAssert(element.Type() == Command::ELEMENT);
@@ -77,7 +121,8 @@ dser.endCommand(attribute);
 
 dser.Hint("map_value");
 // dser.deserializeItem();
-dser.endCommand(element);*/
-}
+dser.endCommand(element);
+} // namespace ork::reflect
 ////////////////////////////////////////////////////////////////////////////////
+*/
 } // namespace ork::reflect
