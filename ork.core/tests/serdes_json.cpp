@@ -37,12 +37,14 @@ std::string getJsonStr() {
        "class": "HotKeyConfiguration",
        "uuid": "6c499e0f-212d-465a-b88b-60b8cc6928ab",
        "properties": {
+        "DropProp": {"drop":"me"},
         "HotKeys": {
          "copy": {
           "object": {
            "class": "HotKey",
            "uuid": "2392ad12-d0c2-44fa-9395-9b94f5d8ff61",
            "properties": {
+            "DropProp": {"drop":"me"},
             "Alt": false,
             "Ctrl": true,
             "KeyCode": 67,
@@ -58,6 +60,7 @@ std::string getJsonStr() {
            "class": "HotKey",
            "uuid": "a232d953-f883-4174-a7bf-d3672f19058a",
            "properties": {
+            "DropProp2": {"dropme":"too"},
             "Alt": false,
             "Ctrl": true,
             "KeyCode": 79,
