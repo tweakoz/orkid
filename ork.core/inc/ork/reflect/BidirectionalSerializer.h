@@ -70,7 +70,7 @@ template <typename T>
 inline //
     BidirectionalSerializer&
     BidirectionalSerializer::operator|(T& object) {
-  ::ork::reflect::Serialize<T>(&object, &object, *this);
+  //::ork::reflect::Serialize<T>(&object, &object, *this);
   return *this;
 }
 
@@ -78,7 +78,7 @@ template <typename T>
 inline //
     BidirectionalSerializer&
     BidirectionalSerializer::operator|(const T& object) {
-  ::ork::reflect::Serialize<T>(&object, NULL, *this);
+  //::ork::reflect::Serialize<T>(&object, NULL, *this);
   return *this;
 }
 
@@ -112,9 +112,9 @@ inline                                                        //
         BidirectionalSerializer::Stream<ClassType>::operator| //
     (DataType ClassType::*member) const {
   if (mSerializer.Serializing()) {
-    ::ork::reflect::Serialize<DataType>(&(mSerializeObject->*member), NULL, mSerializer);
+    //::ork::reflect::Serialize<DataType>(&(mSerializeObject->*member), NULL, mSerializer);
   } else {
-    ::ork::reflect::Serialize<DataType>(NULL, &(mDeserializeObject->*member), mSerializer);
+    //::ork::reflect::Serialize<DataType>(NULL, &(mDeserializeObject->*member), mSerializer);
   }
 
   return *this;

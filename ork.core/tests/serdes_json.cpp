@@ -23,12 +23,10 @@ using namespace ork::stream;
 TEST(SerializeObjectJSON) {
   auto hkeys = std::make_shared<ork::HotKeyConfiguration>();
   hkeys->Default();
-  auto resultdata = std::make_shared<ArrayString<65536>>();
-  stream::StringOutputStream out_stream(*resultdata);
-  serialize::JsonSerializer ser(out_stream);
-  ser.serializeSharedObject(hkeys);
-  ser.finalize();
-  printf("mutstr<%s>\n", resultdata->c_str());
+  serialize::JsonSerializer ser;
+  auto topnode    = ser.serializeTop(hkeys);
+  auto resultdata = ser.output();
+  printf("mutstr<%s>\n", resultdata.c_str());
 }
 
 std::string getJsonStr() {

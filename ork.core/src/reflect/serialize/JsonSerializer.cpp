@@ -77,6 +77,13 @@ std::string JsonSerializer::output() {
 
   return strbuf.GetString();
 }
+
+ISerializer::node_ptr_t JsonSerializer::serializeTop(object_constptr_t instance) {
+  return nullptr;
+}
+ISerializer::node_ptr_t JsonSerializer::serializeElement(ISerializer::node_ptr_t elemnode) {
+  return nullptr;
+}
 ////////////////////////////////////////////////////////////////////////////////
 /*
 void JsonSerializer::_serializeNamedItem(

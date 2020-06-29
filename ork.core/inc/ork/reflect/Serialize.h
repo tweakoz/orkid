@@ -9,7 +9,6 @@
 
 namespace ork { namespace reflect {
 class BidirectionalSerializer;
-
 template <typename T>
 void Serialize(
     const T*, //
@@ -21,5 +20,4 @@ void Serialize(
     std::shared_ptr<const T>&, //
     std::shared_ptr<T>&,
     BidirectionalSerializer&);
-
 }} // namespace ork::reflect

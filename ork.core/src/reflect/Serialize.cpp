@@ -19,16 +19,16 @@ class ICastable;
 namespace ork { namespace reflect {
 
 //////////////////////////////////////////////////
-void BidirectionalSerializer::serializeSharedObject(object_constptr_t obj) {
-  // printf("bidi sershared<%p>\n", obj.get());
-  // mSerializer->serializeSharedObject(obj);
-}
-void BidirectionalSerializer::deserializeSharedObject(object_ptr_t& obj) {
-  // mDeserializer->deserializeSharedObject(obj);
-}
+// void BidirectionalSerializer::serializeSharedObject(object_constptr_t obj) {
+// printf("bidi sershared<%p>\n", obj.get());
+// mSerializer->serializeSharedObject(obj);
+//}
+// void BidirectionalSerializer::deserializeSharedObject(object_ptr_t& obj) {
+// mDeserializer->deserializeSharedObject(obj);
+//}
 
 //////////////////////////////////////////////////
-template <typename T>
+/*template <typename T>
 inline //
     void
     BidirectionalSerializer::Serialize(const T& value) {
@@ -40,10 +40,11 @@ inline //
     void
     BidirectionalSerializer::Deserialize(T& value) {
   // mDeserializer->deserialize(value);
-}
+}*/
 
 //////////////////////////////////////////////////
 
+/*
 template <typename T>
 void Serialize(  // default serdes<>bidi handler
     const T* in, //
@@ -55,9 +56,9 @@ void Serialize(  // default serdes<>bidi handler
     // bidi.Deserialize(*out);
   }
 }
-
+*/
 //////////////////////////////////////////////////
-
+/*
 #define FOREACH_BASIC_SERIALIZATION_TYPE(MACRO)                                                                                    \
   MACRO(bool);                                                                                                                     \
   MACRO(char);                                                                                                                     \
@@ -181,6 +182,6 @@ void Serialize(
     OrkAssert(result.length() <= 8);
     out->SetCString(result.c_str());
   }
-}
+}*/
 
 }} // namespace ork::reflect
