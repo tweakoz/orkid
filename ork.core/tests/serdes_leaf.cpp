@@ -51,3 +51,71 @@ TEST(SerializeLeafProperties) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+std::string getJsonStr_SLP() {
+  return R"xxx(
+  {
+ "root": {
+  "object": {
+   "class": "SharedTest",
+   "uuid": "31d8a600-7146-4b66-b546-2d3f6c9f3498",
+   "properties": {
+    "bool_direct": false,
+    "double_direct": 0.02,
+    "float_direct": 0.009999999776482582,
+    "int_direct": 0,
+    "sharedobj_accessor": {
+     "object": {
+      "class": "SharedTest",
+      "uuid": "4d6f0ec2-b8f3-4f6c-a4f2-e8963b0d2283",
+      "properties": {
+       "bool_direct": false,
+       "double_direct": 0.0,
+       "float_direct": 0.0,
+       "int_direct": 2,
+       "sharedobj_accessor": "nil",
+       "sharedobj_direct": "nil",
+       "sizet_direct": 0,
+       "string_direct": "yo-2",
+       "uint32_direct": 0
+      }
+     }
+    },
+    "sharedobj_direct": {
+     "object": {
+      "class": "SharedTest",
+      "uuid": "f0be81ef-d0de-4e7e-a721-490f2e9f37b0",
+      "properties": {
+       "bool_direct": false,
+       "double_direct": 0.0,
+       "float_direct": 0.0,
+       "int_direct": 1,
+       "sharedobj_accessor": "nil",
+       "sharedobj_direct": "nil",
+       "sizet_direct": 0,
+       "string_direct": "yo-1",
+       "uint32_direct": 0
+      }
+     }
+    },
+    "sizet_direct": 6,
+    "string_direct": "yo-0",
+    "uint32_direct": 5
+   }
+  }
+ }
+}
+)xxx";
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// test suite of leaf node properties, direct, accessor and lambda
+////////////////////////////////////////////////////////////////////////////////
+
+TEST(DeserializeLeafProperties) {
+  auto objstr = getJsonStr_SLP();
+  object_ptr_t instance_out;
+  serdes::JsonDeserializer deser(objstr.c_str());
+  deser.deserializeTop(instance_out);
+  auto typed = std::dynamic_pointer_cast<SharedTest>(instance_out);
+}
