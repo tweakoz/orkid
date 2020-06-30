@@ -23,33 +23,30 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::object::AutoSlot, "AutoSlot");
 INSTANTIATE_TRANSPARENT_RTTI(ork::object::LambdaSlot, "LambdaSlot");
 INSTANTIATE_TRANSPARENT_RTTI(ork::object::Signal, "Signal");
 
-namespace ork { namespace reflect {
+namespace ork::reflect::serdes {
 template <>
 void Serialize<ork::object::Signal>(
-    ork::object::Signal const* in,
+    ork::object::Signal const* in, //
     ork::object::Signal* out,
-    ::ork::reflect::BidirectionalSerializer& bidi) {
+    BidirectionalSerializer& bidi) {
   if (bidi.Serializing()) {
     bidi || in;
   } else {
     bidi || out;
   }
 }
-}} // namespace ork::reflect
-
-namespace ork { namespace reflect {
 template <>
 void Serialize<ork::object::AutoSlot>(
-    ork::object::AutoSlot const* in,
+    ork::object::AutoSlot const* in, //
     ork::object::AutoSlot* out,
-    ::ork::reflect::BidirectionalSerializer& bidi) {
+    BidirectionalSerializer& bidi) {
   if (bidi.Serializing()) {
     bidi || in;
   } else {
     bidi || out;
   }
 }
-}} // namespace ork::reflect
+} // namespace ork::reflect::serdes
 
 namespace ork { namespace object {
 

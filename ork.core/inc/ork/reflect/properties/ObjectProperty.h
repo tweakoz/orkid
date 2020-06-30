@@ -21,8 +21,8 @@ struct ObjectProperty {
 
   using anno_t = ork::svar64_t;
 
-  virtual void deserialize(IDeserializer::node_ptr_t) const          = 0;
-  virtual void serialize(ISerializer::node_ptr_t) const = 0;
+  virtual void deserialize(serdes::node_ptr_t) const          = 0;
+  virtual void serialize(serdes::node_ptr_t) const = 0;
   /////////////////////////////////////////////////////////////////
   // old string only annotations
   /////////////////////////////////////////////////////////////////

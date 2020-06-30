@@ -42,8 +42,8 @@ protected:
 
 private:
   // from ObjectProperty
-  void deserialize(IDeserializer::node_ptr_t) const override;
-  void serialize(ISerializer::node_ptr_t sernode) const override;
+  void deserialize(serdes::node_ptr_t) const override;
+  void serialize(serdes::node_ptr_t sernode) const override;
 };
 
 }} // namespace ork::reflect

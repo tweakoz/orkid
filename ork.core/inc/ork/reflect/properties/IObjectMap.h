@@ -17,8 +17,8 @@ namespace ork { namespace reflect {
 
 class IObjectMap : public IMap {
 public:
-  virtual object_ptr_t accessItem(IDeserializer& key, int, object_ptr_t) const           = 0;
-  virtual object_constptr_t accessItem(IDeserializer& key, int, object_constptr_t) const = 0;
+  virtual object_ptr_t accessItem(serdes::IDeserializer& key, int, object_ptr_t) const           = 0;
+  virtual object_constptr_t accessItem(serdes::IDeserializer& key, int, object_constptr_t) const = 0;
 };
 
 }} // namespace ork::reflect

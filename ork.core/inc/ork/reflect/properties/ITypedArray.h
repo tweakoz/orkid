@@ -20,8 +20,8 @@ public:
   virtual void set(const T& value, object_ptr_t obj, size_t index) const = 0;
 
 private:
-  void deserializeElement(IDeserializer::node_ptr_t) const override;
-  void serializeElement(ISerializer::node_ptr_t) const override;
+  void deserializeElement(serdes::node_ptr_t) const override;
+  void serializeElement(serdes::node_ptr_t) const override;
 };
 
 }} // namespace ork::reflect

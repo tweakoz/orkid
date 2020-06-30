@@ -7,7 +7,7 @@
 
 #pragma once
 
-namespace ork { namespace reflect {
+namespace ork::reflect::serdes {
 class BidirectionalSerializer;
 template <typename T>
 void Serialize(
@@ -20,4 +20,4 @@ void Serialize(
     std::shared_ptr<const T>&, //
     std::shared_ptr<T>&,
     BidirectionalSerializer&);
-}} // namespace ork::reflect
+} // namespace ork::reflect::serdes

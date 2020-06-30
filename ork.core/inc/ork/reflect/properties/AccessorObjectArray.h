@@ -26,10 +26,10 @@ private:
   size_t count(object_constptr_t) const override;
   void resize(object_ptr_t obj, size_t size) const override;
 
-  void deserializeElement(IDeserializer::node_ptr_t) const override;
-  void serializeElement(ISerializer::node_ptr_t) const override;
-  void deserialize(IDeserializer::node_ptr_t) const override;
-  void serialize(ISerializer::node_ptr_t) const override;
+  void deserializeElement(serdes::node_ptr_t) const override;
+  void serializeElement(serdes::node_ptr_t) const override;
+  void deserialize(serdes::node_ptr_t) const override;
+  void serialize(serdes::node_ptr_t) const override;
 
   object_ptr_t (Object::*_accessor)(size_t);
   size_t (Object::*_counter)() const;

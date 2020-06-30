@@ -13,7 +13,7 @@ namespace ork { namespace reflect {
 
 AccessorVariantArray::AccessorVariantArray(
     void (Object::*serialize_item)(ISerializer&, size_t) const,
-    void (Object::*deserialize_element)(IDeserializer::node_ptr_t),
+    void (Object::*deserialize_element)(serdes::node_ptr_t),
     size_t (Object::*count)() const,
     void (Object::*resize)(size_t))
     : mSerializeItem(serialize_item)
@@ -22,11 +22,11 @@ AccessorVariantArray::AccessorVariantArray(
     , mResize(resize) {
 }
 
-void AccessorVariantArray::deserializeElement(IDeserializer::node_ptr_t desernode) const {
+void AccessorVariantArray::deserializeElement(serdes::node_ptr_t desernode) const {
   // return (instance.get()->*_deserializeElement)(deserializer, index);
 }
 
-void AccessorVariantArray::serializeElement(ISerializer::node_ptr_t sernode) const {
+void AccessorVariantArray::serializeElement(serdes::node_ptr_t sernode) const {
   // return (instance.get()->*mSerializeItem)(serializer, index);
 }
 

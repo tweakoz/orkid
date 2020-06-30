@@ -40,16 +40,16 @@ public:
 
   AccessorVariantMap(
       bool (Object::*)(IDeserializer&, int, ISerializer&),
-      bool (Object::*)(IDeserializer::node_ptr_t) const,
+      bool (Object::*)(serdes::node_ptr_t) const,
       bool (Object::*)(AccessorVariantMapContext&) const);
 
 private:
   bool (Object::*mReadElement)(IDeserializer& key, int, ISerializer& value);
-  bool (Object::*_writeelement)(IDeserializer::node_ptr_t) const;
+  bool (Object::*_writeelement)(serdes::node_ptr_t) const;
   bool (Object::*mMapSerialization)(AccessorVariantMapContext&) const;
 
-  void deserialize(IDeserializer::node_ptr_t) const override;
-  void serialize(ISerializer::node_ptr_t) const override;
+  void deserialize(serdes::node_ptr_t) const override;
+  void serialize(serdes::node_ptr_t) const override;
 };
 
 }} // namespace ork::reflect

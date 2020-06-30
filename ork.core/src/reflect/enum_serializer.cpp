@@ -8,7 +8,7 @@
 #include <ork/pch.h>
 #include <ork/reflect/enum_serializer.inl>
 
-namespace ork { namespace reflect {
+namespace ork::reflect::serdes {
 
 const char* DoSerializeEnum(int value, EnumNameMap* enum_map, BidirectionalSerializer& bidi) {
   ISerializer* pser = bidi.Serializer();
@@ -41,4 +41,4 @@ int DoDeserializeEnum(const ConstString& name, EnumNameMap* enum_map, Bidirectio
   return -1;
 }
 
-}} // namespace ork::reflect
+} // namespace ork::reflect::serdes

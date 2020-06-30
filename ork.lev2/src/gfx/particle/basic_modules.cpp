@@ -332,7 +332,7 @@ bool Constants::doNotify(const ork::event::Event* event) {
   }
   return true;
 }
-bool Constants::postDeserialize(reflect::IDeserializer&) {
+bool Constants::postDeserialize(reflect::serdes::IDeserializer&) {
   OnTopologyUpdate();
   return (true);
 }

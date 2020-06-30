@@ -3,7 +3,7 @@
 // Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -39,60 +39,49 @@
 /// END_ENUM_SERIALIZER()
 ///
 
-namespace ork { namespace reflect {
+namespace ork::reflect::serdes {
 
-struct EnumNameMap
-{
-	int value;
-	const char *name;
+struct EnumNameMap {
+  int value;
+  const char* name;
 };
 
-const char *DoSerializeEnum(int value, EnumNameMap *enum_map, BidirectionalSerializer &bidi);
-int DoDeserializeEnum(const ConstString &name, EnumNameMap *enum_map, BidirectionalSerializer &bidi);
+const char* DoSerializeEnum(int value, EnumNameMap* enum_map, serdes::BidirectionalSerializer& bidi);
+int DoDeserializeEnum(const ConstString& name, EnumNameMap* enum_map, serdes::BidirectionalSerializer& bidi);
 
-template<typename EnumType>
-inline void SerializeEnum(const EnumType *in, EnumType *out, BidirectionalSerializer &bidi, EnumNameMap *enum_map)
-{	    
-	if(bidi.Serializing())
-	{
-		int value = int(*in);
-		ConstString name = DoSerializeEnum(value, enum_map, bidi);
-		bidi | name;
-	}
-	else
-	{
-		ConstString name;
-		bidi | name;
-		int value = DoDeserializeEnum(name, enum_map, bidi);
-		*out = EnumType(value);
-	}
+template <typename EnumType>
+inline void SerializeEnum(const EnumType* in, EnumType* out, serdes::BidirectionalSerializer& bidi, EnumNameMap* enum_map) {
+  if (bidi.Serializing()) {
+    int value        = int(*in);
+    ConstString name = DoSerializeEnum(value, enum_map, bidi);
+    bidi | name;
+  } else {
+    ConstString name;
+    bidi | name;
+    int value = DoDeserializeEnum(name, enum_map, bidi);
+    *out      = EnumType(value);
+  }
 }
 
-} }
+} // namespace ork::reflect::serdes
 
+#define BEGIN_ENUM_SERIALIZER(Namespace, Type)                                                                                     \
+  namespace ork::reflect::serdes {                                                                                                 \
+  template <> void Serialize(const Namespace::Type* in, Namespace::Type* out, BidirectionalSerializer& bidi) {                     \
+    using namespace Namespace;                                                                                                     \
+    static EnumNameMap sEnumMap[] = {
 
-#define BEGIN_ENUM_SERIALIZER(Namespace, Type) \
-	namespace ork { namespace reflect { \
-	template<> void Serialize(const Namespace::Type *in, Namespace::Type *out, BidirectionalSerializer &bidi) \
-	{ \
-		using namespace Namespace; \
-		\
-		static EnumNameMap sEnumMap[] = {
+#define DECLARE_ENUM(ENUM) {int(ENUM), #ENUM},
 
-#define DECLARE_ENUM(ENUM) \
-	{ int(ENUM), #ENUM },
+#define DECLARE_ENUM_VALUE(ENUM, VALUE) {int(ENUM), VALUE},
 
-#define DECLARE_ENUM_VALUE(ENUM, VALUE) \
-	{ int(ENUM), VALUE },
+#define DECLARE_CLASS_ENUM(ClassType, ENUM) {int(ClassType::ENUM), #ENUM},
 
-#define DECLARE_CLASS_ENUM(ClassType, ENUM) \
-	{ int(ClassType::ENUM), #ENUM },
-
-#define END_ENUM_SERIALIZER() \
-			{ 0, NULL } \
-		}; \
-		\
-		ork::reflect::SerializeEnum(in, out, bidi, sEnumMap); \
-    } \
-    } }
-
+#define END_ENUM_SERIALIZER()                                                                                                      \
+  { 0, NULL }                                                                                                                      \
+  }                                                                                                                                \
+  ;                                                                                                                                \
+                                                                                                                                   \
+  SerializeEnum(in, out, bidi, sEnumMap);                                                                                          \
+  }                                                                                                                                \
+  }

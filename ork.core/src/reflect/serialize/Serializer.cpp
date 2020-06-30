@@ -16,17 +16,19 @@
 #include <ork/object/Object.h>
 #include <boost/uuid/uuid_io.hpp>
 ////////////////////////////////////////////////////////////////
-namespace ork::reflect {
+namespace ork::reflect::serdes {
+ISerializer::~ISerializer() {
+}
 ////////////////////////////////////////////////////////////////////////////////
-ISerializer::node_ptr_t ISerializer::serializeRoot(object_constptr_t instance) {
-  _rootnode            = pushNode("root");
-  _rootnode->_isobject = true;
-  _rootnode->_instance = instance;
-  auto objnode         = serializeObject(_rootnode);
+node_ptr_t ISerializer::serializeRoot(object_constptr_t instance) {
+  _rootnode                = pushNode("root", NodeType::OBJECT);
+  _rootnode->_isobject     = true;
+  _rootnode->_out_instance = instance;
+  auto objnode             = serializeObject(_rootnode);
   return _rootnode;
 }
 ////////////////////////////////////////////////////////////////////////////////
-ISerializer::node_ptr_t ISerializer::topNode() {
+node_ptr_t ISerializer::topNode() {
   node_ptr_t n;
   if (not _nodestack.empty()) {
     n = _nodestack.top();
@@ -34,4 +36,4 @@ ISerializer::node_ptr_t ISerializer::topNode() {
   return n;
 }
 ////////////////////////////////////////////////////////////////
-} // namespace ork::reflect
+} // namespace ork::reflect::serdes

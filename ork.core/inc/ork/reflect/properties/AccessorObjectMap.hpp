@@ -22,7 +22,9 @@ AccessorObjectMap<KeyType>::AccessorObjectMap(
     object_constptr_t (Object::*get)(const KeyType&, int) const,
     object_ptr_t (Object::*access)(const KeyType&, int),
     void (Object::*erase)(const KeyType&, int),
-    void (Object::*serializer)(typename AccessorObjectMap<KeyType>::SerializationFunction, BidirectionalSerializer&) const)
+    void (Object::*serializer)(
+        typename AccessorObjectMap<KeyType>::SerializationFunction, //
+        serdes::BidirectionalSerializer&) const)
     : _getter(get)
     , _accessor(access)
     , _eraser(erase)
@@ -31,7 +33,7 @@ AccessorObjectMap<KeyType>::AccessorObjectMap(
 ////////////////////////////////////////////////////////////////////////////////
 template <typename KeyType>
 object_ptr_t AccessorObjectMap<KeyType>::accessItem(
-    IDeserializer& key_deserializer, //
+    serdes::IDeserializer& key_deserializer, //
     int multi_index,
     object_ptr_t instance) const {
   KeyType key;
@@ -47,7 +49,7 @@ object_ptr_t AccessorObjectMap<KeyType>::accessItem(
 ////////////////////////////////////////////////////////////////////////////////
 template <typename KeyType>
 object_constptr_t AccessorObjectMap<KeyType>::accessItem(
-    IDeserializer& key_deserializer, //
+    serdes::IDeserializer& key_deserializer, //
     int multi_index,
     object_constptr_t instance) const {
   // KeyType key;
@@ -55,7 +57,7 @@ object_constptr_t AccessorObjectMap<KeyType>::accessItem(
   return nullptr; //(instance.get()->*_getter)(key, multi_index);
 }
 ////////////////////////////////////////////////////////////////////////////////
-template <typename KeyType> void AccessorObjectMap<KeyType>::deserialize(IDeserializer::node_ptr_t desernode) const {
+template <typename KeyType> void AccessorObjectMap<KeyType>::deserialize(serdes::node_ptr_t desernode) const {
   /*Command item;
   deserializer.beginCommand(item);
   OrkAssert(item.Type() == Command::ELEMENT);
@@ -71,7 +73,7 @@ template <typename KeyType> void AccessorObjectMap<KeyType>::deserialize(IDeseri
   deserializer.endCommand(item);*/
 }
 ////////////////////////////////////////////////////////////////////////////////
-template <typename KeyType> void AccessorObjectMap<KeyType>::serialize(ISerializer::node_ptr_t sernode) const {
+template <typename KeyType> void AccessorObjectMap<KeyType>::serialize(serdes::node_ptr_t sernode) const {
   // BidirectionalSerializer bidi(serializer);
   // auto non_const = const_cast<Object*>(instance.get());
   //(non_const->*_serializer)(_serdesimpl, bidi);

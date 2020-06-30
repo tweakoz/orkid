@@ -989,10 +989,10 @@ protected:
   bool mbTopologyIsDirty;
   recursive_mutex mMutex;
 
-  bool SerializeConnections(ork::reflect::ISerializer& ser) const;
-  bool DeserializeConnections(ork::reflect::IDeserializer& deser);
-  bool preDeserialize(reflect::IDeserializer&) override;
-  bool postDeserialize(reflect::IDeserializer&) override;
+  bool SerializeConnections(ork::reflect::serdes::ISerializer& ser) const;
+  bool DeserializeConnections(ork::reflect::serdes::IDeserializer& deser);
+  bool preDeserialize(reflect::serdes::IDeserializer&) override;
+  bool postDeserialize(reflect::serdes::IDeserializer&) override;
 };
 
 class graph_inst : public graph_data {

@@ -95,8 +95,8 @@ public:
   void Init(int inumsegs);
 
 private:
-  bool postDeserialize(reflect::IDeserializer&) final;           // virtual
-  bool preDeserialize(ork::reflect::IDeserializer& deser) final; // virtual
+  bool postDeserialize(reflect::serdes::IDeserializer&) final;           // virtual
+  bool preDeserialize(ork::reflect::serdes::IDeserializer& deser) final; // virtual
 };
 
 ///////////////////////////////////////////////////////////////////////////////

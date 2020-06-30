@@ -19,15 +19,15 @@ DirectObject::DirectObject(object_ptr_t Object::*property)
     : mProperty(property) {
 }
 
-void DirectObject::serialize(ISerializer::node_ptr_t propnode) const {
+void DirectObject::serialize(serdes::node_ptr_t propnode) const {
   auto serializer     = propnode->_serializer;
-  auto parinstance    = propnode->_instance;
+  auto parinstance    = propnode->_out_instance;
   auto child_instance = (parinstance.get()->*mProperty);
   if (child_instance) {
-    auto childnode       = serializer->pushNode(_name);
-    childnode->_isobject = true;
-    childnode->_instance = child_instance;
-    childnode->_parent   = propnode;
+    auto childnode           = serializer->pushNode(_name, serdes::NodeType::OBJECT);
+    childnode->_isobject     = true;
+    childnode->_out_instance = child_instance;
+    childnode->_parent       = propnode;
     serializer->serializeObject(childnode);
     serializer->popNode();
   } else {
@@ -36,7 +36,7 @@ void DirectObject::serialize(ISerializer::node_ptr_t propnode) const {
   }
 }
 
-void DirectObject::deserialize(IDeserializer::node_ptr_t dsernode) const {
+void DirectObject::deserialize(serdes::node_ptr_t dsernode) const {
   OrkAssert(false);
   /*Object* object_property = (object->*mProperty)();
   Command command;

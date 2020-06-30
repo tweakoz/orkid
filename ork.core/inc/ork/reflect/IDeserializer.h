@@ -7,23 +7,18 @@
 
 #pragma once
 
-#include <ork/kernel/svariant.h>
-#include <ork/kernel/string/ResizableString.h>
-#include <ork/kernel/string/MutableString.h>
-#include <ork/orktypes.h>
-#include <unordered_map>
-#include <boost/uuid/uuid.hpp>
+#include "serialize/serdes.h"
 
-namespace ork::reflect {
+namespace ork::reflect::serdes {
 
 class ObjectProperty;
 class Command;
 
 struct IDeserializer {
 
-  using var_t = svar1024_t;
-  struct Node;
-  using node_ptr_t = std::shared_ptr<Node>;
+  virtual node_ptr_t createNode(std::string named, NodeType type) {
+    return nullptr;
+  }
 
   virtual void deserializeTop(object_ptr_t&) = 0;
   virtual node_ptr_t deserializeElement(node_ptr_t elemnode) {
@@ -36,22 +31,8 @@ struct IDeserializer {
 
   ///////////////////////////////////////////
 
-  struct Node {
-    node_ptr_t _parent                       = nullptr;
-    const reflect::ObjectProperty* _property = nullptr;
-    IDeserializer* _deserializer             = nullptr;
-    object_ptr_t _instance                   = nullptr;
-    var_t _impl;
-    std::string _key;
-    var_t _value;
-    size_t _index       = -1;
-    size_t _numchildren = 0;
-  };
-
-  ///////////////////////////////////////////
-
   using trackervect_t = std::unordered_map<std::string, object_ptr_t>;
   trackervect_t _reftracker;
 };
 
-} // namespace ork::reflect
+} // namespace ork::reflect::serdes

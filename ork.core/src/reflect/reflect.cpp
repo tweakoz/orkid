@@ -119,10 +119,6 @@ using namespace reflect;
 ////////////////////
 
 namespace ork {
-ISerializer::~ISerializer() {
-}
-IDeserializer::~IDeserializer() {
-}
 
 template class orklut<ConstString, ObjectProperty*>;
 template class orklut<ConstString, IObjectFunctor*>;

@@ -25,10 +25,11 @@ public:
 
 private:
   using allocator_t = rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>*;
+  node_ptr_t createNode(std::string named, NodeType type) override;
 
-  object_ptr_t _parseObjectNode(IDeserializer::node_ptr_t dsernode);
+  object_ptr_t _parseObjectNode(serdes::node_ptr_t dsernode);
   node_ptr_t _parseSubNode(
-      IDeserializer::node_ptr_t parentnode, //
+      serdes::node_ptr_t parentnode, //
       const rapidjson::Value& subvalue);
 
   ////////////////////////////////////////////
@@ -37,4 +38,4 @@ private:
   allocator_t _allocator;
 };
 
-}}} // namespace ork::reflect::serialize
+}}} // namespace ork::reflect::serdes

@@ -18,8 +18,8 @@ public:
   AccessorVariant(bool (Object::*getter)(ISerializer&) const, bool (Object::*setter)(IDeserializer&));
 
 private:
-  void deserialize(IDeserializer::node_ptr_t) const override;
-  void serialize(ISerializer::node_ptr_t) const override;
+  void deserialize(serdes::node_ptr_t) const override;
+  void serialize(serdes::node_ptr_t) const override;
   bool (Object::*mSerialize)(ISerializer&) const;
   bool (Object::*mDeserialize)(IDeserializer&);
 };

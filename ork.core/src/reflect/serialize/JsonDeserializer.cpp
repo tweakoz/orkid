@@ -49,8 +49,6 @@ struct JsonArrayNode {
 
 //////////////////////////////////////////////////////////////////////////////
 
-static int unhex(char c);
-
 JsonDeserializer::JsonDeserializer(const std::string& jsondata)
     : _document() {
   _allocator = &_document.GetAllocator();
@@ -63,13 +61,46 @@ JsonDeserializer::JsonDeserializer(const std::string& jsondata)
 
 //////////////////////////////////////////////////////////////////////////////
 
+node_ptr_t JsonDeserializer::createNode(std::string named, NodeType type) {
+  node_ptr_t n     = std::make_shared<Node>();
+  n->_name         = named;
+  n->_deserializer = this;
+  n->_type         = type;
+  switch (type) {
+    case NodeType::MAP:
+      OrkAssert(false);
+      break;
+    case NodeType::MAP_ELEMENT:
+      OrkAssert(false);
+      break;
+    case NodeType::ARRAY:
+      OrkAssert(false);
+      break;
+    case NodeType::ARRAY_ELEMENT:
+      n->_impl.makeShared<JsonArrayNode>(rapidjson::Value());
+      break;
+    case NodeType::OBJECT:
+      n->_impl.makeShared<JsonObjectNode>(rapidjson::Value());
+      break;
+    case NodeType::LEAF:
+      n->_impl.makeShared<JsonLeafNode>(rapidjson::Value());
+      break;
+    case NodeType::UNKNOWN:
+      OrkAssert(false);
+      break;
+  }
+  return n;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
 void JsonDeserializer::deserializeTop(object_ptr_t& instance_out) {
   const auto& rootnode   = _document["root"];
-  auto topnode           = std::make_shared<IDeserializer::Node>();
+  auto topnode           = std::make_shared<Node>();
   topnode->_deserializer = this;
   // auto dserjsonnode      = topnode->_impl.makeShared<JsonObjectNode>(rootnode);
   auto child_node             = _parseSubNode(topnode, rootnode);
-  instance_out                = child_node->_instance;
+  instance_out                = child_node->_inp_instance;
   auto instance_out_classname = instance_out->GetClass()->Name();
   std::string uuids           = boost::uuids::to_string(instance_out->_uuid);
 
@@ -83,15 +114,15 @@ void JsonDeserializer::deserializeTop(object_ptr_t& instance_out) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-IDeserializer::node_ptr_t JsonDeserializer::_parseSubNode(
-    IDeserializer::node_ptr_t parentnode, //
+serdes::node_ptr_t JsonDeserializer::_parseSubNode(
+    serdes::node_ptr_t parentnode, //
     const rapidjson::Value& subvalue) {
 
-  auto child_node           = std::make_shared<IDeserializer::Node>();
+  auto child_node           = std::make_shared<Node>();
   child_node->_parent       = parentnode;
   child_node->_property     = parentnode->_property;
   child_node->_deserializer = this;
-  child_node->_instance     = parentnode->_instance;
+  child_node->_inp_instance = parentnode->_inp_instance;
 
   switch (subvalue.GetType()) {
     case rapidjson::kObjectType: {
@@ -100,7 +131,7 @@ IDeserializer::node_ptr_t JsonDeserializer::_parseSubNode(
         auto implnode               = child_node->_impl.makeShared<JsonObjectNode>(jsonobjnode);
         auto instance_out           = _parseObjectNode(child_node);
         auto instance_out_classname = instance_out->GetClass()->Name();
-        child_node->_instance       = instance_out;
+        child_node->_inp_instance   = instance_out;
         std::string uuids           = boost::uuids::to_string(instance_out->_uuid);
         child_node->_value.Set<object_ptr_t>(instance_out);
         if (1)
@@ -142,7 +173,7 @@ IDeserializer::node_ptr_t JsonDeserializer::_parseSubNode(
 
 //////////////////////////////////////////////////////////////////////////////
 
-IDeserializer::node_ptr_t JsonDeserializer::deserializeElement(node_ptr_t elemnode) {
+serdes::node_ptr_t JsonDeserializer::deserializeElement(node_ptr_t elemnode) {
   node_ptr_t childnode;
   /////////////////////////////////////////////////////
   // map element
@@ -189,7 +220,7 @@ IDeserializer::node_ptr_t JsonDeserializer::deserializeElement(node_ptr_t elemno
 
 //////////////////////////////////////////////////////////////////////////////
 
-object_ptr_t JsonDeserializer::_parseObjectNode(IDeserializer::node_ptr_t dsernode) {
+object_ptr_t JsonDeserializer::_parseObjectNode(serdes::node_ptr_t dsernode) {
 
   const rapidjson::Value& objnode = dsernode->_impl.getShared<JsonObjectNode>()->_jsonobjectnode;
   object_ptr_t instance_out       = nullptr;
@@ -236,12 +267,12 @@ object_ptr_t JsonDeserializer::_parseObjectNode(IDeserializer::node_ptr_t dserno
     if (prop) {
       printf("found propname<%s> prop<%p>\n", propname, prop);
       dsernode->_property = prop;
-      auto child_node     = std::make_shared<IDeserializer::Node>();
+      auto child_node     = std::make_shared<Node>();
 
       child_node->_parent       = dsernode;
       child_node->_property     = prop;
       child_node->_deserializer = this;
-      child_node->_instance     = instance_out;
+      child_node->_inp_instance = instance_out;
 
       auto jsonleafnode = child_node->_impl.makeShared<JsonLeafNode>(propnode);
 
@@ -288,4 +319,4 @@ object_ptr_t JsonDeserializer::_parseObjectNode(IDeserializer::node_ptr_t dserno
 }
 
 //////////////////////////////////////////////////////////////////////////////
-} // namespace ork::reflect::serialize
+} // namespace ork::reflect::serdes

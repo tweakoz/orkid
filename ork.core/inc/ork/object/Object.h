@@ -43,10 +43,10 @@ public:
 
   object::Signal* findSignal(ConstString name);
 
-  virtual bool preSerialize(reflect::ISerializer&) const;
-  virtual bool preDeserialize(reflect::IDeserializer&);
-  virtual bool postSerialize(reflect::ISerializer&) const;
-  virtual bool postDeserialize(reflect::IDeserializer&);
+  virtual bool preSerialize(reflect::serdes::ISerializer&) const;
+  virtual bool preDeserialize(reflect::serdes::IDeserializer&);
+  virtual bool postSerialize(reflect::serdes::ISerializer&) const;
+  virtual bool postDeserialize(reflect::serdes::IDeserializer&);
 
   void notify(const event::Event* pEV);
 

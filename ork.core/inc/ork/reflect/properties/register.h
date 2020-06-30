@@ -167,13 +167,13 @@ template <typename ClassType>
 static inline AccessorVariantArray& RegisterArrayProperty(
     const char* name,
     void (ClassType::*serialize_item)(ISerializer&, size_t) const,
-    void (ClassType::*deserialize_item)(IDeserializer::node_ptr_t),
+    void (ClassType::*deserialize_item)(serdes::node_ptr_t),
     size_t (ClassType::*count)() const,
     void (ClassType::*resize)(size_t) = nullptr,
     Description& description          = ClassType::GetClassStatic()->Description()) {
   AccessorVariantArray* prop = new AccessorVariantArray(
       static_cast<void (Object::*)(ISerializer&, size_t) const>(serialize_item),
-      static_cast<void (Object::*)(IDeserializer::node_ptr_t)>(deserialize_item),
+      static_cast<void (Object::*)(serdes::node_ptr_t)>(deserialize_item),
       static_cast<size_t (Object::*)() const>(count),
       static_cast<void (Object::*)(size_t)>(resize));
 

@@ -11,8 +11,10 @@
 #include <ork/reflect/BidirectionalSerializer.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace reflect {
+namespace ork::reflect {
 ///////////////////////////////////////////////////////////////////////////////
+
+using bidi_t = serdes::BidirectionalSerializer;
 
 template <typename FunctionType> struct Function {};
 
@@ -24,10 +26,10 @@ template <> struct Function<void (*)()> {
 
   struct Parameters__ {
     enum { Count = 0 };
-    void Apply(BidirectionalSerializer& bidi, int) {
+    void Apply(bidi_t& bidi, int) {
       bidi.Fail();
     };
-    void Apply(BidirectionalSerializer& bidi, int) const {
+    void Apply(bidi_t& bidi, int) const {
       bidi.Fail();
     }
   };
@@ -51,10 +53,10 @@ template <typename R> struct Function<R (*)()> {
 
   struct Parameters__ {
     enum { Count = 0 };
-    void Apply(BidirectionalSerializer& bidi, int) {
+    void Apply(bidi_t& bidi, int) {
       bidi.Fail();
     };
-    void Apply(BidirectionalSerializer& bidi, int) const {
+    void Apply(bidi_t& bidi, int) const {
       bidi.Fail();
     }
   };
@@ -81,14 +83,14 @@ struct Function<R (*)(P0)> {
 
     enum { Count = 1 + ParentFunction__::Parameters::Count };
 
-    void Apply(BidirectionalSerializer& bidi, int parameter_index) {
+    void Apply(bidi_t& bidi, int parameter_index) {
       if (parameter_index == Count - 1)
         ; // Serialize<P0>(&mParam_00, &mParam_00, bidi);
       else
         ; // ParentFunction__::Parameters::Apply(bidi, parameter_index);
     }
 
-    void Apply(BidirectionalSerializer& bidi, int parameter_index) const {
+    void Apply(bidi_t& bidi, int parameter_index) const {
       if (parameter_index == Count - 1)
         ; // Serialize<P0>(&mParam_00, NULL, bidi);
       else
@@ -131,14 +133,14 @@ struct Function<R (*)(P0, P1)> {
 
     enum { Count = 1 + ParentFunction__::Parameters::Count };
 
-    void Apply(BidirectionalSerializer& bidi, int parameter_index) {
+    void Apply(bidi_t& bidi, int parameter_index) {
       if (parameter_index == Count - 1)
         ; // Serialize<P1>(&mParam_01, &mParam_01, bidi);
       else
         ; // ParentFunction__::Parameters::Apply(bidi, parameter_index);
     }
 
-    void Apply(BidirectionalSerializer& bidi, int parameter_index) const {
+    void Apply(bidi_t& bidi, int parameter_index) const {
       if (parameter_index == Count - 1)
         ; // Serialize<P1>(&mParam_01, NULL, bidi);
       else
@@ -179,10 +181,10 @@ struct Function<R (C::*)()> {
 
   struct Parameters__ {
     enum { Count = 0 };
-    void Apply(BidirectionalSerializer& bidi, int) {
+    void Apply(bidi_t& bidi, int) {
       bidi.Fail();
     };
-    void Apply(BidirectionalSerializer& bidi, int) const {
+    void Apply(bidi_t& bidi, int) const {
       bidi.Fail();
     }
   };
@@ -212,14 +214,14 @@ struct Function<R (C::*)(P0)> {
 
     enum { Count = 1 + ParentFunction__::Parameters::Count };
 
-    void Apply(BidirectionalSerializer& bidi, int parameter_index) {
+    void Apply(bidi_t& bidi, int parameter_index) {
       if (parameter_index == Count - 1)
         ; // Serialize<P0>(&mParam_00, &mParam_00, bidi);
       else
         ; // ParentFunction__::Parameters::Apply(bidi, parameter_index);
     }
 
-    void Apply(BidirectionalSerializer& bidi, int parameter_index) const {
+    void Apply(bidi_t& bidi, int parameter_index) const {
       if (parameter_index == Count - 1)
         ; // Serialize<P0>(&mParam_00, NULL, bidi);
       else
@@ -265,14 +267,14 @@ struct Function<R (C::*)(P0, P1)> {
 
     enum { Count = 1 + ParentFunction__::Parameters::Count };
 
-    void Apply(BidirectionalSerializer& bidi, int parameter_index) {
+    void Apply(bidi_t& bidi, int parameter_index) {
       if (parameter_index == Count - 1)
         ; // Serialize<P1>(&mParam_01, &mParam_01, bidi);
       else
         ; // ParentFunction__::Parameters::Apply(bidi, parameter_index);
     }
 
-    void Apply(BidirectionalSerializer& bidi, int parameter_index) const {
+    void Apply(bidi_t& bidi, int parameter_index) const {
       if (parameter_index == Count - 1)
         ; // Serialize<P1>(&mParam_01, NULL, bidi);
       else
@@ -312,10 +314,10 @@ struct Function<R (C::*)() const> {
 
   struct Parameters__ {
     enum { Count = 0 };
-    void Apply(BidirectionalSerializer& bidi, int) {
+    void Apply(bidi_t& bidi, int) {
       bidi.Fail();
     };
-    void Apply(BidirectionalSerializer& bidi, int) const {
+    void Apply(bidi_t& bidi, int) const {
       bidi.Fail();
     }
   };
@@ -345,14 +347,14 @@ struct Function<R (C::*)(P0) const> {
 
     enum { Count = 1 + ParentFunction__::Parameters::Count };
 
-    void Apply(BidirectionalSerializer& bidi, int parameter_index) {
+    void Apply(bidi_t& bidi, int parameter_index) {
       if (parameter_index == Count - 1)
         ; // Serialize<P0>(&mParam_00, &mParam_00, bidi);
       else
         ; // ParentFunction__::Parameters::Apply(bidi, parameter_index);
     }
 
-    void Apply(BidirectionalSerializer& bidi, int parameter_index) const {
+    void Apply(bidi_t& bidi, int parameter_index) const {
       if (parameter_index == Count - 1)
         ; // Serialize<P0>(&mParam_00, NULL, bidi);
       else
@@ -398,14 +400,14 @@ struct Function<R (C::*)(P0, P1) const> {
 
     enum { Count = 1 + ParentFunction__::Parameters::Count };
 
-    void Apply(BidirectionalSerializer& bidi, int parameter_index) {
+    void Apply(bidi_t& bidi, int parameter_index) {
       if (parameter_index == Count - 1)
         ; // Serialize<P1>(&mParam_01, &mParam_01, bidi);
       else
         ; // ParentFunction__::Parameters::Apply(bidi, parameter_index);
     }
 
-    void Apply(BidirectionalSerializer& bidi, int parameter_index) const {
+    void Apply(bidi_t& bidi, int parameter_index) const {
       if (parameter_index == Count - 1)
         ; // Serialize<P1>(&mParam_01, NULL, bidi);
       else
@@ -436,4 +438,4 @@ inline void SetParameters(ReturnType (ClassType::*)(P0, P1) const, void* param_d
 
 ///////////////////////////////////////////////////////////////////////////////
 
-}} // namespace ork::reflect
+} // namespace ork::reflect

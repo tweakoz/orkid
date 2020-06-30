@@ -120,7 +120,7 @@ ConstString EntData::GetUserProperty(const ConstString& key) const {
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool EntData::postDeserialize(reflect::IDeserializer&) {
+bool EntData::postDeserialize(reflect::serdes::IDeserializer&) {
   return true;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -357,7 +357,7 @@ Archetype::Archetype()
     , mpSceneData(0) {
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool Archetype::postDeserialize(reflect::IDeserializer&) {
+bool Archetype::postDeserialize(reflect::serdes::IDeserializer&) {
   // Compose();
   return true;
 }

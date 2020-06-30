@@ -16,11 +16,10 @@
 #include <ork/object/Object.h>
 #include <boost/uuid/uuid_io.hpp>
 ////////////////////////////////////////////////////////////////
-namespace ork::reflect {
+namespace ork::reflect::serdes {
 ////////////////////////////////////////////////////////////////
-// void IDeserializer::referenceObject(object_ptr_t instance) {
-// OrkAssert(false);
-//}
+IDeserializer::~IDeserializer() {
+}
 ////////////////////////////////////////////////////////////////
 void IDeserializer::trackObject(
     boost::uuids::uuid id, //
@@ -29,7 +28,7 @@ void IDeserializer::trackObject(
   auto it           = _reftracker.find(uuids);
   OrkAssert(it == _reftracker.end());
   _reftracker[uuids] = instance;
-}
+} // namespace ork::reflect::serdesvoidIDeserializer::trackObject(boost::uuids::uuidid,object_ptr_tinstance)
 ////////////////////////////////////////////////////////////////
 object_ptr_t IDeserializer::findTrackedObject(boost::uuids::uuid id) const {
   std::string uuids = boost::uuids::to_string(id);
@@ -38,4 +37,4 @@ object_ptr_t IDeserializer::findTrackedObject(boost::uuids::uuid id) const {
   return it->second;
 }
 ////////////////////////////////////////////////////////////////
-} // namespace ork::reflect
+} // namespace ork::reflect::serdes

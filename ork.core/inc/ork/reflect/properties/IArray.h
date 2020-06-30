@@ -16,14 +16,14 @@ namespace ork { namespace reflect {
 
 class IArray : public ObjectProperty {
 public:
-  virtual void deserializeElement(IDeserializer::node_ptr_t) const = 0;
-  virtual void serializeElement(ISerializer::node_ptr_t) const     = 0;
+  virtual void deserializeElement(serdes::node_ptr_t) const = 0;
+  virtual void serializeElement(serdes::node_ptr_t) const     = 0;
   virtual size_t count(object_constptr_t) const                    = 0;
   virtual void resize(object_ptr_t obj, size_t size) const         = 0;
 
 private:
-  void deserialize(IDeserializer::node_ptr_t) const override;
-  void serialize(ISerializer::node_ptr_t) const override;
+  void deserialize(serdes::node_ptr_t) const override;
+  void serialize(serdes::node_ptr_t) const override;
 
 protected:
   IArray() {

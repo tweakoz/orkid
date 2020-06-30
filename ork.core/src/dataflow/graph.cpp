@@ -103,7 +103,7 @@ void graph_data::Describe() {
     mChildrenTopoSorted.UnLock();
   }
   ///////////////////////////////////////////////////////////////////////////////
-  bool graph_data::SerializeConnections(ork::reflect::ISerializer& ser) const {
+  bool graph_data::SerializeConnections(ork::reflect::serdes::ISerializer& ser) const {
     for (orklut<ork::PoolString, ork::Object*>::const_iterator it = mModules.begin(); it != mModules.end(); it++) {
       ork::Object* pobj                  = it->second;
       ork::dataflow::dgmodule* pdgmodule = ork::rtti::autocast(pobj);
@@ -154,7 +154,7 @@ void graph_data::Describe() {
     return true;
   }
   ///////////////////////////////////////////////////////////////////////////////
-  bool graph_data::DeserializeConnections(ork::reflect::IDeserializer& deser) {
+  bool graph_data::DeserializeConnections(ork::reflect::serdes::IDeserializer& deser) {
     for (orklut<ork::PoolString, ork::Object*>::const_iterator it = mModules.begin(); it != mModules.end(); it++) {
       ork::Object* pobj                  = it->second;
       ork::dataflow::dgmodule* pdgmodule = ork::rtti::autocast(pobj);
@@ -196,14 +196,14 @@ void graph_data::Describe() {
     return true;
   }
   ///////////////////////////////////////////////////////////////////////////////
-  bool graph_data::preDeserialize(reflect::IDeserializer&) {
+  bool graph_data::preDeserialize(reflect::serdes::IDeserializer&) {
     LockTopoSortedChildrenForWrite(101);
     Clear();
     mModules.clear();
     UnLockTopoSortedChildren();
     return true;
   }
-  bool graph_data::postDeserialize(reflect::IDeserializer&) {
+  bool graph_data::postDeserialize(reflect::serdes::IDeserializer&) {
     /////////////////////////////////
     // remove dangling null modules
     /////////////////////////////////

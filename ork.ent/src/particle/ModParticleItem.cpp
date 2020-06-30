@@ -205,7 +205,7 @@ NovaParticleSystem* ModParticleItem::CreateSystem(
   return psystem;
 }
 
-bool ModParticleItem::postDeserialize(reflect::IDeserializer& ideser) {
+bool ModParticleItem::postDeserialize(reflect::serdes::IDeserializer& ideser) {
   mpgraphpool.BindTemplate(mTemplate);
   return true;
 }

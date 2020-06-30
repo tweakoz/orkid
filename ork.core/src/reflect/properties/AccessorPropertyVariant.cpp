@@ -16,11 +16,11 @@ AccessorVariant::AccessorVariant(bool (Object::*ser)(ISerializer&) const, bool (
     , mSerialize(ser) {
 }
 
-void AccessorVariant::deserialize(IDeserializer::node_ptr_t desernode) const {
+void AccessorVariant::deserialize(serdes::node_ptr_t desernode) const {
   //(object.get()->*mDeserialize)(deserializer);
 }
 
-void AccessorVariant::serialize(ISerializer::node_ptr_t desernode) const {
+void AccessorVariant::serialize(serdes::node_ptr_t desernode) const {
   //(object.get()->*mSerialize)(serializer);
 }
 

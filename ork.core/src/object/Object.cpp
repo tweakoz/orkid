@@ -60,25 +60,25 @@ void Object::notify(const event::Event* pEV) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Object::preSerialize(reflect::ISerializer&) const {
+bool Object::preSerialize(reflect::serdes::ISerializer&) const {
   return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Object::preDeserialize(reflect::IDeserializer&) {
+bool Object::preDeserialize(reflect::serdes::IDeserializer&) {
   return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Object::postSerialize(reflect::ISerializer&) const {
+bool Object::postSerialize(reflect::serdes::ISerializer&) const {
   return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Object::postDeserialize(reflect::IDeserializer&) {
+bool Object::postDeserialize(reflect::serdes::IDeserializer&) {
   return true;
 }
 
@@ -115,7 +115,7 @@ reflect::BidirectionalSerializer& operator||(
     bidi || object_constptr_t(object);
     return bidi;
   } else {
-    reflect::IDeserializer& deserializer = *bidi.Deserializer();
+    reflect::serdes::IDeserializer& deserializer = *bidi.Deserializer();
 
     reflect::Command object_command;
 

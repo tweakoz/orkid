@@ -14,7 +14,7 @@
 namespace ork { namespace reflect {
 
 template <typename T> //
-void ITypedArray<T>::deserializeElement(IDeserializer::node_ptr_t desernode) const {
+void ITypedArray<T>::deserializeElement(serdes::node_ptr_t desernode) const {
   // BidirectionalSerializer bidi(deserializer);
   // T value;
   // bidi | value;
@@ -22,11 +22,17 @@ void ITypedArray<T>::deserializeElement(IDeserializer::node_ptr_t desernode) con
 }
 
 template <typename T> //
-void ITypedArray<T>::serializeElement(ISerializer::node_ptr_t sernode) const {
-  // BidirectionalSerializer bidi(serializer);
-  // T value;
-  // get(value, obj, index);
-  // bidi | value;
+void ITypedArray<T>::serializeElement(serdes::node_ptr_t sernode) const {
+  auto serializer        = sernode->_serializer;
+  auto instance          = sernode->_out_instance;
+  auto arynode           = serializer->pushNode(_name, serdes::NodeType::ARRAY);
+  arynode->_isobject     = true;
+  arynode->_parent       = sernode;
+  arynode->_out_instance = instance;
+  int numelements        = count(instance);
+  for (size_t i = 0; i < numelements; i++) {
+  }
+  serializer->popNode(); // pop mapnode
 }
 
 }} // namespace ork::reflect

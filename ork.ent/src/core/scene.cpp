@@ -403,7 +403,7 @@ void SceneData::EnterRunState() {
   OnSceneDataMode(ESCENEDATAMODE_RUN);
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool SceneData::postDeserialize(reflect::IDeserializer&) {
+bool SceneData::postDeserialize(reflect::serdes::IDeserializer&) {
   cleanup();
   EnterEditState();
   return true;

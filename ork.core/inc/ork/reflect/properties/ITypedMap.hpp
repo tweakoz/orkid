@@ -31,14 +31,14 @@ template <typename kt, typename vt> bool IsMultiMapDeducer(const ork::orklut<kt,
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename KeyType, typename ValueType> //
-void ITypedMap<KeyType, ValueType>::serialize(ISerializer::node_ptr_t sernode) const {
-  auto serializer    = sernode->_serializer;
-  auto instance      = sernode->_instance;
-  auto mapnode       = serializer->pushNode(_name);
-  mapnode->_isobject = true;
-  mapnode->_parent   = sernode;
-  mapnode->_instance = instance;
-  int numelements    = elementCount(instance);
+void ITypedMap<KeyType, ValueType>::serialize(serdes::node_ptr_t sernode) const {
+  auto serializer        = sernode->_serializer;
+  auto instance          = sernode->_out_instance;
+  auto mapnode           = serializer->pushNode(_name, serdes::NodeType::MAP);
+  mapnode->_isobject     = true;
+  mapnode->_parent       = sernode;
+  mapnode->_out_instance = instance;
+  int numelements        = elementCount(instance);
   for (size_t i = 0; i < numelements; i++) {
     //////////////////////////////
     KeyType K;
@@ -47,17 +47,17 @@ void ITypedMap<KeyType, ValueType>::serialize(ISerializer::node_ptr_t sernode) c
     GetVal(instance, K, V);
     //////////////////////////////
     std::string keystr;
-    encode_key(keystr, K);
+    serdes::encode_key(keystr, K);
     //////////////////////////////
-    auto elemnode = serializer->pushNode(keystr);
+    auto elemnode = serializer->pushNode(keystr, serdes::NodeType::MAP_ELEMENT);
     //////////////////////////////
     elemnode->_key = keystr;
     elemnode->_value.template Set<ValueType>(V);
-    elemnode->_index      = i;
-    elemnode->_parent     = mapnode;
-    elemnode->_instance   = instance;
-    elemnode->_serializer = serializer;
-    auto childnode        = serializer->serializeMapElement(elemnode);
+    elemnode->_index        = i;
+    elemnode->_parent       = mapnode;
+    elemnode->_out_instance = instance;
+    elemnode->_serializer   = serializer;
+    auto childnode          = serializer->serializeMapElement(elemnode);
     //////////////////////////////
     serializer->popNode(); // pop elemnode
     //////////////////////////////
@@ -65,20 +65,20 @@ void ITypedMap<KeyType, ValueType>::serialize(ISerializer::node_ptr_t sernode) c
   serializer->popNode(); // pop mapnode
 }
 ////////////////////////////////////////////////////////////////////////////////
-template <typename KeyType, typename ValueType>
-void ITypedMap<KeyType, ValueType>::deserialize(IDeserializer::node_ptr_t dsernode) const {
+template <typename KeyType, typename ValueType> void ITypedMap<KeyType, ValueType>::deserialize(serdes::node_ptr_t dsernode) const {
   KeyType key;
   ValueType value;
   auto deserializer  = dsernode->_deserializer;
   size_t numelements = dsernode->_numchildren;
-  auto elemnode      = std::make_shared<IDeserializer::Node>();
+  auto elemnode      = deserializer->createNode("", serdes::NodeType::MAP_ELEMENT);
   elemnode->_parent  = dsernode;
-  auto instance      = dsernode->_instance;
+  auto instance      = dsernode->_inp_instance;
   for (size_t i = 0; i < numelements; i++) {
     dsernode->_index = i;
     auto childnode   = deserializer->deserializeElement(dsernode);
-    decode_key<KeyType>(childnode->_key, key);
-    decode_value<ValueType>(childnode->_value, value);
+    serdes::decode_key<KeyType>(childnode->_key, key);
+    childnode->_name = childnode->_key;
+    serdes::decode_value<ValueType>(childnode->_value, value);
     this->WriteElement(
         instance, //
         key,

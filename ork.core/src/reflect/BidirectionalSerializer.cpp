@@ -8,7 +8,7 @@
 #include <ork/pch.h>
 #include <ork/reflect/BidirectionalSerializer.h>
 
-namespace ork { namespace reflect {
+namespace ork::reflect::serdes {
 
 BidirectionalSerializer::BidirectionalSerializer(IDeserializer& deserializer)
     : mDeserializer(&deserializer)
@@ -46,4 +46,4 @@ BidirectionalSerializer::operator bool() const {
   return Succeeded();
 }
 
-}} // namespace ork::reflect
+} // namespace ork::reflect::serdes

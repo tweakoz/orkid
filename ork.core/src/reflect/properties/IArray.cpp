@@ -15,7 +15,7 @@
 namespace ork::reflect {
 ///////////////////////////////////////////////////////////////////////////////
 
-void IArray::deserialize(IDeserializer::node_ptr_t desernode) const {
+void IArray::deserialize(serdes::node_ptr_t desernode) const {
 
   /*int deser_count;
   deserializer.deserialize(deser_count);
@@ -36,8 +36,8 @@ void IArray::deserialize(IDeserializer::node_ptr_t desernode) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void IArray::serialize(ISerializer::node_ptr_t sernode) const {
-  size_t numitems = count(sernode->_instance);
+void IArray::serialize(serdes::node_ptr_t sernode) const {
+  size_t numitems = count(sernode->_out_instance);
   for (size_t index = 0; index < numitems; index++) {
     // Command item(Command::ELEMENT);
     // serializer.beginCommand(item);

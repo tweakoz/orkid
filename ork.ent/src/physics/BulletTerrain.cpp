@@ -196,7 +196,7 @@ BulletShapeTerrainData::BulletShapeTerrainData()
   };
 }
 
-bool BulletShapeTerrainData::postDeserialize(reflect::IDeserializer&) {
+bool BulletShapeTerrainData::postDeserialize(reflect::serdes::IDeserializer&) {
   return true;
 }
 

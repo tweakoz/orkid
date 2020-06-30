@@ -11,7 +11,7 @@
 #include <ork/reflect/IDeserializer.h>
 #include <ork/reflect/Serialize.h>
 
-namespace ork { namespace reflect {
+namespace ork::reflect::serdes {
 
 class BidirectionalSerializer {
 public:
@@ -120,4 +120,4 @@ inline                                                        //
   return *this;
 }
 
-}} // namespace ork::reflect
+} // namespace ork::reflect::serdes

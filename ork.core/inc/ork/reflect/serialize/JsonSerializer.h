@@ -16,7 +16,7 @@ namespace ork { namespace stream {
 class IOutputStream;
 }} // namespace ork::stream
 
-namespace ork { namespace reflect { namespace serdes {
+namespace ork::reflect::serdes {
 
 class JsonSerializer : public ISerializer {
 public:
@@ -33,12 +33,12 @@ private:
   using allocator_t = rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>*;
 
   void _serializeNamedItem(std::string name, const var_t&);
-  node_ptr_t _createNode(std::string named);
+  node_ptr_t _createNode(std::string named, NodeType type);
 
-  node_ptr_t pushNode(std::string named) override;
+  node_ptr_t pushNode(std::string named, NodeType type) override;
   void popNode() override;
 
   allocator_t _allocator;
   rapidjson::Document _document;
 };
-}}} // namespace ork::reflect::serdes
+} // namespace ork::reflect::serdes

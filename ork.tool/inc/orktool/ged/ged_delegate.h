@@ -433,6 +433,6 @@ void EnumerateFactories(
     orkset<object::ObjectClass*>& FactoryClassVect);
 void EnumerateFactories(object::ObjectClass* pbaseclass, orkset<object::ObjectClass*>& FactoryClassVect);
 object::ObjectClass* FactoryMenu(orkset<object::ObjectClass*>& FactoryClasses);
-bool DeserializeInPlace(reflect::IDeserializer& deserializer, rtti::ICastable* value);
+bool DeserializeInPlace(reflect::serdes::IDeserializer& deserializer, rtti::ICastable* value);
 QMenu* CreateFactoryMenu(const orkset<object::ObjectClass*>& FactoryClassVect);
 }}} // namespace ork::tool::ged

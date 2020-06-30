@@ -33,10 +33,10 @@ inline LayerSerializer::LayerSerializer(ISerializer& serializer)
     : _subserializer(serializer) {
 }
 
-inline ISerializer::node_ptr_t LayerSerializer::layerSerializeRoot(object_constptr_t instance) {
+inline serdes::node_ptr_t LayerSerializer::layerSerializeRoot(object_constptr_t instance) {
   return _subserializer.serializeRoot(instance);
 }
-inline ISerializer::node_ptr_t LayerSerializer::serializeMapElement(node_ptr_t elemnode) {
+inline serdes::node_ptr_t LayerSerializer::serializeMapElement(node_ptr_t elemnode) {
   return _subserializer.serializeMapElement(elemnode);
 }
 
