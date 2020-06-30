@@ -19,10 +19,20 @@ DirectObject::DirectObject(object_ptr_t Object::*property)
     : mProperty(property) {
 }
 
-void DirectObject::serialize(ISerializer::node_ptr_t sernode) const {
-  // const Object* object_property = (const_cast<Object*>(object)->*mProperty)();
-  // Object::xxxSerialize(object_property, serializer);
-  OrkAssert(false);
+void DirectObject::serialize(ISerializer::node_ptr_t propnode) const {
+  auto serializer     = propnode->_serializer;
+  auto parinstance    = propnode->_instance;
+  auto child_instance = (parinstance.get()->*mProperty);
+  if (child_instance) {
+    auto childnode       = serializer->pushObjectNode(_name);
+    childnode->_instance = child_instance;
+    childnode->_parent   = propnode;
+    serializer->serializeObject(childnode);
+    serializer->popNode();
+  } else {
+    propnode->_value.template Set<void*>(nullptr);
+    serializer->serializeLeaf(propnode);
+  }
 }
 
 void DirectObject::deserialize(IDeserializer::node_ptr_t dsernode) const {

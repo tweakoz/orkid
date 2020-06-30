@@ -119,13 +119,57 @@ void JsonSerializer::serializeLeaf(node_ptr_t leafnode) {
         nameval, //
         intval,
         *_allocator);
+  } else if (auto as_uint32_t = leafnode->_value.TryAs<uint32_t>()) {
+    rapidjson::Value uint32_tval(as_uint32_t.value());
+    implnode->_jsonvalue.AddMember(
+        nameval, //
+        uint32_tval,
+        *_allocator);
+  } else if (auto as_size_t = leafnode->_value.TryAs<size_t>()) {
+    rapidjson::Value size_tval(as_size_t.value());
+    implnode->_jsonvalue.AddMember(
+        nameval, //
+        size_tval,
+        *_allocator);
+  } else if (auto as_float = leafnode->_value.TryAs<float>()) {
+    rapidjson::Value floatval;
+    floatval.SetFloat(as_float.value());
+    implnode->_jsonvalue.AddMember(
+        nameval, //
+        floatval,
+        *_allocator);
+  } else if (auto as_double = leafnode->_value.TryAs<double>()) {
+    rapidjson::Value doubleval;
+    doubleval.SetDouble(as_double.value());
+    implnode->_jsonvalue.AddMember(
+        nameval, //
+        doubleval,
+        *_allocator);
+  } else if (auto as_str = leafnode->_value.TryAs<std::string>()) {
+    rapidjson::Value strval(as_str.value().c_str(), *_allocator);
+    implnode->_jsonvalue.AddMember(
+        nameval, //
+        strval,
+        *_allocator);
+  } else if (auto as_nil = leafnode->_value.TryAs<void*>()) {
+    //////////////////////////////////////////////////////////////////
+    // if we get here we have an object property, but set to nullptr
+    //  otherwise we would have went into serializeObject
+    //////////////////////////////////////////////////////////////////
+    auto parimplnode = leafnode->_impl.getShared<JsonSerObjectNode>();
+    OrkAssert(as_nil.value() == nullptr);
+    parimplnode->_jsonvalue.AddMember(
+        nameval, //
+        "nil",
+        *_allocator);
+  } else {
+    OrkAssert(false);
   }
 }
 ////////////////////////////////////////////////////////////////////////////////
 ISerializer::node_ptr_t JsonSerializer::serializeObject(node_ptr_t parnode) {
 
   node_ptr_t onode;
-  OrkAssert(parnode->_instance);
   auto instance = parnode->_instance;
   if (instance) {
     auto parimplnode  = parnode->_impl.getShared<JsonSerObjectNode>();
@@ -186,12 +230,13 @@ ISerializer::node_ptr_t JsonSerializer::serializeObject(node_ptr_t parnode) {
     }
 
   } else {
-    /*topNode()->_value.AddMember(
-        "nil", //
+    auto parimplnode = parnode->_impl.getShared<JsonSerObjectNode>();
+    parimplnode->_jsonvalue.AddMember(
+        "object", //
         "nil",
-        *_allocator);*/
+        *_allocator);
   }
   return onode;
 }
 ////////////////////////////////////////////////////////////////////////////////
-} // namespace ork::reflect::serialize
+} // namespace ork::reflect::serdes

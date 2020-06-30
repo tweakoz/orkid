@@ -8,26 +8,6 @@
 #include <ork/reflect/properties/AccessorTyped.hpp>
 #include <ork/reflect/properties/DirectObject.h>
 
-using namespace ork;
-using namespace ork::object;
-using namespace ork::reflect;
-using namespace ork::rtti;
-
-///////////////////////////////////////////////////////////////////////////////
-
-ImplementReflectionX(SharedTest, "SharedTest");
-
-void SharedTest::describeX(ObjectClass* clazz) {
-  clazz->accessorProperty(
-      "prop_sharedobj_accessor", //
-      &SharedTest::getChild,
-      &SharedTest::setChild);
-
-  clazz->sharedObjectProperty(
-      "prop_sharedobj_direct", //
-      &SharedTest::_childObject);
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 TEST(ReflectionClazz) {
@@ -51,10 +31,10 @@ TEST(ReflectionAccessorSharedProperty) {
   using ptype      = AccessorTyped<object_ptr_t>;
   auto passh       = desc.findTypedProperty<ptype>("prop_sharedobj_accessor");
   passh->set(sht2, sht1);
-  CHECK_EQUAL(sht1->_childObject, sht2);
+  CHECK_EQUAL(sht1->_accessorChild, sht2);
   object_ptr_t sht3;
   passh->get(sht3, sht1);
-  CHECK_EQUAL(sht1->_childObject, sht3);
+  CHECK_EQUAL(sht1->_accessorChild, sht3);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -69,8 +49,8 @@ TEST(ReflectionDirectSharedProperty) {
   using ptype      = DirectObject;
   auto passh       = desc.findTypedProperty<ptype>("prop_sharedobj_direct");
   passh->set(sht2, sht1);
-  CHECK_EQUAL(sht1->_childObject, sht2);
+  CHECK_EQUAL(sht1->_accessorChild, sht2);
   object_ptr_t sht3;
   passh->get(sht3, sht1);
-  CHECK_EQUAL(sht1->_childObject, sht3);
+  CHECK_EQUAL(sht1->_accessorChild, sht3);
 }

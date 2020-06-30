@@ -57,4 +57,23 @@ template <typename T> void ITyped<T>::serialize(ISerializer::node_ptr_t leafnode
   serializer->serializeLeaf(leafnode);
 }
 
+template <> //
+inline void ITyped<object_ptr_t>::serialize(ISerializer::node_ptr_t propnode) const {
+  auto serializer  = propnode->_serializer;
+  auto parinstance = propnode->_instance;
+  auto nonconst    = std::const_pointer_cast<Object>(parinstance);
+  object_ptr_t child_instance;
+  get(child_instance, parinstance);
+  if (child_instance) {
+    auto childnode       = serializer->pushObjectNode(_name);
+    childnode->_instance = child_instance;
+    childnode->_parent   = propnode;
+    serializer->serializeObject(childnode);
+    serializer->popNode();
+  } else {
+    propnode->_value.template Set<void*>(nullptr);
+    serializer->serializeLeaf(propnode);
+  }
+}
+
 }} // namespace ork::reflect

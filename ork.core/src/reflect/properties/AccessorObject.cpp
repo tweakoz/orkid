@@ -19,10 +19,21 @@ AccessorObject::AccessorObject(object_ptr_t (Object::*property)())
     : _accessor(property) {
 }
 ////////////////////////////////////////////////////////////////
-void AccessorObject::serialize(ISerializer::node_ptr_t) const {
-  // auto nonconst  = std::const_pointer_cast<Object>(instance);
-  // auto subobject = (nonconst.get()->*_accessor)();
-  // Object::xxxSerializeShared(subobject, serializer);
+void AccessorObject::serialize(ISerializer::node_ptr_t propnode) const {
+  auto serializer     = propnode->_serializer;
+  auto parinstance    = propnode->_instance;
+  auto nonconst       = std::const_pointer_cast<Object>(parinstance);
+  auto child_instance = (nonconst.get()->*_accessor)();
+  if (child_instance) {
+    auto childnode       = serializer->pushObjectNode(_name);
+    childnode->_instance = child_instance;
+    childnode->_parent   = propnode;
+    serializer->serializeObject(childnode);
+    serializer->popNode();
+  } else {
+    propnode->_value.template Set<void*>(nullptr);
+    serializer->serializeLeaf(propnode);
+  }
 }
 ////////////////////////////////////////////////////////////////
 void AccessorObject::deserialize(IDeserializer::node_ptr_t dsernode) const {

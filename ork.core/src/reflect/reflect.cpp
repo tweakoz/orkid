@@ -149,6 +149,8 @@ template class ITyped<Char4>;
 template class DirectTyped<Char4>;
 template class ITyped<Char8>;
 template class DirectTyped<Char8>;
+template class DirectTyped<uint32_t>;
+template class DirectTyped<size_t>;
 template class DirectTypedMap<orkmap<int, int>>;
 template class DirectTypedMap<orklut<int, int>>;
 template class DirectTypedMap<orkmap<PoolString, PoolString>>;
