@@ -45,6 +45,9 @@ node_ptr_t JsonSerializer::_createNode(std::string named, NodeType type) {
   n->_name       = named;
   n->_type       = type;
   n->_serializer = this;
+  if (type == NodeType::ARRAY) {
+    impl->_jsonvalue.SetArray();
+  }
   return n;
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -59,13 +62,12 @@ void JsonSerializer::popNode() {
   _nodestack.pop();
 
   switch (n->_type) {
+    case NodeType::ARRAY:
     case NodeType::OBJECT:
     case NodeType::PROPERTIES:
-    case NodeType::MAP:
-    case NodeType::ARRAY:
-    case NodeType::LEAF: {
-      rapidjson::Value key(n->_name.c_str(), *_allocator);
+    case NodeType::MAP: {
       auto impl = n->_impl.getShared<JsonSerObjectNode>();
+      rapidjson::Value key(n->_name.c_str(), *_allocator);
       if (_nodestack.empty()) {
         _document.AddMember(
             key, //
@@ -73,7 +75,8 @@ void JsonSerializer::popNode() {
             *_allocator);
         break;
       } else {
-        auto topimpl = topNode()->_impl.getShared<JsonSerObjectNode>();
+        auto parent  = topNode();
+        auto topimpl = parent->_impl.getShared<JsonSerObjectNode>();
         topimpl->_jsonvalue.AddMember(
             key, //
             impl->_jsonvalue,
@@ -83,6 +86,7 @@ void JsonSerializer::popNode() {
     }
     case NodeType::MAP_ELEMENT:
     case NodeType::ARRAY_ELEMENT:
+    case NodeType::LEAF:
       break;
     default:
       OrkAssert(false);
@@ -130,52 +134,46 @@ node_ptr_t JsonSerializer::serializeMapElement(node_ptr_t elemnode) {
 void JsonSerializer::serializeLeaf(node_ptr_t leafnode) {
   auto parimplnode = leafnode->_impl.getShared<JsonSerObjectNode>();
   rapidjson::Value nameval(leafnode->_name.c_str(), *_allocator);
+
+  using addfn_t = std::function<void(rapidjson::Value & value)>;
+
+  addfn_t addfn = [&](rapidjson::Value& value) {
+    parimplnode->_jsonvalue.AddMember(
+        nameval, //
+        value,
+        *_allocator);
+  };
+  if (leafnode->_type == NodeType::ARRAY_ELEMENT) {
+    addfn = [&](rapidjson::Value& value) { //
+      parimplnode->_jsonvalue.PushBack(value, *_allocator);
+    };
+  }
+
   if (auto as_bool = leafnode->_value.TryAs<bool>()) {
     rapidjson::Value boolval;
     boolval.SetBool(as_bool.value());
-    parimplnode->_jsonvalue.AddMember(
-        nameval, //
-        boolval,
-        *_allocator);
+    addfn(boolval);
   } else if (auto as_int = leafnode->_value.TryAs<int>()) {
     rapidjson::Value intval;
     intval.SetInt(as_int.value());
-    parimplnode->_jsonvalue.AddMember(
-        nameval, //
-        intval,
-        *_allocator);
+    addfn(intval);
   } else if (auto as_uint = leafnode->_value.TryAs<unsigned int>()) {
     rapidjson::Value uintval(uint32_t(as_uint.value()));
-    parimplnode->_jsonvalue.AddMember(
-        nameval, //
-        uintval,
-        *_allocator);
+    addfn(uintval);
   } else if (auto as_ulong = leafnode->_value.TryAs<unsigned long>()) {
     rapidjson::Value ulongval(uint64_t(as_ulong.value()));
-    parimplnode->_jsonvalue.AddMember(
-        nameval, //
-        ulongval,
-        *_allocator);
+    addfn(ulongval);
   } else if (auto as_float = leafnode->_value.TryAs<float>()) {
     rapidjson::Value floatval;
     floatval.SetFloat(as_float.value());
-    parimplnode->_jsonvalue.AddMember(
-        nameval, //
-        floatval,
-        *_allocator);
+    addfn(floatval);
   } else if (auto as_double = leafnode->_value.TryAs<double>()) {
     rapidjson::Value doubleval;
     doubleval.SetDouble(as_double.value());
-    parimplnode->_jsonvalue.AddMember(
-        nameval, //
-        doubleval,
-        *_allocator);
+    addfn(doubleval);
   } else if (auto as_str = leafnode->_value.TryAs<std::string>()) {
     rapidjson::Value strval(as_str.value().c_str(), *_allocator);
-    parimplnode->_jsonvalue.AddMember(
-        nameval, //
-        strval,
-        *_allocator);
+    addfn(strval);
   } else if (auto as_nil = leafnode->_value.TryAs<void*>()) {
     //////////////////////////////////////////////////////////////////
     // if we get here we have an object property, but set to nullptr
@@ -183,10 +181,8 @@ void JsonSerializer::serializeLeaf(node_ptr_t leafnode) {
     //////////////////////////////////////////////////////////////////
     // auto parimplnode = leafnode->_impl.getShared<JsonSerObjectNode>();
     OrkAssert(as_nil.value() == nullptr);
-    parimplnode->_jsonvalue.AddMember(
-        nameval, //
-        "nil",
-        *_allocator);
+    rapidjson::Value nilval("nil", *_allocator);
+    addfn(nilval);
   } else {
     OrkAssert(false);
   }

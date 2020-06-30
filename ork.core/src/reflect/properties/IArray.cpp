@@ -37,13 +37,22 @@ void IArray::deserialize(serdes::node_ptr_t desernode) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void IArray::serialize(serdes::node_ptr_t sernode) const {
-  size_t numitems = count(sernode->_ser_instance);
-  for (size_t index = 0; index < numitems; index++) {
-    // Command item(Command::ELEMENT);
-    // serializer.beginCommand(item);
-    // serializeElement(serializer, obj, index);
-    // serializer.endCommand(item);
+  auto serializer        = sernode->_serializer;
+  auto instance          = sernode->_ser_instance;
+  auto arynode           = serializer->pushNode(_name, serdes::NodeType::ARRAY);
+  arynode->_parent       = sernode;
+  arynode->_ser_instance = instance;
+  int numelements        = count(instance);
+  for (size_t index = 0; index < numelements; index++) {
+    auto elemnode           = serializer->pushNode("aryelem", serdes::NodeType::ARRAY_ELEMENT);
+    elemnode->_index        = index;
+    elemnode->_parent       = arynode;
+    elemnode->_ser_instance = instance;
+    elemnode->_serializer   = serializer;
+    serializeElement(elemnode);
+    serializer->popNode(); // pop elemnode
   }
+  serializer->popNode(); // pop mapnode
 }
 
 ///////////////////////////////////////////////////////////////////////////////

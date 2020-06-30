@@ -13,25 +13,22 @@
 
 namespace ork { namespace reflect {
 
-template <typename T> //
-void ITypedArray<T>::deserializeElement(serdes::node_ptr_t desernode) const {
+template <typename elem_t> //
+void ITypedArray<elem_t>::deserializeElement(serdes::node_ptr_t desernode) const {
   // BidirectionalSerializer bidi(deserializer);
   // T value;
   // bidi | value;
   // set(value, obj, index);
 }
 
-template <typename T> //
-void ITypedArray<T>::serializeElement(serdes::node_ptr_t sernode) const {
-  auto serializer        = sernode->_serializer;
-  auto instance          = sernode->_ser_instance;
-  auto arynode           = serializer->pushNode(_name, serdes::NodeType::ARRAY);
-  arynode->_parent       = sernode;
-  arynode->_ser_instance = instance;
-  int numelements        = count(instance);
-  for (size_t i = 0; i < numelements; i++) {
-  }
-  serializer->popNode(); // pop mapnode
+template <typename elem_t> //
+void ITypedArray<elem_t>::serializeElement(serdes::node_ptr_t elemnode) const {
+  elem_t value;
+  auto serializer = elemnode->_serializer;
+  auto instance   = elemnode->_ser_instance;
+  get(value, instance, elemnode->_index);
+  elemnode->_value.template Set<elem_t>(value);
+  auto childnode = serializer->serializeMapElement(elemnode);
 }
 
 }} // namespace ork::reflect
