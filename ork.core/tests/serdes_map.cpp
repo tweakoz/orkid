@@ -36,6 +36,11 @@ std::string smp_generate() {
   maptest->_directstrintumap["three"]     = 3;
   maptest->_directstrintumap["theanswer"] = 42;
 
+  maptest->_directstrintlut.AddSorted("one", 1);
+  maptest->_directstrintlut.AddSorted("two", 2);
+  maptest->_directstrintlut.AddSorted("three", 3);
+  maptest->_directstrintlut.AddSorted("theanswer", 42);
+
   serdes::JsonSerializer ser;
   auto rootnode = ser.serializeRoot(maptest);
   return ser.output();

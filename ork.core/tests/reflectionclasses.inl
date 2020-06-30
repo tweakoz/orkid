@@ -3,6 +3,7 @@
 #include <ork/reflect/properties/registerX.inl>
 #include <ork/object/ObjectClass.h>
 #include <ork/rtti/RTTIX.inl>
+#include <ork/kernel/orklut.h>
 
 using namespace ork;
 using namespace ork::object;
@@ -47,6 +48,7 @@ public:
   std::map<std::string, int> _directstrintmap;
   std::unordered_map<int, std::string> _directintstrumap;
   std::unordered_map<std::string, int> _directstrintumap;
+  orklut<std::string, int> _directstrintlut;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
