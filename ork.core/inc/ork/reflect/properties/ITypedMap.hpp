@@ -15,6 +15,20 @@
 #include "codec.inl"
 
 namespace ork::reflect {
+template <typename kt, typename vt> bool IsMultiMapDeducer(const std::map<kt, vt>& map) {
+  return false;
+}
+template <typename kt, typename vt> bool IsMultiMapDeducer(const std::unordered_map<kt, vt>& map) {
+  return false;
+}
+
+template <typename kt, typename vt> bool IsMultiMapDeducer(const std::multimap<kt, vt>& map) {
+  return true;
+}
+
+template <typename kt, typename vt> bool IsMultiMapDeducer(const ork::orklut<kt, vt>& map) {
+  return map.GetKeyPolicy() == ork::EKEYPOLICY_MULTILUT;
+}
 ////////////////////////////////////////////////////////////////////////////////
 template <typename KeyType, typename ValueType> //
 void ITypedMap<KeyType, ValueType>::serialize(ISerializer::node_ptr_t sernode) const {

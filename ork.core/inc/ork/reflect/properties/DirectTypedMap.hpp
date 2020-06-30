@@ -13,18 +13,6 @@
 
 namespace ork { namespace reflect {
 
-template <typename kt, typename vt> bool IsMultiMapDeducer(const std::map<kt, vt>& map) {
-  return false;
-}
-
-template <typename kt, typename vt> bool IsMultiMapDeducer(const std::multimap<kt, vt>& map) {
-  return true;
-}
-
-template <typename kt, typename vt> bool IsMultiMapDeducer(const ork::orklut<kt, vt>& map) {
-  return map.GetKeyPolicy() == ork::EKEYPOLICY_MULTILUT;
-}
-
 template <typename MapType> bool DirectTypedMap<MapType>::isMultiMap(object_constptr_t obj) const {
   return IsMultiMapDeducer(GetMap(obj));
 }

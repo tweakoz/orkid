@@ -69,11 +69,19 @@ MapTest::MapTest() {
 void MapTest::describeX(ObjectClass* clazz) {
   ///////////////////////////////////
   clazz->directMapProperty(
-      "directintstrmap", //
+      "directintstr_map", //
       &MapTest::_directintstrmap);
   ///////////////////////////////////
   clazz->directMapProperty(
-      "directstrintmap", //
+      "directstrint_map", //
       &MapTest::_directstrintmap);
+  ///////////////////////////////////
+  clazz->directMapProperty(
+      "directintstr_unorderedmap", //
+      &MapTest::_directintstrumap);
+  ///////////////////////////////////
+  clazz->directMapProperty(
+      "directstrint_unordered_map", //
+      &MapTest::_directstrintumap);
 }
 ///////////////////////////////////////////////////////////////////////////////

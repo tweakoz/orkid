@@ -25,6 +25,17 @@ std::string smp_generate() {
   maptest->_directstrintmap["two"]       = 2;
   maptest->_directstrintmap["three"]     = 3;
   maptest->_directstrintmap["theanswer"] = 42;
+
+  maptest->_directintstrumap[1]  = "one";
+  maptest->_directintstrumap[2]  = "two";
+  maptest->_directintstrumap[3]  = "three";
+  maptest->_directintstrumap[42] = "theanswer";
+
+  maptest->_directstrintumap["one"]       = 1;
+  maptest->_directstrintumap["two"]       = 2;
+  maptest->_directstrintumap["three"]     = 3;
+  maptest->_directstrintumap["theanswer"] = 42;
+
   serdes::JsonSerializer ser;
   auto rootnode = ser.serializeRoot(maptest);
   return ser.output();

@@ -45,6 +45,8 @@ public:
 
   std::map<int, std::string> _directintstrmap;
   std::map<std::string, int> _directstrintmap;
+  std::unordered_map<int, std::string> _directintstrumap;
+  std::unordered_map<std::string, int> _directstrintumap;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

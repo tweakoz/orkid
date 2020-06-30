@@ -13,22 +13,9 @@
 #include <ork/reflect/IDeserializer.h>
 #include "DirectObjectMap.h"
 #include <ork/kernel/core_interface.h>
+#include "ITypedMap.hpp"
 
 namespace ork::reflect {
-template <typename kt, typename vt> //
-bool DSOM_IsMultiMapDeducer(const std::map<kt, vt>& map) {
-  return false;
-}
-
-template <typename kt, typename vt> //
-bool DSOM_IsMultiMapDeducer(const std::multimap<kt, vt>& map) {
-  return true;
-}
-
-template <typename kt, typename vt> //
-bool DSOM_IsMultiMapDeducer(const ork::orklut<kt, vt>& map) {
-  return map.GetKeyPolicy() == ork::EKEYPOLICY_MULTILUT;
-}
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
 DirectObjectMap<MapType>::DirectObjectMap(MapType Object::*prop) {
@@ -48,7 +35,7 @@ const MapType& DirectObjectMap<MapType>::GetMap(object_constptr_t instance) cons
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
 bool DirectObjectMap<MapType>::isMultiMap(object_constptr_t instance) const {
-  return DSOM_IsMultiMapDeducer(GetMap(instance));
+  return IsMultiMapDeducer(GetMap(instance));
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename MapType> //
