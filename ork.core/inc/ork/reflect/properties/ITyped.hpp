@@ -66,7 +66,6 @@ inline void ITyped<object_ptr_t>::serialize(serdes::node_ptr_t propnode) const {
   get(child_instance, parinstance);
   if (child_instance) {
     auto childnode           = serializer->pushNode(_name, serdes::NodeType::OBJECT);
-    childnode->_isobject     = true;
     childnode->_out_instance = child_instance;
     childnode->_parent       = propnode;
     serializer->serializeObject(childnode);

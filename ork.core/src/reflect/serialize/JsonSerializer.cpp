@@ -58,21 +58,33 @@ void JsonSerializer::popNode() {
   auto n = topNode();
   _nodestack.pop();
 
-  if (n->_isobject) {
-    auto impl = n->_impl.getShared<JsonSerObjectNode>();
-    rapidjson::Value key(n->_name.c_str(), *_allocator);
-    if (_nodestack.empty()) {
-      _document.AddMember(
-          key, //
-          impl->_jsonvalue,
-          *_allocator);
-    } else {
-      auto topimpl = topNode()->_impl.getShared<JsonSerObjectNode>();
+  rapidjson::Value key(n->_name.c_str(), *_allocator);
+  auto impl    = n->_impl.getShared<JsonSerObjectNode>();
+  auto topimpl = topNode()->_impl.getShared<JsonSerObjectNode>();
+
+  switch (n->_type) {
+    case NodeType::OBJECT:
+    case NodeType::PROPERTIES:
+    case NodeType::MAP:
+    case NodeType::ARRAY: {
+      if (_nodestack.empty()) {
+        _document.AddMember(
+            key, //
+            impl->_jsonvalue,
+            *_allocator);
+        break;
+      }
+    }
+    case NodeType::LEAF: {
       topimpl->_jsonvalue.AddMember(
           key, //
           impl->_jsonvalue,
           *_allocator);
+      break;
     }
+    default:
+      OrkAssert(false);
+      break;
   }
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -94,7 +106,7 @@ node_ptr_t JsonSerializer::serializeMapElement(node_ptr_t elemnode) {
 
   if (auto as_obj = elemnode->_value.TryAs<object_ptr_t>()) {
     elemnode->_out_instance = as_obj.value();
-    elemnode->_isobject     = true;
+    elemnode->_type         = NodeType::OBJECT;
     auto objnode            = serializeObject(elemnode);
     OrkAssert(objnode);
     objnode->_parent = elemnode;
@@ -198,7 +210,6 @@ node_ptr_t JsonSerializer::serializeObject(node_ptr_t parnode) {
       auto& desc    = objclazz->Description();
 
       onode                = pushNode("object", NodeType::OBJECT);
-      onode->_isobject     = true;
       onode->_parent       = parnode;
       onode->_out_instance = instance;
       auto oimplnode       = onode->_impl.getShared<JsonSerObjectNode>();
@@ -217,7 +228,6 @@ node_ptr_t JsonSerializer::serializeObject(node_ptr_t parnode) {
       auto propsnode           = pushNode("properties", NodeType::PROPERTIES);
       propsnode->_out_instance = instance;
       propsnode->_parent       = onode;
-      propsnode->_isobject     = true;
 
       for (auto prop_item : desc.properties()) {
         auto propname        = prop_item.first;

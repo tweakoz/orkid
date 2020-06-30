@@ -25,7 +25,6 @@ void DirectObject::serialize(serdes::node_ptr_t propnode) const {
   auto child_instance = (parinstance.get()->*mProperty);
   if (child_instance) {
     auto childnode           = serializer->pushNode(_name, serdes::NodeType::OBJECT);
-    childnode->_isobject     = true;
     childnode->_out_instance = child_instance;
     childnode->_parent       = propnode;
     serializer->serializeObject(childnode);

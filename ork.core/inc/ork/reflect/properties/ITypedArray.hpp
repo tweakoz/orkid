@@ -26,7 +26,6 @@ void ITypedArray<T>::serializeElement(serdes::node_ptr_t sernode) const {
   auto serializer        = sernode->_serializer;
   auto instance          = sernode->_out_instance;
   auto arynode           = serializer->pushNode(_name, serdes::NodeType::ARRAY);
-  arynode->_isobject     = true;
   arynode->_parent       = sernode;
   arynode->_out_instance = instance;
   int numelements        = count(instance);

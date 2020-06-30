@@ -55,7 +55,6 @@ struct Node {
   size_t _index       = 0;
   size_t _multiindex  = 0;
   size_t _numchildren = 0;
-  bool _isobject      = false;
   NodeType _type      = NodeType::UNKNOWN;
 };
 

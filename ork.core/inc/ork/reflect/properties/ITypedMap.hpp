@@ -35,7 +35,6 @@ void ITypedMap<KeyType, ValueType>::serialize(serdes::node_ptr_t sernode) const 
   auto serializer        = sernode->_serializer;
   auto instance          = sernode->_out_instance;
   auto mapnode           = serializer->pushNode(_name, serdes::NodeType::MAP);
-  mapnode->_isobject     = true;
   mapnode->_parent       = sernode;
   mapnode->_out_instance = instance;
   int numelements        = elementCount(instance);
