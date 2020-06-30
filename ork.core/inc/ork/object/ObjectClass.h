@@ -50,6 +50,9 @@ public:
   inline PropertyModifier memberProperty(const char* name, MemberType ClassType::*member);
 
   template <typename ClassType, typename MemberType>
+  inline PropertyModifier directMapProperty(const char* name, MemberType ClassType::*member);
+
+  template <typename ClassType, typename MemberType>
   inline PropertyModifier sharedObjectMapProperty(
       const char* name, //
       MemberType ClassType::*member);

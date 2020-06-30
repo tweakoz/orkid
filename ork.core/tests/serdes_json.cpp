@@ -5,11 +5,6 @@
 
 #include <ork/reflect/serialize/JsonDeserializer.h>
 #include <ork/reflect/serialize/JsonSerializer.h>
-#include <ork/stream/FileInputStream.h>
-#include <ork/stream/FileOutputStream.h>
-#include <ork/stream/StringInputStream.h>
-#include <ork/stream/StringOutputStream.h>
-#include <ork/kernel/string/ArrayString.h>
 #include <ork/util/hotkey.h>
 #include "reflectionclasses.inl"
 #include <boost/uuid/uuid_io.hpp>

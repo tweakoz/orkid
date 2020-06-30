@@ -22,6 +22,7 @@ struct TestApplication final : public Application {
     ApplicationStack::Push(this);
 
     SharedTest::GetClassStatic();
+    MapTest::GetClassStatic();
 
     rtti::Class::InitializeClasses();
   }

@@ -9,6 +9,8 @@ using namespace ork::object;
 using namespace ork::reflect;
 using namespace ork::rtti;
 
+////////////////////////////////////////////////////////////////////////////////
+
 struct SharedTest final : public Object {
   DeclareConcreteX(SharedTest, Object);
 
@@ -32,3 +34,17 @@ public:
     _accessorChild = v;
   }
 };
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct MapTest final : public Object {
+  DeclareConcreteX(MapTest, Object);
+
+public:
+  MapTest();
+
+  std::map<int, std::string> _directintstrmap;
+  std::map<std::string, int> _directstrintmap;
+};
+
+////////////////////////////////////////////////////////////////////////////////

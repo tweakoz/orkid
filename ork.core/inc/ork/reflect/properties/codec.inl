@@ -1,4 +1,5 @@
 #pragma once
+#include <ork/kernel/string/string.h>
 ////////////////////////////////////////////////////////////////////////////////
 namespace ork::reflect {
 ////////////////////////////////////////////////////////////////////////////////
@@ -26,7 +27,7 @@ inline void encode_key(std::string& keystr_out, const T& key_inp) {
 }
 template <> //
 inline void encode_key(std::string& keystr_out, const int& key_inp) {
-  OrkAssert(false);
+  keystr_out = FormatString("%d", key_inp);
 }
 template <> //
 inline void encode_key(std::string& keystr_out, const std::string& key_inp) {

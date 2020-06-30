@@ -4,9 +4,11 @@
 #include <string.h>
 
 #include "reflectionclasses.inl"
+#include <ork/reflect/properties/DirectObject.h>
 #include <ork/reflect/properties/ITyped.hpp>
 #include <ork/reflect/properties/AccessorTyped.hpp>
-#include <ork/reflect/properties/DirectObject.h>
+#include <ork/reflect/properties/DirectTyped.hpp>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
 
 using namespace ork;
 using namespace ork::object;
@@ -15,6 +17,7 @@ using namespace ork::rtti;
 
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(SharedTest, "SharedTest");
+ImplementReflectionX(MapTest, "MapTest");
 ///////////////////////////////////////////////////////////////////////////////
 void SharedTest::describeX(ObjectClass* clazz) {
   ///////////////////////////////////
@@ -58,5 +61,19 @@ void SharedTest::describeX(ObjectClass* clazz) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 SharedTest::SharedTest() {
+}
+///////////////////////////////////////////////////////////////////////////////
+MapTest::MapTest() {
+}
+///////////////////////////////////////////////////////////////////////////////
+void MapTest::describeX(ObjectClass* clazz) {
+  ///////////////////////////////////
+  clazz->directMapProperty(
+      "directintstrmap", //
+      &MapTest::_directintstrmap);
+  ///////////////////////////////////
+  clazz->directMapProperty(
+      "directstrintmap", //
+      &MapTest::_directstrintmap);
 }
 ///////////////////////////////////////////////////////////////////////////////
