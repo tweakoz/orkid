@@ -24,6 +24,7 @@ void AccessorObject::serialize(ISerializer::node_ptr_t propnode) const {
   auto parinstance    = propnode->_instance;
   auto nonconst       = std::const_pointer_cast<Object>(parinstance);
   auto child_instance = (nonconst.get()->*_accessor)();
+  OrkAssert(false);
   if (child_instance) {
     auto childnode       = serializer->pushNode(_name);
     childnode->_isobject = true;

@@ -96,8 +96,7 @@ ISerializer::node_ptr_t JsonSerializer::serializeMapElement(ISerializer::node_pt
     elemnode->_isobject = true;
     auto objnode        = serializeObject(elemnode);
     OrkAssert(objnode);
-    if (objnode)
-      objnode->_parent = elemnode;
+    objnode->_parent = elemnode;
     // popNode(); // pop objnode
   } else {
     elemnode->_name = elemnode->_key;
