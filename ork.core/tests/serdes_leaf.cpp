@@ -13,10 +13,7 @@
 #include "reflectionclasses.inl"
 
 using namespace ork;
-using namespace ork::file;
 using namespace ork::reflect;
-using namespace ork::rtti;
-using namespace ork::stream;
 
 ////////////////////////////////////////////////////////////////////////////////
 // test suite of leaf node properties, direct, accessor and lambda
