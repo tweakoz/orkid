@@ -30,7 +30,7 @@ TEST(SerializeLeafProperties) {
   auto child1            = std::make_shared<SharedTest>();
   auto child2            = std::make_shared<SharedTest>();
   rootobj->_directInt    = 0;
-  rootobj->_directBool   = 0;
+  rootobj->_directBool   = true;
   rootobj->_directString = "yo-0";
   rootobj->_directFloat  = 0.01f;
   rootobj->_directDouble = 0.02;
@@ -60,7 +60,7 @@ std::string getJsonStr_SLP() {
    "class": "SharedTest",
    "uuid": "31d8a600-7146-4b66-b546-2d3f6c9f3498",
    "properties": {
-    "bool_direct": false,
+    "bool_direct": true,
     "double_direct": 0.02,
     "float_direct": 0.009999999776482582,
     "int_direct": 0,
