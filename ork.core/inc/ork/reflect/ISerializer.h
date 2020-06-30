@@ -40,7 +40,7 @@ public:
   virtual node_ptr_t serializeObject(node_ptr_t parnode) {
     return node_ptr_t(nullptr);
   }
-  virtual node_ptr_t serializeElement(node_ptr_t elemnode) {
+  virtual node_ptr_t serializeMapElement(node_ptr_t elemnode) {
     return node_ptr_t(nullptr);
   }
   virtual void serializeLeaf(node_ptr_t leafnode) {

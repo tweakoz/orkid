@@ -40,7 +40,7 @@ void ITypedMap<KeyType, ValueType>::serialize(ISerializer::node_ptr_t sernode) c
     elemnode->_parent     = mapnode;
     elemnode->_instance   = instance;
     elemnode->_serializer = serializer;
-    auto childnode        = serializer->serializeElement(elemnode);
+    auto childnode        = serializer->serializeMapElement(elemnode);
     //////////////////////////////
     serializer->popNode(); // pop elemnode
     //////////////////////////////

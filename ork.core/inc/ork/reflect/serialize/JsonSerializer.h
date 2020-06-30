@@ -23,7 +23,7 @@ public:
   JsonSerializer();
   ~JsonSerializer();
 
-  node_ptr_t serializeElement(node_ptr_t elemnode) override;
+  node_ptr_t serializeMapElement(node_ptr_t elemnode) override;
   node_ptr_t serializeObject(node_ptr_t objnode) override;
   void serializeLeaf(node_ptr_t leafnode) override;
 

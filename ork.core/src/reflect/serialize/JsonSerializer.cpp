@@ -87,21 +87,21 @@ std::string JsonSerializer::output() {
   return strbuf.GetString();
 }
 ////////////////////////////////////////////////////////////////////////////////
-ISerializer::node_ptr_t JsonSerializer::serializeElement(ISerializer::node_ptr_t elemnode) {
+ISerializer::node_ptr_t JsonSerializer::serializeMapElement(ISerializer::node_ptr_t elemnode) {
 
   OrkAssert(elemnode->_instance);
 
   if (auto as_obj = elemnode->_value.TryAs<object_ptr_t>()) {
-    auto chnode       = pushNode(elemnode->_key);
-    chnode->_instance = elemnode->_instance;
-    chnode->_parent   = elemnode;
-    chnode->_instance = as_obj.value();
-    chnode->_isobject = true;
-    auto objnode      = serializeObject(chnode);
+    // auto chnode       = pushNode(elemnode->_key);
+    // chnode->_instance = elemnode->_instance;
+    // chnode->_parent   = elemnode;
+    elemnode->_instance = as_obj.value();
+    elemnode->_isobject = true;
+    auto objnode        = serializeObject(elemnode);
     OrkAssert(objnode);
     if (objnode)
-      objnode->_parent = chnode;
-    popNode();
+      objnode->_parent = elemnode;
+    // popNode(); // pop objnode
   } else {
     elemnode->_name = elemnode->_key;
     serializeLeaf(elemnode);
@@ -111,7 +111,8 @@ ISerializer::node_ptr_t JsonSerializer::serializeElement(ISerializer::node_ptr_t
 }
 ////////////////////////////////////////////////////////////////////////////////
 void JsonSerializer::serializeLeaf(node_ptr_t leafnode) {
-  auto parimplnode = leafnode->_parent->_impl.getShared<JsonSerObjectNode>();
+  // auto parimplnode = leafnode->_parent->_impl.getShared<JsonSerObjectNode>();
+  auto parimplnode = leafnode->_impl.getShared<JsonSerObjectNode>();
   rapidjson::Value nameval(leafnode->_name.c_str(), *_allocator);
   if (auto as_bool = leafnode->_value.TryAs<bool>()) {
     rapidjson::Value boolval;
@@ -127,17 +128,17 @@ void JsonSerializer::serializeLeaf(node_ptr_t leafnode) {
         nameval, //
         intval,
         *_allocator);
-  } else if (auto as_uint32_t = leafnode->_value.TryAs<uint32_t>()) {
-    rapidjson::Value uint32_tval(as_uint32_t.value());
+  } else if (auto as_uint = leafnode->_value.TryAs<unsigned int>()) {
+    rapidjson::Value uintval(uint32_t(as_uint.value()));
     parimplnode->_jsonvalue.AddMember(
         nameval, //
-        uint32_tval,
+        uintval,
         *_allocator);
-  } else if (auto as_size_t = leafnode->_value.TryAs<size_t>()) {
-    rapidjson::Value size_tval(as_size_t.value());
+  } else if (auto as_ulong = leafnode->_value.TryAs<unsigned long>()) {
+    rapidjson::Value ulongval(uint64_t(as_ulong.value()));
     parimplnode->_jsonvalue.AddMember(
         nameval, //
-        size_tval,
+        ulongval,
         *_allocator);
   } else if (auto as_float = leafnode->_value.TryAs<float>()) {
     rapidjson::Value floatval;
