@@ -92,9 +92,6 @@ ISerializer::node_ptr_t JsonSerializer::serializeMapElement(ISerializer::node_pt
   OrkAssert(elemnode->_instance);
 
   if (auto as_obj = elemnode->_value.TryAs<object_ptr_t>()) {
-    // auto chnode       = pushNode(elemnode->_key);
-    // chnode->_instance = elemnode->_instance;
-    // chnode->_parent   = elemnode;
     elemnode->_instance = as_obj.value();
     elemnode->_isobject = true;
     auto objnode        = serializeObject(elemnode);
@@ -104,6 +101,12 @@ ISerializer::node_ptr_t JsonSerializer::serializeMapElement(ISerializer::node_pt
     // popNode(); // pop objnode
   } else {
     elemnode->_name = elemnode->_key;
+    /////////////////////////////////
+    // put leafnodes under mapnode
+    /////////////////////////////////
+    auto mapnode    = elemnode->_parent;
+    elemnode->_impl = mapnode->_impl;
+    /////////////////////////////////
     serializeLeaf(elemnode);
   }
 
@@ -111,7 +114,6 @@ ISerializer::node_ptr_t JsonSerializer::serializeMapElement(ISerializer::node_pt
 }
 ////////////////////////////////////////////////////////////////////////////////
 void JsonSerializer::serializeLeaf(node_ptr_t leafnode) {
-  // auto parimplnode = leafnode->_parent->_impl.getShared<JsonSerObjectNode>();
   auto parimplnode = leafnode->_impl.getShared<JsonSerObjectNode>();
   rapidjson::Value nameval(leafnode->_name.c_str(), *_allocator);
   if (auto as_bool = leafnode->_value.TryAs<bool>()) {
