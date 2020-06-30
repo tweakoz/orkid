@@ -70,13 +70,15 @@ node_ptr_t JsonDeserializer::createNode(std::string named, NodeType type) {
     case NodeType::MAP:
       OrkAssert(false);
       break;
-    case NodeType::MAP_ELEMENT:
+    case NodeType::MAP_ELEMENT_LEAF:
+    case NodeType::MAP_ELEMENT_OBJECT:
       OrkAssert(false);
       break;
     case NodeType::ARRAY:
       OrkAssert(false);
       break;
-    case NodeType::ARRAY_ELEMENT:
+    case NodeType::ARRAY_ELEMENT_LEAF:
+    case NodeType::ARRAY_ELEMENT_OBJECT:
       n->_impl.makeShared<JsonArrayNode>(rapidjson::Value());
       break;
     case NodeType::OBJECT:
@@ -118,10 +120,10 @@ serdes::node_ptr_t JsonDeserializer::_parseSubNode(
     serdes::node_ptr_t parentnode, //
     const rapidjson::Value& subvalue) {
 
-  auto child_node           = std::make_shared<Node>();
-  child_node->_parent       = parentnode;
-  child_node->_property     = parentnode->_property;
-  child_node->_deserializer = this;
+  auto child_node             = std::make_shared<Node>();
+  child_node->_parent         = parentnode;
+  child_node->_property       = parentnode->_property;
+  child_node->_deserializer   = this;
   child_node->_deser_instance = parentnode->_deser_instance;
 
   switch (subvalue.GetType()) {
@@ -131,7 +133,7 @@ serdes::node_ptr_t JsonDeserializer::_parseSubNode(
         auto implnode               = child_node->_impl.makeShared<JsonObjectNode>(jsonobjnode);
         auto instance_out           = _parseObjectNode(child_node);
         auto instance_out_classname = instance_out->GetClass()->Name();
-        child_node->_deser_instance   = instance_out;
+        child_node->_deser_instance = instance_out;
         std::string uuids           = boost::uuids::to_string(instance_out->_uuid);
         child_node->_value.Set<object_ptr_t>(instance_out);
         if (1)
@@ -269,9 +271,9 @@ object_ptr_t JsonDeserializer::_parseObjectNode(serdes::node_ptr_t dsernode) {
       dsernode->_property = prop;
       auto child_node     = std::make_shared<Node>();
 
-      child_node->_parent       = dsernode;
-      child_node->_property     = prop;
-      child_node->_deserializer = this;
+      child_node->_parent         = dsernode;
+      child_node->_property       = prop;
+      child_node->_deserializer   = this;
       child_node->_deser_instance = instance_out;
 
       auto jsonleafnode = child_node->_impl.makeShared<JsonLeafNode>(propnode);

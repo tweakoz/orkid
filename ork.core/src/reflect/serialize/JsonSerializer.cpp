@@ -61,19 +61,19 @@ void JsonSerializer::popNode() {
   auto n = topNode();
   _nodestack.pop();
 
+  rapidjson::Value key(n->_name.c_str(), *_allocator);
+  auto impl = n->_impl.getShared<JsonSerObjectNode>();
+
   switch (n->_type) {
     case NodeType::ARRAY:
     case NodeType::OBJECT:
     case NodeType::PROPERTIES:
     case NodeType::MAP: {
-      auto impl = n->_impl.getShared<JsonSerObjectNode>();
-      rapidjson::Value key(n->_name.c_str(), *_allocator);
       if (_nodestack.empty()) {
         _document.AddMember(
             key, //
             impl->_jsonvalue,
             *_allocator);
-        break;
       } else {
         auto parent  = topNode();
         auto topimpl = parent->_impl.getShared<JsonSerObjectNode>();
@@ -81,11 +81,28 @@ void JsonSerializer::popNode() {
             key, //
             impl->_jsonvalue,
             *_allocator);
-        break;
       }
+      break;
     }
-    case NodeType::MAP_ELEMENT:
-    case NodeType::ARRAY_ELEMENT:
+    case NodeType::ARRAY_ELEMENT_OBJECT: {
+      auto parent  = topNode();
+      auto topimpl = parent->_impl.getShared<JsonSerObjectNode>();
+      topimpl->_jsonvalue.PushBack(
+          impl->_jsonvalue, //
+          *_allocator);
+      break;
+    }
+    case NodeType::MAP_ELEMENT_OBJECT: {
+      auto parent  = topNode();
+      auto topimpl = parent->_impl.getShared<JsonSerObjectNode>();
+      topimpl->_jsonvalue.AddMember(
+          key, //
+          impl->_jsonvalue,
+          *_allocator);
+      break;
+    }
+    case NodeType::MAP_ELEMENT_LEAF:
+    case NodeType::ARRAY_ELEMENT_LEAF:
     case NodeType::LEAF:
       break;
     default:
@@ -112,8 +129,18 @@ node_ptr_t JsonSerializer::serializeMapElement(node_ptr_t elemnode) {
 
   if (auto as_obj = elemnode->_value.TryAs<object_ptr_t>()) {
     elemnode->_ser_instance = as_obj.value();
-    elemnode->_type         = NodeType::OBJECT;
-    auto objnode            = serializeObject(elemnode);
+    switch (elemnode->_type) {
+      case NodeType::ARRAY_ELEMENT_LEAF:
+        elemnode->_type = NodeType::ARRAY_ELEMENT_OBJECT;
+        break;
+      case NodeType::MAP_ELEMENT_LEAF:
+        elemnode->_type = NodeType::MAP_ELEMENT_OBJECT;
+        break;
+      default:
+        OrkAssert(false);
+        break;
+    }
+    auto objnode = serializeObject(elemnode);
     OrkAssert(objnode);
     objnode->_parent = elemnode;
     // popNode(); // pop objnode
@@ -143,7 +170,7 @@ void JsonSerializer::serializeLeaf(node_ptr_t leafnode) {
         value,
         *_allocator);
   };
-  if (leafnode->_type == NodeType::ARRAY_ELEMENT) {
+  if (leafnode->_type == NodeType::ARRAY_ELEMENT_LEAF) {
     addfn = [&](rapidjson::Value& value) { //
       parimplnode->_jsonvalue.PushBack(value, *_allocator);
     };

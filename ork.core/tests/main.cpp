@@ -21,6 +21,7 @@ struct TestApplication final : public Application {
   TestApplication() {
     ApplicationStack::Push(this);
 
+    SimpleTest::GetClassStatic();
     SharedTest::GetClassStatic();
     MapTest::GetClassStatic();
     ArrayTest::GetClassStatic();

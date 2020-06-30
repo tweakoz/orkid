@@ -16,9 +16,21 @@ using namespace ork::reflect;
 using namespace ork::rtti;
 
 ///////////////////////////////////////////////////////////////////////////////
+ImplementReflectionX(SimpleTest, "SimpleTest");
 ImplementReflectionX(SharedTest, "SharedTest");
 ImplementReflectionX(MapTest, "MapTest");
 ImplementReflectionX(ArrayTest, "ArrayTest");
+///////////////////////////////////////////////////////////////////////////////
+void SimpleTest::describeX(ObjectClass* clazz) {
+  ///////////////////////////////////
+  clazz->memberProperty(
+      "value", //
+      &SimpleTest::_strvalue);
+}
+///////////////////////////////////////////////////////////////////////////////
+SimpleTest::SimpleTest(std::string str)
+    : _strvalue(str) {
+}
 ///////////////////////////////////////////////////////////////////////////////
 void SharedTest::describeX(ObjectClass* clazz) {
   ///////////////////////////////////
@@ -98,5 +110,13 @@ void ArrayTest::describeX(ObjectClass* clazz) {
   clazz->directVectorProperty(
       "directint_vect", //
       &ArrayTest::_directintvect);
+  ///////////////////////////////////
+  clazz->directVectorProperty(
+      "directstr_vect", //
+      &ArrayTest::_directstrvect);
+  ///////////////////////////////////
+  clazz->directVectorProperty(
+      "directobj_vect", //
+      &ArrayTest::_directobjvect);
 }
 ///////////////////////////////////////////////////////////////////////////////

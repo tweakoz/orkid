@@ -48,7 +48,7 @@ void ITypedMap<KeyType, ValueType>::serialize(serdes::node_ptr_t sernode) const 
     std::string keystr;
     serdes::encode_key(keystr, K);
     //////////////////////////////
-    auto elemnode = serializer->pushNode(keystr, serdes::NodeType::MAP_ELEMENT);
+    auto elemnode = serializer->pushNode(keystr, serdes::NodeType::MAP_ELEMENT_LEAF);
     //////////////////////////////
     elemnode->_key = keystr;
     elemnode->_value.template Set<ValueType>(V);
@@ -69,7 +69,7 @@ template <typename KeyType, typename ValueType> void ITypedMap<KeyType, ValueTyp
   ValueType value;
   auto deserializer  = dsernode->_deserializer;
   size_t numelements = dsernode->_numchildren;
-  auto elemnode      = deserializer->createNode("", serdes::NodeType::MAP_ELEMENT);
+  auto elemnode      = deserializer->createNode("", serdes::NodeType::MAP_ELEMENT_LEAF);
   elemnode->_parent  = dsernode;
   auto instance      = dsernode->_deser_instance;
   for (size_t i = 0; i < numelements; i++) {

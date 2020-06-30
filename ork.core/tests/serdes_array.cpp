@@ -21,6 +21,15 @@ std::string sap_generate() {
   arytest->_directintvect.push_back(3);
   arytest->_directintvect.push_back(42);
 
+  arytest->_directstrvect.push_back("one");
+  arytest->_directstrvect.push_back("two");
+  arytest->_directstrvect.push_back("three");
+  arytest->_directstrvect.push_back("four");
+
+  arytest->_directobjvect.push_back(std::make_shared<SimpleTest>("one"));
+  arytest->_directobjvect.push_back(std::make_shared<SimpleTest>("two"));
+  arytest->_directobjvect.push_back(std::make_shared<SimpleTest>("three"));
+
   serdes::JsonSerializer ser;
   auto rootnode = ser.serializeRoot(arytest);
   return ser.output();

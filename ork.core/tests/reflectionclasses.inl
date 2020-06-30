@@ -60,6 +60,18 @@ public:
   ArrayTest();
 
   std::vector<int> _directintvect;
+  std::vector<std::string> _directstrvect;
+  std::vector<object_ptr_t> _directobjvect;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct SimpleTest final : public Object {
+  DeclareConcreteX(SimpleTest, Object);
+
+public:
+  SimpleTest(std::string str = "");
+  std::string _strvalue;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

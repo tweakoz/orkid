@@ -36,9 +36,11 @@ enum struct NodeType {
   OBJECT,
   PROPERTIES,
   MAP,
-  MAP_ELEMENT,
+  MAP_ELEMENT_LEAF,
+  MAP_ELEMENT_OBJECT,
   ARRAY,
-  ARRAY_ELEMENT
+  ARRAY_ELEMENT_LEAF,
+  ARRAY_ELEMENT_OBJECT,
 };
 
 struct Node {
@@ -47,7 +49,7 @@ struct Node {
   ISerializer* _serializer                 = nullptr;
   IDeserializer* _deserializer             = nullptr;
   object_constptr_t _ser_instance          = nullptr;
-  object_ptr_t _deser_instance               = nullptr;
+  object_ptr_t _deser_instance             = nullptr;
   var_t _impl;
   std::string _key;
   std::string _name;

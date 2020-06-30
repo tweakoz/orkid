@@ -44,7 +44,7 @@ void IArray::serialize(serdes::node_ptr_t sernode) const {
   arynode->_ser_instance = instance;
   int numelements        = count(instance);
   for (size_t index = 0; index < numelements; index++) {
-    auto elemnode           = serializer->pushNode("aryelem", serdes::NodeType::ARRAY_ELEMENT);
+    auto elemnode           = serializer->pushNode("aryelem", serdes::NodeType::ARRAY_ELEMENT_LEAF);
     elemnode->_index        = index;
     elemnode->_parent       = arynode;
     elemnode->_ser_instance = instance;
