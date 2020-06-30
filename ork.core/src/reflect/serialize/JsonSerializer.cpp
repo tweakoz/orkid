@@ -39,11 +39,16 @@ JsonSerializer::JsonSerializer()
 JsonSerializer::~JsonSerializer() {
 }
 ////////////////////////////////////////////////////////////////////////////////
-ISerializer::node_ptr_t JsonSerializer::pushObjectNode(std::string named) {
+ISerializer::node_ptr_t JsonSerializer::_createNode(std::string named) {
   node_ptr_t n   = std::make_shared<Node>(); //)named, rapidjson::kObjectType);
   auto impl      = n->_impl.makeShared<JsonSerObjectNode>();
   n->_name       = named;
   n->_serializer = this;
+  return n;
+}
+////////////////////////////////////////////////////////////////////////////////
+ISerializer::node_ptr_t JsonSerializer::pushNode(std::string named) {
+  node_ptr_t n = _createNode(named);
   _nodestack.push(n);
   return n;
 }
@@ -52,19 +57,21 @@ void JsonSerializer::popNode() {
   auto n = topNode();
   _nodestack.pop();
 
-  auto impl = n->_impl.getShared<JsonSerObjectNode>();
-  rapidjson::Value key(n->_name.c_str(), *_allocator);
-  if (_nodestack.empty()) {
-    _document.AddMember(
-        key, //
-        impl->_jsonvalue,
-        *_allocator);
-  } else {
-    auto topimpl = topNode()->_impl.getShared<JsonSerObjectNode>();
-    topimpl->_jsonvalue.AddMember(
-        key, //
-        impl->_jsonvalue,
-        *_allocator);
+  if (n->_isobject) {
+    auto impl = n->_impl.getShared<JsonSerObjectNode>();
+    rapidjson::Value key(n->_name.c_str(), *_allocator);
+    if (_nodestack.empty()) {
+      _document.AddMember(
+          key, //
+          impl->_jsonvalue,
+          *_allocator);
+    } else {
+      auto topimpl = topNode()->_impl.getShared<JsonSerObjectNode>();
+      topimpl->_jsonvalue.AddMember(
+          key, //
+          impl->_jsonvalue,
+          *_allocator);
+    }
   }
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -84,70 +91,71 @@ ISerializer::node_ptr_t JsonSerializer::serializeElement(ISerializer::node_ptr_t
 
   OrkAssert(elemnode->_instance);
 
-  auto chnode       = pushObjectNode(elemnode->_key);
-  chnode->_instance = elemnode->_instance;
-  chnode->_parent   = elemnode;
   if (auto as_obj = elemnode->_value.TryAs<object_ptr_t>()) {
+    auto chnode       = pushNode(elemnode->_key);
+    chnode->_instance = elemnode->_instance;
+    chnode->_parent   = elemnode;
     chnode->_instance = as_obj.value();
+    chnode->_isobject = true;
     auto objnode      = serializeObject(chnode);
     OrkAssert(objnode);
     if (objnode)
       objnode->_parent = chnode;
+    popNode();
   } else {
-    chnode->_value = elemnode->_value;
-    chnode->_name  = elemnode->_key;
-    serializeLeaf(chnode);
+    elemnode->_name = elemnode->_key;
+    serializeLeaf(elemnode);
   }
 
-  popNode();
-  return chnode;
+  return elemnode;
 }
+////////////////////////////////////////////////////////////////////////////////
 void JsonSerializer::serializeLeaf(node_ptr_t leafnode) {
-  auto implnode = leafnode->_impl.getShared<JsonSerObjectNode>();
+  auto parimplnode = leafnode->_parent->_impl.getShared<JsonSerObjectNode>();
   rapidjson::Value nameval(leafnode->_name.c_str(), *_allocator);
   if (auto as_bool = leafnode->_value.TryAs<bool>()) {
     rapidjson::Value boolval;
     boolval.SetBool(as_bool.value());
-    implnode->_jsonvalue.AddMember(
+    parimplnode->_jsonvalue.AddMember(
         nameval, //
         boolval,
         *_allocator);
   } else if (auto as_int = leafnode->_value.TryAs<int>()) {
     rapidjson::Value intval;
     intval.SetInt(as_int.value());
-    implnode->_jsonvalue.AddMember(
+    parimplnode->_jsonvalue.AddMember(
         nameval, //
         intval,
         *_allocator);
   } else if (auto as_uint32_t = leafnode->_value.TryAs<uint32_t>()) {
     rapidjson::Value uint32_tval(as_uint32_t.value());
-    implnode->_jsonvalue.AddMember(
+    parimplnode->_jsonvalue.AddMember(
         nameval, //
         uint32_tval,
         *_allocator);
   } else if (auto as_size_t = leafnode->_value.TryAs<size_t>()) {
     rapidjson::Value size_tval(as_size_t.value());
-    implnode->_jsonvalue.AddMember(
+    parimplnode->_jsonvalue.AddMember(
         nameval, //
         size_tval,
         *_allocator);
   } else if (auto as_float = leafnode->_value.TryAs<float>()) {
     rapidjson::Value floatval;
     floatval.SetFloat(as_float.value());
-    implnode->_jsonvalue.AddMember(
+    parimplnode->_jsonvalue.AddMember(
         nameval, //
         floatval,
         *_allocator);
   } else if (auto as_double = leafnode->_value.TryAs<double>()) {
     rapidjson::Value doubleval;
     doubleval.SetDouble(as_double.value());
-    implnode->_jsonvalue.AddMember(
+    parimplnode->_jsonvalue.AddMember(
         nameval, //
         doubleval,
         *_allocator);
   } else if (auto as_str = leafnode->_value.TryAs<std::string>()) {
     rapidjson::Value strval(as_str.value().c_str(), *_allocator);
-    implnode->_jsonvalue.AddMember(
+    parimplnode->_jsonvalue.AddMember(
         nameval, //
         strval,
         *_allocator);
@@ -156,7 +164,7 @@ void JsonSerializer::serializeLeaf(node_ptr_t leafnode) {
     // if we get here we have an object property, but set to nullptr
     //  otherwise we would have went into serializeObject
     //////////////////////////////////////////////////////////////////
-    auto parimplnode = leafnode->_impl.getShared<JsonSerObjectNode>();
+    // auto parimplnode = leafnode->_impl.getShared<JsonSerObjectNode>();
     OrkAssert(as_nil.value() == nullptr);
     parimplnode->_jsonvalue.AddMember(
         nameval, //
@@ -186,7 +194,8 @@ ISerializer::node_ptr_t JsonSerializer::serializeObject(node_ptr_t parnode) {
       auto objclazz = instance->GetClass();
       auto& desc    = objclazz->Description();
 
-      onode            = pushObjectNode("object");
+      onode            = pushNode("object");
+      onode->_isobject = true;
       onode->_parent   = parnode;
       onode->_instance = instance;
       auto oimplnode   = onode->_impl.getShared<JsonSerObjectNode>();
@@ -202,9 +211,10 @@ ISerializer::node_ptr_t JsonSerializer::serializeObject(node_ptr_t parnode) {
           uuidval,
           *_allocator);
 
-      auto propsnode       = pushObjectNode("properties");
+      auto propsnode       = pushNode("properties");
       propsnode->_instance = instance;
       propsnode->_parent   = onode;
+      propsnode->_isobject = true;
 
       for (auto prop_item : desc.properties()) {
         auto propname        = prop_item.first;

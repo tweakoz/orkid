@@ -33,11 +33,12 @@ private:
   using allocator_t = rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>*;
 
   void _serializeNamedItem(std::string name, const var_t&);
+  node_ptr_t _createNode(std::string named);
 
-  node_ptr_t pushObjectNode(std::string named) override;
+  node_ptr_t pushNode(std::string named) override;
   void popNode() override;
 
   allocator_t _allocator;
   rapidjson::Document _document;
 };
-}}} // namespace ork::reflect::serialize
+}}} // namespace ork::reflect::serdes

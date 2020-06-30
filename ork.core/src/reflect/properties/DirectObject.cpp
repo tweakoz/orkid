@@ -24,7 +24,8 @@ void DirectObject::serialize(ISerializer::node_ptr_t propnode) const {
   auto parinstance    = propnode->_instance;
   auto child_instance = (parinstance.get()->*mProperty);
   if (child_instance) {
-    auto childnode       = serializer->pushObjectNode(_name);
+    auto childnode       = serializer->pushNode(_name);
+    childnode->_isobject = true;
     childnode->_instance = child_instance;
     childnode->_parent   = propnode;
     serializer->serializeObject(childnode);

@@ -32,7 +32,7 @@ public:
   node_ptr_t topNode();
   node_ptr_t serializeRoot(object_constptr_t);
 
-  virtual node_ptr_t pushObjectNode(std::string named) {
+  virtual node_ptr_t pushNode(std::string named) {
     return nullptr;
   }
   virtual void popNode() {
@@ -65,6 +65,7 @@ public:
     size_t _index       = 0;
     size_t _multiindex  = 0;
     size_t _numchildren = 0;
+    bool _isobject      = false;
   };
 };
 }} // namespace ork::reflect

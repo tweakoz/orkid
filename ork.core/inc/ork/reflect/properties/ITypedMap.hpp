@@ -18,27 +18,34 @@ namespace ork::reflect {
 ////////////////////////////////////////////////////////////////////////////////
 template <typename KeyType, typename ValueType> //
 void ITypedMap<KeyType, ValueType>::serialize(ISerializer::node_ptr_t sernode) const {
-  auto serializer       = sernode->_serializer;
-  auto instance         = sernode->_instance;
-  auto mapnode          = serializer->pushObjectNode(_name);
-  mapnode->_parent      = sernode;
-  mapnode->_instance    = instance;
-  int numelements       = elementCount(instance);
-  auto elemnode         = std::make_shared<ISerializer::Node>();
-  elemnode->_parent     = mapnode;
-  elemnode->_instance   = instance;
-  elemnode->_serializer = serializer;
+  auto serializer    = sernode->_serializer;
+  auto instance      = sernode->_instance;
+  auto mapnode       = serializer->pushNode(_name);
+  mapnode->_isobject = true;
+  mapnode->_parent   = sernode;
+  mapnode->_instance = instance;
+  int numelements    = elementCount(instance);
   for (size_t i = 0; i < numelements; i++) {
-    sernode->_index = i;
+    //////////////////////////////
     KeyType K;
     ValueType V;
     GetKey(instance, i, K);
     GetVal(instance, K, V);
-    elemnode->_value.Set<ValueType>(V);
+    //////////////////////////////
+    auto elemnode = serializer->pushNode(_name);
+    //////////////////////////////
     encode_key(elemnode->_key, K);
-    auto childnode = serializer->serializeElement(elemnode);
+    elemnode->_value.template Set<ValueType>(V);
+    elemnode->_index      = i;
+    elemnode->_parent     = mapnode;
+    elemnode->_instance   = instance;
+    elemnode->_serializer = serializer;
+    auto childnode        = serializer->serializeElement(elemnode);
+    //////////////////////////////
+    serializer->popNode(); // pop elemnode
+    //////////////////////////////
   }
-  serializer->popNode();
+  serializer->popNode(); // pop mapnode
 }
 ////////////////////////////////////////////////////////////////////////////////
 template <typename KeyType, typename ValueType>

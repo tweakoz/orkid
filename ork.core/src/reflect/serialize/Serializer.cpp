@@ -19,7 +19,8 @@
 namespace ork::reflect {
 ////////////////////////////////////////////////////////////////////////////////
 ISerializer::node_ptr_t ISerializer::serializeRoot(object_constptr_t instance) {
-  _rootnode            = pushObjectNode("root");
+  _rootnode            = pushNode("root");
+  _rootnode->_isobject = true;
   _rootnode->_instance = instance;
   auto objnode         = serializeObject(_rootnode);
   return _rootnode;

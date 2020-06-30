@@ -65,7 +65,7 @@ inline void ITyped<object_ptr_t>::serialize(ISerializer::node_ptr_t propnode) co
   object_ptr_t child_instance;
   get(child_instance, parinstance);
   if (child_instance) {
-    auto childnode       = serializer->pushObjectNode(_name);
+    auto childnode       = serializer->pushNode(_name);
     childnode->_instance = child_instance;
     childnode->_parent   = propnode;
     serializer->serializeObject(childnode);
