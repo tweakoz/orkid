@@ -37,7 +37,7 @@ void IArray::deserialize(serdes::node_ptr_t desernode) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void IArray::serialize(serdes::node_ptr_t sernode) const {
-  size_t numitems = count(sernode->_out_instance);
+  size_t numitems = count(sernode->_ser_instance);
   for (size_t index = 0; index < numitems; index++) {
     // Command item(Command::ELEMENT);
     // serializer.beginCommand(item);

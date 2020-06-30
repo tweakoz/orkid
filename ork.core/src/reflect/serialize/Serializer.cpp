@@ -22,7 +22,7 @@ ISerializer::~ISerializer() {
 ////////////////////////////////////////////////////////////////////////////////
 node_ptr_t ISerializer::serializeRoot(object_constptr_t instance) {
   _rootnode                = pushNode("root", NodeType::OBJECT);
-  _rootnode->_out_instance = instance;
+  _rootnode->_ser_instance = instance;
   auto objnode             = serializeObject(_rootnode);
   return _rootnode;
 }

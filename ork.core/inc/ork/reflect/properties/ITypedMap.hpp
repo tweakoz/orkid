@@ -33,10 +33,10 @@ template <typename kt, typename vt> bool IsMultiMapDeducer(const ork::orklut<kt,
 template <typename KeyType, typename ValueType> //
 void ITypedMap<KeyType, ValueType>::serialize(serdes::node_ptr_t sernode) const {
   auto serializer        = sernode->_serializer;
-  auto instance          = sernode->_out_instance;
+  auto instance          = sernode->_ser_instance;
   auto mapnode           = serializer->pushNode(_name, serdes::NodeType::MAP);
   mapnode->_parent       = sernode;
-  mapnode->_out_instance = instance;
+  mapnode->_ser_instance = instance;
   int numelements        = elementCount(instance);
   for (size_t i = 0; i < numelements; i++) {
     //////////////////////////////
@@ -54,7 +54,7 @@ void ITypedMap<KeyType, ValueType>::serialize(serdes::node_ptr_t sernode) const 
     elemnode->_value.template Set<ValueType>(V);
     elemnode->_index        = i;
     elemnode->_parent       = mapnode;
-    elemnode->_out_instance = instance;
+    elemnode->_ser_instance = instance;
     elemnode->_serializer   = serializer;
     auto childnode          = serializer->serializeMapElement(elemnode);
     //////////////////////////////
@@ -71,7 +71,7 @@ template <typename KeyType, typename ValueType> void ITypedMap<KeyType, ValueTyp
   size_t numelements = dsernode->_numchildren;
   auto elemnode      = deserializer->createNode("", serdes::NodeType::MAP_ELEMENT);
   elemnode->_parent  = dsernode;
-  auto instance      = dsernode->_inp_instance;
+  auto instance      = dsernode->_deser_instance;
   for (size_t i = 0; i < numelements; i++) {
     dsernode->_index = i;
     auto childnode   = deserializer->deserializeElement(dsernode);

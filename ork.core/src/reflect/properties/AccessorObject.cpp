@@ -21,13 +21,13 @@ AccessorObject::AccessorObject(object_ptr_t (Object::*property)())
 ////////////////////////////////////////////////////////////////
 void AccessorObject::serialize(serdes::node_ptr_t propnode) const {
   auto serializer     = propnode->_serializer;
-  auto parinstance    = propnode->_out_instance;
+  auto parinstance    = propnode->_ser_instance;
   auto nonconst       = std::const_pointer_cast<Object>(parinstance);
   auto child_instance = (nonconst.get()->*_accessor)();
   OrkAssert(false);
   if (child_instance) {
     auto childnode           = serializer->pushNode(_name, serdes::NodeType::OBJECT);
-    childnode->_out_instance = child_instance;
+    childnode->_ser_instance = child_instance;
     childnode->_parent       = propnode;
     serializer->serializeObject(childnode);
     serializer->popNode();
@@ -38,7 +38,7 @@ void AccessorObject::serialize(serdes::node_ptr_t propnode) const {
 }
 ////////////////////////////////////////////////////////////////
 void AccessorObject::deserialize(serdes::node_ptr_t dsernode) const {
-  auto instance  = dsernode->_inp_instance;
+  auto instance  = dsernode->_deser_instance;
   auto subobject = (instance.get()->*_accessor)();
   // Command command;
   // serializer.beginCommand(command);

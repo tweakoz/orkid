@@ -100,7 +100,7 @@ void JsonDeserializer::deserializeTop(object_ptr_t& instance_out) {
   topnode->_deserializer = this;
   // auto dserjsonnode      = topnode->_impl.makeShared<JsonObjectNode>(rootnode);
   auto child_node             = _parseSubNode(topnode, rootnode);
-  instance_out                = child_node->_inp_instance;
+  instance_out                = child_node->_deser_instance;
   auto instance_out_classname = instance_out->GetClass()->Name();
   std::string uuids           = boost::uuids::to_string(instance_out->_uuid);
 
@@ -122,7 +122,7 @@ serdes::node_ptr_t JsonDeserializer::_parseSubNode(
   child_node->_parent       = parentnode;
   child_node->_property     = parentnode->_property;
   child_node->_deserializer = this;
-  child_node->_inp_instance = parentnode->_inp_instance;
+  child_node->_deser_instance = parentnode->_deser_instance;
 
   switch (subvalue.GetType()) {
     case rapidjson::kObjectType: {
@@ -131,7 +131,7 @@ serdes::node_ptr_t JsonDeserializer::_parseSubNode(
         auto implnode               = child_node->_impl.makeShared<JsonObjectNode>(jsonobjnode);
         auto instance_out           = _parseObjectNode(child_node);
         auto instance_out_classname = instance_out->GetClass()->Name();
-        child_node->_inp_instance   = instance_out;
+        child_node->_deser_instance   = instance_out;
         std::string uuids           = boost::uuids::to_string(instance_out->_uuid);
         child_node->_value.Set<object_ptr_t>(instance_out);
         if (1)
@@ -272,7 +272,7 @@ object_ptr_t JsonDeserializer::_parseObjectNode(serdes::node_ptr_t dsernode) {
       child_node->_parent       = dsernode;
       child_node->_property     = prop;
       child_node->_deserializer = this;
-      child_node->_inp_instance = instance_out;
+      child_node->_deser_instance = instance_out;
 
       auto jsonleafnode = child_node->_impl.makeShared<JsonLeafNode>(propnode);
 

@@ -46,8 +46,8 @@ struct Node {
   const reflect::ObjectProperty* _property = nullptr;
   ISerializer* _serializer                 = nullptr;
   IDeserializer* _deserializer             = nullptr;
-  object_constptr_t _out_instance          = nullptr;
-  object_ptr_t _inp_instance               = nullptr;
+  object_constptr_t _ser_instance          = nullptr;
+  object_ptr_t _deser_instance               = nullptr;
   var_t _impl;
   std::string _key;
   std::string _name;

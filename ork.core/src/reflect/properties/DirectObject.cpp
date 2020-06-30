@@ -21,11 +21,11 @@ DirectObject::DirectObject(object_ptr_t Object::*property)
 
 void DirectObject::serialize(serdes::node_ptr_t propnode) const {
   auto serializer     = propnode->_serializer;
-  auto parinstance    = propnode->_out_instance;
+  auto parinstance    = propnode->_ser_instance;
   auto child_instance = (parinstance.get()->*mProperty);
   if (child_instance) {
     auto childnode           = serializer->pushNode(_name, serdes::NodeType::OBJECT);
-    childnode->_out_instance = child_instance;
+    childnode->_ser_instance = child_instance;
     childnode->_parent       = propnode;
     serializer->serializeObject(childnode);
     serializer->popNode();

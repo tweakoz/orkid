@@ -22,7 +22,7 @@
 namespace ork { namespace reflect {
 
 template <typename T> void ITyped<T>::deserialize(serdes::node_ptr_t desernode) const {
-  auto instance   = desernode->_inp_instance;
+  auto instance   = desernode->_deser_instance;
   const auto& var = desernode->_value;
   T value;
   serdes::decode_value<T>(var, value);
@@ -31,26 +31,26 @@ template <typename T> void ITyped<T>::deserialize(serdes::node_ptr_t desernode) 
 
 template <> //
 inline void ITyped<int>::deserialize(serdes::node_ptr_t desernode) const {
-  auto instance   = desernode->_inp_instance;
+  auto instance   = desernode->_deser_instance;
   const auto& var = desernode->_value;
   set(int(var.Get<double>()), instance);
 }
 template <> //
 inline void ITyped<uint32_t>::deserialize(serdes::node_ptr_t desernode) const {
-  auto instance   = desernode->_inp_instance;
+  auto instance   = desernode->_deser_instance;
   const auto& var = desernode->_value;
   set(uint32_t(var.Get<double>()), instance);
 }
 template <> //
 inline void ITyped<size_t>::deserialize(serdes::node_ptr_t desernode) const {
-  auto instance   = desernode->_inp_instance;
+  auto instance   = desernode->_deser_instance;
   const auto& var = desernode->_value;
   set(size_t(var.Get<double>()), instance);
 }
 
 template <typename T> void ITyped<T>::serialize(serdes::node_ptr_t leafnode) const {
   auto serializer = leafnode->_serializer;
-  auto instance   = leafnode->_out_instance;
+  auto instance   = leafnode->_ser_instance;
   T value;
   get(value, instance);
   leafnode->_value.template Set<T>(value);
@@ -60,13 +60,13 @@ template <typename T> void ITyped<T>::serialize(serdes::node_ptr_t leafnode) con
 template <> //
 inline void ITyped<object_ptr_t>::serialize(serdes::node_ptr_t propnode) const {
   auto serializer  = propnode->_serializer;
-  auto parinstance = propnode->_out_instance;
+  auto parinstance = propnode->_ser_instance;
   auto nonconst    = std::const_pointer_cast<Object>(parinstance);
   object_ptr_t child_instance;
   get(child_instance, parinstance);
   if (child_instance) {
     auto childnode           = serializer->pushNode(_name, serdes::NodeType::OBJECT);
-    childnode->_out_instance = child_instance;
+    childnode->_ser_instance = child_instance;
     childnode->_parent       = propnode;
     serializer->serializeObject(childnode);
     serializer->popNode();

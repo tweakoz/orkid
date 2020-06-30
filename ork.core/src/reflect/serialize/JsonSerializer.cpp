@@ -102,10 +102,10 @@ std::string JsonSerializer::output() {
 ////////////////////////////////////////////////////////////////////////////////
 node_ptr_t JsonSerializer::serializeMapElement(node_ptr_t elemnode) {
 
-  OrkAssert(elemnode->_out_instance);
+  OrkAssert(elemnode->_ser_instance);
 
   if (auto as_obj = elemnode->_value.TryAs<object_ptr_t>()) {
-    elemnode->_out_instance = as_obj.value();
+    elemnode->_ser_instance = as_obj.value();
     elemnode->_type         = NodeType::OBJECT;
     auto objnode            = serializeObject(elemnode);
     OrkAssert(objnode);
@@ -193,7 +193,7 @@ void JsonSerializer::serializeLeaf(node_ptr_t leafnode) {
 node_ptr_t JsonSerializer::serializeObject(node_ptr_t parnode) {
 
   node_ptr_t onode;
-  auto instance = parnode->_out_instance;
+  auto instance = parnode->_ser_instance;
   if (instance) {
     auto parimplnode  = parnode->_impl.getShared<JsonSerObjectNode>();
     const auto& uuid  = instance->_uuid;
@@ -211,7 +211,7 @@ node_ptr_t JsonSerializer::serializeObject(node_ptr_t parnode) {
 
       onode                = pushNode("object", NodeType::OBJECT);
       onode->_parent       = parnode;
-      onode->_out_instance = instance;
+      onode->_ser_instance = instance;
       auto oimplnode       = onode->_impl.getShared<JsonSerObjectNode>();
       auto classname       = objclazz->Name();
       rapidjson::Value classval(classname.c_str(), *_allocator);
@@ -226,7 +226,7 @@ node_ptr_t JsonSerializer::serializeObject(node_ptr_t parnode) {
           *_allocator);
 
       auto propsnode           = pushNode("properties", NodeType::PROPERTIES);
-      propsnode->_out_instance = instance;
+      propsnode->_ser_instance = instance;
       propsnode->_parent       = onode;
 
       for (auto prop_item : desc.properties()) {
