@@ -32,9 +32,12 @@ void ITypedMap<KeyType, ValueType>::serialize(ISerializer::node_ptr_t sernode) c
     GetKey(instance, i, K);
     GetVal(instance, K, V);
     //////////////////////////////
-    auto elemnode = serializer->pushNode(_name);
+    std::string keystr;
+    encode_key(keystr, K);
     //////////////////////////////
-    encode_key(elemnode->_key, K);
+    auto elemnode = serializer->pushNode(keystr);
+    //////////////////////////////
+    elemnode->_key = keystr;
     elemnode->_value.template Set<ValueType>(V);
     elemnode->_index      = i;
     elemnode->_parent     = mapnode;
