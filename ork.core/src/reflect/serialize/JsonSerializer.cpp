@@ -58,30 +58,32 @@ void JsonSerializer::popNode() {
   auto n = topNode();
   _nodestack.pop();
 
-  rapidjson::Value key(n->_name.c_str(), *_allocator);
-  auto impl    = n->_impl.getShared<JsonSerObjectNode>();
-  auto topimpl = topNode()->_impl.getShared<JsonSerObjectNode>();
-
   switch (n->_type) {
     case NodeType::OBJECT:
     case NodeType::PROPERTIES:
     case NodeType::MAP:
-    case NodeType::ARRAY: {
+    case NodeType::ARRAY:
+    case NodeType::LEAF: {
+      rapidjson::Value key(n->_name.c_str(), *_allocator);
+      auto impl = n->_impl.getShared<JsonSerObjectNode>();
       if (_nodestack.empty()) {
         _document.AddMember(
             key, //
             impl->_jsonvalue,
             *_allocator);
         break;
+      } else {
+        auto topimpl = topNode()->_impl.getShared<JsonSerObjectNode>();
+        topimpl->_jsonvalue.AddMember(
+            key, //
+            impl->_jsonvalue,
+            *_allocator);
+        break;
       }
     }
-    case NodeType::LEAF: {
-      topimpl->_jsonvalue.AddMember(
-          key, //
-          impl->_jsonvalue,
-          *_allocator);
+    case NodeType::MAP_ELEMENT:
+    case NodeType::ARRAY_ELEMENT:
       break;
-    }
     default:
       OrkAssert(false);
       break;
