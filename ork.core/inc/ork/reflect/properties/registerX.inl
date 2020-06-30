@@ -8,6 +8,8 @@
 #pragma once
 #include "register.h"
 #include "DirectObjectMap.inl"
+#include "DirectTypedArray.hpp"
+#include "DirectTypedVector.hpp"
 
 namespace ork::object {
 ///////////////////////////////////////////////////////////////////////////
@@ -36,13 +38,35 @@ inline object::PropertyModifier object::ObjectClass::memberProperty(const char* 
   return modder;
 }
 ///////////////////////////////////////////////////////////////////////////
-template <typename ClassType, typename MapType>
+template <typename ClassType, typename MemberMapType>
 inline object::PropertyModifier object::ObjectClass::directMapProperty(
     const char* name, //
-    MapType ClassType::*member) {
+    MemberMapType ClassType::*member) {
   object::PropertyModifier modder;
-  auto typed_member = static_cast<MapType Object::*>(member);
-  modder._property  = new reflect::DirectTypedMap<MapType>(typed_member);
+  auto typed_member = static_cast<MemberMapType Object::*>(member);
+  modder._property  = new reflect::DirectTypedMap<MemberMapType>(typed_member);
+  _description.addProperty(name, modder._property);
+  return modder;
+}
+///////////////////////////////////////////////////////////////////////////
+template <typename ClassType, typename MemberArrayType>
+inline object::PropertyModifier object::ObjectClass::directArrayProperty(
+    const char* name, //
+    MemberArrayType ClassType::*member) {
+  object::PropertyModifier modder;
+  auto typed_member = static_cast<MemberArrayType Object::*>(member);
+  modder._property  = new reflect::DirectTypedArray<MemberArrayType>(typed_member);
+  _description.addProperty(name, modder._property);
+  return modder;
+}
+///////////////////////////////////////////////////////////////////////////
+template <typename ClassType, typename MemberVectorType>
+inline object::PropertyModifier object::ObjectClass::directVectorProperty(
+    const char* name, //
+    MemberVectorType ClassType::*member) {
+  object::PropertyModifier modder;
+  auto typed_member = static_cast<MemberVectorType Object::*>(member);
+  modder._property  = new reflect::DirectTypedVector<MemberVectorType>(typed_member);
   _description.addProperty(name, modder._property);
   return modder;
 }

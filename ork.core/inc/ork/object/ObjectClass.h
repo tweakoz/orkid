@@ -49,8 +49,14 @@ public:
   template <typename ClassType, typename MemberType>
   inline PropertyModifier memberProperty(const char* name, MemberType ClassType::*member);
 
-  template <typename ClassType, typename MemberType>
-  inline PropertyModifier directMapProperty(const char* name, MemberType ClassType::*member);
+  template <typename ClassType, typename MemberMapType>
+  inline PropertyModifier directMapProperty(const char* name, MemberMapType ClassType::*member);
+
+  template <typename ClassType, typename MemberArrayType>
+  inline PropertyModifier directArrayProperty(const char* name, MemberArrayType ClassType::*member);
+
+  template <typename ClassType, typename MemberVectorType>
+  inline PropertyModifier directVectorProperty(const char* name, MemberVectorType ClassType::*member);
 
   template <typename ClassType, typename MemberType>
   inline PropertyModifier sharedObjectMapProperty(

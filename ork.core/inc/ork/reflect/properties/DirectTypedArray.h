@@ -13,17 +13,20 @@
 
 namespace ork { namespace reflect {
 
-template <typename T> class DirectTypedArray : public ITypedArray<T> {
+template <typename ArrayType> //
+class DirectTypedArray : public ITypedArray<typename ArrayType::value_type> {
+  using value_type = typename ArrayType::value_type;
+
 public:
-  DirectTypedArray(T (Object::*)[], size_t);
-  /*virtual*/ void Get(T&, const Object*, size_t) const;
-  /*virtual*/ void Set(const T&, Object*, size_t) const;
-  /*virtual*/ size_t Count(const Object*) const;
-  /*virtual*/ bool Resize(Object* obj, size_t size) const;
+  DirectTypedArray(ArrayType (Object::*)[], size_t);
+  void get(value_type&, object_constptr_t, size_t) const override;
+  void set(const value_type&, object_ptr_t, size_t) const override;
+  size_t count(object_constptr_t) const override;
+  void resize(object_ptr_t obj, size_t size) const override;
 
 private:
-  T (Object::*mProperty)[];
-  size_t mSize;
+  ArrayType (Object::*_property)[];
+  size_t _size;
 };
 
 }} // namespace ork::reflect
