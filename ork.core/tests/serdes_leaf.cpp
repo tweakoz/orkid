@@ -47,12 +47,18 @@ TEST(SerdesLeafProperties) {
   object_ptr_t instance_out;
   serdes::JsonDeserializer deser(serstr.c_str());
   deser.deserializeTop(instance_out);
-  auto typed = std::dynamic_pointer_cast<SharedTest>(instance_out);
-  CHECK_EQUAL(typed->_directInt, 0);
-  CHECK_EQUAL(typed->_directBool, true);
-  CHECK_EQUAL(typed->_directString, "yo-0");
-  CHECK_EQUAL(typed->_directFloat, 0.01f);
-  CHECK_EQUAL(typed->_directDouble, 0.02);
-  CHECK_EQUAL(typed->_directUint32, 5);
-  CHECK_EQUAL(typed->_directSizeT, 6);
+  auto clone = std::dynamic_pointer_cast<SharedTest>(instance_out);
+  CHECK_EQUAL(clone->_directInt, 0);
+  CHECK_EQUAL(clone->_directBool, true);
+  CHECK_EQUAL(clone->_directString, "yo-0");
+  CHECK_EQUAL(clone->_directFloat, 0.01f);
+  CHECK_EQUAL(clone->_directDouble, 0.02);
+  CHECK_EQUAL(clone->_directUint32, 5);
+  CHECK_EQUAL(clone->_directSizeT, 6);
+  auto child1 = std::dynamic_pointer_cast<SharedTest>(clone->_directChild);
+  auto child2 = std::dynamic_pointer_cast<SharedTest>(clone->_accessorChild);
+  CHECK_EQUAL(child1->_directInt, 1);
+  CHECK_EQUAL(child1->_directString, "yo-1");
+  CHECK_EQUAL(child2->_directInt, 2);
+  CHECK_EQUAL(child2->_directString, "yo-2");
 }
