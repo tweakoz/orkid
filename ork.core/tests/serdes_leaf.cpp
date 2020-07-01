@@ -43,7 +43,7 @@ std::string slp_generate() {
 
 TEST(SerdesLeafProperties) {
   auto serstr = slp_generate();
-  printf("mutstr<%s>\n", serstr.c_str());
+  // printf("mutstr<%s>\n", serstr.c_str());
   object_ptr_t instance_out;
   serdes::JsonDeserializer deser(serstr.c_str());
   deser.deserializeTop(instance_out);

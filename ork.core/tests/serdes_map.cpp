@@ -48,7 +48,7 @@ std::string smp_generate() {
 
 TEST(SerdesMapProperties) {
   auto objstr = smp_generate();
-  printf("objstr<%s>\n", objstr.c_str());
+  // printf("objstr<%s>\n", objstr.c_str());
   object_ptr_t instance_out;
   serdes::JsonDeserializer deser(objstr.c_str());
   deser.deserializeTop(instance_out);

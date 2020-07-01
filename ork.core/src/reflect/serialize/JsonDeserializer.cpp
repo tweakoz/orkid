@@ -108,7 +108,7 @@ void JsonDeserializer::deserializeTop(object_ptr_t& instance_out) {
   auto instance_out_classname = instance_out->GetClass()->Name();
   std::string uuids           = boost::uuids::to_string(instance_out->_uuid);
 
-  if (1)
+  if (0)
     printf(
         "top instance<%p> class<%s> uuid<%s>\n", //
         instance_out.get(),
@@ -159,7 +159,7 @@ serdes::node_ptr_t JsonDeserializer::_parseSubNode(
         child_node->_deser_instance = instance_out;
         std::string uuids           = boost::uuids::to_string(instance_out->_uuid);
         child_node->_value.Set<object_ptr_t>(instance_out);
-        if (1)
+        if (0)
           printf(
               "instance<%p> class<%s> uuid<%s>\n", //
               instance_out.get(),
@@ -210,7 +210,7 @@ serdes::node_ptr_t JsonDeserializer::deserializeElement(node_ptr_t elemnode) {
       auto mapimplnode                = mapnode->_impl.getShared<JsonObjectNode>();
       const rapidjson::Value& objnode = mapimplnode->_jsonobjectnode;
       OrkAssert(mapimplnode->_iterator != objnode.MemberEnd());
-      printf("mapnode key<%s>\n", mapimplnode->_iterator->name.GetString());
+      // printf("mapnode key<%s>\n", mapimplnode->_iterator->name.GetString());
       const auto& childvalue = mapimplnode->_iterator->value;
       childnode              = _parseSubNode(elemnode, childvalue);
       childnode->_key        = mapimplnode->_iterator->name.GetString();
@@ -224,7 +224,7 @@ serdes::node_ptr_t JsonDeserializer::deserializeElement(node_ptr_t elemnode) {
       auto aryimplnode               = arynode->_impl.getShared<JsonArrayNode>();
       const rapidjson::Value& jarray = aryimplnode->_jsonarray;
       OrkAssert(aryimplnode->_iterator != jarray.End());
-      printf("array element<%zu>\n", arynode->_index);
+      // printf("array element<%zu>\n", arynode->_index);
       const auto& childjsonvalue = *aryimplnode->_iterator;
       childnode                  = _parseSubNode(elemnode, childjsonvalue);
       aryimplnode->_iterator++;
@@ -284,7 +284,7 @@ object_ptr_t JsonDeserializer::_parseObjectNode(serdes::node_ptr_t dsernode) {
     auto prop     = description.property(propname);
 
     if (prop) {
-      printf("found propname<%s> prop<%p>\n", propname, prop);
+      // printf("found propname<%s> prop<%p>\n", propname, prop);
       dsernode->_property = prop;
       auto child_node     = std::make_shared<Node>();
 
