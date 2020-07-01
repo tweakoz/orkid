@@ -47,6 +47,18 @@ inline void ITyped<size_t>::deserialize(serdes::node_ptr_t desernode) const {
   const auto& var = desernode->_value;
   set(size_t(var.Get<double>()), instance);
 }
+template <> //
+inline void ITyped<object_ptr_t>::deserialize(serdes::node_ptr_t desernode) const {
+  auto instance     = desernode->_deser_instance;
+  auto deserializer = desernode->_deserializer;
+  auto childnode    = deserializer->deserializeObject(desernode);
+  if (childnode) {
+    auto subinstance = childnode->_deser_instance;
+    set(subinstance, instance);
+  } else {
+    set(object_ptr_t(nullptr), instance);
+  }
+}
 
 template <typename T> void ITyped<T>::serialize(serdes::node_ptr_t leafnode) const {
   auto serializer = leafnode->_serializer;

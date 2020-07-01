@@ -120,6 +120,26 @@ void JsonDeserializer::deserializeTop(object_ptr_t& instance_out) {
 
 //////////////////////////////////////////////////////////////////////////////
 
+node_ptr_t JsonDeserializer::deserializeObject(node_ptr_t parnode) {
+  auto topnode = pushNode("object", NodeType::OBJECT);
+
+  if (parnode->_impl.IsShared<JsonLeafNode>()) {
+    OrkAssert(parnode->_value.Get<std::string>() == "nil");
+    return nullptr;
+  } else {
+    auto implnode       = parnode->_impl.getShared<JsonObjectNode>();
+    const auto& jsonval = implnode->_jsonobjectnode;
+    OrkAssert(jsonval.IsObject());
+    OrkAssert(jsonval.HasMember("object"));
+    auto child_node   = _parseSubNode(topnode, jsonval);
+    auto instance_out = child_node->_deser_instance;
+    popNode();
+    return child_node;
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
 serdes::node_ptr_t JsonDeserializer::_parseSubNode(
     serdes::node_ptr_t parentnode, //
     const rapidjson::Value& subvalue) {
@@ -272,8 +292,7 @@ object_ptr_t JsonDeserializer::_parseObjectNode(serdes::node_ptr_t dsernode) {
       child_node->_property       = prop;
       child_node->_deserializer   = this;
       child_node->_deser_instance = instance_out;
-
-      auto jsonleafnode = child_node->_impl.makeShared<JsonLeafNode>(propnode);
+      child_node->_impl.makeShared<JsonLeafNode>(propnode);
 
       switch (propnode.GetType()) {
         case rapidjson::kObjectType: {

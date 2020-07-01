@@ -25,6 +25,9 @@ struct IDeserializer {
   }
 
   virtual void deserializeTop(object_ptr_t&) = 0;
+  virtual node_ptr_t deserializeObject(node_ptr_t) {
+    return node_ptr_t(nullptr);
+  }
   virtual node_ptr_t deserializeElement(node_ptr_t elemnode) {
     return node_ptr_t(nullptr);
   }

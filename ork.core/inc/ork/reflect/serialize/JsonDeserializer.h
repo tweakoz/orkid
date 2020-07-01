@@ -20,6 +20,7 @@ class JsonDeserializer : public IDeserializer {
 public:
   void deserializeTop(object_ptr_t&) override;
   node_ptr_t deserializeElement(node_ptr_t elemnode) override;
+  node_ptr_t deserializeObject(node_ptr_t) override;
 
   JsonDeserializer(const std::string& jsondata);
 

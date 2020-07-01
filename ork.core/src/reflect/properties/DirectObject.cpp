@@ -36,18 +36,15 @@ void DirectObject::serialize(serdes::node_ptr_t propnode) const {
 }
 
 void DirectObject::deserialize(serdes::node_ptr_t dsernode) const {
-  OrkAssert(false);
-  /*Object* object_property = (object->*mProperty)();
-  Command command;
-  serializer.beginCommand(command);
-
-  OrkAssertI(command.Type() == Command::EOBJECT, "DirectObject::Deserdes::Expected an Object command!\n");
-
-  if (command.Type() == Command::EOBJECT) {
-    Object::xxxDeserialize(object_property, serializer);
+  auto instance     = dsernode->_deser_instance;
+  auto deserializer = dsernode->_deserializer;
+  auto childnode    = deserializer->deserializeObject(dsernode);
+  if (childnode) {
+    auto subinstance             = childnode->_deser_instance;
+    (instance.get()->*mProperty) = subinstance;
+  } else {
+    (instance.get()->*mProperty) = nullptr;
   }
-
-  serializer.endCommand(command);*/
 }
 
 object_ptr_t DirectObject::access(object_ptr_t instance) const {
