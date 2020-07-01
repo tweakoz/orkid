@@ -25,7 +25,8 @@ public:
 
 private:
   using allocator_t = rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>*;
-  node_ptr_t createNode(std::string named, NodeType type) override;
+  node_ptr_t pushNode(std::string named, NodeType type) override;
+  void popNode() override;
 
   object_ptr_t _parseObjectNode(serdes::node_ptr_t dsernode);
   node_ptr_t _parseSubNode(

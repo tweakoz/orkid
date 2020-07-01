@@ -8,6 +8,7 @@
 #pragma once
 
 #include "serialize/serdes.h"
+#include <stack>
 
 namespace ork::reflect::serdes {
 
@@ -16,8 +17,11 @@ class Command;
 
 struct IDeserializer {
 
-  virtual node_ptr_t createNode(std::string named, NodeType type) {
+  virtual node_ptr_t pushNode(std::string named, NodeType type) {
     return nullptr;
+  }
+  virtual void popNode() {
+    return;
   }
 
   virtual void deserializeTop(object_ptr_t&) = 0;
@@ -32,6 +36,7 @@ struct IDeserializer {
   ///////////////////////////////////////////
 
   using trackervect_t = std::unordered_map<std::string, object_ptr_t>;
+  std::stack<node_ptr_t> _nodestack;
   trackervect_t _reftracker;
 };
 

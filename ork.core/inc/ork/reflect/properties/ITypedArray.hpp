@@ -10,15 +10,22 @@
 #include "ITypedArray.h"
 #include <ork/reflect/ISerializer.h>
 #include <ork/reflect/BidirectionalSerializer.h>
+#include "codec.inl"
 
 namespace ork { namespace reflect {
 
 template <typename elem_t> //
-void ITypedArray<elem_t>::deserializeElement(serdes::node_ptr_t desernode) const {
-  // BidirectionalSerializer bidi(deserializer);
-  // T value;
-  // bidi | value;
-  // set(value, obj, index);
+void ITypedArray<elem_t>::deserializeElement(serdes::node_ptr_t arynode) const {
+  auto deserializer = arynode->_deserializer;
+  auto instance     = arynode->_deser_instance;
+  int index         = arynode->_index;
+  auto elemnode     = deserializer->pushNode("", serdes::NodeType::ARRAY_ELEMENT_LEAF);
+  elemnode->_parent = arynode;
+  auto childnode    = deserializer->deserializeElement(elemnode);
+  deserializer->popNode();
+  elem_t value;
+  serdes::decode_value<elem_t>(childnode->_value, value);
+  set(value, instance, index);
 }
 
 template <typename elem_t> //

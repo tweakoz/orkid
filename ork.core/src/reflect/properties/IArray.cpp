@@ -15,23 +15,14 @@
 namespace ork::reflect {
 ///////////////////////////////////////////////////////////////////////////////
 
-void IArray::deserialize(serdes::node_ptr_t desernode) const {
-
-  /*int deser_count;
-  deserializer.deserialize(deser_count);
-  resize(obj, size_t(deser_count));
-
-  deserializer.endCommand(command);
-
-  size_t numitems = count(obj);
-
-  for (size_t index = 0; index < numitems; index++) {
-    Command item;
-    deserializer.beginCommand(item);
-    OrkAssert(item.Type() == Command::ELEMENT);
-    deserializeElement(deserializer, obj, index);
-    deserializer.endCommand(item);
-  }*/
+void IArray::deserialize(serdes::node_ptr_t arynode) const {
+  auto deserializer  = arynode->_deserializer;
+  auto instance      = arynode->_deser_instance;
+  size_t numelements = arynode->_numchildren;
+  for (size_t i = 0; i < numelements; i++) {
+    arynode->_index = i;
+    this->deserializeElement(arynode);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

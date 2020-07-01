@@ -64,17 +64,18 @@ void ITypedMap<KeyType, ValueType>::serialize(serdes::node_ptr_t sernode) const 
   serializer->popNode(); // pop mapnode
 }
 ////////////////////////////////////////////////////////////////////////////////
-template <typename KeyType, typename ValueType> void ITypedMap<KeyType, ValueType>::deserialize(serdes::node_ptr_t dsernode) const {
+template <typename KeyType, typename ValueType> //
+void ITypedMap<KeyType, ValueType>::deserialize(serdes::node_ptr_t dsernode) const {
   KeyType key;
   ValueType value;
   auto deserializer  = dsernode->_deserializer;
   size_t numelements = dsernode->_numchildren;
-  auto elemnode      = deserializer->createNode("", serdes::NodeType::MAP_ELEMENT_LEAF);
-  elemnode->_parent  = dsernode;
   auto instance      = dsernode->_deser_instance;
   for (size_t i = 0; i < numelements; i++) {
-    dsernode->_index = i;
-    auto childnode   = deserializer->deserializeElement(dsernode);
+    dsernode->_index  = i;
+    auto elemnode     = deserializer->pushNode("", serdes::NodeType::MAP_ELEMENT_LEAF);
+    elemnode->_parent = dsernode;
+    auto childnode    = deserializer->deserializeElement(elemnode);
     serdes::decode_key<KeyType>(childnode->_key, key);
     childnode->_name = childnode->_key;
     serdes::decode_value<ValueType>(childnode->_value, value);
@@ -83,6 +84,7 @@ template <typename KeyType, typename ValueType> void ITypedMap<KeyType, ValueTyp
         key,
         -1,
         &value);
+    deserializer->popNode();
   }
 }
 ////////////////////////////////////////////////////////////////////////////////

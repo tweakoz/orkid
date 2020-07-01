@@ -15,6 +15,7 @@ namespace ork { namespace reflect {
 template <typename VectorType> //
 DirectTypedVector<VectorType>::DirectTypedVector(VectorType Object::*prop)
     : _member(prop) {
+  OrkAssert(_member != nullptr);
 }
 
 template <typename VectorType> //
