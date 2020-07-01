@@ -31,19 +31,22 @@ void DirectTypedVector<VectorType>::set(
     const value_type& value, //
     object_ptr_t instance,
     size_t index) const {
-  (instance.get()->*_member)[index] = value;
+  auto& vect  = (instance.get()->*_member);
+  vect[index] = value;
 }
 
 template <typename VectorType> //
 size_t DirectTypedVector<VectorType>::count(object_constptr_t instance) const {
-  return size_t((instance.get()->*_member).size());
+  auto& vect = (instance.get()->*_member);
+  return size_t(vect.size());
 }
 
 template <typename VectorType> //
 void DirectTypedVector<VectorType>::resize(
     object_ptr_t instance, //
     size_t size) const {
-  (instance.get()->*_member).resize(size);
+  auto& vect = (instance.get()->*_member);
+  vect.resize(size);
 }
 
 }} // namespace ork::reflect

@@ -19,6 +19,7 @@ void IArray::deserialize(serdes::node_ptr_t arynode) const {
   auto deserializer  = arynode->_deserializer;
   auto instance      = arynode->_deser_instance;
   size_t numelements = arynode->_numchildren;
+  resize(instance, numelements);
   for (size_t i = 0; i < numelements; i++) {
     arynode->_index = i;
     this->deserializeElement(arynode);
