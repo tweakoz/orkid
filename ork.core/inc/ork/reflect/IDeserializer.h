@@ -8,6 +8,7 @@
 #pragma once
 
 #include "serialize/serdes.h"
+#include "properties/codec.inl"
 #include <stack>
 
 namespace ork::reflect::serdes {
@@ -42,5 +43,19 @@ struct IDeserializer {
   std::stack<node_ptr_t> _nodestack;
   trackervect_t _reftracker;
 };
+
+template <typename T>
+T deserializeArraySubLeaf(
+    serdes::node_ptr_t arynode, //
+    int index) {
+  auto deserializer = arynode->_deserializer;
+  auto elemnode     = deserializer->pushNode("", serdes::NodeType::ARRAY_ELEMENT_LEAF);
+  elemnode->_parent = arynode;
+  auto childnode    = deserializer->deserializeElement(elemnode);
+  deserializer->popNode();
+  T value;
+  serdes::decode_value<T>(childnode->_value, value);
+  return value;
+}
 
 } // namespace ork::reflect::serdes

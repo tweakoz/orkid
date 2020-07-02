@@ -77,7 +77,7 @@ template class Vector3<double>; // explicit template instantiation
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace reflect {
-
+using namespace serdes;
 template <> //
 void ::ork::reflect::ITyped<fvec3>::serialize(serdes::node_ptr_t sernode) const {
   auto serializer        = sernode->_serializer;
@@ -91,6 +91,22 @@ void ::ork::reflect::ITyped<fvec3>::serialize(serdes::node_ptr_t sernode) const 
   serializeArraySubLeaf(arynode, value.y, 1);
   serializeArraySubLeaf(arynode, value.z, 2);
   serializer->popNode(); // pop arraynode
+}
+template <> //
+void ::ork::reflect::ITyped<fvec3>::deserialize(serdes::node_ptr_t arynode) const {
+  using namespace serdes;
+  auto deserializer  = arynode->_deserializer;
+  auto instance      = arynode->_deser_instance;
+  size_t numelements = arynode->_numchildren;
+  OrkAssert(numelements == 3);
+
+  fvec3 outval;
+  outval.x = deserializeArraySubLeaf<float>(arynode, 0);
+  outval.y = deserializeArraySubLeaf<float>(arynode, 1);
+  outval.z = deserializeArraySubLeaf<float>(arynode, 2);
+  set(outval, instance);
+
+  OrkAssert(false);
 }
 
 /*

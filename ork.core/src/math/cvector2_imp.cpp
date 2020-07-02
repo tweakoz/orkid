@@ -76,6 +76,7 @@ namespace reflect {
 ///////////////////////////////////////////////////////////////////////////////
 template <> //
 void ::ork::reflect::ITyped<fvec2>::serialize(serdes::node_ptr_t sernode) const {
+  using namespace serdes;
   auto serializer        = sernode->_serializer;
   auto instance          = sernode->_ser_instance;
   auto arynode           = serializer->pushNode(_name, serdes::NodeType::ARRAY);
@@ -88,11 +89,18 @@ void ::ork::reflect::ITyped<fvec2>::serialize(serdes::node_ptr_t sernode) const 
   serializer->popNode(); // pop arraynode
 }
 template <> //
-void ::ork::reflect::ITyped<fvec2>::deserialize(serdes::node_ptr_t desernode) const {
-  // auto instance      = desernode->_deser_instance;
-  // const auto& var    = desernode->_value;
-  // const auto& as_fv2 = var.Get<fvec2>();
-  // set(as_fv2, instance);
+void ::ork::reflect::ITyped<fvec2>::deserialize(serdes::node_ptr_t arynode) const {
+  using namespace serdes;
+  auto deserializer  = arynode->_deserializer;
+  auto instance      = arynode->_deser_instance;
+  size_t numelements = arynode->_numchildren;
+  OrkAssert(numelements == 2);
+
+  fvec2 outval;
+  outval.x = deserializeArraySubLeaf<float>(arynode, 0);
+  outval.y = deserializeArraySubLeaf<float>(arynode, 1);
+  set(outval, instance);
+
   OrkAssert(false);
 }
 ///////////////////////////////////////////////////////////////////////////////
