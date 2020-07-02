@@ -37,4 +37,23 @@ public:
   std::stack<node_ptr_t> _nodestack;
   node_ptr_t _rootnode;
 };
+
+template <typename T>
+serdes::node_ptr_t serializeArraySubLeaf(
+    serdes::node_ptr_t arynode, //
+    T inp,
+    int index) {
+  auto serializer         = arynode->_serializer;
+  auto instance           = arynode->_ser_instance;
+  auto elemnode           = serializer->pushNode("aryelem", serdes::NodeType::ARRAY_ELEMENT_LEAF);
+  elemnode->_index        = index;
+  elemnode->_parent       = arynode;
+  elemnode->_ser_instance = instance;
+  elemnode->_serializer   = serializer;
+  elemnode->_value.template Set<T>(inp);
+  serializer->serializeMapElement(elemnode);
+  serializer->popNode(); // pop elemnode
+  return elemnode;
+}
+
 } // namespace ork::reflect::serdes

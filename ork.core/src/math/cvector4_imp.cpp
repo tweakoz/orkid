@@ -9,10 +9,9 @@
 #include <ork/math/cvector4.h>
 #include <ork/math/cvector4.hpp>
 #include <ork/math/matrix_inverseGEMS.hpp>
-#include <ork/kernel/prop.h>
-#include <ork/kernel/prop.hpp>
-#include <ork/reflect/Serialize.h>
-#include <ork/reflect/BidirectionalSerializer.h>
+#include <ork/reflect/properties/ITyped.hpp>
+#include <ork/reflect/ISerializer.h>
+#include <ork/reflect/IDeserializer.h>
 
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
@@ -74,10 +73,25 @@ template class PropType<fvec4>;
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-/*
 namespace reflect {
 
-template <> void Serialize(const fvec4* in, fvec4* out, reflect::BidirectionalSerializer& bidi) {
+template <> //
+void ::ork::reflect::ITyped<fvec4>::serialize(serdes::node_ptr_t sernode) const {
+  auto serializer        = sernode->_serializer;
+  auto instance          = sernode->_ser_instance;
+  auto arynode           = serializer->pushNode(_name, serdes::NodeType::ARRAY);
+  arynode->_parent       = sernode;
+  arynode->_ser_instance = instance;
+  fvec4 value;
+  get(value, instance);
+  serializeArraySubLeaf(arynode, value.x, 0);
+  serializeArraySubLeaf(arynode, value.y, 1);
+  serializeArraySubLeaf(arynode, value.z, 2);
+  serializeArraySubLeaf(arynode, value.w, 3);
+  serializer->popNode(); // pop arraynode
+}
+
+/*template <> void Serialize(const fvec4* in, fvec4* out, reflect::BidirectionalSerializer& bidi) {
   using namespace std::literals;
   if (bidi.Serializing()) {
     bidi.Serializer()->Hint("type", "fvec4"s);
@@ -96,8 +110,9 @@ template <> void Serialize(const orkmap<float, fvec4>* in, orkmap<float, fvec4>*
   } else {
   }
 }
+*/// namespace reflect
 } // namespace reflect
-*/
+
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

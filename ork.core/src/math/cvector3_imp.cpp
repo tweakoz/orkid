@@ -9,11 +9,10 @@
 
 #include <ork/math/cvector3.h>
 #include <ork/math/cvector3.hpp>
-#include <ork/kernel/prop.h>
-#include <ork/kernel/prop.hpp>
-#include <ork/reflect/Serialize.h>
-#include <ork/reflect/BidirectionalSerializer.h>
 #include <ork/math/misc_math.h>
+#include <ork/reflect/properties/ITyped.hpp>
+#include <ork/reflect/ISerializer.h>
+#include <ork/reflect/IDeserializer.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -76,9 +75,25 @@ template class PropType<Vector3<float>>;
 template class Vector3<double>; // explicit template instantiation
 
 ///////////////////////////////////////////////////////////////////////////////
-/*
+
 namespace reflect {
 
+template <> //
+void ::ork::reflect::ITyped<fvec3>::serialize(serdes::node_ptr_t sernode) const {
+  auto serializer        = sernode->_serializer;
+  auto instance          = sernode->_ser_instance;
+  auto arynode           = serializer->pushNode(_name, serdes::NodeType::ARRAY);
+  arynode->_parent       = sernode;
+  arynode->_ser_instance = instance;
+  fvec3 value;
+  get(value, instance);
+  serializeArraySubLeaf(arynode, value.x, 0);
+  serializeArraySubLeaf(arynode, value.y, 1);
+  serializeArraySubLeaf(arynode, value.z, 2);
+  serializer->popNode(); // pop arraynode
+}
+
+/*
 template <> void Serialize(const fvec3* in, fvec3* out, reflect::BidirectionalSerializer& bidi) {
   using namespace std::literals;
   if (bidi.Serializing()) {
@@ -92,6 +107,6 @@ template <> void Serialize(const fvec3* in, fvec3* out, reflect::BidirectionalSe
     }
   }
 }
-} // namespace reflect
 */
+} // namespace reflect
 } // namespace ork

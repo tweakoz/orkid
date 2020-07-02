@@ -8,10 +8,9 @@
 #include <ork/pch.h>
 #include <ork/math/cvector2.h>
 #include <ork/math/cvector2.hpp>
-#include <ork/kernel/prop.h>
-#include <ork/kernel/prop.hpp>
-#include <ork/reflect/Serialize.h>
-#include <ork/reflect/BidirectionalSerializer.h>
+#include <ork/reflect/properties/ITyped.hpp>
+#include <ork/reflect/ISerializer.h>
+#include <ork/reflect/IDeserializer.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -73,9 +72,31 @@ template class Vector2<double>; // explicit template instantiation
 template class PropType<fvec2>;
 
 ///////////////////////////////////////////////////////////////////////////////
-/*
 namespace reflect {
-template <> void Serialize(const fvec2* in, fvec2* out, reflect::BidirectionalSerializer& bidi) {
+///////////////////////////////////////////////////////////////////////////////
+template <> //
+void ::ork::reflect::ITyped<fvec2>::serialize(serdes::node_ptr_t sernode) const {
+  auto serializer        = sernode->_serializer;
+  auto instance          = sernode->_ser_instance;
+  auto arynode           = serializer->pushNode(_name, serdes::NodeType::ARRAY);
+  arynode->_parent       = sernode;
+  arynode->_ser_instance = instance;
+  fvec2 value;
+  get(value, instance);
+  serializeArraySubLeaf(arynode, value.x, 0);
+  serializeArraySubLeaf(arynode, value.y, 1);
+  serializer->popNode(); // pop arraynode
+}
+template <> //
+void ::ork::reflect::ITyped<fvec2>::deserialize(serdes::node_ptr_t desernode) const {
+  // auto instance      = desernode->_deser_instance;
+  // const auto& var    = desernode->_value;
+  // const auto& as_fv2 = var.Get<fvec2>();
+  // set(as_fv2, instance);
+  OrkAssert(false);
+}
+///////////////////////////////////////////////////////////////////////////////
+/*template <> void Serialize(const fvec2* in, fvec2* out, reflect::BidirectionalSerializer& bidi) {
 
   using namespace std::literals;
   if (bidi.Serializing()) {
@@ -88,7 +109,7 @@ template <> void Serialize(const fvec2* in, fvec2* out, reflect::BidirectionalSe
       bidi | out->GetArray()[i];
     }
   }
-}
+}*/
+///////////////////////////////////////////////////////////////////////////////
 } // namespace reflect
-*/
 } // namespace ork
