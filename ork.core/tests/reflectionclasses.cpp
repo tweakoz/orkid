@@ -9,6 +9,7 @@
 #include <ork/reflect/properties/AccessorTyped.hpp>
 #include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/reflect/properties/DirectTypedMap.hpp>
+#include <ork/math/cvector2.hpp>
 
 using namespace ork;
 using namespace ork::object;
@@ -18,6 +19,7 @@ using namespace ork::rtti;
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(SimpleTest, "SimpleTest");
 ImplementReflectionX(EnumTest, "EnumTest");
+ImplementReflectionX(MathTest, "MathTest");
 ImplementReflectionX(SharedTest, "SharedTest");
 ImplementReflectionX(MapTest, "MapTest");
 ImplementReflectionX(ArrayTest, "ArrayTest");
@@ -128,5 +130,20 @@ void EnumTest::describeX(ObjectClass* clazz) {
   clazz->memberProperty(
       "enum_direct", //
       &EnumTest::_mcst);
+}
+///////////////////////////////////////////////////////////////////////////////
+MathTest::MathTest() {
+}
+///////////////////////////////////////////////////////////////////////////////
+void MathTest::describeX(ObjectClass* clazz) {
+  clazz->memberProperty(
+      "direct_fvec2", //
+      &MathTest::_fvec2);
+  // clazz->memberProperty(
+  //  "direct_fvec3", //
+  //&MathTest::_fvec3);
+  //  clazz->memberProperty(
+  //    "direct_fvec4", //
+  //  &MathTest::_fvec4);
 }
 ///////////////////////////////////////////////////////////////////////////////

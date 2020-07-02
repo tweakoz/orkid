@@ -271,6 +271,10 @@ using fvec4_ptr_t = std::shared_ptr<fvec4>;
 using dvec4_ptr_t = std::shared_ptr<dvec4>;
 using fcolor4     = fvec4;
 
+// template <>                     //
+// struct use_custom_serdes<fvec4> //
+//  : std::true_type {};
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork
 ///////////////////////////////////////////////////////////////////////////////

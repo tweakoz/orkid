@@ -45,7 +45,9 @@
 #include <ork/kernel/orklut.hpp>
 #include <ork/object/Object.h>
 
-#include <ork/math/cvector4.h>
+#include <ork/math/cvector2.hpp>
+#include <ork/math/cvector3.hpp>
+#include <ork/math/cvector4.hpp>
 
 #include <ork/file/file.h>
 

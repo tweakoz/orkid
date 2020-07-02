@@ -13,7 +13,8 @@
 
 namespace ork { namespace reflect {
 
-template <typename T> class AccessorTyped : public ITyped<T> {
+template <typename T> //
+class AccessorTyped : public ITyped<T> {
 public:
   AccessorTyped(void (Object::*getter)(T&) const, void (Object::*setter)(const T&));
 

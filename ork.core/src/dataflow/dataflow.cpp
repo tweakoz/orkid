@@ -101,7 +101,10 @@ template <> const fvec3& outplug<fvec3>::GetValue() const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void floatinplug::Describe() {
-  ork::reflect::RegisterProperty("value", &floatinplug::GetValAccessor, &floatinplug::SetValAccessor);
+  ork::reflect::RegisterProperty(
+      "value", //
+      &floatinplug::GetValAccessor,
+      &floatinplug::SetValAccessor);
   ork::reflect::annotatePropertyForEditor<floatinplug>("value", "editor.visible", "false");
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -110,7 +113,10 @@ template <> void floatinplugxf<floatxf>::Describe() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void vect3inplug::Describe() {
-  ork::reflect::RegisterProperty("value", &vect3inplug::GetValAccessor, &vect3inplug::SetValAccessor);
+  ork::reflect::RegisterProperty(
+      "value", //
+      &vect3inplug::GetValAccessor,
+      &vect3inplug::SetValAccessor);
   ork::reflect::annotatePropertyForEditor<vect3inplug>("value", "editor.visible", "false");
 }
 ///////////////////////////////////////////////////////////////////////////////

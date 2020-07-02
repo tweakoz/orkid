@@ -14,6 +14,7 @@
 #include <ork/util/crc64.h>
 
 #include <ork/config/config.h>
+
 #include <ork/math/multicurve.h>
 #include <ork/kernel/orkpool.h>
 #include <ork/event/Event.h>

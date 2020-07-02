@@ -78,6 +78,19 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
+struct MathTest final : public Object {
+  DeclareConcreteX(MathTest, Object);
+
+public:
+  MathTest();
+
+  fvec2 _fvec2;
+  fvec3 _fvec3;
+  fvec4 _fvec4;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
 struct SimpleTest final : public Object {
   DeclareConcreteX(SimpleTest, Object);
 

@@ -22,6 +22,14 @@ typedef unsigned char* ADDRESS;
 
 namespace ork {
 
+template <typename T>      //
+struct use_custom_serdes { //
+  static constexpr bool enable = false;
+};
+
+template <typename T> typename std::enable_if<std::is_enum<T>::value, void>::type bar2(T t) {
+}
+
 typedef std::function<void()> void_lambda_t;
 
 template <typename T> T minimum(T a, T b) {

@@ -80,6 +80,7 @@ namespace reflect {
 using namespace serdes;
 template <> //
 void ::ork::reflect::ITyped<fvec3>::serialize(serdes::node_ptr_t sernode) const {
+  OrkAssert(false);
   auto serializer        = sernode->_serializer;
   auto instance          = sernode->_ser_instance;
   auto arynode           = serializer->pushNode(_name, serdes::NodeType::ARRAY);
@@ -94,6 +95,7 @@ void ::ork::reflect::ITyped<fvec3>::serialize(serdes::node_ptr_t sernode) const 
 }
 template <> //
 void ::ork::reflect::ITyped<fvec3>::deserialize(serdes::node_ptr_t arynode) const {
+  OrkAssert(false);
   using namespace serdes;
   auto deserializer  = arynode->_deserializer;
   auto instance      = arynode->_deser_instance;

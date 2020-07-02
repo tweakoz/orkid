@@ -23,6 +23,7 @@ struct TestApplication final : public Application {
 
     SimpleTest::GetClassStatic();
     EnumTest::GetClassStatic();
+    MathTest::GetClassStatic();
     SharedTest::GetClassStatic();
     MapTest::GetClassStatic();
     ArrayTest::GetClassStatic();

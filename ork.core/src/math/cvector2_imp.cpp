@@ -8,9 +8,6 @@
 #include <ork/pch.h>
 #include <ork/math/cvector2.h>
 #include <ork/math/cvector2.hpp>
-#include <ork/reflect/properties/ITyped.hpp>
-#include <ork/reflect/ISerializer.h>
-#include <ork/reflect/IDeserializer.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -72,38 +69,6 @@ template class Vector2<double>; // explicit template instantiation
 template class PropType<fvec2>;
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace reflect {
-///////////////////////////////////////////////////////////////////////////////
-template <> //
-void ::ork::reflect::ITyped<fvec2>::serialize(serdes::node_ptr_t sernode) const {
-  using namespace serdes;
-  auto serializer        = sernode->_serializer;
-  auto instance          = sernode->_ser_instance;
-  auto arynode           = serializer->pushNode(_name, serdes::NodeType::ARRAY);
-  arynode->_parent       = sernode;
-  arynode->_ser_instance = instance;
-  fvec2 value;
-  get(value, instance);
-  serializeArraySubLeaf(arynode, value.x, 0);
-  serializeArraySubLeaf(arynode, value.y, 1);
-  serializer->popNode(); // pop arraynode
-}
-template <> //
-void ::ork::reflect::ITyped<fvec2>::deserialize(serdes::node_ptr_t arynode) const {
-  using namespace serdes;
-  auto deserializer  = arynode->_deserializer;
-  auto instance      = arynode->_deser_instance;
-  size_t numelements = arynode->_numchildren;
-  OrkAssert(numelements == 2);
-
-  fvec2 outval;
-  outval.x = deserializeArraySubLeaf<float>(arynode, 0);
-  outval.y = deserializeArraySubLeaf<float>(arynode, 1);
-  set(outval, instance);
-
-  OrkAssert(false);
-}
-///////////////////////////////////////////////////////////////////////////////
 /*template <> void Serialize(const fvec2* in, fvec2* out, reflect::BidirectionalSerializer& bidi) {
 
   using namespace std::literals;
@@ -119,5 +84,4 @@ void ::ork::reflect::ITyped<fvec2>::deserialize(serdes::node_ptr_t arynode) cons
   }
 }*/
 ///////////////////////////////////////////////////////////////////////////////
-} // namespace reflect
 } // namespace ork

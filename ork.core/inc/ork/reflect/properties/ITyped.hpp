@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 #pragma once
 ///////////////////////////////////////////////////////////////////////////////
+#include <ork/orktypes.h>
 #include "ITyped.h"
 #include <ork/reflect/ISerializer.h>
 #include <ork/reflect/BidirectionalSerializer.h>
@@ -26,7 +27,8 @@ void ITyped<T>::deserialize(serdes::node_ptr_t desernode) const {
   /////////////////////////////////////////////
   // only use this implementation for non-enums
   /////////////////////////////////////////////
-  using eif = typename std::enable_if<not std::is_enum<T>::value>::type;
+  using eif = typename std::enable_if<not std::is_enum<T>::value, void>::type;
+  using csd = typename std::enable_if<not use_custom_serdes<T>::enable, void>::type;
   /////////////////////////////////////////////
 
   auto instance   = desernode->_deser_instance;
@@ -76,6 +78,7 @@ void ITyped<T>::serialize(serdes::node_ptr_t leafnode) const {
   // only use this implementation for non-enums
   /////////////////////////////////////////////
   using eif = typename std::enable_if<not std::is_enum<T>::value>::type;
+  using csd = typename std::enable_if<not use_custom_serdes<T>::enable, void>::type;
   /////////////////////////////////////////////
   auto serializer = leafnode->_serializer;
   auto instance   = leafnode->_ser_instance;

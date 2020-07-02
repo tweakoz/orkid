@@ -21,6 +21,7 @@ namespace ork {
 template <typename T> class Vector3;
 
 template <typename T> class Vector2 {
+
   static T Sin(T);
   static T Cos(T);
   static T Sqrt(T);
@@ -163,6 +164,11 @@ using fvec2       = Vector2<float>;
 using dvec2       = Vector2<double>;
 using fvec2_ptr_t = std::shared_ptr<fvec2>;
 using dvec2_ptr_t = std::shared_ptr<dvec2>;
+
+template <>                       //
+struct use_custom_serdes<fvec2> { //
+  static constexpr bool enable = true;
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork
