@@ -10,35 +10,9 @@
 
 namespace ork::reflect::serdes {
 
-const char* DoSerializeEnum(int value, EnumNameMap* enum_map, BidirectionalSerializer& bidi) {
-  ISerializer* pser = bidi.Serializer();
-
-  // pser->Hint( "EnumMap", reinterpret_cast<intptr_t>(enum_map) );
-
-  for (int i = 0; enum_map[i].name; i++) {
-    if (value == enum_map[i].value) {
-      return enum_map[i].name;
-    }
-  }
-
-  bidi.Fail();
-
-  return "<<BAD_ENUM>>";
-}
-
-int DoDeserializeEnum(const ConstString& name, EnumNameMap* enum_map, BidirectionalSerializer& bidi) {
-  // IDeserializer *pser = bidi.Deserializer();
-  // pser->Hint( "EnumMap", reinterpret_cast<int>(enum_map) );
-
-  for (int i = 0; enum_map[i].name; i++) {
-    if (name == enum_map[i].name) {
-      return enum_map[i].value;
-    }
-  }
-
-  bidi.Fail();
-
-  return -1;
+enumregistrar_ptr_t EnumRegistrar::instance() {
+  static enumregistrar_ptr_t _inst = std::make_shared<EnumRegistrar>();
+  return _inst;
 }
 
 } // namespace ork::reflect::serdes

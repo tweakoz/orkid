@@ -10,78 +10,67 @@
 #include <ork/kernel/string/ConstString.h>
 #include <ork/reflect/BidirectionalSerializer.h>
 
-/// @file
-///
-/// BEGIN_ENUM_SERIALIZER(NAMESPACE, ENUMTYPE)
-///     DECLARE_ENUM( ENUM )
-///     ...
-/// END_ENUM_SERIALIZER()
-///
-///
-/// Example usage:
-///
-/// <pre>
-/// BEGIN_ENUM_SERIALIZER(ork::fsm, ComparatorOperator)
-///     DECLARE_ENUM(UNDEFINED)
-///     DECLARE_ENUM(LESS_THAN)
-///     DECLARE_ENUM(LESS_THAN_OR_EQUAL)
-///     DECLARE_ENUM(GREATER_THAN)
-///     DECLARE_ENUM(GREATER_THAN_OR_EQUAL)
-///     DECLARE_ENUM(EQUAL)
-///     DECLARE_ENUM(NOT_EQUAL)
-/// END_ENUM_SERIALIZER()
-/// </pre>
-///
-/// or for in-class enums:
-/// BEGIN_ENUM_SERIALIZER(ork, CountdownTimer::TimerUnits)
-///     DECLARE_CLASS_ENUM(CountdownTimer, SECONDS)
-///     DECLARE_CLASS_ENUM(CountdownTimer, VBLANKS)
-/// END_ENUM_SERIALIZER()
-///
-
 namespace ork::reflect::serdes {
 
-struct EnumNameMap {
-  int value;
-  const char* name;
+struct EnumRegistrar;
+using enumregistrar_ptr_t = std::shared_ptr<EnumRegistrar>;
+
+//////////////////////////////////////////////////////////////
+struct EnumValue {
+  int _value = 0;
+  std::string _name;
+};
+using enumvalue_ptr_t = std::shared_ptr<EnumValue>;
+
+//////////////////////////////////////////////////////////////
+struct EnumType {
+  const std::type_info* _mtinfo = nullptr;
+
+  template <typename enum_t>                                 //
+  inline void addEnum(std::string name, enum_t enum_value) { //
+    _int2strmap[int(enum_value)] = name;
+    _str2intmap[name]            = int(enum_value);
+  }
+  inline std::string findNameFromValue(int ivalue) { //
+    auto it = _int2strmap.find(ivalue);
+    return it->second;
+  }
+
+  std::string _name;
+  std::map<int, std::string> _int2strmap;
+  std::map<std::string, int> _str2intmap;
+};
+using enumtype_ptr_t = std::shared_ptr<EnumType>;
+//////////////////////////////////////////////////////////////
+
+struct EnumRegistrar {
+  static enumregistrar_ptr_t instance();
+  using typekey_t = const std::type_info*;
+
+  template <typename enumclass> //
+  inline                        //
+      enumtype_ptr_t
+      addEnumClass(std::string named) { //
+
+    typekey_t tkey = &typeid(enumclass);
+
+    auto type       = std::make_shared<EnumType>();
+    type->_name     = named;
+    _namemap[named] = type;
+    _typemap[tkey]  = type;
+    return type;
+  }
+  template <typename enumclass> //
+  inline                        //
+      enumtype_ptr_t
+      findEnumClass() { //
+    typekey_t tkey = &typeid(enumclass);
+    auto it        = _typemap.find(tkey);
+    return (it != _typemap.end()) ? it->second : nullptr;
+  }
+
+  std::map<typekey_t, enumtype_ptr_t> _typemap;
+  std::map<std::string, enumtype_ptr_t> _namemap;
 };
 
-const char* DoSerializeEnum(int value, EnumNameMap* enum_map, serdes::BidirectionalSerializer& bidi);
-int DoDeserializeEnum(const ConstString& name, EnumNameMap* enum_map, serdes::BidirectionalSerializer& bidi);
-
-template <typename EnumType>
-inline void SerializeEnum(const EnumType* in, EnumType* out, serdes::BidirectionalSerializer& bidi, EnumNameMap* enum_map) {
-  if (bidi.Serializing()) {
-    int value        = int(*in);
-    ConstString name = DoSerializeEnum(value, enum_map, bidi);
-    bidi | name;
-  } else {
-    ConstString name;
-    bidi | name;
-    int value = DoDeserializeEnum(name, enum_map, bidi);
-    *out      = EnumType(value);
-  }
-}
-
 } // namespace ork::reflect::serdes
-
-#define BEGIN_ENUM_SERIALIZER(Namespace, Type)                                                                                     \
-  namespace ork::reflect::serdes {                                                                                                 \
-  template <> void Serialize(const Namespace::Type* in, Namespace::Type* out, BidirectionalSerializer& bidi) {                     \
-    using namespace Namespace;                                                                                                     \
-    static EnumNameMap sEnumMap[] = {
-
-#define DECLARE_ENUM(ENUM) {int(ENUM), #ENUM},
-
-#define DECLARE_ENUM_VALUE(ENUM, VALUE) {int(ENUM), VALUE},
-
-#define DECLARE_CLASS_ENUM(ClassType, ENUM) {int(ClassType::ENUM), #ENUM},
-
-#define END_ENUM_SERIALIZER()                                                                                                      \
-  { 0, NULL }                                                                                                                      \
-  }                                                                                                                                \
-  ;                                                                                                                                \
-                                                                                                                                   \
-  SerializeEnum(in, out, bidi, sEnumMap);                                                                                          \
-  }                                                                                                                                \
-  }

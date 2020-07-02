@@ -4,13 +4,12 @@
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
-
 #pragma once
-
+///////////////////////////////////////////////////////////////////////////////
 #include "ITyped.h"
 #include <ork/reflect/ISerializer.h>
 #include <ork/reflect/BidirectionalSerializer.h>
-
+///////////////////////////////////////////////////////////////////////////////
 #include <ork/stream/StringInputStream.h>
 #include <ork/stream/StringOutputStream.h>
 #include <ork/reflect/serialize/ShallowDeserializer.h>
@@ -18,35 +17,39 @@
 #include <ork/reflect/serialize/JsonDeserializer.h>
 #include <ork/reflect/serialize/JsonSerializer.h>
 #include "codec.inl"
-
-namespace ork { namespace reflect {
-
-template <typename T> void ITyped<T>::deserialize(serdes::node_ptr_t desernode) const {
+///////////////////////////////////////////////////////////////////////////////
+namespace ork::reflect {
+///////////////////////////////////////////////////////////////////////////////
+template <typename T> //
+void ITyped<T>::deserialize(serdes::node_ptr_t desernode) const {
   auto instance   = desernode->_deser_instance;
   const auto& var = desernode->_value;
   T value;
   serdes::decode_value<T>(var, value);
   set(value, instance);
 }
-
+///////////////////////////////////////////////////////////////////////////////
 template <> //
 inline void ITyped<int>::deserialize(serdes::node_ptr_t desernode) const {
   auto instance   = desernode->_deser_instance;
   const auto& var = desernode->_value;
   set(int(var.Get<double>()), instance);
 }
+///////////////////////////////////////////////////////////////////////////////
 template <> //
 inline void ITyped<uint32_t>::deserialize(serdes::node_ptr_t desernode) const {
   auto instance   = desernode->_deser_instance;
   const auto& var = desernode->_value;
   set(uint32_t(var.Get<double>()), instance);
 }
+///////////////////////////////////////////////////////////////////////////////
 template <> //
 inline void ITyped<size_t>::deserialize(serdes::node_ptr_t desernode) const {
   auto instance   = desernode->_deser_instance;
   const auto& var = desernode->_value;
   set(size_t(var.Get<double>()), instance);
 }
+///////////////////////////////////////////////////////////////////////////////
 template <> //
 inline void ITyped<object_ptr_t>::deserialize(serdes::node_ptr_t desernode) const {
   auto instance     = desernode->_deser_instance;
@@ -59,8 +62,9 @@ inline void ITyped<object_ptr_t>::deserialize(serdes::node_ptr_t desernode) cons
     set(object_ptr_t(nullptr), instance);
   }
 }
-
-template <typename T> void ITyped<T>::serialize(serdes::node_ptr_t leafnode) const {
+///////////////////////////////////////////////////////////////////////////////
+template <typename T> //
+void ITyped<T>::serialize(serdes::node_ptr_t leafnode) const {
   auto serializer = leafnode->_serializer;
   auto instance   = leafnode->_ser_instance;
   T value;
@@ -68,7 +72,7 @@ template <typename T> void ITyped<T>::serialize(serdes::node_ptr_t leafnode) con
   leafnode->_value.template Set<T>(value);
   serializer->serializeLeaf(leafnode);
 }
-
+///////////////////////////////////////////////////////////////////////////////
 template <> //
 inline void ITyped<object_ptr_t>::serialize(serdes::node_ptr_t propnode) const {
   auto serializer  = propnode->_serializer;
@@ -87,5 +91,5 @@ inline void ITyped<object_ptr_t>::serialize(serdes::node_ptr_t propnode) const {
     serializer->serializeLeaf(propnode);
   }
 }
-
-}} // namespace ork::reflect
+///////////////////////////////////////////////////////////////////////////////
+} // namespace ork::reflect

@@ -9,6 +9,7 @@
 #include <ork/reflect/properties/AccessorTyped.hpp>
 #include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/reflect/properties/DirectTypedMap.hpp>
+#include <ork/reflect/enum_serializer.inl>
 
 using namespace ork;
 using namespace ork::object;
@@ -17,6 +18,7 @@ using namespace ork::rtti;
 
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(SimpleTest, "SimpleTest");
+ImplementReflectionX(EnumTest, "EnumTest");
 ImplementReflectionX(SharedTest, "SharedTest");
 ImplementReflectionX(MapTest, "MapTest");
 ImplementReflectionX(ArrayTest, "ArrayTest");
@@ -118,5 +120,34 @@ void ArrayTest::describeX(ObjectClass* clazz) {
   clazz->directVectorProperty(
       "directobj_vect", //
       &ArrayTest::_directobjvect);
+}
+///////////////////////////////////////////////////////////////////////////////
+template <> //
+inline void ITyped<MultiCurveSegmentType>::serialize(serdes::node_ptr_t leafnode) const {
+  auto serializer = leafnode->_serializer;
+  auto instance   = leafnode->_ser_instance;
+  MultiCurveSegmentType value;
+  get(value, instance);
+  auto registrar = reflect::serdes::EnumRegistrar::instance();
+  auto enumtype  = registrar->findEnumClass<MultiCurveSegmentType>();
+  auto enumname  = enumtype->findNameFromValue(int(value));
+  leafnode->_value.template Set<std::string>(enumname);
+  serializer->serializeLeaf(leafnode);
+}
+template <> //
+inline void ITyped<MultiCurveSegmentType>::deserialize(serdes::node_ptr_t desernode) const {
+  auto instance   = desernode->_deser_instance;
+  const auto& var = desernode->_value;
+  set(MultiCurveSegmentType(var.Get<double>()), instance);
+}
+///////////////////////////////////////////////////////////////////////////////
+EnumTest::EnumTest() {
+}
+///////////////////////////////////////////////////////////////////////////////
+void EnumTest::describeX(ObjectClass* clazz) {
+  ///////////////////////////////////
+  clazz->memberProperty(
+      "enum_direct", //
+      &EnumTest::_mcst);
 }
 ///////////////////////////////////////////////////////////////////////////////

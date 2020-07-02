@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _MATH_MULTICURVE_H
-#define _MATH_MULTICURVE_H
+#pragma once
 
 #include <ork/math/spline.h>
 
@@ -16,13 +15,13 @@ namespace ork {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enum EMCSEGTYPE {
-  EMCST_LINEAR = 0,
-  EMCST_BOX,
-  EMCST_LOG,
-  EMCST_EXP,
+enum class MultiCurveSegmentType {
+  LINEAR = 0,
+  BOX,
+  LOG,
+  EXP,
 };
-
+void RegisterEnumMultiCurveSegmentType();
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> class ObjProxy : public ork::Object {
@@ -40,7 +39,7 @@ struct MultiCurve1D : public ork::Object {
   RttiDeclareConcrete(MultiCurve1D, ork::Object);
 
 public:
-  orkvector<EMCSEGTYPE> mSegmentTypes;
+  orkvector<MultiCurveSegmentType> mSegmentTypes;
   orklut<float, float> mVertices;
   ObjProxy<MultiCurve1D> mProxy;
 
@@ -55,7 +54,7 @@ public:
   const std::pair<float, float>& GetVertex(int iv) const {
     return *(mVertices.begin() + iv);
   }
-  EMCSEGTYPE GetSegmentType(int is) const {
+  MultiCurveSegmentType GetSegmentType(int is) const {
     return mSegmentTypes[is];
   }
   size_t GetNumVertices() const {
@@ -69,7 +68,7 @@ public:
 
   void SplitSegment(int iseg);
   void MergeSegment(int ifirstseg);
-  void SetSegmentType(int iseg, EMCSEGTYPE etype);
+  void SetSegmentType(int iseg, MultiCurveSegmentType etype);
   void SetPoint(int ipoint, float fu, float fv);
 
   void SetMin(float fmin) {
@@ -104,5 +103,3 @@ private:
 }; // namespace ork
 
 //////////////////////////////////////////////////////////////////////////////
-
-#endif

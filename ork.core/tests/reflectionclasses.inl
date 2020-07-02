@@ -2,6 +2,7 @@
 
 #include <ork/reflect/properties/registerX.inl>
 #include <ork/object/ObjectClass.h>
+#include <ork/math/multicurve.h>
 #include <ork/rtti/RTTIX.inl>
 #include <ork/kernel/orklut.h>
 
@@ -62,6 +63,17 @@ public:
   std::vector<int> _directintvect;
   std::vector<std::string> _directstrvect;
   std::vector<object_ptr_t> _directobjvect;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct EnumTest final : public Object {
+  DeclareConcreteX(EnumTest, Object);
+
+public:
+  EnumTest();
+
+  MultiCurveSegmentType _mcst = MultiCurveSegmentType::LINEAR;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

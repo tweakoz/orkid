@@ -150,13 +150,13 @@ public:
           QString UserName  = UserData.toString();
           std::string sval  = UserName.toStdString();
           if (sval == "lin")
-            mCurveObject->SetSegmentType(miSeg, EMCST_LINEAR);
+            mCurveObject->SetSegmentType(miSeg, MultiCurveSegmentType::LINEAR);
           if (sval == "box")
-            mCurveObject->SetSegmentType(miSeg, EMCST_BOX);
+            mCurveObject->SetSegmentType(miSeg, MultiCurveSegmentType::BOX);
           if (sval == "log")
-            mCurveObject->SetSegmentType(miSeg, EMCST_LOG);
+            mCurveObject->SetSegmentType(miSeg, MultiCurveSegmentType::LOG);
           if (sval == "exp")
-            mCurveObject->SetSegmentType(miSeg, EMCST_EXP);
+            mCurveObject->SetSegmentType(miSeg, MultiCurveSegmentType::EXP);
           _parent->SigInvalidateProperty();
         }
       }
@@ -298,16 +298,16 @@ class GedCurveV4Widget : public GedItemNode {
       int inuml                    = 0;
       for (int i = 0; i < ksegs; i++) {
         switch (pthis->mCurveObject->GetSegmentType(i)) {
-          case EMCST_LINEAR:
+          case MultiCurveSegmentType::LINEAR:
             inuml += 2;
             break;
-          case EMCST_BOX:
+          case MultiCurveSegmentType::BOX:
             inuml += 4;
             break;
-          case EMCST_LOG:
+          case MultiCurveSegmentType::LOG:
             inuml += kexplogsegs * 2;
             break;
-          case EMCST_EXP:
+          case MultiCurveSegmentType::EXP:
             inuml += kexplogsegs * 2;
             break;
         }
@@ -364,8 +364,8 @@ class GedCurveV4Widget : public GedItemNode {
         float fy1 = fy + fh - (fiyb * fh);
 
         switch (pthis->mCurveObject->GetSegmentType(i)) {
-          case EMCST_LOG:
-          case EMCST_EXP: {
+          case MultiCurveSegmentType::LOG:
+          case MultiCurveSegmentType::EXP: {
             for (int j = 0; j < kexplogsegs; j++) {
               int k      = j + 1;
               float fj   = float(j) / float(kexplogsegs);
@@ -390,7 +390,7 @@ class GedCurveV4Widget : public GedItemNode {
             }
             break;
           }
-          case EMCST_LINEAR: {
+          case MultiCurveSegmentType::LINEAR: {
             lev2::SVtxV12C4T16 v0(fvec3(fx0, fy0, kz), uv, 0xffffffff);
             lev2::SVtxV12C4T16 v1(fvec3(fx1, fy1, kz), uv, 0xffffffff);
             vw.AddVertex(v0);
@@ -398,7 +398,7 @@ class GedCurveV4Widget : public GedItemNode {
             icountA += 2;
             break;
           }
-          case EMCST_BOX: {
+          case MultiCurveSegmentType::BOX: {
             lev2::SVtxV12C4T16 v0(fvec3(fx0, fy0, kz), uv, 0xffffffff);
             lev2::SVtxV12C4T16 v1(fvec3(fx1, fy0, kz), uv, 0xffffffff);
             lev2::SVtxV12C4T16 v2(fvec3(fx1, fy1, kz), uv, 0xffffffff);

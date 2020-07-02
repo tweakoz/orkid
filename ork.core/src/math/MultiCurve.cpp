@@ -16,42 +16,46 @@
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::MultiCurve1D, "MultiCurve1D");
 
-BEGIN_ENUM_SERIALIZER(ork, EMCSEGTYPE)
-DECLARE_ENUM(EMCST_LINEAR)
-DECLARE_ENUM(EMCST_BOX)
-DECLARE_ENUM(EMCST_LOG)
-DECLARE_ENUM(EMCST_EXP)
-END_ENUM_SERIALIZER()
-
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
-void MultiCurve1D::Describe() { /*
-                                   ork::reflect::RegisterArrayProperty("Segs", &ork::MultiCurve1D::mSegmentTypes);
-                                   ork::reflect::RegisterMapProperty("Verts", &ork::MultiCurve1D::mVertices);
+void initenum_MultiCurveSegmentType() {
+  auto registrar = reflect::serdes::EnumRegistrar::instance();
+  auto enumtype  = registrar->addEnumClass<MultiCurveSegmentType>("ork::MultiCurveSegmentType");
+  enumtype->addEnum("LINEAR", MultiCurveSegmentType::LINEAR);
+  enumtype->addEnum("BOX", MultiCurveSegmentType::BOX);
+  enumtype->addEnum("LOG", MultiCurveSegmentType::LOG);
+  enumtype->addEnum("EXP", MultiCurveSegmentType::EXP);
+}
 
-                                   ork::reflect::RegisterProperty("Curve", &ork::MultiCurve1D::ProxyAccessor);
+void MultiCurve1D::Describe() {
+  initenum_MultiCurveSegmentType();
+  /*
+                                  ork::reflect::RegisterArrayProperty("Segs", &ork::MultiCurve1D::mSegmentTypes);
+                                  ork::reflect::RegisterMapProperty("Verts", &ork::MultiCurve1D::mVertices);
 
-                                   ork::reflect::annotatePropertyForEditor< MultiCurve1D >("Segs", "editor.visible", "false" );
-                                   ork::reflect::annotatePropertyForEditor< MultiCurve1D >("Verts", "editor.visible", "false" );
+                                  ork::reflect::RegisterProperty("Curve", &ork::MultiCurve1D::ProxyAccessor);
 
-                                   ork::reflect::RegisterProperty("min", &ork::MultiCurve1D::mMin);
-                                   ork::reflect::RegisterProperty("max", &ork::MultiCurve1D::mMax);
+                                  ork::reflect::annotatePropertyForEditor< MultiCurve1D >("Segs", "editor.visible", "false" );
+                                  ork::reflect::annotatePropertyForEditor< MultiCurve1D >("Verts", "editor.visible", "false" );
 
-                                   ork::reflect::annotatePropertyForEditor< MultiCurve1D >("Curve", "editor.class",
-                                   "ged.factory.curve1d" );
+                                  ork::reflect::RegisterProperty("min", &ork::MultiCurve1D::mMin);
+                                  ork::reflect::RegisterProperty("max", &ork::MultiCurve1D::mMax);
 
-                                   ork::reflect::annotatePropertyForEditor< MultiCurve1D >( "min", "editor.range.min", "-2000.0f" );
-                                   ork::reflect::annotatePropertyForEditor< MultiCurve1D >( "min", "editor.range.max", "2000.0f" );
+                                  ork::reflect::annotatePropertyForEditor< MultiCurve1D >("Curve", "editor.class",
+                                  "ged.factory.curve1d" );
 
-                                   ork::reflect::annotatePropertyForEditor< MultiCurve1D >( "max", "editor.range.min", "-2000.0f" );
-                                   ork::reflect::annotatePropertyForEditor< MultiCurve1D >( "max", "editor.range.max", "2000.0f" );
+                                  ork::reflect::annotatePropertyForEditor< MultiCurve1D >( "min", "editor.range.min", "-2000.0f" );
+                                  ork::reflect::annotatePropertyForEditor< MultiCurve1D >( "min", "editor.range.max", "2000.0f" );
 
-                                   static const char* EdGrpStr = "sort://min max Curve";
+                                  ork::reflect::annotatePropertyForEditor< MultiCurve1D >( "max", "editor.range.min", "-2000.0f" );
+                                  ork::reflect::annotatePropertyForEditor< MultiCurve1D >( "max", "editor.range.max", "2000.0f" );
 
-                                   reflect::annotateClassForEditor<MultiCurve1D>( "editor.prop.groups", EdGrpStr );
-                               */
+                                  static const char* EdGrpStr = "sort://min max Curve";
+
+                                  reflect::annotateClassForEditor<MultiCurve1D>( "editor.prop.groups", EdGrpStr );
+                              */
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -75,7 +79,7 @@ void MultiCurve1D::Init(int inumsegs) {
   mVertices.clear();
 
   for (int i = 0; i < inumsegs; i++) {
-    mSegmentTypes.push_back(EMCST_LINEAR);
+    mSegmentTypes.push_back(MultiCurveSegmentType::LINEAR);
     float fu = float(i) / float(inumsegs);
     mVertices.AddSorted(fu, 0.0f);
   }
@@ -151,24 +155,24 @@ float MultiCurve1D::Sample(float fu) const {
   float fsu = (fu - Base) / dU;
 
   switch (mSegmentTypes[isega]) {
-    case EMCST_LINEAR: {
+    case MultiCurveSegmentType::LINEAR: {
       float fisu = 1.0f - fsu;
       rval       = (VA.second * fisu) + (VB.second * fsu);
       break;
     }
-    case EMCST_LOG: {
+    case MultiCurveSegmentType::LOG: {
       float fsup = fsu + (fsu - (fsu * fsu));
       float fisu = 1.0f - fsup;
       rval       = (VA.second * fisu) + (VB.second * fsup);
       break;
     }
-    case EMCST_EXP: {
+    case MultiCurveSegmentType::EXP: {
       float fsup = (fsu * fsu);
       float fisu = 1.0f - fsup;
       rval       = (VA.second * fisu) + (VB.second * fsup);
       break;
     }
-    case EMCST_BOX: {
+    case MultiCurveSegmentType::BOX: {
       rval = VA.second;
       break;
     }
@@ -195,7 +199,7 @@ void MultiCurve1D::SplitSegment(int iseg) {
 
   mVertices.AddSorted((VA.first + VB.first) * 0.5f, (VA.second + VB.second) * 0.5f);
 
-  mSegmentTypes.insert(mSegmentTypes.begin() + ivb, EMCST_LINEAR);
+  mSegmentTypes.insert(mSegmentTypes.begin() + ivb, MultiCurveSegmentType::LINEAR);
 
   OrkAssert(IsOk() == true);
 }
@@ -211,7 +215,7 @@ void MultiCurve1D::MergeSegment(int ifirstseg) {
   orklut<float, float>::iterator it = mVertices.begin() + ifirstseg;
   mVertices.RemoveItem(it);
 
-  orkvector<EMCSEGTYPE>::iterator it2 = mSegmentTypes.begin() + ifirstseg;
+  orkvector<MultiCurveSegmentType>::iterator it2 = mSegmentTypes.begin() + ifirstseg;
   mSegmentTypes.erase(it2);
 
   OrkAssert(IsOk() == true);
@@ -219,7 +223,7 @@ void MultiCurve1D::MergeSegment(int ifirstseg) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void MultiCurve1D::SetSegmentType(int iseg, EMCSEGTYPE etype) {
+void MultiCurve1D::SetSegmentType(int iseg, MultiCurveSegmentType etype) {
   int inumseg = GetNumSegments();
   OrkAssert(iseg < inumseg);
   OrkAssert(iseg >= 0);
