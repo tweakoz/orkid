@@ -3,6 +3,7 @@
 #include <limits>
 #include <string.h>
 
+#include <ork/application/application.h>
 #include "reflectionclasses.inl"
 #include <ork/reflect/properties/DirectObject.h>
 #include <ork/reflect/properties/ITyped.hpp>
@@ -52,16 +53,21 @@ inline void ::ork::reflect::ITyped<asset::asset_ptr_t>::serialize(serdes::node_p
   }
 }
 template <> //
-inline void ::ork::reflect::ITyped<asset::asset_ptr_t>::deserialize(serdes::node_ptr_t objnode) const {
+inline void ::ork::reflect::ITyped<asset::asset_ptr_t>::deserialize(serdes::node_ptr_t mapnode) const {
   using namespace serdes;
-  auto deserializer = objnode->_deserializer;
-  auto instance     = objnode->_deser_instance;
+  auto deserializer = mapnode->_deserializer;
+  auto instance     = mapnode->_deser_instance;
 
-  asset::asset_ptr_t outval = nullptr;
-  // outval.x = deserializeArraySubLeaf<float>(arynode, 0);
-  // outval.y = deserializeArraySubLeaf<float>(arynode, 1);
-  // outval.z = deserializeArraySubLeaf<float>(arynode, 2);
-  set(outval, instance);
+  std::string key1_out, key2_out;
+  std::string val1 = deserializeMapSubLeaf<std::string>(mapnode, key1_out);
+  std::string val2 = deserializeMapSubLeaf<std::string>(mapnode, key2_out);
+  OrkAssert(key1_out == "type");
+  OrkAssert(key2_out == "path");
+
+  auto asset = std::make_shared<asset::Asset>();
+  OrkAssert(asset->GetType() == AddPooledString(val1.c_str()));
+  asset->_path = val2;
+  set(asset, instance);
 }
 } // namespace ork::reflect
 ///////////////////////////////////////////////////////////////////////////////

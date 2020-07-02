@@ -60,4 +60,19 @@ T deserializeArraySubLeaf(
   return value;
 }
 
+template <typename T>
+T deserializeMapSubLeaf(
+    serdes::node_ptr_t mapnode, //
+    std::string& key_out) {
+  auto deserializer = mapnode->_deserializer;
+  auto elemnode     = deserializer->pushNode("", serdes::NodeType::MAP_ELEMENT_LEAF);
+  elemnode->_parent = mapnode;
+  auto childnode    = deserializer->deserializeElement(elemnode);
+  deserializer->popNode();
+  T value;
+  serdes::decode_value<T>(childnode->_value, value);
+  key_out = childnode->_key;
+  return value;
+}
+
 } // namespace ork::reflect::serdes

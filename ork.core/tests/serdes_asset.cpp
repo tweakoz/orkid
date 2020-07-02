@@ -15,7 +15,6 @@ std::string asset_generate() {
   auto assettest = std::make_shared<AssetTest>();
 
   assettest->_assetptr        = std::make_shared<asset::Asset>();
-  assettest->_assetptr->_name = "yo"_pool;
   assettest->_assetptr->_path = "lev2://yo";
 
   serdes::JsonSerializer ser;
@@ -30,4 +29,6 @@ TEST(SerdesAssetProperties) {
   serdes::JsonDeserializer deser(objstr.c_str());
   deser.deserializeTop(instance_out);
   auto clone = std::dynamic_pointer_cast<AssetTest>(instance_out);
+  auto asset = clone->_assetptr;
+  CHECK(asset->_path == "lev2://yo");
 }
