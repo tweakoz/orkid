@@ -91,7 +91,7 @@ struct EnumRegistrar {
     auto instance   = leafnode->_ser_instance;                                                                                     \
     ENUMTYPE value;                                                                                                                \
     get(value, instance);                                                                                                          \
-    auto registrar = reflect::serdes::EnumRegistrar::instance();                                                                   \
+    auto registrar = ::ork::reflect::serdes::EnumRegistrar::instance();                                                            \
     auto enumtype  = registrar->findEnumClass<ENUMTYPE>();                                                                         \
     auto enumname  = enumtype->findNameFromValue(int(value));                                                                      \
     leafnode->_value.template Set<std::string>(enumname);                                                                          \
@@ -101,9 +101,26 @@ struct EnumRegistrar {
     auto instance      = desernode->_deser_instance;                                                                               \
     const auto& var    = desernode->_value;                                                                                        \
     const auto& as_str = var.Get<std::string>();                                                                                   \
-    auto registrar     = reflect::serdes::EnumRegistrar::instance();                                                               \
+    auto registrar     = ::ork::reflect::serdes::EnumRegistrar::instance();                                                        \
     auto enumtype      = registrar->findEnumClass<ENUMTYPE>();                                                                     \
     int intval         = enumtype->findValueFromName(as_str);                                                                      \
-    auto enumval       = MultiCurveSegmentType(intval);                                                                            \
+    auto enumval       = ENUMTYPE(intval);                                                                                         \
     set(enumval, instance);                                                                                                        \
   }
+
+///////////////////////////////////////////////////////////////////////////////
+// clang-format off
+///////////////////////////////////////////////////////////////////////////////
+#define BeginEnumRegistration(X)                                                                                               \
+void initenum_##X () {                                                                                                            \
+   auto registrar = ::ork::reflect::serdes::EnumRegistrar::instance();                                                            \
+   auto enumtype  = registrar->addEnumClass<X>(#X);
+
+#define RegisterEnum(ET, X) enumtype->addEnum(#X, ET::X);
+
+#define EndEnumRegistration() }
+
+#define InvokeEnumRegistration(X) initenum_##X ();
+///////////////////////////////////////////////////////////////////////////////
+// clang-format on
+///////////////////////////////////////////////////////////////////////////////

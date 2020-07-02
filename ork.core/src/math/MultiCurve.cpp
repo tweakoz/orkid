@@ -15,24 +15,21 @@
 #include <math.h>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::MultiCurve1D, "MultiCurve1D");
+ImplementEnumSerializer(ork::MultiCurveSegmentType);
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
-ImplementEnumSerializer(MultiCurveSegmentType);
-
-void initenum_MultiCurveSegmentType() {
-  auto registrar = reflect::serdes::EnumRegistrar::instance();
-  auto enumtype  = registrar->addEnumClass<MultiCurveSegmentType>("ork::MultiCurveSegmentType");
-  enumtype->addEnum("LINEAR", MultiCurveSegmentType::LINEAR);
-  enumtype->addEnum("BOX", MultiCurveSegmentType::BOX);
-  enumtype->addEnum("LOG", MultiCurveSegmentType::LOG);
-  enumtype->addEnum("EXP", MultiCurveSegmentType::EXP);
-}
+BeginEnumRegistration(MultiCurveSegmentType);
+RegisterEnum(MultiCurveSegmentType, LINEAR);
+RegisterEnum(MultiCurveSegmentType, BOX);
+RegisterEnum(MultiCurveSegmentType, LOG);
+RegisterEnum(MultiCurveSegmentType, EXP);
+EndEnumRegistration();
 
 void MultiCurve1D::Describe() {
-  initenum_MultiCurveSegmentType();
+  InvokeEnumRegistration(MultiCurveSegmentType);
   /*
                                   ork::reflect::RegisterArrayProperty("Segs", &ork::MultiCurve1D::mSegmentTypes);
                                   ork::reflect::RegisterMapProperty("Verts", &ork::MultiCurve1D::mVertices);
