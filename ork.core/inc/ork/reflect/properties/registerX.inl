@@ -10,7 +10,6 @@
 #include "DirectObjectMap.inl"
 #include "DirectTypedArray.hpp"
 #include "DirectTypedVector.hpp"
-#include "../enum_serializer.inl"
 
 namespace ork::object {
 ///////////////////////////////////////////////////////////////////////////
