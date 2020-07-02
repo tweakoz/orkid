@@ -267,9 +267,10 @@ using fvec3_ptr_t = std::shared_ptr<fvec3>;
 using dvec3_ptr_t = std::shared_ptr<dvec3>;
 using fcolor3     = fvec3;
 
-// template <>                     //
-// struct use_custom_serdes<fvec3> //
-//  : std::true_type {};
+template <>                       //
+struct use_custom_serdes<fvec3> { //
+  static constexpr bool enable = true;
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork

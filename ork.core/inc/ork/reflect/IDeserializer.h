@@ -11,9 +11,11 @@
 #include "properties/codec.inl"
 #include <stack>
 
+namespace ork::reflect {
+class ObjectProperty;
+}
 namespace ork::reflect::serdes {
 
-class ObjectProperty;
 class Command;
 
 struct IDeserializer {

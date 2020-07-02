@@ -168,6 +168,11 @@ public:
 using fmtx3       = Matrix33<float>;
 using fmtx3_ptr_t = std::shared_ptr<fmtx3>;
 
+template <>                       //
+struct use_custom_serdes<fmtx3> { //
+  static constexpr bool enable = true;
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
 } // namespace ork

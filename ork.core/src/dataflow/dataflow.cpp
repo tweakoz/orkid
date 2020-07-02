@@ -14,6 +14,14 @@
 #include <ork/reflect/properties/AccessorTyped.hpp>
 #include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/reflect/properties/registerX.inl>
+
+#include <ork/math/cvector2.hpp>
+#include <ork/math/cvector3.hpp>
+#include <ork/math/cvector4.hpp>
+#include <ork/math/quaternion.hpp>
+#include <ork/math/cmatrix3.hpp>
+#include <ork/math/cmatrix4.hpp>
+
 ///////////////////////////////////////////////////////////////////////////////
 template class ork::orklut<ork::PoolString, ork::dataflow::module*>;
 

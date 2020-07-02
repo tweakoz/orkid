@@ -8,6 +8,9 @@
 #if defined(_WIN32) && !defined(_XBOX)
 #include <pmmintrin.h>
 #endif
+#include <ork/reflect/properties/ITyped.hpp>
+#include <ork/reflect/ISerializer.h>
+#include <ork/reflect/IDeserializer.h>
 
 namespace ork {
 
@@ -563,3 +566,38 @@ T Vector4<T>::CalcTriArea(const Vector4<T>& V0, const Vector4<T>& V1, const Vect
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork
 ///////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+namespace ork::reflect {
+template <> //
+inline void ::ork::reflect::ITyped<fvec4>::serialize(serdes::node_ptr_t sernode) const {
+  using namespace serdes;
+  auto serializer        = sernode->_serializer;
+  auto instance          = sernode->_ser_instance;
+  auto arynode           = serializer->pushNode(_name, serdes::NodeType::ARRAY);
+  arynode->_parent       = sernode;
+  arynode->_ser_instance = instance;
+  fvec4 value;
+  get(value, instance);
+  serializeArraySubLeaf(arynode, value.x, 0);
+  serializeArraySubLeaf(arynode, value.y, 1);
+  serializeArraySubLeaf(arynode, value.z, 2);
+  serializeArraySubLeaf(arynode, value.w, 3);
+  serializer->popNode(); // pop arraynode
+}
+template <> //
+inline void ::ork::reflect::ITyped<fvec4>::deserialize(serdes::node_ptr_t arynode) const {
+  using namespace serdes;
+  auto deserializer  = arynode->_deserializer;
+  auto instance      = arynode->_deser_instance;
+  size_t numelements = arynode->_numchildren;
+  OrkAssert(numelements == 4);
+
+  fvec4 outval;
+  outval.x = deserializeArraySubLeaf<float>(arynode, 0);
+  outval.y = deserializeArraySubLeaf<float>(arynode, 1);
+  outval.z = deserializeArraySubLeaf<float>(arynode, 2);
+  outval.w = deserializeArraySubLeaf<float>(arynode, 3);
+  set(outval, instance);
+}
+} // namespace ork::reflect

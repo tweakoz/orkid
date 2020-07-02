@@ -5,6 +5,12 @@
 #include <ork/math/multicurve.h>
 #include <ork/rtti/RTTIX.inl>
 #include <ork/kernel/orklut.h>
+#include <ork/math/cvector2.h>
+#include <ork/math/cvector3.h>
+#include <ork/math/cvector4.h>
+#include <ork/math/cmatrix3.h>
+#include <ork/math/cmatrix4.h>
+#include <ork/math/quaternion.h>
 
 using namespace ork;
 using namespace ork::object;
@@ -87,6 +93,11 @@ public:
   fvec2 _fvec2;
   fvec3 _fvec3;
   fvec4 _fvec4;
+
+  fquat _fquat;
+
+  fmtx3 _fmtx3;
+  fmtx4 _fmtx4;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

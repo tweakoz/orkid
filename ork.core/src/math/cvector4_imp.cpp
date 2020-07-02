@@ -9,9 +9,6 @@
 #include <ork/math/cvector4.h>
 #include <ork/math/cvector4.hpp>
 #include <ork/math/matrix_inverseGEMS.hpp>
-#include <ork/reflect/properties/ITyped.hpp>
-#include <ork/reflect/ISerializer.h>
-#include <ork/reflect/IDeserializer.h>
 
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
@@ -70,68 +67,6 @@ template class Vector4<float>;  // explicit template instantiation
 template class Vector4<double>; // explicit template instantiation
 template class PropType<fvec4>;
 
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-namespace reflect {
-template <> //
-void ::ork::reflect::ITyped<fvec4>::serialize(serdes::node_ptr_t sernode) const {
-  using namespace serdes;
-  auto serializer        = sernode->_serializer;
-  auto instance          = sernode->_ser_instance;
-  auto arynode           = serializer->pushNode(_name, serdes::NodeType::ARRAY);
-  arynode->_parent       = sernode;
-  arynode->_ser_instance = instance;
-  fvec4 value;
-  get(value, instance);
-  serializeArraySubLeaf(arynode, value.x, 0);
-  serializeArraySubLeaf(arynode, value.y, 1);
-  serializeArraySubLeaf(arynode, value.z, 2);
-  serializeArraySubLeaf(arynode, value.w, 3);
-  serializer->popNode(); // pop arraynode
-}
-template <> //
-void ::ork::reflect::ITyped<fvec4>::deserialize(serdes::node_ptr_t arynode) const {
-  using namespace serdes;
-  auto deserializer  = arynode->_deserializer;
-  auto instance      = arynode->_deser_instance;
-  size_t numelements = arynode->_numchildren;
-  OrkAssert(numelements == 4);
-
-  fvec4 outval;
-  outval.x = deserializeArraySubLeaf<float>(arynode, 0);
-  outval.y = deserializeArraySubLeaf<float>(arynode, 1);
-  outval.z = deserializeArraySubLeaf<float>(arynode, 2);
-  outval.w = deserializeArraySubLeaf<float>(arynode, 3);
-  set(outval, instance);
-
-  OrkAssert(false);
-}
-
-/*template <> void Serialize(const fvec4* in, fvec4* out, reflect::BidirectionalSerializer& bidi) {
-  using namespace std::literals;
-  if (bidi.Serializing()) {
-    bidi.Serializer()->Hint("type", "fvec4"s);
-    for (int i = 0; i < 4; i++) {
-      bidi | in->GetArray()[i];
-    }
-  } else {
-    for (int i = 0; i < 4; i++) {
-      bidi | out->GetArray()[i];
-    }
-  }
-}
-
-template <> void Serialize(const orkmap<float, fvec4>* in, orkmap<float, fvec4>* out, reflect::BidirectionalSerializer& bidi) {
-  if (bidi.Serializing()) {
-  } else {
-  }
-}
-*/// namespace reflect
-} // namespace reflect
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 } // namespace ork

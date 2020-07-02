@@ -10,6 +10,11 @@
 #include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/math/cvector2.hpp>
+#include <ork/math/cvector3.hpp>
+#include <ork/math/cvector4.hpp>
+#include <ork/math/quaternion.hpp>
+#include <ork/math/cmatrix3.hpp>
+#include <ork/math/cmatrix4.hpp>
 
 using namespace ork;
 using namespace ork::object;
@@ -139,11 +144,20 @@ void MathTest::describeX(ObjectClass* clazz) {
   clazz->memberProperty(
       "direct_fvec2", //
       &MathTest::_fvec2);
-  // clazz->memberProperty(
-  //  "direct_fvec3", //
-  //&MathTest::_fvec3);
-  //  clazz->memberProperty(
-  //    "direct_fvec4", //
-  //  &MathTest::_fvec4);
+  clazz->memberProperty(
+      "direct_fvec3", //
+      &MathTest::_fvec3);
+  clazz->memberProperty(
+      "direct_fvec4", //
+      &MathTest::_fvec4);
+  clazz->memberProperty(
+      "direct_fquat", //
+      &MathTest::_fquat);
+  clazz->memberProperty(
+      "direct_fmtx3", //
+      &MathTest::_fmtx3);
+  clazz->memberProperty(
+      "direct_fmtx4", //
+      &MathTest::_fmtx4);
 }
 ///////////////////////////////////////////////////////////////////////////////

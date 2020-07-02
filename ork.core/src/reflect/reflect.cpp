@@ -48,6 +48,9 @@
 #include <ork/math/cvector2.hpp>
 #include <ork/math/cvector3.hpp>
 #include <ork/math/cvector4.hpp>
+#include <ork/math/quaternion.hpp>
+#include <ork/math/cmatrix3.hpp>
+#include <ork/math/cmatrix4.hpp>
 
 #include <ork/file/file.h>
 
