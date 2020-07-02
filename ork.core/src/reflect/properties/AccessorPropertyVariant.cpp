@@ -11,9 +11,11 @@
 
 namespace ork { namespace reflect {
 
-AccessorVariant::AccessorVariant(bool (Object::*ser)(ISerializer&) const, bool (Object::*deser)(IDeserializer&))
-    : mDeserialize(deser)
-    , mSerialize(ser) {
+AccessorVariant::AccessorVariant(
+    bool (Object::*ser)(serdes::ISerializer&) const, //
+    bool (Object::*deser)(serdes::IDeserializer&))
+    : _deserialize(deser)
+    , _serialize(ser) {
 }
 
 void AccessorVariant::deserialize(serdes::node_ptr_t desernode) const {

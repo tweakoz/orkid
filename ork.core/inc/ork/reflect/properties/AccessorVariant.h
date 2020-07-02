@@ -15,13 +15,15 @@ namespace ork { namespace reflect {
 
 class AccessorVariant : public ObjectProperty {
 public:
-  AccessorVariant(bool (Object::*getter)(ISerializer&) const, bool (Object::*setter)(IDeserializer&));
+  AccessorVariant(
+      bool (Object::*getter)(serdes::ISerializer&) const, //
+      bool (Object::*setter)(serdes::IDeserializer&));
 
 private:
   void deserialize(serdes::node_ptr_t) const override;
   void serialize(serdes::node_ptr_t) const override;
-  bool (Object::*mSerialize)(ISerializer&) const;
-  bool (Object::*mDeserialize)(IDeserializer&);
+  bool (Object::*_serialize)(serdes::ISerializer&) const;
+  bool (Object::*_deserialize)(serdes::IDeserializer&);
 };
 
 }} // namespace ork::reflect

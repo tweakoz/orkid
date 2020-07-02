@@ -87,11 +87,12 @@ static inline AccessorObject& RegisterProperty(
 template <typename ClassType>
 static inline AccessorVariant& RegisterProperty(
     const char* name,
-    bool (ClassType::*serialize)(ISerializer&) const,
-    bool (ClassType::*deserialize)(IDeserializer&),
+    bool (ClassType::*serialize)(serdes::ISerializer&) const,
+    bool (ClassType::*deserialize)(serdes::IDeserializer&),
     Description& description = ClassType::GetClassStatic()->Description()) {
   auto prop = new AccessorVariant(
-      static_cast<bool (Object::*)(ISerializer&) const>(serialize), static_cast<bool (Object::*)(IDeserializer&)>(deserialize));
+      static_cast<bool (Object::*)(serdes::ISerializer&) const>(serialize), //
+      static_cast<bool (Object::*)(serdes::IDeserializer&)>(deserialize));
 
   description.addProperty(name, prop);
 

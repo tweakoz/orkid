@@ -20,6 +20,10 @@ struct float_range {
   float _min = 0.0f;
   float _max = 0.0f;
 };
+struct int_range {
+  int _min = 0;
+  int _max = 0;
+};
 } // namespace ork
 namespace ork::object {
 class ObjectClass;

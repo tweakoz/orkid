@@ -70,12 +70,20 @@ public:
       void (ClassType::*setter)(const MemberType&));
 
   template <typename ClassType>
+  inline object::PropertyModifier accessorVariant(
+      const char* name,
+      bool (ClassType::*serialize)(reflect::serdes::ISerializer&) const,
+      bool (ClassType::*deserialize)(reflect::serdes::IDeserializer&));
+
+  template <typename ClassType>
   inline PropertyModifier sharedObjectProperty(
       const char* name, //
       object_ptr_t ClassType::*member);
 
   template <typename ClassType>
   inline PropertyModifier floatProperty(const char* name, float_range range, float ClassType::*member);
+
+  template <typename ClassType> inline PropertyModifier intProperty(const char* name, int_range range, int ClassType::*member);
 
 private:
   reflect::Description _description;

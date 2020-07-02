@@ -105,8 +105,28 @@ inline object::PropertyModifier object::ObjectClass::accessorProperty(
 }
 ///////////////////////////////////////////////////////////////////////////
 template <typename ClassType>
+inline object::PropertyModifier object::ObjectClass::accessorVariant(
+    const char* name,
+    bool (ClassType::*serialize)(reflect::serdes::ISerializer&) const,
+    bool (ClassType::*deserialize)(reflect::serdes::IDeserializer&)) {
+  object::PropertyModifier modder;
+  auto typed_getter = static_cast<bool (Object::*)(reflect::serdes::ISerializer&) const>(serialize);
+  auto typed_setter = static_cast<bool (Object::*)(reflect::serdes::IDeserializer&)>(deserialize);
+  modder._property  = new reflect::AccessorVariant(typed_getter, typed_setter);
+  _description.addProperty(name, modder._property);
+  return modder;
+}
+///////////////////////////////////////////////////////////////////////////
+template <typename ClassType>
 inline PropertyModifier object::ObjectClass::floatProperty(const char* name, float_range rng, float ClassType::*member) {
   auto rval = memberProperty<ClassType, float>(name, member);
+  rval->annotate("editor.range", rng);
+  return rval;
+}
+///////////////////////////////////////////////////////////////////////////
+template <typename ClassType>
+inline PropertyModifier object::ObjectClass::intProperty(const char* name, int_range rng, int ClassType::*member) {
+  auto rval = memberProperty<ClassType, int>(name, member);
   rval->annotate("editor.range", rng);
   return rval;
 }

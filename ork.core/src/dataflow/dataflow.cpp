@@ -13,7 +13,7 @@
 #include <ork/kernel/orklut.hpp>
 #include <ork/reflect/properties/AccessorTyped.hpp>
 #include <ork/reflect/properties/DirectTypedMap.hpp>
-#include <ork/reflect/properties/register.h>
+#include <ork/reflect/properties/registerX.inl>
 ///////////////////////////////////////////////////////////////////////////////
 template class ork::orklut<ork::PoolString, ork::dataflow::module*>;
 
@@ -32,10 +32,10 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::dataflow::outplugbase, "dflow/outplugbase");
 INSTANTIATE_TRANSPARENT_RTTI(ork::dataflow::floatinplug, "dflow/floatinplug");
 INSTANTIATE_TRANSPARENT_RTTI(ork::dataflow::vect3inplug, "dflow/vect3inplug");
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::dataflow::modscabias, "dflow/ModScaleBias");
+ImplementReflectionX(ork::dataflow::modscabias, "dflow/ModScaleBias");
 INSTANTIATE_TRANSPARENT_RTTI(ork::dataflow::floatxfitembase, "dflow/floatxfitembase");
-INSTANTIATE_TRANSPARENT_RTTI(ork::dataflow::floatxfmsbcurve, "dflow/floatxfmsbcurve");
-INSTANTIATE_TRANSPARENT_RTTI(ork::dataflow::floatxfmodstep, "dflow/floatxfmodstep");
+ImplementReflectionX(ork::dataflow::floatxfmsbcurve, "dflow/floatxfmsbcurve");
+ImplementReflectionX(ork::dataflow::floatxfmodstep, "dflow/floatxfmodstep");
 INSTANTIATE_TRANSPARENT_RTTI(ork::dataflow::floatxf, "dflow/floatxf");
 INSTANTIATE_TRANSPARENT_RTTI(ork::dataflow::vect3xf, "dflow/vect3xf");
 
@@ -120,21 +120,15 @@ template <> void vect3inplugxf<vect3xf>::Describe() {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void modscabias::Describe() {
-  /*ork::reflect::RegisterProperty("mod", &modscabias::mfMod);
-  ork::reflect::RegisterProperty("scale", &modscabias::mfScale);
-  ork::reflect::RegisterProperty("bias", &modscabias::mfBias);
-  ork::reflect::annotatePropertyForEditor<modscabias>("mod", "editor.range.min", "0.0f");
-  ork::reflect::annotatePropertyForEditor<modscabias>("mod", "editor.range.max", "16.0f");
-  ork::reflect::annotatePropertyForEditor<modscabias>("scale", "editor.range.min", "-16.0f");
-  ork::reflect::annotatePropertyForEditor<modscabias>("scale", "editor.range.max", "16.0f");
-  ork::reflect::annotatePropertyForEditor<modscabias>("bias", "editor.range.min", "-16.0f");
-  ork::reflect::annotatePropertyForEditor<modscabias>("bias", "editor.range.max", "16.0f");*/
+void modscabias::describeX(object::ObjectClass* clazz) {
+  clazz->floatProperty("mod", float_range{0.0f, 16.0f}, &modscabias::mfMod);
+  clazz->floatProperty("scale", float_range{-16.0f, 16.0f}, &modscabias::mfScale);
+  clazz->floatProperty("bias", float_range{-16.0f, 16.0f}, &modscabias::mfBias);
 }
 void floatxfitembase::Describe() {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void floatxfmsbcurve::Describe() {
+void floatxfmsbcurve::describeX(object::ObjectClass* clazz) {
   /*
   ork::reflect::RegisterProperty("curve", &floatxfmsbcurve::CurveAccessor);
   ork::reflect::RegisterProperty("ModScaleBias", &floatxfmsbcurve::ModScaleBiasAccessor);
@@ -163,21 +157,12 @@ void floatxfmsbcurve::Describe() {
     return input;
   }
   ///////////////////////////////////////////////////////////////////////////////
-  void floatxfmodstep::Describe() {
-    /*
-    ork::reflect::RegisterProperty("Mod", &floatxfmodstep::mMod);
-    ork::reflect::RegisterProperty("Step", &floatxfmodstep::miSteps);
-    ork::reflect::RegisterProperty("OutputBias", &floatxfmodstep::mOutputBias);
-    ork::reflect::RegisterProperty("OutputScale", &floatxfmodstep::mOutputScale);
-    ork::reflect::annotatePropertyForEditor<floatxfmodstep>("Mod", "editor.range.min", "0.01f");
-    ork::reflect::annotatePropertyForEditor<floatxfmodstep>("Mod", "editor.range.max", "16.0f");
-    ork::reflect::annotatePropertyForEditor<floatxfmodstep>("Step", "editor.range.min", "1.0f");
-    ork::reflect::annotatePropertyForEditor<floatxfmodstep>("Step", "editor.range.max", "128.0f");
-    ork::reflect::annotatePropertyForEditor<floatxfmodstep>("OutputBias", "editor.range.min", "-16.0f");
-    ork::reflect::annotatePropertyForEditor<floatxfmodstep>("OutputBias", "editor.range.max", "16.0f");
-    ork::reflect::annotatePropertyForEditor<floatxfmodstep>("OutputScale", "editor.range.min", "-1600.0f");
-    ork::reflect::annotatePropertyForEditor<floatxfmodstep>("OutputScale", "editor.range.max", "1600.0f");
-  */}
+  void floatxfmodstep::describeX(object::ObjectClass* clazz) {
+    clazz->floatProperty("Mod", float_range{0.0f, 16.0f}, &floatxfmodstep::mMod);
+    clazz->intProperty("Step", int_range{1, 128}, &floatxfmodstep::miSteps);
+    clazz->floatProperty("OutputBias", float_range{-16.0f, 16.0f}, &floatxfmodstep::mOutputBias);
+    clazz->floatProperty("OutputScale", float_range{-1600.0f, 1600.0f}, &floatxfmodstep::mOutputScale);
+  }
   ///////////////////////////////////////////////////////////////////////////////
   float floatxfmodstep::transform(float input) const {
     int isteps = miSteps > 0 ? miSteps : 1;

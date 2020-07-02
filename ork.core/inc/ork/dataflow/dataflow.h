@@ -17,6 +17,7 @@
 #include <ork/math/multicurve.h>
 #include <ork/kernel/orkpool.h>
 #include <ork/event/Event.h>
+#include <ork/rtti/RTTIX.inl>
 
 namespace ork { namespace dataflow {
 
@@ -483,7 +484,7 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 class modscabias : public ork::Object {
-  RttiDeclareConcrete(modscabias, ork::Object);
+  DeclareConcreteX(modscabias, ork::Object);
 
 public:
   float GetMod() const {
@@ -529,7 +530,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class floatxfmsbcurve : public floatxfitembase {
-  RttiDeclareConcrete(floatxfmsbcurve, floatxfitembase);
+  DeclareConcreteX(floatxfmsbcurve, floatxfitembase);
 
 public:
   float GetMod() const {
@@ -576,7 +577,7 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 
 class floatxfmodstep : public floatxfitembase {
-  RttiDeclareConcrete(floatxfmodstep, floatxfitembase);
+  DeclareConcreteX(floatxfmodstep, floatxfitembase);
 
 public:
   floatxfmodstep()
@@ -946,12 +947,12 @@ struct dgqueue {
 ///////////////////////////////////////////////////////////////////////////////
 
 class graph_data : public ork::Object {
-  RttiDeclareAbstract(graph_data, ork::Object);
+  DeclareConcreteX(graph_data, ork::Object);
 
 public:
   graph_data();
   ~graph_data();
-  graph_data(const graph_data& oth);
+  // graph_data(const graph_data& oth);
 
   virtual bool CanConnect(const inplugbase* pin, const outplugbase* pout) const;
   bool IsComplete() const;
@@ -980,7 +981,8 @@ public:
   const orklut<int, dgmodule*>& LockTopoSortedChildrenForRead(int lid) const;
   orklut<int, dgmodule*>& LockTopoSortedChildrenForWrite(int lid);
   void UnLockTopoSortedChildren() const;
-  virtual void Clear() = 0;
+  virtual void Clear() {
+  }
   void OnGraphChanged();
 
 protected:
@@ -995,8 +997,10 @@ protected:
   bool postDeserialize(reflect::serdes::IDeserializer&) override;
 };
 
+///////////////////////////////////////////////////////////////////////////////
+
 class graph_inst : public graph_data {
-  RttiDeclareAbstract(graph_inst, graph_data);
+  DeclareConcreteX(graph_inst, graph_data);
 
 public:
   const std::set<int>& OutputRegisters() const {
