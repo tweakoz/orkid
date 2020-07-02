@@ -15,7 +15,6 @@
 #include <math.h>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::MultiCurve1D, "MultiCurve1D");
-ImplementEnumSerializer(ork::MultiCurveSegmentType);
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -27,6 +26,8 @@ RegisterEnum(MultiCurveSegmentType, BOX);
 RegisterEnum(MultiCurveSegmentType, LOG);
 RegisterEnum(MultiCurveSegmentType, EXP);
 EndEnumRegistration();
+
+ImplementEnumSerializer(MultiCurveSegmentType);
 
 void MultiCurve1D::Describe() {
   InvokeEnumRegistration(MultiCurveSegmentType);
