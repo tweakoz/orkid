@@ -9,7 +9,7 @@
 #include <ork/kernel/string/PoolString.h>
 #include <ork/config/config.h>
 
-namespace ork { namespace asset {
+namespace ork::asset {
 
 class AssetSet;
 using assetset_ptr_t = std::shared_ptr<AssetSet>;
@@ -34,4 +34,11 @@ public:
 using asset_ptr_t      = std::shared_ptr<Asset>;
 using asset_constptr_t = std::shared_ptr<const Asset>;
 
-}} // namespace ork::asset
+} // namespace ork::asset
+
+namespace ork {
+template <>                                    //
+struct use_custom_serdes<asset::asset_ptr_t> { //
+  static constexpr bool enable = true;
+};
+} // namespace ork

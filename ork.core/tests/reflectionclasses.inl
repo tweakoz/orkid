@@ -11,6 +11,7 @@
 #include <ork/math/cmatrix3.h>
 #include <ork/math/cmatrix4.h>
 #include <ork/math/quaternion.h>
+#include <ork/asset/Asset.h>
 
 using namespace ork;
 using namespace ork::object;
@@ -98,6 +99,16 @@ public:
 
   fmtx3 _fmtx3;
   fmtx4 _fmtx4;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct AssetTest final : public Object {
+  DeclareConcreteX(AssetTest, Object);
+
+public:
+  AssetTest();
+  asset::asset_ptr_t _assetptr;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
