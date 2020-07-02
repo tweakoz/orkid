@@ -10,11 +10,10 @@
 #include <ork/math/cmatrix4.h>
 #include <ork/math/cmatrix4.hpp>
 #include <ork/math/matrix_inverseGEMS.hpp>
-#include <ork/kernel/prop.h>
-#include <ork/kernel/prop.hpp>
-#include <ork/reflect/Serialize.h>
-#include <ork/reflect/BidirectionalSerializer.h>
 #include <ork/kernel/string/string.h>
+#include <ork/reflect/properties/ITyped.hpp>
+#include <ork/reflect/ISerializer.h>
+#include <ork/reflect/IDeserializer.h>
 
 namespace ork {
 template <> const EPropType PropType<fmtx4>::meType   = EPROPTYPE_MAT44REAL;
@@ -59,9 +58,40 @@ template <> fmtx4 PropType<fmtx4>::FromString(const PropTypeString& String) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-/*
+
 namespace reflect {
-template <> void Serialize(const fmtx4* in, fmtx4* out, reflect::BidirectionalSerializer& bidi) {
+template <> //
+void ::ork::reflect::ITyped<fmtx4>::serialize(serdes::node_ptr_t sernode) const {
+  using namespace serdes;
+  auto serializer        = sernode->_serializer;
+  auto instance          = sernode->_ser_instance;
+  auto arynode           = serializer->pushNode(_name, serdes::NodeType::ARRAY);
+  arynode->_parent       = sernode;
+  arynode->_ser_instance = instance;
+  fmtx4 value;
+  get(value, instance);
+  for (int i = 0; i < 16; i++)
+    serializeArraySubLeaf(arynode, value.GetArray()[i], i);
+  serializer->popNode(); // pop arraynode
+}
+template <> //
+void ::ork::reflect::ITyped<fmtx4>::deserialize(serdes::node_ptr_t arynode) const {
+  using namespace serdes;
+  auto deserializer  = arynode->_deserializer;
+  auto instance      = arynode->_deser_instance;
+  size_t numelements = arynode->_numchildren;
+  OrkAssert(numelements == 16);
+
+  fmtx4 value;
+  for (int i = 0; i < 16; i++)
+    value.GetArray()[i] = deserializeArraySubLeaf<float>(arynode, i);
+
+  set(value, instance);
+
+  OrkAssert(false);
+}
+
+/*template <> void Serialize(const fmtx4* in, fmtx4* out, reflect::BidirectionalSerializer& bidi) {
   if (bidi.Serializing()) {
     using namespace std::literals;
     bidi.Serializer()->Hint("type", "fmtx4"s);
@@ -74,8 +104,8 @@ template <> void Serialize(const fmtx4* in, fmtx4* out, reflect::BidirectionalSe
     }
   }
 }
-} // namespace reflect
 */
+} // namespace reflect
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

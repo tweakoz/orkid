@@ -8,11 +8,10 @@
 #include <ork/pch.h>
 #include <ork/math/quaternion.h>
 #include <ork/math/quaternion.hpp>
-#include <ork/kernel/prop.h>
-#include <ork/kernel/prop.hpp>
-#include <ork/reflect/Serialize.h>
-#include <ork/reflect/BidirectionalSerializer.h>
 #include <ork/kernel/string/string.h>
+#include <ork/reflect/properties/ITyped.hpp>
+#include <ork/reflect/ISerializer.h>
+#include <ork/reflect/IDeserializer.h>
 
 namespace ork {
 template class Quaternion<float>; // explicit template instantiation
@@ -48,10 +47,43 @@ template <> fquat PropType<fquat>::FromString(const PropTypeString& String) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-/*
 namespace reflect {
 
-template <> void Serialize(const fquat* in, fquat* out, reflect::BidirectionalSerializer& bidi) {
+template <> //
+void ::ork::reflect::ITyped<fquat>::serialize(serdes::node_ptr_t sernode) const {
+  using namespace serdes;
+  auto serializer        = sernode->_serializer;
+  auto instance          = sernode->_ser_instance;
+  auto arynode           = serializer->pushNode(_name, serdes::NodeType::ARRAY);
+  arynode->_parent       = sernode;
+  arynode->_ser_instance = instance;
+  fquat value;
+  get(value, instance);
+  serializeArraySubLeaf(arynode, value.x, 0);
+  serializeArraySubLeaf(arynode, value.y, 1);
+  serializeArraySubLeaf(arynode, value.z, 2);
+  serializeArraySubLeaf(arynode, value.w, 3);
+  serializer->popNode(); // pop arraynode
+}
+template <> //
+void ::ork::reflect::ITyped<fquat>::deserialize(serdes::node_ptr_t arynode) const {
+  using namespace serdes;
+  auto deserializer  = arynode->_deserializer;
+  auto instance      = arynode->_deser_instance;
+  size_t numelements = arynode->_numchildren;
+  OrkAssert(numelements == 4);
+
+  fquat outval;
+  outval.x = deserializeArraySubLeaf<float>(arynode, 0);
+  outval.y = deserializeArraySubLeaf<float>(arynode, 1);
+  outval.z = deserializeArraySubLeaf<float>(arynode, 2);
+  outval.w = deserializeArraySubLeaf<float>(arynode, 3);
+  set(outval, instance);
+
+  OrkAssert(false);
+}
+
+/*template <> void Serialize(const fquat* in, fquat* out, reflect::BidirectionalSerializer& bidi) {
   using namespace std::literals;
   if (bidi.Serializing()) {
     bidi.Serializer()->Hint("type", "fquat"s);
@@ -70,6 +102,6 @@ template <> void Serialize(const fquat* in, fquat* out, reflect::BidirectionalSe
     out->w = (m[3]);
   }
 }
-} // namespace reflect
 */
+} // namespace reflect
 } // namespace ork
