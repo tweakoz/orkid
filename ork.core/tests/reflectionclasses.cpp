@@ -134,11 +134,17 @@ inline void ITyped<MultiCurveSegmentType>::serialize(serdes::node_ptr_t leafnode
   leafnode->_value.template Set<std::string>(enumname);
   serializer->serializeLeaf(leafnode);
 }
+///////////////////////////////////////////////////////////////////////////////
 template <> //
 inline void ITyped<MultiCurveSegmentType>::deserialize(serdes::node_ptr_t desernode) const {
-  auto instance   = desernode->_deser_instance;
-  const auto& var = desernode->_value;
-  set(MultiCurveSegmentType(var.Get<double>()), instance);
+  auto instance      = desernode->_deser_instance;
+  const auto& var    = desernode->_value;
+  const auto& as_str = var.Get<std::string>();
+  auto registrar     = reflect::serdes::EnumRegistrar::instance();
+  auto enumtype      = registrar->findEnumClass<MultiCurveSegmentType>();
+  int intval         = enumtype->findValueFromName(as_str);
+  auto enumval       = MultiCurveSegmentType(intval);
+  set(enumval, instance);
 }
 ///////////////////////////////////////////////////////////////////////////////
 EnumTest::EnumTest() {

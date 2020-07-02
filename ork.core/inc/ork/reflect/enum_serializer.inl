@@ -35,6 +35,10 @@ struct EnumType {
     auto it = _int2strmap.find(ivalue);
     return it->second;
   }
+  inline int findValueFromName(std::string svalue) { //
+    auto it = _str2intmap.find(svalue);
+    return it->second;
+  }
 
   std::string _name;
   std::map<int, std::string> _int2strmap;
