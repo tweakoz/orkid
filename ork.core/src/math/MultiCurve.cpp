@@ -8,13 +8,13 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/pch.h>
 #include <ork/math/multicurve.h>
-#include <ork/reflect/properties/register.h>
+#include <ork/reflect/properties/registerX.inl>
 #include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/reflect/properties/DirectTypedVector.hpp>
 #include <ork/reflect/enum_serializer.inl>
 #include <math.h>
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::MultiCurve1D, "MultiCurve1D");
+ImplementReflectionX(ork::MultiCurve1D, "MultiCurve1D");
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -29,41 +29,29 @@ EndEnumRegistration();
 
 ImplementEnumSerializer(MultiCurveSegmentType);
 
-void MultiCurve1D::Describe() {
+void MultiCurve1D::describeX(object::ObjectClass* clazz) {
   InvokeEnumRegistration(MultiCurveSegmentType);
-  /*
-                                  ork::reflect::RegisterArrayProperty("Segs", &ork::MultiCurve1D::mSegmentTypes);
-                                  ork::reflect::RegisterMapProperty("Verts", &ork::MultiCurve1D::mVertices);
 
-                                  ork::reflect::RegisterProperty("Curve", &ork::MultiCurve1D::ProxyAccessor);
+  clazz
+      ->directVectorProperty("Segs", &ork::MultiCurve1D::mSegmentTypes) //
+      ->annotate<bool>("editor.visible", false);
+  clazz
+      ->directMapProperty("Verts", &ork::MultiCurve1D::mVertices) //
+      ->annotate<bool>("editor.visible", false);
 
-                                  ork::reflect::annotatePropertyForEditor< MultiCurve1D >("Segs", "editor.visible", "false" );
-                                  ork::reflect::annotatePropertyForEditor< MultiCurve1D >("Verts", "editor.visible", "false" );
+  clazz->floatProperty("min", float_range{-2000.0f, +2000.0f}, &ork::MultiCurve1D::mMin);
+  clazz->floatProperty("max", float_range{-2000.0f, +2000.0f}, &ork::MultiCurve1D::mMax);
 
-                                  ork::reflect::RegisterProperty("min", &ork::MultiCurve1D::mMin);
-                                  ork::reflect::RegisterProperty("max", &ork::MultiCurve1D::mMax);
+  static const char* EdGrpStr = "sort://min max Curve";
 
-                                  ork::reflect::annotatePropertyForEditor< MultiCurve1D >("Curve", "editor.class",
-                                  "ged.factory.curve1d" );
-
-                                  ork::reflect::annotatePropertyForEditor< MultiCurve1D >( "min", "editor.range.min", "-2000.0f" );
-                                  ork::reflect::annotatePropertyForEditor< MultiCurve1D >( "min", "editor.range.max", "2000.0f" );
-
-                                  ork::reflect::annotatePropertyForEditor< MultiCurve1D >( "max", "editor.range.min", "-2000.0f" );
-                                  ork::reflect::annotatePropertyForEditor< MultiCurve1D >( "max", "editor.range.max", "2000.0f" );
-
-                                  static const char* EdGrpStr = "sort://min max Curve";
-
-                                  reflect::annotateClassForEditor<MultiCurve1D>( "editor.prop.groups", EdGrpStr );
-                              */
+  clazz->annotate("editor.prop.groups", EdGrpStr);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 MultiCurve1D::MultiCurve1D()
     : mMin(0.0f)
-    , mMax(1.0f)
-    , mProxy(this) {
+    , mMax(1.0f) {
   Init(1);
 }
 

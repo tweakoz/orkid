@@ -10,6 +10,7 @@
 #include <ork/math/spline.h>
 
 #include <ork/config/config.h>
+#include <ork/rtti/RTTIX.inl>
 #include <ork/reflect/enum_serializer.inl>
 
 namespace ork {
@@ -24,30 +25,14 @@ enum class MultiCurveSegmentType {
 DeclareEnumSerializer(MultiCurveSegmentType);
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> class ObjProxy : public ork::Object {
-public:
-  T* _parent;
-
-  ObjProxy(T* val)
-      : _parent(val) {
-  }
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 struct MultiCurve1D : public ork::Object {
-  RttiDeclareConcrete(MultiCurve1D, ork::Object);
+  DeclareConcreteX(MultiCurve1D, ork::Object);
 
 public:
   orkvector<MultiCurveSegmentType> mSegmentTypes;
   orklut<float, float> mVertices;
-  ObjProxy<MultiCurve1D> mProxy;
 
   float mMin, mMax;
-
-  ork::Object* ProxyAccessor() {
-    return &mProxy;
-  }
 
   int GetNumSegments() const;
   float Sample(float u) const;

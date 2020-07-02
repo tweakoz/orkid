@@ -8,6 +8,7 @@
 #pragma once
 
 #include "RTTI.h"
+#include <ork/object/ObjectClass.h>
 
 namespace ork::rtti {
 ////////////////////////////////////////////////////////////////////////////////
@@ -16,8 +17,8 @@ namespace ork::rtti {
 
 #define DeclareConcreteX(ClassType, BaseType)                                                                                      \
 public:                                                                                                                            \
-  typedef ::ork::rtti::RTTI<ClassType, BaseType, ::ork::rtti::DefaultPolicy, BaseType::RTTITyped::RTTICategory> RTTITyped;           \
-  typedef RTTITyped::RTTICategory class_t;                                                                                          \
+  typedef ::ork::rtti::RTTI<ClassType, BaseType, ::ork::rtti::DefaultPolicy, BaseType::RTTITyped::RTTICategory> RTTITyped;         \
+  typedef RTTITyped::RTTICategory class_t;                                                                                         \
   static void describeX(class_t* clazz);                                                                                           \
   static void Describe();                                                                                                          \
   static ::ork::ConstString DesignNameStatic();                                                                                    \
@@ -30,8 +31,8 @@ private:
 
 #define DeclareAbstractX(ClassType, BaseType)                                                                                      \
 public:                                                                                                                            \
-  typedef ::ork::rtti::RTTI<ClassType, BaseType, ::ork::rtti::AbstractPolicy, BaseType::RTTITyped::RTTICategory> RTTITyped;          \
-  typedef RTTITyped::RTTICategory class_t;                                                                                          \
+  typedef ::ork::rtti::RTTI<ClassType, BaseType, ::ork::rtti::AbstractPolicy, BaseType::RTTITyped::RTTICategory> RTTITyped;        \
+  typedef RTTITyped::RTTICategory class_t;                                                                                         \
   static void describeX(class_t* clazz);                                                                                           \
   static void Describe();                                                                                                          \
   static ::ork::ConstString DesignNameStatic();                                                                                    \
@@ -44,8 +45,8 @@ private:
 
 #define DeclareExplicitX(ClassType, BaseType, Policy, ClassImplementation)                                                         \
 public:                                                                                                                            \
-  typedef ::ork::rtti::RTTI<ClassType, BaseType, Policy, ClassImplementation> RTTITyped;                                            \
-  typedef RTTITyped::RTTICategory class_t;                                                                                          \
+  typedef ::ork::rtti::RTTI<ClassType, BaseType, Policy, ClassImplementation> RTTITyped;                                           \
+  typedef RTTITyped::RTTICategory class_t;                                                                                         \
   static void describeX(class_t* clazz);                                                                                           \
   static void Describe();                                                                                                          \
   static ::ork::ConstString DesignNameStatic();                                                                                    \
@@ -64,7 +65,7 @@ private:
     describeX(GetClassStatic());                                                                                                   \
   }                                                                                                                                \
   ClassName::class_t* ClassName::GetClassStatic() {                                                                                \
-    static ClassName::class_t _clazz(ClassName::RTTITyped::ClassRTTI());                                                            \
+    static ClassName::class_t _clazz(ClassName::RTTITyped::ClassRTTI());                                                           \
     return &_clazz;                                                                                                                \
   }                                                                                                                                \
   ClassName::class_t* ClassName::GetClass() const {                                                                                \
