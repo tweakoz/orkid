@@ -56,4 +56,23 @@ serdes::node_ptr_t serializeArraySubLeaf(
   return elemnode;
 }
 
+template <typename T>
+serdes::node_ptr_t serializeMapSubLeaf(
+    serdes::node_ptr_t mapnode, //
+    std::string key,
+    T inp) {
+  auto serializer = mapnode->_serializer;
+  auto instance   = mapnode->_ser_instance;
+  auto elemnode   = serializer->pushNode(key, serdes::NodeType::MAP_ELEMENT_LEAF);
+  elemnode->_key  = key;
+  elemnode->_value.template Set<T>(inp);
+  elemnode->_index        = 0;
+  elemnode->_parent       = mapnode;
+  elemnode->_ser_instance = instance;
+  elemnode->_serializer   = serializer;
+  auto childnode          = serializer->serializeMapElement(elemnode);
+  serializer->popNode(); // pop element node
+  return elemnode;
+} // namespace ork::reflect::serdes
+
 } // namespace ork::reflect::serdes

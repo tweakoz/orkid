@@ -3,6 +3,7 @@
 #include <limits>
 #include <string.h>
 
+#include <ork/application/application.h>
 #include <ork/reflect/serialize/JsonDeserializer.h>
 #include <ork/reflect/serialize/JsonSerializer.h>
 #include "reflectionclasses.inl"
@@ -11,9 +12,14 @@ using namespace ork;
 using namespace ork::reflect;
 
 std::string asset_generate() {
-  auto enutest = std::make_shared<AssetTest>();
+  auto assettest = std::make_shared<AssetTest>();
+
+  assettest->_assetptr        = std::make_shared<asset::Asset>();
+  assettest->_assetptr->_name = "yo"_pool;
+  assettest->_assetptr->_path = "lev2://yo";
+
   serdes::JsonSerializer ser;
-  auto rootnode = ser.serializeRoot(enutest);
+  auto rootnode = ser.serializeRoot(assettest);
   return ser.output();
 }
 

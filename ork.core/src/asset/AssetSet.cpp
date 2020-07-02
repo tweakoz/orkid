@@ -103,13 +103,15 @@ AssetLoader* AssetSet::FindLoader(PoolString name) {
 ///////////////////////////////////////////////////////////////////////////////
 
 std::pair<AssetSetEntry*, bool> FindAssetEntryInternal(AssetSetLevel* top_level, PoolString name) {
-  for (AssetSetLevel* level = top_level; level != nullptr; level = level->Parent()) {
+  for (AssetSetLevel* level = top_level; //
+       level != nullptr;
+       level = level->Parent()) {
     auto levset = level->GetSet();
     auto it     = std::find_if(
         levset.begin(), //
         levset.end(),
         [name](const AssetSetEntry* entry) -> bool { //
-          return name == entry->asset()->GetName();
+          return name == entry->asset()->name();
         });
     if (it != levset.end())
       return std::make_pair(*it, level == top_level);
@@ -124,7 +126,9 @@ bool AssetSet::Load(int depth) {
   int load_count = 0;
   ork::ConstString name("");
 
-  for (AssetSetLevel* level = mTopLevel; depth != 0 && level != NULL; level = level->Parent(), depth--) {
+  for (AssetSetLevel* level = mTopLevel; //
+       depth != 0 && level != NULL;
+       level = level->Parent(), depth--) {
     for (orkvector<AssetSetEntry*>::size_type i = 0; i < level->GetSet().size(); ++i) {
       AssetSetEntry* entry = level->GetSet()[i];
       if (false == entry->IsLoaded()) {

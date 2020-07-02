@@ -34,25 +34,30 @@ namespace ork::reflect {
 using namespace serdes;
 template <> //
 inline void ::ork::reflect::ITyped<asset::asset_ptr_t>::serialize(serdes::node_ptr_t sernode) const {
-  auto serializer        = sernode->_serializer;
-  auto instance          = sernode->_ser_instance;
-  auto arynode           = serializer->pushNode(_name, serdes::NodeType::ARRAY);
-  arynode->_parent       = sernode;
-  arynode->_ser_instance = instance;
+  auto serializer = sernode->_serializer;
+  auto instance   = sernode->_ser_instance;
   asset::asset_ptr_t value;
   get(value, instance);
-  // serializeArraySubLeaf(arynode, value.x, 0);
-  // serializeArraySubLeaf(arynode, value.y, 1);
-  // serializeArraySubLeaf(arynode, value.z, 2);
-  serializer->popNode(); // pop arraynode
+  auto as_asset = std::dynamic_pointer_cast<asset::Asset>(value);
+  if (as_asset) {
+    auto mapnode           = serializer->pushNode(_name, serdes::NodeType::MAP);
+    mapnode->_parent       = sernode;
+    mapnode->_ser_instance = instance;
+    serializeMapSubLeaf<std::string>(mapnode, "type", as_asset->GetType().c_str());
+    serializeMapSubLeaf<std::string>(mapnode, "path", as_asset->_path.toStdString());
+    serializer->popNode(); // pop mapnode
+  } else {
+    sernode->_value.template Set<void*>(nullptr);
+    serializer->serializeLeaf(sernode);
+  }
 }
 template <> //
-inline void ::ork::reflect::ITyped<asset::asset_ptr_t>::deserialize(serdes::node_ptr_t arynode) const {
+inline void ::ork::reflect::ITyped<asset::asset_ptr_t>::deserialize(serdes::node_ptr_t objnode) const {
   using namespace serdes;
-  auto deserializer = arynode->_deserializer;
-  auto instance     = arynode->_deser_instance;
+  auto deserializer = objnode->_deserializer;
+  auto instance     = objnode->_deser_instance;
 
-  asset::asset_ptr_t outval;
+  asset::asset_ptr_t outval = nullptr;
   // outval.x = deserializeArraySubLeaf<float>(arynode, 0);
   // outval.y = deserializeArraySubLeaf<float>(arynode, 1);
   // outval.z = deserializeArraySubLeaf<float>(arynode, 2);

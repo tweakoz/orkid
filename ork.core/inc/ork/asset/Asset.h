@@ -8,6 +8,8 @@
 #include <ork/kernel/varmap.inl>
 #include <ork/kernel/string/PoolString.h>
 #include <ork/config/config.h>
+#include <ork/rtti/RTTIX.inl>
+#include <ork/file/path.h>
 
 namespace ork::asset {
 
@@ -15,12 +17,12 @@ class AssetSet;
 using assetset_ptr_t = std::shared_ptr<AssetSet>;
 
 class Asset : public Object {
-  RttiDeclareAbstractWithCategory(Asset, Object, object::ObjectClass);
+  DeclareConcreteX(Asset, ork::Object);
 
 public:
   Asset();
-  void SetName(PoolString name);
-  PoolString GetName() const;
+  void setName(PoolString name);
+  PoolString name() const;
   virtual PoolString GetType() const;
   bool Load() const;
   bool LoadUnManaged() const;
@@ -28,7 +30,8 @@ public:
   assetset_ptr_t assetSet() const;
 
   varmap::VarMap _varmap;
-  PoolString mName;
+  PoolString _name;
+  AssetPath _path;
 };
 
 using asset_ptr_t      = std::shared_ptr<Asset>;

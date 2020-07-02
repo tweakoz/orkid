@@ -215,8 +215,8 @@ bool FileAssetLoader::LoadAsset(asset_ptr_t asset) {
   ArrayString<256> asset_name;
 
   ///////////////////////////////////////////////////////////////////////////////
-  if (false == FindAsset(asset->GetName(), asset_name)) {
-    printf("Error Loading File Asset %s\n", asset->GetName().c_str());
+  if (false == FindAsset(asset->name(), asset_name)) {
+    printf("Error Loading File Asset %s\n", asset->name().c_str());
 #if defined(ORKCONFIG_ASSET_UNLOAD)
     return false;
 #else
