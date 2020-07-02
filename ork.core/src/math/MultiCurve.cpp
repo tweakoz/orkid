@@ -20,6 +20,8 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::MultiCurve1D, "MultiCurve1D");
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
+ImplementEnumSerializer(MultiCurveSegmentType);
+
 void initenum_MultiCurveSegmentType() {
   auto registrar = reflect::serdes::EnumRegistrar::instance();
   auto enumtype  = registrar->addEnumClass<MultiCurveSegmentType>("ork::MultiCurveSegmentType");

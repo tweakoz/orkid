@@ -9,6 +9,7 @@
 
 #include <ork/kernel/string/ConstString.h>
 #include <ork/reflect/BidirectionalSerializer.h>
+#include <ork/reflect/properties/ITyped.hpp>
 
 namespace ork::reflect::serdes {
 
@@ -76,5 +77,33 @@ struct EnumRegistrar {
   std::map<typekey_t, enumtype_ptr_t> _typemap;
   std::map<std::string, enumtype_ptr_t> _namemap;
 };
-
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::reflect::serdes
+
+///////////////////////////////////////////////////////////////////////////////
+#define DeclareEnumSerializer(ENUMTYPE)                                                                                            \
+  template <> void ::ork::reflect::ITyped<ENUMTYPE>::serialize(serdes::node_ptr_t leafnode) const;                                 \
+  template <> void ::ork::reflect::ITyped<ENUMTYPE>::deserialize(serdes::node_ptr_t desernode) const;
+///////////////////////////////////////////////////////////////////////////////
+#define ImplementEnumSerializer(ENUMTYPE)                                                                                          \
+  template <> void ::ork::reflect::ITyped<ENUMTYPE>::serialize(serdes::node_ptr_t leafnode) const {                                \
+    auto serializer = leafnode->_serializer;                                                                                       \
+    auto instance   = leafnode->_ser_instance;                                                                                     \
+    ENUMTYPE value;                                                                                                                \
+    get(value, instance);                                                                                                          \
+    auto registrar = reflect::serdes::EnumRegistrar::instance();                                                                   \
+    auto enumtype  = registrar->findEnumClass<ENUMTYPE>();                                                                         \
+    auto enumname  = enumtype->findNameFromValue(int(value));                                                                      \
+    leafnode->_value.template Set<std::string>(enumname);                                                                          \
+    serializer->serializeLeaf(leafnode);                                                                                           \
+  }                                                                                                                                \
+  template <> void ::ork::reflect::ITyped<ENUMTYPE>::deserialize(serdes::node_ptr_t desernode) const {                             \
+    auto instance      = desernode->_deser_instance;                                                                               \
+    const auto& var    = desernode->_value;                                                                                        \
+    const auto& as_str = var.Get<std::string>();                                                                                   \
+    auto registrar     = reflect::serdes::EnumRegistrar::instance();                                                               \
+    auto enumtype      = registrar->findEnumClass<ENUMTYPE>();                                                                     \
+    int intval         = enumtype->findValueFromName(as_str);                                                                      \
+    auto enumval       = MultiCurveSegmentType(intval);                                                                            \
+    set(enumval, instance);                                                                                                        \
+  }

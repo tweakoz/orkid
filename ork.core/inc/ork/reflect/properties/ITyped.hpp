@@ -22,6 +22,13 @@ namespace ork::reflect {
 ///////////////////////////////////////////////////////////////////////////////
 template <typename T> //
 void ITyped<T>::deserialize(serdes::node_ptr_t desernode) const {
+
+  /////////////////////////////////////////////
+  // only use this implementation for non-enums
+  /////////////////////////////////////////////
+  using eif = typename std::enable_if<not std::is_enum<T>::value>::type;
+  /////////////////////////////////////////////
+
   auto instance   = desernode->_deser_instance;
   const auto& var = desernode->_value;
   T value;
@@ -65,6 +72,11 @@ inline void ITyped<object_ptr_t>::deserialize(serdes::node_ptr_t desernode) cons
 ///////////////////////////////////////////////////////////////////////////////
 template <typename T> //
 void ITyped<T>::serialize(serdes::node_ptr_t leafnode) const {
+  /////////////////////////////////////////////
+  // only use this implementation for non-enums
+  /////////////////////////////////////////////
+  using eif = typename std::enable_if<not std::is_enum<T>::value>::type;
+  /////////////////////////////////////////////
   auto serializer = leafnode->_serializer;
   auto instance   = leafnode->_ser_instance;
   T value;

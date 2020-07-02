@@ -10,6 +10,7 @@
 #include <ork/math/spline.h>
 
 #include <ork/config/config.h>
+#include <ork/reflect/properties/registerX.inl>
 
 namespace ork {
 
@@ -21,7 +22,8 @@ enum class MultiCurveSegmentType {
   LOG,
   EXP,
 };
-void RegisterEnumMultiCurveSegmentType();
+///////////////////////////////////////////////////////////////////////////////
+DeclareEnumSerializer(MultiCurveSegmentType);
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> class ObjProxy : public ork::Object {
