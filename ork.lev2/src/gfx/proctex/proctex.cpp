@@ -6,6 +6,7 @@
 #include <ork/pch.h>
 #include <ork/lev2/gfx/proctex/proctex.h>
 #include <ork/reflect/properties/DirectTypedMap.h>
+#include <ork/reflect/properties/DirectTyped.hpp>
 
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/material_freestyle.h>
@@ -195,15 +196,15 @@ void ImgModule::describeX(class_t* clazz) {
 }
 void Img32Module::describeX(class_t* clazz) {
   // RegisterObjOutPlug(Img32Module, ImgOut);
-  clazz
-      ->memberProperty("ImgOut", &Img32Module::OutAccessorImgOut) //
-      ->annotate<bool>("editor.visible", false);
+  // clazz
+  //  ->memberProperty("ImgOut", &Img32Module::OutAccessorImgOut) //
+  //->annotate<bool>("editor.visible", false);
 }
 void Img64Module::describeX(class_t* clazz) {
   // RegisterObjOutPlug(Img64Module, ImgOut);
-  clazz
-      ->memberProperty("ImgOut", &Img64Module::OutAccessorImgOut) //
-      ->annotate<bool>("editor.visible", false);
+  // clazz
+  //  ->memberProperty("ImgOut", &Img64Module::OutAccessorImgOut) //
+  //->annotate<bool>("editor.visible", false);
 }
 ImgModule::ImgModule()
     : mExport(false) {

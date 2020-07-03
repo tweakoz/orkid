@@ -14,20 +14,17 @@
 #include <ork/kernel/opq.h>
 #include <ork/asset/AssetManager.hpp>
 #include <ork/lev2/aud/audiodevice.h>
-#include <ork/lev2/aud/audiobank.h>
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::FxShaderAsset, "FxShader");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::TextureAsset, "lev2tex");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::XgmModelAsset, "xgmodel");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::XgmAnimAsset, "xganim");
+ImplementReflectionX(ork::lev2::FxShaderAsset, "FxShader");
+ImplementReflectionX(ork::lev2::TextureAsset, "lev2tex");
+ImplementReflectionX(ork::lev2::XgmModelAsset, "xgmodel");
+ImplementReflectionX(ork::lev2::XgmAnimAsset, "xganim");
 
 template class ork::orklut<ork::PoolString, ork::lev2::FxShaderAsset*>;
 template class ork::asset::AssetManager<ork::lev2::FxShaderAsset>;
 template class ork::asset::AssetManager<ork::lev2::XgmModelAsset>;
 template class ork::asset::AssetManager<ork::lev2::TextureAsset>;
 template class ork::asset::AssetManager<ork::lev2::XgmAnimAsset>;
-template class ork::asset::AssetManager<ork::lev2::AudioStream>;
-template class ork::asset::AssetManager<ork::lev2::AudioBank>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -60,8 +57,9 @@ public:
     AddLocation(srcctx, ".obj");
   }
 
-  bool LoadFileAsset(asset::asset_ptr_t asset, ConstString filename) override {
-    AssetPath assetpath(filename);
+  bool LoadFileAsset(
+      asset::asset_ptr_t asset, //
+      AssetPath assetpath) override {
     auto absolutepath = assetpath.ToAbsolute();
     auto modelasset   = std::dynamic_pointer_cast<XgmModelAsset>(asset);
     printf("LoadModelAsset<%s>\n", absolutepath.c_str());
@@ -72,7 +70,7 @@ public:
         absolutepath.GetExtension() == "glb" or //
         absolutepath.GetExtension() == "gltf") {
       modelasset->clearModel();
-      OK = XgmModel::LoadUnManaged(modelasset->GetModel(), filename.c_str());
+      OK = XgmModel::LoadUnManaged(modelasset->GetModel(), assetpath);
       asset::AssetManager<lev2::TextureAsset>::AutoLoad();
       // route to caching assimp->xgm processor
       OrkAssert(OK);
@@ -96,11 +94,12 @@ ork::asset::FileAssetLoader* modelLoader() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmModelAsset::Describe() {
+void XgmModelAsset::describeX(class_t* clazz) {
   auto loader = modelLoader();
-  GetClassStatic()->AddLoader(loader);
+  /*GetClassStatic()->AddLoader(loader);
   GetClassStatic()->SetAssetNamer("");
   GetClassStatic()->AddTypeAlias(ork::AddPooledLiteral("xgmodel"));
+  */
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -120,12 +119,13 @@ public:
     AddLocation(lev2ctx, ".dds");
   }
 
-  bool LoadFileAsset(asset::asset_ptr_t asset, ConstString filename) {
-    ork::file::Path pth(filename.c_str());
+  bool LoadFileAsset(
+      asset::asset_ptr_t asset, //
+      AssetPath assetpath) {
     auto texture_asset                   = std::dynamic_pointer_cast<TextureAsset>(asset);
     texture_asset->GetTexture()->_varmap = texture_asset->_varmap;
     if (texture_asset->_varmap.hasKey("postproc")) {
-      printf("texasset<%p:%s> has postproc\n", texture_asset.get(), filename.c_str());
+      printf("texasset<%p:%s> has postproc\n", texture_asset.get(), assetpath.c_str());
     } else {
       // printf("texasset<%p:%s> does NOT have postproc\n", texture_asset, filename.c_str());
     }
@@ -135,7 +135,7 @@ public:
     while (0 == GfxEnv::GetRef().loadingContext()) {
       ork::msleep(100);
     }
-    auto p   = file::Path(asset->GetName());
+    auto p   = file::Path(asset->name());
     bool bOK = GfxEnv::GetRef().loadingContext()->TXI()->LoadTexture(p, texture_asset->GetTexture());
     OrkAssert(bOK);
     return true;
@@ -157,10 +157,10 @@ TextureAsset::~TextureAsset() {
     delete i;
 }
 
-void TextureAsset::Describe() {
-  GetClassStatic()->AddLoader(new StaticTexFileLoader);
-  GetClassStatic()->SetAssetNamer("");
-  GetClassStatic()->AddTypeAlias(ork::AddPooledLiteral("lev2tex"));
+void TextureAsset::describeX(class_t* clazz) {
+  // GetClassStatic()->AddLoader(new StaticTexFileLoader);
+  // GetClassStatic()->SetAssetNamer("");
+  // GetClassStatic()->AddTypeAlias(ork::AddPooledLiteral("lev2tex"));
 }
 
 void TextureAsset::SetTexture(Texture* pt) {
@@ -179,9 +179,9 @@ public:
     AddLocation(datactx, ".xga");
   }
 
-  bool LoadFileAsset(asset::asset_ptr_t asset, ConstString filename) override {
+  bool LoadFileAsset(asset::asset_ptr_t asset, AssetPath filename) override {
     auto animasset = std::dynamic_pointer_cast<XgmAnimAsset>(asset);
-    bool bOK       = XgmAnim::LoadUnManaged(animasset->GetAnim(), filename.c_str());
+    bool bOK       = XgmAnim::LoadUnManaged(animasset->GetAnim(), filename);
     OrkAssert(bOK);
     return true;
   }
@@ -197,11 +197,11 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmAnimAsset::Describe() {
+void XgmAnimAsset::describeX(class_t* clazz) {
   auto loader = new XgmAnimLoader;
-  GetClassStatic()->AddLoader(loader);
-  GetClassStatic()->SetAssetNamer("");
-  GetClassStatic()->AddTypeAlias(ork::AddPooledLiteral("xganim"));
+  // GetClassStatic()->AddLoader(loader);
+  // GetClassStatic()->SetAssetNamer("");
+  // GetClassStatic()->AddTypeAlias(ork::AddPooledLiteral("xganim"));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -212,7 +212,7 @@ class FxShaderLoader : public ork::asset::FileAssetLoader {
 public:
   FxShaderLoader();
 
-  bool LoadFileAsset(asset::asset_ptr_t asset, ConstString filename) final;
+  bool LoadFileAsset(asset::asset_ptr_t asset, AssetPath filename) final;
   void DestroyAsset(asset::asset_ptr_t asset) final {
     auto shader_asset = std::dynamic_pointer_cast<FxShaderAsset>(asset);
   }
@@ -241,11 +241,10 @@ FxShaderLoader::FxShaderLoader()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool FxShaderLoader::LoadFileAsset(asset::asset_ptr_t asset, ConstString filename) {
-  ork::file::Path pth(filename.c_str());
+bool FxShaderLoader::LoadFileAsset(asset::asset_ptr_t asset, AssetPath filename) {
   // printf("Loading Effect url<%s> abs<%s>\n", filename.c_str(), pth.ToAbsolute().c_str());
   auto pshader = std::dynamic_pointer_cast<FxShaderAsset>(asset);
-  bool bOK     = GfxEnv::GetRef().loadingContext()->FXI()->LoadFxShader(filename.c_str(), pshader->GetFxShader());
+  bool bOK     = GfxEnv::GetRef().loadingContext()->FXI()->LoadFxShader(filename, pshader->GetFxShader());
   OrkAssert(bOK);
   if (bOK)
     pshader->GetFxShader()->SetName(filename.c_str());
@@ -254,13 +253,13 @@ bool FxShaderLoader::LoadFileAsset(asset::asset_ptr_t asset, ConstString filenam
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void FxShaderAsset::Describe() {
+void FxShaderAsset::describeX(class_t* clazz) {
   auto loader = shaderLoader();
   // printf( "Registering FxShaderAsset\n" );
 
-  GetClassStatic()->AddLoader(loader);
-  GetClassStatic()->SetAssetNamer("orkshader://");
-  GetClassStatic()->AddTypeAlias(ork::AddPooledLiteral("fxshader"));
+  // GetClassStatic()->AddLoader(loader);
+  // GetClassStatic()->SetAssetNamer("orkshader://");
+  // GetClassStatic()->AddTypeAlias(ork::AddPooledLiteral("fxshader"));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -271,8 +270,6 @@ void autoloadAssets(bool wait) {
     do {
       loaded = false;
       loaded = asset::AssetManager<lev2::XgmAnimAsset>::AutoLoad() || loaded;
-      loaded = asset::AssetManager<lev2::AudioStream>::AutoLoad() || loaded;
-      loaded = asset::AssetManager<lev2::AudioBank>::AutoLoad() || loaded;
       loaded = asset::AssetManager<lev2::FxShaderAsset>::AutoLoad() || loaded;
       loaded = asset::AssetManager<lev2::XgmModelAsset>::AutoLoad() || loaded;
       loaded = asset::AssetManager<lev2::TextureAsset>::AutoLoad() || loaded;

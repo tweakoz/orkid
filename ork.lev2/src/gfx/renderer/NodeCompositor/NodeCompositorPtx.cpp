@@ -148,6 +148,7 @@ typedef std::set<PtxCompositingNode*> instex_set_t;
 ork::LockedResource<instex_set_t> ginstexset;
 ///////////////////////////////////////////////////////////////////////////////
 void PtxCompositingNode::describeX(class_t* c) {
+  /*
   c->accessorProperty("ReturnTexture", &PtxCompositingNode::GetTextureAccessor, &PtxCompositingNode::SetTextureAccessor)
       ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
       ->annotate<ConstString>("editor.assettype", "lev2tex")
@@ -195,6 +196,7 @@ void PtxCompositingNode::describeX(class_t* c) {
   };
 
   lev2::TextureAsset::GetClassStatic()->AddLoader(nodins_loader);
+  */
 }
 ///////////////////////////////////////////////////////////////////////////////
 PtxCompositingNode::PtxCompositingNode()

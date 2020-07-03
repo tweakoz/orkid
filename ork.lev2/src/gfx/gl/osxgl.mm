@@ -371,7 +371,7 @@ void ContextGL::initializeOffscreenContext( OffscreenBuffer *pBuf )
 	//////////////////////////////////////////////
 
 	//mFbI.InitializeContext( pBuf );
-	pBuf->SetContext(this);
+	//pBuf->SetContext(this);
 
 	//////////////////////////////////////////////
 

@@ -956,7 +956,7 @@ class SpriteRenderer : public RendererModule {
       const ParticlePoolRenderBuffer& buffer,
       ork::lev2::Context* targ) final;
   void DoLink() final;
-  void doNotify(const ork::event::Event* event) final;
+  // void doNotify(const ork::event::Event* event) final;
 
 public:
   SpriteRenderer();

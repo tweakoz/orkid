@@ -47,7 +47,7 @@ struct NopEventFilter : public IWidgetEventFilter {
 };
 
 struct Widget : public ork::Object {
-  RttiDeclareAbstract(Widget, ork::Object);
+  DeclareAbstractX(Widget, ork::Object);
 
   friend struct Group;
 

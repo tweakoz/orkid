@@ -33,7 +33,7 @@ ImplementReflectionX(ork::lev2::CompositingData, "CompositingData");
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 void CompositingData::describeX(class_t* c) {
-  using namespace ork::reflect;
+/*  using namespace ork::reflect;
 
   RegisterProperty("Enable", &CompositingData::mbEnable);
 
@@ -49,7 +49,7 @@ void CompositingData::describeX(class_t* c) {
   static const char* EdGrpStr = "grp://Main Enable ActiveScene ActiveItem "
                                 "grp://Data Groups Scenes ";
   reflect::annotateClassForEditor<CompositingData>("editor.prop.groups", EdGrpStr);
-}
+*/}
 
 ///////////////////////////////////////////////////////////////////////////////
 

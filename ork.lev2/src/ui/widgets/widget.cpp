@@ -9,7 +9,7 @@
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 ///////////////////////////////////////////////////////////
-INSTANTIATE_TRANSPARENT_RTTI(ork::ui::Widget, "ui::Widget");
+ImplementReflectionX(ork::ui::Widget, "ui::Widget");
 ///////////////////////////////////////////////////////////
 namespace ork::ui {
 /////////////////////////////////////////////////////////////////////////
@@ -18,7 +18,7 @@ HandlerResult::HandlerResult(Widget* ph)
     , mHoldFocus(false) {
 }
 /////////////////////////////////////////////////////////////////////////
-void Widget::Describe() {
+void Widget::describeX(class_t* clazz) {
 }
 /////////////////////////////////////////////////////////////////////////
 Widget::Widget(const std::string& name, int x, int y, int w, int h)
@@ -389,24 +389,27 @@ void Widget::OnResize(void) {
 }
 /////////////////////////////////////////////////////////////////////////
 bool Widget::IsKeyDepressed(int ch) {
-  if (_uicontext and false == _uicontext->hasKeyboardFocus()) {
+  /*if (_uicontext and false == _uicontext->hasKeyboardFocus()) {
     return false;
   }
-  return OldSchool::GetRef().IsKeyDepressed(ch);
+  return OldSchool::GetRef().IsKeyDepressed(ch);*/
+  return false;
 }
 /////////////////////////////////////////////////////////////////////////
 bool Widget::IsHotKeyDepressed(const char* pact) {
-  if (_uicontext and false == _uicontext->hasKeyboardFocus()) {
-    return false;
-  }
-  return HotKeyManager::IsDepressed(pact);
+  return false;
+  /*  if (_uicontext and false == _uicontext->hasKeyboardFocus()) {
+      return false;
+    }
+    return HotKeyManager::IsDepressed(pact);*/
 }
 /////////////////////////////////////////////////////////////////////////
 bool Widget::IsHotKeyDepressed(const HotKey& hk) {
-  if (_uicontext and false == _uicontext->hasKeyboardFocus()) {
+  return false;
+  /*if (_uicontext and false == _uicontext->hasKeyboardFocus()) {
     return false;
   }
-  return HotKeyManager::IsDepressed(hk);
+  return HotKeyManager::IsDepressed(hk);*/
 }
 /////////////////////////////////////////////////////////////////////////
 Group* Widget::root() const {

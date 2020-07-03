@@ -24,20 +24,21 @@ template <typename AssetType>
 inline typename AssetManager<AssetType>::typed_asset_ptr_t //
 AssetManager<AssetType>::Create(const AssetPath& asset_name, const varmap::VarMap& vmap) {
   gLock.Lock();
-  auto asset       = AssetType::GetClassStatic()->DeclareAsset(asset_name, vmap);
-  auto typed_asset = std::dynamic_pointer_cast<AssetType>(asset);
+  // auto asset       = AssetType::GetClassStatic()->DeclareAsset(asset_name, vmap);
+  // auto typed_asset = std::dynamic_pointer_cast<AssetType>(asset);
   gLock.UnLock();
-  return typed_asset;
+  return typename AssetManager<AssetType>::typed_asset_ptr_t(nullptr);
 }
 
 template <typename AssetType>
 inline typename AssetManager<AssetType>::typed_asset_ptr_t //
 AssetManager<AssetType>::Find(const AssetPath& asset_name) {
   gLock.Lock();
-  auto asset       = AssetType::GetClassStatic()->FindAsset(asset_name);
-  auto typed_asset = std::dynamic_pointer_cast<AssetType>(asset);
+  // auto asset       = AssetType::GetClassStatic()->FindAsset(asset_name);
+  // auto typed_asset = std::dynamic_pointer_cast<AssetType>(asset);
   gLock.UnLock();
-  return typed_asset;
+  // return typed_asset;
+  return typename AssetManager<AssetType>::typed_asset_ptr_t(nullptr);
 }
 
 template <typename AssetType>
@@ -61,19 +62,20 @@ template <typename AssetType>
 inline typename AssetManager<AssetType>::typed_asset_ptr_t //
 AssetManager<AssetType>::LoadUnManaged(const AssetPath& asset_name) {
   gLock.Lock();
-  auto asset       = AssetType::GetClassStatic()->LoadUnManagedAsset(asset_name);
-  auto typed_asset = std::dynamic_pointer_cast<AssetType>(asset);
+  // auto asset       = AssetType::GetClassStatic()->LoadUnManagedAsset(asset_name);
+  // auto typed_asset = std::dynamic_pointer_cast<AssetType>(asset);
   gLock.UnLock();
-  return typed_asset;
+  return typename AssetManager<AssetType>::typed_asset_ptr_t(nullptr);
+  // return typed_asset;
 }
 
 template <typename AssetType> inline bool AssetManager<AssetType>::AutoLoad(int depth) {
   if (gbAUTOLOAD) {
     gLock.Lock();
-    auto asset_set = AssetType::GetClassStatic()->assetSet();
-    bool brval     = asset_set->Load(depth);
+    // auto asset_set = AssetType::GetClassStatic()->assetSet();
+    // bool brval     = asset_set->Load(depth);
     gLock.UnLock();
-    return brval;
+    return false;
   } else {
     return false;
   }
@@ -81,8 +83,8 @@ template <typename AssetType> inline bool AssetManager<AssetType>::AutoLoad(int 
 
 #if defined(ORKCONFIG_ASSET_UNLOAD)
 template <typename AssetType> inline bool AssetManager<AssetType>::AutoUnLoad(int depth) {
-  auto asset_set = AssetType::GetClassStatic()->assetSet();
-  return asset_set->UnLoad(depth);
+  // auto asset_set = AssetType::GetClassStatic()->assetSet();
+  // return asset_set->UnLoad(depth);
 }
 #endif
 

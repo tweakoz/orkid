@@ -1086,7 +1086,7 @@ static void _RenderHeightfield(RenderContextInstData& RCID) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void TerrainDrawableData::describeX(class_t* c) {
-  c->memberProperty("Offset", &TerrainDrawableData::_visualOffset);
+/*  c->memberProperty("Offset", &TerrainDrawableData::_visualOffset);
   c->memberProperty("FogColor", &TerrainDrawableData::_fogcolor);
   c->memberProperty("GrassColor", &TerrainDrawableData::_grass);
   c->memberProperty("SnowColor", &TerrainDrawableData::_snow);
@@ -1108,7 +1108,7 @@ void TerrainDrawableData::describeX(class_t* c) {
   c->floatProperty("GBlendStepLo", float_range{0, 1}, &TerrainDrawableData::_gblend_steplo);
   c->floatProperty("GBlendStepHi", float_range{0, 1}, &TerrainDrawableData::_gblend_stephi);
   ////////////////////////////////////////////////////////////////////////
-}
+*/}
 
 ///////////////////////////////////////////////////////////////////////////////
 
