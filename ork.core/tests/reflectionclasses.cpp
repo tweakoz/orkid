@@ -17,6 +17,7 @@
 #include <ork/math/cmatrix3.hpp>
 #include <ork/math/cmatrix4.hpp>
 #include <ork/asset/DynamicAssetLoader.h>
+#include <ork/asset/Asset.inl>
 
 using namespace ork;
 using namespace ork::object;
@@ -31,54 +32,7 @@ ImplementReflectionX(AssetTest, "AssetTest");
 ImplementReflectionX(SharedTest, "SharedTest");
 ImplementReflectionX(MapTest, "MapTest");
 ImplementReflectionX(ArrayTest, "ArrayTest");
-///////////////////////////////////////////////////////////////////////////////
-namespace ork::reflect {
-using namespace serdes;
-template <> //
-inline void ::ork::reflect::ITyped<asset::asset_ptr_t>::serialize(serdes::node_ptr_t sernode) const {
-  auto serializer = sernode->_serializer;
-  auto instance   = sernode->_ser_instance;
-  asset::asset_ptr_t value;
-  get(value, instance);
-  auto as_asset = std::dynamic_pointer_cast<asset::Asset>(value);
-  if (as_asset) {
-    auto mapnode           = serializer->pushNode(_name, serdes::NodeType::MAP);
-    mapnode->_parent       = sernode;
-    mapnode->_ser_instance = instance;
-    serializeMapSubLeaf<std::string>(mapnode, "class", as_asset->type());
-    serializeMapSubLeaf<std::string>(mapnode, "path", as_asset->_name.toStdString());
-    serializer->popNode(); // pop mapnode
-  } else {
-    sernode->_value.template Set<void*>(nullptr);
-    serializer->serializeLeaf(sernode);
-  }
-}
-template <> //
-inline void ::ork::reflect::ITyped<asset::asset_ptr_t>::deserialize(serdes::node_ptr_t mapnode) const {
-  using namespace serdes;
-  auto deserializer = mapnode->_deserializer;
-  auto instance     = mapnode->_deser_instance;
 
-  std::string key1_out, key2_out;
-  std::string val1 = deserializeMapSubLeaf<std::string>(mapnode, key1_out);
-  std::string val2 = deserializeMapSubLeaf<std::string>(mapnode, key2_out);
-  OrkAssert(key1_out == "class");
-  OrkAssert(key2_out == "path");
-
-  auto assetclazz = dynamic_cast<object::ObjectClass*>(Class::FindClass(val1.c_str()));
-  auto loader     = asset::getLoader(assetclazz);
-  if (loader->CheckAsset(val2)) {
-    auto newobj   = assetclazz->createShared();
-    auto newasset = std::dynamic_pointer_cast<asset::Asset>(newobj);
-    OrkAssert(newasset->type() == val1);
-    newasset->_name = val2;
-    loader->LoadAsset(newasset);
-    set(newasset, instance);
-  } else {
-    set(nullptr, instance);
-  }
-}
-} // namespace ork::reflect
 ///////////////////////////////////////////////////////////////////////////////
 void AssetTest::describeX(ObjectClass* clazz) {
   ///////////////////////////////////
