@@ -79,7 +79,7 @@ struct RenderContextInstData {
   const IRenderable* _dagrenderable         = nullptr;
   const RenderContextFrameData* _RCFD       = nullptr;
   const XgmMaterialStateInst* mMaterialInst = nullptr;
-  RenderGroupState mRenderGroupState        = ERGST_NONE;
+  RenderGroupState mRenderGroupState        = RenderGroupState::NONE;
 
   float mEngineParamFloats[kMaxEngineParamFloats];
 };

@@ -38,7 +38,7 @@ const RenderContextInstData RenderContextInstData::Default;
 ///////////////////////////////////////////////////////////////////////////////
 
 RenderContextInstData::RenderContextInstData(const RenderContextFrameData* RCFD)
-    : mRenderGroupState(ERGST_NONE) //
+    : mRenderGroupState(RenderGroupState::NONE) //
     , _RCFD(RCFD) {                 //
   if (_RCFD) {
     mpActiveRenderer = _RCFD->_renderer;

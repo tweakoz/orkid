@@ -305,12 +305,12 @@ void XgmModel::RenderRigid(
       static int giNUMPASSES             = 0;
       static bool gbDRAW                 = false;
       static bool gbGROUPENABLED         = false;
-      static RenderGroupState gLASTSTATE = ork::lev2::ERGST_NONE;
+      static RenderGroupState gLASTSTATE = ork::lev2::RenderGroupState::NONE;
 
       switch (rgs) {
         /////////////////////////////////////////////////////
-        case ork::lev2::ERGST_NONE: {
-          pTARG->debugPushGroup("XgmModel::RenderRigid::ERGST_NONE");
+        case ork::lev2::RenderGroupState::NONE: {
+          pTARG->debugPushGroup("XgmModel::RenderRigid::RenderGroupState::NONE");
           // pTARG->BindMaterial(pmat.get());
           int inumpasses = pmat->BeginBlock(pTARG, RCID);
           { RenderClus::RenderStd(pTARG, pmat.get(), cluster, inumpasses); }
@@ -320,7 +320,7 @@ void XgmModel::RenderRigid(
           break;
         }
         /////////////////////////////////////////////////////
-        case ork::lev2::ERGST_FIRST: {
+        case ork::lev2::RenderGroupState::FIRST: {
           // pTARG->BindMaterial(pmat.get());
           giNUMPASSES = pmat->BeginBlock(pTARG, RCID);
           if (giNUMPASSES == 1) {
@@ -339,8 +339,8 @@ void XgmModel::RenderRigid(
           break;
         }
         /////////////////////////////////////////////////////
-        case ork::lev2::ERGST_CONTINUE: {
-          OrkAssert((gLASTSTATE == ork::lev2::ERGST_FIRST) || (gLASTSTATE == ork::lev2::ERGST_CONTINUE));
+        case ork::lev2::RenderGroupState::CONTINUE: {
+          OrkAssert((gLASTSTATE == ork::lev2::RenderGroupState::FIRST) || (gLASTSTATE == ork::lev2::RenderGroupState::CONTINUE));
           if (gbGROUPENABLED) {
             if (gbDRAW) {
               pmat->UpdateMVPMatrix(pTARG);
@@ -355,8 +355,8 @@ void XgmModel::RenderRigid(
           break;
         }
         /////////////////////////////////////////////////////
-        case ork::lev2::ERGST_LAST: {
-          OrkAssert((gLASTSTATE == ork::lev2::ERGST_CONTINUE) || (gLASTSTATE == ork::lev2::ERGST_FIRST));
+        case ork::lev2::RenderGroupState::LAST: {
+          OrkAssert((gLASTSTATE == ork::lev2::RenderGroupState::CONTINUE) || (gLASTSTATE == ork::lev2::RenderGroupState::FIRST));
 
           if (gbGROUPENABLED) {
             if (gbDRAW) {

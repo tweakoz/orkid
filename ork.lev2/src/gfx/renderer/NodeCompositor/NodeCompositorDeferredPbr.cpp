@@ -10,7 +10,7 @@
 #include <ork/rtti/Class.h>
 #include <ork/kernel/opq.h>
 #include <ork/kernel/mutex.h>
-#include <ork/asset/AssetCategory.h>
+//#include <ork/asset/AssetCategory.h>
 #include <ork/reflect/properties/registerX.inl>
 #include <ork/application/application.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
@@ -60,12 +60,12 @@ void DeferredCompositingNodePbr::describeX(class_t* c) {
        "EnvironmentTexture", &DeferredCompositingNodePbr::_readEnvTexture, &DeferredCompositingNodePbr::_writeEnvTexture)
       ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
       ->annotate<ConstString>("editor.assettype", "lev2tex")
-      ->annotate<ConstString>("editor.assetclass", "lev2tex")
-      ->annotate<AssetCategory::vars_gen_t>("asset.deserialize.vargen", [](ork::Object* obj) -> const AssetCategory::vars_t& {
-        auto node = dynamic_cast<DeferredCompositingNodePbr*>(obj);
-        OrkAssert(node);
-        return node->_texAssetVarMap;
-      });
+      ->annotate<ConstString>("editor.assetclass", "lev2tex");
+  //->annotate<AssetCategory::vars_gen_t>("asset.deserialize.vargen", [](ork::Object* obj) -> const AssetCategory::vars_t& {
+  // auto node = dynamic_cast<DeferredCompositingNodePbr*>(obj);
+  // OrkAssert(node);
+  // return node->_texAssetVarMap;
+  //});
 }
 
 void DeferredCompositingNodePbr::_readEnvTexture(ork::rtti::ICastable*& tex) const {
