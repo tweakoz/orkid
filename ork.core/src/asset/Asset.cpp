@@ -27,13 +27,13 @@ Asset::Asset() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Asset::setName(PoolString name) {
+void Asset::setName(AssetPath name) {
   _name = name;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PoolString Asset::name() const {
+AssetPath Asset::name() const {
   return _name;
 }
 
@@ -48,9 +48,9 @@ assetset_ptr_t Asset::assetSet() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PoolString Asset::GetType() const {
+std::string Asset::type() const {
   auto objclazz = rtti::safe_downcast<object::ObjectClass*>(GetClass());
-  return objclazz->Name();
+  return objclazz->Name().c_str();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

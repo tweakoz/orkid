@@ -17,7 +17,7 @@ namespace ork { namespace asset {
 
 class AssetLoader {
 public:
-  virtual bool CheckAsset(const PieceString&)  = 0;
+  virtual bool CheckAsset(const AssetPath&)    = 0;
   virtual bool LoadAsset(asset_ptr_t asset)    = 0;
   virtual void DestroyAsset(asset_ptr_t asset) = 0;
 

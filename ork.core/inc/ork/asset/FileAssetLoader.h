@@ -29,13 +29,13 @@ struct FileAssetLoader : public AssetLoader {
   FileAssetLoader(const object::ObjectClass* ac)
       : _assetClass(ac) {
   }
-  bool FindAsset(const PieceString&, MutableString result, int first_extension = 0);
-  bool CheckAsset(const PieceString&) override;
+  bool FindAsset(const AssetPath&, AssetPath& result_out, int first_extension = 0);
+  bool CheckAsset(const AssetPath&) override;
   bool LoadAsset(asset_ptr_t asset) override;
   void AddLocation(filedevctx_constptr_t b, file_ext_t e);
 
 protected:
-  virtual bool LoadFileAsset(asset_ptr_t asset, ConstString filename) = 0;
+  virtual bool LoadFileAsset(asset_ptr_t asset, AssetPath filename) = 0;
   std::set<file::Path> EnumerateExisting() override;
 
   const object::ObjectClass* _assetClass;

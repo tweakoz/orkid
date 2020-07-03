@@ -77,7 +77,10 @@ void FileAssetLoader::AddLocation(filedevctx_constptr_t b, file_ext_t e) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool FileAssetLoader::FindAsset(const PieceString& name, MutableString result, int first_extension) {
+bool FileAssetLoader::FindAsset(
+    const AssetPath& name, //
+    AssetPath& result_out,
+    int first_extension) {
   //////////////////////////////////////////
   // do we already have an extension
   //////////////////////////////////////////
@@ -148,7 +151,7 @@ bool FileAssetLoader::FindAsset(const PieceString& name, MutableString result, i
     if (has_valid_extension) // path already have an extension ?
     {
       if (FileEnv::DoesFileExist(MungedPath)) {
-        result = MungedPath.c_str();
+        result_out = MungedPath.c_str();
         return true;
       }
     } else // no extension test the registered extensions
@@ -161,7 +164,7 @@ bool FileAssetLoader::FindAsset(const PieceString& name, MutableString result, i
         if (FileEnv::DoesFileExist(MungedPath)) {
           // pathobj.SetExtension( extension.c_str() );
 
-          result = MungedPath.c_str();
+          result_out = MungedPath.c_str();
           return true;
         }
       }
@@ -173,13 +176,12 @@ bool FileAssetLoader::FindAsset(const PieceString& name, MutableString result, i
   // try the original path
   //////////////////////////////////////////
 
-  PieceString thename = name;
+  AssetPath thename = name;
 
   if (has_valid_extension) {
     printf("TESTPTH3<%s>\n", pathobjnoq.c_str());
     if (FileEnv::DoesFileExist(pathobjnoq)) {
-      ork::PieceString ps(pathobjnoq.c_str());
-      result = ps;
+      result_out = pathobjnoq.c_str();
       printf("PTH3<%s>\n", pathobjnoq.c_str());
       return true;
     }
@@ -189,7 +191,7 @@ bool FileAssetLoader::FindAsset(const PieceString& name, MutableString result, i
       bool exists = FileEnv::DoesFileExist(pathobjnoq);
       printf("TESTPTH4<%s> exists<%d>\n", pathobjnoq.c_str(), int(exists));
       if (exists) {
-        result = pathobjnoq.c_str();
+        result_out = pathobjnoq.c_str();
         printf("PTH4<%s>\n", pathobjnoq.c_str());
         return true;
       }
@@ -202,8 +204,8 @@ bool FileAssetLoader::FindAsset(const PieceString& name, MutableString result, i
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool FileAssetLoader::CheckAsset(const PieceString& name) {
-  ArrayString<0> null_result;
+bool FileAssetLoader::CheckAsset(const AssetPath& name) {
+  AssetPath null_result;
 
   return FindAsset(name, null_result);
 }
@@ -212,7 +214,7 @@ bool FileAssetLoader::CheckAsset(const PieceString& name) {
 
 bool FileAssetLoader::LoadAsset(asset_ptr_t asset) {
   float ftime1 = ork::OldSchool::GetRef().GetLoResRelTime();
-  ArrayString<256> asset_name;
+  AssetPath asset_name;
 
   ///////////////////////////////////////////////////////////////////////////////
   if (false == FindAsset(asset->name(), asset_name)) {

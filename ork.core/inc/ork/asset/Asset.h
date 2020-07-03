@@ -21,17 +21,16 @@ class Asset : public Object {
 
 public:
   Asset();
-  void setName(PoolString name);
-  PoolString name() const;
-  virtual PoolString GetType() const;
+  void setName(AssetPath name);
+  AssetPath name() const;
+  virtual std::string type() const;
   bool Load() const;
   bool LoadUnManaged() const;
   bool IsLoaded() const;
   assetset_ptr_t assetSet() const;
 
   varmap::VarMap _varmap;
-  PoolString _name;
-  AssetPath _path;
+  AssetPath _name;
 };
 
 using asset_ptr_t      = std::shared_ptr<Asset>;

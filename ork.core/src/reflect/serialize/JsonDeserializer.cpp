@@ -185,6 +185,7 @@ serdes::node_ptr_t JsonDeserializer::_parseSubNode(
       break;
     case rapidjson::kStringType:
       child_node->_value.Set<std::string>(subvalue.GetString());
+      // printf("gotstr<%s>\n", child_node->_value.Get<std::string>().c_str());
       break;
     case rapidjson::kNumberType:
       child_node->_value.Set<double>(subvalue.GetDouble());
@@ -214,7 +215,6 @@ serdes::node_ptr_t JsonDeserializer::deserializeElement(node_ptr_t elemnode) {
       const auto& childvalue = mapimplnode->_iterator->value;
       childnode              = _parseSubNode(elemnode, childvalue);
       childnode->_key        = mapimplnode->_iterator->name.GetString();
-      childnode->_value      = childnode->_value;
       mapimplnode->_iterator++;
     } break;
     case NodeType::ARRAY_ELEMENT_LEAF:

@@ -15,14 +15,14 @@
 #include <ork/reflect/properties/register.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace asset {
+namespace ork::asset {
 ///////////////////////////////////////////////////////////////////////////////
 
 // class Asset;
 
 template <typename Operator> static void Apply(AssetSetLevel* top_level, Operator op, int depth = -1);
 
-std::pair<AssetSetEntry*, bool> FindAssetEntryInternal(AssetSetLevel* top_level, PoolString name);
+std::pair<AssetSetEntry*, bool> FindAssetEntryInternal(AssetSetLevel* top_level, AssetPath name);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -56,7 +56,7 @@ AssetSet::AssetSet()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void AssetSet::Register(PoolString name, asset_ptr_t asset, AssetLoader* loader) {
+void AssetSet::Register(AssetPath name, asset_ptr_t asset, AssetLoader* loader) {
   if (NULL == mTopLevel)
     PushLevel(ork::rtti::safe_downcast<object::ObjectClass*>(asset->GetClass()));
 
@@ -74,7 +74,7 @@ void AssetSet::Register(PoolString name, asset_ptr_t asset, AssetLoader* loader)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-asset_ptr_t AssetSet::FindAsset(PoolString name) {
+asset_ptr_t AssetSet::FindAsset(AssetPath name) {
   auto entry = FindAssetEntry(name);
 
   if (entry)
@@ -85,13 +85,13 @@ asset_ptr_t AssetSet::FindAsset(PoolString name) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-AssetSetEntry* AssetSet::FindAssetEntry(PoolString name) {
+AssetSetEntry* AssetSet::FindAssetEntry(AssetPath name) {
   return FindAssetEntryInternal(mTopLevel, name).first;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-AssetLoader* AssetSet::FindLoader(PoolString name) {
+AssetLoader* AssetSet::FindLoader(AssetPath name) {
   AssetSetEntry* entry = FindAssetEntry(name);
 
   if (entry)
@@ -102,7 +102,7 @@ AssetLoader* AssetSet::FindLoader(PoolString name) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-std::pair<AssetSetEntry*, bool> FindAssetEntryInternal(AssetSetLevel* top_level, PoolString name) {
+std::pair<AssetSetEntry*, bool> FindAssetEntryInternal(AssetSetLevel* top_level, AssetPath name) {
   for (AssetSetLevel* level = top_level; //
        level != nullptr;
        level = level->Parent()) {
@@ -199,5 +199,5 @@ template <typename Operator> void Apply(AssetSetLevel* top_level, Operator op, i
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-}} // namespace ork::asset
+} // namespace ork::asset
 ///////////////////////////////////////////////////////////////////////////////

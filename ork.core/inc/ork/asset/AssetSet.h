@@ -21,10 +21,10 @@ public:
 
   AssetSet();
 
-  void Register(PoolString name, asset_ptr_t asset, AssetLoader* loader = NULL);
-  asset_ptr_t FindAsset(PoolString name);
-  AssetSetEntry* FindAssetEntry(PoolString name);
-  AssetLoader* FindLoader(PoolString name);
+  void Register(AssetPath name, asset_ptr_t asset, AssetLoader* loader = NULL);
+  asset_ptr_t FindAsset(AssetPath name);
+  AssetSetEntry* FindAssetEntry(AssetPath name);
+  AssetLoader* FindLoader(AssetPath name);
 
   bool Load(int depth = -1);
 #if defined(ORKCONFIG_ASSET_UNLOAD)

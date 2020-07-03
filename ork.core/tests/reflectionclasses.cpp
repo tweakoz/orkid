@@ -44,8 +44,8 @@ inline void ::ork::reflect::ITyped<asset::asset_ptr_t>::serialize(serdes::node_p
     auto mapnode           = serializer->pushNode(_name, serdes::NodeType::MAP);
     mapnode->_parent       = sernode;
     mapnode->_ser_instance = instance;
-    serializeMapSubLeaf<std::string>(mapnode, "type", as_asset->GetType().c_str());
-    serializeMapSubLeaf<std::string>(mapnode, "path", as_asset->_path.toStdString());
+    serializeMapSubLeaf<std::string>(mapnode, "class", as_asset->type());
+    serializeMapSubLeaf<std::string>(mapnode, "path", as_asset->_name.toStdString());
     serializer->popNode(); // pop mapnode
   } else {
     sernode->_value.template Set<void*>(nullptr);
@@ -61,12 +61,12 @@ inline void ::ork::reflect::ITyped<asset::asset_ptr_t>::deserialize(serdes::node
   std::string key1_out, key2_out;
   std::string val1 = deserializeMapSubLeaf<std::string>(mapnode, key1_out);
   std::string val2 = deserializeMapSubLeaf<std::string>(mapnode, key2_out);
-  OrkAssert(key1_out == "type");
+  OrkAssert(key1_out == "class");
   OrkAssert(key2_out == "path");
 
   auto asset = std::make_shared<asset::Asset>();
-  OrkAssert(asset->GetType() == AddPooledString(val1.c_str()));
-  asset->_path = val2;
+  OrkAssert(asset->type() == val1);
+  asset->_name = val2;
   set(asset, instance);
 }
 } // namespace ork::reflect

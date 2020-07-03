@@ -34,7 +34,7 @@ std::set<file::Path> DynamicAssetLoader::EnumerateExisting() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool DynamicAssetLoader::CheckAsset(const PieceString& name) {
+bool DynamicAssetLoader::CheckAsset(const AssetPath& name) {
   return (mCheckFn != nullptr) ? mCheckFn(name) : false;
 }
 

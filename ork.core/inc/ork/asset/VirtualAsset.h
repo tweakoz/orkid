@@ -8,19 +8,18 @@
 
 namespace ork { namespace asset {
 
-class VirtualAsset : public Asset
-{
-    RttiDeclareConcrete( VirtualAsset, Asset );
-    
+class VirtualAsset : public Asset {
+  RttiDeclareConcrete(VirtualAsset, Asset);
+
 public:
-	VirtualAsset();
+  VirtualAsset();
 
-	void SetType(PoolString category);
+  void setType(std::string category);
 
-	PoolString GetType() const final;
+  std::string type() const final;
+
 private:
-	PoolString mCategory;
+  std::string _category;
 };
 
-
-} }
+}} // namespace ork::asset
