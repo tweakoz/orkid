@@ -104,7 +104,7 @@ struct DuRasterStateInterface : public RasterStateInterface {
   }
   void SetRGBAWriteMask(bool rgb, bool a) override {
   }
-  void SetBlending(EBlending eVal) override {
+  void SetBlending(Blending eVal) override {
   }
   void SetDepthTest(EDepthTest eVal) override {
   }
@@ -160,21 +160,21 @@ class DuGeometryBufferInterface final : public GeometryBufferInterface {
 
   void DrawPrimitiveEML(
       const VertexBufferBase& VBuf, //
-      EPrimitiveType eType,
+      PrimitiveType eType,
       int ivbase,
       int ivcount) override;
 
   void DrawIndexedPrimitiveEML(
       const VertexBufferBase& VBuf,
       const IndexBufferBase& IdxBuf,
-      EPrimitiveType eType,
+      PrimitiveType eType,
       int ivbase,
       int ivcount) override;
 
   void DrawInstancedIndexedPrimitiveEML(
       const VertexBufferBase& VBuf,
       const IndexBufferBase& IdxBuf,
-      EPrimitiveType eType,
+      PrimitiveType eType,
       size_t instance_count) override;
 
   //////////////////////////////////////////////

@@ -66,7 +66,7 @@ void Panel::DoDraw(ui::drawevent_constptr_t drwev) {
     vw.AddVertex(lev2::SVtxV12C4T16(x, y, 0.0f, 0.0f, 0.0f, 0xffffffff));
     vw.AddVertex(lev2::SVtxV12C4T16(x2, y2, 0.0f, 0.0f, 0.0f, 0xffffffff));
     vw.UnLock(tgt);
-    tgt->GBI()->DrawPrimitive(defmtl.get(), vw, lev2::EPrimitiveType::LINES);
+    tgt->GBI()->DrawPrimitive(defmtl.get(), vw, lev2::PrimitiveType::LINES);
   };
 
   mtxi->PushUIMatrix();
@@ -82,11 +82,11 @@ void Panel::DoDraw(ui::drawevent_constptr_t drwev) {
     if (has_foc)
       clr = _focuscolor;
 
-    defmtl->_rasterstate.SetBlending(lev2::EBLENDING_ALPHA);
+    defmtl->_rasterstate.SetBlending(lev2::Blending::ALPHA);
     tgt->PushModColor(clr);
     ren_quad(ixr, iyr, ixr + _geometry._w, iyr + _geometry._h);
     tgt->PopModColor();
-    defmtl->_rasterstate.SetBlending(lev2::EBLENDING_OFF);
+    defmtl->_rasterstate.SetBlending(lev2::Blending::OFF);
 
     /////////////
 

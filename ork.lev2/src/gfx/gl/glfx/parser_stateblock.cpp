@@ -94,11 +94,11 @@ void StateBlockNode::generate(shaderbuilder::BackEnd& backend) const {
   }
   if (_blendmode != "") {
     if (_blendmode == "ADDITIVE")
-      psb->addStateFn([=](Context* t) { t->RSI()->SetBlending(lev2::EBLENDING_ADDITIVE); });
+      psb->addStateFn([=](Context* t) { t->RSI()->SetBlending(lev2::Blending::ADDITIVE); });
     else if (_blendmode == "ALPHA_ADDITIVE")
-      psb->addStateFn([=](Context* t) { t->RSI()->SetBlending(lev2::EBLENDING_ALPHA_ADDITIVE); });
+      psb->addStateFn([=](Context* t) { t->RSI()->SetBlending(lev2::Blending::ALPHA_ADDITIVE); });
     else if (_blendmode == "ALPHA")
-      psb->addStateFn([=](Context* t) { t->RSI()->SetBlending(lev2::EBLENDING_ALPHA); });
+      psb->addStateFn([=](Context* t) { t->RSI()->SetBlending(lev2::Blending::ALPHA); });
   }
 
   //////////////////////

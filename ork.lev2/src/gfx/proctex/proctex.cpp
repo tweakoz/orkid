@@ -117,7 +117,7 @@ lev2::RtGroup* Buffer::GetRtGroup(lev2::Context* ptgt) {
     mRtGroup             = new RtGroup(ptgt, miW, miH);
     mRtGroup->_autoclear = false;
 
-    auto mrt = new ork::lev2::RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA8, miW, miH);
+    auto mrt = new ork::lev2::RtBuffer(lev2::RtgSlot::Slot0, lev2::EBufferFormat::RGBA8, miW, miH);
 
     mrt->_debugName = FormatString("%s<%p>", _basename.c_str(), this);
 
@@ -316,7 +316,7 @@ void RenderQuad(
 
   vw.UnLock(pTARG);
 
-  pTARG->GBI()->DrawPrimitive(material, vw, EPrimitiveType::TRIANGLES, ivcount);
+  pTARG->GBI()->DrawPrimitive(material, vw, PrimitiveType::TRIANGLES, ivcount);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void RenderQuadEML(
@@ -350,7 +350,7 @@ void RenderQuadEML(
 
   vw.UnLock(pTARG);
 
-  pTARG->GBI()->DrawPrimitiveEML(vw, EPrimitiveType::TRIANGLES, ivcount);
+  pTARG->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES, ivcount);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -382,7 +382,7 @@ void ImgModule::UpdateThumb(ProcTex& ptex) {
   auto partex = thumbmtl.param("ColorMap");
   thumbmtl._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
   thumbmtl._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
-  thumbmtl._rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+  thumbmtl._rasterstate.SetBlending(ork::lev2::Blending::OFF);
   thumbmtl._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
   // thumbmtl.SetUser0(fvec4(0.0f, 0.0f, 0.0f, float(wrbuf.miW)));
   thumbmtl.begin(tek, *RCFD);
@@ -663,7 +663,7 @@ AA16Render::AA16Render(ProcTex& ptx, Buffer& bo)
   downsamplemat.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
   downsamplemat._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
   downsamplemat._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
-  downsamplemat._rasterstate.SetBlending(ork::lev2::EBLENDING_ADDITIVE);
+  downsamplemat._rasterstate.SetBlending(ork::lev2::Blending::ADDITIVE);
   downsamplemat._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
   downsamplemat.SetUser0(fvec4(0.0f, 0.0f, 0.0f, float(bo.miW)));
 }

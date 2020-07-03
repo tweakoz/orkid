@@ -94,7 +94,7 @@ public:
 
 class VertexBufferBase {
 public:
-  VertexBufferBase(int iMax, int iFlush, int iSize, EPrimitiveType eType, EVtxStreamFormat eFmt);
+  VertexBufferBase(int iMax, int iFlush, int iSize, PrimitiveType eType, EVtxStreamFormat eFmt);
   virtual ~VertexBufferBase();
 
   ///////////////////////////////////////////////////////////////
@@ -127,8 +127,8 @@ public:
   EVtxStreamFormat GetStreamFormat(void) const {
     return EVtxStreamFormat(meStreamFormat);
   }
-  EPrimitiveType GetPrimType(void) const {
-    return EPrimitiveType(mePrimType);
+  PrimitiveType GetPrimType(void) const {
+    return PrimitiveType(mePrimType);
   }
 
   void* GetPBHandle(void) const {
@@ -169,7 +169,7 @@ protected:
   int miVtxSize;
   mutable int miLockWriteIndex;
   int miFlushSize;
-  EPrimitiveType mePrimType;
+  PrimitiveType mePrimType;
   EVtxStreamFormat meStreamFormat;
   void* mhHandle;
   mutable void* mhPBHandle;
@@ -189,7 +189,7 @@ template <typename T> class CVtxBuffer : public VertexBufferBase {
 public:
   typedef T vertex_t;
 
-  CVtxBuffer(int iMax, int iFlush, EPrimitiveType eType)
+  CVtxBuffer(int iMax, int iFlush, PrimitiveType eType)
       : VertexBufferBase(iMax, iFlush, sizeof(T), eType, T::meFormat) {
   }
 
@@ -256,7 +256,7 @@ template <typename T> class StaticVertexBuffer : public CVtxBuffer<T> {
   }
 
 public:
-  StaticVertexBuffer(int iMax, int iFlush, EPrimitiveType eType)
+  StaticVertexBuffer(int iMax, int iFlush, PrimitiveType eType)
       : CVtxBuffer<T>(iMax, iFlush, eType) {
     // printf("StaticVertexBuffer max<%d> len<%zu>\n", iMax, iMax * sizeof(T));
   }
@@ -270,7 +270,7 @@ template <typename T> class DynamicVertexBuffer : public CVtxBuffer<T> {
   }
 
 public:
-  DynamicVertexBuffer(int iMax, int iFlush, EPrimitiveType eType)
+  DynamicVertexBuffer(int iMax, int iFlush, PrimitiveType eType)
       : CVtxBuffer<T>(iMax, iFlush, eType) {
     // printf("DynamicVertexBuffer max<%d> len<%zu>\n", iMax, iMax * sizeof(T));
   }

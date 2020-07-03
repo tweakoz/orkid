@@ -33,78 +33,35 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::IManipInterface, "IManipInterface");
 
 ///////////////////////////////////////////////////////////////////////////////
 
-BEGIN_ENUM_SERIALIZER(ork::lev2, EBlending)
-DECLARE_ENUM(EBLENDING_OFF)
-DECLARE_ENUM(EBLENDING_PREMA)
-DECLARE_ENUM(EBLENDING_ALPHA)
-DECLARE_ENUM(EBLENDING_DSTALPHA)
-DECLARE_ENUM(EBLENDING_ADDITIVE)
-DECLARE_ENUM(EBLENDING_ALPHA_ADDITIVE)
-DECLARE_ENUM(EBLENDING_SUBTRACTIVE)
-DECLARE_ENUM(EBLENDING_ALPHA_SUBTRACTIVE)
-DECLARE_ENUM(EBLENDING_MODULATE)
-END_ENUM_SERIALIZER()
-
-BEGIN_ENUM_SERIALIZER(ork::lev2, EPrimitiveType)
-DECLARE_ENUM(EPrimitiveType::NONE)
-DECLARE_ENUM(EPrimitiveType::POINTS)
-DECLARE_ENUM(EPrimitiveType::LINES)
-DECLARE_ENUM(EPrimitiveType::LINESTRIP)
-DECLARE_ENUM(EPrimitiveType::LINELOOP)
-DECLARE_ENUM(EPrimitiveType::TRIANGLES)
-DECLARE_ENUM(EPrimitiveType::QUADS)
-DECLARE_ENUM(EPrimitiveType::TRIANGLESTRIP)
-DECLARE_ENUM(EPrimitiveType::TRIANGLEFAN)
-DECLARE_ENUM(EPrimitiveType::QUADSTRIP)
-DECLARE_ENUM(EPrimitiveType::MULTI)
-DECLARE_ENUM(EPrimitiveType::END)
-END_ENUM_SERIALIZER()
-
-///////////////////////////////////////////////////////////////////////////////
-
 using namespace ork::lev2; // too many things to add ork::lev2:: in front of in this file...
 
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
+BeginEnumRegistration(Blending);
+RegisterEnum(Blending, OFF);
+RegisterEnum(Blending, PREMA);
+RegisterEnum(Blending, ALPHA);
+RegisterEnum(Blending, DSTALPHA);
+RegisterEnum(Blending, ADDITIVE);
+RegisterEnum(Blending, ALPHA_ADDITIVE);
+RegisterEnum(Blending, SUBTRACTIVE);
+RegisterEnum(Blending, ALPHA_SUBTRACTIVE);
+RegisterEnum(Blending, MODULATE);
+EndEnumRegistration();
 
-static const std::string BlendingStrings[EBLENDING_END + 2] = {
-    "EBLENDING_OFF",
-    "EBLENDING_ALPHA",
-    "EBLENDING_DSTALPHA",
-    "EBLENDING_ADDITIVE",
-    "EBLENDING_ALPHA_ADDITIVE",
-    "EBLENDING_SUBTRACTIVE",
-    "EBLENDING_ALPHA_SUBTRACTIVE",
-    "EBLENDING_MODULATE"};
+BeginEnumRegistration(PrimitiveType);
+RegisterEnum(PrimitiveType, NONE);
+RegisterEnum(PrimitiveType, POINTS);
+RegisterEnum(PrimitiveType, LINES);
+RegisterEnum(PrimitiveType, LINESTRIP);
+RegisterEnum(PrimitiveType, LINELOOP);
+RegisterEnum(PrimitiveType, TRIANGLES);
+RegisterEnum(PrimitiveType, QUADS);
+RegisterEnum(PrimitiveType, TRIANGLESTRIP);
+RegisterEnum(PrimitiveType, TRIANGLEFAN);
+RegisterEnum(PrimitiveType, QUADSTRIP);
+RegisterEnum(PrimitiveType, MULTI);
+RegisterEnum(PrimitiveType, END);
+EndEnumRegistration();
 
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-namespace ork {
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-template <> const EPropType PropType<EBlending>::meType = EPROPTYPE_ENUM;
-///////////////////////////////////////////////////////////////////////////////
-template <> const char* PropType<EBlending>::mstrTypeName = "GfxEnv::EBlending";
-///////////////////////////////////////////////////////////////////////////////
-template <> EBlending PropType<EBlending>::FromString(const PropTypeString& String) {
-  return PropType::FindValFromStrings<EBlending>(String.c_str(), BlendingStrings, EBLENDING_END);
-}
-///////////////////////////////////////////////////////////////////////////////
-template <> void PropType<EBlending>::ToString(const EBlending& e, PropTypeString& tstr) {
-  tstr.set(BlendingStrings[int(e)].c_str());
-}
-///////////////////////////////////////////////////////////////////////////////
-template <> void PropType<EBlending>::GetValueSet(const std::string*& ValueStrings, int& NumStrings) {
-  NumStrings   = EBLENDING_END + 1;
-  ValueStrings = BlendingStrings;
-}
-}; // namespace ork
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 ECullTest GlobalCullTest = ECULLTEST_PASS_FRONT;
@@ -119,7 +76,7 @@ SRasterState::SRasterState() {
   mPointSize = 1;
   setScissorTest(ESCISSORTEST_OFF);
   SetAlphaTest(EALPHATEST_OFF, 0);
-  SetBlending(EBLENDING_OFF);
+  SetBlending(Blending::OFF);
   SetDepthTest(EDEPTHTEST_LEQUALS);
   SetShadeModel(ESHADEMODEL_SMOOTH);
   SetCullTest(ECULLTEST_PASS_FRONT);
@@ -160,9 +117,9 @@ GfxEnv::GfxEnv()
     , mpMainWindow(nullptr)
     , mGfxEnvMutex("GfxEnvGlobalMutex")
     , gLoaderTarget(nullptr)
-    , mVtxBufSharedVect(256 << 10, 0, EPrimitiveType::TRIANGLES)    // SVtxV12C4T16==32bytes
-    , mVtxBufSharedVect2(256 << 10, 0, EPrimitiveType::TRIANGLES)   // SvtxV12N12B12T8C4==48bytes
-    , _vtxBufSharedV16T16C16(1 << 20, 0, EPrimitiveType::TRIANGLES) // SvtxV12N12B12T8C4==48bytes
+    , mVtxBufSharedVect(256 << 10, 0, PrimitiveType::TRIANGLES)    // SVtxV12C4T16==32bytes
+    , mVtxBufSharedVect2(256 << 10, 0, PrimitiveType::TRIANGLES)   // SvtxV12N12B12T8C4==48bytes
+    , _vtxBufSharedV16T16C16(1 << 20, 0, PrimitiveType::TRIANGLES) // SvtxV12N12B12T8C4==48bytes
 {
   mVtxBufSharedVect.SetRingLock(true);
   mVtxBufSharedVect2.SetRingLock(true);

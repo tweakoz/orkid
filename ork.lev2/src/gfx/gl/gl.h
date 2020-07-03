@@ -95,7 +95,7 @@ struct GlDrawingInterface : public DrawingInterface {
 class GlImiInterface : public ImmInterface {
   virtual void DrawLine(const fvec4& From, const fvec4& To);
   virtual void DrawPoint(F32 fx, F32 fy, F32 fz);
-  virtual void DrawPrim(const fvec4* Points, int inumpoints, EPrimitiveType eType);
+  virtual void DrawPrim(const fvec4* Points, int inumpoints, PrimitiveType eType);
   virtual void _doBeginFrame() {
   }
   virtual void _doEndFrame() {
@@ -114,7 +114,7 @@ struct GlRasterStateInterface : public RasterStateInterface {
 
   void SetZWriteMask(bool bv) override;
   void SetRGBAWriteMask(bool rgb, bool a) override;
-  void SetBlending(EBlending eVal) override;
+  void SetBlending(Blending eVal) override;
   void SetDepthTest(EDepthTest eVal) override;
   void SetCullTest(ECullTest eVal) override;
   void setScissorTest(EScissorTest eVal) override;
@@ -167,21 +167,21 @@ private:
 
   void DrawPrimitiveEML(
       const VertexBufferBase& VBuf, //
-      EPrimitiveType eType,
+      PrimitiveType eType,
       int ivbase,
       int ivcount) override;
 
   void DrawIndexedPrimitiveEML(
       const VertexBufferBase& VBuf,
       const IndexBufferBase& IdxBuf,
-      EPrimitiveType eType,
+      PrimitiveType eType,
       int ivbase,
       int ivcount) override;
 
   void DrawInstancedIndexedPrimitiveEML(
       const VertexBufferBase& VBuf,
       const IndexBufferBase& IdxBuf,
-      EPrimitiveType eType,
+      PrimitiveType eType,
       size_t instance_count) override;
 
   //////////////////////////////////////////////

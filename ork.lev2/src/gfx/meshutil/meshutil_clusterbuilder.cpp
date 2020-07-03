@@ -120,7 +120,7 @@ void BuildXgmClusterPrimGroups(
 
       stripgroup->miNumIndices = inumidx;
       stripgroup->mpIndices    = pidxbuf;
-      stripgroup->mePrimType   = lev2::EPrimitiveType::TRIANGLESTRIP;
+      stripgroup->mePrimType   = lev2::PrimitiveType::TRIANGLESTRIP;
     }
   }
 
@@ -144,7 +144,7 @@ void BuildXgmClusterPrimGroups(
 
     StripGroup->miNumIndices = inumidx;
     StripGroup->mpIndices    = pidxbuf;
-    StripGroup->mePrimType   = lev2::EPrimitiveType::TRIANGLES;
+    StripGroup->mePrimType   = lev2::PrimitiveType::TRIANGLES;
   }
 }
 

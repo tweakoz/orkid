@@ -450,7 +450,7 @@ class RotSolid : public Img32Module {
   /////////////////////////////////////////
 
   int miNumSides;
-  ork::lev2::EBlending meBlendMode;
+  ork::lev2::Blending meBlendMode;
 
   Periodic mRadiusFunc;
   Periodic mIntensFunc;

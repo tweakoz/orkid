@@ -9,50 +9,37 @@
 #include <ork/util/crc.h>
 
 namespace ork::lev2 {
+
 ///////////////////////////////////////////////////////////////////////////////
 
-enum EField {
-  EFIELD_EVEN = 0,
-  EFIELD_ODD,
+enum class TargetType {
+  NONE = 0,
+  LOADING,
+  OFFSCREEN,
+  WINDOW,
+};
+
+enum class RtgSlot {
+  Slot0 = 0,
+  Slot1 = 1,
+  Slot2 = 2,
+  Slot3 = 3,
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enum EContextNiceness {
-  EGFXNICEMODE_GAME = 0, // the target is running as fast as it can
-  EGFXNICEMODE_APP       // only refresh UI when dirty (use from external apps like audio plugins, etc..)
+enum class UiColorMode {
+  MOD = 0,
+  VTX,
+  MODVTX,
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enum ETargetType {
-  ETGTTYPE_NONE = 0,
-  ETGTTYPE_LOADING,
-  ETGTTYPE_OFFSCREEN,
-  ETGTTYPE_WINDOW,
-};
-
-enum ERtgSlot {
-  ERTGSLOT0 = 0,
-  ERTGSLOT1 = 1,
-  ERTGSLOT2 = 2,
-  ERTGSLOT3 = 3,
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-enum EUIColorMode {
-  EUICOLOR_MOD = 0,
-  EUICOLOR_VTX,
-  EUICOLOR_MODVTX,
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-enum ETextureAddressMode {
-  ETEXADDR_CLAMP = 0,
-  ETEXADDR_WRAP,
-  ETEXADDR_END,
+enum class TextureAddressMode {
+  CLAMP = 0,
+  WRAP,
+  END,
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -111,7 +98,7 @@ enum struct EBufferFormat : crc_enum_t {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enum struct EPrimitiveType : crc_enum_t {
+enum struct PrimitiveType : crc_enum_t {
   CrcEnum(NONE),
   CrcEnum(POINTS),
   CrcEnum(LINES),
@@ -144,17 +131,17 @@ enum EAlphaTest {
 
 //////////////////////////////////////
 
-enum EBlending {
-  EBLENDING_OFF = 0,
-  EBLENDING_PREMA,             // (SrcClr) + (FBClr*(1-SrcAlpha))
-  EBLENDING_ALPHA,             // (SrcClr*SrcAlpha) + (FBClr*(1-SrcAlpha))
-  EBLENDING_DSTALPHA,          // (SrcClr*FBAlpha) + (FBClr*(1-FBAlpha))
-  EBLENDING_ADDITIVE,          // (SrcClr*1) + (FBClr*1)
-  EBLENDING_ALPHA_ADDITIVE,    // (SrcClr*SrcAlpha) + (FBClr*1)
-  EBLENDING_SUBTRACTIVE,       // (SrcClr*0) + (FBClr*(1-SrcColor))
-  EBLENDING_ALPHA_SUBTRACTIVE, // (SrcClr*0) + (FBClr*(1-SrcAlpha))
-  EBLENDING_MODULATE,          // (SrcClr*0) + (FBClr*(1-SrcAlpha))
-  EBLENDING_END,
+enum class Blending {
+  OFF = 0,
+  PREMA,             // (SrcClr) + (FBClr*(1-SrcAlpha))
+  ALPHA,             // (SrcClr*SrcAlpha) + (FBClr*(1-SrcAlpha))
+  DSTALPHA,          // (SrcClr*FBAlpha) + (FBClr*(1-FBAlpha))
+  ADDITIVE,          // (SrcClr*1) + (FBClr*1)
+  ALPHA_ADDITIVE,    // (SrcClr*SrcAlpha) + (FBClr*1)
+  SUBTRACTIVE,       // (SrcClr*0) + (FBClr*(1-SrcColor))
+  ALPHA_SUBTRACTIVE, // (SrcClr*0) + (FBClr*(1-SrcAlpha))
+  MODULATE,          // (SrcClr*0) + (FBClr*(1-SrcAlpha))
+  END,
 }; // 3 bit
 
 //////////////////////////////////////

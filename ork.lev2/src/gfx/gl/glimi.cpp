@@ -21,7 +21,7 @@ GlImiInterface::GlImiInterface( ContextGL& target )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlImiInterface::DrawPrim( const fvec4 *Points, int inumpoints, EPrimitiveType eType )
+void GlImiInterface::DrawPrim( const fvec4 *Points, int inumpoints, PrimitiveType eType )
 {
 /*	glBindBuffer( GL_ARRAY_BUFFER, 0 );
 	int inumpasses = mTarget.currentMaterial()->BeginBlock(&mTarget);
@@ -34,7 +34,7 @@ void GlImiInterface::DrawPrim( const fvec4 *Points, int inumpoints, EPrimitiveTy
 		{
 			switch( eType )
 			{
-				case EPrimitiveType::QUADS:
+				case PrimitiveType::QUADS:
 				{
 					glBegin( GL_QUADS );
 					for( int itri=0; itri<inumpoints; itri++ )
@@ -50,7 +50,7 @@ void GlImiInterface::DrawPrim( const fvec4 *Points, int inumpoints, EPrimitiveTy
 					break;
 				}
 
-				case EPrimitiveType::TRIANGLES:
+				case PrimitiveType::TRIANGLES:
 				{
 					glBegin( GL_TRIANGLES );
 					for( int itri=0; itri<inumpoints; itri++ )

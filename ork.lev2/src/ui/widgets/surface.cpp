@@ -77,7 +77,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
 
   if (nullptr == mRtGroup) {
     mRtGroup  = new lev2::RtGroup(tgt, _geometry._w, _geometry._h, 1);
-    auto mrt0 = new lev2::RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA8, 1280, 720);
+    auto mrt0 = new lev2::RtBuffer(lev2::RtgSlot::Slot0, lev2::EBufferFormat::RGBA8, 1280, 720);
     mRtGroup->SetMrt(0, mrt0);
   }
   ///////////////////////////////////////

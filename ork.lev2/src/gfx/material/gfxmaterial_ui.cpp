@@ -41,11 +41,11 @@ GfxMaterialUI::GfxMaterialUI(Context* pTarg)
     , hTekCircle(nullptr)
     , hTransform(nullptr)
     , hModColor(nullptr)
-    , meUIColorMode(EUICOLOR_MOD) {
+    , meUIColorMode(UiColorMode::MOD) {
   miNumPasses = 1;
   _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
   _rasterstate.SetAlphaTest(EALPHATEST_OFF);
-  _rasterstate.SetBlending(EBLENDING_OFF);
+  _rasterstate.SetBlending(Blending::OFF);
   _rasterstate.SetDepthTest(EDEPTHTEST_OFF);
   _rasterstate.SetZWriteMask(false);
   _rasterstate.SetCullTest(ECULLTEST_OFF);
@@ -85,13 +85,13 @@ int GfxMaterialUI::BeginBlock(Context* pTarg, const RenderContextInstData& MatCt
     case ETYPE_STANDARD: {
       switch (meUIColorMode) {
         default:
-        case EUICOLOR_MOD:
+        case UiColorMode::MOD:
           htek = hTekMod;
           break;
-        case EUICOLOR_VTX:
+        case UiColorMode::VTX:
           htek = hTekVtx;
           break;
-        case EUICOLOR_MODVTX:
+        case UiColorMode::MODVTX:
           htek = hTekModVtx;
           break;
       }
@@ -147,7 +147,7 @@ GfxMaterialUIText::GfxMaterialUIText(Context* pTarg)
     , hModColor(0)
     , hColorMap(0) {
   _rasterstate.SetAlphaTest(EALPHATEST_GREATER, 0.0f);
-  _rasterstate.SetBlending(EBLENDING_OFF);
+  _rasterstate.SetBlending(Blending::OFF);
   _rasterstate.SetDepthTest(EDEPTHTEST_ALWAYS);
   _rasterstate.SetZWriteMask(false);
   _rasterstate.SetCullTest(ECULLTEST_OFF);
@@ -229,7 +229,7 @@ GfxMaterialUITextured::GfxMaterialUITextured(Context* pTarg, const std::string& 
   miNumPasses = 1;
   _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
   _rasterstate.SetAlphaTest(EALPHATEST_OFF);
-  _rasterstate.SetBlending(EBLENDING_OFF);
+  _rasterstate.SetBlending(Blending::OFF);
   _rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
   _rasterstate.SetCullTest(ECULLTEST_OFF);
 

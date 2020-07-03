@@ -15,7 +15,7 @@
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-RtBuffer::RtBuffer(ERtgSlot slot, EBufferFormat efmt, int iW, int iH)
+RtBuffer::RtBuffer(RtgSlot slot, EBufferFormat efmt, int iW, int iH)
     : miW(iW)
     , miH(iH)
     , mType(slot)
@@ -53,7 +53,7 @@ RtGroup::~RtGroup() {
 
 void RtGroup::SetMrt(int idx, RtBuffer* buf) {
   OrkAssert((idx >= 0) && (idx < kmaxmrts)); // ensure our mrt index is in range
-  // OrkAssert( (ERTGSLOT0+idx) == Buffer->GetTargetType() );	// ensure our mrt type matches the index
+  // OrkAssert( (RtgSlot::Slot0+idx) == Buffer->GetTargetType() );	// ensure our mrt type matches the index
   OrkAssert(idx == mNumMrts); // ensure we add mrt's sequentially
   mMrt[mNumMrts] = buf;
   mNumMrts++;

@@ -944,7 +944,7 @@ class SpriteRenderer : public RendererModule {
   PoolString mActiveGradient;
   PoolString mActiveMaterial;
 
-  ork::lev2::EBlending meBlendMode;
+  ork::lev2::Blending meBlendMode;
   ParticleItemAlignment meAlignment;
   bool mbSort;
   int miImageFrame;
@@ -987,7 +987,7 @@ class StreakRenderer : public RendererModule {
   //////////////////////////////////////////////////
 
   ork::Gradient<ork::fvec4> mGradient;
-  ork::lev2::EBlending meBlendMode;
+  ork::lev2::Blending meBlendMode;
   GfxMaterial3DSolid* mpMaterial;
   ork::lev2::TextureAsset* mTexture;
   bool mbSort;

@@ -46,8 +46,8 @@ struct IMPL {
     if (nullptr == _rtg) {
       _material.gpuInit(pTARG);
       _rtg             = new RtGroup(pTARG, _width, _height, NUMSAMPLES);
-      auto buf1        = new RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA16UI, _width, _height);
-      auto buf2        = new RtBuffer(lev2::ERTGSLOT1, lev2::EBufferFormat::RGBA32F, _width, _height);
+      auto buf1        = new RtBuffer(lev2::RtgSlot::Slot0, lev2::EBufferFormat::RGBA16UI, _width, _height);
+      auto buf2        = new RtBuffer(lev2::RtgSlot::Slot1, lev2::EBufferFormat::RGBA32F, _width, _height);
       buf1->_debugName = "PickingRt0";
       buf2->_debugName = "PickingRt1";
       _rtg->SetMrt(0, buf1);

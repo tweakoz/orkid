@@ -110,7 +110,7 @@ void Octaves::compute(ProcTex& ptex) {
     mOctMaterial.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
     mOctMaterial._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
     mOctMaterial._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
-    mOctMaterial._rasterstate.SetBlending(ork::lev2::EBLENDING_ADDITIVE);
+    mOctMaterial._rasterstate.SetBlending(ork::lev2::Blending::ADDITIVE);
     mOctMaterial._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
     mOctMaterial._rasterstate.SetZWriteMask(false);
 
@@ -193,7 +193,7 @@ void Cells::Describe() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 Cells::Cells()
-    : mVertexBuffer(65536, 0, ork::lev2::EPrimitiveType::MULTI)
+    : mVertexBuffer(65536, 0, ork::lev2::PrimitiveType::MULTI)
     , miSeedA(0)
     , miSeedB(0)
     , miDimU(2)
@@ -422,7 +422,7 @@ void Cells::compute(ProcTex& ptex) {
         fmtx4 mtx;
         mtx.SetTranslation(wpu + wpv);
         mPTX.GetTarget()->MTXI()->PushMMatrix(mtx);
-        mPTX.GetTarget()->GBI()->DrawPrimitive(&stdmat, mVW, ork::lev2::EPrimitiveType::TRIANGLES);
+        mPTX.GetTarget()->GBI()->DrawPrimitive(&stdmat, mVW, ork::lev2::PrimitiveType::TRIANGLES);
         mPTX.GetTarget()->MTXI()->PopMMatrix();
       }
       mPTX.GetTarget()->MTXI()->PopPMatrix();
@@ -441,7 +441,7 @@ void Cells::compute(ProcTex& ptex) {
       stdmat.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR);
       stdmat._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
       stdmat._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
-      stdmat._rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+      stdmat._rasterstate.SetBlending(ork::lev2::Blending::OFF);
       stdmat._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
       stdmat.SetUser0(fvec4(0.0f, 0.0f, 0.0f, float(bo.miW)));
 

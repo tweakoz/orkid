@@ -138,7 +138,7 @@ void RtGroupOutputCompositingNode::composite(CompositorDrawData& drawdata) {
         auto this_buf = context->FBI()->GetThisBuffer();
         auto& mtl     = impl->_blit2screenmtl;
         mtl.begin(impl->_fxtechnique1x1, framedata);
-        mtl._rasterstate.SetBlending(EBLENDING_OFF);
+        mtl._rasterstate.SetBlending(Blending::OFF);
         mtl.bindParamCTex(impl->_fxpColorMapA, texA);
         mtl.bindParamCTex(impl->_fxpColorMapB, texB);
         mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());

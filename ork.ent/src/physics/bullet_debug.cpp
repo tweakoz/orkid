@@ -180,7 +180,7 @@ void PhysicsDebugger::render(const RenderContextInstData& RCID, lineqptr_t lines
     mtx_dbg.SetTranslation(cam_z * -.013f);
 
     context->MTXI()->PushMMatrix(mtx_dbg);
-    context->GBI()->DrawPrimitive(&material, vwriter, ork::lev2::EPrimitiveType::LINES);
+    context->GBI()->DrawPrimitive(&material, vwriter, ork::lev2::PrimitiveType::LINES);
     context->MTXI()->PopMMatrix();
     context->PopModColor();
   }

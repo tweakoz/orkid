@@ -255,7 +255,7 @@ void ProcTexOutputQuad::OnLinkEntity(Simulation* psi, Entity* pent) {
 
     const fmtx4& mtx = renderable->GetMatrix();
 
-    context->GBI()->DrawPrimitive(mtl, vw, lev2::EPrimitiveType::TRIANGLES, 6);
+    context->GBI()->DrawPrimitive(mtl, vw, lev2::PrimitiveType::TRIANGLES, 6);
 
     context->MTXI()->PopMMatrix();
   };

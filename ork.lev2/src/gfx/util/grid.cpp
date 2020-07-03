@@ -128,7 +128,7 @@ void Grid3d::Render(RenderContextFrameData& FrameData) const {
   {
     static GfxMaterial3DSolid gridmat(pTARG);
     gridmat.SetColorMode(GfxMaterial3DSolid::EMODE_MOD_COLOR);
-    gridmat._rasterstate.SetBlending(EBLENDING_ADDITIVE);
+    gridmat._rasterstate.SetBlending(Blending::ADDITIVE);
 
     ////////////////////////////////
     // Grid
@@ -349,7 +349,7 @@ void Grid2d::Render(Context* pTARG, int iw, int ih) {
   {
     static GfxMaterial3DSolid gridmat(pTARG);
     gridmat.SetColorMode(GfxMaterial3DSolid::EMODE_VERTEX_COLOR);
-    gridmat._rasterstate.SetBlending(EBLENDING_ADDITIVE);
+    gridmat._rasterstate.SetBlending(Blending::ADDITIVE);
 
     ////////////////////////////////
     // Grid
@@ -401,7 +401,7 @@ void Grid2d::Render(Context* pTARG, int iw, int ih) {
         vw.AddVertex(v1);
       }
       vw.UnLock(pTARG);
-      pTARG->GBI()->DrawPrimitive(&gridmat, vw, ork::lev2::EPrimitiveType::LINES);
+      pTARG->GBI()->DrawPrimitive(&gridmat, vw, ork::lev2::PrimitiveType::LINES);
     }
   }
   mtxi->PopPMatrix();

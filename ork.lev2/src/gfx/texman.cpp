@@ -20,8 +20,8 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 void TextureSamplingModeData::PresetPointAndClamp() {
-  mTexAddrModeU   = ETEXADDR_CLAMP;
-  mTexAddrModeV   = ETEXADDR_CLAMP;
+  mTexAddrModeU   = TextureAddressMode::CLAMP;
+  mTexAddrModeV   = TextureAddressMode::CLAMP;
   mTexFiltModeMin = ETEXFILT_POINT;
   mTexFiltModeMag = ETEXFILT_POINT;
   mTexFiltModeMip = ETEXFILT_POINT;
@@ -30,8 +30,8 @@ void TextureSamplingModeData::PresetPointAndClamp() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void TextureSamplingModeData::PresetTrilinearWrap() {
-  mTexAddrModeU   = ETEXADDR_WRAP;
-  mTexAddrModeV   = ETEXADDR_WRAP;
+  mTexAddrModeU   = TextureAddressMode::WRAP;
+  mTexAddrModeV   = TextureAddressMode::WRAP;
   mTexFiltModeMin = ETEXFILT_LINEAR;
   mTexFiltModeMag = ETEXFILT_LINEAR;
   mTexFiltModeMip = ETEXFILT_LINEAR;

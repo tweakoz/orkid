@@ -374,7 +374,7 @@ singularitybenchapp_ptr_t createBenchmarkApp(
         vw.AddVertex(vtx_t(fvec4(xr, tgtrect._h - yr, 0.0), fvec4(), color));
       }
       vw.UnLock(context);
-      context->GBI()->DrawPrimitiveEML(vw, EPrimitiveType::LINES);
+      context->GBI()->DrawPrimitiveEML(vw, PrimitiveType::LINES);
       //////////////////////////////////////////////
       // bin_time = 20 * i / histosize
       // bin_time/i = 20/histosize
@@ -387,7 +387,7 @@ singularitybenchapp_ptr_t createBenchmarkApp(
       vw2.AddVertex(vtx_t(fvec4(desx, 0, 0.0), fvec4(), fvec4(1, 1, 0, 0)));
       vw2.AddVertex(vtx_t(fvec4(desx, tgtrect._h, 0.0), fvec4(), fvec4(1, 1, 0, 0)));
       vw2.UnLock(context);
-      context->GBI()->DrawPrimitiveEML(vw2, EPrimitiveType::LINES);
+      context->GBI()->DrawPrimitiveEML(vw2, PrimitiveType::LINES);
       //////////////////////////////////////////////
       // draw text
       //////////////////////////////////////////////

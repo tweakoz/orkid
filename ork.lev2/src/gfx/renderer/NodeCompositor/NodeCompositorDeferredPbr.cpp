@@ -164,7 +164,7 @@ struct PbrNodeImpl {
     // base lighting (environent IBL lighting)
     //////////////////////////////////////////////////////////////////
     targ->debugPushGroup("Deferred::BaseLighting");
-    _context._lightingmtl._rasterstate.SetBlending(EBLENDING_OFF);
+    _context._lightingmtl._rasterstate.SetBlending(Blending::OFF);
     _context._lightingmtl._rasterstate.SetDepthTest(EDEPTHTEST_OFF);
     _context._lightingmtl._rasterstate.SetCullTest(ECULLTEST_PASS_BACK);
     _context._lightingmtl.begin(

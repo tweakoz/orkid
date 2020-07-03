@@ -408,7 +408,7 @@ x11_window_t getHandleForWidget(const QWidget* widget) {
   return 0;
 }
 void ContextGL::initializeWindowContext(Window* pWin, CTXBASE* pctxbase) {
-  meTargetType = ETGTTYPE_WINDOW;
+  meTargetType = TargetType::WINDOW;
 
   ///////////////////////
   GlIxPlatformObject* plato = new GlIxPlatformObject;
@@ -462,7 +462,7 @@ void ContextGL::initializeWindowContext(Window* pWin, CTXBASE* pctxbase) {
 void recomputeHIDPI(Context* ctx) {
 
   switch (ctx->meTargetType) {
-    case ETGTTYPE_WINDOW:
+    case TargetType::WINDOW:
       break;
     default:
       return;
@@ -586,7 +586,7 @@ float _currentDPI() {
 
 void ContextGL::initializeOffscreenContext(OffscreenBuffer* pBuf) {
 
-  meTargetType = ETGTTYPE_OFFSCREEN;
+  meTargetType = TargetType::OFFSCREEN;
 
   ///////////////////////
 
@@ -605,7 +605,7 @@ void ContextGL::initializeOffscreenContext(OffscreenBuffer* pBuf) {
   plato->mXWindowId  = g_rootwin;
 
   _defaultRTG = new RtGroup(this, miW, miH, 1);
-  auto rtb    = new RtBuffer(ERTGSLOT0, EBufferFormat::RGBA8, miW, miH);
+  auto rtb    = new RtBuffer(RtgSlot::Slot0, EBufferFormat::RGBA8, miW, miH);
   _defaultRTG->SetMrt(0, rtb);
   auto texture = _defaultRTG->GetMrt(0)->texture();
   FBI()->SetBufferTexture(texture);
@@ -617,7 +617,7 @@ void ContextGL::initializeOffscreenContext(OffscreenBuffer* pBuf) {
 
 void ContextGL::initializeLoaderContext() {
 
-  meTargetType = ETGTTYPE_LOADING;
+  meTargetType = TargetType::LOADING;
 
   miW = 8;
   miH = 8;
@@ -633,7 +633,7 @@ void ContextGL::initializeLoaderContext() {
   plato->mXWindowId  = g_rootwin;
 
   _defaultRTG = new RtGroup(this, miW, miH, 16);
-  auto rtb    = new RtBuffer(ERTGSLOT0, EBufferFormat::RGBA8, miW, miH);
+  auto rtb    = new RtBuffer(RtgSlot::Slot0, EBufferFormat::RGBA8, miW, miH);
   _defaultRTG->SetMrt(0, rtb);
   auto texture = _defaultRTG->GetMrt(0)->texture();
   FBI()->SetBufferTexture(texture);

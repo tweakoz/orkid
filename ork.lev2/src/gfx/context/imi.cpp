@@ -20,10 +20,10 @@ namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 ImmInterface::ImmInterface(Context& target)
-    : mVtxBufUILine(16 << 10, 4096, EPrimitiveType::LINES)
-    , mVtxBufUIQuad(16 << 10, 8, EPrimitiveType::TRIANGLES)
-    , mVtxBufUITexQuad(16 << 10, 8, EPrimitiveType::TRIANGLES)
-    , mVtxBufText(256 << 10, 0, EPrimitiveType::TRIANGLES)
+    : mVtxBufUILine(16 << 10, 4096, PrimitiveType::LINES)
+    , mVtxBufUIQuad(16 << 10, 8, PrimitiveType::TRIANGLES)
+    , mVtxBufUITexQuad(16 << 10, 8, PrimitiveType::TRIANGLES)
+    , mVtxBufText(256 << 10, 0, PrimitiveType::TRIANGLES)
     , mTarget(target) {
 }
 

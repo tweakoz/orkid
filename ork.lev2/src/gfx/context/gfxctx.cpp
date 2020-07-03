@@ -90,7 +90,7 @@ Context::Context()
     , mRenderContextInstData(nullptr)
     , miDrawLock(0)
     , mPlatformHandle(nullptr)
-    , meTargetType(ETGTTYPE_NONE) {
+    , meTargetType(TargetType::NONE) {
 
   static CompositingData _gdata;
   static auto _gimpl = _gdata.createImpl();

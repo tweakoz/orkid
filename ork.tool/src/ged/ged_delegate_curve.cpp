@@ -205,7 +205,7 @@ class GedCurveV4Widget : public GedItemNode {
     GedSkin::GedPrim prim;
     prim.mDrawCB = CurveCustomPrim;
     prim.mpNode  = this;
-    prim.meType  = ork::lev2::EPrimitiveType::MULTI;
+    prim.meType  = ork::lev2::PrimitiveType::MULTI;
     prim.iy1     = miY;
     prim.iy2     = miY + kh;
     GetSkin()->AddPrim(prim);
@@ -288,7 +288,7 @@ class GedCurveV4Widget : public GedItemNode {
       gridmat.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_MOD_COLOR);
       gridmat._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
       gridmat._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
-      gridmat._rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+      gridmat._rasterstate.SetBlending(ork::lev2::Blending::OFF);
       gridmat._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
       gridmat._rasterstate.SetShadeModel(ork::lev2::ESHADEMODEL_SMOOTH);
 
@@ -425,10 +425,10 @@ class GedCurveV4Widget : public GedItemNode {
       pTARG->MTXI()->PushVMatrix(fmtx4::Identity());
       pTARG->MTXI()->PushMMatrix(fmtx4::Identity());
       pTARG->PushModColor(fvec3::Blue());
-      pTARG->GBI()->DrawPrimitive(&gridmat, VB, ork::lev2::EPrimitiveType::TRIANGLES, ivbaseA, 6);
+      pTARG->GBI()->DrawPrimitive(&gridmat, VB, ork::lev2::PrimitiveType::TRIANGLES, ivbaseA, 6);
       pTARG->PopModColor();
       pTARG->PushModColor(fvec3::White());
-      pTARG->GBI()->DrawPrimitive(&gridmat, VB, ork::lev2::EPrimitiveType::LINES, ivbaseA + 6, icountA - 6);
+      pTARG->GBI()->DrawPrimitive(&gridmat, VB, ork::lev2::PrimitiveType::LINES, ivbaseA + 6, icountA - 6);
       pTARG->PopModColor();
       pTARG->MTXI()->PopPMatrix();
       pTARG->MTXI()->PopVMatrix();
@@ -448,7 +448,7 @@ public:
   GedCurveV4Widget(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj)
       : GedItemNode(mdl, name, prop, obj)
       , mCurveObject(0)
-      //, mVertexBuffer( 512, 0, ork::lev2::EPrimitiveType::TRIANGLES )
+      //, mVertexBuffer( 512, 0, ork::lev2::PrimitiveType::TRIANGLES )
       , mEditPoints(kpoolsize)
       , mEditSegs(kpoolsize) {
     mCurveObject = rtti::autocast(obj);

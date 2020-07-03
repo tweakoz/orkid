@@ -67,7 +67,7 @@ public:
       mtl.SetTexture(tex.get());
       // mtl.SetColorMode( GfxMaterial3DSolid::EMODE_MOD_COLOR );
       mtl.SetColorMode(GfxMaterial3DSolid::EMODE_TEX_COLOR);
-      mtl._rasterstate.SetBlending(EBLENDING_OFF);
+      mtl._rasterstate.SetBlending(Blending::OFF);
       _target->FBI()->GetThisBuffer()->RenderMatOrthoQuad(
           tgtrect.asSRect(), tgtrect.asSRect(), &mtl, 0.0f, 0.0f, 1.0f, 1.0f, 0, clr1);
 

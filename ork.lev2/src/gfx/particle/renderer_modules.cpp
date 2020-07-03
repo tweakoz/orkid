@@ -127,7 +127,7 @@ void SpriteRenderer::Describe() {
 ///////////////////////////////////////////////////////////////////////////////
 
 SpriteRenderer::SpriteRenderer()
-    : meBlendMode(ork::lev2::EBLENDING_ALPHA)
+    : meBlendMode(ork::lev2::Blending::ALPHA)
     , ConstructOutPlug(UnitAge, dataflow::EPR_VARYING1)
     , ConstructOutPlug(PtcRandom, dataflow::EPR_VARYING1)
     , ConstructInpPlug(GradientIntensity, dataflow::EPR_UNIFORM, mfGradientIntensity)
@@ -483,7 +483,7 @@ void SpriteRenderer::Render(
 
       bool bsort = mbSort;
 
-      if (meBlendMode >= ork::lev2::EBLENDING_ADDITIVE && meBlendMode <= EBLENDING_ALPHA_SUBTRACTIVE)
+      if (meBlendMode >= ork::lev2::Blending::ADDITIVE && meBlendMode <= Blending::ALPHA_SUBTRACTIVE)
         bsort = false;
 
       if (bsort) {
@@ -592,7 +592,7 @@ void SpriteRenderer::Render(
 
         bound_mtl->_rasterstate.SetBlending(meBlendMode);
         targ->MTXI()->PushMMatrix(MatScale * mtx);
-        targ->GBI()->DrawPrimitive(bound_mtl, vw, ork::lev2::EPrimitiveType::POINTS, ivertexlockcount);
+        targ->GBI()->DrawPrimitive(bound_mtl, vw, ork::lev2::PrimitiveType::POINTS, ivertexlockcount);
         mpVB = 0;
         targ->MTXI()->PopMMatrix();
       }
@@ -627,7 +627,7 @@ void StreakRenderer::Describe() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 StreakRenderer::StreakRenderer()
-    : meBlendMode(ork::lev2::EBLENDING_ALPHA)
+    : meBlendMode(ork::lev2::Blending::ALPHA)
     , ConstructOutPlug(UnitAge, dataflow::EPR_UNIFORM)
     , ConstructInpPlug(GradientIntensity, dataflow::EPR_UNIFORM, mfGradientIntensity)
     , ConstructInpPlug(Length, dataflow::EPR_UNIFORM, mfLength)
@@ -781,7 +781,7 @@ void StreakRenderer::Render(
     // Draw Particles
     //////////////////////////////////////////
     targ->MTXI()->PushMMatrix(mtx_scale * mtx);
-    targ->GBI()->DrawPrimitive(mpMaterial, vw, ork::lev2::EPrimitiveType::POINTS, icnt);
+    targ->GBI()->DrawPrimitive(mpMaterial, vw, ork::lev2::PrimitiveType::POINTS, icnt);
     targ->MTXI()->PopMMatrix();
     //////////////////////////////////////////
   } // if( icnt )

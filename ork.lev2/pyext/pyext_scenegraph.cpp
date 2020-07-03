@@ -114,7 +114,7 @@ void pyinit_scenegraph(py::module& module_lev2) {
                     vw.AddVertex(v1);
                     vw.UnLock(context);
                     auto GBI = context->GBI();
-                    GBI->DrawPrimitiveEML(vw, lev2::EPrimitiveType::LINES);
+                    GBI->DrawPrimitiveEML(vw, lev2::PrimitiveType::LINES);
                   });
                 });
                 auto node = layer->createDrawableNode(named, drawable);

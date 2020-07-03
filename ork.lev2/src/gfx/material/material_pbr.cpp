@@ -49,7 +49,7 @@ PBRMaterial::PBRMaterial()
     : _baseColor(1, 1, 1) {
   _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
   _rasterstate.SetAlphaTest(EALPHATEST_OFF);
-  _rasterstate.SetBlending(EBLENDING_OFF);
+  _rasterstate.SetBlending(Blending::OFF);
   _rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
   _rasterstate.SetZWriteMask(true);
   _rasterstate.SetCullTest(ECULLTEST_OFF);

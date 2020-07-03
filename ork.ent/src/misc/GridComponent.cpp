@@ -138,7 +138,7 @@ struct impl {
       modcolor.SetRGBAU64(pid);
     }
     context->PushModColor(modcolor);
-    gbi->DrawPrimitive(pimpl->_material, vw, EPrimitiveType::TRIANGLES, 6);
+    gbi->DrawPrimitive(pimpl->_material, vw, PrimitiveType::TRIANGLES, 6);
     context->PopModColor();
     mtxi->PopMMatrix();
   }

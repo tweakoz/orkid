@@ -131,9 +131,9 @@ void pyinit_gfx(py::module& module_lev2) {
             return vw;
           })
       .def("unlock", [](gbi_t gbi, vw_vtxa_t& vw) { vw.UnLock(gbi.get()); })
-      .def("drawTriangles", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, EPrimitiveType::TRIANGLES); })
-      .def("drawTriangleStrip", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, EPrimitiveType::TRIANGLESTRIP); })
-      .def("drawLines", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, EPrimitiveType::LINES); });
+      .def("drawTriangles", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES); })
+      .def("drawTriangleStrip", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLESTRIP); })
+      .def("drawLines", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, PrimitiveType::LINES); });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<vw_vtxa_t>(module_lev2, "Writer_V12N12B12T8C4")
       .def(
@@ -332,7 +332,7 @@ void pyinit_gfx(py::module& module_lev2) {
       .def_static(
           "staticBuffer",
           [](size_t size) -> vb_static_vtxa_t //
-          { return vb_static_vtxa_t(size, 0, EPrimitiveType::NONE); });
+          { return vb_static_vtxa_t(size, 0, PrimitiveType::NONE); });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<vb_static_vtxa_t, VertexBufferBase>(module_lev2, "VtxV12N12B12T8C4_StaticBuffer");
   /////////////////////////////////////////////////////////////////////////////////

@@ -72,13 +72,13 @@ void GedSkin::AddPrim(const GedPrim& cb) {
     pctr->mCustomPrims.push_back(pooledprim);
   } else
     switch (cb.meType) {
-      case EPrimitiveType::LINES: {
+      case PrimitiveType::LINES: {
         GedPrim* pooledprim = pctr->mPrimPool.allocate();
         *pooledprim         = cb;
         pctr->mLinePrims.push_back(pooledprim);
         break;
       }
-      case EPrimitiveType::QUADS: {
+      case PrimitiveType::QUADS: {
         GedPrim* pooledprim = pctr->mPrimPool.allocate();
         *pooledprim         = cb;
         pctr->mQuadPrims.push_back(pooledprim);
@@ -208,7 +208,7 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
     }
 
     prim._ucolor   = mbPickMode ? uobj : GetStyleColor(pnode, ic); // Default Outline
-    prim.meType    = EPrimitiveType::QUADS;
+    prim.meType    = PrimitiveType::QUADS;
     prim.miSortKey = calcsort(isort);
     AddPrim(prim);
   }
@@ -217,7 +217,7 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
     if (false == mbPickMode) {
       GedPrim prim;
       prim._ucolor   = GetStyleColor(pnode, ic);
-      prim.meType    = EPrimitiveType::LINES;
+      prim.meType    = PrimitiveType::LINES;
       prim.miSortKey = calcsort(isort + 1);
 
       prim.ix1 = ix;
@@ -250,7 +250,7 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
     if (false == mbPickMode) {
       GedPrim prim;
       prim._ucolor   = GetStyleColor(pnode, ic);
-      prim.meType    = EPrimitiveType::LINES;
+      prim.meType    = PrimitiveType::LINES;
       prim.ix1       = ix;
       prim.ix2       = ix2;
       prim.iy1       = iy;
@@ -324,8 +324,8 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
       int inumquads = (int)primcontainer->mQuadPrims.size();
       int inumcusts = (int)primcontainer->mCustomPrims.size();
 
-      // uimat.SetUIColorMode(EUICOLOR_VTX);
-      // uimat._rasterstate.SetBlending(lev2::EBLENDING_OFF);
+      // uimat.SetUIColorMode(UiColorMode::VTX);
+      // uimat._rasterstate.SetBlending(lev2::Blending::OFF);
 
       const float fZ = 0.0f;
 
@@ -354,7 +354,7 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
 
       _material->begin(mbPickMode ? _tekvtxpick : _tekvtxcolor, RCFD);
       _material->bindParamMatrix(_parmvp, uimatrix);
-      pTARG->GBI()->DrawPrimitiveEML(vw, EPrimitiveType::TRIANGLES);
+      pTARG->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
       _material->end(RCFD);
       icount = 0;
       // ivbase += inumquads*6;
@@ -385,7 +385,7 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
           if (icount) {
             _material->begin(mbPickMode ? _tekvtxpick : _tekvtxcolor, RCFD);
             _material->bindParamMatrix(_parmvp, uimatrix);
-            pTARG->GBI()->DrawPrimitiveEML(vw, EPrimitiveType::LINES);
+            pTARG->GBI()->DrawPrimitiveEML(vw, PrimitiveType::LINES);
             _material->end(RCFD);
           }
         }
@@ -395,7 +395,7 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
     ////////////////////////
     if (false == mbPickMode) { ////////////////////////
       lev2::GfxMaterialUI uimat(pTARG);
-      uimat.SetUIColorMode(EUICOLOR_MOD);
+      uimat.SetUIColorMode(UiColorMode::MOD);
       // pTARG->PushModColor(fcolor4(0.0f,0.0f,0.2f));
       pTARG->PushModColor(fcolor4::Black());
       lev2::FontMan::PushFont(mpFONT);
@@ -521,7 +521,7 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
     }
 
     prim._ucolor   = mbPickMode ? uobj : GetStyleColor(pnode, ic); // Default Outline
-    prim.meType    = EPrimitiveType::QUADS;
+    prim.meType    = PrimitiveType::QUADS;
     prim.miSortKey = calcsort(isort);
     AddPrim(prim);
   }
@@ -530,7 +530,7 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
     if (false == mbPickMode) {
       GedPrim prim;
       prim._ucolor   = GetStyleColor(pnode, ic);
-      prim.meType    = EPrimitiveType::LINES;
+      prim.meType    = PrimitiveType::LINES;
       prim.miSortKey = calcsort(isort + 1);
 
       prim.ix1 = ix;
@@ -563,7 +563,7 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
     if (false == mbPickMode) {
       GedPrim prim;
       prim._ucolor   = GetStyleColor(pnode, ic);
-      prim.meType    = EPrimitiveType::LINES;
+      prim.meType    = PrimitiveType::LINES;
       prim.ix1       = ix;
       prim.ix2       = ix2;
       prim.iy1       = iy;
@@ -663,7 +663,7 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
 
       _material->begin(mbPickMode ? _tekvtxpick : _tekvtxcolor, RCFD);
       _material->bindParamMatrix(_parmvp, mtxW * uimatrix);
-      pTARG->GBI()->DrawPrimitiveEML(vw, EPrimitiveType::TRIANGLES);
+      pTARG->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
       _material->end(RCFD);
       icount = 0;
       // ivbase += inumquads*6;
@@ -694,7 +694,7 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
           if (icount) {
             _material->begin(mbPickMode ? _tekvtxpick : _tekvtxcolor, RCFD);
             _material->bindParamMatrix(_parmvp, mtxW * uimatrix);
-            pTARG->GBI()->DrawPrimitiveEML(vw, EPrimitiveType::LINES);
+            pTARG->GBI()->DrawPrimitiveEML(vw, PrimitiveType::LINES);
             _material->end(RCFD);
           }
         }
@@ -704,7 +704,7 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
     ////////////////////////
     if (false == mbPickMode) { ////////////////////////
       lev2::GfxMaterialUI uimat(pTARG);
-      uimat.SetUIColorMode(EUICOLOR_MOD);
+      uimat.SetUIColorMode(UiColorMode::MOD);
       lev2::FontMan::PushFont(mpFONT);
       lev2::FontMan::beginTextBlock(pTARG);
       pTARG->PushModColor(fcolor4(0.8f, 0.9f, 1.0f));

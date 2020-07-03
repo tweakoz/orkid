@@ -257,7 +257,7 @@ public:
     GedObject* mpNode;
     int ix1, iy1, ix2, iy2;
     fvec4 _ucolor;
-    ork::lev2::EPrimitiveType meType;
+    ork::lev2::PrimitiveType meType;
     int miSortKey;
 
     GedPrim()
@@ -269,7 +269,7 @@ public:
         , iy2(0)
         , _ucolor(0)
         , miSortKey(0)
-        , meType(ork::lev2::EPrimitiveType::END) {
+        , meType(ork::lev2::PrimitiveType::END) {
     }
   };
 

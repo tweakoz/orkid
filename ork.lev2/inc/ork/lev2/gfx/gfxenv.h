@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include <ork/rtti/RTTIX.inl>
 #include <ork/kernel/core/singleton.h>
 #include <ork/kernel/timer.h>
 
@@ -49,6 +50,8 @@ class GfxMaterialUITextured;
 class PBRMaterial;
 
 class GfxEnv;
+
+using context_ptr_t = std::shared_ptr<Context>;
 
 /// ////////////////////////////////////////////////////////////////////////////
 ///
@@ -247,7 +250,7 @@ public:
   void SetCurrentObject(const ork::rtti::ICastable* pobj) {
     mpCurrentObject = pobj;
   }
-  ETargetType GetTargetType(void) const {
+  TargetType GetTargetType(void) const {
     return meTargetType;
   }
   int GetTargetFrame(void) const {
@@ -305,7 +308,7 @@ public:
   int miW, miH;
   CTXBASE* mCtxBase;
   void* mPlatformHandle;
-  ETargetType meTargetType;
+  TargetType meTargetType;
   fvec4 maModColorStack[kiModColorStackMax];
   int miModColorStackIndex;
   const ork::rtti::ICastable* mpCurrentObject;
@@ -358,7 +361,7 @@ struct OrthoQuad {
 };
 
 class OffscreenBuffer : public ork::Object {
-  RttiDeclareAbstract(OffscreenBuffer, ork::Object);
+  DeclareAbstractX(OffscreenBuffer, ork::Object);
 
 public:
   //////////////////////////////////////////////
@@ -397,7 +400,7 @@ public:
   OffscreenBuffer* GetParent(void) const {
     return _parent;
   }
-  ETargetType GetTargetType(void) const {
+  TargetType GetTargetType(void) const {
     return meTargetType;
   }
   EBufferFormat format(void) const {
@@ -445,8 +448,9 @@ public:
   fcolor4& RefClearColor() {
     return mClearColor;
   }
-  void SetContext(Context* pctx) {
-    mpContext = pctx;
+  void SetContext(context_ptr_t ctx) {
+    _sharedcontext = ctx;
+    mpContext      = ctx.get(); // todo get rid of me..
   }
   void SetTexture(Texture* ptex) {
     mpTexture = ptex;
@@ -481,13 +485,14 @@ public:
   virtual void initContext();
 
 protected:
+  context_ptr_t _sharedcontext;
   ui::Widget* mRootWidget;
   Context* mpContext;
   Texture* mpTexture;
   int miWidth;
   int miHeight;
   EBufferFormat meFormat;
-  ETargetType meTargetType;
+  TargetType meTargetType;
   bool mbDirty;
   bool mbSizeIsDirty;
   std::string _name;

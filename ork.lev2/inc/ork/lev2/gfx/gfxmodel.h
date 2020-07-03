@@ -76,7 +76,7 @@ public:
   int miNumIndices;
 
   IndexBufferBase* mpIndices;
-  EPrimitiveType mePrimType;
+  PrimitiveType mePrimType;
 
   XgmPrimGroup();
   XgmPrimGroup(XgmPrimGroup* pgrp);
@@ -89,7 +89,7 @@ public:
   const IndexBufferBase* GetIndexBuffer(void) const {
     return mpIndices;
   }
-  EPrimitiveType GetPrimType(void) const {
+  PrimitiveType GetPrimType(void) const {
     return mePrimType;
   }
 };

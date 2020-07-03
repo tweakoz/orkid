@@ -171,8 +171,8 @@ void GraphVP::draw_connections(Context* pTARG) {
       mGridMaterial.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR);
       mGridMaterial._rasterstate.SetDepthTest(lev2::EDEPTHTEST_OFF);
       mGridMaterial._rasterstate.SetAlphaTest(EALPHATEST_OFF, 0.0f);
-      mGridMaterial._rasterstate.SetBlending(lev2::EBLENDING_OFF);
-      pTARG->GBI()->DrawPrimitive(&mGridMaterial, vw, EPrimitiveType::TRIANGLES, ivcount);
+      mGridMaterial._rasterstate.SetBlending(lev2::Blending::OFF);
+      pTARG->GBI()->DrawPrimitive(&mGridMaterial, vw, PrimitiveType::TRIANGLES, ivcount);
     }
   }
 }
@@ -303,8 +303,8 @@ void GraphVP::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
           _nodematerial.begin(is_pick ? tek_vtx : tek_tex, RCFD);
           _nodematerial.bindParamMatrix(par_mvp, mGrid.GetOrthoMatrix());
           _nodematerial.bindParamCTex(par_tex, texasset->GetTexture());
-          _nodematerial._rasterstate.SetBlending(lev2::EBLENDING_OFF);
-          gbi->DrawPrimitiveEML(vw, EPrimitiveType::TRIANGLES, 6);
+          _nodematerial._rasterstate.SetBlending(lev2::Blending::OFF);
+          gbi->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES, 6);
           _nodematerial.end(RCFD);
         }
       }
@@ -393,14 +393,14 @@ void GraphVP::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
             do_blend &= (false == is_pick);
 
-            auto blend_mode = do_blend ? lev2::EBLENDING_ALPHA : lev2::EBLENDING_OFF;
+            auto blend_mode = do_blend ? lev2::Blending::ALPHA : lev2::Blending::OFF;
             _nodematerial._rasterstate.SetBlending(blend_mode);
             _nodematerial.commit();
             //////////////////////
             // draw the dataflow node
             //////////////////////
 
-            gbi->DrawPrimitiveEML(vw, EPrimitiveType::TRIANGLES);
+            gbi->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
             _nodematerial.end(RCFD);
           }
           //////////////////////

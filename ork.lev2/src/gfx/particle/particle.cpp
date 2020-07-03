@@ -23,8 +23,8 @@
 using namespace ork::lev2::particle;
 
 template class ork::reflect::DirectTypedMap<orkmap<float, ork::fvec4>>;
-template class ork::reflect::DirectTyped<ork::lev2::EBlending>;
-template class ork::reflect::DirectTyped<ork::lev2::EPrimitiveType>;
+template class ork::reflect::DirectTyped<ork::lev2::Blending>;
+template class ork::reflect::DirectTyped<ork::lev2::PrimitiveType>;
 namespace ork { namespace lev2 { namespace particle {
 template class Pool<BasicParticle>;
 template class BasicEmitter<BasicParticle>;

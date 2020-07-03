@@ -34,7 +34,7 @@ struct PtxImpl {
       _blit2screenmtl.gpuInit(pTARG);
 
       _output                   = new lev2::RtGroup(pTARG, iW, iH);
-      _outputbuffer             = new lev2::RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA16F, iW, iH);
+      _outputbuffer             = new lev2::RtBuffer(lev2::RtgSlot::Slot0, lev2::EBufferFormat::RGBA16F, iW, iH);
       _outputbuffer->_debugName = FormatString("PtxCompositingNode::output");
       _output->SetMrt(0, _outputbuffer);
     }
@@ -115,7 +115,7 @@ struct PtxImpl {
       mtl.SetTexture(_resultTexture);
       mtl.SetTexture2(nullptr);
       mtl.SetColorMode(GfxMaterial3DSolid::EMODE_USER);
-      mtl._rasterstate.SetBlending(EBLENDING_OFF);
+      mtl._rasterstate.SetBlending(Blending::OFF);
       mtl._rasterstate.SetDepthTest(EDEPTHTEST_OFF);
       this_buf->RenderMatOrthoQuad(
           vprect.asSRect(),

@@ -15,7 +15,7 @@ int hud_lineheight() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 static vtxbuf_ptr_t create_vertexbuffer(Context* context) {
-  auto vb = std::make_shared<vtxbuf_t>(16 << 20, 0, EPrimitiveType::NONE); // ~800 MB
+  auto vb = std::make_shared<vtxbuf_t>(16 << 20, 0, PrimitiveType::NONE); // ~800 MB
   vb->SetRingLock(true);
   return vb;
 }
@@ -280,8 +280,8 @@ void drawHudLines(
   mtxi->PushUIMatrix(w, h);
   mtl->begin(tek, RCFD);
   mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
-  mtl->_rasterstate.SetBlending(EBLENDING_OFF);
-  gbi->DrawPrimitiveEML(vw, EPrimitiveType::LINES);
+  mtl->_rasterstate.SetBlending(Blending::OFF);
+  gbi->DrawPrimitiveEML(vw, PrimitiveType::LINES);
   mtl->end(RCFD);
   mtxi->PopUIMatrix();
 }

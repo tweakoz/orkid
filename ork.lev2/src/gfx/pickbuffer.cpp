@@ -45,8 +45,8 @@ ork::Object* PickBuffer::GetObjectFromPickId(uint64_t pid) {
 void PickBuffer::Init() {
   _rtgroup         = new lev2::RtGroup(_context, _width, _height);
   _uimaterial      = new ork::lev2::GfxMaterialUITextured(_context);
-  auto buf0        = new ork::lev2::RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA16UI, _width, _height);
-  auto buf1        = new ork::lev2::RtBuffer(lev2::ERTGSLOT1, lev2::EBufferFormat::RGBA32F, _width, _height);
+  auto buf0        = new ork::lev2::RtBuffer(lev2::RtgSlot::Slot0, lev2::EBufferFormat::RGBA16UI, _width, _height);
+  auto buf1        = new ork::lev2::RtBuffer(lev2::RtgSlot::Slot1, lev2::EBufferFormat::RGBA32F, _width, _height);
   buf0->_debugName = FormatString("Pickbuf::mrt0");
   buf1->_debugName = FormatString("Pickbuf::mrt1");
   _rtgroup->SetMrt(0, buf0);

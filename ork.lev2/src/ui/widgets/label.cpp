@@ -36,7 +36,7 @@ void Label::DoDraw(drawevent_constptr_t drwev) {
     ixc = ix1 + (_geometry._w >> 1);
     iyc = iy1 + (_geometry._h >> 1);
 
-    defmtl->_rasterstate.SetBlending(lev2::EBLENDING_ALPHA);
+    defmtl->_rasterstate.SetBlending(lev2::Blending::ALPHA);
     defmtl->_rasterstate.SetDepthTest(lev2::EDEPTHTEST_OFF);
     tgt->PushModColor(_color);
     primi.RenderQuadAtZ(

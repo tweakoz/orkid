@@ -207,7 +207,7 @@ class GedGradientV4Widget : public GedItemNode {
     GedSkin::GedPrim prim;
     prim.mDrawCB = GradientCustomPrim;
     prim.mpNode  = this;
-    prim.meType  = ork::lev2::EPrimitiveType::MULTI;
+    prim.meType  = ork::lev2::PrimitiveType::MULTI;
     prim.iy1     = miY;
     prim.iy2     = miY + kh;
     GetSkin()->AddPrim(prim);
@@ -289,7 +289,7 @@ class GedGradientV4Widget : public GedItemNode {
       material.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR);
       material._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
       material._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
-      material._rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+      material._rasterstate.SetBlending(ork::lev2::Blending::OFF);
       material._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
       material._rasterstate.SetShadeModel(ork::lev2::ESHADEMODEL_SMOOTH);
 
@@ -348,7 +348,7 @@ class GedGradientV4Widget : public GedItemNode {
       pTARG->MTXI()->PushVMatrix(fmtx4::Identity());
       pTARG->MTXI()->PushMMatrix(fmtx4::Identity());
       pTARG->PushModColor(fvec3::White());
-      pTARG->GBI()->DrawPrimitive(&material, vw, ork::lev2::EPrimitiveType::TRIANGLES);
+      pTARG->GBI()->DrawPrimitive(&material, vw, ork::lev2::PrimitiveType::TRIANGLES);
       pTARG->PopModColor();
       pTARG->MTXI()->PopPMatrix();
       pTARG->MTXI()->PopVMatrix();
@@ -368,7 +368,7 @@ public:
   GedGradientV4Widget(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj)
       : GedItemNode(mdl, name, prop, obj)
       , mGradientObject(0)
-      , mVertexBuffer(256, 0, ork::lev2::EPrimitiveType::TRIANGLES)
+      , mVertexBuffer(256, 0, ork::lev2::PrimitiveType::TRIANGLES)
       , mEditPoints(kpoolsize)
       , mEditSegs(kpoolsize) {
     if (prop) {

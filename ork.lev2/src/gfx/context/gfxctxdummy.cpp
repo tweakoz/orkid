@@ -174,17 +174,17 @@ bool ContextDummy::SetDisplayMode(DisplayMode* mode) {
 void DuGeometryBufferInterface::DrawIndexedPrimitiveEML(
     const VertexBufferBase& VBuf,
     const IndexBufferBase& IdxBuf,
-    EPrimitiveType eType,
+    PrimitiveType eType,
     int ivbase,
     int ivcount) {
 }
-void DuGeometryBufferInterface::DrawPrimitiveEML(const VertexBufferBase& VBuf, EPrimitiveType eType, int ivbase, int ivcount) {
+void DuGeometryBufferInterface::DrawPrimitiveEML(const VertexBufferBase& VBuf, PrimitiveType eType, int ivbase, int ivcount) {
 }
 
 void DuGeometryBufferInterface::DrawInstancedIndexedPrimitiveEML(
     const VertexBufferBase& VBuf,
     const IndexBufferBase& IdxBuf,
-    EPrimitiveType eType,
+    PrimitiveType eType,
     size_t instance_count) {
 }
 

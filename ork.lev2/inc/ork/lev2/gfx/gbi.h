@@ -34,13 +34,13 @@ public:
   void DrawPrimitive(
       GfxMaterial* mtl,
       const VtxWriterBase& VW, //
-      EPrimitiveType eType,
+      PrimitiveType eType,
       int icount = 0);
 
   void DrawPrimitive(
       GfxMaterial* mtl,
       const VertexBufferBase& VBuf, //
-      EPrimitiveType eType = EPrimitiveType::NONE,
+      PrimitiveType eType = PrimitiveType::NONE,
       int ivbase           = 0,
       int ivcount          = 0);
 
@@ -48,7 +48,7 @@ public:
       GfxMaterial* mtl,
       const VertexBufferBase& VBuf,
       const IndexBufferBase& IdxBuf,
-      EPrimitiveType eType = EPrimitiveType::NONE,
+      PrimitiveType eType = PrimitiveType::NONE,
       int ivbase           = 0,
       int ivcount          = 0);
 
@@ -56,21 +56,21 @@ public:
 
   virtual void DrawPrimitiveEML(
       const VertexBufferBase& VBuf, //
-      EPrimitiveType eType = EPrimitiveType::NONE,
+      PrimitiveType eType = PrimitiveType::NONE,
       int ivbase           = 0,
       int ivcount          = 0) = 0;
 
   virtual void DrawIndexedPrimitiveEML(
       const VertexBufferBase& VBuf,
       const IndexBufferBase& IdxBuf,
-      EPrimitiveType eType = EPrimitiveType::NONE,
+      PrimitiveType eType = PrimitiveType::NONE,
       int ivbase           = 0,
       int ivcount          = 0) = 0;
 
   virtual void DrawInstancedIndexedPrimitiveEML(
       const VertexBufferBase& VBuf,
       const IndexBufferBase& IdxBuf,
-      EPrimitiveType eType,
+      PrimitiveType eType,
       size_t instance_count) = 0;
 
   virtual void* LockIB(IndexBufferBase& VBuf, int ibase = 0, int icount = 0) = 0;
@@ -81,7 +81,7 @@ public:
 
   virtual void ReleaseIB(IndexBufferBase& VBuf) = 0;
 
-  void DrawPrimitiveEML(const VtxWriterBase& VW, EPrimitiveType eType, int icount = 0);
+  void DrawPrimitiveEML(const VtxWriterBase& VW, PrimitiveType eType, int icount = 0);
   void render2dQuadEML(const fvec4& QuadRect, const fvec4& UvRect, const fvec4& UvRect2);
 
   //////////////////////////////////////////////

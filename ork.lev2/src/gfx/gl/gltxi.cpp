@@ -186,12 +186,12 @@ void GlTextureInterface::SaveTexture(const ork::AssetPath& fname, Texture* ptex)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static auto addrlamb = [](ETextureAddressMode inp) -> GLenum {
+static auto addrlamb = [](TextureAddressMode inp) -> GLenum {
   switch (inp) {
-    case ETEXADDR_CLAMP:
+    case TextureAddressMode::CLAMP:
       return GL_CLAMP_TO_EDGE;
       break;
-    case ETEXADDR_WRAP:
+    case TextureAddressMode::WRAP:
       return GL_REPEAT;
       break;
     default:

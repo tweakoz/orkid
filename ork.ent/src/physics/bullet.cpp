@@ -168,7 +168,7 @@ btTriangleIndexVertexArray* XgmClusterToTriVertArray(ork::lev2::xgmcluster_ptr_t
   for (int pg = 0; pg < xgmcluster->numPrimGroups(); pg++) {
     auto xgmprimgroup = xgmcluster->primgroup(pg);
 
-    lev2::EPrimitiveType ept = xgmprimgroup->GetPrimType();
+    lev2::PrimitiveType ept = xgmprimgroup->GetPrimType();
 
     btIndexedMesh mesh;
 
@@ -186,7 +186,7 @@ btTriangleIndexVertexArray* XgmClusterToTriVertArray(ork::lev2::xgmcluster_ptr_t
       const u16* psrcIDC = (const u16*)pIBDATA;
 
       switch (ept) {
-        case lev2::EPrimitiveType::TRIANGLESTRIP: {
+        case lev2::PrimitiveType::TRIANGLESTRIP: {
           for (int ii = 0; ii < (inumindices - 2); ii++) {
             u16 idx0 = psrcIDC[ii + 0];
             u16 idx1 = psrcIDC[ii + 1];
@@ -202,7 +202,7 @@ btTriangleIndexVertexArray* XgmClusterToTriVertArray(ork::lev2::xgmcluster_ptr_t
           }
           break;
         }
-        case lev2::EPrimitiveType::TRIANGLES: {
+        case lev2::PrimitiveType::TRIANGLES: {
           for (int ii = 0; ii < inumindices; ii += 3) {
             u16 idx0 = psrcIDC[ii + 0];
             u16 idx1 = psrcIDC[ii + 1];

@@ -200,7 +200,7 @@ ContextGL::~ContextGL(){}
 /////////////////////////////////////////////////////////////////////////
 
 void ContextGL::initializeWindowContext( Window *pWin, CTXBASE* pctxbase  ) {
-  meTargetType = ETGTTYPE_WINDOW;
+  meTargetType = TargetType::WINDOW;
 	///////////////////////
 	GlOsxPlatformObject* plato = new GlOsxPlatformObject;
 	mCtxBase = pctxbase;
@@ -334,7 +334,7 @@ void ContextGL::initializeWindowContext( Window *pWin, CTXBASE* pctxbase  ) {
 
 void ContextGL::initializeOffscreenContext( OffscreenBuffer *pBuf )
 {
-  meTargetType = ETGTTYPE_OFFSCREEN;
+  meTargetType = TargetType::OFFSCREEN;
 	///////////////////////
 
 	miW = pBuf->GetBufferW();
@@ -352,7 +352,7 @@ void ContextGL::initializeOffscreenContext( OffscreenBuffer *pBuf )
 	plato->mbNSOpenGlView = false;
 	plato->mbInit = false;
   _defaultRTG = new RtGroup(this,miW,miH,1);
-  auto rtb = new RtBuffer(ERTGSLOT0,EBufferFormat::RGBA8,miW,miH);
+  auto rtb = new RtBuffer(RtgSlot::Slot0,EBufferFormat::RGBA8,miW,miH);
   _defaultRTG->SetMrt(0,rtb);
 
 	//////////////////////////////////////////
@@ -387,7 +387,7 @@ void ContextGL::initializeOffscreenContext( OffscreenBuffer *pBuf )
 
 void ContextGL::initializeLoaderContext() {
 
-  meTargetType = ETGTTYPE_LOADING;
+  meTargetType = TargetType::LOADING;
 
 miW = 8;
 miH = 8;
@@ -404,7 +404,7 @@ plato->mbNSOpenGlView = false;
 plato->mbInit = false;
 
 _defaultRTG = new RtGroup(this,miW,miH,1);
-auto rtb = new RtBuffer(ERTGSLOT0,EBufferFormat::RGBA8,miW,miH);
+auto rtb = new RtBuffer(RtgSlot::Slot0,EBufferFormat::RGBA8,miW,miH);
 _defaultRTG->SetMrt(0,rtb);
   auto texture = _defaultRTG->GetMrt(0)->texture();
   FBI()->SetBufferTexture(texture);

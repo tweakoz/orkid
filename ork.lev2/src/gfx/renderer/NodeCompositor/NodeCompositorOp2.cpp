@@ -101,7 +101,7 @@ void Op2CompositingNode::doGpuInit(lev2::Context* pTARG, int iW, int iH) // virt
     mCompositingMaterial.gpuInit(pTARG);
 
     _rtg                = new lev2::RtGroup(pTARG, iW, iH);
-    mOutput             = new lev2::RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA16F, iW, iH);
+    mOutput             = new lev2::RtBuffer(lev2::RtgSlot::Slot0, lev2::EBufferFormat::RGBA16F, iW, iH);
     mOutput->_debugName = FormatString("Op2CompositingNode::output");
     _rtg->SetMrt(0, mOutput);
   }

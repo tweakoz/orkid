@@ -19,7 +19,7 @@ struct CtxBaseProgressPimpl { //
     _material      = std::make_shared<GfxMaterialUITextured>(context);
     auto& rasstate = _material->_rasterstate;
     rasstate.SetDepthTest(EDEPTHTEST_OFF);
-    rasstate.SetBlending(EBLENDING_OFF);
+    rasstate.SetBlending(Blending::OFF);
     rasstate.SetAlphaTest(EALPHATEST_OFF, 0.0f);
     rasstate.SetDepthTest(EDEPTHTEST_ALWAYS);
     auto txi                                                    = context->TXI();
@@ -43,7 +43,7 @@ CTXBASE::CTXBASE(Window* pwin)
     , _target(0)
     , ConstructAutoSlot(Repaint) {
 
-  SetupSignalsAndSlots();
+  AutoConnector::setupSignalsAndSlots(this);
   mpWindow->mpCTXBASE = this;
 
   _uievent = std::make_shared<ui::Event>();
@@ -183,7 +183,7 @@ Window* CTXBASE::GetWindow() const {
   return mpWindow;
 }
 void CTXBASE::setContext(Context* ctx) {
-  _target           = ctx;
+  _target            = ctx;
   _uievent->_context = ctx;
 }
 void CTXBASE::SetWindow(Window* pw) {

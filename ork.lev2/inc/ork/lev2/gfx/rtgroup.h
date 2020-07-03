@@ -25,7 +25,7 @@ class RtBuffer;
 struct RtBuffer final {
   enum EMipGen { EMG_NONE, EMG_AUTOCOMPUTE, EMG_USER };
 
-  RtBuffer(ERtgSlot etype, EBufferFormat efmt, int iW, int iH);
+  RtBuffer(RtgSlot etype, EBufferFormat efmt, int iW, int iH);
 
   Texture* texture() const {
     return _texture;
@@ -40,7 +40,7 @@ struct RtBuffer final {
 
   int miW, miH;
   Texture* _texture;
-  ERtgSlot mType;
+  RtgSlot mType;
   EBufferFormat mFormat;
   svarp_t _impl;
   bool mSizeDirty;

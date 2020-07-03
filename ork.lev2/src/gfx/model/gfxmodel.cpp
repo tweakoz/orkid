@@ -162,7 +162,7 @@ XgmPrimGroup::~XgmPrimGroup() {
 XgmPrimGroup::XgmPrimGroup()
     : miNumIndices(0)
     , mpIndices(0)
-    , mePrimType(EPrimitiveType::NONE) {
+    , mePrimType(PrimitiveType::NONE) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -613,7 +613,7 @@ void XgmModel::RenderSkinned(
         }
         vw.UnLock(pTARG);
         pTARG->MTXI()->PushMMatrix(fmtx4::Identity());
-        pTARG->GBI()->DrawPrimitive(material.get(), vw, EPrimitiveType::LINES, numlines);
+        pTARG->GBI()->DrawPrimitive(material.get(), vw, PrimitiveType::LINES, numlines);
         pTARG->MTXI()->PopMMatrix();
       }
       for (int ib = 0; ib < inumbones; ib++) {

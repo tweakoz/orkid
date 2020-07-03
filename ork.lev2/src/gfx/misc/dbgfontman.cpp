@@ -86,7 +86,7 @@ void FontMan::_endTextBlock(Context* pTARG) {
   bool bdraw = mTextWriter.miWriteCounter != 0;
   if (bdraw) {
     auto material = mpCurrentFont->GetMaterial();
-    pTARG->GBI()->DrawPrimitive(material, mTextWriter, ork::lev2::EPrimitiveType::TRIANGLES);
+    pTARG->GBI()->DrawPrimitive(material, mTextWriter, ork::lev2::PrimitiveType::TRIANGLES);
   }
 }
 
