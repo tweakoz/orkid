@@ -6,7 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
-#include <ork/reflect/properties/register.h>
+#include <ork/reflect/properties/registerX.inl>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
@@ -28,11 +28,6 @@
 #include <ork/stream/StringInputStream.h>
 #include <ork/reflect/serialize/JsonDeserializer.h>
 #include <ork/reflect/serialize/JsonSerializer.h>
-#include <ork/reflect/serialize/BinaryDeserializer.h>
-#include <ork/reflect/serialize/BinarySerializer.h>
-#include <ork/stream/ResizableStringOutputStream.h>
-#include <ork/reflect/serialize/ShallowSerializer.h>
-#include <ork/reflect/serialize/ShallowDeserializer.h>
 #include <ork/lev2/lev2_asset.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -41,16 +36,15 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::particle::psys_graph, "psys::Graph");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::particle::Module, "psys::Module");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::particle::ParticleModule, "psys::ParticleModule");
+ImplementReflectionX(ork::lev2::particle::psys_graph, "psys::Graph");
+ImplementReflectionX(ork::lev2::particle::Module, "psys::Module");
+ImplementReflectionX(ork::lev2::particle::ParticleModule, "psys::ParticleModule");
+ImplementReflectionX(ork::lev2::particle::psys_graph_pool, "psys::GraphPool");
 
 INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI(ork::lev2::particle::PtclBufOutPlug, "psys::pbufoutplug");
 INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI(ork::lev2::particle::PtclBufInpPlug, "psys::pbufinpplug");
 
 ///////////////////////////////////////////////////////////////////////////////
-
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::particle::psys_graph_pool, "psys::GraphPool");
 
 template <> void ork::dataflow::outplug<ork::lev2::particle::psys_ptclbuf>::Describe() {
 }
@@ -86,9 +80,9 @@ static lev2::Texture* GetPtclModuleIcon(ork::dataflow::dgmodule* pmod) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Module::Describe() {
-  reflect::annotateClassForEditor<Module>("dflowicon", &GetPtclModuleIcon);
-  reflect::annotateClassForEditor<Module>("dflowshouldblend", true);
+void Module::describeX(class_t* clazz) {
+  // clazz->annotate<Module>("dflowicon", &GetPtclModuleIcon);
+  // clazz->annotate<bool>("dflowshouldblend", true);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -105,7 +99,7 @@ void Module::Link(ork::lev2::particle::Context* pctx) {
   DoLink();
 }
 
-void ParticleModule::Describe() {
+void ParticleModule::describeX(class_t* clazz) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -120,7 +114,7 @@ bool psys_graph::CanConnect(const ork::dataflow::inplugbase* pin, const ork::dat
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void psys_graph::Describe() {
+void psys_graph::describeX(class_t* clazz) {
   // ork::reflect::annotatePropertyForEditor< psys_graph >("Modules", "editor.factorylistbase", "dflow/dgmodule" );
 }
 
@@ -137,7 +131,7 @@ psys_graph::psys_graph()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool psys_graph::Query(event::Event* event) const {
+/*bool psys_graph::Query(event::Event* event) const {
   auto pfilter = dynamic_cast<ork::ObjectFactoryFilter*>(event);
   if (pfilter) {
     const object::ObjectClass* pclass = pfilter->mpClass;
@@ -150,7 +144,7 @@ bool psys_graph::Query(event::Event* event) const {
   }
 
   return dataflow::graph_inst::Query(event);
-}
+}*/
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -224,12 +218,12 @@ void psys_graph::PrepForStart() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void psys_graph_pool::Describe() {
+void psys_graph_pool::describeX(class_t* clazz) {
   //	ork::reflect::RegisterProperty("Template", &psys_graph_pool::TemplateAccessor);
 
-  ork::reflect::RegisterProperty("MaxInstances", &psys_graph_pool::miPoolSize);
-  ork::reflect::annotatePropertyForEditor<psys_graph_pool>("MaxInstances", "editor.range.min", "1");
-  ork::reflect::annotatePropertyForEditor<psys_graph_pool>("MaxInstances", "editor.range.max", "128");
+  // ork::reflect::RegisterProperty("MaxInstances", &psys_graph_pool::miPoolSize);
+  // ork::reflect::annotatePropertyForEditor<psys_graph_pool>("MaxInstances", "editor.range.min", "1");
+  // ork::reflect::annotatePropertyForEditor<psys_graph_pool>("MaxInstances", "editor.range.max", "128");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -247,6 +241,7 @@ void psys_graph_pool::BindTemplate(const psys_graph& InTemplate) {
   mGraphPool = new ork::pool<psys_graph>(miPoolSize);
   printf(" new mGraphPool<%p>\n", mGraphPool);
   ////////////////////////////////////////////
+  /*
   ork::ResizableString str;
   ork::stream::ResizableStringOutputStream ostream(str);
   ork::reflect::serdes::BinarySerializer binoser(ostream);
@@ -259,7 +254,7 @@ void psys_graph_pool::BindTemplate(const psys_graph& InTemplate) {
     ork::reflect::serdes::BinaryDeserializer biniser(istream);
     InTemplate.GetClass()->Description().DeserializeProperties(biniser, &clone);
   }
-  mNewTemplate = &InTemplate;
+  mNewTemplate = &InTemplate;*/
 }
 
 ///////////////////////////////////////////////////////////////////////////////
