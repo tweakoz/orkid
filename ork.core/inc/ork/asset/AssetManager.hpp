@@ -14,15 +14,15 @@ namespace ork { namespace asset {
 
 template <typename AssetType> ork::recursive_mutex AssetManager<AssetType>::gLock("AssetManagerMutex");
 
-template <typename AssetType> VarMap AssetManager<AssetType>::novars() {
-  return VarMap();
+template <typename AssetType> varmap::VarMap AssetManager<AssetType>::novars() {
+  return varmap::VarMap();
 };
 
 template <typename AssetType> bool AssetManager<AssetType>::gbAUTOLOAD = true;
 
 template <typename AssetType>
 inline typename AssetManager<AssetType>::typed_asset_ptr_t //
-AssetManager<AssetType>::Create(const PieceString& asset_name, const VarMap& vmap) {
+AssetManager<AssetType>::Create(const AssetPath& asset_name, const varmap::VarMap& vmap) {
   gLock.Lock();
   auto asset       = AssetType::GetClassStatic()->DeclareAsset(asset_name, vmap);
   auto typed_asset = std::dynamic_pointer_cast<AssetType>(asset);
@@ -32,7 +32,7 @@ AssetManager<AssetType>::Create(const PieceString& asset_name, const VarMap& vma
 
 template <typename AssetType>
 inline typename AssetManager<AssetType>::typed_asset_ptr_t //
-AssetManager<AssetType>::Find(const PieceString& asset_name) {
+AssetManager<AssetType>::Find(const AssetPath& asset_name) {
   gLock.Lock();
   auto asset       = AssetType::GetClassStatic()->FindAsset(asset_name);
   auto typed_asset = std::dynamic_pointer_cast<AssetType>(asset);
@@ -42,7 +42,7 @@ AssetManager<AssetType>::Find(const PieceString& asset_name) {
 
 template <typename AssetType>
 inline typename AssetManager<AssetType>::typed_asset_ptr_t //
-AssetManager<AssetType>::Load(const PieceString& asset_name) {
+AssetManager<AssetType>::Load(const AssetPath& asset_name) {
   gLock.Lock();
 
   typed_asset_ptr_t asset = Create(asset_name);
@@ -59,7 +59,7 @@ AssetManager<AssetType>::Load(const PieceString& asset_name) {
 }
 template <typename AssetType>
 inline typename AssetManager<AssetType>::typed_asset_ptr_t //
-AssetManager<AssetType>::LoadUnManaged(const PieceString& asset_name) {
+AssetManager<AssetType>::LoadUnManaged(const AssetPath& asset_name) {
   gLock.Lock();
   auto asset       = AssetType::GetClassStatic()->LoadUnManagedAsset(asset_name);
   auto typed_asset = std::dynamic_pointer_cast<AssetType>(asset);

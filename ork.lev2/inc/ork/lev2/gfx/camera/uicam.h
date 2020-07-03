@@ -8,6 +8,7 @@
 #pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
+#include <ork/rtti/RTTIX.inl>
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/kernel/core/singleton.h>
 #include <ork/lev2/ui/event.h>
@@ -84,7 +85,7 @@ public: //
 };
 
 class UiCamera : public ork::Object {
-  RttiDeclareAbstract(UiCamera, ork::Object);
+  DeclareAbstractX(UiCamera, ork::Object);
 
 protected:
   std::string type_name;
@@ -184,7 +185,7 @@ struct CamEvTrackData {
 ///////////////////////////////////////////////////////////////////////////////
 
 class EzUiCam : public UiCamera {
-  RttiDeclareConcrete(EzUiCam, UiCamera);
+  DeclareConcreteX(EzUiCam, UiCamera);
 
 public: //
   enum erotmode {

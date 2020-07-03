@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <stack>
 #include "serialize/serdes.h"
 
 namespace ork::reflect::serdes {
