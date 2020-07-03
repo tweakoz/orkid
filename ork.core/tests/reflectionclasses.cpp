@@ -65,11 +65,10 @@ inline void ::ork::reflect::ITyped<asset::asset_ptr_t>::deserialize(serdes::node
   OrkAssert(key1_out == "class");
   OrkAssert(key2_out == "path");
 
-  auto clazz      = dynamic_cast<object::ObjectClass*>(Class::FindClass(val1.c_str()));
-  auto loaderanno = clazz->annotation("ork.asset.loader");
-  auto loader     = loaderanno.Get<asset::loader_ptr_t>();
+  auto assetclazz = dynamic_cast<object::ObjectClass*>(Class::FindClass(val1.c_str()));
+  auto loader     = asset::getLoader(assetclazz);
   if (loader->CheckAsset(val2)) {
-    auto newobj   = clazz->createShared();
+    auto newobj   = assetclazz->createShared();
     auto newasset = std::dynamic_pointer_cast<asset::Asset>(newobj);
     OrkAssert(newasset->type() == val1);
     newasset->_name = val2;
@@ -102,14 +101,8 @@ void AssetTest::describeX(ObjectClass* clazz) {
     printf("DynamicAssetLoader test name<%s> ptr<%p>\n", asset_name, asset.get());
     return true;
   };
-  auto assetclazz = dynamic_cast<object::ObjectClass*>(asset::Asset::GetClassStatic());
 
-  ObjectClass::anno_t anno;
-  anno.Set<asset::loader_ptr_t>(dyn_loader);
-  assetclazz->annotate("ork.asset.loader", anno);
-  // assetclazz->AddLoader(dyn_loader);
-  // todo support multiple loaders per asset type
-  // todo support flyweighting
+  asset::registerLoader<asset::Asset>(dyn_loader);
 }
 ///////////////////////////////////////////////////////////////////////////////
 AssetTest::AssetTest()

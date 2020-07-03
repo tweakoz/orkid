@@ -43,4 +43,5 @@ template <>                                    //
 struct use_custom_serdes<asset::asset_ptr_t> { //
   static constexpr bool enable = true;
 };
+
 } // namespace ork
