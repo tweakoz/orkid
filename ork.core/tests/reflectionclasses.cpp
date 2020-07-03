@@ -16,6 +16,7 @@
 #include <ork/math/quaternion.hpp>
 #include <ork/math/cmatrix3.hpp>
 #include <ork/math/cmatrix4.hpp>
+#include <ork/asset/DynamicAssetLoader.h>
 
 using namespace ork;
 using namespace ork::object;
@@ -64,10 +65,19 @@ inline void ::ork::reflect::ITyped<asset::asset_ptr_t>::deserialize(serdes::node
   OrkAssert(key1_out == "class");
   OrkAssert(key2_out == "path");
 
-  auto asset = std::make_shared<asset::Asset>();
-  OrkAssert(asset->type() == val1);
-  asset->_name = val2;
-  set(asset, instance);
+  auto clazz      = dynamic_cast<object::ObjectClass*>(Class::FindClass(val1.c_str()));
+  auto loaderanno = clazz->annotation("ork.asset.loader");
+  auto loader     = loaderanno.Get<asset::loader_ptr_t>();
+  if (loader->CheckAsset(val2)) {
+    auto newobj   = clazz->createShared();
+    auto newasset = std::dynamic_pointer_cast<asset::Asset>(newobj);
+    OrkAssert(newasset->type() == val1);
+    newasset->_name = val2;
+    loader->LoadAsset(newasset);
+    set(newasset, instance);
+  } else {
+    set(nullptr, instance);
+  }
 }
 } // namespace ork::reflect
 ///////////////////////////////////////////////////////////////////////////////
@@ -76,6 +86,30 @@ void AssetTest::describeX(ObjectClass* clazz) {
   clazz->memberProperty(
       "asset", //
       &AssetTest::_assetptr);
+  ///////////////////////////////////
+  auto dyn_loader = std::make_shared<asset::DynamicAssetLoader>();
+
+  dyn_loader->mEnumFn = [=]() -> asset::set_t {
+    asset::set_t rval;
+    rval.insert("dyn://yo");
+    return rval;
+  };
+  dyn_loader->mCheckFn = [=](const AssetPath& path) { //
+    return ork::IsSubStringPresent("dyn://", path.c_str());
+  };
+  dyn_loader->mLoadFn = [=](asset::asset_ptr_t asset) {
+    auto asset_name = asset->name().c_str();
+    printf("DynamicAssetLoader test name<%s> ptr<%p>\n", asset_name, asset.get());
+    return true;
+  };
+  auto assetclazz = dynamic_cast<object::ObjectClass*>(asset::Asset::GetClassStatic());
+
+  ObjectClass::anno_t anno;
+  anno.Set<asset::loader_ptr_t>(dyn_loader);
+  assetclazz->annotate("ork.asset.loader", anno);
+  // assetclazz->AddLoader(dyn_loader);
+  // todo support multiple loaders per asset type
+  // todo support flyweighting
 }
 ///////////////////////////////////////////////////////////////////////////////
 AssetTest::AssetTest()

@@ -26,7 +26,8 @@ class Event;
 
 namespace object {
 class Signal;
-}
+class ObjectClass;
+} // namespace object
 
 struct Object;
 
@@ -41,6 +42,7 @@ public:
   Object();
   virtual ~Object();
 
+  object::ObjectClass* objectClass() const;
   object::Signal* findSignal(ConstString name);
 
   virtual bool preSerialize(reflect::serdes::ISerializer&) const;

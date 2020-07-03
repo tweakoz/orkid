@@ -41,7 +41,10 @@ Object::Object() {
 Object::~Object() {
 }
 ///////////////////////////////////////////////////////////////////////////////
-
+object::ObjectClass* Object::objectClass() const {
+  return dynamic_cast<object::ObjectClass*>(GetClass());
+}
+///////////////////////////////////////////////////////////////////////////////
 object::Signal* Object::findSignal(ConstString name) {
   auto objclazz = rtti::downcast<object::ObjectClass*>(GetClass());
   auto pSignal  = objclazz->Description().findSignal(name);

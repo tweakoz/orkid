@@ -24,4 +24,6 @@ public:
   virtual std::set<file::Path> EnumerateExisting() = 0;
 };
 
+using loader_ptr_t = std::shared_ptr<AssetLoader>;
+
 }} // namespace ork::asset

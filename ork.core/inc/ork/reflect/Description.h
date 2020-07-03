@@ -32,11 +32,11 @@ class IDeserializer;
 
 class Description {
 public:
-  typedef orklut<ConstString, ObjectProperty*> PropertyMapType;
-  typedef orklut<ConstString, IObjectFunctor*> FunctorMapType;
-  typedef orklut<ConstString, object::Signal Object::*> SignalMapType;
-  typedef orklut<ConstString, object::AutoSlot Object::*> AutoSlotMapType;
-  typedef ork::svar64_t anno_t;
+  using PropertyMapType = orklut<ConstString, ObjectProperty*>;
+  using FunctorMapType  = orklut<ConstString, IObjectFunctor*>;
+  using SignalMapType   = orklut<ConstString, object::Signal Object::*>;
+  using AutoSlotMapType = orklut<ConstString, object::AutoSlot Object::*>;
+  using anno_t          = ork::svar64_t;
 
   Description();
 
