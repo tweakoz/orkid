@@ -203,7 +203,7 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef orkmap<std::string, GfxMaterial*> MaterialMap;
+typedef orkmap<std::string, material_ptr_t> MaterialMap;
 bool LoadMaterialMap(const ork::file::Path& pth, MaterialMap& mmap);
 
 } // namespace lev2

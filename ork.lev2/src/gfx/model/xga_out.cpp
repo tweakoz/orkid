@@ -206,9 +206,9 @@ bool XgmAnim::Save(const AssetPath& Filename, const XgmAnim* anm) {
     const PoolString& ChannelUsage = it->second->GetUsageSemantic();
     const PoolString& ObjectName   = it->second->GetObjectName();
 
-    const XgmMatrixAnimChannel* MtxChannel = rtti::autocast(it->second);
-    const XgmFloatAnimChannel* F32Channel  = rtti::autocast(it->second);
-    const XgmVect3AnimChannel* Vec3Channel = rtti::autocast(it->second);
+    auto MtxChannel  = std::dynamic_pointer_cast<XgmMatrixAnimChannel>(it->second);
+    auto F32Channel  = std::dynamic_pointer_cast<XgmFloatAnimChannel>(it->second);
+    auto Vec3Channel = std::dynamic_pointer_cast<XgmVect3AnimChannel>(it->second);
 
     int idataoffset = AnimDataStream->GetSize();
 

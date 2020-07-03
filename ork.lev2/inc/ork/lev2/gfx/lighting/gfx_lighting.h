@@ -218,7 +218,7 @@ using pointlight_constptr_t = std::shared_ptr<const PointLight>;
 ///////////////////////////////////////////////////////////////////////////////
 
 class DirectionalLightData : public LightData {
-  RttiDeclareConcrete(DirectionalLightData, LightData);
+  DeclareConcreteX(DirectionalLightData, LightData);
 
 public:
   DirectionalLightData() {
@@ -252,7 +252,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class AmbientLightData : public LightData {
-  RttiDeclareConcrete(AmbientLightData, LightData);
+  DeclareConcreteX(AmbientLightData, LightData);
 
   float mfAmbientShade;
   fvec3 mvHeadlightDir;
@@ -309,7 +309,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class SpotLightData : public LightData {
-  RttiDeclareConcrete(SpotLightData, LightData);
+  DeclareConcreteX(SpotLightData, LightData);
 
   float mFovy;
   float mRange;
@@ -440,7 +440,7 @@ struct LightingGroup {
 ///////////////////////////////////////////////////////////////////////////////
 
 class LightManagerData : public ork::Object {
-  RttiDeclareConcrete(LightManagerData, ork::Object);
+  DeclareConcreteX(LightManagerData, ork::Object);
 
 public:
 };

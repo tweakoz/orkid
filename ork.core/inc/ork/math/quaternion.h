@@ -9,6 +9,7 @@
 
 #include <memory>
 #include <ork/config/config.h>
+#include <ork/orktypes.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {

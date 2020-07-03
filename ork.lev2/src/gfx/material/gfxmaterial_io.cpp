@@ -40,8 +40,8 @@ bool LoadMaterialMap(const ork::file::Path& pth, MaterialMap& mmap) {
           auto pclazz = dynamic_cast<object::ObjectClass*>(rtti::Class::FindClass(MaterialClass));
 
           if (pclazz) {
-            auto pmtlobj            = pclazz->CreateObject();
-            lev2::GfxMaterial* pmtl = rtti::autocast(pmtlobj);
+            auto pmtlobj = pclazz->createShared();
+            auto pmtl    = std::dynamic_pointer_cast<lev2::GfxMaterial>(pmtlobj);
             OrkAssert(pmtl != 0);
 
             for (const TiXmlElement* PropNode = MtlNode->FirstChildElement(); PropNode; PropNode = PropNode->NextSiblingElement()) {

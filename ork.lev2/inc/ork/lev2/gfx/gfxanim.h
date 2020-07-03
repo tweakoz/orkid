@@ -11,6 +11,7 @@
 #include <ork/math/box.h>
 #include <ork/file/path.h>
 #include <ork/kernel/varmap.inl>
+#include <ork/rtti/RTTIX.inl>
 
 namespace ork { namespace lev2 {
 
@@ -29,6 +30,8 @@ typedef ork::lev2::XgmAnimChannel AnimChannelType;
 typedef XgmAnim AnimType;
 typedef orkmap<PoolString, ork::lev2::AnimChannelType*> AnimChannelsMap;
 
+using animchannel_ptr_t = std::shared_ptr<XgmAnimChannel>;
+
 /// ///////////////////////////////////////////////////////////////////////////
 /// Animation Channel
 /// there can be multiple animation channels per anim
@@ -38,7 +41,7 @@ typedef orkmap<PoolString, ork::lev2::AnimChannelType*> AnimChannelsMap;
 /// ///////////////////////////////////////////////////////////////////////////
 
 class XgmAnimChannel : public ork::Object {
-  RttiDeclareAbstract(XgmAnimChannel, ork::Object);
+  DeclareAbstractX(XgmAnimChannel, ork::Object);
 
 public:
   enum EChannelType {
@@ -89,7 +92,7 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 class XgmFloatAnimChannel : public XgmAnimChannel {
-  RttiDeclareConcrete(XgmFloatAnimChannel, XgmAnimChannel);
+  DeclareConcreteX(XgmFloatAnimChannel, XgmAnimChannel);
 
   orkvector<float> mSampledFrames;
 
@@ -116,7 +119,7 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 
 class XgmVect3AnimChannel : public XgmAnimChannel {
-  RttiDeclareConcrete(XgmVect3AnimChannel, XgmAnimChannel);
+  DeclareConcreteX(XgmVect3AnimChannel, XgmAnimChannel);
 
   orkvector<fvec3> mSampledFrames;
 
@@ -143,7 +146,7 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 
 class XgmVect4AnimChannel : public XgmAnimChannel {
-  RttiDeclareConcrete(XgmVect4AnimChannel, XgmAnimChannel);
+  DeclareConcreteX(XgmVect4AnimChannel, XgmAnimChannel);
 
   orkvector<fvec4> mSampledFrames;
 
@@ -195,7 +198,7 @@ struct DecompMtx44 {
 
 class XgmDecompAnimChannel : public XgmAnimChannel {
 
-  RttiDeclareConcrete(XgmDecompAnimChannel, XgmAnimChannel);
+  DeclareConcreteX(XgmDecompAnimChannel, XgmAnimChannel);
 
   int GetNumFrames() const final;
 
@@ -217,7 +220,7 @@ public:
 
 class XgmMatrixAnimChannel : public XgmAnimChannel {
 
-  RttiDeclareConcrete(XgmMatrixAnimChannel, XgmAnimChannel);
+  DeclareConcreteX(XgmMatrixAnimChannel, XgmAnimChannel);
 
   int GetNumFrames() const final;
 
@@ -244,9 +247,9 @@ public:
 class XgmAnim {
 public:
   typedef orklut<PoolString, ork::lev2::XgmDecompAnimChannel*> JointChannelsMap;
-  typedef orklut<PoolString, ork::lev2::XgmAnimChannel*> MaterialChannelsMap;
+  typedef orklut<PoolString, animchannel_ptr_t> MaterialChannelsMap;
 
-  void AddChannel(const PoolString& Name, XgmAnimChannel* pchan);
+  void AddChannel(const PoolString& Name, animchannel_ptr_t pchan);
   void SetNumFrames(int ifr) {
     miNumFrames = ifr;
   }
