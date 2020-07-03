@@ -147,7 +147,7 @@ template <typename T> int MaxFanout(void);
 ///////////////////////////////////////////////////////////////////////////////
 
 class plugroot : public ork::Object {
-  RttiDeclareAbstract(plugroot, ork::Object);
+  DeclareAbstractX(plugroot, ork::Object);
 
 public:
   plugroot(module* pmod, EPlugDir edir, EPlugRate epr, const std::type_info& tid, const char* pname);
@@ -197,7 +197,7 @@ private:
 
 class inplugbase : public plugroot {
   friend class module;
-  RttiDeclareAbstract(inplugbase, plugroot);
+  DeclareAbstractX(inplugbase, plugroot);
 
 public:
   bool IsConnected() const {
@@ -237,7 +237,7 @@ private:
 
 class outplugbase : public plugroot {
   friend class inplugbase;
-  RttiDeclareAbstract(outplugbase, plugroot);
+  DeclareAbstractX(outplugbase, plugroot);
 
 public:
   dataflow::node_hash& RefHash() {
@@ -282,8 +282,9 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename vartype> class outplug : public outplugbase {
-  DECLARE_TRANSPARENT_TEMPLATE_RTTI(outplug<vartype>, outplugbase);
+template <typename vartype> //
+class outplug : public outplugbase {
+  DeclareTemplateConcreteX(outplug<vartype>, outplugbase);
 
 public:
   void operator=(const outplug<vartype>& oth) {
@@ -307,7 +308,7 @@ public:
       : outplugbase(pmod, epr, tinfo, pname)
       , mOutputData(def) {
   }
-  virtual int MaxFanOut() const {
+  int MaxFanOut() const override {
     return MaxFanout<vartype>();
   }
   ///////////////////////////////////////////////////////////////
@@ -328,7 +329,7 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename vartype> class inplug : public inplugbase {
-  DECLARE_TRANSPARENT_TEMPLATE_ABSTRACT_RTTI(inplug<vartype>, inplugbase);
+  DeclareTemplateAbstractX(inplug<vartype>, inplugbase);
 
 public:
   explicit inplug(module* pmod, EPlugRate epr, vartype& def, const char* pname)
@@ -378,7 +379,7 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 class floatinplug : public inplug<float> {
-  RttiDeclareAbstract(floatinplug, inplug<float>);
+  DeclareAbstractX(floatinplug, inplug<float>);
 
 public:
   floatinplug(module* pmod, EPlugRate epr, float& def, const char* pname)
@@ -397,7 +398,7 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 
 class vect3inplug : public inplug<fvec3> {
-  RttiDeclareAbstract(vect3inplug, inplug<fvec3>);
+  DeclareAbstractX(vect3inplug, inplug<fvec3>);
 
 public:
   vect3inplug(module* pmod, EPlugRate epr, fvec3& def, const char* pname)
@@ -416,7 +417,7 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename xf> class floatinplugxf : public floatinplug {
-  DECLARE_TRANSPARENT_TEMPLATE_ABSTRACT_RTTI(floatinplugxf<xf>, floatinplug);
+  DeclareTemplateAbstractX(floatinplugxf<xf>, floatinplug);
 
 public:
   explicit floatinplugxf(module* pmod, EPlugRate epr, float& def, const char* pname)
@@ -451,7 +452,7 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename xf> class vect3inplugxf : public vect3inplug {
-  DECLARE_TRANSPARENT_TEMPLATE_ABSTRACT_RTTI(vect3inplugxf<xf>, vect3inplug);
+  DeclareTemplateAbstractX(vect3inplugxf<xf>, vect3inplug);
 
 public:
   explicit vect3inplugxf(module* pmod, EPlugRate epr, fvec3& def, const char* pname)
@@ -522,7 +523,7 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 
 class floatxfitembase : public ork::Object {
-  RttiDeclareAbstract(floatxfitembase, ork::Object);
+  DeclareAbstractX(floatxfitembase, ork::Object);
 
 public:
   virtual float transform(float inp) const = 0;
@@ -600,7 +601,7 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 
 class floatxf : public ork::Object {
-  RttiDeclareAbstract(floatxf, ork::Object);
+  DeclareAbstractX(floatxf, ork::Object);
 
 public:
   float transform(float inp) const;
@@ -615,7 +616,7 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 
 class vect3xf : public ork::Object {
-  RttiDeclareConcrete(vect3xf, ork::Object);
+  DeclareConcreteX(vect3xf, ork::Object);
 
 public:
   const floatxf& GetTransformX() const {
@@ -652,7 +653,7 @@ typedef vect3inplugxf<vect3xf> vect3xfinplug;
 ///////////////////////////////////////////////////////////////////////////////
 
 class module : public ork::Object {
-  RttiDeclareAbstract(module, ork::Object);
+  DeclareAbstractX(module, ork::Object);
 
 public:
   module();
@@ -750,7 +751,7 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 class dgmodule : public module {
-  RttiDeclareAbstract(dgmodule, module);
+  DeclareAbstractX(dgmodule, module);
 
 public:
   dgmodule();

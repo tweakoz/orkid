@@ -10,7 +10,7 @@
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/reflect/properties/AccessorObject.h>
-#include <ork/reflect/properties/register.h>
+#include <ork/reflect/properties/registerX.inl>
 #include <ork/reflect/enum_serializer.inl>
 #include <ork/file/file.h>
 #include <ork/stream/FileInputStream.h>
@@ -20,26 +20,18 @@
 #include <ork/reflect/enum_serializer.inl>
 #include <ork/asset/AssetManager.h>
 
-BEGIN_ENUM_SERIALIZER(ork::proctex, EPTEX_TYPE)
-DECLARE_ENUM(EPTEXTYPE_REALTIME)
-DECLARE_ENUM(EPTEXTYPE_EXPORT)
-END_ENUM_SERIALIZER()
-
-INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::ProcTex, "proctex");
-INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::ImgModule, "proctex::ImgModule");
-INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::Img32Module, "proctex::Img32Module");
-INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::Img64Module, "proctex::Img64Module");
-INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::Module, "proctex::Module");
-
-INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI(ork::dataflow::outplug<ork::proctex::ImgBase>, "proctex::OutImgPlug");
-INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI(ork::dataflow::inplug<ork::proctex::ImgBase>, "proctex::InImgPlug");
+ImplementReflectionX(ork::proctex::ProcTex, "proctex");
+ImplementReflectionX(ork::proctex::ImgModule, "proctex::ImgModule");
+ImplementReflectionX(ork::proctex::Img32Module, "proctex::Img32Module");
+ImplementReflectionX(ork::proctex::Img64Module, "proctex::Img64Module");
+ImplementReflectionX(ork::proctex::Module, "proctex::Module");
 
 using namespace ork::lev2;
 
 namespace ork { namespace dataflow {
-template <> void outplug<ork::proctex::ImgBase>::Describe() {
+template <> void outplug<ork::proctex::ImgBase>::describeX(class_t* clazz) {
 }
-template <> void inplug<ork::proctex::ImgBase>::Describe() {
+template <> void inplug<ork::proctex::ImgBase>::describeX(class_t* clazz) {
 }
 template <> int MaxFanout<ork::proctex::ImgBase>() {
   return 0;
@@ -54,10 +46,15 @@ template <> const ork::proctex::ImgBase& outplug<ork::proctex::ImgBase>::GetValu
 }} // namespace ork::dataflow
 
 namespace ork {
-
 file::Path SaveFileRequester(const std::string& title, const std::string& ext);
+}
 
-namespace proctex {
+namespace ork::proctex {
+
+BeginEnumRegistration(ProcTexType);
+RegisterEnum(ProcTexType, REALTIME);
+RegisterEnum(ProcTexType, EXPORT);
+EndEnumRegistration();
 
 Img32 ImgModule::gNoCon;
 ork::MpMcBoundedQueue<Buffer*> ProcTexContext::gBuf32Q;
@@ -180,7 +177,7 @@ static lev2::Texture* GetImgModuleIcon(ork::dataflow::dgmodule* pmod) {
   return buffer.OutputTexture();
 }
 
-void ImgModule::Describe() {
+void ImgModule::describeX(class_t* clazz) {
   reflect::annotateClassForEditor<ImgModule>("dflowicon", &GetImgModuleIcon);
 
   auto opm = new ork::reflect::OpMap;
@@ -196,11 +193,17 @@ void ImgModule::Describe() {
 
   reflect::annotateClassForEditor<Img32Module>("editor.object.ops", opm);
 }
-void Img32Module::Describe() {
-  RegisterObjOutPlug(Img32Module, ImgOut);
+void Img32Module::describeX(class_t* clazz) {
+  // RegisterObjOutPlug(Img32Module, ImgOut);
+  clazz
+      ->memberProperty("ImgOut", &Img32Module::OutAccessorImgOut) //
+      ->annotate<bool>("editor.visible", false);
 }
-void Img64Module::Describe() {
-  RegisterObjOutPlug(Img64Module, ImgOut);
+void Img64Module::describeX(class_t* clazz) {
+  // RegisterObjOutPlug(Img64Module, ImgOut);
+  clazz
+      ->memberProperty("ImgOut", &Img64Module::OutAccessorImgOut) //
+      ->annotate<bool>("editor.visible", false);
 }
 ImgModule::ImgModule()
     : mExport(false) {
@@ -405,10 +408,10 @@ void ImgModule::UpdateThumb(ProcTex& ptex) {
   CIMPL->popCPD();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ProcTex::Describe() { // ork::reflect::RegisterProperty( "Global", & ProcTex::GlobalAccessor );
-                           // ork::reflect::annotatePropertyForEditor< ProcTex >("Global", "editor.visible", "false" );
-                           // ork::reflect::annotatePropertyForEditor< ProcTex >("Modules", "editor.factorylistbase",
-                           // "proctex::Module" );
+void ProcTex::describeX(class_t* clazz) { // ork::reflect::RegisterProperty( "Global", & ProcTex::GlobalAccessor );
+  // ork::reflect::annotatePropertyForEditor< ProcTex >("Global", "editor.visible", "false" );
+  // ork::reflect::annotatePropertyForEditor< ProcTex >("Modules", "editor.factorylistbase",
+  // "proctex::Module" );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -554,7 +557,7 @@ void ProcTex::compute(ProcTexContext& ptctx) {
   // mpctx = 0;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Module::Describe() {
+void Module::describeX(class_t* clazz) {
 }
 Module::Module() {
 }
@@ -583,7 +586,7 @@ ProcTexContext::ProcTexContext()
     , mCurrentTime(0.0f)
     , mTarget(nullptr)
     , mBufferDim(0)
-    , mProcTexType(EPTEXTYPE_REALTIME)
+    , mProcTexType(ProcTexType::REALTIME)
     , mWriteFrames(false)
     , mWriteFrameIndex(0)
     , mWritePath("ptex_out.png") {
@@ -614,7 +617,7 @@ void ProcTexContext::SetBufferDim(int idim) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 ProcTex* ProcTex::Load(const ork::file::Path& pth) {
-  ProcTex* rval        = 0;
+  /*ProcTex* rval        = 0;
   ork::file::Path path = pth;
   path.SetExtension("ptx");
   lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
@@ -627,7 +630,8 @@ ProcTex* ProcTex::Load(const ork::file::Path& pth) {
     rval = rtti::safe_downcast<ProcTex*>(pcastable);
   }
   lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
-  return rval;
+  return rval;*/
+  return nullptr;
 }
 
 Buffer* ProcTexContext::AllocBuffer32() {
@@ -844,5 +848,7 @@ void AA16Render::RenderNoAA() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-} // namespace proctex
-} // namespace ork
+} // namespace ork::proctex
+
+ImplementTemplateReflectionX(ork::dataflow::outplug<ork::proctex::ImgBase>, "proctex::OutImgPlug");
+ImplementTemplateReflectionX(ork::dataflow::inplug<ork::proctex::ImgBase>, "proctex::InImgPlug");

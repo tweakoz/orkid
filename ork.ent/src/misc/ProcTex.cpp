@@ -32,13 +32,13 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include "ProcTex.h"
 ///////////////////////////////////////////////////////////////////////////////
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::ProcTexArchetype, "ProcTexArchetype");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::ProcTexControllerInst, "ProcTexControllerInst");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::ProcTexControllerData, "ProcTexControllerData");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::ProcTexOutputBase, "ProcTexOutputBase");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::ProcTexOutputQuad, "ProcTexOutputQuad");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::ProcTexOutputSkybox, "ProcTexOutputSkybox");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::ProcTexOutputDynTex, "ProcTexOutputDynTex");
+ImplementReflectionX(ork::ent::ProcTexArchetype, "ProcTexArchetype");
+ImplementReflectionX(ork::ent::ProcTexControllerInst, "ProcTexControllerInst");
+ImplementReflectionX(ork::ent::ProcTexControllerData, "ProcTexControllerData");
+ImplementReflectionX(ork::ent::ProcTexOutputBase, "ProcTexOutputBase");
+ImplementReflectionX(ork::ent::ProcTexOutputQuad, "ProcTexOutputQuad");
+ImplementReflectionX(ork::ent::ProcTexOutputSkybox, "ProcTexOutputSkybox");
+ImplementReflectionX(ork::ent::ProcTexOutputDynTex, "ProcTexOutputDynTex");
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 

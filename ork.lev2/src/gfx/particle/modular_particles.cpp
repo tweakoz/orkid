@@ -41,17 +41,16 @@ ImplementReflectionX(ork::lev2::particle::Module, "psys::Module");
 ImplementReflectionX(ork::lev2::particle::ParticleModule, "psys::ParticleModule");
 ImplementReflectionX(ork::lev2::particle::psys_graph_pool, "psys::GraphPool");
 
-INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI(ork::lev2::particle::PtclBufOutPlug, "psys::pbufoutplug");
-INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI(ork::lev2::particle::PtclBufInpPlug, "psys::pbufinpplug");
-
 ///////////////////////////////////////////////////////////////////////////////
 
-template <> void ork::dataflow::outplug<ork::lev2::particle::psys_ptclbuf>::Describe() {
+template <> //
+void ork::dataflow::outplug<ork::lev2::particle::psys_ptclbuf>::describeX(class_t* clazz) {
 }
-template <> void ork::dataflow::inplug<ork::lev2::particle::psys_ptclbuf>::Describe() {
+template <> //
+void ork::dataflow::inplug<ork::lev2::particle::psys_ptclbuf>::describeX(class_t* clazz) {
 }
 
-namespace ork { namespace dataflow {
+namespace ork::dataflow {
 template <> int MaxFanout<ork::lev2::particle::psys_ptclbuf>() {
   return 1;
 }
@@ -64,10 +63,10 @@ template <> const ork::lev2::particle::psys_ptclbuf& outplug<ork::lev2::particle
   return GetInternalData();
 }
 
-}} // namespace ork::dataflow
+} // namespace ork::dataflow
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace lev2 { namespace particle {
+namespace ork::lev2::particle {
 ///////////////////////////////////////////////////////////////////////////////
 
 psys_ptclbuf ParticleModule::gNoCon;
@@ -284,4 +283,7 @@ void psys_graph_pool::Free(psys_graph* pgraph) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-}}} // namespace ork::lev2::particle
+} // namespace ork::lev2::particle
+
+ImplementTemplateReflectionX(ork::lev2::particle::PtclBufOutPlug, "psys::pbufoutplug");
+ImplementTemplateReflectionX(ork::lev2::particle::PtclBufInpPlug, "psys::pbufinpplug");

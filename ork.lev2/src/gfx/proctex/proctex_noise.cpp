@@ -17,13 +17,14 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::Cells, "proctex::Cells");
-INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::Octaves, "proctex::Octaves");
+ImplementReflectionX(ork::proctex::Cells, "proctex::Cells");
+ImplementReflectionX(ork::proctex::Octaves, "proctex::Octaves");
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace proctex {
 ///////////////////////////////////////////////////////////////////////////////
-void Octaves::Describe() {
+void Octaves::describeX(class_t* clazz) {
+  /*
   RegisterObjInpPlug(Octaves, Input);
   RegisterFloatXfPlug(Octaves, BaseOffsetX, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
   RegisterFloatXfPlug(Octaves, BaseOffsetY, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
@@ -41,6 +42,7 @@ void Octaves::Describe() {
   static const char* EdGrpStr = "grp://Basic Input NumOctaves "
                                 "grp://Plugs BaseOffsetX ScalOffsetX BaseOffsetY ScalOffsetY BaseFreq ScalFreq BaseAmp ScalAmp ";
   reflect::annotateClassForEditor<Octaves>("editor.prop.groups", EdGrpStr);
+  */
 }
 ///////////////////////////////////////////////////////////////////////////////
 Octaves::Octaves()
@@ -155,8 +157,8 @@ void Octaves::compute(ProcTex& ptex) {
   pTARG->debugPopGroup();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Cells::Describe() {
-  ork::reflect::RegisterProperty("SeedA", &Cells::miSeedA);
+void Cells::describeX(class_t* clazz) {
+  /*ork::reflect::RegisterProperty("SeedA", &Cells::miSeedA);
   ork::reflect::annotatePropertyForEditor<Cells>("SeedA", "editor.range.min", "0");
   ork::reflect::annotatePropertyForEditor<Cells>("SeedA", "editor.range.max", "1000");
 
@@ -190,6 +192,7 @@ void Cells::Describe() {
                                 "grp://Plugs Dispersion SeedLerp SmoothingRadius ";
 
   reflect::annotateClassForEditor<Cells>("editor.prop.groups", EdGrpStr);
+  */
 }
 ///////////////////////////////////////////////////////////////////////////////
 Cells::Cells()

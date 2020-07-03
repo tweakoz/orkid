@@ -17,7 +17,7 @@
 #include <ork/math/gradient.h>
 #include <ork/math/multicurve.h>
 #include <ork/object/Object.h>
-#include <ork/rtti/RTTI.h>
+#include <ork/rtti/RTTIX.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -52,9 +52,9 @@ class IDeserializer;
 namespace ork { namespace proctex {
 class Module;
 
-enum EPTEX_TYPE {
-  EPTEXTYPE_REALTIME = 0,
-  EPTEXTYPE_EXPORT,
+enum class ProcTexType {
+  REALTIME = 0,
+  EXPORT,
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -158,7 +158,7 @@ struct AA16Render {
 ///////////////////////////////////////////////////////////////////////////////
 
 class Module : public ork::dataflow::dgmodule {
-  RttiDeclareAbstract(Module, ork::dataflow::dgmodule);
+  DeclareAbstractX(Module, ork::dataflow::dgmodule);
 
   ////////////////////////////////////////////////////////////
   void Compute(dataflow::workunit* wu) override {
@@ -185,7 +185,7 @@ void RenderQuad(
     float fv2 = 1.0f);
 
 class ImgModule : public Module {
-  RttiDeclareAbstract(ImgModule, Module);
+  DeclareAbstractX(ImgModule, Module);
 
   virtual void compute(ProcTex& ptex) = 0;
 
@@ -224,7 +224,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class Img64Module : public ImgModule {
-  RttiDeclareAbstract(Img64Module, ImgModule);
+  DeclareAbstractX(Img64Module, ImgModule);
 
 protected:
   DeclareImg64OutPlug(ImgOut);
@@ -239,7 +239,7 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 class Img32Module : public ImgModule {
-  RttiDeclareAbstract(Img32Module, ImgModule);
+  DeclareAbstractX(Img32Module, ImgModule);
 
 protected:
   DeclareImg32OutPlug(ImgOut);
@@ -254,7 +254,7 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 class Curve1D : public Module {
-  RttiDeclareConcrete(Curve1D, Module);
+  DeclareConcreteX(Curve1D, Module);
 
 private:
   ork::dataflow::inplugbase* GetInput(int idx) final;
@@ -284,7 +284,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class Global : public Module {
-  RttiDeclareConcrete(Global, Module);
+  DeclareConcreteX(Global, Module);
 
 private:
   //////////////////////////////////////////////////
@@ -331,7 +331,7 @@ struct ProcTexContext {
   Buffer32 mTrashBuffer;
   float mCurrentTime;
   int mBufferDim;
-  EPTEX_TYPE mProcTexType;
+  ProcTexType mProcTexType;
   bool mWriteFrames;
   int mWriteFrameIndex;
   ork::file::Path mWritePath;
@@ -355,7 +355,7 @@ struct ProcTexContext {
 ///////////////////////////////////////////////////////////////////////////////
 
 class ProcTex : public ork::dataflow::graph_inst {
-  RttiDeclareConcrete(ProcTex, ork::dataflow::graph_inst);
+  DeclareConcreteX(ProcTex, ork::dataflow::graph_inst);
 
 public:
   ProcTex();
@@ -398,15 +398,15 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enum EPeriodicShape {
-  ESH_SAW = 0,
-  ESH_SIN,
-  ESH_COS,
-  ESH_SQU,
+enum PeriodicShape {
+  SAW = 0,
+  SIN,
+  COS,
+  SQU,
 };
 
 class Periodic : public Module {
-  RttiDeclareAbstract(Periodic, Module);
+  DeclareAbstractX(Periodic, Module);
 
 public:
   Periodic();
@@ -425,7 +425,7 @@ private:
   DeclareFloatXfPlug(Amplitude);
   DeclareFloatXfPlug(Bias);
 
-  EPeriodicShape meShape;
+  PeriodicShape meShape;
 
   ////////////////////////////////////////////
   ////////////////////////////////////////////
@@ -433,7 +433,7 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 class RotSolid : public Img32Module {
-  RttiDeclareConcrete(RotSolid, Img32Module);
+  DeclareConcreteX(RotSolid, Img32Module);
 
   dataflow::node_hash mVBHash;
 
@@ -481,7 +481,7 @@ enum EColorizeType {
 };
 ///////////////////////////////////////////////////////////////////////////////
 class Colorize : public Img32Module {
-  RttiDeclareConcrete(Colorize, Img32Module);
+  DeclareConcreteX(Colorize, Img32Module);
 
   //////////////////////////////////////////////////
   // inputs
@@ -503,7 +503,7 @@ public:
 };
 ///////////////////////////////////////////////////////////////////////////////
 class UvMap : public Img32Module {
-  RttiDeclareConcrete(UvMap, Img32Module);
+  DeclareConcreteX(UvMap, Img32Module);
 
   //////////////////////////////////////////////////
   // inputs
@@ -524,7 +524,7 @@ public:
 };
 ///////////////////////////////////////////////////////////////////////////////
 class SphMap : public Img32Module {
-  RttiDeclareConcrete(SphMap, Img32Module);
+  DeclareConcreteX(SphMap, Img32Module);
 
   //////////////////////////////////////////////////
   // inputs
@@ -546,7 +546,7 @@ public:
 };
 ///////////////////////////////////////////////////////////////////////////////
 class SphRefract : public Img32Module {
-  RttiDeclareConcrete(SphRefract, Img32Module);
+  DeclareConcreteX(SphRefract, Img32Module);
 
   //////////////////////////////////////////////////
   // inputs
@@ -569,7 +569,7 @@ public:
 };
 ///////////////////////////////////////////////////////////////////////////////
 class SolidColor : public Img32Module {
-  RttiDeclareConcrete(SolidColor, Img32Module);
+  DeclareConcreteX(SolidColor, Img32Module);
 
   void compute(ProcTex& ptex) final;
 
@@ -616,7 +616,7 @@ public:
   }
 };
 class Cells : public Img32Module {
-  RttiDeclareConcrete(Cells, Img32Module);
+  DeclareConcreteX(Cells, Img32Module);
 
   ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16> mVertexBuffer;
 
@@ -652,17 +652,18 @@ public:
   Cells();
 };
 ///////////////////////////////////////////////////////////////////////////////
-enum EKaledMode {
-  EKM_4SQU = 0,
-  ESH_8TRI,
-  ESH_24TRI,
+enum class KaledMode {
+  SQU4 = 0,
+  TRI8,
+  TRI24,
 };
+///////////////////////////////////////////////////////////////////////////////
 class Kaled : public Img32Module {
-  RttiDeclareConcrete(Kaled, Img32Module);
+  DeclareConcreteX(Kaled, Img32Module);
 
   typedef ork::lev2::SVtxV12C4T16 vtxt;
 
-  EKaledMode meMode;
+  KaledMode meMode;
   dataflow::node_hash mVBHash;
 
   //////////////////////////////////////////////////
@@ -687,14 +688,14 @@ public:
   Kaled();
 };
 ///////////////////////////////////////////////////////////////////////////////
-enum EIMGOP2 {
-  EIO2_ADD = 0,
-  EIO2_MUL,
-  EIO2_AMINUSB,
-  EIO2_BMINUSA,
+enum class ImageOp2 {
+  ADD = 0,
+  MUL,
+  AMINUSB,
+  BMINUSA,
 };
 class ImgOp2 : public Img32Module {
-  RttiDeclareConcrete(ImgOp2, Img32Module);
+  DeclareConcreteX(ImgOp2, Img32Module);
 
   //////////////////////////////////////////////////
   // inputs
@@ -708,26 +709,26 @@ class ImgOp2 : public Img32Module {
 
   //////////////////////////////////////////////////
 
-  EIMGOP2 meOp;
+  ImageOp2 meOp;
 
 public:
   ImgOp2();
 };
 ///////////////////////////////////////////////////////////////////////////////
-enum EIMGOP3 {
-  EIO3_LERP = 0,
-  EIO3_ADDW,
-  EIO3_SUBW,
-  EIO3_MUL3,
+enum ImageOp3 {
+  LERP = 0,
+  ADDW,
+  SUBW,
+  MUL3,
 };
-enum EIMGOP3CHAN {
-  EIO3_CH_R = 0,
-  EIO3_CH_A,
-  EIO3_CH_RGB,
-  EIO3_CH_RGBA,
+enum ImageOp3Channel {
+  R = 0,
+  A,
+  RGB,
+  RGBA,
 };
 class ImgOp3 : public Img32Module {
-  RttiDeclareConcrete(ImgOp3, Img32Module);
+  DeclareConcreteX(ImgOp3, Img32Module);
 
   //////////////////////////////////////////////////
   // inputs
@@ -742,8 +743,8 @@ class ImgOp3 : public Img32Module {
 
   //////////////////////////////////////////////////
 
-  EIMGOP3 meOp;
-  EIMGOP3CHAN meChanCtrl;
+  ImageOp3 meOp;
+  ImageOp3Channel meChanCtrl;
   lev2::GfxMaterial3DSolid* mMtlLerp;
   lev2::GfxMaterial3DSolid* mMtlAddw;
   lev2::GfxMaterial3DSolid* mMtlSubw;
@@ -754,7 +755,7 @@ public:
 };
 ///////////////////////////////////////////////////////////////////////////////
 class Transform : public Img32Module {
-  RttiDeclareConcrete(Transform, Img32Module);
+  DeclareConcreteX(Transform, Img32Module);
 
   //////////////////////////////////////////////////
   // inputs
@@ -779,7 +780,7 @@ public:
 };
 ///////////////////////////////////////////////////////////////////////////////
 class H2N : public Img64Module {
-  RttiDeclareConcrete(H2N, Img64Module);
+  DeclareConcreteX(H2N, Img64Module);
 
   //////////////////////////////////////////////////
   // inputs
@@ -802,7 +803,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class Octaves : public Img32Module {
-  RttiDeclareConcrete(Octaves, Img32Module);
+  DeclareConcreteX(Octaves, Img32Module);
 
   //////////////////////////////////////////////////
   // inputs
@@ -834,7 +835,7 @@ public:
 };
 ///////////////////////////////////////////////////////////////////////////////
 class Texture : public Img32Module {
-  RttiDeclareConcrete(Texture, Img32Module);
+  DeclareConcreteX(Texture, Img32Module);
 
   ork::lev2::TextureAsset* mpTexture;
   void SetTextureAccessor(ork::rtti::ICastable* const& tex) {
@@ -856,7 +857,7 @@ public:
 };
 ///////////////////////////////////////////////////////////////////////////////
 class ShaderQuad : public Img32Module {
-  RttiDeclareConcrete(ShaderQuad, Img32Module);
+  DeclareConcreteX(ShaderQuad, Img32Module);
 
   void SetTextureAccessor(ork::rtti::ICastable* const& tex) {
     mpTexture = tex ? ork::rtti::autocast(tex) : 0;
@@ -887,7 +888,7 @@ public:
 };
 ///////////////////////////////////////////////////////////////////////////////
 class Group : public Img32Module {
-  RttiDeclareConcrete(Group, Img32Module);
+  DeclareConcreteX(Group, Img32Module);
 
   ProcTex* mpProcTex;
 
@@ -913,24 +914,24 @@ public:
   }
 };
 ///////////////////////////////////////////////////////////////////////////////
-enum EGradientRepeatMode {
-  EGS_REPEAT,
-  EGS_PINGPONG,
+enum class GradientRepeatMode {
+  REPEAT,
+  PINGPONG,
 };
-enum EGradientType {
-  EGT_HORIZONTAL = 0,
-  EGT_VERTICAL,
-  EGT_RADIAL,
-  EGT_CONICAL,
+enum class GradientType {
+  HORIZONTAL = 0,
+  VERTICAL,
+  RADIAL,
+  CONICAL,
 };
 class Gradient : public Img32Module {
-  RttiDeclareConcrete(Gradient, Img32Module);
+  DeclareConcreteX(Gradient, Img32Module);
 
   ork::lev2::Texture* mpTexture;
   ork::Gradient<ork::fvec4> mGradient;
   int miRepeat;
-  EGradientRepeatMode meRepeatMode;
-  EGradientType meGradientType;
+  GradientRepeatMode meRepeatMode;
+  GradientType meGradientType;
   lev2::GfxMaterial3DSolid* mMtl;
 
   ork::Object* GradientAccessor() {
