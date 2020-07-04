@@ -64,7 +64,7 @@ inline void ::ork::reflect::ITyped<asset::asset_ptr_t>::deserialize(serdes::node
   OrkAssert(key1_out == "class");
   OrkAssert(key2_out == "path");
 
-  auto assetclazz = dynamic_cast<object::ObjectClass*>(Class::FindClass(val1.c_str()));
+  auto assetclazz = dynamic_cast<object::ObjectClass*>(rtti::Class::FindClass(val1.c_str()));
   auto loader     = asset::getLoader(assetclazz);
   if (loader->CheckAsset(val2)) {
     auto newobj   = assetclazz->createShared();

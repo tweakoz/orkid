@@ -7,6 +7,7 @@
 
 #include <ork/pch.h>
 #include <ork/lev2/lev2_asset.h>
+#include <ork/asset/Asset.inl>
 #include <ork/asset/FileAssetLoader.h>
 #include <ork/asset/FileAssetNamer.h>
 #include <ork/application/application.h>
@@ -220,13 +221,6 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::asset::FileAssetLoader* shaderLoader() {
-  static FxShaderLoader* _loader = new FxShaderLoader;
-  return _loader;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 FxShaderLoader::FxShaderLoader()
     : FileAssetLoader(FxShaderAsset::GetClassStatic()) {
   /////////////////////
@@ -254,12 +248,10 @@ bool FxShaderLoader::LoadFileAsset(asset::asset_ptr_t asset, AssetPath filename)
 ///////////////////////////////////////////////////////////////////////////////
 
 void FxShaderAsset::describeX(class_t* clazz) {
-  auto loader = shaderLoader();
-  // printf( "Registering FxShaderAsset\n" );
-
-  // GetClassStatic()->AddLoader(loader);
-  // GetClassStatic()->SetAssetNamer("orkshader://");
-  // GetClassStatic()->AddTypeAlias(ork::AddPooledLiteral("fxshader"));
+  auto loader = std::make_shared<FxShaderLoader>();
+  asset::registerLoader<FxShaderAsset>(loader);
+  // clazz->SetAssetNamer("orkshader://");
+  // clazz->AddTypeAlias(ork::AddPooledLiteral("fxshader"));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
