@@ -136,8 +136,8 @@ struct DisplayMode {
 ///   IMI : ImmediateMode interface. convenience methods for oldschool type gfx
 ///////////////////////////////////////////////////////////////////////////////
 
-class Context : public ork::rtti::ICastable {
-  RttiDeclareAbstract(Context, ork::rtti::ICastable);
+class Context : public ork::Object {
+  DeclareAbstractX(Context, ork::Object);
 
   ///////////////////////////////////////////////////////////////////////
 public:

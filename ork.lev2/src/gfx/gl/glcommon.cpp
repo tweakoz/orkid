@@ -10,9 +10,14 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include "gl.h"
 
+ImplementReflectionX(ork::lev2::ContextGL, "ContextGL");
+
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
+
+void ContextGL::describeX(class_t* clazz) {
+}
 
 std::string indent(int count) {
   std::string rval = "";

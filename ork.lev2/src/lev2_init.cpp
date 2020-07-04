@@ -64,6 +64,10 @@ void PreferOpenGL() {
 void ClassInit() {
   AllocationLabel label("ork::lev2::Init");
 
+  Context::GetClassStatic();
+
+  PreferOpenGL();
+
   GfxEnv::GetRef();
   GfxPrimitives::GetRef();
 
@@ -164,6 +168,7 @@ void ClassInit() {
 
 void GfxInit(const std::string& gfxlayer) {
   vk::init();
+
   if (gfxlayer != "dummy") {
 #if defined(ORK_CONFIG_OPENGL)
     OpenGlContextInit();

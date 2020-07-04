@@ -171,12 +171,9 @@ private:
       int ivbase,
       int ivcount) override;
 
-  void DrawIndexedPrimitiveEML(
-      const VertexBufferBase& VBuf,
-      const IndexBufferBase& IdxBuf,
-      PrimitiveType eType,
-      int ivbase,
-      int ivcount) override;
+  void
+  DrawIndexedPrimitiveEML(const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, PrimitiveType eType, int ivbase, int ivcount)
+      override;
 
   void DrawInstancedIndexedPrimitiveEML(
       const VertexBufferBase& VBuf,
@@ -412,7 +409,7 @@ void Set3DC(
 //////////////////////////////////////////////////////////////////////
 
 class ContextGL : public Context {
-  RttiDeclareConcrete(ContextGL, Context);
+  DeclareConcreteX(ContextGL, Context);
   friend class GfxEnv;
 
   static const CClass* gpClass;

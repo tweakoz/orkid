@@ -16,9 +16,12 @@
 bool LoadIL(const ork::AssetPath& pth, ork::lev2::Texture* ptex);
 /////////////////////////////////////////////////////////////////////////
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::ContextDummy, "ContextDummy")
+ImplementReflectionX(ork::lev2::ContextDummy, "ContextDummy");
+
 namespace ork { namespace lev2 {
 
+void ContextDummy::describeX(class_t* clazz) {
+}
 /////////////////////////////////////////////////////////////////////////
 
 void DummyContextInit() {

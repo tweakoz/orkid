@@ -76,6 +76,8 @@ public:
 
   bool _initialized = false;
 
+  virtual void make_abstract() = 0;
+
 protected:
   shared_factory_t _sharedFactory;
   raw_factory_t _rawFactory;

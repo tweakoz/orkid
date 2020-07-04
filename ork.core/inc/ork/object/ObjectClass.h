@@ -86,6 +86,9 @@ public:
   template <typename ClassType> inline PropertyModifier intProperty(const char* name, int_range range, int ClassType::*member);
 
 private:
+  inline void make_abstract() override {
+  }
+
   reflect::Description _description;
   void Initialize() override;
 };

@@ -19,7 +19,7 @@
 
 bool sbExit = false;
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::Context, "Context")
+ImplementReflectionX(ork::lev2::Context, "Context");
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -33,6 +33,9 @@ bool Context::hiDPI() const {
 
 float Context::currentDPI() const {
   return _currentDPI();
+}
+
+void Context::describeX(class_t* clazz) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////

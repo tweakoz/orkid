@@ -164,12 +164,9 @@ class DuGeometryBufferInterface final : public GeometryBufferInterface {
       int ivbase,
       int ivcount) override;
 
-  void DrawIndexedPrimitiveEML(
-      const VertexBufferBase& VBuf,
-      const IndexBufferBase& IdxBuf,
-      PrimitiveType eType,
-      int ivbase,
-      int ivcount) override;
+  void
+  DrawIndexedPrimitiveEML(const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, PrimitiveType eType, int ivbase, int ivcount)
+      override;
 
   void DrawInstancedIndexedPrimitiveEML(
       const VertexBufferBase& VBuf,
@@ -244,7 +241,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class ContextDummy final : public Context {
-  RttiDeclareConcrete(ContextDummy, Context);
+  DeclareConcreteX(ContextDummy, Context);
 
   friend class GfxEnv;
 

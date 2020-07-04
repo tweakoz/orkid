@@ -23,6 +23,8 @@ class Category : public Class {
   RttiDeclareExplicit(Category, Class, NamePolicy, Category) public : Category(const RTTIData& data)
       : Class(data) {
   }
+  inline void make_abstract() override {
+  }
 };
 
 }} // namespace ork::rtti

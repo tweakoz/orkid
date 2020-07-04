@@ -22,8 +22,6 @@
 
 #import <ork/kernel/objc.h>
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::ContextGL, "ContextGL")
-
 extern "C"
 {
 	bool gbVSYNC = false;
@@ -157,8 +155,9 @@ void OpenGlContextInit() {
 	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 	///////////////////////////////////////////////////////////
 
-	auto clazz = dynamic_cast<object::ObjectClass*>(ContextGL::GetClassStatic());
-	GfxEnv::setContextClass(clazz);
+	auto clazz = ContextGL::GetClassStatic();
+	auto objclazz = dynamic_cast<object::ObjectClass*>(clazz);
+	GfxEnv::setContextClass(objclazz);
   ContextGL::GLinit();
   auto target = new ContextGL;
   target->initializeLoaderContext();
