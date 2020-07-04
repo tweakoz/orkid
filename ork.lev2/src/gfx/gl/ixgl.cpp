@@ -610,7 +610,7 @@ void ContextGL::initializeOffscreenContext(OffscreenBuffer* pBuf) {
   auto texture = _defaultRTG->GetMrt(0)->texture();
   FBI()->SetBufferTexture(texture);
 
-  pBuf->SetContext(this);
+  // pBuf->SetContext(this);
 }
 
 /////////////////////////////////////////////////////////////////////////
