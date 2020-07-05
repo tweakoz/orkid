@@ -199,7 +199,7 @@ LightingComponentInst::LightingComponentInst(const LightingComponentData& data, 
       }
     }
     yo() {
-      auto model_asset = ork::asset::AssetManager<ork::lev2::XgmModelAsset>::Load("data://editor/dirlight");
+      auto model_asset = ork::asset::AssetManager<ork::lev2::XgmModelAsset>::load("data://editor/dirlight");
       mpModel          = model_asset.get();
     }
   };

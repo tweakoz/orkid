@@ -141,8 +141,6 @@ void EzViewport::DoDraw(ui::drawevent_constptr_t drwev) {
       _mainwin->_execscene = std::make_shared<scenegraph::Scene>(_mainwin->_execsceneparams);
       _mainwin->_onGpuInitWithScene(drwev->GetTarget(), _mainwin->_execscene);
     }
-    while (asset::AssetManager<TextureAsset>::AutoLoad()) {
-    }
     while (ork::opq::mainSerialQueue()->Process()) {
     }
     _mainwin->_dogpuinit = false;

@@ -166,7 +166,7 @@ void DeferredContext::gpuInit(Context* target) {
     _rtgLaccum->SetMrt(0, _rtbLightAccum);
     _accumRT = new RtGroupRenderTarget(_rtgLaccum);
     //////////////////////////////////////////////////////////////
-    _whiteTexture = asset::AssetManager<lev2::TextureAsset>::Load("src://effect_textures/white")->GetTexture();
+    _whiteTexture = asset::AssetManager<lev2::TextureAsset>::load("src://effect_textures/white")->GetTexture();
   }
   target->debugPopGroup();
 }

@@ -26,8 +26,6 @@ extern "C" {
 #include <X11/extensions/Xrandr.h>
 }
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::ContextGL, "ContextGL")
-
 extern "C" {
 extern bool gbVSYNC;
 }
@@ -36,7 +34,7 @@ extern bool gbVSYNC;
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef ::Window x11_window_t; // contained alias of X11 Window Class (conflicts with lev2::Window)
+using x11_window_t = ::Window; // contained alias of X11 Window Class (conflicts with lev2::Window)
 
 bool _hakHIDPI       = false;
 bool _hakMixedDPI    = false;

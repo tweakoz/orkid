@@ -418,7 +418,7 @@ struct EntArchDeRef final : public ork::tool::ged::IOpsDelegate {
         if (0 != prefarch) {
           ent::SceneData* pscene = parch->GetSceneData();
           if (0 != pscene) {
-            ArchetypeAsset* passet = prefarch->GetAsset();
+            ArchetypeAsset* passet = prefarch->asset();
             if (0 != passet) {
               ent::Archetype* pderefarch = passet->GetArchetype();
               if (0 != pderefarch) {
@@ -503,7 +503,7 @@ struct EntArchReRef final : public ork::tool::ged::IOpsDelegate {
             gEditorMainWindow->mEditorBase.mpArchChoices->EnumerateChoices();
             gEditorMainWindow->mEditorBase.mpRefArchChoices->EnumerateChoices(true);
             /////////////////////////////////////////////////////////////////////
-            auto arch_asset                     = asset::AssetManager<ArchetypeAsset>::Load(assetname.c_str());
+            auto arch_asset                     = asset::AssetManager<ArchetypeAsset>::load(assetname.c_str());
             ent::ReferenceArchetype* newrefarch = new ent::ReferenceArchetype;
             newrefarch->SetAsset(arch_asset.get());
             newrefarch->SetName(OriginalName);

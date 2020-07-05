@@ -173,7 +173,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   _initialTarget = targ;
   auto fxi       = targ->FXI();
-  auto shass     = ork::asset::AssetManager<FxShaderAsset>::Load("orkshader://pbr");
+  auto shass     = ork::asset::AssetManager<FxShaderAsset>::load("orkshader://pbr");
   _shader        = shass->GetFxShader();
 
   _tekRigidPICKING           = fxi->technique(_shader, "picking_rigid");
@@ -211,17 +211,17 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   assert(_parBoneMatrices != nullptr);
 
   if (_texColor == nullptr) {
-    _texColor = asset::AssetManager<lev2::TextureAsset>::Load("src://effect_textures/white")->GetTexture();
+    _texColor = asset::AssetManager<lev2::TextureAsset>::load("src://effect_textures/white")->GetTexture();
     // printf("substituted white for non-existant color texture\n");
     OrkAssert(_texColor != nullptr);
   }
   if (_texNormal == nullptr) {
-    _texNormal = asset::AssetManager<lev2::TextureAsset>::Load("src://effect_textures/default_normal")->GetTexture();
+    _texNormal = asset::AssetManager<lev2::TextureAsset>::load("src://effect_textures/default_normal")->GetTexture();
     // printf("substituted blue for non-existant normal texture\n");
     OrkAssert(_texNormal != nullptr);
   }
   if (_texMtlRuf == nullptr) {
-    _texMtlRuf = asset::AssetManager<lev2::TextureAsset>::Load("src://effect_textures/white")->GetTexture();
+    _texMtlRuf = asset::AssetManager<lev2::TextureAsset>::load("src://effect_textures/white")->GetTexture();
     // printf("substituted white for non-existant mtlrufao texture\n");
     OrkAssert(_texMtlRuf != nullptr);
   }

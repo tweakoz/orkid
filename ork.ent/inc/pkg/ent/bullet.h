@@ -370,7 +370,7 @@ public:
   BulletShapeModelData();
   ~BulletShapeModelData();
 
-  lev2::XgmModelAsset* GetAsset() { return mModelAsset; }
+  lev2::XgmModelAsset* asset() { return mModelAsset; }
   void SetModelAccessor(ork::rtti::ICastable* const& mdl);
   void GetModelAccessor(ork::rtti::ICastable*& mdl) const;
   float GetScale() const { return mfScale; }

@@ -617,8 +617,8 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
     ity1 /= 2;
   }
 
-  static Texture* pplaytex = ork::asset::AssetManager<ork::lev2::TextureAsset>::Create("lev2://textures/play_icon")->GetTexture();
-  static Texture* ppaustex = ork::asset::AssetManager<ork::lev2::TextureAsset>::Create("lev2://textures/pause_icon")->GetTexture();
+  static Texture* pplaytex = ork::asset::AssetManager<ork::lev2::TextureAsset>::declare("lev2://textures/play_icon")->GetTexture();
+  static Texture* ppaustex = ork::asset::AssetManager<ork::lev2::TextureAsset>::declare("lev2://textures/pause_icon")->GetTexture();
 
   /////////////////////////////////////////////////
   lev2::GfxMaterialUI UiMat(pTARG);

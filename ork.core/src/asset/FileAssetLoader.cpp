@@ -19,7 +19,7 @@
 #include <ork/file/path.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace asset {
+namespace ork::asset {
 ///////////////////////////////////////////////////////////////////////////////
 
 std::set<file::Path> FileAssetLoader::EnumerateExisting() {
@@ -59,7 +59,7 @@ std::set<file::Path> FileAssetLoader::EnumerateExisting() {
   return rval;
 }
 
-void FileAssetLoader::AddLocation(filedevctx_constptr_t b, file_ext_t e) {
+void FileAssetLoader::addLocation(filedevctx_constptr_t b, file_ext_t e) {
   OrkAssert(b);
   FileSet fset;
   fset.mExt      = e;
@@ -77,7 +77,7 @@ void FileAssetLoader::AddLocation(filedevctx_constptr_t b, file_ext_t e) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool FileAssetLoader::FindAsset(
+bool FileAssetLoader::_find(
     const AssetPath& name, //
     AssetPath& result_out,
     int first_extension) {
@@ -204,29 +204,37 @@ bool FileAssetLoader::FindAsset(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool FileAssetLoader::CheckAsset(const AssetPath& name) {
+bool FileAssetLoader::doesExist(const AssetPath& name) {
   AssetPath null_result;
-
-  return FindAsset(name, null_result);
+  return _find(name, null_result);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool FileAssetLoader::LoadAsset(asset_ptr_t asset) {
+bool FileAssetLoader::resolvePath(
+    const AssetPath& name,      //
+    AssetPath& resolved_path) { // override
+  return _find(name, resolved_path);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+asset_ptr_t FileAssetLoader::load(const AssetPath& assetinppath) {
   float ftime1 = ork::OldSchool::GetRef().GetLoResRelTime();
-  AssetPath asset_name;
+  AssetPath resolved_path;
 
   ///////////////////////////////////////////////////////////////////////////////
-  if (false == FindAsset(asset->name(), asset_name)) {
-    printf("Error Loading File Asset %s\n", asset->name().c_str());
+  if (false == _find(assetinppath, resolved_path)) {
+    printf("Error Loading File Asset %s\n", assetinppath.c_str());
 #if defined(ORKCONFIG_ASSET_UNLOAD)
-    return false;
+    return nullptr;
 #else
     OrkAssertI(false, "Can't file asset second-time around");
 #endif
   }
-
-  bool out     = LoadFileAsset(asset, asset_name);
+  auto asset = std::make_shared<asset::Asset>();
+  OrkAssert(false); //
+  bool out     = LoadFileAsset(asset, resolved_path);
   float ftime2 = ork::OldSchool::GetRef().GetLoResRelTime();
 
   static float ftotaltime = 0.0f;
@@ -242,9 +250,9 @@ bool FileAssetLoader::LoadAsset(asset_ptr_t asset) {
     ////OutputDebugString( outstr.c_str() );
     iltotaltime = itotaltime;
   }
-  return out;
+  return asset;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-}} // namespace ork::asset
+} // namespace ork::asset
 ///////////////////////////////////////////////////////////////////////////////

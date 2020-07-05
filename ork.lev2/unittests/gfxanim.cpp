@@ -48,10 +48,10 @@ TEST(gfxanim1) {
     OrkAssert(loadOK);
     auto animinst = new XgmAnimInst;
 
-    // auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://test/bonetest_mesh");
-    // auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://test/rigtest_exp");
-    auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://test/hfs_rigtest_mesh");
-    // auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://test/char_mesh");
+    // auto modl_asset = asset::AssetManager<XgmModelAsset>::load("data://test/bonetest_mesh");
+    // auto modl_asset = asset::AssetManager<XgmModelAsset>::load("data://test/rigtest_exp");
+    auto modl_asset = asset::AssetManager<XgmModelAsset>::load("data://test/hfs_rigtest_mesh");
+    // auto modl_asset = asset::AssetManager<XgmModelAsset>::load("data://test/char_mesh");
     printf("modl_asset<%p>\n", modl_asset.get());
     CHECK(modl_asset != nullptr);
 

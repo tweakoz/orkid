@@ -42,7 +42,7 @@ class ReferenceArchetype final : public Archetype {
 public:
   ReferenceArchetype();
 
-  ArchetypeAsset* GetAsset() const {
+  ArchetypeAsset* asset() const {
     return mArchetypeAsset;
   }
   void SetAsset(ArchetypeAsset* passet) {

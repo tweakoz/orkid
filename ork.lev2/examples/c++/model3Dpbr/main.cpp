@@ -70,7 +70,7 @@ int main(int argc, char** argv, char** argp) {
   //////////////////////////////////////////////////////////
   qtapp->onGpuInit([&](Context* ctx) {
     // ctx->debugPushGroup("main.onGpuInit");
-    auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://tests/pbr1/pbr1");
+    auto modl_asset = asset::AssetManager<XgmModelAsset>::load("data://tests/pbr1/pbr1");
     model           = modl_asset->GetModel();
     renderer.setContext(ctx);
 

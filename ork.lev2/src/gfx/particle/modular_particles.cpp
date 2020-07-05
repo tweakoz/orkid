@@ -73,7 +73,7 @@ psys_ptclbuf ParticleModule::gNoCon;
 
 static lev2::Texture* GetPtclModuleIcon(ork::dataflow::dgmodule* pmod) {
   static const char* assetname = "lev2://textures/dfnodesel";
-  static auto texasset         = asset::AssetManager<TextureAsset>::Load(assetname);
+  static auto texasset         = asset::AssetManager<TextureAsset>::load(assetname);
   return texasset->GetTexture();
 }
 

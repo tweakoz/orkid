@@ -20,25 +20,13 @@ template <typename AssetType> class AssetManager {
 
 public:
   static varmap::VarMap novars();
-  static typed_asset_ptr_t Create(const AssetPath& asset_name, const varmap::VarMap& vmap = novars());
-  static typed_asset_ptr_t Find(const AssetPath& asset_name);
-  static typed_asset_ptr_t Load(const AssetPath& asset_name);
-  static typed_asset_ptr_t LoadUnManaged(const AssetPath& asset_name);
-  static bool AutoLoad(int depth = -1);
-#if defined(ORKCONFIG_ASSET_UNLOAD)
-  static bool AutoUnLoad(int depth = -1);
-#endif
-
-  static void DisableAutoLoad() {
-    gbAUTOLOAD = false;
-  }
-  static void EnableAutoLoad() {
-    gbAUTOLOAD = true;
-  }
-
+  //////////////////////////////////////////////////////////////////////////////
+  static typed_asset_ptr_t load(
+      const AssetPath& asset_name, //
+      const varmap::VarMap& vmap = novars());
+  //////////////////////////////////////////////////////////////////////////////
 private:
   static ork::recursive_mutex gLock;
-  static bool gbAUTOLOAD;
 };
 
 }} // namespace ork::asset

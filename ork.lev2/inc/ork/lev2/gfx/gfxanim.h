@@ -259,7 +259,7 @@ public:
   static bool LoadUnManaged(XgmAnim* mdl, const AssetPath& fname);
   static bool Save(const file::Path& AnimFile, const XgmAnim* panm);
 
-  static bool UnLoadUnManaged(XgmAnim* mdl);
+  static bool unloadUnManaged(XgmAnim* mdl);
 
   //////////////////////////
 

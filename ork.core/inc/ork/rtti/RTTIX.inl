@@ -10,6 +10,9 @@
 #include "RTTI.h"
 #include <ork/object/ObjectClass.h>
 
+namespace ork::object {
+class ObjectClass;
+}
 namespace ork::rtti {
 // clang-format off
 ////////////////////////////////////////////////////////////////////////////////
@@ -25,6 +28,7 @@ public:                                                         \
   static void Describe();                                       \
   static ::ork::ConstString DesignNameStatic();                 \
   static class_t* GetClassStatic();                             \
+  static object::class_ptr_t objectClassStatic();               \
   class_t* GetClass() const override;                           \
                                                                 \
 private:
@@ -37,6 +41,7 @@ public:                                                         \
   static void Describe();                                       \
   static ::ork::ConstString DesignNameStatic();                 \
   static class_t* GetClassStatic();                             \
+  static object::class_ptr_t objectClassStatic();               \
   class_t* GetClass() const override;                           \
                                                                 \
 private:
@@ -51,6 +56,7 @@ public:                                                         \
   static void Describe();                                       \
   static ::ork::ConstString DesignNameStatic();                 \
   static class_t* GetClassStatic();                             \
+  static object::class_ptr_t objectClassStatic();               \
   class_t* GetClass() const override;                           \
                                                                 \
 private:
@@ -66,6 +72,7 @@ public:                                                         \
   static void Describe();                                       \
   static ::ork::ConstString DesignNameStatic();                 \
   static class_t* GetClassStatic();                             \
+  static object::class_ptr_t objectClassStatic();               \
   class_t* GetClass() const override;                           \
                                                                 \
 private:
@@ -80,6 +87,7 @@ public:                                                         \
   static void Describe();                                       \
   static ::ork::ConstString DesignNameStatic();                 \
   static class_t* GetClassStatic();                             \
+  static object::class_ptr_t objectClassStatic();               \
   class_t* GetClass() const override;                           \
                                                                 \
 private:
@@ -100,6 +108,9 @@ private:
   ClassName::class_t* ClassName::GetClass() const {             \
     return GetClassStatic();                                    \
   }                                                             \
+  ::ork::object::class_ptr_t ClassName::objectClassStatic() {    \
+    return dynamic_cast<::ork::object::class_ptr_t>(GetClassStatic()); \
+  }                                                             \
   INSTANTIATE_CASTABLE_SERIALIZE(ClassName)                     \
   INSTANTIATE_CASTABLE_SERIALIZE(const ClassName)               \
   INSTANTIATE_LINK_FUNCTION(ClassName)
@@ -112,6 +123,10 @@ private:
     static ClassName::class_t _clazz(ClassName::RTTITyped::ClassRTTI());\
     return &_clazz;                                             \
   }                                                              \
+  template <> \
+  ::ork::object::class_ptr_t ClassName::objectClassStatic() {    \
+    return dynamic_cast<::ork::object::class_ptr_t>(GetClassStatic()); \
+  }                                                             \
   template <> \
   ::ork::ConstString ClassName::DesignNameStatic() { \
     return TheDesignName;                                       \

@@ -49,7 +49,7 @@ CompositingMaterial::~CompositingMaterial() {
 /////////////////////////////////////////////////
 void CompositingMaterial::gpuInit(lev2::Context* pTarg) {
   if (0 == hModFX) {
-    hModFX = asset::AssetManager<lev2::FxShaderAsset>::Load("orkshader://compositor")->GetFxShader();
+    hModFX = asset::AssetManager<lev2::FxShaderAsset>::load("orkshader://compositor")->GetFxShader();
 
     auto fxi = pTarg->FXI();
 

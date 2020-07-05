@@ -27,7 +27,7 @@ namespace ork { namespace lev2 {
 class TextureAsset : public ork::asset::Asset {
   DeclareConcreteX(TextureAsset, ork::asset::Asset);
 
-  static const char* GetAssetTypeNameStatic(void) {
+  static const char* assetTypeNameStatic(void) {
     return "lev2tex";
   }
 
@@ -51,7 +51,7 @@ struct XgmModelAsset : public ork::asset::Asset {
   DeclareConcreteX(XgmModelAsset, ork::asset::Asset);
 
 public:
-  static const char* GetAssetTypeNameStatic(void) {
+  static const char* assetTypeNameStatic(void) {
     return "xgmodel";
   }
 
@@ -80,7 +80,7 @@ typedef XgmModelAsset* xgmmodelassetptr_t; // prep for shared_ptr
 
 class XgmAnimAsset : public ork::asset::Asset {
   DeclareConcreteX(XgmAnimAsset, ork::asset::Asset);
-  static const char* GetAssetTypeNameStatic(void) {
+  static const char* assetTypeNameStatic(void) {
     return "xganim";
   }
   XgmAnim mData;
@@ -97,7 +97,7 @@ typedef XgmAnimAsset* xgmanimassetptr_t; // prep for shared_ptr
 
 class FxShaderAsset : public ork::asset::Asset {
   DeclareConcreteX(FxShaderAsset, ork::asset::Asset);
-  static const char* GetAssetTypeNameStatic(void) {
+  static const char* assetTypeNameStatic(void) {
     return "fxshader";
   }
   FxShader mData;

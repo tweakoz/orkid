@@ -13,9 +13,6 @@
 
 namespace ork::asset {
 
-class AssetSet;
-using assetset_ptr_t = std::shared_ptr<AssetSet>;
-
 class Asset : public Object {
   DeclareConcreteX(Asset, ork::Object);
 
@@ -32,9 +29,6 @@ public:
   varmap::VarMap _varmap;
   AssetPath _name;
 };
-
-using asset_ptr_t      = std::shared_ptr<Asset>;
-using asset_constptr_t = std::shared_ptr<const Asset>;
 
 } // namespace ork::asset
 

@@ -61,7 +61,7 @@ public:
       , mIoDriver(iodriver) {
   }
   /////////////////////////////////////////////////////
-  const ork::asset::Asset* GetAsset() {
+  const ork::asset::Asset* asset() {
     reflect::serdes::LayerSerializer::serializeObjectProperty(
         mIoDriver.GetProp(), //
         mIoDriver.GetObject());
@@ -118,7 +118,7 @@ void GedAssetObjIoDriver::SetValue(ork::Object* passet) {
 
 void GedAssetObjIoDriver::GetValue(const ork::Object*& rp) const {
   AssLayerSerializer ser(*this);
-  rp = ser.GetAsset();
+  rp = ser.asset();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

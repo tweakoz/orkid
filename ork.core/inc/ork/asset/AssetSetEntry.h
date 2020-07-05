@@ -20,7 +20,7 @@ public:
   ~AssetSetEntry();
 
 #if defined(ORKCONFIG_ASSET_UNLOAD)
-  bool UnLoad(AssetSetLevel* level);
+  bool unload(AssetSetLevel* level);
 #endif
   bool Load(AssetSetLevel* level);
   void OnPush(AssetSetLevel* level);
@@ -38,6 +38,6 @@ private:
   AssetSetLevel* mLoadLevel;
 };
 
-AssetSetEntry* GetAssetSetEntry(const Asset* asset);
+AssetSetEntry* assetSetEntry(const Asset* asset);
 
 }} // namespace ork::asset

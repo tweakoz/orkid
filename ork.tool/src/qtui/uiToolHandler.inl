@@ -52,10 +52,10 @@ template <typename VPTYPE> void UIToolHandler<VPTYPE>::SetBaseIconName(std::stri
 
 template <typename VPTYPE> void UIToolHandler<VPTYPE>::LoadToolIcon() {
   if (0 == mpBaseIcon) {
-    auto texasset = asset::AssetManager<ork::lev2::TextureAsset>::Load(mBaseIconName.c_str());
+    auto texasset = asset::AssetManager<ork::lev2::TextureAsset>::load(mBaseIconName.c_str());
     mpBaseIcon    = (texasset == nullptr) ? nullptr : texasset->GetTexture();
     for (auto subicon_name : mpSubIconNameVector) {
-      texasset = asset::AssetManager<ork::lev2::TextureAsset>::Load(subicon_name.c_str());
+      texasset = asset::AssetManager<ork::lev2::TextureAsset>::load(subicon_name.c_str());
       if (texasset)
         mpSubIconVector.push_back(texasset->GetTexture());
     }

@@ -9,7 +9,7 @@ template <typename AssetType> //
 inline void registerLoader(loader_ptr_t loader) {
   // todo support multiple loaders per asset type
   // todo support flyweighting
-  auto assetclazz = dynamic_cast<object::ObjectClass*>(AssetType::GetClassStatic());
+  auto assetclazz = AssetType::objectClassStatic();
   object::ObjectClass::anno_t anno;
   anno.Set<asset::loader_ptr_t>(loader);
   assetclazz->annotate("ork.asset.loader", anno);
@@ -66,12 +66,9 @@ inline void ::ork::reflect::ITyped<asset::asset_ptr_t>::deserialize(serdes::node
 
   auto assetclazz = dynamic_cast<object::ObjectClass*>(rtti::Class::FindClass(val1.c_str()));
   auto loader     = asset::getLoader(assetclazz);
-  if (loader->CheckAsset(val2)) {
-    auto newobj   = assetclazz->createShared();
-    auto newasset = std::dynamic_pointer_cast<asset::Asset>(newobj);
+  if (loader->doesExist(val2)) {
+    auto newasset = loader->load(val2);
     OrkAssert(newasset->type() == val1);
-    newasset->_name = val2;
-    loader->LoadAsset(newasset);
     set(newasset, instance);
   } else {
     set(nullptr, instance);

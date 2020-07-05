@@ -277,7 +277,7 @@ void SimpleAnimatableInst::PlayAnimationEx(
   if (itmask == mBodyPartMap.end()) {
     // orkprintf("WARNING: Mask %s is unknown on entity %s (%s) with model %s\n", maskname.c_str(),
     // GetEntity()->GetEntData().GetName().c_str(), GetEntity()->GetEntData().GetArchetype()->GetName().c_str(),
-    // mModelInst->xgmModel()->GetAssetName().c_str()); return;
+    // mModelInst->xgmModel()->assetName().c_str()); return;
 
     maskname = sEmptyString;
     itmask   = mBodyPartMap.find(maskname);
@@ -288,7 +288,7 @@ void SimpleAnimatableInst::PlayAnimationEx(
     // nasa - not really a WARNING any more
     // orkprintf("WARNING: Anim %s is unknown on entity %s (%s) with model %s\n", name.c_str(),
     // GetEntity()->GetEntData().GetName().c_str(), GetEntity()->GetEntData().GetArchetype()->GetName().c_str(),
-    // mModelInst->xgmModel()->GetAssetName().c_str());
+    // mModelInst->xgmModel()->assetName().c_str());
     return;
   }
 

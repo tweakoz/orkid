@@ -73,9 +73,9 @@ void DeferredCompositingNodePbr::_readEnvTexture(ork::rtti::ICastable*& tex) con
 }
 
 void DeferredCompositingNodePbr::setEnvTexturePath(file::Path path) {
-  auto envl_asset = asset::AssetManager<TextureAsset>::Create(path.c_str());
-
-  asset::AssetManager<TextureAsset>::AutoLoad();
+  auto envl_asset = asset::AssetManager<TextureAsset>::load(path.c_str());
+  OrkAssert(false);
+  // TODO - inject asset postload ops ()
 }
 
 void DeferredCompositingNodePbr::_writeEnvTexture(ork::rtti::ICastable* const& tex) {

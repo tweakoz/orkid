@@ -32,7 +32,7 @@ class LocalizedStringReadContext : public util::Context<LocalizedStringReadConte
 {
 public:
 	LocalizedStringReadContext(PieceString asset, bool require_prefix = false);
-	TranslationMap *GetAsset() const;
+	TranslationMap *asset() const;
 	int GetNextKey();
 	bool RequirePrefix() const;
 

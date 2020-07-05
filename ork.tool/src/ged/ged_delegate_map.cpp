@@ -631,7 +631,7 @@ bool MapItemReadSerializer::Serialize(const float& value) {
   return reflect::serdes::LayerSerializer::Serialize(value);
 }
 ///////////////////////////////////////////////////////////////////////////////
-const ork::asset::Asset* MapItemReadSerializer::GetAsset() {
+const ork::asset::Asset* MapItemReadSerializer::asset() {
   meReadType = ERT_NEWASSET;
   if (mIoDriver.mDecoKey.mActualKey == "") {
     return 0;
@@ -1246,7 +1246,7 @@ void GedMapIoDriver::SetValue(ork::Object* pobject) {
 ///////////////////////////////////////////////////////////////////////////////
 void GedMapIoDriver::GetValue(const ork::Object*& rp) const {
   MapItemReadSerializer ser(*this);
-  const asset::Asset* passet = ser.GetAsset();
+  const asset::Asset* passet = ser.asset();
   rp                         = passet;
 }
 ///////////////////////////////////////////////////////////////////////////////

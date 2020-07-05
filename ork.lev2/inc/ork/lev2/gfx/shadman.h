@@ -216,7 +216,7 @@ struct FxShader {
     return mInternalHandle;
   }
 
-  static const char* GetAssetTypeNameStatic(void) {
+  static const char* assetTypeNameStatic(void) {
     return "fxshader";
   }
 

@@ -104,7 +104,7 @@ template <typename IODriver> void GedAssetNode<IODriver>::OnCreateObject() {
           lev2::GfxEnv::atomicOp([]() {
             // poldasset- Load(true);
             // = DynAssetManager::GetRef().LoadManaged( anno.c_str(),
-            // passet->GetAssetName().c_str(), true );
+            // passet->assetName().c_str(), true );
           });
           mIoDriver.SetValue(poldasset);
         }

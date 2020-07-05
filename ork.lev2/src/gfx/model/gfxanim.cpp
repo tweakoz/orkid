@@ -554,7 +554,7 @@ struct chansettter {
   }
 }; // namespace lev2
 ///////////////////////////////////////////////////////////////////////////////
-bool XgmAnim::UnLoadUnManaged(XgmAnim* anm) {
+bool XgmAnim::unloadUnManaged(XgmAnim* anm) {
 #if defined(ORKCONFIG_ASSET_UNLOAD)
 #if defined(WII)
   // crap the wii actually does call this...

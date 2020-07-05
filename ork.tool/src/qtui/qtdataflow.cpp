@@ -70,7 +70,7 @@ GraphVP::GraphVP(DataFlowEditor& dfed, tool::ged::ObjModel& objmdl, const std::s
   mGrid.SetExtent(100.0f);
   mGrid.SetZoom(1.0f);
 
-  mpArrowTex = AssetManager<TextureAsset>::Load("lev2://textures/dfarrow")->GetTexture();
+  mpArrowTex = AssetManager<TextureAsset>::load("lev2://textures/dfarrow")->GetTexture();
 
   mObjectModel.EnablePaint();
 
@@ -297,7 +297,7 @@ void GraphVP::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
         vw.UnLock(ctx);
 
         static const char* assetname = "lev2://textures/dfnodebg2";
-        static auto texasset         = asset::AssetManager<lev2::TextureAsset>::Load(assetname);
+        static auto texasset         = asset::AssetManager<lev2::TextureAsset>::load(assetname);
 
         if (1) {
           _nodematerial.begin(is_pick ? tek_vtx : tek_tex, RCFD);

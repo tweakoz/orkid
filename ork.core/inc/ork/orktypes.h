@@ -79,7 +79,10 @@ struct const_string {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
+namespace object {
+class ObjectClass;
+using class_ptr_t = ObjectClass*;
+} // namespace object
 namespace rtti {
 struct ICastable;
 using castable_ptr_t         = std::shared_ptr<ICastable>;
@@ -96,6 +99,20 @@ using object_ptr_t         = std::shared_ptr<Object>;
 using object_constptr_t    = std::shared_ptr<const Object>;
 using object_rawptr_t      = Object*;
 using object_rawconstptr_t = const Object*;
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace asset {
+class Asset;
+class AssetSet;
+class AssetLoader;
+
+using assetset_ptr_t   = std::shared_ptr<AssetSet>;
+using asset_ptr_t      = std::shared_ptr<Asset>;
+using asset_constptr_t = std::shared_ptr<const Asset>;
+using loader_ptr_t     = std::shared_ptr<AssetLoader>;
+
+} // namespace asset
 
 ///////////////////////////////////////////////////////////////////////////////
 

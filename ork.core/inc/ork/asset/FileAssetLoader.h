@@ -16,7 +16,7 @@ class PieceString;
 class MutableString;
 }; // namespace ork
 
-namespace ork { namespace asset {
+namespace ork::asset {
 
 typedef fxstring<8> file_ext_t;
 
@@ -29,10 +29,20 @@ struct FileAssetLoader : public AssetLoader {
   FileAssetLoader(const object::ObjectClass* ac)
       : _assetClass(ac) {
   }
-  bool FindAsset(const AssetPath&, AssetPath& result_out, int first_extension = 0);
-  bool CheckAsset(const AssetPath&) override;
-  bool LoadAsset(asset_ptr_t asset) override;
-  void AddLocation(filedevctx_constptr_t b, file_ext_t e);
+  bool _find(
+      const AssetPath&, //
+      AssetPath& result_out,
+      int first_extension = 0);
+
+  bool resolvePath(
+      const AssetPath& pathin, //
+      AssetPath& resolved_path) override;
+
+  bool doesExist(const AssetPath&) override;
+  asset_ptr_t load(const AssetPath&) override;
+  void addLocation(
+      filedevctx_constptr_t b, //
+      file_ext_t e);
 
 protected:
   virtual bool LoadFileAsset(asset_ptr_t asset, AssetPath filename) = 0;
@@ -42,4 +52,4 @@ protected:
   std::vector<FileSet> mLocations;
 };
 
-}} // namespace ork::asset
+} // namespace ork::asset

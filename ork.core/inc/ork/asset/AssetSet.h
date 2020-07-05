@@ -28,13 +28,13 @@ public:
 
   bool Load(int depth = -1);
 #if defined(ORKCONFIG_ASSET_UNLOAD)
-  bool UnLoad(int depth = -1);
+  bool unload(int depth = -1);
 #endif
 
-  AssetSetLevel* GetTopLevel() const;
+  AssetSetLevel* topLevel() const;
 
-  void PushLevel(object::ObjectClass*);
-  void PopLevel();
+  void pushLevel(object::ObjectClass*);
+  void popLevel();
 
 private:
   AssetSetLevel* mTopLevel;

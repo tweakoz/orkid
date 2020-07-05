@@ -643,7 +643,7 @@ void SceneEditorBase::EditorArchMakeLocal() {
     if (selection.size() > 0) {
       for (orkset<Object*>::const_iterator it = selection.begin(); it != selection.end(); it++)
         if (ent::ReferenceArchetype* refarchetype = rtti::autocast(*it))
-          if (ent::ArchetypeAsset* archasset = refarchetype->GetAsset())
+          if (ent::ArchetypeAsset* archasset = refarchetype->asset())
             if (ent::Archetype* archetype = archasset->GetArchetype()) {
             }
     }
@@ -1137,8 +1137,8 @@ void SceneEditorBase::ImplEnterEditState() {
       //////////////////////////////////////////////////////////
 #if defined(ORKCONFIG_ASSET_UNLOAD)
       ork::lev2::AudioDevice::GetDevice()->ReInitDevice();
-      bool unloaded = asset::AssetManager<lev2::AudioStream>::AutoUnLoad();
-      unloaded      = asset::AssetManager<lev2::XgmAnimAsset>::AutoUnLoad();
+      bool unloaded = asset::AssetManager<lev2::AudioStream>::autoUnload();
+      unloaded      = asset::AssetManager<lev2::XgmAnimAsset>::autoUnload();
 #endif
       //////////////////////////////////////////////////////////
 
@@ -1171,7 +1171,7 @@ ReferenceArchetype* SceneEditorBase::NewReferenceArchetype(const std::string& ar
   std::string str2       = CreateFormattedString("data://archetypes/%s", archassetname.c_str());
   std::string ExtRefName = CreateFormattedString("/arch/ref/%s", archassetname.c_str());
 
-  auto arch_asset = asset::AssetManager<ArchetypeAsset>::Create(str2.c_str());
+  auto arch_asset = asset::AssetManager<ArchetypeAsset>::declare(str2.c_str());
   asset::AssetManager<ArchetypeAsset>::AutoLoad();
 
   orkprintf("asset<%p> pth<%s>\n", arch_asset.get(), str2.c_str());

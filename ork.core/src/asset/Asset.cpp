@@ -56,21 +56,21 @@ std::string Asset::type() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool Asset::Load() const {
-  auto entry     = GetAssetSetEntry(this);
+  auto entry     = assetSetEntry(this);
   auto asset_set = assetSet();
-  return entry->Load(asset_set->GetTopLevel());
+  return entry->Load(asset_set->topLevel());
 }
 
 bool Asset::LoadUnManaged() const {
-  AssetSetEntry* entry = GetAssetSetEntry(this);
+  AssetSetEntry* entry = assetSetEntry(this);
   auto asset_set       = assetSet();
-  return entry->Load(asset_set->GetTopLevel());
+  return entry->Load(asset_set->topLevel());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 bool Asset::IsLoaded() const {
-  AssetSetEntry* entry = GetAssetSetEntry(this);
+  AssetSetEntry* entry = assetSetEntry(this);
 
   return entry && entry->IsLoaded();
 }

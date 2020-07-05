@@ -218,7 +218,7 @@ public:
   /////////////////////////////////////////////////////
   MapItemReadSerializer(const GedMapIoDriver& ioDriver);
   /////////////////////////////////////////////////////
-  const ork::asset::Asset* GetAsset();
+  const ork::asset::Asset* asset();
   PoolString GetPoolString();
   file::Path GetPathObject();
   float GetFloat();

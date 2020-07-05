@@ -491,7 +491,7 @@ void SceneData::defaultSetup(opq::opq_ptr_t editopq) {
       ////////////////////////////////////////////
       std::shared_ptr<lev2::XgmModelAsset> model_asset;
       opq::Op([&model_asset]() {
-        model_asset = asset::AssetManager<lev2::XgmModelAsset>::Load("src://environ/objects/misc/ref/torus");
+        model_asset = asset::AssetManager<lev2::XgmModelAsset>::load("src://environ/objects/misc/ref/torus");
       }).QueueSync(opq::mainSerialQueue());
       ////////////////////////////////////////////
       // perform edit

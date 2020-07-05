@@ -8,7 +8,7 @@
 #include <functional>
 #include <ork/asset/AssetLoader.h>
 
-namespace ork { namespace asset {
+namespace ork::asset {
 
 using set_t = std::set<file::Path>;
 
@@ -20,9 +20,12 @@ struct DynamicAssetLoader : public AssetLoader {
 
   DynamicAssetLoader();
 
-  bool CheckAsset(const AssetPath&) override;
-  bool LoadAsset(asset_ptr_t asset) override;
-  void DestroyAsset(asset_ptr_t asset) override;
+  bool doesExist(const AssetPath&) override;
+  bool resolvePath(
+      const AssetPath& pathin, //
+      AssetPath& resolved_path) override;
+  asset_ptr_t load(const AssetPath&) override;
+  void destroy(asset_ptr_t asset) override;
   set_t EnumerateExisting() override;
 
   check_fn_t mCheckFn;
@@ -30,4 +33,4 @@ struct DynamicAssetLoader : public AssetLoader {
   enum_fn_t mEnumFn;
 };
 
-}} // namespace ork::asset
+} // namespace ork::asset
