@@ -81,8 +81,8 @@ void FreestyleMaterial::gpuInit(Context* targ, const AssetPath& assetname) {
   if (_initialTarget == nullptr) {
     _initialTarget = targ;
     auto fxi       = targ->FXI();
-    auto shass     = asset::AssetManager<FxShaderAsset>::load(assetname.c_str());
-    _shader        = shass->GetFxShader();
+    _shaderasset   = asset::AssetManager<FxShaderAsset>::load(assetname.c_str());
+    _shader        = _shaderasset->GetFxShader();
     OrkAssert(_shader);
   }
 }

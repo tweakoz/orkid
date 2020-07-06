@@ -66,10 +66,11 @@ void LightData::describeX(class_t* c) {
 }
 
 void LightData::_readCookie(ork::rtti::ICastable*& tex) const {
-  tex = _cookie;
+  OrkAssert(false); // update for asset_ptr_t
+  // tex = _cookie;
 }
 void LightData::_writeCookie(ork::rtti::ICastable* const& tex) {
-  _cookie = tex ? ork::rtti::autocast(tex) : nullptr;
+  //_cookie = tex ? ork::rtti::autocast(tex) : nullptr;
 }
 
 LightData::LightData()

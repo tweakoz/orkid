@@ -1127,10 +1127,11 @@ TerrainDrawableData::~TerrainDrawableData() {
 
 ///////////////////////////////////////////////////////////////////////////////
 void TerrainDrawableData::_writeEnvMap(ork::rtti::ICastable* const& tex) {
-  _sphericalenvmap = tex ? ork::rtti::autocast(tex) : nullptr;
+  OrkAssert(false); // update for asset_ptr_t
+  //_sphericalenvmap = tex ? ork::rtti::autocast(tex) : nullptr;
 }
 void TerrainDrawableData::_readEnvMap(ork::rtti::ICastable*& tex) const {
-  tex = _sphericalenvmap;
+  // tex = _sphericalenvmap;
 }
 static int count = 0;
 void TerrainDrawableData::_writeHmapPath(file::Path const& hmap) {

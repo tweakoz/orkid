@@ -43,8 +43,6 @@ public: //
   void SetTexture(Texture* pt);
 };
 
-typedef TextureAsset* textureassetptr_t; // prep for shared_ptr
-
 ///////////////////////////////////////////////////////////////////////////////
 
 struct XgmModelAsset : public ork::asset::Asset {
@@ -74,8 +72,6 @@ public:
   LockedResource<model_ptr_t> _model;
 };
 
-typedef XgmModelAsset* xgmmodelassetptr_t; // prep for shared_ptr
-
 ///////////////////////////////////////////////////////////////////////////////
 
 class XgmAnimAsset : public ork::asset::Asset {
@@ -91,8 +87,6 @@ public: //
   }
 };
 
-typedef XgmAnimAsset* xgmanimassetptr_t; // prep for shared_ptr
-
 ///////////////////////////////////////////////////////////////////////////////
 
 class FxShaderAsset : public ork::asset::Asset {
@@ -107,8 +101,6 @@ public: //
     return &mData;
   }
 };
-
-typedef FxShaderAsset* fxshaderassetptr_t; // prep for shared_ptr
 
 ///////////////////////////////////////////////////////////////////////////////
 void autoloadAssets(bool wait);

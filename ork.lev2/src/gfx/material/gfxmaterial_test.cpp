@@ -36,7 +36,8 @@ GfxMaterial3DSolid::GfxMaterial3DSolid(Context* pTARG)
   miNumPasses = 1;
 
   if (false == gearlyhack) {
-    hModFX = asset::AssetManager<FxShaderAsset>::load("orkshader://solid")->GetFxShader();
+    _shaderasset = asset::AssetManager<FxShaderAsset>::load("orkshader://solid");
+    _shader      = _shaderasset->GetFxShader();
   }
 
   if (pTARG) {
@@ -63,11 +64,11 @@ GfxMaterial3DSolid::GfxMaterial3DSolid(Context* pTARG, const char* puserfx, cons
     gpuInit(pTARG);
   } else {
     std::shared_ptr<FxShaderAsset> fxshaderasset;
-    fxshaderasset = asset::AssetManager<FxShaderAsset>::load(mUserFxName.c_str());
-    hModFX        = fxshaderasset ? fxshaderasset->GetFxShader() : 0;
+    _shaderasset = asset::AssetManager<FxShaderAsset>::load(mUserFxName.c_str());
+    _shader      = _shaderasset->GetFxShader();
 
-    if (hModFX)
-      hModFX->SetAllowCompileFailure(mAllowCompileFailure);
+    if (_shader)
+      _shader->SetAllowCompileFailure(mAllowCompileFailure);
   }
 }
 
@@ -78,68 +79,68 @@ void GfxMaterial3DSolid::gpuInit(ork::lev2::Context* pTarg) {
   auto fxi = pTarg->FXI();
 
   if (mUserFxName.length()) {
-    std::shared_ptr<FxShaderAsset> fxshaderasset;
-    fxshaderasset = asset::AssetManager<FxShaderAsset>::load(mUserFxName.c_str());
+    _shaderasset = asset::AssetManager<FxShaderAsset>::load(mUserFxName.c_str());
 
-    hModFX = fxshaderasset ? fxshaderasset->GetFxShader() : 0;
+    _shader = _shaderasset ? _shaderasset->GetFxShader() : 0;
 
-    if (hModFX)
-      hModFX->SetAllowCompileFailure(mAllowCompileFailure);
+    if (_shader)
+      _shader->SetAllowCompileFailure(mAllowCompileFailure);
 
   } else {
     // orkprintf( "Attempting to Load Shader<orkshader://solid>\n" );
-    hModFX = asset::AssetManager<FxShaderAsset>::load("orkshader://solid")->GetFxShader();
+    _shaderasset = asset::AssetManager<FxShaderAsset>::load("orkshader://solid");
+    _shader      = _shaderasset->GetFxShader();
   }
-  if (0 == hModFX) {
+  if (0 == _shader) {
     return;
   }
   if (mUserTekName.length()) {
-    hTekUser       = fxi->technique(hModFX, mUserTekName);
-    hTekUserStereo = fxi->technique(hModFX, mUserTekName + "_stereo");
+    hTekUser       = fxi->technique(_shader, mUserTekName);
+    hTekUserStereo = fxi->technique(_shader, mUserTekName + "_stereo");
   }
   if (meColorMode != EMODE_USER) {
-    hTekVertexColor    = fxi->technique(hModFX, "vtxcolor");
-    hTekVertexModColor = fxi->technique(hModFX, "vtxmodcolor");
-    hTekModColor       = fxi->technique(hModFX, "mmodcolor");
-    hTekTexColor       = fxi->technique(hModFX, "texcolor");
-    hTekTexColorStereo = fxi->technique(hModFX, "texcolorstereo");
-    hTekTexModColor    = fxi->technique(hModFX, "texmodcolor");
-    hTekTexTexModColor = fxi->technique(hModFX, "textexmodcolor");
-    hTekTexVertexColor = fxi->technique(hModFX, "texvtxcolor");
+    hTekVertexColor    = fxi->technique(_shader, "vtxcolor");
+    hTekVertexModColor = fxi->technique(_shader, "vtxmodcolor");
+    hTekModColor       = fxi->technique(_shader, "mmodcolor");
+    hTekTexColor       = fxi->technique(_shader, "texcolor");
+    hTekTexColorStereo = fxi->technique(_shader, "texcolorstereo");
+    hTekTexModColor    = fxi->technique(_shader, "texmodcolor");
+    hTekTexTexModColor = fxi->technique(_shader, "textexmodcolor");
+    hTekTexVertexColor = fxi->technique(_shader, "texvtxcolor");
   }
 
-  hTekPick = fxi->technique(hModFX, "tek_pick");
+  hTekPick = fxi->technique(_shader, "tek_pick");
 
-  hMatAux  = fxi->parameter(hModFX, "MatAux");
-  hMatAux2 = fxi->parameter(hModFX, "MatAux2");
-  hMatRot  = fxi->parameter(hModFX, "MatRotW");
+  hMatAux  = fxi->parameter(_shader, "MatAux");
+  hMatAux2 = fxi->parameter(_shader, "MatAux2");
+  hMatRot  = fxi->parameter(_shader, "MatRotW");
 
-  hMatMVPL       = fxi->parameter(hModFX, "MatMVPL");
-  hMatMVPR       = fxi->parameter(hModFX, "MatMVPR");
-  hMatMVPC       = fxi->parameter(hModFX, "MatMVPC");
-  hMatMVP        = fxi->parameter(hModFX, "MatMVP");
-  hMatMV         = fxi->parameter(hModFX, "MatMV");
-  hMatV          = fxi->parameter(hModFX, "MatV");
-  hMatM          = fxi->parameter(hModFX, "MatM");
-  hMatP          = fxi->parameter(hModFX, "MatP");
-  hParamModColor = fxi->parameter(hModFX, "modcolor");
+  hMatMVPL       = fxi->parameter(_shader, "MatMVPL");
+  hMatMVPR       = fxi->parameter(_shader, "MatMVPR");
+  hMatMVPC       = fxi->parameter(_shader, "MatMVPC");
+  hMatMVP        = fxi->parameter(_shader, "MatMVP");
+  hMatMV         = fxi->parameter(_shader, "MatMV");
+  hMatV          = fxi->parameter(_shader, "MatV");
+  hMatM          = fxi->parameter(_shader, "MatM");
+  hMatP          = fxi->parameter(_shader, "MatP");
+  hParamModColor = fxi->parameter(_shader, "modcolor");
 
-  hVolumeMap = fxi->parameter(hModFX, "VolumeMap");
-  hColorMap  = fxi->parameter(hModFX, "ColorMap");
-  hColorMap2 = fxi->parameter(hModFX, "ColorMap2");
-  hColorMap3 = fxi->parameter(hModFX, "ColorMap3");
-  hColorMap4 = fxi->parameter(hModFX, "ColorMap4");
+  hVolumeMap = fxi->parameter(_shader, "VolumeMap");
+  hColorMap  = fxi->parameter(_shader, "ColorMap");
+  hColorMap2 = fxi->parameter(_shader, "ColorMap2");
+  hColorMap3 = fxi->parameter(_shader, "ColorMap3");
+  hColorMap4 = fxi->parameter(_shader, "ColorMap4");
 
-  hParamUser0 = fxi->parameter(hModFX, "User0");
-  hParamUser1 = fxi->parameter(hModFX, "User1");
-  hParamUser2 = fxi->parameter(hModFX, "User2");
-  hParamUser3 = fxi->parameter(hModFX, "User3");
+  hParamUser0 = fxi->parameter(_shader, "User0");
+  hParamUser1 = fxi->parameter(_shader, "User1");
+  hParamUser2 = fxi->parameter(_shader, "User2");
+  hParamUser3 = fxi->parameter(_shader, "User3");
 
-  hParamTime = fxi->parameter(hModFX, "Time");
+  hParamTime = fxi->parameter(_shader, "Time");
 
-  hParamNoiseAmp   = fxi->parameter(hModFX, "NoiseAmp");
-  hParamNoiseFreq  = fxi->parameter(hModFX, "NoiseFreq");
-  hParamNoiseShift = fxi->parameter(hModFX, "NoiseShift");
+  hParamNoiseAmp   = fxi->parameter(_shader, "NoiseAmp");
+  hParamNoiseFreq  = fxi->parameter(_shader, "NoiseFreq");
+  hParamNoiseShift = fxi->parameter(_shader, "NoiseShift");
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -217,7 +218,7 @@ bool GfxMaterial3DSolid::BeginPass(Context* pTarg, int iPass) {
   pTarg->RSI()->BindRasterState(_rasterstate);
   pTarg->FXI()->BindPass(iPass);
 
-  if (hModFX->GetFailedCompile()) {
+  if (_shader->GetFailedCompile()) {
     assert(false);
     return false;
   }

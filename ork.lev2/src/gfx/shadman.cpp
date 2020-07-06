@@ -14,10 +14,7 @@ namespace ork { namespace lev2 {
 
 extern bool gearlyhack;
 
-FxShader::FxShader()
-    : mInternalHandle(0)
-    , mAllowCompileFailure(false)
-    , mFailedCompile(false) {
+FxShader::FxShader() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -56,9 +53,6 @@ FxShaderParam* FxShaderParamBlock::param(const std::string& name) const {
   return (it != _subparams.end()) ? it->second : nullptr;
 }
 
-/*void FxShaderParamBlockMapping::setMatrix(const FxShaderParam* par, const fmtx4& m) {
-
-}*/
 FxShaderParamBufferMapping::FxShaderParamBufferMapping() {
 }
 FxShaderParamBufferMapping::~FxShaderParamBufferMapping() {

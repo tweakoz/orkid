@@ -50,7 +50,8 @@ protected:
   fvec4 PosScale;
   fvec4 PosBias;
   fvec4 Color;
-  FxShader* hModFX;
+  fxshaderassetptr_t _shaderasset;
+  FxShader* _shader;
   UiColorMode meUIColorMode;
   const FxShaderTechnique* hTekMod;
   const FxShaderTechnique* hTekVtx;
@@ -95,7 +96,8 @@ protected:
   fvec4 TexScale;
   fvec4 TexColor;
 
-  FxShader* hModFX;
+  fxshaderassetptr_t _shaderasset;
+  FxShader* _shader;
   const FxShaderTechnique* hTek;
   const FxShaderParam* hVPW;
   const FxShaderParam* hBias;
@@ -127,7 +129,8 @@ protected:
   std::string mTechniqueName;
 
   fvec4 Color;
-  FxShader* hModFX;
+  fxshaderassetptr_t _shaderasset;
+  FxShader* _shader;
 
   const FxShaderTechnique* hTek;
   const FxShaderParam* hVPW;

@@ -9,6 +9,7 @@
 
 #include <functional>
 #include <unordered_map>
+#include <ork/lev2/lev2_types.h>
 #include <ork/lev2/gfx/gfxenv_enum.h> // For ETextureDest
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/renderer/rendercontext.h>
