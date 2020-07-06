@@ -65,7 +65,7 @@ void FileAssetLoader::addLocation(filedevctx_constptr_t b, file_ext_t e) {
   fset.mExt      = e;
   fset.mPathBase = b;
   mLocations.push_back(fset);
-  if (0) {
+  if (1) {
     auto loc = b->getFilesystemBaseAbs().c_str();
     printf(
         "FileAssetLoader<%p> added set ext<%s> base<%s>\n", //
@@ -220,36 +220,13 @@ bool FileAssetLoader::resolvePath(
 ///////////////////////////////////////////////////////////////////////////////
 
 asset_ptr_t FileAssetLoader::load(const AssetPath& assetinppath) {
-  float ftime1 = ork::OldSchool::GetRef().GetLoResRelTime();
   AssetPath resolved_path;
-
   ///////////////////////////////////////////////////////////////////////////////
   if (false == _find(assetinppath, resolved_path)) {
     printf("Error Loading File Asset %s\n", assetinppath.c_str());
-#if defined(ORKCONFIG_ASSET_UNLOAD)
     return nullptr;
-#else
-    OrkAssertI(false, "Can't file asset second-time around");
-#endif
   }
-  auto asset = std::make_shared<asset::Asset>();
-  OrkAssert(false); //
-  bool out     = LoadFileAsset(asset, resolved_path);
-  float ftime2 = ork::OldSchool::GetRef().GetLoResRelTime();
-
-  static float ftotaltime = 0.0f;
-  static int iltotaltime  = 0;
-
-  ftotaltime += (ftime2 - ftime1);
-
-  int itotaltime = int(ftotaltime);
-
-  // if( itotaltime > iltotaltime )
-  {
-    std::string outstr = ork::CreateFormattedString("FILEAsset AccumTime<%f>\n", ftotaltime);
-    ////OutputDebugString( outstr.c_str() );
-    iltotaltime = itotaltime;
-  }
+  auto asset = _doLoadAsset(resolved_path);
   return asset;
 }
 

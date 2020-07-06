@@ -157,6 +157,7 @@ void ClassInit() {
   RegisterClassX(PBRMaterial);
 
   RegisterClassX(TerrainDrawableData);
+  RegisterClassX(FxShaderAsset);
 
   //////////////////////////////////////////
   // register lev2 graphics target classes

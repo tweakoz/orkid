@@ -45,7 +45,7 @@ struct FileAssetLoader : public AssetLoader {
       file_ext_t e);
 
 protected:
-  virtual bool LoadFileAsset(asset_ptr_t asset, AssetPath filename) = 0;
+  virtual asset_ptr_t _doLoadAsset(AssetPath resolvedpath) = 0;
   std::set<file::Path> EnumerateExisting() override;
 
   const object::ObjectClass* _assetClass;
