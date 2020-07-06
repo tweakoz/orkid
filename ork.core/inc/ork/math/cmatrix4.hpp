@@ -4,7 +4,8 @@
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
-
+#pragma once
+////////////////////////////////////////////////////////////////
 #include <cmath>
 #include <ork/math/cvector3.h>
 #include <ork/math/cvector4.h>

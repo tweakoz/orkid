@@ -14,6 +14,7 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <ork/math/collision_test.h>
+#include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/reflect/properties/registerX.inl>
 
 ImplementReflectionX(ork::lev2::LightManagerData, "LightManagerData");
@@ -59,27 +60,25 @@ void LightData::describeX(class_t* c) {
       ->annotate<ConstString>("editor.range.min", "1")
       ->annotate<ConstString>("editor.range.max", "16");
 
-  c->accessorProperty("Cookie", &LightData::_readCookie, &LightData::_writeCookie)
+  c->memberProperty(
+       "Cookie",
+       &LightData::_cookie) //
       ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
       ->annotate<ConstString>("editor.assettype", "lev2tex")
       ->annotate<ConstString>("editor.assetclass", "lev2tex");
 }
 
-void LightData::_readCookie(ork::rtti::ICastable*& tex) const {
-  OrkAssert(false); // update for asset_ptr_t
-  // tex = _cookie;
-}
-void LightData::_writeCookie(ork::rtti::ICastable* const& tex) {
-  //_cookie = tex ? ork::rtti::autocast(tex) : nullptr;
-}
-
 LightData::LightData()
     : mColor(1.0f, 0.0f, 0.0f)
-    , _cookie(nullptr)
     , mbShadowCaster(false)
     , _shadowsamples(1)
     , mShadowBlur(0.0f)
     , mShadowBias(0.002f) {
+}
+
+lev2::Texture* LightData::cookie() const {
+  auto as_tex = std::dynamic_pointer_cast<TextureAsset>(_cookie);
+  return as_tex ? as_tex->GetTexture() : nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

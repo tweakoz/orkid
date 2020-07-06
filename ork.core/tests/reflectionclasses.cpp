@@ -10,14 +10,7 @@
 #include <ork/reflect/properties/AccessorTyped.hpp>
 #include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/reflect/properties/DirectTypedMap.hpp>
-#include <ork/math/cvector2.hpp>
-#include <ork/math/cvector3.hpp>
-#include <ork/math/cvector4.hpp>
-#include <ork/math/quaternion.hpp>
-#include <ork/math/cmatrix3.hpp>
-#include <ork/math/cmatrix4.hpp>
 #include <ork/asset/DynamicAssetLoader.h>
-#include <ork/asset/Asset.inl>
 
 using namespace ork;
 using namespace ork::object;

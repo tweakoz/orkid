@@ -10,6 +10,21 @@
 #include "DirectTyped.h"
 #include "ITyped.hpp"
 
+////////////////////////////////////////////////
+// commonly needed inline member types
+//  (with custom serdes)
+////////////////////////////////////////////////
+
+#include <ork/asset/Asset.inl>
+#include <ork/math/cvector2.hpp>
+#include <ork/math/cvector3.hpp>
+#include <ork/math/cvector4.hpp>
+#include <ork/math/quaternion.hpp>
+#include <ork/math/cmatrix3.hpp>
+#include <ork/math/cmatrix4.hpp>
+
+////////////////////////////////////////////////
+
 namespace ork { namespace reflect {
 
 class ISerializer;

@@ -4,7 +4,8 @@
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
-
+#pragma once
+////////////////////////////////////////////////////////////////
 #if defined(_WIN32) && !defined(_XBOX)
 #include <pmmintrin.h>
 #endif

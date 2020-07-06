@@ -1097,7 +1097,7 @@ void TerrainDrawableData::describeX(class_t* c) {
       ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
       ->annotate<ConstString>("editor.filetype", "png");
   ////////////////////////////////////////////////////////////////////////
-  c->accessorProperty("SphericalEnvMap", &TerrainDrawableData::_readEnvMap, &TerrainDrawableData::_writeEnvMap)
+  c->memberProperty("SphericalEnvMap", &TerrainDrawableData::_sphericalenvmapasset)
       ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
       ->annotate<ConstString>("editor.assettype", "lev2tex")
       ->annotate<ConstString>("editor.assetclass", "lev2tex");
@@ -1126,13 +1126,11 @@ TerrainDrawableData::~TerrainDrawableData() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void TerrainDrawableData::_writeEnvMap(ork::rtti::ICastable* const& tex) {
-  OrkAssert(false); // update for asset_ptr_t
-  //_sphericalenvmap = tex ? ork::rtti::autocast(tex) : nullptr;
+Texture* TerrainDrawableData::envtex() const {
+  auto as_texasset = std::dynamic_pointer_cast<TextureAsset>(_sphericalenvmapasset);
+  return as_texasset ? as_texasset->GetTexture() : nullptr;
 }
-void TerrainDrawableData::_readEnvMap(ork::rtti::ICastable*& tex) const {
-  // tex = _sphericalenvmap;
-}
+///////////////////////////////////////////////////////////////////////////////
 static int count = 0;
 void TerrainDrawableData::_writeHmapPath(file::Path const& hmap) {
   _hfpath = hmap;
