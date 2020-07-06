@@ -20,9 +20,10 @@ class XgmModelAsset;
 class XgmAnimAsset;
 class FxShaderAsset;
 ///////////////////////////////////////////////////////////////////////////////
-using textureassetptr_t  = std::shared_ptr<TextureAsset>;
-using xgmmodelassetptr_t = std::shared_ptr<XgmModelAsset>;
-using xgmanimassetptr_t  = std::shared_ptr<XgmAnimAsset>;
-using fxshaderassetptr_t = std::shared_ptr<FxShaderAsset>;
+using textureassetptr_t        = std::shared_ptr<TextureAsset>;
+using xgmmodelassetptr_t       = std::shared_ptr<XgmModelAsset>;
+using xgmanimassetptr_t        = std::shared_ptr<XgmAnimAsset>;
+using fxshaderasset_ptr_t       = std::shared_ptr<FxShaderAsset>;
+using fxshaderasset_constptr_t = std::shared_ptr<const FxShaderAsset>;
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

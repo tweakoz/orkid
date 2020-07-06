@@ -204,6 +204,13 @@ void XgmAnimAsset::describeX(class_t* clazz) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
+FxShaderAsset::FxShaderAsset() {
+  _shader = new FxShader;
+}
+FxShaderAsset::~FxShaderAsset() {
+  if (_shader)
+    delete _shader;
+}
 class FxShaderLoader final : public FileAssetLoader {
 public:
   FxShaderLoader();

@@ -90,8 +90,13 @@ void FreestyleMaterial::gpuInit(Context* targ, const AssetPath& assetname) {
 void FreestyleMaterial::gpuInitFromShaderText(Context* targ, const std::string& shadername, const std::string& shadertext) {
   if (_initialTarget == nullptr) {
     _initialTarget = targ;
-    _shader        = targ->FXI()->shaderFromShaderText(shadername, shadertext);
+    _shaderasset   = std::make_shared<FxShaderAsset>();
+    _shaderasset->setName("shaderFromShaderText");
+    _shader = targ->FXI()->shaderFromShaderText(shadername, shadertext);
     OrkAssert(_shader);
+
+    delete _shaderasset->_shader;
+    _shaderasset->_shader = _shader;
   }
 }
 ///////////////////////////////////////////////////////////////////////////////

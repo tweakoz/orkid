@@ -91,7 +91,7 @@ public:
   const lev2::FxShaderParam* hMapC;
   const lev2::FxShaderParam* hMatMVP;
   lev2::FxShader* _shader;
-  fxshaderassetptr_t _shaderasset;
+  fxshaderasset_ptr_t _shaderasset;
 };
 
 } // namespace ork::lev2

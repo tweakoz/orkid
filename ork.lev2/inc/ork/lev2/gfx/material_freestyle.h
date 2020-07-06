@@ -73,7 +73,7 @@ struct FreestyleMaterial final : public GfxMaterial {
 
   ////////////////////////////////////////////
 
-  fxshaderassetptr_t _shaderasset;
+  fxshaderasset_ptr_t _shaderasset;
   FxShader* _shader                     = nullptr;
   const FxShaderTechnique* _selectedTEK = nullptr;
 

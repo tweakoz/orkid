@@ -94,12 +94,17 @@ class FxShaderAsset : public ork::asset::Asset {
   static const char* assetTypeNameStatic(void) {
     return "fxshader";
   }
-  FxShader mData;
 
 public: //
+  FxShaderAsset();
+  ~FxShaderAsset();
   FxShader* GetFxShader() {
-    return &mData;
+    return _shader;
   }
+  const FxShader* GetFxShader() const {
+    return _shader;
+  }
+  FxShader* _shader;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
