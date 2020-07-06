@@ -97,11 +97,12 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 ctx->makeCurrentContext();
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars.typedValueForKey<py::function>("gpuinitfn");
-                try {
-                  pyfn.value()(ctx_t(ctx));
-                } catch (std::exception& e) {
-                  OrkAssert(false);
-                }
+                pyfn.value()(ctx_t(ctx));
+                // try {
+                // pyfn.value()(ctx_t(ctx));
+                //} catch (std::exception& e) {
+                // OrkAssert(false);
+                //}
               });
             }
             ////////////////////////////////////////////////////////////////////
