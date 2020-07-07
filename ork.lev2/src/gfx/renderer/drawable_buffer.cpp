@@ -121,7 +121,13 @@ void DrawableBuffer::Reset() {
   _preRenderCallbacks.clear();
   _cameraDataLUT.clear();
 }
-
+///////////////////////////////////////////////////////////////////////////////
+void DrawableBuffer::terminate() {
+  Reset();
+  for (int il = 0; il < kmaxlayers; il++) {
+    mRawLayers[il].terminate();
+  }
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 void DrawableBufLayer::Reset(const DrawableBuffer& dB) {
@@ -175,6 +181,18 @@ DrawableBufLayer::DrawableBufLayer()
     , miBufferIndex(-1) {
 }
 
+void DrawableBufLayer::terminate() {
+  for (int i = 0; i < kmaxitems; i++) {
+    auto& item = mDrawBufItems[i];
+    item.terminate();
+  }
+}
+
+void DrawableBufItem::terminate() {
+  mUserData0.Set<void*>(nullptr);
+  mUserData1.Set<void*>(nullptr);
+  mpDrawable = nullptr;
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 DrawableBuffer::~DrawableBuffer() {
@@ -287,6 +305,14 @@ void DrawableBuffer::ClearAndSyncWriters() {
   BeginClearAndSyncWriters();
   EndClearAndSyncWriters();
 }
-
+////////////////////////////////////////////////////////////////
+// call at app end
+////////////////////////////////////////////////////////////////
+void DrawableBuffer::terminateAll() {
+  BeginClearAndSyncWriters();
+  gBuffers.rawAccess(0)->terminate();
+  gBuffers.rawAccess(1)->terminate();
+  gBuffers.rawAccess(2)->terminate();
+}
 ////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

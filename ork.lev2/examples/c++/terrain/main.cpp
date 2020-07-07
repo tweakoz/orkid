@@ -61,7 +61,6 @@ int main(int argc, char** argv) {
   qtapp->onGpuInit([&](Context* ctx) {
     ctx->debugPushGroup("main.onGpuInit");
     renderer.setContext(ctx);
-    OrkAssert(false); // sync on assets loaded..
     //////////////////////////////////////////////////////////
     _terrainData._rock1 = fvec3(1, 1, 1);
     _terrainData._writeHmapPath("src://terrain/testhmap2_2048.png");

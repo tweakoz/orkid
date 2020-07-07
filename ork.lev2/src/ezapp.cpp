@@ -322,6 +322,7 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
 
 OrkEzQtApp::~OrkEzQtApp() {
   joinUpdate();
+  DrawableBuffer::terminateAll();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

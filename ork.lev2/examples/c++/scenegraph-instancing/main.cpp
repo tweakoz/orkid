@@ -30,7 +30,6 @@ int main(int argc, char** argv) {
   auto modl_asset = asset::AssetManager<XgmModelAsset>::load("data://src/environ/objects/misc/ref/uvsph");
   // auto modl_asset = asset::AssetManager<XgmModelAsset>::load("data://tests/pbr_calib");
   auto drw = std::make_shared<InstancedModelDrawable>(nullptr);
-  OrkAssert(false); // sync on modl_asset loaded...
   OrkAssert(modl_asset->_model.atomicCopy());
   drw->bindModel(modl_asset->_model.atomicCopy());
   auto sg_node = sg_layer->createDrawableNode("model-node", drw);

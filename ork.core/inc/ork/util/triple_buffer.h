@@ -221,6 +221,12 @@ public:
     mState.store(1 << 4); // starting
   }
   /////////////////////////////
+  T* rawAccess(int index) {
+    OrkAssert(index >= 0);
+    OrkAssert(index < 3);
+    return mValues[index];
+  }
+  /////////////////////////////
 private: //
   /////////////////////////////
   T* mValues[3];
