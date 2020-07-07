@@ -39,6 +39,11 @@ struct IMDIMPL_MODEL {
 using imdimpl_model_ptr_t = std::shared_ptr<IMDIMPL_MODEL>;
 
 ///////////////////////////////////////////////////////////////////////////////
+void InstancedModelDrawable::bindModelAsset(AssetPath assetpath) {
+  _asset = asset::AssetManager<XgmModelAsset>::load(assetpath);
+  bindModel(_asset->_model.atomicCopy());
+}
+///////////////////////////////////////////////////////////////////////////////
 void InstancedModelDrawable::bindModel(model_ptr_t model) {
   _model = model;
   // generate material instance data

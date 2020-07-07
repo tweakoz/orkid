@@ -41,29 +41,29 @@ int main(int argc, char** argv, char** argp) {
   Texture* envlight       = nullptr;
   XgmModelInst* modelinst = nullptr;
   ModelDrawable* drawable = nullptr;
-  DrawQueueXfData drawxf;
-  std::vector<Instance> instances;
+  using instances_t       = std::vector<Instance>;
+  auto instances          = std::make_shared<instances_t>();
   //////////////////////////////////////////////////////////
   // initialize compositor (necessary for PBR models)
   //  use a deferredPBR compositing node
   //  which does all the gbuffer and lighting passes
   //////////////////////////////////////////////////////////
-  DefaultRenderer renderer;
-  LightManagerData lmd;
-  auto lightmgr = std::make_shared<LightManager>(lmd);
-  CompositingData compositordata;
-  compositordata.presetPBR();
-  compositordata.mbEnable = true;
-  auto nodetek            = compositordata.tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
-  auto outpnode           = nodetek->tryOutputNodeAs<ScreenOutputCompositingNode>();
+  auto renderer       = std::make_shared<DefaultRenderer>();
+  auto lmd            = std::make_shared<LightManagerData>();
+  auto lightmgr       = std::make_shared<LightManager>(*lmd);
+  auto compositordata = std::make_shared<CompositingData>();
+  compositordata->presetPBR();
+  compositordata->mbEnable = true;
+  auto nodetek             = compositordata->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
+  auto outpnode            = nodetek->tryOutputNodeAs<ScreenOutputCompositingNode>();
   // outpnode->setSuperSample(4);
-  auto compositorimpl = compositordata.createImpl();
+  auto compositorimpl = compositordata->createImpl();
   compositorimpl->bindLighting(lightmgr.get());
-  lev2::CompositingPassData TOPCPD;
-  TOPCPD.addStandardLayers();
-  CameraDataLut cameras;
-  CameraData camdata;
-  cameras.AddSorted("spawncam", &camdata);
+  auto TOPCPD = std::make_shared<lev2::CompositingPassData>();
+  TOPCPD->addStandardLayers();
+  auto cameras = std::make_shared<CameraDataLut>();
+  auto camdata = std::make_shared<CameraData>();
+  cameras->AddSorted("spawncam", camdata.get());
   //////////////////////////////////////////////////////////
   // gpuInit handler, called once on main(rendering) thread
   //  at startup time
@@ -73,7 +73,7 @@ int main(int argc, char** argv, char** argp) {
     // ctx->debugPushGroup("main.onGpuInit");
     modelasset = asset::AssetManager<XgmModelAsset>::load("data://tests/pbr1/pbr1");
     model      = modelasset->GetModel();
-    renderer.setContext(ctx);
+    renderer->setContext(ctx);
 
     for (int i = 0; i < 30; i++) {
       Instance inst;
@@ -81,7 +81,7 @@ int main(int argc, char** argv, char** argp) {
       inst._xgminst  = std::make_shared<XgmModelInst>(model);
       inst._xgminst->EnableAllMeshes();
       inst._drawable->SetModelInst(inst._xgminst);
-      instances.push_back(inst);
+      instances->push_back(inst);
     }
     // ctx->debugPopGroup();
   });
@@ -89,7 +89,7 @@ int main(int argc, char** argv, char** argp) {
   // update handler (called on update thread)
   //  it will never be called before onGpuInit() is complete...
   //////////////////////////////////////////////////////////
-  qtapp->onUpdate([&](ui::updatedata_ptr_t updata) {
+  qtapp->onUpdate([=](ui::updatedata_ptr_t updata) {
     double dt      = updata->_dt;
     double abstime = updata->_abstime;
     ///////////////////////////////////////
@@ -100,17 +100,17 @@ int main(int argc, char** argv, char** argp) {
     auto eye       = fvec3(sinf(phase), 1.0f, -cosf(phase)) * distance;
     fvec3 tgt(0, 0, 0);
     fvec3 up(0, 1, 0);
-    camdata.Lookat(eye, tgt, up);
-    camdata.Persp(0.1, 100.0, 45.0);
+    camdata->Lookat(eye, tgt, up);
+    camdata->Persp(0.1, 100.0, 45.0);
     ///////////////////////////////////////
     auto DB = DrawableBuffer::acquireForWrite(0);
     DB->Reset();
-    DB->copyCameras(cameras);
+    DB->copyCameras(*cameras);
     auto layer = DB->MergeLayer("Default");
     ////////////////////////////////////////
     // animate and enqueue all instances
     ////////////////////////////////////////
-    for (auto& inst : instances) {
+    for (auto& inst : *instances) {
       auto drawable = static_cast<Drawable*>(inst._drawable);
       fvec3 delta   = inst._target - inst._curpos;
       inst._curpos += delta.Normal() * dt * 1.0;
@@ -163,10 +163,10 @@ int main(int argc, char** argv, char** argp) {
     // compositor setup
     ///////////////////////////////////////
     lev2::UiViewportRenderTarget rt(nullptr);
-    auto tgtrect          = context->mainSurfaceRectAtOrigin();
-    TOPCPD._irendertarget = &rt;
-    TOPCPD.SetDstRect(tgtrect);
-    compositorimpl->pushCPD(TOPCPD);
+    auto tgtrect           = context->mainSurfaceRectAtOrigin();
+    TOPCPD->_irendertarget = &rt;
+    TOPCPD->SetDstRect(tgtrect);
+    compositorimpl->pushCPD(*TOPCPD);
     ///////////////////////////////////////
     // Draw!
     ///////////////////////////////////////
@@ -178,7 +178,7 @@ int main(int argc, char** argv, char** argp) {
     CompositorDrawData drawdata(framerenderer);
     drawdata._properties["primarycamindex"_crcu].Set<int>(0);
     drawdata._properties["cullcamindex"_crcu].Set<int>(0);
-    drawdata._properties["irenderer"_crcu].Set<lev2::IRenderer*>(&renderer);
+    drawdata._properties["irenderer"_crcu].Set<lev2::IRenderer*>(renderer.get());
     drawdata._properties["simrunning"_crcu].Set<bool>(true);
     drawdata._properties["DB"_crcu].Set<const DrawableBuffer*>(DB);
     drawdata._cimpl = compositorimpl;

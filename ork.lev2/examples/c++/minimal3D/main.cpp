@@ -11,42 +11,42 @@ using namespace ork;
 using namespace ork::lev2;
 
 int main(int argc, char** argv) {
-  auto qtapp  = OrkEzQtApp::create(argc, argv);
-  auto qtwin  = qtapp->_mainWindow;
-  auto gfxwin = qtwin->_gfxwin;
-  FreestyleMaterial material;
+  auto qtapp                           = OrkEzQtApp::create(argc, argv);
+  auto qtwin                           = qtapp->_mainWindow;
+  auto gfxwin                          = qtwin->_gfxwin;
+  auto material                        = std::make_shared<FreestyleMaterial>();
   const FxShaderTechnique* fxtechnique = nullptr;
   const FxShaderParam* fxparameterMVP  = nullptr;
   Timer timer;
-  primitives::FrustumPrimitive primitive;
-  primitive._colorTop    = fvec3(.5, 1, .5);
-  primitive._colorBottom = fvec3(.5, 0, .5);
-  primitive._colorFront  = fvec3(.5, .5, 1);
-  primitive._colorBack   = fvec3(.5, .5, 0);
-  primitive._colorLeft   = fvec3(0, .5, .5);
-  primitive._colorRight  = fvec3(1, .5, .5);
+  auto primitive          = std::make_shared<primitives::FrustumPrimitive>();
+  primitive->_colorTop    = fvec3(.5, 1, .5);
+  primitive->_colorBottom = fvec3(.5, 0, .5);
+  primitive->_colorFront  = fvec3(.5, .5, 1);
+  primitive->_colorBack   = fvec3(.5, .5, 0);
+  primitive->_colorLeft   = fvec3(0, .5, .5);
+  primitive->_colorRight  = fvec3(1, .5, .5);
   //////////////////////////////////////////////////////////
   timer.Start();
   //////////////////////////////////////////////////////////
   qtapp->onGpuInit([&](Context* ctx) {
-    material.gpuInit(ctx, "orkshader://solid");
-    fxtechnique    = material.technique("vtxcolor");
-    fxparameterMVP = material.param("MatMVP");
+    material->gpuInit(ctx, "orkshader://solid");
+    fxtechnique    = material->technique("vtxcolor");
+    fxparameterMVP = material->param("MatMVP");
     deco::printf(fvec3::White(), "gpuINIT - context<%p>\n", ctx, fxtechnique);
     deco::printf(fvec3::Yellow(), "  fxtechnique<%p>\n", fxtechnique);
     deco::printf(fvec3::Yellow(), "  fxparameterMVP<%p>\n", fxparameterMVP);
-    material._rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
+    material->_rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
     ///////////////////////////////////////////////////
     // init frustum primitive
     ///////////////////////////////////////////////////
     auto frus_p = ctx->MTXI()->Persp(45.0, 1.0f, .1, 3);
     auto frus_v = ctx->MTXI()->LookAt(fvec3(0, 0, -1), fvec3(0, 0, 0), fvec3(0, 1, 0));
-    primitive._frustum.Set(frus_v, frus_p);
-    primitive.gpuInit(ctx);
+    primitive->_frustum.Set(frus_v, frus_p);
+    primitive->gpuInit(ctx);
     ///////////////////////////////////////////////////
   });
   //////////////////////////////////////////////////////////
-  qtapp->onDraw([&](ui::drawevent_constptr_t drwev) {
+  qtapp->onDraw([=](ui::drawevent_constptr_t drwev) {
     auto context = drwev->GetTarget();
     RenderContextFrameData RCFD(context); // renderer per/frame data
     auto fbi  = context->FBI();           // FrameBufferInterface
@@ -72,10 +72,10 @@ int main(int argc, char** argv) {
     ///////////////////////////////////////
     fbi->SetClearColor(fvec4(0, 0, 0, 1));
     context->beginFrame();
-    material.begin(fxtechnique, RCFD);
-    material.bindParamMatrix(fxparameterMVP, view * projection);
-    primitive.renderEML(context);
-    material.end(RCFD);
+    material->begin(fxtechnique, RCFD);
+    material->bindParamMatrix(fxparameterMVP, view * projection);
+    primitive->renderEML(context);
+    material->end(RCFD);
     context->endFrame();
   });
   //////////////////////////////////////////////////////////
