@@ -142,7 +142,6 @@ void CompositingData::presetPBRVR() {
   // t1->_writePostFxNode(p1);
   auto assetVars  = r1->_texAssetVarMap;
   auto envl_asset = asset::AssetManager<TextureAsset>::load("src://envmaps/tozenv_nebula", assetVars);
-  OrkAssert(false);
   // todo inject postload ops
   OrkAssert(envl_asset->GetTexture() != nullptr);
   OrkAssert(envl_asset->_varmap->hasKey("postproc"));

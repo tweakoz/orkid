@@ -418,7 +418,6 @@ void pyinit_gfx(py::module& module_lev2) {
   py::class_<XgmModel, model_ptr_t>(module_lev2, "Model") //
       .def(py::init([](const std::string& model_path) -> model_ptr_t {
         auto modl_asset = asset::AssetManager<XgmModelAsset>::load(model_path.c_str());
-        OrkAssert(false); // sync on modl_asset loaded...
         return modl_asset->_model.atomicCopy();
       }))
       .def(
