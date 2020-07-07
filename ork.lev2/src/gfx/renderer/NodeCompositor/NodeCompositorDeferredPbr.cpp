@@ -10,7 +10,6 @@
 #include <ork/rtti/Class.h>
 #include <ork/kernel/opq.h>
 #include <ork/kernel/mutex.h>
-//#include <ork/asset/AssetCategory.h>
 #include <ork/reflect/properties/registerX.inl>
 #include <ork/application/application.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
@@ -31,6 +30,7 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/CpuLightProcessor.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/SimpleLightProcessor.h>
 #include <ork/profiling.inl>
+#include <ork/asset/Asset.inl>
 
 ImplementReflectionX(ork::lev2::deferrednode::DeferredCompositingNodePbr, "DeferredCompositingNodePbr");
 
@@ -57,7 +57,9 @@ void DeferredCompositingNodePbr::describeX(class_t* c) {
   c->floatProperty("DepthFogPower", float_range{0.01, 100.0}, &DeferredCompositingNodePbr::_depthFogPower);
 
   c->accessorProperty(
-       "EnvironmentTexture", &DeferredCompositingNodePbr::_readEnvTexture, &DeferredCompositingNodePbr::_writeEnvTexture)
+       "EnvironmentTexture", //
+       &DeferredCompositingNodePbr::_readEnvTexture,
+       &DeferredCompositingNodePbr::_writeEnvTexture)
       ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
       ->annotate<ConstString>("editor.assettype", "lev2tex")
       ->annotate<ConstString>("editor.assetclass", "lev2tex")
@@ -71,7 +73,7 @@ void DeferredCompositingNodePbr::describeX(class_t* c) {
           });
 }
 
-void DeferredCompositingNodePbr::_readEnvTexture(ork::rtti::ICastable*& tex) const {
+void DeferredCompositingNodePbr::_readEnvTexture(asset::asset_ptr_t& tex) const {
   tex = _environmentTextureAsset;
 }
 
@@ -81,11 +83,12 @@ void DeferredCompositingNodePbr::setEnvTexturePath(file::Path path) {
   // TODO - inject asset postload ops ()
 }
 
-void DeferredCompositingNodePbr::_writeEnvTexture(ork::rtti::ICastable* const& tex) {
-  _environmentTextureAsset = tex ? rtti::autocast(tex) : nullptr;
+void DeferredCompositingNodePbr::_writeEnvTexture(asset::asset_ptr_t const& tex) {
+  _environmentTextureAsset = tex;
+  printf("WTF1 <%p>\n\n", _environmentTextureAsset.get());
   if (nullptr == _environmentTextureAsset)
     return;
-  printf("WTF1 <%p>\n\n", _environmentTextureAsset);
+  _environmentTextureAsset->_varmap = _texAssetVarMap;
 }
 
 lev2::Texture* DeferredCompositingNodePbr::envSpecularTexture() const {

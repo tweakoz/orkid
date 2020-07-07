@@ -110,6 +110,7 @@ struct EzViewport : public ui::Viewport {
   ui::HandlerResult DoOnUiEvent(ui::event_constptr_t ev) final;
   EzMainWin* _mainwin;
   ui::layoutgroup_ptr_t _topLayoutGroup;
+  std::atomic<int> _initstate;
 };
 ////////////////////////////////////////////////////////////////////////////////
 class OrkEzQtApp : public OrkEzQtAppBase {

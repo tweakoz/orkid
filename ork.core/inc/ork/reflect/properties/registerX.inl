@@ -10,6 +10,7 @@
 #include "DirectObjectMap.inl"
 #include "DirectTypedArray.hpp"
 #include "DirectTypedVector.hpp"
+#include "AccessorTyped.hpp"
 
 namespace ork::object {
 ///////////////////////////////////////////////////////////////////////////

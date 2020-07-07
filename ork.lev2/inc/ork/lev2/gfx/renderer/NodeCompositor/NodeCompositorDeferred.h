@@ -248,12 +248,12 @@ public:
 
   void doGpuInit(lev2::Context* pTARG, int w, int h) final;
   void DoRender(CompositorDrawData& drawdata) final;
-  void _readEnvTexture(ork::rtti::ICastable*& tex) const;
-  void _writeEnvTexture(ork::rtti::ICastable* const& tex);
+  void _readEnvTexture(asset::asset_ptr_t& tex) const;
+  void _writeEnvTexture(asset::asset_ptr_t const& tex);
 
   void setEnvTexturePath(file::Path path);
 
-  lev2::TextureAsset* _environmentTextureAsset = nullptr;
+  asset::asset_ptr_t _environmentTextureAsset;
 
   lev2::RtBuffer* GetOutput() const final;
   lev2::RtGroup* GetOutputGroup() const final;

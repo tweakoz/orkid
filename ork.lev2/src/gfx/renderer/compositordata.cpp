@@ -120,7 +120,7 @@ void CompositingData::presetPBR() {
   // todo inject postload ops
   OrkAssert(envl_asset->GetTexture() != nullptr);
   OrkAssert(envl_asset->_varmap->hasKey("postproc"));
-  r1->_writeEnvTexture(envl_asset.get());
+  r1->_writeEnvTexture(envl_asset);
 
   auto s1 = new CompositingScene;
   auto i1 = new CompositingSceneItem;
@@ -146,7 +146,7 @@ void CompositingData::presetPBRVR() {
   // todo inject postload ops
   OrkAssert(envl_asset->GetTexture() != nullptr);
   OrkAssert(envl_asset->_varmap->hasKey("postproc"));
-  r1->_writeEnvTexture(envl_asset.get());
+  r1->_writeEnvTexture(envl_asset);
 
   auto s1 = new CompositingScene;
   auto i1 = new CompositingSceneItem;

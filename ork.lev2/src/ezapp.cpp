@@ -115,6 +115,7 @@ qtezapp_ptr_t OrkEzQtApp::createWithScene(varmap::varmap_ptr_t sceneparams) {
 EzViewport::EzViewport(EzMainWin* mainwin)
     : ui::Viewport("ezviewport", 1, 1, 1, 1, fvec3(0, 0, 0), 1.0f)
     , _mainwin(mainwin) {
+  _initstate.store(0);
   lev2::DrawableBuffer::ClearAndSyncWriters();
   _mainwin->_render_timer.Start();
   _mainwin->_render_prevtime = _mainwin->_render_timer.SecsSinceStart();
@@ -122,6 +123,8 @@ EzViewport::EzViewport(EzMainWin* mainwin)
 /////////////////////////////////////////////////
 void EzViewport::DoInit(ork::lev2::Context* pTARG) {
   pTARG->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
+  FontMan::gpuInit(pTARG);
+  _initstate.store(1);
 }
 /////////////////////////////////////////////////
 void EzViewport::DoDraw(ui::drawevent_constptr_t drwev) {
@@ -132,7 +135,6 @@ void EzViewport::DoDraw(ui::drawevent_constptr_t drwev) {
 
   if (do_gpu_init) {
     drwev->GetTarget()->makeCurrentContext();
-    FontMan::gpuInit(drwev->GetTarget());
     drwev->GetTarget()->makeCurrentContext();
 
     if (_mainwin->_onGpuInit)
@@ -254,7 +256,9 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
   _mainWindow->_ctqt->pushRefreshPolicy(RefreshPolicyItem{EREFRESH_WHENDIRTY});
   /////////////////////////////////////////////
   auto handler = [this](opq::progressdata_ptr_t data) { //
-    _mainWindow->_ctqt->progressHandler(data);
+    if (_ezviewport->_initstate.load() == 1) {
+      _mainWindow->_ctqt->progressHandler(data);
+    }
   };
   opq::setProgressHandler(handler);
 
