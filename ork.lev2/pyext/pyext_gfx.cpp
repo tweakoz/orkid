@@ -427,7 +427,10 @@ void pyinit_gfx(py::module& module_lev2) {
              scenegraph::layer_ptr_t layer) -> scenegraph::node_ptr_t { //
             auto drw        = std::make_shared<ModelDrawable>(nullptr);
             drw->_modelinst = std::make_shared<XgmModelInst>(model.get());
-            return layer->createDrawableNode(named, drw);
+
+            auto node = layer->createDrawableNode(named, drw);
+            node->_userdata->makeValueForKey<model_ptr_t>("pyext.retain.model", model);
+            return node;
           })
       .def(
           "createInstancedNode", //
