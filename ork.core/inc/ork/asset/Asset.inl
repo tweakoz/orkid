@@ -75,7 +75,11 @@ inline void ::ork::reflect::ITyped<asset::asset_ptr_t>::deserialize(serdes::node
   auto assetclazz = dynamic_cast<object::ObjectClass*>(rtti::Class::FindClass(val1.c_str()));
   auto loader     = asset::getLoader(assetclazz);
   if (loader->doesExist(val2)) {
-    auto newasset = loader->load(val2);
+    const auto& anno = annotation(ConstString("asset.deserialize.vargen"));
+    asset::vars_ptr_t assetvars;
+    if (auto as_gen = anno.TryAs<asset::vars_gen_t>())
+      assetvars = as_gen.value()(instance);
+    auto newasset = loader->load(val2, assetvars);
     OrkAssert(newasset->type() == val1);
     set(newasset, instance);
   } else {

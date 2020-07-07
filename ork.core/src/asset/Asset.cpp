@@ -19,6 +19,11 @@ ImplementReflectionX(ork::asset::Asset, "Asset");
 namespace ork { namespace asset {
 ///////////////////////////////////////////////////////////////////////////////
 
+const vars_t novars() {
+  static const vars_t gnovars;
+  return gnovars;
+}
+
 void Asset::describeX(object::ObjectClass* clazz) {
 }
 

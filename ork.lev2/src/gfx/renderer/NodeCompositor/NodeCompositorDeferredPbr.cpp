@@ -60,12 +60,14 @@ void DeferredCompositingNodePbr::describeX(class_t* c) {
        "EnvironmentTexture", &DeferredCompositingNodePbr::_readEnvTexture, &DeferredCompositingNodePbr::_writeEnvTexture)
       ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
       ->annotate<ConstString>("editor.assettype", "lev2tex")
-      ->annotate<ConstString>("editor.assetclass", "lev2tex");
-  //->annotate<AssetCategory::vars_gen_t>("asset.deserialize.vargen", [](ork::Object* obj) -> const AssetCategory::vars_t& {
-  // auto node = dynamic_cast<DeferredCompositingNodePbr*>(obj);
-  // OrkAssert(node);
-  // return node->_texAssetVarMap;
-  //});
+      ->annotate<ConstString>("editor.assetclass", "lev2tex")
+      ->annotate<asset::vars_gen_t>(
+          "asset.deserialize.vargen", //
+          [](ork::object_ptr_t obj) -> asset::vars_ptr_t {
+            auto node = std::dynamic_pointer_cast<DeferredCompositingNodePbr>(obj);
+            OrkAssert(node);
+            return node->_texAssetVarMap;
+          });
 }
 
 void DeferredCompositingNodePbr::_readEnvTexture(ork::rtti::ICastable*& tex) const {
@@ -261,12 +263,13 @@ struct PbrNodeImpl {
 
 ///////////////////////////////////////////////////////////////////////////////
 DeferredCompositingNodePbr::DeferredCompositingNodePbr() {
-  _impl = std::make_shared<PbrNodeImpl>(this);
+  _impl           = std::make_shared<PbrNodeImpl>(this);
+  _texAssetVarMap = std::make_shared<asset::vars_t>();
   ///////////////////////////////////////////////////////////////
   // texture postprocessor for generating equirectangular environment
   //  PBR irradiance diffuse and specular maps
   ///////////////////////////////////////////////////////////////
-  _texAssetVarMap.makeValueForKey<Texture::proc_t>("postproc") =
+  _texAssetVarMap->makeValueForKey<Texture::proc_t>("postproc") =
       [this](Texture* tex, Context* targ, datablock_constptr_t inp_datablock) -> datablock_ptr_t {
     printf(
         "EnvironmentTexture Irradiance PreProcessor tex<%p:%s> datablocklen<%zu>...\n",

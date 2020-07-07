@@ -23,7 +23,7 @@ public:
   //////////////////////////////////////////////////////////////////////////////
   static typed_asset_ptr_t load(
       const AssetPath& asset_name, //
-      const varmap::VarMap& vmap = novars());
+      vars_constptr_t vmap = nullptr);
   //////////////////////////////////////////////////////////////////////////////
 private:
   static ork::recursive_mutex gLock;

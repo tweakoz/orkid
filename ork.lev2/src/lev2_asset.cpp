@@ -58,7 +58,7 @@ public:
     addLocation(srcctx, ".obj");
   }
 
-  asset_ptr_t _doLoadAsset(AssetPath assetpath) override {
+  asset_ptr_t _doLoadAsset(AssetPath assetpath, vars_constptr_t vars) override {
     auto absolutepath = assetpath.ToAbsolute();
     auto modelasset   = std::make_shared<XgmModelAsset>();
     printf("LoadModelAsset<%s>\n", absolutepath.c_str());
@@ -107,15 +107,13 @@ public:
     addLocation(lev2ctx, ".dds");
   }
 
-  asset_ptr_t _doLoadAsset(AssetPath assetpath) {
-    auto texture_asset                   = std::make_shared<TextureAsset>();
-    texture_asset->GetTexture()->_varmap = texture_asset->_varmap;
-    if (texture_asset->_varmap.hasKey("postproc")) {
-      printf("texasset<%p:%s> has postproc\n", texture_asset.get(), assetpath.c_str());
-    } else {
-      // printf("texasset<%p:%s> does NOT have postproc\n", texture_asset, filename.c_str());
+  asset_ptr_t _doLoadAsset(AssetPath assetpath, vars_constptr_t vars) {
+    auto texture_asset = std::make_shared<TextureAsset>();
+    if (vars) {
+      texture_asset->GetTexture()->_varmap = *vars;
+      if (vars->hasKey("postproc"))
+        printf("texasset<%p:%s> has postproc\n", texture_asset.get(), assetpath.c_str());
     }
-
     // OrkAssert(false == texture_asset->GetTexture()->_varmap.hasKey("preproc"));
 
     while (0 == GfxEnv::GetRef().loadingContext()) {
@@ -164,7 +162,7 @@ public:
     addLocation(datactx, ".xga");
   }
 
-  asset_ptr_t _doLoadAsset(AssetPath filename) override {
+  asset_ptr_t _doLoadAsset(AssetPath filename, vars_constptr_t vars) override {
     auto animasset = std::make_shared<XgmAnimAsset>();
     bool bOK       = XgmAnim::LoadUnManaged(animasset->GetAnim(), filename);
     OrkAssert(bOK);
@@ -202,7 +200,7 @@ class FxShaderLoader final : public FileAssetLoader {
 public:
   FxShaderLoader();
 
-  asset_ptr_t _doLoadAsset(AssetPath filename) override;
+  asset_ptr_t _doLoadAsset(AssetPath filename, vars_constptr_t vars) override;
   void destroy(asset_ptr_t asset) override {
     auto shader_asset = std::dynamic_pointer_cast<FxShaderAsset>(asset);
   }
@@ -224,7 +222,7 @@ FxShaderLoader::FxShaderLoader()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-asset_ptr_t FxShaderLoader::_doLoadAsset(AssetPath resolvedpath) {
+asset_ptr_t FxShaderLoader::_doLoadAsset(AssetPath resolvedpath, vars_constptr_t vars) {
   auto pshader = std::make_shared<FxShaderAsset>();
   auto fxi     = GfxEnv::GetRef().loadingContext()->FXI();
   bool bOK     = fxi->LoadFxShader(resolvedpath, pshader->GetFxShader());

@@ -272,7 +272,7 @@ public:
   lev2::Texture* _filtenvDiffuseMap  = nullptr;
   fvec4 _clearColor;
 
-  varmap::VarMap _texAssetVarMap;
+  asset::vars_ptr_t _texAssetVarMap;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

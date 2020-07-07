@@ -13,6 +13,11 @@
 
 namespace ork::asset {
 
+using vars_t          = varmap::VarMap;
+using vars_ptr_t      = std::shared_ptr<vars_t>;
+using vars_constptr_t = std::shared_ptr<const vars_t>;
+using vars_gen_t      = std::function<vars_ptr_t(object_ptr_t)>;
+
 class Asset : public Object {
   DeclareConcreteX(Asset, ork::Object);
 
@@ -26,7 +31,7 @@ public:
   bool IsLoaded() const;
   assetset_ptr_t assetSet() const;
 
-  varmap::VarMap _varmap;
+  vars_constptr_t _varmap;
   AssetPath _name;
 };
 

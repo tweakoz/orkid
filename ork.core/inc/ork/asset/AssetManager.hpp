@@ -23,10 +23,10 @@ template <typename AssetType>
 inline typename AssetManager<AssetType>::typed_asset_ptr_t //
 AssetManager<AssetType>::load(
     const AssetPath& asset_name, //
-    const varmap::VarMap& vmap) {
+    vars_constptr_t vmap) {
   auto loader = getLoader<AssetType>();
   gLock.Lock();
-  auto asset = loader->load(asset_name);
+  auto asset = loader->load(asset_name, vmap);
   gLock.UnLock();
   return std::dynamic_pointer_cast<AssetType>(asset);
 }

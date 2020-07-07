@@ -14,7 +14,7 @@
 #include <ork/file/path.h>
 #include <ork/kernel/kernel.h>
 #include <ork/kernel/datablock.h>
-#include <ork/kernel/varmap.inl>
+#include <ork/asset/Asset.h>
 
 namespace ork { namespace lev2 {
 

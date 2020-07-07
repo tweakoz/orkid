@@ -219,14 +219,14 @@ bool FileAssetLoader::resolvePath(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-asset_ptr_t FileAssetLoader::load(const AssetPath& assetinppath) {
+asset_ptr_t FileAssetLoader::load(const AssetPath& assetinppath, vars_constptr_t vars) {
   AssetPath resolved_path;
   ///////////////////////////////////////////////////////////////////////////////
   if (false == _find(assetinppath, resolved_path)) {
     printf("Error Loading File Asset %s\n", assetinppath.c_str());
     return nullptr;
   }
-  auto asset = _doLoadAsset(resolved_path);
+  auto asset = _doLoadAsset(resolved_path, vars);
   return asset;
 }
 
