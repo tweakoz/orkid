@@ -7,9 +7,9 @@
 #include <ork/lev2/gfx/proctex/proctex.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 
-#include <ork/reflect/RegisterProperty.h>
-#include <ork/reflect/DirectObjectMapPropertyType.h>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/properties/register.h>
+#include <ork/reflect/properties/DirectTypedMap.h>
+#include <ork/reflect/properties/DirectTyped.hpp>
 
 #include <ork/reflect/enum_serializer.inl>
 #include <ork/math/polar.h>
@@ -17,13 +17,14 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::Cells, "proctex::Cells");
-INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::Octaves, "proctex::Octaves");
+ImplementReflectionX(ork::proctex::Cells, "proctex::Cells");
+ImplementReflectionX(ork::proctex::Octaves, "proctex::Octaves");
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace proctex {
 ///////////////////////////////////////////////////////////////////////////////
-void Octaves::Describe() {
+void Octaves::describeX(class_t* clazz) {
+  /*
   RegisterObjInpPlug(Octaves, Input);
   RegisterFloatXfPlug(Octaves, BaseOffsetX, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
   RegisterFloatXfPlug(Octaves, BaseOffsetY, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
@@ -41,6 +42,7 @@ void Octaves::Describe() {
   static const char* EdGrpStr = "grp://Basic Input NumOctaves "
                                 "grp://Plugs BaseOffsetX ScalOffsetX BaseOffsetY ScalOffsetY BaseFreq ScalFreq BaseAmp ScalAmp ";
   reflect::annotateClassForEditor<Octaves>("editor.prop.groups", EdGrpStr);
+  */
 }
 ///////////////////////////////////////////////////////////////////////////////
 Octaves::Octaves()
@@ -110,7 +112,7 @@ void Octaves::compute(ProcTex& ptex) {
     mOctMaterial.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
     mOctMaterial._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
     mOctMaterial._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
-    mOctMaterial._rasterstate.SetBlending(ork::lev2::EBLENDING_ADDITIVE);
+    mOctMaterial._rasterstate.SetBlending(ork::lev2::Blending::ADDITIVE);
     mOctMaterial._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
     mOctMaterial._rasterstate.SetZWriteMask(false);
 
@@ -155,8 +157,8 @@ void Octaves::compute(ProcTex& ptex) {
   pTARG->debugPopGroup();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Cells::Describe() {
-  ork::reflect::RegisterProperty("SeedA", &Cells::miSeedA);
+void Cells::describeX(class_t* clazz) {
+  /*ork::reflect::RegisterProperty("SeedA", &Cells::miSeedA);
   ork::reflect::annotatePropertyForEditor<Cells>("SeedA", "editor.range.min", "0");
   ork::reflect::annotatePropertyForEditor<Cells>("SeedA", "editor.range.max", "1000");
 
@@ -190,10 +192,11 @@ void Cells::Describe() {
                                 "grp://Plugs Dispersion SeedLerp SmoothingRadius ";
 
   reflect::annotateClassForEditor<Cells>("editor.prop.groups", EdGrpStr);
+  */
 }
 ///////////////////////////////////////////////////////////////////////////////
 Cells::Cells()
-    : mVertexBuffer(65536, 0, ork::lev2::EPrimitiveType::MULTI)
+    : mVertexBuffer(65536, 0, ork::lev2::PrimitiveType::MULTI)
     , miSeedA(0)
     , miSeedB(0)
     , miDimU(2)
@@ -422,7 +425,7 @@ void Cells::compute(ProcTex& ptex) {
         fmtx4 mtx;
         mtx.SetTranslation(wpu + wpv);
         mPTX.GetTarget()->MTXI()->PushMMatrix(mtx);
-        mPTX.GetTarget()->GBI()->DrawPrimitive(&stdmat, mVW, ork::lev2::EPrimitiveType::TRIANGLES);
+        mPTX.GetTarget()->GBI()->DrawPrimitive(&stdmat, mVW, ork::lev2::PrimitiveType::TRIANGLES);
         mPTX.GetTarget()->MTXI()->PopMMatrix();
       }
       mPTX.GetTarget()->MTXI()->PopPMatrix();
@@ -441,7 +444,7 @@ void Cells::compute(ProcTex& ptex) {
       stdmat.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR);
       stdmat._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
       stdmat._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
-      stdmat._rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+      stdmat._rasterstate.SetBlending(ork::lev2::Blending::OFF);
       stdmat._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
       stdmat.SetUser0(fvec4(0.0f, 0.0f, 0.0f, float(bo.miW)));
 

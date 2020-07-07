@@ -14,6 +14,7 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/vr/vr.h>
 #include <ork/profiling.inl>
+#include <ork/reflect/properties/registerX.inl>
 
 ImplementReflectionX(ork::lev2::VrCompositingNode, "VrCompositingNode");
 
@@ -47,7 +48,7 @@ struct VRIMPL {
       _blit2screenmtl.gpuInit(pTARG);
 
       _rtg            = new RtGroup(pTARG, width, height, 1);
-      auto buf        = new RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA8, width, height);
+      auto buf        = new RtBuffer(lev2::RtgSlot::Slot0, lev2::EBufferFormat::RGBA8, width, height);
       buf->_debugName = "WtfVrRt";
       _rtg->SetMrt(0, buf);
 
@@ -235,7 +236,7 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
         mtl.SetTexture(tex);
         mtl.SetTexture2(nullptr);
         mtl.SetColorMode(GfxMaterial3DSolid::EMODE_USER);
-        mtl._rasterstate.SetBlending(EBLENDING_OFF);
+        mtl._rasterstate.SetBlending(Blending::OFF);
         this_buf->RenderMatOrthoQuad(
             vprect,
             quadrect,

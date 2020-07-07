@@ -134,7 +134,8 @@ protected:
   fvec4 mUser1;
   fvec4 mUser2;
   fvec4 mUser3;
-  FxShader* hModFX          = nullptr;
+  fxshaderasset_ptr_t _shaderasset;
+  FxShader* _shader         = nullptr;
   Texture* mVolumeTexture   = nullptr;
   Texture* mCurrentTexture  = nullptr;
   Texture* mCurrentTexture2 = nullptr;

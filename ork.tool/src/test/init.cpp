@@ -11,7 +11,7 @@
 #include <ork/lev2/qtui/qtui.h>
 #include <ork/object/Object.h>
 #include <ork/pch.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/rtti/downcast.h>
 #include <pkg/ent/entity.h>
 #include <pkg/ent/scene.h>

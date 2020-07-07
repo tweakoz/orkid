@@ -4,32 +4,43 @@
 ///////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include <ork/asset/AssetClass.h>
 #include <ork/object/Object.h>
 #include <ork/kernel/varmap.inl>
 #include <ork/kernel/string/PoolString.h>
-
 #include <ork/config/config.h>
+#include <ork/rtti/RTTIX.inl>
+#include <ork/file/path.h>
 
-namespace ork { namespace asset {
+namespace ork::asset {
+
+using vars_t          = varmap::VarMap;
+using vars_ptr_t      = std::shared_ptr<vars_t>;
+using vars_constptr_t = std::shared_ptr<const vars_t>;
+using vars_gen_t      = std::function<vars_ptr_t(object_ptr_t)>;
 
 class Asset : public Object {
-  RttiDeclareAbstractWithCategory(Asset, Object, AssetClass);
+  DeclareConcreteX(Asset, ork::Object);
 
 public:
   Asset();
-  void SetName(PoolString name);
-  PoolString GetName() const;
-  virtual PoolString GetType() const;
+  void setName(AssetPath name);
+  AssetPath name() const;
+  virtual std::string type() const;
   bool Load() const;
   bool LoadUnManaged() const;
   bool IsLoaded() const;
+  assetset_ptr_t assetSet() const;
 
-  varmap::VarMap _varmap;
-  PoolString mName;
+  vars_constptr_t _varmap;
+  AssetPath _name;
 };
 
-using asset_ptr_t      = std::shared_ptr<Asset>;
-using asset_constptr_t = std::shared_ptr<const Asset>;
+} // namespace ork::asset
 
-}} // namespace ork::asset
+namespace ork {
+template <>                                    //
+struct use_custom_serdes<asset::asset_ptr_t> { //
+  static constexpr bool enable = true;
+};
+
+} // namespace ork

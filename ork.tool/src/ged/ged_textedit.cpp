@@ -8,10 +8,10 @@
 #include <orktool/ged/ged.h>
 #include <orktool/ged/ged_delegate.h>
 #include <orktool/ged/ged_io.h>
-#include <ork/reflect/IProperty.h>
-#include <ork/reflect/IObjectProperty.h>
-#include <ork/reflect/DirectObjectMapPropertyType.h>
-#include <ork/reflect/IObjectPropertyObject.h>
+
+#include <ork/reflect/properties/ObjectProperty.h>
+#include <ork/reflect/properties/DirectTypedMap.h>
+#include <ork/reflect/properties/IObject.h>
 #include <ork/reflect/IDeserializer.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/qtui/qtui.hpp>

@@ -11,17 +11,17 @@
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/pch.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/rtti/downcast.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/renderer/drawable.h>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/reflect/enum_serializer.inl>
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 CompositingMaterial::CompositingMaterial()
-    : hModFX(nullptr)
+    : _shader(nullptr)
     , hMapA(nullptr)
     , hMapB(nullptr)
     , hMapC(nullptr)
@@ -48,34 +48,35 @@ CompositingMaterial::~CompositingMaterial() {
 }
 /////////////////////////////////////////////////
 void CompositingMaterial::gpuInit(lev2::Context* pTarg) {
-  if (0 == hModFX) {
-    hModFX = asset::AssetManager<lev2::FxShaderAsset>::Load("orkshader://compositor")->GetFxShader();
+  if (0 == _shader) {
+    _shaderasset = asset::AssetManager<lev2::FxShaderAsset>::load("orkshader://compositor");
+    _shader      = _shaderasset->GetFxShader();
 
     auto fxi = pTarg->FXI();
 
-    hMatMVP = fxi->parameter(hModFX, "MatMVP");
-    hBiasA  = fxi->parameter(hModFX, "BiasA");
-    hBiasB  = fxi->parameter(hModFX, "BiasB");
-    hBiasC  = fxi->parameter(hModFX, "BiasC");
+    hMatMVP = fxi->parameter(_shader, "MatMVP");
+    hBiasA  = fxi->parameter(_shader, "BiasA");
+    hBiasB  = fxi->parameter(_shader, "BiasB");
+    hBiasC  = fxi->parameter(_shader, "BiasC");
 
-    hLevelA = fxi->parameter(hModFX, "LevelA");
-    hLevelB = fxi->parameter(hModFX, "LevelB");
-    hLevelC = fxi->parameter(hModFX, "LevelC");
+    hLevelA = fxi->parameter(_shader, "LevelA");
+    hLevelB = fxi->parameter(_shader, "LevelB");
+    hLevelC = fxi->parameter(_shader, "LevelC");
 
-    hMapA = fxi->parameter(hModFX, "MapA");
-    hMapB = fxi->parameter(hModFX, "MapB");
-    hMapC = fxi->parameter(hModFX, "MapC");
+    hMapA = fxi->parameter(_shader, "MapA");
+    hMapB = fxi->parameter(_shader, "MapB");
+    hMapC = fxi->parameter(_shader, "MapC");
 
-    hTekOp2AmulB = fxi->technique(hModFX, "Op2AmulB");
-    hTekOp2AdivB = fxi->technique(hModFX, "Op2AdivB");
+    hTekOp2AmulB = fxi->technique(_shader, "Op2AmulB");
+    hTekOp2AdivB = fxi->technique(_shader, "Op2AdivB");
 
-    hTekBoverAplusC = fxi->technique(hModFX, "BoverAplusC");
-    hTekAplusBplusC = fxi->technique(hModFX, "AplusBplusC");
-    hTekAlerpBwithC = fxi->technique(hModFX, "AlerpBwithC");
+    hTekBoverAplusC = fxi->technique(_shader, "BoverAplusC");
+    hTekAplusBplusC = fxi->technique(_shader, "AplusBplusC");
+    hTekAlerpBwithC = fxi->technique(_shader, "AlerpBwithC");
 
-    hTekAsolo = fxi->technique(hModFX, "Asolo");
-    hTekBsolo = fxi->technique(hModFX, "Bsolo");
-    hTekCsolo = fxi->technique(hModFX, "Csolo");
+    hTekAsolo = fxi->technique(_shader, "Asolo");
+    hTekBsolo = fxi->technique(_shader, "Bsolo");
+    hTekCsolo = fxi->technique(_shader, "Csolo");
 
     _rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
     _rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);

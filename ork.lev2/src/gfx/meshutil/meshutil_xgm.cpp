@@ -56,7 +56,7 @@ void Mesh::ReadFromXGM(const file::Path& BasePath) {
             int inumpg = clus->numPrimGroups();
             for (int ipg = 0; ipg < inumpg; ipg++) {
               auto primgroup = clus->primgroup(ipg);
-              if (primgroup->GetPrimType() == lev2::EPrimitiveType::TRIANGLES) {
+              if (primgroup->GetPrimType() == lev2::PrimitiveType::TRIANGLES) {
                 const lev2::IndexBufferBase* pidxbuf          = primgroup->GetIndexBuffer();
                 const lev2::StaticIndexBuffer<U16>* pidxbuf16 = (const lev2::StaticIndexBuffer<U16>*)pidxbuf;
                 // const U16* pidx16 = pidxbuf16->GetIndexPointer();

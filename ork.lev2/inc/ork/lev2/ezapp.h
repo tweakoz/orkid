@@ -8,7 +8,7 @@
 #include <ork/file/file.h>
 #include <ork/object/Object.h>
 #include <ork/rtti/downcast.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/application/application.h>
 #include <ork/lev2/ui/event.h>
 #include <ork/lev2/ui/viewport.h>
@@ -21,6 +21,7 @@
 #include <ork/lev2/qtui/qtui.h>
 #include <ork/lev2/qtui/qtui.hpp>
 #include <ork/lev2/ui/event.h>
+#include <ork/lev2/ui/context.h>
 
 namespace ork::lev2 {
 class EzApp;
@@ -108,6 +109,8 @@ struct EzViewport : public ui::Viewport {
   void DoSurfaceResize() final;
   ui::HandlerResult DoOnUiEvent(ui::event_constptr_t ev) final;
   EzMainWin* _mainwin;
+  ui::layoutgroup_ptr_t _topLayoutGroup;
+  std::atomic<int> _initstate;
 };
 ////////////////////////////////////////////////////////////////////////////////
 class OrkEzQtApp : public OrkEzQtAppBase {
@@ -157,6 +160,9 @@ public:
   varmap::VarMap _vars;
   std::atomic<uint64_t> _appstate;
   ui::updatedata_ptr_t _update_data;
+  ui::context_ptr_t _uicontext;
+  ui::layoutgroup_ptr_t _topLayoutGroup;
+  std::shared_ptr<EzViewport> _ezviewport;
 };
 
 } // namespace ork::lev2

@@ -7,7 +7,7 @@
 
 #include <orktool/orktool_pch.h>
 #include <ork/kernel/string/string.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::SelectManager, "selectionManager");
 

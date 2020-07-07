@@ -10,20 +10,20 @@
 
 #include <queue>
 
-#include <ork/reflect/DirectObjectPropertyType.h>
-#include <ork/reflect/IObjectArrayProperty.h>
-#include <ork/reflect/IObjectMapProperty.h>
-#include <ork/reflect/IObjectProperty.h>
-#include <ork/reflect/IObjectPropertyObject.h>
-#include <ork/reflect/IProperty.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/DirectTyped.h>
+#include <ork/reflect/properties/IArray.h>
+#include <ork/reflect/properties/IMap.h>
+#include <ork/reflect/properties/ObjectProperty.h>
+#include <ork/reflect/properties/IObject.h>
+
+#include <ork/reflect/properties/register.h>
 #include <ork/rtti/downcast.h>
 #include <orktool/ged/ged.h>
 #include <orktool/ged/ged_delegate.h>
 #include <orktool/ged/ged_io.h>
 
 #include <ork/kernel/orklut.hpp>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <pkg/ent/scene.h>
 
 #include <ork/util/crc.h>
@@ -59,7 +59,7 @@ void ObjModel::Describe() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ObjModel::SlotRelayPropertyInvalidated(ork::Object* pobj, const reflect::IObjectProperty* prop) {
+void ObjModel::SlotRelayPropertyInvalidated(ork::Object* pobj, const reflect::ObjectProperty* prop) {
   if (mpGedWidget)
     mpGedWidget->PropertyInvalidated(pobj, prop);
   // Attach( mCurrentObject );
@@ -158,7 +158,7 @@ void ObjModel::SigPreNewObject() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ObjModel::SigPropertyInvalidated(ork::Object* pobj, const reflect::IObjectProperty* prop) {
+void ObjModel::SigPropertyInvalidated(ork::Object* pobj, const reflect::ObjectProperty* prop) {
   auto lamb = [=]() { this->mSignalPropertyInvalidated(&ObjModel::SigPropertyInvalidated, pobj, prop); };
   opq::updateSerialQueue()->enqueue(lamb);
 }
@@ -317,7 +317,7 @@ GedItemNode* ObjModel::Recurse(ork::Object* root_object, const char* pname, bool
       ////////////////////////////////////////////////////////////////////////////////////////
       for (auto item : snode->PropVect) {
         const std::string& Name              = item.first;
-        const reflect::IObjectProperty* prop = item.second;
+        const reflect::ObjectProperty* prop = item.second;
         GedItemNode* PropContainerW          = 0;
         if (0 == prop)
           continue;
@@ -357,7 +357,7 @@ GedItemNode* ObjModel::Recurse(ork::Object* root_object, const char* pname, bool
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
-bool ObjModel::IsNodeVisible(const reflect::IObjectProperty* prop) {
+bool ObjModel::IsNodeVisible(const reflect::ObjectProperty* prop) {
   ConstString anno_vis       = prop->GetAnnotation("editor.visible");
   ConstString anno_ediftageq = prop->GetAnnotation("editor.iftageq");
   if (anno_vis.length()) {
@@ -452,7 +452,7 @@ void ObjModel::EnumerateNodes(sortnode& in_node, object::ObjectClass* the_class)
           for (; itp != iter_toklist.end(); itp++) {
             const std::string& str                                   = (*itp);
             ork::reflect::Description::PropertyMapType::iterator itf = propmap.find(str.c_str());
-            ork::reflect::IObjectProperty* prop                      = (itf != propmap.end()) ? itf->second : 0;
+            ork::reflect::ObjectProperty* prop                      = (itf != propmap.end()) ? itf->second : 0;
             if (prop) {
               pnode->PropVect.push_back(std::make_pair(str.c_str(), prop));
             }
@@ -482,7 +482,7 @@ void ObjModel::EnumerateNodes(sortnode& in_node, object::ObjectClass* the_class)
           prop_ok = allowed_props.find(namstr) != allowed_props.end();
         }
         if (prop_ok) {
-          ork::reflect::IObjectProperty* prop = it.second;
+          ork::reflect::ObjectProperty* prop = it.second;
           if (prop) {
             in_node.PropVect.push_back(std::make_pair(Name.c_str(), prop));
           }
@@ -494,7 +494,7 @@ void ObjModel::EnumerateNodes(sortnode& in_node, object::ObjectClass* the_class)
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
-GedItemNode* ObjModel::CreateNode(const std::string& Name, const reflect::IObjectProperty* prop, Object* pobject) {
+GedItemNode* ObjModel::CreateNode(const std::string& Name, const reflect::ObjectProperty* prop, Object* pobject) {
   rtti::Class* AnnoEditorClass = 0;
   /////////////////////////////////////////////////////////////////////////
   // check editor class anno on property
@@ -513,49 +513,49 @@ GedItemNode* ObjModel::CreateNode(const std::string& Name, const reflect::IObjec
     }
   }
   /////////////////////////////////////////////////////////////////////////
-  const reflect::IObjectArrayProperty* ArrayProp = rtti::autocast(prop);
+  const reflect::IArray* ArrayProp = rtti::autocast(prop);
   /////////////////////////////////////////////////////////////////////////
   ConstString anno_ucdclass  = prop->GetAnnotation("ged.userchoice.delegate");
   bool HasUserChoiceDelegate = (anno_ucdclass.length());
   /////////////////////////////////////////////////////////////////////////
-  if (const reflect::IObjectPropertyType<Char8>* c8prop = rtti::autocast(prop))
+  if (const reflect::ITyped<Char8>* c8prop = rtti::autocast(prop))
     return new GedLabelNode(*this, Name.c_str(), prop, pobject);
   /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::IObjectPropertyType<PoolString>* psprop = rtti::autocast(prop))
+  else if (const reflect::ITyped<PoolString>* psprop = rtti::autocast(prop))
     return new GedSimpleNode<GedIoDriver<PoolString>, PoolString>(*this, Name.c_str(), psprop, pobject);
   /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::IObjectPropertyType<bool>* boolprop = rtti::autocast(prop))
+  else if (const reflect::ITyped<bool>* boolprop = rtti::autocast(prop))
     return new GedBoolNode<PropSetterObj>(*this, Name.c_str(), boolprop, pobject);
   /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::IObjectPropertyType<float>* floatprop = rtti::autocast(prop))
+  else if (const reflect::ITyped<float>* floatprop = rtti::autocast(prop))
     return new GedFloatNode<GedIoDriver<float>>(*this, Name.c_str(), floatprop, pobject);
   /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::IObjectPropertyType<fvec4>* vec4prop = rtti::autocast(prop))
+  else if (const reflect::ITyped<fvec4>* vec4prop = rtti::autocast(prop))
     return new GedSimpleNode<GedIoDriver<fvec4>, fvec4>(*this, Name.c_str(), vec4prop, pobject);
   /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::IObjectPropertyType<fvec3>* vec3prop = rtti::autocast(prop))
+  else if (const reflect::ITyped<fvec3>* vec3prop = rtti::autocast(prop))
     return new GedSimpleNode<GedIoDriver<fvec3>, fvec3>(*this, Name.c_str(), vec3prop, pobject);
   /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::IObjectPropertyType<fvec2>* vec2prop = rtti::autocast(prop))
+  else if (const reflect::ITyped<fvec2>* vec2prop = rtti::autocast(prop))
     return new GedSimpleNode<GedIoDriver<fvec2>, fvec2>(*this, Name.c_str(), vec2prop, pobject);
   /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::IObjectPropertyType<fmtx4>* mtx44prop = rtti::autocast(prop))
+  else if (const reflect::ITyped<fmtx4>* mtx44prop = rtti::autocast(prop))
     return new GedSimpleNode<GedIoDriver<fmtx4>, fmtx4>(*this, Name.c_str(), mtx44prop, pobject);
   /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::IObjectPropertyType<TransformNode>* xfprop = rtti::autocast(prop)) {
+  else if (const reflect::ITyped<TransformNode>* xfprop = rtti::autocast(prop)) {
     return new GedSimpleNode<GedIoDriver<TransformNode>, TransformNode>(*this, Name.c_str(), xfprop, pobject);
   }
   /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::IObjectPropertyType<ork::rtti::ICastable*>* castprop = rtti::autocast(prop)) {
+  else if (const reflect::ITyped<ork::rtti::ICastable*>* castprop = rtti::autocast(prop)) {
     return new GedObjNode<PropSetterObj>(*this, Name.c_str(), prop, pobject);
   }
   /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::IObjectPropertyType<int>* intprop = rtti::autocast(prop)) {
+  else if (const reflect::ITyped<int>* intprop = rtti::autocast(prop)) {
     return HasUserChoiceDelegate ? (GedItemNode*)new GedSimpleNode<GedIoDriver<int>, int>(*this, Name.c_str(), intprop, pobject)
                                  : (GedItemNode*)new GedIntNode<GedIoDriver<int>>(*this, Name.c_str(), intprop, pobject);
   }
   /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::IObjectPropertyObject* objprop = rtti::autocast(prop)) {
+  else if (const reflect::IObject* objprop = rtti::autocast(prop)) {
     ork::Object* psubobj = objprop->Access(pobject);
     if (psubobj)
       Recurse(psubobj, Name.c_str());
@@ -563,13 +563,13 @@ GedItemNode* ObjModel::CreateNode(const std::string& Name, const reflect::IObjec
       return new GedObjNode<PropSetterObj>(*this, Name.c_str(), prop, pobject);
   }
   /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::DirectObjectMapPropertyType<ent::SceneData::SystemDataLut>* MapProp = rtti::autocast(prop)) {
-    auto mapprop = rtti::downcast<const reflect::DirectObjectMapPropertyType<ent::SceneData::SystemDataLut>*>(prop);
+  else if (const reflect::DirectTypedMap<ent::SceneData::SystemDataLut>* MapProp = rtti::autocast(prop)) {
+    auto mapprop = rtti::downcast<const reflect::DirectTypedMap<ent::SceneData::SystemDataLut>*>(prop);
     if (mapprop)
       return new GedMapNode(*this, Name.c_str(), mapprop, pobject);
   }
   /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::DirectObjectPropertyType<ork::Object*>* dobjprop = rtti::autocast(prop)) {
+  else if (const reflect::DirectTyped<ork::Object*>* dobjprop = rtti::autocast(prop)) {
     ork::Object* psubobj = 0;
     dobjprop->Get(psubobj, pobject);
     if (psubobj)
@@ -577,8 +577,8 @@ GedItemNode* ObjModel::CreateNode(const std::string& Name, const reflect::IObjec
     return new GedObjNode<PropSetterObj>(*this, Name.c_str(), prop, pobject);
   }
   /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::IObjectMapProperty* MapProp = rtti::autocast(prop)) {
-    auto mapprop = rtti::downcast<const reflect::IObjectMapProperty*>(prop);
+  else if (const reflect::IMap* MapProp = rtti::autocast(prop)) {
+    auto mapprop = rtti::downcast<const reflect::IMap*>(prop);
     if (mapprop)
       return new GedMapNode(*this, Name.c_str(), mapprop, pobject);
   }

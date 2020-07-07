@@ -142,7 +142,7 @@ void TransformNode::ReParent(const TransformNode* ppar) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-namespace reflect {
+namespace reflect::serdes {
 template <> void Serialize(const TransformNode* in, TransformNode* out, BidirectionalSerializer& bidi) {
   if (bidi.Serializing()) {
     bidi | in->GetTransform().GetMatrix();
@@ -163,7 +163,7 @@ template <> void Serialize(const TransformNode* in, TransformNode* out, Bidirect
     out->GetTransform().SetMatrix(result);
   }
 }
-} // namespace reflect
+} // namespace reflect::serdes
 ///////////////////////////////////////////////////////////////////////////////
 
 template <> const EPropType PropType<TransformNode>::meType   = EPROPTYPE_TRANSFORMNODE3D;

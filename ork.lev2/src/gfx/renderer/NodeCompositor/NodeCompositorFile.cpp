@@ -14,53 +14,55 @@
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/pch.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/registerX.inl>
 #include <ork/reflect/enum_serializer.inl>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
 
 ImplementReflectionX(ork::lev2::FileOutputCompositingNode, "FileOutputCompositingNode");
 
 ///////////////////////////////////////////////////////////////////////////////
-BEGIN_ENUM_SERIALIZER(ork::lev2, EOutputRes)
-DECLARE_ENUM(EOutputRes_640x480)
-DECLARE_ENUM(EOutputRes_960x640)
-DECLARE_ENUM(EOutputRes_1024x1024)
-DECLARE_ENUM(EOutputRes_1280x720)
-DECLARE_ENUM(EOutputRes_1600x1200)
-DECLARE_ENUM(EOutputRes_1920x1080)
-END_ENUM_SERIALIZER()
-///////////////////////////////////////////////////////////////////////////////
-BEGIN_ENUM_SERIALIZER(ork::lev2, EOutputResMult)
-DECLARE_ENUM(EOutputResMult_Quarter)
-DECLARE_ENUM(EOutputResMult_Half)
-DECLARE_ENUM(EOutputResMult_Full)
-DECLARE_ENUM(EOutputResMult_Double)
-DECLARE_ENUM(EOutputResMult_Quadruple)
-END_ENUM_SERIALIZER()
-///////////////////////////////////////////////////////////////////////////////
-BEGIN_ENUM_SERIALIZER(ork::lev2, EOutputTimeStep)
-DECLARE_ENUM(EOutputTimeStep_RealTime)
-DECLARE_ENUM(EOutputTimeStep_15fps)
-DECLARE_ENUM(EOutputTimeStep_24fps)
-DECLARE_ENUM(EOutputTimeStep_30fps)
-DECLARE_ENUM(EOutputTimeStep_48fps)
-DECLARE_ENUM(EOutputTimeStep_60fps)
-DECLARE_ENUM(EOutputTimeStep_72fps)
-DECLARE_ENUM(EOutputTimeStep_96fps)
-DECLARE_ENUM(EOutputTimeStep_120fps)
-DECLARE_ENUM(EOutputTimeStep_240fps)
-END_ENUM_SERIALIZER()
-///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
+BeginEnumRegistration(OutputRes);
+RegisterEnum(OutputRes, res_640x480);
+RegisterEnum(OutputRes, res_960x640);
+RegisterEnum(OutputRes, res_1024x1024);
+RegisterEnum(OutputRes, res_1280x720);
+RegisterEnum(OutputRes, res_1600x1200);
+RegisterEnum(OutputRes, res_1920x1080);
+EndEnumRegistration();
+///////////////////////////////////////////////////////////////////////////////
+BeginEnumRegistration(OutputResMult);
+RegisterEnum(OutputResMult, Quarter);
+RegisterEnum(OutputResMult, Half);
+RegisterEnum(OutputResMult, Full);
+RegisterEnum(OutputResMult, Double);
+RegisterEnum(OutputResMult, Quadruple);
+EndEnumRegistration();
+///////////////////////////////////////////////////////////////////////////////
+BeginEnumRegistration(OutputTimeStep);
+RegisterEnum(OutputTimeStep, RealTime);
+RegisterEnum(OutputTimeStep, fps15);
+RegisterEnum(OutputTimeStep, fps24);
+RegisterEnum(OutputTimeStep, fps30);
+RegisterEnum(OutputTimeStep, fps48);
+RegisterEnum(OutputTimeStep, fps60);
+RegisterEnum(OutputTimeStep, fps72);
+RegisterEnum(OutputTimeStep, fps96);
+RegisterEnum(OutputTimeStep, fps120);
+RegisterEnum(OutputTimeStep, fps240);
+EndEnumRegistration();
+///////////////////////////////////////////////////////////////////////////////
 void FileOutputCompositingNode::describeX(class_t* c) {
-  c->memberProperty("Layer", &FileOutputCompositingNode::_layername);
+  /*c->memberProperty("Layer", &FileOutputCompositingNode::_layername);
   c->memberProperty("OutputFrames", &FileOutputCompositingNode::mbOutputFrames);
   c->memberProperty("OutputResBase", &FileOutputCompositingNode::mOutputBaseResolution)
       ->annotate("editor.class", "ged.factory.enum");
-  c->memberProperty("OutputResMult", &FileOutputCompositingNode::mOutputResMult)->annotate("editor.class", "ged.factory.enum");
-  c->memberProperty("OutputFrameRate", &FileOutputCompositingNode::mOutputFrameRate)->annotate("editor.class", "ged.factory.enum");
+  c->memberProperty("OutputResMult", &FileOutputCompositingNode::mOutputResMult) //
+      ->annotate("editor.class", "ged.factory.enum");
+  c->memberProperty("OutputFrameRate", &FileOutputCompositingNode::mOutputFrameRate) //
+      ->annotate("editor.class", "ged.factory.enum");*/
 }
 ///////////////////////////////////////////////////////////////////////////////
 struct IMPL {
@@ -100,9 +102,9 @@ struct IMPL {
 ///////////////////////////////////////////////////////////////////////////////
 FileOutputCompositingNode::FileOutputCompositingNode()
     : mbOutputFrames(false)
-    , mOutputFrameRate(EOutputTimeStep_RealTime)
-    , mOutputBaseResolution(EOutputRes_1280x720)
-    , mOutputResMult(EOutputResMult_Full) {
+    , mOutputFrameRate(OutputTimeStep::RealTime)
+    , mOutputBaseResolution(OutputRes::res_1280x720)
+    , mOutputResMult(OutputResMult::Full) {
   _impl = std::make_shared<IMPL>(this);
 }
 FileOutputCompositingNode::~FileOutputCompositingNode() {
@@ -121,44 +123,44 @@ void FileOutputCompositingNode::composite(CompositorDrawData& drawdata) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-EOutputTimeStep FileOutputCompositingNode::currentFrameRateEnum() const {
+OutputTimeStep FileOutputCompositingNode::currentFrameRateEnum() const {
   return mOutputFrameRate;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 float FileOutputCompositingNode::currentFrameRate() const {
-  EOutputTimeStep time_step = currentFrameRateEnum();
-  float framerate           = 0.0f;
+  OutputTimeStep time_step = currentFrameRateEnum();
+  float framerate          = 0.0f;
   switch (time_step) {
-    case EOutputTimeStep_15fps:
+    case OutputTimeStep::fps15:
       framerate = 1.0f / 15.0f;
       break;
-    case EOutputTimeStep_24fps:
+    case OutputTimeStep::fps24:
       framerate = 24.0f;
       break;
-    case EOutputTimeStep_30fps:
+    case OutputTimeStep::fps30:
       framerate = 30.0f;
       break;
-    case EOutputTimeStep_48fps:
+    case OutputTimeStep::fps48:
       framerate = 48.0f;
       break;
-    case EOutputTimeStep_60fps:
+    case OutputTimeStep::fps60:
       framerate = 60.0f;
       break;
-    case EOutputTimeStep_72fps:
+    case OutputTimeStep::fps72:
       framerate = 72.0f;
       break;
-    case EOutputTimeStep_96fps:
+    case OutputTimeStep::fps96:
       framerate = 96.0f;
       break;
-    case EOutputTimeStep_120fps:
+    case OutputTimeStep::fps120:
       framerate = 120.0f;
       break;
-    case EOutputTimeStep_240fps:
+    case OutputTimeStep::fps240:
       framerate = 240.0f;
       break;
-    case EOutputTimeStep_RealTime:
+    case OutputTimeStep::RealTime:
     default:
       break;
   }

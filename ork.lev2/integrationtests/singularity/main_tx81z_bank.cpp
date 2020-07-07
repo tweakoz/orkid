@@ -24,23 +24,59 @@ int main(int argc, char** argv) {
     mainbus->setBusDSP(fxlayer);
   }
   ////////////////////////////////////////////////
+  // UI layout
+  ////////////////////////////////////////////////
+  auto toplayout = app->_hudvp->_layout;
+  auto guidehl   = toplayout->left();
+  auto guidehc   = toplayout->centerH();
+  auto guidehr   = toplayout->right();
+  auto guidevt   = toplayout->top();
+  auto guidev0   = toplayout->fixedHorizontalGuide(240);
+  auto guidev1   = toplayout->fixedHorizontalGuide(480);
+  auto guidehd   = toplayout->proportionalVerticalGuide(0.75);
+  auto guidevb   = toplayout->bottom();
+
+  ui::anchor::Bounds top_left, middle_left, bottom_left;
+  ui::anchor::Bounds top_right, middle_right, bottom_right;
+
+  top_left._top    = guidevt;
+  top_left._left   = guidehl;
+  top_left._bottom = guidev0;
+  top_left._right  = guidehd;
+
+  top_right._top    = guidevt;
+  top_right._left   = guidehd;
+  top_right._bottom = guidev0;
+  top_right._right  = guidehr;
+
+  middle_left._top    = guidev0;
+  middle_left._left   = guidehl;
+  middle_left._bottom = guidev1;
+  middle_left._right  = guidehc;
+
+  middle_right._top    = guidev0;
+  middle_right._left   = guidehc;
+  middle_right._bottom = guidev1;
+  middle_right._right  = guidehr;
+
+  bottom_left         = middle_left;
+  bottom_left._top    = guidev1;
+  bottom_left._bottom = guidevb;
+
+  bottom_right         = middle_right;
+  bottom_right._top    = guidev1;
+  bottom_right._bottom = guidevb;
+  ////////////////////////////////////////////////
   // create visualizers
   ////////////////////////////////////////////////
-  auto scope1    = create_oscilloscope(app->_hudvp, "layer");
-  auto scope2    = create_oscilloscope(app->_hudvp, "main-bus");
-  auto analyzer1 = create_spectrumanalyzer(app->_hudvp, "layer");
-  auto analyzer2 = create_spectrumanalyzer(app->_hudvp, "main-bus");
-  scope1->setRect(-10, 0, 480, 240, true);
-  scope2->setRect(-10, 480, 480, 240, true);
-  analyzer1->setRect(480, 0, 810, 240, true);
-  analyzer2->setRect(480, 480, 810, 240, true);
+  auto progview  = createProgramView(app->_hudvp, top_left, "program");
+  auto perfview  = createProfilerView(app->_hudvp, top_right, "profiler");
+  auto scope1    = create_oscilloscope(app->_hudvp, middle_left, "layer");
+  auto scope2    = create_oscilloscope(app->_hudvp, bottom_left, "main-bus");
+  auto analyzer1 = create_spectrumanalyzer(app->_hudvp, middle_right, "layer");
+  auto analyzer2 = create_spectrumanalyzer(app->_hudvp, bottom_right, "main-bus");
   bussource->connect(scope2->_sink);
   bussource->connect(analyzer2->_sink);
-  //////////////////////////////////////////////////////////////////////////////
-  auto progview = createProgramView(app->_hudvp, "program");
-  auto perfview = createProfilerView(app->_hudvp, "profiler");
-  progview->setRect(-10, 240, 890, 240, true);
-  perfview->setRect(900, 240, 1290 - 900, 240, true);
   //////////////////////////////////////////////////////////////////////////////
   auto basepath = basePath() / "tx81z";
   auto bank     = std::make_shared<Tx81zData>();

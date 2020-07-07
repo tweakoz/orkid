@@ -12,7 +12,7 @@
 
 #if 0 //defined(ORK_OSX)
 #include <ork/pch.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/rtti/downcast.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
@@ -26,7 +26,7 @@
 #include <pkg/ent/entity.hpp>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <pkg/ent/AudioAnalyzer.h>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/reflect/enum_serializer.inl>
 #include "CARingBuffer.h"
 #include "CAStreamBasicDescription.h"
@@ -665,7 +665,7 @@ void CAPlayThroughHost::addDeviceListeners(AudioDeviceID input)
 				propSize = sizeof(UInt32);
 				err = AudioStreamGetProperty(streams[i], 0, kAudioStreamPropertyDirection, &propSize, &isInput);
 				if(!err && isInput)
-					err = AudioStreamAddPropertyListener(streams[i], 0, kAudioStreamPropertyPhysicalFormat, StreamListener, this);
+					err = AudioStreamaddPropertyListener(streams[i], 0, kAudioStreamPropertyPhysicalFormat, StreamListener, this);
 			}
 		}
 	}

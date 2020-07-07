@@ -12,7 +12,7 @@
 
 #if 0 //defined(ORK_OSX)
 #include <ork/pch.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/rtti/downcast.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
@@ -26,7 +26,7 @@
 #include <pkg/ent/entity.hpp>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <pkg/ent/AudioAnalyzer.h>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/reflect/enum_serializer.inl>
 ///////////////////////////////////////////////////////////////////////////////
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioAnalysisSystemData, "AudioAnalysisSystemData");
@@ -362,9 +362,9 @@ void EnumerateMidiDevices()
 	{
 		MIDIDeviceRef dev = MIDIGetExternalDevice(i);
 
-		MIDIObjectGetStringProperty(dev, kMIDIPropertyName, &pname);
-		MIDIObjectGetStringProperty(dev, kMIDIPropertyManufacturer, &pmanuf);
-		MIDIObjectGetStringProperty(dev, kMIDIPropertyModel, &pmodel);
+		MIDIObjectGetStringProperty(dev, kMIDAbstractPropertyName, &pname);
+		MIDIObjectGetStringProperty(dev, kMIDAbstractPropertyManufacturer, &pmanuf);
+		MIDIObjectGetStringProperty(dev, kMIDAbstractPropertyModel, &pmodel);
 		CFStringGetCString(pname, name, sizeof(name), 0);
 		CFStringGetCString(pmanuf, manuf, sizeof(manuf), 0);
 		CFStringGetCString(pmodel, model, sizeof(model), 0);

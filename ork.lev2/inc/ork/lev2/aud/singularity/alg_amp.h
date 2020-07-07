@@ -7,7 +7,7 @@ namespace ork::audio::singularity {
 // amp blocks
 ///////////////////////////////////////////////////////////////////////////////
 struct AMP_MONOIO_DATA : public DspBlockData {
-  AMP_MONOIO_DATA();
+  AMP_MONOIO_DATA(std::string name);
   dspblk_ptr_t createInstance() const override;
 };
 struct AMP_MONOIO : public DspBlock {

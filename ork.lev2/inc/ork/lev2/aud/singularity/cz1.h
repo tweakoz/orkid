@@ -66,7 +66,7 @@ algdata_ptr_t configureCz1Algorithm(lyrdata_ptr_t ldat, int numosc);
 
 ///////////////////////////////////////////////////////////////////////////////
 struct CZXDATA final : public DspBlockData {
-  CZXDATA(czxdata_constptr_t czdata, int dcochannel);
+  CZXDATA(std::string name, czxdata_constptr_t czdata, int dcochannel);
   dspblk_ptr_t createInstance() const override;
   czxdata_constptr_t _cxzdata;
   int _dcochannel;

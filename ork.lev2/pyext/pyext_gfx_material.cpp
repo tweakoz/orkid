@@ -132,7 +132,10 @@ void pyinit_gfx_material(py::module& module_lev2) {
                 m->_rasterstate.SetCullTest(ECULLTEST_OFF);
               })
           .def_property_readonly(
-              "shader", [](const freestyle_mtl_ptr_t m) -> pyfxshader_ptr_t { return pyfxshader_ptr_t(m->_shader); })
+              "shader",
+              [](const freestyle_mtl_ptr_t m) -> fxshaderasset_ptr_t { //
+                return fxshaderasset_ptr_t(m->_shaderasset);
+              })
           .def("param", [](freestyle_mtl_ptr_t m, std::string name) -> pyfxparam_ptr_t { return pyfxparam_ptr_t(m->param(name)); })
           .def("bindParamFloat", [](freestyle_mtl_ptr_t m, pyfxparam_ptr_t& p, float value) { m->bindParamFloat(p.get(), value); })
           .def(

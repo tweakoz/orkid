@@ -84,7 +84,7 @@ struct DeferredContext {
   void endSpotDecaling(CompositorDrawData& drawdata, const ViewData& VD);
   ////////////////////////////////////////////////////////////////////
   void bindViewParams(const ViewData& VD);
-  void bindRasterState(Context* ctx, ECullTest culltest, EDepthTest depthtest, EBlending blending);
+  void bindRasterState(Context* ctx, ECullTest culltest, EDepthTest depthtest, Blending blending);
   ////////////////////////////////////////////////////////////////////
   RenderCompositingNode* _node;
   FreestyleMaterial _lightingmtl;
@@ -94,11 +94,12 @@ struct DeferredContext {
   std::string _shadername;
   lev2::Texture* brdfIntegrationTexture() const;
   ////////////////////////////////////////////////////////////////////
-  int _width                   = 0;
-  int _height                  = 0;
-  int _clusterW                = 0;
-  int _clusterH                = 0;
-  lev2::Texture* _whiteTexture = nullptr;
+  int _width    = 0;
+  int _height   = 0;
+  int _clusterW = 0;
+  int _clusterH = 0;
+
+  textureassetptr_t _whiteTexture;
   ////////////////////////////////////////////////////////////////////
   std::vector<PointLight*> _pointlights;
 
@@ -248,12 +249,12 @@ public:
 
   void doGpuInit(lev2::Context* pTARG, int w, int h) final;
   void DoRender(CompositorDrawData& drawdata) final;
-  void _readEnvTexture(ork::rtti::ICastable*& tex) const;
-  void _writeEnvTexture(ork::rtti::ICastable* const& tex);
+  void _readEnvTexture(asset::asset_ptr_t& tex) const;
+  void _writeEnvTexture(asset::asset_ptr_t const& tex);
 
   void setEnvTexturePath(file::Path path);
 
-  lev2::TextureAsset* _environmentTextureAsset = nullptr;
+  asset::asset_ptr_t _environmentTextureAsset;
 
   lev2::RtBuffer* GetOutput() const final;
   lev2::RtGroup* GetOutputGroup() const final;
@@ -272,7 +273,7 @@ public:
   lev2::Texture* _filtenvDiffuseMap  = nullptr;
   fvec4 _clearColor;
 
-  varmap::VarMap _texAssetVarMap;
+  asset::vars_ptr_t _texAssetVarMap;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -58,8 +58,9 @@ target_include_directories (ork_tool PRIVATE ${Python_INCLUDE_DIRS} )
 
 set( libs ork_core ork_tuio ork_lev2 ork_ecs ork_fcollada ork_utpp python3.8d )
 list(APPEND libs OpenImageIO OpenImageIO_Util portaudio )
-
 list(APPEND libs Qt5::Widgets Qt5::Core Qt5::Gui)
+list(APPEND libs boost_system )
+
 IF(${APPLE})
     target_include_directories (ork_tool PRIVATE /usr/local/include)
     list(APPEND libs m pthread )

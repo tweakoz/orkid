@@ -16,7 +16,6 @@
 namespace ork::ent {
 
 class SimulationEvent : public ork::event::Event {
-  RttiDeclareAbstract(SimulationEvent, ork::event::Event);
 
 public:
   enum ESIEvent {

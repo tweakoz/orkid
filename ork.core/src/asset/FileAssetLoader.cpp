@@ -19,7 +19,7 @@
 #include <ork/file/path.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace asset {
+namespace ork::asset {
 ///////////////////////////////////////////////////////////////////////////////
 
 std::set<file::Path> FileAssetLoader::EnumerateExisting() {
@@ -59,13 +59,13 @@ std::set<file::Path> FileAssetLoader::EnumerateExisting() {
   return rval;
 }
 
-void FileAssetLoader::AddLocation(filedevctx_constptr_t b, file_ext_t e) {
+void FileAssetLoader::addLocation(filedevctx_constptr_t b, file_ext_t e) {
   OrkAssert(b);
   FileSet fset;
   fset.mExt      = e;
   fset.mPathBase = b;
   mLocations.push_back(fset);
-  if (0) {
+  if (1) {
     auto loc = b->getFilesystemBaseAbs().c_str();
     printf(
         "FileAssetLoader<%p> added set ext<%s> base<%s>\n", //
@@ -77,7 +77,10 @@ void FileAssetLoader::AddLocation(filedevctx_constptr_t b, file_ext_t e) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool FileAssetLoader::FindAsset(const PieceString& name, MutableString result, int first_extension) {
+bool FileAssetLoader::_find(
+    const AssetPath& name, //
+    AssetPath& result_out,
+    int first_extension) {
   //////////////////////////////////////////
   // do we already have an extension
   //////////////////////////////////////////
@@ -148,7 +151,7 @@ bool FileAssetLoader::FindAsset(const PieceString& name, MutableString result, i
     if (has_valid_extension) // path already have an extension ?
     {
       if (FileEnv::DoesFileExist(MungedPath)) {
-        result = MungedPath.c_str();
+        result_out = MungedPath.c_str();
         return true;
       }
     } else // no extension test the registered extensions
@@ -161,7 +164,7 @@ bool FileAssetLoader::FindAsset(const PieceString& name, MutableString result, i
         if (FileEnv::DoesFileExist(MungedPath)) {
           // pathobj.SetExtension( extension.c_str() );
 
-          result = MungedPath.c_str();
+          result_out = MungedPath.c_str();
           return true;
         }
       }
@@ -173,13 +176,12 @@ bool FileAssetLoader::FindAsset(const PieceString& name, MutableString result, i
   // try the original path
   //////////////////////////////////////////
 
-  PieceString thename = name;
+  AssetPath thename = name;
 
   if (has_valid_extension) {
     printf("TESTPTH3<%s>\n", pathobjnoq.c_str());
     if (FileEnv::DoesFileExist(pathobjnoq)) {
-      ork::PieceString ps(pathobjnoq.c_str());
-      result = ps;
+      result_out = pathobjnoq.c_str();
       printf("PTH3<%s>\n", pathobjnoq.c_str());
       return true;
     }
@@ -189,7 +191,7 @@ bool FileAssetLoader::FindAsset(const PieceString& name, MutableString result, i
       bool exists = FileEnv::DoesFileExist(pathobjnoq);
       printf("TESTPTH4<%s> exists<%d>\n", pathobjnoq.c_str(), int(exists));
       if (exists) {
-        result = pathobjnoq.c_str();
+        result_out = pathobjnoq.c_str();
         printf("PTH4<%s>\n", pathobjnoq.c_str());
         return true;
       }
@@ -202,47 +204,32 @@ bool FileAssetLoader::FindAsset(const PieceString& name, MutableString result, i
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool FileAssetLoader::CheckAsset(const PieceString& name) {
-  ArrayString<0> null_result;
-
-  return FindAsset(name, null_result);
+bool FileAssetLoader::doesExist(const AssetPath& name) {
+  AssetPath null_result;
+  return _find(name, null_result);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool FileAssetLoader::LoadAsset(asset_ptr_t asset) {
-  float ftime1 = ork::OldSchool::GetRef().GetLoResRelTime();
-  ArrayString<256> asset_name;
+bool FileAssetLoader::resolvePath(
+    const AssetPath& name,      //
+    AssetPath& resolved_path) { // override
+  return _find(name, resolved_path);
+}
 
+///////////////////////////////////////////////////////////////////////////////
+
+asset_ptr_t FileAssetLoader::load(const AssetPath& assetinppath, vars_constptr_t vars) {
+  AssetPath resolved_path;
   ///////////////////////////////////////////////////////////////////////////////
-  if (false == FindAsset(asset->GetName(), asset_name)) {
-    printf("Error Loading File Asset %s\n", asset->GetName().c_str());
-#if defined(ORKCONFIG_ASSET_UNLOAD)
-    return false;
-#else
-    OrkAssertI(false, "Can't file asset second-time around");
-#endif
+  if (false == _find(assetinppath, resolved_path)) {
+    printf("Error Loading File Asset %s\n", assetinppath.c_str());
+    return nullptr;
   }
-
-  bool out     = LoadFileAsset(asset, asset_name);
-  float ftime2 = ork::OldSchool::GetRef().GetLoResRelTime();
-
-  static float ftotaltime = 0.0f;
-  static int iltotaltime  = 0;
-
-  ftotaltime += (ftime2 - ftime1);
-
-  int itotaltime = int(ftotaltime);
-
-  // if( itotaltime > iltotaltime )
-  {
-    std::string outstr = ork::CreateFormattedString("FILEAsset AccumTime<%f>\n", ftotaltime);
-    ////OutputDebugString( outstr.c_str() );
-    iltotaltime = itotaltime;
-  }
-  return out;
+  auto asset = _doLoadAsset(resolved_path, vars);
+  return asset;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-}} // namespace ork::asset
+} // namespace ork::asset
 ///////////////////////////////////////////////////////////////////////////////

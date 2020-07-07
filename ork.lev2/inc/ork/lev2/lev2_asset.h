@@ -25,33 +25,30 @@ namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 class TextureAsset : public ork::asset::Asset {
-  RttiDeclareConcrete(TextureAsset, ork::asset::Asset);
+  DeclareConcreteX(TextureAsset, ork::asset::Asset);
 
-  static const char* GetAssetTypeNameStatic(void) {
+  static const char* assetTypeNameStatic(void) {
     return "lev2tex";
   }
-
-  ork::atomic<Texture*> mData;
 
 public: //
   TextureAsset();
   ~TextureAsset() override;
 
   Texture* GetTexture() const {
-    return mData;
+    return _texture;
   }
   void SetTexture(Texture* pt);
+  ork::atomic<Texture*> _texture;
 };
-
-typedef TextureAsset* textureassetptr_t; // prep for shared_ptr
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct XgmModelAsset : public ork::asset::Asset {
-  RttiDeclareConcrete(XgmModelAsset, ork::asset::Asset);
+  DeclareConcreteX(XgmModelAsset, ork::asset::Asset);
 
 public:
-  static const char* GetAssetTypeNameStatic(void) {
+  static const char* assetTypeNameStatic(void) {
     return "xgmodel";
   }
 
@@ -74,13 +71,11 @@ public:
   LockedResource<model_ptr_t> _model;
 };
 
-typedef XgmModelAsset* xgmmodelassetptr_t; // prep for shared_ptr
-
 ///////////////////////////////////////////////////////////////////////////////
 
 class XgmAnimAsset : public ork::asset::Asset {
-  RttiDeclareConcrete(XgmAnimAsset, ork::asset::Asset);
-  static const char* GetAssetTypeNameStatic(void) {
+  DeclareConcreteX(XgmAnimAsset, ork::asset::Asset);
+  static const char* assetTypeNameStatic(void) {
     return "xganim";
   }
   XgmAnim mData;
@@ -91,24 +86,22 @@ public: //
   }
 };
 
-typedef XgmAnimAsset* xgmanimassetptr_t; // prep for shared_ptr
-
 ///////////////////////////////////////////////////////////////////////////////
 
 class FxShaderAsset : public ork::asset::Asset {
-  RttiDeclareConcrete(FxShaderAsset, ork::asset::Asset);
-  static const char* GetAssetTypeNameStatic(void) {
+  DeclareConcreteX(FxShaderAsset, ork::asset::Asset);
+  static const char* assetTypeNameStatic(void) {
     return "fxshader";
   }
-  FxShader mData;
 
 public: //
-  FxShader* GetFxShader() {
-    return &mData;
+  FxShaderAsset();
+  ~FxShaderAsset();
+  FxShader* GetFxShader() const {
+    return _shader;
   }
+  FxShader* _shader;
 };
-
-typedef FxShaderAsset* fxshaderassetptr_t; // prep for shared_ptr
 
 ///////////////////////////////////////////////////////////////////////////////
 void autoloadAssets(bool wait);

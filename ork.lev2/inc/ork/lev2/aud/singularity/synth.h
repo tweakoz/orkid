@@ -70,6 +70,7 @@ struct OutputBus {
   lyrdata_ptr_t _dsplayerdata;
   Layer* _dsplayer = nullptr;
   scopesource_ptr_t _scopesource;
+  std::string _fxname;
 
   /////////////////////////
 };
@@ -112,6 +113,11 @@ struct synth {
   void _tick(eventmap_t& emap, float dt);
   float _timeaccum;
 
+  void nextEffect(); // temporary
+
+  fxpresetmap_t _fxpresets;
+  fxpresetmap_t::iterator _fxcurpreset;
+
   std::map<std::string, outbus_ptr_t> _outputBusses;
   std::vector<onkey_t> _onkey_subscribers;
   onprofframe_t _onprofilerframe = nullptr;
@@ -142,6 +148,7 @@ struct synth {
 
   prgdata_constptr_t _globalprog;
   bankdata_ptr_t _globalbank;
+
   std::map<int, prgdata_ptr_t>::iterator _globalprgit;
   void nextProgram();
   void prevProgram();
@@ -156,10 +163,6 @@ struct synth {
   float _testtoneampps;
   int _hudpage;
   int _genmode                  = 0;
-  float _ostriglev              = 0;
-  bool _ostrigdir               = false;
-  int _osgainmode               = 3; // auto
-  int64_t _oswidth              = 0;
   bool _bypassDSP               = false;
   bool _doModWheel              = false;
   bool _doPressure              = false;

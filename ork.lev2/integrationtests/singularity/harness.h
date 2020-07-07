@@ -11,6 +11,7 @@
 #include <ork/lev2/aud/singularity/krzobjects.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/material_freestyle.h>
+#include <ork/lev2/ui/context.h>
 #include <ork/kernel/timer.h>
 
 using namespace std::string_literals;
@@ -22,6 +23,23 @@ namespace ork::lev2 {
 void startupAudio();
 void tearDownAudio();
 } // namespace ork::lev2
+
+struct MidiContext;
+using midicontext_ptr_t = std::shared_ptr<MidiContext>;
+
+struct MidiContext {
+
+  static midicontext_ptr_t instance();
+
+  using midiinputmap_t = std::map<std::string, int>;
+  MidiContext();
+  ~MidiContext();
+  midiinputmap_t enumerateMidiInputs();
+  void startMidiInputByName(std::string named);
+  void startMidiInputByIndex(int inputid);
+  svar128_t _impl;
+  midiinputmap_t _portmap;
+};
 
 struct SingularityTestApp final : public OrkEzQtApp {
   SingularityTestApp(int& argc, char** argv);

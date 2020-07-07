@@ -52,10 +52,10 @@ template <typename VPTYPE> void UIToolHandler<VPTYPE>::SetBaseIconName(std::stri
 
 template <typename VPTYPE> void UIToolHandler<VPTYPE>::LoadToolIcon() {
   if (0 == mpBaseIcon) {
-    auto texasset = asset::AssetManager<ork::lev2::TextureAsset>::Load(mBaseIconName.c_str());
+    auto texasset = asset::AssetManager<ork::lev2::TextureAsset>::load(mBaseIconName.c_str());
     mpBaseIcon    = (texasset == nullptr) ? nullptr : texasset->GetTexture();
     for (auto subicon_name : mpSubIconNameVector) {
-      texasset = asset::AssetManager<ork::lev2::TextureAsset>::Load(subicon_name.c_str());
+      texasset = asset::AssetManager<ork::lev2::TextureAsset>::load(subicon_name.c_str());
       if (texasset)
         mpSubIconVector.push_back(texasset->GetTexture());
     }
@@ -74,7 +74,7 @@ template <typename VPTYPE> void UIToolHandler<VPTYPE>::DrawToolIcon(lev2::Contex
           new lev2::GfxMaterialUITextured(pTARG);
       texmaterial->_rasterstate.SetDepthTest(lev2::EDEPTHTEST_OFF);
       texmaterial->SetTexture(lev2::ETEXDEST_DIFFUSE, mpBaseIcon);
-      texmaterial->_rasterstate.SetBlending(lev2::EBLENDING_OFF);
+      texmaterial->_rasterstate.SetBlending(lev2::Blending::OFF);
       texmaterial->_rasterstate.SetAlphaTest(lev2::EALPHATEST_OFF, 0.0f);
       texmaterial->_rasterstate.SetDepthTest(lev2::EDEPTHTEST_ALWAYS);
       mpBaseIcon->_varmap.makeValueForKey<lev2::GfxMaterialUITextured*>("iconmtl") = texmaterial;
@@ -124,14 +124,14 @@ template <typename VPTYPE> void UIToolHandler<VPTYPE>::DrawToolIcon(lev2::Contex
       ////////////////////////////////
       if (bhilite) {
         UiMat.SetTexture(lev2::ETEXDEST_DIFFUSE, 0);
-        UiMat._rasterstate.SetBlending(lev2::EBLENDING_OFF);
+        UiMat._rasterstate.SetBlending(lev2::Blending::OFF);
         pTARG->PushModColor(fcolor4::Green());
-        pTARG->GBI()->DrawPrimitive(&UiMat, vb, lev2::EPrimitiveType::TRIANGLES, ibase, 6);
+        pTARG->GBI()->DrawPrimitive(&UiMat, vb, lev2::PrimitiveType::TRIANGLES, ibase, 6);
         pTARG->PopModColor();
       }
       ////////////////////////////////
       pTARG->PushModColor(fcolor4::White());
-      pTARG->GBI()->DrawPrimitive(texmaterial, vb, lev2::EPrimitiveType::TRIANGLES, bhilite ? ibase + 6 : ibase, 6);
+      pTARG->GBI()->DrawPrimitive(texmaterial, vb, lev2::PrimitiveType::TRIANGLES, bhilite ? ibase + 6 : ibase, 6);
       pTARG->PopModColor();
     }
     pTARG->MTXI()->PopUIMatrix();

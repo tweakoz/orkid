@@ -16,11 +16,11 @@
 namespace ork { namespace asset {
 ///////////////////////////////////////////////////////////////////////////////
 
-util::dependency::Provider *GetAssetLoadProvider(const Asset *asset)
+util::dependency::Provider *assetLoadProvider(const Asset *asset)
 {
 	if(asset)
 	{
-		AssetSetEntry *entry = GetAssetSetEntry(asset);
+		AssetSetEntry *entry = assetSetEntry(asset);
 		return entry->GetLoadProvider();
 	}
 	else

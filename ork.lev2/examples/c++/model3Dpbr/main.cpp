@@ -68,10 +68,11 @@ int main(int argc, char** argv, char** argp) {
   // gpuInit handler, called once on main(rendering) thread
   //  at startup time
   //////////////////////////////////////////////////////////
+  lev2::xgmmodelassetptr_t modelasset; // retain model
   qtapp->onGpuInit([&](Context* ctx) {
     // ctx->debugPushGroup("main.onGpuInit");
-    auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://tests/pbr1/pbr1");
-    model           = modl_asset->GetModel();
+    modelasset = asset::AssetManager<XgmModelAsset>::load("data://tests/pbr1/pbr1");
+    model      = modelasset->GetModel();
     renderer.setContext(ctx);
 
     for (int i = 0; i < 30; i++) {

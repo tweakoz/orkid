@@ -11,10 +11,10 @@
 #include <orktool/ged/ged_delegate.h>
 #include <orktool/ged/ged_io.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/reflect/IProperty.h>
-#include <ork/reflect/IObjectProperty.h>
-#include <ork/reflect/IObjectPropertyObject.h>
-#include <ork/reflect/IObjectPropertyType.h>
+
+#include <ork/reflect/properties/ObjectProperty.h>
+#include <ork/reflect/properties/IObject.h>
+#include <ork/reflect/properties/ITyped.h>
 #include "ged_delegate.hpp"
 #include <ork/math/gradient.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
@@ -32,7 +32,7 @@ class GedGradientEditPoint : public GedObject {
   RttiDeclareAbstract(GedGradientEditPoint, GedObject);
 
   ork::Gradient<ork::fvec4>* mGradientObject;
-  GedItemNode* mParent;
+  GedItemNode* _parent;
   int miPoint;
 
 public:
@@ -42,7 +42,7 @@ public:
 
   GedGradientEditPoint()
       : mGradientObject(0)
-      , mParent(0)
+      , _parent(0)
       , miPoint(-1) {
   }
 
@@ -50,7 +50,7 @@ public:
     mGradientObject = pgrad;
   }
   void SetParent(GedItemNode* ppar) {
-    mParent = ppar;
+    _parent = ppar;
   }
 
   void OnUiEvent(ork::ui::event_constptr_t ev) final {
@@ -58,21 +58,21 @@ public:
 
     switch (filtev._eventcode) {
       case ui::EventCode::DRAG: {
-        if (mParent && mGradientObject) {
+        if (_parent && mGradientObject) {
           orklut<float, ork::fvec4>& data = mGradientObject->Data();
           const int knumpoints            = (int)data.size();
           const int ksegs                 = knumpoints - 1;
 
           if (miPoint > 0 && miPoint < (knumpoints - 1)) {
-            int mousepos = ev->miX - mParent->GetX();
-            float fx     = float(mousepos) / float(mParent->width());
+            int mousepos = ev->miX - _parent->GetX();
+            float fx     = float(mousepos) / float(_parent->width());
 
             orklut<float, ork::fvec4>::iterator it  = data.begin() + miPoint;
             orklut<float, ork::fvec4>::iterator itp = it - 1;
             orklut<float, ork::fvec4>::iterator itn = it + 1;
 
             if (fx > 0.0f && fx < 1.0f) {
-              const float kfbound = float(kpntsize) / mParent->width();
+              const float kfbound = float(kpntsize) / _parent->width();
               if (itp != data.end()) {
                 if (fx < (itp->first + kfbound)) {
                   fx = (itp->first + kfbound);
@@ -94,7 +94,7 @@ public:
       }
       case ui::EventCode::DOUBLECLICK: {
 
-        if (mParent && mGradientObject) {
+        if (_parent && mGradientObject) {
           orklut<float, ork::fvec4>& data = mGradientObject->Data();
 
           bool is_left  = filtev.mBut0;
@@ -141,7 +141,7 @@ class GedGradientEditSeg : public GedObject {
   RttiDeclareAbstract(GedGradientEditSeg, GedObject);
 
   ork::Gradient<ork::fvec4>* mGradientObject;
-  GedItemNode* mParent;
+  GedItemNode* _parent;
   int miSeg;
 
 public:
@@ -150,8 +150,8 @@ public:
 
     switch (filtev._eventcode) {
       case ui::EventCode::DOUBLECLICK: {
-        // printf( "GradSplit par<%p> go<%p>\n", mParent, mGradientObject );
-        if (mParent && mGradientObject) {
+        // printf( "GradSplit par<%p> go<%p>\n", _parent, mGradientObject );
+        if (_parent && mGradientObject) {
           orklut<float, ork::fvec4>& data = mGradientObject->Data();
           bool bok                        = false;
 
@@ -174,7 +174,7 @@ public:
 
   GedGradientEditSeg()
       : mGradientObject(0)
-      , mParent(0)
+      , _parent(0)
       , miSeg(-1) {
   }
 
@@ -182,7 +182,7 @@ public:
     mGradientObject = pgrad;
   }
   void SetParent(GedItemNode* ppar) {
-    mParent = ppar;
+    _parent = ppar;
   }
 };
 
@@ -207,7 +207,7 @@ class GedGradientV4Widget : public GedItemNode {
     GedSkin::GedPrim prim;
     prim.mDrawCB = GradientCustomPrim;
     prim.mpNode  = this;
-    prim.meType  = ork::lev2::EPrimitiveType::MULTI;
+    prim.meType  = ork::lev2::PrimitiveType::MULTI;
     prim.iy1     = miY;
     prim.iy2     = miY + kh;
     GetSkin()->AddPrim(prim);
@@ -289,7 +289,7 @@ class GedGradientV4Widget : public GedItemNode {
       material.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR);
       material._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
       material._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
-      material._rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+      material._rasterstate.SetBlending(ork::lev2::Blending::OFF);
       material._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
       material._rasterstate.SetShadeModel(ork::lev2::ESHADEMODEL_SMOOTH);
 
@@ -348,7 +348,7 @@ class GedGradientV4Widget : public GedItemNode {
       pTARG->MTXI()->PushVMatrix(fmtx4::Identity());
       pTARG->MTXI()->PushMMatrix(fmtx4::Identity());
       pTARG->PushModColor(fvec3::White());
-      pTARG->GBI()->DrawPrimitive(&material, vw, ork::lev2::EPrimitiveType::TRIANGLES);
+      pTARG->GBI()->DrawPrimitive(&material, vw, ork::lev2::PrimitiveType::TRIANGLES);
       pTARG->PopModColor();
       pTARG->MTXI()->PopPMatrix();
       pTARG->MTXI()->PopVMatrix();
@@ -365,14 +365,14 @@ class GedGradientV4Widget : public GedItemNode {
   } // virtual
 
 public:
-  GedGradientV4Widget(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj)
+  GedGradientV4Widget(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj)
       : GedItemNode(mdl, name, prop, obj)
       , mGradientObject(0)
-      , mVertexBuffer(256, 0, ork::lev2::EPrimitiveType::TRIANGLES)
+      , mVertexBuffer(256, 0, ork::lev2::PrimitiveType::TRIANGLES)
       , mEditPoints(kpoolsize)
       , mEditSegs(kpoolsize) {
     if (prop) {
-      const reflect::IObjectPropertyObject* pprop = rtti::autocast(GetOrkProp());
+      const reflect::IObject* pprop = rtti::autocast(GetOrkProp());
       mGradientObject                             = rtti::autocast(pprop->Access(GetOrkObj()));
     } else {
       mGradientObject = rtti::autocast(obj);
@@ -388,7 +388,7 @@ void GedFactoryGradient::Describe() {
 }
 
 GedItemNode*
-GedFactoryGradient::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::IObjectProperty* prop, Object* obj)
+GedFactoryGradient::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::ObjectProperty* prop, Object* obj)
     const {
   GedItemNode* groupnode = new GedLabelNode(mdl, Name.c_str(), prop, obj);
 

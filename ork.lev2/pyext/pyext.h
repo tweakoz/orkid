@@ -5,7 +5,7 @@
 #include <ork/kernel/fixedstring.hpp>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/application/application.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/object/Object.h>
 #include <ork/file/fileenv.h>
 #include <ork/file/filedevcontext.h>
@@ -20,6 +20,7 @@
 #include <ork/kernel/opq.h>
 #include <ork/lev2/ezapp.h>
 #include <ork/lev2/ui/event.h>
+#include <ork/lev2/lev2_types.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace py = pybind11;
@@ -42,7 +43,6 @@ using rtb_t               = ork::python::unmanaged_ptr<RtBuffer>;
 using rtg_t               = ork::python::unmanaged_ptr<RtGroup>;
 using font_t              = ork::python::unmanaged_ptr<Font>;
 using capbuf_t            = ork::python::unmanaged_ptr<CaptureBuffer>;
-using pyfxshader_ptr_t    = ork::python::unmanaged_ptr<const FxShader>;
 using pyfxparam_ptr_t     = ork::python::unmanaged_ptr<const FxShaderParam>;
 using pyfxtechnique_ptr_t = ork::python::unmanaged_ptr<const FxShaderTechnique>;
 using fxparammap_t        = std::map<std::string, pyfxparam_ptr_t>;

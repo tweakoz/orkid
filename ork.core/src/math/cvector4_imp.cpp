@@ -9,10 +9,6 @@
 #include <ork/math/cvector4.h>
 #include <ork/math/cvector4.hpp>
 #include <ork/math/matrix_inverseGEMS.hpp>
-#include <ork/kernel/prop.h>
-#include <ork/kernel/prop.hpp>
-#include <ork/reflect/Serialize.h>
-#include <ork/reflect/BidirectionalSerializer.h>
 
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
@@ -71,33 +67,6 @@ template class Vector4<float>;  // explicit template instantiation
 template class Vector4<double>; // explicit template instantiation
 template class PropType<fvec4>;
 
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
-namespace reflect {
-
-template <> void Serialize(const fvec4* in, fvec4* out, reflect::BidirectionalSerializer& bidi) {
-  if (bidi.Serializing()) {
-    bidi.Serializer()->Hint("fvec4");
-    for (int i = 0; i < 4; i++) {
-      bidi | in->GetArray()[i];
-    }
-  } else {
-    for (int i = 0; i < 4; i++) {
-      bidi | out->GetArray()[i];
-    }
-  }
-}
-
-template <> void Serialize(const orkmap<float, fvec4>* in, orkmap<float, fvec4>* out, reflect::BidirectionalSerializer& bidi) {
-  if (bidi.Serializing()) {
-  } else {
-  }
-}
-} // namespace reflect
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 } // namespace ork

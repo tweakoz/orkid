@@ -6,6 +6,9 @@
 
 namespace ork::ui {
 
+using evrouter_t  = std::function<Widget*(event_constptr_t ev)>;
+using evhandler_t = std::function<HandlerResult(event_constptr_t ev)>;
+
 struct IWidgetEventFilter {
   IWidgetEventFilter(Widget& w);
   void Filter(event_constptr_t Ev);
@@ -44,7 +47,7 @@ struct NopEventFilter : public IWidgetEventFilter {
 };
 
 struct Widget : public ork::Object {
-  RttiDeclareAbstract(Widget, ork::Object);
+  DeclareAbstractX(Widget, ork::Object);
 
   friend struct Group;
 
@@ -69,14 +72,14 @@ public:
   }
 
   const std::string& GetName(void) const {
-    return msName;
+    return _name;
   }
   void SetName(const std::string& name) {
-    msName = name;
+    _name = name;
   }
 
   lev2::Context* GetTarget(void) const {
-    return mpTarget;
+    return _target;
   }
 
   int x(void) const {
@@ -131,16 +134,6 @@ public:
   void ExtDraw(lev2::Context* pTARG);
   virtual void Draw(ui::drawevent_constptr_t drwev);
 
-  void GotKeyboardFocus(void) {
-    mbKeyboardFocus = true;
-  }
-  void LostKeyboardFocus(void) {
-    mbKeyboardFocus = false;
-  }
-  bool HasKeyboardFocus(void) const {
-    return mbKeyboardFocus;
-  }
-
   bool IsKeyDepressed(int ch);
   bool IsHotKeyDepressed(const char* pact);
   bool IsHotKeyDepressed(const HotKey& hk);
@@ -151,10 +144,10 @@ public:
 
   void SetDirty();
   bool IsDirty() const {
-    return mDirty;
+    return _dirty;
   }
   Group* parent() const {
-    return mParent;
+    return _parent;
   }
   Group* root() const;
 
@@ -165,7 +158,7 @@ public:
 
   bool hasMouseFocus() const;
   void SetParent(Group* p) {
-    mParent = p;
+    _parent = p;
   }
 
   Widget* routeUiEvent(event_constptr_t Ev);
@@ -180,21 +173,22 @@ public:
   }
   void setGeometry(Rect geo);
 
-  Context* _uicontext = nullptr;
-
-protected:
-  bool mbInit;
-  bool mbKeyboardFocus;
+  bool _needsinit = true;
+  std::string _name;
+  drawevent_constptr_t _drawEvent;
+  bool _dirty     = true;
+  bool mSizeDirty = true;
+  bool mPosDirty  = true;
   Rect _geometry;
   Rect _prevGeometry;
-  std::string msName;
-  lev2::Context* mpTarget;
-  drawevent_constptr_t _drawEvent;
-  bool mDirty;
-  bool mSizeDirty;
-  bool mPosDirty;
-  Group* mParent;
+  Group* _parent         = nullptr;
+  lev2::Context* _target = nullptr;
+  Context* _uicontext    = nullptr;
   std::stack<eventfilter_ptr_t> _eventfilterstack;
+  evrouter_t _evrouter   = nullptr;
+  evhandler_t _evhandler = nullptr;
+
+  virtual Widget* doRouteUiEvent(event_constptr_t Ev);
 
 private:
   friend struct ui::Context;
@@ -205,7 +199,6 @@ private:
   void ReLayout();
   virtual void DoLayout() {
   }
-  virtual Widget* doRouteUiEvent(event_constptr_t Ev);
 };
 
 } // namespace ork::ui

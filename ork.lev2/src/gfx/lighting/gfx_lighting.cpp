@@ -14,14 +14,15 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <ork/math/collision_test.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/DirectTyped.hpp>
+#include <ork/reflect/properties/registerX.inl>
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::LightManagerData, "LightManagerData");
+ImplementReflectionX(ork::lev2::LightManagerData, "LightManagerData");
 ImplementReflectionX(ork::lev2::LightData, "LightData");
 ImplementReflectionX(ork::lev2::PointLightData, "PointLightData");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::DirectionalLightData, "DirectionalLightData");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::AmbientLightData, "AmbientLightData");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::SpotLightData, "SpotLightData");
+ImplementReflectionX(ork::lev2::DirectionalLightData, "DirectionalLightData");
+ImplementReflectionX(ork::lev2::AmbientLightData, "AmbientLightData");
+ImplementReflectionX(ork::lev2::SpotLightData, "SpotLightData");
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -59,26 +60,25 @@ void LightData::describeX(class_t* c) {
       ->annotate<ConstString>("editor.range.min", "1")
       ->annotate<ConstString>("editor.range.max", "16");
 
-  c->accessorProperty("Cookie", &LightData::_readCookie, &LightData::_writeCookie)
+  c->memberProperty(
+       "Cookie",
+       &LightData::_cookie) //
       ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
       ->annotate<ConstString>("editor.assettype", "lev2tex")
       ->annotate<ConstString>("editor.assetclass", "lev2tex");
 }
 
-void LightData::_readCookie(ork::rtti::ICastable*& tex) const {
-  tex = _cookie;
-}
-void LightData::_writeCookie(ork::rtti::ICastable* const& tex) {
-  _cookie = tex ? ork::rtti::autocast(tex) : nullptr;
-}
-
 LightData::LightData()
     : mColor(1.0f, 0.0f, 0.0f)
-    , _cookie(nullptr)
     , mbShadowCaster(false)
     , _shadowsamples(1)
     , mShadowBlur(0.0f)
     , mShadowBias(0.002f) {
+}
+
+lev2::Texture* LightData::cookie() const {
+  auto as_tex = std::dynamic_pointer_cast<TextureAsset>(_cookie);
+  return as_tex ? as_tex->GetTexture() : nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -144,7 +144,7 @@ DirectionalLight::DirectionalLight(xform_generator_t mtx, const DirectionalLight
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void DirectionalLightData::Describe() {
+void DirectionalLightData::describeX(class_t* c) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -164,11 +164,9 @@ AmbientLight::AmbientLight(xform_generator_t mtx, const AmbientLightData* dld)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void AmbientLightData::Describe() {
-  ork::reflect::RegisterProperty("AmbientShade", &AmbientLightData::mfAmbientShade);
-  ork::reflect::annotatePropertyForEditor<AmbientLightData>("AmbientShade", "editor.range.min", "0.0");
-  ork::reflect::annotatePropertyForEditor<AmbientLightData>("AmbientShade", "editor.range.max", "1.0");
-  ork::reflect::RegisterProperty("HeadlightDir", &AmbientLightData::mvHeadlightDir);
+void AmbientLightData::describeX(class_t* c) {
+  c->floatProperty("AmbientShade", float_range{0, 1}, &AmbientLightData::mfAmbientShade);
+  c->memberProperty("HeadlightDir", &AmbientLightData::mvHeadlightDir);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -183,16 +181,10 @@ bool AmbientLight::IsInFrustum(const Frustum& frustum) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SpotLightData::Describe() {
-  ork::reflect::RegisterProperty("Fovy", &SpotLightData::mFovy);
-  ork::reflect::RegisterProperty("Range", &SpotLightData::mRange);
-
-  ork::reflect::annotatePropertyForEditor<SpotLightData>("Fovy", "editor.range.min", "0.0");
-  ork::reflect::annotatePropertyForEditor<SpotLightData>("Fovy", "editor.range.max", "180.0");
-
-  ork::reflect::annotatePropertyForEditor<SpotLightData>("Range", "editor.range.min", "1");
-  ork::reflect::annotatePropertyForEditor<SpotLightData>("Range", "editor.range.max", "1000.00");
-  ork::reflect::annotatePropertyForEditor<SpotLightData>("Range", "editor.range.log", "true");
+void SpotLightData::describeX(class_t* c) {
+  c->floatProperty("Fovy", float_range{0, 180}, &SpotLightData::mFovy);
+  c->floatProperty("Range", float_range{1, 1000}, &SpotLightData::mRange) //
+      ->annotate<bool>("editor.range.log", true);
 }
 
 SpotLightData::SpotLightData()
@@ -438,7 +430,7 @@ void LightCollector::QueueInstance(const LightMask& lmask, const fmtx4& mtx) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void LightManagerData::Describe() {
+void LightManagerData::describeX(class_t* c) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////

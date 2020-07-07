@@ -17,19 +17,32 @@ struct ScopeSurf final : public ui::Surface {
   concurrent_triple_buffer<ScopeBuffer> _scopebuffers;
   const ScopeSource* _currentSource = nullptr;
   int _updatecount                  = 0;
+  float _ostriglev                  = 0;
+  bool _ostrigdir                   = false;
+  int _osgainmode                   = 3; // auto
+  int64_t _oswidth                  = 0;
 };
 ///////////////////////////////////////////////////////////////////////////////
-signalscope_ptr_t create_oscilloscope(hudvp_ptr_t vp, std::string named) {
-  auto hudpanel      = std::make_shared<HudPanel>();
-  auto scopesurf     = std::make_shared<ScopeSurf>();
-  hudpanel->_uipanel = std::make_shared<ui::Panel>("scope", 0, 0, 32, 32);
+signalscope_ptr_t create_oscilloscope(
+    hudvp_ptr_t vp, //
+    const ui::anchor::Bounds& bounds,
+    std::string named) {
+  auto hudpanel    = std::make_shared<HudPanel>();
+  auto scopesurf   = std::make_shared<ScopeSurf>();
+  auto uipanelitem = vp->makeChild<ui::Panel>("scope", 0, 0, 32, 32);
+  uipanelitem.applyBounds(bounds);
+  hudpanel->_uipanel                = uipanelitem._widget;
+  hudpanel->_panelLayout            = uipanelitem._layout;
+  hudpanel->_uipanel->_closeEnabled = false;
+  hudpanel->_uipanel->_moveEnabled  = false;
   hudpanel->_uipanel->setTitle(named);
   hudpanel->_uisurface = scopesurf;
   hudpanel->_uipanel->setChild(hudpanel->_uisurface);
-  hudpanel->_uipanel->snap();
-  auto instrument       = std::make_shared<SignalScope>();
-  instrument->_hudpanel = hudpanel;
-  instrument->_sink     = std::make_shared<ScopeSink>();
+  hudpanel->_uipanel->_stdcolor   = fvec4(0.2, 0.2, 0.3f, 0.5f);
+  hudpanel->_uipanel->_focuscolor = fvec4(0.3, 0.2, 0.4f, 0.5f);
+  auto instrument                 = std::make_shared<SignalScope>();
+  instrument->_hudpanel           = hudpanel;
+  instrument->_sink               = std::make_shared<ScopeSink>();
   ///////////////////////////////////////////////////////////////////////
   instrument->_sink->_onupdate = [scopesurf](const ScopeSource* src) { //
     bool select = (scopesurf->_currentSource == nullptr);
@@ -71,6 +84,8 @@ signalscope_ptr_t create_oscilloscope(hudvp_ptr_t vp, std::string named) {
 ///////////////////////////////////////////////////////////////////////////////
 ScopeSurf::ScopeSurf() //
     : ui::Surface("Scope", 0, 0, 32, 32, fvec3(), 1.0) {
+  _oswidth   = (0.030f * getSampleRate());
+  _ostriglev = 0.0f;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
@@ -90,7 +105,7 @@ void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
   float osgain = 1.0f;
 
-  switch (syn->_osgainmode & 3) {
+  switch (_osgainmode & 3) {
     case 0:
       osgain = 0.5;
       break;
@@ -121,7 +136,7 @@ void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
   hudlines_t lines;
 
-  int inumframes = syn->_oswidth;
+  int inumframes = _oswidth;
 
   const float OSC_X1 = 0;
   const float OSC_Y1 = 0;
@@ -136,11 +151,11 @@ void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
   int ycursor = OSC_Y1;
 
-  int window_width = syn->_oswidth;
+  int window_width = _oswidth;
 
   double width       = double(window_width) / getSampleRate();
   double frq         = 1.0 / width;
-  float triggerlevel = syn->_ostriglev;
+  float triggerlevel = _ostriglev;
 
   drawtext(
       this,
@@ -178,7 +193,7 @@ void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   drawtext(
       this,
       context, //
-      FormatString("\\  trigdir: %s", syn->_ostrigdir ? "up" : "down"),
+      FormatString("\\  trigdir: %s", _ostrigdir ? "up" : "down"),
       OSC_X1,
       ycursor,
       fontscale,
@@ -205,7 +220,7 @@ void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     float ly = _samples[0];
     for (int i = 0; i < koscopelength; i++) {
       float y = _samples[i] * osgain;
-      if (syn->_ostrigdir) {
+      if (_ostrigdir) {
         if (ly > triggerlevel and y <= triggerlevel)
           crossings.insert(i);
       } else {
@@ -332,8 +347,46 @@ void ScopeSurf::DoInit(lev2::Context* pt) {
   _ctxbase    = pt->GetCtxBase();
 }
 ///////////////////////////////////////////////////////////////////////////////
-ui::HandlerResult ScopeSurf::DoOnUiEvent(ui::event_constptr_t EV) {
+ui::HandlerResult ScopeSurf::DoOnUiEvent(ui::event_constptr_t ev) {
   ui::HandlerResult ret(this);
+  bool isalt  = ev->mbALT;
+  bool isctrl = ev->mbCTRL;
+  switch (ev->_eventcode) {
+    case ui::EventCode::KEY:
+    case ui::EventCode::KEY_REPEAT:
+      switch (ev->miKeyCode) {
+        case '-': {
+          int64_t amt = isalt ? 100 : (isctrl ? 1 : 10);
+          _oswidth    = std::clamp(_oswidth - amt, int64_t(0), int64_t(4095));
+          break;
+        }
+        case '=': {
+          int64_t amt = isalt ? 100 : (isctrl ? 1 : 10);
+          _oswidth    = std::clamp(_oswidth + amt, int64_t(0), int64_t(4095));
+          break;
+        }
+        case '[': {
+          float amt  = isalt ? 0.1 : (isctrl ? 0.001 : 0.01);
+          _ostriglev = std::clamp(_ostriglev - amt, -1.0f, 1.0f);
+          break;
+        }
+        case ']': {
+          float amt  = isalt ? 0.1 : (isctrl ? 0.001 : 0.01);
+          _ostriglev = std::clamp(_ostriglev + amt, -1.0f, 1.0f);
+          break;
+        }
+        case '\\': {
+          _ostrigdir = !_ostrigdir;
+          break;
+        }
+        case '\'': {
+          _osgainmode++;
+          break;
+        }
+        default:
+          break;
+      }
+  }
   return ret;
 }
 ///////////////////////////////////////////////////////////////////////////////

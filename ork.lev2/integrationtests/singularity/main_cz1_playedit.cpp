@@ -2,7 +2,7 @@
 #include <ork/lev2/aud/singularity/cz1.h>
 
 int main(int argc, char** argv) {
-  auto qtapp    = createEZapp(argc, argv);
+  auto app      = createEZapp(argc, argv);
   auto basepath = basePath() / "casioCZ";
   //////////////////////////////////////////////////////////////////////////////
   auto bnk = CzData::load(basepath / "edit.syx", "bank1");
@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
     enqueue_audio_event(prg, 1 + float(i) * 1.0, 1.0, note);
   }
   //////////////////////////////////////////////////////////////////////////////
-  qtapp->setRefreshPolicy({EREFRESH_FASTEST, 0});
-  qtapp->exec();
+  app->setRefreshPolicy({EREFRESH_FASTEST, 0});
+  app->exec();
   return 0;
 }

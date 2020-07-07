@@ -24,9 +24,10 @@
 #include <ork/lev2/gfx/meshutil/rigid_primitive.inl>
 #include <ork/lev2/gfx/meshutil/clusterizer.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/reflect/AccessorObjectPropertyType.hpp>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/properties/AccessorTyped.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/kernel/datacache.h>
+#include <ork/reflect/properties/registerX.inl>
 ///////////////////////////////////////////////////////////////////////////////
 using namespace ork::lev2;
 ImplementReflectionX(ork::lev2::TerrainDrawableData, "TerrainDrawableData");
@@ -1085,7 +1086,7 @@ static void _RenderHeightfield(RenderContextInstData& RCID) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void TerrainDrawableData::describeX(class_t* c) {
-  c->memberProperty("Offset", &TerrainDrawableData::_visualOffset);
+/*  c->memberProperty("Offset", &TerrainDrawableData::_visualOffset);
   c->memberProperty("FogColor", &TerrainDrawableData::_fogcolor);
   c->memberProperty("GrassColor", &TerrainDrawableData::_grass);
   c->memberProperty("SnowColor", &TerrainDrawableData::_snow);
@@ -1096,7 +1097,7 @@ void TerrainDrawableData::describeX(class_t* c) {
       ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
       ->annotate<ConstString>("editor.filetype", "png");
   ////////////////////////////////////////////////////////////////////////
-  c->accessorProperty("SphericalEnvMap", &TerrainDrawableData::_readEnvMap, &TerrainDrawableData::_writeEnvMap)
+  c->memberProperty("SphericalEnvMap", &TerrainDrawableData::_sphericalenvmapasset)
       ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
       ->annotate<ConstString>("editor.assettype", "lev2tex")
       ->annotate<ConstString>("editor.assetclass", "lev2tex");
@@ -1107,7 +1108,7 @@ void TerrainDrawableData::describeX(class_t* c) {
   c->floatProperty("GBlendStepLo", float_range{0, 1}, &TerrainDrawableData::_gblend_steplo);
   c->floatProperty("GBlendStepHi", float_range{0, 1}, &TerrainDrawableData::_gblend_stephi);
   ////////////////////////////////////////////////////////////////////////
-}
+*/}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1125,12 +1126,11 @@ TerrainDrawableData::~TerrainDrawableData() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void TerrainDrawableData::_writeEnvMap(ork::rtti::ICastable* const& tex) {
-  _sphericalenvmap = tex ? ork::rtti::autocast(tex) : nullptr;
+Texture* TerrainDrawableData::envtex() const {
+  auto as_texasset = std::dynamic_pointer_cast<TextureAsset>(_sphericalenvmapasset);
+  return as_texasset ? as_texasset->GetTexture() : nullptr;
 }
-void TerrainDrawableData::_readEnvMap(ork::rtti::ICastable*& tex) const {
-  tex = _sphericalenvmap;
-}
+///////////////////////////////////////////////////////////////////////////////
 static int count = 0;
 void TerrainDrawableData::_writeHmapPath(file::Path const& hmap) {
   _hfpath = hmap;

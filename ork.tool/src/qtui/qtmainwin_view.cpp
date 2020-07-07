@@ -160,7 +160,7 @@ void EditorMainWindow::SlotSpawnNewGed(ork::Object* pobj) {
 
   _widgets.insert(pnlw);
 
-  pnewobjmodel->SetChoiceManager(&mEditorBase.mChoiceMan);
+  pnewobjmodel->SetChoiceManager(mEditorBase._choicemanager);
 
   pnewobjmodel->GetPersistMapContainer().CloneFrom(mGedModelObj.GetPersistMapContainer());
 

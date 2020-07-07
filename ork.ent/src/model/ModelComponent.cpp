@@ -6,7 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/rtti/downcast.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/material_pbr.inl>
@@ -21,9 +21,9 @@
 #include <pkg/ent/event/MeshEvent.h>
 #include <pkg/ent/scene.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/reflect/AccessorObjectPropertyType.hpp>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/properties/AccessorTyped.hpp>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/kernel/string/deco.inl>
 ///////////////////////////////////////////////////////////////////////////////
 //#include "ModelArchetype.h"
@@ -201,8 +201,8 @@ void ModelComponentInst::doNotify(const ComponentEvent& e) {
   }
 }
 
-bool ModelComponentInst::DoNotify(const ork::event::Event* event) {
-  if (const event::MeshEnableEvent* meshenaev = ork::rtti::autocast(event)) {
+bool ModelComponentInst::doNotify(const ork::event::Event* event) {
+  if (auto meshenaev = dynamic_cast<const event::MeshEnableEvent*>(event)) {
     if (modelDrawable().GetModelInst()) {
       if (meshenaev->IsEnable())
         modelDrawable().GetModelInst()->EnableMesh(meshenaev->GetName());
@@ -210,7 +210,7 @@ bool ModelComponentInst::DoNotify(const ork::event::Event* event) {
         modelDrawable().GetModelInst()->DisableMesh(meshenaev->GetName());
       return true;
     }
-  } else if (const event::MeshLayerFxEvent* lfxev = ork::rtti::autocast(event)) {
+  } else if (auto lfxev = dynamic_cast<const event::MeshLayerFxEvent*>(event)) {
     if (modelDrawable().GetModelInst()) {
       /*lev2::GfxMaterialFx* pmaterial = 0;
       if (lfxev->IsEnable()) {

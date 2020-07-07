@@ -115,7 +115,7 @@ private:
   CompositingMaterial mCompositingMaterial;
   lev2::RtBuffer* mOutput = nullptr;
   lev2::RtGroup* _rtg     = nullptr;
-  EOp2CompositeMode mMode;
+  Op2CompositeMode mMode;
   fvec4 mLevelA;
   fvec4 mLevelB;
   fvec4 mBiasA;

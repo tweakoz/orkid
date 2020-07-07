@@ -15,13 +15,14 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PitchShifterData::PitchShifterData() {
-  _blocktype        = "PitchShifter";
-  auto& mix_param   = addParam();
-  auto& pitch_param = addParam();
+PitchShifterData::PitchShifterData(std::string name)
+    : DspBlockData(name) {
+  _blocktype       = "PitchShifter";
+  auto mix_param   = addParam();
+  auto pitch_param = addParam();
 
-  mix_param.useDefaultEvaluator();
-  pitch_param.useDefaultEvaluator();
+  mix_param->useDefaultEvaluator();
+  pitch_param->useDefaultEvaluator();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

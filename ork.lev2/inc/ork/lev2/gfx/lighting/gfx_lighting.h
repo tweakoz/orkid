@@ -81,9 +81,7 @@ public:
 
   LightData();
 
-  lev2::Texture* cookie() const {
-    return _cookie ? _cookie->GetTexture() : nullptr;
-  }
+  lev2::Texture* cookie() const;
 
   bool decal() const {
     return _decal;
@@ -98,12 +96,9 @@ public:
   int _shadowsamples;
   float mShadowBlur;
   float mShadowBias;
-  bool _decal               = false;
-  textureassetptr_t _cookie = nullptr;
-  int _shadowMapSize        = 1024;
-
-  void _readCookie(ork::rtti::ICastable*& cookietex) const;
-  void _writeCookie(ork::rtti::ICastable* const& cookietex);
+  asset::asset_ptr_t _cookie;
+  bool _decal        = false;
+  int _shadowMapSize = 1024;
 };
 using lightdata_ptr_t      = std::shared_ptr<LightData>;
 using lightdata_constptr_t = std::shared_ptr<const LightData>;
@@ -218,7 +213,7 @@ using pointlight_constptr_t = std::shared_ptr<const PointLight>;
 ///////////////////////////////////////////////////////////////////////////////
 
 class DirectionalLightData : public LightData {
-  RttiDeclareConcrete(DirectionalLightData, LightData);
+  DeclareConcreteX(DirectionalLightData, LightData);
 
 public:
   DirectionalLightData() {
@@ -252,7 +247,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class AmbientLightData : public LightData {
-  RttiDeclareConcrete(AmbientLightData, LightData);
+  DeclareConcreteX(AmbientLightData, LightData);
 
   float mfAmbientShade;
   fvec3 mvHeadlightDir;
@@ -309,7 +304,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class SpotLightData : public LightData {
-  RttiDeclareConcrete(SpotLightData, LightData);
+  DeclareConcreteX(SpotLightData, LightData);
 
   float mFovy;
   float mRange;
@@ -440,7 +435,7 @@ struct LightingGroup {
 ///////////////////////////////////////////////////////////////////////////////
 
 class LightManagerData : public ork::Object {
-  RttiDeclareConcrete(LightManagerData, ork::Object);
+  DeclareConcreteX(LightManagerData, ork::Object);
 
 public:
 };

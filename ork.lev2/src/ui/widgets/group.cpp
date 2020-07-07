@@ -10,9 +10,11 @@ Group::Group(const std::string& name, int x, int y, int w, int h)
 }
 /////////////////////////////////////////////////////////////////////////
 void Group::addChild(widget_ptr_t w) {
-  assert(w->parent() == nullptr);
+  if (w->parent()) {
+    w->parent()->removeChild(w);
+  }
   _children.push_back(w);
-  w->mParent    = this;
+  w->_parent    = this;
   w->_uicontext = this->_uicontext;
   DoLayout();
 }
@@ -52,7 +54,7 @@ void Group::drawChildren(ui::drawevent_constptr_t drwev) {
 }
 /////////////////////////////////////////////////////////////////////////
 void Group::OnResize() {
-  // printf( "Group<%s>::OnResize x<%d> y<%d> w<%d> h<%d>\n", msName.c_str(), miX, miY, miW, miH );
+  // printf( "Group<%s>::OnResize x<%d> y<%d> w<%d> h<%d>\n", _name.c_str(), miX, miY, miW, miH );
   for (auto& it : _children) {
     if (it->mSizeDirty)
       it->OnResize();
@@ -62,7 +64,7 @@ void Group::OnResize() {
 void Group::DoLayout() {
   const auto& g = _geometry;
   if (0)
-    printf("Group<%s>::DoLayout x<%d> y<%d> w<%d> h<%d>\n", msName.c_str(), g._x, g._y, g._w, g._h);
+    printf("Group<%s>::DoLayout x<%d> y<%d> w<%d> h<%d>\n", _name.c_str(), g._x, g._y, g._w, g._h);
   for (auto& it : _children) {
     it->ReLayout();
   }
@@ -70,11 +72,11 @@ void Group::DoLayout() {
 /////////////////////////////////////////////////////////////////////////
 Widget* Group::doRouteUiEvent(event_constptr_t ev) {
   if (0)
-    printf("Group<%s>::doRouteUiEvent\n", msName.c_str());
+    printf("Group<%s>::doRouteUiEvent\n", _name.c_str());
   for (auto& child : _children) {
     bool inside = child->IsEventInside(ev);
     if (0)
-      printf("Group<%s>::doRouteUiEvent ch<%p> inside<%d>\n", msName.c_str(), child.get(), int(inside));
+      printf("Group<%s>::doRouteUiEvent ch<%p> inside<%d>\n", _name.c_str(), child.get(), int(inside));
     if (inside) {
       auto child_target = child->routeUiEvent(ev);
       if (child_target)
@@ -103,10 +105,10 @@ void LayoutGroup::DoLayout() {
   //  either manually or driven indirectly through the resize
   //  of a parent..
   const auto& g = _geometry;
-  if (0)
+  if (1)
     printf(
         "LayoutGroup<%s>::DoLayout l<%p> x<%d> y<%d> w<%d> h<%d>\n", //
-        msName.c_str(),
+        _name.c_str(),
         _layout.get(),
         g._x,
         g._y,

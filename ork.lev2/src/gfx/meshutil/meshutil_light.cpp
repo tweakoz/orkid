@@ -11,16 +11,18 @@
 #include <ork/math/collision_test.h>
 #include <ork/math/sphere.h>
 
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/kernel/orklut.hpp>
+#include <ork/reflect/properties/registerX.inl>
+#include <ork/math/cmatrix4.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::meshutil::Light, "MeshUtilLight");
-INSTANTIATE_TRANSPARENT_RTTI(ork::meshutil::LightContainer, "MeshUtilLightContainer");
-INSTANTIATE_TRANSPARENT_RTTI(ork::meshutil::AmbientLight, "MeshUtilAmbientLight");
-INSTANTIATE_TRANSPARENT_RTTI(ork::meshutil::DirLight, "MeshUtilDirLight");
-INSTANTIATE_TRANSPARENT_RTTI(ork::meshutil::PointLight, "MeshUtilPointLight");
+ImplementReflectionX(ork::meshutil::Light, "MeshUtilLight");
+ImplementReflectionX(ork::meshutil::LightContainer, "MeshUtilLightContainer");
+ImplementReflectionX(ork::meshutil::AmbientLight, "MeshUtilAmbientLight");
+ImplementReflectionX(ork::meshutil::DirLight, "MeshUtilDirLight");
+ImplementReflectionX(ork::meshutil::PointLight, "MeshUtilPointLight");
 
 template class ork::orklut<ork::PoolString, ork::meshutil::Light*>;
 
@@ -28,44 +30,38 @@ template class ork::orklut<ork::PoolString, ork::meshutil::Light*>;
 namespace ork { namespace meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 
-void LightContainer::Describe() {
+void LightContainer::describeX(class_t* clazz) {
   ork::reflect::RegisterMapProperty("Lights", &LightContainer::mLights);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Light::Describe() {
-  ork::reflect::RegisterProperty("Color", &Light::mColor);
-  ork::reflect::RegisterProperty("WorldMatrix", &Light::mWorldMatrix);
-  ork::reflect::RegisterProperty("AffectsSpecular", &Light::mbSpecular);
-  ork::reflect::RegisterProperty("ShadowSamples", &Light::mShadowSamples);
-  ork::reflect::RegisterProperty("ShadowBlur", &Light::mShadowBlur);
-  ork::reflect::RegisterProperty("ShadowBias", &Light::mShadowBias);
-  ork::reflect::RegisterProperty("ShadowCaster", &Light::mbIsShadowCaster);
+void Light::describeX(class_t* clazz) {
+  clazz->memberProperty("Color", &Light::mColor);
+  clazz->memberProperty("WorldMatrix", &Light::mWorldMatrix);
+  clazz->memberProperty("AffectsSpecular", &Light::mbSpecular);
+  clazz->memberProperty("ShadowCaster", &Light::mbIsShadowCaster);
 
-  ork::reflect::annotatePropertyForEditor<Light>("ShadowBias", "editor.range.min", "0.0");
-  ork::reflect::annotatePropertyForEditor<Light>("ShadowBias", "editor.range.max", "10.0");
-  ork::reflect::annotatePropertyForEditor<Light>("ShadowSamples", "editor.range.min", "1");
-  ork::reflect::annotatePropertyForEditor<Light>("ShadowSamples", "editor.range.max", "256.0");
-  ork::reflect::annotatePropertyForEditor<Light>("ShadowBlur", "editor.range.min", "0");
-  ork::reflect::annotatePropertyForEditor<Light>("ShadowBlur", "editor.range.max", "1.0");
+  clazz->floatProperty("ShadowSamples", float_range{1, 256}, &Light::mShadowSamples);
+  clazz->floatProperty("ShadowBlur", float_range{0, 1}, &Light::mShadowBlur);
+  clazz->floatProperty("ShadowBias", float_range{0, 10}, &Light::mShadowBias);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void DirLight::Describe() {
+void DirLight::describeX(class_t* clazz) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void AmbientLight::Describe() {
+void AmbientLight::describeX(class_t* clazz) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void PointLight::Describe() {
-  ork::reflect::RegisterProperty("Falloff", &PointLight::mFalloff);
-  ork::reflect::RegisterProperty("Radius", &PointLight::mRadius);
+void PointLight::describeX(class_t* clazz) {
+  clazz->memberProperty("Falloff", &PointLight::mFalloff);
+  clazz->memberProperty("Radius", &PointLight::mRadius);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

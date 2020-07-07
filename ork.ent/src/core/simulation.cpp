@@ -18,16 +18,16 @@
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/input/inputdevice.h>
 #include <ork/pch.h>
-#include <ork/reflect/DirectObjectMapPropertyType.h>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/DirectTypedMap.h>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
+#include <ork/reflect/properties/register.h>
 #include <pkg/ent/CompositingSystem.h>
 #include <pkg/ent/ReferenceArchetype.h>
 #include <pkg/ent/entity.h>
 #include <pkg/ent/scene.h>
 
-#include <ork/reflect/serialize/XMLDeserializer.h>
-#include <ork/reflect/serialize/XMLSerializer.h>
+#include <ork/reflect/serialize/JsonDeserializer.h>
+#include <ork/reflect/serialize/JsonSerializer.h>
 #include <ork/stream/ResizableStringOutputStream.h>
 #include <ork/stream/StringInputStream.h>
 
@@ -60,7 +60,6 @@ void LeaveRunMode();
 ///////////////////////////////////////////////////////////////////////////////
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::Simulation, "Ent3dSimulation");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::SimulationEvent, "SimulationEvent");
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -82,11 +81,9 @@ static ork::PoolString sLightFamily;
 static ork::PoolString sInputFamily;
 static ork::PoolString sPreRenderFamily;
 
-void SimulationEvent::Describe() {
-  sSimulationEvChanName = ork::AddPooledLiteral("SimulationEvChannel");
-}
 const ork::PoolString& Simulation::EventChannel() {
-  return sSimulationEvChanName;
+  static auto evchanname = ork::AddPooledLiteral("SimulationEvChannel");
+  return evchanname;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

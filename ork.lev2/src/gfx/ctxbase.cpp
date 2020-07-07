@@ -19,7 +19,7 @@ struct CtxBaseProgressPimpl { //
     _material      = std::make_shared<GfxMaterialUITextured>(context);
     auto& rasstate = _material->_rasterstate;
     rasstate.SetDepthTest(EDEPTHTEST_OFF);
-    rasstate.SetBlending(EBLENDING_OFF);
+    rasstate.SetBlending(Blending::OFF);
     rasstate.SetAlphaTest(EALPHATEST_OFF, 0.0f);
     rasstate.SetDepthTest(EDEPTHTEST_ALWAYS);
     auto txi                                                    = context->TXI();
@@ -40,10 +40,10 @@ void CTXBASE::Describe() {
 CTXBASE::CTXBASE(Window* pwin)
     : mbInitialize(true)
     , mpWindow(pwin)
-    , mpTarget(0)
+    , _target(0)
     , ConstructAutoSlot(Repaint) {
 
-  SetupSignalsAndSlots();
+  AutoConnector::setupSignalsAndSlots(this);
   mpWindow->mpCTXBASE = this;
 
   _uievent = std::make_shared<ui::Event>();
@@ -66,12 +66,12 @@ void CTXBASE::popRefreshPolicy() {
 ///////////////////////////////////////////////////////////////////////////////
 void CTXBASE::progressHandler(opq::progressdata_ptr_t data) {
 
-  if (nullptr != mpTarget) {
+  if (nullptr != _target) {
     if (auto as_pimpl = _pimpl_progress.TryAs<progresspimpl_ptr_t>()) {
       auto pimpl                            = as_pimpl.value();
       DynamicVertexBuffer<SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
-      int TARGW                             = mpTarget->mainSurfaceWidth();
-      int TARGH                             = mpTarget->mainSurfaceHeight();
+      int TARGW                             = _target->mainSurfaceWidth();
+      int TARGH                             = _target->mainSurfaceHeight();
 
       float target_aspect = float(TARGW) / float(TARGH);
       float image_aspect  = float(pimpl->_loadingtex->_width) //
@@ -79,8 +79,8 @@ void CTXBASE::progressHandler(opq::progressdata_ptr_t data) {
 
       const auto tgtrect = ViewportRect(0, 0, TARGW, TARGH);
       ////////////////////////////////////////////////
-      lev2::RenderContextFrameData RCFD(mpTarget);
-      mpTarget->pushRenderContextFrameData(&RCFD);
+      lev2::RenderContextFrameData RCFD(_target);
+      _target->pushRenderContextFrameData(&RCFD);
       /////////////////////////////////
       lev2::CompositingPassData TOPCPD;
       TOPCPD.SetDstRect(tgtrect);
@@ -90,8 +90,8 @@ void CTXBASE::progressHandler(opq::progressdata_ptr_t data) {
       RCFD._cimpl        = _gimpl;
       _gimpl->pushCPD(TOPCPD);
       /////////////////////////////////
-      auto FBI  = mpTarget->FBI();
-      auto MTXI = mpTarget->MTXI();
+      auto FBI  = _target->FBI();
+      auto MTXI = _target->MTXI();
       FBI->SetAutoClear(true);
       static float phi = 0.0f;
       phi += 0.5f;
@@ -106,7 +106,7 @@ void CTXBASE::progressHandler(opq::progressdata_ptr_t data) {
       if (auto DB = DrawableBuffer::acquireForRead(7))
         DrawableBuffer::releaseFromRead(DB);
       /////////////////////////////////
-      mpTarget->beginFrame();
+      _target->beginFrame();
       FBI->setViewport(tgtrect);
       FBI->setScissor(tgtrect);
 
@@ -115,12 +115,12 @@ void CTXBASE::progressHandler(opq::progressdata_ptr_t data) {
       /////////////////////////////////////////
       MTXI->PushMMatrix(fmtx4());
       MTXI->PushUIMatrix();
-      mpTarget->PushModColor(clearcolor);
+      _target->PushModColor(clearcolor);
       mpWindow->RenderMatOrthoQuad(
           tgtrect.asSRect(), //
           tgtrect.asSRect(),
           pimpl->_material.get());
-      mpTarget->PopModColor();
+      _target->PopModColor();
       /////////////////////////////////////////
       // messages
       /////////////////////////////////////////
@@ -130,23 +130,23 @@ void CTXBASE::progressHandler(opq::progressdata_ptr_t data) {
       int y           = (TARGH / 2);
       FontMan::PushFont("i48");
 
-      mpTarget->PushModColor(fcolor4(1.0, 1.0, 1.0));
-      FontMan::GetRef().beginTextBlock(mpTarget);
-      FontMan::DrawCenteredText(mpTarget, y - 48, formatteda.c_str());
-      FontMan::GetRef().endTextBlock(mpTarget);
-      mpTarget->PopModColor();
+      _target->PushModColor(fcolor4(1.0, 1.0, 1.0));
+      FontMan::GetRef().beginTextBlock(_target);
+      FontMan::DrawCenteredText(_target, y - 48, formatteda.c_str());
+      FontMan::GetRef().endTextBlock(_target);
+      _target->PopModColor();
 
-      mpTarget->PushModColor(fcolor4(1.0, 1.0, 0.5));
-      FontMan::GetRef().beginTextBlock(mpTarget);
-      FontMan::DrawCenteredText(mpTarget, y + 0, formattedb.c_str());
-      FontMan::GetRef().endTextBlock(mpTarget);
-      mpTarget->PopModColor();
+      _target->PushModColor(fcolor4(1.0, 1.0, 0.5));
+      FontMan::GetRef().beginTextBlock(_target);
+      FontMan::DrawCenteredText(_target, y + 0, formattedb.c_str());
+      FontMan::GetRef().endTextBlock(_target);
+      _target->PopModColor();
 
-      mpTarget->PushModColor(fcolor4(1.0, 0.7, 0.3));
-      FontMan::GetRef().beginTextBlock(mpTarget);
-      FontMan::DrawCenteredText(mpTarget, y + 48, formattedc.c_str());
-      FontMan::GetRef().endTextBlock(mpTarget);
-      mpTarget->PopModColor();
+      _target->PushModColor(fcolor4(1.0, 0.7, 0.3));
+      FontMan::GetRef().beginTextBlock(_target);
+      FontMan::DrawCenteredText(_target, y + 48, formattedc.c_str());
+      FontMan::GetRef().endTextBlock(_target);
+      _target->PopModColor();
 
       FontMan::PopFont();
       /////////////////////////////////////////
@@ -154,12 +154,12 @@ void CTXBASE::progressHandler(opq::progressdata_ptr_t data) {
       MTXI->PopUIMatrix();
       MTXI->PopMMatrix();
 
-      mpTarget->endFrame();
-      mpTarget->popRenderContextFrameData();
+      _target->endFrame();
+      _target->popRenderContextFrameData();
       _gimpl->popCPD();
 
     } else {
-      auto pimpl = _pimpl_progress.makeShared<CtxBaseProgressPimpl>(mpTarget);
+      auto pimpl = _pimpl_progress.makeShared<CtxBaseProgressPimpl>(_target);
     }
   }
 }
@@ -177,13 +177,13 @@ void CTXBASE::SetTopXID(CTFLXID xid) {
   mxidTopLevel = xid;
 }
 Context* CTXBASE::GetTarget() const {
-  return mpTarget;
+  return _target;
 }
 Window* CTXBASE::GetWindow() const {
   return mpWindow;
 }
 void CTXBASE::setContext(Context* ctx) {
-  mpTarget           = ctx;
+  _target            = ctx;
   _uievent->_context = ctx;
 }
 void CTXBASE::SetWindow(Window* pw) {

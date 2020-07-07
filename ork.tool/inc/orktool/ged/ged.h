@@ -51,7 +51,7 @@ bool IsObjInSet(void* pobj);
 
 struct PersistHashContext {
   ork::Object* mObject;
-  const reflect::IObjectProperty* mProperty;
+  const reflect::ObjectProperty* mProperty;
   const char* mString;
 
   PersistHashContext();
@@ -113,10 +113,10 @@ public:
   ObjModel();
   /*virtual*/ ~ObjModel();
 
-  void SetChoiceManager(ChoiceManager* chcman) {
+  void SetChoiceManager(util::choicemanager_ptr_t chcman) {
     mChoiceManager = chcman;
   }
-  ChoiceManager* GetChoiceManager(void) const {
+  util::choicemanager_ptr_t GetChoiceManager(void) const {
     return mChoiceManager;
   }
 
@@ -160,7 +160,7 @@ private:
   ork::Object* mCurrentObject;
   ork::Object* mRootObject;
   ork::Object* mQueueObject;
-  ChoiceManager* mChoiceManager;
+  util::choicemanager_ptr_t mChoiceManager;
   orkstack<ork::Object*> mBrowseStack;
   PersistMapContainer mPersistMapContainer;
   bool mbEnablePaint;
@@ -189,7 +189,7 @@ private:
 public:
   void SigModelInvalidated();
   void SigPreNewObject();
-  void SigPropertyInvalidated(ork::Object* pobj, const reflect::IObjectProperty* prop);
+  void SigPropertyInvalidated(ork::Object* pobj, const reflect::ObjectProperty* prop);
   void SigRepaint();
   void SigSpawnNewGed(ork::Object* pobj);
   void SigNewObject(ork::Object* pobj);
@@ -200,7 +200,7 @@ private:
 
   void SlotNewObject(ork::Object* pobj);
   void SlotRelayModelInvalidated();
-  void SlotRelayPropertyInvalidated(ork::Object* pobj, const reflect::IObjectProperty* prop);
+  void SlotRelayPropertyInvalidated(ork::Object* pobj, const reflect::ObjectProperty* prop);
   void SlotObjectDeleted(ork::Object* pobj);
   void SlotObjectSelected(ork::Object* pobj);
   void SlotObjectDeSelected(ork::Object* pobj);
@@ -210,7 +210,7 @@ private:
 
   struct sortnode {
     std::string Name;
-    orkvector<std::pair<std::string, reflect::IObjectProperty*>> PropVect;
+    orkvector<std::pair<std::string, reflect::ObjectProperty*>> PropVect;
     orkvector<std::pair<std::string, sortnode*>> GroupVect;
   };
 
@@ -218,18 +218,18 @@ private:
 
   //////////////////////////////////////////////////////////
 
-  bool IsNodeVisible(const reflect::IObjectProperty* prop);
-  GedItemNode* CreateNode(const std::string& Name, const reflect::IObjectProperty* prop, Object* pobject);
+  bool IsNodeVisible(const reflect::ObjectProperty* prop);
+  GedItemNode* CreateNode(const std::string& Name, const reflect::ObjectProperty* prop, Object* pobject);
 };
 ///////////////////////////////////////////////////////////////////////////////
 class GedFactory : public ork::Object {
   RttiDeclareAbstract(GedFactory, ork::Object);
 
 public:
-  virtual void Recurse(ObjModel& mdl, const reflect::IObjectProperty* prop, ork::Object* pobj) const {
+  virtual void Recurse(ObjModel& mdl, const reflect::ObjectProperty* prop, ork::Object* pobj) const {
   }
   virtual GedItemNode*
-  CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::IObjectProperty* prop, Object* obj) const;
+  CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::ObjectProperty* prop, Object* obj) const;
 };
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -257,7 +257,7 @@ public:
     GedObject* mpNode;
     int ix1, iy1, ix2, iy2;
     fvec4 _ucolor;
-    ork::lev2::EPrimitiveType meType;
+    ork::lev2::PrimitiveType meType;
     int miSortKey;
 
     GedPrim()
@@ -269,7 +269,7 @@ public:
         , iy2(0)
         , _ucolor(0)
         , miSortKey(0)
-        , meType(ork::lev2::EPrimitiveType::END) {
+        , meType(ork::lev2::PrimitiveType::END) {
     }
   };
 
@@ -419,7 +419,7 @@ class GedItemNode : public GedObject {
 public:
   ///////////////////////////////////////////////////
 
-  GedItemNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj);
+  GedItemNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj);
 
   ///////////////////////////////////////////////////
 
@@ -501,7 +501,7 @@ public:
   GedItemNode* GetItem(int idx) const;
   int GetNumItems() const;
   GedItemNode* GetParent() const {
-    return mParent;
+    return _parent;
   }
   ///////////////////////////////////////////////////
   virtual int CalcHeight(void);
@@ -509,10 +509,10 @@ public:
     return this;
   }
   ///////////////////////////////////////////////////
-  void SetOrkProp(const reflect::IObjectProperty* prop) {
+  void SetOrkProp(const reflect::ObjectProperty* prop) {
     mOrkProp = prop;
   }
-  const reflect::IObjectProperty* GetOrkProp() const {
+  const reflect::ObjectProperty* GetOrkProp() const {
     return mOrkProp;
   }
   ///////////////////////////////////////////////////
@@ -531,7 +531,7 @@ public:
   ///////////////////////////////////////////////////
   GedSkin* GetSkin() const;
   ///////////////////////////////////////////////////
-  const reflect::IObjectProperty* mOrkProp;
+  const reflect::ObjectProperty* mOrkProp;
   ork::Object* mOrkObj;
   static GedSkin* gpSkin0;
   static GedSkin* gpSkin1;
@@ -552,7 +552,7 @@ public:
   bool mbcollapsed;
   ork::ArrayString<kmaxgedstring> mvalue;
   orkvector<GedItemNode*> mItems;
-  GedItemNode* mParent;
+  GedItemNode* _parent;
   orkmap<std::string, std::string> mTags;
   GedWidget* mRoot;
   int micalch;
@@ -569,7 +569,7 @@ class GedLabelNode : public GedItemNode {
 public:
   ///////////////////////////////////////////////////
 
-  GedLabelNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj)
+  GedLabelNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj)
       : GedItemNode(mdl, name, prop, obj) {
   }
 
@@ -584,7 +584,7 @@ class GedRootNode : public GedItemNode {
   virtual int CalcHeight(void);
 
 public:
-  GedRootNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj);
+  GedRootNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj);
   bool DoDrawDefault() const {
     return false;
   } // virtual
@@ -597,7 +597,7 @@ class GedGroupNode : public GedItemNode {
   ork::file::Path::NameType mPersistID;
 
 public:
-  GedGroupNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj, bool is_obj_node = false);
+  GedGroupNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj, bool is_obj_node = false);
 
   void CheckVis();
   bool DoDrawDefault() const {
@@ -644,7 +644,7 @@ public:
     mbDeleteModel = true;
   }
 
-  void PropertyInvalidated(ork::Object* pobj, const reflect::IObjectProperty* prop);
+  void PropertyInvalidated(ork::Object* pobj, const reflect::ObjectProperty* prop);
 
   GedWidget(ObjModel& model);
   ~GedWidget();

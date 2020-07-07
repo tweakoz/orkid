@@ -42,7 +42,7 @@ template <typename vtx_t> struct RigidPrimitive {
 
   struct PrimitiveGroup {
     idxbuf_ptr_t _idxbuffer;
-    lev2::EPrimitiveType _primtype = lev2::EPrimitiveType::NONE;
+    lev2::PrimitiveType _primtype = lev2::PrimitiveType::NONE;
   };
   using primgroup_ptr_t      = std::shared_ptr<PrimitiveGroup>;
   using primgroup_ptr_list_t = std::vector<primgroup_ptr_t>;
@@ -174,7 +174,7 @@ void RigidPrimitive<vtx_t>::writeToChunks(
       auto indexdata    = DummyTarget.GBI()->LockIB(*PG->mpIndices);
       OrkAssert(indexdata != nullptr);
       hdrstream->AddItem<size_t>(ipg);
-      hdrstream->AddItem<lev2::EPrimitiveType>(PG->mePrimType);
+      hdrstream->AddItem<lev2::PrimitiveType>(PG->mePrimType);
       hdrstream->AddItem<size_t>(numindices);
       hdrstream->AddItem<size_t>(ibufoffset);
       geostream->Write(
@@ -203,7 +203,7 @@ void RigidPrimitive<vtx_t>::gpuLoadFromChunks(
   size_t vertexdataoffset = 0;
   size_t numprimgroups    = 0;
   size_t check_pgindex    = 0;
-  lev2::EPrimitiveType primtype;
+  lev2::PrimitiveType primtype;
   size_t numindices      = 0;
   size_t indexdataoffset = 0;
   ////////////////////////////////////////////////////////////////
@@ -237,7 +237,7 @@ void RigidPrimitive<vtx_t>::gpuLoadFromChunks(
     for (size_t ipg = 0; ipg < numprimgroups; ipg++) {
       hdrstream->GetItem<size_t>(check_pgindex);
       OrkAssert(ipg == check_pgindex);
-      hdrstream->GetItem<lev2::EPrimitiveType>(primtype);
+      hdrstream->GetItem<lev2::PrimitiveType>(primtype);
       hdrstream->GetItem<size_t>(numindices);
       hdrstream->GetItem<size_t>(indexdataoffset);
       auto indexbufferdata = (const uint16_t*)geostream->GetDataAt(indexdataoffset);

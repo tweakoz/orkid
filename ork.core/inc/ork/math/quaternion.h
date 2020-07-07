@@ -9,6 +9,7 @@
 
 #include <memory>
 #include <ork/config/config.h>
+#include <ork/orktypes.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -113,6 +114,11 @@ template <typename T> struct Quaternion {
 
 using fquat       = Quaternion<float>;
 using fquat_ptr_t = std::shared_ptr<fquat>;
+
+template <>                       //
+struct use_custom_serdes<fquat> { //
+  static constexpr bool enable = true;
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 

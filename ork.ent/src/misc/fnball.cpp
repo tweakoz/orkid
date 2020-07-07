@@ -13,8 +13,8 @@
 #include <pkg/ent/scene.hpp>
 #include <ork/lev2/gfx/camera/cameradata.h>
 
-#include <ork/reflect/RegisterProperty.h>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/properties/register.h>
+#include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/lev2_asset.h>
@@ -217,9 +217,9 @@ void FnBallArchetype::DoLinkEntity(Simulation* psi, Entity* pent) const {
 
         targ->MTXI()->PushMMatrix(mtx);
         if (use_tess)
-          targ->GBI()->DrawPrimitive(fd.mpMaterial, vw, EPrimitiveType::PATCHES, knumv);
+          targ->GBI()->DrawPrimitive(fd.mpMaterial, vw, PrimitiveType::PATCHES, knumv);
         else
-          targ->GBI()->DrawPrimitive(fd.mpMaterial, vw, EPrimitiveType::POINTS, knumv);
+          targ->GBI()->DrawPrimitive(fd.mpMaterial, vw, PrimitiveType::POINTS, knumv);
         targ->MTXI()->PopMMatrix();
       }
     }

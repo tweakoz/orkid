@@ -67,7 +67,7 @@ void GeometryBufferInterface::FlushVB(VertexBufferBase& VBuf) {
 void GeometryBufferInterface::DrawPrimitive(
     GfxMaterial* mtl, //
     const VtxWriterBase& VW,
-    EPrimitiveType eType,
+    PrimitiveType eType,
     int icount) {
   if (0 == icount) {
     icount = VW.miWriteCounter;
@@ -81,7 +81,7 @@ void GeometryBufferInterface::DrawPrimitive(
 void GeometryBufferInterface::DrawPrimitive(
     GfxMaterial* mtl,
     const VertexBufferBase& VBuf,
-    EPrimitiveType eTyp,
+    PrimitiveType eTyp,
     int ivbase,
     int ivcount) {
   int imax = VBuf.GetMax();
@@ -90,7 +90,7 @@ void GeometryBufferInterface::DrawPrimitive(
     for (int ipass = 0; ipass < inumpasses; ipass++) {
       bool bDRAW = mtl->BeginPass(&_context, ipass);
       if (bDRAW) {
-        if (EPrimitiveType::NONE == eTyp) {
+        if (PrimitiveType::NONE == eTyp) {
           eTyp = VBuf.GetPrimType();
         }
 
@@ -110,7 +110,7 @@ void GeometryBufferInterface::DrawIndexedPrimitive(
     GfxMaterial* mtl,
     const VertexBufferBase& VBuf,
     const IndexBufferBase& IdxBuf,
-    EPrimitiveType eType,
+    PrimitiveType eType,
     int ivbase,
     int ivcount) {
   int imax = VBuf.GetMax();
@@ -120,7 +120,7 @@ void GeometryBufferInterface::DrawIndexedPrimitive(
 
     for (int ipass = 0; ipass < inumpasses; ipass++) {
       if (mtl->BeginPass(&_context, ipass)) {
-        if (EPrimitiveType::NONE == eType)
+        if (PrimitiveType::NONE == eType)
           eType = VBuf.GetPrimType();
         DrawIndexedPrimitiveEML(VBuf, IdxBuf, eType, ivbase, ivcount);
 
@@ -134,7 +134,7 @@ void GeometryBufferInterface::DrawIndexedPrimitive(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GeometryBufferInterface::DrawPrimitiveEML(const VtxWriterBase& VW, EPrimitiveType eType, int icount) {
+void GeometryBufferInterface::DrawPrimitiveEML(const VtxWriterBase& VW, PrimitiveType eType, int icount) {
   if (0 == icount) {
     icount = VW.miWriteCounter;
   }

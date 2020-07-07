@@ -15,11 +15,11 @@
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/lev2_asset.h>
 #include <ork/pch.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/rtti/downcast.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/reflect/enum_serializer.inl>
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::lev2::CompositingScene, "CompositingScene");

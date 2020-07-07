@@ -9,13 +9,13 @@
 #include <ork/application/application.h>
 #include <pkg/ent/entity.h>
 #include <pkg/ent/scene.h>
-#include <ork/reflect/RegisterProperty.h>
-#include <ork/reflect/AccessorObjectPropertyType.hpp>
+#include <ork/reflect/properties/registerX.inl>
+#include <ork/reflect/properties/AccessorTyped.hpp>
 #include <ork/rtti/downcast.h>
-#include <ork/reflect/DirectObjectVectorPropertyType.h>
-#include <ork/reflect/DirectObjectVectorPropertyType.hpp>
-#include <ork/reflect/DirectObjectMapPropertyType.h>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/DirectTypedVector.h>
+#include <ork/reflect/properties/DirectTypedVector.hpp>
+#include <ork/reflect/properties/DirectTypedMap.h>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::SceneObjectClass, "SceneObjectClass")
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::SceneObject, "Ent3dSceneObject");
@@ -57,19 +57,19 @@ void SceneDagObject::Describe() {
   reflect::annotateClassForEditor<SceneDagObject>("editor.3dxfable", true);
   reflect::annotateClassForEditor<SceneDagObject>("editor.3dxfinterface", ConstString("SceneDagObjectManipInterface"));
   reflect::RegisterProperty("DagNode", &SceneDagObject::AccessDagNode);
-  reflect::RegisterProperty("Parent", &SceneDagObject::mParentName);
+  reflect::RegisterProperty("Parent", &SceneDagObject::_parentName);
 
   // reflect::annotatePropertyForEditor<SceneDagObject>("DagNode", "editor.visible", "false");
   reflect::annotatePropertyForEditor<SceneDagObject>("Parent", "editor.visible", "false");
 }
 SceneDagObject::SceneDagObject()
     : mDagNode(this)
-    , mParentName(AddPooledString("scene")) {
+    , _parentName(AddPooledString("scene")) {
 }
 SceneDagObject::~SceneDagObject() {
 }
 void SceneDagObject::SetParentName(const PoolString& pname) {
-  mParentName = pname;
+  _parentName = pname;
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

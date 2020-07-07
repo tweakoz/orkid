@@ -8,48 +8,63 @@
 #ifndef ORK_ENT_EVENT_MESHENABLEEVENT_H
 #define ORK_ENT_EVENT_MESHENABLEEVENT_H
 
-#include <ork/rtti/RTTI.h>
 #include <ork/event/Event.h>
 #include <ork/application/application.h>
 
 namespace ork { namespace ent { namespace event {
 
-class MeshEnableEvent : public ork::event::Event
-{
-	RttiDeclareConcrete(MeshEnableEvent, ork::event::Event);
+class MeshEnableEvent : public ork::event::Event {
 public:
+  MeshEnableEvent(ork::PieceString name = "", bool enable = true)
+      : mName(ork::AddPooledString(name))
+      , mEnable(enable) {
+  }
 
-	MeshEnableEvent(ork::PieceString name = "", bool enable = true) : mName(ork::AddPooledString(name)), mEnable(enable) {}
+  void SetName(ork::PoolString name) {
+    mName = name;
+  }
+  ork::PoolString GetName() const {
+    return mName;
+  }
 
-	void SetName(ork::PoolString name) { mName = name; }
-	ork::PoolString GetName() const { return mName; }
-
-	void SetEnable(bool enable) { mEnable = enable; }
-	bool IsEnable() const { return mEnable; }
+  void SetEnable(bool enable) {
+    mEnable = enable;
+  }
+  bool IsEnable() const {
+    return mEnable;
+  }
 
 private:
-	ork::PoolString mName;
-	bool mEnable;
+  ork::PoolString mName;
+  bool mEnable;
 };
 
-class MeshLayerFxEvent : public ork::event::Event
-{
-	RttiDeclareConcrete(MeshLayerFxEvent, ork::event::Event);
+class MeshLayerFxEvent : public ork::event::Event {
 public:
+  MeshLayerFxEvent(ork::PieceString name = "", bool enable = true)
+      : mName(ork::AddPooledString(name))
+      , mEnable(enable) {
+  }
 
-	MeshLayerFxEvent(ork::PieceString name = "", bool enable = true) : mName(ork::AddPooledString(name)), mEnable(enable) {}
+  void SetName(ork::PoolString name) {
+    mName = name;
+  }
+  ork::PoolString GetName() const {
+    return mName;
+  }
 
-	void SetName(ork::PoolString name) { mName = name; }
-	ork::PoolString GetName() const { return mName; }
-
-	void SetEnable(bool enable) { mEnable = enable; }
-	bool IsEnable() const { return mEnable; }
+  void SetEnable(bool enable) {
+    mEnable = enable;
+  }
+  bool IsEnable() const {
+    return mEnable;
+  }
 
 private:
-	ork::PoolString mName;
-	bool mEnable;
+  ork::PoolString mName;
+  bool mEnable;
 };
 
-} } } // ork::ent::event
+}}} // namespace ork::ent::event
 
 #endif // ORK_ENT_EVENT_MESHENABLEEVENT_H

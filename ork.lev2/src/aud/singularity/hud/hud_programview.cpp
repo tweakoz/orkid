@@ -16,16 +16,27 @@ struct ProgramView final : public ui::Surface {
   ork::lev2::CTXBASE* _ctxbase = nullptr;
   int _updatecount             = 0;
   prgdata_constptr_t _curprogram;
+  int _octaveshift = 0;
+  int _velocity    = 127;
 };
 ///////////////////////////////////////////////////////////////////////////////
-hudpanel_ptr_t createProgramView(hudvp_ptr_t vp, std::string named) {
-  auto hudpanel      = std::make_shared<HudPanel>();
-  auto programview   = std::make_shared<ProgramView>();
-  hudpanel->_uipanel = std::make_shared<ui::Panel>("progview", 0, 0, 32, 32);
+hudpanel_ptr_t createProgramView(
+    hudvp_ptr_t vp, //
+    const ui::anchor::Bounds& bounds,
+    std::string named) {
+  auto hudpanel    = std::make_shared<HudPanel>();
+  auto programview = std::make_shared<ProgramView>();
+  auto uipanelitem = vp->makeChild<ui::Panel>("progview", 0, 0, 32, 32);
+  uipanelitem.applyBounds(bounds);
+  hudpanel->_uipanel                = uipanelitem._widget;
+  hudpanel->_panelLayout            = uipanelitem._layout;
+  hudpanel->_uipanel->_closeEnabled = false;
+  hudpanel->_uipanel->_moveEnabled  = false;
   hudpanel->_uipanel->setTitle(named);
   hudpanel->_uisurface = programview;
   hudpanel->_uipanel->setChild(hudpanel->_uisurface);
-  hudpanel->_uipanel->snap();
+  hudpanel->_uipanel->_stdcolor   = fvec4(0.2, 0.2, 0.3f, 0.5f);
+  hudpanel->_uipanel->_focuscolor = fvec4(0.3, 0.2, 0.4f, 0.5f);
   ///////////////////////////////////////////////////////////////////////
   vp->addChild(hudpanel->_uipanel);
   vp->_hudpanels.insert(hudpanel);
@@ -94,8 +105,17 @@ void ProgramView::DoInit(lev2::Context* pt) {
   _ctxbase    = pt->GetCtxBase();
 }
 ///////////////////////////////////////////////////////////////////////////////
-ui::HandlerResult ProgramView::DoOnUiEvent(ui::event_constptr_t EV) {
-  ui::HandlerResult ret(this);
+
+ui::HandlerResult ProgramView::DoOnUiEvent(ui::event_constptr_t ev) {
+  ui::HandlerResult ret;
+  bool isalt  = ev->mbALT;
+  bool isctrl = ev->mbCTRL;
+  switch (ev->_eventcode) {
+    case ui::EventCode::KEY:
+      break;
+    case ui::EventCode::KEYUP: {
+    } break;
+  }
   return ret;
 }
 ///////////////////////////////////////////////////////////////////////////////

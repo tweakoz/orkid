@@ -146,7 +146,7 @@ public:
 class SceneDagObject : public SceneObject {
   RttiDeclareConcrete(SceneDagObject, SceneObject);
   DagNode mDagNode;
-  PoolString mParentName;
+  PoolString _parentName;
 
 public:
   SceneDagObject();
@@ -154,7 +154,7 @@ public:
 
   void SetParentName(const PoolString& pname);
   const PoolString& GetParentName() const {
-    return mParentName;
+    return _parentName;
   }
 
   DagNode& GetDagNode() {
@@ -204,7 +204,7 @@ public:
   EntData();
   ~EntData();
 
-  bool PostDeserialize(reflect::IDeserializer&) final;
+  bool postDeserialize(reflect::serdes::IDeserializer&) final;
 
   const Archetype* GetArchetype() const {
     return mArchetype;
@@ -289,7 +289,7 @@ public:
   _rendermtxprovider_t _renderMtxProvider = nullptr;
 
 private:
-  bool DoNotify(const ork::event::Event* event) final;
+  void doNotify(const ork::event::Event* event) final;
 
   Simulation* mSimulation;
 
@@ -371,7 +371,7 @@ protected:
   ComponentDataTable::LutType mComponentDatas;
 
 private:
-  bool PostDeserialize(reflect::IDeserializer&) override;
+  bool postDeserialize(reflect::serdes::IDeserializer&) override;
 
   SceneData* mpSceneData;
 };

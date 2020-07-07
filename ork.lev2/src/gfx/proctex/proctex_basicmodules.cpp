@@ -5,9 +5,9 @@
 #include <ork/lev2/gfx/proctex/proctex.h>
 #include <ork/pch.h>
 
-#include <ork/reflect/DirectObjectMapPropertyType.h>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/DirectTypedMap.h>
+#include <ork/reflect/properties/DirectTyped.hpp>
+#include <ork/reflect/properties/register.h>
 
 #include <ork/file/file.h>
 #include <ork/math/plane.hpp>
@@ -15,69 +15,68 @@
 #include <ork/reflect/enum_serializer.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
-INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::Periodic, "proctex::periodic");
-INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::RotSolid, "proctex::RotSolid");
-INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::Colorize, "proctex::Colorize");
-INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::SolidColor, "proctex::SolidColor");
-INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::ImgOp2, "proctex::ImgOp2");
-INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::ImgOp3, "proctex::ImgOp3");
-INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::Transform, "proctex::Transform");
-INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::Texture, "proctex::Texture");
-INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::ShaderQuad, "proctex::ShaderQuad");
-INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::Gradient, "proctex::Gradient");
-INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::Curve1D, "proctex::Curve1D");
-INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::Global, "proctex::Global");
-INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::Group, "proctex::Group");
-
-///////////////////////////////////////////////////////////////////////////////
-BEGIN_ENUM_SERIALIZER(ork::proctex, EPeriodicShape)
-DECLARE_ENUM(ESH_SAW)
-DECLARE_ENUM(ESH_SIN)
-DECLARE_ENUM(ESH_COS)
-DECLARE_ENUM(ESH_SQU)
-END_ENUM_SERIALIZER()
-
-BEGIN_ENUM_SERIALIZER(ork::proctex, EIMGOP2)
-DECLARE_ENUM(EIO2_ADD)
-DECLARE_ENUM(EIO2_MUL)
-DECLARE_ENUM(EIO2_AMINUSB)
-DECLARE_ENUM(EIO2_BMINUSA)
-END_ENUM_SERIALIZER()
-
-BEGIN_ENUM_SERIALIZER(ork::proctex, EIMGOP3)
-DECLARE_ENUM(EIO3_LERP)
-DECLARE_ENUM(EIO3_ADDW)
-DECLARE_ENUM(EIO3_SUBW)
-DECLARE_ENUM(EIO3_MUL3)
-END_ENUM_SERIALIZER()
-
-BEGIN_ENUM_SERIALIZER(ork::proctex, EIMGOP3CHAN)
-DECLARE_ENUM(EIO3_CH_R)
-DECLARE_ENUM(EIO3_CH_A)
-DECLARE_ENUM(EIO3_CH_RGB)
-DECLARE_ENUM(EIO3_CH_RGBA)
-END_ENUM_SERIALIZER()
-
-BEGIN_ENUM_SERIALIZER(ork::proctex, EGradientRepeatMode)
-DECLARE_ENUM(EGS_REPEAT)
-DECLARE_ENUM(EGS_PINGPONG)
-END_ENUM_SERIALIZER()
-
-BEGIN_ENUM_SERIALIZER(ork::proctex, EGradientType)
-DECLARE_ENUM(EGT_HORIZONTAL)
-DECLARE_ENUM(EGT_VERTICAL)
-DECLARE_ENUM(EGT_RADIAL)
-DECLARE_ENUM(EGT_CONICAL)
-END_ENUM_SERIALIZER()
+ImplementReflectionX(ork::proctex::Periodic, "proctex::periodic");
+ImplementReflectionX(ork::proctex::RotSolid, "proctex::RotSolid");
+ImplementReflectionX(ork::proctex::Colorize, "proctex::Colorize");
+ImplementReflectionX(ork::proctex::SolidColor, "proctex::SolidColor");
+ImplementReflectionX(ork::proctex::ImgOp2, "proctex::ImgOp2");
+ImplementReflectionX(ork::proctex::ImgOp3, "proctex::ImgOp3");
+ImplementReflectionX(ork::proctex::Transform, "proctex::Transform");
+ImplementReflectionX(ork::proctex::Texture, "proctex::Texture");
+ImplementReflectionX(ork::proctex::ShaderQuad, "proctex::ShaderQuad");
+ImplementReflectionX(ork::proctex::Gradient, "proctex::Gradient");
+ImplementReflectionX(ork::proctex::Curve1D, "proctex::Curve1D");
+ImplementReflectionX(ork::proctex::Global, "proctex::Global");
+ImplementReflectionX(ork::proctex::Group, "proctex::Group");
 
 using namespace ork::lev2;
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace proctex {
+namespace ork::proctex {
+///////////////////////////////////////////////////////////////////////////////
+BeginEnumRegistration(PeriodicShape);
+RegisterEnum(PeriodicShape, SAW);
+RegisterEnum(PeriodicShape, SIN);
+RegisterEnum(PeriodicShape, COS);
+RegisterEnum(PeriodicShape, SQU);
+EndEnumRegistration();
+
+BeginEnumRegistration(ImageOp2);
+RegisterEnum(ImageOp2, ADD);
+RegisterEnum(ImageOp2, MUL);
+RegisterEnum(ImageOp2, AMINUSB);
+RegisterEnum(ImageOp2, BMINUSA);
+EndEnumRegistration();
+
+BeginEnumRegistration(ImageOp3);
+RegisterEnum(ImageOp3, LERP);
+RegisterEnum(ImageOp3, ADDW);
+RegisterEnum(ImageOp3, SUBW);
+RegisterEnum(ImageOp3, MUL3);
+EndEnumRegistration();
+
+BeginEnumRegistration(ImageOp3Channel);
+RegisterEnum(ImageOp3Channel, R);
+RegisterEnum(ImageOp3Channel, A);
+RegisterEnum(ImageOp3Channel, RGB);
+RegisterEnum(ImageOp3Channel, RGBA);
+EndEnumRegistration();
+
+BeginEnumRegistration(GradientRepeatMode);
+RegisterEnum(GradientRepeatMode, REPEAT);
+RegisterEnum(GradientRepeatMode, PINGPONG);
+EndEnumRegistration();
+
+BeginEnumRegistration(GradientType);
+RegisterEnum(GradientType, HORIZONTAL);
+RegisterEnum(GradientType, VERTICAL);
+RegisterEnum(GradientType, RADIAL);
+RegisterEnum(GradientType, CONICAL);
+EndEnumRegistration();
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-void Periodic::Describe() {
+void Periodic::describeX(class_t* clazz) {
+  /*
   RegisterFloatXfPlug(Periodic, Frequency, 0.0f, 36.0f, ged::OutPlugChoiceDelegate);
   RegisterFloatXfPlug(Periodic, Amplitude, -1.0f, 1.0f, ged::OutPlugChoiceDelegate);
   RegisterFloatXfPlug(Periodic, PhaseOffset, -1.0f, 1.0f, ged::OutPlugChoiceDelegate);
@@ -85,6 +84,7 @@ void Periodic::Describe() {
 
   ork::reflect::RegisterProperty("Shape", &Periodic::meShape);
   ork::reflect::annotatePropertyForEditor<Periodic>("Shape", "editor.class", "ged.factory.enum");
+*/
 }
 dataflow::inplugbase* Periodic::GetInput(int idx) {
   dataflow::inplugbase* rval = 0;
@@ -113,7 +113,7 @@ Periodic::Periodic()
     , mfAmplitude(0.0f)
     , mfBias(1.0f)
     , mfPhaseOffset(0.0f)
-    , meShape(ESH_SQU)
+    , meShape(PeriodicShape::SQU)
     , mPlugInpFrequency(this, dataflow::EPR_UNIFORM, mfFrequency, "frq")
     , mPlugInpAmplitude(this, dataflow::EPR_UNIFORM, mfAmplitude, "amp")
     , mPlugInpPhaseOffset(this, dataflow::EPR_UNIFORM, mfPhaseOffset, "pho")
@@ -131,16 +131,16 @@ float Periodic::compute(float unitphase) {
   float rval    = 0.0f;
   float inphase = mPlugInpPhaseOffset.GetValue() + (unitphase * mPlugInpFrequency.GetValue());
   switch (meShape) {
-    case ESH_SAW:
+    case PeriodicShape::SAW:
       rval = (2.0f * fmod(inphase, 1.0f)) - 1.0f;
       break;
-    case ESH_SQU:
+    case PeriodicShape::SQU:
       rval = fmod(inphase, 1.0f) < 0.5f ? 0.0f : 1.0f;
       break;
-    case ESH_COS:
+    case PeriodicShape::COS:
       rval = cosf(inphase * PI2);
       break;
-    case ESH_SIN:
+    case PeriodicShape::SIN:
       rval = sinf(inphase * PI2);
       break;
     default:
@@ -152,7 +152,7 @@ float Periodic::compute(float unitphase) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void Global::Describe() {
+void Global::describeX(class_t* clazz) {
 }
 Global::Global()
     : ConstructOutPlug(Time, dataflow::EPR_UNIFORM)
@@ -192,9 +192,9 @@ dataflow::outplugbase* Global::GetOutput(int idx) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void Curve1D::Describe() {
-  RegisterFloatXfPlug(Curve1D, Input, 0.0f, 1.0f, ged::OutPlugChoiceDelegate);
-  ork::reflect::RegisterProperty("curve", &Curve1D::CurveAccessor);
+void Curve1D::describeX(class_t* clazz) {
+  // RegisterFloatXfPlug(Curve1D, Input, 0.0f, 1.0f, ged::OutPlugChoiceDelegate);
+  // ork::reflect::RegisterProperty("curve", &Curve1D::CurveAccessor);
   // ork::reflect::annotatePropertyForEditor<Curve1D>( "curve", "editor.class", "ged.factory.curve1d" );
 }
 Curve1D::Curve1D()
@@ -229,7 +229,8 @@ dataflow::inplugbase* Curve1D::GetInput(int idx) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void RotSolid::Describe() {
+void RotSolid::describeX(class_t* clazz) {
+  /*
   ork::reflect::RegisterProperty("NumSides", &RotSolid::miNumSides);
   ork::reflect::RegisterProperty("BlendMode", &RotSolid::meBlendMode);
   ork::reflect::RegisterProperty("Radius", &RotSolid::RadiusAccessor);
@@ -246,12 +247,13 @@ void RotSolid::Describe() {
                                 "grp://Plugs PhaseOffset Radius Intens ";
 
   reflect::annotateClassForEditor<RotSolid>("editor.prop.groups", EdGrpStr);
+  */
 }
 ///////////////////////////////////////////////////////////////////////////////
 RotSolid::RotSolid()
     : miNumSides(3)
-    , mVertexBuffer(2048, 0, ork::lev2::EPrimitiveType::TRIANGLES)
-    , meBlendMode(ork::lev2::EBLENDING_OFF)
+    , mVertexBuffer(2048, 0, ork::lev2::PrimitiveType::TRIANGLES)
+    , meBlendMode(ork::lev2::Blending::OFF)
     , mVBHash()
     , mfPhaseOffset(0.0f)
     , mPlugInpPhaseOffset(this, dataflow::EPR_UNIFORM, mfPhaseOffset, "pho")
@@ -331,13 +333,13 @@ void RotSolid::compute(ProcTex& ptex) {
   struct AA16RenderRot : public AA16Render {
     virtual void DoRender(float left, float right, float top, float bot, Buffer& buf) {
       auto targ = mPTX.GetTarget();
-      targ->GBI()->DrawPrimitive(&stdmat, mVB, ork::lev2::EPrimitiveType::TRIANGLES, 0, mVB.GetNumVertices());
+      targ->GBI()->DrawPrimitive(&stdmat, mVB, ork::lev2::PrimitiveType::TRIANGLES, 0, mVB.GetNumVertices());
     }
 
     lev2::GfxMaterial3DSolid stdmat;
     lev2::VertexBufferBase& mVB;
 
-    AA16RenderRot(ProcTex& ptx, Buffer& bo, lev2::EBlending ebm, lev2::VertexBufferBase& vb)
+    AA16RenderRot(ProcTex& ptx, Buffer& bo, lev2::Blending ebm, lev2::VertexBufferBase& vb)
         : AA16Render(ptx, bo)
         , stdmat(ptx.GetTarget())
         , mVB(vb) {
@@ -366,11 +368,13 @@ void RotSolid::compute(ProcTex& ptex) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void ImgOp2::Describe() {
+void ImgOp2::describeX(class_t* clazz) {
+  /*
   RegisterObjInpPlug(ImgOp2, InputA);
   RegisterObjInpPlug(ImgOp2, InputB);
   ork::reflect::RegisterProperty("Op", &ImgOp2::meOp);
   ork::reflect::annotatePropertyForEditor<ImgOp2>("Op", "editor.class", "ged.factory.enum");
+  */
 }
 ork::dataflow::inplugbase* ImgOp2::GetInput(int idx) {
   ork::dataflow::inplugbase* rval = 0;
@@ -387,7 +391,7 @@ ork::dataflow::inplugbase* ImgOp2::GetInput(int idx) {
 ImgOp2::ImgOp2()
     : ConstructInpPlug(InputA, dataflow::EPR_UNIFORM, gNoCon)
     , ConstructInpPlug(InputB, dataflow::EPR_UNIFORM, gNoCon)
-    , meOp(EIO2_ADD) {
+    , meOp(ImageOp2::ADD) {
 }
 void ImgOp2::compute(ProcTex& ptex) {
   auto proc_ctx = ptex.GetPTC();
@@ -403,16 +407,16 @@ void ImgOp2::compute(ProcTex& ptex) {
 
     const char* pop = 0;
     switch (meOp) {
-      case EIO2_ADD:
+      case ImageOp2::ADD:
         pop = "imgop2_add";
         break;
-      case EIO2_MUL:
+      case ImageOp2::MUL:
         pop = "imgop2_mul";
         break;
-      case EIO2_AMINUSB:
+      case ImageOp2::AMINUSB:
         pop = "imgop2_aminusb";
         break;
-      case EIO2_BMINUSA:
+      case ImageOp2::BMINUSA:
         pop = "imgop2_bminusa";
         break;
     }
@@ -420,7 +424,7 @@ void ImgOp2::compute(ProcTex& ptex) {
     gridmat.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
     gridmat._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
     gridmat._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
-    gridmat._rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+    gridmat._rasterstate.SetBlending(ork::lev2::Blending::OFF);
     gridmat._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
 
     auto texa = conplugA->GetValue().GetTexture(ptex);
@@ -438,7 +442,8 @@ void ImgOp2::compute(ProcTex& ptex) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void ImgOp3::Describe() {
+void ImgOp3::describeX(class_t* clazz) {
+  /*
   RegisterObjInpPlug(ImgOp3, InputA);
   RegisterObjInpPlug(ImgOp3, InputB);
   RegisterObjInpPlug(ImgOp3, InputM);
@@ -446,6 +451,7 @@ void ImgOp3::Describe() {
   ork::reflect::annotatePropertyForEditor<ImgOp3>("Op", "editor.class", "ged.factory.enum");
   ork::reflect::RegisterProperty("ChanCtrl", &ImgOp3::meChanCtrl);
   ork::reflect::annotatePropertyForEditor<ImgOp3>("ChanCtrl", "editor.class", "ged.factory.enum");
+  */
 }
 ork::dataflow::inplugbase* ImgOp3::GetInput(int idx) {
   ork::dataflow::inplugbase* rval = 0;
@@ -466,8 +472,8 @@ ImgOp3::ImgOp3()
     : ConstructInpPlug(InputA, dataflow::EPR_UNIFORM, gNoCon)
     , ConstructInpPlug(InputB, dataflow::EPR_UNIFORM, gNoCon)
     , ConstructInpPlug(InputM, dataflow::EPR_UNIFORM, gNoCon)
-    , meOp(EIO3_LERP)
-    , meChanCtrl(EIO3_CH_RGB)
+    , meOp(ImageOp3::LERP)
+    , meChanCtrl(ImageOp3Channel::RGB)
     , mMtlLerp(nullptr)
     , mMtlAddw(nullptr)
     , mMtlSubw(nullptr)
@@ -504,40 +510,40 @@ void ImgOp3::compute(ProcTex& ptex) {
       mMtlLerp->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
       mMtlLerp->_rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
       mMtlLerp->_rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
-      mMtlLerp->_rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+      mMtlLerp->_rasterstate.SetBlending(ork::lev2::Blending::OFF);
       mMtlLerp->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
 
       mMtlAddw->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
       mMtlAddw->_rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
       mMtlAddw->_rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
-      mMtlAddw->_rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+      mMtlAddw->_rasterstate.SetBlending(ork::lev2::Blending::OFF);
       mMtlAddw->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
 
       mMtlSubw->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
       mMtlSubw->_rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
       mMtlSubw->_rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
-      mMtlSubw->_rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+      mMtlSubw->_rasterstate.SetBlending(ork::lev2::Blending::OFF);
       mMtlSubw->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
 
       mMtlMul3->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
       mMtlMul3->_rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
       mMtlMul3->_rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
-      mMtlMul3->_rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+      mMtlMul3->_rasterstate.SetBlending(ork::lev2::Blending::OFF);
       mMtlMul3->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
     }
 
     lev2::GfxMaterial3DSolid* cur_mtl = nullptr;
     switch (meOp) {
-      case EIO3_LERP:
+      case ImageOp3::LERP:
         cur_mtl = mMtlLerp;
         break;
-      case EIO3_ADDW:
+      case ImageOp3::ADDW:
         cur_mtl = mMtlAddw;
         break;
-      case EIO3_SUBW:
+      case ImageOp3::SUBW:
         cur_mtl = mMtlSubw;
         break;
-      case EIO3_MUL3:
+      case ImageOp3::MUL3:
         cur_mtl = mMtlMul3;
         break;
     }
@@ -558,13 +564,15 @@ void ImgOp3::compute(ProcTex& ptex) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void Transform::Describe() {
+void Transform::describeX(class_t* clazz) {
+  /*
   RegisterObjInpPlug(Transform, Input);
   RegisterFloatXfPlug(Transform, ScaleX, -16.0f, 16.0f, ged::OutPlugChoiceDelegate);
   RegisterFloatXfPlug(Transform, ScaleY, -16.0f, 16.0f, ged::OutPlugChoiceDelegate);
   RegisterFloatXfPlug(Transform, OffsetX, -1.0f, 1.0f, ged::OutPlugChoiceDelegate);
   RegisterFloatXfPlug(Transform, OffsetY, -1.0f, 1.0f, ged::OutPlugChoiceDelegate);
   RegisterFloatXfPlug(Transform, Rotate, -360.0f, 360.0f, ged::OutPlugChoiceDelegate);
+  */
 }
 ork::dataflow::inplugbase* Transform::GetInput(int idx) {
   ork::dataflow::inplugbase* rval = 0;
@@ -619,7 +627,7 @@ void Transform::compute(ProcTex& ptex) {
       mMaterial->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
       mMaterial->_rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
       mMaterial->_rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
-      mMaterial->_rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+      mMaterial->_rasterstate.SetBlending(ork::lev2::Blending::OFF);
       mMaterial->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
     }
     ////////////////////////////////////////////////////////////////
@@ -647,12 +655,14 @@ void Transform::compute(ProcTex& ptex) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void Texture::Describe() {
+void Texture::describeX(class_t* clazz) {
+  /*
   ork::reflect::RegisterProperty("Input", &Texture::GetTextureAccessor, &Texture::SetTextureAccessor);
   ork::reflect::RegisterProperty("FlipY", &Texture::_flipy);
   ork::reflect::annotatePropertyForEditor<Texture>("Input", "editor.class", "ged.factory.assetlist");
   ork::reflect::annotatePropertyForEditor<Texture>("Input", "editor.assettype", "lev2tex");
   ork::reflect::annotatePropertyForEditor<Texture>("Input", "editor.assetclass", "lev2tex");
+  */
 }
 Texture::Texture()
     : mpTexture(0) {
@@ -669,7 +679,7 @@ void Texture::compute(ProcTex& ptex) {
   gridmat.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
   gridmat._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
   gridmat._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
-  gridmat._rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+  gridmat._rasterstate.SetBlending(ork::lev2::Blending::OFF);
   gridmat._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
   gridmat.SetTexture(GetTexture());
   gridmat.SetUser0(fvec4(0.0f, 0.0f, 0.0f, float(buffer.miW)));
@@ -702,7 +712,8 @@ void Texture::compute(ProcTex& ptex) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void ShaderQuad::Describe() {
+void ShaderQuad::describeX(class_t* clazz) {
+  /*
   ork::reflect::RegisterProperty("ShaderFile", &ShaderQuad::mShaderPath);
   ork::reflect::annotatePropertyForEditor<ShaderQuad>("ShaderFile", "editor.class", "ged.factory.filelist");
   ork::reflect::annotatePropertyForEditor<ShaderQuad>("ShaderFile", "editor.filetype", "glfx");
@@ -733,6 +744,7 @@ void ShaderQuad::Describe() {
   };
 
   reflect::annotateClassForEditor<ShaderQuad>("editor.object.ops", opm);
+  */
 
   ////////////////////////////////////////
 }
@@ -785,7 +797,7 @@ void ShaderQuad::compute(ProcTex& ptex) {
     mShader->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
     mShader->_rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
     mShader->_rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
-    mShader->_rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+    mShader->_rasterstate.SetBlending(ork::lev2::Blending::OFF);
     mShader->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
 
     if (conplug) {
@@ -825,7 +837,8 @@ void ShaderQuad::compute(ProcTex& ptex) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void SolidColor::Describe() {
+void SolidColor::describeX(class_t* clazz) {
+  /*
   ork::reflect::RegisterProperty("Red", &SolidColor::mfr);
   ork::reflect::RegisterProperty("Green", &SolidColor::mfg);
   ork::reflect::RegisterProperty("Blue", &SolidColor::mfb);
@@ -846,6 +859,7 @@ void SolidColor::Describe() {
   static const char* EdGrpStr = "grp://RGBA Red Green Blue Alpha";
 
   reflect::annotateClassForEditor<SolidColor>("editor.prop.groups", EdGrpStr);
+  */
 }
 SolidColor::SolidColor()
     : mfr(1.0f)
@@ -867,7 +881,7 @@ void SolidColor::compute(ProcTex& ptex) {
     mMaterial->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_MOD_COLOR);
     mMaterial->_rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
     mMaterial->_rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
-    mMaterial->_rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+    mMaterial->_rasterstate.SetBlending(ork::lev2::Blending::OFF);
     mMaterial->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
     mMaterial->SetUser0(fvec4(0.0f, 0.0f, 0.0f, float(buffer.miW)));
   }
@@ -890,7 +904,8 @@ void SolidColor::compute(ProcTex& ptex) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void Gradient::Describe() {
+void Gradient::describeX(class_t* clazz) {
+  /*
   ork::reflect::RegisterProperty("gradient", &Gradient::GradientAccessor);
   ork::reflect::annotatePropertyForEditor<Gradient>("gradient", "editor.class", "ged.factory.gradient");
 
@@ -910,13 +925,14 @@ void Gradient::Describe() {
   static const char* EdGrpStr = "grp://Basic AntiAlias Type Repeat RepeatMode gradient";
 
   reflect::annotateClassForEditor<Gradient>("editor.prop.groups", EdGrpStr);
+  */
 }
 Gradient::Gradient()
     : mpTexture(0)
-    , mVertexBuffer(1 << 20, 0, ork::lev2::EPrimitiveType::TRIANGLES)
+    , mVertexBuffer(1 << 20, 0, ork::lev2::PrimitiveType::TRIANGLES)
     , miRepeat(1)
-    , meRepeatMode(EGS_REPEAT)
-    , meGradientType(EGT_HORIZONTAL)
+    , meRepeatMode(GradientRepeatMode::REPEAT)
+    , meGradientType(GradientType::HORIZONTAL)
     , mbAA(false)
     , mMtl(nullptr) {
 }
@@ -929,7 +945,7 @@ void Gradient::compute(ProcTex& ptex) {
 
   const orklut<float, ork::fvec4>& data = mGradient.Data();
   float frw                             = 1.0f / float(miRepeat);
-  bool bpingpong                        = (meRepeatMode == EGS_PINGPONG);
+  bool bpingpong                        = (meRepeatMode == GradientRepeatMode::PINGPONG);
   const int knumpoints                  = data.size();
   const int ksegs                       = knumpoints - 1;
   const float kz                        = 0.0f;
@@ -943,7 +959,7 @@ void Gradient::compute(ProcTex& ptex) {
     mMtl->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR);
     mMtl->_rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
     mMtl->_rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
-    mMtl->_rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+    mMtl->_rasterstate.SetBlending(ork::lev2::Blending::OFF);
     mMtl->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
     mMtl->_rasterstate.SetShadeModel(ork::lev2::ESHADEMODEL_SMOOTH);
   }
@@ -967,18 +983,18 @@ void Gradient::compute(ProcTex& ptex) {
       float fx0                           = bppalt ? frght - (fia * frw) : fleft + (fia * frw);
       float fx1                           = bppalt ? frght - (fib * frw) : fleft + (fib * frw);
       switch (meGradientType) {
-        case EGT_VERTICAL:
-        case EGT_HORIZONTAL:
+        case GradientType::VERTICAL:
+        case GradientType::HORIZONTAL:
           ivtxcount += 6;
           break;
-        case EGT_CONICAL: {
+        case GradientType::CONICAL: {
           float fmx0        = bppalt ? fx1 : fx0;
           float fmx1        = bppalt ? fx0 : fx1;
           const int ksegdiv = int((fmx1 - fmx0) * 360.0f);
           ivtxcount += ksegdiv * 3;
           break;
         }
-        case EGT_RADIAL:
+        case GradientType::RADIAL:
           ivtxcount += 360 * 6;
           break;
         default:
@@ -1015,7 +1031,7 @@ void Gradient::compute(ProcTex& ptex) {
       fvec4 c1 = data_b.second;
 
       switch (meGradientType) {
-        case EGT_VERTICAL: {
+        case GradientType::VERTICAL: {
           lev2::SVtxV12C4T16 v0(fvec3(fy0, fx0, kz), uv, c0.GetVtxColorAsU32());
           lev2::SVtxV12C4T16 v1(fvec3(fy0, fx1, kz), uv, c1.GetVtxColorAsU32());
           lev2::SVtxV12C4T16 v2(fvec3(fy1, fx1, kz), uv, c1.GetVtxColorAsU32());
@@ -1028,7 +1044,7 @@ void Gradient::compute(ProcTex& ptex) {
           vw.AddVertex(v3);
           break;
         }
-        case EGT_HORIZONTAL: {
+        case GradientType::HORIZONTAL: {
           lev2::SVtxV12C4T16 v0(fvec3(fx0, fy0, kz), uv, c0.GetVtxColorAsU32());
           lev2::SVtxV12C4T16 v1(fvec3(fx1, fy0, kz), uv, c1.GetVtxColorAsU32());
           lev2::SVtxV12C4T16 v2(fvec3(fx1, fy1, kz), uv, c1.GetVtxColorAsU32());
@@ -1041,7 +1057,7 @@ void Gradient::compute(ProcTex& ptex) {
           vw.AddVertex(v3);
           break;
         }
-        case EGT_CONICAL: {
+        case GradientType::CONICAL: {
           float fmx0 = bppalt ? fx1 : fx0;
           float fmx1 = bppalt ? fx0 : fx1;
 
@@ -1080,7 +1096,7 @@ void Gradient::compute(ProcTex& ptex) {
           }
           break;
         }
-        case EGT_RADIAL: {
+        case GradientType::RADIAL: {
           float fmx0 = bppalt ? fx1 : fx0;
           float fmx1 = bppalt ? fx0 : fx1;
 
@@ -1131,7 +1147,7 @@ void Gradient::compute(ProcTex& ptex) {
       mPTX.GetTarget()->PushModColor(fvec3::White());
       mPTX.GetTarget()->MTXI()->PushPMatrix(mtxortho);
       mPTX.GetTarget()->GBI()->DrawPrimitive(
-          mMtl, mVertexBuffer, ork::lev2::EPrimitiveType::TRIANGLES, 0, mVertexBuffer.GetNumVertices());
+          mMtl, mVertexBuffer, ork::lev2::PrimitiveType::TRIANGLES, 0, mVertexBuffer.GetNumVertices());
       mPTX.GetTarget()->MTXI()->PopPMatrix();
       mPTX.GetTarget()->PopModColor();
     }
@@ -1163,10 +1179,12 @@ void Gradient::compute(ProcTex& ptex) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void Group::Describe() {
+void Group::describeX(class_t* clazz) {
+  /*
   ork::reflect::RegisterProperty("ProcTex", &Group::GetTextureAccessor, &Group::SetTextureAccessor);
   ork::reflect::annotatePropertyForEditor<Group>("ProcTex", "editor.visible", "false");
   ork::reflect::annotateClassForEditor<Group>("editor.object.ops", ConstString("load:proctexgroupload save:proctexgroupsave"));
+  */
 }
 Group::Group()
     : mpProcTex(0) {
@@ -1190,7 +1208,7 @@ void Group::compute(ProcTex& ptex) {
     gridmat.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
     gridmat._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
     gridmat._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
-    gridmat._rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+    gridmat._rasterstate.SetBlending(ork::lev2::Blending::OFF);
     gridmat._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
     gridmat.SetTexture(ptexture);
     gridmat.SetUser0(fvec4(0.0f, 0.0f, 0.0f, float(computebuffer.miW)));
@@ -1214,4 +1232,4 @@ void Group::compute(ProcTex& ptex) {
   pTARG->debugPopGroup();
 }
 ///////////////////////////////////////////////////////////////////////////////
-}} // namespace ork::proctex
+} // namespace ork::proctex

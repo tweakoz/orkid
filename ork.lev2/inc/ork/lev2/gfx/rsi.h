@@ -18,7 +18,7 @@ public:
 
   virtual void SetZWriteMask(bool bv)             = 0;
   virtual void SetRGBAWriteMask(bool rgb, bool a) = 0;
-  virtual void SetBlending(EBlending eVal)        = 0;
+  virtual void SetBlending(Blending eVal)        = 0;
   virtual void SetDepthTest(EDepthTest eVal)      = 0;
   virtual void SetCullTest(ECullTest eVal)        = 0;
   virtual void setScissorTest(EScissorTest eVal)  = 0;

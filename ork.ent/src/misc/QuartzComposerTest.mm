@@ -7,7 +7,7 @@
 
 #if defined(ORK_OSX)
 #include <ork/pch.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/rtti/downcast.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/texman.h>
@@ -21,9 +21,9 @@
 #include <pkg/ent/ModelComponent.h>
 #include <pkg/ent/event/MeshEvent.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/reflect/AccessorObjectPropertyType.hpp>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/AccessorTyped.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
 ///////////////////////////////////////////////////////////////////////////////
 #include <Foundation/NSString.h>
 #include <Foundation/NSGeometry.h>
@@ -397,7 +397,7 @@ void QuartzComposerInst::DoUpdate( ork::ent::Simulation* psi )
 
 	miFrame++;
 }
-bool QuartzComposerInst::DoNotify(const ork::event::Event *event)
+bool QuartzComposerInst::doNotify(const ork::event::Event *event)
 {
 	return true;
 }

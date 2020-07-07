@@ -9,7 +9,7 @@
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 ///////////////////////////////////////////////////////////
-INSTANTIATE_TRANSPARENT_RTTI(ork::ui::Widget, "ui::Widget");
+ImplementReflectionX(ork::ui::Widget, "ui::Widget");
 ///////////////////////////////////////////////////////////
 namespace ork::ui {
 /////////////////////////////////////////////////////////////////////////
@@ -18,16 +18,15 @@ HandlerResult::HandlerResult(Widget* ph)
     , mHoldFocus(false) {
 }
 /////////////////////////////////////////////////////////////////////////
-void Widget::Describe() {
+void Widget::describeX(class_t* clazz) {
 }
 /////////////////////////////////////////////////////////////////////////
 Widget::Widget(const std::string& name, int x, int y, int w, int h)
-    : msName(name)
-    , mpTarget(0)
-    , mbInit(true)
-    , mbKeyboardFocus(false)
-    , mParent(nullptr)
-    , mDirty(true)
+    : _name(name)
+    , _target(0)
+    , _needsinit(true)
+    , _parent(nullptr)
+    , _dirty(true)
     , mSizeDirty(true)
     , mPosDirty(true) {
 
@@ -57,12 +56,13 @@ void Widget::setGeometry(Rect newgeo) {
 HandlerResult Widget::handleUiEvent(event_constptr_t ev) {
   Widget* target = doRouteUiEvent(ev);
   if (0)
-    printf("handleuiev target<%s>\n", target ? target->msName.c_str() : "none");
+    printf("handleuiev target<%s>\n", target ? target->_name.c_str() : "none");
   return target ? target->OnUiEvent(ev) : HandlerResult();
 }
 ///////////////////////////////////////////////////////////
 Widget* Widget::routeUiEvent(event_constptr_t ev) {
-  auto ret = doRouteUiEvent(ev);
+  auto ret = _evrouter ? _evrouter(ev) // lambda takes preference
+                       : doRouteUiEvent(ev);
   return ret;
 }
 ///////////////////////////////////////////////////////////
@@ -70,12 +70,12 @@ Widget* Widget::doRouteUiEvent(event_constptr_t ev) {
   bool inside    = IsEventInside(ev);
   Widget* target = inside ? this : nullptr;
   if (0)
-    printf("Widget::doRouteUiEvent w<%s> inside<%d> target<%p>\n", msName.c_str(), int(inside), target);
+    printf("Widget::doRouteUiEvent w<%s> inside<%d> target<%p>\n", _name.c_str(), int(inside), target);
   return target;
 }
 ///////////////////////////////////////////////////////////
 bool Widget::hasMouseFocus() const {
-  return _uicontext->hasMouseFocus(this);
+  return _uicontext ? _uicontext->hasMouseFocus(this) : false;
 }
 ///////////////////////////////////////////////////////////
 HandlerResult Widget::OnUiEvent(event_constptr_t ev) {
@@ -87,6 +87,9 @@ HandlerResult Widget::OnUiEvent(event_constptr_t ev) {
     top->Filter(ev);
     if (ev->mFilteredEvent._eventcode == EventCode::UNKNOWN)
       return HandlerResult();
+  }
+  if (_evhandler) {
+    return _evhandler(ev);
   }
   return DoOnUiEvent(ev);
 }
@@ -262,7 +265,7 @@ bool Widget::IsEventInside(event_constptr_t Ev) const {
 }
 /////////////////////////////////////////////////////////////////////////
 void Widget::LocalToRoot(int lx, int ly, int& rx, int& ry) const {
-  bool ishidpi    = mpTarget ? mpTarget->hiDPI() : false;
+  bool ishidpi    = _target ? _target->hiDPI() : false;
   rx              = lx;
   ry              = ly;
   const Widget* w = this;
@@ -274,7 +277,7 @@ void Widget::LocalToRoot(int lx, int ly, int& rx, int& ry) const {
 }
 ///////////////////////////////////////////////////////////
 void Widget::RootToLocal(int rx, int ry, int& lx, int& ly) const {
-  bool ishidpi    = mpTarget ? mpTarget->hiDPI() : false;
+  bool ishidpi    = _target ? _target->hiDPI() : false;
   lx              = rx;
   ly              = ry;
   const Widget* w = this;
@@ -286,19 +289,19 @@ void Widget::RootToLocal(int rx, int ry, int& lx, int& ly) const {
 }
 /////////////////////////////////////////////////////////////////////////
 void Widget::SetDirty() {
-  mDirty = true;
-  if (mParent)
-    mParent->mDirty = true;
+  _dirty = true;
+  if (_parent)
+    _parent->_dirty = true;
 }
 /////////////////////////////////////////////////////////////////////////
 void Widget::Draw(ui::drawevent_constptr_t drwev) {
   _drawEvent = drwev;
-  mpTarget   = drwev->GetTarget();
+  _target    = drwev->GetTarget();
 
-  if (mbInit) {
+  if (_needsinit) {
     ork::lev2::FontMan::GetRef();
-    Init(mpTarget);
-    mbInit = false;
+    Init(_target);
+    _needsinit = false;
   }
 
   if (mSizeDirty) {
@@ -309,40 +312,40 @@ void Widget::Draw(ui::drawevent_constptr_t drwev) {
   }
 
   DoDraw(drwev);
-  mpTarget   = 0;
+  _target    = 0;
   _drawEvent = nullptr;
 }
 /////////////////////////////////////////////////////////////////////////
 float Widget::logicalWidth() const {
-  bool ishidpi = mpTarget ? mpTarget->hiDPI() : false;
+  bool ishidpi = _target ? _target->hiDPI() : false;
   return ishidpi ? width() * 2 : width();
 }
 ///////////////////////////////////////////////////////////
 float Widget::logicalHeight() const {
-  bool ishidpi = mpTarget ? mpTarget->hiDPI() : false;
+  bool ishidpi = _target ? _target->hiDPI() : false;
   return ishidpi ? height() * 2 : height();
 }
 ///////////////////////////////////////////////////////////
 float Widget::logicalX() const {
-  bool ishidpi = mpTarget ? mpTarget->hiDPI() : false;
+  bool ishidpi = _target ? _target->hiDPI() : false;
   return ishidpi ? x() * 2 : x();
 }
 ///////////////////////////////////////////////////////////
 float Widget::logicalY() const {
-  bool ishidpi = mpTarget ? mpTarget->hiDPI() : false;
+  bool ishidpi = _target ? _target->hiDPI() : false;
   return ishidpi ? y() * 2 : y();
 }
 /////////////////////////////////////////////////////////////////////////
 void Widget::ExtDraw(lev2::Context* pTARG) {
-  if (mbInit) {
+  if (_needsinit) {
     ork::lev2::FontMan::GetRef();
-    Init(mpTarget);
-    mbInit = false;
+    Init(_target);
+    _needsinit = false;
   }
-  mpTarget = pTARG;
-  auto ev  = std::make_shared<ui::DrawEvent>(pTARG);
+  _target = pTARG;
+  auto ev = std::make_shared<ui::DrawEvent>(pTARG);
   DoDraw(ev);
-  mpTarget = 0;
+  _target = 0;
 }
 /////////////////////////////////////////////////////////////////////////
 void Widget::SetPos(int iX, int iY) {
@@ -382,40 +385,40 @@ void Widget::ReLayout() {
 }
 /////////////////////////////////////////////////////////////////////////
 void Widget::OnResize(void) {
-  // printf("Widget<%s>::OnResize x<%d> y<%d> w<%d> h<%d>\n", msName.c_str(), miX, miY, miW, miH);
+  // printf("Widget<%s>::OnResize x<%d> y<%d> w<%d> h<%d>\n", _name.c_str(), miX, miY, miW, miH);
 }
 /////////////////////////////////////////////////////////////////////////
 bool Widget::IsKeyDepressed(int ch) {
-  if (false == HasKeyboardFocus()) {
+  /*if (_uicontext and false == _uicontext->hasKeyboardFocus()) {
     return false;
   }
-
-  return OldSchool::GetRef().IsKeyDepressed(ch);
+  return OldSchool::GetRef().IsKeyDepressed(ch);*/
+  return false;
 }
 /////////////////////////////////////////////////////////////////////////
 bool Widget::IsHotKeyDepressed(const char* pact) {
-  if (false == HasKeyboardFocus()) {
-    return false;
-  }
-
-  return HotKeyManager::IsDepressed(pact);
+  return false;
+  /*  if (_uicontext and false == _uicontext->hasKeyboardFocus()) {
+      return false;
+    }
+    return HotKeyManager::IsDepressed(pact);*/
 }
 /////////////////////////////////////////////////////////////////////////
 bool Widget::IsHotKeyDepressed(const HotKey& hk) {
-  if (false == HasKeyboardFocus()) {
+  return false;
+  /*if (_uicontext and false == _uicontext->hasKeyboardFocus()) {
     return false;
   }
-
-  return HotKeyManager::IsDepressed(hk);
+  return HotKeyManager::IsDepressed(hk);*/
 }
 /////////////////////////////////////////////////////////////////////////
 Group* Widget::root() const {
-  Group* node = mParent;
+  Group* node = _parent;
   while (node) {
-    if (node->mParent == nullptr)
+    if (node->_parent == nullptr)
       return node;
     else
-      node = node->mParent;
+      node = node->_parent;
   }
   return nullptr;
 }

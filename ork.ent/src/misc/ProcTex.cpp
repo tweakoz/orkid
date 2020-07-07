@@ -13,7 +13,7 @@
 #include <ork/lev2/gfx/proctex/proctex.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/pch.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/rtti/downcast.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -25,20 +25,20 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/kernel/opq.h>
-#include <ork/reflect/AccessorObjectPropertyType.hpp>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/properties/AccessorTyped.hpp>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/reflect/enum_serializer.inl>
 ///////////////////////////////////////////////////////////////////////////////
 #include "ProcTex.h"
 ///////////////////////////////////////////////////////////////////////////////
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::ProcTexArchetype, "ProcTexArchetype");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::ProcTexControllerInst, "ProcTexControllerInst");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::ProcTexControllerData, "ProcTexControllerData");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::ProcTexOutputBase, "ProcTexOutputBase");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::ProcTexOutputQuad, "ProcTexOutputQuad");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::ProcTexOutputSkybox, "ProcTexOutputSkybox");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::ProcTexOutputDynTex, "ProcTexOutputDynTex");
+ImplementReflectionX(ork::ent::ProcTexArchetype, "ProcTexArchetype");
+ImplementReflectionX(ork::ent::ProcTexControllerInst, "ProcTexControllerInst");
+ImplementReflectionX(ork::ent::ProcTexControllerData, "ProcTexControllerData");
+ImplementReflectionX(ork::ent::ProcTexOutputBase, "ProcTexOutputBase");
+ImplementReflectionX(ork::ent::ProcTexOutputQuad, "ProcTexOutputQuad");
+ImplementReflectionX(ork::ent::ProcTexOutputSkybox, "ProcTexOutputSkybox");
+ImplementReflectionX(ork::ent::ProcTexOutputDynTex, "ProcTexOutputDynTex");
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 
@@ -255,7 +255,7 @@ void ProcTexOutputQuad::OnLinkEntity(Simulation* psi, Entity* pent) {
 
     const fmtx4& mtx = renderable->GetMatrix();
 
-    context->GBI()->DrawPrimitive(mtl, vw, lev2::EPrimitiveType::TRIANGLES, 6);
+    context->GBI()->DrawPrimitive(mtl, vw, lev2::PrimitiveType::TRIANGLES, 6);
 
     context->MTXI()->PopMMatrix();
   };

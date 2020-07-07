@@ -8,7 +8,7 @@
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/pch.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/rtti/downcast.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <pkg/ent/entity.h>
@@ -16,8 +16,8 @@
 #include <pkg/ent/scene.h>
 #include <pkg/ent/scene.hpp>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/reflect/AccessorObjectPropertyType.hpp>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/properties/AccessorTyped.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
 ///////////////////////////////////////////////////////////////////////////////
 #include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
 #include <ork/kernel/msgrouter.inl>
@@ -196,7 +196,7 @@ BulletShapeTerrainData::BulletShapeTerrainData()
   };
 }
 
-bool BulletShapeTerrainData::PostDeserialize(reflect::IDeserializer&) {
+bool BulletShapeTerrainData::postDeserialize(reflect::serdes::IDeserializer&) {
   return true;
 }
 

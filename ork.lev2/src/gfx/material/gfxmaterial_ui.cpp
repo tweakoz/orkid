@@ -41,18 +41,19 @@ GfxMaterialUI::GfxMaterialUI(Context* pTarg)
     , hTekCircle(nullptr)
     , hTransform(nullptr)
     , hModColor(nullptr)
-    , meUIColorMode(EUICOLOR_MOD) {
+    , meUIColorMode(UiColorMode::MOD) {
   miNumPasses = 1;
   _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
   _rasterstate.SetAlphaTest(EALPHATEST_OFF);
-  _rasterstate.SetBlending(EBLENDING_OFF);
+  _rasterstate.SetBlending(Blending::OFF);
   _rasterstate.SetDepthTest(EDEPTHTEST_OFF);
   _rasterstate.SetZWriteMask(false);
   _rasterstate.SetCullTest(ECULLTEST_OFF);
 
-  hModFX = asset::AssetManager<FxShaderAsset>::Load("orkshader://ui")->GetFxShader();
-  // printf( "HMODFX<%p> pTarg<%p>\n", hModFX, pTarg );
-  OrkAssertI(hModFX != 0, "did you copy the shaders folder!\n");
+  _shaderasset = asset::AssetManager<FxShaderAsset>::load("orkshader://ui");
+  _shader      = _shaderasset->GetFxShader();
+  // printf( "HMODFX<%p> pTarg<%p>\n", _shader, pTarg );
+  OrkAssertI(_shader != 0, "did you copy the shaders folder!\n");
 
   if (pTarg) {
     gpuInit(pTarg);
@@ -62,17 +63,17 @@ GfxMaterialUI::GfxMaterialUI(Context* pTarg)
 /////////////////////////////////////////////////////////////////////////
 
 void GfxMaterialUI::gpuInit(ork::lev2::Context* pTarg) {
-  // printf( "hModFX<%p>\n", hModFX );
+  // printf( "_shader<%p>\n", _shader );
 
-  hTekMod = pTarg->FXI()->technique(hModFX, "uidev_modcolor");
+  hTekMod = pTarg->FXI()->technique(_shader, "uidev_modcolor");
 
   // OrkAssert(hTekMod);
-  hTekVtx    = pTarg->FXI()->technique(hModFX, "ui_vtx");
-  hTekModVtx = pTarg->FXI()->technique(hModFX, "ui_vtxmod");
-  hTekCircle = pTarg->FXI()->technique(hModFX, "uicircle");
+  hTekVtx    = pTarg->FXI()->technique(_shader, "ui_vtx");
+  hTekModVtx = pTarg->FXI()->technique(_shader, "ui_vtxmod");
+  hTekCircle = pTarg->FXI()->technique(_shader, "uicircle");
 
-  hTransform = pTarg->FXI()->parameter(hModFX, "mvp");
-  hModColor  = pTarg->FXI()->parameter(hModFX, "ModColor");
+  hTransform = pTarg->FXI()->parameter(_shader, "mvp");
+  hModColor  = pTarg->FXI()->parameter(_shader, "ModColor");
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -85,13 +86,13 @@ int GfxMaterialUI::BeginBlock(Context* pTarg, const RenderContextInstData& MatCt
     case ETYPE_STANDARD: {
       switch (meUIColorMode) {
         default:
-        case EUICOLOR_MOD:
+        case UiColorMode::MOD:
           htek = hTekMod;
           break;
-        case EUICOLOR_VTX:
+        case UiColorMode::VTX:
           htek = hTekVtx;
           break;
-        case EUICOLOR_MODVTX:
+        case UiColorMode::MODVTX:
           htek = hTekModVtx;
           break;
       }
@@ -147,15 +148,15 @@ GfxMaterialUIText::GfxMaterialUIText(Context* pTarg)
     , hModColor(0)
     , hColorMap(0) {
   _rasterstate.SetAlphaTest(EALPHATEST_GREATER, 0.0f);
-  _rasterstate.SetBlending(EBLENDING_OFF);
+  _rasterstate.SetBlending(Blending::OFF);
   _rasterstate.SetDepthTest(EDEPTHTEST_ALWAYS);
   _rasterstate.SetZWriteMask(false);
   _rasterstate.SetCullTest(ECULLTEST_OFF);
 
   miNumPasses = 1;
 
-  hModFX = asset::AssetManager<FxShaderAsset>::Load("orkshader://ui")->GetFxShader();
-
+  _shaderasset = asset::AssetManager<FxShaderAsset>::load("orkshader://ui");
+  _shader      = _shaderasset->GetFxShader();
   if (pTarg) {
     gpuInit(pTarg);
   }
@@ -164,11 +165,11 @@ GfxMaterialUIText::GfxMaterialUIText(Context* pTarg)
 /////////////////////////////////////////////////////////////////////////
 
 void GfxMaterialUIText::gpuInit(ork::lev2::Context* pTarg) {
-  hTek = pTarg->FXI()->technique(hModFX, "uitext");
+  hTek = pTarg->FXI()->technique(_shader, "uitext");
 
-  hTransform = pTarg->FXI()->parameter(hModFX, "mvp");
-  hModColor  = pTarg->FXI()->parameter(hModFX, "ModColor");
-  hColorMap  = pTarg->FXI()->parameter(hModFX, "ColorMap");
+  hTransform = pTarg->FXI()->parameter(_shader, "mvp");
+  hModColor  = pTarg->FXI()->parameter(_shader, "ModColor");
+  hColorMap  = pTarg->FXI()->parameter(_shader, "ColorMap");
 
   _rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_OFF);
 }
@@ -229,7 +230,7 @@ GfxMaterialUITextured::GfxMaterialUITextured(Context* pTarg, const std::string& 
   miNumPasses = 1;
   _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
   _rasterstate.SetAlphaTest(EALPHATEST_OFF);
-  _rasterstate.SetBlending(EBLENDING_OFF);
+  _rasterstate.SetBlending(Blending::OFF);
   _rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
   _rasterstate.SetCullTest(ECULLTEST_OFF);
 
@@ -250,13 +251,15 @@ void GfxMaterialUITextured::EffectInit(void) {
 
 void GfxMaterialUITextured::gpuInit(ork::lev2::Context* pTarg) {
   if (hTek == nullptr) {
-    hModFX = asset::AssetManager<FxShaderAsset>::Load("orkshader://ui")->GetFxShader();
-    hTek   = pTarg->FXI()->technique(hModFX, mTechniqueName);
-    printf("HMODFX<%p> pTarg<%p> hTek<%p>\n", hModFX, pTarg, hTek);
+    _shaderasset = asset::AssetManager<FxShaderAsset>::load("orkshader://ui");
+    _shader      = _shaderasset->GetFxShader();
 
-    hTransform = pTarg->FXI()->parameter(hModFX, "mvp");
-    hModColor  = pTarg->FXI()->parameter(hModFX, "ModColor");
-    hColorMap  = pTarg->FXI()->parameter(hModFX, "ColorMap");
+    hTek = pTarg->FXI()->technique(_shader, mTechniqueName);
+    printf("HMODFX<%p> pTarg<%p> hTek<%p>\n", _shader, pTarg, hTek);
+
+    hTransform = pTarg->FXI()->parameter(_shader, "mvp");
+    hModColor  = pTarg->FXI()->parameter(_shader, "ModColor");
+    hColorMap  = pTarg->FXI()->parameter(_shader, "ColorMap");
   }
 }
 

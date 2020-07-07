@@ -16,7 +16,7 @@ class GedMapIoDriver : public IoDriverBase {
 public:
   KeyDecoName mDecoKey;
 
-  GedMapIoDriver(ObjModel& Model, const reflect::IObjectProperty* prop, Object* obj)
+  GedMapIoDriver(ObjModel& Model, const reflect::ObjectProperty* prop, Object* obj)
       : IoDriverBase(Model, prop, obj)
       , mDecoKey("", 0) {
   }
@@ -68,7 +68,7 @@ public:
     return mIoDriver;
   }
 
-  GedMapFactoryNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj)
+  GedMapFactoryNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj)
       : GedItemNode(mdl, name, prop, obj)
       , mIoDriver(mdl, prop, obj) {
   }
@@ -83,9 +83,9 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class MapTraverseSerializer : public reflect::serialize::LayerSerializer {
+class MapTraverseSerializer : public reflect::serdes::LayerSerializer {
   ObjModel& mModel;
-  const reflect::IObjectProperty* mProp;
+  const reflect::ObjectProperty* mProp;
   Object* mObject;
   PropTypeString mKeyString;
   KeyDecoName mKeyDeco;
@@ -107,37 +107,36 @@ public:
       ISerializer& serializer,
       ObjModel& model,
       ork::Object* pobj,
-      const reflect::IObjectProperty* prop);
+      const reflect::ObjectProperty* prop);
 
   bool IsKey() const {
     return mbIsKey;
   }
 
-  /*virtual*/ bool Serialize(const bool&);
-  /*virtual*/ bool Serialize(const char&);
-  /*virtual*/ bool Serialize(const short&);
-  /*virtual*/ bool Serialize(const int&);
-  /*virtual*/ bool Serialize(const long&);
-  /*virtual*/ bool Serialize(const float&);
-  /*virtual*/ bool Serialize(const double&);
-  /*virtual*/ bool Serialize(const rtti::ICastable*);
-  /*virtual*/ bool Serialize(const PieceString&);
-  /*virtual*/ bool Serialize(const reflect::IObjectProperty*, const Object*);
+  bool Serialize(const bool&) override;
+  bool Serialize(const char&) override;
+  bool Serialize(const short&) override;
+  bool Serialize(const int&) override;
+  bool Serialize(const long&) override;
+  bool Serialize(const float&) override;
+  bool Serialize(const double&) override;
+  bool serializeObject(rtti::castable_rawconstptr_t) override;
+  bool Serialize(const PieceString&) override;
 
-  /*virtual*/ void Hint(const PieceString& pstr);
-  /*virtual*/ void Hint(const PieceString&, intptr_t ival);
+  void Hint(const PieceString& pstr) override;
+  void Hint(const PieceString&, hintvar_t val) override;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class MapItemWriteSerializer : public reflect::serialize::LayerDeserializer {
+class MapItemWriteSerializer : public reflect::serdes::LayerDeserializer {
   enum EWRITETYPE {
     EWT_FLOAT = 0,
     EWT_CVECTOR3,
   };
 
-  const reflect::IObjectMapProperty* mMapProp;
-  reflect::serialize::NullDeserializer mNullDeser;
+  const reflect::IMap* mMapProp;
+  reflect::serdes::NullDeserializer mNullDeser;
   GedMapIoDriver& mIoDriver;
   EWRITETYPE meWriteType;
   int miFloatIndex;
@@ -188,7 +187,7 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class MapItemReadSerializer : public reflect::serialize::LayerSerializer {
+class MapItemReadSerializer : public reflect::serdes::LayerSerializer {
   enum EREADTYPE {
     ERT_OBJECT = 0,
     ERT_NEWASSET,
@@ -199,8 +198,8 @@ class MapItemReadSerializer : public reflect::serialize::LayerSerializer {
   };
 
   /////////////////////////////////////////////////////
-  const reflect::IObjectMapProperty* mMapProp;
-  reflect::serialize::NullSerializer mNullSer;
+  const reflect::IMap* mMapProp;
+  reflect::serdes::NullSerializer mNullSer;
   const GedMapIoDriver& mIoDriver;
   /////////////////////////////////////////////////////
   const ork::Object* mpObject;
@@ -219,7 +218,7 @@ public:
   /////////////////////////////////////////////////////
   MapItemReadSerializer(const GedMapIoDriver& ioDriver);
   /////////////////////////////////////////////////////
-  const ork::asset::Asset* GetAsset();
+  const ork::asset::Asset* asset();
   PoolString GetPoolString();
   file::Path GetPathObject();
   float GetFloat();
@@ -229,8 +228,8 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class MapKeyWriter : public reflect::serialize::LayerDeserializer {
-  reflect::serialize::NullDeserializer mNull;
+class MapKeyWriter : public reflect::serdes::LayerDeserializer {
+  reflect::serdes::NullDeserializer mNull;
   const GedMapIoDriver& mIoDriver;
 
   bool Deserialize(MutableString& mstr) {
@@ -248,7 +247,7 @@ class MapKeyWriter : public reflect::serialize::LayerDeserializer {
 
 public:
   MapKeyWriter(const GedMapIoDriver& ioDriver)
-      : reflect::serialize::LayerDeserializer(mNull)
+      : reflect::serdes::LayerDeserializer(mNull)
       , mIoDriver(ioDriver)
 
   {

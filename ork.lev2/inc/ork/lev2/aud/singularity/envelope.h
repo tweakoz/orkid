@@ -126,6 +126,7 @@ struct YmEnvData : public ControllerData {
   ControllerInst* instantiate(Layer* layer) const final;
 
   float _attackTime  = 2.0f; //
+  float _attackShape = 0.5f; //
   float _decay1Rate  = 0.5f; // exponential decay rate (/sec)
   float _decay1Level = 0.5f;
   float _decay2Rate  = 0.5f; // exponential decay rate (/sec)

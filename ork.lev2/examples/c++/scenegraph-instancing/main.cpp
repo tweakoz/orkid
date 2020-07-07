@@ -27,10 +27,9 @@ int main(int argc, char** argv) {
   //////////////////////////////////////////////////////////
   // create instanced model drawable
   //////////////////////////////////////////////////////////
-  auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://src/environ/objects/misc/ref/uvsph");
-  // auto modl_asset = asset::AssetManager<XgmModelAsset>::Load("data://tests/pbr_calib");
+  auto modl_asset = asset::AssetManager<XgmModelAsset>::load("data://src/environ/objects/misc/ref/uvsph");
+  // auto modl_asset = asset::AssetManager<XgmModelAsset>::load("data://tests/pbr_calib");
   auto drw = std::make_shared<InstancedModelDrawable>(nullptr);
-  asset::AssetManager<XgmModelAsset>::AutoLoad();
   OrkAssert(modl_asset->_model.atomicCopy());
   drw->bindModel(modl_asset->_model.atomicCopy());
   auto sg_node = sg_layer->createDrawableNode("model-node", drw);

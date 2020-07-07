@@ -7,23 +7,29 @@
 #include <ork/kernel/timer.h>
 #include <ork/dataflow/dataflow.h>
 #include <ork/application/application.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 
+#if 0
 ////////////////////////////////////////////////////////////
+#define DeclareImg32OutPlug(name)                                                                                                  \
+  Img32 OutDataName(name);                                                                                                         \
+  ImgOutPlug OutPlugName(name);                                                                                                    \
+  ork::Object* OutAccessor##name() {                                                                                               \
+    return &OutPlugName(name);                                                                                                     \
+  }
 
-#define DeclareImg32OutPlug( name )\
-Img32 OutDataName(name);\
-ImgOutPlug	OutPlugName(name);\
-ork::Object* OutAccessor##name() { return & OutPlugName(name); }
+#define DeclareImg64OutPlug(name)                                                                                                  \
+  Img64 OutDataName(name);                                                                                                         \
+  ImgOutPlug OutPlugName(name);                                                                                                    \
+  ork::Object* OutAccessor##name() {                                                                                               \
+    return &OutPlugName(name);                                                                                                     \
+  }
 
-#define DeclareImg64OutPlug( name )\
-Img64 OutDataName(name);\
-ImgOutPlug	OutPlugName(name);\
-ork::Object* OutAccessor##name() { return & OutPlugName(name); }
-
-#define DeclareImgInpPlug( name )\
-ImgInPlug	InpPlugName(name);\
-ork::Object* InpAccessor##name() { return & InpPlugName(name); }
+#define DeclareImgInpPlug(name)                                                                                                    \
+  ImgInPlug InpPlugName(name);                                                                                                     \
+  ork::Object* InpAccessor##name() {                                                                                               \
+    return &InpPlugName(name);                                                                                                     \
+  }
 
 ////////////////////////////////////////////////////////////
 
@@ -540,3 +546,4 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::dataflow::test::Img32Module,"dflowtest/Img32Mo
 INSTANTIATE_TRANSPARENT_RTTI(ork::dataflow::test::Img64Module,"dflowtest/Img64Module");
 INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI(ork::dataflow::outplug<ork::dataflow::test::ImgBase>,"dflowtest/OutImgPlug");
 INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI(ork::dataflow::inplug<ork::dataflow::test::ImgBase>,"dflowtest/InImgPlug");
+#endif

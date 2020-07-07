@@ -5,57 +5,41 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _MATH_MULTICURVE_H
-#define _MATH_MULTICURVE_H
+#pragma once
 
 #include <ork/math/spline.h>
 
 #include <ork/config/config.h>
+#include <ork/rtti/RTTIX.inl>
+#include <ork/reflect/enum_serializer.inl>
 
 namespace ork {
 
 ///////////////////////////////////////////////////////////////////////////////
-
-enum EMCSEGTYPE {
-  EMCST_LINEAR = 0,
-  EMCST_BOX,
-  EMCST_LOG,
-  EMCST_EXP,
+enum class MultiCurveSegmentType {
+  LINEAR = 0,
+  BOX,
+  LOG,
+  EXP,
 };
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename T> class ObjProxy : public ork::Object {
-public:
-  T* mParent;
-
-  ObjProxy(T* val)
-      : mParent(val) {
-  }
-};
-
+DeclareEnumSerializer(MultiCurveSegmentType);
 ///////////////////////////////////////////////////////////////////////////////
 
 struct MultiCurve1D : public ork::Object {
-  RttiDeclareConcrete(MultiCurve1D, ork::Object);
+  DeclareConcreteX(MultiCurve1D, ork::Object);
 
 public:
-  orkvector<EMCSEGTYPE> mSegmentTypes;
+  orkvector<MultiCurveSegmentType> mSegmentTypes;
   orklut<float, float> mVertices;
-  ObjProxy<MultiCurve1D> mProxy;
 
   float mMin, mMax;
-
-  ork::Object* ProxyAccessor() {
-    return &mProxy;
-  }
 
   int GetNumSegments() const;
   float Sample(float u) const;
   const std::pair<float, float>& GetVertex(int iv) const {
     return *(mVertices.begin() + iv);
   }
-  EMCSEGTYPE GetSegmentType(int is) const {
+  MultiCurveSegmentType GetSegmentType(int is) const {
     return mSegmentTypes[is];
   }
   size_t GetNumVertices() const {
@@ -69,7 +53,7 @@ public:
 
   void SplitSegment(int iseg);
   void MergeSegment(int ifirstseg);
-  void SetSegmentType(int iseg, EMCSEGTYPE etype);
+  void SetSegmentType(int iseg, MultiCurveSegmentType etype);
   void SetPoint(int ipoint, float fu, float fv);
 
   void SetMin(float fmin) {
@@ -95,8 +79,8 @@ public:
   void Init(int inumsegs);
 
 private:
-  bool PostDeserialize(reflect::IDeserializer&) final;           // virtual
-  bool PreDeserialize(ork::reflect::IDeserializer& deser) final; // virtual
+  bool postDeserialize(reflect::serdes::IDeserializer&) final;           // virtual
+  bool preDeserialize(ork::reflect::serdes::IDeserializer& deser) final; // virtual
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -104,5 +88,3 @@ private:
 }; // namespace ork
 
 //////////////////////////////////////////////////////////////////////////////
-
-#endif

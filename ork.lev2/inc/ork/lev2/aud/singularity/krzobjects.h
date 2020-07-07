@@ -51,7 +51,7 @@ struct SynthObjectsDB {
 
   KrzAlgData parseAlg(const rapidjson::Value& JO);
   void parseKmpBlock(const Value& JO, KmpBlockData& kmblk);
-  void parseFBlock(const Value& JO, DspParamData& fb);
+  void parseFBlock(const Value& JO, dspparam_ptr_t param);
   dspblkdata_ptr_t parseDspBlock(const Value& JO, lyrdata_ptr_t layd, bool force = false);
   dspblkdata_ptr_t parsePchBlock(const Value& JO, lyrdata_ptr_t layd);
 

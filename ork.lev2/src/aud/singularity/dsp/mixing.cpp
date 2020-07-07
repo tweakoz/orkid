@@ -15,7 +15,8 @@
 namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
-Sum2Data::Sum2Data() {
+Sum2Data::Sum2Data(std::string name)
+    : DspBlockData(name) {
   _blocktype = "SUM2";
 }
 dspblk_ptr_t Sum2Data::createInstance() const { // override
@@ -44,12 +45,13 @@ void SUM2::compute(DspBuffer& dspbuf) { // final
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-MonoInStereoOutData::MonoInStereoOutData() {
-  _blocktype      = "MonoInStereoOut";
-  auto& amp_param = addParam();
-  amp_param.useAmplitudeEvaluator();
-  auto& pan_param = addParam();
-  pan_param.useDefaultEvaluator();
+MonoInStereoOutData::MonoInStereoOutData(std::string name)
+    : DspBlockData(name) {
+  _blocktype     = "MonoInStereoOut";
+  auto amp_param = addParam();
+  amp_param->useAmplitudeEvaluator();
+  auto pan_param = addParam();
+  pan_param->useDefaultEvaluator();
 }
 dspblk_ptr_t MonoInStereoOutData::createInstance() const { // override
   return std::make_shared<MonoInStereoOut>(this);
@@ -95,10 +97,11 @@ void MonoInStereoOut::doKeyOn(const KeyOnInfo& koi) // final
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-StereoEnhancerData::StereoEnhancerData() {
-  _blocktype        = "StereoEnhancer";
-  auto& width_param = addParam();
-  width_param.useDefaultEvaluator();
+StereoEnhancerData::StereoEnhancerData(std::string name)
+    : DspBlockData(name) {
+  _blocktype       = "StereoEnhancer";
+  auto width_param = addParam();
+  width_param->useDefaultEvaluator();
 }
 dspblk_ptr_t StereoEnhancerData::createInstance() const { // override
   return std::make_shared<StereoEnhancer>(this);

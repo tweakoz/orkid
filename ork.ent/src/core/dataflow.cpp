@@ -11,8 +11,8 @@
 #include <pkg/ent/entity.h>
 #include <pkg/ent/entity.hpp>
 #include <pkg/ent/dataflow.h>
-#include <ork/reflect/RegisterProperty.h>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/register.h>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/kernel/orklut.hpp>
 #include <ork/application/application.h>
 
@@ -24,8 +24,8 @@ namespace ork { namespace ent {
 
 static bool gbusepreview = false;
 
-bool DataflowRecieverComponentData::DoNotify(const event::Event* event) {
-  if (const ObjectGedVisitEvent* pev = rtti::autocast(event)) {
+bool DataflowRecieverComponentData::doNotify(const event::Event* event) {
+  if (auto pev = dynamic_cast<const ObjectGedVisitEvent*>(event)) {
     gbusepreview = true;
     return true;
   }
@@ -109,7 +109,7 @@ void DataflowRecieverComponentInst::BindExternalValue(PoolString name, const fve
   }
 }
 
-bool DataflowRecieverComponentInst::DoNotify(const event::Event* event) {
+bool DataflowRecieverComponentInst::doNotify(const event::Event* event) {
   return false;
 }
 

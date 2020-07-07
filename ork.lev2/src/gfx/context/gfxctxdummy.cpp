@@ -16,13 +16,17 @@
 bool LoadIL(const ork::AssetPath& pth, ork::lev2::Texture* ptex);
 /////////////////////////////////////////////////////////////////////////
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::ContextDummy, "ContextDummy")
+ImplementReflectionX(ork::lev2::ContextDummy, "ContextDummy");
+
 namespace ork { namespace lev2 {
 
+void ContextDummy::describeX(class_t* clazz) {
+}
 /////////////////////////////////////////////////////////////////////////
 
 void DummyContextInit() {
-  GfxEnv::setContextClass(ContextDummy::GetClassStatic());
+  auto clazz = dynamic_cast<const object::ObjectClass*>(ContextDummy::GetClassStatic());
+  GfxEnv::setContextClass(clazz);
 }
 
 DuRasterStateInterface::DuRasterStateInterface(Context& target)
@@ -173,17 +177,17 @@ bool ContextDummy::SetDisplayMode(DisplayMode* mode) {
 void DuGeometryBufferInterface::DrawIndexedPrimitiveEML(
     const VertexBufferBase& VBuf,
     const IndexBufferBase& IdxBuf,
-    EPrimitiveType eType,
+    PrimitiveType eType,
     int ivbase,
     int ivcount) {
 }
-void DuGeometryBufferInterface::DrawPrimitiveEML(const VertexBufferBase& VBuf, EPrimitiveType eType, int ivbase, int ivcount) {
+void DuGeometryBufferInterface::DrawPrimitiveEML(const VertexBufferBase& VBuf, PrimitiveType eType, int ivbase, int ivcount) {
 }
 
 void DuGeometryBufferInterface::DrawInstancedIndexedPrimitiveEML(
     const VertexBufferBase& VBuf,
     const IndexBufferBase& IdxBuf,
-    EPrimitiveType eType,
+    PrimitiveType eType,
     size_t instance_count) {
 }
 

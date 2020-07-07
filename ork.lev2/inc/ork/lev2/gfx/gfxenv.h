@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include <ork/rtti/RTTIX.inl>
 #include <ork/kernel/core/singleton.h>
 #include <ork/kernel/timer.h>
 
@@ -49,6 +50,8 @@ class GfxMaterialUITextured;
 class PBRMaterial;
 
 class GfxEnv;
+
+using context_ptr_t = std::shared_ptr<Context>;
 
 /// ////////////////////////////////////////////////////////////////////////////
 ///
@@ -133,8 +136,8 @@ struct DisplayMode {
 ///   IMI : ImmediateMode interface. convenience methods for oldschool type gfx
 ///////////////////////////////////////////////////////////////////////////////
 
-class Context : public ork::rtti::ICastable {
-  RttiDeclareAbstract(Context, ork::rtti::ICastable);
+class Context : public ork::Object {
+  DeclareAbstractX(Context, ork::Object);
 
   ///////////////////////////////////////////////////////////////////////
 public:
@@ -247,7 +250,7 @@ public:
   void SetCurrentObject(const ork::rtti::ICastable* pobj) {
     mpCurrentObject = pobj;
   }
-  ETargetType GetTargetType(void) const {
+  TargetType GetTargetType(void) const {
     return meTargetType;
   }
   int GetTargetFrame(void) const {
@@ -305,7 +308,7 @@ public:
   int miW, miH;
   CTXBASE* mCtxBase;
   void* mPlatformHandle;
-  ETargetType meTargetType;
+  TargetType meTargetType;
   fvec4 maModColorStack[kiModColorStackMax];
   int miModColorStackIndex;
   const ork::rtti::ICastable* mpCurrentObject;
@@ -358,7 +361,7 @@ struct OrthoQuad {
 };
 
 class OffscreenBuffer : public ork::Object {
-  RttiDeclareAbstract(OffscreenBuffer, ork::Object);
+  DeclareAbstractX(OffscreenBuffer, ork::Object);
 
 public:
   //////////////////////////////////////////////
@@ -377,7 +380,7 @@ public:
   //////////////////////////////////////////////
 
   RtGroup* GetParentMrt(void) const {
-    return mParentRtGroup;
+    return _parentRtGroup;
   }
   ui::Widget* GetRootWidget(void) const {
     return mRootWidget;
@@ -389,15 +392,15 @@ public:
     return mbSizeIsDirty;
   }
   const std::string& GetName(void) const {
-    return msName;
+    return _name;
   }
   const fcolor4& GetClearColor() const {
     return mClearColor;
   }
   OffscreenBuffer* GetParent(void) const {
-    return mParent;
+    return _parent;
   }
-  ETargetType GetTargetType(void) const {
+  TargetType GetTargetType(void) const {
     return meTargetType;
   }
   EBufferFormat format(void) const {
@@ -440,13 +443,14 @@ public:
     mbSizeIsDirty = bv;
   }
   void SetParentMrt(RtGroup* ParentMrt) {
-    mParentRtGroup = ParentMrt;
+    _parentRtGroup = ParentMrt;
   }
   fcolor4& RefClearColor() {
     return mClearColor;
   }
-  void SetContext(Context* pctx) {
-    mpContext = pctx;
+  void SetContext(context_ptr_t ctx) {
+    _sharedcontext = ctx;
+    mpContext      = ctx.get(); // todo get rid of me..
   }
   void SetTexture(Texture* ptex) {
     mpTexture = ptex;
@@ -481,19 +485,20 @@ public:
   virtual void initContext();
 
 protected:
+  context_ptr_t _sharedcontext;
   ui::Widget* mRootWidget;
   Context* mpContext;
   Texture* mpTexture;
   int miWidth;
   int miHeight;
   EBufferFormat meFormat;
-  ETargetType meTargetType;
+  TargetType meTargetType;
   bool mbDirty;
   bool mbSizeIsDirty;
-  std::string msName;
+  std::string _name;
   fcolor4 mClearColor;
-  OffscreenBuffer* mParent;
-  RtGroup* mParentRtGroup;
+  OffscreenBuffer* _parent;
+  RtGroup* _parentRtGroup;
   void* mPlatformHandle;
 };
 
@@ -577,10 +582,10 @@ public:
 
   static void atomicOp(recursive_mutex::atomicop_t op);
 
-  static void setContextClass(const rtti::Class* pclass) {
+  static void setContextClass(const object::ObjectClass* pclass) {
     gpTargetClass = pclass;
   }
-  static const rtti::Class* contextClass() {
+  static const object::ObjectClass* contextClass() {
     return gpTargetClass;
   }
   void SetRuntimeEnvironmentVariable(const std::string& key, const std::string& val);
@@ -621,7 +626,7 @@ protected:
   recursive_mutex mGfxEnvMutex;
   bool _initialized = false;
 
-  static const rtti::Class* gpTargetClass;
+  static const object::ObjectClass* gpTargetClass;
 };
 
 /// ////////////////////////////////////////////////////////////////////////////
@@ -629,7 +634,6 @@ protected:
 /// ////////////////////////////////////////////////////////////////////////////
 
 class DrawHudEvent : public ork::event::Event {
-  RttiDeclareConcrete(DrawHudEvent, ork::event::Event);
 
 public:
   DrawHudEvent(Context* target = NULL, int camera_number = 1)

@@ -16,7 +16,7 @@
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/pch.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/registerX.inl>
 
 ImplementReflectionX(ork::lev2::RtGroupOutputCompositingNode, "RtGroupOutputCompositingNode");
 
@@ -138,7 +138,7 @@ void RtGroupOutputCompositingNode::composite(CompositorDrawData& drawdata) {
         auto this_buf = context->FBI()->GetThisBuffer();
         auto& mtl     = impl->_blit2screenmtl;
         mtl.begin(impl->_fxtechnique1x1, framedata);
-        mtl._rasterstate.SetBlending(EBLENDING_OFF);
+        mtl._rasterstate.SetBlending(Blending::OFF);
         mtl.bindParamCTex(impl->_fxpColorMapA, texA);
         mtl.bindParamCTex(impl->_fxpColorMapB, texB);
         mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());

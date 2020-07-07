@@ -367,56 +367,56 @@ int NoteFromString(const std::string& snote) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SynthObjectsDB::parseFBlock(const Value& fseg, DspParamData& fblk) {
+void SynthObjectsDB::parseFBlock(const Value& fseg, dspparam_ptr_t fblk) {
   //////////////////////////////////
 
   if (fseg.HasMember("PARAM_SCHEME")) {
     auto scheme = fseg["PARAM_SCHEME"].GetString();
     if (scheme == "PCH")
-      fblk.usePitchEvaluator();
+      fblk->usePitchEvaluator();
     else if (scheme == "AMP")
-      fblk.useAmplitudeEvaluator();
+      fblk->useAmplitudeEvaluator();
     else if (scheme == "FRQ")
-      fblk.useFrequencyEvaluator();
+      fblk->useFrequencyEvaluator();
     else if (scheme == "POS")
-      fblk.useKrzPosEvaluator();
+      fblk->useKrzPosEvaluator();
     else if (scheme == "EVN")
-      fblk.useKrzEvnOddEvaluator();
+      fblk->useKrzEvnOddEvaluator();
     else if (scheme == "ODD")
-      fblk.useKrzEvnOddEvaluator();
+      fblk->useKrzEvnOddEvaluator();
     else
-      fblk.useDefaultEvaluator();
+      fblk->useDefaultEvaluator();
   }
 
   if (fseg.HasMember("KeyTrack"))
-    fblk._keyTrack = fseg["KeyTrack"]["Value"].GetFloat();
+    fblk->_keyTrack = fseg["KeyTrack"]["Value"].GetFloat();
   if (fseg.HasMember("VelTrack"))
-    fblk._velTrack = fseg["VelTrack"]["Value"].GetFloat();
-  float keytrack = fblk._keyTrack;
-  float veltrack = fblk._velTrack;
+    fblk->_velTrack = fseg["VelTrack"]["Value"].GetFloat();
+  float keytrack = fblk->_keyTrack;
+  float veltrack = fblk->_velTrack;
 
   //////////////////////////////////
 
   if (fseg.HasMember("Coarse")) {
     auto& c = fseg["Coarse"];
     assert(c.HasMember("Value"));
-    fblk._units = c["Unit"].GetString();
-    auto& v     = c["Value"];
+    fblk->_units = c["Unit"].GetString();
+    auto& v      = c["Value"];
     switch (v.GetType()) {
       case kNumberType: {
-        fblk._coarse = v.GetFloat();
+        fblk->_coarse = v.GetFloat();
         break;
       }
       case kStringType: // FRQ ?
       {
-        auto toks    = ork::SplitString(v.GetString(), ' ');
-        auto snote   = toks[0];
-        auto soct    = toks[1];
-        int inote    = NoteFromString(snote);
-        int ioct     = atoi(soct.c_str()) + 1;
-        int midinote = ioct * 12 + inote;
-        float frq    = midi_note_to_frequency(midinote);
-        fblk._coarse = frq;
+        auto toks     = ork::SplitString(v.GetString(), ' ');
+        auto snote    = toks[0];
+        auto soct     = toks[1];
+        int inote     = NoteFromString(snote);
+        int ioct      = atoi(soct.c_str()) + 1;
+        int midinote  = ioct * 12 + inote;
+        float frq     = midi_note_to_frequency(midinote);
+        fblk->_coarse = frq;
         // printf( "v.GetString() %s\n", v.GetString() );
         // printf( "inote<%d> ioct<%d> midinote<%d> frq<%f>\n", inote, ioct, midinote, frq );
         // assert(false);
@@ -431,39 +431,39 @@ void SynthObjectsDB::parseFBlock(const Value& fseg, DspParamData& fblk) {
     }
   }
   if (fseg.HasMember("Fine") and fseg["Fine"].IsObject()) {
-    fblk._fine = fseg["Fine"]["Value"].GetFloat();
-    // printf( "fine<%f>\n", fblk._fine );
+    fblk->_fine = fseg["Fine"]["Value"].GetFloat();
+    // printf( "fine<%f>\n", fblk->_fine );
     // assert(false);
   }
   if (fseg.HasMember("FineHZ") and fseg["FineHZ"].IsNumber())
-    fblk._fineHZ = fseg["FineHZ"].GetFloat();
+    fblk->_fineHZ = fseg["FineHZ"].GetFloat();
   if (fseg.HasMember("Src1")) {
     auto& s1 = fseg["Src1"];
     OrkAssert(false); // hook up direct controller data shared_ptr
-    // fblk._mods._src1 = s1["Source"].GetString();
+    // fblk->_mods->_src1 = s1["Source"].GetString();
     if (s1.HasMember("Depth")) {
-      auto& d               = s1["Depth"];
-      fblk._mods._src1Depth = d["Value"].GetFloat();
+      auto& d                = s1["Depth"];
+      fblk->_mods->_src1Depth = d["Value"].GetFloat();
     }
   }
   if (fseg.HasMember("Src2")) {
     auto& s = fseg["Src2"];
     OrkAssert(false); // hook up direct controller data shared_ptr
-    // fblk._mods._src2 = s["Source"].GetString();
+    // fblk->_mods->_src2 = s["Source"].GetString();
     if (s.HasMember("DepthControl"))
       OrkAssert(false); // hook up direct controller data shared_ptr
-    // fblk._mods._src2DepthCtrl = s["DepthControl"].GetString();
+    // fblk->_mods->_src2DepthCtrl = s["DepthControl"].GetString();
     if (s.HasMember("MinDepth"))
-      fblk._mods._src2MinDepth = s["MinDepth"]["Value"].GetFloat();
+      fblk->_mods->_src2MinDepth = s["MinDepth"]["Value"].GetFloat();
     if (s.HasMember("MaxDepth"))
-      fblk._mods._src2MaxDepth = s["MaxDepth"]["Value"].GetFloat();
+      fblk->_mods->_src2MaxDepth = s["MaxDepth"]["Value"].GetFloat();
   }
   if (fseg.HasMember("KeyStart")) {
-    auto& i               = fseg["KeyStart"];
-    fblk._keystartBipolar = i["Mode"].GetString() == std::string("Bipolar");
-    int inote             = NoteFromString(i["Note"].GetString());
-    int ioct              = i["Octave"].GetInt();
-    fblk._keystartNote    = (ioct + 1) * 12 + inote;
+    auto& i                = fseg["KeyStart"];
+    fblk->_keystartBipolar = i["Mode"].GetString() == std::string("Bipolar");
+    int inote              = NoteFromString(i["Note"].GetString());
+    int ioct               = i["Octave"].GetInt();
+    fblk->_keystartNote    = (ioct + 1) * 12 + inote;
   }
 
   //////////////////////////////////
@@ -538,7 +538,7 @@ dspblkdata_ptr_t SynthObjectsDB::parsePchBlock(const Value& pseg, lyrdata_ptr_t 
   auto KMP = layd->_kmpBlock;
   if (KMP->_pbMode == "Noise") {
     dblk->_blocktype = "NOISE";
-    dblk->_paramd[0].usePitchEvaluator();
+    dblk->param(0)->usePitchEvaluator();
   } else {
     SAMPLER::initBlock(dblk);
   }
@@ -794,7 +794,7 @@ lyrdata_ptr_t SynthObjectsDB::parseLayer(const Value& jsonobj, prgdata_ptr_t pd)
     if (0 == blkbase) {
       dspblock             = parsePchBlock(pitchSeg, rval);
       dspblock->_numParams = 1;
-      parseFBlock(pitchSeg, dspblock->_paramd[0]);
+      parseFBlock(pitchSeg, dspblock->param(0));
     } else if (jsonobj.HasMember(blockn1)) {
       dspblock = parseDspBlock(jsonobj[blockn1], rval);
 
@@ -808,24 +808,24 @@ lyrdata_ptr_t SynthObjectsDB::parseLayer(const Value& jsonobj, prgdata_ptr_t pd)
           break;
         case 1: {
           if (jsonobj.HasMember(blockn1)) {
-            parseFBlock(jsonobj[blockn1], dspblock->_paramd[0]);
+            parseFBlock(jsonobj[blockn1], dspblock->param(0));
           }
           break;
         }
         case 2: {
           if (jsonobj.HasMember(blockn1))
-            parseFBlock(jsonobj[blockn1], dspblock->_paramd[0]);
+            parseFBlock(jsonobj[blockn1], dspblock->param(0));
           if (jsonobj.HasMember(blockn2))
-            parseFBlock(jsonobj[blockn2], dspblock->_paramd[1]);
+            parseFBlock(jsonobj[blockn2], dspblock->param(1));
           break;
         }
         case 3: {
           if (jsonobj.HasMember(blockn1))
-            parseFBlock(jsonobj[blockn1], dspblock->_paramd[0]);
+            parseFBlock(jsonobj[blockn1], dspblock->param(0));
           if (jsonobj.HasMember(blockn2))
-            parseFBlock(jsonobj[blockn2], dspblock->_paramd[1]);
+            parseFBlock(jsonobj[blockn2], dspblock->param(1));
           if (jsonobj.HasMember(blockn3))
-            parseFBlock(jsonobj[blockn3], dspblock->_paramd[2]);
+            parseFBlock(jsonobj[blockn3], dspblock->param(2));
           break;
         }
         default:

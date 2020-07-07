@@ -82,9 +82,25 @@ HandlerResult Context::handleEvent(event_constptr_t ev) {
       break;
     }
     /////////////////////////////////
+    case EventCode::GOT_KEYFOCUS: {
+      _evdragtarget     = nullptr;
+      rval              = _top->handleUiEvent(ev);
+      _hasKeyboardFocus = true;
+      break;
+    }
+    /////////////////////////////////
+    case EventCode::LOST_KEYFOCUS: {
+      _evdragtarget     = nullptr;
+      rval              = _top->handleUiEvent(ev);
+      _hasKeyboardFocus = false;
+      break;
+    }
+    /////////////////////////////////
     default: {
       _evdragtarget = nullptr;
-      rval          = _top->handleUiEvent(ev);
+      auto dest     = _top->routeUiEvent(ev);
+      if (dest)
+        rval = dest->OnUiEvent(ev);
       break;
     }
       /////////////////////////////////

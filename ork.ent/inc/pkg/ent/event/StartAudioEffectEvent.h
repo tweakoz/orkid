@@ -7,51 +7,46 @@
 
 #pragma once
 
-#include <ork/rtti/RTTI.h>
-#include <ork/object/Object.h>
-
 #include <ork/event/Event.h>
 
 namespace ork { namespace ent { namespace event {
 
-class PlaySoundEvent : public ork::event::Event
-{
-	RttiDeclareAbstract(PlaySoundEvent,ork::event::Event);
+class PlaySoundEvent : public ork::event::Event {
 public:
+  PlaySoundEvent(ork::PieceString name = "");
 
-	PlaySoundEvent(ork::PieceString name = "");
+  void SetName(ork::PoolString name) {
+    mSoundName = name;
+  }
+  ork::PoolString GetName() const;
 
-	void SetName(ork::PoolString name) {mSoundName = name;}
-	ork::PoolString GetName() const;
-
-	const ork::PoolString& GetSoundName() const { return mSoundName; }
+  const ork::PoolString& GetSoundName() const {
+    return mSoundName;
+  }
 
 private:
-
-	ork::PoolString		mSoundName;
-
-	Object *Clone() const final;
+  ork::PoolString mSoundName;
 };
 
 /*class PlaySoundEventEx : public ork::rtti::RTTI<PlaySoundEvent, ork::event::Event>
 {
 public:
-	static void Describe();
+    static void Describe();
 
-	PlaySoundEvent(ork::PieceString name = "");
+    PlaySoundEvent(ork::PieceString name = "");
 
-	void SetName(ork::PieceString name);
-	ork::PoolString GetName() const;
+    void SetName(ork::PieceString name);
+    ork::PoolString GetName() const;
 
-	int GetNote() const { return miNote; }
-	int GetVelocity() const { return miVelocity; }
-	const ork::PoolString& GetSoundName() const { return mSoundName; }
+    int GetNote() const { return miNote; }
+    int GetVelocity() const { return miVelocity; }
+    const ork::PoolString& GetSoundName() const { return mSoundName; }
 
 private:
 
-	ork::PoolString		mSoundName;
-	int					miNote;
-	int					miVelocity;
+    ork::PoolString		mSoundName;
+    int					miNote;
+    int					miVelocity;
 };*/
 
-} } } // ork::ent::event
+}}} // namespace ork::ent::event

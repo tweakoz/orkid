@@ -7,53 +7,72 @@
 
 #pragma once
 
-#include <ork/kernel/string/ResizableString.h>
-#include <ork/kernel/string/MutableString.h>
+#include "serialize/serdes.h"
+#include "properties/codec.inl"
+#include <stack>
 
-#include <ork/config/config.h>
-
-namespace ork { namespace rtti {
-class ICastable;
-}} // namespace ork::rtti
-
-namespace ork {
-class Object;
+namespace ork::reflect {
+class ObjectProperty;
 }
+namespace ork::reflect::serdes {
 
-namespace ork { namespace reflect {
-
-// typedef ork::Object Serializable;
-class IProperty;
-class IObjectProperty;
 class Command;
 
 struct IDeserializer {
-  virtual bool Deserialize(bool&)             = 0;
-  virtual bool Deserialize(char&)             = 0;
-  virtual bool Deserialize(short&)            = 0;
-  virtual bool Deserialize(int&)              = 0;
-  virtual bool Deserialize(long&)             = 0;
-  virtual bool Deserialize(float&)            = 0;
-  virtual bool Deserialize(double&)           = 0;
-  virtual bool Deserialize(rtti::ICastable*&) = 0;
 
-  virtual bool Deserialize(const IProperty*)                = 0;
-  virtual bool Deserialize(const IObjectProperty*, Object*) = 0;
-
-  virtual bool Deserialize(MutableString&)             = 0;
-  virtual bool Deserialize(ResizableString&)           = 0;
-  virtual bool DeserializeData(unsigned char*, size_t) = 0;
-
-  virtual bool ReferenceObject(rtti::ICastable*) = 0;
-  virtual bool BeginCommand(Command&)            = 0;
-  virtual bool EndCommand(const Command&)        = 0;
-  virtual void Hint(const PieceString&) {
+  virtual node_ptr_t pushNode(std::string named, NodeType type) {
+    return nullptr;
+  }
+  virtual void popNode() {
+    return;
   }
 
+  virtual void deserializeTop(object_ptr_t&) = 0;
+  virtual node_ptr_t deserializeObject(node_ptr_t) {
+    return node_ptr_t(nullptr);
+  }
+  virtual node_ptr_t deserializeElement(node_ptr_t elemnode) {
+    return node_ptr_t(nullptr);
+  }
+
+  void trackObject(boost::uuids::uuid id, object_ptr_t instance);
+  object_ptr_t findTrackedObject(boost::uuids::uuid id) const;
   virtual ~IDeserializer();
 
-  const reflect::IObjectProperty* _currentProperty = nullptr;
-  Object* _currentObject                           = nullptr;
+  ///////////////////////////////////////////
+
+  using trackervect_t = std::unordered_map<std::string, object_ptr_t>;
+  std::stack<node_ptr_t> _nodestack;
+  trackervect_t _reftracker;
 };
 
-}} // namespace ork::reflect
+template <typename T>
+T deserializeArraySubLeaf(
+    serdes::node_ptr_t arynode, //
+    int index) {
+  auto deserializer = arynode->_deserializer;
+  auto elemnode     = deserializer->pushNode("", serdes::NodeType::ARRAY_ELEMENT_LEAF);
+  elemnode->_parent = arynode;
+  auto childnode    = deserializer->deserializeElement(elemnode);
+  deserializer->popNode();
+  T value;
+  serdes::decode_value<T>(childnode->_value, value);
+  return value;
+}
+
+template <typename T>
+T deserializeMapSubLeaf(
+    serdes::node_ptr_t mapnode, //
+    std::string& key_out) {
+  auto deserializer = mapnode->_deserializer;
+  auto elemnode     = deserializer->pushNode("", serdes::NodeType::MAP_ELEMENT_LEAF);
+  elemnode->_parent = mapnode;
+  auto childnode    = deserializer->deserializeElement(elemnode);
+  deserializer->popNode();
+  T value;
+  serdes::decode_value<T>(childnode->_value, value);
+  key_out = childnode->_key;
+  return value;
+}
+
+} // namespace ork::reflect::serdes

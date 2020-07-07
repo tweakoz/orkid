@@ -7,20 +7,25 @@
 
 #pragma once
 
-#include <ork/reflect/IObjectMapPropertyType.h>
+#include <ork/reflect/properties/ITypedMap.h>
 #include <ork/kernel/core_interface.h>
 #include <ork/kernel/any.h>
-#include <orktool/toolcore/choiceman.h>
+#include <ork/util/choiceman.h>
 
 namespace ork { namespace dataflow {
 class outplugbase;
 }} // namespace ork::dataflow
 namespace ork { namespace tool { namespace ged {
+
+///////////////////////////////////////////////////////////////////////////////
+QMenu* qmenuFromChoiceList(
+    util::choicelist_ptr_t chclist, //
+    util::choicefilter_ptr_t Filter = nullptr);
 ///////////////////////////////////////////////////////////////////////////////
 class SliderBase {
 public:
-  virtual void resize(int ix, int iy, int iw, int ih) = 0;
-  virtual void OnUiEvent(ork::ui::event_constptr_t ev)    = 0;
+  virtual void resize(int ix, int iy, int iw, int ih)  = 0;
+  virtual void OnUiEvent(ork::ui::event_constptr_t ev) = 0;
 
   void SetLogMode(bool bv) {
     mlogmode = bv;
@@ -80,7 +85,7 @@ public:
   }
 
 private:
-  T& mParent;
+  T& _parent;
   datatype mval;
   datatype mmin;
   datatype mmax;
@@ -97,7 +102,7 @@ template <typename Setter> class GedBoolNode : public GedItemNode {
 public:
   typedef bool datatype;
   Setter mSetter;
-  GedBoolNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj);
+  GedBoolNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj);
   void OnMouseDoubleClicked(ork::ui::event_constptr_t ev) final;
   void OnMouseReleased(ork::ui::event_constptr_t ev) final;
 
@@ -107,7 +112,7 @@ public:
 template <typename IODriver> struct GedFloatNode : public GedItemNode {
 
   bool mLogMode;
-  GedFloatNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj);
+  GedFloatNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj);
 
   void OnUiEvent(ork::ui::event_constptr_t ev) final;
   void DoDraw(lev2::Context* pTARG) final;
@@ -130,7 +135,7 @@ template <typename IODriver> struct GedFloatNode : public GedItemNode {
 ///////////////////////////////////////////////////////////////////////////////
 template <typename IODriver> struct GedIntNode : public GedItemNode {
   bool mLogMode;
-  GedIntNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj);
+  GedIntNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj);
 
   void OnUiEvent(ork::ui::event_constptr_t ev) final;
 
@@ -147,7 +152,7 @@ template <typename IODriver> struct GedIntNode : public GedItemNode {
 ///////////////////////////////////////////////////////////////////////////////
 template <typename IODriver, typename T> class GedSimpleNode : public GedItemNode {
 public:
-  GedSimpleNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj);
+  GedSimpleNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj);
 
   void OnUiEvent(ork::ui::event_constptr_t ev) final;
 
@@ -163,7 +168,7 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 template <typename Setter> class GedObjNode : public GedItemNode {
 public:
-  GedObjNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj);
+  GedObjNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj);
   void OnCreateObject();
 
   void OnMouseDoubleClicked(ork::ui::event_constptr_t ev) final;
@@ -191,7 +196,7 @@ class GedMapNode : public GedItemNode {
   RttiDeclareAbstract(GedMapNode, GedItemNode);
 
 public:
-  GedMapNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj);
+  GedMapNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj);
   const orkmap<PropTypeString, KeyDecoName>& GetKeys() const {
     return mMapKeys;
   }
@@ -205,7 +210,7 @@ public:
   }
 
 private:
-  const reflect::IObjectMapProperty* mMapProp;
+  const reflect::IMap* mMapProp;
   orkmap<PropTypeString, KeyDecoName> mMapKeys;
   GedItemNode* mKeyNode;
   PropTypeString mCurrentKey;
@@ -237,7 +242,7 @@ private:
 class GedFactoryEnum : public GedFactory {
   RttiDeclareConcrete(GedFactoryEnum, GedFactory);
   GedItemNode*
-  CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::IObjectProperty* prop, Object* obj) const final;
+  CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::ObjectProperty* prop, Object* obj) const final;
 
 public:
 };
@@ -245,7 +250,7 @@ public:
 class GedFactoryTransform : public GedFactory {
   RttiDeclareConcrete(GedFactoryTransform, GedFactory);
   GedItemNode*
-  CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::IObjectProperty* prop, Object* obj) const final;
+  CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::ObjectProperty* prop, Object* obj) const final;
 
 public:
 };
@@ -253,8 +258,8 @@ public:
 class GedFactory_PlugFloat : public GedFactory {
   RttiDeclareConcrete(GedFactory_PlugFloat, GedFactory);
   GedItemNode*
-  CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::IObjectProperty* prop, Object* obj) const final;
-  void Recurse(ObjModel& mdl, const reflect::IObjectProperty* prop, ork::Object* pobj) const final;
+  CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::ObjectProperty* prop, Object* obj) const final;
+  void Recurse(ObjModel& mdl, const reflect::ObjectProperty* prop, ork::Object* pobj) const final;
 
 public:
   GedFactory_PlugFloat();
@@ -263,7 +268,7 @@ public:
 class GedFactoryOutliner : public GedFactory {
   RttiDeclareConcrete(GedFactoryOutliner, GedFactory);
   GedItemNode*
-  CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::IObjectProperty* prop, Object* obj) const final;
+  CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::ObjectProperty* prop, Object* obj) const final;
 
 public:
 };
@@ -271,7 +276,7 @@ public:
 class GedFactoryGradient : public GedFactory {
   RttiDeclareConcrete(GedFactoryGradient, GedFactory);
   GedItemNode*
-  CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::IObjectProperty* prop, Object* obj) const final;
+  CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::ObjectProperty* prop, Object* obj) const final;
 
 public:
 };
@@ -279,7 +284,7 @@ public:
 class GedFactoryCurve : public GedFactory {
   RttiDeclareConcrete(GedFactoryCurve, GedFactory);
   GedItemNode*
-  CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::IObjectProperty* prop, Object* obj) const final;
+  CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::ObjectProperty* prop, Object* obj) const final;
 
 public:
 };
@@ -287,7 +292,7 @@ public:
 class GedFactoryAssetList : public GedFactory {
   RttiDeclareConcrete(GedFactoryAssetList, GedFactory);
   GedItemNode*
-  CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::IObjectProperty* prop, Object* obj) const final;
+  CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::ObjectProperty* prop, Object* obj) const final;
 
 public:
 };
@@ -295,7 +300,7 @@ public:
 class GedFactoryFileList : public GedFactory {
   RttiDeclareConcrete(GedFactoryFileList, GedFactory);
   GedItemNode*
-  CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::IObjectProperty* prop, Object* obj) const final;
+  CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::ObjectProperty* prop, Object* obj) const final;
 
 public:
 };
@@ -304,7 +309,7 @@ template <typename IODriver> class GedAssetNode : public GedItemNode {
   DECLARE_TRANSPARENT_TEMPLATE_ABSTRACT_RTTI(GedAssetNode<IODriver>, GedItemNode);
 
 public:
-  GedAssetNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj);
+  GedAssetNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj);
   void OnCreateObject();
   void SetLabel();
   void DoDraw(lev2::Context* pTARG); // virtual
@@ -326,7 +331,7 @@ template <typename IODriver> class GedFileNode : public GedItemNode {
   DECLARE_TRANSPARENT_TEMPLATE_ABSTRACT_RTTI(GedFileNode<IODriver>, GedItemNode);
 
 public:
-  GedFileNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj);
+  GedFileNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj);
   void OnCreateObject();
   void SetLabel();
   void DoDraw(lev2::Context* pTARG); // virtual
@@ -344,7 +349,7 @@ private:
   }
 };
 ///////////////////////////////////////////////////////////////////////////////
-class UserChoices : public tool::ChoiceList {
+class UserChoices : public util::ChoiceList {
   IUserChoiceDelegate& mucd;
   orkmap<PoolString, IUserChoiceDelegate::ValueType> mUserChoices;
 
@@ -367,11 +372,11 @@ class IOpsDelegate;
 
 struct OpsTask {
   IOpsDelegate* mpDelegate;
-  ork::Object* mpTarget;
+  ork::Object* _target;
 
   OpsTask()
       : mpDelegate(0)
-      , mpTarget(0) {
+      , _target(0) {
   }
 };
 
@@ -411,7 +416,7 @@ class OpsNode : public GedItemNode {
   }
 
 public:
-  OpsNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj);
+  OpsNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj);
 };
 class ObjectImportDelegate : public IOpsDelegate {
   RttiDeclareConcrete(ObjectImportDelegate, tool::ged::IOpsDelegate);
@@ -424,11 +429,10 @@ class ObjectExportDelegate : public IOpsDelegate {
 ///////////////////////////////////////////////////////////////////////////////
 void EnumerateFactories(
     const ork::Object* pdestobj,
-    const reflect::IObjectProperty* prop,
+    const reflect::ObjectProperty* prop,
     orkset<object::ObjectClass*>& FactoryClassVect);
 void EnumerateFactories(object::ObjectClass* pbaseclass, orkset<object::ObjectClass*>& FactoryClassVect);
 object::ObjectClass* FactoryMenu(orkset<object::ObjectClass*>& FactoryClasses);
-bool DeserializeInPlace(reflect::IDeserializer& deserializer, rtti::ICastable* value);
+bool DeserializeInPlace(reflect::serdes::IDeserializer& deserializer, rtti::ICastable* value);
 QMenu* CreateFactoryMenu(const orkset<object::ObjectClass*>& FactoryClassVect);
-
 }}} // namespace ork::tool::ged

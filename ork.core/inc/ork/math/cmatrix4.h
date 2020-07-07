@@ -205,6 +205,11 @@ public:
 using fmtx4       = Matrix44<float>;
 using fmtx4_ptr_t = std::shared_ptr<fmtx4>;
 
+template <>                       //
+struct use_custom_serdes<fmtx4> { //
+  static constexpr bool enable = true;
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
 } // namespace ork

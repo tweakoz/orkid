@@ -88,7 +88,7 @@ public:
 protected:
   std::stack<RefreshPolicyItem> _policyStack;
 
-  Context* mpTarget;
+  Context* _target;
   Window* mpWindow;
   ui::event_ptr_t _uievent;
   CTFLXID mxidThis;

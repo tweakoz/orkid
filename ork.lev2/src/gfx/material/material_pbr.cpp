@@ -25,6 +25,7 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <OpenImageIO/imageio.h>
 #include <ork/kernel/datacache.h>
+#include <ork/reflect/properties/registerX.inl>
 
 OIIO_NAMESPACE_USING
 
@@ -48,7 +49,7 @@ PBRMaterial::PBRMaterial()
     : _baseColor(1, 1, 1) {
   _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
   _rasterstate.SetAlphaTest(EALPHATEST_OFF);
-  _rasterstate.SetBlending(EBLENDING_OFF);
+  _rasterstate.SetBlending(Blending::OFF);
   _rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
   _rasterstate.SetZWriteMask(true);
   _rasterstate.SetCullTest(ECULLTEST_OFF);
@@ -172,8 +173,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   _initialTarget = targ;
   auto fxi       = targ->FXI();
-  auto shass     = ork::asset::AssetManager<FxShaderAsset>::Load("orkshader://pbr");
-  _shader        = shass->GetFxShader();
+  _asset_shader  = ork::asset::AssetManager<FxShaderAsset>::load("orkshader://pbr");
+  _shader        = _asset_shader->GetFxShader();
 
   _tekRigidPICKING           = fxi->technique(_shader, "picking_rigid");
   _tekRigidPICKING_INSTANCED = fxi->technique(_shader, "picking_rigid_instanced");
@@ -210,17 +211,20 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   assert(_parBoneMatrices != nullptr);
 
   if (_texColor == nullptr) {
-    _texColor = asset::AssetManager<lev2::TextureAsset>::Load("src://effect_textures/white")->GetTexture();
+    _asset_texcolor = asset::AssetManager<lev2::TextureAsset>::load("src://effect_textures/white");
+    _texColor       = _asset_texcolor->GetTexture();
     // printf("substituted white for non-existant color texture\n");
     OrkAssert(_texColor != nullptr);
   }
   if (_texNormal == nullptr) {
-    _texNormal = asset::AssetManager<lev2::TextureAsset>::Load("src://effect_textures/default_normal")->GetTexture();
+    _asset_texnormal = asset::AssetManager<lev2::TextureAsset>::load("src://effect_textures/default_normal");
+    _texNormal       = _asset_texnormal->GetTexture();
     // printf("substituted blue for non-existant normal texture\n");
     OrkAssert(_texNormal != nullptr);
   }
   if (_texMtlRuf == nullptr) {
-    _texMtlRuf = asset::AssetManager<lev2::TextureAsset>::Load("src://effect_textures/white")->GetTexture();
+    _asset_mtlruf = asset::AssetManager<lev2::TextureAsset>::load("src://effect_textures/white");
+    _texMtlRuf    = _asset_mtlruf->GetTexture();
     // printf("substituted white for non-existant mtlrufao texture\n");
     OrkAssert(_texMtlRuf != nullptr);
   }
@@ -397,7 +401,7 @@ void PBRMaterial::Update() {
 ////////////////////////////////////////////
 
 void PBRMaterial::setupCamera(const RenderContextFrameData& RCFD) {
-  auto target     = RCFD.mpTarget;
+  auto target     = RCFD._target;
   auto MTXI       = target->MTXI();
   auto FXI        = target->FXI();
   auto CIMPL      = RCFD._cimpl;

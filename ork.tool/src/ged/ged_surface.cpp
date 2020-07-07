@@ -9,9 +9,9 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <orktool/ged/ged.h>
 #include <orktool/ged/ged_delegate.h>
-#include <ork/reflect/IProperty.h>
-#include <ork/reflect/IObjectProperty.h>
-#include <ork/reflect/IObjectPropertyObject.h>
+
+#include <ork/reflect/properties/ObjectProperty.h>
+#include <ork/reflect/properties/IObject.h>
 #include <ork/lev2/gfx/pickbuffer.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/math/basicfilters.h>
@@ -69,7 +69,7 @@ void GedSurface::DoInit(lev2::Context* pt) {
 void GedSurface::DoSurfaceResize() {
   mWidget.SetDims(width(), height());
 
-  if (0 == _pickbuffer && (nullptr != mpTarget)) {
+  if (0 == _pickbuffer && (nullptr != _target)) {
     _pickbuffer->resize(width(), height());
   }
   // TODO: _pickbuffer->Resize()

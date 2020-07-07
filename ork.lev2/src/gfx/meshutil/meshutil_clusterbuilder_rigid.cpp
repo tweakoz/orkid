@@ -57,7 +57,7 @@ lev2::vtxbufferbase_ptr_t buildTypedVertexBuffer(
   using vtxbuf_t       = lev2::StaticVertexBuffer<vtx_t>;
   const auto& vpool    = inp_submesh.RefVertexPool();
   int NumVertexIndices = vpool.GetNumVertices();
-  auto out_vbuf        = std::make_shared<vtxbuf_t>(NumVertexIndices, 0, ork::lev2::EPrimitiveType::MULTI);
+  auto out_vbuf        = std::make_shared<vtxbuf_t>(NumVertexIndices, 0, ork::lev2::PrimitiveType::MULTI);
   lev2::VtxWriter<vtx_t> vwriter;
   vwriter.Lock(&context, out_vbuf.get(), NumVertexIndices);
   for (int iv = 0; iv < NumVertexIndices; iv++)

@@ -6,7 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/registerX.inl>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
@@ -15,52 +15,52 @@
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/reflect/enum_serializer.inl>
 #include <ork/math/collision_test.h>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/kernel/orklut.hpp>
 #include <ork/lev2/gfx/particle/modular_particles.h>
 #include <ork/lev2/lev2_asset.h>
 #include <signal.h>
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::particle::Global, "psys::Global");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::particle::ParticlePool, "psys::Pool");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::particle::RingEmitter, "psys::RingEmitterModule");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::particle::NozzleEmitter, "psys::NozzleEmitterModule");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::particle::ReEmitter, "psys::ReEmitterModule");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::particle::WindModule, "psys::WindModule");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::particle::GravityModule, "psys::GravityModule");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::particle::PlanarColliderModule, "psys::PlanarColliderModule");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::particle::SphericalColliderModule, "psys::SphericalColliderModule");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::particle::DecayModule, "psys::DecayModule");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::particle::TurbulenceModule, "psys::TurbulenceModule");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::particle::VortexModule, "psys::VortexModule");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::particle::ExtConnector, "psys::ExtConnector");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::particle::Constants, "psys::Constants");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::particle::FloatOp2Module, "psys::FloatOp2Module");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::particle::Vec3Op2Module, "psys::Vec3Op2Module");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::particle::Vec3SplitModule, "psys::Vec3SplitModule");
-
-BEGIN_ENUM_SERIALIZER(ork::lev2::particle, EPSYS_FLOATOP)
-DECLARE_ENUM(EPSYS_FLOATOP_ADD)
-DECLARE_ENUM(EPSYS_FLOATOP_SUB)
-DECLARE_ENUM(EPSYS_FLOATOP_MUL)
-END_ENUM_SERIALIZER()
-
-BEGIN_ENUM_SERIALIZER(ork::lev2::particle, EPSYS_VEC3OP)
-DECLARE_ENUM(EPSYS_VEC3OP_ADD)
-DECLARE_ENUM(EPSYS_VEC3OP_SUB)
-DECLARE_ENUM(EPSYS_VEC3OP_MUL)
-DECLARE_ENUM(EPSYS_VEC3OP_DOT)
-DECLARE_ENUM(EPSYS_VEC3OP_CROSS)
-END_ENUM_SERIALIZER()
+ImplementReflectionX(ork::lev2::particle::Global, "psys::Global");
+ImplementReflectionX(ork::lev2::particle::ParticlePool, "psys::Pool");
+ImplementReflectionX(ork::lev2::particle::RingEmitter, "psys::RingEmitterModule");
+ImplementReflectionX(ork::lev2::particle::NozzleEmitter, "psys::NozzleEmitterModule");
+ImplementReflectionX(ork::lev2::particle::ReEmitter, "psys::ReEmitterModule");
+ImplementReflectionX(ork::lev2::particle::WindModule, "psys::WindModule");
+ImplementReflectionX(ork::lev2::particle::GravityModule, "psys::GravityModule");
+ImplementReflectionX(ork::lev2::particle::PlanarColliderModule, "psys::PlanarColliderModule");
+ImplementReflectionX(ork::lev2::particle::SphericalColliderModule, "psys::SphericalColliderModule");
+ImplementReflectionX(ork::lev2::particle::DecayModule, "psys::DecayModule");
+ImplementReflectionX(ork::lev2::particle::TurbulenceModule, "psys::TurbulenceModule");
+ImplementReflectionX(ork::lev2::particle::VortexModule, "psys::VortexModule");
+ImplementReflectionX(ork::lev2::particle::ExtConnector, "psys::ExtConnector");
+ImplementReflectionX(ork::lev2::particle::Constants, "psys::Constants");
+ImplementReflectionX(ork::lev2::particle::FloatOp2Module, "psys::FloatOp2Module");
+ImplementReflectionX(ork::lev2::particle::Vec3Op2Module, "psys::Vec3Op2Module");
+ImplementReflectionX(ork::lev2::particle::Vec3SplitModule, "psys::Vec3SplitModule");
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace lev2 { namespace particle {
+namespace ork::lev2::particle {
+///////////////////////////////////////////////////////////////////////////////
+BeginEnumRegistration(PSYS_FLOATOP);
+RegisterEnum(PSYS_FLOATOP, ADD);
+RegisterEnum(PSYS_FLOATOP, SUB);
+RegisterEnum(PSYS_FLOATOP, MUL);
+EndEnumRegistration();
+
+BeginEnumRegistration(PSYS_VEC3OP);
+RegisterEnum(PSYS_VEC3OP, ADD);
+RegisterEnum(PSYS_VEC3OP, SUB);
+RegisterEnum(PSYS_VEC3OP, MUL);
+RegisterEnum(PSYS_VEC3OP, DOT);
+RegisterEnum(PSYS_VEC3OP, CROSS);
+EndEnumRegistration();
+
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-void Global::Describe() {
-  RegisterFloatXfPlug(Global, TimeScale, -100, 100.0f, ged::OutPlugChoiceDelegate);
+void Global::describeX(class_t* clazz) {
+  // RegisterFloatXfPlug(Global, TimeScale, -100, 100.0f, ged::OutPlugChoiceDelegate);
 }
 ///////////////////////////////////////////////////////////////////////////////
 Global::Global()
@@ -170,9 +170,9 @@ dataflow::outplugbase* Global::GetOutput(int idx) {
 Constants::Constants()
     : mbPlugsDirty(true) {
 }
-void Constants::Describe() {
-  ork::reflect::RegisterMapProperty("Floats", &Constants::mFloatConsts);
-  ork::reflect::RegisterMapProperty("Vect3s", &Constants::mVect3Consts);
+void Constants::describeX(class_t* clazz) {
+  clazz->directMapProperty("Floats", &Constants::mFloatConsts);
+  clazz->directMapProperty("Vect3s", &Constants::mVect3Consts);
   // ork::reflect::annotatePropertyForEditor< Constants >("FloatPlugs", "editor.factorylistbase", "dflow/outplug<float>" );
   // ork::reflect::annotatePropertyForEditor< Constants >("Vect3Plugs", "editor.factorylistbase", "dflow/outplug<vect3>" );
 }
@@ -321,18 +321,17 @@ void Constants::OnTopologyUpdate(void) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Constants::DoNotify(const ork::event::Event* event) {
+void Constants::doNotify(const ork::event::Event* event) {
   // invalidate topology when editor modified map
-  if (const ItemRemovalEvent* pev = rtti::autocast(event)) {
-    const ork::reflect::IObjectProperty* prop = pev->mProperty;
+  if (auto pev = dynamic_cast<const ItemRemovalEvent*>(event)) {
+    const ork::reflect::ObjectProperty* prop = pev->mProperty;
     OnTopologyUpdate();
-  } else if (const MapItemCreationEvent* pev = rtti::autocast(event)) {
-    const ork::reflect::IObjectProperty* prop = pev->mProperty;
+  } else if (auto pev = dynamic_cast<const MapItemCreationEvent*>(event)) {
+    const ork::reflect::ObjectProperty* prop = pev->mProperty;
     OnTopologyUpdate();
   }
-  return true;
 }
-bool Constants::PostDeserialize(reflect::IDeserializer&) {
+bool Constants::postDeserialize(reflect::serdes::IDeserializer&) {
   OnTopologyUpdate();
   return (true);
 }
@@ -344,11 +343,11 @@ ExtConnector::ExtConnector()
 //: mpExternalConnector( 0 )
 {
 }
-void ExtConnector::Describe() {
-  ork::reflect::RegisterMapProperty("FloatPlugs", &ExtConnector::mFloatPlugs);
-  ork::reflect::RegisterMapProperty("Vect3Plugs", &ExtConnector::mVect3Plugs);
-  ork::reflect::annotatePropertyForEditor<ExtConnector>("FloatPlugs", "editor.factorylistbase", "dflow/outplug<float>");
-  ork::reflect::annotatePropertyForEditor<ExtConnector>("Vect3Plugs", "editor.factorylistbase", "dflow/outplug<vect3>");
+void ExtConnector::describeX(class_t* clazz) {
+  clazz->directMapProperty("FloatPlugs", &ExtConnector::mFloatPlugs);
+  clazz->directMapProperty("Vect3Plugs", &ExtConnector::mVect3Plugs);
+  // ork::reflect::annotatePropertyForEditor<ExtConnector>("FloatPlugs", "editor.factorylistbase", "dflow/outplug<float>");
+  // ork::reflect::annotatePropertyForEditor<ExtConnector>("Vect3Plugs", "editor.factorylistbase", "dflow/outplug<vect3>");
 }
 int ExtConnector::GetNumOutputs() const {
   int iret      = 0;
@@ -440,9 +439,9 @@ void ExtConnector::BindConnector(dataflow::dyn_external* pconnector) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void FloatOp2Module::Describe() {
-  RegisterFloatXfPlug(FloatOp2Module, InputA, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
-  RegisterFloatXfPlug(FloatOp2Module, InputB, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
+void FloatOp2Module::describeX(class_t* clazz) {
+  // RegisterFloatXfPlug(FloatOp2Module, InputA, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
+  // RegisterFloatXfPlug(FloatOp2Module, InputB, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
   // static const char* EdGrpStr =
   //	        "grp://yp Input Gravity";
   // reflect::annotateClassForEditor<FloatOp2Module>( "editor.prop.groups", EdGrpStr );
@@ -455,18 +454,18 @@ FloatOp2Module::FloatOp2Module()
     , mfInputA(0.0f)
     , mfInputB(0.0f)
     , mOutDataOutput(0.0f)
-    , meOp(EPSYS_FLOATOP_ADD) {
+    , meOp(PSYS_FLOATOP::ADD) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FloatOp2Module::Compute(float dt) {
   switch (meOp) {
-    case EPSYS_FLOATOP_ADD:
+    case PSYS_FLOATOP::ADD:
       mOutDataOutput = mPlugInpInputA.GetValue() + mPlugInpInputB.GetValue();
       break;
-    case EPSYS_FLOATOP_SUB:
+    case PSYS_FLOATOP::SUB:
       mOutDataOutput = mPlugInpInputA.GetValue() - mPlugInpInputB.GetValue();
       break;
-    case EPSYS_FLOATOP_MUL:
+    case PSYS_FLOATOP::MUL:
       mOutDataOutput = mPlugInpInputA.GetValue() * mPlugInpInputB.GetValue();
       break;
   }
@@ -487,9 +486,9 @@ dataflow::inplugbase* FloatOp2Module::GetInput(int idx) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void Vec3Op2Module::Describe() {
-  RegisterVect3XfPlug(Vec3Op2Module, InputA, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
-  RegisterVect3XfPlug(Vec3Op2Module, InputB, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
+void Vec3Op2Module::describeX(class_t* clazz) {
+  // RegisterVect3XfPlug(Vec3Op2Module, InputA, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
+  // RegisterVect3XfPlug(Vec3Op2Module, InputB, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
   // static const char* EdGrpStr =
   //	        "grp://yp Input Gravity";
   // reflect::annotateClassForEditor<FloatOp2Module>( "editor.prop.groups", EdGrpStr );
@@ -502,25 +501,25 @@ Vec3Op2Module::Vec3Op2Module()
     , mvInputA(0.0f, 0.0f, 0.0f)
     , mvInputB(0.0f, 0.0f, 0.0f)
     , mOutDataOutput(0.0f, 0.0f, 0.0f)
-    , meOp(EPSYS_VEC3OP_ADD) {
+    , meOp(PSYS_VEC3OP::ADD) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Vec3Op2Module::Compute(float dt) {
   switch (meOp) {
-    case EPSYS_VEC3OP_ADD:
+    case PSYS_VEC3OP::ADD:
       mOutDataOutput = mPlugInpInputA.GetValue() + mPlugInpInputB.GetValue();
       break;
-    case EPSYS_VEC3OP_SUB:
+    case PSYS_VEC3OP::SUB:
       mOutDataOutput = mPlugInpInputA.GetValue() - mPlugInpInputB.GetValue();
       break;
-    case EPSYS_VEC3OP_MUL:
+    case PSYS_VEC3OP::MUL:
       mOutDataOutput = mPlugInpInputA.GetValue() * mPlugInpInputB.GetValue();
       break;
-    case EPSYS_VEC3OP_DOT: { // fvec3 a = mPlugInpInputA.GetValue();
+    case PSYS_VEC3OP::DOT: { // fvec3 a = mPlugInpInputA.GetValue();
                              // fvec3 b = mPlugInpInputA.GetValue();
                              // mOutDataOutput = .Dot(mPlugInpInputB.GetValue());
     } break;
-    case EPSYS_VEC3OP_CROSS:
+    case PSYS_VEC3OP::CROSS:
       mOutDataOutput = mPlugInpInputA.GetValue().Cross(mPlugInpInputB.GetValue());
       break;
   }
@@ -541,8 +540,8 @@ dataflow::inplugbase* Vec3Op2Module::GetInput(int idx) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void Vec3SplitModule::Describe() {
-  RegisterVect3XfPlug(Vec3SplitModule, Input, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
+void Vec3SplitModule::describeX(class_t* clazz) {
+  // RegisterVect3XfPlug(Vec3SplitModule, Input, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
 }
 ///////////////////////////////////////////////////////////////////////////////
 Vec3SplitModule::Vec3SplitModule()
@@ -575,15 +574,15 @@ dataflow::inplugbase* Vec3SplitModule::GetInput(int idx) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void ParticlePool::Describe() {
-  RegisterObjOutPlug(ParticlePool, Output);
-  RegisterFloatXfPlug(ParticlePool, PathInterval, 0.0f, 10.0f, ged::OutPlugChoiceDelegate);
-  RegisterFloatXfPlug(ParticlePool, PathProbability, 0.0f, 1.0f, ged::OutPlugChoiceDelegate);
-  ork::reflect::RegisterProperty("MaxParticles", &ParticlePool::miPoolSize);
-  ork::reflect::annotatePropertyForEditor<ParticlePool>("MaxParticles", "editor.range.min", "1");
-  ork::reflect::annotatePropertyForEditor<ParticlePool>("MaxParticles", "editor.range.max", "20000");
-  ork::reflect::RegisterProperty("PathStochasticQID", &ParticlePool::mPathStochasticQueueID);
-  ork::reflect::RegisterProperty("PathIntervalQID", &ParticlePool::mPathIntervalQueueID);
+void ParticlePool::describeX(class_t* clazz) {
+  // RegisterObjOutPlug(ParticlePool, Output);
+  // RegisterFloatXfPlug(ParticlePool, PathInterval, 0.0f, 10.0f, ged::OutPlugChoiceDelegate);
+  // RegisterFloatXfPlug(ParticlePool, PathProbability, 0.0f, 1.0f, ged::OutPlugChoiceDelegate);
+  // ork::reflect::RegisterProperty("MaxParticles", &ParticlePool::miPoolSize);
+  // rk::reflect::annotatePropertyForEditor<ParticlePool>("MaxParticles", "editor.range.min", "1");
+  // ork::reflect::annotatePropertyForEditor<ParticlePool>("MaxParticles", "editor.range.max", "20000");
+  // ork::reflect::RegisterProperty("PathStochasticQID", &ParticlePool::mPathStochasticQueueID);
+  // ork::reflect::RegisterProperty("PathIntervalQID", &ParticlePool::mPathIntervalQueueID);
 }
 ///////////////////////////////////////////////////////////////////////////////
 ParticlePool::ParticlePool()
@@ -686,8 +685,8 @@ void ParticlePool::DoLink() {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void RingEmitter::Describe() {
-  RegisterObjInpPlug(RingEmitter, Input);
+void RingEmitter::describeX(class_t* clazz) {
+  /*RegisterObjInpPlug(RingEmitter, Input);
   RegisterObjOutPlug(RingEmitter, Output);
   RegisterFloatXfPlug(RingEmitter, Lifespan, 0.0f, 20.0f, ged::OutPlugChoiceDelegate);
   RegisterFloatXfPlug(RingEmitter, EmissionRadius, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
@@ -709,6 +708,7 @@ void RingEmitter::Describe() {
                                 "grp://Offset OffsetX OffsetY OffsetZ "
                                 "grp://Event DeathQID PathIntervalQID PathStochasticQID";
   reflect::annotateClassForEditor<RingEmitter>("editor.prop.groups", EdGrpStr);
+  */
 }
 ///////////////////////////////////////////////////////////////////////////////
 RingEmitter::RingEmitter()
@@ -733,7 +733,7 @@ RingEmitter::RingEmitter()
     , mfEmitterSpinRate(0.0f)
     , mfEmissionVelocity(0.0f)
     , mfAccumTime(0.0f)
-    , meDirection(EMITDIR_VEL)
+    , meDirection(EmitterDirection::VEL)
     , mDirectedEmitter(*this)
     , mfOffsetX(0.0f)
     , mfOffsetY(0.0f)
@@ -811,7 +811,7 @@ void RingDirectedEmitter::ComputePosDir(float fi, fvec3& pos, fvec3& dir) {
   float fdx    = cosf(phase + PI_DIV_2);
   float fdz    = sinf(phase + PI_DIV_2);
   pos          = fvec3((fpx * scaler), 0.0f, (fpz * scaler));
-  if (meDirection == EMITDIR_USER) {
+  if (meDirection == EmitterDirection::USER) {
     dir = mUserDir;
   } else {
     dir = fvec3(fdx, 0.0f, fdz);
@@ -889,8 +889,8 @@ void RingEmitter::Compute(float fdt) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void NozzleEmitter::Describe() {
-  RegisterObjInpPlug(NozzleEmitter, Input);
+void NozzleEmitter::describeX(class_t* clazz) {
+  /*RegisterObjInpPlug(NozzleEmitter, Input);
   RegisterObjOutPlug(NozzleEmitter, Output);
   RegisterObjOutPlug(NozzleEmitter, TheDead);
   RegisterFloatXfPlug(NozzleEmitter, Lifespan, 0.0f, 20.0f, ged::OutPlugChoiceDelegate);
@@ -905,6 +905,7 @@ void NozzleEmitter::Describe() {
                                 "EmissionRate EmissionVelocity "
                                 "Offset Direction  OffsetVelocity";
   reflect::annotateClassForEditor<NozzleEmitter>("editor.prop.groups", EdGrpStr);
+  */
 }
 ///////////////////////////////////////////////////////////////////////////////
 NozzleEmitter::NozzleEmitter()
@@ -998,7 +999,7 @@ void NozzleEmitter::Emit(float fdt) {
   mEmitterCtx.mfDeltaTime        = fdt;
   mEmitterCtx.mfEmissionVelocity = femitvel;
   mEmitterCtx.mDispersion        = mPlugInpDispersionAngle.GetValue();
-  mDirectedEmitter.meDirection   = EMITDIR_CONSTANT;
+  mDirectedEmitter.meDirection   = EmitterDirection::CONSTANT;
   fvec3 dir                      = mPlugInpDirection.GetValue();
   mEmitterCtx.mPosition          = fvec3(0.0f, 0.0f, 0.0f); // mPlugInpOffset.GetValue();
   fvec3 offsetVel                = mPlugInpOffsetVelocity.GetValue();
@@ -1052,8 +1053,8 @@ void ReDirectedEmitter::ComputePosDir(float fi, fvec3& pos, fvec3& dir) {
   // dir = (mEmitterModule.mEmitterCtx.mPosition-mEmitterModule.mEmitterCtx.mLastPosition).Normal();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ReEmitter::Describe() {
-  RegisterObjInpPlug(ReEmitter, Input);
+void ReEmitter::describeX(class_t* clazz) {
+  /*RegisterObjInpPlug(ReEmitter, Input);
 
   RegisterObjOutPlug(ReEmitter, Output);
 
@@ -1074,6 +1075,7 @@ void ReEmitter::Describe() {
                                 "EmissionRate EmissionVelocity "
                                 "grp://Event SpawnProbability SpawnMultiplier SpawnQID DeathQID ";
   reflect::annotateClassForEditor<ReEmitter>("editor.prop.groups", EdGrpStr);
+  */
 }
 ///////////////////////////////////////////////////////////////////////////////
 ReEmitter::ReEmitter()
@@ -1090,7 +1092,7 @@ ReEmitter::ReEmitter()
     , mfEmissionRate(0.0f)
     , mfEmissionVelocity(0.0f)
     , mfDispersionAngle(0.0f)
-    , meDirection(EMITDIR_VEL)
+    , meDirection(EmitterDirection::VEL)
     , mDirectedEmitter(*this)
     , mSpawnEventQueue(0)
     , mDeathEventQueue(0)
@@ -1197,523 +1199,523 @@ dataflow::outplugbase* ReEmitter::GetOutput(int idx) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void WindModule::Describe() {
-  RegisterObjInpPlug(WindModule, Input);
+void WindModule::describeX(class_t* clazz) {
+  /*RegisterObjInpPlug(WindModule, Input);
   RegisterObjOutPlug(WindModule, Output);
   RegisterFloatXfPlug(WindModule, Force, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
   static const char* EdGrpStr = "grp://yp Input Force";
   reflect::annotateClassForEditor<WindModule>("editor.prop.groups", EdGrpStr);
-}
-///////////////////////////////////////////////////////////////////////////////
-WindModule::WindModule()
-    : ConstructOutPlug(Output, dataflow::EPR_UNIFORM)
-    , ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
-    , ConstructInpPlug(Force, dataflow::EPR_UNIFORM, mfForce)
-    , mfForce(0.0f) {
-}
-///////////////////////////////////////////////////////////////////////////////
-void WindModule::Compute(float dt) {
-  const psys_ptclbuf& pb = mPlugInpInput.GetValue();
-  if (pb.mPool) {
-    ork::fvec4 accel(0.0f, mPlugInpForce.GetValue(), 0.0f);
-    for (int i = 0; i < pb.mPool->GetNumAlive(); i++) {
-      BasicParticle* particle = pb.mPool->GetActiveParticle(i);
-      particle->mVelocity += accel * dt;
-    }
+*/}
+  ///////////////////////////////////////////////////////////////////////////////
+  WindModule::WindModule()
+      : ConstructOutPlug(Output, dataflow::EPR_UNIFORM)
+      , ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
+      , ConstructInpPlug(Force, dataflow::EPR_UNIFORM, mfForce)
+      , mfForce(0.0f) {
   }
-  mOutDataOutput.mPool = pb.mPool;
-}
-///////////////////////////////////////////////////////////////////////////////
-dataflow::inplugbase* WindModule::GetInput(int idx) {
-  dataflow::inplugbase* rval = 0;
-  switch (idx) {
-    case 0:
-      rval = &mPlugInpInput;
-      break;
-    case 1:
-      rval = &mPlugInpForce;
-      break;
-  }
-  return rval;
-}
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-void GravityModule::Describe() {
-  RegisterObjInpPlug(GravityModule, Input);
-  RegisterObjOutPlug(GravityModule, Output);
-  RegisterFloatXfPlug(GravityModule, G, -10.0f, 10.0f, ged::OutPlugChoiceDelegate);
-  RegisterFloatXfPlug(GravityModule, Mass, -10.0f, 10.0f, ged::OutPlugChoiceDelegate);
-  RegisterFloatXfPlug(GravityModule, OthMass, -10.0f, 10.0f, ged::OutPlugChoiceDelegate);
-  RegisterFloatXfPlug(GravityModule, MinDistance, 0.0f, 100.0f, ged::OutPlugChoiceDelegate);
-  RegisterVect3XfPlug(GravityModule, Center, -1000.0f, 1000.0f, ged::OutPlugChoiceDelegate);
-
-  static const char* EdGrpStr = "grp://yp Input G Mass OthMass MinDistance Center";
-  reflect::annotateClassForEditor<GravityModule>("editor.prop.groups", EdGrpStr);
-}
-///////////////////////////////////////////////////////////////////////////////
-GravityModule::GravityModule()
-    : ConstructOutPlug(Output, dataflow::EPR_UNIFORM)
-    , ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
-    , ConstructInpPlug(G, dataflow::EPR_UNIFORM, mfG)
-    , ConstructInpPlug(Mass, dataflow::EPR_UNIFORM, mfMass)
-    , ConstructInpPlug(OthMass, dataflow::EPR_UNIFORM, mfOthMass)
-    , ConstructInpPlug(MinDistance, dataflow::EPR_UNIFORM, mfMinDistance)
-    , ConstructInpPlug(Center, dataflow::EPR_UNIFORM, mvCenter)
-    , mvCenter(0.0f, 0.0f, 0.0f)
-    , mfMass(0.0f)
-    , mfMinDistance(0.0f)
-    , mfOthMass(0.0f)
-    , mfG(0.0f) {
-
-  printf("&G<%p>\n", &mfG);
-  // raise(SIGINT);
-}
-///////////////////////////////////////////////////////////////////////////////
-void GravityModule::Compute(float dt) {
-  const psys_ptclbuf& pb = mPlugInpInput.GetValue();
-  if (pb.mPool) {
-    float fmass    = powf(10.0f, mPlugInpMass.GetValue());
-    float fothmass = powf(10.0f, mPlugInpOthMass.GetValue());
-    float fG       = powf(10.0f, mPlugInpG.GetValue());
-    float finvmass = (fothmass == 0.0f) ? 0.0f : (1.0f / fothmass);
-    float numer    = (fmass * fothmass * fG);
-    float mindist  = mPlugInpMinDistance.GetValue();
-    for (int i = 0; i < pb.mPool->GetNumAlive(); i++) {
-      BasicParticle* particle = pb.mPool->GetActiveParticle(i);
-      const fvec3& OldPos     = particle->mPosition;
-      fvec3 Dir               = (mvCenter - OldPos);
-      float Mag               = Dir.Mag();
-      if (Mag < mindist)
-        Mag = mindist;
-      Dir            = Dir * (1.0f / Mag);
-      float denom    = Mag * Mag;
-      fvec3 forceVec = Dir * (numer / denom);
-      fvec3 accel    = forceVec * finvmass;
-      // printf( "numer<%f> denim<%f> accel<%f %f %f>\n", numer, denom, accel.GetX(), accel.GetY(), accel.GetZ() );
-      particle->mVelocity += accel * dt;
-    }
-  }
-  mOutDataOutput.mPool = pb.mPool;
-}
-///////////////////////////////////////////////////////////////////////////////
-dataflow::inplugbase* GravityModule::GetInput(int idx) {
-  dataflow::inplugbase* rval = 0;
-  switch (idx) {
-    case 0:
-      rval = &mPlugInpInput;
-      break;
-    case 1:
-      rval = &mPlugInpG;
-      break;
-    case 2:
-      rval = &mPlugInpMass;
-      break;
-    case 3:
-      rval = &mPlugInpOthMass;
-      break;
-    case 4:
-      rval = &mPlugInpCenter;
-      break;
-    case 5:
-      rval = &mPlugInpMinDistance;
-      break;
-  }
-  return rval;
-}
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-void PlanarColliderModule::Describe() {
-  RegisterObjInpPlug(PlanarColliderModule, Input);
-  RegisterObjOutPlug(PlanarColliderModule, Output);
-  RegisterFloatXfPlug(PlanarColliderModule, NormalX, -1.0f, 1.0f, ged::OutPlugChoiceDelegate);
-  RegisterFloatXfPlug(PlanarColliderModule, NormalY, -1.0f, 1.0f, ged::OutPlugChoiceDelegate);
-  RegisterFloatXfPlug(PlanarColliderModule, NormalZ, -1.0f, 1.0f, ged::OutPlugChoiceDelegate);
-  RegisterFloatXfPlug(PlanarColliderModule, OriginX, -1000.0f, 1000.0f, ged::OutPlugChoiceDelegate);
-  RegisterFloatXfPlug(PlanarColliderModule, OriginY, -1000.0f, 1000.0f, ged::OutPlugChoiceDelegate);
-  RegisterFloatXfPlug(PlanarColliderModule, OriginZ, -1000.0f, 1000.0f, ged::OutPlugChoiceDelegate);
-  RegisterFloatXfPlug(PlanarColliderModule, Absorbtion, 0.0f, 1.0f, ged::OutPlugChoiceDelegate);
-
-  static const char* EdGrpStr = "grp://Main Input DiodeDirection Absorbtion "
-                                "grp://Normal NormalX NormalY NormalZ "
-                                "grp://Origin OriginX OriginY OriginZ ";
-
-  reflect::annotateClassForEditor<PlanarColliderModule>("editor.prop.groups", EdGrpStr);
-  ork::reflect::RegisterProperty("DiodeDirection", &PlanarColliderModule::miDiodeDirection);
-  ork::reflect::annotatePropertyForEditor<PlanarColliderModule>("DiodeDirection", "editor.range.min", "-1");
-  ork::reflect::annotatePropertyForEditor<PlanarColliderModule>("DiodeDirection", "editor.range.max", "1");
-}
-///////////////////////////////////////////////////////////////////////////////
-PlanarColliderModule::PlanarColliderModule()
-    : ConstructOutPlug(Output, dataflow::EPR_UNIFORM)
-    , ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
-    , ConstructInpPlug(NormalX, dataflow::EPR_UNIFORM, mfNormalX)
-    , ConstructInpPlug(NormalY, dataflow::EPR_UNIFORM, mfNormalY)
-    , ConstructInpPlug(NormalZ, dataflow::EPR_UNIFORM, mfNormalZ)
-    , ConstructInpPlug(OriginX, dataflow::EPR_UNIFORM, mfOriginX)
-    , ConstructInpPlug(OriginY, dataflow::EPR_UNIFORM, mfOriginY)
-    , ConstructInpPlug(OriginZ, dataflow::EPR_UNIFORM, mfOriginZ)
-    , ConstructInpPlug(Absorbtion, dataflow::EPR_UNIFORM, mfAbsorbtion)
-    , mfOriginX(0.0f)
-    , mfOriginY(0.0f)
-    , mfOriginZ(0.0f)
-    , mfNormalX(0.0f)
-    , mfNormalY(0.0f)
-    , mfNormalZ(0.0f)
-    , mfAbsorbtion(0.0f) {
-}
-///////////////////////////////////////////////////////////////////////////////
-void PlanarColliderModule::Compute(float dt) {
-  const psys_ptclbuf& pb = mPlugInpInput.GetValue();
-  if (pb.mPool) {
-    //////////////////////////////////////////////////////////
-    ork::fvec3 PlaneN;
-    PlaneN.SetX(mPlugInpNormalX.GetValue());
-    PlaneN.SetY(mPlugInpNormalY.GetValue());
-    PlaneN.SetZ(mPlugInpNormalZ.GetValue());
-    PlaneN.Normalize();
-    if (PlaneN.Mag() == 0.0f)
-      PlaneN = fvec3(0.0f, 1.0f, 0.0f);
-    ork::fvec3 PlaneO;
-    PlaneO.SetX(mPlugInpOriginX.GetValue());
-    PlaneO.SetY(mPlugInpOriginY.GetValue());
-    PlaneO.SetZ(mPlugInpOriginZ.GetValue());
-    ork::fplane3 CollisionPlane;
-    CollisionPlane.CalcFromNormalAndOrigin(PlaneN, PlaneO);
-    float retention = 1.0f - mPlugInpAbsorbtion.GetValue();
-    //////////////////////////////////////////////////////////
-
-    for (int i = 0; i < pb.mPool->GetNumAlive(); i++) {
-      auto particle        = pb.mPool->GetActiveParticle(i);
-      const fvec3& cur_pos = particle->mPosition;
-      const fvec3& cur_vel = particle->mVelocity;
-
-      auto nxt_pos = cur_pos + cur_vel * dt;
-
-      float pntdist = CollisionPlane.pointDistance(nxt_pos);
-
-      bool cur_inside = particle->mColliderStates & 1;
-      bool nxt_inside = pntdist < 0;
-
-      if ((false == cur_inside) && nxt_inside) {
-        particle->mVelocity = cur_vel.Reflect(PlaneN) * retention;
+  ///////////////////////////////////////////////////////////////////////////////
+  void WindModule::Compute(float dt) {
+    const psys_ptclbuf& pb = mPlugInpInput.GetValue();
+    if (pb.mPool) {
+      ork::fvec4 accel(0.0f, mPlugInpForce.GetValue(), 0.0f);
+      for (int i = 0; i < pb.mPool->GetNumAlive(); i++) {
+        BasicParticle* particle = pb.mPool->GetActiveParticle(i);
+        particle->mVelocity += accel * dt;
       }
-      if (nxt_inside)
-        particle->mColliderStates |= 1;
-      else
-        particle->mColliderStates &= ~1;
     }
+    mOutDataOutput.mPool = pb.mPool;
   }
-  mOutDataOutput.mPool = pb.mPool;
-}
-///////////////////////////////////////////////////////////////////////////////
-dataflow::inplugbase* PlanarColliderModule::GetInput(int idx) {
-  dataflow::inplugbase* rval = 0;
-  switch (idx) {
-    case 0:
-      rval = &mPlugInpInput;
-      break;
-    case 1:
-      rval = &mPlugInpNormalX;
-      break;
-    case 2:
-      rval = &mPlugInpNormalY;
-      break;
-    case 3:
-      rval = &mPlugInpNormalZ;
-      break;
-    case 4:
-      rval = &mPlugInpOriginX;
-      break;
-    case 5:
-      rval = &mPlugInpOriginY;
-      break;
-    case 6:
-      rval = &mPlugInpOriginZ;
-      break;
-    case 7:
-      rval = &mPlugInpAbsorbtion;
-      break;
-    default:
-      OrkAssert(false);
-      break;
+  ///////////////////////////////////////////////////////////////////////////////
+  dataflow::inplugbase* WindModule::GetInput(int idx) {
+    dataflow::inplugbase* rval = 0;
+    switch (idx) {
+      case 0:
+        rval = &mPlugInpInput;
+        break;
+      case 1:
+        rval = &mPlugInpForce;
+        break;
+    }
+    return rval;
   }
-  return rval;
-}
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-void SphericalColliderModule::Describe() {
-  RegisterObjInpPlug(SphericalColliderModule, Input);
-  RegisterObjOutPlug(SphericalColliderModule, Output);
-  RegisterFloatXfPlug(SphericalColliderModule, CenterX, -1000.0f, 1000.0f, ged::OutPlugChoiceDelegate);
-  RegisterFloatXfPlug(SphericalColliderModule, CenterY, -1000.0f, 1000.0f, ged::OutPlugChoiceDelegate);
-  RegisterFloatXfPlug(SphericalColliderModule, CenterZ, -1000.0f, 1000.0f, ged::OutPlugChoiceDelegate);
-  RegisterFloatXfPlug(SphericalColliderModule, Radius, -1000.0f, 1000.0f, ged::OutPlugChoiceDelegate);
-  RegisterFloatXfPlug(SphericalColliderModule, Absorbtion, 0.0f, 1.0f, ged::OutPlugChoiceDelegate);
+  ///////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////
+  void GravityModule::describeX(class_t* clazz) {
+    /*RegisterObjInpPlug(GravityModule, Input);
+    RegisterObjOutPlug(GravityModule, Output);
+    RegisterFloatXfPlug(GravityModule, G, -10.0f, 10.0f, ged::OutPlugChoiceDelegate);
+    RegisterFloatXfPlug(GravityModule, Mass, -10.0f, 10.0f, ged::OutPlugChoiceDelegate);
+    RegisterFloatXfPlug(GravityModule, OthMass, -10.0f, 10.0f, ged::OutPlugChoiceDelegate);
+    RegisterFloatXfPlug(GravityModule, MinDistance, 0.0f, 100.0f, ged::OutPlugChoiceDelegate);
+    RegisterVect3XfPlug(GravityModule, Center, -1000.0f, 1000.0f, ged::OutPlugChoiceDelegate);
 
-  static const char* EdGrpStr = "grp://Main Input Absorbtion "
-                                "grp://Sphere CenterX CenterY CenterZ Radius";
+    static const char* EdGrpStr = "grp://yp Input G Mass OthMass MinDistance Center";
+    reflect::annotateClassForEditor<GravityModule>("editor.prop.groups", EdGrpStr);
+  */}
+  ///////////////////////////////////////////////////////////////////////////////
+  GravityModule::GravityModule()
+      : ConstructOutPlug(Output, dataflow::EPR_UNIFORM)
+      , ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
+      , ConstructInpPlug(G, dataflow::EPR_UNIFORM, mfG)
+      , ConstructInpPlug(Mass, dataflow::EPR_UNIFORM, mfMass)
+      , ConstructInpPlug(OthMass, dataflow::EPR_UNIFORM, mfOthMass)
+      , ConstructInpPlug(MinDistance, dataflow::EPR_UNIFORM, mfMinDistance)
+      , ConstructInpPlug(Center, dataflow::EPR_UNIFORM, mvCenter)
+      , mvCenter(0.0f, 0.0f, 0.0f)
+      , mfMass(0.0f)
+      , mfMinDistance(0.0f)
+      , mfOthMass(0.0f)
+      , mfG(0.0f) {
 
-  reflect::annotateClassForEditor<SphericalColliderModule>("editor.prop.groups", EdGrpStr);
-}
-///////////////////////////////////////////////////////////////////////////////
-SphericalColliderModule::SphericalColliderModule()
-    : ConstructOutPlug(Output, dataflow::EPR_UNIFORM)
-    , ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
-    , ConstructInpPlug(CenterX, dataflow::EPR_UNIFORM, mfCenterX)
-    , ConstructInpPlug(CenterY, dataflow::EPR_UNIFORM, mfCenterY)
-    , ConstructInpPlug(CenterZ, dataflow::EPR_UNIFORM, mfCenterZ)
-    , ConstructInpPlug(Radius, dataflow::EPR_UNIFORM, mfRadius)
-    , ConstructInpPlug(Absorbtion, dataflow::EPR_UNIFORM, mfAbsorbtion)
-    , mfRadius(1.0f)
-    , mfCenterX(0.0f)
-    , mfCenterY(0.0f)
-    , mfCenterZ(0.0f)
-    , mfAbsorbtion(0.0f) {
-}
-///////////////////////////////////////////////////////////////////////////////
-dataflow::inplugbase* SphericalColliderModule::GetInput(int idx) {
-  dataflow::inplugbase* rval = 0;
-  switch (idx) {
-    case 0:
-      rval = &mPlugInpInput;
-      break;
-    case 1:
-      rval = &mPlugInpCenterX;
-      break;
-    case 2:
-      rval = &mPlugInpCenterY;
-      break;
-    case 3:
-      rval = &mPlugInpCenterZ;
-      break;
-    case 4:
-      rval = &mPlugInpRadius;
-      break;
-    case 5:
-      rval = &mPlugInpAbsorbtion;
-      break;
-    default:
-      OrkAssert(false);
-      break;
+    printf("&G<%p>\n", &mfG);
+    // raise(SIGINT);
   }
-  return rval;
-}
-///////////////////////////////////////////////////////////////////////////////
-void SphericalColliderModule::Compute(float dt) {
-  const psys_ptclbuf& pb = mPlugInpInput.GetValue();
-  if (pb.mPool) {
-    //////////////////////////////////////////////////////////
-    Sphere the_sphere(fvec3(), 1.0f);
-
-    the_sphere.mCenter.SetX(mPlugInpCenterX.GetValue());
-    the_sphere.mCenter.SetY(mPlugInpCenterY.GetValue());
-    the_sphere.mCenter.SetZ(mPlugInpCenterZ.GetValue());
-    the_sphere.mRadius = mPlugInpRadius.GetValue();
-    float retention    = 1.0f - mPlugInpAbsorbtion.GetValue();
-    //////////////////////////////////////////////////////////
-
-    auto m1 = 1000.0f;
-    auto m2 = 1.0f;
-
-    float sphereradsquared = the_sphere.mRadius * the_sphere.mRadius;
-    auto& sphereCenter     = the_sphere.mCenter;
-
-    for (int i = 0; i < pb.mPool->GetNumAlive(); i++) {
-      auto particle        = pb.mPool->GetActiveParticle(i);
-      const fvec3& cur_pos = particle->mPosition;
-      const fvec3& cur_vel = particle->mVelocity;
-      auto cur_dir         = cur_vel.Normal();
-
-      auto nxt_pos     = cur_pos + cur_vel * dt;
-      float ndcsquared = (nxt_pos - the_sphere.mCenter).MagSquared();
-
-      bool cur_inside = particle->mColliderStates & 1;
-      bool nxt_inside = ndcsquared <= sphereradsquared;
-
-      if ((false == cur_inside) && nxt_inside) {
-        auto N              = (cur_pos - sphereCenter).Normal();
-        particle->mVelocity = cur_vel.Reflect(N) * retention;
+  ///////////////////////////////////////////////////////////////////////////////
+  void GravityModule::Compute(float dt) {
+    const psys_ptclbuf& pb = mPlugInpInput.GetValue();
+    if (pb.mPool) {
+      float fmass    = powf(10.0f, mPlugInpMass.GetValue());
+      float fothmass = powf(10.0f, mPlugInpOthMass.GetValue());
+      float fG       = powf(10.0f, mPlugInpG.GetValue());
+      float finvmass = (fothmass == 0.0f) ? 0.0f : (1.0f / fothmass);
+      float numer    = (fmass * fothmass * fG);
+      float mindist  = mPlugInpMinDistance.GetValue();
+      for (int i = 0; i < pb.mPool->GetNumAlive(); i++) {
+        BasicParticle* particle = pb.mPool->GetActiveParticle(i);
+        const fvec3& OldPos     = particle->mPosition;
+        fvec3 Dir               = (mvCenter - OldPos);
+        float Mag               = Dir.Mag();
+        if (Mag < mindist)
+          Mag = mindist;
+        Dir            = Dir * (1.0f / Mag);
+        float denom    = Mag * Mag;
+        fvec3 forceVec = Dir * (numer / denom);
+        fvec3 accel    = forceVec * finvmass;
+        // printf( "numer<%f> denim<%f> accel<%f %f %f>\n", numer, denom, accel.GetX(), accel.GetY(), accel.GetZ() );
+        particle->mVelocity += accel * dt;
       }
-      if (nxt_inside)
-        particle->mColliderStates |= 1;
-      else
-        particle->mColliderStates &= ~1;
     }
+    mOutDataOutput.mPool = pb.mPool;
   }
-  mOutDataOutput.mPool = pb.mPool;
-}
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-void DecayModule::Describe() {
-  RegisterObjInpPlug(DecayModule, Input);
-  RegisterObjOutPlug(DecayModule, Output);
-  RegisterFloatXfPlug(DecayModule, Decay, 0.0f, 1.0f, ged::OutPlugChoiceDelegate);
-  static const char* EdGrpStr = "grp://yp Input Decay";
-  reflect::annotateClassForEditor<DecayModule>("editor.prop.groups", EdGrpStr);
-}
-///////////////////////////////////////////////////////////////////////////////
-DecayModule::DecayModule()
-    : ConstructOutPlug(Output, dataflow::EPR_UNIFORM)
-    , ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
-    , ConstructInpPlug(Decay, dataflow::EPR_UNIFORM, mfDecay)
-    , mfDecay(0.99f) {
-}
-///////////////////////////////////////////////////////////////////////////////
-void DecayModule::Compute(float dt) {
-  const psys_ptclbuf& pb = mPlugInpInput.GetValue();
-  if (pb.mPool) {
-    float decay = powf(mPlugInpDecay.GetValue(), dt);
-    for (int i = 0; i < pb.mPool->GetNumAlive(); i++) {
-      BasicParticle* particle = pb.mPool->GetActiveParticle(i);
-      particle->mVelocity *= decay;
+  ///////////////////////////////////////////////////////////////////////////////
+  dataflow::inplugbase* GravityModule::GetInput(int idx) {
+    dataflow::inplugbase* rval = 0;
+    switch (idx) {
+      case 0:
+        rval = &mPlugInpInput;
+        break;
+      case 1:
+        rval = &mPlugInpG;
+        break;
+      case 2:
+        rval = &mPlugInpMass;
+        break;
+      case 3:
+        rval = &mPlugInpOthMass;
+        break;
+      case 4:
+        rval = &mPlugInpCenter;
+        break;
+      case 5:
+        rval = &mPlugInpMinDistance;
+        break;
     }
+    return rval;
   }
-  mOutDataOutput.mPool = pb.mPool;
-}
-///////////////////////////////////////////////////////////////////////////////
-dataflow::inplugbase* DecayModule::GetInput(int idx) {
-  dataflow::inplugbase* rval = 0;
-  switch (idx) {
-    case 0:
-      rval = &mPlugInpInput;
-      break;
-    case 1:
-      rval = &mPlugInpDecay;
-      break;
-  }
-  return rval;
-}
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-void TurbulenceModule::Describe() {
-  RegisterObjInpPlug(TurbulenceModule, Input);
-  RegisterObjOutPlug(TurbulenceModule, Output);
-  RegisterFloatXfPlug(TurbulenceModule, AmountX, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
-  RegisterFloatXfPlug(TurbulenceModule, AmountY, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
-  RegisterFloatXfPlug(TurbulenceModule, AmountZ, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
-  static const char* EdGrpStr = "grp://yp Input AmountX AmountY AmountZ ";
-  reflect::annotateClassForEditor<TurbulenceModule>("editor.prop.groups", EdGrpStr);
-}
-///////////////////////////////////////////////////////////////////////////////
-TurbulenceModule::TurbulenceModule()
-    : ConstructOutPlug(Output, dataflow::EPR_UNIFORM)
-    , ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
-    , ConstructInpPlug(AmountX, dataflow::EPR_UNIFORM, mfAmountX)
-    , ConstructInpPlug(AmountY, dataflow::EPR_UNIFORM, mfAmountY)
-    , ConstructInpPlug(AmountZ, dataflow::EPR_UNIFORM, mfAmountZ)
-    , mfAmountX(0.0f)
-    , mfAmountY(0.0f)
-    , mfAmountZ(0.0f) {
-}
-///////////////////////////////////////////////////////////////////////////////
-void TurbulenceModule::Compute(float dt) {
-  const psys_ptclbuf& pb = mPlugInpInput.GetValue();
-  if (pb.mPool) {
-    for (int i = 0; i < pb.mPool->GetNumAlive(); i++) {
-      BasicParticle* particle = pb.mPool->GetActiveParticle(i);
-      float furx              = ((std::rand() % 256) / 256.0f) - 0.5f;
-      float fury              = ((std::rand() % 256) / 256.0f) - 0.5f;
-      float furz              = ((std::rand() % 256) / 256.0f) - 0.5f;
-      /////////////////////////////////////////
-      F32 randX = mPlugInpAmountX.GetValue() * furx;
-      F32 randY = mPlugInpAmountY.GetValue() * fury;
-      F32 randZ = mPlugInpAmountZ.GetValue() * furz;
-      ork::fvec4 accel(randX, randY, randZ);
-      particle->mVelocity += accel * dt;
-    }
-  }
-  mOutDataOutput.mPool = pb.mPool;
-}
-///////////////////////////////////////////////////////////////////////////////
-dataflow::inplugbase* TurbulenceModule::GetInput(int idx) {
-  dataflow::inplugbase* rval = 0;
-  switch (idx) {
-    case 0:
-      rval = &mPlugInpInput;
-      break;
-    case 1:
-      rval = &mPlugInpAmountX;
-      break;
-    case 2:
-      rval = &mPlugInpAmountY;
-      break;
-    case 3:
-      rval = &mPlugInpAmountZ;
-      break;
-  }
-  return rval;
-}
+  ///////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////
+  void PlanarColliderModule::describeX(class_t* clazz) {
+    /*RegisterObjInpPlug(PlanarColliderModule, Input);
+    RegisterObjOutPlug(PlanarColliderModule, Output);
+    RegisterFloatXfPlug(PlanarColliderModule, NormalX, -1.0f, 1.0f, ged::OutPlugChoiceDelegate);
+    RegisterFloatXfPlug(PlanarColliderModule, NormalY, -1.0f, 1.0f, ged::OutPlugChoiceDelegate);
+    RegisterFloatXfPlug(PlanarColliderModule, NormalZ, -1.0f, 1.0f, ged::OutPlugChoiceDelegate);
+    RegisterFloatXfPlug(PlanarColliderModule, OriginX, -1000.0f, 1000.0f, ged::OutPlugChoiceDelegate);
+    RegisterFloatXfPlug(PlanarColliderModule, OriginY, -1000.0f, 1000.0f, ged::OutPlugChoiceDelegate);
+    RegisterFloatXfPlug(PlanarColliderModule, OriginZ, -1000.0f, 1000.0f, ged::OutPlugChoiceDelegate);
+    RegisterFloatXfPlug(PlanarColliderModule, Absorbtion, 0.0f, 1.0f, ged::OutPlugChoiceDelegate);
 
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-void VortexModule::Describe() {
-  RegisterObjInpPlug(VortexModule, Input);
-  RegisterObjOutPlug(VortexModule, Output);
-  RegisterFloatXfPlug(VortexModule, Falloff, 0.0f, 10.0f, ged::OutPlugChoiceDelegate);
-  RegisterFloatXfPlug(VortexModule, VortexStrength, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
-  RegisterFloatXfPlug(VortexModule, OutwardStrength, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
-  static const char* EdGrpStr = "grp://yp Input Falloff VortexStrength OutwardStrength";
-  reflect::annotateClassForEditor<VortexModule>("editor.prop.groups", EdGrpStr);
-}
-///////////////////////////////////////////////////////////////////////////////
-VortexModule::VortexModule()
-    : ConstructOutPlug(Output, dataflow::EPR_UNIFORM)
-    , ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
-    , ConstructInpPlug(Falloff, dataflow::EPR_UNIFORM, mfFalloff)
-    , ConstructInpPlug(VortexStrength, dataflow::EPR_UNIFORM, mfVortexStrength)
-    , ConstructInpPlug(OutwardStrength, dataflow::EPR_UNIFORM, mfOutwardStrength)
-    , mfFalloff(0.0f)
-    , mfVortexStrength(0.0f)
-    , mfOutwardStrength(0.0f) {
-}
-///////////////////////////////////////////////////////////////////////////////
-void VortexModule::Compute(float dt) {
-  const psys_ptclbuf& pb = mPlugInpInput.GetValue();
-  if (pb.mPool) {
-    for (int i = 0; i < pb.mPool->GetNumAlive(); i++) {
-      BasicParticle* particle = pb.mPool->GetActiveParticle(i);
-      /////////////////////////////////////////
-      F32 falloff         = mPlugInpFalloff.GetValue();
-      F32 vortexstrength  = mPlugInpVortexStrength.GetValue();
-      F32 outwardstrength = mPlugInpOutwardStrength.GetValue();
+    static const char* EdGrpStr = "grp://Main Input DiodeDirection Absorbtion "
+                                  "grp://Normal NormalX NormalY NormalZ "
+                                  "grp://Origin OriginX OriginY OriginZ ";
 
-      fvec3 Pos2D = particle->mPosition;
-      Pos2D.SetY(0.0f);
-      fvec3 N     = particle->mPosition.Normal();
-      fvec3 Dir   = N.Cross(fvec3::UnitY());
-      float fstr  = 1.0f / (1.0f + falloff / Pos2D.Mag());
-      fvec3 Force = Dir * (vortexstrength * fstr);
-      Force += N * (outwardstrength * fstr);
+    reflect::annotateClassForEditor<PlanarColliderModule>("editor.prop.groups", EdGrpStr);
+    ork::reflect::RegisterProperty("DiodeDirection", &PlanarColliderModule::miDiodeDirection);
+    ork::reflect::annotatePropertyForEditor<PlanarColliderModule>("DiodeDirection", "editor.range.min", "-1");
+    ork::reflect::annotatePropertyForEditor<PlanarColliderModule>("DiodeDirection", "editor.range.max", "1");
+  */}
+  ///////////////////////////////////////////////////////////////////////////////
+  PlanarColliderModule::PlanarColliderModule()
+      : ConstructOutPlug(Output, dataflow::EPR_UNIFORM)
+      , ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
+      , ConstructInpPlug(NormalX, dataflow::EPR_UNIFORM, mfNormalX)
+      , ConstructInpPlug(NormalY, dataflow::EPR_UNIFORM, mfNormalY)
+      , ConstructInpPlug(NormalZ, dataflow::EPR_UNIFORM, mfNormalZ)
+      , ConstructInpPlug(OriginX, dataflow::EPR_UNIFORM, mfOriginX)
+      , ConstructInpPlug(OriginY, dataflow::EPR_UNIFORM, mfOriginY)
+      , ConstructInpPlug(OriginZ, dataflow::EPR_UNIFORM, mfOriginZ)
+      , ConstructInpPlug(Absorbtion, dataflow::EPR_UNIFORM, mfAbsorbtion)
+      , mfOriginX(0.0f)
+      , mfOriginY(0.0f)
+      , mfOriginZ(0.0f)
+      , mfNormalX(0.0f)
+      , mfNormalY(0.0f)
+      , mfNormalZ(0.0f)
+      , mfAbsorbtion(0.0f) {
+  }
+  ///////////////////////////////////////////////////////////////////////////////
+  void PlanarColliderModule::Compute(float dt) {
+    const psys_ptclbuf& pb = mPlugInpInput.GetValue();
+    if (pb.mPool) {
+      //////////////////////////////////////////////////////////
+      ork::fvec3 PlaneN;
+      PlaneN.SetX(mPlugInpNormalX.GetValue());
+      PlaneN.SetY(mPlugInpNormalY.GetValue());
+      PlaneN.SetZ(mPlugInpNormalZ.GetValue());
+      PlaneN.Normalize();
+      if (PlaneN.Mag() == 0.0f)
+        PlaneN = fvec3(0.0f, 1.0f, 0.0f);
+      ork::fvec3 PlaneO;
+      PlaneO.SetX(mPlugInpOriginX.GetValue());
+      PlaneO.SetY(mPlugInpOriginY.GetValue());
+      PlaneO.SetZ(mPlugInpOriginZ.GetValue());
+      ork::fplane3 CollisionPlane;
+      CollisionPlane.CalcFromNormalAndOrigin(PlaneN, PlaneO);
+      float retention = 1.0f - mPlugInpAbsorbtion.GetValue();
+      //////////////////////////////////////////////////////////
 
-      particle->mVelocity += Force * dt;
+      for (int i = 0; i < pb.mPool->GetNumAlive(); i++) {
+        auto particle        = pb.mPool->GetActiveParticle(i);
+        const fvec3& cur_pos = particle->mPosition;
+        const fvec3& cur_vel = particle->mVelocity;
+
+        auto nxt_pos = cur_pos + cur_vel * dt;
+
+        float pntdist = CollisionPlane.pointDistance(nxt_pos);
+
+        bool cur_inside = particle->mColliderStates & 1;
+        bool nxt_inside = pntdist < 0;
+
+        if ((false == cur_inside) && nxt_inside) {
+          particle->mVelocity = cur_vel.Reflect(PlaneN) * retention;
+        }
+        if (nxt_inside)
+          particle->mColliderStates |= 1;
+        else
+          particle->mColliderStates &= ~1;
+      }
     }
+    mOutDataOutput.mPool = pb.mPool;
   }
-  mOutDataOutput.mPool = pb.mPool;
-}
-///////////////////////////////////////////////////////////////////////////////
-dataflow::inplugbase* VortexModule::GetInput(int idx) {
-  dataflow::inplugbase* rval = 0;
-  switch (idx) {
-    case 0:
-      rval = &mPlugInpInput;
-      break;
-    case 1:
-      rval = &mPlugInpFalloff;
-      break;
-    case 2:
-      rval = &mPlugInpVortexStrength;
-      break;
-    case 3:
-      rval = &mPlugInpOutwardStrength;
-      break;
+  ///////////////////////////////////////////////////////////////////////////////
+  dataflow::inplugbase* PlanarColliderModule::GetInput(int idx) {
+    dataflow::inplugbase* rval = 0;
+    switch (idx) {
+      case 0:
+        rval = &mPlugInpInput;
+        break;
+      case 1:
+        rval = &mPlugInpNormalX;
+        break;
+      case 2:
+        rval = &mPlugInpNormalY;
+        break;
+      case 3:
+        rval = &mPlugInpNormalZ;
+        break;
+      case 4:
+        rval = &mPlugInpOriginX;
+        break;
+      case 5:
+        rval = &mPlugInpOriginY;
+        break;
+      case 6:
+        rval = &mPlugInpOriginZ;
+        break;
+      case 7:
+        rval = &mPlugInpAbsorbtion;
+        break;
+      default:
+        OrkAssert(false);
+        break;
+    }
+    return rval;
   }
-  return rval;
-}
-///////////////////////////////////////////////////////////////////////////////
-}}} // namespace ork::lev2::particle
+  ///////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////
+  void SphericalColliderModule::describeX(class_t* clazz) {
+    /*RegisterObjInpPlug(SphericalColliderModule, Input);
+    RegisterObjOutPlug(SphericalColliderModule, Output);
+    RegisterFloatXfPlug(SphericalColliderModule, CenterX, -1000.0f, 1000.0f, ged::OutPlugChoiceDelegate);
+    RegisterFloatXfPlug(SphericalColliderModule, CenterY, -1000.0f, 1000.0f, ged::OutPlugChoiceDelegate);
+    RegisterFloatXfPlug(SphericalColliderModule, CenterZ, -1000.0f, 1000.0f, ged::OutPlugChoiceDelegate);
+    RegisterFloatXfPlug(SphericalColliderModule, Radius, -1000.0f, 1000.0f, ged::OutPlugChoiceDelegate);
+    RegisterFloatXfPlug(SphericalColliderModule, Absorbtion, 0.0f, 1.0f, ged::OutPlugChoiceDelegate);
+
+    static const char* EdGrpStr = "grp://Main Input Absorbtion "
+                                  "grp://Sphere CenterX CenterY CenterZ Radius";
+
+    reflect::annotateClassForEditor<SphericalColliderModule>("editor.prop.groups", EdGrpStr);
+  */}
+  ///////////////////////////////////////////////////////////////////////////////
+  SphericalColliderModule::SphericalColliderModule()
+      : ConstructOutPlug(Output, dataflow::EPR_UNIFORM)
+      , ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
+      , ConstructInpPlug(CenterX, dataflow::EPR_UNIFORM, mfCenterX)
+      , ConstructInpPlug(CenterY, dataflow::EPR_UNIFORM, mfCenterY)
+      , ConstructInpPlug(CenterZ, dataflow::EPR_UNIFORM, mfCenterZ)
+      , ConstructInpPlug(Radius, dataflow::EPR_UNIFORM, mfRadius)
+      , ConstructInpPlug(Absorbtion, dataflow::EPR_UNIFORM, mfAbsorbtion)
+      , mfRadius(1.0f)
+      , mfCenterX(0.0f)
+      , mfCenterY(0.0f)
+      , mfCenterZ(0.0f)
+      , mfAbsorbtion(0.0f) {
+  }
+  ///////////////////////////////////////////////////////////////////////////////
+  dataflow::inplugbase* SphericalColliderModule::GetInput(int idx) {
+    dataflow::inplugbase* rval = 0;
+    switch (idx) {
+      case 0:
+        rval = &mPlugInpInput;
+        break;
+      case 1:
+        rval = &mPlugInpCenterX;
+        break;
+      case 2:
+        rval = &mPlugInpCenterY;
+        break;
+      case 3:
+        rval = &mPlugInpCenterZ;
+        break;
+      case 4:
+        rval = &mPlugInpRadius;
+        break;
+      case 5:
+        rval = &mPlugInpAbsorbtion;
+        break;
+      default:
+        OrkAssert(false);
+        break;
+    }
+    return rval;
+  }
+  ///////////////////////////////////////////////////////////////////////////////
+  void SphericalColliderModule::Compute(float dt) {
+    const psys_ptclbuf& pb = mPlugInpInput.GetValue();
+    if (pb.mPool) {
+      //////////////////////////////////////////////////////////
+      Sphere the_sphere(fvec3(), 1.0f);
+
+      the_sphere.mCenter.SetX(mPlugInpCenterX.GetValue());
+      the_sphere.mCenter.SetY(mPlugInpCenterY.GetValue());
+      the_sphere.mCenter.SetZ(mPlugInpCenterZ.GetValue());
+      the_sphere.mRadius = mPlugInpRadius.GetValue();
+      float retention    = 1.0f - mPlugInpAbsorbtion.GetValue();
+      //////////////////////////////////////////////////////////
+
+      auto m1 = 1000.0f;
+      auto m2 = 1.0f;
+
+      float sphereradsquared = the_sphere.mRadius * the_sphere.mRadius;
+      auto& sphereCenter     = the_sphere.mCenter;
+
+      for (int i = 0; i < pb.mPool->GetNumAlive(); i++) {
+        auto particle        = pb.mPool->GetActiveParticle(i);
+        const fvec3& cur_pos = particle->mPosition;
+        const fvec3& cur_vel = particle->mVelocity;
+        auto cur_dir         = cur_vel.Normal();
+
+        auto nxt_pos     = cur_pos + cur_vel * dt;
+        float ndcsquared = (nxt_pos - the_sphere.mCenter).MagSquared();
+
+        bool cur_inside = particle->mColliderStates & 1;
+        bool nxt_inside = ndcsquared <= sphereradsquared;
+
+        if ((false == cur_inside) && nxt_inside) {
+          auto N              = (cur_pos - sphereCenter).Normal();
+          particle->mVelocity = cur_vel.Reflect(N) * retention;
+        }
+        if (nxt_inside)
+          particle->mColliderStates |= 1;
+        else
+          particle->mColliderStates &= ~1;
+      }
+    }
+    mOutDataOutput.mPool = pb.mPool;
+  }
+  ///////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////
+  void DecayModule::describeX(class_t* clazz) {
+    // RegisterObjInpPlug(DecayModule, Input);
+    // RegisterObjOutPlug(DecayModule, Output);
+    // RegisterFloatXfPlug(DecayModule, Decay, 0.0f, 1.0f, ged::OutPlugChoiceDelegate);
+    // static const char* EdGrpStr = "grp://yp Input Decay";
+    // reflect::annotateClassForEditor<DecayModule>("editor.prop.groups", EdGrpStr);
+  }
+  ///////////////////////////////////////////////////////////////////////////////
+  DecayModule::DecayModule()
+      : ConstructOutPlug(Output, dataflow::EPR_UNIFORM)
+      , ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
+      , ConstructInpPlug(Decay, dataflow::EPR_UNIFORM, mfDecay)
+      , mfDecay(0.99f) {
+  }
+  ///////////////////////////////////////////////////////////////////////////////
+  void DecayModule::Compute(float dt) {
+    const psys_ptclbuf& pb = mPlugInpInput.GetValue();
+    if (pb.mPool) {
+      float decay = powf(mPlugInpDecay.GetValue(), dt);
+      for (int i = 0; i < pb.mPool->GetNumAlive(); i++) {
+        BasicParticle* particle = pb.mPool->GetActiveParticle(i);
+        particle->mVelocity *= decay;
+      }
+    }
+    mOutDataOutput.mPool = pb.mPool;
+  }
+  ///////////////////////////////////////////////////////////////////////////////
+  dataflow::inplugbase* DecayModule::GetInput(int idx) {
+    dataflow::inplugbase* rval = 0;
+    switch (idx) {
+      case 0:
+        rval = &mPlugInpInput;
+        break;
+      case 1:
+        rval = &mPlugInpDecay;
+        break;
+    }
+    return rval;
+  }
+  ///////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////
+  void TurbulenceModule::describeX(class_t* clazz) {
+    /*RegisterObjInpPlug(TurbulenceModule, Input);
+    RegisterObjOutPlug(TurbulenceModule, Output);
+    RegisterFloatXfPlug(TurbulenceModule, AmountX, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
+    RegisterFloatXfPlug(TurbulenceModule, AmountY, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
+    RegisterFloatXfPlug(TurbulenceModule, AmountZ, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
+    static const char* EdGrpStr = "grp://yp Input AmountX AmountY AmountZ ";
+    reflect::annotateClassForEditor<TurbulenceModule>("editor.prop.groups", EdGrpStr);
+  */}
+  ///////////////////////////////////////////////////////////////////////////////
+  TurbulenceModule::TurbulenceModule()
+      : ConstructOutPlug(Output, dataflow::EPR_UNIFORM)
+      , ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
+      , ConstructInpPlug(AmountX, dataflow::EPR_UNIFORM, mfAmountX)
+      , ConstructInpPlug(AmountY, dataflow::EPR_UNIFORM, mfAmountY)
+      , ConstructInpPlug(AmountZ, dataflow::EPR_UNIFORM, mfAmountZ)
+      , mfAmountX(0.0f)
+      , mfAmountY(0.0f)
+      , mfAmountZ(0.0f) {
+  }
+  ///////////////////////////////////////////////////////////////////////////////
+  void TurbulenceModule::Compute(float dt) {
+    const psys_ptclbuf& pb = mPlugInpInput.GetValue();
+    if (pb.mPool) {
+      for (int i = 0; i < pb.mPool->GetNumAlive(); i++) {
+        BasicParticle* particle = pb.mPool->GetActiveParticle(i);
+        float furx              = ((std::rand() % 256) / 256.0f) - 0.5f;
+        float fury              = ((std::rand() % 256) / 256.0f) - 0.5f;
+        float furz              = ((std::rand() % 256) / 256.0f) - 0.5f;
+        /////////////////////////////////////////
+        F32 randX = mPlugInpAmountX.GetValue() * furx;
+        F32 randY = mPlugInpAmountY.GetValue() * fury;
+        F32 randZ = mPlugInpAmountZ.GetValue() * furz;
+        ork::fvec4 accel(randX, randY, randZ);
+        particle->mVelocity += accel * dt;
+      }
+    }
+    mOutDataOutput.mPool = pb.mPool;
+  }
+  ///////////////////////////////////////////////////////////////////////////////
+  dataflow::inplugbase* TurbulenceModule::GetInput(int idx) {
+    dataflow::inplugbase* rval = 0;
+    switch (idx) {
+      case 0:
+        rval = &mPlugInpInput;
+        break;
+      case 1:
+        rval = &mPlugInpAmountX;
+        break;
+      case 2:
+        rval = &mPlugInpAmountY;
+        break;
+      case 3:
+        rval = &mPlugInpAmountZ;
+        break;
+    }
+    return rval;
+  }
+
+  ///////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////
+  void VortexModule::describeX(class_t* clazz) {
+    /*RegisterObjInpPlug(VortexModule, Input);
+    RegisterObjOutPlug(VortexModule, Output);
+    RegisterFloatXfPlug(VortexModule, Falloff, 0.0f, 10.0f, ged::OutPlugChoiceDelegate);
+    RegisterFloatXfPlug(VortexModule, VortexStrength, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
+    RegisterFloatXfPlug(VortexModule, OutwardStrength, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
+    static const char* EdGrpStr = "grp://yp Input Falloff VortexStrength OutwardStrength";
+    reflect::annotateClassForEditor<VortexModule>("editor.prop.groups", EdGrpStr);
+  */}
+  ///////////////////////////////////////////////////////////////////////////////
+  VortexModule::VortexModule()
+      : ConstructOutPlug(Output, dataflow::EPR_UNIFORM)
+      , ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
+      , ConstructInpPlug(Falloff, dataflow::EPR_UNIFORM, mfFalloff)
+      , ConstructInpPlug(VortexStrength, dataflow::EPR_UNIFORM, mfVortexStrength)
+      , ConstructInpPlug(OutwardStrength, dataflow::EPR_UNIFORM, mfOutwardStrength)
+      , mfFalloff(0.0f)
+      , mfVortexStrength(0.0f)
+      , mfOutwardStrength(0.0f) {
+  }
+  ///////////////////////////////////////////////////////////////////////////////
+  void VortexModule::Compute(float dt) {
+    const psys_ptclbuf& pb = mPlugInpInput.GetValue();
+    if (pb.mPool) {
+      for (int i = 0; i < pb.mPool->GetNumAlive(); i++) {
+        BasicParticle* particle = pb.mPool->GetActiveParticle(i);
+        /////////////////////////////////////////
+        F32 falloff         = mPlugInpFalloff.GetValue();
+        F32 vortexstrength  = mPlugInpVortexStrength.GetValue();
+        F32 outwardstrength = mPlugInpOutwardStrength.GetValue();
+
+        fvec3 Pos2D = particle->mPosition;
+        Pos2D.SetY(0.0f);
+        fvec3 N     = particle->mPosition.Normal();
+        fvec3 Dir   = N.Cross(fvec3::UnitY());
+        float fstr  = 1.0f / (1.0f + falloff / Pos2D.Mag());
+        fvec3 Force = Dir * (vortexstrength * fstr);
+        Force += N * (outwardstrength * fstr);
+
+        particle->mVelocity += Force * dt;
+      }
+    }
+    mOutDataOutput.mPool = pb.mPool;
+  }
+  ///////////////////////////////////////////////////////////////////////////////
+  dataflow::inplugbase* VortexModule::GetInput(int idx) {
+    dataflow::inplugbase* rval = 0;
+    switch (idx) {
+      case 0:
+        rval = &mPlugInpInput;
+        break;
+      case 1:
+        rval = &mPlugInpFalloff;
+        break;
+      case 2:
+        rval = &mPlugInpVortexStrength;
+        break;
+      case 3:
+        rval = &mPlugInpOutwardStrength;
+        break;
+    }
+    return rval;
+  }
+  ///////////////////////////////////////////////////////////////////////////////
+  } // namespace ork::lev2::particle

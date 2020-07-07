@@ -47,7 +47,7 @@ template <typename T> class  Gradient : public GradientBase
 
 	GradLut<T> mData;
 
-	bool PreDeserialize( ork::reflect::IDeserializer& deser );
+	bool preDeserialize( ork::reflect::serdes::IDeserializer& deser );
 
 public: 
 
@@ -69,7 +69,7 @@ template <typename T> class  GradientD2 : public GradientBase
 
 	GradLut< ork::Object* > mData;
 
-	bool PreDeserialize( ork::reflect::IDeserializer& deser );
+	bool preDeserialize( ork::reflect::serdes::IDeserializer& deser );
 
 public: 
 

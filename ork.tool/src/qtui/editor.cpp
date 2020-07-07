@@ -19,14 +19,14 @@
 #include <pkg/ent/editor/editor.h>
 #include <pkg/ent/entity.h>
 ///////////////////////////////////////////////////////////////////////////
-#include <ork/reflect/serialize/XMLDeserializer.h>
-#include <ork/reflect/serialize/XMLSerializer.h>
+#include <ork/reflect/serialize/JsonDeserializer.h>
+#include <ork/reflect/serialize/JsonSerializer.h>
 #include <ork/stream/FileInputStream.h>
 #include <ork/stream/FileOutputStream.h>
 #include <ork/stream/StringInputStream.h>
 #include <ork/stream/StringOutputStream.h>
 ///////////////////////////////////////////////////////////////////////////
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 ///////////////////////////////////////////////////////////////////////////
 #include <QtWidgets/QFileDialog>
 #include <ork/application/application.h>
@@ -165,16 +165,18 @@ SceneEditorBase::SceneEditorBase()
     , ConstructAutoSlot(NewObject) {
   SetupSignalsAndSlots();
 
-  mChoiceMan.AddChoiceList("chsm", mpChsmChoices);
-  mChoiceMan.AddChoiceList("xgmodel", mpMdlChoices);
-  mChoiceMan.AddChoiceList("xganim", mpAnmChoices);
-  mChoiceMan.AddChoiceList("lev2::audiostream", mpAudStreamChoices);
-  mChoiceMan.AddChoiceList("lev2::audiobank", mpAudBankChoices);
-  mChoiceMan.AddChoiceList("lev2tex", mpTexChoices);
-  mChoiceMan.AddChoiceList("script", mpScriptChoices);
-  mChoiceMan.AddChoiceList("archetype", mpArchChoices);
-  mChoiceMan.AddChoiceList("refarch", mpRefArchChoices);
-  mChoiceMan.AddChoiceList("FxShader", mpFxShaderChoices);
+  _choicemanager = std::make_shared<util::ChoiceManager>();
+
+  _choicemanager->AddChoiceList("chsm", mpChsmChoices);
+  _choicemanager->AddChoiceList("xgmodel", mpMdlChoices);
+  _choicemanager->AddChoiceList("xganim", mpAnmChoices);
+  _choicemanager->AddChoiceList("lev2::audiostream", mpAudStreamChoices);
+  _choicemanager->AddChoiceList("lev2::audiobank", mpAudBankChoices);
+  _choicemanager->AddChoiceList("lev2tex", mpTexChoices);
+  _choicemanager->AddChoiceList("script", mpScriptChoices);
+  _choicemanager->AddChoiceList("archetype", mpArchChoices);
+  _choicemanager->AddChoiceList("refarch", mpRefArchChoices);
+  _choicemanager->AddChoiceList("FxShader", mpFxShaderChoices);
 
   object::Connect(&this->GetSigObjectDeleted(), &mselectionManager.GetSlotObjectDeleted());
 
@@ -423,9 +425,9 @@ void SceneEditorBase::ImplLoadScene(std::string fname) {
     ////////////////////////////////////
     auto load_op = [=]() {
       stream::FileInputStream istream(fname.c_str());
-      reflect::serialize::XMLDeserializer iser(istream);
+      reflect::serdes::JsonDeserializer iser(istream);
       rtti::ICastable* pcastable = nullptr;
-      bool bloadOK               = iser.Deserialize(pcastable);
+      bool bloadOK               = iser.deserializeObject(pcastable);
       ////////////////////////////////////
       auto post_load_op = [=]() {
         if (bloadOK) {
@@ -555,7 +557,7 @@ void SceneEditorBase::EditorArchExport() {
                 fname += ".mox";
 
               stream::FileOutputStream ostream(fname.c_str());
-              reflect::serialize::XMLSerializer oser(ostream);
+              reflect::serdes::JsonSerializer oser(ostream);
               oser.Serialize(archetype);
             }
           }
@@ -581,10 +583,10 @@ void SceneEditorBase::EditorArchImport() {
     std::string fname = FileName.toStdString().c_str();
     if (fname.length()) {
       stream::FileInputStream istream(fname.c_str());
-      reflect::serialize::XMLDeserializer iser(istream);
+      reflect::serdes::JsonDeserializer iser(istream);
 
       rtti::ICastable* pcastable = 0;
-      bool bOK                   = iser.Deserialize(pcastable);
+      bool bOK                   = iser.deserializeObject(pcastable);
 
       if (ent::Archetype* archetype = rtti::autocast(pcastable)) {
         mpScene->AddSceneObject(archetype);
@@ -627,7 +629,7 @@ void SceneEditorBase::EditorArchMakeReferenced() {
                 fname += ".mox";
 
               stream::FileOutputStream ostream(fname.c_str());
-              reflect::serialize::XMLSerializer oser(ostream);
+              reflect::serdes::JsonSerializer oser(ostream);
               oser.Serialize(archetype);
             }
           }
@@ -641,7 +643,7 @@ void SceneEditorBase::EditorArchMakeLocal() {
     if (selection.size() > 0) {
       for (orkset<Object*>::const_iterator it = selection.begin(); it != selection.end(); it++)
         if (ent::ReferenceArchetype* refarchetype = rtti::autocast(*it))
-          if (ent::ArchetypeAsset* archasset = refarchetype->GetAsset())
+          if (ent::ArchetypeAsset* archasset = refarchetype->asset())
             if (ent::Archetype* archetype = archasset->GetArchetype()) {
             }
     }
@@ -871,7 +873,7 @@ bool QueryArchetypeReferenced(ork::Object* pobj, const ent::Archetype* parch) {
 
   /////////////////////////////
   const reflect::IObjectFunctor* functor =
-      rtti::downcast<object::ObjectClass*>(pobj->GetClass())->Description().FindFunctor("SlotArchetypeReferenced");
+      rtti::downcast<object::ObjectClass*>(pobj->GetClass())->Description().findFunctor("SlotArchetypeReferenced");
   if (functor) {
     reflect::IInvokation* invokation = functor->CreateInvokation();
     if (invokation->GetNumParameters() == 1) {
@@ -880,7 +882,7 @@ bool QueryArchetypeReferenced(ork::Object* pobj, const ent::Archetype* parch) {
 
       ArrayString<32> resultdata;
       stream::StringOutputStream ostream(resultdata);
-      reflect::serialize::XMLSerializer serializer(ostream);
+      reflect::serdes::JsonSerializer serializer(ostream);
       reflect::BidirectionalSerializer result_bidi(serializer);
       functor->invoke(pobj, invokation, &result_bidi);
 
@@ -948,7 +950,7 @@ void DynamicSignalArchetypeDeleted(ork::Object* pobj, ent::Archetype* parch) {
 
   /////////////////////////////
   const reflect::IObjectFunctor* functor =
-      rtti::downcast<object::ObjectClass*>(pobj->GetClass())->Description().FindFunctor("SlotArchetypeDeleted");
+      rtti::downcast<object::ObjectClass*>(pobj->GetClass())->Description().findFunctor("SlotArchetypeDeleted");
   if (functor) {
     reflect::IInvokation* invokation = functor->CreateInvokation();
     if (invokation->GetNumParameters() == 1) {
@@ -957,7 +959,7 @@ void DynamicSignalArchetypeDeleted(ork::Object* pobj, ent::Archetype* parch) {
 
       ArrayString<32> resultdata;
       stream::StringOutputStream ostream(resultdata);
-      reflect::serialize::XMLSerializer serializer(ostream);
+      reflect::serdes::JsonSerializer serializer(ostream);
       reflect::BidirectionalSerializer result_bidi(serializer);
       functor->invoke(pobj, invokation, &result_bidi);
     }
@@ -1135,8 +1137,8 @@ void SceneEditorBase::ImplEnterEditState() {
       //////////////////////////////////////////////////////////
 #if defined(ORKCONFIG_ASSET_UNLOAD)
       ork::lev2::AudioDevice::GetDevice()->ReInitDevice();
-      bool unloaded = asset::AssetManager<lev2::AudioStream>::AutoUnLoad();
-      unloaded      = asset::AssetManager<lev2::XgmAnimAsset>::AutoUnLoad();
+      bool unloaded = asset::AssetManager<lev2::AudioStream>::autoUnload();
+      unloaded      = asset::AssetManager<lev2::XgmAnimAsset>::autoUnload();
 #endif
       //////////////////////////////////////////////////////////
 
@@ -1169,7 +1171,7 @@ ReferenceArchetype* SceneEditorBase::NewReferenceArchetype(const std::string& ar
   std::string str2       = CreateFormattedString("data://archetypes/%s", archassetname.c_str());
   std::string ExtRefName = CreateFormattedString("/arch/ref/%s", archassetname.c_str());
 
-  auto arch_asset = asset::AssetManager<ArchetypeAsset>::Create(str2.c_str());
+  auto arch_asset = asset::AssetManager<ArchetypeAsset>::declare(str2.c_str());
   asset::AssetManager<ArchetypeAsset>::AutoLoad();
 
   orkprintf("asset<%p> pth<%s>\n", arch_asset.get(), str2.c_str());
@@ -1199,9 +1201,10 @@ Archetype* SceneEditorBase::ImplNewArchetype(const std::string& classname, const
     SlotPreNewObject();
     std::string name         = CreateFormattedString("/arch/%s", classname.c_str());
     ork::rtti::Class* pclass = ork::rtti::Class::FindClassNoCase(classname.c_str());
-    printf("NewArchetype classname<%s> class<%p> aname<%s>\n", classname.c_str(), pclass, name.c_str());
-    if (pclass) {
-      rarch = rtti::autocast(pclass->CreateObject());
+    auto pclazz              = dynamic_cast<const object::ObjectClass*>(pclass);
+    printf("NewArchetype classname<%s> pclazz<%p> aname<%s>\n", classname.c_str(), pclazz, name.c_str());
+    if (pclazz) {
+      rarch = rtti::autocast(pclazz->CreateObject());
       rarch->SetName(name.c_str());
       SlotNewObject(rarch);
     }
@@ -1218,10 +1221,11 @@ SystemData* SceneEditorBase::ImplNewSystem(const std::string& classname) { /////
   SystemData* system = nullptr;
   auto lamb          = [&]() {
     SlotPreNewObject();
-    ork::rtti::Class* pclass = ork::rtti::Class::FindClassNoCase(classname.c_str());
-    printf("NewSystem classname<%s> class<%p>\n", classname.c_str(), pclass);
-    if (pclass) {
-      system = rtti::autocast(pclass->CreateObject());
+    auto pclass = ork::rtti::Class::FindClassNoCase(classname.c_str());
+    auto pclazz = dynamic_cast<const object::ObjectClass*>(pclass);
+    printf("NewSystem classname<%s> pclazz<%p>\n", classname.c_str(), pclazz);
+    if (pclazz) {
+      system = rtti::autocast(pclazz->CreateObject());
       SlotNewObject(system);
     }
   };

@@ -84,7 +84,7 @@ int PoolString::compare(const PoolString& rhs) const {
 ///////////////////////////////////////////////////////////
 
 StringPool::StringPool(const StringPool* parent)
-    : mParent(parent)
+    : _parent(parent)
     , mStringPool()
     , mStringPoolMutex("StringPoolMutex") {
   // mStringPool.reserve( 2<<20 );
@@ -99,8 +99,8 @@ const char* StringPool::FindRecursive(const PieceString& string) const {
 
     if (search_result)
       result = mStringPool[pos];
-    else if (mParent)
-      result = mParent->FindRecursive(string);
+    else if (_parent)
+      result = _parent->FindRecursive(string);
   }
   UnLock();
   return result;
@@ -115,8 +115,8 @@ const char* StringPool::FindFirst(const PieceString& string, VecType::iterator& 
 
     if (search_result)
       result = mStringPool[pos];
-    else if (mParent)
-      result = mParent->FindRecursive(string);
+    else if (_parent)
+      result = _parent->FindRecursive(string);
 
     OrkHeapCheck();
 
@@ -136,7 +136,7 @@ int StringPool::FindIndex(const PieceString& string) const {
   bool search_result = false;
   Lock();
   {
-    OrkAssert(mParent == NULL);
+    OrkAssert(_parent == NULL);
 
     pos = BinarySearch(string, search_result);
   }
@@ -162,7 +162,7 @@ int StringPool::Size() const {
 }
 
 PoolString StringPool::FromIndex(int index) const {
-  OrkAssert(mParent == NULL);
+  OrkAssert(_parent == NULL);
 
   if (index == -1 || index >= int(mStringPool.size()))
     return PoolString();
@@ -231,20 +231,18 @@ PoolString StringPool::Find(const PieceString& s) const {
 }
 
 ///////////////////////////////////////////////////
-
+/*
 namespace reflect {
 template <> void Serialize<PoolString>(const PoolString* in, PoolString* out, BidirectionalSerializer& bidi) {
   if (bidi.Serializing()) {
-    if (false == bidi.Serializer()->Serialize(PieceString(*in)))
-      bidi.Fail();
+    bidi.Serializer()->serializeElement(PieceString(*in));
   } else {
     ArrayString<2048> buffer;
     MutableString string(buffer);
-    if (false == bidi.Deserializer()->Deserialize(string))
-      bidi.Fail();
-    else
-      *out = ork::AddPooledString(string);
+    // bidi.Deserializer()->deserialize(string);
+    *out = ork::AddPooledString(string);
   }
 }
-} // namespace reflect
+} // namespace ork
+*/
 } // namespace ork

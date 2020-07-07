@@ -10,8 +10,7 @@
 #include <ork/rtti/Class.h>
 #include <ork/kernel/opq.h>
 #include <ork/kernel/mutex.h>
-#include <ork/asset/AssetCategory.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/registerX.inl>
 #include <ork/application/application.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/rtgroup.h>
@@ -31,6 +30,7 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/CpuLightProcessor.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/SimpleLightProcessor.h>
 #include <ork/profiling.inl>
+#include <ork/asset/Asset.inl>
 
 ImplementReflectionX(ork::lev2::deferrednode::DeferredCompositingNodePbr, "DeferredCompositingNodePbr");
 
@@ -57,32 +57,38 @@ void DeferredCompositingNodePbr::describeX(class_t* c) {
   c->floatProperty("DepthFogPower", float_range{0.01, 100.0}, &DeferredCompositingNodePbr::_depthFogPower);
 
   c->accessorProperty(
-       "EnvironmentTexture", &DeferredCompositingNodePbr::_readEnvTexture, &DeferredCompositingNodePbr::_writeEnvTexture)
+       "EnvironmentTexture", //
+       &DeferredCompositingNodePbr::_readEnvTexture,
+       &DeferredCompositingNodePbr::_writeEnvTexture)
       ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
       ->annotate<ConstString>("editor.assettype", "lev2tex")
       ->annotate<ConstString>("editor.assetclass", "lev2tex")
-      ->annotate<AssetCategory::vars_gen_t>("asset.deserialize.vargen", [](ork::Object* obj) -> const AssetCategory::vars_t& {
-        auto node = dynamic_cast<DeferredCompositingNodePbr*>(obj);
-        OrkAssert(node);
-        return node->_texAssetVarMap;
-      });
+      ->annotate<asset::vars_gen_t>(
+          "asset.deserialize.vargen", //
+          [](ork::object_ptr_t obj) -> asset::vars_ptr_t {
+            auto node = std::dynamic_pointer_cast<DeferredCompositingNodePbr>(obj);
+            OrkAssert(node);
+            OrkAssert(false);
+            return node->_texAssetVarMap;
+          });
 }
 
-void DeferredCompositingNodePbr::_readEnvTexture(ork::rtti::ICastable*& tex) const {
+void DeferredCompositingNodePbr::_readEnvTexture(asset::asset_ptr_t& tex) const {
   tex = _environmentTextureAsset;
 }
 
 void DeferredCompositingNodePbr::setEnvTexturePath(file::Path path) {
-  auto envl_asset = asset::AssetManager<TextureAsset>::Create(path.c_str());
-
-  asset::AssetManager<TextureAsset>::AutoLoad();
+  auto envl_asset = asset::AssetManager<TextureAsset>::load(path.c_str());
+  OrkAssert(false);
+  // TODO - inject asset postload ops ()
 }
 
-void DeferredCompositingNodePbr::_writeEnvTexture(ork::rtti::ICastable* const& tex) {
-  _environmentTextureAsset = tex ? rtti::autocast(tex) : nullptr;
+void DeferredCompositingNodePbr::_writeEnvTexture(asset::asset_ptr_t const& tex) {
+  _environmentTextureAsset = tex;
+  printf("WTF1 <%p>\n\n", _environmentTextureAsset.get());
   if (nullptr == _environmentTextureAsset)
     return;
-  printf("WTF1 <%p>\n\n", _environmentTextureAsset);
+  _environmentTextureAsset->_varmap = _texAssetVarMap;
 }
 
 lev2::Texture* DeferredCompositingNodePbr::envSpecularTexture() const {
@@ -164,7 +170,7 @@ struct PbrNodeImpl {
     // base lighting (environent IBL lighting)
     //////////////////////////////////////////////////////////////////
     targ->debugPushGroup("Deferred::BaseLighting");
-    _context._lightingmtl._rasterstate.SetBlending(EBLENDING_OFF);
+    _context._lightingmtl._rasterstate.SetBlending(Blending::OFF);
     _context._lightingmtl._rasterstate.SetDepthTest(EDEPTHTEST_OFF);
     _context._lightingmtl._rasterstate.SetCullTest(ECULLTEST_PASS_BACK);
     _context._lightingmtl.begin(
@@ -261,12 +267,13 @@ struct PbrNodeImpl {
 
 ///////////////////////////////////////////////////////////////////////////////
 DeferredCompositingNodePbr::DeferredCompositingNodePbr() {
-  _impl = std::make_shared<PbrNodeImpl>(this);
+  _impl           = std::make_shared<PbrNodeImpl>(this);
+  _texAssetVarMap = std::make_shared<asset::vars_t>();
   ///////////////////////////////////////////////////////////////
   // texture postprocessor for generating equirectangular environment
   //  PBR irradiance diffuse and specular maps
   ///////////////////////////////////////////////////////////////
-  _texAssetVarMap.makeValueForKey<Texture::proc_t>("postproc") =
+  _texAssetVarMap->makeValueForKey<Texture::proc_t>("postproc") =
       [this](Texture* tex, Context* targ, datablock_constptr_t inp_datablock) -> datablock_ptr_t {
     printf(
         "EnvironmentTexture Irradiance PreProcessor tex<%p:%s> datablocklen<%zu>...\n",

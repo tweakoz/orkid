@@ -436,7 +436,7 @@ public:
 
   RenderContextInstData _RCID;
 
-  TransformNode mParentTransform;
+  TransformNode _parentTransform;
   EManipMode meManipMode;
   EManipEnable meManipEnable;
 

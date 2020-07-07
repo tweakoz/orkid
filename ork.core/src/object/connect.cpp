@@ -10,10 +10,10 @@
 #include <ork/object/Object.h>
 #include <ork/object/connect.h>
 #include <ork/application/application.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 
-#include <ork/reflect/IObjectPropertyType.hpp>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/properties/ITyped.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
 
 #include <ork/object/ObjectClass.h>
 
@@ -23,41 +23,38 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::object::AutoSlot, "AutoSlot");
 INSTANTIATE_TRANSPARENT_RTTI(ork::object::LambdaSlot, "LambdaSlot");
 INSTANTIATE_TRANSPARENT_RTTI(ork::object::Signal, "Signal");
 
-namespace ork { namespace reflect {
+namespace ork::reflect::serdes {
 template <>
 void Serialize<ork::object::Signal>(
-    ork::object::Signal const* in,
+    ork::object::Signal const* in, //
     ork::object::Signal* out,
-    ::ork::reflect::BidirectionalSerializer& bidi) {
+    BidirectionalSerializer& bidi) {
   if (bidi.Serializing()) {
     bidi || in;
   } else {
     bidi || out;
   }
 }
-}} // namespace ork::reflect
-
-namespace ork { namespace reflect {
 template <>
 void Serialize<ork::object::AutoSlot>(
-    ork::object::AutoSlot const* in,
+    ork::object::AutoSlot const* in, //
     ork::object::AutoSlot* out,
-    ::ork::reflect::BidirectionalSerializer& bidi) {
+    BidirectionalSerializer& bidi) {
   if (bidi.Serializing()) {
     bidi || in;
   } else {
     bidi || out;
   }
 }
-}} // namespace ork::reflect
+} // namespace ork::reflect::serdes
 
 namespace ork { namespace object {
 
 //////////////////////////////////////////////////////////////////////
 
 void ISlot::Describe() {
-  reflect::RegisterProperty("Object", &ISlot::mObject);
-  reflect::RegisterProperty("SlotName", &ISlot::mSlotName);
+  // reflect::RegisterProperty("Object", &ISlot::mObject);
+  // reflect::RegisterProperty("SlotName", &ISlot::mSlotName);
 }
 
 ISlot::ISlot(Object* object, PoolString name)
@@ -92,7 +89,7 @@ const reflect::IObjectFunctor* Slot::GetFunctor() const {
   object::ObjectClass* clazz = rtti::autocast(mObject->GetClass());
   auto& desc                 = clazz->Description();
   auto classname             = clazz->Name();
-  auto f                     = desc.FindFunctor(mSlotName);
+  auto f                     = desc.findFunctor(mSlotName);
   return f;
 }
 
@@ -118,7 +115,7 @@ AutoSlot::AutoSlot(Object* object, const char* name)
   OrkAssert(object != 0);
 }
 
-void AutoSlot::AddSignal(Signal* psig) {
+void AutoSlot::addSignal(Signal* psig) {
   bool found = false;
   mConnectedSignals.atomicOp([&](sig_set_t& ss) {
     for (auto the_sig : ss)
@@ -165,7 +162,7 @@ const reflect::IObjectFunctor* LambdaSlot::GetFunctor() const {
   return nullptr;
 }
 
-void LambdaSlot::AddSignal(Signal* psig) {
+void LambdaSlot::addSignal(Signal* psig) {
   auto it = mConnectedSignals.find(psig);
   if (it != mConnectedSignals.end()) {
     OrkAssert(false);
@@ -184,7 +181,7 @@ void LambdaSlot::RemoveSignal(Signal* psig) {
 //////////////////////////////////////////////////////////////////////
 
 void Signal::Describe() {
-  reflect::RegisterArrayProperty("Slots", &Signal::GetSlot, &Signal::GetSlotCount, &Signal::ResizeSlots);
+  // reflect::RegisterArrayProperty("Slots", &Signal::GetSlot, &Signal::GetSlotCount, &Signal::ResizeSlots);
 }
 
 Signal::Signal() {
@@ -283,7 +280,7 @@ reflect::IInvokation* Signal::CreateInvokation() const {
   return NULL;
 }
 
-Object* Signal::GetSlot(size_t index) {
+ISlot* Signal::GetSlot(size_t index) {
   auto& locked_slots = mSlots.LockForRead();
   auto num_slots     = locked_slots.size();
   bool in_range      = (index < num_slots);
@@ -313,9 +310,9 @@ void Signal::ResizeSlots(size_t sz) {
 bool Connect(Object* pSender, PoolString signal, Object* pReceiver, PoolString slot) {
   object::ObjectClass* pclass            = rtti::downcast<object::ObjectClass*>(pReceiver->GetClass());
   const reflect::Description& descript   = pclass->Description();
-  const reflect::IObjectFunctor* functor = descript.FindFunctor(slot);
+  const reflect::IObjectFunctor* functor = descript.findFunctor(slot);
   if (functor != NULL) {
-    Signal* pSignal = pSender->FindSignal(signal);
+    Signal* pSignal = pSender->findSignal(signal);
     if (pSignal)
       return pSignal->AddSlot(pReceiver, slot);
   }
@@ -325,14 +322,14 @@ bool Connect(Signal* psig, AutoSlot* pslot) {
   if (psig && pslot) {
     bool bsig = psig->AddSlot(pslot);
     bool bslt = true;
-    static_cast<Slot*>(pslot)->AddSignal(psig);
+    static_cast<Slot*>(pslot)->addSignal(psig);
     return (bsig & bslt);
   }
   return false;
 }
 
 bool ConnectToLambda(Object* pSender, PoolString signal, Object* pReceiver, const slot_lambda_t& slt) {
-  Signal* pSignal = pSender->FindSignal(signal);
+  Signal* pSignal = pSender->findSignal(signal);
   if (pSignal) {
     assert(false);
     // return pSignal->AddSlot(pReceiver, slot);
@@ -344,9 +341,9 @@ bool ConnectToLambda(Object* pSender, PoolString signal, Object* pReceiver, cons
 bool Disconnect(Object* pSender, PoolString signal, Object* pReceiver, PoolString slot) {
   object::ObjectClass* pclass            = rtti::downcast<object::ObjectClass*>(pReceiver->GetClass());
   const reflect::Description& descript   = pclass->Description();
-  const reflect::IObjectFunctor* functor = descript.FindFunctor(slot);
+  const reflect::IObjectFunctor* functor = descript.findFunctor(slot);
   if (functor != NULL) {
-    Signal* pSignal = pSender->FindSignal(signal);
+    Signal* pSignal = pSender->findSignal(signal);
     if (pSignal)
       return pSignal->RemoveSlot(pReceiver, slot);
   }

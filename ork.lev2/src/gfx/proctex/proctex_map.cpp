@@ -6,9 +6,9 @@
 #include <ork/lev2/gfx/proctex/proctex.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 
-#include <ork/reflect/RegisterProperty.h>
-#include <ork/reflect/DirectObjectMapPropertyType.h>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/properties/register.h>
+#include <ork/reflect/properties/DirectTypedMap.h>
+#include <ork/reflect/properties/DirectTyped.hpp>
 
 #include <ork/reflect/enum_serializer.inl>
 #include <ork/math/polar.h>
@@ -16,28 +16,26 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::SphMap, "proctex::SphMap");
-INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::SphRefract, "proctex::SphRefract");
-INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::H2N, "proctex::H2N");
-INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::UvMap, "proctex::UvMap");
-INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::Kaled, "proctex::Kaled");
-
-BEGIN_ENUM_SERIALIZER(ork::proctex, EKaledMode)
-DECLARE_ENUM(EKM_4SQU)
-DECLARE_ENUM(ESH_8TRI)
-DECLARE_ENUM(ESH_24TRI)
-END_ENUM_SERIALIZER()
+ImplementReflectionX(ork::proctex::SphMap, "proctex::SphMap");
+ImplementReflectionX(ork::proctex::SphRefract, "proctex::SphRefract");
+ImplementReflectionX(ork::proctex::H2N, "proctex::H2N");
+ImplementReflectionX(ork::proctex::UvMap, "proctex::UvMap");
+ImplementReflectionX(ork::proctex::Kaled, "proctex::Kaled");
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace proctex {
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
+BeginEnumRegistration(KaledMode);
+RegisterEnum(KaledMode, SQU4);
+RegisterEnum(KaledMode, TRI8);
+RegisterEnum(KaledMode, TRI24);
+EndEnumRegistration();
 ///////////////////////////////////////////////////////////////////////////////
 
-void Colorize::Describe() {
-  RegisterObjInpPlug(Colorize, InputA);
-  RegisterObjInpPlug(Colorize, InputB);
-  ork::reflect::RegisterProperty("AntiAlias", &Colorize::mbAA);
+void Colorize::describeX(class_t* clazz) {
+  // RegisterObjInpPlug(Colorize, InputA);
+  // RegisterObjInpPlug(Colorize, InputB);
+  // ork::reflect::RegisterProperty("AntiAlias", &Colorize::mbAA);
 }
 Colorize::Colorize()
     : meColorizeType(ECT_1D)
@@ -75,7 +73,7 @@ void Colorize::compute(ProcTex& ptex) {
         mtl.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
         mtl._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
         mtl._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
-        mtl._rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+        mtl._rasterstate.SetBlending(ork::lev2::Blending::OFF);
         mtl._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
         auto inptexa = cpa->GetValue().GetTexture(ptex);
         auto inptexb = cpb->GetValue().GetTexture(ptex);
@@ -115,10 +113,10 @@ ork::dataflow::inplugbase* Colorize::GetInput(int idx) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void UvMap::Describe() {
-  RegisterObjInpPlug(UvMap, InputA);
-  RegisterObjInpPlug(UvMap, InputB);
-  ork::reflect::RegisterProperty("AntiAlias", &UvMap::mbAA);
+void UvMap::describeX(class_t* clazz) {
+  // RegisterObjInpPlug(UvMap, InputA);
+  // RegisterObjInpPlug(UvMap, InputB);
+  //  ork::reflect::RegisterProperty("AntiAlias", &UvMap::mbAA);
 }
 UvMap::UvMap()
     : ConstructInpPlug(InputA, dataflow::EPR_UNIFORM, gNoCon)
@@ -153,7 +151,7 @@ void UvMap::compute(ProcTex& ptex) {
         mtl.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
         mtl._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
         mtl._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
-        mtl._rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+        mtl._rasterstate.SetBlending(ork::lev2::Blending::OFF);
         mtl._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
         auto inptexa = cpa->GetValue().GetTexture(ptex);
         auto inptexb = cpb->GetValue().GetTexture(ptex);
@@ -192,11 +190,11 @@ ork::dataflow::inplugbase* UvMap::GetInput(int idx) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void SphMap::Describe() {
-  RegisterObjInpPlug(SphMap, InputN);
-  RegisterObjInpPlug(SphMap, InputR);
-  ork::reflect::RegisterProperty("AntiAlias", &SphMap::mbAA);
-  RegisterFloatXfPlug(SphMap, Directionality, 0.0f, 1.0f, ged::OutPlugChoiceDelegate);
+void SphMap::describeX(class_t* clazz) {
+  // RegisterObjInpPlug(SphMap, InputN);
+  // RegisterObjInpPlug(SphMap, InputR);
+  // ork::reflect::RegisterProperty("AntiAlias", &SphMap::mbAA);
+  // RegisterFloatXfPlug(SphMap, Directionality, 0.0f, 1.0f, ged::OutPlugChoiceDelegate);
 }
 SphMap::SphMap()
     : ConstructInpPlug(InputN, dataflow::EPR_UNIFORM, gNoCon)
@@ -223,7 +221,7 @@ void SphMap::compute(ProcTex& ptex) {
         mtl.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
         mtl._rasterstate.SetAlphaTest(lev2::EALPHATEST_OFF);
         mtl._rasterstate.SetCullTest(lev2::ECULLTEST_OFF);
-        mtl._rasterstate.SetBlending(lev2::EBLENDING_OFF);
+        mtl._rasterstate.SetBlending(lev2::Blending::OFF);
         mtl._rasterstate.SetDepthTest(lev2::EDEPTHTEST_ALWAYS);
         auto inptexa = cpa->GetValue().GetTexture(ptex);
         auto inptexb = cpb->GetValue().GetTexture(ptex);
@@ -265,13 +263,13 @@ ork::dataflow::inplugbase* SphMap::GetInput(int idx) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void SphRefract::Describe() {
-  RegisterObjInpPlug(SphRefract, InputA);
-  RegisterObjInpPlug(SphRefract, InputB);
-  RegisterFloatXfPlug(SphRefract, IOR, -10.0f, 10.0f, ged::OutPlugChoiceDelegate);
-  RegisterFloatXfPlug(SphRefract, Directionality, 0.0f, 1.0f, ged::OutPlugChoiceDelegate);
+void SphRefract::describeX(class_t* clazz) {
+  // RegisterObjInpPlug(SphRefract, InputA);
+  // RegisterObjInpPlug(SphRefract, InputB);
+  // RegisterFloatXfPlug(SphRefract, IOR, -10.0f, 10.0f, ged::OutPlugChoiceDelegate);
+  // RegisterFloatXfPlug(SphRefract, Directionality, 0.0f, 1.0f, ged::OutPlugChoiceDelegate);
 
-  ork::reflect::RegisterProperty("AntiAlias", &SphRefract::mbAA);
+  // ork::reflect::RegisterProperty("AntiAlias", &SphRefract::mbAA);
 }
 SphRefract::SphRefract()
     : ConstructInpPlug(InputA, dataflow::EPR_UNIFORM, gNoCon)
@@ -298,7 +296,7 @@ void SphRefract::compute(ProcTex& ptex) {
         mtl.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
         mtl._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
         mtl._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
-        mtl._rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+        mtl._rasterstate.SetBlending(ork::lev2::Blending::OFF);
         mtl._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
         mtl.SetTexture(cpa->GetValue().GetTexture(ptex));
         mtl.SetTexture2(cpb->GetValue().GetTexture(ptex));
@@ -337,11 +335,11 @@ ork::dataflow::inplugbase* SphRefract::GetInput(int idx) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void H2N::Describe() {
-  RegisterObjInpPlug(H2N, Input);
-  RegisterFloatXfPlug(H2N, ScaleY, 0.0f, 1.0f, ged::OutPlugChoiceDelegate);
-  ork::reflect::annotatePropertyForEditor<H2N>("ScaleY", "editor.range.log", "true");
-  ork::reflect::RegisterProperty("AntiAlias", &H2N::mbAA);
+void H2N::describeX(class_t* clazz) {
+  // RegisterObjInpPlug(H2N, Input);
+  // RegisterFloatXfPlug(H2N, ScaleY, 0.0f, 1.0f, ged::OutPlugChoiceDelegate);
+  // ork::reflect::annotatePropertyForEditor<H2N>("ScaleY", "editor.range.log", "true");
+  // ork::reflect::RegisterProperty("AntiAlias", &H2N::mbAA);
 }
 ork::dataflow::inplugbase* H2N::GetInput(int idx) {
   ork::dataflow::inplugbase* rval = 0;
@@ -363,7 +361,7 @@ H2N::H2N()
     , mMTL(ork::lev2::GfxEnv::GetRef().loadingContext(), "orkshader://proctex", "h2n") {
   mMTL._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
   mMTL._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
-  mMTL._rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+  mMTL._rasterstate.SetBlending(ork::lev2::Blending::OFF);
   mMTL._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
   mMTL._rasterstate.SetZWriteMask(false);
   mMTL.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
@@ -414,13 +412,13 @@ void H2N::compute(ProcTex& ptex) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void Kaled::Describe() {
-  RegisterObjInpPlug(Kaled, Input);
-  RegisterFloatXfPlug(Kaled, Size, -4.0f, 4.0f, ged::OutPlugChoiceDelegate);
-  RegisterFloatXfPlug(Kaled, OffsetX, -1.0f, 1.0f, ged::OutPlugChoiceDelegate);
-  RegisterFloatXfPlug(Kaled, OffsetY, -1.0f, 1.0f, ged::OutPlugChoiceDelegate);
-  ork::reflect::RegisterProperty("Mode", &Kaled::meMode);
-  ork::reflect::annotatePropertyForEditor<Kaled>("Mode", "editor.class", "ged.factory.enum");
+void Kaled::describeX(class_t* clazz) {
+  // RegisterObjInpPlug(Kaled, Input);
+  // RegisterFloatXfPlug(Kaled, Size, -4.0f, 4.0f, ged::OutPlugChoiceDelegate);
+  // RegisterFloatXfPlug(Kaled, OffsetX, -1.0f, 1.0f, ged::OutPlugChoiceDelegate);
+  // RegisterFloatXfPlug(Kaled, OffsetY, -1.0f, 1.0f, ged::OutPlugChoiceDelegate);
+  // ork::reflect::RegisterProperty("Mode", &Kaled::meMode);
+  // ork::reflect::annotatePropertyForEditor<Kaled>("Mode", "editor.class", "ged.factory.enum");
 }
 ///////////////////////////////////////////////////////////////////////////////
 Kaled::Kaled()
@@ -428,8 +426,8 @@ Kaled::Kaled()
     , ConstructInpPlug(OffsetX, dataflow::EPR_UNIFORM, mfOffsetX)
     , ConstructInpPlug(OffsetY, dataflow::EPR_UNIFORM, mfOffsetY)
     , mPlugInpSize(this, dataflow::EPR_UNIFORM, mfSize, "si")
-    , mVertexBuffer(256, 0, ork::lev2::EPrimitiveType::MULTI)
-    , meMode(EKM_4SQU)
+    , mVertexBuffer(256, 0, ork::lev2::PrimitiveType::MULTI)
+    , meMode(KaledMode::SQU4)
     , mfSize(0.5f)
     , mfOffsetX(0.5f)
     , mfOffsetY(0.5f) {
@@ -474,7 +472,7 @@ void Kaled::compute(ProcTex& ptex) {
     gridmat.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR);
     gridmat._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
     gridmat._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
-    gridmat._rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+    gridmat._rasterstate.SetBlending(ork::lev2::Blending::OFF);
     gridmat._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
     auto inptexa = conplug->GetValue().GetTexture(ptex);
 
@@ -503,7 +501,7 @@ void Kaled::compute(ProcTex& ptex) {
         float fv0 = foffsety - (fsize * 0.5f);
         float fv1 = foffsety + (fsize * 0.5f);
         switch (meMode) {
-          case EKM_4SQU: {
+          case KaledMode::SQU4: {
             addvtx(0.0f, 0.0f, fu0, fv0);
             addvtx(0.5f, 0.0f, fu1, fv0);
             addvtx(0.5f, 0.5f, fu1, fv1);
@@ -530,7 +528,7 @@ void Kaled::compute(ProcTex& ptex) {
             addvtx(1.0f, 0.5f, fu0, fv1);
             break;
           }
-          case ESH_8TRI: {
+          case KaledMode::TRI8: {
             for (int ix = 0; ix < 2; ix++) {
               float fx   = float(ix) / 2.0f;
               bool bx    = (ix == 0);
@@ -551,7 +549,7 @@ void Kaled::compute(ProcTex& ptex) {
             }
             break;
           }
-          case ESH_24TRI: {
+          case KaledMode::TRI24: {
             float fdivx = 1.0f / 6.0f;
             float fdivy = 1.0f / 4.0f;
             for (int ix = 0; ix < 7; ix++) {
@@ -608,7 +606,7 @@ void Kaled::compute(ProcTex& ptex) {
         }
       }
       mVW.UnLock(targ);
-      targ->GBI()->DrawPrimitive(&gridmat, mVW, ork::lev2::EPrimitiveType::TRIANGLES);
+      targ->GBI()->DrawPrimitive(&gridmat, mVW, ork::lev2::PrimitiveType::TRIANGLES);
     }
     mtxi->PopPMatrix();
     mtxi->PopVMatrix();

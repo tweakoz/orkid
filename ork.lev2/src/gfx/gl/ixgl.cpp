@@ -26,8 +26,6 @@ extern "C" {
 #include <X11/extensions/Xrandr.h>
 }
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::ContextGL, "ContextGL")
-
 extern "C" {
 extern bool gbVSYNC;
 }
@@ -36,7 +34,7 @@ extern bool gbVSYNC;
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef ::Window x11_window_t; // contained alias of X11 Window Class (conflicts with lev2::Window)
+using x11_window_t = ::Window; // contained alias of X11 Window Class (conflicts with lev2::Window)
 
 bool _hakHIDPI       = false;
 bool _hakMixedDPI    = false;
@@ -356,7 +354,8 @@ void ContextGL::GLinit() {
 std::string GetGlErrorString(void);
 
 void OpenGlContextInit() {
-  GfxEnv::setContextClass(ContextGL::GetClassStatic());
+  auto clazz = dynamic_cast<object::ObjectClass*>(ContextGL::GetClassStatic());
+  GfxEnv::setContextClass(clazz);
   ContextGL::GLinit();
   auto target = new ContextGL;
   target->initializeLoaderContext();
@@ -407,7 +406,7 @@ x11_window_t getHandleForWidget(const QWidget* widget) {
   return 0;
 }
 void ContextGL::initializeWindowContext(Window* pWin, CTXBASE* pctxbase) {
-  meTargetType = ETGTTYPE_WINDOW;
+  meTargetType = TargetType::WINDOW;
 
   ///////////////////////
   GlIxPlatformObject* plato = new GlIxPlatformObject;
@@ -461,7 +460,7 @@ void ContextGL::initializeWindowContext(Window* pWin, CTXBASE* pctxbase) {
 void recomputeHIDPI(Context* ctx) {
 
   switch (ctx->meTargetType) {
-    case ETGTTYPE_WINDOW:
+    case TargetType::WINDOW:
       break;
     default:
       return;
@@ -585,7 +584,7 @@ float _currentDPI() {
 
 void ContextGL::initializeOffscreenContext(OffscreenBuffer* pBuf) {
 
-  meTargetType = ETGTTYPE_OFFSCREEN;
+  meTargetType = TargetType::OFFSCREEN;
 
   ///////////////////////
 
@@ -604,19 +603,19 @@ void ContextGL::initializeOffscreenContext(OffscreenBuffer* pBuf) {
   plato->mXWindowId  = g_rootwin;
 
   _defaultRTG = new RtGroup(this, miW, miH, 1);
-  auto rtb    = new RtBuffer(ERTGSLOT0, EBufferFormat::RGBA8, miW, miH);
+  auto rtb    = new RtBuffer(RtgSlot::Slot0, EBufferFormat::RGBA8, miW, miH);
   _defaultRTG->SetMrt(0, rtb);
   auto texture = _defaultRTG->GetMrt(0)->texture();
   FBI()->SetBufferTexture(texture);
 
-  pBuf->SetContext(this);
+  // pBuf->SetContext(this);
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 void ContextGL::initializeLoaderContext() {
 
-  meTargetType = ETGTTYPE_LOADING;
+  meTargetType = TargetType::LOADING;
 
   miW = 8;
   miH = 8;
@@ -632,7 +631,7 @@ void ContextGL::initializeLoaderContext() {
   plato->mXWindowId  = g_rootwin;
 
   _defaultRTG = new RtGroup(this, miW, miH, 16);
-  auto rtb    = new RtBuffer(ERTGSLOT0, EBufferFormat::RGBA8, miW, miH);
+  auto rtb    = new RtBuffer(RtgSlot::Slot0, EBufferFormat::RGBA8, miW, miH);
   _defaultRTG->SetMrt(0, rtb);
   auto texture = _defaultRTG->GetMrt(0)->texture();
   FBI()->SetBufferTexture(texture);

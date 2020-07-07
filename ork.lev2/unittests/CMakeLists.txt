@@ -14,7 +14,6 @@ add_executable (ork.test.lev2.exe ${testsrcs} )
 target_link_libraries(ork.test.lev2.exe LINK_PRIVATE ork_utpp )
 target_link_libraries(ork.test.lev2.exe LINK_PRIVATE ork_core )
 target_link_libraries(ork.test.lev2.exe LINK_PRIVATE ork_lev2 )
-target_link_libraries(ork.test.lev2.exe LINK_PRIVATE ork_ecs )
 target_link_libraries(ork.test.lev2.exe LINK_PRIVATE boost_system )
 
 set_target_properties(ork.test.lev2.exe PROPERTIES LINKER_LANGUAGE CXX)

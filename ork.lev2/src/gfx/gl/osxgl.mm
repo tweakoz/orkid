@@ -22,8 +22,6 @@
 
 #import <ork/kernel/objc.h>
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::ContextGL, "ContextGL")
-
 extern "C"
 {
 	bool gbVSYNC = false;
@@ -156,7 +154,10 @@ void OpenGlContextInit() {
 	///////////////////////////////////////////////////////////
 	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 	///////////////////////////////////////////////////////////
-	GfxEnv::setContextClass(ContextGL::GetClassStatic());
+
+	auto clazz = ContextGL::GetClassStatic();
+	auto objclazz = dynamic_cast<object::ObjectClass*>(clazz);
+	GfxEnv::setContextClass(objclazz);
   ContextGL::GLinit();
   auto target = new ContextGL;
   target->initializeLoaderContext();
@@ -198,7 +199,7 @@ ContextGL::~ContextGL(){}
 /////////////////////////////////////////////////////////////////////////
 
 void ContextGL::initializeWindowContext( Window *pWin, CTXBASE* pctxbase  ) {
-  meTargetType = ETGTTYPE_WINDOW;
+  meTargetType = TargetType::WINDOW;
 	///////////////////////
 	GlOsxPlatformObject* plato = new GlOsxPlatformObject;
 	mCtxBase = pctxbase;
@@ -332,7 +333,7 @@ void ContextGL::initializeWindowContext( Window *pWin, CTXBASE* pctxbase  ) {
 
 void ContextGL::initializeOffscreenContext( OffscreenBuffer *pBuf )
 {
-  meTargetType = ETGTTYPE_OFFSCREEN;
+  meTargetType = TargetType::OFFSCREEN;
 	///////////////////////
 
 	miW = pBuf->GetBufferW();
@@ -350,7 +351,7 @@ void ContextGL::initializeOffscreenContext( OffscreenBuffer *pBuf )
 	plato->mbNSOpenGlView = false;
 	plato->mbInit = false;
   _defaultRTG = new RtGroup(this,miW,miH,1);
-  auto rtb = new RtBuffer(ERTGSLOT0,EBufferFormat::RGBA8,miW,miH);
+  auto rtb = new RtBuffer(RtgSlot::Slot0,EBufferFormat::RGBA8,miW,miH);
   _defaultRTG->SetMrt(0,rtb);
 
 	//////////////////////////////////////////
@@ -369,7 +370,7 @@ void ContextGL::initializeOffscreenContext( OffscreenBuffer *pBuf )
 	//////////////////////////////////////////////
 
 	//mFbI.InitializeContext( pBuf );
-	pBuf->SetContext(this);
+	//pBuf->SetContext(this);
 
 	//////////////////////////////////////////////
 
@@ -385,7 +386,7 @@ void ContextGL::initializeOffscreenContext( OffscreenBuffer *pBuf )
 
 void ContextGL::initializeLoaderContext() {
 
-  meTargetType = ETGTTYPE_LOADING;
+  meTargetType = TargetType::LOADING;
 
 miW = 8;
 miH = 8;
@@ -402,7 +403,7 @@ plato->mbNSOpenGlView = false;
 plato->mbInit = false;
 
 _defaultRTG = new RtGroup(this,miW,miH,1);
-auto rtb = new RtBuffer(ERTGSLOT0,EBufferFormat::RGBA8,miW,miH);
+auto rtb = new RtBuffer(RtgSlot::Slot0,EBufferFormat::RGBA8,miW,miH);
 _defaultRTG->SetMrt(0,rtb);
   auto texture = _defaultRTG->GetMrt(0)->texture();
   FBI()->SetBufferTexture(texture);

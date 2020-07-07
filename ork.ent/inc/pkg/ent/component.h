@@ -13,6 +13,7 @@
 #include <ork/event/Event.h>
 #include <ork/math/cmatrix4.h>
 #include <ork/object/Object.h>
+#include <ork/rtti/RTTIX.inl>
 #include "system.h"
 
 ///////////////////////////////////////////////////////////////////////////////

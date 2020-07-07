@@ -20,7 +20,7 @@ namespace ork {
 fvec4 PickIdToVertexColor(uint64_t pid) {
   fvec4 out;
   out.SetRGBAU64(pid);
-  printf("PickIdToVertexColor uint64_t<0x%zx> fvec4<%g %g %g %g>\n", pid, out.x, out.y, out.z, out.w);
+  // printf("PickIdToVertexColor uint64_t<0x%zx> fvec4<%g %g %g %g>\n", pid, out.x, out.y, out.z, out.w);
   return out;
 }
 

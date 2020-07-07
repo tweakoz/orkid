@@ -131,9 +131,9 @@ void pyinit_gfx(py::module& module_lev2) {
             return vw;
           })
       .def("unlock", [](gbi_t gbi, vw_vtxa_t& vw) { vw.UnLock(gbi.get()); })
-      .def("drawTriangles", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, EPrimitiveType::TRIANGLES); })
-      .def("drawTriangleStrip", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, EPrimitiveType::TRIANGLESTRIP); })
-      .def("drawLines", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, EPrimitiveType::LINES); });
+      .def("drawTriangles", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES); })
+      .def("drawTriangleStrip", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLESTRIP); })
+      .def("drawLines", [](gbi_t gbi, vw_vtxa_t& vw) { gbi.get()->DrawPrimitiveEML(vw, PrimitiveType::LINES); });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<vw_vtxa_t>(module_lev2, "Writer_V12N12B12T8C4")
       .def(
@@ -332,7 +332,7 @@ void pyinit_gfx(py::module& module_lev2) {
       .def_static(
           "staticBuffer",
           [](size_t size) -> vb_static_vtxa_t //
-          { return vb_static_vtxa_t(size, 0, EPrimitiveType::NONE); });
+          { return vb_static_vtxa_t(size, 0, PrimitiveType::NONE); });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<vb_static_vtxa_t, VertexBufferBase>(module_lev2, "VtxV12N12B12T8C4_StaticBuffer");
   /////////////////////////////////////////////////////////////////////////////////
@@ -417,8 +417,7 @@ void pyinit_gfx(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<XgmModel, model_ptr_t>(module_lev2, "Model") //
       .def(py::init([](const std::string& model_path) -> model_ptr_t {
-        auto modl_asset = asset::AssetManager<XgmModelAsset>::Load(model_path.c_str());
-        asset::AssetManager<XgmModelAsset>::AutoLoad();
+        auto modl_asset = asset::AssetManager<XgmModelAsset>::load(model_path.c_str());
         return modl_asset->_model.atomicCopy();
       }))
       .def(
@@ -428,7 +427,10 @@ void pyinit_gfx(py::module& module_lev2) {
              scenegraph::layer_ptr_t layer) -> scenegraph::node_ptr_t { //
             auto drw        = std::make_shared<ModelDrawable>(nullptr);
             drw->_modelinst = std::make_shared<XgmModelInst>(model.get());
-            return layer->createDrawableNode(named, drw);
+
+            auto node = layer->createDrawableNode(named, drw);
+            node->_userdata->makeValueForKey<model_ptr_t>("pyext.retain.model", model);
+            return node;
           })
       .def(
           "createInstancedNode", //

@@ -117,7 +117,7 @@ public:
 private:
 
 	void DoUpdate(ork::ent::Simulation *inst) override;
-	bool DoNotify(const ork::event::Event *event) override;
+	void doNotify(const ork::event::Event *event) override;
 	bool DoStart(ork::ent::Simulation *inst, const ork::fmtx4 &world) override;
 	bool DoLink(ork::ent::Simulation *inst ) override;
 	const ParticleControllableData&	mData;
@@ -142,9 +142,9 @@ class ModParticleItem : public NovaParticleItemBase
 	ork::Object* GraphPoolAccessor() { return & mpgraphpool; }
 	ork::Object* TemplateAccessor() { return & mTemplate; }
 
-	bool DoNotify(const event::Event *event) override;
+	void doNotify(const event::Event *event) override;
 
-	bool PostDeserialize(reflect::IDeserializer &ideser) override;
+	bool postDeserialize(reflect::serdes::IDeserializer &ideser) override;
 
 public:
 
@@ -183,7 +183,7 @@ private:
     void SetEmitterEnable( bool bv ) final;
     void DoLinkSystem( ork::ent::Simulation* psi, ork::ent::Entity* pent ) final;
     void DoStartSystem( const ork::ent::Simulation* psi, ork::ent::Entity*pent ) final;
-    bool DoNotify(const event::Event *event) final;
+    void doNotify(const event::Event *event) final;
 
 	psys_graph*							mGraphInstance;
 	orkvector<RendererModule*>			mRenderers;

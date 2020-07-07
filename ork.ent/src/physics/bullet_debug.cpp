@@ -21,9 +21,9 @@
 #include <ork/kernel/opq.h>
 #include <ork/kernel/orklut.hpp>
 #include <ork/lev2/gfx/renderer/renderer.h>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
+#include <ork/reflect/properties/register.h>
 
 using namespace ork::lev2;
 ///////////////////////////////////////////////////////////////////////////////
@@ -180,7 +180,7 @@ void PhysicsDebugger::render(const RenderContextInstData& RCID, lineqptr_t lines
     mtx_dbg.SetTranslation(cam_z * -.013f);
 
     context->MTXI()->PushMMatrix(mtx_dbg);
-    context->GBI()->DrawPrimitive(&material, vwriter, ork::lev2::EPrimitiveType::LINES);
+    context->GBI()->DrawPrimitive(&material, vwriter, ork::lev2::PrimitiveType::LINES);
     context->MTXI()->PopMMatrix();
     context->PopModColor();
   }

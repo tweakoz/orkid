@@ -15,7 +15,7 @@
 #include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/pch.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 
 ImplementReflectionX(ork::lev2::ScaleBiasCompositingNode, "ScaleBiasCompositingNode");
 
@@ -42,7 +42,7 @@ struct IMPL {
       int w           = pTARG->mainSurfaceWidth();
       int h           = pTARG->mainSurfaceHeight();
       _rtg            = new RtGroup(pTARG, w, h, NUMSAMPLES);
-      auto buf        = new RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA8, w, h);
+      auto buf        = new RtBuffer(lev2::RtgSlot::Slot0, lev2::EBufferFormat::RGBA8, w, h);
       buf->_debugName = FormatString("ScaleBiasCompositingNode::output");
       _rtg->SetMrt(0, buf);
       _material.gpuInit(pTARG);

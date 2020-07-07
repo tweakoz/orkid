@@ -388,7 +388,7 @@ private:
 
 	bool DoStart(ork::ent::Simulation *inst, const ork::fmtx4 &world) final;
 	bool DoLink(ork::ent::Simulation *inst) final;
-	bool DoNotify(const ork::event::Event *event) final;
+	void doNotify(const ork::event::Event *event) final;
 
 	const SectorTrackerData&		mData;
 	const Track*					mTrack;

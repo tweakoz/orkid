@@ -18,17 +18,17 @@
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/lev2_asset.h>
 
-#include <ork/reflect/DirectObjectMapPropertyType.h>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/DirectTypedMap.h>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
+#include <ork/reflect/properties/register.h>
 #include <pkg/ent/ReferenceArchetype.h>
 #include <pkg/ent/entity.hpp>
 #include <pkg/ent/scene.h>
 #include <pkg/ent/CompositingSystem.h>
 #include <pkg/ent/LightingSystem.h>
 
-#include <ork/reflect/serialize/XMLDeserializer.h>
-#include <ork/reflect/serialize/XMLSerializer.h>
+#include <ork/reflect/serialize/JsonDeserializer.h>
+#include <ork/reflect/serialize/JsonSerializer.h>
 #include <ork/stream/ResizableStringOutputStream.h>
 #include <ork/stream/StringInputStream.h>
 
@@ -403,7 +403,7 @@ void SceneData::EnterRunState() {
   OnSceneDataMode(ESCENEDATAMODE_RUN);
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool SceneData::PostDeserialize(reflect::IDeserializer&) {
+bool SceneData::postDeserialize(reflect::serdes::IDeserializer&) {
   cleanup();
   EnterEditState();
   return true;
@@ -491,7 +491,7 @@ void SceneData::defaultSetup(opq::opq_ptr_t editopq) {
       ////////////////////////////////////////////
       std::shared_ptr<lev2::XgmModelAsset> model_asset;
       opq::Op([&model_asset]() {
-        model_asset = asset::AssetManager<lev2::XgmModelAsset>::Load("src://environ/objects/misc/ref/torus");
+        model_asset = asset::AssetManager<lev2::XgmModelAsset>::load("src://environ/objects/misc/ref/torus");
       }).QueueSync(opq::mainSerialQueue());
       ////////////////////////////////////////////
       // perform edit

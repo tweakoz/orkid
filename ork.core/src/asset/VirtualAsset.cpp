@@ -3,8 +3,7 @@
 // Copyright 1996-2020, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
-
+////////////////////////////////////////////////////////////////
 
 #include "ork/pch.h"
 #include <ork/asset/VirtualAsset.h>
@@ -17,35 +16,33 @@ namespace ork { namespace asset {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-VirtualAsset::VirtualAsset()
-{
+VirtualAsset::VirtualAsset() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VirtualAsset::Describe()
-{
+void VirtualAsset::Describe() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VirtualAsset::SetType(PoolString category)
-{
-	mCategory = category;
-	orkprintf("\n\n\n"
-		      "----------------------------------------\n"
-	          " Virtual Asset of type \"%s\" created!\n"
-		      "----------------------------------------\n", category.c_str());
-	OrkAssertI(false, "Virtual Assets not supported yet");
+void VirtualAsset::setType(std::string category) {
+  _category = category;
+  orkprintf(
+      "\n\n\n"
+      "----------------------------------------\n"
+      " Virtual Asset of type \"%s\" created!\n"
+      "----------------------------------------\n",
+      _category.c_str());
+  OrkAssertI(false, "Virtual Assets not supported yet");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PoolString VirtualAsset::GetType() const
-{
-	return mCategory;
+std::string VirtualAsset::type() const {
+  return _category;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} }
+}} // namespace ork::asset
 ///////////////////////////////////////////////////////////////////////////////

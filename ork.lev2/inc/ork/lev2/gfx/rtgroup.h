@@ -25,7 +25,7 @@ class RtBuffer;
 struct RtBuffer final {
   enum EMipGen { EMG_NONE, EMG_AUTOCOMPUTE, EMG_USER };
 
-  RtBuffer(ERtgSlot etype, EBufferFormat efmt, int iW, int iH);
+  RtBuffer(RtgSlot etype, EBufferFormat efmt, int iW, int iH);
 
   Texture* texture() const {
     return _texture;
@@ -40,7 +40,7 @@ struct RtBuffer final {
 
   int miW, miH;
   Texture* _texture;
-  ERtgSlot mType;
+  RtgSlot mType;
   EBufferFormat mFormat;
   svarp_t _impl;
   bool mSizeDirty;
@@ -78,7 +78,7 @@ struct RtGroup final {
     return mbSizeDirty;
   }
   Context* ParentTarget() const {
-    return mParentTarget;
+    return _parentTarget;
   }
   /////////////////////////////////////////
   int width() const {
@@ -96,7 +96,7 @@ struct RtGroup final {
   /////////////////////////////////////////
   static const int kmaxmrts = 4;
 
-  Context* mParentTarget;
+  Context* _parentTarget;
   RtBuffer* mMrt[kmaxmrts];
   OffscreenBuffer* mDepth;
   Texture* _depthTexture = nullptr;

@@ -5,71 +5,92 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-
 #include <ork/pch.h>
+#include <ork/object/Object.h>
 #include <ork/object/ObjectClass.h>
 #include <ork/rtti/downcast.h>
-#include <ork/reflect/IObjectProperty.h>
+#include <ork/reflect/properties/ObjectProperty.h>
+#include <boost/uuid/random_generator.hpp>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::object::ObjectClass, "ObjectClass");
 
 namespace ork { namespace object {
+////////////////////////////////////////////////////////////////////////////////
 
-static const reflect::Description *ParentClassDescription(const rtti::Class *clazz)
-{
-	const ObjectClass *object_class = rtti::downcast<const ObjectClass *>(clazz);
+static const reflect::Description* ParentClassDescription(const rtti::Class* clazz) {
+  const ObjectClass* object_class = rtti::downcast<const ObjectClass*>(clazz);
 
-	if(object_class)
-	{
-		return &object_class->Description();
-	}
-	else
-	{
-		return NULL;
-	}
+  if (object_class) {
+    return &object_class->Description();
+  } else {
+    return NULL;
+  }
 }
 
-void ObjectClass::Describe()
-{
+////////////////////////////////////////////////////////////////////////////////
+
+void ObjectClass::Describe() {
 }
 
-ObjectClass::ObjectClass(const rtti::RTTIData &data)
-	: rtti::Class(data)
-	, _description()
-{
+////////////////////////////////////////////////////////////////////////////////
+
+ObjectClass::ObjectClass(const rtti::RTTIData& data)
+    : rtti::Class(data)
+    , _description() {
 }
 
-void ObjectClass::annotate( const ConstString &key, const anno_t& val ) {
-  _description.annotateClass(key,val);
+boost::uuids::uuid ObjectClass::genUUID() {
+  static boost::uuids::random_generator generator;
+  return generator();
 }
-const ObjectClass::anno_t& ObjectClass::annotation( const ConstString &key ) {
+
+////////////////////////////////////////////////////////////////////////////////
+
+object_ptr_t ObjectClass::createShared() const {
+  auto shcast = _sharedFactory();
+  auto asobj  = std::dynamic_pointer_cast<Object>(shcast);
+  return asobj;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void ObjectClass::annotate(const ConstString& key, const anno_t& val) {
+  _description.annotateClass(key, val);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+const ObjectClass::anno_t& ObjectClass::annotation(const ConstString& key) {
   return _description.classAnnotation(key);
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 void ObjectClass::Initialize() {
   Class::Initialize();
   _description.SetParentDescription(ParentClassDescription(Parent()));
 
-  reflect::Description::PropertyMapType& propmap = _description.Properties();
+  reflect::Description::PropertyMapType& propmap = _description.properties();
 
-  for (reflect::Description::PropertyMapType::iterator it = propmap.begin(); it != propmap.end(); it++) {
-    ConstString name               = it->first;
-    reflect::IObjectProperty* prop = it->second;
+  for (auto it : propmap) {
+    ConstString name              = it.first;
+    reflect::ObjectProperty* prop = it.second;
 
-    rtti::Class* propclass = prop->GetClass();
-
-    propclass->SetName(name, false);
+    // auto propclass = prop->GetClass();
+    // propclass->SetName(name, false);
   }
 }
 
-reflect::Description &ObjectClass::Description()
-{
-	return _description;
+////////////////////////////////////////////////////////////////////////////////
+
+reflect::Description& ObjectClass::Description() {
+  return _description;
 }
 
-const reflect::Description &ObjectClass::Description() const
-{
-	return _description;
+////////////////////////////////////////////////////////////////////////////////
+
+const reflect::Description& ObjectClass::Description() const {
+  return _description;
 }
 
-} }
+}} // namespace ork::object

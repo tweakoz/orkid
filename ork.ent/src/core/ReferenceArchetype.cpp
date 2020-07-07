@@ -7,10 +7,10 @@
 
 #include <ork/pch.h>
 #include <pkg/ent/ReferenceArchetype.h>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/asset/FileAssetLoader.h>
-#include <ork/reflect/RegisterProperty.h>
-#include <ork/reflect/serialize/XMLDeserializer.h>
+#include <ork/reflect/properties/register.h>
+#include <ork/reflect/serialize/JsonDeserializer.h>
 #include <ork/stream/FileInputStream.h>
 #include <ork/application/application.h>
 #include <pkg/ent/scene.h>
@@ -42,7 +42,7 @@ private:
 
 ArchetypeAssetLoader::ArchetypeAssetLoader()
     : FileAssetLoader(ArchetypeAsset::GetClassStatic()) {
-  // AddLocation("data://archetypes", ".mox");
+  // addLocation("data://archetypes", ".mox");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -60,13 +60,13 @@ bool ArchetypeAssetLoader::LoadFileAsset(asset::asset_ptr_t asset, ConstString a
 
   float ftime1 = ork::OldSchool::GetRef().GetLoResRelTime();
   stream::FileInputStream istream(asset_name.c_str());
-  reflect::serialize::XMLDeserializer iser(istream);
+  reflect::serdes::JsonDeserializer iser(istream);
   rtti::ICastable* pcastable = 0;
 
 #if defined(_XBOX) && defined(PROFILE)
   PIXBeginNamedEvent(0, "ArchetypeAssetLoader::LoadFileAsset(%s).Deserialize", archasset->GetName());
 #endif
-  bool bOK = iser.Deserialize(pcastable);
+  bool bOK = iser.deserializeObject(pcastable);
 #if defined(_XBOX) && defined(PROFILE)
   PIXEndNamedEvent();
 #endif

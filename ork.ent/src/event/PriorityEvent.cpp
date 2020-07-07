@@ -9,19 +9,10 @@
 
 #include <pkg/ent/event/PriorityEvent.h>
 
-#include <ork/reflect/RegisterProperty.h>
-
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::event::PriorityEvent, "PriorityEvent");
-
 namespace ork { namespace ent { namespace event {
 
-void PriorityEvent::Describe()
-{
-	ork::reflect::RegisterProperty("Priority", &PriorityEvent::mPriority);
+PriorityEvent::PriorityEvent(int priority)
+    : mPriority(priority) {
 }
 
-PriorityEvent::PriorityEvent(int priority) : mPriority(priority)
-{
-}
-
-} } } // namespace ork::ent::event
+}}} // namespace ork::ent::event

@@ -20,7 +20,7 @@ namespace ork { namespace tool { namespace ged {
 template <typename T>
 Slider<T>::Slider(T& ParentW, datatype min, datatype max, datatype def)
     : SliderBase()
-    , mParent(ParentW)
+    , _parent(ParentW)
     , mval(def)
     , mmin(min)
     , mmax(max)
@@ -120,7 +120,7 @@ template <typename T> void Slider<T>::SetVal(datatype val) {
   if (val > mmax)
     val = mmax;
   mval = val;
-  mParent.RefIODriver().SetValue(val);
+  _parent.RefIODriver().SetValue(val);
   PropType<datatype>::ToString(mval, mValStr);
   Refresh();
 }
@@ -164,8 +164,8 @@ void Slider<T>::OnUiEvent(ork::ui::event_constptr_t ev) // final
 
         if (mbUpdateOnDrag) {
           SetVal(mval);
-          IoDriverBase& iod = mParent.RefIODriver();
-          mParent.SigInvalidateProperty();
+          IoDriverBase& iod = _parent.RefIODriver();
+          _parent.SigInvalidateProperty();
         }
       }
       break;
@@ -174,13 +174,13 @@ void Slider<T>::OnUiEvent(ork::ui::event_constptr_t ev) // final
       std::string RangeStr = CreateFormattedString("v:[%f..%f]", float(mmin), float(mmax));
       // QString qstr = QInputDialog::getText ( 0, "Set Value", RangeStr.c_str() );
 
-      int ilabw = mParent.propnameWidth() + 16;
+      int ilabw = _parent.propnameWidth() + 16;
 
-      int iwidth = mParent.width() - ilabw;
+      int iwidth = _parent.width() - ilabw;
       if (iwidth < 64)
         iwidth = 64;
 
-      int iheight = mParent.height() - 3;
+      int iheight = _parent.height() - 3;
       if (iheight < 12)
         iheight = 12;
 
@@ -194,7 +194,7 @@ void Slider<T>::OnUiEvent(ork::ui::event_constptr_t ev) // final
       PropTypeString ptsg;
       PropType<datatype>::ToString(mval, ptsg);
 
-      QString qstr = GedInputDialog::getText(ev, &mParent, ptsg.c_str(), 2, 2, mParent.width() - 3, iheight);
+      QString qstr = GedInputDialog::getText(ev, &_parent, ptsg.c_str(), 2, 2, _parent.width() - 3, iheight);
 
       std::string sstr = qstr.toStdString();
       if (sstr.length()) {
@@ -210,8 +210,8 @@ void Slider<T>::OnUiEvent(ork::ui::event_constptr_t ev) // final
     }
   }
   SetVal(mval);
-  IoDriverBase& iod = mParent.RefIODriver();
-  mParent.SigInvalidateProperty();
+  IoDriverBase& iod = _parent.RefIODriver();
+  _parent.SigInvalidateProperty();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -226,7 +226,7 @@ template <typename T> void Slider<T>::resize(int ix, int iy, int iw, int ih) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename Setter>
-GedBoolNode<Setter>::GedBoolNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj)
+GedBoolNode<Setter>::GedBoolNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj)
     : GedItemNode(mdl, name, prop, obj)
     , mSetter(prop, obj) {
 }
@@ -284,7 +284,7 @@ template <typename Setter> void GedBoolNode<Setter>::OnMouseDoubleClicked(ork::u
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename IODriver>
-GedFloatNode<IODriver>::GedFloatNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj)
+GedFloatNode<IODriver>::GedFloatNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj)
     : GedItemNode(mdl, name, prop, obj)
     , mIoDriver(mdl, prop, obj)
     , mLogMode(false) {
@@ -368,7 +368,7 @@ template <typename IoDriver> void GedFloatNode<IoDriver>::onDeactivate() {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename IODriver>
-GedIntNode<IODriver>::GedIntNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj)
+GedIntNode<IODriver>::GedIntNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj)
     : GedItemNode(mdl, name, prop, obj)
     , mIoDriver(mdl, prop, obj)
     , mLogMode(false) {
@@ -448,7 +448,7 @@ template <typename IODriver> void GedFloatNode<IODriver>::OnUiEvent(ork::ui::eve
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 template <typename IODriver, typename T>
-GedSimpleNode<IODriver, T>::GedSimpleNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj)
+GedSimpleNode<IODriver, T>::GedSimpleNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj)
     : GedItemNode(mdl, name, prop, obj)
     , mIoDriver(mdl, prop, obj) {
 }
@@ -473,22 +473,22 @@ template <typename IODriver, typename T> void GedSimpleNode<IODriver, T>::OnUiEv
         rtti::Class* the_class = rtti::Class::FindClass(anno_ucdclass);
         if (the_class) {
           ork::object::ObjectClass* pucdclass = rtti::autocast(the_class);
-          ork::rtti::ICastable* ucdo          = the_class->CreateObject();
-          IUserChoiceDelegate* ucd            = rtti::autocast(ucdo);
+          ork::rtti::ICastable* ucdo          = pucdclass->CreateObject();
+          auto ucd                            = dynamic_cast<IUserChoiceDelegate*>(ucdo);
           if (ucd) {
-            UserChoices uchc(*ucd, pobj, this);
-            QMenu* qm     = uchc.CreateMenu();
+            auto uchc     = std::make_shared<UserChoices>(*ucd, pobj, this);
+            QMenu* qm     = qmenuFromChoiceList(uchc);
             QAction* pact = qm->exec(QCursor::pos());
             if (pact) {
               QVariant UserData = pact->data();
               QString UserName  = UserData.toString();
               std::string pname = UserName.toStdString();
 
-              const AttrChoiceValue* Chc = uchc.FindFromLongName(pname);
+              auto Chc = uchc->FindFromLongName(pname);
 
               if (Chc) {
-                if (Chc->GetCustomData().IsA<T>()) {
-                  const T& value = Chc->GetCustomData().Get<T>();
+                if (Chc->GetCustomData().template IsA<T>()) {
+                  const T& value = Chc->GetCustomData().template Get<T>();
                 }
                 std::string valuestr = Chc->EvaluateValue();
                 PropTypeString pts(valuestr.c_str());

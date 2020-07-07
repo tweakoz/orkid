@@ -16,9 +16,9 @@ void TestViewport::onUpdateThreadTick(ui::updatedata_ptr_t updata) {
 }
 
 int main(int argc, char** argv) {
+  auto app = createEZapp(argc, argv);
   //////////////////////////////////////
-  auto uicontext           = std::make_shared<ui::Context>();
-  auto vp                  = uicontext->makeTop<LayoutGroup>("layoutgroup", 0, 0, 1280, 720);
+  auto vp                  = app->_topLayoutGroup;
   auto w0                  = vp->makeChild<EvTestBox>("w0", fvec4(1, 1, 0, 1));
   auto w1                  = vp->makeChild<SplitPanel>("w1");
   auto w2                  = vp->makeChild<LayoutGroup>("w2", 0, 0, 0, 0);
@@ -93,8 +93,6 @@ int main(int argc, char** argv) {
   root_layout->dump();
   // exit(0);
   //////////////////////////////////////
-  auto app   = createEZapp(uicontext, argc, argv);
-  app->_uivp = vp;
   app->setRefreshPolicy({EREFRESH_FIXEDFPS, 60});
   return app->exec();
 }

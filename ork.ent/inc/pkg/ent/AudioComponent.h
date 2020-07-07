@@ -140,7 +140,7 @@ public:
   }
 
 private:
-  bool DoNotify(const ork::event::Event* event) final;
+  void doNotify(const ork::event::Event* event) final;
   ork::lev2::AudioGraph mControlGraph;
   int miNumVoices;
   AudioMultiEffectPlayInstItemBase* CreateInst() const final;
@@ -365,7 +365,7 @@ private:
   bool DoLink(ork::ent::Simulation* psi) final;
   void DoStop(ork::ent::Simulation* psi) final;
 
-  bool DoNotify(const ork::event::Event* pev) final;
+  void doNotify(const ork::event::Event* pev) final;
 
   void AddSound(const ork::PoolString& ps, AudioMultiEffectPlayInst* pib);
 

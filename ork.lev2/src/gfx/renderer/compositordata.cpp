@@ -13,7 +13,7 @@
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/pch.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/rtti/downcast.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
@@ -24,8 +24,8 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorVr.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
 #include <ork/application/application.h>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::lev2::CompositingData, "CompositingData");
@@ -33,7 +33,7 @@ ImplementReflectionX(ork::lev2::CompositingData, "CompositingData");
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 void CompositingData::describeX(class_t* c) {
-  using namespace ork::reflect;
+/*  using namespace ork::reflect;
 
   RegisterProperty("Enable", &CompositingData::mbEnable);
 
@@ -49,7 +49,7 @@ void CompositingData::describeX(class_t* c) {
   static const char* EdGrpStr = "grp://Main Enable ActiveScene ActiveItem "
                                 "grp://Data Groups Scenes ";
   reflect::annotateClassForEditor<CompositingData>("editor.prop.groups", EdGrpStr);
-}
+*/}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -113,11 +113,14 @@ void CompositingData::presetPBR() {
   t1->_writeOutputNode(o1);
   t1->_writeRenderNode(r1);
   // t1->_writePostFxNode(p1);
-  auto& assetVars = r1->_texAssetVarMap;
-  auto envl_asset = asset::AssetManager<TextureAsset>::Create("src://envmaps/tozenv_nebula", assetVars);
+  auto assetVars  = r1->_texAssetVarMap;
+  auto envl_asset = asset::AssetManager<TextureAsset>::load(
+      "src://envmaps/tozenv_nebula", //
+      assetVars);
+  // todo inject postload ops
   OrkAssert(envl_asset->GetTexture() != nullptr);
-  OrkAssert(envl_asset->_varmap.hasKey("postproc"));
-  r1->_writeEnvTexture(envl_asset.get());
+  OrkAssert(envl_asset->_varmap->hasKey("postproc"));
+  r1->_writeEnvTexture(envl_asset);
 
   auto s1 = new CompositingScene;
   auto i1 = new CompositingSceneItem;
@@ -137,11 +140,12 @@ void CompositingData::presetPBRVR() {
   t1->_writeOutputNode(o1);
   t1->_writeRenderNode(r1);
   // t1->_writePostFxNode(p1);
-  auto& assetVars = r1->_texAssetVarMap;
-  auto envl_asset = asset::AssetManager<TextureAsset>::Create("src://envmaps/tozenv_nebula", assetVars);
+  auto assetVars  = r1->_texAssetVarMap;
+  auto envl_asset = asset::AssetManager<TextureAsset>::load("src://envmaps/tozenv_nebula", assetVars);
+  // todo inject postload ops
   OrkAssert(envl_asset->GetTexture() != nullptr);
-  OrkAssert(envl_asset->_varmap.hasKey("postproc"));
-  r1->_writeEnvTexture(envl_asset.get());
+  OrkAssert(envl_asset->_varmap->hasKey("postproc"));
+  r1->_writeEnvTexture(envl_asset);
 
   auto s1 = new CompositingScene;
   auto i1 = new CompositingSceneItem;

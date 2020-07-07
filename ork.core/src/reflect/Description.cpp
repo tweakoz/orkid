@@ -10,34 +10,35 @@
 #include <ork/reflect/Command.h>
 #include <ork/reflect/Description.h>
 #include <ork/reflect/IDeserializer.h>
-#include <ork/reflect/IObjectProperty.h>
+#include <ork/reflect/properties/ObjectProperty.h>
 #include <ork/reflect/ISerializer.h>
 
 namespace ork { namespace reflect {
 
 Description::Description()
-    : mParentDescription(NULL) {
+    : _parentDescription(NULL) {
 }
 
 void Description::SetParentDescription(const Description* parent) {
-  mParentDescription = parent;
+  _parentDescription = parent;
 }
 
-void Description::AddProperty(const char* key, IObjectProperty* value) {
+void Description::addProperty(const char* key, ObjectProperty* value) {
   mProperties.AddSorted(key, value);
+  value->_name = key;
 }
 
-Description::PropertyMapType& Description::Properties() {
+Description::PropertyMapType& Description::properties() {
   return mProperties;
 }
 
-const Description::PropertyMapType& Description::Properties() const {
+const Description::PropertyMapType& Description::properties() const {
   return mProperties;
 }
 
-const IObjectProperty* Description::FindProperty(const ConstString& name) const {
-  for (const Description* description = this; description != NULL; description = description->mParentDescription) {
-    const PropertyMapType& map         = description->Properties();
+const ObjectProperty* Description::property(const ConstString& name) const {
+  for (const Description* description = this; description != NULL; description = description->_parentDescription) {
+    const PropertyMapType& map         = description->properties();
     PropertyMapType::const_iterator it = map.find(name);
 
     if (it != map.end()) {
@@ -51,12 +52,12 @@ const IObjectProperty* Description::FindProperty(const ConstString& name) const 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void Description::AddFunctor(const char* key, IObjectFunctor* functor) {
+void Description::addFunctor(const char* key, IObjectFunctor* functor) {
   mFunctions.AddSorted(key, functor);
 }
 
-const IObjectFunctor* Description::FindFunctor(const ConstString& name) const {
-  for (const Description* description = this; description != NULL; description = description->mParentDescription) {
+const IObjectFunctor* Description::findFunctor(const ConstString& name) const {
+  for (const Description* description = this; description != NULL; description = description->_parentDescription) {
     const FunctorMapType& map         = description->mFunctions;
     FunctorMapType::const_iterator it = map.find(name);
 
@@ -71,15 +72,15 @@ const IObjectFunctor* Description::FindFunctor(const ConstString& name) const {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void Description::AddSignal(const char* key, object::Signal Object::*pmember) {
+void Description::addSignal(const char* key, object::Signal Object::*pmember) {
   mSignals.AddSorted(key, pmember);
 }
-void Description::AddAutoSlot(const char* key, object::AutoSlot Object::*pmember) {
+void Description::addAutoSlot(const char* key, object::AutoSlot Object::*pmember) {
   mAutoSlots.AddSorted(key, pmember);
 }
 
-object::Signal Object::*Description::FindSignal(const ConstString& key) const {
-  for (const Description* description = this; description != NULL; description = description->mParentDescription) {
+object::Signal Object::*Description::findSignal(const ConstString& key) const {
+  for (const Description* description = this; description != NULL; description = description->_parentDescription) {
     const SignalMapType& map         = description->mSignals;
     SignalMapType::const_iterator it = map.find(key);
 
@@ -92,7 +93,7 @@ object::Signal Object::*Description::FindSignal(const ConstString& key) const {
 }
 
 object::AutoSlot Object::*Description::FindAutoSlot(const ConstString& key) const {
-  for (const Description* description = this; description != NULL; description = description->mParentDescription) {
+  for (const Description* description = this; description != NULL; description = description->_parentDescription) {
     const AutoSlotMapType& map         = description->mAutoSlots;
     AutoSlotMapType::const_iterator it = map.find(key);
 
@@ -108,7 +109,7 @@ object::AutoSlot Object::*Description::FindAutoSlot(const ConstString& key) cons
 ///////////////////////////////////////////////////////////////////////////////
 
 void Description::annotateProperty(const ConstString& propname, const ConstString& key, const ConstString& val) {
-  const PropertyMapType& map         = Properties();
+  const PropertyMapType& map         = properties();
   PropertyMapType::const_iterator it = map.find(propname);
   if (it == map.end()) {
     OrkAssert(false);
@@ -118,8 +119,8 @@ void Description::annotateProperty(const ConstString& propname, const ConstStrin
 }
 
 ConstString Description::propertyAnnotation(const ConstString& propname, const ConstString& key) const {
-  for (const Description* description = this; description != NULL; description = description->mParentDescription) {
-    const PropertyMapType& map         = description->Properties();
+  for (const Description* description = this; description != NULL; description = description->_parentDescription) {
+    const PropertyMapType& map         = description->properties();
     PropertyMapType::const_iterator it = map.find(propname);
     if (it != map.end()) {
       return (*it).second->GetAnnotation(key);
@@ -138,7 +139,7 @@ void Description::annotateClass(const ConstString& key, const Description::anno_
 }
 
 const Description::anno_t& Description::classAnnotation(const ConstString& key) const {
-  for (const Description* description = this; description != NULL; description = description->mParentDescription) {
+  for (const Description* description = this; description != NULL; description = description->_parentDescription) {
     orklut<ConstString, anno_t>::const_iterator it = description->mClassAnnotations.find(key);
     if (it != description->mClassAnnotations.end()) {
       return (*it).second;
@@ -146,81 +147,6 @@ const Description::anno_t& Description::classAnnotation(const ConstString& key) 
   }
   static const anno_t empty_anno(nullptr);
   return empty_anno;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
-bool Description::SerializeProperties(ISerializer& serializer, const Object* object) const {
-  bool result = true;
-
-  if (mParentDescription) {
-    if (!mParentDescription->SerializeProperties(serializer, object))
-      result = false;
-  }
-
-  const PropertyMapType& map = Properties();
-
-  for (PropertyMapType::const_iterator it = map.begin(); it != map.end(); ++it) {
-    ConstString name      = (*it).first;
-    IObjectProperty* prop = (*it).second;
-
-    Command command(Command::EPROPERTY, name);
-
-    serializer.BeginCommand(command);
-    if (false == serializer.Serialize(prop, object))
-      result = false;
-    serializer.EndCommand(command);
-  }
-
-  return result;
-}
-
-bool Description::DeserializeProperties(IDeserializer& deserializer, Object* object) const {
-  Command command;
-  deserializer._currentObject = object;
-
-  while (deserializer.BeginCommand(command)) {
-    if (command.Type() != Command::EPROPERTY) {
-      orkprintf(
-          "Description::DeserializeProperties:: got command %s, wanted EPROPERTY\n",
-          command.Type() == Command::EOBJECT
-              ? "EOBJECT"
-              : command.Type() == Command::EITEM ? "EITEM" : command.Type() == Command::EATTRIBUTE ? "EATTRIBUTE" : "???");
-    }
-
-    OrkAssertI(command.Type() == Command::EPROPERTY, "Description::DeserializeProperties: expected a property!");
-
-    if (command.Type() == Command::EPROPERTY) {
-      const reflect::IObjectProperty* prop = FindProperty(command.Name());
-
-      // orkprintf( "deserialize prop<%s>\n", command.Name().c_str() );
-
-      if (prop) {
-        deserializer._currentProperty = prop;
-        if (false == deserializer.Deserialize(prop, object)) {
-          deserializer.EndCommand(command);
-          deserializer._currentProperty = nullptr;
-          deserializer._currentObject   = nullptr;
-          return false;
-        }
-        deserializer._currentProperty = nullptr;
-      } else {
-        orkprintf("Could not find property <%p>'%s'\n", command.Name().c_str(), command.Name().c_str());
-      }
-
-      if (false == deserializer.EndCommand(command)) {
-        OrkAssertI(prop, "Description::DeserializeProperties: could not skip property!");
-        deserializer._currentObject = nullptr;
-        return false;
-      }
-    } else {
-      deserializer._currentObject = nullptr;
-      return false;
-    }
-  }
-  deserializer._currentObject = nullptr;
-  return true;
 }
 
 }} // namespace ork::reflect

@@ -4,27 +4,22 @@
 ///////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include <ork/rtti/RTTI.h>
-#include <ork/object/Object.h>
+#include <ork/kernel/string/PoolString.h>
 #include <ork/kernel/svariant.h>
 
 namespace ork { namespace event {
-    
-class Event : public Object
-{
-    RttiDeclareAbstract( Event, Object );
-    
+
+class Event {
 public:
+  virtual ~Event() {
+  }
 };
 
-class VEvent : public Event 
-{
-    RttiDeclareConcrete( VEvent, Event );
+class VEvent : public Event {
+
 public:
-    
-    PoolString mCode;
-    svar64_t mData;
+  PoolString mCode;
+  svar64_t mData;
 };
 
-} } // ork::event
-
+}} // namespace ork::event

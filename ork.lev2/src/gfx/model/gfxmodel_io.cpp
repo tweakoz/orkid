@@ -355,7 +355,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
             HeaderStream->GetItem<int32_t>(ipgindex);
             OrkAssert(ipgindex == ipg);
 
-            HeaderStream->GetItem<EPrimitiveType>(newprimgroup->mePrimType);
+            HeaderStream->GetItem<PrimitiveType>(newprimgroup->mePrimType);
             HeaderStream->GetItem<int32_t>(newprimgroup->miNumIndices);
 
             int32_t idxdataoffset = -1;
@@ -694,7 +694,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
           printf("WritePG<%d> NumIndices<%d>\n", ipg, inumidx);
 
           HeaderStream->AddItem(ipg);
-          HeaderStream->AddItem<EPrimitiveType>(PG->GetPrimType());
+          HeaderStream->AddItem<PrimitiveType>(PG->GetPrimType());
           HeaderStream->AddItem<int32_t>(inumidx);
           HeaderStream->AddItem<int32_t>(ModelDataStream->GetSize());
 

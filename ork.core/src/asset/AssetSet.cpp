@@ -12,21 +12,29 @@
 #include <ork/asset/AssetSetLevel.h>
 #include <ork/asset/AssetSetEntry.h>
 #include <ork/asset/AssetLoader.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace asset {
+namespace ork::asset {
 ///////////////////////////////////////////////////////////////////////////////
 
 // class Asset;
 
-template <typename Operator> static void Apply(AssetSetLevel* top_level, Operator op, int depth = -1);
+template <typename Operator> //
+static void Apply(
+    AssetSetLevel* top_level, //
+    Operator op,
+    int depth = -1);
 
-std::pair<AssetSetEntry*, bool> FindAssetEntryInternal(AssetSetLevel* top_level, PoolString name);
+std::pair<AssetSetEntry*, bool> //
+FindAssetEntryInternal(
+    AssetSetLevel* top_level, //
+    AssetPath name);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename ClassType, typename ReturnType> class SimpleExecutor {
+template <typename ClassType, typename ReturnType> //
+class SimpleExecutor {
   ReturnType (ClassType::*mMemberFunction)(AssetSetLevel* level);
   AssetSetLevel* mLevel;
 
@@ -44,7 +52,10 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename ClassType, typename ReturnType>
-SimpleExecutor<ClassType, ReturnType> BuildExecutor(ReturnType (ClassType::*function)(AssetSetLevel*), AssetSetLevel* level) {
+SimpleExecutor<ClassType, ReturnType> //
+BuildExecutor(
+    ReturnType (ClassType::*function)(AssetSetLevel*), //
+    AssetSetLevel* level) {
   return SimpleExecutor<ClassType, ReturnType>(function, level);
 }
 
@@ -56,9 +67,12 @@ AssetSet::AssetSet()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void AssetSet::Register(PoolString name, asset_ptr_t asset, AssetLoader* loader) {
+void AssetSet::Register(
+    AssetPath name, //
+    asset_ptr_t asset,
+    AssetLoader* loader) {
   if (NULL == mTopLevel)
-    PushLevel(ork::rtti::safe_downcast<AssetClass*>(asset->GetClass()));
+    pushLevel(ork::rtti::safe_downcast<object::ObjectClass*>(asset->GetClass()));
 
   std::pair<AssetSetEntry*, bool> result = FindAssetEntryInternal(mTopLevel, name);
   AssetSetEntry* entry                   = result.first;
@@ -74,7 +88,7 @@ void AssetSet::Register(PoolString name, asset_ptr_t asset, AssetLoader* loader)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-asset_ptr_t AssetSet::FindAsset(PoolString name) {
+asset_ptr_t AssetSet::FindAsset(AssetPath name) {
   auto entry = FindAssetEntry(name);
 
   if (entry)
@@ -85,13 +99,13 @@ asset_ptr_t AssetSet::FindAsset(PoolString name) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-AssetSetEntry* AssetSet::FindAssetEntry(PoolString name) {
+AssetSetEntry* AssetSet::FindAssetEntry(AssetPath name) {
   return FindAssetEntryInternal(mTopLevel, name).first;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-AssetLoader* AssetSet::FindLoader(PoolString name) {
+AssetLoader* AssetSet::FindLoader(AssetPath name) {
   AssetSetEntry* entry = FindAssetEntry(name);
 
   if (entry)
@@ -102,14 +116,16 @@ AssetLoader* AssetSet::FindLoader(PoolString name) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-std::pair<AssetSetEntry*, bool> FindAssetEntryInternal(AssetSetLevel* top_level, PoolString name) {
-  for (AssetSetLevel* level = top_level; level != nullptr; level = level->Parent()) {
+std::pair<AssetSetEntry*, bool> FindAssetEntryInternal(AssetSetLevel* top_level, AssetPath name) {
+  for (AssetSetLevel* level = top_level; //
+       level != nullptr;
+       level = level->Parent()) {
     auto levset = level->GetSet();
     auto it     = std::find_if(
         levset.begin(), //
         levset.end(),
         [name](const AssetSetEntry* entry) -> bool { //
-          return name == entry->asset()->GetName();
+          return name == entry->asset()->name();
         });
     if (it != levset.end())
       return std::make_pair(*it, level == top_level);
@@ -124,7 +140,9 @@ bool AssetSet::Load(int depth) {
   int load_count = 0;
   ork::ConstString name("");
 
-  for (AssetSetLevel* level = mTopLevel; depth != 0 && level != NULL; level = level->Parent(), depth--) {
+  for (AssetSetLevel* level = mTopLevel; //
+       depth != 0 && level != NULL;
+       level = level->Parent(), depth--) {
     for (orkvector<AssetSetEntry*>::size_type i = 0; i < level->GetSet().size(); ++i) {
       AssetSetEntry* entry = level->GetSet()[i];
       if (false == entry->IsLoaded()) {
@@ -142,16 +160,16 @@ bool AssetSet::Load(int depth) {
 ///////////////////////////////////////////////////////////////////////////////
 
 #if defined(ORKCONFIG_ASSET_UNLOAD)
-bool AssetSet::UnLoad(int depth) {
+bool AssetSet::unload(int depth) {
   int unload_count = 0;
   ork::ConstString name("");
 
   for (AssetSetLevel* level = mTopLevel; depth != 0 && level != NULL; level = level->Parent(), depth--) {
     for (orkvector<AssetSetEntry*>::size_type i = 0; i < level->GetSet().size(); ++i) {
       AssetSetEntry* entry = level->GetSet()[i];
-      if (entry->UnLoad(mTopLevel)) {
+      if (entry->unload(mTopLevel)) {
         unload_count--;
-        name = entry->GetAsset()->GetClass()->Name();
+        name = entry->asset()->GetClass()->Name();
       }
     }
   }
@@ -162,7 +180,7 @@ bool AssetSet::UnLoad(int depth) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void AssetSet::PushLevel(AssetClass* type) {
+void AssetSet::pushLevel(object::ObjectClass* type) {
   Apply(mTopLevel, BuildExecutor(&AssetSetEntry::OnPush, mTopLevel));
 
   mTopLevel = new AssetSetLevel(mTopLevel);
@@ -170,7 +188,7 @@ void AssetSet::PushLevel(AssetClass* type) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void AssetSet::PopLevel() {
+void AssetSet::popLevel() {
   Apply(mTopLevel, BuildExecutor(&AssetSetEntry::OnPop, mTopLevel));
 
   AssetSetLevel* top_level = mTopLevel;
@@ -182,7 +200,7 @@ void AssetSet::PopLevel() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-AssetSetLevel* AssetSet::GetTopLevel() const {
+AssetSetLevel* AssetSet::topLevel() const {
   return mTopLevel;
 }
 
@@ -195,5 +213,5 @@ template <typename Operator> void Apply(AssetSetLevel* top_level, Operator op, i
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-}} // namespace ork::asset
+} // namespace ork::asset
 ///////////////////////////////////////////////////////////////////////////////

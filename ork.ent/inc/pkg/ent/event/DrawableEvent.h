@@ -5,29 +5,27 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef ORK_ENT_EVENT_DRAWABLEEVENT_H
-#define ORK_ENT_EVENT_DRAWABLEEVENT_H
-
-#include <ork/rtti/RTTI.h>
+#pragma once
 
 #include <ork/event/Event.h>
 
 namespace ork { namespace ent { namespace event {
 
-class DrawableEvent : public ork::event::Event
-{
-    RttiDeclareConcrete( DrawableEvent, ork::event::Event );
+class DrawableEvent : public ork::event::Event {
 public:
+  DrawableEvent(Event* event = NULL)
+      : mEvent(event) {
+  }
 
-	DrawableEvent(Event *event = NULL) : mEvent(event) {}
-
-	void SetEvent(Event *event) { mEvent = event; }
-	Event *GetEvent() const { return mEvent; }
+  void SetEvent(Event* event) {
+    mEvent = event;
+  }
+  Event* GetEvent() const {
+    return mEvent;
+  }
 
 private:
-	ork::event::Event *mEvent;
+  ork::event::Event* mEvent;
 };
 
-} } } // ork::ent::event
-
-#endif // ORK_ENT_EVENT_DRAWABLEEVENT_H
+}}} // namespace ork::ent::event

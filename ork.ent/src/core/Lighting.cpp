@@ -13,8 +13,8 @@
 #include <pkg/ent/scene.hpp>
 #include <ork/lev2/gfx/camera/cameradata.h>
 
-#include <ork/reflect/RegisterProperty.h>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/properties/register.h>
+#include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/lev2_asset.h>
@@ -199,7 +199,7 @@ LightingComponentInst::LightingComponentInst(const LightingComponentData& data, 
       }
     }
     yo() {
-      auto model_asset = ork::asset::AssetManager<ork::lev2::XgmModelAsset>::Load("data://editor/dirlight");
+      auto model_asset = ork::asset::AssetManager<ork::lev2::XgmModelAsset>::load("data://editor/dirlight");
       mpModel          = model_asset.get();
     }
   };

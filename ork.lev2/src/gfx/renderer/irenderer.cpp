@@ -29,7 +29,7 @@ static const int kRenderbufferSize = 1024 << 10;
 
 IRenderer::IRenderer(Context* pTARG)
     : mPerformanceItem(0)
-    , mpTarget(pTARG)
+    , _target(pTARG)
     , mRenderQueue() {
 }
 
@@ -48,10 +48,10 @@ void IRenderer::drawEnqueuedRenderables() {
 
   ///////////////////////////////////////////////////////
   size_t renderQueueSize = mRenderQueue.Size();
-  mpTarget->debugPushGroup(FormatString("IRenderer::drawEnqueuedRenderables renderQueueSize<%zu>", renderQueueSize));
+  _target->debugPushGroup(FormatString("IRenderer::drawEnqueuedRenderables renderQueueSize<%zu>", renderQueueSize));
 
   if (renderQueueSize == 0) {
-    mpTarget->debugPopGroup();
+    _target->debugPopGroup();
     return;
   }
 
@@ -86,16 +86,16 @@ void IRenderer::drawEnqueuedRenderables() {
 
   for (size_t i = 0; i < renderQueueSize; i++) {
     int sorted = mQueueSortKeys[i];
-    mpTarget->debugMarker(FormatString("IRenderer::drawEnqueuedRenderables sorting index<%zu> sorted<%d>", i, sorted));
+    _target->debugMarker(FormatString("IRenderer::drawEnqueuedRenderables sorting index<%zu> sorted<%d>", i, sorted));
   }
 
   for (size_t i = 0; i < renderQueueSize; i++) {
     int sorted = sortedRenderQueueIndices[i];
     OrkAssert(sorted < U32(renderQueueSize));
     const RenderQueue::Node* pnode = mQueueSortNodes[sorted];
-    mpTarget->debugPushGroup(FormatString("IRenderer::drawEnqueuedRenderables render item<%zu> node<%p>", i, pnode));
+    _target->debugPushGroup(FormatString("IRenderer::drawEnqueuedRenderables render item<%zu> node<%p>", i, pnode));
     pnode->_renderable->Render(this);
-    mpTarget->debugPopGroup();
+    _target->debugPopGroup();
   }
 
   float favgrun = fruntot / float(imdlcount);
@@ -107,7 +107,7 @@ void IRenderer::drawEnqueuedRenderables() {
   if (mPerformanceItem)
     mPerformanceItem->Exit();
 
-  mpTarget->debugPopGroup();
+  _target->debugPopGroup();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

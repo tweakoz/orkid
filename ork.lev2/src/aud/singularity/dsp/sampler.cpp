@@ -36,7 +36,7 @@ kmregion* KeyMap::getRegion(int note, int vel) const {
 
 void SAMPLER::initBlock(dspblkdata_ptr_t blockdata) {
   blockdata->_blocktype = "SAMPLER";
-  blockdata->_paramd[0].usePitchEvaluator();
+  blockdata->_paramd[0]->usePitchEvaluator();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -393,7 +393,7 @@ void sampleOsc::findRegion(const KeyOnInfo& koi) {
   int timbreshift = KMP->_timbreShift;                // 0
   int kmtrans     = KMP->_transpose /*+timbreshift*/; // -20
   int kmkeytrack  = KMP->_keyTrack;                   // 100
-  int pchkeytrack = PCH._keyTrack;                    // 0
+  int pchkeytrack = PCH->_keyTrack;                   // 0
   // expect 48-20+8 = 28+8 = 36*100 = 3600 total cents
 
   int kmpivot      = (kNOTEC4 + kmtrans);            // 48-20 = 28
@@ -409,7 +409,7 @@ void sampleOsc::findRegion(const KeyOnInfo& koi) {
 
   _sampselnote = (kmfinalcents / 100) + timbreshift; // 4800/100=48
 
-  int pchtrans      = PCH._coarse - timbreshift;        // 8
+  int pchtrans      = PCH->_coarse - timbreshift;       // 8
   int pchpivot      = (kNOTEC4 + pchtrans);             // 48-0 = 48
   int pchdeltakey   = (note + pchtrans - pchpivot);     // 48-48=0 //possible minus kmorigin?
   int pchdeltacents = pchdeltakey * pchkeytrack;        // 0*0=0

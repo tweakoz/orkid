@@ -185,21 +185,11 @@ struct FxComputeShader {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct FxShader {
-  void* mInternalHandle;
 
-  typedef std::map<std::string, fxparam_constptr_t> parambynamemap_t;
-  typedef std::map<std::string, const FxShaderParamBlock*> paramblockbynamemap_t;
-  typedef std::map<std::string, fxtechnique_constptr_t> techniquebynamemap_t;
-  typedef std::map<std::string, const FxComputeShader*> computebynamemap_t;
-
-  techniquebynamemap_t _techniques;
-  parambynamemap_t _parameterByName;
-  paramblockbynamemap_t _parameterBlockByName;
-  computebynamemap_t _computeShaderByName;
-
-  bool mAllowCompileFailure;
-  bool mFailedCompile;
-  std::string mName;
+  using parambynamemap_t      = std::map<std::string, fxparam_constptr_t>;
+  using paramblockbynamemap_t = std::map<std::string, const FxShaderParamBlock*>;
+  using techniquebynamemap_t  = std::map<std::string, fxtechnique_constptr_t>;
+  using computebynamemap_t    = std::map<std::string, const FxComputeShader*>;
 
   void OnReset();
 
@@ -216,7 +206,7 @@ struct FxShader {
     return mInternalHandle;
   }
 
-  static const char* GetAssetTypeNameStatic(void) {
+  static const char* assetTypeNameStatic(void) {
     return "fxshader";
   }
 
@@ -277,6 +267,16 @@ struct FxShader {
 #endif
 
   ////////////////////////////////////////////////////
+
+  void* mInternalHandle = nullptr;
+  techniquebynamemap_t _techniques;
+  parambynamemap_t _parameterByName;
+  paramblockbynamemap_t _parameterBlockByName;
+  computebynamemap_t _computeShaderByName;
+
+  bool mAllowCompileFailure = false;
+  bool mFailedCompile       = false;
+  std::string mName;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

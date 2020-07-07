@@ -311,7 +311,7 @@ public:
 protected:
   shape_factory_t mShapeFactory;
 
-  bool DoNotify(const event::Event* event) override;
+  void doNotify(const event::Event* event) override;
 };
 
 struct BulletShapeBaseInst {
@@ -370,7 +370,7 @@ public:
   BulletShapeModelData();
   ~BulletShapeModelData();
 
-  lev2::XgmModelAsset* GetAsset() { return mModelAsset; }
+  lev2::XgmModelAsset* asset() { return mModelAsset; }
   void SetModelAccessor(ork::rtti::ICastable* const& mdl);
   void GetModelAccessor(ork::rtti::ICastable*& mdl) const;
   float GetScale() const { return mfScale; }
@@ -399,7 +399,7 @@ public:
 private:
 	ork::Object* _visualDataAccessor() { return & _visualData; }
 
-  bool PostDeserialize(reflect::IDeserializer&) final;
+  bool postDeserialize(reflect::serdes::IDeserializer&) final;
 
   file::Path mHeightMapName;
   float mWorldHeight;
@@ -468,7 +468,7 @@ private:
   BulletShapeBaseInst* mShapeInst;
 
   void DoUpdate(ork::ent::Simulation* inst) final;
-  bool DoNotify(const ork::event::Event* event) final { return false; }
+  void doNotify(const ork::event::Event* event) final { return false; }
   bool DoLink(Simulation* psi) final;
   void DoStop(Simulation* psi) final;
 };

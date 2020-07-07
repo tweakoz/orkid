@@ -4,6 +4,7 @@
 #include "modulation.h"
 #include <ork/kernel/svariant.h>
 #include <ork/file/path.h>
+#include <ork/util/hexdump.inl>
 
 namespace ork::audio::singularity {
 file::Path basePath();
@@ -44,7 +45,5 @@ struct SynthData {
   float _seqCursor;
   std::string _staticBankName;
 };
-
-void hexdumpbytes(std::vector<uint8_t> bytes);
 
 } // namespace ork::audio::singularity

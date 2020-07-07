@@ -13,15 +13,18 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::asset::Asset, "Asset2");
-
-// template ork::rtti::RTTI<ork::asset::Asset, ork::Object, ork::rtti::AbstractPolicy, ork::asset::AssetClass>;
+ImplementReflectionX(ork::asset::Asset, "Asset");
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace asset {
 ///////////////////////////////////////////////////////////////////////////////
 
-void Asset::Describe() {
+const vars_t novars() {
+  static const vars_t gnovars;
+  return gnovars;
+}
+
+void Asset::describeX(object::ObjectClass* clazz) {
 }
 
 Asset::Asset() {
@@ -29,40 +32,50 @@ Asset::Asset() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Asset::SetName(PoolString name) {
-  mName = name;
+void Asset::setName(AssetPath name) {
+  _name = name;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PoolString Asset::GetName() const {
-  return mName;
+AssetPath Asset::name() const {
+  return _name;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PoolString Asset::GetType() const {
-  return rtti::safe_downcast<AssetClass*>(GetClass())->Name();
+assetset_ptr_t Asset::assetSet() const {
+  auto objclazz  = rtti::safe_downcast<object::ObjectClass*>(GetClass());
+  auto aset_anno = objclazz->annotation("AssetSet");
+  auto asset_set = aset_anno.Get<assetset_ptr_t>();
+  return asset_set;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+std::string Asset::type() const {
+  auto objclazz = rtti::safe_downcast<object::ObjectClass*>(GetClass());
+  return objclazz->Name().c_str();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 bool Asset::Load() const {
-  auto entry     = GetAssetSetEntry(this);
-  auto asset_set = GetClass()->assetSet();
-  return entry->Load(asset_set->GetTopLevel());
+  auto entry     = assetSetEntry(this);
+  auto asset_set = assetSet();
+  return entry->Load(asset_set->topLevel());
 }
 
 bool Asset::LoadUnManaged() const {
-  AssetSetEntry* entry = GetAssetSetEntry(this);
-  auto asset_set       = GetClass()->assetSet();
-  return entry->Load(asset_set->GetTopLevel());
+  AssetSetEntry* entry = assetSetEntry(this);
+  auto asset_set       = assetSet();
+  return entry->Load(asset_set->topLevel());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 bool Asset::IsLoaded() const {
-  AssetSetEntry* entry = GetAssetSetEntry(this);
+  AssetSetEntry* entry = assetSetEntry(this);
 
   return entry && entry->IsLoaded();
 }

@@ -107,6 +107,7 @@ public:
   var_t mUserData0;
   var_t mUserData1;
   int miBufferIndex;
+  void terminate();
 
 private:
   const Drawable* mpDrawable;
@@ -132,6 +133,7 @@ struct DrawableBufLayer {
   }
   void Reset(const DrawableBuffer& dB);
   DrawableBufItem& Queue(const DrawQueueXfData& xfdata, const Drawable* d);
+  void terminate();
 
   DrawableBufLayer();
 }; // ~ 100K
@@ -173,6 +175,7 @@ public:
 
   void copyCameras(const CameraDataLut& cameras);
   void Reset();
+  void terminate();
   DrawableBuffer(int ibidx);
   ~DrawableBuffer();
 
@@ -196,6 +199,7 @@ public:
   static void EndClearAndSyncReaders();
   static void ClearAndSyncReaders();
   static void ClearAndSyncWriters();
+  static void terminateAll();
 
   const CameraData* cameraData(int icam) const;
   const CameraData* cameraData(const std::string& named) const;
@@ -250,6 +254,7 @@ struct Drawable {
   void Disable() {
     mEnabled = false;
   }
+  void terminate();
 
   const ork::Object* mOwner;
   var_t mDataA;

@@ -16,8 +16,8 @@
 #include <pkg/ent/scene.h>
 #include <pkg/ent/scene.hpp>
 
-#include <ork/reflect/RegisterProperty.h>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/register.h>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/kernel/orklut.hpp>
 
 #include <ork/application/application.h>
@@ -176,7 +176,7 @@ void RacingLineInst::Sample(int racing_line_index, float progress, RacingLineSam
 	}
 }
 
-bool RacingLineData::PostDeserialize(reflect::IDeserializer &)
+bool RacingLineData::postDeserialize(reflect::serdes::IDeserializer &)
 {
 	int re_idx = 0;
 	for(orklut<int, RacingLine *>::iterator it = mRacingLines.begin();

@@ -7,13 +7,18 @@
 
 #pragma once
 
+#include <ork/orktypes.h>
 #include <ork/rtti/RTTI.h>
-#include <ork/reflect/Serializable.h>
+#include <ork/reflect/ISerializer.h>
+#include <ork/reflect/IDeserializer.h>
 #include <ork/object/ObjectClass.h>
-#include <ork/config/config.h>
 #include <ork/util/md5.h>
+#include <boost/uuid/uuid.hpp>
 
 namespace ork {
+
+object_ptr_t loadObjectFromFile(const char* filename);
+object_ptr_t loadObjectFromString(const char* jsondata);
 
 namespace event {
 class Event;
@@ -21,59 +26,38 @@ class Event;
 
 namespace object {
 class Signal;
-}
+class ObjectClass;
+} // namespace object
 
-namespace reflect { class ISerializer; class IDeserializer; class BidirectionalSerializer; }
+struct Object;
 
-//typedef rtti::RTTI<Object, rtti::ICastable, rtti::DefaultPolicy, object::ObjectClass> ObjectBase;
+struct Object : public rtti::ICastable {
 
-struct  Object : public rtti::ICastable
-{
-private:
-    RttiDeclareAbstractWithCategory( Object, rtti::ICastable, object::ObjectClass );
+  static object_ptr_t clone(object_constptr_t source);
+  static Md5Sum md5sum(object_constptr_t source);
 
-    //RttiDeclareConcrete( Object, ObjectBase );
+  RttiDeclareAbstractWithCategory(Object, rtti::ICastable, object::ObjectClass);
 
 public:
-	virtual ~Object() {}
+  Object();
+  virtual ~Object();
 
-	bool Serialize(reflect::ISerializer &) const;
-	bool SerializeInPlace(reflect::ISerializer &serializer) const;
-	bool Deserialize(reflect::IDeserializer &);
-	bool DeserializeInPlace(reflect::IDeserializer &);
+  object::ObjectClass* objectClass() const;
+  object::Signal* findSignal(ConstString name);
 
-	object::Signal *FindSignal(ConstString name);
+  virtual bool preSerialize(reflect::serdes::ISerializer&) const;
+  virtual bool preDeserialize(reflect::serdes::IDeserializer&);
+  virtual bool postSerialize(reflect::serdes::ISerializer&) const;
+  virtual bool postDeserialize(reflect::serdes::IDeserializer&);
 
-	virtual bool PreSerialize(reflect::ISerializer &) const;
-	virtual bool PreDeserialize(reflect::IDeserializer &);
-	virtual bool PostSerialize(reflect::ISerializer &) const;
-	virtual bool PostDeserialize(reflect::IDeserializer &);
+  void notify(const event::Event* pEV);
 
-	virtual Object* Clone() const;
-	Md5Sum CalcMd5() const;
-
-	bool Notify(const event::Event* pEV) { return DoNotify(pEV); }
-	bool Query(event::Event* pEV) const { return DoQuery(pEV); }
+  boost::uuids::uuid _uuid;
 
 private:
-
-	virtual bool DoNotify(const event::Event* pEV) { return false; }
-	virtual bool DoQuery(event::Event* pEV) const { return false; }
-
+  virtual void doNotify(const event::Event* pEV) {
+    return;
+  }
 };
 
-reflect::BidirectionalSerializer &operator ||(reflect::BidirectionalSerializer &, Object &);
-reflect::BidirectionalSerializer &operator ||(reflect::BidirectionalSerializer &, const Object &);
-
-template<typename T>
-inline bool DeserializeUnknownObject(ork::reflect::IDeserializer &deser, T *&value)
-{
-	ork::rtti::ICastable *obj = NULL;
-	bool result = ork::rtti::safe_downcast<ork::rtti::Category*>(ork::Object::GetClassStatic()->GetClass())->DeserializeReference(deser, obj);
-	value = ork::rtti::safe_downcast<T *>(obj);
-	return result;
-}
-
-Object *DeserializeObject(PieceString file);
-
-}
+} // namespace ork

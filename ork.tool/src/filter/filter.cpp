@@ -145,11 +145,11 @@ bool AssetFilter::ConvertFile(const char* filter_name, const tokenlist& toklist)
   if (info) {
     PoolString classname = info->classname;
 
-    rtti::Class* pclass = rtti::Class::FindClass(classname.c_str());
+    auto pclazz = dynamic_cast<object::ObjectClass*>(rtti::Class::FindClass(classname.c_str()));
 
-    OrkAssert(pclass != 0);
+    OrkAssert(pclazz != 0);
 
-    AssetFilterBase* pfilter = rtti::safe_downcast<AssetFilterBase*>(pclass->CreateObject());
+    AssetFilterBase* pfilter = rtti::safe_downcast<AssetFilterBase*>(pclazz->CreateObject());
 
     OrkAssert(pfilter != 0);
 
@@ -219,8 +219,8 @@ int Main_Filter(tokenlist toklist) {
   //////////////////////////////
   // need a gfx context for some filters
 
-  //	ork::lev2::GfxEnv::GetRef().SetCurrentRenderer( ork::lev2::EGFXENVTYPE_DUMMY );
-  ork::lev2::GfxEnv::setContextClass(ork::lev2::ContextDummy::GetClassStatic());
+  auto pclazz = dynamic_cast<object::ObjectClass*>(ork::lev2::ContextDummy::GetClassStatic());
+  ork::lev2::GfxEnv::setContextClass(pclazz);
 
   NullAppWindow* w = new NullAppWindow(0, 0, 640, 480);
   ork::lev2::GfxEnv::GetRef().RegisterWinContext(w);
@@ -267,8 +267,8 @@ int Main_FilterTree(tokenlist toklist) {
   //////////////////////////////
   // need a gfx context for some filters
 
-  // ork::lev2::GfxEnv::GetRef().SetCurrentRenderer( ork::lev2::EGFXENVTYPE_DUMMY );
-  ork::lev2::GfxEnv::setContextClass(ork::lev2::ContextDummy::GetClassStatic());
+  auto pclazz = dynamic_cast<object::ObjectClass*>(ork::lev2::ContextDummy::GetClassStatic());
+  ork::lev2::GfxEnv::setContextClass(pclazz);
   NullAppWindow* w = new NullAppWindow(0, 0, 640, 480);
 
   //////////////////////////////

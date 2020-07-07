@@ -22,63 +22,72 @@ class ConstString;
 namespace object {
 class Signal;
 class AutoSlot;
-}
+} // namespace object
 
 namespace reflect {
 
-class IObjectProperty;
+class ObjectProperty;
 class ISerializer;
 class IDeserializer;
 
-class  Description
-{
+class Description {
 public:
-	typedef orklut<ConstString, IObjectProperty *> PropertyMapType;
-	typedef orklut<ConstString, IObjectFunctor *> FunctorMapType;
-	typedef orklut<ConstString, object::Signal Object:: *> SignalMapType;
-	typedef orklut<ConstString, object::AutoSlot Object:: *> AutoSlotMapType;
-    typedef ork::svar64_t anno_t;
+  using PropertyMapType = orklut<ConstString, ObjectProperty*>;
+  using FunctorMapType  = orklut<ConstString, IObjectFunctor*>;
+  using SignalMapType   = orklut<ConstString, object::Signal Object::*>;
+  using AutoSlotMapType = orklut<ConstString, object::AutoSlot Object::*>;
+  using anno_t          = ork::svar64_t;
 
-	Description();
+  Description();
 
-	void AddProperty(const char *key, IObjectProperty *value);
-	void AddFunctor(const char *key, IObjectFunctor *functor);
-	void AddSignal(const char *key, object::Signal Object::*);
-	void AddAutoSlot(const char *key, object::AutoSlot Object::*);
+  void addProperty(const char* key, ObjectProperty* value);
+  void addFunctor(const char* key, IObjectFunctor* functor);
+  void addSignal(const char* key, object::Signal Object::*);
+  void addAutoSlot(const char* key, object::AutoSlot Object::*);
 
-	void SetParentDescription(const Description *);
+  void SetParentDescription(const Description*);
 
-	void annotateProperty( const ConstString &propname, const ConstString &key, const ConstString &val );
-	ConstString	propertyAnnotation( const ConstString &propname, const ConstString& key ) const;
+  void annotateProperty(const ConstString& propname, const ConstString& key, const ConstString& val);
+  ConstString propertyAnnotation(const ConstString& propname, const ConstString& key) const;
 
-	void annotateClass( const ConstString &key, const anno_t& val );
-	const anno_t& classAnnotation( const ConstString& key ) const;
+  void annotateClass(const ConstString& key, const anno_t& val);
+  const anno_t& classAnnotation(const ConstString& key) const;
 
-	PropertyMapType &Properties();
-	const PropertyMapType &Properties() const;
+  PropertyMapType& properties();
+  const PropertyMapType& properties() const;
 
-	const IObjectProperty *FindProperty(const ConstString &) const;
-	const IObjectFunctor *FindFunctor(const ConstString &) const;
-	object::Signal Object::*FindSignal(const ConstString &) const;
-	object::AutoSlot Object::*FindAutoSlot(const ConstString &) const;
+  const ObjectProperty* property(const ConstString&) const;
+  const IObjectFunctor* findFunctor(const ConstString&) const;
+  object::Signal Object::*findSignal(const ConstString&) const;
+  object::AutoSlot Object::*FindAutoSlot(const ConstString&) const;
 
-	bool SerializeProperties(ISerializer &, const Object *) const;
-	bool DeserializeProperties(IDeserializer &, Object *) const;
+  template <typename T> inline const T* findTypedProperty(const ConstString& named) const {
+    return dynamic_cast<const T*>(property(named));
+  }
 
-	const SignalMapType&	GetSignals() const { return mSignals; }
-	const AutoSlotMapType&	GetAutoSlots() const { return mAutoSlots; }
-	const FunctorMapType&	GetFunctors() const { return mFunctions; }
+  void serializeProperties(serdes::node_ptr_t) const;
+  void deserializeProperties(serdes::node_ptr_t) const;
+
+  const SignalMapType& GetSignals() const {
+    return mSignals;
+  }
+  const AutoSlotMapType& GetAutoSlots() const {
+    return mAutoSlots;
+  }
+  const FunctorMapType& GetFunctors() const {
+    return mFunctions;
+  }
 
 private:
-	const Description *mParentDescription;
+  const Description* _parentDescription;
 
-	PropertyMapType		mProperties;
-	FunctorMapType		mFunctions;
-	SignalMapType		mSignals;
-	AutoSlotMapType		mAutoSlots;
+  PropertyMapType mProperties;
+  FunctorMapType mFunctions;
+  SignalMapType mSignals;
+  AutoSlotMapType mAutoSlots;
 
-	orklut<ConstString,anno_t> mClassAnnotations;
-
+  orklut<ConstString, anno_t> mClassAnnotations;
 };
 
-} }
+} // namespace reflect
+} // namespace ork

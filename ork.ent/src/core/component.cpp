@@ -13,9 +13,9 @@
 #include <pkg/ent/componenttable.h>
 
 #include <ork/kernel/orklut.hpp>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
-#include <ork/reflect/DirectObjectVectorPropertyType.hpp>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
+#include <ork/reflect/properties/DirectTypedVector.hpp>
+#include <ork/reflect/properties/register.h>
 #include <ork/application/application.h>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::ComponentDataClass, "ComponentDataClass");
@@ -26,7 +26,7 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::EditorPropMapInst, "EditorPropMapInst");
 
 template class ork::orklut<ork::PoolString, orklist<ork::ent::ComponentInst*>>;
 template class ork::orklut<ork::PoolString, orklist<ork::ent::ComponentData*>>;
-template class ork::reflect::DirectObjectVectorPropertyType<orkvector<ork::PoolString>>;
+template class ork::reflect::DirectTypedVector<orkvector<ork::PoolString>>;
 
 namespace ork { namespace ent {
 

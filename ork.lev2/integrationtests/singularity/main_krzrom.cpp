@@ -2,7 +2,7 @@
 #include <ork/lev2/aud/singularity/krzdata.h>
 
 int main(int argc, char** argv) {
-  auto qtapp    = createEZapp(argc, argv);
+  auto app      = createEZapp(argc, argv);
   auto bank     = std::make_shared<KrzSynthData>();
   auto drums    = bank->getProgramByName("Castle_Drums");
   auto doomsday = bank->getProgramByName("Doomsday");
@@ -29,7 +29,7 @@ int main(int argc, char** argv) {
     enqueue_audio_event(drums, t, 1.0, 48);
   }
   //////////////////////////////////////////////////////////////////////////////
-  qtapp->setRefreshPolicy({EREFRESH_FASTEST, 0});
-  qtapp->exec();
+  app->setRefreshPolicy({EREFRESH_FASTEST, 0});
+  app->exec();
   return 0;
 }

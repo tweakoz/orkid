@@ -67,8 +67,9 @@ class SimpleAnimatableData final : public ork::ent::ComponentData {
 
   bool HasAnimation(ork::PoolString name) const;
 
-private:
   ~SimpleAnimatableData();
+
+private:
   ork::ent::ComponentInst* createComponent(ork::ent::Entity* pent) const final;
 
   AnimationMap mAnimationMap;
@@ -229,7 +230,7 @@ private:
   void DoUpdate(ork::ent::Simulation* inst) final;
   bool DoStart(ork::ent::Simulation* psi, const ork::fmtx4& world) final;
   bool DoLink(ork::ent::Simulation* psi) final;
-  bool DoNotify(const ork::event::Event* event) final;
+  void doNotify(const ork::event::Event* event) final;
 
   BodyPartMap mBodyPartMap;
   ork::lev2::xgmmodelinst_ptr_t _modelinst;

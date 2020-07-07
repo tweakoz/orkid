@@ -76,7 +76,7 @@ struct LPCLIP : public DspBlock {
 // newstyle
 /////////////////
 struct LowPassData : public DspBlockData {
-  LowPassData();
+  LowPassData(std::string name);
   dspblk_ptr_t createInstance() const override;
 };
 struct LowPass : public DspBlock {
@@ -88,7 +88,7 @@ struct LowPass : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct HighPassData : public DspBlockData {
-  HighPassData();
+  HighPassData(std::string name);
   dspblk_ptr_t createInstance() const override;
 };
 struct HighPass : public DspBlock {
@@ -100,7 +100,7 @@ struct HighPass : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct AllPassData : public DspBlockData {
-  AllPassData();
+  AllPassData(std::string name);
   dspblk_ptr_t createInstance() const override;
 };
 struct AllPass : public DspBlock {
@@ -112,7 +112,7 @@ struct AllPass : public DspBlock {
   void doKeyOn(const KeyOnInfo& koi) final;
 };
 struct HighFreqStimulatorData : public DspBlockData {
-  HighFreqStimulatorData();
+  HighFreqStimulatorData(std::string name);
   dspblk_ptr_t createInstance() const override;
 };
 struct HighFreqStimulator : public DspBlock {
@@ -127,7 +127,7 @@ struct HighFreqStimulator : public DspBlock {
 };
 struct TwoPoleLowPassData : public DspBlockData {
   // krzname: "2POLE LOWPASS"
-  TwoPoleLowPassData();
+  TwoPoleLowPassData(std::string name);
   dspblk_ptr_t createInstance() const override;
 };
 struct TwoPoleLowPass : public DspBlock {
@@ -141,7 +141,7 @@ struct TwoPoleLowPass : public DspBlock {
 
 struct TwoPoleAllPassData : public DspBlockData {
   // krzname: "2POLE ALLPASS"
-  TwoPoleAllPassData();
+  TwoPoleAllPassData(std::string name);
   dspblk_ptr_t createInstance() const override;
 };
 struct TwoPoleAllPass : public DspBlock {
@@ -155,7 +155,7 @@ struct TwoPoleAllPass : public DspBlock {
 
 struct FourPoleLowPassWithSepData : public DspBlockData {
   // krzname: "4POLE LOPASS W/SEP"
-  FourPoleLowPassWithSepData();
+  FourPoleLowPassWithSepData(std::string name);
   dspblk_ptr_t createInstance() const override;
 };
 struct FourPoleLowPassWithSep : public DspBlock {

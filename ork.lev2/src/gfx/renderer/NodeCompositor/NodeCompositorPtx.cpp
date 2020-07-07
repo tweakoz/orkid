@@ -11,8 +11,8 @@
 #include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/lev2_asset.h>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/DirectTyped.hpp>
+#include <ork/reflect/properties/registerX.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::lev2::PtxCompositingNode, "PtxCompositingNode");
@@ -34,7 +34,7 @@ struct PtxImpl {
       _blit2screenmtl.gpuInit(pTARG);
 
       _output                   = new lev2::RtGroup(pTARG, iW, iH);
-      _outputbuffer             = new lev2::RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA16F, iW, iH);
+      _outputbuffer             = new lev2::RtBuffer(lev2::RtgSlot::Slot0, lev2::EBufferFormat::RGBA16F, iW, iH);
       _outputbuffer->_debugName = FormatString("PtxCompositingNode::output");
       _output->SetMrt(0, _outputbuffer);
     }
@@ -115,7 +115,7 @@ struct PtxImpl {
       mtl.SetTexture(_resultTexture);
       mtl.SetTexture2(nullptr);
       mtl.SetColorMode(GfxMaterial3DSolid::EMODE_USER);
-      mtl._rasterstate.SetBlending(EBLENDING_OFF);
+      mtl._rasterstate.SetBlending(Blending::OFF);
       mtl._rasterstate.SetDepthTest(EDEPTHTEST_OFF);
       this_buf->RenderMatOrthoQuad(
           vprect.asSRect(),
@@ -148,6 +148,7 @@ typedef std::set<PtxCompositingNode*> instex_set_t;
 ork::LockedResource<instex_set_t> ginstexset;
 ///////////////////////////////////////////////////////////////////////////////
 void PtxCompositingNode::describeX(class_t* c) {
+  /*
   c->accessorProperty("ReturnTexture", &PtxCompositingNode::GetTextureAccessor, &PtxCompositingNode::SetTextureAccessor)
       ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
       ->annotate<ConstString>("editor.assettype", "lev2tex")
@@ -195,6 +196,7 @@ void PtxCompositingNode::describeX(class_t* c) {
   };
 
   lev2::TextureAsset::GetClassStatic()->AddLoader(nodins_loader);
+  */
 }
 ///////////////////////////////////////////////////////////////////////////////
 PtxCompositingNode::PtxCompositingNode()

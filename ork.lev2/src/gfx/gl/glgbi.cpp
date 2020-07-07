@@ -49,13 +49,13 @@ typedef ork::MpMcBoundedQueue<GlVtxBufMapData*> vtxbufmapdata_q_t;
 ///////////////////////////////////////////////////////////
 
 struct GlVtxBufMapData {
-  vtxbufmapdata_q_t& mParentQ;
+  vtxbufmapdata_q_t& _parentQ;
   int mPotSize;
   int mCurSize;
   void* mpData;
 
   GlVtxBufMapData(vtxbufmapdata_q_t& oq, int potsize)
-      : mParentQ(oq)
+      : _parentQ(oq)
       , mPotSize(potsize)
       , mCurSize(0) {
     mpData = malloc(potsize);
@@ -64,7 +64,7 @@ struct GlVtxBufMapData {
     free(mpData);
   }
   void ReturnToPool() {
-    mParentQ.push(this);
+    _parentQ.push(this);
   }
 };
 
@@ -770,7 +770,7 @@ bool GlGeometryBufferInterface::BindStreamSources(const VertexBufferBase& VBuf, 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlGeometryBufferInterface::DrawPrimitiveEML(const VertexBufferBase& VBuf, EPrimitiveType eType, int ivbase, int ivcount) {
+void GlGeometryBufferInterface::DrawPrimitiveEML(const VertexBufferBase& VBuf, PrimitiveType eType, int ivbase, int ivcount) {
   ////////////////////////////////////////////////////////////////////
   GL_ERRORCHECK();
   bool bOK = BindVertexStreamSource(VBuf);
@@ -782,40 +782,40 @@ void GlGeometryBufferInterface::DrawPrimitiveEML(const VertexBufferBase& VBuf, E
 
   int inum = (ivcount == 0) ? VBuf.GetNumVertices() : ivcount;
 
-  if (eType == EPrimitiveType::NONE) {
+  if (eType == PrimitiveType::NONE) {
     eType = VBuf.GetPrimType();
   }
   if (inum) {
     GL_ERRORCHECK();
     switch (eType) {
-      case EPrimitiveType::LINES: { // orkprintf( "drawarrays: <ivbase %d> <inum %d> lines\n", ivbase, inum );
+      case PrimitiveType::LINES: { // orkprintf( "drawarrays: <ivbase %d> <inum %d> lines\n", ivbase, inum );
         glDrawArrays(GL_LINES, ivbase, inum);
         break;
       }
-      case EPrimitiveType::QUADS:
+      case PrimitiveType::QUADS:
         // orkprintf( "drawarrays: %d quads\n", inum );
         // GL_ERRORCHECK();
         // glDrawArrays( GL_QUADS, ivbase, inum );
         // GL_ERRORCHECK();
         // miTrianglesRendered += (inum/2);
         break;
-      case EPrimitiveType::TRIANGLES:
+      case PrimitiveType::TRIANGLES:
         // printf( "drawarrays: <ivbase %d> <inum %d> tris\n", ivbase, inum );
         glDrawArrays(GL_TRIANGLES, ivbase, inum);
         miTrianglesRendered += (inum / 3);
         break;
-      case EPrimitiveType::TRIANGLESTRIP:
+      case PrimitiveType::TRIANGLESTRIP:
         // printf( "drawarrays: <ivbase %d> <inum %d> tristrip\n", ivbase, inum );
         glDrawArrays(GL_TRIANGLE_STRIP, ivbase, inum);
         miTrianglesRendered += (inum - 2);
         break;
-      case EPrimitiveType::POINTS:
+      case PrimitiveType::POINTS:
         GL_ERRORCHECK();
         glPointSize(1.0f);
         glDrawArrays(GL_POINTS, ivbase, inum);
         GL_ERRORCHECK();
         break;
-      case EPrimitiveType::PATCHES:
+      case PrimitiveType::PATCHES:
         GL_ERRORCHECK();
         glPointSize(32.0f);
 #if defined(ORK_OSX)
@@ -827,7 +827,7 @@ void GlGeometryBufferInterface::DrawPrimitiveEML(const VertexBufferBase& VBuf, E
         glDrawArrays(GL_PATCHES, ivbase, inum);
         GL_ERRORCHECK();
         break;
-        /*			case EPrimitiveType::POINTSPRITES:
+        /*			case PrimitiveType::POINTSPRITES:
                         GL_ERRORCHECK();
                         glPointSize( mTargetGL.currentMaterial()->mfParticleSize );
 
@@ -855,7 +855,7 @@ void GlGeometryBufferInterface::DrawPrimitiveEML(const VertexBufferBase& VBuf, E
 void GlGeometryBufferInterface::DrawIndexedPrimitiveEML(
     const VertexBufferBase& VBuf,
     const IndexBufferBase& IdxBuf,
-    EPrimitiveType eType,
+    PrimitiveType eType,
     int ivbase,
     int ivcount) {
   GL_ERRORCHECK();
@@ -880,21 +880,21 @@ void GlGeometryBufferInterface::DrawIndexedPrimitiveEML(
   if (iNum) {
     GL_ERRORCHECK();
     switch (eType) {
-      case EPrimitiveType::LINES: { // orkprintf( "drawarrays: %d lines\n", iNum );
+      case PrimitiveType::LINES: { // orkprintf( "drawarrays: %d lines\n", iNum );
         glprimtype = GL_LINES;
         break;
       }
-      case EPrimitiveType::TRIANGLES:
+      case PrimitiveType::TRIANGLES:
         // printf( "drawindexedtris inum<%d> imin<%d> imax<%d>\n", iNum/3, imin, imax );
         glprimtype = GL_TRIANGLES;
         miTrianglesRendered += (iNum / 3);
         break;
-      case EPrimitiveType::TRIANGLESTRIP:
+      case PrimitiveType::TRIANGLESTRIP:
         // printf( "drawindexedtristrip inum<%d>\n", iNum-2 );
         glprimtype = GL_TRIANGLE_STRIP;
         miTrianglesRendered += (iNum - 2);
         break;
-      case EPrimitiveType::POINTS:
+      case PrimitiveType::POINTS:
         glprimtype = GL_POINTS;
         break;
       default:
@@ -918,7 +918,7 @@ void GlGeometryBufferInterface::DrawIndexedPrimitiveEML(
 void GlGeometryBufferInterface::DrawInstancedIndexedPrimitiveEML(
     const VertexBufferBase& VBuf,
     const IndexBufferBase& IdxBuf,
-    EPrimitiveType eType,
+    PrimitiveType eType,
     size_t instance_count) {
   GL_ERRORCHECK();
   ////////////////////////////////////////////////////////////////////
@@ -931,21 +931,21 @@ void GlGeometryBufferInterface::DrawInstancedIndexedPrimitiveEML(
   if (iNum) {
     GL_ERRORCHECK();
     switch (eType) {
-      case EPrimitiveType::LINES: { // orkprintf( "drawarrays: %d lines\n", iNum );
+      case PrimitiveType::LINES: { // orkprintf( "drawarrays: %d lines\n", iNum );
         glprimtype = GL_LINES;
         break;
       }
-      case EPrimitiveType::TRIANGLES:
+      case PrimitiveType::TRIANGLES:
         // printf( "drawindexedtris inum<%d> imin<%d> imax<%d>\n", iNum/3, imin, imax );
         glprimtype = GL_TRIANGLES;
         miTrianglesRendered += (iNum / 3) * instance_count;
         break;
-      case EPrimitiveType::TRIANGLESTRIP:
+      case PrimitiveType::TRIANGLESTRIP:
         // printf( "drawindexedtristrip inum<%d>\n", iNum-2 );
         glprimtype = GL_TRIANGLE_STRIP;
         miTrianglesRendered += (iNum - 2) * instance_count;
         break;
-      case EPrimitiveType::POINTS:
+      case PrimitiveType::POINTS:
         glprimtype = GL_POINTS;
         break;
       default:

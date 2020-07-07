@@ -20,7 +20,7 @@
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/gfx/texman.h>
 
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <pkg/ent/entity.h>
 #include <pkg/ent/scene.h>

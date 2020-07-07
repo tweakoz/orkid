@@ -96,7 +96,7 @@ public:
 //////////////////////////////////////////////////////////////////////////////
 
 class SpiralEmitterData : public ork::Object {
-  RttiDeclareConcrete(SpiralEmitterData, ork::Object);
+  DeclareConcreteX(SpiralEmitterData, ork::Object);
 
 public:
   SpiralEmitterData();
@@ -316,13 +316,13 @@ inline Char4 PoolString2Char4(const PoolString& ps) {
 ///////////////////////////////////////////////////////////////////////////////
 
 enum EmitterDirection {
-  EMITDIR_CONSTANT = 0,
-  EMITDIR_VEL,
-  EMITDIR_CROSS_X,
-  EMITDIR_CROSS_Y,
-  EMITDIR_CROSS_Z,
-  EMITDIR_TO_POINT,
-  EMITDIR_USER,
+  CONSTANT = 0,
+  VEL,
+  CROSS_X,
+  CROSS_Y,
+  CROSS_Z,
+  TO_POINT,
+  USER,
 };
 
 struct EmitterCtx {
@@ -358,11 +358,11 @@ public:
   virtual void ComputePosDir(float fi, fvec3& pos, fvec3& dir) = 0;
 };
 
-enum ParticleItemAlignment {
-  EPIA_BILLBOARD = 0,
-  EPIA_XZ,
-  EPIA_XY,
-  EPIA_YZ,
+enum class ParticleItemAlignment {
+  BILLBOARD = 0,
+  XZ,
+  XY,
+  YZ,
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -372,7 +372,7 @@ enum ParticleItemAlignment {
 class ParticleItemBase;
 
 class ParticleSystemBase : public ork::Object {
-  RttiDeclareAbstract(ParticleSystemBase, ork::Object);
+  DeclareAbstractX(ParticleSystemBase, ork::Object);
 
 public:
   ParticleSystemBase(const ParticleItemBase& itemb);
@@ -400,7 +400,7 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 class ParticleItemBase : public ork::Object {
-  RttiDeclareAbstract(ParticleItemBase, ork::Object);
+  DeclareAbstractX(ParticleItemBase, ork::Object);
 
 public:
   float GetPreCharge() const {

@@ -14,7 +14,7 @@
 #include <ork/file/path.h>
 #include <ork/kernel/kernel.h>
 #include <ork/kernel/datablock.h>
-#include <ork/kernel/varmap.inl>
+#include <ork/asset/Asset.h>
 
 namespace ork { namespace lev2 {
 
@@ -37,17 +37,17 @@ enum ETextureUsage {
 
 struct TextureSamplingModeData {
   TextureSamplingModeData()
-      : mTexAddrModeU(ETEXADDR_WRAP)
-      , mTexAddrModeV(ETEXADDR_WRAP)
+      : mTexAddrModeU(TextureAddressMode::WRAP)
+      , mTexAddrModeV(TextureAddressMode::WRAP)
       , mTexFiltModeMin(ETEXFILT_POINT)
       , mTexFiltModeMag(ETEXFILT_POINT)
       , mTexFiltModeMip(ETEXFILT_POINT) {
   }
 
-  ETextureAddressMode GetAddrModeU() const {
+  TextureAddressMode GetAddrModeU() const {
     return mTexAddrModeU;
   }
-  ETextureAddressMode GetAddrModeV() const {
+  TextureAddressMode GetAddrModeV() const {
     return mTexAddrModeV;
   }
   ETextureFilterMode GetFiltModeMin() const {
@@ -60,8 +60,8 @@ struct TextureSamplingModeData {
     return mTexFiltModeMip;
   }
 
-  ETextureAddressMode mTexAddrModeU;
-  ETextureAddressMode mTexAddrModeV;
+  TextureAddressMode mTexAddrModeU;
+  TextureAddressMode mTexAddrModeV;
   ETextureFilterMode mTexFiltModeMin;
   ETextureFilterMode mTexFiltModeMag;
   ETextureFilterMode mTexFiltModeMip;

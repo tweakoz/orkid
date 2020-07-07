@@ -15,6 +15,7 @@
 #include <ork/lev2/ui/surface.h>
 #include <ork/lev2/ui/viewport.h>
 #include <ork/lev2/ui/panel.h>
+#include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/lev2/ui/event.h>
 #include <ork/lev2/ezapp.h> // todo move updatedata_ptr_t out..
 
@@ -91,6 +92,8 @@ struct ItemDrawReq {
 ///////////////////////////////////////////////////////////////////////////////
 struct HudPanel {
   void setRect(int iX, int iY, int iW, int iH, bool snap = false);
+  ui::anchor::layout_ptr_t _panelLayout;
+  ui::layoutgroup_ptr_t _layoutgroup;
   ui::panel_ptr_t _uipanel;
   ui::surface_ptr_t _uisurface;
 };
@@ -142,18 +145,49 @@ struct SignalScope {
   varmap::VarMap _vars;
 };
 ///////////////////////////////////////////////////////////////////////////////
-signalscope_ptr_t create_oscilloscope(hudvp_ptr_t vp, std::string named = "");
-signalscope_ptr_t create_spectrumanalyzer(hudvp_ptr_t vp, std::string named = "");
-signalscope_ptr_t create_envelope_analyzer(hudvp_ptr_t vp, std::string named = "");
-hudpanel_ptr_t createProgramView(hudvp_ptr_t vp, std::string named = "");
-hudpanel_ptr_t createProfilerView(hudvp_ptr_t vp, std::string named = "");
+signalscope_ptr_t create_oscilloscope(
+    hudvp_ptr_t vp, //
+    const ui::anchor::Bounds& bounds,
+    std::string named = "");
+signalscope_ptr_t create_spectrumanalyzer(
+    hudvp_ptr_t vp, //
+    const ui::anchor::Bounds& bounds,
+    std::string named = "");
+signalscope_ptr_t create_envelope_analyzer(
+    hudvp_ptr_t vp, //
+    const ui::anchor::Bounds& bounds,
+    std::string named = "");
+hudpanel_ptr_t createProgramView(
+    hudvp_ptr_t vp, //
+    const ui::anchor::Bounds& bounds,
+    std::string named = "");
+hudpanel_ptr_t createProfilerView(
+    hudvp_ptr_t vp, //
+    const ui::anchor::Bounds& bounds,
+    std::string named = "");
+hudpanel_ptr_t createEnvYmEditView(
+    hudvp_ptr_t vp, //
+    std::string named,
+    fvec4 color,
+    controllerdata_ptr_t envdata,
+    const ui::anchor::Bounds& bounds);
+hudpanel_ptr_t createPmxEditView(
+    hudvp_ptr_t vp, //
+    std::string named,
+    fvec4 color,
+    dspblkdata_ptr_t dbdata,
+    const ui::anchor::Bounds& bounds);
 ///////////////////////////////////////////////////////////////////////////////
-struct HudViewport final : public ui::Viewport {
-  HudViewport();
-  void DoDraw(ui::drawevent_constptr_t drwev) override;
+struct HudLayoutGroup final : public ui::LayoutGroup {
+  HudLayoutGroup();
   void onUpdateThreadTick(ui::updatedata_ptr_t updata);
   std::unordered_set<hudpanel_ptr_t> _hudpanels;
-  int _updcount = 0;
+  std::map<char, int> _notemap;
+  std::map<char, int> _handledkeymap;
+  std::map<int, programInst*> _activenotes;
+  int _updcount    = 0;
+  int _velocity    = 127;
+  int _octaveshift = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

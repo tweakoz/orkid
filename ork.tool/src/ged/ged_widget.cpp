@@ -8,9 +8,9 @@
 #include <orktool/qtui/qtui_tool.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <orktool/qtui/qtmainwin.h>
-#include <ork/reflect/IProperty.h>
-#include <ork/reflect/IObjectProperty.h>
-#include <ork/reflect/RegisterProperty.h>
+
+#include <ork/reflect/properties/ObjectProperty.h>
+#include <ork/reflect/properties/register.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <orktool/ged/ged.h>
 #include <ork/lev2/gfx/dbgfontman.h>
@@ -76,7 +76,7 @@ GedWidget::~GedWidget() {
   }
 }
 
-void GedWidget::PropertyInvalidated(ork::Object* pobj, const reflect::IObjectProperty* prop) {
+void GedWidget::PropertyInvalidated(ork::Object* pobj, const reflect::ObjectProperty* prop) {
   if (mRootItem) {
     orkstack<GedItemNode*> stackofnodes;
     stackofnodes.push(mRootItem);

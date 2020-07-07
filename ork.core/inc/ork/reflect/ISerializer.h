@@ -7,46 +7,73 @@
 
 #pragma once
 
-#include <ork/config/config.h>
-#include <ork/kernel/string/PieceString.h>
-#include <stdint.h>
+#include <stack>
+#include "serialize/serdes.h"
 
-namespace ork { namespace rtti {
-class ICastable;
-}} // namespace ork::rtti
+namespace ork::reflect::serdes {
 
-namespace ork { namespace reflect {
-
-class IProperty;
-class IObjectProperty;
-class IObjectArrayProperty;
-class Command;
-// typedef ork::Object Serializable;
-
-class ISerializer {
+struct ISerializer {
 public:
-  virtual bool Serialize(const bool&) = 0;
-  virtual bool Serialize(const char&) = 0;
-  virtual bool Serialize(const short&) = 0;
-  virtual bool Serialize(const int&) = 0;
-  virtual bool Serialize(const long&) = 0;
-  virtual bool Serialize(const float&) = 0;
-  virtual bool Serialize(const double&) = 0;
-  virtual bool Serialize(const rtti::ICastable*) = 0;
-  virtual bool Serialize(const PieceString&) = 0;
-  virtual void Hint(const PieceString&) = 0;
-  virtual void Hint(const PieceString&, intptr_t ival) = 0;
+  node_ptr_t topNode();
+  node_ptr_t serializeRoot(object_constptr_t);
 
-  virtual bool Serialize(const IProperty*) = 0;
-  virtual bool Serialize(const IObjectProperty*, const Object*) = 0;
-
-  virtual bool SerializeData(unsigned char*, size_t) = 0;
-
-  virtual bool ReferenceObject(const rtti::ICastable*) = 0;
-  virtual bool BeginCommand(const Command&) = 0;
-  virtual bool EndCommand(const Command&) = 0;
+  virtual node_ptr_t pushNode(std::string named, NodeType type) {
+    return nullptr;
+  }
+  virtual void popNode() {
+  }
+  virtual node_ptr_t serializeObject(node_ptr_t parnode) {
+    return node_ptr_t(nullptr);
+  }
+  virtual node_ptr_t serializeMapElement(node_ptr_t elemnode) {
+    return node_ptr_t(nullptr);
+  }
+  virtual void serializeLeaf(node_ptr_t leafnode) {
+    return;
+  }
 
   virtual ~ISerializer();
+
+  std::unordered_set<std::string> _reftracker;
+  std::stack<node_ptr_t> _nodestack;
+  node_ptr_t _rootnode;
 };
 
-}} // namespace ork::reflect
+template <typename T>
+serdes::node_ptr_t serializeArraySubLeaf(
+    serdes::node_ptr_t arynode, //
+    T inp,
+    int index) {
+  auto serializer         = arynode->_serializer;
+  auto instance           = arynode->_ser_instance;
+  auto elemnode           = serializer->pushNode("aryelem", serdes::NodeType::ARRAY_ELEMENT_LEAF);
+  elemnode->_index        = index;
+  elemnode->_parent       = arynode;
+  elemnode->_ser_instance = instance;
+  elemnode->_serializer   = serializer;
+  elemnode->_value.template Set<T>(inp);
+  serializer->serializeMapElement(elemnode);
+  serializer->popNode(); // pop elemnode
+  return elemnode;
+}
+
+template <typename T>
+serdes::node_ptr_t serializeMapSubLeaf(
+    serdes::node_ptr_t mapnode, //
+    std::string key,
+    T inp) {
+  auto serializer = mapnode->_serializer;
+  auto instance   = mapnode->_ser_instance;
+  auto elemnode   = serializer->pushNode(key, serdes::NodeType::MAP_ELEMENT_LEAF);
+  elemnode->_key  = key;
+  elemnode->_value.template Set<T>(inp);
+  elemnode->_index        = 0;
+  elemnode->_parent       = mapnode;
+  elemnode->_ser_instance = instance;
+  elemnode->_serializer   = serializer;
+  auto childnode          = serializer->serializeMapElement(elemnode);
+  serializer->popNode(); // pop element node
+  return elemnode;
+} // namespace ork::reflect::serdes
+
+} // namespace ork::reflect::serdes

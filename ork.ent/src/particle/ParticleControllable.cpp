@@ -11,7 +11,7 @@
 #include <pkg/ent/entity.hpp>
 #include <pkg/ent/scene.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
@@ -20,8 +20,8 @@
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <pkg/ent/ParticleControllable.h>
 #include <ork/reflect/enum_serializer.inl>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/kernel/orklut.hpp>
 #include <pkg/ent/dataflow.h>
 
@@ -191,7 +191,7 @@ void ParticleControllableInst::DoUpdate(ork::ent::Simulation* inst) {
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool ParticleControllableInst::DoNotify(const ork::event::Event* event) {
+bool ParticleControllableInst::doNotify(const ork::event::Event* event) {
   return false;
 }
 ///////////////////////////////////////////////////////////////////////////////

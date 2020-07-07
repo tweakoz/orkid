@@ -18,6 +18,31 @@
 
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
+void synth::nextEffect() {
+  _eventmap.atomicOp([this](eventmap_t& emap) { //
+    emap.insert(std::make_pair(0.0f, [this]() {
+      for (auto bus : _outputBusses) {
+
+        ///////////////////////////////
+        auto it = _fxcurpreset;
+        if (it == _fxpresets.end()) {
+          it = _fxpresets.begin();
+        } else {
+          it++;
+        }
+        if (it == _fxpresets.end()) {
+          it = _fxpresets.begin();
+        }
+        ///////////////////////////////
+        _fxcurpreset    = it;
+        auto nextpreset = _fxcurpreset->second;
+        bus.second->setBusDSP(nextpreset);
+        bus.second->_fxname = it->first;
+      }
+    }));
+  });
+}
+///////////////////////////////////////////////////////////////////////////////
 void OutputBus::resize(int numframes) {
   _buffer.resize(numframes);
   if (_dsplayer) {
@@ -26,6 +51,11 @@ void OutputBus::resize(int numframes) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OutputBus::setBusDSP(lyrdata_ptr_t ld) {
+  if (_dsplayer) {
+    delete _dsplayer;
+    _dsplayer = nullptr;
+  }
+
   _dsplayerdata        = ld;
   auto l               = new Layer;
   l->_is_bus_processor = true;
@@ -63,9 +93,8 @@ synth::synth()
     , _soloLayer(-1)
     , _timeaccum(0.0f)
     , _hudpage(0)
-    , _oswidth(0.030f * getSampleRate()) //
-    , _ostriglev(0.0f)
     , _masterGain(1.0f) { //
+  _fxcurpreset = _fxpresets.rbegin().base();
 
   _tempbus         = std::make_shared<OutputBus>();
   _tempbus->_name  = "temp-dsp";
@@ -84,7 +113,7 @@ synth::synth()
     _allProgInsts.insert(pi);
   }
 
-  _hudvp = std::make_shared<HudViewport>();
+  _hudvp = std::make_shared<HudLayoutGroup>();
 
   resize(1);
 
@@ -213,7 +242,8 @@ void synth::prevProgram() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 programInst* synth::liveKeyOn(int note, int velocity, prgdata_constptr_t pdata) {
-  assert(pdata);
+  if (not pdata)
+    return nullptr;
   programInst* pi = nullptr;
   _freeProgInst.atomicOp([&pi](proginstset_t& piset) {
     auto it = piset.begin();

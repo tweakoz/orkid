@@ -449,34 +449,36 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
     //////////////////////////////////////
     // setup dsp graph
     //////////////////////////////////////
+    auto dconame        = FormatString("dco%d", dcochannel);
+    auto dcoampname     = FormatString("amp%d", dcochannel);
     auto dcostage       = layerdata->stageByName("DCO");
     auto ampstage       = layerdata->stageByName("AMP");
-    auto dco            = dcostage->appendTypedBlock<CZX>(oscdata, dcochannel);
-    auto amp            = ampstage->appendTypedBlock<AMP_MONOIO>();
+    auto dco            = dcostage->appendTypedBlock<CZX>(dconame, oscdata, dcochannel);
+    auto amp            = ampstage->appendTypedBlock<AMP_MONOIO>(dcoampname);
     dco->_dspchannel[0] = dcochannel;
     amp->_dspchannel[0] = dcochannel;
     //////////////////////////////////////
     // setup modulators
     //////////////////////////////////////
-    auto& pitch_mod      = dco->_paramd[0]._mods;
-    pitch_mod._src1      = DCOENV;
-    pitch_mod._src1Depth = 1.0f;
+    auto pitch_mod        = dco->_paramd[0]->_mods;
+    pitch_mod->_src1      = DCOENV;
+    pitch_mod->_src1Depth = 1.0f;
     /////////////////////////////////////////////////
-    auto& modulation_index      = dco->_paramd[1]._mods;
-    modulation_index._src1      = DCWENV;
-    modulation_index._src1Depth = float(oscdata->_dcwDepth) / 15.0f;
+    auto modulation_index        = dco->_paramd[1]->_mods;
+    modulation_index->_src1      = DCWENV;
+    modulation_index->_src1Depth = float(oscdata->_dcwDepth) / 15.0f;
     /////////////////////////////////////////////////
-    auto& amp_param = amp->_paramd[0];
-    amp_param.useDefaultEvaluator();
-    amp_param._mods._src1      = DCAENV;
-    amp_param._mods._src1Depth = float(oscdata->_dcaDepth) / 15.0f;
+    auto amp_param = amp->_paramd[0];
+    amp_param->useDefaultEvaluator();
+    amp_param->_mods->_src1      = DCAENV;
+    amp_param->_mods->_src1Depth = float(oscdata->_dcaDepth) / 15.0f;
     /////////////////////////////////////////////////
     if (dcochannel == 1) { // add detune
-      auto DETUNE             = layerdata->appendController<CustomControllerData>("DCO1DETUNE");
-      pitch_mod._src2         = DETUNE;
-      pitch_mod._src2MinDepth = 1.0;
-      pitch_mod._src2MaxDepth = 1.0;
-      DETUNE->_onkeyon        = [czprogdata](
+      auto DETUNE              = layerdata->appendController<CustomControllerData>("DCO1DETUNE");
+      pitch_mod->_src2         = DETUNE;
+      pitch_mod->_src2MinDepth = 1.0;
+      pitch_mod->_src2MaxDepth = 1.0;
+      DETUNE->_onkeyon         = [czprogdata](
                              CustomControllerInst* cci, //
                              const KeyOnInfo& KOI) {    //
         cci->_curval = czprogdata->_detuneCents;
@@ -523,7 +525,7 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
     case 1: { // none
       if (czprogdata->numOscs() == 2) {
         auto modstage = layerdata->stageByName("MOD");
-        auto mix      = modstage->appendTypedBlock<SUM2>();
+        auto mix      = modstage->appendTypedBlock<SUM2>("nomod");
       }
       break;
     }
@@ -535,7 +537,7 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
       OrkAssert(czprogdata->numOscs() == 2);
       czprogdata->_oscData[1]->_noisemod = true;
       auto modstage                      = layerdata->stageByName("MOD");
-      auto mix                           = modstage->appendTypedBlock<SUM2>();
+      auto mix                           = modstage->appendTypedBlock<SUM2>("noisemod-1");
       break;
     }
     case 4:                           // ring 1
@@ -544,9 +546,9 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
         return nullptr;
       auto modstage = layerdata->stageByName("MOD");
       if (modulation_nomix)
-        modstage->appendTypedBlock<RingMod>();
+        modstage->appendTypedBlock<RingMod>("ringmod");
       else
-        modstage->appendTypedBlock<RingModSumA>();
+        modstage->appendTypedBlock<RingModSumA>("ringmod-1");
       break;
     }
     case 6: // ring 3
@@ -558,7 +560,7 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
       OrkAssert(czprogdata->numOscs() == 2);
       czprogdata->_oscData[1]->_noisemod = true;
       auto modstage                      = layerdata->stageByName("MOD");
-      auto mix                           = modstage->appendTypedBlock<SUM2>();
+      auto mix                           = modstage->appendTypedBlock<SUM2>("noisemod-2");
       break;
     }
   }

@@ -33,8 +33,8 @@ int main(int argc, char** argv) {
     layerdata->_algdata = configureCz1Algorithm(layerdata, 1);
     auto dcostage       = layerdata->stageByName("DCO");
     auto ampstage       = layerdata->stageByName("AMP");
-    auto dco            = dcostage->appendTypedBlock<CZX>(czoscdata, 0);
-    auto amp            = ampstage->appendTypedBlock<AMP_MONOIO>();
+    auto dco            = dcostage->appendTypedBlock<CZX>("dco", czoscdata, 0);
+    auto amp            = ampstage->appendTypedBlock<AMP_MONOIO>("amp");
     //////////////////////////////////////
     // setup envelope
     //////////////////////////////////////
@@ -83,34 +83,35 @@ int main(int argc, char** argv) {
     //////////////////////////////////////
     // setup modulation routing
     //////////////////////////////////////
-    auto& pitch_mod      = dco->_paramd[0]._mods;
-    pitch_mod._src1      = DCOENV;
-    pitch_mod._src1Depth = 1.0f;
+    auto pitch_mod        = dco->_paramd[0]->_mods;
+    pitch_mod->_src1      = DCOENV;
+    pitch_mod->_src1Depth = 1.0f;
     //////////////////////////////////////
-    auto& modulation_index_param      = dco->_paramd[1]._mods;
-    modulation_index_param._src1      = DCWENV;
-    modulation_index_param._src1Depth = 1.0;
-    // modulation_index_param._src2      = LFO1;
-    // modulation_index_param._src2DepthCtrl = LFO2;
-    modulation_index_param._src2MinDepth = 0.5;
-    modulation_index_param._src2MaxDepth = 0.1;
+    auto modulation_index_param        = dco->_paramd[1]->_mods;
+    modulation_index_param->_src1      = DCWENV;
+    modulation_index_param->_src1Depth = 1.0;
+    // modulation_index_param->_src2      = LFO1;
+    // modulation_index_param->_src2DepthCtrl = LFO2;
+    modulation_index_param->_src2MinDepth = 0.5;
+    modulation_index_param->_src2MaxDepth = 0.1;
     //////////////////////////////////////
     czoscdata->_dcoBaseWaveA = 6;
     czoscdata->_dcoBaseWaveB = 7;
     czoscdata->_dcoWindow    = 2;
     //////////////////////////////////////
-    auto& amp_param   = amp->_paramd[0];
-    amp_param._coarse = 0.0f;
-    amp_param.useDefaultEvaluator();
-    amp_param._mods._src1      = DCAENV;
-    amp_param._mods._src1Depth = 1.0;
+    auto amp_param     = amp->_paramd[0];
+    amp_param->_coarse = 0.0f;
+    amp_param->useDefaultEvaluator();
+    amp_param->_mods->_src1      = DCAENV;
+    amp_param->_mods->_src1Depth = 1.0;
   }
   //////////////////////////////////////
   // create and connect oscilloscope
   //////////////////////////////////////
+  ui::anchor::Bounds nobounds;
   auto source   = layerdata->createScopeSource();
-  auto scope    = create_oscilloscope(app->_hudvp);
-  auto analyzer = create_spectrumanalyzer(app->_hudvp);
+  auto scope    = create_oscilloscope(app->_hudvp, nobounds);
+  auto analyzer = create_spectrumanalyzer(app->_hudvp, nobounds);
   source->connect(scope->_sink);
   source->connect(analyzer->_sink);
   scope->setRect(0, 0, 480, 256, true);
@@ -120,7 +121,7 @@ int main(int argc, char** argv) {
   //////////////////////////////////////
   controllerdata_ptr_t inspect_env = layerdata->controllerByName("DCWENV1");
   auto env_source                  = inspect_env->createScopeSource();
-  auto envview                     = create_envelope_analyzer(app->_hudvp);
+  auto envview                     = create_envelope_analyzer(app->_hudvp, nobounds);
   env_source->connect(envview->_sink);
   envview->setRect(-10, 720 - 467, 1300, 477, true);
   envview->setProperty<float>("timewidth", 1.0f);

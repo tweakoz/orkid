@@ -12,7 +12,7 @@ namespace ork::lev2 {
 FreestyleMaterial::FreestyleMaterial() {
   _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
   _rasterstate.SetAlphaTest(EALPHATEST_OFF);
-  _rasterstate.SetBlending(EBLENDING_OFF);
+  _rasterstate.SetBlending(Blending::OFF);
   _rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
   _rasterstate.SetZWriteMask(true);
   _rasterstate.SetCullTest(ECULLTEST_PASS_BACK);
@@ -81,8 +81,8 @@ void FreestyleMaterial::gpuInit(Context* targ, const AssetPath& assetname) {
   if (_initialTarget == nullptr) {
     _initialTarget = targ;
     auto fxi       = targ->FXI();
-    auto shass     = asset::AssetManager<FxShaderAsset>::Load(assetname.c_str());
-    _shader        = shass->GetFxShader();
+    _shaderasset   = asset::AssetManager<FxShaderAsset>::load(assetname.c_str());
+    _shader        = _shaderasset->GetFxShader();
     OrkAssert(_shader);
   }
 }
@@ -90,8 +90,13 @@ void FreestyleMaterial::gpuInit(Context* targ, const AssetPath& assetname) {
 void FreestyleMaterial::gpuInitFromShaderText(Context* targ, const std::string& shadername, const std::string& shadertext) {
   if (_initialTarget == nullptr) {
     _initialTarget = targ;
-    _shader        = targ->FXI()->shaderFromShaderText(shadername, shadertext);
+    _shaderasset   = std::make_shared<FxShaderAsset>();
+    _shaderasset->setName("shaderFromShaderText");
+    _shader = targ->FXI()->shaderFromShaderText(shadername, shadertext);
     OrkAssert(_shader);
+
+    delete _shaderasset->_shader;
+    _shaderasset->_shader = _shader;
   }
 }
 ///////////////////////////////////////////////////////////////////////////////

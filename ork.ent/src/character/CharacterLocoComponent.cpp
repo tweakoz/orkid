@@ -7,7 +7,7 @@
 
 #include "CharacterLocoComponent.h"
 #include <ork/kernel/msgrouter.inl>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <pkg/ent/bullet.h>
 #include <pkg/ent/entity.hpp>
 #include <ork/application/application.h>
@@ -39,9 +39,10 @@ public:
     return mDirection;
   }
 
-private:
   ~LocomotionForceData() final {
   }
+
+private:
   BulletObjectForceControllerInst*
   CreateForceControllerInst(const BulletObjectControllerData& data, ork::ent::Entity* pent) const final;
 

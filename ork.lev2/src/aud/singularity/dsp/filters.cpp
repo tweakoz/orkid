@@ -349,7 +349,8 @@ void LPGATE::doKeyOn(const KeyOnInfo& koi) // final
 ///////////////////////////////////////////////////////////////////////////////
 // LOPASS : 1 pole! lowpass
 ///////////////////////////////////////////////////////////////////////////////
-LowPassData::LowPassData() {
+LowPassData::LowPassData(std::string name)
+    : DspBlockData(name) {
 }
 dspblk_ptr_t LowPassData::createInstance() const {
   return std::make_shared<LowPass>(this);
@@ -387,8 +388,9 @@ void LowPass::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-HighPassData::HighPassData() {
-  addParam().useDefaultEvaluator(); // cutoff
+HighPassData::HighPassData(std::string name)
+    : DspBlockData(name) {
+  addParam()->useDefaultEvaluator(); // cutoff
 }
 dspblk_ptr_t HighPassData::createInstance() const {
   return std::make_shared<HighPass>(this);
@@ -421,10 +423,11 @@ void HighPass::doKeyOn(const KeyOnInfo& koi) // final
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-HighFreqStimulatorData::HighFreqStimulatorData() {
-  addParam().useDefaultEvaluator(); // cutoff
-  addParam().useDefaultEvaluator(); // drive
-  addParam().useDefaultEvaluator(); // outgain
+HighFreqStimulatorData::HighFreqStimulatorData(std::string name)
+    : DspBlockData(name) {
+  addParam()->useDefaultEvaluator(); // cutoff
+  addParam()->useDefaultEvaluator(); // drive
+  addParam()->useDefaultEvaluator(); // outgain
 }
 dspblk_ptr_t HighFreqStimulatorData::createInstance() const {
   return std::make_shared<HighFreqStimulator>(this);
@@ -470,8 +473,9 @@ void HighFreqStimulator::doKeyOn(const KeyOnInfo& koi) // final
 // 2pole allpass (for phasers, etc..)
 ///////////////////////////////////////////////////////////////////////////////
 
-AllPassData::AllPassData() {
-  addParam().useDefaultEvaluator(); // cutoff
+AllPassData::AllPassData(std::string name)
+    : DspBlockData(name) {
+  addParam()->useDefaultEvaluator(); // cutoff
 }
 dspblk_ptr_t AllPassData::createInstance() const {
   return std::make_shared<AllPass>(this);
@@ -505,10 +509,11 @@ void AllPass::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-TwoPoleAllPassData::TwoPoleAllPassData() {
+TwoPoleAllPassData::TwoPoleAllPassData(std::string name)
+    : DspBlockData(name) {
   _blocktype = "TwoPoleAllPass";
-  addParam().useDefaultEvaluator(); // center
-  addParam().useDefaultEvaluator(); // width
+  addParam()->useDefaultEvaluator(); // center
+  addParam()->useDefaultEvaluator(); // width
 }
 dspblk_ptr_t TwoPoleAllPassData::createInstance() const {
   return std::make_shared<TwoPoleAllPass>(this);
@@ -548,12 +553,13 @@ void TwoPoleAllPass::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-TwoPoleLowPassData::TwoPoleLowPassData() {
-  _blocktype      = "TwoPoleLowPassData";
-  auto& cutoff    = addParam();
-  auto& resonance = addParam();
-  cutoff.useDefaultEvaluator();
-  resonance.useDefaultEvaluator();
+TwoPoleLowPassData::TwoPoleLowPassData(std::string name)
+    : DspBlockData(name) {
+  _blocktype     = "TwoPoleLowPassData";
+  auto cutoff    = addParam();
+  auto resonance = addParam();
+  cutoff->useDefaultEvaluator();
+  resonance->useDefaultEvaluator();
 }
 dspblk_ptr_t TwoPoleLowPassData::createInstance() const {
   return std::make_shared<TwoPoleLowPass>(this);
@@ -595,11 +601,12 @@ void TwoPoleLowPass::doKeyOn(const KeyOnInfo& koi) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-FourPoleLowPassWithSepData::FourPoleLowPassWithSepData() {
+FourPoleLowPassWithSepData::FourPoleLowPassWithSepData(std::string name)
+    : DspBlockData(name) {
   _blocktype = "FourPoleLowPassWithSep";
-  addParam().useDefaultEvaluator(); // cutoff
-  addParam().useDefaultEvaluator(); // resonance
-  addParam().useDefaultEvaluator(); // seperation
+  addParam()->useDefaultEvaluator(); // cutoff
+  addParam()->useDefaultEvaluator(); // resonance
+  addParam()->useDefaultEvaluator(); // seperation
 }
 dspblk_ptr_t FourPoleLowPassWithSepData::createInstance() const { // override
   return std::make_shared<FourPoleLowPassWithSep>(this);

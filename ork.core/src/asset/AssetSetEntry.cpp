@@ -14,7 +14,10 @@
 namespace ork { namespace asset {
 ///////////////////////////////////////////////////////////////////////////////
 
-AssetSetEntry::AssetSetEntry(asset_ptr_t asset, AssetLoader* loader, AssetSetLevel* level)
+AssetSetEntry::AssetSetEntry(
+    asset_ptr_t asset, //
+    AssetLoader* loader,
+    AssetSetLevel* level)
     : _asset(asset)
     , mLoader(loader)
     , mDeclareLevel(level)
@@ -24,8 +27,8 @@ AssetSetEntry::AssetSetEntry(asset_ptr_t asset, AssetLoader* loader, AssetSetLev
 ///////////////////////////////////////////////////////////////////////////////
 
 bool AssetSetEntry::Load(AssetSetLevel* level) {
-  if (NULL == mLoadLevel) {
-    if (NULL == mLoader || false == mLoader->LoadAsset(_asset)) {
+  /*if (NULL == mLoadLevel) {
+    if (NULL == mLoader || false == mLoader->load(_asset)) {
       mLoadLevel = NULL;
 
       return false;
@@ -35,14 +38,14 @@ bool AssetSetEntry::Load(AssetSetLevel* level) {
 
     mLoadProvider.Provide();
   }
-
+*/
   return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 #if defined(ORKCONFIG_ASSET_UNLOAD)
-bool AssetSetEntry::UnLoad(AssetSetLevel* level) {
+bool AssetSetEntry::unload(AssetSetLevel* level) {
   if (IsLoaded()) {
     if (mLoader) {
       mLoader->DestroyAsset(_asset);
@@ -69,7 +72,7 @@ void AssetSetEntry::OnPop(AssetSetLevel* level) {
 
   if (mLoadLevel == level) {
     mLoadProvider.Revoke();
-    mLoader->DestroyAsset(_asset);
+    mLoader->destroy(_asset);
 
     mLoadLevel = NULL;
   }
@@ -113,10 +116,9 @@ util::dependency::Provider* AssetSetEntry::GetLoadProvider() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-AssetSetEntry* GetAssetSetEntry(const Asset* asset) {
-  auto asset_class = asset->GetClass();
-  auto asset_set   = asset_class->assetSet();
-  auto entry       = asset_set->FindAssetEntry(asset->GetName());
+AssetSetEntry* assetSetEntry(const Asset* asset) {
+  auto asset_set = asset->assetSet();
+  auto entry     = asset_set->FindAssetEntry(asset->name());
 
   return entry;
 }

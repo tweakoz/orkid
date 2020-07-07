@@ -6,25 +6,23 @@
 ////////////////////////////////////////////////////////////////
 
 #include <math.h>
+#include <ork/pch.h>
+#include <ork/math/polar.h>
+#include <ork/reflect/properties/registerX.inl>
 #include <ork/lev2/gfx/camera/uicam.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/ui/viewport.h>
-#include <ork/math/polar.h>
-#include <ork/pch.h>
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::UiCamera, "UiCamera");
+ImplementReflectionX(ork::lev2::UiCamera, "UiCamera");
 
 namespace ork { namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void UiCamera::Describe() {
-  ork::reflect::RegisterProperty("Center", &UiCamera::mvCenter);
-  ork::reflect::RegisterProperty("Loc", &UiCamera::mfLoc);
-  ork::reflect::RegisterProperty("QuatC", &UiCamera::QuatC);
-
-  ork::reflect::annotatePropertyForEditor<UiCamera>("Loc", "editor.range.min", "0.1f");
-  ork::reflect::annotatePropertyForEditor<UiCamera>("Loc", "editor.range.max", "1000.0f");
+void UiCamera::describeX(object::ObjectClass* clazz) {
+  clazz->memberProperty("Center", &UiCamera::mvCenter);
+  clazz->floatProperty("Loc", float_range{0.1f, 1000.0f}, &UiCamera::mfLoc);
+  clazz->memberProperty("QuatC", &UiCamera::QuatC);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

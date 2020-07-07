@@ -22,7 +22,7 @@ public:
   Renderer(ent::SceneEditorBase& editor, lev2::Context* ptarg = nullptr);
 
 private:
-  void RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::RenderGroupState rgs = ork::lev2::ERGST_NONE) const final;
+  void RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::RenderGroupState rgs = ork::lev2::RenderGroupState::NONE) const final;
   void RenderModelGroup(const lev2::IRenderer::modelgroup_t&) const final;
 
   ent::SceneEditorBase& mEditor;

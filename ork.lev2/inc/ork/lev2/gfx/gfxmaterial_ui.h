@@ -31,10 +31,10 @@ public:
   int BeginBlock(Context* pTARG, const RenderContextInstData& MatCtx) override;
   void EndBlock(Context* pTARG) override;
 
-  void SetUIColorMode(EUIColorMode emod) {
+  void SetUIColorMode(UiColorMode emod) {
     meUIColorMode = emod;
   }
-  EUIColorMode GetUIColorMode(void) {
+  UiColorMode GetUIColorMode(void) {
     return meUIColorMode;
   }
 
@@ -50,8 +50,9 @@ protected:
   fvec4 PosScale;
   fvec4 PosBias;
   fvec4 Color;
-  FxShader* hModFX;
-  EUIColorMode meUIColorMode;
+  fxshaderasset_ptr_t _shaderasset;
+  FxShader* _shader;
+  UiColorMode meUIColorMode;
   const FxShaderTechnique* hTekMod;
   const FxShaderTechnique* hTekVtx;
   const FxShaderTechnique* hTekModVtx;
@@ -95,7 +96,8 @@ protected:
   fvec4 TexScale;
   fvec4 TexColor;
 
-  FxShader* hModFX;
+  fxshaderasset_ptr_t _shaderasset;
+  FxShader* _shader;
   const FxShaderTechnique* hTek;
   const FxShaderParam* hVPW;
   const FxShaderParam* hBias;
@@ -127,7 +129,8 @@ protected:
   std::string mTechniqueName;
 
   fvec4 Color;
-  FxShader* hModFX;
+  fxshaderasset_ptr_t _shaderasset;
+  FxShader* _shader;
 
   const FxShaderTechnique* hTek;
   const FxShaderParam* hVPW;

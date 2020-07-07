@@ -10,12 +10,12 @@
 
 #include <ork/application/application.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
-#include <ork/reflect/AccessorObjectPropertyType.hpp>
-#include <ork/reflect/DirectObjectMapPropertyType.h>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
-#include <ork/reflect/DirectObjectVectorPropertyType.h>
-#include <ork/reflect/DirectObjectVectorPropertyType.hpp>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/AccessorTyped.hpp>
+#include <ork/reflect/properties/DirectTypedMap.h>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
+#include <ork/reflect/properties/DirectTypedVector.h>
+#include <ork/reflect/properties/DirectTypedVector.hpp>
+#include <ork/reflect/properties/register.h>
 #include <ork/rtti/RTTI.h>
 #include <ork/rtti/downcast.h>
 #include <pkg/ent/bullet.h>
@@ -56,7 +56,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template class ork::reflect::DirectObjectMapPropertyType<ork::orklut<ork::PoolString, ork::Object*>>;
+template class ork::reflect::DirectTypedMap<ork::orklut<ork::PoolString, ork::Object*>>;
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -120,7 +120,7 @@ ConstString EntData::GetUserProperty(const ConstString& key) const {
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool EntData::PostDeserialize(reflect::IDeserializer&) {
+bool EntData::postDeserialize(reflect::serdes::IDeserializer&) {
   return true;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -280,7 +280,7 @@ void Entity::PrintName() {
   orkprintf("EntityName:%s: \n", name().c_str());
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool Entity::DoNotify(const ork::event::Event* event) {
+bool Entity::doNotify(const ork::event::Event* event) {
   bool result                  = false;
   ComponentTable::LutType& lut = mComponentTable.GetComponents();
   for (ComponentTable::LutType::const_iterator it = lut.begin(); it != lut.end(); it++) {
@@ -357,7 +357,7 @@ Archetype::Archetype()
     , mpSceneData(0) {
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool Archetype::PostDeserialize(reflect::IDeserializer&) {
+bool Archetype::postDeserialize(reflect::serdes::IDeserializer&) {
   // Compose();
   return true;
 }

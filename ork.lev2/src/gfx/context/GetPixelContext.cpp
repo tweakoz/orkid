@@ -22,7 +22,7 @@
 #include <ork/lev2/ui/ui.h>
 #include <ork/reflect/enum_serializer.inl>
 
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 
 namespace ork::lev2 {
 

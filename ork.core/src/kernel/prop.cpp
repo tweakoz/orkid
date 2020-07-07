@@ -35,6 +35,8 @@ template class orklut<ork::PoolString, U32>;
 template class orklut<ork::PoolString, bool>;
 template class orklut<ork::PoolString, ork::PoolString>;
 template class orklut<ork::PoolString, ork::Object*>;
+template class orklut<ork::PoolString, ork::object_ptr_t>;
+template class orklut<std::string, ork::object_ptr_t>;
 template class orklut<Char4, ork::Object*>;
 template class orklut<Char8, ork::Object*>;
 

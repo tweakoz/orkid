@@ -1,5 +1,6 @@
 #include <ork/lev2/ezapp.h>
 #include <ork/lev2/ui/viewport.h>
+#include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/vr/vr.h>
@@ -114,6 +115,7 @@ qtezapp_ptr_t OrkEzQtApp::createWithScene(varmap::varmap_ptr_t sceneparams) {
 EzViewport::EzViewport(EzMainWin* mainwin)
     : ui::Viewport("ezviewport", 1, 1, 1, 1, fvec3(0, 0, 0), 1.0f)
     , _mainwin(mainwin) {
+  _initstate.store(0);
   lev2::DrawableBuffer::ClearAndSyncWriters();
   _mainwin->_render_timer.Start();
   _mainwin->_render_prevtime = _mainwin->_render_timer.SecsSinceStart();
@@ -121,6 +123,8 @@ EzViewport::EzViewport(EzMainWin* mainwin)
 /////////////////////////////////////////////////
 void EzViewport::DoInit(ork::lev2::Context* pTARG) {
   pTARG->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
+  FontMan::gpuInit(pTARG);
+  _initstate.store(1);
 }
 /////////////////////////////////////////////////
 void EzViewport::DoDraw(ui::drawevent_constptr_t drwev) {
@@ -131,7 +135,6 @@ void EzViewport::DoDraw(ui::drawevent_constptr_t drwev) {
 
   if (do_gpu_init) {
     drwev->GetTarget()->makeCurrentContext();
-    FontMan::gpuInit(drwev->GetTarget());
     drwev->GetTarget()->makeCurrentContext();
 
     if (_mainwin->_onGpuInit)
@@ -139,8 +142,6 @@ void EzViewport::DoDraw(ui::drawevent_constptr_t drwev) {
     else if (_mainwin->_onGpuInitWithScene) {
       _mainwin->_execscene = std::make_shared<scenegraph::Scene>(_mainwin->_execsceneparams);
       _mainwin->_onGpuInitWithScene(drwev->GetTarget(), _mainwin->_execscene);
-    }
-    while (asset::AssetManager<TextureAsset>::AutoLoad()) {
     }
     while (ork::opq::mainSerialQueue()->Process()) {
     }
@@ -196,6 +197,8 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
     : OrkEzQtAppBase(argc, argv)
     , _updateThread("updatethread")
     , _mainWindow(0) {
+
+  _uicontext   = std::make_shared<ui::Context>();
   _update_data = std::make_shared<ui::UpdateData>();
   _appstate    = 0;
 
@@ -229,8 +232,12 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
   _mainWindow->_gfxwin = new CQtWindow(nullptr);
   GfxEnv::GetRef().RegisterWinContext(_mainWindow->_gfxwin);
   //////////////////////////////////////
-  auto vp                           = new EzViewport(_mainWindow);
-  _mainWindow->_gfxwin->mRootWidget = vp;
+  //////////////////////////////////////
+  _ezviewport                       = std::make_shared<EzViewport>(_mainWindow);
+  _ezviewport->_uicontext           = _uicontext.get();
+  _mainWindow->_gfxwin->mRootWidget = _ezviewport.get();
+  _ezviewport->_topLayoutGroup      = _uicontext->makeTop<ui::LayoutGroup>("top-layoutgroup", 0, 0, 1280, 720);
+  _topLayoutGroup                   = _ezviewport->_topLayoutGroup;
 
   _mainWindow->_ctqt = new CTQT(_mainWindow->_gfxwin, _mainWindow);
   _mainWindow->_ctqt->Show();
@@ -249,7 +256,9 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
   _mainWindow->_ctqt->pushRefreshPolicy(RefreshPolicyItem{EREFRESH_WHENDIRTY});
   /////////////////////////////////////////////
   auto handler = [this](opq::progressdata_ptr_t data) { //
-    _mainWindow->_ctqt->progressHandler(data);
+    if (_ezviewport->_initstate.load() == 1) {
+      _mainWindow->_ctqt->progressHandler(data);
+    }
   };
   opq::setProgressHandler(handler);
 
@@ -313,6 +322,7 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
 
 OrkEzQtApp::~OrkEzQtApp() {
   joinUpdate();
+  DrawableBuffer::terminateAll();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

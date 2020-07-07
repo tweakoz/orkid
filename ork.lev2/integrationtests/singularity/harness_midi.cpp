@@ -10,6 +10,9 @@
 
 void mycallback(double deltatime, std::vector<unsigned char>* message, void* userData) {
   auto numbytes = message->size();
+  for (unsigned int i = 0; i < numbytes; i++)
+    printf("%02x ", (int)message->at(i));
+  printf("\n");
 
   static std::map<int, programInst*> _keymap;
 
@@ -23,43 +26,70 @@ void mycallback(double deltatime, std::vector<unsigned char>* message, void* use
           int note  = message->at(1);
           int vel   = message->at(2);
           auto prog = synth::instance()->_globalprog;
-          auto pi   = synth::instance()->liveKeyOn(note, vel, prog);
           auto it   = _keymap.find(note);
-          OrkAssert(it == _keymap.end());
-          _keymap[note] = pi;
+          if (it == _keymap.end()) {
+            auto pi       = synth::instance()->liveKeyOn(note, vel, prog);
+            _keymap[note] = pi;
+          }
           break;
         }
         case 8: { // note off
           int note = message->at(1);
           auto it  = _keymap.find(note);
-          OrkAssert(it != _keymap.end());
-          auto pi = it->second;
-          synth::instance()->liveKeyOff(pi);
-          _keymap.erase(it);
+          if (it != _keymap.end()) {
+            auto pi = it->second;
+            synth::instance()->liveKeyOff(pi);
+            _keymap.erase(it);
+          }
           break;
         }
       }
       break;
     }
   }
-  for (unsigned int i = 0; i < numbytes; i++)
-    printf("%02x ", (int)message->at(i));
-  printf("\n");
 }
-void startMidi() {
-  RtMidiIn* midiin = new RtMidiIn();
-  // Check available ports.
-  unsigned int nPorts = midiin->getPortCount();
-  if (nPorts == 0) {
-    std::cout << "No ports available!\n";
-    return;
+
+using impl_t = std::shared_ptr<RtMidiIn>;
+
+midicontext_ptr_t MidiContext::instance() {
+  static midicontext_ptr_t ctx = std::make_shared<MidiContext>();
+  return ctx;
+}
+
+MidiContext::MidiContext() {
+  auto rtinpimpl = std::make_shared<RtMidiIn>();
+  _impl.Set<impl_t>(rtinpimpl);
+  enumerateMidiInputs();
+}
+MidiContext::~MidiContext() {
+  auto rtinpimpl = _impl.Get<impl_t>();
+}
+MidiContext::midiinputmap_t MidiContext::enumerateMidiInputs() {
+  auto rtinpimpl = _impl.Get<impl_t>();
+  midiinputmap_t rval;
+  unsigned int nPorts = rtinpimpl->getPortCount();
+  for (int i = 0; i < nPorts; i++) {
+    auto portname      = rtinpimpl->getPortName(i);
+    _portmap[portname] = i;
   }
-  midiin->openPort(0);
+  return rval;
+}
+void MidiContext::startMidiInputByName(std::string named) {
+  auto it   = _portmap.find(named);
+  int index = 0;
+  if (it != _portmap.end()) {
+    index = it->second;
+  }
+  startMidiInputByIndex(index);
+}
+void MidiContext::startMidiInputByIndex(int inputid) {
+  auto rtinpimpl = _impl.Get<impl_t>();
+  rtinpimpl->openPort(inputid);
   // Set our callback function.  This should be done immediately after
   // opening the port to avoid having incoming messages written to the
   // queue.
-  midiin->setCallback(&mycallback);
+  rtinpimpl->setCallback(&mycallback);
   // Don't ignore sysex, timing, or active sensing messages.
-  midiin->ignoreTypes(false, false, false);
+  rtinpimpl->ignoreTypes(true, true, true);
   // Clean up
 }

@@ -11,15 +11,15 @@
 #include <orktool/ged/ged_delegate.h>
 #include <orktool/ged/ged_io.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/reflect/IProperty.h>
-#include <ork/reflect/IObjectProperty.h>
-#include <ork/reflect/IObjectPropertyObject.h>
+
+#include <ork/reflect/properties/ObjectProperty.h>
+#include <ork/reflect/properties/IObject.h>
 #include <ork/dataflow/dataflow.h>
 #include <ork/file/file.h>
 #include <ork/stream/FileInputStream.h>
 #include <ork/stream/FileOutputStream.h>
-#include <ork/reflect/serialize/XMLSerializer.h>
-#include <ork/reflect/serialize/XMLDeserializer.h>
+#include <ork/reflect/serialize/JsonSerializer.h>
+#include <ork/reflect/serialize/JsonDeserializer.h>
 #include <ork/kernel/fixedlut.hpp>
 #include <ork/kernel/Array.hpp>
 #include <QMenu>
@@ -65,7 +65,7 @@ void GedFactory::Describe() {
 ///////////////////////////////////////////////////////////////////////////////
 
 GedItemNode*
-GedFactory::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::IObjectProperty* prop, Object* obj) const {
+GedFactory::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::ObjectProperty* prop, Object* obj) const {
   GedItemNode* PropContainerW = new GedLabelNode(mdl, Name.c_str(), prop, obj);
   return PropContainerW;
 }
@@ -75,7 +75,7 @@ GedFactory::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect
 
 void EnumerateFactories(
     const ork::Object* pdestobj,
-    const reflect::IObjectProperty* prop,
+    const reflect::ObjectProperty* prop,
     orkset<object::ObjectClass*>& FactoryClassSet) {
   /////////////////////////////////////////////////////////
 
@@ -105,7 +105,7 @@ void EnumerateFactories(
         object::ObjectClass* pclass = FactoryStack.top();
         FactoryStack.pop();
 
-        if (pclass->HasFactory()) {
+        if (pclass->hasFactory()) {
           //////////////////////////////////////////////
           // check if class marked uninstantiable by editor
           //////////////////////////////////////////////
@@ -151,7 +151,7 @@ void EnumerateFactories(object::ObjectClass* pobjclass, orkset<object::ObjectCla
   while (FactoryStack.empty() == false) {
     object::ObjectClass* pclass = FactoryStack.top();
     FactoryStack.pop();
-    if (pclass->HasFactory()) { //////////////////////////////////////////////
+    if (pclass->hasFactory()) { //////////////////////////////////////////////
       // check if class marked uninstantiable by editor
       //////////////////////////////////////////////
 
@@ -168,7 +168,7 @@ void EnumerateFactories(object::ObjectClass* pobjclass, orkset<object::ObjectCla
           }
       }*/
       if (bok2add) {
-        if (pclass->HasFactory()) {
+        if (pclass->hasFactory()) {
           FactoryClassVect.insert(pclass);
         }
       }
@@ -221,7 +221,7 @@ void UserChoices::EnumerateChoices(bool bforcenocache) {
   for (orkmap<PoolString, IUserChoiceDelegate::ValueType>::const_iterator it = mUserChoices.begin(); it != mUserChoices.end();
        it++) {
     const char* item = it->first.c_str();
-    AttrChoiceValue myval(item, item);
+    util::AttrChoiceValue myval(item, item);
     myval.SetCustomData(it->second);
     add(myval);
   }
@@ -251,7 +251,7 @@ void IOpsDelegate::AddTask(ork::object::ObjectClass* pdelegclass, ork::Object* p
     if (deleg) {
       OpsTask* ptask    = new OpsTask;
       ptask->mpDelegate = deleg;
-      ptask->mpTarget   = ptarget;
+      ptask->_target    = ptarget;
 
       TaskList& tsklist = gCurrentTasks.LockForWrite();
       { tsklist.push_back(ptask); }
@@ -292,7 +292,7 @@ OpsTask* IOpsDelegate::GetTask(ork::object::ObjectClass* pdelegclass, ork::Objec
       OpsTask* ptask = (*it);
 
       if (ptask->mpDelegate->GetClass() == pdelegclass) {
-        if (ptask->mpTarget == ptarget) {
+        if (ptask->_target == ptarget) {
           pret = ptask;
         }
       }
@@ -407,7 +407,7 @@ void OpsNode::OnMouseClicked(ork::ui::event_constptr_t ev) {
   }
 }
 
-OpsNode::OpsNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj)
+OpsNode::OpsNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj)
     : GedItemNode(mdl, name, prop, obj) {
   object::ObjectClass* objclass = rtti::downcast<object::ObjectClass*>(obj->GetClass());
 
@@ -542,7 +542,7 @@ void GedGroupNode::DoDraw(lev2::Context* pTARG) {
 GedGroupNode::GedGroupNode(
     ObjModel& mdl,
     const char* name,
-    const reflect::IObjectProperty* prop,
+    const reflect::ObjectProperty* prop,
     ork::Object* obj,
     bool is_obj_node)
     : GedItemNode(mdl, name, prop, obj)
@@ -708,11 +708,11 @@ class GraphImportDelegate : public IOpsDelegate {
         if (ork::FileEnv::filespec_to_extension(fname).length() == 0)
           fname += ".dfg";
         stream::FileInputStream istream(fname.c_str());
-        reflect::serialize::XMLDeserializer iser(istream);
+        reflect::serdes::JsonDeserializer iser(istream);
         // ork::stream::FileOutputStream ostream(fname.c_str());
-        // ork::reflect::serialize::XMLSerializer oser(ostream);
+        // ork::reflect::serdes::JsonSerializer oser(ostream);
         // oser.Serialize(ptex);
-        pgraph->DeserializeInPlace(iser);
+        ork::Object::xxxDeserializeInPlace(pgraph, iser);
       }
       lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
     }
@@ -733,9 +733,9 @@ class GraphExportDelegate : public IOpsDelegate {
         if (ork::FileEnv::filespec_to_extension(fname).length() == 0)
           fname += ".dfg";
         ork::stream::FileOutputStream ostream(fname.c_str());
-        ork::reflect::serialize::XMLSerializer oser(ostream);
+        ork::reflect::serdes::JsonSerializer oser(ostream);
         // oser.Serialize(ptex);
-        pgraph->SerializeInPlace(oser);
+        ork::Object::xxxSerializeInPlace(pgraph, oser);
       }
       lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
     }
@@ -752,11 +752,11 @@ void ObjectImportDelegate::Execute(ork::Object* ptarget) {
       if (ork::FileEnv::filespec_to_extension(fname).length() == 0)
         fname += ".mox";
       stream::FileInputStream istream(fname.c_str());
-      reflect::serialize::XMLDeserializer iser(istream);
+      reflect::serdes::JsonDeserializer iser(istream);
       // ork::stream::FileOutputStream ostream(fname.c_str());
-      // ork::reflect::serialize::XMLSerializer oser(ostream);
+      // ork::reflect::serdes::JsonSerializer oser(ostream);
       // oser.Serialize(ptex);
-      ptarget->DeserializeInPlace(iser);
+      ork::Object::xxxDeserializeInPlace(ptarget, iser);
     }
     lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
   }
@@ -773,9 +773,9 @@ void ObjectExportDelegate::Execute(ork::Object* ptarget) {
       if (ork::FileEnv::filespec_to_extension(fname).length() == 0)
         fname += ".mox";
       ork::stream::FileOutputStream ostream(fname.c_str());
-      ork::reflect::serialize::XMLSerializer oser(ostream);
+      ork::reflect::serdes::JsonSerializer oser(ostream);
       // oser.Serialize(ptex);
-      pobj->SerializeInPlace(oser);
+      ork::Object::xxxSerializeInPlace(pobj, oser);
     }
     lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
   }

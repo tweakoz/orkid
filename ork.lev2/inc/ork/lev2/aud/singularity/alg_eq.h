@@ -34,7 +34,7 @@ struct PARATREBLE : public DspBlock {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 struct ParametricEqData : public DspBlockData {
-  ParametricEqData();
+  ParametricEqData(std::string name);
   // krzname  "PARAMETRIC EQ"
   dspblk_ptr_t createInstance() const override;
 };

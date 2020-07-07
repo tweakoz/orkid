@@ -7,8 +7,8 @@
 
 #include <ork/pch.h>
 
-#include <ork/reflect/RegisterProperty.h>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/register.h>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/kernel/orklut.hpp>
 
 #include <pkg/ent/entity.h>
@@ -26,6 +26,8 @@
 #include <pkg/ent/event/PriorityEvent.h>
 
 #include <ork/lev2/gfx/gfxmodel.h>
+
+////////////////////////////////////////////////////////////////
 
 #define ANIMATE_VERBOSE (0)
 #define PRINT_CONDITION_NAME(__name) true //(ork::PieceString(__name).find("ship1") != ork::PieceString::npos)
@@ -47,7 +49,7 @@
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::SimpleAnimatableData, "SimpleAnimatableData");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::SimpleAnimatableInst, "SimpleAnimatableInst");
 
-template class ork::reflect::DirectObjectMapPropertyType<orkmap<ork::PoolString, ork::ent::AnimSeqTable*>>;
+template class ork::reflect::DirectTypedMap<orkmap<ork::PoolString, ork::ent::AnimSeqTable*>>;
 
 namespace ork { namespace ent {
 
@@ -275,7 +277,7 @@ void SimpleAnimatableInst::PlayAnimationEx(
   if (itmask == mBodyPartMap.end()) {
     // orkprintf("WARNING: Mask %s is unknown on entity %s (%s) with model %s\n", maskname.c_str(),
     // GetEntity()->GetEntData().GetName().c_str(), GetEntity()->GetEntData().GetArchetype()->GetName().c_str(),
-    // mModelInst->xgmModel()->GetAssetName().c_str()); return;
+    // mModelInst->xgmModel()->assetName().c_str()); return;
 
     maskname = sEmptyString;
     itmask   = mBodyPartMap.find(maskname);
@@ -286,7 +288,7 @@ void SimpleAnimatableInst::PlayAnimationEx(
     // nasa - not really a WARNING any more
     // orkprintf("WARNING: Anim %s is unknown on entity %s (%s) with model %s\n", name.c_str(),
     // GetEntity()->GetEntData().GetName().c_str(), GetEntity()->GetEntData().GetArchetype()->GetName().c_str(),
-    // mModelInst->xgmModel()->GetAssetName().c_str());
+    // mModelInst->xgmModel()->assetName().c_str());
     return;
   }
 
@@ -740,8 +742,8 @@ void SimpleAnimatableInst::AnimData::BindAnim(const ork::lev2::XgmAnim* anim) {
   }
 }
 
-bool SimpleAnimatableInst::DoNotify(const ork::event::Event* event) {
-  if (const event::PlayAnimationEvent* play = ork::rtti::autocast(event)) {
+bool SimpleAnimatableInst::doNotify(const ork::event::Event* event) {
+  if (auto play = dynamic_cast<const event::PlayAnimationEvent*>(event)) {
     if (play->GetMaskName().empty())
       PlayAnimationEx(
           sEmptyString, play->GetName(), play->GetPriority(), play->GetSpeed(), play->GetInterpDuration(), play->IsLoop());
@@ -749,16 +751,16 @@ bool SimpleAnimatableInst::DoNotify(const ork::event::Event* event) {
       PlayAnimationEx(
           play->GetMaskName(), play->GetName(), play->GetPriority(), play->GetSpeed(), play->GetInterpDuration(), play->IsLoop());
     return true;
-  } else if (const event::ChangeAnimationSpeedEvent* change_speed = ork::rtti::autocast(event)) {
+  } else if (auto change_speed = dynamic_cast<const event::ChangeAnimationSpeedEvent*>(event)) {
     ChangeAnimationSpeed(change_speed->GetSpeed());
     return true;
-  } else if (const event::AnimationPriority* anim_priority = ork::rtti::autocast(event)) {
+  } else if (auto anim_priority = dynamic_cast<const event::AnimationPriority*>(event)) {
     ChangeAnimationPriority(anim_priority->GetName(), anim_priority->GetPriority());
     return true;
-  } else if (const event::MaskPriority* mask_priority = ork::rtti::autocast(event)) {
+  } else if (auto mask_priority = dynamic_cast<const event::MaskPriority*>(event)) {
     ChangeMaskPriority(mask_priority->GetMaskName(), mask_priority->GetPriority());
     return true;
-  } else if (const event::PriorityEvent* priority = ork::rtti::autocast(event)) {
+  } else if (auto priority = dynamic_cast<const event::PriorityEvent*>(event)) {
     ChangePriority(priority->GetPriority());
     return true;
   }

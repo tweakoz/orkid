@@ -12,10 +12,11 @@ float wrap(float inp, float adj);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-AMP_MONOIO_DATA::AMP_MONOIO_DATA() {
-  _blocktype  = "AMP_MONOIO";
-  auto& param = addParam();
-  param.useAmplitudeEvaluator();
+AMP_MONOIO_DATA::AMP_MONOIO_DATA(std::string name)
+    : DspBlockData(name) {
+  _blocktype = "AMP_MONOIO";
+  auto param = addParam();
+  param->useAmplitudeEvaluator();
 }
 
 dspblk_ptr_t AMP_MONOIO_DATA::createInstance() const { // override
@@ -59,8 +60,8 @@ void AMP_MONOIO::doKeyOn(const KeyOnInfo& koi) // final
 
 void PLUSAMP::initBlock(dspblkdata_ptr_t blockdata) {
   blockdata->_blocktype = "+ AMP";
-  auto& param           = blockdata->addParam();
-  param.useAmplitudeEvaluator();
+  auto param            = blockdata->addParam();
+  param->useAmplitudeEvaluator();
 }
 
 PLUSAMP::PLUSAMP(const DspBlockData* dbd)
@@ -105,8 +106,8 @@ void PLUSAMP::doKeyOn(const KeyOnInfo& koi) // final
 
 void XAMP::initBlock(dspblkdata_ptr_t blockdata) {
   blockdata->_blocktype = "x AMP";
-  auto& param           = blockdata->addParam();
-  param.useAmplitudeEvaluator();
+  auto param            = blockdata->addParam();
+  param->useAmplitudeEvaluator();
 }
 
 XAMP::XAMP(const DspBlockData* dbd)

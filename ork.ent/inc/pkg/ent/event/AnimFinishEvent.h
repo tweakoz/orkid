@@ -7,29 +7,19 @@
 
 #pragma once
 
-#include <ork/rtti/RTTI.h>
-#include <ork/object/Object.h>
-
 #include <ork/event/Event.h>
 
 namespace ork { namespace ent { namespace event {
 
-class AnimFinishEvent : public ork::event::Event
-{
-	RttiDeclareAbstract(AnimFinishEvent, ork::event::Event);
+class AnimFinishEvent : public ork::event::Event {
 public:
+  AnimFinishEvent(ork::PieceString name = "");
 
-	AnimFinishEvent(ork::PieceString name = "");
-
-	void SetName(ork::PieceString name);
-	ork::PoolString GetName() const;
+  void SetName(ork::PieceString name);
+  ork::PoolString GetName() const;
 
 private:
-
-	ork::PoolString mName;
-
-	Object *Clone() const final;
+  ork::PoolString mName;
 };
 
-} } } // ork::ent::event
-
+}}} // namespace ork::ent::event

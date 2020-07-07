@@ -21,7 +21,9 @@
 
 namespace ork::audio::singularity {
 
-DspBlockData::DspBlockData() {
+DspBlockData::DspBlockData(std::string name)
+    : _name(name) {
+
   for (int i = 0; i < kmaxdspblocksperstage; i++)
     _dspchannel[i] = i;
 }
@@ -34,17 +36,20 @@ scopesource_ptr_t DspBlockData::createScopeSource() {
 ///////////////////////////////////////////////////////////////////////////////
 
 DspParamData::DspParamData() {
+  _mods = std::make_shared<BlockModulationData>();
   useDefaultEvaluator();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-DspParamData& DspBlockData::addParam() {
+dspparam_ptr_t DspBlockData::addParam() {
   OrkAssert(_numParams < kmaxparmperblock - 1);
-  return _paramd[_numParams++];
+  auto param            = std::make_shared<DspParamData>();
+  _paramd[_numParams++] = param;
+  return param;
 }
 
-DspParamData& DspBlockData::param(int index) {
+dspparam_ptr_t DspBlockData::param(int index) {
   return _paramd[index];
 }
 
@@ -104,21 +109,19 @@ DspBlock::DspBlock(const DspBlockData* dbd)
     _dspchannel[i] = dbd->_dspchannel[i];
 }
 
+BlockModulationData::BlockModulationData() {
+  _evaluator = [](DspParam& cec) -> //
+      float { return cec._data->_coarse; };
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
-FPARAM DspBlock::initFPARAM(const DspParamData& dpd) {
-  FPARAM rval;
-  rval._coarse    = dpd._coarse;
-  rval._fine      = dpd._fine;
-  rval._C1        = _layer->getSRC1(dpd._mods);
-  rval._C2        = _layer->getSRC2(dpd._mods);
-  rval._evaluator = dpd._mods._evaluator;
-
-  rval._keyTrack      = dpd._keyTrack;
-  rval._velTrack      = dpd._velTrack;
-  rval._kstartNote    = dpd._keystartNote;
-  rval._kstartBipolar = dpd._keystartBipolar;
-
+DspParam DspBlock::initDspParam(dspparam_constptr_t dpd) {
+  DspParam rval;
+  rval._data      = dpd;
+  rval._C1        = _layer->getSRC1(dpd->_mods);
+  rval._C2        = _layer->getSRC2(dpd->_mods);
+  rval._evaluator = dpd->_mods->_evaluator;
   return rval;
 }
 
@@ -126,8 +129,9 @@ FPARAM DspBlock::initFPARAM(const DspParamData& dpd) {
 
 void DspBlock::keyOn(const KeyOnInfo& koi) {
   _layer = koi._layer;
+  // HERE
   for (int i = 0; i < _numParams; i++) {
-    _param[i] = initFPARAM(_dbd->_paramd[i]);
+    _param[i] = initDspParam(_dbd->_paramd[i]);
     _param[i].keyOn(koi._key, koi._vel);
   }
   doKeyOn(koi);
@@ -182,7 +186,7 @@ dspblk_ptr_t createDspBlock(const DspBlockData* dbd) {
   dspblk_ptr_t rval = dbd->createInstance();
   if (rval)
     return rval;
-
+  /*
   ////////////////////////
   // amp/mix
   ////////////////////////
@@ -288,7 +292,7 @@ dspblk_ptr_t createDspBlock(const DspBlockData* dbd) {
     rval = std::make_shared<SHAPER>(dbd);
   if (dbd->_blocktype == "2PARAM SHAPER")
     rval = std::make_shared<TWOPARAM_SHAPER>(dbd);
-
+*/
   return rval;
 }
 

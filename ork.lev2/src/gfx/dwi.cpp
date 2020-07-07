@@ -41,7 +41,7 @@ void DrawingInterface::quad2DEML(const fvec4& QuadRect, const fvec4& UvRect, con
   vw.AddVertex(SVtxV12C4T16(fx1, fy1, 0.0f, fua1, fva1, fub1, fvb1, uc));
   vw.UnLock(GBI);
 
-  GBI->DrawPrimitiveEML(vw, EPrimitiveType::TRIANGLES, 6);
+  GBI->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES, 6);
 }
 void DrawingInterface::quad2DEMLTiled(const fvec4& QuadRect, const fvec4& UvRect, const fvec4& UvRect2, int numtileseachdim) {
 
@@ -96,7 +96,7 @@ void DrawingInterface::quad2DEMLTiled(const fvec4& QuadRect, const fvec4& UvRect
     }
   }
   vw.UnLock(GBI);
-  GBI->DrawPrimitiveEML(vw, EPrimitiveType::TRIANGLES, num2lock);
+  GBI->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES, num2lock);
 }
 
 } // namespace ork::lev2

@@ -19,13 +19,13 @@
 #include <ork/lev2/ui/viewport.h>
 #include <ork/rtti/downcast.h>
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::OffscreenBuffer, "ork::lev2::OffscreenBuffer");
+ImplementReflectionX(ork::lev2::OffscreenBuffer, "ork::lev2::OffscreenBuffer");
 
 namespace ork { namespace lev2 {
 
 /////////////////////////////////////////////////////////////////////////
 
-void OffscreenBuffer::Describe() {
+void OffscreenBuffer::describeX(object::ObjectClass* clazz) {
 }
 
 OffscreenBuffer::OffscreenBuffer(
@@ -37,13 +37,13 @@ OffscreenBuffer::OffscreenBuffer(
     EBufferFormat efmt,
     const std::string& name)
     : mpContext(nullptr)
-    , mParent(Parent)
+    , _parent(Parent)
     , miWidth(iW)
     , miHeight(iH)
     , mbDirty(true)
-    , msName(name)
+    , _name(name)
     , meFormat(efmt)
-    , mParentRtGroup(nullptr)
+    , _parentRtGroup(nullptr)
     , mpTexture(nullptr)
     , mRootWidget(nullptr)
     , mbSizeIsDirty(true) {
@@ -119,14 +119,18 @@ Context* OffscreenBuffer::context(void) const {
 /////////////////////////////////////////////////////////////////////////
 
 void OffscreenBuffer::initContext() {
-  mpContext = ork::rtti::safe_downcast<Context*>(GfxEnv::GetRef().contextClass()->CreateObject());
+  auto ctxclazz  = GfxEnv::GetRef().contextClass();
+  _sharedcontext = std::dynamic_pointer_cast<Context>(ctxclazz->createShared());
+  mpContext      = _sharedcontext.get();
   mpContext->initializeOffscreenContext(this);
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 void Window::initContext() {
-  mpContext = ork::rtti::safe_downcast<Context*>(GfxEnv::GetRef().contextClass()->CreateObject());
+  auto ctxclazz  = GfxEnv::GetRef().contextClass();
+  _sharedcontext = std::dynamic_pointer_cast<Context>(ctxclazz->createShared());
+  mpContext      = _sharedcontext.get();
   if (mpCTXBASE) {
     mpCTXBASE->setContext(mpContext);
   }
@@ -182,7 +186,7 @@ void OffscreenBuffer::Render2dQuadsEML(size_t count, const fvec4* QuadRects, con
   }
   vw.UnLock(context());
 
-  ctx->GBI()->DrawPrimitiveEML(vw, EPrimitiveType::TRIANGLES, 6 * count);
+  ctx->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES, 6 * count);
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -245,7 +249,7 @@ void OffscreenBuffer::RenderMatOrthoQuad(
       int inumpasses = pmat->BeginBlock(ctx);
       for (int ipass = 0; ipass < inumpasses; ipass++) {
         bool bDRAW = pmat->BeginPass(ctx, ipass);
-        ctx->GBI()->DrawPrimitiveEML(vw, EPrimitiveType::TRIANGLES);
+        ctx->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
         pmat->EndPass(ctx);
       }
       pmat->EndBlock(ctx);

@@ -6,7 +6,7 @@
 #include <ork/application/application.h>
 #include <ork/object/Object.h>
 #include <ork/rtti/downcast.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/kernel/thread.h>
 #include <ork/kernel/opq.h>
 

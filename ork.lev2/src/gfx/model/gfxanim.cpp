@@ -16,27 +16,27 @@
 
 using namespace std::string_literals;
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::XgmAnimChannel, "XgmAnimChannel");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::XgmFloatAnimChannel, "XgmFloatAnimChannel");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::XgmVect3AnimChannel, "XgmVect3AnimChannel");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::XgmVect4AnimChannel, "XgmVect4AnimChannel");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::XgmMatrixAnimChannel, "XgmMatrixAnimChannel");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::XgmDecompAnimChannel, "XgmDecompAnimChannel");
+ImplementReflectionX(ork::lev2::XgmAnimChannel, "XgmAnimChannel");
+ImplementReflectionX(ork::lev2::XgmFloatAnimChannel, "XgmFloatAnimChannel");
+ImplementReflectionX(ork::lev2::XgmVect3AnimChannel, "XgmVect3AnimChannel");
+ImplementReflectionX(ork::lev2::XgmVect4AnimChannel, "XgmVect4AnimChannel");
+ImplementReflectionX(ork::lev2::XgmMatrixAnimChannel, "XgmMatrixAnimChannel");
+ImplementReflectionX(ork::lev2::XgmDecompAnimChannel, "XgmDecompAnimChannel");
 
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmAnimChannel::Describe() {
+void XgmAnimChannel::describeX(class_t* clazz) {
 }
-void XgmFloatAnimChannel::Describe() {
+void XgmFloatAnimChannel::describeX(class_t* clazz) {
 }
-void XgmVect3AnimChannel::Describe() {
+void XgmVect3AnimChannel::describeX(class_t* clazz) {
 }
-void XgmVect4AnimChannel::Describe() {
+void XgmVect4AnimChannel::describeX(class_t* clazz) {
 }
-void XgmMatrixAnimChannel::Describe() {
+void XgmMatrixAnimChannel::describeX(class_t* clazz) {
 }
-void XgmDecompAnimChannel::Describe() {
+void XgmDecompAnimChannel::describeX(class_t* clazz) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -254,9 +254,9 @@ void XgmMaterialStateInst::BindAnimInst(const XgmAnimInst& AnimInst) {
     const XgmAnim::MaterialChannelsMap& map = anim.RefMaterialChannels();
 
     for (XgmAnim::MaterialChannelsMap::const_iterator it = map.begin(); it != map.end(); it++) {
-      const PoolString& channelname            = it->first;
-      const ork::lev2::XgmAnimChannel* channel = it->second;
-      const PoolString& objectname             = channel->GetObjectName();
+      const PoolString& channelname = it->first;
+      auto channel                  = it->second.get();
+      const PoolString& objectname  = channel->GetObjectName();
 
       const XgmFloatAnimChannel* __restrict fchan  = rtti::autocast(channel);
       const XgmVect3AnimChannel* __restrict v3chan = rtti::autocast(channel);
@@ -337,17 +337,17 @@ XgmAnim::XgmAnim()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmAnim::AddChannel(const PoolString& Name, XgmAnimChannel* pchan) {
+void XgmAnim::AddChannel(const PoolString& Name, animchannel_ptr_t pchan) {
   const PoolString& usage = pchan->GetUsageSemantic();
 
   if (usage == FindPooledString("Joint")) {
-    XgmDecompAnimChannel* MtxChan = rtti::autocast(pchan);
+    auto MtxChan = std::dynamic_pointer_cast<XgmDecompAnimChannel>(pchan).get();
     OrkAssert(MtxChan);
     mJointAnimationChannels.AddSorted(Name, MtxChan);
   } else if (usage == FindPooledString("UvTransform")) {
-    XgmMatrixAnimChannel* MtxChan = rtti::autocast(pchan);
+    auto MtxChan = std::dynamic_pointer_cast<XgmMatrixAnimChannel>(pchan).get();
     OrkAssert(MtxChan);
-    mMaterialAnimationChannels.AddSorted(Name, MtxChan);
+    mMaterialAnimationChannels.AddSorted(Name, pchan);
   } else if (usage == FindPooledString("FxParam")) {
     OrkAssert(pchan);
     mMaterialAnimationChannels.AddSorted(Name, pchan);
@@ -516,11 +516,11 @@ void XgmDecompAnimChannel::ReserveFrames(int icount) {
 
 ///////////////////////////////////////////////////////////////////////////////
 struct chansettter {
-  static void set(XgmAnim* anm, XgmAnimChannel* Channel, const void* pdata) {
-    XgmDecompAnimChannel* DecChannel = rtti::autocast(Channel);
-    XgmMatrixAnimChannel* MtxChannel = rtti::autocast(Channel);
-    XgmFloatAnimChannel* F32Channel  = rtti::autocast(Channel);
-    XgmVect3AnimChannel* Ve3Channel  = rtti::autocast(Channel);
+  static void set(XgmAnim* anm, animchannel_ptr_t Channel, const void* pdata) {
+    XgmDecompAnimChannel* DecChannel = rtti::autocast(Channel.get());
+    XgmMatrixAnimChannel* MtxChannel = rtti::autocast(Channel.get());
+    XgmFloatAnimChannel* F32Channel  = rtti::autocast(Channel.get());
+    XgmVect3AnimChannel* Ve3Channel  = rtti::autocast(Channel.get());
     if (DecChannel) {
       const DecompMtx44* DecBase = (const DecompMtx44*)pdata;
       DecChannel->ReserveFrames(anm->GetNumFrames());
@@ -554,7 +554,7 @@ struct chansettter {
   }
 }; // namespace lev2
 ///////////////////////////////////////////////////////////////////////////////
-bool XgmAnim::UnLoadUnManaged(XgmAnim* anm) {
+bool XgmAnim::unloadUnManaged(XgmAnim* anm) {
 #if defined(ORKCONFIG_ASSET_UNLOAD)
 #if defined(WII)
   // crap the wii actually does call this...
@@ -608,7 +608,7 @@ bool XgmAnim::LoadUnManaged(XgmAnim* anm, const AssetPath& fname) { ////////////
       const char* pusgname             = chunkreader.GetString(iusgname);
       void* pdata                      = AnimDataStream->GetDataAt(idataoffset);
       ork::object::ObjectClass* pclass = rtti::autocast(rtti::Class::FindClass(pchannelclass));
-      XgmAnimChannel* Channel          = rtti::autocast(pclass->CreateObject());
+      auto Channel                     = std::dynamic_pointer_cast<XgmAnimChannel>(pclass->createShared());
 
       printf("LoadAnim MatrixChannel<%s> objname<%s> numframes<%d>\n", pchnname, pobjname, inumframes);
 
@@ -633,7 +633,7 @@ bool XgmAnim::LoadUnManaged(XgmAnim* anm, const AssetPath& fname) { ////////////
       const char* pusgname             = chunkreader.GetString(iusgname);
       void* pdata                      = AnimDataStream->GetDataAt(idataoffset);
       ork::object::ObjectClass* pclass = rtti::autocast(rtti::Class::FindClass(pchannelclass));
-      XgmAnimChannel* Channel          = rtti::autocast(pclass->CreateObject());
+      auto Channel                     = std::dynamic_pointer_cast<XgmAnimChannel>(pclass->createShared());
       Channel->SetChannelName(AddPooledString(pchnname));
       Channel->SetObjectName(AddPooledString(pobjname));
       Channel->SetChannelUsage(AddPooledString(pusgname));

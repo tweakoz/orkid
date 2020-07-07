@@ -59,7 +59,7 @@ typedef ork::dataflow::inplug<psys_ptclbuf> PtclBufInpPlug;
 ///////////////////////////////////////////////////////////////////////////////
 
 class Module : public ork::dataflow::dgmodule {
-  RttiDeclareAbstract(Module, ork::dataflow::dgmodule);
+  DeclareAbstractX(Module, ork::dataflow::dgmodule);
   ////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////
 protected:
@@ -86,7 +86,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class Global : public Module {
-  RttiDeclareConcrete(Global, Module);
+  DeclareConcreteX(Global, Module);
 
 private:
   DeclareFloatXfPlug(TimeScale);
@@ -130,7 +130,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class Constants : public Module {
-  RttiDeclareConcrete(Constants, Module);
+  DeclareConcreteX(Constants, Module);
 
   ork::orklut<ork::PoolString, ork::dataflow::outplug<float>*> mFloatPlugs;
   ork::orklut<ork::PoolString, ork::dataflow::outplug<fvec3>*> mVect3Plugs;
@@ -155,8 +155,8 @@ class Constants : public Module {
 
   void OnTopologyUpdate(void) final; // virtual
 
-  bool DoNotify(const ork::event::Event* event) final; // virtual
-  bool PostDeserialize(reflect::IDeserializer&) final; // virtual
+  void doNotify(const ork::event::Event* event) final;         // virtual
+  bool postDeserialize(reflect::serdes::IDeserializer&) final; // virtual
 
 public:
   Constants();
@@ -165,7 +165,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class ExtConnector : public Module {
-  RttiDeclareConcrete(ExtConnector, Module);
+  DeclareConcreteX(ExtConnector, Module);
 
   dataflow::dyn_external* mpExternalConnector;
   ork::orklut<ork::PoolString, ork::dataflow::outplug<float>*> mFloatPlugs;
@@ -193,7 +193,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class ParticleModule : public Module {
-  RttiDeclareAbstract(ParticleModule, Module);
+  DeclareAbstractX(ParticleModule, Module);
   bool IsDirty(void) const {
     return true;
   } // virtual
@@ -209,7 +209,7 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 class ParticlePool : public ParticleModule {
-  RttiDeclareConcrete(ParticlePool, ParticleModule);
+  DeclareConcreteX(ParticlePool, ParticleModule);
 
   DeclareFloatXfPlug(PathInterval);
   DeclareFloatXfPlug(PathProbability);
@@ -269,7 +269,7 @@ public:
 class RingEmitter : public ParticleModule {
   friend class RingDirectedEmitter;
 
-  RttiDeclareConcrete(RingEmitter, ParticleModule);
+  DeclareConcreteX(RingEmitter, ParticleModule);
 
   float mfPhase, mfPhase2;
   float mfLastRadius, mfThisRadius;
@@ -338,7 +338,7 @@ public:
 class NozzleEmitter : public ParticleModule {
   friend class NozzleDirectedEmitter;
 
-  RttiDeclareConcrete(NozzleEmitter, ParticleModule);
+  DeclareConcreteX(NozzleEmitter, ParticleModule);
 
   float mfAccumTime;
   Pool<BasicParticle> mDeadPool;
@@ -400,7 +400,7 @@ public:
 class ReEmitter : public ParticleModule {
   friend class PoolDirectedEmitter;
 
-  RttiDeclareConcrete(ReEmitter, ParticleModule);
+  DeclareConcreteX(ReEmitter, ParticleModule);
 
   ReDirectedEmitter mDirectedEmitter;
   EmitterDirection meDirection;
@@ -447,7 +447,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class WindModule : public ParticleModule {
-  RttiDeclareConcrete(WindModule, ParticleModule);
+  DeclareConcreteX(WindModule, ParticleModule);
 
   //////////////////////////////////////////////////
   // inputs
@@ -478,7 +478,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class GravityModule : public ParticleModule {
-  RttiDeclareConcrete(GravityModule, ParticleModule);
+  DeclareConcreteX(GravityModule, ParticleModule);
 
   //////////////////////////////////////////////////
   // inputs
@@ -513,7 +513,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class PlanarColliderModule : public ParticleModule {
-  RttiDeclareConcrete(PlanarColliderModule, ParticleModule);
+  DeclareConcreteX(PlanarColliderModule, ParticleModule);
 
   int miDiodeDirection;
 
@@ -553,7 +553,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class SphericalColliderModule : public ParticleModule {
-  RttiDeclareConcrete(SphericalColliderModule, ParticleModule);
+  DeclareConcreteX(SphericalColliderModule, ParticleModule);
 
   //////////////////////////////////////////////////
   // inputs
@@ -588,16 +588,16 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enum EPSYS_FLOATOP {
-  EPSYS_FLOATOP_ADD = 0,
-  EPSYS_FLOATOP_SUB,
-  EPSYS_FLOATOP_MUL,
+enum class PSYS_FLOATOP {
+  ADD = 0,
+  SUB,
+  MUL,
 };
 
 class FloatOp2Module : public ParticleModule {
-  RttiDeclareConcrete(FloatOp2Module, ParticleModule);
+  DeclareConcreteX(FloatOp2Module, ParticleModule);
 
-  EPSYS_FLOATOP meOp;
+  PSYS_FLOATOP meOp;
 
   //////////////////////////////////////////////////
   // inputs
@@ -627,18 +627,18 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enum EPSYS_VEC3OP {
-  EPSYS_VEC3OP_ADD = 0,
-  EPSYS_VEC3OP_SUB,
-  EPSYS_VEC3OP_MUL,
-  EPSYS_VEC3OP_DOT,
-  EPSYS_VEC3OP_CROSS,
+enum class PSYS_VEC3OP {
+  ADD = 0,
+  SUB,
+  MUL,
+  DOT,
+  CROSS,
 };
 
 class Vec3Op2Module : public ParticleModule {
-  RttiDeclareConcrete(Vec3Op2Module, ParticleModule);
+  DeclareConcreteX(Vec3Op2Module, ParticleModule);
 
-  EPSYS_VEC3OP meOp;
+  PSYS_VEC3OP meOp;
 
   //////////////////////////////////////////////////
   // inputs
@@ -669,7 +669,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class Vec3SplitModule : public ParticleModule {
-  RttiDeclareConcrete(Vec3SplitModule, ParticleModule);
+  DeclareConcreteX(Vec3SplitModule, ParticleModule);
 
   //////////////////////////////////////////////////
   // inputs
@@ -710,7 +710,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class DecayModule : public ParticleModule {
-  RttiDeclareConcrete(DecayModule, ParticleModule);
+  DeclareConcreteX(DecayModule, ParticleModule);
 
   //////////////////////////////////////////////////
   // inputs
@@ -741,7 +741,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class TurbulenceModule : public ParticleModule {
-  RttiDeclareConcrete(TurbulenceModule, ParticleModule);
+  DeclareConcreteX(TurbulenceModule, ParticleModule);
 
   //////////////////////////////////////////////////
   // inputs
@@ -775,7 +775,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class VortexModule : public ParticleModule {
-  RttiDeclareConcrete(VortexModule, ParticleModule);
+  DeclareConcreteX(VortexModule, ParticleModule);
 
   //////////////////////////////////////////////////
   // inputs
@@ -809,7 +809,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class RendererModule : public ParticleModule {
-  RttiDeclareAbstract(RendererModule, ParticleModule);
+  DeclareAbstractX(RendererModule, ParticleModule);
 
 protected:
   //////////////////////////////////////////////////
@@ -840,7 +840,7 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 class MaterialBase : public ork::Object {
-  RttiDeclareAbstract(MaterialBase, ork::Object);
+  DeclareAbstractX(MaterialBase, ork::Object);
 
 public:
   virtual lev2::GfxMaterial* Bind(lev2::Context* pT) = 0;
@@ -854,7 +854,7 @@ protected:
 };
 
 class TextureMaterial : public MaterialBase {
-  RttiDeclareConcrete(TextureMaterial, MaterialBase);
+  DeclareConcreteX(TextureMaterial, MaterialBase);
 
 public:
   TextureMaterial();
@@ -870,7 +870,7 @@ private:
 };
 
 class VolTexMaterial : public MaterialBase {
-  RttiDeclareConcrete(VolTexMaterial, MaterialBase);
+  DeclareConcreteX(VolTexMaterial, MaterialBase);
 
 public:
   VolTexMaterial();
@@ -889,7 +889,7 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 
 class SpriteRenderer : public RendererModule {
-  RttiDeclareConcrete(SpriteRenderer, RendererModule);
+  DeclareConcreteX(SpriteRenderer, RendererModule);
 
   //////////////////////////////////////////////////
   // inputs
@@ -944,7 +944,7 @@ class SpriteRenderer : public RendererModule {
   PoolString mActiveGradient;
   PoolString mActiveMaterial;
 
-  ork::lev2::EBlending meBlendMode;
+  ork::lev2::Blending meBlendMode;
   ParticleItemAlignment meAlignment;
   bool mbSort;
   int miImageFrame;
@@ -956,7 +956,7 @@ class SpriteRenderer : public RendererModule {
       const ParticlePoolRenderBuffer& buffer,
       ork::lev2::Context* targ) final;
   void DoLink() final;
-  bool DoNotify(const ork::event::Event* event) final;
+  // void doNotify(const ork::event::Event* event) final;
 
 public:
   SpriteRenderer();
@@ -965,7 +965,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class StreakRenderer : public RendererModule {
-  RttiDeclareConcrete(StreakRenderer, RendererModule);
+  DeclareConcreteX(StreakRenderer, RendererModule);
 
   //////////////////////////////////////////////////
   // inputs
@@ -987,7 +987,7 @@ class StreakRenderer : public RendererModule {
   //////////////////////////////////////////////////
 
   ork::Gradient<ork::fvec4> mGradient;
-  ork::lev2::EBlending meBlendMode;
+  ork::lev2::Blending meBlendMode;
   GfxMaterial3DSolid* mpMaterial;
   ork::lev2::TextureAsset* mTexture;
   bool mbSort;
@@ -1016,7 +1016,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class ModelRenderer : public RendererModule {
-  RttiDeclareConcrete(ModelRenderer, RendererModule);
+  DeclareConcreteX(ModelRenderer, RendererModule);
 
   //////////////////////////////////////////////////
   // inputs
@@ -1068,7 +1068,7 @@ class psys_graph_pool;
 class psys_graph : public ork::dataflow::graph_inst {
   friend class psys_graph_pool;
 
-  RttiDeclareAbstract(psys_graph, ork::dataflow::graph_inst);
+  DeclareAbstractX(psys_graph, ork::dataflow::graph_inst);
 
   bool CanConnect(const ork::dataflow::inplugbase* pin, const ork::dataflow::outplugbase* pout) const final;
   ork::dataflow::dgregisterblock mdflowregisters;
@@ -1098,7 +1098,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class psys_graph_pool : public ork::Object {
-  RttiDeclareConcrete(psys_graph_pool, ork::Object);
+  DeclareConcreteX(psys_graph_pool, ork::Object);
 
   const psys_graph* mNewTemplate; // deprecated
   ork::pool<psys_graph>* mGraphPool;

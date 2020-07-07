@@ -19,7 +19,7 @@
 
 bool sbExit = false;
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::Context, "Context")
+ImplementReflectionX(ork::lev2::Context, "Context");
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -33,6 +33,9 @@ bool Context::hiDPI() const {
 
 float Context::currentDPI() const {
   return _currentDPI();
+}
+
+void Context::describeX(class_t* clazz) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -90,7 +93,7 @@ Context::Context()
     , mRenderContextInstData(nullptr)
     , miDrawLock(0)
     , mPlatformHandle(nullptr)
-    , meTargetType(ETGTTYPE_NONE) {
+    , meTargetType(TargetType::NONE) {
 
   static CompositingData _gdata;
   static auto _gimpl = _gdata.createImpl();

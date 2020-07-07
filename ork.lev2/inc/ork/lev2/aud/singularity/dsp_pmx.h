@@ -49,7 +49,7 @@ hudpanel_ptr_t create_op4panel();
 ////////////////////////////////////////////////////////////////
 
 struct PMXData final : public DspBlockData {
-  PMXData();
+  PMXData(std::string name);
   dspblk_ptr_t createInstance() const override;
   int _inpchannel                     = 0;
   float _feedback                     = 0.0f;
@@ -82,7 +82,7 @@ struct PMX final : public DspBlock {
 ////////////////////////////////////////////////////////////////
 
 struct PMXMixData final : public DspBlockData {
-  PMXMixData();
+  PMXMixData(std::string name);
   dspblk_ptr_t createInstance() const override;
   static constexpr int kmaxinputs  = 8;
   int _pmixInpChannels[kmaxinputs] = {-1, -1, -1, -1, -1, -1, -1, -1};

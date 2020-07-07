@@ -21,9 +21,9 @@
 #include <pkg/ent/scene.hpp>
 #include <pkg/ent/entity.hpp>
 
-#include <ork/reflect/RegisterProperty.h>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/register.h>
+#include <ork/reflect/properties/DirectTyped.hpp>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/kernel/orklut.hpp>
 
 #define WRITE_DEBUG_TXT 0
@@ -1314,7 +1314,7 @@ bool SectorTrackerInst::DoStart(ork::ent::Simulation *inst, const ork::fmtx4 &wo
 	return true;
 }
 
-bool SectorTrackerInst::DoNotify(const ork::event::Event *event)
+bool SectorTrackerInst::doNotify(const ork::event::Event *event)
 {
 	return true;
 }

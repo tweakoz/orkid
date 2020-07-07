@@ -19,35 +19,41 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
+#include <ork/lev2/ui/layoutgroup.inl>
 ///////////////////////////////////////////////////////////////////////////////
-
 namespace po = boost::program_options;
-
+///////////////////////////////////////////////////////////////////////////////
 #if defined(__APPLE__)
 namespace ork::lev2 {
 extern bool _macosUseHIDPI;
 }
 #endif
-
+///////////////////////////////////////////////////////////////////////////////
 static auto the_synth = synth::instance();
-
+///////////////////////////////////////////////////////////////////////////////
 SingularityTestApp::SingularityTestApp(int& argc, char** argv)
     : OrkEzQtApp(argc, argv) {
   _hudvp = the_synth->_hudvp;
   startupAudio();
 }
+///////////////////////////////////////////////////////////////////////////////
 SingularityTestApp::~SingularityTestApp() {
   tearDownAudio();
 }
+///////////////////////////////////////////////////////////////////////////////
 std::string testpatternname = "";
 std::string testprogramname = "";
-
+std::string midiportname    = "";
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 singularitytestapp_ptr_t createEZapp(int& argc, char** argv) {
 
   po::options_description desc("Allowed options");
   desc.add_options()                                                //
       ("help", "produce help message")                              //
       ("test", po::value<std::string>(), "test name (list,vo,nvo)") //
+      ("port", po::value<std::string>(), "midiport name (list)")    //
       ("program", po::value<std::string>(), "program name")         //
       ("hidpi", "hidpi mode");
 
@@ -58,6 +64,9 @@ singularitytestapp_ptr_t createEZapp(int& argc, char** argv) {
   if (vars.count("help")) {
     std::cout << desc << "\n";
     exit(0);
+  }
+  if (vars.count("port")) {
+    midiportname = vars["port"].as<std::string>();
   }
   if (vars.count("test")) {
     testpatternname = vars["test"].as<std::string>();
@@ -79,6 +88,10 @@ singularitytestapp_ptr_t createEZapp(int& argc, char** argv) {
   auto qtapp  = std::make_shared<SingularityTestApp>(qti._argc, qti._argvp);
   auto qtwin  = qtapp->_mainWindow;
   auto gfxwin = qtwin->_gfxwin;
+  //////////////////////////////////////////////////////////
+  // a wee bit convoluted, TODO: fixme
+  auto hudvplayout       = qtapp->_topLayoutGroup->layoutAndAddChild(qtapp->_hudvp);
+  qtapp->_hudvp->_layout = hudvplayout;
   //////////////////////////////////////////////////////////
   // create references to various items scoped by qtapp
   //////////////////////////////////////////////////////////
@@ -149,7 +162,8 @@ singularitytestapp_ptr_t createEZapp(int& argc, char** argv) {
     compositorimpl->pushCPD(*CPD);
     context->beginFrame();
     mtxi->PushUIMatrix();
-    qtapp->_hudvp->Draw(drwev);
+    // qtapp->_hudvp->Draw(drwev);
+    qtapp->_ezviewport->_topLayoutGroup->Draw(drwev);
     mtxi->PopUIMatrix();
     context->endFrame();
     ////////////////////////////////////////////////////
@@ -157,7 +171,8 @@ singularitytestapp_ptr_t createEZapp(int& argc, char** argv) {
   });
   //////////////////////////////////////////////////////////
   qtapp->onResize([=](int w, int h) { //
-    // printf("GOTRESIZE<%d %d>\n", w, h);
+                                      // printf("GOTRESIZE<%d %d>\n", w, h);
+                                      // qtapp->_ezviewport->_topLayoutGroup->SetSize(w, h);
     qtapp->_hudvp->SetSize(w, h);
   });
   //////////////////////////////////////////////////////////
@@ -172,42 +187,6 @@ singularitytestapp_ptr_t createEZapp(int& argc, char** argv) {
           case 'p':
             the_synth->_hudpage = (the_synth->_hudpage + 1) % 2;
             break;
-          case '-': {
-            int64_t amt         = isalt ? 100 : (isctrl ? 1 : 10);
-            the_synth->_oswidth = std::clamp(the_synth->_oswidth - amt, int64_t(0), int64_t(4095));
-            break;
-          }
-          case '=': {
-            int64_t amt         = isalt ? 100 : (isctrl ? 1 : 10);
-            the_synth->_oswidth = std::clamp(the_synth->_oswidth + amt, int64_t(0), int64_t(4095));
-            break;
-          }
-          case '[': {
-            float amt             = isalt ? 0.1 : (isctrl ? 0.001 : 0.01);
-            the_synth->_ostriglev = std::clamp(the_synth->_ostriglev - amt, -1.0f, 1.0f);
-            break;
-          }
-          case ']': {
-            float amt             = isalt ? 0.1 : (isctrl ? 0.001 : 0.01);
-            the_synth->_ostriglev = std::clamp(the_synth->_ostriglev + amt, -1.0f, 1.0f);
-            break;
-          }
-          case '\\': {
-            the_synth->_ostrigdir = !the_synth->_ostrigdir;
-            break;
-          }
-          case '\'': {
-            the_synth->_osgainmode++;
-            break;
-          }
-          case '6': {
-            the_synth->nextProgram();
-            break;
-          }
-          case '4': {
-            the_synth->prevProgram();
-            break;
-          }
           default:
             break;
         }
@@ -222,13 +201,22 @@ singularitytestapp_ptr_t createEZapp(int& argc, char** argv) {
   return qtapp;
 }
 //////////////////////////////////////////////////////////////////////////////
-singularitybenchapp_ptr_t createBenchmarkApp(int& argc, char** argv, prgdata_constptr_t program) {
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+singularitybenchapp_ptr_t createBenchmarkApp(
+    int& argc, //
+    char** argv,
+    prgdata_constptr_t program) {
   //////////////////////////////////////////////////////////////////////////////
   // benchmark
   //////////////////////////////////////////////////////////////////////////////
   constexpr size_t histosize = 65536;
   /////////////////////////////////////////
-  auto app = std::make_shared<SingularityBenchMarkApp>(argc, argv);
+  auto uicontext                  = std::make_shared<ui::Context>();
+  auto app                        = std::make_shared<SingularityBenchMarkApp>(argc, argv);
+  auto qtwin                      = app->_mainWindow;
+  auto gfxwin                     = qtwin->_gfxwin;
+  gfxwin->mRootWidget->_uicontext = uicontext.get();
   //////////////////////////////////////////////////////////////////////////////
   app->onGpuInit([=](Context* ctx) { //
     app->_material = std::make_shared<ork::lev2::FreestyleMaterial>();
@@ -386,7 +374,7 @@ singularitybenchapp_ptr_t createBenchmarkApp(int& argc, char** argv, prgdata_con
         vw.AddVertex(vtx_t(fvec4(xr, tgtrect._h - yr, 0.0), fvec4(), color));
       }
       vw.UnLock(context);
-      context->GBI()->DrawPrimitiveEML(vw, EPrimitiveType::LINES);
+      context->GBI()->DrawPrimitiveEML(vw, PrimitiveType::LINES);
       //////////////////////////////////////////////
       // bin_time = 20 * i / histosize
       // bin_time/i = 20/histosize
@@ -399,7 +387,7 @@ singularitybenchapp_ptr_t createBenchmarkApp(int& argc, char** argv, prgdata_con
       vw2.AddVertex(vtx_t(fvec4(desx, 0, 0.0), fvec4(), fvec4(1, 1, 0, 0)));
       vw2.AddVertex(vtx_t(fvec4(desx, tgtrect._h, 0.0), fvec4(), fvec4(1, 1, 0, 0)));
       vw2.UnLock(context);
-      context->GBI()->DrawPrimitiveEML(vw2, EPrimitiveType::LINES);
+      context->GBI()->DrawPrimitiveEML(vw2, PrimitiveType::LINES);
       //////////////////////////////////////////////
       // draw text
       //////////////////////////////////////////////
@@ -469,7 +457,18 @@ singularitybenchapp_ptr_t createBenchmarkApp(int& argc, char** argv, prgdata_con
   return app;
 }
 
-prgdata_constptr_t testpattern(syndata_ptr_t syndat, int argc, char** argv) {
+prgdata_constptr_t testpattern(
+    syndata_ptr_t syndat, //
+    int argc,
+    char** argv) {
+
+  auto midictx = MidiContext::instance();
+  if (midiportname == "list") {
+    for (auto portitem : midictx->_portmap) {
+      printf("midiport<%d:%s>\n", portitem.second, portitem.first.c_str());
+    }
+    exit(0);
+  }
 
   auto program = syndat->getProgramByName(testprogramname);
 
@@ -482,9 +481,11 @@ prgdata_constptr_t testpattern(syndata_ptr_t syndat, int argc, char** argv) {
       printf("program<%d:%s>\n", id, prog->_name.c_str());
     }
     return nullptr;
+  } else if (testpatternname == "none") {
+    the_synth->_globalprog = program;
+    return program;
   } else if (testpatternname == "midi") {
-    void startMidi();
-    startMidi();
+    midictx->startMidiInputByName(midiportname);
     the_synth->_globalprog = program;
     return program;
   } else if (testpatternname == "sq1") {

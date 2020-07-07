@@ -14,16 +14,16 @@ class AssetSetLevel
 {
 public:
 	AssetSetLevel(AssetSetLevel *parent)
-		: mParent(parent)
+		: _parent(parent)
 	{}
 
 	typedef orkvector<AssetSetEntry *> SetType;
 
 	SetType &GetSet() { return mSet; }
 
-	AssetSetLevel *Parent() const { return mParent; }
+	AssetSetLevel *Parent() const { return _parent; }
 private:
-	AssetSetLevel *mParent;
+	AssetSetLevel *_parent;
 	SetType mSet;
 };
 

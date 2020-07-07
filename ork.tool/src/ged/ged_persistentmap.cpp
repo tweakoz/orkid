@@ -13,17 +13,17 @@
 #include <orktool/ged/ged.h>
 #include <orktool/ged/ged_delegate.h>
 #include <orktool/ged/ged_io.h>
-#include <ork/reflect/IProperty.h>
-#include <ork/reflect/IObjectProperty.h>
-#include <ork/reflect/IObjectMapProperty.h>
-#include <ork/reflect/IObjectArrayProperty.h>
-#include <ork/reflect/IObjectPropertyObject.h>
-#include <ork/reflect/DirectObjectPropertyType.h>
-#include <ork/reflect/RegisterProperty.h>
+
+#include <ork/reflect/properties/ObjectProperty.h>
+#include <ork/reflect/properties/IMap.h>
+#include <ork/reflect/properties/IArray.h>
+#include <ork/reflect/properties/IObject.h>
+#include <ork/reflect/properties/DirectTyped.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/rtti/downcast.h>
 
 #include <ork/kernel/orklut.hpp>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
 
 #include <ork/util/crc.h>
 

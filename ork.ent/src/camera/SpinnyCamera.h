@@ -109,7 +109,7 @@ private:
     void DoUpdate(ent::Simulation* sinst) final;
     bool DoLink(Simulation *psi) final;
     bool DoStart(Simulation *psi, const fmtx4 &world) final;
-	bool DoNotify(const ork::event::Event *event) final;
+	void doNotify(const ork::event::Event *event) final;
 	orklut<PoolString,SeqCamItemInstBase*>	mItemInsts;
 	SeqCamItemInstBase*						mpActiveItem;
 	const SequenceCamControllerData&		mCD;

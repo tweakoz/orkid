@@ -13,34 +13,34 @@ namespace ork::lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enum EOutputTimeStep {
-  EOutputTimeStep_RealTime = 0,
-  EOutputTimeStep_15fps,
-  EOutputTimeStep_24fps,
-  EOutputTimeStep_30fps,
-  EOutputTimeStep_48fps,
-  EOutputTimeStep_60fps,
-  EOutputTimeStep_72fps,
-  EOutputTimeStep_96fps,
-  EOutputTimeStep_120fps,
-  EOutputTimeStep_240fps,
+enum class OutputTimeStep {
+  RealTime = 0,
+  fps15,
+  fps24,
+  fps30,
+  fps48,
+  fps60,
+  fps72,
+  fps96,
+  fps120,
+  fps240,
 };
 
-enum EOutputRes {
-  EOutputRes_640x480 = 0,
-  EOutputRes_960x640,
-  EOutputRes_1024x1024,
-  EOutputRes_1280x720,
-  EOutputRes_1600x1200,
-  EOutputRes_1920x1080,
+enum class OutputRes {
+  res_640x480 = 0,
+  res_960x640,
+  res_1024x1024,
+  res_1280x720,
+  res_1600x1200,
+  res_1920x1080,
 };
 
-enum EOutputResMult {
-  EOutputResMult_Quarter = 0,
-  EOutputResMult_Half,
-  EOutputResMult_Full,
-  EOutputResMult_Double,
-  EOutputResMult_Quadruple,
+enum class OutputResMult {
+  Quarter = 0,
+  Half,
+  Full,
+  Double,
+  Quadruple,
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -59,10 +59,10 @@ public:
   bool IsOutputFramesEnabled() const {
     return mbOutputFrames;
   }
-  EOutputTimeStep OutputFrameRate() const {
+  OutputTimeStep OutputFrameRate() const {
     return mOutputFrameRate;
   }
-  EOutputTimeStep currentFrameRateEnum() const;
+  OutputTimeStep currentFrameRateEnum() const;
   float currentFrameRate() const;
 
 private:
@@ -74,9 +74,9 @@ private:
   svar256_t _impl;
 
   bool mbOutputFrames;
-  EOutputRes mOutputBaseResolution;
-  EOutputResMult mOutputResMult;
-  EOutputTimeStep mOutputFrameRate;
+  OutputRes mOutputBaseResolution;
+  OutputResMult mOutputResMult;
+  OutputTimeStep mOutputFrameRate;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

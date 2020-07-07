@@ -91,13 +91,13 @@ class SkyBoxArchetype : public Archetype
 	//void					GetSkyTexture( ork::rtti::ICastable* & l2tex) const;
 
 	//lev2::TextureAsset *	mSkyTexture;
-	//ork::lev2::EBlending	meBlendMode;
+	//ork::lev2::Blending	meBlendMode;
 	//float					mfSpinRate;
 
 public:
 
 	//lev2::Texture*			SkyTexture() const { return (mSkyTexture==0) ? 0 : mSkyTexture->GetTexture(); }
-	//ork::lev2::EBlending	GetBlendMode() const { return meBlendMode; }
+	//ork::lev2::Blending	GetBlendMode() const { return meBlendMode; }
 
 	SkyBoxArchetype();
 	//mutable lev2::GfxMaterial3DSolid* matsky;;

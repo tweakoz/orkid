@@ -162,13 +162,14 @@ void PARAMID::doKeyOn(const KeyOnInfo& koi) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-ParametricEqData::ParametricEqData() {
-  auto& fc_param    = addParam();
-  auto& width_param = addParam();
-  auto& gain_param  = addParam();
-  fc_param.useDefaultEvaluator();
-  width_param.useDefaultEvaluator();
-  gain_param.useDefaultEvaluator();
+ParametricEqData::ParametricEqData(std::string name)
+    : DspBlockData(name) {
+  auto fc_param    = addParam();
+  auto width_param = addParam();
+  auto gain_param  = addParam();
+  fc_param->useDefaultEvaluator();
+  width_param->useDefaultEvaluator();
+  gain_param->useDefaultEvaluator();
 }
 dspblk_ptr_t ParametricEqData::createInstance() const {
   return std::make_shared<ParametricEq>(this);

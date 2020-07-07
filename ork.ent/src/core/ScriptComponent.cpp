@@ -7,7 +7,7 @@
 
 #include <ork/kernel/any.h>
 #include <ork/pch.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/register.h>
 #include <ork/util/md5.h>
 #include <pkg/ent/ScriptComponent.h>
 #include <pkg/ent/entity.h>

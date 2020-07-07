@@ -66,7 +66,7 @@ void Panel::DoDraw(ui::drawevent_constptr_t drwev) {
     vw.AddVertex(lev2::SVtxV12C4T16(x, y, 0.0f, 0.0f, 0.0f, 0xffffffff));
     vw.AddVertex(lev2::SVtxV12C4T16(x2, y2, 0.0f, 0.0f, 0.0f, 0xffffffff));
     vw.UnLock(tgt);
-    tgt->GBI()->DrawPrimitive(defmtl.get(), vw, lev2::EPrimitiveType::LINES);
+    tgt->GBI()->DrawPrimitive(defmtl.get(), vw, lev2::PrimitiveType::LINES);
   };
 
   mtxi->PushUIMatrix();
@@ -78,31 +78,36 @@ void Panel::DoDraw(ui::drawevent_constptr_t drwev) {
     // panel outline (resize/moving)
     /////////////
 
-    fvec4 clr = fcolor4(1.0f, 0.0f, 1.0f, 0.4f);
+    fvec4 clr = _stdcolor;
     if (has_foc)
-      clr = fcolor4::White();
+      clr = _focuscolor;
 
-    defmtl->_rasterstate.SetBlending(lev2::EBLENDING_ALPHA);
+    defmtl->_rasterstate.SetBlending(lev2::Blending::ALPHA);
     tgt->PushModColor(clr);
     ren_quad(ixr, iyr, ixr + _geometry._w, iyr + _geometry._h);
     tgt->PopModColor();
-    defmtl->_rasterstate.SetBlending(lev2::EBLENDING_OFF);
+    defmtl->_rasterstate.SetBlending(lev2::Blending::OFF);
+
+    /////////////
+
+    LocalToRoot(mCloseX, mCloseY, ixr, iyr);
 
     /////////////
     // close button
     /////////////
 
-    LocalToRoot(mCloseX, mCloseY, ixr, iyr);
-    tgt->PushModColor(fcolor4(0.3f, 0.0f, 0.0f));
-    ren_quad(ixr + 1, iyr + 1, ixr + kpanelw - 1, iyr + kpanelw - 1);
-    tgt->PopModColor();
-    tgt->PushModColor(fcolor4(1.0f, 0.3f, 0.3f));
-    ren_quad(ixr + 2, iyr + 2, ixr + kpanelw - 2, iyr + kpanelw - 2);
-    tgt->PopModColor();
-    tgt->PushModColor(fcolor4(0.3f, 0.0f, 0.0f));
-    ren_line(ixr + 1, iyr + 1, ixr + kpanelw - 1, iyr + kpanelw - 1);
-    ren_line(ixr + kpanelw - 1, iyr + 1, ixr + 1, iyr + kpanelw - 1);
-    tgt->PopModColor();
+    if (_closeEnabled) {
+      tgt->PushModColor(fcolor4(0.3f, 0.0f, 0.0f));
+      ren_quad(ixr + 1, iyr + 1, ixr + kpanelw - 1, iyr + kpanelw - 1);
+      tgt->PopModColor();
+      tgt->PushModColor(fcolor4(1.0f, 0.3f, 0.3f));
+      ren_quad(ixr + 2, iyr + 2, ixr + kpanelw - 2, iyr + kpanelw - 2);
+      tgt->PopModColor();
+      tgt->PushModColor(fcolor4(0.3f, 0.0f, 0.0f));
+      ren_line(ixr + 1, iyr + 1, ixr + kpanelw - 1, iyr + kpanelw - 1);
+      ren_line(ixr + kpanelw - 1, iyr + 1, ixr + 1, iyr + kpanelw - 1);
+      tgt->PopModColor();
+    }
 
     if (_title.length()) {
       tgt->PushModColor(fcolor4::Yellow());
@@ -134,7 +139,7 @@ void Panel::DoLayout() {
   int cw = _geometry._w - (kpanelw * 2);
   int ch = _geometry._h - (kpanelw * 2);
 
-  // printf( "Panel<%s>::DoLayout x<%d> y<%d> w<%d> h<%d>\n", msName.c_str(), _geometry._x, _geometry._y, _geometry._w, _geometry._h
+  // printf( "Panel<%s>::DoLayout x<%d> y<%d> w<%d> h<%d>\n", _name.c_str(), _geometry._x, _geometry._y, _geometry._w, _geometry._h
   // );
   if (_child) {
     _child->SetRect(kpanelw, kpanelw, cw, ch);
@@ -156,20 +161,20 @@ Widget* Panel::doRouteUiEvent(event_constptr_t ev) {
 /////////////////////////////////////////////////////////////////////////
 
 void Panel::unsnap() {
-  if (nullptr == mParent)
+  if (nullptr == _parent)
     return;
-  mParent->_snapped.erase(this);
+  _parent->_snapped.erase(this);
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 void Panel::snap() {
-  if (nullptr == mParent)
+  if (nullptr == _parent)
     return;
 
-  int pw = mParent->width();
+  int pw = _parent->width();
   int xd = abs(x2() - pw);
-  int ph = mParent->height();
+  int ph = _parent->height();
   int yd = abs(y2() - ph);
   // printf( "x2<%d> pw<%d> xd<%d>\n", x2, pw, xd );
   // printf( "y2<%d> ph<%d> yd<%d>\n", y2, ph, yd );
@@ -204,7 +209,7 @@ void Panel::snap() {
     SetX(pw + kpanelw - width());
   }
   if (was_snapped) {
-    mParent->_snapped.insert(this);
+    _parent->_snapped.insert(this);
   }
 }
 
@@ -230,26 +235,31 @@ HandlerResult Panel::DoOnUiEvent(event_constptr_t Ev) {
       _prevph        = _geometry._h;
       ret.mHoldFocus = true;
       if (filtev.mBut0) {
-        printf("ilocx<%d> mCloseX<%d>\n", ilocx, mCloseX);
-        if ((ilocx >= mCloseX) && ((ilocx - mCloseX) < kpanelw) && (ilocy >= mCloseY) && ((ilocy - mCloseY) < kpanelw)) {
-          auto lamb = [=]() {
-            if (mParent) {
-              mParent->removeChild(this);
-            }
-          };
-          opq::Op(lamb).QueueASync(opq::mainSerialQueue());
-
-        } else
+        if (_moveEnabled) {
           mPanelUiState = 1;
+        }
+        if (_closeEnabled) {
+          printf("ilocx<%d> mCloseX<%d>\n", ilocx, mCloseX);
+          if ((ilocx >= mCloseX) && ((ilocx - mCloseX) < kpanelw) && (ilocy >= mCloseY) && ((ilocy - mCloseY) < kpanelw)) {
+            auto lamb = [=]() {
+              if (_parent) {
+                _parent->removeChild(this);
+              }
+            };
+            opq::Op(lamb).QueueASync(opq::mainSerialQueue());
+          }
+        }
       } else if (filtev.mBut1 || filtev.mBut2) {
-        if (abs(ilocy) < kpanelw) // top
-          mPanelUiState = 2;
-        else if (abs(ilocy - _geometry._h) < kpanelw) // bot
-          mPanelUiState = 3;
-        else if (abs(ilocx) < kpanelw) // lft
-          mPanelUiState = 4;
-        else if (abs(ilocx - _geometry._w) < kpanelw) // rht
-          mPanelUiState = 5;
+        if (_moveEnabled) {
+          if (abs(ilocy) < kpanelw) // top
+            mPanelUiState = 2;
+          else if (abs(ilocy - _geometry._h) < kpanelw) // bot
+            mPanelUiState = 3;
+          else if (abs(ilocx) < kpanelw) // lft
+            mPanelUiState = 4;
+          else if (abs(ilocx - _geometry._w) < kpanelw) // rht
+            mPanelUiState = 5;
+        }
       }
       break;
     case ui::EventCode::RELEASE: // idle
@@ -294,5 +304,4 @@ HandlerResult Panel::DoOnUiEvent(event_constptr_t Ev) {
   return ret;
 }
 //
-
 }} // namespace ork::ui

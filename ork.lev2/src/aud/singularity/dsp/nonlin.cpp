@@ -114,9 +114,10 @@ void TWOPARAM_SHAPER::compute(DspBuffer& dspbuf) // final
 
 ///////////////////////////////////////////////////////////////////////////////
 
-WrapData::WrapData() {
+WrapData::WrapData(std::string name)
+    : DspBlockData(name) {
   _blocktype = "WRAP";
-  addParam().useDefaultEvaluator();
+  addParam()->useDefaultEvaluator();
 }
 dspblk_ptr_t WrapData::createInstance() const {
   return std::make_shared<Wrap>(this);
@@ -140,9 +141,10 @@ void Wrap::compute(DspBuffer& dspbuf) // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-DistortionData::DistortionData() {
+DistortionData::DistortionData(std::string name)
+    : DspBlockData(name) {
   _blocktype = "DIST";
-  addParam().useDefaultEvaluator();
+  addParam()->useDefaultEvaluator();
 }
 dspblk_ptr_t DistortionData::createInstance() const {
   return std::make_shared<Distortion>(this);
@@ -158,7 +160,7 @@ void Distortion::compute(DspBuffer& dspbuf) // final
   float adj      = _param[0].eval();
   _fval[0]       = adj;
   float ratio    = decibel_to_linear_amp_ratio(adj + 30.0) * pad;
-  // printf("ratio<%g>\n", ratio);
+  float invratio = 1.0f / ratio;
   if (1) {
     auto inputchan  = getInpBuf(dspbuf, 0) + _layer->_dspwritebase;
     auto outputchan = getOutBuf(dspbuf, 0) + _layer->_dspwritebase;
@@ -166,7 +168,7 @@ void Distortion::compute(DspBuffer& dspbuf) // final
       float inp     = inputchan[i];
       float out     = inp * ratio;
       out           = softsat(out, 1);
-      outputchan[i] = out;
+      outputchan[i] = out * invratio;
       // printf("inp<%g> out<%g>\n", inp, out);
     }
   }

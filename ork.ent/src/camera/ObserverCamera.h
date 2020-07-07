@@ -74,7 +74,7 @@ class ObserverCamControllerInst : public ent::ComponentInst
 
 	const ObserverCamControllerData&		mCD;
 	Entity*									mpEye = nullptr;
-	Entity*									mpTarget = nullptr;
+	Entity*									_target = nullptr;
 	lev2::CameraData*				_cameraData = nullptr;
 
 	void DoUpdate(ent::Simulation* sinst) final;

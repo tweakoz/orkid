@@ -11,6 +11,7 @@
 #include <ork/asset/Asset.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <orktool/ged/ged_io.h>
+#include <ork/util/choiceman.h>
 
 namespace ork { namespace tool { namespace ged {
 
@@ -42,7 +43,7 @@ template <typename IODriver> void GedAssetNode<IODriver>::OnCreateObject() {
   OrkAssert(passetclass);
 
   if (passetclass) {
-    ChoiceList* chclist = 0;
+    util::choicelist_ptr_t chclist = nullptr;
     ;
 
     chclist = mModel.GetChoiceManager()->GetChoiceList(annotype.c_str());
@@ -55,7 +56,7 @@ template <typename IODriver> void GedAssetNode<IODriver>::OnCreateObject() {
     pact2->setData(QVariant("reload"));
 
     if (chclist) {
-      QMenu* qm2 = chclist->CreateMenu();
+      QMenu* qm2 = qmenuFromChoiceList(chclist);
 
       qm.addMenu(qm2);
     }
@@ -75,8 +76,9 @@ template <typename IODriver> void GedAssetNode<IODriver>::OnCreateObject() {
 
       QVariant chcvalprop = pact->property("chcval");
 
-      const AttrChoiceValue* chcval =
-          chcvalprop.isValid() ? (const AttrChoiceValue*)chcvalprop.value<void*>() : (const AttrChoiceValue*)0;
+      bool is_valid = chcvalprop.isValid();
+      auto chcval   = is_valid ? (const util::AttrChoiceValue*)chcvalprop.value<void*>() //
+                             : (const util::AttrChoiceValue*)nullptr;
 
       if (chcval) {
         if (0 != strstr(chcval->GetValue().c_str(), "asset<")) {
@@ -102,7 +104,7 @@ template <typename IODriver> void GedAssetNode<IODriver>::OnCreateObject() {
           lev2::GfxEnv::atomicOp([]() {
             // poldasset- Load(true);
             // = DynAssetManager::GetRef().LoadManaged( anno.c_str(),
-            // passet->GetAssetName().c_str(), true );
+            // passet->assetName().c_str(), true );
           });
           mIoDriver.SetValue(poldasset);
         }
@@ -155,7 +157,7 @@ template <typename IODriver> void GedAssetNode<IODriver>::SetLabel() {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename IODriver>
-GedAssetNode<IODriver>::GedAssetNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, Object* obj)
+GedAssetNode<IODriver>::GedAssetNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, Object* obj)
     : GedItemNode(mdl, name, prop, obj)
     , mIoDriver(mdl, prop, obj) {
   mdl.GetGedWidget()->PushItemNode(this);

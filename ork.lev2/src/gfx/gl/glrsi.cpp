@@ -35,45 +35,45 @@ void GlRasterStateInterface::SetRGBAWriteMask( bool rgb, bool a )
 				 rgbmask,
 				 amask );
 }
-void GlRasterStateInterface::SetBlending( EBlending eVal )
+void GlRasterStateInterface::SetBlending( Blending eVal )
 {
 	switch( eVal )
 	{
 
-		case EBLENDING_OFF:
+		case Blending::OFF:
 			glDisable( GL_BLEND );
 			break;
-		case EBLENDING_DSTALPHA:
+		case Blending::DSTALPHA:
 			glEnable( GL_BLEND );
 			glBlendFunc( GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA );
 			break;
-		case EBLENDING_PREMA:
+		case Blending::PREMA:
 			glEnable( GL_BLEND );
 			glBlendFunc( GL_ONE, GL_ONE_MINUS_SRC_ALPHA );
 			//glBlendFunc( GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA );
 			break;
-		case EBLENDING_ALPHA:
+		case Blending::ALPHA:
 			glEnable( GL_BLEND );
 			glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 			//glBlendFunc( GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA );
 			break;
-		case EBLENDING_ADDITIVE:
+		case Blending::ADDITIVE:
 			glEnable( GL_BLEND );
 			glBlendFunc( GL_ONE, GL_ONE );
 			break;
-		case EBLENDING_SUBTRACTIVE:
+		case Blending::SUBTRACTIVE:
 			glEnable( GL_BLEND );
 			glBlendFunc( GL_ZERO, GL_ONE_MINUS_SRC_COLOR );
 			break;
-		case EBLENDING_ALPHA_ADDITIVE:
+		case Blending::ALPHA_ADDITIVE:
 			glEnable( GL_BLEND );
 			glBlendFunc( GL_SRC_ALPHA, GL_ONE );
 			break;
-		case EBLENDING_ALPHA_SUBTRACTIVE:
+		case Blending::ALPHA_SUBTRACTIVE:
 			glEnable( GL_BLEND );
 			glBlendFunc( GL_ZERO, GL_ONE_MINUS_SRC_ALPHA );
 			break;
-		case EBLENDING_MODULATE:
+		case Blending::MODULATE:
 			glEnable( GL_BLEND );
 			glBlendFunc( GL_ZERO, GL_SRC_ALPHA );
 			break;

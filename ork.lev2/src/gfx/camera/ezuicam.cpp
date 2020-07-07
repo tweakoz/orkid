@@ -27,10 +27,11 @@
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/gfx/fxstate_instance.h>
+#include <ork/reflect/properties/registerX.inl>
 
 #include <QtGui/QCursor>
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::EzUiCam, "EzUiCam");
+ImplementReflectionX(ork::lev2::EzUiCam, "EzUiCam");
 
 using namespace ork::ui;
 
@@ -41,18 +42,10 @@ void OrkGlobalEnableMousePointer();
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void EzUiCam::Describe() {
-  ork::reflect::RegisterProperty("Aperature", &EzUiCam::aper);
-  ork::reflect::annotatePropertyForEditor<EzUiCam>("Aperature", "editor.range.min", "0.0f");
-  ork::reflect::annotatePropertyForEditor<EzUiCam>("Aperature", "editor.range.max", "90.0f");
-
-  ork::reflect::RegisterProperty("MaxFar", &EzUiCam::far_max);
-  ork::reflect::annotatePropertyForEditor<EzUiCam>("MaxFar", "editor.range.min", "1.0f");
-  ork::reflect::annotatePropertyForEditor<EzUiCam>("MaxFar", "editor.range.max", "100000.0f");
-
-  ork::reflect::RegisterProperty("MinNear", &EzUiCam::near_min);
-  ork::reflect::annotatePropertyForEditor<EzUiCam>("MinNear", "editor.range.min", "0.01f");
-  ork::reflect::annotatePropertyForEditor<EzUiCam>("MinNear", "editor.range.max", "10000.0f");
+void EzUiCam::describeX(object::ObjectClass* clazz) {
+  clazz->floatProperty("Aperature", float_range{0.0f, 90.0f}, &EzUiCam::aper);
+  clazz->floatProperty("MaxFar", float_range{1.0f, 100000.0f}, &EzUiCam::far_max);
+  clazz->floatProperty("MinNear", float_range{0.01f, 10000.0f}, &EzUiCam::near_min);
 
   // temporary until old mox files converted
   ork::rtti::Class::CreateClassAlias("Camera_persp", GetClassStatic());
@@ -504,10 +497,10 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
 
         fvec4 MoveVec = _pushNZ * fdolly;
 
-        if (HotKeyManager::IsDepressed("camera_y"))
-          MoveVec = _pushNY * fdolly;
-        else if (HotKeyManager::IsDepressed("camera_x"))
-          MoveVec = _pushNX * fdolly;
+        // if (HotKeyManager::IsDepressed("camera_y"))
+        // MoveVec = _pushNY * fdolly;
+        // else if (HotKeyManager::IsDepressed("camera_x"))
+        // MoveVec = _pushNX * fdolly;
 
         mvCenter += MoveVec;
 

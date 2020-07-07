@@ -6,22 +6,18 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct FPARAM {
-  FPARAM();
+struct DspParam {
+  DspParam();
   void reset();
   void keyOn(int ikey, int ivel);
   float eval(bool dump = false);
 
+  dspparam_constptr_t _data;
+
   controller_t _C1;
   controller_t _C2;
-  float _coarse       = 0.0f;
-  float _fine         = 0.0f;
-  float _keyTrack     = 0;
-  float _velTrack     = 0;
-  float _keyOff       = 0.0f;
-  float _unitVel      = 0.0f;
-  int _kstartNote     = 60;
-  bool _kstartBipolar = false;
+  float _keyOff  = 0.0f;
+  float _unitVel = 0.0f;
 
   float _s1val = 0.0f;
   float _s2val = 0.0f;

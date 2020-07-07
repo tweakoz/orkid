@@ -20,7 +20,8 @@
 
 namespace ork {
 template class orklut<PoolString, rtti::Class*>;
-}
+void TouchCoreClasses();
+} // namespace ork
 
 namespace ork { namespace rtti {
 
@@ -28,24 +29,24 @@ std::set<Class*> Class::_explicitLinkClasses;
 static int counter = 0;
 
 Class::Class(const RTTIData& rtti)
-    : mParentClass(rtti.ParentClass())
+    : _parentClass(rtti.ParentClass())
     , mClassInitializer(rtti.ClassInitializer())
-    , mFactory(0)
-
+    , _rawFactory(nullptr)
+    , _sharedFactory(nullptr)
     , mNextClass(sLastClass)
     , mNextSiblingClass(this)
     , mPrevSiblingClass(this)
     , mChildClass(NULL) {
 
-  assert(not(mParentClass==nullptr and counter==2));
+  assert(not(_parentClass == nullptr and counter == 2));
 
   sLastClass = this;
 }
 
 void Class::Initialize() {
   _initialized = true;
-  if (mParentClass)
-    mParentClass->AddChild(this);
+  if (_parentClass)
+    _parentClass->AddChild(this);
 
   if (mClassInitializer != NULL) {
     (*mClassInitializer)();
@@ -53,33 +54,32 @@ void Class::Initialize() {
 }
 
 void Class::InitializeClasses() {
+  TouchCoreClasses();
   counter++;
   std::set<Class*> _pendingclasses;
   for (Class* clazz = sLastClass; clazz != nullptr; clazz = clazz->mNextClass) {
-    if( clazz )
+    if (clazz)
       _pendingclasses.insert(clazz);
     // clazz->Initialize();
     // orkprintf("InitClass class<%p:%s> next<%p>\n", clazz, clazz->Name().c_str(), clazz->mNextClass);
   }
   sLastClass = NULL;
   for (auto clazz : _explicitLinkClasses) {
-    if(clazz)
+    if (clazz)
       _pendingclasses.insert(clazz);
   }
 
   for (auto itc : _pendingclasses) {
     auto clazz = itc;
 
-    if (false==clazz->_initialized) {
-      if(counter==2){
+    if (false == clazz->_initialized) {
+      if (counter == 2) {
         //__asm__ volatile("int $0x03");
       }
-      //orkprintf("InitClass class<%p:%s>\n", clazz, clazz->Name().c_str());
+      // orkprintf("InitClass class<%p:%s>\n", clazz, clazz->Name().c_str());
       clazz->Initialize();
     }
   }
-
-
 }
 
 void Class::SetName(ConstString name, bool badd2map) {
@@ -102,17 +102,32 @@ void Class::SetName(ConstString name, bool badd2map) {
   }
 }
 
-void Class::SetFactory(rtti::ICastable* (*factory)()) { mFactory = factory; }
+void Class::setRawFactory(raw_factory_t factory) {
+  _rawFactory = factory;
+}
+void Class::setSharedFactory(shared_factory_t factory) {
+  _sharedFactory = factory;
+}
 
-Class* Class::Parent() { return mParentClass; }
+Class* Class::Parent() {
+  return _parentClass;
+}
 
-const Class* Class::Parent() const { return mParentClass; }
+const Class* Class::Parent() const {
+  return _parentClass;
+}
 
-Class* Class::FirstChild() { return mChildClass; }
+Class* Class::FirstChild() {
+  return mChildClass;
+}
 
-Class* Class::NextSibling() { return mNextSiblingClass; }
+Class* Class::NextSibling() {
+  return mNextSiblingClass;
+}
 
-Class* Class::PrevSibling() { return mPrevSiblingClass; }
+Class* Class::PrevSibling() {
+  return mPrevSiblingClass;
+}
 
 void Class::AddChild(Class* pClass) {
   if (mChildClass) {
@@ -133,16 +148,18 @@ void Class::RemoveFromHierarchy() {
   mNextSiblingClass->mPrevSiblingClass = mPrevSiblingClass;
   mPrevSiblingClass->mNextSiblingClass = mNextSiblingClass;
 
-  if (mParentClass->mChildClass == this)
-    mParentClass->mChildClass = mNextSiblingClass;
+  if (_parentClass->mChildClass == this)
+    _parentClass->mChildClass = mNextSiblingClass;
 
-  if (mParentClass->mChildClass == this)
-    mParentClass->mChildClass = NULL;
+  if (_parentClass->mChildClass == this)
+    _parentClass->mChildClass = NULL;
 
   mNextSiblingClass = mPrevSiblingClass = this;
 }
 
-const PoolString& Class::Name() const { return mClassName; }
+const PoolString& Class::Name() const {
+  return mClassName;
+}
 
 Class* Class::FindClass(const ConstString& name) {
   return OldStlSchoolFindValFromKey(mClassMap, FindPooledString(name.c_str()), NULL);
@@ -157,8 +174,6 @@ Class* Class::FindClassNoCase(const ConstString& name) {
   }
   return nullptr;
 }
-
-rtti::ICastable* Class::CreateObject() const { return (*mFactory)(); }
 
 bool Class::IsSubclassOf(const Class* other) const {
   const Class* this_class = this;
@@ -200,7 +215,11 @@ Category* Class::category() {
   return &s_category;
 }
 
-Class* Class::GetClass() const { return Class::GetClassStatic(); }
-ConstString Class::DesignNameStatic() { return "Class"; }
+Class* Class::GetClass() const {
+  return Class::GetClassStatic();
+}
+ConstString Class::DesignNameStatic() {
+  return "Class";
+}
 
 }} // namespace ork::rtti

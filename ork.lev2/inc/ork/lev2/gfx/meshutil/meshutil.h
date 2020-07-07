@@ -55,7 +55,7 @@ struct MaterialBindingItem {
 typedef orkmap<std::string, MaterialBindingItem> material_semanticmap_t;
 
 class Light : public ork::Object {
-  RttiDeclareAbstract(Light, ork::Object);
+  DeclareAbstractX(Light, ork::Object);
 
 public:
   std::string mName;
@@ -89,7 +89,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class LightContainer : public ork::Object {
-  RttiDeclareConcrete(LightContainer, ork::Object);
+  DeclareConcreteX(LightContainer, ork::Object);
 
 public:
   orklut<PoolString, Light*> mLights;
@@ -310,7 +310,7 @@ struct Mesh {
 ///////////////////////////////////////////////////////////////////////////////
 
 class AmbientLight : public Light {
-  RttiDeclareConcrete(AmbientLight, Light);
+  DeclareConcreteX(AmbientLight, Light);
 
 public:
   AmbientLight() {
@@ -326,7 +326,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 struct DirLight : public Light {
-  RttiDeclareConcrete(DirLight, Light);
+  DeclareConcreteX(DirLight, Light);
 
 public:
   fvec3 mFrom;
@@ -346,7 +346,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class PointLight : public Light {
-  RttiDeclareConcrete(PointLight, Light);
+  DeclareConcreteX(PointLight, Light);
 
 public:
   fvec3 mPoint;

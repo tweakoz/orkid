@@ -79,7 +79,7 @@ struct RenderContextInstData {
   const IRenderable* _dagrenderable         = nullptr;
   const RenderContextFrameData* _RCFD       = nullptr;
   const XgmMaterialStateInst* mMaterialInst = nullptr;
-  RenderGroupState mRenderGroupState        = ERGST_NONE;
+  RenderGroupState mRenderGroupState        = RenderGroupState::NONE;
 
   float mEngineParamFloats[kMaxEngineParamFloats];
 };
@@ -102,7 +102,7 @@ struct RenderContextFrameData {
     return context(); // deprecated
   }
   Context* context(void) const {
-    return mpTarget;
+    return _target;
   }
   LightManager* GetLightManager() const {
     return _lightmgr;
@@ -136,7 +136,7 @@ struct RenderContextFrameData {
   compositorimpl_ptr_t _cimpl;
   LightManager* _lightmgr = nullptr;
   usermap_t _userProperties;
-  Context* const mpTarget = nullptr;
+  Context* const _target = nullptr;
   const IRenderer* _renderer;
 };
 

@@ -7,7 +7,7 @@
 
 #include <ork/pch.h>
 #include <ork/kernel/opq.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/registerX.inl>
 #include <ork/rtti/downcast.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/texman.h>
@@ -21,9 +21,9 @@
 #include <pkg/ent/entity.hpp>
 #include <ork/lev2/gfx/renderer/drawable.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/reflect/AccessorObjectPropertyType.hpp>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/properties/AccessorTyped.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/lev2/gfx/camera/cameradata.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include "GridComponent.h"
@@ -138,7 +138,7 @@ struct impl {
       modcolor.SetRGBAU64(pid);
     }
     context->PushModColor(modcolor);
-    gbi->DrawPrimitive(pimpl->_material, vw, EPrimitiveType::TRIANGLES, 6);
+    gbi->DrawPrimitive(pimpl->_material, vw, PrimitiveType::TRIANGLES, 6);
     context->PopModColor();
     mtxi->PopMMatrix();
   }

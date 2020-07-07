@@ -7,12 +7,17 @@ void pyinit_gfx_shader(py::module& module_lev2) {
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
   auto shader_type = //
-      py::class_<pyfxshader_ptr_t>(module_lev2, "FxShader")
-          .def(py::init<>())
-          .def_property_readonly("name", [](const pyfxshader_ptr_t& sh) -> std::string { return sh->mName; })
+      py::class_<FxShaderAsset, fxshaderasset_ptr_t>(module_lev2, "FxShaderAsset")
+          .def_property_readonly(
+              "name",
+              [](const fxshaderasset_ptr_t& shass) -> std::string { //
+                auto sh = shass->GetFxShader();
+                return sh->mName;
+              })
           .def_property_readonly(
               "params",
-              [](const pyfxshader_ptr_t& sh) -> fxparammap_t {
+              [](const fxshaderasset_ptr_t& shass) -> fxparammap_t {
+                auto sh = shass->GetFxShader();
                 fxparammap_t rval;
                 for (auto item : sh->_parameterByName) {
                   rval[item.first] = pyfxparam_ptr_t(item.second);
@@ -21,7 +26,8 @@ void pyinit_gfx_shader(py::module& module_lev2) {
               })
           .def(
               "param",
-              [](const pyfxshader_ptr_t& sh, cstrref_t named) -> pyfxparam_ptr_t {
+              [](const fxshaderasset_ptr_t& shass, cstrref_t named) -> pyfxparam_ptr_t {
+                auto sh = shass->GetFxShader();
                 auto it = sh->_parameterByName.find(named);
                 pyfxparam_ptr_t rval(nullptr);
                 if (it != sh->_parameterByName.end())
@@ -30,7 +36,8 @@ void pyinit_gfx_shader(py::module& module_lev2) {
               })
           .def_property_readonly(
               "techniques",
-              [](const pyfxshader_ptr_t& sh) -> fxtechniquemap_t {
+              [](const fxshaderasset_ptr_t& shass) -> fxtechniquemap_t {
+                auto sh = shass->GetFxShader();
                 fxtechniquemap_t rval;
                 for (auto item : sh->_techniques) {
                   rval[item.first] = pyfxtechnique_ptr_t(item.second);
@@ -39,19 +46,21 @@ void pyinit_gfx_shader(py::module& module_lev2) {
               })
           .def(
               "technique",
-              [](const pyfxshader_ptr_t& sh, cstrref_t named) -> pyfxtechnique_ptr_t {
+              [](const fxshaderasset_ptr_t& shass, cstrref_t named) -> pyfxtechnique_ptr_t {
+                auto sh = shass->GetFxShader();
                 auto it = sh->_techniques.find(named);
                 pyfxtechnique_ptr_t rval(nullptr);
                 if (it != sh->_techniques.end())
                   rval = pyfxtechnique_ptr_t(it->second);
                 return rval;
               })
-          .def("__repr__", [](const pyfxshader_ptr_t& sh) -> std::string {
+          .def("__repr__", [](const fxshaderasset_ptr_t& shass) -> std::string {
+            auto sh = shass->GetFxShader();
             fxstring<256> fxs;
-            fxs.format("FxShader(%p:%s)", sh.get(), sh->mName.c_str());
+            fxs.format("FxShader(%p:%s)", sh, sh->mName.c_str());
             return fxs.c_str();
           });
-  type_codec->registerRawPtrCodec<pyfxshader_ptr_t, fxshader_constptr_t>(shader_type);
+  type_codec->registerStdCodec<fxshaderasset_ptr_t>(shader_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto param_type = //
       py::class_<pyfxparam_ptr_t>(module_lev2, "FxShaderParam")

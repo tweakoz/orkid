@@ -10,7 +10,7 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 struct Sum2Data final : public DspBlockData {
-  Sum2Data();
+  Sum2Data(std::string name);
   dspblk_ptr_t createInstance() const override;
 };
 
@@ -21,7 +21,7 @@ struct SUM2 : public DspBlock {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct MonoInStereoOutData : public DspBlockData {
-  MonoInStereoOutData();
+  MonoInStereoOutData(std::string name);
   dspblk_ptr_t createInstance() const override;
 };
 struct MonoInStereoOut : public DspBlock {
@@ -34,7 +34,7 @@ struct MonoInStereoOut : public DspBlock {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct StereoEnhancerData : public DspBlockData {
-  StereoEnhancerData();
+  StereoEnhancerData(std::string name);
   dspblk_ptr_t createInstance() const override;
 };
 struct StereoEnhancer : public DspBlock {
@@ -61,7 +61,7 @@ struct DelayContext {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct PitchShifterData : public DspBlockData {
-  PitchShifterData();
+  PitchShifterData(std::string name);
   dspblk_ptr_t createInstance() const override;
 };
 struct PitchShifter : public DspBlock {
@@ -91,7 +91,7 @@ struct PitchShifter : public DspBlock {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct StereoDynamicEchoData : public DspBlockData {
-  StereoDynamicEchoData();
+  StereoDynamicEchoData(std::string name);
   dspblk_ptr_t createInstance() const override;
 };
 struct StereoDynamicEcho : public DspBlock {
@@ -106,7 +106,7 @@ struct StereoDynamicEcho : public DspBlock {
 // Feedback Delay Network Reverb (4 nodes)
 ///////////////////////////////////////////////////////////////////////////////
 struct Fdn4ReverbData : public DspBlockData {
-  Fdn4ReverbData(float tscale);
+  Fdn4ReverbData(std::string name, float tscale);
   dspblk_ptr_t createInstance() const override;
   float _tscale;
 };
@@ -134,7 +134,7 @@ struct Fdn4Reverb : public DspBlock {
 // Feedback Delay Network Reverb (4 nodes) with rotation matrix
 ///////////////////////////////////////////////////////////////////////////////
 struct Fdn4ReverbXData : public DspBlockData {
-  Fdn4ReverbXData(float tscale);
+  Fdn4ReverbXData(std::string name, float tscale);
   dspblk_ptr_t createInstance() const override;
   float _tscale = 1.0f;
 

@@ -11,10 +11,10 @@
 #include <orktool/ged/ged_delegate.h>
 #include <orktool/ged/ged_io.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/reflect/IProperty.h>
-#include <ork/reflect/IObjectProperty.h>
-#include <ork/reflect/IObjectPropertyObject.h>
-#include <ork/reflect/IObjectPropertyType.h>
+
+#include <ork/reflect/properties/ObjectProperty.h>
+#include <ork/reflect/properties/IObject.h>
+#include <ork/reflect/properties/ITyped.h>
 #include "ged_delegate.hpp"
 #include <ork/math/multicurve.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
@@ -30,7 +30,7 @@ static const int kh       = 128;
 class GedCurveEditPoint : public GedObject {
   RttiDeclareAbstract(GedCurveEditPoint, GedObject);
   MultiCurve1D* mCurveObject;
-  GedItemNode* mParent;
+  GedItemNode* _parent;
   int miPoint;
 
 public:
@@ -39,17 +39,17 @@ public:
   }
   GedCurveEditPoint()
       : mCurveObject(0)
-      , mParent(0)
+      , _parent(0)
       , miPoint(-1) {
   }
   void SetCurveObject(MultiCurve1D* pgrad) {
     mCurveObject = pgrad;
   }
   void SetParent(GedItemNode* ppar) {
-    mParent = ppar;
+    _parent = ppar;
   }
   void OnMouseDoubleClicked(ork::ui::event_constptr_t ev) final {
-    if (mParent && mCurveObject) {
+    if (_parent && mCurveObject) {
       orklut<float, float>& data        = mCurveObject->GetVertices();
       orklut<float, float>::iterator it = data.begin() + miPoint;
       if (ev->IsButton0DownF()) {
@@ -57,7 +57,7 @@ public:
       } else if (ev->IsButton2DownF()) {
         if (it->first != 0.0f && it->first != 1.0f) {
           mCurveObject->MergeSegment(miPoint);
-          mParent->SigInvalidateProperty();
+          _parent->SigInvalidateProperty();
         }
       }
     }
@@ -67,14 +67,14 @@ public:
 
     switch (filtev._eventcode) {
       case ui::EventCode::DRAG: {
-        if (mParent && mCurveObject) {
+        if (_parent && mCurveObject) {
           orklut<float, float>& data = mCurveObject->GetVertices();
           const int knumpoints       = (int)data.size();
           const int ksegs            = knumpoints - 1;
           if (miPoint >= 0 && miPoint < knumpoints) {
-            int mouseposX = ev->miX - mParent->GetX();
-            int mouseposY = ev->miY - mParent->GetY();
-            float fx      = float(mouseposX) / float(mParent->width());
+            int mouseposX = ev->miX - _parent->GetX();
+            int mouseposY = ev->miY - _parent->GetY();
+            float fx      = float(mouseposX) / float(_parent->width());
             float fy      = 1.0f - float(mouseposY) / float(kh);
             if (miPoint == 0)
               fx = 0.0f;
@@ -90,7 +90,7 @@ public:
             if (miPoint != 0 && miPoint != (knumpoints - 1)) {
               orklut<float, float>::iterator itp = it - 1;
               orklut<float, float>::iterator itn = it + 1;
-              const float kfbound                = float(kpntsize) / mParent->width();
+              const float kfbound                = float(kpntsize) / _parent->width();
               if (itp != data.end()) {
                 if (fx < (itp->first + kfbound)) {
                   fx = (itp->first + kfbound);
@@ -104,7 +104,7 @@ public:
             }
             data.RemoveItem(it);
             data.AddSorted(fx, fy);
-            mParent->SigInvalidateProperty();
+            _parent->SigInvalidateProperty();
           }
         }
         break;
@@ -122,15 +122,15 @@ class GedCurveEditSeg : public GedObject {
   RttiDeclareAbstract(GedCurveEditSeg, GedObject);
 
   MultiCurve1D* mCurveObject;
-  GedItemNode* mParent;
+  GedItemNode* _parent;
   int miSeg;
 
 public:
   void OnMouseDoubleClicked(ork::ui::event_constptr_t ev) final {
-    if (mParent && mCurveObject) {
+    if (_parent && mCurveObject) {
       if (ev->IsButton0DownF()) {
         mCurveObject->SplitSegment(miSeg);
-        mParent->SigInvalidateProperty();
+        _parent->SigInvalidateProperty();
       } else if (ev->IsButton2DownF()) {
         QMenu* pMenu         = new QMenu(0);
         QAction* pchildmenu0 = pMenu->addAction("Seg:Lin");
@@ -150,14 +150,14 @@ public:
           QString UserName  = UserData.toString();
           std::string sval  = UserName.toStdString();
           if (sval == "lin")
-            mCurveObject->SetSegmentType(miSeg, EMCST_LINEAR);
+            mCurveObject->SetSegmentType(miSeg, MultiCurveSegmentType::LINEAR);
           if (sval == "box")
-            mCurveObject->SetSegmentType(miSeg, EMCST_BOX);
+            mCurveObject->SetSegmentType(miSeg, MultiCurveSegmentType::BOX);
           if (sval == "log")
-            mCurveObject->SetSegmentType(miSeg, EMCST_LOG);
+            mCurveObject->SetSegmentType(miSeg, MultiCurveSegmentType::LOG);
           if (sval == "exp")
-            mCurveObject->SetSegmentType(miSeg, EMCST_EXP);
-          mParent->SigInvalidateProperty();
+            mCurveObject->SetSegmentType(miSeg, MultiCurveSegmentType::EXP);
+          _parent->SigInvalidateProperty();
         }
       }
     }
@@ -169,7 +169,7 @@ public:
 
   GedCurveEditSeg()
       : mCurveObject(0)
-      , mParent(0)
+      , _parent(0)
       , miSeg(-1) {
   }
 
@@ -177,7 +177,7 @@ public:
     mCurveObject = pgrad;
   }
   void SetParent(GedItemNode* ppar) {
-    mParent = ppar;
+    _parent = ppar;
   }
 };
 
@@ -205,7 +205,7 @@ class GedCurveV4Widget : public GedItemNode {
     GedSkin::GedPrim prim;
     prim.mDrawCB = CurveCustomPrim;
     prim.mpNode  = this;
-    prim.meType  = ork::lev2::EPrimitiveType::MULTI;
+    prim.meType  = ork::lev2::PrimitiveType::MULTI;
     prim.iy1     = miY;
     prim.iy2     = miY + kh;
     GetSkin()->AddPrim(prim);
@@ -288,7 +288,7 @@ class GedCurveV4Widget : public GedItemNode {
       gridmat.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_MOD_COLOR);
       gridmat._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
       gridmat._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
-      gridmat._rasterstate.SetBlending(ork::lev2::EBLENDING_OFF);
+      gridmat._rasterstate.SetBlending(ork::lev2::Blending::OFF);
       gridmat._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
       gridmat._rasterstate.SetShadeModel(ork::lev2::ESHADEMODEL_SMOOTH);
 
@@ -298,16 +298,16 @@ class GedCurveV4Widget : public GedItemNode {
       int inuml                    = 0;
       for (int i = 0; i < ksegs; i++) {
         switch (pthis->mCurveObject->GetSegmentType(i)) {
-          case EMCST_LINEAR:
+          case MultiCurveSegmentType::LINEAR:
             inuml += 2;
             break;
-          case EMCST_BOX:
+          case MultiCurveSegmentType::BOX:
             inuml += 4;
             break;
-          case EMCST_LOG:
+          case MultiCurveSegmentType::LOG:
             inuml += kexplogsegs * 2;
             break;
-          case EMCST_EXP:
+          case MultiCurveSegmentType::EXP:
             inuml += kexplogsegs * 2;
             break;
         }
@@ -364,8 +364,8 @@ class GedCurveV4Widget : public GedItemNode {
         float fy1 = fy + fh - (fiyb * fh);
 
         switch (pthis->mCurveObject->GetSegmentType(i)) {
-          case EMCST_LOG:
-          case EMCST_EXP: {
+          case MultiCurveSegmentType::LOG:
+          case MultiCurveSegmentType::EXP: {
             for (int j = 0; j < kexplogsegs; j++) {
               int k      = j + 1;
               float fj   = float(j) / float(kexplogsegs);
@@ -390,7 +390,7 @@ class GedCurveV4Widget : public GedItemNode {
             }
             break;
           }
-          case EMCST_LINEAR: {
+          case MultiCurveSegmentType::LINEAR: {
             lev2::SVtxV12C4T16 v0(fvec3(fx0, fy0, kz), uv, 0xffffffff);
             lev2::SVtxV12C4T16 v1(fvec3(fx1, fy1, kz), uv, 0xffffffff);
             vw.AddVertex(v0);
@@ -398,7 +398,7 @@ class GedCurveV4Widget : public GedItemNode {
             icountA += 2;
             break;
           }
-          case EMCST_BOX: {
+          case MultiCurveSegmentType::BOX: {
             lev2::SVtxV12C4T16 v0(fvec3(fx0, fy0, kz), uv, 0xffffffff);
             lev2::SVtxV12C4T16 v1(fvec3(fx1, fy0, kz), uv, 0xffffffff);
             lev2::SVtxV12C4T16 v2(fvec3(fx1, fy1, kz), uv, 0xffffffff);
@@ -425,10 +425,10 @@ class GedCurveV4Widget : public GedItemNode {
       pTARG->MTXI()->PushVMatrix(fmtx4::Identity());
       pTARG->MTXI()->PushMMatrix(fmtx4::Identity());
       pTARG->PushModColor(fvec3::Blue());
-      pTARG->GBI()->DrawPrimitive(&gridmat, VB, ork::lev2::EPrimitiveType::TRIANGLES, ivbaseA, 6);
+      pTARG->GBI()->DrawPrimitive(&gridmat, VB, ork::lev2::PrimitiveType::TRIANGLES, ivbaseA, 6);
       pTARG->PopModColor();
       pTARG->PushModColor(fvec3::White());
-      pTARG->GBI()->DrawPrimitive(&gridmat, VB, ork::lev2::EPrimitiveType::LINES, ivbaseA + 6, icountA - 6);
+      pTARG->GBI()->DrawPrimitive(&gridmat, VB, ork::lev2::PrimitiveType::LINES, ivbaseA + 6, icountA - 6);
       pTARG->PopModColor();
       pTARG->MTXI()->PopPMatrix();
       pTARG->MTXI()->PopVMatrix();
@@ -445,23 +445,23 @@ class GedCurveV4Widget : public GedItemNode {
   } // virtual
 
 public:
-  GedCurveV4Widget(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj)
+  GedCurveV4Widget(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj)
       : GedItemNode(mdl, name, prop, obj)
       , mCurveObject(0)
-      //, mVertexBuffer( 512, 0, ork::lev2::EPrimitiveType::TRIANGLES )
+      //, mVertexBuffer( 512, 0, ork::lev2::PrimitiveType::TRIANGLES )
       , mEditPoints(kpoolsize)
       , mEditSegs(kpoolsize) {
     mCurveObject = rtti::autocast(obj);
 
     if (0 == mCurveObject) {
-      const reflect::IObjectPropertyObject* pprop = rtti::autocast(GetOrkProp());
+      const reflect::IObject* pprop = rtti::autocast(GetOrkProp());
       mCurveObject                                = rtti::autocast(pprop->Access(GetOrkObj()));
     }
 
     if (0 == mCurveObject) {
-      const reflect::IObjectPropertyObject* pprop = rtti::autocast(GetOrkProp());
+      const reflect::IObject* pprop = rtti::autocast(GetOrkProp());
       ObjProxy<MultiCurve1D>* proxy               = rtti::autocast(pprop->Access(GetOrkObj()));
-      mCurveObject                                = proxy->mParent;
+      mCurveObject                                = proxy->_parent;
     }
   }
 };
@@ -470,7 +470,7 @@ void GedFactoryCurve::Describe() {
 }
 
 GedItemNode*
-GedFactoryCurve::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::IObjectProperty* prop, Object* obj) const {
+GedFactoryCurve::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::ObjectProperty* prop, Object* obj) const {
   GedItemNode* groupnode = new GedLabelNode(mdl, "curve", prop, obj);
 
   mdl.GetGedWidget()->PushItemNode(groupnode);

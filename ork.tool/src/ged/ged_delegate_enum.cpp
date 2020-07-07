@@ -11,10 +11,10 @@
 #include <orktool/ged/ged_delegate.h>
 #include <orktool/ged/ged_io.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/reflect/IProperty.h>
-#include <ork/reflect/IObjectProperty.h>
-#include <ork/reflect/IObjectPropertyObject.h>
-#include <ork/reflect/IObjectPropertyType.h>
+
+#include <ork/reflect/properties/ObjectProperty.h>
+#include <ork/reflect/properties/IObject.h>
+#include <ork/reflect/properties/ITyped.h>
 #include "ged_delegate.hpp"
 #include <ork/reflect/serialize/LayerDeserializer.h>
 #include <ork/reflect/serialize/ShallowSerializer.h>
@@ -25,11 +25,11 @@
 namespace ork { namespace tool { namespace ged {
 ///////////////////////////////////////////////////////////////////////////////
 
-class EnumReader : public reflect::serialize::LayerSerializer {
+class EnumReader : public reflect::serdes::LayerSerializer {
 public:
   /////////////////////////////////////////////////////
-  EnumReader(const ork::Object* pobj, const reflect::IObjectProperty* prop)
-      : reflect::serialize::LayerSerializer(mNullSer) {
+  EnumReader(const ork::Object* pobj, const reflect::ObjectProperty* prop)
+      : reflect::serdes::LayerSerializer(mNullSer) {
     prop->Serialize(*this, pobj);
   }
   const orkmap<std::string, int>& GetEnumMap() const {
@@ -41,14 +41,14 @@ public:
 
 private:
   /////////////////////////////////////////////////////
-  const reflect::IObjectMapProperty* mMapProp;
-  reflect::serialize::NullSerializer mNullSer;
+  const reflect::IMap* mMapProp;
+  reflect::serdes::NullSerializer mNullSer;
   /////////////////////////////////////////////////////
   const ork::Object* mpObject;
   orkmap<std::string, int> mEnumMap;
   std::string mCurrentValue;
   /////////////////////////////////////////////////////
-  void Hint(const PieceString&, intptr_t ival) {
+  void Hint(const PieceString&, hintvar_t val) {
     ork::reflect::EnumNameMap* penummap = reinterpret_cast<ork::reflect::EnumNameMap*>(ival);
     for (int i = 0; penummap[i].name; i++) {
       const char* pname = penummap[i].name;
@@ -60,17 +60,17 @@ private:
   bool Serialize(const PieceString& value) {
     ArrayString<128> astr(value);
     mCurrentValue = astr.c_str();
-    return reflect::serialize::LayerSerializer::Serialize(value);
+    return reflect::serdes::LayerSerializer::Serialize(value);
   }
   /////////////////////////////////////////////////////
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class EnumWriter : public reflect::serialize::LayerDeserializer {
+class EnumWriter : public reflect::serdes::LayerDeserializer {
 public:
-  EnumWriter(const ork::Object* pobj, const reflect::IObjectProperty* prop)
-      : reflect::serialize::LayerDeserializer(mNullDeser)
+  EnumWriter(const ork::Object* pobj, const reflect::ObjectProperty* prop)
+      : reflect::serdes::LayerDeserializer(mNullDeser)
       , mObject(pobj)
       , mProp(prop)
       , mpSetValue(0) {
@@ -83,9 +83,9 @@ public:
   }
 
 private:
-  reflect::serialize::NullDeserializer mNullDeser;
+  reflect::serdes::NullDeserializer mNullDeser;
   const ork::Object* mObject;
-  const reflect::IObjectProperty* mProp;
+  const reflect::ObjectProperty* mProp;
   const char* mpSetValue;
 
   /*virtual*/ bool Deserialize(MutableString& val) {
@@ -117,7 +117,7 @@ class GedEnumWidget : public GedItemNode {
   }
 
 public:
-  GedEnumWidget(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj)
+  GedEnumWidget(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj)
       : GedItemNode(mdl, name, prop, obj)
       , ValueStrings(0)
       , NumStrings(0)
@@ -161,7 +161,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 GedItemNode*
-GedFactoryEnum::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::IObjectProperty* prop, Object* obj) const {
+GedFactoryEnum::CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::ObjectProperty* prop, Object* obj) const {
   ConstString anno_mkgroup = prop->GetAnnotation("editor.mktag");
 
   GedEnumWidget* PropContainerW = new GedEnumWidget(mdl, Name.c_str(), prop, obj);

@@ -16,16 +16,17 @@ namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-StereoDynamicEchoData::StereoDynamicEchoData() {
-  _blocktype             = "StereoDynamicEcho";
-  auto& delaytime_paramL = addParam();
-  auto& delaytime_paramR = addParam();
-  auto& feedback_param   = addParam();
-  auto& mix_param        = addParam();
-  delaytime_paramL.useDefaultEvaluator();
-  delaytime_paramR.useDefaultEvaluator();
-  feedback_param.useDefaultEvaluator();
-  mix_param.useDefaultEvaluator();
+StereoDynamicEchoData::StereoDynamicEchoData(std::string name)
+    : DspBlockData(name) {
+  _blocktype            = "StereoDynamicEcho";
+  auto delaytime_paramL = addParam();
+  auto delaytime_paramR = addParam();
+  auto feedback_param   = addParam();
+  auto mix_param        = addParam();
+  delaytime_paramL->useDefaultEvaluator();
+  delaytime_paramR->useDefaultEvaluator();
+  feedback_param->useDefaultEvaluator();
+  mix_param->useDefaultEvaluator();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

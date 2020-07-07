@@ -64,6 +64,10 @@ void PreferOpenGL() {
 void ClassInit() {
   AllocationLabel label("ork::lev2::Init");
 
+  Context::GetClassStatic();
+
+  PreferOpenGL();
+
   GfxEnv::GetRef();
   GfxPrimitives::GetRef();
 
@@ -153,6 +157,10 @@ void ClassInit() {
   RegisterClassX(PBRMaterial);
 
   RegisterClassX(TerrainDrawableData);
+  RegisterClassX(TextureAsset);
+  RegisterClassX(FxShaderAsset);
+  RegisterClassX(XgmAnimAsset);
+  RegisterClassX(XgmModelAsset);
 
   //////////////////////////////////////////
   // register lev2 graphics target classes
@@ -164,6 +172,7 @@ void ClassInit() {
 
 void GfxInit(const std::string& gfxlayer) {
   vk::init();
+
   if (gfxlayer != "dummy") {
 #if defined(ORK_CONFIG_OPENGL)
     OpenGlContextInit();
@@ -255,7 +264,7 @@ void PerformanceTracker::Draw(ork::lev2::Context* pTARG) {
   //////////////////////////////////////////////////////////////////////
   ork::lev2::GfxMaterial3DSolid Material(pTARG);
   Material._rasterstate.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
-  Material._rasterstate.SetBlending( ork::lev2::EBLENDING_ADDITIVE );
+  Material._rasterstate.SetBlending( ork::lev2::Blending::ADDITIVE );
   Material.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_MOD_COLOR );
   Material._rasterstate.SetZWriteMask( false );
   pTARG->BindMaterial( & Material );
@@ -307,7 +316,7 @@ void PerformanceTracker::Draw(ork::lev2::Context* pTARG) {
           Vertices[4].SetXYZ( fx2, (f32) ipY+1, 0.5f );
           Vertices[5].SetXYZ( fx2, (f32) ipY2-1, 0.5f );
 
-          pTARG->IMI()->DrawPrim( Vertices, 6, ork::lev2::EPrimitiveType::TRIANGLES );
+          pTARG->IMI()->DrawPrim( Vertices, 6, ork::lev2::PrimitiveType::TRIANGLES );
 
           ipY -= iih;
           ipY2 -= iih;

@@ -16,7 +16,7 @@
 #include <ork/kernel/string/string.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace asset {
+namespace ork::asset {
 ///////////////////////////////////////////////////////////////////////////////
 
 DynamicAssetLoader::DynamicAssetLoader()
@@ -34,19 +34,29 @@ std::set<file::Path> DynamicAssetLoader::EnumerateExisting() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool DynamicAssetLoader::CheckAsset(const PieceString& name) {
+bool DynamicAssetLoader::doesExist(const AssetPath& name) {
   return (mCheckFn != nullptr) ? mCheckFn(name) : false;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-bool DynamicAssetLoader::LoadAsset(asset_ptr_t asset) {
-  return (mLoadFn != nullptr) ? mLoadFn(asset) : false;
+bool DynamicAssetLoader::resolvePath(
+    const AssetPath& pathin,    //
+    AssetPath& resolved_path) { // override
+  auto found = doesExist(pathin);
+  if (found)
+    resolved_path = pathin;
+  return found;
 }
 
-void DynamicAssetLoader::DestroyAsset(asset_ptr_t asset) {
+///////////////////////////////////////////////////////////////////////////////
+
+asset_ptr_t DynamicAssetLoader::load(const AssetPath& name, vars_constptr_t vars) {
+  // bool loaded = (mLoadFn != nullptr) ? mLoadFn(asset) : false;
+  return nullptr;
+}
+
+void DynamicAssetLoader::destroy(asset_ptr_t asset) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-}} // namespace ork::asset
+} // namespace ork::asset
 ///////////////////////////////////////////////////////////////////////////////

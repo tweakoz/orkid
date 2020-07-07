@@ -12,13 +12,13 @@
 #include <orktool/ged/ged.h>
 #include <orktool/ged/ged_delegate.h>
 #include <orktool/ged/ged_io.h>
-#include <ork/reflect/IProperty.h>
-#include <ork/reflect/IObjectProperty.h>
-#include <ork/reflect/DirectObjectMapPropertyType.h>
-#include <ork/reflect/IObjectPropertyObject.h>
+
+#include <ork/reflect/properties/ObjectProperty.h>
+#include <ork/reflect/properties/DirectTypedMap.h>
+#include <ork/reflect/properties/IObject.h>
 #include <ork/reflect/IDeserializer.h>
-#include <ork/reflect/serialize/XMLSerializer.h>
-#include <ork/reflect/serialize/XMLDeserializer.h>
+#include <ork/reflect/serialize/JsonSerializer.h>
+#include <ork/reflect/serialize/JsonDeserializer.h>
 #include <ork/reflect/Functor.h>
 #include <ork/stream/FileOutputStream.h>
 #include <ork/stream/FileInputStream.h>
@@ -34,7 +34,7 @@ namespace ork { namespace tool { namespace ged {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <>
-GedObjNode<PropSetterObj>::GedObjNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, Object* obj)
+GedObjNode<PropSetterObj>::GedObjNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, Object* obj)
     : GedItemNode(mdl, name, prop, obj)
     , mSetter(prop, obj)
     , mbInteractive(false)
@@ -52,8 +52,8 @@ GedObjNode<PropSetterObj>::GedObjNode(ObjModel& mdl, const char* name, const ref
     mbCollapse = false;
   }
 
-  const reflect::IObjectPropertyType<ork::rtti::ICastable*>* castprop = rtti::autocast(prop);
-  const reflect::IObjectPropertyType<ork::Object*>* objprop           = rtti::autocast(prop);
+  const reflect::ITyped<ork::rtti::ICastable*>* castprop = rtti::autocast(prop);
+  const reflect::ITyped<ork::Object*>* objprop           = rtti::autocast(prop);
 
   ork::Object* psubobj = 0;
 
@@ -73,7 +73,7 @@ GedObjNode<PropSetterObj>::GedObjNode(ObjModel& mdl, const char* name, const ref
 
       mdl.GetGedWidget()->PushItemNode( this );
       const reflect::IObjectFunctor *functor =
-      rtti::downcast<object::ObjectClass*>(psubobj->GetClass())->Description().FindFunctor("GetName"); if( functor )
+      rtti::downcast<object::ObjectClass*>(psubobj->GetClass())->Description().findFunctor("GetName"); if( functor )
       {
           reflect::IInvokation *invokation = functor->CreateInvokation();
           if(invokation->GetNumParameters() == 0)
@@ -81,7 +81,7 @@ GedObjNode<PropSetterObj>::GedObjNode(ObjModel& mdl, const char* name, const ref
               ArrayString<1024> result;
 
               stream::StringOutputStream ostream(result);
-              reflect::serialize::XMLSerializer serializer(ostream);
+              reflect::serdes::JsonSerializer serializer(ostream);
               reflect::BidirectionalSerializer result_bidi(serializer);
 
               functor->invoke(psubobj, invokation, &result_bidi);
@@ -111,14 +111,14 @@ GedObjNode<PropSetterObj>::GedObjNode(ObjModel& mdl, const char* name, const ref
   // printf("GedObjNode<%s> psubobj<%p> 1\n", name, psubobj);
   if (psubobj) {
     const reflect::IObjectFunctor* functor =
-        rtti::downcast<object::ObjectClass*>(psubobj->GetClass())->Description().FindFunctor("GetName");
+        rtti::downcast<object::ObjectClass*>(psubobj->GetClass())->Description().findFunctor("GetName");
     if (functor) {
       reflect::IInvokation* invokation = functor->CreateInvokation();
       if (invokation->GetNumParameters() == 0) {
         ArrayString<1024> result;
 
         stream::StringOutputStream ostream(result);
-        reflect::serialize::XMLSerializer serializer(ostream);
+        reflect::serdes::JsonSerializer serializer(ostream);
         reflect::BidirectionalSerializer result_bidi(serializer);
 
         functor->invoke(psubobj, invokation, &result_bidi);
@@ -139,7 +139,7 @@ GedObjNode<PropSetterObj>::GedObjNode(ObjModel& mdl, const char* name, const ref
   ConstString anno = GetOrkProp()->GetAnnotation("editor.choicelist");
 
   if (anno.length()) {
-    ChoiceList* chclist = mModel.GetChoiceManager()->GetChoiceList(anno.c_str());
+    auto chclist = mModel.GetChoiceManager()->GetChoiceList(anno.c_str());
 
     if (chclist) {
       mbInteractive = true;
@@ -220,10 +220,8 @@ template <typename Setter> void GedObjNode<Setter>::OnCreateObject() {
   ConstString anno = GetOrkProp()->GetAnnotation("editor.choicelist");
 
   if (anno.length()) {
-    ChoiceList* chclist = 0;
-    ;
 
-    chclist = mModel.GetChoiceManager()->GetChoiceList(anno.c_str());
+    auto chclist = mModel.GetChoiceManager()->GetChoiceList(anno.c_str());
 
     chclist->EnumerateChoices();
 
@@ -235,7 +233,7 @@ template <typename Setter> void GedObjNode<Setter>::OnCreateObject() {
     pact2->setData(QVariant("reload"));
 
     if (chclist) {
-      QMenu* qm2 = chclist->CreateMenu();
+      QMenu* qm2 = qmenuFromChoiceList(chclist);
 
       qm.addMenu(qm2);
     }
@@ -246,13 +244,13 @@ template <typename Setter> void GedObjNode<Setter>::OnCreateObject() {
       QVariant UserData = pact->data();
       std::string pname = UserData.toString().toStdString();
 
-      const AttrChoiceValue* Chc = chclist->FindFromLongName(pname);
+      auto Chc = chclist->FindFromLongName(pname);
 
       if (Chc) {
         std::string valuestr = Chc->EvaluateValue();
         PropTypeString tstr(valuestr.c_str());
         NewObject                                                          = PropType<Object*>::FromString(tstr);
-        const reflect::IObjectPropertyType<ork::rtti::ICastable*>* objprop = rtti::autocast(GetOrkProp());
+        const reflect::ITyped<ork::rtti::ICastable*>* objprop = rtti::autocast(GetOrkProp());
         if (objprop && NewObject) {
           mModel.SigPreNewObject();
           objprop->Set(NewObject, GetOrkObj());
@@ -260,7 +258,7 @@ template <typename Setter> void GedObjNode<Setter>::OnCreateObject() {
         }
 
       } else if (pname == "none") {
-        const reflect::IObjectPropertyType<ork::rtti::ICastable*>* objprop = rtti::autocast(GetOrkProp());
+        const reflect::ITyped<ork::rtti::ICastable*>* objprop = rtti::autocast(GetOrkProp());
         if (objprop) {
           mModel.SigPreNewObject();
           objprop->Set(0, GetOrkObj());
@@ -289,8 +287,8 @@ template <typename Setter> void GedObjNode<Setter>::OnCreateObject() {
         if (poclass) {
           NewObject = rtti::autocast(poclass->CreateObject());
         }
-        const reflect::IObjectPropertyType<ork::rtti::ICastable*>* castprop = rtti::autocast(GetOrkProp());
-        const reflect::IObjectPropertyType<ork::Object*>* objprop           = rtti::autocast(GetOrkProp());
+        const reflect::ITyped<ork::rtti::ICastable*>* castprop = rtti::autocast(GetOrkProp());
+        const reflect::ITyped<ork::Object*>* objprop           = rtti::autocast(GetOrkProp());
         if (castprop && NewObject) {
           mModel.SigPreNewObject();
           castprop->Set(NewObject, GetOrkObj());

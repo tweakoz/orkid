@@ -134,4 +134,16 @@ struct Guide {
   int _fixed        = 0.0f;
 };
 
+/////////////////////////////////////////////////////////////////////////
+
+struct Bounds {
+  guide_ptr_t _top;
+  guide_ptr_t _left;
+  guide_ptr_t _bottom;
+  guide_ptr_t _right;
+  int _margin = 2;
+};
+
+/////////////////////////////////////////////////////////////////////////
+
 } // namespace ork::ui::anchor

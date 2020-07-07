@@ -4,13 +4,17 @@
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
-
+#pragma once
+////////////////////////////////////////////////////////////////
 #include <cmath>
 #include <ork/math/cvector3.h>
 #include <ork/math/cvector4.h>
 #include <ork/math/cmatrix3.h>
 #include <ork/kernel/string/string.h>
 #include <ork/kernel/string/deco.inl>
+#include <ork/reflect/properties/ITyped.hpp>
+#include <ork/reflect/ISerializer.h>
+#include <ork/reflect/IDeserializer.h>
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include <pmmintrin.h>
@@ -1166,3 +1170,35 @@ template <typename T> void Matrix44<T>::Normalize(void) {
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork
 ///////////////////////////////////////////////////////////////////////////////
+
+namespace ork::reflect {
+template <> //
+inline void ::ork::reflect::ITyped<fmtx4>::serialize(serdes::node_ptr_t sernode) const {
+  using namespace serdes;
+  auto serializer        = sernode->_serializer;
+  auto instance          = sernode->_ser_instance;
+  auto arynode           = serializer->pushNode(_name, serdes::NodeType::ARRAY);
+  arynode->_parent       = sernode;
+  arynode->_ser_instance = instance;
+  fmtx4 value;
+  get(value, instance);
+  for (int i = 0; i < 16; i++)
+    serializeArraySubLeaf(arynode, value.GetArray()[i], i);
+  serializer->popNode(); // pop arraynode
+}
+template <> //
+inline void ::ork::reflect::ITyped<fmtx4>::deserialize(serdes::node_ptr_t arynode) const {
+  using namespace serdes;
+  auto deserializer  = arynode->_deserializer;
+  auto instance      = arynode->_deser_instance;
+  size_t numelements = arynode->_numchildren;
+  OrkAssert(numelements == 16);
+
+  fmtx4 value;
+  for (int i = 0; i < 16; i++)
+    value.GetArray()[i] = deserializeArraySubLeaf<float>(arynode, i);
+
+  set(value, instance);
+}
+
+} // namespace ork::reflect

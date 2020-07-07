@@ -36,7 +36,7 @@ namespace ork::lev2 {
 
 RenderContextFrameData::RenderContextFrameData(Context* ptarg)
     : _lightmgr(0)
-    , mpTarget(ptarg)
+    , _target(ptarg)
     , _cimpl(nullptr) {
 }
 

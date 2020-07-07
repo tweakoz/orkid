@@ -11,11 +11,11 @@
 #include <orktool/ged/ged_delegate.h>
 #include <orktool/ged/ged_io.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/reflect/IProperty.h>
-#include <ork/reflect/IObjectProperty.h>
-#include <ork/reflect/IObjectPropertyObject.h>
-#include <ork/reflect/IObjectPropertyType.h>
-#include <ork/reflect/AccessorObjectPropertyObject.h>
+
+#include <ork/reflect/properties/ObjectProperty.h>
+#include <ork/reflect/properties/IObject.h>
+#include <ork/reflect/properties/ITyped.h>
+#include <ork/reflect/properties/AccessorObject.h>
 #include "ged_delegate.hpp"
 #include <ork/dataflow/dataflow.h>
 ///////////////////////////////////////////////////////////////////////////////
@@ -25,7 +25,7 @@ namespace ork { namespace tool { namespace ged {
 class GedPlugDriver : public IoDriverBase {
 public:
   typedef float datatype;
-  GedPlugDriver(ObjModel& Model, const reflect::IObjectProperty* prop, Object* obj)
+  GedPlugDriver(ObjModel& Model, const reflect::ObjectProperty* prop, Object* obj)
       : IoDriverBase(Model, prop, obj)
       , mPlugFloat(0) {
   }
@@ -189,7 +189,7 @@ private:
     GetSkin()->DrawBgBox(this, dbx1 + labw, miY + 2, dbw - labw, igdim - 3, GedSkin::ESTYLE_BACKGROUND_2);
     //////////////////////////////////////
 
-    const ork::reflect::AccessorObjectPropertyObject* pprop = rtti::autocast(GetOrkProp());
+    const ork::reflect::AccessorObject* pprop = rtti::autocast(GetOrkProp());
 
     if (pprop) {
       dataflow::inplugbase* pinpplug = rtti::autocast(pprop->Access(GetOrkObj()));
@@ -232,7 +232,7 @@ private:
   }
 
 public:
-  GedPlugWidget(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj)
+  GedPlugWidget(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, ork::Object* obj)
       : GedItemNode(mdl, name, prop, obj)
       , ValueStrings(0)
       , NumStrings(0)
@@ -282,7 +282,7 @@ public:
     }
     ///////////////////////////////////////////
 
-    const ork::reflect::AccessorObjectPropertyObject* pprop = rtti::autocast(GetOrkProp());
+    const ork::reflect::AccessorObject* pprop = rtti::autocast(GetOrkProp());
     if (pprop) {
       mInputPlug = rtti::autocast(pprop->Access(obj));
     }
@@ -421,20 +421,20 @@ public:
             rtti::Class* the_class = rtti::Class::FindClass(anno_ucdclass);
             if (the_class) {
               ork::object::ObjectClass* pucdclass = rtti::autocast(the_class);
-              ork::rtti::ICastable* ucdo          = the_class->CreateObject();
+              ork::rtti::ICastable* ucdo          = pucdclass->CreateObject();
               IPlugChoiceDelegate* ucd            = rtti::autocast(ucdo);
               if (ucd) {
                 IPlugChoiceDelegate::OutPlugMapType choices;
                 ucd->EnumerateChoices(this, choices);
                 ///////////////////////////////////////////////////////////////////////////////
-                class PlugChoices : public tool::ChoiceList {
+                class PlugChoices : public util::ChoiceList {
                 public:
                   const IPlugChoiceDelegate::OutPlugMapType& choices;
                   virtual void EnumerateChoices(bool bforcenocache = false) {
                     typedef IPlugChoiceDelegate::OutPlugMapType::const_iterator iter_t;
                     for (iter_t it = choices.begin(); it != choices.end(); it++) {
                       const std::string& name = it->first;
-                      AttrChoiceValue myval(name, name);
+                      util::AttrChoiceValue myval(name, name);
                       myval.SetCustomData(it->second);
                       add(myval);
                     }
@@ -442,26 +442,27 @@ public:
                   PlugChoices(const IPlugChoiceDelegate::OutPlugMapType& chc)
                       : choices(chc) {
                     EnumerateChoices();
-                    AttrChoiceValue none("none", "none");
+                    util::AttrChoiceValue none("none", "none");
                     add(none);
                   }
                 };
                 ///////////////////////////////////////////////////////////////////////////////
-                PlugChoices uchc(choices);
-                QMenu* qm = uchc.CreateMenu();
+                auto uchc = std::make_shared<PlugChoices>(choices);
+                QMenu* qm = qmenuFromChoiceList(uchc);
                 ///////////////////////////////////////////
                 QAction* pact = qm->exec(QCursor::pos());
                 if (pact) {
                   QVariant UserData   = pact->data();
                   QString UserName    = UserData.toString();
                   QVariant chcvalprop = pact->property("chcval");
-                  const AttrChoiceValue* chcval =
-                      chcvalprop.isValid() ? (const AttrChoiceValue*)chcvalprop.value<void*>() : (const AttrChoiceValue*)0;
+                  bool isvalid        = chcvalprop.isValid();
+                  auto chcval         = isvalid ? (const util::AttrChoiceValue*)chcvalprop.value<void*>() //
+                                        : (const util::AttrChoiceValue*)nullptr;
                   if (chcval) {
                     if (mInputPlug) {
                       const auto& customdata = chcval->GetCustomData();
-                      if (customdata.IsA<ork::dataflow::outplugbase*>()) {
-                        ork::dataflow::outplugbase* outplug = customdata.Get<ork::dataflow::outplugbase*>();
+                      if (customdata.template IsA<ork::dataflow::outplugbase*>()) {
+                        ork::dataflow::outplugbase* outplug = customdata.template Get<ork::dataflow::outplugbase*>();
 
                         dataflow::dgmodule* pmod = rtti::autocast(mInputPlug->GetModule());
                         if (pmod) {
@@ -521,7 +522,7 @@ class GedFactoryPlug : public GedFactory {
 
 public:
   GedItemNode*
-  CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::IObjectProperty* prop, Object* obj) const final {
+  CreateItemNode(ObjModel& mdl, const ConstString& Name, const reflect::ObjectProperty* prop, Object* obj) const final {
     GedItemNode* PropContainerW = new GedPlugWidget(mdl, Name.c_str(), prop, obj);
     return PropContainerW;
   }
@@ -550,8 +551,8 @@ private:
 void OutPlugChoiceDelegate::Describe() {
 }
 void OutPlugChoiceDelegate::EnumerateChoices(tool::ged::GedItemNode* pnode, OutPlugMapType& Choices) {
-  dataflow::inplugbase* pinputplug                        = 0;
-  const ork::reflect::AccessorObjectPropertyObject* pprop = rtti::autocast(pnode->GetOrkProp());
+  dataflow::inplugbase* pinputplug          = 0;
+  const ork::reflect::AccessorObject* pprop = rtti::autocast(pnode->GetOrkProp());
   if (pprop) {
     dataflow::inplugbase* pinpplug = rtti::autocast(pprop->Access(pnode->GetOrkObj()));
     if (pinpplug) {

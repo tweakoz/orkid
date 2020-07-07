@@ -10,13 +10,16 @@
 #include <QMenu>
 
 namespace ork { namespace tool {
-void FindAssetChoices(const file::Path& sdir, ChoiceList* choice_list, const std::string& wildcard);
+void FindAssetChoices(
+    const file::Path& sdir, //
+    util::choicelist_ptr_t choice_list,
+    const std::string& wildcard);
 }} // namespace ork::tool
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace tool { namespace ged {
 ///////////////////////////////////////////////////////////////////////////////
-class UserFileChoices : public ork::tool::ChoiceList {
+class UserFileChoices : public ork::util::ChoiceList {
   file::Path mBaseDir;
   std::string mWildCard;
 
@@ -64,7 +67,7 @@ template <typename IODriver> void GedFileNode<IODriver>::SetLabel() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 template <typename IODriver>
-GedFileNode<IODriver>::GedFileNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, Object* obj)
+GedFileNode<IODriver>::GedFileNode(ObjModel& mdl, const char* name, const reflect::ObjectProperty* prop, Object* obj)
     : GedItemNode(mdl, name, prop, obj)
     , mIoDriver(mdl, prop, obj) {
 }
@@ -83,8 +86,8 @@ template <typename IODriver> void GedFileNode<IODriver>::OnCreateObject() {
       urlbasetxt = anno_urlbase.c_str();
     }
 
-    UserFileChoices chclist(urlbasetxt.c_str(), wildcard);
-    chclist.EnumerateChoices();
+    auto chclist = std::make_shared<UserFileChoices>(urlbasetxt.c_str(), wildcard);
+    chclist->EnumerateChoices();
 
     QMenu qm;
 
@@ -93,7 +96,7 @@ template <typename IODriver> void GedFileNode<IODriver>::OnCreateObject() {
     QAction* pact2 = qm.addAction("reload");
     pact2->setData(QVariant("reload"));
 
-    QMenu* qm2 = chclist.CreateMenu();
+    QMenu* qm2 = qmenuFromChoiceList(chclist);
     qm.addMenu(qm2);
 
     pact = qm.exec(QCursor::pos());

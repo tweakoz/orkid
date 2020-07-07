@@ -12,42 +12,43 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/pch.h>
-#include <ork/reflect/RegisterProperty.h>
+#include <ork/reflect/properties/registerX.inl>
 #include <ork/rtti/downcast.h>
 #include <ork/rtti/RTTI.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <iostream>
 #include <ork/asset/DynamicAssetLoader.h>
-#include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/reflect/enum_serializer.inl>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/renderer/builtin_frameeffects.h>
-
-BEGIN_ENUM_SERIALIZER(ork::lev2, EOp2CompositeMode)
-DECLARE_ENUM(Op2AsumB)
-DECLARE_ENUM(Op2AmulB)
-DECLARE_ENUM(Op2AdivB)
-DECLARE_ENUM(Op2BoverA)
-DECLARE_ENUM(Op2Asolo)
-DECLARE_ENUM(Op2Bsolo)
-END_ENUM_SERIALIZER()
 
 ImplementReflectionX(ork::lev2::Op2CompositingNode, "Op2CompositingNode");
 
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
+BeginEnumRegistration(Op2CompositeMode);
+RegisterEnum(Op2CompositeMode, Op2AsumB);
+RegisterEnum(Op2CompositeMode, Op2AmulB);
+RegisterEnum(Op2CompositeMode, Op2AdivB);
+RegisterEnum(Op2CompositeMode, Op2BoverA);
+RegisterEnum(Op2CompositeMode, Op2Asolo);
+RegisterEnum(Op2CompositeMode, Op2Bsolo);
+EndEnumRegistration();
+///////////////////////////////////////////////////////////////////////////////
 void Op2CompositingNode::describeX(class_t* c) {
+  /*
+    c->memberProperty("Mode", &Op2CompositingNode::mMode)->annotate<ConstString>("editor.class", "ged.factory.enum");
+    c->accessorProperty("NodeA", &Op2CompositingNode::GetNodeA, &Op2CompositingNode::SetNodeA)
+        ->annotate<ConstString>("editor.factorylistbase", "PostCompositingNode");
+    c->accessorProperty("NodeB", &Op2CompositingNode::GetNodeB, &Op2CompositingNode::SetNodeB)
+        ->annotate<ConstString>("editor.factorylistbase", "PostCompositingNode");
 
-  c->memberProperty("Mode", &Op2CompositingNode::mMode)->annotate<ConstString>("editor.class", "ged.factory.enum");
-  c->accessorProperty("NodeA", &Op2CompositingNode::GetNodeA, &Op2CompositingNode::SetNodeA)
-      ->annotate<ConstString>("editor.factorylistbase", "PostCompositingNode");
-  c->accessorProperty("NodeB", &Op2CompositingNode::GetNodeB, &Op2CompositingNode::SetNodeB)
-      ->annotate<ConstString>("editor.factorylistbase", "PostCompositingNode");
-
-  c->memberProperty("LevelA", &Op2CompositingNode::mLevelA);
-  c->memberProperty("LevelB", &Op2CompositingNode::mLevelB);
-  c->memberProperty("BiasA", &Op2CompositingNode::mBiasA);
-  c->memberProperty("BiasB", &Op2CompositingNode::mBiasB);
+    c->memberProperty("LevelA", &Op2CompositingNode::mLevelA);
+    c->memberProperty("LevelB", &Op2CompositingNode::mLevelB);
+    c->memberProperty("BiasA", &Op2CompositingNode::mBiasA);
+    c->memberProperty("BiasB", &Op2CompositingNode::mBiasB);
+    */
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Op2CompositingNode::GetNodeA(ork::rtti::ICastable*& val) const {
@@ -74,7 +75,7 @@ Op2CompositingNode::Op2CompositingNode()
     : mSubA(nullptr)
     , mSubB(nullptr)
     , mOutput(nullptr)
-    , mMode(Op2AsumB)
+    , mMode(Op2CompositeMode::Op2AsumB)
     , mLevelA(1.0f, 1.0f, 1.0f, 1.0f)
     , mLevelB(1.0f, 1.0f, 1.0f, 1.0f)
     , mBiasA(0.0f, 0.0f, 0.0f, 0.0f)
@@ -101,7 +102,7 @@ void Op2CompositingNode::doGpuInit(lev2::Context* pTARG, int iW, int iH) // virt
     mCompositingMaterial.gpuInit(pTARG);
 
     _rtg                = new lev2::RtGroup(pTARG, iW, iH);
-    mOutput             = new lev2::RtBuffer(lev2::ERTGSLOT0, lev2::EBufferFormat::RGBA16F, iW, iH);
+    mOutput             = new lev2::RtBuffer(lev2::RtgSlot::Slot0, lev2::EBufferFormat::RGBA16F, iW, iH);
     mOutput->_debugName = FormatString("Op2CompositingNode::output");
     _rtg->SetMrt(0, mOutput);
   }
@@ -142,25 +143,25 @@ void Op2CompositingNode::DoRender(CompositorDrawData& drawdata) // virtual
     mCompositingMaterial.SetLevelC(fvec4(0.0f, 0.0f, 0.0f, 0.0f));
 
     switch (mMode) {
-      case Op2AsumB:
+      case Op2CompositeMode::Op2AsumB:
         mCompositingMaterial.SetTechnique("AplusBplusC");
         break;
-      case Op2AmulB:
+      case Op2CompositeMode::Op2AmulB:
         mCompositingMaterial.SetTechnique("Op2AmulB");
         break;
-      case Op2AdivB:
+      case Op2CompositeMode::Op2AdivB:
         mCompositingMaterial.SetTechnique("Op2AdivB");
         break;
-      case Op2AoverB:
+      case Op2CompositeMode::Op2AoverB:
         mCompositingMaterial.SetTechnique("AoverBplusC");
         break;
-      case Op2BoverA:
+      case Op2CompositeMode::Op2BoverA:
         mCompositingMaterial.SetTechnique("BoverAplusC");
         break;
-      case Op2Asolo:
+      case Op2CompositeMode::Op2Asolo:
         mCompositingMaterial.SetTechnique("Asolo");
         break;
-      case Op2Bsolo:
+      case Op2CompositeMode::Op2Bsolo:
         mCompositingMaterial.SetTechnique("Bsolo");
         break;
     }
