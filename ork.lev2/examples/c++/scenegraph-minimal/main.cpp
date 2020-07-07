@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
   auto terrainDrawable      = terrainInst->createCallbackDrawable();
 
   auto sg_node = sg_layer->createDrawableNode("terrain-node", terrainDrawable);
-
+  sg_layer     = nullptr; // release from main
   //////////////////////////////////////////////////////////
   // gpuInit handler, called once on main(rendering) thread
   //  at startup time
@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
   auto cameralut = std::make_shared<CameraDataLut>();
   auto camera    = std::make_shared<CameraData>();
   cameralut->AddSorted("spawncam", camera.get());
-  qtapp->onUpdate([&](ui::updatedata_ptr_t updata) {
+  qtapp->onUpdate([=](ui::updatedata_ptr_t updata) {
     double dt      = updata->_dt;
     double abstime = updata->_abstime;
     ///////////////////////////////////////
@@ -70,7 +70,7 @@ int main(int argc, char** argv) {
   //////////////////////////////////////////////////////////
   // draw handler (called on main(rendering) thread)
   //////////////////////////////////////////////////////////
-  qtapp->onDraw([&](ui::drawevent_constptr_t drwev) { //
+  qtapp->onDraw([=](ui::drawevent_constptr_t drwev) { //
     sg_scene->renderOnContext(drwev->GetTarget());
   });
   //////////////////////////////////////////////////////////

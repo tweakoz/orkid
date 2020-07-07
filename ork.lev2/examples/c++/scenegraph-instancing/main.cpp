@@ -27,12 +27,8 @@ int main(int argc, char** argv) {
   //////////////////////////////////////////////////////////
   // create instanced model drawable
   //////////////////////////////////////////////////////////
-  auto modl_asset = asset::AssetManager<XgmModelAsset>::load("data://src/environ/objects/misc/ref/uvsph");
-  // auto modl_asset = asset::AssetManager<XgmModelAsset>::load("data://tests/pbr_calib");
   auto drw = std::make_shared<InstancedModelDrawable>(nullptr);
-  OrkAssert(modl_asset->_model.atomicCopy());
-  drw->bindModel(modl_asset->_model.atomicCopy());
-  auto sg_node = sg_layer->createDrawableNode("model-node", drw);
+  drw->bindModelAsset("data://src/environ/objects/misc/ref/uvsph");
   //////////////////////////////////////////////////////////
   constexpr size_t NUMINSTANCES = 65536;
   //////////////////////////////////////////////////////////
@@ -47,6 +43,8 @@ int main(int argc, char** argv) {
     float fz = float(iz) / 10.0f;
     instdata->_worldmatrices[i].compose(fvec3(fx, fy, fz), fquat(), 0.03f);
   }
+  sg_layer->createDrawableNode("model-node", std::move(drw));
+  sg_layer = nullptr; // release from main
   //////////////////////////////////////////////////////////
   // gpuInit handler, called once on main(rendering) thread
   //  at startup time
@@ -61,7 +59,7 @@ int main(int argc, char** argv) {
   auto cameralut = std::make_shared<CameraDataLut>();
   auto camera    = std::make_shared<CameraData>();
   cameralut->AddSorted("spawncam", camera.get());
-  qtapp->onUpdate([&](ui::updatedata_ptr_t updata) {
+  qtapp->onUpdate([=](ui::updatedata_ptr_t updata) {
     double dt      = updata->_dt;
     double abstime = updata->_abstime;
     ///////////////////////////////////////

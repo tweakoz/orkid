@@ -305,8 +305,10 @@ struct InstancedModelDrawable final : public Drawable {
   ~InstancedModelDrawable();
   void enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const override;
   void resize(size_t count);
+  void bindModelAsset(AssetPath assetpath);
   void bindModel(model_ptr_t model);
   void gpuInit(Context* ctx) const;
+  xgmmodelassetptr_t _asset;
   model_ptr_t _model;
   instanceddrawdata_ptr_t _instancedata;
   size_t _count;
