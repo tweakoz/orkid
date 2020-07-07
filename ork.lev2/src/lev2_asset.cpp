@@ -85,19 +85,9 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-FileAssetLoader* modelLoader() {
-  static XgmModelLoader* _loader = new XgmModelLoader;
-  return _loader;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 void XgmModelAsset::describeX(class_t* clazz) {
-  auto loader = modelLoader();
-  /*GetClassStatic()->AddLoader(loader);
-  GetClassStatic()->SetAssetNamer("");
-  GetClassStatic()->AddTypeAlias(ork::AddPooledLiteral("xgmodel"));
-  */
+  auto loader = std::make_shared<XgmModelLoader>();
+  registerLoader<XgmModelAsset>(loader);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -137,7 +127,7 @@ public:
     return texture_asset;
   }
 
-  void DestroyAsset(asset_ptr_t asset) {
+  void destroy(asset_ptr_t asset) {
     auto texture_asset = std::dynamic_pointer_cast<TextureAsset>(asset);
   }
 };
@@ -145,22 +135,21 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 TextureAsset::TextureAsset() {
-  mData = new Texture(this);
+  _texture = new Texture(this);
 }
 TextureAsset::~TextureAsset() {
-  auto i = mData.exchange(nullptr);
+  auto i = _texture.exchange(nullptr);
   if (i)
     delete i;
 }
 
 void TextureAsset::describeX(class_t* clazz) {
-  // GetClassStatic()->AddLoader(new StaticTexFileLoader);
-  // GetClassStatic()->SetAssetNamer("");
-  // GetClassStatic()->AddTypeAlias(ork::AddPooledLiteral("lev2tex"));
+  auto loader = std::make_shared<StaticTexFileLoader>();
+  registerLoader<TextureAsset>(loader);
 }
 
 void TextureAsset::SetTexture(Texture* pt) {
-  auto prev = mData.exchange(pt);
+  auto prev = _texture.exchange(pt);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -194,10 +183,8 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 void XgmAnimAsset::describeX(class_t* clazz) {
-  auto loader = new XgmAnimLoader;
-  // GetClassStatic()->AddLoader(loader);
-  // GetClassStatic()->SetAssetNamer("");
-  // GetClassStatic()->AddTypeAlias(ork::AddPooledLiteral("xganim"));
+  auto loader = std::make_shared<XgmAnimLoader>();
+  registerLoader<XgmAnimAsset>(loader);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -252,8 +239,6 @@ asset_ptr_t FxShaderLoader::_doLoadAsset(AssetPath resolvedpath) {
 void FxShaderAsset::describeX(class_t* clazz) {
   auto loader = std::make_shared<FxShaderLoader>();
   registerLoader<FxShaderAsset>(loader);
-  // clazz->SetAssetNamer("orkshader://");
-  // clazz->AddTypeAlias(ork::AddPooledLiteral("fxshader"));
 }
 
 ///////////////////////////////////////////////////////////////////////////////

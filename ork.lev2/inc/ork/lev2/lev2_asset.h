@@ -31,16 +31,15 @@ class TextureAsset : public ork::asset::Asset {
     return "lev2tex";
   }
 
-  ork::atomic<Texture*> mData;
-
 public: //
   TextureAsset();
   ~TextureAsset() override;
 
   Texture* GetTexture() const {
-    return mData;
+    return _texture;
   }
   void SetTexture(Texture* pt);
+  ork::atomic<Texture*> _texture;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

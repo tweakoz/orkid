@@ -157,7 +157,10 @@ void ClassInit() {
   RegisterClassX(PBRMaterial);
 
   RegisterClassX(TerrainDrawableData);
+  RegisterClassX(TextureAsset);
   RegisterClassX(FxShaderAsset);
+  RegisterClassX(XgmAnimAsset);
+  RegisterClassX(XgmModelAsset);
 
   //////////////////////////////////////////
   // register lev2 graphics target classes
