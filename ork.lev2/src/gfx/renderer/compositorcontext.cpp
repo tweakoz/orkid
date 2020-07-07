@@ -46,8 +46,10 @@ void CompositingContext::Init(lev2::Context* pTARG) {
       _compositingTechnique->gpuInit(pTARG, miWidth, miHeight);
     }
   }
-  _utilMaterial = new GfxMaterial3DSolid;
-  _utilMaterial->gpuInit(pTARG);
+  if (nullptr == _utilMaterial) {
+    _utilMaterial = new GfxMaterial3DSolid;
+    _utilMaterial->gpuInit(pTARG);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

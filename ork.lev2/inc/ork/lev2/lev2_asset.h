@@ -97,10 +97,7 @@ class FxShaderAsset : public ork::asset::Asset {
 public: //
   FxShaderAsset();
   ~FxShaderAsset();
-  FxShader* GetFxShader() {
-    return _shader;
-  }
-  const FxShader* GetFxShader() const {
+  FxShader* GetFxShader() const {
     return _shader;
   }
   FxShader* _shader;

@@ -94,11 +94,12 @@ struct DeferredContext {
   std::string _shadername;
   lev2::Texture* brdfIntegrationTexture() const;
   ////////////////////////////////////////////////////////////////////
-  int _width                   = 0;
-  int _height                  = 0;
-  int _clusterW                = 0;
-  int _clusterH                = 0;
-  lev2::Texture* _whiteTexture = nullptr;
+  int _width    = 0;
+  int _height   = 0;
+  int _clusterW = 0;
+  int _clusterH = 0;
+
+  textureassetptr_t _whiteTexture;
   ////////////////////////////////////////////////////////////////////
   std::vector<PointLight*> _pointlights;
 
