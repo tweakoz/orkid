@@ -50,8 +50,8 @@ bool DynamicAssetLoader::resolvePath(
 ///////////////////////////////////////////////////////////////////////////////
 
 asset_ptr_t DynamicAssetLoader::load(const AssetPath& name, vars_constptr_t vars) {
-  // bool loaded = (mLoadFn != nullptr) ? mLoadFn(asset) : false;
-  return nullptr;
+  asset_ptr_t loaded = (mLoadFn != nullptr) ? mLoadFn(name, vars) : nullptr;
+  return loaded;
 }
 
 void DynamicAssetLoader::destroy(asset_ptr_t asset) {

@@ -60,4 +60,10 @@ private:
   }
 };
 
+template <typename T>
+inline std::shared_ptr<T> //
+objcast(object_ptr_t obj) {
+  return std::dynamic_pointer_cast<T>(obj);
+}
+
 } // namespace ork

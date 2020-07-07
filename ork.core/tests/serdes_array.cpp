@@ -53,7 +53,7 @@ TEST(SerdesArrayProperties) {
   CHECK_EQUAL(typed->_directstrvect[2], "three");
   CHECK_EQUAL(typed->_directstrvect[3], "four");
 
-  CHECK_EQUAL(std::dynamic_pointer_cast<SimpleTest>(typed->_directobjvect[0])->_strvalue, "one");
-  CHECK_EQUAL(std::dynamic_pointer_cast<SimpleTest>(typed->_directobjvect[1])->_strvalue, "two");
-  CHECK_EQUAL(std::dynamic_pointer_cast<SimpleTest>(typed->_directobjvect[2])->_strvalue, "three");
+  CHECK_EQUAL(typed->_directobjvect[0]->_strvalue, "one");
+  CHECK_EQUAL(typed->_directobjvect[1]->_strvalue, "two");
+  CHECK_EQUAL(typed->_directobjvect[2]->_strvalue, "three");
 }

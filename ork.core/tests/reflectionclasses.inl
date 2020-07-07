@@ -20,6 +20,18 @@ using namespace ork::rtti;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+struct SimpleTest final : public Object {
+  DeclareConcreteX(SimpleTest, Object);
+
+public:
+  SimpleTest(std::string str = "");
+  std::string _strvalue;
+};
+
+using simpletest_ptr_t = std::shared_ptr<SimpleTest>;
+
+////////////////////////////////////////////////////////////////////////////////
+
 struct SharedTest final : public Object {
   DeclareConcreteX(SharedTest, Object);
 
@@ -69,7 +81,7 @@ public:
 
   std::vector<int> _directintvect;
   std::vector<std::string> _directstrvect;
-  std::vector<object_ptr_t> _directobjvect;
+  std::vector<simpletest_ptr_t> _directobjvect;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -109,16 +121,6 @@ struct AssetTest final : public Object {
 public:
   AssetTest();
   asset::asset_ptr_t _assetptr;
-};
-
-////////////////////////////////////////////////////////////////////////////////
-
-struct SimpleTest final : public Object {
-  DeclareConcreteX(SimpleTest, Object);
-
-public:
-  SimpleTest(std::string str = "");
-  std::string _strvalue;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

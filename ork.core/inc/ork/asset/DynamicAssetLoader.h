@@ -15,7 +15,7 @@ using set_t = std::set<file::Path>;
 struct DynamicAssetLoader : public AssetLoader {
 
   using check_fn_t = std::function<bool(const AssetPath& name)>;
-  using load_fn_t  = std::function<bool(asset_ptr_t passet, vars_constptr_t vars)>;
+  using load_fn_t  = std::function<asset_ptr_t(const AssetPath& name, vars_constptr_t vars)>;
   using enum_fn_t  = std::function<set_t()>;
 
   DynamicAssetLoader();

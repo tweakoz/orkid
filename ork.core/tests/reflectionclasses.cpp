@@ -43,10 +43,10 @@ void AssetTest::describeX(ObjectClass* clazz) {
   dyn_loader->mCheckFn = [=](const AssetPath& path) { //
     return ork::IsSubStringPresent("dyn://", path.c_str());
   };
-  dyn_loader->mLoadFn = [=](asset::asset_ptr_t asset, asset::vars_constptr_t vars) {
-    auto asset_name = asset->name().c_str();
-    printf("DynamicAssetLoader test name<%s> ptr<%p>\n", asset_name, asset.get());
-    return true;
+  dyn_loader->mLoadFn = [=](AssetPath assetpath, asset::vars_constptr_t vars) -> asset::asset_ptr_t {
+    printf("DynamicAssetLoader test name<%s>\n", assetpath.c_str());
+    auto instance = asset::Asset::objectClassStatic()->createShared();
+    return objcast<asset::Asset>(instance);
   };
 
   asset::registerLoader<asset::Asset>(dyn_loader);

@@ -23,9 +23,17 @@ void ITypedArray<elem_t>::deserializeElement(serdes::node_ptr_t arynode) const {
   elemnode->_parent = arynode;
   auto childnode    = deserializer->deserializeElement(elemnode);
   deserializer->popNode();
-  elem_t value;
-  serdes::decode_value<elem_t>(childnode->_value, value);
-  set(value, instance, index);
+  if constexpr (std::is_convertible<elem_t, object_ptr_t>::value) {
+    object_ptr_t objvalue;
+    serdes::decode_value<object_ptr_t>(childnode->_value, objvalue);
+    using ptrtype_t      = typename elem_t::element_type;
+    auto typed_ptr_value = std::dynamic_pointer_cast<ptrtype_t>(objvalue);
+    set(typed_ptr_value, instance, index);
+  } else {
+    elem_t value;
+    serdes::decode_value<elem_t>(childnode->_value, value);
+    set(value, instance, index);
+  }
 }
 
 template <typename elem_t> //
@@ -34,7 +42,11 @@ void ITypedArray<elem_t>::serializeElement(serdes::node_ptr_t elemnode) const {
   auto serializer = elemnode->_serializer;
   auto instance   = elemnode->_ser_instance;
   get(value, instance, elemnode->_index);
-  elemnode->_value.template Set<elem_t>(value);
+  if constexpr (std::is_convertible<elem_t, object_ptr_t>::value) {
+    elemnode->_value.template Set<object_ptr_t>(value);
+  } else {
+    elemnode->_value.template Set<elem_t>(value);
+  }
   auto childnode = serializer->serializeMapElement(elemnode);
 }
 
