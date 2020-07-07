@@ -110,6 +110,7 @@ public:
   asset_ptr_t _doLoadAsset(AssetPath assetpath, vars_constptr_t vars) {
     auto texture_asset = std::make_shared<TextureAsset>();
     if (vars) {
+      texture_asset->_varmap               = vars;
       texture_asset->GetTexture()->_varmap = *vars;
       if (vars->hasKey("postproc"))
         printf("texasset<%p:%s> has postproc\n", texture_asset.get(), assetpath.c_str());

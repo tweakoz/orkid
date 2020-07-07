@@ -66,6 +66,7 @@ void DeferredCompositingNodePbr::describeX(class_t* c) {
           [](ork::object_ptr_t obj) -> asset::vars_ptr_t {
             auto node = std::dynamic_pointer_cast<DeferredCompositingNodePbr>(obj);
             OrkAssert(node);
+            OrkAssert(false);
             return node->_texAssetVarMap;
           });
 }
