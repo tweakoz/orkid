@@ -29,7 +29,7 @@ TEST(ReflectionAccessorSharedProperty) {
   auto sht2        = clazz->createShared();
   auto& desc       = clazz->Description();
   using ptype      = AccessorTyped<object_ptr_t>;
-  auto passh       = desc.findTypedProperty<ptype>("prop_sharedobj_accessor");
+  auto passh       = desc.findTypedProperty<ptype>("sharedobj_accessor");
   passh->set(sht2, sht1);
   CHECK_EQUAL(sht1->_accessorChild, sht2);
   object_ptr_t sht3;
@@ -40,17 +40,17 @@ TEST(ReflectionAccessorSharedProperty) {
 ///////////////////////////////////////////////////////////////////////////////
 
 TEST(ReflectionDirectSharedProperty) {
+  auto top        = std::make_shared<SharedTest>();
+  auto topclazz   = top->GetClass();
+  auto childclazz = SimpleTest::GetClassStatic();
+  auto child      = childclazz->createShared();
+  auto& topdesc   = topclazz->Description();
+  using ptype     = DirectObject<simpletest_ptr_t>;
+  auto passh      = topdesc.findTypedProperty<ptype>("sharedobj_direct");
+  passh->set(objcast<SimpleTest>(child), top);
+  CHECK_EQUAL(top->_directChild, child);
 
-  auto top         = std::make_shared<SharedTest>();
-  auto clazz       = top->GetClass();
-  auto clazzstatic = SharedTest::GetClassStatic();
-  auto sht2        = clazz->createShared();
-  auto& desc       = clazz->Description();
-  using ptype      = DirectObject<sharedtest_ptr_t>;
-  auto passh       = desc.findTypedProperty<ptype>("prop_sharedobj_direct");
-  passh->set(objcast<SharedTest>(sht2), top);
-  CHECK_EQUAL(top->_accessorChild, sht2);
-  sharedtest_ptr_t sht3;
-  passh->get(sht3, top);
-  CHECK_EQUAL(top->_accessorChild, sht3);
+  simpletest_ptr_t get_test;
+  passh->get(get_test, top);
+  CHECK_EQUAL(top->_directChild, get_test);
 }

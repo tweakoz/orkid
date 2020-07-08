@@ -16,15 +16,15 @@
 namespace ork::reflect {
 
 template <typename MemberType> //
-inline DirectObject<MemberType>::DirectObject(sharedptrtype_t Object::*property)
-    : mProperty(property) {
+inline DirectObject<MemberType>::DirectObject(sharedptrtype_t Object::*member)
+    : _member(member) {
 }
 
 template <typename MemberType> //
 inline void DirectObject<MemberType>::serialize(serdes::node_ptr_t propnode) const {
   auto serializer     = propnode->_serializer;
   auto parinstance    = propnode->_ser_instance;
-  auto child_instance = (parinstance.get()->*mProperty);
+  auto child_instance = (parinstance.get()->*_member);
   if (child_instance) {
     auto childnode           = serializer->pushNode(_name, serdes::NodeType::OBJECT);
     childnode->_ser_instance = child_instance;
@@ -43,36 +43,36 @@ inline void DirectObject<MemberType>::deserialize(serdes::node_ptr_t dsernode) c
   auto deserializer = dsernode->_deserializer;
   auto childnode    = deserializer->deserializeObject(dsernode);
   if (childnode) {
-    auto subinstance             = childnode->_deser_instance;
-    (instance.get()->*mProperty) = std::dynamic_pointer_cast<rawptrtype_t>(subinstance);
+    auto subinstance           = childnode->_deser_instance;
+    (instance.get()->*_member) = std::dynamic_pointer_cast<rawptrtype_t>(subinstance);
   } else {
-    (instance.get()->*mProperty) = nullptr;
+    (instance.get()->*_member) = nullptr;
   }
 }
 
 template <typename MemberType>                            //
 inline typename DirectObject<MemberType>::sharedptrtype_t //
 DirectObject<MemberType>::access(object_ptr_t instance) const {
-  return (instance.get()->*mProperty);
+  return (instance.get()->*_member);
 }
 
 template <typename MemberType>                                 //
 inline typename DirectObject<MemberType>::sharedconstptrtype_t //
 DirectObject<MemberType>::access(object_constptr_t instance) const {
-  return (const_cast<Object*>(instance.get())->*mProperty);
+  return (const_cast<Object*>(instance.get())->*_member);
 }
 
 template <typename MemberType> //
 inline void DirectObject<MemberType>::get(
     sharedptrtype_t& value, //
     object_constptr_t instance) const {
-  value = (instance.get()->*mProperty);
+  value = (instance.get()->*_member);
 }
 template <typename MemberType> //
 inline void DirectObject<MemberType>::set(
     const sharedptrtype_t& value, //
     object_ptr_t instance) const {
-  (instance.get()->*mProperty) = value;
+  (instance.get()->*_member) = value;
 }
 
 } // namespace ork::reflect

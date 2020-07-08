@@ -21,7 +21,7 @@ class DirectObject : public ObjectProperty {
   using rawptrtype_t         = typename MemberType::element_type;
   using sharedconstptrtype_t = typename std::shared_ptr<const rawptrtype_t>;
 
-  sharedptrtype_t Object::*mProperty;
+  sharedptrtype_t Object::*_member;
 
 public:
   DirectObject(sharedptrtype_t Object::*);
