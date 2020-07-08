@@ -149,7 +149,7 @@ static KrzAlgCfg getAlgConfig(int algID) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-keymap_ptr_t SynthObjectsDB::parseKeymap(int kmid, const Value& jsonobj) {
+keymap_ptr_t BankData::parseKeymap(int kmid, const Value& jsonobj) {
   auto kmapout = std::make_shared<KeyMap>();
 
   kmapout->_kmID = kmid;
@@ -186,7 +186,7 @@ keymap_ptr_t SynthObjectsDB::parseKeymap(int kmid, const Value& jsonobj) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-sample* SynthObjectsDB::parseSample(const Value& jsonobj, const multisample* parent) {
+sample* BankData::parseSample(const Value& jsonobj, const multisample* parent) {
   auto sout           = new sample;
   sout->_sampleBlock  = getK2V3InternalSoundBlock();
   sout->_name         = jsonobj["subSampleName"].GetString();
@@ -250,7 +250,7 @@ sample* SynthObjectsDB::parseSample(const Value& jsonobj, const multisample* par
 
 ///////////////////////////////////////////////////////////////////////////////
 
-multisample* SynthObjectsDB::parseMultiSample(const Value& jsonobj) {
+multisample* BankData::parseMultiSample(const Value& jsonobj) {
   auto msout    = new multisample;
   msout->_name  = jsonobj["MultiSample"].GetString();
   msout->_objid = jsonobj["objectID"].GetInt();
@@ -268,7 +268,7 @@ multisample* SynthObjectsDB::parseMultiSample(const Value& jsonobj) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SynthObjectsDB::parseAsr(
+void BankData::parseAsr(
     const rapidjson::Value& jo, //
     controlblockdata_ptr_t cblock,
     const EnvCtrlData& ENVCTRL,
@@ -316,7 +316,7 @@ void SynthObjectsDB::parseAsr(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SynthObjectsDB::parseLfo(const rapidjson::Value& jo, controlblockdata_ptr_t cblock, const std::string& name) {
+void BankData::parseLfo(const rapidjson::Value& jo, controlblockdata_ptr_t cblock, const std::string& name) {
   auto lout           = cblock->addController<LfoData>();
   lout->_initialPhase = jo["phase"].GetFloat();
   lout->_shape        = jo["shape"].GetString();
@@ -328,7 +328,7 @@ void SynthObjectsDB::parseLfo(const rapidjson::Value& jo, controlblockdata_ptr_t
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SynthObjectsDB::parseFun(const rapidjson::Value& jo, controlblockdata_ptr_t cblock, const std::string& name) {
+void BankData::parseFun(const rapidjson::Value& jo, controlblockdata_ptr_t cblock, const std::string& name) {
   auto out   = cblock->addController<FunData>();
   out->_a    = jo["a"].GetString();
   out->_b    = jo["b"].GetString();
@@ -367,7 +367,7 @@ int NoteFromString(const std::string& snote) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SynthObjectsDB::parseFBlock(const Value& fseg, dspparam_ptr_t fblk) {
+void BankData::parseFBlock(const Value& fseg, dspparam_ptr_t fblk) {
   //////////////////////////////////
 
   if (fseg.HasMember("PARAM_SCHEME")) {
@@ -473,7 +473,7 @@ void SynthObjectsDB::parseFBlock(const Value& fseg, dspparam_ptr_t fblk) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-dspblkdata_ptr_t SynthObjectsDB::parseDspBlock(const Value& dseg, lyrdata_ptr_t layd, bool force) {
+dspblkdata_ptr_t BankData::parseDspBlock(const Value& dseg, lyrdata_ptr_t layd, bool force) {
   dspblkdata_ptr_t rval;
   if (dseg.HasMember("BLOCK_ALG ")) {
     rval             = std::make_shared<DspBlockData>();
@@ -529,7 +529,7 @@ dspblkdata_ptr_t SynthObjectsDB::parseDspBlock(const Value& dseg, lyrdata_ptr_t 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-dspblkdata_ptr_t SynthObjectsDB::parsePchBlock(const Value& pseg, lyrdata_ptr_t layd) {
+dspblkdata_ptr_t BankData::parsePchBlock(const Value& pseg, lyrdata_ptr_t layd) {
   auto dblk = parseDspBlock(pseg, layd, true);
 
   if (nullptr == dblk)
@@ -547,7 +547,7 @@ dspblkdata_ptr_t SynthObjectsDB::parsePchBlock(const Value& pseg, lyrdata_ptr_t 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SynthObjectsDB::parseKmpBlock(const Value& kmseg, KmpBlockData& kmblk) {
+void BankData::parseKmpBlock(const Value& kmseg, KmpBlockData& kmblk) {
   kmblk._keyTrack    = kmseg["KeyTrack(ct)"].GetInt();
   kmblk._transpose   = kmseg["transposeTS(st)"].GetInt();
   kmblk._timbreShift = kmseg["timbreshift"].GetInt();
@@ -556,7 +556,7 @@ void SynthObjectsDB::parseKmpBlock(const Value& kmseg, KmpBlockData& kmblk) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lyrdata_ptr_t SynthObjectsDB::parseLayer(const Value& jsonobj, prgdata_ptr_t pd) {
+lyrdata_ptr_t BankData::parseLayer(const Value& jsonobj, prgdata_ptr_t pd) {
   const auto& name = pd->_name;
   printf("Got Prgram<%s> layer..\n", name.c_str());
   const auto& calvinSeg = jsonobj["CALVIN"];
@@ -882,7 +882,7 @@ lyrdata_ptr_t SynthObjectsDB::parseLayer(const Value& jsonobj, prgdata_ptr_t pd)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-KrzAlgData SynthObjectsDB::parseAlg(const rapidjson::Value& JO) {
+KrzAlgData BankData::parseAlg(const rapidjson::Value& JO) {
   const auto& calvin = JO["CALVIN"];
   int krzAlgIndex    = calvin["ALG"].GetInt();
 
@@ -893,7 +893,7 @@ KrzAlgData SynthObjectsDB::parseAlg(const rapidjson::Value& JO) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SynthObjectsDB::parseEnvControl(const rapidjson::Value& seg, EnvCtrlData& ed) {
+void BankData::parseEnvControl(const rapidjson::Value& seg, EnvCtrlData& ed) {
   auto aenvmode = seg["ampenv_mode"].GetString();
   ed._useNatEnv = (0 == strcmp(aenvmode, "Natural"));
   ed._atkAdjust = seg["AtkAdjust"].GetFloat();
@@ -906,7 +906,7 @@ void SynthObjectsDB::parseEnvControl(const rapidjson::Value& seg, EnvCtrlData& e
 
 ///////////////////////////////////////////////////////////////////////////////
 
-prgdata_ptr_t SynthObjectsDB::parseProgram(const Value& jsonobj) {
+prgdata_ptr_t BankData::parseProgram(const Value& jsonobj) {
   auto pdata       = std::make_shared<ProgramData>();
   pdata->_role     = "Program";
   const auto& name = jsonobj["Program"].GetString();
@@ -926,7 +926,7 @@ prgdata_ptr_t SynthObjectsDB::parseProgram(const Value& jsonobj) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SynthObjectsDB::loadJson(const std::string& fname, int ibaseid) {
+void BankData::loadJson(const std::string& fname, int ibaseid) {
   auto realfname = basePath() / "kurzweil" / (fname + ".json");
   printf("fname<%s>\n", realfname.c_str());
   FILE* fin = fopen(realfname.c_str(), "rt");
@@ -1030,7 +1030,7 @@ void SynthObjectsDB::loadJson(const std::string& fname, int ibaseid) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-prgdata_constptr_t SynthObjectsDB::findProgram(int progID) const {
+prgdata_constptr_t BankData::findProgram(int progID) const {
   prgdata_constptr_t pd = nullptr;
   auto it               = _programs.find(progID);
   if (it == _programs.end()) {
@@ -1041,7 +1041,7 @@ prgdata_constptr_t SynthObjectsDB::findProgram(int progID) const {
   return pd;
 }
 
-prgdata_constptr_t SynthObjectsDB::findProgramByName(const std::string named) const {
+prgdata_constptr_t BankData::findProgramByName(const std::string named) const {
   prgdata_constptr_t pd = nullptr;
   auto it               = _programsByName.find(named);
   if (it == _programsByName.end()) {
@@ -1054,7 +1054,7 @@ prgdata_constptr_t SynthObjectsDB::findProgramByName(const std::string named) co
 
 ///////////////////////////////////////////////////////////////////////////////
 
-keymap_constptr_t SynthObjectsDB::findKeymap(int kmID) const {
+keymap_constptr_t BankData::findKeymap(int kmID) const {
   keymap_constptr_t kd = nullptr;
   auto it              = _keymaps.find(kmID);
   if (it != _keymaps.end())

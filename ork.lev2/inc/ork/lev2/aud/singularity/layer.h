@@ -8,13 +8,14 @@
 #pragma once
 
 #include <mutex>
+#include "reflection.h"
 #include "envelope.h"
 #include "konoff.h"
 #include "hud_data.h"
 
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
-struct LayerData {
+struct LayerData : public ork::Object {
   LayerData(const ProgramData* pdat);
 
   dspstagedata_ptr_t appendStage(const std::string& named);

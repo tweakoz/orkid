@@ -18,8 +18,16 @@
 #include <ork/lev2/aud/singularity/cz1.h>
 #include <ork/lev2/aud/singularity/sampler.h>
 #include <ork/lev2/aud/singularity/hud.h>
+#include <ork/reflect/properties/registerX.inl>
+
+ImplementReflectionX(ork::audio::singularity::DspBlockData, "SynDspBlock");
 
 namespace ork::audio::singularity {
+
+void DspBlockData::describeX(class_t* clazz) {
+}
+
+//////////////////////////////////////////////////////////////////////////////
 
 DspBlockData::DspBlockData(std::string name)
     : _name(name) {

@@ -17,7 +17,7 @@ namespace ork::audio::singularity {
 static const auto krzbasedir = basePath() / "kurzweil" / "krz";
 
 bankdata_ptr_t KrzSynthData::baseObjects() {
-  static bankdata_ptr_t objdb = std::make_shared<SynthObjectsDB>();
+  static bankdata_ptr_t objdb = std::make_shared<BankData>();
   objdb->loadJson("k2v3base", 0);
   return objdb;
 }

@@ -113,11 +113,11 @@ struct IoMask final {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct DspBlockData {
+struct DspBlockData : public ork::Object {
+
+  DeclareAbstractX(DspBlockData, ork::Object);
 
   DspBlockData(std::string name = "");
-  virtual ~DspBlockData() {
-  }
 
   virtual dspblk_ptr_t createInstance() const {
     return nullptr;

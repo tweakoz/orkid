@@ -41,7 +41,7 @@ Sf2TestSynthData::~Sf2TestSynthData() {
 void SoundFont::genZpmDB() {
 #if 0
 
-   _zpmDB = new SynthObjectsDB;
+   _zpmDB = new BankData;
 
    //////////////////////
    // sf2 samples -> zpm samples

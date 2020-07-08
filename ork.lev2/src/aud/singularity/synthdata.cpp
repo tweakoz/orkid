@@ -10,12 +10,21 @@
 #include <ork/lev2/aud/singularity/dspblocks.h>
 #include <ork/lev2/aud/singularity/sampler.h>
 #include <ork/kernel/string/string.h>
+#include <ork/reflect/properties/registerX.inl>
+ImplementReflectionX(ork::audio::singularity::BankData, "SynBankData");
 
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::audio::singularity {
 
-void SynthObjectsDB::addProgram(int idx, const std::string& name, prgdata_ptr_t program) {
+//////////////////////////////////////////////////////////////////////////////
+
+void BankData::describeX(class_t* clazz) {
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+void BankData::addProgram(int idx, const std::string& name, prgdata_ptr_t program) {
   _programs[idx]        = program;
   _programsByName[name] = program;
 }
@@ -42,7 +51,7 @@ prgdata_constptr_t SynthData::getProgramByName(const std::string& named) const {
 SynthData::SynthData()
     : _seqCursor(0.0f) {
 
-  _bankdata = std::make_shared<SynthObjectsDB>();
+  _bankdata = std::make_shared<BankData>();
 
   auto syn = synth::instance();
   _synsr   = syn->_sampleRate;

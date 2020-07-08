@@ -2,8 +2,16 @@
 #include <ork/lev2/aud/singularity/synthdata.h>
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/aud/singularity/sampler.h>
+#include <ork/reflect/properties/registerX.inl>
+
+ImplementReflectionX(ork::audio::singularity::ProgramData, "SynProgramData");
 
 namespace ork::audio::singularity {
+
+//////////////////////////////////////////////////////////////////////////////
+
+void ProgramData::describeX(class_t* clazz) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

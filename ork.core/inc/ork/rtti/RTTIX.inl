@@ -44,7 +44,6 @@ public:                                                         \
   static object::class_ptr_t objectClassStatic();               \
   class_t* GetClass() const override;                           \
                                                                 \
-private:
 
 ////////////////
 
@@ -59,7 +58,6 @@ public:                                                         \
   static object::class_ptr_t objectClassStatic();               \
   class_t* GetClass() const override;                           \
                                                                 \
-private:
 
 ////////////////
 
