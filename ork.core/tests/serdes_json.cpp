@@ -12,7 +12,7 @@
 using namespace ork;
 using namespace ork::reflect;
 
-TEST(SerializeObjectJSON) {
+TEST(SerdesJson) {
   ///////////////////////////////////////////
   // serialize an object
   ///////////////////////////////////////////

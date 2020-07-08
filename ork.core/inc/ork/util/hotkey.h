@@ -59,7 +59,7 @@ public:
   bool IsHotKeyPresent(const HotKey& hkey) const;
   HotKey* GetHotKey(std::string ps) const;
 
-  orklut<std::string, ork::object_ptr_t> _hotkeys;
+  orklut<std::string, hotkey_ptr_t> _hotkeys;
   orkset<boost::Crc64> mHotKeysUsed;
 };
 

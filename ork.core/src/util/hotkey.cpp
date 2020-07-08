@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
+#include <ork/kernel/orklut.hpp>
 #include <ork/util/hotkey.h>
 #include <ork/util/Context.hpp>
 #include <ork/kernel/thread.h>
@@ -470,8 +471,7 @@ void HotKeyConfiguration::RemoveHotKey(const char* actionname) {
 bool HotKeyConfiguration::postDeserialize(reflect::serdes::IDeserializer&) // virtual
 {
   for (auto it : _hotkeys) {
-    auto pobj = it.second;
-    auto pkey = std::dynamic_pointer_cast<HotKey>(pobj);
+    auto pkey = it.second;
     OrkAssert(mHotKeysUsed.find(pkey->GetHash()) == mHotKeysUsed.end());
     mHotKeysUsed.insert(pkey->GetHash());
   }
@@ -494,7 +494,7 @@ bool HotKeyConfiguration::IsHotKeyPresent(const HotKey& hkey) const {
 HotKey* HotKeyConfiguration::GetHotKey(std::string named) const {
   auto it = _hotkeys.find(named);
   if (it != _hotkeys.end()) {
-    auto pkey = std::dynamic_pointer_cast<HotKey>(it->second);
+    auto pkey = it->second;
     return pkey.get();
   }
   return nullptr;
