@@ -14,6 +14,11 @@
 #include <ork/lev2/aud/singularity/alg_oscil.h>
 #include <ork/lev2/aud/singularity/alg_amp.h>
 #include <ork/lev2/aud/singularity/dsp_mix.h>
+#include <ork/reflect/properties/registerX.inl>
+
+ImplementReflectionX(ork::audio::singularity::PMXData, "SynPMX");
+ImplementReflectionX(ork::audio::singularity::PMXMixData, "SynPMXMixer");
+
 ////////////////////////////////////////////////////////////////////////////////
 namespace ork::audio::singularity {
 ////////////////////////////////////////////////////////////////////////////////
@@ -30,6 +35,12 @@ inline float proc_out(float inp) {
     return clip_float(inp, -kclamp, kclamp) * kscale;
   }
   return 0.0f;
+}
+///////////////////////////////////////////////////////////////////////////////
+void PMXData::describeX(class_t* clazz) {
+  clazz->directProperty("Feedback", &PMXData::_feedback);
+  clazz->directProperty("ModIndex", &PMXData::_modIndex);
+  clazz->directProperty("InputChannel", &PMXData::_inpchannel);
 }
 ///////////////////////////////////////////////////////////////////////////////
 PMXData::PMXData(std::string name)
@@ -115,6 +126,10 @@ void PMX::doKeyOn(const KeyOnInfo& koi) { // final
 ///////////////////////////////////////////////////////////////////////////////
 void PMX::doKeyOff() { // final
   _pmosc.keyOff();
+}
+///////////////////////////////////////////////////////////////////////////////
+void PMXMixData::describeX(class_t* clazz) {
+  // clazz->directArrayProperty("InputChannels", &PMXMixData::_pmixInpChannels);
 }
 ///////////////////////////////////////////////////////////////////////////////
 PMXMixData::PMXMixData(std::string name)

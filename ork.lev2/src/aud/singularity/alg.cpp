@@ -4,8 +4,17 @@
 #include <ork/lev2/aud/singularity/konoff.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
 #include <ork/lev2/aud/singularity/hud.h>
+#include <ork/reflect/properties/registerX.inl>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
+
+ImplementReflectionX(ork::audio::singularity::AlgData, "SynAlgorithm");
 
 namespace ork::audio::singularity {
+
+void AlgData::describeX(class_t* clazz) {
+  clazz->directProperty("Name", &AlgData::_name);
+  clazz->directObjectMapProperty("Stages", &AlgData::_stageByName);
+}
 
 static synth_ptr_t the_synth = synth::instance();
 
@@ -20,6 +29,8 @@ alg_ptr_t AlgData::createAlgInst() const {
 dspstagedata_ptr_t AlgData::appendStage(const std::string& named) {
   OrkAssert((_numstages + 1) <= kmaxdspstagesperlayer);
   auto stage            = std::make_shared<DspStageData>();
+  stage->_name          = named;
+  stage->_stageIndex    = _numstages;
   _stages[_numstages++] = stage;
   _stageByName[named]   = stage;
   return stage;

@@ -4,8 +4,17 @@
 #include <math.h>
 
 #include <ork/lev2/aud/singularity/synth.h>
+#include <ork/reflect/properties/registerX.inl>
+ImplementReflectionX(ork::audio::singularity::FunData, "SynFun");
 
 namespace ork::audio::singularity {
+
+///////////////////////////////////////////////////////////////////////////////
+void FunData::describeX(class_t* clazz) {
+  clazz->directProperty("a", &FunData::_a);
+  clazz->directProperty("b", &FunData::_b);
+  clazz->directProperty("op", &FunData::_op);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

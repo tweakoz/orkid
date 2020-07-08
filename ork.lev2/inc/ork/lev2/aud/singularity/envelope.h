@@ -32,6 +32,8 @@ using envadjust_method_t = std::function<EnvPoint(const EnvPoint& inp, int iseg,
 ///////////////////////////////////////////////////////////////////////////////
 
 struct RateLevelEnvData : public ControllerData {
+  DeclareConcreteX(RateLevelEnvData, ControllerData);
+
   RateLevelEnvData();
   ControllerInst* instantiate(Layer* layer) const final;
   bool isBiPolar() const;
@@ -87,6 +89,9 @@ struct RateLevelEnvInst : public ControllerInst {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct AsrData : public ControllerData {
+
+  DeclareConcreteX(AsrData, ControllerData);
+
   AsrData();
   ControllerInst* instantiate(Layer* layer) const final;
 
@@ -122,6 +127,9 @@ struct AsrInst : public ControllerInst {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct YmEnvData : public ControllerData {
+
+  DeclareConcreteX(YmEnvData, ControllerData);
+
   YmEnvData();
   ControllerInst* instantiate(Layer* layer) const final;
 

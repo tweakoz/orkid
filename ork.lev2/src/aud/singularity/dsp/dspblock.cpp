@@ -21,11 +21,14 @@
 #include <ork/reflect/properties/registerX.inl>
 
 ImplementReflectionX(ork::audio::singularity::DspBlockData, "SynDspBlock");
+ImplementReflectionX(ork::audio::singularity::DspStageData, "SynDspStage");
 
 namespace ork::audio::singularity {
 
 void DspBlockData::describeX(class_t* clazz) {
   clazz->directProperty("Name", &DspBlockData::_name);
+  clazz->directProperty("BlockIndex", &DspBlockData::_blockIndex);
+  clazz->directProperty("InputPad", &DspBlockData::_inputPad);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -90,6 +93,12 @@ float* DspBuffer::channel(int ich) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void DspStageData::describeX(class_t* clazz) {
+  clazz->directProperty("Name", &DspStageData::_name);
+  clazz->directProperty("StageIndex", &DspStageData::_stageIndex);
+  clazz->directObjectMapProperty("DspBlocks", &DspStageData::_namedblockdatas);
+}
 
 DspStageData::DspStageData() {
   _iomask = std::make_shared<IoMask>();

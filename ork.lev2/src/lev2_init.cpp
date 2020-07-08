@@ -36,6 +36,8 @@
 #include <ork/lev2/aud/singularity/layer.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
 #include <ork/lev2/aud/singularity/controller.h>
+#include <ork/lev2/aud/singularity/envelope.h>
+#include <ork/lev2/aud/singularity/dsp_pmx.h>
 ///////////////////////////////////////////////////////////////////////////////
 //#define WIIEMU
 ///////////////////////////////////////////////////////////////////////////////
@@ -173,9 +175,22 @@ void ClassInit() {
 
   RegisterClassX(audio::singularity::ProgramData);
   RegisterClassX(audio::singularity::BankData);
+
   RegisterClassX(audio::singularity::LayerData);
-  RegisterClassX(audio::singularity::DspBlockData);
+  RegisterClassX(audio::singularity::AlgData);
+  RegisterClassX(audio::singularity::DspStageData);
+
   RegisterClassX(audio::singularity::ControllerData);
+  RegisterClassX(audio::singularity::AsrData);
+  RegisterClassX(audio::singularity::RateLevelEnvData);
+  RegisterClassX(audio::singularity::YmEnvData);
+  RegisterClassX(audio::singularity::LfoData);
+  RegisterClassX(audio::singularity::FunData);
+  RegisterClassX(audio::singularity::CustomControllerData);
+
+  RegisterClassX(audio::singularity::DspBlockData);
+  RegisterClassX(audio::singularity::PMXData);
+  RegisterClassX(audio::singularity::PMXMixData);
 
   //////////////////////////////////////////
   // register lev2 graphics target classes

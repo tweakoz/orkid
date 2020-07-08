@@ -5,8 +5,14 @@
 
 #include <ork/lev2/aud/singularity/synthdata.h>
 #include <ork/lev2/aud/singularity/synth.h>
+#include <ork/reflect/properties/registerX.inl>
+
+ImplementReflectionX(ork::audio::singularity::AsrData, "SynAsr");
 
 namespace ork::audio::singularity {
+
+void AsrData::describeX(class_t* clazz) {
+}
 
 AsrData::AsrData() {
   _envadjust = [](const EnvPoint& inp, //

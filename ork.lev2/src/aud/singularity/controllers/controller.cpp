@@ -10,6 +10,7 @@
 #include <ork/reflect/properties/registerX.inl>
 
 ImplementReflectionX(ork::audio::singularity::ControllerData, "SynControllerData");
+ImplementReflectionX(ork::audio::singularity::CustomControllerData, "SynCustomControllerData");
 
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
@@ -58,6 +59,9 @@ ControllerInst::ControllerInst(Layer* l)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+void CustomControllerData::describeX(class_t* clazz) {
+}
 
 CustomControllerData::CustomControllerData() {
   _oncompute = [](CustomControllerInst* cci) {};

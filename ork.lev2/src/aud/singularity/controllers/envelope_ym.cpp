@@ -13,8 +13,22 @@
 #include <ork/lev2/aud/singularity/synthdata.h>
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/aud/singularity/hud.h>
+#include <ork/reflect/properties/registerX.inl>
+
+ImplementReflectionX(ork::audio::singularity::YmEnvData, "SynYmEnv");
 
 namespace ork::audio::singularity {
+
+void YmEnvData::describeX(class_t* clazz) {
+  clazz->directProperty("AttackTime", &YmEnvData::_attackTime);
+  clazz->directProperty("AttackShape", &YmEnvData::_attackShape);
+  clazz->directProperty("Decay1Rate", &YmEnvData::_decay1Rate);
+  clazz->directProperty("Decay1Level", &YmEnvData::_decay1Level);
+  clazz->directProperty("Decay2Rate", &YmEnvData::_decay2Rate);
+  clazz->directProperty("ReleaseRate", &YmEnvData::_releaseRate);
+  clazz->directProperty("EgShift", &YmEnvData::_egshift);
+  clazz->directProperty("RateScale", &YmEnvData::_rateScale);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

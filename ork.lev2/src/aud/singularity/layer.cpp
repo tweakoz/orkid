@@ -17,7 +17,7 @@
 #include <ork/lev2/aud/singularity/hud.h>
 #include <ork/reflect/properties/registerX.inl>
 
-ImplementReflectionX(ork::audio::singularity::LayerData, "SynLayerData");
+ImplementReflectionX(ork::audio::singularity::LayerData, "SynLayer");
 
 namespace ork::audio::singularity {
 
@@ -27,6 +27,7 @@ static synth_ptr_t the_synth = synth::instance();
 
 void LayerData::describeX(class_t* clazz) {
   clazz->directObjectMapProperty("Controllers", &LayerData::_controllermap);
+  clazz->directObjectProperty("Algorithm", &LayerData::_algdata);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

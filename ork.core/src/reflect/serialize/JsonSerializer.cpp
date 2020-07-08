@@ -211,6 +211,9 @@ void JsonSerializer::serializeLeaf(node_ptr_t leafnode) {
     rapidjson::Value nilval("nil", *_allocator);
     addfn(nilval);
   } else {
+    // did you mean to use directObjectXXXProperty
+    //    instead of directXXXProperty ?
+    // todo: get it to fail at compile time
     OrkAssert(false);
   }
 }

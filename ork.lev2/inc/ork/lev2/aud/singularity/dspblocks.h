@@ -207,18 +207,30 @@ struct DspBlock {
 // a DspStage is a vertical stack of up to N dspblocks
 ///////////////////////////////////////////////////////////////////////////////
 
-struct DspStageData final {
+struct DspStageData final : public ork::Object {
+
+  DeclareConcreteX(DspStageData, ork::Object);
+
   DspStageData();
   dspblkdata_ptr_t appendBlock();
 
-  template <typename T, typename... A> std::shared_ptr<typename T::dataclass_t> appendTypedBlock(std::string name, A&&... args) {
+  template <typename T, typename... A>     //
+  std::shared_ptr<typename T::dataclass_t> //
+  appendTypedBlock(
+      std::string named, //
+      A&&... args) {
     OrkAssert(_numblocks < kmaxdspblocksperstage);
-    auto blkdata              = std::make_shared<typename T::dataclass_t>(name, std::forward<A>(args)...);
+    auto blkdata              = std::make_shared<typename T::dataclass_t>(named, std::forward<A>(args)...);
+    blkdata->_name            = named;
+    blkdata->_blockIndex      = _numblocks;
     _blockdatas[_numblocks++] = blkdata;
+    _namedblockdatas[named]   = blkdata;
     return blkdata;
   }
   void setNumIos(int numinp, int numout);
 
+  std::string _name;
+  int _stageIndex = -1;
   dspblkdata_ptr_t _blockdatas[kmaxdspblocksperstage];
   std::map<std::string, dspblkdata_ptr_t> _namedblockdatas;
   iomask_ptr_t _iomask;
@@ -232,7 +244,10 @@ struct DspStage final {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct AlgData final {
+struct AlgData final : public ork::Object {
+
+  DeclareConcreteX(AlgData, ork::Object);
+
   dspstagedata_ptr_t appendStage(const std::string& named);
   dspstagedata_ptr_t stageByName(const std::string& named);
   dspstagedata_ptr_t stageByIndex(int index);

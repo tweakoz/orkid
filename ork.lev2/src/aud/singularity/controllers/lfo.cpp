@@ -4,8 +4,14 @@
 #include <math.h>
 
 #include <ork/lev2/aud/singularity/synth.h>
+#include <ork/reflect/properties/registerX.inl>
+ImplementReflectionX(ork::audio::singularity::LfoData, "SynLfoData");
 
 namespace ork::audio::singularity {
+
+///////////////////////////////////////////////////////////////////////////////
+void LfoData::describeX(class_t* clazz) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

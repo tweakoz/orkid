@@ -6,8 +6,14 @@
 #include <ork/lev2/aud/singularity/synthdata.h>
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/aud/singularity/hud.h>
+#include <ork/reflect/properties/registerX.inl>
+
+ImplementReflectionX(ork::audio::singularity::RateLevelEnvData, "SynRateLevelEnv");
 
 namespace ork::audio::singularity {
+
+void RateLevelEnvData::describeX(class_t* clazz) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // 7-seg rate/level envelopes

@@ -62,6 +62,9 @@ struct ControlBlockInst {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct LfoData : public ControllerData {
+
+  DeclareConcreteX(LfoData, ControllerData);
+
   LfoData();
   ControllerInst* instantiate(Layer* layer) const final;
 
@@ -95,6 +98,9 @@ struct LfoInst : public ControllerInst {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct FunData : public ControllerData {
+
+  DeclareConcreteX(FunData, ControllerData);
+
   ControllerInst* instantiate(Layer* layer) const final;
 
   std::string _a, _b, _op;
@@ -122,6 +128,9 @@ using customcontroller_keyonmethod_t   = std::function<void(CustomControllerInst
 using customcontroller_keyoffmethod_t  = std::function<void(CustomControllerInst* cci)>;
 
 struct CustomControllerData final : public ControllerData {
+
+  DeclareConcreteX(CustomControllerData, ControllerData);
+
   CustomControllerData();
   ControllerInst* instantiate(Layer* layer) const override;
   customcontroller_computemethod_t _oncompute;

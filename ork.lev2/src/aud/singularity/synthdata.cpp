@@ -11,6 +11,7 @@
 #include <ork/lev2/aud/singularity/sampler.h>
 #include <ork/kernel/string/string.h>
 #include <ork/reflect/properties/registerX.inl>
+
 ImplementReflectionX(ork::audio::singularity::BankData, "SynBankData");
 
 ///////////////////////////////////////////////////////////////////////////////

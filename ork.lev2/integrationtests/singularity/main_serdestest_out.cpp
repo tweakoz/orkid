@@ -12,10 +12,6 @@ using namespace ork::lev2;
 using namespace ork::reflect::serdes;
 using namespace ork::audio::singularity;
 
-namespace ork::lev2 {
-void ClassInit();
-};
-
 int main(int argc, char** argv) {
   auto app = EzApp::get(argc, argv); // reflection init
   //////////////////////////////////////////////////////////////////////////////
@@ -91,7 +87,7 @@ int main(int argc, char** argv) {
   JsonSerializer ser;
   auto topnode    = ser.serializeRoot(bank->_bankdata);
   auto jsonresult = ser.output();
-  printf("jsonresult<%s>\n", jsonresult.c_str());
+  printf("jsonresult:\n%s\n", jsonresult.c_str());
   //////////////////////////////////////////////////////////////////////////////
   return 0;
 }
