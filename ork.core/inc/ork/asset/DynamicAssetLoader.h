@@ -28,9 +28,9 @@ struct DynamicAssetLoader : public AssetLoader {
   void destroy(asset_ptr_t asset) override;
   set_t EnumerateExisting() override;
 
-  check_fn_t mCheckFn;
-  load_fn_t mLoadFn;
-  enum_fn_t mEnumFn;
+  check_fn_t _checkFn;
+  load_fn_t _loadFn;
+  enum_fn_t _enumFn;
 };
 
 } // namespace ork::asset

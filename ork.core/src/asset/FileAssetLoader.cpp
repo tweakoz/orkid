@@ -227,6 +227,8 @@ asset_ptr_t FileAssetLoader::load(const AssetPath& assetinppath, vars_constptr_t
     return nullptr;
   }
   auto asset = _doLoadAsset(resolved_path, vars);
+  if (asset)
+    asset->_name = assetinppath;
   return asset;
 }
 

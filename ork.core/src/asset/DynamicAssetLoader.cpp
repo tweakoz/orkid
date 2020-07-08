@@ -20,22 +20,22 @@ namespace ork::asset {
 ///////////////////////////////////////////////////////////////////////////////
 
 DynamicAssetLoader::DynamicAssetLoader()
-    : mCheckFn(nullptr)
-    , mLoadFn(nullptr)
-    , mEnumFn(nullptr) {
+    : _checkFn(nullptr)
+    , _loadFn(nullptr)
+    , _enumFn(nullptr) {
 }
 
 std::set<file::Path> DynamicAssetLoader::EnumerateExisting() {
   std::set<file::Path> rval;
-  if (mEnumFn)
-    rval = mEnumFn();
+  if (_enumFn)
+    rval = _enumFn();
   return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 bool DynamicAssetLoader::doesExist(const AssetPath& name) {
-  return (mCheckFn != nullptr) ? mCheckFn(name) : false;
+  return (_checkFn != nullptr) ? _checkFn(name) : false;
 }
 
 bool DynamicAssetLoader::resolvePath(
@@ -50,7 +50,9 @@ bool DynamicAssetLoader::resolvePath(
 ///////////////////////////////////////////////////////////////////////////////
 
 asset_ptr_t DynamicAssetLoader::load(const AssetPath& name, vars_constptr_t vars) {
-  asset_ptr_t loaded = (mLoadFn != nullptr) ? mLoadFn(name, vars) : nullptr;
+  asset_ptr_t loaded = (_loadFn != nullptr) ? _loadFn(name, vars) : nullptr;
+  if (loaded)
+    loaded->_name = name;
   return loaded;
 }
 

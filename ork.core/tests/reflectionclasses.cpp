@@ -35,15 +35,15 @@ void AssetTest::describeX(ObjectClass* clazz) {
   ///////////////////////////////////
   auto dyn_loader = std::make_shared<asset::DynamicAssetLoader>();
 
-  dyn_loader->mEnumFn = [=]() -> asset::set_t {
+  dyn_loader->_enumFn = [=]() -> asset::set_t {
     asset::set_t rval;
     rval.insert("dyn://yo");
     return rval;
   };
-  dyn_loader->mCheckFn = [=](const AssetPath& path) { //
+  dyn_loader->_checkFn = [=](const AssetPath& path) { //
     return ork::IsSubStringPresent("dyn://", path.c_str());
   };
-  dyn_loader->mLoadFn = [=](AssetPath assetpath, asset::vars_constptr_t vars) -> asset::asset_ptr_t {
+  dyn_loader->_loadFn = [=](AssetPath assetpath, asset::vars_constptr_t vars) -> asset::asset_ptr_t {
     printf("DynamicAssetLoader test name<%s>\n", assetpath.c_str());
     auto instance = asset::Asset::objectClassStatic()->createShared();
     return objcast<asset::Asset>(instance);
