@@ -19,7 +19,7 @@ std::string slp_generate() {
   // serialize an object
   ///////////////////////////////////////////
   auto rootobj           = std::make_shared<SharedTest>();
-  auto child1            = std::make_shared<SharedTest>();
+  auto child1            = std::make_shared<SimpleTest>();
   auto child2            = std::make_shared<SharedTest>();
   rootobj->_directInt    = 0;
   rootobj->_directBool   = true;
@@ -28,8 +28,7 @@ std::string slp_generate() {
   rootobj->_directDouble = 0.02;
   rootobj->_directUint32 = 5;
   rootobj->_directSizeT  = 6;
-  child1->_directInt     = 1;
-  child1->_directString  = "yo-1";
+  child1->_strvalue      = "aaa";
   child2->_directInt     = 2;
   child2->_directString  = "yo-2";
 
@@ -47,7 +46,7 @@ TEST(SerdesLeafProperties) {
   object_ptr_t instance_out;
   serdes::JsonDeserializer deser(serstr.c_str());
   deser.deserializeTop(instance_out);
-  auto clone = std::dynamic_pointer_cast<SharedTest>(instance_out);
+  auto clone = objcast<SharedTest>(instance_out);
   CHECK_EQUAL(clone->_directInt, 0);
   CHECK_EQUAL(clone->_directBool, true);
   CHECK_EQUAL(clone->_directString, "yo-0");
@@ -55,10 +54,9 @@ TEST(SerdesLeafProperties) {
   CHECK_EQUAL(clone->_directDouble, 0.02);
   CHECK_EQUAL(clone->_directUint32, 5);
   CHECK_EQUAL(clone->_directSizeT, 6);
-  auto child1 = std::dynamic_pointer_cast<SharedTest>(clone->_directChild);
-  auto child2 = std::dynamic_pointer_cast<SharedTest>(clone->_accessorChild);
-  CHECK_EQUAL(child1->_directInt, 1);
-  CHECK_EQUAL(child1->_directString, "yo-1");
+  auto child1 = clone->_directChild;
+  auto child2 = objcast<SharedTest>(clone->_accessorChild);
+  CHECK_EQUAL(child1->_strvalue, "aaa");
   CHECK_EQUAL(child2->_directInt, 2);
   CHECK_EQUAL(child2->_directString, "yo-2");
 }

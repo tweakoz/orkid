@@ -41,16 +41,16 @@ TEST(ReflectionAccessorSharedProperty) {
 
 TEST(ReflectionDirectSharedProperty) {
 
-  auto sht1        = std::make_shared<SharedTest>();
-  auto clazz       = sht1->GetClass();
+  auto top         = std::make_shared<SharedTest>();
+  auto clazz       = top->GetClass();
   auto clazzstatic = SharedTest::GetClassStatic();
   auto sht2        = clazz->createShared();
   auto& desc       = clazz->Description();
-  using ptype      = DirectObject;
+  using ptype      = DirectObject<sharedtest_ptr_t>;
   auto passh       = desc.findTypedProperty<ptype>("prop_sharedobj_direct");
-  passh->set(sht2, sht1);
-  CHECK_EQUAL(sht1->_accessorChild, sht2);
-  object_ptr_t sht3;
-  passh->get(sht3, sht1);
-  CHECK_EQUAL(sht1->_accessorChild, sht3);
+  passh->set(objcast<SharedTest>(sht2), top);
+  CHECK_EQUAL(top->_accessorChild, sht2);
+  sharedtest_ptr_t sht3;
+  passh->get(sht3, top);
+  CHECK_EQUAL(top->_accessorChild, sht3);
 }

@@ -13,13 +13,15 @@
 #include <ork/reflect/ISerializer.h>
 #include <ork/reflect/IDeserializer.h>
 
-namespace ork { namespace reflect {
+namespace ork::reflect {
 
-DirectObject::DirectObject(object_ptr_t Object::*property)
+template <typename MemberType> //
+inline DirectObject<MemberType>::DirectObject(sharedptrtype_t Object::*property)
     : mProperty(property) {
 }
 
-void DirectObject::serialize(serdes::node_ptr_t propnode) const {
+template <typename MemberType> //
+inline void DirectObject<MemberType>::serialize(serdes::node_ptr_t propnode) const {
   auto serializer     = propnode->_serializer;
   auto parinstance    = propnode->_ser_instance;
   auto child_instance = (parinstance.get()->*mProperty);
@@ -35,35 +37,42 @@ void DirectObject::serialize(serdes::node_ptr_t propnode) const {
   }
 }
 
-void DirectObject::deserialize(serdes::node_ptr_t dsernode) const {
+template <typename MemberType> //
+inline void DirectObject<MemberType>::deserialize(serdes::node_ptr_t dsernode) const {
   auto instance     = dsernode->_deser_instance;
   auto deserializer = dsernode->_deserializer;
   auto childnode    = deserializer->deserializeObject(dsernode);
   if (childnode) {
     auto subinstance             = childnode->_deser_instance;
-    (instance.get()->*mProperty) = subinstance;
+    (instance.get()->*mProperty) = std::dynamic_pointer_cast<rawptrtype_t>(subinstance);
   } else {
     (instance.get()->*mProperty) = nullptr;
   }
 }
 
-object_ptr_t DirectObject::access(object_ptr_t instance) const {
+template <typename MemberType>                            //
+inline typename DirectObject<MemberType>::sharedptrtype_t //
+DirectObject<MemberType>::access(object_ptr_t instance) const {
   return (instance.get()->*mProperty);
 }
 
-object_constptr_t DirectObject::access(object_constptr_t instance) const {
+template <typename MemberType>                                 //
+inline typename DirectObject<MemberType>::sharedconstptrtype_t //
+DirectObject<MemberType>::access(object_constptr_t instance) const {
   return (const_cast<Object*>(instance.get())->*mProperty);
 }
 
-void DirectObject::get(
-    object_ptr_t& value, //
+template <typename MemberType> //
+inline void DirectObject<MemberType>::get(
+    sharedptrtype_t& value, //
     object_constptr_t instance) const {
   value = (instance.get()->*mProperty);
 }
-void DirectObject::set(
-    object_ptr_t const& value, //
+template <typename MemberType> //
+inline void DirectObject<MemberType>::set(
+    const sharedptrtype_t& value, //
     object_ptr_t instance) const {
   (instance.get()->*mProperty) = value;
 }
 
-}} // namespace ork::reflect
+} // namespace ork::reflect

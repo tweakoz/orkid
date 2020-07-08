@@ -429,7 +429,7 @@ boost::Crc64 HotKey::GetHash() const {
 void HotKeyConfiguration::describeX(object::ObjectClass* clazz) {
 
   clazz
-      ->sharedObjectMapProperty("HotKeys", &HotKeyConfiguration::_hotkeys) //
+      ->directObjectMapProperty("HotKeys", &HotKeyConfiguration::_hotkeys) //
       ->annotate<ConstString>("editor.factorylistbase", "HotKey");
 }
 

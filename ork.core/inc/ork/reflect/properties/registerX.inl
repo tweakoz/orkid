@@ -7,6 +7,7 @@
 
 #pragma once
 #include "register.h"
+#include "DirectObject.inl"
 #include "DirectObjectMap.inl"
 #include "DirectTypedArray.hpp"
 #include "DirectTypedVector.hpp"
@@ -73,7 +74,7 @@ inline object::PropertyModifier object::ObjectClass::directVectorProperty(
 }
 ///////////////////////////////////////////////////////////////////////////
 template <typename ClassType, typename MemberType>
-inline object::PropertyModifier object::ObjectClass::sharedObjectMapProperty(const char* name, MemberType ClassType::*member) {
+inline object::PropertyModifier object::ObjectClass::directObjectMapProperty(const char* name, MemberType ClassType::*member) {
   object::PropertyModifier modder;
   auto typed_member = static_cast<MemberType Object::*>(member);
   modder._property  = new reflect::DirectObjectMap(typed_member);
@@ -81,13 +82,13 @@ inline object::PropertyModifier object::ObjectClass::sharedObjectMapProperty(con
   return modder;
 }
 ///////////////////////////////////////////////////////////////////////////
-template <typename ClassType>
-inline object::PropertyModifier object::ObjectClass::sharedObjectProperty( //
+template <typename ClassType, typename MemberType>
+inline object::PropertyModifier object::ObjectClass::directObjectProperty( //
     const char* name,                                                      //
-    object_ptr_t ClassType::*member) {
+    MemberType ClassType::*member) {
   object::PropertyModifier modder;
-  auto typed_member = static_cast<object_ptr_t Object::*>(member);
-  modder._property  = new reflect::DirectObject(typed_member);
+  auto typed_member = static_cast<MemberType Object::*>(member);
+  modder._property  = new reflect::DirectObject<MemberType>(typed_member);
   _description.addProperty(name, modder._property);
   return modder;
 }

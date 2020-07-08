@@ -18,6 +18,12 @@ using namespace ork::object;
 using namespace ork::reflect;
 using namespace ork::rtti;
 
+struct SimpleTest;
+struct SharedTest;
+
+using simpletest_ptr_t = std::shared_ptr<SimpleTest>;
+using sharedtest_ptr_t = std::shared_ptr<SharedTest>;
+
 ////////////////////////////////////////////////////////////////////////////////
 
 struct SimpleTest final : public Object {
@@ -28,8 +34,6 @@ public:
   std::string _strvalue;
 };
 
-using simpletest_ptr_t = std::shared_ptr<SimpleTest>;
-
 ////////////////////////////////////////////////////////////////////////////////
 
 struct SharedTest final : public Object {
@@ -38,15 +42,15 @@ struct SharedTest final : public Object {
 public:
   SharedTest();
 
-  object_ptr_t _accessorChild = nullptr;
-  object_ptr_t _directChild   = nullptr;
-  int _directInt              = -1;
-  uint32_t _directUint32      = 0;
-  size_t _directSizeT         = 0;
-  bool _directBool            = false;
-  float _directFloat          = 0.0f;
-  double _directDouble        = 0.0;
-  std::string _directString   = "";
+  object_ptr_t _accessorChild   = nullptr;
+  simpletest_ptr_t _directChild = nullptr;
+  int _directInt                = -1;
+  uint32_t _directUint32        = 0;
+  size_t _directSizeT           = 0;
+  bool _directBool              = false;
+  float _directFloat            = 0.0f;
+  double _directDouble          = 0.0;
+  std::string _directString     = "";
 
   void getChild(object_ptr_t& outptr) const {
     outptr = _accessorChild;

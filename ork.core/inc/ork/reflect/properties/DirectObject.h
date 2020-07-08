@@ -12,22 +12,28 @@
 
 #include <ork/config/config.h>
 
-namespace ork { namespace reflect {
+namespace ork::reflect {
 
-class DirectObject : public IObject {
-  object_ptr_t Object::*mProperty;
+template <typename MemberType> //
+class DirectObject : public ObjectProperty {
+
+  using sharedptrtype_t      = MemberType;
+  using rawptrtype_t         = typename MemberType::element_type;
+  using sharedconstptrtype_t = typename std::shared_ptr<const rawptrtype_t>;
+
+  sharedptrtype_t Object::*mProperty;
 
 public:
-  DirectObject(object_ptr_t Object::*);
+  DirectObject(sharedptrtype_t Object::*);
 
-  void get(object_ptr_t& value, object_constptr_t instance) const;
-  void set(object_ptr_t const& value, object_ptr_t instance) const;
+  void get(sharedptrtype_t& value, object_constptr_t instance) const;
+  void set(const sharedptrtype_t& value, object_ptr_t instance) const;
 
-  object_ptr_t access(object_ptr_t) const override;
-  object_constptr_t access(object_constptr_t) const override;
+  sharedptrtype_t access(object_ptr_t) const;
+  sharedconstptrtype_t access(object_constptr_t) const;
 
   void deserialize(serdes::node_ptr_t) const override;
   void serialize(serdes::node_ptr_t) const override;
 };
 
-}} // namespace ork::reflect
+} // namespace ork::reflect

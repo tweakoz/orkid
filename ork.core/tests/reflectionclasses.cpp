@@ -97,7 +97,7 @@ void SharedTest::describeX(ObjectClass* clazz) {
       "string_direct", //
       &SharedTest::_directString);
   ///////////////////////////////////
-  clazz->sharedObjectProperty(
+  clazz->directObjectProperty(
       "sharedobj_direct", //
       &SharedTest::_directChild);
   ///////////////////////////////////
@@ -136,7 +136,7 @@ void MapTest::describeX(ObjectClass* clazz) {
       "directstrint_lut", //
       &MapTest::_directstrintlut);
   ///////////////////////////////////
-  clazz->sharedObjectMapProperty(
+  clazz->directObjectMapProperty(
       "directstrobj_map", //
       &MapTest::_directstrobjmap);
   ///////////////////////////////////

@@ -59,7 +59,7 @@ public:
   inline PropertyModifier directVectorProperty(const char* name, MemberVectorType ClassType::*member);
 
   template <typename ClassType, typename MemberType>
-  inline PropertyModifier sharedObjectMapProperty(
+  inline PropertyModifier directObjectMapProperty(
       const char* name, //
       MemberType ClassType::*member);
 
@@ -75,10 +75,10 @@ public:
       bool (ClassType::*serialize)(reflect::serdes::ISerializer&) const,
       bool (ClassType::*deserialize)(reflect::serdes::IDeserializer&));
 
-  template <typename ClassType>
-  inline PropertyModifier sharedObjectProperty(
+  template <typename ClassType, typename MemberType>
+  inline PropertyModifier directObjectProperty(
       const char* name, //
-      object_ptr_t ClassType::*member);
+      MemberType ClassType::*member);
 
   template <typename ClassType>
   inline PropertyModifier floatProperty(const char* name, float_range range, float ClassType::*member);
