@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
   auto program   = std::make_shared<ProgramData>();
   auto layerdata = program->newLayer();
   auto czoscdata = std::make_shared<CzOscData>();
-  program->_role = "czx";
+  program->_tags = "czx";
   program->_name = "test";
   //////////////////////////////////////
   // setup dsp graph

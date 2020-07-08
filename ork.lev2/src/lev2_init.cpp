@@ -32,6 +32,11 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorForward.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
 ///////////////////////////////////////////////////////////////////////////////
+#include <ork/lev2/aud/singularity/synthdata.h>
+#include <ork/lev2/aud/singularity/layer.h>
+#include <ork/lev2/aud/singularity/dspblocks.h>
+#include <ork/lev2/aud/singularity/controller.h>
+///////////////////////////////////////////////////////////////////////////////
 //#define WIIEMU
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -163,7 +168,18 @@ void ClassInit() {
   RegisterClassX(XgmModelAsset);
 
   //////////////////////////////////////////
+  // register audio classes
+  //////////////////////////////////////////
+
+  RegisterClassX(audio::singularity::ProgramData);
+  RegisterClassX(audio::singularity::BankData);
+  RegisterClassX(audio::singularity::LayerData);
+  RegisterClassX(audio::singularity::DspBlockData);
+  RegisterClassX(audio::singularity::ControllerData);
+
+  //////////////////////////////////////////
   // register lev2 graphics target classes
+  //////////////////////////////////////////
 
   DummyContextInit();
 

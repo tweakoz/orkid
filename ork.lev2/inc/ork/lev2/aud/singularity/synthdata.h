@@ -29,7 +29,7 @@ struct ProgramData : public ork::Object {
   }
 
   std::string _name;
-  std::string _role;
+  std::string _tags;
   std::vector<lyrdata_ptr_t> _layerdatas;
   std::vector<std::string> _hudinfos;
 };

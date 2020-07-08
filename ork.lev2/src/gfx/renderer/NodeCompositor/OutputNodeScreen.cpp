@@ -24,8 +24,8 @@ ImplementReflectionX(ork::lev2::ScreenOutputCompositingNode, "ScreenOutputCompos
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 void ScreenOutputCompositingNode::describeX(class_t* c) {
-  c->memberProperty("Layer", &ScreenOutputCompositingNode::_layername);
-  c->memberProperty("SuperSample", &ScreenOutputCompositingNode::_supersample)
+  c->directProperty("Layer", &ScreenOutputCompositingNode::_layername);
+  c->directProperty("SuperSample", &ScreenOutputCompositingNode::_supersample)
       ->annotate<ConstString>("editor.range.min", "0")
       ->annotate<ConstString>("editor.range.max", "5");
 }

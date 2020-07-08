@@ -197,13 +197,13 @@ void ImgModule::describeX(class_t* clazz) {
 void Img32Module::describeX(class_t* clazz) {
   // RegisterObjOutPlug(Img32Module, ImgOut);
   // clazz
-  //  ->memberProperty("ImgOut", &Img32Module::OutAccessorImgOut) //
+  //  ->directProperty("ImgOut", &Img32Module::OutAccessorImgOut) //
   //->annotate<bool>("editor.visible", false);
 }
 void Img64Module::describeX(class_t* clazz) {
   // RegisterObjOutPlug(Img64Module, ImgOut);
   // clazz
-  //  ->memberProperty("ImgOut", &Img64Module::OutAccessorImgOut) //
+  //  ->directProperty("ImgOut", &Img64Module::OutAccessorImgOut) //
   //->annotate<bool>("editor.visible", false);
 }
 ImgModule::ImgModule()

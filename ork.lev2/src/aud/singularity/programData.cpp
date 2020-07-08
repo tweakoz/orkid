@@ -11,6 +11,9 @@ namespace ork::audio::singularity {
 //////////////////////////////////////////////////////////////////////////////
 
 void ProgramData::describeX(class_t* clazz) {
+  clazz->directProperty("Name", &ProgramData::_name);
+  clazz->directProperty("Tags", &ProgramData::_tags);
+  clazz->directVectorProperty("Layers", &ProgramData::_layerdatas);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

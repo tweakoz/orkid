@@ -32,10 +32,10 @@ using namespace ork::lev2::orkidvr;
 ///////////////////////////////////////////////////////////////////////////////
 
 void VrSystemData::describeX(class_t* c) {
-  c->memberProperty("TrackingObjectEntity", &VrSystemData::_vrTrackedObject);
-  c->memberProperty("VrCameraEntity", &VrSystemData::_vrCamera);
-  c->memberProperty("VisualOffset", &VrSystemData::_visualoffset);
-  c->memberProperty("UseCameraView", &VrSystemData::_useCamView);
+  c->directProperty("TrackingObjectEntity", &VrSystemData::_vrTrackedObject);
+  c->directProperty("VrCameraEntity", &VrSystemData::_vrCamera);
+  c->directProperty("VisualOffset", &VrSystemData::_visualoffset);
+  c->directProperty("UseCameraView", &VrSystemData::_useCamView);
   // todo - property annotation which pops up a choicelist with the current set of entities
 }
 

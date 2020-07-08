@@ -37,10 +37,10 @@ void LightContainer::describeX(class_t* clazz) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Light::describeX(class_t* clazz) {
-  clazz->memberProperty("Color", &Light::mColor);
-  clazz->memberProperty("WorldMatrix", &Light::mWorldMatrix);
-  clazz->memberProperty("AffectsSpecular", &Light::mbSpecular);
-  clazz->memberProperty("ShadowCaster", &Light::mbIsShadowCaster);
+  clazz->directProperty("Color", &Light::mColor);
+  clazz->directProperty("WorldMatrix", &Light::mWorldMatrix);
+  clazz->directProperty("AffectsSpecular", &Light::mbSpecular);
+  clazz->directProperty("ShadowCaster", &Light::mbIsShadowCaster);
 
   clazz->floatProperty("ShadowSamples", float_range{1, 256}, &Light::mShadowSamples);
   clazz->floatProperty("ShadowBlur", float_range{0, 1}, &Light::mShadowBlur);
@@ -60,8 +60,8 @@ void AmbientLight::describeX(class_t* clazz) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void PointLight::describeX(class_t* clazz) {
-  clazz->memberProperty("Falloff", &PointLight::mFalloff);
-  clazz->memberProperty("Radius", &PointLight::mRadius);
+  clazz->directProperty("Falloff", &PointLight::mFalloff);
+  clazz->directProperty("Radius", &PointLight::mRadius);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

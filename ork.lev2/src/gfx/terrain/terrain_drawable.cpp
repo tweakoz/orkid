@@ -1086,18 +1086,18 @@ static void _RenderHeightfield(RenderContextInstData& RCID) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void TerrainDrawableData::describeX(class_t* c) {
-/*  c->memberProperty("Offset", &TerrainDrawableData::_visualOffset);
-  c->memberProperty("FogColor", &TerrainDrawableData::_fogcolor);
-  c->memberProperty("GrassColor", &TerrainDrawableData::_grass);
-  c->memberProperty("SnowColor", &TerrainDrawableData::_snow);
-  c->memberProperty("rock1Color", &TerrainDrawableData::_rock1);
-  c->memberProperty("Rock2Color", &TerrainDrawableData::_rock2);
+/*  c->directProperty("Offset", &TerrainDrawableData::_visualOffset);
+  c->directProperty("FogColor", &TerrainDrawableData::_fogcolor);
+  c->directProperty("GrassColor", &TerrainDrawableData::_grass);
+  c->directProperty("SnowColor", &TerrainDrawableData::_snow);
+  c->directProperty("rock1Color", &TerrainDrawableData::_rock1);
+  c->directProperty("Rock2Color", &TerrainDrawableData::_rock2);
   ////////////////////////////////////////////////////////////////////////
   c->accessorProperty("HeightMap", &TerrainDrawableData::_readHmapPath, &TerrainDrawableData::_writeHmapPath)
       ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
       ->annotate<ConstString>("editor.filetype", "png");
   ////////////////////////////////////////////////////////////////////////
-  c->memberProperty("SphericalEnvMap", &TerrainDrawableData::_sphericalenvmapasset)
+  c->directProperty("SphericalEnvMap", &TerrainDrawableData::_sphericalenvmapasset)
       ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
       ->annotate<ConstString>("editor.assettype", "lev2tex")
       ->annotate<ConstString>("editor.assetclass", "lev2tex");

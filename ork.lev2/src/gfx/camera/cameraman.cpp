@@ -20,9 +20,9 @@ namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 void UiCamera::describeX(object::ObjectClass* clazz) {
-  clazz->memberProperty("Center", &UiCamera::mvCenter);
+  clazz->directProperty("Center", &UiCamera::mvCenter);
   clazz->floatProperty("Loc", float_range{0.1f, 1000.0f}, &UiCamera::mfLoc);
-  clazz->memberProperty("QuatC", &UiCamera::QuatC);
+  clazz->directProperty("QuatC", &UiCamera::QuatC);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -239,6 +239,7 @@ node_ptr_t JsonSerializer::serializeObject(node_ptr_t parnode) {
       onode->_ser_instance = instance;
       auto oimplnode       = onode->_impl.getShared<JsonSerObjectNode>();
       auto classname       = objclazz->Name();
+      OrkAssert(classname.c_str() != nullptr); // did you 'touch' the class ?
       rapidjson::Value classval(classname.c_str(), *_allocator);
       oimplnode->_jsonvalue.AddMember(
           "class", //

@@ -16,7 +16,10 @@
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 struct LayerData : public ork::Object {
-  LayerData(const ProgramData* pdat);
+
+  DeclareConcreteX(LayerData, ork::Object);
+
+  LayerData(const ProgramData* pdat = nullptr);
 
   dspstagedata_ptr_t appendStage(const std::string& named);
   dspstagedata_ptr_t stageByIndex(int index);

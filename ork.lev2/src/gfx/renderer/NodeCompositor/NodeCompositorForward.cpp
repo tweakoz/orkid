@@ -23,7 +23,7 @@ ImplementReflectionX(ork::lev2::ForwardCompositingNode, "ForwardCompositingNode"
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 void ForwardCompositingNode::describeX(class_t* c) {
-  c->memberProperty("ClearColor", &ForwardCompositingNode::_clearColor);
+  c->directProperty("ClearColor", &ForwardCompositingNode::_clearColor);
 }
 ///////////////////////////////////////////////////////////////////////////
 constexpr int NUMSAMPLES = 1;

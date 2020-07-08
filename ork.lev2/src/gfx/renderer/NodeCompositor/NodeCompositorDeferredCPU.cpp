@@ -29,8 +29,8 @@ ImplementReflectionX(ork::lev2::deferrednode::DeferredCompositingNode, "Deferred
 namespace ork::lev2::deferrednode {
 ///////////////////////////////////////////////////////////////////////////////
 void DeferredCompositingNode::describeX(class_t* c) {
-  c->memberProperty("ClearColor", &DeferredCompositingNode::_clearColor);
-  c->memberProperty("FogColor", &DeferredCompositingNode::_fogColor);
+  c->directProperty("ClearColor", &DeferredCompositingNode::_clearColor);
+  c->directProperty("FogColor", &DeferredCompositingNode::_fogColor);
 }
 ///////////////////////////////////////////////////////////////////////////////
 struct CpuNodeImpl {

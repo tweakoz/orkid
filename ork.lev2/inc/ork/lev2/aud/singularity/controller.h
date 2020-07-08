@@ -22,10 +22,12 @@ struct ControlBlockData {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct ControllerData {
+struct ControllerData : public ork::Object {
+
+  DeclareAbstractX(ControllerData, ork::Object);
+
   virtual ControllerInst* instantiate(Layer* layer) const = 0;
-  virtual ~ControllerData() {
-  }
+
   scopesource_ptr_t createScopeSource();
   std::string _name;
   scopesource_ptr_t _scopesource;

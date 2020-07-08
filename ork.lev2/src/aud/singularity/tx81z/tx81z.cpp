@@ -119,7 +119,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
     int progid               = outd->_lastprg++;
     auto zpmprg              = std::make_shared<ProgramData>();
     zpmDB->_programs[progid] = zpmprg;
-    zpmprg->_role            = "fm4";
+    zpmprg->_tags            = "fm4";
 
     ///////////////////////////
     // collect bytes for program

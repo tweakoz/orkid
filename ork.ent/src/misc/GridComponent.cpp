@@ -202,7 +202,7 @@ void GridControllerData::describeX(class_t* c) {
   c->floatProperty("Extent", float_range{-1000.0, 1000.0}, &GridControllerData::_extent);
   c->floatProperty("TileDim", float_range{0.0, 1000.0}, &GridControllerData::_tiledim);
 
-  c->memberProperty("ColorTexture", &GridControllerData::_colorTexture)
+  c->directProperty("ColorTexture", &GridControllerData::_colorTexture)
       ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
       ->annotate<ConstString>("editor.assettype", "lev2tex")
       ->annotate<ConstString>("editor.assetclass", "lev2tex");

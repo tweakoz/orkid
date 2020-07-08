@@ -23,7 +23,7 @@ ImplementReflectionX(ork::lev2::PickingCompositingNode, "PickingCompositingNode"
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 void PickingCompositingNode::describeX(class_t* c) {
-  c->memberProperty("ClearColor", &PickingCompositingNode::_clearColor);
+  c->directProperty("ClearColor", &PickingCompositingNode::_clearColor);
 }
 ///////////////////////////////////////////////////////////////////////////
 constexpr int NUMSAMPLES = 1;

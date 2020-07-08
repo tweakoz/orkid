@@ -32,7 +32,7 @@ PropertyModifier* PropertyModifier::operator->() {
 }
 ///////////////////////////////////////////////////////////////////////////
 template <typename ClassType, typename MemberType>
-inline object::PropertyModifier object::ObjectClass::memberProperty(const char* name, MemberType ClassType::*member) {
+inline object::PropertyModifier object::ObjectClass::directProperty(const char* name, MemberType ClassType::*member) {
   object::PropertyModifier modder;
   auto typed_member = static_cast<MemberType Object::*>(member);
   modder._property  = new reflect::DirectTyped<MemberType>(typed_member);
@@ -121,14 +121,14 @@ inline object::PropertyModifier object::ObjectClass::accessorVariant(
 ///////////////////////////////////////////////////////////////////////////
 template <typename ClassType>
 inline PropertyModifier object::ObjectClass::floatProperty(const char* name, float_range rng, float ClassType::*member) {
-  auto rval = memberProperty<ClassType, float>(name, member);
+  auto rval = directProperty<ClassType, float>(name, member);
   rval->annotate("editor.range", rng);
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////
 template <typename ClassType>
 inline PropertyModifier object::ObjectClass::intProperty(const char* name, int_range rng, int ClassType::*member) {
-  auto rval = memberProperty<ClassType, int>(name, member);
+  auto rval = directProperty<ClassType, int>(name, member);
   rval->annotate("editor.range", rng);
   return rval;
 }

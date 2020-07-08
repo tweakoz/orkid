@@ -78,7 +78,7 @@ int main(int argc, char** argv) {
     lyrdata_ptr_t layerdata;
     auto mutable_program   = std::make_shared<ProgramData>();
     layerdata              = mutable_program->newLayer();
-    mutable_program->_role = "czx";
+    mutable_program->_tags = "czx";
     mutable_program->_name = "test";
     program                = mutable_program;
     //////////////////////////////////////

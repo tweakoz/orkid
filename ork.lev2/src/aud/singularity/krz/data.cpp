@@ -43,7 +43,7 @@ KrzTestData::KrzTestData()
 
 void KrzTestData::genTestPrograms() {
   auto t1   = new ProgramData;
-  t1->_role = "PrgTest";
+  t1->_tags = "PrgTest";
   _testPrograms.push_back(t1);
   t1->_name = "YO";
 

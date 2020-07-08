@@ -24,7 +24,7 @@ int main(int argc, char** argv) {
     auto mutable_program   = std::make_shared<ProgramData>();
     layerdata              = mutable_program->newLayer();
     auto czoscdata         = std::make_shared<CzOscData>();
-    mutable_program->_role = "czx";
+    mutable_program->_tags = "czx";
     mutable_program->_name = "test";
     program                = mutable_program;
     //////////////////////////////////////

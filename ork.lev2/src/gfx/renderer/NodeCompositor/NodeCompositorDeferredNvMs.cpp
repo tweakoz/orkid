@@ -31,8 +31,8 @@ ImplementReflectionX(ork::lev2::deferrednode::DeferredCompositingNodeNvMs, "Defe
 namespace ork::lev2::deferrednode {
 ///////////////////////////////////////////////////////////////////////////////
 void DeferredCompositingNodeNvMs::describeX(class_t* c) {
-  c->memberProperty("ClearColor", &DeferredCompositingNodeNvMs::_clearColor);
-  c->memberProperty("FogColor", &DeferredCompositingNodeNvMs::_fogColor);
+  c->directProperty("ClearColor", &DeferredCompositingNodeNvMs::_clearColor);
+  c->directProperty("FogColor", &DeferredCompositingNodeNvMs::_fogColor);
 }
 ///////////////////////////////////////////////////////////////////////////////
 struct NVMSIMPL {

@@ -24,7 +24,7 @@ ImplementReflectionX(ork::lev2::RtGroupOutputCompositingNode, "RtGroupOutputComp
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 void RtGroupOutputCompositingNode::describeX(class_t* c) {
-  c->memberProperty("Layer", &RtGroupOutputCompositingNode::_layername);
+  c->directProperty("Layer", &RtGroupOutputCompositingNode::_layername);
 }
 ///////////////////////////////////////////////////////////////////////////////
 struct RTGIMPL {

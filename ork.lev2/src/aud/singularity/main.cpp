@@ -545,7 +545,7 @@ void runUI()
           loadprog(programID);
         }
 
-        const char* prghead = curProg->_role.c_str();
+        const char* prghead = curProg->_tags.c_str();
 
         hudstr += formatString("%s<%d:%s>\n", prghead,programID, curProg->_name.c_str() );
         drawtext( hudstr, 50,50, 1, 0,1,0 );

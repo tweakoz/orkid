@@ -7,9 +7,14 @@
 #include <ork/lev2/aud/singularity/synthdata.h>
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/aud/singularity/hud.h>
+#include <ork/reflect/properties/registerX.inl>
+
+ImplementReflectionX(ork::audio::singularity::ControllerData, "SynControllerData");
 
 namespace ork::audio::singularity {
-
+///////////////////////////////////////////////////////////////////////////////
+void ControllerData::describeX(class_t* clazz) {
+}
 ///////////////////////////////////////////////////////////////////////////////
 scopesource_ptr_t ControllerData::createScopeSource() {
   _scopesource = std::make_shared<ScopeSource>();

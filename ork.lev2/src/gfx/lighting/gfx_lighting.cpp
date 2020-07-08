@@ -46,21 +46,21 @@ float Light::distance(fvec3 pos) const {
 
 void LightData::describeX(class_t* c) {
 
-  c->memberProperty("Color", &LightData::mColor);
-  c->memberProperty("ShadowCaster", &LightData::mbShadowCaster);
-  c->memberProperty("Decal", &LightData::_decal);
+  c->directProperty("Color", &LightData::mColor);
+  c->directProperty("ShadowCaster", &LightData::mbShadowCaster);
+  c->directProperty("Decal", &LightData::_decal);
 
   c->floatProperty("ShadowBias", float_range{0.0, 0.01}, &LightData::mShadowBias)
       ->annotate<ConstString>("editor.range.log", "true");
   c->floatProperty("ShadowBlur", float_range{0.0, 1.0}, &LightData::mShadowBlur);
-  c->memberProperty("ShadowMapSize", &LightData::_shadowMapSize)
+  c->directProperty("ShadowMapSize", &LightData::_shadowMapSize)
       ->annotate<ConstString>("editor.range.min", "128")
       ->annotate<ConstString>("editor.range.max", "4096");
-  c->memberProperty("ShadowSamples", &LightData::_shadowsamples)
+  c->directProperty("ShadowSamples", &LightData::_shadowsamples)
       ->annotate<ConstString>("editor.range.min", "1")
       ->annotate<ConstString>("editor.range.max", "16");
 
-  c->memberProperty(
+  c->directProperty(
        "Cookie",
        &LightData::_cookie) //
       ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
@@ -166,7 +166,7 @@ AmbientLight::AmbientLight(xform_generator_t mtx, const AmbientLightData* dld)
 
 void AmbientLightData::describeX(class_t* c) {
   c->floatProperty("AmbientShade", float_range{0, 1}, &AmbientLightData::mfAmbientShade);
-  c->memberProperty("HeadlightDir", &AmbientLightData::mvHeadlightDir);
+  c->directProperty("HeadlightDir", &AmbientLightData::mvHeadlightDir);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

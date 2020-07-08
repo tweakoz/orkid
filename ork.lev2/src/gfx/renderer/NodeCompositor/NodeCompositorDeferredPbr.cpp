@@ -45,8 +45,8 @@ void DeferredCompositingNodePbr::describeX(class_t* c) {
 
   class_t::CreateClassAlias("DeferredCompositingNodeDebugNormal", c);
 
-  c->memberProperty("ClearColor", &DeferredCompositingNodePbr::_clearColor);
-  c->memberProperty("AmbientLevel", &DeferredCompositingNodePbr::_ambientLevel);
+  c->directProperty("ClearColor", &DeferredCompositingNodePbr::_clearColor);
+  c->directProperty("AmbientLevel", &DeferredCompositingNodePbr::_ambientLevel);
   c->floatProperty("EnvironmentIntensity", float_range{0, 100}, &DeferredCompositingNodePbr::_environmentIntensity);
   c->floatProperty("EnvironmentMipBias", float_range{0, 12}, &DeferredCompositingNodePbr::_environmentMipBias);
   c->floatProperty("EnvironmentMipScale", float_range{0, 100}, &DeferredCompositingNodePbr::_environmentMipScale);

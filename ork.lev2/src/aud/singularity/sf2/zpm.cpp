@@ -236,7 +236,7 @@ void SoundFont::genZpmDB() {
         auto prg = new ProgramData;
         _zpmDB->_programs[id] = prg;
         prg->_name = km->_name;
-        prg->_role = _bankName;
+        prg->_tags = _bankName;
         auto ld = prg->newLayer();
         ld->_keymap = km;
         auto CB0 = new ControlBlockData;

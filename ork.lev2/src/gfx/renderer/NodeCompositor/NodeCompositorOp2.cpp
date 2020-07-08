@@ -38,16 +38,16 @@ EndEnumRegistration();
 ///////////////////////////////////////////////////////////////////////////////
 void Op2CompositingNode::describeX(class_t* c) {
   /*
-    c->memberProperty("Mode", &Op2CompositingNode::mMode)->annotate<ConstString>("editor.class", "ged.factory.enum");
+    c->directProperty("Mode", &Op2CompositingNode::mMode)->annotate<ConstString>("editor.class", "ged.factory.enum");
     c->accessorProperty("NodeA", &Op2CompositingNode::GetNodeA, &Op2CompositingNode::SetNodeA)
         ->annotate<ConstString>("editor.factorylistbase", "PostCompositingNode");
     c->accessorProperty("NodeB", &Op2CompositingNode::GetNodeB, &Op2CompositingNode::SetNodeB)
         ->annotate<ConstString>("editor.factorylistbase", "PostCompositingNode");
 
-    c->memberProperty("LevelA", &Op2CompositingNode::mLevelA);
-    c->memberProperty("LevelB", &Op2CompositingNode::mLevelB);
-    c->memberProperty("BiasA", &Op2CompositingNode::mBiasA);
-    c->memberProperty("BiasB", &Op2CompositingNode::mBiasB);
+    c->directProperty("LevelA", &Op2CompositingNode::mLevelA);
+    c->directProperty("LevelB", &Op2CompositingNode::mLevelB);
+    c->directProperty("BiasA", &Op2CompositingNode::mBiasA);
+    c->directProperty("BiasB", &Op2CompositingNode::mBiasB);
     */
 }
 ///////////////////////////////////////////////////////////////////////////////

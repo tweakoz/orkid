@@ -627,7 +627,7 @@ void parse_czx(CzData* outd, const file::Path& path, const std::string& bnkname)
     auto name        = FormatString("%s(%02d)", bnkname.c_str(), iv);
     int newprogramid = outd->_lastprg++;
     auto prgout      = std::make_shared<ProgramData>();
-    prgout->_role    = "czx";
+    prgout->_tags    = "czx";
     ///////////////////////////
     // collect bytes for program
     ///////////////////////////

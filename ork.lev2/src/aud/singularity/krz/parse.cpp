@@ -908,7 +908,7 @@ void BankData::parseEnvControl(const rapidjson::Value& seg, EnvCtrlData& ed) {
 
 prgdata_ptr_t BankData::parseProgram(const Value& jsonobj) {
   auto pdata       = std::make_shared<ProgramData>();
-  pdata->_role     = "Program";
+  pdata->_tags     = "Program";
   const auto& name = jsonobj["Program"].GetString();
   // printf( "Got Prgram name<%s>\n", name );
   pdata->_name = name;
@@ -970,7 +970,7 @@ void BankData::loadJson(const std::string& fname, int ibaseid) {
     } else if (obj.HasMember("Program")) {
       auto p               = this->parseProgram(obj);
       _tempprograms[objid] = p;
-      p->_role             = "k2000(" + fname + ")";
+      p->_tags             = "k2000(" + fname + ")";
     } else {
       assert(false);
     }

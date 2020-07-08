@@ -25,6 +25,7 @@ ImplementReflectionX(ork::audio::singularity::DspBlockData, "SynDspBlock");
 namespace ork::audio::singularity {
 
 void DspBlockData::describeX(class_t* clazz) {
+  clazz->directProperty("Name", &DspBlockData::_name);
 }
 
 //////////////////////////////////////////////////////////////////////////////

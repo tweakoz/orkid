@@ -55,13 +55,13 @@ RegisterEnum(OutputTimeStep, fps240);
 EndEnumRegistration();
 ///////////////////////////////////////////////////////////////////////////////
 void FileOutputCompositingNode::describeX(class_t* c) {
-  /*c->memberProperty("Layer", &FileOutputCompositingNode::_layername);
-  c->memberProperty("OutputFrames", &FileOutputCompositingNode::mbOutputFrames);
-  c->memberProperty("OutputResBase", &FileOutputCompositingNode::mOutputBaseResolution)
+  /*c->directProperty("Layer", &FileOutputCompositingNode::_layername);
+  c->directProperty("OutputFrames", &FileOutputCompositingNode::mbOutputFrames);
+  c->directProperty("OutputResBase", &FileOutputCompositingNode::mOutputBaseResolution)
       ->annotate("editor.class", "ged.factory.enum");
-  c->memberProperty("OutputResMult", &FileOutputCompositingNode::mOutputResMult) //
+  c->directProperty("OutputResMult", &FileOutputCompositingNode::mOutputResMult) //
       ->annotate("editor.class", "ged.factory.enum");
-  c->memberProperty("OutputFrameRate", &FileOutputCompositingNode::mOutputFrameRate) //
+  c->directProperty("OutputFrameRate", &FileOutputCompositingNode::mOutputFrameRate) //
       ->annotate("editor.class", "ged.factory.enum");*/
 }
 ///////////////////////////////////////////////////////////////////////////////

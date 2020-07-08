@@ -156,13 +156,13 @@ void PtxCompositingNode::describeX(class_t* c) {
 
   ork::reflect::RegisterProperty("Template", &PtxCompositingNode::_accessTemplate);
 
-  c->memberProperty("BufferDim", &PtxCompositingNode::_bufferDim)
+  c->directProperty("BufferDim", &PtxCompositingNode::_bufferDim)
       ->annotate<ConstString>("editor.range.min", "16")
       ->annotate<ConstString>("editor.range.max", "8192");
 
   /////////////////////
 
-  c->memberProperty("DynTexName", &PtxCompositingNode::mDynTexPath);
+  c->directProperty("DynTexName", &PtxCompositingNode::mDynTexPath);
 
   auto nodins_loader = new asset::DynamicAssetLoader;
 

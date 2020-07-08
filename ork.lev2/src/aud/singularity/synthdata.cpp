@@ -20,6 +20,8 @@ namespace ork::audio::singularity {
 //////////////////////////////////////////////////////////////////////////////
 
 void BankData::describeX(class_t* clazz) {
+  clazz->directObjectMapProperty("Programs", &BankData::_programsByName);
+  // clazz->directObjectMapProperty("KeyMaps", &BankData::_keymaps);
 }
 
 //////////////////////////////////////////////////////////////////////////////

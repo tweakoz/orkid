@@ -29,7 +29,7 @@ ImplementReflectionX(ArrayTest, "ArrayTest");
 ///////////////////////////////////////////////////////////////////////////////
 void AssetTest::describeX(ObjectClass* clazz) {
   ///////////////////////////////////
-  clazz->memberProperty(
+  clazz->directProperty(
       "asset", //
       &AssetTest::_assetptr);
   ///////////////////////////////////
@@ -58,7 +58,7 @@ AssetTest::AssetTest()
 ///////////////////////////////////////////////////////////////////////////////
 void SimpleTest::describeX(ObjectClass* clazz) {
   ///////////////////////////////////
-  clazz->memberProperty(
+  clazz->directProperty(
       "value", //
       &SimpleTest::_strvalue);
 }
@@ -69,31 +69,31 @@ SimpleTest::SimpleTest(std::string str)
 ///////////////////////////////////////////////////////////////////////////////
 void SharedTest::describeX(ObjectClass* clazz) {
   ///////////////////////////////////
-  clazz->memberProperty(
+  clazz->directProperty(
       "int_direct", //
       &SharedTest::_directInt);
   ///////////////////////////////////
-  clazz->memberProperty(
+  clazz->directProperty(
       "uint32_direct", //
       &SharedTest::_directUint32);
   ///////////////////////////////////
-  clazz->memberProperty(
+  clazz->directProperty(
       "sizet_direct", //
       &SharedTest::_directSizeT);
   ///////////////////////////////////
-  clazz->memberProperty(
+  clazz->directProperty(
       "bool_direct", //
       &SharedTest::_directBool);
   ///////////////////////////////////
-  clazz->memberProperty(
+  clazz->directProperty(
       "float_direct", //
       &SharedTest::_directFloat);
   ///////////////////////////////////
-  clazz->memberProperty(
+  clazz->directProperty(
       "double_direct", //
       &SharedTest::_directDouble);
   ///////////////////////////////////
-  clazz->memberProperty(
+  clazz->directProperty(
       "string_direct", //
       &SharedTest::_directString);
   ///////////////////////////////////
@@ -164,7 +164,7 @@ EnumTest::EnumTest() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void EnumTest::describeX(ObjectClass* clazz) {
-  clazz->memberProperty(
+  clazz->directProperty(
       "enum_direct", //
       &EnumTest::_mcst);
 }
@@ -173,22 +173,22 @@ MathTest::MathTest() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void MathTest::describeX(ObjectClass* clazz) {
-  clazz->memberProperty(
+  clazz->directProperty(
       "direct_fvec2", //
       &MathTest::_fvec2);
-  clazz->memberProperty(
+  clazz->directProperty(
       "direct_fvec3", //
       &MathTest::_fvec3);
-  clazz->memberProperty(
+  clazz->directProperty(
       "direct_fvec4", //
       &MathTest::_fvec4);
-  clazz->memberProperty(
+  clazz->directProperty(
       "direct_fquat", //
       &MathTest::_fquat);
-  clazz->memberProperty(
+  clazz->directProperty(
       "direct_fmtx3", //
       &MathTest::_fmtx3);
-  clazz->memberProperty(
+  clazz->directProperty(
       "direct_fmtx4", //
       &MathTest::_fmtx4);
 }

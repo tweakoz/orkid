@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
   bank->_bankdata->_programsByName["yo"] = program;
   auto layerdata                         = program->newLayer();
   auto prgdata81z                        = std::make_shared<Tx81zProgData>();
-  program->_role                         = "fm4";
+  program->_tags                         = "fm4";
   program->_name                         = "test";
   prgdata81z->_alg                       = 0;
   auto& opd0                             = prgdata81z->_ops[0];
