@@ -19,7 +19,11 @@ class DirectObjectMap       //
           typename MapType::key_type, //
           object_ptr_t> {
 public:
-  using KeyType = typename MapType::key_type;
+  using KeyType         = typename MapType::key_type;
+  using ValType         = typename MapType::value_type;
+  using MappedType      = typename MapType::mapped_type;
+  using ptrtype_t       = typename MappedType::element_type;
+  using ConstMappedType = typename std::shared_ptr<const ptrtype_t>;
 
   DirectObjectMap(MapType Object::*);
 

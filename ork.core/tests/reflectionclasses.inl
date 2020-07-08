@@ -69,6 +69,7 @@ public:
   std::unordered_map<int, std::string> _directintstrumap;
   std::unordered_map<std::string, int> _directstrintumap;
   orklut<std::string, int> _directstrintlut;
+  std::map<std::string, simpletest_ptr_t> _directstrobjmap;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

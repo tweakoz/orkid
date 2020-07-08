@@ -135,6 +135,11 @@ void MapTest::describeX(ObjectClass* clazz) {
   clazz->directMapProperty(
       "directstrint_lut", //
       &MapTest::_directstrintlut);
+  ///////////////////////////////////
+  clazz->sharedObjectMapProperty(
+      "directstrobj_map", //
+      &MapTest::_directstrobjmap);
+  ///////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////////////////////
 ArrayTest::ArrayTest() {

@@ -73,7 +73,8 @@ bool DirectObjectMap<MapType>::WriteElement(
   const int orig_multi_index = multi_index;
   if (multi_index == IMap::kDeserializeInsertElement) {
     OrkAssert(value_inp);
-    map.insert(std::make_pair(key, *value_inp));
+    auto typed_ptr_value = std::dynamic_pointer_cast<ptrtype_t>(*value_inp);
+    map.insert(std::make_pair(key, typed_ptr_value));
   } else {
     auto it = map.find(key);
     while (multi_index > 0) {
@@ -81,7 +82,8 @@ bool DirectObjectMap<MapType>::WriteElement(
       multi_index--;
     }
     if (value_inp) {
-      it->second = *value_inp;
+      auto typed_ptr_value = std::dynamic_pointer_cast<ptrtype_t>(*value_inp);
+      it->second           = typed_ptr_value;
     } else {
       auto val2erase = it->second;
       ItemRemovalEvent ev;
