@@ -48,13 +48,6 @@ scopesource_ptr_t DspBlockData::createScopeSource() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-DspParamData::DspParamData() {
-  _mods = std::make_shared<BlockModulationData>();
-  useDefaultEvaluator();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 dspparam_ptr_t DspBlockData::addParam() {
   OrkAssert(_numParams < kmaxparmperblock - 1);
   auto param = std::make_shared<DspParamData>();

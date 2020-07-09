@@ -38,6 +38,7 @@ BlockModulationData::BlockModulationData() {
 void DspParamData::describeX(class_t* clazz) {
   clazz->directObjectProperty("Mods", &DspParamData::_mods);
   clazz->directProperty("Name", &DspParamData::_name);
+  clazz->directProperty("EvaluatorID", &DspParamData::_evaluatorid);
   clazz->directProperty("Coarse", &DspParamData::_coarse);
   clazz->directProperty("Fine", &DspParamData::_fine);
   clazz->directProperty("FineHZ", &DspParamData::_fineHZ);
@@ -49,7 +50,15 @@ void DspParamData::describeX(class_t* clazz) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+DspParamData::DspParamData() {
+  _mods = std::make_shared<BlockModulationData>();
+  useDefaultEvaluator();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void DspParamData::useDefaultEvaluator() {
+  _evaluatorid            = "default";
   _edit_coarse_min        = -1.0f;
   _edit_coarse_max        = 1.0f;
   _edit_coarse_numsteps   = 102;
@@ -76,6 +85,7 @@ void DspParamData::useDefaultEvaluator() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void DspParamData::useAmplitudeEvaluator() {
+  _evaluatorid      = "amplitude";
   _mods->_evaluator = [this](DspParam& cec) -> float {
     cec._kval  = _keyTrack * cec._keyOff;
     cec._vval  = lerp(-_velTrack, 0.0f, cec._unitVel);
@@ -94,6 +104,7 @@ void DspParamData::useAmplitudeEvaluator() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void DspParamData::usePitchEvaluator() {
+  _evaluatorid = "pitch";
 
   _units = "cents";
 
@@ -134,6 +145,7 @@ void DspParamData::usePitchEvaluator() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void DspParamData::useFrequencyEvaluator() {
+  _evaluatorid      = "frequency";
   _mods->_evaluator = [this](DspParam& cec) -> float {
     float ktcents  = _keyTrack * cec._keyOff;
     cec._vval      = _velTrack * cec._unitVel;
@@ -149,6 +161,7 @@ void DspParamData::useFrequencyEvaluator() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void DspParamData::useKrzPosEvaluator() {
+  _evaluatorid      = "krzpos";
   _mods->_evaluator = [this](DspParam& cec) -> float {
     cec._kval  = _keyTrack * cec._keyOff;
     cec._vval  = _velTrack * cec._unitVel;
@@ -166,6 +179,7 @@ void DspParamData::useKrzPosEvaluator() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void DspParamData::useKrzEvnOddEvaluator() {
+  _evaluatorid      = "krzevnodd";
   _mods->_evaluator = [this](DspParam& cec) -> float {
     float kt = _keyTrack * cec._keyOff;
     float vt = lerp(-_velTrack, 0.0f, cec._unitVel);

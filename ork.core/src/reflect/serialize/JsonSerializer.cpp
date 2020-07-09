@@ -235,7 +235,6 @@ node_ptr_t JsonSerializer::serializeObject(node_ptr_t parnode) {
       _reftracker.insert(uuids);
 
       auto objclazz = instance->GetClass();
-      auto& desc    = objclazz->Description();
 
       onode                = pushNode("object", NodeType::OBJECT);
       onode->_parent       = parnode;
@@ -258,13 +257,20 @@ node_ptr_t JsonSerializer::serializeObject(node_ptr_t parnode) {
       propsnode->_ser_instance = instance;
       propsnode->_parent       = onode;
 
-      for (auto prop_item : desc.properties()) {
-        auto propname        = prop_item.first;
-        auto property        = prop_item.second;
-        propsnode->_property = property;
-        propsnode->_name     = propname.c_str();
-        property->serialize(propsnode);
+      bool done = false;
+
+      while (objclazz) {
+        auto& desc = objclazz->Description();
+        for (auto prop_item : desc.properties()) {
+          auto propname        = prop_item.first;
+          auto property        = prop_item.second;
+          propsnode->_property = property;
+          propsnode->_name     = propname.c_str();
+          property->serialize(propsnode);
+        }
+        objclazz = dynamic_cast<object::ObjectClass*>(objclazz->Parent());
       }
+
       propsnode->_name = "properties";
 
       popNode(); // pop "properties"

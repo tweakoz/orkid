@@ -41,6 +41,7 @@ struct DspParamData final : public ork::Object {
 
   std::string _name;
   std::string _units;
+  std::string _evaluatorid;
 
   int _edit_coarse_numsteps = 1;
   float _edit_coarse_shape  = 1.0f;
