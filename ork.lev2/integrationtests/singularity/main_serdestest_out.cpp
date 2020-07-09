@@ -66,16 +66,8 @@ int main(int argc, char** argv) {
     auto amp_param               = op->param(1);
     auto feedback_param          = op->param(2);
     auto envname                 = FormatString("%sENV", opname.c_str());
-    auto ampname                 = FormatString("%sAMP", opname.c_str());
-    auto funname                 = FormatString("%sFUN", opname.c_str());
     auto ENV                     = layerdata->appendController<YmEnvData>(envname);
-    auto AMP                     = layerdata->appendController<CustomControllerData>(ampname);
-    AMP->_oncompute              = [](CustomControllerInst* cci) { cci->_curval = 1.0f; };
-    auto FUN                     = layerdata->appendController<FunData>(funname);
-    FUN->_a                      = envname;
-    FUN->_b                      = ampname;
-    FUN->_op                     = "a*b";
-    amp_param->_mods->_src1      = FUN;
+    amp_param->_mods->_src1      = ENV;
     amp_param->_mods->_src1Depth = 1.0;
     return ENV;
   };

@@ -274,11 +274,15 @@ node_ptr_t JsonSerializer::serializeObject(node_ptr_t parnode) {
     // backreference
     ////////////////////////////////////
     else {
-      OrkAssert(false);
-      /*topNode()->_value.AddMember(
-          "backreference", //
+      onode                = pushNode("object-ref", NodeType::OBJECT);
+      onode->_parent       = parnode;
+      onode->_ser_instance = instance;
+      auto oimplnode       = onode->_impl.getShared<JsonSerObjectNode>();
+      oimplnode->_jsonvalue.AddMember(
+          "uuid-ref", //
           uuidval,
-          *_allocator);*/
+          *_allocator);
+      popNode(); // pop "object"
     }
 
   } else {

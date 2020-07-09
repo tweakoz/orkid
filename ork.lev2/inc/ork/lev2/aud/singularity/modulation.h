@@ -1,12 +1,77 @@
 #pragma once
 
 #include <ork/lev2/aud/singularity/krztypes.h>
+#include "reflection.h"
 
 namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct DspParam {
+struct BlockModulationData final : public ork::Object {
+
+  DeclareConcreteX(BlockModulationData, ork::Object);
+
+  BlockModulationData();
+  BlockModulationData(const BlockModulationData&) = delete;
+
+  controllerdata_ptr_t _src1;
+  controllerdata_ptr_t _src2;
+  controllerdata_ptr_t _src2DepthCtrl;
+
+  float _src1Depth    = 0.0f;
+  float _src2MinDepth = 0.0f;
+  float _src2MaxDepth = 0.0f;
+  evalit_t _evaluator;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct DspParamData final : public ork::Object {
+
+  DeclareConcreteX(DspParamData, ork::Object);
+
+  DspParamData();
+
+  void useDefaultEvaluator();
+  void usePitchEvaluator();
+  void useFrequencyEvaluator();
+  void useAmplitudeEvaluator();
+  void useKrzPosEvaluator();
+  void useKrzEvnOddEvaluator();
+
+  std::string _name;
+  std::string _units;
+
+  int _edit_coarse_numsteps = 1;
+  float _edit_coarse_shape  = 1.0f;
+  float _edit_coarse_min    = 0.0f;
+  float _edit_coarse_max    = 1.0f;
+
+  int _edit_fine_numsteps = 1;
+  float _edit_fine_shape  = 1.0f;
+  float _edit_fine_min    = 0.0f;
+  float _edit_fine_max    = 1.0f;
+
+  int _edit_keytrack_numsteps = 1;
+  float _edit_keytrack_shape  = 1.0f;
+  float _edit_keytrack_min    = 0.0f;
+  float _edit_keytrack_max    = 1.0f;
+
+  float _coarse         = 0.0f;
+  float _fine           = 0.0f;
+  float _fineHZ         = 0.0f;
+  float _keyTrack       = 0.0f;
+  float _velTrack       = 0.0f;
+  int _keystartNote     = 60;
+  bool _keystartBipolar = true; // false==unipolar
+  // evalit_t _evaluator;
+  dspparammod_ptr_t _mods;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct DspParam : public ork::Object {
+
   DspParam();
   void reset();
   void keyOn(int ikey, int ivel);

@@ -180,6 +180,9 @@ void ClassInit() {
   RegisterClassX(audio::singularity::AlgData);
   RegisterClassX(audio::singularity::DspStageData);
 
+  RegisterClassX(audio::singularity::BlockModulationData);
+  RegisterClassX(audio::singularity::DspParamData);
+
   RegisterClassX(audio::singularity::ControllerData);
   RegisterClassX(audio::singularity::AsrData);
   RegisterClassX(audio::singularity::RateLevelEnvData);

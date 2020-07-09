@@ -5,6 +5,8 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
+#pragma once
+
 #include <ork/pch.h>
 
 #include <ork/object/Object.h>

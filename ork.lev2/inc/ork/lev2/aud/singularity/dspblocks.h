@@ -35,65 +35,6 @@ private:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-struct BlockModulationData final {
-
-  BlockModulationData();
-  BlockModulationData(const BlockModulationData&) = delete;
-
-  controllerdata_ptr_t _src1;
-  controllerdata_ptr_t _src2;
-  controllerdata_ptr_t _src2DepthCtrl;
-
-  float _src1Depth    = 0.0f;
-  float _src2MinDepth = 0.0f;
-  float _src2MaxDepth = 0.0f;
-  evalit_t _evaluator;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct DspParamData final {
-
-  DspParamData();
-
-  void useDefaultEvaluator();
-  void usePitchEvaluator();
-  void useFrequencyEvaluator();
-  void useAmplitudeEvaluator();
-  void useKrzPosEvaluator();
-  void useKrzEvnOddEvaluator();
-
-  std::string _name;
-  std::string _units;
-
-  int _edit_coarse_numsteps = 1;
-  float _edit_coarse_shape  = 1.0f;
-  float _edit_coarse_min    = 0.0f;
-  float _edit_coarse_max    = 1.0f;
-
-  int _edit_fine_numsteps = 1;
-  float _edit_fine_shape  = 1.0f;
-  float _edit_fine_min    = 0.0f;
-  float _edit_fine_max    = 1.0f;
-
-  int _edit_keytrack_numsteps = 1;
-  float _edit_keytrack_shape  = 1.0f;
-  float _edit_keytrack_min    = 0.0f;
-  float _edit_keytrack_max    = 1.0f;
-
-  float _coarse         = 0.0f;
-  float _fine           = 0.0f;
-  float _fineHZ         = 0.0f;
-  float _keyTrack       = 0.0f;
-  float _velTrack       = 0.0f;
-  int _keystartNote     = 60;
-  bool _keystartBipolar = true; // false==unipolar
-  // evalit_t _evaluator;
-  dspparammod_ptr_t _mods;
-};
-
-///////////////////////////////////////////////////////////////////////////////
 // IoMask:
 //   specifies inputs and output configuration of a zpm module
 ////////////////////////////////////////////////////////////////////////////////
@@ -136,7 +77,7 @@ struct DspBlockData : public ork::Object {
   float _inputPad = 1.0f;
   int _blockIndex = -1;
   varmap::VarMap _vars;
-  dspparam_ptr_t _paramd[kmaxparmperblock];
+  std::vector<dspparam_ptr_t> _paramd;
   scopesource_ptr_t _scopesource;
 };
 

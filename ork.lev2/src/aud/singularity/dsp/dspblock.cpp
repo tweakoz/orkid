@@ -29,6 +29,7 @@ void DspBlockData::describeX(class_t* clazz) {
   clazz->directProperty("Name", &DspBlockData::_name);
   clazz->directProperty("BlockIndex", &DspBlockData::_blockIndex);
   clazz->directProperty("InputPad", &DspBlockData::_inputPad);
+  clazz->directVectorProperty("Params", &DspBlockData::_paramd);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -56,8 +57,9 @@ DspParamData::DspParamData() {
 
 dspparam_ptr_t DspBlockData::addParam() {
   OrkAssert(_numParams < kmaxparmperblock - 1);
-  auto param            = std::make_shared<DspParamData>();
-  _paramd[_numParams++] = param;
+  auto param = std::make_shared<DspParamData>();
+  _paramd.push_back(param);
+  _numParams = _paramd.size();
   return param;
 }
 
@@ -125,11 +127,6 @@ DspBlock::DspBlock(const DspBlockData* dbd)
     , _numParams(dbd->_numParams) {
   for (int i = 0; i < kmaxdspblocksperstage; i++)
     _dspchannel[i] = dbd->_dspchannel[i];
-}
-
-BlockModulationData::BlockModulationData() {
-  _evaluator = [](DspParam& cec) -> //
-      float { return cec._data->_coarse; };
 }
 
 ///////////////////////////////////////////////////////////////////////////////
