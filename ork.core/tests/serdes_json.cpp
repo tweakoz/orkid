@@ -21,7 +21,7 @@ TEST(SerdesJson) {
   serdes::JsonSerializer ser;
   auto topnode    = ser.serializeRoot(hkeys);
   auto resultdata = ser.output();
-  printf("mutstr<%s>\n", resultdata.c_str());
+  // printf("mutstr<%s>\n", resultdata.c_str());
 }
 
 std::string getJsonStr() {
@@ -114,7 +114,7 @@ TEST(DeserializeObjectJSON) {
   deser.deserializeTop(instance_out);
   auto as_hkc = std::dynamic_pointer_cast<HotKeyConfiguration>(instance_out);
   auto save   = as_hkc->GetHotKey("save");
-  printf("save<%p>\n", save);
+  // printf("save<%p>\n", save);
 
   ///////////////////////////////////////////
   // check that properties were correctly deserialized

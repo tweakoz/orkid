@@ -24,6 +24,7 @@ ImplementReflectionX(MathTest, "MathTest");
 ImplementReflectionX(AssetTest, "AssetTest");
 ImplementReflectionX(SharedTest, "SharedTest");
 ImplementReflectionX(MapTest, "MapTest");
+ImplementReflectionX(VectorTest, "VectorTest");
 ImplementReflectionX(ArrayTest, "ArrayTest");
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -142,22 +143,40 @@ void MapTest::describeX(ObjectClass* clazz) {
   ///////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////////////////////
+VectorTest::VectorTest() {
+}
+///////////////////////////////////////////////////////////////////////////////
+void VectorTest::describeX(ObjectClass* clazz) {
+  ///////////////////////////////////
+  clazz->directVectorProperty(
+      "directint_vect", //
+      &VectorTest::_directintvect);
+  ///////////////////////////////////
+  clazz->directVectorProperty(
+      "directstr_vect", //
+      &VectorTest::_directstrvect);
+  ///////////////////////////////////
+  clazz->directVectorProperty(
+      "directobj_vect", //
+      &VectorTest::_directobjvect);
+}
+///////////////////////////////////////////////////////////////////////////////
 ArrayTest::ArrayTest() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ArrayTest::describeX(ObjectClass* clazz) {
   ///////////////////////////////////
-  clazz->directVectorProperty(
-      "directint_vect", //
-      &ArrayTest::_directintvect);
+  clazz->directArrayProperty(
+      "directstdaryvect", //
+      &ArrayTest::_directstdaryvect);
   ///////////////////////////////////
-  clazz->directVectorProperty(
-      "directstr_vect", //
-      &ArrayTest::_directstrvect);
+  clazz->directArrayProperty(
+      "directcaryvect", //
+      &ArrayTest::_directcaryvect);
   ///////////////////////////////////
-  clazz->directVectorProperty(
-      "directobj_vect", //
-      &ArrayTest::_directobjvect);
+  clazz->directArrayProperty(
+      "directcaryobjvect", //
+      &ArrayTest::_directcaryobjvect);
 }
 ///////////////////////////////////////////////////////////////////////////////
 EnumTest::EnumTest() {

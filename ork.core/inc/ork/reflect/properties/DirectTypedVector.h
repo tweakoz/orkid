@@ -4,15 +4,13 @@
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
-
 #pragma once
-
-#include "ITypedArray.h"
-
+////////////////////////////////////////////////////////////////
 #include <ork/config/config.h>
-
+#include "ITypedArray.h"
+////////////////////////////////////////////////////////////////
 namespace ork::reflect {
-
+////////////////////////////////////////////////////////////////
 template <typename VectorType> //
 struct DirectTypedVector       //
     : public ITypedArray<typename VectorType::value_type> {
@@ -28,5 +26,5 @@ struct DirectTypedVector       //
 
   VectorType Object::*_member;
 };
-
+////////////////////////////////////////////////////////////////
 } // namespace ork::reflect

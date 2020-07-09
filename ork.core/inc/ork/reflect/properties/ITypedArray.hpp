@@ -47,7 +47,7 @@ void ITypedArray<elem_t>::serializeElement(serdes::node_ptr_t elemnode) const {
   } else {
     elemnode->_value.template Set<elem_t>(value);
   }
-  auto childnode = serializer->serializeMapElement(elemnode);
+  auto childnode = serializer->serializeContainerElement(elemnode);
 }
 
 }} // namespace ork::reflect

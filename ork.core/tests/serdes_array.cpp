@@ -15,20 +15,18 @@ using namespace ork::reflect;
 ////////////////////////////////////////////////////////////////////////////////
 
 std::string sap_generate() {
-  auto arytest = std::make_shared<ArrayTest>();
-  arytest->_directintvect.push_back(1);
-  arytest->_directintvect.push_back(2);
-  arytest->_directintvect.push_back(3);
-  arytest->_directintvect.push_back(42);
+  auto arytest                  = std::make_shared<ArrayTest>();
+  arytest->_directstdaryvect[0] = 1;
+  arytest->_directstdaryvect[1] = 2;
+  arytest->_directstdaryvect[2] = 3;
+  arytest->_directstdaryvect[3] = 42;
 
-  arytest->_directstrvect.push_back("one");
-  arytest->_directstrvect.push_back("two");
-  arytest->_directstrvect.push_back("three");
-  arytest->_directstrvect.push_back("four");
+  arytest->_directcaryvect[0] = 1;
+  arytest->_directcaryvect[1] = 2;
+  arytest->_directcaryvect[2] = 3;
+  arytest->_directcaryvect[3] = 42;
 
-  arytest->_directobjvect.push_back(std::make_shared<SimpleTest>("one"));
-  arytest->_directobjvect.push_back(std::make_shared<SimpleTest>("two"));
-  arytest->_directobjvect.push_back(std::make_shared<SimpleTest>("three"));
+  arytest->_directcaryobjvect[0] = std::make_shared<SimpleTest>("yo");
 
   serdes::JsonSerializer ser;
   auto rootnode = ser.serializeRoot(arytest);
@@ -43,17 +41,20 @@ TEST(SerdesArrayProperties) {
   deser.deserializeTop(instance_out);
   auto typed = std::dynamic_pointer_cast<ArrayTest>(instance_out);
 
-  CHECK_EQUAL(typed->_directintvect[0], 1);
-  CHECK_EQUAL(typed->_directintvect[1], 2);
-  CHECK_EQUAL(typed->_directintvect[2], 3);
-  CHECK_EQUAL(typed->_directintvect[3], 42);
+  auto nil = simpletest_ptr_t(nullptr);
 
-  CHECK_EQUAL(typed->_directstrvect[0], "one");
-  CHECK_EQUAL(typed->_directstrvect[1], "two");
-  CHECK_EQUAL(typed->_directstrvect[2], "three");
-  CHECK_EQUAL(typed->_directstrvect[3], "four");
+  CHECK_EQUAL(typed->_directstdaryvect[0], 1);
+  CHECK_EQUAL(typed->_directstdaryvect[1], 2);
+  CHECK_EQUAL(typed->_directstdaryvect[2], 3);
+  CHECK_EQUAL(typed->_directstdaryvect[3], 42);
 
-  CHECK_EQUAL(typed->_directobjvect[0]->_strvalue, "one");
-  CHECK_EQUAL(typed->_directobjvect[1]->_strvalue, "two");
-  CHECK_EQUAL(typed->_directobjvect[2]->_strvalue, "three");
+  CHECK_EQUAL(typed->_directcaryvect[0], 1);
+  CHECK_EQUAL(typed->_directcaryvect[1], 2);
+  CHECK_EQUAL(typed->_directcaryvect[2], 3);
+  CHECK_EQUAL(typed->_directcaryvect[3], 42);
+
+  CHECK_EQUAL(typed->_directcaryobjvect[0]->_strvalue, "yo");
+  CHECK_EQUAL(typed->_directcaryobjvect[1], nil);
+  CHECK_EQUAL(typed->_directcaryobjvect[2], nil);
+  CHECK_EQUAL(typed->_directcaryobjvect[3], nil);
 }

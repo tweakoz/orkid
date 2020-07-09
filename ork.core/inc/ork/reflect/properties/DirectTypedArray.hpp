@@ -13,7 +13,7 @@ namespace ork::reflect {
 ///////////////////////////////////////////////////////////////////////////
 template <typename ArrayType>
 DirectTypedArray<ArrayType>::DirectTypedArray(ArrayType(Object::*prop))
-    : _property(prop)
+    : _member(prop)
     , _size(array_length) {
 }
 ///////////////////////////////////////////////////////////////////////////
@@ -23,7 +23,7 @@ void DirectTypedArray<ArrayType>::get(
     object_constptr_t obj,
     size_t index) const {
   auto nonconst = std::const_pointer_cast<Object>(obj);
-  auto& array   = (nonconst.get()->*_property);
+  auto& array   = (nonconst.get()->*_member);
   value         = array[index];
 }
 ///////////////////////////////////////////////////////////////////////////
@@ -32,7 +32,7 @@ void DirectTypedArray<ArrayType>::set(
     const element_type& value, //
     object_ptr_t obj,
     size_t index) const {
-  auto& array  = (obj.get()->*_property);
+  auto& array  = (obj.get()->*_member);
   array[index] = value;
 }
 ///////////////////////////////////////////////////////////////////////////

@@ -12,6 +12,7 @@
 #include <ork/math/cmatrix4.h>
 #include <ork/math/quaternion.h>
 #include <ork/asset/Asset.h>
+#include <array>
 
 using namespace ork;
 using namespace ork::object;
@@ -78,15 +79,28 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
+struct VectorTest final : public Object {
+  DeclareConcreteX(VectorTest, Object);
+
+public:
+  VectorTest();
+
+  std::vector<int> _directintvect;
+  std::vector<std::string> _directstrvect;
+  std::vector<simpletest_ptr_t> _directobjvect;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
 struct ArrayTest final : public Object {
   DeclareConcreteX(ArrayTest, Object);
 
 public:
   ArrayTest();
 
-  std::vector<int> _directintvect;
-  std::vector<std::string> _directstrvect;
-  std::vector<simpletest_ptr_t> _directobjvect;
+  std::array<int, 4> _directstdaryvect;
+  int _directcaryvect[4];
+  simpletest_ptr_t _directcaryobjvect[4];
 };
 
 ////////////////////////////////////////////////////////////////////////////////

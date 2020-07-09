@@ -152,20 +152,37 @@ serdes::node_ptr_t JsonDeserializer::_parseSubNode(
   switch (subvalue.GetType()) {
     case rapidjson::kObjectType: {
       if (subvalue.HasMember("object")) {
-        const auto& jsonobjnode     = subvalue["object"];
-        auto implnode               = child_node->_impl.makeShared<JsonObjectNode>(jsonobjnode);
-        auto instance_out           = _parseObjectNode(child_node);
-        auto instance_out_classname = instance_out->GetClass()->Name();
-        child_node->_deser_instance = instance_out;
-        std::string uuids           = boost::uuids::to_string(instance_out->_uuid);
-        child_node->_value.Set<object_ptr_t>(instance_out);
-        trackObject(instance_out->_uuid, instance_out);
-        if (0)
-          printf(
-              "instance<%p> class<%s> uuid<%s>\n", //
-              instance_out.get(),
-              instance_out_classname.c_str(),
-              uuids.c_str());
+        const auto& jsonobjnode = subvalue["object"];
+        switch (jsonobjnode.GetType()) {
+          case rapidjson::kObjectType: {
+
+            auto implnode               = child_node->_impl.makeShared<JsonObjectNode>(jsonobjnode);
+            auto instance_out           = _parseObjectNode(child_node);
+            auto instance_out_classname = instance_out->GetClass()->Name();
+            child_node->_deser_instance = instance_out;
+            std::string uuids           = boost::uuids::to_string(instance_out->_uuid);
+            child_node->_value.Set<object_ptr_t>(instance_out);
+            trackObject(instance_out->_uuid, instance_out);
+            if (0)
+              printf(
+                  "instance<%p> class<%s> uuid<%s>\n", //
+                  instance_out.get(),
+                  instance_out_classname.c_str(),
+                  uuids.c_str());
+            break;
+          }
+          case rapidjson::kStringType: {
+            auto strval = jsonobjnode.GetString();
+            OrkAssert(strval == std::string("nil"));
+            auto nil                    = object_ptr_t(nullptr);
+            child_node->_deser_instance = nil;
+            child_node->_value.Set<object_ptr_t>(nil);
+            break;
+          }
+          default:
+            OrkAssert(false);
+            break;
+        }
       } else if (subvalue.HasMember("object-ref")) {
         const auto& jsonobjnode = subvalue["object-ref"];
         bool has_uuid           = jsonobjnode.HasMember("uuid-ref");

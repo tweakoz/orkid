@@ -28,6 +28,7 @@ struct TestApplication final : public Application {
     SharedTest::GetClassStatic();
     MapTest::GetClassStatic();
     ArrayTest::GetClassStatic();
+    VectorTest::GetClassStatic();
 
     rtti::Class::InitializeClasses();
   }

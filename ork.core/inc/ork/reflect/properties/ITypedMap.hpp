@@ -56,7 +56,7 @@ void ITypedMap<KeyType, ValueType>::serialize(serdes::node_ptr_t sernode) const 
     elemnode->_parent       = mapnode;
     elemnode->_ser_instance = instance;
     elemnode->_serializer   = serializer;
-    auto childnode          = serializer->serializeMapElement(elemnode);
+    auto childnode          = serializer->serializeContainerElement(elemnode);
     //////////////////////////////
     serializer->popNode(); // pop elemnode
     //////////////////////////////

@@ -4,19 +4,28 @@
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
-
 #pragma once
-
-#include "ITypedArray.h"
-
+////////////////////////////////////////////////////////////////
 #include <ork/config/config.h>
-
-namespace ork { namespace reflect {
-
+#include "ITypedArray.h"
+////////////////////////////////////////////////////////////////
+namespace ork::reflect {
+////////////////////////////////////////////////////////////////
 template <typename ArrayType> //
-class DirectTypedArray : public ITypedArray<std::remove_reference_t<decltype(*std::begin(std::declval<ArrayType&>()))>> {
-  using element_type                   = std::remove_reference_t<decltype(*std::begin(std::declval<ArrayType&>()))>;
-  static constexpr size_t array_length = std::extent<ArrayType>::value;
+struct array_size : std::extent<ArrayType> {};
+////////////////////////////////////////////////////////////////
+template <typename ArrayType, size_t N>     //
+struct array_size<std::array<ArrayType, N>> //
+    : std::tuple_size<std::array<ArrayType, N>> {};
+////////////////////////////////////////////////////////////////
+template <typename ArrayType> //
+using array_element_type = std::remove_reference_t<decltype(*std::begin(std::declval<ArrayType&>()))>;
+////////////////////////////////////////////////////////////////
+template <typename ArrayType> //
+class DirectTypedArray        //
+    : public ITypedArray<array_element_type<ArrayType>> {
+  using element_type                   = array_element_type<ArrayType>;
+  static constexpr size_t array_length = array_size<ArrayType>::value;
 
 public:
   DirectTypedArray(ArrayType(Object::*));
@@ -26,8 +35,8 @@ public:
   void resize(object_ptr_t obj, size_t size) const override;
 
 private:
-  ArrayType(Object::*_property);
+  ArrayType(Object::*_member);
   const size_t _size;
 };
-
-}} // namespace ork::reflect
+////////////////////////////////////////////////////////////////
+} // namespace ork::reflect

@@ -123,7 +123,7 @@ std::string JsonSerializer::output() {
   return strbuf.GetString();
 }
 ////////////////////////////////////////////////////////////////////////////////
-node_ptr_t JsonSerializer::serializeMapElement(node_ptr_t elemnode) {
+node_ptr_t JsonSerializer::serializeContainerElement(node_ptr_t elemnode) {
 
   OrkAssert(elemnode->_ser_instance);
 
@@ -141,8 +141,10 @@ node_ptr_t JsonSerializer::serializeMapElement(node_ptr_t elemnode) {
         break;
     }
     auto objnode = serializeObject(elemnode);
-    OrkAssert(objnode);
-    objnode->_parent = elemnode;
+      if(objnode){
+          OrkAssert(objnode);
+          objnode->_parent = elemnode;
+      }
     // popNode(); // pop objnode
   } else {
     elemnode->_name = elemnode->_key;

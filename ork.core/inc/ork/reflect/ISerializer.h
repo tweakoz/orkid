@@ -25,7 +25,7 @@ public:
   virtual node_ptr_t serializeObject(node_ptr_t parnode) {
     return node_ptr_t(nullptr);
   }
-  virtual node_ptr_t serializeMapElement(node_ptr_t elemnode) {
+  virtual node_ptr_t serializeContainerElement(node_ptr_t elemnode) {
     return node_ptr_t(nullptr);
   }
   virtual void serializeLeaf(node_ptr_t leafnode) {
@@ -52,7 +52,7 @@ serdes::node_ptr_t serializeArraySubLeaf(
   elemnode->_ser_instance = instance;
   elemnode->_serializer   = serializer;
   elemnode->_value.template Set<T>(inp);
-  serializer->serializeMapElement(elemnode);
+  serializer->serializeContainerElement(elemnode);
   serializer->popNode(); // pop elemnode
   return elemnode;
 }
@@ -71,7 +71,7 @@ serdes::node_ptr_t serializeMapSubLeaf(
   elemnode->_parent       = mapnode;
   elemnode->_ser_instance = instance;
   elemnode->_serializer   = serializer;
-  auto childnode          = serializer->serializeMapElement(elemnode);
+  auto childnode          = serializer->serializeContainerElement(elemnode);
   serializer->popNode(); // pop element node
   return elemnode;
 } // namespace ork::reflect::serdes
