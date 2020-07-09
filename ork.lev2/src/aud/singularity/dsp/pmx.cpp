@@ -15,6 +15,7 @@
 #include <ork/lev2/aud/singularity/alg_amp.h>
 #include <ork/lev2/aud/singularity/dsp_mix.h>
 #include <ork/reflect/properties/registerX.inl>
+//#include <ork/reflect/properties/DirectTyped.hpp>
 
 ImplementReflectionX(ork::audio::singularity::PMXData, "SynPMX");
 ImplementReflectionX(ork::audio::singularity::PMXMixData, "SynPMXMixer");
@@ -38,9 +39,16 @@ inline float proc_out(float inp) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void PMXData::describeX(class_t* clazz) {
+
   clazz->directProperty("Feedback", &PMXData::_feedback);
   clazz->directProperty("ModIndex", &PMXData::_modIndex);
   clazz->directProperty("InputChannel", &PMXData::_inpchannel);
+  clazz->directArrayProperty("PmInputChannels", &PMXData::_pmInpChannels);
+
+  clazz->lambdaProperty<PMXData, int>(
+      "Waveform", //
+      [](const PMXData* obj_inp, int& valout) { valout = obj_inp->_pmoscdata._waveform; },
+      [](PMXData* obj_out, const int& valinp) { obj_out->_pmoscdata._waveform = valinp; });
 }
 ///////////////////////////////////////////////////////////////////////////////
 PMXData::PMXData(std::string name)

@@ -57,6 +57,23 @@ DspParamData::DspParamData() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+bool DspParamData::postDeserialize(reflect::serdes::IDeserializer&) { // override
+
+  if (_evaluatorid == "amplitude")
+    useAmplitudeEvaluator();
+  else if (_evaluatorid == "pitch")
+    usePitchEvaluator();
+  else if (_evaluatorid == "frequency")
+    useFrequencyEvaluator();
+  else if (_evaluatorid == "krzpos")
+    useKrzPosEvaluator();
+  else if (_evaluatorid == "krzevnodd")
+    useKrzEvnOddEvaluator();
+  return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void DspParamData::useDefaultEvaluator() {
   _evaluatorid            = "default";
   _edit_coarse_min        = -1.0f;

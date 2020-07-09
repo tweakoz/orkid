@@ -7,6 +7,7 @@
 
 #pragma once
 #include "register.h"
+#include "LambdaTyped.inl"
 #include "DirectObject.inl"
 #include "DirectObjectMap.inl"
 #include "DirectTypedArray.hpp"
@@ -102,6 +103,17 @@ inline object::PropertyModifier object::ObjectClass::accessorProperty(
   auto typed_getter = static_cast<void (Object::*)(MemberType&) const>(getter);
   auto typed_setter = static_cast<void (Object::*)(const MemberType&)>(setter);
   modder._property  = new reflect::AccessorTyped<MemberType>(typed_getter, typed_setter);
+  _description.addProperty(name, modder._property);
+  return modder;
+}
+///////////////////////////////////////////////////////////////////////////
+template <typename ClassType, typename MemberType>
+inline object::PropertyModifier object::ObjectClass::lambdaProperty(
+    const char* name,
+    std::function<void(const ClassType*, MemberType&)> getter,
+    std::function<void(ClassType*, const MemberType&)> setter) {
+  object::PropertyModifier modder;
+  modder._property = new reflect::LambdaTyped<ClassType, MemberType>(getter, setter);
   _description.addProperty(name, modder._property);
   return modder;
 }

@@ -52,13 +52,15 @@ struct PMXData final : public DspBlockData {
 
   DeclareConcreteX(PMXData, DspBlockData);
 
+  static constexpr int kmaxmodulators = 8;
+  using inpchanarray_t                = int[kmaxmodulators];
+
   PMXData(std::string name = "");
   dspblk_ptr_t createInstance() const override;
-  int _inpchannel                     = 0;
-  float _feedback                     = 0.0f;
-  float _modIndex                     = 1.0f;
-  static constexpr int kmaxmodulators = 8;
-  int _pmInpChannels[kmaxmodulators]  = {-1, -1, -1, -1, -1, -1, -1, -1};
+  int _inpchannel                    = 0;
+  float _feedback                    = 0.0f;
+  float _modIndex                    = 1.0f;
+  int _pmInpChannels[kmaxmodulators] = {-1, -1, -1, -1, -1, -1, -1, -1};
   PmOscData _pmoscdata;
   int _opindex = 0;
   tx81zprgdata_ptr_t _txprogramdata; // temp for debugging

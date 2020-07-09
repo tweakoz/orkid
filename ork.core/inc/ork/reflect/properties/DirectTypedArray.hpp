@@ -12,16 +12,14 @@
 namespace ork::reflect {
 ///////////////////////////////////////////////////////////////////////////
 template <typename ArrayType>
-DirectTypedArray<ArrayType>::DirectTypedArray(
-    ArrayType (Object::*prop)[], //
-    size_t size)
+DirectTypedArray<ArrayType>::DirectTypedArray(ArrayType(Object::*prop))
     : _property(prop)
-    , _size(size) {
+    , _size(array_length) {
 }
 ///////////////////////////////////////////////////////////////////////////
 template <typename ArrayType> //
 void DirectTypedArray<ArrayType>::get(
-    value_type& value, //
+    element_type& value, //
     object_constptr_t obj,
     size_t index) const {
   auto nonconst = std::const_pointer_cast<Object>(obj);
@@ -31,7 +29,7 @@ void DirectTypedArray<ArrayType>::get(
 ///////////////////////////////////////////////////////////////////////////
 template <typename ArrayType> //
 void DirectTypedArray<ArrayType>::set(
-    const value_type& value, //
+    const element_type& value, //
     object_ptr_t obj,
     size_t index) const {
   auto& array  = (obj.get()->*_property);
@@ -47,8 +45,7 @@ template <typename ArrayType> //
 void DirectTypedArray<ArrayType>::resize(
     object_ptr_t obj, //
     size_t newsize) const {
-  auto& array = (obj.get()->*_property);
-  array.resize(newsize);
+  OrkAssert(newsize == array_length);
 }
 ///////////////////////////////////////////////////////////////////////////
 } // namespace ork::reflect

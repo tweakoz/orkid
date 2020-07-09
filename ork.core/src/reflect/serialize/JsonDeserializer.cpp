@@ -273,6 +273,8 @@ object_ptr_t JsonDeserializer::_parseObjectNode(serdes::node_ptr_t dsernode) {
   instance_out        = objclazz->createShared();
   instance_out->_uuid = uuid;
 
+  instance_out->preDeserialize(*this);
+
   ///////////////////////////////////
   // deserialize properties
   ///////////////////////////////////
@@ -342,6 +344,7 @@ object_ptr_t JsonDeserializer::_parseObjectNode(serdes::node_ptr_t dsernode) {
       printf("dropping property<%s>\n", propname);
     }
   }
+  instance_out->postDeserialize(*this);
 
   ///////////////////////////////////
   return instance_out;

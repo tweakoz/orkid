@@ -64,6 +64,12 @@ public:
       MemberType ClassType::*member);
 
   template <typename ClassType, typename MemberType>
+  inline PropertyModifier lambdaProperty(
+      const char* name, //
+      std::function<void(const ClassType*, MemberType&)>,
+      std::function<void(ClassType*, const MemberType&)>);
+
+  template <typename ClassType, typename MemberType>
   inline PropertyModifier accessorProperty(
       const char* name, //
       void (ClassType::*getter)(MemberType&) const,

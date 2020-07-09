@@ -29,6 +29,7 @@ struct BlockModulationData final : public ork::Object {
 struct DspParamData final : public ork::Object {
 
   DeclareConcreteX(DspParamData, ork::Object);
+  bool postDeserialize(reflect::serdes::IDeserializer&) override;
 
   DspParamData();
 
