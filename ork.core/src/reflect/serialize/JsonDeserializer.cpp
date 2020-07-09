@@ -159,12 +159,23 @@ serdes::node_ptr_t JsonDeserializer::_parseSubNode(
         child_node->_deser_instance = instance_out;
         std::string uuids           = boost::uuids::to_string(instance_out->_uuid);
         child_node->_value.Set<object_ptr_t>(instance_out);
+        trackObject(instance_out->_uuid, instance_out);
         if (0)
           printf(
               "instance<%p> class<%s> uuid<%s>\n", //
               instance_out.get(),
               instance_out_classname.c_str(),
               uuids.c_str());
+      } else if (subvalue.HasMember("object-ref")) {
+        const auto& jsonobjnode = subvalue["object-ref"];
+        bool has_uuid           = jsonobjnode.HasMember("uuid-ref");
+        OrkAssert(has_uuid);
+        auto uuidstr = jsonobjnode["uuid-ref"].GetString();
+        boost::uuids::string_generator gen;
+        auto uuid                   = gen(uuidstr);
+        auto instance_out           = findTrackedObject(uuid);
+        child_node->_deser_instance = instance_out;
+        child_node->_value.Set<object_ptr_t>(instance_out);
       } else {
         OrkAssert(false);
       }

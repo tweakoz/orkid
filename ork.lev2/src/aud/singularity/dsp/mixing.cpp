@@ -11,6 +11,9 @@
 #include <ork/lev2/aud/singularity/dsp_mix.h>
 #include <ork/lev2/aud/singularity/modulation.h>
 #include <ork/lev2/aud/singularity/alg_pan.inl>
+#include <ork/reflect/properties/registerX.inl>
+
+ImplementReflectionX(ork::audio::singularity::MonoInStereoOutData, "SynMonoInStereoOut");
 
 namespace ork::audio::singularity {
 
@@ -44,6 +47,9 @@ void SUM2::compute(DspBuffer& dspbuf) { // final
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
+
+void MonoInStereoOutData::describeX(class_t* clazz) {
+}
 
 MonoInStereoOutData::MonoInStereoOutData(std::string name)
     : DspBlockData(name) {

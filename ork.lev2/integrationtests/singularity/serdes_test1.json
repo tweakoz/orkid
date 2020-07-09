@@ -106,7 +106,7 @@
                    "DspBlocks": {
                     "monoin-stereoout": {
                      "object": {
-                      "class": "SynDspBlock",
+                      "class": "SynMonoInStereoOut",
                       "uuid": "31bd0448-9e9c-48ce-9114-0a6f133729b1",
                       "properties": {
                        "BlockIndex": 0,

@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include "reflection.h"
 #include "dspblocks.h"
 #include <ork/math/cmatrix4.h>
 #include <ork/math/cvector4.h>
@@ -21,7 +22,8 @@ struct SUM2 : public DspBlock {
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct MonoInStereoOutData : public DspBlockData {
-  MonoInStereoOutData(std::string name);
+  DeclareConcreteX(MonoInStereoOutData, DspBlockData);
+  MonoInStereoOutData(std::string name = "");
   dspblk_ptr_t createInstance() const override;
 };
 struct MonoInStereoOut : public DspBlock {
