@@ -108,6 +108,7 @@ ConstantInst::ConstantInst(const ConstantControllerData* data, Layer* layer)
   _curval = data->_constvalue;
 }
 void ConstantInst::compute() {
+  // printf("_curval<%g>\n", _curval);
 }
 void ConstantInst::keyOn(const KeyOnInfo& KOI) {
 }
