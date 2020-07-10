@@ -11,14 +11,28 @@ ImplementReflectionX(ork::audio::singularity::AlgData, "SynAlgorithm");
 
 namespace ork::audio::singularity {
 
+static synth_ptr_t the_synth = synth::instance();
+
+dspblk_ptr_t createDspBlock(const DspBlockData* dbd);
+
+///////////////////////////////////////////////////////////////////////////////
+
 void AlgData::describeX(class_t* clazz) {
   clazz->directProperty("Name", &AlgData::_name);
   clazz->directObjectMapProperty("Stages", &AlgData::_stageByName);
 }
 
-static synth_ptr_t the_synth = synth::instance();
+///////////////////////////////////////////////////////////////////////////////
 
-dspblk_ptr_t createDspBlock(const DspBlockData* dbd);
+bool AlgData::postDeserialize(reflect::serdes::IDeserializer&) { // override
+  for (auto item : _stageByName) {
+    auto stage     = item.second;
+    int index      = stage->_stageIndex;
+    _stages[index] = stage;
+  }
+  _numstages = _stageByName.size();
+  return true;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -26,6 +40,9 @@ alg_ptr_t AlgData::createAlgInst() const {
   auto alg = std::make_shared<Alg>(*this);
   return alg;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 dspstagedata_ptr_t AlgData::appendStage(const std::string& named) {
   OrkAssert((_numstages + 1) <= kmaxdspstagesperlayer);
   auto stage            = std::make_shared<DspStageData>();
@@ -35,10 +52,16 @@ dspstagedata_ptr_t AlgData::appendStage(const std::string& named) {
   _stageByName[named]   = stage;
   return stage;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 dspstagedata_ptr_t AlgData::stageByName(const std::string& named) {
   auto it = _stageByName.find(named);
   return (it == _stageByName.end()) ? nullptr : it->second;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 dspstagedata_ptr_t AlgData::stageByIndex(int index) {
   OrkAssert(index < _numstages);
   OrkAssert(index >= 0);
@@ -51,6 +74,8 @@ dspstagedata_ptr_t AlgData::stageByIndex(int index) {
 Alg::Alg(const AlgData& algd)
     : _algdata(algd) {
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 Alg::~Alg() {
 }

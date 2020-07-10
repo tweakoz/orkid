@@ -15,6 +15,7 @@ ImplementReflectionX(ork::audio::singularity::CustomControllerData, "SynCustomCo
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 void ControllerData::describeX(class_t* clazz) {
+  clazz->directProperty("Name", &ControllerData::_name);
 }
 ///////////////////////////////////////////////////////////////////////////////
 scopesource_ptr_t ControllerData::createScopeSource() {
@@ -54,7 +55,7 @@ void ControlBlockInst::compute() {
 
 ControllerInst::ControllerInst(Layer* l)
     : _layer(l)
-    , _curval(0.0f) {
+    , _curval(1.0f) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////

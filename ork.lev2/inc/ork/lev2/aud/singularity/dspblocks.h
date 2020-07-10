@@ -186,6 +186,7 @@ struct DspStage final {
 struct AlgData final : public ork::Object {
 
   DeclareConcreteX(AlgData, ork::Object);
+  bool postDeserialize(reflect::serdes::IDeserializer&) override;
 
   dspstagedata_ptr_t appendStage(const std::string& named);
   dspstagedata_ptr_t stageByName(const std::string& named);
