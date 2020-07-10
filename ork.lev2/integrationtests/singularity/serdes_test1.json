@@ -147,7 +147,7 @@
                            "FineHZ": 0.0,
                            "KeyStart": 60,
                            "KeyStartBipolar": true,
-                           "KeyTrack": -100.0,
+                           "KeyTrack": 100.0,
                            "Mods": {
                             "object": {
                              "class": "SynBlockModulation",
@@ -190,13 +190,13 @@
                                 "uuid": "2fdeaca9-50d5-4386-beac-3f62888c6390",
                                 "properties": {
                                  "AttackShape": 0.5,
-                                 "AttackTime": 2.0,
+                                 "AttackTime": 0.0,
                                  "Decay1Level": 0.5,
-                                 "Decay1Rate": 0.5,
-                                 "Decay2Rate": 0.5,
+                                 "Decay1Rate": 0.999,
+                                 "Decay2Rate": 0.999,
                                  "EgShift": 0,
                                  "RateScale": 0,
-                                 "ReleaseRate": 0.5,
+                                 "ReleaseRate": 0.999,
                                  "Name": "OP0ENV"
                                 }
                                }
@@ -344,13 +344,13 @@
                                 "uuid": "7eb7827f-cf07-49dd-ac28-b88673cc9d81",
                                 "properties": {
                                  "AttackShape": 0.5,
-                                 "AttackTime": 2.0,
-                                 "Decay1Level": 0.5,
-                                 "Decay1Rate": 0.5,
-                                 "Decay2Rate": 0.5,
+                                 "AttackTime": 0.1,
+                                 "Decay1Level": 0.8,
+                                 "Decay1Rate": 0.99,
+                                 "Decay2Rate": 0.99,
                                  "EgShift": 0,
                                  "RateScale": 0,
-                                 "ReleaseRate": 0.5,
+                                 "ReleaseRate": 0.99,
                                  "Name": "OP1ENV"
                                 }
                                }
@@ -498,13 +498,13 @@
                                 "uuid": "ee6358b3-610a-4150-8054-cbb6495dc1c3",
                                 "properties": {
                                  "AttackShape": 0.5,
-                                 "AttackTime": 2.0,
-                                 "Decay1Level": 0.5,
-                                 "Decay1Rate": 0.5,
-                                 "Decay2Rate": 0.5,
+                                 "AttackTime": 0.2,
+                                 "Decay1Level": 0.9,
+                                 "Decay1Rate": 0.99,
+                                 "Decay2Rate": 0.99,
                                  "EgShift": 0,
                                  "RateScale": 0,
-                                 "ReleaseRate": 0.5,
+                                 "ReleaseRate": 0.99,
                                  "Name": "OP2ENV"
                                 }
                                }
@@ -652,18 +652,18 @@
                                 "uuid": "e1a4d2b2-13dc-48b5-a98e-2f8341e52db7",
                                 "properties": {
                                  "AttackShape": 0.5,
-                                 "AttackTime": 2.0,
+                                 "AttackTime": 0.3,
                                  "Decay1Level": 0.5,
-                                 "Decay1Rate": 0.5,
-                                 "Decay2Rate": 0.5,
+                                 "Decay1Rate": 0.99,
+                                 "Decay2Rate": 0.99,
                                  "EgShift": 0,
                                  "RateScale": 0,
-                                 "ReleaseRate": 0.5,
+                                 "ReleaseRate": 0.99,
                                  "Name": "OP3ENV"
                                 }
                                }
                               },
-                              "Src1Depth": 1.0,
+                              "Src1Depth": 0.1,
                               "Src2": "nil",
                               "Src2DepthControl": "nil",
                               "Src2MaxDepth": 0.0,
@@ -681,7 +681,7 @@
                           "class": "SynDspParam",
                           "uuid": "f7a48405-3a6f-4089-a4ad-79dd334a0272",
                           "properties": {
-                           "Coarse": 1.0,
+                           "Coarse": 0.85,
                            "EvaluatorID": "default",
                            "Fine": 0.0,
                            "FineHZ": 0.0,

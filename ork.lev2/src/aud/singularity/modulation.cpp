@@ -59,7 +59,9 @@ DspParamData::DspParamData() {
 
 bool DspParamData::postDeserialize(reflect::serdes::IDeserializer&) { // override
 
-  if (_evaluatorid == "amplitude")
+  if (_evaluatorid == "default")
+    useDefaultEvaluator();
+  else if (_evaluatorid == "amplitude")
     useAmplitudeEvaluator();
   else if (_evaluatorid == "pitch")
     usePitchEvaluator();
@@ -69,6 +71,9 @@ bool DspParamData::postDeserialize(reflect::serdes::IDeserializer&) { // overrid
     useKrzPosEvaluator();
   else if (_evaluatorid == "krzevnodd")
     useKrzEvnOddEvaluator();
+  else {
+    OrkAssert(false);
+  }
   return true;
 }
 
@@ -94,7 +99,7 @@ void DspParamData::useDefaultEvaluator() {
                + cec._C1() //
                + cec._C2() //
                + kt + vt;
-    // printf("cec._keyOff<%g> rv<%g>\n", cec._keyOff, rv);
+    //printf("cec._keyOff<%g> rv<%g>\n", cec._keyOff, rv);
     return rv;
   };
 }
