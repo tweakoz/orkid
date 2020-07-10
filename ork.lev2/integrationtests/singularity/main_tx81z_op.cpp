@@ -4,6 +4,9 @@
 #include <ork/lev2/aud/singularity/alg_amp.h>
 #include <ork/lev2/aud/singularity/fxgen.h>
 
+using namespace ork;
+using namespace ork::lev2;
+using namespace ork::reflect::serdes;
 using namespace ork::audio::singularity;
 
 int main(int argc, char** argv) {

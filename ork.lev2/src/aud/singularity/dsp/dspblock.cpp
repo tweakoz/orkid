@@ -30,6 +30,7 @@ void DspBlockData::describeX(class_t* clazz) {
   clazz->directProperty("BlockIndex", &DspBlockData::_blockIndex);
   clazz->directProperty("InputPad", &DspBlockData::_inputPad);
   clazz->directVectorProperty("Params", &DspBlockData::_paramd);
+  clazz->directArrayProperty("DspChannels", &DspBlockData::_dspchannel);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -40,6 +41,16 @@ DspBlockData::DspBlockData(std::string name)
   for (int i = 0; i < kmaxdspblocksperstage; i++)
     _dspchannel[i] = i;
 }
+
+//////////////////////////////////////////////////////////////////////////////
+
+bool DspBlockData::postDeserialize(reflect::serdes::IDeserializer&) { // override
+  _numParams = _paramd.size();
+  return true;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
 scopesource_ptr_t DspBlockData::createScopeSource() {
   auto src     = std::make_shared<ScopeSource>();
   _scopesource = src;

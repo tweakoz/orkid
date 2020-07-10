@@ -57,6 +57,7 @@ struct IoMask final {
 struct DspBlockData : public ork::Object {
 
   DeclareAbstractX(DspBlockData, ork::Object);
+  bool postDeserialize(reflect::serdes::IDeserializer&) override;
 
   DspBlockData(std::string name = "");
 
