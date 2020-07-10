@@ -52,8 +52,8 @@ void appendStereoDistortion(
   auto r               = stage->appendTypedBlock<Distortion>("distorion-R");
   l->param(0)->_coarse = adj;
   r->param(0)->_coarse = adj;
-  l->_dspchannel[0]    = 0;
-  r->_dspchannel[0]    = 1;
+  l->addDspChannel(0);
+  r->addDspChannel(1);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void appendStereoStereoDynamicEcho(
@@ -68,8 +68,8 @@ void appendStereoStereoDynamicEcho(
   echo->param(1)->_coarse = dtR;
   echo->param(2)->_coarse = feedback;
   echo->param(3)->_coarse = wetness;
-  echo->_dspchannel[0]    = 0;
-  echo->_dspchannel[1]    = 1;
+  echo->addDspChannel(0);
+  echo->addDspChannel(1);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void appendStereoParaEQ(
@@ -86,8 +86,8 @@ void appendStereoParaEQ(
   eqr->param(0)->_coarse = fc;
   eqr->param(1)->_coarse = w;
   eqr->param(2)->_coarse = gain;
-  eql->_dspchannel[0]    = 0;
-  eqr->_dspchannel[0]    = 1;
+  eql->addDspChannel(0);
+  eqr->addDspChannel(1);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void appendStereoHighPass(
@@ -98,8 +98,8 @@ void appendStereoHighPass(
   auto eqr               = stage->appendTypedBlock<HighPass>("Highpass-R");
   eql->param(0)->_coarse = fc;
   eqr->param(0)->_coarse = fc;
-  eql->_dspchannel[0]    = 0;
-  eqr->_dspchannel[0]    = 1;
+  eql->addDspChannel(0);
+  eqr->addDspChannel(1);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void appendStereoHighFreqStimulator(
@@ -116,8 +116,8 @@ void appendStereoHighFreqStimulator(
   eqr->param(1)->_coarse = drive;
   eql->param(2)->_coarse = amp;
   eqr->param(2)->_coarse = amp;
-  eql->_dspchannel[0]    = 0;
-  eqr->_dspchannel[0]    = 1;
+  eql->addDspChannel(0);
+  eqr->addDspChannel(1);
 }
 ///////////////////////////////////////////////////////////////////////////////
 dspblkdata_ptr_t appendStereoReverbX(
@@ -184,8 +184,8 @@ void appendPitchChorus(
   shifterL->param(0)->_coarse = wetness; // wet/dry mix
   shifterR->param(0)->_coarse = wetness; // wet/dry mix
   /////////////////
-  shifterL->_dspchannel[0] = 0; // chorus voice 1 on left
-  shifterR->_dspchannel[0] = 1; // chorus voice 2 on right
+  shifterL->addDspChannel(0); // chorus voice 1 on left
+  shifterR->addDspChannel(1); // chorus voice 2 on right
   /////////////////
   auto PITCHMODL        = fxlayer->appendController<CustomControllerData>("PITCHSHIFT1");
   auto PITCHMODR        = fxlayer->appendController<CustomControllerData>("PITCHSHIFT2");

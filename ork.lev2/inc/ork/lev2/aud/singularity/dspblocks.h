@@ -67,9 +67,10 @@ struct DspBlockData : public ork::Object {
 
   dspparam_ptr_t addParam();
   dspparam_ptr_t param(int index);
+  int addDspChannel(int channel);
 
   std::string _name;
-  int _dspchannel[kmaxdspblocksperstage];
+  std::vector<int> _dspchannels;
   int _numParams  = 0;
   float _inputPad = 1.0f;
   int _blockIndex = -1;

@@ -100,13 +100,13 @@ int main(int argc, char** argv) {
       auto allpass    = ampstage->appendTypedBlock<TwoPoleAllPass>("allpass");
       auto lopass1    = ampstage->appendTypedBlock<FourPoleLowPassWithSep>("lowpass");
       // auto lopass2               = ampstage->appendTypedBlock<FourPoleLowPassWithSep>();
-      auto amp                   = ampstage->appendTypedBlock<AMP_MONOIO>("amp");
-      dco->_dspchannel[0]        = dcochannel;
-      distortion->_dspchannel[0] = dcochannel;
-      allpass->_dspchannel[0]    = dcochannel;
-      lopass1->_dspchannel[0]    = dcochannel;
-      // lopass2->_dspchannel[0]    = dcochannel;
-      amp->_dspchannel[0] = dcochannel;
+      auto amp = ampstage->appendTypedBlock<AMP_MONOIO>("amp");
+      dco->addDspChannel(dcochannel);
+      distortion->addDspChannel(dcochannel);
+      allpass->addDspChannel(dcochannel);
+      lopass1->addDspChannel(dcochannel);
+      // lopass2->addDspChannel(dcochannel);
+      amp->addDspChannel(dcochannel);
       //////////////////////////////////////
       auto dco_source         = dco->createScopeSource();
       dco_source->_dspchannel = dcochannel;

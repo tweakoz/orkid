@@ -43,7 +43,7 @@ void PMXData::describeX(class_t* clazz) {
   clazz->directProperty("Feedback", &PMXData::_feedback);
   clazz->directProperty("ModIndex", &PMXData::_modIndex);
   clazz->directProperty("InputChannel", &PMXData::_inpchannel);
-  clazz->directArrayProperty("PmInputChannels", &PMXData::_pmInpChannels);
+  clazz->directVectorProperty("PmInputChannels", &PMXData::_pmInpChannels);
 
   clazz->lambdaProperty<PMXData, int>(
       "Waveform", //
@@ -66,6 +66,10 @@ PMXData::PMXData(std::string name)
 ///////////////////////////////////////////////////////////////////////////////
 dspblk_ptr_t PMXData::createInstance() const {
   return std::make_shared<PMX>(this);
+}
+///////////////////////////////////////////////////////////////////////////////
+void PMXData::addPmInput(int dspchannel) {
+  _pmInpChannels.push_back(dspchannel);
 }
 ///////////////////////////////////////////////////////////////////////////////
 PMX::PMX(const DspBlockData* dbd)
@@ -94,12 +98,11 @@ void PMX::compute(DspBuffer& dspbuf) { // final
       nullptr,
       nullptr,
       nullptr};
-  for (int m = 0; m < PMXData::kmaxmodulators; m++) {
-    int inpchi = _pmxdata->_pmInpChannels[m];
-    if (inpchi >= 0) {
-      modinputs[m] = dspbuf.channel(inpchi) //
-                     + _layer->_dspwritebase;
-    }
+  int m = 0;
+  for (int inpchi : _pmxdata->_pmInpChannels) {
+    modinputs[m] = dspbuf.channel(inpchi) //
+                   + _layer->_dspwritebase;
+    m++;
   }
   ///////////////////////////////////////////////////////////////
   for (int i = 0; i < inumframes; i++) {
@@ -137,7 +140,7 @@ void PMX::doKeyOff() { // final
 }
 ///////////////////////////////////////////////////////////////////////////////
 void PMXMixData::describeX(class_t* clazz) {
-  clazz->directArrayProperty("InputChannels", &PMXMixData::_pmixInpChannels);
+  clazz->directVectorProperty("InputChannels", &PMXMixData::_pmixInpChannels);
 }
 ///////////////////////////////////////////////////////////////////////////////
 PMXMixData::PMXMixData(std::string name)
@@ -146,6 +149,9 @@ PMXMixData::PMXMixData(std::string name)
 ///////////////////////////////////////////////////////////////////////////////
 dspblk_ptr_t PMXMixData::createInstance() const {
   return std::make_shared<PMXMix>(this);
+}
+void PMXMixData::addInputChannel(int chan) {
+  _pmixInpChannels.push_back(chan);
 }
 ///////////////////////////////////////////////////////////////////////////////
 PMXMix::PMXMix(const DspBlockData* dbd)
@@ -156,15 +162,15 @@ void PMXMix::compute(DspBuffer& dspbuf) { // final
   int inumframes = _layer->_dspwritecount;
   float* output  = dspbuf.channel(_dspchannel[0]) + _layer->_dspwritebase;
   ///////////////////////////////////////////////////////////////
-  for (int m = 0; m < PMXMixData::kmaxinputs; m++) {
-    int inpchi = _pmixdata->_pmixInpChannels[m];
-    if (inpchi >= 0) {
-      auto input = dspbuf.channel(inpchi) + _layer->_dspwritebase;
-      for (int i = 0; i < inumframes; i++) {
-        output[i] += input[i] * _finalamp;
-      }
+  // mix in each PM carrier oscillator
+  ///////////////////////////////////////////////////////////////
+  for (int inpchi : _pmixdata->_pmixInpChannels) {
+    auto input = dspbuf.channel(inpchi) + _layer->_dspwritebase;
+    for (int i = 0; i < inumframes; i++) {
+      output[i] += input[i] * _finalamp;
     }
   }
+  ///////////////////////////////////////////////////////////////
   for (int i = 0; i < inumframes; i++) {
     output[i] = proc_out(output[i]);
   }
@@ -172,14 +178,8 @@ void PMXMix::compute(DspBuffer& dspbuf) { // final
 ///////////////////////////////////////////////////////////////////////////////
 void PMXMix::doKeyOn(const KeyOnInfo& koi) { // final
   _pmixdata      = (const PMXMixData*)_dbd;
-  int numoutputs = 0;
-  for (int m = 0; m < PMXMixData::kmaxinputs; m++) {
-    int inpchi = _pmixdata->_pmixInpChannels[m];
-    if (inpchi >= 0) {
-      numoutputs++;
-    }
-  }
-  _finalamp = (numoutputs == 0) //
+  int numoutputs = _pmixdata->_pmixInpChannels.size();
+  _finalamp      = (numoutputs == 0) //
                   ? 1.0f
                   : 1.0f / float(numoutputs);
   validateSample(_finalamp);

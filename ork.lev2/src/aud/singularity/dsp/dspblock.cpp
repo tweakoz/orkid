@@ -49,16 +49,19 @@ void DspBlockData::describeX(class_t* clazz) {
   clazz->directProperty("BlockIndex", &DspBlockData::_blockIndex);
   clazz->directProperty("InputPad", &DspBlockData::_inputPad);
   clazz->directVectorProperty("Params", &DspBlockData::_paramd);
-  clazz->directArrayProperty("DspChannels", &DspBlockData::_dspchannel);
+  clazz->directVectorProperty("DspChannels", &DspBlockData::_dspchannels);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
 DspBlockData::DspBlockData(std::string name)
     : _name(name) {
+}
 
-  for (int i = 0; i < kmaxdspblocksperstage; i++)
-    _dspchannel[i] = i;
+int DspBlockData::addDspChannel(int channel) {
+  int chanindex = _dspchannels.size();
+  _dspchannels.push_back(channel);
+  return chanindex;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -168,8 +171,12 @@ void DspStageData::setNumIos(int numinp, int numout) {
 DspBlock::DspBlock(const DspBlockData* dbd)
     : _dbd(dbd)
     , _numParams(dbd->_numParams) {
-  for (int i = 0; i < kmaxdspblocksperstage; i++)
-    _dspchannel[i] = dbd->_dspchannel[i];
+  int numchannels = dbd->_dspchannels.size();
+  for (int i = 0; i < numchannels; i++)
+    _dspchannel[i] = dbd->_dspchannels[i];
+  for (int i = numchannels; i < kmaxdspblocksperstage; i++) {
+    _dspchannel[i] = i;
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

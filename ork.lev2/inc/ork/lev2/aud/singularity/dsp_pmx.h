@@ -57,10 +57,12 @@ struct PMXData final : public DspBlockData {
 
   PMXData(std::string name = "");
   dspblk_ptr_t createInstance() const override;
-  int _inpchannel                    = 0;
-  float _feedback                    = 0.0f;
-  float _modIndex                    = 1.0f;
-  int _pmInpChannels[kmaxmodulators] = {-1, -1, -1, -1, -1, -1, -1, -1};
+  void addPmInput(int dspchannel);
+
+  int _inpchannel = 0;
+  float _feedback = 0.0f;
+  float _modIndex = 1.0f;
+  std::vector<int> _pmInpChannels;
   PmOscData _pmoscdata;
   int _opindex = 0;
   tx81zprgdata_ptr_t _txprogramdata; // temp for debugging
@@ -90,8 +92,9 @@ struct PMXMixData final : public DspBlockData {
   DeclareConcreteX(PMXMixData, DspBlockData);
   PMXMixData(std::string name = "");
   dspblk_ptr_t createInstance() const override;
-  static constexpr int kmaxinputs  = 8;
-  int _pmixInpChannels[kmaxinputs] = {-1, -1, -1, -1, -1, -1, -1, -1};
+  void addInputChannel(int chan);
+  static constexpr int kmaxinputs = 8;
+  std::vector<int> _pmixInpChannels;
 };
 
 struct PMXMix final : public DspBlock {

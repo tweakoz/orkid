@@ -449,14 +449,14 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
     //////////////////////////////////////
     // setup dsp graph
     //////////////////////////////////////
-    auto dconame        = FormatString("dco%d", dcochannel);
-    auto dcoampname     = FormatString("amp%d", dcochannel);
-    auto dcostage       = layerdata->stageByName("DCO");
-    auto ampstage       = layerdata->stageByName("AMP");
-    auto dco            = dcostage->appendTypedBlock<CZX>(dconame, oscdata, dcochannel);
-    auto amp            = ampstage->appendTypedBlock<AMP_MONOIO>(dcoampname);
-    dco->_dspchannel[0] = dcochannel;
-    amp->_dspchannel[0] = dcochannel;
+    auto dconame    = FormatString("dco%d", dcochannel);
+    auto dcoampname = FormatString("amp%d", dcochannel);
+    auto dcostage   = layerdata->stageByName("DCO");
+    auto ampstage   = layerdata->stageByName("AMP");
+    auto dco        = dcostage->appendTypedBlock<CZX>(dconame, oscdata, dcochannel);
+    auto amp        = ampstage->appendTypedBlock<AMP_MONOIO>(dcoampname);
+    dco->addDspChannel(dcochannel);
+    amp->addDspChannel(dcochannel);
     //////////////////////////////////////
     // setup modulators
     //////////////////////////////////////

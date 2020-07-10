@@ -556,14 +556,14 @@ void configureTx81zAlgorithm(
   auto op1 = stage_ops->appendTypedBlock<PMX>("op1");
   auto op0 = stage_ops->appendTypedBlock<PMX>("op0");
   /////////////////////////////////////////////////
-  int opchanbase      = 2;
-  op0->_dspchannel[0] = opchanbase + 0;
-  op1->_dspchannel[0] = opchanbase + 1;
-  op2->_dspchannel[0] = opchanbase + 2;
-  op3->_dspchannel[0] = opchanbase + 3;
+  int opchanbase = 2;
+  op0->addDspChannel(opchanbase + 0);
+  op1->addDspChannel(opchanbase + 1);
+  op2->addDspChannel(opchanbase + 2);
+  op3->addDspChannel(opchanbase + 3);
   /////////////////////////////////////////////////
-  auto opmix            = stage_opmix->appendTypedBlock<PMXMix>("opmixer");
-  opmix->_dspchannel[0] = 0;
+  auto opmix = stage_opmix->appendTypedBlock<PMXMix>("opmixer");
+  opmix->addDspChannel(0);
   /////////////////////////////////////////////////
   float basemodindex = 3.5f;
   op0->_modIndex     = basemodindex;
@@ -576,13 +576,13 @@ void configureTx81zAlgorithm(
       //   (3)->2->1->0
       stage_ops->setNumIos(1, 1);
       stage_opmix->setNumIos(1, 1);
-      op1->_modulator            = true;
-      op2->_modulator            = true;
-      op3->_modulator            = true;
-      op0->_pmInpChannels[0]     = opchanbase + 1;
-      op1->_pmInpChannels[0]     = opchanbase + 2;
-      op2->_pmInpChannels[0]     = opchanbase + 3;
-      opmix->_pmixInpChannels[0] = opchanbase + 0;
+      op1->_modulator = true;
+      op2->_modulator = true;
+      op3->_modulator = true;
+      op0->addPmInput(opchanbase + 1);
+      op1->addPmInput(opchanbase + 2);
+      op2->addPmInput(opchanbase + 3);
+      opmix->addInputChannel(opchanbase + 0);
       break;
     case 1:
       //   (3)
@@ -590,13 +590,13 @@ void configureTx81zAlgorithm(
       op1->_modIndex = basemodindex * 0.5f; // 2 inputs
       stage_ops->setNumIos(1, 1);
       stage_opmix->setNumIos(1, 1);
-      op1->_modulator            = true;
-      op2->_modulator            = true;
-      op3->_modulator            = true;
-      op0->_pmInpChannels[0]     = opchanbase + 1;
-      op1->_pmInpChannels[0]     = opchanbase + 2;
-      op1->_pmInpChannels[1]     = opchanbase + 3;
-      opmix->_pmixInpChannels[0] = opchanbase + 0;
+      op1->_modulator = true;
+      op2->_modulator = true;
+      op3->_modulator = true;
+      op0->addPmInput(opchanbase + 1);
+      op1->addPmInput(opchanbase + 2);
+      op1->addPmInput(opchanbase + 3);
+      opmix->addInputChannel(opchanbase + 0);
       break;
     case 2:
       //  2
@@ -605,40 +605,40 @@ void configureTx81zAlgorithm(
       op0->_modIndex = basemodindex * 0.5f; // 2 inputs
       stage_ops->setNumIos(1, 1);
       stage_opmix->setNumIos(1, 1);
-      op1->_modulator            = true;
-      op2->_modulator            = true;
-      op3->_modulator            = true;
-      op0->_pmInpChannels[0]     = opchanbase + 1;
-      op0->_pmInpChannels[1]     = opchanbase + 3;
-      op1->_pmInpChannels[0]     = opchanbase + 2;
-      opmix->_pmixInpChannels[0] = opchanbase + 0;
+      op1->_modulator = true;
+      op2->_modulator = true;
+      op3->_modulator = true;
+      op0->addPmInput(opchanbase + 1);
+      op0->addPmInput(opchanbase + 3);
+      op1->addPmInput(opchanbase + 2);
+      opmix->addInputChannel(opchanbase + 0);
       break;
     case 3:
       // (3)
       //  1   2
       //    0
-      op0->_modIndex         = basemodindex * 0.5f; // 2 inputs
-      op0->_pmInpChannels[0] = opchanbase + 1;
-      op0->_pmInpChannels[1] = opchanbase + 2;
-      op1->_pmInpChannels[0] = opchanbase + 3;
+      op0->_modIndex = basemodindex * 0.5f; // 2 inputs
+      op0->addPmInput(opchanbase + 1);
+      op0->addPmInput(opchanbase + 2);
+      op1->addPmInput(opchanbase + 3);
       stage_ops->setNumIos(1, 1);
       stage_opmix->setNumIos(1, 1);
-      op1->_modulator            = true;
-      op2->_modulator            = true;
-      op3->_modulator            = true;
-      opmix->_pmixInpChannels[0] = opchanbase + 0;
+      op1->_modulator = true;
+      op2->_modulator = true;
+      op3->_modulator = true;
+      opmix->addInputChannel(opchanbase + 0);
       break;
     case 4:
       // 1 (3)
       // 0  2
       stage_ops->setNumIos(1, 2);
       stage_opmix->setNumIos(2, 1);
-      op1->_modulator            = true;
-      op3->_modulator            = true;
-      op0->_pmInpChannels[0]     = opchanbase + 1;
-      op2->_pmInpChannels[0]     = opchanbase + 3;
-      opmix->_pmixInpChannels[0] = opchanbase + 0;
-      opmix->_pmixInpChannels[1] = opchanbase + 2;
+      op1->_modulator = true;
+      op3->_modulator = true;
+      op0->addPmInput(opchanbase + 1);
+      op2->addPmInput(opchanbase + 3);
+      opmix->addInputChannel(opchanbase + 0);
+      opmix->addInputChannel(opchanbase + 2);
       break;
     case 5:
       //   (3)
@@ -646,33 +646,33 @@ void configureTx81zAlgorithm(
       // 0  1  2
       stage_ops->setNumIos(1, 3);
       stage_opmix->setNumIos(3, 1);
-      op3->_modulator            = true;
-      op0->_pmInpChannels[0]     = opchanbase + 3;
-      op1->_pmInpChannels[0]     = opchanbase + 3;
-      op2->_pmInpChannels[0]     = opchanbase + 3;
-      opmix->_pmixInpChannels[0] = opchanbase + 0;
-      opmix->_pmixInpChannels[1] = opchanbase + 1;
-      opmix->_pmixInpChannels[2] = opchanbase + 2;
+      op3->_modulator = true;
+      op0->addPmInput(opchanbase + 3);
+      op1->addPmInput(opchanbase + 3);
+      op2->addPmInput(opchanbase + 3);
+      opmix->addInputChannel(opchanbase + 0);
+      opmix->addInputChannel(opchanbase + 1);
+      opmix->addInputChannel(opchanbase + 2);
       break;
     case 6:
       //      (3)
       // 0  1  2
       stage_ops->setNumIos(1, 3);
       stage_opmix->setNumIos(3, 1);
-      op3->_modulator            = true;
-      op2->_pmInpChannels[0]     = opchanbase + 3;
-      opmix->_pmixInpChannels[0] = opchanbase + 0;
-      opmix->_pmixInpChannels[1] = opchanbase + 1;
-      opmix->_pmixInpChannels[2] = opchanbase + 2;
+      op3->_modulator = true;
+      op2->addPmInput(opchanbase + 3);
+      opmix->addInputChannel(opchanbase + 0);
+      opmix->addInputChannel(opchanbase + 1);
+      opmix->addInputChannel(opchanbase + 2);
       break;
     case 7:
       //   0  1  2 (3)
       stage_ops->setNumIos(1, 4);
       stage_opmix->setNumIos(4, 1);
-      opmix->_pmixInpChannels[0] = opchanbase + 0;
-      opmix->_pmixInpChannels[1] = opchanbase + 1;
-      opmix->_pmixInpChannels[2] = opchanbase + 2;
-      opmix->_pmixInpChannels[3] = opchanbase + 3;
+      opmix->addInputChannel(opchanbase + 0);
+      opmix->addInputChannel(opchanbase + 1);
+      opmix->addInputChannel(opchanbase + 2);
+      opmix->addInputChannel(opchanbase + 3);
       break;
   }
   /////////////////////////////////////////////////
