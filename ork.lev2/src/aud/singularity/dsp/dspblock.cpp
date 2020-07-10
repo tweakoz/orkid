@@ -81,9 +81,9 @@ scopesource_ptr_t DspBlockData::createScopeSource() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-dspparam_ptr_t DspBlockData::addParam() {
+dspparam_ptr_t DspBlockData::addParam(std::string named) {
   OrkAssert(_numParams < kmaxparmperblock - 1);
-  auto param = std::make_shared<DspParamData>();
+  auto param = std::make_shared<DspParamData>(named);
   _paramd.push_back(param);
   _numParams = _paramd.size();
   return param;

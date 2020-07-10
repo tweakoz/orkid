@@ -65,7 +65,7 @@ struct DspBlockData : public ork::Object {
 
   std::string _blocktype;
 
-  dspparam_ptr_t addParam();
+  dspparam_ptr_t addParam(std::string name = "");
   dspparam_ptr_t param(int index);
   int addDspChannel(int channel);
 

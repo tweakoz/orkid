@@ -54,12 +54,12 @@ void PMXData::describeX(class_t* clazz) {
 PMXData::PMXData(std::string name)
     : DspBlockData(name) {
 
-  auto pitch = addParam();
+  auto pitch = addParam("pitch");
   pitch->usePitchEvaluator(); // pitch
-  auto amp = addParam();
+  auto amp = addParam("amp");
   amp->useDefaultEvaluator(); // amp
   amp->_units = "0-1";
-  auto fbl    = addParam();
+  auto fbl    = addParam("feedback");
   fbl->_units = "0-1";
   fbl->useDefaultEvaluator(); // feedback
 }

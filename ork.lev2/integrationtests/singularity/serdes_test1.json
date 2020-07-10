@@ -119,7 +119,7 @@
                              }
                             }
                            },
-                           "Name": "",
+                           "Name": "pitch",
                            "VelTrack": 0.0
                           }
                          }
@@ -166,7 +166,7 @@
                              }
                             }
                            },
-                           "Name": "",
+                           "Name": "amp",
                            "VelTrack": 0.0
                           }
                          }
@@ -197,7 +197,7 @@
                              }
                             }
                            },
-                           "Name": "",
+                           "Name": "feedback",
                            "VelTrack": 0.0
                           }
                          }
@@ -251,7 +251,7 @@
                              }
                             }
                            },
-                           "Name": "",
+                           "Name": "pitch",
                            "VelTrack": 0.0
                           }
                          }
@@ -298,7 +298,7 @@
                              }
                             }
                            },
-                           "Name": "",
+                           "Name": "amp",
                            "VelTrack": 0.0
                           }
                          }
@@ -329,7 +329,7 @@
                              }
                             }
                            },
-                           "Name": "",
+                           "Name": "feedback",
                            "VelTrack": 0.0
                           }
                          }
@@ -383,7 +383,7 @@
                              }
                             }
                            },
-                           "Name": "",
+                           "Name": "pitch",
                            "VelTrack": 0.0
                           }
                          }
@@ -430,7 +430,7 @@
                              }
                             }
                            },
-                           "Name": "",
+                           "Name": "amp",
                            "VelTrack": 0.0
                           }
                          }
@@ -461,7 +461,7 @@
                              }
                             }
                            },
-                           "Name": "",
+                           "Name": "feedback",
                            "VelTrack": 0.0
                           }
                          }
@@ -514,7 +514,7 @@
                              }
                             }
                            },
-                           "Name": "",
+                           "Name": "pitch",
                            "VelTrack": 0.0
                           }
                          }
@@ -561,7 +561,7 @@
                              }
                             }
                            },
-                           "Name": "",
+                           "Name": "amp",
                            "VelTrack": 0.0
                           }
                          }
@@ -592,7 +592,7 @@
                              }
                             }
                            },
-                           "Name": "",
+                           "Name": "feedback",
                            "VelTrack": 0.0
                           }
                          }

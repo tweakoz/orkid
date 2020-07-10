@@ -31,7 +31,7 @@ struct DspParamData final : public ork::Object {
   DeclareConcreteX(DspParamData, ork::Object);
   bool postDeserialize(reflect::serdes::IDeserializer&) override;
 
-  DspParamData();
+  DspParamData(std::string name = "");
 
   void useDefaultEvaluator();
   void usePitchEvaluator();

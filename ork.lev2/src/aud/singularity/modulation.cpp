@@ -50,7 +50,8 @@ void DspParamData::describeX(class_t* clazz) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-DspParamData::DspParamData() {
+DspParamData::DspParamData(std::string name) {
+  _name = name;
   _mods = std::make_shared<BlockModulationData>();
   useDefaultEvaluator();
 }
@@ -99,7 +100,7 @@ void DspParamData::useDefaultEvaluator() {
                + cec._C1() //
                + cec._C2() //
                + kt + vt;
-    //printf("cec._keyOff<%g> rv<%g>\n", cec._keyOff, rv);
+    // printf("cec._keyOff<%g> rv<%g>\n", cec._keyOff, rv);
     return rv;
   };
 }
