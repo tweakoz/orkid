@@ -192,6 +192,7 @@ void ClassInit() {
   RegisterClassX(audio::singularity::FunData);
   RegisterClassX(audio::singularity::CustomControllerData);
 
+  RegisterClassX(audio::singularity::IoMask);
   RegisterClassX(audio::singularity::DspBlockData);
   RegisterClassX(audio::singularity::PMXData);
   RegisterClassX(audio::singularity::PMXMixData);

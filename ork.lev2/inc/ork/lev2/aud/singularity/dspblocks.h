@@ -39,15 +39,11 @@ private:
 //   specifies inputs and output configuration of a zpm module
 ////////////////////////////////////////////////////////////////////////////////
 
-struct IoMask final {
-  inline IoMask() {
-  }
-  inline size_t numInputs() const {
-    return _inputs.size();
-  }
-  inline size_t numOutputs() const {
-    return _outputs.size();
-  }
+struct IoMask final : public ork::Object {
+  DeclareConcreteX(IoMask, ork::Object);
+  IoMask();
+  size_t numInputs() const;
+  size_t numOutputs() const;
   std::vector<int> _inputs;
   std::vector<int> _outputs;
 };
@@ -152,6 +148,7 @@ struct DspBlock {
 struct DspStageData final : public ork::Object {
 
   DeclareConcreteX(DspStageData, ork::Object);
+  bool postDeserialize(reflect::serdes::IDeserializer&) override;
 
   DspStageData();
   dspblkdata_ptr_t appendBlock();

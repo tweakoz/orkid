@@ -55,6 +55,10 @@ int main(int argc, char** argv, char** envp) {
   auto op1       = ops_stage->_blockdatas[2];
   auto op2       = ops_stage->_blockdatas[1];
   auto op3       = ops_stage->_blockdatas[0];
+  auto op0env    = lyrdata->controllerByName("OP0ENV");
+  auto op1env    = lyrdata->controllerByName("OP1ENV");
+  auto op2env    = lyrdata->controllerByName("OP2ENV");
+  auto op3env    = lyrdata->controllerByName("OP3ENV");
   ////////////////////////////////////////////////
   // main bus effect
   ////////////////////////////////////////////////
@@ -113,7 +117,7 @@ int main(int argc, char** argv, char** envp) {
       color1,
       op1,
       {guidev0, guidehc, guidev1, guidehr, 2});
-  /*auto envedit0 = createEnvYmEditView(
+  auto envedit0 = createEnvYmEditView(
       app->_hudvp, //
       "envedit0",
       color0,
@@ -124,7 +128,7 @@ int main(int argc, char** argv, char** envp) {
       "envedit1",
       color1,
       op1env,
-      {guidev1, guidehc, guidev2, guidehr, 2});*/
+      {guidev1, guidehc, guidev2, guidehr, 2});
 
   auto pmxedit2 = createPmxEditView(
       app->_hudvp, //
@@ -138,7 +142,7 @@ int main(int argc, char** argv, char** envp) {
       color3,
       op3,
       {guidev2, guidehc, guidev3, guidehr, 2});
-  /*auto envedit2 = createEnvYmEditView(
+  auto envedit2 = createEnvYmEditView(
       app->_hudvp, //
       "envedit2",
       color2,
@@ -149,7 +153,7 @@ int main(int argc, char** argv, char** envp) {
       "envedit3",
       color3,
       op3env,
-      {guidev3, guidehc, guidev4, guidehr, 2});*/
+      {guidev3, guidehc, guidev4, guidehr, 2});
   auto source   = lyrdata->createScopeSource();
   auto scope    = create_oscilloscope(app->_hudvp, {guidev4, guidehl, guidevb, guidehc, 2});
   auto analyzer = create_spectrumanalyzer(app->_hudvp, {guidev4, guidehc, guidevb, guidehr, 2});

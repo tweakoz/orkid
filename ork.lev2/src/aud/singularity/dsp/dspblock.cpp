@@ -22,8 +22,27 @@
 
 ImplementReflectionX(ork::audio::singularity::DspBlockData, "SynDspBlock");
 ImplementReflectionX(ork::audio::singularity::DspStageData, "SynDspStage");
+ImplementReflectionX(ork::audio::singularity::IoMask, "SynIoMask");
 
 namespace ork::audio::singularity {
+
+//////////////////////////////////////////////////////////////////////////////
+
+void IoMask::describeX(class_t* clazz) {
+  clazz->directVectorProperty("Inputs", &IoMask::_inputs);
+  clazz->directVectorProperty("Outputs", &IoMask::_outputs);
+}
+//////////////////////////////////////////////////////////////////////////////
+IoMask::IoMask() {
+}
+//////////////////////////////////////////////////////////////////////////////
+size_t IoMask::numInputs() const {
+  return _inputs.size();
+}
+size_t IoMask::numOutputs() const {
+  return _outputs.size();
+}
+//////////////////////////////////////////////////////////////////////////////
 
 void DspBlockData::describeX(class_t* clazz) {
   clazz->directProperty("Name", &DspBlockData::_name);
@@ -93,6 +112,8 @@ void DspBuffer::resize(int inumframes) {
   _numframes = inumframes;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 float* DspBuffer::channel(int ich) {
   ich = ich % kmaxdspblocksperstage;
   return _channels[ich].data();
@@ -103,12 +124,28 @@ float* DspBuffer::channel(int ich) {
 void DspStageData::describeX(class_t* clazz) {
   clazz->directProperty("Name", &DspStageData::_name);
   clazz->directProperty("StageIndex", &DspStageData::_stageIndex);
+  clazz->directObjectProperty("IoMask", &DspStageData::_iomask);
   clazz->directObjectMapProperty("DspBlocks", &DspStageData::_namedblockdatas);
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+bool DspStageData::postDeserialize(reflect::serdes::IDeserializer&) { // override
+  for (auto item : _namedblockdatas) {
+    auto blockdata     = item.second;
+    int index          = blockdata->_blockIndex;
+    _blockdatas[index] = blockdata;
+  }
+  _numblocks = _namedblockdatas.size();
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 DspStageData::DspStageData() {
   _iomask = std::make_shared<IoMask>();
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 dspblkdata_ptr_t DspStageData::appendBlock() {
   OrkAssert(_numblocks < kmaxdspblocksperstage);
@@ -116,6 +153,8 @@ dspblkdata_ptr_t DspStageData::appendBlock() {
   _blockdatas[_numblocks++] = blk;
   return blk;
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 void DspStageData::setNumIos(int numinp, int numout) {
   for (int i = 0; i < numinp; i++)
