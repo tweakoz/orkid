@@ -11,6 +11,7 @@
 
 ImplementReflectionX(ork::audio::singularity::ControllerData, "SynControllerData");
 ImplementReflectionX(ork::audio::singularity::CustomControllerData, "SynCustomControllerData");
+ImplementReflectionX(ork::audio::singularity::ConstantControllerData, "SynConstControllerData");
 
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
@@ -91,4 +92,26 @@ void CustomControllerInst::keyOn(const KeyOnInfo& KOI) {
 void CustomControllerInst::keyOff() {
   _data->_onkeyoff(this);
 }
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+void ConstantControllerData::describeX(class_t* clazz) {
+  clazz->directProperty("constvalue", &ConstantControllerData::_constvalue);
+}
+
+ControllerInst* ConstantControllerData::instantiate(Layer* layer) const {
+  return new ConstantInst(this, layer);
+}
+ConstantInst::ConstantInst(const ConstantControllerData* data, Layer* layer)
+    : ControllerInst(layer) {
+  _curval = data->_constvalue;
+}
+void ConstantInst::compute() {
+}
+void ConstantInst::keyOn(const KeyOnInfo& KOI) {
+}
+void ConstantInst::keyOff() {
+}
+
 } // namespace ork::audio::singularity

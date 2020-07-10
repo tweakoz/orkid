@@ -137,14 +137,11 @@ void PMX::doKeyOff() { // final
 }
 ///////////////////////////////////////////////////////////////////////////////
 void PMXMixData::describeX(class_t* clazz) {
-  // clazz->directArrayProperty("InputChannels", &PMXMixData::_pmixInpChannels);
+  clazz->directArrayProperty("InputChannels", &PMXMixData::_pmixInpChannels);
 }
 ///////////////////////////////////////////////////////////////////////////////
 PMXMixData::PMXMixData(std::string name)
     : DspBlockData(name) {
-  addParam()->usePitchEvaluator();   // pitch
-  addParam()->useDefaultEvaluator(); // amp
-  addParam()->useDefaultEvaluator(); // feedback
 }
 ///////////////////////////////////////////////////////////////////////////////
 dspblk_ptr_t PMXMixData::createInstance() const {

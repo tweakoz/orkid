@@ -2,38 +2,48 @@
  "root": {
   "object": {
    "class": "SynBankData",
-   "uuid": "f2d3beeb-17e9-4484-bd24-a6d2a4470aef",
+   "uuid": "8f039297-8b2a-49a6-b31d-ed600962d400",
    "properties": {
     "Programs": {
      "yo": {
       "object": {
        "class": "SynProgramData",
-       "uuid": "feeeb73d-4cbd-4a1f-be1d-f4a3edbb1b10",
+       "uuid": "bf0d4651-cbfe-4d7b-8de3-90fe9c3484a2",
        "properties": {
         "Layers": [
          {
           "object": {
            "class": "SynLayer",
-           "uuid": "edd90dc2-5fc5-4a6a-adb9-d792479294b5",
+           "uuid": "bb5105f0-6f28-4ddf-b2b4-0f1a5805a34d",
            "properties": {
             "Algorithm": {
              "object": {
               "class": "SynAlgorithm",
-              "uuid": "3bd6dd69-8efe-489d-bb63-237afbe6ffcc",
+              "uuid": "73b37d0a-6006-456a-a68d-f7769f7d6cd4",
               "properties": {
                "Name": "tx81z<0>",
                "Stages": {
                 "OPMIX": {
                  "object": {
                   "class": "SynDspStage",
-                  "uuid": "9db963a4-aa0d-4e5b-9e06-eb35bc0002c7",
+                  "uuid": "8ded50e0-6b1c-4272-ad9c-419e4b5bad50",
                   "properties": {
                    "DspBlocks": {
                     "opmixer": {
                      "object": {
                       "class": "SynPMXMixer",
-                      "uuid": "626421ec-a199-4496-a772-b4d3e835f8c8",
+                      "uuid": "c277859b-1a9f-4512-b300-a06e575bc79f",
                       "properties": {
+                       "InputChannels": [
+                        2,
+                        -1,
+                        -1,
+                        -1,
+                        -1,
+                        -1,
+                        -1,
+                        -1
+                       ],
                        "BlockIndex": 0,
                        "DspChannels": [
                         0,
@@ -55,101 +65,7 @@
                        ],
                        "InputPad": 1.0,
                        "Name": "opmixer",
-                       "Params": [
-                        {
-                         "object": {
-                          "class": "SynDspParam",
-                          "uuid": "3b3c78ce-3831-4825-ac90-7e5682c9a5bd",
-                          "properties": {
-                           "Coarse": 0.0,
-                           "EvaluatorID": "pitch",
-                           "Fine": 0.0,
-                           "FineHZ": 0.0,
-                           "KeyStart": 60,
-                           "KeyStartBipolar": true,
-                           "KeyTrack": 0.0,
-                           "Mods": {
-                            "object": {
-                             "class": "SynBlockModulation",
-                             "uuid": "2a91899d-2a0f-4806-87ce-44f5c334f39b",
-                             "properties": {
-                              "Src1": "nil",
-                              "Src1Depth": 0.0,
-                              "Src2": "nil",
-                              "Src2DepthControl": "nil",
-                              "Src2MaxDepth": 0.0,
-                              "Src2MinDepth": 0.0
-                             }
-                            }
-                           },
-                           "Name": "",
-                           "VelTrack": 0.0
-                          }
-                         }
-                        },
-                        {
-                         "object": {
-                          "class": "SynDspParam",
-                          "uuid": "3ed01a65-c54c-4bb6-8cb5-76503ca02a99",
-                          "properties": {
-                           "Coarse": 0.0,
-                           "EvaluatorID": "default",
-                           "Fine": 0.0,
-                           "FineHZ": 0.0,
-                           "KeyStart": 60,
-                           "KeyStartBipolar": true,
-                           "KeyTrack": 0.0,
-                           "Mods": {
-                            "object": {
-                             "class": "SynBlockModulation",
-                             "uuid": "e969c1f0-64f2-45fe-85f4-dbd3457dd7f1",
-                             "properties": {
-                              "Src1": "nil",
-                              "Src1Depth": 0.0,
-                              "Src2": "nil",
-                              "Src2DepthControl": "nil",
-                              "Src2MaxDepth": 0.0,
-                              "Src2MinDepth": 0.0
-                             }
-                            }
-                           },
-                           "Name": "",
-                           "VelTrack": 0.0
-                          }
-                         }
-                        },
-                        {
-                         "object": {
-                          "class": "SynDspParam",
-                          "uuid": "f62e6b2e-6bed-434d-8d39-7ea827538e60",
-                          "properties": {
-                           "Coarse": 0.0,
-                           "EvaluatorID": "default",
-                           "Fine": 0.0,
-                           "FineHZ": 0.0,
-                           "KeyStart": 60,
-                           "KeyStartBipolar": true,
-                           "KeyTrack": 0.0,
-                           "Mods": {
-                            "object": {
-                             "class": "SynBlockModulation",
-                             "uuid": "03f282b6-892b-4527-bff5-26adfaca7c11",
-                             "properties": {
-                              "Src1": "nil",
-                              "Src1Depth": 0.0,
-                              "Src2": "nil",
-                              "Src2DepthControl": "nil",
-                              "Src2MaxDepth": 0.0,
-                              "Src2MinDepth": 0.0
-                             }
-                            }
-                           },
-                           "Name": "",
-                           "VelTrack": 0.0
-                          }
-                         }
-                        }
-                       ]
+                       "Params": []
                       }
                      }
                     }
@@ -157,7 +73,7 @@
                    "IoMask": {
                     "object": {
                      "class": "SynIoMask",
-                     "uuid": "09f6db6c-f12a-4970-84b2-e76347d3157d",
+                     "uuid": "21705c48-6eb0-4171-bb4c-b0e1fb5e722f",
                      "properties": {
                       "Inputs": [
                        0
@@ -176,13 +92,13 @@
                 "OPS": {
                  "object": {
                   "class": "SynDspStage",
-                  "uuid": "89cdc8c1-9d6c-46a8-9327-d78b6e97b144",
+                  "uuid": "ac8799d0-3305-4704-a74d-eeefb95a69e6",
                   "properties": {
                    "DspBlocks": {
                     "op0": {
                      "object": {
                       "class": "SynPMX",
-                      "uuid": "962fa5fc-3a9c-4d10-bb7a-949a6ce55f87",
+                      "uuid": "6247245a-6df6-4dcd-8d74-8553889f499c",
                       "properties": {
                        "Feedback": 0.0,
                        "InputChannel": 0,
@@ -223,7 +139,7 @@
                         {
                          "object": {
                           "class": "SynDspParam",
-                          "uuid": "af895537-7a7a-43aa-8f3b-8ba7f6f445ff",
+                          "uuid": "9d19b529-decb-4249-b624-851be390e78c",
                           "properties": {
                            "Coarse": 6000.0,
                            "EvaluatorID": "pitch",
@@ -235,7 +151,7 @@
                            "Mods": {
                             "object": {
                              "class": "SynBlockModulation",
-                             "uuid": "0fcb167e-2c59-4cb1-855f-4edf5e60f608",
+                             "uuid": "1ce3aae0-8a3b-4fe7-ace9-22afb55c90b3",
                              "properties": {
                               "Src1": "nil",
                               "Src1Depth": 0.0,
@@ -254,7 +170,7 @@
                         {
                          "object": {
                           "class": "SynDspParam",
-                          "uuid": "8a59cc67-f57d-45cb-a880-03dec0a1b485",
+                          "uuid": "4cc3c02f-c955-4a70-b5b8-89d0eedacfa5",
                           "properties": {
                            "Coarse": 0.0,
                            "EvaluatorID": "default",
@@ -266,12 +182,12 @@
                            "Mods": {
                             "object": {
                              "class": "SynBlockModulation",
-                             "uuid": "89ddc820-673c-4386-a176-aaa126284586",
+                             "uuid": "701a021e-161b-4161-b37d-331b9e3d8a98",
                              "properties": {
                               "Src1": {
                                "object": {
                                 "class": "SynYmEnv",
-                                "uuid": "e5a4f0db-8000-4865-973c-69e6c560b7b1",
+                                "uuid": "2fdeaca9-50d5-4386-beac-3f62888c6390",
                                 "properties": {
                                  "AttackShape": 0.5,
                                  "AttackTime": 2.0,
@@ -301,7 +217,7 @@
                         {
                          "object": {
                           "class": "SynDspParam",
-                          "uuid": "9ac2f02c-16c9-44e0-951d-92322f9bab9d",
+                          "uuid": "f381543d-bc53-48c1-a98d-603fcd1cd8c5",
                           "properties": {
                            "Coarse": 0.0,
                            "EvaluatorID": "default",
@@ -313,7 +229,7 @@
                            "Mods": {
                             "object": {
                              "class": "SynBlockModulation",
-                             "uuid": "4981c8b0-80f7-459f-b523-3678189cfa15",
+                             "uuid": "19ce585e-20b8-4b25-8a34-57832099b33e",
                              "properties": {
                               "Src1": "nil",
                               "Src1Depth": 0.0,
@@ -336,7 +252,7 @@
                     "op1": {
                      "object": {
                       "class": "SynPMX",
-                      "uuid": "d8648dc0-1800-4d9e-857c-9c86add376f0",
+                      "uuid": "9ae9efeb-34b7-4c60-bc88-486266ad17dc",
                       "properties": {
                        "Feedback": 0.0,
                        "InputChannel": 0,
@@ -377,7 +293,7 @@
                         {
                          "object": {
                           "class": "SynDspParam",
-                          "uuid": "438a77c2-6d1e-4fe2-9d00-b6b5cccb2a3f",
+                          "uuid": "35cf69e5-9dfc-4cb5-9bc3-979552baebd2",
                           "properties": {
                            "Coarse": 7200.0,
                            "EvaluatorID": "pitch",
@@ -389,7 +305,7 @@
                            "Mods": {
                             "object": {
                              "class": "SynBlockModulation",
-                             "uuid": "dbd6ef75-d3a6-4286-8a4c-eeeec9887e43",
+                             "uuid": "f190b459-65ab-4448-ac42-6c1591b3a59c",
                              "properties": {
                               "Src1": "nil",
                               "Src1Depth": 0.0,
@@ -408,7 +324,7 @@
                         {
                          "object": {
                           "class": "SynDspParam",
-                          "uuid": "a62be01a-d080-402e-b1e8-7cc2fac67076",
+                          "uuid": "e75544b5-4de3-4389-be7c-6f14d31bf5a6",
                           "properties": {
                            "Coarse": 0.0,
                            "EvaluatorID": "default",
@@ -420,12 +336,12 @@
                            "Mods": {
                             "object": {
                              "class": "SynBlockModulation",
-                             "uuid": "8fa0f593-4530-43bf-844c-34cfbc5b13eb",
+                             "uuid": "50e5c1ff-9aa6-4ecc-9c2b-03b5b89f9dfe",
                              "properties": {
                               "Src1": {
                                "object": {
                                 "class": "SynYmEnv",
-                                "uuid": "db24e8b1-73ef-4be1-8bce-fe3237af1ace",
+                                "uuid": "7eb7827f-cf07-49dd-ac28-b88673cc9d81",
                                 "properties": {
                                  "AttackShape": 0.5,
                                  "AttackTime": 2.0,
@@ -455,7 +371,7 @@
                         {
                          "object": {
                           "class": "SynDspParam",
-                          "uuid": "ad9c9973-0742-45ba-8f8e-e14922191c1b",
+                          "uuid": "ba6137bb-3675-44cf-82a3-a25dab0a8ca1",
                           "properties": {
                            "Coarse": 0.0,
                            "EvaluatorID": "default",
@@ -467,7 +383,7 @@
                            "Mods": {
                             "object": {
                              "class": "SynBlockModulation",
-                             "uuid": "7722c1d0-a380-4b3a-aa8c-562ed903e277",
+                             "uuid": "8da24759-43ad-4166-9c5e-588973a781c6",
                              "properties": {
                               "Src1": "nil",
                               "Src1Depth": 0.0,
@@ -490,7 +406,7 @@
                     "op2": {
                      "object": {
                       "class": "SynPMX",
-                      "uuid": "82236de2-1ac3-4b65-9c30-5c25d0b14f17",
+                      "uuid": "52bc5576-69be-4bf3-a5c1-d9aa2adcfe54",
                       "properties": {
                        "Feedback": 0.0,
                        "InputChannel": 0,
@@ -531,7 +447,7 @@
                         {
                          "object": {
                           "class": "SynDspParam",
-                          "uuid": "f5e77b77-62da-4b74-bdb9-d49aee16ea42",
+                          "uuid": "db09bc3e-d1a4-4b7f-bbbf-44638dc4ec8f",
                           "properties": {
                            "Coarse": 7200.0,
                            "EvaluatorID": "pitch",
@@ -543,7 +459,7 @@
                            "Mods": {
                             "object": {
                              "class": "SynBlockModulation",
-                             "uuid": "4a1ebf49-64eb-4467-86dc-79332f88fc23",
+                             "uuid": "be41c462-b330-4dcd-af45-ace5d9974ca8",
                              "properties": {
                               "Src1": "nil",
                               "Src1Depth": 0.0,
@@ -562,7 +478,7 @@
                         {
                          "object": {
                           "class": "SynDspParam",
-                          "uuid": "24634fdc-3434-4ee0-b8ed-605c28ced24a",
+                          "uuid": "a5f7b1fe-a69f-4576-8922-b4c6b51344f4",
                           "properties": {
                            "Coarse": 0.0,
                            "EvaluatorID": "default",
@@ -574,12 +490,12 @@
                            "Mods": {
                             "object": {
                              "class": "SynBlockModulation",
-                             "uuid": "5f9764b4-e31e-4391-89fa-56b8a98a32a9",
+                             "uuid": "626fe4f3-0b8d-4dc5-b2a7-ba014cb0cb40",
                              "properties": {
                               "Src1": {
                                "object": {
                                 "class": "SynYmEnv",
-                                "uuid": "fe488a23-adb8-496d-be6a-18345b80b246",
+                                "uuid": "ee6358b3-610a-4150-8054-cbb6495dc1c3",
                                 "properties": {
                                  "AttackShape": 0.5,
                                  "AttackTime": 2.0,
@@ -609,7 +525,7 @@
                         {
                          "object": {
                           "class": "SynDspParam",
-                          "uuid": "9852e173-40a1-464e-9e2f-bf135537734c",
+                          "uuid": "0b34c9e9-2b98-4800-94b1-92cbd39645c8",
                           "properties": {
                            "Coarse": 0.0,
                            "EvaluatorID": "default",
@@ -621,7 +537,7 @@
                            "Mods": {
                             "object": {
                              "class": "SynBlockModulation",
-                             "uuid": "837dc69a-8fed-4176-b1de-d8a5bab3b5ec",
+                             "uuid": "78b67ce1-19a0-404b-a8b1-b2766c8032f3",
                              "properties": {
                               "Src1": "nil",
                               "Src1Depth": 0.0,
@@ -644,7 +560,7 @@
                     "op3": {
                      "object": {
                       "class": "SynPMX",
-                      "uuid": "75cfe9c9-a71c-4a97-b2ef-0b4f9674b59e",
+                      "uuid": "620f1a16-a03c-4021-9d23-ad1aeb0d91ae",
                       "properties": {
                        "Feedback": 0.0,
                        "InputChannel": 0,
@@ -685,7 +601,7 @@
                         {
                          "object": {
                           "class": "SynDspParam",
-                          "uuid": "31cafa36-7b87-4a76-b948-e40369d28ebe",
+                          "uuid": "709125cd-31fb-4541-a4e8-0abc48f50ec1",
                           "properties": {
                            "Coarse": 8400.0,
                            "EvaluatorID": "pitch",
@@ -697,7 +613,7 @@
                            "Mods": {
                             "object": {
                              "class": "SynBlockModulation",
-                             "uuid": "9acacd8c-0dd3-4a68-92c8-97715f606f9c",
+                             "uuid": "143a49d9-ef37-410d-8fc2-ee59503b9f5e",
                              "properties": {
                               "Src1": "nil",
                               "Src1Depth": 0.0,
@@ -716,7 +632,7 @@
                         {
                          "object": {
                           "class": "SynDspParam",
-                          "uuid": "c1114e8c-490e-4f11-a818-407a22430c78",
+                          "uuid": "8831955c-3110-449c-89d6-8f4f1cfeb88d",
                           "properties": {
                            "Coarse": 0.0,
                            "EvaluatorID": "default",
@@ -728,12 +644,12 @@
                            "Mods": {
                             "object": {
                              "class": "SynBlockModulation",
-                             "uuid": "30de9d63-4827-48a5-a4bf-cc7b2cd26aa5",
+                             "uuid": "5d607b92-ec46-4fc4-b4e5-8cbd41803439",
                              "properties": {
                               "Src1": {
                                "object": {
                                 "class": "SynYmEnv",
-                                "uuid": "01eef971-e5de-44dd-8dbb-9ad14b9e5e61",
+                                "uuid": "e1a4d2b2-13dc-48b5-a98e-2f8341e52db7",
                                 "properties": {
                                  "AttackShape": 0.5,
                                  "AttackTime": 2.0,
@@ -763,7 +679,7 @@
                         {
                          "object": {
                           "class": "SynDspParam",
-                          "uuid": "70ca6206-92e7-4cf7-b2e1-d9e358ac7b18",
+                          "uuid": "f7a48405-3a6f-4089-a4ad-79dd334a0272",
                           "properties": {
                            "Coarse": 1.0,
                            "EvaluatorID": "default",
@@ -775,7 +691,7 @@
                            "Mods": {
                             "object": {
                              "class": "SynBlockModulation",
-                             "uuid": "6c7238d4-1ecb-4611-9540-1ce430ed1fbc",
+                             "uuid": "bc335ce2-cfd3-4efa-8378-0949e3f37106",
                              "properties": {
                               "Src1": "nil",
                               "Src1Depth": 0.0,
@@ -799,7 +715,7 @@
                    "IoMask": {
                     "object": {
                      "class": "SynIoMask",
-                     "uuid": "fb57f599-6b96-4a2a-a1e7-1571783717ab",
+                     "uuid": "8fd1629b-82bb-4aad-be9e-82fe8c7f5c26",
                      "properties": {
                       "Inputs": [
                        0
@@ -818,13 +734,13 @@
                 "STMIX": {
                  "object": {
                   "class": "SynDspStage",
-                  "uuid": "43826165-1acb-4cd6-a87f-e4db30917dd8",
+                  "uuid": "70103176-84cd-4f6f-aa84-8001c2b81607",
                   "properties": {
                    "DspBlocks": {
                     "monoin-stereoout": {
                      "object": {
                       "class": "SynMonoInStereoOut",
-                      "uuid": "48c92515-5e52-4bd3-9e3a-41577696bb14",
+                      "uuid": "217afc8a-39a4-4dae-85f5-dfc0a0b17b31",
                       "properties": {
                        "BlockIndex": 0,
                        "DspChannels": [
@@ -851,7 +767,7 @@
                         {
                          "object": {
                           "class": "SynDspParam",
-                          "uuid": "c9cec0cb-1b86-470a-ba8d-6266d023cfec",
+                          "uuid": "09c17274-7406-486e-8814-f93a4b5343ba",
                           "properties": {
                            "Coarse": 0.0,
                            "EvaluatorID": "amplitude",
@@ -863,10 +779,19 @@
                            "Mods": {
                             "object": {
                              "class": "SynBlockModulation",
-                             "uuid": "65d2c5bf-563f-45d4-a62a-1612fd1d41ef",
+                             "uuid": "5b418637-ca57-4353-8064-9048f220a1f4",
                              "properties": {
-                              "Src1": "nil",
-                              "Src1Depth": 0.0,
+                              "Src1": {
+                               "object": {
+                                "class": "SynConstControllerData",
+                                "uuid": "dc415637-0c35-426d-8fce-b7a66eb61b11",
+                                "properties": {
+                                 "constvalue": 1.0,
+                                 "Name": "STEREOMIX"
+                                }
+                               }
+                              },
+                              "Src1Depth": 1.0,
                               "Src2": "nil",
                               "Src2DepthControl": "nil",
                               "Src2MaxDepth": 0.0,
@@ -882,7 +807,7 @@
                         {
                          "object": {
                           "class": "SynDspParam",
-                          "uuid": "3f4083da-b1dc-44eb-b0fc-67f946dd15a0",
+                          "uuid": "b670ef52-ee52-4099-99ba-da03fb89c272",
                           "properties": {
                            "Coarse": 0.0,
                            "EvaluatorID": "default",
@@ -894,7 +819,7 @@
                            "Mods": {
                             "object": {
                              "class": "SynBlockModulation",
-                             "uuid": "baf93fe3-138c-4535-a02b-c15c13653921",
+                             "uuid": "e54e8a4a-68b9-4db1-9102-fd3bf7d85efd",
                              "properties": {
                               "Src1": "nil",
                               "Src1Depth": 0.0,
@@ -918,7 +843,7 @@
                    "IoMask": {
                     "object": {
                      "class": "SynIoMask",
-                     "uuid": "4c769742-ca76-4256-8efa-8137e2fa1a95",
+                     "uuid": "41069b0e-3beb-49e8-ba2e-dfe8c5ad0f37",
                      "properties": {
                       "Inputs": [
                        0
@@ -942,22 +867,27 @@
             "Controllers": {
              "OP0ENV": {
               "object-ref": {
-               "uuid-ref": "e5a4f0db-8000-4865-973c-69e6c560b7b1"
+               "uuid-ref": "2fdeaca9-50d5-4386-beac-3f62888c6390"
               }
              },
              "OP1ENV": {
               "object-ref": {
-               "uuid-ref": "db24e8b1-73ef-4be1-8bce-fe3237af1ace"
+               "uuid-ref": "7eb7827f-cf07-49dd-ac28-b88673cc9d81"
               }
              },
              "OP2ENV": {
               "object-ref": {
-               "uuid-ref": "fe488a23-adb8-496d-be6a-18345b80b246"
+               "uuid-ref": "ee6358b3-610a-4150-8054-cbb6495dc1c3"
               }
              },
              "OP3ENV": {
               "object-ref": {
-               "uuid-ref": "01eef971-e5de-44dd-8dbb-9ad14b9e5e61"
+               "uuid-ref": "e1a4d2b2-13dc-48b5-a98e-2f8341e52db7"
+              }
+             },
+             "STEREOMIX": {
+              "object-ref": {
+               "uuid-ref": "dc415637-0c35-426d-8fce-b7a66eb61b11"
               }
              }
             }

@@ -678,14 +678,11 @@ void configureTx81zAlgorithm(
   /////////////////////////////////////////////////
   // stereo mix out
   /////////////////////////////////////////////////
-  auto stereoout = stage_stereo->appendTypedBlock<MonoInStereoOut>("monoin-stereoout");
-  // auto STEREOC           = layerdata->appendController<CustomControllerData>("STEREOMIX");
-  // auto stereo_mod        = stereoout->_paramd[0]->_mods;
-  // stereo_mod->_src1      = STEREOC;
-  // stereo_mod->_src1Depth = 1.0f;
-  // STEREOC->_onkeyon      = [](CustomControllerInst* cci, //
-  //                     const KeyOnInfo& KOI) {    //
-  // cci->_curval = 1.0f;                            // amplitude to unity
-  //};
+  auto stereoout         = stage_stereo->appendTypedBlock<MonoInStereoOut>("monoin-stereoout");
+  auto STEREOC           = layerdata->appendController<ConstantControllerData>("STEREOMIX");
+  auto stereo_mod        = stereoout->_paramd[0]->_mods;
+  stereo_mod->_src1      = STEREOC;
+  stereo_mod->_src1Depth = 1.0f;
+  STEREOC->_constvalue   = 1.0f;
 }
 } // namespace ork::audio::singularity

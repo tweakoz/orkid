@@ -190,6 +190,7 @@ void ClassInit() {
   RegisterClassX(audio::singularity::YmEnvData);
   RegisterClassX(audio::singularity::LfoData);
   RegisterClassX(audio::singularity::FunData);
+  RegisterClassX(audio::singularity::ConstantControllerData);
   RegisterClassX(audio::singularity::CustomControllerData);
 
   RegisterClassX(audio::singularity::IoMask);

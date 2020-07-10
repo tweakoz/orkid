@@ -145,4 +145,24 @@ struct CustomControllerInst final : public ControllerInst {
   const CustomControllerData* _data = nullptr;
 };
 
+///////////////////////////////////////////////////////////////////////////////
+
+struct ConstantControllerData : public ControllerData {
+
+  DeclareConcreteX(ConstantControllerData, ControllerData);
+
+  ControllerInst* instantiate(Layer* layer) const final;
+
+  float _constvalue = 0.0f;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct ConstantInst final : public ControllerInst {
+  ConstantInst(const ConstantControllerData* data, Layer* layer);
+  void compute() override;
+  void keyOn(const KeyOnInfo& KOI) override;
+  void keyOff() override;
+};
+
 } // namespace ork::audio::singularity
