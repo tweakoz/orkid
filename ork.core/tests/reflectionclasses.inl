@@ -52,6 +52,7 @@ public:
   float _directFloat            = 0.0f;
   double _directDouble          = 0.0;
   std::string _directString     = "";
+  int _lambdaint;
 
   void getChild(object_ptr_t& outptr) const {
     outptr = _accessorChild;

@@ -107,6 +107,10 @@ void SharedTest::describeX(ObjectClass* clazz) {
       &SharedTest::getChild,
       &SharedTest::setChild);
   ///////////////////////////////////
+  clazz->lambdaProperty<SharedTest, int>(
+      "int_lambda", //
+      [](const SharedTest* obj_inp, int& valout) { valout = obj_inp->_lambdaint; },
+      [](SharedTest* obj_out, const int& valinp) { obj_out->_lambdaint = valinp; });
 }
 ///////////////////////////////////////////////////////////////////////////////
 SharedTest::SharedTest() {
