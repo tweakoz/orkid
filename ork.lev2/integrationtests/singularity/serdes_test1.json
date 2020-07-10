@@ -147,7 +147,7 @@
                            "FineHZ": 0.0,
                            "KeyStart": 60,
                            "KeyStartBipolar": true,
-                           "KeyTrack": 100.0,
+                           "KeyTrack": 101.0,
                            "Mods": {
                             "object": {
                              "class": "SynBlockModulation",
@@ -201,7 +201,7 @@
                                 }
                                }
                               },
-                              "Src1Depth": 1.0,
+                              "Src1Depth": 4.0,
                               "Src2": "nil",
                               "Src2DepthControl": "nil",
                               "Src2MaxDepth": 0.0,
@@ -343,14 +343,14 @@
                                 "class": "SynYmEnv",
                                 "uuid": "7eb7827f-cf07-49dd-ac28-b88673cc9d81",
                                 "properties": {
-                                 "AttackShape": 0.5,
-                                 "AttackTime": 0.1,
+                                 "AttackShape": 0.15,
+                                 "AttackTime": 0.0,
                                  "Decay1Level": 0.8,
                                  "Decay1Rate": 0.99,
-                                 "Decay2Rate": 0.99,
+                                 "Decay2Rate": 0.999,
                                  "EgShift": 0,
                                  "RateScale": 0,
-                                 "ReleaseRate": 0.99,
+                                 "ReleaseRate": 0.999,
                                  "Name": "OP1ENV"
                                 }
                                }
@@ -373,7 +373,7 @@
                           "class": "SynDspParam",
                           "uuid": "ba6137bb-3675-44cf-82a3-a25dab0a8ca1",
                           "properties": {
-                           "Coarse": 0.0,
+                           "Coarse": 0.041,
                            "EvaluatorID": "default",
                            "Fine": 0.0,
                            "FineHZ": 0.0,
@@ -449,13 +449,13 @@
                           "class": "SynDspParam",
                           "uuid": "db09bc3e-d1a4-4b7f-bbbf-44638dc4ec8f",
                           "properties": {
-                           "Coarse": 7200.0,
+                           "Coarse": 4800.0,
                            "EvaluatorID": "pitch",
                            "Fine": 0.0,
                            "FineHZ": 0.0,
                            "KeyStart": 60,
                            "KeyStartBipolar": true,
-                           "KeyTrack": 100.0,
+                           "KeyTrack": 99.50,
                            "Mods": {
                             "object": {
                              "class": "SynBlockModulation",
@@ -497,19 +497,19 @@
                                 "class": "SynYmEnv",
                                 "uuid": "ee6358b3-610a-4150-8054-cbb6495dc1c3",
                                 "properties": {
-                                 "AttackShape": 0.5,
-                                 "AttackTime": 0.2,
+                                 "AttackShape": 0.15,
+                                 "AttackTime": 0.01,
                                  "Decay1Level": 0.9,
-                                 "Decay1Rate": 0.99,
-                                 "Decay2Rate": 0.99,
+                                 "Decay1Rate": 0.999,
+                                 "Decay2Rate": 0.999,
                                  "EgShift": 0,
                                  "RateScale": 0,
-                                 "ReleaseRate": 0.99,
+                                 "ReleaseRate": 0.999,
                                  "Name": "OP2ENV"
                                 }
                                }
                               },
-                              "Src1Depth": 1.0,
+                              "Src1Depth": 0.7,
                               "Src2": "nil",
                               "Src2DepthControl": "nil",
                               "Src2MaxDepth": 0.0,
@@ -527,7 +527,7 @@
                           "class": "SynDspParam",
                           "uuid": "0b34c9e9-2b98-4800-94b1-92cbd39645c8",
                           "properties": {
-                           "Coarse": 0.0,
+                           "Coarse": 0.0707,
                            "EvaluatorID": "default",
                            "Fine": 0.0,
                            "FineHZ": 0.0,
@@ -603,13 +603,13 @@
                           "class": "SynDspParam",
                           "uuid": "709125cd-31fb-4541-a4e8-0abc48f50ec1",
                           "properties": {
-                           "Coarse": 8400.0,
+                           "Coarse": 11300.0,
                            "EvaluatorID": "pitch",
                            "Fine": 0.0,
                            "FineHZ": 0.0,
                            "KeyStart": 60,
                            "KeyStartBipolar": true,
-                           "KeyTrack": 100.0,
+                           "KeyTrack": 102.0,
                            "Mods": {
                             "object": {
                              "class": "SynBlockModulation",
@@ -651,11 +651,11 @@
                                 "class": "SynYmEnv",
                                 "uuid": "e1a4d2b2-13dc-48b5-a98e-2f8341e52db7",
                                 "properties": {
-                                 "AttackShape": 0.5,
-                                 "AttackTime": 0.3,
-                                 "Decay1Level": 0.5,
-                                 "Decay1Rate": 0.99,
-                                 "Decay2Rate": 0.99,
+                                 "AttackShape": 0.19,
+                                 "AttackTime": 0.0,
+                                 "Decay1Level": 0.0,
+                                 "Decay1Rate": 0.9,
+                                 "Decay2Rate": 0.9,
                                  "EgShift": 0,
                                  "RateScale": 0,
                                  "ReleaseRate": 0.99,
@@ -663,7 +663,7 @@
                                 }
                                }
                               },
-                              "Src1Depth": 0.1,
+                              "Src1Depth": 0.088,
                               "Src2": "nil",
                               "Src2DepthControl": "nil",
                               "Src2MaxDepth": 0.0,
@@ -681,7 +681,7 @@
                           "class": "SynDspParam",
                           "uuid": "f7a48405-3a6f-4089-a4ad-79dd334a0272",
                           "properties": {
-                           "Coarse": 0.85,
+                           "Coarse": 1.0,
                            "EvaluatorID": "default",
                            "Fine": 0.0,
                            "FineHZ": 0.0,
