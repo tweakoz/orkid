@@ -36,7 +36,6 @@ BlockModulationData::BlockModulationData() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void DspParamData::describeX(class_t* clazz) {
-  clazz->directObjectProperty("Mods", &DspParamData::_mods);
   clazz->directProperty("Name", &DspParamData::_name);
   clazz->directProperty("EvaluatorID", &DspParamData::_evaluatorid);
   clazz->directProperty("Coarse", &DspParamData::_coarse);
@@ -46,6 +45,7 @@ void DspParamData::describeX(class_t* clazz) {
   clazz->directProperty("VelTrack", &DspParamData::_velTrack);
   clazz->directProperty("KeyStart", &DspParamData::_keystartNote);
   clazz->directProperty("KeyStartBipolar", &DspParamData::_keystartBipolar);
+  clazz->directObjectProperty("Mods", &DspParamData::_mods);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
