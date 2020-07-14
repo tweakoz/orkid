@@ -1,6 +1,8 @@
 #pragma once
 
 #include <ork/util/scanner.h>
+#include <parsertl/generator.hpp>
+#include <parsertl/match.hpp>
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::glslfx {
@@ -1023,6 +1025,8 @@ struct GlSlFxParser {
   int itokidx              = 0;
   Container* mpContainer   = nullptr;
   ContainerNode* _rootNode = nullptr;
+  parsertl::rules _grules;
+  parsertl::state_machine _gsm;
 };
 /////////////////////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::glslfx

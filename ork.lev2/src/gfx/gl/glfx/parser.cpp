@@ -451,7 +451,8 @@ void ContainerNode::addStructType(StructNode* snode) {
 
 GlSlFxParser::GlSlFxParser(const std::string& pth, const Scanner& s)
     : mPath(pth)
-    , scanner(s) {
+    , scanner(s)
+    , _grules(parsertl::enable_captures) {
   _rootNode = new ContainerNode(pth, s);
   _rootNode->parse();
 }
