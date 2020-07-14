@@ -1,5 +1,6 @@
 #include <ork/hdl/vcd.h>
 #include <ork/file/file.h>
+#include <stack>
 
 namespace ork::hdl::vcd {
 
@@ -32,6 +33,8 @@ enum class ParseState {
 
 void File::parse(ork::file::Path& inppath) {
 
+  _root = std::make_shared<Scope>();
+
   ::ork::File vcdfile(inppath, EFM_READ);
   size_t length = 0;
   vcdfile.GetLength(length);
@@ -60,7 +63,6 @@ void File::parse(ork::file::Path& inppath) {
   _scanner.scan();
 
   size_t numtoks = _scanner.tokens.size();
-
   ////////////////////////////////////
   auto find_end = [&](size_t start) -> size_t {
     size_t index = start;
@@ -77,6 +79,8 @@ void File::parse(ork::file::Path& inppath) {
   ////////////////////////////////////
   ParseState parse_state = ParseState::INIT;
   size_t cur_timestamp   = 0;
+  std::stack<scope_ptr_t> scope_stack;
+  scope_stack.push(_root);
   ////////////////////////////////////
   Sample cursample;
   ////////////////////////////////////
@@ -105,11 +109,24 @@ void File::parse(ork::file::Path& inppath) {
         }
         ///////////////////////////////
         else if (toktext == "$scope") {
+
+          auto top = scope_stack.top();
+
+          auto type    = _scanner.tokens[index + 2].text;
+          auto named   = _scanner.tokens[index + 4].text;
+          auto scope   = std::make_shared<Scope>();
+          scope->_type = type;
+          scope->_name = named;
+
+          top->_child_scopes[named] = scope;
+          scope_stack.push(scope);
+
           printf("index<%zu> SCOPE\n", index);
         }
         ///////////////////////////////
         else if (toktext == "$upscope") {
           printf("index<%zu> UPSCOPE\n", index);
+          scope_stack.pop();
         }
         ///////////////////////////////
         else if (toktext == "$var") {
@@ -132,6 +149,9 @@ void File::parse(ork::file::Path& inppath) {
           sig->_word_width = sig->_bit_width >> 6;
 
           _signals_by_shortname[varshort.text] = sig;
+
+          auto top                    = scope_stack.top();
+          top->_signals[varlong.text] = sig;
 
           OrkAssert(sig->_bit_width <= kmaxbitlen);
         }
@@ -160,13 +180,15 @@ void File::parse(ork::file::Path& inppath) {
       case TokenClass::PRINTABLE: {
         switch (parse_state) {
           case ParseState::KEY: {
+            auto top = scope_stack.top();
+
             auto it = _signals_by_shortname.find(toktext);
             OrkAssert(it != _signals_by_shortname.end());
             auto sig = it->second;
             printf("index<%zu> SIG<%s:%d:%s>\n", index, sig->_type.c_str(), sig->_bit_width, sig->_longname.c_str());
 
-            auto copyofsample                     = std::make_shared<Sample>(cursample);
-            sig->_unsorted_samples[cur_timestamp] = copyofsample;
+            auto copyofsample            = std::make_shared<Sample>(cursample);
+            sig->_samples[cur_timestamp] = copyofsample;
 
             parse_state = ParseState::VALUE;
             break;
@@ -188,9 +210,9 @@ void File::parse(ork::file::Path& inppath) {
               OrkAssert(it != _signals_by_shortname.end());
               auto sig = it->second;
               printf("mushed SIG<%s:%d:%s>\n", sig->_type.c_str(), sig->_bit_width, sig->_longname.c_str());
-              auto copyofsample                     = std::make_shared<Sample>(cursample);
-              sig->_unsorted_samples[cur_timestamp] = copyofsample;
-              parse_state                           = ParseState::VALUE;
+              auto copyofsample            = std::make_shared<Sample>(cursample);
+              sig->_samples[cur_timestamp] = copyofsample;
+              parse_state                  = ParseState::VALUE;
             } else {
               OrkAssert(false);
             }
@@ -245,6 +267,7 @@ void File::parse(ork::file::Path& inppath) {
         break;
     }
   }
+  OrkAssert(scope_stack.top() == _root);
 }
 
 void Sample::write(int bit, bool value) {

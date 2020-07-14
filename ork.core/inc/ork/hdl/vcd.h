@@ -35,18 +35,23 @@ struct Signal {
   std::string _longname  = "";
   int _bit_width         = 0;
   int _word_width        = 0;
-  std::unordered_map<uint64_t, sample_ptr_t> _unsorted_samples;
+  std::map<uint64_t, sample_ptr_t> _samples;
 };
 
 struct Scope {
-  std::map<std::string, signal_ptr_t> _signals_by_shortname;
+  std::string _name;
+  std::string _type = "none";
+  std::map<std::string, signal_ptr_t> _signals;
   std::map<std::string, scope_ptr_t> _child_scopes;
 };
 
-struct File : public Scope {
+struct File {
   File();
   void parse(ork::file::Path& path);
   Scanner _scanner;
+  scope_ptr_t _root;
+  std::map<std::string, scope_ptr_t> _child_scopes;
+  std::map<std::string, signal_ptr_t> _signals_by_shortname;
 };
 
 } // namespace ork::hdl::vcd
