@@ -35,5 +35,5 @@ install(TARGETS ork_eda LIBRARY DESTINATION $ENV{OBT_STAGE}/lib )
 ###################################
 
 #add_subdirectory (pyext)
-#add_subdirectory (examples)
 add_subdirectory (tests)
+add_subdirectory (utils/vcdviewer)
