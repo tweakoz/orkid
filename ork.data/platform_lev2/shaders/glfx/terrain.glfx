@@ -90,7 +90,7 @@ libblock lib_terrain_vtx {
     const float HFDIM = 2048;
     const float INVHFDIM = 1.0 / HFDIM;
     const float UVDIM = 256.0;
-    const float INVUVDIM = 1.0f/UVDIM;
+    const float INVUVDIM = 1.0/UVDIM;
     const float hfHeightScale = 1500;
     const float hfHeightBias = 0;
     /////////////////////////////////

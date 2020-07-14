@@ -25,6 +25,65 @@
 namespace ork::lev2::glslfx {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+void performScan(Scanner& scanner) {
+
+  int tokclass = 1;
+
+  scanner.addRule("\\/\\*([^*]|\\*+[^/*])*\\*+\\/", int(TokenClass::MULTI_LINE_COMMENT));
+  scanner.addRule("\\/\\/.*[\\n\\r]", int(TokenClass::SINGLE_LINE_COMMENT));
+  scanner.addRule("\\s+", int(TokenClass::WHITESPACE));
+  scanner.addRule("[\\n\\r]+", int(TokenClass::NEWLINE));
+  /////////
+  scanner.addRule("[0-9]+u", int(TokenClass::UNSIGNED_DECIMAL_INTEGER));
+  scanner.addRule("0x[0-9a-fA-F]+u?", int(TokenClass::HEX_INTEGER));
+  scanner.addRule("-?(\\d+)", int(TokenClass::MISC_INTEGER));
+  scanner.addRule("-?(\\d*\\.?)(\\d+)([eE][-+]?\\d+)?", int(TokenClass::FLOATING_POINT));
+  /////////
+  scanner.addRule("[\"].*[\"]", int(TokenClass::STRING));
+  /////////
+  scanner.addRule("[a-zA-Z_]+[a-zA-Z0-9_]+", int(TokenClass::KW_OR_ID));
+  /////////
+  scanner.addRule("[{}]", int(TokenClass::CURLY_BRACKET));
+  scanner.addRule("[()]", int(TokenClass::PARENTHESIS));
+  scanner.addRule("[\\[\\]]", int(TokenClass::SQUARE_BRACKET));
+  /////////
+  scanner.addRule(":", int(TokenClass::COLON));
+  scanner.addRule(";", int(TokenClass::SEMICOLON));
+  scanner.addRule("[,.]", int(TokenClass::COMMA_OR_DOT));
+  /////////
+  scanner.addRule("<<", int(TokenClass::LEFT_SHIFT));
+  scanner.addRule(">>", int(TokenClass::RIGHT_SHIFT));
+  /////////
+  scanner.addRule("<", int(TokenClass::LESS_THAN));
+  scanner.addRule(">", int(TokenClass::GREATER_THAN));
+  /////////
+  scanner.addRule("<=", int(TokenClass::LESS_THAN_EQ));
+  scanner.addRule(">=", int(TokenClass::GREATER_THAN_EQ));
+  scanner.addRule("==", int(TokenClass::EQUAL_TO));
+  scanner.addRule("!=", int(TokenClass::NOT_EQUAL_TO));
+  scanner.addRule("\\+=", int(TokenClass::PLUS_EQ));
+  scanner.addRule("\\-=", int(TokenClass::MINUS_EQ));
+  scanner.addRule("\\*=", int(TokenClass::TIMES_EQ));
+  scanner.addRule("\\/=", int(TokenClass::DIVIDE_EQ));
+  scanner.addRule("\\|=", int(TokenClass::OR_EQ));
+  scanner.addRule("&=", int(TokenClass::AND_EQ));
+  /////////
+  scanner.addRule("[*+-/~]", int(TokenClass::ARITHMETIC_OP));
+  /////////
+  scanner.addRule("\\+\\+", int(TokenClass::INCREMENT));
+  scanner.addRule("--", int(TokenClass::DECREMENT));
+  /////////
+  scanner.addRule("\\|\\|", int(TokenClass::LOGICAL_OR));
+  scanner.addRule("&&", int(TokenClass::LOGICAL_AND));
+
+  scanner.buildStateMachine();
+  scanner.scan();
+  scanner.discardTokensOfClass(int(TokenClass::SINGLE_LINE_COMMENT));
+  scanner.discardTokensOfClass(int(TokenClass::MULTI_LINE_COMMENT));
+  scanner.discardTokensOfClass(int(TokenClass::WHITESPACE));
+  scanner.discardTokensOfClass(int(TokenClass::NEWLINE));
+}
+
 void checktoken(const ScannerView& view, int actual_index, std::string expected) {
 }
 
@@ -236,83 +295,92 @@ void ContainerNode::parse() {
 
     bool advance_block = true;
 
-    if (tok.text == "\n") {
-      itokidx++;
-      advance_block = false;
-    } else if (tok.text == "fxconfig") {
-      _configNode = new ConfigNode(this);
-      _configNode->parse(scanview);
-    } else if (tok.text == "libblock") {
-      auto lb = new LibraryBlockNode(this);
-      lb->parse(scanview);
-    } else if (tok.text == "uniform_set") {
-      auto uniset = new UniformSetNode(this);
-      uniset->parse(scanview);
-    } else if (tok.text == "uniform_block") {
-      auto uniblk = new UniformBlockNode(this);
-      uniblk->parse(scanview);
-    } else if (tok.text == "vertex_interface") {
-      auto sif = new VertexInterfaceNode(this);
-      sif->parse(scanview);
-    } else if (tok.text == "tessctrl_interface") {
-      auto sif = new TessCtrlInterfaceNode(this);
-      sif->parse(scanview);
-    } else if (tok.text == "tesseval_interface") {
-      auto sif = new TessEvalInterfaceNode(this);
-      sif->parse(scanview);
-    } else if (tok.text == "geometry_interface") {
-      auto sif = new GeometryInterfaceNode(this);
-      sif->parse(scanview);
-    } else if (tok.text == "fragment_interface") {
-      auto sif = new FragmentInterfaceNode(this);
-      sif->parse(scanview);
-    } else if (tok.text == "state_block") {
-      auto sblock = new StateBlockNode(this);
-      sblock->parse(scanview);
-      // mpContainer->addStateBlock(psblock);
-    } else if (tok.text == "vertex_shader") {
-      auto sh = new VertexShaderNode(this);
-      sh->parse(scanview);
-    } else if (tok.text == "tessctrl_shader") {
-      auto sh = new TessCtrlShaderNode(this);
-      sh->parse(scanview);
-    } else if (tok.text == "tesseval_shader") {
-      auto sh = new TessEvalShaderNode(this);
-      sh->parse(scanview);
-    } else if (tok.text == "geometry_shader") {
-      auto sh = new GeometryShaderNode(this);
-      sh->parse(scanview);
-    } else if (tok.text == "fragment_shader") {
-      auto sh = new FragmentShaderNode(this);
-      sh->parse(scanview);
+    auto tokclass = TokenClass(tok._class);
+
+    switch (tokclass) {
+      case TokenClass::KW_OR_ID: {
+        if (tok.text == "\n") {
+        } else if (tok.text == "fxconfig") {
+          _configNode = new ConfigNode(this);
+          _configNode->parse(scanview);
+        } else if (tok.text == "libblock") {
+          auto lb = new LibraryBlockNode(this);
+          lb->parse(scanview);
+        } else if (tok.text == "uniform_set") {
+          auto uniset = new UniformSetNode(this);
+          uniset->parse(scanview);
+        } else if (tok.text == "uniform_block") {
+          auto uniblk = new UniformBlockNode(this);
+          uniblk->parse(scanview);
+        } else if (tok.text == "vertex_interface") {
+          auto sif = new VertexInterfaceNode(this);
+          sif->parse(scanview);
+        } else if (tok.text == "tessctrl_interface") {
+          auto sif = new TessCtrlInterfaceNode(this);
+          sif->parse(scanview);
+        } else if (tok.text == "tesseval_interface") {
+          auto sif = new TessEvalInterfaceNode(this);
+          sif->parse(scanview);
+        } else if (tok.text == "geometry_interface") {
+          auto sif = new GeometryInterfaceNode(this);
+          sif->parse(scanview);
+        } else if (tok.text == "fragment_interface") {
+          auto sif = new FragmentInterfaceNode(this);
+          sif->parse(scanview);
+        } else if (tok.text == "state_block") {
+          auto sblock = new StateBlockNode(this);
+          sblock->parse(scanview);
+          // mpContainer->addStateBlock(psblock);
+        } else if (tok.text == "vertex_shader") {
+          auto sh = new VertexShaderNode(this);
+          sh->parse(scanview);
+        } else if (tok.text == "tessctrl_shader") {
+          auto sh = new TessCtrlShaderNode(this);
+          sh->parse(scanview);
+        } else if (tok.text == "tesseval_shader") {
+          auto sh = new TessEvalShaderNode(this);
+          sh->parse(scanview);
+        } else if (tok.text == "geometry_shader") {
+          auto sh = new GeometryShaderNode(this);
+          sh->parse(scanview);
+        } else if (tok.text == "fragment_shader") {
+          auto sh = new FragmentShaderNode(this);
+          sh->parse(scanview);
 #if defined(ENABLE_COMPUTE_SHADERS)
-    } else if (tok.text == "compute_shader") {
-      auto sh = new ComputeShaderNode(this);
-      sh->parse(scanview);
-    } else if (tok.text == "compute_interface") {
-      auto sif = new ComputeInterfaceNode(this);
-      sif->parse(scanview);
+        } else if (tok.text == "compute_shader") {
+          auto sh = new ComputeShaderNode(this);
+          sh->parse(scanview);
+        } else if (tok.text == "compute_interface") {
+          auto sif = new ComputeInterfaceNode(this);
+          sif->parse(scanview);
 #endif
 #if defined(ENABLE_NVMESH_SHADERS)
-    } else if (tok.text == "nvtask_shader") {
-      auto sh = new NvTaskShaderNode(this);
-      sh->parse(scanview);
-    } else if (tok.text == "nvmesh_shader") {
-      auto sh = new NvMeshShaderNode(this);
-      sh->parse(scanview);
-    } else if (tok.text == "nvtask_interface") {
-      auto sif = new NvTaskInterfaceNode(this);
-      sif->parse(scanview);
-    } else if (tok.text == "nvmesh_interface") {
-      auto sif = new NvMeshInterfaceNode(this);
-      sif->parse(scanview);
+        } else if (tok.text == "nvtask_shader") {
+          auto sh = new NvTaskShaderNode(this);
+          sh->parse(scanview);
+        } else if (tok.text == "nvmesh_shader") {
+          auto sh = new NvMeshShaderNode(this);
+          sh->parse(scanview);
+        } else if (tok.text == "nvtask_interface") {
+          auto sif = new NvTaskInterfaceNode(this);
+          sif->parse(scanview);
+        } else if (tok.text == "nvmesh_interface") {
+          auto sif = new NvMeshInterfaceNode(this);
+          sif->parse(scanview);
 #endif
-    } else if (tok.text == "technique") {
-      auto tek = new TechniqueNode(this);
-      tek->parse(scanview);
-    } else {
-      printf("Unknown Token<%s>\n", tok.text.c_str());
-      OrkAssert(false);
+        } else if (tok.text == "technique") {
+          auto tek = new TechniqueNode(this);
+          tek->parse(scanview);
+        } else {
+          printf("Unknown Token<%s>\n", tok.text.c_str());
+          OrkAssert(false);
+        }
+        break;
+      }
+      default:
+        printf("Invalid TokenClass tok<%s>\n", tok.text.c_str());
+        OrkAssert(false);
+        break;
     }
     if (advance_block)
       itokidx = scanview.blockEnd() + 1;
@@ -411,7 +479,7 @@ Container* LoadFxFromFile(const AssetPath& pth) {
   eFileErr                            = fx_file.Read(scanner._fxbuffer.data(), scanner.ifilelen);
   scanner._fxbuffer[scanner.ifilelen] = 0;
   ///////////////////////////////////
-  scanner.scan();
+  performScan(scanner);
   ///////////////////////////////////
   GlSlFxParser parser(pth.c_str(), scanner);
   auto pcont = new Container(pth.c_str());
@@ -432,7 +500,7 @@ Container* LoadFxFromText(const std::string& name, const std::string& shadertext
   memcpy(scanner._fxbuffer.data(), shadertext.c_str(), scanner.ifilelen);
   scanner._fxbuffer[scanner.ifilelen] = 0;
   ///////////////////////////////////
-  scanner.scan();
+  performScan(scanner);
   ///////////////////////////////////
   GlSlFxParser parser(name, scanner);
   auto pcont = new Container(name);

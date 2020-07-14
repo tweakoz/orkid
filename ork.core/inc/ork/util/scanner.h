@@ -82,6 +82,8 @@ struct Scanner {
   /////////////////////////////////////////
   const Token* token(size_t i) const;
   /////////////////////////////////////////
+  void discardTokensOfClass(int tokclass);
+  /////////////////////////////////////////
   const size_t _kcapacity;
   std::vector<char> _fxbuffer;
   size_t ifilelen;
