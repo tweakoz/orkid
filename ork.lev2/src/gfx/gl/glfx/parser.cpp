@@ -411,7 +411,7 @@ Container* LoadFxFromFile(const AssetPath& pth) {
   eFileErr                            = fx_file.Read(scanner._fxbuffer.data(), scanner.ifilelen);
   scanner._fxbuffer[scanner.ifilelen] = 0;
   ///////////////////////////////////
-  scanner.Scan();
+  scanner.scan();
   ///////////////////////////////////
   GlSlFxParser parser(pth.c_str(), scanner);
   auto pcont = new Container(pth.c_str());
@@ -432,7 +432,7 @@ Container* LoadFxFromText(const std::string& name, const std::string& shadertext
   memcpy(scanner._fxbuffer.data(), shadertext.c_str(), scanner.ifilelen);
   scanner._fxbuffer[scanner.ifilelen] = 0;
   ///////////////////////////////////
-  scanner.Scan();
+  scanner.scan();
   ///////////////////////////////////
   GlSlFxParser parser(name, scanner);
   auto pcont = new Container(name);

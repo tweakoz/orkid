@@ -7,6 +7,20 @@ File::File()
     : _scanner("") {
 }
 
+enum class TokenClass {
+  SECTION = 1,
+  IDENTIFIER,
+  TIMESTAMP,
+  BITVECTOR,
+  NUMBER,
+  OPENBRACKET,
+  CLOSEBRACKET,
+  COLON,
+  WHITESPACE,
+  NEWLINE,
+  UNKNOWN = 65535,
+};
+
 void File::parse(ork::file::Path& inppath) {
 
   ::ork::File vcdfile(inppath, EFM_READ);
@@ -21,7 +35,19 @@ void File::parse(ork::file::Path& inppath) {
   _scanner.ifilelen                 = length;
   _scanner._quotedstrings           = false;
 
-  _scanner.Scan();
+  _scanner.addRule("$[a-z]+", int(TokenClass::SECTION));
+  _scanner.addRule("[bB][0-1]+", int(TokenClass::BITVECTOR));
+  _scanner.addRule("[a-zA-Z_]+[a-zA-Z0-9_]+", int(TokenClass::IDENTIFIER));
+  _scanner.addRule("#[0-9]+", int(TokenClass::TIMESTAMP));
+  _scanner.addRule("[0-9]+", int(TokenClass::NUMBER));
+  _scanner.addRule("\\[", int(TokenClass::OPENBRACKET));
+  _scanner.addRule("\\]", int(TokenClass::CLOSEBRACKET));
+  _scanner.addRule(":", int(TokenClass::COLON));
+  _scanner.addRule("\\s+", int(TokenClass::WHITESPACE));
+  _scanner.addRule("\\n", int(TokenClass::NEWLINE));
+  _scanner.buildStateMachine();
+
+  _scanner.scan();
 
   size_t numtoks = _scanner.tokens.size();
 
@@ -43,103 +69,110 @@ void File::parse(ork::file::Path& inppath) {
   while (index < numtoks) {
     auto& tok     = _scanner.tokens[index];
     auto& toktext = tok.text;
-    ///////////////////////////////
-    if (toktext == "\n") {
-      index++;
-    }
-    ///////////////////////////////
-    else if (toktext == "$date") {
-      printf("GotDate\n");
-      size_t end = find_end(index);
-      if (end)
-        index = end;
-    }
-    ///////////////////////////////
-    else if (toktext == "$version") {
-      printf("GotVersion\n");
-      size_t end = find_end(index);
-      if (end)
-        index = end;
-    }
-    ///////////////////////////////
-    else if (toktext == "$timescale") {
-      printf("GotTimeScale\n");
-      size_t end = find_end(index);
-      if (end)
-        index = end;
-    }
-    ///////////////////////////////
-    else if (toktext == "$scope") {
-      printf("GotScope\n");
-      size_t end = find_end(index);
-      if (end)
-        index = end;
-    }
-    ///////////////////////////////
-    else if (toktext == "$upscope") {
-      printf("GotUpScope\n");
-      size_t end = find_end(index);
-      if (end)
-        index = end;
-    }
-    ///////////////////////////////
-    else if (toktext == "$var") {
-      auto varname = _scanner.tokens[index + 3];
-      printf("GotVar<%s>\n", varname.text.c_str());
-      varset.insert(varname.text);
-      size_t end = find_end(index);
-      if (end)
-        index = end;
-    }
-    ///////////////////////////////
-    else if (toktext == "$enddefinitions") {
-      printf("GotEndDefinitions\n");
-      size_t end = find_end(index);
-      if (end)
-        index = end;
-    }
-    ///////////////////////////////
-    else if (toktext == "$dumpvars") {
-      size_t end = find_end(index);
-      printf("GotDumpVars index<%zu> end<%zu>\n", index, end);
-      if (end)
-        index = end;
-    }
-    ///////////////////////////////
-    else if (toktext[0] == '#' and tok.icol == 0) {
-      printf("GotTimeSpec<%s>\n", toktext.c_str());
-      index += 2;
-    }
-    ///////////////////////////////
-    else if (toktext[0] == '0' and tok.icol == 0) {
-      printf("GotZero index<%zu>\n", index);
-      if (toktext.length() == 1) {
-        index += 2;
-      } else {
-        index += 1;
+    switch (TokenClass(tok._class)) {
+      case TokenClass::SECTION: {
+        ///////////////////////////////
+        if (toktext == "$date") {
+          printf("DATE\n");
+        }
+        ///////////////////////////////
+        else if (toktext == "$version") {
+          printf("VERSION\n");
+        }
+        ///////////////////////////////
+        else if (toktext == "$timescale") {
+          auto val  = _scanner.tokens[index + 2].text;
+          auto unit = _scanner.tokens[index + 3].text;
+          int ival  = atoi(val.c_str());
+          printf("index<%zu> TIMESCALE %s %s\n", index, val.c_str(), unit.c_str());
+        }
+        ///////////////////////////////
+        else if (toktext == "$scope") {
+          printf("index<%zu> SCOPE\n", index);
+        }
+        ///////////////////////////////
+        else if (toktext == "$upscope") {
+          printf("index<%zu> UPSCOPE\n", index);
+        }
+        ///////////////////////////////
+        else if (toktext == "$var") {
+          auto varname = _scanner.tokens[index + 6];
+          printf("index<%zu> VARDECL: %s\n", index, varname.text.c_str());
+          varset.insert(varname.text);
+        }
+        ///////////////////////////////
+        else if (toktext == "$enddefinitions") {
+          printf("index<%zu> ENDDEFINITIONS\n", index);
+        }
+        ///////////////////////////////
+        else if (toktext == "$dumpvars") {
+          printf("index<%zu> DUMPVARS\n", index);
+        } else {
+          OrkAssert(false);
+        }
+        size_t end = find_end(index);
+        if (end)
+          index = end;
+        break;
       }
-    }
-    ///////////////////////////////
-    else if (toktext[0] == '1' and tok.icol == 0) {
-      printf("GotOne index<%zu>\n", index);
-      if (toktext.length() == 1) {
-        index += 2;
-      } else {
-        index += 1;
+      case TokenClass::IDENTIFIER: {
+        auto it = varset.find(toktext);
+        if (it == varset.end()) {
+          printf("IDENTIFIER<%s> not found\n", toktext.c_str());
+          OrkAssert(false);
+        }
+        index++;
+        break;
       }
-    }
-    ///////////////////////////////
-    else if (toktext[0] == 'b' and tok.icol == 0) {
-      printf("GotBin index<%zu> toktext<%s>\n", index, toktext.c_str());
-      index += 2;
-    }
-    ///////////////////////////////
-    else {
-      auto it = varset.find(toktext);
-      OrkAssert(it != varset.end());
-      index++;
+      case TokenClass::WHITESPACE:
+        index++;
+        break;
+      case TokenClass::NEWLINE:
+        index++;
+        break;
+      case TokenClass::OPENBRACKET:
+        index++;
+        break;
+      case TokenClass::CLOSEBRACKET:
+        index++;
+        break;
+      case TokenClass::COLON:
+        index++;
+        break;
+      case TokenClass::NUMBER: {
+        auto it = varset.find(toktext);
+        if (it != varset.end()) {
+          printf("index<%zu> IDENTIFIER(n): %s\n", index, toktext.c_str());
+        } else {
+          printf("index<%zu>  NUMBER: %s\n", index, toktext.c_str());
+        }
+        index += 2;
+        break;
+      }
+      case TokenClass::BITVECTOR:
+        printf("index<%zu> BITVECTOR<%s>\n", index, toktext.c_str());
+        index += 2;
+        break;
+      case TokenClass::TIMESTAMP:
+        printf("index<%zu> TIMESTAMP<%s>\n", index, toktext.c_str());
+        index += 2;
+        break;
+      case TokenClass::UNKNOWN: {
+        auto it = varset.find(toktext);
+        if (it != varset.end()) {
+          printf("index<%zu> IDENTIFIER(u): %s\n", index, toktext.c_str());
+        } else {
+          printf("index<%zu>  UNKNOWN: %s\n", index, toktext.c_str());
+          OrkAssert(false);
+        }
+        index++;
+        break;
+      }
+      default:
+        OrkAssert(false);
+        break;
     }
   }
-} // namespace ork::hdl::vcd
+}
 
 } // namespace ork::hdl::vcd

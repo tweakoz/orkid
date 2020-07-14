@@ -220,6 +220,13 @@ size_t ScannerView::globalTokenIndex(size_t i) const {
   return ret;
 }
 
+void Scanner::addRule(std::string rule, int state) {
+  _rules.push(rule, state);
+}
+void Scanner::buildStateMachine() {
+  lexertl::generator::build(_rules, _statemachine);
+}
+
 Scanner::Scanner(
     std::string blockregex, //
     size_t capacity)
@@ -229,187 +236,23 @@ Scanner::Scanner(
     , _blockregex(blockregex)
     , _kcapacity(capacity) {
   _fxbuffer.resize(capacity);
-
-  _rules.push("[0-9]+", 1);
-  _rules.push("[a-z]+", 2);
-  lexertl::generator::build(_rules, _statemachine);
 }
 
-void Scanner::FlushToken() {
-  if (cur_token.text.length())
-    tokens.push_back(cur_token);
-  assert(cur_token.text != ".0");
-  cur_token.text  = "";
-  cur_token.iline = 0;
-  cur_token.icol  = 0;
-  ss              = ESTA_NONE;
-}
 /////////////////////////////////////////
-void Scanner::AddToken(const Token& tok) {
-  assert(tok.text != ".0");
-  tokens.push_back(tok);
-  cur_token.text  = "";
-  cur_token.iline = 0;
-  cur_token.icol  = 0;
-  ss              = ESTA_NONE;
-}
-/////////////////////////////////////////
-void Scanner::Scan() {
+void Scanner::scan() {
+  std::string as_str = _fxbuffer.data();
+  lexertl::siterator iter(as_str.begin(), as_str.end(), _statemachine);
+  lexertl::siterator end;
 
-  int iscanst_cpp_comment = 0;
-  int iscanst_c_comment   = 0;
-  int iscanst_whitespace  = 0;
-  int iscanst_dqstring    = 0;
-  int iscanst_sqstring    = 0;
-
-  int iline = 0;
-  int icol  = 0;
-
-  int itoksta_line = 0;
-  int itoksta_colm = 0;
-
-  for (size_t i = 0; i < ifilelen; i++) {
-    char PCH = (i == 0) ? 0 : _fxbuffer[i - 1];
-    char CH  = _fxbuffer[i];
-    char NCH = (i < ifilelen - 1) ? _fxbuffer[i + 1] : 0;
-
-    char ch_buf[2];
-    ch_buf[0] = CH;
-    ch_buf[1] = 0;
-
-    bool benctok = false;
-
-    int adv_col = 1;
-    int adv_lin = 0;
-
-    switch (ss) {
-      case ESTA_NONE:
-        if ((CH == '/') && (NCH == '/')) {
-          ss = ESTA_CPP_COMMENT;
-          iscanst_cpp_comment++;
-          i++;
-        } else if ((CH == '/') && (NCH == '*')) {
-          ss = ESTA_C_COMMENT;
-          iscanst_c_comment++;
-          i++;
-        } else if (CH == '\'') {
-          if (_quotedstrings) {
-            ss      = ESTA_SQ_STRING;
-            benctok = true;
-          } else {
-            AddToken(Token("\'", iline, icol));
-          }
-        } else if (CH == '\"') {
-          if (_quotedstrings) {
-            ss      = ESTA_DQ_STRING;
-            benctok = true;
-          } else {
-            AddToken(Token("\"", iline, icol));
-          }
-        } else if (is_spc(CH)) {
-          ss = ESTA_WSPACE;
-        } else if (CH == '\n') {
-          AddToken(Token("\n", iline, icol));
-          adv_lin = 1;
-        } else if (
-            CH == '.'           //
-            and not is_num(PCH) //
-            and not is_num(NCH)) {
-          AddToken(Token(".", iline, icol));
-        } else if (is_septok(CH)) {
-          if (((CH == '=') && (NCH == '=')) || ((CH == '!') && (NCH == '=')) || ((CH == '*') && (NCH == '=')) ||
-              ((CH == '/') && (NCH == '=')) || ((CH == '&') && (NCH == '=')) || ((CH == '|') && (NCH == '=')) ||
-              ((CH == '&') && (NCH == '&')) || ((CH == '|') && (NCH == '|')) || ((CH == '<') && (NCH == '<')) ||
-              ((CH == '>') && (NCH == '>')) || ((CH == '<') && (NCH == '=')) || ((CH == '>') && (NCH == '=')) ||
-              ((CH == ':') && (NCH == ':')) || ((CH == '$') && (NCH == '(')) || ((CH == '+') && (NCH == '+')) ||
-              ((CH == '-') && (NCH == '-')) || ((CH == '+') && (NCH == '=')) || ((CH == '-') && (NCH == '=')) //
-          ) {
-            char ch_buf2[3];
-            ch_buf2[0] = CH;
-            ch_buf2[1] = NCH;
-            ch_buf2[2] = 0;
-            AddToken(Token(ch_buf2, iline, icol));
-            i++;
-          } else
-            AddToken(Token(ch_buf, iline, icol));
-
-        } else {
-          ss              = ESTA_CONTENT;
-          benctok         = true;
-          cur_token.iline = iline;
-          cur_token.icol  = icol;
-        }
-        break;
-      case ESTA_C_COMMENT:
-        if ((CH == '/') && (PCH == '*')) {
-          iscanst_c_comment--;
-          if (iscanst_c_comment == 0)
-            ss = ESTA_NONE;
-        }
-        break;
-      case ESTA_CPP_COMMENT:
-        if (CH == '/') {
-        }
-        if (CH == '\n') {
-          ss      = ESTA_NONE;
-          adv_lin = 1;
-        }
-        break;
-      case ESTA_DQ_STRING:
-        if (CH == '\"') {
-          cur_token.text += ch_buf;
-          FlushToken();
-        } else {
-          benctok = true;
-        }
-        break;
-      case ESTA_SQ_STRING:
-        if (CH == '\'') {
-          cur_token.text += ch_buf;
-          FlushToken();
-        } else {
-          benctok = true;
-        }
-        break;
-      case ESTA_WSPACE:
-        if ((false == is_spc(CH)) && (CH != '\n')) {
-          ss = ESTA_NONE;
-          i--;
-        }
-        break;
-      case ESTA_CONTENT: {
-        if (CH == '.' and is_num(PCH)) {
-          benctok = true;
-        } else if (PCH == '.' and is_num(CH)) {
-          benctok = true;
-        } else if (is_septok(CH)) {
-          FlushToken();
-          i--; // put sep back
-        } else if (CH == '\n') {
-          FlushToken();
-          adv_lin = 1;
-        } else if (is_spc(CH)) {
-          FlushToken();
-        } else if (CH == '.') {
-          FlushToken();
-          i--; // put . back
-        } else if (is_content(CH)) {
-          benctok = true;
-        }
-        break;
-      }
-    }
-    if (benctok) {
-      cur_token.text += ch_buf;
-    }
-    if (adv_col) {
-      icol += adv_col;
-    }
-    if (adv_lin) {
-      iline++;
-      icol = 0;
-    }
+  int index = 0;
+  for (; iter != end; ++iter) {
+    auto tok   = Token(iter->str(), 0, 0);
+    tok._class = iter->id;
+    tokens.push_back(tok);
+    std::cout << "index<" << index << "> Id: " << iter->id << ", Token: '" << iter->str() << "'\n";
+    index++;
   }
+  // OrkAssert(false);
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
 } // namespace ork

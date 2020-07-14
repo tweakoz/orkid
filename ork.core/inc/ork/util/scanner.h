@@ -12,6 +12,7 @@ namespace ork {
 struct Token {
   int iline;
   int icol;
+  int _class = -1;
   std::string text;
   Token(const std::string& txt, int il, int ic)
       : text(txt)
@@ -68,9 +69,10 @@ struct Scanner {
       std::string blockregex, //
       size_t capacity = 64 << 10);
   /////////////////////////////////////////
-  void FlushToken();
-  void AddToken(const Token& tok);
-  void Scan();
+  void addRule(std::string rule, int state);
+  void buildStateMachine();
+  void scan();
+  /////////////////////////////////////////
   inline size_t length() const {
     return _fxbuffer.size();
   }

@@ -61,7 +61,7 @@ void ConfigNode::parse(const ScannerView& view) {
     importscanner->resize(importscanner->ifilelen + 1);
     eFileErr                                          = fx_file.Read(importscanner->_fxbuffer.data(), importscanner->ifilelen);
     importscanner->_fxbuffer[importscanner->ifilelen] = 0;
-    importscanner->Scan();
+    importscanner->scan();
     ///////////////////////////////////
     auto childparser = new GlSlFxParser(imppath.c_str(), *importscanner);
     _imports.push_back(childparser);
