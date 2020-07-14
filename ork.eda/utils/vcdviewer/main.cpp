@@ -5,11 +5,13 @@
 #include <ork/lev2/ui/viewport.h>
 #include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/lev2/ui/context.h>
+#include <queue>
 #include "harness.h"
 
 using namespace std::string_literals;
 using namespace ork;
 using namespace ork::hdl;
+using namespace ork::hdl::vcd;
 using namespace ork::lev2;
 using namespace ork::ui;
 
@@ -44,6 +46,27 @@ int main(int argc, char** argv) {
   l_header->setMargin(4);
   l_status->setMargin(2);
   //////////////////////////////////////
+  // recursive descent into scoped-signals
+  //////////////////////////////////////
+  std::stack<scope_ptr_t> scope_stack;
+  std::stack<std::string> scopename_stack;
+  scope_stack.push(vcdfile._root);
+  scopename_stack.push("");
+  while (not scope_stack.empty()) {
+    auto front   = scope_stack.top();
+    auto topname = scopename_stack.top();
+
+    printf("visiting scope<%s>\n", topname.c_str());
+
+    scope_stack.pop();
+    scopename_stack.pop();
+    for (auto ch : front->_child_scopes) {
+      scope_stack.push(ch.second);
+      auto chname = topname + "/" + ch.second->_name;
+      scopename_stack.push(chname);
+    }
+  }
+  //////////////////////////////////////
   auto cg1 = root_layout->fixedHorizontalGuide(-32); // 1
   //////////////////////////////////////
   l_header->top()->anchorTo(root_layout->top());     // 2,3
@@ -56,7 +79,7 @@ int main(int argc, char** argv) {
   l_status->bottom()->anchorTo(root_layout->bottom()); // 20,21
   l_status->right()->anchorTo(root_layout->right());   // 22
   //////////////////////////////////////
-  root_layout->dump();
+  // root_layout->dump();
   // exit(0);
   //////////////////////////////////////
   app->setRefreshPolicy({EREFRESH_FIXEDFPS, 60});

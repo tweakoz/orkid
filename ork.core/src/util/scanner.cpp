@@ -249,7 +249,7 @@ void Scanner::scan() {
     auto tok   = Token(iter->str(), 0, 0);
     tok._class = iter->id;
     tokens.push_back(tok);
-    std::cout << "index<" << index << "> Id: " << iter->id << ", Token: '" << iter->str() << "'\n";
+    // std::cout << "index<" << index << "> Id: " << iter->id << ", Token: '" << iter->str() << "'\n";
     index++;
   }
   // OrkAssert(false);
