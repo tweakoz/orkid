@@ -17,14 +17,14 @@ using sample_ptr_t = std::shared_ptr<Sample>;
 using file_ptr_t   = std::shared_ptr<File>;
 
 constexpr size_t kmaxbitlen = 256;
+constexpr size_t knumwords  = kmaxbitlen >> 6;
 struct Sample {
   Sample() {
-    _packedbits[0] = 0;
-    _packedbits[1] = 0;
-    _packedbits[2] = 0;
-    _packedbits[3] = 0;
+    for (int i = 0; i < knumwords; i++)
+      _packedbits[i] = 0;
   }
-  uint64_t _packedbits[4];
+  void write(int bit, bool value);
+  uint64_t _packedbits[knumwords];
   int _numbits = 0;
 };
 

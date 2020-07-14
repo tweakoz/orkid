@@ -182,7 +182,7 @@ void File::parse(ork::file::Path& inppath) {
               printf("mushed VALUE: %c\n", toktext[0]);
               cursample          = Sample();
               cursample._numbits = 1;
-              cursample._packedbits[3] |= (toktext[0] == '1');
+              cursample.write(0, (toktext[0] == '1'));
               auto key = toktext.substr(1);
               auto it  = _signals_by_shortname.find(key);
               OrkAssert(it != _signals_by_shortname.end());
@@ -218,8 +218,7 @@ void File::parse(ork::file::Path& inppath) {
               break;
             case '1': {
               int abit = (numbitsinsample - 1) - ibit;
-              int awrd = abit >> 6;
-              cursample._packedbits[awrd] |= (1 << abit);
+              cursample.write(abit, true);
               break;
             }
             default:
@@ -245,6 +244,15 @@ void File::parse(ork::file::Path& inppath) {
         OrkAssert(false);
         break;
     }
+  }
+}
+
+void Sample::write(int bit, bool value) {
+  int awrd = (knumwords - 1) - (bit >> 6);
+  if (value) {
+    _packedbits[awrd] |= (1 << bit);
+  } else {
+    _packedbits[awrd] &= ~(1 << bit);
   }
 }
 
