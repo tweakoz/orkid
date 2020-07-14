@@ -73,7 +73,7 @@ void File::parse(ork::file::Path& inppath) {
     }
     return 0;
   };
-  std::set<std::string> varset;
+  std::map<std::string, std::string> varmap;
   ////////////////////////////////////
   ParseState parse_state = ParseState::INIT;
   ////////////////////////////////////
@@ -110,9 +110,26 @@ void File::parse(ork::file::Path& inppath) {
         }
         ///////////////////////////////
         else if (toktext == "$var") {
-          auto varname = _scanner.tokens[index + 6];
-          printf("index<%zu> VARDECL: %s\n", index, varname.text.c_str());
-          varset.insert(varname.text);
+          auto vartype  = _scanner.tokens[index + 2];
+          auto varwidth = _scanner.tokens[index + 4];
+          auto varshort = _scanner.tokens[index + 6];
+          auto varlong  = _scanner.tokens[index + 8];
+          printf(
+              "index<%zu> VARDECL: %s -> %s\n", //
+              index,
+              varshort.text.c_str(),
+              varlong.text.c_str());
+          varmap[varshort.text] = varlong.text;
+
+          auto sig         = std::make_shared<Signal>();
+          sig->_shortname  = varshort.text;
+          sig->_longname   = varlong.text;
+          sig->_type       = vartype.text;
+          sig->_bit_width  = atoi(varwidth.text.c_str());
+          sig->_word_width = sig->_bit_width >> 3;
+
+          _signals_by_shortname[varshort.text] = sig;
+
         }
         ///////////////////////////////
         else if (toktext == "$enddefinitions") {
@@ -130,15 +147,6 @@ void File::parse(ork::file::Path& inppath) {
         parse_state = ParseState::VALUE;
         break;
       }
-        /*    case TokenClass::IDENTIFIER: {
-              auto it = varset.find(toktext);
-              if (it == varset.end()) {
-                printf("IDENTIFIER<%s> not found\n", toktext.c_str());
-                OrkAssert(false);
-              }
-              index++;
-              break;
-            }*/
       case TokenClass::WHITESPACE:
         index++;
         break;
@@ -148,9 +156,10 @@ void File::parse(ork::file::Path& inppath) {
       case TokenClass::PRINTABLE: {
         switch (parse_state) {
           case ParseState::KEY: {
-            auto it = varset.find(toktext);
-            OrkAssert(it != varset.end());
-            printf("index<%zu> KEY: %s\n", index, toktext.c_str());
+            auto it = _signals_by_shortname.find(toktext);
+            OrkAssert(it != _signals_by_shortname.end());
+            auto sig = it->second;
+            printf("index<%zu> SIG<%s:%d:%s>\n", index, sig->_type.c_str(), sig->_bit_width, sig->_longname.c_str());
             parse_state = ParseState::VALUE;
             break;
           }
@@ -164,9 +173,10 @@ void File::parse(ork::file::Path& inppath) {
             if (starts_bool) {
               printf("mushed VALUE: %c\n", toktext[0]);
               auto key = toktext.substr(1);
-              printf("mushed KEY: %s\n", key.c_str());
-              auto it = varset.find(key);
-              OrkAssert(it != varset.end());
+              auto it  = _signals_by_shortname.find(key);
+              OrkAssert(it != _signals_by_shortname.end());
+              auto sig = it->second;
+              printf("mushed SIG<%s:%d:%s>\n", sig->_type.c_str(), sig->_bit_width, sig->_longname.c_str());
               parse_state = ParseState::VALUE;
             } else {
               OrkAssert(false);

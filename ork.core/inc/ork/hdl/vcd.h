@@ -15,13 +15,16 @@ using file_ptr_t   = std::shared_ptr<File>;
 
 struct Signal {
 
-  std::string type = "none";
-  int _bit_width   = 0;
-  int _word_width  = 0;
+  std::string _type      = "none";
+  std::string _shortname = "";
+  std::string _longname  = "";
+  int _bit_width         = 0;
+  int _word_width        = 0;
   std::vector<uint64_t> _storage;
 };
 
 struct Scope {
+  std::map<std::string, signal_ptr_t> _signals_by_shortname;
   std::map<std::string, scope_ptr_t> _child_scopes;
 };
 
