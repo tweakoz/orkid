@@ -58,9 +58,9 @@ void ConfigNode::parse(const ScannerView& view) {
     File fx_file(imppath.c_str(), EFM_READ);
     OrkAssert(fx_file.IsOpen());
     EFileErrCode eFileErr = fx_file.GetLength(importscanner->ifilelen);
-    OrkAssert(importscanner->ifilelen < importscanner->kmaxfxblen);
-    eFileErr                                         = fx_file.Read(importscanner->fxbuffer, importscanner->ifilelen);
-    importscanner->fxbuffer[importscanner->ifilelen] = 0;
+    importscanner->resize(importscanner->ifilelen + 1);
+    eFileErr                                          = fx_file.Read(importscanner->_fxbuffer.data(), importscanner->ifilelen);
+    importscanner->_fxbuffer[importscanner->ifilelen] = 0;
     importscanner->Scan();
     ///////////////////////////////////
     auto childparser = new GlSlFxParser(imppath.c_str(), *importscanner);

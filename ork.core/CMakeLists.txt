@@ -22,6 +22,7 @@ file(GLOB_RECURSE src_rtti ${SRCD}/rtti/*.cpp)
 file(GLOB_RECURSE src_stream ${SRCD}/stream/*.cpp)
 file(GLOB_RECURSE src_util ${SRCD}/util/*.cpp)
 file(GLOB_RECURSE src_gfx ${SRCD}/gfx/*.cpp)
+file(GLOB_RECURSE src_hdl ${SRCD}/hdl/*.cpp)
 file(GLOB_RECURSE src_python ${SRCD}/python/*.cpp)
 file(GLOB_RECURSE src_test ${SRCD}/test/*.cpp)
 
@@ -29,7 +30,7 @@ set( orksrcs ${src_application} ${src_asset} ${src_dataflow} )
 list( APPEND orksrcs ${src_event} ${src_file} ${src_kernel} )
 list( APPEND orksrcs ${src_math} ${src_object} ${src_reflect} )
 list( APPEND orksrcs ${src_rtti} ${src_stream} ${src_util} )
-list( APPEND orksrcs ${src_gfx} ${src_python} ${src_test} )
+list( APPEND orksrcs ${src_gfx} ${src_hdl} ${src_python} ${src_test} )
 
 add_compile_options(-mavx)
 

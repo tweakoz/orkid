@@ -1,6 +1,9 @@
 #pragma once
 
 #include <regex>
+#include <lexertl/generator.hpp>
+#include <lexertl/lookup.hpp>
+#include <lexertl/iterator.hpp>
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -52,7 +55,7 @@ inline bool is_spc(char ch) {
 inline bool is_septok(char ch) {
   return (ch == ';') || (ch == ':') || (ch == '{') || (ch == '}') || (ch == '[') || (ch == ']') || (ch == '(') || (ch == ')') ||
          (ch == '*') || (ch == '+') || (ch == '-') || (ch == '=') || (ch == ',') || (ch == '?') || (ch == '%') || (ch == '<') ||
-         (ch == '>') || (ch == '&') || (ch == '|') || (ch == '!') || (ch == '/');
+         (ch == '>') || (ch == '&') || (ch == '|') || (ch == '!') || (ch == '/') || (ch == '#');
 }
 /////////////////////////////////////////
 inline bool is_content(char ch) {
@@ -61,21 +64,33 @@ inline bool is_content(char ch) {
 /////////////////////////////////////////
 
 struct Scanner {
-  Scanner(std::string blockregex);
+  Scanner(
+      std::string blockregex, //
+      size_t capacity = 64 << 10);
   /////////////////////////////////////////
   void FlushToken();
   void AddToken(const Token& tok);
   void Scan();
+  inline size_t length() const {
+    return _fxbuffer.size();
+  }
+  inline void resize(size_t length) {
+    _fxbuffer.resize(length);
+  }
   /////////////////////////////////////////
   const Token* token(size_t i) const;
   /////////////////////////////////////////
-  static const int kmaxfxblen = 64 << 10;
-  char fxbuffer[kmaxfxblen];
+  const size_t _kcapacity;
+  std::vector<char> _fxbuffer;
   size_t ifilelen;
   std::vector<Token> tokens;
   std::string _blockregex;
   Token cur_token;
   scan_state ss;
+  bool _quotedstrings = true;
+
+  lexertl::rules _rules;
+  lexertl::state_machine _statemachine;
 };
 
 struct ScanViewFilter {

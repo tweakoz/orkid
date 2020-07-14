@@ -220,11 +220,19 @@ size_t ScannerView::globalTokenIndex(size_t i) const {
   return ret;
 }
 
-Scanner::Scanner(std::string blockregex)
+Scanner::Scanner(
+    std::string blockregex, //
+    size_t capacity)
     : ss(ESTA_NONE)
     , cur_token("", 0, 0)
     , ifilelen(0)
-    , _blockregex(blockregex) {
+    , _blockregex(blockregex)
+    , _kcapacity(capacity) {
+  _fxbuffer.resize(capacity);
+
+  _rules.push("[0-9]+", 1);
+  _rules.push("[a-z]+", 2);
+  lexertl::generator::build(_rules, _statemachine);
 }
 
 void Scanner::FlushToken() {
@@ -260,12 +268,10 @@ void Scanner::Scan() {
   int itoksta_line = 0;
   int itoksta_colm = 0;
 
-  bool b_in_number = false;
-
   for (size_t i = 0; i < ifilelen; i++) {
-    char PCH = (i == 0) ? 0 : fxbuffer[i - 1];
-    char CH  = fxbuffer[i];
-    char NCH = (i < ifilelen - 1) ? fxbuffer[i + 1] : 0;
+    char PCH = (i == 0) ? 0 : _fxbuffer[i - 1];
+    char CH  = _fxbuffer[i];
+    char NCH = (i < ifilelen - 1) ? _fxbuffer[i + 1] : 0;
 
     char ch_buf[2];
     ch_buf[0] = CH;
@@ -287,17 +293,28 @@ void Scanner::Scan() {
           iscanst_c_comment++;
           i++;
         } else if (CH == '\'') {
-          ss      = ESTA_SQ_STRING;
-          benctok = true;
+          if (_quotedstrings) {
+            ss      = ESTA_SQ_STRING;
+            benctok = true;
+          } else {
+            AddToken(Token("\'", iline, icol));
+          }
         } else if (CH == '\"') {
-          ss      = ESTA_DQ_STRING;
-          benctok = true;
+          if (_quotedstrings) {
+            ss      = ESTA_DQ_STRING;
+            benctok = true;
+          } else {
+            AddToken(Token("\"", iline, icol));
+          }
         } else if (is_spc(CH)) {
           ss = ESTA_WSPACE;
         } else if (CH == '\n') {
           AddToken(Token("\n", iline, icol));
           adv_lin = 1;
-        } else if (CH == '.' and not is_num(PCH) and not is_num(NCH)) {
+        } else if (
+            CH == '.'           //
+            and not is_num(PCH) //
+            and not is_num(NCH)) {
           AddToken(Token(".", iline, icol));
         } else if (is_septok(CH)) {
           if (((CH == '=') && (NCH == '=')) || ((CH == '!') && (NCH == '=')) || ((CH == '*') && (NCH == '=')) ||
@@ -305,7 +322,8 @@ void Scanner::Scan() {
               ((CH == '&') && (NCH == '&')) || ((CH == '|') && (NCH == '|')) || ((CH == '<') && (NCH == '<')) ||
               ((CH == '>') && (NCH == '>')) || ((CH == '<') && (NCH == '=')) || ((CH == '>') && (NCH == '=')) ||
               ((CH == ':') && (NCH == ':')) || ((CH == '$') && (NCH == '(')) || ((CH == '+') && (NCH == '+')) ||
-              ((CH == '-') && (NCH == '-')) || ((CH == '+') && (NCH == '=')) || ((CH == '-') && (NCH == '='))) {
+              ((CH == '-') && (NCH == '-')) || ((CH == '+') && (NCH == '=')) || ((CH == '-') && (NCH == '=')) //
+          ) {
             char ch_buf2[3];
             ch_buf2[0] = CH;
             ch_buf2[1] = NCH;

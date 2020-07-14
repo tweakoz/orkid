@@ -407,9 +407,9 @@ Container* LoadFxFromFile(const AssetPath& pth) {
   File fx_file(pth, EFM_READ);
   OrkAssert(fx_file.IsOpen());
   EFileErrCode eFileErr = fx_file.GetLength(scanner.ifilelen);
-  OrkAssert(scanner.ifilelen < scanner.kmaxfxblen);
-  eFileErr                           = fx_file.Read(scanner.fxbuffer, scanner.ifilelen);
-  scanner.fxbuffer[scanner.ifilelen] = 0;
+  scanner.resize(scanner.ifilelen + 1);
+  eFileErr                            = fx_file.Read(scanner._fxbuffer.data(), scanner.ifilelen);
+  scanner._fxbuffer[scanner.ifilelen] = 0;
   ///////////////////////////////////
   scanner.Scan();
   ///////////////////////////////////
@@ -428,9 +428,9 @@ Container* LoadFxFromText(const std::string& name, const std::string& shadertext
   Scanner scanner(block_regex);
   ///////////////////////////////////
   scanner.ifilelen = shadertext.length();
-  OrkAssert(scanner.ifilelen < scanner.kmaxfxblen);
-  memcpy(scanner.fxbuffer, shadertext.c_str(), scanner.ifilelen);
-  scanner.fxbuffer[scanner.ifilelen] = 0;
+  scanner.resize(scanner.ifilelen + 1);
+  memcpy(scanner._fxbuffer.data(), shadertext.c_str(), scanner.ifilelen);
+  scanner._fxbuffer[scanner.ifilelen] = 0;
   ///////////////////////////////////
   scanner.Scan();
   ///////////////////////////////////
