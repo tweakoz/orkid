@@ -6,6 +6,12 @@
 #include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/lev2/ui/context.h>
 #include <ork/lev2/ui/label.h>
+#include <ork/lev2/gfx/gfxenv.h>
+#include <ork/lev2/gfx/rtgroup.h>
+#include <ork/lev2/gfx/gfxmaterial_ui.h>
+#include <ork/util/hotkey.h>
+#include <ork/lev2/gfx/dbgfontman.h>
+#include <ork/lev2/gfx/gfxprimitives.h>
 #include <queue>
 #include "harness.h"
 
@@ -29,6 +35,81 @@ struct ScopeTrack {
   std::string _name;
   scope_ptr_t _scope;
   std::vector<SignalTrack> _sigtracks;
+};
+
+struct SignalTrackWidget final : public Widget {
+public:
+  SignalTrackWidget(
+      const std::string& name, //
+      fvec4 color,
+      std::string label)
+      : Widget(name)
+      , _color(color)
+      , _label(label) {
+    _textcolor = fvec4(1, 1, 1, 1);
+  }
+  fvec4 _color;
+  fvec4 _textcolor;
+  std::string _label;
+  std::string _font = "i14";
+
+private:
+  void DoDraw(ui::drawevent_constptr_t drwev) override {
+    {
+
+      auto tgt    = drwev->GetTarget();
+      auto fbi    = tgt->FBI();
+      auto mtxi   = tgt->MTXI();
+      auto& primi = lev2::GfxPrimitives::GetRef();
+      auto defmtl = lev2::defaultUIMaterial();
+
+      mtxi->PushUIMatrix();
+      {
+        int ix1, iy1, ix2, iy2, ixc, iyc;
+        LocalToRoot(0, 0, ix1, iy1);
+        ix2 = ix1 + _geometry._w;
+        iy2 = iy1 + _geometry._h;
+        ixc = ix1 + (_geometry._w >> 1);
+        iyc = iy1 + (_geometry._h >> 1);
+
+        defmtl->_rasterstate.SetBlending(lev2::Blending::ALPHA);
+        defmtl->_rasterstate.SetDepthTest(lev2::EDEPTHTEST_OFF);
+        tgt->PushModColor(_color);
+        primi.RenderQuadAtZ(
+            defmtl.get(),
+            tgt,
+            ix1,  // x0
+            ix2,  // x1
+            iy1,  // y0
+            iy2,  // y1
+            0.0f, // z
+            0.0f,
+            1.0f, // u0, u1
+            0.0f,
+            1.0f // v0, v1
+        );
+        tgt->PopModColor();
+
+        int lablen = _label.length();
+        if (lablen) {
+          tgt->PushModColor(_textcolor);
+          ork::lev2::FontMan::PushFont(_font);
+          lev2::FontMan::beginTextBlock(tgt, lablen);
+          int sw = lev2::FontMan::stringWidth(lablen);
+          lev2::FontMan::DrawText(
+              tgt, //
+              ixc - (sw >> 1),
+              iyc - 6,
+              _label.c_str());
+          //
+          lev2::FontMan::endTextBlock(tgt);
+          ork::lev2::FontMan::PopFont();
+          tgt->PopModColor();
+        }
+      }
+      mtxi->PopUIMatrix();
+    }
+  }
 };
 
 int main(int argc, char** argv) {
@@ -58,10 +139,11 @@ int main(int argc, char** argv) {
   //////////////////////////////////////
   auto cg1 = root_layout->fixedHorizontalGuide(-32); // 1
   //////////////////////////////////////
-  l_tracks->top()->anchorTo(root_layout->top());     // 2,3
-  l_tracks->left()->anchorTo(root_layout->left());   // 4,5
-  l_tracks->bottom()->anchorTo(cg1);                 // 6
-  l_tracks->right()->anchorTo(root_layout->right()); // 7,8
+  l_tracks->top()->anchorTo(root_layout->top());       // 2,3
+  l_tracks->left()->anchorTo(root_layout->left());     // 4,5
+  l_tracks->bottom()->anchorTo(cg1);                   // 6
+  l_tracks->right()->anchorTo(root_layout->right());   // 7,8
+  auto selx_guide = l_tracks->fixedVerticalGuide(192); // 1
   //////////////////////////////////////
   l_status->top()->anchorTo(cg1);                      // 18
   l_status->left()->anchorTo(root_layout->left());     // 19
@@ -114,12 +196,26 @@ int main(int argc, char** argv) {
     auto gbot           = l_tracks->proportionalHorizontalGuide(fibot);
     track_guides[i + 1] = gbot;
     auto sigtrack       = flat_sigtracks[i];
-    auto w              = w_tracks._widget->makeChild<Label>(sigtrack._name, fvec4(0), sigtrack._name);
-    auto wl             = w._layout;
+
+    auto label = FormatString("%s[%d]", sigtrack._name.c_str(), sigtrack._signal->_bit_width);
+
+    auto labclr = (i & 1) ? fvec4(0.1, 0.1, 0.1, 1.0) : fvec4(0.2, 0.2, 0.2, 1.0);
+
+    auto w  = w_tracks._widget->makeChild<Label>(sigtrack._name, labclr, label);
+    auto wl = w._layout;
     wl->top()->anchorTo(gtop);
     wl->bottom()->anchorTo(gbot);
     wl->left()->anchorTo(l_tracks->left());
-    wl->right()->anchorTo(l_tracks->right());
+    wl->right()->anchorTo(selx_guide);
+
+    auto trkclr = (i & 1) ? fvec4(0.15, 0.15, 0.15, 1.0) : fvec4(0.25, 0.25, 0.25, 1.0);
+
+    auto t  = w_tracks._widget->makeChild<SignalTrackWidget>(sigtrack._name, trkclr, label);
+    auto tl = t._layout;
+    tl->top()->anchorTo(gtop);
+    tl->bottom()->anchorTo(gbot);
+    tl->left()->anchorTo(selx_guide);
+    tl->right()->anchorTo(l_tracks->right());
   }
   //////////////////////////////////////
   // root_layout->dump();
