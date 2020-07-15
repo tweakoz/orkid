@@ -26,7 +26,8 @@ namespace po = boost::program_options;
 #if defined(__APPLE__)
 namespace ork::lev2 {
 extern bool _macosUseHIDPI;
-}
+extern int G_MSAASAMPLES;
+} // namespace ork::lev2
 #endif
 ///////////////////////////////////////////////////////////////////////////////
 UiTestApp::UiTestApp(int& argc, char** argv)
@@ -37,6 +38,10 @@ UiTestApp::~UiTestApp() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 uitestapp_ptr_t createEZapp(int& argc, char** argv) {
+#if defined(__APPLE__)
+  _macosUseHIDPI = false;
+  G_MSAASAMPLES  = 1;
+#endif
 
   //////////////////////////////////////////////////////////////////////////////
   // boot up debug HUD
