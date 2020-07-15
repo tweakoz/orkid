@@ -52,6 +52,7 @@ struct File {
   scope_ptr_t _root;
   std::map<std::string, scope_ptr_t> _child_scopes;
   std::map<std::string, signal_ptr_t> _signals_by_shortname;
+  std::set<size_t> _timestamps;
 };
 
 } // namespace ork::hdl::vcd

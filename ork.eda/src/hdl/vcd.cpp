@@ -257,6 +257,7 @@ void File::parse(ork::file::Path& inppath) {
         auto timestr  = toktext.substr(1);
         auto timeval  = size_t(atol(timestr.c_str()));
         cur_timestamp = timeval;
+        _timestamps.insert(timeval);
         printf("index<%zu> TIMESTAMP<%zu>\n", index, cur_timestamp);
         parse_state = ParseState::VALUE;
         index++;

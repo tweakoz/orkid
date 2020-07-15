@@ -27,6 +27,12 @@ void TestViewport::DoDraw(ui::drawevent_constptr_t drwev) {
 }
 void TestViewport::onUpdateThreadTick(ui::updatedata_ptr_t updata) {
 }
+struct ViewParams {
+  int _min_timestamp = 0;
+  int _max_timestamp = 0;
+};
+using viewparams_ptr_t = std::shared_ptr<ViewParams>;
+
 struct SignalTrack {
   std::string _name;
   signal_ptr_t _signal;
@@ -40,22 +46,29 @@ struct ScopeTrack {
 struct SignalTrackWidget final : public Widget {
 public:
   SignalTrackWidget(
-      const std::string& name, //
-      fvec4 color,
-      std::string label)
-      : Widget(name)
+      signal_ptr_t sig, //
+      fvec4 color)
+      : Widget("SignalTrackWidget")
       , _color(color)
-      , _label(label) {
+      , _signal(sig) {
     _textcolor = fvec4(1, 1, 1, 1);
   }
   fvec4 _color;
   fvec4 _textcolor;
+  signal_ptr_t _signal;
+  viewparams_ptr_t _viewparams;
   std::string _label;
   std::string _font = "i14";
 
 private:
   void DoDraw(ui::drawevent_constptr_t drwev) override {
     {
+
+      _label = FormatString(
+          "%s[%d] numpts<%zu>", //
+          _signal->_longname.c_str(),
+          _signal->_bit_width,
+          _signal->_samples.size());
 
       auto tgt    = drwev->GetTarget();
       auto fbi    = tgt->FBI();
@@ -169,11 +182,14 @@ int main(int argc, char** argv) {
     scopetrk._scope = front;
 
     for (auto sigitem : front->_signals) {
-      SignalTrack sigtrk;
-      sigtrk._name   = sigitem.second->_longname;
-      sigtrk._signal = sigitem.second;
-      scopetrk._sigtracks.push_back(sigtrk);
-      flat_sigtracks.push_back(sigtrk);
+      auto signal = sigitem.second;
+      if (signal->_samples.size() != 0) {
+        SignalTrack sigtrk;
+        sigtrk._name   = signal->_longname;
+        sigtrk._signal = signal;
+        scopetrk._sigtracks.push_back(sigtrk);
+        flat_sigtracks.push_back(sigtrk);
+      }
     }
     scopetracks.push_back(scopetrk);
     scope_stack.pop();
@@ -184,6 +200,12 @@ int main(int argc, char** argv) {
       scopename_stack.push(chname);
     }
   }
+  //////////////////////////////////////
+  auto vparams            = std::make_shared<ViewParams>();
+  vparams->_min_timestamp = *vcdfile._timestamps.begin();
+  vparams->_max_timestamp = *vcdfile._timestamps.rbegin();
+  printf("min_timestamp<%d>\n", vparams->_min_timestamp);
+  printf("max_timestamp<%d>\n", vparams->_max_timestamp);
   //////////////////////////////////////
   int numsigtracks = flat_sigtracks.size();
   std::vector<anchor::guide_ptr_t> track_guides;
@@ -210,8 +232,9 @@ int main(int argc, char** argv) {
 
     auto trkclr = (i & 1) ? fvec4(0.15, 0.15, 0.15, 1.0) : fvec4(0.25, 0.25, 0.25, 1.0);
 
-    auto t  = w_tracks._widget->makeChild<SignalTrackWidget>(sigtrack._name, trkclr, label);
-    auto tl = t._layout;
+    auto t                 = w_tracks._widget->makeChild<SignalTrackWidget>(sigtrack._signal, trkclr);
+    auto tl                = t._layout;
+    t._widget->_viewparams = vparams;
     tl->top()->anchorTo(gtop);
     tl->bottom()->anchorTo(gbot);
     tl->left()->anchorTo(selx_guide);
