@@ -113,5 +113,12 @@ HandlerResult Context::handleEvent(event_constptr_t ev) {
 bool Context::hasMouseFocus(const Widget* w) const {
   return w == _mousefocuswidget;
 }
+//////////////////////////////////////
+void Context::draw(drawevent_constptr_t drwev) {
+  _top->Draw(drwev);
+  if (_overlayWidget) {
+    _overlayWidget->Draw(drwev);
+  }
+}
 /////////////////////////////////////////////////////////////////////////
 } // namespace ork::ui

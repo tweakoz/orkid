@@ -66,6 +66,24 @@ struct SignalTrackWidget final : public Widget {
   bool _vbdirty     = true;
   DynamicVertexBuffer<vtx_t> _vtxbuf;
   int _numvertices = 0;
+
+  ///////////////////////////////////////////////////////////////////////////////
+  HandlerResult DoOnUiEvent(event_constptr_t evptr) override {
+    auto uictx = evptr->_uicontext;
+    switch (evptr->_eventcode) {
+      case EventCode::MOUSE_ENTER:
+        printf("enter trakwidg<%p>\n", this);
+        uictx->_overlayWidget = nullptr;
+        break;
+      case EventCode::MOUSE_LEAVE:
+        uictx->_overlayWidget = nullptr;
+        break;
+      default:
+        break;
+    };
+    return HandlerResult();
+  }
+
   void DoDraw(ui::drawevent_constptr_t drwev) override {
     {
 

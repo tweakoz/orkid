@@ -125,7 +125,7 @@ uitestapp_ptr_t createEZapp(int& argc, char** argv) {
     compositorimpl->pushCPD(*CPD);
     context->beginFrame();
     mtxi->PushUIMatrix();
-    qtapp->_ezviewport->_topLayoutGroup->Draw(drwev);
+    qtapp->_uicontext->draw(drwev);
     mtxi->PopUIMatrix();
     context->endFrame();
     ////////////////////////////////////////////////////
@@ -135,7 +135,8 @@ uitestapp_ptr_t createEZapp(int& argc, char** argv) {
   qtapp->onResize([=](int w, int h) { //
     // printf("GOTRESIZE<%d %d>\n", w, h);
     qtapp->_ezviewport->SetSize(w, h);
-    qtapp->_ezviewport->_topLayoutGroup->SetSize(w, h);
+    qtapp->_uicontext->_top->SetSize(w, h);
+    // qtapp->_ezviewport->_topLayoutGroup->SetSize(w, h);
   });
   //////////////////////////////////////////////////////////
   const int64_t trackMAX = (4095 << 16);
