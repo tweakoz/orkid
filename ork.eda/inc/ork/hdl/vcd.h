@@ -24,6 +24,7 @@ struct Sample {
       _packedbits[i] = 0;
   }
   void write(int bit, bool value);
+  bool read(int bit) const;
   uint64_t _packedbits[knumwords];
   int _numbits = 0;
 };

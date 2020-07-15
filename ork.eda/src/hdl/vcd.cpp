@@ -280,4 +280,9 @@ void Sample::write(int bit, bool value) {
   }
 }
 
+bool Sample::read(int bit) const {
+  int awrd = (knumwords - 1) - (bit >> 6);
+  return _packedbits[awrd] & (1 << bit);
+}
+
 } // namespace ork::hdl::vcd

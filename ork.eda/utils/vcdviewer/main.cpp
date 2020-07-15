@@ -65,6 +65,7 @@ struct SignalTrackWidget final : public Widget {
   std::string _font = "i14";
   bool _vbdirty     = true;
   DynamicVertexBuffer<vtx_t> _vtxbuf;
+  int _numvertices = 0;
   void DoDraw(ui::drawevent_constptr_t drwev) override {
     {
 
@@ -81,6 +82,8 @@ struct SignalTrackWidget final : public Widget {
       auto& primi = lev2::GfxPrimitives::GetRef();
       auto defmtl = lev2::defaultUIMaterial();
 
+      bool is_1bit = _signal->_bit_width == 1;
+
       ////////////////////////////////
       if (_vbdirty) {
         _numsamples = _signal->_samples.size();
@@ -89,17 +92,36 @@ struct SignalTrackWidget final : public Widget {
         vw.Lock(
             tgt, //
             &_vtxbuf,
-            _numsamples * 2);
+            1 << 20);
+        _numvertices = 0;
+        auto add_vtx = [&](uint64_t timestamp, float value, uint32_t color) {
+          float fx = float(timestamp);
+          vtx_t vtx;
+          vtx._position = fvec3(fx, value, 0.0f);
+          vtx._color    = color;
+          vw.AddVertex(vtx);
+          _numvertices++;
+        };
+
+        uint64_t prevtimest     = _signal->_samples.begin()->first;
+        sample_ptr_t prevsample = _signal->_samples.begin()->second;
 
         for (auto sitem : _signal->_samples) {
-          int timestamp = sitem.first;
-          float fx      = float(timestamp);
-          vtx_t vtx;
-          vtx._position = fvec3(fx, 0.0, 0.0f);
-          vtx._color    = 0x00ff00ff;
-          vw.AddVertex(vtx);
-          vtx._position = fvec3(fx, 1.0, 0.0f);
-          vw.AddVertex(vtx);
+
+          uint64_t nexttimest     = sitem.first;
+          sample_ptr_t nextsample = sitem.second;
+
+          if (is_1bit) {
+            add_vtx(prevtimest, prevsample->read(0), 0xff00ff00);
+            add_vtx(nexttimest, prevsample->read(0), 0xff00ff00);
+            add_vtx(nexttimest, prevsample->read(0), 0xff00ff00);
+            add_vtx(nexttimest, nextsample->read(0), 0xff00ff00);
+          } else {
+            add_vtx(sitem.first, 0.0f, 0xff208080);
+            add_vtx(sitem.first, 1.0f, 0xff208080);
+          }
+          prevtimest = sitem.first;
+          prevsample = sitem.second;
         }
         vw.UnLock(tgt);
       }
@@ -155,12 +177,13 @@ struct SignalTrackWidget final : public Widget {
       mtxi->PushMMatrix(scale_matrix * trans_matrix);
       tgt->PushModColor(fvec4(0, 1, 0, 1));
 
+      defmtl->SetUIColorMode(UiColorMode::VTX);
       gbi->DrawPrimitive(
           defmtl.get(), //
           _vtxbuf,
           PrimitiveType::LINES,
           0,
-          _numsamples * 2);
+          _numvertices);
 
       tgt->PopModColor();
       mtxi->PopMMatrix();
@@ -291,7 +314,7 @@ int main(int argc, char** argv) {
     wl->left()->anchorTo(l_tracks->left());
     wl->right()->anchorTo(selx_guide);
 
-    auto trkclr = (i & 1) ? fvec4(0.15, 0.15, 0.15, 1.0) : fvec4(0.25, 0.25, 0.25, 1.0);
+    auto trkclr = (i & 1) ? fvec4(0.1, 0.0, 0.1, 1.0) : fvec4(0.0, 0.0, 0.1, 1.0);
 
     auto t                 = w_tracks._widget->makeChild<SignalTrackWidget>(sigtrack._signal, trkclr);
     auto tl                = t._layout;

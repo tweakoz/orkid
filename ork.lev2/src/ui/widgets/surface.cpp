@@ -113,7 +113,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   lev2::SRasterState defstate;
   rsi->BindRasterState(defstate);
 
-  auto material = defmtl;
+  lev2::material_ptr_t material = defmtl;
   if (mRtGroup) {
     static auto texmtl = std::make_shared<lev2::GfxMaterialUITextured>(tgt);
     auto ptex          = mRtGroup->GetMrt(0)->texture();

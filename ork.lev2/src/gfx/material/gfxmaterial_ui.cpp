@@ -16,7 +16,7 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::GfxMaterialUI, "MaterialUI")
 
 namespace ork { namespace lev2 {
 
-material_ptr_t defaultUIMaterial() {
+uimaterial_ptr_t defaultUIMaterial() {
   static auto mtl = std::make_shared<GfxMaterialUI>(GfxEnv::GetRef().loadingContext());
   return mtl;
 }
