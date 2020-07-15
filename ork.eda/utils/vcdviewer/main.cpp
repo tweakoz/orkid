@@ -44,13 +44,16 @@ struct ScopeTrack {
 };
 
 struct SignalTrackWidget final : public Widget {
-public:
+
+  using vtx_t = SVtxV12C4T16;
+
   SignalTrackWidget(
       signal_ptr_t sig, //
       fvec4 color)
       : Widget("SignalTrackWidget")
       , _color(color)
-      , _signal(sig) {
+      , _signal(sig)
+      , _vtxbuf(1 << 20, 0, PrimitiveType::NONE) {
     _textcolor = fvec4(1, 1, 1, 1);
   }
   fvec4 _color;
@@ -58,9 +61,10 @@ public:
   signal_ptr_t _signal;
   viewparams_ptr_t _viewparams;
   std::string _label;
+  size_t _numsamples;
   std::string _font = "i14";
-
-private:
+  bool _vbdirty     = true;
+  DynamicVertexBuffer<vtx_t> _vtxbuf;
   void DoDraw(ui::drawevent_constptr_t drwev) override {
     {
 
@@ -72,55 +76,112 @@ private:
 
       auto tgt    = drwev->GetTarget();
       auto fbi    = tgt->FBI();
+      auto gbi    = tgt->GBI();
       auto mtxi   = tgt->MTXI();
       auto& primi = lev2::GfxPrimitives::GetRef();
       auto defmtl = lev2::defaultUIMaterial();
 
-      mtxi->PushUIMatrix();
-      {
-        int ix1, iy1, ix2, iy2, ixc, iyc;
-        LocalToRoot(0, 0, ix1, iy1);
-        ix2 = ix1 + _geometry._w;
-        iy2 = iy1 + _geometry._h;
-        ixc = ix1 + (_geometry._w >> 1);
-        iyc = iy1 + (_geometry._h >> 1);
+      ////////////////////////////////
+      if (_vbdirty) {
+        _numsamples = _signal->_samples.size();
+        _vbdirty    = false;
+        VtxWriter<vtx_t> vw;
+        vw.Lock(
+            tgt, //
+            &_vtxbuf,
+            _numsamples * 2);
 
-        defmtl->_rasterstate.SetBlending(lev2::Blending::ALPHA);
-        defmtl->_rasterstate.SetDepthTest(lev2::EDEPTHTEST_OFF);
-        tgt->PushModColor(_color);
-        primi.RenderQuadAtZ(
-            defmtl.get(),
-            tgt,
-            ix1,  // x0
-            ix2,  // x1
-            iy1,  // y0
-            iy2,  // y1
-            0.0f, // z
-            0.0f,
-            1.0f, // u0, u1
-            0.0f,
-            1.0f // v0, v1
-        );
-        tgt->PopModColor();
-
-        int lablen = _label.length();
-        if (lablen) {
-          tgt->PushModColor(_textcolor);
-          ork::lev2::FontMan::PushFont(_font);
-          lev2::FontMan::beginTextBlock(tgt, lablen);
-          int sw = lev2::FontMan::stringWidth(lablen);
-          lev2::FontMan::DrawText(
-              tgt, //
-              ixc - (sw >> 1),
-              iyc - 6,
-              _label.c_str());
-          //
-          lev2::FontMan::endTextBlock(tgt);
-          ork::lev2::FontMan::PopFont();
-          tgt->PopModColor();
+        for (auto sitem : _signal->_samples) {
+          int timestamp = sitem.first;
+          float fx      = float(timestamp);
+          vtx_t vtx;
+          vtx._position = fvec3(fx, 0.0, 0.0f);
+          vtx._color    = 0x00ff00ff;
+          vw.AddVertex(vtx);
+          vtx._position = fvec3(fx, 1.0, 0.0f);
+          vw.AddVertex(vtx);
         }
+        vw.UnLock(tgt);
       }
+      ////////////////////////////////
+      float ftimemin   = float(_viewparams->_min_timestamp);
+      float ftimemax   = float(_viewparams->_max_timestamp);
+      float ftimerange = ftimemax - ftimemin;
+      float mainsurfw  = tgt->mainSurfaceWidth();
+      float mainsurfh  = tgt->mainSurfaceHeight();
+      // float viewproportionw = float(_geometry._w) / mainsurfw;
+      // float viewproportionh = float(_geometry._h) / mainsurfh;
+      // float viewproportiony = float(_geometry._y) / mainsurfh;
+      /*printf(
+          "msurf<%g %g> vp<%g %g>\n", //
+          mainsurfw,
+          mainsurfh,
+          viewproportionw,
+          viewproportionh);*/
+      float matrix_xscale  = float(_geometry._w) / ftimerange;
+      float matrix_xoffset = float(_geometry._x);
+      float matrix_yscale  = float(_geometry._h - 4);
+      float matrix_yoffset = float(_geometry._y) + 5;
+      ////////////////////////////////
+      int ix1, iy1, ix2, iy2, ixc, iyc;
+      LocalToRoot(0, 0, ix1, iy1);
+      ix2 = ix1 + _geometry._w;
+      iy2 = iy1 + _geometry._h;
+      ixc = ix1 + (_geometry._w >> 1);
+      iyc = iy1 + (_geometry._h >> 1);
+
+      defmtl->_rasterstate.SetBlending(lev2::Blending::ALPHA);
+      defmtl->_rasterstate.SetDepthTest(lev2::EDEPTHTEST_OFF);
+      tgt->PushModColor(_color);
+      mtxi->PushUIMatrix();
+      primi.RenderQuadAtZ(
+          defmtl.get(),
+          tgt,
+          ix1,  // x0
+          ix2,  // x1
+          iy1,  // y0
+          iy2,  // y1
+          0.0f, // z
+          0.0f,
+          1.0f, // u0, u1
+          0.0f,
+          1.0f // v0, v1
+      );
+      tgt->PopModColor();
+
+      fmtx4 scale_matrix, trans_matrix;
+      scale_matrix.SetScale(matrix_xscale, matrix_yscale, 1.0f);
+      trans_matrix.Translate(matrix_xoffset, matrix_yoffset, 0.0f);
+      mtxi->PushMMatrix(scale_matrix * trans_matrix);
+      tgt->PushModColor(fvec4(0, 1, 0, 1));
+
+      gbi->DrawPrimitive(
+          defmtl.get(), //
+          _vtxbuf,
+          PrimitiveType::LINES,
+          0,
+          _numsamples * 2);
+
+      tgt->PopModColor();
+      mtxi->PopMMatrix();
+
       mtxi->PopUIMatrix();
+      /*int lablen = _label.length();
+      if (lablen) {
+        tgt->PushModColor(_textcolor);
+        ork::lev2::FontMan::PushFont(_font);
+        lev2::FontMan::beginTextBlock(tgt, lablen);
+        int sw = lev2::FontMan::stringWidth(lablen);
+        lev2::FontMan::DrawText(
+            tgt, //
+            ixc - (sw >> 1),
+            iyc - 6,
+            _label.c_str());
+        //
+        lev2::FontMan::endTextBlock(tgt);
+        ork::lev2::FontMan::PopFont();
+        tgt->PopModColor();
+      }*/
     }
   }
 };
