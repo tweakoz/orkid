@@ -94,11 +94,17 @@ struct SignalTrackWidget final : public Widget {
         fi               = std::clamp(fi, 0.0f, 1.0f);
         size_t timestep  = size_t(ftimemin + (fi * ftimerange));
         uint64_t closest = nearestItem(_signal->_samples, timestep)->first;
-        auto label       = FormatString("timestep<%zu>", closest);
+        auto sample      = _signal->_samples[closest];
+        auto label       = FormatString("timestep<%zu>\n", closest);
         int lablen       = label.length();
-        auto font        = lev2::FontMan::GetRef()._pushFont(_font);
-        int sw           = lev2::FontMan::stringWidth(lablen);
-        int swdiv2       = sw >> 1;
+
+        bool is_1bit = _signal->_bit_width == 1;
+        if (not is_1bit)
+          label += sample->strvalue();
+
+        auto font  = lev2::FontMan::GetRef()._pushFont(_font);
+        int sw     = lev2::FontMan::stringWidth(lablen);
+        int swdiv2 = sw >> 1;
         lev2::FontMan::PopFont();
         __overlayLabel->_label = label;
 
@@ -170,17 +176,31 @@ struct SignalTrackWidget final : public Widget {
           sample_ptr_t nextsample = sitem.second;
 
           if (is_1bit) {
-            add_vtx(prevtimest, prevsample->read(0), 0xff00ff00);
-            add_vtx(nexttimest, prevsample->read(0), 0xff00ff00);
-            add_vtx(nexttimest, prevsample->read(0), 0xff00ff00);
-            add_vtx(nexttimest, nextsample->read(0), 0xff00ff00);
+            float prevvalue = prevsample->read(0) ? 0.1 : 0.9;
+            float nextvalue = nextsample->read(0) ? 0.1 : 0.9;
+            add_vtx(prevtimest, prevvalue, 0xff00ff00);
+            add_vtx(nexttimest, prevvalue, 0xff00ff00);
+            add_vtx(nexttimest, prevvalue, 0xff00ff00);
+            add_vtx(nexttimest, nextvalue, 0xff00ff00);
           } else {
-            add_vtx(sitem.first, 0.0f, 0xff208080);
-            add_vtx(sitem.first, 1.0f, 0xff208080);
+            add_vtx(sitem.first, 0.0f, 0xff404040);
+            add_vtx(sitem.first, 1.0f, 0xff404040);
           }
           prevtimest = sitem.first;
           prevsample = sitem.second;
         }
+        //////////////////////////////////////////////
+        // extend signal trace to end of session
+        //////////////////////////////////////////////
+        if (is_1bit) {
+          auto enditem           = _signal->_samples.rbegin();
+          uint64_t endtimest     = enditem->first;
+          sample_ptr_t endsample = enditem->second;
+          float endvalue         = endsample->read(0) ? 0.1 : 0.9;
+          add_vtx(endtimest, endvalue, 0xff00ff00);
+          add_vtx(_viewparams->_max_timestamp, endvalue, 0xff00ff00);
+        }
+        //////////////////////////////////////////////
         vw.UnLock(tgt);
       }
       ////////////////////////////////

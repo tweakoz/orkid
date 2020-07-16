@@ -25,6 +25,7 @@ struct Sample {
   }
   void write(int bit, bool value);
   bool read(int bit) const;
+  std::string strvalue() const;
   uint64_t _packedbits[knumwords];
   int _numbits = 0;
 };

@@ -84,7 +84,8 @@ void File::parse(ork::file::Path& inppath) {
   ////////////////////////////////////
   Sample cursample;
   ////////////////////////////////////
-  size_t index = 0;
+  size_t index               = 0;
+  std::string __prev_section = "";
   while (index < numtoks) {
     auto& tok     = _scanner.tokens[index];
     auto& toktext = tok.text;
@@ -162,10 +163,23 @@ void File::parse(ork::file::Path& inppath) {
         ///////////////////////////////
         else if (toktext == "$dumpvars") {
           printf("index<%zu> DUMPVARS\n", index);
-        } else {
+          index++;
+          parse_state = ParseState::VALUE;
+          break;
+        }
+        ///////////////////////////////
+        else if (toktext == "$end") {
+          if (__prev_section == "$dumpvars") {
+            index++;
+            break;
+          }
+        }
+        ///////////////////////////////
+        else {
           OrkAssert(false);
         }
-        size_t end = find_end(index);
+        __prev_section = toktext;
+        size_t end     = find_end(index);
         if (end)
           index = end;
         parse_state = ParseState::VALUE;
@@ -283,6 +297,42 @@ void Sample::write(int bit, bool value) {
 bool Sample::read(int bit) const {
   int awrd = (knumwords - 1) - (bit >> 6);
   return _packedbits[awrd] & (1 << bit);
+}
+
+std::string Sample::strvalue() const {
+
+  std::string rval;
+
+  int bits_pending = _numbits;
+
+  auto nyb2char = [](int nyb) -> char {
+    OrkAssert(nyb >= 0 and nyb < 16);
+    char rval = 0;
+    if (nyb < 10) {
+      rval = '0' + nyb;
+    } else {
+      rval = 'a' + (nyb - 10);
+    }
+    return rval;
+  };
+
+  uint64_t shiftreg = _packedbits[3];
+  size_t numadded   = 0;
+  while (bits_pending) {
+    int nyb = shiftreg & 0xf;
+    rval.push_back(nyb2char(nyb));
+    shiftreg >>= 4;
+    bits_pending -= 4;
+    if (bits_pending < 0)
+      bits_pending = 0;
+    if (bits_pending and (numadded & 7 == 7))
+      rval.push_back('.');
+    numadded++;
+  }
+  auto reversed = rval;
+  std::reverse(reversed.begin(), reversed.end());
+
+  return reversed;
 }
 
 } // namespace ork::hdl::vcd
