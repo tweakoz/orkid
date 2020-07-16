@@ -2,10 +2,6 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-auto __overlayLabel = std::make_shared<ui::Label>("yo", fvec4(0), "yo");
-
-///////////////////////////////////////////////////////////////////////////////
-
 SignalTrackWidget::SignalTrackWidget(
     signal_ptr_t sig, //
     fvec4 color)
@@ -19,11 +15,14 @@ SignalTrackWidget::SignalTrackWidget(
 ///////////////////////////////////////////////////////////////////////////////
 
 HandlerResult SignalTrackWidget::DoOnUiEvent(event_constptr_t evptr) {
-  auto uictx = evptr->_uicontext;
+  auto overlay    = Overlay::instance();
+  auto viewparams = ViewParams::instance();
+  auto uictx      = evptr->_uicontext;
+
   switch (evptr->_eventcode) {
     case EventCode::MOUSE_ENTER:
       printf("enter trakwidg<%p>\n", this);
-      uictx->_overlayWidget = __overlayLabel.get();
+      uictx->_overlayWidget = overlay.get();
       break;
     case EventCode::MOUSE_LEAVE:
       uictx->_overlayWidget = nullptr;
@@ -32,16 +31,20 @@ HandlerResult SignalTrackWidget::DoOnUiEvent(event_constptr_t evptr) {
       int local_x = 0;
       int local_y = 0;
       RootToLocal(evptr->miX, evptr->miY, local_x, local_y);
-      float ftimemin   = float(_viewparams->_min_timestamp);
-      float ftimemax   = float(_viewparams->_max_timestamp);
+      float ftimemin   = float(viewparams->_min_timestamp);
+      float ftimemax   = float(viewparams->_max_timestamp);
       float ftimerange = ftimemax - ftimemin;
       float fi         = float(local_x - 1) / float(_geometry._w - 2);
       fi               = std::clamp(fi, 0.0f, 1.0f);
       size_t timestep  = size_t(ftimemin + (fi * ftimerange));
       uint64_t closest = nearestItem(_signal->_samples, timestep)->first;
-      auto sample      = _signal->_samples[closest];
-      auto label       = FormatString("timestep<%zu>\n", closest);
-      int lablen       = label.length();
+
+      overlay->_cursor_actual = timestep;
+      overlay->_cursor_actual = closest;
+
+      auto sample = _signal->_samples[closest];
+      auto label  = FormatString("timestep<%zu>\n", closest);
+      int lablen  = label.length();
 
       bool is_1bit = _signal->_bit_width == 1;
       if (not is_1bit)
@@ -51,7 +54,7 @@ HandlerResult SignalTrackWidget::DoOnUiEvent(event_constptr_t evptr) {
       int sw     = lev2::FontMan::stringWidth(lablen);
       int swdiv2 = sw >> 1;
       lev2::FontMan::PopFont();
-      __overlayLabel->_label = label;
+      overlay->_label = label;
 
       int ovx = std::clamp(
           evptr->miX - 128, //
@@ -62,10 +65,11 @@ HandlerResult SignalTrackWidget::DoOnUiEvent(event_constptr_t evptr) {
           _geometry._y,
           _geometry.y2() - 32);
 
-      __overlayLabel->SetX(ovx);
-      __overlayLabel->SetY(ovy);
-      __overlayLabel->SetW(256);
-      __overlayLabel->SetH(32);
+      overlay->SetX(ovx);
+      overlay->SetY(ovy);
+      overlay->SetW(256);
+      overlay->SetH(32);
+      overlay->_vbdirty = true;
       // printf("trakwidg<%p> fi<%g> timestep<%zu> closest<%llu>\n", this, fi, timestep, closest);
       break;
     }
@@ -78,8 +82,9 @@ HandlerResult SignalTrackWidget::DoOnUiEvent(event_constptr_t evptr) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void SignalTrackWidget::DoDraw(ui::drawevent_constptr_t drwev) {
-
-  _label = FormatString(
+  auto overlay    = Overlay::instance();
+  auto viewparams = ViewParams::instance();
+  _label          = FormatString(
       "%s[%d] numpts<%zu>", //
       _signal->_longname.c_str(),
       _signal->_bit_width,
@@ -144,26 +149,15 @@ void SignalTrackWidget::DoDraw(ui::drawevent_constptr_t drwev) {
       sample_ptr_t endsample = enditem->second;
       float endvalue         = endsample->read(0) ? 0.1 : 0.9;
       add_vtx(endtimest, endvalue, 0xff00ff00);
-      add_vtx(_viewparams->_max_timestamp, endvalue, 0xff00ff00);
+      add_vtx(viewparams->_max_timestamp, endvalue, 0xff00ff00);
     }
     //////////////////////////////////////////////
     vw.UnLock(tgt);
   }
   ////////////////////////////////
-  float ftimemin   = float(_viewparams->_min_timestamp);
-  float ftimemax   = float(_viewparams->_max_timestamp);
-  float ftimerange = ftimemax - ftimemin;
-  float mainsurfw  = tgt->mainSurfaceWidth();
-  float mainsurfh  = tgt->mainSurfaceHeight();
-  // float viewproportionw = float(_geometry._w) / mainsurfw;
-  // float viewproportionh = float(_geometry._h) / mainsurfh;
-  // float viewproportiony = float(_geometry._y) / mainsurfh;
-  /*printf(
-      "msurf<%g %g> vp<%g %g>\n", //
-      mainsurfw,
-      mainsurfh,
-      viewproportionw,
-      viewproportionh);*/
+  float ftimemin       = float(viewparams->_min_timestamp);
+  float ftimemax       = float(viewparams->_max_timestamp);
+  float ftimerange     = ftimemax - ftimemin;
   float matrix_xscale  = float(_geometry._w) / ftimerange;
   float matrix_xoffset = float(_geometry._x);
   float matrix_yscale  = float(_geometry._h - 4);

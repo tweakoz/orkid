@@ -323,11 +323,11 @@ std::string Sample::strvalue() const {
     rval.push_back(nyb2char(nyb));
     shiftreg >>= 4;
     bits_pending -= 4;
+    numadded++;
     if (bits_pending < 0)
       bits_pending = 0;
-    if (bits_pending and (numadded & 7 == 7))
+    if (bits_pending and (numadded != 0) and ((numadded & 0x3) == 0))
       rval.push_back('.');
-    numadded++;
   }
   auto reversed = rval;
   std::reverse(reversed.begin(), reversed.end());

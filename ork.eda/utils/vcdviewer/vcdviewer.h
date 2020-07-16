@@ -26,33 +26,29 @@ using namespace ork::lev2;
 using namespace ork::ui;
 
 ///////////////////////////////////////////////////////////////////////////////
-
+struct ViewParams;
+struct Overlay;
+///////////////////////////////////////////////////////////////////////////////
+using viewparams_ptr_t = std::shared_ptr<ViewParams>;
+using overlay_ptr_t    = std::shared_ptr<Overlay>;
+///////////////////////////////////////////////////////////////////////////////
 struct ViewParams {
+  static viewparams_ptr_t instance();
   int _min_timestamp = 0;
   int _max_timestamp = 0;
 };
-
 ///////////////////////////////////////////////////////////////////////////////
-
-using viewparams_ptr_t = std::shared_ptr<ViewParams>;
-
-///////////////////////////////////////////////////////////////////////////////
-
 struct SignalTrack {
   std::string _name;
   signal_ptr_t _signal;
 };
-
 ///////////////////////////////////////////////////////////////////////////////
-
 struct ScopeTrack {
   std::string _name;
   scope_ptr_t _scope;
   std::vector<SignalTrack> _sigtracks;
 };
-
 ///////////////////////////////////////////////////////////////////////////////
-
 struct SignalTrackWidget final : public Widget {
 
   using vtx_t = SVtxV12C4T16;
@@ -64,7 +60,6 @@ struct SignalTrackWidget final : public Widget {
   fvec4 _color;
   fvec4 _textcolor;
   signal_ptr_t _signal;
-  viewparams_ptr_t _viewparams;
   std::string _label;
   size_t _numsamples;
   std::string _font = "i14";
@@ -72,5 +67,28 @@ struct SignalTrackWidget final : public Widget {
   DynamicVertexBuffer<vtx_t> _vtxbuf;
   int _numvertices = 0;
   HandlerResult DoOnUiEvent(event_constptr_t evptr) override;
+  void DoDraw(ui::drawevent_constptr_t drwev) override;
+};
+///////////////////////////////////////////////////////////////////////////////
+struct Overlay final : public Widget {
+
+  using vtx_t = SVtxV12C4T16;
+
+  static overlay_ptr_t instance();
+
+  Overlay(
+      const std::string& name, //
+      fvec4 color,
+      std::string label);
+  fvec4 _color;
+  fvec4 _textcolor;
+  uint64_t _cursor_actual  = 0;
+  uint64_t _cursor_nearest = 0;
+  std::string _label;
+  std::string _font = "i14";
+  DynamicVertexBuffer<vtx_t> _vtxbuf;
+  int _numvertices = 0;
+  bool _vbdirty    = true;
+
   void DoDraw(ui::drawevent_constptr_t drwev) override;
 };

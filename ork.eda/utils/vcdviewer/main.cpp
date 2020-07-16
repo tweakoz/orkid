@@ -1,6 +1,11 @@
 #include "vcdviewer.h"
 
 ///////////////////////////////////////////////////////////////////////////////
+viewparams_ptr_t ViewParams::instance() {
+  static viewparams_ptr_t __vparams = std::make_shared<ViewParams>();
+  return __vparams;
+}
+///////////////////////////////////////////////////////////////////////////////
 
 void TestViewport::DoDraw(ui::drawevent_constptr_t drwev) {
   drawChildren(drwev);
@@ -84,11 +89,11 @@ int main(int argc, char** argv) {
     }
   }
   //////////////////////////////////////
-  auto vparams            = std::make_shared<ViewParams>();
-  vparams->_min_timestamp = *vcdfile._timestamps.begin();
-  vparams->_max_timestamp = *vcdfile._timestamps.rbegin();
-  printf("min_timestamp<%d>\n", vparams->_min_timestamp);
-  printf("max_timestamp<%d>\n", vparams->_max_timestamp);
+  auto viewparams            = ViewParams::instance();
+  viewparams->_min_timestamp = *vcdfile._timestamps.begin();
+  viewparams->_max_timestamp = *vcdfile._timestamps.rbegin();
+  printf("min_timestamp<%d>\n", viewparams->_min_timestamp);
+  printf("max_timestamp<%d>\n", viewparams->_max_timestamp);
   //////////////////////////////////////
   int numsigtracks = flat_sigtracks.size();
   std::vector<anchor::guide_ptr_t> track_guides;
@@ -115,18 +120,21 @@ int main(int argc, char** argv) {
 
     auto trkclr = (i & 1) ? fvec4(0.1, 0.0, 0.1, 1.0) : fvec4(0.0, 0.0, 0.1, 1.0);
 
-    auto t                 = w_tracks._widget->makeChild<SignalTrackWidget>(sigtrack._signal, trkclr);
-    auto tl                = t._layout;
-    t._widget->_viewparams = vparams;
+    auto t  = w_tracks._widget->makeChild<SignalTrackWidget>(sigtrack._signal, trkclr);
+    auto tl = t._layout;
     tl->top()->anchorTo(gtop);
     tl->bottom()->anchorTo(gbot);
     tl->left()->anchorTo(selx_guide);
     tl->right()->anchorTo(l_tracks->right());
   }
   //////////////////////////////////////
-  // root_layout->dump();
-  // exit(0);
+  auto overlay = Overlay::instance();
+  auto ol      = w_tracks._widget->layoutAndAddChild(overlay);
+  ol->top()->anchorTo(l_tracks->top());
+  ol->bottom()->anchorTo(l_tracks->bottom());
+  ol->left()->anchorTo(l_tracks->left());
+  ol->right()->anchorTo(l_tracks->right());
   //////////////////////////////////////
-  app->setRefreshPolicy({EREFRESH_FIXEDFPS, 60});
+  app->setRefreshPolicy({EREFRESH_WHENDIRTY, -1});
   return app->exec();
 }
