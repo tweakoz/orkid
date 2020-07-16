@@ -14,6 +14,7 @@
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <queue>
 #include "harness.h"
+#include <stdint.h>
 
 using namespace std::string_literals;
 using namespace ork;
@@ -21,6 +22,10 @@ using namespace ork::hdl;
 using namespace ork::hdl::vcd;
 using namespace ork::lev2;
 using namespace ork::ui;
+
+auto __overlayLabel = std::make_shared<ui::Label>("yo", fvec4(0), "yo");
+
+///////////////////////////////////////////////////////////////////////////////
 
 void TestViewport::DoDraw(ui::drawevent_constptr_t drwev) {
   drawChildren(drwev);
@@ -73,11 +78,46 @@ struct SignalTrackWidget final : public Widget {
     switch (evptr->_eventcode) {
       case EventCode::MOUSE_ENTER:
         printf("enter trakwidg<%p>\n", this);
-        uictx->_overlayWidget = nullptr;
+        uictx->_overlayWidget = __overlayLabel.get();
         break;
       case EventCode::MOUSE_LEAVE:
         uictx->_overlayWidget = nullptr;
         break;
+      case EventCode::MOVE: {
+        int local_x = 0;
+        int local_y = 0;
+        RootToLocal(evptr->miX, evptr->miY, local_x, local_y);
+        float ftimemin   = float(_viewparams->_min_timestamp);
+        float ftimemax   = float(_viewparams->_max_timestamp);
+        float ftimerange = ftimemax - ftimemin;
+        float fi         = float(local_x - 1) / float(_geometry._w - 2);
+        fi               = std::clamp(fi, 0.0f, 1.0f);
+        size_t timestep  = size_t(ftimemin + (fi * ftimerange));
+        uint64_t closest = nearestItem(_signal->_samples, timestep)->first;
+        auto label       = FormatString("timestep<%zu>", closest);
+        int lablen       = label.length();
+        auto font        = lev2::FontMan::GetRef()._pushFont(_font);
+        int sw           = lev2::FontMan::stringWidth(lablen);
+        int swdiv2       = sw >> 1;
+        lev2::FontMan::PopFont();
+        __overlayLabel->_label = label;
+
+        int ovx = std::clamp(
+            evptr->miX - 128, //
+            _geometry._x - (128 - swdiv2),
+            _geometry.x2() - (128 + swdiv2));
+        int ovy = std::clamp(
+            evptr->miY - 32, //
+            _geometry._y,
+            _geometry.y2() - 32);
+
+        __overlayLabel->SetX(ovx);
+        __overlayLabel->SetY(ovy);
+        __overlayLabel->SetW(256);
+        __overlayLabel->SetH(32);
+        // printf("trakwidg<%p> fi<%g> timestep<%zu> closest<%llu>\n", this, fi, timestep, closest);
+        break;
+      }
       default:
         break;
     };
