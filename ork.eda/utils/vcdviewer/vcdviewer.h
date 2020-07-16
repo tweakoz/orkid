@@ -28,14 +28,18 @@ using namespace ork::ui;
 ///////////////////////////////////////////////////////////////////////////////
 struct ViewParams;
 struct Overlay;
+struct SignalTrackWidget;
 ///////////////////////////////////////////////////////////////////////////////
 using viewparams_ptr_t = std::shared_ptr<ViewParams>;
 using overlay_ptr_t    = std::shared_ptr<Overlay>;
 ///////////////////////////////////////////////////////////////////////////////
 struct ViewParams {
   static viewparams_ptr_t instance();
-  int _min_timestamp = 0;
-  int _max_timestamp = 0;
+  uint64_t _min_timestamp      = 0;
+  uint64_t _max_timestamp      = 0;
+  uint64_t _cursor_actual      = 0;
+  uint64_t _cursor_nearest     = 0;
+  SignalTrackWidget* _curtrack = nullptr;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct SignalTrack {
@@ -82,12 +86,11 @@ struct Overlay final : public Widget {
       std::string label);
   fvec4 _color;
   fvec4 _textcolor;
-  uint64_t _cursor_actual  = 0;
-  uint64_t _cursor_nearest = 0;
   std::string _label;
   std::string _font = "i14";
   DynamicVertexBuffer<vtx_t> _vtxbuf;
   int _numvertices = 0;
+  int _vtxbase     = 0;
   bool _vbdirty    = true;
 
   void DoDraw(ui::drawevent_constptr_t drwev) override;

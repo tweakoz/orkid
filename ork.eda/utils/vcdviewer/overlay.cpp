@@ -15,7 +15,7 @@ Overlay::Overlay(
     , _label(label)
     , _vtxbuf(1 << 20, 0, PrimitiveType::NONE) {
   _textcolor = fvec4(1, 1, 1, 1);
-  _vtxbuf.SetRingLock(true);
+  _vtxbuf.SetRingLock(false);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Overlay::DoDraw(drawevent_constptr_t drwev) {
@@ -28,13 +28,20 @@ void Overlay::DoDraw(drawevent_constptr_t drwev) {
   auto defmtl     = lev2::defaultUIMaterial();
   auto viewparams = ViewParams::instance();
   ////////////////////////////////
-  float ftimemin       = float(viewparams->_min_timestamp);
-  float ftimemax       = float(viewparams->_max_timestamp);
-  float ftimerange     = ftimemax - ftimemin;
-  float matrix_xscale  = float(_geometry._w) / ftimerange;
-  float matrix_xoffset = float(_geometry._x);
-  float matrix_yscale  = float(_geometry._h - 4);
-  float matrix_yoffset = float(_geometry._y) + 5;
+  auto genmatrix = [&](float offx, float offy) -> fmtx4 {
+    float ftimemin      = float(viewparams->_min_timestamp);
+    float ftimemax      = float(viewparams->_max_timestamp);
+    float ftimerange    = ftimemax - ftimemin;
+    float matrix_xscale = (float(_geometry._w) - offx) / ftimerange;
+    // printf("matrix_xscale<%g>\n", matrix_xscale);
+    float matrix_xoffset = float(_geometry._x) + offx + 4;
+    float matrix_yscale  = 1.0f; // float(_geometry._h);
+    float matrix_yoffset = 4.0f; // float(_geometry._y) + offy + 4;
+    fmtx4 scale_matrix, trans_matrix;
+    scale_matrix.SetScale(matrix_xscale, matrix_yscale, 1.0f);
+    trans_matrix.Translate(matrix_xoffset, matrix_yoffset, 0.0f);
+    return scale_matrix * trans_matrix;
+  };
   ////////////////////////////////
   if (_vbdirty) {
     _vbdirty = false;
@@ -54,10 +61,17 @@ void Overlay::DoDraw(drawevent_constptr_t drwev) {
       vw.AddVertex(vtx);
       _numvertices++;
     };
-    add_vtx(ftimemin, 0.0f, 0xffffffff);
-    add_vtx(ftimemin, 1.0f, 0xffffffff);
+    add_vtx(viewparams->_cursor_actual, 0, 0xff202020);
+    add_vtx(viewparams->_cursor_actual, _geometry._h, 0xff202020);
+    if (viewparams->_curtrack) {
+      int y1 = viewparams->_curtrack->_geometry._y;
+      int y2 = viewparams->_curtrack->_geometry.y2();
+      add_vtx(viewparams->_cursor_nearest, y1, 0xff00ffff);
+      add_vtx(viewparams->_cursor_nearest, y2, 0xff00ffff);
+    }
     //////////////////////////////////////////////
     vw.UnLock(tgt);
+    _vtxbase = vw.miWriteBase;
   }
   ////////////////////////////////
 
@@ -88,33 +102,29 @@ void Overlay::DoDraw(drawevent_constptr_t drwev) {
         1.0f // v0, v1
     );
     tgt->PopModColor();
-    mtxi->PopUIMatrix();
 
     /////////////////////////////////
     // line prims
     /////////////////////////////////
 
-    fmtx4 scale_matrix, trans_matrix;
-    scale_matrix.SetScale(matrix_xscale, matrix_yscale, 1.0f);
-    trans_matrix.Translate(matrix_xoffset, matrix_yoffset, 0.0f);
-    mtxi->PushMMatrix(scale_matrix * trans_matrix);
-    tgt->PushModColor(fvec4(0, 1, 0, 1));
+    SRasterState rstate;
+    rstate.SetBlending(lev2::Blending::ADDITIVE);
+    rstate.SetDepthTest(lev2::EDEPTHTEST_OFF);
+    auto save_rstate = defmtl->swapRasterState(rstate);
 
+    mtxi->PushMMatrix(genmatrix(192, 0));
     defmtl->SetUIColorMode(UiColorMode::VTX);
     gbi->DrawPrimitive(
         defmtl.get(), //
         _vtxbuf,
         PrimitiveType::LINES,
-        0,
+        _vtxbase,
         _numvertices);
-
-    tgt->PopModColor();
     mtxi->PopMMatrix();
-
+    defmtl->swapRasterState(save_rstate);
     /////////////////////////////////
     // mouselabel
     /////////////////////////////////
-    mtxi->PushUIMatrix();
 
     int lablen = _label.length();
     if (lablen) {

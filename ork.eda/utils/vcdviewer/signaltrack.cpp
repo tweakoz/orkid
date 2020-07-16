@@ -31,16 +31,17 @@ HandlerResult SignalTrackWidget::DoOnUiEvent(event_constptr_t evptr) {
       int local_x = 0;
       int local_y = 0;
       RootToLocal(evptr->miX, evptr->miY, local_x, local_y);
-      float ftimemin   = float(viewparams->_min_timestamp);
-      float ftimemax   = float(viewparams->_max_timestamp);
-      float ftimerange = ftimemax - ftimemin;
-      float fi         = float(local_x - 1) / float(_geometry._w - 2);
-      fi               = std::clamp(fi, 0.0f, 1.0f);
-      size_t timestep  = size_t(ftimemin + (fi * ftimerange));
-      uint64_t closest = nearestItem(_signal->_samples, timestep)->first;
+      float ftimemin    = float(viewparams->_min_timestamp);
+      float ftimemax    = float(viewparams->_max_timestamp);
+      float ftimerange  = ftimemax - ftimemin;
+      float fi          = float(local_x - 1) / float(_geometry._w - 2);
+      fi                = std::clamp(fi, 0.0f, 1.0f);
+      uint64_t timestep = uint64_t(ftimemin + (fi * ftimerange));
+      uint64_t closest  = nearestItem(_signal->_samples, timestep)->first;
 
-      overlay->_cursor_actual = timestep;
-      overlay->_cursor_actual = closest;
+      viewparams->_cursor_actual  = timestep;
+      viewparams->_cursor_nearest = closest;
+      viewparams->_curtrack       = this;
 
       auto sample = _signal->_samples[closest];
       auto label  = FormatString("timestep<%zu>\n", closest);
@@ -56,19 +57,19 @@ HandlerResult SignalTrackWidget::DoOnUiEvent(event_constptr_t evptr) {
       lev2::FontMan::PopFont();
       overlay->_label = label;
 
-      int ovx = std::clamp(
+      /*int ovx = std::clamp(
           evptr->miX - 128, //
           _geometry._x - (128 - swdiv2),
           _geometry.x2() - (128 + swdiv2));
       int ovy = std::clamp(
           evptr->miY - 32, //
           _geometry._y,
-          _geometry.y2() - 32);
+          _geometry.y2() - 32);*/
 
-      overlay->SetX(ovx);
-      overlay->SetY(ovy);
-      overlay->SetW(256);
-      overlay->SetH(32);
+      // overlay->SetX(ovx);
+      // overlay->SetY(ovy);
+      // overlay->SetW(256);
+      // overlay->SetH(32);
       overlay->_vbdirty = true;
       // printf("trakwidg<%p> fi<%g> timestep<%zu> closest<%llu>\n", this, fi, timestep, closest);
       break;
@@ -129,10 +130,10 @@ void SignalTrackWidget::DoDraw(ui::drawevent_constptr_t drwev) {
       if (is_1bit) {
         float prevvalue = prevsample->read(0) ? 0.1 : 0.9;
         float nextvalue = nextsample->read(0) ? 0.1 : 0.9;
-        add_vtx(prevtimest, prevvalue, 0xff00ff00);
-        add_vtx(nexttimest, prevvalue, 0xff00ff00);
-        add_vtx(nexttimest, prevvalue, 0xff00ff00);
-        add_vtx(nexttimest, nextvalue, 0xff00ff00);
+        add_vtx(prevtimest, prevvalue, 0xff00c000);
+        add_vtx(nexttimest, prevvalue, 0xff00c000);
+        add_vtx(nexttimest, prevvalue, 0xff00c000);
+        add_vtx(nexttimest, nextvalue, 0xff00c000);
       } else {
         add_vtx(sitem.first, 0.0f, 0xff404040);
         add_vtx(sitem.first, 1.0f, 0xff404040);
@@ -159,9 +160,13 @@ void SignalTrackWidget::DoDraw(ui::drawevent_constptr_t drwev) {
   float ftimemax       = float(viewparams->_max_timestamp);
   float ftimerange     = ftimemax - ftimemin;
   float matrix_xscale  = float(_geometry._w) / ftimerange;
-  float matrix_xoffset = float(_geometry._x);
+  float matrix_xoffset = float(_geometry._x) + 4;
   float matrix_yscale  = float(_geometry._h - 4);
   float matrix_yoffset = float(_geometry._y) + 5;
+  fmtx4 scale_matrix, trans_matrix;
+  scale_matrix.SetScale(matrix_xscale, matrix_yscale, 1.0f);
+  trans_matrix.Translate(matrix_xoffset, matrix_yoffset, 0.0f);
+  auto mmatrix = scale_matrix * trans_matrix;
   ////////////////////////////////
   int ix1, iy1, ix2, iy2, ixc, iyc;
   LocalToRoot(0, 0, ix1, iy1);
@@ -189,11 +194,15 @@ void SignalTrackWidget::DoDraw(ui::drawevent_constptr_t drwev) {
   );
   tgt->PopModColor();
 
-  fmtx4 scale_matrix, trans_matrix;
-  scale_matrix.SetScale(matrix_xscale, matrix_yscale, 1.0f);
-  trans_matrix.Translate(matrix_xoffset, matrix_yoffset, 0.0f);
-  mtxi->PushMMatrix(scale_matrix * trans_matrix);
-  tgt->PushModColor(fvec4(0, 1, 0, 1));
+  ////////////////////////////////////////
+  // draw track data
+  ////////////////////////////////////////
+
+  SRasterState rstate;
+  rstate.SetBlending(lev2::Blending::ADDITIVE);
+  rstate.SetDepthTest(lev2::EDEPTHTEST_OFF);
+  auto save_rstate = defmtl->swapRasterState(rstate);
+  mtxi->PushMMatrix(mmatrix);
 
   defmtl->SetUIColorMode(UiColorMode::VTX);
   gbi->DrawPrimitive(
@@ -203,8 +212,10 @@ void SignalTrackWidget::DoDraw(ui::drawevent_constptr_t drwev) {
       0,
       _numvertices);
 
-  tgt->PopModColor();
   mtxi->PopMMatrix();
+  defmtl->swapRasterState(save_rstate);
+
+  ////////////////////////////////////////
 
   mtxi->PopUIMatrix();
   /*int lablen = _label.length();

@@ -134,6 +134,7 @@ int main(int argc, char** argv) {
   ol->bottom()->anchorTo(l_tracks->bottom());
   ol->left()->anchorTo(l_tracks->left());
   ol->right()->anchorTo(l_tracks->right());
+  // ol->setMargin(4);
   //////////////////////////////////////
   app->setRefreshPolicy({EREFRESH_WHENDIRTY, -1});
   return app->exec();

@@ -58,6 +58,14 @@ void GfxMaterial::Describe() {
 
 /////////////////////////////////////////////////////////////////////////
 
+SRasterState GfxMaterial::swapRasterState(SRasterState rstate) {
+  auto rval    = _rasterstate;
+  _rasterstate = rstate;
+  return rval;
+}
+
+/////////////////////////////////////////////////////////////////////////
+
 RenderQueueSortingData::RenderQueueSortingData()
     : miSortingPass(4)
     , miSortingOffset(0)

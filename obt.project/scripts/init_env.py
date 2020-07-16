@@ -16,6 +16,7 @@ def setup():
 
   ork.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.core")
   ork.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.lev2")
+  ork.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.eda")
   ork.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.ent")
   ork.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.tool")
   ork.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.data"/"platform_lev2"/"shaders"/"glfx")
