@@ -1,0 +1,232 @@
+#include "vcdviewer.h"
+
+///////////////////////////////////////////////////////////////////////////////
+
+auto __overlayLabel = std::make_shared<ui::Label>("yo", fvec4(0), "yo");
+
+///////////////////////////////////////////////////////////////////////////////
+
+SignalTrackWidget::SignalTrackWidget(
+    signal_ptr_t sig, //
+    fvec4 color)
+    : Widget("SignalTrackWidget")
+    , _color(color)
+    , _signal(sig)
+    , _vtxbuf(1 << 20, 0, PrimitiveType::NONE) {
+  _textcolor = fvec4(1, 1, 1, 1);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+HandlerResult SignalTrackWidget::DoOnUiEvent(event_constptr_t evptr) {
+  auto uictx = evptr->_uicontext;
+  switch (evptr->_eventcode) {
+    case EventCode::MOUSE_ENTER:
+      printf("enter trakwidg<%p>\n", this);
+      uictx->_overlayWidget = __overlayLabel.get();
+      break;
+    case EventCode::MOUSE_LEAVE:
+      uictx->_overlayWidget = nullptr;
+      break;
+    case EventCode::MOVE: {
+      int local_x = 0;
+      int local_y = 0;
+      RootToLocal(evptr->miX, evptr->miY, local_x, local_y);
+      float ftimemin   = float(_viewparams->_min_timestamp);
+      float ftimemax   = float(_viewparams->_max_timestamp);
+      float ftimerange = ftimemax - ftimemin;
+      float fi         = float(local_x - 1) / float(_geometry._w - 2);
+      fi               = std::clamp(fi, 0.0f, 1.0f);
+      size_t timestep  = size_t(ftimemin + (fi * ftimerange));
+      uint64_t closest = nearestItem(_signal->_samples, timestep)->first;
+      auto sample      = _signal->_samples[closest];
+      auto label       = FormatString("timestep<%zu>\n", closest);
+      int lablen       = label.length();
+
+      bool is_1bit = _signal->_bit_width == 1;
+      if (not is_1bit)
+        label += sample->strvalue();
+
+      auto font  = lev2::FontMan::GetRef()._pushFont(_font);
+      int sw     = lev2::FontMan::stringWidth(lablen);
+      int swdiv2 = sw >> 1;
+      lev2::FontMan::PopFont();
+      __overlayLabel->_label = label;
+
+      int ovx = std::clamp(
+          evptr->miX - 128, //
+          _geometry._x - (128 - swdiv2),
+          _geometry.x2() - (128 + swdiv2));
+      int ovy = std::clamp(
+          evptr->miY - 32, //
+          _geometry._y,
+          _geometry.y2() - 32);
+
+      __overlayLabel->SetX(ovx);
+      __overlayLabel->SetY(ovy);
+      __overlayLabel->SetW(256);
+      __overlayLabel->SetH(32);
+      // printf("trakwidg<%p> fi<%g> timestep<%zu> closest<%llu>\n", this, fi, timestep, closest);
+      break;
+    }
+    default:
+      break;
+  };
+  return HandlerResult();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void SignalTrackWidget::DoDraw(ui::drawevent_constptr_t drwev) {
+
+  _label = FormatString(
+      "%s[%d] numpts<%zu>", //
+      _signal->_longname.c_str(),
+      _signal->_bit_width,
+      _signal->_samples.size());
+
+  auto tgt    = drwev->GetTarget();
+  auto fbi    = tgt->FBI();
+  auto gbi    = tgt->GBI();
+  auto mtxi   = tgt->MTXI();
+  auto& primi = lev2::GfxPrimitives::GetRef();
+  auto defmtl = lev2::defaultUIMaterial();
+
+  bool is_1bit = _signal->_bit_width == 1;
+
+  ////////////////////////////////
+  if (_vbdirty) {
+    _numsamples = _signal->_samples.size();
+    _vbdirty    = false;
+    VtxWriter<vtx_t> vw;
+    vw.Lock(
+        tgt, //
+        &_vtxbuf,
+        1 << 20);
+    _numvertices = 0;
+    auto add_vtx = [&](uint64_t timestamp, float value, uint32_t color) {
+      float fx = float(timestamp);
+      vtx_t vtx;
+      vtx._position = fvec3(fx, value, 0.0f);
+      vtx._color    = color;
+      vw.AddVertex(vtx);
+      _numvertices++;
+    };
+
+    uint64_t prevtimest     = _signal->_samples.begin()->first;
+    sample_ptr_t prevsample = _signal->_samples.begin()->second;
+
+    for (auto sitem : _signal->_samples) {
+
+      uint64_t nexttimest     = sitem.first;
+      sample_ptr_t nextsample = sitem.second;
+
+      if (is_1bit) {
+        float prevvalue = prevsample->read(0) ? 0.1 : 0.9;
+        float nextvalue = nextsample->read(0) ? 0.1 : 0.9;
+        add_vtx(prevtimest, prevvalue, 0xff00ff00);
+        add_vtx(nexttimest, prevvalue, 0xff00ff00);
+        add_vtx(nexttimest, prevvalue, 0xff00ff00);
+        add_vtx(nexttimest, nextvalue, 0xff00ff00);
+      } else {
+        add_vtx(sitem.first, 0.0f, 0xff404040);
+        add_vtx(sitem.first, 1.0f, 0xff404040);
+      }
+      prevtimest = sitem.first;
+      prevsample = sitem.second;
+    }
+    //////////////////////////////////////////////
+    // extend signal trace to end of session
+    //////////////////////////////////////////////
+    if (is_1bit) {
+      auto enditem           = _signal->_samples.rbegin();
+      uint64_t endtimest     = enditem->first;
+      sample_ptr_t endsample = enditem->second;
+      float endvalue         = endsample->read(0) ? 0.1 : 0.9;
+      add_vtx(endtimest, endvalue, 0xff00ff00);
+      add_vtx(_viewparams->_max_timestamp, endvalue, 0xff00ff00);
+    }
+    //////////////////////////////////////////////
+    vw.UnLock(tgt);
+  }
+  ////////////////////////////////
+  float ftimemin   = float(_viewparams->_min_timestamp);
+  float ftimemax   = float(_viewparams->_max_timestamp);
+  float ftimerange = ftimemax - ftimemin;
+  float mainsurfw  = tgt->mainSurfaceWidth();
+  float mainsurfh  = tgt->mainSurfaceHeight();
+  // float viewproportionw = float(_geometry._w) / mainsurfw;
+  // float viewproportionh = float(_geometry._h) / mainsurfh;
+  // float viewproportiony = float(_geometry._y) / mainsurfh;
+  /*printf(
+      "msurf<%g %g> vp<%g %g>\n", //
+      mainsurfw,
+      mainsurfh,
+      viewproportionw,
+      viewproportionh);*/
+  float matrix_xscale  = float(_geometry._w) / ftimerange;
+  float matrix_xoffset = float(_geometry._x);
+  float matrix_yscale  = float(_geometry._h - 4);
+  float matrix_yoffset = float(_geometry._y) + 5;
+  ////////////////////////////////
+  int ix1, iy1, ix2, iy2, ixc, iyc;
+  LocalToRoot(0, 0, ix1, iy1);
+  ix2 = ix1 + _geometry._w;
+  iy2 = iy1 + _geometry._h;
+  ixc = ix1 + (_geometry._w >> 1);
+  iyc = iy1 + (_geometry._h >> 1);
+
+  defmtl->_rasterstate.SetBlending(lev2::Blending::ALPHA);
+  defmtl->_rasterstate.SetDepthTest(lev2::EDEPTHTEST_OFF);
+  tgt->PushModColor(_color);
+  mtxi->PushUIMatrix();
+  primi.RenderQuadAtZ(
+      defmtl.get(),
+      tgt,
+      ix1,  // x0
+      ix2,  // x1
+      iy1,  // y0
+      iy2,  // y1
+      0.0f, // z
+      0.0f,
+      1.0f, // u0, u1
+      0.0f,
+      1.0f // v0, v1
+  );
+  tgt->PopModColor();
+
+  fmtx4 scale_matrix, trans_matrix;
+  scale_matrix.SetScale(matrix_xscale, matrix_yscale, 1.0f);
+  trans_matrix.Translate(matrix_xoffset, matrix_yoffset, 0.0f);
+  mtxi->PushMMatrix(scale_matrix * trans_matrix);
+  tgt->PushModColor(fvec4(0, 1, 0, 1));
+
+  defmtl->SetUIColorMode(UiColorMode::VTX);
+  gbi->DrawPrimitive(
+      defmtl.get(), //
+      _vtxbuf,
+      PrimitiveType::LINES,
+      0,
+      _numvertices);
+
+  tgt->PopModColor();
+  mtxi->PopMMatrix();
+
+  mtxi->PopUIMatrix();
+  /*int lablen = _label.length();
+  if (lablen) {
+    tgt->PushModColor(_textcolor);
+    ork::lev2::FontMan::PushFont(_font);
+    lev2::FontMan::beginTextBlock(tgt, lablen);
+    int sw = lev2::FontMan::stringWidth(lablen);
+    lev2::FontMan::DrawText(
+        tgt, //
+        ixc - (sw >> 1),
+        iyc - 6,
+        _label.c_str());
+    //
+    lev2::FontMan::endTextBlock(tgt);
+    ork::lev2::FontMan::PopFont();
+    tgt->PopModColor();
+  }*/
+}
