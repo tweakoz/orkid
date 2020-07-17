@@ -48,7 +48,7 @@ void File::parse(ork::file::Path& inppath) {
   _scanner._quotedstrings           = false;
 
   _scanner.addRule("$[a-z]+", int(TokenClass::SECTION));
-  _scanner.addRule("[bB][0-1]+", int(TokenClass::BITVECTOR));
+  _scanner.addRule("[bB][0-1z]+", int(TokenClass::BITVECTOR));
   _scanner.addRule("#[0-9]+", int(TokenClass::TIMESTAMP));
   _scanner.addRule("\\s+", int(TokenClass::WHITESPACE));
   _scanner.addRule("\\n+", int(TokenClass::NEWLINE));
@@ -211,14 +211,21 @@ void File::parse(ork::file::Path& inppath) {
             parse_state = ParseState::KEY;
 
             bool starts_bool =
-                (toktext[0] == '0' //
-                 or toktext[0] == '1');
+                (toktext[0] == '0'    //
+                 or toktext[0] == '1' //
+                 or toktext[0] == 'z');
 
             if (starts_bool) {
               printf("mushed VALUE: %c\n", toktext[0]);
               cursample          = Sample();
               cursample._numbits = 1;
-              cursample.write(0, (toktext[0] == '1'));
+              if (toktext[0] == '1') {
+                cursample.write(0, true);
+              } else if (toktext[0] == '0') {
+                cursample.write(0, false);
+              } else if (toktext[0] == 'z') {
+                // cursample.write(0, false); // todo handle undefined
+              }
               auto key = toktext.substr(1);
               auto it  = _signals_by_shortname.find(key);
               OrkAssert(it != _signals_by_shortname.end());
@@ -257,6 +264,11 @@ void File::parse(ork::file::Path& inppath) {
               cursample.write(abit, true);
               break;
             }
+            case 'z': {
+              int abit = (numbitsinsample - 1) - ibit;
+              cursample.write(abit, false); // todo uninitialized...
+              break;
+            }
             default:
               OrkAssert(false);
               break;
@@ -283,7 +295,7 @@ void File::parse(ork::file::Path& inppath) {
     }
   }
   OrkAssert(scope_stack.top() == _root);
-}
+} // namespace ork::hdl::vcd
 
 void Sample::write(int bit, bool value) {
   int awrd = (knumwords - 1) - (bit >> 6);
