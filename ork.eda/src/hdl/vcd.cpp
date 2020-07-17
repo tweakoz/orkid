@@ -3,11 +3,11 @@
 #include <stack>
 
 namespace ork::hdl::vcd {
-
+////////////////////////////////////////////////////////////////////////////////
 File::File()
     : _scanner("") {
 }
-
+////////////////////////////////////////////////////////////////////////////////
 enum class TokenClass {
   SECTION = 1,
   IDENTIFIER,
@@ -22,7 +22,7 @@ enum class TokenClass {
   PRINTABLE,
   UNKNOWN = 65535,
 };
-
+////////////////////////////////////////////////////////////////////////////////
 enum class ParseState {
   INIT = 0, //
   SECTION,
@@ -30,7 +30,7 @@ enum class ParseState {
   VALUE,
   KEY
 };
-
+////////////////////////////////////////////////////////////////////////////////
 void File::parse(ork::file::Path& inppath) {
 
   _root = std::make_shared<Scope>();
@@ -48,7 +48,7 @@ void File::parse(ork::file::Path& inppath) {
   _scanner._quotedstrings           = false;
 
   _scanner.addRule("$[a-z]+", int(TokenClass::SECTION));
-  _scanner.addRule("[bB][0-1z]+", int(TokenClass::BITVECTOR));
+  _scanner.addRule("[bB][0-1xz]+", int(TokenClass::BITVECTOR));
   _scanner.addRule("#[0-9]+", int(TokenClass::TIMESTAMP));
   _scanner.addRule("\\s+", int(TokenClass::WHITESPACE));
   _scanner.addRule("\\n+", int(TokenClass::NEWLINE));
@@ -82,7 +82,7 @@ void File::parse(ork::file::Path& inppath) {
   std::stack<scope_ptr_t> scope_stack;
   scope_stack.push(_root);
   ////////////////////////////////////
-  Sample cursample;
+  sample_ptr_t cursample;
   ////////////////////////////////////
   size_t index               = 0;
   std::string __prev_section = "";
@@ -200,11 +200,10 @@ void File::parse(ork::file::Path& inppath) {
             OrkAssert(it != _signals_by_shortname.end());
             auto sig = it->second;
             printf("index<%zu> SIG<%s:%d:%s>\n", index, sig->_type.c_str(), sig->_bit_width, sig->_longname.c_str());
-
-            auto copyofsample            = std::make_shared<Sample>(cursample);
-            sig->_samples[cur_timestamp] = copyofsample;
-
-            parse_state = ParseState::VALUE;
+            cursample->left_extend(sig->_bit_width);
+            sig->_samples[cur_timestamp] = cursample;
+            cursample                    = nullptr;
+            parse_state                  = ParseState::VALUE;
             break;
           }
           case ParseState::VALUE: {
@@ -213,30 +212,51 @@ void File::parse(ork::file::Path& inppath) {
             bool starts_bool =
                 (toktext[0] == '0'    //
                  or toktext[0] == '1' //
+                 or toktext[0] == 'x' //
                  or toktext[0] == 'z');
 
-            if (starts_bool) {
-              printf("mushed VALUE: %c\n", toktext[0]);
-              cursample          = Sample();
-              cursample._numbits = 1;
-              if (toktext[0] == '1') {
-                cursample.write(0, TriBool::TRUE);
-              } else if (toktext[0] == '0') {
-                cursample.write(0, TriBool::FALSE);
-              } else if (toktext[0] == 'z') {
-                cursample.write(0, TriBool::Z);
-              }
-              auto key = toktext.substr(1);
-              auto it  = _signals_by_shortname.find(key);
-              OrkAssert(it != _signals_by_shortname.end());
-              auto sig = it->second;
-              printf("mushed SIG<%s:%d:%s>\n", sig->_type.c_str(), sig->_bit_width, sig->_longname.c_str());
-              auto copyofsample            = std::make_shared<Sample>(cursample);
-              sig->_samples[cur_timestamp] = copyofsample;
-              parse_state                  = ParseState::VALUE;
-            } else {
-              OrkAssert(false);
+            OrkAssert(starts_bool);
+
+            char ch = toktext[0];
+
+            printf("mushed VALUE: %c\n", ch);
+            LineState lstate;
+            switch (ch) {
+              case '0':
+                lstate = LineState::FALSE;
+                break;
+              case '1':
+                lstate = LineState::TRUE;
+                break;
+              case 'x':
+                lstate = LineState::X;
+                break;
+              case 'z':
+                lstate = LineState::Z;
+                break;
+              default:
+                OrkAssert(false);
+                break;
             }
+
+            auto key = toktext.substr(1);
+            auto it  = _signals_by_shortname.find(key);
+            OrkAssert(it != _signals_by_shortname.end());
+            auto sig            = it->second;
+            cursample           = std::make_shared<Sample>();
+            cursample->_numbits = 1;
+            cursample->write(0, lstate);
+            cursample->left_extend(sig->_bit_width);
+
+            printf(
+                "mushed SIG<%s:%d:%s>\n", //
+                sig->_type.c_str(),
+                sig->_bit_width,
+                sig->_longname.c_str());
+
+            sig->_samples[cur_timestamp] = cursample;
+            cursample                    = nullptr;
+            parse_state                  = ParseState::VALUE;
 
             break;
           }
@@ -252,21 +272,25 @@ void File::parse(ork::file::Path& inppath) {
         OrkAssert(parse_state == ParseState::VALUE);
         int numbitsinsample = toktext.length() - 1;
         printf("index<%zu> BITVECTOR<%d:%s>\n", index, numbitsinsample, toktext.c_str());
-        cursample          = Sample();
-        cursample._numbits = numbitsinsample;
+        cursample           = std::make_shared<Sample>();
+        cursample->_numbits = numbitsinsample;
         for (int ibit = 0; ibit < numbitsinsample; ibit++) {
           char bitval = toktext[ibit + 1];
           int abit    = (numbitsinsample - 1) - ibit;
           switch (bitval) {
             case '0':
-              cursample.write(abit, TriBool::FALSE);
+              cursample->write(abit, LineState::FALSE);
               break;
             case '1': {
-              cursample.write(abit, TriBool::TRUE);
+              cursample->write(abit, LineState::TRUE);
+              break;
+            }
+            case 'x': {
+              cursample->write(abit, LineState::X);
               break;
             }
             case 'z': {
-              cursample.write(abit, TriBool::Z);
+              cursample->write(abit, LineState::Z);
               break;
             }
             default:
@@ -295,16 +319,33 @@ void File::parse(ork::file::Path& inppath) {
     }
   }
   OrkAssert(scope_stack.top() == _root);
-} // namespace ork::hdl::vcd
-
-void Sample::write(int bit, TriBool value) {
+}
+////////////////////////////////////////////////////////////////////////////////
+void Sample::write(int bit, LineState value) {
   _bits[bit] = value;
 }
-
-TriBool Sample::read(int bit) const {
+////////////////////////////////////////////////////////////////////////////////
+LineState Sample::read(int bit) const {
   return _bits[bit];
 }
-
+////////////////////////////////////////////////////////////////////////////////
+void Sample::left_extend(int width) {
+  LineState extension = _bits[_numbits - 1];
+  // extension rules
+  // https://www.eg.bucknell.edu/~csci320/2016-fall/wp-content/uploads/2015/08/verilog-std-1364-2005.pdf
+  //  page 331
+  switch (extension) {
+    case LineState::FALSE:
+    case LineState::TRUE:
+      extension = LineState::FALSE;
+      break;
+  }
+  for (int i = _numbits; i < width; i++) {
+    _bits[i] = extension;
+  }
+  _numbits = width;
+}
+////////////////////////////////////////////////////////////////////////////////
 std::string Sample::strvalue() const {
 
   std::string rval;
@@ -312,10 +353,12 @@ std::string Sample::strvalue() const {
   int bits_pending = _numbits;
 
   auto nyb2char = [](int nyb) -> char {
-    OrkAssert(nyb >= -1 and nyb < 16);
+    OrkAssert(nyb >= -2 and nyb < 16);
     char rval = 0;
-    if (nyb < 0) {
+    if (nyb == -1) {
       rval = 'z';
+    } else if (nyb == -2) {
+      rval = 'x';
     } else if (nyb < 10) {
       rval = '0' + nyb;
     } else {
@@ -324,26 +367,31 @@ std::string Sample::strvalue() const {
     return rval;
   };
 
-  size_t numadded = 0;
+  size_t bitsadded = 0;
   while (bits_pending) {
 
-    int ibit = numadded;
-    int nyb  = 0;
-    for (int i = 0; i < 4; i++)
-      if (_bits[numadded + i] == TriBool::TRUE)
+    int numthisiter = std::clamp(bits_pending, 1, 4);
+
+    int nyb = 0;
+    for (int i = 0; i < numthisiter; i++)
+      if (_bits[bitsadded + i] == LineState::TRUE)
         nyb |= (1 << i);
 
-    for (int i = 0; i < 4; i++)
-      if (_bits[numadded + i] == TriBool::Z)
+    for (int i = 0; i < numthisiter; i++)
+      if (_bits[bitsadded + i] == LineState::Z)
         nyb = -1;
+
+    for (int i = 0; i < numthisiter; i++)
+      if (_bits[bitsadded + i] == LineState::X)
+        nyb = -2;
 
     rval.push_back(nyb2char(nyb));
 
-    bits_pending -= 4;
-    numadded++;
-    if (bits_pending < 0)
-      bits_pending = 0;
-    if (bits_pending and (numadded != 0) and ((numadded & 0x3) == 0))
+    bits_pending -= numthisiter;
+    bitsadded += numthisiter;
+
+    if (bits_pending and //
+        ((bitsadded & 0xf) == 0))
       rval.push_back('.');
   }
   auto reversed = rval;
@@ -351,5 +399,5 @@ std::string Sample::strvalue() const {
 
   return reversed;
 }
-
+////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::hdl::vcd

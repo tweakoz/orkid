@@ -163,25 +163,31 @@ void SignalTrackWidget::DoDraw(ui::drawevent_constptr_t drwev) {
         float nextvalue = 0.5f;
         uint32_t color  = 0xff00c000;
         switch (prevsample->read(0)) {
-          case TriBool::FALSE:
+          case LineState::FALSE:
             prevvalue = 0.9f;
             break;
-          case TriBool::TRUE:
+          case LineState::TRUE:
             prevvalue = 0.1f;
             break;
-          case TriBool::Z:
+          case LineState::X:
             color = 0xff0000c0;
+            break;
+          case LineState::Z:
+            color = 0xff00c0c0;
             break;
         }
         switch (nextsample->read(0)) {
-          case TriBool::FALSE:
+          case LineState::FALSE:
             nextvalue = 0.9f;
             break;
-          case TriBool::TRUE:
+          case LineState::TRUE:
             nextvalue = 0.1f;
             break;
-          case TriBool::Z:
+          case LineState::X:
             color = 0xff0000c0;
+            break;
+          case LineState::Z:
+            color = 0xff00c0c0;
             break;
         }
         add_vtx(prevtimest, prevvalue, color);
@@ -206,14 +212,17 @@ void SignalTrackWidget::DoDraw(ui::drawevent_constptr_t drwev) {
       float endvalue = 0.5f;
       uint32_t color = 0xff00c000;
       switch (endsample->read(0)) {
-        case TriBool::FALSE:
+        case LineState::FALSE:
           endvalue = 0.9f;
           break;
-        case TriBool::TRUE:
+        case LineState::TRUE:
           endvalue = 0.1f;
           break;
-        case TriBool::Z:
+        case LineState::X:
           color = 0xff0000c0;
+          break;
+        case LineState::Z:
+          color = 0xff00c0c0;
           break;
       }
 
