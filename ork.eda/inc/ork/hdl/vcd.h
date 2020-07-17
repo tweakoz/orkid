@@ -16,17 +16,19 @@ using scope_ptr_t  = std::shared_ptr<Scope>;
 using sample_ptr_t = std::shared_ptr<Sample>;
 using file_ptr_t   = std::shared_ptr<File>;
 
-constexpr size_t kmaxbitlen = 256;
-constexpr size_t knumwords  = kmaxbitlen >> 6;
+constexpr size_t kmaxbitlen = 64;
+
+enum class TriBool { FALSE, TRUE, Z };
+
 struct Sample {
   Sample() {
-    for (int i = 0; i < knumwords; i++)
-      _packedbits[i] = 0;
+    for (int i = 0; i < kmaxbitlen; i++)
+      _bits[i] = TriBool::FALSE;
   }
-  void write(int bit, bool value);
-  bool read(int bit) const;
+  void write(int bit, TriBool value);
+  TriBool read(int bit) const;
   std::string strvalue() const;
-  uint64_t _packedbits[knumwords];
+  TriBool _bits[kmaxbitlen];
   int _numbits = 0;
 };
 

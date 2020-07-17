@@ -159,12 +159,35 @@ void SignalTrackWidget::DoDraw(ui::drawevent_constptr_t drwev) {
       sample_ptr_t nextsample = sitem.second;
 
       if (is_1bit) {
-        float prevvalue = prevsample->read(0) ? 0.1 : 0.9;
-        float nextvalue = nextsample->read(0) ? 0.1 : 0.9;
-        add_vtx(prevtimest, prevvalue, 0xff00c000);
-        add_vtx(nexttimest, prevvalue, 0xff00c000);
-        add_vtx(nexttimest, prevvalue, 0xff00c000);
-        add_vtx(nexttimest, nextvalue, 0xff00c000);
+        float prevvalue = 0.5f;
+        float nextvalue = 0.5f;
+        uint32_t color  = 0xff00c000;
+        switch (prevsample->read(0)) {
+          case TriBool::FALSE:
+            prevvalue = 0.9f;
+            break;
+          case TriBool::TRUE:
+            prevvalue = 0.1f;
+            break;
+          case TriBool::Z:
+            color = 0xff0000c0;
+            break;
+        }
+        switch (nextsample->read(0)) {
+          case TriBool::FALSE:
+            nextvalue = 0.9f;
+            break;
+          case TriBool::TRUE:
+            nextvalue = 0.1f;
+            break;
+          case TriBool::Z:
+            color = 0xff0000c0;
+            break;
+        }
+        add_vtx(prevtimest, prevvalue, color);
+        add_vtx(nexttimest, prevvalue, color);
+        add_vtx(nexttimest, prevvalue, color);
+        add_vtx(nexttimest, nextvalue, color);
       } else {
         add_vtx(sitem.first, 0.0f, 0xff404040);
         add_vtx(sitem.first, 1.0f, 0xff404040);
@@ -179,9 +202,23 @@ void SignalTrackWidget::DoDraw(ui::drawevent_constptr_t drwev) {
       auto enditem           = _signal->_samples.rbegin();
       uint64_t endtimest     = enditem->first;
       sample_ptr_t endsample = enditem->second;
-      float endvalue         = endsample->read(0) ? 0.1 : 0.9;
-      add_vtx(endtimest, endvalue, 0xff00ff00);
-      add_vtx(viewparams->_max_timestamp, endvalue, 0xff00ff00);
+
+      float endvalue = 0.5f;
+      uint32_t color = 0xff00c000;
+      switch (endsample->read(0)) {
+        case TriBool::FALSE:
+          endvalue = 0.9f;
+          break;
+        case TriBool::TRUE:
+          endvalue = 0.1f;
+          break;
+        case TriBool::Z:
+          color = 0xff0000c0;
+          break;
+      }
+
+      add_vtx(endtimest, endvalue, color);
+      add_vtx(viewparams->_max_timestamp, endvalue, color);
     }
     //////////////////////////////////////////////
     vw.UnLock(tgt);

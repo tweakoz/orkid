@@ -220,11 +220,11 @@ void File::parse(ork::file::Path& inppath) {
               cursample          = Sample();
               cursample._numbits = 1;
               if (toktext[0] == '1') {
-                cursample.write(0, true);
+                cursample.write(0, TriBool::TRUE);
               } else if (toktext[0] == '0') {
-                cursample.write(0, false);
+                cursample.write(0, TriBool::FALSE);
               } else if (toktext[0] == 'z') {
-                // cursample.write(0, false); // todo handle undefined
+                cursample.write(0, TriBool::Z);
               }
               auto key = toktext.substr(1);
               auto it  = _signals_by_shortname.find(key);
@@ -256,17 +256,17 @@ void File::parse(ork::file::Path& inppath) {
         cursample._numbits = numbitsinsample;
         for (int ibit = 0; ibit < numbitsinsample; ibit++) {
           char bitval = toktext[ibit + 1];
+          int abit    = (numbitsinsample - 1) - ibit;
           switch (bitval) {
             case '0':
+              cursample.write(abit, TriBool::FALSE);
               break;
             case '1': {
-              int abit = (numbitsinsample - 1) - ibit;
-              cursample.write(abit, true);
+              cursample.write(abit, TriBool::TRUE);
               break;
             }
             case 'z': {
-              int abit = (numbitsinsample - 1) - ibit;
-              cursample.write(abit, false); // todo uninitialized...
+              cursample.write(abit, TriBool::Z);
               break;
             }
             default:
@@ -297,18 +297,12 @@ void File::parse(ork::file::Path& inppath) {
   OrkAssert(scope_stack.top() == _root);
 } // namespace ork::hdl::vcd
 
-void Sample::write(int bit, bool value) {
-  int awrd = (knumwords - 1) - (bit >> 6);
-  if (value) {
-    _packedbits[awrd] |= (1 << bit);
-  } else {
-    _packedbits[awrd] &= ~(1 << bit);
-  }
+void Sample::write(int bit, TriBool value) {
+  _bits[bit] = value;
 }
 
-bool Sample::read(int bit) const {
-  int awrd = (knumwords - 1) - (bit >> 6);
-  return _packedbits[awrd] & (1 << bit);
+TriBool Sample::read(int bit) const {
+  return _bits[bit];
 }
 
 std::string Sample::strvalue() const {
@@ -318,9 +312,11 @@ std::string Sample::strvalue() const {
   int bits_pending = _numbits;
 
   auto nyb2char = [](int nyb) -> char {
-    OrkAssert(nyb >= 0 and nyb < 16);
+    OrkAssert(nyb >= -1 and nyb < 16);
     char rval = 0;
-    if (nyb < 10) {
+    if (nyb < 0) {
+      rval = 'z';
+    } else if (nyb < 10) {
       rval = '0' + nyb;
     } else {
       rval = 'a' + (nyb - 10);
@@ -328,12 +324,21 @@ std::string Sample::strvalue() const {
     return rval;
   };
 
-  uint64_t shiftreg = _packedbits[3];
-  size_t numadded   = 0;
+  size_t numadded = 0;
   while (bits_pending) {
-    int nyb = shiftreg & 0xf;
+
+    int ibit = numadded;
+    int nyb  = 0;
+    for (int i = 0; i < 4; i++)
+      if (_bits[numadded + i] == TriBool::TRUE)
+        nyb |= (1 << i);
+
+    for (int i = 0; i < 4; i++)
+      if (_bits[numadded + i] == TriBool::Z)
+        nyb = -1;
+
     rval.push_back(nyb2char(nyb));
-    shiftreg >>= 4;
+
     bits_pending -= 4;
     numadded++;
     if (bits_pending < 0)
