@@ -2,17 +2,15 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 overlay_ptr_t Overlay::instance() {
-  static overlay_ptr_t __overlay = std::make_shared<Overlay>("yo", fvec4(0), "yo");
+  static overlay_ptr_t __overlay = std::make_shared<Overlay>("yo", fvec4(0));
   return __overlay;
 }
 ///////////////////////////////////////////////////////////////////////////////
 Overlay::Overlay(
     const std::string& name, //
-    fvec4 color,
-    std::string label)
+    fvec4 color)
     : Widget(name)
     , _color(color)
-    , _label(label)
     , _vtxbuf(1 << 20, 0, PrimitiveType::NONE) {
   _textcolor = fvec4(1, 1, 1, 1);
   _vtxbuf.SetRingLock(false);
@@ -49,7 +47,7 @@ void Overlay::DoDraw(drawevent_constptr_t drwev) {
     vw.Lock(
         tgt, //
         &_vtxbuf,
-        4);
+        4 + viewparams->_sigtracks.size() * 2);
     //////////////////////////////////////////////
     _numvertices = 0;
     //////////////////////////////////////////////
@@ -68,6 +66,12 @@ void Overlay::DoDraw(drawevent_constptr_t drwev) {
       int y2 = viewparams->_curtrack->_geometry.y2();
       add_vtx(viewparams->_cursor_nearest, y1, 0xff00ffff);
       add_vtx(viewparams->_cursor_nearest, y2, 0xff00ffff);
+    }
+    for (auto track : viewparams->_sigtracks) {
+      int y1 = track->_geometry._y;
+      int y2 = track->_geometry.y2();
+      add_vtx(track->_nearest_timestep, y1, 0xff404040);
+      add_vtx(track->_nearest_timestep, y2, 0xff404040);
     }
     //////////////////////////////////////////////
     vw.UnLock(tgt);
@@ -122,26 +126,28 @@ void Overlay::DoDraw(drawevent_constptr_t drwev) {
         _numvertices);
     mtxi->PopMMatrix();
     defmtl->swapRasterState(save_rstate);
+
     /////////////////////////////////
     // mouselabel
     /////////////////////////////////
 
-    int lablen = _label.length();
-    if (lablen) {
-      tgt->PushModColor(_textcolor);
-      ork::lev2::FontMan::PushFont(_font);
-      lev2::FontMan::beginTextBlock(tgt, lablen);
-      int sw = lev2::FontMan::stringWidth(lablen);
-      lev2::FontMan::DrawText(
-          tgt, //
-          ixc - (sw >> 1),
-          iyc - 6,
-          _label.c_str());
-      //
-      lev2::FontMan::endTextBlock(tgt);
-      ork::lev2::FontMan::PopFont();
-      tgt->PopModColor();
+    ork::lev2::FontMan::PushFont(_font);
+    lev2::FontMan::beginTextBlock(tgt, 1024);
+    tgt->PushModColor(_textcolor);
+    for (auto track : viewparams->_sigtracks) {
+      if (track->_stringwidth) {
+        auto& label = track->_label;
+        lev2::FontMan::DrawText(
+            tgt, //
+            ixc - (track->_stringwidth >> 1),
+            track->_labelY,
+            label.c_str());
+        //
+      }
     }
+    tgt->PopModColor();
+    lev2::FontMan::endTextBlock(tgt);
+    ork::lev2::FontMan::PopFont();
   }
   mtxi->PopUIMatrix();
 }

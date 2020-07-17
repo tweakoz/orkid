@@ -1,4 +1,5 @@
 #include "vcdviewer.h"
+#include <ork/lev2/input/inputdevice.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -14,12 +15,76 @@ SignalTrackWidget::SignalTrackWidget(
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void SignalTrackWidget::setTimeStamp(uint64_t timestep) {
+  auto overlay                = Overlay::instance();
+  auto viewparams             = ViewParams::instance();
+  viewparams->_cursor_actual  = timestep;
+  viewparams->_curtrack       = this;
+  uint64_t closest            = nearestItem(_signal->_samples, timestep)->first;
+  viewparams->_cursor_nearest = closest;
+  ////////////////////////////////
+  // update all tracks
+  ////////////////////////////////
+  auto font = lev2::FontMan::GetRef()._pushFont(_font);
+  for (auto track : viewparams->_sigtracks) {
+
+    auto sig = track->_signal;
+
+    closest                  = nearestItem(sig->_samples, timestep)->first;
+    track->_nearest_timestep = closest;
+    auto sample              = sig->_samples[closest];
+    bool is_1bit             = sig->_bit_width == 1;
+    if (is_1bit) {
+      track->_label       = "";
+      track->_stringwidth = 0;
+    } else {
+      track->_label = sample->strvalue();
+      int lablen    = track->_label.length();
+
+      track->_stringwidth = lev2::FontMan::stringWidth(lablen);
+    }
+  }
+  lev2::FontMan::PopFont();
+  ////////////////////////////////
+
+  overlay->_vbdirty = true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 HandlerResult SignalTrackWidget::DoOnUiEvent(event_constptr_t evptr) {
   auto overlay    = Overlay::instance();
   auto viewparams = ViewParams::instance();
   auto uictx      = evptr->_uicontext;
 
   switch (evptr->_eventcode) {
+    case EventCode::KEY:
+    case EventCode::KEY_REPEAT:
+      switch (evptr->miKeyCode) {
+        case ETRIG_RAW_KEY_LEFT: {
+          auto it = nearestItem(_signal->_samples, _nearest_timestep);
+          if (it != _signal->_samples.end()) {
+            it--;
+            if (it != _signal->_samples.end()) {
+              setTimeStamp(it->first);
+            }
+          }
+          break;
+        }
+        case ETRIG_RAW_KEY_RIGHT: {
+          auto it = nearestItem(_signal->_samples, _nearest_timestep);
+          if (it != _signal->_samples.end()) {
+            it++;
+            if (it != _signal->_samples.end()) {
+              setTimeStamp(it->first);
+            }
+          }
+          break;
+        }
+        default:
+          break;
+      }
+      break;
     case EventCode::MOUSE_ENTER:
       printf("enter trakwidg<%p>\n", this);
       uictx->_overlayWidget = overlay.get();
@@ -37,41 +102,7 @@ HandlerResult SignalTrackWidget::DoOnUiEvent(event_constptr_t evptr) {
       float fi          = float(local_x - 1) / float(_geometry._w - 2);
       fi                = std::clamp(fi, 0.0f, 1.0f);
       uint64_t timestep = uint64_t(ftimemin + (fi * ftimerange));
-      uint64_t closest  = nearestItem(_signal->_samples, timestep)->first;
-
-      viewparams->_cursor_actual  = timestep;
-      viewparams->_cursor_nearest = closest;
-      viewparams->_curtrack       = this;
-
-      auto sample = _signal->_samples[closest];
-      auto label  = FormatString("timestep<%zu>\n", closest);
-      int lablen  = label.length();
-
-      bool is_1bit = _signal->_bit_width == 1;
-      if (not is_1bit)
-        label += sample->strvalue();
-
-      auto font  = lev2::FontMan::GetRef()._pushFont(_font);
-      int sw     = lev2::FontMan::stringWidth(lablen);
-      int swdiv2 = sw >> 1;
-      lev2::FontMan::PopFont();
-      overlay->_label = label;
-
-      /*int ovx = std::clamp(
-          evptr->miX - 128, //
-          _geometry._x - (128 - swdiv2),
-          _geometry.x2() - (128 + swdiv2));
-      int ovy = std::clamp(
-          evptr->miY - 32, //
-          _geometry._y,
-          _geometry.y2() - 32);*/
-
-      // overlay->SetX(ovx);
-      // overlay->SetY(ovy);
-      // overlay->SetW(256);
-      // overlay->SetH(32);
-      overlay->_vbdirty = true;
-      // printf("trakwidg<%p> fi<%g> timestep<%zu> closest<%llu>\n", this, fi, timestep, closest);
+      setTimeStamp(timestep);
       break;
     }
     default:
@@ -85,7 +116,7 @@ HandlerResult SignalTrackWidget::DoOnUiEvent(event_constptr_t evptr) {
 void SignalTrackWidget::DoDraw(ui::drawevent_constptr_t drwev) {
   auto overlay    = Overlay::instance();
   auto viewparams = ViewParams::instance();
-  _label          = FormatString(
+  _hdrlabel       = FormatString(
       "%s[%d] numpts<%zu>", //
       _signal->_longname.c_str(),
       _signal->_bit_width,
@@ -170,10 +201,11 @@ void SignalTrackWidget::DoDraw(ui::drawevent_constptr_t drwev) {
   ////////////////////////////////
   int ix1, iy1, ix2, iy2, ixc, iyc;
   LocalToRoot(0, 0, ix1, iy1);
-  ix2 = ix1 + _geometry._w;
-  iy2 = iy1 + _geometry._h;
-  ixc = ix1 + (_geometry._w >> 1);
-  iyc = iy1 + (_geometry._h >> 1);
+  ix2     = ix1 + _geometry._w;
+  iy2     = iy1 + _geometry._h;
+  ixc     = ix1 + (_geometry._w >> 1);
+  iyc     = iy1 + (_geometry._h >> 1);
+  _labelY = _geometry._y + 4 + (_geometry._h >> 1) - 8;
 
   defmtl->_rasterstate.SetBlending(lev2::Blending::ALPHA);
   defmtl->_rasterstate.SetDepthTest(lev2::EDEPTHTEST_OFF);

@@ -32,6 +32,7 @@ struct SignalTrackWidget;
 ///////////////////////////////////////////////////////////////////////////////
 using viewparams_ptr_t = std::shared_ptr<ViewParams>;
 using overlay_ptr_t    = std::shared_ptr<Overlay>;
+using sigtrack_ptr_t   = std::shared_ptr<SignalTrackWidget>;
 ///////////////////////////////////////////////////////////////////////////////
 struct ViewParams {
   static viewparams_ptr_t instance();
@@ -40,6 +41,7 @@ struct ViewParams {
   uint64_t _cursor_actual      = 0;
   uint64_t _cursor_nearest     = 0;
   SignalTrackWidget* _curtrack = nullptr;
+  std::vector<sigtrack_ptr_t> _sigtracks;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct SignalTrack {
@@ -61,17 +63,24 @@ struct SignalTrackWidget final : public Widget {
       signal_ptr_t sig, //
       fvec4 color);
 
+  HandlerResult DoOnUiEvent(event_constptr_t evptr) override;
+  void DoDraw(ui::drawevent_constptr_t drwev) override;
+  void setTimeStamp(uint64_t ts);
+
   fvec4 _color;
   fvec4 _textcolor;
   signal_ptr_t _signal;
   std::string _label;
+  std::string _hdrlabel;
   size_t _numsamples;
-  std::string _font = "i14";
-  bool _vbdirty     = true;
+  std::string _font          = "i14";
+  bool _vbdirty              = true;
+  uint64_t _nearest_timestep = 0xffffffffffffffff;
   DynamicVertexBuffer<vtx_t> _vtxbuf;
   int _numvertices = 0;
-  HandlerResult DoOnUiEvent(event_constptr_t evptr) override;
-  void DoDraw(ui::drawevent_constptr_t drwev) override;
+  std::string _curlabel;
+  int _stringwidth = 0;
+  int _labelY      = 0;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct Overlay final : public Widget {
@@ -82,11 +91,9 @@ struct Overlay final : public Widget {
 
   Overlay(
       const std::string& name, //
-      fvec4 color,
-      std::string label);
+      fvec4 color);
   fvec4 _color;
   fvec4 _textcolor;
-  std::string _label;
   std::string _font = "i14";
   DynamicVertexBuffer<vtx_t> _vtxbuf;
   int _numvertices = 0;

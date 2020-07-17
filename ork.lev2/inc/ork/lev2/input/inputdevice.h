@@ -37,14 +37,14 @@ enum ERawTriggerNames {
   ///////////////////////////////
   // Raw Values
 
-  ETRIG_RAW_ALPHA_A  = 'A',
-  ETRIG_RAW_ALPHA_B  = 'B',
-  ETRIG_RAW_ALPHA_C  = 'C',
-  ETRIG_RAW_ALPHA_D  = 'D',
-  ETRIG_RAW_ALPHA_E  = 'E',
-  ETRIG_RAW_ALPHA_S  = 'S',
-  ETRIG_RAW_ALPHA_W  = 'W',
-  ETRIG_RAW_ALPHA_Z  = 'Z',
+  ETRIG_RAW_ALPHA_A  = 'a',
+  ETRIG_RAW_ALPHA_B  = 'b',
+  ETRIG_RAW_ALPHA_C  = 'c',
+  ETRIG_RAW_ALPHA_D  = 'd',
+  ETRIG_RAW_ALPHA_E  = 'e',
+  ETRIG_RAW_ALPHA_S  = 's',
+  ETRIG_RAW_ALPHA_W  = 'w',
+  ETRIG_RAW_ALPHA_Z  = 'z',
   ETRIG_RAW_NUMBER_0 = '0',
   ETRIG_RAW_NUMBER_1 = '1',
   ETRIG_RAW_NUMBER_2 = '2',
@@ -54,6 +54,8 @@ enum ERawTriggerNames {
   ETRIG_RAW_KEY_MINUS = '-',
 
   ETRIG_RAW_KEY_ALPHABASE = ETRIG_RAW_ALPHA_A,
+
+  ETRIG_RAW_KEY_RETURN,
 
   ETRIG_RAW_KEY_SPACEBAR = 32,
 

@@ -7,7 +7,6 @@
 #include <ork/kernel/opq.h>
 #include <ork/lev2/gfx/ctxbase.h>
 #include <ork/lev2/gfx/gfxenv.h>
-#include <ork/lev2/input/inputdevice.h>
 #include <ork/pch.h>
 ////////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/camera/uicam.h>
@@ -49,6 +48,20 @@ QCtxWidget::QCtxWidget(CTQT* pctxbase, QWidget* parent)
   _evstealwidget = nullptr;
 
   _pushTimer.Start();
+
+  auto assignkey = [&](int from, int to) { _keymap[Qt::Key(from)] = ERawTriggerNames(to); };
+
+  assignkey(Qt::Key_Left, ETRIG_RAW_KEY_LEFT);
+  assignkey(Qt::Key_Right, ETRIG_RAW_KEY_RIGHT);
+  assignkey(Qt::Key_Up, ETRIG_RAW_KEY_UP);
+  assignkey(Qt::Key_Down, ETRIG_RAW_KEY_DOWN);
+  assignkey(Qt::Key_Enter, ETRIG_RAW_KEY_RETURN);
+  for (int k = Qt::Key_A; k <= Qt::Key_Z; k++) {
+    assignkey(k, (k - Qt::Key_A) + ETRIG_RAW_ALPHA_A);
+  }
+  for (int k = Qt::Key_0; k <= Qt::Key_9; k++) {
+    assignkey(k, (k - Qt::Key_0) + ETRIG_RAW_NUMBER_0);
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 QCtxWidget::~QCtxWidget() {
@@ -290,9 +303,8 @@ void QCtxWidget::keyPressEvent(QKeyEvent* event) {
                          ? ork::ui::EventCode::KEY_REPEAT
                          : ork::ui::EventCode::KEY;
 
-  int ikeyUNI = event->key();
+  auto ikeyUNI = event->key();
 
-  uiev->miKeyCode                 = ikeyUNI;
   Qt::KeyboardModifiers modifiers = event->modifiers();
 
   uiev->mbALT   = (modifiers & Qt::AltModifier);
@@ -300,16 +312,13 @@ void QCtxWidget::keyPressEvent(QKeyEvent* event) {
   uiev->mbSHIFT = (modifiers & Qt::ShiftModifier);
   uiev->mbMETA  = (modifiers & Qt::MetaModifier);
 
-  if ((ikeyUNI >= Qt::Key_A) && (ikeyUNI <= Qt::Key_Z)) {
-    uiev->miKeyCode = (ikeyUNI - Qt::Key_A) + int('a');
-
+  auto keyc       = _keymap.find(Qt::Key(ikeyUNI));
+  uiev->miKeyCode = int(ikeyUNI);
+  if (keyc != _keymap.end()) {
+    uiev->miKeyCode = keyc->second;
     msgrouter::content_t c;
     c.Set<int>(uiev->miKeyCode);
     msgrouter::channel("qtkeyboard.down")->post(c);
-  }
-  if (ikeyUNI == 0x01000004) // enter != (Qt::Key_Enter)
-  {
-    uiev->miKeyCode = 13;
   }
 
   if (root) {
@@ -333,20 +342,14 @@ void QCtxWidget::keyReleaseEvent(QKeyEvent* event) {
   uiev->mpBlindEventData = (void*)event;
   uiev->_eventcode       = ork::ui::EventCode::KEYUP;
 
-  int ikeyUNI = event->key();
-
-  uiev->miKeyCode = ikeyUNI;
-
-  if ((ikeyUNI >= Qt::Key_A) && (ikeyUNI <= Qt::Key_Z)) {
-
-    uiev->miKeyCode = (ikeyUNI - Qt::Key_A) + int('a');
+  auto ikeyUNI    = event->key();
+  uiev->miKeyCode = int(ikeyUNI);
+  auto keyc       = _keymap.find(Qt::Key(ikeyUNI));
+  if (keyc != _keymap.end()) {
+    uiev->miKeyCode = keyc->second;
     msgrouter::content_t c;
     c.Set<int>(uiev->miKeyCode);
     msgrouter::channel("qtkeyboard.up")->post(c);
-  }
-  if (ikeyUNI == 0x01000004) // enter != (Qt::Key_Enter)
-  {
-    uiev->miKeyCode = 13;
   }
 
   if (root) {

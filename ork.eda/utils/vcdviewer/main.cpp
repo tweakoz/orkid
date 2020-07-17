@@ -126,6 +126,8 @@ int main(int argc, char** argv) {
     tl->bottom()->anchorTo(gbot);
     tl->left()->anchorTo(selx_guide);
     tl->right()->anchorTo(l_tracks->right());
+
+    viewparams->_sigtracks.push_back(t._widget);
   }
   //////////////////////////////////////
   auto overlay = Overlay::instance();

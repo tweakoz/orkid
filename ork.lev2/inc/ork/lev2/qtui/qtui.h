@@ -13,6 +13,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/gfxenv.h>
+#include <ork/lev2/input/inputdevice.h>
 ///////////////////////////////////////////////////////////////////////////////
 
 extern int QtTest(int argc, char** argv);
@@ -106,6 +107,7 @@ public:
   ~QCtxWidget();
 
 protected:
+  std::map<Qt::Key, ERawTriggerNames> _keymap;
   QTimer mQtTimer;
   ork::Timer _pushTimer;
   bool mbSignalConnected;
