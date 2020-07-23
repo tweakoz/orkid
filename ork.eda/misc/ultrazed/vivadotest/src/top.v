@@ -26,7 +26,7 @@ module uzedtest(input wire SYSCLK_P,
     .clk_400_090(clk_400_090),
     .clk_400_180(clk_400_180),
     .clk_400_270(clk_400_270),
-    .reset(reset),
+    .reset(RESET),
     .locked(locked),
     .clk_in1_p(SYSCLK_P),
     .clk_in1_n(SYSCLK_N)
@@ -47,8 +47,11 @@ module uzedtest(input wire SYSCLK_P,
   assign PL_LED7 = counter[30];
   assign PL_LED8 = counter[31];
 
-  always @(posedge clk_600 or posedge RESET) begin
-    counter <= (RESET==1) ? 64'b0 : counter <= counter + 64'b1;
+  always @(posedge clk_400_000 or posedge RESET) begin
+    if(RESET || ! locked)
+      counter <= 0;
+    else
+      counter <= counter + 64'b1;
   end
 
 

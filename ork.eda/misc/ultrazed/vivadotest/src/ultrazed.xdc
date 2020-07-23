@@ -7,11 +7,11 @@ set_property PACKAGE_PIN AC7 [ get_ports {SYSCLK_N} ]; # SYS_CLK_N
 set_property IOSTANDARD LVDS [ get_ports {SYSCLK_P} ];
 set_property IOSTANDARD LVDS [ get_ports {SYSCLK_N} ];
 
-set_property PACKAGE_PIN AF1 [get_ports {RESET}];		# HP_SE_04
+set_property PACKAGE_PIN AA13 [get_ports {RESET}];		# HP_DP_18_P
 set_property IOSTANDARD LVCMOS18 [get_ports {RESET}]
 
 create_clock -period 3.333 [get_ports SYSCLK_P]
-set_input_jitter [get_clocks -of_objects [get_ports SYSCLK_P]] 0.033333
+set_input_jitter [get_clocks -of_objects [get_ports SYSCLK_P]] 0.033
 
 
 set_false_path -to [get_cells  -hier {*seq_reg*[0]} -filter {is_sequential}]
