@@ -1,7 +1,8 @@
 `timescale 1ns / 1ps
 
-module uzedtest(input wire user_sys_clk_p,
-           input wire user_sys_clk_n,
+module uzedtest(input wire SYSCLK_P,
+           input wire SYSCLK_N,
+           input wire RESET,
            output wire PL_LED1,
            output wire PL_LED2,
            output wire PL_LED3,
@@ -12,13 +13,24 @@ module uzedtest(input wire user_sys_clk_p,
            output wire PL_LED8
            );
 
-  wire sysclock;
+  wire clk_600;
+  wire clk_400_000;
+  wire clk_400_090;
+  wire clk_400_180;
+  wire clk_400_270;
+  wire locked;
 
-  IBUFGDS clk_inst (
-    .O(sysclock),
-    .I(user_sys_clk_p),
-    .IB(user_sys_clk_n)
-  );
+  uzed_sysclocks clocks(
+    .clk_600(clk_600),
+    .clk_400_000(clk_400_000),
+    .clk_400_090(clk_400_090),
+    .clk_400_180(clk_400_180),
+    .clk_400_270(clk_400_270),
+    .reset(reset),
+    .locked(locked),
+    .clk_in1_p(SYSCLK_P),
+    .clk_in1_n(SYSCLK_N)
+    );
 
   reg [63:0] counter;
 
@@ -35,8 +47,8 @@ module uzedtest(input wire user_sys_clk_p,
   assign PL_LED7 = counter[30];
   assign PL_LED8 = counter[31];
 
-  always @(posedge sysclock) begin
-      counter <= counter + 64'b1;
+  always @(posedge clk_600 or posedge RESET) begin
+    counter <= (RESET==1) ? 64'b0 : counter <= counter + 64'b1;
   end
 
 

@@ -1,13 +1,22 @@
 # ---------------------------------------------------
 ## UltraZed-EV SOM Clock Output #4 - 300MHz OSC Y4 on Bank 66
 ## ---------------------------------------------------
-set_property PACKAGE_PIN AC8 [ get_ports {user_sys_clk_p} ]; # SYS_CLK_P
-set_property PACKAGE_PIN AC7 [ get_ports {user_sys_clk_n} ]; # SYS_CLK_N
+set_property PACKAGE_PIN AC8 [ get_ports {SYSCLK_P} ]; # SYS_CLK_P
+set_property PACKAGE_PIN AC7 [ get_ports {SYSCLK_N} ]; # SYS_CLK_N
 ##
-set_property IOSTANDARD LVDS [ get_ports {user_sys_clk_p} ];
-set_property IOSTANDARD LVDS [ get_ports {user_sys_clk_n} ];
+set_property IOSTANDARD LVDS [ get_ports {SYSCLK_P} ];
+set_property IOSTANDARD LVDS [ get_ports {SYSCLK_N} ];
 
-create_clock -add -name sysclock -period 3.333 [get_ports {user_sys_clk_p}];
+set_property PACKAGE_PIN AF1 [get_ports {RESET}];		# HP_SE_04
+set_property IOSTANDARD LVCMOS18 [get_ports {RESET}]
+
+create_clock -period 3.333 [get_ports SYSCLK_P]
+set_input_jitter [get_clocks -of_objects [get_ports SYSCLK_P]] 0.033333
+
+
+set_false_path -to [get_cells  -hier {*seq_reg*[0]} -filter {is_sequential}]
+set_property PHASESHIFT_MODE LATENCY [get_cells -hierarchical *adv*]
+
 
 # PL User LEDs
 #
