@@ -1,7 +1,9 @@
 puts "what up yo"
 set outputDir ./.build
 file mkdir $outputDir
-read_verilog [ glob src/*.v ]
+read_verilog src/top.v
+read_verilog .gen/systemclocks/systemclocks.v
+read_verilog .gen/systemclocks/systemclocks_clk_wiz.v
 read_xdc src/ultrazed.xdc
 read_xdc .gen/systemclocks/systemclocks.xdc
 synth_design -top uzedtest -part xczu7ev-fbvb900-1-e -verbose > $outputDir/synth_design.log

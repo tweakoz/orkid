@@ -6,56 +6,53 @@ from ork import vivado, path, pathtools
 this_dir = path.Path(os.path.dirname(os.path.realpath(__file__)))
 pathtools.chdir(this_dir)
 
-INP_NAME = "SYSCLK_P"
-INP_FREQ = 300.000 # Mhz
-OUT_FREQ = 400.000 # Mhz
-INP_PERIOD = round(1000.0 / INP_FREQ,3);
-OUT_PHASE_A = 0.000 # Degrees
-OUT_PHASE_B = 180.000 # Degrees
-
 ########################################################
-# TODO: parameterize for single-ended vs differential
 # TODO: hoist to infrastructure
 ########################################################
 
-MMCMDICT = {
-  #"CONFIG.PRIMARY_PORT": INP_NAME+"_P",
-  "CONFIG.PRIM_SOURCE": "Differential_clock_capable_pin",
+class OutClock:
+ def __init__(self,freq,phaseoffset): # Mhz, Degrees
+   self._frequency = freq
+   self._phaseoffset = phaseoffset
 
-
-  "CONFIG.NUM_OUT_CLKS": 2,
-  "CONFIG.CLKOUT2_USED": True,
-
+def genMMCMdict(differential=False,
+                INP_FREQ=None,
+                outputs=[]):
+ num_outputs = len(outputs)
+ assert(num_outputs>=1)
+ assert(num_outputs<=4)
+ INP_PERIOD = round(1000.0 / INP_FREQ,3);
+ MMCMDICT = {
+  "CONFIG.NUM_OUT_CLKS": num_outputs,
   "CONFIG.USE_MIN_POWER": True,
   "CONFIG.PRIM_IN_FREQ": INP_FREQ,
   "CONFIG.USE_SAFE_CLOCK_STARTUP": True,
   "CONFIG.JITTER_SEL": "No_Jitter",
   "CONFIG.FEEDBACK_SOURCE": "FDBK_AUTO",
-
-  "CONFIG.MMCM_DIVCLK_DIVIDE": 3,
-  "CONFIG.MMCM_CLKOUT0_DUTY_CYCLE": 0.5,
-
-  "CONFIG.MMCM_CLKOUT1_DIVIDE": 2,
-  "CONFIG.MMCM_CLKOUT1_DUTY_CYCLE": 0.5,
-
-
   "CONFIG.MMCM_CLKIN1_PERIOD": INP_PERIOD,
-  "CONFIG.MMCM_CLKIN2_PERIOD": 10.0, # ???
-
-  "CONFIG.CLKIN1_JITTER_PS": 33.330000000000005,
-
-  "CONFIG.CLKOUT1_REQUESTED_OUT_FREQ": OUT_FREQ,
-  "CONFIG.CLKOUT1_REQUESTED_PHASE": OUT_PHASE_A,
-  "CONFIG.CLKOUT1_DRIVES": "BUFGCE",
-
-  "CONFIG.CLKOUT2_REQUESTED_OUT_FREQ": OUT_FREQ,
-  "CONFIG.CLKOUT2_REQUESTED_PHASE": OUT_PHASE_B,
-  "CONFIG.CLKOUT2_DRIVES": "BUFGCE",
-}
-
+ }
+ #############################
+ if differential:
+   MMCMDICT["CONFIG.PRIM_SOURCE"]="Differential_clock_capable_pin"
+ #############################
+ index = 0
+ for item in outputs:
+   out = outputs[index]
+   index += 1
+   MMCMDICT["CONFIG.CLKOUT%d_REQUESTED_OUT_FREQ"%index]=out._frequency
+   MMCMDICT["CONFIG.CLKOUT%d_REQUESTED_PHASE"%index]=out._phaseoffset
+   MMCMDICT["CONFIG.CLKOUT%d_DRIVES"%index]="BUFGCE" # BUFG,BUFGCE
+   MMCMDICT["CONFIG.CLKOUT%d_USED"%index] = True
+ #############################
+ return MMCMDICT
 ########################################################
+MMCMDICT=genMMCMdict(differential=True,
+                     INP_FREQ = 300.000, # Mhz
+                     outputs = [OutClock(350.000,0.000),
+                                OutClock(350.000,180.000)])
 ########################################################
 
+INP_NAME = "SYSCLK_P"
 INSTANCENAME = "systemclocks"
 OUTDIR = this_dir/".gen"/INSTANCENAME
 

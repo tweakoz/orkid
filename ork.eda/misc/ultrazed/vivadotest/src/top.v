@@ -13,19 +13,13 @@ module uzedtest(input wire SYSCLK_P,
            output wire PL_LED8
            );
 
-  wire clk_600;
   wire clk_400_000;
-  wire clk_400_090;
   wire clk_400_180;
-  wire clk_400_270;
   wire locked;
 
-  uzed_sysclocks clocks(
-    .clk_600(clk_600),
-    .clk_400_000(clk_400_000),
-    .clk_400_090(clk_400_090),
-    .clk_400_180(clk_400_180),
-    .clk_400_270(clk_400_270),
+  systemclocks clocks(
+    .clk_out1(clk_400_000),
+    .clk_out2(clk_400_180),
     .reset(RESET),
     .locked(locked),
     .clk_in1_p(SYSCLK_P),
