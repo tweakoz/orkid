@@ -3,6 +3,8 @@
 import os
 from ork import vivado, path, pathtools
 
+#todo invoke genclock.py
+
 this_dir = path.Path(os.path.dirname(os.path.realpath(__file__)))
 pathtools.chdir(this_dir)
 

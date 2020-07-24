@@ -1,8 +1,9 @@
 puts "what up yo"
 set outputDir ./.build
 file mkdir $outputDir
-read_verilog [ glob ./src/*.v ]
-read_xdc ./src/ultrazed.xdc
+read_verilog [ glob src/*.v ]
+read_xdc src/ultrazed.xdc
+read_xdc .gen/systemclocks/systemclocks.xdc
 synth_design -top uzedtest -part xczu7ev-fbvb900-1-e -verbose > $outputDir/synth_design.log
 write_checkpoint -force $outputDir/post_synth.dcp
 opt_design -directive Explore -debug_log > $outputDir/opt_design.log
