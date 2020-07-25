@@ -2,6 +2,8 @@ puts "what up yo"
 set outputDir ./.build
 file mkdir $outputDir
 read_verilog src/top.v
+read_verilog .gen/sdiio/hdl/v_smpte_sdi_v3_0_vl_rfs.v
+read_verilog .gen/sdiio/synth/sdiio.v
 read_verilog .gen/systemclocks/systemclocks.v
 read_verilog .gen/systemclocks/systemclocks_clk_wiz.v
 read_xdc src/ultrazed.xdc
