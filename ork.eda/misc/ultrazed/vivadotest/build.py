@@ -19,7 +19,7 @@ if _args["clean"]:
 
 ########################################################
 ########################################################
-from ork.eda.xilinx import vivado, mmcm
+from ork.eda.xilinx import vivado, mmcm, sdiio
 ########################################################
 ########################################################
 vivctx = vivado.Context(hostdir=this_dir,
@@ -29,14 +29,18 @@ vivctx = vivado.Context(hostdir=this_dir,
 #  systemclocks, etc..
 ########################################################
 if _args["genip"]:
+  ###############
   myclocks = [mmcm.OutClock(350.000,0.000),
               mmcm.OutClock(350.000,180.000)]
+  ###############
   mmcm.generate(vivctx,
                 INP_NAME="SYSCLK_P",
                 INSTANCENAME="systemclocks",
                 differential=True,
                 INP_FREQ = 300.000, # mhz,
                 outclocks = myclocks)
+  ###############
+  sdiio.generate(vivctx,INSTANCENAME="sdiio")
 ########################################################
 # main build
 ########################################################
