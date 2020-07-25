@@ -2,12 +2,45 @@ puts "what up yo"
 set outputDir ./.build
 file mkdir $outputDir
 read_verilog src/top.v
-read_verilog .gen/sdiio/hdl/v_smpte_sdi_v3_0_vl_rfs.v
-read_verilog .gen/sdiio/synth/sdiio.v
+#####################################
+# vivadotest
+#####################################
+read_verilog [glob .gen/gth/synth/*.v]
+read_verilog [glob .gen/gth/hdl/*.v]
+read_xdc src/ultrazed.xdc
+#####################################
+# SDI-GT
+#####################################
+read_verilog [glob .gen/sdigt/*.v]
+read_verilog [glob .gen/sdigt/hdl/drp_ctrl/*.v]
+read_verilog [glob .gen/sdigt/hdl/gt_common/*.v]
+read_vhdl [glob .gen/sdigt/hdl/nidru/*.vhd]
+#read_verilog [glob .gen/sdigt/ip_0/hdl/*.v]
+read_verilog [glob .gen/sdigt/ip_0/synth/uhdsdi*.v]
+read_xdc [glob .gen/sdigt/*.xdc]
+read_xdc [glob .gen/sdigt/ip_0/synth/*.xdc]
+#####################################
+# SDI-TX
+#####################################
+read_verilog [glob .gen/sditx/synth/*.v]
+read_verilog [glob .gen/sditx/bd_0/hdl/*.v]
+read_verilog [glob .gen/sditx/bd_0/synth/*.v]
+read_verilog [glob .gen/sditx/bd_0/ip/ip_0/synth/*.v]
+read_verilog [glob .gen/sditx/bd_0/ip/ip_1/synth/*.v]
+read_verilog [glob .gen/sditx/bd_0/ip/ip_0/hdl/*.v]
+read_vhdl [glob .gen/sditx/bd_0/ip/ip_0/hdl/*.vhd]
+# ahem: so much for consistency, Xilinx..
+read_verilog [glob .gen/sditx/bd_0/ip/ip_1/hdl/verilog/*.v]
+read_xdc [glob .gen/sditx/bd_0/ip/ip_0/*.xdc]
+#####################################
+#
+#####################################
 read_verilog .gen/systemclocks/systemclocks.v
 read_verilog .gen/systemclocks/systemclocks_clk_wiz.v
-read_xdc src/ultrazed.xdc
 read_xdc .gen/systemclocks/systemclocks.xdc
+#####################################
+#
+#####################################
 synth_design -top uzedtest -part xczu7ev-fbvb900-1-e -verbose > $outputDir/synth_design.log
 write_checkpoint -force $outputDir/post_synth.dcp
 opt_design -directive Explore -debug_log > $outputDir/opt_design.log

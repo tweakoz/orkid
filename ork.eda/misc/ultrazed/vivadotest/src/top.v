@@ -3,6 +3,10 @@
 module uzedtest(input wire SYSCLK_P,
            input wire SYSCLK_N,
            input wire RESET,
+           input wire GTH_REFCLK0_P, // 148.5 mhz HDMI clock
+           input wire GTH_REFCLK0_N, // 148.5 mhz HDMI clock
+           output wire U13_SDIP,
+           output wire U13_SDIN,
            output wire PL_LED1,
            output wire PL_LED2,
            output wire PL_LED3,
@@ -19,8 +23,20 @@ module uzedtest(input wire SYSCLK_P,
 
   reg [9:0] sdi_ycbcr_data;
   reg [2:0] sdi_subclock;
-  wire [19:0] sdi_tx_output;
-  wire sdi_tx_error; // connect to tranciever
+  wire [19:0] sdi_tx_output; // connect to tranciever
+  wire [31:0] sdi_tx_error;
+  reg vid_active;
+  reg [59:0] vid_data;
+  reg vid_field;
+  reg vid_hblank;
+  reg vid_vblank;
+  wire vid_ce;
+  wire [63:0] gt_sts;
+  reg [63:0] gt_ctrl;
+
+  //////////////////////////////////////
+  // system clocks
+  //////////////////////////////////////
 
   systemclocks clocks(
     .clk_out1(clk_400_000),
@@ -31,27 +47,39 @@ module uzedtest(input wire SYSCLK_P,
     .clk_in1_n(SYSCLK_N)
     );
 
-  sdiio sdiout(
-    .tx_mode(2'b01), // SD-SDI
-    .tx_rst(RESET),
-    .tx_usrclk(clk_400_180), // sdi clock (148.5 MHz)
-    .tx_video_a_y_in(sdi_ycbcr_data),
-    .tx_ce(sdi_subclock),
-    .tx_txdata(sdi_tx_output),
-    .tx_ce_align_err(sdi_tx_error),
-    .tx_use_dsin(1'b0),
-    .tx_din_rdy(1'b1),
-    .tx_vpid_byte1(8'b0),
-    .tx_vpid_byte2(8'b0),
-    .tx_vpid_byte3(8'b0),
-    .tx_vpid_byte4a(8'b0),
-    .tx_vpid_byte4b(8'b0),
-    .tx_sd_bitrep_bypass(1'b0),
-    .tx_insert_ln(1'b0),
-    .tx_insert_crc(1'b0),
-    .tx_insert_vpid(1'b0),
-    .tx_insert_edh(1'b0)
+  //////////////////////////////////////
+  // SDI GT transceiver
+  //////////////////////////////////////
+
+  sdigt sdi_gt(
+    .intf_0_txp(U13_SDIP),
+    .intf_0_txn(U13_SDIN),
+    .intf_0_qpll0_refclk_in(GTH_REFCLK0_P),
+    .intf_0_qpll1_refclk_in(GTH_REFCLK0_P),
+    .cmp_gt_ctrl(gt_ctrl),
+    .cmp_gt_sts(gt_sts)
   );
+
+  //////////////////////////////////////
+  // SDI controller
+  //////////////////////////////////////
+
+  sditx sdi_transmitter(
+    .sdi_tx_rst(RESET),
+    .sdi_tx_clk(GTH_REFCLK0_P), // sdi clock (148.5 MHz)
+    .sdi_tx_ctrl(32'h00000011), // mode(SD-SDI,integer frame rate)
+    .sdi_tx_err(sdi_tx_error),
+    .VID_IO_IN_active_video(vid_active),
+    .VID_IO_IN_data(vid_data),
+    .VID_IO_IN_field(vid_field),
+    .VID_IO_IN_hblank(vid_hblank),
+    .VID_IO_IN_vblank(vid_vblank),
+    .vid_ce(vid_ce)
+  );
+
+  //////////////////////////////////////
+  // custom logic
+  //////////////////////////////////////
 
   reg [63:0] counter;
 
@@ -59,6 +87,12 @@ module uzedtest(input wire SYSCLK_P,
       counter <= 64'b0;
       sdi_subclock<=3'b0;
       sdi_ycbcr_data<=10'b0;
+      vid_active<=0;
+      vid_field<=0;
+      vid_hblank<=0;
+      vid_vblank<=0;
+      vid_data<=60'b0;
+      gt_ctrl<=64'b0;
   end
 
   assign PL_LED1 = counter[24];
@@ -69,6 +103,8 @@ module uzedtest(input wire SYSCLK_P,
   assign PL_LED6 = counter[29];
   assign PL_LED7 = counter[30];
   assign PL_LED8 = counter[31];
+
+  // todo: video timing and data
 
   always @(posedge clk_400_000 or posedge RESET) begin
     if(RESET || ! locked)

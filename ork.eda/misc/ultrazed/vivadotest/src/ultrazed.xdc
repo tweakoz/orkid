@@ -29,3 +29,14 @@ set_property IOSTANDARD LVCMOS18 [get_ports {PL_LED5}]
 set_property IOSTANDARD LVCMOS18 [get_ports {PL_LED6}]
 set_property IOSTANDARD LVCMOS18 [get_ports {PL_LED7}]
 set_property IOSTANDARD LVCMOS18 [get_ports {PL_LED8}]
+
+# SDI TX
+#set_property PACKAGE_PIN A7  [get_ports {U13_SDIN}];		# GTH3_TX_N
+#set_property PACKAGE_PIN A8  [get_ports {U13_SDIP}];		# GTH3_TX_P
+
+# HDMI CLOCK (From the IDT 8T49N241)
+set_property PACKAGE_PIN J7  [get_ports {GTH_REFCLK0_N}];
+set_property PACKAGE_PIN J8  [get_ports {GTH_REFCLK0_P}]; #
+#set_property IOSTANDARD LVDS [ get_ports {GTH_REFCLK0_N} ];
+#set_property IOSTANDARD LVDS [ get_ports {GTH_REFCLK0_P} ];
+create_clock -add -name hdmiclock -period 6.734 [get_ports {GTH_REFCLK0_P}];
