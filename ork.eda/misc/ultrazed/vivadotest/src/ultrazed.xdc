@@ -31,6 +31,7 @@ set_property IOSTANDARD LVCMOS18 [get_ports {PL_LED7}]
 set_property IOSTANDARD LVCMOS18 [get_ports {PL_LED8}]
 
 # SDI TX
+set_property LOC GTHE4_CHANNEL_X0Y19 [get_cells -hierarchical -filter {NAME =~ *gen_channel_container[1].*gen_gthe4_channel_inst[0].GTHE4_CHANNEL_PRIM_INST}]
 #set_property PACKAGE_PIN A7  [get_ports {U13_SDIN}];		# GTH3_TX_N
 #set_property PACKAGE_PIN A8  [get_ports {U13_SDIP}];		# GTH3_TX_P
 

@@ -2,6 +2,32 @@ puts "what up yo"
 set outputDir ./.build
 file mkdir $outputDir
 read_verilog src/top.v
+
+#####################################
+# Workflow improvement TODO
+#####################################
+# 1. autogenerate build.tcl (this file) from python infrastructure
+# 2. have vivado.genIP() build a constraint list dynamically
+# 3. constraints order:
+#  correct order (according to Xilinx pdf ug903)
+## Timing Assertions Section
+#   Primary clocks
+#   Virtual clocks
+#   Generated clocks
+#   Clock Groups
+#   Bus Skew constraints
+#   Input and output delay constraints
+## Timing Exceptions Section
+#   False Paths
+#   Max Delay / Min Delay
+#   Multicycle Paths
+#   Case Analysis
+#   Disable Timing
+## Physical Constraints Section
+#   located anywhere in the file, preferably before or after the timing constraints
+#   or stored in a separate constraint file
+#####################################
+
 #####################################
 # vivadotest
 #####################################

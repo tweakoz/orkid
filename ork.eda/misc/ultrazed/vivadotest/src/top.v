@@ -81,6 +81,11 @@ module uzedtest(input wire SYSCLK_P,
   // custom logic
   //////////////////////////////////////
 
+  //2477475.0 == (148.5e6)/(2*10.0e6*63/88/455/525.0)
+
+  // NTSC LPS == 15734 
+  // PAL LPS == 15625
+
   reg [63:0] counter;
 
   initial begin
