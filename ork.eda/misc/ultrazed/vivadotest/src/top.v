@@ -3,8 +3,9 @@
 module uzedtest(input wire SYSCLK_P,
            input wire SYSCLK_N,
            input wire RESET,
-           input wire GTH_REFCLK0_P, // 148.5 mhz HDMI clock
-           input wire GTH_REFCLK0_N, // 148.5 mhz HDMI clock
+           input wire drpclk_in,
+           input wire intf_0_qpll0_refclk_in,
+           input wire intf_0_qpll1_refclk_in,
            output wire U13_SDIP,
            output wire U13_SDIN,
            output wire PL_LED1,
@@ -20,6 +21,8 @@ module uzedtest(input wire SYSCLK_P,
   wire clk_400_000;
   wire clk_400_180;
   wire locked;
+  wire GTH_REFCLK0; // 148.5 mhz HDMI clock
+  //wire GTH_REFCLK0_N; // 148.5 mhz HDMI clock
 
   reg [9:0] sdi_ycbcr_data;
   reg [2:0] sdi_subclock;
@@ -33,6 +36,9 @@ module uzedtest(input wire SYSCLK_P,
   wire vid_ce;
   wire [63:0] gt_sts;
   reg [63:0] gt_ctrl;
+
+  assign GTH_REFCLK0 = intf_0_qpll0_refclk_in;
+  //assign GTH_REFCLK0_P = intf_0_qpll1_refclk_in;
 
   //////////////////////////////////////
   // system clocks
@@ -54,8 +60,8 @@ module uzedtest(input wire SYSCLK_P,
   sdigt sdi_gt(
     .intf_0_txp(U13_SDIP),
     .intf_0_txn(U13_SDIN),
-    .intf_0_qpll0_refclk_in(GTH_REFCLK0_P),
-    .intf_0_qpll1_refclk_in(GTH_REFCLK0_P),
+    .intf_0_qpll0_refclk_in(GTH_REFCLK0),
+    .intf_0_qpll1_refclk_in(GTH_REFCLK0),
     .cmp_gt_ctrl(gt_ctrl),
     .cmp_gt_sts(gt_sts)
   );
@@ -83,7 +89,7 @@ module uzedtest(input wire SYSCLK_P,
 
   //2477475.0 == (148.5e6)/(2*10.0e6*63/88/455/525.0)
 
-  // NTSC LPS == 15734 
+  // NTSC LPS == 15734
   // PAL LPS == 15625
 
   reg [63:0] counter;

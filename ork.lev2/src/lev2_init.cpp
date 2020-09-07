@@ -39,6 +39,8 @@
 #include <ork/lev2/aud/singularity/envelope.h>
 #include <ork/lev2/aud/singularity/dsp_pmx.h>
 #include <ork/lev2/aud/singularity/dsp_mix.h>
+#include <ork/math/plane.hpp>
+
 ///////////////////////////////////////////////////////////////////////////////
 //#define WIIEMU
 ///////////////////////////////////////////////////////////////////////////////
@@ -402,3 +404,5 @@ name.c_str(), fps, ftime*1000.0f ).c_str() ); #endif
 }
 
 } // namespace ork
+
+template class ork::Plane<float>; // explicit template instantiation

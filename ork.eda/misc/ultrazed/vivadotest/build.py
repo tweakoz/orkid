@@ -23,7 +23,7 @@ from ork.eda.xilinx import vivado, mmcm, sditx, sdigt
 ########################################################
 ########################################################
 vivctx = vivado.Context(hostdir=this_dir,
-                        FPGAPART="xczu7ev-fbvb900-1-e")
+                        FPGAPART="xczu7ev-fbvb900-1-i")
 ########################################################
 # Generate required procedural IP
 #  systemclocks, etc..

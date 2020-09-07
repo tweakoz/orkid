@@ -36,8 +36,8 @@ set_property LOC GTHE4_CHANNEL_X0Y19 [get_cells -hierarchical -filter {NAME =~ *
 #set_property PACKAGE_PIN A8  [get_ports {U13_SDIP}];		# GTH3_TX_P
 
 # HDMI CLOCK (From the IDT 8T49N241)
-set_property PACKAGE_PIN J7  [get_ports {GTH_REFCLK0_N}];
-set_property PACKAGE_PIN J8  [get_ports {GTH_REFCLK0_P}]; #
+#set_property PACKAGE_PIN D9  [get_ports {GTH_REFCLK0_N}];
+#set_property PACKAGE_PIN D10  [get_ports {GTH_REFCLK0_P}]; #
 #set_property IOSTANDARD LVDS [ get_ports {GTH_REFCLK0_N} ];
 #set_property IOSTANDARD LVDS [ get_ports {GTH_REFCLK0_P} ];
-create_clock -add -name hdmiclock -period 6.734 [get_ports {GTH_REFCLK0_P}];
+create_clock -add -name hdmiclock -period 6.734 [get_ports {intf_0_qpll0_refclk_in}];

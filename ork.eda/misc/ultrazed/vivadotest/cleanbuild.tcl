@@ -33,7 +33,6 @@ read_verilog src/top.v
 #####################################
 read_verilog [glob .gen/gth/synth/*.v]
 read_verilog [glob .gen/gth/hdl/*.v]
-read_xdc src/ultrazed.xdc
 #####################################
 # SDI-GT
 #####################################
@@ -43,8 +42,8 @@ read_verilog [glob .gen/sdigt/hdl/gt_common/*.v]
 read_vhdl [glob .gen/sdigt/hdl/nidru/*.vhd]
 #read_verilog [glob .gen/sdigt/ip_0/hdl/*.v]
 read_verilog [glob .gen/sdigt/ip_0/synth/uhdsdi*.v]
-read_xdc [glob .gen/sdigt/*.xdc]
-read_xdc [glob .gen/sdigt/ip_0/synth/*.xdc]
+read_xdc [glob .gen/sdigt/sdigt_ooc.xdc]
+read_xdc [glob .gen/sdigt/ip_0/synth/uhdsdi_gt_v2_0_2_gtwiz_gthe4.xdc]
 #####################################
 # SDI-TX
 #####################################
@@ -58,12 +57,15 @@ read_vhdl [glob .gen/sditx/bd_0/ip/ip_0/hdl/*.vhd]
 # ahem: so much for consistency, Xilinx..
 read_verilog [glob .gen/sditx/bd_0/ip/ip_1/hdl/verilog/*.v]
 read_xdc [glob .gen/sditx/bd_0/ip/ip_0/*.xdc]
+#read_xdc [glob .gen/sditx/bd_0/*.xdc]
 #####################################
 #
 #####################################
 read_verilog .gen/systemclocks/systemclocks.v
 read_verilog .gen/systemclocks/systemclocks_clk_wiz.v
 read_xdc .gen/systemclocks/systemclocks.xdc
+#####################################
+read_xdc src/ultrazed.xdc
 #####################################
 #
 #####################################
