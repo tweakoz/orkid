@@ -102,12 +102,13 @@ pybind11 = ork.dep.require("pybind11")
 #qt5forpython = ork.dep.require("qt5forpython")
 pyqt5 = ork.dep.require("pyqt5")
 
-ork.dep.require(["bullet","openexr","oiio","fcollada","assimp",
+ork.dep.require(["bullet","openexr","oiio","assimp",
                  "nvtt","lua","glfw","ispctexc",
+                 "lexertl14","parsertl14", 
                  "easyprof","eigen","embree","igl","audiofile"])
 
-if ork.host.IsOsx:
-   ork.dep.require(["moltenvk"])
+#if ork.host.IsOsx: # until moltenvk fixed on big sur
+#   ork.dep.require(["moltenvk"])
 if ork.host.IsLinux:
    ork.dep.require(["vulkan","openvr"])
 
@@ -196,7 +197,7 @@ cmd = ["make"]
 if _args["verbose"]!=False:
   cmd += ["VERBOSE=1"]
 
-if _args["serial"]==False:
+if _args["serial"]!=True:
   cmd += ["-j",ork.host.NumCores]
 
 cmd += ["install"]
