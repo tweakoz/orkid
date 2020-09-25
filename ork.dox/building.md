@@ -9,7 +9,7 @@ I do not currently test on Intel gfx chips. If you have an NVidia or AMD/ATI car
 
 In general building will require a bunch of dependencies which are not included. There is a script included that automates the downloading, building and installation of these dependencies.
 
-To bootstrap on Osx BigSur (11.0)+
+To bootstrap on MacOs BigSur (11.0)+
 ==================================
 * install homebrew, and with install deps listed in ork.installdeps.ubuntu19.py
 * ```git clone https://github.com/tweakoz/orkid```
