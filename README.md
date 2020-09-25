@@ -6,7 +6,7 @@
 
 * Ubuntu 19.10 [![CISTATUS](http://tweakoz.com:16999/orkid-ix-ub1910/master/status.svg)](http://tweakoz.com:16999/)
 * Ubuntu 20.04 [![CISTATUS](http://tweakoz.com:16999/orkid-ix-ub2004/master/status.svg)](http://tweakoz.com:16999/)
-* Osx Catalina [![CISTATUS](http://tweakoz.com:16999/orkid-osx-catalina/master/status.svg)](http://tweakoz.com:16999/)
+* Osx Big Sur [![CISTATUS](http://tweakoz.com:16999/orkid-osx-catalina/master/status.svg)](http://tweakoz.com:16999/)
 
 ### Description
 
