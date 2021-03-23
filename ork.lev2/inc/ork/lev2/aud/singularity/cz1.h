@@ -61,8 +61,16 @@ struct CzProgData {
 using czxprogdata_ptr_t = std::shared_ptr<CzProgData>;
 
 ///////////////////////////////////////////////////////////////////////////////
+struct CZLAYERDATACTX{
+  lyrdata_ptr_t _layerdata;
+  algdata_ptr_t _algdata;
+  dspstagedata_ptr_t _stage_dco;
+  dspstagedata_ptr_t _stage_amp;
+  dspstagedata_ptr_t _stage_mod;
+};
+///////////////////////////////////////////////////////////////////////////////
 
-algdata_ptr_t configureCz1Algorithm(lyrdata_ptr_t ldat, int numosc);
+CZLAYERDATACTX configureCz1Algorithm(lyrdata_ptr_t ldat, int numosc);
 
 ///////////////////////////////////////////////////////////////////////////////
 struct CZXDATA final : public DspBlockData {

@@ -21,8 +21,9 @@ file(GLOB sources ${SRCD}/*.cpp)
 
 add_library( _lev2 SHARED ${sources} )
 
+ork_std_target_opts(_lev2)
+
 target_include_directories (_lev2 PRIVATE ${INCD} ${INCD2} )
-target_include_directories( _lev2 PRIVATE ${PYTHON_INCLUDE_DIRS} ${PYBIND11_INCLUDE_DIRS} )
 
 
 target_link_libraries(_lev2 LINK_PUBLIC ork_core ork_lev2 )
@@ -42,7 +43,6 @@ if( APPLE )
       LINK_FLAGS "-undefined dynamic_lookup"
       SUFFIX     ".so"
   )
-  target_include_directories (_lev2 PRIVATE /usr/local/include)
 else()
   target_link_options(_lev2 PUBLIC -Wl,--no-undefined )
 endif()

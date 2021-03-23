@@ -1,6 +1,8 @@
 #pragma once
 
 #include <ork/util/scanner.h>
+#include <parsertl/generator.hpp>
+#include <parsertl/match.hpp>
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::glslfx {
@@ -14,6 +16,48 @@ struct UniformBlockNode;
 struct LibraryBlockNode;
 struct InterfaceNode;
 struct TechniqueNode;
+
+///////////////////////////////////////////////////////////////////////////////
+
+void performScan(Scanner& scanner);
+
+enum class TokenClass {
+  SINGLE_LINE_COMMENT = 1,
+  MULTI_LINE_COMMENT,
+  WHITESPACE,
+  NEWLINE,
+  UNSIGNED_DECIMAL_INTEGER,
+  HEX_INTEGER,
+  MISC_INTEGER,
+  FLOATING_POINT,
+  STRING,
+  KW_OR_ID,
+  CURLY_BRACKET,
+  SQUARE_BRACKET,
+  PARENTHESIS,
+  COLON,
+  SEMICOLON,
+  COMMA_OR_DOT,
+  ARITHMETIC_OP,
+  LEFT_SHIFT,
+  RIGHT_SHIFT,
+  LESS_THAN,
+  GREATER_THAN,
+  LESS_THAN_EQ,
+  GREATER_THAN_EQ,
+  EQUAL_TO,
+  NOT_EQUAL_TO,
+  PLUS_EQ,
+  MINUS_EQ,
+  TIMES_EQ,
+  DIVIDE_EQ,
+  OR_EQ,
+  AND_EQ,
+  LOGICAL_OR,
+  LOGICAL_AND,
+  INCREMENT,
+  DECREMENT,
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -981,6 +1025,8 @@ struct GlSlFxParser {
   int itokidx              = 0;
   Container* mpContainer   = nullptr;
   ContainerNode* _rootNode = nullptr;
+  parsertl::rules _grules;
+  parsertl::state_machine _gsm;
 };
 /////////////////////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::glslfx

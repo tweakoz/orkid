@@ -7,20 +7,21 @@ int main(int argc, char** argv) {
   ////////////////////////////////////////////////
   // main bus effect
   ////////////////////////////////////////////////
+  synth::instance()->_masterGain = decibel_to_linear_amp_ratio(30.0f);
   auto mainbus      = synth::instance()->outputBus("main");
   auto bussource    = mainbus->createScopeSource();
-  auto fxprog       = std::make_shared<ProgramData>();
-  auto fxlayer      = fxprog->newLayer();
-  auto fxalg        = std::make_shared<AlgData>();
-  fxlayer->_algdata = fxalg;
-  fxalg->_name      = ork::FormatString("FxAlg");
+  //auto fxprog       = std::make_shared<ProgramData>();
+  //auto fxlayer      = fxprog->newLayer();
+  //auto fxalg        = std::make_shared<AlgData>();
+  //fxlayer->_algdata = fxalg;
+  //fxalg->_name      = ork::FormatString("FxAlg");
   /////////////////
   // output effect
   /////////////////
   if (1) { // create mixbus effect ?
-    // auto fxlayer = fxpreset_niceverb();
+     auto fxlayer = fxpreset_niceverb();
     // auto fxlayer = fxpreset_echoverb();
-    auto fxlayer = fxpreset_pitchchorus();
+    //auto fxlayer = fxpreset_pitchchorus();
     mainbus->setBusDSP(fxlayer);
   }
   ////////////////////////////////////////////////
@@ -46,11 +47,24 @@ int main(int argc, char** argv) {
   // auto czdata1  = CzData::load(basepath / "cz1_1.bnk", "bank1");
   // auto czdata2  = CzData::load(basepath / "cz1_2.bnk", "bank2");
   // czdata->loadBank(basepath / "edit.syx", "bank1");
+
+  //////////////////////////////////////////////////////////////////////////////
+  // auto program   = bank->getProgramByName("LatelyBass");
+  auto program = testpattern(czdata1, argc, argv);
+  if (!program) {
+    return 0;
+  }
+
+
   int count = 0;
   for (int i = 0; i < 64; i++) { // 2 32 patch banks
     auto bnk       = (i >> 5) ? czdata2 : czdata1;
     auto prg       = bnk->getProgram(i % 32);
     auto layerdata = prg->getLayer(0);
+
+    synth::instance()->_globalbank  = bnk->_bankdata;
+    synth::instance()->_globalprgit = synth::instance()->_globalbank->_programs.begin();
+
     //////////////////////////////////////
     // connect DCO's to scopes 1&2
     //////////////////////////////////////
@@ -77,7 +91,7 @@ int main(int argc, char** argv) {
     layersource->connect(analyzer3->_sink);
     //////////////////////////////////////
     for (int n = 0; n <= 24; n += 3) {
-      enqueue_audio_event(prg, count * 0.5, 0.5, 48 + n);
+      //enqueue_audio_event(prg, count * 0.5, 0.5, 48 + n);
       count++;
     }
   }

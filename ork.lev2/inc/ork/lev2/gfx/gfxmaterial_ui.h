@@ -68,6 +68,8 @@ protected:
   EType meType;
 };
 
+using uimaterial_ptr_t = std::shared_ptr<GfxMaterialUI>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 class GfxMaterialUIText final : public GfxMaterial {
@@ -141,7 +143,7 @@ protected:
   const FxShaderParam* hColorMap;
 };
 
-material_ptr_t defaultUIMaterial();
+uimaterial_ptr_t defaultUIMaterial();
 
 ///////////////////////////////////////////////////////////////////////////////
 

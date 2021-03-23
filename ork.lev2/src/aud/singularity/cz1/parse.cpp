@@ -175,6 +175,168 @@ float decode_p_envlevel(int value) {
 
   return cents;
 } // namespace ork::audio::singularity
+
+///////////////////////////////////////////////////////////////////////////////
+
+CZLAYERDATACTX configureCz1Algorithm(lyrdata_ptr_t layerdata, int numosc) {
+  CZLAYERDATACTX lctx;
+  lctx._layerdata = layerdata;
+  auto algdout        = std::make_shared<AlgData>();
+  layerdata->_algdata = algdout;
+  algdout->_name      = ork::FormatString("Cz1<%d>", numosc);
+  //////////////////////////////////////////
+  auto stage_dco               = algdout->appendStage("DCO");
+  auto stage_amp               = algdout->appendStage("AMP");
+  dspstagedata_ptr_t stage_mod = (numosc == 2) //
+                                 ? algdout->appendStage("MOD")
+                                 : nullptr;
+  //////////////////////////////////////////
+  lctx._algdata = algdout;
+  lctx._stage_dco = stage_dco;
+  lctx._stage_amp = stage_amp;
+  lctx._stage_mod = stage_mod;
+  //////////////////////////////////////////
+  int dcoios = stage_mod ? 2 : 1;
+  stage_dco->setNumIos(0, dcoios);
+  stage_amp->setNumIos(dcoios, dcoios);
+  //////////////////////////////////////////
+  // 2 DCO case..
+  // ring, noise mod or mix stage
+  //////////////////////////////////////////
+  if (stage_mod)
+    stage_mod->setNumIos(2, 1); // 2 ins, 1 out
+  /////////////////////////////////////////////////
+  // stereo mix out
+  /////////////////////////////////////////////////
+  //auto stereoout         = stage_stereo->appendTypedBlock<MonoInStereoOut>("MonoInStereoOut");
+  //auto STEREOC           = layerdata->appendController<ConstantControllerData>("STEREOMIX");
+  //STEREOC->_constvalue   = 1.0f;
+  //auto stereo_mod        = stereoout->_paramd[0]->_mods;
+  //stereo_mod->_src1      = STEREOC;
+  //stereo_mod->_src1Depth = 1.0f;
+  //STEREOC->_onkeyon      = [](CustomControllerInst* cci, //
+  //                     const KeyOnInfo& KOI) {    //
+  //cci->_curval = 1.0f;                            // amplitude to unity
+  //};
+  //stereoout->addDspChannel(0);
+  //////////////////////////////////////////
+  return lctx;
+}
+///////////////////////////////////////////////////////////////////////////////
+void make_dco(CZLAYERDATACTX czctx,
+              czprogdata_ptr_t czprogdata,
+              czxdata_ptr_t oscdata,
+              int dcochannel) {
+  auto layerdata = czctx._layerdata;
+  /////////////////////////////////////////////////
+  auto dcoenvname = FormatString("DCOENV%d", dcochannel);
+  auto dcaenvname = FormatString("DCAENV%d", dcochannel);
+  auto dcwenvname = FormatString("DCWENV%d", dcochannel);
+  /////////////////////////////////////////////////
+  // Pitch Envelope
+  /////////////////////////////////////////////////
+  auto DCOENV             = layerdata->appendController<RateLevelEnvData>(dcoenvname);
+  DCOENV->_ampenv         = false;
+  const auto& srcdcoenv   = oscdata->_dcoEnv;
+  DCOENV->_sustainSegment = srcdcoenv._sustPoint;
+  for (int i = 0; i < 8; i++) {
+    if (i <= srcdcoenv._endStep) {
+      auto name = FormatString("seg%d", i);
+      DCOENV->addSegment(name, srcdcoenv._time[i], srcdcoenv._level[i]);
+    }
+  }
+  DCOENV->_releaseSegment = srcdcoenv._endStep;
+  /////////////////////////////////////////////////
+  // Wave(filter) Envelope
+  /////////////////////////////////////////////////
+  auto DCWENV             = layerdata->appendController<RateLevelEnvData>(dcwenvname);
+  DCWENV->_ampenv         = false;
+  const auto& srcdcwenv   = oscdata->_dcwEnv;
+  DCWENV->_sustainSegment = srcdcwenv._sustPoint;
+  for (int i = 0; i < 8; i++) {
+    if (i <= srcdcwenv._endStep) {
+      auto name = FormatString("seg%d", i);
+      DCWENV->addSegment(name, srcdcwenv._time[i], srcdcwenv._level[i]);
+    }
+  }
+  DCWENV->_releaseSegment = srcdcwenv._endStep;
+  DCWENV->_envadjust      = [=](const EnvPoint& inp, //
+                                int iseg,
+                                const KeyOnInfo& KOI) -> EnvPoint { //
+    EnvPoint outp = inp;
+    int ikeydelta = KOI._key;
+    float base    = 1.0 - (oscdata->_dcwKeyFollow * 0.001);
+    float power   = pow(base, ikeydelta);
+    // printf("DCW kf<%d> ikeydelta<%d> base<%0.3f> power<%0.3f>\n", oscdata->_dcwKeyFollow, ikeydelta, base, power);
+    outp._level *= power;
+    return outp;
+  };
+  /////////////////////////////////////////////////
+  // Amplitude Envelope
+  /////////////////////////////////////////////////
+  auto DCAENV             = layerdata->appendController<RateLevelEnvData>(dcaenvname);
+  DCAENV->_ampenv         = true;
+  const auto& srcdcaenv   = oscdata->_dcaEnv;
+  DCAENV->_sustainSegment = srcdcaenv._sustPoint;
+  for (int i = 0; i < 8; i++) {
+    if (i <= srcdcaenv._endStep) {
+      auto name = FormatString("seg%d", i);
+      DCAENV->addSegment(name, srcdcaenv._time[i], srcdcaenv._level[i]);
+    }
+    DCAENV->_releaseSegment = srcdcaenv._endStep;
+  }
+  DCAENV->_envadjust = [=](const EnvPoint& inp, //
+                           int iseg,
+                           const KeyOnInfo& KOI) -> EnvPoint { //
+    EnvPoint outp = inp;
+    int ikeydelta = KOI._key;
+    float base    = 1.0 - (oscdata->_dcaKeyFollow * 0.001);
+    float power   = pow(base, ikeydelta);
+    // printf("DCA kf<%d> ikeydelta<%d> base<%0.3f> power<%0.3f>\n", oscdata->_dcaKeyFollow, ikeydelta, base, power);
+    outp._time *= power;
+    return outp;
+  };
+  //////////////////////////////////////
+  // setup dsp graph
+  //////////////////////////////////////
+  auto dconame    = FormatString("dco%d", dcochannel);
+  auto dcoampname = FormatString("amp%d", dcochannel);
+  auto dcostage   = layerdata->stageByName("DCO");
+  assert(false);
+  auto ampstage   = layerdata->stageByName("AMP");
+  auto dco        = dcostage->appendTypedBlock<CZX>(dconame, oscdata, dcochannel);
+  auto amp        = ampstage->appendTypedBlock<AMP_MONOIO>(dcoampname);
+  dco->addDspChannel(dcochannel);
+  amp->addDspChannel(dcochannel);
+  //////////////////////////////////////
+  // setup modulators
+  //////////////////////////////////////
+  auto pitch_mod        = dco->_paramd[0]->_mods;
+  pitch_mod->_src1      = DCOENV;
+  pitch_mod->_src1Depth = 1.0f;
+  /////////////////////////////////////////////////
+  auto modulation_index        = dco->_paramd[1]->_mods;
+  modulation_index->_src1      = DCWENV;
+  modulation_index->_src1Depth = float(oscdata->_dcwDepth) / 15.0f;
+  /////////////////////////////////////////////////
+  auto amp_param = amp->_paramd[0];
+  amp_param->useDefaultEvaluator();
+  amp_param->_mods->_src1      = DCAENV;
+  amp_param->_mods->_src1Depth = float(oscdata->_dcaDepth) / 15.0f;
+  /////////////////////////////////////////////////
+  if (dcochannel == 1) { // add detune
+    auto DETUNE              = layerdata->appendController<CustomControllerData>("DCO1DETUNE");
+    pitch_mod->_src2         = DETUNE;
+    pitch_mod->_src2MinDepth = 1.0;
+    pitch_mod->_src2MaxDepth = 1.0;
+    DETUNE->_onkeyon         = [czprogdata](
+        CustomControllerInst* cci, //
+        const KeyOnInfo& KOI) {    //
+      cci->_curval = czprogdata->_detuneCents;
+      // printf("DETUNE<%g>\n", cci->_curval);
+    };
+  }
+};
 ///////////////////////////////////////////////////////////////////////////////
 czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::vector<u8> bytes) {
 
@@ -365,7 +527,7 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
 
   ////////////////////////////////////
   // todo create 2 instances of CzOsc
-  //
+  ////////////////////////////////////
 
   std::string name;
   if (is_cz1) {
@@ -376,141 +538,37 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
     name = std::regex_replace(name, std::regex("^ +| +$|( ) +"), "$1");
   }
   prgout->_name = name;
-  // czprogdata->dump();
 
-  auto make_dco = [&](lyrdata_ptr_t layerdata, czxdata_ptr_t oscdata, int dcochannel) {
-    auto dcoenvname = FormatString("DCOENV%d", dcochannel);
-    auto dcaenvname = FormatString("DCAENV%d", dcochannel);
-    auto dcwenvname = FormatString("DCWENV%d", dcochannel);
-    /////////////////////////////////////////////////
-    // Pitch Envelope
-    /////////////////////////////////////////////////
-    auto DCOENV             = layerdata->appendController<RateLevelEnvData>(dcoenvname);
-    DCOENV->_ampenv         = false;
-    const auto& srcdcoenv   = oscdata->_dcoEnv;
-    DCOENV->_sustainSegment = srcdcoenv._sustPoint;
-    for (int i = 0; i < 8; i++) {
-      if (i <= srcdcoenv._endStep) {
-        auto name = FormatString("seg%d", i);
-        DCOENV->addSegment(name, srcdcoenv._time[i], srcdcoenv._level[i]);
-      }
-    }
-    DCOENV->_releaseSegment = srcdcoenv._endStep;
-    /////////////////////////////////////////////////
-    // Wave(filter) Envelope
-    /////////////////////////////////////////////////
-    auto DCWENV             = layerdata->appendController<RateLevelEnvData>(dcwenvname);
-    DCWENV->_ampenv         = false;
-    const auto& srcdcwenv   = oscdata->_dcwEnv;
-    DCWENV->_sustainSegment = srcdcwenv._sustPoint;
-    for (int i = 0; i < 8; i++) {
-      if (i <= srcdcwenv._endStep) {
-        auto name = FormatString("seg%d", i);
-        DCWENV->addSegment(name, srcdcwenv._time[i], srcdcwenv._level[i]);
-      }
-    }
-    DCWENV->_releaseSegment = srcdcwenv._endStep;
-    DCWENV->_envadjust      = [=](const EnvPoint& inp, //
-                             int iseg,
-                             const KeyOnInfo& KOI) -> EnvPoint { //
-      EnvPoint outp = inp;
-      int ikeydelta = KOI._key;
-      float base    = 1.0 - (oscdata->_dcwKeyFollow * 0.001);
-      float power   = pow(base, ikeydelta);
-      // printf("DCW kf<%d> ikeydelta<%d> base<%0.3f> power<%0.3f>\n", oscdata->_dcwKeyFollow, ikeydelta, base, power);
-      outp._level *= power;
-      return outp;
-    };
-    /////////////////////////////////////////////////
-    // Amplitude Envelope
-    /////////////////////////////////////////////////
-    auto DCAENV             = layerdata->appendController<RateLevelEnvData>(dcaenvname);
-    DCAENV->_ampenv         = true;
-    const auto& srcdcaenv   = oscdata->_dcaEnv;
-    DCAENV->_sustainSegment = srcdcaenv._sustPoint;
-    for (int i = 0; i < 8; i++) {
-      if (i <= srcdcaenv._endStep) {
-        auto name = FormatString("seg%d", i);
-        DCAENV->addSegment(name, srcdcaenv._time[i], srcdcaenv._level[i]);
-      }
-      DCAENV->_releaseSegment = srcdcaenv._endStep;
-    }
-    DCAENV->_envadjust = [=](const EnvPoint& inp, //
-                             int iseg,
-                             const KeyOnInfo& KOI) -> EnvPoint { //
-      EnvPoint outp = inp;
-      int ikeydelta = KOI._key;
-      float base    = 1.0 - (oscdata->_dcaKeyFollow * 0.001);
-      float power   = pow(base, ikeydelta);
-      // printf("DCA kf<%d> ikeydelta<%d> base<%0.3f> power<%0.3f>\n", oscdata->_dcaKeyFollow, ikeydelta, base, power);
-      outp._time *= power;
-      return outp;
-    };
-    //////////////////////////////////////
-    // setup dsp graph
-    //////////////////////////////////////
-    auto dconame    = FormatString("dco%d", dcochannel);
-    auto dcoampname = FormatString("amp%d", dcochannel);
-    auto dcostage   = layerdata->stageByName("DCO");
-    auto ampstage   = layerdata->stageByName("AMP");
-    auto dco        = dcostage->appendTypedBlock<CZX>(dconame, oscdata, dcochannel);
-    auto amp        = ampstage->appendTypedBlock<AMP_MONOIO>(dcoampname);
-    dco->addDspChannel(dcochannel);
-    amp->addDspChannel(dcochannel);
-    //////////////////////////////////////
-    // setup modulators
-    //////////////////////////////////////
-    auto pitch_mod        = dco->_paramd[0]->_mods;
-    pitch_mod->_src1      = DCOENV;
-    pitch_mod->_src1Depth = 1.0f;
-    /////////////////////////////////////////////////
-    auto modulation_index        = dco->_paramd[1]->_mods;
-    modulation_index->_src1      = DCWENV;
-    modulation_index->_src1Depth = float(oscdata->_dcwDepth) / 15.0f;
-    /////////////////////////////////////////////////
-    auto amp_param = amp->_paramd[0];
-    amp_param->useDefaultEvaluator();
-    amp_param->_mods->_src1      = DCAENV;
-    amp_param->_mods->_src1Depth = float(oscdata->_dcaDepth) / 15.0f;
-    /////////////////////////////////////////////////
-    if (dcochannel == 1) { // add detune
-      auto DETUNE              = layerdata->appendController<CustomControllerData>("DCO1DETUNE");
-      pitch_mod->_src2         = DETUNE;
-      pitch_mod->_src2MinDepth = 1.0;
-      pitch_mod->_src2MaxDepth = 1.0;
-      DETUNE->_onkeyon         = [czprogdata](
-                             CustomControllerInst* cci, //
-                             const KeyOnInfo& KOI) {    //
-        cci->_curval = czprogdata->_detuneCents;
-        // printf("DETUNE<%g>\n", cci->_curval);
-      };
-    }
-  };
+  ////////////////////////////////////
+
+
+  OrkAssert(false);
   /////////////////////////////////////////////////
   auto layerdata           = prgout->newLayer();
   layerdata->_layerLinGain = 0.25;
   /////////////////////////////////////////////////
   // line select
   /////////////////////////////////////////////////
+  CZLAYERDATACTX lyrctx;
   switch (czprogdata->_lineSel) {
     case 0: // 1
-      configureCz1Algorithm(layerdata, 1);
-      make_dco(layerdata, czprogdata->_oscData[0], 0);
+      lyrctx = configureCz1Algorithm(layerdata, 1);
+      make_dco(lyrctx, czprogdata, czprogdata->_oscData[0], 0);
       break;
     case 1: // 2
-      configureCz1Algorithm(layerdata, 1);
-      make_dco(layerdata, czprogdata->_oscData[1], 0);
+      lyrctx = configureCz1Algorithm(layerdata, 1);
+      make_dco(lyrctx, czprogdata, czprogdata->_oscData[1], 0);
       break;
     case 2: // 1+1'
-      configureCz1Algorithm(layerdata, 2);
+      lyrctx = configureCz1Algorithm(layerdata, 2);
       *(czprogdata->_oscData[1]) = *(czprogdata->_oscData[0]);
-      make_dco(layerdata, czprogdata->_oscData[0], 0);
-      make_dco(layerdata, czprogdata->_oscData[1], 1);
+      make_dco(lyrctx, czprogdata, czprogdata->_oscData[0], 0);
+      make_dco(lyrctx, czprogdata, czprogdata->_oscData[1], 1);
       break;
     case 3: // 1+2'
-      configureCz1Algorithm(layerdata, 2);
-      make_dco(layerdata, czprogdata->_oscData[0], 0);
-      make_dco(layerdata, czprogdata->_oscData[1], 1);
+      lyrctx = configureCz1Algorithm(layerdata, 2);
+      make_dco(lyrctx, czprogdata, czprogdata->_oscData[0], 0);
+      make_dco(lyrctx, czprogdata, czprogdata->_oscData[1], 1);
       break;
     default:
       assert(false);
@@ -520,12 +578,14 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
   /////////////////////////////////////////////////
   int modulation_mode   = czprogdata->_lineMod >> 1;
   bool modulation_nomix = (czprogdata->_lineMod & 1);
+  auto modstage = layerdata->stageByName("MOD");
   switch (modulation_mode) {
     case 0:   // none
     case 1: { // none
       if (czprogdata->numOscs() == 2) {
-        auto modstage = layerdata->stageByName("MOD");
         auto mix      = modstage->appendTypedBlock<SUM2>("nomod");
+        mix->addDspChannel(0);
+        mix->addDspChannel(1);
       }
       break;
     }
@@ -536,7 +596,6 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
     case 3: { // noise 1
       OrkAssert(czprogdata->numOscs() == 2);
       czprogdata->_oscData[1]->_noisemod = true;
-      auto modstage                      = layerdata->stageByName("MOD");
       auto mix                           = modstage->appendTypedBlock<SUM2>("noisemod-1");
       break;
     }
@@ -544,7 +603,6 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
     case 5: {                         // ring 1
       if (czprogdata->numOscs() == 1) // we get some bad data with some banks
         return nullptr;
-      auto modstage = layerdata->stageByName("MOD");
       if (modulation_nomix)
         modstage->appendTypedBlock<RingMod>("ringmod");
       else

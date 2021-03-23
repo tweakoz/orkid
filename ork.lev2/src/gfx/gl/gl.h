@@ -37,7 +37,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#if 1 // defined( _DEBUG )
+#if 0 // defined( _DEBUG )
 #define GL_ERRORCHECK()                                                                                                            \
   {                                                                                                                                \
     GLenum iErr = GetGlError();                                                                                                    \
@@ -287,16 +287,26 @@ struct GLTextureObject {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct PboItem {
+  GLuint _handle = 0xffffffff;
+  size_t _length = 0;
+  void* _mapped = nullptr;
+};
+
+using pboptr_t = std::shared_ptr<PboItem>;
+
 struct PboSet {
 
   PboSet(size_t size);
   ~PboSet();
-  GLuint alloc();
-  void free(GLuint pbo);
-  std::set<GLuint> _pbos;
-  std::set<GLuint> _pbos_perm;
+  pboptr_t alloc();
+  void free(pboptr_t pbo);
+  std::queue<pboptr_t> _pbos;
+  std::set<pboptr_t> _pbos_perm;
   const size_t _size;
 };
+
+using pbosetptr_t = std::shared_ptr<PboSet>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -321,8 +331,8 @@ class GlTextureInterface : public TextureInterface {
 public:
   void TexManInit(void) override;
 
-  GLuint _getPBO(size_t isize);
-  void _returnPBO(size_t isize, GLuint pbo);
+  pboptr_t _getPBO(size_t isize);
+  void _returnPBO(pboptr_t pbo);
 
   GlTextureInterface(ContextGL& tgt);
 
@@ -347,7 +357,7 @@ private:
   void generateMipMaps(Texture* ptex) final;
   Texture* createFromMipChain(MipChain* from_chain) final;
 
-  std::map<size_t, PboSet*> mPBOSets;
+  std::map<size_t, pbosetptr_t> _pbosets;
   ContextGL& mTargetGL;
 };
 

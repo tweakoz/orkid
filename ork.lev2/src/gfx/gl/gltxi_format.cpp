@@ -157,9 +157,9 @@ void Set2D(
       // imgdata->PBO
       /////////////////////////////
 
-      const GLuint PBOOBJ = txi->_getPBO(isiz2);
+      auto pbo = txi->_getPBO(isiz2);
 
-      glBindBuffer(GL_PIXEL_UNPACK_BUFFER, PBOOBJ);
+      glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo->_handle);
       GL_ERRORCHECK();
 
       u32 map_flags = GL_MAP_WRITE_BIT;
@@ -187,7 +187,7 @@ void Set2D(
 
       glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
-      txi->_returnPBO(isiz2, PBOOBJ);
+      txi->_returnPBO(pbo);
       GL_ERRORCHECK();
     } else // not PBO
     {

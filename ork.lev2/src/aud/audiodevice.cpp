@@ -23,7 +23,8 @@
 
 #include "null/audiodevice_null.h"
 #include "portaudio/audiodevice_pa.h"
-#define NativeDevice AudioDevicePa
+#include "alsa/audiodevice_alsa.h"
+#define NativeDevice AudioDeviceAlsa
 
 bool gb_audio_filter = false;
 
@@ -39,19 +40,9 @@ namespace ork { namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-AudioDevice* AudioDevice::gpDevice = 0;
-
-AudioDevice* AudioDevice::GetDevice(void) {
-  if (0 == gpDevice) {
-    if (true) // gb_audio_filter )
-    {
-      gpDevice = new AudioDeviceNULL;
-    } else {
-      gpDevice = new NativeDevice;
-    }
-  }
-
-  return gpDevice;
+audiodevice_ptr_t AudioDevice::instance(void) {
+  static audiodevice_ptr_t device = std::make_shared<NativeDevice>();
+  return device;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

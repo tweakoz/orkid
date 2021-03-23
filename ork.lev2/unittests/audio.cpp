@@ -3,7 +3,7 @@
 #include <utpp/UnitTest++.h>
 
 TEST(Audio1) {
-  ork::lev2::AudioDevice* paudio = ork::lev2::AudioDevice::GetDevice();
-  printf("audiodev<%p>\n", paudio);
+  auto paudio = ork::lev2::AudioDevice::instance();
+  printf("audiodev<%p>\n", paudio.get());
   CHECK(paudio != nullptr);
 }

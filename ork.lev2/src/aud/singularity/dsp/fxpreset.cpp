@@ -281,8 +281,7 @@ lyrdata_ptr_t fxpreset_none() {
   return fxlayer;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void loadAllFxPresets() {
-  auto s                             = synth::instance();
+void loadAllFxPresets(synth* s) {
   s->_fxpresets["none"]              = fxpreset_none();
   s->_fxpresets["distortion+chorus"] = fxpreset_distortionpluschorus();
   s->_fxpresets["distortion+echo"]   = fxpreset_distortionplusecho();

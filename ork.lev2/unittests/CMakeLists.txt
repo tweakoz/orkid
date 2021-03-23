@@ -11,10 +11,11 @@ set( TESTSRCD ${CMAKE_CURRENT_SOURCE_DIR} )
 file(GLOB testsrcs ${TESTSRCD}/*.cpp)
 add_executable (ork.test.lev2.exe ${testsrcs} )
 
+ork_std_target_opts(ork.test.lev2.exe)
+
 target_link_libraries(ork.test.lev2.exe LINK_PRIVATE ork_utpp )
 target_link_libraries(ork.test.lev2.exe LINK_PRIVATE ork_core )
 target_link_libraries(ork.test.lev2.exe LINK_PRIVATE ork_lev2 )
-target_link_libraries(ork.test.lev2.exe LINK_PRIVATE boost_system )
 
 set_target_properties(ork.test.lev2.exe PROPERTIES LINKER_LANGUAGE CXX)
 target_include_directories (ork.test.lev2.exe PRIVATE ${ORKROOT}/ork.core/inc )

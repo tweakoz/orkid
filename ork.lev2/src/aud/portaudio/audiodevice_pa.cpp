@@ -37,7 +37,7 @@ const bool ENABLE_OUTPUT = true; // allow disabling for long debug sessions
 #if defined(__APPLE__)
 const int DESIRED_NUMFRAMES = 256;
 #else
-const int DESIRED_NUMFRAMES = 4096;
+const int DESIRED_NUMFRAMES = 8192;
 #endif
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -80,11 +80,12 @@ static int patestCallback(
       *out++ = 0.0f; // interleaved
       *out++ = 0.0f; // interleaved
     }
+
   }
   return 0;
 }
 
-void startupAudio() {
+ static void _startupAudio() {
 
   float SR = getSampleRate();
 
@@ -135,7 +136,7 @@ void tearDownAudio() {
 
 AudioDevicePa::AudioDevicePa()
     : AudioDevice() {
-  startupAudio();
+    _startupAudio();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

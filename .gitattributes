@@ -1,16 +1,16 @@
-*.png filter=lfs diff=lfs merge=lfs -text
+*.png filter=lfs diff=lfs merge=lfs -text lockable
 *.dds filter=lfs diff=lfs merge=lfs -text
-*.tga filter=lfs diff=lfs merge=lfs -text
-*.dae filter=lfs diff=lfs merge=lfs -text
-*.hiplc filter=lfs diff=lfs merge=lfs -text
-*.xga filter=lfs diff=lfs merge=lfs -text
-*.xgm filter=lfs diff=lfs merge=lfs -text
-*.glb filter=lfs diff=lfs merge=lfs -text
-*.gltf filter=lfs diff=lfs merge=lfs -text
-*.spp filter=lfs diff=lfs merge=lfs -text
-*.fbx filter=lfs diff=lfs merge=lfs -text
-*.3b filter=lfs diff=lfs merge=lfs -text
-*.jpg filter=lfs diff=lfs merge=lfs -text
-*.jpeg filter=lfs diff=lfs merge=lfs -text
-*.blend filter=lfs diff=lfs merge=lfs -text
-*.3b.jpg filter=lfs diff=lfs merge=lfs -text
+*.tga filter=lfs diff=lfs merge=lfs -text lockable
+*.dae filter=lfs diff=lfs merge=lfs -text lockable
+*.hiplc filter=lfs diff=lfs merge=lfs -text lockable
+*.xga filter=lfs diff=lfs merge=lfs -text 
+*.xgm filter=lfs diff=lfs merge=lfs -text 
+*.glb filter=lfs diff=lfs merge=lfs -text lockable
+*.gltf filter=lfs diff=lfs merge=lfs -text lockable
+*.spp filter=lfs diff=lfs merge=lfs -text lockable
+*.fbx filter=lfs diff=lfs merge=lfs -text lockable
+*.3b filter=lfs diff=lfs merge=lfs -text lockable
+*.jpg filter=lfs diff=lfs merge=lfs -text lockable
+*.jpeg filter=lfs diff=lfs merge=lfs -text lockable
+*.blend filter=lfs diff=lfs merge=lfs -text lockable
+*.3b.jpg filter=lfs diff=lfs merge=lfs -text lockable

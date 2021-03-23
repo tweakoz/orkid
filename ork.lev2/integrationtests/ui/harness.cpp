@@ -120,7 +120,7 @@ uitestapp_ptr_t createEZapp(int& argc, char** argv) {
     compositorimpl->pushCPD(*CPD);
     context->beginFrame();
     mtxi->PushUIMatrix();
-    qtapp->_ezviewport->_topLayoutGroup->Draw(drwev);
+    qtapp->_uicontext->draw(drwev);
     mtxi->PopUIMatrix();
     context->endFrame();
     ////////////////////////////////////////////////////

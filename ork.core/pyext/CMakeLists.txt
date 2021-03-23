@@ -17,8 +17,9 @@ set( INCD $ENV{ORKID_WORKSPACE_DIR}/ork.core/inc )
 
 ADD_LIBRARY( _core SHARED pyext.cpp pyext_math.cpp )
 
+ork_std_target_opts(_core)
+
 target_include_directories (_core PRIVATE ${INCD} )
-target_include_directories( _core PRIVATE ${PYTHON_INCLUDE_DIRS} ${PYBIND11_INCLUDE_DIRS} )
 target_link_libraries(_core LINK_PRIVATE ork_core)
 
 SET_TARGET_PROPERTIES( _core
@@ -33,7 +34,6 @@ IF( APPLE )
       LINK_FLAGS "-undefined dynamic_lookup"
       SUFFIX     ".so"
   )
-  target_include_directories (_core PRIVATE /usr/local/include)
 ENDIF()
 
 ###################################

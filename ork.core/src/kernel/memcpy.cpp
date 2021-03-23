@@ -1,6 +1,7 @@
 
 #include <immintrin.h>
 #include <stdint.h>
+#include <memory.h>
 
 namespace ork {
 
@@ -52,7 +53,9 @@ static void memcpy_avxnocache(uint8_t* dst, uint8_t* src, size_t size)
     }
 }
 void memcpy_fast(void* dest, const void* src, size_t length){
-  memcpy_sse((uint8_t*) dest, (uint8_t*) src, length );
+  //memcpy_sse((uint8_t*) dest, (uint8_t*) src, length );
+  memcpy_ssenocache((uint8_t*) dest, (uint8_t*) src, length );
+  //::memcpy(dest,src,length);
 }
 
 

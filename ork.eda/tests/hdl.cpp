@@ -68,7 +68,7 @@ struct Module1 final : public Module {
       hdl_if(y > x, {
         x.next(x + 1);
         y.next(y + 2);
-        auto sliced = slice(x - y, 1, 16);
+        auto sliced = slice(x - y, 0, 16);
         auto filled = l_fill0(sliced, 32);
         a.next(filled);
         b.next(y - x);
@@ -106,15 +106,16 @@ struct TOP : public Module {
   TOP(Module* tb, args_t args = {})
       : Module("Top", tb, args)
       , initref(outregbool, lineout)
+      , initref(u64reg, counter)
       , initref(s32reg, o)
       , initref(s32reg, o2)
       , initref(u32wire, gcdX)
       , initref(u32wire, gcdY)
       , initref(wireuint<ROMW>, romdatain)
-      , initref(reguint<ROMW>, romdataout)
+      , initref(wireuint<ROMW>, romdataout)
       , initref(reguint<KROMPOTD>, romaddr)
       , initref(regbool, romwe) {
-    auto bram = instance<BlockMem>("BRAM", {romaddr, romdataout, romdatain, romwe}, size_t(ROMW), size_t(ROMD));
+    auto bram = instance<BlockMem>("BRAM", {romaddr, romdatain, romdataout, romwe}, size_t(ROMW), size_t(ROMD));
 
     const char rominit[ROMD] = "0123456789abcdef0123456789ABCDE";
     bram->_storage->initFromData(rominit, ROMD);
@@ -130,17 +131,19 @@ struct TOP : public Module {
   }
   void generate() final {
     hdl_posedge(sysclock(), {
+      counter.next(counter + 1);
       auto sum = (o + ks32(1));
       auto sli = slice(sum, 0, 32);
       auto wra = wrap(sum);
       o.next(sli << 1);
-      romaddr.next(slice(sum, 0, KROMPOTD));
+      romaddr.next(slice(counter, 0, KROMPOTD));
     });
     hdl_sync({
-      lineout.next(romdatain[0]);
+      lineout.next(romdataout[0]);
       o2.next(o2 - 3);
     });
   }
+  Ref counter;
   Ref lineout, o, o2;
   Ref gcdX, gcdY;
   Ref romaddr, romdatain, romdataout, romwe;

@@ -18,6 +18,12 @@ set(CMAKE_FIND_DEBUG_MODE OFF)
 set(PYTHON_EXECUTABLE $ENV{OBT_STAGE}/bin/python3)
 set(PYTHON_LIBRARY $ENV{OBT_STAGE}/lib/libpython3.8d.so)
 
+set(Python3_FIND_STRATEGY "LOCATION")
+set(Python3_ROOT_DIR $ENV{OBT_STAGE} )
+
+find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
+find_package(pybind11 REQUIRED)
+
 ################################################################################
 
 IF(${APPLE})
@@ -50,14 +56,11 @@ IF(${APPLE})
        SET(CMAKE_INSTALL_RPATH "$ENV{OBT_STAGE}/lib")
     ENDIF("${isSystemDir}" STREQUAL "-1")
     add_definitions(-DOSX -DORK_OSX)
-    link_directories(/usr/local/lib) # homebrew
 ELSE()
     add_definitions(-DORK_CONFIG_IX -DLINUX -DGCC)
     add_compile_options(-D_REENTRANT -DQT_NO_EXCEPTIONS -D_LARGEFILE64_SOURCE -D_LARGEFILE_SOURCE -DQT_GUI_LIB -DQT_CORE_LIB)
     link_directories($ENV{OBT_STAGE}/qt5/lib )
 ENDIF()
-
-add_compile_options(-frounding-math) # CGAL!
 
 add_compile_definitions(QTVER=$ENV{QTVER})
 
@@ -80,14 +83,19 @@ link_directories($ENV{OBT_STAGE}/lib/)
 
 link_directories($ENV{OBT_STAGE}/orkid/ork.tuio )
 link_directories($ENV{OBT_STAGE}/orkid/ork.utpp )
-link_directories($ENV{OBT_STAGE}/orkid/ork.core )
-link_directories($ENV{OBT_STAGE}/orkid/ork.lev2 )
-link_directories($ENV{OBT_STAGE}/orkid/ork.ent )
-link_directories($ENV{OBT_STAGE}/orkid/ork.tool )
+#link_directories($ENV{OBT_STAGE}/orkid/ork.core )
+#link_directories($ENV{OBT_STAGE}/orkid/ork.lev2 )
+#link_directories($ENV{OBT_STAGE}/orkid/ork.ent )
+#link_directories($ENV{OBT_STAGE}/orkid/ork.tool )
 
 set( ORK_CORE_INCD ${ORKROOT}/ork.core/inc )
 set( ORK_LEV2_INCD ${ORKROOT}/ork.lev2/inc )
 set( ORK_ECS_INCD ${ORKROOT}/ork.ecs/inc )
+
+#set( ORK_CORE_LIBD ${OBT_STAGE}/orkid/ork.lev2 )
+#set( ORK_LEV2_LIBD ${OBT_STAGE}/orkid/ork.lev2 )
+#set( ORK_ECS_LIBD ${OBT_STAGE}/orkid/ork.ent )
+#set( ORK_TOOL_LIBD ${OBT_STAGE}/orkid/ork.tool )
 
 ################################################################################
 # IGL (its a beast, needs a cmake update)
@@ -180,6 +188,47 @@ macro(enableQt5)
   include_directories(${Qt5Gui_PRIVATE_INCLUDE_DIRS})
 
 endmacro()
+
+##############################
+
+function(ork_post_lib_paths TARGET)
+  target_link_directories(${TARGET} PRIVATE /usr/local/lib) # homebrew
+endfunction()
+
+##############################
+
+function(ork_std_target_opts_compiler TARGET)
+  target_include_directories( ${TARGET} PRIVATE ${Python3_INCLUDE_DIRS} ${PYBIND11_INCLUDE_DIRS} )
+  IF(${APPLE})
+    target_include_directories (${TARGET} PRIVATE /usr/local/include)
+  ELSEIF(${UNIX})
+  ENDIF()
+endfunction()
+
+##############################
+
+function(ork_std_target_opts_linker TARGET)
+  IF(${APPLE})
+      target_link_libraries(${TARGET} LINK_PRIVATE m pthread)
+      target_link_libraries(${TARGET} LINK_PRIVATE
+          "-framework AppKit"
+          "-framework IOKit"
+      )
+      target_link_libraries(${TARGET} LINK_PRIVATE objc boost_filesystem  boost_system)
+  ELSEIF(${UNIX})
+      target_link_libraries(${TARGET} LINK_PRIVATE rt dl pthread boost_filesystem boost_system)
+  ENDIF()
+  target_link_libraries(${TARGET} LINK_PRIVATE ${Python3_LIBRARIES} )
+  target_link_options(${TARGET} PRIVATE ${Python3_LINK_OPTIONS})
+endfunction()
+
+##############################
+
+function(ork_std_target_opts TARGET)
+  ork_post_lib_paths(${TARGET})
+  ork_std_target_opts_compiler(${TARGET})
+  ork_std_target_opts_linker(${TARGET})
+endfunction()
 
 ##############################
 # ISPC compile option

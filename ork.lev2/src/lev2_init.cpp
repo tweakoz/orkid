@@ -39,6 +39,8 @@
 #include <ork/lev2/aud/singularity/envelope.h>
 #include <ork/lev2/aud/singularity/dsp_pmx.h>
 #include <ork/lev2/aud/singularity/dsp_mix.h>
+#include <ork/math/plane.hpp>
+
 ///////////////////////////////////////////////////////////////////////////////
 //#define WIIEMU
 ///////////////////////////////////////////////////////////////////////////////
@@ -47,9 +49,11 @@ namespace ork {
 
 namespace lev2 {
 
+#if !defined(ORK_OSX)
 namespace vk {
 void init();
 }
+#endif
 // static FileDevContext LocPlatformLevel2FileContext;
 // const FileDevContext& PlatformLevel2FileContext = LocPlatformLevel2FileContext;
 
@@ -209,7 +213,10 @@ void ClassInit() {
 }
 
 void GfxInit(const std::string& gfxlayer) {
+
+#if !defined(ORK_OSX)
   vk::init();
+#endif
 
   if (gfxlayer != "dummy") {
 #if defined(ORK_CONFIG_OPENGL)
@@ -402,3 +409,5 @@ name.c_str(), fps, ftime*1000.0f ).c_str() ); #endif
 }
 
 } // namespace ork
+
+template class ork::Plane<float>; // explicit template instantiation

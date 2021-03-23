@@ -26,12 +26,23 @@ struct Context {
     return _hasKeyboardFocus;
   }
   //////////////////////////////////////
+  const Widget* mouseFocusWidget() const {
+    return _mousefocuswidget;
+  }
+  //////////////////////////////////////
+  const Widget* keyboardFocusWidget() const {
+    return _keyboardFocusWidget;
+  }
+  //////////////////////////////////////
+  void draw(drawevent_constptr_t drwev);
+  //////////////////////////////////////
 
   group_ptr_t _top;
   bool _hasKeyboardFocus             = false;
   Widget* _evdragtarget              = nullptr;
   const Widget* _mousefocuswidget    = nullptr;
   const Widget* _keyboardFocusWidget = nullptr;
+  Widget* _overlayWidget             = nullptr;
   Event _prevevent;
   event_ptr_t _tempevent;
 };
