@@ -5,10 +5,6 @@ include (GenerateExportHeader)
 set( CMAKE_MODULE_PATH $ENV{ORKID_WORKSPACE_DIR}:$ENV{OBT_STAGE}/share/cmake/pybind11 )
 enableQt5()
 
-find_package (Python COMPONENTS Interpreter Development)
-#find_package (Eigen3 3.3 REQUIRED NO_MODULE)
-find_package( pybind11 REQUIRED )
-
 ###################################
 
 set( SRCD ${CMAKE_CURRENT_SOURCE_DIR} )
@@ -23,12 +19,14 @@ file(GLOB binding_sources ${PYQT5_BINDINGS_DIR}/lev2-qtui/*.cpp)
 #message(${SHIBOKEN_BINDINGS_PATH})
 #message(${binding_sources})
 add_library( _lev2qt SHARED ${sources} ${binding_sources} )
+
+ork_std_target_opts(_lev2qt)
+
 #target_include_directories( _lev2qt PRIVATE ${SHIBOKEN_HEADER_PATH} )
 #target_include_directories (_lev2qt PRIVATE ${SHIBOKEN_BINDINGS_PATH} )
 #target_include_directories (_lev2qt PRIVATE ${PYSIDE_HEADER_PATH} )
 add_definitions(-include ${SRCD}/binding_header.h)
 target_include_directories (_lev2qt PRIVATE ${INCD} ${INCD2} )
-target_include_directories( _lev2qt PRIVATE ${PYTHON_INCLUDE_DIRS} )
 target_link_libraries(_lev2qt LINK_PUBLIC ork_core ork_lev2 )
 #target_link_libraries(_lev2qt LINK_PRIVATE ${SHIBOKEN_LIBRARY_FILE} )
 #add_library(ABC SHARED IMPORTED)
@@ -59,7 +57,6 @@ if( APPLE )
       LINK_FLAGS "-undefined dynamic_lookup"
       SUFFIX     ".so"
   )
-  target_include_directories (_lev2qt PRIVATE /usr/local/include)
 else()
   target_link_options(_lev2qt PUBLIC -Wl,--no-undefined )
 endif()

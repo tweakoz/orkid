@@ -8,6 +8,7 @@
 #include "harness.h"
 #include <boost/program_options.hpp>
 #include <iostream>
+#include <ork/lev2/aud/audiodevice.h>
 #include <ork/lev2/aud/singularity/hud.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
@@ -30,15 +31,17 @@ extern bool _macosUseHIDPI;
 #endif
 ///////////////////////////////////////////////////////////////////////////////
 static auto the_synth = synth::instance();
+audiodevice_ptr_t gaudiodevice;
 ///////////////////////////////////////////////////////////////////////////////
 SingularityTestApp::SingularityTestApp(int& argc, char** argv)
     : OrkEzQtApp(argc, argv) {
   _hudvp = the_synth->_hudvp;
-  startupAudio();
+  gaudiodevice = AudioDevice::instance();
+  //startupAudio();
 }
 ///////////////////////////////////////////////////////////////////////////////
 SingularityTestApp::~SingularityTestApp() {
-  tearDownAudio();
+  //tearDownAudio();
 }
 ///////////////////////////////////////////////////////////////////////////////
 std::string testpatternname = "";
@@ -535,7 +538,7 @@ prgdata_constptr_t testpattern(
       for (int velocity = 0; velocity <= 128; velocity += 8) {
         for (int n = 0; n <= 64; n += 12) {
           // printf("getProgramByName<%s>\n", program->_name.c_str());
-          enqueue_audio_event(program, count * 0.20, (i + 1) * 0.05, 36 + n + i, velocity);
+          enqueue_audio_event(program, count * 0.20, (i + 1) * 0.05, 48 + n + i, velocity);
           count++;
         }
       }

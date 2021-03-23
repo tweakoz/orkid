@@ -49,9 +49,11 @@ namespace ork {
 
 namespace lev2 {
 
+#if !defined(ORK_OSX)
 namespace vk {
 void init();
 }
+#endif
 // static FileDevContext LocPlatformLevel2FileContext;
 // const FileDevContext& PlatformLevel2FileContext = LocPlatformLevel2FileContext;
 
@@ -211,7 +213,10 @@ void ClassInit() {
 }
 
 void GfxInit(const std::string& gfxlayer) {
+
+#if !defined(ORK_OSX)
   vk::init();
+#endif
 
   if (gfxlayer != "dummy") {
 #if defined(ORK_CONFIG_OPENGL)

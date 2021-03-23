@@ -14,13 +14,13 @@ using namespace ork::lev2;
 using namespace ork::audio::singularity;
 
 namespace ork::lev2 {
-void startupAudio();
-void tearDownAudio();
+//void startupAudio();
+//void tearDownAudio();
 } // namespace ork::lev2
 
 int main(int argc, char** argv) {
   // auto qtapp = OrkEzQtApp::create(argc, argv);
-  startupAudio();
+  //startupAudio();
   auto bank     = std::make_shared<KrzSynthData>();
   auto drums    = bank->getProgramByName("Castle_Drums");
   auto doomsday = bank->getProgramByName("Doomsday");
@@ -64,6 +64,6 @@ int main(int argc, char** argv) {
   //////////////////////////////////////////////////////////////////////////////
   usleep(60 << 20); // just wait, let the "music" play..
   //////////////////////////////////////////////////////////////////////////////
-  tearDownAudio();
+  //tearDownAudio();
   return 0;
 }

@@ -10,6 +10,9 @@ set( TESTSRCD ${CMAKE_CURRENT_SOURCE_DIR} )
 file(GLOB testsrcs ${TESTSRCD}/*.cpp)
 add_executable (ork.test.core.exe ${testsrcs} )
 
+ork_std_target_opts(ork.test.core.exe)
+
+
 target_link_libraries(ork.test.core.exe LINK_PRIVATE ork_utpp )
 target_link_libraries(ork.test.core.exe LINK_PRIVATE ork_core )
 target_link_libraries(ork.test.core.exe LINK_PRIVATE boost_filesystem boost_system )

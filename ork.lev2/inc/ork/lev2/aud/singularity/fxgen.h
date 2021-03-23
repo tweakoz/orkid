@@ -93,6 +93,6 @@ lyrdata_ptr_t fxpreset_wackiverb();
 lyrdata_ptr_t fxpreset_pitchoctup();
 lyrdata_ptr_t fxpreset_pitchwave();
 lyrdata_ptr_t fxpreset_pitchchorus();
-void loadAllFxPresets();
+void loadAllFxPresets(synth* s);
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::audio::singularity

@@ -26,6 +26,7 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 class AudioDevice;
+using audiodevice_ptr_t = std::shared_ptr<AudioDevice>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -34,15 +35,13 @@ public:
   virtual void ShutdownNow() {
   }
 
-  static AudioDevice* GetDevice(void);
+  static audiodevice_ptr_t instance(void);
 
   virtual ~AudioDevice() {
   }
 
 protected:
   AudioDevice();
-
-  static AudioDevice* gpDevice;
 
   //////////////////
 };

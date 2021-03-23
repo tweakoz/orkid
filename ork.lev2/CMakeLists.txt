@@ -51,27 +51,27 @@ add_library (ork_lev2 SHARED ${orksrcs}
 
 ###################################
 
+ork_std_target_opts(ork_lev2)
+
 set( libs ork_core ork_tuio )
-list(APPEND libs OpenImageIO OpenImageIO_Util portaudio ispc_texcomp openvr_api )
+list(APPEND libs OpenImageIO OpenImageIO_Util portaudio ispc_texcomp )
 #list(APPEND libs igl::core igl::opengl_glfw )
 
 IF(${APPLE})
-    target_include_directories (ork_lev2 PRIVATE /usr/local/include)
-    list(APPEND libs m pthread boost_filesystem )
-    list(APPEND libs MoltenVK )
+    #list(APPEND libs MoltenVK )
     list(APPEND libs "-framework OpenGL" "-framework Metal" "-framework IOSurface"  )
     list(APPEND libs "-framework CoreMIDI" "-framework CoreAudio" "-framework QuartzCore" )
     list(APPEND libs "-framework AudioUnit" "-framework AudioToolbox" )
     list(APPEND libs "-framework Carbon" "-framework Foundation" )
     list(APPEND libs "-framework ApplicationServices" "-framework AppKit" )
-    list(APPEND libs glfw.3 objc)
+    list(APPEND libs glfw.3)
 ELSEIF(${UNIX})
     set(VULKAN_SDK=$ENV{OBT_STAGE}/builds/vulkan/1.2.131.2/x86_64)
     set(ENV{VULKAN_SDK}=${VULKAN_SDK})
     set(ENV{PATH}=$ENV{PATH}:${VULKAN_SDK}/bin)
     set(ENV{LD_LIBRARY_PATH}=$ENV{LD_LIBRARY_PATH}:${VULKAN_SDK}/lib)
     set(ENV{VK_LAYER_PATH}=${VULKAN_SDK}/etc/vulkan/explicit_layer.d)
-    list(APPEND libs rt dl pthread GL Qt5::X11Extras Xrandr vulkan )
+    list(APPEND libs GL Qt5::X11Extras Xrandr vulkan openvr_api )
 ENDIF()
 
 list(APPEND libs Qt5::Widgets Qt5::Core Qt5::Gui)
@@ -82,6 +82,10 @@ ENDIF()
 list(APPEND libs embree3 mpfr gmp )
 IF(${UNIX})
   list(APPEND igl )
+ENDIF()
+
+IF(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+   target_compile_options(ork_lev2 PUBLIC -frounding-math) # CGAL!
 ENDIF()
 
 target_link_libraries(ork_lev2 PUBLIC ${libs} triangle tetgen )
@@ -99,7 +103,7 @@ target_include_directories (ork_lev2 PRIVATE $ENV{OBT_BUILDS}/igl/external/tetge
 IF(${APPLE})
 ELSE()
   target_link_options(ork_lev2 PUBLIC -Wl,--no-undefined )
-  target_link_libraries(ork_lev2 PUBLIC X11 )
+  target_link_libraries(ork_lev2 PUBLIC X11 asound )
 ENDIF()
 ###################################
 

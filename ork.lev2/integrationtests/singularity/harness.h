@@ -20,8 +20,8 @@ using namespace ork::lev2;
 using namespace ork::audio::singularity;
 
 namespace ork::lev2 {
-void startupAudio();
-void tearDownAudio();
+//void startupAudio();
+//void tearDownAudio();
 } // namespace ork::lev2
 
 struct MidiContext;

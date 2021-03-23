@@ -12,10 +12,11 @@ set( SRCD ${CMAKE_CURRENT_SOURCE_DIR} )
 file(GLOB testsrcs ${SRCD}/*.cpp)
 add_executable (${EXE} ${testsrcs} )
 
+ork_std_target_opts(${EXE})
+
 target_link_libraries(${EXE} LINK_PRIVATE ork_core )
 target_link_libraries(${EXE} LINK_PRIVATE ork_eda )
 target_link_libraries(${EXE} LINK_PRIVATE ork_lev2 )
-target_link_libraries(${EXE} LINK_PRIVATE boost_system )
 
 set_target_properties(${EXE} PROPERTIES LINKER_LANGUAGE CXX)
 target_include_directories (${EXE} PRIVATE ${ORKROOT}/ork.core/inc )

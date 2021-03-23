@@ -18,6 +18,7 @@ namespace ork::lev2 {
 InstancedModelDrawable::InstancedModelDrawable(DrawableOwner* pent)
     : Drawable() {
   _instancedata = std::make_shared<InstancedDrawableData>();
+  _drawcount = 0;
 }
 /////////////////////////////////////////////////////////////////////
 InstancedModelDrawable::~InstancedModelDrawable() {
@@ -76,7 +77,7 @@ void InstancedModelDrawable::bindModel(model_ptr_t model) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void InstancedModelDrawable::gpuInit(Context* ctx) const {
-  _instanceMatrixTex = Texture::createBlank(1024, 1024, EBufferFormat::RGBA32F);
+  _instanceMatrixTex = Texture::createBlank(1024, 256, EBufferFormat::RGBA32F);
   _instanceColorTex  = Texture::createBlank(1024, 256, EBufferFormat::RGBA32F);
   _instanceIdTex     = Texture::createBlank(1024, 128, EBufferFormat::RGBA16UI);
 
@@ -127,28 +128,35 @@ void InstancedModelDrawable::enqueueToRenderQueue(
     bool isStereo    = RCID._RCFD->isStereo();
     int fxinst_index = isStereo ? 1 : (isPick ? 2 : 0);
     ////////////////////////////////////////////////////////
+    bool updatetex = true; //( (_drawcount++) < 5000);
+    ////////////////////////////////////////////////////////
     // upload instance matrices to GPU
     ////////////////////////////////////////////////////////
     TextureInitData texdata;
-    texdata._w           = k_texture_dimension; // 64 bytes per instance
-    texdata._h           = k_texture_dimension;
+    texdata._w           = k_texture_dimension_x; // 64 bytes per instance
+    texdata._h           = k_texture_dimension_y;
     texdata._format      = EBufferFormat::RGBA32F;
     texdata._autogenmips = false;
     texdata._data        = (const void*)_instancedata->_worldmatrices.data();
     OrkAssert(_count <= k_max_instances);
-    TXI->initTextureFromData(_instanceMatrixTex.get(), texdata);
+    if(updatetex)
+      TXI->initTextureFromData(_instanceMatrixTex.get(), texdata);
     ////////////////////////////////////////////////////////
-    texdata._w    = k_texture_dimension; // 16 bytes per instance
-    texdata._h    = k_texture_dimension / 4;
+    texdata._w    = k_texture_dimension_x; // 16 bytes per instance
+    texdata._h    = k_texture_dimension_y / 4;
     texdata._data = (const void*)_instancedata->_modcolors.data();
-    TXI->initTextureFromData(_instanceColorTex.get(), texdata);
+    if(updatetex)
+      TXI->initTextureFromData(_instanceColorTex.get(), texdata);
     ////////////////////////////////////////////////////////
-    texdata._w           = k_texture_dimension; // 8 bytes per instance
-    texdata._h           = k_texture_dimension / 8;
+    texdata._w           = k_texture_dimension_x; // 8 bytes per instance
+    texdata._h           = k_texture_dimension_y / 8;
     texdata._format      = EBufferFormat::RGBA16UI;
     texdata._autogenmips = false;
     texdata._data        = (const void*)_instancedata->_pickids.data();
-    TXI->initTextureFromData(_instanceIdTex.get(), texdata);
+
+    if(updatetex)
+      TXI->initTextureFromData(_instanceIdTex.get(), texdata);
+
     _instanceIdTex->TexSamplingMode().PresetPointAndClamp();
     TXI->ApplySamplingMode(_instanceIdTex.get());
     ////////////////////////////////////////////////////////

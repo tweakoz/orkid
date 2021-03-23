@@ -10,19 +10,6 @@ int main(int argc, char** argv) {
   synth::instance()->_masterGain = decibel_to_linear_amp_ratio(30.0f);
   auto mainbus                   = synth::instance()->outputBus("main");
   auto bussource                 = mainbus->createScopeSource();
-  if (1) { // create mixbus effect ?
-
-    // auto fxlayer = fxpreset_stereochorus();
-    // auto fxlayer = fxpreset_fdn4reverb();
-    auto fxlayer = fxpreset_multitest();
-    // auto fxlayer = fxpreset_niceverb();
-    // auto fxlayer = fxpreset_echoverb();
-    // auto fxlayer = fxpreset_wackiverb();
-    // auto fxlayer = fxpreset_pitchoctup();
-    // auto fxlayer = fxpreset_pitchwave();
-    // auto fxlayer = fxpreset_pitchchorus();
-    mainbus->setBusDSP(fxlayer);
-  }
   ////////////////////////////////////////////////
   // UI layout
   ////////////////////////////////////////////////
@@ -84,7 +71,10 @@ int main(int argc, char** argv) {
   bank->loadBank(basepath / "tx81z_2.syx");
   bank->loadBank(basepath / "tx81z_3.syx");
   bank->loadBank(basepath / "tx81z_4.syx");
+  synth::instance()->_globalbank  = bank->_bankdata;
+  synth::instance()->_globalprgit = synth::instance()->_globalbank->_programs.begin();
   int count = 0;
+  auto program = testpattern(bank, argc, argv);
   for (int i = 0; i < 128; i++) { // 2 32 patch banks
     auto prg       = bank->getProgram(i);
     auto layerdata = prg->getLayer(0);
@@ -106,7 +96,11 @@ int main(int argc, char** argv) {
     layersource->connect(scope1->_sink);
     layersource->connect(analyzer1->_sink);
     //////////////////////////////////////
-    seq1(180.0f, i * 4, prg);
+    //////////////////////////////////////
+    for (int n = 0; n <= 24; n += 3) {
+      //enqueue_audio_event(prg, count * 0.5, 0.5, 72 + n);
+      count++;
+    }
   }
   //////////////////////////////////////////////////////////////////////////////
   app->setRefreshPolicy({EREFRESH_FASTEST, 0});

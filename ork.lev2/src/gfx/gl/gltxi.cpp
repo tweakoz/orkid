@@ -52,8 +52,8 @@ bool GlTextureInterface::LoadTexture(const AssetPath& infname, Texture* ptex) {
   if (FileEnv::GetRef().DoesFileExist(XtxFilename))
     final_fname = XtxFilename;
 
-  // printf("infname<%s>\n", infname.c_str());
-  // printf("final_fname<%s>\n", final_fname.c_str());
+   printf("infname<%s>\n", infname.c_str());
+   printf("final_fname<%s>\n", final_fname.c_str());
 
   if (auto dblock = datablockFromFileAtPath(final_fname))
     return LoadTexture(ptex, dblock);
@@ -111,49 +111,71 @@ PboSet::PboSet(size_t size)
 ///////////////////////////////////////////////////////////////////////////////
 
 PboSet::~PboSet() {
-  for (GLuint item : _pbos_perm) {
-    glDeleteBuffers(1, &item);
+  for (pboptr_t item : _pbos_perm) {
+
+    glDeleteBuffers(1, &item->_handle);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-GLuint PboSet::alloc() {
-  GLuint rval = 0xffffffff;
-  auto it     = _pbos.begin();
-  if (it == _pbos.end()) {
-    GL_ERRORCHECK();
-    glGenBuffers(1, &rval);
-    GL_ERRORCHECK();
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, rval);
-    GL_ERRORCHECK();
-    glBufferData(GL_PIXEL_UNPACK_BUFFER, _size, NULL, GL_DYNAMIC_DRAW);
-    GL_ERRORCHECK();
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-    GL_ERRORCHECK();
-    _pbos_perm.insert(rval);
+pboptr_t PboSet::alloc() {
+
+  if (_pbos.empty()) {
+
+    for( int i=0; i<4; i++ ) {
+
+      auto new_pbo = std::make_shared<PboItem>();
+
+      new_pbo->_length = _size;
+
+      GL_ERRORCHECK();
+      glGenBuffers(1, &new_pbo->_handle);
+      GL_ERRORCHECK();
+      glBindBuffer(GL_PIXEL_UNPACK_BUFFER, new_pbo->_handle);
+      GL_ERRORCHECK();
+      //glBufferData(GL_PIXEL_UNPACK_BUFFER, _size, NULL, GL_STREAM_DRAW);
+      u32 create_flags = GL_MAP_WRITE_BIT;
+      create_flags |= GL_MAP_PERSISTENT_BIT;
+      create_flags |= GL_MAP_COHERENT_BIT;
+      glBufferStorage( GL_PIXEL_UNPACK_BUFFER, _size,  nullptr, create_flags );
+      GL_ERRORCHECK();
+      u32 map_flags = GL_MAP_WRITE_BIT;
+      map_flags |= GL_MAP_PERSISTENT_BIT;
+      map_flags |= GL_MAP_INVALIDATE_RANGE_BIT;
+      map_flags |= GL_MAP_COHERENT_BIT;
+      //map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
+      new_pbo->_mapped = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, _size, map_flags);
+      //new_pbo->_mapped = glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
+      GL_ERRORCHECK();
+      glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+      //GL_ERRORCHECK();
+      _pbos.push(new_pbo);
+      _pbos_perm.insert(new_pbo);
+    }
     // printf("AllocPBO objid<%d> size<%zu>\n", int(rval), _size);
-  } else {
-    rval = *it;
-    _pbos.erase(it);
   }
+
+  auto rval = _pbos.front();
+  _pbos.pop();
+
   return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void PboSet::free(GLuint item) {
-  _pbos.insert(item);
+void PboSet::free(pboptr_t item) {
+  _pbos.push(item);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-GLuint GlTextureInterface::_getPBO(size_t isize) {
-  PboSet* pbs = 0;
-  auto it     = mPBOSets.find(isize);
-  if (it == mPBOSets.end()) {
-    pbs             = new PboSet(isize);
-    mPBOSets[isize] = pbs;
+pboptr_t GlTextureInterface::_getPBO(size_t isize) {
+  pbosetptr_t pbs = nullptr;
+  auto it     = _pbosets.find(isize);
+  if (it == _pbosets.end()) {
+    pbs             = std::make_shared<PboSet>(isize);
+    _pbosets[isize] = pbs;
   } else {
     pbs = it->second;
   }
@@ -162,10 +184,10 @@ GLuint GlTextureInterface::_getPBO(size_t isize) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlTextureInterface::_returnPBO(size_t isize, GLuint pbo) {
-  auto it = mPBOSets.find(isize);
-  OrkAssert(it != mPBOSets.end());
-  PboSet* pbs = it->second;
+void GlTextureInterface::_returnPBO(pboptr_t pbo) {
+  auto it = _pbosets.find(pbo->_length);
+  OrkAssert(it != _pbosets.end());
+  pbosetptr_t pbs = it->second;
   pbs->free(pbo);
 }
 
@@ -306,6 +328,26 @@ void GlTextureInterface::generateMipMaps(Texture* ptex) {
 
 void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid) {
 
+  ///////////////////////////////////
+
+  size_t length = tid.computeSize();
+  auto pboitem = this->_getPBO(length);
+  auto mapped = pboitem->_mapped;
+  //glBindBuffer(GL_PIXEL_UNPACK_BUFFER, PBOOBJ);
+  //GL_ERRORCHECK();
+  //u32 map_flags = GL_MAP_WRITE_BIT;
+  //map_flags |= GL_MAP_INVALIDATE_BUFFER_BIT;
+  //map_flags |= GL_MAP_INVALIDATE_RANGE_BIT;
+  //map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
+  //void* pgfxmem = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, length, map_flags);
+   //printf("UPDATE IMAGE UNC iw<%d> ih<%d> length<%zu> pbo<%d> mem<%p>\n", tid._w, tid._h, length, PBOOBJ, pgfxmem);
+  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboitem->_handle);
+  memcpy_fast(mapped, tid._data, length);
+  //glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+  //GL_ERRORCHECK();
+
+///////////////////////////////////
+
   GLTextureObject* pTEXOBJ = nullptr;
   if (nullptr == ptex->_internalHandle) {
     pTEXOBJ               = new GLTextureObject;
@@ -320,24 +362,7 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     glBindTexture(GL_TEXTURE_2D, pTEXOBJ->mObject);
   }
 
-  bool size_or_fmt_dirty = (ptex->_width != tid._w) or (ptex->_height != tid._h) or (ptex->_texFormat != tid._format);
-
-  ///////////////////////////////////
-
-  size_t length = tid.computeSize();
-  GLuint PBOOBJ = this->_getPBO(length);
-  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, PBOOBJ);
-  GL_ERRORCHECK();
-  u32 map_flags = GL_MAP_WRITE_BIT;
-  map_flags |= GL_MAP_INVALIDATE_BUFFER_BIT;
-  map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
-  void* pgfxmem = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, length, map_flags);
-  // printf("UPDATE IMAGE UNC iw<%d> ih<%d> length<%zu> pbo<%d> mem<%p>\n", tid._w, tid._h, length, PBOOBJ, pgfxmem);
-  memcpy(pgfxmem, tid._data, length);
-  glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-  GL_ERRORCHECK();
-
-  ///////////////////////////////////
+///////////////////////////////////
   GLenum internalformat, format, type;
   switch (tid._format) {
     case EBufferFormat::RGBA8: {
@@ -371,13 +396,17 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   ///////////////////////////////////
   // update texels
   ///////////////////////////////////
+  bool size_or_fmt_dirty = (ptex->_width != tid._w) or
+                           (ptex->_height != tid._h) or
+                           (ptex->_texFormat != tid._format);
+
   if (size_or_fmt_dirty)
     glTexImage2D(GL_TEXTURE_2D, 0, internalformat, tid._w, tid._h, 0, format, type, nullptr);
   else
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tid._w, tid._h, format, type, nullptr);
   ///////////////////////////////////
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0); // unbind pbo
-  this->_returnPBO(length, PBOOBJ);
+  this->_returnPBO(pboitem);
   ///////////////////////////////////
 
   ptex->_width     = tid._w;

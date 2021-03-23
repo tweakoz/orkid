@@ -64,10 +64,6 @@ int main(int argc, char** argv, char** envp) {
   ////////////////////////////////////////////////
   auto mainbus   = synth::instance()->outputBus("main");
   auto bussource = mainbus->createScopeSource();
-  if (1) { // create mixbus effect ?
-    loadAllFxPresets();
-    // synth::instance()->nextEffect();
-  }
   ////////////////////////////////////////////////
   // UI layout
   ////////////////////////////////////////////////

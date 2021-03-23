@@ -298,8 +298,9 @@ struct ModelDrawable : public Drawable {
 
 struct InstancedModelDrawable final : public Drawable {
 
-  static constexpr size_t k_texture_dimension = 1024;
-  static constexpr size_t k_max_instances     = k_texture_dimension * k_texture_dimension / 4;
+  static constexpr size_t k_texture_dimension_x = 4096;
+  static constexpr size_t k_texture_dimension_y = 64;
+  static constexpr size_t k_max_instances     = k_texture_dimension_x * k_texture_dimension_y / 4;
 
   InstancedModelDrawable(DrawableOwner* owner = NULL);
   ~InstancedModelDrawable();
@@ -316,6 +317,7 @@ struct InstancedModelDrawable final : public Drawable {
   mutable texture_ptr_t _instanceMatrixTex;
   mutable texture_ptr_t _instanceIdTex;
   mutable texture_ptr_t _instanceColorTex;
+  mutable int _drawcount = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

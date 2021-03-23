@@ -51,7 +51,7 @@ LayerData::LayerData(const ProgramData* pdata)
   _ctrlBlock   = std::make_shared<ControlBlockData>();
   _kmpBlock    = std::make_shared<KmpBlockData>(); // todo move to samplerdata
   _scopesource = nullptr;
-  _outbus      = the_synth->outputBus("main");
+  _outbus      = "main";
 }
 ///////////////////////////////////////////////////////////////////////////////
 int LayerData::numDspBlocks() const {
@@ -384,7 +384,7 @@ void Layer::keyOn(int note, int vel, lyrdata_constptr_t ld) {
   _ignoreRelease = ld->_ignRels;
   _curnote       = note;
   _layerdata     = ld;
-  _outbus        = ld->_outbus;
+  _outbus        = the_synth->outputBus(ld->_outbus);
   _layerLinGain  = ld->_layerLinGain;
 
   _curvel = vel;

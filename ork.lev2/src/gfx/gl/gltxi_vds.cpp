@@ -155,9 +155,9 @@ void VdsTextureAnimation::UpdateTexture(TextureInterface* txi, lev2::Texture* pt
 
     // printf( "UPDATE IMAGE UNC iw<%d> ih<%d> to<%d>\n", miW, miH, int(pTEXOBJ->mObject) );
 
-    const GLuint PBOOBJ = pgltxi->_getPBO(miFrameBaseSize);
+    auto pbo = pgltxi->_getPBO(miFrameBaseSize);
 
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, PBOOBJ);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo->_handle);
     void* pgfxmem = glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
     // mpFile->Read( pgfxmem, miFrameBaseSize );
     memcpy(pgfxmem, pdata, miFrameBaseSize);
@@ -175,7 +175,7 @@ void VdsTextureAnimation::UpdateTexture(TextureInterface* txi, lev2::Texture* pt
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
-    pgltxi->_returnPBO(miFrameBaseSize, PBOOBJ);
+    pgltxi->_returnPBO(pbo);
   }
   if (dds::IsDXT5(mpDDSHEADER->ddspf)) {
     /////////////////////////////////////////////////
@@ -196,9 +196,9 @@ void VdsTextureAnimation::UpdateTexture(TextureInterface* txi, lev2::Texture* pt
 
     // printf( "UPDATE IMAGE UNC iw<%d> ih<%d> to<%d>\n", miW, miH, int(pTEXOBJ->mObject) );
 
-    const GLuint PBOOBJ = pgltxi->_getPBO(miFrameBaseSize);
+    auto pbo = pgltxi->_getPBO(miFrameBaseSize);
 
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, PBOOBJ);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo->_handle);
     void* pgfxmem = glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
     //        mpFile->Read( pgfxmem, miFrameBaseSize );
     memcpy(pgfxmem, pdata, miFrameBaseSize);
@@ -215,7 +215,7 @@ void VdsTextureAnimation::UpdateTexture(TextureInterface* txi, lev2::Texture* pt
     ////////////////////////
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-    pgltxi->_returnPBO(miFrameBaseSize, PBOOBJ);
+    pgltxi->_returnPBO(pbo);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////

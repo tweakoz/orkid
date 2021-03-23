@@ -10,9 +10,10 @@ set( TESTSRCD ${CMAKE_CURRENT_SOURCE_DIR} )
 file(GLOB testsrcs ${TESTSRCD}/*.cpp)
 add_executable (ork.test.eda.exe ${testsrcs} )
 
+ork_std_target_opts(ork.test.eda.exe)
+
 target_link_libraries(ork.test.eda.exe LINK_PRIVATE ork_utpp )
 target_link_libraries(ork.test.eda.exe LINK_PRIVATE ork_eda )
-target_link_libraries(ork.test.eda.exe LINK_PRIVATE boost_filesystem boost_system )
 
 set_target_properties(ork.test.eda.exe PROPERTIES LINKER_LANGUAGE CXX)
 target_include_directories (ork.test.eda.exe PRIVATE ${ORKROOT}/ork.core/inc )

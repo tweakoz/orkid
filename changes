@@ -1,0 +1,5 @@
+v0.9
+  - linux and macos build sync
+  - linux: qt set to 5.12 (due to availability on mirrors changing)
+  - linux: reduce audio latency
+  - linux: fix synth crashes

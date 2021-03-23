@@ -1,5 +1,6 @@
 #include <ork/pch.h>
 #include <ork/kernel/string/deco.inl>
+#if !defined(ORK_OSX)
 #include <vulkan/vulkan.hpp>
 
 namespace ork::lev2::vk {
@@ -85,3 +86,5 @@ void init() {
 }
 
 } // namespace ork::lev2::vk
+
+#endif

@@ -117,8 +117,8 @@ libblock lib_pbr_vtx_instanced {
 		frg_camz = wnormal.xyz;
 		frg_camdist = -cpos.z;
 		////////////////////////////////
-		int modcolor_u = (gl_InstanceID&0x3ff);
-		int modcolor_v = (gl_InstanceID>>10);
+		int modcolor_u = (gl_InstanceID&0xfff);
+		int modcolor_v = (gl_InstanceID>>12);
 		frg_modcolor = texelFetch(InstanceColors, ivec2(modcolor_u,modcolor_v), 0);
 		////////////////////////////////
 	}
@@ -151,13 +151,13 @@ vertex_shader vs_rigid_gbuffer_stereo
 vertex_shader vs_rigid_gbuffer_instanced
 	: iface_vgbuffer_instanced
   : lib_pbr_vtx_instanced {
-		int matrix_u = (gl_InstanceID&0xff)<<2;
-		int matrix_v = (gl_InstanceID>>8);
+        int matrix_v = (gl_InstanceID>>10);
+		int matrix_u = (gl_InstanceID&0x3ff)<<2;
 		mat4 instancemtx = mat4(
-			texelFetch(InstanceMatrices, ivec2(matrix_u+0,matrix_v), 0),
-		  texelFetch(InstanceMatrices, ivec2(matrix_u+1,matrix_v), 0),
-		  texelFetch(InstanceMatrices, ivec2(matrix_u+2,matrix_v), 0),
-		  texelFetch(InstanceMatrices, ivec2(matrix_u+3,matrix_v), 0));
+            texelFetch(InstanceMatrices, ivec2(matrix_u+0,matrix_v), 0),
+ 		    texelFetch(InstanceMatrices, ivec2(matrix_u+1,matrix_v), 0),
+		    texelFetch(InstanceMatrices, ivec2(matrix_u+2,matrix_v), 0),
+		    texelFetch(InstanceMatrices, ivec2(matrix_u+3,matrix_v), 0));
   	////////////////////////////////
 		vec4 instanced_pos = (instancemtx*position);
 		vs_instanced(position,normal,binormal,instancemtx);
@@ -171,8 +171,8 @@ vertex_shader vs_rigid_gbuffer_instanced_stereo
 	: iface_vgbuffer_stereo_instanced
 	: lib_pbr_vtx_instanced {
 		////////////////////////////////
-		int matrix_u = (gl_InstanceID&0xff)<<2;
-		int matrix_v = (gl_InstanceID>>8);
+        int matrix_v = (gl_InstanceID>>10);
+		int matrix_u = (gl_InstanceID&0x3ff)<<2;
 		mat4 instancemtx = mat4(
 			texelFetch(InstanceMatrices, ivec2(matrix_u+0,matrix_v), 0),
 		  texelFetch(InstanceMatrices, ivec2(matrix_u+1,matrix_v), 0),

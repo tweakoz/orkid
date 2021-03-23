@@ -15,6 +15,7 @@
 #include <ork/lev2/aud/singularity/hud.h>
 #include <ork/lev2/aud/singularity/krzobjects.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
+#include <ork/lev2/aud/singularity/fxgen.h>
 
 namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
@@ -36,6 +37,7 @@ void synth::nextEffect() {
         ///////////////////////////////
         _fxcurpreset    = it;
         auto nextpreset = _fxcurpreset->second;
+        assert(nextpreset->_algdata != nullptr); // did you add presets ?
         bus.second->setBusDSP(nextpreset);
         bus.second->_fxname = it->first;
       }
@@ -51,6 +53,9 @@ void OutputBus::resize(int numframes) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OutputBus::setBusDSP(lyrdata_ptr_t ld) {
+
+  assert(ld->_algdata!=nullptr);
+
   if (_dsplayer) {
     delete _dsplayer;
     _dsplayer = nullptr;
@@ -100,6 +105,10 @@ synth::synth()
   _tempbus->_name  = "temp-dsp";
   _numactivevoices = 0;
   createOutputBus("main");
+
+  // TODO - synth::instance(); is creating chicken and egg problems
+  loadAllFxPresets(this);
+  nextEffect();
 
   for (int i = 0; i < kmaxlayerspersynth; i++) {
     auto l = new Layer();

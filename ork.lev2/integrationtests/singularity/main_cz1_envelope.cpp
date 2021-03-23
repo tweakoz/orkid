@@ -30,7 +30,8 @@ int main(int argc, char** argv) {
     //////////////////////////////////////
     // setup dsp graph
     //////////////////////////////////////
-    layerdata->_algdata = configureCz1Algorithm(layerdata, 1);
+    auto czldc = configureCz1Algorithm(layerdata, 1);
+    layerdata->_algdata = czldc._algdata;
     auto dcostage       = layerdata->stageByName("DCO");
     auto ampstage       = layerdata->stageByName("AMP");
     auto dco            = dcostage->appendTypedBlock<CZX>("dco", czoscdata, 0);

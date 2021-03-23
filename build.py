@@ -104,7 +104,7 @@ pyqt5 = ork.dep.require("pyqt5")
 
 ork.dep.require(["bullet","openexr","oiio","assimp",
                  "nvtt","lua","glfw","ispctexc",
-                 "lexertl14","parsertl14", 
+                 "lexertl14","parsertl14",
                  "easyprof","eigen","embree","igl","audiofile"])
 
 #if ork.host.IsOsx: # until moltenvk fixed on big sur

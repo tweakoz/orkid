@@ -912,17 +912,44 @@ template <typename T> void Matrix44<T>::decompose(Vector3<T>& pos, Quaternion<T>
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Matrix44<T>::compose(const Vector3<T>& pos, const Quaternion<T>& qrot, const T& Scale) {
-  auto mtx_rotscale = qrot.ToMatrix();
-  for (int i = 0; i < 3; i++) {
-    for (int j = 0; j < 3; j++) {
-      mtx_rotscale.SetElemYX(i, j, mtx_rotscale.GetElemYX(i, j) * Scale);
-    }
-  }
-  fmtx4 mtx_trans;
-  mtx_trans.SetTranslation(pos.GetX(), pos.GetY(), pos.GetZ());
+template <typename T> void Matrix44<T>::compose(const Vector3<T>& pos, const Quaternion<T>& qrot, const T& scale) {
 
-  (*this) = mtx_rotscale * mtx_trans;
+  T l = qrot.x * qrot.x + qrot.y * qrot.y + qrot.z * qrot.z + qrot.w * qrot.w;
+
+  // should this be T::Epsilon() ?
+  T s = (fabs(l) < T(EPSILON)) ? T(1.0) : (T(2.0) / l);
+
+  T xs = qrot.x * s;
+  T ys = qrot.y * s;
+  T zs = qrot.z * s;
+  T wx = qrot.w * xs;
+  T wy = qrot.w * ys;
+  T wz = qrot.w * zs;
+  T xx = qrot.x * xs;
+  T xy = qrot.x * ys;
+  T xz = qrot.x * zs;
+  T yy = qrot.y * ys;
+  T yz = qrot.y * zs;
+  T zz = qrot.z * zs;
+
+  elements[0][0]=scale*(T(1.0) - (yy + zz));
+  elements[0][1]=scale*(xy - wz);
+  elements[0][2]=scale*(xz + wy);
+
+  elements[1][0]=scale*(xy + wz);
+  elements[1][1]=scale*(T(1.0) - (xx + zz));
+  elements[1][2]=scale*(yz - wx);
+
+  elements[2][0]=scale*(xz - wy);
+  elements[2][1]=scale*(yz + wx);
+  elements[2][2]=scale*(T(1.0) - (xx + yy));
+
+  elements[3][0] = pos.x;
+  elements[3][1] = pos.y;
+  elements[3][2] = pos.z;
+
+  elements[3][3] = T(1.0);
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////

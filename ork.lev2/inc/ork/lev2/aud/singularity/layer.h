@@ -56,7 +56,7 @@ struct LayerData : public ork::Object {
   float _layerLinGain             = 1.0f;
 
   algdata_ptr_t _algdata;
-  outbus_ptr_t _outbus;
+  std::string _outbus;
 
   kmpblockdata_ptr_t _kmpBlock;
   dspblkdata_ptr_t _pchBlock;

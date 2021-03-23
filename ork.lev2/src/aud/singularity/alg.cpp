@@ -73,6 +73,7 @@ dspstagedata_ptr_t AlgData::stageByIndex(int index) {
 
 Alg::Alg(const AlgData& algd)
     : _algdata(algd) {
+  assert((&algd)!=nullptr);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
