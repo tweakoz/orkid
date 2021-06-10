@@ -4,6 +4,7 @@
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
+#if defined(LINUX)
 
 #include <ork/pch.h>
 #include <assert.h>
@@ -160,3 +161,5 @@ AudioDeviceAlsa::AudioDeviceAlsa()
 }
 
 } // namespace ork::lev2 {
+#endif
+

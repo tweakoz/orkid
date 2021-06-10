@@ -24,7 +24,12 @@
 #include "null/audiodevice_null.h"
 #include "portaudio/audiodevice_pa.h"
 #include "alsa/audiodevice_alsa.h"
+
+#if defined(ORK_OSX)
+#define NativeDevice AudioDevicePa
+#else
 #define NativeDevice AudioDeviceAlsa
+#endif
 
 bool gb_audio_filter = false;
 

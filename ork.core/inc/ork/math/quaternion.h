@@ -54,6 +54,7 @@ template <typename T> struct Quaternion {
   }
 
   Quaternion<T> operator*(const Quaternion<T>& rhs) const;
+  bool operator==(const Quaternion<T>& rhs) const;
 
   /////////
 
@@ -72,6 +73,10 @@ template <typename T> struct Quaternion {
 
   /////////
 
+  std::string formatcn(const std::string named) const;
+
+  /////////
+
   void FromMatrix(const Matrix44<T>& matrix);
   Matrix44<T> ToMatrix(void) const;
 
@@ -87,12 +92,13 @@ template <typename T> struct Quaternion {
   Vector4<T> toAxisAngle(void) const;
   void fromAxisAngle(const Vector4<T>& v);
 
-  T Magnitude(void);
-  Quaternion Conjugate(Quaternion& a);
-  Quaternion Square(void);
-  Quaternion Negate(void);
+  T norm() const;
+  Quaternion conjugate() const;
+  Quaternion inverse() const;
+  Quaternion square() const;
+  Quaternion negate() const;
 
-  void Normalize();
+  void normalize();
 
   static Quaternion Lerp(const Quaternion& a, const Quaternion& b, T alpha);
   static Quaternion Slerp(const Quaternion& a, const Quaternion& b, T alpha);

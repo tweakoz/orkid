@@ -9,6 +9,10 @@
 namespace ork {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+struct Scanner;
+using scanner_ptr_t = std::shared_ptr<Scanner>;
+using scanner_constptr_t = std::shared_ptr<const Scanner>;
+
 struct Token {
   int iline;
   int icol;

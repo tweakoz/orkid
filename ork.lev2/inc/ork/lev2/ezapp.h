@@ -29,19 +29,31 @@ class OrkEzQtApp;
 using ezapp_ptr_t   = std::shared_ptr<EzApp>;
 using qtezapp_ptr_t = std::shared_ptr<OrkEzQtApp>;
 ////////////////////////////////////////////////////////////////////////////////
+struct QtAppInitData{
+  bool _fullscreen = false;
+  int _top = 100;
+  int _left = 100;
+  int _width = 1280;
+  int _height = 720;
+  std::string _monitor_id = "";
+};
+////////////////////////////////////////////////////////////////////////////////
 struct QtAppInit {
   QtAppInit();
+  QtAppInit(int argc, char** argv, const QtAppInitData& initdata);
   QtAppInit(int argc, char** argv);
   ~QtAppInit();
   int _argc = 0;
   std::string _arg;
   char* _argv   = nullptr;
   char** _argvp = nullptr;
+  QtAppInitData _initdata;
   std::shared_ptr<StdFileSystemInitalizer> _fsinit;
 };
 ////////////////////////////////////////////////////////////////////////////////
 extern QtAppInit& qtinit();
 extern QtAppInit& qtinit(int& argc, char** argv);
+extern QtAppInit& qtinit(int& argc, char** argv,const QtAppInitData& initdata);
 ////////////////////////////////////////////////////////////////////////////////
 class OrkEzQtAppBase : public QApplication {
   Q_OBJECT
@@ -118,11 +130,12 @@ class OrkEzQtApp : public OrkEzQtAppBase {
 
 public:
   ///////////////////////////////////
-  OrkEzQtApp(int& argc, char** argv);
+  OrkEzQtApp(int& argc, char** argv,const QtAppInitData& initdata);
   ~OrkEzQtApp();
   ///////////////////////////////////
   static qtezapp_ptr_t create();
   static qtezapp_ptr_t create(int argc, char** argv);
+  static qtezapp_ptr_t create(int argc, char** argv, const QtAppInitData& initdata);
   static qtezapp_ptr_t createWithScene(varmap::varmap_ptr_t sceneparams);
 
   filedevctx_ptr_t newFileDevContext(std::string uriproto, const file::Path& basepath);
@@ -145,9 +158,12 @@ public:
 public slots:
   void OnTimer();
 
+  void enqueueOnRenderer(const void_lambda_t& l);
+
   ///////////////////////////////////
 public:
   QTimer mIdleTimer;
+  QtAppInitData _initdata;
   EzMainWin* _mainWindow;
   std::map<std::string, filedevctx_ptr_t> _fdevctxmap;
   ork::Timer _update_timer;
@@ -163,6 +179,7 @@ public:
   ui::context_ptr_t _uicontext;
   ui::layoutgroup_ptr_t _topLayoutGroup;
   std::shared_ptr<EzViewport> _ezviewport;
+  ork::opq::opq_ptr_t _rthreadq;
 };
 
 } // namespace ork::lev2

@@ -1,0 +1,23 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(gdb) attach model3Dpbr",
+            "type": "cppdbg",
+            "request": "attach",
+            "processId":"${command:pickProcess}"
+            "program": "${workspaceFolder}/../staging-orkid/bin/ork.example.lev2.gfx.model3Dpbr.exe",
+            "stopAtEntry": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+    ]
+}

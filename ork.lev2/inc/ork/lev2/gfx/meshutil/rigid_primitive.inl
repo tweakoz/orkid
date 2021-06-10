@@ -62,6 +62,8 @@ template <typename vtx_t> struct RigidPrimitive {
   void fromClusterizer(const XgmClusterizerStd& cluz, lev2::Context* context);
   void renderEML(lev2::Context* context) const; /// draw with context
 
+  void renderUnitOrthoWithMaterial(lev2::Context* context, const SRect& vprect, lev2::GfxMaterial* pmat ) const;
+
   void writeToChunks(const lev2::XgmSubMesh& xsubmesh, chunkfile::OutputStream* hdrstream, chunkfile::OutputStream* geostream);
   void gpuLoadFromChunks(lev2::Context* context, chunkfile::InputStream* hdrstream, chunkfile::InputStream* geostream);
 
@@ -78,12 +80,12 @@ void RigidPrimitive<vtx_t>::fromClusterizer(const meshutil::XgmClusterizerStd& c
   //////////////////////////////////////////////////////////////
   size_t inumclus = cluz.GetNumClusters();
   printf("inumclus<%zu>\n", inumclus);
-  OrkAssert(inumclus <= 1);
+  //OrkAssert(inumclus <= 1);
   for (size_t icluster = 0; icluster < inumclus; icluster++) {
     auto clusterbuilder = cluz.GetCluster(icluster);
     clusterbuilder->buildVertexBuffer(*context, vtx_t::meFormat);
     auto xgmcluster = std::make_shared<lev2::XgmCluster>();
-    buildTriStripXgmCluster(*context, xgmcluster, clusterbuilder);
+    buildXgmCluster(*context, xgmcluster, clusterbuilder,true);
     primgroupcluster_ptr_t out_cluster = std::make_shared<PrimGroupCluster>();
     out_cluster->_vtxbuffer            = std::dynamic_pointer_cast<vtxbuf_t>(clusterbuilder->_vertexBuffer);
     out_cluster->_aabb                 = xgmcluster->mBoundingBox;
@@ -258,8 +260,8 @@ void RigidPrimitive<vtx_t>::gpuLoadFromChunks(
 ////////////////////////////////////////////////////////////////////////////////
 template <typename vtx_t> void RigidPrimitive<vtx_t>::renderEML(lev2::Context* context) const {
   auto gbi = context->GBI();
-  for (auto cluster : _gpuClusters) {
-    for (auto primgroup : cluster->_primgroups) {
+  for (auto& cluster : _gpuClusters) {
+    for (auto& primgroup : cluster->_primgroups) {
       gbi->DrawIndexedPrimitiveEML(
           *cluster->_vtxbuffer.get(), //
           *primgroup->_idxbuffer.get(),
@@ -267,5 +269,56 @@ template <typename vtx_t> void RigidPrimitive<vtx_t>::renderEML(lev2::Context* c
     }
   }
 }
+////////////////////////////////////////////////////////////////////////////////
+template <typename vtx_t> void RigidPrimitive<vtx_t>::renderUnitOrthoWithMaterial(lev2::Context* context,
+                                                                                  const SRect& vprect,
+                                                                                  lev2::GfxMaterial* pmat ) const {
+  lev2::SRasterState DefaultRasterState;
+  auto mtxi = context->MTXI();
+  auto fbi  = context->FBI();
+  auto gbi = context->GBI();
+  
+  lev2::ViewportRect vprectNew( vprect.miX, 
+                                vprect.miY, 
+                                vprect.miX2 - vprect.miX, 
+                                vprect.miY2 - vprect.miY);
+
+  mtxi->PushPMatrix(fmtx4::Identity());
+  mtxi->PushVMatrix(fmtx4::Identity());
+  mtxi->PushMMatrix(fmtx4::Identity());
+  context->RSI()->BindRasterState(DefaultRasterState, true);
+  fbi->pushViewport(vprectNew);
+  fbi->pushScissor(vprectNew);
+  { // Draw primitive with specified material
+      int inumpasses = pmat->BeginBlock(context);
+      for (int ipass = 0; ipass < inumpasses; ipass++) {
+        bool bDRAW = pmat->BeginPass(context, ipass);
+        for (auto& cluster : _gpuClusters) {
+          for (auto& primgroup : cluster->_primgroups) {
+            gbi->DrawIndexedPrimitiveEML(
+                *cluster->_vtxbuffer.get(), //
+                *primgroup->_idxbuffer.get(),
+                primgroup->_primtype);
+          }
+        }
+        pmat->EndPass(context);
+      }
+      pmat->EndBlock(context);
+  }
+  fbi->popScissor();
+  fbi->popViewport();
+  mtxi->PopPMatrix();
+  mtxi->PopVMatrix();
+  mtxi->PopMMatrix();
+  
+  
+}
+///////////////////////////////////////////////////////////////////////////////
+using rigidprim_V12_t = meshutil::RigidPrimitive<lev2::SVtxV12>;
+using rigidprim_V12T8_t = meshutil::RigidPrimitive<lev2::SVtxV12T8>;
+using rigidprim_V12C4T16_t = meshutil::RigidPrimitive<lev2::SVtxV12C4T16>;
+using rigidprim_V12_ptr_t = std::shared_ptr<rigidprim_V12_t>;
+using rigidprim_V12T8_ptr_t = std::shared_ptr<rigidprim_V12T8_t>;
+using rigidprim_V12C4T16_ptr_t = std::shared_ptr<rigidprim_V12C4T16_t>;
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::meshutil

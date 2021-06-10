@@ -36,6 +36,12 @@ inline float pow_base(float base, float inp) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+template <typename T> T clamp(T inp, T low, T high){
+  return (inp>high) ? high : ((inp<low) ? low : inp);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 inline int powerOfTwoIndex(size_t inp) {
   int index = 0;
   while (((inp & 1) == 0) && inp > 1) {

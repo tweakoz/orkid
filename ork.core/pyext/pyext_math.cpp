@@ -183,13 +183,13 @@ void pyinit_math(py::module& module_core) {
           .def(py::init<float, float, float, float>())
           .def(py::init<fvec3, float>())
           .def(py::init<fmtx3>())
-          .def("mag", &fquat::Magnitude)
+          .def("norm", &fquat::norm)
           .def("fromAxisAngle", &fquat::fromAxisAngle)
           .def("toAxisAngle", &fquat::toAxisAngle)
-          .def("conjugate", &fquat::Magnitude)
-          .def("square", &fquat::Square)
-          .def("negate", &fquat::Negate)
-          .def("normalize", &fquat::Normalize)
+          .def("conjugate", &fquat::conjugate)
+          .def("square", &fquat::square)
+          .def("negate", &fquat::negate)
+          .def("normalize", &fquat::normalize)
           .def(py::self * py::self)
           .def(
               "__str__",

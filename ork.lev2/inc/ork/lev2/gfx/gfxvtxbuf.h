@@ -279,6 +279,74 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
+struct SVtxV12 {
+  F32 x, y, z;    // 12
+
+  SVtxV12()
+      : x(0.0f)
+      , y(0.0f)
+      , z(0.0f) {
+  }
+
+  SVtxV12(F32 X, F32 Y, F32 Z)
+      : x(X)
+      , y(Y)
+      , z(Z){
+  }
+
+  void EndianSwap() {
+    swapbytes_dynamic(x);
+    swapbytes_dynamic(y);
+    swapbytes_dynamic(z);
+  }
+
+  constexpr static EVtxStreamFormat meFormat = EVtxStreamFormat::V12;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+struct SVtxV12T8 {
+  F32 x, y, z;    // 12
+  F32 u, v; // 20
+
+  SVtxV12T8()
+      : x(0.0f)
+      , y(0.0f)
+      , z(0.0f)
+      , u(0.0f)
+      , v(0.0f) {
+  }
+
+  SVtxV12T8(F32 X, F32 Y, F32 Z)
+      : x(X)
+      , y(Y)
+      , z(Z)
+      , u(0.0f)
+      , v(0.0f){
+  }
+  SVtxV12T8(F32 X, F32 Y, F32 Z, F32 U, F32 V)
+      : x(X)
+      , y(Y)
+      , z(Z)
+      , u(U)
+      , v(V){
+  }
+
+  void EndianSwap() {
+    swapbytes_dynamic(x);
+    swapbytes_dynamic(y);
+    swapbytes_dynamic(z);
+    swapbytes_dynamic(u);
+    swapbytes_dynamic(v);
+  }
+
+  constexpr static EVtxStreamFormat meFormat = EVtxStreamFormat::V12T8;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
 struct SVtxV12N6I1T4 {
   F32 mX, mY, mZ;    // 12
   S16 mNX, mNY, mNZ; // 18

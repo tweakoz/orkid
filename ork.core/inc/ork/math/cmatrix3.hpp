@@ -433,8 +433,8 @@ void Matrix33<T>::Lerp(const Matrix33<T>& from, const Matrix33<T>& to, T par) //
   dQ.Scale(par);
   dQ.Add(Qidn);
 
-  if (dQ.Magnitude() > T(0.0f))
-    dQ.Negate();
+  if (dQ.norm() > T(0.0f))
+    dQ.negate();
 
   Quaternion<T> newQrot = dQ;
 

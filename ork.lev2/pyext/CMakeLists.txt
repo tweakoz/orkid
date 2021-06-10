@@ -11,7 +11,7 @@ find_package( pybind11 REQUIRED )
 ###################################
 
 set( SRCD ${CMAKE_CURRENT_SOURCE_DIR} )
-set( ORKPKGBASE $ENV{OBT_STAGE}/lib/python3.8/site-packages/orkengine )
+set( ORKPKGBASE $ENV{PYTHONHOME}/lib/python3.8/site-packages/orkengine )
 set( INSTALL_DEST ${ORKPKGBASE}/lev2 )
 set( INCD $ENV{ORKID_WORKSPACE_DIR}/ork.core/inc )
 set( INCD2 $ENV{ORKID_WORKSPACE_DIR}/ork.lev2/inc )
@@ -28,7 +28,7 @@ target_include_directories (_lev2 PRIVATE ${INCD} ${INCD2} )
 
 target_link_libraries(_lev2 LINK_PUBLIC ork_core ork_lev2 )
 
-target_link_libraries(_lev2 PUBLIC ${PYTHON_LIBRARY_PATH} )
+#target_link_libraries(_lev2 PUBLIC ${PYTHON_LIBRARY_PATH} )
 target_link_options(_lev2 PUBLIC -Wl,-rpath )
 
 set_target_properties( _lev2

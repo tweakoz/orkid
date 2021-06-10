@@ -10,6 +10,7 @@
 #include <ork/math/cmatrix3.h>
 #include <ork/math/cmatrix4.h>
 #include <ork/math/cvector4.h>
+#include <ork/kernel/string/deco.inl>
 #include <ork/reflect/properties/ITyped.hpp>
 #include <ork/reflect/ISerializer.h>
 #include <ork/reflect/IDeserializer.h>
@@ -85,6 +86,16 @@ template <typename T> Quaternion<T>::Quaternion(const Matrix33<T>& matrix) {
 
 template <typename T> Quaternion<T> Quaternion<T>::operator*(const Quaternion<T>& rhs) const {
   return this->Multiply(rhs);
+}
+
+template <typename T>
+bool Quaternion<T>::operator==(const Quaternion<T>& rhs) const {
+  bool match = true;
+  match &= (x==rhs.x);
+  match &= (y==rhs.y);
+  match &= (z==rhs.z);
+  match &= (w==rhs.w);
+  return match;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -301,7 +312,7 @@ template <typename T> Quaternion<T> Quaternion<T>::Slerp(const Quaternion<T>& a,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> Quaternion<T> Quaternion<T>::Negate(void) {
+template <typename T> Quaternion<T> Quaternion<T>::negate() const {
   Quaternion<T> result;
 
   result.x = (-x);
@@ -314,7 +325,7 @@ template <typename T> Quaternion<T> Quaternion<T>::Negate(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> Quaternion<T> Quaternion<T>::Square(void) {
+template <typename T> Quaternion<T> Quaternion<T>::square() const {
   T temp = T(2) * w;
   Quaternion<T> result;
 
@@ -328,7 +339,7 @@ template <typename T> Quaternion<T> Quaternion<T>::Square(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> Quaternion<T> Quaternion<T>::Conjugate(Quaternion<T>& a) {
+template <typename T> Quaternion<T> Quaternion<T>::conjugate() const {
   Quaternion<T> result;
 
   result.x = (-x);
@@ -341,10 +352,24 @@ template <typename T> Quaternion<T> Quaternion<T>::Conjugate(Quaternion<T>& a) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> T Quaternion<T>::Magnitude(void) {
-  return (w * w + x * x + y * y + z * z);
+template <typename T> Quaternion<T> Quaternion<T>::inverse() const {
+  Quaternion<T> result = conjugate();
+  T invnorm = T(1)/norm();
+
+  result.x *= invnorm;
+  result.y *= invnorm;
+  result.z *= invnorm;
+  result.w *= invnorm;
+
+  return (result);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> T Quaternion<T>::norm() const {
+  return (w * w + x * x + y * y + z * z);
+}
+ 
 ///////////////////////////////////////////////////////////////////////////////
 //	DESC: Converts a normalized axis and angle to a unit quaternion.
 
@@ -368,21 +393,14 @@ template <typename T> void Quaternion<T>::fromAxisAngle(const Vector4<T>& v) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> Vector4<T> Quaternion<T>::toAxisAngle(void) const {
-  static const double kAAC = (114.591559026 * DTOR);
-  T tr                     = acosf(w);
-  T dsin                   = sinf(tr);
-  T invscale               = (dsin == T(0.0f)) ? T(1.0f) : T(1.0f) / dsin;
-  T vx                     = x * invscale;
-  T vy                     = y * invscale;
-  T vz                     = z * invscale;
-  T ang                    = tr * T((float)kAAC);
-  if (isnan(tr)) {
-    vx  = 0.0f;
-    vy  = 0.0f;
-    vz  = 0.0f;
-    ang = 0.0f;
-  }
-  return Vector4<T>(vx, vy, vz, -ang);
+  T tr = acosf(w);
+  bool is_nan = isnan(tr);
+  T wsq = w*w;
+  T vx  = is_nan ? 0.0f : x / sqrt(1-wsq);
+  T vy  = is_nan ? 0.0f : y / sqrt(1-wsq);
+  T vz  = is_nan ? 0.0f : z / sqrt(1-wsq);
+  T ang = is_nan ? 0.0f : 2.0*tr;
+  return Vector4<T>(vx, vy, vz, ang);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -596,7 +614,7 @@ template <typename T> void Quaternion<T>::DeCompress(QuatCodec uquat) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Quaternion<T>::Normalize() {
+template <typename T> void Quaternion<T>::normalize() {
   float x2 = x * x;
   float y2 = y * y;
   float z2 = z * z;
@@ -609,6 +627,24 @@ template <typename T> void Quaternion<T>::Normalize() {
   z /= sq;
   w /= sq;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> std::string Quaternion<T>::formatcn(const std::string named) const {
+  std::string rval;
+ 
+  rval += ork::deco::format(fvec3(1,1,1), "%s< ", named.c_str() );
+
+  rval += ork::deco::format(fvec3(1, .5, .5), "x:%g, ", x );
+  rval += ork::deco::format(fvec3(.5, 1, .5), "y:%g, ", y );
+  rval += ork::deco::format(fvec3(.5, .5, 1), "z:%g, ", z );
+  rval += ork::deco::format(fvec3(.6, .6, .6), "w:%g", w );
+
+  rval += ork::deco::format(fvec3(1,1,1), ">" );
+
+  return rval;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork

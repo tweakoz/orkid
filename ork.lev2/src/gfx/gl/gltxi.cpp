@@ -36,6 +36,105 @@ GlTextureInterface::GlTextureInterface(ContextGL& tgt)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void GlTextureInterface::bindTextureToUnit(const Texture* tex,
+                                           GLenum tex_target,
+                                           int tex_unit){
+
+    auto tex_obj = (const GLTextureObject*) tex->_internalHandle;
+    if(nullptr == tex_obj){
+
+      auto new_tex_obj = new GLTextureObject;
+      tex->_internalHandle = new_tex_obj;
+      tex_obj = new_tex_obj;
+
+      /////////////////////////////////////////////////////////////
+      // assign default texture object (0) to start out with
+      /////////////////////////////////////////////////////////////
+
+      new_tex_obj->mObject = 0;
+
+      /////////////////////////////////////////////////////////////
+      // check to see if we are referencing external memory objects
+      //  if we are and tex_obj is null - we need to create the 
+      //  GL texture referencing the external memory...
+      /////////////////////////////////////////////////////////////
+#if defined(LINUX)
+      auto ipcdata = tex->_external_memory;
+      if( ipcdata ){
+        
+        GLuint mem_object = 0;
+        glCreateMemoryObjectsEXT(1,&mem_object);
+
+        printf("MEMOBJECT<%d> fd<%d> w<%d> h<%d> size<%zu>\n", 
+               int(mem_object),
+               ipcdata->_image_fd,
+               ipcdata->_image_width,
+               ipcdata->_image_height,
+               ipcdata->_image_size );
+
+        GL_ERRORCHECK();
+
+        GLint is_dedicated = GL_FALSE;
+        glMemoryObjectParameterivEXT(mem_object,
+                                     GL_DEDICATED_MEMORY_OBJECT_EXT,
+                                     &is_dedicated);
+
+        GL_ERRORCHECK();
+
+        glImportMemoryFdEXT(mem_object, // mem object
+                            ipcdata->_image_size, // image size
+                            GL_HANDLE_TYPE_OPAQUE_FD_EXT, // handle type
+                            ipcdata->_image_fd); // file descriptor
+
+        GL_ERRORCHECK();
+
+        glCreateTextures(GL_TEXTURE_2D,1,&new_tex_obj->mObject);
+        glBindTexture(GL_TEXTURE_2D, new_tex_obj->mObject);
+
+        GL_ERRORCHECK();
+
+        glTexStorageMem2DEXT(GL_TEXTURE_2D, // texture target
+                             1, // mip count
+                             GL_RGB10_A2, // internal format
+                             ipcdata->_image_width, // width
+                             ipcdata->_image_height, // height
+                             mem_object, // mem object
+                             0); // offset into memobject's data
+
+        GL_ERRORCHECK();
+        glBindTexture(GL_TEXTURE_2D, 0);
+        GL_ERRORCHECK();
+
+      	//int _sema_complete_fd = 0;
+	      //int _sema_ready_fd = 0;
+
+        //OrkAssert(false);
+      }
+#endif
+      /////////////////////////////////////////////////////////////
+    }
+
+    GLuint texID                   = tex_obj->mObject;
+
+
+    /*printf(
+        "Bind3 ISDEPTH<%d> tex<%p> texobj<%d> tex_unit<%d> textgt<% d>\n ",
+        int(pTex->_isDepthTexture),
+        pTex,
+        texID,
+        tex_unit,
+        int(textgt));*/
+
+    GL_ERRORCHECK();
+    glActiveTexture(GL_TEXTURE0 + tex_unit);
+    GL_ERRORCHECK();
+    glBindTexture(tex_target, texID);
+    GL_ERRORCHECK();
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 bool GlTextureInterface::LoadTexture(const AssetPath& infname, Texture* ptex) {
   AssetPath DdsFilename = infname;
   AssetPath PngFilename = infname;
@@ -134,8 +233,11 @@ pboptr_t PboSet::alloc() {
       GL_ERRORCHECK();
       glBindBuffer(GL_PIXEL_UNPACK_BUFFER, new_pbo->_handle);
       GL_ERRORCHECK();
-      //glBufferData(GL_PIXEL_UNPACK_BUFFER, _size, NULL, GL_STREAM_DRAW);
-      u32 create_flags = GL_MAP_WRITE_BIT;
+      #if defined(ORK_OSX)
+       glBufferData(GL_PIXEL_UNPACK_BUFFER, _size, NULL, GL_STREAM_DRAW);
+      #else
+       u32 create_flags = GL_MAP_WRITE_BIT;
+      
       create_flags |= GL_MAP_PERSISTENT_BIT;
       create_flags |= GL_MAP_COHERENT_BIT;
       glBufferStorage( GL_PIXEL_UNPACK_BUFFER, _size,  nullptr, create_flags );
@@ -146,6 +248,7 @@ pboptr_t PboSet::alloc() {
       map_flags |= GL_MAP_COHERENT_BIT;
       //map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
       new_pbo->_mapped = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, _size, map_flags);
+      #endif
       //new_pbo->_mapped = glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
       GL_ERRORCHECK();
       glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
@@ -333,18 +436,22 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   size_t length = tid.computeSize();
   auto pboitem = this->_getPBO(length);
   auto mapped = pboitem->_mapped;
-  //glBindBuffer(GL_PIXEL_UNPACK_BUFFER, PBOOBJ);
-  //GL_ERRORCHECK();
-  //u32 map_flags = GL_MAP_WRITE_BIT;
-  //map_flags |= GL_MAP_INVALIDATE_BUFFER_BIT;
-  //map_flags |= GL_MAP_INVALIDATE_RANGE_BIT;
-  //map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
-  //void* pgfxmem = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, length, map_flags);
-   //printf("UPDATE IMAGE UNC iw<%d> ih<%d> length<%zu> pbo<%d> mem<%p>\n", tid._w, tid._h, length, PBOOBJ, pgfxmem);
-  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboitem->_handle);
-  memcpy_fast(mapped, tid._data, length);
-  //glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-  //GL_ERRORCHECK();
+  if(mapped){
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboitem->_handle);
+    memcpy_fast(mapped, tid._data, length);
+  }
+  else{
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboitem->_handle);
+    GL_ERRORCHECK();
+    u32 map_flags = GL_MAP_WRITE_BIT;
+    map_flags |= GL_MAP_INVALIDATE_BUFFER_BIT;
+    map_flags |= GL_MAP_INVALIDATE_RANGE_BIT;
+    map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
+    void* pgfxmem = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, length, map_flags);
+     printf("UPDATE IMAGE UNC iw<%d> ih<%d> length<%zu> pbo<%d> mem<%p>\n", tid._w, tid._h, length, pboitem->_handle, pgfxmem);
+    glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+    GL_ERRORCHECK();
+  }
 
 ///////////////////////////////////
 

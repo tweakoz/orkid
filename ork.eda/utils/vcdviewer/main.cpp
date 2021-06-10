@@ -1,18 +1,11 @@
 #include "vcdviewer.h"
-
+#include <ork/lev2/ui/simpleuiapp.h>
 ///////////////////////////////////////////////////////////////////////////////
 viewparams_ptr_t ViewParams::instance() {
   static viewparams_ptr_t __vparams = std::make_shared<ViewParams>();
   return __vparams;
 }
 ///////////////////////////////////////////////////////////////////////////////
-
-void TestViewport::DoDraw(ui::drawevent_constptr_t drwev) {
-  drawChildren(drwev);
-}
-void TestViewport::onUpdateThreadTick(ui::updatedata_ptr_t updata) {
-}
-
 int main(int argc, char** argv) {
   //////////////////////////////////////
   std::string orkdir = getenv("ORKID_WORKSPACE_DIR");
@@ -25,7 +18,7 @@ int main(int argc, char** argv) {
   vcd::File vcdfile;
   vcdfile.parse(inppath);
   //////////////////////////////////////
-  auto app = createEZapp(argc, argv);
+  auto app = createSimpleUiApp(argc, argv);
   //////////////////////////////////////
   auto vp       = app->_topLayoutGroup;
   auto w_tracks = vp->makeChild<LayoutGroup>("w_tracks");

@@ -72,6 +72,23 @@ lev2::vtxbufferbase_ptr_t buildTypedVertexBuffer(
 void XgmRigidClusterBuilder::buildVertexBuffer(lev2::Context& context, lev2::EVtxStreamFormat format) {
   switch (format) {
     ////////////////////////////////////////////////////////////////////////////
+    case lev2::EVtxStreamFormat::V12: {
+      _vertexBuffer = buildTypedVertexBuffer<lev2::SVtxV12>(context, _submesh, [](const meshutil::vertex& inpvtx) {
+        return lev2::SVtxV12( inpvtx.mPos.x, inpvtx.mPos.y, inpvtx.mPos.z );
+      });
+      break;
+    }
+    ////////////////////////////////////////////////////////////////////////////
+    case lev2::EVtxStreamFormat::V12T8: {
+      _vertexBuffer = buildTypedVertexBuffer<lev2::SVtxV12T8>(context, _submesh, [](const meshutil::vertex& inpvtx) {
+        const auto& POS = inpvtx.mPos;
+        const auto& UV0 = inpvtx.mUV[0].mMapTexCoord;
+        return lev2::SVtxV12T8( POS.x, POS.y, POS.z, 
+                                UV0.x, UV0.y );
+      });
+      break;
+    }
+    ////////////////////////////////////////////////////////////////////////////
     case lev2::EVtxStreamFormat::V12C4T16: {
       _vertexBuffer = buildTypedVertexBuffer<lev2::SVtxV12C4T16>(context, _submesh, [](const meshutil::vertex& inpvtx) {
         lev2::SVtxV12C4T16 out_vtx;

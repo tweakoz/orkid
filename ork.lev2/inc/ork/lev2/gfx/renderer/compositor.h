@@ -25,6 +25,8 @@ class DrawableBuffer;
 class LightManager;
 class GfxMaterial3DSolid;
 class IRenderTarget;
+class OutputCompositingNode;
+class RenderCompositingNode;
 
 using compositordata_ptr_t = std::shared_ptr<CompositingData>;
 using compositorimpl_ptr_t = std::shared_ptr<CompositingImpl>;
@@ -205,6 +207,13 @@ struct CompositorDrawData {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct RenderPresetContext {
+  CompositingTechnique* _nodetek = nullptr;
+  OutputCompositingNode* _outputnode = nullptr;
+  RenderCompositingNode* _rendernode = nullptr;
+};  
+///////////////////////////////////////////////////////////////////////////////
+
 class CompositingData : public ork::Object {
   DeclareConcreteX(CompositingData, ork::Object);
 
@@ -216,8 +225,8 @@ public:
   void presetDefault();
   void presetForward();
   void presetPicking();
-  void presetPBR();
-  void presetPBRVR();
+  RenderPresetContext presetPBR();
+  RenderPresetContext presetPBRVR();
 
   const orklut<PoolString, ork::Object*>& GetGroups() const {
     return _groups;

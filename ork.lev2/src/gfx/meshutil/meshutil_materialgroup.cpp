@@ -22,8 +22,6 @@
 namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 
-void BuildXgmClusterPrimGroups(lev2::XgmCluster& XgmCluster, const std::vector<unsigned int>& TriangleIndices);
-
 void MaterialGroup::ComputeVtxStreamFormat() {
 
   meVtxFormat = lev2::EVtxStreamFormat::V12N12B12T16;

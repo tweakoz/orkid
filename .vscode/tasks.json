@@ -1,0 +1,42 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build-debug",
+            "type": "shell",
+            "command": "./ork.build/bin/init_env.py --launch ../staging-orkid --command './build.py --debug'",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "fix-pybind11",
+            "type": "shell",
+            "command": "./ork.build/bin/init_env.py --launch ../staging-orkid --command 'obt.dep.build.py --force --wipe pybind11'",
+        },
+        {
+            "label": "fix-tuio",
+            "type": "shell",
+            "command": "./ork.build/bin/init_env.py --launch ../staging-orkid --command 'cd $OBT_STAGE/orkid/ork.tuio; make install'",
+        },
+        {
+            "label": "run-terrain",
+            "type": "shell",
+            "command": "./ork.build/bin/init_env.py --launch ../staging-orkid --command 'ork.example.lev2.gfx.terrain.exe'",
+        },
+        {
+            "label": "run-model3Dpbr",
+            "type": "shell",
+            "command": "./ork.build/bin/init_env.py --launch ../staging-orkid --command 'ork.example.lev2.gfx.model3Dpbr.exe'",
+        },
+        {
+            "label": "create-env",
+            "type": "shell",
+            "command": "./ork.build/bin/init_env.py --create ../staging-orkid --command 'pwd'"
+        }
+    ]
+}

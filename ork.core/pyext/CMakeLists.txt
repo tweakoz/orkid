@@ -9,7 +9,7 @@ FIND_PACKAGE( pybind11 REQUIRED )
 
 ###################################
 
-set( ORKPKGBASE $ENV{OBT_STAGE}/lib/python3.8/site-packages/orkengine )
+set( ORKPKGBASE $ENV{OBT_PYPKG}/orkengine )
 set( INSTALL_DEST ${ORKPKGBASE}/core )
 set( INCD $ENV{ORKID_WORKSPACE_DIR}/ork.core/inc )
 
