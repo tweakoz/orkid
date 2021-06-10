@@ -199,13 +199,6 @@ struct FxShader {
 
   static void RegisterLoaders(const file::Path& base, const std::string& ext);
 
-  void SetInternalHandle(void* ph) {
-    mInternalHandle = ph;
-  }
-  void* GetInternalHandle(void) {
-    return mInternalHandle;
-  }
-
   static const char* assetTypeNameStatic(void) {
     return "fxshader";
   }
@@ -268,7 +261,7 @@ struct FxShader {
 
   ////////////////////////////////////////////////////
 
-  void* mInternalHandle = nullptr;
+  svar16_t _internalHandle;
   techniquebynamemap_t _techniques;
   parambynamemap_t _parameterByName;
   paramblockbynamemap_t _parameterBlockByName;

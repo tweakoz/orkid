@@ -469,6 +469,17 @@ public:
       float* uv2         = NULL,
       const fcolor4& clr = fcolor4::White());
 
+  void RenderMatOrthoQuad(
+      const SRect& ViewportRect,
+      const SRect& QuadRect,
+      GfxMaterial* pmat,
+      fvec2 uv0,
+      fvec2 uv1,
+      fvec2 uv2,
+      fvec2 uv3,
+      const fcolor4& clr = fcolor4::White());
+
+
   void Render2dQuadEML(const fvec4& QuadRect, const fvec4& UvRect, const fvec4& UvRect2);
   void Render2dQuadsEML(size_t count, const fvec4* QuadRects, const fvec4* UvRects, const fvec4* UvRect2s);
 

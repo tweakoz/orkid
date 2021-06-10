@@ -49,7 +49,11 @@ namespace ork {
 
 namespace lev2 {
 
-#if !defined(ORK_OSX)
+#if defined(ORK_OSX)
+namespace metal {
+void init();
+}
+#else
 namespace vk {
 void init();
 }
@@ -214,7 +218,9 @@ void ClassInit() {
 
 void GfxInit(const std::string& gfxlayer) {
 
-#if !defined(ORK_OSX)
+#if defined(ORK_OSX)
+  metal::init();
+#else
   vk::init();
 #endif
 

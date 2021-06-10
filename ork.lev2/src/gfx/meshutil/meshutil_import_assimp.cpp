@@ -796,7 +796,7 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
 
         // printf("building tristrip cluster<%d>\n", icluster);
 
-        buildTriStripXgmCluster(DummyTarget, xgm_cluster, clusterbuilder);
+        buildXgmCluster(DummyTarget, xgm_cluster, clusterbuilder,true);
 
         const int imaxvtx = xgm_cluster->_vertexBuffer->GetNumVertices();
         printf("xgm_cluster->_vertexBuffer<%p> imaxvtx<%d>\n", xgm_cluster->_vertexBuffer.get(), imaxvtx);

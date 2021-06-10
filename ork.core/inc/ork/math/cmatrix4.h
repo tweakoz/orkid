@@ -114,6 +114,7 @@ public:
 
   void decompose(Vector3<T>& pos, Quaternion<T>& rot, T& Scale) const;
   void compose(const Vector3<T>& pos, const Quaternion<T>& rot, const T& Scale);
+  void compose(const Vector3<T>& pos, const Quaternion<T>& rot, const T& ScaleX, const T& ScaleY, const T& ScaleZ);
 
   ////////////////
 

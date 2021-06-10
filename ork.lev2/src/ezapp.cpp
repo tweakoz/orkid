@@ -5,7 +5,9 @@
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/vr/vr.h>
 #include <QtWidgets/QStyle>
+#include <QtGui/QWindow>
 #include <QtWidgets/QDesktopWidget>
+#include <boost/program_options.hpp>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::EzApp, "Lev2EzApp");
 using namespace std::string_literals;
@@ -22,8 +24,14 @@ QtAppInit::QtAppInit() {
   _argv   = (char*)_arg.c_str();
   _argvp  = &_argv;
   _fsinit = std::make_shared<StdFileSystemInitalizer>(_argc, _argvp);
-  // auto& VRDEV = orkidvr::device();
-  // usleep(1 << 20);
+}
+QtAppInit::QtAppInit(int argc, char** argv, const QtAppInitData& initdata)
+  : _initdata(initdata) {
+  _argc   = argc;
+  _arg    = "";
+  _argv   = nullptr;
+  _argvp  = argv;
+  _fsinit = std::make_shared<StdFileSystemInitalizer>(_argc, _argvp);
 }
 QtAppInit::QtAppInit(int argc, char** argv) {
   _argc   = argc;
@@ -42,6 +50,11 @@ QtAppInit& qtinit() {
 ////////////////////////////////////////////////////////////////////////////////
 QtAppInit& qtinit(int& argc, char** argv) {
   static QtAppInit qti(argc, argv);
+  return qti;
+};
+////////////////////////////////////////////////////////////////////////////////
+QtAppInit& qtinit(int& argc, char** argv,const QtAppInitData& initdata) {
+  static QtAppInit qti(argc, argv,initdata);
   return qti;
 };
 ////////////////////////////////////////////////////////////////////////////////
@@ -87,19 +100,24 @@ EzApp::~EzApp() {
 qtezapp_ptr_t OrkEzQtApp::create() {
   static auto& qti = qtinit();
   QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
-  return std::make_shared<OrkEzQtApp>(qti._argc, qti._argvp);
+  return std::make_shared<OrkEzQtApp>(qti._argc, qti._argvp,qti._initdata);
 }
 qtezapp_ptr_t OrkEzQtApp::create(int argc, char** argv) {
   static auto& qti = qtinit(argc, argv);
   QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
-  return std::make_shared<OrkEzQtApp>(qti._argc, qti._argvp);
+  return std::make_shared<OrkEzQtApp>(qti._argc, qti._argvp,qti._initdata);
+}
+qtezapp_ptr_t OrkEzQtApp::create(int argc, char** argv, const QtAppInitData& init) {
+  static auto& qti = qtinit(argc, argv,init);
+  QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
+  return std::make_shared<OrkEzQtApp>(qti._argc, qti._argvp,qti._initdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
 qtezapp_ptr_t OrkEzQtApp::createWithScene(varmap::varmap_ptr_t sceneparams) {
   static auto& qti = qtinit();
   QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
-
-  auto rval                           = std::make_shared<OrkEzQtApp>(qti._argc, qti._argvp);
+  QtAppInitData initdata;
+  auto rval                           = std::make_shared<OrkEzQtApp>(qti._argc, qti._argvp,initdata);
   rval->_mainWindow->_execsceneparams = sceneparams;
   rval->_mainWindow->_onDraw          = [=](ui::drawevent_constptr_t drwev) { //
     ork::opq::mainSerialQueue()->Process();
@@ -143,9 +161,12 @@ void EzViewport::DoDraw(ui::drawevent_constptr_t drwev) {
       _mainwin->_execscene = std::make_shared<scenegraph::Scene>(_mainwin->_execsceneparams);
       _mainwin->_onGpuInitWithScene(drwev->GetTarget(), _mainwin->_execscene);
     }
+    _mainwin->_dogpuinit = false;
     while (ork::opq::mainSerialQueue()->Process()) {
     }
-    _mainwin->_dogpuinit = false;
+  }
+  auto ezapp = (OrkEzQtApp*)OrkEzQtAppBase::get();
+  while (ezapp->_rthreadq->Process()) {
   }
   if (_mainwin->_onDraw) {
     drwev->GetTarget()->makeCurrentContext();
@@ -171,6 +192,7 @@ void EzViewport::DoSurfaceResize() {
 }
 /////////////////////////////////////////////////
 ui::HandlerResult EzViewport::DoOnUiEvent(ui::event_constptr_t ev) {
+    printf("WTF...\n");
   if (_mainwin->_onUiEvent) {
     return _mainwin->_onUiEvent(ev);
   } else
@@ -193,10 +215,17 @@ OrkEzQtAppBase::OrkEzQtAppBase(int& argc, char** argv)
   _ezapp     = EzApp::get(argc, argv);
 }
 ///////////////////////////////////////////////////////////////////////////////
-OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
+void OrkEzQtApp::enqueueOnRenderer(const void_lambda_t& l){
+  _rthreadq->enqueue(l);
+}
+///////////////////////////////////////////////////////////////////////////////
+OrkEzQtApp::OrkEzQtApp(int& argc, char** argv,const QtAppInitData& initdata)
     : OrkEzQtAppBase(argc, argv)
+    , _initdata(initdata)
     , _updateThread("updatethread")
     , _mainWindow(0) {
+
+  //////////////////////////////////////////////////////////
 
   _uicontext   = std::make_shared<ui::Context>();
   _update_data = std::make_shared<ui::UpdateData>();
@@ -217,11 +246,14 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
 
   _mainWindow = new EzMainWin();
 
-  _mainWindow->setGeometry(QStyle::alignedRect(
-      Qt::LeftToRight, //
-      Qt::AlignCenter,
-      QSize(1280, 720),
-      qApp->desktop()->availableGeometry()));
+  bool fullscreen = _initdata._fullscreen;
+
+  _mainWindow->setGeometry(
+      _initdata._left, //
+      _initdata._top,
+      _initdata._width,
+       _initdata._height
+      );
 
   _mainWindow->show();
   _mainWindow->raise(); // for MacOS
@@ -236,7 +268,7 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
   _ezviewport                       = std::make_shared<EzViewport>(_mainWindow);
   _ezviewport->_uicontext           = _uicontext.get();
   _mainWindow->_gfxwin->mRootWidget = _ezviewport.get();
-  _ezviewport->_topLayoutGroup      = _uicontext->makeTop<ui::LayoutGroup>("top-layoutgroup", 0, 0, 1280, 720);
+  _ezviewport->_topLayoutGroup      = _uicontext->makeTop<ui::LayoutGroup>("top-layoutgroup", 0, 0, _initdata._width, _initdata._height);
   _topLayoutGroup                   = _ezviewport->_topLayoutGroup;
 
   _mainWindow->_ctqt = new CTQT(_mainWindow->_gfxwin, _mainWindow);
@@ -247,7 +279,15 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
   // gpvp->Init();
 
   _mainWindow->activateWindow();
-  _mainWindow->show();
+  //auto screens = this->screens();
+  //_mainWindow->windowHandle()->setScreen(screens[2]);
+
+  /////////////////////////////////
+  if( _initdata._fullscreen )
+    _mainWindow->showFullScreen();
+  else
+    _mainWindow->show();
+  /////////////////////////////////
   _mainWindow->_ctxw->activateWindow();
   _mainWindow->_ctxw->show();
 
@@ -266,6 +306,7 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
   _updq  = ork::opq::updateSerialQueue();
   _conq  = ork::opq::concurrentQueue();
   _mainq = ork::opq::mainSerialQueue();
+  _rthreadq = std::make_shared<opq::OperationsQueue>(0, "renderSerialQueue");
   _updateThread.start([&](anyp data) {
     _appstate.fetch_xor(KAPPSTATEFLAG_UPDRUNNING);
     _update_timer.Start();
@@ -321,7 +362,10 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv)
 ///////////////////////////////////////////////////////////////////////////////
 
 OrkEzQtApp::~OrkEzQtApp() {
+  printf( "OrkEzQtApp<%p> destructor - joining update thread...\n", this );
   joinUpdate();
+  printf( "OrkEzQtApp<%p> destructor - joined update thread\n", this );
+  printf( "OrkEzQtApp<%p> terminating drawable buffers..\n", this );
   DrawableBuffer::terminateAll();
 }
 
@@ -361,6 +405,7 @@ void OrkEzQtApp::onGpuInit(EzMainWin::ongpuinit_t cb) {
   _mainWindow->_onGpuInit = cb;
 }
 void OrkEzQtApp::onUiEvent(EzMainWin::onuieventcb_t cb) {
+  _ezviewport->_topLayoutGroup->_evhandler = cb;
   _mainWindow->_onUiEvent = cb;
 }
 void OrkEzQtApp::onUpdate(EzMainWin::onupdate_t cb) {

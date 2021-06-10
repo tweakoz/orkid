@@ -15,11 +15,11 @@ set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
 ################################################################################
 
 set(CMAKE_FIND_DEBUG_MODE OFF)
-set(PYTHON_EXECUTABLE $ENV{OBT_STAGE}/bin/python3)
-set(PYTHON_LIBRARY $ENV{OBT_STAGE}/lib/libpython3.8d.so)
+set(PYTHON_EXECUTABLE $ENV{PYTHONHOME}/bin/python3)
+set(PYTHON_LIBRARY $ENV{PYTHONHOME}/lib/libpython3.9d.so)
 
 set(Python3_FIND_STRATEGY "LOCATION")
-set(Python3_ROOT_DIR $ENV{OBT_STAGE} )
+set(Python3_ROOT_DIR $ENV{PYTHONHOME} )
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 find_package(pybind11 REQUIRED)
@@ -79,7 +79,7 @@ link_directories(${destlib})
 
 include_directories(AFTER $ENV{OBT_STAGE}/include)
 include_directories(AFTER $ENV{OBT_STAGE}/include/tuio/oscpack)
-link_directories($ENV{OBT_STAGE}/lib/)
+link_directories($ENV{OBT_STAGE}/lib/ $ENV{OBT_STAGE}/lib64 )
 
 link_directories($ENV{OBT_STAGE}/orkid/ork.tuio )
 link_directories($ENV{OBT_STAGE}/orkid/ork.utpp )
@@ -87,6 +87,9 @@ link_directories($ENV{OBT_STAGE}/orkid/ork.utpp )
 #link_directories($ENV{OBT_STAGE}/orkid/ork.lev2 )
 #link_directories($ENV{OBT_STAGE}/orkid/ork.ent )
 #link_directories($ENV{OBT_STAGE}/orkid/ork.tool )
+
+set(VULKAN_SDK $ENV{OBT_STAGE}/builds/vulkan/1.2.131.2/x86_64)
+link_directories(${VULKAN_SDK}/lib )
 
 set( ORK_CORE_INCD ${ORKROOT}/ork.core/inc )
 set( ORK_LEV2_INCD ${ORKROOT}/ork.lev2/inc )
@@ -130,8 +133,8 @@ include_directories (AFTER $ENV{OBT_BUILDS}/igl/external/triangle )
 # pull in extra header paths from obt dep modules
 ################################################################################
 
-include_directories (AFTER ${SHIBOKENHEADERPATH} )
-include_directories (AFTER ${PYTHONHEADERPATH} )
+#include_directories (AFTER ${SHIBOKENHEADERPATH} )
+#include_directories (AFTER ${PYTHONHEADERPATH} )
 
 ################################################################################
 # QT5
@@ -146,7 +149,7 @@ macro(enableQt5)
   list(PREPEND CMAKE_MODULE_PATH $ENV{OBT_STAGE}/qt5/lib/cmake)
 
   IF(${APPLE})
-  set(QT5BASE /usr/local/opt/qt/lib/cmake)
+  set(QT5BASE /usr/local/opt/qt5/lib/cmake)
   ELSE()
   set(QT5BASE $ENV{OBT_STAGE}/qt5/lib/cmake)
   ENDIF()
@@ -218,8 +221,9 @@ function(ork_std_target_opts_linker TARGET)
   ELSEIF(${UNIX})
       target_link_libraries(${TARGET} LINK_PRIVATE rt dl pthread boost_filesystem boost_system)
   ENDIF()
-  target_link_libraries(${TARGET} LINK_PRIVATE ${Python3_LIBRARIES} )
-  target_link_options(${TARGET} PRIVATE ${Python3_LINK_OPTIONS})
+  target_link_directories(${TARGET} PUBLIC $ENV{OBT_PYTHON_LIB_PATH} )
+  target_link_libraries(${TARGET} LINK_PRIVATE $ENV{OBT_PYTHON_DECOD_NAME} )
+  #target_link_options(${TARGET} PRIVATE ${Python3_LINK_OPTIONS})
 endfunction()
 
 ##############################

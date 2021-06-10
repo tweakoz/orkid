@@ -263,6 +263,75 @@ void OffscreenBuffer::RenderMatOrthoQuad(
   mtxi->PopMMatrix();
 }
 
+/////////////////////////////////////////////////////////////////////////
+
+void OffscreenBuffer::RenderMatOrthoQuad(
+    const SRect& vprect,
+    const SRect& QuadRect,
+    GfxMaterial* pmat,
+    fvec2 uv0,
+    fvec2 uv1,
+    fvec2 uv2,
+    fvec2 uv3,
+    const fcolor4& clr) {
+  static SRasterState DefaultRasterState;
+  auto ctx  = context();
+  auto mtxi = ctx->MTXI();
+  auto fbi  = ctx->FBI();
+
+  ViewportRect vprectNew(vprect.miX, vprect.miY, vprect.miX2 - vprect.miX, vprect.miY2 - vprect.miY);
+
+  // align source pixels to target pixels if sizes match
+  float fx0  = float(QuadRect.miX);
+  float fy0  = float(QuadRect.miY);
+  float fx1  = float(QuadRect.miX2);
+  float fy1  = float(QuadRect.miY2);
+  float fvx0 = float(vprect.miX);
+  float fvy0 = float(vprect.miY);
+  float fvx1 = float(vprect.miX2);
+  float fvy1 = float(vprect.miY2);
+
+  mtxi->PushPMatrix(mtxi->Ortho(fvx0, fvx1, fvy0, fvy1, 0.0f, 1.0f));
+  mtxi->PushVMatrix(fmtx4::Identity());
+  mtxi->PushMMatrix(fmtx4::Identity());
+  ctx->RSI()->BindRasterState(DefaultRasterState, true);
+  fbi->pushViewport(vprectNew);
+  fbi->pushScissor(vprectNew);
+  { // Draw Full Screen Quad with specified material
+    ctx->PushModColor(clr);
+    {
+      DynamicVertexBuffer<SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
+
+      // U32 uc = clr.GetBGRAU32();
+      U32 uc = clr.GetVtxColorAsU32();
+      ork::lev2::VtxWriter<SVtxV12C4T16> vw;
+      vw.Lock(context(), &vb, 6);
+      vw.AddVertex(SVtxV12C4T16(fx0, fy0, 0.0f, uv0.x, uv0.y, 0.0f, 0.0f, uc));
+      vw.AddVertex(SVtxV12C4T16(fx1, fy0, 0.0f, uv1.x, uv1.y, 0.0f, 0.0f, uc));
+      vw.AddVertex(SVtxV12C4T16(fx1, fy1, 0.0f, uv2.x, uv2.y, 0.0f, 0.0f, uc));
+
+      vw.AddVertex(SVtxV12C4T16(fx0, fy0, 0.0f, uv0.x, uv0.y, 0.0f, 0.0f, uc));
+      vw.AddVertex(SVtxV12C4T16(fx1, fy1, 0.0f, uv2.x, uv2.y, 0.0f, 0.0f, uc));
+      vw.AddVertex(SVtxV12C4T16(fx0, fy1, 0.0f, uv3.x, uv3.y, 0.0f, 0.0f, uc));
+      vw.UnLock(context());
+
+      int inumpasses = pmat->BeginBlock(ctx);
+      for (int ipass = 0; ipass < inumpasses; ipass++) {
+        bool bDRAW = pmat->BeginPass(ctx, ipass);
+        ctx->GBI()->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
+        pmat->EndPass(ctx);
+      }
+      pmat->EndBlock(ctx);
+    }
+    ctx->PopModColor();
+  }
+  fbi->popScissor();
+  fbi->popViewport();
+  mtxi->PopPMatrix();
+  mtxi->PopVMatrix();
+  mtxi->PopMMatrix();
+}
+
 OrthoQuad::OrthoQuad()
     : mfrot(0.0f)
     , mfu0a(0.0f)

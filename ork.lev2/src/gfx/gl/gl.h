@@ -37,7 +37,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#if 0 // defined( _DEBUG )
+#if 1 // defined( _DEBUG )
 #define GL_ERRORCHECK()                                                                                                            \
   {                                                                                                                                \
     GLenum iErr = GetGlError();                                                                                                    \
@@ -333,8 +333,11 @@ public:
 
   pboptr_t _getPBO(size_t isize);
   void _returnPBO(pboptr_t pbo);
-
   GlTextureInterface(ContextGL& tgt);
+
+  void bindTextureToUnit(const Texture* tex, 
+                         GLenum tex_target,
+                         int tex_unit);
 
 private:
   bool _loadImageTexture(Texture* ptex, datablock_ptr_t inpdata);

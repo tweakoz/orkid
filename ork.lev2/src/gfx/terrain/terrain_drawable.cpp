@@ -35,7 +35,7 @@ ImplementReflectionX(ork::lev2::TerrainDrawableData, "TerrainDrawableData");
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-using vertex_type = SVtxV12C4T16;
+using vertex_type = SVtxV12;
 
 enum PatchType {
   PT_A = 0,
@@ -60,6 +60,7 @@ struct SectorLodInfo {
 
   // LOD0 is the inner LOD
   // LODX is all outer LODs (combined)
+  static int _g__num_triangles;
 
   ////////////////////////////////////////
   void addTriangle(
@@ -68,6 +69,7 @@ struct SectorLodInfo {
       const meshutil::vertex& vtxc) {
     meshutil::XgmClusterTri tri{vtxa, vtxb, vtxc};
     _clusterizer.addTriangle(tri, _meshflags);
+    _g__num_triangles++;
   }
   ////////////////////////////////////////
   void buildClusters(AABox& aabb);
@@ -84,6 +86,8 @@ struct SectorLodInfo {
 
   bool _islod0 = false;
 };
+
+int SectorLodInfo::_g__num_triangles = 0;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -464,6 +468,8 @@ void SectorLodInfo::buildClusters(AABox& aabb) {
     p2.y = lod;
     p3.y = lod;
 
+    c0 = 0x00000000;
+
     auto v0   = meshutil::vertex(p0, fvec3(), fvec3(), fvec2(), c0);
     auto v1   = meshutil::vertex(p1, fvec3(), fvec3(), fvec2(), c0);
     auto v2   = meshutil::vertex(p2, fvec3(), fvec3(), fvec2(), c0);
@@ -791,6 +797,9 @@ void TerrainRenderImpl::recomputeGeometry(chunkfile::OutputStream* hdrstream, ch
   // printf("geomax<%f %f %f>\n", geomax.GetX(), geomax.GetY(), geomax.GetZ());
   // printf("geosiz<%f %f %f>\n", geosiz.GetX(), geosiz.GetY(), geosiz.GetZ());
 
+
+  printf( "TERRAIN-NUMTRIANGLES<%d>\n", SectorLodInfo::_g__num_triangles );
+
   float runtime = timer.SecsSinceStart();
 }
 
@@ -805,7 +814,7 @@ void SectorLodInfo::buildPrimitives(chunkfile::OutputStream* hdrstream, chunkfil
     clusterbuilder->buildVertexBuffer(DummyTarget, vertex_type::meFormat);
     auto xgmcluster = std::make_shared<XgmCluster>();
     xgmsubmesh._clusters.push_back(xgmcluster);
-    buildTriStripXgmCluster(DummyTarget, xgmcluster, clusterbuilder);
+    buildXgmCluster(DummyTarget, xgmcluster, clusterbuilder,false);
   }
   _primitive.writeToChunks(xgmsubmesh, hdrstream, geostream);
 }

@@ -106,7 +106,8 @@ void CompositingData::presetPicking() {
 
 //////////////////////////////////////////////////////////////////////////////
 
-void CompositingData::presetPBR() {
+RenderPresetContext CompositingData::presetPBR() {
+  RenderPresetContext rval;
   auto t1 = new NodeCompositingTechnique;
   auto o1 = new ScreenOutputCompositingNode;
   auto r1 = new deferrednode::DeferredCompositingNodePbr;
@@ -129,11 +130,18 @@ void CompositingData::presetPBR() {
   _activeScene = "scene1"_pool;
   _activeItem  = "item1"_pool;
   _scenes.AddSorted("scene1"_pool, s1);
+
+  rval._nodetek = t1;
+  rval._outputnode = o1;
+  rval._rendernode = r1;
+
+  return rval;
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-void CompositingData::presetPBRVR() {
+RenderPresetContext CompositingData::presetPBRVR() {
+  RenderPresetContext rval;
   auto t1 = new NodeCompositingTechnique;
   auto o1 = new VrCompositingNode;
   auto r1 = new deferrednode::DeferredCompositingNodePbr;
@@ -154,6 +162,13 @@ void CompositingData::presetPBRVR() {
   _activeScene = "scene1"_pool;
   _activeItem  = "item1"_pool;
   _scenes.AddSorted("scene1"_pool, s1);
+
+  rval._nodetek = t1;
+  rval._outputnode = o1;
+  rval._rendernode = r1;
+
+  return rval;
+
 }
 
 //////////////////////////////////////////////////////////////////////////////

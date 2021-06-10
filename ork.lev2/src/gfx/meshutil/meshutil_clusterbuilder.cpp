@@ -58,7 +58,8 @@ void XgmClusterBuilder::Dump(void) {
 void BuildXgmClusterPrimGroups(
     lev2::Context& context,
     lev2::xgmcluster_ptr_t xgm_cluster,
-    const std::vector<unsigned int>& TriangleIndices) {
+    const std::vector<unsigned int>& TriangleIndices,
+    bool enable_tristrips) {
 
   const int imaxvtx = xgm_cluster->_vertexBuffer->GetNumVertices();
 
@@ -67,8 +68,35 @@ void BuildXgmClusterPrimGroups(
   static const int WII_PRIM_GROUP_MAX_INDICES = 0xFFFF;
 
   ////////////////////////////////////////////////////////////
-  // Build TriStrips
+  // Disallow TriStrips
+  ////////////////////////////////////////////////////////////
 
+  if(not enable_tristrips){
+    int inumidx = TriangleIndices.size();
+
+    /////////////////////////////////////////////////////
+    ork::lev2::StaticIndexBuffer<U16>* pidxbuf = new ork::lev2::StaticIndexBuffer<U16>(inumidx);
+    U16* pidx                                  = (U16*)context.GBI()->LockIB(*pidxbuf);
+    OrkAssert(pidx != 0);
+    for (int ii = 0; ii < inumidx; ii++) {
+      pidx[ii] = U16(TriangleIndices[ii]);
+    }
+    context.GBI()->UnLockIB(*pidxbuf);
+    /////////////////////////////////////////////////////
+
+    auto ListGroup = std::make_shared<ork::lev2::XgmPrimGroup>();
+    xgm_cluster->_primgroups.push_back(ListGroup);
+
+    ListGroup->miNumIndices = inumidx;
+    ListGroup->mpIndices    = pidxbuf;
+    ListGroup->mePrimType   = lev2::PrimitiveType::TRIANGLES;
+  }
+
+  ////////////////////////////////////////////////////////////
+  // Allow TriStrips
+  ////////////////////////////////////////////////////////////
+
+  else {
   meshutil::TriStripper MyStripper(TriangleIndices, 16, 4);
 
   bool bhastris = (MyStripper.GetTriIndices().size() > 0);
@@ -140,17 +168,22 @@ void BuildXgmClusterPrimGroups(
     context.GBI()->UnLockIB(*pidxbuf);
     /////////////////////////////////////////////////////
 
-    auto StripGroup = xgm_cluster->primgroup(ipg++);
+    auto ListGroup = xgm_cluster->primgroup(ipg++);
 
-    StripGroup->miNumIndices = inumidx;
-    StripGroup->mpIndices    = pidxbuf;
-    StripGroup->mePrimType   = lev2::PrimitiveType::TRIANGLES;
+    ListGroup->miNumIndices = inumidx;
+    ListGroup->mpIndices    = pidxbuf;
+    ListGroup->mePrimType   = lev2::PrimitiveType::TRIANGLES;
+  }
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void buildTriStripXgmCluster(lev2::Context& context, lev2::xgmcluster_ptr_t xgm_cluster, clusterbuilder_ptr_t clusterbuilder) {
+void buildXgmCluster( lev2::Context& context, 
+                      lev2::xgmcluster_ptr_t xgm_cluster, 
+                      clusterbuilder_ptr_t clusterbuilder,
+                      bool enable_tristrips ) {
+
   if (!clusterbuilder->_vertexBuffer)
     return;
 
@@ -183,7 +216,7 @@ void buildTriStripXgmCluster(lev2::Context& context, lev2::xgmcluster_ptr_t xgm_
 
   /////////////////////////////////////////////////////////////
 
-  BuildXgmClusterPrimGroups(context, xgm_cluster, TriangleIndices);
+  BuildXgmClusterPrimGroups(context, xgm_cluster, TriangleIndices,enable_tristrips);
 
   xgm_cluster->mBoundingBox    = clusterbuilder->_submesh.aabox();
   xgm_cluster->mBoundingSphere = Sphere(xgm_cluster->mBoundingBox.Min(), xgm_cluster->mBoundingBox.Max());

@@ -491,10 +491,10 @@ struct vtx_config {
   const GLenum mType;
   const bool mNormalize;
   const int mOffset;
-  const glslfx::Pass* mPass;
-  glslfx::Attribute* mAttr;
+  const orksl::Pass* mPass;
+  orksl::Attribute* mAttr;
 
-  uint32_t bind_to_attr(const glslfx::Pass* pfxpass, int istride) {
+  uint32_t bind_to_attr(const orksl::Pass* pfxpass, int istride) {
     uint32_t rval = 0;
     if (mPass != pfxpass) {
       const auto& it = pfxpass->_vtxAttributesBySemantic.find(mSemantic);
@@ -510,8 +510,8 @@ struct vtx_config {
     }
     if (mAttr) {
       // printf( "gbi::bind_attr istride<%d> loc<%d> numc<%d> offs<%d>\n", istride, mAttr->mLocation, mNu_components, mOffset );
-      glVertexAttribPointer(mAttr->mLocation, mNu_components, mType, mNormalize, istride, (void*)(uint64_t)mOffset);
-      rval = 1 << mAttr->mLocation;
+      glVertexAttribPointer(mAttr->_location, mNu_components, mType, mNormalize, istride, (void*)(uint64_t)mOffset);
+      rval = 1 << mAttr->_location;
     } else {
       // printf( "gbi::bind_attr no_attr\n" );
     }
@@ -538,7 +538,7 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf, const svarp_t p
   // printf( "EnableVtxBufComponents\n");
   bool rval = false;
   //////////////////////////////////////////////
-  auto pfxpass = priv_data.Get<const glslfx::Pass*>();
+  auto pfxpass = priv_data.Get<const orksl::Pass*>();
 //////////////////////////////////////////////
 #if defined(WIN32)
   const GLenum kGLVTXCOLS = GL_BGRA;
@@ -553,6 +553,25 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf, const svarp_t p
   //////////////////////////////////////////////
   GL_ERRORCHECK();
   switch (eStrFmt) {
+    case lev2::EVtxStreamFormat::V12: {
+      static vtx_config cfgs[] = {
+          {"POSITION", 3, GL_FLOAT, false, 0, 0, 0}
+      };
+      for (vtx_config& vcfg : cfgs)
+        component_mask |= vcfg.bind_to_attr(pfxpass, iStride);
+      rval = true;
+      break;
+    }
+    case lev2::EVtxStreamFormat::V12T8: {
+      static vtx_config cfgs[] = {
+          {"POSITION", 3, GL_FLOAT, false, 0, 0, 0},
+          {"TEXCOORD0", 2, GL_FLOAT, false, 12, 0, 0}
+      };
+      for (vtx_config& vcfg : cfgs)
+        component_mask |= vcfg.bind_to_attr(pfxpass, iStride);
+      rval = true;
+      break;
+    }
     case lev2::EVtxStreamFormat::V12N12B12T16: {
       static vtx_config cfgs[] = {
           {"POSITION", 3, GL_FLOAT, false, 0, 0, 0},
@@ -680,9 +699,9 @@ bool GlGeometryBufferInterface::BindVertexStreamSource(const VertexBufferBase& V
   svarp_t evb_priv;
   ////////////////////////////////////////////////////////////////////
   glslfx::Interface* pFXI     = static_cast<glslfx::Interface*>(mTargetGL.FXI());
-  const glslfx::Pass* pfxpass = pFXI->GetActiveEffect()->_activePass;
+  const orksl::Pass* pfxpass = pFXI->GetActiveEffect()->_activePass;
   OrkAssert(pfxpass != nullptr);
-  evb_priv.Set<const glslfx::Pass*>(pfxpass);
+  evb_priv.Set<const orksl::Pass*>(pfxpass);
   ////////////////////////////////////////////////////////////////////
   // setup VBO or DL
   GLVtxBufHandle* hBuf = reinterpret_cast<GLVtxBufHandle*>(VBuf.GetHandle());
@@ -719,9 +738,9 @@ bool GlGeometryBufferInterface::BindStreamSources(const VertexBufferBase& VBuf, 
   svarp_t evb_priv;
 
   glslfx::Interface* pFXI     = static_cast<glslfx::Interface*>(mTargetGL.FXI());
-  const glslfx::Pass* pfxpass = pFXI->GetActiveEffect()->_activePass;
+  const orksl::Pass* pfxpass = pFXI->GetActiveEffect()->_activePass;
   OrkAssert(pfxpass != nullptr);
-  evb_priv.Set<const glslfx::Pass*>(pfxpass);
+  evb_priv.Set<const orksl::Pass*>(pfxpass);
 
   ////////////////////////////////////////////////////////////////////
 

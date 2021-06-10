@@ -34,7 +34,7 @@ static auto the_synth = synth::instance();
 audiodevice_ptr_t gaudiodevice;
 ///////////////////////////////////////////////////////////////////////////////
 SingularityTestApp::SingularityTestApp(int& argc, char** argv)
-    : OrkEzQtApp(argc, argv) {
+    : OrkEzQtApp(argc, argv,QtAppInitData()) {
   _hudvp = the_synth->_hudvp;
   gaudiodevice = AudioDevice::instance();
   //startupAudio();

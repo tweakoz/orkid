@@ -43,7 +43,6 @@ bool DummyFxInterface::LoadFxShader(const AssetPath& pth, FxShader* pfxshader) {
   AssetPath assetname = pth;
   assetname.SetExtension("fxml");
   FxShader* shader = new FxShader;
-  pfxshader->SetInternalHandle(0);
   printf("DUMMYFX::LOADED<%s>\n", pth.c_str());
   // bool bOK = LoadFxShader( shader );
   // OrkAssert(bOK);

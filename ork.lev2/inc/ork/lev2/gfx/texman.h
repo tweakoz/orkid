@@ -25,6 +25,27 @@ class Texture;
 class TextureAsset;
 using texture_ptr_t = std::shared_ptr<Texture>;
 
+//////////////////////////////////////////////////////////////////////////
+// External IPC Texture support
+//
+// VK: External Memory
+// GL: EXT_external_objects
+// GL: EXT_external_objects_fd
+//////////////////////////////////////////////////////////////////////////
+
+struct IpcTexture {
+	int _image_fd = 0;
+  int _image_width = 0;
+  int _image_height = 0;
+  size_t _image_size = 0;
+	int _sema_complete_fd = 0;
+	int _sema_ready_fd = 0;
+};
+
+using ipctexture_ptr_t = std::shared_ptr<IpcTexture>;
+
+//////////////////////////////////////////////////////////////////////////
+
 enum ETextureUsage {
   ETEXUSAGE_COLOR = 0,
   ETEXUSAGE_COLOR_NC,
@@ -152,6 +173,8 @@ struct Texture {
   //////////////////////////////////////////////////////
 
   Texture(const TextureAsset* asset = nullptr);
+  Texture(ipctexture_ptr_t external_memory);
+
   ~Texture();
 
   //////////////////////////////////////////////////////
@@ -234,6 +257,7 @@ struct Texture {
   varmap::VarMap _varmap;
   const TextureAsset* _asset;
   bool _formatSupportsFiltering = true;
+  ipctexture_ptr_t _external_memory;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

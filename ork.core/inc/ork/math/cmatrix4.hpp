@@ -862,8 +862,8 @@ void Matrix44<T>::Lerp(const Matrix44<T>& from, const Matrix44<T>& to, T par) //
   dQ.Scale(par);
   dQ.Add(Qidn);
 
-  if (dQ.Magnitude() > T(0.0f))
-    dQ.Negate();
+  if (dQ.norm() > T(0.0f))
+    dQ.negate();
 
   Quaternion<T> newQrot = dQ;
 
@@ -913,6 +913,16 @@ template <typename T> void Matrix44<T>::decompose(Vector3<T>& pos, Quaternion<T>
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void Matrix44<T>::compose(const Vector3<T>& pos, const Quaternion<T>& qrot, const T& scale) {
+  compose(pos,qrot,scale,scale,scale);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> void Matrix44<T>::compose(const Vector3<T>& pos, 
+                                                const Quaternion<T>& qrot, 
+                                                const T& scalex,
+                                                const T& scaley,
+                                                const T& scalez) {
 
   T l = qrot.x * qrot.x + qrot.y * qrot.y + qrot.z * qrot.z + qrot.w * qrot.w;
 
@@ -932,17 +942,17 @@ template <typename T> void Matrix44<T>::compose(const Vector3<T>& pos, const Qua
   T yz = qrot.y * zs;
   T zz = qrot.z * zs;
 
-  elements[0][0]=scale*(T(1.0) - (yy + zz));
-  elements[0][1]=scale*(xy - wz);
-  elements[0][2]=scale*(xz + wy);
+  elements[0][0]=scalex*(T(1.0) - (yy + zz));
+  elements[0][1]=scalex*(xy - wz);
+  elements[0][2]=scalex*(xz + wy);
 
-  elements[1][0]=scale*(xy + wz);
-  elements[1][1]=scale*(T(1.0) - (xx + zz));
-  elements[1][2]=scale*(yz - wx);
+  elements[1][0]=scaley*(xy + wz);
+  elements[1][1]=scaley*(T(1.0) - (xx + zz));
+  elements[1][2]=scaley*(yz - wx);
 
-  elements[2][0]=scale*(xz - wy);
-  elements[2][1]=scale*(yz + wx);
-  elements[2][2]=scale*(T(1.0) - (xx + yy));
+  elements[2][0]=scalez*(xz - wy);
+  elements[2][1]=scalez*(yz + wx);
+  elements[2][2]=scalez*(T(1.0) - (xx + yy));
 
   elements[3][0] = pos.x;
   elements[3][1] = pos.y;
@@ -951,7 +961,6 @@ template <typename T> void Matrix44<T>::compose(const Vector3<T>& pos, const Qua
   elements[3][3] = T(1.0);
 
 }
-
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 

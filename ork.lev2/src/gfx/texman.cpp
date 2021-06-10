@@ -81,6 +81,12 @@ Texture::Texture(const TextureAsset* asset)
     : _asset(asset) {
 }
 
+Texture::Texture(ipctexture_ptr_t external_memory)
+  : _asset(nullptr)
+  , _external_memory(external_memory) {
+
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 Texture::~Texture() {

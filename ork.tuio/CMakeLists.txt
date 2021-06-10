@@ -41,21 +41,16 @@ link_directories(${CMAKE_INSTALL_PREFIX}/lib)
 
 ###################################
 
-add_custom_target(mktuiohdrdir ALL
-  COMMAND ${CMAKE_COMMAND} -E make_directory ${TUIO_DEST_HEADERDIR})
-
-add_custom_target(mkoschdrdir ALL
-  COMMAND ${CMAKE_COMMAND} -E make_directory ${OSC_DEST_HEADERDIR})
-
-add_custom_target(mkiphdrdir ALL
-  COMMAND ${CMAKE_COMMAND} -E make_directory ${IP_DEST_HEADERDIR})
-
+add_custom_target(mktuiohdrdir ALL COMMAND ${CMAKE_COMMAND} -E make_directory ${TUIO_DEST_HEADERDIR})
+add_custom_target(mkoschdrdir ALL COMMAND ${CMAKE_COMMAND} -E make_directory ${OSC_DEST_HEADERDIR})
+add_custom_target(mkiphdrdir ALL COMMAND ${CMAKE_COMMAND} -E make_directory ${IP_DEST_HEADERDIR})
 
 file(GLOB tuiohdrs "${SRCD}/*.h")
 file(GLOB oschdrs "${SRCD}/oscpack/osc/*.h")
 file(GLOB iphdrs "${SRCD}/oscpack/ip/*.h")
 
-install(TARGETS ork_tuio LIBRARY DESTINATION $ENV{OBT_STAGE}/lib )
-install(FILES ${tuiohdrs} DESTINATION ${TUIO_DEST_HEADERDIR})
-install(FILES ${oschdrs} DESTINATION ${TUIO_DEST_HEADERDIR}/oscpack/osc)
-install(FILES ${iphdrs} DESTINATION ${TUIO_DEST_HEADERDIR}/oscpack/ip)
+add_custom_command(TARGET ork_tuio POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:ork_tuio> $ENV{OBT_STAGE}/lib )
+add_custom_command(TARGET ork_tuio POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${tuiohdrs} ${TUIO_DEST_HEADERDIR} )
+add_custom_command(TARGET ork_tuio POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${oschdrs} ${TUIO_DEST_HEADERDIR}/oscpack/osc)
+add_custom_command(TARGET ork_tuio POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${iphdrs} ${TUIO_DEST_HEADERDIR}/oscpack/ip)
+

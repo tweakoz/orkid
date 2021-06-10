@@ -28,95 +28,54 @@ public:
   void Render(RenderContextFrameData& RCFD) const;
 
   void SetGridMode(EGrid egrid) {
-    meGridMode = egrid;
-  }
-
-  float GetVisGridBase() const {
-    return mVisGridBase;
-  }
-  float GetVisGridDiv() const {
-    return mVisGridDiv;
-  }
-  float GetVisGridSize() const {
-    return mVisGridSize;
+    _gridMode = egrid;
   }
 
   Grid3d();
 
 private:
-  EGrid meGridMode;
-  float mVisGridBase;
-  float mVisGridDiv;
-  float mVisGridHiliteDiv;
-  float mGridDL;
-  float mGridDR;
-  float mGridDB;
-  float mGridDT;
-  float mVisGridSize;
+  EGrid _gridMode;
+  float _visGridBase;
+  float _visGridDiv;
+  float _visGridHiliteDiv;
+  float _gridDL;
+  float _gridDR;
+  float _gridDB;
+  float _gridDT;
+  float _visGridSize;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct Grid2d {
-public:
+
   void updateMatrices(Context* pTARG, int iw, int ih);
   void Render(Context* pTARG, int iw, int ih);
-
-  float GetVisGridBase() const {
-    return mVisGridBase;
-  }
-  float GetVisGridDiv() const {
-    return mVisGridDiv;
-  }
-  float GetVisGridSize() const {
-    return mVisGridSize;
-  }
 
   Grid2d();
 
   fvec2 Snap(fvec2 inp) const;
 
-  float GetZoom() const {
-    return mZoom;
-  }
-  float GetExtent() const {
-    return mExtent;
-  }
-  const fvec2& GetCenter() const {
-    return mCenter;
-  }
-
-  void SetZoom(float fz);
-  void SetExtent(float fz);
-  void SetCenter(const fvec2& ctr);
-
-  const fmtx4& GetOrthoMatrix() const {
-    return mMtxOrtho;
-  }
-
-  const fvec2& GetTopLeft() const {
-    return mTopLeft;
-  }
-  const fvec2& GetBotRight() const {
-    return mBotRight;
-  }
-
   void ReCalc(int iw, int ih);
 
-  fmtx4 mMtxOrtho;
-  float mVisGridBase;
-  float mVisGridDiv;
-  float mVisGridHiliteDiv;
-  // float				mGridDL;
-  // float				mGridDR;
-  // float				mGridDB;
-  // float				mGridDT;
-  float mZoom;
-  float mVisGridSize;
-  float mExtent;
-  fvec2 mCenter;
-  fvec2 mTopLeft;
-  fvec2 mBotRight;
+  bool _snapCenter;
+  fmtx4 _mtxOrtho;
+  float _visGridDiv;
+  float _visGridHiliteDiv;
+  float _zoomX;
+  float _zoomY;
+  float _visGridSize;
+  float _extent;
+  fvec2 _center;
+  fvec2 _topLeft;
+  fvec2 _botRight;
+  float _aspect;
+  float _zoomedExtentX;
+  float _zoomedExtentY;
+  bool _bipolar;
+  fvec3 _baseColor;
+  fvec3 _hiliteColor;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////

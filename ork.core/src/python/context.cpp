@@ -39,7 +39,7 @@ static struct termios stored_settings;
 int Py_NoSiteFlag;
 int Py_VerboseFlag;
 
-extern "C" char *PyOS_StdioReadline(FILE *sys_stdin, FILE *sys_stdout, char *prompt);
+extern "C" char *PyOS_StdioReadline(FILE *sys_stdin, FILE *sys_stdout, const char *prompt);
 extern "C" int PyRun_InteractiveOneFlags(FILE *fp, const char *filename, PyCompilerFlags *flags);
 extern "C" int(*_orkpy_redirect_interactiveloopflags)(FILE *fp, const char *filename, PyCompilerFlags *flags);
 char slave_out_name[256];
@@ -53,7 +53,8 @@ bool isPythonEnabled() {
 ///////////////////////////////////////////////////////////////////////////////
 char *orkpy_readline(FILE *sys_stdin, FILE *sys_stdout, char *prompt)
 {
-    //printf( "prompt<%s>\n", prompt );
+#if 0
+//printf( "prompt<%s>\n", prompt );
 	char* pdata = PyOS_StdioReadline( sys_stdin, sys_stdout, prompt );
     //printf( "prompt<%s> pdata<%s>\n", prompt, pdata );
     ork::fxstring<256> proc_line(pdata);
@@ -64,6 +65,9 @@ char *orkpy_readline(FILE *sys_stdin, FILE *sys_stdout, char *prompt)
 	pret[ilen]=0;
 	PyMem_FREE(pdata);
 	return pret;
+#else
+return nullptr;
+#endif
 }
 ///////////////////////////////////////////////////////////////////////////////
 void echo_off(int ifil)
