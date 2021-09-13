@@ -30,19 +30,24 @@ list( APPEND orksrcs ${src_math} ${src_object} ${src_reflect} )
 list( APPEND orksrcs ${src_rtti} ${src_stream} ${src_util} )
 list( APPEND orksrcs ${src_gfx} ${src_hdl} ${src_python} ${src_test} )
 
-add_compile_options(-mavx)
+###################################
+# ISPC files (intel specific)
+###################################
+
+IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
+
+    add_compile_options(-mavx)
+    gen_ispc_object_list( ${SRCD}/math/*.ispc
+                          ork_core.dir/src/math/
+                          ispc_math_object_list )
+
+    list( APPEND orksrcs ${ispc_math_object_list} )
+
+ENDIF()
 
 ###################################
 
-gen_ispc_object_list( ${SRCD}/math/*.ispc
-                      ork_core.dir/src/math/
-                      ispc_math_object_list )
-
-###################################
-
-add_library (ork_core SHARED ${orksrcs} ${ispc_math_object_list} )
-
-###################################
+add_library (ork_core SHARED ${orksrcs} )
 
 ork_std_target_opts(ork_core)
 target_link_libraries(ork_core LINK_PRIVATE ork_utpp )

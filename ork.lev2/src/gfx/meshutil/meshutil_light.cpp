@@ -71,8 +71,8 @@ bool PointLight::AffectsSphere(const fvec3& center, float radius) const {
   float combinedradii = (radius + mRadius);
 
   //	orkprintf( "PointLight::AffectsSphere point<%f %f %f> center<%f %f %f>\n",
-  //				mWorldPosition.GetX(), mWorldPosition.GetY(), mWorldPosition.GetZ(),
-  //				center.GetX(), center.GetY(), center.GetZ() );
+  //				mWorldPosition.x, mWorldPosition.y, mWorldPosition.z,
+  //				center.x, center.y, center.z );
 
   // float crsq = combinedradii; //(combinedradii*combinedradii);
   return (dist < combinedradii);

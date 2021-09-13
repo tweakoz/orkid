@@ -156,8 +156,8 @@ void Surface::SurfaceRender(lev2::RenderContextFrameData& FrameData, const std::
 	lev2::Context* pTARG = FrameData.GetTarget();
 	lev2::IRenderTarget* pIT = FrameData.GetRenderTarget();
 
-	int vpx = GetX();
-	int vpy = GetY();
+	int vpx = x;
+	int vpy = y;
 	int vpw = width();
 	int vph = height();
 

@@ -83,7 +83,7 @@ void MatrixStackInterface::OnVMatrixDirty(void) {
   mmMVMatrix           = RefMMatrix() * VMatrix;
   mmVPMatrix           = RefVMatrix() * RefPMatrix();
   //////////////////////////////////////////////////////
-  const float* pfmatrix    = VMatrix.GetArray();
+  const float* pfmatrix    = VMatrix.asArray();
   mVectorScreenRightNormal = fvec4(pfmatrix[0], pfmatrix[4], pfmatrix[8]);
   mVectorScreenUpNormal    = fvec4(pfmatrix[1], pfmatrix[5], pfmatrix[9]);
   //////////////////////////////////////////////////////
@@ -294,17 +294,17 @@ fmtx4 MatrixStackInterface::LookAt(const fvec3& eye, const fvec3& tgt, const fve
   fvec3 xaxis = (up.Cross(zaxis)).Normal();
   fvec3 yaxis = zaxis.Cross(xaxis);
 
-  rval.SetElemYX(0, 0, xaxis.GetX());
-  rval.SetElemYX(1, 0, yaxis.GetX());
-  rval.SetElemYX(2, 0, zaxis.GetX());
+  rval.SetElemYX(0, 0, xaxis.x);
+  rval.SetElemYX(1, 0, yaxis.x);
+  rval.SetElemYX(2, 0, zaxis.x);
 
-  rval.SetElemYX(0, 1, xaxis.GetY());
-  rval.SetElemYX(1, 1, yaxis.GetY());
-  rval.SetElemYX(2, 1, zaxis.GetY());
+  rval.SetElemYX(0, 1, xaxis.y);
+  rval.SetElemYX(1, 1, yaxis.y);
+  rval.SetElemYX(2, 1, zaxis.y);
 
-  rval.SetElemYX(0, 2, xaxis.GetZ());
-  rval.SetElemYX(1, 2, yaxis.GetZ());
-  rval.SetElemYX(2, 2, zaxis.GetZ());
+  rval.SetElemYX(0, 2, xaxis.z);
+  rval.SetElemYX(1, 2, yaxis.z);
+  rval.SetElemYX(2, 2, zaxis.z);
 
   rval.SetElemYX(0, 3, -xaxis.Dot(eye));
   rval.SetElemYX(1, 3, -yaxis.Dot(eye));

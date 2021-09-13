@@ -31,16 +31,16 @@ ork::Vector2<T>::Vector2(T _x, T _y)
 
 template <typename T>
 ork::Vector2<T>::Vector2(const Vector2<T>& vec)
-    : x(vec.GetX())
-    , y(vec.GetY()) {
+    : x(vec.x)
+    , y(vec.y) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
 ork::Vector2<T>::Vector2(const Vector3<T>& vec)
-    : x(vec.GetX())
-    , y(vec.GetY()) {
+    : x(vec.x)
+    , y(vec.y) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -89,11 +89,15 @@ template <typename T> T ork::Vector2<T>::MagSquared(void) const {
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-void ork::Vector2<T>::Serp(const Vector2<T>& PA, const Vector2<T>& PB, const Vector2<T>& PC, const Vector2<T>& PD, T Par) {
+void ork::Vector2<T>::serp(const Vector2<T>& PA, //
+                           const Vector2<T>& PB, //
+                           const Vector2<T>& PC, //
+                           const Vector2<T>& PD, //
+                           T par_x, T par_y) {
   Vector2<T> PAB, PCD;
-  PAB.Lerp(PA, PB, Par);
-  PCD.Lerp(PC, PD, Par);
-  Lerp(PAB, PCD, Par);
+  PAB.lerp(PA, PB, par_x);
+  PCD.lerp(PC, PD, par_x);
+  lerp(PAB, PCD, par_y);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -108,7 +112,7 @@ template <typename T> void ork::Vector2<T>::Rotate(T rad) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void ork::Vector2<T>::Lerp(const Vector2<T>& from, const Vector2<T>& to, T par) {
+template <typename T> void ork::Vector2<T>::lerp(const Vector2<T>& from, const Vector2<T>& to, T par) {
   if (par < T(0))
     par = T(0);
   if (par > T(1))

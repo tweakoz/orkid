@@ -275,18 +275,18 @@ static fvec4 GetGradientColor(float fin, const gradient_t& gmap) {
         float frange = itu->first - itl->first;
         float flerp  = (fin - itl->first) / frange;
 
-        rval.Lerp(itl->second, itu->second, flerp);
+        rval.lerp(itl->second, itu->second, flerp);
       }
     }
   }
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
-fvec4 GradientSet::Lerp(float fu, float fv) const {
+fvec4 GradientSet::lerp(float fu, float fv) const {
   fvec3 lo = GetGradientColor(fu, *mGradientLo);
   fvec3 hi = GetGradientColor(fu, *mGradientHi);
   fvec3 result;
-  result.Lerp(lo, hi, fv);
+  result.lerp(lo, hi, fv);
   return result;
 }
 ///////////////////////////////////////////////////////////////////////////////

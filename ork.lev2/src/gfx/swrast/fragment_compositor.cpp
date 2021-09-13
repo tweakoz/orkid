@@ -196,7 +196,7 @@ FragmentCompositorREYES::Composite(const ork::fvec3& clrcolor) { ///////////////
           ork::fvec4 shcol = plastvolumeshader->ShadeVolume(lpos, wpos);
           float falpha     = shcol.w;
           ork::fvec3 res;
-          res.Lerp(rgb, shcol.xyz(), falpha);
+          res.lerp(rgb, shcol.xyz(), falpha);
           rgb = res;
         }
       }
@@ -204,7 +204,7 @@ FragmentCompositorREYES::Composite(const ork::fvec3& clrcolor) { ///////////////
     ////////////////////////////////////
 
     ork::fvec3 res;
-    res.Lerp(rgb, fragrgba.xyz(), fragrgba.w);
+    res.lerp(rgb, fragrgba.xyz(), fragrgba.w);
     rgb = res;
   }
   //	OrkAssert(VolumeShaderStack.size()==1);
@@ -301,7 +301,7 @@ void rend_texture2D::Load(const std::string& pth) {
 					float fB = float(B)/255.0f;
 					float fA = float(A)/255.0f;
 
-					mpData[idstindex].Set( fR, fG, fB, fA );
+					mpData[idstindex].set( fR, fG, fB, fA );
 
 				}
 			}

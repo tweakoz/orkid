@@ -83,12 +83,12 @@ Path::Path()
 Path::Path(const PieceString& pathName)
     : _pathstring(pathName.c_str(), int(pathName.size()))
     , _markers() {
-  Set(_pathstring.c_str());
+  set(_pathstring.c_str());
 }
 Path::Path(const char* pathName)
     : _pathstring("")
     , _markers() {
-  Set(pathName);
+  set(pathName);
 }
 Path::Path(const std::string pathName)
     : Path(pathName.c_str()) {
@@ -96,17 +96,17 @@ Path::Path(const std::string pathName)
 Path::Path(const std::vector<std::string>& pathVect) {
   auto j = JoinString(pathVect, "/");
   j      = j.substr(0, j.size() - 1); // remove trailing /
-  Set(j.c_str());
+  set(j.c_str());
 }
 Path::Path(const ork::PoolString& pathName)
     : _pathstring("")
     , _markers() {
-  Set(pathName.c_str());
+  set(pathName.c_str());
 }
 Path::Path(const NameType& pathName)
     : _pathstring("")
     , _markers() {
-  Set(pathName.c_str());
+  set(pathName.c_str());
 }
 ///////////////////////////////////////////////////////////////////////////////
 Path::~Path() {
@@ -218,7 +218,7 @@ static bool PathPred(const char* src, const char* loc, size_t isrclen) {
   return true;
 }
 
-void Path::Set(const char* instr) {
+void Path::set(const char* instr) {
   NameType tmp, tmp2;
   tmp.set(instr);
   //////////////////////////////////////////////
@@ -967,7 +967,7 @@ void Path::Compose(
     str.append("?", 1);
     str.append(query.c_str(), iql);
   }
-  Set(str.c_str());
+  set(str.c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1068,7 +1068,7 @@ void Path::Compose(const DecomposedPath& decomposed) {
     str.append("?", 1);
     str.append(decomposed.mQuery.c_str(), iql);
   }
-  Set(str.c_str());
+  set(str.c_str());
 }
 
 void Path::DeCompose(DecomposedPath& decomposed) {
@@ -1201,21 +1201,21 @@ bool Path::IsSymLink() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 Path::Path(const boost::filesystem::path& p) {
-  this->Set(p.c_str());
+  this->set(p.c_str());
 }
 
 boost::filesystem::path Path::toBFS() const {
   return boost::filesystem::path(c_str());
 }
 void Path::fromBFS(const boost::filesystem::path& p) {
-  Set(p.c_str());
+  set(p.c_str());
 }
 Path Path::operator/(const Path& rhs) const {
   auto a = this->toBFS();
   auto b = rhs.toBFS();
   auto c = a / b;
   Path rval;
-  rval.Set(c.c_str());
+  rval.set(c.c_str());
   return rval;
 }
 

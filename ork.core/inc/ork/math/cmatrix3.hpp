@@ -213,7 +213,7 @@ template <typename T> void Matrix33<T>::RotateZ(T rad) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void Matrix33<T>::SetScale(const Vector4<T>& vec) {
-  SetScale(vec.GetX(), vec.GetY(), vec.GetZ());
+  SetScale(vec.x, vec.y, vec.z);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -261,15 +261,15 @@ template <typename T> void Matrix33<T>::Scale(T xscl, T yscl, T zscl) {
 
 // sm - rotation matrix from quaternion
 template <typename T> void Matrix33<T>::FromQuaternion(Quaternion<T> quat) {
-  T xx = quat.GetX() * quat.GetX();
-  T yy = quat.GetY() * quat.GetY();
-  T zz = quat.GetZ() * quat.GetZ();
-  T xy = quat.GetX() * quat.GetY();
-  T zw = quat.GetZ() * quat.width();
-  T zx = quat.GetZ() * quat.GetX();
-  T yw = quat.GetY() * quat.width();
-  T yz = quat.GetY() * quat.GetZ();
-  T xw = quat.GetX() * quat.width();
+  T xx = quat.x * quat.x;
+  T yy = quat.y * quat.y;
+  T zz = quat.z * quat.z;
+  T xy = quat.x * quat.y;
+  T zw = quat.z * quat.w;
+  T zx = quat.z * quat.x;
+  T yw = quat.y * quat.w;
+  T yz = quat.y * quat.z;
+  T xw = quat.x * quat.w;
 
   elements[0][0] = T(1.0f) - (T(2.0f) * (yy + zz));
   elements[0][1] = T(2.0f) * (xy + zw);
@@ -411,7 +411,7 @@ void Matrix33<T>::SetScale(const Matrix33<T>& from) // assumes rot is zero!
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-void Matrix33<T>::Lerp(const Matrix33<T>& from, const Matrix33<T>& to, T par) // par 0.0f .. 1.0f
+void Matrix33<T>::lerp(const Matrix33<T>& from, const Matrix33<T>& to, T par) // par 0.0f .. 1.0f
 {
   Matrix33<T> FromR, ToR, CORR, matR;
   Quaternion<T> FromQ, ToQ, Qidn, Qrot;
@@ -421,12 +421,12 @@ void Matrix33<T>::Lerp(const Matrix33<T>& from, const Matrix33<T>& to, T par) //
   FromR.SetRotation(from); // froms ROTATION
   ToR.SetRotation(to);     // froms ROTATION
 
-  FromQ.FromMatrix3(FromR);
-  ToQ.FromMatrix3(ToR);
+  FromQ.fromMatrix3(FromR);
+  ToQ.fromMatrix3(ToR);
 
   CORR.CorrectionMatrix(from, to); // CORR.Normalize();
 
-  Qrot.FromMatrix3(CORR);
+  Qrot.fromMatrix3(CORR);
 
   Quaternion<T> dQ = Qrot;
   dQ.Sub(Qidn);
@@ -438,7 +438,7 @@ void Matrix33<T>::Lerp(const Matrix33<T>& from, const Matrix33<T>& to, T par) //
 
   Quaternion<T> newQrot = dQ;
 
-  matR = newQrot.ToMatrix3();
+  matR = newQrot.toMatrix3();
 
   //////////////////
 
@@ -461,13 +461,13 @@ template <typename T> void Matrix33<T>::decompose(Quaternion<T>& qrot, T& Scale)
     }
   }
 
-  qrot.FromMatrix3(rot);
+  qrot.fromMatrix3(rot);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void Matrix33<T>::compose(const Quaternion<T>& qrot, const T& Scale) {
-  *this = qrot.ToMatrix3();
+  *this = qrot.toMatrix3();
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < 3; j++) {
       SetElemYX(i, j, GetElemYX(i, j) * Scale);
@@ -480,9 +480,9 @@ template <typename T> void Matrix33<T>::compose(const Quaternion<T>& qrot, const
 
 template <typename T> Vector3<T> Matrix33<T>::GetRow(int irow) const {
   Vector3<T> out;
-  out.SetX(GetElemXY(0, irow));
-  out.SetY(GetElemXY(1, irow));
-  out.SetZ(GetElemXY(2, irow));
+  out.setX(GetElemXY(0, irow));
+  out.setY(GetElemXY(1, irow));
+  out.setZ(GetElemXY(2, irow));
   return out;
 }
 
@@ -490,26 +490,26 @@ template <typename T> Vector3<T> Matrix33<T>::GetRow(int irow) const {
 
 template <typename T> Vector3<T> Matrix33<T>::GetColumn(int icol) const {
   Vector3<T> out;
-  out.SetX(GetElemXY(icol, 0));
-  out.SetY(GetElemXY(icol, 1));
-  out.SetZ(GetElemXY(icol, 2));
+  out.setX(GetElemXY(icol, 0));
+  out.setY(GetElemXY(icol, 1));
+  out.setZ(GetElemXY(icol, 2));
   return out;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void Matrix33<T>::SetRow(int irow, const Vector3<T>& v) {
-  SetElemXY(0, irow, v.GetX());
-  SetElemXY(1, irow, v.GetY());
-  SetElemXY(2, irow, v.GetZ());
+  SetElemXY(0, irow, v.x);
+  SetElemXY(1, irow, v.y);
+  SetElemXY(2, irow, v.z);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void Matrix33<T>::SetColumn(int icol, const Vector3<T>& v) {
-  SetElemXY(icol, 0, v.GetX());
-  SetElemXY(icol, 1, v.GetY());
-  SetElemXY(icol, 2, v.GetZ());
+  SetElemXY(icol, 0, v.x);
+  SetElemXY(icol, 1, v.y);
+  SetElemXY(icol, 2, v.z);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -640,7 +640,7 @@ inline void ::ork::reflect::ITyped<fmtx3>::serialize(serdes::node_ptr_t sernode)
   fmtx3 value;
   get(value, instance);
   for (int i = 0; i < 9; i++)
-    serializeArraySubLeaf(arynode, value.GetArray()[i], i);
+    serializeArraySubLeaf(arynode, value.asArray()[i], i);
   serializer->popNode(); // pop arraynode
 }
 template <> //
@@ -653,7 +653,7 @@ inline void ::ork::reflect::ITyped<fmtx3>::deserialize(serdes::node_ptr_t arynod
 
   fmtx3 value;
   for (int i = 0; i < 9; i++)
-    value.GetArray()[i] = deserializeArraySubLeaf<float>(arynode, i);
+    value.asArray()[i] = deserializeArraySubLeaf<float>(arynode, i);
 
   set(value, instance);
 }

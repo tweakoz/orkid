@@ -38,16 +38,16 @@ bool Ref::is_signed() const {
         v = _connected;
     ///////////////////////////////
 
-    if(auto as = v->TryAs<Input>()){
+    if(auto as = v->tryAs<Input>()){
         return as.value()._signed;
     }
-    else if(auto as = v->TryAs<Output>()){
+    else if(auto as = v->tryAs<Output>()){
         return as.value()._signed;
     }
-    else if(auto as = v->TryAs<Reg>()){
+    else if(auto as = v->tryAs<Reg>()){
         return as.value()._signed;
     }
-    else if(auto as = v->TryAs<Wire>()){
+    else if(auto as = v->tryAs<Wire>()){
         return as.value()._signed;
     }
     ///////////////////////////////
@@ -75,16 +75,16 @@ size_t Ref::bitwidth() const {
 
     ///////////////////////////////
 
-    if(auto as = v->TryAs<Input>()){
+    if(auto as = v->tryAs<Input>()){
         return as.value().bitwidth();
     }
-    else if(auto as = v->TryAs<Output>()){
+    else if(auto as = v->tryAs<Output>()){
         return as.value().bitwidth();
     }
-    else if(auto as = v->TryAs<Reg>()){
+    else if(auto as = v->tryAs<Reg>()){
         return as.value().bitwidth();
     }
-    else if(auto as = v->TryAs<Wire>()){
+    else if(auto as = v->tryAs<Wire>()){
         return as.value().bitwidth();
     }
     ///////////////////////////////
@@ -138,10 +138,10 @@ void Ref::next(int rhs){
 ///////////////////////////////////////////////////
 
 Ref& Ref::operator = (Rvalue rhs) {
-    if( auto as = rhs._payload.TryAs<Ref>() ){
+    if( auto as = rhs._payload.tryAs<Ref>() ){
         *this = as.value();
     }
-    if( auto as = rhs._payload.TryAs<expr_t>() ){
+    if( auto as = rhs._payload.tryAs<expr_t>() ){
         auto s = FrontEnd::segment();
         auto expr = s->createExpression(true);
         auto op = expr->MakeAstNode<CombAssignNode>(*this,as.value());

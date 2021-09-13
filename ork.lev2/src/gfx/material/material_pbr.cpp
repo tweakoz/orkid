@@ -54,6 +54,7 @@ PBRMaterial::PBRMaterial()
   _rasterstate.SetZWriteMask(true);
   _rasterstate.SetCullTest(ECULLTEST_OFF);
   miNumPasses = 1;
+  _shaderpath = "orkshader://pbr";
 }
 
 ////////////////////////////////////////////
@@ -173,7 +174,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   _initialTarget = targ;
   auto fxi       = targ->FXI();
-  _asset_shader  = ork::asset::AssetManager<FxShaderAsset>::load("orkshader://pbr");
+
+  _asset_shader  = ork::asset::AssetManager<FxShaderAsset>::load(_shaderpath);
   _shader        = _asset_shader->GetFxShader();
 
   _tekRigidPICKING           = fxi->technique(_shader, "picking_rigid");
@@ -189,6 +191,16 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _tekRigidGBUFFER_N_INSTANCED_STEREO = fxi->technique(_shader, "rigid_gbuffer_n_instanced_stereo");
 
   _tekSkinnedGBUFFER_N = fxi->technique(_shader, "skinned_gbuffer_n");
+
+  /*assert(_tekRigidPICKING);
+  assert(_tekRigidPICKING_INSTANCED);
+  assert(_tekRigidGBUFFER);
+  assert(_tekRigidGBUFFER_N);
+  assert(_tekRigidGBUFFER_N_STEREO);
+  assert(_tekRigidGBUFFER_N_TEX_STEREO);
+  assert(_tekRigidGBUFFER_N_SKINNED);
+  assert(_tekRigidGBUFFER_N_INSTANCED);
+  assert(_tekRigidGBUFFER_N_INSTANCED_STEREO);*/
 
   _paramMVP               = fxi->parameter(_shader, "mvp");
   _paramMVPL              = fxi->parameter(_shader, "mvp_l");

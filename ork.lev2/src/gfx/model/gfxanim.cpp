@@ -217,7 +217,7 @@ public:
       , mChannel(chan) {
   }
 
-  void Set() final {
+  void set() final {
     const XgmAnim& anim = *mAnimInst.GetAnim();
 
     /*float fx = 0.0f;
@@ -321,7 +321,7 @@ void XgmMaterialStateInst::ApplyAnimInst(const XgmAnimInst& AnimInst) {
     MaterialInstItem* psetter = it->second;
 
     if (psetter) {
-      psetter->Set();
+      psetter->set();
     }
   }
 }

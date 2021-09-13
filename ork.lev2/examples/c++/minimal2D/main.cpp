@@ -1,4 +1,3 @@
-#include <QWindow>
 #include <ork/kernel/string/deco.inl>
 #include <ork/lev2/ezapp.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
@@ -64,5 +63,5 @@ int main(int argc, char** argv) {
     return rval;
   });
   //////////////////////////////////////////////////////////
-  return qtapp->exec();
+  return qtapp->runloop();
 }

@@ -114,9 +114,9 @@ T* ContextTLS<T>::context()
     if(it==ptmap->end()) return nullptr;
 
     svar64_t& sv = it->second;
-    if( sv.IsA<std::stack<T*>>() )
+    if( sv.isA<std::stack<T*>>() )
     {
-    	auto& stk = sv.Get<std::stack<T*>>();
+    	auto& stk = sv.get<std::stack<T*>>();
     	rval = stk.empty() ? nullptr : stk.top();
     }
     return rval;
@@ -150,11 +150,11 @@ ContextTLS<T>::ContextTLS()
     if(it==ptmap->end())
     {
     	std::stack<T*> def;
-    	ptmap->operator[](&typeid(T)).Set<std::stack<T*>>(def);
+    	ptmap->operator[](&typeid(T)).set<std::stack<T*>>(def);
 	    it = ptmap->find(&typeid(T));
     }
     assert(it!=ptmap->end());
-    std::stack<T*>& stk = it->second.Get<std::stack<T*>>();
+    std::stack<T*>& stk = it->second.get<std::stack<T*>>();
     stk.push(static_cast<T*>(this));
 	////////////////////
 	#else
@@ -177,7 +177,7 @@ ContextTLS<T>::~ContextTLS()
     tmap_t* ptmap = get_thr_tmap();
     auto it = ptmap->find(&typeid(T));
     assert(it!=ptmap->end());
-    std::stack<T*>& stk = it->second.Get<std::stack<T*>>();
+    std::stack<T*>& stk = it->second.get<std::stack<T*>>();
 	stk.pop();
 	////////////////////
 	#else

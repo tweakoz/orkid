@@ -63,7 +63,7 @@ TEST(SerdesMathProperties) {
   CHECK_EQUAL(clone->_fquat.z, 13.0f);
   CHECK_EQUAL(clone->_fquat.w, 14.0f);
   //
-  const float* mtx3e = clone->_fmtx3.GetArray();
+  const float* mtx3e = clone->_fmtx3.asArray();
   CHECK_EQUAL(mtx3e[0], 1.0f);
   CHECK_EQUAL(mtx3e[1], 0.0f);
   CHECK_EQUAL(mtx3e[2], 0.0f);
@@ -74,7 +74,7 @@ TEST(SerdesMathProperties) {
   CHECK_EQUAL(mtx3e[7], -1.0f);
   CHECK_EQUAL(mtx3e[8], -4.371138828673793e-8f);
   //
-  const float* mtx4e = clone->_fmtx4.GetArray();
+  const float* mtx4e = clone->_fmtx4.asArray();
   CHECK_EQUAL(mtx4e[0], 1.0f);
   CHECK_EQUAL(mtx4e[1], 0.0f);
   CHECK_EQUAL(mtx4e[2], 0.0f);

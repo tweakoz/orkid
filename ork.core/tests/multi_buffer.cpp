@@ -60,7 +60,7 @@ template <typename queue_type> struct yo {
       mStage0Pushed++;
       extstring_t str;
       str.format("to<%d>", i);
-      pv->mVar.template Set(str);
+      pv->mVar.template set(str);
       // usleep(rand()%3);
       mQueue01.EndWrite(pv);
     }
@@ -74,7 +74,7 @@ template <typename queue_type> struct yo {
 
       if (pv01) {
         mStage1Pulled++;
-        auto str = pv01->mVar.template Get<extstring_t>();
+        auto str = pv01->mVar.template get<extstring_t>();
         mQueue01.EndRead(pv01);
         ////////////////////////////////////////
         // pass it on
@@ -82,7 +82,7 @@ template <typename queue_type> struct yo {
         auto pv12 = mQueue12.BeginWrite();
         OrkAssert(pv12);
         mStage1Pushed++;
-        pv12->mVar.template Set(str);
+        pv12->mVar.template set(str);
         mQueue12.EndWrite(pv12);
         ////////////////////////////////////////
       } else if (mStage1ExitPlease)
@@ -103,7 +103,7 @@ template <typename queue_type> struct yo {
 
       if (pv12) {
         mStage2Pulled++;
-        auto str = pv12->mVar.template Get<extstring_t>();
+        auto str = pv12->mVar.template get<extstring_t>();
         mQueue12.EndRead(pv12);
 
         if (tm2.SecsSinceStart() > 1.0f) {

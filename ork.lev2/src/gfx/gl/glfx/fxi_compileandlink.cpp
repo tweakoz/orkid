@@ -13,7 +13,7 @@
 
 constexpr bool _DEBUG_SHADER_COMPILE = false;
 
-namespace ork::lev2::orksl {
+namespace ork::lev2::glslfx {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Shader::dumpFinalText() const {
@@ -25,47 +25,10 @@ void Shader::dumpFinalText() const {
 
 bool Shader::Compile() {
   GL_NF_ERRORCHECK();
-
-  GLenum glshadertype = GL_ZERO;
-
-  switch(_shadertype){
-    case EShaderType::Vertex:
-      glshadertype = GL_VERTEX_SHADER;
-      break;
-    case EShaderType::Fragment:
-      glshadertype = GL_FRAGMENT_SHADER;
-      break;
-    case EShaderType::Geometry:
-      glshadertype = GL_GEOMETRY_SHADER;
-      break;
-    case EShaderType::TessCtrl:
-      glshadertype = GL_TESS_CONTROL_SHADER;
-      break;
-    case EShaderType::TessEval:
-      glshadertype = GL_TESS_EVALUATION_SHADER;
-      break;
-#if defined(ENABLE_COMPUTE_SHADERS)
-    case EShaderType::Compute:
-      glshadertype = GL_COMPUTE_SHADER;
-      break;
-#endif
-#if defined(ENABLE_NVMESH_SHADERS)
-    case EShaderType::NvTask:
-      glshadertype = GL_TASK_SHADER_NV;
-      break;
-    case EShaderType::NvMesh:
-      glshadertype = GL_MESH_SHADER_NV;
-      break;
-#endif
-    default:
-      OrkAssert(false);
-      break;
-  }
-
-  mShaderObjectId = glCreateShader(glshadertype);
+  mShaderObjectId = glCreateShader(mShaderType);
 
 #if defined(ENABLE_COMPUTE_SHADERS)
-  if (glshadertype == GL_COMPUTE_SHADER) {
+  if (mShaderType == GL_COMPUTE_SHADER) {
     printf("yo\n");
   }
 #endif
@@ -98,7 +61,7 @@ bool Shader::Compile() {
     glGetShaderInfoLog(mShaderObjectId, sizeof(infoLog), NULL, infoLog);
     dumpFinalText();
     printf("Effect<%s>\n", _rootcontainer->mEffectName.c_str());
-    printf("ShaderType<0x%x>\n", _shadertype);
+    printf("ShaderType<0x%x>\n", mShaderType);
     printf("Shader<%s> InfoLog<%s>\n", mName.c_str(), infoLog);
     printf("//////////////////////////////////\n");
 
@@ -113,28 +76,24 @@ bool Shader::Compile() {
   return true;
 }
 
-} //namespace ork::lev2::orksl {
-
-namespace ork::lev2::glslfx {
-
 ////////////////////////////////////////////////////////////////////////////////
 
-bool Interface::compilePipelineVTG(orksl::rootcontainer_ptr_t container) {
+bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
 
-  auto pass = const_cast<orksl::Pass*>(container->_activePass);
+  auto pass = const_cast<Pass*>(container->_activePass);
 
-  auto& pipeVTG = pass->_primpipe.Get<orksl::PrimPipelineVTG>();
+  auto& pipeVTG = pass->_primpipe.get<PrimPipelineVTG>();
 
-  orksl::Shader* pvtxshader = pipeVTG._vertexShader;
-  orksl::Shader* ptecshader = pipeVTG._tessCtrlShader;
-  orksl::Shader* pteeshader = pipeVTG._tessEvalShader;
-  orksl::Shader* pgeoshader = pipeVTG._geometryShader;
-  orksl::Shader* pfrgshader = pipeVTG._fragmentShader;
+  Shader* pvtxshader = pipeVTG._vertexShader;
+  Shader* ptecshader = pipeVTG._tessCtrlShader;
+  Shader* pteeshader = pipeVTG._tessEvalShader;
+  Shader* pgeoshader = pipeVTG._geometryShader;
+  Shader* pfrgshader = pipeVTG._fragmentShader;
 
   OrkAssert(pvtxshader != nullptr);
   OrkAssert(pfrgshader != nullptr);
 
-  auto l_compile = [&](orksl::Shader* psh) -> bool {
+  auto l_compile = [&](Shader* psh) -> bool {
     bool compile_ok = true;
     if (psh && psh->IsCompiled() == false)
       compile_ok = psh->Compile();
@@ -188,8 +147,8 @@ bool Interface::compilePipelineVTG(orksl::rootcontainer_ptr_t container) {
     // link
     //////////////
 
-    orksl::StreamInterface* vtx_iface = pvtxshader->_inputInterface;
-    orksl::StreamInterface* frg_iface = pfrgshader->_inputInterface;
+    StreamInterface* vtx_iface = pvtxshader->_inputInterface;
+    StreamInterface* frg_iface = pfrgshader->_inputInterface;
     if (_DEBUG_SHADER_COMPILE) {
       auto tek = pass->_technique;
       printf(
@@ -222,8 +181,8 @@ bool Interface::compilePipelineVTG(orksl::rootcontainer_ptr_t container) {
     // int(vtx_iface->mAttributes.size()) );
 
     for (const auto& itp : vtx_iface->_inputAttributes) {
-      orksl::Attribute* pattr = itp.second;
-      int iloc         = pattr->_location;
+      Attribute* pattr = itp.second;
+      int iloc         = pattr->mLocation;
       // printf( "	vtxattr<%s> loc<%d> dir<%s> sem<%s>\n",
       // pattr->mName.c_str(), iloc, pattr->mDirection.c_str(),
       // pattr->mSemantic.c_str() );
@@ -292,51 +251,17 @@ bool Interface::compilePipelineVTG(orksl::rootcontainer_ptr_t container) {
       GLchar nambuf[256];
       GLsizei namlen = 0;
       GLint atrsiz   = 0;
-      GLenum atr_apitype  = GL_ZERO;
+      GLenum atrtyp  = GL_ZERO;
       GL_ERRORCHECK();
-      glGetActiveAttrib(prgo, i, sizeof(nambuf), &namlen, &atrsiz, &atr_apitype, nambuf);
+      glGetActiveAttrib(prgo, i, sizeof(nambuf), &namlen, &atrsiz, &atrtyp, nambuf);
       OrkAssert(namlen < sizeof(nambuf));
       GL_ERRORCHECK();
       auto it = vtx_iface->_inputAttributes.find(nambuf);
       if (it != vtx_iface->_inputAttributes.end()) {
-        orksl::Attribute* pattr = it->second;
+        Attribute* pattr = it->second;
         // printf( "qattr<%d> loc<%d> name<%s>\n", i, pattr->mLocation, nambuf
         // );
-        pattr->_apitype.Set<GLenum>(atr_apitype);
-        switch(atr_apitype){
-          case GL_FLOAT:
-            pattr->_type = orksl::EAttributeType::Float;
-            break;
-          case GL_FLOAT_VEC2:
-            pattr->_type = orksl::EAttributeType::Vec2f;
-            break;
-          case GL_FLOAT_VEC3:
-            pattr->_type = orksl::EAttributeType::Vec3f;
-            break;
-          case GL_FLOAT_VEC4:
-            pattr->_type = orksl::EAttributeType::Vec4f;
-            break;
-          case GL_INT_VEC2:
-            pattr->_type = orksl::EAttributeType::Vec2i;
-            break;
-          case GL_INT_VEC3:
-            pattr->_type = orksl::EAttributeType::Vec3i;
-            break;
-          case GL_INT_VEC4:
-            pattr->_type = orksl::EAttributeType::Vec4i;
-            break;
-          case GL_UNSIGNED_INT_VEC2:
-            pattr->_type = orksl::EAttributeType::Vec2u;
-            break;
-          case GL_UNSIGNED_INT_VEC3:
-            pattr->_type = orksl::EAttributeType::Vec3u;
-            break;
-          case GL_UNSIGNED_INT_VEC4:
-            pattr->_type = orksl::EAttributeType::Vec4u;
-            break;
-          default:
-            OrkAssert(false);
-        }
+        pattr->meType = atrtyp;
         // pattr->mLocation = i;
       } else {
         // check for builtin attr
@@ -357,15 +282,15 @@ bool Interface::compilePipelineVTG(orksl::rootcontainer_ptr_t container) {
 ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(ENABLE_NVMESH_SHADERS)
-bool Interface::compilePipelineNVTM(orksl::rootcontainer_ptr_t container) {
-  auto pass           = const_cast<orksl::Pass*>(container->_activePass);
-  auto& pipeNVTM      = pass->_primpipe.Get<orksl::PrimPipelineNVTM>();
-  orksl::Shader* ptaskshader = pipeNVTM._nvTaskShader;
-  orksl::Shader* pmeshhader  = pipeNVTM._nvMeshShader;
-  orksl::Shader* pfragshader = pipeNVTM._fragmentShader;
+bool Interface::compilePipelineNVTM(rootcontainer_ptr_t container) {
+  auto pass           = const_cast<Pass*>(container->_activePass);
+  auto& pipeNVTM      = pass->_primpipe.get<PrimPipelineNVTM>();
+  Shader* ptaskshader = pipeNVTM._nvTaskShader;
+  Shader* pmeshhader  = pipeNVTM._nvMeshShader;
+  Shader* pfragshader = pipeNVTM._fragmentShader;
   OrkAssert(pmeshhader != nullptr);
   OrkAssert(pfragshader != nullptr);
-  auto l_compile = [&](orksl::Shader* psh) -> bool {
+  auto l_compile = [&](Shader* psh) -> bool {
     bool compile_ok = true;
     if (psh && psh->IsCompiled() == false)
       compile_ok = psh->Compile();
@@ -422,13 +347,13 @@ bool Interface::compilePipelineNVTM(orksl::rootcontainer_ptr_t container) {
 #endif
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Interface::compileAndLink(orksl::rootcontainer_ptr_t container) {
+bool Interface::compileAndLink(rootcontainer_ptr_t container) {
   bool OK   = false;
-  auto pass = const_cast<orksl::Pass*>(container->_activePass);
-  if (pass->_primpipe.IsA<orksl::PrimPipelineVTG>())
+  auto pass = const_cast<Pass*>(container->_activePass);
+  if (pass->_primpipe.isA<PrimPipelineVTG>())
     OK = compilePipelineVTG(container);
 #if defined(ENABLE_NVMESH_SHADERS)
-  else if (pass->_primpipe.IsA<orksl::PrimPipelineNVTM>())
+  else if (pass->_primpipe.isA<PrimPipelineNVTM>())
     OK = compilePipelineNVTM(container);
 #endif
   return OK;

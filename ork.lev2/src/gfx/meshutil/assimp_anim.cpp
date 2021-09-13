@@ -142,8 +142,8 @@ bool ASS_XGA_Filter_ConvertAsset(const tokenlist& toklist) {
       auto bindmatrix = skelnode->bindMatrix();
       auto invbindmtx = skelnode->_bindMatrixInverse;
 
-      auto& skelnode_framevect_n = skelnode->_varmap["framevect_n"].Make<framevect_t>();
-      skelnode->_varmap["framevect_j"].Make<framevect_t>();
+      auto& skelnode_framevect_n = skelnode->_varmap["framevect_n"].make<framevect_t>();
+      skelnode->_varmap["framevect_j"].make<framevect_t>();
 
       auto it = channel_remap.find(channel_name);
       if (it != channel_remap.end()) {
@@ -162,7 +162,7 @@ bool ASS_XGA_Filter_ConvertAsset(const tokenlist& toklist) {
       auto XgmChan                 = new ork::lev2::XgmDecompAnimChannel(objnameps, ChannelPooledName, JointPS);
       XgmChan->ReserveFrames(framecount);
       xgmanim.AddChannel(ChannelPooledName, XgmChan);
-      skelnode->_varmap["xgmchan"].Make<lev2::XgmDecompAnimChannel*>(XgmChan);
+      skelnode->_varmap["xgmchan"].make<lev2::XgmDecompAnimChannel*>(XgmChan);
 
       /////////////////////////////
       // we assume pre-sampled frames here
@@ -240,7 +240,7 @@ bool ASS_XGA_Filter_ConvertAsset(const tokenlist& toklist) {
             std::string channel_name   = remapSkelName(channel->mNodeName.data);
             auto its                   = skelnodes.find(channel_name);
             auto skelnode              = its->second;
-            auto& skelnode_framevect_j = skelnode->_varmap["framevect_n"].Get<framevect_t>();
+            auto& skelnode_framevect_j = skelnode->_varmap["framevect_n"].get<framevect_t>();
             fmtx4 joint_JSPACE         = skelnode_framevect_j[f];
             skelnode->_nodeMatrix      = joint_JSPACE;
           }
@@ -249,7 +249,7 @@ bool ASS_XGA_Filter_ConvertAsset(const tokenlist& toklist) {
           std::string channel_name = remapSkelName(channel->mNodeName.data);
           auto its                 = skelnodes.find(channel_name);
           auto skelnode            = its->second;
-          auto XgmChan             = skelnode->_varmap["xgmchan"].Get<lev2::XgmDecompAnimChannel*>();
+          auto XgmChan             = skelnode->_varmap["xgmchan"].get<lev2::XgmDecompAnimChannel*>();
           fmtx4 OSPACE             = skelnode->concatenatednode();
           deco::printf(color, "fr<%d> ", f);
           deco::printf(yel, "%s (O): ", channel_name.c_str());
@@ -272,7 +272,7 @@ bool ASS_XGA_Filter_ConvertAsset(const tokenlist& toklist) {
             std::string channel_name   = remapSkelName(channel->mNodeName.data);
             auto its                   = skelnodes.find(channel_name);
             auto skelnode              = its->second;
-            auto& skelnode_framevect_n = skelnode->_varmap["framevect_n"].Get<framevect_t>();
+            auto& skelnode_framevect_n = skelnode->_varmap["framevect_n"].get<framevect_t>();
             fmtx4 joint_NSPACE         = skelnode_framevect_n[f];
             skelnode->_jointMatrix     = joint_NSPACE;
           }
@@ -281,7 +281,7 @@ bool ASS_XGA_Filter_ConvertAsset(const tokenlist& toklist) {
           std::string channel_name = remapSkelName(channel->mNodeName.data);
           auto its                 = skelnodes.find(channel_name);
           auto skelnode            = its->second;
-          auto XgmChan             = skelnode->_varmap["xgmchan"].Get<lev2::XgmDecompAnimChannel*>();
+          auto XgmChan             = skelnode->_varmap["xgmchan"].get<lev2::XgmDecompAnimChannel*>();
           fmtx4 OSPACE             = skelnode->concatenated2();
           auto par                 = skelnode->_parent;
           fmtx4 POSPACE            = par ? skelnode->_parent->concatenated2() : fmtx4();
@@ -290,7 +290,7 @@ bool ASS_XGA_Filter_ConvertAsset(const tokenlist& toklist) {
           deco::printf(yel, "%s (J): ", channel_name.c_str());
           deco::prints(JSPACE.dump4x3cn(), true);
 
-          skelnode->_varmap["framevect_j"].Get<framevect_t>().push_back(JSPACE);
+          skelnode->_varmap["framevect_j"].get<framevect_t>().push_back(JSPACE);
 
           ork::lev2::DecompMtx44 decomp;
           JSPACE.decompose(decomp.mTrans, decomp.mRot, decomp.mScale);
@@ -313,7 +313,7 @@ bool ASS_XGA_Filter_ConvertAsset(const tokenlist& toklist) {
             std::string channel_name   = remapSkelName(channel->mNodeName.data);
             auto its                   = skelnodes.find(channel_name);
             auto skelnode              = its->second;
-            auto& skelnode_framevect_j = skelnode->_varmap["framevect_j"].Get<framevect_t>();
+            auto& skelnode_framevect_j = skelnode->_varmap["framevect_j"].get<framevect_t>();
             fmtx4 joint_JSPACE         = skelnode_framevect_j[f];
             skelnode->_jointMatrix     = joint_JSPACE;
           }

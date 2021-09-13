@@ -490,7 +490,7 @@ inline int RenderData::CalcAAPixelAddress( int ix, int iy ) const
 struct ClipVert
 {	ork::fvec3 pos;
 	void Lerp( const ClipVert& va, const ClipVert& vb, float flerp )
-	{	pos.Lerp( va.pos, vb.pos, flerp );
+	{	pos.lerp( va.pos, vb.pos, flerp );
 	}
 	const ork::fvec3& Pos() const { return pos; }
 	ClipVert(const ork::fvec3&tp) : pos(tp) {}

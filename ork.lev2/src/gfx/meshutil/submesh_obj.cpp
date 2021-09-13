@@ -111,7 +111,7 @@ void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath) {
     // Tf 1.00 1.00 1.00
     // Ni 1.00
     mtloutstr += CreateFormattedString("newmtl %s\n", mayamatname.c_str());
-    mtloutstr += CreateFormattedString("Kd %f %f %f\n", material.mColor.GetX(), material.mColor.GetY(), material.mColor.GetZ());
+    mtloutstr += CreateFormattedString("Kd %f %f %f\n", material.mColor.x, material.mColor.y, material.mColor.z);
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -121,7 +121,7 @@ void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath) {
   int inumobjv = ObjVertexPool.size();
 
   for (int i = 0; i < inumobjv; i++) {
-    outstr += CreateFormattedString("v %f %f %f\n", ObjVertexPool[i].GetX(), ObjVertexPool[i].GetY(), ObjVertexPool[i].GetZ());
+    outstr += CreateFormattedString("v %f %f %f\n", ObjVertexPool[i].x, ObjVertexPool[i].y, ObjVertexPool[i].z);
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -131,7 +131,7 @@ void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath) {
   int inumobju = ObjUv0Pool.size();
 
   for (int i = 0; i < inumobju; i++) {
-    outstr += CreateFormattedString("vt %f %f\n", ObjUv0Pool[i].GetX(), ObjUv0Pool[i].GetY());
+    outstr += CreateFormattedString("vt %f %f\n", ObjUv0Pool[i].x, ObjUv0Pool[i].y);
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -141,7 +141,7 @@ void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath) {
   int inumobjn = ObjNormalPool.size();
 
   for (int i = 0; i < inumobjn; i++) {
-    outstr += CreateFormattedString("vn %f %f %f\n", ObjNormalPool[i].GetX(), ObjNormalPool[i].GetY(), ObjNormalPool[i].GetZ());
+    outstr += CreateFormattedString("vn %f %f %f\n", ObjNormalPool[i].x, ObjNormalPool[i].y, ObjNormalPool[i].z);
   }
 
   //////////////////////////////////////////////////////////////////////////////

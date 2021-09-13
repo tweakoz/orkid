@@ -102,7 +102,7 @@ void TransformNode::UnParent(void) {
     MatR.SetTranslation(0.0f, 0.0f, 0.0f);
 
     fquat NewQ;
-    NewQ.FromMatrix(MatR);
+    NewQ.fromMatrix(MatR);
     GetTransform().SetRotation(NewQ);
   }
 }
@@ -173,7 +173,7 @@ template <> void PropType<TransformNode>::ToString(const TransformNode& node, Pr
   const fvec3 pos   = xf.GetPosition();
   const fquat quat  = xf.GetRotation();
   const float scale = xf.GetScale();
-  tstr.format("(%g %g %g) (%g %g %g %g) (%g)", pos.x, pos.y, pos.z, quat.x, quat.GetY(), quat.GetZ(), quat.width(), scale);
+  tstr.format("(%g %g %g) (%g %g %g %g) (%g)", pos.x, pos.y, pos.z, quat.x, quat.y, quat.z, quat.w, scale);
 }
 
 template <> TransformNode PropType<TransformNode>::FromString(const PropTypeString& tstr) {

@@ -3,7 +3,6 @@
 import sys
 import os, argparse
 import ork.host
-import ork.env
 import ork.dep
 from ork.path import Path
 from ork.command import Command, run
@@ -41,10 +40,10 @@ prj_root = Path(os.environ["ORKID_WORKSPACE_DIR"])
 ork_root = prj_root
 ok = True
 
-PYTHON = ork.dep.instance("python")
-#print(PYTHON)
-ork.env.set("PYTHONHOME",PYTHON.home_dir)
 
+PYTHON = ork.dep.instance("python")
+print(PYTHON)
+ork.env.set("PYTHONHOME",PYTHON.home_dir)
 
 ######################################################################
 # ez install
@@ -69,11 +68,6 @@ if _args["ez"]!=False:
     # boostrap pkgconfig/python
     ##########################################
     docmd(init_env+ch_ork_root+["--command","obt.dep.build.py python"]) # bootstrap python
-
-    ##########################################
-    # boostrap pkgconfig/qt
-    ##########################################
-    docmd(init_env+ch_ork_root+["--command","obt.dep.build.py qt5"]) # bootstrap qt
 
     ##########################################
     # start ork build
@@ -109,11 +103,9 @@ if _args["ez"]!=False:
 
 python = ork.dep.require("python")
 pybind11 = ork.dep.require("pybind11")
-#qt5forpython = ork.dep.require("qt5forpython")
-#pyqt5 = ork.dep.require("pyqt5")
 
 ork.dep.require(["bullet","openexr","oiio","assimp",
-                 "lua","glfw","ispctexc",
+                 "nvtt","lua","glfw","ispctexc",
                  "lexertl14","parsertl14",
                  "easyprof","eigen","embree","igl"])
 
@@ -151,9 +143,6 @@ if profiler:
 else:
   cmd += ["-DPROFILER=OFF"]
 
-if ork.host.IsOsx:
-  cmd += ["-DCMAKE_OSX_SYSROOT=%s"%str(ork.path.osx_sdkdir())]
-
 ###################################################
 # inject relevant state from deppers into cmake
 ###################################################
@@ -161,26 +150,15 @@ if ork.host.IsOsx:
 cmd += ["-DPYTHON_HEADER_PATH=%s"%python.include_dir]
 cmd += ["-DPYTHON_LIBRARY_PATH=%s"%python.library_file]
 
-#cmd += ["-DSHIBOKEN_HEADER_PATH=%s"%qt5forpython.include_dir]
-#cmd += ["-DSHIBOKEN_LIBRARY_FILE=%s"%qt5forpython.library_file]
-
-#cmd += ["-DPYSIDE_HEADER_PATH=%s"%qt5forpython.pyside_include_dir]
-#cmd += ["-DPYSIDE_LIBRARY_PATH=%s"%qt5forpython.pyside_library_dir]
-#cmd += ["-DPYSIDE_LIBRARY_FILE=%s"%qt5forpython.pyside_library]
-#cmd += ["-DPYSIDE_QTGUI_LIB=%s"%qt5forpython.pyside_qtlibrary("QtGui")]
-
 clangdep = ork.dep.instance("clang")
-
 
 cmd += ["-DCMAKE_CXX_COMPILER=%s"%clangdep.bin_clangpp]
 cmd += ["-DCMAKE_CC_COMPILER=%s"%clangdep.bin_clang]
 
-###################################################
-# inject generated shiboken binding path into cmake
-###################################################
-
-#cmd += ["-DSHIBOKEN_BINDINGS_PATH=%s"%(build_dest/"shiboken-bindings")]
-cmd += ["-DPYQT5_BINDINGS_DIR=%s"%(build_dest/"sip-bindings")]
+if ork.host.IsAARCH64:
+  cmd += ["-DARCHITECTURE=AARCH64"]
+else:
+  cmd += ["-DARCHITECTURE=x86_64"]
 
 ###################################################
 if _args["trace"]==True:

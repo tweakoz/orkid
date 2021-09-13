@@ -54,44 +54,31 @@ public:
   void PerspectiveDivide(void);
   Vector4 perspectiveDivided(void) const;
 
-  void Lerp(const Vector4& from, const Vector4& to, T par);
-  void Serp(const Vector4& PA, const Vector4& PB, const Vector4& PC, const Vector4& PD, T Par);
+  void lerp(const Vector4& from, const Vector4& to, T par);
+  void serp(const Vector4& PA, const Vector4& PB, const Vector4& PC, const Vector4& PD, T par_x, T par_y);
 
-  T GetX(void) const {
-    return (x);
-  }
-  T GetY(void) const {
-    return (y);
-  }
-  T GetZ(void) const {
-    return (z);
-  }
-  T GetW(void) const {
-    return (w);
-  }
-
-  void Set(T _x, T _y, T _z, T _w) {
+  void set(T _x, T _y, T _z, T _w) {
     x = _x;
     y = _y;
     z = _z;
     w = _w;
   }
-  void Set(T _x, T _y, T _z) {
+  void set(T _x, T _y, T _z) {
     x = _x;
     y = _y;
     z = _z;
     w = (T)1.0f;
   }
-  void SetX(T _x) {
+  void setX(T _x) {
     x = _x;
   }
-  void SetY(T _y) {
+  void setY(T _y) {
     y = _y;
   }
-  void SetZ(T _z) {
+  void setZ(T _z) {
     z = _z;
   }
-  void SetW(T _w) {
+  void setW(T _w) {
     w = _w;
   }
 
@@ -117,12 +104,12 @@ public:
   static Vector4 Zero(void) {
     return Vector4(T(0), T(0), T(0), T(0));
   }
-  static T CalcTriArea(const Vector4& V0, const Vector4& V1, const Vector4& V2, const Vector4& N);
+  static T calcTriangularArea(const Vector4& V0, const Vector4& V1, const Vector4& V2, const Vector4& N);
 
   void SetXYZ(T _x, T _y, T _z) {
-    SetX(_x);
-    SetY(_y);
-    SetZ(_z);
+    setX(_x);
+    setY(_y);
+    setZ(_z);
   }
 
   inline T& operator[](U32 i) {
@@ -246,23 +233,12 @@ public:
   static const Vector4& Cyan(void);
   static const Vector4& Yellow(void);
 
-  T* GetArray(void) const {
+  T* asArray(void) const {
     return const_cast<T*>(&x);
   }
 
-  template <typename U> static Vector4 FromVector4(Vector4<U> vec) {
-    return Vector4(
-        T::FromFX(vec.GetX().FXCast()),
-        T::FromFX(vec.GetY().FXCast()),
-        T::FromFX(vec.GetZ().FXCast()),
-        T::FromFX(vec.width().FXCast()));
-  }
-
 public:
-  T x; // x component of this vector
-  T y; // y component of this vector
-  T z; // z component of this vector
-  T w;
+  T x, y, z, w; 
 };
 
 using fvec4       = Vector4<float>;
@@ -281,7 +257,7 @@ struct use_custom_serdes<fvec4> { //
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> inline ork::Vector4<T> operator*(T scalar, const ork::Vector4<T>& b) {
-  return ork::Vector4<T>((scalar * b.GetX()), (scalar * b.GetY()), (scalar * b.GetZ()));
+  return ork::Vector4<T>((scalar * b.x), (scalar * b.y), (scalar * b.z));
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -324,23 +324,23 @@ void TransformAndClipModule::do_process( const ork::threadpool::sub_task* tsk, c
 
 			ork::fvec3 dX = d0.Cross(d1);
 
-			bool bFRONTFACE = (dX.GetZ()<=0.0f);
+			bool bFRONTFACE = (dX.z<=0.0f);
 
 			if( false == bFRONTFACE ) continue;
 
 			int inuminside = 0;
 
-			inuminside += (		((hd0.GetX()>=-1.0f) || (hd0.GetX()<=1.0f))
-				&&	((hd0.GetY()>=-1.0f) || (hd0.GetY()<=1.0f))
-				&&	((hd0.GetZ()>=-1.0f) || (hd0.GetZ()<=1.0f)) );
+			inuminside += (		((hd0.x>=-1.0f) || (hd0.x<=1.0f))
+				&&	((hd0.y>=-1.0f) || (hd0.y<=1.0f))
+				&&	((hd0.z>=-1.0f) || (hd0.z<=1.0f)) );
 
-			inuminside += (		((hd1.GetX()>=-1.0f) || (hd1.GetX()<=1.0f))
-				&&	((hd1.GetY()>=-1.0f) || (hd1.GetY()<=1.0f))
-				&&	((hd1.GetZ()>=-1.0f) || (hd1.GetZ()<=1.0f)) );
+			inuminside += (		((hd1.x>=-1.0f) || (hd1.x<=1.0f))
+				&&	((hd1.y>=-1.0f) || (hd1.y<=1.0f))
+				&&	((hd1.z>=-1.0f) || (hd1.z<=1.0f)) );
 
-			inuminside += (		((hd2.GetX()>=-1.0f) || (hd2.GetX()<=1.0f))
-				&&	((hd2.GetY()>=-1.0f) || (hd2.GetY()<=1.0f))
-				&&	((hd2.GetZ()>=-1.0f) || (hd2.GetZ()<=1.0f)) );
+			inuminside += (		((hd2.x>=-1.0f) || (hd2.x<=1.0f))
+				&&	((hd2.y>=-1.0f) || (hd2.y<=1.0f))
+				&&	((hd2.z>=-1.0f) || (hd2.z<=1.0f)) );
 
 			if( 0 == inuminside )
 			{
@@ -349,15 +349,15 @@ void TransformAndClipModule::do_process( const ork::threadpool::sub_task* tsk, c
 
 			//////////////////////////////////////
 
-			float fX0 = (0.5f+hd0.GetX()*0.5f)*fiW;
-			float fY0 = (0.5f+hd0.GetY()*0.5f)*fiH;
-			float fX1 = (0.5f+hd1.GetX()*0.5f)*fiW;
-			float fY1 = (0.5f+hd1.GetY()*0.5f)*fiH;
-			float fX2 = (0.5f+hd2.GetX()*0.5f)*fiW;
-			float fY2 = (0.5f+hd2.GetY()*0.5f)*fiH;
-			float fZ0 = hd0.GetZ();
-			float fZ1 = hd1.GetZ();
-			float fZ2 = hd2.GetZ();
+			float fX0 = (0.5f+hd0.x*0.5f)*fiW;
+			float fY0 = (0.5f+hd0.y*0.5f)*fiH;
+			float fX1 = (0.5f+hd1.x*0.5f)*fiW;
+			float fY1 = (0.5f+hd1.y*0.5f)*fiH;
+			float fX2 = (0.5f+hd2.x*0.5f)*fiW;
+			float fY2 = (0.5f+hd2.y*0.5f)*fiH;
+			float fZ0 = hd0.z;
+			float fZ1 = hd1.z;
+			float fZ2 = hd2.z;
 			float fiZ0 = 1.0f/fZ0;
 			float fiZ1 = 1.0f/fZ1;
 			float fiZ2 = 1.0f/fZ2;
@@ -379,9 +379,9 @@ void TransformAndClipModule::do_process( const ork::threadpool::sub_task* tsk, c
 			v0.mSY = fY0;
 			v0.mfDepth = fZ0;
 			v0.mfInvDepth = fiZ0;
-			v0.mRoZ = fiZ0; //TriV0.uv.GetX()*v0.mfInvDepth;
-			v0.mSoZ = 0.0f; //TriV0.uv.GetX()*v0.mfInvDepth;
-			v0.mToZ = 0.0f; //TriV0.uv.GetY()*v0.mfInvDepth;
+			v0.mRoZ = fiZ0; //TriV0.uv.x*v0.mfInvDepth;
+			v0.mSoZ = 0.0f; //TriV0.uv.x*v0.mfInvDepth;
+			v0.mToZ = 0.0f; //TriV0.uv.y*v0.mfInvDepth;
 			v0.mWldSpacePos = w0;
 			v0.mObjSpacePos = o0;
 			v0.mObjSpaceNrm = on0;
@@ -390,9 +390,9 @@ void TransformAndClipModule::do_process( const ork::threadpool::sub_task* tsk, c
 			v1.mSY = fY1;
 			v1.mfDepth = fZ1;
 			v1.mfInvDepth = fiZ1;
-			v1.mRoZ = 0.0f; //TriV0.uv.GetX()*v0.mfInvDepth;
-			v1.mSoZ = fiZ1; //TriV1.uv.GetX()*v1.mfInvDepth;
-			v1.mToZ = 0.0f; //TriV1.uv.GetY()*v1.mfInvDepth;
+			v1.mRoZ = 0.0f; //TriV0.uv.x*v0.mfInvDepth;
+			v1.mSoZ = fiZ1; //TriV1.uv.x*v1.mfInvDepth;
+			v1.mToZ = 0.0f; //TriV1.uv.y*v1.mfInvDepth;
 			v1.mWldSpacePos = w1;
 			v1.mObjSpacePos = o1;
 			v1.mObjSpaceNrm = on1;
@@ -401,9 +401,9 @@ void TransformAndClipModule::do_process( const ork::threadpool::sub_task* tsk, c
 			v2.mSY = fY2;
 			v2.mfDepth = fZ2;
 			v2.mfInvDepth = fiZ2;
-			v2.mRoZ = 0.0f; //TriV0.uv.GetX()*v0.mfInvDepth;
-			v2.mSoZ = 0.0f; //TriV2.uv.GetX()*v2.mfInvDepth;
-			v2.mToZ = fiZ2; //TriV2.uv.GetY()*v2.mfInvDepth;
+			v2.mRoZ = 0.0f; //TriV0.uv.x*v0.mfInvDepth;
+			v2.mSoZ = 0.0f; //TriV2.uv.x*v2.mfInvDepth;
+			v2.mToZ = fiZ2; //TriV2.uv.y*v2.mfInvDepth;
 			v2.mWldSpacePos = w2;
 			v2.mObjSpacePos = o2;
 			v2.mObjSpaceNrm = on2;

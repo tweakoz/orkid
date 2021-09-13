@@ -51,7 +51,7 @@ serdes::node_ptr_t serializeArraySubLeaf(
   elemnode->_parent       = arynode;
   elemnode->_ser_instance = instance;
   elemnode->_serializer   = serializer;
-  elemnode->_value.template Set<T>(inp);
+  elemnode->_value.template set<T>(inp);
   serializer->serializeContainerElement(elemnode);
   serializer->popNode(); // pop elemnode
   return elemnode;
@@ -66,7 +66,7 @@ serdes::node_ptr_t serializeMapSubLeaf(
   auto instance   = mapnode->_ser_instance;
   auto elemnode   = serializer->pushNode(key, serdes::NodeType::MAP_ELEMENT_LEAF);
   elemnode->_key  = key;
-  elemnode->_value.template Set<T>(inp);
+  elemnode->_value.template set<T>(inp);
   elemnode->_index        = 0;
   elemnode->_parent       = mapnode;
   elemnode->_ser_instance = instance;

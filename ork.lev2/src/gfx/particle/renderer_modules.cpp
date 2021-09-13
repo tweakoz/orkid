@@ -458,7 +458,7 @@ void SpriteRenderer::Render(
           {
             fvec4 proj = ptcl->mPosition.Transform(MVP);
             proj.PerspectiveDivide();
-            float fv = proj.GetZ();
+            float fv = proj.z;
             SortedParticles.AddSorted(fv, ptcl);
           }
         }
@@ -691,7 +691,7 @@ void StreakRenderer::describeX(class_t* clazz) {
             {
               fvec4 proj = ptcl->mPosition.Transform(MVP);
               proj.PerspectiveDivide();
-              float fv = proj.GetZ();
+              float fv = proj.z;
               SortedParticles.AddSorted(fv, ptcl);
             }
           }
@@ -846,7 +846,7 @@ void StreakRenderer::describeX(class_t* clazz) {
 
       fquat qrot;
       fvec4 axisang = mBaseRotAxisAngle;
-      axisang.SetW(3.1415926 * axisang.w / 90.0f);
+      axisang.setW(3.1415926 * axisang.w / 90.0f);
       qrot.fromAxisAngle(axisang);
       rmtx.FromQuaternion(qrot);
 

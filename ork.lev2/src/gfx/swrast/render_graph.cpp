@@ -141,7 +141,7 @@ void RenderData::Update()
 	//mMatrixP.Perspective( 25.0f, faspect, 1500.0f, 10000.0f );
 	mMatrixP.Perspective( 25.0f, faspect, 1500.0f, 10000.0f );
 //	mMatrixP.Perspective( 25.0f, faspect, 0.1f, 10.0f );
-	mFrustum.Set( mMatrixV, mMatrixP );
+	mFrustum.set( mMatrixV, mMatrixP );
 
 	float fi = float(miFrame)/1800.0f;
 
@@ -177,8 +177,8 @@ void RenderData::Update()
 
 		ork::fvec3 topn;
 		ork::fvec3 botn;
-		topn.Lerp( root_topn, -root_botn, fity );
-		botn.Lerp( -root_topn, root_botn, fiby );
+		topn.lerp( root_topn, -root_botn, fity );
+		botn.lerp( -root_topn, root_botn, fiby );
 		topn.Normalize();
 		botn.Normalize();
 
@@ -189,15 +189,15 @@ void RenderData::Update()
 		ork::fvec3 LF[2];
 		ork::fvec3 RF[2];
 
-		LN[0].Lerp( mFrustum.mNearCorners[0], mFrustum.mNearCorners[3], fity );	// left near top
-		LN[1].Lerp( mFrustum.mNearCorners[0], mFrustum.mNearCorners[3], fiby );	// left near bot
-		RN[0].Lerp( mFrustum.mNearCorners[1], mFrustum.mNearCorners[2], fity );	// right near top
-		RN[1].Lerp( mFrustum.mNearCorners[1], mFrustum.mNearCorners[2], fiby );	// right near bot
+		LN[0].lerp( mFrustum.mNearCorners[0], mFrustum.mNearCorners[3], fity );	// left near top
+		LN[1].lerp( mFrustum.mNearCorners[0], mFrustum.mNearCorners[3], fiby );	// left near bot
+		RN[0].lerp( mFrustum.mNearCorners[1], mFrustum.mNearCorners[2], fity );	// right near top
+		RN[1].lerp( mFrustum.mNearCorners[1], mFrustum.mNearCorners[2], fiby );	// right near bot
 
-		LF[0].Lerp( mFrustum.mFarCorners[0], mFrustum.mFarCorners[3], fity );		// left far top
-		LF[1].Lerp( mFrustum.mFarCorners[0], mFrustum.mFarCorners[3], fiby );		// left far bot
-		RF[0].Lerp( mFrustum.mFarCorners[1], mFrustum.mFarCorners[2], fity );		// right far top
-		RF[1].Lerp( mFrustum.mFarCorners[1], mFrustum.mFarCorners[2], fiby );		// right far bot
+		LF[0].lerp( mFrustum.mFarCorners[0], mFrustum.mFarCorners[3], fity );		// left far top
+		LF[1].lerp( mFrustum.mFarCorners[0], mFrustum.mFarCorners[3], fiby );		// left far bot
+		RF[0].lerp( mFrustum.mFarCorners[1], mFrustum.mFarCorners[2], fity );		// right far top
+		RF[1].lerp( mFrustum.mFarCorners[1], mFrustum.mFarCorners[2], fiby );		// right far bot
 
 		ork::fplane3 NFCenterPlane( mFrustum._nearPlane.GetNormal(), mFrustum.mCenter );
 
@@ -232,21 +232,21 @@ void RenderData::Update()
 
 			/////////////////////////////////////////////////////
 
-			ork::fvec3 N0; N0.Lerp( LN[0], RN[0], filx );
-			ork::fvec3 N1; N1.Lerp( LN[0], RN[0], firx );
-			ork::fvec3 N2; N2.Lerp( LN[1], RN[1], firx );
-			ork::fvec3 N3; N3.Lerp( LN[1], RN[1], filx );
-			ork::fvec3 F0; F0.Lerp( LF[0], RF[0], filx );
-			ork::fvec3 F1; F1.Lerp( LF[0], RF[0], firx );
-			ork::fvec3 F2; F2.Lerp( LF[1], RF[1], firx );
-			ork::fvec3 F3; F3.Lerp( LF[1], RF[1], filx );
+			ork::fvec3 N0; N0.lerp( LN[0], RN[0], filx );
+			ork::fvec3 N1; N1.lerp( LN[0], RN[0], firx );
+			ork::fvec3 N2; N2.lerp( LN[1], RN[1], firx );
+			ork::fvec3 N3; N3.lerp( LN[1], RN[1], filx );
+			ork::fvec3 F0; F0.lerp( LF[0], RF[0], filx );
+			ork::fvec3 F1; F1.lerp( LF[0], RF[0], firx );
+			ork::fvec3 F2; F2.lerp( LF[1], RF[1], firx );
+			ork::fvec3 F3; F3.lerp( LF[1], RF[1], filx );
 
 			/////////////////////////////////////////////////////
 
 			ork::fvec3 lftn;
 			ork::fvec3 rhtn;
-			lftn.Lerp( root_lftn, -root_rhtn, filx );
-			rhtn.Lerp( -root_lftn, root_rhtn, firx );
+			lftn.lerp( root_lftn, -root_rhtn, filx );
+			rhtn.lerp( -root_lftn, root_rhtn, firx );
 			lftn.Normalize();
 			rhtn.Normalize();
 
@@ -271,14 +271,14 @@ void RenderData::Update()
 
 			/////////////////////////////////////////////////
 
-			the_tile.mFrustum.mNearCorners[0].Lerp( LN[0], RN[0], filx );
-			the_tile.mFrustum.mNearCorners[1].Lerp( LN[0], RN[0], firx );
-			the_tile.mFrustum.mNearCorners[2].Lerp( LN[1], RN[1], firx );
-			the_tile.mFrustum.mNearCorners[3].Lerp( LN[1], RN[1], filx );
-			the_tile.mFrustum.mFarCorners[0].Lerp( LF[0], RF[0], filx );
-			the_tile.mFrustum.mFarCorners[1].Lerp( LF[0], RF[0], firx );
-			the_tile.mFrustum.mFarCorners[2].Lerp( LF[1], RF[1], firx );
-			the_tile.mFrustum.mFarCorners[3].Lerp( LF[1], RF[1], filx );
+			the_tile.mFrustum.mNearCorners[0].lerp( LN[0], RN[0], filx );
+			the_tile.mFrustum.mNearCorners[1].lerp( LN[0], RN[0], firx );
+			the_tile.mFrustum.mNearCorners[2].lerp( LN[1], RN[1], firx );
+			the_tile.mFrustum.mNearCorners[3].lerp( LN[1], RN[1], filx );
+			the_tile.mFrustum.mFarCorners[0].lerp( LF[0], RF[0], filx );
+			the_tile.mFrustum.mFarCorners[1].lerp( LF[0], RF[0], firx );
+			the_tile.mFrustum.mFarCorners[2].lerp( LF[1], RF[1], firx );
+			the_tile.mFrustum.mFarCorners[3].lerp( LF[1], RF[1], filx );
 
 			ork::fvec3 C; for( int i=0; i<4; i++ ) C += the_tile.mFrustum.mNearCorners[i];
 			for( int i=0; i<4; i++ ) C += the_tile.mFrustum.mFarCorners[i];
@@ -409,7 +409,7 @@ static rend_srcmesh* LoadRgm( const char* pfname, RenderData& rdata )
 
 		const ork::RgmSubMesh& Sub = prgmmodel->msubmeshes[is];
 		const ork::BakeShader* pbakeshader = Sub.mpShader;
-		rend_shader* pshader = pbakeshader->mPlatformShader.Get<rend_shader*>();
+		rend_shader* pshader = pbakeshader->mPlatformShader.get<rend_shader*>();
 
 		int inumtri = Sub.minumtris;
 

@@ -61,9 +61,9 @@ void XgmClusterizerDiced::End() {
 
 	while( false == bdone )
 	{
-		int idimX = int(extents.GetX())/isize;
-		int idimY = int(extents.GetY())/isize;
-		int idimZ = int(extents.GetZ())/isize;
+		int idimX = int(extents.x)/isize;
+		int idimY = int(extents.y)/isize;
+		int idimZ = int(extents.z)/isize;
 
 		int inumnodes = idimX*idimY*idimZ;
 
@@ -80,9 +80,9 @@ void XgmClusterizerDiced::End() {
 	}
 #else
   int isize = kDICESIZE;
-  int idimX = int(extents.GetX()) / isize;
-  int idimY = int(extents.GetY()) / isize;
-  int idimZ = int(extents.GetZ()) / isize;
+  int idimX = int(extents.x) / isize;
+  int idimY = int(extents.y) / isize;
+  int idimZ = int(extents.z) / isize;
   if (idimX == 0)
     idimX = 1;
   if (idimY == 0)
@@ -178,12 +178,12 @@ void XgmClusterizerDiced::End() {
         "clus<%d> inumv<%d> bbmin<%g %g %g> bbmax<%g %g %g> diag<%g>\n",
         ic,
         inumv,
-        vmin.GetX(),
-        vmin.GetY(),
-        vmin.GetZ(),
-        vmax.GetX(),
-        vmax.GetY(),
-        vmax.GetZ(),
+        vmin.x,
+        vmin.y,
+        vmin.z,
+        vmax.x,
+        vmax.y,
+        vmax.z,
         fdist);
   }
 }

@@ -14,19 +14,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::orkidvr {
 ////////////////////////////////////////////////////////////////////////////////
-
-static ork::LockedResource<VrTrackingNotificationReceiver_set> gnotifset;
-void addVrTrackingNotificationReceiver(VrTrackingNotificationReceiver_ptr_t recvr) {
-  gnotifset.atomicOp([&](VrTrackingNotificationReceiver_set& notifset) { notifset.insert(recvr); });
-}
-void removeVrTrackingNotificationReceiver(VrTrackingNotificationReceiver_ptr_t recvr) {
-  gnotifset.atomicOp([&](VrTrackingNotificationReceiver_set& notifset) {
-    auto it = notifset.find(recvr);
-    OrkAssert(it != notifset.end());
-    notifset.erase(it);
-  });
-}
-
 fmtx4 steam34tofmtx4(const _ovr::HmdMatrix34_t& matPose) {
   fmtx4 orkmtx = fmtx4::Identity();
   for (int i = 0; i < 3; i++)
@@ -346,7 +333,7 @@ void OpenVrDevice::_processControllerEvents() {
     auto handgroup = inpmgr::instance()->inputGroup("hands");
 
     ork::svar256_t notifvar;
-    auto ctrlnotiffram = notifvar.Make<VrTrackingControllerNotificationFrame>();
+    auto ctrlnotiffram = notifvar.make<VrTrackingControllerNotificationFrame>();
 
     if (_leftControllerDeviceIndex >= 0) {
       auto LCONTROLLER = controller(_leftControllerDeviceIndex);
@@ -510,7 +497,7 @@ void OpenVrDevice::_updatePoses() {
       _hmdinputgroup->setChannel("hmdmatrix").as<fmtx4>(hmdmatrix);
 
       ork::svar256_t notifvar;
-      auto& hmdnotiffram      = notifvar.Make<VrTrackingHmdPoseNotificationFrame>();
+      auto& hmdnotiffram      = notifvar.make<VrTrackingHmdPoseNotificationFrame>();
       hmdnotiffram._hmdMatrix = _poseMatrices[_ovr::k_unTrackedDeviceIndex_Hmd];
       EASY_BLOCK("openvr-aop");
       gnotifset.atomicOp([&](VrTrackingNotificationReceiver_set& notifset) {
@@ -525,23 +512,19 @@ void OpenVrDevice::_updatePoses() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-OpenVrDevice& concrete_get() {
-  static OpenVrDevice _device;
+std::shared_ptr<OpenVrDevice> openvr_device() {
+  static std::shared_ptr<OpenVrDevice> _device = std::make_shared<OpenVrDevice>();
   return _device;
-}
-Device& device() {
-  return concrete_get();
 }
 ////////////////////////////////////////////////////////////////////////////////
 
-void gpuUpdate(RenderContextFrameData& RCFD) {
+void OpenVrDevice::gpuUpdate(RenderContextFrameData& RCFD) {
   EASY_BLOCK("openvr-gpuUpdate");
-  auto& mgr = concrete_get();
-  if (mgr._active) {
+  if (_active) {
     bool ovr_compositor_ok = (bool)_ovr::VRCompositor();
     assert(ovr_compositor_ok);
   }
-  mgr._updatePoses();
+  _updatePoses();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

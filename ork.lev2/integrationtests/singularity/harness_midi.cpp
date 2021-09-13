@@ -58,14 +58,14 @@ midicontext_ptr_t MidiContext::instance() {
 
 MidiContext::MidiContext() {
   auto rtinpimpl = std::make_shared<RtMidiIn>();
-  _impl.Set<impl_t>(rtinpimpl);
+  _impl.set<impl_t>(rtinpimpl);
   enumerateMidiInputs();
 }
 MidiContext::~MidiContext() {
-  auto rtinpimpl = _impl.Get<impl_t>();
+  auto rtinpimpl = _impl.get<impl_t>();
 }
 MidiContext::midiinputmap_t MidiContext::enumerateMidiInputs() {
-  auto rtinpimpl = _impl.Get<impl_t>();
+  auto rtinpimpl = _impl.get<impl_t>();
   midiinputmap_t rval;
   unsigned int nPorts = rtinpimpl->getPortCount();
   for (int i = 0; i < nPorts; i++) {
@@ -83,7 +83,7 @@ void MidiContext::startMidiInputByName(std::string named) {
   startMidiInputByIndex(index);
 }
 void MidiContext::startMidiInputByIndex(int inputid) {
-  auto rtinpimpl = _impl.Get<impl_t>();
+  auto rtinpimpl = _impl.get<impl_t>();
   rtinpimpl->openPort(inputid);
   // Set our callback function.  This should be done immediately after
   // opening the port to avoid having incoming messages written to the

@@ -29,7 +29,7 @@ template <typename val_t> struct TVarMap {
   template <typename T> inline attempt_cast_const<T> typedValueForKey(const key_t& key) const {
     auto it = _themap.find(key);
     if (it != _themap.end()) {
-      return it->second.template TryAs<T>();
+      return it->second.template tryAs<T>();
     }
     return attempt_cast_const<T>(nullptr);
   }
@@ -37,13 +37,13 @@ template <typename val_t> struct TVarMap {
   template <typename T> inline attempt_cast<T> typedValueForKey(const key_t& key) {
     auto it = _themap.find(key);
     if (it != _themap.end()) {
-      return it->second.template TryAs<T>();
+      return it->second.template tryAs<T>();
     }
     return attempt_cast<T>(nullptr);
   }
   ///////////////////////////////////////////////////////////////////////////
   template <typename T, typename... A> inline T& makeValueForKey(const key_t& key, A&&... args) {
-    return _themap[key].template Make<T>(std::forward<A>(args)...);
+    return _themap[key].template make<T>(std::forward<A>(args)...);
   }
   ///////////////////////////////////////////////////////////////////////////
   template <typename T, typename... A> inline std::shared_ptr<T> makeSharedForKey(const key_t& key, A&&... args) {

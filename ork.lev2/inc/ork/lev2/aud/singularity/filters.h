@@ -52,13 +52,13 @@ struct TrapAllpass {
   void Clear();
 
   // set coefficients
-  void Set(float cutoff);
+  void set(float cutoff);
   float Tick(float input);
 };
 
 struct ParaOne {
   void Clear();
-  void Set(float f, float w, float g);
+  void set(float f, float w, float g);
   float compute(float inp);
   float _c0, _c1, _c2;
   float _arc, _gain, _a;

@@ -78,7 +78,7 @@ void submeshTrianglesToQuads(const submesh& inpmesh, submesh& outmesh) {
     P0.CalcPlaneFromTriangle(VPos[0], VPos[1], VPos[2]);
     // fvec4 VArea012[3] = { VPos[0],VPos[1],VPos[2] };
 
-    float fArea012 = fvec4::CalcTriArea(VPos[0], VPos[1], VPos[2], P0.GetNormal());
+    float fArea012 = fvec4::calcTriangularArea(VPos[0], VPos[1], VPos[2], P0.GetNormal());
 
     /*if( 0 != _isnan( fArea012 ) )
     {
@@ -133,7 +133,7 @@ void submeshTrianglesToQuads(const submesh& inpmesh, submesh& outmesh) {
         P1.CalcPlaneFromTriangle(VPos[3], VPos[4], VPos[5]);
         // fvec4 VArea345[3] = { VPos[3],VPos[4],VPos[5] };
 
-        float fArea345 = fvec4::CalcTriArea(VPos[3], VPos[4], VPos[5], P1.GetNormal());
+        float fArea345 = fvec4::calcTriangularArea(VPos[3], VPos[4], VPos[5], P1.GetNormal());
 
         /*if( 0 != _isnan( fArea345 ) )
         {

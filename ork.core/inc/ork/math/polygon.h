@@ -170,7 +170,7 @@ public:
     const point_type& center() { return mCenter; }
     T radius() { return mRadius; }
     
-	void Set(const point_type& c, T r );
+	void set(const point_type& c, T r );
     bool IsPointInside(const point_type& p ) const; // is a point inside the circle
     void CircumscribeFromTriangle( const point_type& p1, const point_type& p2, const point_type& p3);  // compute from 3 points
 };

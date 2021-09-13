@@ -1,7 +1,6 @@
 #pragma once
 
 #include <ork/lev2/ui/widget.h>
-#include <ork/lev2/ui/surface.h>
 #include <ork/lev2/gfx/util/grid.h>
 
 namespace ork::ui {
@@ -26,10 +25,6 @@ struct GraphChannel{
 	std::string _name;
 	fvec3 _color;
 	bool _visible = true;
-  bool _autoscaleY = false;
-  float _minY = 9e9;
-  float _maxY = -9e9;
-  anyp _userdata;
 };
 using graphchannel_ptr_t = std::shared_ptr<GraphChannel>;
 ///////////////////////////////////////////////////////////////////////////////
@@ -49,7 +44,6 @@ struct GraphView : public ui::Surface  {
   bool _lockY;
   bool _lockYZOOM;
   bool _dragging;
-  int _fontsize;
 
 };
 using graphview_ptr_t = std::shared_ptr<GraphView>;

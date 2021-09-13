@@ -28,6 +28,18 @@
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
+struct AppInitData{
+  bool _fullscreen = false;
+  int _top = 100;
+  int _left = 100;
+  int _width = 1280;
+  int _height = 720;
+  int _msaa_samples = 1;
+  int _swap_interval = 1;
+  bool _allowHIDPI = true;
+  std::string _monitor_id = "";
+};
+
 /// ////////////////////////////////////////////////////////////////////////////
 /// Graphics Context Base
 /// this abstraction allows us to switch UI toolkits (Qt/Fltk, etc...)
@@ -53,8 +65,11 @@ class CTXBASE : public ork::AutoConnector {
   DeclarePublicAutoSlot(Repaint);
 
 public:
+
   CTXBASE(Window* pwin);
   virtual ~CTXBASE();
+
+  bool isGlobal() const;
 
   void progressHandler(opq::progressdata_ptr_t data);
 
@@ -71,6 +86,8 @@ public:
   void setContext(Context* ctx);
   void SetWindow(Window* pw);
 
+  virtual void makeCurrent(){}
+  
   virtual void SlotRepaint(void) {
   }
   virtual void _setRefreshPolicy(RefreshPolicyItem policy) {
@@ -84,16 +101,17 @@ public:
   virtual fvec2 MapCoordToGlobal(const fvec2& v) const {
     return v;
   }
+  RefreshPolicyItem currentRefreshPolicy() const;
 
 protected:
   std::stack<RefreshPolicyItem> _policyStack;
 
   Context* _target;
-  Window* mpWindow;
+  Window* _orkwindow;
   ui::event_ptr_t _uievent;
   CTFLXID mxidThis;
   CTFLXID mxidTopLevel;
-  bool mbInitialize;
+  bool _needsInitialize;
   svar16_t _pimpl_progress;
 
   RefreshPolicyItem _curpolicy;

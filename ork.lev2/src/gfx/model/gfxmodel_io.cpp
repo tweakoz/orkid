@@ -236,7 +236,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
       ///////////////////////////////////////////////////////////
 
       auto anno = pmatclass->annotation("xgm.reader");
-      if (auto as_reader = anno.TryAs<chunkfile::materialreader_t>()) {
+      if (auto as_reader = anno.tryAs<chunkfile::materialreader_t>()) {
         auto pmat = as_reader.value()(materialread_ctx);
         pmat->SetName(AddPooledString(pmatname));
         mdl->AddMaterial(pmat);
@@ -340,7 +340,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
                 auto& p = v.mPosition;
                 auto& n = v.mNormal;
                 OrkAssert(n.length() > 0.95);
-                // printf( " iv<%d> pos<%f %f %f> bi<%08x> bw<%08x>\n", iv, p.GetX(), p.GetY(), p.GetZ(), v.mBoneIndices,
+                // printf( " iv<%d> pos<%f %f %f> bi<%08x> bw<%08x>\n", iv, p.x, p.y, p.z, v.mBoneIndices,
                 // v.mBoneWeights );
               }
             }
@@ -516,15 +516,15 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
   const fvec3& bbxyz = mdl->GetBoundingAA_XYZ();
   const fvec3& bbwhd = mdl->boundingAA_WHD();
 
-  HeaderStream->AddItem(bc.GetX());
-  HeaderStream->AddItem(bc.GetY());
-  HeaderStream->AddItem(bc.GetZ());
-  HeaderStream->AddItem(bbxyz.GetX());
-  HeaderStream->AddItem(bbxyz.GetY());
-  HeaderStream->AddItem(bbxyz.GetZ());
-  HeaderStream->AddItem(bbwhd.GetX());
-  HeaderStream->AddItem(bbwhd.GetY());
-  HeaderStream->AddItem(bbwhd.GetZ());
+  HeaderStream->AddItem(bc.x);
+  HeaderStream->AddItem(bc.y);
+  HeaderStream->AddItem(bc.z);
+  HeaderStream->AddItem(bbxyz.x);
+  HeaderStream->AddItem(bbxyz.y);
+  HeaderStream->AddItem(bbxyz.z);
+  HeaderStream->AddItem(bbwhd.x);
+  HeaderStream->AddItem(bbwhd.y);
+  HeaderStream->AddItem(bbwhd.z);
   HeaderStream->AddItem(br);
 
   HeaderStream->AddItem(mdl->GetBonesPerCluster());
@@ -585,7 +585,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     // new style material writer
     /////////////////////////////////////////////////////////////////////////////////////////////////////
-    if (auto as_writer = writeranno.TryAs<chunkfile::materialwriter_t>()) {
+    if (auto as_writer = writeranno.tryAs<chunkfile::materialwriter_t>()) {
       chunkfile::XgmMaterialWriterContext mtlwctx(chunkwriter);
       mtlwctx._material     = pmat;
       mtlwctx._outputStream = HeaderStream;

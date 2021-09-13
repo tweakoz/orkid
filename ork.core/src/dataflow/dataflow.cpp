@@ -146,7 +146,7 @@ void floatxfmsbcurve::describeX(object::ObjectClass* clazz) {
   static const char* EdGrpStr = "sort:// domodscabia docurve ModScaleBias curve";
 
   reflect::Description::anno_t annoval;
-  annoval.Set<const char*>(EdGrpStr);
+  annoval.set<const char*>(EdGrpStr);
   reflect::annotateClassForEditor<floatxfmsbcurve>("editor.prop.groups", annoval);
 */
 }
@@ -217,9 +217,9 @@ void vect3xf::describeX(class_t* clazz) {
 ///////////////////////////////////////////////////////////////////////////////
 fvec3 vect3xf::transform(const fvec3& input) const {
   fvec3 output;
-  output.SetX(mTransformX.transform(input.GetX()));
-  output.SetY(mTransformX.transform(input.GetY()));
-  output.SetZ(mTransformX.transform(input.GetZ()));
+  output.setX(mTransformX.transform(input.x));
+  output.setY(mTransformX.transform(input.y));
+  output.setZ(mTransformX.transform(input.z));
   return output;
 }
 ///////////////////////////////////////////////////////////////////////////////

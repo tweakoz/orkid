@@ -47,10 +47,18 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
+enum class EGrid2DDrawMode{
+  ALL = 0,
+  NONE,
+  ORIGIN_AXIS_ONLY
+};
+
 struct Grid2d {
 
   void updateMatrices(Context* pTARG, int iw, int ih);
   void Render(Context* pTARG, int iw, int ih);
+  void pushMatrix(Context* pTARG);
+  void popMatrix(Context* pTARG);
 
   Grid2d();
 
@@ -72,9 +80,13 @@ struct Grid2d {
   float _aspect;
   float _zoomedExtentX;
   float _zoomedExtentY;
-  bool _bipolar;
+
   fvec3 _baseColor;
   fvec3 _hiliteColor;
+
+  EGrid2DDrawMode _drawmode = EGrid2DDrawMode::ALL;
+
+
 
 };
 

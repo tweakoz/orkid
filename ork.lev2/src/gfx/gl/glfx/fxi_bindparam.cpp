@@ -17,28 +17,16 @@ void Interface::BindParamBool(const FxShaderParam* hpar, const bool bv) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Interface::_stdbindparam(const FxShaderParam* hpar, const stdparambinder_t& binder) {
-  auto container = _activeShader->_internalHandle.Get<orksl::rootcontainer_ptr_t>();
-  auto puni = static_cast<orksl::Uniform*>(hpar->GetPlatformHandle());
+  auto container = _activeShader->_internalHandle.get<rootcontainer_ptr_t>();
+  Uniform* puni        = static_cast<Uniform*>(hpar->GetPlatformHandle());
   assert(container->_activePass != nullptr);
-  const orksl::UniformInstance* pinst = container->_activePass->uniformInstance(puni);
+  const UniformInstance* pinst = container->_activePass->uniformInstance(puni);
   if (pinst) {
-    int iloc = pinst->_location;
+    int iloc = pinst->mLocation;
     if (iloc >= 0) {
       const char* psem = puni->_semantic.c_str();
       const char* pnam = puni->_name.c_str();
-
-      if(not puni->_apitype.IsSet()){
-        /*switch(puni->_type){
-          case EUniformType::
-          {
-            break;
-          }
-        }*/
-      }
-      GLenum etyp = puni->_apitype.Get<GLenum>();
-
-
-
+      GLenum etyp      = puni->_type;
       binder(iloc, etyp);
     }
   }
@@ -56,7 +44,7 @@ void Interface::BindParamVect2(const FxShaderParam* hpar, const fvec2& Vec) {
   _stdbindparam(hpar, [&](int iloc, GLenum checktype) {
     OrkAssert(checktype == GL_FLOAT_VEC2);
     GL_ERRORCHECK();
-    glUniform2fv(iloc, 1, Vec.GetArray());
+    glUniform2fv(iloc, 1, Vec.asArray());
     GL_ERRORCHECK();
   });
 }
@@ -64,7 +52,7 @@ void Interface::BindParamVect3(const FxShaderParam* hpar, const fvec3& Vec) {
   _stdbindparam(hpar, [&](int iloc, GLenum checktype) {
     OrkAssert(checktype == GL_FLOAT_VEC3);
     GL_ERRORCHECK();
-    glUniform3fv(iloc, 1, Vec.GetArray());
+    glUniform3fv(iloc, 1, Vec.asArray());
     GL_ERRORCHECK();
   });
 }
@@ -72,7 +60,7 @@ void Interface::BindParamVect4(const FxShaderParam* hpar, const fvec4& Vec) {
   _stdbindparam(hpar, [&](int iloc, GLenum checktype) {
     OrkAssert(checktype == GL_FLOAT_VEC4);
     GL_ERRORCHECK();
-    glUniform4fv(iloc, 1, Vec.GetArray());
+    glUniform4fv(iloc, 1, Vec.asArray());
     GL_ERRORCHECK();
   });
 }
@@ -125,7 +113,7 @@ void Interface::BindParamMatrix(const FxShaderParam* hpar, const fmtx4& Mat) {
   _stdbindparam(hpar, [&](int iloc, GLenum checktype) {
     OrkAssert(checktype == GL_FLOAT_MAT4);
     GL_ERRORCHECK();
-    glUniformMatrix4fv(iloc, 1, GL_FALSE, Mat.GetArray());
+    glUniformMatrix4fv(iloc, 1, GL_FALSE, Mat.asArray());
     GL_ERRORCHECK();
   });
 }
@@ -133,7 +121,7 @@ void Interface::BindParamMatrix(const FxShaderParam* hpar, const fmtx3& Mat) {
   _stdbindparam(hpar, [&](int iloc, GLenum checktype) {
     OrkAssert(checktype == GL_FLOAT_MAT3);
     GL_ERRORCHECK();
-    glUniformMatrix3fv(iloc, 1, GL_FALSE, Mat.GetArray());
+    glUniformMatrix3fv(iloc, 1, GL_FALSE, Mat.asArray());
     GL_ERRORCHECK();
   });
 }
@@ -148,12 +136,12 @@ void Interface::BindParamMatrixArray(const FxShaderParam* hpar, const fmtx4* Mat
 ///////////////////////////////////////////////////////////////////////////////
 
 void Interface::BindParamCTex(const FxShaderParam* hpar, const Texture* pTex) {
-  auto container = _activeShader->_internalHandle.Get<orksl::rootcontainer_ptr_t>();
-  auto puni = static_cast<orksl::Uniform*>(hpar->GetPlatformHandle());
-  const orksl::UniformInstance* pinst = container->_activePass->uniformInstance(puni);
+  auto container = _activeShader->_internalHandle.get<rootcontainer_ptr_t>();
+  auto puni                    = static_cast<Uniform*>(hpar->GetPlatformHandle());
+  const UniformInstance* pinst = container->_activePass->uniformInstance(puni);
   // printf("Bind1 Tex<%p> puni<%p> par<%s> pinst<%p>\n", pTex, puni, hpar->_name.c_str(), pinst);
   if (pinst) {
-    int iloc = pinst->_location;
+    int iloc = pinst->mLocation;
 
     const char* teknam = container->mActiveTechnique->_name.c_str();
 
@@ -161,30 +149,41 @@ void Interface::BindParamCTex(const FxShaderParam* hpar, const Texture* pTex) {
     if (iloc >= 0) {
       const char* psem = puni->_semantic.c_str();
       const char* pnam = puni->_name.c_str();
-
-      if(not puni->_apitype.IsSet()){
-        /*switch(puni->_type){
-          case EUniformType::
-          {
-            break;
-          }
-        }*/
-      }
-      GLenum etyp = puni->_apitype.Get<GLenum>();
-
+      GLenum etyp      = puni->_type;
       // OrkAssert( etyp == GL_FLOAT_MAT4 );
 
       if (pTex != 0) {
 
         auto GLTXI = (GlTextureInterface*) mTarget.TXI();
         int itexunit                   = pinst->mSubItemIndex;
-        GLenum textgt = pinst->mPrivData.Get<GLenum>();
+        GLenum textgt = pinst->mPrivData.get<GLenum>();
         GLTXI->bindTextureToUnit(pTex,textgt,itexunit);
         glUniform1i(iloc, itexunit);
         GL_ERRORCHECK();
       }
     }
   }
+  /*
+          if( 0 == hpar ) return;
+          CgFxRootContainer* container = static_cast<CgFxRootContainer*>(
+     _activeShader->GetInternalHandle() ); CGeffect cgeffect = container->mCgEffect;
+          CGparameter cgparam =
+     reinterpret_cast<CGparameter>(hpar->GetPlatformHandle()); if( (pTex!=0) &&
+     (cgparam!=0) )
+          {
+                  const GLTextureObject* pTEXOBJ = (GLTextureObject*)
+     pTex->GetTexIH();
+                  //orkprintf( "BINDTEX param<%p:%s> pTEX<%p> pTEXOBJ<%p>
+     obj<%d>\n", hpar, hpar->mParameterName.c_str(), pTex, pTEXOBJ,
+     pTEXOBJ->mObject ); cgGLSetTextureParameter( cgparam, pTEXOBJ ?
+     pTEXOBJ->mObject : 0 );
+          }
+          else
+          {
+                  cgGLSetTextureParameter( cgparam, 0 );
+          }
+          GL_ERRORCHECK();
+  */
 }
 
 ///////////////////////////////////////////////////////////////////////////////

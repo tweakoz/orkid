@@ -5,6 +5,9 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
+#include <ork/lev2/config.h>
+#if defined(ENABLE_IGL)
+
 #include <ork/kernel/orklut.hpp>
 #include <ork/math/plane.h>
 #include <ork/lev2/gfx/meshutil/submesh.h>
@@ -52,3 +55,5 @@ Eigen::VectorXd IglMesh::computeGaussianCurvature() const {
 }
 
 } // namespace ork::meshutil
+
+#endif

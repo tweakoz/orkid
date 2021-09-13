@@ -137,7 +137,7 @@ public:
   void SetUrlBase(const char* UrlBase);
   void SetDrive(const char* UrlBase);
 
-  void Set(const char* pathName);
+  void set(const char* pathName);
 
   bool IsAbsolute() const;
   bool IsRelative() const;

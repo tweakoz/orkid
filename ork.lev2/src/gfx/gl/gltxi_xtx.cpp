@@ -35,18 +35,19 @@ bool GlTextureInterface::_loadXTXTexture(Texture* ptex, datablock_ptr_t databloc
   ptex->_depth     = 1;
   ptex->_texFormat = load_req._cmipchain->_format;
   ///////////////////////////////////////////////
-  // auto keys = load_req._cmipchain->_varmap.dumpkeys();
-  // printf("\nxtx w<%lu>\n", load_req._cmipchain->_width);
-  // printf("xtx h<%lu>\n", load_req._cmipchain->_height);
-  // printf("xtx d<%lu>\n", load_req._cmipchain->_depth);
-  // printf("xtx fmt<%zx>\n", (uint64_t)load_req._cmipchain->_format);
-  // for (auto k : keys) {
-  // printf("xtx mipchain varmap-key<%s>\n", k.c_str());
-  //}
-  // for (auto k : ptex->_varmap.dumpkeys()) {
-  // printf("xtx ptex varmap-key<%s>\n", k.c_str());
-  //}
+   auto keys = load_req._cmipchain->_varmap.dumpkeys();
+   printf("\nxtx w<%lu>\n", load_req._cmipchain->_width);
+   printf("xtx h<%lu>\n", load_req._cmipchain->_height);
+   printf("xtx d<%lu>\n", load_req._cmipchain->_depth);
+   printf("xtx fmt<%zx>\n", (uint64_t)load_req._cmipchain->_format);
+   for (auto k : keys) {
+   printf("xtx mipchain varmap-key<%s>\n", k.c_str());
+  }
+   for (auto k : ptex->_varmap.dumpkeys()) {
+   printf("xtx ptex varmap-key<%s>\n", k.c_str());
+  }
   void_lambda_t lamb = [=]() {
+    printf( "XTX MAINTHREAD<%p>\n",ptex);
     /////////////////////////////////////////////
     // texture preprocssing, if any..
     //  on main thread.
@@ -77,10 +78,10 @@ void GlTextureInterface::_loadXTXTextureMainThreadPart(GlTexLoadReq req) {
   int inummips = req._cmipchain->_levels.size();
   OrkAssert(inummips > 0);
   GL_ERRORCHECK();
-  // printf("inummips<%d>\n", inummips);
+   printf("inummips<%d>\n", inummips);
   for (int imip = 0; imip < inummips; imip++) {
     auto& level = req._cmipchain->_levels[imip];
-    // printf("mip<%d> w<%ld> h<%ld> len<%zu>\n", imip, level._width, level._height, level._data->length());
+     printf("mip<%d> w<%ld> h<%ld> len<%zu>\n", imip, level._width, level._height, level._data->length());
     switch (req.ptex->_texFormat) {
       case EBufferFormat::RGBA8:
         glTexImage2D(         //
@@ -125,6 +126,10 @@ void GlTextureInterface::_loadXTXTextureMainThreadPart(GlTexLoadReq req) {
   // done loading texture,
   //  perform postprocessing, if any..
   ////////////////////////////////////////////////
+
+  if(req.ptex->_debugName== "filtenvmap-processed-specular"){
+    //OrkAssert(false);
+  }
 
   if (req.ptex->_varmap.hasKey("postproc")) {
     auto dblock    = req._inpstream._datablock;

@@ -58,7 +58,7 @@ HandlerResult SignalTrackWidget::DoOnUiEvent(event_constptr_t evptr) {
   auto uictx      = evptr->_uicontext;
 
   switch (evptr->_eventcode) {
-    case EventCode::KEY:
+    case EventCode::KEY_DOWN:
     case EventCode::KEY_REPEAT:
       switch (evptr->miKeyCode) {
         case ETRIG_RAW_KEY_LEFT: {

@@ -27,7 +27,7 @@ void ManipHandler::Init(const ork::fvec2& posubp, const fmtx4& RCurIMVPMat, cons
 
   ///////////////////////////////////////
 
-  mFrustum.Set(RCurIMVPMat);
+  mFrustum.set(RCurIMVPMat);
 
   CamXNormal = mFrustum.mXNormal;
   CamYNormal = mFrustum.mYNormal;
@@ -54,7 +54,7 @@ bool ManipHandler::IntersectXZ(const ork::fvec2& posubp, fvec3& Intersection, fl
   DoesIntersectXZ = XZPlane.Intersect(ray, isect_dist, Intersection);
 
   if (DoesIntersectXZ)
-    XZAngle = rect2pol_ang(Intersection.GetX(), Intersection.GetZ());
+    XZAngle = rect2pol_ang(Intersection.x, Intersection.z);
 
   Angle = XZAngle;
 
@@ -76,7 +76,7 @@ bool ManipHandler::IntersectYZ(const ork::fvec2& posubp, fvec3& Intersection, fl
   DoesIntersectYZ = YZPlane.Intersect(ray, isect_dist, Intersection);
 
   if (DoesIntersectYZ)
-    YZAngle = rect2pol_ang(Intersection.GetY(), Intersection.GetZ());
+    YZAngle = rect2pol_ang(Intersection.y, Intersection.z);
 
   Angle = YZAngle;
 
@@ -97,7 +97,7 @@ bool ManipHandler::IntersectXY(const ork::fvec2& posubp, fvec3& Intersection, fl
   DoesIntersectXY = XYPlane.Intersect(ray, isect_dist, Intersection);
 
   if (DoesIntersectXY)
-    XYAngle = rect2pol_ang(Intersection.GetX(), Intersection.GetY());
+    XYAngle = rect2pol_ang(Intersection.x, Intersection.y);
 
   Angle = XYAngle;
 
@@ -125,8 +125,8 @@ fvec4 TRayF;
 void ManipHandler::GenerateIntersectionRays(const ork::fvec2& posubp, fvec3& RayZNormal, fvec3& RayNear) {
   fvec3 RayFar;
   ///////////////////////////////////////////
-  fvec3 vWinN(posubp.GetX(), posubp.GetY(), 0.0f);
-  fvec3 vWinF(posubp.GetX(), posubp.GetY(), 1.0f);
+  fvec3 vWinN(posubp.x, posubp.y, 0.0f);
+  fvec3 vWinF(posubp.x, posubp.y, 1.0f);
   fmtx4::UnProject(IMVPMat, vWinN, RayNear);
   fmtx4::UnProject(IMVPMat, vWinF, RayFar);
   TRayN = RayNear;
@@ -134,9 +134,9 @@ void ManipHandler::GenerateIntersectionRays(const ork::fvec2& posubp, fvec3& Ray
   ///////////////////////////////////////////
   fvec3 RayD = (RayFar - RayNear);
   ///////////////////////////////////////////
-  double draydX = (double)RayD.GetX();
-  double draydY = (double)RayD.GetY();
-  double draydZ = (double)RayD.GetZ();
+  double draydX = (double)RayD.x;
+  double draydY = (double)RayD.y;
+  double draydZ = (double)RayD.z;
   double drayD  = 1.0f / sqrt((draydX * draydX) + (draydY * draydY) + (draydZ * draydZ));
   draydX *= drayD;
   draydY *= drayD;

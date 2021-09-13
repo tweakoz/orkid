@@ -10,9 +10,9 @@
 inline ork::fvec4 SphMap( const ork::fvec3& N, const ork::fvec3& EyeToPointDir, const rend_texture2D& tex )
 {
 	ork::fvec3 ref = EyeToPointDir-N*(N.Dot(EyeToPointDir)*2.0f);
-	float p = ::sqrtf( ref.GetX()*ref.GetX()+ref.GetY()*ref.GetY()+::powf(ref.GetZ()+1.0f,2.0f) );
-	float reflectS = ref.GetX()/(2.0f*p)+0.5f;
-	float reflectT = ref.GetY()/(2.0f*p)+0.5f;
+	float p = ::sqrtf( ref.x*ref.x+ref.y*ref.y+::powf(ref.z+1.0f,2.0f) );
+	float reflectS = ref.x/(2.0f*p)+0.5f;
+	float reflectT = ref.y/(2.0f*p)+0.5f;
 	return tex.sample_point( reflectS, reflectT, true, true );
 }
 
@@ -76,12 +76,12 @@ struct Shader2 : public rend_shader
 		float s = prefrag.mfS;
 		float t = prefrag.mfT;
 		float z = prefrag.mfZ;
-		float wnx = wnrmR.GetX()*r+wnrmS.GetX()*s+wnrmT.GetX()*t;
-		float wny = wnrmR.GetY()*r+wnrmS.GetY()*s+wnrmT.GetY()*t;
-		float wnz = wnrmR.GetZ()*r+wnrmS.GetZ()*s+wnrmT.GetZ()*t;
-		float wx = wposR.GetX()*r+wposS.GetX()*s+wposT.GetX()*t;
-		float wy = wposR.GetY()*r+wposS.GetY()*s+wposT.GetY()*t;
-		float wz = wposR.GetZ()*r+wposS.GetZ()*s+wposT.GetZ()*t;
+		float wnx = wnrmR.x*r+wnrmS.x*s+wnrmT.x*t;
+		float wny = wnrmR.y*r+wnrmS.y*s+wnrmT.y*t;
+		float wnz = wnrmR.z*r+wnrmS.z*s+wnrmT.z*t;
+		float wx = wposR.x*r+wposS.x*s+wposT.x*t;
+		float wy = wposR.y*r+wposS.y*s+wposT.y*t;
+		float wz = wposR.z*r+wposS.z*s+wposT.z*t;
 		/////////////////////////////////////////////////////////////////
 		float area = prefrag.mpSrcPrimitive->mfArea;
 		float areaintens = (area==0.0f) ? 0.0f : ::powf( 100.0f / area, 0.7f );
@@ -103,7 +103,7 @@ struct Shader2 : public rend_shader
 		///////////////////////////////////////////////
 		ork::fvec3 c0( fgrid, fgrid, fgrid );
 		ork::fvec3 c( wnx, wny, wnz ); c=c*0.6f+c0*0.1f+texout*::powf(areaintens,0.1f)*0.7f+sphtexout*0.5f;
-		pdstfrag->mRGBA.Set(c.GetX(), c.GetY(), c.GetZ(), fZblend ); // cunc
+		pdstfrag->mRGBA.set(c.x, c.y, c.z, fZblend ); // cunc
 		pdstfrag->mZ = z;
 		pdstfrag->mpPrimitive = prefrag.mpSrcPrimitive;
 		pdstfrag->mpShader = this;

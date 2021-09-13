@@ -81,7 +81,7 @@ void Frustum::CalcCorners()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Frustum::Set( const mtx44_type& IVPMatrix )
+void Frustum::set( const mtx44_type& IVPMatrix )
 {
 	float minv = -1.0f;
 	float maxv = 1.0f;
@@ -98,10 +98,10 @@ void Frustum::Set( const mtx44_type& IVPMatrix )
 	mtx44_type::UnProject( IVPMatrix, Vx1y1, mNearCorners[2] );
 	mtx44_type::UnProject( IVPMatrix, Vx0y1, mNearCorners[3] );
 
-	Vx0y0.SetZ(maxz);
-	Vx1y0.SetZ(maxz);
-	Vx1y1.SetZ(maxz);
-	Vx0y1.SetZ(maxz);
+	Vx0y0.setZ(maxz);
+	Vx1y0.setZ(maxz);
+	Vx1y1.setZ(maxz);
+	Vx0y1.setZ(maxz);
 
 	mtx44_type::UnProject( IVPMatrix, Vx0y0, mFarCorners[0] );
 	mtx44_type::UnProject( IVPMatrix, Vx1y0, mFarCorners[1] );
@@ -147,12 +147,12 @@ void Frustum::Set( const mtx44_type& IVPMatrix )
 #endif
 }
 
-void Frustum::Set( const mtx44_type& VMatrix, const mtx44_type& PMatrix )
+void Frustum::set( const mtx44_type& VMatrix, const mtx44_type& PMatrix )
 {
 	mtx44_type IVPMatrix;
 	mtx44_type VPMatrix = VMatrix*PMatrix;
 	IVPMatrix.inverseOf(VPMatrix);
-	Set( IVPMatrix );
+	set( IVPMatrix );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

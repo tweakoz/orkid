@@ -66,10 +66,10 @@ struct fparamVar {
   template <typename T> void set(const std::string& name, const std::string& units, const std::string& fmt, T value) {
     _name  = name;
     _units = units;
-    _value.Set<T>(value);
+    _value.set<T>(value);
   }
   operator bool() const {
-    return _value.IsSet();
+    return _value.Isset();
   }
 
   std::string _name;

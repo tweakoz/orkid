@@ -19,7 +19,7 @@ inline void registerLoader(loader_ptr_t loader) {
   // todo support flyweighting
   auto assetclazz = AssetType::objectClassStatic();
   object::ObjectClass::anno_t anno;
-  anno.Set<asset::loader_ptr_t>(loader);
+  anno.set<asset::loader_ptr_t>(loader);
   assetclazz->annotate("ork.asset.loader", anno);
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -27,14 +27,14 @@ template <typename AssetType> //
 inline loader_ptr_t getLoader() {
   auto assetclazz = dynamic_cast<object::ObjectClass*>(AssetType::GetClassStatic());
   auto loaderanno = assetclazz->annotation("ork.asset.loader");
-  auto loader     = loaderanno.Get<asset::loader_ptr_t>();
+  auto loader     = loaderanno.get<asset::loader_ptr_t>();
   return loader;
 }
 ////////////////////////////////////////////////////////////////////////////////
 inline loader_ptr_t getLoader(rtti::Class* clazz) {
   auto assetclazz = dynamic_cast<object::ObjectClass*>(clazz);
   auto loaderanno = assetclazz->annotation("ork.asset.loader");
-  auto loader     = loaderanno.Get<asset::loader_ptr_t>();
+  auto loader     = loaderanno.get<asset::loader_ptr_t>();
   return loader;
 }
 } // namespace ork::asset
@@ -56,7 +56,7 @@ inline void ::ork::reflect::ITyped<asset::asset_ptr_t>::serialize(serdes::node_p
     serializeMapSubLeaf<std::string>(mapnode, "path", as_asset->_name.toStdString());
     serializer->popNode(); // pop mapnode
   } else {
-    sernode->_value.template Set<void*>(nullptr);
+    sernode->_value.template set<void*>(nullptr);
     serializer->serializeLeaf(sernode);
   }
 }
@@ -77,7 +77,7 @@ inline void ::ork::reflect::ITyped<asset::asset_ptr_t>::deserialize(serdes::node
   if (loader->doesExist(val2)) {
     const auto& anno = annotation(ConstString("asset.deserialize.vargen"));
     asset::vars_ptr_t assetvars;
-    if (auto as_gen = anno.TryAs<asset::vars_gen_t>())
+    if (auto as_gen = anno.tryAs<asset::vars_gen_t>())
       assetvars = as_gen.value()(instance);
     auto newasset = loader->load(val2, assetvars);
     OrkAssert(newasset->type() == val1);

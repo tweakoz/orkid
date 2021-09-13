@@ -30,9 +30,10 @@ public:
 
   ////////////////
 
-  T elements[4][4];
+  T elements[4][4]; // y is contiguous => column major
 
   Matrix44(const Matrix44<T>& m) {
+    // i=row, j=column
     for (int i = 0; i < 4; i++) {
       for (int j = 0; j < 4; j++) {
         elements[i][j] = m.elements[i][j];
@@ -110,7 +111,7 @@ public:
   void SetTranslation(const Matrix44<T>& from);
   void SetScale(const Matrix44<T>& from);
 
-  void Lerp(const Matrix44<T>& from, const Matrix44<T>& to, T par); // par 0.0f .. 1.0f
+  void lerp(const Matrix44<T>& from, const Matrix44<T>& to, T par); // par 0.0f .. 1.0f
 
   void decompose(Vector3<T>& pos, Quaternion<T>& rot, T& Scale) const;
   void compose(const Vector3<T>& pos, const Quaternion<T>& rot, const T& Scale);
@@ -161,8 +162,11 @@ public:
 
   Vector4<T> GetRow(int irow) const;
   Vector4<T> GetColumn(int icol) const;
+
   void SetRow(int irow, const Vector4<T>& v);
   void SetColumn(int icol, const Vector4<T>& v);
+  void SetRow(int irow, float a, float b, float c, float d);
+  void SetColumn(int icol, float a, float b, float c, float d);
 
   Vector3<T> GetXNormal(void) const {
     return GetColumn(0).xyz();
@@ -196,7 +200,7 @@ public:
 
   static const Matrix44<T> Identity();
 
-  T* GetArray(void) const {
+  T* asArray(void) const {
     return (T*)&elements[0][0];
   }
 

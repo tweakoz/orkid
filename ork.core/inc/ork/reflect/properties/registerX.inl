@@ -18,7 +18,7 @@ namespace ork::object {
 ///////////////////////////////////////////////////////////////////////////
 template <typename T> inline PropertyModifier* PropertyModifier::annotate(const ConstString& key, T value) {
   reflect::ObjectProperty::anno_t anno;
-  anno.Set<T>(value);
+  anno.set<T>(value);
   _property->annotate(key, anno);
   return this;
 }

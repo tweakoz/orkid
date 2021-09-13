@@ -58,16 +58,25 @@ IF(${APPLE})
     add_definitions(-DOSX -DORK_OSX)
 ELSE()
     add_definitions(-DORK_CONFIG_IX -DLINUX -DGCC)
-    add_compile_options(-D_REENTRANT -DQT_NO_EXCEPTIONS -D_LARGEFILE64_SOURCE -D_LARGEFILE_SOURCE -DQT_GUI_LIB -DQT_CORE_LIB)
-    link_directories($ENV{OBT_STAGE}/qt5/lib )
+    add_compile_options(-D_REENTRANT -D_LARGEFILE64_SOURCE -D_LARGEFILE_SOURCE)
 ENDIF()
-
-add_compile_definitions(QTVER=$ENV{QTVER})
 
 add_compile_options(-Wno-deprecated -Wno-register -fexceptions)
 add_compile_options(-Wno-unused-command-line-argument)
-add_compile_options(-mavx -fPIE -fPIC -fno-common -fno-strict-aliasing -g -Wno-switch-enum)
+add_compile_options(-fPIE -fPIC -fno-common -fno-strict-aliasing -g -Wno-switch-enum)
 add_compile_options(-fextended-identifiers)
+
+##############################
+
+IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
+    add_compile_options(-mavx)
+    add_definitions(-DORK_ARCHITECTURE_X86_64 )
+ELSEIF( "${ARCHITECTURE}" STREQUAL "AARCH64" )
+    add_definitions(-DORK_ARCHITECTURE_ARM_64 )
+    #add_compile_options(-fvectorize)
+ENDIF()
+
+##############################
 
 set( ORKROOT $ENV{ORKID_WORKSPACE_DIR} )
 
@@ -88,8 +97,6 @@ link_directories($ENV{OBT_STAGE}/orkid/ork.utpp )
 #link_directories($ENV{OBT_STAGE}/orkid/ork.ent )
 #link_directories($ENV{OBT_STAGE}/orkid/ork.tool )
 
-set(VULKAN_SDK $ENV{OBT_STAGE}/builds/vulkan/1.2.131.2/x86_64)
-link_directories(${VULKAN_SDK}/lib )
 
 set( ORK_CORE_INCD ${ORKROOT}/ork.core/inc )
 set( ORK_LEV2_INCD ${ORKROOT}/ork.lev2/inc )
@@ -103,94 +110,37 @@ set( ORK_ECS_INCD ${ORKROOT}/ork.ecs/inc )
 ################################################################################
 # IGL (its a beast, needs a cmake update)
 ################################################################################
-list(APPEND CMAKE_MODULE_PATH "${LIBIGL_INCLUDE_DIR}/../cmake")
-option(LIBIGL_USE_STATIC_LIBRARY "Use libigl as static library" ON)
-#option(LIBIGL_WITH_ANTTWEAKBAR      "Use AntTweakBar"    OFF)
-option(LIBIGL_WITH_CGAL             "Use CGAL"           ON)
-option(LIBIGL_WITH_COMISO           "Use CoMiso"         ON)
-option(LIBIGL_WITH_CORK             "Use Cork"           ON)
-option(LIBIGL_WITH_EMBREE           "Use Embree"         ON)
-#option(LIBIGL_WITH_LIM              "Use LIM"            OFF)
-#option(LIBIGL_WITH_MATLAB           "Use Matlab"         OFF)
-#option(LIBIGL_WITH_MOSEK            "Use MOSEK"          OFF)
-#option(LIBIGL_WITH_OPENGL           "Use OpenGL"         ON)
-#option(LIBIGL_WITH_OPENGL_GLFW      "Use GLFW"           ON)
-#option(LIBIGL_WITH_PNG              "Use PNG"            OFF)
-#option(LIBIGL_WITH_PYTHON           "Use Python"         OFF)
-option(LIBIGL_WITH_TETGEN           "Use Tetgen"         ON)
-option(LIBIGL_WITH_TRIANGLE         "Use Triangle"       ON)
-#option(LIBIGL_WITH_VIEWER           "Use OpenGL viewer"  ON)
-#option(LIBIGL_WITH_XML              "Use XML"            OFF)
-find_package(LIBIGL REQUIRED)
-#include($ENV{OBT_BUILDS}/igl/cmake/libigl.cmake )
 
-link_directories($ENV{OBT_BUILDS}/igl/.build)
 include_directories (AFTER $ENV{OBT_STAGE}/include/eigen3 )
-include_directories (AFTER $ENV{OBT_BUILDS}/igl/include )
-include_directories (AFTER $ENV{OBT_BUILDS}/igl/external/triangle )
 
-################################################################################
-# pull in extra header paths from obt dep modules
-################################################################################
+IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
 
-#include_directories (AFTER ${SHIBOKENHEADERPATH} )
-#include_directories (AFTER ${PYTHONHEADERPATH} )
+  list(APPEND CMAKE_MODULE_PATH "${LIBIGL_INCLUDE_DIR}/../cmake")
+  option(LIBIGL_USE_STATIC_LIBRARY "Use libigl as static library" ON)
+  #option(LIBIGL_WITH_ANTTWEAKBAR      "Use AntTweakBar"    OFF)
+  option(LIBIGL_WITH_CGAL             "Use CGAL"           ON)
+  option(LIBIGL_WITH_COMISO           "Use CoMiso"         ON)
+  option(LIBIGL_WITH_CORK             "Use Cork"           ON)
+  option(LIBIGL_WITH_EMBREE           "Use Embree"         ON)
+  #option(LIBIGL_WITH_LIM              "Use LIM"            OFF)
+  #option(LIBIGL_WITH_MATLAB           "Use Matlab"         OFF)
+  #option(LIBIGL_WITH_MOSEK            "Use MOSEK"          OFF)
+  #option(LIBIGL_WITH_OPENGL           "Use OpenGL"         ON)
+  #option(LIBIGL_WITH_OPENGL_GLFW      "Use GLFW"           ON)
+  #option(LIBIGL_WITH_PNG              "Use PNG"            OFF)
+  #option(LIBIGL_WITH_PYTHON           "Use Python"         OFF)
+  option(LIBIGL_WITH_TETGEN           "Use Tetgen"         ON)
+  option(LIBIGL_WITH_TRIANGLE         "Use Triangle"       ON)
+  #option(LIBIGL_WITH_VIEWER           "Use OpenGL viewer"  ON)
+  #option(LIBIGL_WITH_XML              "Use XML"            OFF)
+  find_package(LIBIGL REQUIRED)
+  #include($ENV{OBT_BUILDS}/igl/cmake/libigl.cmake )
 
-################################################################################
-# QT5
-################################################################################
+  link_directories($ENV{OBT_BUILDS}/igl/.build)
+  include_directories (AFTER $ENV{OBT_BUILDS}/igl/include )
+  include_directories (AFTER $ENV{OBT_BUILDS}/igl/external/triangle )
 
-# use a macro, not a function because of variable scoping issues
-#  there does not seem to be an easy way to propagate variables
-#  that were set by find_package up to the PARENT_SCOPE
-
-macro(enableQt5)
-
-  list(PREPEND CMAKE_MODULE_PATH $ENV{OBT_STAGE}/qt5/lib/cmake)
-
-  IF(${APPLE})
-  set(QT5BASE /usr/local/opt/qt5/lib/cmake)
-  ELSE()
-  set(QT5BASE $ENV{OBT_STAGE}/qt5/lib/cmake)
-  ENDIF()
-
-  ###################################
-
-  set(CMAKE_AUTOMOC ON)
-  set(CMAKE_AUTOUIC ON)
-  set(CMAKE_AUTORCC ON)
-
-  add_compile_options(-D_REENTRANT -DQT_NO_EXCEPTIONS -D_LARGEFILE64_SOURCE -D_LARGEFILE_SOURCE -DQT_GUI_LIB -DQT_CORE_LIB)
-  add_compile_definitions(QTVER=$ENV{QTVER})
-
-  set(Qt5_DIR ${QT5BASE})
-  set(Qt5Widgets_DIR ${QT5BASE}/Qt5Widgets)
-  set(Qt5Test_DIR ${QT5BASE}/Qt5Test)
-  set(Qt5Core_DIR ${QT5BASE}/Qt5Core)
-  set(Qt5Concurrent_DIR ${QT5BASE}/Qt5Concurrent)
-  set(Qt5Gui_DIR ${QT5BASE}/Qt5Gui)
-  set(Qt5Network_DIR ${QT5BASE}/Qt5Network)
-  set(Qt5X11Extras_DIR ${QT5BASE}/Qt5X11Extras)
-
-  set(QT5_COMPONENTS Core Widgets Gui )
-
-  # find_component(Qt5 ...) not working with X11Extras!
-  #  so we will explicitly add our qt5 modules
-  include(${Qt5Core_DIR}/Qt5CoreConfig.cmake )
-  include(${Qt5Gui_DIR}/Qt5GuiConfig.cmake )
-  include(${Qt5Widgets_DIR}/Qt5WidgetsConfig.cmake )
-
-  if(${APPLE})
-  else()
-    include(${Qt5X11Extras_DIR}/Qt5X11ExtrasConfig.cmake )
-    list(APPEND QT5_COMPONENTS X11Extras )
-  endif()
-
-  find_package(Qt5 COMPONENTS ${QT5_COMPONENTS} REQUIRED )
-
-  include_directories(${Qt5Gui_PRIVATE_INCLUDE_DIRS})
-
-endmacro()
+ENDIF()
 
 ##############################
 

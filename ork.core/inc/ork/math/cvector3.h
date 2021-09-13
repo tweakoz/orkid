@@ -66,65 +66,46 @@ public:
   Vector3<T> Transform(const Matrix33<T>& matrix) const;    // transform this vector
   Vector3<T> Transform3x3(const Matrix44<T>& matrix) const; // transform this vector
 
-  void Lerp(const Vector3& from, const Vector3& to, T par);
-  void Serp(const Vector3& PA, const Vector3& PB, const Vector3& PC, const Vector3& PD, T Par);
+  void lerp(const Vector3& from, const Vector3& to, T par); // linear interp
+  void serp(const Vector3& PA, const Vector3& PB, const Vector3& PC, const Vector3& PD, T par_x, T par_y); // 2D interp
 
-  T GetX(void) const {
-    return (x);
-  }
-  T GetY(void) const {
-    return (y);
-  }
-  T GetZ(void) const {
-    return (z);
-  }
-
-  void Set(T _x, T _y, T _z) {
+  void set(T _x, T _y, T _z) {
     x = _x;
     y = _y;
     z = _z;
   }
-  void SetX(T _x) {
+  void setX(T _x) {
     x = _x;
   }
-  void SetY(T _y) {
+  void setY(T _y) {
     y = _y;
   }
-  void SetZ(T _z) {
+  void setZ(T _z) {
     z = _z;
   }
 
-  Vector2<T> GetXY(void) const {
+  Vector2<T> xy(void) const {
     return Vector2<T>(x, y);
   }
-  Vector2<T> GetXZ(void) const {
+  Vector2<T> xz(void) const {
     return Vector2<T>(x, z);
   }
 
-  static Vector3 Zero(void) {
+  static Vector3 zero(void) {
     return Vector3(T(0), T(0), T(0));
   }
-  static Vector3 UnitX(void) {
-    return Vector3(T(1), T(0), T(0));
-  }
-  static Vector3 UnitY(void) {
-    return Vector3(T(0), T(1), T(0));
-  }
-  static Vector3 UnitZ(void) {
-    return Vector3(T(0), T(0), T(1));
-  }
-  static Vector3 One(void) {
+  static Vector3 one(void) {
     return Vector3(T(1), T(1), T(1));
   }
 
-  static T CalcTriArea(const Vector3& V, const Vector3& N);
+  static T calcTriangularArea(const Vector3& V, const Vector3& N);
 
   Vector3<T> Reflect(const Vector3& N) const; // R = I-(N*2*dot(N,I));
 
   void SetXYZ(T x, T y, T z) {
-    SetX(x);
-    SetY(y);
-    SetZ(z);
+    setX(x);
+    setY(y);
+    setZ(z);
   }
 
   inline T& operator[](U32 i) {
@@ -248,17 +229,15 @@ public:
   static const Vector3& Cyan(void);
   static const Vector3& Yellow(void);
 
-  T* GetArray(void) const {
+  static const Vector3 unitX() { return Vector3(T(1),T(0),T(0)); }
+  static const Vector3 unitY() { return Vector3(T(0),T(1),T(0)); }
+  static const Vector3 unitZ() { return Vector3(T(0),T(0),T(1)); }
+
+  T* asArray(void) const {
     return const_cast<T*>(&x);
   }
 
-  template <typename U> static Vector3 FromVector3(Vector3<U> vec) {
-    return Vector3(T::FromFX(vec.GetX().FXCast()), T::FromFX(vec.GetY().FXCast()), T::FromFX(vec.GetZ().FXCast()));
-  }
-
-  T x; // x component of this vector
-  T y; // y component of this vector
-  T z; // z component of this vector
+  T x, y, z; 
 };
 
 using fvec3       = Vector3<float>;
@@ -277,7 +256,7 @@ struct use_custom_serdes<fvec3> { //
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> inline ork::Vector3<T> operator*(T scalar, const ork::Vector3<T>& b) {
-  return ork::Vector3<T>((scalar * b.GetX()), (scalar * b.GetY()), (scalar * b.GetZ()));
+  return ork::Vector3<T>((scalar * b.x), (scalar * b.y), (scalar * b.z));
 }
 
 ///////////////////////////////////////////////////////////////////////////////

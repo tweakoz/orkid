@@ -16,10 +16,13 @@
 #include <ork/gfx/dds.h>
 #include <ork/lev2/gfx/texman.h>
 #include <math.h>
-#include <ispc_texcomp.h>
 #include <OpenImageIO/imageio.h>
 #include <OpenImageIO/filesystem.h>
 #include <ork/file/chunkfile.inl>
+
+#if defined(ENABLE_ISPC)
+#include <ispc_texcomp.h>
+#endif
 
 OIIO_NAMESPACE_USING
 
@@ -203,14 +206,14 @@ void Image::convertToRGBA(Image& imgout) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Image::compressDefault(CompressedImage& imgout) const {
-#if defined(__APPLE__)
+#if defined(__APPLE__) or defined(ORK_ARCHITECTURE_ARM_64)
   compressRGBA(imgout);
 #else
   compressBC7(imgout);
 #endif
 }
 CompressedImageMipChain Image::compressedMipChainDefault() const {
-#if defined(__APPLE__)
+#if defined(__APPLE__) or defined(ORK_ARCHITECTURE_ARM_64)
   return compressedMipChainRGBA();
 #else
   return compressedMipChainBC7();
@@ -218,6 +221,8 @@ CompressedImageMipChain Image::compressedMipChainDefault() const {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+#if defined(ENABLE_ISPC)
 
 void Image::compressBC7(CompressedImage& imgout) const {
   deco::printf(_image_deco, "///////////////////////////////////\n");
@@ -291,6 +296,8 @@ CompressedImageMipChain Image::compressedMipChainBC7() const {
   }
   return rval;
 }
+
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 

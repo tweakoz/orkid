@@ -283,7 +283,7 @@ void SimpleLightProcessor::_renderShadowedTexturedSpotLights(
   auto& RCFD     = drawdata.RCFD();
   auto context   = drawdata.context();
   auto& ddprops  = drawdata._properties;
-  auto irenderer = ddprops["irenderer"_crcu].Get<lev2::IRenderer*>();
+  auto irenderer = ddprops["irenderer"_crcu].get<lev2::IRenderer*>();
   auto FBI       = context->FBI();
   auto CIMPL     = drawdata._cimpl;
   auto FXI       = context->FXI();

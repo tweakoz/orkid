@@ -42,21 +42,21 @@ template <> //
 inline void ITyped<int>::deserialize(serdes::node_ptr_t desernode) const {
   auto instance   = desernode->_deser_instance;
   const auto& var = desernode->_value;
-  set(int(var.Get<double>()), instance);
+  set(int(var.get<double>()), instance);
 }
 ///////////////////////////////////////////////////////////////////////////////
 template <> //
 inline void ITyped<uint32_t>::deserialize(serdes::node_ptr_t desernode) const {
   auto instance   = desernode->_deser_instance;
   const auto& var = desernode->_value;
-  set(uint32_t(var.Get<double>()), instance);
+  set(uint32_t(var.get<double>()), instance);
 }
 ///////////////////////////////////////////////////////////////////////////////
 template <> //
 inline void ITyped<size_t>::deserialize(serdes::node_ptr_t desernode) const {
   auto instance   = desernode->_deser_instance;
   const auto& var = desernode->_value;
-  set(size_t(var.Get<double>()), instance);
+  set(size_t(var.get<double>()), instance);
 }
 ///////////////////////////////////////////////////////////////////////////////
 template <> //
@@ -84,7 +84,7 @@ void ITyped<T>::serialize(serdes::node_ptr_t leafnode) const {
   auto instance   = leafnode->_ser_instance;
   T value;
   get(value, instance);
-  leafnode->_value.template Set<T>(value);
+  leafnode->_value.template set<T>(value);
   serializer->serializeLeaf(leafnode);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -102,7 +102,7 @@ inline void ITyped<object_ptr_t>::serialize(serdes::node_ptr_t propnode) const {
     serializer->serializeObject(childnode);
     serializer->popNode();
   } else {
-    propnode->_value.template Set<void*>(nullptr);
+    propnode->_value.template set<void*>(nullptr);
     serializer->serializeLeaf(propnode);
   }
 }

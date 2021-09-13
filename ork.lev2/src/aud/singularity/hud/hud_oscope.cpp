@@ -352,7 +352,7 @@ ui::HandlerResult ScopeSurf::DoOnUiEvent(ui::event_constptr_t ev) {
   bool isalt  = ev->mbALT;
   bool isctrl = ev->mbCTRL;
   switch (ev->_eventcode) {
-    case ui::EventCode::KEY:
+    case ui::EventCode::KEY_DOWN:
     case ui::EventCode::KEY_REPEAT:
       switch (ev->miKeyCode) {
         case '-': {

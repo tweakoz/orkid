@@ -73,7 +73,7 @@ void DrawNaturalEnv(lev2::Context* context, const ItemDrawReq& EDR) {
     float Y2 = R.Y1 + R.H;
 
     const auto& KFIN              = EDR.s->_curhud_kframe;
-    const auto& ENVFRAME          = EDR._data.Get<envframe>();
+    const auto& ENVFRAME          = EDR._data.get<envframe>();
     const NaturalEnvEnvData* ENVD = ENVFRAME._data;
 
     bool collsamp = EDR.shouldCollectSample();

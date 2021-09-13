@@ -7,7 +7,7 @@
 
 #include <ork/pch.h>
 #include <ork/lev2/gfx/gfxenv.h>
-#include <ork/lev2/qtui/qtui.h>
+#include <ork/lev2/glfw/ctx_glfw.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/math/cvector4.h>
 #include <ork/lev2/ui/viewport.h>
@@ -125,22 +125,22 @@ DemoApp::DemoApp(int iw, int ih)
   // mpThreadPool->init(16);
   mpThreadPool->init(4);
 
-  mpTimer = new QTimer;
+  //mpTimer = new QTimer;
 
   ////////////////////
 
   MyViewport* gpvp   = new MyViewport("yo");
-  CQtWindow* pgfxwin = new CQtWindow(gpvp);
+  AppWindow* pgfxwin = new AppWindow(gpvp);
 
-  CTQT* pctqt = new CTQT(pgfxwin, nullptr);
+  //CtxGLFW* pctqt = new CtxGLFW(pgfxwin, nullptr);
 
-  // gfxdock->setWidget( pctqt->GetQWidget() );
+  // gfxdock->setWidget( pctqt->window() );
   // gfxdock->setMinimumSize( 100, 100 );
   // addDockWidget(Qt::NoDockWidgetArea, gfxdock);
 
-  pctqt->Show();
+  //pctqt->Show();
 
-  pctqt->GetQWidget()->Enable();
+  //pctqt->window()->Enable();
 
   // viewnum++;
 
@@ -149,10 +149,10 @@ DemoApp::DemoApp(int iw, int ih)
 
   gpvp->Init(pgfxwin->context());
 
-  mpTimer->connect(mpTimer, SIGNAL(timeout()), pctqt->GetQWidget(), SLOT(repaint()));
-  mpTimer->setSingleShot(false);
-  mpTimer->setInterval(16);
-  mpTimer->start(16);
+  //mpTimer->connect(mpTimer, SIGNAL(timeout()), pctqt->window(), SLOT(repaint()));
+  //mpTimer->setSingleShot(false);
+  //mpTimer->setInterval(16);
+  //mpTimer->start(16);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

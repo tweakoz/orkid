@@ -289,15 +289,15 @@ graph_inst::graph_inst(const graph_inst& oth)
 void graph_inst::doNotify(const ork::event::Event* event) {
   if (auto pev = dynamic_cast<const ItemRemovalEvent*>(event)) {
     if (pev->mProperty == graph_inst::GetClassStatic()->Description().property("Modules")) {
-      ork::PoolString ps = pev->mKey.Get<ork::PoolString>();
-      ork::Object* pobj  = pev->mOldValue.Get<ork::Object*>();
+      ork::PoolString ps = pev->mKey.get<ork::PoolString>();
+      ork::Object* pobj  = pev->mOldValue.get<ork::Object*>();
       delete pobj;
       return;
     }
   } else if (auto pev = dynamic_cast<const MapItemCreationEvent*>(event)) {
     if (pev->mProperty == graph_inst::GetClassStatic()->Description().property("Modules")) {
-      PoolString psname    = pev->mKey.Get<PoolString>();
-      ork::Object* pnewobj = pev->mNewItem.Get<ork::Object*>();
+      PoolString psname    = pev->mKey.get<PoolString>();
+      ork::Object* pnewobj = pev->mNewItem.get<ork::Object*>();
       dgmodule* pdgmod     = rtti::autocast(pnewobj);
 
       pdgmod->SetParent(this);

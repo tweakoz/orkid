@@ -58,7 +58,7 @@ void OutputStream::AddItem(const float& data) {
 void OutputStream::AddItem(const fmtx4& data) {
   fmtx4 temp = data;
   for (int i = 0; i < 16; i++) {
-    swapbytes_dynamic(temp.GetArray()[i]);
+    swapbytes_dynamic(temp.asArray()[i]);
   }
   Write((unsigned char*)&temp, sizeof(temp));
 }
@@ -66,7 +66,7 @@ void OutputStream::AddItem(const fmtx4& data) {
 void OutputStream::AddItem(const fvec4& data) {
   fvec4 temp = data;
   for (int i = 0; i < 4; i++) {
-    swapbytes_dynamic(temp.GetArray()[i]);
+    swapbytes_dynamic(temp.asArray()[i]);
   }
   Write((unsigned char*)&temp, sizeof(temp));
 }
@@ -74,7 +74,7 @@ void OutputStream::AddItem(const fvec4& data) {
 void OutputStream::AddItem(const fvec3& data) {
   fvec3 temp = data;
   for (int i = 0; i < 3; i++) {
-    swapbytes_dynamic(temp.GetArray()[i]);
+    swapbytes_dynamic(temp.asArray()[i]);
   }
   Write((unsigned char*)&temp, sizeof(temp));
 }
@@ -82,7 +82,7 @@ void OutputStream::AddItem(const fvec3& data) {
 void OutputStream::AddItem(const fvec2& data) {
   fvec2 temp = data;
   for (int i = 0; i < 2; i++) {
-    swapbytes_dynamic(temp.GetArray()[i]);
+    swapbytes_dynamic(temp.asArray()[i]);
   }
   Write((unsigned char*)&temp, sizeof(temp));
 }
@@ -95,50 +95,50 @@ void OutputStream::addVarMap(const varmap::VarMap& vmap, Writer& writer) {
     const auto& val        = item.second;
     size_t keystring_index = writer.stringIndex(key.c_str());
     AddItem<size_t>(keystring_index);
-    if (auto as = val.TryAs<std::string>()) {
+    if (auto as = val.tryAs<std::string>()) {
       AddItem<uint64_t>("std::string"_crcu);
       size_t str_index = writer.stringIndex(as.value().c_str());
       AddItem<size_t>(str_index);
-    } else if (auto as = val.TryAs<bool>()) {
+    } else if (auto as = val.tryAs<bool>()) {
       AddItem<uint64_t>("bool"_crcu);
       AddItem<bool>(as.value());
-    } else if (auto as = val.TryAs<int32_t>()) {
+    } else if (auto as = val.tryAs<int32_t>()) {
       AddItem<uint64_t>("int32_t"_crcu);
       AddItem<int32_t>(as.value());
-    } else if (auto as = val.TryAs<uint32_t>()) {
+    } else if (auto as = val.tryAs<uint32_t>()) {
       AddItem<uint64_t>("uint32_t"_crcu);
       AddItem<uint32_t>(as.value());
-    } else if (auto as = val.TryAs<int64_t>()) {
+    } else if (auto as = val.tryAs<int64_t>()) {
       AddItem<uint64_t>("int64_t"_crcu);
       AddItem<int64_t>(as.value());
-    } else if (auto as = val.TryAs<uint64_t>()) {
+    } else if (auto as = val.tryAs<uint64_t>()) {
       AddItem<uint64_t>("uint64_t"_crcu);
       AddItem<uint64_t>(as.value());
-    } else if (auto as = val.TryAs<size_t>()) {
+    } else if (auto as = val.tryAs<size_t>()) {
       AddItem<uint64_t>("size_t"_crcu);
       AddItem<size_t>(as.value());
-    } else if (auto as = val.TryAs<float>()) {
+    } else if (auto as = val.tryAs<float>()) {
       AddItem<uint64_t>("float"_crcu);
       AddItem<float>(as.value());
-    } else if (auto as = val.TryAs<double>()) {
+    } else if (auto as = val.tryAs<double>()) {
       AddItem<uint64_t>("double"_crcu);
       AddItem<double>(as.value());
-    } else if (auto as = val.TryAs<fvec2>()) {
+    } else if (auto as = val.tryAs<fvec2>()) {
       AddItem<uint64_t>("fvec2"_crcu);
       AddItem<fvec2>(as.value());
-    } else if (auto as = val.TryAs<fvec3>()) {
+    } else if (auto as = val.tryAs<fvec3>()) {
       AddItem<uint64_t>("fvec3"_crcu);
       AddItem<fvec3>(as.value());
-    } else if (auto as = val.TryAs<fvec4>()) {
+    } else if (auto as = val.tryAs<fvec4>()) {
       AddItem<uint64_t>("fvec4"_crcu);
       AddItem<fvec4>(as.value());
-    } else if (auto as = val.TryAs<fquat>()) {
+    } else if (auto as = val.tryAs<fquat>()) {
       AddItem<uint64_t>("fquat"_crcu);
       AddItem<fquat>(as.value());
-    } else if (auto as = val.TryAs<fmtx3>()) {
+    } else if (auto as = val.tryAs<fmtx3>()) {
       AddItem<uint64_t>("fmtx3"_crcu);
       AddItem<fmtx3>(as.value());
-    } else if (auto as = val.TryAs<fmtx4>()) {
+    } else if (auto as = val.tryAs<fmtx4>()) {
       AddItem<uint64_t>("fmtx4"_crcu);
       AddItem<fmtx4>(as.value());
     } else {

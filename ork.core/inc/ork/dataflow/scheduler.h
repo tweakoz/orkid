@@ -209,7 +209,7 @@ public:
 
 	void WaitForIdle();								// BLOCKING
 
-	LockedResource< graph_set_t >& GraphSet() { return mGraphSet; }
+	LockedResource< graph_set_t >& Graphset() { return mGraphSet; }
 
 	//////////////////////////
 

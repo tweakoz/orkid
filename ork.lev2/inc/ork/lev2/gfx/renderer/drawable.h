@@ -282,9 +282,14 @@ struct ModelDrawable : public Drawable {
   float GetEngineParamFloat(int idx) const;
   void ShowBoundingSphere(bool bflg);
   void enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const final;
+  void bindModelAsset(AssetPath assetpath);
+  void bindModel(model_ptr_t model);
 
   xgmmodelinst_ptr_t _modelinst;
   xgmworldpose_ptr_t _worldpose;
+  xgmmodelassetptr_t _asset;
+  model_ptr_t _model;
+
   float mfScale;
   fvec3 mOffset;
   fvec3 mRotate;

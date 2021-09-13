@@ -29,7 +29,7 @@ ShaderBuilder::ShaderBuilder(ork::Engine* tracer,const RenderData*prdata)
 	rend_shader* prendshader = new Shader1();//prdata->mClEngine);
 	//rend_shader* prendshader = new Shader2();
 	prendshader->mRenderData = prdata;
-	mpbakeshader->mPlatformShader.Set<rend_shader*>(prendshader);
+	mpbakeshader->mPlatformShader.set<rend_shader*>(prendshader);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -105,9 +105,9 @@ void Shader1::Shade( const rend_prefragment& prefrag, rend_fragment* pdstfrag ) 
 	float r = prefrag.mfR;
 	float s = prefrag.mfS;
 	float t = prefrag.mfT;
-	float onx = onrmR.GetX()*r+onrmS.GetX()*s+onrmT.GetX()*t;
-	float ony = onrmR.GetY()*r+onrmS.GetY()*s+onrmT.GetY()*t;
-	float onz = onrmR.GetZ()*r+onrmS.GetZ()*s+onrmT.GetZ()*t;
+	float onx = onrmR.x*r+onrmS.x*s+onrmT.x*t;
+	float ony = onrmR.y*r+onrmS.y*s+onrmT.y*t;
+	float onz = onrmR.z*r+onrmS.z*s+onrmT.z*t;
 	ork::fvec3 c( onx, ony, onz );
 	pdstfrag->mRGBA = ork::fvec4( c, 1.0f );
 	pdstfrag->mZ = prefrag.mfZ;
@@ -169,7 +169,7 @@ void Shader1::ShadeBlock( AABuffer& aabuf, int ifragbase, int icount, int inumtr
 		aabuf.mFragInpClBuffer->TransferAndBlock( mRenderData->mClEngine.GetDevice(), ifraginpsize );
 		//////////////////////////////////////////////
 		const ork::fvec3& veye = mRenderData->mEye;
-		const float* peye = veye.GetArray();
+		const float* peye = veye.asArray();
 		//////////////////////////////////////////////
 		// set arguments
 		int iarg = 0;
@@ -200,7 +200,7 @@ void Shader1::ShadeBlock( AABuffer& aabuf, int ifragbase, int icount, int inumtr
 	{	rend_fragment* frag = aabuf.mpFragments[i];
 		//const rend_prefragment& pfrag = PFRAGS.mPreFrags[ifragbase+i];
 		frag->mRGBA.SetXYZ( ppostfragbuffer[2], ppostfragbuffer[1], ppostfragbuffer[0] );
-		frag->mRGBA.SetW( ppostfragbuffer[3] );
+		frag->mRGBA.setW( ppostfragbuffer[3] );
 		frag->mZ = ppostfragbuffer[4];
 		frag->mWorldPos.SetXYZ( ppostfragbuffer[5], ppostfragbuffer[6], ppostfragbuffer[7] );
 		frag->mWldSpaceNrm.SetXYZ( ppostfragbuffer[8], ppostfragbuffer[9], ppostfragbuffer[10] );
@@ -225,8 +225,8 @@ void Shader1::ShadeBlock( AABuffer& aabuf, int ifragbase, int icount, int inumtr
 		rend_fragment* frag = aabuf.mpFragments[i];
 //		const ork::fvec3 nrm = (frag->mWldSpaceNrm*0.5f)+ork::fvec3(0.5f,0.5f,0.5f);
 		frag->mRGBA.SetXYZ( pfrag.mfR, pfrag.mfS, pfrag.mfT );
-		//frag->mRGBA.SetXYZ( nrm.GetX(), nrm.GetY(), nrm.GetZ() );
-		frag->mRGBA.SetW( 0.5f );
+		//frag->mRGBA.SetXYZ( nrm.x, nrm.y, nrm.z );
+		frag->mRGBA.setW( 0.5f );
 		frag->mZ = pfrag.mfZ;
 	}
 	//////////////////////////////////////////////////////

@@ -309,22 +309,22 @@ DeferredCompositingNodePbr::~DeferredCompositingNodePbr() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void DeferredCompositingNodePbr::doGpuInit(lev2::Context* pTARG, int iW, int iH) {
-  _impl.Get<std::shared_ptr<PbrNodeImpl>>()->init(pTARG);
+  _impl.get<std::shared_ptr<PbrNodeImpl>>()->init(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void DeferredCompositingNodePbr::DoRender(CompositorDrawData& drawdata) {
   EASY_BLOCK("pbr-DoRender");
-  auto impl = _impl.Get<std::shared_ptr<PbrNodeImpl>>();
+  auto impl = _impl.get<std::shared_ptr<PbrNodeImpl>>();
   impl->_render(this, drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
 RtBuffer* DeferredCompositingNodePbr::GetOutput() const {
-  auto& CTX = _impl.Get<std::shared_ptr<PbrNodeImpl>>()->_context;
+  auto& CTX = _impl.get<std::shared_ptr<PbrNodeImpl>>()->_context;
   return CTX._rtbLightAccum;
 }
 ///////////////////////////////////////////////////////////////////////////////
 RtGroup* DeferredCompositingNodePbr::GetOutputGroup() const {
-  auto& CTX = _impl.Get<std::shared_ptr<PbrNodeImpl>>()->_context;
+  auto& CTX = _impl.get<std::shared_ptr<PbrNodeImpl>>()->_context;
   return CTX._rtgGbuffer;
 }
 ///////////////////////////////////////////////////////////////////////////////

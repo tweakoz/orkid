@@ -43,9 +43,9 @@ size_t Module::countIos() const {
     for( auto io : _io ){
         auto name = io.first;
         auto var = io.second;
-        if( auto as = var.TryAs<Input>() )
+        if( auto as = var.tryAs<Input>() )
             rval++;
-        if( auto as = var.TryAs<Output>() )
+        if( auto as = var.tryAs<Output>() )
             rval++;
     }
     return rval;

@@ -19,16 +19,16 @@ TEST(svariant_try)
 {
     svar128_t var;
 
-    var.Set<bool>(true);
+    var.set<bool>(true);
 
-    CHECK_EQUAL(var.TryAs<float>(),false);
-    CHECK_EQUAL(var.TryAs<bool>(),true);
-    CHECK_EQUAL(var.TryAs<bool>().value(),true);
+    CHECK_EQUAL(var.tryAs<float>(),false);
+    CHECK_EQUAL(var.tryAs<bool>(),true);
+    CHECK_EQUAL(var.tryAs<bool>().value(),true);
 
-    var.Set<float>(3.14f);
-    CHECK_EQUAL(var.TryAs<float>(),true);
-    CHECK_EQUAL(var.TryAs<bool>(),false);
-    auto asf = var.TryAs<bool>();
+    var.set<float>(3.14f);
+    CHECK_EQUAL(var.tryAs<float>(),true);
+    CHECK_EQUAL(var.tryAs<bool>(),false);
+    auto asf = var.tryAs<bool>();
     if( asf )
         printf("chk<%d> val<%d>\n", int(asf), int(asf.value()));
 

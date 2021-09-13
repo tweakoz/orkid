@@ -30,7 +30,7 @@ extern bool _macosUseHIDPI;
 #endif
 ///////////////////////////////////////////////////////////////////////////////
 UiTestApp::UiTestApp(int& argc, char** argv)
-    : OrkEzQtApp(argc, argv,QtAppInitData()) {
+    : OrkEzQtApp(argc, argv,AppInitData()) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 UiTestApp::~UiTestApp() {
@@ -42,7 +42,7 @@ uitestapp_ptr_t createEZapp(int& argc, char** argv) {
   // boot up debug HUD
   //////////////////////////////////////////////////////////////////////////////
   static auto& qti = qtinit(argc, argv);
-  QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
+  //QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
   auto qtapp                      = std::make_shared<UiTestApp>(qti._argc, qti._argvp);
   auto qtwin                      = qtapp->_mainWindow;
   auto gfxwin                     = qtwin->_gfxwin;
@@ -138,7 +138,7 @@ uitestapp_ptr_t createEZapp(int& argc, char** argv) {
     bool isalt  = ev->mbALT;
     bool isctrl = ev->mbCTRL;
     switch (ev->_eventcode) {
-      case ui::EventCode::KEY:
+      case ui::EventCode::KEY_DOWN:
       case ui::EventCode::KEY_REPEAT:
         switch (ev->miKeyCode) {
           case 'p':

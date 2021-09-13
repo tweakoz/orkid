@@ -20,19 +20,19 @@ Expression::Expression(Ref&v) {
 
 size_t Expression::bitwidth() const {
 
-    if(auto as=_child.TryAs<Ref>()){
+    if(auto as=_child.tryAs<Ref>()){
         return as.value().bitwidth();
     }
-    else if(auto as=_child.TryAs<OperationNot>()){
+    else if(auto as=_child.tryAs<OperationNot>()){
         return as.value().bitwidth();
     }
-    else if(auto as=_child.TryAs<OperationPlus>()){
+    else if(auto as=_child.tryAs<OperationPlus>()){
         return as.value().bitwidth();
     }
-    else if(auto as=_child.TryAs<OperationSlice>()){
+    else if(auto as=_child.tryAs<OperationSlice>()){
         return as.value().bitwidth();
     }
-    else if(auto as=_child.TryAs<astnode_t>()){
+    else if(auto as=_child.tryAs<astnode_t>()){
         return as.value()->bitwidth();
     }
     else {

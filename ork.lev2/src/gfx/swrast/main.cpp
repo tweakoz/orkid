@@ -12,7 +12,7 @@
 #include <ork/file/fileenv.h>
 #include <ork/math/collision_test.h>
 #include <ork/lev2/gfx/gfxenv.h>
-#include <ork/lev2/qtui/qtui.h>
+#include <ork/lev2/glfw/ctx_glfw.h>
 //#include <IL/il.h>
 //#include <IL/ilut.h>
 ////////////////////////////////////////////////////////////
@@ -24,26 +24,6 @@
 #pragma comment( lib, "ilu.lib" )
 #pragma comment( lib, "ilut.lib" )
 
-/*
-namespace devil {
-
-void InitDevIL()
-{
-	static bool binit = true;
-
-	if( binit )
-	{
-		ilInit();
-		int iver = ilGetInteger( IL_VERSION_NUM);
-		if(	(iver < IL_VERSION) )
-		{	printf("DevIL version is different...exiting!\n");
-			OrkAssert(0);
-		}
-		binit = false;
-	}
-}
-
-}*/
 ////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////
@@ -556,13 +536,13 @@ int lev3_test_main( int argc, char** argv )
 	CreationParams.miNumSharedVerts = 512<<10;
 	ork::lev2::GfxEnv::GetRef().PushCreationParams(CreationParams);
 	////////////////////////////////////////////////////
-    QApplication qapp(argc,argv);
-    DemoApp dapp(640,480);
+    //QApplication qapp(argc,argv);
+    //DemoApp dapp(640,480);
 
 
     while(1)
     {
-        qapp.exec();
+        //qapp.exec();
     }
 	{	//ork::Init();
 

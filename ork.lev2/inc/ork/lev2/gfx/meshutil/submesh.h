@@ -9,6 +9,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#include <ork/lev2/config.h>
 #include <ork/util/crc.h>
 #include <ork/util/crc64.h>
 #include <ork/math/cvector3.h>
@@ -36,22 +37,25 @@ struct edge;
 struct vertex;
 struct vertexpool;
 struct poly;
-struct IglMesh;
 struct submesh;
 
 using edge_ptr_t       = std::shared_ptr<edge>;
 using vertex_ptr_t     = std::shared_ptr<vertex>;
 using vertexpool_ptr_t = std::shared_ptr<vertexpool>;
 using poly_ptr_t       = std::shared_ptr<poly>;
-using iglmesh_ptr_t    = std::shared_ptr<IglMesh>;
 using submesh_ptr_t    = std::shared_ptr<submesh>;
 
 using edge_constptr_t       = std::shared_ptr<const edge>;
 using vertex_constptr_t     = std::shared_ptr<const vertex>;
 using vertexpool_constptr_t = std::shared_ptr<const vertexpool>;
 using poly_constptr_t       = std::shared_ptr<const poly>;
-using iglmesh_constptr_t    = std::shared_ptr<const IglMesh>;
 using submesh_constptr_t    = std::shared_ptr<const submesh>;
+
+#if defined(ENABLE_IGL)
+struct IglMesh;
+using iglmesh_ptr_t    = std::shared_ptr<IglMesh>;
+using iglmesh_constptr_t    = std::shared_ptr<const IglMesh>;
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -101,7 +105,7 @@ struct edge {
 
 struct uvmapcoord {
   uvmapcoord();
-  void Lerp(const uvmapcoord& ina, const uvmapcoord& inb, float flerp);
+  void lerp(const uvmapcoord& ina, const uvmapcoord& inb, float flerp);
   uvmapcoord operator+(const uvmapcoord& ina) const;
   uvmapcoord operator*(const float Scalar) const;
   void Clear(void);
@@ -123,8 +127,8 @@ struct vertex {
   vertex(fvec3 pos, fvec3 nrm, fvec3 bin, fvec2 uv, fvec4 col);
   void set(fvec3 pos, fvec3 nrm, fvec3 bin, fvec2 uv, fvec4 col);
 
-  vertex Lerp(const vertex& vtx, float flerp) const;
-  void Lerp(const vertex& a, const vertex& b, float flerp);
+  vertex lerp(const vertex& vtx, float flerp) const;
+  void lerp(const vertex& a, const vertex& b, float flerp);
 
   const fvec3& Pos() const;
 
@@ -270,16 +274,16 @@ struct submesh {
 
   template <typename T> T& typedAnnotation(const std::string annokey) {
     auto& anno = _annotations[annokey];
-    if (anno.IsA<T>())
-      return anno.Get<T>();
-    return anno.Make<T>();
+    if (anno.isA<T>())
+      return anno.get<T>();
+    return anno.make<T>();
   }
 
   template <typename T> const T& typedAnnotation(const std::string annokey) const {
     auto it = _annotations.find(annokey);
     if (it != _annotations.end()) {
       const auto& anno = it->second;
-      return anno.Get<T>();
+      return anno.get<T>();
     }
     assert(false);
     static T rval;
@@ -361,9 +365,11 @@ struct submesh {
 
   /////////////////////////////////////////////////////////////////////////
 
+#if defined(ENABLE_IGL)
   iglmesh_ptr_t toIglMesh(int numsides) const;
   void igl_test();
-
+#endif
+  
   /////////////////////////////////////////////////////////////////////////
 
   std::string name;

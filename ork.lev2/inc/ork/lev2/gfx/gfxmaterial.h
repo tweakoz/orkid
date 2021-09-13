@@ -62,7 +62,7 @@ struct MaterialInstItem {
   }
   virtual ~MaterialInstItem() {
   }
-  virtual void Set() = 0;
+  virtual void set() = 0;
   void SetApplicator(MaterialInstApplicator* papplicator) {
     mApplicator = papplicator;
   }
@@ -82,7 +82,7 @@ struct MaterialInstItemMatrix : public MaterialInstItem {
   }
 
 private:
-  void Set() override {
+  void set() override {
   }
 };
 
@@ -109,7 +109,7 @@ struct MaterialInstItemMatrixBlock : public MaterialInstItem {
   const fmtx4* GetMatrices() const {
     return mpMatrices;
   }
-  void Set() final {
+  void set() final {
   }
 };
 

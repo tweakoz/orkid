@@ -83,7 +83,7 @@ void AssetSet::Register(
   }
 
   if (false == result.second)
-    mTopLevel->GetSet().push_back(entry);
+    mTopLevel->Getset().push_back(entry);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -120,7 +120,7 @@ std::pair<AssetSetEntry*, bool> FindAssetEntryInternal(AssetSetLevel* top_level,
   for (AssetSetLevel* level = top_level; //
        level != nullptr;
        level = level->Parent()) {
-    auto levset = level->GetSet();
+    auto levset = level->Getset();
     auto it     = std::find_if(
         levset.begin(), //
         levset.end(),
@@ -143,8 +143,8 @@ bool AssetSet::Load(int depth) {
   for (AssetSetLevel* level = mTopLevel; //
        depth != 0 && level != NULL;
        level = level->Parent(), depth--) {
-    for (orkvector<AssetSetEntry*>::size_type i = 0; i < level->GetSet().size(); ++i) {
-      AssetSetEntry* entry = level->GetSet()[i];
+    for (orkvector<AssetSetEntry*>::size_type i = 0; i < level->Getset().size(); ++i) {
+      AssetSetEntry* entry = level->Getset()[i];
       if (false == entry->IsLoaded()) {
         if (entry->Load(mTopLevel)) {
           load_count++;
@@ -165,8 +165,8 @@ bool AssetSet::unload(int depth) {
   ork::ConstString name("");
 
   for (AssetSetLevel* level = mTopLevel; depth != 0 && level != NULL; level = level->Parent(), depth--) {
-    for (orkvector<AssetSetEntry*>::size_type i = 0; i < level->GetSet().size(); ++i) {
-      AssetSetEntry* entry = level->GetSet()[i];
+    for (orkvector<AssetSetEntry*>::size_type i = 0; i < level->Getset().size(); ++i) {
+      AssetSetEntry* entry = level->Getset()[i];
       if (entry->unload(mTopLevel)) {
         unload_count--;
         name = entry->asset()->GetClass()->Name();
@@ -208,7 +208,7 @@ AssetSetLevel* AssetSet::topLevel() const {
 
 template <typename Operator> void Apply(AssetSetLevel* top_level, Operator op, int depth) {
   for (AssetSetLevel* level = top_level; depth != 0 && level != NULL; level = level->Parent(), depth--) {
-    std::for_each(level->GetSet().begin(), level->GetSet().end(), op);
+    std::for_each(level->Getset().begin(), level->Getset().end(), op);
   }
 }
 

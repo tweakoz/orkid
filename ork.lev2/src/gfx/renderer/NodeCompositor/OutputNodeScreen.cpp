@@ -72,9 +72,9 @@ struct SCRIMPL {
     _width  = w * (_node->supersample() + 1);
     _height = h * (_node->supersample() + 1);
     //////////////////////////////////////////////////////
-    drawdata._properties["OutputWidth"_crcu].Set<int>(_width);
-    drawdata._properties["OutputHeight"_crcu].Set<int>(_height);
-    drawdata._properties["StereoEnable"_crcu].Set<bool>(false);
+    drawdata._properties["OutputWidth"_crcu].set<int>(_width);
+    drawdata._properties["OutputHeight"_crcu].set<int>(_height);
+    drawdata._properties["StereoEnable"_crcu].set<bool>(false);
     _CPD.defaultSetup(drawdata);
     CIMPL->pushCPD(_CPD);
   }
@@ -109,17 +109,17 @@ ScreenOutputCompositingNode::ScreenOutputCompositingNode()
 ScreenOutputCompositingNode::~ScreenOutputCompositingNode() {
 }
 void ScreenOutputCompositingNode::gpuInit(lev2::Context* pTARG, int iW, int iH) {
-  _impl.Get<std::shared_ptr<SCRIMPL>>()->gpuInit(pTARG);
+  _impl.get<std::shared_ptr<SCRIMPL>>()->gpuInit(pTARG);
 }
 void ScreenOutputCompositingNode::beginAssemble(CompositorDrawData& drawdata) {
-  _impl.Get<std::shared_ptr<SCRIMPL>>()->beginAssemble(drawdata);
+  _impl.get<std::shared_ptr<SCRIMPL>>()->beginAssemble(drawdata);
 }
 void ScreenOutputCompositingNode::endAssemble(CompositorDrawData& drawdata) {
-  _impl.Get<std::shared_ptr<SCRIMPL>>()->endAssemble(drawdata);
+  _impl.get<std::shared_ptr<SCRIMPL>>()->endAssemble(drawdata);
 }
 void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
   drawdata.context()->debugPushGroup("ScreenOutputCompositingNode::composite");
-  auto impl = _impl.Get<std::shared_ptr<SCRIMPL>>();
+  auto impl = _impl.get<std::shared_ptr<SCRIMPL>>();
   /////////////////////////////////////////////////////////////////////////////
   // VR compositor
   /////////////////////////////////////////////////////////////////////////////
@@ -127,7 +127,7 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
   RenderContextFrameData& framedata = framerenderer.framedata();
   Context* context                  = framedata.GetTarget();
   auto fbi                          = context->FBI();
-  if (auto try_final = drawdata._properties["final_out"_crcu].TryAs<RtBuffer*>()) {
+  if (auto try_final = drawdata._properties["final_out"_crcu].tryAs<RtBuffer*>()) {
     auto buffer = try_final.value();
     if (buffer) {
       assert(buffer != nullptr);

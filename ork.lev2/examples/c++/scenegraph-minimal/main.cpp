@@ -1,4 +1,3 @@
-#include <QWindow>
 #include <ork/application/application.h>
 #include <ork/kernel/string/deco.inl>
 #include <ork/kernel/timer.h>
@@ -80,5 +79,5 @@ int main(int argc, char** argv) {
   });
   //////////////////////////////////////////////////////////
   qtapp->setRefreshPolicy({EREFRESH_FASTEST, -1});
-  return qtapp->exec();
+  return qtapp->runloop();
 }

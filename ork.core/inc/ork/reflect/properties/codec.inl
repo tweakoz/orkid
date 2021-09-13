@@ -20,23 +20,23 @@ inline void decode_key(std::string keystr, std::string& key_out) {
 }
 template <typename T> //
 inline void decode_value(var_t val_inp, T& val_out) {
-  val_out = val_inp.Get<T>();
+  val_out = val_inp.get<T>();
 }
 template <> //
 inline void decode_value(var_t val_inp, int& val_out) {
-  val_out = int(val_inp.Get<double>());
+  val_out = int(val_inp.get<double>());
 }
 template <> //
 inline void decode_value(var_t val_inp, uint_t& val_out) {
-  val_out = uint_t(val_inp.Get<double>());
+  val_out = uint_t(val_inp.get<double>());
 }
 template <> //
 inline void decode_value(var_t val_inp, ulong_t& val_out) {
-  val_out = ulong_t(val_inp.Get<double>());
+  val_out = ulong_t(val_inp.get<double>());
 }
 template <> //
 inline void decode_value(var_t val_inp, float& val_out) {
-  val_out = float(val_inp.Get<double>());
+  val_out = float(val_inp.get<double>());
 }
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////

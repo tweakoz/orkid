@@ -28,7 +28,7 @@ template <typename queue_type> struct yo {
 
   void RunTest() {
     auto l_producer = [&](anyp inp) {
-      auto pyo              = inp.Get<yo*>();
+      auto pyo              = inp.get<yo*>();
       queue_type& the_queue = pyo->mQueue;
       printf("STARTED PRODUCER knummsgs<%d>\n", knummsgs);
       for (int i = 0; i < knummsgs; i++) {
@@ -42,7 +42,7 @@ template <typename queue_type> struct yo {
     };
 
     auto l_consumer = [&](anyp inp) {
-      auto pyo = inp.Get<yo*>();
+      auto pyo = inp.get<yo*>();
       printf("STARTED CONSUMER\n");
       queue_type& the_queue = pyo->mQueue;
       value_type popped;
@@ -54,18 +54,18 @@ template <typename queue_type> struct yo {
         while (the_queue.try_pop(popped)) {
           // printf( " cons pulling ictr1<%d> ictr2<%d>\n", ictr1, ictr2 );
 
-          if (popped.template IsA<int>()) {
-            int iget = popped.template Get<int>();
+          if (popped.template isA<int>()) {
+            int iget = popped.template get<int>();
             // printf( "popped int<%d>\n", iget );
             assert(iget == ictr1);
             ictr1++;
-          } else if (popped.template IsA<extstring_t>()) {
-            extstring_t& es = popped.template Get<extstring_t>();
+          } else if (popped.template isA<extstring_t>()) {
+            extstring_t& es = popped.template get<extstring_t>();
             // if( (ictr2%(1<<18))==0 )
             //	printf( "popped str<%s>\n", es.c_str() );
             ictr2++;
             assert(ictr2 == ictr1);
-          } else if (popped.template IsA<EOTEST>())
+          } else if (popped.template isA<EOTEST>())
             bdone = true;
           else
             assert(false);

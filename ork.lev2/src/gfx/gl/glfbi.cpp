@@ -71,13 +71,13 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
 
   if (rtg) {
     glDepthRange(0.0, 1.0f);
-    float fx = 0.0f; // mTargetGL.FBI()->GetRtGroup()->GetX();
-    float fy = 0.0f; // mTargetGL.FBI()->GetRtGroup()->GetY();
+    float fx = 0.0f; // mTargetGL.FBI()->GetRtGroup()->x;
+    float fy = 0.0f; // mTargetGL.FBI()->GetRtGroup()->y;
     float fw = GetRtGroup()->width();
     float fh = GetRtGroup()->height();
     // printf("RTGroup begin x<%f> y<%f> w<%f> h<%f>\n", fx, fy, fw, fh);
     ViewportRect extents(fx, fy, fw, fh);
-    // SRect extents( mTarget.GetX(), mTarget.GetY(), mTarget.width(), mTarget.height() );
+    // SRect extents( mTarget.x, mTarget.y, mTarget.width(), mTarget.height() );
     pushViewport(extents);
     pushScissor(extents);
     // printf("BEGINFRAME<RtGroup>\n");
@@ -101,7 +101,7 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
 
     glDepthRange(0.0, 1.0f);
     ViewportRect extents = mTarget.mainSurfaceRectAtOrigin();
-    // printf( "WINtarg begin x<%d> y<%d> w<%d> h<%d>\n", mTarget.GetX(), mTarget.GetY(), mTarget.width(), mTarget.height() );
+    // printf( "WINtarg begin x<%d> y<%d> w<%d> h<%d>\n", mTarget.x, mTarget.y, mTarget.width(), mTarget.height() );
     pushViewport(extents);
     pushScissor(extents);
     // printf("BEGINFRAME<WIN> w<%d> h<%d>\n", extents.miW, extents.miH);
@@ -311,10 +311,10 @@ void GlFrameBufferInterface::Capture(const RtGroup& rtg, int irt, const file::Pa
     return;
 
   auto buffer = rtg.GetMrt(irt);
-  if (buffer->_impl.IsSet() == false)
+  if (buffer->_impl.Isset() == false)
     return;
 
-  auto tex_id = buffer->_impl.Get<GlRtBufferImpl*>()->_texture;
+  auto tex_id = buffer->_impl.get<GlRtBufferImpl*>()->_texture;
 
   int iw        = rtg.width();
   int ih        = rtg.height();
@@ -565,8 +565,8 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
     if (ctx.mRtGroup) {
       int W  = ctx.mRtGroup->width();
       int H  = ctx.mRtGroup->height();
-      int sx = int((rAt.GetX()) * float(W));
-      int sy = int((1.0f - rAt.GetY()) * float(H));
+      int sx = int((rAt.x) * float(W));
+      int sy = int((1.0f - rAt.y) * float(H));
 
       GlFboObject* FboObj = (GlFboObject*)ctx.mRtGroup->GetInternalHandle();
 
@@ -624,15 +624,15 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
                   // d             = (value >> 0) & 0xffff;
                   // uint64_t rval = (d << 48) | (c << 32) | (b << 16) | a;
                   /////////////////////////////////////////////////////////////////
-                  ctx._pickvalues[MrtIndex].Set<uint64_t>(value);
+                  ctx._pickvalues[MrtIndex].set<uint64_t>(value);
                   // printf("getpix MrtIndex<%d> rx<%d> ry<%d> value<0x%zx>\n", MrtIndex, sx, sy, value);
                   /////////////////////////////////////////////////////////////////
                   break;
                 }
                 case PixelFetchContext::EPU_FLOAT: {
                   fvec4 rv;
-                  glReadPixels(sx, sy, 1, 1, GL_RGBA, GL_FLOAT, (void*)rv.GetArray());
-                  ctx._pickvalues[MrtIndex].Set<fvec4>(rv);
+                  glReadPixels(sx, sy, 1, 1, GL_RGBA, GL_FLOAT, (void*)rv.asArray());
+                  ctx._pickvalues[MrtIndex].set<fvec4>(rv);
                   // printf("getpix MrtIndex<%d> rx<%d> ry<%d> <%g %g %g %g>\n", MrtIndex, sx, sy, rv.x, rv.y, rv.z, rv.w);
                   break;
                 }

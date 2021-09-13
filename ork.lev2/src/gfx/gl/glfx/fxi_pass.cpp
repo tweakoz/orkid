@@ -11,7 +11,7 @@
 #include <ork/kernel/prop.h>
 #include <ork/kernel/string/string.h>
 
-namespace ork::lev2::orksl {
+namespace ork::lev2::glslfx {
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -133,14 +133,14 @@ void Pass::bindUniformBlockBuffer(UniformBlock* block, UniformBuffer* buffer) {
     GL_ERRORCHECK();
     // glBindBufferRange(GL_UNIFORM_BUFFER,   // target
     //                ubo_bindingindex,    // index
-    //              buffer->_bufid, // buffer objid
+    //              buffer->_glbufid, // buffer objid
     //            ubo_offset,          // offset
     //          ubo_size);           // length
     glBindBufferBase(
         GL_UNIFORM_BUFFER, // target
         ubo_bindingindex,  // index
-        buffer->_bufid); // buffer objid
-    printf("glBindBufferRange bidx<%d> bufid<%d>\n", int(ubo_bindingindex), int(buffer->_bufid));
+        buffer->_glbufid); // buffer objid
+    printf("glBindBufferRange bidx<%d> bufid<%d>\n", int(ubo_bindingindex), int(buffer->_glbufid));
     GL_ERRORCHECK();
     _ubobindings[ubo_bindingindex] = buffer;
   }
@@ -186,107 +186,29 @@ void Pass::postProc(rootcontainer_ptr_t container) {
 
       Uniform* puni = it->second;
 
-      puni->_apitype.Set<GLenum>(unityp);
-
-      switch(unityp){
-        case GL_FLOAT:
-          puni->_type = orksl::EUniformType::Float;
-          break;
-        case GL_FLOAT_VEC2:
-          puni->_type = orksl::EUniformType::Vec2f;
-          break;
-        case GL_FLOAT_VEC3:
-          puni->_type = orksl::EUniformType::Vec3f;
-          break;
-        case GL_FLOAT_VEC4:
-          puni->_type = orksl::EUniformType::Vec4f;
-          break;
-        case GL_FLOAT_MAT3:
-          puni->_type = orksl::EUniformType::Mat33f;
-          break;
-        case GL_FLOAT_MAT4:
-          puni->_type = orksl::EUniformType::Mat44f;
-          break;
-        case GL_INT:
-          puni->_type = orksl::EUniformType::Int;
-          break;
-        case GL_INT_VEC2:
-          puni->_type = orksl::EUniformType::Vec2i;
-          break;
-        case GL_INT_VEC3:
-          puni->_type = orksl::EUniformType::Vec3i;
-          break;
-        case GL_INT_VEC4:
-          puni->_type = orksl::EUniformType::Vec4i;
-          break;
-        case GL_UNSIGNED_INT:
-          puni->_type = orksl::EUniformType::UnsignedInt;
-          break;
-        case GL_UNSIGNED_INT_VEC2:
-          puni->_type = orksl::EUniformType::Vec2u;
-          break;
-        case GL_UNSIGNED_INT_VEC3:
-          puni->_type = orksl::EUniformType::Vec3u;
-          break;
-        case GL_UNSIGNED_INT_VEC4:
-          puni->_type = orksl::EUniformType::Vec4u;
-          break;
-        case GL_SAMPLER_1D:
-          puni->_type = orksl::EUniformType::Sampler1D;
-          break;          
-        case GL_SAMPLER_2D:
-          puni->_type = orksl::EUniformType::Sampler2D;
-          break;          
-        case GL_SAMPLER_3D:
-          puni->_type = orksl::EUniformType::Sampler3D;
-          break;          
-        case GL_SAMPLER_CUBE:
-          puni->_type = orksl::EUniformType::SamplerCube;
-          break;          
-        case GL_SAMPLER_1D_SHADOW:
-          puni->_type = orksl::EUniformType::SamplerShadow1D;
-          break;          
-        case GL_SAMPLER_2D_SHADOW:
-          puni->_type = orksl::EUniformType::SamplerShadow2D;
-          break;          
-        case GL_UNSIGNED_INT_SAMPLER_1D:
-          puni->_type = orksl::EUniformType::Sampler1Du;
-          break;          
-        case GL_UNSIGNED_INT_SAMPLER_2D:
-          puni->_type = orksl::EUniformType::Sampler2Du;
-          break;          
-        case GL_UNSIGNED_INT_SAMPLER_3D:
-          puni->_type = orksl::EUniformType::Sampler3Du;
-          break;          
-        case GL_UNSIGNED_INT_SAMPLER_CUBE:
-          puni->_type = orksl::EUniformType::SamplerCubeu;
-          break;          
-        default:
-          printf( "Unknown uniform datatype<%08x>\n", unityp);
-          OrkAssert(false);
-      }
+      puni->_type = unityp;
 
       UniformInstance* pinst = new UniformInstance;
       pinst->mpUniform       = puni;
 
       GLint uniloc     = glGetUniformLocation(_programObjectId, str_name.c_str());
-      pinst->_location = uniloc;
+      pinst->mLocation = uniloc;
 
       if (puni->_typeName == "sampler2D") {
         pinst->mSubItemIndex = this->_samplerCount++;
-        pinst->mPrivData.Set<GLenum>(GL_TEXTURE_2D);
+        pinst->mPrivData.set<GLenum>(GL_TEXTURE_2D);
       } else if (puni->_typeName == "usampler2D") {
         pinst->mSubItemIndex = this->_samplerCount++;
-        pinst->mPrivData.Set<GLenum>(GL_TEXTURE_2D);
+        pinst->mPrivData.set<GLenum>(GL_TEXTURE_2D);
       } else if (puni->_typeName == "sampler3D") {
         pinst->mSubItemIndex = this->_samplerCount++;
-        pinst->mPrivData.Set<GLenum>(GL_TEXTURE_3D);
+        pinst->mPrivData.set<GLenum>(GL_TEXTURE_3D);
       } else if (puni->_typeName == "usampler3D") {
         pinst->mSubItemIndex = this->_samplerCount++;
-        pinst->mPrivData.Set<GLenum>(GL_TEXTURE_3D);
+        pinst->mPrivData.set<GLenum>(GL_TEXTURE_3D);
       } else if (puni->_typeName == "sampler2DShadow") {
         pinst->mSubItemIndex = this->_samplerCount++;
-        pinst->mPrivData.Set<GLenum>(GL_TEXTURE_2D);
+        pinst->mPrivData.set<GLenum>(GL_TEXTURE_2D);
       }
 
       this->_uniformInstances[puni->_name] = pinst;

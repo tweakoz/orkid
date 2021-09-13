@@ -55,7 +55,7 @@ template <> const EPropType PropType<Vector3<float>>::meType   = EPROPTYPE_VEC3F
 template <> const char* PropType<Vector3<float>>::mstrTypeName = "VEC3FLOAT";
 template <> void PropType<Vector3<float>>::ToString(const Vector3<float>& Value, PropTypeString& tstr) {
   Vector3<float> v = Value;
-  tstr.format("%g %g %g", float(v.GetX()), float(v.GetY()), float(v.GetZ()));
+  tstr.format("%g %g %g", float(v.x), float(v.y), float(v.z));
 }
 
 template <> Vector3<float> PropType<Vector3<float>>::FromString(const PropTypeString& String) {

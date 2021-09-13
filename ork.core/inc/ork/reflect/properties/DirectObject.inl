@@ -34,7 +34,7 @@ inline void DirectObject<MemberType>::serialize(serdes::node_ptr_t propnode) con
     serializer->serializeObject(childnode);
     serializer->popNode();
   } else {
-    propnode->_value.template Set<void*>(nullptr);
+    propnode->_value.template set<void*>(nullptr);
     serializer->serializeLeaf(propnode);
   }
 }

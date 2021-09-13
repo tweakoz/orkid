@@ -47,6 +47,7 @@ struct VRIMPL {
       _blit2screenmtl.SetUserFx("orkshader://solid", "texcolor");
       _blit2screenmtl.gpuInit(pTARG);
 
+      printf( "vr width<%d> height<%d>\n", width, height );
       _rtg            = new RtGroup(pTARG, width, height, 1);
       auto buf        = new RtBuffer(lev2::RtgSlot::Slot0, lev2::EBufferFormat::RGBA8, width, height);
       buf->_debugName = "WtfVrRt";
@@ -104,7 +105,7 @@ struct VRIMPL {
     auto DB                      = RCFD.GetDB();
     Context* targ                = drawdata.context();
 
-    bool simrunning = drawdata._properties["simrunning"_crcu].Get<bool>();
+    bool simrunning = drawdata._properties["simrunning"_crcu].get<bool>();
     bool use_vr     = (orkidvr::device()._active and simrunning);
 
     /////////////////////////////////////////////////////////////////////////////
@@ -114,7 +115,7 @@ struct VRIMPL {
     if (use_vr) {
       auto vrcamprop = RCFD.getUserProperty("vrcam"_crc);
       fmtx4 rootmatrix;
-      if (auto as_cam = vrcamprop.TryAs<const CameraData*>()) {
+      if (auto as_cam = vrcamprop.tryAs<const CameraData*>()) {
         targ->debugMarker("Vr::gotcamera");
         auto vrcam = as_cam.value();
         auto eye   = vrcam->GetEye();
@@ -131,7 +132,7 @@ struct VRIMPL {
     /////////////////////////////////////////////////////////////////////////////
 
     if (use_vr)
-      orkidvr::gpuUpdate(RCFD);
+      orkidvr::device().gpuUpdate(RCFD);
 
     ///////////////////////////////////
 
@@ -139,18 +140,18 @@ struct VRIMPL {
     int width   = VRDEV._width * 2;
     int height  = VRDEV._height;
 
-    drawdata._properties["OutputWidth"_crcu].Set<int>(width);
-    drawdata._properties["OutputHeight"_crcu].Set<int>(height);
+    drawdata._properties["OutputWidth"_crcu].set<int>(width);
+    drawdata._properties["OutputHeight"_crcu].set<int>(height);
     bool doing_stereo = (use_vr and VRDEV._supportsStereo);
-    drawdata._properties["StereoEnable"_crcu].Set<bool>(doing_stereo);
+    drawdata._properties["StereoEnable"_crcu].set<bool>(doing_stereo);
     if (simrunning)
-      drawdata._properties["simcammtx"_crcu].Set<const CameraMatrices*>(VRDEV._centercamera);
+      drawdata._properties["simcammtx"_crcu].set<const CameraMatrices*>(VRDEV._centercamera);
 
     if (use_vr and VRDEV._supportsStereo) {
       _stereomatrices->_left  = VRDEV._leftcamera;
       _stereomatrices->_right = VRDEV._rightcamera;
       _stereomatrices->_mono  = VRDEV._leftcamera;
-      drawdata._properties["StereoMatrices"_crcu].Set<const StereoCameraMatrices*>(_stereomatrices);
+      drawdata._properties["StereoMatrices"_crcu].set<const StereoCameraMatrices*>(_stereomatrices);
     }
 
     _CPD.defaultSetup(drawdata);
@@ -187,30 +188,30 @@ VrCompositingNode::~VrCompositingNode() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void VrCompositingNode::gpuInit(lev2::Context* pTARG, int iW, int iH) {
-  _impl.Get<std::shared_ptr<VRIMPL>>()->gpuInit(pTARG);
+  _impl.get<std::shared_ptr<VRIMPL>>()->gpuInit(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void VrCompositingNode::beginAssemble(CompositorDrawData& drawdata) {
   drawdata.context()->debugPushGroup("VrCompositingNode::beginAssemble");
-  _impl.Get<std::shared_ptr<VRIMPL>>()->beginAssemble(drawdata);
+  _impl.get<std::shared_ptr<VRIMPL>>()->beginAssemble(drawdata);
   drawdata.context()->debugPopGroup();
 }
 void VrCompositingNode::endAssemble(CompositorDrawData& drawdata) {
   drawdata.context()->debugPushGroup("VrCompositingNode::endAssemble");
-  _impl.Get<std::shared_ptr<VRIMPL>>()->endAssemble(drawdata);
+  _impl.get<std::shared_ptr<VRIMPL>>()->endAssemble(drawdata);
   drawdata.context()->debugPopGroup();
 }
 
 void VrCompositingNode::composite(CompositorDrawData& drawdata) {
   drawdata.context()->debugPushGroup("VrCompositingNode::composite");
-  auto impl = _impl.Get<std::shared_ptr<VRIMPL>>();
+  auto impl = _impl.get<std::shared_ptr<VRIMPL>>();
   /////////////////////////////////////////////////////////////////////////////
   // VR compositor
   /////////////////////////////////////////////////////////////////////////////
   FrameRenderer& framerenderer      = drawdata.mFrameRenderer;
   RenderContextFrameData& framedata = framerenderer.framedata();
   Context* targ                     = framedata.GetTarget();
-  if (auto try_final = drawdata._properties["final_out"_crcu].TryAs<RtBuffer*>()) {
+  if (auto try_final = drawdata._properties["final_out"_crcu].tryAs<RtBuffer*>()) {
     auto buffer = try_final.value();
     if (buffer) {
       assert(buffer != nullptr);
@@ -225,28 +226,37 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
         // be nice and composite to main screen as well...
         /////////////////////////////////////////////////////////////////////////////
         drawdata.context()->debugPushGroup("VrCompositingNode::to_screen");
-        auto this_buf = targ->FBI()->GetThisBuffer();
-        auto& mtl     = impl->_blit2screenmtl;
-        int iw        = targ->mainSurfaceWidth();
-        int ih        = targ->mainSurfaceHeight();
-        SRect vprect(0, 0, iw, ih);
-        SRect quadrect(0, ih, iw, 0);
-        fvec4 color(1.0f, 1.0f, 1.0f, 1.0f);
-        mtl.SetAuxMatrix(fmtx4::Identity());
-        mtl.SetTexture(tex);
-        mtl.SetTexture2(nullptr);
-        mtl.SetColorMode(GfxMaterial3DSolid::EMODE_USER);
-        mtl._rasterstate.SetBlending(Blending::OFF);
-        this_buf->RenderMatOrthoQuad(
-            vprect,
-            quadrect,
-            &mtl,
-            0.0f,
-            0.0f, // u0 v0
-            1.0f,
-            1.0f, // u1 v1
-            nullptr,
-            color);
+
+        const auto& vrdev = orkidvr::device();
+
+        if(_distorion_lambda ){
+          _distorion_lambda(framedata,tex);
+        }
+        else{
+          auto& mtl     = impl->_blit2screenmtl;
+          mtl.SetAuxMatrix(fmtx4::Identity());
+          mtl.SetTexture(tex);
+          mtl.SetTexture2(nullptr);
+          mtl.SetColorMode(GfxMaterial3DSolid::EMODE_USER);
+          mtl._rasterstate.SetBlending(Blending::OFF);
+          auto this_buf = targ->FBI()->GetThisBuffer();
+          int iw        = targ->mainSurfaceWidth();
+          int ih        = targ->mainSurfaceHeight();
+          SRect vprect(0, 0, iw, ih);
+          fvec4 color(1.0f, 1.0f, 1.0f, 1.0f);
+          SRect quadrect(0, ih, iw, 0);
+          this_buf->RenderMatOrthoQuad(
+              vprect,
+              quadrect,
+              &mtl,
+              0.0f,
+              0.0f, // u0 v0
+              1.0f,
+              1.0f, // u1 v1
+              nullptr,
+              color);
+        }
+
         drawdata.context()->debugPopGroup();
       }
     }

@@ -25,10 +25,10 @@ template <> void PropType<fquat>::ToString(const fquat& Value, PropTypeString& t
   const fquat& v = Value;
 
   std::string result;
-  result += CreateFormattedString("%g ", v.GetX());
-  result += CreateFormattedString("%g ", v.GetY());
-  result += CreateFormattedString("%g ", v.GetZ());
-  result += CreateFormattedString("%g ", v.width());
+  result += CreateFormattedString("%g ", v.x);
+  result += CreateFormattedString("%g ", v.y);
+  result += CreateFormattedString("%g ", v.z);
+  result += CreateFormattedString("%g ", v.w);
   tstr.format("%s", result.c_str());
 }
 

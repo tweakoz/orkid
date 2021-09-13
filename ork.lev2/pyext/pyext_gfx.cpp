@@ -310,14 +310,14 @@ void pyinit_gfx(py::module& module_lev2) {
           [](const PixelFetchContext& pfc, int index) -> fvec4 {
             OrkAssert(index >= 0);
             OrkAssert(index < PixelFetchContext::kmaxitems);
-            return pfc._pickvalues[index].Get<fvec4>();
+            return pfc._pickvalues[index].get<fvec4>();
           })
       .def(
           "pointer",
           [](const PixelFetchContext& pfc, int index) -> fvec4 {
             OrkAssert(index >= 0);
             OrkAssert(index < PixelFetchContext::kmaxitems);
-            return pfc._pickvalues[index].Get<uint64_t>();
+            return pfc._pickvalues[index].get<uint64_t>();
           })
       .def("__repr__", [](const PixelFetchContext& pfc) -> std::string {
         fxstring<256> fxs;

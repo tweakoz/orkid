@@ -180,7 +180,7 @@ XgmPrimGroup::XgmPrimGroup(XgmPrimGroup* pgrp)
 ///////////////////////////////////////////////////////////////////////////////
 
 XgmCluster::XgmCluster()
-    : mBoundingSphere(fvec3::Zero(), 0.0f) {
+    : mBoundingSphere(fvec3::zero(), 0.0f) {
 }
 
 XgmCluster::~XgmCluster() {

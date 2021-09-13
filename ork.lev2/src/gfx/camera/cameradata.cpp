@@ -132,7 +132,7 @@ CameraMatrices CameraData::computeMatrices(float faspect) const {
   rval._ipmatrix.inverseOf(rval._pmatrix);
   rval._vpmatrix = rval._vmatrix * rval._pmatrix;
   rval._ivpmatrix.inverseOf(rval._vpmatrix);
-  rval._frustum.Set(rval._ivpmatrix);
+  rval._frustum.set(rval._ivpmatrix);
   ///////////////////////////////////////////////////
   rval._camdat = *this;
 

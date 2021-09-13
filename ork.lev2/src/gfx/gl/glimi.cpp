@@ -40,10 +40,10 @@ void GlImiInterface::DrawPrim( const fvec4 *Points, int inumpoints, PrimitiveTyp
 					for( int itri=0; itri<inumpoints; itri++ )
 					{
 						int ibase = itri*4;
-						glVertex3fv( (float*)Points[ibase+0].GetArray() );
-						glVertex3fv( (float*)Points[ibase+1].GetArray() );
-						glVertex3fv( (float*)Points[ibase+2].GetArray() );
-						glVertex3fv( (float*)Points[ibase+3].GetArray() );
+						glVertex3fv( (float*)Points[ibase+0].asArray() );
+						glVertex3fv( (float*)Points[ibase+1].asArray() );
+						glVertex3fv( (float*)Points[ibase+2].asArray() );
+						glVertex3fv( (float*)Points[ibase+3].asArray() );
 
 					}
 					glEnd();
@@ -56,9 +56,9 @@ void GlImiInterface::DrawPrim( const fvec4 *Points, int inumpoints, PrimitiveTyp
 					for( int itri=0; itri<inumpoints; itri++ )
 					{
 						int ibase = itri*3;
-						glVertex3fv( (float*)Points[ibase+0].GetArray() );
-						glVertex3fv( (float*)Points[ibase+1].GetArray() );
-						glVertex3fv( (float*)Points[ibase+2].GetArray() );
+						glVertex3fv( (float*)Points[ibase+0].asArray() );
+						glVertex3fv( (float*)Points[ibase+1].asArray() );
+						glVertex3fv( (float*)Points[ibase+2].asArray() );
 
 					}
 					glEnd();
@@ -82,8 +82,8 @@ void GlImiInterface::DrawLine( const fvec4 &From, const fvec4 &To )
 		if( bDRAW )
 		{
 			glBegin( GL_LINES );
-				glVertex3fv( (float*)const_cast<fvec4&>(From).GetArray() );
-				glVertex3fv( (float*)const_cast<fvec4&>(To).GetArray() );
+				glVertex3fv( (float*)const_cast<fvec4&>(From).asArray() );
+				glVertex3fv( (float*)const_cast<fvec4&>(To).asArray() );
 			glEnd();
 		}
 		mTarget.currentMaterial()->EndPass(&mTarget);

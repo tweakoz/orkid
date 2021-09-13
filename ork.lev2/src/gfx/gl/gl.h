@@ -41,6 +41,7 @@
 #define GL_ERRORCHECK()                                                                                                            \
   {                                                                                                                                \
     GLenum iErr = GetGlError();                                                                                                    \
+    if(iErr!=GL_NO_ERROR) printf( "GL_ERROR<%08x>\n", iErr);                                                                       \
     OrkAssert(iErr == GL_NO_ERROR);                                                                                                \
   }
 #else

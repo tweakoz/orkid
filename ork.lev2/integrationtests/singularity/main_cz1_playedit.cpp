@@ -14,6 +14,6 @@ int main(int argc, char** argv) {
   }
   //////////////////////////////////////////////////////////////////////////////
   app->setRefreshPolicy({EREFRESH_FASTEST, 0});
-  app->exec();
+  app->runloop();
   return 0;
 }

@@ -1,4 +1,3 @@
-#include <QWindow>
 #include <ork/application/application.h>
 #include <ork/kernel/datacache.h>
 #include <ork/kernel/string/deco.inl>
@@ -21,7 +20,11 @@ using namespace ork::lev2::deferrednode;
 
 int main(int argc, char** argv) {
 
-  auto qtapp        = OrkEzQtApp::create(argc, argv);
+  AppInitData initdata;
+  initdata._fullscreen = false;
+  //initdata._msaa_samples = 1;
+
+  auto qtapp        = OrkEzQtApp::create(argc, argv,initdata);
   auto qtwin        = qtapp->_mainWindow;
   auto gfxwin       = qtwin->_gfxwin;
   Texture* envlight = nullptr;
@@ -129,11 +132,11 @@ int main(int argc, char** argv) {
     context->beginFrame();
     FrameRenderer framerenderer(RCFD, [&]() {});
     CompositorDrawData drawdata(framerenderer);
-    drawdata._properties["primarycamindex"_crcu].Set<int>(0);
-    drawdata._properties["cullcamindex"_crcu].Set<int>(0);
-    drawdata._properties["irenderer"_crcu].Set<lev2::IRenderer*>(renderer.get());
-    drawdata._properties["simrunning"_crcu].Set<bool>(true);
-    drawdata._properties["DB"_crcu].Set<const DrawableBuffer*>(DB);
+    drawdata._properties["primarycamindex"_crcu].set<int>(0);
+    drawdata._properties["cullcamindex"_crcu].set<int>(0);
+    drawdata._properties["irenderer"_crcu].set<lev2::IRenderer*>(renderer.get());
+    drawdata._properties["simrunning"_crcu].set<bool>(true);
+    drawdata._properties["DB"_crcu].set<const DrawableBuffer*>(DB);
     drawdata._cimpl = compositorimpl;
     compositorimpl->assemble(drawdata);
     compositorimpl->composite(drawdata);
@@ -149,5 +152,5 @@ int main(int argc, char** argv) {
   });
   //////////////////////////////////////////////////////////
   qtapp->setRefreshPolicy({EREFRESH_FASTEST, -1});
-  return qtapp->exec();
+  return qtapp->runloop();
 }

@@ -4,15 +4,16 @@
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/vr/vr.h>
-#include <QtWidgets/QStyle>
-#include <QtGui/QWindow>
-#include <QtWidgets/QDesktopWidget>
+//#include <QtWidgets/QStyle>
+//#include <QtGui/QWindow>
+//#include <QtWidgets/QDesktopWidget>
 #include <boost/program_options.hpp>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::EzApp, "Lev2EzApp");
 using namespace std::string_literals;
 
 namespace ork::lev2 {
+extern bool g_allow_HIDPI;
 void ClassInit();
 void GfxInit(const std::string& gfxlayer);
 constexpr uint64_t KAPPSTATEFLAG_UPDRUNNING = 1 << 0;
@@ -25,13 +26,16 @@ QtAppInit::QtAppInit() {
   _argvp  = &_argv;
   _fsinit = std::make_shared<StdFileSystemInitalizer>(_argc, _argvp);
 }
-QtAppInit::QtAppInit(int argc, char** argv, const QtAppInitData& initdata)
+QtAppInit::QtAppInit(int argc, char** argv, const AppInitData& initdata)
   : _initdata(initdata) {
   _argc   = argc;
   _arg    = "";
   _argv   = nullptr;
   _argvp  = argv;
   _fsinit = std::make_shared<StdFileSystemInitalizer>(_argc, _argvp);
+
+  g_allow_HIDPI = initdata._allowHIDPI;
+
 }
 QtAppInit::QtAppInit(int argc, char** argv) {
   _argc   = argc;
@@ -53,7 +57,7 @@ QtAppInit& qtinit(int& argc, char** argv) {
   return qti;
 };
 ////////////////////////////////////////////////////////////////////////////////
-QtAppInit& qtinit(int& argc, char** argv,const QtAppInitData& initdata) {
+QtAppInit& qtinit(int& argc, char** argv,const AppInitData& initdata) {
   static QtAppInit qti(argc, argv,initdata);
   return qti;
 };
@@ -75,12 +79,6 @@ void EzApp::Describe() {
 ////////////////////////////////////////////////////////////////////////////////
 EzApp::EzApp(int& argc, char** argv) {
   ork::SetCurrentThreadName("main");
-#if !defined(__APPLE__)
-  setenv("QT_QPA_PLATFORMTHEME", "gtk2", 1); // qt5 file dialog crashes otherwise...
-  // QFont arialFont("Ubuntu Regular", 15);
-  // QGuiApplication::setFont(arialFont);
-
-#endif
   ApplicationStack::Push(this);
   /////////////////////////////////////////////
   _mainq  = ork::opq::mainSerialQueue();
@@ -99,24 +97,24 @@ EzApp::~EzApp() {
 
 qtezapp_ptr_t OrkEzQtApp::create() {
   static auto& qti = qtinit();
-  QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
-  return std::make_shared<OrkEzQtApp>(qti._argc, qti._argvp,qti._initdata);
+  //QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
+  return OrkEzQtApp::create(qti._argc, qti._argvp);
+  //return std::make_shared<OrkEzQtApp>(qti._argc, qti._argvp,qti._initdata);
 }
 qtezapp_ptr_t OrkEzQtApp::create(int argc, char** argv) {
   static auto& qti = qtinit(argc, argv);
-  QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
+  //QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
   return std::make_shared<OrkEzQtApp>(qti._argc, qti._argvp,qti._initdata);
 }
-qtezapp_ptr_t OrkEzQtApp::create(int argc, char** argv, const QtAppInitData& init) {
+qtezapp_ptr_t OrkEzQtApp::create(int argc, char** argv, const AppInitData& init) {
   static auto& qti = qtinit(argc, argv,init);
-  QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
+  //QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
   return std::make_shared<OrkEzQtApp>(qti._argc, qti._argvp,qti._initdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
 qtezapp_ptr_t OrkEzQtApp::createWithScene(varmap::varmap_ptr_t sceneparams) {
   static auto& qti = qtinit();
-  QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
-  QtAppInitData initdata;
+  AppInitData initdata;
   auto rval                           = std::make_shared<OrkEzQtApp>(qti._argc, qti._argvp,initdata);
   rval->_mainWindow->_execsceneparams = sceneparams;
   rval->_mainWindow->_onDraw          = [=](ui::drawevent_constptr_t drwev) { //
@@ -209,17 +207,20 @@ OrkEzQtAppBase* OrkEzQtAppBase::get() {
   return _staticapp;
 }
 ///////////////////////////////////////////////////////////////////////////////
-OrkEzQtAppBase::OrkEzQtAppBase(int& argc, char** argv)
-    : QApplication(argc, argv) {
+OrkEzQtAppBase::OrkEzQtAppBase(int& argc, char** argv) {
   _staticapp = this;
   _ezapp     = EzApp::get(argc, argv);
+}
+///////////////////////////////////////////////////////////////////////////////
+void OrkEzQtApp::signalExit(){
+  _mainWindow->_ctqt->signalExit();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzQtApp::enqueueOnRenderer(const void_lambda_t& l){
   _rthreadq->enqueue(l);
 }
 ///////////////////////////////////////////////////////////////////////////////
-OrkEzQtApp::OrkEzQtApp(int& argc, char** argv,const QtAppInitData& initdata)
+OrkEzQtApp::OrkEzQtApp(int& argc, char** argv,const AppInitData& initdata)
     : OrkEzQtAppBase(argc, argv)
     , _initdata(initdata)
     , _updateThread("updatethread")
@@ -231,37 +232,14 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv,const QtAppInitData& initdata)
   _update_data = std::make_shared<ui::UpdateData>();
   _appstate    = 0;
 
-  QCoreApplication::addLibraryPath(QCoreApplication::applicationDirPath());
-  setOrganizationDomain("tweakoz.com");
-  setApplicationDisplayName("OrkidEzApp");
-  setApplicationName("OrkidEzApp");
-
-  bool bcon = mIdleTimer.connect(&mIdleTimer, SIGNAL(timeout()), this, SLOT(OnTimer()));
-
-  mIdleTimer.setInterval(1);
-  mIdleTimer.setSingleShot(false);
-  mIdleTimer.start();
-
   //////////////////////////////////////////////
 
   _mainWindow = new EzMainWin();
 
-  bool fullscreen = _initdata._fullscreen;
-
-  _mainWindow->setGeometry(
-      _initdata._left, //
-      _initdata._top,
-      _initdata._width,
-       _initdata._height
-      );
-
-  _mainWindow->show();
-  _mainWindow->raise(); // for MacOS
-
   //////////////////////////////////////
   // create leve gfxwindow
   //////////////////////////////////////
-  _mainWindow->_gfxwin = new CQtWindow(nullptr);
+  _mainWindow->_gfxwin = new AppWindow(nullptr);
   GfxEnv::GetRef().RegisterWinContext(_mainWindow->_gfxwin);
   //////////////////////////////////////
   //////////////////////////////////////
@@ -270,34 +248,30 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv,const QtAppInitData& initdata)
   _mainWindow->_gfxwin->mRootWidget = _ezviewport.get();
   _ezviewport->_topLayoutGroup      = _uicontext->makeTop<ui::LayoutGroup>("top-layoutgroup", 0, 0, _initdata._width, _initdata._height);
   _topLayoutGroup                   = _ezviewport->_topLayoutGroup;
-
-  _mainWindow->_ctqt = new CTQT(_mainWindow->_gfxwin, _mainWindow);
+  /////////////////////////////////////////////
+  _mainWindow->_ctqt = new CtxGLFW(_mainWindow->_gfxwin);
+  _mainWindow->_ctqt->initWithData(_initdata);
   _mainWindow->_ctqt->Show();
+  /////////////////////////////////////////////
+  // mainthread runloop callback
+  /////////////////////////////////////////////
+  _mainWindow->_ctqt->_onRunLoopIteration = [this](){
+    //////////////////////////////
+    // handle main serialqueue
+    //////////////////////////////
+    opq::TrackCurrent opqtest(_mainq);
+    _mainq->Process();
+    //////////////////////////////
+  };
 
-  _mainWindow->_ctxw = _mainWindow->_ctqt->GetQWidget();
-  _mainWindow->_ctxw->Enable();
-  // gpvp->Init();
-
-  _mainWindow->activateWindow();
-  //auto screens = this->screens();
-  //_mainWindow->windowHandle()->setScreen(screens[2]);
-
-  /////////////////////////////////
-  if( _initdata._fullscreen )
-    _mainWindow->showFullScreen();
-  else
-    _mainWindow->show();
-  /////////////////////////////////
-  _mainWindow->_ctxw->activateWindow();
-  _mainWindow->_ctxw->show();
-
-  _mainWindow->setCentralWidget(_mainWindow->_ctxw);
   //////////////////////////////////////////////
   _mainWindow->_ctqt->pushRefreshPolicy(RefreshPolicyItem{EREFRESH_WHENDIRTY});
   /////////////////////////////////////////////
   auto handler = [this](opq::progressdata_ptr_t data) { //
     if (_ezviewport->_initstate.load() == 1) {
       _mainWindow->_ctqt->progressHandler(data);
+    }
+    else{
     }
   };
   opq::setProgressHandler(handler);
@@ -423,7 +397,7 @@ filedevctx_ptr_t OrkEzQtApp::newFileDevContext(std::string uriproto, const file:
 }
 
 int OrkEzQtApp::runloop() {
-  return exec();
+  return _mainWindow->_ctqt->runloop();
 }
 
 void OrkEzQtApp::setRefreshPolicy(RefreshPolicyItem policy) {
@@ -432,8 +406,7 @@ void OrkEzQtApp::setRefreshPolicy(RefreshPolicyItem policy) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EzMainWin::EzMainWin()
-    : _ctxw(nullptr) {
+EzMainWin::EzMainWin() {
   _execsceneparams = std::make_shared<varmap::VarMap>();
 }
 EzMainWin::~EzMainWin() {

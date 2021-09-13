@@ -65,9 +65,9 @@ struct RTGIMPL {
     auto DB                      = RCFD.GetDB();
     Context* targ                = drawdata.context();
     //////////////////////////////////////////////////////
-    drawdata._properties["OutputWidth"_crcu].Set<int>(_width);
-    drawdata._properties["OutputHeight"_crcu].Set<int>(_height);
-    drawdata._properties["StereoEnable"_crcu].Set<bool>(false);
+    drawdata._properties["OutputWidth"_crcu].set<int>(_width);
+    drawdata._properties["OutputHeight"_crcu].set<int>(_height);
+    drawdata._properties["StereoEnable"_crcu].set<bool>(false);
     _CPD.defaultSetup(drawdata);
     CIMPL->pushCPD(_CPD);
   }
@@ -98,22 +98,22 @@ RtGroupOutputCompositingNode::RtGroupOutputCompositingNode() {
 RtGroupOutputCompositingNode::~RtGroupOutputCompositingNode() {
 }
 void RtGroupOutputCompositingNode::resize(int w, int h) {
-  auto impl     = _impl.Get<std::shared_ptr<RTGIMPL>>();
+  auto impl     = _impl.get<std::shared_ptr<RTGIMPL>>();
   impl->_width  = w;
   impl->_height = h;
 }
 void RtGroupOutputCompositingNode::gpuInit(lev2::Context* pTARG, int iW, int iH) {
-  _impl.Get<std::shared_ptr<RTGIMPL>>()->gpuInit(pTARG);
+  _impl.get<std::shared_ptr<RTGIMPL>>()->gpuInit(pTARG);
 }
 void RtGroupOutputCompositingNode::beginAssemble(CompositorDrawData& drawdata) {
-  _impl.Get<std::shared_ptr<RTGIMPL>>()->beginAssemble(drawdata);
+  _impl.get<std::shared_ptr<RTGIMPL>>()->beginAssemble(drawdata);
 }
 void RtGroupOutputCompositingNode::endAssemble(CompositorDrawData& drawdata) {
-  _impl.Get<std::shared_ptr<RTGIMPL>>()->endAssemble(drawdata);
+  _impl.get<std::shared_ptr<RTGIMPL>>()->endAssemble(drawdata);
 }
 void RtGroupOutputCompositingNode::composite(CompositorDrawData& drawdata) {
   drawdata.context()->debugPushGroup("RtGroupOutputCompositingNode::composite");
-  auto impl = _impl.Get<std::shared_ptr<RTGIMPL>>();
+  auto impl = _impl.get<std::shared_ptr<RTGIMPL>>();
   /////////////////////////////////////////////////////////////////////////////
   // VR compositor
   /////////////////////////////////////////////////////////////////////////////
@@ -121,7 +121,7 @@ void RtGroupOutputCompositingNode::composite(CompositorDrawData& drawdata) {
   RenderContextFrameData& framedata = framerenderer.framedata();
   Context* context                  = framedata.GetTarget();
   auto fbi                          = context->FBI();
-  if (auto try_outgroup = drawdata._properties["render_outgroup"_crcu].TryAs<RtGroup*>()) {
+  if (auto try_outgroup = drawdata._properties["render_outgroup"_crcu].tryAs<RtGroup*>()) {
     auto rtgroup = try_outgroup.value();
     if (rtgroup) {
       auto bufA = rtgroup->GetMrt(0);

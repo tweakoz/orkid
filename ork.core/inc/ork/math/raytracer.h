@@ -380,9 +380,9 @@ public:
   FixedGrid* GetFixedGrid() const {
     return mpFixedGrid;
   }
-  void AddGeoSet(const std::string& name, RgmGeoSet* pset);
-  void RemoveGeoSet(const std::string& name);
-  const RgmGeoSet* FindGeoSet(const std::string& name) const;
+  void AddGeoset(const std::string& name, RgmGeoSet* pset);
+  void RemoveGeoset(const std::string& name);
+  const RgmGeoSet* FindGeoset(const std::string& name) const;
   void ClearGeoSets() {
     mGeoSets.clear();
   }

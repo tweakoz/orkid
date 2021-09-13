@@ -14,7 +14,7 @@
 #include <tuio/TuioListener.h>
 #include <functional>
 #include <ork/kernel/csystem.h>
-#include <ork/lev2/qtui/qtui.h>
+#include <ork/lev2/glfw/ctx_glfw.h>
 
 using namespace TUIO;
 

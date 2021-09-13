@@ -57,7 +57,7 @@ ork::rtti::ICastable* PixelFetchContext::GetObject(PickBuffer* pb, int ichan) co
 
 void* PixelFetchContext::GetPointer(int ichan) const {
   const auto& pickv = _pickvalues[ichan];
-  if (auto as_u64 = pickv.TryAs<uint64_t>()) {
+  if (auto as_u64 = pickv.tryAs<uint64_t>()) {
     uint64_t uobj = as_u64.value();
     void* pObj    = reinterpret_cast<void*>(uobj);
     return pObj;

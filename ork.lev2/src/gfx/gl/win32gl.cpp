@@ -17,7 +17,7 @@
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/ui/ui.h>
 //
-#include <ork/lev2/qtui/qtui.h>
+#include <ork/lev2/glfw/ctx_glfw.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/gfx/dbgfontman.h>
@@ -162,7 +162,7 @@ static ContextGL *gpmaincontext = 0;
 
 void ContextGL::InitializeContext( Window *pWin, CTXBASE* pctxbase )
 {
-	CTQT *pqtwin = (CTQT*) pWin->mpCTXBASE;
+	CtxGLFW *pqtwin = (CtxGLFW*) pWin->mpCTXBASE;
 	GlWinPlatformObject* plato = new GlWinPlatformObject;
 	mCtxBase = pctxbase;
 	mPlatformHandle = (void*) plato;

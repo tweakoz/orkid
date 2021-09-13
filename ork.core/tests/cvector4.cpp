@@ -4,19 +4,11 @@
 #include <ork/math/cvector3.h>
 #include <ork/math/cvector4.h>
 #include <ork/math/cmatrix4.h>
-#include <ork/math/quaternion.h>
 #include <ork/math/misc_math.h>
 
 using namespace ork;
 static const float MyEPSILON = 5.0e-07f; // std::numeric_limits<float>::epsilon();
 
-TEST(QuatStraightDown) {
-  fvec4 v(1, 0, 0, PI * 0.5);
-  fquat q;
-  q.fromAxisAngle(v);
-  printf("axis<%g %g %g> angle<%g>\n", v.x, v.y, v.z, v.w);
-  printf("q<%g %g %g %g>\n", q.x, q.y, q.z, q.w);
-}
 
 TEST(Vector4DefaultConstructor) {
   fvec4 v;

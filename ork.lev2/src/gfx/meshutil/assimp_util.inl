@@ -185,8 +185,8 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
         OrkAssert(itb != xgmskelnodes.end());
         if (itb != xgmskelnodes.end()) {
           auto xgmnode = itb->second;
-          if (false == xgmnode->_varmap["visited_bone"].IsA<bool>()) {
-            xgmnode->_varmap["visited_bone"].Set<bool>(true);
+          if (false == xgmnode->_varmap["visited_bone"].isA<bool>()) {
+            xgmnode->_varmap["visited_bone"].set<bool>(true);
             xgmnode->_assimpOffsetMatrix = convertMatrix44(bone->mOffsetMatrix);
             rval->_isSkinned             = true;
           }
@@ -223,8 +223,8 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
       OrkAssert(itc != xgmskelnodes.end());
       auto cskelnode = itc->second;
 
-      if (false == cskelnode->_varmap["visited_2nd"].IsA<bool>()) {
-        cskelnode->_varmap["visited_2nd"].Set<bool>(true);
+      if (false == cskelnode->_varmap["visited_2nd"].isA<bool>()) {
+        cskelnode->_varmap["visited_2nd"].set<bool>(true);
         nodestack.push(c);
         cskelnode->_parent = pskelnode;
         pskelnode->mChildren.push_back(cskelnode);

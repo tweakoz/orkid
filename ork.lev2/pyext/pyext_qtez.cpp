@@ -111,7 +111,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   = py::cast<varmap::varmap_ptr_t>(appinstance.attr("sceneparams"));
               auto scene = std::make_shared<scenegraph::Scene>(sceneparams);
               varmap::VarMap::value_type scenevar;
-              scenevar.Set<scenegraph::scene_ptr_t>(scene);
+              scenevar.set<scenegraph::scene_ptr_t>(scene);
               auto pyscene = type_codec->encode(scenevar);
               py::setattr(appinstance, "scene", pyscene);
             }

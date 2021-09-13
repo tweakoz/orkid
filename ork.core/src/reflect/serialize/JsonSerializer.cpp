@@ -127,7 +127,7 @@ node_ptr_t JsonSerializer::serializeContainerElement(node_ptr_t elemnode) {
 
   OrkAssert(elemnode->_ser_instance);
 
-  if (auto as_obj = elemnode->_value.TryAs<object_ptr_t>()) {
+  if (auto as_obj = elemnode->_value.tryAs<object_ptr_t>()) {
     elemnode->_ser_instance = as_obj.value();
     switch (elemnode->_type) {
       case NodeType::ARRAY_ELEMENT_LEAF:
@@ -178,32 +178,32 @@ void JsonSerializer::serializeLeaf(node_ptr_t leafnode) {
     };
   }
 
-  if (auto as_bool = leafnode->_value.TryAs<bool>()) {
+  if (auto as_bool = leafnode->_value.tryAs<bool>()) {
     rapidjson::Value boolval;
     boolval.SetBool(as_bool.value());
     addfn(boolval);
-  } else if (auto as_int = leafnode->_value.TryAs<int>()) {
+  } else if (auto as_int = leafnode->_value.tryAs<int>()) {
     rapidjson::Value intval;
     intval.SetInt(as_int.value());
     addfn(intval);
-  } else if (auto as_uint = leafnode->_value.TryAs<unsigned int>()) {
+  } else if (auto as_uint = leafnode->_value.tryAs<unsigned int>()) {
     rapidjson::Value uintval(uint32_t(as_uint.value()));
     addfn(uintval);
-  } else if (auto as_ulong = leafnode->_value.TryAs<unsigned long>()) {
+  } else if (auto as_ulong = leafnode->_value.tryAs<unsigned long>()) {
     rapidjson::Value ulongval(uint64_t(as_ulong.value()));
     addfn(ulongval);
-  } else if (auto as_float = leafnode->_value.TryAs<float>()) {
+  } else if (auto as_float = leafnode->_value.tryAs<float>()) {
     rapidjson::Value floatval;
     floatval.SetFloat(as_float.value());
     addfn(floatval);
-  } else if (auto as_double = leafnode->_value.TryAs<double>()) {
+  } else if (auto as_double = leafnode->_value.tryAs<double>()) {
     rapidjson::Value doubleval;
     doubleval.SetDouble(as_double.value());
     addfn(doubleval);
-  } else if (auto as_str = leafnode->_value.TryAs<std::string>()) {
+  } else if (auto as_str = leafnode->_value.tryAs<std::string>()) {
     rapidjson::Value strval(as_str.value().c_str(), *_allocator);
     addfn(strval);
-  } else if (auto as_nil = leafnode->_value.TryAs<void*>()) {
+  } else if (auto as_nil = leafnode->_value.tryAs<void*>()) {
     //////////////////////////////////////////////////////////////////
     // if we get here we have an object property, but set to nullptr
     //  otherwise we would have went into serializeObject

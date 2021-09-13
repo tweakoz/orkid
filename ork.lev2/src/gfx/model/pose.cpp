@@ -51,14 +51,14 @@ void DecompMtx44::Compose(fmtx4& mtx, EXFORM_COMPONENT components) const {
   if (XFORM_COMPONENT_ALL == components)
     mtx.compose(mTrans, mRot, mScale); // = scaleMat * rotMat * transMat;
   else if (XFORM_COMPONENT_ORIENT == components)
-    mtx = mRot.ToMatrix();
+    mtx = mRot.toMatrix();
   else if (XFORM_COMPONENT_TRANS == components) {
     mtx.SetToIdentity();
     mtx.SetTranslation(mTrans);
   } else if ((XFORM_COMPONENT_ORIENT | XFORM_COMPONENT_SCALE) == components) {
     ork::fmtx4 scaleMat;
     scaleMat.SetScale(mScale, mScale, mScale);
-    ork::fmtx4 rotMat = mRot.ToMatrix();
+    ork::fmtx4 rotMat = mRot.toMatrix();
     mtx               = scaleMat * rotMat;
   } else if ((XFORM_COMPONENT_TRANS | XFORM_COMPONENT_SCALE) == components) {
     ork::fmtx4 scaleMat;
@@ -72,7 +72,7 @@ void DecompMtx44::Compose(fmtx4& mtx, EXFORM_COMPONENT components) const {
   } else if (XFORM_COMPONENT_TRANSORIENT == components) {
     ork::fmtx4 transMat;
     transMat.SetTranslation(mTrans);
-    ork::fmtx4 rotMat = mRot.ToMatrix();
+    ork::fmtx4 rotMat = mRot.toMatrix();
     mtx               = rotMat * transMat;
   }
 }
@@ -117,14 +117,14 @@ void XgmBlendPoseInfo::ComputeMatrix(fmtx4& outmatrix) const {
       float iflerp = 1.0f - flerp;
 
       if (acomp & XFORM_COMPONENT_ORIENT && bcomp & XFORM_COMPONENT_ORIENT)
-        c.mRot = fquat::Lerp(a.mRot, b.mRot, flerp);
+        c.mRot = fquat::lerp(a.mRot, b.mRot, flerp);
       else if (acomp & XFORM_COMPONENT_ORIENT)
         c.mRot = a.mRot;
       else if (bcomp & XFORM_COMPONENT_ORIENT)
         c.mRot = b.mRot;
 
       if (acomp & XFORM_COMPONENT_TRANS && bcomp & XFORM_COMPONENT_TRANS)
-        c.mTrans.Lerp(a.mTrans, b.mTrans, flerp);
+        c.mTrans.lerp(a.mTrans, b.mTrans, flerp);
       else if (acomp & XFORM_COMPONENT_TRANS)
         c.mTrans = a.mTrans;
       else if (bcomp & XFORM_COMPONENT_TRANS)
@@ -425,13 +425,13 @@ void XgmLocalPose::Concatenate(void) {
 
       fvec3 vtrans = pmats[ichild].GetTranslation();
 
-      fminx = std::min(fminx, vtrans.GetX());
-      fminy = std::min(fminy, vtrans.GetY());
-      fminz = std::min(fminz, vtrans.GetZ());
+      fminx = std::min(fminx, vtrans.x);
+      fminy = std::min(fminy, vtrans.y);
+      fminz = std::min(fminz, vtrans.z);
 
-      fmaxx = std::max(fmaxx, vtrans.GetX());
-      fmaxy = std::max(fmaxy, vtrans.GetY());
-      fmaxz = std::max(fmaxz, vtrans.GetZ());
+      fmaxx = std::max(fmaxx, vtrans.x);
+      fmaxy = std::max(fmaxy, vtrans.y);
+      fmaxz = std::max(fmaxz, vtrans.z);
     }
   }
 

@@ -80,7 +80,7 @@ void PickBuffer::mydraw(fray3_constptr_t ray) {
   ///////////////////////////////////////////////////////////////////////////
   ork::lev2::RenderContextFrameData RCFD(_context); //
   RCFD._cimpl = _compimpl;
-  _pixelfetchctx.mUserData.Set<ork::lev2::RenderContextFrameData*>(&RCFD);
+  _pixelfetchctx.mUserData.set<ork::lev2::RenderContextFrameData*>(&RCFD);
   ///////////////////////////////////////////////////////////////////////////
 
   ork::recursive_mutex& glock = lev2::GfxEnv::GetRef().GetGlobalLock();
@@ -121,12 +121,12 @@ void PickBuffer::mydraw(fray3_constptr_t ray) {
     lev2::FrameRenderer framerenderer(RCFD, [&]() {});
     lev2::CompositorDrawData drawdata(framerenderer);
     drawdata._cimpl = _compimpl;
-    drawdata._properties["StereoEnable"_crcu].Set<bool>(false);
-    drawdata._properties["primarycamindex"_crcu].Set<int>(0);
-    drawdata._properties["cullcamindex"_crcu].Set<int>(0);
-    drawdata._properties["irenderer"_crcu].Set<lev2::IRenderer*>(&_scene._renderer);
-    drawdata._properties["simrunning"_crcu].Set<bool>(true);
-    drawdata._properties["DB"_crcu].Set<const DrawableBuffer*>(DB);
+    drawdata._properties["StereoEnable"_crcu].set<bool>(false);
+    drawdata._properties["primarycamindex"_crcu].set<int>(0);
+    drawdata._properties["cullcamindex"_crcu].set<int>(0);
+    drawdata._properties["irenderer"_crcu].set<lev2::IRenderer*>(&_scene._renderer);
+    drawdata._properties["simrunning"_crcu].set<bool>(true);
+    drawdata._properties["DB"_crcu].set<const DrawableBuffer*>(DB);
     ///////////////////////////////////////////////////////////////////////////
     // draw the pickbuffer
     ///////////////////////////////////////////////////////////////////////////

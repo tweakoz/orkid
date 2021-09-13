@@ -23,16 +23,16 @@ Rvalue::Rvalue(KSIntC s){
 }
 
 size_t Rvalue::bitwidth() const {
-    if(auto as = _payload.TryAs<expr_t>()){
+    if(auto as = _payload.tryAs<expr_t>()){
         return as.value()->bitwidth();
     }
-    else if(auto as = _payload.TryAs<Ref>()){
+    else if(auto as = _payload.tryAs<Ref>()){
         return as.value().bitwidth();
     }
-    else if(auto as = _payload.TryAs<KUIntC>()){
+    else if(auto as = _payload.tryAs<KUIntC>()){
         return as.value().bitwidth();
     }
-    else if(auto as = _payload.TryAs<KSIntC>()){
+    else if(auto as = _payload.tryAs<KSIntC>()){
         return as.value().bitwidth();
     }
     assert(false);

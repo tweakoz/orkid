@@ -5,7 +5,7 @@ from orkengine.lev2 import *
 import pyopencl as cl
 mf = cl.mem_flags
 ################################################################################
-class InstanceSet(object):
+class Instanceset(object):
   ########################################################
   def __init__(self,model,num_instances,layer):
     super().__init__()

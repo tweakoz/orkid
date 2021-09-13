@@ -10,7 +10,7 @@ void DrawFun(lev2::Context* context, const ItemDrawReq& EDR) {
   float Y2      = R.Y1 + R.H;
 
   const auto& KFIN     = EDR.s->_curhud_kframe;
-  const auto& FUNFRAME = EDR._data.Get<funframe>();
+  const auto& FUNFRAME = EDR._data.get<funframe>();
   const FunData* FUND  = FUNFRAME._data;
 
   if (FUND == nullptr)

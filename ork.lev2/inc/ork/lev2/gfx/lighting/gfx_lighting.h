@@ -336,7 +336,7 @@ public:
     return ELIGHTTYPE_SPOT;
   }
 
-  void Set(const fvec3& pos, const fvec3& target, const fvec3& up, float fovy);
+  void set(const fvec3& pos, const fvec3& target, const fvec3& up, float fovy);
 
   float GetFovy() const {
     return _SLD->GetFovy();

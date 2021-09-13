@@ -252,11 +252,11 @@ void filescanner::fparamVarOutput(const fparamVar& fpv, const std::string& blkna
 
   Value fpvout(kObjectType);
 
-  if (auto as_float = val.TryAs<float>())
+  if (auto as_float = val.tryAs<float>())
     AddMember(fpvout, "Value", as_float.value());
-  else if (auto as_int = val.TryAs<int>())
+  else if (auto as_int = val.tryAs<int>())
     AddMember(fpvout, "Value", as_int.value());
-  else if (auto as_str = val.TryAs<std::string>())
+  else if (auto as_str = val.tryAs<std::string>())
     AddStringKVMember(fpvout, "Value", as_str.value());
   else {
     assert(false);

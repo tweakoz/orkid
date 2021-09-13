@@ -119,7 +119,7 @@ void Mesh::WriteToWavefrontObj(const file::Path& BasePath) const {
     // Tf 1.00 1.00 1.00
     // Ni 1.00
     mtloutstr += CreateFormattedString("newmtl %s\n", mayamatname.c_str());
-    mtloutstr += CreateFormattedString("Kd %f %f %f\n", material.mColor.GetX(), material.mColor.GetY(), material.mColor.GetZ());
+    mtloutstr += CreateFormattedString("Kd %f %f %f\n", material.mColor.x, material.mColor.y, material.mColor.z);
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -129,7 +129,7 @@ void Mesh::WriteToWavefrontObj(const file::Path& BasePath) const {
   int inumobjv = ObjVertexPool.size();
 
   for (int i = 0; i < inumobjv; i++) {
-    outstr += CreateFormattedString("v %f %f %f\n", ObjVertexPool[i].GetX(), ObjVertexPool[i].GetY(), ObjVertexPool[i].GetZ());
+    outstr += CreateFormattedString("v %f %f %f\n", ObjVertexPool[i].x, ObjVertexPool[i].y, ObjVertexPool[i].z);
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -139,7 +139,7 @@ void Mesh::WriteToWavefrontObj(const file::Path& BasePath) const {
   int inumobju = ObjUv0Pool.size();
 
   for (int i = 0; i < inumobju; i++) {
-    outstr += CreateFormattedString("vt %f %f\n", ObjUv0Pool[i].GetX(), ObjUv0Pool[i].GetY());
+    outstr += CreateFormattedString("vt %f %f\n", ObjUv0Pool[i].x, ObjUv0Pool[i].y);
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -149,7 +149,7 @@ void Mesh::WriteToWavefrontObj(const file::Path& BasePath) const {
   int inumobjn = ObjNormalPool.size();
 
   for (int i = 0; i < inumobjn; i++) {
-    outstr += CreateFormattedString("vn %f %f %f\n", ObjNormalPool[i].GetX(), ObjNormalPool[i].GetY(), ObjNormalPool[i].GetZ());
+    outstr += CreateFormattedString("vn %f %f %f\n", ObjNormalPool[i].x, ObjNormalPool[i].y, ObjNormalPool[i].z);
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -306,24 +306,24 @@ void Mesh::ReadFromWavefrontObj(const file::Path& BasePath) {
           if (Tokens[0] == "v") {
             OrkAssert(Tokens.size() == 4);
             fvec3 v;
-            sscanf(Tokens[1].c_str(), "%f", v.GetArray() + 0);
-            sscanf(Tokens[2].c_str(), "%f", v.GetArray() + 1);
-            sscanf(Tokens[3].c_str(), "%f", v.GetArray() + 2);
+            sscanf(Tokens[1].c_str(), "%f", v.asArray() + 0);
+            sscanf(Tokens[2].c_str(), "%f", v.asArray() + 1);
+            sscanf(Tokens[3].c_str(), "%f", v.asArray() + 2);
             ObjV.push_back(v);
           }
           if (Tokens[0] == "vn") {
             OrkAssert(Tokens.size() == 4);
             fvec3 vn;
-            sscanf(Tokens[1].c_str(), "%f", vn.GetArray() + 0);
-            sscanf(Tokens[2].c_str(), "%f", vn.GetArray() + 1);
-            sscanf(Tokens[3].c_str(), "%f", vn.GetArray() + 2);
+            sscanf(Tokens[1].c_str(), "%f", vn.asArray() + 0);
+            sscanf(Tokens[2].c_str(), "%f", vn.asArray() + 1);
+            sscanf(Tokens[3].c_str(), "%f", vn.asArray() + 2);
             ObjVN.push_back(vn);
           }
           if (Tokens[0] == "vt") {
             OrkAssert(Tokens.size() == 3);
             fvec2 vt;
-            sscanf(Tokens[1].c_str(), "%f", vt.GetArray() + 0);
-            sscanf(Tokens[2].c_str(), "%f", vt.GetArray() + 1);
+            sscanf(Tokens[1].c_str(), "%f", vt.asArray() + 0);
+            sscanf(Tokens[2].c_str(), "%f", vt.asArray() + 1);
             ObjVT.push_back(vt);
           }
 

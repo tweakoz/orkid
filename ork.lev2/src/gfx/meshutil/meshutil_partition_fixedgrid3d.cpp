@@ -132,9 +132,9 @@ GridAddr GridGraph::GetGridAddress(const fvec3& v) {
   fvec3 vxf = v.Transform(mMtxWorldToGrid).xyz();
 
   GridAddr ret;
-  ret.ix = int(vxf.GetX());
-  ret.iy = int(vxf.GetY());
-  ret.iz = int(vxf.GetZ());
+  ret.ix = int(vxf.x);
+  ret.iy = int(vxf.y);
+  ret.iz = int(vxf.z);
 
   return ret;
 }
@@ -153,9 +153,9 @@ void GridGraph::GetCuttingPlanes(
   const int iy = addr.iy;
   const int iz = addr.iz;
 
-  float fx0 = float(ix * kfixedgridsize) + vmin.GetX();
-  float fy0 = float(iy * kfixedgridsize) + vmin.GetY();
-  float fz0 = float(iz * kfixedgridsize) + vmin.GetZ();
+  float fx0 = float(ix * kfixedgridsize) + vmin.x;
+  float fy0 = float(iy * kfixedgridsize) + vmin.y;
+  float fz0 = float(iz * kfixedgridsize) + vmin.z;
 
   float fx1 = fx0 + kfixedgridsize;
   float fy1 = fy0 + kfixedgridsize;
@@ -199,23 +199,23 @@ void GridGraph::EndPreMerge() {
 
   orkprintf(
       "fg3d aabb min<%f,%f,%f> max<%f,%f,%f> siz<%f,%f,%f>\n",
-      vmin.GetX(),
-      vmin.GetY(),
-      vmin.GetZ(),
-      vmax.GetX(),
-      vmax.GetY(),
-      vmax.GetZ(),
-      vsize.GetX(),
-      vsize.GetY(),
-      vsize.GetZ());
+      vmin.x,
+      vmin.y,
+      vmin.z,
+      vmax.x,
+      vmax.y,
+      vmax.z,
+      vsize.x,
+      vsize.y,
+      vsize.z);
 
   orkprintf("MaxPolyArea<%f> MinPolyArea<%f> AvgPolyArea<%f> TotPolyArea<%f>\n", areamax, areamin, areaavg, areatot);
 
   ///////////////////////////////////////////
 
-  miDimX = int(vsize.GetX());
-  miDimY = int(vsize.GetY());
-  miDimZ = int(vsize.GetZ());
+  miDimX = int(vsize.x);
+  miDimY = int(vsize.y);
+  miDimZ = int(vsize.z);
 
   int icntX = miDimX / kfixedgridsize;
   int icntY = miDimY / kfixedgridsize;

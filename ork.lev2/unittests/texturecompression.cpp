@@ -1,4 +1,5 @@
 #include <ork/pch.h>
+#include <ork/lev2/config.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/lev2_asset.h>
 #include <ork/lev2/gfx/gfxmodel.h>
@@ -7,6 +8,7 @@
 #include <ork/kernel/string/deco.inl>
 #include <ork/lev2/gfx/texman.h>
 
+#if defined(ENABLE_ISPC)
 using namespace ork;
 namespace ork::lev2 {
 void bc7testcomp();
@@ -19,3 +21,4 @@ TEST(bc7test) {
 TEST(astctest) {
   ork::lev2::astctestcomp();
 }
+#endif

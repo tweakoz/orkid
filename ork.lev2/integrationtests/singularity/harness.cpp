@@ -34,7 +34,7 @@ static auto the_synth = synth::instance();
 audiodevice_ptr_t gaudiodevice;
 ///////////////////////////////////////////////////////////////////////////////
 SingularityTestApp::SingularityTestApp(int& argc, char** argv)
-    : OrkEzQtApp(argc, argv,QtAppInitData()) {
+    : OrkEzQtApp(argc, argv,AppInitData()) {
   _hudvp = the_synth->_hudvp;
   gaudiodevice = AudioDevice::instance();
   //startupAudio();
@@ -87,7 +87,7 @@ singularitytestapp_ptr_t createEZapp(int& argc, char** argv) {
   // boot up debug HUD
   //////////////////////////////////////////////////////////////////////////////
   static auto& qti = qtinit(argc, argv);
-  QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
+  //QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
   auto qtapp  = std::make_shared<SingularityTestApp>(qti._argc, qti._argvp);
   auto qtwin  = qtapp->_mainWindow;
   auto gfxwin = qtwin->_gfxwin;
@@ -184,7 +184,7 @@ singularitytestapp_ptr_t createEZapp(int& argc, char** argv) {
     bool isalt  = ev->mbALT;
     bool isctrl = ev->mbCTRL;
     switch (ev->_eventcode) {
-      case ui::EventCode::KEY:
+      case ui::EventCode::KEY_DOWN:
       case ui::EventCode::KEY_REPEAT:
         switch (ev->miKeyCode) {
           case 'p':

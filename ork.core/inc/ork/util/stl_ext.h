@@ -213,7 +213,7 @@ bool OldStlSchoolRemoveSingleValueFromMultiMap(multimaptype& rMap, const typenam
   return bRVAL;
 }
 
-template <typename settype> bool OldStlSchoolRemoveFromSet(settype& rSet, const typename settype::key_type& val) {
+template <typename settype> bool OldStlSchoolRemoveFromset(settype& rSet, const typename settype::key_type& val) {
   bool bRVAL = false;
 
   typename settype::iterator it = rSet.find(val);
@@ -287,7 +287,7 @@ template <typename KeyType> bool OldStlSchoolSetInsert(std::set<KeyType>& rSet, 
   return bRVAL;
 }
 
-template <typename KeyType> bool OldStlSchoolIsInSet(const std::set<KeyType>& rSet, const KeyType& key) {
+template <typename KeyType> bool OldStlSchoolIsInset(const std::set<KeyType>& rSet, const KeyType& key) {
   return (rSet.find(key) != rSet.end());
 }
 
@@ -343,7 +343,7 @@ nearestItem(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#define OldStlSchoolForEachInSet(Set, Type, it)                                                                                    \
+#define OldStlSchoolForEachInset(Set, Type, it)                                                                                    \
   for (typename std::set<Type>::const_iterator it = Set.begin(); it != Set.end(); ++it)
 
 #endif

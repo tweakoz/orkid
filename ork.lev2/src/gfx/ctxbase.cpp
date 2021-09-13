@@ -38,20 +38,24 @@ void CTXBASE::Describe() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 CTXBASE::CTXBASE(Window* pwin)
-    : mbInitialize(true)
-    , mpWindow(pwin)
+    : _needsInitialize(true)
+    , _orkwindow(pwin)
     , _target(0)
     , ConstructAutoSlot(Repaint) {
 
   AutoConnector::setupSignalsAndSlots(this);
-  mpWindow->mpCTXBASE = this;
-
+  if(_orkwindow)
+    _orkwindow->mpCTXBASE = this;
   _uievent = std::make_shared<ui::Event>();
 }
 ///////////////////////////////////////////////////////////////////////////////
+bool CTXBASE::isGlobal() const {
+  return (_orkwindow==nullptr);
+}
+///////////////////////////////////////////////////////////////////////////////
 CTXBASE::~CTXBASE() {
-  if (mpWindow)
-    delete mpWindow;
+  if (_orkwindow)
+    delete _orkwindow;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CTXBASE::pushRefreshPolicy(RefreshPolicyItem policy) {
@@ -64,12 +68,17 @@ void CTXBASE::popRefreshPolicy() {
   _setRefreshPolicy(prev);
 }
 ///////////////////////////////////////////////////////////////////////////////
+RefreshPolicyItem CTXBASE::currentRefreshPolicy() const{
+  RefreshPolicyItem rval = _policyStack.top();
+  return rval;
+}
+///////////////////////////////////////////////////////////////////////////////
 void CTXBASE::progressHandler(opq::progressdata_ptr_t data) {
 
   if (nullptr != _target) {
-    if (auto as_pimpl = _pimpl_progress.TryAs<progresspimpl_ptr_t>()) {
+
+    if (auto as_pimpl = _pimpl_progress.tryAs<progresspimpl_ptr_t>()) {
       auto pimpl                            = as_pimpl.value();
-      DynamicVertexBuffer<SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
       int TARGW                             = _target->mainSurfaceWidth();
       int TARGH                             = _target->mainSurfaceHeight();
 
@@ -116,10 +125,13 @@ void CTXBASE::progressHandler(opq::progressdata_ptr_t data) {
       MTXI->PushMMatrix(fmtx4());
       MTXI->PushUIMatrix();
       _target->PushModColor(clearcolor);
-      mpWindow->RenderMatOrthoQuad(
+      if(_orkwindow){
+        makeCurrent();
+        _orkwindow->RenderMatOrthoQuad(
           tgtrect.asSRect(), //
           tgtrect.asSRect(),
           pimpl->_material.get());
+      }
       _target->PopModColor();
       /////////////////////////////////////////
       // messages
@@ -180,14 +192,14 @@ Context* CTXBASE::GetTarget() const {
   return _target;
 }
 Window* CTXBASE::GetWindow() const {
-  return mpWindow;
+  return _orkwindow;
 }
 void CTXBASE::setContext(Context* ctx) {
   _target            = ctx;
   _uievent->_context = ctx;
 }
 void CTXBASE::SetWindow(Window* pw) {
-  mpWindow = pw;
+  _orkwindow = pw;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

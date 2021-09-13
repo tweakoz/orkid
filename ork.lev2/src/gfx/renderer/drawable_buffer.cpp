@@ -189,8 +189,8 @@ void DrawableBufLayer::terminate() {
 }
 
 void DrawableBufItem::terminate() {
-  mUserData0.Set<void*>(nullptr);
-  mUserData1.Set<void*>(nullptr);
+  mUserData0.set<void*>(nullptr);
+  mUserData1.set<void*>(nullptr);
   mpDrawable = nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////

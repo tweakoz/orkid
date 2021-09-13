@@ -170,26 +170,26 @@ void Plane<T>::CalcPlaneFromTriangle(const Vector3<T>& p0, const Vector3<T>& p1,
   len2 = p0mp2.Mag();
 
   if ((len0 >= len1) && (len0 >= len2)) {
-    ii1 = (p0.GetX() - p2.GetX());
-    ii2 = (p1.GetX() - p2.GetX());
-    jj1 = (p0.GetY() - p2.GetY());
-    jj2 = (p1.GetY() - p2.GetY());
-    kk1 = (p0.GetZ() - p2.GetZ());
-    kk2 = (p1.GetZ() - p2.GetZ());
+    ii1 = (p0.x - p2.x);
+    ii2 = (p1.x - p2.x);
+    jj1 = (p0.y - p2.y);
+    jj2 = (p1.y - p2.y);
+    kk1 = (p0.z - p2.z);
+    kk2 = (p1.z - p2.z);
   } else if ((len1 >= len0) && (len1 >= len2)) {
-    ii1 = (p1.GetX() - p0.GetX());
-    ii2 = (p2.GetX() - p0.GetX());
-    jj1 = (p1.GetY() - p0.GetY());
-    jj2 = (p2.GetY() - p0.GetY());
-    kk1 = (p1.GetZ() - p0.GetZ());
-    kk2 = (p2.GetZ() - p0.GetZ());
+    ii1 = (p1.x - p0.x);
+    ii2 = (p2.x - p0.x);
+    jj1 = (p1.y - p0.y);
+    jj2 = (p2.y - p0.y);
+    kk1 = (p1.z - p0.z);
+    kk2 = (p2.z - p0.z);
   } else {
-    ii1 = (p2.GetX() - p1.GetX());
-    ii2 = (p0.GetX() - p1.GetX());
-    jj1 = (p2.GetY() - p1.GetY());
-    jj2 = (p0.GetY() - p1.GetY());
-    kk1 = (p2.GetZ() - p1.GetZ());
-    kk2 = (p0.GetZ() - p1.GetZ());
+    ii1 = (p2.x - p1.x);
+    ii2 = (p0.x - p1.x);
+    jj1 = (p2.y - p1.y);
+    jj2 = (p0.y - p1.y);
+    kk1 = (p2.z - p1.z);
+    kk2 = (p0.z - p1.z);
   }
 
   crossProduct(ii2, jj2, kk2, ii1, jj1, kk1, iicp, jjcp, kkcp);
@@ -301,7 +301,7 @@ template <typename T> template <typename PolyType> bool Plane<T>::ClipPoly(const
           T fDist2  = (vA.Pos() - vPos).Mag();
           T fScalar = (Abs(fDist) < Epsilon()) ? 0.0f : fDist2 / fDist;
           typename PolyType::VertexType LerpedVertex;
-          LerpedVertex.Lerp(vA, vB, fScalar);
+          LerpedVertex.lerp(vA, vB, fScalar);
           OutPoly.AddVertex(LerpedVertex);
         }
       }
@@ -339,7 +339,7 @@ bool Plane<T>::ClipPoly(const PolyType& PolyToClip, PolyType& OutPolyFront, Poly
         T fDist2  = (vA.Pos() - vPos).Mag();
         T fScalar = (Abs(fDist) < Epsilon()) ? T(0.0) : fDist2 / fDist;
         typename PolyType::VertexType LerpedVertex;
-        LerpedVertex.Lerp(vA, vB, fScalar);
+        LerpedVertex.lerp(vA, vB, fScalar);
         OutPolyFront.AddVertex(LerpedVertex);
         OutPolyBack.AddVertex(LerpedVertex);
       }

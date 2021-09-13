@@ -89,8 +89,8 @@ bool DirectObjectMap<MapType>::WriteElement(
       ItemRemovalEvent ev;
       ev.mProperty    = this;
       ev.miMultiIndex = orig_multi_index;
-      ev.mKey.Set(key);
-      ev.mOldValue.Set(val2erase);
+      ev.mKey.set(key);
+      ev.mOldValue.set(val2erase);
       ork::object_ptr_t pevl = static_cast<ork::object_ptr_t>(instance);
       pevl->notify(&ev);
       map.erase(it);

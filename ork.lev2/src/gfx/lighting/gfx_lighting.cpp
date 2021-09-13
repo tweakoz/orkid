@@ -128,7 +128,7 @@ bool PointLight::AffectsAABox(const AABox& aab) {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool PointLight::AffectsCircleXZ(const Circle& cirXZ) {
-  fvec3 center(cirXZ.mCenter.GetX(), worldPosition().GetY(), cirXZ.mCenter.GetY());
+  fvec3 center(cirXZ.mCenter.x, worldPosition().y, cirXZ.mCenter.y);
   float dist          = (worldPosition() - center).Mag();
   float combinedradii = (cirXZ.mRadius + radius());
   return (dist < combinedradii);
@@ -222,14 +222,14 @@ bool SpotLight::IsInFrustum(const Frustum& frustum) {
   fvec3 up        = mtx.GetYNormal();
   float fovy      = 15.0f;
 
-  Set(pos, tgt, up, fovy);
+  set(pos, tgt, up, fovy);
 
   return false; // CollisionTester::FrustumFrustumTest( frustum, mWorldSpaceLightFrustum );
 }
 
 ///////////////////////////////////////////////////////////
 
-void SpotLight::Set(const fvec3& pos, const fvec3& tgt, const fvec3& up, float fovy) {
+void SpotLight::set(const fvec3& pos, const fvec3& tgt, const fvec3& up, float fovy) {
   // mFovy = fovy;
 
   // mWorldSpaceDirection = (tgt-pos);
@@ -239,10 +239,10 @@ void SpotLight::Set(const fvec3& pos, const fvec3& tgt, const fvec3& up, float f
   // mWorldSpaceDirection.Normalize();
 
   mProjectionMatrix.Perspective(GetFovy(), 1.0, GetRange() / float(1000.0f), GetRange());
-  mViewMatrix.LookAt(pos.GetX(), pos.GetY(), pos.GetZ(), tgt.GetX(), tgt.GetY(), tgt.GetZ(), up.GetX(), up.GetY(), up.GetZ());
+  mViewMatrix.LookAt(pos.x, pos.y, pos.z, tgt.x, tgt.y, tgt.z, up.x, up.y, up.z);
   // mFovy = fovy;
 
-  mWorldSpaceLightFrustum.Set(mViewMatrix, mProjectionMatrix);
+  mWorldSpaceLightFrustum.set(mViewMatrix, mProjectionMatrix);
 
   // SetPosition( pos );
 }

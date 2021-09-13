@@ -53,7 +53,7 @@ template <> const EPropType PropType<fvec2>::meType   = EPROPTYPE_VEC2REAL;
 template <> const char* PropType<fvec2>::mstrTypeName = "VEC2REAL";
 template <> void PropType<fvec2>::ToString(const fvec2& Value, PropTypeString& tstr) {
   fvec2 v = Value;
-  tstr.format("%g %g", float(v.GetX()), float(v.GetY()));
+  tstr.format("%g %g", float(v.x), float(v.y));
 }
 
 template <> fvec2 PropType<fvec2>::FromString(const PropTypeString& String) {

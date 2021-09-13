@@ -123,8 +123,8 @@ void JsonDeserializer::deserializeTop(object_ptr_t& instance_out) {
 node_ptr_t JsonDeserializer::deserializeObject(node_ptr_t parnode) {
   auto topnode = pushNode("object", NodeType::OBJECT);
 
-  if (parnode->_impl.IsShared<JsonLeafNode>()) {
-    OrkAssert(parnode->_value.Get<std::string>() == "nil");
+  if (parnode->_impl.isShared<JsonLeafNode>()) {
+    OrkAssert(parnode->_value.get<std::string>() == "nil");
     return nullptr;
   } else {
     auto implnode       = parnode->_impl.getShared<JsonObjectNode>();
@@ -161,7 +161,7 @@ serdes::node_ptr_t JsonDeserializer::_parseSubNode(
             auto instance_out_classname = instance_out->GetClass()->Name();
             child_node->_deser_instance = instance_out;
             std::string uuids           = boost::uuids::to_string(instance_out->_uuid);
-            child_node->_value.Set<object_ptr_t>(instance_out);
+            child_node->_value.set<object_ptr_t>(instance_out);
             trackObject(instance_out->_uuid, instance_out);
             if (0)
               printf(
@@ -176,7 +176,7 @@ serdes::node_ptr_t JsonDeserializer::_parseSubNode(
             OrkAssert(strval == std::string("nil"));
             auto nil                    = object_ptr_t(nullptr);
             child_node->_deser_instance = nil;
-            child_node->_value.Set<object_ptr_t>(nil);
+            child_node->_value.set<object_ptr_t>(nil);
             break;
           }
           default:
@@ -192,7 +192,7 @@ serdes::node_ptr_t JsonDeserializer::_parseSubNode(
         auto uuid                   = gen(uuidstr);
         auto instance_out           = findTrackedObject(uuid);
         child_node->_deser_instance = instance_out;
-        child_node->_value.Set<object_ptr_t>(instance_out);
+        child_node->_value.set<object_ptr_t>(instance_out);
       } else {
         OrkAssert(false);
       }
@@ -203,20 +203,20 @@ serdes::node_ptr_t JsonDeserializer::_parseSubNode(
       break;
     }
     case rapidjson::kNullType:
-      child_node->_value.Set<void*>(nullptr);
+      child_node->_value.set<void*>(nullptr);
       break;
     case rapidjson::kFalseType:
-      child_node->_value.Set<bool>(false);
+      child_node->_value.set<bool>(false);
       break;
     case rapidjson::kTrueType:
-      child_node->_value.Set<bool>(true);
+      child_node->_value.set<bool>(true);
       break;
     case rapidjson::kStringType:
-      child_node->_value.Set<std::string>(subvalue.GetString());
-      // printf("gotstr<%s>\n", child_node->_value.Get<std::string>().c_str());
+      child_node->_value.set<std::string>(subvalue.GetString());
+      // printf("gotstr<%s>\n", child_node->_value.get<std::string>().c_str());
       break;
     case rapidjson::kNumberType:
-      child_node->_value.Set<double>(subvalue.GetDouble());
+      child_node->_value.set<double>(subvalue.GetDouble());
       break;
     default:
       OrkAssert(false);
@@ -338,19 +338,19 @@ object_ptr_t JsonDeserializer::_parseObjectNode(serdes::node_ptr_t dsernode) {
           break;
         }
         case rapidjson::kNullType:
-          child_node->_value.Set<void*>(nullptr);
+          child_node->_value.set<void*>(nullptr);
           break;
         case rapidjson::kFalseType:
-          child_node->_value.Set<bool>(false);
+          child_node->_value.set<bool>(false);
           break;
         case rapidjson::kTrueType:
-          child_node->_value.Set<bool>(true);
+          child_node->_value.set<bool>(true);
           break;
         case rapidjson::kStringType:
-          child_node->_value.Set<std::string>(propnode.GetString());
+          child_node->_value.set<std::string>(propnode.GetString());
           break;
         case rapidjson::kNumberType:
-          child_node->_value.Set<double>(propnode.GetDouble());
+          child_node->_value.set<double>(propnode.GetDouble());
           break;
         default:
           OrkAssert(false);

@@ -33,7 +33,7 @@ struct channel_impl {
     template <typename T, typename... A>
     inline void postType(A&&... args){
       content_t c;
-      c.Make<T>(std::forward<A>(args)...);
+      c.make<T>(std::forward<A>(args)...);
       post(c);
     }
 

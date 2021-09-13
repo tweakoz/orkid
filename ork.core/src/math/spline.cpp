@@ -35,10 +35,10 @@ void SplineV2::SetComponent(int idx, float fv) {
   OrkAssert(idx < Nu_components);
   switch (idx) {
     case 0:
-      mData.SetX(fv);
+      mData.setX(fv);
       break;
     case 1:
-      mData.SetY(fv);
+      mData.setY(fv);
       break;
   }
 }
@@ -69,13 +69,13 @@ void SplineV3::SetComponent(int idx, float fv) {
   OrkAssert(idx < Nu_components);
   switch (idx) {
     case 0:
-      mData.SetX(fv);
+      mData.setX(fv);
       break;
     case 1:
-      mData.SetY(fv);
+      mData.setY(fv);
       break;
     case 2:
-      mData.SetZ(fv);
+      mData.setZ(fv);
       break;
   }
 }
@@ -109,16 +109,16 @@ void SplineV4::SetComponent(int idx, float fv) {
   OrkAssert(idx < Nu_components);
   switch (idx) {
     case 0:
-      mData.SetX(fv);
+      mData.setX(fv);
       break;
     case 1:
-      mData.SetY(fv);
+      mData.setY(fv);
       break;
     case 2:
-      mData.SetZ(fv);
+      mData.setZ(fv);
       break;
     case 3:
-      mData.SetW(fv);
+      mData.setW(fv);
       break;
   }
 }

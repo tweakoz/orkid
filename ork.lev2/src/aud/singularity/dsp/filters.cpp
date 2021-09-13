@@ -491,7 +491,7 @@ void AllPass::compute(DspBuffer& dspbuf) // final
   int inumframes = _layer->_dspwritecount;
 
   float fc = _param[0].eval();
-  _filter.Set(fc);
+  _filter.set(fc);
   _fval[0] = fc;
 
   if (1) {
@@ -534,8 +534,8 @@ void TwoPoleAllPass::compute(DspBuffer& dspbuf) // final
   _fval[0]  = fc;
   _fval[1]  = wid;
 
-  _filterL.Set(fc);
-  _filterH.Set(fc);
+  _filterL.set(fc);
+  _filterH.set(fc);
   // printf( "fc<%f>\n", fc );
   if (1)
     for (int i = 0; i < inumframes; i++) {

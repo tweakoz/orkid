@@ -69,13 +69,12 @@ inline bool is_content(char ch) {
 /////////////////////////////////////////
 
 struct Scanner {
-  Scanner(
-      std::string blockregex, //
-      size_t capacity = 64 << 10);
+  Scanner(std::string blockregex);
   /////////////////////////////////////////
   void addRule(std::string rule, int state);
   void buildStateMachine();
   void scan();
+  void scanString(std::string str);
   /////////////////////////////////////////
   inline size_t length() const {
     return _fxbuffer.size();
@@ -88,7 +87,6 @@ struct Scanner {
   /////////////////////////////////////////
   void discardTokensOfClass(int tokclass);
   /////////////////////////////////////////
-  const size_t _kcapacity;
   std::vector<char> _fxbuffer;
   size_t ifilelen;
   std::vector<Token> tokens;

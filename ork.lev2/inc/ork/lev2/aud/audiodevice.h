@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <ork/lev2/config.h>
 #include <ork/math/cvector4.h>
 #include <ork/math/cmatrix4.h>
 #include <ork/asset/Asset.h>

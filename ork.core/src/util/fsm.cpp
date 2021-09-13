@@ -160,11 +160,11 @@ void StateMachine::PerformStateChange(state_ptr_t pto) {
 void StateMachine::Update() {
   svar16_t ev;
   while (mPendingEvents.try_pop(ev)) {
-    if (ev.IsA<ChangeStateEvent>()) {
-      const auto& cse = ev.Get<ChangeStateEvent>();
+    if (ev.isA<ChangeStateEvent>()) {
+      const auto& cse = ev.get<ChangeStateEvent>();
       PerformStateChange(cse._next);
     } else if (_current) {
-      auto k  = ev.GetTypeInfo();
+      auto k  = ev.typeInfo();
       auto it = _current->mTransitions.find(k);
       if (it != _current->mTransitions.end()) {
         const PredicatedTransition& trans = it->second;

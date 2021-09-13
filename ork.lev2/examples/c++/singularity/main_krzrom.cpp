@@ -1,4 +1,3 @@
-#include <QWindow>
 #include <ork/application/application.h>
 #include <ork/kernel/string/deco.inl>
 #include <ork/kernel/timer.h>

@@ -25,6 +25,8 @@
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/lev2/aud/singularity/krzobjects.h>
 
+#if defined(ENABLE_PORTAUDIO)
+
 using namespace ork::audio::singularity;
 
 template class ork::orklut<ork::Char8, float>;
@@ -142,3 +144,4 @@ AudioDevicePa::AudioDevicePa()
 ///////////////////////////////////////////////////////////////////////////////
 
 } // namespace ork::lev2
+#endif 

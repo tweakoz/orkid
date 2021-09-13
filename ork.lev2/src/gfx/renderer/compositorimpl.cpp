@@ -108,7 +108,7 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   // todo - compute CameraMatrices per rendertarget/pass !
 
   // lev2::rendervar_t passdata;
-  // passdata.Set<orkstack<CompositingPassData>*>(&cgSTACK);
+  // passdata.set<orkstack<CompositingPassData>*>(&cgSTACK);
   // RCFD.setUserProperty("nodes"_crc, passdata);
 
   /////////////////////////////////////////////////////////
@@ -123,9 +123,9 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   // Lock Drawable Buffer
   /////////////////////////////////
 
-  int primarycamindex = ddprops["primarycamindex"_crcu].Get<int>();
-  int cullcamindex    = ddprops["cullcamindex"_crcu].Get<int>();
-  auto DB             = ddprops["DB"_crcu].Get<const DrawableBuffer*>();
+  int primarycamindex = ddprops["primarycamindex"_crcu].get<int>();
+  int cullcamindex    = ddprops["cullcamindex"_crcu].get<int>();
+  auto DB             = ddprops["DB"_crcu].get<const DrawableBuffer*>();
 
   /////////////////////////////////////////////////////////////////////////////
   // default camera selection
@@ -141,14 +141,14 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   }
 
   target->debugMarker(FormatString("defcammtx<%p>", _defaultCameraMatrices));
-  ddprops["defcammtx"_crcu].Set<const CameraMatrices*>(_defaultCameraMatrices);
+  ddprops["defcammtx"_crcu].set<const CameraMatrices*>(_defaultCameraMatrices);
 
   if (spncam and spncam->getUiCamera()) {
     // spncam->computeMatrices(CAMCCTX);
     // l2cam->_camcamdata.BindContext(target);
     //_tempcamdat = l2cam->mCameraData;
     target->debugMarker(FormatString("seleditcam<%p>", spncam));
-    ddprops["seleditcam"_crcu].Set<const CameraData*>(spncam);
+    ddprops["seleditcam"_crcu].set<const CameraData*>(spncam);
   }
 
   /////////////////////////////////////////////////////////////////////////////

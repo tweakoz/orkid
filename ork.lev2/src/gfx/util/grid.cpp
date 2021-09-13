@@ -64,7 +64,7 @@ void Grid3d::Calc(const CameraMatrices& camdat) {
   float DistToPlane(0.0f);
 
   if (_gridMode == EGRID_XY) {
-    fplane3 XYPlane(fvec3(float(0.0f), float(0.0f), float(1.0f)), fvec3::Zero());
+    fplane3 XYPlane(fvec3(float(0.0f), float(0.0f), float(1.0f)), fvec3::zero());
     fvec3 vc;
     bool bc = XYPlane.Intersect(centerray, DistToPlane);
     float isect_dist;
@@ -76,7 +76,7 @@ void Grid3d::Calc(const CameraMatrices& camdat) {
     ity0 = vc.y - Restrict;
     ity1 = vc.y + Restrict;
   } else if (_gridMode == EGRID_XZ) {
-    fplane3 XZPlane(fvec3(float(0.0f), float(1.0f), float(0.0f)), fvec3::Zero());
+    fplane3 XZPlane(fvec3(float(0.0f), float(1.0f), float(0.0f)), fvec3::zero());
     fvec3 vc;
     bool bc = XZPlane.Intersect(centerray, DistToPlane);
     float isect_dist;
@@ -85,8 +85,8 @@ void Grid3d::Calc(const CameraMatrices& camdat) {
     // extend Grid to cover full viewport
     itx0 = vc.x - Restrict;
     itx1 = vc.x + Restrict;
-    ity0 = vc.GetZ() - Restrict;
-    ity1 = vc.GetZ() + Restrict;
+    ity0 = vc.z - Restrict;
+    ity1 = vc.z + Restrict;
   }
 
   /////////////////////////////////////////////////////////////////
@@ -199,8 +199,7 @@ Grid2d::Grid2d()
     , _extent(100.0f)
     , _zoomX(1.0f)
     , _zoomY(1.0f)
-    , _snapCenter(false)
-    , _bipolar(false){
+    , _snapCenter(false){
 
     float base_grey(0.10f);
     float hilite_grey(0.40f);
@@ -337,6 +336,19 @@ void Grid2d::updateMatrices(Context* pTARG, int iw, int ih) {
   _mtxOrtho = mtxi->Ortho(_topLeft.x, _botRight.x, _botRight.y, _topLeft.y, 0.0f, 1.0f);
 }
 
+void Grid2d::pushMatrix(Context* pTARG){
+  auto mtxi = pTARG->MTXI();
+  mtxi->PushPMatrix(_mtxOrtho);
+  mtxi->PushVMatrix(fmtx4::Identity());
+  mtxi->PushMMatrix(fmtx4::Identity());
+}
+void Grid2d::popMatrix(Context* pTARG){
+  auto mtxi = pTARG->MTXI();
+  mtxi->PopPMatrix();
+  mtxi->PopVMatrix();
+  mtxi->PopMMatrix();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void Grid2d::Render(Context* pTARG, int iw, int ih) {
@@ -344,9 +356,7 @@ void Grid2d::Render(Context* pTARG, int iw, int ih) {
 
   lev2::DynamicVertexBuffer<lev2::SVtxV12C4T16>& VB = lev2::GfxEnv::GetSharedDynamicVB();
 
-  mtxi->PushPMatrix(_mtxOrtho);
-  mtxi->PushVMatrix(fmtx4::Identity());
-  mtxi->PushMMatrix(fmtx4::Identity());
+  this->pushMatrix(pTARG);
   {
     static GfxMaterial3DSolid gridmat(pTARG);
     gridmat.SetColorMode(GfxMaterial3DSolid::EMODE_VERTEX_COLOR);
@@ -373,41 +383,55 @@ void Grid2d::Render(Context* pTARG, int iw, int ih) {
       float y1 = floor(_topLeft.y/_visGridSize)*_visGridSize;
       float y2 = ceil(_botRight.y/_visGridSize)*_visGridSize;
 
+      bool draw_grid = (_drawmode!=EGrid2DDrawMode::NONE);
+      if( draw_grid ){
+
+        bool origin_axis_only = _drawmode==EGrid2DDrawMode::ORIGIN_AXIS_ONLY;
+
+        lev2::VtxWriter<lev2::SVtxV12C4T16> vw;
+        vw.Lock(pTARG, &VB,count);
+
+        fvec2 uv0(0.0f, 0.0f);
+
+        for (float fx = x1; fx <= x2; fx += _visGridSize) {
+          bool bORIGIN = (fabs(fx)<0.01);
+
+          if( origin_axis_only and (not bORIGIN) )
+            continue;
 
 
-      lev2::VtxWriter<lev2::SVtxV12C4T16> vw;
-      vw.Lock(pTARG, &VB,count);
+          bool bhi     = fmodf(fabs(fx), _visGridHiliteDiv) < Float::Epsilon();
 
-      fvec2 uv0(0.0f, 0.0f);
-      for (float fx = x1; fx <= x2; fx += _visGridSize) {
-        bool bORIGIN = (fabs(fx)<0.01);
-        bool bhi     = fmodf(fabs(fx), _visGridHiliteDiv) < Float::Epsilon();
+          auto color = bORIGIN ? fcolor3::Green()*0.5 : (bhi ? _hiliteColor : _baseColor );
+          u32 ucolor = color.GetVtxColorAsU32();
+          ork::lev2::SVtxV12C4T16 v0(fvec3(fx, y1, 0.0f), uv0, ucolor);
+          ork::lev2::SVtxV12C4T16 v1(fvec3(fx, y2, 0.0f), uv0, ucolor);
+          vw.AddVertex(v0);
+          vw.AddVertex(v1);
+        }
+        for (float fy = y1; fy <= y2; fy += _visGridSize) {
+          bool bORIGIN = (fabs(fy)<0.01);
 
-        auto color = bORIGIN ? fcolor3::Green()*0.5 : (bhi ? _hiliteColor : _baseColor );
-        u32 ucolor = color.GetVtxColorAsU32();
-        ork::lev2::SVtxV12C4T16 v0(fvec3(fx, y1, 0.0f), uv0, ucolor);
-        ork::lev2::SVtxV12C4T16 v1(fvec3(fx, y2, 0.0f), uv0, ucolor);
-        vw.AddVertex(v0);
-        vw.AddVertex(v1);
+          if( origin_axis_only and (not bORIGIN) )
+            continue;
+
+
+          bool bhi     = fmodf(fabs(fy), _visGridHiliteDiv) < Float::Epsilon();
+
+          auto color = bORIGIN ? fcolor3::Red()*0.5 : (bhi ? _hiliteColor : _baseColor );
+          u32 ucolor = color.GetVtxColorAsU32();
+          ork::lev2::SVtxV12C4T16 v0(fvec3(x1, fy, 0.0f), uv0, ucolor);
+          ork::lev2::SVtxV12C4T16 v1(fvec3(x2, fy, 0.0f), uv0, ucolor);
+          vw.AddVertex(v0);
+          vw.AddVertex(v1);
+        }
+        vw.UnLock(pTARG);
+        pTARG->GBI()->DrawPrimitive(&gridmat, vw, ork::lev2::PrimitiveType::LINES);
       }
-      for (float fy = y1; fy <= y2; fy += _visGridSize) {
-        bool bORIGIN = (fabs(fy)<0.01);
-        bool bhi     = fmodf(fabs(fy), _visGridHiliteDiv) < Float::Epsilon();
-
-        auto color = bORIGIN ? fcolor3::Red()*0.5 : (bhi ? _hiliteColor : _baseColor );
-        u32 ucolor = color.GetVtxColorAsU32();
-        ork::lev2::SVtxV12C4T16 v0(fvec3(x1, fy, 0.0f), uv0, ucolor);
-        ork::lev2::SVtxV12C4T16 v1(fvec3(x2, fy, 0.0f), uv0, ucolor);
-        vw.AddVertex(v0);
-        vw.AddVertex(v1);
-      }
-      vw.UnLock(pTARG);
-      pTARG->GBI()->DrawPrimitive(&gridmat, vw, ork::lev2::PrimitiveType::LINES);
     }
   }
-  mtxi->PopPMatrix();
-  mtxi->PopVMatrix();
-  mtxi->PopMMatrix();
+  this->popMatrix(pTARG);
+
 }
 
 }} // namespace ork::lev2

@@ -73,7 +73,7 @@ struct PtxImpl {
 
     lev2::Texture* input_tex = nullptr;
 
-    if (auto try_render = drawdata._properties["render_out"_crcu].TryAs<RtBuffer*>()) {
+    if (auto try_render = drawdata._properties["render_out"_crcu].tryAs<RtBuffer*>()) {
       auto buffer = try_render.value();
       if (buffer) {
         assert(buffer != nullptr);

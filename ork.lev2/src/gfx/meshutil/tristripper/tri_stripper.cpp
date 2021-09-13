@@ -262,7 +262,7 @@ tri_stripper::ExtendTriToStrip(const size_t StartTriPos, const triangle_strip::s
     const_tri_link_iter LinkIt;
     for (LinkIt = TriNodeIt->out_begin(); LinkIt != TriNodeIt->out_end(); ++LinkIt) {
 
-      const arc_t& the_arc = LinkIt->Get<const arc_t>();
+      const arc_t& the_arc = LinkIt->get<const arc_t>();
 
       // Get the reference to the possible next triangle
       const triangle& Tri = (**(the_arc.terminal()));
@@ -297,7 +297,7 @@ tri_stripper::ExtendTriToStrip(const size_t StartTriPos, const triangle_strip::s
       TriNodeIt = m_Triangles.end();
       --Size;
     } else {
-      const arc_t& the_arc = LinkIt->Get<const arc_t>();
+      const arc_t& the_arc = LinkIt->get<const arc_t>();
       TriNodeIt            = the_arc.terminal();
 
       // Setup for the next triangle
@@ -356,7 +356,7 @@ void tri_stripper::BuildStrip(const triangle_strip TriStrip) {
     const_tri_link_iter LinkIt;
     for (LinkIt = TriNodeIt->out_begin(); LinkIt != TriNodeIt->out_end(); ++LinkIt) {
 
-      const arc_t& the_arc = LinkIt->Get<const arc_t>();
+      const arc_t& the_arc = LinkIt->get<const arc_t>();
       // Get the reference to the possible next triangle
       const triangle& Tri = (**(the_arc.terminal()));
 
@@ -389,7 +389,7 @@ void tri_stripper::BuildStrip(const triangle_strip TriStrip) {
     assert(LinkIt != TriNodeIt->out_end());
 
     // Go to the next triangle
-    const arc_t& the_arc = LinkIt->Get<const arc_t>();
+    const arc_t& the_arc = LinkIt->get<const arc_t>();
     TriNodeIt            = the_arc.terminal();
     MarkTriAsTaken(TriNodeIt - m_Triangles.begin());
 
@@ -414,7 +414,7 @@ void tri_stripper::MarkTriAsTaken(const size_t i) {
   // Adjust the degree of available neighbour triangles
   for (tri_link_iter LinkIt = m_Triangles[i].out_begin(); LinkIt != m_Triangles[i].out_end(); ++LinkIt) {
 
-    const arc_t& the_arc = LinkIt->Get<const arc_t>();
+    const arc_t& the_arc = LinkIt->get<const arc_t>();
     const size_t j       = the_arc.terminal() - m_Triangles.begin();
 
     if ((!m_Triangles[j].marked()) && (!m_TriHeap.removed(j))) {

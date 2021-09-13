@@ -28,7 +28,7 @@ struct ObjectProperty {
   /////////////////////////////////////////////////////////////////
   void Annotate(const ConstString& key, const ConstString& val) {
     anno_t wrapped;
-    wrapped.Set<ConstString>(val);
+    wrapped.set<ConstString>(val);
     _annotations.AddSorted(key, wrapped);
   }
   /////////////////////////////////////////////////////////////////
@@ -37,8 +37,8 @@ struct ObjectProperty {
     auto it          = _annotations.find(key);
     if (it != _annotations.end()) {
       const anno_t& val = it->second;
-      assert(val.IsA<ConstString>());
-      rval = val.Get<ConstString>();
+      assert(val.isA<ConstString>());
+      rval = val.get<ConstString>();
     }
     return rval;
   }

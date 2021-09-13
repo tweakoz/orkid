@@ -49,7 +49,7 @@ void InstancedModelDrawable::bindModel(model_ptr_t model) {
   _model = model;
   // generate material instance data
   auto impl = std::make_shared<IMDIMPL_MODEL>();
-  _impl.Set<imdimpl_model_ptr_t>(impl);
+  _impl.set<imdimpl_model_ptr_t>(impl);
   int inummeshes = _model->numMeshes();
   for (int imesh = 0; imesh < inummeshes; imesh++) {
     auto mesh       = _model->mesh(imesh);
@@ -93,7 +93,7 @@ void InstancedModelDrawable::enqueueToRenderQueue(
   ////////////////////////////////////////////////////////////////////
   if (not _model)
     return;
-  if (not _impl.IsA<imdimpl_model_ptr_t>())
+  if (not _impl.isA<imdimpl_model_ptr_t>())
     return;
   ////////////////////////////////////////////////////////////////////
   auto context                         = renderer->GetTarget();

@@ -94,5 +94,5 @@ int main(int argc, char** argv) {
   // exit(0);
   //////////////////////////////////////
   app->setRefreshPolicy({EREFRESH_FIXEDFPS, 60});
-  return app->exec();
+  return app->runloop();
 }

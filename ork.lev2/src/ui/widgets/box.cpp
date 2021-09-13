@@ -157,7 +157,7 @@ void EvTestBox::DoDraw(drawevent_constptr_t drwev) {
         color     = _colorDrag;
         statename = "END_DRAG";
         break;
-      case EventCode::KEY:
+      case EventCode::KEY_DOWN:
         color     = _colorKeyDown;
         statename = "KEY";
         break;
@@ -165,7 +165,7 @@ void EvTestBox::DoDraw(drawevent_constptr_t drwev) {
         color     = _colorKeyDown;
         statename = "KEY_REPEAT";
         break;
-      case EventCode::KEYUP:
+      case EventCode::KEY_UP:
         statename = "KEYUP";
         break;
       case EventCode::MOUSEWHEEL:

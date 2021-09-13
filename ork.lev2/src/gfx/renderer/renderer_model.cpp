@@ -45,7 +45,7 @@ void ModelDrawable::SetModelInst(xgmmodelinst_ptr_t pModelInst) {
     _worldpose = std::make_shared<XgmWorldPose>(Model->skeleton());
   }
   Drawable::var_t ap;
-  ap.Set(_worldpose);
+  ap.set(_worldpose);
   SetUserDataA(ap);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -81,6 +81,17 @@ void ModelDrawable::ShowBoundingSphere(bool bflg) {
   mbShowBoundingSphere = bflg;
 }
 ///////////////////////////////////////////////////////////////////////////////
+void ModelDrawable::bindModelAsset(AssetPath assetpath) {
+  _asset = asset::AssetManager<XgmModelAsset>::load(assetpath);
+  bindModel(_asset->_model.atomicCopy());
+}
+///////////////////////////////////////////////////////////////////////////////
+void ModelDrawable::bindModel(model_ptr_t model) {
+  _model = model;
+  auto modelinst = std::make_shared<XgmModelInst>(_model.get());
+  SetModelInst(modelinst);
+}
+///////////////////////////////////////////////////////////////////////////////
 void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const {
   ork::opq::assertOnQueue2(opq::mainSerialQueue());
   auto RCFD                   = renderer->GetTarget()->topRenderContextFrameData();
@@ -96,11 +107,11 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
   ork::fvec3 center_plus_offset = mOffset + Model->boundingCenter();
   ork::fvec3 ctr                = ork::fvec4(center_plus_offset * mfScale).Transform(matw);
   ork::fvec3 vwhd               = Model->boundingAA_WHD();
-  float frad                    = vwhd.GetX();
-  if (vwhd.GetY() > frad)
-    frad = vwhd.GetY();
-  if (vwhd.GetZ() > frad)
-    frad = vwhd.GetZ();
+  float frad                    = vwhd.x;
+  if (vwhd.y > frad)
+    frad = vwhd.y;
+  if (vwhd.z > frad)
+    frad = vwhd.z;
   frad *= 0.6f;
 
   bool bCenterInFrustum = monofrustum.contains(ctr);

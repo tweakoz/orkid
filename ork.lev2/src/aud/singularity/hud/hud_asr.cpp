@@ -10,7 +10,7 @@ void DrawAsr(lev2::Context* context, const ItemDrawReq& EDR) {
   float Y2      = R.Y1 + R.H;
 
   const auto& KFIN     = EDR.s->_curhud_kframe;
-  const auto& ASRFRAME = EDR._data.Get<asrframe>();
+  const auto& ASRFRAME = EDR._data.get<asrframe>();
   const AsrData* ASRD  = ASRFRAME._data;
 
   if (nullptr == ASRD)

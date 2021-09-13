@@ -117,7 +117,7 @@ util::dependency::Provider* AssetSetEntry::GetLoadProvider() {
 ///////////////////////////////////////////////////////////////////////////////
 
 AssetSetEntry* assetSetEntry(const Asset* asset) {
-  auto asset_set = asset->assetSet();
+  auto asset_set = asset->assetset();
   auto entry     = asset_set->FindAssetEntry(asset->name());
 
   return entry;

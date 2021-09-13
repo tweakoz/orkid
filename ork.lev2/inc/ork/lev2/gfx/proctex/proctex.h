@@ -582,8 +582,8 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 struct CellVert {
   fvec3 pos;
-  void Lerp(const CellVert& va, const CellVert& vb, float flerp) {
-    pos.Lerp(va.pos, vb.pos, flerp);
+  void lerp(const CellVert& va, const CellVert& vb, float flerp) {
+    pos.lerp(va.pos, vb.pos, flerp);
   }
   const fvec3& Pos() const {
     return pos;

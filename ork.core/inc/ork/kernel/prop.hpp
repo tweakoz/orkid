@@ -15,7 +15,7 @@ namespace ork{
 
 // TODO: escape double-quotes in all strings
 
-template<typename T> void PropType<T>::GetValueSet( const std::string * & ValueStrings, int & NumStrings )
+template<typename T> void PropType<T>::GetValueset( const std::string * & ValueStrings, int & NumStrings )
 {	
 	NumStrings = 0;
 	ValueStrings = 0;

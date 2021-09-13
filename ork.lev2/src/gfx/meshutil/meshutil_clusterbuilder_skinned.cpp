@@ -243,10 +243,10 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12T8I4W4(lev2::Context& con
     OutVtx.mBoneIndices = (index0) | (index1 << 8) | (index2 << 16) | (index3 << 24);
 
     fvec4 vw;
-    vw.SetX(InVtx.mJointWeights[3]);
-    vw.SetY(InVtx.mJointWeights[2]);
-    vw.SetZ(InVtx.mJointWeights[1]);
-    vw.SetW(InVtx.mJointWeights[0]);
+    vw.setX(InVtx.mJointWeights[3]);
+    vw.setY(InVtx.mJointWeights[2]);
+    vw.setZ(InVtx.mJointWeights[1]);
+    vw.setW(InVtx.mJointWeights[0]);
 
     OutVtx.mBoneWeights = vw.GetRGBAU32();
     vwriter.AddVertex(OutVtx);
@@ -271,16 +271,16 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N6I1T4(lev2::Context& contex
     vtx_t OutVtx;
     const meshutil::vertex& InVtx = _submesh.RefVertexPool().GetVertex(iv);
 
-    OutVtx.mX = InVtx.mPos.GetX() * kVertexScale;
-    OutVtx.mY = InVtx.mPos.GetY() * kVertexScale;
-    OutVtx.mZ = InVtx.mPos.GetZ() * kVertexScale;
+    OutVtx.mX = InVtx.mPos.x * kVertexScale;
+    OutVtx.mY = InVtx.mPos.y * kVertexScale;
+    OutVtx.mZ = InVtx.mPos.z * kVertexScale;
 
-    OutVtx.mNX = s16(InVtx.mNrm.GetX() * float(32767.0f));
-    OutVtx.mNY = s16(InVtx.mNrm.GetY() * float(32767.0f));
-    OutVtx.mNZ = s16(InVtx.mNrm.GetZ() * float(32767.0f));
+    OutVtx.mNX = s16(InVtx.mNrm.x * float(32767.0f));
+    OutVtx.mNY = s16(InVtx.mNrm.y * float(32767.0f));
+    OutVtx.mNZ = s16(InVtx.mNrm.z * float(32767.0f));
 
-    OutVtx.mU = s16(InVtx.mUV[0].mMapTexCoord.GetX() * float(1024.0f));
-    OutVtx.mV = s16(InVtx.mUV[0].mMapTexCoord.GetY() * float(1024.0f));
+    OutVtx.mU = s16(InVtx.mUV[0].mMapTexCoord.x * float(1024.0f));
+    OutVtx.mV = s16(InVtx.mUV[0].mMapTexCoord.y * float(1024.0f));
 
     ///////////////////////////////////////
 

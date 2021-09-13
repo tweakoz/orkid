@@ -45,7 +45,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
               [type_codec](matinst_param_proxy_ptr_t proxy, py::object key, py::object val) { //
                 auto var_key = type_codec->decode(key);
                 auto var_val = type_codec->decode(val);
-                if (auto as_param = var_key.TryAs<fxparam_constptr_t>()) {
+                if (auto as_param = var_key.tryAs<fxparam_constptr_t>()) {
                   proxy->_materialinst->_params[as_param.value()] = var_val;
                 } else {
                   OrkAssert(false);
@@ -55,7 +55,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
               "__getitem__",                                                                //
               [type_codec](matinst_param_proxy_ptr_t proxy, py::object key) -> py::object { //
                 auto var_key = type_codec->decode(key);
-                if (auto as_param = var_key.TryAs<fxparam_constptr_t>()) {
+                if (auto as_param = var_key.tryAs<fxparam_constptr_t>()) {
                   auto it = proxy->_materialinst->_params.find(as_param.value());
                   if (it != proxy->_materialinst->_params.end()) {
                     auto var_val = it->second;
@@ -76,7 +76,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
               [type_codec](fxinstance_ptr_t instance, const std::string& key, py::object val) { //
                 auto varmap_val = type_codec->decode(val);
                 if (key == "technique")
-                  instance->_technique = varmap_val.Get<fxtechnique_constptr_t>();
+                  instance->_technique = varmap_val.get<fxtechnique_constptr_t>();
                 else {
                   OrkAssert(false);
                   // instance->_vars.setValueForKey(key, varmap_val);
@@ -95,10 +95,10 @@ void pyinit_gfx_material(py::module& module_lev2) {
                 if (key == "param") {
                   auto proxy           = std::make_shared<matinst_param_proxy>();
                   proxy->_materialinst = instance;
-                  varval.Set<matinst_param_proxy_ptr_t>(proxy);
+                  varval.set<matinst_param_proxy_ptr_t>(proxy);
                   return type_codec->encode(varval);
                 } else if (key == "technique") {
-                  varval.Set<fxtechnique_constptr_t>(instance->_technique);
+                  varval.set<fxtechnique_constptr_t>(instance->_technique);
                   return type_codec->encode(varval);
                 }
                 return py::none(); // ;

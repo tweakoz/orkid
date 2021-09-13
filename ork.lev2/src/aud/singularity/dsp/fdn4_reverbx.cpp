@@ -126,7 +126,7 @@ void Fdn4ReverbX::compute(DspBuffer& dspbuf) // final
 
     fquat q;
     q.fromAxisAngle(fvec4(_axis, _speed * time));
-    auto rotMatrix = q.ToMatrix();
+    auto rotMatrix = q.toMatrix();
     auto curmatrix = _feedbackMatrix * rotMatrix;
 
     fvec4 grp0 = curmatrix.GetColumn(0);

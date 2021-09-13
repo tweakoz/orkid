@@ -92,7 +92,7 @@ public:
   void SetRotation(const Matrix33<T>& from);
   void SetScale(const Matrix33<T>& from);
 
-  void Lerp(const Matrix33<T>& from, const Matrix33<T>& to, T par); // par 0.0f .. 1.0f
+  void lerp(const Matrix33<T>& from, const Matrix33<T>& to, T par); // par 0.0f .. 1.0f
 
   void decompose(Quaternion<T>& rot, T& Scale) const;
   void compose(const Quaternion<T>& rot, const T& Scale);
@@ -158,7 +158,7 @@ public:
   static const Matrix33<T> Identity;
   std::string dumpcn() const;
 
-  T* GetArray(void) const {
+  T* asArray(void) const {
     return (T*)&elements[0][0];
   }
 

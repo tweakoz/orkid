@@ -89,7 +89,7 @@ bool FileAssetLoader::_find(
   file::Path pathobj(name);
   AssetPath::NameType pathsp, qrysp;
   pathobj.SplitQuery(pathsp, qrysp);
-  pathobjnoq.Set(pathsp.c_str());
+  pathobjnoq.set(pathsp.c_str());
 
   file::Path::NameType preext;
   preext.format(".%s", pathobjnoq.GetExtension().c_str());

@@ -22,13 +22,12 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include "null/audiodevice_null.h"
-#include "portaudio/audiodevice_pa.h"
+#if defined(ENABLE_ALSA)
 #include "alsa/audiodevice_alsa.h"
-
-#if defined(ORK_OSX)
-#define NativeDevice AudioDevicePa
-#else
 #define NativeDevice AudioDeviceAlsa
+#elif defined(ENABLE_PORTAUDIO)
+#include "portaudio/audiodevice_pa.h"
+#define NativeDevice AudioDevicePa
 #endif
 
 bool gb_audio_filter = false;

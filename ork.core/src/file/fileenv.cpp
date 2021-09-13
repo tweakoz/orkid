@@ -355,7 +355,7 @@ file::Path::NameType FileEnv::FilespecToContainingDirectory(const file::Path::Na
     rval                     = tmp;
   }
 
-  // rval=TruncateAtFirstCharFromSet(UrlStrippedPath, "/");
+  // rval=TruncateAtFirstCharFromset(UrlStrippedPath, "/");
   //	printf( "UrlStrippedPath<%s>\n", UrlStrippedPath.c_str() );
   //	printf( "rval<%s>\n", rval.c_str() );
   if (isurl) {
@@ -370,7 +370,7 @@ file::Path::NameType FileEnv::FilespecToContainingDirectory(const file::Path::Na
 /// DEPRECATED (ork::file::Path will be replacement)
 
 file::Path::NameType
-FileEnv::TruncateAtFirstCharFromSet(const file::Path::NameType& stringToTruncate, const file::Path::NameType& setOfChars) {
+FileEnv::TruncateAtFirstCharFromset(const file::Path::NameType& stringToTruncate, const file::Path::NameType& setOfChars) {
   size_t isetsize = setOfChars.length();
 
   file::Path::NameType::size_type ilchar = file::Path::NameType::npos;

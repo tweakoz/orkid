@@ -248,7 +248,7 @@ class InputMap {
 public:
   std::map<MappedInputKey, RawInputKey> mInputMap;
   RawInputKey MapInput(const MappedInputKey& inkey) const;
-  void Set(MappedInputKey inch, RawInputKey outch);
+  void set(MappedInputKey inch, RawInputKey outch);
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -389,7 +389,7 @@ private:
 
 struct InputChannel {
   InputChannel() {
-    _value.Set<float>(0.0f);
+    _value.set<float>(0.0f);
   }
   svar64_t _value;
 };
@@ -446,18 +446,18 @@ struct InputGroup {
   }
   ///////////////////////////////////
   template <typename T> void setAs(const std::string& chname, const T& value) {
-    _channels.atomicOp([&](channelmap_t& chmap) { chmap[chname]._value.Set<T>(value); });
+    _channels.atomicOp([&](channelmap_t& chmap) { chmap[chname]._value.set<T>(value); });
   }
   ///////////////////////////////////
   template <typename T> T get(const std::string& chname) {
     T rval;
-    _channels.atomicOp([&](channelmap_t& chmap) { rval = chmap[chname]._value.Get<T>(); });
+    _channels.atomicOp([&](channelmap_t& chmap) { rval = chmap[chname]._value.get<T>(); });
     return rval;
   }
   ///////////////////////////////////
   template <typename T> attempt_cast<T> tryAs(const std::string& chname) {
     attempt_cast<T> rval(nullptr);
-    _channels.atomicOp([&](channelmap_t& chmap) { rval = chmap[chname]._value.TryAs<T>(); });
+    _channels.atomicOp([&](channelmap_t& chmap) { rval = chmap[chname]._value.tryAs<T>(); });
     return rval;
   }
 };

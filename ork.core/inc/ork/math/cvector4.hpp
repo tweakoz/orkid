@@ -251,10 +251,10 @@ template <typename T> void Vector4<T>::SetRGBAU32(U32 uval) {
 
   static const T kfic(1.0f / 255.0f);
 
-  SetX(kfic * T(int(r)));
-  SetY(kfic * T(int(g)));
-  SetZ(kfic * T(int(b)));
-  SetW(kfic * T(int(a)));
+  setX(kfic * T(int(r)));
+  setY(kfic * T(int(g)));
+  setZ(kfic * T(int(b)));
+  setW(kfic * T(int(a)));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -267,10 +267,10 @@ template <typename T> void Vector4<T>::SetBGRAU32(U32 uval) {
 
   static const T kfic(1.0f / 255.0f);
 
-  SetX(kfic * T(int(r)));
-  SetY(kfic * T(int(g)));
-  SetZ(kfic * T(int(b)));
-  SetW(kfic * T(int(a)));
+  setX(kfic * T(int(r)));
+  setY(kfic * T(int(g)));
+  setZ(kfic * T(int(b)));
+  setW(kfic * T(int(a)));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -283,10 +283,10 @@ template <typename T> void Vector4<T>::SetARGBU32(U32 uval) {
 
   static const T kfic(1.0f / 255.0f);
 
-  SetX(kfic * T(int(r)));
-  SetY(kfic * T(int(g)));
-  SetZ(kfic * T(int(b)));
-  SetW(kfic * T(int(a)));
+  setX(kfic * T(int(r)));
+  setY(kfic * T(int(g)));
+  setZ(kfic * T(int(b)));
+  setW(kfic * T(int(a)));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -299,10 +299,10 @@ template <typename T> void Vector4<T>::SetABGRU32(U32 uval) {
 
   static const T kfic(1.0f / 255.0f);
 
-  SetX(kfic * T(int(r)));
-  SetY(kfic * T(int(g)));
-  SetZ(kfic * T(int(b)));
-  SetW(kfic * T(int(a)));
+  setX(kfic * T(int(r)));
+  setY(kfic * T(int(g)));
+  setZ(kfic * T(int(b)));
+  setW(kfic * T(int(a)));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -314,9 +314,9 @@ template <typename T> void Vector4<T>::SetHSV(T h, T s, T v) {
 
   if (s == 0.0f) {
     // Grayscale
-    SetX(v);
-    SetY(v);
-    SetZ(v);
+    setX(v);
+    setY(v);
+    setZ(v);
   } else {
     const T kone(1.0f);
 
@@ -329,29 +329,29 @@ template <typename T> void Vector4<T>::SetHSV(T h, T s, T v) {
     T bb = v * (kone - (s * f));
     T cc = v * (kone - (s * (kone - f)));
     if (i < kone) {
-      SetX(v);
-      SetY(cc);
-      SetZ(aa);
+      setX(v);
+      setY(cc);
+      setZ(aa);
     } else if (i < 2.0f) {
-      SetX(bb);
-      SetY(v);
-      SetZ(aa);
+      setX(bb);
+      setY(v);
+      setZ(aa);
     } else if (i < 3.0f) {
-      SetX(aa);
-      SetY(v);
-      SetZ(cc);
+      setX(aa);
+      setY(v);
+      setZ(cc);
     } else if (i < 4.0f) {
-      SetX(aa);
-      SetY(bb);
-      SetZ(v);
+      setX(aa);
+      setY(bb);
+      setZ(v);
     } else if (i < 5.0f) {
-      SetX(cc);
-      SetY(aa);
-      SetZ(v);
+      setX(cc);
+      setY(aa);
+      setZ(v);
     } else {
-      SetX(v);
-      SetY(aa);
-      SetZ(bb);
+      setX(v);
+      setY(aa);
+      setZ(bb);
     }
   }
 }
@@ -457,11 +457,15 @@ template <typename T> Vector4<T> Vector4<T>::Transform(const Matrix44<T>& matrix
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-void Vector4<T>::Serp(const Vector4<T>& PA, const Vector4<T>& PB, const Vector4<T>& PC, const Vector4<T>& PD, T Par) {
+void Vector4<T>::serp(const Vector4<T>& PA, //
+                      const Vector4<T>& PB, //
+                      const Vector4<T>& PC, //
+                      const Vector4<T>& PD, //
+                      T par_x, T par_y) {
   Vector4<T> PAB, PCD;
-  PAB.Lerp(PA, PB, Par);
-  PCD.Lerp(PC, PD, Par);
-  Lerp(PAB, PCD, Par);
+  PAB.lerp(PA, PB, par_x);
+  PCD.lerp(PC, PD, par_x);
+  lerp(PAB, PCD, par_y);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -495,7 +499,7 @@ template <typename T> void Vector4<T>::RotateZ(T rad) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Vector4<T>::Lerp(const Vector4<T>& from, const Vector4<T>& to, T par) {
+template <typename T> void Vector4<T>::lerp(const Vector4<T>& from, const Vector4<T>& to, T par) {
   if (par < T(0.0f))
     par = T(0.0f);
   if (par > T(1.0f))
@@ -510,7 +514,7 @@ template <typename T> void Vector4<T>::Lerp(const Vector4<T>& from, const Vector
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-T Vector4<T>::CalcTriArea(const Vector4<T>& V0, const Vector4<T>& V1, const Vector4<T>& V2, const Vector4<T>& N) {
+T Vector4<T>::calcTriangularArea(const Vector4<T>& V0, const Vector4<T>& V1, const Vector4<T>& V2, const Vector4<T>& N) {
   // select largest abs coordinate to ignore for projection
   T ax = Abs(N.x);
   T ay = Abs(N.y);

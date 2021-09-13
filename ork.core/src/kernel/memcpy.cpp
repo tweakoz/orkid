@@ -1,7 +1,14 @@
-
-#include <immintrin.h>
 #include <stdint.h>
 #include <memory.h>
+
+#if defined(ORK_ARCHITECTURE_ARM_64)
+namespace ork {
+void memcpy_fast(void* dest, const void* src, size_t length){
+  ::memcpy(dest,src,length);
+}
+}
+#elif defined(ORK_ARCHITECTURE_X86_64)
+#include <immintrin.h>
 
 namespace ork {
 
@@ -61,3 +68,6 @@ void memcpy_fast(void* dest, const void* src, size_t length){
 
 
 } // namespace ork
+#else 
+#error // architecture not supported yet..
+#endif

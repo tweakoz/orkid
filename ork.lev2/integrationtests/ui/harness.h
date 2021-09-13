@@ -1,4 +1,3 @@
-#include <QWindow>
 #include <portaudio.h>
 #include <ork/application/application.h>
 #include <ork/kernel/string/deco.inl>

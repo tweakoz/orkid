@@ -316,9 +316,9 @@ void Cells::ComputeVB(lev2::Context* pTARG) {
             fvec3 DirB    = (Site0B - Site1B).Normal();
 
             fvec3 Center;
-            Center.Lerp(CenterA, CenterB, flerp);
+            Center.lerp(CenterA, CenterB, flerp);
             fvec3 Dir;
-            Dir.Lerp(DirA, DirB, flerp);
+            Dir.lerp(DirA, DirB, flerp);
             Dir.Normalize();
 
             fplane3 plane(Dir, Center);
@@ -330,7 +330,7 @@ void Cells::ComputeVB(lev2::Context* pTARG) {
       OrkAssert(polychi < kmaxpc);
       const CellPoly& outpoly = polychain[polychi];
       fvec3 vctr;
-      vctr.Lerp(Site0A, Site0B, flerp);
+      vctr.lerp(Site0A, Site0B, flerp);
 
       ////////////////////////////////////////////////
       if (miSmoothing) {
@@ -342,11 +342,11 @@ void Cells::ComputeVB(lev2::Context* pTARG) {
             ivp += outpoly.GetNumVertices();
           int ivn = (iv + 1) % outpoly.GetNumVertices();
           fvec3 p0;
-          p0.Lerp(vctr, outpoly.GetVertex(iv).Pos(), smoothrad);
+          p0.lerp(vctr, outpoly.GetVertex(iv).Pos(), smoothrad);
           fvec3 pp;
-          pp.Lerp(vctr, outpoly.GetVertex(ivp).Pos(), smoothrad);
+          pp.lerp(vctr, outpoly.GetVertex(ivp).Pos(), smoothrad);
           fvec3 pn;
-          pn.Lerp(vctr, outpoly.GetVertex(ivn).Pos(), smoothrad);
+          pn.lerp(vctr, outpoly.GetVertex(ivn).Pos(), smoothrad);
 
           for (int is = 0; is < miSmoothing; is++) {
             float fu0 = (float(is) / float(miSmoothing));
@@ -356,19 +356,19 @@ void Cells::ComputeVB(lev2::Context* pTARG) {
             fvec3 n_0 = (p0 + pn) * 0.5f;
 
             fvec3 p_p_0;
-            p_p_0.Lerp(p_0, p0, fu0);
+            p_p_0.lerp(p_0, p0, fu0);
             fvec3 p_p_1;
-            p_p_1.Lerp(p_0, p0, fu1);
+            p_p_1.lerp(p_0, p0, fu1);
 
             fvec3 p_n_0;
-            p_n_0.Lerp(p0, n_0, fu0);
+            p_n_0.lerp(p0, n_0, fu0);
             fvec3 p_n_1;
-            p_n_1.Lerp(p0, n_0, fu1);
+            p_n_1.lerp(p0, n_0, fu1);
 
             fvec3 p_s_0;
-            p_s_0.Lerp(p_p_0, p_n_0, fu0);
+            p_s_0.lerp(p_p_0, p_n_0, fu0);
             fvec3 p_s_1;
-            p_s_1.Lerp(p_p_1, p_n_1, fu1);
+            p_s_1.lerp(p_p_1, p_n_1, fu1);
 
             mVW.AddVertex(ork::lev2::SVtxV12C4T16(vctr, fvec2(), 0xffffffff));
             mVW.AddVertex(ork::lev2::SVtxV12C4T16(p_s_0, fvec2(), 0));
@@ -420,8 +420,8 @@ void Cells::compute(ProcTex& ptex) {
       for (int iw = 0; iw < 9; iw++) {
         int ix    = (iw % 3) - 1;
         int iy    = (iw / 3) - 1;
-        fvec3 wpu = (ix > 0) ? wrapu : (ix < 0) ? -wrapu : fvec3::Zero();
-        fvec3 wpv = (iy > 0) ? wrapv : (iy < 0) ? -wrapv : fvec3::Zero();
+        fvec3 wpu = (ix > 0) ? wrapu : (ix < 0) ? -wrapu : fvec3::zero();
+        fvec3 wpv = (iy > 0) ? wrapv : (iy < 0) ? -wrapv : fvec3::zero();
         fmtx4 mtx;
         mtx.SetTranslation(wpu + wpv);
         mPTX.GetTarget()->MTXI()->PushMMatrix(mtx);

@@ -51,7 +51,7 @@ fmtx4 GlMatrixStackInterface::Frustum( float left, float right, float top, float
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
 		glFrustum(left,right,bottom,top,zn,zf);
-		glGetFloatv(GL_PROJECTION_MATRIX, rval.GetArray() );
+		glGetFloatv(GL_PROJECTION_MATRIX, rval.asArray() );
 		GL_ERRORCHECK();*/
 //		rval.Transpose();
 	}
@@ -125,7 +125,7 @@ fmtx4 GlMatrixStackInterface::Ortho( float left, float right, float top, float b
 		printf( "l<%f> r<%f> b<%f> t<%f> n<%f> f<%f>\n", left,right,bottom,top,fnear,ffar);
 		glOrtho(left,right,bottom,top,fnear,ffar);
 		GL_ERRORCHECK();
-		glGetFloatv(GL_PROJECTION_MATRIX, rval.GetArray() );
+		glGetFloatv(GL_PROJECTION_MATRIX, rval.asArray() );
 		GL_ERRORCHECK();*/
 //	
 	}

@@ -153,9 +153,9 @@ Op::~Op() {
 }
 ////////////////////////////////////////////////////////////////////////////////
 void Op::SetOp(const op_wrap_t& op) {
-  if (op.IsA<void_lambda_t>()) {
+  if (op.isA<void_lambda_t>()) {
     mWrapped = op;
-  } else if (op.IsA<BarrierSyncReq>()) {
+  } else if (op.isA<BarrierSyncReq>()) {
     mWrapped = op;
   } else // unhandled op type
   {
@@ -164,12 +164,12 @@ void Op::SetOp(const op_wrap_t& op) {
 }
 ///////////////////////////////////////////////////////////////////////////
 void Op::invoke() {
-  if (auto as_lambda = mWrapped.TryAs<void_lambda_t>()) {
+  if (auto as_lambda = mWrapped.tryAs<void_lambda_t>()) {
     as_lambda.value()();
-  } else if (auto as_barrier = mWrapped.TryAs<BarrierSyncReq>()) {
+  } else if (auto as_barrier = mWrapped.tryAs<BarrierSyncReq>()) {
     as_barrier.value().mFuture.Signal<bool>(true);
   } else {
-    printf("unknown operation type<%s>\n", mWrapped.GetTypeName());
+    printf("unknown operation type<%s>\n", mWrapped.typeName());
     OrkAssert(false);
   }
 }

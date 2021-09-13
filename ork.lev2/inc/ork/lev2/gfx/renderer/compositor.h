@@ -108,7 +108,7 @@ struct CompositingContext {
 struct CompositingPassData {
 
   CompositingPassData() {
-    _var.Set<void*>(nullptr);
+    _var.set<void*>(nullptr);
   }
 
   ////////////////////////////////////////////////////

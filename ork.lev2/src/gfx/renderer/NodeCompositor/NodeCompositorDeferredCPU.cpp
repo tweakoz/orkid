@@ -299,18 +299,18 @@ DeferredCompositingNode::~DeferredCompositingNode() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void DeferredCompositingNode::doGpuInit(lev2::Context* pTARG, int iW, int iH) {
-  _impl.Get<std::shared_ptr<CpuNodeImpl>>()->init(pTARG);
+  _impl.get<std::shared_ptr<CpuNodeImpl>>()->init(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void DeferredCompositingNode::DoRender(CompositorDrawData& drawdata) {
-  auto impl = _impl.Get<std::shared_ptr<CpuNodeImpl>>();
+  auto impl = _impl.get<std::shared_ptr<CpuNodeImpl>>();
   impl->_render(this, drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
 RtBuffer* DeferredCompositingNode::GetOutput() const {
   static int i = 0;
   i++;
-  return _impl.Get<std::shared_ptr<CpuNodeImpl>>()->_context._rtgLaccum->GetMrt(0);
+  return _impl.get<std::shared_ptr<CpuNodeImpl>>()->_context._rtgLaccum->GetMrt(0);
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::deferrednode

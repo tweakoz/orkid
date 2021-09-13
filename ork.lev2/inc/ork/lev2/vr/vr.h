@@ -1,5 +1,13 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2021, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #pragma once
 
+#include <ork/lev2/config.h>
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/kernel/msgrouter.inl>
 #include <ork/lev2/input/inputdevice.h>
@@ -7,8 +15,7 @@
 #include <ork/kernel/thread.h>
 #include <ork/kernel/mutex.h>
 
-#if !defined(ORK_OSX)
-#define ENABLE_OPENVR
+#if defined(ENABLE_OPENVR)
 #include <openvr/openvr.h>
 namespace _ovr = ::vr;
 #endif
@@ -93,6 +100,7 @@ typedef std::set<VrTrackingNotificationReceiver_ptr_t> VrTrackingNotificationRec
 
 void addVrTrackingNotificationReceiver(VrTrackingNotificationReceiver_ptr_t recvr);
 void removeVrTrackingNotificationReceiver(VrTrackingNotificationReceiver_ptr_t recvr);
+extern ork::LockedResource<VrTrackingNotificationReceiver_set> gnotifset;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -102,6 +110,9 @@ struct Device {
   Device();
   virtual ~Device();
   void _updatePosesCommon();
+
+  virtual void gpuUpdate(RenderContextFrameData& RCFD) = 0;
+
 
   std::map<std::string, fmtx4> _posemap;
   CameraMatrices* _leftcamera   = nullptr;
@@ -114,7 +125,8 @@ struct Device {
   fmtx4 _hmdMatrix;
   fmtx4 _rotMatrix;
   fmtx4 _baseMatrix;
-
+  float _stereoTileRotationDegreesL;
+  float _stereoTileRotationDegreesR;
   usermatrixgenerator_t _usermtxgen;
 
   VrProjFrustumPar _frustumLeft;
@@ -131,6 +143,10 @@ struct Device {
   std::vector<fvec3> _calibnxvect;
   std::vector<fvec3> _calibnyvect;
   std::vector<fvec3> _calibnzvect;
+  float _fov = 45.0f;
+  float _near = 1.0f;
+  float _far = 100000.0;
+  float _IPD = 0.0f;
 
 protected:
   controllerstate_ptr_t controller(int id);
@@ -139,18 +155,16 @@ private:
   Device(const Device& rhs) = delete;
 };
 
-////////////////////////////////////////////////////////////////////////////////
 #if defined(ENABLE_OPENVR)
-////////////////////////////////////////////////////////////////////////////////
-
 struct OpenVrDevice final : public Device {
 
   OpenVrDevice();
-  ~OpenVrDevice();
+  ~OpenVrDevice() final;
 
   void _processControllerEvents();
   void _updatePoses();
   void _vrthread_loop();
+  void gpuUpdate(RenderContextFrameData& RCFD) final;
 
   _ovr::IVRSystem* _hmd;
   _ovr::TrackedDevicePose_t _trackedPoses[_ovr::k_unMaxTrackedDeviceCount];
@@ -162,21 +176,32 @@ struct OpenVrDevice final : public Device {
   ork::Thread _vrthread;
   ork::mutex _vrmutex;
 };
-#else
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////
-struct NoVrDevice : public Device {
+struct NoVrDevice final : public Device {
   NoVrDevice();
   ~NoVrDevice() final;
   void _processControllerEvents();
   void _updatePoses(RenderContextFrameData& RCFD);
+  void gpuUpdate(RenderContextFrameData& RCFD) final;
   msgrouter::subscriber_t _qtmousesubsc;
   msgrouter::subscriber_t _qtkbdownsubs;
   msgrouter::subscriber_t _qtkbupsubs;
   fvec2 _qtmousepos;
+  int _width;
+  int _height;
 };
-#endif
+
 ////////////////////////////////////////////////////////////////////////////////
+
+void setDevice(std::shared_ptr<Device> device);
+
 Device& device();
+#if defined(ENABLE_OPENVR)
+std::shared_ptr<OpenVrDevice> openvr_device();
+#endif
+std::shared_ptr<NoVrDevice> novr_device();
 ////////////////////////////////////////////////////////////////////////////////
 void gpuUpdate(RenderContextFrameData& RCFD);
 void composite(Context* targ, Texture* twoeyetex);

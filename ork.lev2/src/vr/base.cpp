@@ -9,7 +9,29 @@
 ////////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::orkidvr {
 ////////////////////////////////////////////////////////////////////////////////
-
+static std::shared_ptr<Device> _gdevice = nullptr;
+void setDevice(std::shared_ptr<Device> device){
+  assert(_gdevice==nullptr);
+  _gdevice = device;
+}
+Device& device() {
+  return *_gdevice;
+}
+////////////////////////////////////////////////////////////////////////////////
+ork::LockedResource<VrTrackingNotificationReceiver_set> gnotifset;
+////////////////////////////////////////////////////////////////////////////////
+void addVrTrackingNotificationReceiver(VrTrackingNotificationReceiver_ptr_t recvr) {
+  gnotifset.atomicOp([&](VrTrackingNotificationReceiver_set& notifset) { notifset.insert(recvr); });
+}
+////////////////////////////////////////////////////////////////////////////////
+void removeVrTrackingNotificationReceiver(VrTrackingNotificationReceiver_ptr_t recvr) {
+  gnotifset.atomicOp([&](VrTrackingNotificationReceiver_set& notifset) {
+    auto it = notifset.find(recvr);
+    OrkAssert(it != notifset.end());
+    notifset.erase(it);
+  });
+}
+////////////////////////////////////////////////////////////////////////////////
 Device::Device()
     : _width(128)
     , _height(128)
@@ -17,7 +39,9 @@ Device::Device()
     , _supportsStereo(false)
     , _calibstate(0)
     , _calibstateFrame(0)
-    , _usermtxgen(nullptr) {
+    , _usermtxgen(nullptr)
+    , _stereoTileRotationDegreesL(0.0f)
+    , _stereoTileRotationDegreesR(0.0f) {
 
   auto imgr      = lev2::InputManager::instance();
   _hmdinputgroup = imgr->inputGroup("hmd");
@@ -74,7 +98,7 @@ void Device::_updatePosesCommon() {
 
   hmd.decompose(hmdpos, hmdrot, hmdscl);
 
-  _rotMatrix = hmdrot.ToMatrix();
+  _rotMatrix = hmdrot.toMatrix();
   _rotMatrix.Transpose();
 
   //_rotMatrix.dump("rotmtx");
@@ -103,7 +127,7 @@ void Device::_updatePosesCommon() {
         }
         avgpos *= (1.0f / float(_calibposvect.size()));
         fvec3 ny    = fvec3(0, 1, 0);
-        fvec2 nz_xz = nzaccum.GetXZ().Normal();
+        fvec2 nz_xz = nzaccum.xz().Normal();
         fvec3 nz    = fvec3(nz_xz.x, 0.0f, nz_xz.y).Normal();
         fvec3 nx    = ny.Cross(nz);
         // printf("nx<%g %g %g>\n", nx.x, nx.y, nx.z);
@@ -169,7 +193,7 @@ void Device::_updatePosesCommon() {
   fmtx4 rmv = cmv * eyeR;
 
   msgrouter::content_t c;
-  c.Set<fmtx4>(cmv);
+  c.set<fmtx4>(cmv);
 
   msgrouter::channel("eggytest")->post(c);
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <ork/lev2/config.h>
 #include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/kernel/datablock.h>
 #include <ork/kernel/varmap.inl>
@@ -60,8 +61,11 @@ struct Image {
   void compressDefault(CompressedImage& imgout) const;
   CompressedImageMipChain compressedMipChainDefault() const;
 
+  #if defined(ENABLE_ISPC)
   void compressBC7(CompressedImage& imgout) const;
   CompressedImageMipChain compressedMipChainBC7() const;
+  #endif
+
   void compressRGBA(CompressedImage& imgout) const;
   CompressedImageMipChain compressedMipChainRGBA() const;
   uint8_t* pixel(int x, int y);

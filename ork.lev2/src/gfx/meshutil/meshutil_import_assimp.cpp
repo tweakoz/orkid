@@ -63,8 +63,8 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
 
       auto embtex = new lev2::EmbeddedTexture;
 
-      embtex->_varmap["src.filename"].Set<std::string>(texname);
-      embtex->_varmap["src.format"].Set<std::string>(texname);
+      embtex->_varmap["src.filename"].set<std::string>(texname);
+      embtex->_varmap["src.format"].set<std::string>(texname);
 
       embtex->_format = fmt;
 
@@ -223,13 +223,13 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
 
     //////////////////////////////////////////////
 
-    auto& bonemarkset = _varmap["bonemarkset"].Make<bonemarkset_t>();
+    auto& bonemarkset = _varmap["bonemarkset"].make<bonemarkset_t>();
 
     std::queue<aiNode*> nodestack;
 
     auto parsedskel = parseSkeleton(scene);
 
-    _varmap["parsedskel"].Make<parsedskeletonptr_t>(parsedskel);
+    _varmap["parsedskel"].make<parsedskeletonptr_t>(parsedskel);
     bool is_skinned    = parsedskel->_isSkinned;
     auto& xgmskelnodes = parsedskel->_xgmskelmap;
 
@@ -275,8 +275,8 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
             //////////////////////////////////
             // mark skel node as actual mesh referenced bone
             //////////////////////////////////
-            if (false == xgmnode->_varmap["visited_weights"].IsA<bool>()) {
-              xgmnode->_varmap["visited_weights"].Set<bool>(true);
+            if (false == xgmnode->_varmap["visited_weights"].isA<bool>()) {
+              xgmnode->_varmap["visited_weights"].set<bool>(true);
               int index = xgmnode->miSkelIndex;
               /////////////////////////////
               // xgmjointmatrix.dump(bonename.c_str());
@@ -583,7 +583,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
     printf("/////////////////////////////////////////////////////////////////\n");
 
     // is_skinned = false; // not yet
-    _varmap["is_skinned"].Set<bool>(is_skinned);
+    _varmap["is_skinned"].set<bool>(is_skinned);
 
     //////////////////////////////////////////////
     // build xgm skeleton
@@ -605,7 +605,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
 
 void configureXgmSkeleton(const ork::meshutil::Mesh& input, lev2::XgmModel& xgmmdlout) {
 
-  auto parsedskel = input._varmap.valueForKey("parsedskel").Get<parsedskeletonptr_t>();
+  auto parsedskel = input._varmap.valueForKey("parsedskel").get<parsedskeletonptr_t>();
 
   const auto& xgmskelnodes = parsedskel->_xgmskelmap;
 
@@ -632,7 +632,7 @@ void configureXgmSkeleton(const ork::meshutil::Mesh& input, lev2::XgmModel& xgmm
   /////////////////////////////////////
 
   printf("Flatten Skeleton\n");
-  const auto& bonemarkset = input._varmap["bonemarkset"].Get<bonemarkset_t>();
+  const auto& bonemarkset = input._varmap["bonemarkset"].get<bonemarkset_t>();
 
   auto root          = parsedskel->rootXgmSkelNode();
   xgmskel.miRootNode = root ? root->miSkelIndex : -1;
@@ -666,7 +666,7 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
 
   // printf("BEGIN: clusterizing model\n");
   bool is_skinned = false;
-  if (auto as_bool = inp_model._varmap.valueForKey("is_skinned").TryAs<bool>()) {
+  if (auto as_bool = inp_model._varmap.valueForKey("is_skinned").tryAs<bool>()) {
     is_skinned = as_bool.value();
   }
 
@@ -822,7 +822,7 @@ datablock_ptr_t assimpToXgm(datablock_ptr_t inp_datablock) {
 
   ork::lev2::XgmModel xgmmdlout;
   bool is_skinned = false;
-  if (auto as_bool = tmesh._varmap.valueForKey("is_skinned").TryAs<bool>()) {
+  if (auto as_bool = tmesh._varmap.valueForKey("is_skinned").tryAs<bool>()) {
     is_skinned = as_bool.value();
     if (is_skinned)
       configureXgmSkeleton(tmesh, xgmmdlout);

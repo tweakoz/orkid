@@ -549,10 +549,10 @@ void TerrainRenderImpl::recomputeGeometry(chunkfile::OutputStream* hdrstream, ch
   auto bbdim = (_aabbmax - _aabbmin);
 
   // printf("IGLX<%d> IGLZ<%d> kworldsizeXZ<%f %f>\n", iglX, iglZ);
-  // printf("bbmin<%f %f %f>\n", _aabbmin.GetX(), _aabbmin.GetY(), _aabbmin.GetZ());
-  // printf("bbmax<%f %f %f>\n", _aabbmax.GetX(), _aabbmax.GetY(), _aabbmax.GetZ());
-  // printf("bbctr<%f %f %f>\n", bbctr.GetX(), bbctr.GetY(), bbctr.GetZ());
-  // printf("bbdim<%f %f %f>\n", bbdim.GetX(), bbdim.GetY(), bbdim.GetZ());
+  // printf("bbmin<%f %f %f>\n", _aabbmin.x, _aabbmin.y, _aabbmin.z);
+  // printf("bbmax<%f %f %f>\n", _aabbmax.x, _aabbmax.y, _aabbmax.z);
+  // printf("bbctr<%f %f %f>\n", bbctr.x, bbctr.y, bbctr.z);
+  // printf("bbdim<%f %f %f>\n", bbdim.x, bbdim.y, bbdim.z);
 
   auto sectorID = [&](int x, int z) -> int {
     int rval = 0;
@@ -793,9 +793,9 @@ void TerrainRenderImpl::recomputeGeometry(chunkfile::OutputStream* hdrstream, ch
   auto geosiz = _aabox.GetSize();
   _aabbmin    = geomin;
   _aabbmax    = geomax;
-  // printf("geomin<%f %f %f>\n", geomin.GetX(), geomin.GetY(), geomin.GetZ());
-  // printf("geomax<%f %f %f>\n", geomax.GetX(), geomax.GetY(), geomax.GetZ());
-  // printf("geosiz<%f %f %f>\n", geosiz.GetX(), geosiz.GetY(), geosiz.GetZ());
+  // printf("geomin<%f %f %f>\n", geomin.x, geomin.y, geomin.z);
+  // printf("geomax<%f %f %f>\n", geomax.x, geomax.y, geomax.z);
+  // printf("geosiz<%f %f %f>\n", geosiz.x, geosiz.y, geosiz.z);
 
 
   printf( "TERRAIN-NUMTRIANGLES<%d>\n", SectorLodInfo::_g__num_triangles );

@@ -117,13 +117,13 @@ template<> bool PropType<bool>::FromString(const PropTypeString& String)
 	else
 		return false;
 }
-template<> void PropType<bool>::GetValueSet( const std::string * & ValueStrings, int & NumStrings )
+template<> void PropType<bool>::GetValueset( const std::string * & ValueStrings, int & NumStrings )
 {	
 	NumStrings = 0;
 	ValueStrings = 0;
 }
 
-template<> void PropType<char>::GetValueSet( const std::string * & ValueStrings, int & NumStrings )
+template<> void PropType<char>::GetValueset( const std::string * & ValueStrings, int & NumStrings )
 {	
 	NumStrings = 0;
 	ValueStrings = 0;
@@ -149,17 +149,17 @@ template<> const char* PropType<s16>::mstrTypeName				= "S16";
 template<> const char* PropType<s32>::mstrTypeName				= "S32";
 template<> const char* PropType<s64>::mstrTypeName					= "S64";
 ///////////////////////////////////////////////////////////////////////////////
-template<> void PropType<s16>::GetValueSet( const std::string * & ValueStrings, int & NumStrings )
+template<> void PropType<s16>::GetValueset( const std::string * & ValueStrings, int & NumStrings )
 {	
 	NumStrings = 0;
 	ValueStrings = 0;
 }
-template<> void PropType<s32>::GetValueSet( const std::string * & ValueStrings, int & NumStrings )
+template<> void PropType<s32>::GetValueset( const std::string * & ValueStrings, int & NumStrings )
 {	
 	NumStrings = 0;
 	ValueStrings = 0;
 }
-template<> void PropType<s64>::GetValueSet( const std::string * & ValueStrings, int & NumStrings )
+template<> void PropType<s64>::GetValueset( const std::string * & ValueStrings, int & NumStrings )
 {	
 	NumStrings = 0;
 	ValueStrings = 0;
@@ -243,7 +243,7 @@ template<> float PropType<float>::FromString(const PropTypeString& String)
 	sscanf(String.c_str(), "%g", &Value);
 	return float(Value);
 }
-template<> void PropType<float>::GetValueSet( const std::string * & ValueStrings, int & NumStrings )
+template<> void PropType<float>::GetValueset( const std::string * & ValueStrings, int & NumStrings )
 {	
 	NumStrings = 0;
 	ValueStrings = 0;
@@ -260,7 +260,7 @@ template<> double PropType<double>::FromString(const PropTypeString& String)
 	sscanf(String.c_str(), "%f", &Value);
 	return double(Value);
 }
-template<> void PropType<double>::GetValueSet( const std::string * & ValueStrings, int & NumStrings )
+template<> void PropType<double>::GetValueset( const std::string * & ValueStrings, int & NumStrings )
 {	
 	NumStrings = 0;
 	ValueStrings = 0;
@@ -289,7 +289,7 @@ template<> file::Path PropType<file::Path>::FromString(const PropTypeString& Str
 {
 	return file::Path(String.c_str());
 }
-template<> void PropType<file::Path>::GetValueSet( const std::string * & ValueStrings, int & NumStrings )
+template<> void PropType<file::Path>::GetValueset( const std::string * & ValueStrings, int & NumStrings )
 {	
 	NumStrings = 0;
 	ValueStrings = 0;
@@ -303,7 +303,7 @@ template<> std::string PropType<std::string>::FromString(const PropTypeString& S
 {
 	return std::string(String.c_str());
 }
-template<> void PropType<std::string>::GetValueSet( const std::string * & ValueStrings, int & NumStrings )
+template<> void PropType<std::string>::GetValueset( const std::string * & ValueStrings, int & NumStrings )
 {	
 	NumStrings = 0;
 	ValueStrings = 0;
@@ -317,7 +317,7 @@ template<> Char4 PropType<Char4>::FromString(const PropTypeString& String)
 {
 	return Char4(String.c_str());
 }
-template<> void PropType<Char4>::GetValueSet( const std::string * & ValueStrings, int & NumStrings )
+template<> void PropType<Char4>::GetValueset( const std::string * & ValueStrings, int & NumStrings )
 {	
 	NumStrings = 0;
 	ValueStrings = 0;
@@ -331,7 +331,7 @@ template<> Char8 PropType<Char8>::FromString(const PropTypeString& String)
 {
 	return Char8(String.c_str());
 }
-template<> void PropType<Char8>::GetValueSet( const std::string * & ValueStrings, int & NumStrings )
+template<> void PropType<Char8>::GetValueset( const std::string * & ValueStrings, int & NumStrings )
 {	
 	NumStrings = 0;
 	ValueStrings = 0;
@@ -347,7 +347,7 @@ template<> const char * PropType<const char *>::FromString(const PropTypeString&
 	strcpy( FixedStringBuffer, String.c_str() );
 	return FixedStringBuffer;
 }
-template<> void PropType<const char *>::GetValueSet( const std::string * & ValueStrings, int & NumStrings )
+template<> void PropType<const char *>::GetValueset( const std::string * & ValueStrings, int & NumStrings )
 {	
 	NumStrings = 0;
 	ValueStrings = 0;
@@ -370,7 +370,7 @@ template<> void PropType<PoolString>::ToString(const PoolString & Value, PropTyp
 		tstr.format( "" );
 	}
 }
-template<> void PropType<PoolString>::GetValueSet( const std::string * & ValueStrings, int & NumStrings )
+template<> void PropType<PoolString>::GetValueset( const std::string * & ValueStrings, int & NumStrings )
 {	
 	NumStrings = 0;
 	ValueStrings = 0;
@@ -421,12 +421,12 @@ template<> ork::object::Signal PropType<ork::object::Signal>::FromString(const P
 	sscanf(String.c_str(), "%p", &pobj);
 	return *pobj;
 }
-template<> void PropType<ork::object::Signal*>::GetValueSet( const std::string * & ValueStrings, int & NumStrings )
+template<> void PropType<ork::object::Signal*>::GetValueset( const std::string * & ValueStrings, int & NumStrings )
 {	
 	NumStrings = 0;
 	ValueStrings = 0;
 }
-template<> void PropType<const ork::Object*>::GetValueSet( const std::string * & ValueStrings, int & NumStrings )
+template<> void PropType<const ork::Object*>::GetValueset( const std::string * & ValueStrings, int & NumStrings )
 {	
 	NumStrings = 0;
 	ValueStrings = 0;

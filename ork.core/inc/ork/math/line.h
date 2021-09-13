@@ -34,25 +34,25 @@ public:
     mfC     = pointDistance(PosVec) * T(-1.0f);
   }
   inline void CalcFromTwoPoints(const vec2_type& Pnt0, const vec2_type& Pnt1) {
-    T dX = (Pnt1.GetX() - Pnt0.GetX());
+    T dX = (Pnt1.x - Pnt0.x);
     if (dX == T(0.0f)) {
-      if (Pnt1.GetY() < Pnt0.GetY())
-        mNormal.Set(1.0f, 0.0f);
-      else if (Pnt1.GetY() > Pnt0.GetY())
-        mNormal.Set(-1.0f, 0.0f);
+      if (Pnt1.y < Pnt0.y)
+        mNormal.set(1.0f, 0.0f);
+      else if (Pnt1.y > Pnt0.y)
+        mNormal.set(-1.0f, 0.0f);
       else {
         OrkAssert(false); // pnt1 must != pnt0
       }
     } else { // b = y-mx
       // a = m*b
       // c = -ax-by
-      T dY = (Pnt1.GetY() - Pnt0.GetY());
+      T dY = (Pnt1.y - Pnt0.y);
       T m  = dY / dX;
-      T b  = (Pnt0.GetY() - m * Pnt0.GetX());
+      T b  = (Pnt0.y - m * Pnt0.x);
       T a  = m * b;
-      mNormal.Set(a, b);
+      mNormal.set(a, b);
       mNormal.Normalize();
-      T c = -a * Pnt0.GetX() - b * Pnt0.GetY();
+      T c = -a * Pnt0.x - b * Pnt0.y;
       mfC = c;
     }
   }
@@ -60,9 +60,9 @@ public:
     T dX = (x1 - x0);
     if (dX == T(0.0f)) {
       if (y1 < y0)
-        mNormal.Set(1.0f, 0.0f);
+        mNormal.set(1.0f, 0.0f);
       else if (y1 > y0)
-        mNormal.Set(-1.0f, 0.0f);
+        mNormal.set(-1.0f, 0.0f);
       else {
         OrkAssert(false); // pnt1 must != pnt0
       }
@@ -99,7 +99,7 @@ public:
       T m  = dY / dX;
       T b  = (y0 - m * x0);
       T a  = m * b;
-      mNormal.Set(a, b);
+      mNormal.set(a, b);
       mNormal.Normalize();
       T c  = -a * x0 - b * y0;
       T fZ = a * x0 + b * y0 + c;
@@ -110,7 +110,7 @@ public:
     return mNormal.Dot(point) + mfC;
   }
   float pointDistance(float fx, float fy) const {
-    return (mNormal.GetX() * fx) + (mNormal.GetY() * fy) + mfC;
+    return (mNormal.x * fx) + (mNormal.y * fy) + mfC;
   }
   bool IsPointInFront(const vec2_type& point) const {
     T distance = pointDistance(point);
@@ -176,7 +176,7 @@ public:
   TLineSegment2Helper();
   void SetStartEnd(const vec2_type& s, const vec2_type& e);
   T GetStartX() const {
-    return (mStart.GetX());
+    return (mStart.x);
   }
 };
 
@@ -202,14 +202,14 @@ template <typename T> struct Ray3 {
   Ray3(const vec3_type& o, const vec3_type& d)
       : mOrigin(o)
       , mDirection(d)
-      , mInverseDirection(1.0f / d.GetX(), 1.0f / d.GetY(), 1.0f / d.GetZ())
+      , mInverseDirection(1.0f / d.x, 1.0f / d.y, 1.0f / d.z)
       , mID(-1) {
     mdot_dd = mDirection.Dot(mDirection);
     mdot_do = mDirection.Dot(mOrigin);
     mdot_oo = mOrigin.Dot(mOrigin);
-    mbSignX = (mInverseDirection.GetX() >= 0.0f);
-    mbSignY = (mInverseDirection.GetY() >= 0.0f);
-    mbSignZ = (mInverseDirection.GetZ() >= 0.0f);
+    mbSignX = (mInverseDirection.x >= 0.0f);
+    mbSignY = (mInverseDirection.y >= 0.0f);
+    mbSignZ = (mInverseDirection.z >= 0.0f);
   }
   void SetID(int id) {
     mID = id;
@@ -218,19 +218,19 @@ template <typename T> struct Ray3 {
     return mID;
   }
 
-  void Lerp(const Ray3& a, const Ray3& b, float fi) {
+  void lerp(const Ray3& a, const Ray3& b, float fi) {
     vec3_type o, d;
-    o.Lerp(a.mOrigin, b.mOrigin, fi);
-    d.Lerp(a.mDirection, b.mDirection, fi);
+    o.lerp(a.mOrigin, b.mOrigin, fi);
+    d.lerp(a.mDirection, b.mDirection, fi);
     d.Normalize();
     *this = Ray3(o, d);
   }
   void BiLerp(const Ray3& x0y0, const Ray3& x1y0, const Ray3& x0y1, const Ray3& x1y1, float fx, float fy) {
     Ray3 t;
-    t.Lerp(x0y0, x1y0, fx);
+    t.lerp(x0y0, x1y0, fx);
     Ray3 b;
-    b.Lerp(x0y1, x1y1, fx);
-    Lerp(t, b, fy);
+    b.lerp(x0y1, x1y1, fx);
+    lerp(t, b, fy);
   }
 };
 

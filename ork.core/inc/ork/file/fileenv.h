@@ -111,7 +111,7 @@ public:
   /// @return The truncated string from the first char up until the last char found from setOfChars. If no
   ///         char is found, then stringToTruncate is returned.
   static file::Path::NameType
-  TruncateAtFirstCharFromSet(const file::Path::NameType& stringToTruncate, const file::Path::NameType& setOfChars);
+  TruncateAtFirstCharFromset(const file::Path::NameType& stringToTruncate, const file::Path::NameType& setOfChars);
 
   /// For a given path, this function returns the folder path which contains the represented file. If path is
   /// a directory then the function will return path. Trailing separators ('/' or '\\') will be stripped. The

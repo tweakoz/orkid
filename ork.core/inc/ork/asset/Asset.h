@@ -29,7 +29,7 @@ public:
   bool Load() const;
   bool LoadUnManaged() const;
   bool IsLoaded() const;
-  assetset_ptr_t assetSet() const;
+  assetset_ptr_t assetset() const;
 
   vars_constptr_t _varmap;
   AssetPath _name;

@@ -8,6 +8,8 @@
 #pragma once
 
 #include "NodeCompositor.h"
+#include <ork/lev2/gfx/meshutil/rigid_primitive.inl>
+#include <ork/lev2/gfx/material_freestyle.h>
 
 namespace ork::lev2 {
 
@@ -16,12 +18,18 @@ namespace ork::lev2 {
 ///   implies stereo rendering..
 ///////////////////////////////////////////////////////////////////////////////
 
-class VrCompositingNode : public OutputCompositingNode {
+using distortion_lambda_t = std::function<void(RenderContextFrameData& RCFD,Texture*lrtexture)>;
+
+class VrCompositingNode final : public OutputCompositingNode {
   DeclareConcreteX(VrCompositingNode, OutputCompositingNode);
 
 public:
   VrCompositingNode();
-  ~VrCompositingNode();
+  ~VrCompositingNode() final ;
+
+  void setDistortionLambda(distortion_lambda_t l){
+    _distorion_lambda = l;
+  }
 
 private:
   void gpuInit(lev2::Context* pTARG, int w, int h) final;
@@ -30,6 +38,7 @@ private:
   void composite(CompositorDrawData& drawdata) final;
 
   svar256_t _impl;
+  distortion_lambda_t _distorion_lambda;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

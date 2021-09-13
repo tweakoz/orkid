@@ -63,10 +63,10 @@ bool AABox::Intersect( const fray3& ray, fvec3& isect_in, fvec3& isect_out ) con
 
     const fvec3& ori = ray.mOrigin;
 
-    tmin = (bndx.GetX() - ori.GetX()) * ray.mInverseDirection.GetX();
-    tmax = (bndix.GetX() - ori.GetX()) * ray.mInverseDirection.GetX();
-    tymin = (bndy.GetY() - ori.GetY()) * ray.mInverseDirection.GetY();
-    tymax = (bndiy.GetY() - ori.GetY()) * ray.mInverseDirection.GetY();
+    tmin = (bndx.x - ori.x) * ray.mInverseDirection.x;
+    tmax = (bndix.x - ori.x) * ray.mInverseDirection.x;
+    tymin = (bndy.y - ori.y) * ray.mInverseDirection.y;
+    tymax = (bndiy.y - ori.y) * ray.mInverseDirection.y;
 
     if ( (tmin > tymax) || (tymin > tmax) )
         return false;
@@ -76,8 +76,8 @@ bool AABox::Intersect( const fray3& ray, fvec3& isect_in, fvec3& isect_out ) con
     if (tymax < tmax)
         tmax = tymax;
 
-    tzmin = (bndz.GetZ() - ori.GetZ()) * ray.mInverseDirection.GetZ();
-    tzmax = (bndiz.GetZ() - ori.GetZ()) * ray.mInverseDirection.GetZ();
+    tzmin = (bndz.z - ori.z) * ray.mInverseDirection.z;
+    tzmax = (bndiz.z - ori.z) * ray.mInverseDirection.z;
 
     if ( (tmin > tzmax) || (tzmin > tmax) )
         return false;
@@ -126,13 +126,13 @@ void AABox::BeginGrow()
 
 void AABox::Grow( const fvec3& vin )
 {
-    mMin.SetX( std::min( mMin.GetX(), vin.GetX() ) );
-    mMin.SetY( std::min( mMin.GetY(), vin.GetY() ) );
-    mMin.SetZ( std::min( mMin.GetZ(), vin.GetZ() ) );
+    mMin.setX( std::min( mMin.x, vin.x ) );
+    mMin.setY( std::min( mMin.y, vin.y ) );
+    mMin.setZ( std::min( mMin.z, vin.z ) );
 
-    mMax.SetX( std::max( mMax.GetX(), vin.GetX() ) );
-    mMax.SetY( std::max( mMax.GetY(), vin.GetY() ) );
-    mMax.SetZ( std::max( mMax.GetZ(), vin.GetZ() ) );
+    mMax.setX( std::max( mMax.x, vin.x ) );
+    mMax.setY( std::max( mMax.y, vin.y ) );
+    mMax.setZ( std::max( mMax.z, vin.z ) );
 
 }
 void AABox::EndGrow()
@@ -148,28 +148,28 @@ void AABox::ComputePlanes()
     fvec3 nY( 0.0f, 1.0f, 0.0f );
     fvec3 nZ( 0.0f, 1.0f, 0.0f );
 
-    mPlaneNX[0] = fplane3( nX, mMin.GetX() );
-    mPlaneNX[1] = fplane3( -nX, mMax.GetX() );
+    mPlaneNX[0] = fplane3( nX, mMin.x );
+    mPlaneNX[1] = fplane3( -nX, mMax.x );
 
-    mPlaneNY[0] = fplane3( nY, mMin.GetY() );
-    mPlaneNY[1] = fplane3( -nY, mMax.GetY() );
+    mPlaneNY[0] = fplane3( nY, mMin.y );
+    mPlaneNY[1] = fplane3( -nY, mMax.y );
 
-    mPlaneNZ[0] = fplane3( nZ, mMin.GetZ() );
-    mPlaneNZ[1] = fplane3( -nZ, mMax.GetZ() );
+    mPlaneNZ[0] = fplane3( nZ, mMin.z );
+    mPlaneNZ[1] = fplane3( -nZ, mMax.z );
 }
 
 bool AABox::contains(const float test_point_X, const float test_point_Z) const
  {
-    if (test_point_X > mMax.GetX())
+    if (test_point_X > mMax.x)
         return false;
 
-    if (test_point_X < mMin.GetX())
+    if (test_point_X < mMin.x)
         return false;
 
-    if (test_point_Z > mMax.GetZ())
+    if (test_point_Z > mMax.z)
         return false;
 
-    if (test_point_Z < mMin.GetZ())
+    if (test_point_Z < mMin.z)
         return false;
 
     return true;
@@ -177,15 +177,15 @@ bool AABox::contains(const float test_point_X, const float test_point_Z) const
 
  void AABox::Constrain(float &test_point_X, float &test_point_Z) const
  {
-    if (test_point_X > mMax.GetX())
-        test_point_X = mMax.GetX();
-    else if (test_point_X < mMin.GetX())
-        test_point_X = mMin.GetX();
+    if (test_point_X > mMax.x)
+        test_point_X = mMax.x;
+    else if (test_point_X < mMin.x)
+        test_point_X = mMin.x;
 
-    if (test_point_Z > mMax.GetZ())
-        test_point_Z = mMax.GetZ();
-    else if (test_point_Z < mMin.GetZ())
-        test_point_Z = mMin.GetZ();
+    if (test_point_Z > mMax.z)
+        test_point_Z = mMax.z;
+    else if (test_point_Z < mMin.z)
+        test_point_Z = mMin.z;
 
  }
 
@@ -193,22 +193,22 @@ bool AABox::contains(const float test_point_X, const float test_point_Z) const
 
  bool AABox::contains(const fvec3& test_point) const
  {
-    if (test_point.GetX() > mMax.GetX())
+    if (test_point.x > mMax.x)
         return false;
 
-    if (test_point.GetX() < mMin.GetX())
+    if (test_point.x < mMin.x)
         return false;
 
-    if (test_point.GetZ() > mMax.GetZ())
+    if (test_point.z > mMax.z)
         return false;
 
-    if (test_point.GetZ() < mMin.GetZ())
+    if (test_point.z < mMin.z)
         return false;
 
-    if (test_point.GetY() > mMax.GetY())
+    if (test_point.y > mMax.y)
         return false;
 
-    if (test_point.GetY() < mMin.GetY())
+    if (test_point.y < mMin.y)
         return false;
 
 
@@ -217,20 +217,20 @@ bool AABox::contains(const float test_point_X, const float test_point_Z) const
 
 void AABox::Constrain(fvec3& test_point) const
 {
-    if (test_point.GetX() > mMax.GetX())
-        test_point.SetX(mMax.GetX());
-    else if (test_point.GetX() < mMin.GetX())
-        test_point.SetX(mMin.GetX());
+    if (test_point.x > mMax.x)
+        test_point.setX(mMax.x);
+    else if (test_point.x < mMin.x)
+        test_point.setX(mMin.x);
 
-    if (test_point.GetZ() > mMax.GetZ())
-        test_point.SetZ(mMax.GetZ());
-    else if (test_point.GetZ() < mMin.GetZ())
-        test_point.SetZ(mMin.GetZ());
+    if (test_point.z > mMax.z)
+        test_point.setZ(mMax.z);
+    else if (test_point.z < mMin.z)
+        test_point.setZ(mMin.z);
 
-    if (test_point.GetY() > mMax.GetY())
-        test_point.SetY(mMax.GetY());
-    else if (test_point.GetY() < mMin.GetY())
-        test_point.SetY(mMin.GetY());
+    if (test_point.y > mMax.y)
+        test_point.setY(mMax.y);
+    else if (test_point.y < mMin.y)
+        test_point.setY(mMin.y);
 
 
 }
@@ -240,9 +240,9 @@ void AABox::Constrain(fvec3& test_point) const
 fvec3 AABox::Corner( int idx ) const
 {
     fvec3 rval;
-    rval.SetX( ((idx & 1) == 1) ? mMax.GetX() : mMin.GetX() );
-    rval.SetY( ((idx & 2) == 1) ? mMax.GetY() : mMin.GetY() );
-    rval.SetZ( ((idx & 4) == 1) ? mMax.GetZ() : mMin.GetZ() );
+    rval.setX( ((idx & 1) == 1) ? mMax.x : mMin.x );
+    rval.setY( ((idx & 2) == 1) ? mMax.y : mMin.y );
+    rval.setZ( ((idx & 4) == 1) ? mMax.z : mMin.z );
     return rval;
 }
 

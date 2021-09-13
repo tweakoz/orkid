@@ -79,8 +79,8 @@ HudLayoutGroup::HudLayoutGroup() //
 
   _evrouter = [this](ui::event_constptr_t ev) -> ui::Widget* { //
     switch (ev->_eventcode) {
-      case ui::EventCode::KEY:
-      case ui::EventCode::KEYUP: {
+      case ui::EventCode::KEY_DOWN:
+      case ui::EventCode::KEY_UP: {
         int key = ev->miKeyCode;
         auto it = _handledkeymap.find(key);
         if (it != _handledkeymap.end()) {
@@ -97,7 +97,7 @@ HudLayoutGroup::HudLayoutGroup() //
     bool was_handled = false;
     printf("hudlg evh\n");
     switch (ev->_eventcode) {
-      case ui::EventCode::KEY: {
+      case ui::EventCode::KEY_DOWN: {
         switch (ev->miKeyCode) {
           case '5': {
             the_synth->nextEffect();
@@ -163,7 +163,7 @@ HudLayoutGroup::HudLayoutGroup() //
         } // switch (ev->miKeyCode) {
         break;
       }
-      case ui::EventCode::KEYUP: {
+      case ui::EventCode::KEY_UP: {
         switch (ev->miKeyCode) {
           default: {
             auto it = _notemap.find(ev->miKeyCode);
@@ -202,8 +202,8 @@ void HudLayoutGroup::onUpdateThreadTick(ui::updatedata_ptr_t updata) {
   }
   svar_t hdata;
   while (syn->_hudbuf.try_pop(hdata)) {
-    if (hdata.IsA<HudFrameControl>()) {
-      syn->_curhud_kframe = hdata.Get<HudFrameControl>();
+    if (hdata.isA<HudFrameControl>()) {
+      syn->_curhud_kframe = hdata.get<HudFrameControl>();
     }
   }
   if ((_updcount & 0xff) == 0) {

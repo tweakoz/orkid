@@ -295,20 +295,18 @@ int OldSchool::GetNumCores()
 }
 
 
-S64 OldSchool::GetClockCycle(void)
-{
-#if defined(__APPLE__) || defined(ORK_CONFIG_IX)
-	S64 output;
-    U32 high_end, low_end;
-    __asm__ __volatile__("     rdtsc" :"=a" (low_end), "=d" (high_end));
-    output = high_end;
-    output = output << 32;
-    output += low_end;
-    return output;
-#else
-	OrkAssert(false);
-	return 0;
-#endif
+S64 OldSchool::GetClockCycle(void) {
+	uint64_t counter = 0; 
+	
+	#if defined(ORK_ARCHITECTURE_X86_64)
+	counter = __builtin_readcyclecounter();
+	#elif defined(ORK_ARCHITECTURE_ARM_64)
+	__asm __volatile("mrs %0, CNTVCT_EL0" : "=&r" (counter));
+	#else
+	#error // not implemented
+	#endif
+    
+    return S64(counter);
 }
 
 S64 OldSchool::ClockCyclesToMicroSeconds(S64 cycles)

@@ -94,13 +94,13 @@ struct EnumRegistrar {
     auto registrar = ::ork::reflect::serdes::EnumRegistrar::instance();                                                            \
     auto enumtype  = registrar->findEnumClass<ENUMTYPE>();                                                                         \
     auto enumname  = enumtype->findNameFromValue(int(value));                                                                      \
-    leafnode->_value.template Set<std::string>(enumname);                                                                          \
+    leafnode->_value.template set<std::string>(enumname);                                                                          \
     serializer->serializeLeaf(leafnode);                                                                                           \
   }                                                                                                                                \
   template <> void ::ork::reflect::ITyped<ENUMTYPE>::deserialize(serdes::node_ptr_t desernode) const {                             \
     auto instance      = desernode->_deser_instance;                                                                               \
     const auto& var    = desernode->_value;                                                                                        \
-    const auto& as_str = var.Get<std::string>();                                                                                   \
+    const auto& as_str = var.get<std::string>();                                                                                   \
     auto registrar     = ::ork::reflect::serdes::EnumRegistrar::instance();                                                        \
     auto enumtype      = registrar->findEnumClass<ENUMTYPE>();                                                                     \
     int intval         = enumtype->findValueFromName(as_str);                                                                      \

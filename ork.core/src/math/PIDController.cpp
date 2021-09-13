@@ -70,8 +70,8 @@ T PIDController<T>::Update(T target)
 
 	mIntegral += error;
 
-	mIntegral = maximum(mIntegral, mIntegralRange.GetX());
-	mIntegral = minimum(mIntegral, mIntegralRange.GetY());
+	mIntegral = maximum(mIntegral, mIntegralRange.x);
+	mIntegral = minimum(mIntegral, mIntegralRange.y);
 
 	T P = mProportionalFactor * error;
 	T I = mIntegralFactor * mIntegral;
@@ -81,8 +81,8 @@ T PIDController<T>::Update(T target)
 
 	T delta = P + I + D;
 
-	delta = maximum(delta, mMaxDelta.GetX());
-	delta = minimum(delta, mMaxDelta.GetY());
+	delta = maximum(delta, mMaxDelta.x);
+	delta = minimum(delta, mMaxDelta.y);
 
 	mPosition += delta;
 
@@ -98,8 +98,8 @@ T PIDController2<T>::Update(T MeasuredError, float dt )
     mIntegral += MeasuredError*dt;
 	mIntegral *= powf(mIntegralDecay, dt);
 
-	//mIntegral = maximum(mIntegral, mMaxDelta.GetX());
-	//mIntegral = minimum(mIntegral, mMaxDelta.GetY());
+	//mIntegral = maximum(mIntegral, mMaxDelta.x);
+	//mIntegral = minimum(mIntegral, mMaxDelta.y);
 
     T P =  MeasuredError;
 
@@ -107,8 +107,8 @@ T PIDController2<T>::Update(T MeasuredError, float dt )
 
     T output = P*mProportionalFactor + mIntegral*mIntegralFactor + D*mDerivativeFactor;
 
-    //output = maximum(output, mMaxDelta.GetX());
-    //output = minimum(output, mMaxDelta.GetY());
+    //output = maximum(output, mMaxDelta.x);
+    //output = minimum(output, mMaxDelta.y);
 
     mLastError = MeasuredError;
 

@@ -29,7 +29,7 @@ template <> lev2::ETextureDest PropType<lev2::ETextureDest>::FromString(const Pr
 template <> void PropType<lev2::ETextureDest>::ToString(const lev2::ETextureDest& e, PropTypeString& tstr) {
   tstr.set(TexDestStrings[int(e)].c_str());
 }
-template <> void PropType<lev2::ETextureDest>::GetValueSet(const std::string*& ValueStrings, int& NumStrings) {
+template <> void PropType<lev2::ETextureDest>::GetValueset(const std::string*& ValueStrings, int& NumStrings) {
   NumStrings   = lev2::ETEXDEST_END + 1;
   ValueStrings = TexDestStrings;
 }

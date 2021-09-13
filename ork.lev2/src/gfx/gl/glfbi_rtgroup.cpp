@@ -90,7 +90,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
 
     for (int it = 0; it < inumtargets; it++) {
       RtBuffer* pB = Base->GetMrt(it);
-      if (pB->_impl.IsA<GlRtBufferImpl*>() == false) {
+      if (pB->_impl.isA<GlRtBufferImpl*>() == false) {
         auto bufferimpl = new GlRtBufferImpl;
         // printf("RtGroup<%p> RtBuffer<%p> initcolor1\n", Base, pB);
         pB->SetSizeDirty(true);
@@ -118,7 +118,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
 
         mTargetGL.TXI()->ApplySamplingMode(ptex);
         //////////////////////////////////////////
-        pB->_impl.Set<GlRtBufferImpl*>(bufferimpl);
+        pB->_impl.set<GlRtBufferImpl*>(bufferimpl);
       }
     }
 
@@ -186,7 +186,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
     //////
     for (int it = 0; it < inumtargets; it++) {
       RtBuffer* rtbuffer = Base->GetMrt(it);
-      auto bufferimpl    = rtbuffer->_impl.Get<GlRtBufferImpl*>();
+      auto bufferimpl    = rtbuffer->_impl.get<GlRtBufferImpl*>();
 
       auto tex = rtbuffer->texture();
       if (bufferimpl->_init or rtbuffer->mSizeDirty) {
@@ -386,7 +386,7 @@ void GlFrameBufferInterface::rtGroupMipGen(RtGroup* rtg) {
     auto b = rtg->GetMrt(it);
 
     if (FboObj && b) {
-      auto bufferimpl = b->_impl.Get<GlRtBufferImpl*>();
+      auto bufferimpl = b->_impl.get<GlRtBufferImpl*>();
       auto tex_obj    = bufferimpl->_texture;
       if (b->_mipgen == RtBuffer::EMG_AUTOCOMPUTE) {
         glBindTexture(GL_TEXTURE_2D, tex_obj);

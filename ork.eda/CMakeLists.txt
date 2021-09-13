@@ -12,8 +12,6 @@ file(GLOB_RECURSE src_hdl ${SRCD}/hdl/*.cpp)
 
 set( hdlsrcs ${src_hdl} )
 
-add_compile_options(-mavx)
-
 ###################################
 
 add_library (ork_eda SHARED ${hdlsrcs} )
@@ -27,7 +25,12 @@ ork_std_target_opts(ork_eda)
 target_link_libraries(ork_eda LINK_PRIVATE ork_utpp )
 
 target_include_directories (ork_eda PRIVATE ${INCD} ${COREINCD} )
-target_link_libraries(ork_eda PUBLIC ${libs} tetgen )
+
+target_link_libraries(ork_eda PUBLIC ${libs} )
+
+IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
+	target_link_libraries(ork_eda PUBLIC ${libs} )
+ENDIF()
 
 install(TARGETS ork_eda LIBRARY DESTINATION $ENV{OBT_STAGE}/lib )
 

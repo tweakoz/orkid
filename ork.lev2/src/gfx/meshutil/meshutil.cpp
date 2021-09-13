@@ -305,8 +305,8 @@ submesh_ptr_t Mesh::submeshFromGroupName(const std::string& polygroupname) {
 
 void Mesh::SetRangeTransform(const fvec4& vscale, const fvec4& vtrans) {
   fmtx4 MatS, MatT;
-  MatS.Scale(vscale.GetX(), vscale.GetY(), vscale.GetZ());
-  MatT.SetTranslation(vtrans.GetX(), vtrans.GetY(), vtrans.GetZ());
+  MatS.Scale(vscale.x, vscale.y, vscale.z);
+  MatT.SetTranslation(vtrans.x, vtrans.y, vtrans.z);
   mMatRange = MatS * MatT;
 }
 

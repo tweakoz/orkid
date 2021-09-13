@@ -371,7 +371,7 @@ inline out_arc_iterator graph_array<nodetype, arctype>::insert_arc(const node_it
 template <class nodetype, class arctype>
 inline out_arc_iterator graph_array<nodetype, arctype>::erase_arc(const out_arc_iterator & Pos) {
 	--m_NbArcs;
-	arc& the_arc = Pos->Get<arc>();
+	arc& the_arc = Pos->get<arc>();
 	return (the_arc.initial()->m_OutArcs.erase(Pos));
 }
 

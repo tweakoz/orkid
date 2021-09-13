@@ -162,7 +162,7 @@ circle<T>::circle(const point_type& c, T r)
 }
 
 template <typename T>
-void circle<T>::Set(const point_type& c, T r )
+void circle<T>::set(const point_type& c, T r )
 {
 }
 
@@ -182,15 +182,15 @@ void circle<T>::CircumscribeFromTriangle( const point_type& p1, const point_type
 
 	if (cp != T(0.0))
 	{
-		T p1Sq = p1.GetX() * p1.GetX() + p1.GetY() * p1.GetY();
-		T p2Sq = p2.GetX() * p2.GetX() + p2.GetY() * p2.GetY();
-		T p3Sq = p3.GetX() * p3.GetX() + p3.GetY() * p3.GetY();
-		T num = p1Sq*(p2.GetY() - p3.GetY()) + p2Sq*(p3.GetY() - p1.GetY()) + p3Sq*(p1.GetY() - p2.GetY());
+		T p1Sq = p1.x * p1.x + p1.y * p1.y;
+		T p2Sq = p2.x * p2.x + p2.y * p2.y;
+		T p3Sq = p3.x * p3.x + p3.y * p3.y;
+		T num = p1Sq*(p2.y - p3.y) + p2Sq*(p3.y - p1.y) + p3Sq*(p1.y - p2.y);
 		T cx = num / (T(2.0f) * cp);
-		  num = p1Sq*(p3.GetX() - p2.GetX()) + p2Sq*(p1.GetX() - p3.GetX()) + p3Sq*(p2.GetX() - p1.GetX());
+		  num = p1Sq*(p3.x - p2.x) + p2Sq*(p1.x - p3.x) + p3Sq*(p2.x - p1.x);
 		T cy = num / (T(2.0f) * cp);
-		mCenter.SetX(cx);
-		mCenter.SetY(cy);
+		mCenter.setX(cx);
+		mCenter.setY(cy);
 	}
     mRadius = (mCenter-p1).Mag();
 }

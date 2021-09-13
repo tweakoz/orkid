@@ -106,8 +106,8 @@ struct Event final // RawEvent
 
   fvec2 GetUnitCoordBP() const {
     fvec2 rval;
-    rval.SetX(2.0f * mfUnitX - 1.0f);
-    rval.SetY(-(2.0f * mfUnitY - 1.0f));
+    rval.setX(2.0f * mfUnitX - 1.0f);
+    rval.setY(-(2.0f * mfUnitY - 1.0f));
     return rval;
   }
   void setvpDim(Widget* w);

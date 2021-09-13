@@ -23,13 +23,11 @@
 #include <ork/lev2/ui/viewport.h>
 #include <ork/math/basicfilters.h>
 #include <ork/math/misc_math.h>
-#include <ork/lev2/qtui/qtui.h>
+#include <ork/lev2/glfw/ctx_glfw.h>
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/gfx/fxstate_instance.h>
 #include <ork/reflect/properties/registerX.inl>
-
-#include <QtGui/QCursor>
 
 ImplementReflectionX(ork::lev2::EzUiCam, "EzUiCam");
 
@@ -102,7 +100,7 @@ EzUiCam::EzUiCam()
   mfWorldSizeAtLocator = 150.0f;
 
   auto uicampriv = std::make_shared<UiCamPrivate>();
-  _private.Set<uicamprivate_t>(uicampriv);
+  _private.set<uicamprivate_t>(uicampriv);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -111,7 +109,7 @@ void EzUiCam::draw(Context* context) const {
   extern fvec4 TRayN;
   extern fvec4 TRayF;
 
-  auto priv = _private.Get<uicamprivate_t>();
+  auto priv = _private.get<uicamprivate_t>();
 
   priv->gpuUpdate(context);
 
@@ -123,8 +121,8 @@ void EzUiCam::draw(Context* context) const {
     context->PushModColor(fcolor4::Black());
     ork::lev2::FontMan::PushFont("i14");
     FontMan::beginTextBlock(context);
-    FontMan::DrawText(context, 41, 9, "Center %f %f %f", mvCenter.GetX(), mvCenter.GetY(), mvCenter.GetZ());
-    FontMan::DrawText(context, 41, 21, "CamLoc   %f %f %f", CamLoc.GetX(), CamLoc.GetY(), CamLoc.GetZ());
+    FontMan::DrawText(context, 41, 9, "Center %f %f %f", mvCenter.x, mvCenter.y, mvCenter.z);
+    FontMan::DrawText(context, 41, 21, "CamLoc   %f %f %f", CamLoc.x, CamLoc.y, CamLoc.z);
     FontMan::DrawText(context, 41, 33, "zf %f", (_camcamdata.GetFar()));
     FontMan::DrawText(context, 41, 45, "zn %f", (_camcamdata.GetNear()));
     FontMan::DrawText(context, 41, 57, "zfoverzn %f", (_camcamdata.GetFar() / _camcamdata.GetNear()));
@@ -137,8 +135,8 @@ void EzUiCam::draw(Context* context) const {
 
     context->PushModColor(fcolor4::Yellow());
     FontMan::beginTextBlock(context);
-    FontMan::DrawText(context, 41, 9, "Center %f %f %f", mvCenter.GetX(), mvCenter.GetY(), mvCenter.GetZ());
-    FontMan::DrawText(context, 41, 21, "CamLoc   %f %f %f", CamLoc.GetX(), CamLoc.GetY(), CamLoc.GetZ());
+    FontMan::DrawText(context, 41, 9, "Center %f %f %f", mvCenter.x, mvCenter.y, mvCenter.z);
+    FontMan::DrawText(context, 41, 21, "CamLoc   %f %f %f", CamLoc.x, CamLoc.y, CamLoc.z);
     FontMan::DrawText(context, 41, 33, "zf %f", (_camcamdata.GetFar()));
     FontMan::DrawText(context, 41, 45, "zn %f", (_camcamdata.GetNear()));
     FontMan::DrawText(context, 41, 57, "zfoverzn %f", (_camcamdata.GetFar() / _camcamdata.GetNear()));
@@ -178,7 +176,7 @@ void EzUiCam::draw(Context* context) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static QPoint pmousepos;
+static fvec2 pmousepos;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -557,7 +555,7 @@ void EzUiCam::SetFromWorldSpaceMatrix(const fmtx4& matrix) {
   imatrot.inverseOf(matrot);
 
   fquat quat;
-  quat.FromMatrix(imatrot);
+  quat.fromMatrix(imatrot);
 
   fvec3 pos = matrix.GetTranslation();
 
@@ -605,7 +603,7 @@ void EzUiCam::updateMatrices(void) {
 
   ///////////////////////////////////////////////////////////////
 
-  mRot = QuatC.ToMatrix();
+  mRot = QuatC.toMatrix();
   mTrans.SetTranslation(mvCenter * -1.0f);
 
   fmtx4 matxf = (mTrans * mRot);
@@ -659,8 +657,8 @@ float EzUiCam::ViewLengthToWorldLength(const fvec4& pos, float ViewLength) {
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 void EzUiCam::GenerateDepthRay(const fvec2& pos2D, fvec3& rayN, fvec3& rayF, const fmtx4& IMat) const {
-  float fx = pos2D.GetX();
-  float fy = pos2D.GetY();
+  float fx = pos2D.x;
+  float fy = pos2D.y;
   //////////////////////////////////////////
   fvec4 vWinN(fx, fy, 0.0f);
   fvec4 vWinF(fx, fy, 1.0f);

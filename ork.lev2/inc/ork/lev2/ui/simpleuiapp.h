@@ -1,4 +1,3 @@
-#include <QWindow>
 #include <portaudio.h>
 #include <ork/application/application.h>
 #include <ork/kernel/string/deco.inl>
@@ -24,13 +23,13 @@ struct SimpleUiViewport final : public ui::Viewport {
 using simpleuivp_ptr_t = std::shared_ptr<SimpleUiViewport>;
 ///////////////////////////////////////////////////////////////////////////////
 struct SimpleUiApp final : public OrkEzQtApp {
-  SimpleUiApp(int& argc, char** argv);
+  SimpleUiApp(int& argc, char** argv, AppInitData& qid);
   ~SimpleUiApp() override;
   ui::group_ptr_t _uivp;
 };
 using simpleuiapp_ptr_t = std::shared_ptr<SimpleUiApp>;
 
-simpleuiapp_ptr_t createSimpleUiApp(int& argc, char** argv);
+simpleuiapp_ptr_t createSimpleUiApp(int& argc, char** argv, AppInitData& qid);
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::ui
 ///////////////////////////////////////////////////////////////////////////////

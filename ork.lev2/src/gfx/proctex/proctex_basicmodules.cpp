@@ -166,7 +166,7 @@ Global::Global()
 }
 void Global::Compute(dataflow::workunit* wu) // virtual
 {
-  auto ptex = wu->GetContextData().Get<ProcTex*>();
+  auto ptex = wu->GetContextData().get<ProcTex*>();
   auto ctx  = ptex->GetPTC();
 
   float ftime                                   = ctx->mCurrentTime;
@@ -1076,9 +1076,9 @@ void Gradient::compute(ProcTex& ptex) {
             float fphA = fph0 + (fi * fphd);
             float fphB = fph0 + ((fi + kfisegdiv) * fphd);
             fvec4 cA;
-            cA.Lerp(c0, c1, fi);
+            cA.lerp(c0, c1, fi);
             fvec4 cB;
-            cB.Lerp(c0, c1, fi + kfisegdiv);
+            cB.lerp(c0, c1, fi + kfisegdiv);
 
             float fxa = pol2rect_x(fphA, 0.0f) + 0.5f;
             float fya = pol2rect_y(fphA, 0.0f) + 0.5f;
@@ -1111,9 +1111,9 @@ void Gradient::compute(ProcTex& ptex) {
             float fphA = fi * PI2;
             float fphB = (fi + kfisegdiv) * PI2;
             fvec4 cA;
-            cA.Lerp(c0, c1, fi);
+            cA.lerp(c0, c1, fi);
             fvec4 cB;
-            cB.Lerp(c0, c1, fi + kfisegdiv);
+            cB.lerp(c0, c1, fi + kfisegdiv);
 
             float fxa = pol2rect_x(fphA, fmx0 * 0.5f) + 0.5f;
             float fya = pol2rect_y(fphA, fmx0 * 0.5f) + 0.5f;

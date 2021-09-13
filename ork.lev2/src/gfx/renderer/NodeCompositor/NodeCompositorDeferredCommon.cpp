@@ -181,7 +181,7 @@ void DeferredContext::renderGbuffer(CompositorDrawData& drawdata, const ViewData
   auto targ                    = drawdata.context();
   auto FBI                     = targ->FBI();
   auto& ddprops                = drawdata._properties;
-  auto irenderer               = ddprops["irenderer"_crcu].Get<lev2::IRenderer*>();
+  auto irenderer               = ddprops["irenderer"_crcu].get<lev2::IRenderer*>();
   ViewportRect tgt_rect(0, 0, _rtgGbuffer->width(), _rtgGbuffer->height());
   ViewportRect mrt_rect(0, 0, _rtgGbuffer->width(), _rtgGbuffer->height());
   ///////////////////////////////////////////////////////////////////////////
@@ -282,8 +282,8 @@ void DeferredContext::renderUpdate(CompositorDrawData& drawdata) {
   //////////////////////////////////////////////////////
   // Resize RenderTargets
   //////////////////////////////////////////////////////
-  int newwidth  = ddprops["OutputWidth"_crcu].Get<int>();
-  int newheight = ddprops["OutputHeight"_crcu].Get<int>();
+  int newwidth  = ddprops["OutputWidth"_crcu].get<int>();
+  int newheight = ddprops["OutputHeight"_crcu].get<int>();
   if (_rtgGbuffer->width() != newwidth or _rtgGbuffer->height() != newheight) {
     printf("newwidth<%d>\n", newwidth);
     printf("newheight<%d>\n", newheight);

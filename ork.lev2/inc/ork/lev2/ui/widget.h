@@ -100,10 +100,10 @@ public:
   int height(void) const {
     return _geometry._h;
   }
-  void SetX(int X) {
+  void setX(int X) {
     SetPos(X, y());
   }
-  void SetY(int Y) {
+  void setY(int Y) {
     SetPos(x(), Y);
   }
   void SetX2(int X2) {
@@ -112,7 +112,7 @@ public:
   void SetY2(int Y2) {
     SetSize(x(), (Y2 - y()));
   }
-  void SetW(int W) {
+  void setW(int W) {
     SetSize(W, height());
   }
   void SetH(int H) {

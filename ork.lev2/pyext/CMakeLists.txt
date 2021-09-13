@@ -11,7 +11,7 @@ find_package( pybind11 REQUIRED )
 ###################################
 
 set( SRCD ${CMAKE_CURRENT_SOURCE_DIR} )
-set( ORKPKGBASE $ENV{PYTHONHOME}/lib/python3.8/site-packages/orkengine )
+set( ORKPKGBASE $ENV{OBT_PYPKG}/orkengine )
 set( INSTALL_DEST ${ORKPKGBASE}/lev2 )
 set( INCD $ENV{ORKID_WORKSPACE_DIR}/ork.core/inc )
 set( INCD2 $ENV{ORKID_WORKSPACE_DIR}/ork.lev2/inc )
@@ -54,4 +54,3 @@ target_include_directories (_lev2 PRIVATE $ENV{OBT_STAGE}/include/eigen3 )
 
 configure_file( pyfiles/__lev2_init__.py ${INSTALL_DEST}/__init__.py )
 #configure_file( pyfiles/setup.py ${INSTALL_DEST}/setup.py)
-add_subdirectory (lev2qt)

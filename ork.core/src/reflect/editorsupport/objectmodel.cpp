@@ -240,10 +240,10 @@ void ObjectModel::SlotObjectDeSelected(ork::object_ptr_t pobj) {
   ///////////////////////////////////////////////////
   auto obj_ops_anno = objclass->Description().classAnnotation("editor.object.ops");
 
-  bool is_const_string = obj_ops_anno.IsSet() && obj_ops_anno.IsA<ConstString>();
-  bool is_op_map       = obj_ops_anno.IsSet() && obj_ops_anno.IsA<ork::reflect::OpMap*>();
+  bool is_const_string = obj_ops_anno.Isset() && obj_ops_anno.isA<ConstString>();
+  bool is_op_map       = obj_ops_anno.Isset() && obj_ops_anno.isA<ork::reflect::OpMap*>();
 
-  // ConstString obj_ops = obj_ops_anno.IsSet() ? obj_ops_anno.Get<ConstString>() : "";
+  // ConstString obj_ops = obj_ops_anno.Isset() ? obj_ops_anno.get<ConstString>() : "";
   const char* usename = (pname != 0) ? pname : cur_obj->GetClass()->Name().c_str();
   auto ObjContainerW  = binline //
                            ? objectmodelnode_ptr_t(nullptr)
@@ -269,7 +269,7 @@ void ObjectModel::SlotObjectDeSelected(ork::object_ptr_t pobj) {
   ///////////////////////////////////////////////////
 
   auto ClassEditorAnno = objclass->Description().classAnnotation("editor.class");
-  if (auto as_conststr = ClassEditorAnno.TryAs<ConstString>()) {
+  if (auto as_conststr = ClassEditorAnno.tryAs<ConstString>()) {
     ConstString anno_edclass = as_conststr.value();
     if (anno_edclass.length()) {
       rtti::Class* AnnoEditorClass = rtti::Class::FindClass(anno_edclass);
@@ -404,7 +404,7 @@ void ObjectModel::EnumerateNodes(
     object::ObjectClass* pclass                         = ClassVect[ic];
     ork::reflect::Description::PropertyMapType& propmap = pclass->Description().properties();
     auto eg_anno                                        = pclass->Description().classAnnotation("editor.prop.groups");
-    auto as_conststr                                    = eg_anno.TryAs<const char*>();
+    auto as_conststr                                    = eg_anno.tryAs<const char*>();
     const char* eg                                      = "";
     if (as_conststr)
       eg = as_conststr.value();
@@ -474,7 +474,7 @@ void ObjectModel::EnumerateNodes(
         ///////////////////////////////////////////////////
         std::set<std::string> allowed_props;
         auto obj_props_anno = the_class->Description().classAnnotation("editor.object.props");
-        if (auto as_str = obj_props_anno.TryAs<std::string>()) {
+        if (auto as_str = obj_props_anno.tryAs<std::string>()) {
           auto propnameset = as_str.value();
           if (propnameset.length()) {
             auto pvect = ork::SplitString(propnameset, ' ');

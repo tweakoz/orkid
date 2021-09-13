@@ -186,27 +186,27 @@ void Panel::snap() {
   bool was_snapped = false;
 
   if (snapt && snapb) {
-    SetY(-kpanelw);
+    setY(-kpanelw);
     SetH(ph + 2 * kpanelw);
     was_snapped = true;
   } else if (snapt) {
-    SetY(-kpanelw);
+    setY(-kpanelw);
     was_snapped = true;
   } else if (snapb) {
-    SetY(ph + kpanelw - height());
+    setY(ph + kpanelw - height());
     was_snapped = true;
   }
   if (snapl && snapr) {
-    SetX(-kpanelw);
-    SetW(pw + 2 * kpanelw);
+    setX(-kpanelw);
+    setW(pw + 2 * kpanelw);
     was_snapped = true;
   }
   if (snapl) {
-    SetX(-kpanelw);
+    setX(-kpanelw);
     was_snapped = true;
   } else if (snapr) {
     was_snapped = true;
-    SetX(pw + kpanelw - width());
+    setX(pw + kpanelw - width());
   }
   if (was_snapped) {
     _parent->_snapped.insert(this);

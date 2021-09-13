@@ -228,20 +228,20 @@ void SplitPanel::snap() {
   bool snapt = (_geometry._y < kpanelw);
   bool snapb = (yd < kpanelw);
   if (snapt and snapb) {
-    SetY(-kpanelw);
+    setY(-kpanelw);
     SetH(ph + 2 * kpanelw);
   } else if (snapt)
-    SetY(-kpanelw);
+    setY(-kpanelw);
   else if (snapb)
-    SetY(ph + kpanelw - height());
+    setY(ph + kpanelw - height());
   if (snapl and snapr) {
-    SetX(-kpanelw);
-    SetW(pw + 2 * kpanelw);
+    setX(-kpanelw);
+    setW(pw + 2 * kpanelw);
   }
   if (snapl)
-    SetX(-kpanelw);
+    setX(-kpanelw);
   else if (snapr)
-    SetX(pw + kpanelw - width());
+    setX(pw + kpanelw - width());
 }
 
 HandlerResult SplitPanel::DoOnUiEvent(event_constptr_t Ev) {

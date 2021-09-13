@@ -9,11 +9,14 @@
 #include <ork/file/file.h>
 #include <ork/kernel/spawner.h>
 
+#include <ork/lev2/config.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/gfx/dds.h>
 #include <ork/lev2/gfx/texman.h>
 #include <math.h>
+#if defined(ENABLE_ISPC)
 #include <ispc_texcomp.h>
+#endif
 
 namespace ork::lev2 {
 
@@ -123,7 +126,7 @@ MipChain::MipChain(int w, int h, EBufferFormat fmt, ETextureType typ) {
       case EBufferFormat::Z16:
         level->_length = w * h * sizeof(uint16_t);
         break;
-#if !defined(__APPLE__)
+#if defined(ENABLE_ISPC)
       case EBufferFormat::RGBA_BPTC_UNORM:
         level->_length = w * h;
         break;
@@ -152,6 +155,7 @@ MipChain::~MipChain() {
   }
 }
 
+#if defined(ENABLE_ISPC)
 void bc7testcomp() {
 
   printf("Generating uncompressed texture...\n");
@@ -268,6 +272,7 @@ void astctestcomp() {
   MPPS = 16.0 / time;
   printf("DONE ASTC compression [SLOW] time<%g> MPPS<%g>\n", time, MPPS);
 }
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 

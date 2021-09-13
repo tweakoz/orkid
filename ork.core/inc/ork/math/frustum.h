@@ -38,8 +38,8 @@ struct Frustum {
 
   void SupportMapping(const vec3_type& v, vec3_type& result) const;
 
-  void Set(const mtx44_type& VMatrix, const mtx44_type& PMatrix);
-  void Set(const mtx44_type& IVPMatrix);
+  void set(const mtx44_type& VMatrix, const mtx44_type& PMatrix);
+  void set(const mtx44_type& IVPMatrix);
 
   void CalcCorners();
 

@@ -49,11 +49,7 @@ namespace ork {
 
 namespace lev2 {
 
-#if defined(ORK_OSX)
-namespace metal {
-void init();
-}
-#else
+#if !defined(ORK_OSX)
 namespace vk {
 void init();
 }
@@ -218,9 +214,7 @@ void ClassInit() {
 
 void GfxInit(const std::string& gfxlayer) {
 
-#if defined(ORK_OSX)
-  metal::init();
-#else
+#if !defined(ORK_OSX)
   vk::init();
 #endif
 
@@ -299,8 +293,8 @@ void PerformanceTracker::Draw(ork::lev2::Context* pTARG) {
   // orklist<PerformanceItem*>* PerfItemList = PerformanceTracker::GetItemList();
   /*s64 PerfTotal = PerformanceTracker::GetRef().mpRoot->miAvgCycle;
 
-  int itX = pTARG->GetX();
-  int itY = pTARG->GetY();
+  int itX = pTARG->x;
+  int itY = pTARG->y;
   int itW = pTARG->width();
   int itH = pTARG->height();
 

@@ -110,7 +110,7 @@ struct GradientSet {
       , mHeightHi(0.0f) {
   }
 
-  fvec4 Lerp(float fu, float fv) const;
+  fvec4 lerp(float fu, float fv) const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

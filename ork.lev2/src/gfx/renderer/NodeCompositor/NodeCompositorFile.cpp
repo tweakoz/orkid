@@ -85,14 +85,14 @@ struct IMPL {
     auto targ                         = framedata.GetTarget();
     // framedata.setLayerName(_node->_layername.c_str());
     // targ->debugMarker("File::beginFrame");
-    drawdata._properties["OutputWidth"_crcu].Set<int>(targ->mainSurfaceWidth());
-    drawdata._properties["OutputHeight"_crcu].Set<int>(targ->mainSurfaceHeight());
+    drawdata._properties["OutputWidth"_crcu].set<int>(targ->mainSurfaceWidth());
+    drawdata._properties["OutputHeight"_crcu].set<int>(targ->mainSurfaceHeight());
   }
   void endAssemble(CompositorDrawData& drawdata) {
     drawdata.context()->debugMarker("File::endFrame");
   }
   void composite(CompositorDrawData& drawdata) {
-    auto final = drawdata._properties["final"_crcu].Get<RtGroup*>();
+    auto final = drawdata._properties["final"_crcu].get<RtGroup*>();
     drawdata.context()->debugMarker("File::endFrame");
   }
   ///////////////////////////////////////
@@ -110,16 +110,16 @@ FileOutputCompositingNode::FileOutputCompositingNode()
 FileOutputCompositingNode::~FileOutputCompositingNode() {
 }
 void FileOutputCompositingNode::gpuInit(lev2::Context* pTARG, int iW, int iH) {
-  _impl.Get<std::shared_ptr<IMPL>>()->gpuInit(pTARG);
+  _impl.get<std::shared_ptr<IMPL>>()->gpuInit(pTARG);
 }
 void FileOutputCompositingNode::beginAssemble(CompositorDrawData& drawdata) {
-  _impl.Get<std::shared_ptr<IMPL>>()->beginAssemble(drawdata);
+  _impl.get<std::shared_ptr<IMPL>>()->beginAssemble(drawdata);
 }
 void FileOutputCompositingNode::endAssemble(CompositorDrawData& drawdata) {
-  _impl.Get<std::shared_ptr<IMPL>>()->endAssemble(drawdata);
+  _impl.get<std::shared_ptr<IMPL>>()->endAssemble(drawdata);
 }
 void FileOutputCompositingNode::composite(CompositorDrawData& drawdata) {
-  _impl.Get<std::shared_ptr<IMPL>>()->composite(drawdata);
+  _impl.get<std::shared_ptr<IMPL>>()->composite(drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
 

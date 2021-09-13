@@ -112,9 +112,9 @@ void VerilogBackEnd::emitRef(const Ref& r) {
     // output addressed memory reference ?
     ///////////////////////////
 
-    if(auto as_reg = r._ref->TryAs<Reg>() ){
+    if(auto as_reg = r._ref->tryAs<Reg>() ){
         auto reg = as_reg.value();
-        if( auto addras = r._address.TryAs<ref_t>() ){
+        if( auto addras = r._address.tryAs<ref_t>() ){
             output("[");
             emitRef(*addras.value());
             output("]");
@@ -136,16 +136,16 @@ void VerilogBackEnd::emitRef(const Ref& r) {
 ///////////////////////////////////
 
 void VerilogBackEnd::emitRvalue(const Rvalue& r) {
-    if(auto as_e = r._payload.TryAs<expr_t>())
+    if(auto as_e = r._payload.tryAs<expr_t>())
         emitExpression(as_e.value());
-    else if(auto as_r = r._payload.TryAs<Ref>())
+    else if(auto as_r = r._payload.tryAs<Ref>())
         emitRef(as_r.value());
-    else if(auto as_u = r._payload.TryAs<KUIntC>()){
+    else if(auto as_u = r._payload.tryAs<KUIntC>()){
         size_t l = as_u.value()._size;
         uint64_t val = as_u.value()._value;
         output( "%zu'h%x", l, val );
     }
-    else if(auto as_s = r._payload.TryAs<KSIntC>()){
+    else if(auto as_s = r._payload.tryAs<KSIntC>()){
         size_t l = as_s.value()._size-1;
         int64_t val = as_s.value()._value;
         if( val>=0 )
@@ -163,10 +163,10 @@ void VerilogBackEnd::emitRvalue(const Rvalue& r) {
 void VerilogBackEnd::emitExpression(expr_t e) {
     _currentexpr = e;
     auto& child = e->_child;
-    if( auto as_op_x = child.TryAs<Unknown>() ){
+    if( auto as_op_x = child.tryAs<Unknown>() ){
         output("Unknown");
     }
-    else if(auto as=child.TryAs<astnode_t>()){
+    else if(auto as=child.tryAs<astnode_t>()){
         as.value()->emitVerilog(this);
     }
     else {
@@ -265,7 +265,7 @@ void VerilogBackEnd::emitModule(Module*m) {
     for( auto var : m->_ios_ordered ){
         i++;
         /////////////////////////////////////
-        if( auto as = var.TryAs<Input>() ){
+        if( auto as = var.tryAs<Input>() ){
             auto& as_val = as.value();
             auto name = as_val._key.c_str();
             bool is_signed = as_val._signed;
@@ -275,7 +275,7 @@ void VerilogBackEnd::emitModule(Module*m) {
             externals.push_back(inp);
         }
         /////////////////////////////////////
-        else if( auto as = var.TryAs<Output>() ){
+        else if( auto as = var.tryAs<Output>() ){
             auto& as_val = as.value();
             auto name = as_val._key.c_str();
             bool is_signed = as_val._signed;
@@ -307,7 +307,7 @@ void VerilogBackEnd::emitModule(Module*m) {
     ////////////////////////////////
 
     for( auto var : m->_ios_ordered ){
-        if( auto as = var.TryAs<Reg>() ){
+        if( auto as = var.tryAs<Reg>() ){
             auto& reg = as.value();
             auto name = reg._key.c_str();
             bool is_signed = reg._signed;
@@ -330,7 +330,7 @@ void VerilogBackEnd::emitModule(Module*m) {
                 output( "%s [%zu:0] %s;\n", type, reg._size-1, name );
             }
         }
-        else if( auto as = var.TryAs<Wire>() ){
+        else if( auto as = var.tryAs<Wire>() ){
             auto& as_val = as.value();
             auto name = as_val._key.c_str();
             bool is_signed = as_val._signed;
@@ -395,7 +395,7 @@ void VerilogBackEnd::emitModule(Module*m) {
     indent();
 
     for( auto var : m->_ios_ordered ){
-        if( auto as = var.TryAs<Reg>() ){
+        if( auto as = var.tryAs<Reg>() ){
             auto reg = as.value();
             auto name = reg._key.c_str();
             if(reg._depth!=0 ) { //and reg._initdata!=nullptr){
@@ -409,7 +409,7 @@ void VerilogBackEnd::emitModule(Module*m) {
             else if(reg._depth==0) // dont init mems with 0
                 outputline("%s <= 0;",name,reg._size);
         }
-        else if( auto as = var.TryAs<Output>() ){
+        else if( auto as = var.tryAs<Output>() ){
             auto out = as.value();
             if(out._register){
                 auto name = out._key.c_str();

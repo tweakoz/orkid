@@ -22,5 +22,5 @@ int main(int argc, char** argv) {
   // benchmark the dsp program
   //////////////////////////////////////
   auto app = createBenchmarkApp(argc, argv, program);
-  return app->exec();
+  return app->runloop();
 }

@@ -44,7 +44,7 @@ RawInputKey InputMap::MapInput(const MappedInputKey& inkey) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void InputMap::Set(ork::lev2::MappedInputKey inch, ork::lev2::RawInputKey outch) {
+void InputMap::set(ork::lev2::MappedInputKey inch, ork::lev2::RawInputKey outch) {
   mInputMap[inch] = outch;
 }
 
@@ -315,7 +315,7 @@ void InputDevice::Disconnect() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void InputDevice::SetInputMap(EMappedTriggerNames inch, ERawTriggerNames outch) {
-  InputState::RefGlobalInputMap().Set(inch, outch);
+  InputState::RefGlobalInputMap().set(inch, outch);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

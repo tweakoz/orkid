@@ -44,10 +44,10 @@ AssetPath Asset::name() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-assetset_ptr_t Asset::assetSet() const {
+assetset_ptr_t Asset::assetset() const {
   auto objclazz  = rtti::safe_downcast<object::ObjectClass*>(GetClass());
   auto aset_anno = objclazz->annotation("AssetSet");
-  auto asset_set = aset_anno.Get<assetset_ptr_t>();
+  auto asset_set = aset_anno.get<assetset_ptr_t>();
   return asset_set;
 }
 
@@ -62,13 +62,13 @@ std::string Asset::type() const {
 
 bool Asset::Load() const {
   auto entry     = assetSetEntry(this);
-  auto asset_set = assetSet();
+  auto asset_set = assetset();
   return entry->Load(asset_set->topLevel());
 }
 
 bool Asset::LoadUnManaged() const {
   AssetSetEntry* entry = assetSetEntry(this);
-  auto asset_set       = assetSet();
+  auto asset_set       = assetset();
   return entry->Load(asset_set->topLevel());
 }
 

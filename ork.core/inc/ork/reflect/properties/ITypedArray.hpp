@@ -43,9 +43,9 @@ void ITypedArray<elem_t>::serializeElement(serdes::node_ptr_t elemnode) const {
   auto instance   = elemnode->_ser_instance;
   get(value, instance, elemnode->_index);
   if constexpr (std::is_convertible<elem_t, object_ptr_t>::value) {
-    elemnode->_value.template Set<object_ptr_t>(value);
+    elemnode->_value.template set<object_ptr_t>(value);
   } else {
-    elemnode->_value.template Set<elem_t>(value);
+    elemnode->_value.template set<elem_t>(value);
   }
   auto childnode = serializer->serializeContainerElement(elemnode);
 }

@@ -1134,12 +1134,12 @@ void GfxPrimitives::Init(Context* pTarg) {
         if (float(fy) > fmax)
           fmax = float(fy);
 
-        heightfield.XYZ(iX, iZ).SetX(fx);
-        heightfield.XYZ(iX, iZ).SetY(fy);
-        heightfield.XYZ(iX, iZ).SetZ(fz);
+        heightfield.XYZ(iX, iZ).setX(fx);
+        heightfield.XYZ(iX, iZ).setY(fy);
+        heightfield.XYZ(iX, iZ).setZ(fz);
 
-        heightfield.UV(iX, iZ).SetX(fu);
-        heightfield.UV(iX, iZ).SetY(fv);
+        heightfield.UV(iX, iZ).setX(fu);
+        heightfield.UV(iX, iZ).setY(fv);
       }
     }
 
@@ -1173,23 +1173,23 @@ void GfxPrimitives::Init(Context* pTarg) {
 
         /////////////////////////////////////////////////////
 
-        float fX1 = pX1Z1.GetX();
-        float fX2 = pX2Z1.GetX();
-        float fZ1 = pX1Z1.GetZ();
-        float fZ2 = pX1Z2.GetZ();
+        float fX1 = pX1Z1.x;
+        float fX2 = pX2Z1.x;
+        float fZ1 = pX1Z1.z;
+        float fZ2 = pX1Z2.z;
 
-        float fTU1 = tX1Z1.GetX();
-        float fTU2 = tX2Z1.GetX();
-        float fTV1 = tX1Z1.GetY();
-        float fTV2 = tX1Z2.GetY();
+        float fTU1 = tX1Z1.x;
+        float fTU2 = tX2Z1.x;
+        float fTV1 = tX1Z1.y;
+        float fTV2 = tX1Z2.y;
 
         /////////////////////////////////////////////////////
         // get heights
 
-        F32 fYH_X1Z1 = pX1Z1.GetY();
-        F32 fYH_X1Z2 = pX1Z2.GetY();
-        F32 fYH_X2Z1 = pX2Z1.GetY();
-        F32 fYH_X2Z2 = pX2Z2.GetY();
+        F32 fYH_X1Z1 = pX1Z1.y;
+        F32 fYH_X1Z2 = pX1Z2.y;
+        F32 fYH_X2Z1 = pX2Z1.y;
+        F32 fYH_X2Z2 = pX2Z2.y;
 
         /////////////////////////////////////////////////////
         // calc height lerps
@@ -1217,15 +1217,15 @@ void GfxPrimitives::Init(Context* pTarg) {
 
         fvec4 caX1Z1, caX2Z1, caX2Z2, caX1Z2;
         fvec4 cX1Z1, cX2Z1, cX2Z2, cX1Z2;
-        caX1Z1.Lerp(ColorB, ColorA, DotX1Z1);
-        caX2Z1.Lerp(ColorB, ColorA, DotX2Z1);
-        caX2Z2.Lerp(ColorB, ColorA, DotX2Z2);
-        caX1Z2.Lerp(ColorB, ColorA, DotX1Z2);
+        caX1Z1.lerp(ColorB, ColorA, DotX1Z1);
+        caX2Z1.lerp(ColorB, ColorA, DotX2Z1);
+        caX2Z2.lerp(ColorB, ColorA, DotX2Z2);
+        caX1Z2.lerp(ColorB, ColorA, DotX1Z2);
 
-        cX1Z1.Lerp(caX1Z1, ColorC, YLerpX1Z1);
-        cX2Z1.Lerp(caX2Z1, ColorC, YLerpX2Z1);
-        cX2Z2.Lerp(caX2Z2, ColorC, YLerpX2Z2);
-        cX1Z2.Lerp(caX1Z2, ColorC, YLerpX1Z2);
+        cX1Z1.lerp(caX1Z1, ColorC, YLerpX1Z1);
+        cX2Z1.lerp(caX2Z1, ColorC, YLerpX2Z1);
+        cX2Z2.lerp(caX2Z2, ColorC, YLerpX2Z2);
+        cX1Z2.lerp(caX1Z2, ColorC, YLerpX1Z2);
 
         /////////////////////////////////////////////////////
 
@@ -1612,13 +1612,13 @@ void GfxPrimitives::RenderQuad(Context* pTarg, fvec4& V0, fvec4& V1, fvec4& V2, 
   f32 imaxU = 1.0f;
   f32 imaxV = 1.0f;
 
-  vw.AddVertex(SVtxV12C4T16(V0.GetX(), V0.GetY(), V0.GetZ(), iminU, iminV, 0xffffffff));
-  vw.AddVertex(SVtxV12C4T16(V1.GetX(), V1.GetY(), V1.GetZ(), imaxU, iminV, 0xffffffff));
-  vw.AddVertex(SVtxV12C4T16(V2.GetX(), V2.GetY(), V2.GetZ(), iminU, imaxV, 0xffffffff));
+  vw.AddVertex(SVtxV12C4T16(V0.x, V0.y, V0.z, iminU, iminV, 0xffffffff));
+  vw.AddVertex(SVtxV12C4T16(V1.x, V1.y, V1.z, imaxU, iminV, 0xffffffff));
+  vw.AddVertex(SVtxV12C4T16(V2.x, V2.y, V2.z, iminU, imaxV, 0xffffffff));
 
-  vw.AddVertex(SVtxV12C4T16(V1.GetX(), V1.GetY(), V1.GetZ(), imaxU, iminV, 0xffffffff));
-  vw.AddVertex(SVtxV12C4T16(V2.GetX(), V2.GetY(), V2.GetZ(), iminU, imaxV, 0xffffffff));
-  vw.AddVertex(SVtxV12C4T16(V3.GetX(), V3.GetY(), V3.GetZ(), imaxU, imaxV, 0xffffffff));
+  vw.AddVertex(SVtxV12C4T16(V1.x, V1.y, V1.z, imaxU, iminV, 0xffffffff));
+  vw.AddVertex(SVtxV12C4T16(V2.x, V2.y, V2.z, iminU, imaxV, 0xffffffff));
+  vw.AddVertex(SVtxV12C4T16(V3.x, V3.y, V3.z, imaxU, imaxV, 0xffffffff));
 
   vw.UnLock(pTarg);
 

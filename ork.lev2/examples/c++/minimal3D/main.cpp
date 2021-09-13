@@ -1,4 +1,3 @@
-#include <QWindow>
 #include <ork/kernel/string/deco.inl>
 #include <ork/kernel/timer.h>
 #include <ork/lev2/ezapp.h>
@@ -32,7 +31,7 @@ int main(int argc, char** argv) {
     material->gpuInit(ctx, "orkshader://solid");
     fxtechnique    = material->technique("vtxcolor");
     fxparameterMVP = material->param("MatMVP");
-    deco::printf(fvec3::White(), "gpuINIT - context<%p>\n", ctx, fxtechnique);
+    deco::printf(fvec3::White(), "gpuINIT - context<%p>\n", ctx);
     deco::printf(fvec3::Yellow(), "  fxtechnique<%p>\n", fxtechnique);
     deco::printf(fvec3::Yellow(), "  fxparameterMVP<%p>\n", fxparameterMVP);
     material->_rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
@@ -41,12 +40,12 @@ int main(int argc, char** argv) {
     ///////////////////////////////////////////////////
     auto frus_p = ctx->MTXI()->Persp(45.0, 1.0f, .1, 3);
     auto frus_v = ctx->MTXI()->LookAt(fvec3(0, 0, -1), fvec3(0, 0, 0), fvec3(0, 1, 0));
-    primitive->_frustum.Set(frus_v, frus_p);
+    primitive->_frustum.set(frus_v, frus_p);
     primitive->gpuInit(ctx);
     ///////////////////////////////////////////////////
   });
   //////////////////////////////////////////////////////////
-  qtapp->onDraw([=](ui::drawevent_constptr_t drwev) {
+  qtapp->onDraw([&](ui::drawevent_constptr_t drwev) {
     auto context = drwev->GetTarget();
     RenderContextFrameData RCFD(context); // renderer per/frame data
     auto fbi  = context->FBI();           // FrameBufferInterface
@@ -80,5 +79,5 @@ int main(int argc, char** argv) {
   });
   //////////////////////////////////////////////////////////
   qtapp->setRefreshPolicy({EREFRESH_FASTEST, -1});
-  return qtapp->exec();
+  return qtapp->runloop();
 }

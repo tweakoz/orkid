@@ -206,7 +206,7 @@ void ParametricEq::compute(DspBuffer& dspbuf) // final
       _smoothW  = wid;  // kf2 * _smoothW + kf1 * wid;
       _smoothG  = gain; // kf2*_smoothG + kf1*gain;
 
-      _peq1.Set(_smoothFC, _smoothW, _smoothG);
+      _peq1.set(_smoothFC, _smoothW, _smoothG);
 
       float inp = ubuf[i] * pad;
       // float outp = _biquad.compute2(inp);

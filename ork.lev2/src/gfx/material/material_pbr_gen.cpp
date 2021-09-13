@@ -135,7 +135,7 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
     mtl->gpuInit(targ, "orkshader://pbr_filterenv");
     tekFilterSpecMap = mtl->technique("tek_filterSpecularMap");
     OrkAssert(tekFilterSpecMap != nullptr);
-    // printf("filterenv mtl<%p> tekFilterSpecMap<%p>\n", mtl.get(), tekFilterSpecMap);
+     printf("filterenv mtl<%p> tekFilterSpecMap<%p>\n", mtl.get(), tekFilterSpecMap);
     param_mvp = mtl->param("mvp");
     param_pfm = mtl->param("prefiltmap");
     param_ruf = mtl->param("roughness");
@@ -144,7 +144,7 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
   auto filtex                                                       = std::make_shared<FilteredEnvMap>();
   rawenvmap->_varmap.makeValueForKey<filtenvmapptr_t>("filtenvmap") = filtex;
   ///////////////////////////////////////////////
-  // printf("filterenv-spec tex<%p> hash<0x%zx>\n", rawenvmap, rawenvmap->_contentHash);
+  printf("filterenv-spec tex<%p> hash<0x%zx>\n", rawenvmap, rawenvmap->_contentHash);
   boost::Crc64 basehasher;
   basehasher.accumulateString("filterenv-spec-v0");
   basehasher.accumulateItem<uint64_t>(rawenvmap->_contentHash);
@@ -153,7 +153,7 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
   auto cmipchain_datablock   = DataBlockCache::findDataBlock(cmipchain_hashkey);
   ///////////////////////////////////////////////
   if (cmipchain_datablock) {
-    // printf("filterenv-spec tex<%p> loading precomputed!\n", rawenvmap);
+    printf("filterenv-spec tex<%p> loading precomputed!\n", rawenvmap);
   } else {
     RenderContextFrameData RCFD(targ);
     int w = rawenvmap->_width;
@@ -175,8 +175,8 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
       outbuffr->_debugName = FormatString("filteredenvmap-specenv-mip%d", imip);
       outgroup->SetMrt(0, outbuffr.get());
 
-      // printf("filterenv imip<%d> w<%d> h<%d>\n", imip, w, h);
-      // printf("filterenv imip<%d> outgroup<%p> outbuf<%p>\n", imip, outgroup.get(), outbuffr.get());
+       printf("filterenv imip<%d> w<%d> h<%d>\n", imip, w, h);
+       printf("filterenv imip<%d> outgroup<%p> outbuf<%p>\n", imip, outgroup.get(), outbuffr.get());
 
       fbi->PushRtGroup(outgroup.get());
       mtl->begin(tekFilterSpecMap, RCFD);

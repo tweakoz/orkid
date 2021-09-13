@@ -206,6 +206,7 @@ enum ECullTest {
 
 enum struct EVtxStreamFormat : crc_enum_t {
   CrcEnum(V12),      // 12 BPV	flat fvec3's
+  CrcEnum(V12C4),    // 16 BPV  flat fvec3's
   CrcEnum(V12T8),    // 20 BPV	flat fvec3's
   CrcEnum(V16),      // 16 BPV	flat fvec4's
   CrcEnum(V4T4),     // 8 BPV	2D text (or textured quads) no vtxcolors

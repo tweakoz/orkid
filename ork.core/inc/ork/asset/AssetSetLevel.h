@@ -19,7 +19,7 @@ public:
 
 	typedef orkvector<AssetSetEntry *> SetType;
 
-	SetType &GetSet() { return mSet; }
+	SetType &Getset() { return mSet; }
 
 	AssetSetLevel *Parent() const { return _parent; }
 private:

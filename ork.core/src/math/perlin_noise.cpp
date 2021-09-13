@@ -106,11 +106,11 @@ float NoiseCache2D::ValueAt(const fvec2& pos, const fvec2& offset, float amplitu
   u32 numSamplesMask = mkSamplesPerSide - 1;
 
   fvec2 adjPos = (pos + offset) * frequency;
-  int iX       = int(adjPos.GetX());
-  int iY       = int(adjPos.GetY());
+  int iX       = int(adjPos.x);
+  int iY       = int(adjPos.y);
 
-  const float smoothXT(SmoothT(adjPos.GetX() - float(iX)));
-  const float smoothYT(SmoothT(adjPos.GetY() - float(iY)));
+  const float smoothXT(SmoothT(adjPos.x - float(iX)));
+  const float smoothYT(SmoothT(adjPos.y - float(iY)));
 
   const float edgePos0(LinearInterp(smoothYT, CacheAt(u32(iX), u32(iY)), CacheAt(u32(iX), u32(iY + 1))));
   const float edgePos1(LinearInterp(smoothYT, CacheAt(u32(iX + 1), u32(iY)), CacheAt(u32(iX + 1), u32(iY + 1))));

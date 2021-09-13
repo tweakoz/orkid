@@ -25,7 +25,8 @@ HandlerResult Context::handleEvent(event_constptr_t ev) {
         //////////////////////////
         *_tempevent            = *ev;
         _tempevent->_eventcode = EventCode::BEGIN_DRAG;
-        _evdragtarget->OnUiEvent(_tempevent);
+        if(_evdragtarget)
+          _evdragtarget->OnUiEvent(_tempevent);
         //////////////////////////
       }
       rval = _evdragtarget //

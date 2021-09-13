@@ -6,11 +6,43 @@
 
 namespace ork::lev2 {
 
+///////////////////////////////////////////////////////////////////////////////
+
 DrawingInterface::DrawingInterface(Context& ctx)
     : _context(ctx) {
 }
 
-void DrawingInterface::quad2DEML(const fvec4& QuadRect, const fvec4& UvRect, const fvec4& UvRect2) {
+///////////////////////////////////////////////////////////////////////////////
+
+void DrawingInterface::quad2DEML(const fvec2& v0, const fvec2& v1, const fvec2& v2, const fvec2& v3, //
+               const fvec2& uva0, const fvec2& uva1, const fvec2& uva2, const fvec2& uva3, //
+               const fvec2& uvb0, const fvec2& uvb1, const fvec2& uvb2, const fvec2& uvb3, //
+               const fvec4& vertex_color ){
+
+  auto GBI = _context.GBI();
+
+  DynamicVertexBuffer<SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
+  U32 uc                                = vertex_color.GetABGRU32();
+  ork::lev2::VtxWriter<SVtxV12C4T16> vw;
+  vw.Lock(GBI, &vb, 6);
+  vw.AddVertex(SVtxV12C4T16(v0.x, v0.y, 0.0f, uva0.x, uva0.y, uva0.x, uva0.y, uc));
+  vw.AddVertex(SVtxV12C4T16(v2.x, v2.y, 0.0f, uva2.x, uva2.y, uvb2.x, uvb2.y, uc));
+  vw.AddVertex(SVtxV12C4T16(v1.x, v1.y, 0.0f, uva1.x, uva1.y, uvb1.x, uvb1.y, uc));
+
+  vw.AddVertex(SVtxV12C4T16(v0.x, v0.y, 0.0f, uva0.x, uva0.y, uva0.x, uva0.y, uc));
+  vw.AddVertex(SVtxV12C4T16(v3.x, v3.y, 0.0f, uva3.x, uva3.y, uvb3.x, uvb3.y, uc));
+  vw.AddVertex(SVtxV12C4T16(v2.x, v2.y, 0.0f, uva2.x, uva2.y, uvb2.x, uvb2.y, uc));
+  vw.UnLock(GBI);
+
+  GBI->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES, 6);
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void DrawingInterface::quad2DEML(const fvec4& QuadRect, //
+                                 const fvec4& UvRect, //
+                                 const fvec4& UvRect2) {
   auto GBI = _context.GBI();
   // align source pixels to target pixels if sizes match
   float fx0 = QuadRect.x;
@@ -43,7 +75,13 @@ void DrawingInterface::quad2DEML(const fvec4& QuadRect, const fvec4& UvRect, con
 
   GBI->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES, 6);
 }
-void DrawingInterface::quad2DEMLTiled(const fvec4& QuadRect, const fvec4& UvRect, const fvec4& UvRect2, int numtileseachdim) {
+
+///////////////////////////////////////////////////////////////////////////////
+
+void DrawingInterface::quad2DEMLTiled(const fvec4& QuadRect, 
+                                      const fvec4& UvRect, 
+                                      const fvec4& UvRect2, 
+                                      int numtileseachdim) {
 
   auto GBI = _context.GBI();
 

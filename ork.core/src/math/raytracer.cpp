@@ -290,13 +290,13 @@ RaytTriangle::RaytTriangle(const RgmVertex* v1, const RgmVertex* v2, const RgmVe
   fvec3 b = C - A;
   mN      = b.Cross(c);
   int u, v;
-  if (fabs(mN.GetX()) > fabs(mN.GetY())) {
-    if (fabs(mN.GetX()) > fabs(mN.GetZ()))
+  if (fabs(mN.x) > fabs(mN.y)) {
+    if (fabs(mN.x) > fabs(mN.z))
       k = 0;
     else
       k = 2;
   } else {
-    if (fabs(mN.GetY()) > fabs(mN.GetZ()))
+    if (fabs(mN.y) > fabs(mN.z))
       k = 1;
     else
       k = 2;
@@ -379,9 +379,9 @@ void RaytTriangle::Rasterize(Engine* peng) const {
   const fvec2& uv1          = mRgmPoly->mpv1->uv;
   const fvec2& uv2          = mRgmPoly->mpv2->uv;
 
-  fvec3 v0(uv0.GetX() * iw, uv0.GetY() * ih, 0.0f);
-  fvec3 v1(uv1.GetX() * iw, uv1.GetY() * ih, 0.0f);
-  fvec3 v2(uv2.GetX() * iw, uv2.GetY() * ih, 0.0f);
+  fvec3 v0(uv0.x * iw, uv0.y * ih, 0.0f);
+  fvec3 v1(uv1.x * iw, uv1.y * ih, 0.0f);
+  fvec3 v2(uv2.x * iw, uv2.y * ih, 0.0f);
 
   BakeShadowFragment bv0, bv1, bv2;
   bv0.mPos = mRgmPoly->mpv0->pos;
@@ -392,7 +392,7 @@ void RaytTriangle::Rasterize(Engine* peng) const {
   bv2.mNrm = mRgmPoly->mpv2->nrm;
 
   peng->RasterizeTriangle(
-      *bshader, int(v0.GetX()), int(v0.GetY()), bv0, int(v1.GetX()), int(v1.GetY()), bv1, int(v2.GetX()), int(v2.GetY()), bv2);
+      *bshader, int(v0.x), int(v0.y), bv0, int(v1.x), int(v1.y), bv1, int(v2.x), int(v2.y), bv2);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -642,11 +642,11 @@ RgmModel* LoadRgmFile(const char* pfilename, RgmShaderBuilder& shbuilder) {
         RgmVertex& vtx = sub.mpVertices[iv];
         ModelDataStream->GetItem(vtx.pos);
         ModelDataStream->GetItem(vtx.nrm);
-        float fu = fmod((vtx.pos.GetX()) * 0.01f, 1.0f);
-        float fv = fmod((vtx.pos.GetZ()) * 0.01f, 1.0f);
+        float fu = fmod((vtx.pos.x) * 0.01f, 1.0f);
+        float fv = fmod((vtx.pos.z) * 0.01f, 1.0f);
         ModelDataStream->GetItem(vtx.uv);
-        vtx.uv.SetX(fu);
-        vtx.uv.SetY(fv);
+        vtx.uv.setX(fu);
+        vtx.uv.setY(fv);
       }
       int inumtotp;
       HeaderStream->GetItem(sub.minumtris);
@@ -1073,12 +1073,12 @@ void* RenderingJobThread(void* vptr_args) {
 
     float fy = float(y) / float(ih);
     fvec3 lSC, rSC;
-    lSC.Lerp(cTL, cBL, fy);
-    rSC.Lerp(cTR, cBR, fy);
+    lSC.lerp(cTL, cBL, fy);
+    rSC.lerp(cTR, cBR, fy);
     for (int x = 0; x < iw; x++) {
       float fx = float(x) / float(iw);
       fvec3 screen_pos, jittered_pos;
-      screen_pos.Lerp(lSC, rSC, fx);
+      screen_pos.lerp(lSC, rSC, fx);
 
       fvec3 acc(0, 0, 0);
       for (int isamp = 0; isamp < my_jitter.miNumSamples; isamp++) {
@@ -1093,9 +1093,9 @@ void* RenderingJobThread(void* vptr_args) {
 
       acc = acc * (1.0f / float(my_jitter.miNumSamples));
       int red, green, blue;
-      red   = (int)(acc.GetX() * 256);
-      green = (int)(acc.GetY() * 256);
-      blue  = (int)(acc.GetZ() * 256);
+      red   = (int)(acc.x * 256);
+      green = (int)(acc.y * 256);
+      blue  = (int)(acc.z * 256);
       if (red > 255)
         red = 255;
       if (green > 255)
@@ -1402,10 +1402,10 @@ bool Engine::Bake(const AABox& bbox, const std::string& OutputName) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void Scene::AddGeoSet(const std::string& name, RgmGeoSet* pset) {
+void Scene::AddGeoset(const std::string& name, RgmGeoSet* pset) {
   mGeoSets[name] = pset;
 }
-void Scene::RemoveGeoSet(const std::string& name) {
+void Scene::RemoveGeoset(const std::string& name) {
   orkmap<std::string, const RgmGeoSet*>::iterator it = mGeoSets.find(name);
   if (it != mGeoSets.end()) {
     const RgmGeoSet* rval = it->second;
@@ -1416,7 +1416,7 @@ void Scene::RemoveGeoSet(const std::string& name) {
   }
 }
 
-const RgmGeoSet* Scene::FindGeoSet(const std::string& name) const {
+const RgmGeoSet* Scene::FindGeoset(const std::string& name) const {
   const RgmGeoSet* rval                                    = 0;
   orkmap<std::string, const RgmGeoSet*>::const_iterator it = mGeoSets.find(name);
   if (it != mGeoSets.end())

@@ -415,7 +415,7 @@ template <typename T> void Matrix44<T>::RotateZ(T rad) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void Matrix44<T>::SetScale(const Vector4<T>& vec) {
-  SetScale(vec.GetX(), vec.GetY(), vec.GetZ());
+  SetScale(vec.x, vec.y, vec.z);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -463,15 +463,15 @@ template <typename T> void Matrix44<T>::Scale(T xscl, T yscl, T zscl) {
 
 // sm - rotation matrix from quaternion
 template <typename T> void Matrix44<T>::FromQuaternion(Quaternion<T> quat) {
-  T xx = quat.GetX() * quat.GetX();
-  T yy = quat.GetY() * quat.GetY();
-  T zz = quat.GetZ() * quat.GetZ();
-  T xy = quat.GetX() * quat.GetY();
-  T zw = quat.GetZ() * quat.width();
-  T zx = quat.GetZ() * quat.GetX();
-  T yw = quat.GetY() * quat.width();
-  T yz = quat.GetY() * quat.GetZ();
-  T xw = quat.GetX() * quat.width();
+  T xx = quat.x * quat.x;
+  T yy = quat.y * quat.y;
+  T zz = quat.z * quat.z;
+  T xy = quat.x * quat.y;
+  T zw = quat.z * quat.w;
+  T zx = quat.z * quat.x;
+  T yw = quat.y * quat.w;
+  T yz = quat.y * quat.z;
+  T xw = quat.x * quat.w;
 
   elements[0][0] = T(1.0f) - (T(2.0f) * (yy + zz));
   elements[0][1] = T(2.0f) * (xy + zw);
@@ -499,9 +499,9 @@ template <typename T> void Matrix44<T>::CreateBillboard(Vector3<T> objectPos, Ve
   Vector3<T> res;
   Vector3<T> cross;
 
-  dir.SetX(objectPos.GetX() - viewPos.GetX());
-  dir.SetY(objectPos.GetY() - viewPos.GetY());
-  dir.SetZ(objectPos.GetZ() - viewPos.GetZ());
+  dir.setX(objectPos.x - viewPos.x);
+  dir.setY(objectPos.y - viewPos.y);
+  dir.setZ(objectPos.z - viewPos.z);
 
   T slen = dir.MagSquared();
   dir    = dir * (T(1.0f) / sqrtf(slen));
@@ -513,21 +513,21 @@ template <typename T> void Matrix44<T>::CreateBillboard(Vector3<T> objectPos, Ve
   res = dir;
   res = res.Cross(cross);
 
-  elements[0][0] = cross.GetX();
-  elements[0][1] = cross.GetY();
-  elements[0][2] = cross.GetZ();
+  elements[0][0] = cross.x;
+  elements[0][1] = cross.y;
+  elements[0][2] = cross.z;
   elements[0][3] = T(0.0f);
-  elements[1][0] = res.GetX();
-  elements[1][1] = res.GetY();
-  elements[1][2] = res.GetZ();
+  elements[1][0] = res.x;
+  elements[1][1] = res.y;
+  elements[1][2] = res.z;
   elements[1][3] = T(0.0f);
-  elements[2][0] = dir.GetX();
-  elements[2][1] = dir.GetY();
-  elements[2][2] = dir.GetZ();
+  elements[2][0] = dir.x;
+  elements[2][1] = dir.y;
+  elements[2][2] = dir.z;
   elements[2][3] = T(0.0f);
-  elements[3][0] = objectPos.GetX();
-  elements[3][1] = objectPos.GetY();
-  elements[3][2] = objectPos.GetZ();
+  elements[3][0] = objectPos.x;
+  elements[3][1] = objectPos.y;
+  elements[3][2] = objectPos.z;
   elements[3][3] = T(1.0f);
 }
 
@@ -818,14 +818,14 @@ void Matrix44<T>::SetScale(const Matrix44<T>& from) // assumes rot is zero!
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-void Matrix44<T>::Lerp(const Matrix44<T>& from, const Matrix44<T>& to, T par) // par 0.0f .. 1.0f
+void Matrix44<T>::lerp(const Matrix44<T>& from, const Matrix44<T>& to, T par) // par 0.0f .. 1.0f
 {
   //////////////////
 
   Vector4<T> vF = from.GetTranslation();
   Vector4<T> vT = to.GetTranslation();
   Vector4<T> vT2;
-  vT2.Lerp(vF, vT, par);
+  vT2.lerp(vF, vT, par);
   Matrix44<T> matT;
   matT.SetTranslation(vT2);
 
@@ -837,22 +837,22 @@ void Matrix44<T>::Lerp(const Matrix44<T>& from, const Matrix44<T>& to, T par) //
   ToR.SetRotation(to); // froms ROTATION
 
   Quaternion<T> FromQ;
-  FromQ.FromMatrix(FromR);
+  FromQ.fromMatrix(FromR);
   Quaternion<T> ToQ;
-  ToQ.FromMatrix(ToR);
+  ToQ.fromMatrix(ToR);
 
   Matrix44<T> CORR;
   CORR.CorrectionMatrix(from, to); // CORR.Normalize();
 
   Quaternion<T> Qidn;
   Quaternion<T> Qrot;
-  Qrot.FromMatrix(CORR);
+  Qrot.fromMatrix(CORR);
 
   // Vector4<T>  rawaxisang = Qrot.toAxisAngle();
   // T rawangle = rawaxisang.width();
   // T	newangle = rawangle*par;
   // Vector4<T> newaxisang = rawaxisang;
-  // newaxisang.SetW( newangle );
+  // newaxisang.setW( newangle );
   // Tfquat newQrot;	newQrot.fromAxisAngle( newaxisang );
 
 #if 1
@@ -872,7 +872,7 @@ void Matrix44<T>::Lerp(const Matrix44<T>& from, const Matrix44<T>& to, T par) //
   // Tfquat newQrot = FromQ.Slerp( ToQ, par );
 
   Matrix44<T> matR;
-  matR = newQrot.ToMatrix();
+  matR = newQrot.toMatrix();
   // matR.Normalize();
 
   //////////////////
@@ -887,27 +887,40 @@ template <typename T> void Matrix44<T>::decompose(Vector3<T>& pos, Quaternion<T>
 
   Matrix44<T> rot = *this;
 
-  rot.SetElemYX(3, 0, T(0.0f));
-  rot.SetElemYX(3, 1, T(0.0f));
-  rot.SetElemYX(3, 2, T(0.0f));
-  rot.SetElemYX(0, 3, T(0.0f));
-  rot.SetElemYX(1, 3, T(0.0f));
-  rot.SetElemYX(2, 3, T(0.0f));
+  T zero = T(0.0);
+  T one = T(1.0);
 
-  rot.SetElemYX(3, 3, T(1.0f));
+  rot.SetRow(3, zero,zero,zero,one); // set bottom row to 0,0,0,1
+  rot.SetColumn(3, zero,zero,zero,one); // set right column to 0,0,0,1
 
-  Vector4<T> UnitVector(T(1.0f), T(0.0f), T(0.0f), T(1.0f));
-  Vector4<T> XFVector = UnitVector.Transform(rot);
+  Vector4<T> UnitVectorX(one, zero, zero, one);
+  Vector4<T> XFVectorX = UnitVectorX.Transform(rot);
+  Vector4<T> UnitVectorY(zero, one, zero, one);
+  Vector4<T> XFVectorY = UnitVectorY.Transform(rot);
+  Vector4<T> UnitVectorZ(zero, zero, one, one);
+  Vector4<T> XFVectorZ = UnitVectorZ.Transform(rot);
 
-  Scale = XFVector.Mag();
+  T magx = XFVectorX.Mag();
+  T magy = XFVectorY.Mag();
+  T magz = XFVectorZ.Mag();
+
+  T scale = T(0.0);
+  if(magx > scale)
+    scale = magx;
+  if(magy > scale)
+    scale = magy;
+  if(magz > scale)
+    scale = magz;
+
+  Scale = scale;
 
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < 3; j++) {
-      rot.SetElemYX(i, j, rot.GetElemYX(i, j) / Scale);
+      rot.SetElemXY(i, j, rot.GetElemXY(i, j) / Scale);
     }
   }
 
-  qrot.FromMatrix(rot);
+  qrot.fromMatrix(rot);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -924,41 +937,51 @@ template <typename T> void Matrix44<T>::compose(const Vector3<T>& pos,
                                                 const T& scaley,
                                                 const T& scalez) {
 
-  T l = qrot.x * qrot.x + qrot.y * qrot.y + qrot.z * qrot.z + qrot.w * qrot.w;
+  T one = T(1.0);
+  T two = T(2.0);
+
+  T l = qrot.norm();
 
   // should this be T::Epsilon() ?
-  T s = (fabs(l) < T(EPSILON)) ? T(1.0) : (T(2.0) / l);
+  T s = (fabs(l) < T(EPSILON)) ? one : (two / l);
 
   T xs = qrot.x * s;
   T ys = qrot.y * s;
   T zs = qrot.z * s;
+
   T wx = qrot.w * xs;
   T wy = qrot.w * ys;
   T wz = qrot.w * zs;
+
   T xx = qrot.x * xs;
   T xy = qrot.x * ys;
   T xz = qrot.x * zs;
+
   T yy = qrot.y * ys;
   T yz = qrot.y * zs;
   T zz = qrot.z * zs;
 
-  elements[0][0]=scalex*(T(1.0) - (yy + zz));
-  elements[0][1]=scalex*(xy - wz);
-  elements[0][2]=scalex*(xz + wy);
+  SetColumn(0,scalex*(one - (yy + zz)),
+              scalex*(xy - wz),
+              scalex*(xz + wy),
+              0);
 
-  elements[1][0]=scaley*(xy + wz);
-  elements[1][1]=scaley*(T(1.0) - (xx + zz));
-  elements[1][2]=scaley*(yz - wx);
 
-  elements[2][0]=scalez*(xz - wy);
-  elements[2][1]=scalez*(yz + wx);
-  elements[2][2]=scalez*(T(1.0) - (xx + yy));
+  SetColumn(1,scaley*(xy + wz),
+              scaley*(one - (xx + zz)),
+              scaley*(yz - wx),
+              0);
 
-  elements[3][0] = pos.x;
-  elements[3][1] = pos.y;
-  elements[3][2] = pos.z;
+  SetColumn(2,scalez*(xz - wy),
+              scalez*(yz + wx),
+              scalez*(one - (xx + yy)),
+              0);
 
-  elements[3][3] = T(1.0);
+  SetColumn(3,pos.x,
+              pos.y,
+              pos.z,
+              1);
+
 
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -966,10 +989,10 @@ template <typename T> void Matrix44<T>::compose(const Vector3<T>& pos,
 
 template <typename T> Vector4<T> Matrix44<T>::GetRow(int irow) const {
   Vector4<T> out;
-  out.SetX(GetElemXY(0, irow));
-  out.SetY(GetElemXY(1, irow));
-  out.SetZ(GetElemXY(2, irow));
-  out.SetW(GetElemXY(3, irow));
+  out.x = GetElemXY(0, irow);
+  out.y = GetElemXY(1, irow);
+  out.z = GetElemXY(2, irow);
+  out.w = GetElemXY(3, irow);
   return out;
 }
 
@@ -977,10 +1000,10 @@ template <typename T> Vector4<T> Matrix44<T>::GetRow(int irow) const {
 
 template <typename T> Vector4<T> Matrix44<T>::GetColumn(int icol) const {
   Vector4<T> out;
-  out.SetX(GetElemXY(icol, 0));
-  out.SetY(GetElemXY(icol, 1));
-  out.SetZ(GetElemXY(icol, 2));
-  out.SetW(GetElemXY(icol, 3));
+  out.x = GetElemXY(icol, 0);
+  out.y = GetElemXY(icol, 1);
+  out.z = GetElemXY(icol, 2);
+  out.w = GetElemXY(icol, 3);
   return out;
 }
 
@@ -1000,6 +1023,24 @@ template <typename T> void Matrix44<T>::SetColumn(int icol, const Vector4<T>& v)
   SetElemXY(icol, 1, v.y);
   SetElemXY(icol, 2, v.z);
   SetElemXY(icol, 3, v.w);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> void Matrix44<T>::SetRow(int irow, float a, float b, float c, float d) {
+  SetElemXY(0, irow, a);
+  SetElemXY(1, irow, b);
+  SetElemXY(2, irow, c);
+  SetElemXY(3, irow, d);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> void Matrix44<T>::SetColumn(int icol, float a, float b, float c, float d) {
+  SetElemXY(icol, 0, a);
+  SetElemXY(icol, 1, b);
+  SetElemXY(icol, 2, c);
+  SetElemXY(icol, 3, d);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1102,25 +1143,14 @@ template <typename T> void Matrix44<T>::Ortho(T left, T right, T top, T bottom, 
   T TransY    = -(top + bottom) * invHeight;
   T TransZ    = -(ffar + fnear) * invDepth;
 
-  SetElemYX(0, 0, fScaleX);
-  SetElemYX(1, 0, T(0.0f));
-  SetElemYX(2, 0, T(0.0f));
-  SetElemYX(3, 0, T(0.0f));
+  T zero = T(0.0);
+  T one = T(1.0);
 
-  SetElemYX(0, 1, T(0.0f));
-  SetElemYX(1, 1, fScaleY);
-  SetElemYX(2, 1, T(0.0f));
-  SetElemYX(3, 1, T(0.0f));
+  SetColumn(0, fScaleX, zero,    zero,    zero);
+  SetColumn(1, zero,    fScaleY, zero,    zero);
+  SetColumn(2, zero,    zero,    fScaleZ, zero);
+  SetColumn(0, TransX,  TransY,  TransZ,  one);
 
-  SetElemYX(0, 2, T(0.0f));
-  SetElemYX(1, 2, T(0.0f));
-  SetElemYX(2, 2, fScaleZ);
-  SetElemYX(3, 2, T(0.0f));
-
-  SetElemYX(0, 3, TransX);
-  SetElemYX(1, 3, TransY);
-  SetElemYX(2, 3, TransZ);
-  SetElemYX(3, 3, T(1.0f));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1128,9 +1158,9 @@ template <typename T> void Matrix44<T>::Ortho(T left, T right, T top, T bottom, 
 template <typename T>
 bool Matrix44<T>::UnProject(const Vector4<T>& rVWin, const Matrix44<T>& rIMVP, const SRect& rVP, Vector3<T>& rVObj) {
   T in[4];
-  T _z  = rVWin.GetZ();
-  in[0] = (rVWin.GetX() - T(rVP.miX)) * T(2) / T(rVP.miW) - T(1.0f);
-  in[1] = (T(rVP.miH) - rVWin.GetY() - T(rVP.miY)) * T(2) / T(rVP.miH) - T(1.0f);
+  T _z  = rVWin.z;
+  in[0] = (rVWin.x - T(rVP.miX)) * T(2) / T(rVP.miW) - T(1.0f);
+  in[1] = (T(rVP.miH) - rVWin.y - T(rVP.miY)) * T(2) / T(rVP.miH) - T(1.0f);
   in[2] = _z;
   in[3] = T(1.0f);
   Vector4<T> rVDev(in[0], in[1], in[2], in[3]);
@@ -1188,17 +1218,9 @@ template <typename T> void Matrix44<T>::Normalize(void) {
   Zy *= Zi;
   Zz *= Zi;
 
-  result.SetElemXY(0, 0, Xx);
-  result.SetElemXY(0, 1, Xy);
-  result.SetElemXY(0, 2, Xz);
-
-  result.SetElemXY(1, 0, Yx);
-  result.SetElemXY(1, 1, Yy);
-  result.SetElemXY(1, 2, Yz);
-
-  result.SetElemXY(2, 0, Zx);
-  result.SetElemXY(2, 1, Zy);
-  result.SetElemXY(2, 2, Zz);
+  result.SetColumn(0, Xx,Xy,Xz,0);
+  result.SetColumn(1, Yx,Yy,Yz,0);
+  result.SetColumn(2, Zx,Zy,Zz,0);
 
   *this = result;
 }
@@ -1219,7 +1241,7 @@ inline void ::ork::reflect::ITyped<fmtx4>::serialize(serdes::node_ptr_t sernode)
   fmtx4 value;
   get(value, instance);
   for (int i = 0; i < 16; i++)
-    serializeArraySubLeaf(arynode, value.GetArray()[i], i);
+    serializeArraySubLeaf(arynode, value.asArray()[i], i);
   serializer->popNode(); // pop arraynode
 }
 template <> //
@@ -1232,7 +1254,7 @@ inline void ::ork::reflect::ITyped<fmtx4>::deserialize(serdes::node_ptr_t arynod
 
   fmtx4 value;
   for (int i = 0; i < 16; i++)
-    value.GetArray()[i] = deserializeArraySubLeaf<float>(arynode, i);
+    value.asArray()[i] = deserializeArraySubLeaf<float>(arynode, i);
 
   set(value, instance);
 }

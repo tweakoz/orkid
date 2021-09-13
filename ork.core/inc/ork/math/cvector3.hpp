@@ -139,9 +139,9 @@ Vector3<T>::Vector3(T _x, T _y, T _z)
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename T> U32 Vector3<T>::GetVtxColorAsU32(void) const {
-  U32 r = U32(GetX() * T(255.0f));
-  U32 g = U32(GetY() * T(255.0f));
-  U32 b = U32(GetZ() * T(255.0f));
+  U32 r = U32(x * T(255.0f));
+  U32 g = U32(y * T(255.0f));
+  U32 b = U32(z * T(255.0f));
   U32 a = 255;
 
 #if defined(ORK_CONFIG_DARWIN) || defined(ORK_CONFIG_IX)
@@ -154,9 +154,9 @@ template <typename T> U32 Vector3<T>::GetVtxColorAsU32(void) const {
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename T> U32 Vector3<T>::GetABGRU32(void) const {
-  U32 r = U32(GetX() * T(255.0f));
-  U32 g = U32(GetY() * T(255.0f));
-  U32 b = U32(GetZ() * T(255.0f));
+  U32 r = U32(x * T(255.0f));
+  U32 g = U32(y * T(255.0f));
+  U32 b = U32(z * T(255.0f));
   U32 a = 255;
 
   return U32((a << 24) | (b << 16) | (g << 8) | r);
@@ -165,9 +165,9 @@ template <typename T> U32 Vector3<T>::GetABGRU32(void) const {
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename T> U32 Vector3<T>::GetARGBU32(void) const {
-  U32 r = U32(GetX() * T(255.0f));
-  U32 g = U32(GetY() * T(255.0f));
-  U32 b = U32(GetZ() * T(255.0f));
+  U32 r = U32(x * T(255.0f));
+  U32 g = U32(y * T(255.0f));
+  U32 b = U32(z * T(255.0f));
   U32 a = 255;
 
   return U32((a << 24) | (r << 16) | (g << 8) | b);
@@ -176,9 +176,9 @@ template <typename T> U32 Vector3<T>::GetARGBU32(void) const {
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename T> U32 Vector3<T>::GetRGBAU32(void) const {
-  U32 r = U32(GetX() * T(255.0f));
-  U32 g = U32(GetY() * T(255.0f));
-  U32 b = U32(GetZ() * T(255.0f));
+  U32 r = U32(x * T(255.0f));
+  U32 g = U32(y * T(255.0f));
+  U32 b = U32(z * T(255.0f));
   U32 a = 255;
 
   U32 rval = 0;
@@ -191,9 +191,9 @@ template <typename T> U32 Vector3<T>::GetRGBAU32(void) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> U32 Vector3<T>::GetBGRAU32(void) const {
-  U32 r = U32(GetX() * T(255.0f));
-  U32 g = U32(GetY() * T(255.0f));
-  U32 b = U32(GetZ() * T(255.0f));
+  U32 r = U32(x * T(255.0f));
+  U32 g = U32(y * T(255.0f));
+  U32 b = U32(z * T(255.0f));
   U32 a = 255;
 
   return U32((b << 24) | (g << 16) | (r << 8) | a);
@@ -202,9 +202,9 @@ template <typename T> U32 Vector3<T>::GetBGRAU32(void) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> U16 Vector3<T>::GetRGBU16() const {
-  U32 r = U32(GetX() * T(31.0f));
-  U32 g = U32(GetY() * T(31.0f));
-  U32 b = U32(GetZ() * T(31.0f));
+  U32 r = U32(x * T(31.0f));
+  U32 g = U32(y * T(31.0f));
+  U32 b = U32(z * T(31.0f));
 
   U16 rval = U16((b << 10) | (g << 5) | r);
 
@@ -220,9 +220,9 @@ template <typename T> void Vector3<T>::SetRGBAU32(U32 uval) {
 
   static const T kfic(1.0f / 255.0f);
 
-  SetX(kfic * T(int(r)));
-  SetY(kfic * T(int(g)));
-  SetZ(kfic * T(int(b)));
+  setX(kfic * T(int(r)));
+  setY(kfic * T(int(g)));
+  setZ(kfic * T(int(b)));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -234,9 +234,9 @@ template <typename T> void Vector3<T>::SetBGRAU32(U32 uval) {
 
   static const T kfic(1.0f / 255.0f);
 
-  SetX(kfic * T(int(r)));
-  SetY(kfic * T(int(g)));
-  SetZ(kfic * T(int(b)));
+  setX(kfic * T(int(r)));
+  setY(kfic * T(int(g)));
+  setZ(kfic * T(int(b)));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -248,9 +248,9 @@ template <typename T> void Vector3<T>::SetARGBU32(U32 uval) {
 
   static const T kfic(1.0f / 255.0f);
 
-  SetX(kfic * T(int(r)));
-  SetY(kfic * T(int(g)));
-  SetZ(kfic * T(int(b)));
+  setX(kfic * T(int(r)));
+  setY(kfic * T(int(g)));
+  setZ(kfic * T(int(b)));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -262,9 +262,9 @@ template <typename T> void Vector3<T>::SetABGRU32(U32 uval) {
 
   static const T kfic(1.0f / 255.0f);
 
-  SetX(kfic * T(int(r)));
-  SetY(kfic * T(int(g)));
-  SetZ(kfic * T(int(b)));
+  setX(kfic * T(int(r)));
+  setY(kfic * T(int(g)));
+  setZ(kfic * T(int(b)));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -331,16 +331,16 @@ template <typename T> Vector3<T>::Vector3(const Vector3<T>& vec) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> Vector3<T>::Vector3(const Vector4<T>& vec) {
-  x = vec.GetX();
-  y = vec.GetY();
-  z = vec.GetZ();
+  x = vec.x;
+  y = vec.y;
+  z = vec.z;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> Vector3<T>::Vector3(const Vector2<T>& vec) {
-  x = vec.GetX();
-  y = vec.GetY();
+  x = vec.x;
+  y = vec.y;
   z = T(0);
 }
 
@@ -359,9 +359,9 @@ template <typename T> T Vector3<T>::Dot(const Vector3<T>& vec) const {
 template <typename T>
 Vector3<T> Vector3<T>::Cross(const Vector3<T>& vec) const // c = this X vec
 {
-  T vx = ((y * vec.GetZ()) - (z * vec.GetY()));
-  T vy = ((z * vec.GetX()) - (x * vec.GetZ()));
-  T vz = ((x * vec.GetY()) - (y * vec.GetX()));
+  T vx = ((y * vec.z) - (z * vec.y));
+  T vy = ((z * vec.x) - (x * vec.z));
+  T vz = ((x * vec.y) - (y * vec.x));
 
   return (Vector3<T>(vx, vy, vz));
 }
@@ -460,11 +460,15 @@ template <typename T> Vector3<T> Vector3<T>::Transform3x3(const Matrix44<T>& mat
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-void Vector3<T>::Serp(const Vector3<T>& PA, const Vector3<T>& PB, const Vector3<T>& PC, const Vector3<T>& PD, T Par) {
+void Vector3<T>::serp(const Vector3<T>& PA, //
+                      const Vector3<T>& PB, //
+                      const Vector3<T>& PC, //
+                      const Vector3<T>& PD, 
+                      T par_x, T par_y ) {
   Vector3<T> PAB, PCD;
-  PAB.Lerp(PA, PB, Par);
-  PCD.Lerp(PC, PD, Par);
-  Lerp(PAB, PCD, Par);
+  PAB.lerp(PA, PB, par_x);
+  PCD.lerp(PC, PD, par_x);
+  lerp(PAB, PCD, par_y);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -498,7 +502,7 @@ template <typename T> void Vector3<T>::RotateZ(T rad) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Vector3<T>::Lerp(const Vector3<T>& from, const Vector3<T>& to, T par) {
+template <typename T> void Vector3<T>::lerp(const Vector3<T>& from, const Vector3<T>& to, T par) {
   if (par < T(0.0f))
     par = T(0.0f);
   if (par > T(1.0f))
@@ -511,7 +515,7 @@ template <typename T> void Vector3<T>::Lerp(const Vector3<T>& from, const Vector
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename T> T Vector3<T>::CalcTriArea(const Vector3<T>& V, const Vector3<T>& N) {
+template <typename T> T Vector3<T>::calcTriangularArea(const Vector3<T>& V, const Vector3<T>& N) {
   return T(0);
 }
 

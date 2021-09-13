@@ -92,7 +92,7 @@ enum EPropType
  * Provides a type-safe mechanism for determining the Type and TypeName of a particular
  * C/C++ data type.
  *
- * For example, PropType<bool>::GetType() returns ETYPE_BOOL and PropType<bool>::GetTypeName() returns "BOOL".
+ * For example, PropType<bool>::GetType() returns ETYPE_BOOL and PropType<bool>::typeName() returns "BOOL".
  *
  * The CTypedProp implementation of CProp defers to PropType for its runtime type identification information.
  *
@@ -112,12 +112,12 @@ public:
 	static U FindValFromStrings( const std::string& String, const std::string Strings[], U defaultval );
 
 	static EPropType GetType() { return meType; }
-	static const char * GetTypeName() { return mstrTypeName; }
+	static const char * typeName() { return mstrTypeName; }
 
 	static void ToString( const T & Value, PropTypeString& pstr );
 	static T FromString( const PropTypeString& String );
 
-	static void GetValueSet( std::string const * & ValueStrings, int & NumStrings );
+	static void GetValueset( std::string const * & ValueStrings, int & NumStrings );
 
 private:
 

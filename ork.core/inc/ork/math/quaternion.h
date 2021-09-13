@@ -58,30 +58,15 @@ template <typename T> struct Quaternion {
 
   /////////
 
-  const T& GetX() const {
-    return x;
-  }
-  const T& GetY() const {
-    return y;
-  }
-  const T& GetZ() const {
-    return z;
-  }
-  const T& width() const {
-    return w;
-  }
-
-  /////////
-
   std::string formatcn(const std::string named) const;
 
   /////////
 
-  void FromMatrix(const Matrix44<T>& matrix);
-  Matrix44<T> ToMatrix(void) const;
+  void fromMatrix(const Matrix44<T>& matrix);
+  Matrix44<T> toMatrix(void) const;
 
-  void FromMatrix3(const Matrix33<T>& matrix);
-  Matrix33<T> ToMatrix3(void) const;
+  void fromMatrix3(const Matrix33<T>& matrix);
+  Matrix33<T> toMatrix3(void) const;
 
   void Scale(T scalar);
   Quaternion Multiply(const Quaternion& q) const;
@@ -100,8 +85,8 @@ template <typename T> struct Quaternion {
 
   void normalize();
 
-  static Quaternion Lerp(const Quaternion& a, const Quaternion& b, T alpha);
-  static Quaternion Slerp(const Quaternion& a, const Quaternion& b, T alpha);
+  static Quaternion lerp(const Quaternion& a, const Quaternion& b, T alpha);
+  static Quaternion slerp(const Quaternion& a, const Quaternion& b, T alpha);
 
   void Identity(void);
   void ShortestRotationArc(Vector4<T> v0, Vector4<T> v1);

@@ -102,9 +102,9 @@ void Global::Compute(float fdt) {
   mOutDataRelTime    = (ftime - mfTimeBase);
   /////////////////////////////////////////
 
-  mOutDataRandomNormal.SetX(float(std::rand() % 32767) / 32768.0f);
-  mOutDataRandomNormal.SetY(float(std::rand() % 32767) / 32768.0f);
-  mOutDataRandomNormal.SetZ(float(std::rand() % 32767) / 32768.0f);
+  mOutDataRandomNormal.setX(float(std::rand() % 32767) / 32768.0f);
+  mOutDataRandomNormal.setY(float(std::rand() % 32767) / 32768.0f);
+  mOutDataRandomNormal.setZ(float(std::rand() % 32767) / 32768.0f);
 
   mOutDataRandomNormal.Normalize();
 
@@ -557,9 +557,9 @@ Vec3SplitModule::Vec3SplitModule()
 ///////////////////////////////////////////////////////////////////////////////
 void Vec3SplitModule::Compute(float dt) {
   fvec3 inp       = mPlugInpInput.GetValue();
-  mOutDataOutputX = inp.GetX();
-  mOutDataOutputY = inp.GetY();
-  mOutDataOutputZ = inp.GetZ();
+  mOutDataOutputX = inp.x;
+  mOutDataOutputY = inp.y;
+  mOutDataOutputZ = inp.z;
 }
 ///////////////////////////////////////////////////////////////////////////////
 dataflow::inplugbase* Vec3SplitModule::GetInput(int idx) {
@@ -982,8 +982,8 @@ dataflow::outplugbase* NozzleEmitter::GetOutput(int idx) {
 ///////////////////////////////////////////////////////////////////////////////
 void NozzleDirectedEmitter::ComputePosDir(float fi, fvec3& pos, fvec3& dir) {
   // pos = mEmitterModule.mvOffset;
-  pos.Lerp(mEmitterModule.mLastPosition, mEmitterModule.mOffsetSample, fi);
-  dir.Lerp(mEmitterModule.mLastDirection, mEmitterModule.mDirectionSample, fi);
+  pos.lerp(mEmitterModule.mLastPosition, mEmitterModule.mOffsetSample, fi);
+  dir.lerp(mEmitterModule.mLastDirection, mEmitterModule.mDirectionSample, fi);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void NozzleEmitter::Emit(float fdt) {
@@ -1049,7 +1049,7 @@ void NozzleEmitter::Compute(float fdt) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void ReDirectedEmitter::ComputePosDir(float fi, fvec3& pos, fvec3& dir) {
-  // pos.Lerp( mEmitterModule.mEmitterCtx.mPosition, mEmitterModule.mEmitterCtx.mLastPosition, fi );
+  // pos.lerp( mEmitterModule.mEmitterCtx.mPosition, mEmitterModule.mEmitterCtx.mLastPosition, fi );
   // dir = (mEmitterModule.mEmitterCtx.mPosition-mEmitterModule.mEmitterCtx.mLastPosition).Normal();
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -1292,7 +1292,7 @@ void WindModule::describeX(class_t* clazz) {
         float denom    = Mag * Mag;
         fvec3 forceVec = Dir * (numer / denom);
         fvec3 accel    = forceVec * finvmass;
-        // printf( "numer<%f> denim<%f> accel<%f %f %f>\n", numer, denom, accel.GetX(), accel.GetY(), accel.GetZ() );
+        // printf( "numer<%f> denim<%f> accel<%f %f %f>\n", numer, denom, accel.x, accel.y, accel.z );
         particle->mVelocity += accel * dt;
       }
     }
@@ -1371,16 +1371,16 @@ void WindModule::describeX(class_t* clazz) {
     if (pb.mPool) {
       //////////////////////////////////////////////////////////
       ork::fvec3 PlaneN;
-      PlaneN.SetX(mPlugInpNormalX.GetValue());
-      PlaneN.SetY(mPlugInpNormalY.GetValue());
-      PlaneN.SetZ(mPlugInpNormalZ.GetValue());
+      PlaneN.setX(mPlugInpNormalX.GetValue());
+      PlaneN.setY(mPlugInpNormalY.GetValue());
+      PlaneN.setZ(mPlugInpNormalZ.GetValue());
       PlaneN.Normalize();
       if (PlaneN.Mag() == 0.0f)
         PlaneN = fvec3(0.0f, 1.0f, 0.0f);
       ork::fvec3 PlaneO;
-      PlaneO.SetX(mPlugInpOriginX.GetValue());
-      PlaneO.SetY(mPlugInpOriginY.GetValue());
-      PlaneO.SetZ(mPlugInpOriginZ.GetValue());
+      PlaneO.setX(mPlugInpOriginX.GetValue());
+      PlaneO.setY(mPlugInpOriginY.GetValue());
+      PlaneO.setZ(mPlugInpOriginZ.GetValue());
       ork::fplane3 CollisionPlane;
       CollisionPlane.CalcFromNormalAndOrigin(PlaneN, PlaneO);
       float retention = 1.0f - mPlugInpAbsorbtion.GetValue();
@@ -1510,9 +1510,9 @@ void WindModule::describeX(class_t* clazz) {
       //////////////////////////////////////////////////////////
       Sphere the_sphere(fvec3(), 1.0f);
 
-      the_sphere.mCenter.SetX(mPlugInpCenterX.GetValue());
-      the_sphere.mCenter.SetY(mPlugInpCenterY.GetValue());
-      the_sphere.mCenter.SetZ(mPlugInpCenterZ.GetValue());
+      the_sphere.mCenter.setX(mPlugInpCenterX.GetValue());
+      the_sphere.mCenter.setY(mPlugInpCenterY.GetValue());
+      the_sphere.mCenter.setZ(mPlugInpCenterZ.GetValue());
       the_sphere.mRadius = mPlugInpRadius.GetValue();
       float retention    = 1.0f - mPlugInpAbsorbtion.GetValue();
       //////////////////////////////////////////////////////////
@@ -1686,9 +1686,9 @@ void WindModule::describeX(class_t* clazz) {
         F32 outwardstrength = mPlugInpOutwardStrength.GetValue();
 
         fvec3 Pos2D = particle->mPosition;
-        Pos2D.SetY(0.0f);
+        Pos2D.setY(0.0f);
         fvec3 N     = particle->mPosition.Normal();
-        fvec3 Dir   = N.Cross(fvec3::UnitY());
+        fvec3 Dir   = N.Cross(fvec3::unitY());
         float fstr  = 1.0f / (1.0f + falloff / Pos2D.Mag());
         fvec3 Force = Dir * (vortexstrength * fstr);
         Force += N * (outwardstrength * fstr);

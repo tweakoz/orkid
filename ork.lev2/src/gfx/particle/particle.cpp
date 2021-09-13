@@ -196,7 +196,7 @@ void SpiralEmitterData::describeX(class_t* clazz) {
         float fu = ((std::rand() % 256) / 256.0f) - 0.5f;
         float fv = ((std::rand() % 256) / 256.0f) - 0.5f;
         disp     = (vbin * fu) + (vtan * fv);
-        yo.Lerp(dir, disp, ctx.mDispersion);
+        yo.lerp(dir, disp, ctx.mDispersion);
         dir                = yo.Normal();
         ptc->mPosition     = pos;
         ptc->mVelocity     = dir * ctx.mfEmissionVelocity + ctx.mOffsetVelocity;
@@ -253,7 +253,7 @@ void SpiralEmitterData::describeX(class_t* clazz) {
             float fu = ((std::rand() % 256) / 256.0f) - 0.5f;
             float fv = ((std::rand() % 256) / 256.0f) - 0.5f;
             disp     = (vbin * fu) + (vtan * fv);
-            yo.Lerp(dir, disp, ctx.mDispersion);
+            yo.lerp(dir, disp, ctx.mDispersion);
             dir = yo.Normal();
             //////////////////////////////////////////////
             ptc->mPosition = pos;
@@ -306,9 +306,9 @@ void SpiralEmitterData::describeX(class_t* clazz) {
             /*printf( "sending particle<%p> kill event DQ<%p> pos<%f %f %f>\n",
                     ptc,
                     ctx.mDeathQueue,
-                    DeathEv.mPosition.GetX(),
-                    DeathEv.mPosition.GetY(),
-                    DeathEv.mPosition.GetZ()
+                    DeathEv.mPosition.x,
+                    DeathEv.mPosition.y,
+                    DeathEv.mPosition.z
                     );*/
           }
           ctx.mPool->mInactiveParticles.push_back(ptc);

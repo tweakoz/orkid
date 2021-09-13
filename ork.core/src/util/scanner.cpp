@@ -228,16 +228,16 @@ void Scanner::buildStateMachine() {
 }
 
 Scanner::Scanner(
-    std::string blockregex, //
-    size_t capacity)
+    std::string blockregex)
     : ss(ESTA_NONE)
     , cur_token("", 0, 0)
     , ifilelen(0)
-    , _blockregex(blockregex)
-    , _kcapacity(capacity) {
-  _fxbuffer.resize(capacity);
+    , _blockregex(blockregex){
 }
-
+/////////////////////////////////////////
+void Scanner::scanString(std::string str){
+  std::copy( str.begin(), str.end(), std::back_inserter(_fxbuffer));
+}
 /////////////////////////////////////////
 void Scanner::scan() {
   std::string as_str = _fxbuffer.data();

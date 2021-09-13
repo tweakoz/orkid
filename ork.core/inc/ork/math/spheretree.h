@@ -20,7 +20,7 @@ public:
   Sphere mSphere;
   SphereTreeNode* mChildren[2];
 
-  SphereTreeNode() : mSphere(fvec3::Zero(), 0.0f) {
+  SphereTreeNode() : mSphere(fvec3::zero(), 0.0f) {
     mChildren[0] = 0;
     mChildren[1] = 0;
   }

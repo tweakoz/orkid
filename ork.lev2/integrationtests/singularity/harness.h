@@ -1,4 +1,3 @@
-#include <QWindow>
 #include <portaudio.h>
 #include <ork/application/application.h>
 #include <ork/kernel/string/deco.inl>
@@ -101,7 +100,7 @@ void seq1(float tempo, int basebar, prgdata_constptr_t program);
 struct SingularityBenchMarkApp final : public OrkEzQtApp {
   static constexpr size_t KNUMFRAMES = 512;
   SingularityBenchMarkApp(int& argc, char** argv)
-      : OrkEzQtApp(argc, argv,QtAppInitData()) {
+      : OrkEzQtApp(argc, argv,AppInitData()) {
   }
   ~SingularityBenchMarkApp() override {
   }

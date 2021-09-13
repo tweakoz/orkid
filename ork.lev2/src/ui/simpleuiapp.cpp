@@ -30,14 +30,14 @@ extern int G_MSAASAMPLES;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ui{
 ///////////////////////////////////////////////////////////////////////////////
-SimpleUiApp::SimpleUiApp(int& argc, char** argv)
-    : OrkEzQtApp(argc, argv,QtAppInitData()) {
+SimpleUiApp::SimpleUiApp(int& argc, char** argv,AppInitData& qid)
+    : OrkEzQtApp(argc, argv,qid) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 SimpleUiApp::~SimpleUiApp() {
 }
 ///////////////////////////////////////////////////////////////////////////////
-simpleuiapp_ptr_t createSimpleUiApp(int& argc, char** argv) {
+simpleuiapp_ptr_t createSimpleUiApp(int& argc, char** argv, AppInitData& qid ) {
 #if defined(__APPLE__)
   _macosUseHIDPI = false;
   G_MSAASAMPLES  = 1;
@@ -46,9 +46,9 @@ simpleuiapp_ptr_t createSimpleUiApp(int& argc, char** argv) {
   //////////////////////////////////////////////////////////////////////////////
   // boot up debug HUD
   //////////////////////////////////////////////////////////////////////////////
-  static auto& qti = qtinit(argc, argv);
-  QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
-  auto qtapp                      = std::make_shared<SimpleUiApp>(qti._argc, qti._argvp);
+  static auto& qti = qtinit(argc, argv,qid);
+
+  auto qtapp                      = std::make_shared<SimpleUiApp>(qti._argc, qti._argvp, qid);
   auto qtwin                      = qtapp->_mainWindow;
   auto gfxwin                     = qtwin->_gfxwin;
   auto uicontext                  = qtapp->_uicontext;
@@ -143,7 +143,7 @@ simpleuiapp_ptr_t createSimpleUiApp(int& argc, char** argv) {
     bool isalt  = ev->mbALT;
     bool isctrl = ev->mbCTRL;
     switch (ev->_eventcode) {
-      case ui::EventCode::KEY:
+      case ui::EventCode::KEY_DOWN:
       case ui::EventCode::KEY_REPEAT:
         switch (ev->miKeyCode) {
           case 'p':

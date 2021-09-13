@@ -38,11 +38,11 @@ struct Future
 template <typename T>
 void Future::Signal( const T& result )
 {
-    mResult.Set<T>(result);
+    mResult.set<T>(result);
 
-    if( mCallback.IsA<fut_blk_cb_t>() )
+    if( mCallback.isA<fut_blk_cb_t>() )
     {
-        const fut_blk_cb_t& blk = mCallback.Get<fut_blk_cb_t>();
+        const fut_blk_cb_t& blk = mCallback.get<fut_blk_cb_t>();
         blk(*this);
     }
 

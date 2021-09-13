@@ -63,7 +63,7 @@ bool CollisionTester::FrustumSphereTest( const Frustum& frus, const Sphere& sph 
 
 bool CollisionTester::FrustumCircleXZTest( const Frustum& frus, const Circle& cirXZ )
 {
-	Sphere sph( fvec3( cirXZ.mCenter.GetX(), frus.mCenter.GetY(), cirXZ.mCenter.GetY() ), cirXZ.mRadius );
+	Sphere sph( fvec3( cirXZ.mCenter.x, frus.mCenter.y, cirXZ.mCenter.y ), cirXZ.mRadius );
 	return FrustumSphereTest( frus, sph );
 }
 

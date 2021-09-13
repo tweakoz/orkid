@@ -173,6 +173,6 @@ int main(int argc, char** argv, char** envp) {
   // test harness UI
   //////////////////////////////////////////////////////////////////////////////
   app->setRefreshPolicy({EREFRESH_FASTEST, 0});
-  app->exec();
+  app->runloop();
   return 0;
 }

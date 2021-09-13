@@ -347,6 +347,44 @@ struct SVtxV12T8 {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
+struct SVtxV12C4 {
+  F32 x, y, z;    // 12
+  U32 color; // 20
+
+  SVtxV12C4()
+      : x(0.0f)
+      , y(0.0f)
+      , z(0.0f)
+      , color(0xffffffff){
+  }
+
+  SVtxV12C4(F32 X, F32 Y, F32 Z)
+      : x(X)
+      , y(Y)
+      , z(Z)
+      , color(0xffffffff){
+  }
+  SVtxV12C4(F32 X, F32 Y, F32 Z, U32 c)
+      : x(X)
+      , y(Y)
+      , z(Z)
+      , color(c){
+  }
+
+  void EndianSwap() {
+    swapbytes_dynamic(x);
+    swapbytes_dynamic(y);
+    swapbytes_dynamic(z);
+    swapbytes_dynamic(color);
+  }
+
+  constexpr static EVtxStreamFormat meFormat = EVtxStreamFormat::V12C4;
+};
+
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
 struct SVtxV12N6I1T4 {
   F32 mX, mY, mZ;    // 12
   S16 mNX, mNY, mNZ; // 18

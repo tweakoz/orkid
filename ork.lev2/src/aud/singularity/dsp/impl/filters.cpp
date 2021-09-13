@@ -137,8 +137,10 @@ void TrapAllpass::Clear() {
   s1 = 0.0f;
   s2 = 0.0f;
 }
+
 // set coefficients
-void TrapAllpass::Set(float cutoff) {
+
+void TrapAllpass::set(float cutoff) {
   cutoff        = clip_float(cutoff, 30, 16000);
   const float Q = 0.5f;
   damping       = 1.0 / Q;
@@ -170,7 +172,7 @@ void ParaOne::Clear() {
   _spl0       = 0.0f;
 }
 
-void ParaOne::Set(float f, float w, float g) {
+void ParaOne::set(float f, float w, float g) {
   // float arc=f*pi/(srate*0.5);
   float arc  = f * pi2 * ISR; ///(srate*0.5);
   float gain = powf(2.0f, g / 6.0f);

@@ -8,7 +8,7 @@ void pyinit_math(py::module& module_core) {
       py::class_<fvec2, fvec2_ptr_t>(module_core, "vec2", pybind11::buffer_protocol())
           //////////////////////////////////////////////////////////////////////////
           .def_buffer([](fvec2& vec) -> pybind11::buffer_info {
-            auto data = vec.GetArray(); // Pointer to buffer
+            auto data = vec.asArray(); // Pointer to buffer
             return pybind11::buffer_info(
                 data,          // Pointer to buffer
                 sizeof(float), // Size of one scalar
@@ -20,14 +20,17 @@ void pyinit_math(py::module& module_core) {
           //////////////////////////////////////////////////////////////////////////
           .def(py::init<>())
           .def(py::init<float, float>())
-          .def_property("x", &fvec2::GetX, &fvec2::SetX)
-          .def_property("y", &fvec2::GetY, &fvec2::SetY)
+          .def_property("x", [](fvec2& vec,float val) { return vec.x = val; }, //
+                             [](const fvec2& vec) -> float { return vec.x; })
+
+          .def_property("y", [](fvec2& vec,float val) { return vec.y = val; }, //
+                             [](const fvec2& vec) -> float { return vec.y; })
           .def("dot", &fvec2::Dot)
           .def("perp", &fvec2::PerpDot)
           .def("mag", &fvec2::Mag)
           .def("magsquared", &fvec2::MagSquared)
-          .def("lerp", &fvec2::Lerp)
-          .def("serp", &fvec2::Serp)
+          .def("lerp", &fvec2::lerp)
+          .def("serp", &fvec2::serp)
           .def("normal", &fvec2::Normal)
           .def("normalize", &fvec2::Normalize)
           .def(py::self + py::self)
@@ -52,7 +55,7 @@ void pyinit_math(py::module& module_core) {
       py::class_<fvec3, fvec3_ptr_t>(module_core, "vec3", pybind11::buffer_protocol())
           //////////////////////////////////////////////////////////////////////////
           .def_buffer([](fvec3& vec) -> pybind11::buffer_info {
-            auto data = vec.GetArray(); // Pointer to buffer
+            auto data = vec.asArray(); // Pointer to buffer
             return pybind11::buffer_info(
                 data,          // Pointer to buffer
                 sizeof(float), // Size of one scalar
@@ -64,16 +67,20 @@ void pyinit_math(py::module& module_core) {
           //////////////////////////////////////////////////////////////////////////
           .def(py::init<>())
           .def(py::init<float, float, float>())
-          .def_property("x", &fvec3::GetX, &fvec3::SetX)
-          .def_property("y", &fvec3::GetY, &fvec3::SetY)
-          .def_property("z", &fvec3::GetZ, &fvec3::SetZ)
+          .def_property("x", [](fvec3& vec,float val) { return vec.x = val; }, //
+                             [](const fvec3& vec) -> float { return vec.x; })
+
+          .def_property("y", [](fvec3& vec,float val) { return vec.y = val; }, //
+                             [](const fvec3& vec) -> float { return vec.y; })
+          .def_property("z", [](fvec3& vec,float val) { return vec.z = val; }, //
+                             [](const fvec3& vec) -> float { return vec.z; })
           .def("dot", &fvec3::Dot)
           .def("cross", &fvec3::Cross)
           .def("mag", &fvec3::Mag)
           .def("length", &fvec3::Mag)
           .def("magsquared", &fvec3::MagSquared)
-          .def("lerp", &fvec3::Lerp)
-          .def("serp", &fvec3::Serp)
+          .def("lerp", &fvec3::lerp)
+          .def("serp", &fvec3::serp)
           .def("reflect", &fvec3::Reflect)
           .def("saturated", &fvec3::saturated)
           .def("clamped", &fvec3::clamped)
@@ -82,8 +89,8 @@ void pyinit_math(py::module& module_core) {
           .def("rotx", &fvec3::RotateX)
           .def("roty", &fvec3::RotateY)
           .def("rotz", &fvec3::RotateZ)
-          .def("xy", &fvec3::GetXY)
-          .def("xz", &fvec3::GetXZ)
+          .def("xy", &fvec3::xy)
+          .def("xz", &fvec3::xz)
           .def(py::self + py::self)
           .def(py::self - py::self)
           .def(py::self * py::self)
@@ -108,7 +115,7 @@ void pyinit_math(py::module& module_core) {
       py::class_<fvec4, fvec4_ptr_t>(module_core, "vec4", pybind11::buffer_protocol())
           //////////////////////////////////////////////////////////////////////////
           .def_buffer([](fvec4& vec) -> pybind11::buffer_info {
-            auto data = vec.GetArray(); // Pointer to buffer
+            auto data = vec.asArray(); // Pointer to buffer
             return pybind11::buffer_info(
                 data,          // Pointer to buffer
                 sizeof(float), // Size of one scalar
@@ -123,17 +130,22 @@ void pyinit_math(py::module& module_core) {
           .def(py::init<fvec3>())
           .def(py::init<fvec3, float>())
           .def(py::init<uint32_t>())
-          .def_property("x", &fvec4::GetX, &fvec4::SetX)
-          .def_property("y", &fvec4::GetY, &fvec4::SetY)
-          .def_property("z", &fvec4::GetZ, &fvec4::SetZ)
-          .def_property("w", &fvec4::GetW, &fvec4::SetW)
+          .def_property("x", [](fvec4& vec,float val) { return vec.x = val; }, //
+                             [](const fvec4& vec) -> float { return vec.x; })
+
+          .def_property("y", [](fvec4& vec,float val) { return vec.y = val; }, //
+                             [](const fvec4& vec) -> float { return vec.y; })
+          .def_property("z", [](fvec4& vec,float val) { return vec.z = val; }, //
+                             [](const fvec4& vec) -> float { return vec.z; })
+          .def_property("w", [](fvec4& vec,float val) { return vec.w = val; }, //
+                             [](const fvec4& vec) -> float { return vec.w; })
           .def("dot", &fvec4::Dot)
           .def("cross", &fvec4::Cross)
           .def("mag", &fvec4::Mag)
           .def("length", &fvec4::Mag)
           .def("magsquared", &fvec4::MagSquared)
-          .def("lerp", &fvec4::Lerp)
-          .def("serp", &fvec4::Serp)
+          .def("lerp", &fvec4::lerp)
+          .def("serp", &fvec4::serp)
           .def("saturated", &fvec4::Saturate)
           .def("normal", &fvec4::Normal)
           .def("normalize", &fvec4::Normalize)
@@ -210,7 +222,7 @@ void pyinit_math(py::module& module_core) {
       py::class_<fmtx3, fmtx3_ptr_t>(module_core, "mtx3", pybind11::buffer_protocol())
           //////////////////////////////////////////////////////////////////////////
           .def_buffer([](fmtx3& mtx) -> pybind11::buffer_info {
-            auto data = mtx.GetArray(); // Pointer to buffer
+            auto data = mtx.asArray(); // Pointer to buffer
             return pybind11::buffer_info(
                 data,          // Pointer to buffer
                 sizeof(float), // Size of one scalar
@@ -241,7 +253,7 @@ void pyinit_math(py::module& module_core) {
       py::class_<fmtx4, fmtx4_ptr_t>(module_core, "mtx4", pybind11::buffer_protocol())
           //////////////////////////////////////////////////////////////////////////
           .def_buffer([](fmtx4& mtx) -> pybind11::buffer_info {
-            auto data = mtx.GetArray(); // Pointer to buffer
+            auto data = mtx.asArray(); // Pointer to buffer
             return pybind11::buffer_info(
                 data,          // Pointer to buffer
                 sizeof(float), // Size of one scalar
@@ -352,11 +364,11 @@ void pyinit_math(py::module& module_core) {
           .def(py::init<>())
           .def(py::init([](const fmtx4& VMatrix, const fmtx4& PMatrix) {
             auto rval = std::make_shared<Frustum>();
-            rval->Set(VMatrix, PMatrix);
+            rval->set(VMatrix, PMatrix);
             return rval;
           }))
-          .def("set", [](Frustum& frustum, const fmtx4& VMatrix, const fmtx4& PMatrix) { frustum.Set(VMatrix, PMatrix); })
-          .def("set", [](Frustum& frustum, const fmtx4& IVPMatrix) { frustum.Set(IVPMatrix); })
+          .def("set", [](Frustum& frustum, const fmtx4& VMatrix, const fmtx4& PMatrix) { frustum.set(VMatrix, PMatrix); })
+          .def("set", [](Frustum& frustum, const fmtx4& IVPMatrix) { frustum.set(IVPMatrix); })
           .def(
               "nearCorner",
               [](const Frustum& frustum, int index) -> fvec3 { return frustum.mNearCorners[std::clamp(index, 0, 3)]; })

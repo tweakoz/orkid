@@ -37,6 +37,8 @@ public:
 
   void Rotate(T rad);
 
+  Vector2 yx() const { return Vector2(y,x); }
+
   T Dot(const Vector2& vec) const; // dot product of two vectors
   T PerpDot(const Vector2& vec) const;
 
@@ -49,24 +51,17 @@ public:
   }
   T MagSquared(void) const; // return magnitude of this vector squared
 
-  void Lerp(const Vector2& from, const Vector2& to, T par);
-  void Serp(const Vector2& PA, const Vector2& PB, const Vector2& PC, const Vector2& PD, T Par);
+  void lerp(const Vector2& from, const Vector2& to, T par);
+  void serp(const Vector2& PA, const Vector2& PB, const Vector2& PC, const Vector2& PD, T par_x, T par_y);
 
-  T GetX(void) const {
-    return (x);
-  }
-  T GetY(void) const {
-    return (y);
-  }
-
-  void Set(T _x, T _y) {
+  void set(T _x, T _y) {
     x = _x;
     y = _y;
   }
-  void SetX(T _x) {
+  void setX(T _x) {
     x = _x;
   }
-  void SetY(T _y) {
+  void setY(T _y) {
     y = _y;
   }
 
@@ -145,19 +140,11 @@ public:
     return (x != b.x || y != b.y);
   }
 
-  T* GetArray(void) const {
+  T* asArray(void) const {
     return const_cast<T*>(&x);
   }
 
-  /*template <typename U>
-  static Vector2 FromVector2(Vector2<U> vec)
-  {
-      return Vector2(T::FromFX(vec.GetX().FXCast()),
-                      T::FromFX(vec.GetY().FXCast()));
-  }*/
-
-  T x; // x component of this vector
-  T y; // y component of this vector
+  T x, y; 
 };
 
 using fvec2       = Vector2<float>;
@@ -175,5 +162,5 @@ struct use_custom_serdes<fvec2> { //
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> inline ork::Vector2<T> operator*(T scalar, const ork::Vector2<T>& b) {
-  return ork::Vector2<T>((scalar * b.GetX()), (scalar * b.GetY()));
+  return ork::Vector2<T>((scalar * b.x), (scalar * b.y));
 }

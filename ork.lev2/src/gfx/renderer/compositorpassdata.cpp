@@ -26,7 +26,7 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 CompositingPassData CompositingPassData::FromRCFD(const RenderContextFrameData& RCFD) {
   lev2::rendervar_t passdata = RCFD.getUserProperty("nodes"_crc);
-  auto cstack                = passdata.Get<compositingpassdatastack_t*>();
+  auto cstack                = passdata.get<compositingpassdatastack_t*>();
   OrkAssert(cstack != nullptr);
   return cstack->top();
 }
@@ -40,22 +40,22 @@ void CompositingPassData::defaultSetup(CompositorDrawData& drawdata) {
   this->_cameraName  = "";
   this->_layerName   = "";
   this->_clearColor  = fvec4(0, 0, 0, 0);
-  int w              = drawdata._properties["OutputWidth"_crcu].Get<int>();
-  int h              = drawdata._properties["OutputHeight"_crcu].Get<int>();
+  int w              = drawdata._properties["OutputWidth"_crcu].get<int>();
+  int h              = drawdata._properties["OutputHeight"_crcu].get<int>();
   ViewportRect tgt_rect(0, 0, w, h);
   this->SetDstRect(tgt_rect);
-  bool stereo = drawdata._properties["StereoEnable"_crcu].Get<bool>();
+  bool stereo = drawdata._properties["StereoEnable"_crcu].get<bool>();
   this->setStereoOnePass(stereo);
   this->_cameraMatrices       = nullptr;
   this->_stereoCameraMatrices = nullptr;
-  if (auto try_scm = drawdata._properties["StereoMatrices"_crcu].TryAs<const StereoCameraMatrices*>()) {
+  if (auto try_scm = drawdata._properties["StereoMatrices"_crcu].tryAs<const StereoCameraMatrices*>()) {
     this->_stereoCameraMatrices = try_scm.value();
   } else {
-    // bool simrunning = drawdata._properties["simrunning"_crcu].Get<bool>();
-    if (auto try_def = drawdata._properties["defcammtx"_crcu].TryAs<const CameraMatrices*>()) {
+    // bool simrunning = drawdata._properties["simrunning"_crcu].get<bool>();
+    if (auto try_def = drawdata._properties["defcammtx"_crcu].tryAs<const CameraMatrices*>()) {
       this->_cameraMatrices = try_def.value();
     }
-    if (auto try_sim = drawdata._properties["simcammtx"_crcu].TryAs<const CameraMatrices*>()) {
+    if (auto try_sim = drawdata._properties["simcammtx"_crcu].tryAs<const CameraMatrices*>()) {
       this->_cameraMatrices = try_sim.value();
     }
   }
@@ -134,7 +134,7 @@ bool CompositingPassData::HasLayer(const std::string& layername) const {
 
 // void RenderContextFrameData::setLayerName(const char* layername) {
 // lev2::rendervar_t passdata;
-// passdata.Set<const char*>(layername);
+// passdata.set<const char*>(layername);
 // setUserProperty("pass"_crc, passdata);
 //}
 

@@ -14,7 +14,7 @@ Future::Future()
 
 void Future::Clear()
 {
-    mResult.Set<bool>(false);
+    mResult.set<bool>(false);
     mState.store(0);
 }
 

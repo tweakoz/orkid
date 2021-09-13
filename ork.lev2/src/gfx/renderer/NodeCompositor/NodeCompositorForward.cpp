@@ -68,13 +68,13 @@ struct IMPL {
     //////////////////////////////////////////////////////
     // Resize RenderTargets
     //////////////////////////////////////////////////////
-    int newwidth  = ddprops["OutputWidth"_crcu].Get<int>();
-    int newheight = ddprops["OutputHeight"_crcu].Get<int>();
+    int newwidth  = ddprops["OutputWidth"_crcu].get<int>();
+    int newheight = ddprops["OutputHeight"_crcu].get<int>();
     if (_rtg->width() != newwidth or _rtg->height() != newheight) {
       _rtg->Resize(newwidth, newheight);
     }
     //////////////////////////////////////////////////////
-    auto irenderer = ddprops["irenderer"_crcu].Get<lev2::IRenderer*>();
+    auto irenderer = ddprops["irenderer"_crcu].get<lev2::IRenderer*>();
     //////////////////////////////////////////////////////
     targ->debugPushGroup("Forward::render");
     RtGroupRenderTarget rt(_rtg);
@@ -88,7 +88,7 @@ struct IMPL {
       CPD._clearColor     = node->_clearColor;
       CPD._layerName      = _layername;
       CPD._irendertarget  = &rt;
-      CPD._cameraMatrices = ddprops["defcammtx"_crcu].Get<const CameraMatrices*>();
+      CPD._cameraMatrices = ddprops["defcammtx"_crcu].get<const CameraMatrices*>();
       CPD.SetDstRect(tgt_rect);
       ///////////////////////////////////////////////////////////////////////////
       if (DB) {
@@ -132,16 +132,16 @@ ForwardCompositingNode::~ForwardCompositingNode() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ForwardCompositingNode::doGpuInit(lev2::Context* pTARG, int iW, int iH) {
-  _impl.Get<std::shared_ptr<forwardnode::IMPL>>()->init(pTARG);
+  _impl.get<std::shared_ptr<forwardnode::IMPL>>()->init(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ForwardCompositingNode::DoRender(CompositorDrawData& drawdata) {
-  auto impl = _impl.Get<std::shared_ptr<forwardnode::IMPL>>();
+  auto impl = _impl.get<std::shared_ptr<forwardnode::IMPL>>();
   impl->_render(this, drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
 RtBuffer* ForwardCompositingNode::GetOutput() const {
-  return _impl.Get<std::shared_ptr<forwardnode::IMPL>>()->_rtg->GetMrt(0);
+  return _impl.get<std::shared_ptr<forwardnode::IMPL>>()->_rtg->GetMrt(0);
 }
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2

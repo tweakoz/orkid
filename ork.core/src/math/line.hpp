@@ -30,10 +30,10 @@ template< typename T >
 void TLineSegment2Helper<T>::SetStartEnd( const vec2_type& s, const vec2_type& e )
 {
 
-   mStart.SetX(s.GetX());
-   mStart.SetY(s.GetY());
-   mEnd.SetX(e.GetX());
-   mEnd.SetY(e.GetY());
+   mStart.setX(s.x);
+   mStart.setY(s.y);
+   mEnd.setX(e.x);
+   mEnd.setY(e.y);
    mOrigin = mEnd - mStart;
    mMag = mOrigin.Mag();
 
@@ -46,7 +46,7 @@ float TLineSegment2Helper<T>::pointDistanceSquared( const vec2_type  &pt ) const
 	T U_num = (pt_origin).Dot(mOrigin);
     T U_den = ( mMag * mMag );
 
-	T U_num2 =  ((pt.GetX() - mStart.GetX()) * (mEnd.GetX() - mStart.GetX()) + ((pt.GetY() - mStart.GetY()) * (mEnd.GetY() - mStart.GetY())));
+	T U_num2 =  ((pt.x - mStart.x) * (mEnd.x - mStart.x) + ((pt.y - mStart.y) * (mEnd.y - mStart.y)));
 
 	if(fabs(U_num) < U_den)
 	{
@@ -62,8 +62,8 @@ float TLineSegment2Helper<T>::pointDistancePercent( const vec2_type  &pt ) const
 {
 
 	/*
-	 float U_num = ( ( ( pt.GetX() - mStart.GetX() ) * ( mEnd.GetX() - mStart.GetX() ) ) +
-        ( ( pt.GetY() - mStart.GetY() ) * ( mEnd.GetY() - mStart.GetY() ))) ;
+	 float U_num = ( ( ( pt.x - mStart.x ) * ( mEnd.x - mStart.x ) ) +
+        ( ( pt.y - mStart.y ) * ( mEnd.y - mStart.y ))) ;
 
 	*/
 	vec2_type pt_origin = pt - mStart;

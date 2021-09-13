@@ -13,13 +13,8 @@
 #include <ork/lev2/ui/event.h>
 #include <ork/lev2/ui/viewport.h>
 #include <ork/lev2/gfx/scenegraph/scenegraph.h>
+#include <ork/lev2/glfw/ctx_glfw.h>
 
-#include <QtWidgets/QApplication>
-#include <QtWidgets/QMainWindow>
-#include <QtCore/QTimer>
-#include <QtWidgets/QApplication>
-#include <ork/lev2/qtui/qtui.h>
-#include <ork/lev2/qtui/qtui.hpp>
 #include <ork/lev2/ui/event.h>
 #include <ork/lev2/ui/context.h>
 
@@ -29,36 +24,27 @@ class OrkEzQtApp;
 using ezapp_ptr_t   = std::shared_ptr<EzApp>;
 using qtezapp_ptr_t = std::shared_ptr<OrkEzQtApp>;
 ////////////////////////////////////////////////////////////////////////////////
-struct QtAppInitData{
-  bool _fullscreen = false;
-  int _top = 100;
-  int _left = 100;
-  int _width = 1280;
-  int _height = 720;
-  std::string _monitor_id = "";
-};
-////////////////////////////////////////////////////////////////////////////////
 struct QtAppInit {
   QtAppInit();
-  QtAppInit(int argc, char** argv, const QtAppInitData& initdata);
+  QtAppInit(int argc, char** argv, const AppInitData& initdata);
   QtAppInit(int argc, char** argv);
   ~QtAppInit();
   int _argc = 0;
   std::string _arg;
   char* _argv   = nullptr;
   char** _argvp = nullptr;
-  QtAppInitData _initdata;
+  AppInitData _initdata;
   std::shared_ptr<StdFileSystemInitalizer> _fsinit;
 };
 ////////////////////////////////////////////////////////////////////////////////
 extern QtAppInit& qtinit();
 extern QtAppInit& qtinit(int& argc, char** argv);
-extern QtAppInit& qtinit(int& argc, char** argv,const QtAppInitData& initdata);
+extern QtAppInit& qtinit(int& argc, char** argv,const AppInitData& initdata);
 ////////////////////////////////////////////////////////////////////////////////
-class OrkEzQtAppBase : public QApplication {
-  Q_OBJECT
+class OrkEzQtAppBase { //: public QApplication {
 public:
   OrkEzQtAppBase(int& argc, char** argv);
+  virtual ~OrkEzQtAppBase() {}
   ezapp_ptr_t _ezapp;
   static OrkEzQtAppBase* get();
   static OrkEzQtAppBase* _staticapp;
@@ -71,7 +57,7 @@ public:
   static ezapp_ptr_t get(int& argc, char** argv);
   static ezapp_ptr_t get();
   ~EzApp();
-
+  
 private:
   EzApp(int& argc, char** argv);
   opq::TrackCurrent* _trackq;
@@ -80,7 +66,7 @@ private:
   ork::opq::opq_ptr_t _conq;
 };
 ////////////////////////////////////////////////////////////////////////////////
-class EzMainWin : public QMainWindow {
+class EzMainWin { //: public QMainWindow {
 public:
   typedef std::function<void(ui::drawevent_constptr_t)> drawcb_t;
   typedef std::function<void(int w, int h)> onresizecb_t;
@@ -96,9 +82,8 @@ public:
   EzMainWin();
   ~EzMainWin();
   bool _dogpuinit                           = true;
-  CQtWindow* _gfxwin                        = nullptr;
-  CTQT* _ctqt                               = nullptr;
-  QCtxWidget* _ctxw                         = nullptr;
+  AppWindow* _gfxwin                        = nullptr;
+  CtxGLFW* _ctqt                               = nullptr;
   drawcb_t _onDraw                          = nullptr;
   onresizecb_t _onResize                    = nullptr;
   onuieventcb_t _onUiEvent                  = nullptr;
@@ -126,16 +111,15 @@ struct EzViewport : public ui::Viewport {
 };
 ////////////////////////////////////////////////////////////////////////////////
 class OrkEzQtApp : public OrkEzQtAppBase {
-  Q_OBJECT
-
+  
 public:
   ///////////////////////////////////
-  OrkEzQtApp(int& argc, char** argv,const QtAppInitData& initdata);
+  OrkEzQtApp(int& argc, char** argv,const AppInitData& initdata);
   ~OrkEzQtApp();
   ///////////////////////////////////
   static qtezapp_ptr_t create();
   static qtezapp_ptr_t create(int argc, char** argv);
-  static qtezapp_ptr_t create(int argc, char** argv, const QtAppInitData& initdata);
+  static qtezapp_ptr_t create(int argc, char** argv, const AppInitData& initdata);
   static qtezapp_ptr_t createWithScene(varmap::varmap_ptr_t sceneparams);
 
   filedevctx_ptr_t newFileDevContext(std::string uriproto, const file::Path& basepath);
@@ -155,15 +139,16 @@ public:
 
   void joinUpdate();
   bool checkAppState(uint64_t singlebitmask);
-public slots:
   void OnTimer();
 
   void enqueueOnRenderer(const void_lambda_t& l);
 
+  void signalExit();
+
   ///////////////////////////////////
 public:
-  QTimer mIdleTimer;
-  QtAppInitData _initdata;
+  //QTimer mIdleTimer;
+  AppInitData _initdata;
   EzMainWin* _mainWindow;
   std::map<std::string, filedevctx_ptr_t> _fdevctxmap;
   ork::Timer _update_timer;

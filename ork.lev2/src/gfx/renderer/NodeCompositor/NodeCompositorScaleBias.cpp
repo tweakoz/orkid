@@ -83,16 +83,16 @@ ScaleBiasCompositingNode::~ScaleBiasCompositingNode() {
 ///////////////////////////////////////////////////////////////////////////////
 void ScaleBiasCompositingNode::doGpuInit(lev2::Context* pTARG, int iW, int iH) // virtual
 {
-  _impl.Get<std::shared_ptr<scaleandbias::IMPL>>()->init(pTARG);
+  _impl.get<std::shared_ptr<scaleandbias::IMPL>>()->init(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ScaleBiasCompositingNode::DoRender(CompositorDrawData& drawdata) // virtual
 {
-  _impl.Get<std::shared_ptr<scaleandbias::IMPL>>()->_render(drawdata);
+  _impl.get<std::shared_ptr<scaleandbias::IMPL>>()->_render(drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
 RtBuffer* ScaleBiasCompositingNode::GetOutput() const {
-  auto impl = _impl.Get<std::shared_ptr<scaleandbias::IMPL>>();
+  auto impl = _impl.get<std::shared_ptr<scaleandbias::IMPL>>();
   return (impl->_rtg) ? impl->_rtg->GetMrt(0) : nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////

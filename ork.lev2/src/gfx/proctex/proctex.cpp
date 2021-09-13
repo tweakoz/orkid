@@ -228,7 +228,7 @@ Buffer& ImgModule::GetWriteBuffer(ProcTex& ptex) {
   // return ptex.GetBuffer(outplug->GetValue().miBufferIndex);
 }
 void ImgModule::Compute(dataflow::workunit* wu) {
-  auto ptex                = wu->GetContextData().Get<ProcTex*>();
+  auto ptex                = wu->GetContextData().get<ProcTex*>();
   ProcTexContext* ptex_ctx = ptex->GetPTC();
 
   auto pTARG = ptex->GetTarget();

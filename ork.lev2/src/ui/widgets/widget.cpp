@@ -80,7 +80,7 @@ bool Widget::hasMouseFocus() const {
 ///////////////////////////////////////////////////////////
 HandlerResult Widget::OnUiEvent(event_constptr_t ev) {
   ev->mFilteredEvent.Reset();
-  // printf("Widget<%p>::OnUiEvent\n", this);
+   //printf("Widget<%p>::OnUiEvent _evhandlerset<%d>\n", this, int(_evhandler!=nullptr));
 
   if (_eventfilterstack.size()) {
     auto top = _eventfilterstack.top();
@@ -103,7 +103,7 @@ void Apple3ButtonMouseEmulationFilter::DoFilter(event_constptr_t Ev) {
   fev.mAction = "none";
 
   switch (Ev->_eventcode) {
-    case ui::EventCode::KEY: {
+    case ui::EventCode::KEY_DOWN: {
       float kt = mKeyTimer.SecsSinceStart();
       float dt = mDoubleTimer.SecsSinceStart();
       float mt = mMoveTimer.SecsSinceStart();
@@ -170,7 +170,7 @@ void Apple3ButtonMouseEmulationFilter::DoFilter(event_constptr_t Ev) {
       }
       break;
     }
-    case ui::EventCode::KEYUP:
+    case ui::EventCode::KEY_UP:
       // printf( "keyup<%d>\n", Ev->miKeyCode );
       switch (Ev->miKeyCode) {
         case 49:

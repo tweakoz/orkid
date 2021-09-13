@@ -63,6 +63,7 @@ void pyinit_meshutil(py::module& module_lev2) {
     } // namespace ork::lev2
   });
   //////////////////////////////////////////////////////////////////////////////
+  #if defined(ENABLE_IGL)
   py::class_<IglMesh, iglmesh_ptr_t>(meshutil, "IglMesh") //
       .def(py::init([](const Eigen::MatrixXd& verts,      //
                        const Eigen::MatrixXi& faces) {    //
@@ -259,6 +260,7 @@ void pyinit_meshutil(py::module& module_lev2) {
           [](iglprinciplecurvature_ptr_t igldir) -> Eigen::MatrixXd { //
             return igldir->PD2;
           });
+  #endif //#if defined(ENABLE_IGL)
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<rigidprim_t>(meshutil, "RigidPrimitive")
       .def(py::init<>())
@@ -272,7 +274,9 @@ void pyinit_meshutil(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<submesh, submesh_ptr_t>(meshutil, "SubMesh")
       .def(py::init<>())
+  #if defined(ENABLE_IGL)
       .def("igl_test", [](submesh_ptr_t submesh) { return submesh->igl_test(); })
+  #endif //#if defined(ENABLE_IGL)
       .def(
           "triangulate",
           [](submesh_constptr_t inpsubmesh) -> submesh_ptr_t {
@@ -280,7 +284,9 @@ void pyinit_meshutil(py::module& module_lev2) {
             submeshTriangulate(*inpsubmesh, *rval);
             return rval;
           })
+  #if defined(ENABLE_IGL)
       .def("toIglMesh", [](submesh_ptr_t submesh, int numsides) -> iglmesh_ptr_t { return submesh->toIglMesh(numsides); })
+  #endif //#if defined(ENABLE_IGL)
       .def("numPolys", [](submesh_constptr_t submesh, int numsides) -> int { return submesh->GetNumPolys(numsides); })
       .def("numVertices", [](submesh_constptr_t submesh) -> int { return submesh->_vtxpool.GetNumVertices(); })
       .def(
@@ -321,6 +327,7 @@ void pyinit_meshutil(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<edge>(meshutil, "Edge").def(py::init<>());
   /////////////////////////////////////////////////////////////////////////////////
+  #if defined(ENABLE_IGL)
   py::class_<UniqueEdges, unique_edges_ptr_t>(meshutil, "UniqueEdges")
       .def_property_readonly("count", [](unique_edges_ptr_t ue) -> int { return ue->_count; })
       .def_property_readonly("ue2e", [](unique_edges_ptr_t ue) -> std::vector<std::vector<size_t>> { return ue->_ue2e; })
@@ -334,6 +341,7 @@ void pyinit_meshutil(py::module& module_lev2) {
       .def_property_readonly("per_patch_cells", [](manifold_extraction_ptr_t me) -> Eigen::MatrixXi { return me->per_patch_cells; })
       .def_property_readonly("P", [](manifold_extraction_ptr_t me) -> Eigen::VectorXi { return me->P; });
 
+  #endif //#if defined(ENABLE_IGL)
   //////////////////////////////////////////////////////////////////////////////
   py::class_<Mesh, mesh_ptr_t>(meshutil, "Mesh") //
       .def(py::init<>())

@@ -83,10 +83,10 @@ struct CombAssignNode : public AstNode {
         : _lhs(lhs)
         , _rhs(rhs){
 
-        if( auto as = _lhs._ref->TryAs<Input>() ){
+        if( auto as = _lhs._ref->tryAs<Input>() ){
 
         }
-        else if( auto as = _lhs._ref->TryAs<Output>() ){
+        else if( auto as = _lhs._ref->tryAs<Output>() ){
             if(as.value()._register){
                 auto trace = bt_to_string(boost::stacktrace::stacktrace());
                 printf( "%s\n", trace.c_str() );
@@ -94,13 +94,13 @@ struct CombAssignNode : public AstNode {
                 assert(false);
             }
         }
-        else if( auto as = _lhs._ref->TryAs<Reg>() ){
+        else if( auto as = _lhs._ref->tryAs<Reg>() ){
             auto trace = bt_to_string(boost::stacktrace::stacktrace());
             printf( "%s\n", trace.c_str() );
             printf( "Invalid CombAssign to Register\n");
             assert(false);
         }
-        else if( auto as = _lhs._ref->TryAs<Wire>() ){
+        else if( auto as = _lhs._ref->tryAs<Wire>() ){
 
         }
         else{

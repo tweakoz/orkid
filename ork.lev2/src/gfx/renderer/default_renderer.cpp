@@ -43,7 +43,7 @@ void DefaultRenderer::RenderModel(const ModelRenderable& mdl_renderable, RenderG
   fmtx4 smat, tmat, rmat;
   smat.SetScale(fscale);
   tmat.SetTranslation(offset);
-  rmat.SetRotateY(rotate.GetY() + rotate.GetZ());
+  rmat.SetRotateY(rotate.y + rotate.z);
   fmtx4 wmat = mdl_renderable.GetMatrix();
   /////////////////////////////////////////////////////////////
   // compute world matrix

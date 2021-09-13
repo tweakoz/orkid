@@ -119,12 +119,12 @@ void SpiralEmitter<ptype>::Emit( Pool<ptype>& pool, float dt )
 
 			ptc->mfAge = 0.0f;
 			ptc->mfLifeSpan = mSed.GetLifespan();
-			ptc->mPosition.SetX( fsx*scaler  );
-			ptc->mPosition.SetY( 0.0f );
-			ptc->mPosition.SetZ( fsz*scaler );
-			ptc->mVelocity.SetX( fsx*femitout );
-			ptc->mVelocity.SetY( mSed.GetEmissionUp() );
-			ptc->mVelocity.SetZ( fsz*femitout );
+			ptc->mPosition.setX( fsx*scaler  );
+			ptc->mPosition.setY( 0.0f );
+			ptc->mPosition.setZ( fsz*scaler );
+			ptc->mVelocity.setX( fsx*femitout );
+			ptc->mVelocity.setY( mSed.GetEmissionUp() );
+			ptc->mVelocity.setZ( fsz*femitout );
 
 			mfPhase += mSed.GetSpinRate();
 

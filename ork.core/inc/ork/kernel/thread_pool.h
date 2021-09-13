@@ -56,11 +56,11 @@ public:
 	task* GetTask() const { return mpTask; }
 	template <typename T> const T& GetData() const
 	{
-		return mSubTaskData.Get<T>();
+		return mSubTaskData.get<T>();
 	}
 	template <typename T> void SetData(const T&data)
 	{
-		mSubTaskData.Set<T>(data);
+		mSubTaskData.set<T>(data);
 	}
 private:
 	task* 				mpTask;

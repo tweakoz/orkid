@@ -18,7 +18,8 @@ int main(int argc, char** argv) {
   vcd::File vcdfile;
   vcdfile.parse(inppath);
   //////////////////////////////////////
-  auto app = createSimpleUiApp(argc, argv);
+  AppInitData qid;
+  auto app = createSimpleUiApp(argc, argv,qid);
   //////////////////////////////////////
   auto vp       = app->_topLayoutGroup;
   auto w_tracks = vp->makeChild<LayoutGroup>("w_tracks");
@@ -132,5 +133,5 @@ int main(int argc, char** argv) {
   // ol->setMargin(4);
   //////////////////////////////////////
   app->setRefreshPolicy({EREFRESH_WHENDIRTY, -1});
-  return app->exec();
+  return app->runloop();
 }

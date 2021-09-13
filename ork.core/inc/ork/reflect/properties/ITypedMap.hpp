@@ -51,7 +51,7 @@ void ITypedMap<KeyType, ValueType>::serialize(serdes::node_ptr_t sernode) const 
     auto elemnode = serializer->pushNode(keystr, serdes::NodeType::MAP_ELEMENT_LEAF);
     //////////////////////////////
     elemnode->_key = keystr;
-    elemnode->_value.template Set<ValueType>(V);
+    elemnode->_value.template set<ValueType>(V);
     elemnode->_index        = i;
     elemnode->_parent       = mapnode;
     elemnode->_ser_instance = instance;

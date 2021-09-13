@@ -27,10 +27,10 @@ void uvmapcoord::Clear(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void uvmapcoord::Lerp(const uvmapcoord& ina, const uvmapcoord& inb, float flerp) {
-  mMapTexCoord.Lerp(ina.mMapTexCoord, inb.mMapTexCoord, flerp);
-  mMapBiNormal.Lerp(ina.mMapBiNormal, inb.mMapBiNormal, flerp);
-  mMapTangent.Lerp(ina.mMapTangent, inb.mMapTangent, flerp);
+void uvmapcoord::lerp(const uvmapcoord& ina, const uvmapcoord& inb, float flerp) {
+  mMapTexCoord.lerp(ina.mMapTexCoord, inb.mMapTexCoord, flerp);
+  mMapBiNormal.lerp(ina.mMapBiNormal, inb.mMapBiNormal, flerp);
+  mMapTangent.lerp(ina.mMapTangent, inb.mMapTangent, flerp);
   // return uvmapcoord( out );
 }
 
@@ -96,22 +96,22 @@ const fvec3& vertex::Pos() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void vertex::Lerp(const vertex& a, const vertex& b, float flerp) {
-  *this = b.Lerp(a, flerp);
+void vertex::lerp(const vertex& a, const vertex& b, float flerp) {
+  *this = b.lerp(a, flerp);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-vertex vertex::Lerp(const vertex& vtx, float flerp) const {
+vertex vertex::lerp(const vertex& vtx, float flerp) const {
   vertex vcenter;
-  vcenter.mPos.Lerp(vtx.mPos, mPos, flerp);
-  vcenter.mNrm.Lerp(vtx.mNrm, mNrm, flerp);
+  vcenter.mPos.lerp(vtx.mPos, mPos, flerp);
+  vcenter.mNrm.lerp(vtx.mNrm, mNrm, flerp);
   vcenter.mNrm.Normalize();
   for (int ic = 0; ic < vertex::kmaxcolors; ic++) {
-    vcenter.mCol[ic].Lerp(vtx.mCol[ic], mCol[ic], flerp);
+    vcenter.mCol[ic].lerp(vtx.mCol[ic], mCol[ic], flerp);
   }
   for (int it = 0; it < vertex::kmaxuvs; it++) {
-    vcenter.mUV[it].Lerp(vtx.mUV[it], mUV[it], flerp);
+    vcenter.mUV[it].lerp(vtx.mUV[it], mUV[it], flerp);
   }
   return vcenter;
 }

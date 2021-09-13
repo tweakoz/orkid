@@ -1,7 +1,6 @@
 cmake_minimum_required (VERSION 3.13.4)
 set( CMAKE_MODULE_PATH $ENV{ORKID_WORKSPACE_DIR} )
 include(orkid)
-enableQt5()
 project (ork.lev2.test.aud.singularity CXX)
 
 include_directories(AFTER ${CMAKE_INSTALL_PREFIX}/include)

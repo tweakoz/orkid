@@ -43,7 +43,7 @@ template <typename queue_type> struct yo {
   void RunTest() {
 
     auto l_producer = [&](anyp inp) {
-      auto pyo              = inp.Get<yo*>();
+      auto pyo              = inp.get<yo*>();
       queue_type& the_queue = pyo->mQueue;
       Timer tm;
       Timer tm2;
@@ -58,7 +58,7 @@ template <typename queue_type> struct yo {
           pyo->mProdGot++;
           extstring_t str;
           str.format("to<%d>", i);
-          pv->mVar.template Set(str);
+          pv->mVar.template set(str);
           // usleep(rand()%3);
         }
         the_queue.end_push(pv);
@@ -70,7 +70,7 @@ template <typename queue_type> struct yo {
     };
 
     auto l_consumer = [&](anyp inp) {
-      auto pyo              = inp.Get<yo*>();
+      auto pyo              = inp.get<yo*>();
       queue_type& the_queue = pyo->mQueue;
 
       Timer tm;
@@ -83,7 +83,7 @@ template <typename queue_type> struct yo {
         pyo->mConsCounter++;
         if (pv) {
           pyo->mConsGot++;
-          auto str = pv->mVar.template Get<extstring_t>();
+          auto str = pv->mVar.template get<extstring_t>();
           // usleep(rand()%3);
         }
         the_queue.end_pull(pv);

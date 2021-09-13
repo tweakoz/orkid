@@ -108,12 +108,12 @@ public:
 
 			fvec3 cell1 = (start - e.Min()) * m_SR;
 			fvec3 cell2 = (end - e.Min()) * m_SR;
-			int X1 = (int)cell1.GetX();
-			int Y1 = (int)cell1.GetY();
-			int Z1 = (int)cell1.GetZ();
-			int X2 = (int)cell2.GetX();
-			int Y2 = (int)cell2.GetY();
-			int Z2 = (int)cell2.GetZ();
+			int X1 = (int)cell1.x;
+			int Y1 = (int)cell1.y;
+			int Z1 = (int)cell1.z;
+			int X2 = (int)cell2.x;
+			int Y2 = (int)cell2.y;
+			int Z2 = (int)cell2.z;
 
 			bool ONEVALID = (CalcAddress(X1,Y1,Z1)>=0);
 			bool TWOVALID = (CalcAddress(X2,Y2,Z2)>=0);
@@ -124,9 +124,9 @@ public:
 			{
 				fvec3 center = (start+end)*0.5f;
 				fvec3 cellC = (center - e.Min()) * m_SR;
-				int XC = (int)cellC.GetX();
-				int YC = (int)cellC.GetY();
-				int ZC = (int)cellC.GetZ();
+				int XC = (int)cellC.x;
+				int YC = (int)cellC.y;
+				int ZC = (int)cellC.z;
 				bool CVALID = (CalcAddress(XC,YC,ZC)>=0);
 
 				bool br1 = false;

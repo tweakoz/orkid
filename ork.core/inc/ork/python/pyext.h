@@ -31,11 +31,11 @@ struct TypeCodec {
         pytype, //
         TypeId::of<ORKTYPE>(),
         [](const varval_t& inpval, pybind11::object& outval) { // encoder
-          outval = pybind11::cast(inpval.Get<ORKTYPE>());
+          outval = pybind11::cast(inpval.get<ORKTYPE>());
         },
         [](const pybind11::object& inpval, varval_t& outval) { // decoder
           auto ork_val = inpval.cast<ORKTYPE>();
-          outval.Set<ORKTYPE>(ork_val);
+          outval.set<ORKTYPE>(ork_val);
         });
   }
   //////////////////////////////////
@@ -46,13 +46,13 @@ struct TypeCodec {
         pytype, //
         TypeId::of<ORKTYPE>(),
         [](const varval_t& inpval, pybind11::object& outval) { // encoder
-          auto rawval = inpval.Get<ORKTYPE>();
+          auto rawval = inpval.get<ORKTYPE>();
           outval      = pybind11::cast(PYREPR(rawval));
         },
         [](const pybind11::object& inpval, varval_t& outval) { // decoder
           auto intermediate_val = inpval.cast<PYREPR>();
           auto ptr_val          = intermediate_val.get();
-          outval.Set<ORKTYPE>(ptr_val);
+          outval.set<ORKTYPE>(ptr_val);
         });
   }
   //////////////////////////////////

@@ -286,18 +286,18 @@ DeferredCompositingNodeNvMs::~DeferredCompositingNodeNvMs() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void DeferredCompositingNodeNvMs::doGpuInit(lev2::Context* pTARG, int iW, int iH) {
-  _impl.Get<std::shared_ptr<NVMSIMPL>>()->init(pTARG);
+  _impl.get<std::shared_ptr<NVMSIMPL>>()->init(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void DeferredCompositingNodeNvMs::DoRender(CompositorDrawData& drawdata) {
-  auto impl = _impl.Get<std::shared_ptr<NVMSIMPL>>();
+  auto impl = _impl.get<std::shared_ptr<NVMSIMPL>>();
   impl->_render(this, drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
 RtBuffer* DeferredCompositingNodeNvMs::GetOutput() const {
   static int i = 0;
   i++;
-  return _impl.Get<std::shared_ptr<NVMSIMPL>>()->_context._rtgLaccum->GetMrt(0);
+  return _impl.get<std::shared_ptr<NVMSIMPL>>()->_context._rtgLaccum->GetMrt(0);
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::deferrednode
