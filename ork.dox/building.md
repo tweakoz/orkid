@@ -43,11 +43,8 @@ To bootstrap on Ubuntu19.10/Ubuntu20.04 x86/64
 * ```./ork.build/bin/obt.ix.installdeps.ubuntu19.py``` <- install obt system deps (this will ask for sudo password)
 * ```./ork.build/bin/init_env.py --create .stage``` <- this creates a staging folder and launches an environment
 * ```ork.installdeps.ubuntu19.py``` <- install orkid system deps (this will ask for sudo password)
-* ```./build.py --ez``` <- builds deps and orkid (into staging folder)
-* ```ork.asset.buildall.py``` <- builds assets (using built orkid executable)
-* ```ork.test.buildtestassets.py``` <- build test assets (using built orkid executable)
-* ```exit``` <- After an --ez build exit environment
 * ```.stage/.launch_env``` <- reload the environment (to get updated environment variables)
+* ```ork,build.py``` <- build all deps, and orkid (will take a while)
 * ```ork.example.lev2.gfx.minimal3D.exe``` <- run a c++ example
 * ```./ork.lev2/examples/python/window.py``` <- run a python example
 
@@ -67,8 +64,10 @@ misc
 * ```<staging_folder>/.launch_env``` <- relaunch previously made environment container.
 * ```obt.find.py "phrase"``` - search source folders for a quoted phrase - the quotes are optional for simple single word seaches
 * ```obt.replace.py "findphrase" "replace"``` - search source folders for a quoted phrase - the quotes are optional for simple single word seaches
-* ```ork.asset.buildall.py``` <- rebuild all assets
 * ```ork.doxygen.py``` <- regenerate doxygen docs
 
+* to generate JSON dump of all top level actions (relative to the current staging folder state) that will be taken to perform an orkid build (which will also execute the actions). Actions which execute commandlines will include working folder and environment variable data. The output from this theoretically should be enough for an externally managed process to complete a build. TODO - can we generate the trace without executing ?
 
-the automatic asset pipe is in flux. more on this later...
+```
+ork.build.py --obttrace
+```
