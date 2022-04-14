@@ -1,10 +1,18 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include "harness.h"
 #include <ork/lev2/aud/singularity/tx81z.h>
 #include <ork/lev2/aud/singularity/dsp_mix.h>
 #include <ork/lev2/aud/singularity/fxgen.h>
 
-int main(int argc, char** argv) {
-  auto app = createEZapp(argc, argv);
+int main(int argc, char** argv,char**envp) {
+  auto initdata = std::make_shared<ork::AppInitData>(argc,argv,envp);
+  auto app = createEZapp(initdata);
   // auto toplayoutgroup            = app->_topLayoutGroup;
   synth::instance()->_masterGain = decibel_to_linear_amp_ratio(30.0f);
   ////////////////////////////////////////////////
@@ -108,6 +116,6 @@ int main(int argc, char** argv) {
   bussource->connect(analyzer2->_sink);
   //////////////////////////////////////////////////////////////////////////////
   app->setRefreshPolicy({EREFRESH_FASTEST, 0});
-  app->runloop();
+  app->mainThreadLoop();
   return 0;
 }

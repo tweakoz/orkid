@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -33,12 +33,14 @@
 #include <string.h>
 #include <type_traits>
 #include <typeinfo>
+#include <functional>
+#include <concepts>
+#include <atomic>
 
 #include <ork/kernel/atomic.h>
 #include <ork/orkstd.h>
 #include <ork/util/crc64.h>
 #include <cxxabi.h>
-
 //#if !defined(__APPLE__)
 #define SVAR_DEBUG
 //#endif
@@ -56,23 +58,6 @@ template <typename T> inline std::string demangled_typename() {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <int tsize> class static_variant;
-
-///////////////////////////////////////////////////////////////////////////////
-// templatized destruction delegate for static_variants
-
-template <int tsize, typename T> struct static_variant_destroyer_t {
-  typedef T MyType;
-
-  static void destroy(static_variant<tsize>& var);
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <int tsize, typename T> struct static_variant_copier_t {
-  typedef T MyType;
-
-  static void copy(static_variant<tsize>& lhs, const static_variant<tsize>& rhs);
-};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -136,42 +121,128 @@ struct TypeId {
   }
 };
 
+namespace __svartraits {
+
+template <typename T>
+concept equality_comparable = requires (T obj) {
+  { obj == obj } -> std::same_as<bool>;
+  { obj != obj } -> std::same_as<bool>;
+};
+
+template <typename T, typename T2>  //
+struct __equal_to {
+  static bool compare(const T& lhs, const T2& rhs) requires equality_comparable<T> {
+    return bool(lhs == rhs);
+  }
+  static bool compare(const T& lhs, const T2& rhs) requires( not equality_comparable<T> ) {
+    OrkAssert(false);
+    return false;
+  }
+};
+
+} // namespace __svartraits
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <int tsize> struct SvarDescriptor {
+
+  using destroyer_t = std::function<void(static_variant<tsize>& var)>;
+  using copier_t    = std::function<void(static_variant<tsize>& lhs, const static_variant<tsize>& rhs)>;
+  using equals_t    = std::function<bool(const static_variant<tsize>& lhs, const static_variant<tsize>& rhs)>;
+
+  /////////////////////////////////////////
+
+  template <typename T> void assign() {
+
+      _destroyer = [](static_variant<tsize>& var) {
+        // just call T's destructor, as opposed to delete
+        //  because the variant owns the memory.
+        //  aka 'placement delete'
+        var.template get<T>().~T();
+      };
+
+      _copier = [](static_variant<tsize>& lhs, const static_variant<tsize>& rhs) {
+        const T& typed_right = rhs.template get<T>();
+        lhs.template set<T>(typed_right);
+      };
+
+      _equals = [](const static_variant<tsize>& lhs, const static_variant<tsize>& rhs) -> bool {
+        return __svartraits::__equal_to<T, T>::compare(lhs.template get<T>(), rhs.template get<T>());
+      };
+
+      _curlength = sizeof(T);
+
+  #if defined(SVAR_DEBUG)
+      _typestr = demangled_typename<T>();
+  #endif
+    }
+
+  /////////////////////////////////////////
+
+  destroyer_t _destroyer;
+  copier_t _copier;
+  equals_t _equals;
+  size_t _curlength;
+#if defined(SVAR_DEBUG)
+  std::string _typestr;
+#endif
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <int tsize, typename T> struct SvarDescriptorFactory {
+  static SvarDescriptor<tsize> create() {
+    SvarDescriptor<tsize> rval;
+    rval.template assign<T>();
+    return rval;
+  }
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template <int tsize> class static_variant {
 public:
-  typedef void (*destroyer_t)(static_variant<tsize>& var);
-  typedef void (*copier_t)(static_variant<tsize>& lhs, const static_variant<tsize>& rhs);
-  static const int ksize = tsize;
+  using descriptor_factory_t = SvarDescriptor<tsize> (*)();
+
+  static constexpr size_t ksize = tsize;
 
   //////////////////////////////////////////////////////////////
   // default constuctor
   //////////////////////////////////////////////////////////////
   static_variant()
       : _mtinfo(nullptr) {
-    _destroyer = nullptr;
-    _copier    = nullptr;
-    _curlength = 0;
+    _descriptorFactory = nullptr;
   }
   //////////////////////////////////////////////////////////////
   // copy constuctor
   //////////////////////////////////////////////////////////////
   static_variant(const static_variant& oth)
       : _mtinfo(nullptr) {
-    _destroyer = nullptr;
-    _copier    = nullptr;
-
-    auto c = oth._copier.load();
-    if (c)
-      c(*this, oth);
+    _descriptorFactory      = nullptr;
+    auto descriptor_factory = oth._descriptorFactory.load();
+    if (descriptor_factory) {
+      auto descriptor = descriptor_factory();
+      auto c          = descriptor._copier;
+      if (c)
+        c(*this, oth);
+    }
   }
   //////////////////////////////////////////////////////////////
   static_variant& operator=(const static_variant& oth) {
-    auto c = oth._copier.load();
-    if (c)
-      c(*this, oth);
-    _curlength = oth._curlength;
+    auto descriptor_factory = oth._descriptorFactory.load();
+    if (descriptor_factory) {
+      auto descriptor = descriptor_factory();
+      auto c          = descriptor._copier;
+      if (c)
+        c(*this, oth);
+    }
     return *this;
+  }
+  //////////////////////////////////////////////////////////////
+  bool operator==(const static_variant& oth) const {
+    auto descriptor = (_descriptorFactory.load())();
+    auto e          = descriptor._equals;
+    return e(*this, oth);
   }
   //////////////////////////////////////////////////////////////
   // typed constructor
@@ -181,45 +252,33 @@ public:
     memset(_buffer, 0, ksize);
     T* pval = (T*)&_buffer[0];
     new (pval) T(value);
-
-    assignDestroyer<T>();
-    assignCopier<T>();
-
     _mtinfo = &typeid(T);
-#if defined(SVAR_DEBUG)
-    _typestr = demangled_typename<T>();
-#endif
+    assignDescriptor<T>();
   }
   //////////////////////////////////////////////////////////////
   // destructor, delegate destuction of the contained object to the destroyer
   //////////////////////////////////////////////////////////////
   ~static_variant() {
-    Destroy();
-    _destroyer = nullptr;
-    _copier    = nullptr;
-    _mtinfo     = nullptr;
+    _destroy();
   }
   //////////////////////////////////////////////////////////////
   // call the destroyer on contained object
   //////////////////////////////////////////////////////////////
-  void Destroy() {
-    destroyer_t pdestr = _destroyer.exchange(nullptr);
-    if (pdestr)
-      pdestr(*this);
-    _curlength = 0;
+  void _destroy() {
+    auto descriptor_factory = _descriptorFactory.exchange(nullptr);
+    if (descriptor_factory) {
+      OrkAssert(_mtinfo != nullptr);
+      auto descriptor = descriptor_factory();
+      OrkAssert(descriptor._destroyer);
+      descriptor._destroyer(*this);
+    }
+    _mtinfo = nullptr;
   }
   //////////////////////////////////////////////////////////////
-  //	assign a destroyer
+  //	assign descriptor
   //////////////////////////////////////////////////////////////
-  template <typename T> void assignDestroyer() {
-    _destroyer.store(&static_variant_destroyer_t<tsize, T>::destroy);
-  }
-  //////////////////////////////////////////////////////////////
-  //	assign a copier
-  //////////////////////////////////////////////////////////////
-  template <typename T> void assignCopier() {
-    _copier.store(&static_variant_copier_t<tsize, T>::copy);
-    _curlength = sizeof(T);
+  template <typename T> void assignDescriptor() {
+    _descriptorFactory.store(&SvarDescriptorFactory<tsize, T>::create);
   }
   //////////////////////////////////////////////////////////////
   // return true if the contained object is a T
@@ -240,22 +299,19 @@ public:
   //////////////////////////////////////////////////////////////
   template <typename T> void set(const T& value) {
     static_assert(sizeof(T) <= ksize, "static_variant size violation");
-    Destroy();
+    _destroy();
     T* pval = (T*)&_buffer[0];
     new (pval) T(value);
     _mtinfo = &typeid(T);
-#if defined(SVAR_DEBUG)
-    _typestr = demangled_typename<T>();
-#endif
-    assignDestroyer<T>();
-    assignCopier<T>();
+    assignDescriptor<T>();
   }
   //////////////////////////////////////////////////////////////
   // return the type T object by reference, assert if the types dont match
   //////////////////////////////////////////////////////////////
   template <typename T> T& get() {
     static_assert(sizeof(T) <= ksize, "static_variant size violation");
-    assert(typeid(T) == *_mtinfo);
+    OrkAssert(_mtinfo != nullptr);
+    OrkAssert(typeid(T) == *_mtinfo);
     T* pval = (T*)&_buffer[0];
     return *pval;
   }
@@ -264,7 +320,15 @@ public:
   //////////////////////////////////////////////////////////////
   template <typename T> const T& get() const {
     static_assert(sizeof(T) <= ksize, "static_variant size violation");
-    assert(typeid(T) == *_mtinfo);
+    auto& tinfo = typeid(T);
+    if (tinfo != *_mtinfo) {
+      auto typestr = demangled_typename<T>();
+      printf("T<%s>\n", typestr.c_str());
+      printf("tinfo: %p:%s\n", (void*)&tinfo, tinfo.name());
+      printf("_mtinfo: %p:%s\n", (void*)_mtinfo, _mtinfo->name());
+      fflush(stdout);
+    }
+    assert(tinfo == *_mtinfo);
     const T* pval = (const T*)&_buffer[0];
     return *pval;
   }
@@ -283,15 +347,11 @@ public:
   //////////////////////////////////////////////////////////////
   template <typename T, typename... A> T& make(A&&... args) {
     static_assert(sizeof(T) <= ksize, "static_variant size violation");
-    Destroy();
+    _destroy();
     auto pval = (T*)&_buffer[0];
     new (pval) T(std::forward<A>(args)...);
     _mtinfo = &typeid(T);
-#if defined(SVAR_DEBUG)
-    _typestr = demangled_typename<T>();
-#endif
-    assignDestroyer<T>();
-    assignCopier<T>();
+    assignDescriptor<T>();
     assert(typeid(T) == *_mtinfo);
     return *pval;
   }
@@ -301,16 +361,12 @@ public:
   template <typename T, typename... A> std::shared_ptr<T>& makeShared(A&&... args) {
     using sharedptr_t = std::shared_ptr<T>;
     static_assert(sizeof(sharedptr_t) <= ksize, "static_variant size violation");
-    Destroy();
+    _destroy();
     auto pval = (sharedptr_t*)&_buffer[0];
     new (pval) sharedptr_t;
     (*pval) = std::make_shared<T>(std::forward<A>(args)...);
-    _mtinfo  = &typeid(sharedptr_t);
-#if defined(SVAR_DEBUG)
-    _typestr = demangled_typename<T>();
-#endif
-    assignDestroyer<sharedptr_t>();
-    assignCopier<sharedptr_t>();
+    _mtinfo = &typeid(sharedptr_t);
+    assignDescriptor<sharedptr_t>();
     assert(typeid(sharedptr_t) == *_mtinfo);
     return (*pval);
   }
@@ -354,7 +410,13 @@ public:
   }
 #if defined(SVAR_DEBUG)
   std::string typestr() const {
-    return _typestr;
+    auto descriptor_factory = _descriptorFactory.load();
+    if (descriptor_factory) {
+      OrkAssert(_mtinfo != nullptr);
+      auto descriptor = descriptor_factory();
+      return descriptor._typestr;
+    }
+    return std::string();
   }
 #endif
   //////////////////////////////////////////////////////////////
@@ -372,29 +434,9 @@ public:
   //////////////////////////////////////////////////////////////
 private:
   char _buffer[ksize];
-  size_t _curlength;
-  ork::atomic<destroyer_t> _destroyer;
-  ork::atomic<copier_t> _copier;
-  const std::type_info* _mtinfo;
-#if defined(SVAR_DEBUG)
-  std::string _typestr;
-#endif
+  const std::type_info* _mtinfo; // TODO: should this go into _descriptorFactory ?
+  ork::atomic<descriptor_factory_t> _descriptorFactory;
   //////////////////////////////////////////////////////////////
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <int tsize, typename T> inline void static_variant_destroyer_t<tsize, T>::destroy(static_variant<tsize>& var) {
-  var.template get<T>().~T();
-  // just call T's destructor, as opposed to delete
-  //	because the variant owns the memory.
-  //  aka 'placement delete'
-};
-
-template <int tsize, typename T>
-inline void static_variant_copier_t<tsize, T>::copy(static_variant<tsize>& lhs, const static_variant<tsize>& rhs) {
-  const T& src = rhs.template get<T>();
-  lhs.template set<T>(src);
 };
 
 ///////////////////////////////////////////////////////////////////////////////

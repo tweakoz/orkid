@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -119,12 +119,12 @@ void SpiralEmitter<ptype>::Emit( Pool<ptype>& pool, float dt )
 
 			ptc->mfAge = 0.0f;
 			ptc->mfLifeSpan = mSed.GetLifespan();
-			ptc->mPosition.setX( fsx*scaler  );
-			ptc->mPosition.setY( 0.0f );
-			ptc->mPosition.setZ( fsz*scaler );
-			ptc->mVelocity.setX( fsx*femitout );
-			ptc->mVelocity.setY( mSed.GetEmissionUp() );
-			ptc->mVelocity.setZ( fsz*femitout );
+			ptc->mPosition.x = ( fsx*scaler  );
+			ptc->mPosition.y = ( 0.0f );
+			ptc->mPosition.z = ( fsz*scaler );
+			ptc->mVelocity.x = ( fsx*femitout );
+			ptc->mVelocity.y = ( mSed.GetEmissionUp() );
+			ptc->mVelocity.z = ( fsz*femitout );
 
 			mfPhase += mSed.GetSpinRate();
 

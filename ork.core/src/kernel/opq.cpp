@@ -1,6 +1,10 @@
-///////////////////////////////////////////////////////////////////////
-//
-///////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 
 #include <ork/kernel/debug.h>
 #include <ork/kernel/future.hpp>
@@ -79,10 +83,13 @@ void CompletionGroup::enqueue(const ork::void_lambda_t& the_op) {
       auto data          = std::make_shared<ProgressData>();
       data->_queue_name  = _q->_name;
       data->_task_name   = _name;
-      data->_num_pending = this->_numpending.fetch_add(-1);
       _progressq.atomicOp([data](progressdata_queue_t& pq) { pq.push(data); });
       /////////////////////////////////////
-    };
+      data->_num_pending = this->_numpending.fetch_add(-1);
+    }
+    else{
+      this->_numpending.fetch_add(-1);
+    }
   };
   _q->enqueue(wrapped);
 }
@@ -142,8 +149,8 @@ Op::Op(const BarrierSyncReq& op, const std::string& name)
 }
 ////////////////////////////////////////////////////////////////////////////////
 Op::Op(const Op& oth)
-    : mName(oth.mName)
-    , mWrapped(oth.mWrapped) {
+    : mWrapped(oth.mWrapped)
+    , mName(oth.mName) {
 }
 ////////////////////////////////////////////////////////////////////////////////
 Op::Op() {
@@ -398,6 +405,23 @@ void OperationsQueue::drain() {
     g->drain();
 }
 /////////////////////////////////////////////////////////////////////////////
+void OperationsQueue::setHook(std::string hookname,hooklambda_t l){
+  _hooks.atomicOp([hookname,l](hookmap_t& unlocked){
+    unlocked[hookname] = l;
+  });
+}
+/////////////////////////////////////////////////////////////////////////////
+void OperationsQueue::invokeHook(std::string hookname,svar64_t data){
+  hooklambda_t l = [](svar64_t){};
+  _hooks.atomicOp([hookname,&l](hookmap_t& unlocked){
+    auto it = unlocked.find(hookname);
+    if(it!=unlocked.end()){
+      l = it->second;
+    }
+  });
+  l(data);
+}
+/////////////////////////////////////////////////////////////////////////////
 concurrency_group_ptr_t OperationsQueue::createConcurrencyGroup(const char* pname) {
   auto pgrp = std::make_shared<ConcurrencyGroup>(*this, pname);
   _concurrencygroups.insert(pgrp);
@@ -407,8 +431,8 @@ concurrency_group_ptr_t OperationsQueue::createConcurrencyGroup(const char* pnam
 }
 ///////////////////////////////////////////////////////////////////////////
 OperationsQueue::OperationsQueue(int inumthreads, const char* name)
-    : _name(name)
-    , mSemaphore(name) {
+    : mSemaphore(name)
+    , _name(name) {
   _lock                 = false;
   _goingdown            = false;
   mGroupCounter         = 0;
@@ -468,11 +492,11 @@ OperationsQueue::~OperationsQueue() {
 }
 ///////////////////////////////////////////////////////////////////////////
 ConcurrencyGroup::ConcurrencyGroup(OperationsQueue& q, const char* pname)
-    : _queue(q)
+    : _name(pname)
+    , _queue(q)
     , _limit_maxops_inflight(0)
     , _limit_maxops_enqueued(0)
-    , _limit_maxrunlength(256)
-    , _name(pname) {
+    , _limit_maxrunlength(256) {
   _opsinflight   = 0;
   _serialopindex = 0;
 }

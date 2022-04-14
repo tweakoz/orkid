@@ -1,8 +1,10 @@
-//////////////////////////////////////////////////////////////////////////////
-// Orkid2
-// Copyright 1996-2020, Michael T. Mayers
-// See License at OrkidRoot/license.html or http://www.tweakoz.com/orkid2/license.html
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 
 #include <ork/pch.h>
 
@@ -79,8 +81,6 @@ using namespace reflect;
   }
 
 ///////////
-
-//	MACRO(CLASS<float>); \
 
 #define FOREACH_PRIMITIVE_TYPE(MACRO, CLASS)                                                                                       \
   MACRO(CLASS<char>);                                                                                                              \
@@ -159,8 +159,8 @@ template class DirectTypedMap<orklut<PoolString, PoolString>>;
 template class DirectTypedMap<orkmap<std::string, std::string>>;
 template class DirectTypedMap<orklut<std::string, std::string>>;
 template class AccessorObjectMap<int>;
-template class AccessorTypedMap<int, char>;
-template class AccessorTypedMap<int, rtti::castable_rawptr_t>;
+//template class AccessorTypedMap<int, char>;
+//template class AccessorTypedMap<int, rtti::castable_rawptr_t>;
 template class DirectTyped<fmtx4>;
 template class DirectTyped<Quaternion<float>>;
 template class ITyped<TransformNode>;
@@ -182,3 +182,5 @@ return bidi.Succeeded();*/
 }
 
 }} // namespace ork::reflect
+
+template class ork::reflect::DirectTypedMap<ork::orklut<ork::PoolString, ork::Object*>>;

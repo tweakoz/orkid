@@ -1,5 +1,14 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include "pyext.h"
 #include <ork/lev2/input/inputdevice.h>
+#include <ork/lev2/gfx/terrain/terrain_drawable.h>
+
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -22,7 +31,7 @@ void pyinit_gfx(py::module& module_lev2) {
   auto gfxenv_type = //
       py::class_<GfxEnv>(module_lev2, "GfxEnv")
           .def_readonly_static("ref", &GfxEnv::GetRef())
-          .def("loadingContext", [](const GfxEnv& e) -> ctx_t { return ctx_t(GfxEnv::GetRef().loadingContext()); })
+          .def("loadingContext", [](const GfxEnv& e) -> ctx_t { return ctx_t(ork::lev2::contextForCurrentThread()); })
           .def("__repr__", [](const GfxEnv& e) -> std::string {
             fxstring<64> fxs;
             fxs.format("GfxEnv(%p)", &e);
@@ -90,14 +99,14 @@ void pyinit_gfx(py::module& module_lev2) {
       .def("capturePixel", [](const fbi_t& fbi, const fvec4& at, PixelFetchContext& pfc) { return fbi.get()->GetPixel(at, pfc); })
       .def(
           "captureBuffer",
-          [](const fbi_t& fbi, rtg_t& rtg, int rtbindex, CaptureBuffer& capbuf) -> bool {
-            return fbi.get()->capture(rtg.ref(), rtbindex, &capbuf);
+          [](const fbi_t& fbi, rtb_t& rtb, CaptureBuffer& capbuf) -> bool {
+            return fbi.get()->capture(rtb.get(), &capbuf);
           })
       .def(
           "captureAsFormat",
-          [](const fbi_t& fbi, rtg_t& rtg, int rtbindex, CaptureBuffer& capbuf, std::string format) -> bool {
+          [](const fbi_t& fbi, rtb_t& rtb, CaptureBuffer& capbuf, std::string format) -> bool {
             auto crc_fmt = CrcString(format.c_str());
-            return fbi.get()->captureAsFormat(rtg.ref(), rtbindex, &capbuf, EBufferFormat(crc_fmt._hashed));
+            return fbi.get()->captureAsFormat(rtb.get(), &capbuf, EBufferFormat(crc_fmt._hashed));
           })
       .def("clear", [](const fbi_t& fbi, const fcolor4& color, float depth) { return fbi.get()->Clear(color, depth); })
       .def("rtGroupPush", [](const fbi_t& fbi, rtg_t& rtg) { return fbi.get()->PushRtGroup(rtg.get()); })
@@ -157,7 +166,7 @@ void pyinit_gfx(py::module& module_lev2) {
     return fxs.c_str();
   });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<rtb_t>(module_lev2, "RtBuffer")
+  py::class_<RtBuffer,rtb_t>(module_lev2, "RtBuffer")
       .def(
           "__repr__",
           [](const rtb_t& rtb) -> std::string {
@@ -167,7 +176,7 @@ void pyinit_gfx(py::module& module_lev2) {
           })
       .def_property_readonly("texture", [](rtb_t& rtb) -> tex_t { return tex_t(rtb->texture()); });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<rtg_t>(module_lev2, "RtGroup")
+  py::class_<RtGroup,rtg_t>(module_lev2, "RtGroup")
       .def("resize", [](rtg_t& rtg, int w, int h) { rtg.get()->Resize(w, h); })
       .def(
           "__repr__",
@@ -176,8 +185,8 @@ void pyinit_gfx(py::module& module_lev2) {
             fxs.format("RtGroup(%p)", rtg.get());
             return fxs.c_str();
           })
-      .def("buffer", [](const rtg_t& rtg, int irtb) -> rtb_t { return rtg->GetMrt(irtb); })
-      .def("texture", [](const rtg_t& rtg, int irtb) -> tex_t { return rtg->GetMrt(irtb)->texture(); });
+      .def("buffer", [](const rtg_t& rtg, int irtb) -> rtb_t { return rtg->GetMrt(irtb); });
+      //.def("texture", [](const rtg_t& rtg, int irtb) -> tex_t { return rtg->GetMrt(irtb)->texture(); });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<CaptureBuffer>(module_lev2, "CaptureBuffer", pybind11::buffer_protocol())
       .def(py::init<>())
@@ -202,7 +211,7 @@ void pyinit_gfx(py::module& module_lev2) {
       });
   /////////////////////////////////////////////////////////////////////////////////
   auto texture_type = //
-      py::class_<tex_t>(module_lev2, "Texture")
+      py::class_<lev2::Texture,tex_t>(module_lev2, "Texture")
           .def(
               "__repr__",
               [](const tex_t& tex) -> std::string {
@@ -217,11 +226,11 @@ void pyinit_gfx(py::module& module_lev2) {
                 return fxs.c_str();
               })
           .def_static("load", [](std::string path) -> tex_t { return Texture::LoadUnManaged(path); });
-  using rawtexptr_t = Texture*;
-  type_codec->registerRawPtrCodec<tex_t, rawtexptr_t>(texture_type);
+  //using rawtexptr_t = Texture*;
+  type_codec->registerStdCodec<tex_t>(texture_type);
   /////////////////////////////////////////////////////////////////////////////////
   struct InstanceMatricesProxy {
-    instanceddrawdata_ptr_t _instancedata;
+    instanceddrawinstancedata_ptr_t _instancedata;
   };
   using matrixinstdata_ptr_t = std::shared_ptr<InstanceMatricesProxy>;
   auto matrixinstdata_type   = //
@@ -244,7 +253,7 @@ void pyinit_gfx(py::module& module_lev2) {
   type_codec->registerStdCodec<matrixinstdata_ptr_t>(matrixinstdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   struct InstanceColorsProxy {
-    instanceddrawdata_ptr_t _instancedata;
+    instanceddrawinstancedata_ptr_t _instancedata;
   };
   using colorsinstdata_ptr_t = std::shared_ptr<InstanceColorsProxy>;
   auto colorsinstdata_type   = //
@@ -267,22 +276,71 @@ void pyinit_gfx(py::module& module_lev2) {
   type_codec->registerStdCodec<colorsinstdata_ptr_t>(colorsinstdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto instancedata_type = //
-      py::class_<InstancedDrawableData, instanceddrawdata_ptr_t>(
+      py::class_<InstancedDrawableInstanceData, instanceddrawinstancedata_ptr_t>(
           module_lev2, //
-          "InstancedDrawableData")
+          "InstancedDrawableInstanceData")
           .def_property_readonly(
               "matrices",
-              [](instanceddrawdata_ptr_t idata) -> matrixinstdata_ptr_t {
+              [](instanceddrawinstancedata_ptr_t idata) -> matrixinstdata_ptr_t {
                 auto proxy           = std::make_shared<InstanceMatricesProxy>();
                 proxy->_instancedata = idata;
                 return proxy;
               })
-          .def_property_readonly("colors", [](instanceddrawdata_ptr_t idata) -> colorsinstdata_ptr_t {
+          .def_property_readonly("colors", [](instanceddrawinstancedata_ptr_t idata) -> colorsinstdata_ptr_t {
             auto proxy           = std::make_shared<InstanceColorsProxy>();
             proxy->_instancedata = idata;
             return proxy;
           });
-  type_codec->registerStdCodec<instanceddrawdata_ptr_t>(instancedata_type);
+  type_codec->registerStdCodec<instanceddrawinstancedata_ptr_t>(instancedata_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto terdrawdata_type = //
+      py::class_<TerrainDrawableData, terraindrawabledata_ptr_t>(module_lev2, "TerrainDrawableData")
+       .def(py::init<>())
+       .def_property("rock1",
+                     [](terraindrawabledata_ptr_t drw) -> fvec3 {
+                       return drw->_rock1;
+                     },
+                        [](terraindrawabledata_ptr_t drw, fvec3 val) {
+                          drw->_rock1 = val;
+                        }
+      )
+          .def(
+              "writeHmapPath",
+              [](terraindrawabledata_ptr_t drw, std::string path) {
+                drw->_writeHmapPath(path);
+              })
+      ;
+  type_codec->registerStdCodec<terraindrawabledata_ptr_t>(terdrawdata_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  /*auto terdrawinst_type = //
+      py::class_<TerrainDrawableInst, terraindrawableinst_ptr_t>(module_lev2, "TerrainDrawableInst")
+          .def(py::init<>([](terraindrawabledata_ptr_t data)->terraindrawableinst_ptr_t{
+            return std::make_shared<TerrainDrawableInst>(data);
+          }))
+          // TODO - find shorter registration method for simple properties
+          .def_property("worldHeight",
+                        [](terraindrawableinst_ptr_t drwi) -> float {
+                          return drwi->_worldHeight;
+                        },
+                        [](terraindrawableinst_ptr_t drwi, float val) {
+                          drwi->_worldHeight = val;
+                        }
+          )
+          .def_property("worldSizeXZ",
+                        [](terraindrawableinst_ptr_t drwi) -> float {
+                          return drwi->_worldSizeXZ;
+                        },
+                        [](terraindrawableinst_ptr_t drwi, float val) {
+                          drwi->_worldSizeXZ = val;
+                        }
+          )
+          .def(
+              "createCallbackDrawable",
+              [](terraindrawableinst_ptr_t drwi) {
+                return drwi->createCallbackDrawable();
+              })
+  ;
+  type_codec->registerStdCodec<terraindrawableinst_ptr_t>(terdrawinst_type);*/
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<RenderContextFrameData>(module_lev2, "RenderContextFrameData").def(py::init([](ctx_t& ctx) { //
     auto rcfd = std::unique_ptr<RenderContextFrameData>(new RenderContextFrameData(ctx.get()));
@@ -293,14 +351,14 @@ void pyinit_gfx(py::module& module_lev2) {
       .def(py::init<>())
       .def(py::init([](rtg_t& rtg, int mask) {
         auto pfc       = std::unique_ptr<PixelFetchContext>(new PixelFetchContext);
-        pfc->mRtGroup  = rtg.get();
+        pfc->_rtgroup  = rtg;
         pfc->miMrtMask = mask;
         return pfc;
       }))
       .def_property(
           "rtgroup",
-          [](PixelFetchContext& pfc) -> rtg_t { return pfc.mRtGroup; },
-          [](PixelFetchContext& pfc, rtg_t& rtg) { pfc.mRtGroup = rtg.get(); })
+          [](PixelFetchContext& pfc) -> rtg_t { return pfc._rtgroup; },
+          [](PixelFetchContext& pfc, rtg_t& rtg) { pfc._rtgroup = rtg; })
       .def_property(
           "rtgmask",
           [](PixelFetchContext& pfc) -> int { return pfc.miMrtMask; },
@@ -378,6 +436,10 @@ void pyinit_gfx(py::module& module_lev2) {
   */
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<Drawable, drawable_ptr_t>(module_lev2, "Drawable");
+  auto cbdrawable_type = //
+      py::class_<CallbackDrawable, Drawable, callback_drawable_ptr_t>(module_lev2, "CallbackDrawable")
+  ;
+  type_codec->registerStdCodec<callback_drawable_ptr_t>(cbdrawable_type);
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<LightData, lightdata_ptr_t>(module_lev2, "LightData")
       .def_property(
@@ -437,8 +499,8 @@ void pyinit_gfx(py::module& module_lev2) {
           [](model_ptr_t model,  //
              int numinstances,
              std::string named,
-             scenegraph::layer_ptr_t layer) -> scenegraph::drawablenode_ptr_t { //
-            auto drw = std::make_shared<InstancedModelDrawable>(nullptr);
+             scenegraph::layer_ptr_t layer) -> scenegraph::drawable_node_ptr_t { //
+            auto drw = std::make_shared<InstancedModelDrawable>();
             drw->bindModel(model);
             auto node = layer->createDrawableNode(named, drw);
             drw->resize(numinstances);

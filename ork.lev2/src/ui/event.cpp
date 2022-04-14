@@ -41,19 +41,7 @@ void EventCooked::Reset() {
 }
 ///////////////////////////////////////////////////////////
 IWidgetEventFilter::IWidgetEventFilter(Widget& w)
-    : mWidget(w)
-    , mShiftDown(false)
-    , mCtrlDown(false)
-    , mMetaDown(false)
-    , mAltDown(false)
-    , mLeftDown(false)
-    , mMiddleDown(false)
-    , mRightDown(false)
-    , mCapsDown(false)
-    , mLastKeyCode(0)
-    , mBut0Down(false)
-    , mBut1Down(false)
-    , mBut2Down(false) {
+    : mWidget(w) {
   mKeyTimer.Start();
   mDoubleTimer.Start();
   mMoveTimer.Start();

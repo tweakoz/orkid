@@ -1,8 +1,9 @@
-///////////////////////////////////////////////////////////////////////////////
-// Orkid2
-// Copyright 1996-2020, Michael T. Mayers
-// See License at OrkidRoot/license.html or http://www.tweakoz.com/orkid2/license.html
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -65,7 +66,6 @@ public:
     typedef char& reference;
     typedef std::ptrdiff_t difference_type;
 
-    FixedString* mpString;
     iterator(size_t idx = npos, int idir = 0, FixedString* pfm = 0);
     iterator(const iterator& oth);
     void operator=(const iterator& oth);
@@ -84,6 +84,7 @@ public:
     bool operator<(const iterator& oth) const;
     difference_type operator-(const iterator& oth) const;
 
+    FixedString* mpString;
     iterator_base mIteratorBase;
   };
   struct const_iterator {
@@ -91,7 +92,6 @@ public:
     typedef const char& const_reference;
     typedef std::ptrdiff_t difference_type;
 
-    const FixedString* mpString;
     const_iterator(size_t idx = npos, int idir = 0, const FixedString* pfm = 0);
     const_iterator(const iterator& oth);
     const_iterator(const const_iterator& oth);
@@ -111,6 +111,7 @@ public:
     bool operator<(const const_iterator& oth) const;
     difference_type operator-(const const_iterator& oth) const;
 
+    const FixedString* mpString;
     iterator_base mIteratorBase;
   };
   friend struct iterator;

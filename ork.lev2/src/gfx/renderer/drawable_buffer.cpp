@@ -1,9 +1,11 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
+
+#include <ork/kernel/semaphore.h>
 
 #include <ork/kernel/opq.h>
 #include <ork/kernel/string/string.h>
@@ -28,28 +30,12 @@
 
 namespace ork::lev2 {
 
-ork::MpMcBoundedQueue<RenderSyncToken> DrawableBuffer::mOfflineRenderSynchro;
-ork::MpMcBoundedQueue<RenderSyncToken> DrawableBuffer::mOfflineUpdateSynchro;
-
 ork::atomic<bool> DrawableBuffer::gbInsideClearAndSync;
+ork::atomic<int> DrawableBuffer::_gate = 1;
 
 ////////////////////////////////////////////////////////////////
 
 LayerData::LayerData() {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-RenderSyncToken DrawableBuffer::acquireRenderToken() {
-  lev2::RenderSyncToken syntok;
-  bool have_token = false;
-  Timer totim;
-  totim.Start();
-  while (false == have_token && (totim.SecsSinceStart() < 2.0f)) {
-    have_token = lev2::DrawableBuffer::mOfflineRenderSynchro.try_pop(syntok);
-    usleep(100);
-  }
-  return syntok;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -78,11 +64,15 @@ void DrawableBuffer::enqueueLayerToRenderQueue(const std::string& LayerName, lev
     return;
   }
 
+  int numdrawables = 0;
+
   bool DoAll = LayerName == "All";
   target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue doall<%d>", int(DoAll)));
   target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue numlayers<%zu>", mLayerLut.size()));
 
   for (const auto& layer_item : mLayerLut) {
+
+
     const std::string& TestLayerName     = layer_item.first;
     const lev2::DrawableBufLayer* player = layer_item.second;
 
@@ -95,17 +85,21 @@ void DrawableBuffer::enqueueLayerToRenderQueue(const std::string& LayerName, lev
         int(Match)));
 
     if (DoAll || (Match && topCPD.HasLayer(TestLayerName))) {
-      target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue layer itemcount<%d>", player->miItemIndex + 1));
-      for (int id = 0; id <= player->miItemIndex; id++) {
-        const lev2::DrawableBufItem& item = player->mDrawBufItems[id];
+      //printf( "layer<%s> count<%d>\n", TestLayerName.c_str(), player->_itemIndex );
+      target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue layer itemcount<%d>", player->_itemIndex + 1));
+      for (int id = 0; id <= player->_itemIndex; id++) {
+        const lev2::DrawableBufItem& item = player->_items[id];
         const lev2::Drawable* pdrw        = item.GetDrawable();
         target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue layer item <%d> drw<%p>", id, pdrw));
         if (pdrw) {
+          numdrawables++;
           pdrw->enqueueToRenderQueue(item, renderer);
         }
       }
     }
   }
+
+  //printf( "DB<%p> enqueued %d drawables\n", this, numdrawables);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -124,16 +118,17 @@ void DrawableBuffer::Reset() {
 ///////////////////////////////////////////////////////////////////////////////
 void DrawableBuffer::terminate() {
   Reset();
-  for (int il = 0; il < kmaxlayers; il++) {
-    mRawLayers[il].terminate();
-  }
+  //for (int il = 0; il < kmaxlayers; il++) {
+    //mRawLayers[il].terminate();
+  //}
 }
 ///////////////////////////////////////////////////////////////////////////////
 
 void DrawableBufLayer::Reset(const DrawableBuffer& dB) {
   // ork::opq::assertOnQueue2( opq::updateSerialQueue() );
   miBufferIndex = dB.miBufferIndex;
-  miItemIndex   = -1;
+  _items.clear();
+  _itemIndex   = -1;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -155,43 +150,34 @@ DrawableBufLayer* DrawableBuffer::MergeLayer(const std::string& layername) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-DrawableBufItem& DrawableBufLayer::Queue(const DrawQueueXfData& xfdata, const Drawable* d) {
+DrawableBufItem& DrawableBufLayer::enqueueDrawable(const DrawQueueXfData& xfdata, const Drawable* d) {
   // ork::opq::assertOnQueue2(opq::updateSerialQueue());
-  // mDrawBufItems.push_back(DrawableBufItem()); // replace std::vector with an array so we can amortize construction costs
-  miItemIndex++;
-  OrkAssert(miItemIndex < kmaxitems);
-  DrawableBufItem& item = mDrawBufItems[miItemIndex];
+  // _items.push_back(DrawableBufItem()); // replace std::vector with an array so we can amortize construction costs
+  _itemIndex++;
+  DrawableBufItem& item = _items.emplace_back();
   item.SetDrawable(d);
-  item.mUserData0    = 0;
-  item.mUserData1    = 0;
   item.mXfData       = xfdata;
-  item.miBufferIndex = miBufferIndex;
+  item._bufferIndex = miBufferIndex;
   return item;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 DrawableBuffer::DrawableBuffer(int ibidx)
-    : miBufferIndex(ibidx)
-    , miNumLayersUsed(0) {
+    : miNumLayersUsed(0) 
+    , miBufferIndex(ibidx) {
 }
 
 DrawableBufLayer::DrawableBufLayer()
-    : miItemIndex(-1)
+    : _itemIndex(-1)
     , miBufferIndex(-1) {
 }
 
-void DrawableBufLayer::terminate() {
-  for (int i = 0; i < kmaxitems; i++) {
-    auto& item = mDrawBufItems[i];
-    item.terminate();
-  }
-}
+//void DrawableBufLayer::terminate() {
+//}
 
 void DrawableBufItem::terminate() {
-  mUserData0.set<void*>(nullptr);
-  mUserData1.set<void*>(nullptr);
-  mpDrawable = nullptr;
+  _drawable = nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -240,25 +226,98 @@ const CameraData* DrawableBuffer::cameraData(const std::string& named) const {
 }
 
 /////////////////////////////////////////////////////////////////////
-static concurrent_triple_buffer<DrawableBuffer> gBuffers;
-/////////////////////////////////////////////////////////////////////
-const DrawableBuffer* DrawableBuffer::acquireForRead(int lid) {
-  return gBuffers.begin_pull();
+
+static concurrent_triple_buffer<DrawableBuffer>& GetGBUFFER(){
+  static concurrent_triple_buffer<DrawableBuffer> gBuffers;
+  return gBuffers;
 }
+
+/////////////////////////////////////////////////////////////////////
+//const DrawableBuffer* DrawableBuffer::acquireForRead(int lid) {
+  //return GetGBUFFER().begin_pull();
+//}
 /////////////////////
-void DrawableBuffer::releaseFromRead(const DrawableBuffer* db) {
-  gBuffers.end_pull(db);
+//void DrawableBuffer::releaseFromRead(const DrawableBuffer* db) {
+  //GetGBUFFER().end_pull(db);
+//}
+/////////////////////////////////////////////////////////////////////
+//DrawableBuffer* DrawableBuffer::acquireForWrite(int lid) {
+  // ork::opq::assertOnQueue2(opq::updateSerialQueue());
+  //DrawableBuffer* wbuf = GetGBUFFER().begin_push();
+  //return wbuf;
+//}
+//void DrawableBuffer::releaseFromWrite(DrawableBuffer* db) {
+  // ork::opq::assertOnQueue2(opq::updateSerialQueue());
+  //GetGBUFFER().end_push(db);
+//}
+/////////////////////////////////////////////////////////////////////
+DrawBufContext::DrawBufContext()
+  :_lockedBufferMutex("lbuf")
+  ,_rendersync_sema("lsema")
+  ,_rendersync_sema2("lsema2") {
+    _lockeddrawablebuffer = std::make_shared<DrawableBuffer>(99);
+    _rendersync_sema2.notify();
+}
+
+DrawBufContext::~DrawBufContext(){
+}
+
+DrawableBuffer* DrawBufContext::acquireForWriteLocked(){
+  int gate = DrawableBuffer::_gate.load();
+  /*if(gate){
+    if(_rendersync_counter>0){
+      _rendersync_sema2.wait();
+    }
+    _rendersync_counter++;
+    return _lockeddrawablebuffer.get();
+  }*/
+   return _lockeddrawablebuffer.get();;
+}
+void DrawBufContext::releaseFromWriteLocked(DrawableBuffer* db){
+  if(db){
+    _rendersync_sema.notify();
+  }
+}
+const DrawableBuffer* DrawBufContext::acquireForReadLocked(){
+
+  int gate = DrawableBuffer::_gate.load();
+  /*if(gate){
+  if(gate){
+    _rendersync_sema.wait();
+    return _lockeddrawablebuffer.get();
+  }
+  }*/
+    return _lockeddrawablebuffer.get();
+}
+void DrawBufContext::releaseFromReadLocked(const DrawableBuffer* db){
+  if(db){
+    _rendersync_sema2.notify();
+  }
 }
 /////////////////////////////////////////////////////////////////////
-DrawableBuffer* DrawableBuffer::acquireForWrite(int lid) {
-  // ork::opq::assertOnQueue2(opq::updateSerialQueue());
-  DrawableBuffer* wbuf = gBuffers.begin_push();
-  return wbuf;
+//static ork::mutex _glockedBufferMutex("glbuf");
+//static ork::semaphore _grendersync_sema("glbuf_sema");
+//static ork::semaphore _grendersync_sema2("glbuf_sema");
+//static int  _grendersync_counter = 0;
+//static auto  _glockeddrawablebuffer = std::make_shared<DrawableBuffer>(99);
+/////////////////////////////////////////////////////////////////////
+/*DrawableBuffer* DrawableBuffer::acquireForWriteLocked(){
+  if(_grendersync_counter>0){
+    _grendersync_sema2.wait();
+  }
+  _grendersync_counter++;
+  return _glockeddrawablebuffer.get();
 }
-void DrawableBuffer::releaseFromWrite(DrawableBuffer* db) {
-  // ork::opq::assertOnQueue2(opq::updateSerialQueue());
-  gBuffers.end_push(db);
+void DrawableBuffer::releaseFromWriteLocked(DrawableBuffer* db){
+  _grendersync_sema.notify();
 }
+const DrawableBuffer* DrawableBuffer::acquireForReadLocked(){
+  _grendersync_sema.wait();
+  return _glockeddrawablebuffer.get();
+}
+void DrawableBuffer::releaseFromReadLocked(const DrawableBuffer* db){
+  _grendersync_sema2.notify();
+}*/
 /////////////////////////////////////////////////////////////////////
 // flush all renderer side data
 //  sync until flushed
@@ -269,7 +328,8 @@ void DrawableBuffer::BeginClearAndSyncReaders() {
   bool b = gbInsideClearAndSync.exchange(true);
   OrkAssert(b == false);
   // printf( "DrawableBuffer::BeginClearAndSyncReaders()\n");
-  gBuffers.disable();
+  //GetGBUFFER().disable();
+  _gate.store(0);
 }
 /////////////////////////////////////////////////////////////////////
 void DrawableBuffer::EndClearAndSyncReaders() {
@@ -278,20 +338,23 @@ void DrawableBuffer::EndClearAndSyncReaders() {
   OrkAssert(b == true);
   ////////////////////
   // printf( "DrawableBuffer::EndClearAndSyncReaders()\n");
-  gBuffers.enable();
+  //GetGBUFFER().enable();
+  _gate.store(1);
 }
 /////////////////////////////////////////////////////////////////////
 void DrawableBuffer::BeginClearAndSyncWriters() {
   // ork::opq::assertOnQueue2( opq::updateSerialQueue() );
   // printf( "DrawableBuffer::BeginClearAndSyncWriters()\n");
-  gBuffers.disable();
+  //GetGBUFFER().disable();
+  _gate.store(0);
 }
 /////////////////////////////////////////////////////////////////////
 void DrawableBuffer::EndClearAndSyncWriters() {
   // ork::opq::assertOnQueue2( opq::updateSerialQueue() );
   ////////////////////
   // printf( "DrawableBuffer::EndClearAndSyncWriters()\n");
-  gBuffers.enable();
+  //GetGBUFFER().enable();
+  _gate.store(1);
 }
 /////////////////////////////////////////////////////////////////////
 void DrawableBuffer::ClearAndSyncReaders() {
@@ -310,9 +373,32 @@ void DrawableBuffer::ClearAndSyncWriters() {
 ////////////////////////////////////////////////////////////////
 void DrawableBuffer::terminateAll() {
   BeginClearAndSyncWriters();
-  gBuffers.rawAccess(0)->terminate();
-  gBuffers.rawAccess(1)->terminate();
-  gBuffers.rawAccess(2)->terminate();
+  //GetGBUFFER().rawAccess(0)->terminate();
+  //GetGBUFFER().rawAccess(1)->terminate();
+  //GetGBUFFER().rawAccess(2)->terminate();
+}
+////////////////////////////////////////////////////////////////
+void DrawableBuffer::setUserProperty(CrcString key, rendervar_t val) {
+  auto it = _userProperties.find(key);
+  if (it == _userProperties.end())
+    _userProperties.AddSorted(key, val);
+  else
+    it->second = val;
+}
+////////////////////////////////////////////////////////////////
+void DrawableBuffer::unSetUserProperty(CrcString key) {
+  auto it = _userProperties.find(key);
+  if (it == _userProperties.end())
+    _userProperties.erase(it);
+}
+////////////////////////////////////////////////////////////////
+rendervar_t DrawableBuffer::getUserProperty(CrcString key) const {
+  auto it = _userProperties.find(key);
+  if (it != _userProperties.end()) {
+    return it->second;
+  }
+  rendervar_t rval(nullptr);
+  return rval;
 }
 ////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

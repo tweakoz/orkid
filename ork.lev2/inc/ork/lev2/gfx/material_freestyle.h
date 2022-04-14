@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -62,10 +62,16 @@ struct FreestyleMaterial final : public GfxMaterial {
   void bindTechnique(const FxShaderTechnique* tek);
   void bindParamInt(const FxShaderParam* par, int value);
   void bindParamFloat(const FxShaderParam* par, float value);
+  void bindParamFloatArray(const FxShaderParam* par, const float* value, size_t len);
   void bindParamCTex(const FxShaderParam* par, const Texture* tex);
   void bindParamVec2(const FxShaderParam* par, const fvec2& v);
   void bindParamVec3(const FxShaderParam* par, const fvec3& v);
   void bindParamVec4(const FxShaderParam* par, const fvec4& v);
+  void bindParamQuat(const FxShaderParam* par, const fquat& v);
+  void bindParamPlane(const FxShaderParam* par, const fplane& v);
+  void bindParamVec2Array(const FxShaderParam* par, const fvec2* v, size_t len);
+  void bindParamVec3Array(const FxShaderParam* par, const fvec3* v, size_t len);
+  void bindParamVec4Array(const FxShaderParam* par, const fvec4* v, size_t len);
   void bindParamU64(const FxShaderParam* par, uint64_t v); // binds as uvec4 (4 32bit uint vector)
   void bindParamMatrix(const FxShaderParam* par, const fmtx4& m);
   void bindParamMatrix(const FxShaderParam* par, const fmtx3& m);

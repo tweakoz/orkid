@@ -1,10 +1,13 @@
-///////////////////////////////////////////////////////////////////////////////
-// Orkid
-// Copyright 1996-2020, Michael T. Mayers
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 
 #include <ork/pch.h>
-
+#if 0
 #include <ork/kernel/opq.h>
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -38,12 +41,12 @@ ObjectModelNode::ObjectModelNode(
     const char* name,
     const reflect::ObjectProperty* prop,
     ork::object_ptr_t obj)
-    : _objectmodel(mdl)
-    , mRoot(mdl->_observer)
-    , _propname(name)
-    , mOrkProp(prop)
+    : mOrkProp(prop)
     , mOrkObj(obj)
     , _parent(0)
+    , mRoot(mdl->_observer)
+    , _propname(name)
+    , _objectmodel(mdl)
     , mbInvalid(true) {
 
   // Init();
@@ -120,3 +123,4 @@ int ObjectModelNode::GetNumItems() const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::reflect::editor
+#endif

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -17,13 +17,15 @@
 
 namespace ork { namespace lev2 {
 
-class InputDeviceIX : public InputDevice {
-  friend class InputManager;
+struct InputDeviceIX : public InputDevice {
+  friend struct InputManager;
 
 public:
   InputDeviceIX(void);
   static void ClassInit(CClass* pClass); // lol
-  static std::string GetClassName(void) { return std::string("InputDeviceIX"); }
+  static std::string GetClassName(void) {
+    return std::string("InputDeviceIX");
+  }
   ~InputDeviceIX();
 
   void poll(void) final;

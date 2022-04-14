@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -35,10 +35,10 @@ void SplineV2::SetComponent(int idx, float fv) {
   OrkAssert(idx < Nu_components);
   switch (idx) {
     case 0:
-      mData.setX(fv);
+      mData.x = (fv);
       break;
     case 1:
-      mData.setY(fv);
+      mData.y = (fv);
       break;
   }
 }
@@ -69,13 +69,13 @@ void SplineV3::SetComponent(int idx, float fv) {
   OrkAssert(idx < Nu_components);
   switch (idx) {
     case 0:
-      mData.setX(fv);
+      mData.x = (fv);
       break;
     case 1:
-      mData.setY(fv);
+      mData.y = (fv);
       break;
     case 2:
-      mData.setZ(fv);
+      mData.z = (fv);
       break;
   }
 }
@@ -109,16 +109,16 @@ void SplineV4::SetComponent(int idx, float fv) {
   OrkAssert(idx < Nu_components);
   switch (idx) {
     case 0:
-      mData.setX(fv);
+      mData.x = (fv);
       break;
     case 1:
-      mData.setY(fv);
+      mData.y = (fv);
       break;
     case 2:
-      mData.setZ(fv);
+      mData.z = (fv);
       break;
     case 3:
-      mData.setW(fv);
+      mData.w = (fv);
       break;
   }
 }

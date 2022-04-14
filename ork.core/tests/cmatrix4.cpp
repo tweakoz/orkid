@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <utpp/UnitTest++.h>
 #include <cmath>
 #include <limits>
@@ -11,9 +18,9 @@ static const float MyEPSILON = 5.0e-07f; // std::numeric_limits<float>::epsilon(
 TEST(Matrix44CompDecomp) {
   fmtx4 mr,ms,mt,mm, mm2;
 
-  mr.SetRotateX(90*DTOR);
-  ms.SetScale(0.5);
-  mt.SetTranslation(1,2,3);
+  mr.setRotateX(90*DTOR);
+  ms.setScale(0.5);
+  mt.setTranslation(1,2,3);
 
   mm = (ms*mr)*mt;
 
@@ -43,10 +50,10 @@ TEST(Matrix44CompDecomp) {
 TEST(Matrix44CompDecomp2) {
   fmtx4 mm, mm2;
 
-  mm.SetColumn(0,0.529338,0.030632,-0.847858,0.000000);
-  mm.SetColumn(1,-0.068524,0.997627,-0.006738,0.000000 );
-  mm.SetColumn(2,-0.845639,-0.061665,-0.530181,0.000000);
-  mm.SetColumn(3,-0.049359,0.002166,-0.019145,1.000000);
+  mm.setColumn(0,0.529338,0.030632,-0.847858,0.000000);
+  mm.setColumn(1,-0.068524,0.997627,-0.006738,0.000000 );
+  mm.setColumn(2,-0.845639,-0.061665,-0.530181,0.000000);
+  mm.setColumn(3,-0.049359,0.002166,-0.019145,1.000000);
 	
   fvec3 t,t2;
   fquat r,r2;
@@ -74,10 +81,10 @@ TEST(Matrix44CompDecomp2) {
 TEST(Matrix44CompDecomp3) {
   fmtx4 mm, mm2;
 
-  mm.SetColumn(0,0.661251,0.149310,-0.735156,0.000000);
-  mm.SetColumn(1,-0.132303,0.987842,0.081628,0.000000);
-  mm.SetColumn(2,-0.738406,-0.043287,-0.672966,0.000000);
-  mm.SetColumn(3,-0.063490,-0.004191,-0.013718,1.000000);
+  mm.setColumn(0,0.661251,0.149310,-0.735156,0.000000);
+  mm.setColumn(1,-0.132303,0.987842,0.081628,0.000000);
+  mm.setColumn(2,-0.738406,-0.043287,-0.672966,0.000000);
+  mm.setColumn(3,-0.063490,-0.004191,-0.013718,1.000000);
 
   fvec3 t,t2;
   fquat r,r2;
@@ -102,8 +109,8 @@ TEST(Matrix44CompDecomp3) {
   CHECK_CLOSE(t.x, t2.x, MyEPSILON);
   CHECK_CLOSE(t.y, t2.y, MyEPSILON);
   CHECK_CLOSE(t.z, t2.z, MyEPSILON);
-  CHECK_CLOSE(mm.elements[0][0], mm2.elements[0][0], MyEPSILON);
-  CHECK_CLOSE(mm.elements[1][1], mm2.elements[1][1], MyEPSILON);
-  CHECK_CLOSE(mm.elements[2][2], mm2.elements[2][2], MyEPSILON);
+  CHECK_CLOSE(mm.elemXY(0,0), mm2.elemXY(0,0), MyEPSILON);
+  CHECK_CLOSE(mm.elemXY(1,1), mm2.elemXY(1,1), MyEPSILON);
+  CHECK_CLOSE(mm.elemXY(2,2), mm2.elemXY(2,2), MyEPSILON);
   CHECK_CLOSE(s, s2, MyEPSILON);
 }

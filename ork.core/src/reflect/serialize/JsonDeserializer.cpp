@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -51,7 +51,7 @@ struct JsonArrayNode {
 
 JsonDeserializer::JsonDeserializer(const std::string& jsondata)
     : _document() {
-  _allocator = &_document.GetAllocator();
+  //_allocator = &_document.GetAllocator();
   _document.Parse(jsondata.c_str());
   bool is_object = _document.IsObject();
   bool has_top   = _document.HasMember("root");
@@ -88,6 +88,7 @@ node_ptr_t JsonDeserializer::pushNode(std::string named, NodeType type) {
       n->_impl.makeShared<JsonLeafNode>(rapidjson::Value());
       break;
     case NodeType::UNKNOWN:
+    case NodeType::PROPERTIES:
       OrkAssert(false);
       break;
   }
@@ -111,7 +112,7 @@ void JsonDeserializer::deserializeTop(object_ptr_t& instance_out) {
   if (0)
     printf(
         "top instance<%p> class<%s> uuid<%s>\n", //
-        instance_out.get(),
+        (void*) instance_out.get(),
         instance_out_classname.c_str(),
         uuids.c_str());
 
@@ -130,7 +131,7 @@ node_ptr_t JsonDeserializer::deserializeObject(node_ptr_t parnode) {
     auto implnode       = parnode->_impl.getShared<JsonObjectNode>();
     const auto& jsonval = implnode->_jsonobjectnode;
     OrkAssert(jsonval.IsObject());
-    OrkAssert(jsonval.HasMember("object"));
+    OrkAssert(jsonval.HasMember("object") or jsonval.HasMember("object-ref"));
     auto child_node   = _parseSubNode(topnode, jsonval);
     auto instance_out = child_node->_deser_instance;
     popNode();
@@ -163,10 +164,10 @@ serdes::node_ptr_t JsonDeserializer::_parseSubNode(
             std::string uuids           = boost::uuids::to_string(instance_out->_uuid);
             child_node->_value.set<object_ptr_t>(instance_out);
             trackObject(instance_out->_uuid, instance_out);
-            if (0)
+            if (1)
               printf(
                   "instance<%p> class<%s> uuid<%s>\n", //
-                  instance_out.get(),
+                  (void*) instance_out.get(),
                   instance_out_classname.c_str(),
                   uuids.c_str());
             break;
@@ -239,7 +240,7 @@ serdes::node_ptr_t JsonDeserializer::deserializeElement(node_ptr_t elemnode) {
       auto mapimplnode                = mapnode->_impl.getShared<JsonObjectNode>();
       const rapidjson::Value& objnode = mapimplnode->_jsonobjectnode;
       OrkAssert(mapimplnode->_iterator != objnode.MemberEnd());
-      // printf("mapnode key<%s>\n", mapimplnode->_iterator->name.GetString());
+       printf("mapnode key<%s>\n", mapimplnode->_iterator->name.GetString());
       const auto& childvalue = mapimplnode->_iterator->value;
       childnode              = _parseSubNode(elemnode, childvalue);
       childnode->_key        = mapimplnode->_iterator->name.GetString();
@@ -252,7 +253,7 @@ serdes::node_ptr_t JsonDeserializer::deserializeElement(node_ptr_t elemnode) {
       auto aryimplnode               = arynode->_impl.getShared<JsonArrayNode>();
       const rapidjson::Value& jarray = aryimplnode->_jsonarray;
       OrkAssert(aryimplnode->_iterator != jarray.End());
-      // printf("array element<%zu>\n", arynode->_index);
+       printf("array element<%zu>\n", arynode->_index);
       const auto& childjsonvalue = *aryimplnode->_iterator;
       childnode                  = _parseSubNode(elemnode, childjsonvalue);
       aryimplnode->_iterator++;
@@ -314,7 +315,7 @@ object_ptr_t JsonDeserializer::_parseObjectNode(serdes::node_ptr_t dsernode) {
     auto prop     = description.property(propname);
 
     if (prop) {
-      // printf("found propname<%s> prop<%p>\n", propname, prop);
+       printf("found propname<%s> prop<%p>\n", propname, (void*) prop);
       dsernode->_property = prop;
       auto child_node     = std::make_shared<Node>();
 

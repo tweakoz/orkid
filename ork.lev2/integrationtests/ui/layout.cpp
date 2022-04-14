@@ -15,8 +15,9 @@ void TestViewport::DoDraw(ui::drawevent_constptr_t drwev) {
 void TestViewport::onUpdateThreadTick(ui::updatedata_ptr_t updata) {
 }
 
-int main(int argc, char** argv) {
-  auto app = createEZapp(argc, argv);
+int main(int argc, char** argv, char** envp) {
+  auto initdata = std::make_shared<ork::AppInitData>(argc,argv,envp);
+  auto app = createEZapp(initdata);
   //////////////////////////////////////
   auto vp                  = app->_topLayoutGroup;
   auto w0                  = vp->makeChild<EvTestBox>("w0", fvec4(1, 1, 0, 1));
@@ -94,5 +95,5 @@ int main(int argc, char** argv) {
   // exit(0);
   //////////////////////////////////////
   app->setRefreshPolicy({EREFRESH_FIXEDFPS, 60});
-  return app->runloop();
+  return app->mainThreadLoop();
 }

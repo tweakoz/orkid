@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -97,7 +97,7 @@ bool DAEXGAFilter_ConvertAsset(const tokenlist& toklist) {
           mtxRIO.Translate(-0.5f, -0.5f, 0.0f);
           mtxRO.Translate(0.5f, 0.5f, 0.0f);
 
-          mtxR.RotateZ(-p2d.rotateUV);
+          mtxR.rotateOnZ(-p2d.rotateUV);
           mtxT.Translate(p2d.offsetU, p2d.offsetV, 0.0f);
           // mtxS.Scale( p2d.repeatU, p2d.repeatV, 1.0f );
           // mtxS.Scale( p2d.repeatU, p2d.repeatV, 1.0f );
@@ -144,7 +144,7 @@ bool DAEXGAFilter_ConvertAsset(const tokenlist& toklist) {
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-bool XgmAnim::Save(const AssetPath& Filename, const XgmAnim* anm) {
+datablock_ptr_t XgmAnim::Save(const XgmAnim* anm) {
   chunkfile::Writer chunkwriter("xga");
   ///////////////////////////////////
   chunkfile::OutputStream* HeaderStream   = chunkwriter.AddStream("header");
@@ -261,13 +261,12 @@ bool XgmAnim::Save(const AssetPath& Filename, const XgmAnim* anm) {
 
   ////////////////////////////////////////////////////////////////////////////////////
 
-  file::Path outpath = Filename;
-  outpath.SetExtension("xga");
-  chunkwriter.WriteToFile(outpath);
+  datablock_ptr_t out_datablock = std::make_shared<DataBlock>();
+  chunkwriter.writeToDataBlock(out_datablock);
 
   ////////////////////////////////////////////////////////////////////////////////////
 
-  return true;
+  return out_datablock;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

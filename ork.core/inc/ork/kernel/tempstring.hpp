@@ -1,8 +1,9 @@
-///////////////////////////////////////////////////////////////////////////////
-// Orkid2
-// Copyright 1996-2020, Michael T. Mayers
-// See License at OrkidRoot/license.html or http://www.tweakoz.com/orkid2/license.html
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -498,8 +499,8 @@ FixedString<kmaxlen>::iterator_base::iterator_base( size_t idx, int idir )
 
 template <unsigned int kmaxlen>
 FixedString<kmaxlen>::iterator::iterator( size_t idx, int idir, FixedString* pfm)
-	: mIteratorBase(idx,idir)
-	, mpString(pfm)
+	: mpString(pfm)
+	, mIteratorBase(idx,idir)
 {
 }
 
@@ -507,8 +508,8 @@ FixedString<kmaxlen>::iterator::iterator( size_t idx, int idir, FixedString* pfm
 
 template <unsigned int kmaxlen>
 FixedString<kmaxlen>::iterator::iterator(const iterator& oth)
-	: mIteratorBase(oth.mIteratorBase.mindex,oth.mIteratorBase.mdirection)
-	, mpString(oth.mpString)
+	: mpString(oth.mpString)
+	, mIteratorBase(oth.mIteratorBase.mindex,oth.mIteratorBase.mdirection)
 {
 }
 
@@ -739,8 +740,8 @@ typename FixedString<kmaxlen>::iterator::difference_type FixedString<kmaxlen>::i
 
 template <unsigned int kmaxlen>
 FixedString<kmaxlen>::const_iterator::const_iterator( size_t idx, int idir, const FixedString* pfm)
-	: mIteratorBase(idx,idir)
-	, mpString(pfm)
+	: mpString(pfm)
+	, mIteratorBase(idx,idir)
 {
 }
 
@@ -748,8 +749,8 @@ FixedString<kmaxlen>::const_iterator::const_iterator( size_t idx, int idir, cons
 
 template <unsigned int kmaxlen>
 FixedString<kmaxlen>::const_iterator::const_iterator(const iterator& oth)
-	: mIteratorBase(oth.mIteratorBase.mindex,oth.mIteratorBase.mdirection)
-	, mpString(oth.mpString)
+	: mpString(oth.mpString)
+	, mIteratorBase(oth.mIteratorBase.mindex,oth.mIteratorBase.mdirection)
 {
 }
 
@@ -757,8 +758,8 @@ FixedString<kmaxlen>::const_iterator::const_iterator(const iterator& oth)
 
 template <unsigned int kmaxlen>
 FixedString<kmaxlen>::const_iterator::const_iterator(const const_iterator& oth)
-	: mIteratorBase(oth.mIteratorBase.mindex,oth.mIteratorBase.mdirection)
-	, mpString(oth.mpString)
+	: mpString(oth.mpString)
+	, mIteratorBase(oth.mIteratorBase.mindex,oth.mIteratorBase.mdirection)
 {
 }
 

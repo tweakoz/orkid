@@ -13,7 +13,9 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#include <ork/lev2/lev2_types.h>
 #include <ork/asset/Asset.h>
+#include <ork/asset/FileAssetLoader.h>
 #include <ork/asset/AssetManager.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/shadman.h>
@@ -24,7 +26,7 @@ namespace ork { namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class TextureAsset : public ork::asset::Asset {
+struct TextureAsset : public ork::asset::Asset {
   DeclareConcreteX(TextureAsset, ork::asset::Asset);
 
   static const char* assetTypeNameStatic(void) {
@@ -35,11 +37,11 @@ public: //
   TextureAsset();
   ~TextureAsset() override;
 
-  Texture* GetTexture() const {
+  texture_ptr_t GetTexture() const {
     return _texture;
   }
-  void SetTexture(Texture* pt);
-  ork::atomic<Texture*> _texture;
+  void SetTexture(texture_ptr_t pt);
+  texture_ptr_t _texture;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -64,6 +66,9 @@ public:
   XgmModel* GetModel() { // todo unsafe
     return _model.atomicCopy().get();
   }
+  model_ptr_t getSharedModel() { // todo unsafe
+    return _model.atomicCopy();
+  }
   const XgmModel* GetModel() const { // todo unsafe
     return _model.atomicCopy().get();
   }
@@ -71,9 +76,17 @@ public:
   LockedResource<model_ptr_t> _model;
 };
 
+struct XgmModelLoader final : public ork::asset::FileAssetLoader {
+public:
+  XgmModelLoader();
+  ork::asset::asset_ptr_t _doLoadAsset(AssetPath assetpath, ork::asset::vars_constptr_t vars) override;
+  void destroy(ork::asset::asset_ptr_t asset) override;
+  void initLoadersForUriProto(const std::string& uriproto) override;
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
-class XgmAnimAsset : public ork::asset::Asset {
+struct XgmAnimAsset : public ork::asset::Asset {
   DeclareConcreteX(XgmAnimAsset, ork::asset::Asset);
   static const char* assetTypeNameStatic(void) {
     return "xganim";
@@ -88,7 +101,7 @@ public: //
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class FxShaderAsset : public ork::asset::Asset {
+struct FxShaderAsset : public ork::asset::Asset {
   DeclareConcreteX(FxShaderAsset, ork::asset::Asset);
   static const char* assetTypeNameStatic(void) {
     return "fxshader";

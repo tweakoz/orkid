@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -17,6 +17,8 @@
 
 namespace ork {
 
+using ObjectMap = std::map<PoolString,Object*>;
+
 object_ptr_t loadObjectFromFile(const char* filename);
 object_ptr_t loadObjectFromString(const char* jsondata);
 
@@ -26,7 +28,7 @@ class Event;
 
 namespace object {
 class Signal;
-class ObjectClass;
+struct ObjectClass;
 } // namespace object
 
 struct Object;

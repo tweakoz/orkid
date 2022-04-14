@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -45,13 +45,11 @@ struct IMPL {
     pTARG->debugPushGroup("Picking::rendeinitr");
     if (nullptr == _rtg) {
       _material.gpuInit(pTARG);
-      _rtg             = new RtGroup(pTARG, _width, _height, NUMSAMPLES);
-      auto buf1        = new RtBuffer(lev2::RtgSlot::Slot0, lev2::EBufferFormat::RGBA16UI, _width, _height);
-      auto buf2        = new RtBuffer(lev2::RtgSlot::Slot1, lev2::EBufferFormat::RGBA32F, _width, _height);
+      _rtg             = std::make_shared<RtGroup>(pTARG, _width, _height, NUMSAMPLES);
+      auto buf1        = _rtg->createRenderTarget(lev2::EBufferFormat::RGBA16UI);
+      auto buf2        = _rtg->createRenderTarget(lev2::EBufferFormat::RGBA32F);
       buf1->_debugName = "PickingRt0";
       buf2->_debugName = "PickingRt1";
-      _rtg->SetMrt(0, buf1);
-      _rtg->SetMrt(1, buf2);
     }
     pTARG->debugPopGroup();
     _initted = true;
@@ -78,9 +76,9 @@ struct IMPL {
     auto irenderer = ddprops["irenderer"_crcu].get<lev2::IRenderer*>();
     //////////////////////////////////////////////////////
     targ->debugPushGroup("Picking::render");
-    RtGroupRenderTarget rt(_rtg);
+    RtGroupRenderTarget rt(_rtg.get());
     {
-      targ->FBI()->PushRtGroup(_rtg);
+      targ->FBI()->PushRtGroup(_rtg.get());
       targ->FBI()->SetAutoClear(false); // explicit clear
       targ->beginFrame();
       /////////////////////////////////////////////////////////////////////////////////////////
@@ -120,7 +118,7 @@ struct IMPL {
   ///////////////////////////////////////
   std::string _camname, _layername;
   CompositingMaterial _material;
-  RtGroup* _rtg = nullptr;
+  rtgroup_ptr_t _rtg;
   fmtx4 _viewOffsetMatrix;
   int _width, _height;
   bool _initted = false;
@@ -154,11 +152,11 @@ void PickingCompositingNode::DoRender(CompositorDrawData& drawdata) {
   impl->_render(this, drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
-RtBuffer* PickingCompositingNode::GetOutput() const {
+rtbuffer_ptr_t PickingCompositingNode::GetOutput() const {
   return _impl.get<std::shared_ptr<picking::IMPL>>()->_rtg->GetMrt(0);
 }
 ///////////////////////////////////////////////////////////////////////////////
-RtGroup* PickingCompositingNode::GetOutputGroup() const {
+rtgroup_ptr_t PickingCompositingNode::GetOutputGroup() const {
   return _impl.get<std::shared_ptr<picking::IMPL>>()->_rtg;
 }
 ///////////////////////////////////////////////////////////////////////////////

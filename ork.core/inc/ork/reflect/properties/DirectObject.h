@@ -1,7 +1,7 @@
 #pragma once
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -14,12 +14,20 @@
 
 namespace ork::reflect {
 
-template <typename MemberType> //
-class DirectObject : public ObjectProperty {
+struct DirectObjectBase : public ObjectProperty {
 
+  virtual object_ptr_t getObject(object_constptr_t instance) const = 0;
+  virtual void setObject(object_ptr_t instance, object_ptr_t obj) const = 0;
+};
+
+
+template <typename MemberType> //
+class DirectObject : public DirectObjectBase {
+
+  using element_type         = typename MemberType::element_type;
   using sharedptrtype_t      = MemberType;
-  using rawptrtype_t         = typename MemberType::element_type;
-  using sharedconstptrtype_t = typename std::shared_ptr<const rawptrtype_t>;
+  using sharedconstptrtype_t = typename std::shared_ptr<const element_type>;
+  //using rawptrtype_t         = typename MemberType::element_type;
 
   sharedptrtype_t Object::*_member;
 
@@ -28,6 +36,9 @@ public:
 
   void get(sharedptrtype_t& value, object_constptr_t instance) const;
   void set(const sharedptrtype_t& value, object_ptr_t instance) const;
+
+  object_ptr_t getObject(object_constptr_t instance) const final;
+  void setObject(object_ptr_t instance, object_ptr_t obj) const final;
 
   sharedptrtype_t access(object_ptr_t) const;
   sharedconstptrtype_t access(object_constptr_t) const;

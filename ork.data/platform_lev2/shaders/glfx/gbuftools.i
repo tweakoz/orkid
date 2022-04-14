@@ -9,11 +9,14 @@ libblock lib_gbuf_decode {
     vec3 _albedo;
     float _zeye;
     float _fogZ;
+    float _linZ;
     float _rawDepth;
     float _metallic;
     float _roughness;
     int _mask;
     int _emissive;
+    float _atmos;
+    float _alpha;
   };
   struct WPosData {
     vec2 _muv;
@@ -39,6 +42,7 @@ libblock lib_gbuf_decode {
   struct wposout {
     vec4 _out;
     float _fogZ;
+    float _linZ;
     float _rawDepth;
   };
   /////////////////////////////////////////////////////////
@@ -50,11 +54,14 @@ libblock lib_gbuf_decode {
     float ndc      = depthtex * 2.0 - 1.0;
     float zeye     = Zndc2eye.x / (ndc - Zndc2eye.y);
     vec3 wpos      = vec3(rr.xyz / rr.w);
-
     wposout o;
     o._rawDepth = depthtex;
     o._out = vec4(wpos, zeye);
     o._fogZ = -0.5 / (ndc - 1.00005); // temp hack until we get VR linear depth working
+    
+    float lin_num = (2.0 * NearFar.x * NearFar.y);
+    float lin_den = (NearFar.y + NearFar.x - ndc * (NearFar.y - NearFar.x));
+    o._linZ = lin_num / lin_den;
     return o;
   }
   /////////////////////////////////////////////////////////
@@ -66,23 +73,23 @@ libblock lib_gbuf_decode {
     decoded._uv     = wpd._muv;
     decoded._wpos   = wpres.xyz;
     decoded._zeye   = wpres.w;
+    decoded._linZ   = o._linZ;
     ///////////////////////////////
     uvec4 gbuf = textureLod(MapGBuffer, decoded._uv,0);
     ///////////////////////////////
     const float inverse_255 = 1.0/255.0;
-    const float inverse_511 = 1.0/511.5;
-    uint ur = (gbuf.x)&0xffu; // 8 bits
-    uint ug = (gbuf.x>>8)&0xffu; // 8 bits (16)
-    uint ub = (gbuf.y)&0xffu;  // 8 bits (24)
-    float nx = float(gbuf.z&0x3ffu)*inverse_511-1.0; // 10 bits (34)
-    float ny = float(gbuf.w&0x3ffu)*inverse_511-1.0; // 10 bits (44)
+    const float inverse_nrm = 1.0/32767.5;
+    uint ur = (gbuf.x)&0xfffu; // 12 bits
+    uint ug = (gbuf.x>>12)&0xfffu; // 12 bits (24)
+    uint ub = (gbuf.y)&0xfffu;  // 12 bits (36)
+    float nx = float(gbuf.z&0xffffu)*inverse_nrm-1.0; // 16 bits (52)
+    float ny = float((gbuf.z>>16)&0xffffu)*inverse_nrm-1.0; // 16 bits (68)
     float nz = sqrt(abs(1-nx*nx-ny*ny)); // rebuild normal z component
-    uint uruf = uint(gbuf.y>>8)&0xffu; // 8 bits (52)
-    uint umtl = uint(gbuf.z>>10)&0x0fu; // 4 bits (56)
-         umtl |= uint(gbuf.w>>6)&0xf0u; // 4 bits (60)
-    bool signof_nz = bool((gbuf.z>>14)&1u);  // 1 bit (61)
-    bool emissive = bool((gbuf.w>>14)&1u);  // 1 bit (62);
-    bool mask = bool((gbuf.w>>15)&1u); // 1 bit (63)
+    uint uruf = uint(gbuf.y>>12)&0xffu; // 8 bits (76)
+    uint umtl = uint(gbuf.y>>24)&0xffu; // 8 bits (84)
+    bool signof_nz = bool((gbuf.x>>25)&1u);  // 1 bit (61)
+    bool emissive = bool((gbuf.x>>24)&1u);  // 1 bit (62);
+    int mask = int((gbuf.x>>26)&1u); // 1 bit (63)
     if(signof_nz)
       nz = -nz;
     vec3 nn      = vec3(nx,ny,nz);
@@ -94,7 +101,9 @@ libblock lib_gbuf_decode {
     decoded._emissive = int(emissive);
     decoded._metallic = float(umtl)*inverse_255;
     decoded._roughness = float(uruf)*inverse_255;
-    decoded._mask = int(mask);
+    decoded._mask = mask;
+    decoded._atmos = float(gbuf.a&0xffffu)/32768.0;
+    decoded._alpha = float((gbuf.a>>16)&0xffffu)/1024.0;
     return decoded;
   }
   /////////////////////////////////////////////////////////
@@ -107,29 +116,37 @@ libblock lib_gbuf_encode {
   /////////////////////////////////////////////////////////
   uvec4 packGbuffer(vec3 basecolor,vec3 normal,float ruf, float mtl, bool emissive){
     uvec3 ucolor = uvec3(basecolor*255.0);
+    vec3 normed = normalize(normal);
     ////////////////////
     // convert
     ////////////////////
-    uint r = ucolor.r&0x000000ffu; // 8 bits
-    uint g = ucolor.g&0x000000ffu; // 8 bits (16)
-    uint b = ucolor.b&0x000000ffu; // 8 bits (24)
-    uint unx = uint((normal.x+1.0)*511.5)&0x3ffu; // 10 bits (34)
-    uint uny = uint((normal.y+1.0)*511.5)&0x3ffu; // 10 bits (44)
-    uint uruf = uint(ruf*255.0)&0xffu; // 8 bits (52)
-    uint umtl = uint(mtl*255.0)&0xffu; // 8 bits (60)
-    uint uemissive = uint(emissive)<<14; // 1 bit (61)
-    uint snz = uint(normal.z<0.0)<<14; // 1 bit (62)
-    uint mask = 0x8000; // 1 bit (63)
+    uint r = ucolor.r&0x00000fffu; // 12 bits
+    uint g = ucolor.g&0x00000fffu; // 12 bits (24)
+    uint b = ucolor.b&0x00000fffu; // 12 bits (36)
+    uint unx = uint((normed.x+1.0)*32767.5)&0xffffu; // 16 bits (52)
+    uint uny = uint((normed.y+1.0)*32767.5)&0xffffu; // 16 bits (68)
+    uint uruf = uint(ruf*255.0)&0xffu; // 8 bits (76)
+    uint umtl = uint(mtl*255.0)&0xffu; // 8 bits (84)
+    uint uemissive = uint(emissive); // 1 bit (85)
+    uint snz = uint(normed.z<0.0); // 1 bit (86)
+    uint mask = 0x80000000; // 1 bit (87)
     ////////////////////
     // pack
     ////////////////////
-    uint rout = r|(g<<8);
-    uint gout = b|(uruf<<8);
-    uint bout = unx|((umtl&0x0fu)<<10)|snz;
-    uint aout = uny|((umtl&0xf0u)<<6)|uemissive|mask;
-    return uvec4(rout,gout,bout,aout);
+    uint rout = r|(g<<12)|(uemissive<<24)|(snz<<25)|(1u<<26);
+    uint gout = b|(uruf<<12)|(umtl<<24);
+    uint bout = unx|(uny<<16);
+    return uvec4(rout,gout,bout,0u);
+  }
+  uvec4 packGbufferA(float atmos,float alpha){
+    uint uatmos = uint(atmos*32768.0)&0xffffu;
+    uint ualpha = uint(alpha*1024.0)&0xffffu;
+    ////////////////////
+    // pack
+    ////////////////////
+    return uvec4(0,0,0,uatmos|(ualpha<<16));
   }
   uvec4 packGbuffer_unlit(vec3 basecolor){
-    return packGbuffer(basecolor,vec3(0,1,0),1,0,true);
+    return packGbuffer(basecolor,vec3(0,0,0),1,0,true);
   }
 } // libblock lib_gbuf {

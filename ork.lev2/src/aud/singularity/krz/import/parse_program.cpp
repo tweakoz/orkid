@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include "krzio.h"
 #include <fstream>
 
@@ -18,7 +25,7 @@ void filescanner::ParseProgram(const datablock& db, datablock::iterator& it, int
 
   if (iObjectID >= 189 && iObjectID <= 191) {
     prg->_debug = true;
-    printf("/////////////////////////////////////// NEW PROGRAM <%d:%p:%s>\n", iObjectID, prg, ObjName.c_str());
+    printf("/////////////////////////////////////// NEW PROGRAM <%d:%p:%s>\n", iObjectID, (void*)prg, ObjName.c_str());
   }
 
   _curProgram = prg;
@@ -242,7 +249,7 @@ void filescanner::emitProgram(const Program* p, rapidjson::Value& parent) {
     return;
 
   if (p->_debug)
-    printf("/////////////////////////////////////// EMIT PROGRAM <%d:%p:%s>\n", p->_programID, p, p->_programName.c_str());
+    printf("/////////////////////////////////////// EMIT PROGRAM <%d:%p:%s>\n", p->_programID, (void*)p, p->_programName.c_str());
 
   rapidjson::Value prgobject(kObjectType);
 

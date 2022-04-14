@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -33,21 +33,21 @@ ResizableString::size_type ResizableString::vformat(const char* format, va_list 
 
 ResizableString::ResizableString()
     : mpBuffer(NULL)
-    , mMaxSize(0)
-    , mLength(0) {
+    , mLength(0)
+    , mMaxSize(0){
 }
 
 ResizableString::ResizableString(const char* s)
     : mpBuffer(NULL)
-    , mMaxSize(0)
-    , mLength(0) {
+    , mLength(0)
+    , mMaxSize(0){
   copy(s, mLength = ::strlen(s));
 }
 
 ResizableString::ResizableString(const PieceString& s)
     : mpBuffer(NULL)
-    , mMaxSize(0)
-    , mLength(0) {
+    , mLength(0)
+    , mMaxSize(0){
   copy(s.c_str(), mLength = s.length());
 }
 

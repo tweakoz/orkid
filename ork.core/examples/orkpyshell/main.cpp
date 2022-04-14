@@ -26,7 +26,7 @@ int main(int argc, const char** argv) {
   SetCurrentThreadName("main");
 
   TestApplication the_app;
-  ApplicationStack::Push(&the_app);
+  StringPoolStack::Push(&the_app);
 
   rtti::Class::InitializeClasses();
 

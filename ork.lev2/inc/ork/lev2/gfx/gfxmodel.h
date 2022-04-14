@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -32,21 +32,9 @@
 
 namespace ork::lev2 {
 
-typedef AssetHandle ModelH;
-
 /////////////////////////////////////////////////////
 //////////////////////////
 
-class VertexBufferBase;
-class GfxMaterial;
-class VertexBufferBase;
-class IndexBufferBase;
-
-class XgmMesh;
-class XgmModel;
-class XgmCluster;
-class XgmSubMesh;
-struct RenderContextInstModelData;
 
 struct EmbeddedTexture final {
   int _w               = 0;
@@ -71,7 +59,7 @@ typedef std::map<std::string, EmbeddedTexture*> embtexmap_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class XgmPrimGroup final {
+struct XgmPrimGroup final {
 public:
   int miNumIndices;
 
@@ -367,7 +355,7 @@ struct XgmModel final {
 
   /////////////////////////////////////
 
-  static bool LoadUnManaged(XgmModel* mdl, const AssetPath& fname);
+  static bool LoadUnManaged(XgmModel* mdl, const AssetPath& fname, asset::vars_constptr_t vars=nullptr);
   static bool _loaderSelect(XgmModel* mdl, datablock_ptr_t dblock);
   static bool _loadXGM(XgmModel* mdl, datablock_ptr_t dblock);
   static bool _loadAssimp(XgmModel* mdl, datablock_ptr_t dblock);
@@ -392,7 +380,7 @@ struct XgmModel final {
   fvec3 mBoundingCenter;
   float mBoundingRadius;
   bool mbSkinned;
-  varmap::VarMap _varmap;
+  asset::vars_ptr_t _varmap;
 };
 
 using model_ptr_t      = std::shared_ptr<XgmModel>;

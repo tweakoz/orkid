@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <ork/kernel/string/deco.inl>
 #include <ork/lev2/ezapp.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
@@ -6,25 +13,41 @@
 using namespace std::string_literals;
 using namespace ork;
 using namespace ork::lev2;
-int main(int argc, char** argv) {
-  auto qtapp  = OrkEzQtApp::create(argc, argv);
+
+struct Resources {
+
+  Resources(Context* ctx){
+    _material = std::make_shared<FreestyleMaterial>();
+    _material->gpuInit(ctx, "orkshader://solid");
+    _fxtechnique     = _material->technique("mmodcolor");
+    _fxparameterMVP  = _material->param("MatMVP");
+    _fxparameterMODC = _material->param("modcolor");
+    deco::printf(fvec3::White(), "gpuINIT - context<%p>\n", ctx, _fxtechnique);
+    deco::printf(fvec3::Yellow(), "  fxtechnique<%p>\n", _fxtechnique);
+    deco::printf(fvec3::Yellow(), "  fxparameterMVP<%p>\n", _fxparameterMVP);
+    deco::printf(fvec3::Yellow(), "  fxparameterMODC<%p>\n", _fxparameterMODC);
+  }
+
+  freestyle_mtl_ptr_t _material;
+  const FxShaderTechnique* _fxtechnique = nullptr;
+  const FxShaderParam* _fxparameterMVP  = nullptr;
+  const FxShaderParam* _fxparameterMODC = nullptr;
+
+
+};
+
+using resources_ptr_t = std::shared_ptr<Resources>;
+
+int main(int argc, char** argv,char** envp) {
+  auto init_data = std::make_shared<ork::AppInitData>(argc,argv,envp);
+  auto qtapp  = OrkEzApp::create(init_data);
   auto qtwin  = qtapp->_mainWindow;
   auto gfxwin = qtwin->_gfxwin;
-  FreestyleMaterial material;
-  const FxShaderTechnique* fxtechnique = nullptr;
-  const FxShaderParam* fxparameterMVP  = nullptr;
-  const FxShaderParam* fxparameterMODC = nullptr;
   //////////////////////////////////////////////////////////
+  resources_ptr_t resources;
   //////////////////////////////////////////////////////////
   qtapp->onGpuInit([&](Context* ctx) {
-    material.gpuInit(ctx, "orkshader://solid");
-    fxtechnique     = material.technique("mmodcolor");
-    fxparameterMVP  = material.param("MatMVP");
-    fxparameterMODC = material.param("modcolor");
-    deco::printf(fvec3::White(), "gpuINIT - context<%p>\n", ctx, fxtechnique);
-    deco::printf(fvec3::Yellow(), "  fxtechnique<%p>\n", fxtechnique);
-    deco::printf(fvec3::Yellow(), "  fxparameterMVP<%p>\n", fxparameterMVP);
-    deco::printf(fvec3::Yellow(), "  fxparameterMODC<%p>\n", fxparameterMODC);
+    resources = std::make_shared<Resources>(ctx);
   });
   //////////////////////////////////////////////////////////
   qtapp->onDraw([&](ui::drawevent_constptr_t drwev) {
@@ -41,11 +64,11 @@ int main(int argc, char** argv) {
     fbi->SetClearColor(fvec4(r, g, b, 1));
     context->beginFrame();
     RenderContextFrameData RCFD(context);
-    material.begin(fxtechnique, RCFD);
-    material.bindParamMatrix(fxparameterMVP, fmtx4::Identity());
-    material.bindParamVec4(fxparameterMODC, fvec4::Red());
+    resources->_material->begin(resources->_fxtechnique, RCFD);
+    resources->_material->bindParamMatrix(resources->_fxparameterMVP, fmtx4::Identity());
+    resources->_material->bindParamVec4(resources->_fxparameterMODC, fvec4::Red());
     gfxwin->Render2dQuadEML(fvec4(-0.5, -0.5, 1, 1), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
-    material.end(RCFD);
+    resources->_material->end(RCFD);
     context->endFrame();
   });
   //////////////////////////////////////////////////////////
@@ -63,5 +86,9 @@ int main(int argc, char** argv) {
     return rval;
   });
   //////////////////////////////////////////////////////////
-  return qtapp->runloop();
+  qtapp->onGpuExit([&](Context* ctx) {
+    resources = nullptr;
+  });
+  //////////////////////////////////////////////////////////
+  return qtapp->mainThreadLoop();
 }

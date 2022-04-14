@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -47,9 +47,10 @@ void Texture::RegisterLoaders(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Texture* Texture::LoadUnManaged(const AssetPath& fname) {
-  Texture* ptex = new Texture;
-  bool bok      = GfxEnv::GetRef().loadingContext()->TXI()->LoadTexture(fname, ptex);
+texture_ptr_t Texture::LoadUnManaged(const AssetPath& fname) {
+  texture_ptr_t ptex = std::make_shared<Texture>();
+  auto target = lev2::contextForCurrentThread();
+  bool bok      = target->TXI()->LoadTexture(fname, ptex);
   return ptex;
 }
 
@@ -82,19 +83,18 @@ texture_ptr_t Texture::createBlank(int iw, int ih, EBufferFormat efmt) {
 
 Texture::Texture(const TextureAsset* asset)
     : _asset(asset) {
+ _residenceState.store(0);
 }
 
 Texture::Texture(ipctexture_ptr_t external_memory)
   : _asset(nullptr)
   , _external_memory(external_memory) {
-
+ _residenceState.store(0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 Texture::~Texture() {
-  Context* pTARG = GfxEnv::GetRef().loadingContext();
-  pTARG->TXI()->DestroyTexture(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

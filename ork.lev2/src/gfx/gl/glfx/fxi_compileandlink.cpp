@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -65,7 +65,7 @@ bool Shader::Compile() {
     printf("Shader<%s> InfoLog<%s>\n", mName.c_str(), infoLog);
     printf("//////////////////////////////////\n");
 
-    if (_rootcontainer->mFxShader->GetAllowCompileFailure() == false){
+    if (_rootcontainer->mFxShader->GetAllowCompileFailure() == false) {
       OrkAssert(false);
     }
 
@@ -156,13 +156,13 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
           tek->_name.c_str(),
           pass->_name.c_str(),
           pvtxshader->mName.c_str(),
-          vtx_iface);
+          (void*)vtx_iface);
       printf(
           "	link tek<%s> pass<%s>frgshader<%s> interface<%p>\n",
           tek->_name.c_str(),
           pass->_name.c_str(),
           pfrgshader->mName.c_str(),
-          frg_iface);
+          (void*)frg_iface);
     }
     if (nullptr == vtx_iface) {
       printf("	vtxshader<%s> has no interface!\n", pvtxshader->mName.c_str());

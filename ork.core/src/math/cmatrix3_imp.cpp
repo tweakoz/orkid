@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -19,8 +19,8 @@ template <> void PropType<fmtx3>::ToString(const fmtx3& Value, PropTypeString& t
 
   std::string result;
   for (int i = 0; i < 9; i++)
-    result += CreateFormattedString("%g ", F32(v.elements[i / 3][i % 3]));
-  result += CreateFormattedString("%g", F32(v.elements[2][2]));
+    result += CreateFormattedString("%g ", F32(v.elemXY(i / 3,i % 3)));
+  result += CreateFormattedString("%g", F32(v.elemXY(2,2)));
   tstr.format("%s", result.c_str());
 }
 
@@ -40,7 +40,7 @@ template <> fmtx3 PropType<fmtx3>::FromString(const PropTypeString& String) {
       &m[2][2]);
   fmtx3 result;
   for (int i = 0; i < 9; i++)
-    result.elements[i / 3][i % 3] = m[i / 3][i % 3];
+    result.setElemXY(i / 3,i % 3, m[i / 3][i % 3]);
   return result;
 }
 
@@ -48,7 +48,7 @@ template <> fmtx3 PropType<fmtx3>::FromString(const PropTypeString& String) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-template class PropType<fmtx3>;
-template class Matrix33<float>; // explicit template instantiation
+template struct PropType<fmtx3>;
+template struct Matrix33<float>; // explicit template instantiation
 
 } // namespace ork

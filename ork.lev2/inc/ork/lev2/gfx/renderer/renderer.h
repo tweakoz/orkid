@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -29,20 +29,22 @@ namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class Context;
-class CameraData;
-
-class IRenderer {
+struct IRenderer {
 public:
-  static const int kmaxrables    = 4096;
-  static const int kmaxrablesmed = 1024;
-  static const int kmaxrablessm  = 64;
+  static const int kmaxrables    = 65536;
+  static const int kmaxrablesmed = 8192;
+  //static const int kmaxrablessm  = 64;
+
+
 
 protected:
+  
+  virtual ~IRenderer() {}
+  
   Context* _target;
 
-  ork::fixedvector<U32, RenderQueue::krqmaxsize> mQueueSortKeys;
-  ork::fixedvector<const RenderQueue::Node*, RenderQueue::krqmaxsize> mQueueSortNodes;
+  ork::fixedvector<U32, RenderQueue::krqmaxsize> _sortkeys;
+  ork::fixedvector<const RenderQueue::Node*, RenderQueue::krqmaxsize> _sortedNodes;
 
   ork::fixedvector<ModelRenderable, kmaxrables> mModels;
   ork::fixedvector<CallbackRenderable, kmaxrablesmed> mCallbacks;
@@ -65,16 +67,16 @@ public:
 
   ModelRenderable& enqueueModel() {
     ModelRenderable& rend = mModels.create();
-    QueueRenderable(&rend);
+    enqueueRenderable(&rend);
     return rend;
   }
   CallbackRenderable& enqueueCallback() {
     CallbackRenderable& rend = mCallbacks.create();
-    QueueRenderable(&rend);
+    enqueueRenderable(&rend);
     return rend;
   }
 
-  void QueueRenderable(IRenderable* pRenderable);
+  void enqueueRenderable(IRenderable* pRenderable);
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   /// Each Renderer implements this function as a helper for Renderables when composing their sort keys
@@ -99,8 +101,8 @@ public:
 
 protected:
   void ResetQueue(void);
-  RadixSort mRadixSorter;
-  RenderQueue mRenderQueue;
+  RadixSort _radixsorter;
+  RenderQueue _unsortedNodes;
   PerformanceItem* mPerformanceItem;
 
   IRenderer(Context* pTARG);
@@ -108,7 +110,7 @@ protected:
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class DefaultRenderer : public lev2::IRenderer {
+struct DefaultRenderer : public lev2::IRenderer {
 
 public:
   DefaultRenderer(lev2::Context* ptarg = nullptr);
@@ -117,6 +119,9 @@ private:
   void RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::RenderGroupState rgs = ork::lev2::RenderGroupState::NONE) const final;
   void RenderModelGroup(const lev2::IRenderer::modelgroup_t&) const final;
 };
+
+
+using renderer_ptr_t = std::shared_ptr<IRenderer>;
 
 } // namespace lev2
 } // namespace ork

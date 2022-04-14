@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -29,26 +29,6 @@ namespace ork::lev2::deferrednode {
 DeferredContext::DeferredContext(RenderCompositingNode* node, std::string shadername, int numlights)
     : _node(node) {
   ///////////
-  _rtbDepthCluster = new RtBuffer(lev2::RtgSlot::Slot0, lev2::EBufferFormat::R32UI, 8, 8);
-  _rtbLightAccum   = new RtBuffer(lev2::RtgSlot::Slot0, lev2::EBufferFormat::RGBA16F, 8, 8);
-  _rtbGbuffer      = new RtBuffer(lev2::RtgSlot::Slot0, lev2::EBufferFormat::RGBA16UI, 8, 8);
-  //_rtbNormalDist   = new RtBuffer(lev2::RtgSlot::Slot1, lev2::EBufferFormat::RGB10A2, 8, 8);
-  //_rtbRufMtl       = new RtBuffer(lev2::RtgSlot::Slot2, lev2::EBufferFormat::RGBA8, 8, 8);
-  ///////////
-  //_rtbAlbAo->_debugName        = "DeferredRtAlbAo";
-  //_rtbNormalDist->_debugName   = "DeferredRtNormalDist";
-  //_rtbRufMtl->_debugName       = "DeferredRtRufMtl";
-  _rtbGbuffer->_debugName      = "DeferredGbuffer";
-  _rtbDepthCluster->_debugName = "DeferredDepthCluster";
-  _rtbLightAccum->_debugName   = "DeferredLightAccum";
-  ///////////
-  _rtbDepthCluster->_texture->TexSamplingMode().PresetPointAndClamp();
-  _rtbLightAccum->_texture->TexSamplingMode().PresetPointAndClamp();
-  //_rtbAlbAo->_texture->TexSamplingMode().PresetPointAndClamp();
-  //_rtbNormalDist->_texture->TexSamplingMode().PresetPointAndClamp();
-  //_rtbRufMtl->_texture->TexSamplingMode().PresetPointAndClamp();
-  _rtbGbuffer->_texture->TexSamplingMode().PresetPointAndClamp();
-  ///////////
   _shadername = shadername;
   _layername  = "All";
 
@@ -71,7 +51,7 @@ DeferredContext::~DeferredContext() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lev2::Texture* DeferredContext::brdfIntegrationTexture() const {
+lev2::texture_ptr_t DeferredContext::brdfIntegrationTexture() const {
   return _brdfIntegrationMap;
 }
 
@@ -108,9 +88,14 @@ void DeferredContext::gpuInit(Context* target) {
     _tekSpotDecalingTexturedStereo = _lightingmtl.technique("spotdecal_textured_stereo");
     _tekSpotDecalingTextured       = _lightingmtl.technique("spotdecal_textured");
     //
-    _tekDownsampleDepthCluster    = _lightingmtl.technique("downsampledepthcluster");
+    _tekDownsampleDepthCluster = _lightingmtl.technique("downsampledepthcluster");
+
+    _tekEnvironmentLightingSDF       = _lightingmtl.technique("environmentlightingSDF");
+    _tekEnvironmentLightingSDFStereo = _lightingmtl.technique("environmentlightingSDF_stereo");
+
     _tekEnvironmentLighting       = _lightingmtl.technique("environmentlighting");
     _tekEnvironmentLightingStereo = _lightingmtl.technique("environmentlighting_stereo");
+
     //////////////////////////////////////////////////////////////
     // init lightblock
     //////////////////////////////////////////////////////////////
@@ -126,12 +111,12 @@ void DeferredContext::gpuInit(Context* target) {
     _parMapDepth       = _lightingmtl.param("MapDepth");
     _parMapShadowDepth = _lightingmtl.param("MapShadowDepth");
     //    _parMapGBufRufMtlAlpha = _lightingmtl.param("MapRufMtlAlpha");
-    _parMapDepthCluster    = _lightingmtl.param("MapDepthCluster");
-    _parLightCookieTexture = _lightingmtl.param("MapLightingCookie");
-    _parMapSpecularEnv     = _lightingmtl.param("MapSpecularEnv");
-    _parMapDiffuseEnv      = _lightingmtl.param("MapDiffuseEnv");
-    _parMapBrdfIntegration = _lightingmtl.param("MapBrdfIntegration");
-
+    _parMapDepthCluster     = _lightingmtl.param("MapDepthCluster");
+    _parLightCookieTexture  = _lightingmtl.param("MapLightingCookie");
+    _parMapSpecularEnv      = _lightingmtl.param("MapSpecularEnv");
+    _parMapDiffuseEnv       = _lightingmtl.param("MapDiffuseEnv");
+    _parMapBrdfIntegration  = _lightingmtl.param("MapBrdfIntegration");
+    _parMapVolTexA          = _lightingmtl.param("MapVolTexA");
     _parInvViewSize         = _lightingmtl.param("InvViewportSize");
     _parTime                = _lightingmtl.param("Time");
     _parNumLights           = _lightingmtl.param("NumLights");
@@ -148,25 +133,34 @@ void DeferredContext::gpuInit(Context* target) {
     _parDepthFogPower       = _lightingmtl.param("DepthFogPower");
     _parShadowParams        = _lightingmtl.param("ShadowParams");
     //////////////////////////////////////////////////////////////
-    _rtgGbuffer             = new RtGroup(target, 8, 8, 1);
+    _rtgGbuffer             = std::make_shared<RtGroup>(target, 8, 8, 1);
     _rtgGbuffer->_autoclear = false;
-    _rtgDecal               = new RtGroup(target, 8, 8, 1);
-    _rtgDecal->_needsDepth  = false;
-    _rtgGbuffer->SetMrt(0, _rtbGbuffer);
+    _rtbGbuffer             = _rtgGbuffer->createRenderTarget(lev2::EBufferFormat::RGBA32UI);
+    _rtbGbuffer->_debugName = "DeferredGbuffer";
+    _rtbGbuffer->_texture->TexSamplingMode().PresetPointAndClamp();
+    //////////////////////////////////////////////////////////////
+    _rtgDecal              = std::make_shared<RtGroup>(target, 8, 8, 1);
+    _rtgDecal->_needsDepth = false;
     _rtgDecal->SetMrt(0, _rtbGbuffer);
-    _gbuffRT = new RtGroupRenderTarget(_rtgGbuffer);
-    _decalRT = new RtGroupRenderTarget(_rtgDecal);
+    _gbuffRT = new RtGroupRenderTarget(_rtgGbuffer.get());
+    _decalRT = new RtGroupRenderTarget(_rtgDecal.get());
     //////////////////////////////////////////////////////////////
-    _rtgDepthCluster = new RtGroup(target, 8, 8, 1);
-    _rtgDepthCluster->SetMrt(0, _rtbDepthCluster);
-    _clusterRT = new RtGroupRenderTarget(_rtgDepthCluster);
+    _rtgDepthCluster = std::make_shared<RtGroup>(target, 8, 8, 1);
+    _rtbDepthCluster = _rtgDepthCluster->createRenderTarget(lev2::EBufferFormat::R32UI);
+    _rtbDepthCluster->_texture->TexSamplingMode().PresetPointAndClamp();
+    _rtbDepthCluster->_debugName = "DeferredDepthCluster";
+    _clusterRT                   = new RtGroupRenderTarget(_rtgDepthCluster.get());
+    ///////////
     //////////////////////////////////////////////////////////////
-    _rtgLaccum             = new RtGroup(target, 8, 8, 1);
+    _rtgLaccum             = std::make_shared<RtGroup>(target, 8, 8, 1);
     _rtgLaccum->_autoclear = false;
-    _rtgLaccum->SetMrt(0, _rtbLightAccum);
-    _accumRT = new RtGroupRenderTarget(_rtgLaccum);
+    _rtbLightAccum         = _rtgLaccum->createRenderTarget(lev2::EBufferFormat::RGBA16F);
+    _rtbLightAccum->_texture->TexSamplingMode().PresetPointAndClamp();
+    _rtbLightAccum->_debugName = "DeferredLightAccum";
+    _accumRT                   = new RtGroupRenderTarget(_rtgLaccum.get());
     //////////////////////////////////////////////////////////////
     _whiteTexture = asset::AssetManager<lev2::TextureAsset>::load("src://effect_textures/white");
+    _voltexA      = asset::AssetManager<lev2::TextureAsset>::load("src://effect_textures/voltex_pn2");
   }
   target->debugPopGroup();
 }
@@ -180,12 +174,13 @@ void DeferredContext::renderGbuffer(CompositorDrawData& drawdata, const ViewData
   RenderContextFrameData& RCFD = framerenderer.framedata();
   auto targ                    = drawdata.context();
   auto FBI                     = targ->FBI();
+  auto RSI                     = targ->RSI();
   auto& ddprops                = drawdata._properties;
   auto irenderer               = ddprops["irenderer"_crcu].get<lev2::IRenderer*>();
   ViewportRect tgt_rect(0, 0, _rtgGbuffer->width(), _rtgGbuffer->height());
   ViewportRect mrt_rect(0, 0, _rtgGbuffer->width(), _rtgGbuffer->height());
   ///////////////////////////////////////////////////////////////////////////
-  FBI->PushRtGroup(_rtgGbuffer);
+  FBI->PushRtGroup(_rtgGbuffer.get());
   FBI->SetAutoClear(false); // explicit clear
   targ->beginFrame();
   ///////////////////////////////////////////////////////////////////////////
@@ -203,6 +198,7 @@ void DeferredContext::renderGbuffer(CompositorDrawData& drawdata, const ViewData
     // DrawableBuffer -> RenderQueue enqueue
     ///////////////////////////////////////////////////////////////////////////
     for (const auto& layer_name : CPD.getLayerNames()) {
+      // printf("Deferred::renderEnqueuedScene::layer<%s>", layer_name.c_str());
       targ->debugMarker(FormatString("Deferred::renderEnqueuedScene::layer<%s>", layer_name.c_str()));
       DB->enqueueLayerToRenderQueue(layer_name, irenderer);
     }
@@ -211,9 +207,12 @@ void DeferredContext::renderGbuffer(CompositorDrawData& drawdata, const ViewData
     CIMPL->pushCPD(CPD); // drawenq
     targ->debugPushGroup("toolvp::DrawEnqRenderables");
     _rtgGbuffer->_clearColor = fvec4(0, 0, 0, 0);
-    FBI->rtGroupClear(_rtgGbuffer);
+    FBI->rtGroupClear(_rtgGbuffer.get());
+    auto newmask = RGBAMask{true,true,true,false};
+    auto oldmask = RSI->SetRGBAWriteMask(newmask);
     irenderer->drawEnqueuedRenderables();
     framerenderer.renderMisc();
+    RSI->SetRGBAWriteMask(oldmask);
     targ->debugPopGroup(); // drawenq
     CIMPL->popCPD();
   }
@@ -250,12 +249,12 @@ const uint32_t* DeferredContext::captureDepthClusters(const CompositorDrawData& 
   targ->debugPushGroup("Deferred::findclusters");
   {
     FBI->SetAutoClear(true);
-    FBI->PushRtGroup(_rtgDepthCluster);
+    FBI->PushRtGroup(_rtgDepthCluster.get());
     targ->beginFrame();
     _lightingmtl.begin(_tekDownsampleDepthCluster, RCFD);
     _lightingmtl.bindParamInt(_parTileDim, KTILEDIMXY);
     _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
-    _lightingmtl.bindParamVec2(_parNearFar, fvec2(KNEAR, KFAR));
+    _lightingmtl.bindParamVec2(_parNearFar, fvec2(VD._near, VD._far));
     _lightingmtl.bindParamVec2(_parZndc2eye, VD._zndc2eye);
     _lightingmtl.bindParamVec2(_parInvViewSize, fvec2(1.0 / float(_width), 1.0f / float(_height)));
     _lightingmtl._rasterstate.SetBlending(Blending::OFF);
@@ -269,8 +268,8 @@ const uint32_t* DeferredContext::captureDepthClusters(const CompositorDrawData& 
   }
   targ->debugPopGroup(); // findclusters
   CIMPL->popCPD();       // findclusters
-
-  bool captureok = FBI->capture(*_rtgDepthCluster, 0, &_clustercapture);
+  auto buf0      = _rtgDepthCluster->GetMrt(0);
+  bool captureok = FBI->capture(buf0.get(), &_clustercapture);
   assert(captureok);
   return (const uint32_t*)_clustercapture._data;
 }
@@ -285,8 +284,8 @@ void DeferredContext::renderUpdate(CompositorDrawData& drawdata) {
   int newwidth  = ddprops["OutputWidth"_crcu].get<int>();
   int newheight = ddprops["OutputHeight"_crcu].get<int>();
   if (_rtgGbuffer->width() != newwidth or _rtgGbuffer->height() != newheight) {
-    printf("newwidth<%d>\n", newwidth);
-    printf("newheight<%d>\n", newheight);
+    // printf("newwidth<%d>\n", newwidth);
+    // printf("newheight<%d>\n", newheight);
     _width    = newwidth;
     _height   = newheight;
     _clusterW = (newwidth + KTILEDIMXY - 1) / KTILEDIMXY;
@@ -311,7 +310,7 @@ void DeferredContext::updateDebugLights(const ViewData& VD) {
       pl->next();
     } else {
       fvec3 delta = pl->_dst - pl->_pos;
-      pl->_pos += delta.Normal() * 2.0f;
+      pl->_pos += delta.normalized() * 2.0f;
       pl->_counter--;
     }
     Sphere sph(pl->_pos, pl->_radius);
@@ -324,7 +323,7 @@ void DeferredContext::updateDebugLights(const ViewData& VD) {
     pl->_maxX          = int(ceil(pl->_aamax.x * KTILEMAXX));
     pl->_minY          = int(floor(pl->_aamin.y * KTILEMAXY));
     pl->_maxY          = int(ceil(pl->_aamax.y * KTILEMAXY));
-    pl->dist2cam       = (pl->_pos - VD._camposmono).Mag();
+    pl->dist2cam       = (pl->_pos - VD._camposmono).magnitude();
     pl->_minZ          = pl->dist2cam - pl->_radius; // Zndc2eye.x / (pl->_aabox.Min().z - Zndc2eye.y);
     pl->_maxZ          = pl->dist2cam + pl->_radius; // Zndc2eye.x / (pl->_aabox.Max().z - Zndc2eye.y);
   }
@@ -337,8 +336,9 @@ void DeferredContext::bindViewParams(const ViewData& VD) {
   _lightingmtl.bindParamMatrixArray(_parMatVArray, VD._v, 2);
   _lightingmtl.bindParamMatrixArray(_parMatPArray, VD._p, 2);
   _lightingmtl.bindParamVec2(_parZndc2eye, VD._zndc2eye);
-  _lightingmtl.bindParamVec2(_parNearFar, fvec2(DeferredContext::KNEAR, DeferredContext::KFAR));
+  _lightingmtl.bindParamVec2(_parNearFar, fvec2(VD._near, VD._far));
   _lightingmtl.bindParamVec2(_parInvViewSize, fvec2(1.0 / float(_width), 1.0f / float(_height)));
+  _lightingmtl.bindParamFloat(_parTime, VD._time);
 }
 
 void DeferredContext::bindRasterState(Context* ctx, ECullTest culltest, EDepthTest depthtest, Blending blending) {
@@ -351,6 +351,7 @@ void DeferredContext::bindRasterState(Context* ctx, ECullTest culltest, EDepthTe
 ///////////////////////////////////////////////////////////////////////////////
 
 void DeferredContext::renderBaseLighting(CompositorDrawData& drawdata, const ViewData& VD) {
+  printf("WTF2\n");
   /////////////////////////////////////////////////////////////////
   FrameRenderer& framerenderer = drawdata.mFrameRenderer;
   RenderContextFrameData& RCFD = framerenderer.framedata();
@@ -377,8 +378,8 @@ void DeferredContext::renderBaseLighting(CompositorDrawData& drawdata, const Vie
   _decalCPD._stereoCameraMatrices = nullptr;
   _decalCPD._stereo1pass          = false;
   CIMPL->pushCPD(_accumCPD); // base lighting
-  FBI->PushRtGroup(_rtgLaccum);
-  FBI->rtGroupClear(_rtgLaccum);
+  FBI->PushRtGroup(_rtgLaccum.get());
+  FBI->rtGroupClear(_rtgLaccum.get());
   //////////////////////////////////////////////////////////////////
   // base lighting
   //////////////////////////////////////////////////////////////////
@@ -414,7 +415,7 @@ void DeferredContext::beginPointLighting(CompositorDrawData& drawdata, const Vie
   auto RSI                     = targ->RSI();
   targ->debugPushGroup("Deferred::PointLighting");
   CIMPL->pushCPD(_accumCPD);
-  FBI->PushRtGroup(_rtgLaccum);
+  FBI->PushRtGroup(_rtgLaccum.get());
   const FxShaderTechnique* tek = nullptr;
   if (VD._isStereo) {
     tek = cookietexture ? _tekPointLightingTexturedStereo : _tekPointLightingUntexturedStereo;
@@ -429,7 +430,7 @@ void DeferredContext::beginPointLighting(CompositorDrawData& drawdata, const Vie
   _lightingmtl.bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
   _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
   _lightingmtl.bindParamCTex(_parMapDepthCluster, _rtgDepthCluster->GetMrt(0)->texture());
-  _lightingmtl.bindParamCTex(_parMapBrdfIntegration, _brdfIntegrationMap);
+  _lightingmtl.bindParamCTex(_parMapBrdfIntegration, _brdfIntegrationMap.get());
   ///////////////////////////
   if (cookietexture)
     _lightingmtl.bindParamCTex(_parLightCookieTexture, cookietexture);
@@ -465,7 +466,7 @@ void DeferredContext::beginSpotLighting(CompositorDrawData& drawdata, const View
   auto RSI                     = targ->RSI();
   targ->debugPushGroup("Deferred::PointLighting");
   CIMPL->pushCPD(_accumCPD);
-  FBI->PushRtGroup(_rtgLaccum);
+  FBI->PushRtGroup(_rtgLaccum.get());
   const FxShaderTechnique* tek = nullptr;
   if (VD._isStereo) {
     tek = cookietexture ? _tekSpotLightingTexturedStereo : _tekSpotLightingUntexturedStereo;
@@ -480,7 +481,7 @@ void DeferredContext::beginSpotLighting(CompositorDrawData& drawdata, const View
   _lightingmtl.bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
   _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
   _lightingmtl.bindParamCTex(_parMapDepthCluster, _rtgDepthCluster->GetMrt(0)->texture());
-  _lightingmtl.bindParamCTex(_parMapBrdfIntegration, _brdfIntegrationMap);
+  _lightingmtl.bindParamCTex(_parMapBrdfIntegration, _brdfIntegrationMap.get());
   ///////////////////////////
   if (cookietexture)
     _lightingmtl.bindParamCTex(_parLightCookieTexture, cookietexture);
@@ -516,7 +517,7 @@ void DeferredContext::beginShadowedSpotLighting(CompositorDrawData& drawdata, co
   auto RSI                     = targ->RSI();
   targ->debugPushGroup("Deferred::PointLighting");
   CIMPL->pushCPD(_accumCPD);
-  FBI->PushRtGroup(_rtgLaccum);
+  FBI->PushRtGroup(_rtgLaccum.get());
   const FxShaderTechnique* tek = nullptr;
   OrkAssert(cookietexture != nullptr);
   tek = VD._isStereo ? _tekSpotLightingTexturedShadowedStereo : _tekSpotLightingTexturedShadowed;
@@ -528,7 +529,7 @@ void DeferredContext::beginShadowedSpotLighting(CompositorDrawData& drawdata, co
   _lightingmtl.bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
   _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
   _lightingmtl.bindParamCTex(_parMapDepthCluster, _rtgDepthCluster->GetMrt(0)->texture());
-  _lightingmtl.bindParamCTex(_parMapBrdfIntegration, _brdfIntegrationMap);
+  _lightingmtl.bindParamCTex(_parMapBrdfIntegration, _brdfIntegrationMap.get());
   ///////////////////////////
   if (cookietexture)
     _lightingmtl.bindParamCTex(_parLightCookieTexture, cookietexture);
@@ -563,7 +564,7 @@ void DeferredContext::beginSpotDecaling(CompositorDrawData& drawdata, const View
   auto RSI                     = targ->RSI();
   targ->debugPushGroup("Deferred::SpotDecaling");
   CIMPL->pushCPD(_decalCPD);
-  FBI->PushRtGroup(_rtgDecal);
+  FBI->PushRtGroup(_rtgDecal.get());
   const FxShaderTechnique* tek = nullptr;
   if (VD._isStereo) {
     tek = cookietexture ? _tekSpotDecalingTexturedStereo : _tekSpotDecalingTexturedStereo;

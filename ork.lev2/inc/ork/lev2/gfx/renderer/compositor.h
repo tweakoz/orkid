@@ -1,35 +1,22 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
 #pragma once
 
+#include <ork/rtti/RTTIX.inl>
 #include <ork/dataflow/dataflow.h>
+#include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/renderer/frametek.h>
-#include <ork/lev2/gfx/gfxenv_enum.h>
-#include <ork/rtti/RTTIX.inl>
+#include <ork/lev2/gfx/targetinterfaces.h>
+//#include <ork/lev2/gfx/renderer/rendercontext.h>
+//#include <ork/lev2/gfx/renderer/irendertarget.h>
 
 namespace ork::lev2 {
-
-class CompositingSceneItem;
-struct CompositorDrawData;
-struct CompositingContext;
-struct CompositingImpl;
-struct CompositingData;
-struct CompositingMorphable;
-class DrawableBuffer;
-class LightManager;
-class GfxMaterial3DSolid;
-class IRenderTarget;
-class OutputCompositingNode;
-class RenderCompositingNode;
-
-using compositordata_ptr_t = std::shared_ptr<CompositingData>;
-using compositorimpl_ptr_t = std::shared_ptr<CompositingImpl>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -152,6 +139,7 @@ struct CompositingPassData {
   const Frustum& monoCamFrustum() const;
   const fvec3& monoCamZnormal() const;
   fvec3 monoCamPos(const fmtx4& vizoffsetmtx) const;
+  fvec2 nearAndFar() const;
   ////////////////////////////////////////////////////
 
   IRenderTarget* _irendertarget        = nullptr;
@@ -168,11 +156,13 @@ struct CompositingPassData {
   ViewportRect mMrtRect;
   uint32_t _passID = 0;
   orkset<std::string> mLayers;
+  float _time = 0.0f;
   bool _ispicking = false;
 };
 
 typedef std::stack<lev2::CompositingPassData> compositingpassdatastack_t;
 
+using compositingpassdata_ptr_t = std::shared_ptr<CompositingPassData>;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ViewData {
@@ -186,6 +176,9 @@ struct ViewData {
   fmtx4 PL, PR, PM;
   fmtx4 VPL, VPR, VPM;
   fvec2 _zndc2eye;
+  float _near = 0.1;
+  float _far = 10.0;
+  float _time = 0.0f;
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -208,13 +201,13 @@ struct CompositorDrawData {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct RenderPresetContext {
-  CompositingTechnique* _nodetek = nullptr;
+  CompositingTechnique* _nodetek     = nullptr;
   OutputCompositingNode* _outputnode = nullptr;
   RenderCompositingNode* _rendernode = nullptr;
-};  
+};
 ///////////////////////////////////////////////////////////////////////////////
 
-class CompositingData : public ork::Object {
+struct CompositingData : public ork::Object {
   DeclareConcreteX(CompositingData, ork::Object);
 
 public:
@@ -225,7 +218,7 @@ public:
   void presetDefault();
   void presetForward();
   void presetPicking();
-  RenderPresetContext presetPBR();
+  RenderPresetContext presetPBR(rtgroup_ptr_t outputgrp = nullptr);
   RenderPresetContext presetPBRVR();
 
   const orklut<PoolString, ork::Object*>& GetGroups() const {
@@ -264,18 +257,23 @@ public:
   orklut<PoolString, ork::Object*> _scenes;
   mutable PoolString _activeScene;
   mutable PoolString _activeItem;
-  mutable bool mToggle;
-  bool mbEnable;
+  mutable bool mToggle = true;
+  bool mbEnable        = true;
+
+  int _defaultW = 100;
+  int _defaultH = 100;
 
   compositorimpl_ptr_t createImpl() const;
 };
 
 ///////////////////////////////////////////////////////////////////////////
 
-class CompositingImpl {
-public:
+struct CompositingImpl {
+
   CompositingImpl(const CompositingData& data);
   ~CompositingImpl();
+
+  void gpuInit(lev2::Context* ctx);
 
   bool assemble(lev2::CompositorDrawData& drawdata);
   void composite(lev2::CompositorDrawData& drawdata);
@@ -308,13 +306,15 @@ public:
 private:
   const CompositingData& _compositingData;
 
-  float mfTimeAccum;
-  float mfLastTime;
-  LightManager* _lightmgr  = nullptr;
-  CameraData* _cimplcamdat = nullptr;
-  CompositingMorphable _morphable;
+  LightManager* _lightmgr                = nullptr;
+  CameraData* _cimplcamdat               = nullptr;
   CameraMatrices* _defaultCameraMatrices = nullptr;
-  int miActiveSceneItem;
+
+  float mfTimeAccum     = 0.0f;
+  float mfLastTime      = 0.0f;
+  int miActiveSceneItem = 0;
+
+  CompositingMorphable _morphable;
   CompositingContext _compcontext;
   compositingpassdatastack_t _stack;
 };
@@ -350,6 +350,43 @@ template <typename T> T* CompositingData::tryNodeTechnique(PoolString scenename,
   }
   return rval;
 }
+////////////////////////////////////////////////////////////////////////////////
+struct AcquiredUpdateDrawBuffer{
+  DrawableBuffer* _DB = nullptr;
+};
+////////////////////////////////////////////////////////////////////////////////
+using acqupdatebuffer_lambda_t = std::function<void(const AcquiredUpdateDrawBuffer&)>;
+////////////////////////////////////////////////////////////////////////////////
+struct AcquiredRenderDrawBuffer{
+  AcquiredRenderDrawBuffer( rcfd_ptr_t rcfd );
+  const DrawableBuffer* _DB;
+  rcfd_ptr_t _RCFD;
+};
+////////////////////////////////////////////////////////////////////////////////
+struct StandardCompositorFrame {
+  using acqrf_lambda_t = std::function<void(const AcquiredRenderDrawBuffer& acq)>;
 
+  StandardCompositorFrame(uidrawevent_constptr_t drawEvent = nullptr);
+  void withAcquiredUpdateDrawBuffer(int debugcode, bool rendersync, acqupdatebuffer_lambda_t l);
+  void _updateEnqueueLockedAndReleaseFrame(bool rendersync, DrawableBuffer* dbuf);
+  void _updateEnqueueUnlockedAndReleaseFrame(bool rendersync, DrawableBuffer* dbuf);
+  
+  void render();
+  const DrawableBuffer* _tryAcquireDrawBuffer();
+
+  rcfd_ptr_t _RCFD;
+  dbufcontext_ptr_t _dbufcontext;
+  uidrawevent_constptr_t _drawEvent;
+  rendertarget_uiviewport_ptr_t _rendertarget;
+  compositorimpl_ptr_t compositor;
+  compositingpassdata_ptr_t passdata;
+  irenderer_ptr_t renderer;
+  acqrf_lambda_t onPreCompositorRender;
+  acqrf_lambda_t onImguiRender;
+  bool _use_imgui_docking = false;
+  acqrf_lambda_t onPostCompositorRender;
+  rendervar_usermap_t _userprops;
+  bool _updrendersync = false;
+};
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

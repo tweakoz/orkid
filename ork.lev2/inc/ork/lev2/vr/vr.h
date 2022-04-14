@@ -21,12 +21,6 @@ namespace _ovr = ::vr;
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
-
-namespace ork::lev2 {
-class Texture;
-}
-
-////////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::orkidvr {
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -111,42 +105,47 @@ struct Device {
   virtual ~Device();
   void _updatePosesCommon();
 
-  virtual void gpuUpdate(RenderContextFrameData& RCFD) = 0;
-
+  virtual void gpuUpdate(RenderContextFrameData& RCFD)              = 0;
+  virtual void __composite(Context* targ, Texture* twoeyetex) const = 0;
 
   std::map<std::string, fmtx4> _posemap;
-  CameraMatrices* _leftcamera   = nullptr;
-  CameraMatrices* _centercamera = nullptr;
-  CameraMatrices* _rightcamera  = nullptr;
+  CameraMatrices* _leftcamera       = nullptr;
+  CameraMatrices* _centercamera     = nullptr;
+  CameraMatrices* _rightcamera      = nullptr;
+  usermatrixgenerator_t _usermtxgen = nullptr;
+
+  uint32_t _width      = 128;
+  uint32_t _height     = 128;
+  float _fov           = 45.0f;
+  float _near          = 1.0f;
+  float _far           = 100000.0;
+  float _IPD           = 0.0f;
+  int _calibstate      = 0;
+  int _calibstateFrame = 0;
+
+  bool _active                      = false;
+  bool _supportsStereo              = false;
+  float _stereoTileRotationDegreesL = 0.0f;
+  float _stereoTileRotationDegreesR = 0.0f;
+
   std::map<int, controllerstate_ptr_t> _controllers;
-  bool _active;
-  bool _supportsStereo;
   fmtx4 _hmd_trackingMatrix;
   fmtx4 _hmdMatrix;
   fmtx4 _rotMatrix;
   fmtx4 _baseMatrix;
-  float _stereoTileRotationDegreesL;
-  float _stereoTileRotationDegreesR;
-  usermatrixgenerator_t _usermtxgen;
+  fmtx4 _outputViewOffsetMatrix;
 
   VrProjFrustumPar _frustumLeft;
   VrProjFrustumPar _frustumCenter;
   VrProjFrustumPar _frustumRight;
 
-  fmtx4 _outputViewOffsetMatrix;
   lev2::inputgroup_ptr_t _hmdinputgroup;
-  uint32_t _width, _height;
-  svar512_t _private;
-  int _calibstate;
-  int _calibstateFrame;
   std::vector<fvec3> _calibposvect;
   std::vector<fvec3> _calibnxvect;
   std::vector<fvec3> _calibnyvect;
   std::vector<fvec3> _calibnzvect;
-  float _fov = 45.0f;
-  float _near = 1.0f;
-  float _far = 100000.0;
-  float _IPD = 0.0f;
+
+  svar512_t _private;
 
 protected:
   controllerstate_ptr_t controller(int id);
@@ -156,6 +155,7 @@ private:
 };
 
 #if defined(ENABLE_OPENVR)
+namespace openvr {
 struct OpenVrDevice final : public Device {
 
   OpenVrDevice();
@@ -165,6 +165,9 @@ struct OpenVrDevice final : public Device {
   void _updatePoses();
   void _vrthread_loop();
   void gpuUpdate(RenderContextFrameData& RCFD) final;
+
+  // void __gpuUpdate(RenderContextFrameData& RCFD);
+  void __composite(Context* targ, Texture* twoeyetex) const final;
 
   _ovr::IVRSystem* _hmd;
   _ovr::TrackedDevicePose_t _trackedPoses[_ovr::k_unMaxTrackedDeviceCount];
@@ -176,15 +179,22 @@ struct OpenVrDevice final : public Device {
   ork::Thread _vrthread;
   ork::mutex _vrmutex;
 };
+std::shared_ptr<OpenVrDevice> openvr_device();
+} // namespace openvr
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
+namespace novr {
 struct NoVrDevice final : public Device {
   NoVrDevice();
   ~NoVrDevice() final;
   void _processControllerEvents();
   void _updatePoses(RenderContextFrameData& RCFD);
   void gpuUpdate(RenderContextFrameData& RCFD) final;
+
+  // void __gpuUpdate(RenderContextFrameData& RCFD);
+  void __composite(Context* targ, Texture* twoeyetex) const final;
+
   msgrouter::subscriber_t _qtmousesubsc;
   msgrouter::subscriber_t _qtkbdownsubs;
   msgrouter::subscriber_t _qtkbupsubs;
@@ -192,18 +202,14 @@ struct NoVrDevice final : public Device {
   int _width;
   int _height;
 };
-
+std::shared_ptr<NoVrDevice> novr_device();
+} // namespace novr
 ////////////////////////////////////////////////////////////////////////////////
 
 void setDevice(std::shared_ptr<Device> device);
 
 Device& device();
-#if defined(ENABLE_OPENVR)
-std::shared_ptr<OpenVrDevice> openvr_device();
-#endif
-std::shared_ptr<NoVrDevice> novr_device();
+
 ////////////////////////////////////////////////////////////////////////////////
-void gpuUpdate(RenderContextFrameData& RCFD);
-void composite(Context* targ, Texture* twoeyetex);
 ////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::orkidvr

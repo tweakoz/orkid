@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -57,8 +57,8 @@ struct DeferredContext {
 #else
   static constexpr int KTILEDIMXY = 64;
 #endif
-  static constexpr float KNEAR = 0.1f;
-  static constexpr float KFAR  = 100000.0f;
+  //static constexpr float KNEAR = 0.1f;
+  //static constexpr float KFAR  = 100000.0f;
   ////////////////////////////////////////////////////////////////////
   DeferredContext(RenderCompositingNode* node, std::string shadername, int numlights);
   ~DeferredContext();
@@ -92,22 +92,27 @@ struct DeferredContext {
   CompositingPassData _decalCPD;
   fvec4 _clearColor;
   std::string _shadername;
-  lev2::Texture* brdfIntegrationTexture() const;
+  lev2::texture_ptr_t brdfIntegrationTexture() const;
   ////////////////////////////////////////////////////////////////////
   int _width    = 0;
   int _height   = 0;
   int _clusterW = 0;
   int _clusterH = 0;
-
   textureassetptr_t _whiteTexture;
+  textureassetptr_t _voltexA;
   ////////////////////////////////////////////////////////////////////
   std::vector<PointLight*> _pointlights;
 
   ////////////////////////////////////////////////////////////////////
 
   const FxShaderTechnique* _tekBaseLighting              = nullptr;
+
   const FxShaderTechnique* _tekEnvironmentLighting       = nullptr;
   const FxShaderTechnique* _tekEnvironmentLightingStereo = nullptr;
+
+  const FxShaderTechnique* _tekEnvironmentLightingSDF       = nullptr;
+  const FxShaderTechnique* _tekEnvironmentLightingSDFStereo = nullptr;
+
   const FxShaderTechnique* _tekBaseLightingStereo        = nullptr;
   const FxShaderTechnique* _tekDownsampleDepthCluster    = nullptr;
   //
@@ -145,6 +150,7 @@ struct DeferredContext {
   const FxShaderParam* _parMapSpecularEnv      = nullptr;
   const FxShaderParam* _parMapDiffuseEnv       = nullptr;
   const FxShaderParam* _parMapBrdfIntegration  = nullptr;
+  const FxShaderParam* _parMapVolTexA  = nullptr;
   const FxShaderParam* _parTime                = nullptr;
   const FxShaderParam* _parNearFar             = nullptr;
   const FxShaderParam* _parInvViewSize         = nullptr;
@@ -169,17 +175,17 @@ struct DeferredContext {
   RtGroupRenderTarget* _gbuffRT      = nullptr;
   RtGroupRenderTarget* _decalRT      = nullptr;
   RtGroupRenderTarget* _clusterRT    = nullptr;
-  lev2::Texture* _brdfIntegrationMap = nullptr;
+  lev2::texture_ptr_t _brdfIntegrationMap = nullptr;
 
   CaptureBuffer _clustercapture;
-  RtGroup* _rtgGbuffer      = nullptr;
-  RtGroup* _rtgDecal        = nullptr;
-  RtGroup* _rtgDepthCluster = nullptr;
-  RtGroup* _rtgLaccum       = nullptr;
+  rtgroup_ptr_t _rtgGbuffer      = nullptr;
+  rtgroup_ptr_t _rtgDecal        = nullptr;
+  rtgroup_ptr_t _rtgDepthCluster = nullptr;
+  rtgroup_ptr_t _rtgLaccum       = nullptr;
 
-  RtBuffer* _rtbGbuffer      = nullptr;
-  RtBuffer* _rtbDepthCluster = nullptr;
-  RtBuffer* _rtbLightAccum   = nullptr;
+  rtbuffer_ptr_t _rtbGbuffer      = nullptr;
+  rtbuffer_ptr_t _rtbDepthCluster = nullptr;
+  rtbuffer_ptr_t _rtbLightAccum   = nullptr;
 
   std::string _layername;
   float _specularLevel    = 1.0f;
@@ -203,7 +209,7 @@ private:
   void doGpuInit(lev2::Context* pTARG, int w, int h) final;
   void DoRender(CompositorDrawData& drawdata) final;
 
-  lev2::RtBuffer* GetOutput() const final;
+  lev2::rtbuffer_ptr_t GetOutput() const final;
   svar256_t _impl;
 };
 
@@ -216,8 +222,8 @@ public:
   DeferredCompositingNodePbr();
   ~DeferredCompositingNodePbr();
 
-  lev2::Texture* envSpecularTexture() const;
-  lev2::Texture* envDiffuseTexture() const;
+  lev2::texture_ptr_t envSpecularTexture() const;
+  lev2::texture_ptr_t envDiffuseTexture() const;
 
   float environmentIntensity() const {
     return _environmentIntensity;
@@ -256,8 +262,8 @@ public:
 
   asset::asset_ptr_t _environmentTextureAsset;
 
-  lev2::RtBuffer* GetOutput() const final;
-  lev2::RtGroup* GetOutputGroup() const final;
+  lev2::rtbuffer_ptr_t GetOutput() const final;
+  lev2::rtgroup_ptr_t GetOutputGroup() const final;
 
   svar256_t _impl;
   float _environmentIntensity = 1.0f;
@@ -269,8 +275,8 @@ public:
   float _depthFogDistance     = 1000.0f;
   float _depthFogPower        = 1.0f;
   fvec3 _ambientLevel;
-  lev2::Texture* _filtenvSpecularMap = nullptr;
-  lev2::Texture* _filtenvDiffuseMap  = nullptr;
+  lev2::texture_ptr_t _filtenvSpecularMap;
+  lev2::texture_ptr_t _filtenvDiffuseMap;
   fvec4 _clearColor;
 
   asset::vars_ptr_t _texAssetVarMap;
@@ -293,7 +299,7 @@ private:
   void doGpuInit(lev2::Context* pTARG, int w, int h) final;
   void DoRender(CompositorDrawData& drawdata) final;
 
-  lev2::RtBuffer* GetOutput() const final;
+  lev2::rtbuffer_ptr_t GetOutput() const final;
   svar256_t _impl;
 };
 

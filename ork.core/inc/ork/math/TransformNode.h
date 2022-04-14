@@ -1,98 +1,69 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _ORK_MATH_TRANSFORM_NODE_H
-#define _ORK_MATH_TRANSFORM_NODE_H
+#pragma once
 
 #include <ork/math/cvector3.h>
 #include <ork/math/quaternion.h>
 #include <ork/math/cmatrix4.h>
 #include <ork/kernel/tempstring.h>
+#include <ork/rtti/RTTIX.inl>
+#include <ork/object/Object.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork {
 
+struct TransformNode;
+struct DecompTransform;
+using decompxf_ptr_t = std::shared_ptr<DecompTransform>;
+using xfnode_ptr_t = std::shared_ptr<TransformNode>;
+using decompxf_const_ptr_t = std::shared_ptr<const DecompTransform>;
+using xfnode_const_ptr_t = std::shared_ptr<const TransformNode>;
+
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
 
-struct Transform3DMatrix {
-  typedef fvec3 PosType;
-  typedef fquat RotType;
-  typedef float ScaType;
-  typedef fmtx4& MatType;
+struct DecompTransform : public ork::Object {
 
-  void SetMatrix(const fmtx4&);
-  const fmtx4& GetMatrix() const;
-  fvec3 GetPosition() const;
-  fquat GetRotation() const;
-  float GetScale() const;
-  void SetRotation(const fquat& q);
-  void SetScale(const float scale);
-  void SetPosition(const fvec3& pos);
+  DeclareConcreteX(DecompTransform, ork::Object);
 
-private:
-  fmtx4 mMatrix; /// matrix in world space
+  fvec3 _translation;
+  fquat _rotation;
+  float _uniformScale = 1.0f;
+
+  void set(fvec3 t, fquat r, float s) { _translation=t; _rotation=r; _uniformScale=s; }
+  fmtx4 composed() const;
+  fmtx4 composed2() const;
+  void decompose( const fmtx4& inmtx );
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
 
-struct TransformNode {
+struct TransformNode : public ork::Object {
+
+  DeclareConcreteX(TransformNode, ork::Object);
+
+public:
 
   TransformNode();
   TransformNode(const TransformNode& oth);
   ~TransformNode();
 
-  const Transform3DMatrix& GetTransform() const {
-    return mTransform;
-  }
-  Transform3DMatrix& GetTransform() {
-    return mTransform;
-  }
-
   const TransformNode& operator=(const TransformNode& oth);
-
-  //////////////////////////////////////////////////////////////////////////////
-
-  void GetMatrix(fmtx4& mtx) const;
-
-  //////////////////////////////////////////////////////////////////////////////
-
-  enum ETransformHierMode {
-    EMODE_ABSOLUTE = 0,   /// Set overwrite transform node's current component
-    EMODE_LOCAL_RELATIVE, /// Concatenate
-  };
-
-  void Translate(ETransformHierMode emode, const fvec3& pos);
-
-  //////////////////////////////////////////////////////////////////////////////
-
   bool operator==(const TransformNode& rhs) const;
   bool operator!=(const TransformNode& rhs) const;
 
-  //////////////////////////////////////////////////////////////////////////////
-  const TransformNode* GetParent() const {
-    return mpParent;
-  }
-  void SetParent(const TransformNode* ppar);
-  //////////////////////////////////////////////////////////////////////////////
-  void UnParent();
-  void ReParent(const TransformNode* ppar);
-  //////////////////////////////////////////////////////////////////////////////
-private:
-  const TransformNode* mpParent;
-  Transform3DMatrix mTransform;
+  fmtx4 computeMatrix() const;
 
-  void CopyFrom(const TransformNode& oth);
-  //////////////////////////////////////////////////////////////////////////////
+  xfnode_const_ptr_t _parent;
+  decompxf_ptr_t _transform;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 } // namespace ork
-#endif

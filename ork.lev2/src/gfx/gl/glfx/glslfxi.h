@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -70,8 +70,8 @@ struct Uniform {
 
   Uniform(const std::string& nam, const std::string& sem = "")
       : _name(nam)
-      , _semantic(sem)
       , _type(GL_ZERO)
+      , _semantic(sem)
       , _arraySize(0) {
   }
 };
@@ -95,15 +95,15 @@ struct UniformInstance {
 
 struct Attribute {
   std::string mName;
+  std::string mSemantic;
+  GLenum meType;
+  GLint mLocation;
+  int mArraySize;
   std::string mTypeName;
   std::string mDirection;
   std::string mLayout;
   std::string mInlineStruct;
-  GLenum meType;
-  GLint mLocation;
-  std::string mSemantic;
   std::string mComment;
-  int mArraySize;
   bool _typeIsInlineStruct = false;
   std::vector<std::string> _inlineStructToks;
   std::set<std::string> _typequalifier;
@@ -389,8 +389,8 @@ struct Pass {
 
   Pass(const std::string& name)
       : _name(name)
-      , _programObjectId(0)
       , _stateBlock(nullptr)
+      , _programObjectId(0)
       , _samplerCount(0) {
     for (int i = 0; i < kmaxattrID; i++)
       _vtxAttributeById[i] = nullptr;
@@ -560,6 +560,8 @@ public:
   void BindParamVect2(const FxShaderParam* hpar, const fvec2& Vec) override;
   void BindParamVect3(const FxShaderParam* hpar, const fvec3& Vec) override;
   void BindParamVect4(const FxShaderParam* hpar, const fvec4& Vec) override;
+  void BindParamVect2Array(const FxShaderParam* hpar, const fvec2* Vec, const int icount) override;
+  void BindParamVect3Array(const FxShaderParam* hpar, const fvec3* Vec, const int icount) override;
   void BindParamVect4Array(const FxShaderParam* hpar, const fvec4* Vec, const int icount) override;
   void BindParamFloatArray(const FxShaderParam* hpar, const float* pfA, const int icnt) override;
   void BindParamFloat(const FxShaderParam* hpar, float fA) override;

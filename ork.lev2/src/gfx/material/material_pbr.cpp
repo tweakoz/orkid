@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -34,8 +34,7 @@ ImplementReflectionX(ork::lev2::PBRMaterial, "PBRMaterial");
 namespace ork::lev2 {
 
 material_ptr_t default3DMaterial() {
-  static auto mtl = std::make_shared<PBRMaterial>(GfxEnv::GetRef().loadingContext());
-  return mtl;
+  return std::make_shared<PBRMaterial>(lev2::contextForCurrentThread());
 }
 
 //////////////////////////////////////////////////////
@@ -74,9 +73,9 @@ void PBRMaterial::describeX(class_t* c) {
   /////////////////////////////////////////////////////////////////
 
   chunkfile::materialreader_t reader = [](chunkfile::XgmMaterialReaderContext& ctx) -> ork::lev2::material_ptr_t {
-    auto targ             = ctx._varmap.typedValueForKey<Context*>("gfxtarget").value();
+    auto targ             = ctx._varmap->typedValueForKey<Context*>("gfxtarget").value();
     auto txi              = targ->TXI();
-    const auto& embtexmap = ctx._varmap.typedValueForKey<embtexmap_t>("embtexmap").value();
+    const auto& embtexmap = ctx._varmap->typedValueForKey<embtexmap_t>("embtexmap").value();
 
     int istring = 0;
 
@@ -104,7 +103,7 @@ void PBRMaterial::describeX(class_t* c) {
         auto itt = embtexmap.find(texname);
         assert(itt != embtexmap.end());
         auto embtex    = itt->second;
-        auto tex       = new lev2::Texture;
+        auto tex       = std::make_shared<lev2::Texture>();
         auto datablock = std::make_shared<DataBlock>(embtex->_srcdata, embtex->_srcdatalen);
         bool ok        = txi->LoadTexture(tex, datablock);
         assert(ok);
@@ -118,11 +117,23 @@ void PBRMaterial::describeX(class_t* c) {
         if (0 == strcmp(token, "mtlrufmap")) {
           mtl->_texMtlRuf = tex;
         }
+        if (0 == strcmp(token, "emissivemap")) {
+          mtl->_texEmissive = tex;
+        }
       }
     }
     ctx._inputStream->GetItem<float>(mtl->_metallicFactor);
     ctx._inputStream->GetItem<float>(mtl->_roughnessFactor);
     ctx._inputStream->GetItem<fvec4>(mtl->_baseColor);
+
+    if( auto try_ov = ctx._varmap->typedValueForKey<std::string>("override.shader.gbuf") ){
+      const auto& ov_val = try_ov.value();
+      if(ov_val == "normalviz"){
+        mtl->_variant = "normalviz"_crcu;
+      }
+    }
+
+
     return mtl;
   };
 
@@ -183,6 +194,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   _tekRigidGBUFFER              = fxi->technique(_shader, "rigid_gbuffer");
   _tekRigidGBUFFER_N            = fxi->technique(_shader, "rigid_gbuffer_n");
+  _tekRigidGBUFFER_VIZ_N        = fxi->technique(_shader, "rigid_gbuffer_vizn");
   _tekRigidGBUFFER_N_STEREO     = fxi->technique(_shader, "rigid_gbuffer_n_stereo");
   _tekRigidGBUFFER_N_TEX_STEREO = fxi->technique(_shader, "rigid_gbuffer_n_tex_stereo");
   _tekRigidGBUFFER_N_SKINNED    = fxi->technique(_shader, "skinned_gbuffer_n");
@@ -190,7 +202,14 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _tekRigidGBUFFER_N_INSTANCED        = fxi->technique(_shader, "rigid_gbuffer_n_instanced");
   _tekRigidGBUFFER_N_INSTANCED_STEREO = fxi->technique(_shader, "rigid_gbuffer_n_instanced_stereo");
 
+
+  _tekRigidGBUFFER_VTXCOLOR = fxi->technique(_shader, "rigid_gbuffer_vtxcolor");
+
+  _tekRigidGBUFFER_FONT = fxi->technique(_shader, "rigid_gbuffer_font");
+  _tekRigidGBUFFER_FONT_INSTANCED = fxi->technique(_shader, "rigid_gbuffer_font_instanced");
+
   _tekSkinnedGBUFFER_N = fxi->technique(_shader, "skinned_gbuffer_n");
+
 
   /*assert(_tekRigidPICKING);
   assert(_tekRigidPICKING_INSTANCED);
@@ -202,6 +221,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   assert(_tekRigidGBUFFER_N_INSTANCED);
   assert(_tekRigidGBUFFER_N_INSTANCED_STEREO);*/
 
+  _paramM                 = fxi->parameter(_shader, "m");
+  _paramVP                = fxi->parameter(_shader, "vp");
   _paramMVP               = fxi->parameter(_shader, "mvp");
   _paramMVPL              = fxi->parameter(_shader, "mvp_l");
   _paramMVPR              = fxi->parameter(_shader, "mvp_r");
@@ -240,6 +261,23 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
     // printf("substituted white for non-existant mtlrufao texture\n");
     OrkAssert(_texMtlRuf != nullptr);
   }
+  if (_texEmissive ) {
+    //_asset_emissive = _asset_texcolor;
+    //_texEmissive       = _asset_emissive->GetTexture();
+    printf("substituted white for non-existant color texture\n");
+    //OrkAssert(_texEmissive != nullptr);
+    forceEmissive();
+    //_asset_texcolor = asset::AssetManager<lev2::TextureAsset>::load("src://effect_textures/white");
+    _texColor       = _texEmissive;
+  }
+}
+
+void PBRMaterial::forceEmissive(){
+  // to force emissive set normal map to black
+  // shader will interpret as emissive
+  _asset_texnormal = asset::AssetManager<lev2::TextureAsset>::load("src://effect_textures/black");
+  _texNormal       = _asset_texnormal->GetTexture();
+  OrkAssert(_texNormal != nullptr);
 }
 
 ////////////////////////////////////////////
@@ -254,6 +292,8 @@ int PBRMaterial::BeginBlock(Context* targ, const RenderContextInstData& RCID) {
 
   const FxShaderTechnique* tek = _tekRigidGBUFFER;
 
+
+
   if (is_picking) {
     tek = _tekRigidPICKING;
   } else if (is_stereo) {
@@ -262,7 +302,23 @@ int PBRMaterial::BeginBlock(Context* targ, const RenderContextInstData& RCID) {
     else
       tek = _tekRigidGBUFFER_N_STEREO;
   } else {
-    tek = is_skinned ? _tekRigidGBUFFER_N_SKINNED : _tekRigidGBUFFER_N;
+    switch(_variant){
+        case 0:
+          tek = is_skinned ? _tekRigidGBUFFER_N_SKINNED : _tekRigidGBUFFER_N;
+          break;
+        case "normalviz"_crcu:
+          tek = _tekRigidGBUFFER_VIZ_N;
+          break;
+        case "vertexcolor"_crcu:
+          tek = _tekRigidGBUFFER_VTXCOLOR;
+          break;
+        case "font"_crcu:
+          tek = _tekRigidGBUFFER_FONT;
+          break;
+        case "font-instanced"_crcu:
+          tek = _tekRigidGBUFFER_FONT_INSTANCED;
+          break;
+    }
     if (is_skinned) {
     }
   }
@@ -281,6 +337,15 @@ void PBRMaterial::EndBlock(Context* targ) {
 
 ////////////////////////////////////////////
 
+void PBRMaterial::gpuUpdate(Context* context) {
+  GfxMaterial::gpuUpdate(context);
+  //auto modcolor = context->RefModColor();
+  //auto fxi    = context->FXI();
+  //fxi->BindParamVect4(_parModColor, modcolor*_baseColor);
+}
+
+////////////////////////////////////////////
+
 bool PBRMaterial::BeginPass(Context* targ, int iPass) {
   // printf( "_name<%s>\n", mMaterialName.c_str() );
   auto fxi    = targ->FXI();
@@ -290,6 +355,9 @@ bool PBRMaterial::BeginPass(Context* targ, int iPass) {
   auto rotmtx = mtxi->RefR3Matrix();
   auto mvmtx  = mtxi->RefMVMatrix();
   auto vmtx   = mtxi->RefVMatrix();
+  auto pmtx   = mtxi->RefPMatrix();
+  auto vpmtx = vmtx*pmtx;
+
   // vmtx.dump("vmtx");
   const RenderContextInstData* RCID  = targ->GetRenderContextInstData();
   const RenderContextFrameData* RCFD = targ->topRenderContextFrameData();
@@ -303,9 +371,10 @@ bool PBRMaterial::BeginPass(Context* targ, int iPass) {
     modcolor = targ->RefModColor();
     // printf("modcolor<%g %g %g %g>\n", modcolor.x, modcolor.y, modcolor.z, modcolor.w);
   } else {
-    fxi->BindParamCTex(_paramMapColor, _texColor);
-    fxi->BindParamCTex(_paramMapNormal, _texNormal);
-    fxi->BindParamCTex(_paramMapMtlRuf, _texMtlRuf);
+    modcolor = _baseColor * targ->RefModColor();
+    fxi->BindParamCTex(_paramMapColor, _texColor.get());
+    fxi->BindParamCTex(_paramMapNormal, _texNormal.get());
+    fxi->BindParamCTex(_paramMapMtlRuf, _texMtlRuf.get());
     fxi->BindParamFloat(_parMetallicFactor, _metallicFactor);
     fxi->BindParamFloat(_parRoughnessFactor, _roughnessFactor);
     auto brdfintegtex = PBRMaterial::brdfIntegrationMap(targ);
@@ -328,13 +397,48 @@ bool PBRMaterial::BeginPass(Context* targ, int iPass) {
     fxi->BindParamMatrix(_paramMROT, (world).rotMatrix33());
   } else {
     auto mcams = CPD._cameraMatrices;
-    auto MVP   = world * mcams->_vmatrix * mcams->_pmatrix;
+    auto VP = (mcams->_vmatrix * mcams->_pmatrix);
+    auto MVP   = world * VP;
     fxi->BindParamMatrix(_paramMVP, MVP);
+    fxi->BindParamMatrix(_paramVP, VP);
     fxi->BindParamMatrix(_paramMROT, (world).rotMatrix33());
   }
+
+  switch(_variant){
+      case "font-instanced"_crcu:
+        break;
+      default:
+        break;
+  }
+
   rsi->BindRasterState(_rasterstate);
   fxi->CommitParams();
   return true;
+}
+
+void PBRMaterial::UpdateMVPMatrix(Context* context) {
+  auto fxi    = context->FXI();
+  auto rsi    = context->RSI();
+  auto mtxi   = context->MTXI();
+  const RenderContextInstData* RCID  = context->GetRenderContextInstData();
+  const RenderContextFrameData* RCFD = context->topRenderContextFrameData();
+  const auto& CPD                    = RCFD->topCPD();
+  if (CPD.isStereoOnePass() and CPD._stereoCameraMatrices) {
+  }
+  else{
+    auto mcams = CPD._cameraMatrices;
+    const auto& world = mtxi->RefMMatrix();
+    auto MVP   = world * mcams->_vmatrix * mcams->_pmatrix;
+    fxi->BindParamMatrix(_paramMVP, MVP);
+
+  }
+}
+
+void PBRMaterial::UpdateMMatrix(Context* context) {
+  auto fxi    = context->FXI();
+  auto mtxi   = context->MTXI();
+  const auto& world = mtxi->RefMMatrix();
+  fxi->BindParamMatrix(_paramM, world);
 }
 
 ////////////////////////////////////////////

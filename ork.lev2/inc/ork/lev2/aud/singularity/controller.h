@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #pragma once
 
 #include "konoff.h"
@@ -26,7 +33,7 @@ struct ControllerData : public ork::Object {
 
   DeclareAbstractX(ControllerData, ork::Object);
 
-  virtual ControllerInst* instantiate(Layer* layer) const = 0;
+  virtual ControllerInst* instantiate(layer_ptr_t layer) const = 0;
 
   scopesource_ptr_t createScopeSource();
   std::string _name;
@@ -36,7 +43,7 @@ struct ControllerData : public ork::Object {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ControllerInst {
-  ControllerInst(Layer* layer);
+  ControllerInst(layer_ptr_t layer);
   virtual ~ControllerInst() {
   }
 
@@ -48,7 +55,7 @@ struct ControllerInst {
   }
 
   float _curval;
-  Layer* _layer = nullptr;
+  layer_ptr_t _layer = nullptr;
 };
 
 struct ControlBlockInst {
@@ -59,6 +66,8 @@ struct ControlBlockInst {
   ControllerInst* _cinst[kmaxctrlperblock] = {0, 0, 0, 0};
 };
 
+using ctrlblockinst_ptr_t = std::shared_ptr<ControlBlockInst>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct LfoData : public ControllerData {
@@ -66,7 +75,7 @@ struct LfoData : public ControllerData {
   DeclareConcreteX(LfoData, ControllerData);
 
   LfoData();
-  ControllerInst* instantiate(Layer* layer) const final;
+  ControllerInst* instantiate(layer_ptr_t layer) const final;
 
   float _initialPhase;
   float _minRate;
@@ -78,7 +87,7 @@ struct LfoData : public ControllerData {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct LfoInst : public ControllerInst {
-  LfoInst(const LfoData* data, Layer* layer);
+  LfoInst(const LfoData* data, layer_ptr_t layer);
 
   void reset();
   void keyOn(const KeyOnInfo& KOI) final;
@@ -101,7 +110,7 @@ struct FunData : public ControllerData {
 
   DeclareConcreteX(FunData, ControllerData);
 
-  ControllerInst* instantiate(Layer* layer) const final;
+  ControllerInst* instantiate(layer_ptr_t layer) const final;
 
   std::string _a, _b, _op;
 };
@@ -109,7 +118,7 @@ struct FunData : public ControllerData {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct FunInst : public ControllerInst {
-  FunInst(const FunData* data, Layer* layer);
+  FunInst(const FunData* data, layer_ptr_t layer);
   void compute() final;
   void keyOn(const KeyOnInfo& KOI) final;
   void keyOff() final;
@@ -132,13 +141,13 @@ struct CustomControllerData final : public ControllerData {
   DeclareConcreteX(CustomControllerData, ControllerData);
 
   CustomControllerData();
-  ControllerInst* instantiate(Layer* layer) const override;
+  ControllerInst* instantiate(layer_ptr_t layer) const override;
   customcontroller_computemethod_t _oncompute;
   customcontroller_keyonmethod_t _onkeyon;
   customcontroller_keyoffmethod_t _onkeyoff;
 };
 struct CustomControllerInst final : public ControllerInst {
-  CustomControllerInst(const CustomControllerData* data, Layer* layer);
+  CustomControllerInst(const CustomControllerData* data, layer_ptr_t layer);
   void compute() override;
   void keyOn(const KeyOnInfo& KOI) override;
   void keyOff() override;
@@ -151,7 +160,7 @@ struct ConstantControllerData : public ControllerData {
 
   DeclareConcreteX(ConstantControllerData, ControllerData);
 
-  ControllerInst* instantiate(Layer* layer) const final;
+  ControllerInst* instantiate(layer_ptr_t layer) const final;
 
   float _constvalue = 0.0f;
 };
@@ -159,7 +168,7 @@ struct ConstantControllerData : public ControllerData {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ConstantInst final : public ControllerInst {
-  ConstantInst(const ConstantControllerData* data, Layer* layer);
+  ConstantInst(const ConstantControllerData* data, layer_ptr_t layer);
   void compute() override;
   void keyOn(const KeyOnInfo& KOI) override;
   void keyOff() override;

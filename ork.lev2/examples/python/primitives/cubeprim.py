@@ -6,6 +6,8 @@
 # see http://www.boost.org/LICENSE_1_0.txt
 ################################################################################
 
+#pip3 install numpi Pillow
+
 import numpy, time
 from PIL import Image
 from orkengine.core import *
@@ -69,6 +71,7 @@ FBI.autoclear = True
 FBI.autoclear = True
 FBI.clearcolor = vec4(1,0,0,1)
 rtg = ctx.defaultRTG()
+rtb = rtg.buffer(0)
 ctx.resize(WIDTH,HEIGHT)
 capbuf = CaptureBuffer()
 
@@ -100,7 +103,7 @@ ctx.debugMarker("yo")
 #FBI.rtGroupPop()
 #ctx.endFrame()
 
-ok = FBI.captureAsFormat(rtg,0,capbuf,"RGBA8")
+ok = FBI.captureAsFormat(rtb,capbuf,"RGBA8")
 assert(ok)
 as_np = numpy.array(capbuf,dtype=numpy.uint8).reshape( HEIGHT, WIDTH, 4 )
 img = Image.fromarray(as_np, 'RGBA')

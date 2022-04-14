@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #pragma once
 
 #include <vector>
@@ -52,7 +59,7 @@ struct DataBlock {
   bool _append(const unsigned char* buffer, size_t bufmax);
   /////////////////////////////////////////////
   std::vector<uint8_t> _storage;
-  varmap::VarMap _vars;
+  std::shared_ptr<varmap::VarMap> _vars;
   std::string _name = "noname";
 };
 

@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <ork/kernel/datacache.h>
 #include <ork/file/fileenv.h>
 #include <ork/file/path.h>
@@ -9,6 +16,9 @@ namespace ork {
 
 bool DataBlockCache::_enabled = true;
 DataBlockCache::DataBlockCache() {
+  if( genviron.has("ORKID_DISABLE_DBLOCK_CACHING") ){
+    _enabled = false;
+  }
 }
 DataBlockCache::~DataBlockCache() {
 }

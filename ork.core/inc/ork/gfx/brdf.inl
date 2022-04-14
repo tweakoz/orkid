@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #pragma once
 
 #include <ork/math/cvector4.hpp>
@@ -82,7 +89,7 @@ inline dvec3 importanceSampleGGX(dvec2 e, float roughness) {
 
 inline double geometrySchlickGGX(dvec3 normal, dvec3 dir, double roughness) {
   double k       = roughness * roughness / 2.0;
-  double numer   = saturate(normal.Dot(dir));
+  double numer   = saturate(normal.dotWith(dir));
   double divisor = numer * (1.0 - k) + k;
   return numer / divisor;
 }
@@ -93,7 +100,7 @@ inline double geometrySmith(dvec3 normal, dvec3 viewdir, dvec3 lightdir, double 
 
 inline dvec3 fresnelSchlick(dvec3 normal, dvec3 viewdir, dvec3 F0) {
   using namespace std;
-  double ndotv_sat = saturate(normal.Dot(viewdir));
+  double ndotv_sat = saturate(normal.dotWith(viewdir));
   return F0 + (dvec3(1, 1, 1) - F0) * pow(1.0 - ndotv_sat, 5.0);
 }
 
@@ -107,8 +114,8 @@ template <size_t numsamples> inline dvec2 integrateGGX(double n_dot_v, double ro
   for (int i = 0; i < numsamples; i++) {
     dvec2 e            = hammersley(i, numsamples);
     dvec3 h            = importanceSampleGGX(e, roughness);
-    double v_dot_h     = v.Dot(h);
-    dvec3 l            = ((h * 2.0 * v_dot_h) - v).Normal();
+    double v_dot_h     = v.dotWith(h);
+    dvec3 l            = ((h * 2.0 * v_dot_h) - v).normalized();
     double n_dot_h_sat = saturate(h.z);
     double v_dot_h_sat = saturate(v_dot_h);
     if (l.z > 0.0) {

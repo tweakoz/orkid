@@ -18,7 +18,6 @@ Surface::Surface(const std::string& name, int x, int y, int w, int h, fcolor3 co
     , mbClear(true)
     , _clearColor(color)
     , mfClearDepth(depth)
-    , mRtGroup(nullptr)
     , mNeedsSurfaceRepaint(true)
     , _pickbuffer(nullptr) {
 }
@@ -34,7 +33,7 @@ void Surface::GetPixel(int ix, int iy, lev2::PixelFetchContext& ctx) {
   if (_pickbuffer) {
     auto tgt     = _pickbuffer->context();
     auto fbi     = tgt->FBI();
-    ctx.mRtGroup = _pickbuffer->_rtgroup;
+    ctx._rtgroup = _pickbuffer->_rtgroup;
     /////////////////////////////////////////////////////////////
     fbi->pushViewport(0, 0, iW, iH); // ??
     fbi->pushScissor(0, 0, iW, iH);  // ??
@@ -54,9 +53,9 @@ void Surface::GetPixel(int ix, int iy, lev2::PixelFetchContext& ctx) {
 void Surface::OnResize(void) {
   /*printf( "Surface<%s>::OnResize x<%d> y<%d> w<%d> h<%d>\n", _name.c_str(), miX, miY, _geometry._w, _geometry._h );
 
-  if( mRtGroup )
+  if( _rtgroup )
   {
-      mRtGroup->Resize(width(),height());
+      _rtgroup->Resize(width(),height());
   }*/
   DoSurfaceResize();
   SetDirty();
@@ -75,23 +74,22 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   auto& primi = lev2::GfxPrimitives::GetRef();
   auto defmtl = lev2::defaultUIMaterial();
 
-  if (nullptr == mRtGroup) {
-    mRtGroup  = new lev2::RtGroup(tgt, _geometry._w, _geometry._h, 1);
-    auto mrt0 = new lev2::RtBuffer(lev2::RtgSlot::Slot0, lev2::EBufferFormat::RGBA8, 1280, 720);
-    mRtGroup->SetMrt(0, mrt0);
+  if (nullptr == _rtgroup) {
+    _rtgroup  = std::make_shared<lev2::RtGroup>(tgt, _geometry._w, _geometry._h, 1);
+    auto mrt0 = _rtgroup->createRenderTarget(lev2::EBufferFormat::RGBA8);
   }
   ///////////////////////////////////////
-  int irtgw  = mRtGroup->width();
-  int irtgh  = mRtGroup->height();
+  int irtgw  = _rtgroup->width();
+  int irtgh  = _rtgroup->height();
   int isurfw = width();
   int isurfh = height();
   if (irtgw != isurfw || irtgh != isurfh) {
     // printf( "resize surface rtgroup<%d %d>\n", isurfw, isurfh);
-    mRtGroup->Resize(isurfw, isurfh);
+    _rtgroup->Resize(isurfw, isurfh);
     mNeedsSurfaceRepaint = true;
   }
   if (mNeedsSurfaceRepaint || IsDirty()) {
-    fbi->PushRtGroup(mRtGroup);
+    fbi->PushRtGroup(_rtgroup.get());
     RePaintSurface(drwev);
     fbi->PopRtGroup();
     mNeedsSurfaceRepaint = false;
@@ -114,9 +112,9 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   rsi->BindRasterState(defstate);
 
   lev2::material_ptr_t material = defmtl;
-  if (mRtGroup) {
+  if (_rtgroup) {
     static auto texmtl = std::make_shared<lev2::GfxMaterialUITextured>(tgt);
-    auto ptex          = mRtGroup->GetMrt(0)->texture();
+    auto ptex          = _rtgroup->GetMrt(0)->texture();
     texmtl->SetTexture(lev2::ETEXDEST_DIFFUSE, ptex);
     material = texmtl;
   }

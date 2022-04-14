@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -61,13 +61,14 @@ struct SCRIMPL {
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();
     auto CIMPL                   = drawdata._cimpl;
+    const auto& CCTX = CIMPL->compositingContext();
     auto DB                      = RCFD.GetDB();
     Context* targ                = drawdata.context();
-    int w                        = targ->mainSurfaceWidth();
-    int h                        = targ->mainSurfaceHeight();
+    int w                        = CCTX.miWidth;
+    int h                        = CCTX.miHeight;
     if (targ->hiDPI()) {
-      w /= 2;
-      h /= 2;
+      //w /= 2;
+      //h /= 2;
     }
     _width  = w * (_node->supersample() + 1);
     _height = h * (_node->supersample() + 1);
@@ -85,8 +86,8 @@ struct SCRIMPL {
     CIMPL->popCPD();
   }
   ///////////////////////////////////////
-  PoolString _camname, _layers;
   ScreenOutputCompositingNode* _node = nullptr;
+  PoolString _camname, _layers;
   CompositingPassData _CPD;
   FreestyleMaterial _blit2screenmtl;
   const FxShaderTechnique* _fxtechnique1x1;
@@ -162,7 +163,12 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
         mtl._rasterstate.SetBlending(Blending::OFF);
         mtl.bindParamCTex(impl->_fxpColorMap, tex);
         mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
+        ViewportRect extents(0, 0, context->mainSurfaceWidth(), context->mainSurfaceHeight());
+        fbi->pushViewport(extents);
+        fbi->pushScissor(extents);
         this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+        fbi->popViewport();
+        fbi->popScissor();
         mtl.end(framedata);
 
         drawdata.context()->debugPopGroup();

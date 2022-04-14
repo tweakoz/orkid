@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #pragma once
 
 #include <ork/util/fsm.h>
@@ -11,23 +18,26 @@ using evhandler_t = std::function<HandlerResult(event_constptr_t ev)>;
 
 struct IWidgetEventFilter {
   IWidgetEventFilter(Widget& w);
+  virtual ~IWidgetEventFilter() {}
+  
   void Filter(event_constptr_t Ev);
 
   virtual void DoFilter(event_constptr_t Ev) = 0;
 
+  bool mShiftDown  = false;
+  bool mCtrlDown   = false;
+  bool mMetaDown   = false;
+  bool mAltDown    = false;
+  bool mLeftDown   = false;
+  bool mMiddleDown = false;
+  bool mRightDown  = false;
+  bool mCapsDown   = false;
+  bool mBut0Down   = false;
+  bool mBut1Down   = false;
+  bool mBut2Down   = false;
+  int mLastKeyCode = 0;
+
   Widget& mWidget;
-  bool mShiftDown;
-  bool mCtrlDown;
-  bool mMetaDown;
-  bool mAltDown;
-  bool mLeftDown;
-  bool mMiddleDown;
-  bool mRightDown;
-  bool mCapsDown;
-  bool mBut0Down;
-  bool mBut1Down;
-  bool mBut2Down;
-  int mLastKeyCode;
   std::vector<int> mKeySequence;
   Timer mKeyTimer;
   Timer mDoubleTimer;
@@ -173,20 +183,21 @@ public:
   }
   void setGeometry(Rect geo);
 
-  bool _needsinit = true;
-  std::string _name;
-  drawevent_constptr_t _drawEvent;
-  bool _dirty     = true;
-  bool mSizeDirty = true;
-  bool mPosDirty  = true;
-  Rect _geometry;
-  Rect _prevGeometry;
+  bool _needsinit        = true;
+  bool _dirty            = true;
+  bool mSizeDirty        = true;
+  bool mPosDirty         = true;
   Group* _parent         = nullptr;
   lev2::Context* _target = nullptr;
   Context* _uicontext    = nullptr;
-  std::stack<eventfilter_ptr_t> _eventfilterstack;
   evrouter_t _evrouter   = nullptr;
   evhandler_t _evhandler = nullptr;
+
+  std::string _name;
+  drawevent_constptr_t _drawEvent;
+  Rect _geometry;
+  std::stack<eventfilter_ptr_t> _eventfilterstack;
+  Rect _prevGeometry;
 
   virtual Widget* doRouteUiEvent(event_constptr_t Ev);
 

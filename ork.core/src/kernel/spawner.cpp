@@ -1,8 +1,10 @@
-///////////////////////////////////////////////////////////////////////////////
-// MicroOrk (Orkid)
-// Copyright 1996-2020, Michael T. Mayers
-// Provided under the MIT License (see LICENSE.txt)
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 
 #include <ork/kernel/spawner.h>
 #include <ork/kernel/string/string.h>
@@ -198,7 +200,7 @@ bool Spawner::is_alive()
     int err = waitpid(mChildPID, &status, WNOHANG);
 
     if (-1 == err) {
-        printf("Spawner<%p>::is_alive: waitpid: %s\n", this, strerror(errno));
+        printf("Spawner<%p>::is_alive: waitpid: %s\n", (void*) this, strerror(errno));
         return false;
     }
 
@@ -214,7 +216,7 @@ void Spawner::collectZombie () {
     int err = waitpid(mChildPID, &status, 0);
 
     if (-1 == err) {
-        printf("Spawner<%p>::collectZombie: waitpid: %s\n", this, strerror(errno));
+        printf("Spawner<%p>::collectZombie: waitpid: %s\n", (void*) this, strerror(errno));
     }
 #endif
 }

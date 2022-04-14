@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -30,7 +30,7 @@ datablock_ptr_t assimpToXgm(datablock_ptr_t inp_datablock);
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
-  printf("Writing Xgm<%p> to path<%s>\n", mdl, Filename.c_str());
+  //printf("Writing Xgm<%p> to path<%s>\n", (void*) mdl, Filename.c_str());
   auto datablock = writeXgmToDatablock(mdl);
   if (datablock) {
     ork::File outputfile(Filename, ork::EFM_WRITE);
@@ -41,10 +41,17 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
+bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename, asset::vars_constptr_t vars) {
   bool rval        = false;
   auto ActualPath  = Filename.ToAbsolute();
   mdl->msModelName = AddPooledString(Filename.c_str());
+  /////////////////////
+  // merge in asset vars
+  /////////////////////
+  if(vars){
+    mdl->_varmap->mergeVars(*vars);
+  }
+  /////////////////////
   if (auto datablock = datablockFromFileAtPath(ActualPath)) {
     ///////////////////////////////////
     // annotate the datablock with some info
@@ -56,8 +63,14 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
     OrkAssert(bfs::is_regular_file(actual_as_bfs));
     OrkAssert(bfs::exists(base_dir));
     OrkAssert(bfs::is_directory(base_dir));
-    datablock->_vars.makeValueForKey<std::string>("file-extension") = ActualPath.GetExtension().c_str();
-    datablock->_vars.makeValueForKey<bfs::path>("base-directory")   = base_dir;
+    datablock->_vars->makeValueForKey<std::string>("file-extension") = ActualPath.GetExtension().c_str();
+    datablock->_vars->makeValueForKey<bfs::path>("base-directory")   = base_dir;
+    /////////////////////
+    // merge in asset vars
+    /////////////////////
+    if(vars){
+      datablock->_vars->mergeVars(*vars);
+    }
     ///////////////////////////////////
     rval = _loaderSelect(mdl, datablock);
   }
@@ -73,9 +86,10 @@ bool XgmModel::_loaderSelect(XgmModel* mdl, datablock_ptr_t datablock) {
     return _loadXGM(mdl, datablock);
   if (check_magic == Char4("glTF")) // its a glb (binary)
     return _loadAssimp(mdl, datablock);
-  auto extension = datablock->_vars.typedValueForKey<std::string>("file-extension").value();
+  auto extension = datablock->_vars->typedValueForKey<std::string>("file-extension").value();
   if (extension == "gltf" or //
       extension == "dae" or  //
+      extension == "fbx" or  //
       extension == "obj")
     return _loadAssimp(mdl, datablock);
   OrkAssert(false);
@@ -87,8 +101,34 @@ bool XgmModel::_loaderSelect(XgmModel* mdl, datablock_ptr_t datablock) {
 bool XgmModel::_loadAssimp(XgmModel* mdl, datablock_ptr_t inp_datablock) {
   auto basehasher = DataBlock::createHasher();
   basehasher->accumulateString("assimp2xgm");
-  basehasher->accumulateString("version-0");
+
+  auto str   = FormatString("version-x1");
+  basehasher->accumulateString(str); 
   inp_datablock->accumlateHash(basehasher);
+  /////////////////////////////////////
+  // include asset vars as hash mutator 
+  //  because they may influence the loading mechanism 
+  /////////////////////////////////////
+  for( auto item : mdl->_varmap->_themap ){
+    const std::string& k = item.first;
+    const rendervar_t& v = item.second;
+    basehasher->accumulateString(k);
+    if(auto as_str = v.tryAs<std::string>() ){
+      basehasher->accumulateString(as_str.value());
+      printf( "LOADASSIMP VAR<%s> <%s>\n", k.c_str(), as_str.value().c_str());
+    }
+    else if(auto as_bool = v.tryAs<bool>() ){
+      basehasher->accumulateItem<bool>(as_bool.value());
+    }
+    else if(auto as_dbl = v.tryAs<double>() ){
+      basehasher->accumulateItem<double>(as_dbl.value());
+    }
+    else{
+      OrkAssert(false);
+    }
+
+  }
+  /////////////////////////////////////
   basehasher->finish();
   uint64_t hashkey   = basehasher->result();
   auto xgm_datablock = DataBlockCache::findDataBlock(hashkey);
@@ -104,7 +144,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
   constexpr int kVERSIONTAG = 0x01234567;
   bool rval                 = false;
   /////////////////////////////////////////////////////////////
-  Context* context = GfxEnv::GetRef().loadingContext();
+  auto context = lev2::contextForCurrentThread();
   /////////////////////////////////////////////////////////////
   OrkHeapCheck();
   chunkfile::DefaultLoadAllocator allocator;
@@ -191,7 +231,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
     ///////////////////////////////////
     // embedded textures
     ///////////////////////////////////
-    auto& embtexmap = mdl->_varmap.makeValueForKey<embtexmap_t>("embtexmap");
+    auto& embtexmap = mdl->_varmap->makeValueForKey<embtexmap_t>("embtexmap");
     if (EmbTexStream) {
       size_t numembtex = 0;
       EmbTexStream->GetItem(numembtex);
@@ -209,15 +249,24 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
         embtex->_srcdata    = texdatcopy;
         embtex->_srcdatalen = datasize;
         embtexmap[texname]  = embtex;
-        printf("embtex<%zu:%s> datasiz<%zu> dataptr<%p>\n", i, texname, datasize, texturedata);
+        // printf("embtex<%zu:%s> datasiz<%zu> dataptr<%p>\n", i, texname, datasize, texturedata);
       }
     }
 
     ///////////////////////////////////
     chunkfile::XgmMaterialReaderContext materialread_ctx(chunkreader);
-    materialread_ctx._inputStream                                      = HeaderStream;
-    materialread_ctx._varmap.makeValueForKey<Context*>("gfxtarget")    = context;
-    materialread_ctx._varmap.makeValueForKey<embtexmap_t>("embtexmap") = embtexmap;
+    materialread_ctx._varmap->mergeVars(*mdl->_varmap);
+    materialread_ctx._varmap->makeValueForKey<Context*>("gfxtarget")    = context;
+    materialread_ctx._inputStream = HeaderStream;
+
+    ///////////////////////////////////
+    bool use_normalviz = false;
+    if( auto try_override = mdl->_varmap->typedValueForKey<std::string>("override.shader.gbuf") ){
+      const auto& override_sh = try_override.value();
+      if(override_sh=="normalviz"){
+        use_normalviz = true;
+      }
+    }
     ///////////////////////////////////
     for (int imat = 0; imat < inummats; imat++) {
       int iimat = 0, imatname = 0, imatclass = 0;
@@ -404,7 +453,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
 
           mdl->mbSkinned |= (inumbb > 0);
 
-          printf("mdl<%p> mbSkinned<%d>\n", mdl, int(mdl->mbSkinned));
+          //printf("mdl<%p> mbSkinned<%d>\n", (void*) mdl, int(mdl->mbSkinned));
           ////////////////////////////////////////////////////////////////////////
         }
       }
@@ -542,7 +591,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
   // embedded textures chunk
   ///////////////////////////////////////////////////////////////////////////////////////////
 
-  if (auto as_embtexmap = mdl->_varmap.typedValueForKey<embtexmap_t>("embtexmap")) {
+  if (auto as_embtexmap = mdl->_varmap->typedValueForKey<embtexmap_t>("embtexmap")) {
     auto& embtexmap    = as_embtexmap.value();
     auto textureStream = chunkwriter.AddStream("embtexmap");
     textureStream->AddItem<size_t>(embtexmap.size());
@@ -657,8 +706,8 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
         int32_t inumpg = cluster->numPrimGroups();
         int32_t inumjb = (int)cluster->GetNumJointBindings();
 
-        printf("VB<%p> NumVerts<%d>\n", VB.get(), VB->GetNumVertices());
-        printf("clus<%d> numjb<%d>\n", ic, inumjb);
+        //printf("VB<%p> NumVerts<%d>\n", (void*) VB.get(), VB->GetNumVertices());
+        //printf("clus<%d> numjb<%d>\n", ic, inumjb);
 
         int32_t ivbufoffset = ModelDataStream->GetSize();
         const u8* VBdata    = (const u8*)DummyTarget.GBI()->LockVB(*VB);
@@ -667,7 +716,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
 
           int VBlen = VB->GetNumVertices() * VB->GetVtxSize();
 
-          printf("WriteVB VB<%p> NumVerts<%d> VtxSize<%d>\n", VB.get(), VB->GetNumVertices(), VB->GetVtxSize());
+          //printf("WriteVB VB<%p> NumVerts<%d> VtxSize<%d>\n", (void*) VB.get(), VB->GetNumVertices(), VB->GetVtxSize());
 
           HeaderStream->AddItem(ic);
           HeaderStream->AddItem(inumpg);
@@ -691,7 +740,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
 
           int32_t inumidx = PG->GetNumIndices();
 
-          printf("WritePG<%d> NumIndices<%d>\n", ipg, inumidx);
+          //printf("WritePG<%d> NumIndices<%d>\n", ipg, inumidx);
 
           HeaderStream->AddItem(ipg);
           HeaderStream->AddItem<PrimitiveType>(PG->GetPrimType());
@@ -704,7 +753,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
           for (int32_t ii = 0; ii < inumidx; ii++) {
             int32_t iv = int32_t(pidx[ii]);
             if (iv >= VB->GetNumVertices()) {
-              orkprintf("index id<%d> val<%d> is > vertex count<%d>\n", ii, iv, VB->GetNumVertices());
+              //orkprintf("index id<%d> val<%d> is > vertex count<%d>\n", ii, iv, VB->GetNumVertices());
             }
             OrkAssert(iv < VB->GetNumVertices());
 

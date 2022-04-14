@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -85,7 +85,7 @@ void GedSurface::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   tgt->debugPushGroup(FormatString("GedSurface::repaint"));
   auto mtxi     = tgt->MTXI();
   auto fbi      = tgt->FBI();
-  int pickstate = fbi->miPickState;
+  int pickstate = fbi->_pickState;
   // bool bispick = framedata().IsPickMode();
 
   // printf("GedSurface<%p>::Draw x<%d> y<%d> w<%d> h<%d> pickstate<%d>\n", this, miX, miY, width(), height(), pickstate);

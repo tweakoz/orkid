@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -13,6 +13,7 @@
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/glfw/ctx_glfw.h>
 #include <ork/lev2/ui/viewport.h>
+#include <ork/lev2/imgui/imgui_impl_glfw.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/kernel/msgrouter.inl>
 #include <ork/math/basicfilters.h>
@@ -43,7 +44,7 @@ static void _fire_ui_event(CtxGLFW* ctx){
     ui::Event::sendToContext(uiev);
     //_pushTimer.Start();
   }
-  ctx->SlotRepaint(); // refresh UI after button event
+  //ctx->SlotRepaint(); // refresh UI after button event
 }
 ///////////////////////////////////////////////////////////////////////////////
 inline int to_qtmillis(RefreshPolicyItem policy) {
@@ -111,7 +112,7 @@ static void _glfw_callback_winresized(GLFWwindow* window, int w, int h) {
   }
 #endif
 
-  printf("win resized<%p %d %d>\n", window, w, h);
+  //printf("win resized<%p %d %d>\n", window, w, h);
   auto ctx = (CtxGLFW*)glfwGetWindowUserPointer(window);
   ctx->onResize(w, h);
 }
@@ -123,24 +124,40 @@ static void _glfw_callback_fbresized(GLFWwindow* window, int w, int h) {
     h *= 2;
   }
 #endif
-  printf("fb resized<%p %d %d>\n", window, w, h);
+  //printf("fb resized<%p %d %d>\n", window, w, h);
   auto ctx = (CtxGLFW*)glfwGetWindowUserPointer(window);
   ctx->onResize(w, h);
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_contentScaleChanged(GLFWwindow* window, float sw, float sh) {
-  printf("fb contentscale<%p %f %f>\n", window, sw, sh);
+  //printf("fb contentscale<%p %f %f>\n", window, sw, sh);
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_focusChanged(GLFWwindow* window, int focus) {
   bool has_focus = (focus == GLFW_TRUE);
-  printf("fb focus<%p %d>\n", window, focus);
+
+  ////////////////////////
+  // TODO - resolve where to send input, IMGUI - or ork::lev2::ui ?
+  ////////////////////////
+
+  //ImGui_ImplGlfw_WindowFocusCallback(window, focus);
+
+  ////////////////////////
+  //printf("fb focus<%p %d>\n", window, focus);
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_keyboard(GLFWwindow* window, int key, int scancode, int action, int modifiers) {
-  printf("_glfw_callback_keyboard<%p>\n", window);
+  //printf("_glfw_callback_keyboard<%p>\n", window);
   auto ctx = (CtxGLFW*) glfwGetWindowUserPointer(window);
   auto uiev = ctx->uievent();
+
+  ////////////////////////
+  // TODO - resolve where to send input, IMGUI - or ork::lev2::ui ?
+  ////////////////////////
+
+  //ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, modifiers);
+
+  ////////////////////////
 
   switch(action){
     case GLFW_PRESS:
@@ -165,7 +182,15 @@ static void _glfw_callback_keyboard(GLFWwindow* window, int key, int scancode, i
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_mousebuttons(GLFWwindow* window, int button, int action, int modifiers){
-  printf("_glfw_callback_mousebuttons<%p>\n", window);
+  //printf("_glfw_callback_mousebuttons<%p>\n", window);
+
+  ////////////////////////
+  // TODO - resolve where to send input, IMGUI - or ork::lev2::ui ?
+  ////////////////////////
+
+  //ImGui_ImplGlfw_MouseButtonCallback(window, button, action, modifiers);
+
+  ////////////////////////
 
   auto ctx = (CtxGLFW*) glfwGetWindowUserPointer(window);
   auto uiev = ctx->uievent();
@@ -204,7 +229,10 @@ static void _glfw_callback_mousebuttons(GLFWwindow* window, int button, int acti
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_scroll(GLFWwindow* window, double xoffset, double yoffset){
-  printf("_glfw_callback_scroll<%p>\n", window);
+  //printf("_glfw_callback_scroll<%p>\n", window);
+
+  //ImGui_ImplGlfw_ScrollCallback(window, xoffset, yoffset);
+
   auto ctx = (CtxGLFW*)glfwGetWindowUserPointer(window);
   auto uiev = ctx->uievent();
   uiev->_eventcode = ui::EventCode::MOUSEWHEEL;
@@ -213,7 +241,7 @@ static void _glfw_callback_scroll(GLFWwindow* window, double xoffset, double yof
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_cursor(GLFWwindow* window, double xoffset, double yoffset){
-  printf("_glfw_callback_cursor<%p>\n", window);
+  //printf("_glfw_callback_cursor<%p>\n", window);
 
   auto ctx = (CtxGLFW*)glfwGetWindowUserPointer(window);
   auto uiev = ctx->uievent();
@@ -256,7 +284,10 @@ static void _glfw_callback_cursor(GLFWwindow* window, double xoffset, double yof
 }
 ///////////////////////////////////////////////////////////////////////////////
 static void _glfw_callback_enterleave(GLFWwindow* window, int entered) {
-  printf("_glfw_callback_enterleave<%p> entered<%d>\n", window, entered);
+  //printf("_glfw_callback_enterleave<%p> entered<%d>\n", window, entered);
+
+  //ImGui_ImplGlfw_CursorEnterCallback(window, entered);
+
   bool was_entered = bool(entered);
   auto ctx = (CtxGLFW*)glfwGetWindowUserPointer(window);
   auto uiev = ctx->uievent();
@@ -277,28 +308,21 @@ static void _glfw_callback_enterleave(GLFWwindow* window, int entered) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 CtxGLFW::CtxGLFW(Window* ork_win) //, QWidget* pparent)
-    : CTXBASE(ork_win)
-    , mbAlwaysRun(false)
-    , _width(32)
-    , _height(32)
-    , _runstate(0)
-    , mDrawLock(0) {
+    : CTXBASE(ork_win) {
 
   _onRunLoopIteration = []() {};
 
   _uievent = std::make_shared<ui::Event>();
-  this->SetThisXID(CTFLXID(0));
-  this->SetTopXID(CTFLXID(0));
 
   _runstate = 1;
 
-  printf("CtxGLFW created<%p> glfw_win<%p> isglobal<%d>\n", this, _glfwWindow, int(isGlobal()));
+  //printf("CtxGLFW created<%p> glfw_win<%p> isglobal<%d>\n", this, _glfwWindow, int(isGlobal()));
 }
 ///////////////////////////////////////////////////////////////////////////////
-void CtxGLFW::initWithData(AppInitData& aid) {
+void CtxGLFW::initWithData(appinitdata_ptr_t aid) {
   _appinitdata = aid;
-  glfwSwapInterval(aid._swap_interval);
-  glfwWindowHint(GLFW_SAMPLES, aid._msaa_samples);
+  glfwSwapInterval(aid->_swap_interval);
+  glfwWindowHint(GLFW_SAMPLES, aid->_msaa_samples);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::Show() {
@@ -308,12 +332,12 @@ void CtxGLFW::Show() {
 
     GLFWmonitor* fullscreen_monitor = nullptr;
 
-    if (_appinitdata._fullscreen) {
+    if (_appinitdata->_fullscreen) {
 
       fullscreen_monitor = glfwGetPrimaryMonitor();
 
-      int l = _appinitdata._left;
-      int t = _appinitdata._top;
+      int l = _appinitdata->_left;
+      int t = _appinitdata->_top;
 
       int monitor_count = 0;
       auto monitors = glfwGetMonitors (&monitor_count);
@@ -335,7 +359,7 @@ void CtxGLFW::Show() {
         if( d<idiff ){
           fullscreen_monitor = monitor;
           idiff = d;
-          printf( "USING MONITOR<%p> \n", fullscreen_monitor );
+          //printf( "USING MONITOR<%p> \n", fullscreen_monitor );
         }
 
         /////////////////////////////////
@@ -351,14 +375,22 @@ void CtxGLFW::Show() {
       glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
       _width = mode->width;
       _height = mode->height;
+      //printf( "USING GLFW_REFRESH_RATE<%d> \n", int(mode->refreshRate) );
+      //printf( "USING GLFW _width<%d> \n", _width );
+      //printf( "USING GLFW _height<%d> \n", _height );
       //////////////////////////////////////
     }
-    else{
-    }
 
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-    glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
-    glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_FALSE);
+    if( _appinitdata->_offscreen ){
+      glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+      glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE );
+      glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_FALSE);
+    }
+    else{
+      glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+      glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
+      glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_FALSE);
+    }
 
     auto global = globalOffscreenContext();
 
@@ -372,9 +404,12 @@ void CtxGLFW::Show() {
     OrkAssert(_glfwWindow != nullptr);
     glfwSetWindowUserPointer(_glfwWindow, (void*)this);
     glfwSetWindowAttrib(_glfwWindow,GLFW_OPENGL_PROFILE,GLFW_OPENGL_CORE_PROFILE);
-    glfwSetWindowAttrib(_glfwWindow,GLFW_FOCUS_ON_SHOW ,GLFW_TRUE);
-    //glfwSetInputMode(_glfwWindow, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
-    //glfwSetInputMode(_glfwWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+    if( not _appinitdata->_offscreen ){
+      glfwSetWindowAttrib(_glfwWindow,GLFW_FOCUS_ON_SHOW ,GLFW_TRUE);
+      //glfwSetInputMode(_glfwWindow, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+      //glfwSetInputMode(_glfwWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    }
 
     glfwSetWindowRefreshCallback(_glfwWindow, _glfw_callback_refresh);
     glfwSetFramebufferSizeCallback(_glfwWindow, _glfw_callback_fbresized);
@@ -387,28 +422,33 @@ void CtxGLFW::Show() {
     glfwSetCursorPosCallback(_glfwWindow,_glfw_callback_cursor);
     glfwSetCursorEnterCallback(_glfwWindow, _glfw_callback_enterleave);
 
+
   }
 
-  if (_appinitdata._fullscreen) {
+  if (_appinitdata->_fullscreen) {
+
+    _glfw_callback_fbresized(_glfwWindow,_width,_height);
 
   } else {
     glfwSetWindowPos(
         _glfwWindow,
-        _appinitdata._left, //
-        _appinitdata._top);
+        _appinitdata->_left, //
+        _appinitdata->_top);
     glfwSetWindowSize(
         _glfwWindow,
-        _appinitdata._width, //
-        _appinitdata._height);
+        _appinitdata->_width, //
+        _appinitdata->_height);
   }
 
   if (_needsInitialize) {
-    printf("CreateCONTEXT\n");
+    //printf("CreateCONTEXT\n");
     _orkwindow->initContext();
     _orkwindow->OnShow();
     _needsInitialize = false;
   }
-  glfwShowWindow(_glfwWindow);
+  if( not _appinitdata->_offscreen ){
+    glfwShowWindow(_glfwWindow);
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::Hide() {
@@ -442,7 +482,25 @@ void CtxGLFW::pollEvents(){
 ///////////////////////////////////////////////////////////////////////////////
 int CtxGLFW::runloop() {
   int rval = 0;
+
+  OrkAssert(_target);
+
+  lev2::ThreadGfxContext l2ctx_track(_target);
+
+  _target->makeCurrentContext();
+
+  if(_onGpuInit){
+    _onGpuInit(_target);
+  }
+
   while (_runstate == 1) {
+
+    //////////////////////////////
+    // poll UI/windowing system events
+    //////////////////////////////
+
+    //glfwWaitEvents();
+    glfwPollEvents();
 
     //////////////////////////////
     // run main thread app logic
@@ -459,11 +517,6 @@ int CtxGLFW::runloop() {
     // if( policy == EREFRESH_FASTEST)
     SlotRepaint();
 
-    //////////////////////////////
-    // poll UI/windowing system events
-    //////////////////////////////
-
-    glfwPollEvents();
 
     //////////////////////////////
     // check for closed window
@@ -476,14 +529,19 @@ int CtxGLFW::runloop() {
       }
     }
 
-    // printf( "running..\n");
-  }
+  } //  while (_runstate == 1) {
 
   //////////////////////////////
   // run main thread app logic (one last time..)
   //////////////////////////////
 
-  _onRunLoopIteration();
+  //_onRunLoopIteration();
+
+  //////////////////////////////
+
+  if(_onGpuExit){
+    _onGpuExit(_target);
+  }
 
   //////////////////////////////
 
@@ -504,8 +562,6 @@ void CtxGLFW::onResize(int W, int H) {
   lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
   //////////////////////////////////////////////////////////
 
-  // this->SetThisXID((CTFLXID)winId());
-  // printf( "CtxGLFW::Resize() _target<%p>\n", _target );
   if (_target) {
     _target->resizeMainSurface(W, H);
     _uievent->mpGfxWin = (Window*)_target->FBI()->GetThisBuffer();
@@ -544,7 +600,7 @@ void CtxGLFW::SlotRepaint() {
         auto gfxwin = _uievent->mpGfxWin;
         auto vp     = gfxwin ? gfxwin->GetRootWidget() : nullptr;
 
-        // this->UIEvent->mpGfxWin = (Window*) this->_target->FBI()->GetThisBuffer();
+        _uievent->mpGfxWin = (Window*) _target->FBI()->GetThisBuffer();
         auto drwev = std::make_shared<ui::DrawEvent>(this->_target);
 
         if (vp)
@@ -559,6 +615,7 @@ void CtxGLFW::SlotRepaint() {
     // already on main Q
     lamb();
   } else {
+    OrkAssert(false);
     opq::mainSerialQueue()->enqueue(lamb);
   }
 }
@@ -578,28 +635,29 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
     assert(ok);
 
     auto primary_monitor = glfwGetPrimaryMonitor();
-    const GLFWvidmode* mode = glfwGetVideoMode(primary_monitor);
+    if(primary_monitor){
+      const GLFWvidmode* mode = glfwGetVideoMode(primary_monitor);
 
-    printf( "primary_monitor<%p>\n", primary_monitor );
-    printf( "mode<%p>\n", mode );
-    printf( "mode redbits<%d>\n", mode->redBits );
-    printf( "mode grnbits<%d>\n", mode->greenBits );
-    printf( "mode blubits<%d>\n", mode->blueBits );
-    printf( "mode refreshRate<%d>\n", mode->refreshRate );
+      //printf( "primary_monitor<%p>\n", primary_monitor );
+      //printf( "mode<%p>\n", mode );
+      //printf( "mode redbits<%d>\n", mode->redBits );
+      //printf( "mode grnbits<%d>\n", mode->greenBits );
+      //printf( "mode blubits<%d>\n", mode->blueBits );
+      //printf( "mode refreshRate<%d>\n", mode->refreshRate );
+      //glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+      //glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+      //glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+      //glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
 
-    //glfwWindowHint(GLFW_RED_BITS, mode->redBits);
-    //glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
-    //glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
-    //glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+    }
 
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
     glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 4 );
-
-#if defined(LINUX)
-    glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 6 );
-#else 
+#if defined(__APPLE__)
     glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 1 );
-#endif 
+#else 
+    glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 6 );
+#endif
     glfwWindowHint( GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE );
     glfwWindowHint( GLFW_CLIENT_API, GLFW_OPENGL_API );
     glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
@@ -613,7 +671,7 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
         "",      //
         nullptr, //
         nullptr);
-    printf( "offscreen_window<%p>\n", offscreen_window );
+    //printf( "offscreen_window<%p>\n", offscreen_window );
     OrkAssert(offscreen_window!=nullptr);
     gctx->_glfwWindow = offscreen_window;
     glfwSetWindowAttrib(offscreen_window,GLFW_OPENGL_PROFILE,GLFW_OPENGL_CORE_PROFILE);

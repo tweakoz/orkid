@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -14,8 +14,8 @@ namespace ork { namespace reflect {
 AccessorVariant::AccessorVariant(
     bool (Object::*ser)(serdes::ISerializer&) const, //
     bool (Object::*deser)(serdes::IDeserializer&))
-    : _deserialize(deser)
-    , _serialize(ser) {
+    : _serialize(ser)
+    , _deserialize(deser) {
 }
 
 void AccessorVariant::deserialize(serdes::node_ptr_t desernode) const {

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -19,8 +19,10 @@ class DirectTypedMap //
           typename MapType::key_type, //
           typename MapType::mapped_type> {
 public:
-  typedef typename MapType::key_type KeyType;
-  typedef typename MapType::mapped_type ValueType;
+
+  using maptype_t = MapType;
+  using KeyType = typename MapType::key_type;
+  using ValueType = typename MapType::mapped_type;
 
   DirectTypedMap(MapType Object::*);
 

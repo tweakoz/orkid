@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <ork/pch.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/material_pbr.inl>
@@ -15,20 +22,20 @@ TEST(skel1) {
   auto td = fvec3(0, 0, 6.05);
 
   fmtx4 mxa;
-  mxa.SetTranslation(ta);
+  mxa.setTranslation(ta);
   fmtx4 mxb;
-  mxb.SetTranslation(tb);
+  mxb.setTranslation(tb);
   fmtx4 mxc;
-  mxc.SetTranslation(tc);
+  mxc.setTranslation(tc);
   fmtx4 mxd;
-  mxd.SetTranslation(td);
+  mxd.setTranslation(td);
 
   fmtx4 a2b;
-  a2b.CorrectionMatrix(mxa, mxb);
+  a2b.correctionMatrix(mxa, mxb);
   fmtx4 b2c;
-  b2c.CorrectionMatrix(mxb, mxc);
+  b2c.correctionMatrix(mxb, mxc);
   fmtx4 c2d;
-  c2d.CorrectionMatrix(mxc, mxd);
+  c2d.correctionMatrix(mxc, mxd);
 
   a2b.dump("a2b");
   b2c.dump("b2c");

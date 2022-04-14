@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -236,7 +236,7 @@ FxShaderParamBuffer* Interface::createParamBuffer(size_t length) {
   ub->_fxspb->_length = length;
   GL_ERRORCHECK();
   glGenBuffers(1, &ub->_glbufid);
-  printf("Create UBO<%p> glid<%d>\n", ub, ub->_glbufid);
+  //printf("Create UBO<%p> glid<%d>\n", ub, ub->_glbufid);
   glBindBuffer(GL_UNIFORM_BUFFER, ub->_glbufid);
   auto mem = new char[length];
   for (int i = 0; i < length; i++)

@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <ork/kernel/prop.h>
 #include <ork/kernel/opq.h>
 #include <ork/kernel/fixedstring.hpp>
@@ -124,17 +131,17 @@ void initpty()
 	setvbuf(fp_pty_err_master, (char*)NULL, _IOFBF, 0); // disable buffering
 
 	printf("master inp fd: %d\n", fd_pty_inp_master);
-	printf("master inp fp: %p\n", fp_pty_inp_master);
+	printf("master inp fp: %p\n", (void*) fp_pty_inp_master);
 	printf("slave inp fd: %d\n", fd_pty_inp_slave);
 	printf("slave inp <%s>\n", slave_inp_name);
 
 	printf("master out fd: %d\n", fd_pty_out_master);
-	printf("master out fp: %p\n", fp_pty_out_master);
+	printf("master out fp: %p\n", (void*) fp_pty_out_master);
 	printf("slave out fd: %d\n", fd_pty_out_slave);
 	printf("slave out<%s>\n", slave_out_name);
 
 	printf("master err fd: %d\n", fd_pty_err_master);
-	printf("master err fp: %p\n", fp_pty_err_master);
+	printf("master err fp: %p\n", (void*) fp_pty_err_master);
 	printf("slave err fd: %d\n", fd_pty_err_slave);
 	printf("slave err<%s>\n", slave_err_name);
 

@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <utpp/UnitTest++.h>
 #include <cmath>
 #include <limits>
@@ -27,7 +34,7 @@ TEST(ObjectClone) {
   auto original = std::make_shared<ork::HotKeyConfiguration>();
   original->Default();
   auto orig_save = original->GetHotKey("save");
-  printf("orig_save<%p>\n", orig_save);
+  printf("orig_save<%p>\n", (void*) orig_save);
 
   CHECK_EQUAL(orig_save->mbAlt, false);
   CHECK_EQUAL(orig_save->mbCtrl, true);
@@ -43,7 +50,7 @@ TEST(ObjectClone) {
   auto clone        = Object::clone(original);
   auto clone_as_hkc = std::dynamic_pointer_cast<HotKeyConfiguration>(clone);
   auto clone_save   = clone_as_hkc->GetHotKey("save");
-  printf("clone_save<%p>\n", clone_save);
+  printf("clone_save<%p>\n", (void*) clone_save);
 
   ///////////////////////////////////////////
   // compare clone to original

@@ -6,13 +6,15 @@ include (GenerateExportHeader)
 set( SRCD ${CMAKE_CURRENT_SOURCE_DIR}/src )
 set( INCD ${CMAKE_CURRENT_SOURCE_DIR}/inc )
 set( COREINCD ${CMAKE_CURRENT_SOURCE_DIR}/../ork.core/inc )
-set( TUIOINCD ${CMAKE_CURRENT_SOURCE_DIR}/../ork.tuio/inc )
+set( TUIOINCD ${CMAKE_CURRENT_SOURCE_DIR}/../ork.tuio/inc/tuio )
 ###################################
 
 file(GLOB_RECURSE src_aud ${SRCD}/aud/*.cpp)
+file(GLOB_RECURSE src_midi ${SRCD}/midi/*.cpp)
 file(GLOB_RECURSE src_gfx ${SRCD}/gfx/*.cpp)
 file(GLOB_RECURSE src_input ${SRCD}/input/*.cpp)
-file(GLOB_RECURSE src_qtui ${SRCD}/glfw/*.cpp)
+file(GLOB_RECURSE src_glfw ${SRCD}/glfw/*.cpp)
+file(GLOB_RECURSE src_imgui ${SRCD}/imgui/*.cpp)
 file(GLOB_RECURSE src_ui ${SRCD}/ui/*.cpp)
 file(GLOB_RECURSE src_ovr ${SRCD}/vr/*.cpp)
 file(GLOB src_lev2 ${SRCD}/*.cpp)
@@ -24,8 +26,8 @@ ELSE()
 ENDIF()
 
 file(GLOB_RECURSE src_glad ${SRCD}/gfx/gl/glad/*.c)
-set( orksrcs ${src_aud} ${src_gfx} ${src_input} )
-list( APPEND orksrcs ${src_qtui} ${src_ui} ${src_lev2} )
+set( orksrcs ${src_aud} ${src_midi} ${src_gfx} ${src_input} )
+list( APPEND orksrcs ${src_glfw} ${src_ui} ${src_imgui} ${src_lev2} )
 list( APPEND orksrcs ${src_apple} ${src_ovr} ${src_glad} )
 list( APPEND orksrcs ${INCD}/ork/lev2/ezapp.h )
 
@@ -57,7 +59,7 @@ add_library (ork_lev2 SHARED ${orksrcs} )
 ork_std_target_opts(ork_lev2)
 
 set( libs ork_core ork_tuio )
-list(APPEND libs OpenImageIO OpenImageIO_Util portaudio )
+list(APPEND libs OpenImageIO OpenImageIO_Util portaudio rtmidi )
 
 IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
   list(APPEND libs ispc_texcomp embree3 )
@@ -90,19 +92,17 @@ ENDIF()
 
 list(APPEND libs  mpfr gmp )
 
-IF(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-   target_compile_options(ork_lev2 PUBLIC -frounding-math) # CGAL!
-ENDIF()
+target_include_directories (ork_lev2 PRIVATE ${INCD} )
+target_include_directories (ork_lev2 PRIVATE ${COREINCD} )
+target_include_directories (ork_lev2 PRIVATE ${TUIOINCD} )
+target_include_directories (ork_lev2 PRIVATE ${TUIOINCD}/oscpack )
+target_include_directories (ork_lev2 PRIVATE ${TUIOINCD}/oscpack/osc )
+target_include_directories (ork_lev2 PRIVATE ${TUIOINCD}/oscpack/ip )
+target_include_directories (ork_lev2 PRIVATE $ENV{OBT_VULKAN_ROOT}/include)
 
 target_link_libraries(ork_lev2 PUBLIC ${libs} )
 target_link_libraries(ork_lev2 PUBLIC boost_filesystem  )
 target_link_libraries(ork_lev2 PRIVATE assimp audiofile )
-
-target_include_directories (ork_lev2 PRIVATE $ENV{OBT_STAGE}/include )
-target_include_directories (ork_lev2 PRIVATE ${INCD} )
-target_include_directories (ork_lev2 PRIVATE ${COREINCD} )
-target_include_directories (ork_lev2 PRIVATE ${TUIOINCD} )
-target_include_directories (ork_lev2 PRIVATE $ENV{OBT_VULKAN_ROOT}/include)
 
 ###################################
 # intel specific
@@ -130,6 +130,7 @@ install(TARGETS ork_lev2 LIBRARY DESTINATION $ENV{OBT_STAGE}/lib )
 add_subdirectory (unittests)
 add_subdirectory (integrationtests/singularity)
 add_subdirectory (integrationtests/ui)
+add_subdirectory (integrationtests/imgui)
 add_subdirectory (examples)
 add_subdirectory (pyext)
 IF(${APPLE})

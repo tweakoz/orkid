@@ -4,7 +4,7 @@ namespace ork::lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class IRenderTarget {
+struct IRenderTarget {
 public:
   IRenderTarget();
 
@@ -29,7 +29,7 @@ struct RtGroupRenderTarget : public IRenderTarget {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class UiViewportRenderTarget : public IRenderTarget {
+struct UiViewportRenderTarget : public IRenderTarget {
 public:
   UiViewportRenderTarget(ui::Viewport* pVP);
 
@@ -44,7 +44,7 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class UiSurfaceRenderTarget : public IRenderTarget {
+struct UiSurfaceRenderTarget : public IRenderTarget {
 public:
   UiSurfaceRenderTarget(ui::Surface* pVP);
 

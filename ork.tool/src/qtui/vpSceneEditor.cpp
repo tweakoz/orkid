@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -498,7 +498,7 @@ ent::CompositingSystem* SceneEditorVP::compositingSystem() {
 const ent::Simulation* SceneEditorVP::simulation() {
   const ent::Simulation* psi = 0;
   if (mEditor.mpScene) {
-    if (ApplicationStack::Top()) {
+    if (StringPoolStack::Top()) {
       psi = mEditor.GetActiveSimulation();
     }
   }

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -65,6 +65,9 @@ public:
   OutputTimeStep currentFrameRateEnum() const;
   float currentFrameRate() const;
 
+  void setBasePath(const std::string pth) { _basepath=pth; }
+  void setFrameIndex(int index) { _frameoutputindex=index; }
+  
 private:
   void gpuInit(lev2::Context* pTARG, int w, int h) final;
   void beginAssemble(CompositorDrawData& drawdata) final;
@@ -77,7 +80,13 @@ private:
   OutputRes mOutputBaseResolution;
   OutputResMult mOutputResMult;
   OutputTimeStep mOutputFrameRate;
+  int _frameoutputindex = 0;
+  std::string _basepath;
+
 };
+
+using fileoutputcompositingnode_ptr_t      = std::shared_ptr<FileOutputCompositingNode>;
+using fileoutputcompositingnode_constptr_t = std::shared_ptr<const FileOutputCompositingNode>;
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

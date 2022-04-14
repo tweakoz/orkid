@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -38,7 +38,7 @@ void Viewport::BeginFrame(lev2::Context* pTARG) {
   pTARG->beginFrame();
   // orkprintf( "BEG Viewport::BeginFrame::mbDrawOK\n" );
   auto MatOrtho = fmtx4::Identity();
-  MatOrtho.Ortho(0.0f, (F32)width(), 0.0f, (F32)height(), 0.0f, 1.0f);
+  MatOrtho.ortho(0.0f, (F32)width(), 0.0f, (F32)height(), 0.0f, 1.0f);
   pTARG->MTXI()->SetOrthoMatrix(MatOrtho);
   ork::lev2::ViewportRect SciRect;
   SciRect._x = _geometry._x;

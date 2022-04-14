@@ -1,7 +1,10 @@
-///////////////////////////////////////////////////////////////////////////////
-// MicroOrk (Orkid)
-// Copyright 1996-2013, Michael T. Mayers
-// Provided under the MIT License (see LICENSE.txt)
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 ///////////////////////////////////////////////////////////////////////////////
 // Hierarchical Finite State Machine
 ///////////////////////////////////////////////////////////////////////////////
@@ -20,54 +23,68 @@ StateMachine::StateMachine()
 ///////////////////////////////////////////////////////////////////////////////
 
 StateMachine::~StateMachine() {
-  QueueStateChange(nullptr);
-  Update();
+  enqueueStateChange(nullptr);
+  update();
+}
+
+void StateMachine::setVar(CrcString key, fsmvar_t var){
+  _machineVars[key] = var;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+fsmvar_t StateMachine::getVar(CrcString key) const{
+  fsmvar_t rval;
+  auto it = _machineVars.find(key);
+  if(it!=_machineVars.end()){
+    rval = it->second;
+  };
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void StateMachine::QueueStateChange(state_ptr_t pst) {
+void StateMachine::enqueueStateChange(state_ptr_t pst) {
   ChangeStateEvent cse;
   cse._next = pst;
-  mPendingEvents.push(cse);
+  _pendingEvents.push(cse);
 }
 
-void StateMachine::QueueEvent(const svar16_t& v) {
-  mPendingEvents.push(v);
+void StateMachine::enqueueEvent(const svar16_t& v) {
+  _pendingEvents.push(v);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void StateMachine::AddState(state_ptr_t pst) {
+void StateMachine::addState(state_ptr_t pst) {
   _stateset.insert(pst);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void StateMachine::AddTransition(state_ptr_t pfr, State::event_key_t k, state_ptr_t pto) {
+void StateMachine::addTransition(state_ptr_t pfr, State::event_key_t k, state_ptr_t pto) {
   assert(_stateset.find(pfr) != _stateset.end());
   assert(_stateset.find(pto) != _stateset.end());
 
-  auto it = pfr->mTransitions.find(k);
-  assert(it == pfr->mTransitions.end());
-  pfr->mTransitions.insert(std::make_pair(k, pto));
+  auto it = pfr->_transitions.find(k);
+  assert(it == pfr->_transitions.end());
+  pfr->_transitions.insert(std::make_pair(k, pto));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void StateMachine::AddTransition(state_ptr_t pfr, State::event_key_t k, const PredicatedTransition& p) {
+void StateMachine::addTransition(state_ptr_t pfr, State::event_key_t k, const PredicatedTransition& p) {
   state_ptr_t pto = p._destination;
   assert(_stateset.find(pfr) != _stateset.end());
   assert(_stateset.find(pto) != _stateset.end());
 
-  auto it = pfr->mTransitions.find(k);
-  assert(it == pfr->mTransitions.end());
-  pfr->mTransitions.insert(std::make_pair(k, p));
+  auto it = pfr->_transitions.find(k);
+  assert(it == pfr->_transitions.end());
+  pfr->_transitions.insert(std::make_pair(k, p));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void StateMachine::PerformStateChange(state_ptr_t pto) {
+void StateMachine::_performStateChange(state_ptr_t pto) {
   assert((pto == nullptr) || (_stateset.find(pto) != _stateset.end()));
 
   //////////////////////////////////////////////////
@@ -131,7 +148,7 @@ void StateMachine::PerformStateChange(state_ptr_t pto) {
       if (iten == pex)
         brun = false;
     if (brun)
-      pex->OnExit();
+      pex->onExit();
   }
 
   //////////////////////////////////////////////////
@@ -147,7 +164,7 @@ void StateMachine::PerformStateChange(state_ptr_t pto) {
       if (itex == pen)
         brun = false;
     if (brun)
-      pen->OnEnter();
+      pen->onEnter();
   }
 
   //////////////////////////////////////////////////
@@ -157,26 +174,26 @@ void StateMachine::PerformStateChange(state_ptr_t pto) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void StateMachine::Update() {
+void StateMachine::update() {
   svar16_t ev;
-  while (mPendingEvents.try_pop(ev)) {
+  while (_pendingEvents.try_pop(ev)) {
     if (ev.isA<ChangeStateEvent>()) {
       const auto& cse = ev.get<ChangeStateEvent>();
-      PerformStateChange(cse._next);
+      _performStateChange(cse._next);
     } else if (_current) {
       auto k  = ev.typeInfo();
-      auto it = _current->mTransitions.find(k);
-      if (it != _current->mTransitions.end()) {
+      auto it = _current->_transitions.find(k);
+      if (it != _current->_transitions.end()) {
         const PredicatedTransition& trans = it->second;
-        if (trans.mPredicate()) {
+        if (trans._predicate()) {
           auto next = trans._destination;
-          PerformStateChange(next);
+          _performStateChange(next);
         }
       }
     }
   }
   if (_current)
-    _current->OnUpdate();
+    _current->onUpdate();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -184,15 +201,15 @@ void StateMachine::Update() {
 LambdaState::LambdaState(StateMachine* machine, state_ptr_t p)
     : State(machine, p) {
 }
-void LambdaState::OnEnter() {
+void LambdaState::onEnter() {
   if (_onenter)
     _onenter();
 }
-void LambdaState::OnExit() {
+void LambdaState::onExit() {
   if (_onexit)
     _onexit();
 }
-void LambdaState::OnUpdate() {
+void LambdaState::onUpdate() {
   if (_onupdate)
     _onupdate();
 }

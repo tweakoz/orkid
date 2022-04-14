@@ -39,6 +39,8 @@ static std::string compressionOptsForUsage(ETextureUsage usage) {
     case ETEXUSAGE_DATA:
       rval = "-rgb";
       break;
+    default:
+      break;
   }
   return rval;
 }
@@ -47,8 +49,8 @@ static std::string compressionOptsForUsage(ETextureUsage usage) {
 
 datablock_ptr_t EmbeddedTexture::compressTexture(uint64_t hash) const {
   datablock_ptr_t dblock = std::make_shared<DataBlock>();
-  auto srcpath          = ork::file::generateContentTempPath(hash, _format);
-  FILE* fout            = fopen(srcpath.c_str(), "wb");
+  auto srcpath           = ork::file::generateContentTempPath(hash, _format);
+  FILE* fout             = fopen(srcpath.c_str(), "wb");
   fwrite(_srcdata, _srcdatalen, 1, fout);
   fclose(fout);
   std::string compressed_path;

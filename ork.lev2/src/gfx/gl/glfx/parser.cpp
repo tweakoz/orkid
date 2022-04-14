@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -93,9 +93,9 @@ GlSlFxParser::GlSlFxParser(std::string name,
                            program_ptr_t progam,
                            scanner_constptr_t s)
     : _name(name)
-    , _program(progam)
+    , _grules(parsertl::enable_captures)
     , _scanner(s)
-    , _grules(parsertl::enable_captures) {
+    , _program(progam){
   _topNode = std::make_shared<TopNode>(this);
   _topNode->parse();
 }
@@ -128,7 +128,7 @@ void Program::addBlockNode(decoblocknode_ptr_t node) {
   }
   auto its = node->_name.find("lib_math");
   if(its!=std::string::npos){
-    printf( "WTF\n");
+    //printf( "WTF\n");
   }
   _blockNodes[node->_name]=node;
   size_t bncount = _blockNodes.size();

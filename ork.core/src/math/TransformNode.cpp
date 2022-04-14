@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -11,138 +11,113 @@
 #include <ork/kernel/prop.h>
 #include <ork/kernel/prop.hpp>
 #include <ork/reflect/BidirectionalSerializer.h>
+#include <ork/reflect/properties/registerX.inl>
+#include <ork/reflect/properties/DirectTyped.hpp>
+
+ImplementReflectionX(ork::TransformNode, "TransformNode");
+ImplementReflectionX(ork::DecompTransform, "DecompTransform");
 
 namespace ork {
 
 ///////////////////////////////////////////////////////////////////////////////
-
-void TransformNode::CopyFrom(const TransformNode& oth) {
-  mTransform.SetMatrix(oth.GetTransform().GetMatrix());
-  mpParent = oth.mpParent;
+void DecompTransform::describeX(class_t* c) {
+  c->directProperty("translation", &DecompTransform::_translation);
+  c->directProperty("rotation", &DecompTransform::_rotation);
+  c->directProperty("uniformScale", &DecompTransform::_uniformScale);
 }
 
-TransformNode::TransformNode()
-    : mTransform()
-    , mpParent(0) {
+
+///////////////////////////////////////////////////////////////////////////////
+
+fmtx4 DecompTransform::composed() const{
+  fmtx4 rval;
+  rval.compose(_translation,_rotation,_uniformScale);
+  //auto mtxstr = rval.dump4x3cn();
+  //printf( " xfval<%s> t<%g %g %g> r<%g %g %g %g> s<%g> \n", mtxstr.c_str(), _translation.x, _translation.y, _translation.z, _rotation.x, _rotation.y, _rotation.z, _rotation.w, _uniformScale );
+  return rval;
+}
+
+fmtx4 DecompTransform::composed2() const{
+  fmtx4 rval;
+  rval.compose2(_translation,_rotation,_uniformScale);
+  //auto mtxstr = rval.dump4x3cn();
+  //printf( " xfval<%s> t<%g %g %g> r<%g %g %g %g> s<%g> \n", mtxstr.c_str(), _translation.x, _translation.y, _translation.z, _rotation.x, _rotation.y, _rotation.z, _rotation.w, _uniformScale );
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void TransformNode::GetMatrix(fmtx4& mtx) const {
-  if (mpParent) {
-    fmtx4 p;
-    mpParent->GetMatrix(p);
-    mtx = GetTransform().GetMatrix() * p;
-  } else {
-    mtx = GetTransform().GetMatrix();
-  }
+void DecompTransform::decompose( const fmtx4& inmtx ){
+  inmtx.decompose(_translation,_rotation,_uniformScale);
+  //auto mtxstr = inmtx.dump4x3cn();
+  //printf( " xfval<%s> t<%g %g %g> r<%g %g %g %g> \n", mtxstr.c_str(), _translation.x, _translation.y, _translation.z, _rotation.x, _rotation.y, _rotation.z, _rotation.w );
 }
 
-void TransformNode::Translate(ETransformHierMode emode, const fvec3& pos) {
-  if (emode == EMODE_ABSOLUTE) {
-    GetTransform().SetPosition(pos);
-  }
+///////////////////////////////////////////////////////////////////////////////
+void TransformNode::describeX(class_t* c) {
+  c->directObjectProperty("transform", &TransformNode::_transform);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+TransformNode::TransformNode()
+    : _parent(nullptr) 
+    , _transform( std::make_shared<DecompTransform>() ) {
 }
 
 TransformNode::TransformNode(const TransformNode& oth)
-    : mTransform()
-    , mpParent(0) {
-  CopyFrom(oth);
+    : _parent(oth._parent) 
+    , _transform( std::make_shared<DecompTransform>() ) {
+    _transform->_translation = oth._transform->_translation;
+    _transform->_rotation = oth._transform->_rotation;
+    _transform->_uniformScale = oth._transform->_uniformScale;
 }
 
-const TransformNode& TransformNode::operator=(const TransformNode& oth) {
-  if (this != &oth) {
-    CopyFrom(oth);
-  }
-
-  return *this;
-}
+///////////////////////////////////////////////////////////////////////////////
 
 TransformNode::~TransformNode() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
+fmtx4 TransformNode::computeMatrix() const {
+  if(_parent){
+    return _transform->composed() * _parent->_transform->composed();
+  }
+  else{
+    return _transform->composed();
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+const TransformNode& TransformNode::operator=(const TransformNode& rhs) {
+  _transform->_translation = rhs._transform->_translation;
+  _transform->_rotation = rhs._transform->_rotation;
+  _transform->_uniformScale = rhs._transform->_uniformScale;
+  _parent = rhs._parent;
+  return *this;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 bool TransformNode::operator==(const TransformNode& rhs) const {
 
-  bool match = (mTransform.GetMatrix() == rhs.mTransform.GetMatrix());
-  match &= (mpParent == rhs.mpParent);
+  bool match = (computeMatrix() == rhs.computeMatrix());
+  match &= (_parent == rhs._parent);
   return match;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 bool TransformNode::operator!=(const TransformNode& rhs) const {
-
-  bool match = (mTransform.GetMatrix() == rhs.mTransform.GetMatrix());
-  match &= (mpParent == rhs.mpParent);
-  return not match;
+  return not this->operator==(rhs);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void TransformNode::UnParent(void) {
-  if (mpParent != NULL) {
-    fmtx4 MatW;
-    GetMatrix(MatW);
-
-    ///////////////////////////////////
-
-    mpParent = 0;
-
-    ///////////////////////////////////
-    // Translation
-
-    Translate(EMODE_ABSOLUTE, MatW.GetTranslation());
-
-    ///////////////////////////////////
-    // Rotation
-
-    fmtx4 MatR = MatW;
-    MatR.SetTranslation(0.0f, 0.0f, 0.0f);
-
-    fquat NewQ;
-    NewQ.fromMatrix(MatR);
-    GetTransform().SetRotation(NewQ);
-  }
-}
-
-void TransformNode::SetParent(const TransformNode* ppar) {
-  mpParent = ppar;
-}
-void TransformNode::ReParent(const TransformNode* ppar) {
-  OrkAssertI(ppar, "Trying to set Null Parent, if trying to unparent, use the UnParent() call");
-
-  fmtx4 MatW = GetTransform().GetMatrix();
-  fmtx4 MatParentW;
-  ppar->GetMatrix(MatParentW);
-
-  if (NULL == mpParent) {
-    mpParent = ppar;
-
-    fmtx4 CorMatrix;
-    CorMatrix.CorrectionMatrix(MatParentW, MatW);
-
-    fvec3 NewPos;
-    fquat NewQ;
-    float NewScale;
-
-    CorMatrix.decompose(NewPos, NewQ, NewScale);
-
-    // ppar->GetWorldTransform()->SetRotation( NewQ );
-
-    ///////////////////////////////////
-    // Translation
-
-    fvec3 WorldPos       = MatW.GetTranslation();
-    fvec3 ParentWorldPos = MatParentW.GetTranslation();
-    Translate(EMODE_ABSOLUTE, CorMatrix.GetTranslation());
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-namespace reflect::serdes {
+/*
+ * namespace reflect::serdes {
 template <> void Serialize(const TransformNode* in, TransformNode* out, BidirectionalSerializer& bidi) {
   if (bidi.Serializing()) {
     bidi | in->GetTransform().GetMatrix();
@@ -190,61 +165,7 @@ template <> TransformNode PropType<TransformNode>::FromString(const PropTypeStri
 }
 
 template class PropType<TransformNode>;
-
-///////////////////////////////////////////////////////////////////////////////
-
-const fmtx4& Transform3DMatrix::GetMatrix() const {
-  return mMatrix;
-}
-
-void Transform3DMatrix::SetMatrix(const fmtx4& mat) {
-  mMatrix = mat;
-}
-
-fvec3 Transform3DMatrix::GetPosition() const {
-  return mMatrix.GetTranslation();
-}
-
-fquat Transform3DMatrix::GetRotation() const {
-  fquat q;
-  fvec3 pos;
-  float Scale;
-  mMatrix.decompose(pos, q, Scale);
-  return q;
-}
-
-float Transform3DMatrix::GetScale() const {
-  fquat q;
-  fvec3 pos;
-  float Scale;
-  mMatrix.decompose(pos, q, Scale);
-  return Scale;
-}
-
-void Transform3DMatrix::SetRotation(const fquat& nq) {
-  fquat oq;
-  fvec3 pos;
-  float Scale;
-  mMatrix.decompose(pos, oq, Scale);
-  mMatrix.compose(pos, nq, Scale);
-}
-
-void Transform3DMatrix::SetScale(const float nscale) {
-  fquat q;
-  fvec3 pos;
-  float Scale;
-  mMatrix.decompose(pos, q, Scale);
-  mMatrix.compose(pos, q, nscale);
-}
-
-void Transform3DMatrix::SetPosition(const fvec3& npos) {
-  fquat q;
-  fvec3 pos;
-  float Scale;
-  mMatrix.decompose(pos, q, Scale);
-  mMatrix.compose(npos, q, Scale);
-}
-
+*/
 ///////////////////////////////////////////////////////////////////////////////
 
 } // namespace ork

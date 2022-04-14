@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -21,7 +21,7 @@
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-bool GlTextureInterface::_loadImageTexture(Texture* ptex, datablock_ptr_t src_datablock) {
+bool GlTextureInterface::_loadImageTexture(texture_ptr_t ptex, datablock_ptr_t src_datablock) {
   DataBlockInputStream checkstream(src_datablock);
   uint8_t magic[4];
   magic[0]                     = checkstream.getItem<uint8_t>();
@@ -30,11 +30,6 @@ bool GlTextureInterface::_loadImageTexture(Texture* ptex, datablock_ptr_t src_da
   magic[3]                     = checkstream.getItem<uint8_t>();
   bool rval                    = false;
   datablock_ptr_t xtx_datablock = nullptr;
-
-  printf("magic0<%c>\n", magic[0]);
-  printf("magic1<%c>\n", magic[1]);
-  printf("magic2<%c>\n", magic[2]);
-  printf("magic3<%c>\n", magic[3]);
 
   if (magic[1] == 'P' and //
       magic[2] == 'N' and //
@@ -49,7 +44,7 @@ bool GlTextureInterface::_loadImageTexture(Texture* ptex, datablock_ptr_t src_da
     xtx_datablock    = DataBlockCache::findDataBlock(hashkey);
 
     if (xtx_datablock) {
-      printf("GlTextureInterface::_loadImageTexture tex<%p> precompressed!\n", ptex);
+      //printf("GlTextureInterface::_loadImageTexture tex<%p> precompressed!\n", ptex.get());
     } else {
       Image img;
       img.initFromInMemoryFile("png", src_datablock->data(), src_datablock->length());
@@ -61,6 +56,11 @@ bool GlTextureInterface::_loadImageTexture(Texture* ptex, datablock_ptr_t src_da
       // OrkAssert(false);
     }
   } else {
+    printf("unknown texture<%s>\n", ptex->_debugName.c_str() );
+    printf("magic0<%c>\n", magic[0]);
+    printf("magic1<%c>\n", magic[1]);
+    printf("magic2<%c>\n", magic[2]);
+    printf("magic3<%c>\n", magic[3]);
     OrkAssert(false);
   }
   if (xtx_datablock) {

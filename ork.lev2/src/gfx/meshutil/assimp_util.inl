@@ -41,7 +41,7 @@ inline fmtx4 convertMatrix44(const aiMatrix4x4& inp) {
   for (int i = 0; i < 16; i++) {
     int x = i % 4;
     int y = i / 4;
-    rval.SetElemXY(x, y, inp[y][x]);
+    rval.setElemXY(x, y, inp[y][x]);
   }
   return rval;
 }
@@ -139,11 +139,11 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
 
   rval->_rootname = scene->mRootNode->mName.data;
 
-  deco::printf(fvec3::Green(), "//////////////////////////////////////////////////\n");
-  deco::printf(fvec3::Green(), "// Parsing Assimp Skeleton\n");
-  deco::printf(fvec3::Green(), "//////////////////////////////////////////////////\n");
+  //deco::printf(fvec3::Green(), "//////////////////////////////////////////////////\n");
+  //deco::printf(fvec3::Green(), "// Parsing Assimp Skeleton\n");
+  //deco::printf(fvec3::Green(), "//////////////////////////////////////////////////\n");
 
-  deco::printf(fvec3::Green(), "// traversing nodes\n");
+  //deco::printf(fvec3::Green(), "// traversing nodes\n");
 
   while (not nodestack.empty()) {
     auto n = nodestack.front();
@@ -156,9 +156,9 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
       auto xgmnode         = new ork::lev2::XgmSkelNode(name);
       xgmnode->miSkelIndex = index;
       xgmskelnodes[name]   = xgmnode;
-      deco::printf(fvec3::White(), "aiNode<%d:%s> xgmnode<%p> remapped<%s>\n", index, n->mName.data, xgmnode, name.c_str());
+      //deco::printf(fvec3::White(), "aiNode<%d:%s> xgmnode<%p> remapped<%s>\n", index, n->mName.data, xgmnode, name.c_str());
       xgmnode->_nodeMatrix = convertMatrix44(n->mTransformation);
-      deco::printe(fvec3::Yellow(), xgmnode->_nodeMatrix.dump4x3(), true);
+      //deco::printe(fvec3::Yellow(), xgmnode->_nodeMatrix.dump4x3(), true);
     }
     for (int i = 0; i < n->mNumChildren; ++i) {
       nodestack.push(n->mChildren[i]);
@@ -169,7 +169,7 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
   // get bones
   /////////////////////////////////////////////////
 
-  deco::printf(fvec3::Green(), "// traversing bones\n");
+  //deco::printf(fvec3::Green(), "// traversing bones\n");
 
   nodestack = std::queue<aiNode*>();
   nodestack.push(scene->mRootNode);
@@ -202,7 +202,7 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
   // set parents
   /////////////////////////////////////////////////
 
-  deco::printf(fvec3::Green(), "// creating xgm topology\n");
+  //deco::printf(fvec3::Green(), "// creating xgm topology\n");
 
   nodestack = std::queue<aiNode*>();
   nodestack.push(scene->mRootNode);
@@ -247,7 +247,7 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
     auto par = node->_parent;
     fmtx4 Bp = par ? par->concatenatednode2() : fmtx4::Identity();
     fmtx4 J;
-    J.CorrectionMatrix(Bp, Bc);
+    J.correctionMatrix(Bp, Bc);
     J                  = Bp.inverse() * Bc;
     node->_jointMatrix = J;
   });
@@ -262,35 +262,37 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
   // debug dump
   /////////////////////////////////////////////////
 
-  deco::printf(fvec3::Green(), "// result debug dump\n");
+  if(0){
+    deco::printf(fvec3::Green(), "// result debug dump\n");
 
-  root->visitHierarchy([root](lev2::XgmSkelNode* node) {
-    fmtx4 ASSO = node->_assimpOffsetMatrix;
-    fmtx4 N    = node->_nodeMatrix;
-    fmtx4 K    = node->concatenatednode();  // object space
-    fmtx4 K2   = node->concatenatednode2(); // object space
-    fmtx4 Bi   = node->_bindMatrixInverse;
-    fmtx4 Bc   = node->bindMatrix();
-    auto par   = node->_parent;
-    fmtx4 Bp   = par ? par->bindMatrix() : fmtx4::Identity();
-    fmtx4 J    = node->_jointMatrix;
-    fmtx4 Jk   = node->concatenated(); // object space
-    fmtx4 Ji   = J.inverse();
-    fmtx4 D    = Bp * J;
-    auto n     = node->_name;
-    deco::printe(fvec3::White(), n + ".ASSO: " + ASSO.dump4x3cn(), true);
-    deco::printe(fvec3::White(), n + ".N: " + N.dump4x3cn(), true);
-    deco::printe(fvec3::White(), n + ".J: " + J.dump4x3cn(), true);
-    deco::printe(fvec3::White(), n + ".K: " + K.dump4x3cn(), true);
-    deco::printe(fvec3::White(), n + ".K2: " + K2.dump4x3cn(), true);
-    deco::printe(fvec3::White(), n + ".Bi: " + Bi.dump4x3cn(), true);
-    deco::printe(fvec3::White(), n + ".Bc: " + Bc.dump4x3cn(), true);
-    deco::printe(fvec3::White(), n + ".Bp: " + Bp.dump4x3cn(), true);
-    deco::printe(fvec3::White(), n + ".Ji: " + Ji.dump4x3cn(), true);
-    deco::printe(fvec3::White(), n + ".Jk: " + Jk.dump4x3cn(), true);
-    deco::printe(fvec3::White(), n + ".Bp*J: " + D.dump4x3cn(), true);
-    printf("\n");
-  });
+    root->visitHierarchy([root](lev2::XgmSkelNode* node) {
+      fmtx4 ASSO = node->_assimpOffsetMatrix;
+      fmtx4 N    = node->_nodeMatrix;
+      fmtx4 K    = node->concatenatednode();  // object space
+      fmtx4 K2   = node->concatenatednode2(); // object space
+      fmtx4 Bi   = node->_bindMatrixInverse;
+      fmtx4 Bc   = node->bindMatrix();
+      auto par   = node->_parent;
+      fmtx4 Bp   = par ? par->bindMatrix() : fmtx4::Identity();
+      fmtx4 J    = node->_jointMatrix;
+      fmtx4 Jk   = node->concatenated(); // object space
+      fmtx4 Ji   = J.inverse();
+      fmtx4 D    = Bp * J;
+      auto n     = node->_name;
+      deco::printe(fvec3::White(), n + ".ASSO: " + ASSO.dump4x3cn(), true);
+      deco::printe(fvec3::White(), n + ".N: " + N.dump4x3cn(), true);
+      deco::printe(fvec3::White(), n + ".J: " + J.dump4x3cn(), true);
+      deco::printe(fvec3::White(), n + ".K: " + K.dump4x3cn(), true);
+      deco::printe(fvec3::White(), n + ".K2: " + K2.dump4x3cn(), true);
+      deco::printe(fvec3::White(), n + ".Bi: " + Bi.dump4x3cn(), true);
+      deco::printe(fvec3::White(), n + ".Bc: " + Bc.dump4x3cn(), true);
+      deco::printe(fvec3::White(), n + ".Bp: " + Bp.dump4x3cn(), true);
+      deco::printe(fvec3::White(), n + ".Ji: " + Ji.dump4x3cn(), true);
+      deco::printe(fvec3::White(), n + ".Jk: " + Jk.dump4x3cn(), true);
+      deco::printe(fvec3::White(), n + ".Bp*J: " + D.dump4x3cn(), true);
+      printf("\n");
+    });
+  }
 
   /////////////////////////////////////////////////
 

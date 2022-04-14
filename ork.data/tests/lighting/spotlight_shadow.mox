@@ -225,7 +225,7 @@
                                         </item>
                                         <item key='control'>
                                             <reference category='ComponentDataClass'>
-                                                <object type='ScriptComponentData' id='25'>
+                                                <object type='LuaComponentData' id='25'>
                                                     <property name='ScriptFile'>"src://scripts/arch/spinny.lua"</property>
                                                 </object>
                                             </reference>
@@ -435,9 +435,9 @@
                     </object>
                 </reference>
             </item>
-            <item key='ScriptSystemData'>
+            <item key='LuaSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='ScriptSystemData' id='47'>
+                    <object type='LuaSystemData' id='47'>
                     </object>
                 </reference>
             </item>

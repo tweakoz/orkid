@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <ork/lev2/aud/singularity/hud.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
 #include <ork/lev2/gfx/pickbuffer.h>
@@ -100,8 +107,8 @@ void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     return;
   const float* _samples = scopebuf->_samples;
 
-  mRtGroup->_clearColor = _clearColor;
-  fbi->rtGroupClear(mRtGroup);
+  _rtgroup->_clearColor = _clearColor;
+  fbi->rtGroupClear(_rtgroup.get());
 
   float osgain = 1.0f;
 
@@ -386,6 +393,9 @@ ui::HandlerResult ScopeSurf::DoOnUiEvent(ui::event_constptr_t ev) {
         default:
           break;
       }
+      break;
+    default:
+      break;
   }
   return ret;
 }

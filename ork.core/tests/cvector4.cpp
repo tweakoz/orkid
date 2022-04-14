@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <utpp/UnitTest++.h>
 #include <cmath>
 #include <limits>
@@ -45,7 +52,7 @@ TEST(Vector4RGBAConstructor) {
 
 TEST(Vector4RotateX) {
   fvec4 v(0.0f, 1.0f, 0.0f);
-  v.RotateX(PI / float(2.0f));
+  v.rotateOnX(PI / float(2.0f));
   CHECK_CLOSE(0.0f, v.x, MyEPSILON);
   CHECK_CLOSE(0.0f, v.y, MyEPSILON);
   CHECK_CLOSE(1.0f, v.z, MyEPSILON);
@@ -54,7 +61,7 @@ TEST(Vector4RotateX) {
 
 TEST(Vector4RotateY) {
   fvec4 v(1.0f, 0.0f, 0.0f);
-  v.RotateY(PI / float(2.0f));
+  v.rotateOnY(PI / float(2.0f));
   CHECK_CLOSE(0.0f, v.x, MyEPSILON);
   CHECK_CLOSE(0.0f, v.y, MyEPSILON);
   CHECK_CLOSE(1.0f, v.z, MyEPSILON);
@@ -63,7 +70,7 @@ TEST(Vector4RotateY) {
 
 TEST(Vector4RotateZ) {
   fvec4 v(1.0f, 0.0f, 0.0f);
-  v.RotateZ(PI / float(2.0f));
+  v.rotateOnZ(PI / float(2.0f));
   CHECK_CLOSE(0.0f, v.x, MyEPSILON);
   CHECK_CLOSE(1.0f, v.y, MyEPSILON);
   CHECK_CLOSE(0.0f, v.z, MyEPSILON);
@@ -206,14 +213,14 @@ TEST(Vector4NotEqualCompare) {
 TEST(Vector4Dot) {
   fvec4 v1(1.0f, 2.0f, 3.0f);
   fvec4 v2(4.0f, 3.0f, 2.0f);
-  float res = v1.Dot(v2);
+  float res = v1.dotWith(v2);
   CHECK_CLOSE(16.0f, res, MyEPSILON);
 }
 
 TEST(Vector4Cross) {
   fvec4 v1(1.0f, 2.0f, 3.0f);
   fvec4 v2(4.0f, 3.0f, 2.0f);
-  fvec4 res = v1.Cross(v2);
+  fvec4 res = v1.crossWith(v2);
   CHECK_CLOSE(-5.0f, res.x, MyEPSILON);
   CHECK_CLOSE(10.0f, res.y, MyEPSILON);
   CHECK_CLOSE(-5.0f, res.z, MyEPSILON);
@@ -222,7 +229,7 @@ TEST(Vector4Cross) {
 
 TEST(Vector4Normalize) {
   fvec4 v(1.0f, 2.0f, 3.0f);
-  v.Normalize();
+  v.normalizeInPlace();
   CHECK_CLOSE(0.267261f, v.x, MyEPSILON);
   CHECK_CLOSE(0.534522f, v.y, MyEPSILON);
   CHECK_CLOSE(0.801784f, v.z, MyEPSILON);
@@ -231,7 +238,7 @@ TEST(Vector4Normalize) {
 
 TEST(Vector4Normal) {
   fvec4 v(1.0f, 2.0f, 3.0f);
-  fvec4 res = v.Normal();
+  fvec4 res = v.normalized();
   CHECK_CLOSE(0.267261f, res.x, MyEPSILON);
   CHECK_CLOSE(0.534522f, res.y, MyEPSILON);
   CHECK_CLOSE(0.801784f, res.z, MyEPSILON);
@@ -240,21 +247,21 @@ TEST(Vector4Normal) {
 
 TEST(Vector4Mag) {
   fvec4 v(3.0f, 4.0f, 0.0f);
-  float res = v.Mag();
+  float res = v.magnitude();
   CHECK_CLOSE(5.0f, res, MyEPSILON);
 }
 
 TEST(Vector4MagSquared) {
   fvec4 v(3.0f, 4.0f, 0.0f);
-  float res = v.MagSquared();
+  float res = v.magnitudeSquared();
   CHECK_CLOSE(25.0f, res, MyEPSILON);
 }
 
 TEST(Vector4Transform) {
   fvec4 v(0.0f, 1.0f, 0.0f);
   fmtx4 m;
-  m.SetRotateX(PI / float(2.0f));
-  fvec4 res = v.Transform(m);
+  m.setRotateX(PI / float(2.0f));
+  fvec4 res = v.transform(m);
   CHECK_CLOSE(0.0f, res.x, MyEPSILON);
   CHECK_CLOSE(0.0f, res.y, MyEPSILON);
   CHECK_CLOSE(1.0f, res.z, MyEPSILON);
@@ -263,7 +270,7 @@ TEST(Vector4Transform) {
 
 TEST(Vector4PerspectiveDivide) {
   fvec4 v(4.0f, 8.0f, 12.0f, 4.0f);
-  v.PerspectiveDivide();
+  v.perspectiveDivideInPlace();
   CHECK_CLOSE(1.0f, v.x, MyEPSILON);
   CHECK_CLOSE(2.0f, v.y, MyEPSILON);
   CHECK_CLOSE(3.0f, v.z, MyEPSILON);
@@ -292,12 +299,12 @@ TEST(Vector4_YO) {
   float fw2u_voff = -fy0;
 
   fmtx4 w2u_mtx, w2u_Smtx, w2u_Tmtx;
-  w2u_Smtx.SetScale(fw2u_hsca, fw2u_vsca, 1.0f);
-  w2u_Tmtx.SetTranslation(fw2u_hoff, fw2u_voff, 0.0f);
+  w2u_Smtx.setScale(fw2u_hsca, fw2u_vsca, 1.0f);
+  w2u_Tmtx.setTranslation(fw2u_hoff, fw2u_voff, 0.0f);
   w2u_mtx = w2u_Tmtx * w2u_Smtx;
 
-  fvec4 v0 = fvec4(fx0, fy0, 0.0f).Transform(w2u_mtx);
-  fvec4 v1 = fvec4(fx1, fy1, 0.0f).Transform(w2u_mtx);
+  fvec4 v0 = fvec4(fx0, fy0, 0.0f).transform(w2u_mtx);
+  fvec4 v1 = fvec4(fx1, fy1, 0.0f).transform(w2u_mtx);
 
   printf("aa::V0<%f %f> V1<%f %f>\n", v0.x, v0.y, v1.x, v1.y);
 

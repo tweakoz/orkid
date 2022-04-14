@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -38,6 +38,7 @@ void ITypedMap<KeyType, ValueType>::serialize(serdes::node_ptr_t sernode) const 
   mapnode->_parent       = sernode;
   mapnode->_ser_instance = instance;
   int numelements        = elementCount(instance);
+  printf( "map<%s> ser numelem<%d>\n", _name.c_str(), numelements );
   for (size_t i = 0; i < numelements; i++) {
     //////////////////////////////
     KeyType K;

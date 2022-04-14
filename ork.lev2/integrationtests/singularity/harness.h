@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <portaudio.h>
 #include <ork/application/application.h>
 #include <ork/kernel/string/deco.inl>
@@ -10,6 +17,7 @@
 #include <ork/lev2/aud/singularity/krzobjects.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/material_freestyle.h>
+#include <ork/lev2/midi/context.h>
 #include <ork/lev2/ui/context.h>
 #include <ork/kernel/timer.h>
 
@@ -23,31 +31,16 @@ namespace ork::lev2 {
 //void tearDownAudio();
 } // namespace ork::lev2
 
-struct MidiContext;
-using midicontext_ptr_t = std::shared_ptr<MidiContext>;
+void mymidicallback(double deltatime, std::vector<unsigned char>* message, void* userData);
 
-struct MidiContext {
-
-  static midicontext_ptr_t instance();
-
-  using midiinputmap_t = std::map<std::string, int>;
-  MidiContext();
-  ~MidiContext();
-  midiinputmap_t enumerateMidiInputs();
-  void startMidiInputByName(std::string named);
-  void startMidiInputByIndex(int inputid);
-  svar128_t _impl;
-  midiinputmap_t _portmap;
-};
-
-struct SingularityTestApp final : public OrkEzQtApp {
-  SingularityTestApp(int& argc, char** argv);
+struct SingularityTestApp final : public OrkEzApp {
+  SingularityTestApp(appinitdata_ptr_t initdata);
   ~SingularityTestApp() override;
   hudvp_ptr_t _hudvp;
 };
 using singularitytestapp_ptr_t = std::shared_ptr<SingularityTestApp>;
 
-singularitytestapp_ptr_t createEZapp(int& argc, char** argv);
+singularitytestapp_ptr_t createEZapp(appinitdata_ptr_t initdata);
 
 inline void enqueue_audio_event(
     prgdata_constptr_t prog, //
@@ -97,10 +90,10 @@ struct Sequence {
 };
 void seq1(float tempo, int basebar, prgdata_constptr_t program);
 ////////////////////////////////////////////////////////////////////////////////
-struct SingularityBenchMarkApp final : public OrkEzQtApp {
+struct SingularityBenchMarkApp final : public OrkEzApp {
   static constexpr size_t KNUMFRAMES = 512;
-  SingularityBenchMarkApp(int& argc, char** argv)
-      : OrkEzQtApp(argc, argv,AppInitData()) {
+  SingularityBenchMarkApp(appinitdata_ptr_t initdata=nullptr)
+      : OrkEzApp(initdata) {
   }
   ~SingularityBenchMarkApp() override {
   }
@@ -125,4 +118,4 @@ struct SingularityBenchMarkApp final : public OrkEzQtApp {
 };
 using singularitybenchapp_ptr_t = std::shared_ptr<SingularityBenchMarkApp>;
 
-singularitybenchapp_ptr_t createBenchmarkApp(int& argc, char** argv, prgdata_constptr_t program);
+singularitybenchapp_ptr_t createBenchmarkApp(appinitdata_ptr_t initdata, prgdata_constptr_t program);

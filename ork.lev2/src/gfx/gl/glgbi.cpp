@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -32,7 +32,7 @@ enum edynvbopath {
 #endif
 };
 
-static edynvbopath gDynVboPath = EVB_MAP_BUFFER_RANGE;
+static edynvbopath gDynVboPath = EVB_BUFFER_SUBDATA;
 
 void ContextGL::TakeThreadOwnership() {
   makeCurrentContext();
@@ -112,30 +112,29 @@ static void RetBufMapPool(GlVtxBufMapPool* p) {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct GLIdxBufHandle {
-  u32 mIBO;
-  const U16* mBuffer;
+  const U16* mBuffer = nullptr;
+
+  uint32_t mIBO;
   int mNumIndices;
   int mMinIndex;
   int mMaxIndex;
 
   GLIdxBufHandle()
       : mIBO(0)
+      , mNumIndices(0) 
       , mMinIndex(0)
-      , mMaxIndex(0)
-      , mBuffer(nullptr)
-      , mNumIndices(0) {
+      , mMaxIndex(0){
   }
 };
 
 struct GLVaoHandle {
-  GLuint mVAO;
+  const GLIdxBufHandle* mIBO = nullptr;
 
-  const GLIdxBufHandle* mIBO;
+  GLuint mVAO;
   bool mInited;
 
   GLVaoHandle()
       : mVAO(0)
-      , mIBO(nullptr)
       , mInited(false) {
   }
 };
@@ -321,8 +320,10 @@ void* GlGeometryBufferInterface::LockVB(VertexBufferBase& VBuf, int ibase, int i
               GL_ARRAY_BUFFER,
               ibasebytes,
               isizebytes,
-              GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_FLUSH_EXPLICIT_BIT |
-                  GL_MAP_UNSYNCHRONIZED_BIT); // MAP_UNSYNCHRONIZED_BIT?
+              GL_MAP_WRITE_BIT | 
+              GL_MAP_INVALIDATE_RANGE_BIT | 
+              GL_MAP_FLUSH_EXPLICIT_BIT |
+              GL_MAP_UNSYNCHRONIZED_BIT); // MAP_UNSYNCHRONIZED_BIT?
           // rVal = glMapBufferRange( GL_ARRAY_BUFFER, ibasebytes, isizebytes, GL_MAP_WRITE_BIT ); // MAP_UNSYNCHRONIZED_BIT?
           GL_ERRORCHECK();
           OrkAssert(rVal);
@@ -553,19 +554,17 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf, const svarp_t p
   //////////////////////////////////////////////
   GL_ERRORCHECK();
   //////////////////////////////////////////////
-  auto _setConfig = [&](auto& configarray){
+  auto _setConfig = [&](auto& configarray) {
     uint32_t component_mask = 0;
-     for (vtx_config& vcfg : configarray)
-         component_mask |= vcfg.bind_to_attr(pfxpass, iStride);
-     rval = true;
+    for (vtx_config& vcfg : configarray)
+      component_mask |= vcfg.bind_to_attr(pfxpass, iStride);
+    rval = true;
     vtx_config::enable_attrs(component_mask);
   };
   //////////////////////////////////////////////
   switch (eStrFmt) {
     case lev2::EVtxStreamFormat::V12: {
-      static vtx_config cfgs[] = {
-          {"POSITION", 3, GL_FLOAT, false, 0, 0, 0}
-      };
+      static vtx_config cfgs[] = {{"POSITION", 3, GL_FLOAT, false, 0, 0, 0}};
       _setConfig(cfgs);
       break;
     }
@@ -578,10 +577,7 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf, const svarp_t p
       break;
     }
     case lev2::EVtxStreamFormat::V12T8: {
-      static vtx_config cfgs[] = {
-          {"POSITION", 3, GL_FLOAT, false, 0, 0, 0},
-          {"TEXCOORD0", 2, GL_FLOAT, false, 12, 0, 0}
-      };
+      static vtx_config cfgs[] = {{"POSITION", 3, GL_FLOAT, false, 0, 0, 0}, {"TEXCOORD0", 2, GL_FLOAT, false, 12, 0, 0}};
       _setConfig(cfgs);
       break;
     }
@@ -837,8 +833,8 @@ void GlGeometryBufferInterface::DrawPrimitiveEML(const VertexBufferBase& VBuf, P
 #if defined(ORK_OSX)
         glPatchParameteri(GL_PATCH_VERTICES, 3);
 #else
-        //extern PFNGLPATCHPARAMETERIPROC GLPPI;
-        //GLPPI(GL_PATCH_VERTICES, 3);
+        // extern PFNGLPATCHPARAMETERIPROC GLPPI;
+        // GLPPI(GL_PATCH_VERTICES, 3);
 #endif
         glDrawArrays(GL_PATCHES, ivbase, inum);
         GL_ERRORCHECK();

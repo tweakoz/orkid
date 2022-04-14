@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -12,21 +12,6 @@
 #include <ork/lev2/gfx/gfxenv.h>
 
 namespace ork { namespace lev2 {
-
-struct FxShader;
-struct FxShaderParam;
-struct FxShaderParamBlock;
-struct FxShaderParamBlockMapping;
-struct FxShaderTechnique;
-typedef std::shared_ptr<FxShaderParamBufferMapping> parambuffermappingptr_t;
-using fxshader_ptr_t         = FxShader*;
-using fxparam_ptr_t          = FxShaderParam*;
-using fxtechnique_ptr_t      = FxShaderTechnique*;
-using fxshader_constptr_t    = const FxShader*;
-using fxparam_constptr_t     = const FxShaderParam*;
-using fxtechnique_constptr_t = const FxShaderTechnique*;
-using fxparamptrmap_t        = std::map<std::string, fxparam_constptr_t>;
-using fxtechniqueptrmap_t    = std::map<std::string, fxtechnique_constptr_t>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -139,9 +124,6 @@ struct FxShaderParamBufferMapping {
 ///////////////////////////////////////////////////////////////////////////////
 
 #if defined(ENABLE_SHADER_STORAGE)
-
-struct FxShaderStorageBlock;
-struct FxShaderStorageBufferMapping;
 
 struct FxShaderStorageBlock {
   std::string _name;

@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #pragma once
 
 #include <stdio.h>
@@ -20,10 +27,16 @@
 //#include <libgig/DLS.h>
 //#include <libgig/gig.h>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunknown-pragmas"
+
 #include <rapidjson/reader.h>
 #include <rapidjson/writer.h>
 #include <rapidjson/prettywriter.h>
 #include <rapidjson/document.h>
+
+#pragma GCC diagnostic pop
+
 #include <ork/kernel/svariant.h>
 #include <ork/kernel/string/string.h>
 #include <ork/lev2/aud/singularity/synthdata.h>

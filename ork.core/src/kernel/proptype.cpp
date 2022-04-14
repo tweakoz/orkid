@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 //////////////////////////////////////////////////////////////// 
@@ -193,7 +193,7 @@ template<> s32 PropType<s32>::FromString(const PropTypeString& String)
 template<> s64 PropType<s64>::FromString(const PropTypeString& String)
 {
 	s64 Value;
-	sscanf(String.c_str(), "%lld", &Value);
+	sscanf(String.c_str(), "%ld", &Value);
 	return Value;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -405,21 +405,22 @@ template<> void PropType<ork::object::Signal>::ToString(ork::object::Signal cons
 
 template<> ork::Object* PropType<ork::Object*>::FromString(const PropTypeString& String)
 {
-	ork::Object *pobj;
+	void* pobj;
 	sscanf(String.c_str(), "%p", &pobj);
-	return pobj;
+	return (ork::Object*) pobj;
 }
 template<> const ork::Object* PropType<const ork::Object*>::FromString(const PropTypeString& String)
 {
-	const ork::Object* pobj;
+	const void* pobj;
 	sscanf(String.c_str(), "%p", &pobj);
-	return pobj;
+
+	return (const ork::Object*) pobj;
 }
 template<> ork::object::Signal PropType<ork::object::Signal>::FromString(const PropTypeString& String)
 {
-	ork::object::Signal* pobj;
+	const void* pobj;
 	sscanf(String.c_str(), "%p", &pobj);
-	return *pobj;
+	return *((const ork::object::Signal*) pobj);
 }
 template<> void PropType<ork::object::Signal*>::GetValueset( const std::string * & ValueStrings, int & NumStrings )
 {	
@@ -452,9 +453,9 @@ template<> void PropType<const rtti::ICastable*>::ToString(const rtti::ICastable
 
 template<> rtti::ICastable* PropType<rtti::ICastable*>::FromString(const PropTypeString& String)
 {
-	rtti::ICastable *pobj;
+	void* pobj;
 	sscanf(String.c_str(), "%p", &pobj);
-	return pobj;
+	return (rtti::ICastable*) pobj;
 }
 
 //////////////////////////////////////////////////////////////
@@ -465,18 +466,18 @@ template<> rtti::ICastable* PropType<rtti::ICastable*>::FromString(const PropTyp
 //////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////
 
-template class PropType<bool>;
-template class PropType<S32>;
-template class PropType<U32>;
-template class PropType<U16>;
-//template class PropType<int>;
-template class PropType<float>;
-template class PropType<std::string>;
-template class PropType<Char8>;
-template class PropType<rtti::ICastable*>;
-//template class PropType<ork::Object*>;
-template class PropType<ork::Object*>;
-template class PropType<ork::object::Signal>;
-template class PropType<PoolString>;
+template struct PropType<bool>;
+template struct PropType<S32>;
+template struct PropType<U32>;
+template struct PropType<U16>;
+//template struct PropType<int>;
+template struct PropType<float>;
+template struct PropType<std::string>;
+template struct PropType<Char8>;
+template struct PropType<rtti::ICastable*>;
+//template struct PropType<ork::Object*>;
+template struct PropType<ork::Object*>;
+template struct PropType<ork::object::Signal>;
+template struct PropType<PoolString>;
 
 }

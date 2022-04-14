@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -25,21 +25,22 @@
 
 extern GLuint gLastBoundNonZeroTex;
 
+using namespace ork;
 using namespace ork::lev2;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class MyViewport : public ork::ui::Viewport {
+class MyViewport : public ui::Viewport {
 
 public:
   MyViewport(const std::string& name)
-      : ork::ui::Viewport(name, 1, 1, 1, 1, ork::fcolor3(0.0f, 0.0f, 0.0f), 1.0f)
+      : ui::Viewport(name, 1, 1, 1, 1, ork::fcolor3(0.0f, 0.0f, 0.0f), 1.0f)
       , gltex(0) {
   }
 
-  ork::ui::HandlerResult DoOnUiEvent(ork::ui::Event* pEV) // virtual
+  ui::HandlerResult DoOnUiEvent(ui::event_constptr_t pEV) final // virtual
   {
-    return ork::ui::HandlerResult(this);
+    return ui::HandlerResult(this);
   }
 
   void Init(Context* pTARG) // virtual
@@ -54,7 +55,7 @@ public:
       }
     tex->_dirty = true;
   }
-  void DoRePaintSurface(ork::ui::drawevent_constptr_t ev) override {
+  void DoRePaintSurface(ui::drawevent_constptr_t ev) override {
     _target->FBI()->SetAutoClear(true);
     auto tgtrect = _target->mainSurfaceRectAtOrigin();
 
@@ -108,18 +109,8 @@ public:
 };
 
 DemoApp::DemoApp(int iw, int ih)
-    //: m_hwnd(NULL)
-    //, m_pDirect2dFactory(NULL)
-    //, m_pRenderTarget(NULL)
-    // m_pLightSlateGrayBrush(NULL)
-    // m_pCornflowerBlueBrush(NULL)
-    : mpFrameBuffer(0)
-    //, mpBackBufferBitmap(0)
-    , miWidth(iw)
-    , miHeight(ih)
-    , mpThreadPool(0)
-    , miNumAviFrames(0)
-    , miFrameIndex(0) {
+    : miWidth(iw)
+    , miHeight(ih){
   mRenderGraph = new render_graph;
   mpThreadPool = new ork::threadpool::thread_pool;
   // mpThreadPool->init(16);
@@ -144,7 +135,7 @@ DemoApp::DemoApp(int iw, int ih)
 
   // viewnum++;
 
-  GfxEnv::GetRef().SetLoaderTarget(pgfxwin->context());
+
   GfxEnv::GetRef().RegisterWinContext(pgfxwin);
 
   gpvp->Init(pgfxwin->context());

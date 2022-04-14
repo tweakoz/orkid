@@ -1,7 +1,9 @@
-///////////////////////////////////////////////////////////////////////////////
-// Orkid
-// Copyright 1996-2020, Michael T. Mayers
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
 
 #include <ork/file/file.h>
 #include <ork/math/audiomath.h>
@@ -15,17 +17,17 @@ namespace ork::audio::singularity::sf2 {
 ////////////////////////////////////////////////////////////////////////////////
 
 InstrumentZone::InstrumentZone()
-    : miBaseModulator(0)
-    , mbGlobalZone(false)
-    , num_generators(0)
+    : num_generators(0)
     , base_generator(0)
     , sampleID(0)
     , presetnum(0xffffffff)
-    , _loopModeOverride(-1)
+    , _loopModeOverride(-1) 
     , index(0xffffffff)
     , is_zone_used(true)
     , strip_order(0)
-    , ipan(0) {
+    , ipan(0) 
+    , mbGlobalZone(false)
+    , miBaseModulator(0) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -244,7 +246,9 @@ void InstrumentZone::ApplyGenerator(ESF2Generators egen, S16 GenVal) {
       sampleID = GenVal;
       break;
     }
-      ////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////
+    default:
+      break;
   }
 }
 

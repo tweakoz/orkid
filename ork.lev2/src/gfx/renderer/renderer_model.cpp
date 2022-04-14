@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -14,12 +14,7 @@
 
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-ModelDrawable::ModelDrawable(DrawableOwner* pent)
-    : Drawable()
-    , mfScale(1.0f)
-    , mRotate(0.0f, 0.0f, 0.0f)
-    , mOffset(0.0f, 0.0f, 0.0f)
-    , mbShowBoundingSphere(false) {
+ModelDrawable::ModelDrawable(DrawableOwner* pent) {
   for (int i = 0; i < kMaxEngineParamFloats; i++)
     mEngineParamFloats[i] = 0.0f;
 }
@@ -82,12 +77,53 @@ void ModelDrawable::ShowBoundingSphere(bool bflg) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ModelDrawable::bindModelAsset(AssetPath assetpath) {
-  _asset = asset::AssetManager<XgmModelAsset>::load(assetpath);
+
+  ork::opq::assertOnQueue(opq::mainSerialQueue());
+
+  asset::vars_ptr_t asset_vars;
+
+  if(_data){
+
+    asset_vars = std::make_shared<asset::vars_t>();
+
+    for( auto item : _data->_assetvars ){
+
+      const std::string& k = item.first;
+      const rendervar_t& v = item.second;
+
+      std::string v_str;
+      if(auto as_str = v.tryAs<std::string>() ){
+        asset_vars->makeValueForKey<std::string>(k,as_str.value());
+        v_str = as_str.value();
+      }
+      else if(auto as_bool = v.tryAs<bool>() ){
+        asset_vars->makeValueForKey<bool>(k,as_bool.value());
+        v_str = as_bool.value() ? "true" : "false";
+      }
+      else if(auto as_dbl = v.tryAs<double>() ){
+        asset_vars->makeValueForKey<double>(k,as_dbl.value());
+        v_str = FormatString("%f",as_dbl.value());
+      }
+      else {
+        OrkAssert(false);
+      }
+
+      printf("modelassetvar k<%s> v<%s>\n", k.c_str(), v_str.c_str() );
+
+    }
+
+  }
+
+  _asset = asset::AssetManager<XgmModelAsset>::load(assetpath,asset_vars);
+  bindModel(_asset->_model.atomicCopy());
+}
+void ModelDrawable::bindModelAsset(xgmmodelassetptr_t asset) {
+  _asset = asset;
   bindModel(_asset->_model.atomicCopy());
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ModelDrawable::bindModel(model_ptr_t model) {
-  _model = model;
+  _model         = model;
   auto modelinst = std::make_shared<XgmModelInst>(_model.get());
   SetModelInst(modelinst);
 }
@@ -101,11 +137,11 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
 
   // TODO - resolve frustum in case of stereo camera
 
-  const ork::fmtx4& matw        = *item.mXfData._worldMatrix.get();
+  const ork::fmtx4 matw         = item.mXfData._worldTransform->composed();
   bool isPickState              = renderer->GetTarget()->FBI()->isPickState();
   bool isSkinned                = Model->isSkinned();
   ork::fvec3 center_plus_offset = mOffset + Model->boundingCenter();
-  ork::fvec3 ctr                = ork::fvec4(center_plus_offset * mfScale).Transform(matw);
+  ork::fvec3 ctr                = ork::fvec4(center_plus_offset * mfScale).transform(matw);
   ork::fvec3 vwhd               = Model->boundingAA_WHD();
   float frad                    = vwhd.x;
   if (vwhd.y > frad)
@@ -173,7 +209,7 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
             const Sphere& bsph = cluster->mBoundingSphere;
 
             float clussphrad = bsph.mRadius * matw_scale * mfScale;
-            fvec3 clussphctr = ((bsph.mCenter + mOffset) * mfScale).Transform(matw);
+            fvec3 clussphctr = ((bsph.mCenter + mOffset) * mfScale).transform(matw);
             Sphere sph2(clussphctr, clussphrad);
 
             btest = true; // CollisionTester::FrustumSphereTest( frus, sph2 );
@@ -193,7 +229,7 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
             renderable.SetMesh(&mesh);
             renderable.SetSubMesh(&submesh);
             renderable._cluster = cluster;
-            renderable.SetModColor(renderer->GetTarget()->RefModColor());
+            renderable.SetModColor(_modcolor);
             renderable.SetMatrix(matw);
             // renderable.SetLightMask(lmask);
             renderable.SetScale(mfScale);
@@ -215,6 +251,10 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
             renderable.SetSortKey(isortkey);
             // orkprintf( " ModelDrawable::enqueueToRenderQueue() rable<%p> \n", & renderable );
 
+            if(item._onrenderable){
+              item._onrenderable(&renderable);
+            }
+
             inumacc++;
           } else {
             inumrej++;
@@ -227,17 +267,7 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
 ///////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
-ModelRenderable::ModelRenderable(IRenderer* renderer)
-    : IRenderable()
-    , mSortKey(0)
-    , mMaterialIndex(0)
-    , mMaterialPassIndex(0)
-    , mScale(1.0f)
-    , mEdgeColor(-1)
-    , mMesh(0)
-    , mSubMesh(0)
-    , mRotate(0.0f, 0.0f, 0.0f)
-    , mOffset(0.0f, 0.0f, 0.0f) {
+ModelRenderable::ModelRenderable(IRenderer* renderer){
   for (int i = 0; i < kMaxEngineParamFloats; i++)
     mEngineParamFloats[i] = 0.0f;
 }

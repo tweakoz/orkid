@@ -5,7 +5,7 @@ from orkengine.lev2 import *
 import pyopencl as cl
 mf = cl.mem_flags
 ################################################################################
-class Instanceset(object):
+class InstanceSet(object):
   ########################################################
   def __init__(self,model,num_instances,layer):
     super().__init__()
@@ -62,7 +62,7 @@ class SimApp(object):
     super().__init__()
     self.sceneparams = VarMap()
     self.sceneparams.preset = "PBRVR" if vrmode else "PBR"
-    self.qtapp = OrkEzQtApp.create(self)
+    self.qtapp = OrkEzApp.create(self)
     self.qtapp.setRefreshPolicy(RefreshFastest, 0)
     self.instanceset=None
     self.instance_set_class = instance_set_class

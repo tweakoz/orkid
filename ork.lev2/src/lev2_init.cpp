@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -31,6 +31,7 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorForward.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
+#include <ork/lev2/gfx/scenegraph/scenegraph.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/aud/singularity/synthdata.h>
 #include <ork/lev2/aud/singularity/layer.h>
@@ -54,8 +55,6 @@ namespace vk {
 void init();
 }
 #endif
-// static FileDevContext LocPlatformLevel2FileContext;
-// const FileDevContext& PlatformLevel2FileContext = LocPlatformLevel2FileContext;
 
 #if defined(_WIN32)
 static bool gbPREFEROPENGL = false;
@@ -63,13 +62,11 @@ static bool gbPREFEROPENGL = false;
 static bool gbPREFEROPENGL = true;
 #endif
 
-void Direct3dContextInit();
-void WiiContextInit();
-void OpenGlContextInit();
+context_ptr_t OpenGlContextInit();
 void DummyContextInit();
 
 void PreferOpenGL() {
-  ork::lev2::OpenGlContextInit();
+  static auto ctx = ork::lev2::OpenGlContextInit();
   gbPREFEROPENGL = true;
 }
 
@@ -85,6 +82,28 @@ void ClassInit() {
 
   //////////////////////////////////////////
   // touch of class
+
+
+  LightData::GetClassStatic();
+  PointLightData::GetClassStatic();
+  DirectionalLightData::GetClassStatic();
+  AmbientLightData::GetClassStatic();
+  SpotLightData::GetClassStatic();
+  
+  scenegraph::DrawableDataKvPair::GetClassStatic();
+  DrawableData::GetClassStatic();
+  ModelDrawableData::GetClassStatic();
+  InstancedModelDrawableData::GetClassStatic();
+  BillboardStringDrawableData::GetClassStatic();
+  InstancedBillboardStringDrawableData::GetClassStatic();
+
+
+  XgmAnimChannel::GetClassStatic();
+  XgmFloatAnimChannel::GetClassStatic();
+  XgmVect3AnimChannel::GetClassStatic();
+  XgmVect4AnimChannel::GetClassStatic();
+  XgmMatrixAnimChannel::GetClassStatic();
+  XgmDecompAnimChannel::GetClassStatic();
 
   particle::ParticleModule::GetClassStatic();
   particle::ParticlePool::GetClassStatic();
@@ -168,7 +187,7 @@ void ClassInit() {
   RegisterClassX(NodeCompositingTechnique);
   RegisterClassX(PBRMaterial);
 
-  RegisterClassX(TerrainDrawableData);
+  //RegisterClassX(TerrainDrawableData);
   RegisterClassX(TextureAsset);
   RegisterClassX(FxShaderAsset);
   RegisterClassX(XgmAnimAsset);
@@ -212,53 +231,33 @@ void ClassInit() {
   //////////////////////////////////////////
 }
 
+static ork::lev2::context_ptr_t gloadercontext;
+
 void GfxInit(const std::string& gfxlayer) {
 
-#if !defined(ORK_OSX)
+#if defined(ENABLE_VULKAN)
   vk::init();
 #endif
 
   if (gfxlayer != "dummy") {
 #if defined(ORK_CONFIG_OPENGL)
-    OpenGlContextInit();
+    gloadercontext = OpenGlContextInit();
 #endif
   }
   DrawableBuffer::gbInsideClearAndSync = false;
   opq::init();
 }
 
-StdFileSystemInitalizer::StdFileSystemInitalizer(int argc, char** argv) {
-  printf("CPA\n");
-  // OldSchool::SetGlobalStringVariable("temp://", CreateFormattedString("ork.data/temp/"));
+void initModule(ork::appinitdata_ptr_t init_data){
 
-  // printf("CPB\n");
-  //////////////////////////////////////////
-  // Register data:// urlbase
+  auto it = init_data->_miscvars.find("lev2_init");
 
-  // todo - hold somewhere not static
-  static auto WorkingDirContext = std::make_shared<FileDevContext>();
-
-  auto base_dir  = file::Path::orkroot_dir();
-  auto data_dir  = base_dir / "ork.data";
-  auto lev2_base = data_dir / "platform_lev2";
-  auto srcd_base = data_dir / "src";
-
-  //////////////////////////////////////////
-  // Register urlbases
-  //////////////////////////////////////////
-
-  auto LocPlatformLevel2FileContext   = FileEnv::createContextForUriBase("lev2://", lev2_base);
-  auto SrcPlatformLevel2FileContext   = FileEnv::createContextForUriBase("src://", srcd_base);
-  auto LocPlatformMorkDataFileContext = FileEnv::createContextForUriBase("miniorkdata://", srcd_base);
-  auto DataDirContext                 = FileEnv::createContextForUriBase("data://", data_dir);
-
-  //////////////
-  // we dont want to see lev2:// in choice manager
-  //////////////
-  LocPlatformLevel2FileContext->_vars.makeValueForKey<void*>("disablechoices");
-  //////////////
-}
-StdFileSystemInitalizer::~StdFileSystemInitalizer() {
+  if(it == init_data->_miscvars.end() ){
+    init_data->enqueuePreInitOp([]{
+      ClassInit();
+    });
+    init_data->_miscvars["lev2_init"] = nullptr;
+  }
 }
 
 } // namespace lev2
@@ -288,6 +287,7 @@ public:
   }
 };
 
+#if 0
 void PerformanceTracker::Draw(ork::lev2::Context* pTARG) {
   // return; //
   // orklist<PerformanceItem*>* PerfItemList = PerformanceTracker::GetItemList();
@@ -407,6 +407,7 @@ name.c_str(), fps, ftime*1000.0f ).c_str() ); #endif
   pTARG->IMI()->QueFlush();
   pTARG->PopModColor();*/
 }
+#endif
 
 } // namespace ork
 

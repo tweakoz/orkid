@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -16,6 +16,7 @@
 #include <ork/reflect/IDeserializer.h>
 
 namespace ork::reflect {
+
 
 template <typename MemberType> //
 inline DirectObject<MemberType>::DirectObject(sharedptrtype_t Object::*member)
@@ -46,7 +47,7 @@ inline void DirectObject<MemberType>::deserialize(serdes::node_ptr_t dsernode) c
   auto childnode    = deserializer->deserializeObject(dsernode);
   if (childnode) {
     auto subinstance           = childnode->_deser_instance;
-    (instance.get()->*_member) = std::dynamic_pointer_cast<rawptrtype_t>(subinstance);
+    (instance.get()->*_member) = std::dynamic_pointer_cast<element_type>(subinstance);
   } else {
     (instance.get()->*_member) = nullptr;
   }
@@ -62,6 +63,18 @@ template <typename MemberType>                                 //
 inline typename DirectObject<MemberType>::sharedconstptrtype_t //
 DirectObject<MemberType>::access(object_constptr_t instance) const {
   return (const_cast<Object*>(instance.get())->*_member);
+}
+
+template <typename MemberType> //
+object_ptr_t DirectObject<MemberType>::getObject(object_constptr_t instance) const { // final
+  auto value = (instance.get()->*_member);
+  return value;
+}
+
+template <typename MemberType> //
+void DirectObject<MemberType>::setObject(object_ptr_t instance, object_ptr_t obj) const { // final
+  auto casted = dynamic_pointer_cast<element_type>(obj);
+  (instance.get()->*_member) = casted;
 }
 
 template <typename MemberType> //

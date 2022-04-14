@@ -50,13 +50,7 @@ To do:
 namespace ork {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-RadixSort::RadixSort()
-    : _indices(nullptr)
-    , _indices2(nullptr)
-    , _currentSize(0)
-    , _previousSize(0)
-    , _totalCalls(0)
-    , _numBhits(0) {
+RadixSort::RadixSort(){
   _histogram = new uint32_t[HISTOSIZE];
   _offset    = new uint32_t[HISTOSIZE];
   resetIndices();

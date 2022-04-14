@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include "pyext.h"
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -14,27 +21,23 @@ void ClassInit();
 void GfxInit(const std::string& gfxlayer);
 } // namespace ork::lev2
 
-class Lev2PythonApplication : public ork::Application {
-  RttiDeclareConcrete(Lev2PythonApplication, ork::Application);
-};
-
-void Lev2PythonApplication::Describe() {
-}
-
-INSTANTIATE_TRANSPARENT_RTTI(Lev2PythonApplication, "Lev2PythonApplication");
-
 ////////////////////////////////////////////////////////////////////////////////
 
 void lev2appinit() {
   ork::SetCurrentThreadName("main");
 
-  static Lev2PythonApplication the_app;
-  ApplicationStack::Push(&the_app);
+  static auto init_data = std::make_shared<AppInitData>();
+
+  static auto _gpsctx = std::make_shared<ork::StringPoolContext>();
+  StringPoolStack::Push(_gpsctx);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwritable-strings"
 
   int argc      = 1;
   char* argv[1] = {"python3"};
 
-  static ork::lev2::StdFileSystemInitalizer filesysteminit(argc, argv);
+#pragma GCC diagnostic pop
 
   ork::lev2::ClassInit();
   ork::rtti::Class::InitializeClasses();

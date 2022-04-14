@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -14,6 +14,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include "config.h"
+#include <ork/lev2/lev2_types.h>
 
 #include <ork/kernel/core/singleton.h>
 #include <ork/kernel/timer.h>
@@ -31,30 +32,12 @@
 #include <ork/lev2/ui/ui.h>
 #include <ork/math/TransformNode.h>
 #include <ork/object/Object.h>
+#include <ork/lev2/gfx/texman.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-class FxShader;
-struct FxShaderTechnique;
-struct FxShaderParam;
-struct FxShaderParamBlock;
-#if defined(ENABLE_SHADER_STORAGE)
-struct FxShaderStorageBlock;
-#endif
-class RenderContextInstData;
-class GfxMaterial;
-class VertexBufferBase;
-class IndexBufferBase;
-class OffscreenBuffer;
-class TextureAnimationInst;
-class PickBuffer;
-class RtGroup;
-class RtBuffer;
-class TextureAsset;
-
-////////////////////////////////////////////////////////////////////////////////
 
 struct ViewportRect : public ui::Rect {
   ViewportRect();
@@ -113,7 +96,10 @@ struct CaptureBuffer {
   void* _data;
   std::vector<uint8_t> _tempbuffer;
   size_t _buffersize;
-  // CaptureBuffer* _conversionBuffer = nullptr;
+  int _captureX = 0;
+  int _captureY = 0;
+  int _captureW = 0;
+  int _captureH = 0;
   ////////////////////////////
 };
 
@@ -139,7 +125,7 @@ struct PixelFetchContext {
   static const int kmaxitems = 4;
 
   Context* _gfxContext = nullptr;
-  RtGroup* mRtGroup;
+  rtgroup_ptr_t _rtgroup;
   int miMrtMask;
   svar256_t _pickvalues[kmaxitems];
   EPixelUsage mUsage[kmaxitems];

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -20,7 +20,7 @@
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-bool GlTextureInterface::_loadDDSTexture(Texture* ptex, datablock_ptr_t datablock) {
+bool GlTextureInterface::_loadDDSTexture(texture_ptr_t ptex, datablock_ptr_t datablock) {
   GlTexLoadReq load_req;
   load_req.ptex                  = ptex;
   load_req._inpstream._datablock = datablock;
@@ -67,7 +67,7 @@ bool GlTextureInterface::_loadDDSTexture(Texture* ptex, datablock_ptr_t databloc
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool GlTextureInterface::_loadDDSTexture(const AssetPath& infname, Texture* ptex) {
+bool GlTextureInterface::_loadDDSTexture(const AssetPath& infname, texture_ptr_t ptex) {
   AssetPath Filename = infname;
   ptex->_debugName   = infname.toStdString();
   ///////////////////////////////////////////////
@@ -94,7 +94,7 @@ void GlTextureInterface::_loadDDSTextureMainThreadPart(GlTexLoadReq req) {
   mTargetGL.makeCurrentContext();
   mTargetGL.debugPushGroup("loadDDSTextureMainThreadPart");
   const dds::DDS_HEADER* ddsh = req._ddsheader;
-  Texture* ptex               = req.ptex;
+  texture_ptr_t ptex               = req.ptex;
   GLTextureObject* pTEXOBJ    = req.pTEXOBJ;
   // File& TextureFile = *req.pTEXFILE;
 
@@ -115,7 +115,7 @@ void GlTextureInterface::_loadDDSTextureMainThreadPart(GlTexLoadReq req) {
 
   if (0) {
     auto dbgname = ptex->_debugName;
-    printf("  tex<%s> ptex<%p>\n", dbgname.c_str(), ptex);
+    printf("  tex<%s> ptex<%p>\n", dbgname.c_str(), (void*) ptex.get());
     printf("  tex<%s> width<%d>\n", dbgname.c_str(), iwidth);
     printf("  tex<%s> height<%d>\n", dbgname.c_str(), iheight);
     printf("  tex<%s> depth<%d>\n", dbgname.c_str(), idepth);
@@ -144,6 +144,9 @@ void GlTextureInterface::_loadDDSTextureMainThreadPart(GlTexLoadReq req) {
     mTargetGL.debugLabel(GL_TEXTURE, pTEXOBJ->mObject, ptex->_debugName);
   }
 
+  ptex->_varmap.makeValueForKey<GLuint>("gltexobj") = pTEXOBJ->mObject;
+
+
   auto infname = req._texname;
 
   // printf("  tex<%p:%s> ORKTEXOBJECT<%p> GLTEXOBJECT<%d>\n", ptex, ptex->_debugName.c_str(), pTEXOBJ, int(pTEXOBJ->mObject));
@@ -158,17 +161,17 @@ void GlTextureInterface::_loadDDSTextureMainThreadPart(GlTexLoadReq req) {
   if (dds::IsLUM(ddsh->ddspf)) {
     // printf( "  tex<%s> LUM\n", ptex->_debugName.c_str() );
     if (bVOLUMETEX)
-      Set3D(this, ptex, GL_RED, GL_UNSIGNED_BYTE, TARGET, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
+      Set3D(this, ptex.get(), GL_RED, GL_UNSIGNED_BYTE, TARGET, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
     else
-      Set2D(this, ptex, 1, GL_RED, GL_UNSIGNED_BYTE, TARGET, 1, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
+      Set2D(this, ptex.get(), 1, GL_RED, GL_UNSIGNED_BYTE, TARGET, 1, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
   } else if (dds::IsBGR5A1(ddsh->ddspf)) {
     const dds::DdsLoadInfo& li = dds::loadInfoBGR5A1;
     // printf("  tex<%s> BGR5A1\n", ptex->_debugName.c_str());
     // printf( "  tex<%s> size<%d>\n", ptex->_debugName.c_str(), 2 );
     if (bVOLUMETEX) {
-      Set3D(this, ptex, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, TARGET, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr,
+      Set3D(this, ptex.get(), GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, TARGET, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr,
     } else
-      Set2D(this, ptex, 4, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, TARGET, 2, NumMips, iwidth, iheight, req._inpstream); // ireadptr,
+      Set2D(this, ptex.get(), 4, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, TARGET, 2, NumMips, iwidth, iheight, req._inpstream); // ireadptr,
                                                                                                                      // pdata
                                                                                                                      // );
   } else if (dds::IsBGRA8(ddsh->ddspf)) {
@@ -177,9 +180,9 @@ void GlTextureInterface::_loadDDSTextureMainThreadPart(GlTexLoadReq req) {
     // printf("  tex<%s> BGRA8\n", ptex->_debugName.c_str());
     // printf( "  tex<%s> size<%d>\n", ptex->_debugName.c_str(), size );
     if (bVOLUMETEX) {
-      Set3D(this, ptex, GL_RGBA, GL_UNSIGNED_BYTE, TARGET, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
+      Set3D(this, ptex.get(), GL_RGBA, GL_UNSIGNED_BYTE, TARGET, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
     } else {
-      Set2D(this, ptex, 4, GL_BGRA, GL_UNSIGNED_BYTE, TARGET, 4, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
+      Set2D(this, ptex.get(), 4, GL_BGRA, GL_UNSIGNED_BYTE, TARGET, 4, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
 
       if (NumMips > 3) {
         ptex->TexSamplingMode().PresetTrilinearWrap();
@@ -194,9 +197,9 @@ void GlTextureInterface::_loadDDSTextureMainThreadPart(GlTexLoadReq req) {
     // printf( "  tex<%s> size<%d>\n", TextureFile.msFileName.c_str(), size );
     // printf( "  tex<%s> BGR8\n", ptex->_debugName.c_str() );
     if (bVOLUMETEX) {
-      Set3D(this, ptex, GL_BGR, GL_UNSIGNED_BYTE, TARGET, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
+      Set3D(this, ptex.get(), GL_BGR, GL_UNSIGNED_BYTE, TARGET, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
     } else
-      Set2D(this, ptex, 3, GL_BGR, GL_UNSIGNED_BYTE, TARGET, 3, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
+      Set2D(this, ptex.get(), 3, GL_BGR, GL_UNSIGNED_BYTE, TARGET, 3, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
     GL_ERRORCHECK();
     if (NumMips > 3) {
       ptex->TexSamplingMode().PresetTrilinearWrap();
@@ -211,9 +214,9 @@ void GlTextureInterface::_loadDDSTextureMainThreadPart(GlTexLoadReq req) {
     // printf("  tex<%s> DXT5\n", ptex->_debugName.c_str());
     // printf("  tex<%s> size<%d>\n", ptex->_debugName.c_str(), size);
     if (bVOLUMETEX) {
-      Set3DC(this, ptex, kRGBA_DXT5, TARGET, li.blockBytes, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
+      Set3DC(this, ptex.get(), kRGBA_DXT5, TARGET, li.blockBytes, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
     } else
-      Set2DC(this, ptex, kRGBA_DXT5, TARGET, li.blockBytes, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
+      Set2DC(this, ptex.get(), kRGBA_DXT5, TARGET, li.blockBytes, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
     GL_ERRORCHECK();
     //////////////////////////////////////
   }
@@ -227,9 +230,9 @@ void GlTextureInterface::_loadDDSTextureMainThreadPart(GlTexLoadReq req) {
     // printf("  tex<%s> size<%d>\n", ptex->_debugName.c_str(), size);
 
     if (bVOLUMETEX) {
-      Set3DC(this, ptex, kRGBA_DXT3, TARGET, li.blockBytes, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
+      Set3DC(this, ptex.get(), kRGBA_DXT3, TARGET, li.blockBytes, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
     } else
-      Set2DC(this, ptex, kRGBA_DXT3, TARGET, li.blockBytes, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
+      Set2DC(this, ptex.get(), kRGBA_DXT3, TARGET, li.blockBytes, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
   }
   //////////////////////////////////////////////////////////
   // DXT1: texturing fast path (4 bits per pixel true color)
@@ -240,9 +243,9 @@ void GlTextureInterface::_loadDDSTextureMainThreadPart(GlTexLoadReq req) {
     // printf("  tex<%s> DXT1\n", ptex->_debugName.c_str());
     // printf("  tex<%s> size<%d> nummips<%d> w<%d> h<%d> \n", ptex->_debugName.c_str(), size, NumMips, iwidth, iheight);
     if (bVOLUMETEX) {
-      Set3DC(this, ptex, kRGB_DXT1, TARGET, li.blockBytes, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
+      Set3DC(this, ptex.get(), kRGB_DXT1, TARGET, li.blockBytes, NumMips, iwidth, iheight, idepth, req._inpstream); // ireadptr, pdata );
     } else
-      Set2DC(this, ptex, kRGB_DXT1, TARGET, li.blockBytes, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
+      Set2DC(this, ptex.get(), kRGB_DXT1, TARGET, li.blockBytes, NumMips, iwidth, iheight, req._inpstream); // ireadptr, pdata );
   }
   //////////////////////////////////////////////////////////
   // ???
@@ -255,7 +258,7 @@ void GlTextureInterface::_loadDDSTextureMainThreadPart(GlTexLoadReq req) {
     ptex->TexSamplingMode().PresetTrilinearWrap();
   }
 
-  this->ApplySamplingMode(ptex);
+  this->ApplySamplingMode(ptex.get());
 
   ptex->_dirty = false;
   glBindTexture(TARGET, 0);

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -28,17 +28,6 @@
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-struct AppInitData{
-  bool _fullscreen = false;
-  int _top = 100;
-  int _left = 100;
-  int _width = 1280;
-  int _height = 720;
-  int _msaa_samples = 1;
-  int _swap_interval = 1;
-  bool _allowHIDPI = true;
-  std::string _monitor_id = "";
-};
 
 /// ////////////////////////////////////////////////////////////////////////////
 /// Graphics Context Base
@@ -73,11 +62,6 @@ public:
 
   void progressHandler(opq::progressdata_ptr_t data);
 
-  CTFLXID GetThisXID(void) const;
-  CTFLXID GetTopXID(void) const;
-  void SetThisXID(CTFLXID xid);
-  void SetTopXID(CTFLXID xid);
-
   void pushRefreshPolicy(RefreshPolicyItem policy);
   void popRefreshPolicy();
 
@@ -109,8 +93,6 @@ protected:
   Context* _target;
   Window* _orkwindow;
   ui::event_ptr_t _uievent;
-  CTFLXID mxidThis;
-  CTFLXID mxidTopLevel;
   bool _needsInitialize;
   svar16_t _pimpl_progress;
 

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 //////////////////////////////////////////////////////////////// 
@@ -119,13 +119,13 @@ T PIDController2<T>::Update(T MeasuredError, float dt )
 
 template<typename T>
 PIDController2<T>::PIDController2(T proportional, T integral, T derivative, Vector2<T> irange, Vector2<T> maxdelta, float decay)
-    : mProportionalFactor(proportional)
+    : mLastError(0.0f)
+	, mIntegral(0.0f)
+    , mProportionalFactor(proportional)
     , mIntegralFactor(integral)
     , mDerivativeFactor(derivative)
     , mIntegralRange(irange)
     , mMaxDelta(maxdelta)
-    , mLastError(0.0f)
-	, mIntegral(0.0f)
 	, mIntegralDecay(decay)
 {
 }

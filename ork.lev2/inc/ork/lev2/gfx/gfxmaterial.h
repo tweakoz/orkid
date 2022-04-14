@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -21,11 +21,6 @@
 namespace ork {
 namespace lev2 {
 
-using material_ptr_t      = std::shared_ptr<GfxMaterial>;
-using material_constptr_t = std::shared_ptr<const GfxMaterial>;
-
-class Texture;
-
 /////////////////////////////////////////////////////////////////////////
 
 #define MAX_MATERIAL_TEXTURES 4
@@ -42,7 +37,7 @@ struct VertexConfig {
 struct TextureContext {
   TextureContext(const Texture* ptex = 0, float repU = 1.0f, float repV = 1.0f);
 
-  const Texture* mpTexture;
+  const Texture* mpTexture = nullptr;
   float mfRepeatU;
   float mfRepeatV;
 };
@@ -120,8 +115,6 @@ struct GfxMaterial : public ork::Object {
   //////////////////////////////////////////////////////////////////////////////
 
 public:
-  f32 mfParticleSize; // todo this does not belong here
-
   GfxMaterial();
   virtual ~GfxMaterial();
 
@@ -163,6 +156,8 @@ public:
 
   virtual void UpdateMVPMatrix(Context* pTARG) {
   }
+  virtual void UpdateMMatrix(Context* pTARG) {
+  }
 
   virtual void BindMaterialInstItem(MaterialInstItem* pitem) const {
   }
@@ -189,17 +184,19 @@ public:
   SRasterState swapRasterState(SRasterState rstate);
   //////////////////////////////////////////////////////////////////////////////
 
+  const RenderContextInstData* mRenderContexInstData = nullptr;
+
   SRasterState _rasterstate;
 
-  int miNumPasses; ///< Number Of Render Passes in this Material (platform specific)
+  int miNumPasses = 0; ///< Number Of Render Passes in this Material (platform specific)
   PoolString mMaterialName;
   TextureContext mTextureMap[ETEXDEST_END];
   float mfFogStart;
   float mfFogRange;
   RenderQueueSortingData mSortingData;
-  const RenderContextInstData* mRenderContexInstData;
   std::stack<bool> mDebug;
   bool _doinit = true;
+  f32 mfParticleSize; // todo this does not belong here
 
   ork::varmap::VarMap _varmap;
 };
@@ -214,9 +211,9 @@ bool LoadMaterialMap(const ork::file::Path& pth, MaterialMap& mmap);
 namespace chunkfile {
 
 struct Reader;
-class Writer;
+struct Writer;
 class OutputStream;
-class InputStream;
+struct InputStream;
 
 struct XgmMaterialWriterContext {
   XgmMaterialWriterContext(Writer& w);
@@ -230,7 +227,7 @@ struct XgmMaterialReaderContext {
   InputStream* _inputStream = nullptr;
   lev2::material_ptr_t _material;
   Reader& _reader;
-  varmap::VarMap _varmap;
+  std::shared_ptr<varmap::VarMap> _varmap;
 };
 
 typedef std::function<lev2::material_ptr_t(XgmMaterialReaderContext& ctx)> materialreader_t;

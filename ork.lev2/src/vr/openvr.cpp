@@ -3,29 +3,35 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/vr/vr.h>
-#include <rapidjson/reader.h>
-#include <rapidjson/document.h>
 #include <ork/kernel/environment.h>
 #include <boost/filesystem.hpp>
 #include <ork/profiling.inl>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunknown-pragmas"
+#include <rapidjson/reader.h>
+#include <rapidjson/document.h>
+#pragma GCC diagnostic pop
+
+////////////////////////////////////////////////////////////////////////////////
+
 #if defined(ENABLE_OPENVR)
 
 ////////////////////////////////////////////////////////////////////////////////
-namespace ork::lev2::orkidvr {
+namespace ork::lev2::orkidvr::openvr {
 ////////////////////////////////////////////////////////////////////////////////
 fmtx4 steam34tofmtx4(const _ovr::HmdMatrix34_t& matPose) {
   fmtx4 orkmtx = fmtx4::Identity();
   for (int i = 0; i < 3; i++)
     for (int j = 0; j < 4; j++)
-      orkmtx.SetElemXY(j, i, matPose.m[i][j]);
+      orkmtx.setElemXY(j, i, matPose.m[i][j]);
   return orkmtx;
 }
 fmtx4 steam44tofmtx4(const _ovr::HmdMatrix44_t& matPose) {
   fmtx4 orkmtx;
   for (int i = 0; i < 4; i++)
     for (int j = 0; j < 4; j++)
-      orkmtx.SetElemXY(j, i, matPose.m[i][j]);
+      orkmtx.setElemXY(j, i, matPose.m[i][j]);
   return orkmtx;
 }
 
@@ -46,40 +52,10 @@ std::string trackedDeviceString(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-fmtx4 VrProjFrustumPar::composeProjection() const {
-  fmtx4 rval;
-  float idx = 1.0f / (_right - _left);
-  float idy = 1.0f / (_bottom - _top);
-  float idz = 1.0f / (_far - _near);
-  float sx  = _right + _left;
-  float sy  = _bottom + _top;
-
-  auto& p = rval.elements;
-  p[0][0] = 2 * idx;
-  p[0][1] = 0;
-  p[0][2] = sx * idx;
-  p[0][3] = 0;
-  p[1][0] = 0;
-  p[1][1] = 2 * idy;
-  p[1][2] = sy * idy;
-  p[1][3] = 0;
-  p[2][0] = 0;
-  p[2][1] = 0;
-  p[2][2] = -_far * idz;
-  p[2][3] = -_far * _near * idz;
-  p[3][0] = 0;
-  p[3][1] = 0;
-  p[3][2] = -1.0f;
-  p[3][3] = 0;
-  rval.Transpose();
-  return rval;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
 OpenVrDevice::OpenVrDevice()
     : _vrmutex("vrmutex") {
 
+      OrkAssert(false);
   _leftControllerDeviceIndex  = -1;
   _rightControllerDeviceIndex = -1;
 
@@ -259,9 +235,9 @@ void OpenVrDevice::_processControllerEvents() {
   if (_active) {
     ////////////////////////////////////////////////////////////////////////////
     fmtx4 rx, ry, rz, ivomatrix;
-    rx.SetRotateX(-PI * 0.5);
-    ry.SetRotateY(PI * 0.5);
-    rz.SetRotateZ(PI * 0.5);
+    rx.setRotateX(-PI * 0.5);
+    ry.setRotateY(PI * 0.5);
+    rz.setRotateZ(PI * 0.5);
     ivomatrix.inverseOf(_outputViewOffsetMatrix);
     auto rotmtx         = (rx * ry * rz);
     auto tracking2world = [&](const fmtx4& input) -> fmtx4 { //
@@ -279,8 +255,8 @@ void OpenVrDevice::_processControllerEvents() {
       bool is_base = controller->_world_matrix == tracking2world(fmtx4());
       if (false == is_base) {
         if (controller->_association_state < 0) {
-          fvec4 cpos = controller->_tracking_matrix.GetTranslation();
-          fvec4 rpos = cpos.Transform(_hmd_trackingMatrix.inverse());
+          fvec4 cpos = controller->_tracking_matrix.translation();
+          fvec4 rpos = cpos.transform(_hmd_trackingMatrix.inverse());
           float xpos = rpos.x;
           controller->_xwpos += xpos * 0.001;
           controller->_xwpos *= 0.9999;
@@ -355,17 +331,11 @@ void OpenVrDevice::_processControllerEvents() {
   }
 }
 
-//////////////////////////////////////////////
-VrTrackingControllerNotificationFrame::VrTrackingControllerNotificationFrame() {
-  _left  = std::make_shared<ControllerState>();
-  _right = std::make_shared<ControllerState>();
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 
-void composite(lev2::Context* targ, Texture* twoeyetex) {
+void OpenVrDevice::__composite(lev2::Context* targ, Texture* twoeyetex) const  {
 
-  if (device()._active) {
+  if (_active) {
 
     auto fbi = targ->FBI();
 
@@ -388,8 +358,8 @@ void composite(lev2::Context* targ, Texture* twoeyetex) {
 
     //////////////////////////////////////////////////
 
-    int w = device()._width;
-    int h = device()._height;
+    int w = _width;
+    int h = _height;
     ViewportRect VPRect(0, 0, w * 2, h);
     fbi->pushViewport(VPRect);
     fbi->pushScissor(VPRect);
@@ -457,7 +427,7 @@ void OpenVrDevice::_updatePoses() {
         auto orkmtx = steam34tofmtx4(_trackedPoses[dev_index].mDeviceToAbsoluteTracking);
         fmtx4 inverse;
         fmtx4 transpose = orkmtx;
-        transpose.Transpose();
+        transpose.transpose();
         inverse.inverseOf(orkmtx);
         _poseMatrices[dev_index] = orkmtx;
         // if (vrimpl->_devclass[dev_index]==0){
@@ -525,25 +495,6 @@ void OpenVrDevice::gpuUpdate(RenderContextFrameData& RCFD) {
     assert(ovr_compositor_ok);
   }
   _updatePoses();
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-void ControllerState::updateGated() {
-  _button1GatedDown     = _button1Down and (not _button1DownPrev);
-  _button2GatedDown     = _button2Down and (not _button2DownPrev);
-  _buttonThumbGatedDown = _buttonThumbDown and (not _buttonThumbDownPrev);
-  _triggerGatedDown     = _triggerDown and (not _triggerDownPrev);
-
-  _button1GatedUp     = _button1DownPrev and (not _button1Down);
-  _button2GatedUp     = _button2DownPrev and (not _button2Down);
-  _buttonThumbGatedUp = _buttonThumbDownPrev and (not _buttonThumbDown);
-  _triggerGatedUp     = _triggerDownPrev and (not _triggerDown);
-
-  _button1DownPrev     = _button1Down;
-  _button2DownPrev     = _button2Down;
-  _buttonThumbDownPrev = _buttonThumbDown;
-  _triggerDownPrev     = _triggerDown;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

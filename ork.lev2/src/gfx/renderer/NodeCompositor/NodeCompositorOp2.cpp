@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -74,7 +74,6 @@ void Op2CompositingNode::SetNodeB(ork::rtti::ICastable* const& val) {
 Op2CompositingNode::Op2CompositingNode()
     : mSubA(nullptr)
     , mSubB(nullptr)
-    , mOutput(nullptr)
     , mMode(Op2CompositeMode::Op2AsumB)
     , mLevelA(1.0f, 1.0f, 1.0f, 1.0f)
     , mLevelB(1.0f, 1.0f, 1.0f, 1.0f)
@@ -87,8 +86,6 @@ Op2CompositingNode::~Op2CompositingNode() {
     delete mSubA;
   if (mSubB)
     delete mSubB;
-  if (mOutput)
-    delete mOutput;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Op2CompositingNode::doGpuInit(lev2::Context* pTARG, int iW, int iH) // virtual
@@ -98,13 +95,12 @@ void Op2CompositingNode::doGpuInit(lev2::Context* pTARG, int iW, int iH) // virt
   if (mSubB)
     mSubB->gpuInit(pTARG, iW, iH);
 
-  if (nullptr == mOutput) {
+  if (nullptr == _output) {
     mCompositingMaterial.gpuInit(pTARG);
 
-    _rtg                = new lev2::RtGroup(pTARG, iW, iH);
-    mOutput             = new lev2::RtBuffer(lev2::RtgSlot::Slot0, lev2::EBufferFormat::RGBA16F, iW, iH);
-    mOutput->_debugName = FormatString("Op2CompositingNode::output");
-    _rtg->SetMrt(0, mOutput);
+    _rtg                = std::make_shared<lev2::RtGroup>(pTARG, iW, iH);
+    _output             = _rtg->createRenderTarget(lev2::EBufferFormat::RGBA16F);
+    _output->_debugName = FormatString("Op2CompositingNode::output");
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -126,12 +122,12 @@ void Op2CompositingNode::DoRender(CompositorDrawData& drawdata) // virtual
   }
 
   fbi->SetAutoClear(false);
-  fbi->PushRtGroup(_rtg);
+  fbi->PushRtGroup(_rtg.get());
   gbi->BeginFrame();
 
   SRect vprect(0, 0, iw - 1, ih - 1);
   SRect quadrect(0, ih - 1, iw - 1, 0);
-  if (mOutput && mSubA && mSubB) {
+  if (_output && mSubA && mSubB) {
     lev2::Texture* ptexa = mSubA->GetOutput()->texture();
     lev2::Texture* ptexb = mSubB->GetOutput()->texture();
     mCompositingMaterial.SetTextureA(ptexa);

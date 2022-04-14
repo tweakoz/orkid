@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #pragma once
 
 #include "controller.h"
@@ -35,7 +42,7 @@ struct RateLevelEnvData : public ControllerData {
   DeclareConcreteX(RateLevelEnvData, ControllerData);
 
   RateLevelEnvData();
-  ControllerInst* instantiate(Layer* layer) const final;
+  ControllerInst* instantiate(layer_ptr_t layer) const final;
   bool isBiPolar() const;
 
   void addSegment(std::string name, float time, float level, float power = 1.0f);
@@ -52,7 +59,7 @@ struct RateLevelEnvData : public ControllerData {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct RateLevelEnvInst : public ControllerInst {
-  RateLevelEnvInst(const RateLevelEnvData* data, Layer* l);
+  RateLevelEnvInst(const RateLevelEnvData* data, layer_ptr_t l);
   void compute() final;
   void keyOn(const KeyOnInfo& KOI) final;
   void keyOff() final;
@@ -62,7 +69,7 @@ struct RateLevelEnvInst : public ControllerInst {
   void initSeg(int iseg);
   bool done() const;
   const RateLevelEnvData* _data;
-  Layer* _layer;
+  layer_ptr_t _layer;
   int _segmentIndex;
   float _startval;
   float _rawdestval;
@@ -93,7 +100,7 @@ struct AsrData : public ControllerData {
   DeclareConcreteX(AsrData, ControllerData);
 
   AsrData();
-  ControllerInst* instantiate(Layer* layer) const final;
+  ControllerInst* instantiate(layer_ptr_t layer) const final;
 
   std::string _trigger;
   std::string _mode;
@@ -106,7 +113,7 @@ struct AsrData : public ControllerData {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct AsrInst : public ControllerInst {
-  AsrInst(const AsrData* data, Layer* l);
+  AsrInst(const AsrData* data, layer_ptr_t l);
   void compute() final;
   void keyOn(const KeyOnInfo& KOI) final;
   void keyOff() final;
@@ -131,7 +138,7 @@ struct YmEnvData : public ControllerData {
   DeclareConcreteX(YmEnvData, ControllerData);
 
   YmEnvData();
-  ControllerInst* instantiate(Layer* layer) const final;
+  ControllerInst* instantiate(layer_ptr_t layer) const final;
 
   float _attackTime  = 2.0f; //
   float _attackShape = 0.5f; //
@@ -147,7 +154,7 @@ struct YmEnvData : public ControllerData {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct YmEnvInst : public ControllerInst {
-  YmEnvInst(const YmEnvData* data, Layer* l);
+  YmEnvInst(const YmEnvData* data, layer_ptr_t l);
   void compute() final;
   void keyOn(const KeyOnInfo& KOI) final;
   void keyOff() final;
@@ -158,7 +165,7 @@ struct YmEnvInst : public ControllerInst {
   KeyOnInfo _koi;
   float _rawout         = 0.0f;
   float _prcout         = 0.0f;
-  Layer* _layer         = nullptr;
+  layer_ptr_t _layer         = nullptr;
   float _atkinc         = 0.0f;
   float _dec1ratefactor = 0.0f;
   float _dec2ratefactor = 0.0f;

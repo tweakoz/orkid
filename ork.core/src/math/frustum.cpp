@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 //////////////////////////////////////////////////////////////// 
@@ -20,17 +20,17 @@ void Frustum::SupportMapping(const vec3_type& v, vec3_type& result ) const
 {
     float num3;
     //const fvec3* pres = 0;
-    num3 = 0.0f; //mNearCorners[0].Dot(v); //fvec3.Dot(this.corners[0], v, num3);
+    num3 = 0.0f; //mNearCorners[0].dotWith(v); //fvec3.dotWith(this.corners[0], v, num3);
     for (int i=0; i<4; i++ )
     {
         float num2;
-        num2 = mNearCorners[i].Dot(v); //, ref v, out num2);
+        num2 = mNearCorners[i].dotWith(v); //, ref v, out num2);
         if (num2 > num3)
         {
             result = mNearCorners[i];
             num3 = num2;
         }
-        num2 = mFarCorners[i].Dot(v); //, ref v, out num2);
+        num2 = mFarCorners[i].dotWith(v); //, ref v, out num2);
         if (num2 > num3)
         {
             result = mFarCorners[i];
@@ -93,34 +93,34 @@ void Frustum::set( const mtx44_type& IVPMatrix )
 	vec4_type Vx1y1(maxv, minv, minz);
 	vec4_type Vx0y1(minv, minv, minz);
 
-	mtx44_type::UnProject( IVPMatrix, Vx0y0, mNearCorners[0] );
-	mtx44_type::UnProject( IVPMatrix, Vx1y0, mNearCorners[1] );
-	mtx44_type::UnProject( IVPMatrix, Vx1y1, mNearCorners[2] );
-	mtx44_type::UnProject( IVPMatrix, Vx0y1, mNearCorners[3] );
+	mtx44_type::unProject( IVPMatrix, Vx0y0, mNearCorners[0] );
+	mtx44_type::unProject( IVPMatrix, Vx1y0, mNearCorners[1] );
+	mtx44_type::unProject( IVPMatrix, Vx1y1, mNearCorners[2] );
+	mtx44_type::unProject( IVPMatrix, Vx0y1, mNearCorners[3] );
 
-	Vx0y0.setZ(maxz);
-	Vx1y0.setZ(maxz);
-	Vx1y1.setZ(maxz);
-	Vx0y1.setZ(maxz);
+	Vx0y0.z = maxz;
+	Vx1y0.z = maxz;
+	Vx1y1.z = maxz;
+	Vx0y1.z = maxz;
 
-	mtx44_type::UnProject( IVPMatrix, Vx0y0, mFarCorners[0] );
-	mtx44_type::UnProject( IVPMatrix, Vx1y0, mFarCorners[1] );
-	mtx44_type::UnProject( IVPMatrix, Vx1y1, mFarCorners[2] );
-	mtx44_type::UnProject( IVPMatrix, Vx0y1, mFarCorners[3] );
+	mtx44_type::unProject( IVPMatrix, Vx0y0, mFarCorners[0] );
+	mtx44_type::unProject( IVPMatrix, Vx1y0, mFarCorners[1] );
+	mtx44_type::unProject( IVPMatrix, Vx1y1, mFarCorners[2] );
+	mtx44_type::unProject( IVPMatrix, Vx0y1, mFarCorners[3] );
 
 	vec3_type camrayN, camrayF;
 
-	mtx44_type::UnProject( IVPMatrix, fvec4(0.0f,0.0f,minz), camrayN );
-	mtx44_type::UnProject( IVPMatrix, fvec4(0.0f,0.0f,maxz), camrayF );
+	mtx44_type::unProject( IVPMatrix, fvec4(0.0f,0.0f,minz), camrayN );
+	mtx44_type::unProject( IVPMatrix, fvec4(0.0f,0.0f,maxz), camrayF );
 
     vec4_type camrayHALF = (camrayN+camrayF)*float(0.5f);
 
 	mXNormal = mFarCorners[1] - mFarCorners[0];
 	mYNormal = mFarCorners[3] - mFarCorners[0];
     mZNormal = (camrayF-camrayN);
-    mXNormal.Normalize();
-    mYNormal.Normalize();
-    mZNormal.Normalize();
+    mXNormal.normalizeInPlace();
+    mYNormal.normalizeInPlace();
+    mZNormal.normalizeInPlace();
 
 	vec3_type  inNormal = mZNormal*float(-1.0f);
 	_nearPlane.CalcFromNormalAndOrigin( mZNormal, camrayN );

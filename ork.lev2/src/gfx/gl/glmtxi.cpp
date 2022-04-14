@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -25,7 +25,7 @@ fmtx4 GlMatrixStackInterface::Frustum( float left, float right, float top, float
 
 	if( 1 ) // GL3 core
 	{
-		rval.SetToIdentity();
+		rval.setToIdentity();
 
 		const float two_near_dist = 2.0f * zn;
 		const float right_minus_left = right - left;
@@ -41,10 +41,10 @@ fmtx4 GlMatrixStackInterface::Frustum( float left, float right, float top, float
 		const float m32 = -1.0f;
 		
 
-		rval.SetRow(0, fvec4(m00, 0.0f, m02, 0.0f) );
-		rval.SetRow(1, fvec4(0.0f, m11, m12, 0.0f) );
-		rval.SetRow(2, fvec4(0.0f, 0.0f, m22, m23) );
-		rval.SetRow(3, fvec4(0.0f, 0.0f, m32, 0.0f) );
+		rval.setRow(0, fvec4(m00, 0.0f, m02, 0.0f) );
+		rval.setRow(1, fvec4(0.0f, m11, m12, 0.0f) );
+		rval.setRow(2, fvec4(0.0f, 0.0f, m22, m23) );
+		rval.setRow(3, fvec4(0.0f, 0.0f, m32, 0.0f) );
 	}
 	else
 	{	/*
@@ -57,9 +57,9 @@ fmtx4 GlMatrixStackInterface::Frustum( float left, float right, float top, float
 	}
 
 /*	rval.SetCol(0, fvec4(m00, 0.0f, m02, 0.0f) );
-	rval.SetRow(1, fvec4(0.0f, m11, m12, 0.0f) );
-	rval.SetRow(2, fvec4(0.0f, 0.0f, m22, m23) );
-	rval.SetRow(3, fvec4(0.0f, 0.0f, m32, 0.0f) );*/
+	rval.setRow(1, fvec4(0.0f, m11, m12, 0.0f) );
+	rval.setRow(2, fvec4(0.0f, 0.0f, m22, m23) );
+	rval.setRow(3, fvec4(0.0f, 0.0f, m32, 0.0f) );*/
 
 	return rval;
 }
@@ -86,25 +86,25 @@ fmtx4 GlMatrixStackInterface::Ortho( float left, float right, float top, float b
 		float TransZ = -float(ffar + fnear) * invDepth;
 
 
-		rval.SetElemYX( 0,0, fScaleX );
-		rval.SetElemYX( 1,0, zero );
-		rval.SetElemYX( 2,0, zero );
-		rval.SetElemYX( 3,0, zero );
+		rval.setElemYX( 0,0, fScaleX );
+		rval.setElemYX( 1,0, zero );
+		rval.setElemYX( 2,0, zero );
+		rval.setElemYX( 3,0, zero );
 
-		rval.SetElemYX( 0,1, zero );
-		rval.SetElemYX( 1,1, fScaleY );
-		rval.SetElemYX( 2,1, zero );
-		rval.SetElemYX( 3,1, zero );
+		rval.setElemYX( 0,1, zero );
+		rval.setElemYX( 1,1, fScaleY );
+		rval.setElemYX( 2,1, zero );
+		rval.setElemYX( 3,1, zero );
 
-		rval.SetElemYX( 0,2, zero );
-		rval.SetElemYX( 1,2, zero );
-		rval.SetElemYX( 2,2, fScaleZ );
-		rval.SetElemYX( 3,2, zero );
+		rval.setElemYX( 0,2, zero );
+		rval.setElemYX( 1,2, zero );
+		rval.setElemYX( 2,2, fScaleZ );
+		rval.setElemYX( 3,2, zero );
 
-		rval.SetElemYX( 0,3, TransX );
-		rval.SetElemYX( 1,3, TransY );
-		rval.SetElemYX( 2,3, TransZ );
-		rval.SetElemYX( 3,3, one );
+		rval.setElemYX( 0,3, TransX );
+		rval.setElemYX( 1,3, TransY );
+		rval.setElemYX( 2,3, TransZ );
+		rval.setElemYX( 3,3, one );
 	}
 	else
 	{	/*

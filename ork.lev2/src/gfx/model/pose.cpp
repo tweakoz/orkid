@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -53,25 +53,25 @@ void DecompMtx44::Compose(fmtx4& mtx, EXFORM_COMPONENT components) const {
   else if (XFORM_COMPONENT_ORIENT == components)
     mtx = mRot.toMatrix();
   else if (XFORM_COMPONENT_TRANS == components) {
-    mtx.SetToIdentity();
-    mtx.SetTranslation(mTrans);
+    mtx.setToIdentity();
+    mtx.setTranslation(mTrans);
   } else if ((XFORM_COMPONENT_ORIENT | XFORM_COMPONENT_SCALE) == components) {
     ork::fmtx4 scaleMat;
-    scaleMat.SetScale(mScale, mScale, mScale);
+    scaleMat.setScale(mScale, mScale, mScale);
     ork::fmtx4 rotMat = mRot.toMatrix();
     mtx               = scaleMat * rotMat;
   } else if ((XFORM_COMPONENT_TRANS | XFORM_COMPONENT_SCALE) == components) {
     ork::fmtx4 scaleMat;
-    scaleMat.SetScale(mScale, mScale, mScale);
+    scaleMat.setScale(mScale, mScale, mScale);
     ork::fmtx4 transMat;
-    mtx.SetTranslation(mTrans);
+    mtx.setTranslation(mTrans);
     mtx = scaleMat * transMat;
   } else if (XFORM_COMPONENT_SCALE == components) {
-    mtx.SetToIdentity();
-    mtx.SetScale(mScale, mScale, mScale);
+    mtx.setToIdentity();
+    mtx.setScale(mScale, mScale, mScale);
   } else if (XFORM_COMPONENT_TRANSORIENT == components) {
     ork::fmtx4 transMat;
-    transMat.SetTranslation(mTrans);
+    transMat.setTranslation(mTrans);
     ork::fmtx4 rotMat = mRot.toMatrix();
     mtx               = rotMat * transMat;
   }
@@ -192,7 +192,7 @@ void XgmLocalPose::BindAnimInst(XgmAnimInst& AnimInst) {
 
       int inumjinmap = mSkeleton.mmJointNameMap.size();
 
-      // printf("spose jname<%s> iskelindex<%d> inumjinmap<%d>\n", JointName.c_str(), iskelindex, inumjinmap);
+       //printf("spose jname<%s> iskelindex<%d> inumjinmap<%d>\n", JointName.c_str(), iskelindex, inumjinmap);
 
       if (-1 != iskelindex) {
         EXFORM_COMPONENT components = AnimInst.RefMask().GetComponents(iskelindex);
@@ -200,7 +200,7 @@ void XgmLocalPose::BindAnimInst(XgmAnimInst& AnimInst) {
           ork::lev2::XgmAnim::JointChannelsMap::const_iterator itanim = Channels.find(JointName);
 
           bool found = itanim == Channels.end();
-          // printf( "spose jname<%s> found<%d>\n", JointName.c_str(), int(found) );
+           //printf( "spose jname<%s> found<%d>\n", JointName.c_str(), int(found) );
 
           if (itanim == Channels.end()) {
             int ispi = int(it - StaticPose.begin());
@@ -222,15 +222,15 @@ void XgmLocalPose::BindAnimInst(XgmAnimInst& AnimInst) {
     // int iframe = int(frame);
     int ichidx = 0;
 
-    // for( int is=0; is<mSkeleton.numJoints(); is++ )
-    //	printf( "skel bone<%d:%s>\n", is, mSkeleton.GetJointName(is).c_str() );
+     //for( int is=0; is<mSkeleton.numJoints(); is++ )
+    	//printf( "skel bone<%d:%s>\n", is, mSkeleton.GetJointName(is).c_str() );
 
     for (ork::lev2::XgmAnim::JointChannelsMap::const_iterator it = Channels.begin(); it != Channels.end(); it++) {
       const PoolString& ChannelName                                    = it->first;
       const ork::lev2::XgmDecompAnimChannel* __restrict MtxChannelData = it->second;
       int iskelindex                                                   = mSkeleton.jointIndex(ChannelName);
 
-      // printf("bind channel<%s> skidx<%d>\n", ChannelName.c_str(), iskelindex);
+       //printf("bind channel<%s> skidx<%d>\n", ChannelName.c_str(), iskelindex);
 
       if (-1 != iskelindex) {
         EXFORM_COMPONENT components = AnimInst.RefMask().GetComponents(iskelindex);
@@ -300,7 +300,7 @@ void XgmLocalPose::ApplyAnimInst(const XgmAnimInst& AnimInst) {
     for (int iaidx = 0; iaidx < XgmAnimInst::kmaxbones; iaidx++) {
       const XgmAnimInst::Binding& binding = AnimInst.GetAnimBinding(iaidx);
       int iskelindex                      = binding.mSkelIndex;
-      // printf( "iaidx<%d> iskelindex<%d> inumanimchannels<%d>\n", iaidx, iskelindex, inumanimchannels );
+       //printf( "iaidx<%d> iskelindex<%d> inumanimchannels<%zu>\n", iaidx, iskelindex, inumanimchannels );
       if (iskelindex != 0xffff) {
         int ichanindex                                                   = binding.mChanIndex;
         const ork::lev2::XgmDecompAnimChannel* __restrict MtxChannelData = Channels.GetItemAtIndex(ichanindex).second;
@@ -308,27 +308,12 @@ void XgmLocalPose::ApplyAnimInst(const XgmAnimInst& AnimInst) {
         EXFORM_COMPONENT components                                      = AnimInst.RefMask().GetComponents(iskelindex);
         RefBlendPoseInfo(iskelindex).AddPose(AnimMtx, fweight, components);
 
-        // printf( "apply frame<%d> on iskelidx<%d>\n", iframe, iskelindex );
+        //printf( "apply frame<%d> on iskelidx<%d>\n", iframe, iskelindex );
 
       } else {
         break;
       }
     }
-    /*
-    //////////////////////////////////////////////////////////////////////////////////////////
-    // root anim on a rigid model (ala destructables in sushi)
-    //////////////////////////////////////////////////////////////////////////////////////////
-    if( (1==inumanimchannels) && (1==XgmSkl.numJoints()) )
-    {	const PoolString& channelname = Channels.begin()->first;
-        const ork::lev2::XgmMatrixAnimChannel* ChannelData = ork::lev2::XgmMatrixAnimChannel::Cast(Channels.begin()->second);
-        PoolString JointName = FindPooledString( channelname.c_str() );
-        int iskelindex = XgmSkl.jointIndex( JointName );
-        if( -1 != iskelindex )
-        {	const fmtx4 & ChannelMatrix = ChannelData->GetFrame(iframe);
-            LocalPose.RefBlendPoseInfo( 0 ).AddPose( ChannelMatrix, ratio );
-        }
-    }
-    */
   }
 #endif
 }
@@ -364,17 +349,17 @@ void XgmLocalPose::BuildPose(void) {
 #ifdef ENABLE_ANIM
   int inumjoints = NumJoints();
 
-  // printf("XgmLocalPose<%p>::BuildPose inumjoints<%d>\n", this, inumjoints);
+   //printf("XgmLocalPose<%p>::BuildPose inumjoints<%d>\n", (void*) this, inumjoints);
 
   static int gctr = 0;
   for (int i = 0; i < inumjoints; i++) {
     int inumanms = mBlendPoseInfos[i].GetNumAnims();
 
-    // printf("j<%d> inumanms<%d>\n", i, inumanms);
+     //printf("j<%d> inumanms<%d>\n", i, inumanms);
     if (inumanms) {
       mBlendPoseInfos[i].ComputeMatrix(mLocalMatrices[i]);
 
-      if (0) //( i == ((gctr/1000)%inumjoints) )
+      if (1) //( i == ((gctr/1000)%inumjoints) )
       {
         const auto& name = mSkeleton.GetJointName(i);
         ork::FixedString<64> fxs;
@@ -403,7 +388,7 @@ void XgmLocalPose::Concatenate(void) {
 
   if (mSkeleton.miRootNode >= 0) {
     const fmtx4& RootAnimMat    = RefLocalMatrix(mSkeleton.miRootNode);
-    pmats[mSkeleton.miRootNode] = RootAnimMat.Concat43(mSkeleton.mTopNodesMatrix);
+    pmats[mSkeleton.miRootNode] = RootAnimMat * mSkeleton.mTopNodesMatrix;
 
     int inumbones = mSkeleton.numBones();
     for (int ib = 0; ib < inumbones; ib++) {
@@ -423,7 +408,7 @@ void XgmLocalPose::Concatenate(void) {
       if (RefBlendPoseInfo(ichild).GetPoseCallback())
         RefBlendPoseInfo(ichild).GetPoseCallback()->PostBlendPostConcat(pmats[ichild]);
 
-      fvec3 vtrans = pmats[ichild].GetTranslation();
+      fvec3 vtrans = pmats[ichild].translation();
 
       fminx = std::min(fminx, vtrans.x);
       fminy = std::min(fminy, vtrans.y);
@@ -441,7 +426,7 @@ void XgmLocalPose::Concatenate(void) {
 
   fvec3 range((fmaxx - fminx), (fmaxy - fminy), (fmaxz - fminz));
 
-  float frange = range.Mag() * 0.5f;
+  float frange = range.magnitude() * 0.5f;
 
   mObjSpaceBoundingSphere = fvec4(fmidx, fmidy, fmidz, frange);
 

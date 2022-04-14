@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -19,8 +19,8 @@ const vertexpool vertexpool::EmptyPool;
 
 /////////////////////////////////////////////////////////////////////////
 submesh::submesh(const vertexpool& vpool)
-    : _vtxpool(vpool)
-    , _surfaceArea(0)
+    : _surfaceArea(0)
+    , _vtxpool(vpool)
     , _mergeEdges(true) {
   for (int i = 0; i < kmaxsidesperpoly; i++)
     _polyTypeCounter[i] = 0;
@@ -353,6 +353,7 @@ void submesh::MergeSubMesh(const submesh& inp_mesh) {
     NewPoly.SetAnnoMap(ply.GetAnnoMap());
     MergePoly(NewPoly);
   }
+  orkprintf("inumpingroup<%d> numoutpolys<%d>\n", inumpingroup, GetNumPolys() );
   float ftimeB = float(OldSchool::GetRef().GetLoResTime());
   float ftime  = (ftimeB - ftimeA);
   orkprintf("<<PROFILE>> <<submesh::MergeSubMesh %f seconds>>\n", ftime);
@@ -483,9 +484,9 @@ void submesh::addQuad(fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec4 c) {
 }
 void submesh::addQuad(fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec2 uv0, fvec2 uv1, fvec2 uv2, fvec2 uv3, fvec4 c) {
   vertex muvtx[4];
-  fvec3 p0p1 = (p1 - p0).Normal();
-  fvec3 p0p2 = (p2 - p0).Normal();
-  fvec3 nrm  = p0p1.Cross(p0p2);
+  fvec3 p0p1 = (p1 - p0).normalized();
+  fvec3 p0p2 = (p2 - p0).normalized();
+  fvec3 nrm  = p0p1.crossWith(p0p2);
   // todo compute tangent space from uv gradients
   fvec3 bin = p0p1;
   muvtx[0].set(p0, nrm, bin, uv0, c);
@@ -514,7 +515,7 @@ void submesh::addQuad(
     fvec2 uv3,
     fvec4 c) { /// add quad helper method
   vertex muvtx[4];
-  fvec3 p0p1 = (p1 - p0).Normal();
+  fvec3 p0p1 = (p1 - p0).normalized();
   fvec3 bin  = p0p1;
   muvtx[0].set(p0, n0, bin, uv0, c);
   muvtx[1].set(p1, n1, bin, uv1, c);

@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <ork/lev2/ezapp.h>
 #include <ork/lev2/aud/singularity/krzdata.h>
 #include <ork/lev2/aud/singularity/tx81z.h>
@@ -12,8 +19,9 @@ using namespace ork::lev2;
 using namespace ork::reflect::serdes;
 using namespace ork::audio::singularity;
 
-int main(int argc, char** argv) {
-  auto app = EzApp::get(argc, argv); // reflection init
+int main(int argc, char** argv,char**envp) {
+  auto initdata = std::make_shared<ork::AppInitData>(argc,argv,envp);
+  auto app = EzAppContext::get(initdata); // reflection init
   //////////////////////////////////////////////////////////////////////////////
   // allocate program/layer data
   //////////////////////////////////////////////////////////////////////////////

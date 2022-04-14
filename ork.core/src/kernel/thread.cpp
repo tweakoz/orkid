@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <ork/kernel/thread.h>
 
 #if defined(LINUX)
@@ -41,20 +48,20 @@ void Thread::runSynchronous()
 	join();
 }
 Thread::Thread(const std::string& thread_name, anyp data)
-	: _userdata(data)
-	, _threadh(0)
-	, _running(false)
+	: _threadh(0)
 	, _threadname( thread_name )
+	, _userdata(data)
+	, _running(false)
 {
 	_state = 0;
 }
 Thread::Thread(thread_lambda_t l,
                anyp data,
                const std::string& thread_name )
-	: _userdata(data)
-	, _threadh(0)
-	, _running(false)
+	: _threadh(0)
 	, _threadname( thread_name )
+	, _userdata(data)
+	, _running(false)
 {
 	_state = 0;
     start(l);

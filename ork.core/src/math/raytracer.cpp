@@ -55,7 +55,7 @@ void RgmTri::Compute() {
   mEdgePlane0.CalcPlaneFromTriangle(mpv0->pos, vn + mpv0->pos, mpv1->pos);
   mEdgePlane1.CalcPlaneFromTriangle(mpv1->pos, vn + mpv1->pos, mpv2->pos);
   mEdgePlane2.CalcPlaneFromTriangle(mpv2->pos, vn + mpv2->pos, mpv0->pos);
-  mArea = (mpv0->pos - mpv2->pos).Cross(mpv1->pos - mpv2->pos).Mag() * 0.5f;
+  mArea = (mpv0->pos - mpv2->pos).crossWith(mpv1->pos - mpv2->pos).magnitude() * 0.5f;
 }
 
 Jitterer::Jitterer(int ikos, float fradius, const fvec3& dX, const fvec3& dY) {
@@ -86,8 +86,8 @@ Material::Material()
     , m_Refl(0)
     , m_Diff(0.2f)
     , m_Spec(0.8f)
-    , m_RIndex(1.5f)
-    , m_DRefl(0) {
+    , m_DRefl(0)
+    , m_RIndex(1.5f) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -215,9 +215,9 @@ bool Primitive::PlaneBoxOverlap(const fvec3& a_Normal, const fvec3& a_Vert, cons
       vmax[q] = -a_MaxBox[q] - v;
     }
   }
-  if (a_Normal.Dot(vmin) > 0.0f)
+  if (a_Normal.dotWith(vmin) > 0.0f)
     return false;
-  if (a_Normal.Dot(vmax) >= 0.0f)
+  if (a_Normal.dotWith(vmax) >= 0.0f)
     return true;
   return false;
 }
@@ -263,7 +263,7 @@ bool Primitive::IntersectTriBox(
   FINDMINMAX(v0[2], v1[2], v2[2], min, max);
   if (min > a_BoxHalfsize[2] || max < -a_BoxHalfsize[2])
     return false;
-  normal = e0.Cross(e1);
+  normal = e0.crossWith(e1);
   if (!PlaneBoxOverlap(normal, v0, a_BoxHalfsize))
     return false;
   return true;
@@ -288,7 +288,7 @@ RaytTriangle::RaytTriangle(const RgmVertex* v1, const RgmVertex* v2, const RgmVe
   fvec3 C = mVertex[2]->pos;
   fvec3 c = B - A;
   fvec3 b = C - A;
-  mN      = b.Cross(c);
+  mN      = b.crossWith(c);
   int u, v;
   if (fabs(mN.x) > fabs(mN.y)) {
     if (fabs(mN.x) > fabs(mN.z))
@@ -307,7 +307,7 @@ RaytTriangle::RaytTriangle(const RgmVertex* v1, const RgmVertex* v2, const RgmVe
   float krec = 1.0f / mN[k];
   nu         = mN[u] * krec;
   nv         = mN[v] * krec;
-  nd         = mN.Dot(A) * krec;
+  nd         = mN.dotWith(A) * krec;
   // first line equation
   float reci = 1.0f / (b[u] * c[v] - b[v] * c[u]);
   bnu        = b[u] * reci;
@@ -316,7 +316,7 @@ RaytTriangle::RaytTriangle(const RgmVertex* v1, const RgmVertex* v2, const RgmVe
   cnu = c[v] * reci;
   cnv = -c[u] * reci;
   // finalize normal
-  mN.Normalize();
+  mN.normalizeInPlace();
   // mVertex[0]->SetNormal( m_N );
   // mVertex[1]->SetNormal( m_N );
   // mVertex[2]->SetNormal( m_N );
@@ -357,7 +357,7 @@ fvec3 RaytTriangle::GetNormal(const fvec3& a_Pos) const {
   fvec3 N2 = mVertex[1]->nrm;
   fvec3 N3 = mVertex[2]->nrm;
   fvec3 N  = N1 + mU * (N2 - N1) + mV * (N3 - N1);
-  N.Normalize();
+  N.normalizeInPlace();
   return N;
 }
 
@@ -408,7 +408,7 @@ RaytSphere::RaytSphere(fvec3& center, float radius) {
   // set vectors for texture mapping
   mVn = fvec3(0, 1, 0);
   mVe = fvec3(1, 0, 0);
-  mVc = mVn.Cross(mVe);
+  mVc = mVn.crossWith(mVe);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -450,8 +450,8 @@ AABox RaytSphere::GetAABox() const {
 
 int RaytSphere::Intersect(const fray3& a_Ray, fvec3& isect, float& a_Dist) const {
   fvec3 v    = a_Ray.mOrigin - mCenter;
-  float b    = -v.Dot(a_Ray.mDirection);
-  float det  = (b * b) - v.Dot(v) + mSqRadius;
+  float b    = -v.dotWith(a_Ray.mDirection);
+  float det  = (b * b) - v.dotWith(v) + mSqRadius;
   int retval = MISS;
   if (det > 0) {
     det      = sqrtf(det);
@@ -575,9 +575,9 @@ void RgmLightContainer::LoadLitFile(const char* pfilename) {
         mLights[pname]      = rlite;
       } else // Dir Light
       {
-        RgmLight rlite(mtxW.GetTranslation(), clr);
+        RgmLight rlite(mtxW.translation(), clr);
 
-        rlite.mDir          = mtxW.GetZNormal();
+        rlite.mDir          = mtxW.zNormal();
         rlite.mCastsShadows = bool(icastsshadows);
         mLights[pname]      = rlite;
       }
@@ -645,8 +645,8 @@ RgmModel* LoadRgmFile(const char* pfilename, RgmShaderBuilder& shbuilder) {
         float fu = fmod((vtx.pos.x) * 0.01f, 1.0f);
         float fv = fmod((vtx.pos.z) * 0.01f, 1.0f);
         ModelDataStream->GetItem(vtx.uv);
-        vtx.uv.setX(fu);
-        vtx.uv.setY(fv);
+        vtx.uv.x = (fu);
+        vtx.uv.y = (fv);
       }
       int inumtotp;
       HeaderStream->GetItem(sub.minumtris);
@@ -724,7 +724,7 @@ void Engine::setTarget(RayPixel* dest, int w, int h) {
 ///////////////////////////////////////////////////////////////////////////////
 
 static float AreaOfTri(const fvec3& A, const fvec3& B, const fvec3& C) {
-  float farea = (A - C).Cross(B - C).Mag() * 0.5f;
+  float farea = (A - C).crossWith(B - C).magnitude() * 0.5f;
   return farea;
 }
 
@@ -779,7 +779,7 @@ const Primitive* Engine::Raytrace(const fray3& ray, const int irecdepth, const f
       fvec3 LMP = (LightPos-P);
       fvec3 LightDir = LMP.Normal();
 
-      float fdot = N.Dot(LightDir);
+      float fdot = N.dotWith(LightDir);
 
       if( fdot<0.0f ) fdot=0.0f;
 
@@ -955,17 +955,17 @@ void Engine::InitRender(fvec3& eye, fvec3& target) {
   // calculate lookat matrix
   ///////////////////////////////////////
 
-  fvec3 zdir  = (target - eye).Normal();
-  fvec3 cross = zdir.Cross(fvec3(0.0f, 1.0f, 0.0f));
-  if (cross.Mag() == 0.0f)
-    cross = zdir.Cross(fvec3(1.0f, 0.0f, 0.0f));
-  if (cross.Mag() == 0.0f)
-    cross = zdir.Cross(fvec3(0.0f, 0.0f, 1.0f));
+  fvec3 zdir  = (target - eye).normalized();
+  fvec3 cross = zdir.crossWith(fvec3(0.0f, 1.0f, 0.0f));
+  if (cross.magnitude() == 0.0f)
+    cross = zdir.crossWith(fvec3(1.0f, 0.0f, 0.0f));
+  if (cross.magnitude() == 0.0f)
+    cross = zdir.crossWith(fvec3(0.0f, 0.0f, 1.0f));
 
-  fvec3 up = zdir.Cross(cross);
+  fvec3 up = zdir.crossWith(cross);
 
   fmtx4 mtxLookat;
-  mtxLookat.LookAt(eye, target, up);
+  mtxLookat.lookAt(eye, target, up);
 
   ///////////////////////////////////////
   // set projection matrix
@@ -974,16 +974,16 @@ void Engine::InitRender(fvec3& eye, fvec3& target) {
   fmtx4 mtxP;
 
   float faspect = float(width()) / float(height());
-  mtxP.Perspective(45, faspect, 1.0f, 10000.0f);
+  mtxP.perspective(45, faspect, 1.0f, 10000.0f);
   // mtxP.Ortho( -1, 1, -1, 1, 1, 10000  );
 
   fvec3 vo(0.0f, 0.0f, 0.0f);
   fvec3 vpn(0.0f, 0.0f, 1.0f);
   fvec3 vpf(0.0f, 0.0f, 10000.0f);
 
-  fvec3 pvo = vo.Transform(mtxP);
-  fvec3 pvn = vpn.Transform(mtxP);
-  fvec3 pvf = vpf.Transform(mtxP);
+  fvec3 pvo = vo.transform(mtxP);
+  fvec3 pvn = vpn.transform(mtxP);
+  fvec3 pvf = vpf.transform(mtxP);
 
   ///////////////////////////////////////
 
@@ -1014,13 +1014,13 @@ void Engine::InitRender(fvec3& eye, fvec3& target) {
 
   fvec3 Center, CenterDir;
 
-  fmtx4::UnProject(Vxcyc, matIVP, VP, Center);
-  fmtx4::UnProject(Vx0y0, matIVP, VP, mCornerTL);
-  fmtx4::UnProject(Vx1y0, matIVP, VP, mCornerTR);
-  fmtx4::UnProject(Vx1y1, matIVP, VP, mCornerBR);
-  fmtx4::UnProject(Vx0y1, matIVP, VP, mCornerBL);
+  fmtx4::unProject(Vxcyc, matIVP, VP, Center);
+  fmtx4::unProject(Vx0y0, matIVP, VP, mCornerTL);
+  fmtx4::unProject(Vx1y0, matIVP, VP, mCornerTR);
+  fmtx4::unProject(Vx1y1, matIVP, VP, mCornerBR);
+  fmtx4::unProject(Vx0y1, matIVP, VP, mCornerBL);
 
-  CenterDir = (Center - eye).Normal();
+  CenterDir = (Center - eye).normalized();
 
   // calculate screen plane interpolation vectors
   mDX = (mCornerTR - mCornerTL) * (1.0f / miW);
@@ -1031,8 +1031,7 @@ void Engine::InitRender(fvec3& eye, fvec3& target) {
 
 const Primitive* Engine::RenderRay(fvec3 screen_pos, fvec3& acc) {
   AABox e   = mScene->GetExtends();
-  fvec3 dir = (screen_pos - mEye);
-  dir.Normalize();
+  fvec3 dir = (screen_pos - mEye).normalized();
   Ray3 r(mEye, dir);
   float dist            = 100000.0f;
   const Primitive* prim = Raytrace(r, 1, 1.0f, acc, dist);

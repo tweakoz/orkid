@@ -52,22 +52,20 @@ Octaves::Octaves()
     , ConstructInpPlug(ScalOffsetX, dataflow::EPR_UNIFORM, mfScalOffsetX)
     , ConstructInpPlug(ScalOffsetY, dataflow::EPR_UNIFORM, mfScalOffsetY)
     , ConstructInpPlug(BaseFreq, dataflow::EPR_UNIFORM, mfBaseFreq)
-    , ConstructInpPlug(BaseAmp, dataflow::EPR_UNIFORM, mfBaseAmp)
     , ConstructInpPlug(ScalFreq, dataflow::EPR_UNIFORM, mfScalFreq)
+    , ConstructInpPlug(BaseAmp, dataflow::EPR_UNIFORM, mfBaseAmp)
     , ConstructInpPlug(ScalAmp, dataflow::EPR_UNIFORM, mfScalAmp)
-    , mfBaseFreq(1.0f)
-    , mfScalFreq(2.0f)
-    , mfBaseAmp(1.0f)
-    , mfScalAmp(0.5f)
-    , mfBaseOffsetX(0.0f)
-    , mfBaseOffsetY(0.0f)
-    , mfScalOffsetX(1.0f)
-    , mfScalOffsetY(1.0f)
-    , miNumOctaves(1)
-    , mOctMaterial(ork::lev2::GfxEnv::GetRef().loadingContext(), "orkshader://proctex", "octaves") {
+    , mOctMaterial(lev2::contextForCurrentThread(), "orkshader://proctex", "octaves") {
+
+  mfBaseFreq    = (1.0f);
+  mfScalFreq    = (2.0f);
+  mfBaseAmp     = (1.0f);
+  mfScalAmp     = (0.5f);
+  mfScalOffsetX = (1.0f);
+  mfScalOffsetY = (1.0f);
 }
 ///////////////////////////////////////////////////////////////////////////////
-dataflow::inplugbase* Octaves::GetInput(int idx) {
+dataflow::inplugbase* Octaves::GetInput(int idx) const {
   dataflow::inplugbase* rval = 0;
   switch (idx) {
     case 0:
@@ -136,9 +134,9 @@ void Octaves::compute(ProcTex& ptex) {
     for (int i = 0; i < miNumOctaves; i++) {
       fmtx4 mtxR, mtxS, mtxT;
 
-      mtxT.SetTranslation(offx, offy, 0.0f);
-      mtxS.Scale(ffrq, ffrq, famp);
-      mtxR.SetRotateZ(0.0f);
+      mtxT.setTranslation(offx, offy, 0.0f);
+      mtxS.scale(ffrq, ffrq, famp);
+      mtxR.setRotateZ(0.0f);
 
       mOctMaterial.SetAuxMatrix(mtxS * mtxT);
       {
@@ -196,21 +194,13 @@ void Cells::describeX(class_t* clazz) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 Cells::Cells()
-    : mVertexBuffer(65536, 0, ork::lev2::PrimitiveType::MULTI)
-    , miSeedA(0)
-    , miSeedB(0)
-    , miDimU(2)
-    , miDimV(2)
-    , miDiv(1)
-    , mVBHash()
-    , mPlugInpDispersion(this, dataflow::EPR_UNIFORM, mfDispersion, "di")
+    : mPlugInpDispersion(this, dataflow::EPR_UNIFORM, mfDispersion, "di")
     , mPlugInpSeedLerp(this, dataflow::EPR_UNIFORM, mfSeedLerp, "sl")
     , mPlugInpSmoothingRadius(this, dataflow::EPR_UNIFORM, mfSmoothingRadius, "sr")
-    , miSmoothing(0)
-    , mbAA(false) {
+    , mVertexBuffer(65536, 0, ork::lev2::PrimitiveType::MULTI) {
 }
 ///////////////////////////////////////////////////////////////////////////////
-dataflow::inplugbase* Cells::GetInput(int idx) {
+dataflow::inplugbase* Cells::GetInput(int idx) const {
   dataflow::inplugbase* rval = 0;
   switch (idx) {
     case 0:
@@ -310,16 +300,16 @@ void Cells::ComputeVB(lev2::Context* pTARG) {
             }
 
             fvec3 CenterA = (Site0A + Site1A) * 0.5f;
-            fvec3 DirA    = (Site0A - Site1A).Normal();
+            fvec3 DirA    = (Site0A - Site1A).normalized();
 
             fvec3 CenterB = (Site0B + Site1B) * 0.5f;
-            fvec3 DirB    = (Site0B - Site1B).Normal();
+            fvec3 DirB    = (Site0B - Site1B).normalized();
 
             fvec3 Center;
             Center.lerp(CenterA, CenterB, flerp);
             fvec3 Dir;
             Dir.lerp(DirA, DirB, flerp);
-            Dir.Normalize();
+            Dir.normalizeInPlace();
 
             fplane3 plane(Dir, Center);
             plane.ClipPoly(polychain[polychi], polychain[polychi + 1]);
@@ -423,7 +413,7 @@ void Cells::compute(ProcTex& ptex) {
         fvec3 wpu = (ix > 0) ? wrapu : (ix < 0) ? -wrapu : fvec3::zero();
         fvec3 wpv = (iy > 0) ? wrapv : (iy < 0) ? -wrapv : fvec3::zero();
         fmtx4 mtx;
-        mtx.SetTranslation(wpu + wpv);
+        mtx.setTranslation(wpu + wpv);
         mPTX.GetTarget()->MTXI()->PushMMatrix(mtx);
         mPTX.GetTarget()->GBI()->DrawPrimitive(&stdmat, mVW, ork::lev2::PrimitiveType::TRIANGLES);
         mPTX.GetTarget()->MTXI()->PopMMatrix();

@@ -46,8 +46,8 @@ uint64_t PickBuffer::pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord
 uint64_t PickBuffer::pickWithRay(fray3_constptr_t ray) {
   _camdat.Persp(0.01, 1000, 0.1);
 
-  auto perp = ray->mDirection.Cross(fvec3(0, 1, 0));
-  perp      = ray->mDirection.Cross(perp);
+  auto perp = ray->mDirection.crossWith(fvec3(0, 1, 0));
+  perp      = ray->mDirection.crossWith(perp);
 
   _camdat.Lookat(
       ray->mOrigin, //
@@ -74,7 +74,7 @@ void PickBuffer::mydraw(fray3_constptr_t ray) {
     auto piknode = dynamic_cast<PickingCompositingNode*>(tek->_renderNode);
     rtgnode->resize(PICKBUFDIM, PICKBUFDIM);
     piknode->gpuInit(_context, PICKBUFDIM, PICKBUFDIM);
-    _pixelfetchctx.mRtGroup = piknode->GetOutputGroup();
+    _pixelfetchctx._rtgroup = piknode->GetOutputGroup();
     _compimpl               = _compdata->createImpl();
   }
   ///////////////////////////////////////////////////////////////////////////
@@ -92,7 +92,7 @@ void PickBuffer::mydraw(fray3_constptr_t ray) {
   // irenderer->setContext(_context);
   RCFD.SetLightManager(nullptr);
   ///////////////////////////////////////////////////////////////////////////
-  auto DB = DrawableBuffer::acquireForRead(0x1234);
+  DrawableBuffer* DB = nullptr; //DrawableBuffer::acquireForRead(0x1234);
   if (DB) {
 
     /////////////////////////////////////////////////////////////
@@ -124,7 +124,7 @@ void PickBuffer::mydraw(fray3_constptr_t ray) {
     drawdata._properties["StereoEnable"_crcu].set<bool>(false);
     drawdata._properties["primarycamindex"_crcu].set<int>(0);
     drawdata._properties["cullcamindex"_crcu].set<int>(0);
-    drawdata._properties["irenderer"_crcu].set<lev2::IRenderer*>(&_scene._renderer);
+    drawdata._properties["irenderer"_crcu].set<lev2::IRenderer*>(_scene._renderer.get());
     drawdata._properties["simrunning"_crcu].set<bool>(true);
     drawdata._properties["DB"_crcu].set<const DrawableBuffer*>(DB);
     ///////////////////////////////////////////////////////////////////////////
@@ -133,7 +133,10 @@ void PickBuffer::mydraw(fray3_constptr_t ray) {
     _compimpl->pushCPD(CPD);
     FBI->EnterPickState(nullptr);
     _compimpl->assemble(drawdata);
-    DrawableBuffer::releaseFromRead(DB);
+
+  //    DrawableBuffer::releaseFromRead(DB);
+    OrkAssert(false);
+    
     FBI->LeavePickState();
     _compimpl->popCPD();
     ///////////////////////////////////////////??

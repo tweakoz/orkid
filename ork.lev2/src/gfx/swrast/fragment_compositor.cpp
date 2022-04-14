@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -233,7 +233,7 @@ rend_texture2D::rend_texture2D()
       float fb = perlin.PlaneNoiseFunc(fix * 3.0f, fiy * 3.0f, 0.0f, 0.0f, 1.0f, 1.0f) * 3.0f;
 
       int idx = iy * 256 + ix;
-      mpData[idx].SetXYZ(fr, fg, fb);
+      mpData[idx].setXYZ(fr, fg, fb);
     }
   }
 }

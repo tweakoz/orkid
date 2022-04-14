@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #pragma once
 #include <ork/kernel/svariant.h>
 #include <string>
@@ -94,6 +101,13 @@ template <typename val_t> struct TVarMap {
       rval.push_back(key);
     }
     return rval;
+  }
+  ///////////////////////////////////////////////////////////////////////////
+  void mergeVars(const TVarMap& oth_vars) {
+    for (const auto& item : oth_vars._themap) {
+      const auto& key = item.first;
+      _themap[key] = item.second;
+    }
   }
   ///////////////////////////////////////////////////////////////////////////
 

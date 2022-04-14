@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -58,9 +58,9 @@ public:
 
   ////////////////////////////////////////////
 
-  static Texture* brdfIntegrationMap(Context* targ);
-  static Texture* filterSpecularEnvMap(Texture* rawenvmap, Context* targ);
-  static Texture* filterDiffuseEnvMap(Texture* rawenvmap, Context* targ);
+  static texture_ptr_t brdfIntegrationMap(Context* targ);
+  static texture_ptr_t filterSpecularEnvMap(texture_ptr_t rawenvmap, Context* targ);
+  static texture_ptr_t filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context* targ);
 
   ////////////////////////////////////////////
 
@@ -74,9 +74,14 @@ public:
   int BeginBlock(Context* targ, const RenderContextInstData& RCID) final;
   void EndBlock(Context* targ) final;
   void gpuInit(Context* targ) final;
+  void gpuUpdate(Context* context) final;
   void Update() final;
   void BindMaterialInstItem(MaterialInstItem* pitem) const override;
   void UnBindMaterialInstItem(MaterialInstItem* pitem) const override;
+  void UpdateMVPMatrix(Context* pTARG) final;
+  void UpdateMMatrix(Context* pTARG) final;
+
+  void forceEmissive();
 
   ////////////////////////////////////////////
   fxinstance_ptr_t createFxStateInstance(FxStateInstanceConfig& cfg) const override;
@@ -87,10 +92,13 @@ public:
   textureassetptr_t _asset_texcolor;
   textureassetptr_t _asset_texnormal;
   textureassetptr_t _asset_mtlruf;
+  textureassetptr_t _asset_emissive;
   ////////////////////////////////////////////
 
   FxShader* _shader                      = nullptr;
   Context* _initialTarget                = nullptr;
+  fxparam_constptr_t _paramM             = nullptr;
+  fxparam_constptr_t _paramVP            = nullptr;
   fxparam_constptr_t _paramMVP           = nullptr;
   fxparam_constptr_t _paramMVPL          = nullptr;
   fxparam_constptr_t _paramMVPR          = nullptr;
@@ -110,13 +118,19 @@ public:
   fxparam_constptr_t _paramInstanceIdMap     = nullptr; // 1k*1k texture containing instance pickids
   fxparam_constptr_t _paramInstanceColorMap  = nullptr; // 1k*1k texture containing instance colors
   ///////////////////////////////////////////
-  Texture* _texColor  = nullptr;
-  Texture* _texNormal = nullptr;
-  Texture* _texMtlRuf = nullptr;
+  texture_ptr_t _texColor;
+  texture_ptr_t _texNormal;
+  texture_ptr_t _texMtlRuf;
+  texture_ptr_t _texEmissive;
   std::string _textureBaseName;
+  ///////////////////////////////////////////
+  uint32_t _variant = 0;
+  ///////////////////////////////////////////
 
   fxtechnique_constptr_t _tekRigidGBUFFER              = nullptr;
+  fxtechnique_constptr_t _tekRigidGBUFFER_VTXCOLOR     = nullptr;
   fxtechnique_constptr_t _tekRigidGBUFFER_N            = nullptr;
+  fxtechnique_constptr_t _tekRigidGBUFFER_VIZ_N        = nullptr;
   fxtechnique_constptr_t _tekRigidGBUFFER_N_SKINNED    = nullptr;
   fxtechnique_constptr_t _tekRigidGBUFFER_N_STEREO     = nullptr;
   fxtechnique_constptr_t _tekRigidGBUFFER_N_TEX_STEREO = nullptr;
@@ -128,6 +142,10 @@ public:
 
   fxtechnique_constptr_t _tekRigidPICKING           = nullptr;
   fxtechnique_constptr_t _tekRigidPICKING_INSTANCED = nullptr;
+
+  fxtechnique_constptr_t _tekRigidGBUFFER_FONT = nullptr;
+  fxtechnique_constptr_t _tekRigidGBUFFER_FONT_INSTANCED = nullptr;
+
 
   std::string _colorMapName;
   std::string _normalMapName;

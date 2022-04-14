@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <utpp/UnitTest++.h>
 #include <cmath>
 #include <limits>
@@ -33,7 +40,7 @@ TEST(Vector2CopyConstructor)
 TEST(Vector2Rotate)
 {
 	fvec2 v(0.0f, 1.0f);
-	v.Rotate(PI / 2.0f);
+	v.rotate(PI / 2.0f);
 	CHECK_CLOSE(0.0f, v.x, MyEPSILON);
 	CHECK_CLOSE(1.0f, v.y, MyEPSILON);
 }
@@ -164,14 +171,14 @@ TEST(Vector2Dot)
 {
 	fvec2 v1(1.0f, 2.0f);
 	fvec2 v2(2.0f, 1.0f);
-	float res = v1.Dot(v2);
+	float res = v1.dotWith(v2);
 	CHECK_CLOSE(4.0f, res, MyEPSILON);
 }
 
 TEST(Vector2Normalize)
 {
 	fvec2 v(1.0f, 2.0f);
-	v.Normalize();
+	v.normalizeInPlace();
 	CHECK_CLOSE(0.447214f, v.x, MyEPSILON);
 	CHECK_CLOSE(0.894427f, v.y, MyEPSILON);
 }
@@ -179,7 +186,7 @@ TEST(Vector2Normalize)
 TEST(Vector2Normal)
 {
 	fvec2 v(1.0f, 2.0f);
-	Vector2 res = v.Normal();
+	Vector2 res = v.normalized();
 	CHECK_CLOSE(0.447214f, res.x, MyEPSILON);
 	CHECK_CLOSE(0.894427f, res.y, MyEPSILON);
 }
@@ -187,13 +194,13 @@ TEST(Vector2Normal)
 TEST(Vector2Mag)
 {
 	fvec2 v(3.0f, 4.0f);
-	float res = v.Mag();
+	float res = v.magnitude();
 	CHECK_CLOSE(5.0f, res, MyEPSILON);
 }
 
 TEST(Vector2MagSquared)
 {
 	fvec2 v(3.0f, 4.0f);
-	float res = v.MagSquared();
+	float res = v.magnitudeSquared();
 	CHECK_CLOSE(25.0f, res, MyEPSILON);
 }

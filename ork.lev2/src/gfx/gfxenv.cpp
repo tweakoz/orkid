@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -23,10 +23,22 @@
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/ui/ui.h>
 #include <ork/reflect/enum_serializer.inl>
+#include <ork/util/Context.hpp>
 
 #include <ork/reflect/properties/register.h>
 
+///////////////////////////////////////////////////////////////////////////////
+
+template class ork::util::ContextTLS<ork::lev2::ThreadGfxContext>;
+
+ork::lev2::Context* ork::lev2::contextForCurrentThread(){
+  return ork::lev2::ThreadGfxContext::context()->_context;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 namespace ork::lev2 {
+extern std::atomic<int> __FIND_IT;
 int G_MSAASAMPLES = 4;
 }
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::IManipInterface, "IManipInterface");
@@ -115,12 +127,13 @@ DynamicVertexBuffer<SVtxV16T16C16>& GfxEnv::GetSharedDynamicV16T16C16() {
 GfxEnv::GfxEnv()
     : NoRttiSingleton<GfxEnv>()
     , mpMainWindow(nullptr)
-    , mGfxEnvMutex("GfxEnvGlobalMutex")
-    , gLoaderTarget(nullptr)
-    , mVtxBufSharedVect(256 << 10, 0, PrimitiveType::TRIANGLES)    // SVtxV12C4T16==32bytes
+    , mVtxBufSharedVect(16 << 20, 0, PrimitiveType::TRIANGLES)    // SVtxV12C4T16==32bytes
     , mVtxBufSharedVect2(256 << 10, 0, PrimitiveType::TRIANGLES)   // SvtxV12N12B12T8C4==48bytes
     , _vtxBufSharedV16T16C16(1 << 20, 0, PrimitiveType::TRIANGLES) // SvtxV12N12B12T8C4==48bytes
+    , mGfxEnvMutex("GfxEnvGlobalMutex")
 {
+  _lockCounter.store(0);
+
   mVtxBufSharedVect.SetRingLock(true);
   mVtxBufSharedVect2.SetRingLock(true);
   _vtxBufSharedV16T16C16.SetRingLock(true);
@@ -129,6 +142,58 @@ GfxEnv::GfxEnv()
 
   PushCreationParams(params);
   Texture::RegisterLoaders();
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+uint64_t GfxEnv::createLock(){
+  uint64_t l = GetRef()._lockCounter.fetch_add(1);
+  GetRef()._waitlockdata.atomicOp([l](WaitLockData& unlocked){
+    unlocked._locks.insert(l);
+  });
+  return l;
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+void GfxEnv::releaseLock(uint64_t lock){
+  locknotifset_t notifs;
+  GetRef()._waitlockdata.atomicOp([lock,&notifs](WaitLockData& unlocked){
+    auto it = unlocked._locks.find(lock);
+    OrkAssert(it!=unlocked._locks.end());
+    unlocked._locks.erase(it);
+    if(unlocked._locks.size()==0){
+      notifs = unlocked._notifs;
+      unlocked._notifs.clear();
+    }
+  });
+  for(auto n : notifs) n();
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+GfxEnv::lockset_t GfxEnv::dumpLocks(){
+  GfxEnv::lockset_t rval;
+  GetRef()._waitlockdata.atomicOp([&rval](WaitLockData& unlocked){
+    rval = unlocked._locks;
+  });
+  return rval;
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+void GfxEnv::onLocksDone(void_lambda_t l){
+  bool execute_now = false;
+  GetRef()._waitlockdata.atomicOp([l,&execute_now](WaitLockData& unlocked){
+    if(unlocked._locks.size()==0){
+      execute_now = true;
+    }
+    else{
+      unlocked._notifs.push_back(l);
+    }
+  });
+  if(execute_now)
+    l();
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -148,33 +213,38 @@ bool GfxEnv::initialized() {
   return GetRef()._initialized;
 }
 
-void GfxEnv::SetLoaderTarget(Context* target) {
-  gLoaderTarget = target;
+void GfxEnv::initializeWithContext(context_ptr_t target){
 
-  auto gfxenvlateinit = [=]() {
-    auto ctx = GfxEnv::loadingContext();
-    ctx->makeCurrentContext();
+  auto op = [target](){
 
-#if !defined(__APPLE__)
-    // ctx->beginFrame();
-#endif
-    ctx->debugPushGroup("GfxEnv.Lateinit");
-
-    ork::lev2::GfxPrimitives::Init(ctx);
-    ctx->debugPopGroup();
-#if !defined(__APPLE__)
-    // ctx->endFrame();
-#endif
-    _initialized = true;
+    if( not GetRef()._initialized  ){
+      target->makeCurrentContext();
+      /////////////////////////////////////
+      #if !defined(__APPLE__)
+      target->beginFrame();
+      #endif
+      /////////////////////////////////////
+      target->debugPushGroup("GfxEnv.Lateinit");
+      ork::lev2::GfxPrimitives::Init(target.get());
+      __FIND_IT.store(0);
+      target->debugPopGroup();
+      /////////////////////////////////////
+      #if !defined(__APPLE__)
+      target->endFrame();
+      #endif
+      /////////////////////////////////////
+      GfxEnv::GetRef()._initialized = true;
+    }
   };
-  opq::mainSerialQueue()->enqueue(gfxenvlateinit);
+
+  opq::mainSerialQueue()->enqueue(op);
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 CaptureBuffer::CaptureBuffer()
-    : _data(0)
-    , meFormat(EBufferFormat::NONE)
+    : meFormat(EBufferFormat::NONE)
+    , _data(0)
     , _buffersize(0) {
 }
 CaptureBuffer::~CaptureBuffer() {
@@ -187,6 +257,9 @@ int CaptureBuffer::GetStride() const {
   switch (meFormat) {
     case EBufferFormat::NV12:
       istride = -1;
+      break;
+    case EBufferFormat::RGB8:
+      istride = 3;
       break;
     case EBufferFormat::RGBA8:
       istride = 4;
@@ -239,6 +312,9 @@ void CaptureBuffer::setFormatAndSize(EBufferFormat fmt, int w, int h) {
   int bytesperpix = 0;
   switch (fmt) {
 
+    case EBufferFormat::RGB8:
+      _buffersize = 3 * w * h;
+      break;
     case EBufferFormat::RGBA8:
     case EBufferFormat::R32F:
     case EBufferFormat::R32UI:

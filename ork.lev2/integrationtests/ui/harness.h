@@ -20,11 +20,11 @@ struct TestViewport final : public ui::Viewport {
 };
 using testvp_ptr_t = std::shared_ptr<TestViewport>;
 ///////////////////////////////////////////////////////////////////////////////
-struct UiTestApp final : public OrkEzQtApp {
-  UiTestApp(int& argc, char** argv);
+struct UiTestApp final : public OrkEzApp {
+  UiTestApp(appinitdata_ptr_t initdata);
   ~UiTestApp() override;
   ui::group_ptr_t _uivp;
 };
 using uitestapp_ptr_t = std::shared_ptr<UiTestApp>;
 
-uitestapp_ptr_t createEZapp(int& argc, char** argv);
+uitestapp_ptr_t createEZapp(appinitdata_ptr_t initdata);

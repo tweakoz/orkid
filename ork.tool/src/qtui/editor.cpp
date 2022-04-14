@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -358,7 +358,7 @@ void SceneEditorBase::NewSimulation() {
     delete psi2del;
   }
   if (mpScene) {
-    mpEditSimulation = new Simulation(mpScene, ApplicationStack::Top());
+    mpEditSimulation = new Simulation(mpScene, StringPoolStack::Top());
     bool bconOK =
         object::Connect(this, AddPooledLiteral("SigSceneTopoChanged"), mpEditSimulation, AddPooledLiteral("SlotSceneTopoChanged"));
     assert(bconOK);

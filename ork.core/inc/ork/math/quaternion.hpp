@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -15,38 +15,63 @@
 #include <ork/reflect/ISerializer.h>
 #include <ork/reflect/IDeserializer.h>
 
+#include <glm/gtc/quaternion.hpp>
+
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> Quaternion<T>::Quaternion(T _x, T _y, T _z, T _w) {
-  x = (_x);
-  y = (_y);
-  z = (_z);
-  w = (_w);
+  this->x = (_x);
+  this->y = (_y);
+  this->z = (_z);
+  this->w = (_w);
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> Quaternion<T>::Quaternion(const base_t& base) {
+  this->x = base.x;
+  this->y = base.y;
+  this->z = base.z;
+  this->w = base.w;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename T> Quaternion<T>::Quaternion(const Vector3<T>& axis, float angle) {
   this->fromAxisAngle(Vector4<T>(axis, angle));
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> 
+Vector3<T> Quaternion<T>::transform(const Vector3<T>& point) const {
+  Vector4<T> p4(point);
+  Vector4<T> result = (*this)*p4;
+  return result.xyz();
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> Vector3<T> Quaternion<T>::toEuler() const {
   Vector3<T> angles;
 
   // roll (x-axis rotation)
-  double sinr_cosp = 2 * (w * x + y * z);
-  double cosr_cosp = 1 - 2 * (x * x + y * y);
+  double sinr_cosp = 2 * (this->w * this->x + this->y * this->z);
+  double cosr_cosp = 1 - 2 * (this->x * this->x + this->y * this->y);
   angles.x         = std::atan2(sinr_cosp, cosr_cosp);
 
   // pitch (y-axis rotation)
-  double sinp = 2 * (w * y - z * x);
+  double sinp = 2 * (this->w * this->y - this->z * this->x);
   if (std::abs(sinp) >= 1)
     angles.y = std::copysign(M_PI / 2, sinp); // use 90 degrees if out of range
   else
     angles.y = std::asin(sinp);
 
   // yaw (z-axis rotation)
-  double siny_cosp = 2 * (w * z + x * y);
-  double cosy_cosp = 1 - 2 * (y * y + z * z);
+  double siny_cosp = 2 * (this->w * this->z + this->x * this->y);
+  double cosy_cosp = 1 - 2 * (this->y * this->y + this->z * this->z);
   angles.z         = std::atan2(siny_cosp, cosy_cosp);
 
   return angles;
@@ -59,9 +84,9 @@ template <typename T> Quaternion<T> Quaternion<T>::lerp(const Quaternion<T>& a, 
   T cos_t = a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
 
   /* if B is on opposite hemisphere from A, use -B instead */
-  bool bflip = (cos_t < T(0.0f));
+  bool bflip = (cos_t < T(0));
 
-  T beta   = T(1.0f) - alpha;
+  T beta   = T(1) - alpha;
   T alpha2 = alpha;
 
   if (bflip) {
@@ -77,24 +102,39 @@ template <typename T> Quaternion<T> Quaternion<T>::lerp(const Quaternion<T>& a, 
   return q;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename T> Quaternion<T>::Quaternion(const Matrix44<T>& matrix) {
   fromMatrix(matrix);
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename T> Quaternion<T>::Quaternion(const Matrix33<T>& matrix) {
   fromMatrix3(matrix);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename T> Quaternion<T> Quaternion<T>::operator*(const Quaternion<T>& rhs) const {
-  return this->Multiply(rhs);
+  return this->multiply(rhs);
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> Quaternion<T> Quaternion<T>::operator+(const Quaternion<T>& rhs) const {
+  return Quaternion<T>(this->x+rhs.x,this->y+rhs.y,this->z+rhs.z,this->w+rhs.w);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
 bool Quaternion<T>::operator==(const Quaternion<T>& rhs) const {
   bool match = true;
-  match &= (x==rhs.x);
-  match &= (y==rhs.y);
-  match &= (z==rhs.z);
-  match &= (w==rhs.w);
+  match &= (this->x==rhs.x);
+  match &= (this->y==rhs.y);
+  match &= (this->z==rhs.z);
+  match &= (this->w==rhs.w);
   return match;
 }
 
@@ -102,90 +142,8 @@ bool Quaternion<T>::operator==(const Quaternion<T>& rhs) const {
 
 template <typename MatrixType> inline Quaternion<typename MatrixType::value_type> quaternionFromMatrix(const MatrixType& M) {
 
-  typedef typename MatrixType::value_type T;
-  Quaternion<T> qout;
-  float q[4];
-
-  T zero = T(0.0);
-  T one = T(1.0);
-
-  Vector3<T> v3zero(zero,zero,zero);
-
-  /////////////////////////////////////////////
-  // factor out scale
-  /////////////////////////////////////////////
-
-  MatrixType rot = M;
-
-  rot.SetRow(3,v3zero); // set bottom row to 0,0,0,1
-  rot.SetColumn(3,v3zero); // set right column to 0,0,0,1
-
-  Vector3<T> UnitVectorX(one, zero, zero);
-  Vector3<T> XFVectorX = UnitVectorX.Transform(rot);
-  Vector3<T> UnitVectorY(zero, one, zero);
-  Vector3<T> XFVectorY = UnitVectorY.Transform(rot);
-  Vector3<T> UnitVectorZ(zero, zero, one);
-  Vector3<T> XFVectorZ = UnitVectorZ.Transform(rot);
-
-  T magx = XFVectorX.Mag();
-  T magy = XFVectorY.Mag();
-  T magz = XFVectorZ.Mag();
-
-  T scale = T(0.0);
-  if(magx > scale)
-    scale = magx;
-  if(magy > scale)
-    scale = magy;
-  if(magz > scale)
-    scale = magz;
-
-  for (int i = 0; i < 3; i++) {
-    for (int j = 0; j < 3; j++) {
-      rot.SetElemXY(i, j, rot.GetElemXY(i, j) / scale);
-    }
-  }
-
-  /////////////////////////////////////////////
-
-  const int nxt[3] = {1, 2, 0};
-
-  T tr = rot.GetElemXY(0, 0) + rot.GetElemXY(1, 1) + rot.GetElemXY(2, 2);
-
-  if (tr > T(0.0f)) {
-    T s  = sqrtf(tr + T(1.0));
-    q[3] = s * T(0.5);
-    s    = T(0.5) / s;
-    q[0] = (rot.GetElemXY(2,1) - rot.GetElemXY(1,2)) * s;
-    q[1] = (rot.GetElemXY(0,2) - rot.GetElemXY(2,0)) * s;
-    q[2] = (rot.GetElemXY(1,0) - rot.GetElemXY(0,1)) * s;
-  } else {
-    int i = 0;
-    if (rot.GetElemXY(1,1) > rot.GetElemXY(0,0))
-      i = 1;
-    if (rot.GetElemXY(2,2) > rot.GetElemXY(i,i))
-      i = 2;
-    int j = nxt[i];
-    int k = nxt[j];
-    T s   = sqrtf((rot.GetElemXY(i,i) - (rot.GetElemXY(j,j) + rot.GetElemXY(k,k))) + T(1.0f));
-    q[i]  = s * T(0.5);
-
-    if (fabs(s) < T(EPSILON)) {
-      qout.Identity();
-    } else {
-      s    = T(0.5) / s;
-      q[3] = (rot.GetElemXY(k,j) - rot.GetElemXY(j,k)) * s;
-      q[j] = (rot.GetElemXY(j,i) + rot.GetElemXY(i,j)) * s;
-      q[k] = (rot.GetElemXY(k,i) + rot.GetElemXY(i,k)) * s;
-    }
-  }
-
-  qout.x = q[0];
-  qout.y = q[1];
-  qout.z = q[2];
-  qout.w = q[3];
-
-  qout.normalize();
-
+  Quaternion<typename MatrixType::value_type> qout;
+  qout = glm::quat_cast(M.asGlmMat4());
   return qout;
 }
 
@@ -204,45 +162,7 @@ template <typename T> void Quaternion<T>::fromMatrix3(const Matrix33<T>& M) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename MatrixType> inline MatrixType QuaterniontoMatrix(const Quaternion<typename MatrixType::value_type>& Q) {
-
-  typedef typename MatrixType::value_type T;
-  MatrixType result;
-
-  T s, xs, ys, zs, wx, wy, wz, xx, xy, xz, yy, yz, zz, l;
-
-  l = Q.x * Q.x + Q.y * Q.y + Q.z * Q.z + Q.w * Q.w;
-
-  // should this be T::Epsilon() ?
-  if (fabs(l) < T(EPSILON)) {
-    s = T(1.0);
-  } else {
-    s = T(2.0) / l;
-  }
-
-  xs = Q.x * s;
-  ys = Q.y * s;
-  zs = Q.z * s;
-  wx = Q.w * xs;
-  wy = Q.w * ys;
-  wz = Q.w * zs;
-  xx = Q.x * xs;
-  xy = Q.x * ys;
-  xz = Q.x * zs;
-  yy = Q.y * ys;
-  yz = Q.y * zs;
-  zz = Q.z * zs;
-
-  result.SetElemYX(0, 0, T(1.0f) - (yy + zz));
-  result.SetElemYX(1, 0, xy - wz);
-  result.SetElemYX(2, 0, xz + wy);
-  result.SetElemYX(0, 1, xy + wz);
-  result.SetElemYX(1, 1, T(1.0f) - (xx + zz));
-  result.SetElemYX(2, 1, yz - wx);
-  result.SetElemYX(0, 2, xz - wy);
-  result.SetElemYX(1, 2, yz + wx);
-  result.SetElemYX(2, 2, T(1.0f) - (xx + yy));
-
-  return result;
+  return MatrixType(glm::mat4_cast(Q.asGlmQuat()));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -259,11 +179,11 @@ template <typename T> Matrix33<T> Quaternion<T>::toMatrix3(void) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Quaternion<T>::Scale(T scalar) {
-  x *= scalar;
-  y *= scalar;
-  z *= scalar;
-  w *= scalar;
+template <typename T> void Quaternion<T>::scale(T scalar) {
+  this->x *= scalar;
+  this->y *= scalar;
+  this->z *= scalar;
+  this->w *= scalar;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -293,7 +213,7 @@ template <typename T> Quaternion<T> Quaternion<T>::slerp(const Quaternion<T>& a,
   cos_t = a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
 
   /* if B is on opposite hemisphere from A, use -B instead */
-  if (cos_t < T(0.0f)) {
+  if (cos_t < T(0)) {
     cos_t = -cos_t;
     bflip = true;
   } else
@@ -303,8 +223,8 @@ template <typename T> Quaternion<T> Quaternion<T>::slerp(const Quaternion<T>& a,
    * just linear interpolate between A and B.
    * Can't do spins, since we don't know what direction to spin.
    */
-  if (T(1.0f) - cos_t < Float::Epsilon()) {
-    beta = T(1.0f) - alpha;
+  if (T(1) - cos_t < Float::Epsilon()) {
+    beta = T(1) - alpha;
   } else { /* normal case */
     theta = acosf(cos_t);
     phi   = theta + T(spin) * Float::Pi();
@@ -330,10 +250,10 @@ template <typename T> Quaternion<T> Quaternion<T>::slerp(const Quaternion<T>& a,
 template <typename T> Quaternion<T> Quaternion<T>::negate() const {
   Quaternion<T> result;
 
-  result.x = (-x);
-  result.y = (-y);
-  result.z = (-z);
-  result.w = (-w);
+  result.x = (-this->x);
+  result.y = (-this->y);
+  result.z = (-this->z);
+  result.w = (-this->w);
 
   return (result);
 }
@@ -341,13 +261,13 @@ template <typename T> Quaternion<T> Quaternion<T>::negate() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> Quaternion<T> Quaternion<T>::square() const {
-  T temp = T(2) * w;
+  T temp = T(2) * this->w;
   Quaternion<T> result;
 
-  result.x = (x * temp);
-  result.y = (y * temp);
-  result.z = (z * temp);
-  result.w = (w * w - (x * x + y * y + z * z));
+  result.x = (this->x * temp);
+  result.y = (this->y * temp);
+  result.z = (this->z * temp);
+  result.w = (this->w * this->w - (this->x * this->x + this->y * this->y + this->z * this->z));
 
   return (result);
 }
@@ -355,138 +275,122 @@ template <typename T> Quaternion<T> Quaternion<T>::square() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> Quaternion<T> Quaternion<T>::conjugate() const {
-  Quaternion<T> result;
-
-  result.x = (-x);
-  result.y = (-y);
-  result.z = (-z);
-  result.w = (w);
-
-  return (result);
+  return Quaternion<T>(glm::conjugate(asGlmQuat()));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> Quaternion<T> Quaternion<T>::inverse() const {
-  Quaternion<T> result = conjugate();
-  T invnorm = T(1)/norm();
-
-  result.x *= invnorm;
-  result.y *= invnorm;
-  result.z *= invnorm;
-  result.w *= invnorm;
-
-  return (result);
+  return Quaternion<T>(glm::inverse(asGlmQuat()));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> T Quaternion<T>::norm() const {
-  return (w * w + x * x + y * y + z * z);
+  return (this->w * this->w + this->x * this->x + this->y * this->y + this->z * this->z);
 }
  
 ///////////////////////////////////////////////////////////////////////////////
 //	DESC: Converts a normalized axis and angle to a unit quaternion.
 
 template <typename T> void Quaternion<T>::fromAxisAngle(const Vector4<T>& v) {
-  T l = v.Mag();
-
-  if (l < Float::Epsilon()) {
-    x = y = z = T(0.0f);
-    w         = T(1.0f);
-    return;
-  }
-
-  T omega = -T(0.5f) * v.w;
-  T s     = sinf(omega) / l;
-  x       = (s * v.x);
-  y       = (s * v.y);
-  z       = (s * v.z);
-  w       = (cosf(omega));
+  auto axis = v.xyz().asGlmVec3();
+  T angle = v.w;
+  base_t& as_base = *this;
+  as_base = glm::angleAxis(angle,axis);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> Vector4<T> Quaternion<T>::toAxisAngle(void) const {
-  T tr = acosf(w);
+  T tr = acosf(this->w);
   bool is_nan = isnan(tr);
-  T wsq = w*w;
-  T vx  = is_nan ? 0.0f : x / sqrt(1-wsq);
-  T vy  = is_nan ? 0.0f : y / sqrt(1-wsq);
-  T vz  = is_nan ? 0.0f : z / sqrt(1-wsq);
-  T ang = is_nan ? 0.0f : 2.0*tr;
+  T wsq = this->w*this->w;
+  T invwsq = T(1)/sqrt(1-wsq);
+  T vx  = is_nan ? T(0) : this->x * invwsq;
+  T vy  = is_nan ? T(0) : this->y * invwsq;
+  T vz  = is_nan ? T(0) : this->z * invwsq;
+  T ang = is_nan ? T(0) : 2.0*tr;
   return Vector4<T>(vx, vy, vz, ang);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Quaternion<T>::Add(Quaternion<T>& a) {
-  x += a.x;
-  y += a.y;
-  z += a.z;
-  w += a.w;
+template <typename T> void Quaternion<T>::add(Quaternion<T>& a) {
+  *this = Quaternion<T>(asGlmQuat()+a.asGlmQuat());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Quaternion<T>::Sub(Quaternion<T>& a) {
-  x -= a.x;
-  y -= a.y;
-  z -= a.z;
-  w -= a.w;
+template <typename T> void Quaternion<T>::subtract(Quaternion<T>& a) {
+  *this = Quaternion<T>(asGlmQuat()-a.asGlmQuat());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> Quaternion<T> Quaternion<T>::Multiply(const Quaternion<T>& b) const {
-  Quaternion<T> a;
-
-  a.x = (x * b.w + y * b.z - z * b.y + w * b.x);
-  a.y = (-x * b.z + y * b.w + z * b.x + w * b.y);
-  a.z = (x * b.y - y * b.x + z * b.w + w * b.z);
-  a.w = (-x * b.x - y * b.y - z * b.z + w * b.w);
-
-  return (a);
+template <typename T> Quaternion<T> Quaternion<T>::multiply(const Quaternion<T>& a) const {
+  return Quaternion<T>(asGlmQuat()*a.asGlmQuat());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Quaternion<T>::Divide(Quaternion<T>& a) {
-  x /= a.x;
-  y /= a.y;
-  z /= a.z;
-  w /= a.w;
+template <typename T> void Quaternion<T>::divide(Quaternion<T>& a) {
+  this->x /= a.x;
+  this->y /= a.y;
+  this->z /= a.z;
+  this->w /= a.w;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Quaternion<T>::Identity(void) {
-  w = (T(1.0f));
-  x = (T(0.0f));
-  y = (T(0.0f));
-  z = (T(0.0f));
+template <typename T> void Quaternion<T>::setToIdentity(void) {
+  this->w = (T(1));
+  this->x = (T(0));
+  this->y = (T(0));
+  this->z = (T(0));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Quaternion<T>::ShortestRotationArc(Vector4<T> v0, Vector4<T> v1) {
-  v0.Normalize();
-  v1.Normalize();
+template <typename T> void Quaternion<T>::correctionQuaternion(const Quaternion<T>& from,const Quaternion<T>& to) {
+  /////////////////////////
+  //
+  //  GENERATE CORRECTION TO GET FROM A to C
+  //
+  //  A * B = C       (A and C are known we dont know B)
+  //  (A * iA) * B = iA * C
+  //  B = iA * C        we now know B
+  //
+  /////////////////////////
 
-  Vector4<T> cross = v1.Cross(v0); // Cross is non destructive
-  T dot            = v1.Dot(v0);
-  T s              = sqrtf((T(1.0f) + dot) * T(2.0f));
+  Quaternion<T> inv_from = from.inverse();
+  *this = (inv_from * to); // B
+}
 
-  x = (cross.x / s);
-  y = (cross.y / s);
-  z = (cross.z / s);
-  w = (s / T(2.0f));
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> Quaternion<T> Quaternion<T>::shortestRotationArc(Vector4<T> v0, Vector4<T> v1) {
+Quaternion q;
+
+  v0.normalizeInPlace();
+  v1.normalizeInPlace();
+
+  Vector4<T> cross = v1.crossWith(v0); // Cross is non destructive
+  T dot            = v1.dotWith(v0);
+  T s              = sqrtf((T(1.0) + dot) * T(2.0));
+
+  q.x = (cross.x / s);
+  q.y = (cross.y / s);
+  q.z = (cross.z / s);
+  q.w = (s / T(2.0));
+
+  return q;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void Quaternion<T>::dump(void) {
-  orkprintf("quat %f %f %f %f\n", x, y, z, w);
+  orkprintf("quat %f %f %f %f\n", this->x, this->y, this->z, this->w);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -500,10 +404,10 @@ template <typename T> QuatCodec Quaternion<T>::Compress(void) const {
 
   T qf[4];
   T fqmax(-2.0f);
-  qf[0] = x;
-  qf[1] = y;
-  qf[2] = z;
-  qf[3] = w;
+  qf[0] = this->x;
+  qf[1] = this->y;
+  qf[2] = this->z;
+  qf[3] = this->w;
 
   ////////////////////////////////////////
   // normalize quaternion
@@ -533,7 +437,7 @@ template <typename T> QuatCodec Quaternion<T>::Compress(void) const {
 
   ////////////////////////////////////////
   // scale quat component from -1 .. 1
-  const T fsqr2d2 = T(1.0f) / sqrtf(T(2.0f));
+  const T fsqr2d2 = T(1) / sqrtf(T(2));
   ////////////////////////////////////////
 
   int iq3[3];
@@ -541,15 +445,15 @@ template <typename T> QuatCodec Quaternion<T>::Compress(void) const {
 
   int iidx = 0;
 
-  static T fmin(100.0f);
-  static T fmax(-100.0f);
+  static T fmin(100);
+  static T fmax(-100);
 
   for (int i = 0; i < 4; i++) {
     T fqi = fabs(qf[i]);
 
     if (i != iqlargest) {
       OrkAssert(fqi <= fsqr2d2);
-      T fi = qf[i] * fsqr2d2 * T(2.0f);
+      T fi = qf[i] * fsqr2d2 * T(2);
 
       if (fi > fmax)
         fmax = fi;
@@ -571,7 +475,7 @@ template <typename T> QuatCodec Quaternion<T>::Compress(void) const {
   OrkAssert(uquat.miElem1 == iq3[1]);
   OrkAssert(uquat.miElem2 == iq3[2]);
 
-  uquat.miwsign = (qf[iqlargest] >= T(0.0f));
+  uquat.miwsign = (qf[iqlargest] >= T(0));
 
   ////////////////////////////////
 
@@ -589,7 +493,7 @@ template <typename T> QuatCodec Quaternion<T>::Compress(void) const {
   // 1.0f = ftq0123 + (ftqD*ftqD)
   // ftqD*ftqD = 1.0f - ftq0123
 
-  T ftqD = sqrtf(T(1.0f) - ftq012);
+  T ftqD = sqrtf(T(1) - ftq012);
 
   T ferr = fabs(ftqD - qf[iqlargest]);
 
@@ -602,13 +506,13 @@ template <typename T> QuatCodec Quaternion<T>::Compress(void) const {
 
 template <typename T> void Quaternion<T>::DeCompress(QuatCodec uquat) {
   static const T frange  = T((1 << 9) - 1);
-  static const T fsqr2d2 = sqrtf(T(2.0f)) / T(2.0f);
+  static const T fsqr2d2 = sqrtf(T(2)) / T(2);
   static const T firange = fsqr2d2 / frange;
 
   int iqlargest = int(uquat.milargest);
   int iqlsign   = int(uquat.miwsign);
 
-  T* pfq = (T*)&x;
+  T* pfq = (T*)&this->x;
 
   int iidx = 0;
 
@@ -624,23 +528,36 @@ template <typename T> void Quaternion<T>::DeCompress(QuatCodec uquat) {
 
   T fq012 = ((fq0 * fq0) + (fq1 * fq1) + (fq2 * fq2));
 
-  pfq[iqlargest] = sqrtf(T(1.0f) - fq012) * (iqlsign ? T(1.0f) : T(-1.0f));
+  pfq[iqlargest] = sqrtf(T(1) - fq012) * (iqlsign ? T(1) : T(-1.0f));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Quaternion<T>::normalize() {
-  float x2 = x * x;
-  float y2 = y * y;
-  float z2 = z * z;
-  float w2 = w * w;
+template <typename T> void Quaternion<T>::normalizeInPlace() {
+  T x2 = this->x * this->x;
+  T y2 = this->y * this->y;
+  T z2 = this->z * this->z;
+  T w2 = this->w * this->w;
 
-  float sq = sqrtf(w2 + x2 + y2 + z2);
+  float isq = T(1) / T(sqrtf(w2 + x2 + y2 + z2));
 
-  x /= sq;
-  y /= sq;
-  z /= sq;
-  w /= sq;
+  this->x *= isq;
+  this->y *= isq;
+  this->z *= isq;
+  this->w *= isq;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> Quaternion<T> Quaternion<T>::normalized() const {
+  T x2 = this->x * this->x;
+  T y2 = this->y * this->y;
+  T z2 = this->z * this->z;
+  T w2 = this->w * this->w;
+
+  float isq = T(1) / T(sqrtf(w2 + x2 + y2 + z2));
+
+  return Quaternion<T>(this->x*isq,this->y*isq,this->z*isq,this->w*isq);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -650,10 +567,10 @@ template <typename T> std::string Quaternion<T>::formatcn(const std::string name
  
   rval += ork::deco::format(fvec3(1,1,1), "%s< ", named.c_str() );
 
-  rval += ork::deco::format(fvec3(1, .5, .5), "x:%g, ", x );
-  rval += ork::deco::format(fvec3(.5, 1, .5), "y:%g, ", y );
-  rval += ork::deco::format(fvec3(.5, .5, 1), "z:%g, ", z );
-  rval += ork::deco::format(fvec3(.6, .6, .6), "w:%g", w );
+  rval += ork::deco::format(fvec3(1, .5, .5), "x:%g, ", this->x );
+  rval += ork::deco::format(fvec3(.5, 1, .5), "y:%g, ", this->y );
+  rval += ork::deco::format(fvec3(.5, .5, 1), "z:%g, ", this->z );
+  rval += ork::deco::format(fvec3(.6, .6, .6), "w:%g", this->w );
 
   rval += ork::deco::format(fvec3(1,1,1), ">" );
 

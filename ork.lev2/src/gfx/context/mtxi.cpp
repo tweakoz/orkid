@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -12,36 +12,36 @@
 namespace ork { namespace lev2 {
 
 MatrixStackInterface::MatrixStackInterface(Context& target)
-    : mTarget(target)
+    : _target(target)
     , miMatrixStackIndexP(0)
-    , miMatrixStackIndexM(0)
     , miMatrixStackIndexV(0)
+    , miMatrixStackIndexM(0)
     , miMatrixStackIndexUI(0) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 fmtx4 MatrixStackInterface::uiMatrix(float fw, float fh) const {
-  if (mTarget.hiDPI()) {
+  if (_target.hiDPI()) {
     // iw /=2;
     // ih /=2;
   }
-  return mTarget.MTXI()->Ortho(0.0f, fw, 0.0f, fh, 0.0f, 1.0f);
+  return _target.MTXI()->Ortho(0.0f, fw, 0.0f, fh, 0.0f, 1.0f);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void MatrixStackInterface::PushUIMatrix() {
-  const RenderContextFrameData* pfdata = mTarget.topRenderContextFrameData();
+  const RenderContextFrameData* pfdata = _target.topRenderContextFrameData();
   assert(pfdata);
   const auto& CPD = pfdata->topCPD();
   float fw        = float(CPD.GetDstRect()._w);
   float fh        = float(CPD.GetDstRect()._h);
-  if (mTarget.hiDPI()) {
+  if (_target.hiDPI()) {
     fw *= 0.5f;
     fh *= 0.5f;
   }
-  ork::fmtx4 mtxMVP = mTarget.MTXI()->Ortho(0.0f, fw, 0.0f, fh, 0.0f, 1.0f);
+  ork::fmtx4 mtxMVP = _target.MTXI()->Ortho(0.0f, fw, 0.0f, fh, 0.0f, 1.0f);
   PushPMatrix(mtxMVP);
   PushVMatrix(ork::fmtx4::Identity());
   PushMMatrix(ork::fmtx4::Identity());
@@ -72,7 +72,7 @@ void MatrixStackInterface::OnMMatrixDirty(void) {
   mmMVMatrix  = wmat * RefVMatrix();
   mmMVPMatrix = wmat * mmVPMatrix;
   mmR3Matrix  = mmMVMatrix.rotMatrix33();
-  // mmMVPMatrix.Transpose();
+  // mmMVPMatrix.transpose();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -88,14 +88,14 @@ void MatrixStackInterface::OnVMatrixDirty(void) {
   mVectorScreenUpNormal    = fvec4(pfmatrix[1], pfmatrix[5], pfmatrix[9]);
   //////////////////////////////////////////////////////
   mMatrixVIT.inverseOf(VMatrix);
-  mMatrixVIT.Transpose();
+  mMatrixVIT.transpose();
   //////////////////////////////////////////////////////
   fmtx4 matiy;
-  matiy.Scale(1.0f, -1.0f, 1.0f);
+  matiy.scale(1.0f, -1.0f, 1.0f);
   mMatrixVITIY = mMatrixVIT * matiy;
   //////////////////////////////////////////////////////
   mMatrixVITG.inverseOf(VMatrix);
-  mMatrixVITG.Transpose();
+  mMatrixVITG.transpose();
   //////////////////////////////////////////////////////
 }
 
@@ -250,7 +250,7 @@ fmtx4 MatrixStackInterface::Persp(float fovy, float aspect, float fnear, float f
 
   mtx = Frustum(xmin, xmax, ymax, ymin, fnear, ffar);
 
-  // mtx.Transpose();
+  // mtx.transpose();
   // mtx.dump("ORK");
   return mtx;
 }
@@ -263,7 +263,7 @@ fmtx4 MatrixStackInterface::Frustum(float left, float right, float top, float bo
 {
   fmtx4 rval;
 
-  rval.SetToIdentity();
+  rval.setToIdentity();
 
   float width  = right - left;
   float height = top - bottom;
@@ -272,15 +272,15 @@ fmtx4 MatrixStackInterface::Frustum(float left, float right, float top, float bo
 
   /////////////////////////////////////////////
 
-  rval.SetElemYX(0, 0, float((two * zn) / width));
-  rval.SetElemYX(1, 1, float((two * zn) / height));
-  rval.SetElemYX(2, 2, float(-(zf + zn) / depth));
-  rval.SetElemYX(3, 3, float(0.0f));
+  rval.setElemYX(0, 0, float((two * zn) / width));
+  rval.setElemYX(1, 1, float((two * zn) / height));
+  rval.setElemYX(2, 2, float(-(zf + zn) / depth));
+  rval.setElemYX(3, 3, float(0.0f));
 
-  rval.SetElemYX(0, 2, float((right + left) / width));
-  rval.SetElemYX(1, 2, float((top + bottom) / height));
-  rval.SetElemYX(2, 3, float(-(two * zf * zn) / depth));
-  rval.SetElemYX(3, 2, float(-1.0f));
+  rval.setElemYX(0, 2, float((right + left) / width));
+  rval.setElemYX(1, 2, float((top + bottom) / height));
+  rval.setElemYX(2, 3, float(-(two * zf * zn) / depth));
+  rval.setElemYX(3, 2, float(-1.0f));
 
   return rval;
 }
@@ -290,25 +290,25 @@ fmtx4 MatrixStackInterface::Frustum(float left, float right, float top, float bo
 fmtx4 MatrixStackInterface::LookAt(const fvec3& eye, const fvec3& tgt, const fvec3& up) const {
   fmtx4 rval;
 
-  fvec3 zaxis = (eye - tgt).Normal();
-  fvec3 xaxis = (up.Cross(zaxis)).Normal();
-  fvec3 yaxis = zaxis.Cross(xaxis);
+  fvec3 zaxis = (eye - tgt).normalized();
+  fvec3 xaxis = (up.crossWith(zaxis)).normalized();
+  fvec3 yaxis = zaxis.crossWith(xaxis);
 
-  rval.SetElemYX(0, 0, xaxis.x);
-  rval.SetElemYX(1, 0, yaxis.x);
-  rval.SetElemYX(2, 0, zaxis.x);
+  rval.setElemYX(0, 0, xaxis.x);
+  rval.setElemYX(1, 0, yaxis.x);
+  rval.setElemYX(2, 0, zaxis.x);
 
-  rval.SetElemYX(0, 1, xaxis.y);
-  rval.SetElemYX(1, 1, yaxis.y);
-  rval.SetElemYX(2, 1, zaxis.y);
+  rval.setElemYX(0, 1, xaxis.y);
+  rval.setElemYX(1, 1, yaxis.y);
+  rval.setElemYX(2, 1, zaxis.y);
 
-  rval.SetElemYX(0, 2, xaxis.z);
-  rval.SetElemYX(1, 2, yaxis.z);
-  rval.SetElemYX(2, 2, zaxis.z);
+  rval.setElemYX(0, 2, xaxis.z);
+  rval.setElemYX(1, 2, yaxis.z);
+  rval.setElemYX(2, 2, zaxis.z);
 
-  rval.SetElemYX(0, 3, -xaxis.Dot(eye));
-  rval.SetElemYX(1, 3, -yaxis.Dot(eye));
-  rval.SetElemYX(2, 3, -zaxis.Dot(eye));
+  rval.setElemYX(0, 3, -xaxis.dotWith(eye));
+  rval.setElemYX(1, 3, -yaxis.dotWith(eye));
+  rval.setElemYX(2, 3, -zaxis.dotWith(eye));
 
   return rval;
 }

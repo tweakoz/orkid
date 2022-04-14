@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -11,13 +11,16 @@
 #endif
 #include <ork/reflect/properties/ITyped.hpp>
 #include <ork/reflect/ISerializer.h>
-#include <ork/reflect/IDeserializer.h>
+#include <ork/reflect/IDeserializer.inl>
+#include <ork/math/cmatrix4.hpp>
+
+#include <glm/gtc/matrix_transform.hpp>
 
 namespace ork {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> Vector4<T> Vector4<T>::Saturate(void) const {
+template <typename T> Vector4<T> Vector4<T>::saturated() const {
   Vector4<T> rval = *this;
   rval.x          = (rval.x > 1.0f) ? 1.0f : (rval.x < 0.0f) ? 0.0f : rval.x;
   rval.y          = (rval.y > 1.0f) ? 1.0f : (rval.y < 0.0f) ? 0.0f : rval.y;
@@ -28,142 +31,132 @@ template <typename T> Vector4<T> Vector4<T>::Saturate(void) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> const Vector4<T>& Vector4<T>::Black(void) {
-  static const Vector4<T> Black(T(0.0f), T(0.0f), T(0.0f), T(1.0f));
+template <typename T> const Vector4<T>& Vector4<T>::Black() {
+  static const Vector4<T> Black(T(0), T(0), T(0), T(1));
   return Black;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> const Vector4<T>& Vector4<T>::DarkGrey(void) {
-  static const Vector4<T> DarkGrey(T(0.250f), T(0.250f), T(0.250f), T(1.0f));
+template <typename T> const Vector4<T>& Vector4<T>::DarkGrey() {
+  static const Vector4<T> DarkGrey(T(0.25), T(0.25), T(0.25), T(1));
   return DarkGrey;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> const Vector4<T>& Vector4<T>::MediumGrey(void) {
-  static const Vector4<T> MediumGrey(T(0.50f), T(0.50f), T(0.50f), T(1.0f));
+template <typename T> const Vector4<T>& Vector4<T>::MediumGrey() {
+  static const Vector4<T> MediumGrey(T(0.5), T(0.5), T(0.5), T(1));
   return MediumGrey;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> const Vector4<T>& Vector4<T>::LightGrey(void) {
-  static const Vector4<T> LightGrey(T(0.75f), T(0.75f), T(0.75f), T(1.0f));
+template <typename T> const Vector4<T>& Vector4<T>::LightGrey() {
+  static const Vector4<T> LightGrey(T(0.75f), T(0.75f), T(0.75f), T(1));
   return LightGrey;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> const Vector4<T>& Vector4<T>::White(void) {
-  static const Vector4<T> White(T(1.0f), T(1.0f), T(1.0f), T(1.0f));
+template <typename T> const Vector4<T>& Vector4<T>::White() {
+  static const Vector4<T> White(T(1), T(1), T(1), T(1));
   return White;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> const Vector4<T>& Vector4<T>::Red(void) {
-  static const Vector4<T> Red(T(1.0f), T(0.0f), T(0.0f), T(1.0f));
+template <typename T> const Vector4<T>& Vector4<T>::Red() {
+  static const Vector4<T> Red(T(1), T(0), T(0), T(1));
   return Red;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> const Vector4<T>& Vector4<T>::Green(void) {
-  static const Vector4<T> Green(T(0.0f), T(1.0f), T(0.0f), T(1.0f));
+template <typename T> const Vector4<T>& Vector4<T>::Green() {
+  static const Vector4<T> Green(T(0), T(1), T(0), T(1));
   return Green;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> const Vector4<T>& Vector4<T>::Blue(void) {
-  static const Vector4<T> Blue(T(0.0f), T(0.0f), T(1.0f), T(1.0f));
+template <typename T> const Vector4<T>& Vector4<T>::Blue() {
+  static const Vector4<T> Blue(T(0), T(0), T(1), T(1));
   return Blue;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> const Vector4<T>& Vector4<T>::Magenta(void) {
-  static const Vector4<T> Magenta(T(1.0f), T(0.0f), T(1.0f), T(1.0f));
+template <typename T> const Vector4<T>& Vector4<T>::Magenta() {
+  static const Vector4<T> Magenta(T(1), T(0), T(1), T(1));
   return Magenta;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> const Vector4<T>& Vector4<T>::Cyan(void) {
-  static const Vector4<T> Cyan(T(0.0f), T(1.0f), T(1.0f), T(1.0f));
+template <typename T> const Vector4<T>& Vector4<T>::Cyan() {
+  static const Vector4<T> Cyan(T(0), T(1), T(1), T(1));
   return Cyan;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> const Vector4<T>& Vector4<T>::Yellow(void) {
-  static const Vector4<T> Yellow(T(1.0f), T(1.0f), T(0.0f), T(1.0f));
+template <typename T> const Vector4<T>& Vector4<T>::Yellow() {
+  static const Vector4<T> Yellow(T(1), T(1), T(0), T(1));
   return Yellow;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-Vector4<T>::Vector4()
-    : x(T(0.0f))
-    , y(T(0.0f))
-    , z(T(0.0f))
-    , w(T(1.0f)) {
+Vector4<T>::Vector4() : base_t(0,0,0,1){
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
 Vector4<T>::Vector4(T _x, T _y, T _z, T _w)
-    : x(_x)
-    , y(_y)
-    , z(_z)
-    , w(_w) {
+  : base_t(_x,_y,_z,_w){
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
 Vector4<T>::Vector4(const Vector3<T>& in, T _w)
-    : x(in.x)
-    , y(in.y)
-    , z(in.z)
-    , w(_w) {
+  : base_t(in.x,in.y,in.z,_w){
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename T> uint64_t Vector4<T>::GetRGBAU64(void) const {
-  uint64_t r = round(x * T(65535.0f));
-  uint64_t g = round(y * T(65535.0f));
-  uint64_t b = round(z * T(65535.0f));
-  uint64_t a = round(w * T(65535.0f));
+template <typename T> uint64_t Vector4<T>::RGBAU64() const {
+  uint64_t r = round(this->x * T(65535.0f));
+  uint64_t g = round(this->y * T(65535.0f));
+  uint64_t b = round(this->z * T(65535.0f));
+  uint64_t a = round(this->w * T(65535.0f));
   return ((r << 48) | (g << 32) | (b << 16) | a);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Vector4<T>::SetRGBAU64(uint64_t inp) {
+template <typename T> void Vector4<T>::setRGBAU64(uint64_t inp) {
   static constexpr T kfic(T(1.0) / T(65535.0));
   uint16_t r = (inp)&0xffff;
   uint16_t g = (inp >> 16) & 0xffff;
   uint16_t b = (inp >> 32) & 0xffff;
   uint16_t a = (inp >> 48) & 0xffff;
-  x          = T(r);
-  y          = T(g);
-  z          = T(b);
-  w          = T(a);
+  this->x          = T(r);
+  this->y          = T(g);
+  this->z          = T(b);
+  this->w          = T(a);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename T> U32 Vector4<T>::GetVtxColorAsU32(void) const {
-  U32 r = U32(x * T(255.0f));
-  U32 g = U32(y * T(255.0f));
-  U32 b = U32(z * T(255.0f));
-  U32 a = U32(w * T(255.0f));
+template <typename T> U32 Vector4<T>::VtxColorAsU32() const {
+  U32 r = U32(this->x * T(255.0f));
+  U32 g = U32(this->y * T(255.0f));
+  U32 b = U32(this->z * T(255.0f));
+  U32 a = U32(this->w * T(255.0f));
 
   //#if defined(ORK_CONFIG_DARWIN)||defined(ORK_CONFIG_IX)//GL
   return U32((a << 24) | (b << 16) | (g << 8) | r);
@@ -174,33 +167,33 @@ template <typename T> U32 Vector4<T>::GetVtxColorAsU32(void) const {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename T> U32 Vector4<T>::GetABGRU32(void) const {
-  U32 r = U32(x * T(255.0f));
-  U32 g = U32(y * T(255.0f));
-  U32 b = U32(z * T(255.0f));
-  U32 a = U32(w * T(255.0f));
+template <typename T> U32 Vector4<T>::ABGRU32() const {
+  U32 r = U32(this->x * T(255.0f));
+  U32 g = U32(this->y * T(255.0f));
+  U32 b = U32(this->z * T(255.0f));
+  U32 a = U32(this->w * T(255.0f));
 
   return U32((a << 24) | (b << 16) | (g << 8) | r);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> U32 Vector4<T>::GetARGBU32(void) const {
-  U32 r = U32(x * T(255.0f));
-  U32 g = U32(y * T(255.0f));
-  U32 b = U32(z * T(255.0f));
-  U32 a = U32(w * T(255.0f));
+template <typename T> U32 Vector4<T>::ARGBU32() const {
+  U32 r = U32(this->x * T(255.0f));
+  U32 g = U32(this->y * T(255.0f));
+  U32 b = U32(this->z * T(255.0f));
+  U32 a = U32(this->w * T(255.0f));
 
   return U32((a << 24) | (r << 16) | (g << 8) | b);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> U32 Vector4<T>::GetRGBAU32(void) const {
-  S32 r = U32(x * T(255.0f));
-  S32 g = U32(y * T(255.0f));
-  S32 b = U32(z * T(255.0f));
-  S32 a = U32(w * T(255.0f));
+template <typename T> U32 Vector4<T>::RGBAU32() const {
+  S32 r = U32(this->x * T(255.0f));
+  S32 g = U32(this->y * T(255.0f));
+  S32 b = U32(this->z * T(255.0f));
+  S32 a = U32(this->w * T(255.0f));
 
   if (r < 0)
     r = 0;
@@ -220,21 +213,21 @@ template <typename T> U32 Vector4<T>::GetRGBAU32(void) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> U32 Vector4<T>::GetBGRAU32(void) const {
-  U32 r = U32(x * T(255.0f));
-  U32 g = U32(y * T(255.0f));
-  U32 b = U32(z * T(255.0f));
-  U32 a = U32(w * T(255.0f));
+template <typename T> U32 Vector4<T>::BGRAU32() const {
+  U32 r = U32(this->x * T(255.0f));
+  U32 g = U32(this->y * T(255.0f));
+  U32 b = U32(this->z * T(255.0f));
+  U32 a = U32(this->w * T(255.0f));
 
   return U32((b << 24) | (g << 16) | (r << 8) | a);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> U16 Vector4<T>::GetRGBU16(void) const {
-  U32 r = U32(x * T(31.0f));
-  U32 g = U32(y * T(31.0f));
-  U32 b = U32(z * T(31.0f));
+template <typename T> U16 Vector4<T>::RGBU16() const {
+  U32 r = U32(this->x * T(31.0f));
+  U32 g = U32(this->y * T(31.0f));
+  U32 b = U32(this->z * T(31.0f));
 
   U16 rval = U16((b << 10) | (g << 5) | r);
 
@@ -243,7 +236,7 @@ template <typename T> U16 Vector4<T>::GetRGBU16(void) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Vector4<T>::SetRGBAU32(U32 uval) {
+template <typename T> void Vector4<T>::setRGBAU32(U32 uval) {
   U32 r = (uval >> 24) & 0xff;
   U32 g = (uval >> 16) & 0xff;
   U32 b = (uval >> 8) & 0xff;
@@ -251,15 +244,15 @@ template <typename T> void Vector4<T>::SetRGBAU32(U32 uval) {
 
   static const T kfic(1.0f / 255.0f);
 
-  setX(kfic * T(int(r)));
-  setY(kfic * T(int(g)));
-  setZ(kfic * T(int(b)));
-  setW(kfic * T(int(a)));
+  this->x = (kfic * T(int(r)));
+  this->y=(kfic * T(int(g)));
+  this->z=(kfic * T(int(b)));
+  this->w=(kfic * T(int(a)));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Vector4<T>::SetBGRAU32(U32 uval) {
+template <typename T> void Vector4<T>::setBGRAU32(U32 uval) {
   U32 b = (uval >> 24) & 0xff;
   U32 g = (uval >> 16) & 0xff;
   U32 r = (uval >> 8) & 0xff;
@@ -267,15 +260,15 @@ template <typename T> void Vector4<T>::SetBGRAU32(U32 uval) {
 
   static const T kfic(1.0f / 255.0f);
 
-  setX(kfic * T(int(r)));
-  setY(kfic * T(int(g)));
-  setZ(kfic * T(int(b)));
-  setW(kfic * T(int(a)));
+  this->x = (kfic * T(int(r)));
+  this->y=(kfic * T(int(g)));
+  this->z=(kfic * T(int(b)));
+  this->w=(kfic * T(int(a)));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Vector4<T>::SetARGBU32(U32 uval) {
+template <typename T> void Vector4<T>::setARGBU32(U32 uval) {
   U32 a = (uval >> 24) & 0xff;
   U32 r = (uval >> 16) & 0xff;
   U32 g = (uval >> 8) & 0xff;
@@ -283,15 +276,15 @@ template <typename T> void Vector4<T>::SetARGBU32(U32 uval) {
 
   static const T kfic(1.0f / 255.0f);
 
-  setX(kfic * T(int(r)));
-  setY(kfic * T(int(g)));
-  setZ(kfic * T(int(b)));
-  setW(kfic * T(int(a)));
+  this->x = (kfic * T(int(r)));
+  this->y=(kfic * T(int(g)));
+  this->z=(kfic * T(int(b)));
+  this->w=(kfic * T(int(a)));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Vector4<T>::SetABGRU32(U32 uval) {
+template <typename T> void Vector4<T>::setABGRU32(U32 uval) {
   U32 a = (uval >> 24) & 0xff;
   U32 b = (uval >> 16) & 0xff;
   U32 g = (uval >> 8) & 0xff;
@@ -299,24 +292,24 @@ template <typename T> void Vector4<T>::SetABGRU32(U32 uval) {
 
   static const T kfic(1.0f / 255.0f);
 
-  setX(kfic * T(int(r)));
-  setY(kfic * T(int(g)));
-  setZ(kfic * T(int(b)));
-  setW(kfic * T(int(a)));
+  this->x = (kfic * T(int(r)));
+  this->y=(kfic * T(int(g)));
+  this->z=(kfic * T(int(b)));
+  this->w=(kfic * T(int(a)));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Vector4<T>::SetHSV(T h, T s, T v) {
+template <typename T> void Vector4<T>::setHSV(T h, T s, T v) {
   //	hsv.x = saturate(hsv.x);
   //	hsv.y = saturate(hsv.y);
   //	hsv.z = saturate(hsv.z);
 
   if (s == 0.0f) {
     // Grayscale
-    setX(v);
-    setY(v);
-    setZ(v);
+    this->x = (v);
+    this->y=(v);
+    this->z=(v);
   } else {
     const T kone(1.0f);
 
@@ -329,129 +322,119 @@ template <typename T> void Vector4<T>::SetHSV(T h, T s, T v) {
     T bb = v * (kone - (s * f));
     T cc = v * (kone - (s * (kone - f)));
     if (i < kone) {
-      setX(v);
-      setY(cc);
-      setZ(aa);
+      this->x = (v);
+      this->y=(cc);
+      this->z=(aa);
     } else if (i < 2.0f) {
-      setX(bb);
-      setY(v);
-      setZ(aa);
+      this->x = (bb);
+      this->y=(v);
+      this->z=(aa);
     } else if (i < 3.0f) {
-      setX(aa);
-      setY(v);
-      setZ(cc);
+      this->x = (aa);
+      this->y=(v);
+      this->z=(cc);
     } else if (i < 4.0f) {
-      setX(aa);
-      setY(bb);
-      setZ(v);
+      this->x = (aa);
+      this->y=(bb);
+      this->z=(v);
     } else if (i < 5.0f) {
-      setX(cc);
-      setY(aa);
-      setZ(v);
+      this->x = (cc);
+      this->y=(aa);
+      this->z=(v);
     } else {
-      setX(v);
-      setY(aa);
-      setZ(bb);
+      this->x = (v);
+      this->y=(aa);
+      this->z=(bb);
     }
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Vector4<T>::PerspectiveDivide(void) {
-  T iw = T(1.0f) / w;
-  x *= iw;
-  y *= iw;
-  z *= iw;
-  w = T(1.0f);
+template <typename T> void Vector4<T>::perspectiveDivideInPlace() {
+  T iw = T(1) / this->w;
+  this->x *= iw;
+  this->y *= iw;
+  this->z *= iw;
+  this->w = T(1);
 }
 
-template <typename T> Vector4<T> Vector4<T>::perspectiveDivided(void) const {
+template <typename T> Vector4<T> Vector4<T>::perspectiveDivided() const {
   Vector4<T> rval;
-  T iw   = T(1.0f) / w;
-  rval.x = x * iw;
-  rval.y = y * iw;
-  rval.z = z * iw;
+  T iw   = T(1) / this->w;
+  rval.x = this->x * iw;
+  rval.y = this->y * iw;
+  rval.z = this->z * iw;
   rval.w = T(1.0);
   return rval;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename T> Vector4<T>::Vector4(const Vector4<T>& vec) {
-  x = vec.x;
-  y = vec.y;
-  z = vec.z;
-  w = vec.w;
+template <typename T> Vector4<T>::Vector4(const base_t& vec) : base_t(vec) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename T> T Vector4<T>::Dot(const Vector4<T>& vec) const {
-  return ((x * vec.x) + (y * vec.y) + (z * vec.z));
+template <typename T> Vector4<T>::Vector4(const Vector4<T>& vec) : base_t(vec) {
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+template <typename T> T Vector4<T>::dotWith(const Vector4<T>& vec) const {
+  return ((this->x * vec.x) + (this->y * vec.y) + (this->z * vec.z));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-Vector4<T> Vector4<T>::Cross(const Vector4<T>& vec) const // c = this X vec
+Vector4<T> Vector4<T>::crossWith(const Vector4<T>& vec) const // c = this X vec
 {
-  T vx = ((y * vec.z) - (z * vec.y));
-  T vy = ((z * vec.x) - (x * vec.z));
-  T vz = ((x * vec.y) - (y * vec.x));
+  T vx = ((this->y * vec.z) - (this->z * vec.y));
+  T vy = ((this->z * vec.x) - (this->x * vec.z));
+  T vz = ((this->x * vec.y) - (this->y * vec.x));
 
   return (Vector4<T>(vx, vy, vz));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Vector4<T>::Normalize(void) {
-  T distance = (T)1.0f / Mag();
+template <typename T> void Vector4<T>::normalizeInPlace() {
+  T distance = T(1) / magnitude();
 
-  x *= distance;
-  y *= distance;
-  z *= distance;
+  this->x *= distance;
+  this->y *= distance;
+  this->z *= distance;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename T> Vector4<T> Vector4<T>::Normal() const {
-  T fmag = Mag();
-  fmag   = (fmag == (T)0.0f) ? (T)0.00001f : fmag;
-  T s    = (T)1.0f / fmag;
-  return Vector4<T>(x * s, y * s, z * s, w);
+template <typename T> Vector4<T> Vector4<T>::normalized() const {
+  T fmag = magnitude();
+  fmag   = (fmag == T(0)) ? T(0.00001) : fmag;
+  T s    = T(1) / fmag;
+  return Vector4<T>(this->x * s, this->y * s, this->z * s, this->w);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename T> T Vector4<T>::Mag(void) const {
-  return Sqrt(x * x + y * y + z * z);
+template <typename T> T Vector4<T>::magnitude() const {
+  return Sqrt(this->x * this->x + this->y * this->y + this->z * this->z);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename T> T Vector4<T>::MagSquared(void) const {
-  T mag = (x * x + y * y + z * z);
+template <typename T> T Vector4<T>::magnitudeSquared() const {
+  T mag = (this->x * this->x + this->y * this->y + this->z * this->z);
   return mag;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename T> Vector4<T> Vector4<T>::Transform(const Matrix44<T>& matrix) const {
-  T tx, ty, tz, tw;
-
-  T* mp = (T*)matrix.elements;
-  T _x  = x;
-  T _y  = y;
-  T _z  = z;
-  T _w  = w;
-
-  tx = _x * mp[0] + _y * mp[4] + _z * mp[8] + _w * mp[12];
-  ty = _x * mp[1] + _y * mp[5] + _z * mp[9] + _w * mp[13];
-  tz = _x * mp[2] + _y * mp[6] + _z * mp[10] + _w * mp[14];
-  tw = _x * mp[3] + _y * mp[7] + _z * mp[11] + _w * mp[15];
-
-  return (Vector4<T>(tx, ty, tz, tw));
+template <typename T> Vector4<T> Vector4<T>::transform(const Matrix44<T>& matrix) const {
+  const auto& xf = matrix.asGlmMat4();
+  const auto& v = this->asGlmVec4();
+  return Vector4<T>(xf*v);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -470,45 +453,45 @@ void Vector4<T>::serp(const Vector4<T>& PA, //
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Vector4<T>::RotateX(T rad) {
-  T oldY = y;
-  T oldZ = z;
-  y      = (oldY * Cos(rad) - oldZ * Sin(rad));
-  z      = (oldY * Sin(rad) + oldZ * Cos(rad));
+template <typename T> void Vector4<T>::rotateOnX(T rad) {
+  T previousY = this->y;
+  T previousZ = this->z;
+  this->y      = (previousY * Cos(rad) - previousZ * Sin(rad));
+  this->z      = (previousY * Sin(rad) + previousZ * Cos(rad));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Vector4<T>::RotateY(T rad) {
-  T oldX = x;
-  T oldZ = z;
+template <typename T> void Vector4<T>::rotateOnY(T rad) {
+  T previousX = this->x;
+  T previousZ = this->z;
 
-  x = (oldX * Cos(rad) - oldZ * Sin(rad));
-  z = (oldX * Sin(rad) + oldZ * Cos(rad));
+  this->x = (previousX * Cos(rad) - previousZ * Sin(rad));
+  this->z = (previousX * Sin(rad) + previousZ * Cos(rad));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Vector4<T>::RotateZ(T rad) {
-  T oldX = x;
-  T oldY = y;
+template <typename T> void Vector4<T>::rotateOnZ(T rad) {
+  T previousX = this->x;
+  T previousY = this->y;
 
-  x = (oldX * Cos(rad) - oldY * Sin(rad));
-  y = (oldX * Sin(rad) + oldY * Cos(rad));
+  this->x = (previousX * Cos(rad) - previousY * Sin(rad));
+  this->y = (previousX * Sin(rad) + previousY * Cos(rad));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void Vector4<T>::lerp(const Vector4<T>& from, const Vector4<T>& to, T par) {
-  if (par < T(0.0f))
-    par = T(0.0f);
-  if (par > T(1.0f))
-    par = T(1.0f);
-  T ipar = T(1.0f) - par;
-  x      = (from.x * ipar) + (to.x * par);
-  y      = (from.y * ipar) + (to.y * par);
-  z      = (from.z * ipar) + (to.z * par);
-  w      = (from.w * ipar) + (to.w * par);
+  if (par < T(0))
+    par = T(0);
+  if (par > T(1))
+    par = T(1);
+  T ipar = T(1) - par;
+  this->x      = (from.x * ipar) + (to.x * par);
+  this->y      = (from.y * ipar) + (to.y * par);
+  this->z      = (from.z * ipar) + (to.z * par);
+  this->w      = (from.w * ipar) + (to.w * par);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

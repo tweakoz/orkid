@@ -19,19 +19,19 @@ void Mesh::readFromAssimp(const file::Path& BasePath) {
   OrkAssert(bfs::exists(base_dir));
   OrkAssert(bfs::is_directory(base_dir));
   auto dblock                                                  = datablockFromFileAtPath(GlbPath);
-  dblock->_vars.makeValueForKey<std::string>("file-extension") = GlbPath.GetExtension().c_str();
-  dblock->_vars.makeValueForKey<bfs::path>("base-directory")   = base_dir;
-  printf("BEGIN: importing<%s> via Assimp\n", GlbPath.c_str());
+  dblock->_vars->makeValueForKey<std::string>("file-extension") = GlbPath.GetExtension().c_str();
+  dblock->_vars->makeValueForKey<bfs::path>("base-directory")   = base_dir;
+  //printf("BEGIN: importing<%s> via Assimp\n", GlbPath.c_str());
   readFromAssimp(dblock);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Mesh::readFromAssimp(datablock_ptr_t datablock) {
-  auto& extension = datablock->_vars.typedValueForKey<std::string>("file-extension").value();
-  printf("BEGIN: importing scene from datablock length<%zu> extension<%s>\n", datablock->length(), extension.c_str());
+  auto& extension = datablock->_vars->typedValueForKey<std::string>("file-extension").value();
+  //printf("BEGIN: importing scene from datablock length<%zu> extension<%s>\n", datablock->length(), extension.c_str());
   auto scene = aiImportFileFromMemory((const char*)datablock->data(), datablock->length(), assimpImportFlags(), extension.c_str());
-  printf("END: importing scene<%p>\n", scene);
+  //printf("END: importing scene<%p>\n", (void*) scene);
   if (scene) {
-    auto& embtexmap = _varmap.makeValueForKey<lev2::embtexmap_t>("embtexmap");
+    auto& embtexmap = _varmap->makeValueForKey<lev2::embtexmap_t>("embtexmap");
     aiVector3D scene_min, scene_max, scene_center;
     aiMatrix4x4 identity;
     aiIdentityMatrix4(&identity);
@@ -50,7 +50,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
     // parse embedded textures
     //////////////////////////////////////////////
 
-    printf("NumTex<%d>\n", scene->mNumTextures);
+    //printf("NumTex<%d>\n", scene->mNumTextures);
 
     for (int i = 0; i < scene->mNumTextures; i++) {
       auto texture        = scene->mTextures[i];
@@ -76,7 +76,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
         embtex->_name       = texname;
       } else {
 
-        printf("texpath<%s>\n", texname.c_str());
+        //printf("texpath<%s>\n", texname.c_str());
         OrkAssert(false);
       }
 
@@ -106,11 +106,11 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
         }
       } else {
         // find by path
-        auto base_dir = datablock->_vars.typedValueForKey<bfs::path>("base-directory").value();
-        printf("base_dir<%s> texname<%s>\n", base_dir.c_str(), texname.c_str());
+        auto base_dir = datablock->_vars->typedValueForKey<bfs::path>("base-directory").value();
+        //printf("base_dir<%s> texname<%s>\n", base_dir.c_str(), texname.c_str());
         auto tex_path = base_dir / texname;
         auto tex_ext  = std::string(tex_path.extension().c_str());
-        printf("texpath<%s> tex_ext<%s>\n", tex_path.c_str(), tex_ext.c_str());
+        //printf("texpath<%s> tex_ext<%s>\n", tex_path.c_str(), tex_ext.c_str());
         if (boost::filesystem::exists(tex_path) and boost::filesystem::is_regular_file(tex_path)) {
           ork::file::Path as_ork_path;
           as_ork_path.fromBFS(tex_path);
@@ -118,7 +118,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
           texfile.OpenFile(as_ork_path, ork::EFM_READ);
           size_t length = 0;
           texfile.GetLength(length);
-          printf("texlen<%zu>\n", length);
+          //printf("texlen<%zu>\n", length);
 
           if (tex_ext == ".jpg" or tex_ext == ".jpeg" or tex_ext == ".png" or tex_ext == ".tga") {
 
@@ -147,7 +147,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
       return rval;
     };
 
-    printf("/////////////////////////////////////////////////////////////////\n");
+    //printf("/////////////////////////////////////////////////////////////////\n");
 
     //////////////////////////////////////////////
 
@@ -171,65 +171,65 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
       }
       if (AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_DIFFUSE, &color)) {
         outmtl->_baseColor = fvec4(color.r, color.g, color.b, color.a);
-        printf("has_uniform_diffuse<%f %f %f %f>\n", color.r, color.g, color.b, color.a);
+        //printf("has_uniform_diffuse<%f %f %f %f>\n", color.r, color.g, color.b, color.a);
       }
       if (AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_SPECULAR, &color)) {
-        printf("has_uniform_specular<%f %f %f %f>\n", color.r, color.g, color.b, color.a);
+        //printf("has_uniform_specular<%f %f %f %f>\n", color.r, color.g, color.b, color.a);
       }
       if (AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_AMBIENT, &color)) {
-        printf("has_uniform_ambient\n");
+        //printf("has_uniform_ambient\n");
       }
       if (AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_EMISSIVE, &color)) {
-        printf("has_uniform_emissive\n");
+        //printf("has_uniform_emissive\n");
       }
       if (AI_SUCCESS == aiGetMaterialFloat(material, AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLIC_FACTOR, &f)) {
         outmtl->_metallicFactor = f;
-        printf("has_pbr_MetallicFactor<%g>\n", f);
+        //printf("has_pbr_MetallicFactor<%g>\n", f);
       }
       if (AI_SUCCESS == aiGetMaterialFloat(material, AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_ROUGHNESS_FACTOR, &f)) {
         outmtl->_roughnessFactor = f;
-        printf("has_pbr_RoughnessFactor<%g>\n", f);
+        //printf("has_pbr_RoughnessFactor<%g>\n", f);
       }
       if (AI_SUCCESS == material->GetTexture(aiTextureType_DIFFUSE, 0, &string, NULL, NULL, NULL, NULL, NULL)) {
         outmtl->_colormap = (const char*)string.data;
         auto tex          = find_texture(outmtl->_colormap, lev2::ETEXUSAGE_COLOR);
-        printf("has_pbr_colormap<%s> tex<%p>\n", outmtl->_colormap.c_str(), tex);
+        //printf("has_pbr_colormap<%s> tex<%p>\n", outmtl->_colormap.c_str(), (void*) tex);
       }
       if (AI_SUCCESS == aiGetMaterialTexture(material, AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &string)) {
         outmtl->_metallicAndRoughnessMap = (const char*)string.data;
         auto tex                         = find_texture(outmtl->_metallicAndRoughnessMap, lev2::ETEXUSAGE_COLOR);
-        printf("has_pbr_MetallicAndRoughnessMap<%s> tex<%p>\n", outmtl->_metallicAndRoughnessMap.c_str(), tex);
+        //printf("has_pbr_MetallicAndRoughnessMap<%s> tex<%p>\n", outmtl->_metallicAndRoughnessMap.c_str(), (void*) tex);
       }
 
       if (AI_SUCCESS == material->GetTexture(aiTextureType_NORMALS, 0, &string, NULL, NULL, NULL, NULL, NULL)) {
         outmtl->_normalmap = (const char*)string.data;
         auto tex           = find_texture(outmtl->_normalmap, lev2::ETEXUSAGE_NORMAL);
-        printf("has_pbr_normalmap<%s> tex<%p>\n", outmtl->_normalmap.c_str(), tex);
+        //printf("has_pbr_normalmap<%s> tex<%p>\n", outmtl->_normalmap.c_str(), (void*) tex);
       }
       if (AI_SUCCESS == material->GetTexture(aiTextureType_AMBIENT, 0, &string, NULL, NULL, NULL, NULL, NULL)) {
         outmtl->_amboccmap = (const char*)string.data;
         auto tex           = find_texture(outmtl->_amboccmap, lev2::ETEXUSAGE_GREYSCALE);
-        printf("has_pbr_amboccmap<%s> tex<%p>", outmtl->_amboccmap.c_str(), tex);
+        //printf("has_pbr_amboccmap<%s> tex<%p>", outmtl->_amboccmap.c_str(), (void*) tex);
       }
       if (AI_SUCCESS == material->GetTexture(aiTextureType_EMISSIVE, 0, &string, NULL, NULL, NULL, NULL, NULL)) {
         outmtl->_emissivemap = (const char*)string.data;
         auto tex             = find_texture(outmtl->_emissivemap, lev2::ETEXUSAGE_GREYSCALE);
-        printf("has_pbr_emissivemap<%s> tex<%p> \n", outmtl->_emissivemap.c_str(), tex);
+        printf("has_pbr_emissivemap<%s> tex<%p> \n", outmtl->_emissivemap.c_str(), (void*) tex);
       }
-      printf("\n");
+      //printf("\n");
     }
 
-    printf("/////////////////////////////////////////////////////////////////\n");
+    //printf("/////////////////////////////////////////////////////////////////\n");
 
     //////////////////////////////////////////////
 
-    auto& bonemarkset = _varmap["bonemarkset"].make<bonemarkset_t>();
+    auto& bonemarkset = (*_varmap)["bonemarkset"].make<bonemarkset_t>();
 
     std::queue<aiNode*> nodestack;
 
     auto parsedskel = parseSkeleton(scene);
 
-    _varmap["parsedskel"].make<parsedskeletonptr_t>(parsedskel);
+    (*_varmap)["parsedskel"].make<parsedskeletonptr_t>(parsedskel);
     bool is_skinned    = parsedskel->_isSkinned;
     auto& xgmskelnodes = parsedskel->_xgmskelmap;
 
@@ -237,7 +237,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
     // count, visit dagnodes
     //////////////////////////////////////////////
 
-    printf("/////////////////////////////////////////////////////////////////\n");
+    //printf("/////////////////////////////////////////////////////////////////\n");
 
     //////////////////////////////////////////////
     // visit meshes, marking dagnodes as bones and fetching joint matrices
@@ -322,7 +322,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
     // parse nodes
     //////////////////////////////////////////////
 
-    // printf("parsing nodes for meshdata\n");
+    //printf("parsing nodes for meshdata\n");
 
     while (not nodestack.empty()) {
 
@@ -337,7 +337,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
       auto it_nod_skelnode                 = xgmskelnodes.find(nren);
       ork::lev2::XgmSkelNode* nod_skelnode = (it_nod_skelnode != xgmskelnodes.end()) ? it_nod_skelnode->second : nullptr;
 
-      printf("xgmnode<%p:%s>\n", nod_skelnode, nod_skelnode->_name.c_str());
+      //printf("xgmnode<%p:%s>\n", (void*) nod_skelnode, nod_skelnode->_name.c_str());
       // auto ppar_skelnode = nod_skelnode->_parent;
       std::string name = nod_skelnode->_name;
       auto nodematrix  = nod_skelnode->_nodeMatrix;
@@ -345,7 +345,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
       fmtx4 invbind    = nod_skelnode->_bindMatrixInverse;
       fmtx4 bind       = nod_skelnode->bindMatrix();
 
-      fvec3 trans = bind.GetTranslation();
+      fvec3 trans = bind.translation();
 
       _skeletonExtents.Grow(trans);
 
@@ -357,25 +357,28 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
       fmtx4 ork_model_mtx;
       fmtx3 ork_normal_mtx;
       if (false == is_skinned) {
-        deco::printf(fvec3(1, 0, 0), "/////////////////////////////\n");
+        //deco::printf(fvec3(1, 0, 0), "/////////////////////////////\n");
         std::deque<aiNode*> nodehier;
         bool done = false;
         auto walk = n;
         while (not done) {
           nodehier.push_back(n);
           fmtx4 test = convertMatrix44(walk->mTransformation);
-          // test.dump4x3(walk->mName.data);
+          //auto test_str = test.dump4x3cn();
+          //printf("NODE<%s> : %s\n", walk->mName.data, test_str.c_str() );
           walk = walk->mParent;
           done = (walk == nullptr);
         }
-        for (auto item : nodehier) {
-          ork_model_mtx = convertMatrix44(item->mTransformation) * ork_model_mtx;
-        }
+        //for (auto item : nodehier) {
+          //ork_model_mtx = convertMatrix44(item->mTransformation) * ork_model_mtx;
+        //}
 
         ork_model_mtx = convertMatrix44(n->mTransformation);
+        //auto test_str = ork_model_mtx.dump4x3cn();
+        //printf("NODE<%s> : %s\n", n->mName.data, test_str.c_str() );
         // ork_model_mtx  = ork_model_mtx.dump(n->mName.data);
         ork_normal_mtx = ork_model_mtx.rotMatrix33();
-        deco::printf(fvec3(1, 0, 0), "/////////////////////////////\n");
+        //deco::printf(fvec3(1, 0, 0), "/////////////////////////////\n");
       }
 
       //////////////////////////////////////////////
@@ -409,7 +412,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
         auto& mtlref = out_submesh.typedAnnotation<GltfMaterial*>("gltfmaterial");
         mtlref       = outmtl;
         ork::meshutil::vertex muverts[4];
-        // printf("processing numfaces<%d>\n", mesh->mNumFaces);
+        printf("processing numfaces<%d> %s\n", mesh->mNumFaces, outmtl->_name.c_str() );
         for (int t = 0; t < mesh->mNumFaces; ++t) {
           const aiFace* face = &mesh->mFaces[t];
           bool is_triangle   = (face->mNumIndices == 3);
@@ -423,8 +426,8 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
               const auto& uv = (mesh->mTextureCoords[0])[index];
               const auto& b  = (mesh->mBitangents)[index];
               auto& muvtx    = muverts[facevert_index];
-              muvtx.mPos     = fvec3(v.x, v.y, v.z).Transform(ork_model_mtx).xyz();
-              muvtx.mNrm     = fvec3(n.x, n.y, n.z).Transform(ork_normal_mtx);
+              muvtx.mPos     = fvec3(v.x, v.y, v.z).transform(ork_model_mtx).xyz();
+              muvtx.mNrm     = fvec3(n.x, n.y, n.z).transform(ork_normal_mtx);
 
               _vertexExtents.Grow(muvtx.mPos);
 
@@ -434,7 +437,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
                 muvtx.mCol[0] = fvec4(1, 1, 1, 1);
               if (has_uvs) {
                 muvtx.mUV[0].mMapTexCoord = fvec2(uv.x, uv.y);
-                muvtx.mUV[0].mMapBiNormal = fvec3(b.x, b.y, b.z).Transform(ork_normal_mtx);
+                muvtx.mUV[0].mMapBiNormal = fvec3(b.x, b.y, b.z).transform(ork_normal_mtx);
               }
               /////////////////////////////////////////////
               // yuk -- assimp is not like gltf, or collada...
@@ -580,10 +583,10 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
       }
     }
     // printf("done parsing nodes for meshdata\n");
-    printf("/////////////////////////////////////////////////////////////////\n");
+    //printf("/////////////////////////////////////////////////////////////////\n");
 
     // is_skinned = false; // not yet
-    _varmap["is_skinned"].set<bool>(is_skinned);
+    (*_varmap)["is_skinned"].set<bool>(is_skinned);
 
     //////////////////////////////////////////////
     // build xgm skeleton
@@ -598,18 +601,18 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
     //////////////////////////////////////////////
   } // if(scene)
 
-  printf("DONE: readFromAssimp\n");
+  //printf("DONE: readFromAssimp\n");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void configureXgmSkeleton(const ork::meshutil::Mesh& input, lev2::XgmModel& xgmmdlout) {
 
-  auto parsedskel = input._varmap.valueForKey("parsedskel").get<parsedskeletonptr_t>();
+  auto parsedskel = input._varmap->valueForKey("parsedskel").get<parsedskeletonptr_t>();
 
   const auto& xgmskelnodes = parsedskel->_xgmskelmap;
 
-  printf("NumSkelNodes<%d>\n", int(xgmskelnodes.size()));
+  //printf("NumSkelNodes<%d>\n", int(xgmskelnodes.size()));
   xgmmdlout.SetSkinned(true);
   auto& xgmskel = xgmmdlout.skeleton();
   xgmskel.resize(xgmskelnodes.size());
@@ -619,7 +622,7 @@ void configureXgmSkeleton(const ork::meshutil::Mesh& input, lev2::XgmModel& xgmm
     auto parskelnode             = skelnode->_parent;
     int idx                      = skelnode->miSkelIndex;
     int pidx                     = parskelnode ? parskelnode->miSkelIndex : -1;
-    printf("JointName<%s> skelnode<%p> parskelnode<%p> idx<%d> pidx<%d>\n", JointName.c_str(), skelnode, parskelnode, idx, pidx);
+    //printf("JointName<%s> skelnode<%p> parskelnode<%p> idx<%d> pidx<%d>\n", JointName.c_str(), (void*) skelnode, (void*) parskelnode, idx, pidx);
 
     PoolString JointNameSidx = AddPooledString(JointName.c_str());
     xgmskel.AddJoint(idx, pidx, JointNameSidx);
@@ -631,8 +634,8 @@ void configureXgmSkeleton(const ork::meshutil::Mesh& input, lev2::XgmModel& xgmm
   // flatten the skeleton (WIP)
   /////////////////////////////////////
 
-  printf("Flatten Skeleton\n");
-  const auto& bonemarkset = input._varmap["bonemarkset"].get<bonemarkset_t>();
+  //printf("Flatten Skeleton\n");
+  const auto& bonemarkset = (*input._varmap)["bonemarkset"].get<bonemarkset_t>();
 
   auto root          = parsedskel->rootXgmSkelNode();
   xgmskel.miRootNode = root ? root->miSkelIndex : -1;
@@ -642,10 +645,11 @@ void configureXgmSkeleton(const ork::meshutil::Mesh& input, lev2::XgmModel& xgmm
       if (parent) {
         bool ignore = (parent->_numBoundVertices == 0);
         ignore      = ignore and (node->_numBoundVertices == 0);
-        if (ignore)
-          printf("IGNORE<%s>\n", node->_name.c_str());
+        if (ignore){
+          //printf("IGNORE<%s>\n", node->_name.c_str());
+        }
         else {
-          printf("ADD<%s>\n", node->_name.c_str());
+          //printf("ADD<%s>\n", node->_name.c_str());
           int iparentindex   = parent->miSkelIndex;
           int ichildindex    = node->miSkelIndex;
           lev2::XgmBone Bone = {iparentindex, ichildindex};
@@ -656,7 +660,7 @@ void configureXgmSkeleton(const ork::meshutil::Mesh& input, lev2::XgmModel& xgmm
     // xgmskel.dump();
   }
 
-  printf("skeleton configuration complete..\n");
+  //printf("skeleton configuration complete..\n");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -666,12 +670,12 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
 
   // printf("BEGIN: clusterizing model\n");
   bool is_skinned = false;
-  if (auto as_bool = inp_model._varmap.valueForKey("is_skinned").tryAs<bool>()) {
+  if (auto as_bool = inp_model._varmap->valueForKey("is_skinned").tryAs<bool>()) {
     is_skinned = as_bool.value();
   }
 
-  auto& inp_embtexmap = inp_model._varmap.typedValueForKey<lev2::embtexmap_t>("embtexmap").value();
-  auto& out_embtexmap = out_model._varmap.makeValueForKey<lev2::embtexmap_t>("embtexmap") = inp_embtexmap;
+  auto& inp_embtexmap = inp_model._varmap->typedValueForKey<lev2::embtexmap_t>("embtexmap").value();
+  auto& out_embtexmap = out_model._varmap->makeValueForKey<lev2::embtexmap_t>("embtexmap") = inp_embtexmap;
 
   out_model.ReserveMeshes(inp_model.RefSubMeshLut().size());
   ork::lev2::XgmMesh* out_mesh = new ork::lev2::XgmMesh;
@@ -710,6 +714,7 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
     mtlout->_colorMapName    = gltfmtl->_colormap;
     mtlout->_normalMapName   = gltfmtl->_normalmap;
     mtlout->_amboccMapName   = gltfmtl->_amboccmap;
+    mtlout->_emissiveMapName   = gltfmtl->_emissivemap;
     mtlout->_mtlRufMapName   = gltfmtl->_metallicAndRoughnessMap;
     mtlout->_metallicFactor  = gltfmtl->_metallicFactor;
     mtlout->_roughnessFactor = gltfmtl->_roughnessFactor;
@@ -771,7 +776,7 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
   out_mesh->ReserveSubMeshes(count_subs);
   subindex = 0;
 
-  printf("generating %d submeshes\n", (int)count_subs);
+  //printf("generating %d submeshes\n", (int)count_subs);
 
   for (auto item : mtlsubmap) {
     GltfMaterial* gltfm = item.first;
@@ -799,7 +804,7 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
         buildXgmCluster(DummyTarget, xgm_cluster, clusterbuilder,true);
 
         const int imaxvtx = xgm_cluster->_vertexBuffer->GetNumVertices();
-        printf("xgm_cluster->_vertexBuffer<%p> imaxvtx<%d>\n", xgm_cluster->_vertexBuffer.get(), imaxvtx);
+        //printf("xgm_cluster->_vertexBuffer<%p> imaxvtx<%d>\n", (void*) xgm_cluster->_vertexBuffer.get(), imaxvtx);
         // OrkAssert(false);
         // int inumclusjoints = XgmClus.mJoints.size();
         // for( int ib=0; ib<inumclusjoints; ib++ )
@@ -822,12 +827,12 @@ datablock_ptr_t assimpToXgm(datablock_ptr_t inp_datablock) {
 
   ork::lev2::XgmModel xgmmdlout;
   bool is_skinned = false;
-  if (auto as_bool = tmesh._varmap.valueForKey("is_skinned").tryAs<bool>()) {
+  if (auto as_bool = tmesh._varmap->valueForKey("is_skinned").tryAs<bool>()) {
     is_skinned = as_bool.value();
     if (is_skinned)
       configureXgmSkeleton(tmesh, xgmmdlout);
   }
-  printf("clusterizing..\n");
+  //printf("clusterizing..\n");
   clusterizeToolMeshToXgmMesh<ork::meshutil::XgmClusterizerStd>(tmesh, xgmmdlout);
 
   auto vmin = tmesh._vertexExtents.Min();
@@ -835,11 +840,12 @@ datablock_ptr_t assimpToXgm(datablock_ptr_t inp_datablock) {
   auto smin = tmesh._skeletonExtents.Min();
   auto smax = tmesh._skeletonExtents.Max();
 
-  deco::printf(fvec3::White(), "vtxext min<%g %g %g>\n", vmin.x, vmin.y, vmin.z);
-  deco::printf(fvec3::White(), "vtxext max<%g %g %g>\n", vmax.x, vmax.y, vmax.z);
-  deco::printf(fvec3::Yellow(), "sklext min<%g %g %g>\n", smin.x, smin.y, smin.z);
-  deco::printf(fvec3::Yellow(), "sklext max<%g %g %g>\n", smax.x, smax.y, smax.z);
+  //deco::printf(fvec3::White(), "vtxext min<%g %g %g>\n", vmin.x, vmin.y, vmin.z);
+  //deco::printf(fvec3::White(), "vtxext max<%g %g %g>\n", vmax.x, vmax.y, vmax.z);
+  //deco::printf(fvec3::Yellow(), "sklext min<%g %g %g>\n", smin.x, smin.y, smin.z);
+  //deco::printf(fvec3::Yellow(), "sklext max<%g %g %g>\n", smax.x, smax.y, smax.z);
 
   return writeXgmToDatablock(&xgmmdlout);
 }
 } // namespace ork::meshutil
+

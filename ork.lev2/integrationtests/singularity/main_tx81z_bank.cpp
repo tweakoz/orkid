@@ -1,9 +1,17 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include "harness.h"
 #include <ork/lev2/aud/singularity/tx81z.h>
 #include <ork/lev2/aud/singularity/fxgen.h>
 
-int main(int argc, char** argv) {
-  auto app = createEZapp(argc, argv);
+int main(int argc, char** argv,char**envp) {
+  auto initdata = std::make_shared<ork::AppInitData>(argc,argv,envp);
+  auto app = createEZapp(initdata);
   ////////////////////////////////////////////////
   // main bus effect
   ////////////////////////////////////////////////
@@ -104,6 +112,6 @@ int main(int argc, char** argv) {
   }
   //////////////////////////////////////////////////////////////////////////////
   app->setRefreshPolicy({EREFRESH_FASTEST, 0});
-  app->runloop();
+  app->mainThreadLoop();
   return 0;
 }

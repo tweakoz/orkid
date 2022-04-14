@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <string>
 #include <assert.h>
 #include <unistd.h>
@@ -18,14 +25,14 @@ void FunData::describeX(class_t* clazz) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ControllerInst* FunData::instantiate(Layer* l) const // final
+ControllerInst* FunData::instantiate(layer_ptr_t l) const // final
 {
   return new FunInst(this, l);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-FunInst::FunInst(const FunData* data, Layer* l)
+FunInst::FunInst(const FunData* data, layer_ptr_t l)
     : ControllerInst(l)
     , _data(data) {
   _a  = []() -> float { return 0.0f; };

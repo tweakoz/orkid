@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -18,14 +18,14 @@
 
 namespace ork { namespace rtti {
 
-class RTTIData;
+struct RTTIData;
 
 class Category;
 
 using shared_factory_t = std::function<rtti::castable_ptr_t()>;
 using raw_factory_t    = rtti::ICastable* (*)();
 
-class Class : public ICastable {
+struct Class : public ICastable {
 public:
   Class(const RTTIData&);
 
@@ -78,6 +78,8 @@ public:
 
   virtual void make_abstract() = 0;
 
+  shared_factory_t sharedFactory() { return _sharedFactory; }
+  
 protected:
   shared_factory_t _sharedFactory;
   raw_factory_t _rawFactory;

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -41,9 +41,9 @@ void DefaultRenderer::RenderModel(const ModelRenderable& mdl_renderable, RenderG
   const fvec3& offset = mdl_renderable.GetOffset();
   const fvec3& rotate = mdl_renderable.GetRotate();
   fmtx4 smat, tmat, rmat;
-  smat.SetScale(fscale);
-  tmat.SetTranslation(offset);
-  rmat.SetRotateY(rotate.y + rotate.z);
+  smat.setScale(fscale);
+  tmat.setTranslation(offset);
+  rmat.setRotateY(rotate.y + rotate.z);
   fmtx4 wmat = mdl_renderable.GetMatrix();
   /////////////////////////////////////////////////////////////
   // compute world matrix
@@ -51,8 +51,8 @@ void DefaultRenderer::RenderModel(const ModelRenderable& mdl_renderable, RenderG
   fmtx4 nmat = tmat * rmat * smat * wmat;
   if (minst->IsBlenderZup()) { // zup to yup conversion matrix
     fmtx4 rmatx, rmaty;
-    rmatx.RotateX(3.14159f * -0.5f);
-    rmaty.RotateX(3.14159f);
+    rmatx.rotateOnX(3.14159f * -0.5f);
+    rmaty.rotateOnX(3.14159f);
     nmat = (rmatx * rmaty) * nmat;
   }
   /////////////////////////////////////////////////////////////
@@ -73,7 +73,7 @@ void DefaultRenderer::RenderModel(const ModelRenderable& mdl_renderable, RenderG
   RCID._isSkinned       = model_is_skinned;
   RCID_MD.SetSkinned(model_is_skinned);
   RCID_MD.SetModelInst(minst);
-  auto ObjColor = fvec4::White();
+  auto ObjColor = mdl_renderable._modColor;
   if (model_is_skinned) {
     model->RenderSkinned(minst.get(), ObjColor, nmat, GetTarget(), RCID, RCID_MD);
   } else {

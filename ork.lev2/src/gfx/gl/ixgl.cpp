@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -9,6 +9,7 @@
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include "gl.h"
+#include <ork/lev2/gfx/gfxprimitives.h>
 
 #if defined(ORK_CONFIG_OPENGL) && defined(LINUX)
 
@@ -21,7 +22,6 @@
 namespace ork::lev2 {
 extern int G_MSAASAMPLES;
 }
-
 
 #include <ork/lev2/glfw/ctx_glfw.h>
 #include <GL/glx.h>
@@ -38,6 +38,8 @@ extern bool gbVSYNC;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
+
+extern std::atomic<int> __FIND_IT;
 
 bool g_allow_HIDPI = false;
 
@@ -91,8 +93,8 @@ GlIxPlatformObject* GlIxPlatformObject::_current      = nullptr;
 /////////////////////////////////////////////////////////////////////////
 
 struct GlxLoadContext {
-  GlIxPlatformObject* _global_plato  = nullptr;
-  GLFWwindow* _pushedContext = nullptr;
+  GlIxPlatformObject* _global_plato = nullptr;
+  GLFWwindow* _pushedContext        = nullptr;
 };
 
 /////////////////////////////////////////////////////////////////////////
@@ -101,8 +103,9 @@ static ork::atomic<int> atomic_init;
 ///////////////////////////////////////////////////////////////////////////////
 
 void check_debug_log() {
-  GLuint count    = 1024; // max. num. of messages that will be read from the log
-  GLsizei bufsize = 32768;
+  constexpr GLuint count    = 1024; // max. num. of messages that will be read from the log
+  constexpr GLsizei bufsize = 32768;
+
   GLenum sources[count];
   GLenum types[count];
   GLuint ids[count];
@@ -148,32 +151,33 @@ void ContextGL::GLinit() {
     loadctx->_global_plato  = GlIxPlatformObject::_global_plato;
     _loadTokens.push((void*)loadctx);
   }
-} // namespace lev2
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 std::string GetGlErrorString(void);
 
-void OpenGlContextInit() {
+context_ptr_t OpenGlContextInit() {
   auto clazz = dynamic_cast<object::ObjectClass*>(ContextGL::GetClassStatic());
   GfxEnv::setContextClass(clazz);
   ContextGL::GLinit();
-  auto target = new ContextGL;
+  auto target = std::make_shared<ContextGL>();
   target->initializeLoaderContext();
-  GfxEnv::GetRef().SetLoaderTarget(target);
+  GfxEnv::initializeWithContext(target);
+  return target;
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 ContextGL::ContextGL()
     : Context()
-    , mFxI(*this)
     , mImI(*this)
+    , mFxI(*this)
     , mRsI(*this)
+    , mMtxI(*this)
     , mGbI(*this)
     , mFbI(*this)
     , mTxI(*this)
-    , mMtxI(*this)
     , mDWI(*this)
     , mCI(*this)
     , mTargetDrawableSizeDirty(true) {
@@ -190,28 +194,16 @@ ContextGL::~ContextGL() {
 
 void ContextGL::initializeWindowContext(Window* pWin, CTXBASE* pctxbase) {
   meTargetType = TargetType::WINDOW;
-
   ///////////////////////
   auto glfw_container = (CtxGLFW*)pctxbase;
   auto glfw_window    = glfw_container->_glfwWindow;
-
   ///////////////////////
   GlIxPlatformObject* plato = new GlIxPlatformObject;
   plato->_thiscontext       = glfw_container;
   mCtxBase                  = pctxbase;
   mPlatformHandle           = (void*)plato;
   ///////////////////////
-
-  printf("glfw_container<%p> glfw_window<%p>\n", glfw_container, glfw_window);
-
-  Display* x_dpy = plato->getDisplay();
-  int x_window   = plato->getXwindowID();
-
-  printf("x_dpy<%p> x_window<%d>\n", x_dpy, x_window);
-  printf("x_screen<%d>\n", plato->getXscreenID());
-
   plato->makeCurrent();
-
   mFbI.SetThisBuffer(pWin);
 }
 
@@ -372,13 +364,10 @@ void ContextGL::initializeOffscreenContext(OffscreenBuffer* pBuf) {
   plato->_thiscontext = global_plato->_thiscontext;
   plato->_needsInit   = false;
 
-  _defaultRTG = new RtGroup(this, miW, miH, 1);
-  auto rtb    = new RtBuffer(RtgSlot::Slot0, EBufferFormat::RGBA8, miW, miH);
-  _defaultRTG->SetMrt(0, rtb);
-  auto texture = _defaultRTG->GetMrt(0)->texture();
+  _defaultRTG  = new RtGroup(this, miW, miH, 1);
+  auto rtb     = _defaultRTG->createRenderTarget(EBufferFormat::RGBA8);
+  auto texture = rtb->texture();
   FBI()->SetBufferTexture(texture);
-
-  // pBuf->SetContext(this);
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -399,10 +388,9 @@ void ContextGL::initializeLoaderContext() {
   plato->_thiscontext = global_plato->_thiscontext;
   plato->_needsInit   = false;
 
-  _defaultRTG = new RtGroup(this, miW, miH, 16);
-  auto rtb    = new RtBuffer(RtgSlot::Slot0, EBufferFormat::RGBA8, miW, miH);
-  _defaultRTG->SetMrt(0, rtb);
-  auto texture = _defaultRTG->GetMrt(0)->texture();
+  _defaultRTG  = new RtGroup(this, miW, miH, 16);
+  auto rtb     = _defaultRTG->createRenderTarget(EBufferFormat::RGBA8);
+  auto texture = rtb->texture();
   FBI()->SetBufferTexture(texture);
 
   plato->_bindop = [=]() {
@@ -446,7 +434,7 @@ void* ContextGL::_doBeginLoad() {
   while (false == _loadTokens.try_pop(pvoiddat)) {
     usleep(1 << 10);
   }
-  GlxLoadContext* loadctx = (GlxLoadContext*)pvoiddat;
+  GlxLoadContext* loadctx    = (GlxLoadContext*)pvoiddat;
   GLFWwindow* current_window = glfwGetCurrentContext();
 
   loadctx->_pushedContext = current_window;
@@ -460,7 +448,7 @@ void ContextGL::_doEndLoad(void* ploadtok) {
   GlxLoadContext* loadctx = (GlxLoadContext*)ploadtok;
 
   auto pushed = loadctx->_pushedContext;
-   glfwMakeContextCurrent(pushed);
+  glfwMakeContextCurrent(pushed);
   _loadTokens.push(ploadtok);
 }
 

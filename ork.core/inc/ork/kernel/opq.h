@@ -1,22 +1,28 @@
-///////////////////////////////////////////////////////////////////////////////
-// Orkid - Copyright 2012 Michael T. Mayers
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #pragma once
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/kernel/concurrent_queue.h>
-#include <ork/kernel/any.h>
-#define _DEBUG_OPQ
-#include <ork/orkstl.h>
-#include <ork/util/Context.h>
-#include <ork/kernel/thread.h>
-
-#include <ork/kernel/atomic.h>
-
-#include <ork/kernel/mutex.h>
-#include <ork/kernel/semaphore.h>
+#include <unordered_map>
 #include <queue>
 #include <set>
+///////////////////////////////////////////////////////////////////////////////
+#include <ork/orkstl.h>
+#include <ork/kernel/concurrent_queue.h>
+#include <ork/kernel/any.h>
+#include <ork/kernel/thread.h>
+#include <ork/kernel/atomic.h>
+#include <ork/kernel/mutex.h>
+#include <ork/kernel/semaphore.h>
+#include <ork/util/Context.h>
+///////////////////////////////////////////////////////////////////////////////
 
+#define _DEBUG_OPQ
+///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 struct Future;
 void SetCurrentThreadName(const char* threadName);
@@ -207,6 +213,8 @@ struct OperationsQueue : public std::enable_shared_from_this<OperationsQueue> {
     OperationsQueue& _queue;
   };
 
+  using hooklambda_t = std::function<void(svar64_t)>;
+
   std::shared_ptr<InternalLock> scopedLock();
 
   void enqueue(const Op& the_op);
@@ -218,6 +226,9 @@ struct OperationsQueue : public std::enable_shared_from_this<OperationsQueue> {
 
   void _internalBeginLock();
   void _internalEndLock();
+
+  void setHook(std::string,hooklambda_t l);
+  void invokeHook(std::string,svar64_t);
 
   concurrency_group_ptr_t createConcurrencyGroup(const char* pname);
 
@@ -243,6 +254,10 @@ struct OperationsQueue : public std::enable_shared_from_this<OperationsQueue> {
   std::atomic<int> _numPendingOperations;
   std::string _name;
   std::string _debuginfo;
+
+  using hookmap_t = std::unordered_map<std::string,hooklambda_t>;
+
+  LockedResource<hookmap_t> _hooks;
 };
 
 //////////////////////////////////////////////////////////////////////

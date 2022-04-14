@@ -32,9 +32,9 @@ struct WrapNode final : public AstNode {
 
 struct SelectAstNode : public AstNode {
     SelectAstNode(Rvalue s,Rvalue a,Rvalue b)
-        : _s(s)
-        , _a(a)
-        , _b(b) {
+        : _a(a)
+        , _b(b) 
+        , _s(s) {
         check_bitwidths(a,b);
     }
     void emitVerilog(VerilogBackEnd* engine) const final {

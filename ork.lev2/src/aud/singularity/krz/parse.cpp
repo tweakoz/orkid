@@ -1,3 +1,9 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
 
 #include <ork/lev2/aud/singularity/synthdata.h>
 #include <ork/lev2/aud/singularity/synth.h>
@@ -369,20 +375,21 @@ int NoteFromString(const std::string& snote) {
 
 void BankData::parseFBlock(const Value& fseg, dspparam_ptr_t fblk) {
   //////////////////////////////////
+  using namespace std::string_literals;
 
   if (fseg.HasMember("PARAM_SCHEME")) {
     auto scheme = fseg["PARAM_SCHEME"].GetString();
-    if (scheme == "PCH")
+    if (scheme == "PCH"s)
       fblk->usePitchEvaluator();
-    else if (scheme == "AMP")
+    else if (scheme == "AMP"s)
       fblk->useAmplitudeEvaluator();
-    else if (scheme == "FRQ")
+    else if (scheme == "FRQ"s)
       fblk->useFrequencyEvaluator();
-    else if (scheme == "POS")
+    else if (scheme == "POS"s)
       fblk->useKrzPosEvaluator();
-    else if (scheme == "EVN")
+    else if (scheme == "EVN"s)
       fblk->useKrzEvnOddEvaluator();
-    else if (scheme == "ODD")
+    else if (scheme == "ODD"s)
       fblk->useKrzEvnOddEvaluator();
     else
       fblk->useDefaultEvaluator();

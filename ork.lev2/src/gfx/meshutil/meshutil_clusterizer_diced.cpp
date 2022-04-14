@@ -171,7 +171,7 @@ void XgmClusterizerDiced::End() {
     AABox bbox   = builder->_submesh.aabox();
     fvec3 vmin   = bbox.Min();
     fvec3 vmax   = bbox.Max();
-    float fdist  = (vmax - vmin).Mag();
+    float fdist  = (vmax - vmin).magnitude();
 
     int inumv = (int)builder->_submesh.RefVertexPool().GetNumVertices();
     orkprintf(

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -20,8 +20,8 @@ IndexBufferBase::IndexBufferBase()
 }
 
 IndexBufferBase::~IndexBufferBase() {
-  Context* pTARG = GfxEnv::GetRef().loadingContext();
-  // pTARG->GBI()->ReleaseIB( *this );
+  auto target = lev2::contextForCurrentThread();
+  // target->GBI()->ReleaseIB( *this );
   mpIndices = 0;
 }
 
@@ -132,13 +132,11 @@ VertexBufferBase::VertexBufferBase(int iMax, int iFlush, int iSize, PrimitiveTyp
     : miNumVerts(0)
     , miMaxVerts(iMax)
     , miVtxSize(iSize)
+    , miLockWriteIndex(0)
     , miFlushSize(iFlush)
     , mePrimType(eType)
     , meStreamFormat(eFmt)
-    , mhHandle(0)
-    , mhPBHandle(0)
     , mbLocked(false)
-    , miLockWriteIndex(0)
     , mbRingLock(false) {
 }
 
@@ -160,9 +158,9 @@ void VtxWriterBase::Lock(GeometryBufferInterface* GBI, VertexBufferBase* pVB, in
   int inewbase = ivbase + icount;
   if (bringlock) {
     if (inewbase > imax) {
-      ivbase   = 1;
+      //printf( "ringcyc vb<%p> ivbase<%d> icount<%d> imax<%d> \n", pVB, ivbase, icount, imax );
+      ivbase   = 0;
       inewbase = icount;
-      // printf( "ringcyc\n" );
     }
   } else {
     OrkAssert((ivbase + icount) <= imax);

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -48,6 +48,7 @@ XgmMaterialWriterContext::XgmMaterialWriterContext(Writer& w)
 }
 XgmMaterialReaderContext::XgmMaterialReaderContext(Reader& r)
     : _reader(r) {
+    _varmap = std::make_shared<varmap::VarMap>();
 }
 
 } // namespace chunkfile
@@ -83,9 +84,7 @@ TextureContext::TextureContext(const Texture* ptex, float repU, float repV)
 /////////////////////////////////////////////////////////////////////////
 
 GfxMaterial::GfxMaterial()
-    : miNumPasses(0)
-    , mRenderContexInstData(0)
-    , mMaterialName(AddPooledString("DefaultMaterial")) {
+    : mMaterialName(AddPooledString("DefaultMaterial")) {
   PushDebug(false);
 }
 

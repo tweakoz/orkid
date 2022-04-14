@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -217,14 +217,14 @@ void submeshTrianglesToQuads(const submesh& inpmesh, submesh& outmesh) {
 
                 // AD are corners
 
-                fvec4 VDelAC = (VPos[icorner0] - VPos[ilo0]).Normal();
-                fvec4 VDelAB = (VPos[icorner0] - VPos[ilo1]).Normal();
-                fvec4 VDelDC = (VPos[icorner1] - VPos[ilo0]).Normal();
-                fvec4 VDelBD = (VPos[ilo1] - VPos[icorner1]).Normal();
+                fvec4 VDelAC = (VPos[icorner0] - VPos[ilo0]).normalized();
+                fvec4 VDelAB = (VPos[icorner0] - VPos[ilo1]).normalized();
+                fvec4 VDelDC = (VPos[icorner1] - VPos[ilo0]).normalized();
+                fvec4 VDelBD = (VPos[ilo1] - VPos[icorner1]).normalized();
 
-                float fdotACBD = VDelAC.Dot(VDelBD); // quad is at least a parallelogram if ang(V02) == ang(V31)
-                float fdotACAB = VDelAC.Dot(VDelAB); // quad is rectangular if V01 is perpendicular to V02
-                float fdotDCBD = VDelDC.Dot(VDelBD); // quad is rectangular if V01 is perpendicular to V02
+                float fdotACBD = VDelAC.dotWith(VDelBD); // quad is at least a parallelogram if ang(V02) == ang(V31)
+                float fdotACAB = VDelAC.dotWith(VDelAB); // quad is rectangular if V01 is perpendicular to V02
+                float fdotDCBD = VDelDC.dotWith(VDelBD); // quad is rectangular if V01 is perpendicular to V02
 
                 // make sure its a rectangular quad by comparing edge directions
 
@@ -240,7 +240,7 @@ void submeshTrianglesToQuads(const submesh& inpmesh, submesh& outmesh) {
                   fplane3 P3;
                   P3.CalcPlaneFromTriangle(VPos[icorner0], VPos[ilo0], VPos[ilo1]);
 
-                  float fdot = P3.n.Dot(P0.n);
+                  float fdot = P3.n.dotWith(P0.n);
 
                   //////////////////////////////////////
 

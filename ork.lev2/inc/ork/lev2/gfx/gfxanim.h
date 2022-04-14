@@ -1,12 +1,13 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
 #pragma once
 
+#include <ork/lev2/lev2_types.h>
 #include <ork/math/cmatrix4.h>
 #include <ork/math/box.h>
 #include <ork/file/path.h>
@@ -15,22 +16,10 @@
 
 namespace ork { namespace lev2 {
 
-class XgmAnim;
-class XgmSkeleton;
-class XgmAnimInst;
-class XgmLocalPose;
-class XgmWorldPose;
-class XgmAnimChannel;
-class XgmModelInst;
-class XgmModel;
-class GfxMaterial;
-class MaterialInstItem;
-typedef orkmap<int, int> TXGMBoneRegMap;
-typedef ork::lev2::XgmAnimChannel AnimChannelType;
-typedef XgmAnim AnimType;
-typedef orkmap<PoolString, ork::lev2::AnimChannelType*> AnimChannelsMap;
-
-using animchannel_ptr_t = std::shared_ptr<XgmAnimChannel>;
+using TXGMBoneRegMap  = orkmap<int, int>;
+using AnimChannelType = XgmAnimChannel;
+using AnimType        = XgmAnim;
+using AnimChannelsMap = orkmap<PoolString, ork::lev2::AnimChannelType*>;
 
 /// ///////////////////////////////////////////////////////////////////////////
 /// Animation Channel
@@ -69,7 +58,7 @@ public:
   const PoolString& GetUsageSemantic() const {
     return mUsageSemantic;
   }
-  virtual int GetNumFrames() const = 0;
+  virtual size_t numFrames() const = 0;
 
   void SetChannelName(const PoolString& name) {
     mChannelName = name;
@@ -94,25 +83,25 @@ protected:
 class XgmFloatAnimChannel : public XgmAnimChannel {
   DeclareConcreteX(XgmFloatAnimChannel, XgmAnimChannel);
 
-  orkvector<float> mSampledFrames;
+  orkvector<float> _sampledFrames;
 
 public:
   XgmFloatAnimChannel(const PoolString& ObjName, const PoolString& ChanName, const PoolString& Usage);
   XgmFloatAnimChannel();
 
-  void AddFrame(float v) {
-    mSampledFrames.push_back(v);
+  void setFrame(size_t i, float v) {
+    _sampledFrames[i] = v;
   }
   float GetFrame(int index) const {
-    return mSampledFrames[index];
+    return _sampledFrames[index];
   }
-  void ReserveFrames(int iv) {
-    mSampledFrames.reserve(iv);
+  void reserveFrames(size_t iv) {
+    _sampledFrames.reserve(iv);
   }
 
 private:
-  int GetNumFrames() const final {
-    return int(mSampledFrames.size());
+  size_t numFrames() const final {
+    return int(_sampledFrames.size());
   }
 };
 
@@ -121,25 +110,25 @@ private:
 class XgmVect3AnimChannel : public XgmAnimChannel {
   DeclareConcreteX(XgmVect3AnimChannel, XgmAnimChannel);
 
-  orkvector<fvec3> mSampledFrames;
+  orkvector<fvec3> _sampledFrames;
 
 public:
   XgmVect3AnimChannel(const PoolString& ObjName, const PoolString& ChanName, const PoolString& Usage);
   XgmVect3AnimChannel();
 
-  void AddFrame(const fvec3& v) {
-    mSampledFrames.push_back(v);
+  void setFrame(size_t i, const fvec3& v) {
+    _sampledFrames[i] = v;
   }
-  const fvec3& GetFrame(int index) const {
-    return mSampledFrames[index];
+  fvec3 GetFrame(int index) const {
+    return _sampledFrames[index];
   }
-  void ReserveFrames(int iv) {
-    mSampledFrames.reserve(iv);
+  void reserveFrames(size_t iv) {
+    _sampledFrames.reserve(iv);
   }
 
 private:
-  int GetNumFrames() const final {
-    return int(mSampledFrames.size());
+  size_t numFrames() const final {
+    return int(_sampledFrames.size());
   }
 };
 
@@ -148,25 +137,25 @@ private:
 class XgmVect4AnimChannel : public XgmAnimChannel {
   DeclareConcreteX(XgmVect4AnimChannel, XgmAnimChannel);
 
-  orkvector<fvec4> mSampledFrames;
+  orkvector<fvec4> _sampledFrames;
 
 public:
   XgmVect4AnimChannel(const PoolString& ObjName, const PoolString& ChanName, const PoolString& Usage);
   XgmVect4AnimChannel();
 
-  void AddFrame(const fvec4& v) {
-    mSampledFrames.push_back(v);
+  void setFrame(size_t i, const fvec4& v) {
+    _sampledFrames[i] = v;
   }
-  const fvec4& GetFrame(int index) const {
-    return mSampledFrames[index];
+  fvec4 GetFrame(int index) const {
+    return _sampledFrames[index];
   }
-  void ReserveFrames(int iv) {
-    mSampledFrames.reserve(iv);
+  void reserveFrames(size_t iv) {
+    _sampledFrames.reserve(iv);
   }
 
 private:
-  int GetNumFrames() const final {
-    return int(mSampledFrames.size());
+  size_t numFrames() const final {
+    return int(_sampledFrames.size());
   }
 };
 
@@ -200,20 +189,18 @@ class XgmDecompAnimChannel : public XgmAnimChannel {
 
   DeclareConcreteX(XgmDecompAnimChannel, XgmAnimChannel);
 
-  int GetNumFrames() const final;
+  size_t numFrames() const final;
 
 protected:
-  DecompMtx44* mSampledFrames;
-  int miNumFrames;
-  int miAddIndex;
+  ork::vector<DecompMtx44> _sampledFrames;
 
 public:
   XgmDecompAnimChannel(const PoolString& ObjName, const PoolString& ChanName, const PoolString& Usage);
   XgmDecompAnimChannel();
 
-  void AddFrame(const DecompMtx44& v);
-  const DecompMtx44& GetFrame(int index) const;
-  void ReserveFrames(int iv);
+  void setFrame(size_t i, const DecompMtx44& v);
+  DecompMtx44 GetFrame(int index) const;
+  void reserveFrames(size_t iv);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -222,20 +209,18 @@ class XgmMatrixAnimChannel : public XgmAnimChannel {
 
   DeclareConcreteX(XgmMatrixAnimChannel, XgmAnimChannel);
 
-  int GetNumFrames() const final;
+  size_t numFrames() const final;
 
 protected:
-  fmtx4* mSampledFrames;
-  int miNumFrames;
-  int miAddIndex;
+  ork::vector<fmtx4> _sampledFrames;
 
 public:
   XgmMatrixAnimChannel(const PoolString& ObjName, const PoolString& ChanName, const PoolString& Usage);
   XgmMatrixAnimChannel();
 
-  void AddFrame(const fmtx4& v);
-  const fmtx4& GetFrame(int index) const;
-  void ReserveFrames(int iv);
+  void setFrame(size_t i, const fmtx4& v);
+  fmtx4 GetFrame(int index) const;
+  void reserveFrames(size_t iv);
 };
 
 /// ///////////////////////////////////////////////////////////////////////////
@@ -257,9 +242,15 @@ public:
   //////////////////////////
 
   static bool LoadUnManaged(XgmAnim* mdl, const AssetPath& fname);
-  static bool Save(const file::Path& AnimFile, const XgmAnim* panm);
+  static datablock_ptr_t Save(const XgmAnim* panm);
 
   static bool unloadUnManaged(XgmAnim* mdl);
+
+  //////////////////////////
+
+  static bool _loaderSelect(XgmAnim* mdl, datablock_ptr_t dblock);
+  static bool _loadXGA(XgmAnim* mdl, datablock_ptr_t dblock);
+  static bool _loadAssimp(XgmAnim* mdl, datablock_ptr_t dblock);
 
   //////////////////////////
 
@@ -356,6 +347,10 @@ private:
 public:
   XgmAnimInst();
 
+  const XgmAnim* anim() const {
+    return mAnim;
+  }
+
   void BindAnim(const XgmAnim* anim);
   const XgmAnim* GetAnim() const {
     return mAnim;
@@ -439,17 +434,17 @@ struct XgmSkelNode {
 
   ///////////////////////////
 
+  XgmSkelNode* _parent  = nullptr;
+  int miSkelIndex       = -1;
+  int _numBoundVertices = 0;
+
   std::string _name;
   fmtx4 _bindMatrixInverse;
   fmtx4 _bindMatrix;
   fmtx4 _jointMatrix;
   fmtx4 _nodeMatrix;
-  int _numBoundVertices;
   fmtx4 _assimpOffsetMatrix;
-
-  XgmSkelNode* _parent = nullptr;
   orkvector<XgmSkelNode*> mChildren;
-  int miSkelIndex = -1;
   ork::varmap::VarMap _varmap;
 };
 
@@ -691,25 +686,25 @@ struct XgmSkeleton {
 
   /////////////////////////////////////
 
-  orkvector<fmtx4> _inverseBindMatrices;
-  orkvector<fmtx4> _jointMatrices;
-  orkvector<fmtx4> _nodeMatrices;
-  int miNumJoints;
-  orkvector<PoolString> mvJointNameVect;
-  orkvector<XgmBone> _bones;
-  orkvector<int> maJointParents;
+  XgmSkelNode* mpRootNode = nullptr;
+  void* mpUserData        = nullptr;
+
+  int miNumJoints = 0;
+  int miRootNode  = -1;
+
   PoolString msSkelName;
-
-  int miRootNode;
-  XgmSkelNode* mpRootNode;
-
-  orklut<PoolString, int> mmJointNameMap;
 
   fvec4 mBoundMin;
   fvec4 mBoundMax;
-  void* mpUserData;
-
   fmtx4 mBindShapeMatrix;
   fmtx4 mTopNodesMatrix;
+
+  orkvector<fmtx4> _inverseBindMatrices;
+  orkvector<fmtx4> _jointMatrices;
+  orkvector<fmtx4> _nodeMatrices;
+  orkvector<PoolString> mvJointNameVect;
+  orkvector<XgmBone> _bones;
+  orkvector<int> maJointParents;
+  orklut<PoolString, int> mmJointNameMap;
 };
 }} // namespace ork::lev2

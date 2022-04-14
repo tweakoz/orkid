@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -20,9 +20,7 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 XgmSkelNode::XgmSkelNode(const std::string& Name)
-    : _name(Name)
-    , _parent(0)
-    , _numBoundVertices(0) {
+    : _name(Name) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -174,12 +172,7 @@ bool XgmSkelNode::isDescendantOf(XgmSkelNode* testnode) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-XgmSkeleton::XgmSkeleton()
-    : miNumJoints(0)
-    , maJointParents(0)
-    , mpUserData(0)
-    , miRootNode(-1)
-    , mpRootNode(0) {
+XgmSkeleton::XgmSkeleton() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -206,8 +199,8 @@ float XgmSkeleton::boneLength(int ibone) const {
   auto bone = _bones[ibone];
   auto pmtx = _inverseBindMatrices[bone._parentIndex].inverse();
   auto cmtx = _inverseBindMatrices[bone._childIndex].inverse();
-  auto ppos = pmtx.GetTranslation();
-  auto cpos = cmtx.GetTranslation();
+  auto ppos = pmtx.translation();
+  auto cpos = cmtx.translation();
   return (cpos - ppos).length();
 }
 

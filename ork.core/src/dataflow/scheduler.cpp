@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 //////////////////////////////////////////////////////////////// 
@@ -27,8 +27,8 @@ const Affinity scheduler::CpuAffinity = 0xffff;
 const Affinity scheduler::GpuAffinity = 0x10000;
 
 workunit::workunit( dgmodule* pmod, cluster* pclus, int imwuidx )
-	: mpModule( pmod )
-	, mAffinity( 0 )
+	: mAffinity( 0 )
+	, mpModule( pmod )
 	, mModuleWuIndex(imwuidx)
 	, mCluster(pclus)
 {
@@ -40,8 +40,8 @@ workunit::workunit( dgmodule* pmod, cluster* pclus, int imwuidx )
 ///////////////////////////////////////////////////////////////////////////////
 
 cluster::cluster()
-	: miNumWorkUnitsDone(0)
-	, miNumWorkUnitsAssigned(0)
+	: miNumWorkUnitsAssigned(0)
+	, miNumWorkUnitsDone(0)
 	, miNumWorkUnits(0)
 {
 }

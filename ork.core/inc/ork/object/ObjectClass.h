@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -13,7 +13,7 @@
 #include <boost/uuid/uuid.hpp>
 
 namespace ork::reflect {
-class ObjectProperty;
+struct ObjectProperty;
 }
 namespace ork { namespace object {
 
@@ -26,7 +26,7 @@ struct PropertyModifier {
   reflect::ObjectProperty* _property = nullptr;
 };
 
-class ObjectClass : public rtti::Class {
+struct ObjectClass : public rtti::Class {
   RttiDeclareExplicit(ObjectClass, rtti::Class, rtti::NamePolicy, ObjectCategory) public : ObjectClass(const rtti::RTTIData&);
 
 public:
@@ -60,6 +60,16 @@ public:
 
   template <typename ClassType, typename MemberType>
   inline PropertyModifier directObjectMapProperty(
+      const char* name, //
+      MemberType ClassType::*member);
+
+  template <typename ClassType, typename MemberType>
+  inline PropertyModifier directObjectVectorProperty(
+      const char* name, //
+      MemberType ClassType::*member);
+
+  template <typename ClassType, typename MemberType>
+  inline PropertyModifier directTypedObjectMapProperty(
       const char* name, //
       MemberType ClassType::*member);
 

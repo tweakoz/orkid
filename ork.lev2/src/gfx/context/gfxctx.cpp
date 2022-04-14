@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -61,11 +61,18 @@ void Context::beginFrame(void) {
   mRenderContextInstData = 0;
 
   _doBeginFrame();
+
+  for (auto l : _onBeginFrameCallbacks)
+    l();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void Context::endFrame(void) {
+
+  for (auto l : _onEndFrameCallbacks)
+    l();
+
   GBI()->EndFrame();
   MTXI()->PopMMatrix();
   MTXI()->PopVMatrix();
@@ -82,18 +89,14 @@ void Context::endFrame(void) {
 /////////////////////////////////////////////////////////////////////////
 
 Context::Context()
-    : miModColorStackIndex(0)
-    , mbPostInitializeContext(true)
-    , mCtxBase(nullptr)
-    , mpCurrentObject(nullptr)
-    , mFramePerfItem(CreateFormattedString("<target:%p>", this))
+    : meTargetType(TargetType::NONE)
     , miW(0)
     , miH(0)
+    , miModColorStackIndex(0)
     , miTargetFrame(0)
-    , mRenderContextInstData(nullptr)
     , miDrawLock(0)
-    , mPlatformHandle(nullptr)
-    , meTargetType(TargetType::NONE) {
+    , mbPostInitializeContext(true)
+    , mFramePerfItem(CreateFormattedString("<target:%p>", this)) {
 
   static CompositingData _gdata;
   static auto _gimpl = _gdata.createImpl();

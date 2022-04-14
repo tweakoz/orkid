@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -14,7 +14,7 @@
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
-class AABox {
+struct AABox {
 
   fvec3 mMin;
   fvec3 mMax;
@@ -25,7 +25,6 @@ class AABox {
 
   void ComputePlanes();
 
-public:
   void SupportMapping(const fvec3 &v, fvec3 &result) const;
 
   fvec3 Corner(int n) const;
@@ -44,6 +43,9 @@ public:
   inline const fvec3 &Min() const { return mMin; }
   inline const fvec3 &Max() const { return mMax; }
   inline fvec3 GetSize() const { return Max() - Min(); }
+
+  fvec3 center() const;
+  fvec3 size() const;
 
   void BeginGrow();
   void Grow(const fvec3 &vin);

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -54,17 +54,14 @@ void OutputBus::resize(int numframes) {
 ///////////////////////////////////////////////////////////////////////////////
 void OutputBus::setBusDSP(lyrdata_ptr_t ld) {
 
-  assert(ld->_algdata!=nullptr);
+  assert(ld->_algdata != nullptr);
 
-  if (_dsplayer) {
-    delete _dsplayer;
-    _dsplayer = nullptr;
-  }
+  _dsplayer = nullptr;
 
   _dsplayerdata        = ld;
-  auto l               = new Layer;
+  auto l               = std::make_shared<Layer>();
   l->_is_bus_processor = true;
-  l->keyOn(0, 0, _dsplayerdata); // outbus layer always keyed on...
+  synth::instance()->_keyOnLayer(l,0, 0, _dsplayerdata); // outbus layer always keyed on...
   _dsplayer = l;
 }
 scopesource_ptr_t OutputBus::createScopeSource() {
@@ -73,9 +70,15 @@ scopesource_ptr_t OutputBus::createScopeSource() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+synth_ptr_t synth::_instance;
+void synth::bringUp() {
+  _instance = std::make_shared<synth>();
+}
+void synth::tearDown() {
+  _instance = nullptr;
+}
 synth_ptr_t synth::instance() {
-  static auto the_syn = std::make_shared<synth>();
-  return the_syn;
+  return _instance;
 }
 ///////////////////////////////////////////////////////////////////////////////
 outbus_ptr_t synth::createOutputBus(std::string named) {
@@ -93,10 +96,10 @@ outbus_ptr_t synth::outputBus(std::string named) const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 synth::synth()
-    : _sampleRate(0.0f)
+    : _timeaccum(0.0f)
+    , _sampleRate(0.0f)
     , _dt(0.0f)
     , _soloLayer(-1)
-    , _timeaccum(0.0f)
     , _hudpage(0)
     , _masterGain(1.0f) { //
   _fxcurpreset = _fxpresets.rbegin().base();
@@ -111,7 +114,7 @@ synth::synth()
   nextEffect();
 
   for (int i = 0; i < kmaxlayerspersynth; i++) {
-    auto l = new Layer();
+    auto l = std::make_shared<Layer>();
     _allVoices.insert(l);
     _freeVoices.insert(l);
   }
@@ -137,8 +140,24 @@ void synth::setSampleRate(float sr) {
 ///////////////////////////////////////////////////////////////////////////////
 
 synth::~synth() {
-  for (auto v : _allVoices)
-    delete v;
+
+  _allVoices.clear();
+  _freeVoices.clear();
+  _activeVoices.clear();
+  _pendactVoices.clear();
+ // _deactiveateVoiceQ.clear();
+  _freeProgInst.atomicOp([](proginstset_t& unlocked){
+    unlocked.clear();
+  });
+  _activeProgInst.atomicOp([](proginstset_t& unlocked){
+    unlocked.clear();
+  });
+
+  _hudsample_map.clear();
+  _fxpresets.clear();
+  _outputBusses.clear();
+  _onkey_subscribers.clear();
+
   for (auto pi : _allProgInsts)
     delete pi;
 }
@@ -170,7 +189,7 @@ void synth::_tick(eventmap_t& emap, float elapsed_this_tick) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Layer* synth::allocLayer() {
+layer_ptr_t synth::allocLayer() {
   auto it = _freeVoices.begin();
   assert(it != _freeVoices.end());
   auto l = *it;
@@ -184,8 +203,13 @@ Layer* synth::allocLayer() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void synth::freeLayer(Layer* l) {
-  _deactiveateVoiceQ.push(l);
+void synth::releaseLayer(layer_ptr_t l) {
+  if ((--l->_keepalive) == 0) {
+    // printf("LAYER<%p> DONE\n", this);
+    _deactiveateVoiceQ.push(l);
+  }
+  assert(l->_keepalive >= 0);
+  // printf( "layer<%p> release cnt<%d>\n", this, _keepalive );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -598,6 +622,88 @@ programInst::programInst()
 programInst::~programInst() {
 }
 
+
+///////////////////////////////////////////////////////////////////////////////
+
+void synth::_keyOnLayer(layer_ptr_t l, int note, int velocity, lyrdata_ptr_t ld){
+  std::lock_guard<std::mutex> lock(l->_mutex);
+
+  l->reset();
+
+  assert(ld != nullptr);
+
+  l->_koi._layer = l;
+  l->_koi._key       = note;
+  l->_koi._vel       = velocity;
+  l->_koi._layerdata = ld;
+
+  l->_HKF._miscText   = "";
+  l->_HKF._note       = note;
+  l->_HKF._vel        = velocity;
+  l->_HKF._layerdata  = ld;
+  l->_HKF._layerIndex = l->_ldindex;
+  l->_HKF._useFm4     = false;
+
+  l->_layerBasePitch = clip_float(note * 100, -0, 12700);
+
+  l->_ignoreRelease = ld->_ignRels;
+  l->_curnote       = note;
+  l->_layerdata     = ld;
+  l->_outbus        = this->outputBus(ld->_outbus);
+  l->_layerLinGain  = ld->_layerLinGain;
+
+  l->_curvel = velocity;
+
+  l->_layerTime = 0.0f;
+
+  l->retain();
+
+  /////////////////////////////////////////////
+  // controllers
+  /////////////////////////////////////////////
+
+  if (ld->_ctrlBlock) {
+    l->_ctrlBlock = std::make_shared<ControlBlockInst>();
+    l->_ctrlBlock->keyOn(l->_koi, ld->_ctrlBlock);
+  }
+
+  ///////////////////////////////////////
+
+  l->_alg = l->_layerdata->_algdata->createAlgInst();
+  // assert(_alg);
+  if (l->_alg) {
+    l->_alg->keyOn(l->_koi);
+  }
+
+  l->_HKF._alg = l->_alg;
+
+  ///////////////////////////////////////
+
+  l->_lyrPhase = 0;
+  l->_sinrepPH = 0.0f;
+
+}
+void synth::_keyOffLayer(layer_ptr_t l){
+  l->_lyrPhase = 1;
+  this->releaseLayer(l);
+
+  ///////////////////////////////////////
+
+  if (l->_ctrlBlock)
+    l->_ctrlBlock->keyOff();
+
+  ///////////////////////////////////////
+
+  if (l->_ignoreRelease)
+    return;
+
+  ///////////////////////////////////////
+
+  if (l->_alg)
+    l->_alg->keyOff();
+
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void programInst::keyOn(int note, int velocity, prgdata_constptr_t pd) {
@@ -631,7 +737,8 @@ void programInst::keyOn(int note, int velocity, prgdata_constptr_t pd) {
 
     assert(ld != nullptr);
 
-    l->keyOn(note, velocity, ld);
+    syn->_keyOnLayer(l,note,velocity,ld);
+
     _layers.push_back(l);
   }
   int inuml = _layers.size();
@@ -652,7 +759,7 @@ void programInst::keyOn(int note, int velocity, prgdata_constptr_t pd) {
 
 void programInst::keyOff() {
   for (auto l : _layers)
-    l->keyOff();
+    synth::instance()->_keyOffLayer(l);
   _layers.clear();
 }
 

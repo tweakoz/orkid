@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 //#include <audiofile.h>
 #include <string>
 #include <assert.h>
@@ -125,18 +132,18 @@ void SAMPLER::doKeyOff() // final
 
 sample::sample()
     : _sampleBlock(nullptr)
-    , _loopPoint(0)
-    , _subid(0)
-    , _sampleRate(0.0f)
-    , _rootKey(0)
-    , _loopMode(eLoopMode::NOTSET)
-    , _linGain(1.0f)
-    , _highestPitch(0)
     , _blk_start(0)
     , _blk_alt(0)
     , _blk_loopstart(0)
     , _blk_loopend(0)
-    , _blk_end(0) {
+    , _blk_end(0) 
+    , _loopPoint(0)
+    , _subid(0)
+    , _sampleRate(0.0f)
+    , _linGain(1.0f)
+    , _rootKey(0)
+    , _highestPitch(0) 
+    , _loopMode(eLoopMode::NOTSET) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -330,7 +337,7 @@ void sampleOsc::keyOn(const KeyOnInfo& koi) {
   // printf( "osc<%p> sroot<%d> SR<%d> ratio<%f> PBR<%d> looped<%d>\n", this, _sample->_rootKey, int(_sample->_sampleRate),
   // _curratio, int(_playbackRate), int(_isLooped) );
   printf("sample<%s>\n", _sample->_name.c_str());
-  printf("sampleBlock<%p>\n", _sample->_sampleBlock);
+  printf("sampleBlock<%p>\n", (void*) _sample->_sampleBlock);
   printf("st<%d> en<%d>\n", _sample->_blk_start, _sample->_blk_end);
   printf("lpst<%d> lpend<%d>\n", _sample->_blk_loopstart, _sample->_blk_loopend);
   _active = true;
@@ -358,7 +365,7 @@ void sampleOsc::keyOn(const KeyOnInfo& koi) {
 void sampleOsc::keyOff() {
 
   _released = true;
-  printf("osc<%p> beginRelease\n", this);
+  printf("osc<%p> beginRelease\n", (void*) this);
 
   if (_enableNatEnv)
     _natAmpEnv.keyOff();

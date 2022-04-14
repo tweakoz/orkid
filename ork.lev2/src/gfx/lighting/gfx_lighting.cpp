@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -39,14 +39,20 @@ bool Light::isShadowCaster() const {
   return _data->IsShadowCaster();
 }
 float Light::distance(fvec3 pos) const {
-  return (worldPosition() - pos).Mag();
+  return (worldPosition() - pos).magnitude();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void LightData::describeX(class_t* c) {
 
-  c->directProperty("Color", &LightData::mColor);
+  c->directProperty("Color", &LightData::mColor)
+      ->annotate<ConstString>("editor.type", "color" );
+
+  c->directProperty("Intensity", &LightData::_intensity)
+      ->annotate<float>("editor.range.min", 0)
+      ->annotate<float>("editor.range.max", 10000);
+
   c->directProperty("ShadowCaster", &LightData::mbShadowCaster);
   c->directProperty("Decal", &LightData::_decal);
 
@@ -54,29 +60,30 @@ void LightData::describeX(class_t* c) {
       ->annotate<ConstString>("editor.range.log", "true");
   c->floatProperty("ShadowBlur", float_range{0.0, 1.0}, &LightData::mShadowBlur);
   c->directProperty("ShadowMapSize", &LightData::_shadowMapSize)
-      ->annotate<ConstString>("editor.range.min", "128")
-      ->annotate<ConstString>("editor.range.max", "4096");
+      ->annotate<int>("editor.range.min", 128)
+      ->annotate<int>("editor.range.max", 4096);
   c->directProperty("ShadowSamples", &LightData::_shadowsamples)
-      ->annotate<ConstString>("editor.range.min", "1")
-      ->annotate<ConstString>("editor.range.max", "16");
+      ->annotate<int>("editor.range.min", 1)
+      ->annotate<int>("editor.range.max", 16);
 
-  c->directProperty(
+  /*c->directProperty(
        "Cookie",
        &LightData::_cookie) //
       ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
       ->annotate<ConstString>("editor.assettype", "lev2tex")
-      ->annotate<ConstString>("editor.assetclass", "lev2tex");
+      ->annotate<ConstString>("editor.assetclass", "lev2tex");*/
 }
 
 LightData::LightData()
     : mColor(1.0f, 0.0f, 0.0f)
+    , _intensity(1)
     , mbShadowCaster(false)
     , _shadowsamples(1)
     , mShadowBlur(0.0f)
     , mShadowBias(0.002f) {
 }
 
-lev2::Texture* LightData::cookie() const {
+lev2::texture_ptr_t LightData::cookie() const {
   auto as_tex = std::dynamic_pointer_cast<TextureAsset>(_cookie);
   return as_tex ? as_tex->GetTexture() : nullptr;
 }
@@ -91,10 +98,25 @@ void PointLightData::describeX(class_t* c) {
   c->floatProperty("Falloff", float_range{1, 10}, &PointLightData::_falloff)->annotate<ConstString>("editor.range.log", "true");
 }
 
+drawable_ptr_t PointLightData::createDrawable() const {
+  return std::make_shared<PointLight>(this);
+}
+
+pointlightdata_ptr_t PointLightData::instantiate(){
+  return std::make_shared<PointLightData>();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 PointLight::PointLight(xform_generator_t mtx, const PointLightData* pld)
     : Light(mtx, pld)
+    , _pldata(pld) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+PointLight::PointLight(const PointLightData* pld)
+    : Light(pld)
     , _pldata(pld) {
 }
 
@@ -114,7 +136,7 @@ bool PointLight::IsInFrustum(const Frustum& frustum) {
 ///////////////////////////////////////////////////////////
 
 bool PointLight::AffectsSphere(const fvec3& center, float radius_) {
-  float dist          = (worldPosition() - center).Mag();
+  float dist          = (worldPosition() - center).magnitude();
   float combinedradii = (radius_ + radius());
   return (dist < combinedradii);
 }
@@ -129,7 +151,7 @@ bool PointLight::AffectsAABox(const AABox& aab) {
 
 bool PointLight::AffectsCircleXZ(const Circle& cirXZ) {
   fvec3 center(cirXZ.mCenter.x, worldPosition().y, cirXZ.mCenter.y);
-  float dist          = (worldPosition() - center).Mag();
+  float dist          = (worldPosition() - center).magnitude();
   float combinedradii = (cirXZ.mRadius + radius());
   return (dist < combinedradii);
 }
@@ -144,7 +166,17 @@ DirectionalLight::DirectionalLight(xform_generator_t mtx, const DirectionalLight
 
 ///////////////////////////////////////////////////////////////////////////////
 
+DirectionalLight::DirectionalLight(const DirectionalLightData* dld)
+    : Light(dld) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void DirectionalLightData::describeX(class_t* c) {
+}
+
+drawable_ptr_t DirectionalLightData::createDrawable() const {
+  return std::make_shared<DirectionalLight>(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -157,9 +189,16 @@ bool DirectionalLight::IsInFrustum(const Frustum& frustum) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-AmbientLight::AmbientLight(xform_generator_t mtx, const AmbientLightData* dld)
-    : Light(mtx, dld)
-    , mAld(dld) {
+AmbientLight::AmbientLight(xform_generator_t mtx, const AmbientLightData* ald)
+    : Light(mtx, ald)
+    , mAld(ald) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+AmbientLight::AmbientLight(const AmbientLightData* ald)
+    : Light(ald)
+    , mAld(ald) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -167,6 +206,10 @@ AmbientLight::AmbientLight(xform_generator_t mtx, const AmbientLightData* dld)
 void AmbientLightData::describeX(class_t* c) {
   c->floatProperty("AmbientShade", float_range{0, 1}, &AmbientLightData::mfAmbientShade);
   c->directProperty("HeadlightDir", &AmbientLightData::mvHeadlightDir);
+}
+
+drawable_ptr_t AmbientLightData::createDrawable() const {
+  return std::make_shared<AmbientLight>(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -192,13 +235,21 @@ SpotLightData::SpotLightData()
     , mRange(1.0f) {
 }
 
+drawable_ptr_t SpotLightData::createDrawable() const {
+  return std::make_shared<SpotLight>(this);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
+
+SpotLight::SpotLight(const SpotLightData* sld)
+    : Light(sld)
+    , _SLD(sld)
+    , _shadowmapDim(0) {
+}
 
 SpotLight::SpotLight(xform_generator_t mtx, const SpotLightData* sld)
     : Light(mtx, sld)
     , _SLD(sld)
-    , _shadowRTG(nullptr)
-    , _shadowIRT(nullptr)
     , _shadowmapDim(0) {
 }
 
@@ -217,9 +268,9 @@ RtGroupRenderTarget* SpotLight::rendertarget(Context* ctx) {
 
 bool SpotLight::IsInFrustum(const Frustum& frustum) {
   const auto& mtx = worldMatrix();
-  fvec3 pos       = mtx.GetTranslation();
-  fvec3 tgt       = pos + mtx.GetZNormal() * GetRange();
-  fvec3 up        = mtx.GetYNormal();
+  fvec3 pos       = mtx.translation();
+  fvec3 tgt       = pos + mtx.zNormal() * GetRange();
+  fvec3 up        = mtx.yNormal();
   float fovy      = 15.0f;
 
   set(pos, tgt, up, fovy);
@@ -238,8 +289,8 @@ void SpotLight::set(const fvec3& pos, const fvec3& tgt, const fvec3& up, float f
 
   // mWorldSpaceDirection.Normalize();
 
-  mProjectionMatrix.Perspective(GetFovy(), 1.0, GetRange() / float(1000.0f), GetRange());
-  mViewMatrix.LookAt(pos.x, pos.y, pos.z, tgt.x, tgt.y, tgt.z, up.x, up.y, up.z);
+  mProjectionMatrix.perspective(GetFovy(), 1.0, GetRange() / float(1000.0f), GetRange());
+  mViewMatrix.lookAt(pos.x, pos.y, pos.z, tgt.x, tgt.y, tgt.z, up.x, up.y, up.z);
   // mFovy = fovy;
 
   mWorldSpaceLightFrustum.set(mViewMatrix, mProjectionMatrix);
@@ -276,11 +327,11 @@ fmtx4 SpotLight::shadowMatrix() const {
   float aspect = 1.0;
   fvec3 wnx, wny, wnz, wpos;
   matW.toNormalVectors(wnx, wny, wnz);
-  wpos      = matW.GetTranslation();
+  wpos      = matW.translation();
   fvec3 ctr = wpos + wnz * 0.01;
   fmtx4 matV, matP;
-  matV.LookAt(wpos, ctr, wny);
-  matP.Perspective(fovy, aspect, near, far);
+  matV.lookAt(wpos, ctr, wny);
+  matP.perspective(fovy, aspect, near, far);
   return matV * matP;
 }
 
@@ -294,7 +345,7 @@ CameraData SpotLight::shadowCamDat() const {
   float aspect = 1.0;
   fvec3 wnx, wny, wnz, wpos;
   matW.toNormalVectors(wnx, wny, wnz);
-  wpos      = matW.GetTranslation();
+  wpos      = matW.translation();
   fvec3 ctr = wpos + wnz * 0.01;
 
   rval.mEye       = wpos;

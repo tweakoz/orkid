@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -10,6 +10,7 @@
 #include "LambdaTyped.inl"
 #include "DirectObject.inl"
 #include "DirectObjectMap.inl"
+#include "DirectObjectVector.inl"
 #include "DirectTypedArray.hpp"
 #include "DirectTypedVector.hpp"
 #include "AccessorTyped.hpp"
@@ -52,6 +53,20 @@ inline object::PropertyModifier object::ObjectClass::directMapProperty(
   return modder;
 }
 ///////////////////////////////////////////////////////////////////////////
+template <typename ClassType, typename MemberMapType>
+inline object::PropertyModifier object::ObjectClass::directTypedObjectMapProperty(
+    const char* name, //
+    MemberMapType ClassType::*member) {
+  object::PropertyModifier modder;
+  auto typed_member = static_cast<MemberMapType Object::*>(member);
+  using key_type = typename MemberMapType::key_type;
+  using mapped_type = typename MemberMapType::mapped_type;
+  //auto casted_member = static_cast<MemberMapType Object::*>(member);
+  modder._property  = new reflect::DirectObjectMap<MemberMapType>(typed_member);
+  _description.addProperty(name, modder._property);
+  return modder;
+}
+///////////////////////////////////////////////////////////////////////////
 template <typename ClassType, typename MemberArrayType>
 inline object::PropertyModifier object::ObjectClass::directArrayProperty(
     const char* name, //
@@ -79,6 +94,15 @@ inline object::PropertyModifier object::ObjectClass::directObjectMapProperty(con
   object::PropertyModifier modder;
   auto typed_member = static_cast<MemberType Object::*>(member);
   modder._property  = new reflect::DirectObjectMap(typed_member);
+  _description.addProperty(name, modder._property);
+  return modder;
+}
+///////////////////////////////////////////////////////////////////////////
+template <typename ClassType, typename MemberType>
+inline object::PropertyModifier object::ObjectClass::directObjectVectorProperty(const char* name, MemberType ClassType::*member) {
+  object::PropertyModifier modder;
+  auto typed_member = static_cast<MemberType Object::*>(member);
+  modder._property  = new reflect::DirectObjectVector(typed_member);
   _description.addProperty(name, modder._property);
   return modder;
 }

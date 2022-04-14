@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -22,12 +22,79 @@
 #include <ork/math/collision_test.h>
 #include <ork/stream/ResizableStringOutputStream.h>
 #include <ork/kernel/string/deco.inl>
+#include <ork/reflect/properties/registerX.inl>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::DrawableOwner, "DrawableOwner");
+
+ImplementReflectionX(ork::lev2::DrawableData, "DrawableData");
+ImplementReflectionX(ork::lev2::ModelDrawableData, "ModelDrawableData");
+ImplementReflectionX(ork::lev2::InstancedModelDrawableData, "InstancedModelDrawableData");
+
 namespace ork::lev2 {
+
 ///////////////////////////////////////////////////////////////////////////////
 
-void InstancedDrawableData::resize(size_t count) {
+void DrawableData::describeX(object::ObjectClass* clazz){
+  clazz->directProperty("ModColor", &DrawableData::_modcolor);
+}
+
+DrawableData::DrawableData(){
+  _modcolor = fvec4(1,1,1,1);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void ModelDrawableData::describeX(object::ObjectClass* clazz){
+  clazz->directProperty("assetpath", &ModelDrawableData::_assetpath);
+  clazz->directMapProperty("assetvars", &ModelDrawableData::_assetvars);
+}
+
+ModelDrawableData::ModelDrawableData(AssetPath path) : _assetpath(path) {
+}
+///////////////////////////////////////////////////////////////////////////////
+drawable_ptr_t ModelDrawableData::createDrawable() const {
+  auto drw = std::make_shared<ModelDrawable>(nullptr);
+  drw->_data = this;
+  drw->bindModelAsset(_assetpath);
+  drw->_modcolor = _modcolor;
+  return drw;
+}
+///////////////////////////////////////////////////////////////////////////////
+
+void InstancedModelDrawableData::describeX(object::ObjectClass* clazz){
+  clazz->directProperty("assetpath", &InstancedModelDrawableData::_assetpath);
+  clazz->directMapProperty("assetvars", &InstancedModelDrawableData::_assetvars);
+}
+
+InstancedModelDrawableData::InstancedModelDrawableData(AssetPath path) : _assetpath(path) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+drawable_ptr_t InstancedModelDrawableData::createDrawable() const {
+  auto drw = std::make_shared<InstancedModelDrawable>();
+  drw->_data = this;
+  drw->bindModelAsset(_assetpath);
+  drw->_modcolor = _modcolor;
+  return drw;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+drawable_ptr_t DrawableCache::fetch(drawabledata_ptr_t data){
+
+  auto it = _cache.find(data);
+  if(it!=_cache.end()){
+    return it->second;
+  }
+  auto drw = data->createDrawable();
+  drw->_modcolor = data->_modcolor;
+  _cache[data]=drw;
+  return drw;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void InstancedDrawableInstanceData::resize(size_t count) {
 
   size_t max_inst = InstancedModelDrawable::k_max_instances;
 
@@ -44,14 +111,21 @@ void InstancedDrawableData::resize(size_t count) {
 ///////////////////////////////////////////////////////////////////////////////
 
 DrawQueueXfData::DrawQueueXfData() {
-  _worldMatrix = std::make_shared<fmtx4>();
+  _worldTransform = std::make_shared<DecompTransform>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void Drawable::enqueueToRenderQueue(
+      const DrawableBufItem& item,
+      lev2::IRenderer* prenderer) const{
+
+}
+
 void Drawable::enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const {
   // ork::opq::assertOnQueue2(opq::updateSerialQueue());
-  DrawableBufItem& item = buffer.Queue(xfdata, this);
+  DrawableBufItem& item = buffer.enqueueDrawable(xfdata, this);
+  item._onrenderable = this->_onrenderable;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -59,8 +133,7 @@ Drawable::Drawable()
     : mDataA(nullptr)
     , mDataB(nullptr)
     , mEnabled(true) {
-  // ork::opq::assertOnQueue2(opq::updateSerialQueue());
-  fflush(stdout);
+    _modcolor = fvec4(1,1,1,1);
 }
 Drawable::~Drawable() {
   // ork::opq::assertOnQueue2(opq::updateSerialQueue());

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -301,8 +301,8 @@ Reader::~Reader() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 Reader::Reader(const file::Path& inpath, const char* ptype, ILoadAllocator& allocator)
-    : mpstrtab(0)
-    , mistrtablen(0)
+    : mistrtablen(0)
+    , mpstrtab(0)
     , mbOk(false)
     , _allocator(allocator) {
 
@@ -320,8 +320,8 @@ Reader::Reader(const file::Path& inpath, const char* ptype, ILoadAllocator& allo
 }
 ///////////////////////////////////////////////////////////////////////////////
 Reader::Reader(datablock_ptr_t datablock, ILoadAllocator& allocator)
-    : mpstrtab(0)
-    , mistrtablen(0)
+    : mistrtablen(0)
+    , mpstrtab(0)
     , mbOk(false)
     , _allocator(allocator) {
   mbOk = readFromDataBlock(datablock);

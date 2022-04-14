@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -30,7 +30,6 @@
 #include <ork/reflect/properties/registerX.inl>
 ///////////////////////////////////////////////////////////////////////////////
 using namespace ork::lev2;
-ImplementReflectionX(ork::lev2::TerrainDrawableData, "TerrainDrawableData");
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
@@ -100,7 +99,7 @@ struct SectorInfo {
 
 struct TerrainRenderImpl {
 
-  TerrainRenderImpl(TerrainDrawableInst* hfdrw);
+  TerrainRenderImpl(terraindrawableinst_ptr_t hfdrw);
   ~TerrainRenderImpl();
   void gpuUpdate(Context* context);
   void render(const RenderContextInstData& RCID);
@@ -113,7 +112,7 @@ struct TerrainRenderImpl {
   datablock_ptr_t recomputeTextures(Context* context);
   void reloadCachedTextures(Context* context, datablock_ptr_t dblock);
 
-  TerrainDrawableInst* _hfinstance;
+  terraindrawableinst_ptr_t _hfinstance;
   hfptr_t _heightfield;
 
   bool _gpuDataDirty                          = true;
@@ -154,7 +153,7 @@ struct TerrainRenderImpl {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-TerrainRenderImpl::TerrainRenderImpl(TerrainDrawableInst* hfinst) {
+TerrainRenderImpl::TerrainRenderImpl(terraindrawableinst_ptr_t hfinst) {
   _hfinstance  = hfinst;
   _heightfield = std::make_shared<HeightMap>(0, 0);
 }
@@ -227,7 +226,7 @@ datablock_ptr_t TerrainRenderImpl::recomputeTextures(Context* context) {
       ssize_t xx = x - (MIPW >> 1);
       float fxx  = float(xx) / float(MIPW >> 1);
       fvec2 pos2d(fxx, fzz);
-      float d                   = (pos2d - origin).Mag();
+      float d                   = (pos2d - origin).magnitude();
       float dpow                = powf(d, 3);
       size_t index              = z * MIPW + x;
       float h                   = heightdata[index];
@@ -254,9 +253,9 @@ datablock_ptr_t TerrainRenderImpl::recomputeTextures(Context* context) {
         fvec3 pos3d_dx(xxm1 * 2, hdx, z * 2);
         fvec3 pos3d_dz(x * 2, hdz, zzm1 * 2);
 
-        fvec3 e01                 = (pos3d_dx - pos3d).Normal();
-        fvec3 e02                 = (pos3d_dz - pos3d).Normal();
-        auto n                    = e02.Cross(e01).Normal();
+        fvec3 e01                 = (pos3d_dx - pos3d).normalized();
+        fvec3 e02                 = (pos3d_dz - pos3d).normalized();
+        auto n                    = e02.crossWith(e01).normalized();
         pfloattexB[pixelbase + 1] = debugmip ? 0.0f : float(n.x); // r x
         pfloattexB[pixelbase + 2] = debugmip ? 0.0f : float(n.y); // g y
         pfloattexB[pixelbase + 3] = debugmip ? 0.0f : float(n.z); // b z
@@ -797,8 +796,7 @@ void TerrainRenderImpl::recomputeGeometry(chunkfile::OutputStream* hdrstream, ch
   // printf("geomax<%f %f %f>\n", geomax.x, geomax.y, geomax.z);
   // printf("geosiz<%f %f %f>\n", geosiz.x, geosiz.y, geosiz.z);
 
-
-  printf( "TERRAIN-NUMTRIANGLES<%d>\n", SectorLodInfo::_g__num_triangles );
+  printf("TERRAIN-NUMTRIANGLES<%d>\n", SectorLodInfo::_g__num_triangles);
 
   float runtime = timer.SecsSinceStart();
 }
@@ -814,7 +812,7 @@ void SectorLodInfo::buildPrimitives(chunkfile::OutputStream* hdrstream, chunkfil
     clusterbuilder->buildVertexBuffer(DummyTarget, vertex_type::meFormat);
     auto xgmcluster = std::make_shared<XgmCluster>();
     xgmsubmesh._clusters.push_back(xgmcluster);
-    buildXgmCluster(DummyTarget, xgmcluster, clusterbuilder,false);
+    buildXgmCluster(DummyTarget, xgmcluster, clusterbuilder, false);
   }
   _primitive.writeToChunks(xgmsubmesh, hdrstream, geostream);
 }
@@ -991,7 +989,7 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
   ///////////////////////////////////////////////////////////////////
   //////////////////////////
   fmtx4 viz_offset;
-  viz_offset.SetTranslation(_hfinstance->_visualOffset);
+  viz_offset.setTranslation(_hfinstance->_visualOffset);
   //////////////////////////
   // color
   //////////////////////////
@@ -999,7 +997,7 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
   if (bpick) {
     auto pickbuf    = targ->FBI()->currentPickBuffer();
     uint64_t pickid = pickbuf->AssignPickId(raw_drawable->GetOwner());
-    color.SetRGBAU64(pickid);
+    color.setRGBAU64(pickid);
   } else if (false) { // is_sel ){
     color = fcolor4::Red();
   }
@@ -1008,7 +1006,7 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
   //////////////////////////
   Texture* ColorTex = nullptr;
   if (_sphericalenvmap && _sphericalenvmap->GetTexture())
-    ColorTex = _sphericalenvmap->GetTexture();
+    ColorTex = _sphericalenvmap->GetTexture().get();
   //////////////////////////
   //////////////////////////
   fmtx4 MVPL, MVPC, MVPR;
@@ -1055,18 +1053,18 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
   _terrainMaterial->bindParamVec4(_parModColor, color);
   _terrainMaterial->bindParamFloat(_parTime, 0.0f);
 
-  _terrainMaterial->bindParamFloat(_parTestXXX, HFDD._testxxx);
+  _terrainMaterial->bindParamFloat(_parTestXXX, HFDD->_testxxx);
 
   _terrainMaterial->bindParamVec3(_parFogColor, fvec3(0, 0, 0));
-  _terrainMaterial->bindParamVec3(_parGrass, HFDD._grass);
-  _terrainMaterial->bindParamVec3(_parSnow, HFDD._snow);
-  _terrainMaterial->bindParamVec3(_parRock1, HFDD._rock1);
-  _terrainMaterial->bindParamVec3(_parRock2, HFDD._rock2);
+  _terrainMaterial->bindParamVec3(_parGrass, HFDD->_grass);
+  _terrainMaterial->bindParamVec3(_parSnow, HFDD->_snow);
+  _terrainMaterial->bindParamVec3(_parRock1, HFDD->_rock1);
+  _terrainMaterial->bindParamVec3(_parRock2, HFDD->_rock2);
 
-  _terrainMaterial->bindParamFloat(_parGblendYscale, HFDD._gblend_yscale);
-  _terrainMaterial->bindParamFloat(_parGblendYbias, HFDD._gblend_ybias);
-  _terrainMaterial->bindParamFloat(_parGblendStepLo, HFDD._gblend_steplo);
-  _terrainMaterial->bindParamFloat(_parGblendStepHi, HFDD._gblend_stephi);
+  _terrainMaterial->bindParamFloat(_parGblendYscale, HFDD->_gblend_yscale);
+  _terrainMaterial->bindParamFloat(_parGblendYbias, HFDD->_gblend_ybias);
+  _terrainMaterial->bindParamFloat(_parGblendStepLo, HFDD->_gblend_steplo);
+  _terrainMaterial->bindParamFloat(_parGblendStepHi, HFDD->_gblend_stephi);
 
   ////////////////////////////////
   // render L0
@@ -1094,8 +1092,8 @@ static void _RenderHeightfield(RenderContextInstData& RCID) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void TerrainDrawableData::describeX(class_t* c) {
-/*  c->directProperty("Offset", &TerrainDrawableData::_visualOffset);
+/*void TerrainDrawableData::describeX(class_t* c) {
+  c->directProperty("Offset", &TerrainDrawableData::_visualOffset);
   c->directProperty("FogColor", &TerrainDrawableData::_fogcolor);
   c->directProperty("GrassColor", &TerrainDrawableData::_grass);
   c->directProperty("SnowColor", &TerrainDrawableData::_snow);
@@ -1117,27 +1115,45 @@ void TerrainDrawableData::describeX(class_t* c) {
   c->floatProperty("GBlendStepLo", float_range{0, 1}, &TerrainDrawableData::_gblend_steplo);
   c->floatProperty("GBlendStepHi", float_range{0, 1}, &TerrainDrawableData::_gblend_stephi);
   ////////////////////////////////////////////////////////////////////////
-*/}
-
-///////////////////////////////////////////////////////////////////////////////
-
-hfdrawableinstptr_t TerrainDrawableData::createInstance() const {
-  auto drw           = std::make_shared<TerrainDrawableInst>(*this);
-  drw->_visualOffset = _visualOffset;
-  return drw;
 }
+*/
 
 TerrainDrawableData::TerrainDrawableData()
-    : _hfpath("none")
-    , _testxxx(0) {
+    : _hfpath("none") {
 }
 TerrainDrawableData::~TerrainDrawableData() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+/*
+callback_drawable_ptr_t TerrainDrawableInst::createCallbackDrawable() {
+
+  auto impl = _impl.makeShared<TerrainRenderImpl>(this);
+
+  _rawdrawable = std::make_shared<CallbackDrawable>(nullptr);
+  _rawdrawable->SetRenderCallback(_RenderHeightfield);
+  _rawdrawable->SetUserDataA(impl);
+  _rawdrawable->SetSortKey(1000);
+  return _rawdrawable;
+}*/
+
+drawable_ptr_t TerrainDrawableData::createDrawable() const {
+  auto inst = std::make_shared<TerrainDrawableInst>(this);
+  auto impl = inst->_impl.template makeShared<TerrainRenderImpl>(inst);
+  auto drawable = std::make_shared<CallbackDrawable>(nullptr);
+  inst->_rawdrawable = drawable;
+  drawable->SetRenderCallback(_RenderHeightfield);
+  drawable->SetUserDataA(impl);
+  drawable->SetUserDataB(inst);
+  drawable->SetSortKey(1000);
+  return drawable;
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
 Texture* TerrainDrawableData::envtex() const {
   auto as_texasset = std::dynamic_pointer_cast<TextureAsset>(_sphericalenvmapasset);
-  return as_texasset ? as_texasset->GetTexture() : nullptr;
+  return as_texasset ? as_texasset->GetTexture().get() : nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
 static int count = 0;
@@ -1153,26 +1169,15 @@ void TerrainDrawableData::_readHmapPath(file::Path& hmap) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-TerrainDrawableInst::TerrainDrawableInst(const TerrainDrawableData& data)
+TerrainDrawableInst::TerrainDrawableInst(const TerrainDrawableData* data)
     : _data(data) {
+  _visualOffset = _data->_visualOffset;
 }
 
 file::Path TerrainDrawableInst::hfpath() const {
-  return _data._hfpath;
+  return _data->_hfpath;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-callback_drawable_ptr_t TerrainDrawableInst::createCallbackDrawable() {
-
-  auto impl = _impl.makeShared<TerrainRenderImpl>(this);
-
-  _rawdrawable = std::make_shared<CallbackDrawable>(nullptr);
-  _rawdrawable->SetRenderCallback(_RenderHeightfield);
-  _rawdrawable->SetUserDataA(impl);
-  _rawdrawable->SetSortKey(1000);
-  return _rawdrawable;
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 

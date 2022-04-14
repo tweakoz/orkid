@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -17,8 +17,7 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::GfxMaterialUI, "MaterialUI")
 namespace ork { namespace lev2 {
 
 uimaterial_ptr_t defaultUIMaterial() {
-  static auto mtl = std::make_shared<GfxMaterialUI>(GfxEnv::GetRef().loadingContext());
-  return mtl;
+  return std::make_shared<GfxMaterialUI>(lev2::contextForCurrentThread());
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -35,12 +34,6 @@ GfxMaterialUI::~GfxMaterialUI() {
 
 GfxMaterialUI::GfxMaterialUI(Context* pTarg)
     : meType(ETYPE_STANDARD)
-    , hTekMod(nullptr)
-    , hTekVtx(nullptr)
-    , hTekModVtx(nullptr)
-    , hTekCircle(nullptr)
-    , hTransform(nullptr)
-    , hModColor(nullptr)
     , meUIColorMode(UiColorMode::MOD) {
   miNumPasses = 1;
   _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
@@ -219,14 +212,17 @@ bool GfxMaterialUIText::BeginPass(Context* pTarg, int iPass) {
   return true;
 }
 
+
+void GfxMaterialUIText::UpdateMVPMatrix(Context* context) {
+  const fmtx4& MatMVP = context->MTXI()->RefMVPMatrix();
+  context->FXI()->BindParamMatrix(hTransform, MatMVP);
+  context->FXI()->CommitParams();
+}
+
 /////////////////////////////////////////////////////////////////////////
 
 GfxMaterialUITextured::GfxMaterialUITextured(Context* pTarg, const std::string& Technique)
-    : hTek(nullptr)
-    , mTechniqueName(Technique)
-    , hTransform(nullptr)
-    , hModColor(nullptr)
-    , hColorMap(nullptr) {
+    : mTechniqueName(Technique) {
   miNumPasses = 1;
   _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
   _rasterstate.SetAlphaTest(EALPHATEST_OFF);
@@ -255,7 +251,7 @@ void GfxMaterialUITextured::gpuInit(ork::lev2::Context* pTarg) {
     _shader      = _shaderasset->GetFxShader();
 
     hTek = pTarg->FXI()->technique(_shader, mTechniqueName);
-    printf("HMODFX<%p> pTarg<%p> hTek<%p>\n", _shader, pTarg, hTek);
+    printf("HMODFX<%p> pTarg<%p> hTek<%p>\n", (void*) _shader, (void*) pTarg, (void*) hTek);
 
     hTransform = pTarg->FXI()->parameter(_shader, "mvp");
     hModColor  = pTarg->FXI()->parameter(_shader, "ModColor");

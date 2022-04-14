@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -110,9 +110,9 @@ bool NodeCompositingTechnique::assemble(CompositorDrawData& drawdata) {
     // if we have a postfx_out, then that is the "final" output
     //  otherwise it is render_out
     ////////////////////////////////////////////////////////////////////////////
-    RtGroup* render_outg = _renderNode ? _renderNode->GetOutputGroup() : nullptr;
-    RtBuffer* render_out = _renderNode ? _renderNode->GetOutput() : nullptr;
-    RtBuffer* postfx_out = _postfxNode ? _postfxNode->GetOutput() : nullptr;
+    RtGroup* render_outg = _renderNode ? _renderNode->GetOutputGroup().get() : nullptr;
+    RtBuffer* render_out = _renderNode ? _renderNode->GetOutput().get() : nullptr;
+    RtBuffer* postfx_out = _postfxNode ? _postfxNode->GetOutput().get() : nullptr;
     RtBuffer* final_out  = postfx_out ? postfx_out : render_out;
     drawdata._properties["render_out"_crcu].set<RtBuffer*>(render_out);
     drawdata._properties["render_outgroup"_crcu].set<RtGroup*>(render_outg);

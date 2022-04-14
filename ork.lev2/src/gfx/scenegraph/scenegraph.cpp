@@ -1,9 +1,30 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <ork/lev2/gfx/scenegraph/scenegraph.h>
+#include <ork/lev2/ui/event.h>
 #include <ork/application/application.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
+#include <ork/reflect/properties/registerX.inl>
+#include <ork/kernel/opq.h>
+
 using namespace std::string_literals;
 using namespace ork;
 
+ImplementReflectionX(ork::lev2::scenegraph::DrawableDataKvPair, "SgDrawableDataKvPair");
+
 namespace ork::lev2::scenegraph {
+
+void DrawableDataKvPair::describeX(object::ObjectClass* clazz){
+  clazz->directProperty("Layer", &DrawableDataKvPair::_layername);
+  clazz->directObjectProperty("DrawableData", &DrawableDataKvPair::_drawabledata);
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 Node::Node(std::string named)
@@ -21,11 +42,24 @@ Node::~Node() {
 DrawableNode::DrawableNode(std::string named, drawable_ptr_t drawable)
     : Node(named)
     , _drawable(drawable) {
+    _modcolor = fvec4(1,1,1,1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 DrawableNode::~DrawableNode() {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+InstancedDrawableNode::InstancedDrawableNode(std::string named, instanced_drawable_ptr_t drawable)
+    : Node(named)
+    , _drawable(drawable) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+InstancedDrawableNode::~InstancedDrawableNode() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -54,24 +88,70 @@ Layer::~Layer() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-drawablenode_ptr_t Layer::createDrawableNode(std::string named, drawable_ptr_t drawable) {
-  drawablenode_ptr_t rval  = std::make_shared<DrawableNode>(named, drawable);
-  _drawablenode_map[named] = rval;
-  _drawablenodes.push_back(rval);
+drawable_node_ptr_t Layer::createDrawableNode(std::string named, drawable_ptr_t drawable) {
+  drawable_node_ptr_t rval = std::make_shared<DrawableNode>(named, drawable);
+  _drawable_nodes.atomicOp([rval](Layer::drawablenodevect_t& unlocked) { unlocked.push_back(rval); });
   return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Layer::removeDrawableNode(drawablenode_ptr_t node) {
+void Layer::removeDrawableNode(drawable_node_ptr_t node) {
+  _drawable_nodes.atomicOp([node](Layer::drawablenodevect_t& unlocked) {
+    auto it = std::remove_if(unlocked.begin(), unlocked.end(), [node](drawable_node_ptr_t d) -> bool {
+      bool matched = (node == d);
+      return matched;
+    });
+    unlocked.erase(it);
+  });
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+instanced_drawable_node_ptr_t Layer::createInstancedDrawableNode(std::string named, instanced_drawable_ptr_t drawable) {
+  instanced_drawable_node_ptr_t rval = std::make_shared<InstancedDrawableNode>(named, drawable);
+  size_t count = 0;
+  _instanced_drawable_map.atomicOp([rval,drawable,&count](Layer::instanced_drawmap_t& unlocked) { //
+    auto& vect = unlocked[drawable];
+    rval->_instance_id = vect.size();
+    vect.push_back(rval);
+    count = rval->_instance_id+1;
+  });
+  drawable->_instancedata->resize(count);
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Layer::removeInstancedDrawableNode(instanced_drawable_node_ptr_t node) {
+
+  _instanced_drawable_map.atomicOp([node](Layer::instanced_drawmap_t& unlocked) {
+
+    auto drawable = node->_drawable;
+  
+    auto it_d = unlocked.find(drawable);
+    OrkAssert(it_d!=unlocked.end());
+
+    auto& vect = it_d->second;
+
+    if(vect.size()>1){
+      auto it = vect.begin() + node->_instance_id;
+      auto rit = vect.rbegin();
+      *it = *rit;
+      vect.erase(rit.base());
+    }
+    else{
+      vect.clear();
+    }
+  });
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 lightnode_ptr_t Layer::createLightNode(std::string named, light_ptr_t light) {
-  lightnode_ptr_t rval  = std::make_shared<LightNode>(named, light);
-  _lightnode_map[named] = rval;
-  _lightnodes.push_back(rval);
+  lightnode_ptr_t rval = std::make_shared<LightNode>(named, light);
+
+  _lightnodes.atomicOp([rval](Layer::lightnodevect_t& unlocked) { unlocked.push_back(rval); });
 
   auto lmgr = _scene->_lightManager;
   lmgr->mGlobalMovingLights.AddLight(light.get());
@@ -87,6 +167,8 @@ void Layer::removeLightNode(lightnode_ptr_t node) {
 ///////////////////////////////////////////////////////////////////////////////
 
 Scene::Scene() {
+  ork::opq::assertOnQueue(opq::mainSerialQueue());
+
   _userdata = std::make_shared<varmap::VarMap>();
 
   auto params //
@@ -112,6 +194,25 @@ void Scene::gpuInit(Context* ctx) {
   _pickbuffer   = std::make_shared<PickBuffer>(ctx, *this);
   _dogpuinit    = false;
   _boundContext = ctx;
+
+  _compositorImpl->gpuInit(ctx);
+}
+
+void Scene::gpuExit(Context* ctx){
+  _pickbuffer = nullptr;
+  _compositorImpl = nullptr;
+  _compositorData = nullptr;
+  _renderer = nullptr;
+  _lightManager = nullptr;
+  _lightManagerData = nullptr;
+  _topCPD = nullptr;
+  _staticDrawables.clear();
+  _layers.atomicOp([](layer_map_t& unlocked){
+    unlocked.clear();
+  });
+  _userdata = nullptr;
+  _nodes2draw.clear();
+  _instancednodes2draw.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -130,9 +231,19 @@ uint64_t Scene::pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Scene::initWithParams(varmap::varmap_ptr_t params) {
+  
+  _dbufcontext = std::make_shared<DrawBufContext>();
+  _renderer = std::make_shared<DefaultRenderer>();
   _lightManagerData = std::make_shared<LightManagerData>();
   _lightManager     = std::make_shared<LightManager>(*_lightManagerData.get());
   _compositorData   = std::make_shared<CompositingData>();
+  _topCPD = std::make_shared<CompositingPassData>();
+
+  for( auto p : params->_themap ){
+    auto k = p.first;
+    auto v = p.second;
+    //printf( "INITSCENE P<%s:%s>\n", k.c_str(), v.typeName());
+  }
 
   std::string preset = "PBR";
   // std::string output = "SCREEN";
@@ -142,74 +253,240 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
   // if (auto try_output = params->typedValueForKey<std::string>("output"))
   // output = try_output.value();
 
-  if (preset == "PBR")
-    _compositorData->presetPBR();
-  else if (preset == "PBRVR")
-    _compositorData->presetPBRVR();
-  else
+  rtgroup_ptr_t outRTG;
+
+  if (auto try_rtgroup = params->typedValueForKey<rtgroup_ptr_t>("outputRTG")) {
+    outRTG = try_rtgroup.value();
+  }
+
+
+  if (preset == "PBR") {
+    _compositorPreset = _compositorData->presetPBR(outRTG);
+    auto nodetek  = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
+    auto outpnode = nodetek->tryOutputNodeAs<RtGroupOutputCompositingNode>();
+
+    if (auto try_supersample = params->typedValueForKey<int>("supersample")) {
+      if(outpnode){
+        outpnode->setSuperSample(try_supersample.value());
+      }
+    }
+
+  } else if (preset == "PBRVR")
+    _compositorPreset = _compositorData->presetPBRVR();
+  else {
     throw std::runtime_error("unknown compositor preset type");
+  }
+  //////////////////////////////////////////////
+
+  auto pbrnode = (deferrednode::DeferredCompositingNodePbr*)_compositorPreset._rendernode;
+
+  if (auto try_bgtex = params->typedValueForKey<std::string>("backgroundTexPathStr")) {
+    auto texture_path        = try_bgtex.value();
+    auto assetVars           = pbrnode->_texAssetVarMap;
+    auto enviromentmap_asset = asset::AssetManager<lev2::TextureAsset>::load(texture_path, assetVars);
+    OrkAssert(enviromentmap_asset->GetTexture() != nullptr);
+    OrkAssert(enviromentmap_asset->_varmap->hasKey("postproc"));
+    pbrnode->_writeEnvTexture(enviromentmap_asset);
+  }
+
+  if (auto try_envintensity = params->typedValueForKey<float>("EnvironmentIntensity")) {
+    pbrnode->_environmentIntensity = try_envintensity.value();
+  }
+  if (auto try_diffuseLevel = params->typedValueForKey<float>("DiffuseIntensity")) {
+    pbrnode->_diffuseLevel = try_diffuseLevel.value();
+  }
+  if (auto try_ambientLevel = params->typedValueForKey<float>("AmbientIntensity")) {
+    pbrnode->_ambientLevel = try_ambientLevel.value();
+  }
+  if (auto try_skyboxLevel = params->typedValueForKey<float>("SkyboxIntensity")) {
+    pbrnode->_skyboxLevel = try_skyboxLevel.value();
+  }
+  if (auto try_specularLevel = params->typedValueForKey<float>("SpecularIntensity")) {
+    pbrnode->_specularLevel = try_specularLevel.value();
+  }
+  if (auto try_DepthFogDistance = params->typedValueForKey<float>("DepthFogDistance")) {
+    pbrnode->_depthFogDistance = try_DepthFogDistance.value();
+  }
+  if (auto try_DepthFogPower = params->typedValueForKey<float>("DepthFogPower")) {
+    pbrnode->_depthFogPower = try_DepthFogPower.value();
+  }
+
+  //////////////////////////////////////////////
 
   _compositorData->mbEnable = true;
   _compostorTechnique       = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
 
   _outputNode = _compostorTechnique->tryOutputNodeAs<OutputCompositingNode>();
+  _renderNode = _compostorTechnique->tryRenderNodeAs<RenderCompositingNode>();
+
   //_outputNode = _compostorTechnique->tryOutputNodeAs<VrCompositingNode>();
   // throw std::runtime_error("unknown compositor outputnode type");
-
   // outpnode->setSuperSample(4);
+
+  auto rendnodePBR = _compostorTechnique->tryRenderNodeAs<lev2::deferrednode::DeferredCompositingNodePbr>();
+  if (rendnodePBR) {
+    if (auto try_dfdist = params->typedValueForKey<float>("depthFogDistance")) {
+      rendnodePBR->_depthFogDistance = try_dfdist.value();
+    }
+    if (auto try_dfpwr = params->typedValueForKey<float>("depthFogPower")) {
+      rendnodePBR->_depthFogPower = try_dfpwr.value();
+    }
+  }
+
   _compositorImpl = _compositorData->createImpl();
   _compositorImpl->bindLighting(_lightManager.get());
-  _topCPD.addStandardLayers();
+  _topCPD->addStandardLayers();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 layer_ptr_t Scene::createLayer(std::string named) {
 
-  auto it = _layers.find(named);
-  OrkAssert(it == _layers.end());
-  auto l         = std::make_shared<Layer>(this, named);
-  _layers[named] = l;
+  auto l = std::make_shared<Layer>(this, named);
+
+  _layers.atomicOp([&](layer_map_t& unlocked) {
+    auto it = unlocked.find(named);
+    OrkAssert(it == unlocked.end());
+    unlocked[named] = l;
+  });
+
   return l;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras) {
-  auto DB = DrawableBuffer::acquireForWrite(0);
-  DB->Reset();
-  DB->copyCameras(*cameras.get());
-  for (auto layer_item : _layers) {
-    auto scenegraph_layer = layer_item.second;
-    auto drawable_layer   = DB->MergeLayer("Default");
-    for (auto n : scenegraph_layer->_drawablenodes) {
-      if (n->_drawable) {
-        n->_drawable->enqueueOnLayer(n->_transform, *drawable_layer);
-      }
-    }
-  }
-  DrawableBuffer::releaseFromWrite(DB);
+layer_ptr_t Scene::findLayer(std::string named) {
+
+  layer_ptr_t rval;
+
+  _layers.atomicOp([&](layer_map_t& unlocked) {
+    auto it = unlocked.find(named);
+    OrkAssert(it != unlocked.end());
+    rval = it->second;
+  });
+
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Scene::renderOnContext(Context* context) {
+void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras) {
+  auto DB = _dbufcontext->acquireForWriteLocked();
+  DB->Reset();
+  DB->copyCameras(*cameras.get());
+
+  //printf( "SG<%p>::enqueueToRenderer DB<%p>\n", this, DB );
+
+  _nodes2draw.clear();
+  _instancednodes2draw.clear();
+
+  std::vector<layer_ptr_t> layers;
+
+  _layers.atomicOp([&](const layer_map_t& unlocked) {
+    for (auto layer_item : unlocked) {
+      layers.push_back(layer_item.second);
+    }
+  });
+  auto drawable_layer = DB->MergeLayer("Default");
+
+  ////////////////////////////////////////////////////////////////////////////
+
+  for (auto l : layers) {
+
+    l->_drawable_nodes.atomicOp([drawable_layer, this](const Layer::drawablenodevect_t& unlocked) {
+      for (auto n : unlocked) {
+        if (n->_drawable) {
+          DrawItem item;
+          item._layer   = drawable_layer;
+          item._drwnode = n;
+          _nodes2draw.push_back(item);
+        }
+      }
+    });
+
+  ////////////////////////////////////////////////////////////////////////////
+
+    l->_instanced_drawable_map.atomicOp([drawable_layer, this](const Layer::instanced_drawmap_t& unlocked) {
+      for (const auto& map_item : unlocked) {
+        instanced_drawable_ptr_t drawable = map_item.first;
+        if(drawable){
+          const Layer::instanced_drawablenodevect_t& vect = map_item.second;
+          size_t count = vect.size();
+          drawable->resize(count);
+
+          auto instance_data = drawable->_instancedata;
+          for( instanced_drawable_node_ptr_t node : vect ){
+            size_t iid = node->_instance_id;
+            instance_data->_worldmatrices[iid] = node->_dqxfdata._worldTransform->composed();
+          }
+
+          InstancedDrawItem item;
+          item._layer   = drawable_layer;
+          item._idrawable = drawable;
+          _instancednodes2draw.push_back(item);
+        }
+      }
+    });
+  
+  } // for (auto l : layers) {
+
+  ////////////////////////////////////////////////////////////////////////////
+
+  for (auto item : _instancednodes2draw) {
+    auto drawable_layer = item._layer;
+    auto drawable              = item._idrawable;
+
+
+    drawable->_onrenderable = [=](lev2::IRenderable* renderable){
+      //renderable->_modColor = n->_modcolor;
+    };
+
+    static const DrawQueueXfData xfdata;
+    drawable->enqueueOnLayer(xfdata, *drawable_layer);
+  }
+
+  ////////////////////////////////////////////////////////////////////////////
+
+  for (auto item : _nodes2draw) {
+    auto& drawable_layer = item._layer;
+    auto& n              = item._drwnode;
+
+
+    n->_drawable->_onrenderable = [n](lev2::IRenderable* renderable){
+      renderable->_modColor = n->_modcolor;
+    };
+
+    n->_drawable->enqueueOnLayer(n->_dqxfdata, *drawable_layer);
+  }
+
+  ////////////////////////////////////////////////////////////////////////////
+
+  for (auto item : _staticDrawables) {
+    auto drawable_layer = DB->MergeLayer(item._layername);
+    auto drawable = item._drawable;
+    DrawQueueXfData xfd;
+    drawable->enqueueOnLayer(xfd, *drawable_layer);
+  }
+
+  _dbufcontext->releaseFromWriteLocked(DB);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Scene::_renderIMPL(Context* context,RenderContextFrameData& RCFD){
+
 
   if (_dogpuinit) {
     gpuInit(context);
   }
 
-  auto DB = DrawableBuffer::acquireForRead(7);
-  if (nullptr == DB) {
-    printf("Dont have a DB!\n");
-    return;
-  }
+  auto DB = _dbufcontext->acquireForReadLocked();
 
-  _renderer.setContext(context);
-
-  RenderContextFrameData RCFD(context); // renderer per/frame data
-  RCFD._cimpl = _compositorImpl;
   RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
+  RCFD._cimpl = _compositorImpl;
+
+  _renderer->setContext(context);
+
   context->pushRenderContextFrameData(&RCFD);
   auto fbi  = context->FBI();  // FrameBufferInterface
   auto fxi  = context->FXI();  // FX Interface
@@ -218,13 +495,13 @@ void Scene::renderOnContext(Context* context) {
   ///////////////////////////////////////
   // compositor setup
   ///////////////////////////////////////
-  float TARGW = context->mainSurfaceWidth();
-  float TARGH = context->mainSurfaceHeight();
+  float TARGW = fbi->GetVPW();
+  float TARGH = fbi->GetVPH();
   lev2::UiViewportRenderTarget rt(nullptr);
   auto tgtrect           = ViewportRect(0, 0, TARGW, TARGH);
-  _topCPD._irendertarget = &rt;
-  _topCPD.SetDstRect(tgtrect);
-  _compositorImpl->pushCPD(_topCPD);
+  _topCPD->_irendertarget = &rt;
+  _topCPD->SetDstRect(tgtrect);
+  _compositorImpl->pushCPD(*_topCPD);
   ///////////////////////////////////////
   // Draw!
   ///////////////////////////////////////
@@ -237,7 +514,7 @@ void Scene::renderOnContext(Context* context) {
     CompositorDrawData drawdata(framerenderer);
     drawdata._properties["primarycamindex"_crcu].set<int>(0);
     drawdata._properties["cullcamindex"_crcu].set<int>(0);
-    drawdata._properties["irenderer"_crcu].set<lev2::IRenderer*>(&_renderer);
+    drawdata._properties["irenderer"_crcu].set<lev2::IRenderer*>(_renderer.get());
     drawdata._properties["simrunning"_crcu].set<bool>(true);
     drawdata._properties["DB"_crcu].set<const DrawableBuffer*>(DB);
     drawdata._cimpl = _compositorImpl;
@@ -252,13 +529,49 @@ void Scene::renderOnContext(Context* context) {
     if (0) {
       auto r   = std::make_shared<fray3>(fvec3(0, 0, 5), fvec3(0, 0, -1));
       auto val = pickWithRay(r);
-      printf("%zx\n", val);
+      // printf("%zx\n", val);
     }
     ////////////////////////////////////////////////////////////////////////////
 
     context->endFrame();
   }
-  DrawableBuffer::releaseFromRead(DB);
+  _dbufcontext->releaseFromReadLocked(DB);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Scene::renderWithStandardCompositorFrame(standardcompositorframe_ptr_t sframe){
+  auto context = sframe->_drawEvent->GetTarget();
+
+  sframe->_dbufcontext = _dbufcontext;
+  
+  if (_dogpuinit) {
+    gpuInit(context);
+  }
+  _renderer->setContext(context);
+  sframe->compositor = _compositorImpl;
+  sframe->renderer = _renderer;
+  sframe->passdata   = _topCPD;
+
+  sframe->render();
+
+  //printf( "scene<%p> renderWithStandardCompositorFrame\n", this);
+
+  //RenderContextFrameData RCFD(context); // renderer per/frame data
+  //_renderIMPL(context,RCFD);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Scene::renderOnContext(Context* context, RenderContextFrameData& RCFD) {
+  _renderIMPL(context,RCFD);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Scene::renderOnContext(Context* context) {
+  RenderContextFrameData RCFD(context); // renderer per/frame data
+  _renderIMPL(context,RCFD);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -20,9 +20,14 @@
 #include "lev3_test.h"
 #include "render_graph.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunknown-pragmas"
+
 #pragma comment( lib, "devil.lib" )
 #pragma comment( lib, "ilu.lib" )
 #pragma comment( lib, "ilut.lib" )
+
+#pragma GCC diagnostic pop
 
 ////////////////////////////////////////////////////////////
 //
@@ -528,8 +533,8 @@ HRESULT DemoApp::OnRender()
 int lev3_test_main( int argc, char** argv )
 {
 	////////////////////////////////////////////////////
-	ork::Application app;
-    ApplicationStack::Push(&app);
+	auto stp = std::make_shared<ork::StringPoolContext>();
+    StringPoolStack::Push(stp);
 	//ork::lev2::CQNoMocBase::MocInitAll();
 	ork::rtti::Class::InitializeClasses();
 	ork::lev2::ContextCreationParams CreationParams;

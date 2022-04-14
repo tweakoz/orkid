@@ -1,29 +1,31 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
+#include <ork/kernel/string/PoolString.h>
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/kernel/string/deco.inl>
 #include <ork/pch.h>
+#include <ork/kernel/orklut.hpp>
 
 namespace ork::lev2 {
 ////////////////////////////////////////////////////////////////////////////////
 // CameraData
 ////////////////////////////////////////////////////////////////////////////////
 CameraData::CameraData()
-    : mAper(17.0f)
-    , mHorizAper(0.0f)
-    , mNear(100.0f)
-    , mFar(750.0f)
-    , mEye(0.0f, 0.0f, 0.0f)
+    : mEye(0.0f, 0.0f, 0.0f)
     , mTarget(0.0f, 0.0f, 1.0f)
     , mUp(0.0f, 1.0f, 0.0f)
-    , _uiCamera(nullptr) {
+    , _uiCamera(nullptr)
+    , mAper(17.0f)
+    , mHorizAper(0.0f)
+    , mNear(100.0f)
+    , mFar(750.0f){
 }
 ////////////////////////////////////////////////////////////////////////////////
 const fvec3& CameraData::GetEye() const {
@@ -88,12 +90,24 @@ void CameraData::Persp(float fnear, float ffar, float faper) {
   mHorizAper = 0;
   mNear      = fnear;
   mFar       = ffar;
+  _is_ortho = false;
 }
 ////////////////////////////////////////////////////////////////////////////////
 void CameraData::PerspH(float fnear, float ffar, float faperh) {
   mHorizAper = faperh;
   mNear      = fnear;
   mFar       = ffar;
+  _is_ortho = false;
+}
+////////////////////////////////////////////////////////////////////////////////
+void CameraData::Ortho(float left, float right, float top, float bottom,float fnear, float ffar) {
+  mNear      = fnear;
+  mFar       = ffar;
+  _left = left;
+  _right = right;
+  _top = top;
+  _bottom = bottom;
+  _is_ortho = true;
 }
 ////////////////////////////////////////////////////////////////////////////////
 void CameraData::Lookat(const fvec3& eye, const fvec3& tgt, const fvec3& up) {
@@ -121,22 +135,29 @@ CameraMatrices CameraData::computeMatrices(float faspect) const {
   ///////////////////////////////////////////////////
   fvec3 target = mTarget;
   ///////////////////////////////////////////////////
-  float fmag2 = (target - mEye).MagSquared();
+  float fmag2 = (target - mEye).magnitudeSquared();
   if (fmag2 < 0.01f) {
     target = mEye + fvec3::Blue();
   }
   ///////////////////////////////////////////////////
-  rval._vmatrix.LookAt(mEye, mTarget, mUp);
-  rval._ivmatrix.inverseOf(rval._vmatrix);
-  rval._pmatrix.Perspective(faper, faspect, fnear, ffar);
+  if(_is_ortho){
+    rval._pmatrix.ortho(_left,_right,_top,_bottom, fnear, ffar);
+  }
+  else{
+    rval._pmatrix.perspective(faper, faspect, fnear, ffar);
+  }
   rval._ipmatrix.inverseOf(rval._pmatrix);
+  ///////////////////////////////////////////////////
+  rval._vmatrix.lookAt(mEye, mTarget, mUp);
+  rval._ivmatrix.inverseOf(rval._vmatrix);
   rval._vpmatrix = rval._vmatrix * rval._pmatrix;
   rval._ivpmatrix.inverseOf(rval._vpmatrix);
   rval._frustum.set(rval._ivpmatrix);
   ///////////////////////////////////////////////////
   rval._camdat = *this;
 
-  // deco::prints(rval._vmatrix.dump4x3cn(), true);
+  //deco::prints(rval._vmatrix.dump4x3cn(), true);
+  //deco::prints(rval._pmatrix.dump4x3cn(), true);
   return rval;
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -231,3 +252,4 @@ fmtx4 StereoCameraMatrices::MVPMONO(const fmtx4& M) const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
+template class ork::orklut<ork::PoolString, const ork::lev2::CameraData*>;

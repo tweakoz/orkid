@@ -36,7 +36,6 @@ list( APPEND orksrcs ${src_gfx} ${src_hdl} ${src_python} ${src_test} )
 
 IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
 
-    add_compile_options(-mavx)
     gen_ispc_object_list( ${SRCD}/math/*.ispc
                           ork_core.dir/src/math/
                           ispc_math_object_list )
@@ -50,7 +49,7 @@ ENDIF()
 add_library (ork_core SHARED ${orksrcs} )
 
 ork_std_target_opts(ork_core)
-target_link_libraries(ork_core LINK_PRIVATE ork_utpp )
+target_link_libraries(ork_core LINK_PRIVATE ork_utpp  )
 
 target_include_directories (ork_core PRIVATE ${INCD} )
 

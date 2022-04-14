@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -62,8 +62,8 @@ struct LayerData : public ork::Object {
   dspblkdata_ptr_t _pchBlock;
   keymap_constptr_t _keymap;
   std::map<std::string, controllerdata_ptr_t> _controllermap;
-  controlblockdata_ptr_t _ctrlBlock;
-  scopesource_ptr_t _scopesource;
+  controlblockdata_ptr_t _ctrlBlock = nullptr;
+  scopesource_ptr_t _scopesource = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -79,8 +79,6 @@ struct Layer {
   void compute(int base, int count);
   void endCompute();
 
-  void keyOn(int note, int vel, lyrdata_constptr_t ld);
-  void keyOff();
   void reset();
   controller_t getController(const std::string& n) const;
   controller_t getController(controllerdata_constptr_t cdat) const;
@@ -95,7 +93,6 @@ struct Layer {
   void updateSampSRRatio();
 
   void retain();
-  void release();
   bool isDone() const {
     return _keepalive <= 0;
   }
@@ -130,7 +127,7 @@ struct Layer {
   KeyOnInfo _koi;
   scopesource_ptr_t _scopesource;
 
-  ControlBlockInst* _ctrlBlock = nullptr;
+  ctrlblockinst_ptr_t _ctrlBlock = nullptr;
 
   std::map<std::string, ControllerInst*> _controlMap;
   std::map<controllerdata_constptr_t, ControllerInst*> _controld2iMap;
@@ -146,7 +143,13 @@ struct Layer {
   scopesynctrack_ptr_t _scopesynctracks[kmaxdspblocksperstage];
 
 private:
+
+  friend struct synth;
+
   int _keepalive;
 };
+
+using layer_ptr_t = std::shared_ptr<Layer>;
+
 
 } // namespace ork::audio::singularity

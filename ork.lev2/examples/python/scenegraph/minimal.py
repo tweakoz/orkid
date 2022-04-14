@@ -26,7 +26,7 @@ class PyOrkApp(object):
     super().__init__()
     self.sceneparams = VarMap()
     self.sceneparams.preset = "PBR"
-    self.qtapp = OrkEzQtApp.create(self)
+    self.qtapp = OrkEzApp.create(self)
     self.qtapp.setRefreshPolicy(RefreshFastest, 0)
     self.scene = scenegraph.Scene(self.sceneparams)
   ################################################
@@ -53,6 +53,7 @@ class PyOrkApp(object):
     ###################################
     layer = self.scene.createLayer("layer1")
     ###################################
+    # Todo - rework using fxinst
     material = FreestyleMaterial(ctx,Path("orkshader://manip"))
     fxinst = material.createFxInstance()
     fxinst.technique = material.shader.technique("std_mono")
@@ -94,4 +95,4 @@ class PyOrkApp(object):
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
   ############################################
 app = PyOrkApp()
-app.qtapp.exec()
+app.qtapp.mainThreadLoop()

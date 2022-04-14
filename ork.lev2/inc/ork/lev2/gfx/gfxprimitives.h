@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -134,31 +134,36 @@ public:
 
   ///////////////////////////////////////////////////////////////////////////////
 
-  StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_GridX100;
-  StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_Cone;
-  StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_DirCone;
   StaticVertexBuffer<SVtxV12N12B12T8C4> mVtxBuf_Axis;
-  StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_TriCircle;
-  StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_Diamond;
-  StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_EQSphere;
-  StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_SkySphere;
-  StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_FullSphere;
-  StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_GroundPlane;
-  StaticVertexBuffer<SVtxV12N12B12T8C4> mVtxBuf_PerlinTerrain;
+  StaticVertexBuffer<SVtxV12N12B12T8C4> mVtxBuf_AxisBox;
+  StaticVertexBuffer<SVtxV12N12B12T8C4> mVtxBuf_AxisCone;
+  StaticVertexBuffer<SVtxV12N12B12T8C4> mVtxBuf_AxisLine;
+
+  StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_Box;
+
+  StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_Capsule;
   StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_CircleStrip;
   StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_CircleStripUI;
   StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_CircleUI;
-
+  StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_Cone;
   StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_Cylinder;
-  StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_Capsule;
+
+  StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_Diamond;
+  StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_DirCone;
   StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_Dome;
-  StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_Box;
-  StaticVertexBuffer<SVtxV12N12B12T8C4> mVtxBuf_AxisLine;
-  StaticVertexBuffer<SVtxV12N12B12T8C4> mVtxBuf_AxisCone;
-  StaticVertexBuffer<SVtxV12N12B12T8C4> mVtxBuf_AxisBox;
-  StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_WireFrameCylinder;
+
+  StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_EQSphere;
+  StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_FullSphere;
+  StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_GridX100;
+  StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_GroundPlane;
+
+  StaticVertexBuffer<SVtxV12N12B12T8C4> mVtxBuf_PerlinTerrain;
+  StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_SkySphere;
+  StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_TriCircle;
+
   StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_WireFrameBox;
   StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_WireFrameCapsule;
+  StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_WireFrameCylinder;
   StaticVertexBuffer<SVtxV12C4T16> mVtxBuf_WireFrameDome;
 
   GfxMaterial3DSolid mMaterial;

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -71,7 +71,7 @@ namespace ork::lev2::particle {
 
 psys_ptclbuf ParticleModule::gNoCon;
 
-static lev2::Texture* GetPtclModuleIcon(ork::dataflow::dgmodule* pmod) {
+static lev2::texture_ptr_t GetPtclModuleIcon(ork::dataflow::dgmodule* pmod) {
   static const char* assetname = "lev2://textures/dfnodesel";
   static auto texasset         = asset::AssetManager<TextureAsset>::load(assetname);
   return texasset->GetTexture();
@@ -227,18 +227,15 @@ void psys_graph_pool::describeX(class_t* clazz) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-psys_graph_pool::psys_graph_pool()
-    : mGraphPool(0)
-    , miPoolSize(1)
-    , mNewTemplate(0) {
+psys_graph_pool::psys_graph_pool() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void psys_graph_pool::BindTemplate(const psys_graph& InTemplate) {
-  printf("psys_graph_pool<%p>::BindTemplate(%p) mGraphPool<%p>\n", this, &InTemplate, mGraphPool);
+  printf("psys_graph_pool<%p>::BindTemplate(%p) mGraphPool<%p>\n", (void*)this, (void*)&InTemplate, (void*)mGraphPool);
   mGraphPool = new ork::pool<psys_graph>(miPoolSize);
-  printf(" new mGraphPool<%p>\n", mGraphPool);
+  printf(" new mGraphPool<%p>\n", (void*)mGraphPool);
   ////////////////////////////////////////////
   /*
   ork::ResizableString str;

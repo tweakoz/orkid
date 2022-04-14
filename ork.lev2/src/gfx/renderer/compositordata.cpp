@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -53,9 +53,7 @@ void CompositingData::describeX(class_t* c) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CompositingData::CompositingData()
-    : mbEnable(true)
-    , mToggle(true) {
+CompositingData::CompositingData() {
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -106,13 +104,28 @@ void CompositingData::presetPicking() {
 
 //////////////////////////////////////////////////////////////////////////////
 
-RenderPresetContext CompositingData::presetPBR() {
+compositorimpl_ptr_t CompositingData::createImpl() const {
+  auto impl = std::make_shared<CompositingImpl>(*this);
+
+  return impl;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+RenderPresetContext CompositingData::presetPBR(rtgroup_ptr_t outputgrp) {
   RenderPresetContext rval;
   auto t1 = new NodeCompositingTechnique;
-  auto o1 = new ScreenOutputCompositingNode;
+  OutputCompositingNode* selected_output_node = nullptr;
   auto r1 = new deferrednode::DeferredCompositingNodePbr;
-  t1->_writeOutputNode(o1);
+  if(outputgrp){
+    selected_output_node = new RtGroupOutputCompositingNode(outputgrp);
+  }else{
+    selected_output_node = new ScreenOutputCompositingNode;
+  }
+
+  t1->_writeOutputNode(selected_output_node);
   t1->_writeRenderNode(r1);
+
   // t1->_writePostFxNode(p1);
   auto assetVars  = r1->_texAssetVarMap;
   auto envl_asset = asset::AssetManager<TextureAsset>::load(
@@ -131,8 +144,8 @@ RenderPresetContext CompositingData::presetPBR() {
   _activeItem  = "item1"_pool;
   _scenes.AddSorted("scene1"_pool, s1);
 
-  rval._nodetek = t1;
-  rval._outputnode = o1;
+  rval._nodetek    = t1;
+  rval._outputnode = selected_output_node;
   rval._rendernode = r1;
 
   return rval;
@@ -163,12 +176,11 @@ RenderPresetContext CompositingData::presetPBRVR() {
   _activeItem  = "item1"_pool;
   _scenes.AddSorted("scene1"_pool, s1);
 
-  rval._nodetek = t1;
+  rval._nodetek    = t1;
   rval._outputnode = o1;
   rval._rendernode = r1;
 
   return rval;
-
 }
 
 //////////////////////////////////////////////////////////////////////////////

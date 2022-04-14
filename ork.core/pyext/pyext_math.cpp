@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include "pyext.h"
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -25,14 +32,14 @@ void pyinit_math(py::module& module_core) {
 
           .def_property("y", [](fvec2& vec,float val) { return vec.y = val; }, //
                              [](const fvec2& vec) -> float { return vec.y; })
-          .def("dot", &fvec2::Dot)
-          .def("perp", &fvec2::PerpDot)
-          .def("mag", &fvec2::Mag)
-          .def("magsquared", &fvec2::MagSquared)
+          .def("dot", &fvec2::dotWith)
+          .def("perp", &fvec2::perpDotWith)
+          .def("mag", &fvec2::magnitude)
+          .def("magsquared", &fvec2::magnitudeSquared)
           .def("lerp", &fvec2::lerp)
           .def("serp", &fvec2::serp)
-          .def("normal", &fvec2::Normal)
-          .def("normalize", &fvec2::Normalize)
+          .def("normal", &fvec2::normalized)
+          .def("normalize", &fvec2::normalizeInPlace)
           .def(py::self + py::self)
           .def(py::self - py::self)
           .def(py::self * py::self)
@@ -74,21 +81,21 @@ void pyinit_math(py::module& module_core) {
                              [](const fvec3& vec) -> float { return vec.y; })
           .def_property("z", [](fvec3& vec,float val) { return vec.z = val; }, //
                              [](const fvec3& vec) -> float { return vec.z; })
-          .def("dot", &fvec3::Dot)
-          .def("cross", &fvec3::Cross)
-          .def("mag", &fvec3::Mag)
-          .def("length", &fvec3::Mag)
-          .def("magsquared", &fvec3::MagSquared)
+          .def("dot", &fvec3::dotWith)
+          .def("cross", &fvec3::crossWith)
+          .def("mag", &fvec3::magnitude)
+          .def("length", &fvec3::magnitude)
+          .def("magsquared", &fvec3::magnitudeSquared)
           .def("lerp", &fvec3::lerp)
           .def("serp", &fvec3::serp)
-          .def("reflect", &fvec3::Reflect)
+          .def("reflect", &fvec3::reflect)
           .def("saturated", &fvec3::saturated)
           .def("clamped", &fvec3::clamped)
-          .def("normal", &fvec3::Normal)
-          .def("normalize", &fvec3::Normalize)
-          .def("rotx", &fvec3::RotateX)
-          .def("roty", &fvec3::RotateY)
-          .def("rotz", &fvec3::RotateZ)
+          .def("normal", &fvec3::normalized)
+          .def("normalize", &fvec3::normalizeInPlace)
+          .def("rotx", &fvec3::rotateOnX)
+          .def("roty", &fvec3::rotateOnY)
+          .def("rotz", &fvec3::rotateOnZ)
           .def("xy", &fvec3::xy)
           .def("xz", &fvec3::xz)
           .def(py::self + py::self)
@@ -139,25 +146,25 @@ void pyinit_math(py::module& module_core) {
                              [](const fvec4& vec) -> float { return vec.z; })
           .def_property("w", [](fvec4& vec,float val) { return vec.w = val; }, //
                              [](const fvec4& vec) -> float { return vec.w; })
-          .def("dot", &fvec4::Dot)
-          .def("cross", &fvec4::Cross)
-          .def("mag", &fvec4::Mag)
-          .def("length", &fvec4::Mag)
-          .def("magsquared", &fvec4::MagSquared)
+          .def("dot", &fvec4::dotWith)
+          .def("cross", &fvec4::crossWith)
+          .def("mag", &fvec4::magnitude)
+          .def("length", &fvec4::magnitude)
+          .def("magSquared", &fvec4::magnitudeSquared)
           .def("lerp", &fvec4::lerp)
           .def("serp", &fvec4::serp)
-          .def("saturated", &fvec4::Saturate)
-          .def("normal", &fvec4::Normal)
-          .def("normalize", &fvec4::Normalize)
-          .def("rotx", &fvec4::RotateX)
-          .def("roty", &fvec4::RotateY)
-          .def("rotz", &fvec4::RotateZ)
+          .def("saturated", &fvec4::saturated)
+          .def("normalized", &fvec4::normalized)
+          .def("normalize", &fvec4::normalizeInPlace)
+          .def("rotx", &fvec4::rotateOnX)
+          .def("roty", &fvec4::rotateOnY)
+          .def("rotz", &fvec4::rotateOnZ)
           .def("xyz", &fvec4::xyz)
-          .def("transform", &fvec4::Transform)
+          .def("transform", &fvec4::transform)
           .def("perspectiveDivided", &fvec4::perspectiveDivided)
-          .def_property_readonly("rgbaU32", [](const fvec4& v) -> uint32_t { return v.GetRGBAU32(); })
-          .def_property_readonly("argbU32", [](const fvec4& v) -> uint32_t { return v.GetARGBU32(); })
-          .def_property_readonly("abgrU32", [](const fvec4& v) -> uint32_t { return v.GetABGRU32(); })
+          .def_property_readonly("rgbaU32", [](const fvec4& v) -> uint32_t { return v.RGBAU32(); })
+          .def_property_readonly("argbU32", [](const fvec4& v) -> uint32_t { return v.ARGBU32(); })
+          .def_property_readonly("abgrU32", [](const fvec4& v) -> uint32_t { return v.ABGRU32(); })
           .def(py::self + py::self)
           .def(py::self - py::self)
           .def(py::self * py::self)
@@ -201,7 +208,7 @@ void pyinit_math(py::module& module_core) {
           .def("conjugate", &fquat::conjugate)
           .def("square", &fquat::square)
           .def("negate", &fquat::negate)
-          .def("normalize", &fquat::normalize)
+          .def("normalize", &fquat::normalizeInPlace)
           .def(py::self * py::self)
           .def(
               "__str__",
@@ -235,11 +242,11 @@ void pyinit_math(py::module& module_core) {
           .def(py::init<>())
           .def(py::init<const fmtx3&>())
           .def(py::init<const fquat&>())
-          .def("setScale", (void (fmtx3::*)(float, float, float)) & fmtx3::SetScale)
-          .def("fromQuaternion", &fmtx3::FromQuaternion)
-          .def("zNormal", &fmtx3::GetXNormal)
-          .def("yNormal", &fmtx3::GetYNormal)
-          .def("xNormal", &fmtx3::GetZNormal)
+          .def("setScale", (void (fmtx3::*)(float, float, float)) & fmtx3::setScale)
+          .def("fromQuaternion", &fmtx3::fromQuaternion)
+          .def("zNormal", &fmtx3::xNormal)
+          .def("yNormal", &fmtx3::yNormal)
+          .def("xNormal", &fmtx3::zNormal)
           .def(py::self * py::self)
           .def(py::self == py::self)
           .def("__repr__", [](const fmtx3& mtx) -> std::string {
@@ -266,11 +273,11 @@ void pyinit_math(py::module& module_core) {
           .def(py::init<>())
           .def(py::init<const fmtx4&>())
           .def(py::init<const fquat&>())
-          .def("zNormal", &fmtx4::GetXNormal)
-          .def("yNormal", &fmtx4::GetYNormal)
-          .def("xNormal", &fmtx4::GetZNormal)
-          .def("transpose", &fmtx4::Transpose)
-          .def("normalize", &fmtx4::Normalize)
+          .def("zNormal", &fmtx4::xNormal)
+          .def("yNormal", &fmtx4::yNormal)
+          .def("xNormal", &fmtx4::zNormal)
+          .def("transpose", &fmtx4::transpose)
+          .def("normalize", &fmtx4::normalizeInPlace)
           .def("inverse", &fmtx4::inverse)
           .def("inverseOf", &fmtx4::inverseOf)
           .def("decompose", &fmtx4::decompose)
@@ -280,7 +287,7 @@ void pyinit_math(py::module& module_core) {
               [](fmtx4_ptr_t mtx, const fvec3& pos, const fquat& rot, float scale) { //
                 mtx->compose(pos, rot, scale);
               })
-          .def_static("perspective", &fmtx4::perspective)
+          .def_static("perspective", &fmtx4::createPerspectiveMatrix)
           .def_static(
               "composed",
               [](const fvec3& pos, const fquat& rot, float scale) -> fmtx4_ptr_t {
@@ -292,64 +299,64 @@ void pyinit_math(py::module& module_core) {
               "deltaMatrix",
               [](fmtx4_ptr_t from, fmtx4_ptr_t to) -> fmtx4_ptr_t {
                 auto rval = std::make_shared<fmtx4>();
-                rval->CorrectionMatrix(*from.get(), *to.get());
+                rval->correctionMatrix(*from.get(), *to.get());
                 return rval;
               })
           .def_static(
               "rotMatrix",
               [](const fquat& q) -> fmtx4_ptr_t {
                 auto rval = std::make_shared<fmtx4>();
-                rval->FromQuaternion(q);
+                rval->fromQuaternion(q);
                 return rval;
               })
           .def_static(
               "rotMatrix",
               [](const fvec3& axis, float angle) -> fmtx4_ptr_t {
                 auto rval = std::make_shared<fmtx4>();
-                rval->FromQuaternion(fquat(axis, angle));
+                rval->fromQuaternion(fquat(axis, angle));
                 return rval;
               })
           .def_static(
               "transMatrix",
               [](float x, float y, float z) -> fmtx4_ptr_t {
                 auto rval = std::make_shared<fmtx4>();
-                rval->SetTranslation(x, y, z);
+                rval->setTranslation(x, y, z);
                 return rval;
               })
           .def_static(
               "transMatrix",
               [](const fvec3& t) -> fmtx4_ptr_t {
                 auto rval = std::make_shared<fmtx4>();
-                rval->SetTranslation(t.x, t.y, t.z);
+                rval->setTranslation(t.x, t.y, t.z);
                 return rval;
               })
           .def_static(
               "scaleMatrix",
               [](float x, float y, float z) -> fmtx4_ptr_t {
                 auto rval = std::make_shared<fmtx4>();
-                rval->SetScale(x, y, z);
+                rval->setScale(x, y, z);
                 return rval;
               })
           .def_static(
               "scaleMatrix",
               [](const fvec3& scale) -> fmtx4_ptr_t {
                 auto rval = std::make_shared<fmtx4>();
-                rval->SetScale(scale.x, scale.y, scale.z);
+                rval->setScale(scale.x, scale.y, scale.z);
                 return rval;
               })
           .def_static(
               "unproject",
               [](fmtx4_ptr_t rIMVP, const fvec3& ClipCoord, fvec3& rVObj) -> bool {
-                return fmtx4::UnProject(*rIMVP.get(), ClipCoord, rVObj);
+                return fmtx4::unProject(*rIMVP.get(), ClipCoord, rVObj);
               })
           .def_static(
               "lookAt",
               [](const fvec3& eye, const fvec3& tgt, fvec3& up) -> fmtx4_ptr_t {
                 auto rval = std::make_shared<fmtx4>();
-                rval->LookAt(eye, tgt, up);
+                rval->lookAt(eye, tgt, up);
                 return rval;
               })
-          //.def("LookAt", &fmtx4::decompose)
+          //.def("lookAt", &fmtx4::decompose)
           .def(py::self * py::self)
           .def(py::self == py::self)
           .def("__repr__", [](fmtx4_ptr_t mtx) -> std::string {

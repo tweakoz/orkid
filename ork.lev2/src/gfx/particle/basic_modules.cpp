@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -64,30 +64,17 @@ void Global::describeX(class_t* clazz) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 Global::Global()
-    : ConstructOutPlug(Time, dataflow::EPR_UNIFORM)
+    : mPlugInpTimeScale(this, dataflow::EPR_UNIFORM, mfTimeScale, "ts")
     , ConstructOutPlug(RelTime, dataflow::EPR_UNIFORM)
+    , ConstructOutPlug(Time, dataflow::EPR_UNIFORM)
     , ConstructOutPlug(TimeDiv10, dataflow::EPR_UNIFORM)
     , ConstructOutPlug(TimeDiv100, dataflow::EPR_UNIFORM)
     , ConstructOutPlug(Random, dataflow::EPR_UNIFORM)
     , ConstructOutPlug(RandomNormal, dataflow::EPR_UNIFORM)
-    , ConstructOutPlug(SlowNoise, dataflow::EPR_UNIFORM)
     , ConstructOutPlug(Noise, dataflow::EPR_UNIFORM)
-    , ConstructOutPlug(FastNoise, dataflow::EPR_UNIFORM)
-    , mPlugInpTimeScale(this, dataflow::EPR_UNIFORM, mfTimeScale, "ts")
-    , mfTimeScale(1.0f)
-    , mOutDataRandom(0.0f)
-    , mOutDataRandomNormal(0.0f, 0.0f, 0.0f)
-    , mOutDataNoise(0.0f)
-    , mfNoiseTim(0.0f)
-    , mfSlowNoiseTim(0.0f)
-    , mfFastNoiseTim(0.0f)
-    , mfNoisePrv(0.0f)
-    , mfSlowNoisePrv(0.0f)
-    , mfFastNoisePrv(0.0f)
-    , mfNoiseBas(0.0f)
-    , mfSlowNoiseBas(0.0f)
-    , mfFastNoiseBas(0.0f)
-    , mfTimeBase(0.0f) {
+    , ConstructOutPlug(SlowNoise, dataflow::EPR_UNIFORM)
+    , ConstructOutPlug(FastNoise, dataflow::EPR_UNIFORM) {
+  mfTimeScale = 1.0f;
 }
 void Global::OnStart() {
   mfTimeBase = ork::OldSchool::GetRef().GetLoResTime() * mPlugInpTimeScale.GetValue();
@@ -102,11 +89,11 @@ void Global::Compute(float fdt) {
   mOutDataRelTime    = (ftime - mfTimeBase);
   /////////////////////////////////////////
 
-  mOutDataRandomNormal.setX(float(std::rand() % 32767) / 32768.0f);
-  mOutDataRandomNormal.setY(float(std::rand() % 32767) / 32768.0f);
-  mOutDataRandomNormal.setZ(float(std::rand() % 32767) / 32768.0f);
+  mOutDataRandomNormal.x = (float(std::rand() % 32767) / 32768.0f);
+  mOutDataRandomNormal.y = (float(std::rand() % 32767) / 32768.0f);
+  mOutDataRandomNormal.z = (float(std::rand() % 32767) / 32768.0f);
 
-  mOutDataRandomNormal.Normalize();
+  mOutDataRandomNormal.normalizeInPlace();
 
   /////////////////////////////////////////
   // compute band limited noise
@@ -131,7 +118,7 @@ void Global::Compute(float fdt) {
   /////////////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////////////////////
-dataflow::outplugbase* Global::GetOutput(int idx) {
+dataflow::outplugbase* Global::GetOutput(int idx) const {
   dataflow::outplugbase* rval = 0;
   switch (idx) {
     case 0:
@@ -206,7 +193,7 @@ int Constants::GetNumOutputs() const {
   ////////////////////////////////////////////
   return iret;
 }
-dataflow::outplugbase* Constants::GetOutput(int idx) {
+dataflow::outplugbase* Constants::GetOutput(int idx) const {
   int ipcounter = 0;
   size_t inumfp = mFloatPlugs.size();
   size_t inumvp = mVect3Plugs.size();
@@ -378,7 +365,7 @@ int ExtConnector::GetNumOutputs() const {
   ////////////////////////////////////////////
   return iret;
 }
-dataflow::outplugbase* ExtConnector::GetOutput(int idx) {
+dataflow::outplugbase* ExtConnector::GetOutput(int idx) const {
   int ipcounter = 0;
   size_t inumfp = mFloatPlugs.size();
   size_t inumvp = mVect3Plugs.size();
@@ -448,13 +435,9 @@ void FloatOp2Module::describeX(class_t* clazz) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 FloatOp2Module::FloatOp2Module()
-    : ConstructOutPlug(Output, dataflow::EPR_UNIFORM)
-    , ConstructInpPlug(InputA, dataflow::EPR_UNIFORM, mfInputA)
+    : ConstructInpPlug(InputA, dataflow::EPR_UNIFORM, mfInputA)
     , ConstructInpPlug(InputB, dataflow::EPR_UNIFORM, mfInputB)
-    , mfInputA(0.0f)
-    , mfInputB(0.0f)
-    , mOutDataOutput(0.0f)
-    , meOp(PSYS_FLOATOP::ADD) {
+    , ConstructOutPlug(Output, dataflow::EPR_UNIFORM) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FloatOp2Module::Compute(float dt) {
@@ -471,7 +454,7 @@ void FloatOp2Module::Compute(float dt) {
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-dataflow::inplugbase* FloatOp2Module::GetInput(int idx) {
+dataflow::inplugbase* FloatOp2Module::GetInput(int idx) const {
   dataflow::inplugbase* rval = 0;
   switch (idx) {
     case 0:
@@ -495,13 +478,9 @@ void Vec3Op2Module::describeX(class_t* clazz) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 Vec3Op2Module::Vec3Op2Module()
-    : ConstructOutPlug(Output, dataflow::EPR_UNIFORM)
-    , ConstructInpPlug(InputA, dataflow::EPR_UNIFORM, mvInputA)
+    : ConstructInpPlug(InputA, dataflow::EPR_UNIFORM, mvInputA)
     , ConstructInpPlug(InputB, dataflow::EPR_UNIFORM, mvInputB)
-    , mvInputA(0.0f, 0.0f, 0.0f)
-    , mvInputB(0.0f, 0.0f, 0.0f)
-    , mOutDataOutput(0.0f, 0.0f, 0.0f)
-    , meOp(PSYS_VEC3OP::ADD) {
+    , ConstructOutPlug(Output, dataflow::EPR_UNIFORM) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Vec3Op2Module::Compute(float dt) {
@@ -517,15 +496,15 @@ void Vec3Op2Module::Compute(float dt) {
       break;
     case PSYS_VEC3OP::DOT: { // fvec3 a = mPlugInpInputA.GetValue();
                              // fvec3 b = mPlugInpInputA.GetValue();
-                             // mOutDataOutput = .Dot(mPlugInpInputB.GetValue());
+                             // mOutDataOutput = .dotWith(mPlugInpInputB.GetValue());
     } break;
     case PSYS_VEC3OP::CROSS:
-      mOutDataOutput = mPlugInpInputA.GetValue().Cross(mPlugInpInputB.GetValue());
+      mOutDataOutput = mPlugInpInputA.GetValue().crossWith(mPlugInpInputB.GetValue());
       break;
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-dataflow::inplugbase* Vec3Op2Module::GetInput(int idx) {
+dataflow::inplugbase* Vec3Op2Module::GetInput(int idx) const {
   dataflow::inplugbase* rval = 0;
   switch (idx) {
     case 0:
@@ -545,14 +524,10 @@ void Vec3SplitModule::describeX(class_t* clazz) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 Vec3SplitModule::Vec3SplitModule()
-    : ConstructOutPlug(OutputX, dataflow::EPR_UNIFORM)
+    : ConstructInpPlug(Input, dataflow::EPR_UNIFORM, mvInput)
+    , ConstructOutPlug(OutputX, dataflow::EPR_UNIFORM)
     , ConstructOutPlug(OutputY, dataflow::EPR_UNIFORM)
-    , ConstructOutPlug(OutputZ, dataflow::EPR_UNIFORM)
-    , ConstructInpPlug(Input, dataflow::EPR_UNIFORM, mvInput)
-    , mvInput(0.0f, 0.0f, 0.0f)
-    , mOutDataOutputX(0.0f)
-    , mOutDataOutputY(0.0f)
-    , mOutDataOutputZ(0.0f) {
+    , ConstructOutPlug(OutputZ, dataflow::EPR_UNIFORM) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Vec3SplitModule::Compute(float dt) {
@@ -562,7 +537,7 @@ void Vec3SplitModule::Compute(float dt) {
   mOutDataOutputZ = inp.z;
 }
 ///////////////////////////////////////////////////////////////////////////////
-dataflow::inplugbase* Vec3SplitModule::GetInput(int idx) {
+dataflow::inplugbase* Vec3SplitModule::GetInput(int idx) const {
   dataflow::inplugbase* rval = 0;
   switch (idx) {
     case 0:
@@ -586,20 +561,14 @@ void ParticlePool::describeX(class_t* clazz) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 ParticlePool::ParticlePool()
-    : ConstructOutPlug(Output, dataflow::EPR_UNIFORM)
-    , ConstructOutPlug(UnitAge, dataflow::EPR_VARYING1)
+    : ConstructOutPlug(UnitAge, dataflow::EPR_VARYING1)
     , ConstructInpPlug(PathInterval, dataflow::EPR_UNIFORM, mfPathInterval)
     , ConstructInpPlug(PathProbability, dataflow::EPR_VARYING1, mfPathProbability)
-    , miPoolSize(40)
-    , mPathIntervalEventQueue(0)
-    , mPathStochasticEventQueue(0)
-    , mfPathInterval(0.0f)
-    , mfPathProbability(0.0f)
-    , mOutDataUnitAge(0.0f) {
+    , ConstructOutPlug(Output, dataflow::EPR_UNIFORM) {
   mOutDataOutput.mPool = &mPoolOutput;
 }
 ///////////////////////////////////////////////////////////////////////////////
-ork::dataflow::outplugbase* ParticlePool::GetOutput(int idx) {
+ork::dataflow::outplugbase* ParticlePool::GetOutput(int idx) const {
   ork::dataflow::outplugbase* rval = 0;
   switch (idx) {
     case 0:
@@ -611,7 +580,7 @@ ork::dataflow::outplugbase* ParticlePool::GetOutput(int idx) {
   }
   return rval;
 }
-dataflow::inplugbase* ParticlePool::GetInput(int idx) {
+dataflow::inplugbase* ParticlePool::GetInput(int idx) const {
   ork::dataflow::inplugbase* rval = 0;
   switch (idx) {
     case 0:
@@ -712,9 +681,7 @@ void RingEmitter::describeX(class_t* clazz) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 RingEmitter::RingEmitter()
-    : mOutDataOutput()
-    , ConstructOutPlug(Output, dataflow::EPR_UNIFORM)
-    , ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
+    : ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
     , ConstructInpPlug(Lifespan, dataflow::EPR_UNIFORM, mfLifespan)
     , ConstructInpPlug(EmissionRadius, dataflow::EPR_UNIFORM, mfEmissionRadius)
     , ConstructInpPlug(EmissionRate, dataflow::EPR_UNIFORM, mfEmissionRate)
@@ -725,21 +692,8 @@ RingEmitter::RingEmitter()
     , ConstructInpPlug(OffsetY, dataflow::EPR_UNIFORM, mfOffsetY)
     , ConstructInpPlug(OffsetZ, dataflow::EPR_UNIFORM, mfOffsetZ)
     , ConstructInpPlug(Direction, dataflow::EPR_UNIFORM, mvDirection)
-    , mfPhase(0.0f)
-    , mfPhase2(0.0f)
-    , mfDispersionAngle(0.0f)
-    , mfEmissionRadius(0.0f)
-    , mfEmissionRate(0.0f)
-    , mfEmitterSpinRate(0.0f)
-    , mfEmissionVelocity(0.0f)
-    , mfAccumTime(0.0f)
-    , meDirection(EmitterDirection::VEL)
-    , mDirectedEmitter(*this)
-    , mfOffsetX(0.0f)
-    , mfOffsetY(0.0f)
-    , mfOffsetZ(0.0f)
-    , mvDirection(0.0f, 0.0f, 0.0f)
-    , mDeathEventQueue(0) {
+    , ConstructOutPlug(Output, dataflow::EPR_UNIFORM)
+    , mDirectedEmitter(*this) {
 }
 void RingEmitter::Reset() {
   mfPhase  = 0.0f;
@@ -752,7 +706,7 @@ void RingEmitter::DoLink() {
   //////	printf( "RingEmitter<%p>::DoLink() KillQ<%p>\n", this, mDeathEventQueue );
 }
 ///////////////////////////////////////////////////////////////////////////////
-dataflow::inplugbase* RingEmitter::GetInput(int idx) {
+dataflow::inplugbase* RingEmitter::GetInput(int idx) const {
   dataflow::inplugbase* rval = 0;
   switch (idx) {
     case 0:
@@ -792,7 +746,7 @@ dataflow::inplugbase* RingEmitter::GetInput(int idx) {
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
-dataflow::outplugbase* RingEmitter::GetOutput(int idx) {
+dataflow::outplugbase* RingEmitter::GetOutput(int idx) const {
   dataflow::outplugbase* rval = 0;
   switch (idx) {
     case 0:
@@ -909,11 +863,7 @@ void NozzleEmitter::describeX(class_t* clazz) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 NozzleEmitter::NozzleEmitter()
-    : mOutDataOutput()
-    , mOutDataTheDead(&mDeadPool)
-    , ConstructOutPlug(Output, dataflow::EPR_UNIFORM)
-    , ConstructOutPlug(TheDead, dataflow::EPR_UNIFORM)
-    , ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
+    : ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
     , ConstructInpPlug(Lifespan, dataflow::EPR_UNIFORM, mfLifespan)
     , ConstructInpPlug(EmissionRate, dataflow::EPR_UNIFORM, mfEmissionRate)
     , ConstructInpPlug(EmissionVelocity, dataflow::EPR_UNIFORM, mfEmissionVelocity)
@@ -921,13 +871,9 @@ NozzleEmitter::NozzleEmitter()
     , ConstructInpPlug(Offset, dataflow::EPR_UNIFORM, mvOffset)
     , ConstructInpPlug(Direction, dataflow::EPR_UNIFORM, mvDirection)
     , ConstructInpPlug(OffsetVelocity, dataflow::EPR_UNIFORM, mvOffsetVelocity)
-    , mfDispersionAngle(0.0f)
-    , mfEmissionRate(0.0f)
-    , mfEmissionVelocity(0.0f)
-    , mfAccumTime(0.0f)
-    , mDirectedEmitter(*this)
-    , mvOffset(0.0f, 0.0f, 0.0f)
-    , mvDirection(0.0f, 0.0f, 0.0f) {
+    , ConstructOutPlug(Output, dataflow::EPR_UNIFORM)
+    , ConstructPoolOutPlug(TheDead, dataflow::EPR_UNIFORM, mDeadPool)
+    , mDirectedEmitter(*this) {
 }
 void NozzleEmitter::Reset() {
   mLastPosition  = fvec3(0.0f, 0.0f, 0.0f);
@@ -935,7 +881,7 @@ void NozzleEmitter::Reset() {
   mfAccumTime    = 0.0f;
 }
 ///////////////////////////////////////////////////////////////////////////////
-dataflow::inplugbase* NozzleEmitter::GetInput(int idx) {
+dataflow::inplugbase* NozzleEmitter::GetInput(int idx) const {
   dataflow::inplugbase* rval = 0;
   switch (idx) {
     case 0:
@@ -966,7 +912,7 @@ dataflow::inplugbase* NozzleEmitter::GetInput(int idx) {
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
-dataflow::outplugbase* NozzleEmitter::GetOutput(int idx) {
+dataflow::outplugbase* NozzleEmitter::GetOutput(int idx) const {
   dataflow::outplugbase* rval = 0;
   switch (idx) {
     case 0:
@@ -1027,7 +973,7 @@ void NozzleEmitter::Compute(float fdt) {
   mDirectionSample = mPlugInpDirection.GetValue();
   mOffsetSample    = mPlugInpOffset.GetValue();
 
-  if (mDirectionSample.MagSquared() == 0.0f) {
+  if (mDirectionSample.magnitudeSquared() == 0.0f) {
     mDirectionSample = fvec3::Green();
   }
 
@@ -1079,25 +1025,17 @@ void ReEmitter::describeX(class_t* clazz) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 ReEmitter::ReEmitter()
-    : mOutDataOutput()
-    , ConstructOutPlug(Output, dataflow::EPR_UNIFORM)
-    , ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
+    : ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
     , ConstructInpPlug(SpawnProbability, dataflow::EPR_UNIFORM, mfSpawnProbability)
     , ConstructInpPlug(SpawnMultiplier, dataflow::EPR_UNIFORM, mfSpawnMultiplier)
     , ConstructInpPlug(Lifespan, dataflow::EPR_UNIFORM, mfLifespan)
     , ConstructInpPlug(EmissionRate, dataflow::EPR_UNIFORM, mfEmissionRate)
     , ConstructInpPlug(EmissionVelocity, dataflow::EPR_UNIFORM, mfEmissionVelocity)
     , ConstructInpPlug(DispersionAngle, dataflow::EPR_UNIFORM, mfDispersionAngle)
-    , mfLifespan(0.0f)
-    , mfEmissionRate(0.0f)
-    , mfEmissionVelocity(0.0f)
-    , mfDispersionAngle(0.0f)
-    , meDirection(EmitterDirection::VEL)
-    , mDirectedEmitter(*this)
-    , mSpawnEventQueue(0)
-    , mDeathEventQueue(0)
-    , mfSpawnProbability(1.0f)
-    , mfSpawnMultiplier(1.0f) {
+    , ConstructOutPlug(Output, dataflow::EPR_UNIFORM)
+    , mDirectedEmitter(*this) {
+  mfSpawnProbability = (1.0f);
+  mfSpawnMultiplier  = (1.0f);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ReEmitter::DoLink() {
@@ -1159,7 +1097,7 @@ void ReEmitter::Reap(float fdt) {
   mEmitterCtx.mDeathQueue = 0;
 }
 ///////////////////////////////////////////////////////////////////////////////
-dataflow::inplugbase* ReEmitter::GetInput(int idx) {
+dataflow::inplugbase* ReEmitter::GetInput(int idx) const {
   dataflow::inplugbase* rval = 0;
   switch (idx) {
     case 0:
@@ -1187,7 +1125,7 @@ dataflow::inplugbase* ReEmitter::GetInput(int idx) {
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
-dataflow::outplugbase* ReEmitter::GetOutput(int idx) {
+dataflow::outplugbase* ReEmitter::GetOutput(int idx) const {
   dataflow::outplugbase* rval = 0;
   switch (idx) {
     case 0:
@@ -1208,10 +1146,9 @@ void WindModule::describeX(class_t* clazz) {
 */}
   ///////////////////////////////////////////////////////////////////////////////
   WindModule::WindModule()
-      : ConstructOutPlug(Output, dataflow::EPR_UNIFORM)
-      , ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
+      : ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
       , ConstructInpPlug(Force, dataflow::EPR_UNIFORM, mfForce)
-      , mfForce(0.0f) {
+      , ConstructOutPlug(Output, dataflow::EPR_UNIFORM) {
   }
   ///////////////////////////////////////////////////////////////////////////////
   void WindModule::Compute(float dt) {
@@ -1226,7 +1163,7 @@ void WindModule::describeX(class_t* clazz) {
     mOutDataOutput.mPool = pb.mPool;
   }
   ///////////////////////////////////////////////////////////////////////////////
-  dataflow::inplugbase* WindModule::GetInput(int idx) {
+  dataflow::inplugbase* WindModule::GetInput(int idx) const {
     dataflow::inplugbase* rval = 0;
     switch (idx) {
       case 0:
@@ -1255,21 +1192,13 @@ void WindModule::describeX(class_t* clazz) {
   */}
   ///////////////////////////////////////////////////////////////////////////////
   GravityModule::GravityModule()
-      : ConstructOutPlug(Output, dataflow::EPR_UNIFORM)
-      , ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
+      : ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
       , ConstructInpPlug(G, dataflow::EPR_UNIFORM, mfG)
       , ConstructInpPlug(Mass, dataflow::EPR_UNIFORM, mfMass)
       , ConstructInpPlug(OthMass, dataflow::EPR_UNIFORM, mfOthMass)
       , ConstructInpPlug(MinDistance, dataflow::EPR_UNIFORM, mfMinDistance)
       , ConstructInpPlug(Center, dataflow::EPR_UNIFORM, mvCenter)
-      , mvCenter(0.0f, 0.0f, 0.0f)
-      , mfMass(0.0f)
-      , mfMinDistance(0.0f)
-      , mfOthMass(0.0f)
-      , mfG(0.0f) {
-
-    printf("&G<%p>\n", &mfG);
-    // raise(SIGINT);
+      , ConstructOutPlug(Output, dataflow::EPR_UNIFORM) {
   }
   ///////////////////////////////////////////////////////////////////////////////
   void GravityModule::Compute(float dt) {
@@ -1285,7 +1214,7 @@ void WindModule::describeX(class_t* clazz) {
         BasicParticle* particle = pb.mPool->GetActiveParticle(i);
         const fvec3& OldPos     = particle->mPosition;
         fvec3 Dir               = (mvCenter - OldPos);
-        float Mag               = Dir.Mag();
+        float Mag               = Dir.magnitude();
         if (Mag < mindist)
           Mag = mindist;
         Dir            = Dir * (1.0f / Mag);
@@ -1299,7 +1228,7 @@ void WindModule::describeX(class_t* clazz) {
     mOutDataOutput.mPool = pb.mPool;
   }
   ///////////////////////////////////////////////////////////////////////////////
-  dataflow::inplugbase* GravityModule::GetInput(int idx) {
+  dataflow::inplugbase* GravityModule::GetInput(int idx) const {
     dataflow::inplugbase* rval = 0;
     switch (idx) {
       case 0:
@@ -1348,8 +1277,7 @@ void WindModule::describeX(class_t* clazz) {
   */}
   ///////////////////////////////////////////////////////////////////////////////
   PlanarColliderModule::PlanarColliderModule()
-      : ConstructOutPlug(Output, dataflow::EPR_UNIFORM)
-      , ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
+      : ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
       , ConstructInpPlug(NormalX, dataflow::EPR_UNIFORM, mfNormalX)
       , ConstructInpPlug(NormalY, dataflow::EPR_UNIFORM, mfNormalY)
       , ConstructInpPlug(NormalZ, dataflow::EPR_UNIFORM, mfNormalZ)
@@ -1357,13 +1285,7 @@ void WindModule::describeX(class_t* clazz) {
       , ConstructInpPlug(OriginY, dataflow::EPR_UNIFORM, mfOriginY)
       , ConstructInpPlug(OriginZ, dataflow::EPR_UNIFORM, mfOriginZ)
       , ConstructInpPlug(Absorbtion, dataflow::EPR_UNIFORM, mfAbsorbtion)
-      , mfOriginX(0.0f)
-      , mfOriginY(0.0f)
-      , mfOriginZ(0.0f)
-      , mfNormalX(0.0f)
-      , mfNormalY(0.0f)
-      , mfNormalZ(0.0f)
-      , mfAbsorbtion(0.0f) {
+      , ConstructOutPlug(Output, dataflow::EPR_UNIFORM) {
   }
   ///////////////////////////////////////////////////////////////////////////////
   void PlanarColliderModule::Compute(float dt) {
@@ -1371,16 +1293,16 @@ void WindModule::describeX(class_t* clazz) {
     if (pb.mPool) {
       //////////////////////////////////////////////////////////
       ork::fvec3 PlaneN;
-      PlaneN.setX(mPlugInpNormalX.GetValue());
-      PlaneN.setY(mPlugInpNormalY.GetValue());
-      PlaneN.setZ(mPlugInpNormalZ.GetValue());
-      PlaneN.Normalize();
-      if (PlaneN.Mag() == 0.0f)
+      PlaneN.x = (mPlugInpNormalX.GetValue());
+      PlaneN.y = (mPlugInpNormalY.GetValue());
+      PlaneN.z = (mPlugInpNormalZ.GetValue());
+      PlaneN.normalizeInPlace();
+      if (PlaneN.magnitude() == 0.0f)
         PlaneN = fvec3(0.0f, 1.0f, 0.0f);
       ork::fvec3 PlaneO;
-      PlaneO.setX(mPlugInpOriginX.GetValue());
-      PlaneO.setY(mPlugInpOriginY.GetValue());
-      PlaneO.setZ(mPlugInpOriginZ.GetValue());
+      PlaneO.x = (mPlugInpOriginX.GetValue());
+      PlaneO.y = (mPlugInpOriginY.GetValue());
+      PlaneO.z = (mPlugInpOriginZ.GetValue());
       ork::fplane3 CollisionPlane;
       CollisionPlane.CalcFromNormalAndOrigin(PlaneN, PlaneO);
       float retention = 1.0f - mPlugInpAbsorbtion.GetValue();
@@ -1399,7 +1321,7 @@ void WindModule::describeX(class_t* clazz) {
         bool nxt_inside = pntdist < 0;
 
         if ((false == cur_inside) && nxt_inside) {
-          particle->mVelocity = cur_vel.Reflect(PlaneN) * retention;
+          particle->mVelocity = cur_vel.reflect(PlaneN) * retention;
         }
         if (nxt_inside)
           particle->mColliderStates |= 1;
@@ -1410,7 +1332,7 @@ void WindModule::describeX(class_t* clazz) {
     mOutDataOutput.mPool = pb.mPool;
   }
   ///////////////////////////////////////////////////////////////////////////////
-  dataflow::inplugbase* PlanarColliderModule::GetInput(int idx) {
+  dataflow::inplugbase* PlanarColliderModule::GetInput(int idx) const {
     dataflow::inplugbase* rval = 0;
     switch (idx) {
       case 0:
@@ -1462,21 +1384,17 @@ void WindModule::describeX(class_t* clazz) {
   */}
   ///////////////////////////////////////////////////////////////////////////////
   SphericalColliderModule::SphericalColliderModule()
-      : ConstructOutPlug(Output, dataflow::EPR_UNIFORM)
-      , ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
+      : ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
       , ConstructInpPlug(CenterX, dataflow::EPR_UNIFORM, mfCenterX)
       , ConstructInpPlug(CenterY, dataflow::EPR_UNIFORM, mfCenterY)
       , ConstructInpPlug(CenterZ, dataflow::EPR_UNIFORM, mfCenterZ)
       , ConstructInpPlug(Radius, dataflow::EPR_UNIFORM, mfRadius)
       , ConstructInpPlug(Absorbtion, dataflow::EPR_UNIFORM, mfAbsorbtion)
-      , mfRadius(1.0f)
-      , mfCenterX(0.0f)
-      , mfCenterY(0.0f)
-      , mfCenterZ(0.0f)
-      , mfAbsorbtion(0.0f) {
+      , ConstructOutPlug(Output, dataflow::EPR_UNIFORM) {
+    mfRadius = 1.0f;
   }
   ///////////////////////////////////////////////////////////////////////////////
-  dataflow::inplugbase* SphericalColliderModule::GetInput(int idx) {
+  dataflow::inplugbase* SphericalColliderModule::GetInput(int idx) const {
     dataflow::inplugbase* rval = 0;
     switch (idx) {
       case 0:
@@ -1510,11 +1428,11 @@ void WindModule::describeX(class_t* clazz) {
       //////////////////////////////////////////////////////////
       Sphere the_sphere(fvec3(), 1.0f);
 
-      the_sphere.mCenter.setX(mPlugInpCenterX.GetValue());
-      the_sphere.mCenter.setY(mPlugInpCenterY.GetValue());
-      the_sphere.mCenter.setZ(mPlugInpCenterZ.GetValue());
-      the_sphere.mRadius = mPlugInpRadius.GetValue();
-      float retention    = 1.0f - mPlugInpAbsorbtion.GetValue();
+      the_sphere.mCenter.x = (mPlugInpCenterX.GetValue());
+      the_sphere.mCenter.y = (mPlugInpCenterY.GetValue());
+      the_sphere.mCenter.z = (mPlugInpCenterZ.GetValue());
+      the_sphere.mRadius   = mPlugInpRadius.GetValue();
+      float retention      = 1.0f - mPlugInpAbsorbtion.GetValue();
       //////////////////////////////////////////////////////////
 
       auto m1 = 1000.0f;
@@ -1527,17 +1445,17 @@ void WindModule::describeX(class_t* clazz) {
         auto particle        = pb.mPool->GetActiveParticle(i);
         const fvec3& cur_pos = particle->mPosition;
         const fvec3& cur_vel = particle->mVelocity;
-        auto cur_dir         = cur_vel.Normal();
+        auto cur_dir         = cur_vel.normalized();
 
         auto nxt_pos     = cur_pos + cur_vel * dt;
-        float ndcsquared = (nxt_pos - the_sphere.mCenter).MagSquared();
+        float ndcsquared = (nxt_pos - the_sphere.mCenter).magnitudeSquared();
 
         bool cur_inside = particle->mColliderStates & 1;
         bool nxt_inside = ndcsquared <= sphereradsquared;
 
         if ((false == cur_inside) && nxt_inside) {
-          auto N              = (cur_pos - sphereCenter).Normal();
-          particle->mVelocity = cur_vel.Reflect(N) * retention;
+          auto N              = (cur_pos - sphereCenter).normalized();
+          particle->mVelocity = cur_vel.reflect(N) * retention;
         }
         if (nxt_inside)
           particle->mColliderStates |= 1;
@@ -1559,10 +1477,10 @@ void WindModule::describeX(class_t* clazz) {
   }
   ///////////////////////////////////////////////////////////////////////////////
   DecayModule::DecayModule()
-      : ConstructOutPlug(Output, dataflow::EPR_UNIFORM)
-      , ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
+      : ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
       , ConstructInpPlug(Decay, dataflow::EPR_UNIFORM, mfDecay)
-      , mfDecay(0.99f) {
+      , ConstructOutPlug(Output, dataflow::EPR_UNIFORM) {
+    mfDecay = (0.99f);
   }
   ///////////////////////////////////////////////////////////////////////////////
   void DecayModule::Compute(float dt) {
@@ -1577,7 +1495,7 @@ void WindModule::describeX(class_t* clazz) {
     mOutDataOutput.mPool = pb.mPool;
   }
   ///////////////////////////////////////////////////////////////////////////////
-  dataflow::inplugbase* DecayModule::GetInput(int idx) {
+  dataflow::inplugbase* DecayModule::GetInput(int idx) const {
     dataflow::inplugbase* rval = 0;
     switch (idx) {
       case 0:
@@ -1603,14 +1521,11 @@ void WindModule::describeX(class_t* clazz) {
   */}
   ///////////////////////////////////////////////////////////////////////////////
   TurbulenceModule::TurbulenceModule()
-      : ConstructOutPlug(Output, dataflow::EPR_UNIFORM)
-      , ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
+      : ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
       , ConstructInpPlug(AmountX, dataflow::EPR_UNIFORM, mfAmountX)
       , ConstructInpPlug(AmountY, dataflow::EPR_UNIFORM, mfAmountY)
       , ConstructInpPlug(AmountZ, dataflow::EPR_UNIFORM, mfAmountZ)
-      , mfAmountX(0.0f)
-      , mfAmountY(0.0f)
-      , mfAmountZ(0.0f) {
+      , ConstructOutPlug(Output, dataflow::EPR_UNIFORM) {
   }
   ///////////////////////////////////////////////////////////////////////////////
   void TurbulenceModule::Compute(float dt) {
@@ -1632,7 +1547,7 @@ void WindModule::describeX(class_t* clazz) {
     mOutDataOutput.mPool = pb.mPool;
   }
   ///////////////////////////////////////////////////////////////////////////////
-  dataflow::inplugbase* TurbulenceModule::GetInput(int idx) {
+  dataflow::inplugbase* TurbulenceModule::GetInput(int idx) const {
     dataflow::inplugbase* rval = 0;
     switch (idx) {
       case 0:
@@ -1665,14 +1580,11 @@ void WindModule::describeX(class_t* clazz) {
   */}
   ///////////////////////////////////////////////////////////////////////////////
   VortexModule::VortexModule()
-      : ConstructOutPlug(Output, dataflow::EPR_UNIFORM)
-      , ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
+      : ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
       , ConstructInpPlug(Falloff, dataflow::EPR_UNIFORM, mfFalloff)
       , ConstructInpPlug(VortexStrength, dataflow::EPR_UNIFORM, mfVortexStrength)
       , ConstructInpPlug(OutwardStrength, dataflow::EPR_UNIFORM, mfOutwardStrength)
-      , mfFalloff(0.0f)
-      , mfVortexStrength(0.0f)
-      , mfOutwardStrength(0.0f) {
+      , ConstructOutPlug(Output, dataflow::EPR_UNIFORM) {
   }
   ///////////////////////////////////////////////////////////////////////////////
   void VortexModule::Compute(float dt) {
@@ -1686,10 +1598,10 @@ void WindModule::describeX(class_t* clazz) {
         F32 outwardstrength = mPlugInpOutwardStrength.GetValue();
 
         fvec3 Pos2D = particle->mPosition;
-        Pos2D.setY(0.0f);
-        fvec3 N     = particle->mPosition.Normal();
-        fvec3 Dir   = N.Cross(fvec3::unitY());
-        float fstr  = 1.0f / (1.0f + falloff / Pos2D.Mag());
+        Pos2D.y     = (0.0f);
+        fvec3 N     = particle->mPosition.normalized();
+        fvec3 Dir   = N.crossWith(fvec3::unitY());
+        float fstr  = 1.0f / (1.0f + falloff / Pos2D.magnitude());
         fvec3 Force = Dir * (vortexstrength * fstr);
         Force += N * (outwardstrength * fstr);
 
@@ -1699,7 +1611,7 @@ void WindModule::describeX(class_t* clazz) {
     mOutDataOutput.mPool = pb.mPool;
   }
   ///////////////////////////////////////////////////////////////////////////////
-  dataflow::inplugbase* VortexModule::GetInput(int idx) {
+  dataflow::inplugbase* VortexModule::GetInput(int idx) const {
     dataflow::inplugbase* rval = 0;
     switch (idx) {
       case 0:

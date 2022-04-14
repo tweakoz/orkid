@@ -243,12 +243,12 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12T8I4W4(lev2::Context& con
     OutVtx.mBoneIndices = (index0) | (index1 << 8) | (index2 << 16) | (index3 << 24);
 
     fvec4 vw;
-    vw.setX(InVtx.mJointWeights[3]);
-    vw.setY(InVtx.mJointWeights[2]);
-    vw.setZ(InVtx.mJointWeights[1]);
-    vw.setW(InVtx.mJointWeights[0]);
+    vw.x = (InVtx.mJointWeights[3]);
+    vw.y = (InVtx.mJointWeights[2]);
+    vw.z = (InVtx.mJointWeights[1]);
+    vw.w = (InVtx.mJointWeights[0]);
 
-    OutVtx.mBoneWeights = vw.GetRGBAU32();
+    OutVtx.mBoneWeights = vw.RGBAU32();
     vwriter.AddVertex(OutVtx);
   }
   vwriter.UnLock(&context);

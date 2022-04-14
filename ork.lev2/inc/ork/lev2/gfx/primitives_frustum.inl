@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #pragma once
 #include <ork/lev2/gfx/meshutil/rigid_primitive.inl>
 #include <ork/math/frustum.h>
@@ -13,7 +20,7 @@ struct FrustumPrimitive {
     const auto& NC = _frustum.mNearCorners;
     const auto& FC = _frustum.mFarCorners;
     auto addq      = [&](fvec3 vtxa, fvec3 vtxb, fvec3 vtxc, fvec3 vtxd, fvec4 col) {
-      auto normal = (vtxb - vtxa).Cross(vtxc - vtxa).Normal();
+      auto normal = (vtxb - vtxa).crossWith(vtxc - vtxa).normalized();
       frustum_submesh.addQuad(
           vtxa, vtxb, vtxc, vtxd, normal, normal, normal, normal, fvec2(0, 0), fvec2(0, 1), fvec2(1, 1), fvec2(1, 0), col);
     };

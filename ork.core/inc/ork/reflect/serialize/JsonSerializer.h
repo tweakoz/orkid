@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -10,7 +10,13 @@
 #include <ork/reflect/ISerializer.h>
 #include <ork/orkstl.h>
 #include <ork/rtti/Category.h>
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunknown-pragmas"
+
 #include <rapidjson/document.h>
+
+#pragma GCC diagnostic pop
 
 namespace ork { namespace stream {
 class IOutputStream;
@@ -30,7 +36,7 @@ public:
   std::string output();
 
 private:
-  using allocator_t = rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>*;
+  using allocator_t = rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>;
 
   void _serializeNamedItem(std::string name, const var_t&);
   node_ptr_t _createNode(std::string named, NodeType type);
@@ -38,7 +44,7 @@ private:
   node_ptr_t pushNode(std::string named, NodeType type) override;
   void popNode() override;
 
-  allocator_t _allocator;
-  rapidjson::Document _document;
+  std::shared_ptr<allocator_t> _allocator;
+  std::shared_ptr<rapidjson::Document> _document;
 };
 } // namespace ork::reflect::serdes

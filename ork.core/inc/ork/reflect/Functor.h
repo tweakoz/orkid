@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -12,7 +12,7 @@
 #include <ork/reflect/BidirectionalSerializer.h>
 #include <functional>
 
-namespace ork { namespace reflect {
+namespace ork::reflect {
 
 class IInvokation {
 public:
@@ -40,145 +40,80 @@ template <typename ParameterType> class Invokation : public IInvokation {
   ParameterType mParameters;
 
 public:
-  int GetNumParameters() const {
-    return ParameterType::Count;
-  }
-
-  void ApplyParam(serdes::BidirectionalSerializer& bidi, int param) {
-    mParameters.Apply(bidi, param);
-  }
-
-  const ParameterType& GetParams() const {
-    return mParameters;
-  }
-
-  void* ParameterData() {
-    return &mParameters;
-  }
+  int GetNumParameters() const;
+  void ApplyParam(serdes::BidirectionalSerializer& bidi, int param);
+  const ParameterType& GetParams() const;
+  void* ParameterData();
 };
 
 template <typename FType> class Functor : public IFunctor {
 public:
-  Functor(FType function)
-      : mFunction(function) {
-  }
+  Functor(FType function);
 
 private:
   FType mFunction;
 
-  /*virtual*/ IInvokation* CreateInvokation() const {
-    return new Invokation<typename Function<FType>::Parameters>();
-  }
-
-  /*virtual*/ void invoke(const IInvokation* invokation, serdes::BidirectionalSerializer* bidi) const {
-    Function<FType>::invoke(
-        mFunction, static_cast<const Invokation<typename Function<FType>::Parameters>*>(invokation)->GetParams());
-  }
+  IInvokation* CreateInvokation() const override;
+  void invoke(const IInvokation* invokation, serdes::BidirectionalSerializer* bidi) const override;
 };
 
-template <typename ReturnType> static void WriteResult__(serdes::BidirectionalSerializer* bidi, const ReturnType& result) {
-  if (bidi)
-    *bidi | result;
-}
+template <typename ReturnType> //
+static void WriteResult__(serdes::BidirectionalSerializer* bidi, const ReturnType& result);
 
-template <typename FType, typename ResultType = typename Function<FType>::ReturnType> class ObjectFunctor : public IObjectFunctor {
+template <typename FType, typename ResultType = typename Function<FType>::ReturnType> //
+class ObjectFunctor : public IObjectFunctor {
 public:
-  ObjectFunctor(FType function, bool pure = false)
-      : mFunction(function)
-      , mPure(pure) {
-  }
+  ObjectFunctor(FType function, bool pure = false);
 
 private:
   FType mFunction;
   bool mPure;
 
-  /*virtual*/ IInvokation* CreateInvokation() const {
-    return new Invokation<typename Function<FType>::Parameters>();
-  }
+  IInvokation* CreateInvokation() const override;
 
-  /*virtual*/ void invoke(Object* obj, const IInvokation* invokation, serdes::BidirectionalSerializer* bidi) const {
-    WriteResult__(
-        bidi,
-        Function<FType>::invoke(
-            *static_cast<typename Function<FType>::ClassType*>(obj),
-            mFunction,
-            static_cast<const Invokation<typename Function<FType>::Parameters>*>(invokation)->GetParams()));
-  }
-
-  /*virtual*/ bool Pure() const {
-    return mPure;
-  }
+  void invoke(Object* obj, const IInvokation* invokation, serdes::BidirectionalSerializer* bidi) const override;
+  bool Pure() const override;
 };
 
 template <typename FType> class ObjectFunctor<FType, void> : public IObjectFunctor {
 public:
-  ObjectFunctor(FType function, bool)
-      : mFunction(function) {
-  }
+  ObjectFunctor(FType function, bool);
 
 private:
   FType mFunction;
-
-  IInvokation* CreateInvokation() const override {
-    return new Invokation<typename Function<FType>::Parameters>();
-  }
-
-  void invoke(Object* obj, const IInvokation* invokation, serdes::BidirectionalSerializer* bidi) const override {
-    Function<FType>::invoke(
-        *static_cast<typename Function<FType>::ClassType*>(obj),
-        mFunction,
-        static_cast<const Invokation<typename Function<FType>::Parameters>*>(invokation)->GetParams());
-  }
-
-  bool Pure() const override {
-    return false;
-  }
+  IInvokation* CreateInvokation() const override;
+  void invoke(Object* obj, const IInvokation* invokation, serdes::BidirectionalSerializer* bidi) const override;
+  bool Pure() const override;
 };
 
 class LambdaInvokation : public IInvokation {
-  int GetNumParameters() const override {
-    return 0;
-  }
-  void ApplyParam(serdes::BidirectionalSerializer&, int) override {
-  }
-  void* ParameterData() override {
-    return nullptr;
-  }
+  int GetNumParameters() const override;
+  void ApplyParam(serdes::BidirectionalSerializer&, int) override;
+  void* ParameterData() override;
 };
 
 struct LambdaFunctor {
   typedef std::function<void(Object*)> lambda_t;
 
-  IInvokation* CreateInvokation() const {
-    return new LambdaInvokation;
-  }
-
-  void invoke(Object* obj, const IInvokation*, serdes::BidirectionalSerializer* = 0) const {
-    if (mLambda)
-      mLambda(obj);
-  }
-
-  LambdaFunctor()
-      : mLambda(nullptr) {
-  }
+  IInvokation* CreateInvokation() const;
+  void invoke(Object* obj, const IInvokation*, serdes::BidirectionalSerializer* = 0) const;
+  LambdaFunctor();
 
   lambda_t mLambda;
 };
 
 ////////////////////////////////////////////////////////////////////////////
 
-template <typename FType> inline IObjectFunctor* CreateObjectFunctor(FType f, bool pure = false) {
-  return new ObjectFunctor<FType>(f, pure);
-}
+template <typename FType> //
+IObjectFunctor* CreateObjectFunctor(FType f, bool pure = false);
 
 ////////////////////////////////////////////////////////////////////////////
 
-template <typename FType> inline IFunctor* CreateFunctor(FType f) {
-  return new Functor<FType>(f);
-}
+template <typename FType> //
+IFunctor* CreateFunctor(FType f);
 
 ////////////////////////////////////////////////////////////////////////////
 
 bool SetInvokationParameter(IInvokation* invokation, int param, const char* paramdata);
 
-}} // namespace ork::reflect
+} // namespace ork::reflect

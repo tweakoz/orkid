@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include "krzio.h"
 #include <fstream>
 
@@ -55,8 +62,8 @@ void filescanner::parseCalvin(const datablock& db, datablock::iterator& it) {
   getFParamPCH(pitchFP);
 
   if (_curProgram->_debug) {
-    printf("debug prg<%d:%p>\n", _curProgram->_programID, _curProgram);
-    printf(">>  parse calvin<%p> KMID1<%d>\n", calvin, KMP._kmid1);
+    printf("debug prg<%d:%p>\n", _curProgram->_programID, (void*) _curProgram);
+    printf(">>  parse calvin<%p> KMID1<%d>\n", (void*) calvin, KMP._kmid1);
     // assert(KMP._kmid1==58);
   }
 
@@ -126,7 +133,7 @@ void filescanner::emitCalvin(const Calvin* c, rapidjson::Value& parent) {
     auto l0  = p->_layers[0];
     auto c0  = l0->_calvin;
     auto& kp = c0->_kmpage;
-    printf("prg190 emit calvin<%p> KMID1<%d>\n", c, kp._kmid1);
+    printf("prg190 emit calvin<%p> KMID1<%d>\n", (void*) c, kp._kmid1);
     assert(kp._kmid1 == 58);
     AddMember(kmseg, "YO", std::string("WHATUP"));
     // assert(false);
@@ -141,8 +148,8 @@ void filescanner::emitCalvin(const Calvin* c, rapidjson::Value& parent) {
 }
 
 Calvin::Calvin(Layer* l)
-    : _algorithm(0)
-    , _layer(l)
+    : _layer(l)
+    , _algorithm(0)
     , _kmpage(this) {
 }
 CalvinKmPage::CalvinKmPage(Calvin* c)

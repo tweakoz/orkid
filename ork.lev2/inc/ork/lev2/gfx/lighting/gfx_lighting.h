@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -19,6 +19,7 @@
 #include <ork/kernel/Array.h>
 
 #include <ork/config/config.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/gfx/camera/cameradata.h>
@@ -26,15 +27,6 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
-
-class RtGroupRenderTarget;
-class RenderContextFrameData;
-class FxShader;
-class FxShaderParam;
-class FxShaderParamBlock;
-class Context;
-class CompositingPassData;
-
 ///////////////////////////////////////////////////////////////////////////////
 
 inline int countbits(U32 v) {
@@ -55,8 +47,8 @@ enum ELightType {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct LightData : public ork::Object {
-  DeclareAbstractX(LightData, ork::Object);
+struct LightData : public DrawableData {
+  DeclareAbstractX(LightData, DrawableData);
 
 public:
   float GetShadowBias() const {
@@ -81,7 +73,7 @@ public:
 
   LightData();
 
-  lev2::Texture* cookie() const;
+  lev2::texture_ptr_t cookie() const;
 
   bool decal() const {
     return _decal;
@@ -92,6 +84,8 @@ public:
   }
 
   fvec3 mColor;
+  float _intensity = 1.0f;
+
   bool mbShadowCaster;
   int _shadowsamples;
   float mShadowBlur;
@@ -100,20 +94,28 @@ public:
   bool _decal        = false;
   int _shadowMapSize = 1024;
 };
-using lightdata_ptr_t      = std::shared_ptr<LightData>;
-using lightdata_constptr_t = std::shared_ptr<const LightData>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
 typedef std::function<fmtx4()> xform_generator_t;
 
-struct Light {
+struct Light : public Drawable {
+
+  Light(const LightData* ld)
+      : _data(ld)
+      , mPriority(0.0f)
+      , _dynamic(false)
+  {
+    _xformgenerator = []()->fmtx4{
+      return fmtx4();
+    };
+  }
 
   Light(xform_generator_t mtx, const LightData* ld = 0)
-      : _xformgenerator(mtx)
-      , _data(ld)
-      , _dynamic(false)
-      , mPriority(0.0f) {
+      : _data(ld)
+      , _xformgenerator(mtx)
+      , mPriority(0.0f)
+      , _dynamic(false) {
   }
   virtual ~Light() {
   }
@@ -125,6 +127,9 @@ struct Light {
   virtual bool AffectsCircleXZ(const Circle& cir)               = 0;
   virtual ELightType LightType() const                          = 0;
 
+  float intensity() const {
+    return _data->_intensity;
+  }
   const fvec3& color() const {
     return _data->GetColor();
   }
@@ -132,13 +137,13 @@ struct Light {
     return _xformgenerator();
   }
   fvec3 worldPosition() const {
-    return worldMatrix().GetTranslation();
+    return worldMatrix().translation();
   }
   fvec3 direction() const {
-    return worldMatrix().GetZNormal();
+    return worldMatrix().zNormal();
   }
   float distance(fvec3 pos) const;
-  Texture* cookie() const {
+  texture_ptr_t cookie() const {
     return _data->cookie();
   }
   bool decal() const {
@@ -154,9 +159,6 @@ struct Light {
   int miInFrustumID;
   bool _dynamic;
 };
-
-using light_ptr_t      = std::shared_ptr<Light>;
-using light_constptr_t = std::shared_ptr<const Light>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -178,10 +180,12 @@ public:
       : _radius(1.0f)
       , _falloff(1.0f) {
   }
-};
 
-using pointlightdata_ptr_t      = std::shared_ptr<PointLightData>;
-using pointlightdata_constptr_t = std::shared_ptr<const PointLightData>;
+  static pointlightdata_ptr_t instantiate();
+
+  drawable_ptr_t createDrawable() const final;
+
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -202,27 +206,29 @@ struct PointLight : public Light {
     return _pldata->radius();
   }
 
+  PointLight(const PointLightData* pld);
   PointLight(xform_generator_t mtx, const PointLightData* pld = 0);
 
   const PointLightData* _pldata;
 };
 
-using pointlight_ptr_t      = std::shared_ptr<PointLight>;
-using pointlight_constptr_t = std::shared_ptr<const PointLight>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class DirectionalLightData : public LightData {
+struct DirectionalLightData : public LightData {
   DeclareConcreteX(DirectionalLightData, LightData);
 
 public:
   DirectionalLightData() {
   }
+
+  drawable_ptr_t createDrawable() const final;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class DirectionalLight : public Light {
+struct DirectionalLight : public Light {
 
   const DirectionalLightData* mDld;
 
@@ -241,12 +247,13 @@ public:
     return ELIGHTTYPE_DIRECTIONAL;
   }
 
+  DirectionalLight(const DirectionalLightData* pld);
   DirectionalLight(xform_generator_t mtx, const DirectionalLightData* dld = 0);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class AmbientLightData : public LightData {
+struct AmbientLightData : public LightData {
   DeclareConcreteX(AmbientLightData, LightData);
 
   float mfAmbientShade;
@@ -269,11 +276,14 @@ public:
   void SetHeadlightDir(const fvec3& dir) {
     mvHeadlightDir = dir;
   }
+
+  drawable_ptr_t createDrawable() const final;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class AmbientLight : public Light {
+struct AmbientLight : public Light {
 
   const AmbientLightData* mAld;
 
@@ -298,12 +308,13 @@ public:
     return mAld->GetHeadlightDir();
   }
 
+  AmbientLight(const AmbientLightData* pld);
   AmbientLight(xform_generator_t mtx, const AmbientLightData* dld = 0);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class SpotLightData : public LightData {
+struct SpotLightData : public LightData {
   DeclareConcreteX(SpotLightData, LightData);
 
   float mFovy;
@@ -318,14 +329,15 @@ public:
   }
 
   SpotLightData();
+
+  drawable_ptr_t createDrawable() const final;
+
 };
 
-using spotlightdata_ptr_t      = std::shared_ptr<SpotLightData>;
-using spotlightdata_constptr_t = std::shared_ptr<const SpotLightData>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class SpotLight : public Light {
+struct SpotLight : public Light {
 
 public:
   bool IsInFrustum(const Frustum& frustum) override;
@@ -349,24 +361,23 @@ public:
   fmtx4 shadowMatrix() const;
   CameraData shadowCamDat() const;
 
+  SpotLight(const SpotLightData* pld);
   SpotLight(xform_generator_t mtx, const SpotLightData* sld = 0);
+
+  RtGroup* _shadowRTG             = nullptr;
+  RtGroupRenderTarget* _shadowIRT = nullptr;
+  const SpotLightData* _SLD       = nullptr;
 
   fmtx4 mProjectionMatrix;
   fmtx4 mViewMatrix;
   Frustum mWorldSpaceLightFrustum;
-  RtGroup* _shadowRTG;
-  RtGroupRenderTarget* _shadowIRT;
   int _shadowmapDim;
-  const SpotLightData* _SLD;
 };
-
-using spotlight_ptr_t      = std::shared_ptr<SpotLight>;
-using spotlight_constptr_t = std::shared_ptr<const SpotLight>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct LightContainer {
-  static const int kmaxlights = 8;
+  static const int kmaxlights = 32;
 
   typedef fixedlut<float, Light*, kmaxlights> map_type;
 
@@ -413,8 +424,6 @@ struct LightMask {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class LightManager;
-
 struct LightingGroup {
   static const int kmaxinst = 32;
 
@@ -434,7 +443,7 @@ struct LightingGroup {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class LightManagerData : public ork::Object {
+struct LightManagerData : public ork::Object {
   DeclareConcreteX(LightManagerData, ork::Object);
 
 public:
@@ -444,7 +453,7 @@ using lightmanagerdata_ptr_t = std::shared_ptr<LightManagerData>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class LightCollector {
+struct LightCollector {
 public:
   static const int kmaxonscreengroups = 32;
   static const int kmaxflagwords      = kmaxonscreengroups >> 5;
@@ -477,7 +486,7 @@ struct EnumeratedLights {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class LightManager {
+struct LightManager {
   const LightManagerData& mLmd;
 
   LightCollector mcollector;

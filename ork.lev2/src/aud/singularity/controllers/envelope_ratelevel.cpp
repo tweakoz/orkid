@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <string>
 #include <assert.h>
 #include <unistd.h>
@@ -48,21 +55,21 @@ RateLevelEnvData::RateLevelEnvData()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ControllerInst* RateLevelEnvData::instantiate(Layer* l) const // final
+ControllerInst* RateLevelEnvData::instantiate(layer_ptr_t l) const // final
 {
   return new RateLevelEnvInst(this, l);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-RateLevelEnvInst::RateLevelEnvInst(const RateLevelEnvData* data, Layer* l)
+RateLevelEnvInst::RateLevelEnvInst(const RateLevelEnvData* data, layer_ptr_t l)
     : ControllerInst(l)
     , _data(data)
+    , _layer(nullptr) 
     , _segmentIndex(-1)
     , _released(false)
     , _ampenv(data->_ampenv)
-    , _envType(data->_envType)
-    , _layer(nullptr) {
+    , _envType(data->_envType) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -179,7 +186,7 @@ void RateLevelEnvInst::compute() // final
       // printf("env<%p> done\n", this);
       if (_ampenv) {
         // printf("ampenv<%p> RELEASING LAYER<%p>\n", this, _layer);
-        _layer->release();
+        synth::instance()->releaseLayer(_layer);
         _curval = 0.0;
       } else {
         _curval = segs.rbegin()->_level;

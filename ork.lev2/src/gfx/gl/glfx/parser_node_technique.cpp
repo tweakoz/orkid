@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -43,9 +43,9 @@ void TechniqueNode::parse(GlSlFxParser* parser, const ScannerView& view) {
       passnode->_vertexshader   = view.token(i + 3)->text;
       passnode->_fragmentshader = view.token(i + 5)->text;
       passnode->_stateblock     = view.token(i + 7)->text;
-      printf("vtxs<%s>\n", passnode->_vertexshader.c_str());
-      printf("frgs<%s>\n", passnode->_fragmentshader.c_str());
-      printf("sblk<%s>\n", passnode->_stateblock.c_str());
+      //printf("vtxs<%s>\n", passnode->_vertexshader.c_str());
+      //printf("frgs<%s>\n", passnode->_fragmentshader.c_str());
+      //printf("sblk<%s>\n", passnode->_stateblock.c_str());
       i += 9;
     }
     ////////////////////////////////////////////////////

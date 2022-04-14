@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <ork/lev2/aud/singularity/hud.h>
 #include <ork/lev2/aud/singularity/envelope.h>
 #include <ork/lev2/aud/singularity/sampler.h>
@@ -116,8 +123,8 @@ void RateLevelSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
   // const float* _samples = scopebuf->_samples;
 
-  mRtGroup->_clearColor = _clearColor;
-  fbi->rtGroupClear(mRtGroup);
+  _rtgroup->_clearColor = _clearColor;
+  fbi->rtGroupClear(_rtgroup.get());
 
   hudlines_t lines;
 

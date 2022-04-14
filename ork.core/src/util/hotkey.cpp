@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -78,25 +78,25 @@ void* ix_kb_thread(void* pctx) {
         switch (oev.code) {
 
           case 17: // w
-            ix_kb_state['W'] = bksta;
+            ix_kb_state[int('W')] = bksta;
             break;
           case 30: // a
-            ix_kb_state['A'] = bksta;
+            ix_kb_state[int('A')] = bksta;
             break;
           case 31: // s
-            ix_kb_state['S'] = bksta;
+            ix_kb_state[int('S')] = bksta;
             break;
           case 32: // d
-            ix_kb_state['D'] = bksta;
+            ix_kb_state[int('D')] = bksta;
             break;
           case 24: // o
-            ix_kb_state['O'] = bksta;
+            ix_kb_state[int('O')] = bksta;
             break;
           case 25: // p
-            ix_kb_state['P'] = bksta;
+            ix_kb_state[int('P')] = bksta;
             break;
           case 33: // f
-            ix_kb_state['F'] = bksta;
+            ix_kb_state[int('F')] = bksta;
             break;
             // case 105: // L
             //	ix_kb_state[ork::lev2::ETRIG_RAW_KEY_LEFT] = bksta;
@@ -284,8 +284,8 @@ HotKey::HotKey()
     , mbCtrl(false)
     , mbShift(false)
     , mbLeftMB(false)
-    , mbMiddleMB(false)
-    , mbRightMB(false) {
+    , mbRightMB(false) 
+    , mbMiddleMB(false) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -296,8 +296,8 @@ HotKey::HotKey(const char* keycode)
     , mbCtrl(false)
     , mbShift(false)
     , mbLeftMB(false)
-    , mbMiddleMB(false)
-    , mbRightMB(false) {
+    , mbRightMB(false) 
+    , mbMiddleMB(false) {
 
   mbAlt      = strstr(keycode, "alt") != 0;
   mbCtrl     = strstr(keycode, "ctrl") != 0;

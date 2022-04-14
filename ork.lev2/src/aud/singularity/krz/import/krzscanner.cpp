@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include "krzio.h"
 #include <fstream>
 
@@ -10,15 +17,15 @@ filescanner::filescanner(const char* pname)
     : mpFile(0)
     , miSize(0)
     , mpData(0)
-    , _japrog(_joprog.GetAllocator())
     , _joprogroot(kObjectType)
     , _joprogobjs(kArrayType)
+    , _japrog(_joprog.GetAllocator())
     , _globalsFlag(false)
 //, _curLayerObject(nullptr)
 {
   printf("Opening<%s>\n", pname);
   mpFile = fopen(pname, "rb");
-  printf("file<%p>\n", mpFile);
+  printf("file<%p>\n", (void*) mpFile);
   fseek(mpFile, 0, SEEK_END);
   int ilen = ftell(mpFile);
   miSize   = ilen;

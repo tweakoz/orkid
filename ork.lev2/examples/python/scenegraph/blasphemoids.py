@@ -170,4 +170,4 @@ class Blasphemoids(_simsetup.SimApp):
              iset.delta_tras[picked]=tramtx # copy into numpy block
   ################################################
 app = Blasphemoids()
-app.qtapp.exec()
+app.qtapp.mainThreadLoop()

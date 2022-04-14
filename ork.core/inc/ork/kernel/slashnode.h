@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -13,8 +13,8 @@
 
 namespace ork {
 
-class SlashTree;
-class SlashNode;
+struct SlashTree;
+struct SlashNode;
 using slashnode_ptr_t      = std::shared_ptr<SlashNode>;
 using slashtree_ptr_t      = std::shared_ptr<SlashTree>;
 using slashnode_constptr_t = std::shared_ptr<const SlashNode>;
@@ -32,7 +32,7 @@ std::string::size_type str_cue_to_char(const std::string& str, char cch, int sta
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class SlashTree;
+struct SlashTree;
 
 struct SlashNode {
 

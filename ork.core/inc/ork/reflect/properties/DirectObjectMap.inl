@@ -1,9 +1,11 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
+
+#pragma once 
 
 #include <ork/pch.h>
 
@@ -41,7 +43,7 @@ bool DirectObjectMap<MapType>::isMultiMap(object_constptr_t instance) const {
 template <typename MapType> //
 bool DirectObjectMap<MapType>::ReadElement(
     object_constptr_t instance, //
-    const KeyType& key,
+    const key_type& key,
     int multi_index,
     object_ptr_t& value_out) const {
   const MapType& map                  = instance.get()->*_member;
@@ -58,7 +60,9 @@ bool DirectObjectMap<MapType>::ReadElement(
     multi_index--;
   }
 
-  value_out = it->second;
+  auto nonconst_ptr_value = std::const_pointer_cast<mutable_element_type>(it->second);
+
+  value_out = std::dynamic_pointer_cast<Object>(nonconst_ptr_value);
 
   return true;
 }
@@ -66,14 +70,14 @@ bool DirectObjectMap<MapType>::ReadElement(
 template <typename MapType> //
 bool DirectObjectMap<MapType>::WriteElement(
     object_ptr_t instance, //
-    const KeyType& key,
+    const key_type& key,
     int multi_index,
     const object_ptr_t* value_inp) const {
   MapType& map               = instance.get()->*_member;
   const int orig_multi_index = multi_index;
   if (multi_index == IMap::kDeserializeInsertElement) {
     OrkAssert(value_inp);
-    auto typed_ptr_value = std::dynamic_pointer_cast<ptrtype_t>(*value_inp);
+    auto typed_ptr_value = std::dynamic_pointer_cast<mutable_element_type>(*value_inp);
     map.insert(std::make_pair(key, typed_ptr_value));
   } else {
     auto it = map.find(key);
@@ -82,7 +86,7 @@ bool DirectObjectMap<MapType>::WriteElement(
       multi_index--;
     }
     if (value_inp) {
-      auto typed_ptr_value = std::dynamic_pointer_cast<ptrtype_t>(*value_inp);
+      auto typed_ptr_value = std::dynamic_pointer_cast<mutable_element_type>(*value_inp);
       it->second           = typed_ptr_value;
     } else {
       auto val2erase = it->second;
@@ -102,7 +106,7 @@ bool DirectObjectMap<MapType>::WriteElement(
 template <typename MapType> //
 bool DirectObjectMap<MapType>::EraseElement(
     object_ptr_t instance, //
-    const KeyType& key,
+    const key_type& key,
     int multi_index) const {
   MapType& map                  = instance.get()->*_member;
   typename MapType::iterator it = map.find(key);
@@ -126,7 +130,7 @@ template <typename MapType> //
 bool DirectObjectMap<MapType>::GetKey(
     object_constptr_t instance, //
     int multi_index,
-    KeyType& key_out) const {
+    key_type& key_out) const {
   auto non_const     = const_cast<Object*>(instance.get());
   const MapType& map = non_const->*_member;
   OrkAssert(multi_index < int(map.size()));
@@ -140,15 +144,74 @@ bool DirectObjectMap<MapType>::GetKey(
 template <typename MapType> //
 bool DirectObjectMap<MapType>::GetVal(
     object_constptr_t instance, //
-    const KeyType& key,
+    const key_type& key,
     object_ptr_t& value_out) const {
   auto non_const                      = const_cast<Object*>(instance.get());
   const MapType& map                  = non_const->*_member;
   typename MapType::const_iterator it = map.find(key);
   if (it == map.end())
     return false;
-  value_out = (*it).second;
+  auto nonconst_ptr_value = std::const_pointer_cast<mutable_element_type>((*it).second);
+  value_out = std::dynamic_pointer_cast<Object>(nonconst_ptr_value);
   return true;
 }
+////////////////////////////////////////////////////////////////////////////////
+/*template <typename MapType> //
+void DirectObjectMap<MapType>::serialize(serdes::node_ptr_t sernode) const {
+  auto serializer        = sernode->_serializer;
+  auto instance          = sernode->_ser_instance;
+  auto mapnode           = serializer->pushNode(_name, serdes::NodeType::MAP);
+  mapnode->_parent       = sernode;
+  mapnode->_ser_instance = instance;
+  int numelements        = elementCount(instance);
+  for (size_t i = 0; i < numelements; i++) {
+    //////////////////////////////
+    key_type K;
+    value_type V;
+    GetKey(instance, i, K);
+    GetVal(instance, K, V);
+    //////////////////////////////
+    std::string keystr;
+    serdes::encode_key(keystr, K);
+    //////////////////////////////
+    auto elemnode = serializer->pushNode(keystr, serdes::NodeType::MAP_ELEMENT_LEAF);
+    //////////////////////////////
+    elemnode->_key = keystr;
+    elemnode->_value.template set<value_type>(V);
+    elemnode->_index        = i;
+    elemnode->_parent       = mapnode;
+    elemnode->_ser_instance = instance;
+    elemnode->_serializer   = serializer;
+    auto childnode          = serializer->serializeContainerElement(elemnode);
+    //////////////////////////////
+    serializer->popNode(); // pop elemnode
+    //////////////////////////////
+  }
+  serializer->popNode(); // pop mapnode
+}
+////////////////////////////////////////////////////////////////////////////////
+template <typename MapType> //
+void DirectObjectMap<MapType>::deserialize(serdes::node_ptr_t dsernode) const {
+  key_type key;
+  value_type value;
+  auto deserializer  = dsernode->_deserializer;
+  size_t numelements = dsernode->_numchildren;
+  auto instance      = dsernode->_deser_instance;
+  for (size_t i = 0; i < numelements; i++) {
+    dsernode->_index  = i;
+    auto elemnode     = deserializer->pushNode("", serdes::NodeType::MAP_ELEMENT_LEAF);
+    elemnode->_parent = dsernode;
+    auto childnode    = deserializer->deserializeElement(elemnode);
+    serdes::decode_key<key_type>(childnode->_key, key);
+    childnode->_name = childnode->_key;
+    serdes::decode_value<value_type>(childnode->_value, value);
+    this->WriteElement(
+        instance, //
+        key,
+        -1,
+        &value);
+    deserializer->popNode();
+  }
+}*/
 ////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::reflect

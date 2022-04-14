@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -14,13 +14,22 @@
 #include <ork/rtti/Category.h>
 #include <ork/rtti/downcast.h>
 #include <ork/kernel/string/string.h>
+#include <ork/kernel/string/PoolString.h>
+#include <ork/file/path.h>
 #include <ork/object/Object.h>
 #include <boost/uuid/uuid_io.hpp>
 #include <cstring>
+#include <boost/filesystem.hpp>
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunknown-pragmas"
+
 #include <rapidjson/writer.h>
 #include <rapidjson/document.h>
 #include <rapidjson/writer.h>
 #include <rapidjson/prettywriter.h>
+
+#pragma GCC diagnostic pop
 
 namespace ork::reflect::serdes {
 struct JsonSerObjectNode {
@@ -30,13 +39,14 @@ struct JsonSerObjectNode {
   rapidjson::Value _jsonvalue;
 };
 ////////////////////////////////////////////////////////////////////////////////
-JsonSerializer::JsonSerializer()
-    : _document() {
-  _allocator = &_document.GetAllocator();
-  _document.SetObject();
+JsonSerializer::JsonSerializer() {
+  _allocator = std::make_shared<allocator_t>();
+  _document = std::make_shared<rapidjson::Document>( rapidjson::kObjectType, _allocator.get() );
 }
 ////////////////////////////////////////////////////////////////////////////////
 JsonSerializer::~JsonSerializer() {
+  _document = nullptr;
+  _allocator = nullptr;
 }
 ////////////////////////////////////////////////////////////////////////////////
 node_ptr_t JsonSerializer::_createNode(std::string named, NodeType type) {
@@ -70,7 +80,7 @@ void JsonSerializer::popNode() {
     case NodeType::PROPERTIES:
     case NodeType::MAP: {
       if (_nodestack.empty()) {
-        _document.AddMember(
+        _document->AddMember(
             key, //
             impl->_jsonvalue,
             *_allocator);
@@ -118,7 +128,7 @@ std::string JsonSerializer::output() {
   rapidjson::StringBuffer strbuf;
   rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(strbuf);
   writer.SetIndent(' ', 1);
-  _document.Accept(writer);
+  _document->Accept(writer);
 
   return strbuf.GetString();
 }
@@ -203,6 +213,12 @@ void JsonSerializer::serializeLeaf(node_ptr_t leafnode) {
   } else if (auto as_str = leafnode->_value.tryAs<std::string>()) {
     rapidjson::Value strval(as_str.value().c_str(), *_allocator);
     addfn(strval);
+  } else if (auto as_str = leafnode->_value.tryAs<PoolString>()) {
+    rapidjson::Value strval(as_str.value().c_str(), *_allocator);
+    addfn(strval);
+  } else if (auto as_str = leafnode->_value.tryAs<file::Path>()) {
+    rapidjson::Value strval(as_str.value().c_str(), *_allocator);
+    addfn(strval);
   } else if (auto as_nil = leafnode->_value.tryAs<void*>()) {
     //////////////////////////////////////////////////////////////////
     // if we get here we have an object property, but set to nullptr
@@ -213,6 +229,7 @@ void JsonSerializer::serializeLeaf(node_ptr_t leafnode) {
     rapidjson::Value nilval("nil", *_allocator);
     addfn(nilval);
   } else {
+    printf( "leafnode->_value<%s>\n", leafnode->_value.typeName() );
     // did you mean to use directObjectXXXProperty
     //    instead of directXXXProperty ?
     // todo: get it to fail at compile time

@@ -1,13 +1,16 @@
-///////////////////////////////////////////////////////////////////////////////
-// Orkid
-// Copyright 1996-2020, Michael T. Mayers
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 
 #include <ork/pch.h>
 
 #include <ork/kernel/opq.h>
 ///////////////////////////////////////////////////////////////////////////////
-
+#if 0
 #include <queue>
 
 #include <ork/reflect/properties/DirectTyped.h>
@@ -78,15 +81,15 @@ void ObjectModel::release(objectmodel_ptr_t model) {
 }
 
 ObjectModel::ObjectModel()
-    : mModelInvalidatedInvoker(mSignalModelInvalidated.CreateInvokation())
-    , mbEnablePaint(false)
+    : mbEnablePaint(false)
     , ConstructAutoSlot(NewObject)
     , ConstructAutoSlot(RelayModelInvalidated)
     , ConstructAutoSlot(RelayPropertyInvalidated)
     , ConstructAutoSlot(ObjectDeleted)
     , ConstructAutoSlot(ObjectSelected)
     , ConstructAutoSlot(ObjectDeSelected)
-    , ConstructAutoSlot(Repaint) {
+    , ConstructAutoSlot(Repaint)
+    , mModelInvalidatedInvoker(mSignalModelInvalidated.CreateInvokation()) {
 
   AutoConnector::setupSignalsAndSlots(this);
   ///////////////////////////////////////////
@@ -678,3 +681,4 @@ void ObjectModel::Dump(const char* header) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::reflect::editor
+#endif

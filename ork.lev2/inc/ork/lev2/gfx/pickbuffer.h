@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #pragma once
 
 #include <ork/kernel/core/singleton.h>
@@ -32,13 +39,15 @@ public:
 
   ///////////////////////
 
-  int _width;
-  int _height;
-  bool _inittex;
-  GfxMaterialUITextured* _uimaterial;
-  ork::lev2::RtGroup* _rtgroup;
-  Context* _context;
-  ui::Surface* _surface;
+  ork::lev2::rtgroup_ptr_t _rtgroup;
+
+  GfxMaterialUITextured* _uimaterial = nullptr;
+  Context* _context                  = nullptr;
+  ui::Surface* _surface              = nullptr;
+
+  int _width    = 0;
+  int _height   = 0;
+  bool _inittex = true;
 
   std::map<uint64_t, ork::Object*> mPickIds;
 };

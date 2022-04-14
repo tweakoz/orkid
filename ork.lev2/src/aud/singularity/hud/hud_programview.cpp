@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <ork/lev2/aud/singularity/hud.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
 #include <ork/lev2/gfx/pickbuffer.h>
@@ -63,8 +70,8 @@ void ProgramView::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   auto vp      = syn->_hudvp;
   double time  = syn->_timeaccum;
 
-  mRtGroup->_clearColor = _clearColor;
-  fbi->rtGroupClear(mRtGroup);
+  _rtgroup->_clearColor = _clearColor;
+  fbi->rtGroupClear(_rtgroup.get());
 
   if (_curprogram) {
     auto name   = _curprogram->_name;
@@ -113,8 +120,10 @@ ui::HandlerResult ProgramView::DoOnUiEvent(ui::event_constptr_t ev) {
   switch (ev->_eventcode) {
     case ui::EventCode::KEY_DOWN:
       break;
-    case ui::EventCode::KEY_UP: {
-    } break;
+    case ui::EventCode::KEY_UP:
+      break;
+    default:
+      break;
   }
   return ret;
 }

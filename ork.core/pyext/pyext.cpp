@@ -1,13 +1,23 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include "pyext.h"
 ///////////////////////////////////////////////////////////////////////////////
-class CorePythonApplication : public ork::Application {
-  RttiDeclareConcrete(CorePythonApplication, ork::Application);
+struct CorePythonApplication  {
+
+  CorePythonApplication(){
+        _stringpoolctx = std::make_shared<ork::StringPoolContext>();
+    StringPoolStack::Push(_stringpoolctx);
+  }
+  ~CorePythonApplication(){
+    StringPoolStack::Pop();
+  }
+  stringpoolctx_ptr_t _stringpoolctx;
 };
-
-void CorePythonApplication::Describe() {
-}
-
-INSTANTIATE_TRANSPARENT_RTTI(CorePythonApplication, "CorePythonApplication");
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 void pyinit_math(py::module& module_core);
@@ -16,7 +26,6 @@ static void _coreappinit() {
   SetCurrentThreadName("main");
 
   static CorePythonApplication the_app;
-  ApplicationStack::Push(&the_app);
 
   static auto WorkingDirContext = std::make_shared<FileDevContext>();
   OldSchool::SetGlobalPathVariable("data://", file::Path::orkroot_dir());
@@ -39,6 +48,18 @@ PYBIND11_MODULE(_core, module_core) {
   // core decoder tyoes
   /////////////////////////////////////////////////////////////////////////////////
   auto type_codec = python::TypeCodec::instance();
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  using coreapp_ptr_t = std::shared_ptr<CorePythonApplication>;
+  auto application_type = py::class_<CorePythonApplication,coreapp_ptr_t>(module_core, "Application")
+      .def(
+          "__repr__",
+          [](coreapp_ptr_t app) -> std::string {
+            fxstring<256> fxs;
+            fxs.format("OrkPyCoreApp(%p)", (void*) app.get());
+            return fxs.c_str();
+          });
+  type_codec->registerStdCodec<coreapp_ptr_t>(application_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto crcstr_type =                                                   //
       py::class_<CrcString, crcstring_ptr_t>(module_core, "CrcString") //

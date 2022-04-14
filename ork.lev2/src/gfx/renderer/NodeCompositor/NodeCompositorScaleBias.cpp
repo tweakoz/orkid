@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -42,9 +42,8 @@ struct IMPL {
       int w           = pTARG->mainSurfaceWidth();
       int h           = pTARG->mainSurfaceHeight();
       _rtg            = new RtGroup(pTARG, w, h, NUMSAMPLES);
-      auto buf        = new RtBuffer(lev2::RtgSlot::Slot0, lev2::EBufferFormat::RGBA8, w, h);
+      auto buf        = _rtg->createRenderTarget(lev2::EBufferFormat::RGBA8);
       buf->_debugName = FormatString("ScaleBiasCompositingNode::output");
-      _rtg->SetMrt(0, buf);
       _material.gpuInit(pTARG);
     }
   }
@@ -91,7 +90,7 @@ void ScaleBiasCompositingNode::DoRender(CompositorDrawData& drawdata) // virtual
   _impl.get<std::shared_ptr<scaleandbias::IMPL>>()->_render(drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
-RtBuffer* ScaleBiasCompositingNode::GetOutput() const {
+rtbuffer_ptr_t ScaleBiasCompositingNode::GetOutput() const {
   auto impl = _impl.get<std::shared_ptr<scaleandbias::IMPL>>();
   return (impl->_rtg) ? impl->_rtg->GetMrt(0) : nullptr;
 }

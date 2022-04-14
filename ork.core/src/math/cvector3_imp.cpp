@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -66,9 +66,9 @@ template <> Vector3<float> PropType<Vector3<float>>::FromString(const PropTypeSt
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template class Vector3<float>; // explicit template instantiation
-template class PropType<Vector3<float>>;
+template struct Vector3<float>; // explicit template instantiation
+template struct PropType<Vector3<float>>;
 
-template class Vector3<double>; // explicit template instantiation
+template struct Vector3<double>; // explicit template instantiation
 
 } // namespace ork

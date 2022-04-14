@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -10,6 +10,7 @@
 #pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
+#include <ork/application/application.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/input/inputdevice.h>
 ///////////////////////////////////////////////////////////////////////////////
@@ -47,7 +48,7 @@ struct CtxGLFW : public CTXBASE {
   void _setRefreshPolicy(RefreshPolicyItem epolicy) final;
 
   CtxGLFW(Window* pwin);
-  void initWithData(AppInitData& aid);
+  void initWithData(appinitdata_ptr_t aid);
   ~CtxGLFW();
 
   void onResize(int W, int H);
@@ -61,17 +62,21 @@ struct CtxGLFW : public CTXBASE {
   ui::event_constptr_t uievent() const;
   ui::event_ptr_t uievent();
   Context* context() const;
-  bool mbAlwaysRun;
-  int _width, _height;
-  int mDrawLock;
-  GLFWwindow* _glfwWindow = nullptr;
-  ui::event_ptr_t _uievent;
-  int _runstate;
-  void_lambda_t _onRunLoopIteration;
-  AppInitData _appinitdata;
 
+  GLFWwindow* _glfwWindow = nullptr;
+
+  bool mbAlwaysRun = false;
+  int _width       = 32;
+  int _height      = 32;
+  int mDrawLock    = 0;
+  int _runstate    = 0;
   int _buttonState = 0;
-  
+
+  ui::event_ptr_t _uievent;
+  void_lambda_t _onRunLoopIteration;
+  appinitdata_ptr_t _appinitdata;
+  std::function<void(Context*)> _onGpuInit;
+  std::function<void(Context*)> _onGpuExit;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -84,11 +89,12 @@ public:
   AppWindow(ui::Widget* root_widget);
   ~AppWindow();
 
-   virtual void Draw(void);
-   virtual void GotFocus(void);
-   virtual void LostFocus(void);
-   virtual void Hide(void) {}
-   virtual void OnShow();
+  virtual void Draw(void);
+  virtual void GotFocus(void);
+  virtual void LostFocus(void);
+  virtual void Hide(void) {
+  }
+  virtual void OnShow();
 };
 
 ///////////////////////////////////////////////////////////////////////////////

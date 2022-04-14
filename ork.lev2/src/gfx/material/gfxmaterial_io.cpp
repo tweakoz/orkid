@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -28,7 +28,7 @@ bool LoadMaterialMap(const ork::file::Path& pth, MaterialMap& mmap) {
   TiXmlDocument XmlDoc;
   if (XmlDoc.LoadFile(pth.ToAbsolute().c_str())) {
     const TiXmlElement* RootNode = XmlDoc.FirstChild("miniork_materials")->ToElement();
-    printf("LoadMaterialMap<%s> RootNode<%p>\n", pth.c_str(), RootNode);
+    printf("LoadMaterialMap<%s> RootNode<%p>\n", pth.c_str(), (void*) RootNode);
 
     if (RootNode) {
       for (const TiXmlElement* MtlNode = RootNode->FirstChildElement(); MtlNode; MtlNode = MtlNode->NextSiblingElement()) {

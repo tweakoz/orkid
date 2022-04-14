@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 //#include <audiofile.h>
 #include <string>
 #include <assert.h>
@@ -54,9 +61,9 @@ void ControlBlockInst::compute() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ControllerInst::ControllerInst(Layer* l)
-    : _layer(l)
-    , _curval(1.0f) {
+ControllerInst::ControllerInst(layer_ptr_t l)
+    : _curval(1.0f)
+    , _layer(l) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -71,12 +78,12 @@ CustomControllerData::CustomControllerData() {
   _onkeyoff  = [](CustomControllerInst* cci) {};
 }
 ///////////////////////////////////////////////////////////////////////////////
-ControllerInst* CustomControllerData::instantiate(Layer* layer) const {
+ControllerInst* CustomControllerData::instantiate(layer_ptr_t layer) const {
   //
   return new CustomControllerInst(this, layer);
 }
 ///////////////////////////////////////////////////////////////////////////////
-CustomControllerInst::CustomControllerInst(const CustomControllerData* data, Layer* layer)
+CustomControllerInst::CustomControllerInst(const CustomControllerData* data, layer_ptr_t layer)
     : ControllerInst(layer)
     , _data(data) {
 }
@@ -100,10 +107,10 @@ void ConstantControllerData::describeX(class_t* clazz) {
   clazz->directProperty("constvalue", &ConstantControllerData::_constvalue);
 }
 
-ControllerInst* ConstantControllerData::instantiate(Layer* layer) const {
+ControllerInst* ConstantControllerData::instantiate(layer_ptr_t layer) const {
   return new ConstantInst(this, layer);
 }
-ConstantInst::ConstantInst(const ConstantControllerData* data, Layer* layer)
+ConstantInst::ConstantInst(const ConstantControllerData* data, layer_ptr_t layer)
     : ControllerInst(layer) {
   _curval = data->_constvalue;
 }

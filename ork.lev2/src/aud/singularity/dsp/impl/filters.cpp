@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <ork/lev2/aud/singularity/synth.h>
 #include <assert.h>
 #include <ork/lev2/aud/singularity/filters.h>
@@ -137,9 +144,7 @@ void TrapAllpass::Clear() {
   s1 = 0.0f;
   s2 = 0.0f;
 }
-
 // set coefficients
-
 void TrapAllpass::set(float cutoff) {
   cutoff        = clip_float(cutoff, 30, 16000);
   const float Q = 0.5f;

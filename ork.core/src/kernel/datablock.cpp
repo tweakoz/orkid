@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <ork/kernel/datablock.h>
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
@@ -6,6 +13,9 @@ DataBlock::hasher_t DataBlock::createHasher() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 DataBlock::DataBlock(const void* buffer, size_t len) {
+
+  _vars = std::make_shared<varmap::VarMap>();
+
   if (buffer and len)
     addData(buffer, len);
 }

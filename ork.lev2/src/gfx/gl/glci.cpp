@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ///////////////////////////////////////////////////////////////////////////////
@@ -150,7 +150,7 @@ FxShaderStorageBuffer* ComputeInterface::createStorageBuffer(size_t length) {
   ssb->_fxssb->_length = length;
   GL_ERRORCHECK();
   glGenBuffers(1, &ssb->_glbufid);
-  printf("Create SSBO<%p> glid<%d>\n", ssb, ssb->_glbufid);
+  printf("Create SSBO<%p> glid<%d>\n", (void*)ssb, ssb->_glbufid);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssb->_glbufid);
   auto mem = new char[length];
   for (int i = 0; i < length; i++)

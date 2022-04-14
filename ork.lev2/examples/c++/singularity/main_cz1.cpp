@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <ork/application/application.h>
 #include <ork/kernel/string/deco.inl>
 #include <ork/kernel/timer.h>
@@ -50,7 +57,7 @@ int main(int argc, char** argv) {
     for (int i = 0; i < 64; i++) { // 2 32 patch banks
       auto bnk = (i >> 5) ? czdata2 : czdata1;
       auto prg = bnk->getProgram(i % 32);
-      printf("i<%d> prg<%p>\n", i, prg.get());
+      printf("i<%d> prg<%p>\n", i, (void*) prg.get());
       add_event(prg, float(i) * 0.5, 1.0, 36);
     }
     usleep(35 << 20); // just wait, let the "music" play..

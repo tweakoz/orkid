@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -26,6 +26,8 @@
 #include <ork/kernel/mutex.h>
 #include <ork/kernel/datablock.h>
 #include <ork/object/AutoConnector.h>
+#include <ork/lev2/lev2_types.h>
+#include <ork/util/Context.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
@@ -36,22 +38,6 @@ extern bool _MIXEDDPI();
 extern float _currentDPI();
 
 typedef SVtxV12C4T16 TEXT_VTXFMT;
-
-class CTXBASE;
-
-class Context;
-class OffscreenBuffer;
-class Window;
-class RtGroup;
-
-class Texture;
-class GfxMaterial;
-class GfxMaterialUITextured;
-class PBRMaterial;
-
-class GfxEnv;
-
-using context_ptr_t = std::shared_ptr<Context>;
 
 /// ////////////////////////////////////////////////////////////////////////////
 ///
@@ -90,9 +76,6 @@ struct RenderQueueSortingData {
   int miSortingOffset;
   bool mbTransparency;
 };
-
-class RenderContextInstData;
-class RenderContextFrameData;
 
 /// ////////////////////////////////////////////////////////////////////////////
 ///
@@ -136,7 +119,7 @@ struct DisplayMode {
 ///   IMI : ImmediateMode interface. convenience methods for oldschool type gfx
 ///////////////////////////////////////////////////////////////////////////////
 
-class Context : public ork::Object {
+struct Context : public ork::Object {
   DeclareAbstractX(Context, ork::Object);
 
   ///////////////////////////////////////////////////////////////////////
@@ -218,19 +201,19 @@ public:
   ///////////////////////////////////////////////////////////////////////
 
   virtual U32 fcolor4ToU32(const fcolor4& clr) {
-    return clr.GetRGBAU32();
+    return clr.RGBAU32();
   }
   virtual U32 fcolor3ToU32(const fcolor3& clr) {
-    return clr.GetRGBAU32();
+    return clr.RGBAU32();
   }
   virtual fcolor4 U32Tofcolor4(const U32 uclr) {
     fcolor4 clr;
-    clr.SetRGBAU32(uclr);
+    clr.setRGBAU32(uclr);
     return clr;
   }
   virtual fcolor3 U32Tofcolor3(const U32 uclr) {
     fcolor3 clr;
-    clr.SetRGBAU32(uclr);
+    clr.setRGBAU32(uclr);
     return clr;
   }
 
@@ -305,28 +288,42 @@ public:
   void EndLoad(void* ploadtok);
 
   static const int kiModColorStackMax = 8;
-  int miW, miH;
-  CTXBASE* mCtxBase;
-  void* mPlatformHandle;
+
+  CTXBASE* mCtxBase                                   = nullptr;
+  void* mPlatformHandle                               = nullptr;
+  const RenderContextInstData* mRenderContextInstData = nullptr;
+  const ork::rtti::ICastable* mpCurrentObject         = nullptr;
+  RtGroup* _defaultRTG                                = nullptr;
+
   TargetType meTargetType;
-  fvec4 maModColorStack[kiModColorStackMax];
+  int miW, miH;
   int miModColorStackIndex;
-  const ork::rtti::ICastable* mpCurrentObject;
-  fvec4 mvModColor;
-  bool mbPostInitializeContext;
   int miTargetFrame;
-  PerformanceItem mFramePerfItem;
-  const RenderContextInstData* mRenderContextInstData;
   int miDrawLock;
+  bool mbPostInitializeContext;
+
+  fvec4 maModColorStack[kiModColorStackMax];
+  fvec4 mvModColor;
+  PerformanceItem mFramePerfItem;
+
   bool hiDPI() const;
   float currentDPI() const;
-  RtGroup* _defaultRTG = nullptr;
 
   static orkvector<DisplayMode*> mDisplayModes;
 
   std::stack<const RenderContextFrameData*> _rcfdstack;
 
+  void scheduleOnBeginFrame(void_lambda_t l) {
+    _onBeginFrameCallbacks.push_back(l);
+  }
+  void scheduleOnEndFrame(void_lambda_t l) {
+    _onEndFrameCallbacks.push_back(l);
+  }
+
 private:
+  std::vector<void_lambda_t> _onBeginFrameCallbacks;
+  std::vector<void_lambda_t> _onEndFrameCallbacks;
+
   virtual void _doBeginFrame(void) = 0;
   virtual void _doEndFrame(void)   = 0;
   virtual void* _doBeginLoad() {
@@ -340,6 +337,15 @@ private:
   const RenderContextFrameData* _defaultrcfd = nullptr;
 };
 
+struct ThreadGfxContext : public util::ContextTLS<ThreadGfxContext> {
+  ThreadGfxContext(Context* c)
+      : _context(c) {
+  }
+  Context* _context;
+};
+
+Context* contextForCurrentThread();
+
 /// ////////////////////////////////////////////////////////////////////////////
 ///
 /// ////////////////////////////////////////////////////////////////////////////
@@ -351,10 +357,10 @@ struct OrthoQuad {
   SRect mQrect;
   float mfu0a;
   float mfv0a;
-  float mfu1a;
-  float mfv1a;
   float mfu0b;
   float mfv0b;
+  float mfu1a;
+  float mfv1a;
   float mfu1b;
   float mfv1b;
   float mfrot;
@@ -383,7 +389,7 @@ public:
     return _parentRtGroup;
   }
   ui::Widget* GetRootWidget(void) const {
-    return mRootWidget;
+    return _rootWidget;
   }
   bool IsDirty(void) const {
     return mbDirty;
@@ -407,7 +413,7 @@ public:
     return meFormat;
   }
   Texture* GetTexture() const {
-    return mpTexture;
+    return _texture;
   }
   Context* context(void) const;
 
@@ -450,10 +456,12 @@ public:
   }
   void SetContext(context_ptr_t ctx) {
     _sharedcontext = ctx;
-    mpContext      = ctx.get(); // todo get rid of me..
   }
   void SetTexture(Texture* ptex) {
-    mpTexture = ptex;
+    _texture = ptex;
+  }
+  void SetRootWidget(ui::Widget* pwidg) {
+    _rootWidget = pwidg;
   }
 
   //////////////////////////////////////////////
@@ -479,15 +487,8 @@ public:
       fvec2 uv3,
       const fcolor4& clr = fcolor4::White());
 
-
   void Render2dQuadEML(const fvec4& QuadRect, const fvec4& UvRect, const fvec4& UvRect2);
   void Render2dQuadsEML(size_t count, const fvec4* QuadRects, const fvec4* UvRects, const fvec4* UvRect2s);
-
-  //////////////////////////////////////////////
-
-  void SetRootWidget(ui::Widget* pwidg) {
-    mRootWidget = pwidg;
-  }
 
   //////////////////////////////////////////////
 
@@ -497,9 +498,12 @@ public:
 
 protected:
   context_ptr_t _sharedcontext;
-  ui::Widget* mRootWidget;
-  Context* mpContext;
-  Texture* mpTexture;
+  ui::Widget* _rootWidget  = nullptr;
+  Texture* _texture        = nullptr;
+  OffscreenBuffer* _parent = nullptr;
+  RtGroup* _parentRtGroup  = nullptr;
+  void* _IMPL              = nullptr;
+
   int miWidth;
   int miHeight;
   EBufferFormat meFormat;
@@ -508,9 +512,6 @@ protected:
   bool mbSizeIsDirty;
   std::string _name;
   fcolor4 mClearColor;
-  OffscreenBuffer* _parent;
-  RtGroup* _parentRtGroup;
-  void* mPlatformHandle;
 };
 
 /// ////////////////////////////////////////////////////////////////////////////
@@ -554,14 +555,10 @@ public:
 class GfxEnv : public NoRttiSingleton<GfxEnv> {
   friend class OffscreenBuffer;
   friend class Window;
-  friend class Context;
+  friend struct Context;
   //////////////////////////////////////////////////////////////////////////////
 
 public:
-  Context* loadingContext() const {
-    return gLoaderTarget;
-  }
-  void SetLoaderTarget(Context* ptarget);
 
   recursive_mutex& GetGlobalLock() {
     return mGfxEnvMutex;
@@ -617,13 +614,22 @@ public:
   static DynamicVertexBuffer<SVtxV16T16C16>& GetSharedDynamicV16T16C16();
 
   static bool initialized();
+  static void initializeWithContext(context_ptr_t ctx);
+
+  using lockset_t = std::unordered_set<uint64_t>;
+  using locknotifset_t = std::vector<void_lambda_t>;
+
+  static uint64_t createLock();
+  static void releaseLock(uint64_t l);
+  static void onLocksDone(void_lambda_t l);
+
+  static lockset_t dumpLocks();
 
   //////////////////////////////////////////////////////////////////////////////
 protected:
   //////////////////////////////////////////////////////////////////////////////
 
   Window* mpMainWindow;
-  Context* gLoaderTarget;
 
   orkvector<OffscreenBuffer*> mvActivePBuffers;
   orkvector<OffscreenBuffer*> mvActiveWindows;
@@ -636,6 +642,16 @@ protected:
   orkstack<ContextCreationParams> mCreationParams;
   recursive_mutex mGfxEnvMutex;
   bool _initialized = false;
+
+
+  struct WaitLockData{
+    lockset_t _locks;
+    locknotifset_t _notifs;
+  };
+
+  std::atomic<uint64_t> _lockCounter;
+
+  LockedResource<WaitLockData> _waitlockdata;
 
   static const object::ObjectClass* gpTargetClass;
 };

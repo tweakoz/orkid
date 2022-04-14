@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -48,26 +48,28 @@ class GridGraph {
 public:
   ////////////////////////////////////////////////////
 
+  GridNode** mppGrids = nullptr;
+
+  const int kfixedgridsize;
+
   int miDimX;
   int miDimY;
   int miDimZ;
   int miNumGrids;
   int miNumFilledGrids;
 
-  GridNode** mppGrids;
+  float areamin;
+  float areamax;
+  float areaavg;
+  float areatot;
+  int totpolys;
 
   fvec3 vsize;
   fvec3 vmin;
   fvec3 vmax;
   fvec3 vctr;
   AABox maab;
-  float areamax;
-  float areamin;
-  float areaavg;
-  float areatot;
-  int totpolys;
   fmtx4 mMtxWorldToGrid;
-  const int kfixedgridsize;
 
   ////////////////////////////////////////////////////
 

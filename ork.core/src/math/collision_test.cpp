@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 //////////////////////////////////////////////////////////////// 
@@ -104,8 +104,8 @@ bool CollisionTester::RayTriangleTest( const fray3& ray, const fvec3& A, const f
 	fvec3 vab = (B-A);
 	fvec3 vac = (C-A);
 
-	fvec3 Nabc = vab.Cross(vac);
-	float dist_O_to_P = -(O-A).Dot(Nabc)/(D.Dot(Nabc));
+	fvec3 Nabc = vab.crossWith(vac);
+	float dist_O_to_P = -(O-A).dotWith(Nabc)/(D.dotWith(Nabc));
 	isect = O+(D*dist_O_to_P); // plane_isect
 		
 	if( dist_O_to_P<0.0f ) return false;
@@ -119,8 +119,8 @@ bool CollisionTester::RayTriangleTest( const fray3& ray, const fvec3& A, const f
 	fvec3 vob = (B-O);
 	fvec3 voc = (C-O);
 
-	fplane3 PlaneOCA( voc.Cross(voa).Normal(), O );
-	fplane3 PlaneOBA( voa.Cross(vob).Normal(), O );
+	fplane3 PlaneOCA( voc.crossWith(voa).normalized(), O );
+	fplane3 PlaneOBA( voa.crossWith(vob).normalized(), O );
 		
 	t = PlaneOCA.pointDistance( isect )/PlaneOCA.pointDistance(B);
 	s = PlaneOBA.pointDistance( isect )/PlaneOBA.pointDistance(C);
@@ -212,7 +212,7 @@ bool CollisionTester::AbstractCollidableBisectionTest(	IAbstractCollidable& coll
 	{
 		case IAbstractCollidable::ECF_ENTERCOLLISION: // entering collision state
 		{
-			float dist = (seg.mEnd-seg.mStart).MagSquared();
+			float dist = (seg.mEnd-seg.mStart).magnitudeSquared();
 		
 			if( dist<0.00001f )
 			{

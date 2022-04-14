@@ -1,14 +1,15 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
 #include <ork/kernel/kernel.h>
 #include <ork/kernel/thread.h>
+#include <ork/orkstl.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -55,9 +56,6 @@ void PerfMarkerPushState();
 void PerfMarkerPopState();
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace lev2 { class Context; }
-///////////////////////////////////////////////////////////////////////////////
-
 
 class PerformanceItem
 {
@@ -118,7 +116,7 @@ public:
 	static void AddItem( eperfset eset, PerformanceItem& Item );
 	static orklist<PerformanceItem*>* GetItemList(eperfset eset);
 
-	static void Draw(ork::lev2::Context *pTARG);
+	//static void Draw(ork::lev2::Context *pTARG);
 	static void TextDump();
 
 };

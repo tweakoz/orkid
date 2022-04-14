@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -37,7 +37,7 @@ std::set<file::Path> FileAssetLoader::EnumerateExisting() {
     auto files    = FileEnv::filespec_search(wild.c_str(), dir);
     int inumfiles = (int)files.size();
 
-    printf("FileAssetLoader<%p> searching<%s> for<%s> inumfiles<%d>\n", this, dir.c_str(), wild.c_str(), inumfiles);
+    printf("FileAssetLoader<%p> searching<%s> for<%s> inumfiles<%d>\n", (void*) this, dir.c_str(), wild.c_str(), inumfiles);
 
     file::Path::NameType searchdir(dir.ToAbsolute().c_str());
     searchdir.replace_in_place("\\", "/");
@@ -65,11 +65,11 @@ void FileAssetLoader::addLocation(filedevctx_constptr_t b, file_ext_t e) {
   fset.mExt      = e;
   fset.mPathBase = b;
   mLocations.push_back(fset);
-  if (1) {
+  if (0) {
     auto loc = b->getFilesystemBaseAbs().c_str();
     printf(
         "FileAssetLoader<%p> added set ext<%s> base<%s>\n", //
-        this,
+        (void*) this,
         fset.mExt.c_str(),
         loc);
   }
@@ -114,6 +114,10 @@ bool FileAssetLoader::_find(
   auto filedevctx = ork::FileEnv::contextForUriProto(url.c_str());
 
   // printf("filedevctx<%p>\n", filedevctx.get());
+
+  if(nullptr==filedevctx){
+    
+  }
 
   //////////////////////
   // munge the path

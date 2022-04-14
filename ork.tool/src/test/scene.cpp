@@ -28,7 +28,7 @@ TEST(SceneManip1)
 	    entdata2->SetName("entity2");
 	    scenedata->AddSceneObject(entdata2);
 
-	    Simulation *simulation = new Simulation(scenedata, ApplicationStack::Top());
+	    Simulation *simulation = new Simulation(scenedata, StringPoolStack::Top());
 	    simulation->SetSimulationMode(ESCENEMODE_RUN);
 
 	    Entity *entity = simulation->FindEntity(AddPooledLiteral("entity1"));

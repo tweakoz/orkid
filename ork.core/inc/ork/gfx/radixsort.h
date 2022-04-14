@@ -25,17 +25,25 @@ public:
   RadixSort& Sort(const float* input, size_t nb);
 
   //! Access to results. _indices is a list of indices in sorted order, i.e. in the order you may further process your data
-  inline uint32_t* GetIndices() const { return _indices; }
+  inline uint32_t* GetIndices() const {
+    return _indices;
+  }
 
   //! Returns the total number of calls to the radix sorter.
-  inline uint32_t GetNbTotalCalls() const { return _totalCalls; }
+  inline uint32_t GetNbTotalCalls() const {
+    return _totalCalls;
+  }
   //! Returns the number of premature exits due to temporal coherence.
-  inline uint32_t GetNbHits() const { return _numBhits; }
+  inline uint32_t GetNbHits() const {
+    return _numBhits;
+  }
 
   RadixSort(const RadixSort& object);
   RadixSort& operator=(const RadixSort& object);
 
-  uint32_t currentSize() const { return _currentSize; }
+  uint32_t currentSize() const {
+    return _currentSize;
+  }
 
   static constexpr size_t HISTOSIZE = 1024;
 

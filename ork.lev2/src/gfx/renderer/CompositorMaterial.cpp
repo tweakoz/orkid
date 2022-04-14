@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -21,24 +21,9 @@
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 CompositingMaterial::CompositingMaterial()
-    : _shader(nullptr)
-    , hMapA(nullptr)
-    , hMapB(nullptr)
-    , hMapC(nullptr)
-    , hBiasA(nullptr)
-    , hBiasB(nullptr)
-    , hBiasC(nullptr)
-    , hTekOp2AmulB(nullptr)
-    , hTekOp2AdivB(nullptr)
-    , hTekBoverAplusC(nullptr)
-    , hTekAplusBplusC(nullptr)
-    , hTekAlerpBwithC(nullptr)
-    , hTekCurrent(nullptr)
-    , mCurrentTextureA(nullptr)
-    , mCurrentTextureB(nullptr)
-    , mCurrentTextureC(nullptr)
-    , mBiasA(0.0f, 0.0f, 0.0f, 0.0f)
+    : mBiasA(0.0f, 0.0f, 0.0f, 0.0f)
     , mBiasB(0.0f, 0.0f, 0.0f, 0.0f)
+    , mBiasC(0.0f, 0.0f, 0.0f, 0.0f)
     , mLevelA(1.0f, 1.0f, 1.0f, 1.0f)
     , mLevelB(1.0f, 1.0f, 1.0f, 1.0f)
     , mLevelC(1.0f, 1.0f, 1.0f, 1.0f) {

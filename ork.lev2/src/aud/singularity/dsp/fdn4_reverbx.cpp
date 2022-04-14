@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -42,7 +42,7 @@ Fdn4ReverbXData::Fdn4ReverbXData(std::string name, float tscale)
   _axis.x = rg.rangedf(-1, 1);
   _axis.y = rg.rangedf(-1, 1);
   _axis.z = rg.rangedf(-1, 1);
-  _axis.Normalize();
+  _axis.normalizeInPlace();
   _speed         = rg.rangedf(0.00001, 0.001);
   float input_g  = 0.75f;
   float output_g = 0.75f;
@@ -84,20 +84,20 @@ Fdn4ReverbX::Fdn4ReverbX(const Fdn4ReverbXData* dbd)
 
 void Fdn4ReverbX::matrixHadamard(float fblevel) {
   float fbgain = lerp(0.40, 0.49, fblevel);
-  _feedbackMatrix.SetRow(0, fvec4(+fbgain, +fbgain, +fbgain, +fbgain));
-  _feedbackMatrix.SetRow(1, fvec4(+fbgain, -fbgain, +fbgain, -fbgain));
-  _feedbackMatrix.SetRow(2, fvec4(+fbgain, +fbgain, -fbgain, -fbgain));
-  _feedbackMatrix.SetRow(3, fvec4(+fbgain, -fbgain, -fbgain, +fbgain));
+  _feedbackMatrix.setRow(0, fvec4(+fbgain, +fbgain, +fbgain, +fbgain));
+  _feedbackMatrix.setRow(1, fvec4(+fbgain, -fbgain, +fbgain, -fbgain));
+  _feedbackMatrix.setRow(2, fvec4(+fbgain, +fbgain, -fbgain, -fbgain));
+  _feedbackMatrix.setRow(3, fvec4(+fbgain, -fbgain, -fbgain, +fbgain));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void Fdn4ReverbX::matrixHouseholder() {
   float fbgain = 0.5f;
-  _feedbackMatrix.SetRow(0, fvec4(+fbgain, -fbgain, -fbgain, -fbgain));
-  _feedbackMatrix.SetRow(1, fvec4(-fbgain, +fbgain, -fbgain, -fbgain));
-  _feedbackMatrix.SetRow(2, fvec4(-fbgain, -fbgain, +fbgain, -fbgain));
-  _feedbackMatrix.SetRow(3, fvec4(-fbgain, -fbgain, -fbgain, +fbgain));
+  _feedbackMatrix.setRow(0, fvec4(+fbgain, -fbgain, -fbgain, -fbgain));
+  _feedbackMatrix.setRow(1, fvec4(-fbgain, +fbgain, -fbgain, -fbgain));
+  _feedbackMatrix.setRow(2, fvec4(-fbgain, -fbgain, +fbgain, -fbgain));
+  _feedbackMatrix.setRow(3, fvec4(-fbgain, -fbgain, -fbgain, +fbgain));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -129,10 +129,10 @@ void Fdn4ReverbX::compute(DspBuffer& dspbuf) // final
     auto rotMatrix = q.toMatrix();
     auto curmatrix = _feedbackMatrix * rotMatrix;
 
-    fvec4 grp0 = curmatrix.GetColumn(0);
-    fvec4 grp1 = curmatrix.GetColumn(1);
-    fvec4 grp2 = curmatrix.GetColumn(2);
-    fvec4 grp3 = curmatrix.GetColumn(3);
+    fvec4 grp0 = curmatrix.column(0);
+    fvec4 grp1 = curmatrix.column(1);
+    fvec4 grp2 = curmatrix.column(2);
+    fvec4 grp3 = curmatrix.column(3);
 
     // todo: renormalize the matrix, it eventually goes unstable...
 
@@ -161,10 +161,10 @@ void Fdn4ReverbX::compute(DspBuffer& dspbuf) // final
     float cinp = finl * _inputGainsL.z + finr * _inputGainsR.z;
     float dinp = finl * _inputGainsL.w + finr * _inputGainsR.w;
 
-    ainp += grp0.Dot(abcd_out) + 1e-9;
-    binp += grp1.Dot(abcd_out) + 1e-9;
-    cinp += grp2.Dot(abcd_out) + 1e-9;
-    dinp += grp3.Dot(abcd_out) + 1e-9;
+    ainp += grp0.dotWith(abcd_out) + 1e-9;
+    binp += grp1.dotWith(abcd_out) + 1e-9;
+    cinp += grp2.dotWith(abcd_out) + 1e-9;
+    dinp += grp3.dotWith(abcd_out) + 1e-9;
 
     _delayA.inp(ainp);
     _delayB.inp(binp);

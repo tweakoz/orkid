@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -30,14 +30,14 @@ extern int G_MSAASAMPLES;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ui{
 ///////////////////////////////////////////////////////////////////////////////
-SimpleUiApp::SimpleUiApp(int& argc, char** argv,AppInitData& qid)
-    : OrkEzQtApp(argc, argv,qid) {
+SimpleUiApp::SimpleUiApp(appinitdata_ptr_t initdata)
+    : OrkEzApp(initdata) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 SimpleUiApp::~SimpleUiApp() {
 }
 ///////////////////////////////////////////////////////////////////////////////
-simpleuiapp_ptr_t createSimpleUiApp(int& argc, char** argv, AppInitData& qid ) {
+simpleuiapp_ptr_t createSimpleUiApp(appinitdata_ptr_t initdata ) {
 #if defined(__APPLE__)
   _macosUseHIDPI = false;
   G_MSAASAMPLES  = 1;
@@ -46,9 +46,8 @@ simpleuiapp_ptr_t createSimpleUiApp(int& argc, char** argv, AppInitData& qid ) {
   //////////////////////////////////////////////////////////////////////////////
   // boot up debug HUD
   //////////////////////////////////////////////////////////////////////////////
-  static auto& qti = qtinit(argc, argv,qid);
 
-  auto qtapp                      = std::make_shared<SimpleUiApp>(qti._argc, qti._argvp, qid);
+  auto qtapp                      = std::make_shared<SimpleUiApp>(initdata);
   auto qtwin                      = qtapp->_mainWindow;
   auto gfxwin                     = qtwin->_gfxwin;
   auto uicontext                  = qtapp->_uicontext;
@@ -89,20 +88,21 @@ simpleuiapp_ptr_t createSimpleUiApp(int& argc, char** argv, AppInitData& qid ) {
     deco::printf(fvec3::Yellow(), "  fxparameterMODC<%p>\n", fxparameterMODC);
   });
   //////////////////////////////////////////////////////////
-  qtapp->onUpdate([=](ui::updatedata_ptr_t updata) {
+  auto dbufcontext = std::make_shared<DrawBufContext>();
+  qtapp->onUpdate([&](ui::updatedata_ptr_t updata) {
     ///////////////////////////////////////
-    auto DB = DrawableBuffer::acquireForWrite(0);
+    auto DB = dbufcontext->acquireForWriteLocked();
     if (DB) {
       DB->Reset();
       DB->copyCameras(*cameras);
       // qtapp->_ezviewport->onUpdateThreadTick(updata);
-      DrawableBuffer::releaseFromWrite(DB);
+      dbufcontext->releaseFromWriteLocked(DB);
     }
   });
   //////////////////////////////////////////////////////////
-  qtapp->onDraw([=](ui::drawevent_constptr_t drwev) {
+  qtapp->onDraw([&](ui::drawevent_constptr_t drwev) {
     ////////////////////////////////////////////////
-    auto DB = DrawableBuffer::acquireForRead(7);
+    auto DB = dbufcontext->acquireForReadLocked();
     if (nullptr == DB)
       return;
     ////////////////////////////////////////////////
@@ -129,7 +129,7 @@ simpleuiapp_ptr_t createSimpleUiApp(int& argc, char** argv, AppInitData& qid ) {
     mtxi->PopUIMatrix();
     context->endFrame();
     ////////////////////////////////////////////////////
-    DrawableBuffer::releaseFromRead(DB);
+    dbufcontext->releaseFromReadLocked(DB);
   });
   //////////////////////////////////////////////////////////
   qtapp->onResize([=](int w, int h) { //

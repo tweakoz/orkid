@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -47,25 +47,27 @@ public:
   //////////////////////////////////////////////////////////////////////////////
 
 protected:
+  fxshaderasset_ptr_t _shaderasset;
+  FxShader* _shader                       = nullptr;
+  const FxShaderTechnique* hTekMod        = nullptr;
+  const FxShaderTechnique* hTekVtx        = nullptr;
+  const FxShaderTechnique* hTekModVtx     = nullptr;
+  const FxShaderTechnique* hTekCircle     = nullptr;
+  const FxShaderParam* hVPW               = nullptr;
+  const FxShaderParam* hBias              = nullptr;
+  const FxShaderParam* hScale             = nullptr;
+  const FxShaderParam* hTransform         = nullptr;
+  const FxShaderParam* hModColor          = nullptr;
+  const FxShaderParam* hColorMap          = nullptr;
+  const FxShaderParam* hCircleInnerRadius = nullptr;
+  const FxShaderParam* hCircleOuterRadius = nullptr;
+
+  EType meType;
+  UiColorMode meUIColorMode;
+
   fvec4 PosScale;
   fvec4 PosBias;
   fvec4 Color;
-  fxshaderasset_ptr_t _shaderasset;
-  FxShader* _shader;
-  UiColorMode meUIColorMode;
-  const FxShaderTechnique* hTekMod;
-  const FxShaderTechnique* hTekVtx;
-  const FxShaderTechnique* hTekModVtx;
-  const FxShaderTechnique* hTekCircle;
-  const FxShaderParam* hVPW;
-  const FxShaderParam* hBias;
-  const FxShaderParam* hScale;
-  const FxShaderParam* hTransform;
-  const FxShaderParam* hModColor;
-  const FxShaderParam* hColorMap;
-  const FxShaderParam* hCircleInnerRadius;
-  const FxShaderParam* hCircleOuterRadius;
-  EType meType;
 };
 
 using uimaterial_ptr_t = std::shared_ptr<GfxMaterialUI>;
@@ -90,7 +92,9 @@ public:
   int BeginBlock(Context* pTARG, const RenderContextInstData& MatCtx) override;
   void EndBlock(Context* pTARG) override;
 
-  //////////////////////////////////////////////////////////////////////////////
+  /////////////////////////
+  void UpdateMVPMatrix(Context* pTARG) final;
+/////////////////////////////////////////////////////
 
 protected:
   fvec4 PosScale;
@@ -128,19 +132,21 @@ public:
   void EffectInit(void);
 
 protected:
+  fxshaderasset_ptr_t _shaderasset;
+
+  const FxShaderTechnique* hTek   = nullptr;
+  const FxShaderParam* hVPW       = nullptr;
+  const FxShaderParam* hBias      = nullptr;
+  const FxShaderParam* hScale     = nullptr;
+  const FxShaderParam* hTransform = nullptr;
+  const FxShaderParam* hModColor  = nullptr;
+  const FxShaderParam* hColorMap  = nullptr;
+
+  FxShader* _shader = nullptr;
+
   std::string mTechniqueName;
 
   fvec4 Color;
-  fxshaderasset_ptr_t _shaderasset;
-  FxShader* _shader;
-
-  const FxShaderTechnique* hTek;
-  const FxShaderParam* hVPW;
-  const FxShaderParam* hBias;
-  const FxShaderParam* hScale;
-  const FxShaderParam* hTransform;
-  const FxShaderParam* hModColor;
-  const FxShaderParam* hColorMap;
 };
 
 uimaterial_ptr_t defaultUIMaterial();

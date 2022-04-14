@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -33,8 +33,9 @@ extern bool _macosUseHIDPI;
 static auto the_synth = synth::instance();
 audiodevice_ptr_t gaudiodevice;
 ///////////////////////////////////////////////////////////////////////////////
-SingularityTestApp::SingularityTestApp(int& argc, char** argv)
-    : OrkEzQtApp(argc, argv,AppInitData()) {
+SingularityTestApp::SingularityTestApp(appinitdata_ptr_t initdata)
+  // TODO - get init data with lev2 enabled...
+    : OrkEzApp(initdata) {
   _hudvp = the_synth->_hudvp;
   gaudiodevice = AudioDevice::instance();
   //startupAudio();
@@ -50,19 +51,19 @@ std::string midiportname    = "";
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-singularitytestapp_ptr_t createEZapp(int& argc, char** argv) {
+singularitytestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
 
-  po::options_description desc("Allowed options");
-  desc.add_options()                                                //
+  //lev2::initModule(init_data);
+
+  auto desc = init_data->commandLineOptions("Singularity Options");
+  desc->add_options()                                                //
       ("help", "produce help message")                              //
       ("test", po::value<std::string>(), "test name (list,vo,nvo)") //
       ("port", po::value<std::string>(), "midiport name (list)")    //
       ("program", po::value<std::string>(), "program name")         //
       ("hidpi", "hidpi mode");
 
-  po::variables_map vars;
-  po::store(po::parse_command_line(argc, argv, desc), vars);
-  po::notify(vars);
+  auto& vars = *init_data->parse();
 
   if (vars.count("help")) {
     std::cout << desc << "\n";
@@ -86,9 +87,7 @@ singularitytestapp_ptr_t createEZapp(int& argc, char** argv) {
   //////////////////////////////////////////////////////////////////////////////
   // boot up debug HUD
   //////////////////////////////////////////////////////////////////////////////
-  static auto& qti = qtinit(argc, argv);
-  //QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
-  auto qtapp  = std::make_shared<SingularityTestApp>(qti._argc, qti._argvp);
+  auto qtapp  = std::make_shared<SingularityTestApp>(init_data);
   auto qtwin  = qtapp->_mainWindow;
   auto gfxwin = qtwin->_gfxwin;
   //////////////////////////////////////////////////////////
@@ -131,18 +130,19 @@ singularitytestapp_ptr_t createEZapp(int& argc, char** argv) {
     deco::printf(fvec3::Yellow(), "  fxparameterMODC<%p>\n", fxparameterMODC);
   });
   //////////////////////////////////////////////////////////
+  auto dbufcontext = std::make_shared<DrawBufContext>();
   qtapp->onUpdate([=](ui::updatedata_ptr_t updata) {
     ///////////////////////////////////////
-    auto DB = DrawableBuffer::acquireForWrite(0);
+    auto DB = dbufcontext->acquireForWriteLocked();
     DB->Reset();
     DB->copyCameras(*cameras);
     qtapp->_hudvp->onUpdateThreadTick(updata);
-    DrawableBuffer::releaseFromWrite(DB);
+    dbufcontext->releaseFromWriteLocked(DB);
   });
   //////////////////////////////////////////////////////////
   qtapp->onDraw([=](ui::drawevent_constptr_t drwev) {
     ////////////////////////////////////////////////
-    auto DB = DrawableBuffer::acquireForRead(7);
+    auto DB = dbufcontext->acquireForReadLocked();
     if (nullptr == DB)
       return;
     ////////////////////////////////////////////////
@@ -170,7 +170,7 @@ singularitytestapp_ptr_t createEZapp(int& argc, char** argv) {
     mtxi->PopUIMatrix();
     context->endFrame();
     ////////////////////////////////////////////////////
-    DrawableBuffer::releaseFromRead(DB);
+    dbufcontext->releaseFromReadLocked(DB);
   });
   //////////////////////////////////////////////////////////
   qtapp->onResize([=](int w, int h) { //
@@ -207,8 +207,7 @@ singularitytestapp_ptr_t createEZapp(int& argc, char** argv) {
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 singularitybenchapp_ptr_t createBenchmarkApp(
-    int& argc, //
-    char** argv,
+    appinitdata_ptr_t initdata,
     prgdata_constptr_t program) {
   //////////////////////////////////////////////////////////////////////////////
   // benchmark
@@ -216,7 +215,7 @@ singularitybenchapp_ptr_t createBenchmarkApp(
   constexpr size_t histosize = 65536;
   /////////////////////////////////////////
   auto uicontext                  = std::make_shared<ui::Context>();
-  auto app                        = std::make_shared<SingularityBenchMarkApp>(argc, argv);
+  auto app                        = std::make_shared<SingularityBenchMarkApp>(initdata);
   auto qtwin                      = app->_mainWindow;
   auto gfxwin                     = qtwin->_gfxwin;
   gfxwin->mRootWidget->_uicontext = uicontext.get();
@@ -465,7 +464,7 @@ prgdata_constptr_t testpattern(
     int argc,
     char** argv) {
 
-  auto midictx = MidiContext::instance();
+  auto midictx = midi::InputContext::instance();
   if (midiportname == "list") {
     for (auto portitem : midictx->_portmap) {
       printf("midiport<%d:%s>\n", portitem.second, portitem.first.c_str());
@@ -488,7 +487,7 @@ prgdata_constptr_t testpattern(
     the_synth->_globalprog = program;
     return program;
   } else if (testpatternname == "midi") {
-    midictx->startMidiInputByName(midiportname);
+    midictx->startMidiInputByName(midiportname,&mymidicallback);
     the_synth->_globalprog = program;
     return program;
   } else if (testpatternname == "sq1") {

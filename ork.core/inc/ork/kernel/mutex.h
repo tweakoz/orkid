@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -106,16 +106,16 @@ private:
 namespace ork {
 
 template <typename T> class LockedResource {
-  typedef std::function<void(T&)> mutable_atomicop_t;
-  typedef std::function<void(const T&)> const_atomicop_t;
+  using mutable_atomicop_t = std::function<void(T&)>;
+  using const_atomicop_t = std::function<void(const T&)>;
 
   mutable ork::recursive_mutex _mutex;
   std::shared_ptr<T> _resource;
 
 public:
-  LockedResource(const char* pname = "ResourceMutex")
+  LockedResource(const char* pname = "ResourceMutex", const T def = T())
       : _mutex(pname) {
-    _resource = std::make_shared<T>();
+    _resource = std::make_shared<T>(def);
   }
   LockedResource(const LockedResource& oth)
       : _mutex(oth._mutex.GetName().c_str()) {

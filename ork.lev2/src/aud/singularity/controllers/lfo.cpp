@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <string>
 #include <assert.h>
 #include <unistd.h>
@@ -22,14 +29,14 @@ LfoData::LfoData()
     , _shape("Sine") {
 }
 
-ControllerInst* LfoData::instantiate(Layer* l) const {
+ControllerInst* LfoData::instantiate(layer_ptr_t l) const {
   auto r = new LfoInst(this, l);
   return r;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-LfoInst::LfoInst(const LfoData* data, Layer* l)
+LfoInst::LfoInst(const LfoData* data, layer_ptr_t l)
     : ControllerInst(l)
     , _data(data)
     , _phaseInc(0.0f)

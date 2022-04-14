@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 
 #include <ork/lev2/gfx/egl.inl>
 #include <GL/gl.h>
@@ -77,7 +84,7 @@ int main(int argc, char* argv[]) {
     if (drmDeviceFile != nullptr) {
       int drmfd      = open(drmDeviceFile, O_RDWR);
       auto resources = drmModeGetResources(drmfd);
-      printf("dev<%d> drmresources<%p>\n", idev, resources);
+      printf("dev<%d> drmresources<%p>\n", idev, (void*) resources);
       close(drmfd);
     }
 

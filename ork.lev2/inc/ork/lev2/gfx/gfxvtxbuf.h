@@ -1,12 +1,13 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
 #pragma once
 
+#include <ork/lev2/lev2_types.h>
 #include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/math/cvector2.h>
 #include <ork/math/cvector3.h>
@@ -15,11 +16,7 @@
 
 namespace ork { namespace lev2 {
 
-class Context;
 class GeometryBufferInterface;
-class VertexBufferBase;
-
-using vtxbufferbase_ptr_t = std::shared_ptr<VertexBufferBase>;
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -111,10 +108,10 @@ public:
     return int(miVtxSize);
   }
   void SetHandle(void* hVB) {
-    mhHandle = hVB;
+    _IMPL = hVB;
   }
   void* GetHandle(void) const {
-    return mhHandle;
+    return _IMPL;
   }
 
   void Reset(void) {
@@ -129,13 +126,6 @@ public:
   }
   PrimitiveType GetPrimType(void) const {
     return PrimitiveType(mePrimType);
-  }
-
-  void* GetPBHandle(void) const {
-    return mhPBHandle;
-  }
-  void SetPBHandle(void* hPB) {
-    mhPBHandle = hPB;
   }
 
   bool IsLocked(void) const {
@@ -163,16 +153,16 @@ public:
   virtual bool IsStatic() const = 0;
 
 protected:
+  void* _vertices = nullptr;
+  void* _IMPL     = nullptr;
+
   int miNumVerts;
-  void* mpVertices;
   int miMaxVerts;
   int miVtxSize;
   mutable int miLockWriteIndex;
   int miFlushSize;
   PrimitiveType mePrimType;
   EVtxStreamFormat meStreamFormat;
-  void* mhHandle;
-  mutable void* mhPBHandle;
   mutable bool mbLocked;
   bool mbInited;
   bool mbRingLock;
@@ -194,7 +184,7 @@ public:
   }
 
   virtual void EndianSwap() {
-    T* tbase = (T*)mpVertices;
+    T* tbase = (T*) _vertices;
 
     for (int i = 0; i < miNumVerts; i++) {
       tbase[i].EndianSwap();
@@ -218,11 +208,11 @@ struct VtxWriterBase {
   VertexBufferBase* mpVB;
 
   VtxWriterBase()
-      : mpVB(0)
+      : miWriteBase(0)
       , miWriteCounter(0)
       , miWriteMax(0)
       , mpBase(0)
-      , miWriteBase(0) {
+      , mpVB(0) {
   }
 
   void Lock(Context* pT, VertexBufferBase* mpVB, int icount = 0);
@@ -280,7 +270,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 struct SVtxV12 {
-  F32 x, y, z;    // 12
+  F32 x, y, z; // 12
 
   SVtxV12()
       : x(0.0f)
@@ -291,7 +281,7 @@ struct SVtxV12 {
   SVtxV12(F32 X, F32 Y, F32 Z)
       : x(X)
       , y(Y)
-      , z(Z){
+      , z(Z) {
   }
 
   void EndianSwap() {
@@ -307,8 +297,8 @@ struct SVtxV12 {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct SVtxV12T8 {
-  F32 x, y, z;    // 12
-  F32 u, v; // 20
+  F32 x, y, z; // 12
+  F32 u, v;    // 20
 
   SVtxV12T8()
       : x(0.0f)
@@ -323,14 +313,14 @@ struct SVtxV12T8 {
       , y(Y)
       , z(Z)
       , u(0.0f)
-      , v(0.0f){
+      , v(0.0f) {
   }
   SVtxV12T8(F32 X, F32 Y, F32 Z, F32 U, F32 V)
       : x(X)
       , y(Y)
       , z(Z)
       , u(U)
-      , v(V){
+      , v(V) {
   }
 
   void EndianSwap() {
@@ -348,27 +338,27 @@ struct SVtxV12T8 {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct SVtxV12C4 {
-  F32 x, y, z;    // 12
-  U32 color; // 20
+  F32 x, y, z; // 12
+  U32 color;   // 20
 
   SVtxV12C4()
       : x(0.0f)
       , y(0.0f)
       , z(0.0f)
-      , color(0xffffffff){
+      , color(0xffffffff) {
   }
 
   SVtxV12C4(F32 X, F32 Y, F32 Z)
       : x(X)
       , y(Y)
       , z(Z)
-      , color(0xffffffff){
+      , color(0xffffffff) {
   }
   SVtxV12C4(F32 X, F32 Y, F32 Z, U32 c)
       : x(X)
       , y(Y)
       , z(Z)
-      , color(c){
+      , color(c) {
   }
 
   void EndianSwap() {
@@ -380,7 +370,6 @@ struct SVtxV12C4 {
 
   constexpr static EVtxStreamFormat meFormat = EVtxStreamFormat::V12C4;
 };
-
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -491,9 +480,9 @@ struct SVtxV12I4N12T8 {
 
   SVtxV12I4N12T8(const fvec3& pos = fvec3(), const fvec3& nrm = fvec3(), const fvec2& uv = fvec2(), U32 idx = 0)
       : mPosition(pos)
+      , mIDX(idx)
       , mNormal(nrm)
-      , mUV0(uv)
-      , mIDX(idx) {
+      , mUV0(uv) {
   }
 
   void EndianSwap() {

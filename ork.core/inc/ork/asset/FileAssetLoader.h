@@ -1,7 +1,10 @@
-///////////////////////////////////////////////////////////////////////////////
-// Orkid
-// Copyright 1996-2020, Michael T. Mayers
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #pragma once
 
 #include <ork/asset/AssetLoader.h>
@@ -43,6 +46,8 @@ struct FileAssetLoader : public AssetLoader {
   void addLocation(
       filedevctx_constptr_t b, //
       file_ext_t e);
+
+  virtual void initLoadersForUriProto(const std::string& uriproto) {}
 
 protected:
   virtual asset_ptr_t _doLoadAsset(AssetPath resolvedpath, vars_constptr_t vars) = 0;

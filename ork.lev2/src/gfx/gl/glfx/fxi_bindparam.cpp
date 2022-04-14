@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -61,6 +61,22 @@ void Interface::BindParamVect4(const FxShaderParam* hpar, const fvec4& Vec) {
     OrkAssert(checktype == GL_FLOAT_VEC4);
     GL_ERRORCHECK();
     glUniform4fv(iloc, 1, Vec.asArray());
+    GL_ERRORCHECK();
+  });
+}
+void Interface::BindParamVect2Array(const FxShaderParam* hpar, const fvec2* Vec, const int icount) {
+  _stdbindparam(hpar, [&](int iloc, GLenum checktype) {
+    OrkAssert(checktype == GL_FLOAT_VEC2);
+    GL_ERRORCHECK();
+    glUniform2fv(iloc, icount, (float*)Vec);
+    GL_ERRORCHECK();
+  });
+}
+void Interface::BindParamVect3Array(const FxShaderParam* hpar, const fvec3* Vec, const int icount) {
+  _stdbindparam(hpar, [&](int iloc, GLenum checktype) {
+    OrkAssert(checktype == GL_FLOAT_VEC3);
+    GL_ERRORCHECK();
+    glUniform3fv(iloc, icount, (float*)Vec);
     GL_ERRORCHECK();
   });
 }

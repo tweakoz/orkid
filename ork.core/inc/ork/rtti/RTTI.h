@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -26,7 +26,7 @@ struct int_range {
 };
 } // namespace ork
 namespace ork::object {
-class ObjectClass;
+struct ObjectClass;
 }
 namespace ork::rtti {
 

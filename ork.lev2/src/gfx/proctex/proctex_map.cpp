@@ -38,10 +38,8 @@ void Colorize::describeX(class_t* clazz) {
   // ork::reflect::RegisterProperty("AntiAlias", &Colorize::mbAA);
 }
 Colorize::Colorize()
-    : meColorizeType(ECT_1D)
-    , ConstructInpPlug(InputA, dataflow::EPR_UNIFORM, gNoCon)
-    , ConstructInpPlug(InputB, dataflow::EPR_UNIFORM, gNoCon)
-    , mbAA(false) {
+    : ConstructInpPlug(InputA, dataflow::EPR_UNIFORM, gNoCon)
+    , ConstructInpPlug(InputB, dataflow::EPR_UNIFORM, gNoCon) {
 }
 void Colorize::compute(ProcTex& ptex) {
   auto proc_ctx              = ptex.GetPTC();
@@ -98,7 +96,7 @@ void Colorize::compute(ProcTex& ptex) {
   MarkClean();
   // buffer.mHash = testhash;
 }
-ork::dataflow::inplugbase* Colorize::GetInput(int idx) {
+ork::dataflow::inplugbase* Colorize::GetInput(int idx) const {
   ork::dataflow::inplugbase* rval = 0;
   switch (idx) {
     case 0:
@@ -120,8 +118,7 @@ void UvMap::describeX(class_t* clazz) {
 }
 UvMap::UvMap()
     : ConstructInpPlug(InputA, dataflow::EPR_UNIFORM, gNoCon)
-    , ConstructInpPlug(InputB, dataflow::EPR_UNIFORM, gNoCon)
-    , mbAA(false) {
+    , ConstructInpPlug(InputB, dataflow::EPR_UNIFORM, gNoCon) {
 }
 void RenderMapQuad(lev2::Context* targ, lev2::GfxMaterial3DSolid& mtl, float l, float r, float t, float b) {
   auto mtxi = targ->MTXI();
@@ -175,7 +172,7 @@ void UvMap::compute(ProcTex& ptex) {
   MarkClean();
   // buffer.mHash = testhash;
 }
-ork::dataflow::inplugbase* UvMap::GetInput(int idx) {
+ork::dataflow::inplugbase* UvMap::GetInput(int idx) const {
   ork::dataflow::inplugbase* rval = 0;
   switch (idx) {
     case 0:
@@ -199,8 +196,7 @@ void SphMap::describeX(class_t* clazz) {
 SphMap::SphMap()
     : ConstructInpPlug(InputN, dataflow::EPR_UNIFORM, gNoCon)
     , ConstructInpPlug(InputR, dataflow::EPR_UNIFORM, gNoCon)
-    , mPlugInpDirectionality(this, dataflow::EPR_UNIFORM, mfDirectionality, "dir")
-    , mbAA(false) {
+    , mPlugInpDirectionality(this, dataflow::EPR_UNIFORM, mfDirectionality, "dir") {
 }
 void SphMap::compute(ProcTex& ptex) {
   auto proc_ctx              = ptex.GetPTC();
@@ -245,7 +241,7 @@ void SphMap::compute(ProcTex& ptex) {
   MarkClean();
   // buffer.mHash = testhash;
 }
-ork::dataflow::inplugbase* SphMap::GetInput(int idx) {
+ork::dataflow::inplugbase* SphMap::GetInput(int idx) const {
   ork::dataflow::inplugbase* rval = 0;
   switch (idx) {
     case 0:
@@ -274,9 +270,8 @@ void SphRefract::describeX(class_t* clazz) {
 SphRefract::SphRefract()
     : ConstructInpPlug(InputA, dataflow::EPR_UNIFORM, gNoCon)
     , ConstructInpPlug(InputB, dataflow::EPR_UNIFORM, gNoCon)
-    , mPlugInpIOR(this, dataflow::EPR_UNIFORM, mfIOR, "ior")
     , mPlugInpDirectionality(this, dataflow::EPR_UNIFORM, mfDirectionality, "dir")
-    , mbAA(false) {
+    , mPlugInpIOR(this, dataflow::EPR_UNIFORM, mfIOR, "ior") {
 }
 void SphRefract::compute(ProcTex& ptex) {
   auto proc_ctx              = ptex.GetPTC();
@@ -314,7 +309,7 @@ void SphRefract::compute(ProcTex& ptex) {
   MarkClean();
   // buffer.mHash = testhash;
 }
-ork::dataflow::inplugbase* SphRefract::GetInput(int idx) {
+ork::dataflow::inplugbase* SphRefract::GetInput(int idx) const {
   ork::dataflow::inplugbase* rval = 0;
   switch (idx) {
     case 0:
@@ -341,7 +336,7 @@ void H2N::describeX(class_t* clazz) {
   // ork::reflect::annotatePropertyForEditor<H2N>("ScaleY", "editor.range.log", "true");
   // ork::reflect::RegisterProperty("AntiAlias", &H2N::mbAA);
 }
-ork::dataflow::inplugbase* H2N::GetInput(int idx) {
+ork::dataflow::inplugbase* H2N::GetInput(int idx) const {
   ork::dataflow::inplugbase* rval = 0;
   switch (idx) {
     case 0:
@@ -356,9 +351,10 @@ ork::dataflow::inplugbase* H2N::GetInput(int idx) {
 H2N::H2N()
     : ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
     , ConstructInpPlug(ScaleY, dataflow::EPR_UNIFORM, mfScaleY)
-    , mbAA(false)
-    , mfScaleY(1.0f)
-    , mMTL(ork::lev2::GfxEnv::GetRef().loadingContext(), "orkshader://proctex", "h2n") {
+    , mMTL(lev2::contextForCurrentThread(), "orkshader://proctex", "h2n") {
+
+  mfScaleY = (1.0f);
+
   mMTL._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
   mMTL._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
   mMTL._rasterstate.SetBlending(ork::lev2::Blending::OFF);
@@ -376,7 +372,7 @@ void H2N::compute(ProcTex& ptex) {
   ////////////////////////////////////////////////////////////////
   float fscy = mPlugInpScaleY.GetValue();
   fmtx4 mtxS;
-  mtxS.Scale(1.0f, fscy, 1.0f);
+  mtxS.scale(1.0f, fscy, 1.0f);
   ////////////////////////////////////////////////////////////////
   auto inptex = conplug->GetValue().GetTexture(ptex);
   inptex->TexSamplingMode().PresetPointAndClamp();
@@ -423,17 +419,16 @@ void Kaled::describeX(class_t* clazz) {
 ///////////////////////////////////////////////////////////////////////////////
 Kaled::Kaled()
     : ConstructInpPlug(Input, dataflow::EPR_UNIFORM, gNoCon)
+    , mPlugInpSize(this, dataflow::EPR_UNIFORM, mfSize, "si")
     , ConstructInpPlug(OffsetX, dataflow::EPR_UNIFORM, mfOffsetX)
     , ConstructInpPlug(OffsetY, dataflow::EPR_UNIFORM, mfOffsetY)
-    , mPlugInpSize(this, dataflow::EPR_UNIFORM, mfSize, "si")
-    , mVertexBuffer(256, 0, ork::lev2::PrimitiveType::MULTI)
-    , meMode(KaledMode::SQU4)
-    , mfSize(0.5f)
-    , mfOffsetX(0.5f)
-    , mfOffsetY(0.5f) {
+    , mVertexBuffer(256, 0, ork::lev2::PrimitiveType::MULTI) {
+  mfSize    = (0.5f);
+  mfOffsetX = (0.5f);
+  mfOffsetY = (0.5f);
 }
 ///////////////////////////////////////////////////////////////////////////////
-dataflow::inplugbase* Kaled::GetInput(int idx) {
+dataflow::inplugbase* Kaled::GetInput(int idx) const {
   dataflow::inplugbase* rval = 0;
   switch (idx) {
     case 0:

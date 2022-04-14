@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -44,12 +44,10 @@ struct IMPL {
     if (nullptr == _rtg) {
       _material.gpuInit(pTARG);
       _rtg             = new RtGroup(pTARG, 8, 8, NUMSAMPLES);
-      auto buf1        = new RtBuffer(lev2::RtgSlot::Slot0, lev2::EBufferFormat::RGBA32F, 8, 8);
-      auto buf2        = new RtBuffer(lev2::RtgSlot::Slot1, lev2::EBufferFormat::RGBA32F, 8, 8);
+      auto buf1        = _rtg->createRenderTarget(lev2::EBufferFormat::RGBA32F);
+      auto buf2        = _rtg->createRenderTarget(lev2::EBufferFormat::RGBA32F);
       buf1->_debugName = "ForwardRt0";
       buf2->_debugName = "ForwardRt1";
-      _rtg->SetMrt(0, buf1);
-      _rtg->SetMrt(1, buf2);
     }
     pTARG->debugPopGroup();
   }
@@ -140,7 +138,7 @@ void ForwardCompositingNode::DoRender(CompositorDrawData& drawdata) {
   impl->_render(this, drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
-RtBuffer* ForwardCompositingNode::GetOutput() const {
+rtbuffer_ptr_t ForwardCompositingNode::GetOutput() const {
   return _impl.get<std::shared_ptr<forwardnode::IMPL>>()->_rtg->GetMrt(0);
 }
 ///////////////////////////////////////////////////////////////////////////////

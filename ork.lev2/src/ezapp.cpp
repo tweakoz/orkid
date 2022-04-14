@@ -4,13 +4,19 @@
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/vr/vr.h>
-//#include <QtWidgets/QStyle>
-//#include <QtGui/QWindow>
-//#include <QtWidgets/QDesktopWidget>
+#include <ork/lev2/imgui/imgui.h>
+#include <ork/lev2/imgui/imgui_impl_glfw.h>
+#include <ork/lev2/imgui/imgui_impl_opengl3.h>
 #include <boost/program_options.hpp>
+#include <ork/kernel/environment.h>
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::EzApp, "Lev2EzApp");
-using namespace std::string_literals;
+using namespace std::string_literals; 
+
+namespace ork::imgui {
+void initModule(appinitdata_ptr_t initdata) {
+  initdata->_imgui = true;
+}
+} // namespace ork::imgui
 
 namespace ork::lev2 {
 extern bool g_allow_HIDPI;
@@ -19,103 +25,83 @@ void GfxInit(const std::string& gfxlayer);
 constexpr uint64_t KAPPSTATEFLAG_UPDRUNNING = 1 << 0;
 constexpr uint64_t KAPPSTATEFLAG_JOINED     = 1 << 1;
 ////////////////////////////////////////////////////////////////////////////////
-QtAppInit::QtAppInit() {
-  _argc   = 1;
-  _arg    = "whatupyo";
-  _argv   = (char*)_arg.c_str();
-  _argvp  = &_argv;
-  _fsinit = std::make_shared<StdFileSystemInitalizer>(_argc, _argvp);
-}
-QtAppInit::QtAppInit(int argc, char** argv, const AppInitData& initdata)
-  : _initdata(initdata) {
-  _argc   = argc;
-  _arg    = "";
-  _argv   = nullptr;
-  _argvp  = argv;
-  _fsinit = std::make_shared<StdFileSystemInitalizer>(_argc, _argvp);
-
-  g_allow_HIDPI = initdata._allowHIDPI;
-
-}
-QtAppInit::QtAppInit(int argc, char** argv) {
-  _argc   = argc;
-  _arg    = "";
-  _argv   = nullptr;
-  _argvp  = argv;
-  _fsinit = std::make_shared<StdFileSystemInitalizer>(_argc, _argvp);
-}
-QtAppInit::~QtAppInit() {
-}
-////////////////////////////////////////////////////////////////////////////////
-QtAppInit& qtinit() {
-  static QtAppInit qti;
-  return qti;
-};
-////////////////////////////////////////////////////////////////////////////////
-QtAppInit& qtinit(int& argc, char** argv) {
-  static QtAppInit qti(argc, argv);
-  return qti;
-};
-////////////////////////////////////////////////////////////////////////////////
-QtAppInit& qtinit(int& argc, char** argv,const AppInitData& initdata) {
-  static QtAppInit qti(argc, argv,initdata);
-  return qti;
-};
-////////////////////////////////////////////////////////////////////////////////
-ezapp_ptr_t EzApp::get(int& argc, char** argv) {
-  static auto& qai = qtinit(argc, argv);
-  static auto app  = std::shared_ptr<EzApp>(new EzApp(qai._argc, qai._argvp));
+ezappctx_ptr_t EzAppContext::get(appinitdata_ptr_t initdata) {
+  if(nullptr==initdata){
+    initdata = std::make_shared<AppInitData>();
+  }
+  initModule(initdata);
+  static auto app  = std::shared_ptr<EzAppContext>(new EzAppContext(initdata));
   return app;
 }
 ////////////////////////////////////////////////////////////////////////////////
-ezapp_ptr_t EzApp::get() {
-  static auto& qai = qtinit();
-  static auto app  = std::shared_ptr<EzApp>(new EzApp(qai._argc, qai._argvp));
-  return app;
-}
-////////////////////////////////////////////////////////////////////////////////
-void EzApp::Describe() {
-}
-////////////////////////////////////////////////////////////////////////////////
-EzApp::EzApp(int& argc, char** argv) {
+EzAppContext::EzAppContext(appinitdata_ptr_t initdata)
+    : _initdata(initdata) {
   ork::SetCurrentThreadName("main");
-  ApplicationStack::Push(this);
+  _stringpoolctx = std::make_shared<StringPoolContext>();
+  StringPoolStack::Push(_stringpoolctx);
   /////////////////////////////////////////////
   _mainq  = ork::opq::mainSerialQueue();
   _trackq = new opq::TrackCurrent(_mainq);
   /////////////////////////////////////////////
-  ork::lev2::ClassInit();
+  for (auto item : initdata->_preinitoperations)
+    item();
+  /////////////////////////////////////////////
   ork::rtti::Class::InitializeClasses();
   ork::lev2::GfxInit("");
+  /////////////////////////////////////////////
 }
-EzApp::~EzApp() {
-  ApplicationStack::Pop();
-}
+///////////////////////////////////////////////////////////////////////////////
+EzAppContext::~EzAppContext() {
 
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
+  if (_initdata->_imgui) {
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+  }
 
-qtezapp_ptr_t OrkEzQtApp::create() {
-  static auto& qti = qtinit();
-  //QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
-  return OrkEzQtApp::create(qti._argc, qti._argvp);
-  //return std::make_shared<OrkEzQtApp>(qti._argc, qti._argvp,qti._initdata);
-}
-qtezapp_ptr_t OrkEzQtApp::create(int argc, char** argv) {
-  static auto& qti = qtinit(argc, argv);
-  //QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
-  return std::make_shared<OrkEzQtApp>(qti._argc, qti._argvp,qti._initdata);
-}
-qtezapp_ptr_t OrkEzQtApp::create(int argc, char** argv, const AppInitData& init) {
-  static auto& qti = qtinit(argc, argv,init);
-  //QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
-  return std::make_shared<OrkEzQtApp>(qti._argc, qti._argvp,qti._initdata);
+  StringPoolStack::Pop();
 }
 ///////////////////////////////////////////////////////////////////////////////
-qtezapp_ptr_t OrkEzQtApp::createWithScene(varmap::varmap_ptr_t sceneparams) {
-  static auto& qti = qtinit();
-  AppInitData initdata;
-  auto rval                           = std::make_shared<OrkEzQtApp>(qti._argc, qti._argvp,initdata);
+orkezapp_ptr_t OrkEzApp::create(appinitdata_ptr_t initdata) {
+  //static auto& qti = qtinit(argc, argv, init);
+  // QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
+  lev2::initModule(initdata);
+  if (initdata->_imgui) {
+    imgui::initModule(initdata);
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
+    // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Enable Docking
+    // io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
+    // io.ConfigViewportsNoAutoMerge = true;
+    // io.ConfigViewportsNoTaskBarIcon = true;
+    //  Setup Dear ImGui style
+    ImGui::StyleColorsDark();
+    io.ConfigWindowsMoveFromTitleBarOnly = true;
+    // ImGuiStyle& style = ImGui::GetStyle();
+    // if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    //{
+    // style.WindowRounding = 0.0f;
+    // style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+    //}
+  }
+  auto ezapp = std::make_shared<OrkEzApp>(initdata);
+  if (initdata->_imgui) {
+    auto ezwin = ezapp->_mainWindow;
+    ImGui_ImplGlfw_InitForOpenGL(ezwin->_ctqt->_glfwWindow, true);
+    #if defined(__APPLE__)
+    ImGui_ImplOpenGL3_Init("#version 410 core");
+    #else 
+    ImGui_ImplOpenGL3_Init("#version 460 core");
+    #endif
+  }
+  return ezapp;
+}
+///////////////////////////////////////////////////////////////////////////////
+orkezapp_ptr_t OrkEzApp::createWithScene(varmap::varmap_ptr_t sceneparams) {
+  auto initdata = std::make_shared<AppInitData>();
+  initModule(initdata);
+  auto rval                           = std::make_shared<OrkEzApp>(initdata);
   rval->_mainWindow->_execsceneparams = sceneparams;
   rval->_mainWindow->_onDraw          = [=](ui::drawevent_constptr_t drwev) { //
     ork::opq::mainSerialQueue()->Process();
@@ -145,30 +131,25 @@ void EzViewport::DoInit(ork::lev2::Context* pTARG) {
 /////////////////////////////////////////////////
 void EzViewport::DoDraw(ui::drawevent_constptr_t drwev) {
 
-  bool do_gpu_init = bool(_mainwin->_onGpuInit);
-  do_gpu_init |= bool(_mainwin->_onGpuInitWithScene);
-  do_gpu_init &= _mainwin->_dogpuinit;
+  lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
 
-  if (do_gpu_init) {
-    drwev->GetTarget()->makeCurrentContext();
-    drwev->GetTarget()->makeCurrentContext();
+  //////////////////////////////////////////////////////
+  // ensure onUpdateInit called before onGpuInit!
+  //////////////////////////////////////////////////////
 
-    if (_mainwin->_onGpuInit)
-      _mainwin->_onGpuInit(drwev->GetTarget());
-    else if (_mainwin->_onGpuInitWithScene) {
-      _mainwin->_execscene = std::make_shared<scenegraph::Scene>(_mainwin->_execsceneparams);
-      _mainwin->_onGpuInitWithScene(drwev->GetTarget(), _mainwin->_execscene);
-    }
-    _mainwin->_dogpuinit = false;
-    while (ork::opq::mainSerialQueue()->Process()) {
-    }
-  }
-  auto ezapp = (OrkEzQtApp*)OrkEzQtAppBase::get();
+  auto ezapp = (OrkEzApp*)OrkEzAppBase::get();
+  if (not ezapp->checkAppState(KAPPSTATEFLAG_UPDRUNNING))
+    return;
+
+  drwev->GetTarget()->makeCurrentContext();
+
   while (ezapp->_rthreadq->Process()) {
   }
+
   if (_mainwin->_onDraw) {
     drwev->GetTarget()->makeCurrentContext();
     _mainwin->_onDraw(drwev);
+    ezapp->_render_count.fetch_add(1);
   }
   double this_time           = _mainwin->_render_timer.SecsSinceStart();
   double raw_delta           = this_time - _mainwin->_render_prevtime;
@@ -182,6 +163,8 @@ void EzViewport::DoDraw(ui::drawevent_constptr_t drwev) {
   } else {
     _mainwin->_render_state_numiters += 1.0;
   }
+
+  lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
 }
 /////////////////////////////////////////////////
 void EzViewport::DoSurfaceResize() {
@@ -190,7 +173,6 @@ void EzViewport::DoSurfaceResize() {
 }
 /////////////////////////////////////////////////
 ui::HandlerResult EzViewport::DoOnUiEvent(ui::event_constptr_t ev) {
-    printf("WTF...\n");
   if (_mainwin->_onUiEvent) {
     return _mainwin->_onUiEvent(ev);
   } else
@@ -198,34 +180,60 @@ ui::HandlerResult EzViewport::DoOnUiEvent(ui::event_constptr_t ev) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-bool OrkEzQtApp::checkAppState(uint64_t singlebitmask) {
+bool OrkEzApp::checkAppState(uint64_t singlebitmask) const {
   uint64_t chk = _appstate.load() & singlebitmask;
   return chk == singlebitmask;
 }
-OrkEzQtAppBase* OrkEzQtAppBase::_staticapp = nullptr;
-OrkEzQtAppBase* OrkEzQtAppBase::get() {
+OrkEzAppBase* OrkEzAppBase::_staticapp = nullptr;
+OrkEzAppBase* OrkEzAppBase::get() {
   return _staticapp;
 }
 ///////////////////////////////////////////////////////////////////////////////
-OrkEzQtAppBase::OrkEzQtAppBase(int& argc, char** argv) {
+OrkEzAppBase::OrkEzAppBase(ezappctx_ptr_t ezapp) {
   _staticapp = this;
-  _ezapp     = EzApp::get(argc, argv);
+  _ezapp     = ezapp;
+  _update_count = 0;
+  _render_count = 0;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OrkEzQtApp::signalExit(){
+void OrkEzApp::signalExit() {
   _mainWindow->_ctqt->signalExit();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OrkEzQtApp::enqueueOnRenderer(const void_lambda_t& l){
+void OrkEzApp::enqueueOnRenderer(const void_lambda_t& l) {
   _rthreadq->enqueue(l);
 }
 ///////////////////////////////////////////////////////////////////////////////
-OrkEzQtApp::OrkEzQtApp(int& argc, char** argv,const AppInitData& initdata)
-    : OrkEzQtAppBase(argc, argv)
+static std::atomic<OrkEzApp*> __priv_gapp;
+void atexit_app(void) { 
+  if(__priv_gapp){
+    auto app = __priv_gapp.load();
+    if(app->_onAppEarlyTerminated){
+      app->_onAppEarlyTerminated();
+    }
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
+    : OrkEzAppBase(EzAppContext::get(initdata))
     , _initdata(initdata)
-    , _updateThread("updatethread")
-    , _mainWindow(0) {
+    , _mainWindow(0) 
+    , _updateThread("updatethread") {
 
+  __priv_gapp.store(this);
+  atexit(atexit_app);
+
+  /////////////////////////////////////////////
+  if(initdata->_envp){
+    genviron.init_from_envp(initdata->_envp);
+    std::string orkdirstr;
+    genviron.get("ORKID_WORKSPACE_DIR", orkdirstr);
+    _orkidWorkspaceDir = file::Path(orkdirstr);
+  }
+  /////////////////////////////////////////////
+  for (auto op : _initdata->_postinitoperations) {
+    op();
+  }
   //////////////////////////////////////////////////////////
 
   _uicontext   = std::make_shared<ui::Context>();
@@ -234,7 +242,7 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv,const AppInitData& initdata)
 
   //////////////////////////////////////////////
 
-  _mainWindow = new EzMainWin();
+  _mainWindow = new EzMainWin(*this);
 
   //////////////////////////////////////
   // create leve gfxwindow
@@ -246,16 +254,20 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv,const AppInitData& initdata)
   _ezviewport                       = std::make_shared<EzViewport>(_mainWindow);
   _ezviewport->_uicontext           = _uicontext.get();
   _mainWindow->_gfxwin->mRootWidget = _ezviewport.get();
-  _ezviewport->_topLayoutGroup      = _uicontext->makeTop<ui::LayoutGroup>("top-layoutgroup", 0, 0, _initdata._width, _initdata._height);
-  _topLayoutGroup                   = _ezviewport->_topLayoutGroup;
+  _ezviewport->_topLayoutGroup = _uicontext->makeTop<ui::LayoutGroup>("top-layoutgroup", 0, 0, _initdata->_width, _initdata->_height);
+  _topLayoutGroup              = _ezviewport->_topLayoutGroup;
+  /////////////////////////////////////////////
+  _updq     = ork::opq::updateSerialQueue();
+  _conq     = ork::opq::concurrentQueue();
+  _mainq    = ork::opq::mainSerialQueue();
+  _rthreadq = std::make_shared<opq::OperationsQueue>(0, "renderSerialQueue");
   /////////////////////////////////////////////
   _mainWindow->_ctqt = new CtxGLFW(_mainWindow->_gfxwin);
   _mainWindow->_ctqt->initWithData(_initdata);
-  _mainWindow->_ctqt->Show();
   /////////////////////////////////////////////
   // mainthread runloop callback
   /////////////////////////////////////////////
-  _mainWindow->_ctqt->_onRunLoopIteration = [this](){
+  _mainWindow->_ctqt->_onRunLoopIteration = [this]() {
     //////////////////////////////
     // handle main serialqueue
     //////////////////////////////
@@ -267,22 +279,111 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv,const AppInitData& initdata)
   //////////////////////////////////////////////
   _mainWindow->_ctqt->pushRefreshPolicy(RefreshPolicyItem{EREFRESH_WHENDIRTY});
   /////////////////////////////////////////////
-  auto handler = [this](opq::progressdata_ptr_t data) { //
-    if (_ezviewport->_initstate.load() == 1) {
-      _mainWindow->_ctqt->progressHandler(data);
-    }
-    else{
-    }
-  };
-  opq::setProgressHandler(handler);
+  if (not genviron.has("ORKID_DISABLE_DBLOCK_PROGRESS")) {
+    auto handler = [this](opq::progressdata_ptr_t data) { //
+      if (_ezviewport->_initstate.load() == 1) {
+        _mainWindow->_ctqt->progressHandler(data);
+      } else {
+      }
+    };
+    opq::setProgressHandler(handler);
+  }
 
-  /////////////////////////////////////////////
-  _updq  = ork::opq::updateSerialQueue();
-  _conq  = ork::opq::concurrentQueue();
-  _mainq = ork::opq::mainSerialQueue();
-  _rthreadq = std::make_shared<opq::OperationsQueue>(0, "renderSerialQueue");
-  _updateThread.start([&](anyp data) {
-    _appstate.fetch_xor(KAPPSTATEFLAG_UPDRUNNING);
+  _mainWindow->_ctqt->Show();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+OrkEzApp::~OrkEzApp() {
+  // printf( "OrkEzApp<%p> destructor - joining update thread...\n", this );
+  // printf( "OrkEzApp<%p> destructor - joined update thread\n", this );
+  // printf( "OrkEzApp<%p> terminating drawable buffers..\n", this );
+  DrawableBuffer::terminateAll();
+  __priv_gapp.store(nullptr);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void OrkEzApp::joinUpdate() {
+  uint64_t prevappsate = _appstate.fetch_or(KAPPSTATEFLAG_JOINED);
+  ////////////////////////////////////////////////
+  bool has_joined_already = bool(prevappsate & KAPPSTATEFLAG_JOINED);
+  ////////////////////////////////////////////////
+  if (not has_joined_already) {
+    // printf( "OrkEzApp<%p> joinUpdate\n", this );
+    while (checkAppState(KAPPSTATEFLAG_UPDRUNNING)) {
+      opq::TrackCurrent opqtest(_mainq);
+      _mainq->Process();
+    }
+    _updq->drain();
+    _updateThread.join();
+    DrawableBuffer::ClearAndSyncWriters();
+  }
+  ////////////////////////////////////////////////
+}
+
+bool OrkEzApp::isExiting() const {
+  return checkAppState(KAPPSTATEFLAG_JOINED);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void OrkEzApp::OnTimer() {
+  opq::TrackCurrent opqtest(_mainq);
+  while (_mainq->Process())
+    ;
+}
+///////////////////////////////////////////////////////////////////////////////
+void OrkEzApp::onDraw(EzMainWin::drawcb_t cb) {
+  _mainWindow->_onDraw = cb;
+}
+///////////////////////////////////////////////////////////////////////////////
+void OrkEzApp::onResize(EzMainWin::onresizecb_t cb) {
+  _mainWindow->_onResize = cb;
+}
+///////////////////////////////////////////////////////////////////////////////
+void OrkEzApp::onGpuInit(EzMainWin::ongpuinit_t cb) {
+  _mainWindow->_onGpuInit = cb;
+}
+///////////////////////////////////////////////////////////////////////////////
+void OrkEzApp::onGpuExit(EzMainWin::ongpuexit_t cb) {
+  _mainWindow->_onGpuExit = cb;
+}
+///////////////////////////////////////////////////////////////////////////////
+void OrkEzApp::onUiEvent(EzMainWin::onuieventcb_t cb) {
+  _ezviewport->_topLayoutGroup->_evhandler = cb;
+  _mainWindow->_onUiEvent                  = cb;
+}
+///////////////////////////////////////////////////////////////////////////////
+void OrkEzApp::onUpdate(EzMainWin::onupdate_t cb) {
+  _mainWindow->_onUpdate = cb;
+}
+///////////////////////////////////////////////////////////////////////////////
+void OrkEzApp::onUpdateInit(EzMainWin::onupdateinit_t cb) {
+  _mainWindow->_onUpdateInit = cb;
+}
+///////////////////////////////////////////////////////////////////////////////
+void OrkEzApp::onUpdateExit(EzMainWin::onupdateexit_t cb) {
+  _mainWindow->_onUpdateExit = cb;
+}
+/////////////////////////////////////////////////////////////////////////////////
+//void OrkEzApp::onUpdateWithScene(EzMainWin::onupdatewithscene_t cb) {
+  //_mainWindow->_onUpdateWithScene = cb;
+//}
+///////////////////////////////////////////////////////////////////////////////
+filedevctx_ptr_t OrkEzApp::newFileDevContext(std::string uriproto, const file::Path& basepath) {
+  return FileEnv::createContextForUriBase(uriproto, basepath);
+}
+///////////////////////////////////////////////////////////////////////////////
+int OrkEzApp::mainThreadLoop() {
+
+  auto glfw_ctx = _mainWindow->_ctqt;
+
+  ///////////////////////////////
+  // update thread implementation
+  ///////////////////////////////
+
+  auto update_thread_impl = [&](anyp data) {
     _update_timer.Start();
     _update_prevtime        = _update_timer.SecsSinceStart();
     _update_timeaccumulator = 0.0;
@@ -290,16 +391,29 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv,const AppInitData& initdata)
     opq::TrackCurrent opqtest(_updq);
     double stats_timeaccum = 0;
     double state_numiters  = 0.0;
+
+    ////////////////////////////////////////
+    // first time init ?
+    ////////////////////////////////////////
+
+    if (_mainWindow->_onUpdateInit) {
+      _mainWindow->_onUpdateInit();
+    }
+
+    _appstate.fetch_or(KAPPSTATEFLAG_UPDRUNNING);
+
+    ////////////////////////////////////////
+
     while (not checkAppState(KAPPSTATEFLAG_JOINED)) {
       double this_time = _update_timer.SecsSinceStart();
       double raw_delta = this_time - _update_prevtime;
       _update_prevtime = this_time;
       _update_timeaccumulator += raw_delta;
-      double step = 1.0 / 120.0;
+      double step = 1.0 / 240.0;
+
       while (_update_timeaccumulator > step) {
+
         bool do_update = bool(_mainWindow->_onUpdate);
-        do_update |= bool(_mainWindow->_onUpdateWithScene);
-        do_update &= bool(not _mainWindow->_dogpuinit);
 
         if (do_update) {
           _update_data->_dt = step;
@@ -307,10 +421,12 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv,const AppInitData& initdata)
           /////////////////////////////
           /////////////////////////////
           if (not checkAppState(KAPPSTATEFLAG_JOINED)) {
-            if (_mainWindow->_onUpdate)
+            if (_mainWindow->_onUpdate) {
               _mainWindow->_onUpdate(_update_data);
-            else if (_mainWindow->_onUpdateWithScene)
+            } else if (_mainWindow->_onUpdateWithScene) {
               _mainWindow->_onUpdateWithScene(_update_data, _mainWindow->_execscene);
+            }
+            _update_count.fetch_add(1);
           }
           /////////////////////////////
           /////////////////////////////
@@ -328,88 +444,156 @@ OrkEzQtApp::OrkEzQtApp(int& argc, char** argv,const AppInitData& initdata)
       opq::updateSerialQueue()->Process();
       usleep(1000);
       sched_yield();
-    } // while (not checkAppState(KAPPSTATEFLAG_UPDSIGKILL)) {
+    } // while (not checkAppState(KAPPSTATEFLAG_JOINED)) {
+
     _appstate.fetch_xor(KAPPSTATEFLAG_UPDRUNNING);
-  });
-}
 
-///////////////////////////////////////////////////////////////////////////////
-
-OrkEzQtApp::~OrkEzQtApp() {
-  printf( "OrkEzQtApp<%p> destructor - joining update thread...\n", this );
-  joinUpdate();
-  printf( "OrkEzQtApp<%p> destructor - joined update thread\n", this );
-  printf( "OrkEzQtApp<%p> terminating drawable buffers..\n", this );
-  DrawableBuffer::terminateAll();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void OrkEzQtApp::joinUpdate() {
-  uint64_t prevappsate    = _appstate.fetch_or(KAPPSTATEFLAG_JOINED);
-  bool has_joined_already =    //
-      (KAPPSTATEFLAG_JOINED == //
-       (prevappsate & KAPPSTATEFLAG_JOINED));
-  if (not has_joined_already) {
-    while (checkAppState(KAPPSTATEFLAG_UPDRUNNING)) {
-      opq::TrackCurrent opqtest(_mainq);
-      _mainq->Process();
+    if (_mainWindow->_onUpdateExit) {
+      _mainWindow->_onUpdateExit();
     }
-    _updq->drain();
-    _updateThread.join();
-    DrawableBuffer::ClearAndSyncWriters();
-  }
-}
 
+  };
+
+  ///////////////////////////////
+  // hookup on gpuinit callback
+  //   ensuring _onGpuInit called before onUpdateInit
+  ///////////////////////////////
+
+  glfw_ctx->_onGpuInit = [this,update_thread_impl](lev2::Context* context){
+    
+    if(_mainWindow->_onGpuInit){
+      _mainWindow->_onGpuInit(context);
+    }
+
+    _updateThread.start(update_thread_impl);
+
+  };
+
+  ///////////////////////////////
+  // hookup on gpuexit callback
+  //   ensuring onGpuExit called after onUpdateExit
+  ///////////////////////////////
+
+  glfw_ctx->_onGpuExit = [this](lev2::Context* context){
+
+    joinUpdate();
+
+    if(_mainWindow->_onGpuExit){
+      _mainWindow->_onGpuExit(context);
+    }
+  };
+
+  ///////////////////////////////
+
+  return glfw_ctx->runloop();
+}
 ///////////////////////////////////////////////////////////////////////////////
-
-void OrkEzQtApp::OnTimer() {
-  opq::TrackCurrent opqtest(_mainq);
-  while (_mainq->Process())
-    ;
-}
-
-void OrkEzQtApp::onDraw(EzMainWin::drawcb_t cb) {
-  _mainWindow->_onDraw = cb;
-}
-void OrkEzQtApp::onResize(EzMainWin::onresizecb_t cb) {
-  _mainWindow->_onResize = cb;
-}
-void OrkEzQtApp::onGpuInit(EzMainWin::ongpuinit_t cb) {
-  _mainWindow->_onGpuInit = cb;
-}
-void OrkEzQtApp::onUiEvent(EzMainWin::onuieventcb_t cb) {
-  _ezviewport->_topLayoutGroup->_evhandler = cb;
-  _mainWindow->_onUiEvent = cb;
-}
-void OrkEzQtApp::onUpdate(EzMainWin::onupdate_t cb) {
-  _mainWindow->_onUpdate = cb;
-}
-void OrkEzQtApp::onGpuInitWithScene(EzMainWin::ongpuinitwitchscene_t cb) {
-  _mainWindow->_onGpuInitWithScene = cb;
-}
-void OrkEzQtApp::onUpdateWithScene(EzMainWin::onupdatewithscene_t cb) {
-  _mainWindow->_onUpdateWithScene = cb;
-}
-
-filedevctx_ptr_t OrkEzQtApp::newFileDevContext(std::string uriproto, const file::Path& basepath) {
-  return FileEnv::createContextForUriBase(uriproto, basepath);
-}
-
-int OrkEzQtApp::runloop() {
-  return _mainWindow->_ctqt->runloop();
-}
-
-void OrkEzQtApp::setRefreshPolicy(RefreshPolicyItem policy) {
+void OrkEzApp::setRefreshPolicy(RefreshPolicyItem policy) {
   _mainWindow->_ctqt->_setRefreshPolicy(policy);
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-
-EzMainWin::EzMainWin() {
+EzMainWin::EzMainWin(OrkEzApp& app)
+    : _app(app) {
   _execsceneparams = std::make_shared<varmap::VarMap>();
+  _update_rendersync = app._initdata->_update_rendersync;
 }
+///////////////////////////////////////////////////////////////////////////////
+void EzMainWin::_updateEnqueueLockedAndReleaseFrame(DrawableBuffer* dbuf) {
+  //if(_app._initdata->_update_rendersync){
+    //DrawableBuffer::releaseFromWriteLocked(dbuf);
+  //}
+  //else{
+    //DrawableBuffer::releaseFromWrite(dbuf);
+  //}
+}
+///////////////////////////////////////////////////////////////////////////////
+void EzMainWin::_updateEnqueueUnlockedAndReleaseFrame(DrawableBuffer* dbuf) {
+  //if(_app._initdata->_update_rendersync){
+    //DrawableBuffer::releaseFromWriteLocked(dbuf);
+  //}
+  //else{
+    //DrawableBuffer::releaseFromWrite(dbuf);
+  //}
+}
+///////////////////////////////////////////////////////////////////////////////
+const DrawableBuffer* EzMainWin::_tryAcquireDrawBuffer(ui::drawevent_constptr_t drawEvent) {
+  //_curframecontext = drawEvent->GetTarget();
+
+  //if(_app._initdata->_update_rendersync){
+    //return DrawableBuffer::acquireForReadLocked();
+  //}
+  //else {
+    //return DrawableBuffer::acquireForRead(7);
+  //
+return nullptr;
+}
+///////////////////////////////////////////////////////////////////////////////
+DrawableBuffer* EzMainWin::_tryAcquireUpdateBuffer() {
+  DrawableBuffer* rval = nullptr;
+  //if(_app._initdata->_update_rendersync){
+    //rval = DrawableBuffer::acquireForWriteLocked();
+  //}
+  //else {
+    //rval = DrawableBuffer::acquireForWrite(7);
+  //}
+  //rval->Reset();
+  return rval;
+}
+///////////////////////////////////////////////////////////////////////////////
+void EzMainWin::_releaseAcquireUpdateBuffer(DrawableBuffer*db){
+  //if(_app._initdata->_update_rendersync){
+//    DrawableBuffer::releaseFromWriteLocked(db);
+  //}
+  //else {
+    //DrawableBuffer::releaseFromWrite(db);
+  //}
+}
+///////////////////////////////////////////////////////////////////////////////
+void EzMainWin::_beginFrame(const DrawableBuffer* dbuf) {
+  auto try_ctx = dbuf->getUserProperty("CONTEXT"_crcu);
+  _curframecontext->beginFrame();
+}
+///////////////////////////////////////////////////////////////////////////////
+void EzMainWin::_endFrame(const DrawableBuffer* dbuf) {
+  if (_update_rendersync) {
+    //auto do_rlock = dbuf->getUserProperty("RENDERLOCK"_crcu);
+    //if (auto as_lock = do_rlock.tryAs<atom_rlock_ptr_t>()) {
+      //as_lock.value()->store(1);
+    //}
+  }
+  _curframecontext->endFrame();
+  //if(_app._initdata->_update_rendersync){
+    //DrawableBuffer::releaseFromReadLocked(dbuf);
+  //}
+  //else{
+    //DrawableBuffer::releaseFromRead(dbuf);
+  //}
+}
+///////////////////////////////////////////////////////////////////////////////
+void EzMainWin::withAcquiredUpdateDrawBuffer(int debugcode, std::function<void(const AcquiredUpdateDrawBuffer&)> l) {
+  DrawableBuffer* DB = nullptr;
+
+  if(_update_rendersync){
+    //DB = DrawableBuffer::acquireForWriteLocked();
+  }
+  else{
+    //DB = DrawableBuffer::acquireForWrite(debugcode);
+  }
+
+  if (DB) {
+    DB->Reset();
+    AcquiredUpdateDrawBuffer udb;
+    udb._DB = DB;
+    l(udb);
+    if (_update_rendersync)
+      _updateEnqueueLockedAndReleaseFrame(DB);
+    else
+      _updateEnqueueUnlockedAndReleaseFrame(DB);
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
 EzMainWin::~EzMainWin() {
 }
+///////////////////////////////////////////////////////////////////////////////
 
 } // namespace ork::lev2

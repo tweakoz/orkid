@@ -66,4 +66,4 @@ class PickingApp(_simsetup.SimApp):
     pass
   ################################################
 app = PickingApp()
-app.qtapp.exec()
+app.qtapp.mainThreadLoop()

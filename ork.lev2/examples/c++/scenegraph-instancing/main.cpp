@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <ork/application/application.h>
 #include <ork/kernel/string/deco.inl>
 #include <ork/kernel/timer.h>
@@ -11,8 +18,9 @@ using namespace ork;
 using namespace ork::lev2;
 using namespace ork::lev2::deferrednode;
 
-int main(int argc, char** argv) {
-  auto qtapp  = OrkEzQtApp::create(argc, argv);
+int main(int argc, char** argv,char** envp) {
+  auto init_data = std::make_shared<ork::AppInitData>(argc,argv,envp);
+  auto qtapp  = OrkEzApp::create(init_data);
   auto qtwin  = qtapp->_mainWindow;
   auto gfxwin = qtwin->_gfxwin;
 
@@ -20,14 +28,12 @@ int main(int argc, char** argv) {
   // create scenegraph
   //////////////////////////////////////////////////////////
 
-  auto sg_scene = std::make_shared<scenegraph::Scene>();
-  auto sg_layer = sg_scene->createLayer("default");
+  scenegraph::scene_ptr_t sg_scene;
 
   //////////////////////////////////////////////////////////
   // create instanced model drawable
   //////////////////////////////////////////////////////////
-  auto drw = std::make_shared<InstancedModelDrawable>(nullptr);
-  drw->bindModelAsset("data://src/environ/objects/misc/ref/uvsph");
+  auto drw = std::make_shared<InstancedModelDrawable>();
   //////////////////////////////////////////////////////////
   constexpr size_t NUMINSTANCES = 65536;
   //////////////////////////////////////////////////////////
@@ -42,14 +48,15 @@ int main(int argc, char** argv) {
     float fz = float(iz) / 10.0f;
     instdata->_worldmatrices[i].compose(fvec3(fx, fy, fz), fquat(), 0.03f);
   }
-  sg_layer->createDrawableNode("model-node", std::move(drw));
-  sg_layer = nullptr; // release from main
   //////////////////////////////////////////////////////////
   // gpuInit handler, called once on main(rendering) thread
   //  at startup time
   //////////////////////////////////////////////////////////
   qtapp->onGpuInit([&](Context* ctx) {
-
+    sg_scene = std::make_shared<scenegraph::Scene>();
+    drw->bindModelAsset("data://src/environ/objects/misc/ref/uvsph");
+    auto sg_layer = sg_scene->createLayer("default");
+    sg_layer->createDrawableNode("model-node", std::move(drw));
   });
   //////////////////////////////////////////////////////////
   // update handler (called on update thread)
@@ -58,7 +65,7 @@ int main(int argc, char** argv) {
   auto cameralut = std::make_shared<CameraDataLut>();
   auto camera    = std::make_shared<CameraData>();
   cameralut->AddSorted("spawncam", camera.get());
-  qtapp->onUpdate([=](ui::updatedata_ptr_t updata) {
+  qtapp->onUpdate([&](ui::updatedata_ptr_t updata) {
     double dt      = updata->_dt;
     double abstime = updata->_abstime;
     ///////////////////////////////////////
@@ -82,7 +89,7 @@ int main(int argc, char** argv) {
       float rz     = float(irz) / 128.0f;
       float rangle = float(irz) / 128.0f;
       float scale  = float(iscale) / 2048.0f;
-      fvec3 axis   = fvec3(rx, ry, rz).Normal();
+      fvec3 axis   = fvec3(rx, ry, rz).normalized();
       fquat rot    = fquat(axis, rangle);
       instdata->_worldmatrices[instance_index]. //
           compose(
@@ -115,7 +122,10 @@ int main(int argc, char** argv) {
     //
     sg_scene->_compositorImpl->compositingContext().Resize(w, h);
   });
+  qtapp->onGpuExit([&](Context* ctx) {
+    sg_scene = nullptr;
+  });
   //////////////////////////////////////////////////////////
   qtapp->setRefreshPolicy({EREFRESH_FASTEST, -1});
-  return qtapp->runloop();
+  return qtapp->mainThreadLoop();
 }

@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <ork/kernel/semaphore.h>
 
 #if defined(ORK_OSX)
@@ -8,106 +15,99 @@ namespace ork {
 
 semaphore::semaphore(const char* name)
     : mMutex(name)
-	, mCount(0)
-{}
-
-void semaphore::notify()
-{
-	//printf( "semaphore<%p>::notify() mCount<%d>\n", this, mCount.load() );
-    ork::mutex::unique_lock lock(mMutex);
-	mCount.fetch_add(1);
-    mCondition.notify_one();
+    , mCount(0) {
 }
 
-void semaphore::wait()
-{
-	//printf( "semaphore<%p>::wait() mCount<%d>\n", this, mCount.load() );
-   ork::mutex::unique_lock lock(mMutex);
-    while(mCount.load()<=0)
-        mCondition.wait(lock.mLockImpl);
-        //mCondition.wait(1<<20);
-	mCount.fetch_sub(1);
+void semaphore::notify() {
+  // printf( "semaphore<%p>::notify() mCount<%d>\n", this, mCount.load() );
+  ork::mutex::unique_lock lock(mMutex);
+  mCount.fetch_add(1);
+  mCondition.notify_one();
 }
 
-condition_variable::condition_variable(bool do_init)
-{
-    if(do_init) 
-        init();
+void semaphore::wait() {
+  // printf( "semaphore<%p>::wait() mCount<%d>\n", this, mCount.load() );
+  ork::mutex::unique_lock lock(mMutex);
+  while (mCount.load() <= 0) {
+    mCondition.wait(lock.mLockImpl);
+  }
+  mCount.fetch_sub(1);
 }
 
-void condition_variable::init()
-{	mWaitCount = mReleaseCount = 0;
-	pthread_mutex_init(&mMutex, NULL);
-	//pthread_mutex_lock(&mMutex);
-	pthread_cond_init(&mCondVar, NULL);
-}//
+condition_variable::condition_variable(bool do_init) {
+  if (do_init)
+    init();
+}
 
-void condition_variable::notify_one()
-{
-	//pthread_mutex_lock(&mMutex); // Wow these are horrible... going commando
-	if(mWaitCount)
-		pthread_cond_signal(&mCondVar);
-	else
-		mReleaseCount++;
-	//pthread_mutex_unlock(&mMutex);
+void condition_variable::init() {
+  mWaitCount = mReleaseCount = 0;
+  pthread_mutex_init(&mMutex, NULL);
+  // pthread_mutex_lock(&mMutex);
+  pthread_cond_init(&mCondVar, NULL);
+} //
+
+void condition_variable::notify_one() {
+  // pthread_mutex_lock(&mMutex); // Wow these are horrible... going commando
+  if (mWaitCount)
+    pthread_cond_signal(&mCondVar);
+  else
+    mReleaseCount++;
+  // pthread_mutex_unlock(&mMutex);
 };
 
-void condition_variable::notify_all()
-{
-	while(mWaitCount)
-		notify_one();
+void condition_variable::notify_all() {
+  while (mWaitCount)
+    notify_one();
 };
 
-int condition_variable::wait(unsigned long usec)
-{
-	const int oneK = 1000;
-	const int oneM = 1000000;
-	const int oneG = 1000000000;
+int condition_variable::wait(unsigned long usec) {
+  const int oneK = 1000;
+  const int oneM = 1000000;
+  const int oneG = 1000000000;
 
-	struct timespec now;
+  struct timespec now;
 
 #if defined(ORK_OSX)
-	struct timeval tv_now;
-	gettimeofday(&tv_now,nullptr);
-	now.tv_sec = tv_now.tv_sec;
-	now.tv_nsec = tv_now.tv_usec*oneK;
+  struct timeval tv_now;
+  gettimeofday(&tv_now, nullptr);
+  now.tv_sec  = tv_now.tv_sec;
+  now.tv_nsec = tv_now.tv_usec * oneK;
 #else
 
-	clock_gettime(CLOCK_REALTIME, &now);
+  clock_gettime(CLOCK_REALTIME, &now);
 #endif
 
-	now.tv_sec += usec / oneM;
-	now.tv_nsec += (usec % oneM) * oneK;
-	if(now.tv_nsec > oneG)
-	{	now.tv_nsec -= oneG;
-		now.tv_sec += 1;
-	}
+  now.tv_sec += usec / oneM;
+  now.tv_nsec += (usec % oneM) * oneK;
+  if (now.tv_nsec > oneG) {
+    now.tv_nsec -= oneG;
+    now.tv_sec += 1;
+  }
 
-	do
-	{
-		int err = 0;
-		//pthread_mutex_lock(&mMutex);
-		if(mReleaseCount > 0)
-		{
-			mReleaseCount--;
-		}
-		else
-		{
-			mWaitCount++;
-			err = pthread_cond_timedwait(&mCondVar, &mMutex, &now);
-			mWaitCount--;
-		}
-		//pthread_mutex_unlock(&mMutex);
-		switch(err)
-		{	case EINTR: break;
-			case ETIMEDOUT: return 0;
-			case 0: return 1;
-			case -1:
-			default: return -1; // Should handle the error, but will leave this for later
-		}
+  do {
+    int err = 0;
+    // pthread_mutex_lock(&mMutex);
+    if (mReleaseCount > 0) {
+      mReleaseCount--;
+    } else {
+      mWaitCount++;
+      err = pthread_cond_timedwait(&mCondVar, &mMutex, &now);
+      mWaitCount--;
+    }
+    // pthread_mutex_unlock(&mMutex);
+    switch (err) {
+      case EINTR:
+        break;
+      case ETIMEDOUT:
+        return 0;
+      case 0:
+        return 1;
+      case -1:
+      default:
+        return -1; // Should handle the error, but will leave this for later
+    }
 
-	} while(1);
+  } while (1);
 }
 
-
-}
+} // namespace ork

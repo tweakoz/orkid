@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <ork/pch.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/lev2_asset.h>
@@ -23,44 +30,47 @@ TEST(gfxanim1) {
   auto somc    = fvec3(1, .5, 1);
 
   fmtx4 t, r, it;
-  t.SetTranslation(1, 0, 0);
-  r.RotateX(PI * 0.01);
-  it.SetTranslation(-1, 0, 0);
+  t.setTranslation(1, 0, 0);
+  r.rotateOnX(PI * 0.01);
+  it.setTranslation(-1, 0, 0);
   auto x  = it * r * t;
-  auto xx = fvec4(0, 1, 0).Transform(x);
+  auto xx = fvec4(0, 1, 0).transform(x);
   deco::printe(orange, x.dump(), true);
   printf("xx<%g %g %g>\n", xx.x, xx.y, xx.z);
   // OrkAssert(false);
 
   opq::mainSerialQueue()->enqueue([&]() {
-    auto targ = GfxEnv::GetRef().loadingContext();
-    printf("targ<%p>\n", targ);
+    auto targ = lev2::contextForCurrentThread();
+    printf("targ<%p>\n", (void*)targ);
     CHECK(targ != nullptr);
 
     auto fxi = targ->FXI();
-    printf("fxi<%p>\n", fxi);
+    printf("fxi<%p>\n", (void*)fxi);
     CHECK(fxi != nullptr);
 
     auto anim = new XgmAnim;
     // bool loadOK = XgmAnim::LoadUnManaged(anim, "data://test/bonetest_anim");
     // bool loadOK = XgmAnim::LoadUnManaged(anim, "data://test/rigtest_anim");
-    bool loadOK = XgmAnim::LoadUnManaged(anim, "data://test/hfs_rigtest_anim");
+    bool loadOK = XgmAnim::LoadUnManaged(anim, "data://tests/hfstest/hfs_rigtest_anim.fbx");
     OrkAssert(loadOK);
-    auto animinst = new XgmAnimInst;
+    auto animinst  = new XgmAnimInst;
+    int num_frames = anim->GetNumFrames();
+
+    printf("num_frames<%d>\n", num_frames);
 
     // auto modl_asset = asset::AssetManager<XgmModelAsset>::load("data://test/bonetest_mesh");
     // auto modl_asset = asset::AssetManager<XgmModelAsset>::load("data://test/rigtest_exp");
-    auto modl_asset = asset::AssetManager<XgmModelAsset>::load("data://test/hfs_rigtest_mesh");
+    auto modl_asset = asset::AssetManager<XgmModelAsset>::load("data://tests/hfstest/hfs_rigtest.fbx");
     // auto modl_asset = asset::AssetManager<XgmModelAsset>::load("data://test/char_mesh");
-    printf("modl_asset<%p>\n", modl_asset.get());
+    printf("modl_asset<%p>\n", (void*)modl_asset.get());
     CHECK(modl_asset != nullptr);
 
     auto model = modl_asset->GetModel();
     auto& skel = model->skeleton();
-    printf("model<%p> isskinned<%d>\n", model, int(model->isSkinned()));
+    printf("model<%p> isskinned<%d>\n", (void*)model, int(model->isSkinned()));
 
     auto modelinst = new XgmModelInst(model);
-    printf("modelinst<%p>\n", modelinst);
+    printf("modelinst<%p>\n", (void*)modelinst);
 
     modelinst->SetBlenderZup(true);
     modelinst->EnableSkinning();
@@ -73,10 +83,10 @@ TEST(gfxanim1) {
 
     fmtx4 A, B, C;
     A.fromNormalVectors(fvec3(0, 0, -1), fvec3(-1, 0, 0), fvec3(0, 1, 0));
-    A.SetTranslation(0, -1.4, 0);
+    A.setTranslation(0, -1.4, 0);
     B.fromNormalVectors(fvec3(0, 0, -1), fvec3(-1, 0, 0), fvec3(0, 1, 0));
-    B.SetTranslation(-1, -1.4, 0);
-    C.CorrectionMatrix(A, B);
+    B.setTranslation(-1, -1.4, 0);
+    C.correctionMatrix(A, B);
     deco::printe(white, "A: " + A.dump4x3(white), true);
     deco::printe(white, "B: " + B.dump4x3(white), true);
     deco::printe(white, "C: " + C.dump4x3(white), true);
@@ -121,8 +131,10 @@ TEST(gfxanim1) {
     while (true) {
       deco::prints(skel.dumpInvBind(blugrn), true);
 
+      iframe = (iframe + 1) % num_frames;
+
       localpose.BindPose();
-      animinst->SetCurrentFrame((iframe++) % 20);
+      animinst->SetCurrentFrame(iframe);
       animinst->SetWeight(1);
       localpose.ApplyAnimInst(*animinst);
       localpose.BuildPose();

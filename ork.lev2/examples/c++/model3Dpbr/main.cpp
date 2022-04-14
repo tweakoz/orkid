@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <ork/application/application.h>
 #include <ork/kernel/environment.h>
 #include <ork/kernel/string/deco.inl>
@@ -19,9 +26,6 @@ using namespace ork::lev2::deferrednode;
 typedef SVtxV12C4T16 vtx_t; // position, vertex color, 2 UV sets
 
 struct Instance {
-  xgmmodelinst_ptr_t _xgminst;
-  ModelDrawable* _drawable = nullptr;
-  DrawQueueXfData _xform;
   fvec3 _curpos;
   fvec3 _curaxis;
   float _curangle = 0.0f;
@@ -31,64 +35,96 @@ struct Instance {
   float _timeout     = 0.0f;
 };
 
-int main(int argc, char** argv, char** argp) {
-  genviron.init_from_envp(argp);
-  auto qtapp              = OrkEzQtApp::create(argc, argv);
-  auto qtwin              = qtapp->_mainWindow;
-  auto gfxwin             = qtwin->_gfxwin;
-  XgmModel* model         = nullptr;
-  Texture* envlight       = nullptr;
-  XgmModelInst* modelinst = nullptr;
-  ModelDrawable* drawable = nullptr;
   using instances_t       = std::vector<Instance>;
-  auto instances          = std::make_shared<instances_t>();
+
+///////////////////////////////////////////////////////////////////
+
+struct GpuResources {
+
+  GpuResources(Context* ctx){
+    _renderer       = std::make_shared<DefaultRenderer>();
+    _lightmgr       = std::make_shared<LightManager>(_lmd);
+
+    _camlut = std::make_shared<CameraDataLut>();
+    _camdata = std::make_shared<CameraData>();
+    _camlut->AddSorted("spawncam", _camdata.get());
+
+    _instanced_drawable = std::make_shared<InstancedModelDrawable>();
+
   //////////////////////////////////////////////////////////
   // initialize compositor (necessary for PBR models)
   //  use a deferredPBR compositing node
   //  which does all the gbuffer and lighting passes
   //////////////////////////////////////////////////////////
-  auto renderer       = std::make_shared<DefaultRenderer>();
-  auto lmd            = std::make_shared<LightManagerData>();
-  auto lightmgr       = std::make_shared<LightManager>(*lmd);
-  auto compositordata = std::make_shared<CompositingData>();
-  compositordata->presetPBR();
-  compositordata->mbEnable = true;
-  auto nodetek             = compositordata->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
-  auto outpnode            = nodetek->tryOutputNodeAs<ScreenOutputCompositingNode>();
-  // outpnode->setSuperSample(4);
-  auto compositorimpl = compositordata->createImpl();
-  compositorimpl->bindLighting(lightmgr.get());
-  auto TOPCPD = std::make_shared<lev2::CompositingPassData>();
-  TOPCPD->addStandardLayers();
-  auto cameras = std::make_shared<CameraDataLut>();
-  auto camdata = std::make_shared<CameraData>();
-  cameras->AddSorted("spawncam", camdata.get());
+
+    _compositordata = std::make_shared<CompositingData>();
+    _compositordata->presetPBR();
+    _compositordata->mbEnable = true;
+    auto nodetek             = _compositordata->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
+    auto outpnode            = nodetek->tryOutputNodeAs<ScreenOutputCompositingNode>();
+    // outpnode->setSuperSample(4);
+    _compositorimpl = _compositordata->createImpl();
+    _compositorimpl->bindLighting(_lightmgr.get());
+
+    _TOPCPD = std::make_shared<lev2::CompositingPassData>();
+    _TOPCPD->addStandardLayers();
+    _instances          = std::make_shared<instances_t>();
+
+     ctx->debugPushGroup("main.onGpuInit");
+    _modelasset = asset::AssetManager<XgmModelAsset>::load("data://tests/pbr1/pbr1");
+    _renderer->setContext(ctx);
+
+    _instanced_drawable->bindModel(_modelasset->getSharedModel());
+
+    constexpr size_t KNUMINSTANCES = 30;
+
+    _instanced_drawable->resize(KNUMINSTANCES);
+    _instanced_drawable->gpuInit(ctx);
+
+    for (int i = 0; i < KNUMINSTANCES; i++) {
+      Instance inst;
+      _instances->push_back(inst);
+    }
+     ctx->debugPopGroup();
+
+  }
+  instanced_modeldrawable_ptr_t _instanced_drawable;
+  renderer_ptr_t _renderer;
+  LightManagerData _lmd;
+  lightmanager_ptr_t _lightmgr;
+  compositingpassdata_ptr_t _TOPCPD;
+  compositorimpl_ptr_t _compositorimpl;
+  compositordata_ptr_t _compositordata;
+  std::shared_ptr<instances_t> _instances;
+  lev2::xgmmodelassetptr_t _modelasset; // retain model
+  cameradata_ptr_t _camdata;
+  cameradatalut_ptr_t _camlut;
+};
+
+///////////////////////////////////////////////////////////////////
+
+int main(int argc, char** argv,char** envp) {
+  auto init_data = std::make_shared<ork::AppInitData>(argc,argv,envp);
+  auto qtapp  = OrkEzApp::create(init_data);
+  auto qtwin              = qtapp->_mainWindow;
+  auto gfxwin             = qtwin->_gfxwin;
+  std::shared_ptr<GpuResources> gpurec;
   //////////////////////////////////////////////////////////
   // gpuInit handler, called once on main(rendering) thread
   //  at startup time
   //////////////////////////////////////////////////////////
-  lev2::xgmmodelassetptr_t modelasset; // retain model
   qtapp->onGpuInit([&](Context* ctx) {
-    // ctx->debugPushGroup("main.onGpuInit");
-    modelasset = asset::AssetManager<XgmModelAsset>::load("data://tests/pbr1/pbr1");
-    model      = modelasset->GetModel();
-    renderer->setContext(ctx);
 
-    for (int i = 0; i < 30; i++) {
-      Instance inst;
-      inst._drawable = new ModelDrawable;
-      inst._xgminst  = std::make_shared<XgmModelInst>(model);
-      inst._xgminst->EnableAllMeshes();
-      inst._drawable->SetModelInst(inst._xgminst);
-      instances->push_back(inst);
-    }
-    // ctx->debugPopGroup();
+    gpurec = std::make_shared<GpuResources>(ctx);
   });
   //////////////////////////////////////////////////////////
   // update handler (called on update thread)
   //  it will never be called before onGpuInit() is complete...
   //////////////////////////////////////////////////////////
-  qtapp->onUpdate([=](ui::updatedata_ptr_t updata) {
+  ork::Timer timer;
+  timer.Start();
+  auto dbufcontext = std::make_shared<DrawBufContext>();
+  qtapp->onUpdate([&](ui::updatedata_ptr_t updata) {
     double dt      = updata->_dt;
     double abstime = updata->_abstime;
     ///////////////////////////////////////
@@ -99,23 +135,28 @@ int main(int argc, char** argv, char** argp) {
     auto eye       = fvec3(sinf(phase), 1.0f, -cosf(phase)) * distance;
     fvec3 tgt(0, 0, 0);
     fvec3 up(0, 1, 0);
-    camdata->Lookat(eye, tgt, up);
-    camdata->Persp(0.1, 100.0, 45.0);
+    gpurec->_camdata->Lookat(eye, tgt, up);
+    gpurec->_camdata->Persp(1, 20.0, 45.0);
     ///////////////////////////////////////
-    auto DB = DrawableBuffer::acquireForWrite(0);
+    auto DB = dbufcontext->acquireForWriteLocked();
     DB->Reset();
-    DB->copyCameras(*cameras);
+    DB->copyCameras(*gpurec->_camlut);
     auto layer = DB->MergeLayer("Default");
     ////////////////////////////////////////
     // animate and enqueue all instances
     ////////////////////////////////////////
-    for (auto& inst : *instances) {
-      auto drawable = static_cast<Drawable*>(inst._drawable);
+
+    auto drawable = gpurec->_instanced_drawable;
+    auto instdata = drawable->_instancedata;
+
+    int index = 0;
+    for (auto& inst : *gpurec->_instances) {
+      //auto drawable = static_cast<Drawable*>(inst._drawable);
       fvec3 delta   = inst._target - inst._curpos;
-      inst._curpos += delta.Normal() * dt * 1.0;
+      inst._curpos += delta.normalized() * dt * 1.0;
 
       delta         = inst._targetaxis - inst._curaxis;
-      inst._curaxis = (inst._curaxis + delta.Normal() * dt * 0.1).Normal();
+      inst._curaxis = (inst._curaxis + delta.normalized() * dt * 0.1).normalized();
       inst._curangle += (inst._targetangle - inst._curangle) * dt * 0.1;
 
       if (inst._timeout < abstime) {
@@ -123,36 +164,40 @@ int main(int argc, char** argv, char** argp) {
         inst._target.x = (float(rand() % 255) / 2.55) - 50;
         inst._target.y = (float(rand() % 255) / 2.55) - 50;
         inst._target.z = (float(rand() % 255) / 2.55) - 50;
-        inst._target *= 10.0f;
+        inst._target *= (4.5f/50.0f);
 
         fvec3 axis;
         axis.x            = (float(rand() % 255) / 255.0f) - 0.5f;
         axis.y            = (float(rand() % 255) / 255.0f) - 0.5f;
         axis.z            = (float(rand() % 255) / 255.0f) - 0.5f;
-        inst._targetaxis  = axis.Normal();
+        inst._targetaxis  = axis.normalized();
         inst._targetangle = PI2 * (float(rand() % 255) / 255.0f) - 0.5f;
       }
 
       fquat q;
       q.fromAxisAngle(fvec4(inst._curaxis, inst._curangle));
-
-      inst._xform._worldMatrix->compose(inst._curpos, q, 1.0f);
-      drawable->enqueueOnLayer(inst._xform, *layer);
+      instdata->_worldmatrices[index++].compose(inst._curpos, q, 0.3f);
     }
+    DrawQueueXfData ident;
+    drawable->enqueueOnLayer(ident, *layer);
     ////////////////////////////////////////
-    DrawableBuffer::releaseFromWrite(DB);
+    dbufcontext->releaseFromWriteLocked(DB);
   });
   //////////////////////////////////////////////////////////
   // draw handler (called on main(rendering) thread)
   //////////////////////////////////////////////////////////
   qtapp->onDraw([&](ui::drawevent_constptr_t drwev) {
-    auto DB = DrawableBuffer::acquireForRead(7);
+    auto DB = dbufcontext->acquireForReadLocked();
     if (nullptr == DB)
       return;
+
+    float time = timer.SecsSinceStart();
     auto context = drwev->GetTarget();
     RenderContextFrameData RCFD(context); // renderer per/frame data
-    RCFD._cimpl = compositorimpl;
+    RCFD._cimpl = gpurec->_compositorimpl;
     RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
+    RCFD.setUserProperty("time"_crc, time);
+    RCFD.setUserProperty("pbr_model"_crc, 1);
     context->pushRenderContextFrameData(&RCFD);
     auto fbi  = context->FBI();  // FrameBufferInterface
     auto fxi  = context->FXI();  // FX Interface
@@ -163,9 +208,10 @@ int main(int argc, char** argv, char** argp) {
     ///////////////////////////////////////
     lev2::UiViewportRenderTarget rt(nullptr);
     auto tgtrect           = context->mainSurfaceRectAtOrigin();
-    TOPCPD->_irendertarget = &rt;
-    TOPCPD->SetDstRect(tgtrect);
-    compositorimpl->pushCPD(*TOPCPD);
+    gpurec->_TOPCPD->_time = time;
+    gpurec->_TOPCPD->_irendertarget = &rt;
+    gpurec->_TOPCPD->SetDstRect(tgtrect);
+    gpurec->_compositorimpl->pushCPD(*gpurec->_TOPCPD);
     ///////////////////////////////////////
     // Draw!
     ///////////////////////////////////////
@@ -177,23 +223,26 @@ int main(int argc, char** argv, char** argp) {
     CompositorDrawData drawdata(framerenderer);
     drawdata._properties["primarycamindex"_crcu].set<int>(0);
     drawdata._properties["cullcamindex"_crcu].set<int>(0);
-    drawdata._properties["irenderer"_crcu].set<lev2::IRenderer*>(renderer.get());
+    drawdata._properties["irenderer"_crcu].set<lev2::IRenderer*>(gpurec->_renderer.get());
     drawdata._properties["simrunning"_crcu].set<bool>(true);
     drawdata._properties["DB"_crcu].set<const DrawableBuffer*>(DB);
-    drawdata._cimpl = compositorimpl;
-    compositorimpl->assemble(drawdata);
-    compositorimpl->composite(drawdata);
-    compositorimpl->popCPD();
+    drawdata._cimpl = gpurec->_compositorimpl;
+    gpurec->_compositorimpl->assemble(drawdata);
+    gpurec->_compositorimpl->composite(drawdata);
+    gpurec->_compositorimpl->popCPD();
     context->popRenderContextFrameData();
     context->endFrame();
-    DrawableBuffer::releaseFromRead(DB);
+    dbufcontext->releaseFromReadLocked(DB);
   });
   //////////////////////////////////////////////////////////
   qtapp->onResize([&](int w, int h) {
     //
-    compositorimpl->compositingContext().Resize(w, h);
+    gpurec->_compositorimpl->compositingContext().Resize(w, h);
+  });
+  qtapp->onGpuExit([&](Context* ctx) {
+    gpurec = nullptr;
   });
   //////////////////////////////////////////////////////////
   qtapp->setRefreshPolicy({EREFRESH_FASTEST, -1});
-  return qtapp->runloop();
+  return qtapp->mainThreadLoop();
 }

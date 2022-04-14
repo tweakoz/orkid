@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -18,9 +18,14 @@
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 AppWindow::AppWindow(ui::Widget* prw)
-    : Window(0, 0, 640, 448, "yo")
+    : Window(0, 0, 1280, 720, "yo")
     , mbinit(true)
     , mRootWidget(prw) {
+
+    if(_HIDPI()){
+      SetBufferWidth(1280*2);
+      SetBufferHeight(720*2);
+    }
 }
 ///////////////////////////////////////////////////////////////////////////////
 AppWindow::~AppWindow() {

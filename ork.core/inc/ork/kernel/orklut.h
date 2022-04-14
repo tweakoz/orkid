@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -12,7 +12,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include <ork/kernel/orkalloc.h>
-#include <ork/orkstl.h>
+#include <vector>
 #include <utility>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -33,20 +33,20 @@ template <typename K, typename V, typename Allocator = std::allocator<std::pair<
   EOrkLutKeyPolicy meKeyPolicy;
 
 public:
-  typedef orkvector<std::pair<K, V>, Allocator> BaseType;
+  using base_t = std::vector<std::pair<K, V>, Allocator>;
 
-  orklut(EOrkLutKeyPolicy ekeypolicy = EKEYPOLICY_LUT) : _internal(0), meKeyPolicy(ekeypolicy) {}
+  orklut(EOrkLutKeyPolicy ekeypolicy = EKEYPOLICY_LUT) : meKeyPolicy(ekeypolicy), _internal(0) {}
 
-  typedef typename BaseType::iterator iterator;
-  typedef typename BaseType::const_iterator const_iterator;
-  typedef typename BaseType::reverse_iterator reverse_iterator;
-  typedef typename BaseType::const_reverse_iterator const_reverse_iterator;
+  typedef typename base_t::iterator iterator;
+  typedef typename base_t::const_iterator const_iterator;
+  typedef typename base_t::reverse_iterator reverse_iterator;
+  typedef typename base_t::const_reverse_iterator const_reverse_iterator;
 
   typedef K key_type;
   typedef V mapped_type;
-  typedef typename BaseType::value_type value_type;
-  typedef typename BaseType::size_type size_type;
-  typedef typename BaseType::difference_type difference_type;
+  typedef typename base_t::value_type value_type;
+  typedef typename base_t::size_type size_type;
+  typedef typename base_t::difference_type difference_type;
 
   // ork::_vector_iterator_base<Data,Traverse,Const> ork::orklut<K,V>::BinarySearch(const K
   // &,ork::_vector_iterator_base<Data,Traverse,Const> &) const
@@ -65,19 +65,19 @@ public:
   const_iterator end() const { return _internal.end(); }
   iterator begin() { return _internal.begin(); }
   iterator end() { return _internal.end(); }
-  // using BaseType::end;
+  // using base_t::end;
   const_reverse_iterator rbegin() const { return _internal.rbegin(); }
   const_reverse_iterator rend() const { return _internal.rend(); }
   reverse_iterator rbegin() { return _internal.rbegin(); }
   reverse_iterator rend() { return _internal.rend(); }
-  // using BaseType::rbegin;
-  // using BaseType::rend;
+  // using base_t::rbegin;
+  // using base_t::rend;
   void clear() { _internal.clear(); }
   size_t size() const { return _internal.size(); }
   void reserve(size_t cnt) { _internal.reserve(cnt); }
-  // using BaseType::clear;
-  // using BaseType::size;
-  // using BaseType::reserve;
+  // using base_t::clear;
+  // using base_t::size;
+  // using base_t::reserve;
 
   void Clear() { this->clear(); }
   void Replace(const K& key, const V& val);
@@ -92,10 +92,10 @@ public:
   size_t Size() const { return _internal.size(); }
   const value_type& GetItemAtIndex(size_t idx) const { return _internal[size_type(idx)]; }
   const_iterator GetIterAtIndex(size_t idx) const { return _internal.begin() + size_type(idx); }
-  typename BaseType::value_type& RefIndex(size_t idx) { return _internal[size_type(idx)]; }
+  typename base_t::value_type& RefIndex(size_t idx) { return _internal[size_type(idx)]; }
 
 private:
-  BaseType _internal;
+  base_t _internal;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

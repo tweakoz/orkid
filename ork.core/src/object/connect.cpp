@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -22,6 +22,13 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::object::Slot, "Slot");
 INSTANTIATE_TRANSPARENT_RTTI(ork::object::AutoSlot, "AutoSlot");
 INSTANTIATE_TRANSPARENT_RTTI(ork::object::LambdaSlot, "LambdaSlot");
 INSTANTIATE_TRANSPARENT_RTTI(ork::object::Signal, "Signal");
+
+namespace ork::object {
+
+//DEFINE_SIGNAL_OPERATOR(01);
+//DEFINE_SIGNAL_OPERATOR(02);
+
+}
 
 namespace ork::reflect::serdes {
 template <>

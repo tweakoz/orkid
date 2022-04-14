@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -58,40 +58,42 @@ public:
   }
   void SetTechnique(const std::string& tek);
   /////////////////////////////////////////////////
-  lev2::Texture* mCurrentTextureA;
-  lev2::Texture* mCurrentTextureB;
-  lev2::Texture* mCurrentTextureC;
-  fvec4 mLevelA;
-  fvec4 mLevelB;
-  fvec4 mLevelC;
+  lev2::Texture* mCurrentTextureA = nullptr;
+  lev2::Texture* mCurrentTextureB = nullptr;
+  lev2::Texture* mCurrentTextureC = nullptr;
+
+  const lev2::FxShaderTechnique* hTekOp2AmulB = nullptr;
+  const lev2::FxShaderTechnique* hTekOp2AdivB = nullptr;
+
+  const lev2::FxShaderTechnique* hTekBoverAplusC = nullptr;
+  const lev2::FxShaderTechnique* hTekAplusBplusC = nullptr;
+  const lev2::FxShaderTechnique* hTekAlerpBwithC = nullptr;
+  const lev2::FxShaderTechnique* hTekAsolo = nullptr;
+  const lev2::FxShaderTechnique* hTekBsolo = nullptr;
+  const lev2::FxShaderTechnique* hTekCsolo = nullptr;
+
+  const lev2::FxShaderTechnique* hTekCurrent = nullptr;
+
+  const lev2::FxShaderParam* hMapA = nullptr;
+  const lev2::FxShaderParam* hMapB = nullptr;
+  const lev2::FxShaderParam* hLevelA = nullptr;
+  const lev2::FxShaderParam* hLevelB = nullptr;
+  const lev2::FxShaderParam* hLevelC = nullptr;
+  const lev2::FxShaderParam* hBiasA = nullptr;
+  const lev2::FxShaderParam* hBiasB = nullptr;
+  const lev2::FxShaderParam* hBiasC = nullptr;
+  const lev2::FxShaderParam* hMapC = nullptr;
+  const lev2::FxShaderParam* hMatMVP = nullptr;
+  lev2::FxShader* _shader = nullptr;
+
+  fxshaderasset_ptr_t _shaderasset;
+
   fvec4 mBiasA;
   fvec4 mBiasB;
   fvec4 mBiasC;
-
-  const lev2::FxShaderTechnique* hTekOp2AmulB;
-  const lev2::FxShaderTechnique* hTekOp2AdivB;
-
-  const lev2::FxShaderTechnique* hTekBoverAplusC;
-  const lev2::FxShaderTechnique* hTekAplusBplusC;
-  const lev2::FxShaderTechnique* hTekAlerpBwithC;
-  const lev2::FxShaderTechnique* hTekAsolo;
-  const lev2::FxShaderTechnique* hTekBsolo;
-  const lev2::FxShaderTechnique* hTekCsolo;
-
-  const lev2::FxShaderTechnique* hTekCurrent;
-
-  const lev2::FxShaderParam* hMapA;
-  const lev2::FxShaderParam* hMapB;
-  const lev2::FxShaderParam* hLevelA;
-  const lev2::FxShaderParam* hLevelB;
-  const lev2::FxShaderParam* hLevelC;
-  const lev2::FxShaderParam* hBiasA;
-  const lev2::FxShaderParam* hBiasB;
-  const lev2::FxShaderParam* hBiasC;
-  const lev2::FxShaderParam* hMapC;
-  const lev2::FxShaderParam* hMatMVP;
-  lev2::FxShader* _shader;
-  fxshaderasset_ptr_t _shaderasset;
+  fvec4 mLevelA;
+  fvec4 mLevelB;
+  fvec4 mLevelC;
 };
 
 } // namespace ork::lev2

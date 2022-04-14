@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -86,7 +86,7 @@ Shader1::Shader1(/*const CLengine& eng*/)
 
 ork::fvec4 test_volume_shader::ShadeVolume( const ork::fvec3& entrywpos, const ork::fvec3& exitwpos ) const // virtual 
 {
-	float fdist = (exitwpos-entrywpos).Mag();
+	float fdist = (exitwpos-entrywpos).magnitude();
 	float fsd = 1.5f*fdist/10.0f;
 	float falpha = powf(fsd,2.0f);
 	return ork::fvec4(1.7f,0.2f,0.2f,falpha);
@@ -224,9 +224,9 @@ void Shader1::ShadeBlock( AABuffer& aabuf, int ifragbase, int icount, int inumtr
 	{	const rend_prefragment& pfrag = PFRAGS.mPreFrags[ifragidx++];
 		rend_fragment* frag = aabuf.mpFragments[i];
 //		const ork::fvec3 nrm = (frag->mWldSpaceNrm*0.5f)+ork::fvec3(0.5f,0.5f,0.5f);
-		frag->mRGBA.SetXYZ( pfrag.mfR, pfrag.mfS, pfrag.mfT );
+		frag->mRGBA.setXYZ( pfrag.mfR, pfrag.mfS, pfrag.mfT );
 		//frag->mRGBA.SetXYZ( nrm.x, nrm.y, nrm.z );
-		frag->mRGBA.setW( 0.5f );
+		frag->mRGBA.w = ( 0.5f );
 		frag->mZ = pfrag.mfZ;
 	}
 	//////////////////////////////////////////////////////

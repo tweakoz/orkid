@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #pragma once
 
 #include <ork/python/pyext.h>
@@ -21,6 +28,7 @@
 #include <ork/lev2/ezapp.h>
 #include <ork/lev2/ui/event.h>
 #include <ork/lev2/lev2_types.h>
+#include <ork/math/TransformNode.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace py = pybind11;
@@ -38,9 +46,9 @@ using gbi_t               = ork::python::unmanaged_ptr<GeometryBufferInterface>;
 using fxi_t               = ork::python::unmanaged_ptr<FxInterface>;
 using rsi_t               = ork::python::unmanaged_ptr<RasterStateInterface>;
 using txi_t               = ork::python::unmanaged_ptr<TextureInterface>;
-using tex_t               = ork::python::unmanaged_ptr<Texture>;
-using rtb_t               = ork::python::unmanaged_ptr<RtBuffer>;
-using rtg_t               = ork::python::unmanaged_ptr<RtGroup>;
+using tex_t               = ork::lev2::texture_ptr_t;
+using rtb_t               = ork::lev2::rtbuffer_ptr_t;
+using rtg_t               = ork::lev2::rtgroup_ptr_t;
 using font_t              = ork::python::unmanaged_ptr<Font>;
 using capbuf_t            = ork::python::unmanaged_ptr<CaptureBuffer>;
 using pyfxparam_ptr_t     = ork::python::unmanaged_ptr<const FxShaderParam>;
@@ -52,5 +60,6 @@ using vb_static_vtxa_t    = StaticVertexBuffer<vtxa_t>;
 using vw_vtxa_t           = VtxWriter<vtxa_t>;
 using cstrref_t           = const std::string&;
 using rcfd_t              = RenderContextFrameData;
+using decxf_t             = ork::decompxf_ptr_t;
 
 } // namespace ork::lev2

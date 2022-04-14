@@ -56,4 +56,4 @@ class OpenClSimApp(_simsetup.SimApp):
     super().__init__(vrmode,instance_set_class)
 ################################################
 app = OpenClSimApp()
-app.qtapp.exec()
+app.qtapp.mainThreadLoop()

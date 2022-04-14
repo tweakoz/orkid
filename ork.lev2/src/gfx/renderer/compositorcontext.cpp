@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -39,13 +39,10 @@ CompositingContext::~CompositingContext() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void CompositingContext::Init(lev2::Context* pTARG) {
-  if ((miWidth != pTARG->mainSurfaceWidth()) || (miHeight != pTARG->mainSurfaceHeight())) {
-    miWidth  = pTARG->mainSurfaceWidth();
-    miHeight = pTARG->mainSurfaceHeight();
-    if (_compositingTechnique) {
-      _compositingTechnique->gpuInit(pTARG, miWidth, miHeight);
-    }
-  }
+  //if ((miWidth != pTARG->mainSurfaceWidth()) || (miHeight != pTARG->mainSurfaceHeight())) {
+    //miWidth  = pTARG->mainSurfaceWidth();
+    //miHeight = pTARG->mainSurfaceHeight();
+  //}
   if (nullptr == _utilMaterial) {
     _utilMaterial = new GfxMaterial3DSolid;
     _utilMaterial->gpuInit(pTARG);
@@ -63,6 +60,7 @@ void CompositingContext::Resize(int iW, int iH) {
 
 bool CompositingContext::assemble(CompositorDrawData& drawdata) {
   bool rval = false;
+  //printf( "assemble<%d %d>\n", miWidth, miHeight );
   Init(drawdata.context()); // fixme lazy init
   if (_compositingTechnique) {
     _compositingTechnique->gpuInit(drawdata.context(), miWidth, miHeight);
@@ -73,6 +71,7 @@ bool CompositingContext::assemble(CompositorDrawData& drawdata) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void CompositingContext::composite(CompositorDrawData& drawdata) {
+  //printf( "composite<%d %d>\n", miWidth, miHeight );
   Init(drawdata.context());
   if (_compositingTechnique)
     _compositingTechnique->composite(drawdata);

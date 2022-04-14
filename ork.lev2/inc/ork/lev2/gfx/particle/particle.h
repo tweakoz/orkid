@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -121,12 +121,12 @@ public:
   }
 
 private:
-  float mfLifespan;
-  float mfEmitScale;
-  float mfEmissionUp;
-  float mfEmissionOut;
-  float mfEmissionRate;
-  float mfSpinRate;
+  float mfLifespan = 0.0f;
+  float mfEmitScale = 0.0f;
+  float mfEmissionUp = 0.0f;
+  float mfEmissionOut = 0.0f;
+  float mfEmissionRate = 0.0f;
+  float mfSpinRate = 0.0f;
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -211,29 +211,24 @@ public: //
 ///////////////////////////////////////////////////////////////////////////////
 
 struct BasicParticle {
+
+  void* mKey = nullptr;
+
+  float mfRandom = 0.0f;
+  float mfAge = 0.0f;
+  float mfLifeSpan = 0.0f;
+  uint32_t mColliderStates = 0;
+
   ork::fvec3 mPosition;
   ork::fvec3 mLastPosition;
   ork::fvec3 mVelocity;
   ork::fvec3 mLastVelocity;
-  float mfRandom;
-  float mfAge;
-  float mfLifeSpan;
-  void* mKey;
-  uint32_t mColliderStates;
 
   bool IsDead(void) {
     return (mfAge >= mfLifeSpan);
   }
 
-  BasicParticle()
-      : mfAge(0.0f)
-      , mfLifeSpan(0.0f)
-      , mPosition(0.0f, 0.0f, 0.0f)
-      , mLastPosition(0.0f, 0.0f, 0.0f)
-      , mVelocity(0.0f, 0.0f, 0.0f)
-      , mLastVelocity(0.0f, 0.0f, 0.0f)
-      , mKey(0)
-      , mColliderStates(0) {
+  BasicParticle() {
     // todo - this prob should still be deterministic,
     //  have the emitter assign the random val
 
@@ -260,19 +255,19 @@ struct Event {
   }
   Event()
       : mEventType("NULL")
-      , mEventId("NULL")
-      , mPosition(0.0f, 0.0f, 0.0f)
-      , mLastPosition(0.0f, 0.0f, 0.0f)
-      , mVelocity(0.0f, 0.0f, 0.0f) {
+      , mEventId("NULL") {
   }
 };
 
 struct EventQueue {
+
   static const int kmaxevents = 65536;
+
+  int miSize = 0;
+  int mInIndex = 0;
+  int mOutIndex = 0;
+
   fixedvector<Event, kmaxevents> mEvents;
-  int miSize;
-  int mInIndex;
-  int mOutIndex;
 
   int GetNumEvents() const {
     return miSize;
@@ -326,22 +321,25 @@ enum EmitterDirection {
 };
 
 struct EmitterCtx {
-  Pool<BasicParticle>* mPool;
+
+  Pool<BasicParticle>* mPool = nullptr;
+  EventQueue* mSpawnQueue = nullptr;
+  EventQueue* mDeathQueue = nullptr;
+  void* mKey = nullptr;
+
+  float mfSpawnProbability = 1.0f;
+  float mfSpawnMultiplier = 1.0f;
+  float mDispersion = 0.0f;
+  float mfDeltaTime = 0.0f;
+  float mfEmitterMark = 0.0f;
+  float mfEmissionRate = 0.0f;
+  float mfEmissionVelocity = 0.0f;
+  float mfLifespan = 0.0f;
+  int miEmitterMark = 0.0f;
+
   fvec3 mPosition;
   fvec3 mLastPosition;
   fvec3 mOffsetVelocity;
-  EventQueue* mSpawnQueue;
-  EventQueue* mDeathQueue;
-  float mfSpawnProbability;
-  float mfSpawnMultiplier;
-  float mDispersion;
-  float mfDeltaTime;
-  float mfEmitterMark;
-  float mfEmissionRate;
-  float mfEmissionVelocity;
-  float mfLifespan;
-  int miEmitterMark;
-  void* mKey;
 
   EmitterCtx();
 };
@@ -386,8 +384,10 @@ public:
   void SetElapsed(float fv);
 
 protected:
-  float mElapsed;
+
   const ParticleItemBase& mItem;
+
+  float mElapsed = 0.0f;
 
   virtual void DoUpdate(float fdt) = 0;
   virtual void DoReset() {

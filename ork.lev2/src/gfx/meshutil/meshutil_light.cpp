@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -67,7 +67,7 @@ void PointLight::describeX(class_t* clazz) {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool PointLight::AffectsSphere(const fvec3& center, float radius) const {
-  float dist          = (mWorldMatrix.GetTranslation() - center).Mag();
+  float dist          = (mWorldMatrix.translation() - center).magnitude();
   float combinedradii = (radius + mRadius);
 
   //	orkprintf( "PointLight::AffectsSphere point<%f %f %f> center<%f %f %f>\n",
@@ -81,7 +81,7 @@ bool PointLight::AffectsSphere(const fvec3& center, float radius) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool PointLight::AffectsAABox(const AABox& aab) const {
-  return CollisionTester::SphereAABoxTest(Sphere(mWorldMatrix.GetTranslation(), mRadius), aab);
+  return CollisionTester::SphereAABoxTest(Sphere(mWorldMatrix.translation(), mRadius), aab);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

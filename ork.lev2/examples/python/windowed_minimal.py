@@ -18,7 +18,7 @@ class MyApp(object):
   ###########################
   def __init__(self):
     super().__init__()
-    self.qtapp = OrkEzQtApp.create(self)
+    self.qtapp = OrkEzApp.create(self)
     self.qtapp.setRefreshPolicy(RefreshFixedFPS, 60)
     self._time_base = time.time()
   ###########################
@@ -72,4 +72,4 @@ class MyApp(object):
     ctx.endFrame()
 ##############################################
 myapp = MyApp()
-myapp.qtapp.exec()
+myapp.qtapp.mainThreadLoop()

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -70,9 +70,14 @@ fvec3 CompositingPassData::monoCamPos(const fmtx4& vizoffsetmtx) const {
   auto mvmono = (vizoffsetmtx * vmono);
   fmtx4 imvmono;
   imvmono.inverseOf(mvmono);
-  return imvmono.GetTranslation();
+  return imvmono.translation();
 }
-
+///////////////////////////////////////////////////////////////////////////////
+fvec2 CompositingPassData::nearAndFar() const {
+  auto mtcs = isStereoOnePass() ? _stereoCameraMatrices->_mono : _cameraMatrices;
+  const auto& camdat = mtcs->_camdat;
+  return fvec2(camdat.mNear,camdat.mFar);
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 const Frustum& CompositingPassData::monoCamFrustum() const {

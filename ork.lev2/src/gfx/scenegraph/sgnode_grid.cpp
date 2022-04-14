@@ -35,7 +35,6 @@ struct GridRenderImpl {
 
   }
   ~GridRenderImpl(){
-
   }
   void gpuInit(lev2::Context* ctx) {
 
@@ -117,7 +116,7 @@ struct GridRenderImpl {
     if (isPickState) {
       auto pickBuf = context->FBI()->currentPickBuffer();
       //uint64_t pid = pickBuf ? pickBuf->AssignPickId((ork::Object*)nullptr) : 0;
-      modcolor.SetRGBAU64(uint64_t(0xffffffffffffffff));
+      modcolor.setRGBAU64(uint64_t(0xffffffffffffffff));
     }
     context->PushModColor(modcolor);
     gbi->DrawPrimitive(this->_material, vw, PrimitiveType::TRIANGLES, 6);
@@ -130,7 +129,7 @@ struct GridRenderImpl {
   }
   GridDrawableInst* _gridinst;
   PBRMaterial* _material;
-  Texture* _colortexture;
+  texture_ptr_t _colortexture;
   bool _initted = false;
 
 };

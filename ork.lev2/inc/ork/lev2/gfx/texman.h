@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -20,11 +20,6 @@ namespace ork { namespace lev2 {
 
 void invoke_nvcompress(std::string inpath, std::string outpath, std::string other_args);
 
-class Context;
-class Texture;
-class TextureAsset;
-using texture_ptr_t = std::shared_ptr<Texture>;
-
 //////////////////////////////////////////////////////////////////////////
 // External IPC Texture support
 //
@@ -41,8 +36,6 @@ struct IpcTexture {
 	int _sema_complete_fd = 0;
 	int _sema_ready_fd = 0;
 };
-
-using ipctexture_ptr_t = std::shared_ptr<IpcTexture>;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -92,10 +85,6 @@ struct TextureSamplingModeData {
 };
 
 //////////////////////////////////////////////////////////////////////////
-
-class TextureAnimationInst;
-class Texture;
-class TextureInterface;
 
 class TextureAnimationBase {
 public:
@@ -168,7 +157,7 @@ struct MipChain {
 //////////////////////////////////////////////////////////////////////////
 
 struct Texture {
-  typedef std::function<datablock_ptr_t(Texture*, Context*, datablock_constptr_t)> proc_t;
+  typedef std::function<datablock_ptr_t(texture_ptr_t, Context*, datablock_constptr_t)> proc_t;
 
   //////////////////////////////////////////////////////
 
@@ -215,7 +204,7 @@ struct Texture {
 
   //////////////////////////////////////////////////////
 
-  static Texture* LoadUnManaged(const AssetPath& fname);
+  static texture_ptr_t LoadUnManaged(const AssetPath& fname);
   static texture_ptr_t createBlank(int iw, int ih, EBufferFormat efmt);
 
   //////////////////////////////////////////////////////////
@@ -258,6 +247,7 @@ struct Texture {
   const TextureAsset* _asset;
   bool _formatSupportsFiltering = true;
   ipctexture_ptr_t _external_memory;
+  std::atomic<int> _residenceState;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

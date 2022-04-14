@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -19,7 +19,7 @@ namespace ork {
 
 fvec4 PickIdToVertexColor(uint64_t pid) {
   fvec4 out;
-  out.SetRGBAU64(pid);
+  out.setRGBAU64(pid);
   // printf("PickIdToVertexColor uint64_t<0x%zx> fvec4<%g %g %g %g>\n", pid, out.x, out.y, out.z, out.w);
   return out;
 }

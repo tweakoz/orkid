@@ -31,6 +31,7 @@ end
 -------------------------------------------------------------------------------
 function Spinny:OnEntityUpdate(dt)
   --printf( "SPINNY::OnEntityUpdate()::begin" )
+  --printf("pos %s", self.ent:pos())
     self.timer = self.timer-dt
     if self.timer<0 then
         self.timer = math.random(1,3)

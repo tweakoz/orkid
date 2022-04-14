@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 //////////////////////////////////////////////////////////////// 
@@ -39,13 +39,13 @@ public:
 
 	FileDevRam();
 	
-	virtual EFileErrCode Write(File &rFile, const void *pFrom, size_t iSize);
-	virtual EFileErrCode GetCurrentDirectory(std::string &directory);
-	virtual EFileErrCode SetCurrentDirectory(const std::string &directory);
+	EFileErrCode Write(File &rFile, const void *pFrom, size_t iSize) final;
+	EFileErrCode GetCurrentDirectory(file::Path::NameType& directory) final;
+	EFileErrCode SetCurrentDirectory(const file::Path::NameType &directory) final;
 
-	virtual bool DoesFileExist(const file::Path& filespec);
-	virtual bool DoesDirectoryExist(const file::Path& filespec);
-	virtual bool IsFileWritable(const file::Path& filespec);
+	bool DoesFileExist(const file::Path& filespec) final;
+	bool DoesDirectoryExist(const file::Path& filespec) final;
+	bool IsFileWritable(const file::Path& filespec) final;
 
 	void RegisterRamFile(const file::Path &path, const char *pBuffer, size_t isize);
 };

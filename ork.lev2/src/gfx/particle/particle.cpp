@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -125,30 +125,12 @@ void SpiralEmitterData::describeX(class_t* clazz) {
 
   ///////////////////////////////////////////////////////////////////////////////
 
-  SpiralEmitterData::SpiralEmitterData()
-      : mfLifespan(0.0f)
-      , mfEmitScale(0.0f)
-      , mfEmissionRate(0.0f)
-      , mfEmissionUp(0.0f)
-      , mfEmissionOut(0.0f)
-      , mfSpinRate(0.0f) {
+  SpiralEmitterData::SpiralEmitterData() {
   }
 
   ///////////////////////////////////////////////////////////////////////////////
 
-  EmitterCtx::EmitterCtx()
-      : mPool(0)
-      , mfDeltaTime(0.0f)
-      , mfEmitterMark(0.0f)
-      , miEmitterMark(0)
-      , mfEmissionRate(0.0f)
-      , mfEmissionVelocity(0.0f)
-      , mfLifespan(0.0f)
-      , mDispersion(0.0f)
-      , mSpawnQueue(0)
-      , mDeathQueue(0)
-      , mfSpawnProbability(1.0f)
-      , mfSpawnMultiplier(1.0f) {
+  EmitterCtx::EmitterCtx() {
   }
 
   ///////////////////////////////////////////////////////////////////////////////
@@ -175,29 +157,30 @@ void SpiralEmitterData::describeX(class_t* clazz) {
         ptc->mfLifeSpan = ctx.mfLifespan;
         switch (meDirection) {
           case EmitterDirection::CROSS_X:
-            dir = dir.Cross(fvec3::Red());
+            dir = dir.crossWith(fvec3::Red());
             break;
           case EmitterDirection::CROSS_Y:
-            dir = dir.Cross(fvec3::Green());
+            dir = dir.crossWith(fvec3::Green());
             break;
           case EmitterDirection::CROSS_Z:
-            dir = dir.Cross(fvec3::Blue());
+            dir = dir.crossWith(fvec3::Blue());
             break;
           case EmitterDirection::CONSTANT:
           case EmitterDirection::VEL:
           case EmitterDirection::TO_POINT:
+          default:
             break;
         }
-        vbin = dir.Cross(fvec3::Green());
-        if (vbin.MagSquared() < .1f)
-          vbin = dir.Cross(fvec3::Red());
-        vbin.Normalize();
-        vtan     = vbin.Cross(dir);
+        vbin = dir.crossWith(fvec3::Green());
+        if (vbin.magnitudeSquared() < .1f)
+          vbin = dir.crossWith(fvec3::Red());
+        vbin.normalizeInPlace();
+        vtan     = vbin.crossWith(dir);
         float fu = ((std::rand() % 256) / 256.0f) - 0.5f;
         float fv = ((std::rand() % 256) / 256.0f) - 0.5f;
         disp     = (vbin * fu) + (vtan * fv);
         yo.lerp(dir, disp, ctx.mDispersion);
-        dir                = yo.Normal();
+        dir                = yo.normalized();
         ptc->mPosition     = pos;
         ptc->mVelocity     = dir * ctx.mfEmissionVelocity + ctx.mOffsetVelocity;
         ptc->mLastPosition = pos - (ptc->mVelocity * ctx.mfDeltaTime);
@@ -232,10 +215,10 @@ void SpiralEmitterData::describeX(class_t* clazz) {
       if (fran < ctx.mfSpawnProbability) {
         //////////////////////////////////////////////
         pos  = ev.mPosition + ctx.mPosition;
-        odir = (pos - ev.mLastPosition).Normal();
+        odir = (pos - ev.mLastPosition).normalized();
         dir  = odir;
         if (false == bUseEmitterSpeed)
-          EmitterSpeed = ev.mVelocity.Mag();
+          EmitterSpeed = ev.mVelocity.magnitude();
         //////////////////////////////////////////////
         for (float ii = 0.0f; ii < ctx.mfSpawnMultiplier; ii += 1.0f) {
           BasicParticle* __restrict ptc = the_pool.FastAlloc();
@@ -245,16 +228,16 @@ void SpiralEmitterData::describeX(class_t* clazz) {
             //////////////////////////////////////////////
             // calc dispersion
             //////////////////////////////////////////////
-            vbin = dir.Cross(fvec3::Green());
-            if (vbin.MagSquared() < .1f)
-              vbin = dir.Cross(fvec3::Red());
-            vbin.Normalize();
-            vtan     = vbin.Cross(dir);
+            vbin = dir.crossWith(fvec3::Green());
+            if (vbin.magnitudeSquared() < .1f)
+              vbin = dir.crossWith(fvec3::Red());
+            vbin.normalizeInPlace();
+            vtan     = vbin.crossWith(dir);
             float fu = ((std::rand() % 256) / 256.0f) - 0.5f;
             float fv = ((std::rand() % 256) / 256.0f) - 0.5f;
             disp     = (vbin * fu) + (vtan * fv);
             yo.lerp(dir, disp, ctx.mDispersion);
-            dir = yo.Normal();
+            dir = yo.normalized();
             //////////////////////////////////////////////
             ptc->mPosition = pos;
             ptc->mVelocity = dir * EmitterSpeed;
@@ -379,8 +362,7 @@ void SpiralEmitterData::describeX(class_t* clazz) {
   ///////////////////////////////////////////////////////////////////////////////
 
   ParticleSystemBase::ParticleSystemBase(const ParticleItemBase& itemb)
-      : mItem(itemb)
-      , mElapsed(0.0f) {
+      : mItem(itemb) {
   }
   ParticleSystemBase::~ParticleSystemBase() {
   }
@@ -447,11 +429,7 @@ void SpiralEmitterData::describeX(class_t* clazz) {
   ///////////////////////////////////////////////////////////////////////////////
   ///////////////////////////////////////////////////////////////////////////////
 
-  EventQueue::EventQueue()
-      : mInIndex(0)
-      , mOutIndex(0)
-      , miSize(0) {
-
+  EventQueue::EventQueue() {
     for (int i = 0; i < kmaxevents; i++) {
       mEvents.push_back(Event());
     }

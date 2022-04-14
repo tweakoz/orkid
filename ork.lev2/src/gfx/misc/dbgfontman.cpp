@@ -5,6 +5,7 @@
 #include <ork/pch.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
+#include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/kernel/prop.h>
@@ -64,8 +65,8 @@ void FontMan::_beginTextBlock(Context* pTARG, int imaxcharcount) {
 
   VertexBufferBase& VB = pTARG->IMI()->RefTextVB();
   OrkAssert(false == VB.IsLocked());
-  VtxWriter<SVtxV12C4T16>& vw = mTextWriter;
-  new (&vw) VtxWriter<SVtxV12C4T16>;
+  vtxwriter_t& vw = mTextWriter;
+  new (&vw) vtxwriter_t;
   vw.miWriteCounter = 0;
   vw.miWriteBase    = 0;
   int inuminvb      = VB.GetNumVertices();
@@ -86,6 +87,7 @@ void FontMan::_endTextBlock(Context* pTARG) {
   bool bdraw = mTextWriter.miWriteCounter != 0;
   if (bdraw) {
     auto material = mpCurrentFont->GetMaterial();
+    mpCurrentFont->_materialDeferred->_variant = "font"_crcu;
     pTARG->GBI()->DrawPrimitive(material, mTextWriter, ork::lev2::PrimitiveType::TRIANGLES);
   }
 }
@@ -268,25 +270,24 @@ void FontMan::_addFont(Context* pTARG, const FontDesc& fdesc) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void FontMan::_drawText(Context* pTARG, int iX, int iY, const fixedstring_t& text) {
+void FontMan::_enqueueText(float fx, float fy, vtxwriter_t& vwriter, const fixedstring_t& text, const fvec4& color) {
   ///////////////////////////////////
-  const char* textbuffer = text.c_str();
   Font* pFont            = mpCurrentFont;
-  size_t iLen            = strlen(textbuffer);
+  size_t iLen            = text.length();
   const FontDesc& fdesc  = pFont->GetFontDesc();
 
   int iSX     = fdesc.miAdvanceWidth;
   int iSY     = fdesc.miAdvanceHeight;
   int ishifty = fdesc.miYShift;
 
-  auto VPRect = pTARG->FBI()->viewport();
+  uint32_t ucolor = color.BGRAU32();
 
   ///////////////////////////////////
   int iRow = 0;
   int iCol = 0;
 
   for (size_t i = 0; i < iLen; i++) {
-    char ch = textbuffer[i];
+    char ch = text[i];
 
     switch (ch) {
       case 0x0a: // linefeed
@@ -312,10 +313,9 @@ void FontMan::_drawText(Context* pTARG, int iX, int iY, const fixedstring_t& tex
         }
 
         if ((iCharRow >= 0) && (iCharCol >= 0)) {
-          int iX0 = iX + (iCol * iSX);
-          int iY0 = iY + (iRow * iSY) + ishifty;
-          // pFont->QueChar( pTARG, GetRef().mTextWriter, iX0, iY0, iCharCol, iCharRow, pTARG->RefModColor().GetABGRU32() );
-          pFont->QueChar(pTARG, mTextWriter, iX0, iY0, iCharCol, iCharRow, pTARG->RefModColor().GetBGRAU32());
+          float fx0 = fx + float(iCol * iSX);
+          float fy0 = fy + float(iRow * iSY) + float(ishifty);
+          pFont->enqueueCharacter(vwriter, fx0, fy0, iCharCol, iCharRow, ucolor);
           iCol++;
         }
 
@@ -327,29 +327,128 @@ void FontMan::_drawText(Context* pTARG, int iX, int iY, const fixedstring_t& tex
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void FontMan::DrawText(Context* pTARG, int iX, int iY, const char* pFmt, ...) {
-  fixedstring_t fxs;
-  va_list argp;
-  va_start(argp, pFmt);
-  vsnprintf(fxs.mutable_c_str(), KFIXEDSTRINGLEN, pFmt, argp);
-  va_end(argp);
-  instance()->_drawText(pTARG, iX, iY, fxs);
+void FontMan::DrawTextItems( Context* context, const textitem_vect& items ){
+
+  auto fontman = instance();
+
+  fontman->_gpuInit(context);
+
+  auto mtxi = context->MTXI();
+  auto gbi = context->GBI();
+  auto imi = context->IMI();
+  auto font = fontman->mpCurrentFont;
+  auto material = font->GetMaterial();
+  const FontDesc& fdesc  = font->GetFontDesc();
+  int iSX     = fdesc.miAdvanceWidth;
+  int iSY     = fdesc.miAdvanceHeight;
+  int ishifty = fdesc.miYShift;
+
+  size_t char_count = 0;
+  for( const auto& item : items ){
+      char_count += item._text.length();
+  }
+
+  /////////////////////////////////////
+  // begin block
+  /////////////////////////////////////
+
+  VertexBufferBase& VB = imi->RefTextVB();
+  OrkAssert(false == VB.IsLocked());
+  VB.Reset();
+
+  /////////////////////////////////////
+  // ensure that we have enough vertex writers
+  /////////////////////////////////////
+
+  size_t num_items = items.size();
+
+  while(fontman->_writers.size()<num_items){
+    vtxwriter_ptr_t vw = std::make_shared<vtxwriter_t>();
+    fontman->_writers.push_back(vw);
+  }
+
+  /////////////////////////////////////
+  fvec4 color = context->RefModColor();
+
+  for( size_t i=0; i<items.size(); i++ ){
+      vtxwriter_ptr_t vw = fontman->_writers[i];
+      vw->miWriteCounter = 0;
+      vw->miWriteBase    = 0;
+      //
+      const auto& item = items[i];
+      const auto& string = item._text;
+      size_t slen = string.length();
+      int inumv = slen * 8;
+      //
+      vw->Lock(context, &VB, inumv);
+
+      float fx = (slen * iSX);
+      float fy = (iSY + ishifty);
+
+      fontman->_enqueueText(-(fx*0.5),-(fy*0.5),*vw,string,color);
+      vw->UnLock(context);
+  }
+
+  /////////////////////////////////////
+  // end block
+  /////////////////////////////////////
+
+  font->_materialDeferred->_variant = "font-instanced"_crcu;
+
+  int inumpasses = material->BeginBlock(context);
+  bool bDRAW = material->BeginPass(context, 0);
+  if (bDRAW) {
+
+    fmtx4 matscale;
+    matscale.setScale(0.25f);
+
+    for( size_t i=0; i<items.size(); i++ ){
+        const auto& item = items[i];
+        auto vw = fontman->_writers[i];
+        const auto& wmatrix = item._wmatrix;
+        mtxi->PushMMatrix(matscale*wmatrix);
+        material->UpdateMMatrix(context);
+        gbi->DrawPrimitiveEML(*vw, ork::lev2::PrimitiveType::TRIANGLES);
+        mtxi->PopMMatrix();
+    }
+
+    material->EndPass(context);
+  }
+  material->EndBlock(context);
+
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void FontMan::DrawCenteredText(Context* pTARG, int iY, const char* pFmt, ...) {
+void FontMan::DrawText(Context* context, int iX, int iY, const char* pFmt, ...) {
   fixedstring_t fxs;
   va_list argp;
   va_start(argp, pFmt);
   vsnprintf(fxs.mutable_c_str(), KFIXEDSTRINGLEN, pFmt, argp);
   va_end(argp);
+  fxs.recalclen();
+  fvec4 color = context->RefModColor();
+
+  instance()->_enqueueText(iX, iY, instance()->mTextWriter, fxs,color);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void FontMan::DrawCenteredText(Context* context, int iY, const char* pFmt, ...) {
+  fixedstring_t fxs;
+  va_list argp;
+  va_start(argp, pFmt);
+  vsnprintf(fxs.mutable_c_str(), KFIXEDSTRINGLEN, pFmt, argp);
+  va_end(argp);
+  fxs.recalclen();
   auto font        = currentFont();
   const auto& desc = font->mFontDesc;
   int string_width = desc.stringWidth(fxs.length());
-  int TARGW        = pTARG->mainSurfaceWidth();
+  int TARGW        = context->mainSurfaceWidth();
   int center_x     = (TARGW >> 1) - (string_width >> 1);
-  instance()->_drawText(pTARG, center_x, iY, fxs);
+  fvec4 color = context->RefModColor();
+  instance()->_enqueueText(center_x, iY, instance()->mTextWriter, fxs,color);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -361,7 +460,7 @@ Font::Font(const std::string& fontname, const std::string& filename)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Font::QueChar(Context* pTARG, VtxWriter<SVtxV12C4T16>& vw, int ix, int iy, int iu, int iv, U32 ucolor) {
+void Font::enqueueCharacter(FontMan::vtxwriter_t& vw, float fx, float fy, int iu, int iv, U32 ucolor) {
   const float kftexsiz   = float(mFontDesc.miTexWidth);
   const float kfU0offset = +0.0f;
   const float kfV0offset = 0.0f;
@@ -375,8 +474,8 @@ void Font::QueChar(Context* pTARG, VtxWriter<SVtxV12C4T16>& vw, int ix, int iy, 
   ///////////////////////////////////////////////
   // calc vertex pos
   ///////////////////////////////////////////////
-  float fix1 = float(ix);
-  float fiy1 = float(iy);
+  float fix1 = fx;
+  float fiy1 = fy;
   ///////////////////////////////////////////////
   // calc UVs
   ///////////////////////////////////////////////
@@ -425,18 +524,29 @@ void Font::QueChar(Context* pTARG, VtxWriter<SVtxV12C4T16>& vw, int ix, int iy, 
 extern bool _macosUseHIDPI;
 #endif
 
+GfxMaterial* Font::GetMaterial(void) {
+  return _use_deferred ? _materialDeferred.get() : mpMaterial;
+}
+
 void Font::LoadFromDisk(Context* pTARG, const FontDesc& fdesc) {
   mpMaterial = new GfxMaterialUIText;
   mpMaterial->gpuInit(pTARG);
+
+  _materialDeferred = std::make_shared<PBRMaterial>();
+
   AssetPath apath(msFileName.c_str());
   auto txi                                             = pTARG->TXI();
-  auto ptex                                            = new Texture;
-  ptex->_varmap.makeValueForKey<bool>("loadimmediate") = true;
-  txi->LoadTexture(apath, ptex);
-  mpMaterial->SetTexture(ETEXDEST_DIFFUSE, ptex);
-  ptex->TexSamplingMode().PresetPointAndClamp();
-  pTARG->TXI()->ApplySamplingMode(ptex);
+  _texture                                            = std::make_shared<Texture>();
+  _texture->_varmap.makeValueForKey<bool>("loadimmediate") = true;
+  txi->LoadTexture(apath, _texture);
+  mpMaterial->SetTexture(ETEXDEST_DIFFUSE, _texture.get());
+  _texture->TexSamplingMode().PresetPointAndClamp();
+  pTARG->TXI()->ApplySamplingMode(_texture.get());
   mFontDesc = fdesc;
+
+  //_materialDeferred->_asset_texcolor = asset::AssetManager<lev2::TextureAsset>::load(apath);
+  _materialDeferred->_texColor = _texture; //_materialDeferred->_asset_texcolor.GetTexture();
+  _materialDeferred->gpuInit(pTARG);
 
 #if defined(__APPLE__)
   /*if (_macosUseHIDPI) {

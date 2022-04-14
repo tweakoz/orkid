@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #pragma once
 
 /// ////////////////////////////////////////////////////////////////////////////
@@ -5,6 +12,13 @@
 /// Raster State Interface
 /// ////////////////////////////////////////////////////////////////////////////
 /// ////////////////////////////////////////////////////////////////////////////
+
+struct RGBAMask {
+  bool _r = true;
+  bool _g = true;
+  bool _b = true;
+  bool _a = true;
+};
 
 class RasterStateInterface {
 public:
@@ -18,6 +32,7 @@ public:
 
   virtual void SetZWriteMask(bool bv)             = 0;
   virtual void SetRGBAWriteMask(bool rgb, bool a) = 0;
+  virtual RGBAMask SetRGBAWriteMask(const RGBAMask& newmask) = 0;
   virtual void SetBlending(Blending eVal)        = 0;
   virtual void SetDepthTest(EDepthTest eVal)      = 0;
   virtual void SetCullTest(ECullTest eVal)        = 0;
@@ -28,4 +43,5 @@ protected:
   SRasterState mUIRasterState;
   SRasterState mCurrentState;
   SRasterState mLastState;
+  RGBAMask _curmask;
 };

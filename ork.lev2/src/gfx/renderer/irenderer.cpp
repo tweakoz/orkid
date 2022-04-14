@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -23,20 +23,19 @@ template class ork::fixedvector<ork::lev2::ModelRenderable, ork::lev2::IRenderer
 template class ork::fixedvector<ork::lev2::CallbackRenderable, ork::lev2::IRenderer::kmaxrables>;
 
 namespace ork { namespace lev2 {
-static const int kRenderbufferSize = 1024 << 10;
 
 ///////////////////////////////////////////////////////////////////////////////
 
 IRenderer::IRenderer(Context* pTARG)
-    : mPerformanceItem(0)
-    , _target(pTARG)
-    , mRenderQueue() {
+    : _target(pTARG)
+    , _unsortedNodes()
+    , mPerformanceItem(0) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void IRenderer::QueueRenderable(IRenderable* pRenderable) {
-  mRenderQueue.QueueRenderable(pRenderable);
+void IRenderer::enqueueRenderable(IRenderable* renderable) {
+  _unsortedNodes.enqueueRenderable(renderable);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -47,7 +46,7 @@ void IRenderer::drawEnqueuedRenderables() {
     mPerformanceItem->Enter();
 
   ///////////////////////////////////////////////////////
-  size_t renderQueueSize = mRenderQueue.Size();
+  size_t renderQueueSize = _unsortedNodes.Size();
   _target->debugPushGroup(FormatString("IRenderer::drawEnqueuedRenderables renderQueueSize<%zu>", renderQueueSize));
 
   if (renderQueueSize == 0) {
@@ -56,23 +55,23 @@ void IRenderer::drawEnqueuedRenderables() {
   }
 
   ///////////////////////////////////////////////////////
-  mQueueSortKeys.clear();
+  _sortkeys.clear();
 
-  mRenderQueue.ExportRenderableNodes(mQueueSortNodes);
+  _unsortedNodes.exportRenderableNodes(_sortedNodes);
 
-  mQueueSortKeys.resize(renderQueueSize);
+  _sortkeys.resize(renderQueueSize);
   for (size_t i = 0; i < renderQueueSize; i++) {
-    mQueueSortKeys[i] = mQueueSortNodes[i]->_renderable->ComposeSortKey(this);
+    _sortkeys[i] = _sortedNodes[i]->_renderable->ComposeSortKey(this);
   }
 
   ///////////////////////////////////////////////////////
   // orkprintf( "rqsize<%d>\n", renderQueueSize );
 
-  U32& first = (*mQueueSortKeys.begin());
+  U32& first = (*_sortkeys.begin());
 
-  mRadixSorter.Sort(&first, U32(renderQueueSize));
+  _radixsorter.Sort(&first, U32(renderQueueSize));
 
-  U32* sortedRenderQueueIndices = mRadixSorter.GetIndices();
+  U32* sortedRenderQueueIndices = _radixsorter.GetIndices();
 
   int imdlcount = 0;
 
@@ -85,14 +84,14 @@ void IRenderer::drawEnqueuedRenderables() {
   _groupedModels.clear();
 
   for (size_t i = 0; i < renderQueueSize; i++) {
-    int sorted = mQueueSortKeys[i];
+    int sorted = _sortkeys[i];
     _target->debugMarker(FormatString("IRenderer::drawEnqueuedRenderables sorting index<%zu> sorted<%d>", i, sorted));
   }
 
   for (size_t i = 0; i < renderQueueSize; i++) {
     int sorted = sortedRenderQueueIndices[i];
     OrkAssert(sorted < U32(renderQueueSize));
-    const RenderQueue::Node* pnode = mQueueSortNodes[sorted];
+    const RenderQueue::Node* pnode = _sortedNodes[sorted];
     _target->debugPushGroup(FormatString("IRenderer::drawEnqueuedRenderables render item<%zu> node<%p>", i, pnode));
     pnode->_renderable->Render(this);
     _target->debugPopGroup();
@@ -113,7 +112,7 @@ void IRenderer::drawEnqueuedRenderables() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void IRenderer::ResetQueue(void) {
-  mRenderQueue.Reset();
+  _unsortedNodes.Reset();
   mModels.clear();
   mCallbacks.clear();
 }

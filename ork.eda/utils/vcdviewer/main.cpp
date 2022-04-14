@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include "vcdviewer.h"
 #include <ork/lev2/ui/simpleuiapp.h>
 ///////////////////////////////////////////////////////////////////////////////
@@ -6,7 +13,8 @@ viewparams_ptr_t ViewParams::instance() {
   return __vparams;
 }
 ///////////////////////////////////////////////////////////////////////////////
-int main(int argc, char** argv) {
+int main(int argc, char** argv, char** envp) {
+  auto init_data = std::make_shared<ork::AppInitData>(argc,argv,envp);
   //////////////////////////////////////
   std::string orkdir = getenv("ORKID_WORKSPACE_DIR");
   //////////////////////////////////////
@@ -18,8 +26,7 @@ int main(int argc, char** argv) {
   vcd::File vcdfile;
   vcdfile.parse(inppath);
   //////////////////////////////////////
-  AppInitData qid;
-  auto app = createSimpleUiApp(argc, argv,qid);
+  auto app = createSimpleUiApp(init_data);
   //////////////////////////////////////
   auto vp       = app->_topLayoutGroup;
   auto w_tracks = vp->makeChild<LayoutGroup>("w_tracks");
@@ -86,8 +93,8 @@ int main(int argc, char** argv) {
   auto viewparams            = ViewParams::instance();
   viewparams->_min_timestamp = *vcdfile._timestamps.begin();
   viewparams->_max_timestamp = *vcdfile._timestamps.rbegin();
-  printf("min_timestamp<%d>\n", viewparams->_min_timestamp);
-  printf("max_timestamp<%d>\n", viewparams->_max_timestamp);
+  printf("min_timestamp<%lu>\n", viewparams->_min_timestamp);
+  printf("max_timestamp<%lu>\n", viewparams->_max_timestamp);
   //////////////////////////////////////
   int numsigtracks = flat_sigtracks.size();
   std::vector<anchor::guide_ptr_t> track_guides;
@@ -133,5 +140,5 @@ int main(int argc, char** argv) {
   // ol->setMargin(4);
   //////////////////////////////////////
   app->setRefreshPolicy({EREFRESH_WHENDIRTY, -1});
-  return app->runloop();
+  return app->mainThreadLoop();
 }

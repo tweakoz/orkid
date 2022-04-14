@@ -1,12 +1,17 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
 #include <ork/lev2/config.h>
 #if defined(ENABLE_IGL)
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wuninitialized"
+#pragma GCC diagnostic ignored "-Wunknown-pragmas"
+#pragma GCC diagnostic ignored "-Wswitch"
 
 #include <ork/kernel/orklut.hpp>
 #include <ork/math/plane.h>
@@ -124,5 +129,7 @@ iglmesh_ptr_t IglMesh::parameterizedSCAF(int numiters, double scale, double bias
 }
 //////////////////////////////////////////////////////////////////////////////
 } // namespace ork::meshutil
+
+#pragma GCC diagnostic pop
 
 #endif

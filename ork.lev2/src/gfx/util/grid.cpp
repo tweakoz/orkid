@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -38,17 +38,17 @@ void Grid3d::Calc(const CameraMatrices& camdat) {
   const fvec4& vf1 = camdat.GetFrustum().mFarCorners[1];
   const fvec4& vf2 = camdat.GetFrustum().mFarCorners[2];
   const fvec4& vf3 = camdat.GetFrustum().mFarCorners[3];
-  fvec3 vr0        = (vf0 - vn0).Normal();
-  fvec3 vr1        = (vf1 - vn1).Normal();
-  fvec3 vr2        = (vf2 - vn2).Normal();
-  fvec3 vr3        = (vf3 - vn3).Normal();
+  fvec3 vr0        = (vf0 - vn0).normalized();
+  fvec3 vr1        = (vf1 - vn1).normalized();
+  fvec3 vr2        = (vf2 - vn2).normalized();
+  fvec3 vr3        = (vf3 - vn3).normalized();
 
   /////////////////////////////////////////////////////////////////
   // get center ray
 
   fvec3 vnc = (vn0 + vn1 + vn2 + vn3) * float(0.25f);
   fvec3 vfc = (vf0 + vf1 + vf2 + vf3) * float(0.25f);
-  fvec3 vrc = (vfc - vnc).Normal();
+  fvec3 vrc = (vfc - vnc).normalized();
 
   fray3 centerray;
   centerray.mOrigin    = vnc;
@@ -199,13 +199,12 @@ Grid2d::Grid2d()
     , _extent(100.0f)
     , _zoomX(1.0f)
     , _zoomY(1.0f)
-    , _snapCenter(false){
+    , _snapCenter(false) {
 
-    float base_grey(0.10f);
-    float hilite_grey(0.40f);
-    _baseColor = fvec3(base_grey, base_grey, base_grey);
-    _hiliteColor = fvec3(hilite_grey, hilite_grey, hilite_grey);
-
+  float base_grey(0.10f);
+  float hilite_grey(0.40f);
+  _baseColor   = fvec3(base_grey, base_grey, base_grey);
+  _hiliteColor = fvec3(hilite_grey, hilite_grey, hilite_grey);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -268,22 +267,22 @@ ic );
 void Grid2d::ReCalc(int iw, int ih) {
   // float scale_factor = (dev_view_rect.y2 - dev_view_rect.y) / gmastercfg.ideviceH;
   // grid_calculator the_grid_calc(dev_view_rect,scale_factor);
-  float ftW     = float(iw);
-  float ftH     = float(ih);
-  _aspect = ftH / ftW;
+  float ftW = float(iw);
+  float ftH = float(ih);
+  _aspect   = ftH / ftW;
 
   _zoomedExtentX = _extent / _zoomX;
-  _zoomedExtentY = _extent / _zoomY *_aspect;
+  _zoomedExtentY = _extent / _zoomY * _aspect;
 
-  //float itx0 = _center.x - fnext * 0.5f;
-  //float itx1 = _center.x + fnext * 0.5f;
-  //float ity0 = _center.y - fnext * 0.5f * fASPECT;
-  //float ity1 = _center.y + fnext * 0.5f * fASPECT;
+  // float itx0 = _center.x - fnext * 0.5f;
+  // float itx1 = _center.x + fnext * 0.5f;
+  // float ity0 = _center.y - fnext * 0.5f * fASPECT;
+  // float ity1 = _center.y + fnext * 0.5f * fASPECT;
 
-  float fLOG   = log_base(_visGridDiv, _zoomedExtentX);
-  float fiLOG  = pow_base(_visGridDiv, floor(fLOG));
+  float fLOG  = log_base(_visGridDiv, _zoomedExtentX);
+  float fiLOG = pow_base(_visGridDiv, floor(fLOG));
 
-  //printf( "grid fLOG<%g> fiLOG<%g>\n", fLOG, fiLOG );
+  // printf( "grid fLOG<%g> fiLOG<%g>\n", fLOG, fiLOG );
 
   /////////////////////////////////////////////////////////////////
   // get params for grid
@@ -302,14 +301,13 @@ void Grid2d::ReCalc(int iw, int ih) {
   //printf( "grid fLEFT<%g> fRIGHT<%g> fTOP<%g> fBOTTOM<%g> fLOG<%g> fiLOG<%g>\n", fLEFT, fRIGHT, fTOP, fBOTTOM, fLOG, fiLOG );
   */
 
-  _topLeft.x = _center.x - _zoomedExtentX*0.5f;
-  _topLeft.y= _center.y - _zoomedExtentY*0.5f;
+  _topLeft.x = _center.x - _zoomedExtentX * 0.5f;
+  _topLeft.y = _center.y - _zoomedExtentY * 0.5f;
 
-  _botRight.x = _center.x + _zoomedExtentX*0.5f;
-  _botRight.y = _center.y + _zoomedExtentY*0.5f;
+  _botRight.x = _center.x + _zoomedExtentX * 0.5f;
+  _botRight.y = _center.y + _zoomedExtentY * 0.5f;
 
-
-  //printf( "grid _topLeft<%g %g> _botRight<%g %g>\n", _topLeft.x, _topLeft.y, _botRight.x, _botRight.y );
+  // printf( "grid _topLeft<%g %g> _botRight<%g %g>\n", _topLeft.x, _topLeft.y, _botRight.x, _botRight.y );
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -336,13 +334,13 @@ void Grid2d::updateMatrices(Context* pTARG, int iw, int ih) {
   _mtxOrtho = mtxi->Ortho(_topLeft.x, _botRight.x, _botRight.y, _topLeft.y, 0.0f, 1.0f);
 }
 
-void Grid2d::pushMatrix(Context* pTARG){
+void Grid2d::pushMatrix(Context* pTARG) {
   auto mtxi = pTARG->MTXI();
   mtxi->PushPMatrix(_mtxOrtho);
   mtxi->PushVMatrix(fmtx4::Identity());
   mtxi->PushMMatrix(fmtx4::Identity());
 }
-void Grid2d::popMatrix(Context* pTARG){
+void Grid2d::popMatrix(Context* pTARG) {
   auto mtxi = pTARG->MTXI();
   mtxi->PopPMatrix();
   mtxi->PopVMatrix();
@@ -365,8 +363,8 @@ void Grid2d::Render(Context* pTARG, int iw, int ih) {
     ////////////////////////////////
     // Grid
 
-    int inumx = ceil(_zoomedExtentX*2.0/_visGridSize);
-    int inumy = ceil(_zoomedExtentY*2.0/_visGridSize);
+    int inumx = ceil(_zoomedExtentX * 2.0 / _visGridSize);
+    int inumy = ceil(_zoomedExtentY * 2.0 / _visGridSize);
 
     float ftW     = float(iw);
     float ftH     = float(ih);
@@ -374,52 +372,50 @@ void Grid2d::Render(Context* pTARG, int iw, int ih) {
 
     int count = (inumx + inumy) * 16;
 
-    //printf( "inumx<%d> inumy<%d> count<%d>\n", inumx, inumy, count );
+    // printf( "inumx<%d> inumy<%d> count<%d>\n", inumx, inumy, count );
 
     if (count) {
 
-      float x1 = floor(_topLeft.x/_visGridSize)*_visGridSize;
-      float x2 = ceil(_botRight.x/_visGridSize)*_visGridSize;
-      float y1 = floor(_topLeft.y/_visGridSize)*_visGridSize;
-      float y2 = ceil(_botRight.y/_visGridSize)*_visGridSize;
+      float x1 = floor(_topLeft.x / _visGridSize) * _visGridSize;
+      float x2 = ceil(_botRight.x / _visGridSize) * _visGridSize;
+      float y1 = floor(_topLeft.y / _visGridSize) * _visGridSize;
+      float y2 = ceil(_botRight.y / _visGridSize) * _visGridSize;
 
-      bool draw_grid = (_drawmode!=EGrid2DDrawMode::NONE);
-      if( draw_grid ){
+      bool draw_grid = (_drawmode != EGrid2DDrawMode::NONE);
+      if (draw_grid) {
 
-        bool origin_axis_only = _drawmode==EGrid2DDrawMode::ORIGIN_AXIS_ONLY;
+        bool origin_axis_only = _drawmode == EGrid2DDrawMode::ORIGIN_AXIS_ONLY;
 
         lev2::VtxWriter<lev2::SVtxV12C4T16> vw;
-        vw.Lock(pTARG, &VB,count);
+        vw.Lock(pTARG, &VB, count);
 
         fvec2 uv0(0.0f, 0.0f);
 
         for (float fx = x1; fx <= x2; fx += _visGridSize) {
-          bool bORIGIN = (fabs(fx)<0.01);
+          bool bORIGIN = (fabs(fx) < 0.01);
 
-          if( origin_axis_only and (not bORIGIN) )
+          if (origin_axis_only and (not bORIGIN))
             continue;
 
+          bool bhi = fmodf(fabs(fx), _visGridHiliteDiv) < Float::Epsilon();
 
-          bool bhi     = fmodf(fabs(fx), _visGridHiliteDiv) < Float::Epsilon();
-
-          auto color = bORIGIN ? fcolor3::Green()*0.5 : (bhi ? _hiliteColor : _baseColor );
-          u32 ucolor = color.GetVtxColorAsU32();
+          auto color = bORIGIN ? fcolor3::Green() * 0.5 : (bhi ? _hiliteColor : _baseColor);
+          u32 ucolor = color.VtxColorAsU32();
           ork::lev2::SVtxV12C4T16 v0(fvec3(fx, y1, 0.0f), uv0, ucolor);
           ork::lev2::SVtxV12C4T16 v1(fvec3(fx, y2, 0.0f), uv0, ucolor);
           vw.AddVertex(v0);
           vw.AddVertex(v1);
         }
         for (float fy = y1; fy <= y2; fy += _visGridSize) {
-          bool bORIGIN = (fabs(fy)<0.01);
+          bool bORIGIN = (fabs(fy) < 0.01);
 
-          if( origin_axis_only and (not bORIGIN) )
+          if (origin_axis_only and (not bORIGIN))
             continue;
 
+          bool bhi = fmodf(fabs(fy), _visGridHiliteDiv) < Float::Epsilon();
 
-          bool bhi     = fmodf(fabs(fy), _visGridHiliteDiv) < Float::Epsilon();
-
-          auto color = bORIGIN ? fcolor3::Red()*0.5 : (bhi ? _hiliteColor : _baseColor );
-          u32 ucolor = color.GetVtxColorAsU32();
+          auto color = bORIGIN ? fcolor3::Red() * 0.5 : (bhi ? _hiliteColor : _baseColor);
+          u32 ucolor = color.VtxColorAsU32();
           ork::lev2::SVtxV12C4T16 v0(fvec3(x1, fy, 0.0f), uv0, ucolor);
           ork::lev2::SVtxV12C4T16 v1(fvec3(x2, fy, 0.0f), uv0, ucolor);
           vw.AddVertex(v0);
@@ -431,7 +427,6 @@ void Grid2d::Render(Context* pTARG, int iw, int ih) {
     }
   }
   this->popMatrix(pTARG);
-
 }
 
 }} // namespace ork::lev2

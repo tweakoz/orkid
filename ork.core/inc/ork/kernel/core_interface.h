@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -23,13 +23,13 @@ namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace reflect {
-class ObjectProperty;
+struct ObjectProperty;
 }
 
 class IUserChoiceDelegate {
 
 public:
-  typedef any64 ValueType;
+  typedef svar256_t ValueType;
 
   virtual void EnumerateChoices(orkmap<PoolString, ValueType>& Choices) = 0;
   virtual void SetObject(Object* pobj, Object* puserdata = 0)           = 0;
@@ -42,8 +42,8 @@ class ItemRemovalEvent : public event::Event {
 public:
   const reflect::ObjectProperty* mProperty;
   int miMultiIndex;
-  any64 mKey;
-  any64 mOldValue;
+  svar256_t mKey;
+  svar256_t mOldValue;
 
   ItemRemovalEvent()
       : mProperty(0)
@@ -58,8 +58,8 @@ class MapItemCreationEvent : public event::Event {
 public:
   const reflect::ObjectProperty* mProperty;
   // int								miMultiIndex;
-  any64 mKey;
-  any64 mNewItem;
+  svar256_t mKey;
+  svar256_t mNewItem;
 
   MapItemCreationEvent()
       : mProperty(0) {

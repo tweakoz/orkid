@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -79,15 +79,15 @@ using uicamprivate_t = std::shared_ptr<UiCamPrivate>;
 
 EzUiCam::EzUiCam()
     : UiCamera()
+    , meRotMode(EROT_SCREENXY)
     , aper(40.0f)
-    , far_max(10000.0f)
-    , near_min(0.01f)
     , tx(0.0f)
     , ty(0.0f)
     , tz(0.0f)
-    , meRotMode(EROT_SCREENXY)
-    , mDoDolly(false)
+    , far_max(10000.0f)
+    , near_min(0.01f)
     , mDoRotate(false)
+    , mDoDolly(false)
     , mDoPan(false) {
   _camcamdata.Persp(1.0f, 1000.0f, 70.0f);
   _camcamdata.Lookat(fvec3(0.0f, 0.0f, 0.0f), fvec3(0.0f, 0.0f, 1.0f), fvec3(0.0f, 1.0f, 0.0f));
@@ -113,7 +113,7 @@ void EzUiCam::draw(Context* context) const {
 
   priv->gpuUpdate(context);
 
-  float CurVelMag = MeasuredCameraVelocity.Mag();
+  float CurVelMag = MeasuredCameraVelocity.magnitude();
   //////////////////////////////////////
   /*context->MTXI()->PushUIMatrix();
   {
@@ -156,9 +156,9 @@ void EzUiCam::draw(Context* context) const {
   auto RCFD    = context->topRenderContextFrameData();
   lev2::RenderContextInstData RCID(RCFD);
   fmtx4 worldmtx;
-  worldmtx.SetTranslation(mvCenter);
+  worldmtx.setTranslation(mvCenter);
   float Scale = mfLoc / 60.0f;
-  worldmtx.Scale(fvec4(Scale, Scale, Scale));
+  worldmtx.scale(fvec4(Scale, Scale, Scale));
   ///////////////////////////////////////////////////////////////
   context->debugPushGroup("EzUiCam::draw");
   auto mtlinst = RCFD->isStereo() //
@@ -436,15 +436,15 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
             float fy1 = (fesy - fvphd2) / fvphd2;
             fvec2 v0(fx0, fy0);
             fvec2 v1(fx1, fy1);
-            v0.Normalize();
-            v1.Normalize();
+            v0.normalizeInPlace();
+            v1.normalizeInPlace();
             float ang0   = rect2pol_ang(v0.x, v0.y);
             float ang1   = rect2pol_ang(v1.x, v1.y);
             float dangle = (ang1 - ang0);
             fvec4 rotz   = fvec4(_pushNZ, dangle);
             fquat QuatZ;
             QuatZ.fromAxisAngle(rotz);
-            QuatC = QuatZ.Multiply(QuatCPushed);
+            QuatC = QuatZ.multiply(QuatCPushed);
             // printf( "v0 <%g %g> v1<%g %g>\n", v0.x, v0.y, v1.x, v1.y );
             // printf( "ang0 <%g> ang1<%g>\n", ang0, ang1 );
             // printf( "rotz <%g %g %g %g>\n", rotz.x, rotz.y, rotz.z, rotz.w );
@@ -463,8 +463,8 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
             QuatX.fromAxisAngle(rotx);
             QuatY.fromAxisAngle(roty);
 
-            QuatC = QuatY.Multiply(QuatC);
-            QuatC = QuatX.Multiply(QuatC);
+            QuatC = QuatY.multiply(QuatC);
+            QuatC = QuatX.multiply(QuatC);
 
             break;
           }
@@ -483,7 +483,7 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
         float fdx = float(esx - beginx);
         float fdy = float(esy - beginy);
 
-        float fdolly = (outx.Mag() * fdx);
+        float fdolly = (outx.magnitude() * fdx);
 
         if (isshift) {
           fdolly *= 3.0f;
@@ -526,7 +526,7 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
         fvec3 UpVector;
         fvec3 RightVector;
         _curMatrices.GetPixelLengthVectors(Pos, _vpdim, UpVector, RightVector);
-        float CameraFactor   = RightVector.Mag() * 20.0f; // 20 pixels of movement
+        float CameraFactor   = RightVector.magnitude() * 20.0f; // 20 pixels of movement
         constexpr float kmin = 0.1f;
         constexpr float kmax = 20000.0f;
         mfLoc                = std::clamp(mfLoc, kmin, kmax);
@@ -536,6 +536,8 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
       }
       break;
     }
+    default:
+      break;
   }
 
   updateMatrices();
@@ -546,9 +548,9 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void EzUiCam::SetFromWorldSpaceMatrix(const fmtx4& matrix) {
-  ork::fvec3 xnormal = matrix.GetXNormal();
-  ork::fvec3 ynormal = matrix.GetYNormal();
-  ork::fvec3 znormal = matrix.GetZNormal();
+  ork::fvec3 xnormal = matrix.xNormal();
+  ork::fvec3 ynormal = matrix.yNormal();
+  ork::fvec3 znormal = matrix.zNormal();
 
   fmtx4 matrot, imatrot;
   matrot.fromNormalVectors(xnormal, ynormal, znormal);
@@ -557,11 +559,11 @@ void EzUiCam::SetFromWorldSpaceMatrix(const fmtx4& matrix) {
   fquat quat;
   quat.fromMatrix(imatrot);
 
-  fvec3 pos = matrix.GetTranslation();
+  fvec3 pos = matrix.translation();
 
   printf("SetQuatc:1\n");
   QuatC    = quat;
-  mvCenter = pos + fvec3(0.0f, 0.0f, mfLoc).Transform3x3(matrot);
+  mvCenter = pos + fvec3(0.0f, 0.0f, mfLoc).transform3x3(matrot);
 
   updateMatrices();
 }
@@ -604,15 +606,15 @@ void EzUiCam::updateMatrices(void) {
   ///////////////////////////////////////////////////////////////
 
   mRot = QuatC.toMatrix();
-  mTrans.SetTranslation(mvCenter * -1.0f);
+  mTrans.setTranslation(mvCenter * -1.0f);
 
   fmtx4 matxf = (mTrans * mRot);
   fmtx4 matixf;
   matxf.inverseOf(matxf);
 
-  fvec3 veye    = fvec3(0.0f, 0.0f, -mfLoc).Transform(matxf);
-  fvec3 vtarget = fvec3(0.0f, 0.0f, 0.0f).Transform(matxf);
-  fvec3 vup     = fvec4(0.0f, 1.0f, 0.0f, 0.0f).Transform(matxf).xyz();
+  fvec3 veye    = fvec3(0.0f, 0.0f, -mfLoc).transform(matxf);
+  fvec3 vtarget = fvec3(0.0f, 0.0f, 0.0f).transform(matxf);
+  fvec3 vup     = fvec4(0.0f, 1.0f, 0.0f, 0.0f).transform(matxf).xyz();
 
   _camcamdata.Persp(fnear, ffar, aper);
   _camcamdata.Lookat(veye, vtarget, vup);
@@ -636,14 +638,14 @@ float EzUiCam::ViewLengthToWorldLength(const fvec4& pos, float ViewLength) {
   float rval = 1.0f;
 
   const auto& frustum = _curMatrices.GetFrustum();
-  float distATnear    = (frustum.mNearCorners[1] - frustum.mNearCorners[0]).Mag();
-  float distATfar     = (frustum.mFarCorners[1] - frustum.mFarCorners[0]).Mag();
+  float distATnear    = (frustum.mNearCorners[1] - frustum.mNearCorners[0]).magnitude();
+  float distATfar     = (frustum.mFarCorners[1] - frustum.mFarCorners[0]).magnitude();
   float depthscaler   = distATfar / distATnear;
 
   // get pos as a lerp from near to far
   float depthN     = frustum._nearPlane.pointDistance(pos);
   float depthF     = frustum._farPlane.pointDistance(pos);
-  float depthRange = (camrayF - camrayN).Mag();
+  float depthRange = (camrayF - camrayN).magnitude();
   if ((depthN >= float(0.0f)) && (depthF >= float(0.0f))) { // better be between near and far planes
     float lerpV  = depthN / depthRange;
     float ilerpV = float(1.0f) - lerpV;
@@ -662,8 +664,8 @@ void EzUiCam::GenerateDepthRay(const fvec2& pos2D, fvec3& rayN, fvec3& rayF, con
   //////////////////////////////////////////
   fvec4 vWinN(fx, fy, 0.0f);
   fvec4 vWinF(fx, fy, 1.0f);
-  fmtx4::UnProject(_curMatrices.GetIVPMatrix(), vWinN, rayN);
-  fmtx4::UnProject(_curMatrices.GetIVPMatrix(), vWinF, rayF);
+  fmtx4::unProject(_curMatrices.GetIVPMatrix(), vWinN, rayN);
+  fmtx4::unProject(_curMatrices.GetIVPMatrix(), vWinF, rayF);
   //////////////////////////////////////////
 }
 

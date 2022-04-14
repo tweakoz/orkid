@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -27,12 +27,15 @@ namespace ork::lev2::scenegraph {
 struct Layer;
 struct Node;
 struct DrawableNode;
+struct InstancedDrawableNode;
 struct LightNode;
 struct Scene;
 using layer_ptr_t        = std::shared_ptr<Layer>;
 using node_ptr_t         = std::shared_ptr<Node>;
+using node_atomicptr_t   = std::atomic<node_ptr_t>;
 using scene_ptr_t        = std::shared_ptr<Scene>;
-using drawablenode_ptr_t = std::shared_ptr<DrawableNode>;
+using drawable_node_ptr_t = std::shared_ptr<DrawableNode>;
+using instanced_drawable_node_ptr_t = std::shared_ptr<InstancedDrawableNode>;
 using lightnode_ptr_t    = std::shared_ptr<LightNode>;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -43,7 +46,7 @@ struct Node {
   virtual ~Node();
 
   std::string _name;
-  DrawQueueXfData _transform;
+  DrawQueueXfData _dqxfdata;
   varmap::varmap_ptr_t _userdata;
 };
 
@@ -55,6 +58,18 @@ struct DrawableNode final : public Node {
   ~DrawableNode();
 
   drawable_ptr_t _drawable;
+  fvec4 _modcolor;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct InstancedDrawableNode final : public Node {
+
+  InstancedDrawableNode(std::string named, instanced_drawable_ptr_t drawable);
+  ~InstancedDrawableNode();
+
+  instanced_drawable_ptr_t _drawable;
+  size_t _instance_id = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -73,18 +88,27 @@ struct Layer {
   Layer(Scene* scene, std::string name);
   ~Layer();
 
-  drawablenode_ptr_t createDrawableNode(std::string named, drawable_ptr_t drawable);
-  void removeDrawableNode(drawablenode_ptr_t node);
+  drawable_node_ptr_t createDrawableNode(std::string named, drawable_ptr_t drawable);
+  void removeDrawableNode(drawable_node_ptr_t node);
+
+  instanced_drawable_node_ptr_t createInstancedDrawableNode(std::string named, instanced_drawable_ptr_t drawable);
+  void removeInstancedDrawableNode(instanced_drawable_node_ptr_t node);
 
   lightnode_ptr_t createLightNode(std::string named, light_ptr_t drawable);
   void removeLightNode(lightnode_ptr_t node);
 
-  std::string _name;
   Scene* _scene = nullptr;
-  std::map<std::string, drawablenode_ptr_t> _drawablenode_map;
-  std::vector<drawablenode_ptr_t> _drawablenodes;
-  std::map<std::string, lightnode_ptr_t> _lightnode_map;
-  std::vector<lightnode_ptr_t> _lightnodes;
+
+  std::string _name;
+
+  using drawablenodevect_t = std::vector<drawable_node_ptr_t>;
+  using instanced_drawablenodevect_t = std::vector<instanced_drawable_node_ptr_t>;
+  using instanced_drawmap_t = std::unordered_map<instanced_drawable_ptr_t,instanced_drawablenodevect_t>;
+  using lightnodevect_t = std::vector<lightnode_ptr_t>;
+
+  LockedResource<drawablenodevect_t> _drawable_nodes;
+  LockedResource<instanced_drawmap_t> _instanced_drawable_map;
+  LockedResource<lightnodevect_t> _lightnodes;
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -93,10 +117,11 @@ struct PickBuffer {
   void mydraw(fray3_constptr_t ray);
   uint64_t pickWithRay(fray3_constptr_t ray);
   uint64_t pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord);
-  Scene& _scene;
-  lev2::PixelFetchContext _pixelfetchctx;
   lev2::Context* _context    = nullptr;
   CompositingData* _compdata = nullptr;
+
+  Scene& _scene;
+  lev2::PixelFetchContext _pixelfetchctx;
   compositorimpl_ptr_t _compimpl;
   fmtx4_ptr_t _pick_mvp_matrix;
   CameraData _camdat;
@@ -104,6 +129,19 @@ struct PickBuffer {
 using pickbuffer_ptr_t = std::shared_ptr<PickBuffer>;
 
 ///////////////////////////////////////////////////////////////////////////////
+
+struct DrawableDataKvPair : public ork::Object {
+  DeclareConcreteX(DrawableDataKvPair, ork::Object);
+public:
+  std::string _layername;
+  lev2::drawabledata_ptr_t _drawabledata;
+};
+struct DrawableKvPair  : public ork::Object {
+  std::string _layername;
+  lev2::drawable_ptr_t _drawable;
+};
+
+using drawabledatakvpair_ptr_t = std::shared_ptr<DrawableDataKvPair>;
 
 struct Scene {
 
@@ -114,12 +152,30 @@ struct Scene {
   void initWithParams(varmap::varmap_ptr_t _initialdata);
 
   layer_ptr_t createLayer(std::string named);
+  layer_ptr_t findLayer(std::string named);
+
   void enqueueToRenderer(cameradatalut_ptr_t cameras);
   void renderOnContext(Context* ctx);
+  void renderOnContext(Context* ctx,RenderContextFrameData& RCFD);
+  void renderWithStandardCompositorFrame(standardcompositorframe_ptr_t sframe);
+
+  void _renderIMPL(Context* ctx,RenderContextFrameData& RCFD);
+
   void gpuInit(Context* ctx);
+  void gpuExit(Context* ctx);
+
   uint64_t pickWithRay(fray3_constptr_t ray);
   uint64_t pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord);
-  DefaultRenderer _renderer;
+
+  template <typename T> T* tryRenderNodeAs() {
+    return dynamic_cast<T*>(_renderNode);
+  }
+  template <typename T> T* tryOutputNodeAs() {
+    return dynamic_cast<T*>(_outputNode);
+  }
+
+  dbufcontext_ptr_t _dbufcontext;
+  irenderer_ptr_t _renderer;
   lightmanager_ptr_t _lightManager;
   lightmanagerdata_ptr_t _lightManagerData;
   compositorimpl_ptr_t _compositorImpl;
@@ -127,12 +183,30 @@ struct Scene {
   pickbuffer_ptr_t _pickbuffer;
   NodeCompositingTechnique* _compostorTechnique = nullptr;
   OutputCompositingNode* _outputNode            = nullptr;
-  lev2::CompositingPassData _topCPD;
+  RenderCompositingNode* _renderNode = nullptr;
+  compositingpassdata_ptr_t _topCPD;
+  RenderPresetContext _compositorPreset;
+  std::vector<DrawableKvPair> _staticDrawables;
 
-  std::map<std::string, layer_ptr_t> _layers;
+  using layer_map_t = std::map<std::string, layer_ptr_t>;
+
+  LockedResource<layer_map_t> _layers;
   varmap::varmap_ptr_t _userdata;
   bool _dogpuinit        = true;
   Context* _boundContext = nullptr;
+
+  struct DrawItem{
+    ork::lev2::DrawableBufLayer * _layer;
+    drawable_node_ptr_t _drwnode;
+  };
+  struct InstancedDrawItem{
+    ork::lev2::DrawableBufLayer * _layer;
+    instanced_drawable_ptr_t _idrawable;
+  };
+
+  std::vector<DrawItem> _nodes2draw;
+  std::vector<InstancedDrawItem> _instancednodes2draw;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////

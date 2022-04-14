@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -124,7 +124,7 @@ void FrameTechniqueBase::Init(Context* targ) {
 
   mpMrtFinal = new RtGroup(targ, kFINALW, kFINALH, kmultisamples);
 
-  mpMrtFinal->SetMrt(0, new RtBuffer(lev2::RtgSlot::Slot0, lev2::EBufferFormat::RGBA8, kFINALW, kFINALH));
+  auto buf = mpMrtFinal->createRenderTarget(lev2::EBufferFormat::RGBA8);
 
   // mpMrtFinal->GetMrt(0)->RefClearColor() = clear_color;
   // mpMrtFinal->GetMrt(0)->SetContext( targ );

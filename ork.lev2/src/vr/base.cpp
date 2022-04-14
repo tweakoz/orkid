@@ -10,8 +10,8 @@
 namespace ork::lev2::orkidvr {
 ////////////////////////////////////////////////////////////////////////////////
 static std::shared_ptr<Device> _gdevice = nullptr;
-void setDevice(std::shared_ptr<Device> device){
-  assert(_gdevice==nullptr);
+void setDevice(std::shared_ptr<Device> device) {
+  assert(_gdevice == nullptr);
   _gdevice = device;
 }
 Device& device() {
@@ -32,16 +32,7 @@ void removeVrTrackingNotificationReceiver(VrTrackingNotificationReceiver_ptr_t r
   });
 }
 ////////////////////////////////////////////////////////////////////////////////
-Device::Device()
-    : _width(128)
-    , _height(128)
-    , _active(false)
-    , _supportsStereo(false)
-    , _calibstate(0)
-    , _calibstateFrame(0)
-    , _usermtxgen(nullptr)
-    , _stereoTileRotationDegreesL(0.0f)
-    , _stereoTileRotationDegreesR(0.0f) {
+Device::Device() {
 
   auto imgr      = lev2::InputManager::instance();
   _hmdinputgroup = imgr->inputGroup("hmd");
@@ -99,7 +90,7 @@ void Device::_updatePosesCommon() {
   hmd.decompose(hmdpos, hmdrot, hmdscl);
 
   _rotMatrix = hmdrot.toMatrix();
-  _rotMatrix.Transpose();
+  _rotMatrix.transpose();
 
   //_rotMatrix.dump("rotmtx");
   ///////////////////////////////////////////////////////////
@@ -127,9 +118,9 @@ void Device::_updatePosesCommon() {
         }
         avgpos *= (1.0f / float(_calibposvect.size()));
         fvec3 ny    = fvec3(0, 1, 0);
-        fvec2 nz_xz = nzaccum.xz().Normal();
-        fvec3 nz    = fvec3(nz_xz.x, 0.0f, nz_xz.y).Normal();
-        fvec3 nx    = ny.Cross(nz);
+        fvec2 nz_xz = nzaccum.xz().normalized();
+        fvec3 nz    = fvec3(nz_xz.x, 0.0f, nz_xz.y).normalized();
+        fvec3 nx    = ny.crossWith(nz);
         // printf("nx<%g %g %g>\n", nx.x, nx.y, nx.z);
         // printf("ny<%g %g %g>\n", ny.x, ny.y, ny.z);
         // printf("nz<%g %g %g>\n", nz.x, nz.y, nz.z);
@@ -137,9 +128,9 @@ void Device::_updatePosesCommon() {
         fmtx4 avgrotmtx;
         avgrotmtx.fromNormalVectors(nx, ny, nz);
         fmtx4 avgtramtx;
-        avgtramtx.SetTranslation(avgpos);
+        avgtramtx.setTranslation(avgpos);
         fmtx4 refmtx = avgtramtx * avgrotmtx;
-        _baseMatrix.SetTranslation(hmd.inverse().GetTranslation());
+        _baseMatrix.setTranslation(hmd.inverse().translation());
         // deco::prints(hmd.dump4x3cn(), true);
         // deco::prints(hmd.inverse().dump4x3cn(), true);
         deco::printf(fvec3::Yellow(), "vrstate: calibrated\n");
@@ -208,6 +199,60 @@ void Device::_updatePosesCommon() {
   _centercamera->setCustomView(cmv);
   _centercamera->setCustomProjection(_posemap["projc"]);
   // printf( "pose_classes<%s>\n", pose_classes.c_str() );
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+fmtx4 VrProjFrustumPar::composeProjection() const {
+  fmtx4 rval;
+  float idx = 1.0f / (_right - _left);
+  float idy = 1.0f / (_bottom - _top);
+  float idz = 1.0f / (_far - _near);
+  float sx  = _right + _left;
+  float sy  = _bottom + _top;
+
+  rval.setElemYX(0, 0, 2 * idx);
+  rval.setElemYX(0, 1, 0);
+  rval.setElemYX(0, 2, sx * idx);
+  rval.setElemYX(0, 3, 0);
+  rval.setElemYX(1, 0, 0);
+  rval.setElemYX(1, 1, 2 * idy);
+  rval.setElemYX(1, 2, sy * idy);
+  rval.setElemYX(1, 3, 0);
+  rval.setElemYX(2, 0, 0);
+  rval.setElemYX(2, 1, 0);
+  rval.setElemYX(2, 2, -_far * idz);
+  rval.setElemYX(2, 3, -_far * _near * idz);
+  rval.setElemYX(3, 0, 0);
+  rval.setElemYX(3, 1, 0);
+  rval.setElemYX(3, 2, -1.0f);
+  rval.setElemYX(3, 3, 0);
+
+  return rval;
+}
+//////////////////////////////////////////////
+VrTrackingControllerNotificationFrame::VrTrackingControllerNotificationFrame() {
+  _left  = std::make_shared<ControllerState>();
+  _right = std::make_shared<ControllerState>();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void ControllerState::updateGated() {
+  _button1GatedDown     = _button1Down and (not _button1DownPrev);
+  _button2GatedDown     = _button2Down and (not _button2DownPrev);
+  _buttonThumbGatedDown = _buttonThumbDown and (not _buttonThumbDownPrev);
+  _triggerGatedDown     = _triggerDown and (not _triggerDownPrev);
+
+  _button1GatedUp     = _button1DownPrev and (not _button1Down);
+  _button2GatedUp     = _button2DownPrev and (not _button2Down);
+  _buttonThumbGatedUp = _buttonThumbDownPrev and (not _buttonThumbDown);
+  _triggerGatedUp     = _triggerDownPrev and (not _triggerDown);
+
+  _button1DownPrev     = _button1Down;
+  _button2DownPrev     = _button2Down;
+  _buttonThumbDownPrev = _buttonThumbDown;
+  _triggerDownPrev     = _triggerDown;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

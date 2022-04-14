@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #pragma once
 
 #include <ork/lev2/ui/coord.h>
@@ -106,8 +113,8 @@ struct Event final // RawEvent
 
   fvec2 GetUnitCoordBP() const {
     fvec2 rval;
-    rval.setX(2.0f * mfUnitX - 1.0f);
-    rval.setY(-(2.0f * mfUnitY - 1.0f));
+    rval.x = (2.0f * mfUnitX - 1.0f);
+    rval.y = (-(2.0f * mfUnitY - 1.0f));
     return rval;
   }
   void setvpDim(Widget* w);
@@ -142,6 +149,7 @@ struct DrawEvent {
   }
 
   lev2::Context* _target;
+  svar64_t _userData;
 };
 
 using drawevent_constptr_t = std::shared_ptr<const DrawEvent>;

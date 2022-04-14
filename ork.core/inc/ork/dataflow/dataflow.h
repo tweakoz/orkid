@@ -1,8 +1,9 @@
-///////////////////////////////////////////////////////////////////////////////
-// Orkid
-// Copyrigh 1996-2004, Michael T. Mayers
-// See License at OrkidRoot/license.html or http://www.tweakoz.com/orkid/license.html
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -113,11 +114,8 @@ public:
     boost::crc64_fin(mValue);
   }
 
-  bool operator==(const node_hash& oth) {
+  bool operator==(const node_hash& oth) const {
     return mValue == oth.mValue;
-  }
-  bool operator!=(const node_hash& oth) {
-    return mValue != oth.mValue;
   }
 
 private:
@@ -572,8 +570,8 @@ public:
 private:
   ork::MultiCurve1D mMultiCurve1d;
   modscabias mModScaleBias;
-  bool mbDoCurve;
   bool mbDoModScaBia;
+  bool mbDoCurve;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -679,7 +677,7 @@ public:
   }
   void SetInputDirty(inplugbase* plg);
   void SetOutputDirty(outplugbase* plg);
-  virtual bool IsDirty(void);
+  virtual bool IsDirty(void) const;
   ////////////////////////////////////////////
   virtual int GetNumInputs() const {
     return mNumStaticInputs;
@@ -687,10 +685,10 @@ public:
   virtual int GetNumOutputs() const {
     return mNumStaticOutputs;
   }
-  virtual inplugbase* GetInput(int idx) {
+  virtual inplugbase* GetInput(int idx) const {
     return GetStaticInput(idx);
   }
-  virtual outplugbase* GetOutput(int idx) {
+  virtual outplugbase* GetOutput(int idx) const {
     return GetStaticOutput(idx);
   }
   inplugbase* GetStaticInput(int idx) const;
@@ -1056,29 +1054,29 @@ protected:
 ///////////
 
 #define DeclareFloatXfPlug(name)                                                                                                   \
-  float mf##name;                                                                                                                  \
-  ork::dataflow::floatxfinplug InpPlugName(name);                                                                                  \
+  float mf##name = 0.0f;                                                                                                                  \
+  mutable ork::dataflow::floatxfinplug InpPlugName(name);                                                                                  \
   ork::Object* InpAccessor##name() {                                                                                               \
     return &InpPlugName(name);                                                                                                     \
   }
 
 #define DeclareVect3XfPlug(name)                                                                                                   \
   ork::fvec3 mv##name;                                                                                                             \
-  ork::dataflow::vect3xfinplug InpPlugName(name);                                                                                  \
+  mutable ork::dataflow::vect3xfinplug InpPlugName(name);                                                                                  \
   ork::Object* InpAccessor##name() {                                                                                               \
     return &InpPlugName(name);                                                                                                     \
   }
 
 #define DeclareFloatOutPlug(name)                                                                                                  \
-  float OutDataName(name);                                                                                                         \
-  ork::dataflow::outplug<float> OutPlugName(name);                                                                                 \
+  float OutDataName(name) = 0.0f;                                                                                                         \
+  mutable ork::dataflow::outplug<float> OutPlugName(name);                                                                                 \
   ork::Object* PlgAccessor##name() {                                                                                               \
     return &OutPlugName(name);                                                                                                     \
   }
 
 #define DeclareVect3OutPlug(name)                                                                                                  \
   ork::fvec3 OutDataName(name);                                                                                                    \
-  ork::dataflow::outplug<ork::fvec3> OutPlugName(name);                                                                            \
+  mutable ork::dataflow::outplug<ork::fvec3> OutPlugName(name);                                                                            \
   ork::Object* PlgAccessor##name() {                                                                                               \
     return &OutPlugName(name);                                                                                                     \
   }

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -34,11 +34,11 @@ FnParseContext::FnParseContext(GlSlFxParser* parser, const ScannerView* v)
 }
 FnParseContext::FnParseContext(const FnParseContext& oth)
     : _parser(oth._parser)
-    , _view(oth._view)
-    , _startIndex(oth._startIndex) {
+    , _startIndex(oth._startIndex)
+    , _view(oth._view) {
 }
 FnParseContext& FnParseContext::operator=(const FnParseContext& oth) {
-  _parser  = oth._parser;
+  _parser     = oth._parser;
   _startIndex = oth._startIndex;
   _view       = oth._view;
   return *this;
@@ -56,7 +56,7 @@ int ParsedFunctionNode::parse(GlSlFxParser* parser, const ork::ScannerView& view
   auto open_tok = view.token(i);
   assert(open_tok->text == "{");
   bool done = false;
-  FnParseContext pctx(parser,&view);
+  FnParseContext pctx(parser, &view);
   while (not done) {
     auto try_tok     = view.token(i)->text;
     pctx._startIndex = i;
@@ -433,5 +433,5 @@ void DeclarationList::emit(shaderbuilder::BackEnd& backend) const {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
-} // namespace ork::lev2::glslfx
+} // namespace ork::lev2::glslfx::parser
 /////////////////////////////////////////////////////////////////////////////////////////////////

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -217,9 +217,9 @@ void vect3xf::describeX(class_t* clazz) {
 ///////////////////////////////////////////////////////////////////////////////
 fvec3 vect3xf::transform(const fvec3& input) const {
   fvec3 output;
-  output.setX(mTransformX.transform(input.x));
-  output.setY(mTransformX.transform(input.y));
-  output.setZ(mTransformX.transform(input.z));
+  output.x = (mTransformX.transform(input.x));
+  output.y = (mTransformX.transform(input.y));
+  output.z = (mTransformX.transform(input.z));
   return output;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -239,11 +239,11 @@ fvec3 vect3xf::transform(const fvec3& input) const {
 
 plugroot::plugroot(module* pmod, EPlugDir edir, EPlugRate epr, const std::type_info& tid, const char* pname)
     : mePlugDir(edir)
+    , mePlugRate(epr)
     , mModule(pmod)
     , mTypeId(tid)
-    , mePlugRate(epr)
     , mPlugName(pname ? ork::AddPooledLiteral(pname) : ork::AddPooledLiteral("noname")) {
-  printf("plugroot<%p> pmod<%p> construct name<%s>\n", this, pmod, mPlugName.c_str());
+  printf("plugroot<%p> pmod<%p> construct name<%s>\n", (void*) this, (void*) pmod, mPlugName.c_str());
 }
 void plugroot::SetDirty(bool bv) {
   mbDirty = bv;
@@ -417,7 +417,7 @@ outplugbase* module::GetStaticOutput(int idx) const {
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool module::IsDirty() {
+bool module::IsDirty() const {
   bool rval   = false;
   int inumout = this->GetNumOutputs();
   for (int i = 0; i < inumout; i++) {
@@ -454,7 +454,7 @@ inplugbase* module::GetInputNamed(const PoolString& named) {
 ///////////////////////////////////////////////////////////////////////////////
 outplugbase* module::GetOutputNamed(const PoolString& named) {
   int inumout = GetNumOutputs();
-  printf("module<%p> numouts<%d>\n", this, inumout);
+  printf("module<%p> numouts<%d>\n", (void*) this, inumout);
   for (int ip = 0; ip < inumout; ip++) {
     outplugbase* rval = GetOutput(ip);
     OrkAssert(rval != nullptr);

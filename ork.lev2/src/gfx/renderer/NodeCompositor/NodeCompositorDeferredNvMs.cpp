@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -76,6 +76,7 @@ struct NVMSIMPL {
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   void _render(DeferredCompositingNodeNvMs* node, CompositorDrawData& drawdata) {
+    printf( "XXX\n");
     //_timer.Start();
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();
@@ -250,7 +251,7 @@ struct NVMSIMPL {
     } // while (num_pending_tiles) {
     // float time_tile_out = _timer.SecsSinceStart();
     // printf( "Deferred::_render tiletime<%g>\n", time_tile_out-time_tile_in );
-    // printf( "numchunks<%zu>\n", numchunks );
+     printf( "numchunks<%zu>\n", numchunks );
     /////////////////////////////////////
     _context.endPointLighting(drawdata, VD);
   }
@@ -294,7 +295,7 @@ void DeferredCompositingNodeNvMs::DoRender(CompositorDrawData& drawdata) {
   impl->_render(this, drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
-RtBuffer* DeferredCompositingNodeNvMs::GetOutput() const {
+rtbuffer_ptr_t DeferredCompositingNodeNvMs::GetOutput() const {
   static int i = 0;
   i++;
   return _impl.get<std::shared_ptr<NVMSIMPL>>()->_context._rtgLaccum->GetMrt(0);

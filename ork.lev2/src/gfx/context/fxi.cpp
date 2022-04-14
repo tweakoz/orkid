@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -25,7 +25,7 @@ FxInterface::FxInterface()
 }
 
 void FxInterface::BindParamTex(const FxShaderParam* hpar, const lev2::TextureAsset* texasset) {
-  auto texture = (texasset != nullptr) ? texasset->GetTexture() : nullptr;
+  auto texture = (texasset != nullptr) ? texasset->GetTexture().get() : nullptr;
   if (texture)
     BindParamCTex(hpar, texture);
 }
@@ -39,8 +39,8 @@ void FxInterface::BeginFrame() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void FxInterface::Reset() {
-  Context* pTARG = GfxEnv::GetRef().loadingContext();
-  pTARG->FXI()->DoOnReset();
+  auto target = lev2::contextForCurrentThread();
+  target->FXI()->DoOnReset();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

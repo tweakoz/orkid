@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -9,7 +9,6 @@
 
 #include <ork/math/cmatrix4.h>
 #include <ork/math/cmatrix4.hpp>
-#include <ork/math/matrix_inverseGEMS.hpp>
 #include <ork/kernel/string/string.h>
 
 namespace ork {
@@ -20,8 +19,8 @@ template <> void PropType<fmtx4>::ToString(const fmtx4& Value, PropTypeString& t
 
   std::string result;
   for (int i = 0; i < 15; i++)
-    result += CreateFormattedString("%g ", F32(v.elements[i / 4][i % 4]));
-  result += CreateFormattedString("%g", F32(v.elements[3][3]));
+    result += CreateFormattedString("%g ", F32(v.elemXY(i / 4,i % 4)));
+  result += CreateFormattedString("%g", F32(v.elemXY(3,3)));
   tstr.format("%s", result.c_str());
 }
 
@@ -48,7 +47,7 @@ template <> fmtx4 PropType<fmtx4>::FromString(const PropTypeString& String) {
       &m[3][3]);
   fmtx4 result;
   for (int i = 0; i < 16; i++)
-    result.elements[i / 4][i % 4] = m[i / 4][i % 4];
+    result.setElemXY(i / 4,i % 4, m[i / 4][i % 4]);
   return result;
 }
 
@@ -56,7 +55,7 @@ template <> fmtx4 PropType<fmtx4>::FromString(const PropTypeString& String) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-template class PropType<fmtx4>;
-template class Matrix44<float>; // explicit template instantiation
+template struct PropType<fmtx4>;
+template struct Matrix44<float>; // explicit template instantiation
 
 } // namespace ork

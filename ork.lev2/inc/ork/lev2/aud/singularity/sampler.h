@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #pragma once
 #include <ork/lev2/aud/singularity/synthdata.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
@@ -106,7 +113,7 @@ struct NatEnv {
   void initSeg(int iseg);
 
   std::vector<natenvseg> _natenvseg;
-  Layer* _layer;
+  layer_ptr_t _layer;
   int _curseg;
   int _prvseg;
   int _numseg;
@@ -144,6 +151,20 @@ struct sampleOsc {
 
   float (sampleOsc::*_pbFunc)() = nullptr;
 
+  layer_ptr_t _lyr;
+  const sample* _sample;
+  bool _active;
+  int64_t _pbindex;
+  int64_t _pbindexNext;
+  int64_t _pbincrem;
+  float _curratio;
+  int _sampleRoot;
+  const kmregion* _kmregion;
+  int _curcents;
+  float _baseCents;
+  float _preDSPGAIN;
+  eLoopMode _loopMode;
+  int _loopCounter;
   //
   int64_t _blk_start;
   int64_t _blk_alt;
@@ -151,27 +172,19 @@ struct sampleOsc {
   int64_t _blk_loopend;
   int64_t _blk_end;
 
-  const sample* _sample;
 
   int _sampselnote;
-  int _sampleRoot;
 
   float _playbackRate;
 
-  int64_t _pbindex;
-  int64_t _pbindexNext;
 
   float _keyoncents;
-  int64_t _pbincrem;
 
   float _dt;
   float _synsr;
   // bool _isLooped;
   bool _enableNatEnv;
-  eLoopMode _loopMode;
-  bool _active;
   bool _forwarddir;
-  int _loopCounter;
   float _curSampSRratio;
   float _NATENV[1024];
   float _OUTPUT[1024];
@@ -180,18 +193,12 @@ struct sampleOsc {
   int _pchcents;
   int _curpitchadjx;
   int _curpitchadj;
-  int _curcents;
-  float _baseCents;
-  float _preDSPGAIN;
   int _samppbnote;
 
-  float _curratio;
 
   NatEnv _natAmpEnv;
 
-  Layer* _lyr;
   bool _released;
-  const kmregion* _kmregion;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

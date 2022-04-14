@@ -24,20 +24,20 @@
 
 #define DeclareImg32OutPlug(name)                                                                                                  \
   Img32 OutDataName(name);                                                                                                         \
-  ImgOutPlug OutPlugName(name);                                                                                                    \
+  mutable ImgOutPlug OutPlugName(name);                                                                                            \
   ork::Object* OutAccessor##name() {                                                                                               \
     return &OutPlugName(name);                                                                                                     \
   }
 
 #define DeclareImg64OutPlug(name)                                                                                                  \
   Img64 OutDataName(name);                                                                                                         \
-  ImgOutPlug OutPlugName(name);                                                                                                    \
+  mutable ImgOutPlug OutPlugName(name);                                                                                            \
   ork::Object* OutAccessor##name() {                                                                                               \
     return &OutPlugName(name);                                                                                                     \
   }
 
 #define DeclareImgInpPlug(name)                                                                                                    \
-  ImgInPlug InpPlugName(name);                                                                                                     \
+  mutable ImgInPlug InpPlugName(name);                                                                                             \
   ork::Object* InpAccessor##name() {                                                                                               \
     return &InpPlugName(name);                                                                                                     \
   }
@@ -189,9 +189,9 @@ class ImgModule : public Module {
 
   virtual void compute(ProcTex& ptex) = 0;
 
-  bool IsDirty(void) const {
+  bool IsDirty(void) const final {
     return true;
-  } // virtual
+  }
 
   bool mExport;
 
@@ -231,7 +231,7 @@ protected:
 
   Img64Module();
 
-  dataflow::outplugbase* GetOutput(int idx) final {
+  dataflow::outplugbase* GetOutput(int idx) const final {
     return &mPlugOutImgOut;
   }
 };
@@ -246,7 +246,7 @@ protected:
 
   Img32Module();
 
-  dataflow::outplugbase* GetOutput(int idx) final {
+  dataflow::outplugbase* GetOutput(int idx) const final {
     return &mPlugOutImgOut;
   }
 };
@@ -257,8 +257,8 @@ class Curve1D : public Module {
   DeclareConcreteX(Curve1D, Module);
 
 private:
-  ork::dataflow::inplugbase* GetInput(int idx) final;
-  dataflow::outplugbase* GetOutput(int idx) final;
+  ork::dataflow::inplugbase* GetInput(int idx) const final;
+  dataflow::outplugbase* GetOutput(int idx) const final;
   void Compute(dataflow::workunit* wu) final;
   void CombineWork(const dataflow::cluster* clus) final {
   }
@@ -270,12 +270,12 @@ private:
     return &mOutput;
   }
 
-  float mOutValue;
   float mInValue;
-  ork::dataflow::outplug<float> mOutput;
-  MultiCurve1D mMultiCurve;
-
   DeclareFloatXfPlug(Input);
+
+  float mOutValue;
+  mutable ork::dataflow::outplug<float> mOutput;
+  MultiCurve1D mMultiCurve;
 
 public:
   Curve1D();
@@ -293,7 +293,7 @@ private:
 
   DeclareFloatXfPlug(TimeScale);
 
-  dataflow::inplugbase* GetInput(int idx) final {
+  dataflow::inplugbase* GetInput(int idx) const final {
     return &mPlugInpTimeScale;
   }
 
@@ -305,7 +305,7 @@ private:
   DeclareFloatOutPlug(TimeDiv10);
   DeclareFloatOutPlug(TimeDiv100);
 
-  dataflow::outplugbase* GetOutput(int idx) final;
+  dataflow::outplugbase* GetOutput(int idx) const final;
 
   //////////////////////////////////////////////////
 
@@ -320,25 +320,10 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ProcTexContext {
+
   static const int k64buffers = 4;
   static const int k32buffers = 16;
-  dataflow::dgcontext mdflowctx;
-  dataflow::dgregisterblock mFloatRegs;
-  dataflow::dgregisterblock mImage32Regs;
-  dataflow::dgregisterblock mImage64Regs;
-  Buffer* mBuffer32[k32buffers];
-  Buffer* mBuffer64[k64buffers];
-  Buffer32 mTrashBuffer;
-  float mCurrentTime;
-  int mBufferDim;
-  ProcTexType mProcTexType;
-  bool mWriteFrames;
-  int mWriteFrameIndex;
-  ork::file::Path mWritePath;
 
-  Buffer& GetBuffer32(int edest);
-  Buffer& GetBuffer64(int edest);
-  lev2::Context* mTarget;
   static ork::MpMcBoundedQueue<Buffer*> gBuf32Q;
   static ork::MpMcBoundedQueue<Buffer*> gBuf64Q;
 
@@ -346,10 +331,34 @@ struct ProcTexContext {
   static Buffer* AllocBuffer64();
   static void ReturnBuffer(Buffer* pbuf);
 
-  void SetBufferDim(int buffer_dim);
+  ///////////////////////////////////
 
   ProcTexContext();
   ~ProcTexContext();
+
+  void SetBufferDim(int buffer_dim);
+
+  Buffer& GetBuffer32(int edest);
+  Buffer& GetBuffer64(int edest);
+
+  ///////////////////////////////////
+
+  Buffer* mBuffer32[k32buffers];
+  Buffer* mBuffer64[k64buffers];
+  lev2::Context* mTarget = nullptr;
+
+  float mCurrentTime       = 0.0f;
+  int mBufferDim           = 0;
+  ProcTexType mProcTexType = ProcTexType::REALTIME;
+  bool mWriteFrames        = false;
+  int mWriteFrameIndex     = 0;
+
+  dataflow::dgcontext mdflowctx;
+  dataflow::dgregisterblock mFloatRegs;
+  dataflow::dgregisterblock mImage32Regs;
+  dataflow::dgregisterblock mImage64Regs;
+  ork::file::Path mWritePath;
+  Buffer32 mTrashBuffer;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -405,7 +414,7 @@ enum PeriodicShape {
   SQU,
 };
 
-class Periodic : public Module {
+struct Periodic : public Module {
   DeclareAbstractX(Periodic, Module);
 
 public:
@@ -417,45 +426,27 @@ public:
 
 private:
   ////////////////////////////////////////////
-  ork::dataflow::inplugbase* GetInput(int idx) final;
+  ork::dataflow::inplugbase* GetInput(int idx) const final;
   ////////////////////////////////////////////
 
-  DeclareFloatXfPlug(PhaseOffset);
   DeclareFloatXfPlug(Frequency);
   DeclareFloatXfPlug(Amplitude);
+  DeclareFloatXfPlug(PhaseOffset);
   DeclareFloatXfPlug(Bias);
 
-  PeriodicShape meShape;
+  PeriodicShape meShape = PeriodicShape::SQU;
 
   ////////////////////////////////////////////
   ////////////////////////////////////////////
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-class RotSolid : public Img32Module {
+struct RotSolid : public Img32Module {
+
   DeclareConcreteX(RotSolid, Img32Module);
 
-  dataflow::node_hash mVBHash;
-
-  //////////////////////////////////////////////////
-  // inputs
-  //////////////////////////////////////////////////
-
-  DeclareFloatXfPlug(PhaseOffset);
-
-  ork::dataflow::inplugbase* GetInput(int idx) final {
-    return &mPlugInpPhaseOffset;
-  }
-
-  /////////////////////////////////////////
-
-  int miNumSides;
-  ork::lev2::Blending meBlendMode;
-
-  Periodic mRadiusFunc;
-  Periodic mIntensFunc;
-
-  bool mbAA;
+public:
+  RotSolid();
 
   ork::Object* RadiusAccessor() {
     return &mRadiusFunc;
@@ -464,14 +455,30 @@ class RotSolid : public Img32Module {
     return &mIntensFunc;
   }
 
-  ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16> mVertexBuffer;
-
   void ComputeVB(lev2::Context* tgt);
 
   void compute(ProcTex& ptex) final;
 
-public:
-  RotSolid();
+  //////////////////////////////////////////////////
+  // inputs
+  //////////////////////////////////////////////////
+
+  DeclareFloatXfPlug(PhaseOffset);
+
+  ork::dataflow::inplugbase* GetInput(int idx) const final {
+    return &mPlugInpPhaseOffset;
+  }
+
+  /////////////////////////////////////////
+
+  int miNumSides                  = 3;
+  ork::lev2::Blending meBlendMode = lev2::Blending::OFF;
+  bool mbAA                       = false;
+
+  Periodic mRadiusFunc;
+  Periodic mIntensFunc;
+  dataflow::node_hash mVBHash;
+  ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16> mVertexBuffer;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -480,30 +487,11 @@ enum EColorizeType {
   ECT_2D,
 };
 ///////////////////////////////////////////////////////////////////////////////
-class Colorize : public Img32Module {
+struct Colorize : public Img32Module {
   DeclareConcreteX(Colorize, Img32Module);
-
-  //////////////////////////////////////////////////
-  // inputs
-  //////////////////////////////////////////////////
-
-  DeclareImgInpPlug(InputA);
-  DeclareImgInpPlug(InputB);
-
-  ork::dataflow::inplugbase* GetInput(int idx) final;
-  void compute(ProcTex& ptex) final;
-
-  //////////////////////////////////////////////////
-
-  EColorizeType meColorizeType;
-  bool mbAA;
 
 public:
   Colorize();
-};
-///////////////////////////////////////////////////////////////////////////////
-class UvMap : public Img32Module {
-  DeclareConcreteX(UvMap, Img32Module);
 
   //////////////////////////////////////////////////
   // inputs
@@ -512,19 +500,41 @@ class UvMap : public Img32Module {
   DeclareImgInpPlug(InputA);
   DeclareImgInpPlug(InputB);
 
-  ork::dataflow::inplugbase* GetInput(int idx) final;
+  ork::dataflow::inplugbase* GetInput(int idx) const final;
   void compute(ProcTex& ptex) final;
 
   //////////////////////////////////////////////////
 
-  bool mbAA;
+  EColorizeType meColorizeType = EColorizeType::ECT_1D;
+  bool mbAA                    = false;
+};
+///////////////////////////////////////////////////////////////////////////////
+struct UvMap : public Img32Module {
+  DeclareConcreteX(UvMap, Img32Module);
 
 public:
   UvMap();
+
+  //////////////////////////////////////////////////
+  // inputs
+  //////////////////////////////////////////////////
+
+  DeclareImgInpPlug(InputA);
+  DeclareImgInpPlug(InputB);
+
+  ork::dataflow::inplugbase* GetInput(int idx) const final;
+  void compute(ProcTex& ptex) final;
+
+  //////////////////////////////////////////////////
+
+  bool mbAA = false;
 };
 ///////////////////////////////////////////////////////////////////////////////
-class SphMap : public Img32Module {
+struct SphMap : public Img32Module {
   DeclareConcreteX(SphMap, Img32Module);
+
+public:
+  SphMap();
 
   //////////////////////////////////////////////////
   // inputs
@@ -534,19 +544,19 @@ class SphMap : public Img32Module {
   DeclareImgInpPlug(InputR);
   DeclareFloatXfPlug(Directionality);
 
-  ork::dataflow::inplugbase* GetInput(int idx) final;
+  ork::dataflow::inplugbase* GetInput(int idx) const final;
   void compute(ProcTex& ptex) final;
 
   //////////////////////////////////////////////////
 
-  bool mbAA;
-
-public:
-  SphMap();
+  bool mbAA = false;
 };
 ///////////////////////////////////////////////////////////////////////////////
-class SphRefract : public Img32Module {
+struct SphRefract : public Img32Module {
   DeclareConcreteX(SphRefract, Img32Module);
+
+public:
+  SphRefract();
 
   //////////////////////////////////////////////////
   // inputs
@@ -557,15 +567,12 @@ class SphRefract : public Img32Module {
   DeclareFloatXfPlug(Directionality);
   DeclareFloatXfPlug(IOR);
 
-  ork::dataflow::inplugbase* GetInput(int idx) final;
+  ork::dataflow::inplugbase* GetInput(int idx) const final;
   void compute(ProcTex& ptex) final;
 
   //////////////////////////////////////////////////
 
-  bool mbAA;
-
-public:
-  SphRefract();
+  bool mbAA = false;
 };
 ///////////////////////////////////////////////////////////////////////////////
 class SolidColor : public Img32Module {
@@ -615,22 +622,18 @@ public:
     mverts.clear();
   }
 };
-class Cells : public Img32Module {
+struct Cells : public Img32Module {
   DeclareConcreteX(Cells, Img32Module);
 
-  ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16> mVertexBuffer;
+public:
+  Cells();
+  ork::dataflow::inplugbase* GetInput(int idx) const final;
+  void compute(ProcTex& ptex) final;
 
-  int miSeedA;
-  int miSeedB;
-  int miDimU;
-  int miDimV;
-  int miDiv;
-  int miSmoothing;
-  orkvector<fvec3> mSitesA;
-  orkvector<fvec3> mSitesB;
-  orkvector<CellPoly> mPolys;
-  bool mbAA;
-  dataflow::node_hash mVBHash;
+  int site_index(int ix, int iy) {
+    return (iy * miDimU) + ix;
+  }
+  void ComputeVB(lev2::Context* tgt);
 
   //////////////////////////////////////////////////
   // inputs
@@ -640,16 +643,22 @@ class Cells : public Img32Module {
   DeclareFloatXfPlug(SeedLerp);
   DeclareFloatXfPlug(SmoothingRadius);
 
-  ork::dataflow::inplugbase* GetInput(int idx) final;
-  void compute(ProcTex& ptex) final;
+  //////////////////////////////////////////////////
 
-  int site_index(int ix, int iy) {
-    return (iy * miDimU) + ix;
-  }
-  void ComputeVB(lev2::Context* tgt);
+  ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16> mVertexBuffer;
 
-public:
-  Cells();
+  int miSeedA     = 0;
+  int miSeedB     = 0;
+  int miDimU      = 2;
+  int miDimV      = 2;
+  int miDiv       = 1;
+  int miSmoothing = 0;
+  bool mbAA       = false;
+
+  orkvector<fvec3> mSitesA;
+  orkvector<fvec3> mSitesB;
+  orkvector<CellPoly> mPolys;
+  dataflow::node_hash mVBHash;
 };
 ///////////////////////////////////////////////////////////////////////////////
 enum class KaledMode {
@@ -658,13 +667,16 @@ enum class KaledMode {
   TRI24,
 };
 ///////////////////////////////////////////////////////////////////////////////
-class Kaled : public Img32Module {
+struct Kaled : public Img32Module {
   DeclareConcreteX(Kaled, Img32Module);
 
-  typedef ork::lev2::SVtxV12C4T16 vtxt;
+public:
+  Kaled();
+  void compute(ProcTex& ptex) final;
+  void ComputeVB(lev2::OffscreenBuffer& buffer);
+  void addvtx(float fx, float fy, float fu, float fv);
 
-  KaledMode meMode;
-  dataflow::node_hash mVBHash;
+  typedef ork::lev2::SVtxV12C4T16 vtxt;
 
   //////////////////////////////////////////////////
   // inputs
@@ -675,17 +687,13 @@ class Kaled : public Img32Module {
   DeclareFloatXfPlug(OffsetX);
   DeclareFloatXfPlug(OffsetY);
 
-  ork::dataflow::inplugbase* GetInput(int idx) final;
+  ork::dataflow::inplugbase* GetInput(int idx) const final;
 
   //////////////////////////////////////////////////
 
-  void compute(ProcTex& ptex) final;
-  void ComputeVB(lev2::OffscreenBuffer& buffer);
+  KaledMode meMode = KaledMode::SQU4;
+  dataflow::node_hash mVBHash;
   ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16> mVertexBuffer;
-  void addvtx(float fx, float fy, float fu, float fv);
-
-public:
-  Kaled();
 };
 ///////////////////////////////////////////////////////////////////////////////
 enum class ImageOp2 {
@@ -704,7 +712,7 @@ class ImgOp2 : public Img32Module {
   DeclareImgInpPlug(InputA);
   DeclareImgInpPlug(InputB);
 
-  ork::dataflow::inplugbase* GetInput(int idx) final;
+  ork::dataflow::inplugbase* GetInput(int idx) const final;
   void compute(ProcTex& ptex) final;
 
   //////////////////////////////////////////////////
@@ -738,7 +746,7 @@ class ImgOp3 : public Img32Module {
   DeclareImgInpPlug(InputB);
   DeclareImgInpPlug(InputM);
 
-  ork::dataflow::inplugbase* GetInput(int idx) final;
+  ork::dataflow::inplugbase* GetInput(int idx) const final;
   void compute(ProcTex& ptex) final;
 
   //////////////////////////////////////////////////
@@ -754,8 +762,11 @@ public:
   ImgOp3();
 };
 ///////////////////////////////////////////////////////////////////////////////
-class Transform : public Img32Module {
+struct Transform : public Img32Module {
   DeclareConcreteX(Transform, Img32Module);
+
+public:
+  Transform();
 
   //////////////////////////////////////////////////
   // inputs
@@ -768,15 +779,12 @@ class Transform : public Img32Module {
   DeclareFloatXfPlug(OffsetY);
   DeclareFloatXfPlug(Rotate);
 
-  ork::dataflow::inplugbase* GetInput(int idx) final;
+  ork::dataflow::inplugbase* GetInput(int idx) const final;
   void compute(ProcTex& ptex) final;
 
   //////////////////////////////////////////////////
 
-  lev2::GfxMaterial3DSolid* mMaterial;
-
-public:
-  Transform();
+  lev2::GfxMaterial3DSolid* mMaterial = nullptr;
 };
 ///////////////////////////////////////////////////////////////////////////////
 class H2N : public Img64Module {
@@ -789,7 +797,7 @@ class H2N : public Img64Module {
   DeclareImgInpPlug(Input);
   DeclareFloatXfPlug(ScaleY);
 
-  ork::dataflow::inplugbase* GetInput(int idx) final;
+  ork::dataflow::inplugbase* GetInput(int idx) const final;
   void compute(ProcTex& ptex) final;
 
   //////////////////////////////////////////////////
@@ -802,8 +810,11 @@ public:
 };
 ///////////////////////////////////////////////////////////////////////////////
 
-class Octaves : public Img32Module {
+struct Octaves : public Img32Module {
   DeclareConcreteX(Octaves, Img32Module);
+
+public:
+  Octaves();
 
   //////////////////////////////////////////////////
   // inputs
@@ -822,16 +833,13 @@ class Octaves : public Img32Module {
 
   //////////////////////////
 
-  dataflow::inplugbase* GetInput(int idx) final;
+  dataflow::inplugbase* GetInput(int idx) const final;
   void compute(ProcTex& ptex) final;
 
   //////////////////////////
 
   ork::lev2::GfxMaterial3DSolid mOctMaterial;
-  int miNumOctaves;
-
-public:
-  Octaves();
+  int miNumOctaves = 1;
 };
 ///////////////////////////////////////////////////////////////////////////////
 class Texture : public Img32Module {
@@ -848,7 +856,7 @@ class Texture : public Img32Module {
   void compute(ProcTex& ptex) final;
 
   ork::lev2::Texture* GetTexture() {
-    return (0 == mpTexture) ? 0 : mpTexture->GetTexture();
+    return (0 == mpTexture) ? 0 : mpTexture->GetTexture().get();
   }
 
 public:
@@ -856,8 +864,11 @@ public:
   bool _flipy = false;
 };
 ///////////////////////////////////////////////////////////////////////////////
-class ShaderQuad : public Img32Module {
+struct ShaderQuad : public Img32Module {
   DeclareConcreteX(ShaderQuad, Img32Module);
+
+public:
+  ShaderQuad();
 
   void SetTextureAccessor(ork::rtti::ICastable* const& tex) {
     mpTexture = tex ? ork::rtti::autocast(tex) : 0;
@@ -869,22 +880,24 @@ class ShaderQuad : public Img32Module {
   void compute(ProcTex& ptex) final;
 
   ork::lev2::Texture* GetTexture() {
-    return (0 == mpTexture) ? 0 : mpTexture->GetTexture();
+    return (0 == mpTexture) ? 0 : mpTexture->GetTexture().get();
   }
 
-  dataflow::inplugbase* GetInput(int idx) final;
+  dataflow::inplugbase* GetInput(int idx) const final;
 
-  ork::file::Path mShaderPath;
-  lev2::GfxMaterial3DSolid* mShader;
-  ork::lev2::TextureAsset* mpTexture;
+  /////////////////////////////////
 
   DeclareImgInpPlug(ImgInput0);
   DeclareFloatXfPlug(User0X);
   DeclareFloatXfPlug(User0Y);
   DeclareFloatXfPlug(User0Z);
 
-public:
-  ShaderQuad();
+  /////////////////////////////////
+
+  lev2::GfxMaterial3DSolid* mShader = nullptr;
+  lev2::TextureAsset* mpTexture     = nullptr;
+
+  file::Path mShaderPath;
 };
 ///////////////////////////////////////////////////////////////////////////////
 class Group : public Img32Module {
@@ -924,15 +937,12 @@ enum class GradientType {
   RADIAL,
   CONICAL,
 };
-class Gradient : public Img32Module {
+
+struct Gradient : public Img32Module {
   DeclareConcreteX(Gradient, Img32Module);
 
-  ork::lev2::Texture* mpTexture;
-  ork::Gradient<ork::fvec4> mGradient;
-  int miRepeat;
-  GradientRepeatMode meRepeatMode;
-  GradientType meGradientType;
-  lev2::GfxMaterial3DSolid* mMtl;
+public:
+  Gradient();
 
   ork::Object* GradientAccessor() {
     return &mGradient;
@@ -940,12 +950,16 @@ class Gradient : public Img32Module {
 
   void compute(ProcTex& ptex) final;
 
+  ork::lev2::Texture* mpTexture   = nullptr;
+  lev2::GfxMaterial3DSolid* mMtl  = nullptr;
+  int miRepeat                    = 1;
+  bool mbAA                       = false;
+  GradientRepeatMode meRepeatMode = GradientRepeatMode::REPEAT;
+  GradientType meGradientType     = GradientType::HORIZONTAL;
+
+  ork::Gradient<ork::fvec4> mGradient;
+
   ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16> mVertexBuffer;
-
-  bool mbAA;
-
-public:
-  Gradient();
 };
 
 ///////////////////////////////////////////////////////////////////////////////

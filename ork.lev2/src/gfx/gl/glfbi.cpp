@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -77,7 +77,7 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
     float fh = GetRtGroup()->height();
     // printf("RTGroup begin x<%f> y<%f> w<%f> h<%f>\n", fx, fy, fw, fh);
     ViewportRect extents(fx, fy, fw, fh);
-    // SRect extents( mTarget.x, mTarget.y, mTarget.width(), mTarget.height() );
+    // SRect extents( _target.x, _target.y, _target.width(), _target.height() );
     pushViewport(extents);
     pushScissor(extents);
     // printf("BEGINFRAME<RtGroup>\n");
@@ -100,8 +100,8 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
       glDisable(GL_MULTISAMPLE);
 
     glDepthRange(0.0, 1.0f);
-    ViewportRect extents = mTarget.mainSurfaceRectAtOrigin();
-    // printf( "WINtarg begin x<%d> y<%d> w<%d> h<%d>\n", mTarget.x, mTarget.y, mTarget.width(), mTarget.height() );
+    ViewportRect extents = _target.mainSurfaceRectAtOrigin();
+    // printf( "WINtarg begin x<%d> y<%d> w<%d> h<%d>\n", _target.x, _target.y, _target.width(), _target.height() );
     pushViewport(extents);
     pushScissor(extents);
     // printf("BEGINFRAME<WIN> w<%d> h<%d>\n", extents.miW, extents.miH);
@@ -109,7 +109,7 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
 
     if (GetAutoClear()) {
       fvec4 rCol = GetClearColor();
-      // U32 ClearColorU = mTarget.fcolor4ToU32(GetClearColor());
+      // U32 ClearColorU = _target.fcolor4ToU32(GetClearColor());
       if (isPickState())
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
       else
@@ -132,7 +132,7 @@ void GlFrameBufferInterface::_doBeginFrame(void) {
   // mTargetGL.debugPushGroup("GlFrameBufferInterface::_doBeginFrameB");
 
   const SRasterState defstate;
-  mTarget.RSI()->BindRasterState(defstate, true);
+  _target.RSI()->BindRasterState(defstate, true);
   // mTargetGL.debugPopGroup();
 
   GL_ERRORCHECK();
@@ -213,8 +213,8 @@ void GlFrameBufferInterface::_initializeContext(OffscreenBuffer* pBuf) {
   // create orknum texture and link it
 
   Texture* ptexture = new Texture();
-  ptexture->_width  = mTarget.mainSurfaceWidth();
-  ptexture->_height = mTarget.mainSurfaceHeight();
+  ptexture->_width  = _target.mainSurfaceWidth();
+  ptexture->_height = _target.mainSurfaceHeight();
 
   SetBufferTexture(ptexture);
 
@@ -304,21 +304,15 @@ void GlFrameBufferInterface::clearDepth(float fdepth) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlFrameBufferInterface::Capture(const RtGroup& rtg, int irt, const file::Path& pth) {
-  auto FboObj = (GlFboObject*)rtg.GetInternalHandle();
+void GlFrameBufferInterface::capture(const RtBuffer* rtb, const file::Path& pth) {
 
-  if ((nullptr == FboObj) || (irt >= rtg.GetNumTargets()))
+  if (not rtb->_impl.Isset())
     return;
 
-  auto buffer = rtg.GetMrt(irt);
-  if (buffer->_impl.Isset() == false)
-    return;
+  auto tex_id = rtb->_impl.get<GlRtBufferImpl*>()->_texture;
 
-  auto tex_id = buffer->_impl.get<GlRtBufferImpl*>()->_texture;
-
-  int iw        = rtg.width();
-  int ih        = rtg.height();
-  RtBuffer* rtb = rtg.GetMrt(irt);
+  int iw        = rtb->_width;
+  int ih        = rtb->_height;
 
   printf("pth<%s> BUFW<%d> BUF<%d>\n", pth.c_str(), iw, ih);
 
@@ -341,25 +335,36 @@ void GlFrameBufferInterface::Capture(const RtGroup& rtg, int irt, const file::Pa
   // glBindFramebuffer(GL_FRAMEBUFFER, 0 );
   GL_ERRORCHECK();
 
-  for (int ipix = 0; ipix < (iw * ih); ipix++) {
-    int ibyt   = ipix * 4;
-    uint8_t c0 = pu8[ibyt + 0];
-    uint8_t c1 = pu8[ibyt + 1];
-    uint8_t c2 = pu8[ibyt + 2];
-    uint8_t c3 = pu8[ibyt + 3];
-    // c0 c1 c2
+  auto outbuf = (uint8_t*) malloc(iw * ih * 4);
 
-#if defined(DARWIN)
-    pu8[ibyt + 0] = c0; // A
-    pu8[ibyt + 1] = c1;
-    pu8[ibyt + 2] = c2;
-    pu8[ibyt + 3] = c3;
-#else
-    pu8[ibyt + 0] = c2;
-    pu8[ibyt + 1] = c1;
-    pu8[ibyt + 2] = c0;
-    pu8[ibyt + 3] = c3; // A
-#endif
+  for( int iy=0; iy<ih; iy++ ){
+    for( int ix=0; ix<iw; ix++ ){
+      int ipix = (ih-1-iy)*iw + ix;
+      int opix = (iy)*iw + ix;
+
+      int ibyt   = ipix * 4;
+      int obyt   = opix * 4;
+
+      uint8_t c0 = pu8[ibyt + 0];
+      uint8_t c1 = pu8[ibyt + 1];
+      uint8_t c2 = pu8[ibyt + 2];
+      uint8_t c3 = pu8[ibyt + 3];
+      // c0 c1 c2
+
+  #if defined(DARWIN)
+      outbuf[obyt + 0] = c0; // A
+      outbuf[obyt + 1] = c1;
+      outbuf[obyt + 2] = c2;
+      outbuf[obyt + 3] = c3;
+  #else
+      outbuf[obyt + 0] = c2;
+      outbuf[obyt + 1] = c1;
+      outbuf[obyt + 2] = c0;
+      outbuf[obyt + 3] = c3; // A
+  #endif
+
+    }
+
   }
 
 #if defined(USE_OIIO)
@@ -368,52 +373,56 @@ void GlFrameBufferInterface::Capture(const RtGroup& rtg, int irt, const file::Pa
     return;
   ImageSpec spec(iw, ih, 4, TypeDesc::UINT8);
   out->open(pth.c_str(), spec);
-  out->write_image(TypeDesc::UINT8, pu8);
+  out->write_image(TypeDesc::UINT8, outbuf);
   out->close();
 
   free((void*)pu8);
+  free((void*)outbuf);
 #endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool GlFrameBufferInterface::captureAsFormat(const RtGroup& rtg, int irt, CaptureBuffer* capbuf, EBufferFormat destfmt) {
+bool GlFrameBufferInterface::captureAsFormat(const RtBuffer* rtb, CaptureBuffer* capbuf, EBufferFormat destfmt) {
 
   if (nullptr == capbuf) {
     OrkAssert(false);
     return false;
   }
 
-  OrkAssert(irt < rtg.GetNumTargets());
-  auto rtb    = rtg.mMrt[irt];
-  auto FboObj = (GlFboObject*)rtg.GetInternalHandle();
 
-  /*if (0 == FboObj) {
-    FboObj = (GlFboObject*)mTargetGL._defaultRTG->GetInternalHandle();
-    OrkAssert(irt < mTargetGL._defaultRTG->GetNumTargets());
-    rtb = mTargetGL._defaultRTG->mMrt[irt];
-  }*/
+  GlFboObject* the_fbo = nullptr;
+
+  int irt = 0;
+  int x = 0;
+  int y = 0;
+  int w = 0;
+  int h = 0;
 
   GLint readbuffer = 0;
   GL_ERRORCHECK();
   glGetIntegerv(GL_READ_BUFFER, &readbuffer);
   GL_ERRORCHECK();
 
-  if (FboObj) {
-
-    if (0 == FboObj->mFBOMaster) {
+  if( rtb ){
+    the_fbo = (GlFboObject*) rtb->_rtgroup->GetInternalHandle();
+    irt = rtb->_slot;
+    w = rtb->_width;
+    h = rtb->_height;
+    if (0 == the_fbo->mFBOMaster) {
       OrkAssert(false);
       return false;
     }
 
     GL_ERRORCHECK();
-    glBindFramebuffer(GL_FRAMEBUFFER, FboObj->mFBOMaster);
+    glBindFramebuffer(GL_FRAMEBUFFER, the_fbo->mFBOMaster);
     GL_ERRORCHECK();
     glReadBuffer(GL_COLOR_ATTACHMENT0 + irt);
     GL_ERRORCHECK();
-
-  } else {
-    OrkAssert(false);
+  }
+  else{
+    w = mTargetGL.mainSurfaceWidth();
+    h = mTargetGL.mainSurfaceHeight();
     GL_ERRORCHECK();
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     GL_ERRORCHECK();
@@ -423,18 +432,22 @@ bool GlFrameBufferInterface::captureAsFormat(const RtGroup& rtg, int irt, Captur
 
   // glDepthMask(GL_TRUE); ??? wtf ???
 
-  bool fmtmatch = (capbuf->format() == destfmt);
-  bool sizmatch = (capbuf->width() == rtb->miW);
-  sizmatch &= (capbuf->height() == rtb->miH);
-  int w = rtb->miW;
-  int h = rtb->miH;
+
+  if(capbuf->_captureW!=0){
+    x = capbuf->_captureX;
+    y = capbuf->_captureY;
+    w = capbuf->_captureW;
+    h = capbuf->_captureH;
+  }
 
   // printf("captureAsFormat w<%d> h<%d>\n", w, h);
 
+  bool fmtmatch = (capbuf->format() == destfmt);
+  bool sizmatch = (capbuf->width() == w);
+  sizmatch &= (capbuf->height() == h);
+
   if (not(fmtmatch and sizmatch))
     capbuf->setFormatAndSize(destfmt, w, h);
-
-  // glPixelStore()
 
   GL_ERRORCHECK();
   static size_t yo       = 0;
@@ -445,7 +458,7 @@ bool GlFrameBufferInterface::captureAsFormat(const RtGroup& rtg, int irt, Captur
       if (capbuf->_tempbuffer.size() != rgbasize) {
         capbuf->_tempbuffer.resize(rgbasize);
       }
-      glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, capbuf->_tempbuffer.data());
+      glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, capbuf->_tempbuffer.data());
       GL_ERRORCHECK();
       // todo convert RGBA8 to NV12 (on GPU)
       auto outptr      = (uint8_t*)capbuf->_data;
@@ -463,7 +476,7 @@ bool GlFrameBufferInterface::captureAsFormat(const RtGroup& rtg, int irt, Captur
           // printf("RGB<%d %d %d>\n", R, G, B);
           auto rgb = fvec3(R, G, B) * inv256;
           avgcol += rgb;
-          auto yuv      = rgb.getYUV();
+          auto yuv      = rgb.YUV();
           outptr[i_out] = uint8_t(yuv.x * 255.0f);
         }
       }
@@ -493,10 +506,10 @@ bool GlFrameBufferInterface::captureAsFormat(const RtGroup& rtg, int irt, Captur
           auto rgb2       = fvec3(R2, G2, B2) * inv256;
           auto rgb3       = fvec3(R3, G3, B3) * inv256;
           auto rgb4       = fvec3(R4, G4, B4) * inv256;
-          auto yuv1       = rgb1.getYUV();
-          auto yuv2       = rgb2.getYUV();
-          auto yuv3       = rgb3.getYUV();
-          auto yuv4       = rgb4.getYUV();
+          auto yuv1       = rgb1.YUV();
+          auto yuv2       = rgb2.YUV();
+          auto yuv3       = rgb3.YUV();
+          auto yuv4       = rgb4.YUV();
           auto yuv        = (yuv1 + yuv2 + yuv3 + yuv4) * 0.125;
           yuv += fvec3(0.5, 0.5, 0.5);
           int u                            = int(yuv.y * 255.0f);
@@ -509,23 +522,46 @@ bool GlFrameBufferInterface::captureAsFormat(const RtGroup& rtg, int irt, Captur
       break;
     }
     case EBufferFormat::RGBA8: {
-      glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, capbuf->_data);
+      glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, capbuf->_data);
+      break;
+    }
+    case EBufferFormat::RGB8: {
+      //////////////////////////////////////
+      // read RGBA
+      //////////////////////////////////////
+      size_t rgbasize = w * h * 4;
+      if (capbuf->_tempbuffer.size() != rgbasize) {
+        capbuf->_tempbuffer.resize(rgbasize);
+      }
+      glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, capbuf->_tempbuffer.data());
+      //////////////////////////////////////
+      // discard alpha
+      //////////////////////////////////////
+      auto SRC = (const uint32_t*) capbuf->_tempbuffer.data();
+      auto DST = (uint8_t*) capbuf->_data;
+      for( size_t ipix=0; ipix<(w*h); ipix++ ){
+        int idi = ipix*3;
+        DST[idi++] = (SRC[ipix]&0x00ff0000)>>16;
+        DST[idi++] = (SRC[ipix]&0x0000ff00)>>8;
+        DST[idi++] = (SRC[ipix]&0x000000ff);
+      }
+      //////////////////////////////////////
       break;
     }
     case EBufferFormat::RGBA16F:
-      glReadPixels(0, 0, w, h, GL_RGBA, GL_HALF_FLOAT, capbuf->_data);
+      glReadPixels(x, y, w, h, GL_RGBA, GL_HALF_FLOAT, capbuf->_data);
       break;
     case EBufferFormat::RGBA32F:
-      glReadPixels(0, 0, w, h, GL_RGBA, GL_FLOAT, capbuf->_data);
+      glReadPixels(x, y, w, h, GL_RGBA, GL_FLOAT, capbuf->_data);
       break;
     case EBufferFormat::R32F:
-      glReadPixels(0, 0, w, h, GL_RED, GL_FLOAT, capbuf->_data);
+      glReadPixels(x, y, w, h, GL_RED, GL_FLOAT, capbuf->_data);
       break;
     case EBufferFormat::R32UI:
-      glReadPixels(0, 0, w, h, GL_RED_INTEGER, GL_UNSIGNED_INT, capbuf->_data);
+      glReadPixels(x, y, w, h, GL_RED_INTEGER, GL_UNSIGNED_INT, capbuf->_data);
       break;
     case EBufferFormat::RG32F:
-      glReadPixels(0, 0, w, h, GL_RG, GL_FLOAT, capbuf->_data);
+      glReadPixels(x, y, w, h, GL_RG, GL_FLOAT, capbuf->_data);
       break;
     default:
       OrkAssert(false);
@@ -539,36 +575,28 @@ bool GlFrameBufferInterface::captureAsFormat(const RtGroup& rtg, int irt, Captur
   return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-bool GlFrameBufferInterface::capture(const RtGroup& rtg, int irt, CaptureBuffer* capbuf) {
-  OrkAssert(irt < rtg.GetNumTargets());
-  auto rtb        = rtg.mMrt[irt];
-  auto rtb_format = rtb->format();
-  return captureAsFormat(rtg, irt, capbuf, rtb_format);
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) {
 
-  mTarget.makeCurrentContext();
+  _target.makeCurrentContext();
   fcolor4 Color(0.0f, 0.0f, 0.0f, 0.0f);
 
-  mTarget.debugPushGroup("GetPixel");
+  _target.debugPushGroup("GetPixel");
 
   bool bInBounds = (rAt.x >= 0.0f and rAt.x < 1.0f and rAt.y >= 0.0f and rAt.y < 1.0f);
 
-  // printf("GetPixel rtg<%p> numbuf<%d>\n", ctx.mRtGroup, ctx.mRtGroup->mNumMrts );
+  // printf("GetPixel rtg<%p> numbuf<%d>\n", ctx._rtgroup, ctx._rtgroup->mNumMrts );
 
   if (bInBounds) {
-    if (ctx.mRtGroup) {
-      int W  = ctx.mRtGroup->width();
-      int H  = ctx.mRtGroup->height();
+    if (ctx._rtgroup) {
+      int W  = ctx._rtgroup->width();
+      int H  = ctx._rtgroup->height();
       int sx = int((rAt.x) * float(W));
       int sy = int((1.0f - rAt.y) * float(H));
 
-      GlFboObject* FboObj = (GlFboObject*)ctx.mRtGroup->GetInternalHandle();
+      GlFboObject* FboObj = (GlFboObject*)ctx._rtgroup->GetInternalHandle();
 
       // printf("GetPixel<%d %d> FboObj<%p>\n", sx, sy, FboObj);
 
@@ -597,9 +625,9 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
 
             if (MrtTest & MrtMask) {
 
-              auto rtbuffer = ctx.mRtGroup->GetMrt(MrtIndex);
+              auto rtbuffer = ctx._rtgroup->GetMrt(MrtIndex);
 
-              OrkAssert(MrtIndex < ctx.mRtGroup->GetNumTargets());
+              OrkAssert(MrtIndex < ctx._rtgroup->GetNumTargets());
 
               GL_ERRORCHECK();
               glDepthMask(GL_TRUE);
@@ -656,7 +684,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
   } else if (bInBounds) {
     ctx._pickvalues[0] = Color;
   }
-  mTarget.debugPopGroup();
+  _target.debugPopGroup();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

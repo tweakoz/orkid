@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #pragma once
 
 #include <ork/pch.h>
@@ -18,78 +25,80 @@
 #include <ork/lev2/ui/event.h>
 #include <ork/lev2/ui/context.h>
 
+namespace ork::imgui {
+void initModule(appinitdata_ptr_t initdata);
+}
+
 namespace ork::lev2 {
-class EzApp;
-class OrkEzQtApp;
-using ezapp_ptr_t   = std::shared_ptr<EzApp>;
-using qtezapp_ptr_t = std::shared_ptr<OrkEzQtApp>;
+class EzAppContext;
+class OrkEzApp;
+using ezappctx_ptr_t   = std::shared_ptr<EzAppContext>;
+using orkezapp_ptr_t = std::shared_ptr<OrkEzApp>;
 ////////////////////////////////////////////////////////////////////////////////
-struct QtAppInit {
-  QtAppInit();
-  QtAppInit(int argc, char** argv, const AppInitData& initdata);
-  QtAppInit(int argc, char** argv);
-  ~QtAppInit();
-  int _argc = 0;
-  std::string _arg;
-  char* _argv   = nullptr;
-  char** _argvp = nullptr;
-  AppInitData _initdata;
-  std::shared_ptr<StdFileSystemInitalizer> _fsinit;
-};
-////////////////////////////////////////////////////////////////////////////////
-extern QtAppInit& qtinit();
-extern QtAppInit& qtinit(int& argc, char** argv);
-extern QtAppInit& qtinit(int& argc, char** argv,const AppInitData& initdata);
-////////////////////////////////////////////////////////////////////////////////
-class OrkEzQtAppBase { //: public QApplication {
-public:
-  OrkEzQtAppBase(int& argc, char** argv);
-  virtual ~OrkEzQtAppBase() {}
-  ezapp_ptr_t _ezapp;
-  static OrkEzQtAppBase* get();
-  static OrkEzQtAppBase* _staticapp;
-};
-////////////////////////////////////////////////////////////////////////////////
-class EzApp final : public ork::Application {
-  RttiDeclareAbstract(EzApp, ork::Application);
+class EzAppContext {
 
 public:
-  static ezapp_ptr_t get(int& argc, char** argv);
-  static ezapp_ptr_t get();
-  ~EzApp();
-  
+  static ezappctx_ptr_t get(appinitdata_ptr_t appinitdata = nullptr);
+  ~EzAppContext();
+
 private:
-  EzApp(int& argc, char** argv);
-  opq::TrackCurrent* _trackq;
+  EzAppContext(appinitdata_ptr_t appinitdata=nullptr);
 
+  opq::TrackCurrent* _trackq;
   ork::opq::opq_ptr_t _mainq;
   ork::opq::opq_ptr_t _conq;
+  appinitdata_ptr_t _initdata;
+  file::Path _orkidWorkspaceDir;
+  stringpoolctx_ptr_t _stringpoolctx;
 };
 ////////////////////////////////////////////////////////////////////////////////
-class EzMainWin { //: public QMainWindow {
+class EzMainWin {
 public:
   typedef std::function<void(ui::drawevent_constptr_t)> drawcb_t;
   typedef std::function<void(int w, int h)> onresizecb_t;
 
   typedef std::function<void(Context* ctx)> ongpuinit_t;
+  typedef std::function<void(Context* ctx)> ongpuexit_t;
   typedef std::function<void(ui::updatedata_ptr_t upd)> onupdate_t;
+  typedef std::function<void()> onupdateinit_t;
+  typedef std::function<void()> onupdateexit_t;
 
   typedef std::function<void(Context* ctx, scenegraph::scene_ptr_t)> ongpuinitwitchscene_t;
   typedef std::function<void(ui::updatedata_ptr_t upd, scenegraph::scene_ptr_t)> onupdatewithscene_t;
 
   typedef std::function<ui::HandlerResult(ui::event_constptr_t ev)> onuieventcb_t;
 
-  EzMainWin();
+  EzMainWin(OrkEzApp& app);
   ~EzMainWin();
-  bool _dogpuinit                           = true;
+
+  void _updateEnqueueLockedAndReleaseFrame(DrawableBuffer*dbuf);
+  void _updateEnqueueUnlockedAndReleaseFrame(DrawableBuffer*dbuf);
+
+  const DrawableBuffer* _tryAcquireDrawBuffer(ui::drawevent_constptr_t drawEvent);
+  DrawableBuffer* _tryAcquireUpdateBuffer();
+  void _releaseAcquireUpdateBuffer(DrawableBuffer*);
+
+  void _beginFrame(const DrawableBuffer*dbuf);
+  void _endFrame(const DrawableBuffer*dbuf);
+
+  void withAcquiredUpdateDrawBuffer(int debugcode,std::function<void(const AcquiredUpdateDrawBuffer& udb)> l);
+  //void withStandardCompositorFrameRender(ui::drawevent_constptr_t drawEvent, StandardCompositorFrame& sframe);
+
+
+  OrkEzApp& _app;
+
+  bool _update_rendersync                   = false;
+  Context* _curframecontext                 = nullptr;
   AppWindow* _gfxwin                        = nullptr;
-  CtxGLFW* _ctqt                               = nullptr;
+  CtxGLFW* _ctqt                            = nullptr;
   drawcb_t _onDraw                          = nullptr;
   onresizecb_t _onResize                    = nullptr;
   onuieventcb_t _onUiEvent                  = nullptr;
   ongpuinit_t _onGpuInit                    = nullptr;
+  ongpuexit_t _onGpuExit                    = nullptr;
   onupdate_t _onUpdate                      = nullptr;
-  ongpuinitwitchscene_t _onGpuInitWithScene = nullptr;
+  onupdateinit_t _onUpdateInit              = nullptr;
+  onupdateexit_t _onUpdateExit              = nullptr;
   onupdatewithscene_t _onUpdateWithScene    = nullptr;
   scenegraph::scene_ptr_t _execscene;
   varmap::varmap_ptr_t _execsceneparams;
@@ -97,6 +106,8 @@ public:
   double _render_prevtime        = 0;
   double _render_stats_timeaccum = 0;
   double _render_state_numiters  = 0.0;
+
+
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct EzViewport : public ui::Viewport {
@@ -110,45 +121,67 @@ struct EzViewport : public ui::Viewport {
   std::atomic<int> _initstate;
 };
 ////////////////////////////////////////////////////////////////////////////////
-class OrkEzQtApp : public OrkEzQtAppBase {
+struct StdDraw {
+  const RenderContextFrameData* RCFD;
+  const DrawableBuffer* DB;
+};
+////////////////////////////////////////////////////////////////////////////////
+class OrkEzAppBase {
+public:
+  OrkEzAppBase(ezappctx_ptr_t ezapp);
+  virtual ~OrkEzAppBase() {}
+  ezappctx_ptr_t _ezapp;
+  static OrkEzAppBase* get();
+  static OrkEzAppBase* _staticapp;
+  std::atomic<int> _update_count;
+  std::atomic<int> _render_count;
+};
+////////////////////////////////////////////////////////////////////////////////
+class OrkEzApp : public OrkEzAppBase {
   
 public:
   ///////////////////////////////////
-  OrkEzQtApp(int& argc, char** argv,const AppInitData& initdata);
-  ~OrkEzQtApp();
+  OrkEzApp(appinitdata_ptr_t initdata);
+  ~OrkEzApp();
   ///////////////////////////////////
-  static qtezapp_ptr_t create();
-  static qtezapp_ptr_t create(int argc, char** argv);
-  static qtezapp_ptr_t create(int argc, char** argv, const AppInitData& initdata);
-  static qtezapp_ptr_t createWithScene(varmap::varmap_ptr_t sceneparams);
+  static orkezapp_ptr_t create(appinitdata_ptr_t appinitdata);
+  static orkezapp_ptr_t createWithScene(varmap::varmap_ptr_t sceneparams);
+  ///////////////////////////////////
 
   filedevctx_ptr_t newFileDevContext(std::string uriproto, const file::Path& basepath);
 
   void onDraw(EzMainWin::drawcb_t cb);
   void onResize(EzMainWin::onresizecb_t cb);
   void onGpuInit(EzMainWin::ongpuinit_t cb);
+  void onGpuExit(EzMainWin::ongpuexit_t cb);
   void onUiEvent(EzMainWin::onuieventcb_t cb);
+  void onUpdateInit(EzMainWin::onupdateinit_t cb);
+  void onUpdateExit(EzMainWin::onupdateexit_t cb);
   void onUpdate(EzMainWin::onupdate_t cb);
   void setRefreshPolicy(RefreshPolicyItem policy);
 
-  void onGpuInitWithScene(EzMainWin::ongpuinitwitchscene_t cb);
-  void onUpdateWithScene(EzMainWin::onupdatewithscene_t cb);
-
-  int runloop();
+  int mainThreadLoop();
   void setSceneRunLoop(scenegraph::scene_ptr_t scene);
 
   void joinUpdate();
-  bool checkAppState(uint64_t singlebitmask);
+  bool checkAppState(uint64_t singlebitmask) const;
   void OnTimer();
 
   void enqueueOnRenderer(const void_lambda_t& l);
 
   void signalExit();
 
+  bool isExiting() const;
+
+  ///////////////////////////////////
+
+  //void stdDraw(const StdDraw& DATA);
+
   ///////////////////////////////////
 public:
-  //QTimer mIdleTimer;
-  AppInitData _initdata;
+
+  file::Path _orkidWorkspaceDir;
+  appinitdata_ptr_t _initdata;
   EzMainWin* _mainWindow;
   std::map<std::string, filedevctx_ptr_t> _fdevctxmap;
   ork::Timer _update_timer;
@@ -165,6 +198,7 @@ public:
   ui::layoutgroup_ptr_t _topLayoutGroup;
   std::shared_ptr<EzViewport> _ezviewport;
   ork::opq::opq_ptr_t _rthreadq;
+  EzMainWin::onupdateexit_t _onAppEarlyTerminated = nullptr;
 };
 
 } // namespace ork::lev2

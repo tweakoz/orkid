@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include "harness.h"
 #include <ork/lev2/aud/singularity/krzdata.h>
 #include <ork/lev2/aud/singularity/tx81z.h>
@@ -17,7 +24,8 @@ using namespace ork::reflect::serdes;
 using namespace ork::audio::singularity;
 
 int main(int argc, char** argv, char** envp) {
-  auto app = createEZapp(argc, argv);
+  auto initdata = std::make_shared<ork::AppInitData>(argc,argv,envp);
+  auto app = createEZapp(initdata);
   Environment env;
   env.init_from_envp(envp);
 
@@ -173,6 +181,6 @@ int main(int argc, char** argv, char** envp) {
   // test harness UI
   //////////////////////////////////////////////////////////////////////////////
   app->setRefreshPolicy({EREFRESH_FASTEST, 0});
-  app->runloop();
+  app->mainThreadLoop();
   return 0;
 }

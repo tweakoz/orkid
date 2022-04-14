@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <regex>
 #include <stdlib.h>
 #include <ork/pch.h>
@@ -19,8 +26,8 @@ bool ScanViewRegex::Test(const Token& t) {
 }
 
 ScannerView::ScannerView(const Scanner& s, ScanViewFilter& f)
-    : _scanner(s)
-    , _filter(f)
+    : _filter(f)
+    , _scanner(s)
     , _blockTerminators(s._blockregex.c_str())
     , _start(0)
     , _end(0)
@@ -30,8 +37,8 @@ ScannerView::ScannerView(const Scanner& s, ScanViewFilter& f)
 }
 
 ScannerView::ScannerView(const ScannerView& oth, int startingpoint)
-    : _scanner(oth._scanner)
-    , _filter(oth._filter)
+    : _filter(oth._filter)
+    , _scanner(oth._scanner)
     , _blockTerminators(_scanner._blockregex.c_str())
     , _start(0)
     , _end(0)
@@ -167,7 +174,7 @@ void ScannerView::scanUntil(size_t start, std::string terminator, bool includete
 }
 
 void ScannerView::dump() {
-  printf("ScannerView<%p>::Dump()\n", this);
+  printf("ScannerView<%p>::Dump()\n", (void*) this);
 
   printf(" _blockOk<%d>\n", int(_blockOk));
   printf(" _start<%d>\n", int(_start));
@@ -228,11 +235,14 @@ void Scanner::buildStateMachine() {
 }
 
 Scanner::Scanner(
-    std::string blockregex)
-    : ss(ESTA_NONE)
-    , cur_token("", 0, 0)
+    std::string blockregex, //
+    size_t capacity)
+    : _kcapacity(capacity)
     , ifilelen(0)
-    , _blockregex(blockregex){
+    , _blockregex(blockregex)
+    , cur_token("", 0, 0)
+    , ss(ESTA_NONE) {
+  _fxbuffer.resize(capacity);
 }
 /////////////////////////////////////////
 void Scanner::scanString(std::string str){

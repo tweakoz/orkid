@@ -6,6 +6,8 @@
 # see http://www.boost.org/LICENSE_1_0.txt
 ################################################################################
 
+#pip3 install numpi Pillow
+
 import numpy, time, os, sys
 import ork.path
 from orkengine.core import *
@@ -58,6 +60,7 @@ prim = meshutil.RigidPrimitive(tsubmesh,ctx)
 # rtg setup
 ###################################
 rtg = ctx.defaultRTG()
+rtb = rtg.buffer(0)
 ctx.resize(AAWIDTH,AAHEIGHT)
 capbuf = CaptureBuffer()
 
@@ -117,7 +120,7 @@ ctx.endFrame()
 # 3. Flip image vertically
 # 4. output png
 ###################################
-ok = FBI.captureAsFormat(rtg,0,capbuf,"RGBA8")
+ok = FBI.captureAsFormat(rtb,capbuf,"RGBA8")
 as_np = numpy.array(capbuf,dtype=numpy.uint8).reshape( AAHEIGHT, AAWIDTH, 4 )
 img = Image.fromarray(as_np, 'RGBA')
 img = img.resize((WIDTH,HEIGHT), Image.ANTIALIAS)

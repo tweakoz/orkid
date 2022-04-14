@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <functional>
 #include <memory>
+#include <numbers>
 
 typedef double f64;
 typedef double F64;
@@ -62,6 +63,8 @@ typedef int64_t fx64, FX64;
 
 namespace ork {
 
+struct StringPoolContext;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct const_string {
@@ -80,7 +83,7 @@ struct const_string {
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace object {
-class ObjectClass;
+struct ObjectClass;
 using class_ptr_t = ObjectClass*;
 } // namespace object
 namespace rtti {
@@ -94,7 +97,7 @@ class Category;
 
 } // namespace rtti
 
-class Object;
+struct Object;
 using object_ptr_t         = std::shared_ptr<Object>;
 using object_constptr_t    = std::shared_ptr<const Object>;
 using object_rawptr_t      = Object*;
@@ -116,19 +119,6 @@ using loader_ptr_t     = std::shared_ptr<AssetLoader>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class AssetHandle {
-public: //
-  ork::Object* mpEngine;
-  void* mpAsset;
-
-  AssetHandle()
-      : mpEngine(0)
-      , mpAsset(0) {
-  }
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 using FileH      = size_t;
 using FileStampH = size_t; // (Y6M4D5:H5M6S6) (15:17) Base Year 2000 6 bits for year goes to 2063
 using LibraryH   = size_t;
@@ -138,8 +128,8 @@ using FunctionH  = size_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-constexpr double PI                = 3.141592654;
-constexpr double PI2               = 6.283185307;
+constexpr double PI                = std::numbers::pi;
+constexpr double PI2               = std::numbers::pi * 2.0;
 constexpr double PI1               = PI;
 constexpr double PI_DIV_2          = (PI / 2.0);
 constexpr double PI_DIV_3          = (PI / 3.0);
@@ -147,11 +137,11 @@ constexpr double PI_DIV_4          = (PI / 4.0);
 constexpr double PI_DIV_5          = (PI / 5.0);
 constexpr double PI_DIV_6          = (PI / 6.0);
 constexpr double NEG_PI_DIV_2      = -PI_DIV_2;
-constexpr double INV_TWO_PI        = (1.0f / PI2);
+constexpr double INV_TWO_PI        = (1.0 / PI2);
 constexpr double THREE_PI_OVER_TWO = (PI * 1.5);
 
-constexpr double DTOR    = 0.017453; // convert degrees to radians
-constexpr double RTOD    = 57.29578; // convert radians to degrees
+constexpr double DTOR    = (PI / 180.0); // convert degrees to radians
+constexpr double RTOD    = (180.0 / PI); // convert radians to degrees
 constexpr double EPSILON = 0.0001;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -174,3 +164,5 @@ struct SRect {
       , miH(y2 - y) {
   }
 };
+
+using stringpoolctx_ptr_t = std::shared_ptr<ork::StringPoolContext>;

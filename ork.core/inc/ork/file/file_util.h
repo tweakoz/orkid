@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -10,7 +10,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/kernel/string/MutableString.h>
 #include <ork/kernel/string/PieceString.h>
-#include <ork/reflect/serialize/JsonDeserializer.h>
+#include <ork/stream/InputStreamBuffer.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace stream {

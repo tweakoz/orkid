@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -41,7 +41,8 @@
 #define GL_ERRORCHECK()                                                                                                            \
   {                                                                                                                                \
     GLenum iErr = GetGlError();                                                                                                    \
-    if(iErr!=GL_NO_ERROR) printf( "GL_ERROR<%08x>\n", iErr);                                                                       \
+    if (iErr != GL_NO_ERROR)                                                                                                       \
+      printf("GL_ERROR<%08x>\n", iErr);                                                                                            \
     OrkAssert(iErr == GL_NO_ERROR);                                                                                                \
   }
 #else
@@ -111,14 +112,15 @@ public:
 struct GlRasterStateInterface : public RasterStateInterface {
 
   GlRasterStateInterface(Context& target);
-  void BindRasterState(const SRasterState& rState, bool bForce) override;
+  void BindRasterState(const SRasterState& rState, bool bForce) final;
 
-  void SetZWriteMask(bool bv) override;
-  void SetRGBAWriteMask(bool rgb, bool a) override;
-  void SetBlending(Blending eVal) override;
-  void SetDepthTest(EDepthTest eVal) override;
-  void SetCullTest(ECullTest eVal) override;
-  void setScissorTest(EScissorTest eVal) override;
+  void SetZWriteMask(bool bv) final;
+  void SetRGBAWriteMask(bool rgb, bool a) final;
+  RGBAMask SetRGBAWriteMask(const RGBAMask& newmask) final;
+  void SetBlending(Blending eVal) final;
+  void SetDepthTest(EDepthTest eVal) final;
+  void SetCullTest(ECullTest eVal) final;
+  void setScissorTest(EScissorTest eVal) final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -223,12 +225,13 @@ public:
   void _setScissor(int iX, int iY, int iW, int iH) final;
   void _doBeginFrame(void) final;
   void _doEndFrame(void) final;
-  bool capture(const RtGroup& inpbuf, int irt, CaptureBuffer* buffer) final;
-  void Capture(const RtGroup& inpbuf, int irt, const file::Path& pth) final;
-  bool CaptureToTexture(const CaptureBuffer& capbuf, Texture& tex) final {
+
+  void capture(const RtBuffer* inpbuf, const file::Path& pth) final;
+  bool captureToTexture(const CaptureBuffer& capbuf, Texture& tex) final {
     return false;
   }
-  bool captureAsFormat(const RtGroup& inpbuf, int irt, CaptureBuffer* buffer, EBufferFormat destfmt) final;
+  bool captureAsFormat(const RtBuffer* inpbuf, CaptureBuffer* buffer, EBufferFormat destfmt) final;
+
   void GetPixel(const fvec4& rAt, PixelFetchContext& ctx) final;
 
   void rtGroupClear(RtGroup* rtg) final;
@@ -291,7 +294,7 @@ struct GLTextureObject {
 struct PboItem {
   GLuint _handle = 0xffffffff;
   size_t _length = 0;
-  void* _mapped = nullptr;
+  void* _mapped  = nullptr;
 };
 
 using pboptr_t = std::shared_ptr<PboItem>;
@@ -312,7 +315,7 @@ using pbosetptr_t = std::shared_ptr<PboSet>;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct GlTexLoadReq {
-  Texture* ptex                     = nullptr;
+  texture_ptr_t ptex;
   const dds::DDS_HEADER* _ddsheader = nullptr;
   GLTextureObject* pTEXOBJ          = nullptr;
   std::string _texname;
@@ -336,24 +339,22 @@ public:
   void _returnPBO(pboptr_t pbo);
   GlTextureInterface(ContextGL& tgt);
 
-  void bindTextureToUnit(const Texture* tex, 
-                         GLenum tex_target,
-                         int tex_unit);
+  void bindTextureToUnit(const Texture* tex, GLenum tex_target, int tex_unit);
 
 private:
-  bool _loadImageTexture(Texture* ptex, datablock_ptr_t inpdata);
+  bool _loadImageTexture(texture_ptr_t ptex, datablock_ptr_t inpdata);
 
-  bool _loadXTXTexture(Texture* ptex, datablock_ptr_t inpdata);
+  bool _loadXTXTexture(texture_ptr_t ptex, datablock_ptr_t inpdata);
   void _loadXTXTextureMainThreadPart(GlTexLoadReq req);
 
   void _loadDDSTextureMainThreadPart(GlTexLoadReq req);
-  bool _loadDDSTexture(const AssetPath& fname, Texture* ptex);
-  bool _loadDDSTexture(Texture* ptex, datablock_ptr_t inpdata);
-  bool _loadVDSTexture(const AssetPath& fname, Texture* ptex);
+  bool _loadDDSTexture(const AssetPath& fname, texture_ptr_t ptex);
+  bool _loadDDSTexture(texture_ptr_t ptex, datablock_ptr_t inpdata);
+  bool _loadVDSTexture(const AssetPath& fname, texture_ptr_t ptex);
 
-  bool LoadTexture(Texture* ptex, datablock_ptr_t inpdata) final;
-  bool DestroyTexture(Texture* ptex) final;
-  bool LoadTexture(const AssetPath& fname, Texture* ptex) final;
+  bool LoadTexture(texture_ptr_t ptex, datablock_ptr_t inpdata) final;
+  bool destroyTexture(texture_ptr_t ptex) final;
+  bool LoadTexture(const AssetPath& fname, texture_ptr_t ptex) final;
   void SaveTexture(const ork::AssetPath& fname, Texture* ptex) final;
   void ApplySamplingMode(Texture* ptex) final;
   void UpdateAnimatedTexture(Texture* ptex, TextureAnimationInst* tai) final;

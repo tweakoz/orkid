@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -36,106 +36,113 @@ GlTextureInterface::GlTextureInterface(ContextGL& tgt)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlTextureInterface::bindTextureToUnit(const Texture* tex,
-                                           GLenum tex_target,
-                                           int tex_unit){
+void GlTextureInterface::bindTextureToUnit(const Texture* tex, GLenum tex_target, int tex_unit) {
 
-    auto tex_obj = (const GLTextureObject*) tex->_internalHandle;
-    if(nullptr == tex_obj){
+  auto tex_obj = (const GLTextureObject*)tex->_internalHandle;
+  if (nullptr == tex_obj) {
 
-      auto new_tex_obj = new GLTextureObject;
-      tex->_internalHandle = new_tex_obj;
-      tex_obj = new_tex_obj;
+    auto new_tex_obj     = new GLTextureObject;
+    tex->_internalHandle = new_tex_obj;
+    tex_obj              = new_tex_obj;
 
-      /////////////////////////////////////////////////////////////
-      // assign default texture object (0) to start out with
-      /////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////
+    // assign default texture object (0) to start out with
+    /////////////////////////////////////////////////////////////
 
-      new_tex_obj->mObject = 0;
+    new_tex_obj->mObject = 0;
 
-      /////////////////////////////////////////////////////////////
-      // check to see if we are referencing external memory objects
-      //  if we are and tex_obj is null - we need to create the 
-      //  GL texture referencing the external memory...
-      /////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////
+    // check to see if we are referencing external memory objects
+    //  if we are and tex_obj is null - we need to create the
+    //  GL texture referencing the external memory...
+    /////////////////////////////////////////////////////////////
+
 #if defined(LINUX)
-      auto ipcdata = tex->_external_memory;
-      if( ipcdata ){
-        
-        GLuint mem_object = 0;
-        glCreateMemoryObjectsEXT(1,&mem_object);
+    auto ipcdata = tex->_external_memory;
+    if (ipcdata) {
 
-        printf("MEMOBJECT<%d> fd<%d> w<%d> h<%d> size<%zu>\n", 
-               int(mem_object),
-               ipcdata->_image_fd,
-               ipcdata->_image_width,
-               ipcdata->_image_height,
-               ipcdata->_image_size );
+      GLuint mem_object = 0;
+      glCreateMemoryObjectsEXT(1, &mem_object);
 
-        GL_ERRORCHECK();
+      /*printf("MEMOBJECT<%d> fd<%d> w<%d> h<%d> size<%zu>\n",
+             int(mem_object),
+             ipcdata->_image_fd,
+             ipcdata->_image_width,
+             ipcdata->_image_height,
+             ipcdata->_image_size );*/
 
-        GLint is_dedicated = GL_FALSE;
-        glMemoryObjectParameterivEXT(mem_object,
-                                     GL_DEDICATED_MEMORY_OBJECT_EXT,
-                                     &is_dedicated);
+      GL_ERRORCHECK();
 
-        GL_ERRORCHECK();
+      GLint is_dedicated = GL_FALSE;
+      glMemoryObjectParameterivEXT(mem_object, GL_DEDICATED_MEMORY_OBJECT_EXT, &is_dedicated);
 
-        glImportMemoryFdEXT(mem_object, // mem object
-                            ipcdata->_image_size, // image size
-                            GL_HANDLE_TYPE_OPAQUE_FD_EXT, // handle type
-                            ipcdata->_image_fd); // file descriptor
+      GL_ERRORCHECK();
 
-        GL_ERRORCHECK();
+      glImportMemoryFdEXT(
+          mem_object,                   // mem object
+          ipcdata->_image_size,         // image size
+          GL_HANDLE_TYPE_OPAQUE_FD_EXT, // handle type
+          ipcdata->_image_fd);          // file descriptor
 
-        glCreateTextures(GL_TEXTURE_2D,1,&new_tex_obj->mObject);
-        glBindTexture(GL_TEXTURE_2D, new_tex_obj->mObject);
+      GL_ERRORCHECK();
 
-        GL_ERRORCHECK();
+      glCreateTextures(GL_TEXTURE_2D, 1, &new_tex_obj->mObject);
+      glBindTexture(GL_TEXTURE_2D, new_tex_obj->mObject);
 
-        glTexStorageMem2DEXT(GL_TEXTURE_2D, // texture target
-                             1, // mip count
-                             GL_RGB10_A2, // internal format
-                             ipcdata->_image_width, // width
-                             ipcdata->_image_height, // height
-                             mem_object, // mem object
-                             0); // offset into memobject's data
+      GL_ERRORCHECK();
 
-        GL_ERRORCHECK();
-        glBindTexture(GL_TEXTURE_2D, 0);
-        GL_ERRORCHECK();
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_TILING_EXT, GL_OPTIMAL_TILING_EXT);
+      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-      	//int _sema_complete_fd = 0;
-	      //int _sema_ready_fd = 0;
+      GL_ERRORCHECK();
 
-        //OrkAssert(false);
-      }
-#endif
-      /////////////////////////////////////////////////////////////
+      glTexStorageMem2DEXT(
+          GL_TEXTURE_2D,          // texture target
+          1,                      // mip count
+          GL_RGB10_A2,            // internal format
+          ipcdata->_image_width,  // width
+          ipcdata->_image_height, // height
+          mem_object,             // mem object
+          0);                     // offset into memobject's data
+
+      GL_ERRORCHECK();
+      glBindTexture(GL_TEXTURE_2D, 0);
+      GL_ERRORCHECK();
+
+      // int _sema_complete_fd = 0;
+      // int _sema_ready_fd = 0;
+
+      // OrkAssert(false);
     }
+#endif // defined(LINUX)
 
-    GLuint texID                   = tex_obj->mObject;
+    /////////////////////////////////////////////////////////////
+  }
 
+  GLuint texID = tex_obj->mObject;
 
-    /*printf(
-        "Bind3 ISDEPTH<%d> tex<%p> texobj<%d> tex_unit<%d> textgt<% d>\n ",
-        int(pTex->_isDepthTexture),
-        pTex,
-        texID,
-        tex_unit,
-        int(textgt));*/
+  /*printf(
+      "Bind3 ISDEPTH<%d> tex<%p> texobj<%d> tex_unit<%d> textgt<% d>\n ",
+      int(pTex->_isDepthTexture),
+      pTex,
+      texID,
+      tex_unit,
+      int(textgt));*/
 
-    GL_ERRORCHECK();
-    glActiveTexture(GL_TEXTURE0 + tex_unit);
-    GL_ERRORCHECK();
-    glBindTexture(tex_target, texID);
-    GL_ERRORCHECK();
-
+  GL_ERRORCHECK();
+  glActiveTexture(GL_TEXTURE0 + tex_unit);
+  GL_ERRORCHECK();
+  glBindTexture(tex_target, texID);
+  GL_ERRORCHECK();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool GlTextureInterface::LoadTexture(const AssetPath& infname, Texture* ptex) {
+bool GlTextureInterface::LoadTexture(const AssetPath& infname, texture_ptr_t ptex) {
   AssetPath DdsFilename = infname;
   AssetPath PngFilename = infname;
   AssetPath XtxFilename = infname;
@@ -151,8 +158,8 @@ bool GlTextureInterface::LoadTexture(const AssetPath& infname, Texture* ptex) {
   if (FileEnv::GetRef().DoesFileExist(XtxFilename))
     final_fname = XtxFilename;
 
-   printf("infname<%s>\n", infname.c_str());
-   printf("final_fname<%s>\n", final_fname.c_str());
+  // printf("infname<%s>\n", infname.c_str());
+  // printf("final_fname<%s>\n", final_fname.c_str());
 
   if (auto dblock = datablockFromFileAtPath(final_fname))
     return LoadTexture(ptex, dblock);
@@ -162,7 +169,7 @@ bool GlTextureInterface::LoadTexture(const AssetPath& infname, Texture* ptex) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool GlTextureInterface::LoadTexture(Texture* ptex, datablock_ptr_t datablock) {
+bool GlTextureInterface::LoadTexture(texture_ptr_t ptex, datablock_ptr_t datablock) {
   DataBlockInputStream checkstream(datablock);
   uint32_t magic = checkstream.getItem<uint32_t>();
   bool ok        = false;
@@ -180,7 +187,7 @@ bool GlTextureInterface::LoadTexture(Texture* ptex, datablock_ptr_t datablock) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool GlTextureInterface::DestroyTexture(Texture* tex) {
+bool GlTextureInterface::destroyTexture(texture_ptr_t tex) {
   auto glto            = (GLTextureObject*)tex->_internalHandle;
   tex->_internalHandle = nullptr;
 
@@ -222,7 +229,7 @@ pboptr_t PboSet::alloc() {
 
   if (_pbos.empty()) {
 
-    for( int i=0; i<4; i++ ) {
+    for (int i = 0; i < 4; i++) {
 
       auto new_pbo = std::make_shared<PboItem>();
 
@@ -233,30 +240,28 @@ pboptr_t PboSet::alloc() {
       GL_ERRORCHECK();
       glBindBuffer(GL_PIXEL_UNPACK_BUFFER, new_pbo->_handle);
       GL_ERRORCHECK();
-      #if defined(ORK_OSX)
-       glBufferData(GL_PIXEL_UNPACK_BUFFER, _size, NULL, GL_STREAM_DRAW);
-      #else
-       u32 create_flags = GL_MAP_WRITE_BIT;
-      
+#if defined(LINUX)
+      u32 create_flags = GL_MAP_WRITE_BIT;
       create_flags |= GL_MAP_PERSISTENT_BIT;
       create_flags |= GL_MAP_COHERENT_BIT;
-      glBufferStorage( GL_PIXEL_UNPACK_BUFFER, _size,  nullptr, create_flags );
+      glBufferStorage(GL_PIXEL_UNPACK_BUFFER, _size, nullptr, create_flags);
       GL_ERRORCHECK();
       u32 map_flags = GL_MAP_WRITE_BIT;
       map_flags |= GL_MAP_PERSISTENT_BIT;
       map_flags |= GL_MAP_INVALIDATE_RANGE_BIT;
       map_flags |= GL_MAP_COHERENT_BIT;
-      //map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
+      map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
       new_pbo->_mapped = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, _size, map_flags);
-      #endif
-      //new_pbo->_mapped = glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
+#else
+      glBufferData(GL_PIXEL_UNPACK_BUFFER, _size, NULL, GL_STREAM_DRAW);
+#endif
       GL_ERRORCHECK();
       glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-      //GL_ERRORCHECK();
+      // GL_ERRORCHECK();
       _pbos.push(new_pbo);
       _pbos_perm.insert(new_pbo);
+      //printf("AllocPBO objid<%d> size<%zu> mapped<%p>\n", int(new_pbo->_handle), _size, (void*) new_pbo->_mapped);
     }
-    // printf("AllocPBO objid<%d> size<%zu>\n", int(rval), _size);
   }
 
   auto rval = _pbos.front();
@@ -275,7 +280,7 @@ void PboSet::free(pboptr_t item) {
 
 pboptr_t GlTextureInterface::_getPBO(size_t isize) {
   pbosetptr_t pbs = nullptr;
-  auto it     = _pbosets.find(isize);
+  auto it         = _pbosets.find(isize);
   if (it == _pbosets.end()) {
     pbs             = std::make_shared<PboSet>(isize);
     _pbosets[isize] = pbs;
@@ -366,11 +371,14 @@ static auto minfiltlamb = [](const TextureSamplingModeData& inp) -> GLenum {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+extern std::atomic<int> __FIND_IT;
+
 void GlTextureInterface::ApplySamplingMode(Texture* ptex) {
   GLTextureObject* pTEXOBJ = (GLTextureObject*)ptex->GetTexIH();
   if (pTEXOBJ) {
     GLenum tgt = (pTEXOBJ->mTarget != GL_NONE) ? pTEXOBJ->mTarget : GL_TEXTURE_2D;
     mTargetGL.makeCurrentContext();
+    __FIND_IT.store(1);
     mTargetGL.debugPushGroup("ApplySamplingMode");
     GL_ERRORCHECK();
     glBindTexture(tgt, pTEXOBJ->mObject);
@@ -411,8 +419,9 @@ void GlTextureInterface::ApplySamplingMode(Texture* ptex) {
     GL_ERRORCHECK();
     glTexParameterf(tgt, GL_TEXTURE_WRAP_T, addrlamb(texmode.GetAddrModeV()));
     GL_ERRORCHECK();
+
+    mTargetGL.debugPopGroup();
   }
-  mTargetGL.debugPopGroup();
 }
 
 void GlTextureInterface::generateMipMaps(Texture* ptex) {
@@ -431,47 +440,74 @@ void GlTextureInterface::generateMipMaps(Texture* ptex) {
 
 void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid) {
 
+  bool is_3d = (tid._d > 1);
+
+  ///////////////////////////////////
+
+  auto texture_target = is_3d ? GL_TEXTURE_3D : GL_TEXTURE_2D;
+
   ///////////////////////////////////
 
   size_t length = tid.computeSize();
-  auto pboitem = this->_getPBO(length);
-  auto mapped = pboitem->_mapped;
-  if(mapped){
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboitem->_handle);
-    memcpy_fast(mapped, tid._data, length);
-  }
-  else{
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboitem->_handle);
-    GL_ERRORCHECK();
-    u32 map_flags = GL_MAP_WRITE_BIT;
-    map_flags |= GL_MAP_INVALIDATE_BUFFER_BIT;
-    map_flags |= GL_MAP_INVALIDATE_RANGE_BIT;
-    map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
-    void* pgfxmem = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, length, map_flags);
-     printf("UPDATE IMAGE UNC iw<%d> ih<%d> length<%zu> pbo<%d> mem<%p>\n", tid._w, tid._h, length, pboitem->_handle, pgfxmem);
-    glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-    GL_ERRORCHECK();
-  }
+  auto pboitem  = this->_getPBO(length);
 
-///////////////////////////////////
+  //printf("UPDATE IMAGE UNC iw<%d> ih<%d> id<%d> length<%zu> pbo<%d>\n", tid._w, tid._h, tid._d, length, pboitem->_handle);
+
+  ///////////////////////////////////
+
+#if defined(__APPLE__)
+  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboitem->_handle);
+  GL_ERRORCHECK();
+  u32 map_flags = GL_MAP_WRITE_BIT;
+  map_flags |= GL_MAP_INVALIDATE_BUFFER_BIT;
+  map_flags |= GL_MAP_INVALIDATE_RANGE_BIT;
+  map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
+  void* mapped = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, length, map_flags);
+  memcpy_fast(mapped, tid._data, length);
+  glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+  GL_ERRORCHECK();
+#else
+  auto mapped = pboitem->_mapped;
+  size_t pbolen = pboitem->_length;
+  //printf("UPDATE IMAGE UNC mapped<%p> pbolen<%zu> from<%p>\n", mapped, pbolen, tid._data );
+  GL_ERRORCHECK();
+  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboitem->_handle);
+  GL_ERRORCHECK();
+  //memcpy_fast(mapped, tid._data, length);
+  auto dest = (char*) mapped;
+  auto src = (char*) tid._data;
+  for( int i=0; i<length; i++)
+    dest[i] = src[i];
+
+#endif
+
+  //printf("UPDATE IMAGE UNC iw<%d> ih<%d> id<%d> length<%zu> pbo<%d> mem<%p>\n", tid._w, tid._h, tid._d, length, pboitem->_handle, mapped);
+
+  ///////////////////////////////////
 
   GLTextureObject* pTEXOBJ = nullptr;
   if (nullptr == ptex->_internalHandle) {
     pTEXOBJ               = new GLTextureObject;
     ptex->_internalHandle = (void*)pTEXOBJ;
     glGenTextures(1, &pTEXOBJ->mObject);
-    glBindTexture(GL_TEXTURE_2D, pTEXOBJ->mObject);
+    glBindTexture(texture_target, pTEXOBJ->mObject);
     if (ptex->_debugName.length()) {
       mTargetGL.debugLabel(GL_TEXTURE, pTEXOBJ->mObject, ptex->_debugName);
     }
   } else {
     pTEXOBJ = (GLTextureObject*)ptex->_internalHandle;
-    glBindTexture(GL_TEXTURE_2D, pTEXOBJ->mObject);
+    glBindTexture(texture_target, pTEXOBJ->mObject);
   }
 
-///////////////////////////////////
+  ///////////////////////////////////
   GLenum internalformat, format, type;
   switch (tid._format) {
+    case EBufferFormat::RGB8: {
+      internalformat = GL_RGB8;
+      format         = GL_RGB;
+      type           = GL_UNSIGNED_BYTE;
+      break;
+    }
     case EBufferFormat::RGBA8: {
       internalformat = GL_RGBA8;
       format         = GL_RGBA;
@@ -496,21 +532,37 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       type           = GL_FLOAT;
       break;
     }
+    case EBufferFormat::R32F: {
+      internalformat = GL_R32F;
+      format         = GL_RED;
+      type           = GL_FLOAT;
+      break;
+    }
     default:
       OrkAssert(false);
       break;
   }
+  GL_ERRORCHECK();
   ///////////////////////////////////
   // update texels
   ///////////////////////////////////
-  bool size_or_fmt_dirty = (ptex->_width != tid._w) or
-                           (ptex->_height != tid._h) or
+  bool size_or_fmt_dirty = (ptex->_width != tid._w) or  //
+                           (ptex->_height != tid._h) or //
+                           (ptex->_depth != tid._d) or  //
                            (ptex->_texFormat != tid._format);
 
-  if (size_or_fmt_dirty)
-    glTexImage2D(GL_TEXTURE_2D, 0, internalformat, tid._w, tid._h, 0, format, type, nullptr);
-  else
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tid._w, tid._h, format, type, nullptr);
+  if (is_3d) {
+    if (size_or_fmt_dirty)
+      glTexImage3D(texture_target, 0, internalformat, tid._w, tid._h, tid._d, 0, format, type, nullptr);
+    else
+      glTexSubImage3D(texture_target, 0, 0, 0, 0, tid._w, tid._h, tid._d, format, type, nullptr);
+  } else {
+    if (size_or_fmt_dirty)
+      glTexImage2D(texture_target, 0, internalformat, tid._w, tid._h, 0, format, type, nullptr);
+    else
+      glTexSubImage2D(texture_target, 0, 0, 0, tid._w, tid._h, format, type, nullptr);
+  }
+
   ///////////////////////////////////
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0); // unbind pbo
   this->_returnPBO(pboitem);
@@ -518,31 +570,51 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   ptex->_width     = tid._w;
   ptex->_height    = tid._h;
+  ptex->_depth    = tid._d;
   ptex->_texFormat = tid._format;
 
   ///////////////////////////////////
   // update texture parameters
   ///////////////////////////////////
+  GL_ERRORCHECK();
 
-  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameterf(texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
   if (tid._autogenmips)
-    glGenerateMipmap(GL_TEXTURE_2D);
+    glGenerateMipmap(texture_target);
 
   if (size_or_fmt_dirty) {
-    if (tid._autogenmips) {
-      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 3);
+    if ((not is_3d) and tid._autogenmips) {
+      glTexParameterf(texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+      glTexParameterf(texture_target, GL_TEXTURE_MAX_LEVEL, 3);
     } else {
-      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+      glTexParameterf(texture_target, GL_TEXTURE_MAX_LEVEL, 0);
     }
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameterf(texture_target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameterf(texture_target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    if(is_3d){
+      glTexParameterf(texture_target, GL_TEXTURE_WRAP_R, GL_REPEAT);
+    }
+
   }
+  if(is_3d){
+    glTexParameterf(texture_target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameterf(texture_target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameterf(texture_target, GL_TEXTURE_WRAP_R, GL_REPEAT);
+  }
+
+  if(is_3d){
+    //ptex->TexSamplingMode().PresetTrilinearWrap();
+    //this->ApplySamplingMode(ptex);
+  }
+
+  pTEXOBJ->mTarget = texture_target;
 
   ///////////////////////////////////
 
-  glBindTexture(GL_TEXTURE_2D, 0);
+  glBindTexture(texture_target, 0);
+  GL_ERRORCHECK();
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -577,7 +649,7 @@ Texture* GlTextureInterface::createFromMipChain(MipChain* from_chain) {
         OrkAssert(pchl->_length == pchl->_width * pchl->_height * sizeof(fvec4));
         glTexImage2D(GL_TEXTURE_2D, l, GL_RGBA32F, pchl->_width, pchl->_height, 0, GL_RGBA, GL_FLOAT, pchl->_data);
         break;
-#if !defined(__APPLE__)
+#if defined(ORK_ARCHITECTURE_X86_64) and defined(LINUX)
       case EBufferFormat::RGBA_BPTC_UNORM:
         OrkAssert(pchl->_length == pchl->_width * pchl->_height);
         glCompressedTexImage2D(

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -22,9 +22,7 @@ using namespace ork::deco;
 namespace ork::test {
 
 int harness(
-    int argc, //
-    char** argv,
-    char** envp,
+    appinitdata_ptr_t initdata,
     const char* test_exename,
     test_setupfn_t scoped_test_init_lambda) {
   ork::SetCurrentThreadName("main");
@@ -32,7 +30,7 @@ int harness(
   // get orkid root directory from environment variables
   /////////////////////////////////////////////
   ork::Environment environment_vars;
-  environment_vars.init_from_envp(envp);
+  environment_vars.init_from_envp(initdata->_envp);
   /////////////////////////////////////////////
   // chdir to test data directory
   /////////////////////////////////////////////
@@ -48,7 +46,7 @@ int harness(
   //   into scoped_var, which would then
   //  be destroyed when leaving harness()
   /////////////////////////////////////////////
-  svar16_t scoped_var;
+  appvar_t scoped_var;
   scoped_test_init_lambda(scoped_var);
   /////////////////////////////////////////////
   int iret      = 0;
@@ -75,7 +73,7 @@ int harness(
     /////////////////////////////////////////////
     // default Run All Tests
     /////////////////////////////////////////////
-    if (argc != 2) {
+    if (initdata->_argc != 2) {
       printf("%s : usage :\n", test_exename);
       printf("<%s> list : list test names\n", test_exename);
       printf("<%s> testname : run 1 test named 'testname'\n", test_exename);
@@ -85,10 +83,10 @@ int harness(
     /////////////////////////////////////////////
     // run a single test (higher signal/noise for debugging)
     /////////////////////////////////////////////
-    else if (argc == 2) {
-      bool blist_tests   = (0 == strcmp(argv[1], "list"));
-      bool all_tests     = (0 == strcmp(argv[1], "all"));
-      bool using_pattern = (0 != strstr(argv[1], "!"));
+    else if (initdata->_argc == 2) {
+      bool blist_tests   = (0 == strcmp(initdata->_argv[1], "list"));
+      bool all_tests     = (0 == strcmp(initdata->_argv[1], "all"));
+      bool using_pattern = (0 != strstr(initdata->_argv[1], "!"));
       ////////////////////////////////
       printf("//////////////////////////////////\n");
       printf(blist_tests ? "Listing Tests\n" : "Running Tests\n");
@@ -97,7 +95,7 @@ int harness(
       if (all_tests)
         return UnitTest::RunAllTests();
       ////////////////////////////////
-      const char* testname           = argv[1];
+      const char* testname           = initdata->_argv[1];
       const UnitTest::TestList& List = UnitTest::Test::GetTestList();
       const UnitTest::Test* ptest    = List.GetHead();
       int itest                      = 0;
@@ -117,7 +115,7 @@ int harness(
           ////////////////////////////////
           if (using_pattern) {
             ork::fxstring<256> pattern;
-            pattern.replace(argv[1], "!", ".*");
+            pattern.replace(initdata->_argv[1], "!", ".*");
             std::regex rgx(pattern.c_str());
             do_test = std::regex_match(Details.testName, rgx);
           }

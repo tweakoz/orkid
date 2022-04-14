@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -128,13 +128,10 @@ void SpriteRenderer::describeX(class_t* clazz) {
 ///////////////////////////////////////////////////////////////////////////////
 
 SpriteRenderer::SpriteRenderer()
-    : meBlendMode(ork::lev2::Blending::ALPHA)
-    , ConstructOutPlug(UnitAge, dataflow::EPR_VARYING1)
-    , ConstructOutPlug(PtcRandom, dataflow::EPR_VARYING1)
-    , ConstructInpPlug(GradientIntensity, dataflow::EPR_UNIFORM, mfGradientIntensity)
+    : ConstructInpPlug(Size, dataflow::EPR_VARYING1, mfSize)
     , ConstructInpPlug(Rot, dataflow::EPR_VARYING1, mfRot)
-    , ConstructInpPlug(Size, dataflow::EPR_VARYING1, mfSize)
     , ConstructInpPlug(AnimFrame, dataflow::EPR_VARYING1, mfAnimFrame)
+    , ConstructInpPlug(GradientIntensity, dataflow::EPR_UNIFORM, mfGradientIntensity)
 
     , ConstructInpPlug(NoiseAmp0, dataflow::EPR_VARYING1, mfNoiseAmp0)
     , ConstructInpPlug(NoiseAmp1, dataflow::EPR_VARYING1, mfNoiseAmp1)
@@ -148,21 +145,10 @@ SpriteRenderer::SpriteRenderer()
     , ConstructInpPlug(NoiseShift1, dataflow::EPR_VARYING1, mfNoiseShift1)
     , ConstructInpPlug(NoiseShift2, dataflow::EPR_VARYING1, mfNoiseShift2)
 
-    , mOutDataUnitAge(0.0f)
-    , meAlignment(ParticleItemAlignment::BILLBOARD)
-    //, mVolumeTexture( 0 )
-    , mfSize(1.0f)
-    , mfRot(0.0f)
-    , mfGradientIntensity(1.0f)
-    , mfAnimFrame(0.0f)
-    , miAnimTexDim(1)
-    //, miImgSequenceBegin(0)
-    //, miImgSequenceEnd(0)
-    , mbSort(false)
-//, mbImageSequence(false)
-//, mbImageSequenceOK(false)
-//, miImageFrame(0)
-{
+    , ConstructOutPlug(UnitAge, dataflow::EPR_VARYING1)
+    , ConstructOutPlug(PtcRandom, dataflow::EPR_VARYING1) {
+
+  mfSize = 1.0f;
 }
 
 void SpriteRenderer::DoLink() {
@@ -207,7 +193,7 @@ void SpriteRenderer::DoLink() {
 //{	tex = mVolumeTexture;
 //}
 ///////////////////////////////////////////////////////////////////////////////
-dataflow::inplugbase* SpriteRenderer::GetInput(int idx) {
+dataflow::inplugbase* SpriteRenderer::GetInput(int idx) const {
   dataflow::inplugbase* rval = 0;
   switch (idx) {
     case 0:
@@ -259,7 +245,7 @@ dataflow::inplugbase* SpriteRenderer::GetInput(int idx) {
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
-dataflow::outplugbase* SpriteRenderer::GetOutput(int idx) {
+dataflow::outplugbase* SpriteRenderer::GetOutput(int idx) const {
   dataflow::outplugbase* rval = 0;
   switch (idx) {
     case 0:
@@ -273,10 +259,7 @@ dataflow::outplugbase* SpriteRenderer::GetOutput(int idx) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-ParticlePoolRenderBuffer::ParticlePoolRenderBuffer()
-    : miMaxParticles(0)
-    , miNumParticles(0)
-    , mpParticles(0) {
+ParticlePoolRenderBuffer::ParticlePoolRenderBuffer() {
 }
 ParticlePoolRenderBuffer::~ParticlePoolRenderBuffer() {
   if (mpParticles) {
@@ -362,7 +345,7 @@ void SpriteRenderer::Render(
   mpVB        = &GfxEnv::GetSharedDynamicVB();
   float Scale = 1.0f;
   ork::fmtx4 MatScale;
-  MatScale.SetScale(Scale, Scale, Scale);
+  MatScale.setScale(Scale, Scale, Scale);
   const fmtx4& MVP = targ->MTXI()->RefMVPMatrix();
   ///////////////////////////////////////////////////////////////
   mCurFGI = mPlugInpGradientIntensity.GetValue();
@@ -379,10 +362,10 @@ void SpriteRenderer::Render(
       switch (meAlignment) {
         case ParticleItemAlignment::BILLBOARD: {
           ork::fmtx4 matrs(mtx);
-          matrs.SetTranslation(0.0f, 0.0f, 0.0f);
-          matrs.Transpose();
-          ork::fvec3 nx = cdata.xNormal().Transform(matrs);
-          ork::fvec3 ny = cdata.yNormal().Transform(matrs);
+          matrs.setTranslation(0.0f, 0.0f, 0.0f);
+          matrs.transpose();
+          ork::fvec3 nx = cdata.xNormal().transform(matrs);
+          ork::fvec3 ny = cdata.yNormal().transform(matrs);
           ork::fvec3 NX = nx * -1.0f;
           ork::fvec3 PX = nx;
           ork::fvec3 NY = ny * -1.0f;
@@ -447,8 +430,9 @@ void SpriteRenderer::Render(
 
       bool bsort = mbSort;
 
-      if (meBlendMode >= ork::lev2::Blending::ADDITIVE && meBlendMode <= Blending::ALPHA_SUBTRACTIVE)
+      if (meBlendMode >= ork::lev2::Blending::ADDITIVE && meBlendMode <= Blending::ALPHA_SUBTRACTIVE) {
         bsort = false;
+      }
 
       if (bsort) {
         static ork::fixedlut<float, const ork::lev2::particle::BasicParticle*, 20000> SortedParticles(EKEYPOLICY_MULTILUT);
@@ -456,8 +440,8 @@ void SpriteRenderer::Render(
         for (int i = 0; i < icnt; i++) {
           const ork::lev2::particle::BasicParticle* ptcl = buffer.mpParticles + i;
           {
-            fvec4 proj = ptcl->mPosition.Transform(MVP);
-            proj.PerspectiveDivide();
+            fvec4 proj = ptcl->mPosition.transform(MVP);
+            proj.perspectiveDivideInPlace();
             float fv = proj.z;
             SortedParticles.AddSorted(fv, ptcl);
           }
@@ -475,8 +459,8 @@ void SpriteRenderer::Render(
           //////////////////////////////////////////////////////
           fvec4 color;
           if (pGRAD)
-            color = (pGRAD->Sample(mOutDataUnitAge) * mCurFGI).Saturate();
-          U32 ucolor = color.GetVtxColorAsU32();
+            color = (pGRAD->Sample(mOutDataUnitAge) * mCurFGI).saturated();
+          U32 ucolor = color.VtxColorAsU32();
           //////////////////////////////////////////////////////
           float fang  = mPlugInpRot.GetValue() * DTOR;
           float sinfr = sinf(fang) * fsize;
@@ -519,8 +503,8 @@ void SpriteRenderer::Render(
           float fsize                                               = mPlugInpSize.GetValue();
           fvec4 color;
           if (pGRAD)
-            color = (pGRAD->Sample(mOutDataUnitAge) * mCurFGI).Saturate();
-          U32 ucolor = color.GetVtxColorAsU32();
+            color = (pGRAD->Sample(mOutDataUnitAge) * mCurFGI).saturated();
+          U32 ucolor = color.VtxColorAsU32();
           float fang = mPlugInpRot.GetValue() * DTOR;
           //////////////////////////////////////////////////////
           float flastframe = float(miTexCnt - 1);
@@ -591,19 +575,15 @@ void StreakRenderer::describeX(class_t* clazz) {
 */}
   ///////////////////////////////////////////////////////////////////////////////
   StreakRenderer::StreakRenderer()
-      : meBlendMode(ork::lev2::Blending::ALPHA)
-      , ConstructOutPlug(UnitAge, dataflow::EPR_UNIFORM)
-      , ConstructInpPlug(GradientIntensity, dataflow::EPR_UNIFORM, mfGradientIntensity)
-      , ConstructInpPlug(Length, dataflow::EPR_UNIFORM, mfLength)
+      : ConstructInpPlug(Length, dataflow::EPR_UNIFORM, mfLength)
       , ConstructInpPlug(Width, dataflow::EPR_UNIFORM, mfWidth)
-      , mOutDataUnitAge(0.0f)
-      , mTexture(0)
-      , mfLength(1.0f)
-      , mfWidth(1.0f)
-      , mfGradientIntensity(1.0f)
-      , mbSort(false) {
-    ork::lev2::Context* targ = ork::lev2::GfxEnv::GetRef().loadingContext();
-    mpMaterial               = new GfxMaterial3DSolid(targ, "orkshader://particle", "tstreakparticle");
+      , ConstructOutPlug(UnitAge, dataflow::EPR_UNIFORM)
+      , ConstructInpPlug(GradientIntensity, dataflow::EPR_UNIFORM, mfGradientIntensity) {
+    mfLength                 = (1.0f);
+    mfWidth                  = (1.0f);
+    mfGradientIntensity      = (1.0f);
+    auto target = lev2::contextForCurrentThread();
+    mpMaterial               = new GfxMaterial3DSolid(target, "orkshader://particle", "tstreakparticle");
   }
   ///////////////////////////////////////////////////////////////////////////////
   void StreakRenderer::SetTextureAccessor(ork::rtti::ICastable* const& tex) {
@@ -615,10 +595,10 @@ void StreakRenderer::describeX(class_t* clazz) {
   }
   ///////////////////////////////////////////////////////////////////////////////
   ork::lev2::Texture* StreakRenderer::GetTexture() const {
-    return (mTexture == 0) ? 0 : mTexture->GetTexture();
+    return (mTexture == 0) ? 0 : mTexture->GetTexture().get();
   }
   ///////////////////////////////////////////////////////////////////////////////
-  dataflow::inplugbase* StreakRenderer::GetInput(int idx) {
+  dataflow::inplugbase* StreakRenderer::GetInput(int idx) const {
     dataflow::inplugbase* rval = 0;
     switch (idx) {
       case 0:
@@ -637,7 +617,7 @@ void StreakRenderer::describeX(class_t* clazz) {
     return rval;
   }
   ///////////////////////////////////////////////////////////////////////////////
-  dataflow::outplugbase* StreakRenderer::GetOutput(int idx) {
+  dataflow::outplugbase* StreakRenderer::GetOutput(int idx) const {
     dataflow::outplugbase* rval = 0;
     switch (idx) {
       case 0:
@@ -661,7 +641,7 @@ void StreakRenderer::describeX(class_t* clazz) {
     ork::lev2::CVtxBuffer<vtx_t>& vtxbuf = lev2::GfxEnv::GetSharedDynamicVB2();
     float Scale                          = 1.0f;
     ork::fmtx4 mtx_scale;
-    mtx_scale.SetScale(Scale, Scale, Scale);
+    mtx_scale.setScale(Scale, Scale, Scale);
     ///////////////////////////////////////////////////////////////
     float fgi = mPlugInpGradientIntensity.GetValue();
     ///////////////////////////////////////////////////////////////
@@ -671,7 +651,7 @@ void StreakRenderer::describeX(class_t* clazz) {
     if (icnt) { ////////////////////////////////////////////////////////////////////////////
       ork::fmtx4 mtx_iw;
       mtx_iw.inverseOf(mtx);
-      fvec3 obj_nrmz = fvec4(cdata.zNormal(), 0.0f).Transform(mtx_iw).Normal();
+      fvec3 obj_nrmz = fvec4(cdata.zNormal(), 0.0f).transform(mtx_iw).normalized();
       ////////////////////////////////////////////////////////////////////////////
       lev2::VtxWriter<vtx_t> vw;
       vw.Lock(targ, &vtxbuf, icnt);
@@ -689,8 +669,8 @@ void StreakRenderer::describeX(class_t* clazz) {
           for (int i = 0; i < icnt; i++) {
             const ork::lev2::particle::BasicParticle* ptcl = buffer.mpParticles + i;
             {
-              fvec4 proj = ptcl->mPosition.Transform(MVP);
-              proj.PerspectiveDivide();
+              fvec4 proj = ptcl->mPosition.transform(MVP);
+              proj.perspectiveDivideInPlace();
               float fv = proj.z;
               SortedParticles.AddSorted(fv, ptcl);
             }
@@ -707,7 +687,7 @@ void StreakRenderer::describeX(class_t* clazz) {
             float flength = mPlugInpLength.GetValue();
             fvec4 color   = mGradient.Sample(mOutDataUnitAge) * fgi;
             ////////////////////////////////////////////////
-            vw.AddVertex(vtx_t(ptcl->mPosition, obj_nrmz, ptcl->mVelocity, ork::fvec2(fwidth, flength), color.GetVtxColorAsU32()));
+            vw.AddVertex(vtx_t(ptcl->mPosition, obj_nrmz, ptcl->mVelocity, ork::fvec2(fwidth, flength), color.VtxColorAsU32()));
             ////////////////////////////////////////////////
           }
         } else {
@@ -723,7 +703,7 @@ void StreakRenderer::describeX(class_t* clazz) {
             float flength = mPlugInpLength.GetValue();
             fvec4 color   = mGradient.Sample(mOutDataUnitAge) * fgi;
             ////////////////////////////////////////////////
-            vw.AddVertex(vtx_t(ptcl->mPosition, obj_nrmz, ptcl->mVelocity, ork::fvec2(fwidth, flength), color.GetVtxColorAsU32()));
+            vw.AddVertex(vtx_t(ptcl->mPosition, obj_nrmz, ptcl->mVelocity, ork::fvec2(fwidth, flength), color.VtxColorAsU32()));
             ////////////////////////////////////////////////
           }
         }
@@ -772,16 +752,16 @@ void StreakRenderer::describeX(class_t* clazz) {
 */}
   ///////////////////////////////////////////////////////////////////////////////
   ModelRenderer::ModelRenderer()
-      : ConstructOutPlug(UnitAge, dataflow::EPR_UNIFORM)
-      , ConstructInpPlug(AnimScale, dataflow::EPR_UNIFORM, mfAnimScale)
+      : ConstructInpPlug(AnimScale, dataflow::EPR_UNIFORM, mfAnimScale)
       , ConstructInpPlug(AnimRot, dataflow::EPR_UNIFORM, mfAnimRot)
-      , mOutDataUnitAge(0.0f)
-      , mModel(0)
-      , mfAnimScale(1.0f)
-      , mfAnimRot(0.0f)
-      , mBaseRotAxisAngle(0.0f, 0.0f, 1.0f, 0.0f)
-      , mAnimRotAxis(0.0f, 0.0f, 1.0f)
-      , mUpVector(0.0f, 1.0f, 0.0f) {
+      , ConstructOutPlug(UnitAge, dataflow::EPR_UNIFORM) {
+
+    mfAnimScale = (1.0f);
+    mfAnimRot   = (0.0f);
+
+    mBaseRotAxisAngle = fvec4(0.0f, 0.0f, 1.0f, 0.0f);
+    mAnimRotAxis      = fvec3(0.0f, 0.0f, 1.0f);
+    mUpVector         = fvec3(0.0f, 1.0f, 0.0f);
   }
   ///////////////////////////////////////////////////////////////////////////////
   void ModelRenderer::SetModelAccessor(ork::rtti::ICastable* const& tex) {
@@ -796,7 +776,7 @@ void StreakRenderer::describeX(class_t* clazz) {
     return (mModel == 0) ? 0 : mModel->GetModel();
   }
   ///////////////////////////////////////////////////////////////////////////////
-  dataflow::inplugbase* ModelRenderer::GetInput(int idx) {
+  dataflow::inplugbase* ModelRenderer::GetInput(int idx) const {
     dataflow::inplugbase* rval = 0;
     switch (idx) {
       case 0:
@@ -812,7 +792,7 @@ void StreakRenderer::describeX(class_t* clazz) {
     return rval;
   }
   ///////////////////////////////////////////////////////////////////////////////
-  dataflow::outplugbase* ModelRenderer::GetOutput(int idx) {
+  dataflow::outplugbase* ModelRenderer::GetOutput(int idx) const {
     dataflow::outplugbase* rval = 0;
     switch (idx) {
       case 0:
@@ -846,11 +826,11 @@ void StreakRenderer::describeX(class_t* clazz) {
 
       fquat qrot;
       fvec4 axisang = mBaseRotAxisAngle;
-      axisang.setW(3.1415926 * axisang.w / 90.0f);
+      axisang.w     = (3.1415926 * axisang.w / 90.0f);
       qrot.fromAxisAngle(axisang);
-      rmtx.FromQuaternion(qrot);
+      rmtx.fromQuaternion(qrot);
 
-      fvec3 upvec = (mUpVector.Mag() == 0.0f) ? fvec3::Green() : mUpVector.Normal();
+      fvec3 upvec = (mUpVector.magnitude() == 0.0f) ? fvec3::Green() : mUpVector.normalized();
 
       for (int i = 0; i < icnt; i++) {
         const ork::lev2::particle::BasicParticle* ptcl = buffer.mpParticles + i;
@@ -858,24 +838,24 @@ void StreakRenderer::describeX(class_t* clazz) {
         // varying properties
         ////////////////////////////////////////////////
         float fage       = ptcl->mfAge;
-        const auto zaxis = ptcl->mVelocity.Normal();
-        const auto xaxis = (upvec.Cross(zaxis)).Normal();
-        const auto yaxis = zaxis.Cross(xaxis);
+        const auto zaxis = ptcl->mVelocity.normalized();
+        const auto xaxis = (upvec.crossWith(zaxis)).normalized();
+        const auto yaxis = zaxis.crossWith(xaxis);
 
         mOutDataUnitAge = (fage / ptcl->mfLifeSpan);
         mOutDataUnitAge = (mOutDataUnitAge < 0.0f) ? 0.0f : mOutDataUnitAge;
         mOutDataUnitAge = (mOutDataUnitAge > 1.0f) ? 1.0f : mOutDataUnitAge;
 
         float fscale = mPlugInpAnimScale.GetValue();
-        smtx.SetScale(fscale, fscale, fscale);
+        smtx.setScale(fscale, fscale, fscale);
 
         float fanimrot = mPlugInpAnimRot.GetValue();
         fvec4 anim_axis_angle(mAnimRotAxis, 3.1415926 * fanimrot / 90.0f);
         qrot.fromAxisAngle(anim_axis_angle);
-        r2mtx.FromQuaternion(qrot);
+        r2mtx.fromQuaternion(qrot);
 
         nmtx.fromNormalVectors(xaxis, yaxis, zaxis);
-        nmtx.SetTranslation(ptcl->mPosition);
+        nmtx.setTranslation(ptcl->mPosition);
 
         gmatrixblock[i] = (rmtx * r2mtx * smtx * nmtx * mtx);
       }
@@ -934,7 +914,7 @@ void StreakRenderer::describeX(class_t* clazz) {
   ///////////////////////////////////////////////////////////////////////////////
   TextureMaterial::TextureMaterial()
       : mTexture(0) {
-    ork::lev2::Context* targ = ork::lev2::GfxEnv::GetRef().loadingContext();
+    ork::lev2::Context* targ = lev2::contextForCurrentThread();
     mpMaterial               = new GfxMaterial3DSolid(targ, "orkshader://particle", "tbasicparticle");
     mpMaterial->SetColorMode(GfxMaterial3DSolid::EMODE_USER);
   }
@@ -948,7 +928,7 @@ void StreakRenderer::describeX(class_t* clazz) {
   }
   ///////////////////////////////////////////////////////////////////////////////
   ork::lev2::Texture* TextureMaterial::GetTexture() const {
-    return (mTexture == 0) ? 0 : mTexture->GetTexture();
+    return (mTexture == 0) ? 0 : mTexture->GetTexture().get();
   }
   void TextureMaterial::Update(float ftexframe) {
     if (gtarg && GetTexture()) {
@@ -984,7 +964,7 @@ void StreakRenderer::describeX(class_t* clazz) {
   ///////////////////////////////////////////////////////////////////////////////
   VolTexMaterial::VolTexMaterial()
       : mTexture(0) {
-    ork::lev2::Context* targ = ork::lev2::GfxEnv::GetRef().loadingContext();
+    ork::lev2::Context* targ = lev2::contextForCurrentThread();
     mpMaterial               = new GfxMaterial3DSolid(targ, "orkshader://particle", "tvolumeparticle");
     mpMaterial->SetColorMode(GfxMaterial3DSolid::EMODE_USER);
   }
@@ -998,7 +978,7 @@ void StreakRenderer::describeX(class_t* clazz) {
   }
   ///////////////////////////////////////////////////////////////////////////////
   ork::lev2::Texture* VolTexMaterial::GetTexture() const {
-    return (mTexture == 0) ? 0 : mTexture->GetTexture();
+    return (mTexture == 0) ? 0 : mTexture->GetTexture().get();
   }
   void VolTexMaterial::Update(float ftexframe) {
     if (gtarg && GetTexture()) {

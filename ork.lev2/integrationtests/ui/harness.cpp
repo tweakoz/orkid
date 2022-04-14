@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -29,21 +29,23 @@ extern bool _macosUseHIDPI;
 }
 #endif
 ///////////////////////////////////////////////////////////////////////////////
-UiTestApp::UiTestApp(int& argc, char** argv)
-    : OrkEzQtApp(argc, argv,AppInitData()) {
+UiTestApp::UiTestApp(appinitdata_ptr_t init_data)
+  // TODO - get init data with lev2 enabled...
+    : OrkEzApp(init_data) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 UiTestApp::~UiTestApp() {
 }
 ///////////////////////////////////////////////////////////////////////////////
-uitestapp_ptr_t createEZapp(int& argc, char** argv) {
-
+uitestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
+  //AppInitData init_data{._envp=envp};
+  lev2::initModule(init_data);
   //////////////////////////////////////////////////////////////////////////////
   // boot up debug HUD
   //////////////////////////////////////////////////////////////////////////////
-  static auto& qti = qtinit(argc, argv);
+  //static auto& qti = qtinit(argc, argv,init_data);
   //QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
-  auto qtapp                      = std::make_shared<UiTestApp>(qti._argc, qti._argvp);
+  auto qtapp                      = std::make_shared<UiTestApp>(init_data);
   auto qtwin                      = qtapp->_mainWindow;
   auto gfxwin                     = qtwin->_gfxwin;
   auto uicontext                  = qtapp->_uicontext;
@@ -59,6 +61,7 @@ uitestapp_ptr_t createEZapp(int& argc, char** argv) {
   auto CPD      = qtapp->_vars.makeSharedForKey<CompositingPassData>("CPD");
   auto cameras  = qtapp->_vars.makeSharedForKey<CameraDataLut>("cameras");
   auto camdata  = qtapp->_vars.makeSharedForKey<CameraData>("camdata");
+  auto dbufcontext = qtapp->_vars.makeSharedForKey<DrawBufContext>("dbufcontext");
   //////////////////////////////////////////////////////////
   compdata->presetForward();
   compdata->mbEnable  = true;
@@ -86,18 +89,18 @@ uitestapp_ptr_t createEZapp(int& argc, char** argv) {
   //////////////////////////////////////////////////////////
   qtapp->onUpdate([=](ui::updatedata_ptr_t updata) {
     ///////////////////////////////////////
-    auto DB = DrawableBuffer::acquireForWrite(0);
+    auto DB = dbufcontext->acquireForWriteLocked();
     if (DB) {
       DB->Reset();
       DB->copyCameras(*cameras);
       // qtapp->_ezviewport->onUpdateThreadTick(updata);
-      DrawableBuffer::releaseFromWrite(DB);
+      dbufcontext->releaseFromWriteLocked(DB);
     }
   });
   //////////////////////////////////////////////////////////
   qtapp->onDraw([=](ui::drawevent_constptr_t drwev) {
     ////////////////////////////////////////////////
-    auto DB = DrawableBuffer::acquireForRead(7);
+    auto DB = dbufcontext->acquireForReadLocked();
     if (nullptr == DB)
       return;
     ////////////////////////////////////////////////
@@ -124,7 +127,7 @@ uitestapp_ptr_t createEZapp(int& argc, char** argv) {
     mtxi->PopUIMatrix();
     context->endFrame();
     ////////////////////////////////////////////////////
-    DrawableBuffer::releaseFromRead(DB);
+    dbufcontext->releaseFromReadLocked(DB);
   });
   //////////////////////////////////////////////////////////
   qtapp->onResize([=](int w, int h) { //
@@ -148,7 +151,7 @@ uitestapp_ptr_t createEZapp(int& argc, char** argv) {
         }
         break;
       default:
-        OrkAssert(false);
+        //OrkAssert(false);
         // return uicontext->handleEvent(ev);
         // return qtapp->_ezviewport->HandleUiEvent(ev);
         break;

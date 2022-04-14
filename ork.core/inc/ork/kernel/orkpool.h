@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 //////////////////////////////////////////////////////////////// 
@@ -31,7 +31,7 @@ public:
 	{
 		pointer beg = &(*m_data.begin());
 		pointer end = &(*m_data.rbegin());
-		printf( "newpool<%p> beg<%p> end<%p> siz<%d>\n", this, beg, end, count );
+		printf( "newpool<%p> beg<%p> end<%p> siz<%d>\n", (void*) this, (void*) beg,  (void*) end, count );
 		OrkAssert(count > 0);
 		clear();
 	}

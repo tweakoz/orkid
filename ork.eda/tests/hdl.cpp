@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <utpp/UnitTest++.h>
 #include <ork/hdl/hdl.inl>
 #include <ork/kernel/spawner.h>
@@ -9,10 +16,10 @@ struct IOBundle : public Module {
   IOBundle(std::string name, Module* par, args_t args)
       : Module(name, par, args)
       , initref(inpuint<32>, a)
-      , initref(reguint<4>, fsmstate)
       , initref(inpbool, b)
       , initref(outregbool, e)
-      , initref(outbool, internal_out) {
+      , initref(outbool, internal_out) 
+      , initref(reguint<4>, fsmstate) {
   }
   void generate() final {
     enum FsmStates {
@@ -77,7 +84,7 @@ struct Module1 final : public Module {
         // x.next((x - y) / (x + y));
         x.next(x + 1);
         y.next(y + 4);
-        a.next(y != y);
+        a.next(y.not_equal_to(y));
         b.next(x - y);
       });
       hdl_endif();
@@ -89,8 +96,8 @@ struct Module1 final : public Module {
 struct MUL final : public Module {
   MUL(const std::string& nam, Module* par, args_t args)
       : Module(nam, par, args)
-      , initref(outreguint<64>, product)
-      , initrefn(inpuint<32>, input, "input" + nam) {
+      , initrefn(inpuint<32>, input, "input" + nam) 
+      , initref(outreguint<64>, product) {
   }
   void generate() final {
     hdl_sync({ product.next(input * input); });
@@ -105,15 +112,15 @@ struct TOP : public Module {
   constexpr static size_t KROMPOTD = bitsToHold<ROMD>() - 1;
   TOP(Module* tb, args_t args = {})
       : Module("Top", tb, args)
-      , initref(outregbool, lineout)
       , initref(u64reg, counter)
+      , initref(outregbool, lineout)
       , initref(s32reg, o)
       , initref(s32reg, o2)
       , initref(u32wire, gcdX)
       , initref(u32wire, gcdY)
+      , initref(reguint<KROMPOTD>, romaddr)
       , initref(wireuint<ROMW>, romdatain)
       , initref(wireuint<ROMW>, romdataout)
-      , initref(reguint<KROMPOTD>, romaddr)
       , initref(regbool, romwe) {
     auto bram = instance<BlockMem>("BRAM", {romaddr, romdatain, romdataout, romwe}, size_t(ROMW), size_t(ROMD));
 

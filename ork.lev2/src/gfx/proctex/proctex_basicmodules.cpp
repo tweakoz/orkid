@@ -86,7 +86,7 @@ void Periodic::describeX(class_t* clazz) {
   ork::reflect::annotatePropertyForEditor<Periodic>("Shape", "editor.class", "ged.factory.enum");
 */
 }
-dataflow::inplugbase* Periodic::GetInput(int idx) {
+dataflow::inplugbase* Periodic::GetInput(int idx) const {
   dataflow::inplugbase* rval = 0;
   switch (idx) {
     case 0:
@@ -109,15 +109,12 @@ dataflow::inplugbase* Periodic::GetInput(int idx) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 Periodic::Periodic()
-    : mfFrequency(1.0f)
-    , mfAmplitude(0.0f)
-    , mfBias(1.0f)
-    , mfPhaseOffset(0.0f)
-    , meShape(PeriodicShape::SQU)
-    , mPlugInpFrequency(this, dataflow::EPR_UNIFORM, mfFrequency, "frq")
+    : mPlugInpFrequency(this, dataflow::EPR_UNIFORM, mfFrequency, "frq")
     , mPlugInpAmplitude(this, dataflow::EPR_UNIFORM, mfAmplitude, "amp")
     , mPlugInpPhaseOffset(this, dataflow::EPR_UNIFORM, mfPhaseOffset, "pho")
     , mPlugInpBias(this, dataflow::EPR_UNIFORM, mfBias, "bia") {
+  mfFrequency = (1.0f);
+  mfBias      = (1.0f);
 }
 void Periodic::Hash(dataflow::node_hash& hash) {
   hash.Hash(mPlugInpFrequency.GetValue());
@@ -155,14 +152,11 @@ float Periodic::compute(float unitphase) {
 void Global::describeX(class_t* clazz) {
 }
 Global::Global()
-    : ConstructOutPlug(Time, dataflow::EPR_UNIFORM)
+    : ConstructInpPlug(TimeScale, dataflow::EPR_UNIFORM, mfTimeScale)
+    , ConstructOutPlug(Time, dataflow::EPR_UNIFORM)
     , ConstructOutPlug(TimeDiv10, dataflow::EPR_UNIFORM)
-    , ConstructOutPlug(TimeDiv100, dataflow::EPR_UNIFORM)
-    , ConstructInpPlug(TimeScale, dataflow::EPR_UNIFORM, mfTimeScale)
-    , mfTimeScale(1.0f)
-    , mOutDataTime(0.0f)
-    , mOutDataTimeDiv10(0.0f)
-    , mOutDataTimeDiv100(0.0f) {
+    , ConstructOutPlug(TimeDiv100, dataflow::EPR_UNIFORM) {
+  mfTimeScale = (1.0f);
 }
 void Global::Compute(dataflow::workunit* wu) // virtual
 {
@@ -174,7 +168,7 @@ void Global::Compute(dataflow::workunit* wu) // virtual
   const_cast<Global*>(this)->mOutDataTimeDiv10  = ftime * 0.1f;
   const_cast<Global*>(this)->mOutDataTimeDiv100 = ftime * 0.01f;
 }
-dataflow::outplugbase* Global::GetOutput(int idx) {
+dataflow::outplugbase* Global::GetOutput(int idx) const {
   dataflow::outplugbase* rval = 0;
   switch (idx) {
     case 0:
@@ -198,17 +192,17 @@ void Curve1D::describeX(class_t* clazz) {
   // ork::reflect::annotatePropertyForEditor<Curve1D>( "curve", "editor.class", "ged.factory.curve1d" );
 }
 Curve1D::Curve1D()
-    : mOutput(this, dataflow::EPR_UNIFORM, &mOutValue, "Output")
+    : mInValue(0.0f)
     , mPlugInpInput(this, dataflow::EPR_UNIFORM, mInValue, "Input")
     , mOutValue(0.0f)
-    , mInValue(0.0f) {
+    , mOutput(this, dataflow::EPR_UNIFORM, &mOutValue, "Output") {
 }
 void Curve1D::Compute(dataflow::workunit* wu) // virtual
 {
   float finp = fmod(mPlugInpInput.GetValue(), 1.0f);
   mOutValue  = mMultiCurve.Sample(finp);
 }
-dataflow::outplugbase* Curve1D::GetOutput(int idx) {
+dataflow::outplugbase* Curve1D::GetOutput(int idx) const {
   dataflow::outplugbase* rval = 0;
   switch (idx) {
     case 0:
@@ -217,7 +211,7 @@ dataflow::outplugbase* Curve1D::GetOutput(int idx) {
   }
   return rval;
 }
-dataflow::inplugbase* Curve1D::GetInput(int idx) {
+dataflow::inplugbase* Curve1D::GetInput(int idx) const {
   dataflow::inplugbase* rval = 0;
   switch (idx) {
     case 0:
@@ -251,13 +245,8 @@ void RotSolid::describeX(class_t* clazz) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 RotSolid::RotSolid()
-    : miNumSides(3)
-    , mVertexBuffer(2048, 0, ork::lev2::PrimitiveType::TRIANGLES)
-    , meBlendMode(ork::lev2::Blending::OFF)
-    , mVBHash()
-    , mfPhaseOffset(0.0f)
-    , mPlugInpPhaseOffset(this, dataflow::EPR_UNIFORM, mfPhaseOffset, "pho")
-    , mbAA(false) {
+    : mPlugInpPhaseOffset(this, dataflow::EPR_UNIFORM, mfPhaseOffset, "pho")
+    , mVertexBuffer(2048, 0, ork::lev2::PrimitiveType::TRIANGLES) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void RotSolid::ComputeVB(ork::lev2::Context* pTARG) {
@@ -376,7 +365,7 @@ void ImgOp2::describeX(class_t* clazz) {
   ork::reflect::annotatePropertyForEditor<ImgOp2>("Op", "editor.class", "ged.factory.enum");
   */
 }
-ork::dataflow::inplugbase* ImgOp2::GetInput(int idx) {
+ork::dataflow::inplugbase* ImgOp2::GetInput(int idx) const {
   ork::dataflow::inplugbase* rval = 0;
   switch (idx) {
     case 0:
@@ -453,7 +442,7 @@ void ImgOp3::describeX(class_t* clazz) {
   ork::reflect::annotatePropertyForEditor<ImgOp3>("ChanCtrl", "editor.class", "ged.factory.enum");
   */
 }
-ork::dataflow::inplugbase* ImgOp3::GetInput(int idx) {
+ork::dataflow::inplugbase* ImgOp3::GetInput(int idx) const {
   ork::dataflow::inplugbase* rval = 0;
   switch (idx) {
     case 0:
@@ -574,7 +563,7 @@ void Transform::describeX(class_t* clazz) {
   RegisterFloatXfPlug(Transform, Rotate, -360.0f, 360.0f, ged::OutPlugChoiceDelegate);
   */
 }
-ork::dataflow::inplugbase* Transform::GetInput(int idx) {
+ork::dataflow::inplugbase* Transform::GetInput(int idx) const {
   ork::dataflow::inplugbase* rval = 0;
   switch (idx) {
     case 0:
@@ -604,13 +593,9 @@ Transform::Transform()
     , ConstructInpPlug(ScaleY, dataflow::EPR_UNIFORM, mfScaleY)
     , ConstructInpPlug(OffsetX, dataflow::EPR_UNIFORM, mfOffsetX)
     , ConstructInpPlug(OffsetY, dataflow::EPR_UNIFORM, mfOffsetY)
-    , ConstructInpPlug(Rotate, dataflow::EPR_UNIFORM, mfRotate)
-    , mfScaleX(1.0f)
-    , mfScaleY(1.0f)
-    , mfOffsetX(0.0f)
-    , mfOffsetY(0.0f)
-    , mfRotate(0.0f)
-    , mMaterial(nullptr) {
+    , ConstructInpPlug(Rotate, dataflow::EPR_UNIFORM, mfRotate) {
+  mfScaleX = (1.0f);
+  mfScaleY = (1.0f);
 }
 void Transform::compute(ProcTex& ptex) {
   auto proc_ctx = ptex.GetPTC();
@@ -634,11 +619,11 @@ void Transform::compute(ProcTex& ptex) {
     float rot = PI2 * mPlugInpRotate.GetValue() / 360.0f;
     ////////////////////////////////////////////////////////////////
     fmtx4 mtxR, mtxS, mtxT, mtxTO1, mtxTO2;
-    mtxS.Scale(mPlugInpScaleX.GetValue(), mPlugInpScaleY.GetValue(), 1.0f);
-    mtxTO1.SetTranslation(-0.5f, -0.5f, 0.0f);
-    mtxTO2.SetTranslation(+0.5f, +0.5f, 0.0f);
-    mtxT.SetTranslation(mPlugInpOffsetX.GetValue(), mPlugInpOffsetY.GetValue(), 0.0f);
-    mtxR.SetRotateZ(rot);
+    mtxS.scale(mPlugInpScaleX.GetValue(), mPlugInpScaleY.GetValue(), 1.0f);
+    mtxTO1.setTranslation(-0.5f, -0.5f, 0.0f);
+    mtxTO2.setTranslation(+0.5f, +0.5f, 0.0f);
+    mtxT.setTranslation(mPlugInpOffsetX.GetValue(), mPlugInpOffsetY.GetValue(), 0.0f);
+    mtxR.setRotateZ(rot);
     float sina = sinf(rot);
     float cosa = cosf(rot);
     ////////////////////////////////////////////////////////////////
@@ -749,17 +734,12 @@ void ShaderQuad::describeX(class_t* clazz) {
   ////////////////////////////////////////
 }
 ShaderQuad::ShaderQuad()
-    : mShader(nullptr)
-    , ConstructInpPlug(ImgInput0, dataflow::EPR_UNIFORM, gNoCon)
+    : ConstructInpPlug(ImgInput0, dataflow::EPR_UNIFORM, gNoCon)
     , ConstructInpPlug(User0X, dataflow::EPR_UNIFORM, mfUser0X)
     , ConstructInpPlug(User0Y, dataflow::EPR_UNIFORM, mfUser0Y)
-    , ConstructInpPlug(User0Z, dataflow::EPR_UNIFORM, mfUser0Z)
-    , mfUser0X(0.0f)
-    , mfUser0Y(0.0f)
-    , mfUser0Z(0.0f)
-    , mpTexture(nullptr) {
+    , ConstructInpPlug(User0Z, dataflow::EPR_UNIFORM, mfUser0Z) {
 }
-ork::dataflow::inplugbase* ShaderQuad::GetInput(int idx) {
+ork::dataflow::inplugbase* ShaderQuad::GetInput(int idx) const {
   ork::dataflow::inplugbase* rval = 0;
   switch (idx) {
     case 0:
@@ -784,7 +764,7 @@ void ShaderQuad::compute(ProcTex& ptex) {
 
   if (nullptr == mShader) {
     mShader = new lev2::GfxMaterial3DSolid(pTARG, mShaderPath.c_str(), "shaderquad", true);
-    printf("ShaderQuad<%p> loading shader<%s>\n", this, mShaderPath.c_str());
+    printf("ShaderQuad<%p> loading shader<%s>\n", (void*)this, mShaderPath.c_str());
   }
 
   if (mShader->IsUserFxOk()) {
@@ -809,12 +789,12 @@ void ShaderQuad::compute(ProcTex& ptex) {
 
       printf(
           " ShaderQuad<%p> input con_mod<%p:%s> conplug<%p:%s> rtg<%p>\n",
-          this,
-          con_mod,
+          (void*)this,
+          (void*)con_mod,
           mod_nam.c_str(),
-          conplug,
+          (void*)conplug,
           plug_name.c_str(),
-          conrtg);
+          (void*)conrtg);
 
       mShader->SetTexture(conplug->GetValue().GetTexture(ptex));
     } else
@@ -928,13 +908,7 @@ void Gradient::describeX(class_t* clazz) {
   */
 }
 Gradient::Gradient()
-    : mpTexture(0)
-    , mVertexBuffer(1 << 20, 0, ork::lev2::PrimitiveType::TRIANGLES)
-    , miRepeat(1)
-    , meRepeatMode(GradientRepeatMode::REPEAT)
-    , meGradientType(GradientType::HORIZONTAL)
-    , mbAA(false)
-    , mMtl(nullptr) {
+    : mVertexBuffer(1 << 20, 0, ork::lev2::PrimitiveType::TRIANGLES) {
 }
 void Gradient::compute(ProcTex& ptex) {
   auto proc_ctx = ptex.GetPTC();
@@ -1032,10 +1006,10 @@ void Gradient::compute(ProcTex& ptex) {
 
       switch (meGradientType) {
         case GradientType::VERTICAL: {
-          lev2::SVtxV12C4T16 v0(fvec3(fy0, fx0, kz), uv, c0.GetVtxColorAsU32());
-          lev2::SVtxV12C4T16 v1(fvec3(fy0, fx1, kz), uv, c1.GetVtxColorAsU32());
-          lev2::SVtxV12C4T16 v2(fvec3(fy1, fx1, kz), uv, c1.GetVtxColorAsU32());
-          lev2::SVtxV12C4T16 v3(fvec3(fy1, fx0, kz), uv, c0.GetVtxColorAsU32());
+          lev2::SVtxV12C4T16 v0(fvec3(fy0, fx0, kz), uv, c0.VtxColorAsU32());
+          lev2::SVtxV12C4T16 v1(fvec3(fy0, fx1, kz), uv, c1.VtxColorAsU32());
+          lev2::SVtxV12C4T16 v2(fvec3(fy1, fx1, kz), uv, c1.VtxColorAsU32());
+          lev2::SVtxV12C4T16 v3(fvec3(fy1, fx0, kz), uv, c0.VtxColorAsU32());
           vw.AddVertex(v0);
           vw.AddVertex(v1);
           vw.AddVertex(v2);
@@ -1045,10 +1019,10 @@ void Gradient::compute(ProcTex& ptex) {
           break;
         }
         case GradientType::HORIZONTAL: {
-          lev2::SVtxV12C4T16 v0(fvec3(fx0, fy0, kz), uv, c0.GetVtxColorAsU32());
-          lev2::SVtxV12C4T16 v1(fvec3(fx1, fy0, kz), uv, c1.GetVtxColorAsU32());
-          lev2::SVtxV12C4T16 v2(fvec3(fx1, fy1, kz), uv, c1.GetVtxColorAsU32());
-          lev2::SVtxV12C4T16 v3(fvec3(fx0, fy1, kz), uv, c0.GetVtxColorAsU32());
+          lev2::SVtxV12C4T16 v0(fvec3(fx0, fy0, kz), uv, c0.VtxColorAsU32());
+          lev2::SVtxV12C4T16 v1(fvec3(fx1, fy0, kz), uv, c1.VtxColorAsU32());
+          lev2::SVtxV12C4T16 v2(fvec3(fx1, fy1, kz), uv, c1.VtxColorAsU32());
+          lev2::SVtxV12C4T16 v3(fvec3(fx0, fy1, kz), uv, c0.VtxColorAsU32());
           vw.AddVertex(v0);
           vw.AddVertex(v1);
           vw.AddVertex(v2);
@@ -1087,9 +1061,9 @@ void Gradient::compute(ProcTex& ptex) {
             float fxc = pol2rect_x(fphB, 1.5f) + 0.5f;
             float fyc = pol2rect_y(fphB, 1.5f) + 0.5f;
 
-            lev2::SVtxV12C4T16 v0(fvec3(fxa, fya, kz), uv, cA.GetVtxColorAsU32());
-            lev2::SVtxV12C4T16 v1(fvec3(fxb, fyb, kz), uv, cA.GetVtxColorAsU32());
-            lev2::SVtxV12C4T16 v2(fvec3(fxc, fyc, kz), uv, cB.GetVtxColorAsU32());
+            lev2::SVtxV12C4T16 v0(fvec3(fxa, fya, kz), uv, cA.VtxColorAsU32());
+            lev2::SVtxV12C4T16 v1(fvec3(fxb, fyb, kz), uv, cA.VtxColorAsU32());
+            lev2::SVtxV12C4T16 v2(fvec3(fxc, fyc, kz), uv, cB.VtxColorAsU32());
             vw.AddVertex(v0);
             vw.AddVertex(v1);
             vw.AddVertex(v2);
@@ -1124,10 +1098,10 @@ void Gradient::compute(ProcTex& ptex) {
             float fxd = pol2rect_x(fphB, fmx0 * 0.5f) + 0.5f;
             float fyd = pol2rect_y(fphB, fmx0 * 0.5f) + 0.5f;
 
-            lev2::SVtxV12C4T16 v0(fvec3(fxa, fya, kz), uv, c0.GetVtxColorAsU32());
-            lev2::SVtxV12C4T16 v1(fvec3(fxb, fyb, kz), uv, c1.GetVtxColorAsU32());
-            lev2::SVtxV12C4T16 v2(fvec3(fxc, fyc, kz), uv, c1.GetVtxColorAsU32());
-            lev2::SVtxV12C4T16 v3(fvec3(fxd, fyd, kz), uv, c0.GetVtxColorAsU32());
+            lev2::SVtxV12C4T16 v0(fvec3(fxa, fya, kz), uv, c0.VtxColorAsU32());
+            lev2::SVtxV12C4T16 v1(fvec3(fxb, fyb, kz), uv, c1.VtxColorAsU32());
+            lev2::SVtxV12C4T16 v2(fvec3(fxc, fyc, kz), uv, c1.VtxColorAsU32());
+            lev2::SVtxV12C4T16 v3(fvec3(fxd, fyd, kz), uv, c0.VtxColorAsU32());
             vw.AddVertex(v0);
             vw.AddVertex(v1);
             vw.AddVertex(v2);

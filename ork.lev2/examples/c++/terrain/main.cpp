@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <ork/application/application.h>
 #include <ork/kernel/datacache.h>
 #include <ork/kernel/string/deco.inl>
@@ -18,19 +25,16 @@ using namespace ork;
 using namespace ork::lev2;
 using namespace ork::lev2::deferrednode;
 
-int main(int argc, char** argv) {
-
-  AppInitData initdata;
-  initdata._fullscreen = false;
-  //initdata._msaa_samples = 1;
-
-  auto qtapp        = OrkEzQtApp::create(argc, argv,initdata);
+int main(int argc, char** argv, char** envp) {
+  auto init_data = std::make_shared<ork::AppInitData>(argc,argv,envp);
+  auto qtapp        = OrkEzApp::create(init_data);
   auto qtwin        = qtapp->_mainWindow;
   auto gfxwin       = qtwin->_gfxwin;
   Texture* envlight = nullptr;
   hfdrawableinstptr_t _terrainInst;
   auto _terrainData = std::make_shared<TerrainDrawableData>();
-  callback_drawable_ptr_t _terrainDrawable;
+  drawable_ptr_t _terrainDrawable;
+  DrawableCache dcache;
   //////////////////////////////////////////////////////////
   // initialize compositor data
   //  use a deferredPBR compositing node
@@ -39,44 +43,51 @@ int main(int argc, char** argv) {
   auto renderer = std::make_shared<DefaultRenderer>();
   auto lmd      = std::make_shared<LightManagerData>();
   auto lightmgr = std::make_shared<LightManager>(*lmd);
-  CompositingData compositordata;
-  compositordata.presetPBR();
-  compositordata.mbEnable     = true;
-  auto nodetek                = compositordata.tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
-  auto rendnode               = nodetek->tryRenderNodeAs<deferrednode::DeferredCompositingNodePbr>();
-  rendnode->_depthFogDistance = 4000.0f;
-  rendnode->_depthFogPower    = 5.0f;
-  ///////////////////////////////////////
-  // compositor instance
-  ///////////////////////////////////////
-  auto compositorimpl = compositordata.createImpl();
-  compositorimpl->bindLighting(lightmgr.get());
-  auto TOPCPD = std::make_shared<lev2::CompositingPassData>();
-  TOPCPD->addStandardLayers();
   auto cameras = std::make_shared<CameraDataLut>();
   auto camdata = std::make_shared<CameraData>();
-  cameras->AddSorted("spawncam", camdata.get());
-  //////////////////////////////////////////////////////////
-  _terrainData->_rock1 = fvec3(1, 1, 1);
-  _terrainData->_writeHmapPath("src://terrain/testhmap2_2048.png");
-  _terrainInst               = _terrainData->createInstance();
-  _terrainInst->_worldHeight = 5000.0f;
-  _terrainInst->_worldSizeXZ = 8192.0f;
-  _terrainDrawable           = _terrainInst->createCallbackDrawable();
+  compositingpassdata_ptr_t TOPCPD;
+  compositorimpl_ptr_t compositorimpl;
+  compositordata_ptr_t compositordata;
   //////////////////////////////////////////////////////////
   // gpuInit handler, called once on main(rendering) thread
   //  at startup time
   //////////////////////////////////////////////////////////
-  qtapp->onGpuInit([=](Context* ctx) {
+  qtapp->onGpuInit([&](Context* ctx) {
+
+    compositordata = std::make_shared<CompositingData>();
+    compositordata->presetPBR();
+    compositordata->mbEnable     = true;
+    auto nodetek                = compositordata->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
+    auto rendnode               = nodetek->tryRenderNodeAs<deferrednode::DeferredCompositingNodePbr>();
+    rendnode->_depthFogDistance = 4000.0f;
+    rendnode->_depthFogPower    = 5.0f;
+    ///////////////////////////////////////
+    // compositor instance
+    ///////////////////////////////////////
+    compositorimpl = compositordata->createImpl();
+    compositorimpl->bindLighting(lightmgr.get());
+    TOPCPD = std::make_shared<lev2::CompositingPassData>();
+    TOPCPD->addStandardLayers();
+    cameras->AddSorted("spawncam", camdata.get());
+    //////////////////////////////////////////////////////////
+    _terrainData->_rock1 = fvec3(1, 1, 1);
+    _terrainData->_writeHmapPath("src://terrain/testhmap2_2048.png");
+
+    _terrainDrawable          = dcache.fetch(_terrainData);
+    _terrainInst = _terrainDrawable->GetUserDataB().getShared<TerrainDrawableInst>();
+    _terrainInst->_worldHeight = 5000.0f;
+    _terrainInst->_worldSizeXZ = 8192.0f;
+
+
     ctx->debugPushGroup("main.onGpuInit");
     renderer->setContext(ctx);
     ctx->debugPopGroup();
   });
   //////////////////////////////////////////////////////////
-  // update handler (called on update thread)
-  //  it will never be called before onGpuInit() is complete...
+  // onUpdateInit (always called after onGpuInit() is complete...)
   //////////////////////////////////////////////////////////
-  qtapp->onUpdate([=](ui::updatedata_ptr_t updata) {
+  auto dbufcontext = std::make_shared<DrawBufContext>();
+  qtapp->onUpdate([&](ui::updatedata_ptr_t updata) {
     double dt      = updata->_dt;
     double abstime = updata->_abstime;
     ///////////////////////////////////////
@@ -91,23 +102,26 @@ int main(int argc, char** argv) {
     ///////////////////////////////////////
     // enqueue terrain (and whole frame)
     ///////////////////////////////////////
-    auto DB = DrawableBuffer::acquireForWrite(0);
+    auto DB = dbufcontext->acquireForWriteLocked();
     DB->Reset();
     DB->copyCameras(*cameras);
-    auto layer = DB->MergeLayer("gbuffer");
+    auto layer = DB->MergeLayer("Default");
     DrawQueueXfData _terrainXform;
-    _terrainXform._worldMatrix->compose(fvec3(), fquat(), 1.0f);
     _terrainDrawable->enqueueOnLayer(_terrainXform, *layer);
-    DrawableBuffer::releaseFromWrite(DB);
+    dbufcontext->releaseFromWriteLocked(DB);
   });
   //////////////////////////////////////////////////////////
   // draw handler (called on main(rendering) thread)
   //////////////////////////////////////////////////////////
-  qtapp->onDraw([=](ui::drawevent_constptr_t drwev) {
-    auto DB = DrawableBuffer::acquireForRead(7);
+  qtapp->onDraw([&](ui::drawevent_constptr_t drwev) {
+    auto DB = dbufcontext->acquireForReadLocked();
     if (nullptr == DB)
       return;
+
     auto context = drwev->GetTarget();
+ 
+    renderer.get()->setContext(context);
+
     RenderContextFrameData RCFD(context); // renderer per/frame data
     RCFD._cimpl = compositorimpl;
     RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
@@ -143,7 +157,7 @@ int main(int argc, char** argv) {
     compositorimpl->popCPD();
     context->popRenderContextFrameData();
     context->endFrame();
-    DrawableBuffer::releaseFromRead(DB);
+    dbufcontext->releaseFromReadLocked(DB);
   });
   //////////////////////////////////////////////////////////
   qtapp->onResize([&](int w, int h) {
@@ -152,5 +166,5 @@ int main(int argc, char** argv) {
   });
   //////////////////////////////////////////////////////////
   qtapp->setRefreshPolicy({EREFRESH_FASTEST, -1});
-  return qtapp->runloop();
+  return qtapp->mainThreadLoop();
 }

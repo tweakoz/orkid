@@ -1,3 +1,11 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
+
 #pragma once
 
 #include <ork/pch.h>
@@ -10,10 +18,11 @@
 #include <ork/util/choiceman.h>
 
 namespace ork {
-class Object;
+struct Object;
 }
 
 namespace ork::reflect::editor {
+#if 0
 struct ObjectModel;
 struct ObjectModelNode;
 struct ObjectModelObserver;
@@ -253,7 +262,7 @@ public:
   int _linearindex = 0;
 };
 ///////////////////////////////////////////////////////////////////////////////
-class ObjectModelObserver : public ork::AutoConnector { //
+struct ObjectModelObserver : public ork::AutoConnector { //
   RttiDeclareAbstract(ObjectModelObserver, ork::AutoConnector);
 
 public: //
@@ -292,5 +301,6 @@ public: //
   std::deque<objectmodelnode_ptr_t> mItemStack;
   U64 mStackHash;
 };
+#endif
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::reflect::editor

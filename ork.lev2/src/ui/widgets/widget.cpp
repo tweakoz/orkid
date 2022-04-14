@@ -22,13 +22,7 @@ void Widget::describeX(class_t* clazz) {
 }
 /////////////////////////////////////////////////////////////////////////
 Widget::Widget(const std::string& name, int x, int y, int w, int h)
-    : _name(name)
-    , _target(0)
-    , _needsinit(true)
-    , _parent(nullptr)
-    , _dirty(true)
-    , mSizeDirty(true)
-    , mPosDirty(true) {
+    : _name(name) {
 
   _geometry._x  = x;
   _geometry._y  = y;
@@ -70,7 +64,7 @@ Widget* Widget::doRouteUiEvent(event_constptr_t ev) {
   bool inside    = IsEventInside(ev);
   Widget* target = inside ? this : nullptr;
   if (0)
-    printf("Widget::doRouteUiEvent w<%s> inside<%d> target<%p>\n", _name.c_str(), int(inside), target);
+    printf("Widget::doRouteUiEvent w<%s> inside<%d> target<%p>\n", _name.c_str(), int(inside), (void*) target);
   return target;
 }
 ///////////////////////////////////////////////////////////
@@ -80,7 +74,7 @@ bool Widget::hasMouseFocus() const {
 ///////////////////////////////////////////////////////////
 HandlerResult Widget::OnUiEvent(event_constptr_t ev) {
   ev->mFilteredEvent.Reset();
-   //printf("Widget<%p>::OnUiEvent _evhandlerset<%d>\n", this, int(_evhandler!=nullptr));
+  // printf("Widget<%p>::OnUiEvent _evhandlerset<%d>\n", this, int(_evhandler!=nullptr));
 
   if (_eventfilterstack.size()) {
     auto top = _eventfilterstack.top();

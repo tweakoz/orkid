@@ -1,55 +1,54 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include <ork/pch.h>
+#import <ork/pch.h>
+#if defined( ORK_OSX )
+#import <Cocoa/Cocoa.h>
+#import <Foundation/Foundation.h>
+#import <CoreData/CoreData.h>
+#import <OpenGL/OpenGL.h>
+#import <dispatch/dispatch.h>
+#import <ork/lev2/gfx/gfxenv.h>
+#import "gl.h"
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
-#include <ork/lev2/gfx/gfxenv.h>
-#include "gl.h"
+#import <ork/lev2/glfw/ctx_glfw.h>
+#import <ork/file/fileenv.h>
+#import <ork/file/filedev.h>
+#import <ork/kernel/opq.h>
 
-#if defined(ORK_CONFIG_OPENGL) && defined(ORK_OSX)
+#import <ork/kernel/objc.h>
 
-#define GLFW_EXPOSE_NATIVE_COCOA
-
-#include <GLFW/glfw3.h>
-#include <GLFW/glfw3native.h>
-
-namespace ork::lev2 {
-extern int G_MSAASAMPLES;
-}
-
-
-#include <ork/lev2/glfw/ctx_glfw.h>
-//#include <GL/glx.h>
-#include "glad/glad.h"
-
-extern "C" {
-extern bool gbVSYNC;
+extern "C"
+{
+	bool gbVSYNC = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
+bool _macosUseHIDPI = true;
 bool g_allow_HIDPI = false;
-
-bool _hakHIDPI       = false;
-bool _hakMixedDPI    = false;
-float _hakCurrentDPI = 95.0f;
-bool _macosUseHIDPI = false;
 
 ork::MpMcBoundedQueue<void*> ContextGL::_loadTokens;
 
-struct GlIxPlatformObject {
-  static GlIxPlatformObject* _global_plato;
-  static GlIxPlatformObject* _current;
+struct GlOsxPlatformObject
+{
+  static GlOsxPlatformObject* _global_plato;
+  static GlOsxPlatformObject* _current;
   /////////////////////////////////////
-  GlIxPlatformObject() {
-    _bindop = [=]() {};
-  }
+	ContextGL*		_context = nullptr;
+  CtxGLFW* _thiscontext = nullptr;
+  bool _needsInit       = true;
+  void_lambda_t _bindop;
+
+	GlOsxPlatformObject()
+		: _bindop([=](){}) {
+	}
   /////////////////////////////////////
   void makeCurrent() {
     _current = this;
@@ -59,28 +58,25 @@ struct GlIxPlatformObject {
     _thiscontext->swapBuffers();
   }
   /////////////////////////////////////
-  CtxGLFW* _thiscontext = nullptr;
-  bool _needsInit       = true;
-  void_lambda_t _bindop;
-  /////////////////////////////////////
 };
-GlIxPlatformObject* GlIxPlatformObject::_global_plato = nullptr;
-GlIxPlatformObject* GlIxPlatformObject::_current      = nullptr;
+GlOsxPlatformObject* GlOsxPlatformObject::_global_plato = nullptr;
+GlOsxPlatformObject* GlOsxPlatformObject::_current      = nullptr;
+
 /////////////////////////////////////////////////////////////////////////
 
-struct GlxLoadContext {
-  GlIxPlatformObject* _global_plato  = nullptr;
-  GLFWwindow* _pushedContext = nullptr;
+struct GlOsxLoadContext {
+  GlOsxPlatformObject* _global_plato = nullptr;
+  GLFWwindow* _pushedContext        = nullptr;
 };
 
 /////////////////////////////////////////////////////////////////////////
 
-static ork::atomic<int> atomic_init;
-///////////////////////////////////////////////////////////////////////////////
+void check_debug_log()
+{
+#if 0 
+  constexpr GLuint count    = 1024; // max. num. of messages that will be read from the log
+  constexpr GLsizei bufsize = 32768;
 
-void check_debug_log() {
-  GLuint count    = 1024; // max. num. of messages that will be read from the log
-  GLsizei bufsize = 32768;
   GLenum sources[count];
   GLenum types[count];
   GLuint ids[count];
@@ -98,10 +94,15 @@ void check_debug_log() {
       pos += lengths[i];
     }
   }
+#endif
 }
 
-void ContextGL::GLinit() {
+///////////////////////////////////////////////////////////////////////////////
 
+static ork::atomic<int> atomic_init;
+
+void ContextGL::GLinit()
+{
   int iinit = atomic_init++;
 
   if (0 != iinit) {
@@ -110,110 +111,90 @@ void ContextGL::GLinit() {
 
   auto global_ctxbase = CtxGLFW::globalOffscreenContext();
 
-  GlIxPlatformObject::_global_plato               = new GlIxPlatformObject;
-  GlIxPlatformObject::_global_plato->_thiscontext = global_ctxbase;
+  GlOsxPlatformObject::_global_plato               = new GlOsxPlatformObject;
+  GlOsxPlatformObject::_global_plato->_thiscontext = global_ctxbase;
 
   ////////////////////////////////////
   // load extensions
   ////////////////////////////////////
 
   global_ctxbase->makeCurrent();
-  gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+  //gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
   ////////////////////////////////////
   for (int i = 0; i < 1; i++) {
-    GlxLoadContext* loadctx = new GlxLoadContext;
-    loadctx->_global_plato  = GlIxPlatformObject::_global_plato;
+    GlOsxLoadContext* loadctx = new GlOsxLoadContext;
+    loadctx->_global_plato  = GlOsxPlatformObject::_global_plato;
     _loadTokens.push((void*)loadctx);
   }
-} // namespace lev2
+}
+
+//	NSOpenGLPixelFormat* nsPixelFormat = [[NSOpenGLPixelFormat alloc] initWithCGLPixelFormatObj:gpixfmt];
+//	plato->mNSOpenGLContext = [[NSOpenGLContext alloc] initWithFormat:nsPixelFormat shareContext:GlOsxPlatformObject::gShareMaster];
 
 ///////////////////////////////////////////////////////////////////////////////
 
-std::string GetGlErrorString(void);
+std::string GetGlErrorString( void );
 
 void OpenGlContextInit() {
+	///////////////////////////////////////////////////////////
+	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+	///////////////////////////////////////////////////////////
+
   auto clazz = dynamic_cast<object::ObjectClass*>(ContextGL::GetClassStatic());
-  GfxEnv::setContextClass(clazz);
+	GfxEnv::setContextClass(clazz);
   ContextGL::GLinit();
-  auto target = new ContextGL;
+  auto target = std::make_shared<ContextGL>();
   target->initializeLoaderContext();
-  GfxEnv::GetRef().SetLoaderTarget(target);
+  GfxEnv::initializeWithContext(target);
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 ContextGL::ContextGL()
-    : Context()
-    , mFxI(*this)
-    , mImI(*this)
-    , mRsI(*this)
-    , mGbI(*this)
-    , mFbI(*this)
-    , mTxI(*this)
-    , mMtxI(*this)
-    , mDWI(*this)
-    //, mCI(*this)
-    , mTargetDrawableSizeDirty(true) {
+	: Context()
+	, mFxI( *this )
+	, mImI( *this )
+	, mRsI( *this )
+	, mGbI( *this )
+	, mFbI( *this )
+	, mTxI( *this )
+	, mMtxI( *this )
+	, mDWI(*this)
+	, mTargetDrawableSizeDirty(true)
+{
   ContextGL::GLinit();
   FxInit();
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-ContextGL::~ContextGL() {
-}
+ContextGL::~ContextGL(){}
 
 /////////////////////////////////////////////////////////////////////////
 
-void ContextGL::initializeWindowContext(Window* pWin, CTXBASE* pctxbase) {
+void ContextGL::initializeWindowContext( Window *pWin, CTXBASE* pctxbase  ) {
   meTargetType = TargetType::WINDOW;
-
   ///////////////////////
   auto glfw_container = (CtxGLFW*)pctxbase;
   auto glfw_window    = glfw_container->_glfwWindow;
-
   ///////////////////////
-  GlIxPlatformObject* plato = new GlIxPlatformObject;
+  GlOsxPlatformObject* plato = new GlOsxPlatformObject;
   plato->_thiscontext       = glfw_container;
   mCtxBase                  = pctxbase;
   mPlatformHandle           = (void*)plato;
   ///////////////////////
-
-  printf("glfw_container<%p> glfw_window<%p>\n", glfw_container, glfw_window);
-
+  miW = pWin->GetBufferW();
+  miH = pWin->GetBufferH();
+  ///////////////////////
   plato->makeCurrent();
-
   mFbI.SetThisBuffer(pWin);
 }
 
 /////////////////////////////////////////////////////////////////////////
-// todo :: recomputeHIDPI on window move event
-/////////////////////////////////////////////////////////////////////////
 
-void recomputeHIDPI(Context* ctx) {
-
-  _hakHIDPI      = true;
-  _hakCurrentDPI = 226;
-_hakMixedDPI = false;
-
-} 
-
-/////////////////////////////////////////////////////////////////////////
-
-bool _HIDPI() {
-  return _hakHIDPI;
-}
-bool _MIXEDDPI() {
-  return _hakMixedDPI;
-}
-float _currentDPI() {
-  return _hakCurrentDPI;
-}
-/////////////////////////////////////////////////////////////////////////
-
-void ContextGL::initializeOffscreenContext(OffscreenBuffer* pBuf) {
-
+void ContextGL::initializeOffscreenContext( OffscreenBuffer *pBuf )
+{
   meTargetType = TargetType::OFFSCREEN;
 
   ///////////////////////
@@ -223,22 +204,19 @@ void ContextGL::initializeOffscreenContext(OffscreenBuffer* pBuf) {
 
   mCtxBase = 0;
 
-  GlIxPlatformObject* plato = new GlIxPlatformObject;
+  GlOsxPlatformObject* plato = new GlOsxPlatformObject;
   mPlatformHandle           = (void*)plato;
   mFbI.SetThisBuffer(pBuf);
 
-  auto global_plato = GlIxPlatformObject::_global_plato;
+  auto global_plato = GlOsxPlatformObject::_global_plato;
 
   plato->_thiscontext = global_plato->_thiscontext;
   plato->_needsInit   = false;
 
-  _defaultRTG = new RtGroup(this, miW, miH, 1);
-  auto rtb    = new RtBuffer(RtgSlot::Slot0, EBufferFormat::RGBA8, miW, miH);
-  _defaultRTG->SetMrt(0, rtb);
-  auto texture = _defaultRTG->GetMrt(0)->texture();
+  _defaultRTG  = new RtGroup(this, miW, miH, 1);
+  auto rtb     = _defaultRTG->createRenderTarget(EBufferFormat::RGBA8);
+  auto texture = rtb->texture();
   FBI()->SetBufferTexture(texture);
-
-  // pBuf->SetContext(this);
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -252,17 +230,16 @@ void ContextGL::initializeLoaderContext() {
 
   mCtxBase = 0;
 
-  GlIxPlatformObject* plato = new GlIxPlatformObject;
+  GlOsxPlatformObject* plato = new GlOsxPlatformObject;
   mPlatformHandle           = (void*)plato;
 
-  auto global_plato   = GlIxPlatformObject::_global_plato;
+  auto global_plato   = GlOsxPlatformObject::_global_plato;
   plato->_thiscontext = global_plato->_thiscontext;
   plato->_needsInit   = false;
 
-  _defaultRTG = new RtGroup(this, miW, miH, 16);
-  auto rtb    = new RtBuffer(RtgSlot::Slot0, EBufferFormat::RGBA8, miW, miH);
-  _defaultRTG->SetMrt(0, rtb);
-  auto texture = _defaultRTG->GetMrt(0)->texture();
+  _defaultRTG  = new RtGroup(this, miW, miH, 16);
+  auto rtb     = _defaultRTG->createRenderTarget(EBufferFormat::RGBA8);
+  auto texture = rtb->texture();
   FBI()->SetBufferTexture(texture);
 
   plato->_bindop = [=]() {
@@ -278,8 +255,8 @@ void ContextGL::initializeLoaderContext() {
 
 /////////////////////////////////////////////////////////////////////////
 
-void ContextGL::makeCurrentContext(void) {
-  auto plato = (GlIxPlatformObject*)mPlatformHandle;
+void ContextGL::makeCurrentContext( void ){
+  auto plato = (GlOsxPlatformObject*)mPlatformHandle;
   OrkAssert(plato);
   if (plato) {
     plato->makeCurrent();
@@ -289,8 +266,9 @@ void ContextGL::makeCurrentContext(void) {
 
 /////////////////////////////////////////////////////////////////////////
 
-void ContextGL::SwapGLContext(CTXBASE* pCTFL) {
-  GlIxPlatformObject* plato = (GlIxPlatformObject*)mPlatformHandle;
+void ContextGL::SwapGLContext( CTXBASE *pCTFL )
+{
+  GlOsxPlatformObject* plato = (GlOsxPlatformObject*)mPlatformHandle;
   OrkAssert(plato);
   if (plato) {
     plato->makeCurrent();
@@ -300,13 +278,14 @@ void ContextGL::SwapGLContext(CTXBASE* pCTFL) {
 
 /////////////////////////////////////////////////////////////////////////
 
-void* ContextGL::_doBeginLoad() {
+void* ContextGL::_doBeginLoad()
+{
   void* pvoiddat = nullptr;
 
   while (false == _loadTokens.try_pop(pvoiddat)) {
     usleep(1 << 10);
   }
-  GlxLoadContext* loadctx = (GlxLoadContext*)pvoiddat;
+  GlOsxLoadContext* loadctx    = (GlOsxLoadContext*)pvoiddat;
   GLFWwindow* current_window = glfwGetCurrentContext();
 
   loadctx->_pushedContext = current_window;
@@ -314,19 +293,27 @@ void* ContextGL::_doBeginLoad() {
   return pvoiddat;
 }
 
-/////////////////////////////////////////////////////////////////////////
-
-void ContextGL::_doEndLoad(void* ploadtok) {
-  GlxLoadContext* loadctx = (GlxLoadContext*)ploadtok;
-
+void ContextGL::_doEndLoad(void*ploadtok)
+{
+  GlOsxLoadContext* loadctx = (GlOsxLoadContext*)ploadtok;
   auto pushed = loadctx->_pushedContext;
-   glfwMakeContextCurrent(pushed);
+  glfwMakeContextCurrent(pushed);
   _loadTokens.push(ploadtok);
 }
 
-/////////////////////////////////////////////////////////////////////////
+void recomputeHIDPI(Context* ctx){
+}
+bool _HIDPI() {
+  return _macosUseHIDPI;
+}
+bool _MIXEDDPI() {
+  return false;
+}
+float _currentDPI(){
+  return 221.0f; // hardcoded to macbook pro for now..
+}
 
-}} // namespace ork::lev2
+}}
 ///////////////////////////////////////////////////////////////////////////////
 
 #endif // #if defined( ORK_CONFIG_OPENGL ) && defined(ORK_CONFIG_IX)

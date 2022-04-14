@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -9,10 +9,13 @@
 
 #include <ork/orkprotos.h>
 #include <ork/kernel/string/PieceString.h>
-#include <ork/kernel/core/kerneltypes.h>
+#include <ork/orktypes.h>
 #include <string>
 #include <vector>
 #include <regex>
+#include <list>
+
+using tokenlist = std::list<std::string>;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -92,6 +95,11 @@ std::string CreateFormattedString(const char* formatstring, ...);
 
 //! like printf, for std::strings
 std::string FormatString(const char* formatstring, ...);
+
+///////////////////////////////////////////////////////////////////////////////
+
+std::string toLower(const std::string& inp);
+std::string toUpper(const std::string& inp);
 
 ///////////////////////////////////////////////////////////////////////////////
 }; // namespace ork

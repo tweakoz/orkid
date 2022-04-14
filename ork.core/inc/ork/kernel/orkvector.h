@@ -1,25 +1,9 @@
-/***********************************************************************************
- * orkmap.h
- *
- * Copyright (c) 2010 Michael T. Mayers.
- *
- * Orkid STL vector implementation
- *
- * TODO:
- * - Make ork::vector use ork::allocator by fixing deallocate bug.
- * - Create _container_base template class for derived containers that
- *   implements the common functions. For example, the following function:
- *      template <typename InputIterator>
- *      void insert(InputIterator first, InputIterator last)
- *   can be implemented the same in all containers.
- * - Create a global template function for container comparisons.
- *
- * Revision History:
- * 8/19/06 Added iterator return value of insert(iterator, const_reference). nasa
- * 7/9/06 much better iterator that is also random access. nasa
- * 7/8/06 created iterator class so it could be dereferencable. nasa
- * ?/?/06 Original Version. fluffy
- ***********************************************************************************/
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
 
 #pragma once
 

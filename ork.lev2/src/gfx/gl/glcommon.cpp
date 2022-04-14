@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -16,7 +16,10 @@ ImplementReflectionX(ork::lev2::ContextGL, "ContextGL");
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
+std::atomic<int> __FIND_IT;
+
 void ContextGL::describeX(class_t* clazz) {
+  __FIND_IT.store(0);
 }
 
 std::string indent(int count) {
@@ -28,42 +31,77 @@ std::string indent(int count) {
 static thread_local int _dbglevel = 0;
 static thread_local std::stack<std::string> _groupstack;
 
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
 #if defined(__APPLE__)
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
 void ContextGL::debugPushGroup(const std::string str) {
-  auto mstr = indent(_dbglevel++) + str;
-  _groupstack.push(mstr);
-  GL_ERRORCHECK();
-  glPushGroupMarkerEXT(mstr.length(), mstr.c_str());
+    int level = _dbglevel++;
+    auto mstr = indent(level) + str;
+    //printf( "PSHGRP CTX<%p> lev<%d> name<%s>\n", this, level, mstr.c_str() );
+    _groupstack.push(mstr);
+    GL_ERRORCHECK();
+    glPushGroupMarkerEXT(mstr.length(), mstr.c_str());
 }
+/////////////////////////////////////////////////////////////////////////
 void ContextGL::debugPopGroup() {
-  glPopGroupMarkerEXT();
-  _dbglevel--;
+    std::string top = _groupstack.top();
+    //printf( "POPGRP CTX<%p> lev<%d> name<%s>\n", this,  _dbglevel, top.c_str() );
+    // auto mstr = indent(_dbglevel--) + _prevgroup;
+    _groupstack.pop();
+    GL_ERRORCHECK();
+    glPopGroupMarkerEXT();
+    GL_ERRORCHECK();
+    _dbglevel--;
 }
+/////////////////////////////////////////////////////////////////////////
 void ContextGL::debugMarker(const std::string str) {
 }
+/////////////////////////////////////////////////////////////////////////
 void ContextGL::debugLabel(GLenum target, GLuint object, std::string name) {
   glLabelObjectEXT(target, object, name.length(), name.c_str());
 }
-#else
+
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+#else // LINUX
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+
 void ContextGL::debugLabel(GLenum target, GLuint object, std::string name) {
   glObjectLabel(target, object, name.length(), name.c_str());
 }
+
+/////////////////////////////////////////////////////////////////////////
+
 void ContextGL::debugPushGroup(const std::string str) {
-  auto mstr = indent(_dbglevel++) + str;
+  int level = _dbglevel++;
+  auto mstr = indent(level) + str;
+  //printf( "PSHGRP CTX<%p> lev<%d> name<%s>\n", (void*) this, level, mstr.c_str() );
   _groupstack.push(mstr);
   GL_ERRORCHECK();
   glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, mstr.length(), mstr.c_str());
   GL_ERRORCHECK();
+  __FIND_IT.fetch_add(1);
 }
+
+/////////////////////////////////////////////////////////////////////////
+
 void ContextGL::debugPopGroup() {
-  // auto mstr = indent(_dbglevel--) + _prevgroup;
   std::string top = _groupstack.top();
   _groupstack.pop();
+  //printf( "POPGRP CTX<%p> lev<%d> name<%s>\n", (void*) this, _dbglevel, top.c_str() );
+  if(__FIND_IT.exchange(0)==1){
+    //OrkAssert(false);
+  }
   GL_ERRORCHECK();
   glPopDebugGroup();
   GL_ERRORCHECK();
   _dbglevel--;
 }
+/////////////////////////////////////////////////////////////////////////
+
 void ContextGL::debugMarker(const std::string str) {
   auto mstr = indent(_dbglevel) + str;
   // printf( "Marker:: %s\n", mstr.c_str() );
@@ -74,6 +112,8 @@ void ContextGL::debugMarker(const std::string str) {
   GL_ERRORCHECK();
 }
 #endif
+
+/////////////////////////////////////////////////////////////////////////
 
 bool ContextGL::SetDisplayMode(DisplayMode* mode) {
   return false;

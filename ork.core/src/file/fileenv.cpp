@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -140,7 +140,8 @@ filedevctx_ptr_t FileEnv::createContextForUriBase(
     const std::string& uriproto, //
     const file::Path& base_location) {
 
-  printf(
+  if(0)
+    printf(
       "createContextForUriBase proto<%s> baseloc<%s>\n", //
       uriproto.c_str(),
       base_location.c_str());

@@ -1,7 +1,9 @@
-///////////////////////////////////////////////////////////////////////////////
-// Orkid
-// Copyright 1996-2020, Michael T. Mayers
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
 
 #include <ork/file/file.h>
 #include <ork/math/audiomath.h>
@@ -33,14 +35,14 @@ SF2Program::SF2Program() {
 ////////////////////////////////////////////////////////////////////////////////
 
 SoundFont::SoundFont(const std::string& SoundFontName, const std::string& bankname)
-    : mSoundFontName(SoundFontName)
-    , _bankName(bankname)
+    : _bankName(bankname)
     , numinst(0)
     , numizones(0)
     , numigen(0)
     , numsamples(0)
     , _chunkOfSampleData(nullptr)
-    , _sampleDataNumSamples(0) {
+    , _sampleDataNumSamples(0) 
+    , mSoundFontName(SoundFontName) {
   std::string filename = SoundFontName;
 
   RIFFFile RiffFile;

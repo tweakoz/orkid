@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -124,8 +124,13 @@ public:
   }
 
 protected:
+
   static const int kFileDevContextStackMax = 4;
+
+  file::Path::NameType msDeviceName;
+  U32 muDeviceCaps;
   int mFileDevContextStackDepth;
+  FileProgressWatcher* mWatcher;
 
   FileDevContext mFileDevContext[kFileDevContextStackMax];
 
@@ -133,9 +138,6 @@ protected:
   file::Path::NameType mFsBaseRel;
   bool mbPrependFSBase;
 
-  file::Path::NameType msDeviceName;
-  U32 muDeviceCaps;
-  FileProgressWatcher* mWatcher;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

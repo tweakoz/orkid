@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -19,11 +19,12 @@ class DirectObjectMap       //
           typename MapType::key_type, //
           object_ptr_t> {
 public:
-  using KeyType         = typename MapType::key_type;
-  using ValType         = typename MapType::value_type;
-  using MappedType      = typename MapType::mapped_type;
-  using ptrtype_t       = typename MappedType::element_type;
-  using ConstMappedType = typename std::shared_ptr<const ptrtype_t>;
+  using key_type        = typename MapType::key_type;
+  using value_type      = typename MapType::value_type;
+  using mapped_type     = typename MapType::mapped_type;
+  using element_type    = typename mapped_type::element_type; 
+  using mutable_element_type = typename std::remove_const<element_type>::type;
+  using const_element_type = const mutable_element_type;
 
   DirectObjectMap(MapType Object::*);
 
@@ -32,19 +33,22 @@ public:
 
   bool isMultiMap(object_constptr_t obj) const override;
 
+  MapType Object::*_member;
+
 protected:
-  bool ReadElement(object_constptr_t, const KeyType&, int, object_ptr_t&) const override;
-  bool WriteElement(object_ptr_t, const KeyType&, int, const object_ptr_t*) const override;
-  bool EraseElement(object_ptr_t, const KeyType&, int) const override;
+  bool ReadElement(object_constptr_t, const key_type&, int, object_ptr_t&) const override;
+  bool WriteElement(object_ptr_t, const key_type&, int, const object_ptr_t*) const override;
+  bool EraseElement(object_ptr_t, const key_type&, int) const override;
 
   size_t elementCount(object_constptr_t obj) const override {
     return GetMap(obj).size();
   }
-  bool GetKey(object_constptr_t, int idx, KeyType&) const override;
-  bool GetVal(object_constptr_t, const KeyType& k, object_ptr_t& v) const override;
+  bool GetKey(object_constptr_t, int idx, key_type&) const override;
+  bool GetVal(object_constptr_t, const key_type& k, object_ptr_t& v) const override;
 
 private:
-  MapType Object::*_member;
+  //void deserialize(serdes::node_ptr_t) const override;
+  //void serialize(serdes::node_ptr_t sernode) const override;
 };
 
 }} // namespace ork::reflect

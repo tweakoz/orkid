@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -8,7 +8,6 @@
 #include <ork/pch.h>
 #include <ork/math/cvector4.h>
 #include <ork/math/cvector4.hpp>
-#include <ork/math/matrix_inverseGEMS.hpp>
 
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
@@ -63,9 +62,9 @@ template <> fvec4 PropType<fvec4>::FromString(const PropTypeString& String) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template class Vector4<float>;  // explicit template instantiation
-template class Vector4<double>; // explicit template instantiation
-template class PropType<fvec4>;
+template struct Vector4<float>;  // explicit template instantiation
+template struct Vector4<double>; // explicit template instantiation
+template struct PropType<fvec4>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

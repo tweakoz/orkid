@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 //////////////////////////////////////////////////////////////// 
@@ -157,7 +157,7 @@ EFileErrCode FileDevRam::DoGetLength(File &rFile, size_t &riLen)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode FileDevRam::GetCurrentDirectory(std::string &directory)
+EFileErrCode FileDevRam::GetCurrentDirectory(file::Path::NameType &directory)
 {
 	directory = "/";
 	return EFEC_FILE_OK;
@@ -165,7 +165,7 @@ EFileErrCode FileDevRam::GetCurrentDirectory(std::string &directory)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode FileDevRam::SetCurrentDirectory(const std::string &inspec)
+EFileErrCode FileDevRam::SetCurrentDirectory(const file::Path::NameType &inspec)
 {
 	return EFEC_FILE_UNSUPPORTED;
 }

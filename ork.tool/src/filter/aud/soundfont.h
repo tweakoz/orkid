@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -183,7 +183,7 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class SoundFont;
+struct SoundFont;
 
 class SF2Sample {
 private:
@@ -592,16 +592,10 @@ protected:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class SoundFont //: public CObject
-{
+struct SoundFont {
 
 public:
-  // static CClass *gpClass;
-
-  // static void ClassInit( CClass *pclass );
-
-  SoundFont(SoundFontConversionEngine* pengine);
-  SoundFont(/*CClass *pclass*/);
+  SoundFont(SoundFontConversionEngine* pengine=nullptr);
 
   //////////////////////////////////////
 

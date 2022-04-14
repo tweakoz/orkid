@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include "harness.h"
 #include <ork/lev2/aud/singularity/cz1.h>
 #include <ork/lev2/aud/singularity/alg_oscil.h>
@@ -10,8 +17,9 @@
 
 using namespace ork::audio::singularity;
 
-int main(int argc, char** argv) {
-  auto app = createEZapp(argc, argv);
+int main(int argc, char** argv,char**envp) {
+  auto initdata = std::make_shared<ork::AppInitData>(argc,argv,envp);
+  auto app = createEZapp(initdata);
   ////////////////////////////////////////////////
   // main bus effect
   ////////////////////////////////////////////////
@@ -69,7 +77,7 @@ int main(int argc, char** argv) {
   std::uniform_int_distribution<> rdist(0, 1000000);
   auto irandom = [&]() -> int { return rdist(gen); };
   auto frandom = [&]() -> float { return double(rdist(gen)) * 0.000001f; };
-  auto rangedf = [&](float fmin, float fmax) -> float { return lerp(fmin, fmax, frandom()); };
+  auto rangedf = [&](float fmin, float fmax) -> float { return std::lerp(fmin, fmax, frandom()); };
   ////////////////////////////////////////////////
   // create random dsp programs and trigger them
   ////////////////////////////////////////////////
@@ -234,7 +242,7 @@ int main(int argc, char** argv) {
     PANCONTROL->_oncompute = [](CustomControllerInst* cci) { //
       float index  = cci->_layer->_layerTime / 3.0f;
       index        = std::clamp(index, 0.0f, 1.0f);
-      float pan    = lerp(-1.0f, 1.0f, index);
+      float pan    = std::lerp(-1.0f, 1.0f, index);
       pan          = std::clamp(pan, -1.0f, 1.0f);
       cci->_curval = pan;
     };
@@ -247,6 +255,6 @@ int main(int argc, char** argv) {
   // test harness UI
   //////////////////////////////////////////////////////////////////////////////
   app->setRefreshPolicy({EREFRESH_FASTEST, 0});
-  app->runloop();
+  app->mainThreadLoop();
   return 0;
 }

@@ -6,6 +6,8 @@
 # see http://www.boost.org/LICENSE_1_0.txt
 ################################################################################
 
+#pip3 install numpi Pillow
+
 import numpy, time
 from orkengine.core import *
 from orkengine.lev2 import *
@@ -57,6 +59,7 @@ prim.gpuInit(ctx)
 ###################################
 
 rtg = ctx.defaultRTG()
+rtb = rtg.buffer(0)
 ctx.resize(WIDTH,HEIGHT)
 capbuf = CaptureBuffer()
 
@@ -115,8 +118,7 @@ ctx.endFrame()
 
 ###################################
 
-print(rtg.texture(0))
-ok = FBI.captureAsFormat(rtg,0,capbuf,"RGBA8")
+ok = FBI.captureAsFormat(rtb,capbuf,"RGBA8")
 as_np = numpy.array(capbuf,dtype=numpy.uint8).reshape( HEIGHT, WIDTH, 4 )
 img = Image.fromarray(as_np, 'RGBA')
 flipped = img.transpose(Image.FLIP_TOP_BOTTOM)

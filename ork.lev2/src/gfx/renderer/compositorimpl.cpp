@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -30,17 +30,8 @@
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-compositorimpl_ptr_t CompositingData::createImpl() const {
-  return std::make_shared<CompositingImpl>(*this);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
 CompositingImpl::CompositingImpl(const CompositingData& data)
-    : _compositingData(data)
-    , miActiveSceneItem(0)
-    , mfTimeAccum(0.0f) {
+    : _compositingData(data) {
 
   // on link ?
   mfTimeAccum       = 0.0f;
@@ -52,6 +43,8 @@ CompositingImpl::CompositingImpl(const CompositingData& data)
   _cimplcamdat = new CameraData;
 
   _defaultCameraMatrices = new CameraMatrices;
+
+  _compcontext.Resize(data._defaultW,data._defaultH);
 }
 
 CompositingImpl::~CompositingImpl() {
@@ -96,6 +89,19 @@ bool CompositingImpl::IsEnabled() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void CompositingImpl::gpuInit(lev2::Context* ctx){
+  int scene_item = 0;
+  _compcontext.Init(ctx);
+  if (auto item = compositingItem(0, scene_item)) {
+    _compcontext._compositingTechnique = item->technique();
+    int w = _compcontext.miWidth;
+    int h = _compcontext.miHeight;
+    _compcontext._compositingTechnique->gpuInit(ctx,w,h);
+  }
+
+}
+///////////////////////////////////////////////////////////////////////////////
+
 bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   EASY_BLOCK("assemble-ci");
   auto& ddprops                      = drawdata._properties;
@@ -103,7 +109,7 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   lev2::RenderContextFrameData& RCFD = the_renderer.framedata();
   lev2::Context* target              = RCFD.GetTarget();
 
-  float aspectratio = target->mainSurfaceAspectRatio();
+  float aspectratio = float(_compcontext.miWidth)/float(_compcontext.miHeight);
 
   // todo - compute CameraMatrices per rendertarget/pass !
 

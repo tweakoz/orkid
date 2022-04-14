@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #pragma once
 
 #include <ork/orktypes.h>
@@ -22,7 +29,7 @@ struct programInst {
 
   prgdata_constptr_t _progdata;
 
-  std::vector<Layer*> _layers;
+  std::vector<layer_ptr_t> _layers;
 };
 
 using onkey_t = std::function<void(
@@ -68,7 +75,7 @@ struct OutputBus {
   void setBusDSP(lyrdata_ptr_t ld);
 
   lyrdata_ptr_t _dsplayerdata;
-  Layer* _dsplayer = nullptr;
+  layer_ptr_t _dsplayer = nullptr;
   scopesource_ptr_t _scopesource;
   std::string _fxname;
 
@@ -81,8 +88,14 @@ struct synth {
   synth();
   ~synth();
 
+
+
   using eventmap_t = std::multimap<float, void_lambda_t>;
+
+  static synth_ptr_t _instance;
   static synth_ptr_t instance();
+  static void tearDown();
+  static void bringUp();
 
   typedef std::vector<hudsample> hudsamples_t;
 
@@ -99,11 +112,15 @@ struct synth {
   programInst* keyOn(int note, int velocity, prgdata_constptr_t pd);
   void keyOff(programInst* p);
 
+  void _keyOnLayer(layer_ptr_t l, int note, int velocity, lyrdata_ptr_t ld);
+  void _keyOffLayer(layer_ptr_t l);
+
+
   programInst* liveKeyOn(int note, int velocity, prgdata_constptr_t pd);
   void liveKeyOff(programInst* p);
 
-  Layer* allocLayer();
-  void freeLayer(Layer* l);
+  layer_ptr_t allocLayer();
+  void releaseLayer(layer_ptr_t l);
   void deactivateVoices();
   void activateVoices(int ifrpending);
 
@@ -131,13 +148,13 @@ struct synth {
 
   using proginstset_t = std::set<programInst*>;
 
-  std::set<Layer*> _allVoices;
+  std::set<layer_ptr_t> _allVoices;
   std::set<programInst*> _allProgInsts;
 
-  std::set<Layer*> _freeVoices;
-  std::set<Layer*> _activeVoices;
-  std::set<Layer*> _pendactVoices;
-  std::queue<Layer*> _deactiveateVoiceQ;
+  std::set<layer_ptr_t> _freeVoices;
+  std::set<layer_ptr_t> _activeVoices;
+  std::set<layer_ptr_t> _pendactVoices;
+  std::queue<layer_ptr_t> _deactiveateVoiceQ;
   LockedResource<proginstset_t> _freeProgInst;
   LockedResource<proginstset_t> _activeProgInst;
   std::map<std::string, hudsamples_t> _hudsample_map;
@@ -174,7 +191,7 @@ struct synth {
   bool _lock_compute            = true;
   float _cpuload                = 0.0f;
 
-  Layer* _hudLayer   = nullptr;
+  layer_ptr_t _hudLayer   = nullptr;
   bool _clearhuddata = true;
   int _numFrames     = 0;
   std::atomic<int> _numactivevoices;

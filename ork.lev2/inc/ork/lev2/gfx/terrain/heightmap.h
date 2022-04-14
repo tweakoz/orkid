@@ -79,20 +79,22 @@ struct HeightMap {
 
   static HeightMap gdefhm;
 
-  int miGridSizeX;
-  int miGridSizeZ;
-  float mfWorldSizeX;
-  float mfWorldSizeZ;
-  float mWorldHeight;
-  orkvector<float> mHeightData;
-  float mMin;
-  float mMax;
-  float mRange;
-  mutex mMutex;
-  float mIndexToUnitX;
-  float mIndexToUnitZ;
   uint16_t* _pu16 = nullptr;
   uint64_t _hash  = 0;
+
+  int miGridSizeX     = 0;
+  int miGridSizeZ     = 0;
+  float mfWorldSizeX  = 1.0f;
+  float mfWorldSizeZ  = 1.0f;
+  float mWorldHeight  = 1.0f;
+  float mMin          = 0.0f;
+  float mMax          = 0.0f;
+  float mRange        = 0.0f;
+  float mIndexToUnitX = 1.0f;
+  float mIndexToUnitZ = 1.0f;
+
+  mutex mMutex;
+  orkvector<float> mHeightData;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

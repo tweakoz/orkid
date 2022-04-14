@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -43,14 +43,14 @@ YmEnvData::YmEnvData() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ControllerInst* YmEnvData::instantiate(Layer* l) const // final
+ControllerInst* YmEnvData::instantiate(layer_ptr_t l) const // final
 {
   return new YmEnvInst(this, l);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-YmEnvInst::YmEnvInst(const YmEnvData* data, Layer* l)
+YmEnvInst::YmEnvInst(const YmEnvData* data, layer_ptr_t l)
     : ControllerInst(l)
     , _data(data)
     , _curseg(-1) {
@@ -79,7 +79,7 @@ void YmEnvInst::compute() {
       break;
     case 3: // released ?
       if (_rawout < 0.0001f) {
-        _layer->release();
+        synth::instance()->releaseLayer(_layer);
         _curseg = 4;
       }
     case 4: // release

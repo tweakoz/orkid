@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -47,11 +47,7 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enum class EGrid2DDrawMode{
-  ALL = 0,
-  NONE,
-  ORIGIN_AXIS_ONLY
-};
+enum class EGrid2DDrawMode { ALL = 0, NONE, ORIGIN_AXIS_ONLY };
 
 struct Grid2d {
 
@@ -66,15 +62,19 @@ struct Grid2d {
 
   void ReCalc(int iw, int ih);
 
-  bool _snapCenter;
-  fmtx4 _mtxOrtho;
   float _visGridDiv;
   float _visGridHiliteDiv;
+  float _visGridSize;
+
+  fvec2 _center;
+  float _extent;
+
   float _zoomX;
   float _zoomY;
-  float _visGridSize;
-  float _extent;
-  fvec2 _center;
+
+  bool _snapCenter;
+
+  fmtx4 _mtxOrtho;
   fvec2 _topLeft;
   fvec2 _botRight;
   float _aspect;
@@ -85,9 +85,6 @@ struct Grid2d {
   fvec3 _hiliteColor;
 
   EGrid2DDrawMode _drawmode = EGrid2DDrawMode::ALL;
-
-
-
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -24,8 +24,7 @@ PickBuffer::PickBuffer(ui::Surface* surf, Context* ctx, int w, int h)
     : _context(ctx)
     , _surface(surf)
     , _width(w)
-    , _height(h)
-    , _inittex(true) {
+    , _height(h) {
   Init();
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -43,14 +42,12 @@ ork::Object* PickBuffer::GetObjectFromPickId(uint64_t pid) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void PickBuffer::Init() {
-  _rtgroup         = new lev2::RtGroup(_context, _width, _height);
-  _uimaterial      = new ork::lev2::GfxMaterialUITextured(_context);
-  auto buf0        = new ork::lev2::RtBuffer(lev2::RtgSlot::Slot0, lev2::EBufferFormat::RGBA16UI, _width, _height);
-  auto buf1        = new ork::lev2::RtBuffer(lev2::RtgSlot::Slot1, lev2::EBufferFormat::RGBA32F, _width, _height);
+  _rtgroup         = std::make_shared<RtGroup>(_context, _width, _height);
+  _uimaterial      = new GfxMaterialUITextured(_context);
+  auto buf0        = _rtgroup->createRenderTarget(lev2::EBufferFormat::RGBA16UI);
+  auto buf1        = _rtgroup->createRenderTarget(lev2::EBufferFormat::RGBA32F);
   buf0->_debugName = FormatString("Pickbuf::mrt0");
   buf1->_debugName = FormatString("Pickbuf::mrt1");
-  _rtgroup->SetMrt(0, buf0);
-  _rtgroup->SetMrt(1, buf1);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void PickBuffer::resize(int w, int h) {
@@ -82,7 +79,7 @@ void PickBuffer::Draw(lev2::PixelFetchContext& ctx) {
     _rtgroup->Resize(isurfw, isurfh);
   }
   // printf("Begin Pickbuffer::Draw() surf<%p>\n", _surface);
-  fbi->PushRtGroup(_rtgroup);
+  fbi->PushRtGroup(_rtgroup.get());
   fbi->EnterPickState(this);
 
   auto drwev = std::make_shared<ork::ui::DrawEvent>(tgt);

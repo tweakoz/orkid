@@ -76,7 +76,7 @@ Widget* Group::doRouteUiEvent(event_constptr_t ev) {
   for (auto& child : _children) {
     bool inside = child->IsEventInside(ev);
     if (0)
-      printf("Group<%s>::doRouteUiEvent ch<%p> inside<%d>\n", _name.c_str(), child.get(), int(inside));
+      printf("Group<%s>::doRouteUiEvent ch<%p> inside<%d>\n", _name.c_str(), (void*) child.get(), int(inside));
     if (inside) {
       auto child_target = child->routeUiEvent(ev);
       if (child_target)
@@ -109,7 +109,7 @@ void LayoutGroup::DoLayout() {
     printf(
         "LayoutGroup<%s>::DoLayout l<%p> x<%d> y<%d> w<%d> h<%d>\n", //
         _name.c_str(),
-        _layout.get(),
+        (void*) _layout.get(),
         g._x,
         g._y,
         g._w,

@@ -1,10 +1,10 @@
-///////////////////////////////////////////////////////////////////////////////
-// Orkid
-// Copyrigh 1996-2009, Michael T. Mayers
-// See License at OrkidRoot/license.html or http://www.tweakoz.com/orkid/license.html
-//
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
 // based on code from Jacco Bikker
-//
 ///////////////////////////////////////////////////////////////////////////////
 
 #pragma once
@@ -171,11 +171,11 @@ struct RgmLight {
   RgmLight(const fvec3& p = fvec3(0.0f, 0.0f, 0.0f), const fvec3& c = fvec3(0.0f, 0.0f, 0.0f))
       : mPos(p)
       , mColor(c)
-      , mDispersion(1.0f)
       , mDir(0.0f, 1.0f, 0.0f)
+      , mCastsShadows(false) 
+      , mDispersion(1.0f)
       , mFalloff(0.0f)
-      , mRadius(0.0f)
-      , mCastsShadows(false) {
+      , mRadius(0.0f) {
   }
 };
 
@@ -234,9 +234,9 @@ RgmModel* LoadRgmFile(const char* pfilename, RgmShaderBuilder& shbuilder);
 class Primitive {
 public:
   Primitive()
-      : mLastRayID(-1)
-      , mMaterial(0)
-      , mBakeShader(0) {
+      : mMaterial(0)
+      , mBakeShader(0)
+      , mLastRayID(-1) {
   }
   ~Primitive();
   BakeShader* GetBakeShader() const {
@@ -562,7 +562,7 @@ template <typename SceneType> struct RayShader {
     float fz1 = fZ1;
     fvec3 v0(fx0, fy0, fz0);
     fvec3 v1(fx1, fy1, fz1);
-    Ray3 myray(v0, (v1 - v0).Normal());
+    Ray3 myray(v0, (v1 - v0).normalized());
     scene.RayTest(myray, reciever);
   }
 };

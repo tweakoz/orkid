@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -38,29 +38,35 @@ static const int NUM_DOME_TRIANGLES   = 10 * 50 * 6;
 GfxPrimitives::GfxPrimitives()
     : NoRttiSingleton<GfxPrimitives>()
     , mVtxBuf_Axis(6, 6, PrimitiveType::LINES)
-    , mVtxBuf_GridX100(1000, 400, PrimitiveType::LINES)
-    , mVtxBuf_Cone(1000, 400, PrimitiveType::TRIANGLES)
-    , mVtxBuf_DirCone(1000, 400, PrimitiveType::TRIANGLES)
-    , mVtxBuf_TriCircle(6 * (CIRCSEGS + 2), 6 * (CIRCSEGS + 2), PrimitiveType::LINES)
-    , mVtxBuf_Diamond(3 * 6, 3 * 6, PrimitiveType::TRIANGLES)
-    , mVtxBuf_EQSphere(1024, 1024, PrimitiveType::POINTS)
-    , mVtxBuf_FullSphere(8192, 8192, PrimitiveType::TRIANGLES)
-    , mVtxBuf_SkySphere(32768, 32768, PrimitiveType::TRIANGLES) // PrimitiveType::TRIANGLES
-    , mVtxBuf_GroundPlane(6, 6, PrimitiveType::TRIANGLES)
-    , mVtxBuf_PerlinTerrain(inumgroundverts, inumgroundverts, PrimitiveType::TRIANGLES)
+    , mVtxBuf_AxisBox(36, 36, PrimitiveType::TRIANGLES)
+    , mVtxBuf_AxisCone(1000, 400, PrimitiveType::TRIANGLES)
+    , mVtxBuf_AxisLine(6 * 2 * 3, 6 * 2 * 3, PrimitiveType::TRIANGLES)
+
+    , mVtxBuf_Box(6 * 2 * 3, 6 * 2 * 3, PrimitiveType::TRIANGLES)
+
+    , mVtxBuf_Capsule((6 * NUM_CYLINDER_FACES + 2), (6 * NUM_CYLINDER_FACES + 2), PrimitiveType::TRIANGLES)
     , mVtxBuf_CircleStrip(1000, 1000, PrimitiveType::TRIANGLES)
     , mVtxBuf_CircleStripUI(1000, 1000, PrimitiveType::QUADS)
     , mVtxBuf_CircleUI(1000, 1000, PrimitiveType::TRIANGLES)
+    , mVtxBuf_Cone(1000, 400, PrimitiveType::TRIANGLES)
     , mVtxBuf_Cylinder(12 * NUM_CYLINDER_FACES + 2, 12 * NUM_CYLINDER_FACES + 2, PrimitiveType::TRIANGLES)
-    , mVtxBuf_Capsule((6 * NUM_CYLINDER_FACES + 2), (6 * NUM_CYLINDER_FACES + 2), PrimitiveType::TRIANGLES)
-    , mVtxBuf_Box(6 * 2 * 3, 6 * 2 * 3, PrimitiveType::TRIANGLES)
-    , mVtxBuf_AxisLine(6 * 2 * 3, 6 * 2 * 3, PrimitiveType::TRIANGLES)
-    , mVtxBuf_AxisCone(1000, 400, PrimitiveType::TRIANGLES)
-    , mVtxBuf_AxisBox(36, 36, PrimitiveType::TRIANGLES)
+
+    , mVtxBuf_Diamond(3 * 6, 3 * 6, PrimitiveType::TRIANGLES)
+    , mVtxBuf_DirCone(1000, 400, PrimitiveType::TRIANGLES)
     , mVtxBuf_Dome(NUM_DOME_TRIANGLES, NUM_DOME_TRIANGLES, PrimitiveType::TRIANGLES)
-    , mVtxBuf_WireFrameCylinder(4 * NUM_CYLINDER_FACES + 2, 4 * NUM_CYLINDER_FACES + 2, PrimitiveType::LINES)
+
+    , mVtxBuf_EQSphere(1024, 1024, PrimitiveType::POINTS)
+    , mVtxBuf_FullSphere(8192, 8192, PrimitiveType::TRIANGLES)
+    , mVtxBuf_GridX100(1000, 400, PrimitiveType::LINES)
+    , mVtxBuf_GroundPlane(6, 6, PrimitiveType::TRIANGLES)
+
+    , mVtxBuf_PerlinTerrain(inumgroundverts, inumgroundverts, PrimitiveType::TRIANGLES)
+    , mVtxBuf_SkySphere(32768, 32768, PrimitiveType::TRIANGLES) // PrimitiveType::TRIANGLES
+    , mVtxBuf_TriCircle(6 * (CIRCSEGS + 2), 6 * (CIRCSEGS + 2), PrimitiveType::LINES)
+
     , mVtxBuf_WireFrameBox(6 * 4 * 2, 6 * 4 * 2, PrimitiveType::LINES)
     , mVtxBuf_WireFrameCapsule(6 * 4 * 2, 6 * 4 * 2, PrimitiveType::LINES)
+    , mVtxBuf_WireFrameCylinder(4 * NUM_CYLINDER_FACES + 2, 4 * NUM_CYLINDER_FACES + 2, PrimitiveType::LINES)
     , mVtxBuf_WireFrameDome(6 * (CIRCSEGS + 2), 6 * (CIRCSEGS + 2), PrimitiveType::LINES) {
 }
 
@@ -90,9 +96,9 @@ void GfxPrimitives::Init(Context* pTarg) {
 
   vwpbr.Lock(pTarg, &GetRef().mVtxBuf_Axis, 6);
 
-  auto RED = fvec4::Red().GetABGRU32();
-  auto GRN = fvec4::Green().GetABGRU32();
-  auto BLU = fvec4::Blue().GetABGRU32();
+  auto RED = fvec4::Red().ABGRU32();
+  auto GRN = fvec4::Green().ABGRU32();
+  auto BLU = fvec4::Blue().ABGRU32();
   vwpbr.AddVertex(SVtxV12N12B12T8C4(fvec3(0, 0, 0), fvec3(1, 0, 0), fvec3(0, 1, 0), fvec2(), RED));
   vwpbr.AddVertex(SVtxV12N12B12T8C4(fvec3(fLineSize, 0, 0), fvec3(1, 0, 0), fvec3(0, 1, 0), fvec2(), RED));
   vwpbr.AddVertex(SVtxV12N12B12T8C4(fvec3(0, 0, 0), fvec3(0, 1, 0), fvec3(1, 0, 0), fvec2(), GRN));
@@ -120,12 +126,12 @@ void GfxPrimitives::Init(Context* pTarg) {
   for (int i = 0; i < iNumGridLines; i++) {
     F32 fVal = fBas0 + (i * fSca0);
 
-    U32 uColorX = fvec4(0.5f, 0.5f, 0.5f, 1.0f).GetABGRU32();
-    U32 uColorZ = fvec4(0.5f, 0.5f, 0.5f, 1.0f).GetABGRU32();
+    U32 uColorX = fvec4(0.5f, 0.5f, 0.5f, 1.0f).ABGRU32();
+    U32 uColorZ = fvec4(0.5f, 0.5f, 0.5f, 1.0f).ABGRU32();
 
     if (i == (GRIDDIVS >> 1)) {
-      uColorX = fvec4(1.0f, 0.0f, 0.0f, 1.0f).GetABGRU32();
-      uColorZ = fvec4(0.0f, 0.0f, 1.0f, 1.0f).GetABGRU32();
+      uColorX = fvec4(1.0f, 0.0f, 0.0f, 1.0f).ABGRU32();
+      uColorZ = fvec4(0.0f, 0.0f, 1.0f, 1.0f).ABGRU32();
     }
     vw.AddVertex(SVtxV12C4T16(-fLineSize, 0.0f, fVal, 0, 0, uColorX));
     vw.AddVertex(SVtxV12C4T16(fLineSize, 0.0f, fVal, 0, 0, uColorX));
@@ -133,8 +139,8 @@ void GfxPrimitives::Init(Context* pTarg) {
     vw.AddVertex(SVtxV12C4T16(fVal, 0.0f, fLineSize, 0, 0, uColorZ));
   }
 
-  vw.AddVertex(SVtxV12C4T16(0.0f, -fLineSize, 0.0f, 0, 0, fvec4(0.0f, 1.0f, 0.0f, 1.0f).GetABGRU32()));
-  vw.AddVertex(SVtxV12C4T16(0.0f, fLineSize, 0.0f, 0, 0, fvec4(0.0f, 1.0f, 0.0f, 1.0f).GetABGRU32()));
+  vw.AddVertex(SVtxV12C4T16(0.0f, -fLineSize, 0.0f, 0, 0, fvec4(0.0f, 1.0f, 0.0f, 1.0f).ABGRU32()));
+  vw.AddVertex(SVtxV12C4T16(0.0f, fLineSize, 0.0f, 0, 0, fvec4(0.0f, 1.0f, 0.0f, 1.0f).ABGRU32()));
 
   // SVtxV12C4T16 *pVTX = (SVtxV12C4T16*) GetRef().mVtxBuf_GridX100.GetVertexPointer();
   // SVtxV12C4T16 *pVTX0 = pVTX;
@@ -147,7 +153,7 @@ void GfxPrimitives::Init(Context* pTarg) {
   icount = (CONEDIVS * 6);
   vw.Lock(pTarg, &GetRef().mVtxBuf_CircleStrip, icount);
 
-  U32 uColor = fvec4(0.5f, 0.5f, 0.5f, 1.0f).GetARGBU32();
+  U32 uColor = fvec4(0.5f, 0.5f, 0.5f, 1.0f).ARGBU32();
 
   f32 fOuterSize = 1.0f;
   f32 fInnerSize = 0.85f;
@@ -210,15 +216,15 @@ void GfxPrimitives::Init(Context* pTarg) {
     fC0 = 0.5f + (0.5f * fC0);
     fC1 = 0.5f + (0.5f * fC1);
 
-    Color0.SetXYZ(fC0, 0.0f, 0.0f);
-    Color1.SetXYZ(fC1, 0.0f, 0.0f);
-    Color2.SetXYZ(fC0, 0.0f, 1.0f);
-    Color3.SetXYZ(fC1, 0.0f, 1.0f);
+    Color0.setXYZ(fC0, 0.0f, 0.0f);
+    Color1.setXYZ(fC1, 0.0f, 0.0f);
+    Color2.setXYZ(fC0, 0.0f, 1.0f);
+    Color3.setXYZ(fC1, 0.0f, 1.0f);
 
-    vw.AddVertex(SVtxV12C4T16(fX0, fZ0, 0.0f, 0, 0, Color2.GetARGBU32()));
-    vw.AddVertex(SVtxV12C4T16(fX2, fZ2, 0.0f, 0, 0, Color0.GetARGBU32()));
-    vw.AddVertex(SVtxV12C4T16(fX1, fZ1, 0.0f, 0, 0, Color3.GetARGBU32()));
-    vw.AddVertex(SVtxV12C4T16(fX3, fZ3, 0.0f, 0, 0, Color1.GetARGBU32()));
+    vw.AddVertex(SVtxV12C4T16(fX0, fZ0, 0.0f, 0, 0, Color2.ARGBU32()));
+    vw.AddVertex(SVtxV12C4T16(fX2, fZ2, 0.0f, 0, 0, Color0.ARGBU32()));
+    vw.AddVertex(SVtxV12C4T16(fX1, fZ1, 0.0f, 0, 0, Color3.ARGBU32()));
+    vw.AddVertex(SVtxV12C4T16(fX3, fZ3, 0.0f, 0, 0, Color1.ARGBU32()));
   }
 
   vw.UnLock(pTarg, EULFLG_ASSIGNVBLEN);
@@ -248,13 +254,13 @@ void GfxPrimitives::Init(Context* pTarg) {
     f32 fC1 = 0.5f + cosf(fPhase2) * 0.5f;
     f32 fCC = 0.5f;
 
-    Color0.SetXYZ(0.5f + (0.5f * fC0), 0.5f + (0.5f * fC0), 0.5f + (0.5f * fC0));
-    Color1.SetXYZ(0.5f + (0.5f * fC1), 0.5f + (0.5f * fC1), 0.5f + (0.5f * fC1));
-    Color2.SetXYZ(0.5f + (0.5f * fCC), 0.5f + (0.5f * fCC), 0.5f + (0.5f * fCC));
+    Color0.setXYZ(0.5f + (0.5f * fC0), 0.5f + (0.5f * fC0), 0.5f + (0.5f * fC0));
+    Color1.setXYZ(0.5f + (0.5f * fC1), 0.5f + (0.5f * fC1), 0.5f + (0.5f * fC1));
+    Color2.setXYZ(0.5f + (0.5f * fCC), 0.5f + (0.5f * fCC), 0.5f + (0.5f * fCC));
 
-    vw.AddVertex(SVtxV12C4T16(fcenterx, fcentery, 0.0f, 0, 0, Color2.GetARGBU32()));
-    vw.AddVertex(SVtxV12C4T16(fX1, fZ1, 0.0f, 0, 0, Color1.GetARGBU32()));
-    vw.AddVertex(SVtxV12C4T16(fX0, fZ0, 0.0f, 0, 0, Color0.GetARGBU32()));
+    vw.AddVertex(SVtxV12C4T16(fcenterx, fcentery, 0.0f, 0, 0, Color2.ARGBU32()));
+    vw.AddVertex(SVtxV12C4T16(fX1, fZ1, 0.0f, 0, 0, Color1.ARGBU32()));
+    vw.AddVertex(SVtxV12C4T16(fX0, fZ0, 0.0f, 0, 0, Color0.ARGBU32()));
     // GetRef().mVtxBuf_CircleStripUI.AddVertex( SVtxV12C4T16( fX3, fZ3, 0.0f, 0, 0, uColor ) );
   }
 
@@ -274,7 +280,7 @@ void GfxPrimitives::Init(Context* pTarg) {
     F32 fZ      = cosf(fPhase) * CONESIZE;
     F32 fX2     = sinf(fPhase2) * CONESIZE;
     F32 fZ2     = cosf(fPhase2) * CONESIZE;
-    U32 uColor  = fvec4(0.5f, 0.5f, 0.5f, 1.0f).GetARGBU32();
+    U32 uColor  = fvec4(0.5f, 0.5f, 0.5f, 1.0f).ARGBU32();
     vw.AddVertex(SVtxV12C4T16(fX, 0.0f, fZ, 0, 0, uColor));
     vw.AddVertex(SVtxV12C4T16(fX2, 0.0f, fZ2, 0, 0, uColor));
     vw.AddVertex(SVtxV12C4T16(0.0f, CONESIZE, 0.0f, 0, 0, uColor));
@@ -294,7 +300,7 @@ void GfxPrimitives::Init(Context* pTarg) {
     F32 fZ                        = cosf(fPhase) * CONESIZE;
     F32 fX2                       = sinf(fPhase2) * CONESIZE;
     F32 fZ2                       = cosf(fPhase2) * CONESIZE;
-    U32 uColor                    = fvec4(0.5f, 0.5f, 0.5f, 1.0f).GetARGBU32();
+    U32 uColor                    = fvec4(0.5f, 0.5f, 0.5f, 1.0f).ARGBU32();
     static const float dirscaleXZ = 1.5f;
     vw.AddVertex(SVtxV12C4T16(fX * dirscaleXZ, 0.0f, fZ * dirscaleXZ, 0, 0, uColor));
     vw.AddVertex(SVtxV12C4T16(fX2 * dirscaleXZ, 0.0f, fZ2 * dirscaleXZ, 0, 0, uColor));
@@ -317,7 +323,7 @@ void GfxPrimitives::Init(Context* pTarg) {
     F32 fX2 = cosf(angle2);
     F32 fZ2 = sinf(angle2);
 
-    U32 uColor = fvec4(0.5f, 0.5f, 0.5f, 1.0f).GetARGBU32();
+    U32 uColor = fvec4(0.5f, 0.5f, 0.5f, 1.0f).ARGBU32();
 
     vw.AddVertex(SVtxV12C4T16(fX, 0.0f, fZ, 0, 0, uColor));
     vw.AddVertex(SVtxV12C4T16(fX2, 0.0f, fZ2, 0, 0, uColor));
@@ -349,7 +355,7 @@ void GfxPrimitives::Init(Context* pTarg) {
     F32 fZ       = sinf(angle);
     F32 fX2      = cosf(angle2);
     F32 fZ2      = sinf(angle2);
-    U32 uColor   = fvec4(0.5f, 0.5f, 0.5f, 1.0f).GetARGBU32();
+    U32 uColor   = fvec4(0.5f, 0.5f, 0.5f, 1.0f).ARGBU32();
     vw.AddVertex(SVtxV12C4T16(fX, 0.0f, fZ, 0, 0, uColor));
     vw.AddVertex(SVtxV12C4T16(fX2, 0.0f, fZ2, 0, 0, uColor));
     vw.AddVertex(SVtxV12C4T16(fX, 1.0f, fZ, 0, 0, uColor));
@@ -371,8 +377,8 @@ void GfxPrimitives::Init(Context* pTarg) {
     F32 fPhase2 = PI2 * (i + 1) / fiCIRCSEGS;
     F32 fX2     = sinf(fPhase2);
     F32 fZ2     = cosf(fPhase2);
-    vw.AddVertex(SVtxV12C4T16(fX, 0.0f, fZ, 0, 0, fcolor4::Green().GetARGBU32()));
-    vw.AddVertex(SVtxV12C4T16(fX2, 0.0f, fZ2, 0, 0, fcolor4::Green().GetARGBU32()));
+    vw.AddVertex(SVtxV12C4T16(fX, 0.0f, fZ, 0, 0, fcolor4::Green().ARGBU32()));
+    vw.AddVertex(SVtxV12C4T16(fX2, 0.0f, fZ2, 0, 0, fcolor4::Green().ARGBU32()));
   }
   for (int i = 0; i < CIRCSEGS; i++) {
     F32 fPhase  = ((PI * i) + PI) / fiCIRCSEGS;
@@ -381,8 +387,8 @@ void GfxPrimitives::Init(Context* pTarg) {
     F32 fPhase2 = ((PI * (i + 1)) + PI) / fiCIRCSEGS;
     F32 fX2     = sinf(fPhase2);
     F32 fZ2     = cosf(fPhase2);
-    vw.AddVertex(SVtxV12C4T16(fX, fZ, 0.0f, 0, 0, fcolor4::Blue().GetARGBU32()));
-    vw.AddVertex(SVtxV12C4T16(fX2, fZ2, 0.0f, 0, 0, fcolor4::Blue().GetARGBU32()));
+    vw.AddVertex(SVtxV12C4T16(fX, fZ, 0.0f, 0, 0, fcolor4::Blue().ARGBU32()));
+    vw.AddVertex(SVtxV12C4T16(fX2, fZ2, 0.0f, 0, 0, fcolor4::Blue().ARGBU32()));
   }
   for (int i = 0; i < CIRCSEGS; i++) {
     F32 fPhase  = PI * i / fiCIRCSEGS;
@@ -391,8 +397,8 @@ void GfxPrimitives::Init(Context* pTarg) {
     F32 fPhase2 = PI * (i + 1) / fiCIRCSEGS;
     F32 fX2     = sinf(fPhase2);
     F32 fZ2     = cosf(fPhase2);
-    vw.AddVertex(SVtxV12C4T16(0.0f, fX, fZ, 0, 0, fcolor4::Red().GetARGBU32()));
-    vw.AddVertex(SVtxV12C4T16(0.0f, fX2, fZ2, 0, 0, fcolor4::Red().GetARGBU32()));
+    vw.AddVertex(SVtxV12C4T16(0.0f, fX, fZ, 0, 0, fcolor4::Red().ARGBU32()));
+    vw.AddVertex(SVtxV12C4T16(0.0f, fX2, fZ2, 0, 0, fcolor4::Red().ARGBU32()));
   }
   vw.UnLock(pTarg, EULFLG_ASSIGNVBLEN);
 
@@ -479,7 +485,7 @@ void GfxPrimitives::Init(Context* pTarg) {
 
   vw.Lock(pTarg, &GetRef().mVtxBuf_Box, 12 * 3);
   {
-    U32 uColor = fvec4(0.5f, 0.5f, 0.5f, 1.0f).GetARGBU32();
+    U32 uColor = fvec4(0.5f, 0.5f, 0.5f, 1.0f).ARGBU32();
 
     vw.AddVertex(SVtxV12C4T16(0.5f, 0.5f, 0.5f, 0, 0, uColor));
     vw.AddVertex(SVtxV12C4T16(-0.5f, 0.5f, 0.5f, 0, 0, uColor));
@@ -540,7 +546,7 @@ void GfxPrimitives::Init(Context* pTarg) {
 
   vwp.Lock(pTarg, &GetRef().mVtxBuf_AxisLine, 36);
   {
-    U32 uColor = fvec4(0.5f, 0.5f, 0.5f, 1.0f).GetARGBU32();
+    U32 uColor = fvec4(0.5f, 0.5f, 0.5f, 1.0f).ARGBU32();
 
     float width  = 0.05f;
     float length = 0.8f;
@@ -611,7 +617,7 @@ void GfxPrimitives::Init(Context* pTarg) {
     F32 fX2     = sinf(fPhase2) / 20.0f;
     F32 fZ2     = cosf(fPhase2) / 20.0f;
 
-    U32 uColor = fvec4(0.5f, 0.5f, 0.5f, 1.0f).GetARGBU32();
+    U32 uColor = fvec4(0.5f, 0.5f, 0.5f, 1.0f).ARGBU32();
     fvec3 N, B;
     fvec2 UV;
 
@@ -627,7 +633,7 @@ void GfxPrimitives::Init(Context* pTarg) {
 
   vwp.Lock(pTarg, &GetRef().mVtxBuf_AxisBox, 36);
   {
-    U32 uColor = fvec4(0.5f, 0.5f, 0.5f, 1.0f).GetARGBU32();
+    U32 uColor = fvec4(0.5f, 0.5f, 0.5f, 1.0f).ARGBU32();
 
     float width  = 0.1f;
     float length = 1.0f;
@@ -687,7 +693,7 @@ void GfxPrimitives::Init(Context* pTarg) {
 
   vw.Lock(pTarg, &GetRef().mVtxBuf_WireFrameBox, 24);
   {
-    U32 uColor = fvec4(0.5f, 0.5f, 0.5f, 1.0f).GetARGBU32();
+    U32 uColor = fvec4(0.5f, 0.5f, 0.5f, 1.0f).ARGBU32();
 
     vw.AddVertex(SVtxV12C4T16(0.5f, 0.5f, 0.5f, 0, 0, uColor));
     vw.AddVertex(SVtxV12C4T16(-0.5f, 0.5f, 0.5f, 0, 0, uColor));
@@ -741,8 +747,8 @@ void GfxPrimitives::Init(Context* pTarg) {
       F32 fPhase2 = PI2 * (i + 1) / fiCIRCSEGS;
       F32 fX2     = sinf(fPhase2);
       F32 fZ2     = cosf(fPhase2);
-      vw.AddVertex(SVtxV12C4T16(fX, 0.0f, fZ, 0, 0, fcolor4::Green().GetARGBU32()));
-      vw.AddVertex(SVtxV12C4T16(fX2, 0.0f, fZ2, 0, 0, fcolor4::Green().GetARGBU32()));
+      vw.AddVertex(SVtxV12C4T16(fX, 0.0f, fZ, 0, 0, fcolor4::Green().ARGBU32()));
+      vw.AddVertex(SVtxV12C4T16(fX2, 0.0f, fZ2, 0, 0, fcolor4::Green().ARGBU32()));
     }
     for (int i = 0; i < CIRCSEGS; i++) {
       F32 fPhase  = PI2 * i / fiCIRCSEGS;
@@ -751,8 +757,8 @@ void GfxPrimitives::Init(Context* pTarg) {
       F32 fPhase2 = PI2 * (i + 1) / fiCIRCSEGS;
       F32 fX2     = sinf(fPhase2);
       F32 fZ2     = cosf(fPhase2);
-      vw.AddVertex(SVtxV12C4T16(fX, fZ, 0.0f, 0, 0, fcolor4::Blue().GetARGBU32()));
-      vw.AddVertex(SVtxV12C4T16(fX2, fZ2, 0.0f, 0, 0, fcolor4::Blue().GetARGBU32()));
+      vw.AddVertex(SVtxV12C4T16(fX, fZ, 0.0f, 0, 0, fcolor4::Blue().ARGBU32()));
+      vw.AddVertex(SVtxV12C4T16(fX2, fZ2, 0.0f, 0, 0, fcolor4::Blue().ARGBU32()));
     }
     for (int i = 0; i < CIRCSEGS; i++) {
       F32 fPhase  = PI2 * i / fiCIRCSEGS;
@@ -761,8 +767,8 @@ void GfxPrimitives::Init(Context* pTarg) {
       F32 fPhase2 = PI2 * (i + 1) / fiCIRCSEGS;
       F32 fX2     = sinf(fPhase2);
       F32 fZ2     = cosf(fPhase2);
-      vw.AddVertex(SVtxV12C4T16(0.0f, fX, fZ, 0, 0, fcolor4::Red().GetARGBU32()));
-      vw.AddVertex(SVtxV12C4T16(0.0f, fX2, fZ2, 0, 0, fcolor4::Red().GetARGBU32()));
+      vw.AddVertex(SVtxV12C4T16(0.0f, fX, fZ, 0, 0, fcolor4::Red().ARGBU32()));
+      vw.AddVertex(SVtxV12C4T16(0.0f, fX2, fZ2, 0, 0, fcolor4::Red().ARGBU32()));
     }
     vw.UnLock(pTarg, EULFLG_ASSIGNVBLEN);
   }
@@ -1094,16 +1100,16 @@ void GfxPrimitives::Init(Context* pTarg) {
         fvec3 d6 = XYZ(ix0, iz2) - XYZ(ix1, iz1);
         fvec3 d7 = XYZ(ix0, iz1) - XYZ(ix1, iz1);
 
-        fvec3 c0 = d0.Cross(d1);
-        fvec3 c1 = d1.Cross(d2);
-        fvec3 c2 = d2.Cross(d3);
-        fvec3 c3 = d3.Cross(d4);
-        fvec3 c4 = d4.Cross(d5);
-        fvec3 c5 = d5.Cross(d6);
-        fvec3 c6 = d6.Cross(d7);
-        fvec3 c7 = d7.Cross(d0);
+        fvec3 c0 = d0.crossWith(d1);
+        fvec3 c1 = d1.crossWith(d2);
+        fvec3 c2 = d2.crossWith(d3);
+        fvec3 c3 = d3.crossWith(d4);
+        fvec3 c4 = d4.crossWith(d5);
+        fvec3 c5 = d5.crossWith(d6);
+        fvec3 c6 = d6.crossWith(d7);
+        fvec3 c7 = d7.crossWith(d0);
 
-        fvec3 vdx = (c0 + c1 + c2 + c3 + c4 + c5 + c6 + c7).Normal();
+        fvec3 vdx = (c0 + c1 + c2 + c3 + c4 + c5 + c6 + c7).normalized();
         return vdx;
       }
     };
@@ -1134,12 +1140,12 @@ void GfxPrimitives::Init(Context* pTarg) {
         if (float(fy) > fmax)
           fmax = float(fy);
 
-        heightfield.XYZ(iX, iZ).setX(fx);
-        heightfield.XYZ(iX, iZ).setY(fy);
-        heightfield.XYZ(iX, iZ).setZ(fz);
+        heightfield.XYZ(iX, iZ).x = (fx);
+        heightfield.XYZ(iX, iZ).y = (fy);
+        heightfield.XYZ(iX, iZ).z = (fz);
 
-        heightfield.UV(iX, iZ).setX(fu);
-        heightfield.UV(iX, iZ).setY(fv);
+        heightfield.UV(iX, iZ).x = (fu);
+        heightfield.UV(iX, iZ).y = (fv);
       }
     }
 
@@ -1208,10 +1214,10 @@ void GfxPrimitives::Init(Context* pTarg) {
         fvec3 nX2Z2 = heightfield.Normal(iX2, iZ2);
 
         fvec3 Up(0.0f, 1.0f, 0.0f);
-        float DotX1Z1 = powf(Up.Dot(nX1Z1), 6.0f);
-        float DotX2Z1 = powf(Up.Dot(nX2Z1), 6.0f);
-        float DotX1Z2 = powf(Up.Dot(nX1Z2), 6.0f);
-        float DotX2Z2 = powf(Up.Dot(nX2Z2), 6.0f);
+        float DotX1Z1 = powf(Up.dotWith(nX1Z1), 6.0f);
+        float DotX2Z1 = powf(Up.dotWith(nX2Z1), 6.0f);
+        float DotX1Z2 = powf(Up.dotWith(nX1Z2), 6.0f);
+        float DotX2Z2 = powf(Up.dotWith(nX2Z2), 6.0f);
 
         /////////////////////////////////////////////////////
 
@@ -1306,20 +1312,20 @@ void GfxPrimitives::RenderCylinder(Context* pTarg, bool drawoutline) {
 void GfxPrimitives::RenderCapsule(Context* pTarg, float radius) {
   fmtx4 MatScale, MatTrans, MatRotate;
 
-  MatScale.Scale(radius, radius, radius);
+  MatScale.scale(radius, radius, radius);
 
   // Top dome
   fvec3 trans(0.0f, 1.0f, 0.0f);
-  trans = trans.Transform(pTarg->MTXI()->RefMMatrix());
-  MatTrans.SetTranslation(trans);
+  trans = trans.transform(pTarg->MTXI()->RefMMatrix());
+  MatTrans.setTranslation(trans);
 
   pTarg->MTXI()->PushMMatrix(MatScale * MatRotate * MatTrans);
   pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_Dome);
   pTarg->MTXI()->PopMMatrix();
 
   // Bottom dome
-  MatRotate.RotateZ(PI);
-  MatTrans.SetTranslation(pTarg->MTXI()->RefMMatrix().GetTranslation());
+  MatRotate.rotateOnZ(PI);
+  MatTrans.setTranslation(pTarg->MTXI()->RefMMatrix().translation());
   pTarg->MTXI()->PushMMatrix(MatScale * MatRotate * MatTrans);
   pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_Dome);
   pTarg->MTXI()->PopMMatrix();
@@ -1406,10 +1412,10 @@ void GfxPrimitives::RenderOrthoQuad(
   // Render Using Ortho Matrix
 
   fmtx4 MatTrans, MatScale;
-  MatTrans.Translate(-1.0f, 1.0f, 0.0f);
-  MatScale.Scale(2.0f, -2.0f, 0.0f);
-  // MatTrans.SetTranslation( -1.0f, 1.0f, 0.0f );
-  // MatScale.Scale( 2.0f, -2.0f, 0.0f );
+  MatTrans.translate(-1.0f, 1.0f, 0.0f);
+  MatScale.scale(2.0f, -2.0f, 0.0f);
+  // MatTrans.setTranslation( -1.0f, 1.0f, 0.0f );
+  // MatScale.scale( 2.0f, -2.0f, 0.0f );
 
   fmtx4 OrthoMat = pTarg->MTXI()->GetUIOrthoProjectionMatrix();
   pTarg->MTXI()->PushPMatrix(OrthoMat);

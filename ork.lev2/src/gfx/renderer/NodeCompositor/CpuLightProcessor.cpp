@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -99,7 +99,7 @@ void CpuLightProcessor::_renderUnshadowedUnTexturedPointLights(
     if (l->isShadowCaster())
       continue;
 
-    fvec3 color = l->color();
+    fvec3 color = l->color()*l->intensity();
 
     if (auto as_point = dynamic_cast<lev2::PointLight*>(l)) {
       float radius = as_point->radius();
@@ -120,7 +120,7 @@ void CpuLightProcessor::_renderUnshadowedUnTexturedPointLights(
       deferred_pointlight._maxX    = int(ceil(deferred_pointlight._aamax.x * KTILEMAXX));
       deferred_pointlight._minY    = int(floor(deferred_pointlight._aamin.y * KTILEMAXY));
       deferred_pointlight._maxY    = int(ceil(deferred_pointlight._aamax.y * KTILEMAXY));
-      deferred_pointlight.dist2cam = (deferred_pointlight._pos - VD._camposmono).Mag();
+      deferred_pointlight.dist2cam = (deferred_pointlight._pos - VD._camposmono).magnitude();
       deferred_pointlight._minZ    = deferred_pointlight.dist2cam -
                                   deferred_pointlight._radius; // Zndc2eye.x / (deferred_pointlight._aabox.Min().z - Zndc2eye.y);
       deferred_pointlight._maxZ =
@@ -281,7 +281,7 @@ void CpuLightProcessor::_renderUnshadowedUnTexturedPointLights(
     // accumulate light for tile
     //////////////////////////////////////////////////
 
-    // printf("numlighttiles<%zu>\n", _chunktiles_pos.size());
+     printf("numlighttiles<%zu>\n", _chunktiles_pos.size());
     if (VD._isStereo) {
       // float L = (float(ix) / float(_clusterW));
       // this_buf->Render2dQuadEML(fvec4(L - 1.0f, T, KTILESIZX * 0.5, KTILESIZY), fvec4(0, 0, 1, 1));

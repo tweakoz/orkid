@@ -1,19 +1,18 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
 #pragma once
 
-#include <ork/rtti/ICastable.h>
-#include <ork/reflect/Serializable.h>
-#include <ork/reflect/Functor.h>
-#include <ork/kernel/orklut.h>
-
 #include <ork/config/config.h>
 #include <ork/kernel/any.h>
+#include <ork/kernel/orklut.h>
+#include <ork/rtti/ICastable.h>
+#include <ork/reflect/Serializable.h>
+#include <ork/reflect/types.h>
 
 namespace ork {
 
@@ -21,14 +20,10 @@ class ConstString;
 
 namespace object {
 class Signal;
-class AutoSlot;
+struct AutoSlot;
 } // namespace object
 
 namespace reflect {
-
-class ObjectProperty;
-class ISerializer;
-class IDeserializer;
 
 class Description {
 public:

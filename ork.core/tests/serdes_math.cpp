@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <utpp/UnitTest++.h>
 #include <cmath>
 #include <limits>
@@ -30,8 +37,8 @@ std::string math_generate() {
   mathtest->_fquat.z = 13.0f;
   mathtest->_fquat.w = 14.0f;
 
-  mathtest->_fmtx3.RotateX(PI * 0.5);
-  mathtest->_fmtx4.RotateX(PI * 0.5);
+  mathtest->_fmtx3.rotateOnX(PI * 0.5);
+  mathtest->_fmtx4.rotateOnX(PI * 0.5);
 
   serdes::JsonSerializer ser;
   auto rootnode = ser.serializeRoot(mathtest);

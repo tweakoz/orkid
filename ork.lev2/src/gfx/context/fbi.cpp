@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -16,20 +16,16 @@ namespace ork { namespace lev2 {
 std::function<void(Context*)> FrameBufferInterface::_hackcb = nullptr;
 
 FrameBufferInterface::FrameBufferInterface(Context& tgt)
-    : mTarget(tgt)
-    , mbEnableVSync(false)
-    , mbEnableFullScreen(GfxEnv::GetRef().GetCreationParams().mbFullScreen)
-    , mpBufferTex(0)
-    , mbAutoClear(true)
-    , _clearColor(fcolor4::Black())
-    , mpThisBuffer(0)
-    , miScissorStackIndex(0)
+    : _target(tgt)
+    , _enableVSync(false)
+    , _enableFullScreen(GfxEnv::GetRef().GetCreationParams().mbFullScreen)
+    , _autoClear(true)
     , miViewportStackIndex(0)
+    , miScissorStackIndex(0)
     , maScissorStack(kiVPStackMax)
     , maViewportStack(kiVPStackMax)
-    , mCurrentRtGroup(0)
-    , miPickState(0)
-    , _pickbuffer(0) {
+    , _clearColor(fcolor4::Black())
+    , _pickState(0) {
   // for( int i=0; i<kiVPStackMax; i++ )
   //	maViewportStack[i]
 }
@@ -37,29 +33,32 @@ FrameBufferInterface::FrameBufferInterface(Context& tgt)
 ///////////////////////////////////////////////////////////////////////////////
 
 FrameBufferInterface::~FrameBufferInterface() {
-  // if( mpBufferTex )
-  //{
-  //	delete mpBufferTex;
-  //}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+bool FrameBufferInterface::capture(const RtBuffer* rtb, CaptureBuffer* capbuf) {
+  auto rtb_format = rtb->format();
+  return captureAsFormat(rtb, capbuf, rtb_format);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void FrameBufferInterface::EnterPickState(PickBuffer* pb) {
-  miPickState++;
+  _pickState++;
 
-  // printf("enter miPickState<%d>\n", miPickState);
+  // printf("enter _pickState<%d>\n", _pickState);
 
   _pickbuffer = pb;
 }
 bool FrameBufferInterface::isPickState() const {
-  return (miPickState > 0);
+  return (_pickState > 0);
 }
 
 void FrameBufferInterface::LeavePickState() {
-  miPickState--;
-  // printf("leave miPickState<%d>\n", miPickState);
-  OrkAssert(miPickState >= 0);
+  _pickState--;
+  // printf("leave _pickState<%d>\n", _pickState);
+  OrkAssert(_pickState >= 0);
   _pickbuffer = 0;
 }
 PickBuffer* FrameBufferInterface::currentPickBuffer() const {
@@ -72,11 +71,11 @@ void FrameBufferInterface::PushRtGroup(RtGroup* Base) {
 
   bool first = mRtGroupStack.empty();
 
-  mRtGroupStack.push(mCurrentRtGroup);
+  mRtGroupStack.push(_currentRtGroup);
   SetRtGroup(Base);
 
-  int iw = mTarget.mainSurfaceWidth();
-  int ih = mTarget.mainSurfaceHeight();
+  int iw = _target.mainSurfaceWidth();
+  int ih = _target.mainSurfaceHeight();
 
   if (Base != nullptr) {
     iw = Base->width();
@@ -107,7 +106,7 @@ void FrameBufferInterface::PopRtGroup() {
 void FrameBufferInterface::BeginFrame(void) {
   _doBeginFrame();
   if (_hackcb)
-    _hackcb(&mTarget);
+    _hackcb(&_target);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

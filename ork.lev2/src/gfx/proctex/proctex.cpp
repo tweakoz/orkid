@@ -115,22 +115,21 @@ lev2::RtGroup* Buffer::GetRtGroup(lev2::Context* ptgt) {
     mRtGroup             = new RtGroup(ptgt, miW, miH);
     mRtGroup->_autoclear = false;
 
-    auto mrt = new ork::lev2::RtBuffer(lev2::RtgSlot::Slot0, lev2::EBufferFormat::RGBA8, miW, miH);
+    auto mrt = mRtGroup->createRenderTarget(lev2::EBufferFormat::RGBA8);
 
     mrt->_debugName = FormatString("%s<%p>", _basename.c_str(), this);
 
     mrt->_mipgen = RtBuffer::EMG_AUTOCOMPUTE;
-    mRtGroup->SetMrt(0, mrt);
 
     ptgt->FBI()->PushRtGroup(mRtGroup);
     ptgt->FBI()->PopRtGroup();
 
     printf(
         "Buffer<%p:%s> RtGroup<%p> texture<%p:%s>\n",
-        this,
+        (void*)this,
         _basename.c_str(),
-        mRtGroup,
-        mrt->texture(),
+        (void*)mRtGroup,
+        (void*)mrt->texture(),
         mrt->texture()->_debugName.c_str());
   }
   return mRtGroup;
@@ -186,7 +185,7 @@ void ImgModule::describeX(class_t* clazz) {
   opm->mLambdaMap["ExportPng"] = [=](Object* pobj) {
     Img32Module* as_module = rtti::autocast(pobj);
 
-    printf("ExportPNG pobj<%p> as_mod<%p>\n", pobj, as_module);
+    printf("ExportPNG pobj<%p> as_mod<%p>\n", (void*)pobj, (void*)as_module);
     if (as_module) {
       as_module->mExport = true;
     }
@@ -210,13 +209,11 @@ ImgModule::ImgModule()
     : mExport(false) {
 }
 Img32Module::Img32Module()
-    : ConstructOutTypPlug(ImgOut, dataflow::EPR_UNIFORM, typeid(Img32))
-    , ImgModule() {
+    : ConstructOutTypPlug(ImgOut, dataflow::EPR_UNIFORM, typeid(Img32)) {
   mThumbBuffer._basename = "Thumb32";
 }
 Img64Module::Img64Module()
-    : ConstructOutTypPlug(ImgOut, dataflow::EPR_UNIFORM, typeid(Img64))
-    , ImgModule() {
+    : ConstructOutTypPlug(ImgOut, dataflow::EPR_UNIFORM, typeid(Img64)) {
   mThumbBuffer._basename = "Thumb64";
 }
 Buffer& ImgModule::GetWriteBuffer(ProcTex& ptex) {
@@ -261,7 +258,8 @@ void ImgModule::Compute(dataflow::workunit* wu) {
       // SetRecentSceneFile(FileName.toAscii().data(),SCENEFILE_DIR);
       if (ork::FileEnv::filespec_to_extension(fname.c_str()).length() == 0)
         fname += ".dds";
-      fbi->Capture(*rtg, 0, fname);
+      auto buf0 = rtg->GetMrt(0);
+      fbi->capture(buf0.get(), fname);
     }
 
     mExport = false;
@@ -548,8 +546,8 @@ void ProcTex::compute(ProcTexContext& ptctx) {
       ork::file::Path indexed_path;
       indexed_path.Compose(dpath);
       printf("indexed_path<%s>\n", indexed_path.c_str());
-
-      fbi->Capture(*rtg, 0, indexed_path);
+      auto buf0 = rtg->GetMrt(0);
+      fbi->capture(buf0.get(), indexed_path);
     }
   }
   pTARG->debugPopGroup();
@@ -583,14 +581,8 @@ ProcTexContext::ProcTexContext()
     , mFloatRegs("ptex_float", 4)
     , mImage32Regs("ptex_img32", k32buffers)
     , mImage64Regs("ptex_img64", k64buffers)
-    , mTrashBuffer()
-    , mCurrentTime(0.0f)
-    , mTarget(nullptr)
-    , mBufferDim(0)
-    , mProcTexType(ProcTexType::REALTIME)
-    , mWriteFrames(false)
-    , mWriteFrameIndex(0)
     , mWritePath("ptex_out.png") {
+
   mdflowctx.SetRegisters<float>(&mFloatRegs);
   mdflowctx.SetRegisters<Img32>(&mImage32Regs);
   mdflowctx.SetRegisters<Img64>(&mImage64Regs);
@@ -664,7 +656,7 @@ void ProcTexContext::ReturnBuffer(Buffer* pbuf) {
 AA16Render::AA16Render(ProcTex& ptx, Buffer& bo)
     : mPTX(ptx)
     , bufout(bo)
-    , downsamplemat(ork::lev2::GfxEnv::GetRef().loadingContext(), "orkshader://proctex", "downsample16") {
+    , downsamplemat(lev2::contextForCurrentThread(), "orkshader://proctex", "downsample16") {
   downsamplemat.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
   downsamplemat._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
   downsamplemat._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);

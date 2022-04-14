@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -30,6 +30,8 @@ OIIO_NAMESPACE_USING
 
 namespace ork::lev2 {
 
+extern std::atomic<int> __FIND_IT;
+
 /////////////////////////////////////////////////////////////////////////
 
 static texture_ptr_t _getbrdfintmap(Context* targ) {
@@ -37,8 +39,19 @@ static texture_ptr_t _getbrdfintmap(Context* targ) {
 
   targ->makeCurrentContext();
   _map              = std::make_shared<lev2::Texture>();
+
+  uint64_t LOCK = lev2::GfxEnv::createLock();
+
   _map->_debugName  = "brdfIntegrationMap";
-  constexpr int DIM = 1024;
+
+  #if defined(__APPLE__)
+  constexpr int DIM = 512;
+  #elif defined(ORK_ARCHITECTURE_X86_64)
+  constexpr int DIM = 512;
+  #else
+  constexpr int DIM = 1024; // takes too long on arm
+  #endif
+
   ///////////////////////////////
   // dblock cache
   ///////////////////////////////
@@ -64,7 +77,7 @@ static texture_ptr_t _getbrdfintmap(Context* targ) {
       group->enqueue([=]() {
         for (int x = 0; x < DIM; x++) {
           float fx               = float(x) / float(DIM - 1);
-          dvec3 output           = brdf::integrateGGX<1024>(fx, fy);
+          dvec3 output           = brdf::integrateGGX<4096>(fx, fy);
           int texidxbase         = (ybase + x) * 4;
           texels[texidxbase + 0] = float(output.x);
           texels[texidxbase + 1] = float(output.y);
@@ -103,19 +116,20 @@ static texture_ptr_t _getbrdfintmap(Context* targ) {
   tid._data        = dblock->data();
 
   targ->TXI()->initTextureFromData(_map.get(), tid);
+  lev2::GfxEnv::releaseLock(LOCK);
   return _map;
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-Texture* PBRMaterial::brdfIntegrationMap(Context* targ) {
+texture_ptr_t PBRMaterial::brdfIntegrationMap(Context* targ) {
   static texture_ptr_t _map = _getbrdfintmap(targ);
-  return _map.get();
+  return _map;
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
+texture_ptr_t PBRMaterial::filterSpecularEnvMap(texture_ptr_t rawenvmap, Context* targ) {
   targ->makeCurrentContext();
   auto txi = targ->TXI();
   auto fbi = targ->FBI();
@@ -129,13 +143,14 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
   static const FxShaderParam* param_pfm            = nullptr;
   static const FxShaderParam* param_ruf            = nullptr;
   targ->debugPushGroup("PBRMaterial::filterSpecularEnvMap");
+  __FIND_IT.store(1);
   if (not mtl) {
     mtl = std::make_shared<FreestyleMaterial>();
     OrkAssert(mtl.get() != nullptr);
     mtl->gpuInit(targ, "orkshader://pbr_filterenv");
     tekFilterSpecMap = mtl->technique("tek_filterSpecularMap");
     OrkAssert(tekFilterSpecMap != nullptr);
-     printf("filterenv mtl<%p> tekFilterSpecMap<%p>\n", mtl.get(), tekFilterSpecMap);
+     //printf("filterenv mtl<%p> tekFilterSpecMap<%p>\n", mtl.get(), tekFilterSpecMap);
     param_mvp = mtl->param("mvp");
     param_pfm = mtl->param("prefiltmap");
     param_ruf = mtl->param("roughness");
@@ -144,7 +159,7 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
   auto filtex                                                       = std::make_shared<FilteredEnvMap>();
   rawenvmap->_varmap.makeValueForKey<filtenvmapptr_t>("filtenvmap") = filtex;
   ///////////////////////////////////////////////
-  printf("filterenv-spec tex<%p> hash<0x%zx>\n", rawenvmap, rawenvmap->_contentHash);
+  //printf("filterenv-spec tex<%p> hash<0x%zx>\n", rawenvmap, rawenvmap->_contentHash);
   boost::Crc64 basehasher;
   basehasher.accumulateString("filterenv-spec-v0");
   basehasher.accumulateItem<uint64_t>(rawenvmap->_contentHash);
@@ -153,7 +168,7 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
   auto cmipchain_datablock   = DataBlockCache::findDataBlock(cmipchain_hashkey);
   ///////////////////////////////////////////////
   if (cmipchain_datablock) {
-    printf("filterenv-spec tex<%p> loading precomputed!\n", rawenvmap);
+    //printf("filterenv-spec tex<%p> loading precomputed!\n", rawenvmap.get());
   } else {
     RenderContextFrameData RCFD(targ);
     int w = rawenvmap->_width;
@@ -166,23 +181,22 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
     while (numpix != 0) {
 
       auto outgroup = std::make_shared<RtGroup>(targ, w, h, 1);
-      auto outbuffr = std::make_shared<RtBuffer>(lev2::RtgSlot::Slot0, lev2::EBufferFormat::RGBA32F, w, h);
+      auto outbuffr = outgroup->createRenderTarget(lev2::EBufferFormat::RGBA32F);
       auto captureb = std::make_shared<CaptureBuffer>();
 
       outgroup->_autoclear = true;
       filtex->_rtgroup     = outgroup;
       filtex->_rtbuffer    = outbuffr;
       outbuffr->_debugName = FormatString("filteredenvmap-specenv-mip%d", imip);
-      outgroup->SetMrt(0, outbuffr.get());
 
-       printf("filterenv imip<%d> w<%d> h<%d>\n", imip, w, h);
-       printf("filterenv imip<%d> outgroup<%p> outbuf<%p>\n", imip, outgroup.get(), outbuffr.get());
+       //printf("filterenv imip<%d> w<%d> h<%d>\n", imip, w, h);
+       //printf("filterenv imip<%d> outgroup<%p> outbuf<%p>\n", imip, outgroup.get(), outbuffr.get());
 
       fbi->PushRtGroup(outgroup.get());
       mtl->begin(tekFilterSpecMap, RCFD);
       ///////////////////////////////////////////////
       mtl->bindParamMatrix(param_mvp, fmtx4::Identity());
-      mtl->bindParamCTex(param_pfm, rawenvmap);
+      mtl->bindParamCTex(param_pfm, rawenvmap.get());
       mtl->bindParamFloat(param_ruf, roughness);
       mtl->commit();
       dwi->quad2DEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
@@ -190,7 +204,7 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
       mtl->end(RCFD);
       fbi->PopRtGroup();
 
-      fbi->capture(*outgroup.get(), 0, captureb.get());
+      fbi->capture(outbuffr.get(), captureb.get());
 
       if (1) {
         auto outpath = file::Path::temp_dir() / FormatString("filteredenv-specmap-mip%d.exr", imip);
@@ -209,8 +223,8 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
       im.compressDefault(cim);
       compressed_levels.push_back(cim);
 
-      rawenvmap->_varmap.makeValueForKey<std::shared_ptr<RtGroup>>(FormatString("alt-tex-specenv-group-mip%d", imip))   = outgroup;
-      rawenvmap->_varmap.makeValueForKey<std::shared_ptr<RtBuffer>>(FormatString("alt-tex-specenv-buffer-mip%d", imip)) = outbuffr;
+      rawenvmap->_varmap.makeValueForKey<rtgroup_ptr_t>(FormatString("alt-tex-specenv-group-mip%d", imip))   = std::move(outgroup);
+      rawenvmap->_varmap.makeValueForKey<rtbuffer_ptr_t>(FormatString("alt-tex-specenv-buffer-mip%d", imip)) = std::move(outbuffr);
       w >>= 1;
       h >>= 1;
       roughness += 0.1f;
@@ -224,12 +238,13 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
     mipchain.writeXTX(cmipchain_datablock);
     DataBlockCache::setDataBlock(cmipchain_hashkey, cmipchain_datablock);
   }
-  auto alt_tex        = new Texture;
+  auto alt_tex        = std::make_shared<Texture>();
   alt_tex->_debugName = "filtenvmap-processed-specular";
   txi->LoadTexture(alt_tex, cmipchain_datablock);
 
-  rawenvmap->_varmap.makeValueForKey<Texture*>("alt-tex-specenv") = alt_tex;
+  rawenvmap->_varmap.makeValueForKey<texture_ptr_t>("alt-tex-specenv") = alt_tex;
 
+  __FIND_IT.store(0);
   targ->debugPopGroup();
 
   return alt_tex;
@@ -237,7 +252,7 @@ Texture* PBRMaterial::filterSpecularEnvMap(Texture* rawenvmap, Context* targ) {
 
 /////////////////////////////////////////////////////////////////////////
 
-Texture* PBRMaterial::filterDiffuseEnvMap(Texture* rawenvmap, Context* targ) {
+texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context* targ) {
   targ->makeCurrentContext();
   auto txi = targ->TXI();
   auto fbi = targ->FBI();
@@ -251,7 +266,10 @@ Texture* PBRMaterial::filterDiffuseEnvMap(Texture* rawenvmap, Context* targ) {
   static const FxShaderParam* param_pfm            = nullptr;
   static const FxShaderParam* param_ruf            = nullptr;
 
+  __FIND_IT.store(1);
   targ->debugPushGroup("PBRMaterial::filterDiffuseEnvMap");
+
+
   if (not mtl) {
     mtl = std::make_shared<FreestyleMaterial>();
     OrkAssert(mtl.get() != nullptr);
@@ -290,7 +308,7 @@ Texture* PBRMaterial::filterDiffuseEnvMap(Texture* rawenvmap, Context* targ) {
     while (numpix != 0) {
 
       auto outgroup        = std::make_shared<RtGroup>(targ, w, h, 1);
-      auto outbuffr        = std::make_shared<RtBuffer>(lev2::RtgSlot::Slot0, lev2::EBufferFormat::RGBA32F, w, h);
+      auto outbuffr = outgroup->createRenderTarget(lev2::EBufferFormat::RGBA32F);
       auto captureb        = std::make_shared<CaptureBuffer>();
       outgroup->_autoclear = true;
 
@@ -298,7 +316,6 @@ Texture* PBRMaterial::filterDiffuseEnvMap(Texture* rawenvmap, Context* targ) {
       filtex->_rtbuffer    = outbuffr;
       outbuffr->_debugName = FormatString("filteredenvmap-diffenv-mip%d", imip);
       // outbuffer->
-      outgroup->SetMrt(0, outbuffr.get());
 
       /// printf("filterenv imip<%d> w<%d> h<%d>\n", imip, w, h);
       // printf("filterenv imip<%d> outgroup<%p> outbuf<%p>\n", imip, outgroup.get(), outbuffr.get());
@@ -307,7 +324,7 @@ Texture* PBRMaterial::filterDiffuseEnvMap(Texture* rawenvmap, Context* targ) {
       mtl->begin(tekFilterDiffMap, RCFD);
       ///////////////////////////////////////////////
       mtl->bindParamMatrix(param_mvp, fmtx4::Identity());
-      mtl->bindParamCTex(param_pfm, rawenvmap);
+      mtl->bindParamCTex(param_pfm, rawenvmap.get());
       mtl->bindParamFloat(param_ruf, roughness);
       mtl->commit();
       dwi->quad2DEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
@@ -315,7 +332,7 @@ Texture* PBRMaterial::filterDiffuseEnvMap(Texture* rawenvmap, Context* targ) {
       mtl->end(RCFD);
       fbi->PopRtGroup();
 
-      fbi->capture(*outgroup.get(), 0, captureb.get());
+      fbi->capture(outbuffr.get(), captureb.get());
 
       if (1) {
         auto outpath = file::Path::temp_dir() / FormatString("filteredenv-diffmap-mip%d.exr", imip);
@@ -352,11 +369,12 @@ Texture* PBRMaterial::filterDiffuseEnvMap(Texture* rawenvmap, Context* targ) {
     DataBlockCache::setDataBlock(cmipchain_hashkey, cmipchain_datablock);
   }
 
-  auto alt_tex        = new Texture;
+  auto alt_tex        = std::make_shared<Texture>();
   alt_tex->_debugName = "filtenvmap-processed-diffuse";
   txi->LoadTexture(alt_tex, cmipchain_datablock);
-  rawenvmap->_varmap.makeValueForKey<Texture*>("alt-tex-diffenv") = alt_tex;
+  rawenvmap->_varmap.makeValueForKey<texture_ptr_t>("alt-tex-diffenv") = alt_tex;
 
+  __FIND_IT.store(0);
   targ->debugPopGroup();
 
   return alt_tex;

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -72,12 +72,14 @@ void Image::initFromInMemoryFile(std::string fmtguess, const void* srcdata, size
   in->read_image(TypeDesc::UINT8, &pixels[0]);
   in->close();
 
-  // deco::printf(_image_deco, "///////////////////////////////////\n");
-  // deco::printf(_image_deco, "// Image::initFromInMemoryFile()\n");
-  // deco::printf(_image_deco, "// _width<%zu>\n", _width);
-  // deco::printf(_image_deco, "// _height<%zu>\n", _height);
-  // deco::printf(_image_deco, "// _numcomponents<%zu>\n", _numcomponents);
-  // adeco::printf(_image_deco, "///////////////////////////////////\n");
+  if(1){
+  deco::printf(_image_deco, "///////////////////////////////////\n");
+   deco::printf(_image_deco, "// Image::initFromInMemoryFile()\n");
+   deco::printf(_image_deco, "// _width<%zu>\n", _width);
+   deco::printf(_image_deco, "// _height<%zu>\n", _height);
+   deco::printf(_image_deco, "// _numcomponents<%zu>\n", _numcomponents);
+   deco::printf(_image_deco, "///////////////////////////////////\n");
+ }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -172,6 +174,18 @@ void Image::convertToRGBA(Image& imgout) const {
   auto inp_pixels = (const uint8_t*)_data->data();
   auto out_pixels = (uint8_t*)imgout._data->data();
   switch (_numcomponents) {
+    case 1:
+      for (size_t y = 0; y < imgout._height; y++) {
+        for (size_t x = 0; x < imgout._width; x++) {
+          auto inppixel = pixel(x, y);
+          auto outpixel = imgout.pixel(x, y);
+          outpixel[0]   = inppixel[0];
+          outpixel[1]   = inppixel[0];
+          outpixel[2]   = inppixel[0];
+          outpixel[3]   = 0xff;
+        }
+      }
+      break;
     case 3:
       for (size_t y = 0; y < imgout._height; y++) {
         for (size_t x = 0; x < imgout._width; x++) {
@@ -230,7 +244,7 @@ void Image::compressBC7(CompressedImage& imgout) const {
   deco::printf(_image_deco, "// imgout._width<%zu>\n", _width);
   deco::printf(_image_deco, "// imgout._height<%zu>\n", _height);
   imgout._format = EBufferFormat::RGBA_BPTC_UNORM;
-  OrkAssert((_numcomponents == 3) or (_numcomponents == 4));
+  OrkAssert((_numcomponents == 1) or (_numcomponents == 3) or (_numcomponents == 4));
   imgout._width          = _width;
   imgout._height         = _height;
   imgout._blocked_width  = (_width + 3) & 0xfffffffc;
@@ -307,7 +321,7 @@ void Image::compressRGBA(CompressedImage& imgout) const {
   deco::printf(_image_deco, "// imgout._width<%zu>\n", _width);
   deco::printf(_image_deco, "// imgout._height<%zu>\n", _height);
   imgout._format = EBufferFormat::RGBA8;
-  OrkAssert((_numcomponents == 3) or (_numcomponents == 4));
+  OrkAssert((_numcomponents == 1) or (_numcomponents == 3) or (_numcomponents == 4));
   imgout._width          = _width;
   imgout._height         = _height;
   imgout._blocked_width  = (_width + 3) & 0xfffffffc;
@@ -331,6 +345,16 @@ void Image::compressRGBA(CompressedImage& imgout) const {
       auto src_line = src_base + y * src_stride;
       auto dst_line = dst_base + y * dst_stride;
       switch (_numcomponents) {
+      case 1:
+          for (size_t x = 0; x < imgout._width; x++) {
+            const uint8_t* src_pix_base = src_line + x;
+            uint8_t* dst_pix_base       = dst_line + (x * 4);
+            dst_pix_base[0]             = src_pix_base[0];
+            dst_pix_base[1]             = src_pix_base[0];
+            dst_pix_base[2]             = src_pix_base[0];
+            dst_pix_base[3]             = 0xff;
+          }
+          break;
         case 3:
           for (int x = 0; x < _width; x++) {
             const uint8_t* src_pix_base = src_line + (x * 3);

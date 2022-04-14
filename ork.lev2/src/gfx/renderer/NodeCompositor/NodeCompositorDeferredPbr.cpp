@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -84,23 +84,29 @@ void DeferredCompositingNodePbr::setEnvTexturePath(file::Path path) {
 }
 
 void DeferredCompositingNodePbr::_writeEnvTexture(asset::asset_ptr_t const& tex) {
+  asset::vars_constptr_t old_varmap;
+  if(_environmentTextureAsset){
+    old_varmap = _environmentTextureAsset->_varmap;
+    //printf("OLD <%p:%s>\n\n", _environmentTextureAsset.get(),_environmentTextureAsset->name().c_str());
+  }
+  //printf("NEW <%p:%s>\n\n", tex.get(),tex->name().c_str());
+
   _environmentTextureAsset = tex;
-  printf("WTF1 <%p>\n\n", _environmentTextureAsset.get());
   if (nullptr == _environmentTextureAsset)
     return;
   _environmentTextureAsset->_varmap = _texAssetVarMap;
 }
 
-lev2::Texture* DeferredCompositingNodePbr::envSpecularTexture() const {
+lev2::texture_ptr_t DeferredCompositingNodePbr::envSpecularTexture() const {
   return _filtenvSpecularMap;
 }
-lev2::Texture* DeferredCompositingNodePbr::envDiffuseTexture() const {
+lev2::texture_ptr_t DeferredCompositingNodePbr::envDiffuseTexture() const {
   return _filtenvDiffuseMap;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 struct PbrNodeImpl {
-  static const int KMAXLIGHTS = 8;
+  static const int KMAXLIGHTS = 32;
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   PbrNodeImpl(DeferredCompositingNodePbr* node)
       : _camname(AddPooledString("Camera"))
@@ -116,7 +122,7 @@ struct PbrNodeImpl {
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   void _render(DeferredCompositingNodePbr* node, CompositorDrawData& drawdata) {
-    //_timer.Start();
+    _timer.Start();
     EASY_BLOCK("pbr-_render");
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();
@@ -127,6 +133,10 @@ struct PbrNodeImpl {
     auto RSI                     = targ->RSI();
     auto DWI                     = targ->DWI();
     const auto TOPCPD            = CIMPL->topCPD();
+    /////////////////////////////////////////////////
+    RCFD.setUserProperty("rtg_gbuffer"_crc,_context._rtgGbuffer);
+    RCFD.setUserProperty("rtb_gbuffer"_crc,_context._rtbGbuffer);
+    RCFD.setUserProperty("rtb_accum"_crc,_context._rtbLightAccum );
     //////////////////////////////////////////////////////
     _context.renderUpdate(drawdata);
     auto VD = drawdata.computeViewData();
@@ -154,7 +164,7 @@ struct PbrNodeImpl {
     float skybox_level                       = node->skyboxLevel() * node->environmentIntensity();
     CIMPL->pushCPD(_context._accumCPD); // base lighting
     FBI->SetAutoClear(true);
-    FBI->PushRtGroup(_context._rtgLaccum);
+    FBI->PushRtGroup(_context._rtgLaccum.get());
     // targ->beginFrame();
     FBI->Clear(fvec4(0.1, 0.2, 0.3, 1), 1.0f);
     //////////////////////////////////////////////////////////////////
@@ -173,18 +183,28 @@ struct PbrNodeImpl {
     _context._lightingmtl._rasterstate.SetBlending(Blending::OFF);
     _context._lightingmtl._rasterstate.SetDepthTest(EDEPTHTEST_OFF);
     _context._lightingmtl._rasterstate.SetCullTest(ECULLTEST_PASS_BACK);
-    _context._lightingmtl.begin(
-        is_stereo //
-            ? _context._tekEnvironmentLightingStereo
-            : _context._tekEnvironmentLighting,
-        RCFD);
-    //////////////////////////////////////////////////////
-    _context._lightingmtl.bindParamMatrixArray(_context._parMatIVPArray, VD._ivp, 2);
-    _context._lightingmtl.bindParamMatrixArray(_context._parMatVArray, VD._v, 2);
-    _context._lightingmtl.bindParamMatrixArray(_context._parMatPArray, VD._p, 2);
-    _context._lightingmtl.bindParamVec2(_context._parZndc2eye, VD._zndc2eye);
 
-    /////////////////////////
+
+    int pbr_model = RCFD.getUserProperty("pbr_model"_crc).get<int>();
+
+    switch( pbr_model ){
+      case 1:
+      _context._lightingmtl.begin(
+          is_stereo //
+              ? _context._tekEnvironmentLightingSDFStereo
+              : _context._tekEnvironmentLightingSDF,
+          RCFD);
+        break;
+      case 0:
+      default:
+      _context._lightingmtl.begin(
+          is_stereo //
+              ? _context._tekEnvironmentLightingStereo
+              : _context._tekEnvironmentLighting,
+          RCFD);
+        break;
+    }
+    //////////////////////////////////////////////////////
 
     _context._lightingmtl.bindParamFloat(_context._parDepthFogDistance, 1.0f / node->depthFogDistance());
     _context._lightingmtl.bindParamFloat(_context._parDepthFogPower, node->depthFogPower());
@@ -198,32 +218,29 @@ struct PbrNodeImpl {
     //_context._lightingmtl.bindParamCTex(_context._parMapGBufRufMtlAlpha, _context._rtgGbuffer->GetMrt(2)->texture());
     _context._lightingmtl.bindParamCTex(_context._parMapDepth, _context._rtgGbuffer->_depthTexture);
 
-    _context._lightingmtl.bindParamCTex(_context._parMapSpecularEnv, node->envSpecularTexture());
-    _context._lightingmtl.bindParamCTex(_context._parMapDiffuseEnv, node->envDiffuseTexture());
+    _context._lightingmtl.bindParamCTex(_context._parMapSpecularEnv, node->envSpecularTexture().get());
+    _context._lightingmtl.bindParamCTex(_context._parMapDiffuseEnv, node->envDiffuseTexture().get());
 
     OrkAssert(_context.brdfIntegrationTexture() != nullptr);
-    _context._lightingmtl.bindParamCTex(_context._parMapBrdfIntegration, _context.brdfIntegrationTexture());
+    _context._lightingmtl.bindParamCTex(_context._parMapBrdfIntegration, _context.brdfIntegrationTexture().get());
+
+    _context._lightingmtl.bindParamCTex(_context._parMapVolTexA, _context._voltexA->_texture.get());
 
     /////////////////////////
-
     _context._lightingmtl.bindParamFloat(_context._parSkyboxLevel, skybox_level);
     _context._lightingmtl.bindParamVec3(_context._parAmbientLevel, node->ambientLevel());
     _context._lightingmtl.bindParamFloat(_context._parSpecularLevel, _context._specularLevel);
     _context._lightingmtl.bindParamFloat(_context._parDiffuseLevel, _context._diffuseLevel);
-
     /////////////////////////
-
     _context._lightingmtl.bindParamFloat(_context._parEnvironmentMipBias, node->environmentMipBias());
     _context._lightingmtl.bindParamFloat(_context._parEnvironmentMipScale, node->environmentMipScale());
-
     /////////////////////////
-
-    _context._lightingmtl.bindParamVec2(_context._parNearFar, fvec2(0.1, 1000));
-    _context._lightingmtl.bindParamVec2(
-        _context._parInvViewSize, fvec2(1.0 / float(_context._width), 1.0f / float(_context._height)));
     _context._lightingmtl._rasterstate.SetZWriteMask(false);
     _context._lightingmtl._rasterstate.SetDepthTest(EDEPTHTEST_OFF);
     _context._lightingmtl._rasterstate.SetAlphaTest(EALPHATEST_OFF);
+    /////////////////////////
+    _context.bindViewParams(VD);
+    /////////////////////////
     _context._lightingmtl.commit();
     RSI->BindRasterState(_context._lightingmtl._rasterstate);
     DWI->quad2DEMLTiled(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0), 16);
@@ -250,8 +267,8 @@ struct PbrNodeImpl {
 
     targ->debugPopGroup(); // "Deferred::LightAccum"
     targ->debugPopGroup(); // "Deferred::render"
-    // float totaltime = _timer.SecsSinceStart();
-    // printf( "Deferred::_render totaltime<%g>\n", totaltime );
+     //float totaltime = _timer.SecsSinceStart();
+     //printf( "Deferred::_render totaltime<%g>\n", totaltime );
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   PoolString _camname;
@@ -274,12 +291,12 @@ DeferredCompositingNodePbr::DeferredCompositingNodePbr() {
   //  PBR irradiance diffuse and specular maps
   ///////////////////////////////////////////////////////////////
   _texAssetVarMap->makeValueForKey<Texture::proc_t>("postproc") =
-      [this](Texture* tex, Context* targ, datablock_constptr_t inp_datablock) -> datablock_ptr_t {
-    printf(
+      [this](texture_ptr_t tex, Context* targ, datablock_constptr_t inp_datablock) -> datablock_ptr_t {
+    /*printf(
         "EnvironmentTexture Irradiance PreProcessor tex<%p:%s> datablocklen<%zu>...\n",
-        tex,
+        tex.get(),
         tex->_debugName.c_str(),
-        inp_datablock->length());
+        inp_datablock->length());*/
     // targ->beginFrame();
     auto hasher = DataBlock::createHasher();
     hasher->accumulateString("irradiancemap-v0");
@@ -318,12 +335,12 @@ void DeferredCompositingNodePbr::DoRender(CompositorDrawData& drawdata) {
   impl->_render(this, drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
-RtBuffer* DeferredCompositingNodePbr::GetOutput() const {
+rtbuffer_ptr_t DeferredCompositingNodePbr::GetOutput() const {
   auto& CTX = _impl.get<std::shared_ptr<PbrNodeImpl>>()->_context;
   return CTX._rtbLightAccum;
 }
 ///////////////////////////////////////////////////////////////////////////////
-RtGroup* DeferredCompositingNodePbr::GetOutputGroup() const {
+rtgroup_ptr_t DeferredCompositingNodePbr::GetOutputGroup() const {
   auto& CTX = _impl.get<std::shared_ptr<PbrNodeImpl>>()->_context;
   return CTX._rtgGbuffer;
 }

@@ -51,4 +51,4 @@ class NumbaSimApp(_simsetup.SimApp):
     super().__init__(vrmode,instance_set_class)
 ################################################
 app = NumbaSimApp()
-app.qtapp.exec()
+app.qtapp.mainThreadLoop()

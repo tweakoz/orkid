@@ -1,6 +1,9 @@
-////////////////////////////////////////////////////////////////////////////////
-// Copyright 2007, Michael T. Mayers, all rights reserved.
-////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -8,11 +11,11 @@
 
 #include <ork/math/frustum.h>
 #include <ork/math/cmatrix4.h>
+#include <ork/lev2/lev2_types.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace ork::lev2 {
-class Context;
 class UiCamera;
 struct CameraMatrices;
 
@@ -45,6 +48,8 @@ struct CameraData {
   void Persp(float fnear, float ffar, float faper /*degrees*/);
   void PerspH(float fnear, float ffar, float faperh /*degrees*/);
 
+  void Ortho(float left, float right, float top, float bottom,float fnear, float ffar);
+
   fvec3 mEye;
   fvec3 mTarget;
   fvec3 mUp;
@@ -53,14 +58,19 @@ struct CameraData {
   fvec3 _ynormal;
   fvec3 _znormal;
 
+  float _left = -1;
+  float _right = 1;
+  float _top = -1;
+  float _bottom = 1;
+
   lev2::UiCamera* _uiCamera = nullptr;
   float mAper               = 0.0f;
   float mHorizAper          = 0.0f;
   float mNear               = 0.0f;
   float mFar                = 0.0f;
-};
 
-using cameradata_ptr_t = std::shared_ptr<CameraData>;
+  bool _is_ortho = false;
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 

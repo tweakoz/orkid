@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <portaudio.h>
 #include <ork/application/application.h>
 #include <ork/kernel/string/deco.inl>
@@ -21,7 +28,7 @@ struct TestViewport final : public ui::Viewport {
 };
 using testvp_ptr_t = std::shared_ptr<TestViewport>;
 ///////////////////////////////////////////////////////////////////////////////
-struct UiTestApp final : public OrkEzQtApp {
+struct UiTestApp final : public OrkEzApp {
   UiTestApp(int& argc, char** argv);
   ~UiTestApp() override;
   ui::group_ptr_t _uivp;

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -34,7 +34,7 @@ struct PtxImpl {
       _blit2screenmtl.gpuInit(pTARG);
 
       _output                   = new lev2::RtGroup(pTARG, iW, iH);
-      _outputbuffer             = new lev2::RtBuffer(lev2::RtgSlot::Slot0, lev2::EBufferFormat::RGBA16F, iW, iH);
+      _outputbuffer             = _output->createRenderTarget(lev2::EBufferFormat::RGBA16F);
       _outputbuffer->_debugName = FormatString("PtxCompositingNode::output");
       _output->SetMrt(0, _outputbuffer);
     }
@@ -71,13 +71,14 @@ struct PtxImpl {
     CPD._stereoCameraMatrices = nullptr;
     CPD._stereo1pass          = false;
 
-    lev2::Texture* input_tex = nullptr;
+    lev2::texture_ptr_t input_tex = nullptr;
 
     if (auto try_render = drawdata._properties["render_out"_crcu].tryAs<RtBuffer*>()) {
       auto buffer = try_render.value();
       if (buffer) {
         assert(buffer != nullptr);
-        input_tex = buffer->texture();
+        OrkAssert(false); // FIXME!
+        input_tex = std::shared_ptr<Texture>(buffer->texture());
       }
     }
 
@@ -138,7 +139,7 @@ struct PtxImpl {
   proctex::ProcTexContext _ptexContext;
   PtxCompositingNode* _node = nullptr;
   RtGroup* _output          = nullptr;
-  RtBuffer* _outputbuffer   = nullptr;
+  rtbuffer_ptr_t _outputbuffer;
   Texture* _resultTexture   = nullptr;
   bool _needsinit           = true;
   float _time               = 0.0f;
@@ -230,7 +231,7 @@ void PtxCompositingNode::DoRender(CompositorDrawData& drawdata) // virtual
   _impl.getShared<PtxImpl>()->_render(drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
-lev2::RtBuffer* PtxCompositingNode::GetOutput() const {
+lev2::rtbuffer_ptr_t PtxCompositingNode::GetOutput() const {
   auto ptximpl = _impl.getShared<PtxImpl>();
   return ptximpl->_output->GetMrt(0);
 }

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -15,19 +15,23 @@
 
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-InstancedModelDrawable::InstancedModelDrawable(DrawableOwner* pent)
-    : Drawable() {
-  _instancedata = std::make_shared<InstancedDrawableData>();
+InstancedDrawable::InstancedDrawable() 
+  : Drawable() {
+  _instancedata = std::make_shared<InstancedDrawableInstanceData>();
   _drawcount = 0;
 }
-/////////////////////////////////////////////////////////////////////
-InstancedModelDrawable::~InstancedModelDrawable() {
-}
 ///////////////////////////////////////////////////////////////////////////////
-void InstancedModelDrawable::resize(size_t count) {
+void InstancedDrawable::resize(size_t count) {
   OrkAssert(count <= k_max_instances);
   _instancedata->resize(count);
   _count = count;
+}
+///////////////////////////////////////////////////////////////////////////////
+InstancedModelDrawable::InstancedModelDrawable()
+    : InstancedDrawable() {
+}
+/////////////////////////////////////////////////////////////////////
+InstancedModelDrawable::~InstancedModelDrawable() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 struct IMDIMPL_SUBMESH {
@@ -113,8 +117,8 @@ void InstancedModelDrawable::enqueueToRenderQueue(
   renderable.SetSortKey(0x00000001);
   renderable.SetDrawableDataA(GetUserDataA());
   renderable.SetDrawableDataB(GetUserDataB());
-  renderable.SetUserData0(item.mUserData0);
-  renderable.SetUserData1(item.mUserData1);
+  //renderable.SetUserData0(item._userdata[0]);
+  //renderable.SetUserData1(item._userdata[1]);
   renderable._instanced = true;
   ////////////////////////////////////////////////////////////////////
   renderable.SetRenderCallback([this](lev2::RenderContextInstData& RCID) { //

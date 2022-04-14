@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -29,12 +29,11 @@ void GfxInit(const std::string& gfxlayer);
 //  and initialize the reflection system
 ///////////////////////////////////////////////////////////
 
-struct TestApplication final : public Application {
+struct TestApplication {
 
-  lev2::stdfilesysinit_p _filesysinit;
-  TestApplication(int argc, char** argv) {
-    ApplicationStack::Push(this);
-    _filesysinit = std::make_shared<lev2::StdFileSystemInitalizer>(argc, argv);
+  TestApplication(appinitdata_ptr_t initdata) {
+    _spctx = std::make_shared<StringPoolContext>();
+    StringPoolStack::Push(_spctx);
 
     lev2::ClassInit();
     rtti::Class::InitializeClasses();
@@ -42,20 +41,20 @@ struct TestApplication final : public Application {
   }
 
   ~TestApplication() {
-    ApplicationStack::Pop();
+    StringPoolStack::Pop();
   }
+  stringpoolctx_ptr_t _spctx;
 };
 
 ///////////////////////////////////////////////////////////
 
 int main(int argc, char** argv, char** envp) {
+  auto init_data = std::make_shared<ork::AppInitData>(argc,argv,envp);
   return test::harness(
-      argc, //
-      argv,
-      envp,
+      init_data,
       "ork.lev2-unittests",
-      [=](svar16_t& scoped_var) { //
+      [=](test::appvar_t& scoped_var) { //
         // instantiate a TestApplication on the harness's stack
-        scoped_var.makeShared<TestApplication>(argc, argv);
+        scoped_var.makeShared<TestApplication>(init_data);
       });
 }

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -378,20 +378,20 @@ XgmAnimChannel::XgmAnimChannel(
     const PoolString& ChanName,
     const PoolString& UsageSemantic,
     EChannelType etype)
-    : mObjectName(ObjName)
-    , mChannelName(ChanName)
-    , meChannelType(etype)
+    : mChannelName(ChanName)
+    , mObjectName(ObjName)
+    , mUsageSemantic(UsageSemantic) 
     , miNumFrames(0)
-    , mUsageSemantic(UsageSemantic) {
+    , meChannelType(etype) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 XgmAnimChannel::XgmAnimChannel(EChannelType etype)
     : mChannelName()
-    , meChannelType(etype)
+    , mUsageSemantic() 
     , miNumFrames(0)
-    , mUsageSemantic() {
+    , meChannelType(etype) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -427,236 +427,77 @@ XgmVect4AnimChannel::XgmVect4AnimChannel(const PoolString& ObjName, const PoolSt
 ///////////////////////////////////////////////////////////////////////////////
 
 XgmMatrixAnimChannel::XgmMatrixAnimChannel()
-    : XgmAnimChannel(EXGMAC_MTX44)
-    , mSampledFrames(0)
-    , miAddIndex(0) {
+    : XgmAnimChannel(EXGMAC_MTX44) {
 }
 
 XgmMatrixAnimChannel::XgmMatrixAnimChannel(const PoolString& ObjName, const PoolString& ChanName, const PoolString& Usage)
-    : XgmAnimChannel(ObjName, ChanName, Usage, EXGMAC_MTX44)
-    , mSampledFrames(0)
-    , miAddIndex(0) {
+    : XgmAnimChannel(ObjName, ChanName, Usage, EXGMAC_MTX44) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmMatrixAnimChannel::AddFrame(const fmtx4& v) {
-  mSampledFrames[miAddIndex] = v;
-  miAddIndex++;
-  OrkAssert(miAddIndex <= miNumFrames);
+void XgmMatrixAnimChannel::setFrame(size_t i, const fmtx4& v) {
+  _sampledFrames[i] = v;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const fmtx4& XgmMatrixAnimChannel::GetFrame(int index) const {
-  OrkAssert(index < miAddIndex);
-  return mSampledFrames[index];
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-int XgmMatrixAnimChannel::GetNumFrames() const {
-  return miNumFrames;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void XgmMatrixAnimChannel::ReserveFrames(int icount) {
-  miNumFrames    = icount;
-  mSampledFrames = (fmtx4*)new fmtx4[icount];
-  for (int i = 0; i < icount; i++) {
-    new (mSampledFrames + i) fmtx4;
+fmtx4 XgmMatrixAnimChannel::GetFrame(int index) const {
+  if(index>=_sampledFrames.size()){
+    return fmtx4();
   }
+  return _sampledFrames[index];
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+size_t XgmMatrixAnimChannel::numFrames() const {
+  return _sampledFrames.size();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void XgmMatrixAnimChannel::reserveFrames(size_t icount) {
+  _sampledFrames.resize(icount);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 XgmDecompAnimChannel::XgmDecompAnimChannel()
-    : XgmAnimChannel(EXGMAC_DCMTX)
-    , mSampledFrames(0)
-    , miAddIndex(0) {
+    : XgmAnimChannel(EXGMAC_DCMTX) {
 }
 
 XgmDecompAnimChannel::XgmDecompAnimChannel(const PoolString& ObjName, const PoolString& ChanName, const PoolString& Usage)
-    : XgmAnimChannel(ObjName, ChanName, Usage, EXGMAC_DCMTX)
-    , mSampledFrames(0)
-    , miAddIndex(0) {
+    : XgmAnimChannel(ObjName, ChanName, Usage, EXGMAC_DCMTX){
+
+}
+ 
+
+///////////////////////////////////////////////////////////////////////////////
+
+void XgmDecompAnimChannel::setFrame(size_t i,const DecompMtx44& v) {
+  _sampledFrames[i]=v;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmDecompAnimChannel::AddFrame(const DecompMtx44& v) {
-  mSampledFrames[miAddIndex] = v;
-  miAddIndex++;
-  OrkAssert(miAddIndex <= miNumFrames);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-const DecompMtx44& XgmDecompAnimChannel::GetFrame(int index) const {
-  OrkAssert(index >= 0 && index < miAddIndex);
-  return mSampledFrames[index];
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-int XgmDecompAnimChannel::GetNumFrames() const {
-  return miNumFrames;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void XgmDecompAnimChannel::ReserveFrames(int icount) {
-  miNumFrames    = icount;
-  mSampledFrames = (DecompMtx44*)new DecompMtx44[icount];
-  for (int i = 0; i < icount; i++) {
-    new (mSampledFrames + i) DecompMtx44;
+DecompMtx44 XgmDecompAnimChannel::GetFrame(int index) const {
+  if(index>=_sampledFrames.size()){
+    return DecompMtx44();
   }
+  return _sampledFrames[index];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-struct chansettter {
-  static void set(XgmAnim* anm, animchannel_ptr_t Channel, const void* pdata) {
-    XgmDecompAnimChannel* DecChannel = rtti::autocast(Channel.get());
-    XgmMatrixAnimChannel* MtxChannel = rtti::autocast(Channel.get());
-    XgmFloatAnimChannel* F32Channel  = rtti::autocast(Channel.get());
-    XgmVect3AnimChannel* Ve3Channel  = rtti::autocast(Channel.get());
-    if (DecChannel) {
-      const DecompMtx44* DecBase = (const DecompMtx44*)pdata;
-      DecChannel->ReserveFrames(anm->GetNumFrames());
-      for (int ifr = 0; ifr < anm->GetNumFrames(); ifr++) {
-        DecompMtx44 DecMtx = DecBase[ifr];
-        DecChannel->AddFrame(DecMtx);
-      }
-    }
-    if (MtxChannel) {
-      const fmtx4* MatBase = (const fmtx4*)pdata;
-      MtxChannel->ReserveFrames(anm->GetNumFrames());
-      for (int ifr = 0; ifr < anm->GetNumFrames(); ifr++) {
-        fmtx4 Matrix = MatBase[ifr];
-        MtxChannel->AddFrame(Matrix);
-      }
-    } else if (F32Channel) {
-      const float* f32Base = (const float*)pdata;
-      F32Channel->ReserveFrames(anm->GetNumFrames());
-      for (int ifr = 0; ifr < anm->GetNumFrames(); ifr++) {
-        float value = f32Base[ifr];
-        F32Channel->AddFrame(value);
-      }
-    } else if (Ve3Channel) {
-      const fvec3* Ve3Base = (const fvec3*)pdata;
-      Ve3Channel->ReserveFrames(anm->GetNumFrames());
-      for (int ifr = 0; ifr < anm->GetNumFrames(); ifr++) {
-        fvec3 value = Ve3Base[ifr];
-        Ve3Channel->AddFrame(value);
-      }
-    }
-  }
-}; // namespace lev2
-///////////////////////////////////////////////////////////////////////////////
-bool XgmAnim::unloadUnManaged(XgmAnim* anm) {
-#if defined(ORKCONFIG_ASSET_UNLOAD)
-#if defined(WII)
-  // crap the wii actually does call this...
-  // OrkAssert(false);
-#else
 
-  anm->mPose.clear();
-  anm->miNumFrames = 0;
-  anm->mJointAnimationChannels.clear();
-  anm->mMaterialAnimationChannels.clear();
-
-#endif
-#endif
-  return true;
+size_t XgmDecompAnimChannel::numFrames() const {
+  return _sampledFrames.size();
 }
+
 ///////////////////////////////////////////////////////////////////////////////
-bool XgmAnim::LoadUnManaged(XgmAnim* anm, const AssetPath& fname) { /////////////////////////////////////////////////////////////
-  AssetPath fnameext(fname);
-  fnameext.SetExtension("xga");
-  AssetPath ActualPath = fnameext.ToAbsolute();
-  /////////////////////////////////////////////////////////////
-  OrkHeapCheck();
-  chunkfile::DefaultLoadAllocator allocator;
-  chunkfile::Reader chunkreader(fnameext, "xga", allocator);
-  OrkHeapCheck();
-  /////////////////////////////////////////////////////////////
-  if (chunkreader.IsOk()) {
-    chunkfile::InputStream* HeaderStream   = chunkreader.GetStream("header");
-    chunkfile::InputStream* AnimDataStream = chunkreader.GetStream("animdata");
-    ////////////////////////////////////////////////////////
-    int inumchannels = 0, inumframes = 0;
-    int inumjointchannels    = 0;
-    int inummaterialchannels = 0;
-    int ichannelclass = 0, iobjname = 0, ichnname = 0, iusgname = 0, idataoffset = 0;
-    int inumposebones = 0;
-    ////////////////////////////////////////////////////////
-    HeaderStream->GetItem(inumframes);
-    HeaderStream->GetItem(inumchannels);
-    anm->SetNumFrames(inumframes);
-    ////////////////////////////////////////////////////////
-    HeaderStream->GetItem(inumjointchannels);
-    for (int ichan = 0; ichan < inumjointchannels; ichan++) {
-      HeaderStream->GetItem(ichannelclass);
-      HeaderStream->GetItem(iobjname);
-      HeaderStream->GetItem(ichnname);
-      HeaderStream->GetItem(iusgname);
-      HeaderStream->GetItem(idataoffset);
-      const char* pchannelclass        = chunkreader.GetString(ichannelclass);
-      const char* pobjname             = chunkreader.GetString(iobjname);
-      const char* pchnname             = chunkreader.GetString(ichnname);
-      const char* pusgname             = chunkreader.GetString(iusgname);
-      void* pdata                      = AnimDataStream->GetDataAt(idataoffset);
-      ork::object::ObjectClass* pclass = rtti::autocast(rtti::Class::FindClass(pchannelclass));
-      auto Channel                     = std::dynamic_pointer_cast<XgmAnimChannel>(pclass->createShared());
 
-      printf("LoadAnim MatrixChannel<%s> objname<%s> numframes<%d>\n", pchnname, pobjname, inumframes);
-
-      Channel->SetChannelName(AddPooledString(pchnname));
-      Channel->SetObjectName(AddPooledString(pobjname));
-      Channel->SetChannelUsage(AddPooledString(pusgname));
-      chansettter::set(anm, Channel, pdata);
-      anm->AddChannel(Channel->GetChannelName(), Channel);
-    }
-    OrkHeapCheck();
-    ////////////////////////////////////////////////////////
-    HeaderStream->GetItem(inummaterialchannels);
-    for (int ichan = 0; ichan < inummaterialchannels; ichan++) {
-      HeaderStream->GetItem(ichannelclass);
-      HeaderStream->GetItem(iobjname);
-      HeaderStream->GetItem(ichnname);
-      HeaderStream->GetItem(iusgname);
-      HeaderStream->GetItem(idataoffset);
-      const char* pchannelclass        = chunkreader.GetString(ichannelclass);
-      const char* pobjname             = chunkreader.GetString(iobjname);
-      const char* pchnname             = chunkreader.GetString(ichnname);
-      const char* pusgname             = chunkreader.GetString(iusgname);
-      void* pdata                      = AnimDataStream->GetDataAt(idataoffset);
-      ork::object::ObjectClass* pclass = rtti::autocast(rtti::Class::FindClass(pchannelclass));
-      auto Channel                     = std::dynamic_pointer_cast<XgmAnimChannel>(pclass->createShared());
-      Channel->SetChannelName(AddPooledString(pchnname));
-      Channel->SetObjectName(AddPooledString(pobjname));
-      Channel->SetChannelUsage(AddPooledString(pusgname));
-      chansettter::set(anm, Channel, pdata);
-      anm->AddChannel(Channel->GetChannelName(), Channel);
-    }
-    OrkHeapCheck();
-    ////////////////////////////////////////////////////////
-    HeaderStream->GetItem(inumposebones);
-    DecompMtx44 decmtx;
-    anm->mPose.reserve(inumposebones);
-    printf("inumposebones<%d>\n", inumposebones);
-    for (int iposeb = 0; iposeb < inumposebones; iposeb++) {
-      HeaderStream->GetItem(ichnname);
-      HeaderStream->GetItem(decmtx);
-      std::string PoseChannelName = chunkreader.GetString(ichnname);
-      PoseChannelName             = ork::string::replaced(PoseChannelName, "_", ".");
-      anm->mPose.AddSorted(AddPooledString(PoseChannelName.c_str()), decmtx);
-    }
-    ////////////////////////////////////////////////////////
-  }
-  OrkHeapCheck();
-  return chunkreader.IsOk();
+void XgmDecompAnimChannel::reserveFrames(size_t icount) {
+  _sampledFrames.resize(icount);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

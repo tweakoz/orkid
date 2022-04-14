@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -24,29 +24,29 @@ FreestyleMaterial::~FreestyleMaterial() {
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::dump() const {
 
-  printf("freestylematerial<%p>\n", this);
-  printf("fxshader<%p>\n", _shader);
+  printf("freestylematerial<%p>\n", (void*) this);
+  printf("fxshader<%p>\n", (void*) _shader);
 
   for (auto item : _shader->_techniques) {
 
     auto name = item.first;
     auto tek  = item.second;
-    printf("tek<%p:%s> valid<%d>\n", tek, name.c_str(), int(tek->mbValidated));
+    printf("tek<%p:%s> valid<%d>\n", (void*) tek, name.c_str(), int(tek->mbValidated));
   }
   for (auto item : _shader->_parameterByName) {
     auto name = item.first;
     auto par  = item.second;
-    printf("par<%p:%s> type<%s>\n", par, name.c_str(), par->mParameterType.c_str());
+    printf("par<%p:%s> type<%s>\n", (void*) par, name.c_str(), par->mParameterType.c_str());
   }
   for (auto item : _shader->_parameterBlockByName) {
     auto name   = item.first;
     auto parblk = item.second;
-    printf("parblk<%p:%s>\n", parblk, name.c_str());
+    printf("parblk<%p:%s>\n", (void*) parblk, name.c_str());
   }
   for (auto item : _shader->_computeShaderByName) {
     auto name = item.first;
     auto csh  = item.second;
-    printf("csh<%p:%s>\n", csh, name.c_str());
+    printf("csh<%p:%s>\n", (void*) csh, name.c_str());
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -145,6 +145,12 @@ void FreestyleMaterial::bindParamFloat(const FxShaderParam* par, float value) {
   fxi->BindParamFloat(par, value);
 }
 ///////////////////////////////////////////////////////////////////////////////
+void FreestyleMaterial::bindParamFloatArray(const FxShaderParam* par, const float* value, size_t count) {
+  OrkAssert(par);
+  auto fxi = _initialTarget->FXI();
+  fxi->BindParamFloatArray(par, value,count);
+}
+///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::bindParamCTex(const FxShaderParam* par, const Texture* tex) {
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();
@@ -167,6 +173,38 @@ void FreestyleMaterial::bindParamVec4(const FxShaderParam* par, const fvec4& v) 
   OrkAssert(par);
   auto fxi = _initialTarget->FXI();
   fxi->BindParamVect4(par, v);
+}
+///////////////////////////////////////////////////////////////////////////////
+void FreestyleMaterial::bindParamQuat(const FxShaderParam* par, const fquat& q) {
+  OrkAssert(par);
+  auto fxi = _initialTarget->FXI();
+  fvec4 V4(q.w,q.x,q.y,q.z);
+  fxi->BindParamVect4(par, V4);
+}
+///////////////////////////////////////////////////////////////////////////////
+void FreestyleMaterial::bindParamPlane(const FxShaderParam* par, const fplane& p) {
+  OrkAssert(par);
+  auto fxi = _initialTarget->FXI();
+  fvec4 V4(p.n.x,p.n.y,p.n.z,p.d);
+  fxi->BindParamVect4(par, V4);
+}
+///////////////////////////////////////////////////////////////////////////////
+void FreestyleMaterial::bindParamVec2Array(const FxShaderParam* par, const fvec2* v, size_t count) {
+  OrkAssert(par);
+  auto fxi = _initialTarget->FXI();
+  fxi->BindParamVect2Array(par, v, count);
+}
+///////////////////////////////////////////////////////////////////////////////
+void FreestyleMaterial::bindParamVec3Array(const FxShaderParam* par, const fvec3* v, size_t count) {
+  OrkAssert(par);
+  auto fxi = _initialTarget->FXI();
+  fxi->BindParamVect3Array(par, v, count);
+}
+///////////////////////////////////////////////////////////////////////////////
+void FreestyleMaterial::bindParamVec4Array(const FxShaderParam* par, const fvec4* v, size_t count) {
+  OrkAssert(par);
+  auto fxi = _initialTarget->FXI();
+  fxi->BindParamVect4Array(par, v, count);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::bindParamU64(const FxShaderParam* par, uint64_t v) {

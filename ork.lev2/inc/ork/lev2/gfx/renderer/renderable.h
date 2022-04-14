@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -20,18 +20,6 @@
 
 namespace ork::lev2 {
 
-class Light;
-class LightMask;
-class CameraData;
-class Anim;
-class IRenderer;
-class GfxMaterial;
-class Manip;
-class RenderContextInstData;
-class Context;
-class GfxMaterial;
-class ManipManager;
-
 ///////////////////////////////////////////////////////////////////////////////
 //
 // A Renderable is an object that renders itself in an atomic, Render call. When drawing
@@ -46,7 +34,7 @@ class ManipManager;
 
 struct IRenderable {
 
-  using var_t                                  = svar16_t;
+  using var_t                                  = svar32_t;
   static constexpr int kManipRenderableSortKey = 0x7fffffff;
   static constexpr int kLastRenderableSortKey  = 0x7ffffffe;
   static constexpr int kFirstRenderableSortKey = 0;
@@ -119,20 +107,22 @@ struct ModelRenderable : public IRenderable {
   void Render(const IRenderer* renderer) const final;
   bool CanGroup(const IRenderable* oth) const final;
 
-  float mEngineParamFloats[kMaxEngineParamFloats];
+  const XgmSubMesh* mSubMesh = nullptr;
+  const XgmMesh* mMesh       = nullptr;
 
   xgmmodelinst_constptr_t _modelinst;
-  uint32_t mSortKey;
-  int mSubMeshIndex;
-  int mMaterialIndex;
-  int mMaterialPassIndex;
-  int mEdgeColor;
-  float mScale;
+  uint32_t mSortKey      = 0;
+  int mSubMeshIndex      = 0;
+  int mMaterialIndex     = 0;
+  int mMaterialPassIndex = 0;
+  int mEdgeColor         = -1;
+  float mScale           = 1.0f;
+
+  float mEngineParamFloats[kMaxEngineParamFloats];
+
   fvec3 mOffset;
   fvec3 mRotate;
-  const XgmSubMesh* mSubMesh;
   xgmcluster_ptr_t _cluster;
-  const XgmMesh* mMesh;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -144,10 +134,6 @@ struct CallbackRenderable : public IRenderable {
   CallbackRenderable(IRenderer* renderer = NULL);
 
   void SetSortKey(uint32_t skey);
-  void SetUserData0(var_t pdata);
-  const var_t& GetUserData0() const;
-  void SetUserData1(var_t pdata);
-  const var_t& GetUserData1() const;
   void SetRenderCallback(cbtype_t cb);
   cbtype_t GetRenderCallback() const;
   void Render(const IRenderer* renderer) const final;
@@ -156,8 +142,6 @@ struct CallbackRenderable : public IRenderable {
   uint32_t mSortKey;
   int mMaterialIndex;
   int mMaterialPassIndex;
-  var_t mUserData0;
-  var_t mUserData1;
   cbtype_t mRenderCallback;
 };
 

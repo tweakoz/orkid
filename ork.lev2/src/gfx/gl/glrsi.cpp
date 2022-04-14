@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -28,12 +28,29 @@ void GlRasterStateInterface::SetZWriteMask( bool bv )
 }
 void GlRasterStateInterface::SetRGBAWriteMask( bool rgb, bool a )
 {
+	_curmask._r = rgb;
+	_curmask._g = rgb;
+	_curmask._b = rgb;
+	_curmask._a = a;
+
 	GLenum rgbmask = rgb ? GL_TRUE : GL_FALSE;
 	GLenum amask = a ? GL_TRUE : GL_FALSE;
 	glColorMask( rgbmask,
 				 rgbmask,
 				 rgbmask,
 				 amask );
+}
+RGBAMask GlRasterStateInterface::SetRGBAWriteMask( const RGBAMask& newmask)
+{
+	RGBAMask oldmask = _curmask;
+	_curmask = newmask;
+
+	glColorMask( newmask._r ? GL_TRUE : GL_FALSE,
+				 newmask._g ? GL_TRUE : GL_FALSE,
+				 newmask._b ? GL_TRUE : GL_FALSE,
+				 newmask._a ? GL_TRUE : GL_FALSE );
+
+	return oldmask;
 }
 void GlRasterStateInterface::SetBlending( Blending eVal )
 {
@@ -159,7 +176,6 @@ void GlRasterStateInterface::setScissorTest( EScissorTest eVal )
 
 void GlRasterStateInterface::BindRasterState( SRasterState const &newstate, bool bForce )
 {
-	//_target.debugPushGroup("GlRasterStateInterface::BindRasterState");
 	bForce = true;
 	bool bAlphaTestChanged =	(newstate.GetAlphaTest()	!=	mLastState.GetAlphaTest()		);
 //	bool bTextureModeChanged =	(newstate.GetTextureMode()	!=	rLast.GetTextureMode()		);
@@ -262,7 +278,6 @@ void GlRasterStateInterface::BindRasterState( SRasterState const &newstate, bool
 		}
 	}
 	GL_ERRORCHECK();
-//	_target.debugPopGroup();
 
 }
 

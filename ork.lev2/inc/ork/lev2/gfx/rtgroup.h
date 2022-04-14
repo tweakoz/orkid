@@ -1,17 +1,19 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #pragma once
 
+#include <ork/lev2/lev2_types.h>
 #include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/kernel/any.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-
-class Texture;
-class Context;
-class GfxMaterial;
-class RtGroup;
-class RtBuffer;
 
 /// ////////////////////////////////////////////////////////////////////////////
 /// ////////////////////////////////////////////////////////////////////////////
@@ -25,7 +27,7 @@ class RtBuffer;
 struct RtBuffer final {
   enum EMipGen { EMG_NONE, EMG_AUTOCOMPUTE, EMG_USER };
 
-  RtBuffer(RtgSlot etype, EBufferFormat efmt, int iW, int iH);
+  RtBuffer(const RtGroup* rtg, int slot, EBufferFormat efmt, int iW, int iH);
 
   Texture* texture() const {
     return _texture;
@@ -38,9 +40,11 @@ struct RtBuffer final {
     mSizeDirty = sd;
   }
 
-  int miW, miH;
+  const RtGroup* _rtgroup;
+  int _width, _height;
+  int _slot;
   Texture* _texture;
-  RtgSlot mType;
+  //RtgSlot mType;
   EBufferFormat mFormat;
   svarp_t _impl;
   bool mSizeDirty;
@@ -55,12 +59,14 @@ struct RtGroup final {
 
   ~RtGroup();
   /////////////////////////////////////////
-  RtBuffer* GetMrt(int idx) const {
+  rtbuffer_ptr_t GetMrt(int idx) const {
     OrkAssert((idx >= 0) && (idx < kmaxmrts));
     return mMrt[idx];
   }
   /////////////////////////////////////////
-  void SetMrt(int idx, RtBuffer* buffer);
+  rtbuffer_ptr_t createRenderTarget(EBufferFormat efmt);
+  /////////////////////////////////////////
+  void SetMrt(int idx, rtbuffer_ptr_t buffer);
   int GetNumTargets(void) const {
     return mNumMrts;
   }
@@ -97,7 +103,7 @@ struct RtGroup final {
   static const int kmaxmrts = 4;
 
   Context* _parentTarget;
-  RtBuffer* mMrt[kmaxmrts];
+  rtbuffer_ptr_t mMrt[kmaxmrts];
   OffscreenBuffer* mDepth;
   Texture* _depthTexture = nullptr;
   int mNumMrts;

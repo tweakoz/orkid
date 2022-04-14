@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -22,10 +22,11 @@ namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 XgmModel::XgmModel()
-    : mpUserData(0)
+    : miBonesPerCluster(0)
+    , mpUserData(0)
     , miNumMaterials(0)
-    , miBonesPerCluster(0)
     , mbSkinned(false) {
+    _varmap = std::make_shared<asset::vars_t>();
 }
 
 XgmModel::~XgmModel() {
@@ -541,24 +542,24 @@ void XgmModel::RenderSkinned(
           const XgmBone& bone = skeleton().bone(ib);
           fmtx4 bone_head     = WorldMat * LocalPose.RefLocalMatrix(bone._parentIndex);
           fmtx4 bone_tail     = WorldMat * LocalPose.RefLocalMatrix(bone._childIndex);
-          fvec3 h             = bone_head.GetTranslation();
-          fvec3 t             = bone_tail.GetTranslation();
+          fvec3 h             = bone_head.translation();
+          fvec3 t             = bone_tail.translation();
 
           fvec3 hnx, hny, hnz;
           bone_head.toNormalVectors(hnx, hny, hnz);
-          hnx.Normalize();
-          hny.Normalize();
-          hnz.Normalize();
+          hnx.normalizeInPlace();
+          hny.normalizeInPlace();
+          hnz.normalizeInPlace();
 
           fvec3 delta      = (t - h);
           float bonelength = delta.length();
-          fvec3 n          = delta.Normal();
+          fvec3 n          = delta.normalized();
           float bl2        = bonelength * 0.1;
           fvec3 hh         = h + n * bl2;
 
           fvec3 a, b, c, d;
 
-          if (math::areValuesClose(abs(n.Dot(hnz)), 1, 0.01)) {
+          if (math::areValuesClose(abs(n.dotWith(hnz)), 1, 0.01)) {
             a = hh + hnx * bl2;
             b = hh - hnx * bl2;
             c = hh + hny * bl2;
@@ -573,7 +574,7 @@ void XgmModel::RenderSkinned(
 
           auto add_vertex = [&](const fvec3 pos, const fvec3& col) {
             hvtx.mPosition = pos;
-            hvtx.mColor    = col.GetABGRU32();
+            hvtx.mColor    = col.ABGRU32();
             vw.AddVertex(hvtx);
           };
           // printf("n<%g %g %g>\n", n.x, n.y, n.z);
@@ -686,9 +687,9 @@ void XgmCluster::dump() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 RenderContextInstModelData::RenderContextInstModelData()
-    : mbisSkinned(false)
-    , mMesh(nullptr)
-    , mSubMesh(nullptr) {
+    : mMesh(nullptr)
+    , mSubMesh(nullptr)
+    , mbisSkinned(false) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////

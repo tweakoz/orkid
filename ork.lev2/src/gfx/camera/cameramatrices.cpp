@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -43,7 +43,7 @@ void CameraMatrices::projectDepthRay(const fvec2& v2d, fvec3& vdir, fvec3& vori)
   far_xb_lerp.lerp(_frustum.mFarCorners[3], _frustum.mFarCorners[2], v2d.x);
   fvec3 far_lerp;
   far_lerp.lerp(far_xt_lerp, far_xb_lerp, v2d.y);
-  vdir = (far_lerp - near_lerp).Normal();
+  vdir = (far_lerp - near_lerp).normalized();
   vori = near_lerp;
 }
 
@@ -63,21 +63,21 @@ void CameraMatrices::GetPixelLengthVectors(const fvec3& Pos, const fvec2& vp, fv
   int ivph = int(vp.y);
   /////////////////////////////////////////////////////////////////
   fvec4 va    = Pos;
-  fvec4 va_xf = va.Transform(_vpmatrix);
-  va_xf.PerspectiveDivide();
+  fvec4 va_xf = va.transform(_vpmatrix);
+  va_xf.perspectiveDivideInPlace();
   va_xf = va_xf * fvec4(vp.x, vp.y, 0.0f);
   /////////////////////////////////////////////////////////////////
   fvec4 vdx    = Pos + _camdat.xNormal();
-  fvec4 vdx_xf = vdx.Transform(_vpmatrix);
-  vdx_xf.PerspectiveDivide();
+  fvec4 vdx_xf = vdx.transform(_vpmatrix);
+  vdx_xf.perspectiveDivideInPlace();
   vdx_xf     = vdx_xf * fvec4(vp.x, vp.y, 0.0f);
-  float MagX = (vdx_xf - va_xf).Mag(); // magnitude in pixels of mBillboardRight
+  float MagX = (vdx_xf - va_xf).magnitude(); // magnitude in pixels of mBillboardRight
   /////////////////////////////////////////////////////////////////
   fvec4 vdy    = Pos + _camdat.yNormal();
-  fvec4 vdy_xf = vdy.Transform(_vpmatrix);
-  vdy_xf.PerspectiveDivide();
+  fvec4 vdy_xf = vdy.transform(_vpmatrix);
+  vdy_xf.perspectiveDivideInPlace();
   vdy_xf     = vdy_xf * fvec4(vp.x, vp.y, 0.0f);
-  float MagY = (vdy_xf - va_xf).Mag(); // magnitude in pixels of mBillboardUp
+  float MagY = (vdy_xf - va_xf).magnitude(); // magnitude in pixels of mBillboardUp
   /////////////////////////////////////////////////////////////////
   OutX = _camdat.xNormal() * (2.0f / MagX);
   OutY = _camdat.yNormal() * (2.0f / MagY);

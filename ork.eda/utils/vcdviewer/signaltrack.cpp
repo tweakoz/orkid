@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include "vcdviewer.h"
 #include <ork/lev2/input/inputdevice.h>
 
@@ -86,7 +93,7 @@ HandlerResult SignalTrackWidget::DoOnUiEvent(event_constptr_t evptr) {
       }
       break;
     case EventCode::MOUSE_ENTER:
-      printf("enter trakwidg<%p>\n", this);
+      printf("enter trakwidg<%p>\n", (void*) this);
       uictx->_overlayWidget = overlay.get();
       break;
     case EventCode::MOUSE_LEAVE:
@@ -241,8 +248,8 @@ void SignalTrackWidget::DoDraw(ui::drawevent_constptr_t drwev) {
   float matrix_yscale  = float(_geometry._h - 4);
   float matrix_yoffset = float(_geometry._y) + 5;
   fmtx4 scale_matrix, trans_matrix;
-  scale_matrix.SetScale(matrix_xscale, matrix_yscale, 1.0f);
-  trans_matrix.Translate(matrix_xoffset, matrix_yoffset, 0.0f);
+  scale_matrix.setScale(matrix_xscale, matrix_yscale, 1.0f);
+  trans_matrix.translate(matrix_xoffset, matrix_yoffset, 0.0f);
   auto mmatrix = scale_matrix * trans_matrix;
   ////////////////////////////////
   int ix1, iy1, ix2, iy2, ixc, iyc;

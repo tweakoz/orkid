@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include "vcdviewer.h"
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -36,8 +43,8 @@ void Overlay::DoDraw(drawevent_constptr_t drwev) {
     float matrix_yscale  = 1.0f; // float(_geometry._h);
     float matrix_yoffset = 4.0f; // float(_geometry._y) + offy + 4;
     fmtx4 scale_matrix, trans_matrix;
-    scale_matrix.SetScale(matrix_xscale, matrix_yscale, 1.0f);
-    trans_matrix.Translate(matrix_xoffset, matrix_yoffset, 0.0f);
+    scale_matrix.setScale(matrix_xscale, matrix_yscale, 1.0f);
+    trans_matrix.translate(matrix_xoffset, matrix_yoffset, 0.0f);
     return scale_matrix * trans_matrix;
   };
   ////////////////////////////////

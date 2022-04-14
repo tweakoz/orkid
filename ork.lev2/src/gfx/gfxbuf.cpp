@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -36,24 +36,16 @@ OffscreenBuffer::OffscreenBuffer(
     int iH,
     EBufferFormat efmt,
     const std::string& name)
-    : mpContext(nullptr)
-    , _parent(Parent)
+    : _parent(Parent)
     , miWidth(iW)
     , miHeight(iH)
-    , mbDirty(true)
-    , _name(name)
     , meFormat(efmt)
-    , _parentRtGroup(nullptr)
-    , mpTexture(nullptr)
-    , mRootWidget(nullptr)
-    , mbSizeIsDirty(true) {
+    , mbDirty(true)
+    , mbSizeIsDirty(true)
+    , _name(name) {
 }
 
 OffscreenBuffer::~OffscreenBuffer() {
-  //	if( mpContext )
-  //	{
-  //		delete mpContext;
-  //	}
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -91,29 +83,19 @@ Window::~Window() {
 /////////////////////////////////////////////////////////////////////////
 
 void OffscreenBuffer::BeginFrame(void) {
-  if (0 == mpContext) {
-    context();
-  }
-  mpContext->beginFrame();
+  _sharedcontext->beginFrame();
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 void OffscreenBuffer::EndFrame(void) {
-  if (mpContext) {
-    mpContext->endFrame();
-  }
+  _sharedcontext->endFrame();
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 Context* OffscreenBuffer::context(void) const {
-  //	if( 0 == mpContext )
-  //{
-  // initContext();
-  //}
-
-  return mpContext;
+  return _sharedcontext.get();
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -121,8 +103,7 @@ Context* OffscreenBuffer::context(void) const {
 void OffscreenBuffer::initContext() {
   auto ctxclazz  = GfxEnv::GetRef().contextClass();
   _sharedcontext = std::dynamic_pointer_cast<Context>(ctxclazz->createShared());
-  mpContext      = _sharedcontext.get();
-  mpContext->initializeOffscreenContext(this);
+  _sharedcontext->initializeOffscreenContext(this);
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -130,11 +111,10 @@ void OffscreenBuffer::initContext() {
 void Window::initContext() {
   auto ctxclazz  = GfxEnv::GetRef().contextClass();
   _sharedcontext = std::dynamic_pointer_cast<Context>(ctxclazz->createShared());
-  mpContext      = _sharedcontext.get();
   if (mpCTXBASE) {
-    mpCTXBASE->setContext(mpContext);
+    mpCTXBASE->setContext(_sharedcontext.get());
   }
-  mpContext->initializeWindowContext(this, mpCTXBASE);
+  _sharedcontext->initializeWindowContext(this, mpCTXBASE);
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -234,7 +214,7 @@ void OffscreenBuffer::RenderMatOrthoQuad(
       DynamicVertexBuffer<SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
 
       // U32 uc = clr.GetBGRAU32();
-      U32 uc = clr.GetVtxColorAsU32();
+      U32 uc = clr.VtxColorAsU32();
       ork::lev2::VtxWriter<SVtxV12C4T16> vw;
       vw.Lock(context(), &vb, 6);
       vw.AddVertex(SVtxV12C4T16(fx0, fy0, 0.0f, fu0, fv0, uv2[0], uv2[1], uc));
@@ -303,7 +283,7 @@ void OffscreenBuffer::RenderMatOrthoQuad(
       DynamicVertexBuffer<SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
 
       // U32 uc = clr.GetBGRAU32();
-      U32 uc = clr.GetVtxColorAsU32();
+      U32 uc = clr.VtxColorAsU32();
       ork::lev2::VtxWriter<SVtxV12C4T16> vw;
       vw.Lock(context(), &vb, 6);
       vw.AddVertex(SVtxV12C4T16(fx0, fy0, 0.0f, uv0.x, uv0.y, 0.0f, 0.0f, uc));
@@ -333,15 +313,15 @@ void OffscreenBuffer::RenderMatOrthoQuad(
 }
 
 OrthoQuad::OrthoQuad()
-    : mfrot(0.0f)
-    , mfu0a(0.0f)
-    , mfu1a(0.0f)
-    , mfu0b(0.0f)
-    , mfu1b(0.0f)
+    : mfu0a(0.0f)
     , mfv0a(0.0f)
-    , mfv1a(0.0f)
+    , mfu0b(0.0f)
     , mfv0b(0.0f)
-    , mfv1b(0.0f) {
+    , mfu1a(0.0f)
+    , mfv1a(0.0f)
+    , mfu1b(0.0f)
+    , mfv1b(0.0f)
+    , mfrot(0.0f) {
 }
 
 /////////////////////////////////////////////////////////////////////////

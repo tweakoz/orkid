@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -107,7 +107,7 @@ public:
     }
   }
   float pointDistance(const vec2_type& point) const {
-    return mNormal.Dot(point) + mfC;
+    return mNormal.dotWith(point) + mfC;
   }
   float pointDistance(float fx, float fy) const {
     return (mNormal.x * fx) + (mNormal.y * fy) + mfC;
@@ -204,9 +204,9 @@ template <typename T> struct Ray3 {
       , mDirection(d)
       , mInverseDirection(1.0f / d.x, 1.0f / d.y, 1.0f / d.z)
       , mID(-1) {
-    mdot_dd = mDirection.Dot(mDirection);
-    mdot_do = mDirection.Dot(mOrigin);
-    mdot_oo = mOrigin.Dot(mOrigin);
+    mdot_dd = mDirection.dotWith(mDirection);
+    mdot_do = mDirection.dotWith(mOrigin);
+    mdot_oo = mOrigin.dotWith(mOrigin);
     mbSignX = (mInverseDirection.x >= 0.0f);
     mbSignY = (mInverseDirection.y >= 0.0f);
     mbSignZ = (mInverseDirection.z >= 0.0f);
@@ -222,7 +222,7 @@ template <typename T> struct Ray3 {
     vec3_type o, d;
     o.lerp(a.mOrigin, b.mOrigin, fi);
     d.lerp(a.mDirection, b.mDirection, fi);
-    d.Normalize();
+    d.normalizeInPlace();
     *this = Ray3(o, d);
   }
   void BiLerp(const Ray3& x0y0, const Ray3& x1y0, const Ray3& x0y1, const Ray3& x1y1, float fx, float fy) {
@@ -255,8 +255,8 @@ struct Ray3HitTest {
   int miTriTestsPassed;
   Ray3HitTest()
       : miSphTests(0)
-      , miTriTests(0)
       , miSphTestsPassed(0)
+      , miTriTests(0)
       , miTriTestsPassed(0) {
   }
   void OnHit(const any32& userdata, const fray3& r) {

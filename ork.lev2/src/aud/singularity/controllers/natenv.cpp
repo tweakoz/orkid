@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 //#include <audiofile.h>
 #include <string>
 #include <assert.h>
@@ -15,15 +22,15 @@ namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 
 NatEnv::NatEnv()
-    : _curseg(0)
-    , _numseg(0)
+    : _layer(nullptr)
+    , _curseg(0)
     , _prvseg(0)
+    , _numseg(0)
+    , _framesrem(0)
     , _slopePerSecond(0.0f)
     , _slopePerSample(0.0f)
     , _SR(getSampleRate())
-    , _framesrem(0)
-    , _state(0)
-    , _layer(nullptr) {
+    , _state(0){
   _envadjust = [](const EnvPoint& inp, //
                   int iseg,
                   const KeyOnInfo& KOI) -> EnvPoint { //
@@ -149,7 +156,8 @@ float NatEnv::compute() {
       float dbatten = linear_amp_ratio_to_decibel(_curamp);
       if (((_curseg + 1) == _numseg) and (dbatten < -72.0f)) {
         _state = 3;
-        _layer->release();
+        auto s = synth::instance();
+        s->releaseLayer(_layer);
       }
       break;
     }

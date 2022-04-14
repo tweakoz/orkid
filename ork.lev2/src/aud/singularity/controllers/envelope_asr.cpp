@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <string>
 #include <assert.h>
 #include <unistd.h>
@@ -22,18 +29,18 @@ AsrData::AsrData() {
   };
 }
 
-ControllerInst* AsrData::instantiate(Layer* l) const // final
+ControllerInst* AsrData::instantiate(layer_ptr_t l) const // final
 {
   return new AsrInst(this, l);
 }
 
-AsrInst::AsrInst(const AsrData* data, Layer* l)
+AsrInst::AsrInst(const AsrData* data, layer_ptr_t l)
     : ControllerInst(l)
     , _data(data)
-    , _curslope_persamp(0.0f)
     , _curseg(-1)
+    , _mode(0)
     , _released(false)
-    , _mode(0) {
+    , _curslope_persamp(0.0f) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////

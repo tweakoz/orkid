@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -17,18 +17,9 @@
 #include <unordered_map>
 #include <boost/uuid/uuid.hpp>
 
-namespace ork::reflect {
-struct ObjectProperty;
-}
+#include "../types.h"
 
 namespace ork::reflect::serdes {
-
-struct ISerializer;
-struct IDeserializer;
-struct Node;
-
-using node_ptr_t = std::shared_ptr<Node>;
-using var_t      = svar1024_t;
 
 enum struct NodeType {
   UNKNOWN, //

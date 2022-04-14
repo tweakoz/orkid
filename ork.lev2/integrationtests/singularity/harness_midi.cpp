@@ -1,14 +1,17 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include "harness.h"
 #include <iostream>
 #include <cstdlib>
 
-#if defined(__APPLE__)
-#include <RtMidi.h>
-#else
 #include <rtmidi/RtMidi.h>
-#endif
 
-void mycallback(double deltatime, std::vector<unsigned char>* message, void* userData) {
+void mymidicallback(double deltatime, std::vector<unsigned char>* message, void* userData) {
   auto numbytes = message->size();
   for (unsigned int i = 0; i < numbytes; i++)
     printf("%02x ", (int)message->at(i));
@@ -48,7 +51,7 @@ void mycallback(double deltatime, std::vector<unsigned char>* message, void* use
     }
   }
 }
-
+/*
 using impl_t = std::shared_ptr<RtMidiIn>;
 
 midicontext_ptr_t MidiContext::instance() {
@@ -92,4 +95,4 @@ void MidiContext::startMidiInputByIndex(int inputid) {
   // Don't ignore sysex, timing, or active sensing messages.
   rtinpimpl->ignoreTypes(true, true, true);
   // Clean up
-}
+}*/

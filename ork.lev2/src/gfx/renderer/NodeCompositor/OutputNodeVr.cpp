@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -42,16 +42,15 @@ struct VRIMPL {
   void gpuInit(lev2::Context* pTARG) {
     if (_doinit) {
       pTARG->debugPushGroup("VRIMPL::gpuInit");
-      int width  = orkidvr::device()._width * 2;
-      int height = orkidvr::device()._height;
+      int width  = orkidvr::device()._width * 2 * (_vrnode->supersample() + 1);
+      int height = orkidvr::device()._height * (_vrnode->supersample() + 1);
       _blit2screenmtl.SetUserFx("orkshader://solid", "texcolor");
       _blit2screenmtl.gpuInit(pTARG);
 
-      printf( "vr width<%d> height<%d>\n", width, height );
+      printf("vr width<%d> height<%d>\n", width, height);
       _rtg            = new RtGroup(pTARG, width, height, 1);
-      auto buf        = new RtBuffer(lev2::RtgSlot::Slot0, lev2::EBufferFormat::RGBA8, width, height);
+      auto buf        = _rtg->createRenderTarget(lev2::EBufferFormat::RGBA8);
       buf->_debugName = "WtfVrRt";
-      _rtg->SetMrt(0, buf);
 
       pTARG->debugPopGroup();
 
@@ -64,16 +63,16 @@ struct VRIMPL {
     fmtx4 rx;
     fmtx4 ry;
     fmtx4 rz;
-    rx.SetRotateX(-PI * 0.5);
-    ry.SetRotateY(PI * 0.5);
-    rz.SetRotateZ(PI * 0.5);
+    rx.setRotateX(-PI * 0.5);
+    ry.setRotateY(PI * 0.5);
+    rz.setRotateZ(PI * 0.5);
 
     for (auto item : controllers) {
 
       auto controller = item.second;
 
       fmtx4 scalemtx;
-      scalemtx.SetScale(controller->_button1Down ? 0.05 : 0.025);
+      scalemtx.setScale(controller->_button1Down ? 0.05 : 0.025);
 
       fmtx4 controller_worldspace = controller->_world_matrix;
 
@@ -121,7 +120,7 @@ struct VRIMPL {
         auto eye   = vrcam->GetEye();
         auto tgt   = vrcam->GetTarget();
         auto up    = vrcam->GetUp();
-        rootmatrix.LookAt(eye, tgt, up);
+        rootmatrix.lookAt(eye, tgt, up);
       } else {
         targ->debugMarker("Vr::nocamera");
       }
@@ -137,8 +136,9 @@ struct VRIMPL {
     ///////////////////////////////////
 
     auto& VRDEV = orkidvr::device();
-    int width   = VRDEV._width * 2;
-    int height  = VRDEV._height;
+    int width   = VRDEV._width * 2 * (_vrnode->supersample() + 1);
+    int height  = VRDEV._height * (_vrnode->supersample() + 1);
+    // printf( "vr width<%d> height<%d>\n", width, height );
 
     drawdata._properties["OutputWidth"_crcu].set<int>(width);
     drawdata._properties["OutputHeight"_crcu].set<int>(height);
@@ -169,9 +169,9 @@ struct VRIMPL {
     CIMPL->popCPD();
   }
   ///////////////////////////////////////
+  VrCompositingNode* _vrnode            = nullptr;
   StereoCameraMatrices* _stereomatrices = nullptr;
   PoolString _camname, _layers;
-  VrCompositingNode* _vrnode = nullptr;
   CompositingPassData _CPD;
   fmtx4 _viewOffsetMatrix;
   RtGroup* _rtg                      = nullptr;
@@ -180,7 +180,8 @@ struct VRIMPL {
   ork::lev2::GfxMaterial3DSolid _blit2screenmtl;
 };
 ///////////////////////////////////////////////////////////////////////////////
-VrCompositingNode::VrCompositingNode() {
+VrCompositingNode::VrCompositingNode()
+    : _supersample(0) {
   _impl = std::make_shared<VRIMPL>(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -217,9 +218,12 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
       assert(buffer != nullptr);
       auto tex = buffer->texture();
       if (tex) {
+
+        const auto& vrdev = orkidvr::device();
+
         drawdata.context()->debugPushGroup("VrCompositingNode::to_hmd");
         targ->FBI()->PushRtGroup(impl->_rtg);
-        orkidvr::composite(targ, tex);
+        vrdev.__composite(targ, tex);
         targ->FBI()->PopRtGroup();
         drawdata.context()->debugPopGroup();
         /////////////////////////////////////////////////////////////////////////////
@@ -227,13 +231,10 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
         /////////////////////////////////////////////////////////////////////////////
         drawdata.context()->debugPushGroup("VrCompositingNode::to_screen");
 
-        const auto& vrdev = orkidvr::device();
-
-        if(_distorion_lambda ){
-          _distorion_lambda(framedata,tex);
-        }
-        else{
-          auto& mtl     = impl->_blit2screenmtl;
+        if (_distorion_lambda) {
+          _distorion_lambda(framedata, tex);
+        } else {
+          auto& mtl = impl->_blit2screenmtl;
           mtl.SetAuxMatrix(fmtx4::Identity());
           mtl.SetTexture(tex);
           mtl.SetTexture2(nullptr);

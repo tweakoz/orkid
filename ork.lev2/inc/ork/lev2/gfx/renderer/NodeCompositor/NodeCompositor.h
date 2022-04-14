@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -10,6 +10,7 @@
 #include <ork/dataflow/dataflow.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/gfx/renderer/rendercontext.h>
+#include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/renderer/frametek.h>
 #include <ork/lev2/gfx/renderer/compositor.h>
@@ -38,8 +39,6 @@ public:
   virtual void composite(CompositorDrawData& drawdata) {
   }
 };
-using outputcompositingnode_ptr_t      = std::shared_ptr<OutputCompositingNode>;
-using outputcompositingnode_constptr_t = std::shared_ptr<const OutputCompositingNode>;
 
 ///////////////////////////////////////////////////////////////////////////////
 /// RenderCompositingNode : compositor node responsible for generation of
@@ -54,10 +53,10 @@ public:
   ~RenderCompositingNode();
   void gpuInit(lev2::Context* pTARG, int w, int h);
   void Render(CompositorDrawData& drawdata);
-  virtual lev2::RtBuffer* GetOutput() const {
+  virtual lev2::rtbuffer_ptr_t GetOutput() const {
     return nullptr;
   }
-  virtual lev2::RtGroup* GetOutputGroup() const {
+  virtual lev2::rtgroup_ptr_t GetOutputGroup() const {
     return nullptr;
   }
 
@@ -78,7 +77,7 @@ public:
   ~PostCompositingNode();
   void gpuInit(lev2::Context* pTARG, int w, int h);
   void Render(CompositorDrawData& drawdata);
-  virtual lev2::RtBuffer* GetOutput() const {
+  virtual lev2::rtbuffer_ptr_t GetOutput() const {
     return nullptr;
   }
 
@@ -106,15 +105,15 @@ private:
   void SetNodeA(ork::rtti::ICastable* const& val);
   void GetNodeB(ork::rtti::ICastable*& val) const;
   void SetNodeB(ork::rtti::ICastable* const& val);
-  lev2::RtBuffer* GetOutput() const override {
-    return mOutput;
+  lev2::rtbuffer_ptr_t GetOutput() const override {
+    return _output;
   }
 
   PostCompositingNode* mSubA = nullptr;
   PostCompositingNode* mSubB = nullptr;
   CompositingMaterial mCompositingMaterial;
-  lev2::RtBuffer* mOutput = nullptr;
-  lev2::RtGroup* _rtg     = nullptr;
+  lev2::rtbuffer_ptr_t _output;
+  lev2::rtgroup_ptr_t _rtg;
   Op2CompositeMode mMode;
   fvec4 mLevelA;
   fvec4 mLevelB;
@@ -177,4 +176,9 @@ public:
   PostCompositingNode* _postfxNode;
   OutputCompositingNode* _outputNode;
 };
+
+using outputcompositingnode_ptr_t      = std::shared_ptr<OutputCompositingNode>;
+using outputcompositingnode_constptr_t = std::shared_ptr<const OutputCompositingNode>;
+
 } // namespace ork::lev2
+

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -20,7 +20,10 @@ namespace ork {
 Sphere::Sphere( const fvec3& boxmin, const fvec3& boxmax )
 {
 	mCenter = (boxmin+boxmax)*0.5f;
-	mRadius = (boxmax-mCenter).Mag();
+	mRadius = (boxmax-mCenter).magnitude();
+}
+Sphere::Sphere( const AABox& box )
+    : Sphere(box.mMin,box.mMax){
 }
 
 AABox::AABox()
@@ -97,13 +100,13 @@ bool AABox::Intersect( const fray3& ray, fvec3& isect_in, fvec3& isect_out ) con
 
 void AABox::SupportMapping( const fvec3& v, fvec3& result ) const
 {
-    //Vector3.Dot(ref this.corners[0], ref v, out num3);
-    float num3 = v.Dot( Corner(0) );
+    //Vector3.dotWith(ref this.corners[0], ref v, out num3);
+    float num3 = v.dotWith( Corner(0) );
 
     int index = 0;
     for (int i = 1; i < 8; i++)
     {
-        float num2 = v.Dot( Corner(i) );
+        float num2 = v.dotWith( Corner(i) );
 
         if (num2 > num3)
         {
@@ -126,13 +129,13 @@ void AABox::BeginGrow()
 
 void AABox::Grow( const fvec3& vin )
 {
-    mMin.setX( std::min( mMin.x, vin.x ) );
-    mMin.setY( std::min( mMin.y, vin.y ) );
-    mMin.setZ( std::min( mMin.z, vin.z ) );
+    mMin.x = ( std::min( mMin.x, vin.x ) );
+    mMin.y = ( std::min( mMin.y, vin.y ) );
+    mMin.z = ( std::min( mMin.z, vin.z ) );
 
-    mMax.setX( std::max( mMax.x, vin.x ) );
-    mMax.setY( std::max( mMax.y, vin.y ) );
-    mMax.setZ( std::max( mMax.z, vin.z ) );
+    mMax.x = ( std::max( mMax.x, vin.x ) );
+    mMax.y = ( std::max( mMax.y, vin.y ) );
+    mMax.z = ( std::max( mMax.z, vin.z ) );
 
 }
 void AABox::EndGrow()
@@ -218,19 +221,19 @@ bool AABox::contains(const float test_point_X, const float test_point_Z) const
 void AABox::Constrain(fvec3& test_point) const
 {
     if (test_point.x > mMax.x)
-        test_point.setX(mMax.x);
+        test_point.x = (mMax.x);
     else if (test_point.x < mMin.x)
-        test_point.setX(mMin.x);
+        test_point.x = (mMin.x);
 
     if (test_point.z > mMax.z)
-        test_point.setZ(mMax.z);
+        test_point.z = (mMax.z);
     else if (test_point.z < mMin.z)
-        test_point.setZ(mMin.z);
+        test_point.z = (mMin.z);
 
     if (test_point.y > mMax.y)
-        test_point.setY(mMax.y);
+        test_point.y = (mMax.y);
     else if (test_point.y < mMin.y)
-        test_point.setY(mMin.y);
+        test_point.y = (mMin.y);
 
 
 }
@@ -240,11 +243,18 @@ void AABox::Constrain(fvec3& test_point) const
 fvec3 AABox::Corner( int idx ) const
 {
     fvec3 rval;
-    rval.setX( ((idx & 1) == 1) ? mMax.x : mMin.x );
-    rval.setY( ((idx & 2) == 1) ? mMax.y : mMin.y );
-    rval.setZ( ((idx & 4) == 1) ? mMax.z : mMin.z );
+    rval.x = (idx & 1) ? mMax.x : mMin.x;
+    rval.y = (idx & 2) ? mMax.y : mMin.y;
+    rval.z = (idx & 4) ? mMax.z : mMin.z;
     return rval;
 }
 
+fvec3 AABox::center() const {
+    return mMin+size()*0.5;
 }
+fvec3 AABox::size() const {
+    return mMax - mMin;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
+} // namespace ork

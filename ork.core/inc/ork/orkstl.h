@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 //////////////////////////////////////////////////////////////// 
@@ -34,17 +34,16 @@
 
 #include <vector>
 #include <ork/kernel/orkvector.h>
+#include <ork/kernel/orklut.h>
 
 //////////////////////////////////////////////
 
-#if defined(ORK_CONFIG_IX)||defined(WII)||defined(WIN32)||defined(ORK_OSX)
 #define orkmap std::map
 #define orkmultimap std::multimap
 #define orklist std::list
 #define orkvector std::vector
 #define orkset std::set
 #define orkstack std::stack
-#endif
 
 //////////////////////////////////////////////
 

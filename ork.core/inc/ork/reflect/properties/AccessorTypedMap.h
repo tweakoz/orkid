@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -23,8 +23,9 @@ public:
       void (Object::*eraser)(const KeyType&, int));
 
 private:
-  /*virtual*/ bool ReadElement(const Object*, const KeyType&, int, ValueType&) const;
-  /*virtual*/ bool WriteElement(Object*, const KeyType&, int, const ValueType*) const;
+  bool ReadElement(object_constptr_t, const KeyType&, int, ValueType&) const final;
+  bool EraseElement(object_ptr_t, const KeyType&, int) const final;
+  bool WriteElement(object_ptr_t, const KeyType&, int, const ValueType*) const final;
 
   bool (Object::*mGetter)(const KeyType&, int, ValueType&) const;
   void (Object::*mSetter)(const KeyType&, int, const ValueType&);

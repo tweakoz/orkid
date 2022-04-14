@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -106,7 +106,7 @@ vertex vertex::lerp(const vertex& vtx, float flerp) const {
   vertex vcenter;
   vcenter.mPos.lerp(vtx.mPos, mPos, flerp);
   vcenter.mNrm.lerp(vtx.mNrm, mNrm, flerp);
-  vcenter.mNrm.Normalize();
+  vcenter.mNrm.normalizeInPlace();
   for (int ic = 0; ic < vertex::kmaxcolors; ic++) {
     vcenter.mCol[ic].lerp(vtx.mCol[ic], mCol[ic], flerp);
   }
@@ -140,10 +140,10 @@ void vertex::Center(const vertex** pverts, int icnt) {
       mUV[it].mMapTangent += pverts[i]->mUV[it].mMapTangent * ficnt;
     }
   }
-  mNrm.Normalize();
+  mNrm.normalizeInPlace();
   for (int it = 0; it < vertex::kmaxuvs; it++) {
-    mUV[it].mMapBiNormal.Normalize();
-    mUV[it].mMapTangent.Normalize();
+    mUV[it].mMapBiNormal.normalizeInPlace();
+    mUV[it].mMapTangent.normalizeInPlace();
   }
 }
 
@@ -198,9 +198,9 @@ edge::edge()
 ////////////////////////////////////////////////////////////////
 
 edge::edge(vertex_ptr_t va, vertex_ptr_t vb)
-    : miNumConnectedPolys(0)
-    , _vertexA(va)
-    , _vertexB(vb) {
+    : _vertexA(va)
+    , _vertexB(vb)
+    , miNumConnectedPolys(0) {
   for (int i = 0; i < kmaxpolysperedge; i++)
     miConnectedPolys[i] = -1;
 }
@@ -345,7 +345,7 @@ vertex poly::ComputeCenter(const vertexpool& vpool) const {
     }
   }
   vcenter.mPos = vcenter.mPos * frecip;
-  vcenter.mNrm.Normalize();
+  vcenter.mNrm.normalizeInPlace();
   return vcenter;
 }
 
@@ -353,13 +353,13 @@ vertex poly::ComputeCenter(const vertexpool& vpool) const {
 
 float poly::ComputeArea(const vertexpool& vpool, const fmtx4& MatRange) const {
   float farea     = 0.0f;
-  ork::fvec3 base = _vertices[0]->mPos.Transform(MatRange);
-  ork::fvec3 prev = _vertices[1]->mPos.Transform(MatRange);
+  ork::fvec3 base = _vertices[0]->mPos.transform(MatRange);
+  ork::fvec3 prev = _vertices[1]->mPos.transform(MatRange);
   // compute area polygon as area of triangle fan
   for (int i = 2; i < miNumSides; i++) {
-    ork::fvec3 next = _vertices[i]->mPos.Transform(MatRange);
+    ork::fvec3 next = _vertices[i]->mPos.transform(MatRange);
     // area of triangle 1/2 length of cross product the vector of any two edges
-    farea += (prev - base).Cross(next - base).Mag() * 0.5f;
+    farea += (prev - base).crossWith(next - base).magnitude() * 0.5f;
     prev = next;
   }
   return farea;
@@ -371,7 +371,7 @@ float poly::ComputeEdgeLength(const vertexpool& vpool, const fmtx4& MatRange, in
   int inumvtx = miNumSides;
   auto v0     = _vertices[(iedge + 0) % miNumSides];
   auto v1     = _vertices[(iedge + 1) % miNumSides];
-  float elen  = (v0->mPos.Transform(MatRange) - v1->mPos.Transform(MatRange)).Mag();
+  float elen  = (v0->mPos.transform(MatRange) - v1->mPos.transform(MatRange)).magnitude();
   return elen;
 }
 
@@ -383,11 +383,11 @@ fvec3 poly::ComputeNormal(const vertexpool& vpool) const {
   auto v1 = _vertices[1]->mPos;
   for (int i = 2; i < miNumSides; i++) {
     auto v2 = _vertices[i % miNumSides]->mPos;
-    rval += (v0 - v1).Cross(v2 - v1);
+    rval += (v0 - v1).crossWith(v2 - v1);
     v0 = v1;
     v1 = v2;
   }
-  return rval.Normal();
+  return rval.normalized();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

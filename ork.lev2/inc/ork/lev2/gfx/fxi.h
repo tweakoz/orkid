@@ -1,12 +1,13 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #pragma once
 
-struct FxComputeShader;
-struct FxShaderStorageBuffer;
-
-struct FxShaderParamBlock;
-struct FxShaderParamBuffer;
-struct FxShaderParamBufferMapping;
-typedef std::shared_ptr<FxShaderParamBufferMapping> parambuffermappingptr_t;
+#include <ork/lev2/lev2_types.h>
 
 /// ////////////////////////////////////////////////////////////////////////////
 /// ////////////////////////////////////////////////////////////////////////////
@@ -43,6 +44,8 @@ public:
   virtual void BindParamVect2(const FxShaderParam* hpar, const fvec2& Vec)                        = 0;
   virtual void BindParamVect3(const FxShaderParam* hpar, const fvec3& Vec)                        = 0;
   virtual void BindParamVect4(const FxShaderParam* hpar, const fvec4& Vec)                        = 0;
+  virtual void BindParamVect2Array(const FxShaderParam* hpar, const fvec2* Vec, const int icount) = 0;
+  virtual void BindParamVect3Array(const FxShaderParam* hpar, const fvec3* Vec, const int icount) = 0;
   virtual void BindParamVect4Array(const FxShaderParam* hpar, const fvec4* Vec, const int icount) = 0;
   virtual void BindParamFloatArray(const FxShaderParam* hpar, const float* pfA, const int icnt)   = 0;
   virtual void BindParamFloat(const FxShaderParam* hpar, float fA)                                = 0;

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -9,7 +9,7 @@
 
 inline ork::fvec4 SphMap( const ork::fvec3& N, const ork::fvec3& EyeToPointDir, const rend_texture2D& tex )
 {
-	ork::fvec3 ref = EyeToPointDir-N*(N.Dot(EyeToPointDir)*2.0f);
+	ork::fvec3 ref = EyeToPointDir-N*(N.dotWith(EyeToPointDir)*2.0f);
 	float p = ::sqrtf( ref.x*ref.x+ref.y*ref.y+::powf(ref.z+1.0f,2.0f) );
 	float reflectS = ref.x/(2.0f*p)+0.5f;
 	float reflectT = ref.y/(2.0f*p)+0.5f;
@@ -89,7 +89,7 @@ struct Shader2 : public rend_shader
 		float wxm = ::fmod( ::abs(wx)/20.0f, 1.0f )<0.1f;
 		float wym = ::fmod( ::abs(wy)/20.0f, 1.0f )<0.1f;
 		float wzm = ::fmod( ::abs(wz)/20.0f, 1.0f )<0.1f;
-		ork::fvec3 vN = (ork::fvec3(wx,wy,wz)-mRenderData->mEye).Normal();
+		ork::fvec3 vN = (ork::fvec3(wx,wy,wz)-mRenderData->mEye).normalized();
 		/////////////////////////////////////////////////////////////////
 		ork::fvec4 tex0 = OctaveTex( 4, wy, wy, 0.01f, 0.407f, 2.0f, 0.6f, mTexture1 );
 		ork::fvec4 tex1 = OctaveTex( 4, wx, wz, 0.01f, 0.507f, 2.0f, 0.5f, mTexture1 );
@@ -107,8 +107,8 @@ struct Shader2 : public rend_shader
 		pdstfrag->mZ = z;
 		pdstfrag->mpPrimitive = prefrag.mpSrcPrimitive;
 		pdstfrag->mpShader = this;
-		pdstfrag->mWldSpaceNrm.SetXYZ( wnx, wny, wnz );
-		pdstfrag->mWorldPos.SetXYZ( wx, wy, wz );
+		pdstfrag->mWldSpaceNrm =ork:: fvec3( wnx, wny, wnz );
+		pdstfrag->mWorldPos = ork::fvec3( wx, wy, wz );
 		///////////////////////////////////////////////
 	}
 	//void ShadeBlock( AABuffer& aabuf, const rend_prefragsubgroup* pfgsubgrp, int ifragbase, int icount ) = 0;

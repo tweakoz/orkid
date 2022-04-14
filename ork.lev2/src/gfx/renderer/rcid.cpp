@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -38,8 +38,8 @@ const RenderContextInstData RenderContextInstData::Default;
 ///////////////////////////////////////////////////////////////////////////////
 
 RenderContextInstData::RenderContextInstData(const RenderContextFrameData* RCFD)
-    : mRenderGroupState(RenderGroupState::NONE) //
-    , _RCFD(RCFD) {                 //
+    : _RCFD(RCFD)                                 //
+    , mRenderGroupState(RenderGroupState::NONE) { //
   if (_RCFD) {
     mpActiveRenderer = _RCFD->_renderer;
   }

@@ -144,16 +144,21 @@ fragment_shader ps_downsample4x4 : iface_fmt {
 }
 fragment_shader ps_downsample5x5 : iface_fmt {
   const float kscale = 1.0/25.0;
-  vec2 uvb = gl_FragCoord.xy*5-vec2(0.5,0.5);
+  vec2 uvb = gl_FragCoord.xy*5+vec2(2,2);
   vec3 outc = vec3(0);
-  for(int iy=0; iy<5; iy++){
-    for(int ix=0; ix<5; ix++){
+  float tot_w = 0.0;
+  for(int iy=-2; iy<=2; iy++){
+    for(int ix=-2; ix<=2; ix++){
     vec2 uvx = uvb+vec2(ix,iy);
-    vec3 texc = texelFetch(ColorMap, ivec2(uvx), 0).xyz;
+    float w_x = abs(ix);
+    float w_y = abs(iy);
+    float w = 1; //w_x*w_y;
+    tot_w += w;
+    vec3 texc = texelFetch(ColorMap, ivec2(uvx), 0).xyz*w;
     outc += texc;
     }
   }
-  out_clr = vec4(outc*kscale,1);
+  out_clr = vec4(outc/tot_w,1);
 }
 fragment_shader ps_downsample6x6 : iface_fmt {
   const float kscale = 1.0/36.0;
@@ -167,6 +172,23 @@ fragment_shader ps_downsample6x6 : iface_fmt {
     }
   }
   out_clr = vec4(outc*kscale,1);
+}
+fragment_shader ps_downsample7x7 : iface_fmt {
+  vec2 uvb = gl_FragCoord.xy*7+vec2(3,3);
+  vec3 outc = vec3(0);
+  float tot_w = 0.0;
+  for(int iy=-3; iy<=3; iy++){
+    for(int ix=-3; ix<=3; ix++){
+    vec2 uvx = uvb+vec2(ix,iy);
+    float w_x = abs(ix);
+    float w_y = abs(iy);
+    float w = 1; //w_x*w_y;
+    tot_w += w;
+    vec3 texc = texelFetch(ColorMap, ivec2(uvx), 0).xyz*w;
+    outc += texc;
+    }
+  }
+  out_clr = vec4(outc/tot_w,1);
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_vtxcolor : iface_vdefault {
@@ -321,6 +343,14 @@ technique downsample_6x6 {
   pass p0 {
     vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_downsample6x6;
+    state_block     = sb_default;
+  }
+}
+technique downsample_7x7 {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_downsample7x7;
     state_block     = sb_default;
   }
 }

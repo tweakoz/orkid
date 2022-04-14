@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -31,6 +31,7 @@ using islot_ptr_t = std::shared_ptr<ISlot>;
 typedef std::function<void(Object*)> slot_lambda_t;
 
 struct ISlot : public Object {
+
   RttiDeclareAbstract(ISlot, Object);
 
 public:
@@ -106,6 +107,32 @@ private:
 #define PARAMETER_DECLARATION(N) P##N
 #define TYPENAME_LIST(N) typename P##N
 
+#define PARAMETER_LIST(N) P##N p##N
+#define PARAMETER_PASS(N) p##N
+
+#define DECLARE_SIGNAL_INVOKATION(N)                                                                                               \
+  template <typename ReturnType, typename ClassType, EXPANDLIST##N(TYPENAME_LIST)>                                                 \
+  void operator()(ReturnType (ClassType::*)(EXPANDLIST##N(PARAMETER_DECLARATION)), EXPANDLIST##N(PARAMETER_DECLARATION));
+
+/////////////////////////////////////////////////////////////////////////////////////////
+
+#define DECLARE_SIGNAL_OPERATOR(N)                                                                                                       \
+  template <typename ReturnType, typename ClassType, EXPANDLIST##N(TYPENAME_LIST)>                                                 \
+  void Signal::operator();
+
+#define DEFINE_SIGNAL_OPERATOR(N)                                                                                                       \
+  template <typename ReturnType, typename ClassType, EXPANDLIST##N(TYPENAME_LIST)>                                                 \
+  void Signal::operator()(                                                                                                  \
+      ReturnType (ClassType::*function_signature)(EXPANDLIST##N(PARAMETER_DECLARATION)), EXPANDLIST##N(PARAMETER_LIST)) {          \
+    typedef reflect::Function<void (*)(EXPANDLIST##N(PARAMETER_DECLARATION))> FunctionType;                                        \
+    typedef reflect::Invokation<typename FunctionType::Parameters> InvokationType;                                                 \
+    InvokationType invokation;                                                                                                     \
+    reflect::SetParameters(function_signature, invokation.ParameterData(), EXPANDLIST##N(PARAMETER_PASS));                         \
+    Invoke(&invokation);                                                                                                           \
+  }
+
+/////////////////////////////////////////////////////////////////////////////////////////
+
 class Signal : public Object {
   RttiDeclareAbstract(Signal, Object);
 
@@ -124,14 +151,8 @@ public:
 
   template <typename ReturnType, typename ClassType> void operator()(ReturnType (ClassType::*)());
 
-#define DECLARE_INVOKATION(N)                                                                                                      \
-  template <typename ReturnType, typename ClassType, EXPANDLIST##N(TYPENAME_LIST)>                                                 \
-  void operator()(ReturnType (ClassType::*)(EXPANDLIST##N(PARAMETER_DECLARATION)), EXPANDLIST##N(PARAMETER_DECLARATION));
-
-  DECLARE_INVOKATION(01)
-  DECLARE_INVOKATION(02)
-
-#undef DECLARE_INVOKATION
+  DECLARE_SIGNAL_INVOKATION(01);
+  DECLARE_SIGNAL_INVOKATION(02);
 
   Signal();
   ~Signal();
@@ -148,12 +169,16 @@ private:
   LockedResource<slot_set_t> mSlots;
 };
 
+/////////////////////////////////////////////////////////////////////////////////////////
+
 bool Connect(Object* pSender, PoolString signal, Object* pReceiver, PoolString slot);
 bool Connect(Signal* psig, AutoSlot* pslot);
 bool ConnectToLambda(Object* pSender, PoolString signal, Object* pReceiver, const slot_lambda_t& slt);
 
 bool Disconnect(Object* pSender, PoolString signal, Object* pReceiver, PoolString slot);
 bool Disconnect(Signal* psig, AutoSlot* pslot);
+
+/////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename ReturnType, typename ClassType> void Signal::operator()(ReturnType (ClassType::*function_signature)()) {
   using FunctionType   = reflect::Function<void (*)()>;
@@ -162,30 +187,19 @@ template <typename ReturnType, typename ClassType> void Signal::operator()(Retur
   Invoke(&invokation);
 }
 
-#define PARAMETER_LIST(N) P##N p##N
-#define PARAMETER_PASS(N) p##N
+//DECLARE_SIGNAL_OPERATOR(01);
+//DECLARE_SIGNAL_OPERATOR(02);
 
-#define DEFINE_INVOKATION(N)                                                                                                       \
-  template <typename ReturnType, typename ClassType, EXPANDLIST##N(TYPENAME_LIST)>                                                 \
-  inline void Signal::operator()(                                                                                                  \
-      ReturnType (ClassType::*function_signature)(EXPANDLIST##N(PARAMETER_DECLARATION)), EXPANDLIST##N(PARAMETER_LIST)) {          \
-    typedef reflect::Function<void (*)(EXPANDLIST##N(PARAMETER_DECLARATION))> FunctionType;                                        \
-    typedef reflect::Invokation<typename FunctionType::Parameters> InvokationType;                                                 \
-    InvokationType invokation;                                                                                                     \
-    reflect::SetParameters(function_signature, invokation.ParameterData(), EXPANDLIST##N(PARAMETER_PASS));                         \
-    Invoke(&invokation);                                                                                                           \
-  }
+//DEFINE_INVOKATION(01)
+//DEFINE_INVOKATION(02)
 
-DEFINE_INVOKATION(01)
-DEFINE_INVOKATION(02)
+//#undef PARAMETER_LIST
+//#undef PARAMETER_PASS
+//#undef TYPENAME_LIST
+//#undef PARAMETER_DECLARATION
 
-#undef PARAMETER_LIST
-#undef PARAMETER_PASS
-#undef TYPENAME_LIST
-#undef PARAMETER_DECLARATION
-
-#undef EXPANDLIST01
-#undef EXPANDLIST02
+//#undef EXPANDLIST01
+//#undef EXPANDLIST02
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -18,10 +18,10 @@
 namespace ork {
 
 template <typename T> bool Plane<T>::PlaneIntersect(const Plane<T>& oth, Vector3<T>& outpos, Vector3<T>& outdir) const {
-  outdir        = GetNormal().Cross(oth.GetNormal());
-  T num         = outdir.MagSquared();
+  outdir        = GetNormal().crossWith(oth.GetNormal());
+  T num         = outdir.magnitudeSquared();
   Vector3<T> c1 = (GetD() * oth.GetNormal()) + (oth.GetD() * GetNormal());
-  outpos        = c1.Cross(outdir) * T(1.0) / num;
+  outpos        = c1.crossWith(outdir) * T(1.0) / num;
   return true;
 }
 

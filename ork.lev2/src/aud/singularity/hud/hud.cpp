@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <ork/math/cvector3.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
 #include <ork/lev2/aud/singularity/hud.h>
@@ -84,11 +91,13 @@ HudLayoutGroup::HudLayoutGroup() //
         int key = ev->miKeyCode;
         auto it = _handledkeymap.find(key);
         if (it != _handledkeymap.end()) {
-          printf("hudevroute<%p>\n", this);
+          printf("hudevroute<%p>\n", (void*) this);
           return this;
         }
         break;
       }
+      default:
+        break;
     }
     return doRouteUiEvent(ev);
   };
@@ -162,6 +171,8 @@ HudLayoutGroup::HudLayoutGroup() //
           }
         } // switch (ev->miKeyCode) {
         break;
+        default:
+          break;
       }
       case ui::EventCode::KEY_UP: {
         switch (ev->miKeyCode) {

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -140,7 +140,7 @@ U32 SoundFont::GetSDTAChunk(RIFFChunk* ParChunk, U32 offset) {
     void* copy = malloc(nchnk->chunklen);
     memcpy(copy, (void*)&nchnk->chunkdata[2], nchnk->chunklen);
     _chunkOfSampleData = (S16*)copy;
-    printf("_chunkOfSampleData<%p> _bankName<%s> total<%d MiB>\n", _chunkOfSampleData, _bankName.c_str(), total >> 20);
+    printf("_chunkOfSampleData<%p> _bankName<%s> total<%d MiB>\n", (void*)_chunkOfSampleData, _bankName.c_str(), total >> 20);
     int* pbdlen = const_cast<int*>(&_sampleDataNumSamples);
     *pbdlen     = nchnk->chunklen;
 

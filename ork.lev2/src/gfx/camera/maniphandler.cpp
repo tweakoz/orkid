@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -45,7 +45,7 @@ void ManipHandler::Init(const ork::fvec2& posubp, const fmtx4& RCurIMVPMat, cons
 bool ManipHandler::IntersectXZ(const ork::fvec2& posubp, fvec3& Intersection, float& Angle) {
   fvec3 RayZNormal;
   GenerateIntersectionRays(posubp, RayZNormal, RayNear);
-  YNormal = fmtx4::Identity().GetYNormal();
+  YNormal = fmtx4::Identity().yNormal();
   XZPlane.CalcFromNormalAndOrigin(YNormal, Origin);
   float isect_dist;
   fray3 ray;
@@ -66,7 +66,7 @@ bool ManipHandler::IntersectXZ(const ork::fvec2& posubp, fvec3& Intersection, fl
 bool ManipHandler::IntersectYZ(const ork::fvec2& posubp, fvec3& Intersection, float& Angle) {
   fvec3 RayZNormal;
   GenerateIntersectionRays(posubp, RayZNormal, RayNear);
-  XNormal = fmtx4::Identity().GetXNormal();
+  XNormal = fmtx4::Identity().xNormal();
   YZPlane.CalcFromNormalAndOrigin(XNormal, Origin);
 
   float isect_dist;
@@ -88,7 +88,7 @@ bool ManipHandler::IntersectYZ(const ork::fvec2& posubp, fvec3& Intersection, fl
 bool ManipHandler::IntersectXY(const ork::fvec2& posubp, fvec3& Intersection, float& Angle) {
   fvec3 RayZNormal;
   GenerateIntersectionRays(posubp, RayZNormal, RayNear);
-  ZNormal = fmtx4::Identity().GetZNormal();
+  ZNormal = fmtx4::Identity().zNormal();
   XYPlane.CalcFromNormalAndOrigin(ZNormal, Origin);
   float isect_dist;
   fray3 ray;
@@ -127,8 +127,8 @@ void ManipHandler::GenerateIntersectionRays(const ork::fvec2& posubp, fvec3& Ray
   ///////////////////////////////////////////
   fvec3 vWinN(posubp.x, posubp.y, 0.0f);
   fvec3 vWinF(posubp.x, posubp.y, 1.0f);
-  fmtx4::UnProject(IMVPMat, vWinN, RayNear);
-  fmtx4::UnProject(IMVPMat, vWinF, RayFar);
+  fmtx4::unProject(IMVPMat, vWinN, RayNear);
+  fmtx4::unProject(IMVPMat, vWinF, RayFar);
   TRayN = RayNear;
   TRayF = RayFar;
   ///////////////////////////////////////////
@@ -142,7 +142,7 @@ void ManipHandler::GenerateIntersectionRays(const ork::fvec2& posubp, fvec3& Ray
   draydY *= drayD;
   draydZ *= drayD;
   ///////////////////////////////////////////
-  RayZNormal.SetXYZ((f32)draydX, (f32)draydY, (f32)draydZ);
+  RayZNormal = fvec3((f32)draydX, (f32)draydY, (f32)draydZ).normalized();
   ///////////////////////////////////////////
 }
 

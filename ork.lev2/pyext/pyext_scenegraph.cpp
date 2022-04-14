@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include "pyext.h"
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -12,12 +19,12 @@ void pyinit_scenegraph(py::module& module_lev2) {
   auto node_type =                                   //
       py::class_<Node, node_ptr_t>(sgmodule, "Node") //
           .def_property(
-              "worldMatrix",                       //
-              [](node_ptr_t node) -> fmtx4_ptr_t { //
-                return node->_transform._worldMatrix;
+              "worldTransform",                     //
+              [](node_ptr_t node) -> decxf_t { //
+                return node->_dqxfdata._worldTransform;
               },
-              [](node_ptr_t node, fmtx4_ptr_t mtx) { //
-                node->_transform._worldMatrix = mtx;
+              [](node_ptr_t node, decxf_t mtx) { //
+                node->_dqxfdata._worldTransform = mtx;
               })
           .def_property_readonly(
               "user",                                       //
@@ -30,13 +37,13 @@ void pyinit_scenegraph(py::module& module_lev2) {
   //  py::class_<InstanceBufferProxy, ibufproxy_ptr_t>(sgmodule, "InstanceBufferProxy",))
   /////////////////////////////////////////////////////////////////////////////////
   auto drawablenode_type =                                                         //
-      py::class_<DrawableNode, Node, drawablenode_ptr_t>(sgmodule, "DrawableNode") //
+      py::class_<DrawableNode, Node, drawable_node_ptr_t>(sgmodule, "DrawableNode") //
           .def_property_readonly(
               "instanceData",
-              [](drawablenode_ptr_t drwnode) -> instanceddrawdata_ptr_t {
+              [](drawable_node_ptr_t drwnode) -> instanceddrawinstancedata_ptr_t {
                 auto drw     = drwnode->_drawable;
                 auto instdrw = std::dynamic_pointer_cast<InstancedModelDrawable>(drw);
-                instanceddrawdata_ptr_t rval;
+                instanceddrawinstancedata_ptr_t rval;
                 if (instdrw) {
                   rval = instdrw->_instancedata;
                 } else {
@@ -46,7 +53,7 @@ void pyinit_scenegraph(py::module& module_lev2) {
               })
           .def(
               "setInstanceMatrix",                                            //
-              [](drawablenode_ptr_t node, int instance, fmtx4_ptr_t matrix) { //
+              [](drawable_node_ptr_t node, int instance, fmtx4_ptr_t matrix) { //
                 auto drw     = node->_drawable;
                 auto instdrw = std::dynamic_pointer_cast<InstancedModelDrawable>(drw);
                 if (instdrw) {
@@ -59,7 +66,7 @@ void pyinit_scenegraph(py::module& module_lev2) {
               })
           .def(
               "setInstanceColor",                                            //
-              [](drawablenode_ptr_t node, int instance, fvec4_ptr_t color) { //
+              [](drawable_node_ptr_t node, int instance, fvec4_ptr_t color) { //
                 auto drw     = node->_drawable;
                 auto instdrw = std::dynamic_pointer_cast<InstancedModelDrawable>(drw);
                 if (instdrw) {
@@ -70,7 +77,7 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 }
                 return node->_userdata;
               });
-  type_codec->registerStdCodec<drawablenode_ptr_t>(drawablenode_type);
+  type_codec->registerStdCodec<drawable_node_ptr_t>(drawablenode_type);
   //.def("renderOnContext", [](scene_ptr_t SG, ctx_t context) { SG->renderOnContext(context.get()); });
   /////////////////////////////////////////////////////////////////////////////////
   auto lightnode_type = //

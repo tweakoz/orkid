@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -77,12 +77,12 @@ void SimpleLightProcessor::gpuUpdate(CompositorDrawData& drawdata, const ViewDat
       if (auto as_spot = dynamic_cast<lev2::SpotLight*>(l)) {
         auto cookie = as_spot->cookie();
         if (cookie)
-          _tex2shadowedspotlightmap[cookie].push_back(as_spot);
+          _tex2shadowedspotlightmap[cookie.get()].push_back(as_spot);
       }
     } else if (auto as_point = dynamic_cast<lev2::PointLight*>(l)) {
       auto cookie = as_point->cookie();
       if (cookie)
-        _tex2pointlightmap[cookie].push_back(as_point);
+        _tex2pointlightmap[cookie.get()].push_back(as_point);
       else
         _untexturedpointlights.push_back(as_point);
     } else if (auto as_spot = dynamic_cast<lev2::SpotLight*>(l)) {
@@ -90,10 +90,10 @@ void SimpleLightProcessor::gpuUpdate(CompositorDrawData& drawdata, const ViewDat
       bool decal  = as_spot->decal();
       if (decal) {
         if (cookie)
-          _tex2spotdecalmap[cookie].push_back(as_spot);
+          _tex2spotdecalmap[cookie.get()].push_back(as_spot);
       } else {
         if (cookie)
-          _tex2spotlightmap[cookie].push_back(as_spot);
+          _tex2spotlightmap[cookie.get()].push_back(as_spot);
         else
           _untexturedspotlights.push_back(as_spot);
       }
@@ -123,7 +123,7 @@ void SimpleLightProcessor::_updatePointLightUBOparams(Context* ctx, pointlightli
   ctx->debugPushGroup("SimpleLightProcessor::_updatePointLightUBOparams");
   auto mapping = FXI->mapParamBuffer(_lightbuffer, 0, 65536);
   for (auto light : lights) {
-    fvec3 color                     = light->color();
+    fvec3 color                     = light->color()*light->intensity();
     float dist2cam                  = light->distance(campos);
     mapping->ref<fvec4>(offset_cd)  = fvec4(color, dist2cam);
     mapping->ref<float>(offset_rad) = light->radius();
@@ -153,7 +153,7 @@ void SimpleLightProcessor::_updateSpotLightUBOparams(Context* ctx, spotlightlist
   ctx->debugPushGroup("SimpleLightProcessor::_updateSpotLightUBOparams");
   auto mapping = FXI->mapParamBuffer(_lightbuffer, 0, 65536);
   for (auto light : lights) {
-    fvec3 color                      = light->color();
+    fvec3 color                      = light->color()*light->intensity();
     float dist2cam                   = light->distance(campos);
     mapping->ref<fvec4>(offset_cd)   = fvec4(color, dist2cam);
     mapping->ref<float>(offset_rad)  = light->GetRange();
@@ -185,6 +185,7 @@ void SimpleLightProcessor::_renderUnshadowedUntexturedPointLights(
   _deferredContext.beginPointLighting(drawdata, VD, nullptr);
   _updatePointLightUBOparams(context, _untexturedpointlights, VD._camposmono);
   int numlights = _untexturedpointlights.size();
+  //printf("numlights<%d>\n", numlights );
   //////////////////////////////////////////////////
   fvec4 quad_pos(-1, -1, 2, 2);
   fvec4 quad_uva(0, 0, 1, 1);
@@ -356,7 +357,7 @@ void SimpleLightProcessor::_renderShadowedTexturedSpotLights(
     for (auto light : lights) {
       numlights                        = 1;
       auto shadowtex                   = light->_shadowRTG->_depthTexture;
-      fvec3 color                      = light->color();
+      fvec3 color                      = light->color()*light->intensity();
       float dist2cam                   = light->distance(VD._camposmono);
       auto mapping                     = FXI->mapParamBuffer(_lightbuffer, 0, 65536);
       size_t offset_cd                 = 0;

@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <ork/lev2/aud/singularity/hud.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
 #include <ork/lev2/gfx/pickbuffer.h>
@@ -58,8 +65,8 @@ void ProfilerView::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   auto vp      = syn->_hudvp;
   double time  = syn->_timeaccum;
 
-  mRtGroup->_clearColor = _clearColor;
-  fbi->rtGroupClear(mRtGroup);
+  _rtgroup->_clearColor = _clearColor;
+  fbi->rtGroupClear(_rtgroup.get());
 
   // auto name   = _curprogram->_name;
   int ycursor = 0;

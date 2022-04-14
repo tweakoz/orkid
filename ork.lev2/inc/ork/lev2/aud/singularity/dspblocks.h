@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -131,7 +131,7 @@ struct DspBlock {
   int _numParams;
   int numOutputs() const;
   int numInputs() const;
-  Layer* _layer      = nullptr;
+  layer_ptr_t _layer      = nullptr;
   int _verticalIndex = -1;
 
   varmap::VarMap _vars;
@@ -226,7 +226,7 @@ struct Alg final {
 
   const AlgData& _algdata;
 
-  Layer* _layer;
+  layer_ptr_t _layer;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

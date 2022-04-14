@@ -10,14 +10,13 @@ typedef std::shared_ptr<HeightMap> hfptr_t;
 struct TerrainDrawableInst;
 typedef std::shared_ptr<TerrainDrawableInst> hfdrawableinstptr_t;
 
-class TerrainDrawableData final : public ork::Object {
-
-  DeclareConcreteX(TerrainDrawableData, ork::Object);
+class TerrainDrawableData final : public DrawableData {
 
 public:
-  hfdrawableinstptr_t createInstance() const;
   TerrainDrawableData();
   ~TerrainDrawableData();
+
+  drawable_ptr_t createDrawable() const final;
 
   float _testxxx = 0.0f;
   fvec3 _fogcolor;
@@ -39,13 +38,15 @@ public:
   fvec3 _visualOffset;
 };
 
+using terraindrawabledata_ptr_t = std::shared_ptr<TerrainDrawableData>;
+
 struct TerrainDrawableInst {
 
-  TerrainDrawableInst(const TerrainDrawableData& data);
+  TerrainDrawableInst(const TerrainDrawableData* data);
   ~TerrainDrawableInst();
   callback_drawable_ptr_t createCallbackDrawable();
 
-  const TerrainDrawableData& _data;
+  const TerrainDrawableData* _data;
   file::Path hfpath() const;
   fvec3 _visualOffset;
   float _worldHeight                   = 0.0f;
@@ -53,6 +54,8 @@ struct TerrainDrawableInst {
   callback_drawable_ptr_t _rawdrawable = nullptr;
   ork::svar16_t _impl;
 };
+
+using terraindrawableinst_ptr_t = std::shared_ptr<TerrainDrawableInst>;
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -74,6 +74,7 @@ enum ETextureType {
 
 ///////////////////////////////////////////////////////////////////////////////
 enum struct EBufferFormat : crc_enum_t {
+  CrcEnum(RGB8),
   CrcEnum(RGBA8),
   CrcEnum(RG16F),
   CrcEnum(RG32F),
@@ -82,6 +83,7 @@ enum struct EBufferFormat : crc_enum_t {
   CrcEnum(RGBA32F),
   CrcEnum(RGB10A2),
   CrcEnum(RGB32UI),
+  CrcEnum(RGBA32UI),
   CrcEnum(R32F),
   CrcEnum(R32UI),
   CrcEnum(NV12),

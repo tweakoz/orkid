@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #pragma once
 
 #include <regex>
@@ -19,9 +26,9 @@ struct Token {
   int _class = -1;
   std::string text;
   Token(const std::string& txt, int il, int ic)
-      : text(txt)
-      , iline(il)
-      , icol(ic) {
+      : iline(il)
+      , icol(ic)
+      , text(txt) {
   }
 };
 
@@ -69,7 +76,9 @@ inline bool is_content(char ch) {
 /////////////////////////////////////////
 
 struct Scanner {
-  Scanner(std::string blockregex);
+  Scanner(
+      std::string blockregex, //
+      size_t capacity = 64 << 10);
   /////////////////////////////////////////
   void addRule(std::string rule, int state);
   void buildStateMachine();
@@ -87,6 +96,7 @@ struct Scanner {
   /////////////////////////////////////////
   void discardTokensOfClass(int tokclass);
   /////////////////////////////////////////
+  const size_t _kcapacity;
   std::vector<char> _fxbuffer;
   size_t ifilelen;
   std::vector<Token> tokens;

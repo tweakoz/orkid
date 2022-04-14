@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <ork/kernel/string/deco.inl>
 #include <ork/kernel/spawner.h>
 #include <ork/math/colormath.inl>
@@ -52,7 +59,7 @@ fvec3 spotread() {
 //////////////////////////////////////////////////////////
 
 int main(int argc, char** argv) {
-  auto qtapp = OrkEzQtApp::create(argc, argv);
+  auto qtapp = OrkEzApp::create(argc, argv);
   //////////////////////////////////////////////////////////
   deco::printf(fvec3::White(), "reading colorimeter, please wait...\n");
   fvec3 yxy = spotread();

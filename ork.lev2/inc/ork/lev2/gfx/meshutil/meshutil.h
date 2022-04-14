@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -9,42 +9,29 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#include <unordered_map>
+#include <algorithm>
+
 #include <ork/pch.h>
 #include <ork/util/crc.h>
 #include <ork/util/crc64.h>
 #include <ork/math/cvector3.h>
 #include <ork/math/cvector4.h>
 #include <ork/math/box.h>
-#include <algorithm>
 #include <ork/kernel/Array.h>
 #include <ork/kernel/varmap.inl>
 
+#include <ork/lev2/lev2_types.h>
 #include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/lev2/gfx/gfxvtxbuf.h>
 #include <ork/lev2/gfx/gfxmaterial.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/meshutil/submesh.h>
-#include <unordered_map>
 #include <ork/kernel/datablock.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::meshutil {
-
-struct XgmClusterizer;
-struct XgmClusterBuilder;
-struct Mesh;
-struct submesh;
-struct MaterialGroup;
-struct MaterialInfo;
-
-using mesh_ptr_t          = std::shared_ptr<Mesh>;
-using submesh_ptr_t       = std::shared_ptr<submesh>;
-using submesh_constptr_t  = std::shared_ptr<const submesh>;
-using submesh_lut_t       = std::map<std::string, submesh_ptr_t>;
-using materialgroup_ptr_t = std::shared_ptr<MaterialGroup>;
-using material_info_ptr_t = std::shared_ptr<MaterialInfo>;
-using material_info_map_t = std::map<std::string, material_info_ptr_t>;
 
 struct MaterialBindingItem {
   std::string mMaterialName;
@@ -52,14 +39,11 @@ struct MaterialBindingItem {
   // std::vector<FCDMaterialInstanceBind*> mBindings;
 };
 
-typedef orkmap<std::string, MaterialBindingItem> material_semanticmap_t;
-
 class Light : public ork::Object {
   DeclareAbstractX(Light, ork::Object);
 
 public:
   std::string mName;
-  fmtx4 mWorldMatrix;
   fvec3 mColor;
   float mIntensity;
   float mShadowSamples;
@@ -67,6 +51,7 @@ public:
   float mShadowBlur;
   bool mbSpecular;
   bool mbIsShadowCaster;
+  fmtx4 mWorldMatrix;
 
   virtual bool AffectsSphere(const fvec3& center, float radius) const {
     return false;
@@ -78,10 +63,10 @@ public:
   Light()
       : mColor(1.0f, 1.0f, 1.0f)
       , mIntensity(1.0f)
-      , mbSpecular(false)
       , mShadowSamples(1.0f)
-      , mShadowBlur(0.0f)
       , mShadowBias(0.2f)
+      , mShadowBlur(0.0f)
+      , mbSpecular(false)
       , mbIsShadowCaster(false) {
   }
 };
@@ -179,16 +164,17 @@ struct MaterialGroup {
 
   ///////////////////////////////////////////////////////////////////
 
-  XgmClusterizer* _clusterizer;
-  std::string mShadingGroupName;
-  MeshConfigurationFlags mMeshConfigurationFlags;
   EMatClass meMaterialClass;
   ork::lev2::GfxMaterial* _orkMaterial;
+  XgmClusterizer* _clusterizer;
+  bool mbVertexLit;
+
+  std::string mShadingGroupName;
+  MeshConfigurationFlags mMeshConfigurationFlags;
   orkvector<ork::lev2::VertexConfig> mVertexConfigData;
   orkvector<ork::lev2::VertexConfig> mAvailVertexConfigData;
   lev2::EVtxStreamFormat meVtxFormat;
   ork::file::Path mLightMapPath;
-  bool mbVertexLit;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -286,7 +272,7 @@ struct Mesh {
 
   /////////////////////////////////////////////////////////////////////////
 
-  varmap::VarMap _varmap;
+  std::shared_ptr<varmap::VarMap> _varmap;
   material_info_map_t _materialsByShadingGroup;
   material_info_map_t _materialsByName;
 
@@ -365,6 +351,10 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 struct FlatSubMesh {
+  FlatSubMesh(const submesh& mesh);
+  FlatSubMesh( const AssetPath& from_path, lev2::rendervar_strmap_t assetvars );
+  void fromSubmesh(const submesh& mesh);
+
   lev2::EVtxStreamFormat evtxformat;
   orkvector<int> TrianglePolyIndices;
   orkvector<int> QuadPolyIndices;
@@ -375,8 +365,8 @@ struct FlatSubMesh {
   int inumverts;
   int ivtxsize;
   void* poutvtxdata;
+  AABox _aabox; 
 
-  FlatSubMesh(const submesh& mesh);
 };
 
 ///////////////////////////////////////////////////////////////////////////////

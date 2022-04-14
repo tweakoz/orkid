@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -29,14 +29,14 @@ std::set<Class*> Class::_explicitLinkClasses;
 static int counter = 0;
 
 Class::Class(const RTTIData& rtti)
-    : _parentClass(rtti.ParentClass())
-    , mClassInitializer(rtti.ClassInitializer())
+    : _sharedFactory(nullptr)
     , _rawFactory(nullptr)
-    , _sharedFactory(nullptr)
-    , mNextClass(sLastClass)
+    , mClassInitializer(rtti.ClassInitializer())
+    , _parentClass(rtti.ParentClass())
+    , mChildClass(NULL) 
     , mNextSiblingClass(this)
     , mPrevSiblingClass(this)
-    , mChildClass(NULL) {
+    , mNextClass(sLastClass) {
 
   assert(not(_parentClass == nullptr and counter == 2));
 

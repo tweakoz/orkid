@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -10,6 +10,7 @@
 #include <ork/kernel/string/string.h>
 #include <ork/kernel/tempstring.h>
 #include <sstream>
+#include <cctype>
 
 namespace ork {
 
@@ -302,6 +303,26 @@ bool ork_cstr_replace(
   size_t inewlen = size_t(dst_marker - dest);
   OrkAssert(inewlen < idestlen);
   return brval;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+std::string toLower(const std::string& inp){
+  std::string rval = inp;
+  std::for_each(rval.begin(), rval.end(), [](char & c){
+    c = ::tolower(c);
+  });
+  return rval;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+std::string toUpper(const std::string& inp){
+  std::string rval = inp;
+  std::for_each(rval.begin(), rval.end(), [](char & c){
+    c = ::toupper(c);
+  });
+  return rval;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

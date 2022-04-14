@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -240,7 +240,7 @@ void graph_data::OnGraphChanged() {
   for (auto item : mModules) {
     dgmodule* module = rtti::autocast(item.second);
 
-    printf("graph<%p> module<%p> name<%s>\n", this, module, item.first.c_str());
+    printf("graph<%p> module<%p> name<%s>\n", (void*) this, (void*) module, item.first.c_str());
     module->SetName(item.first);
   }
 }
@@ -264,9 +264,9 @@ void graph_inst::describeX(object::ObjectClass* clazz) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 graph_inst::graph_inst()
-    : mScheduler(0)
-    , mbInProgress(false)
-    , mExternal(0) {
+    : mExternal(0) 
+    , mScheduler(0)
+    , mbInProgress(false) {
   mChildrenTopoSorted.LockForWrite().SetKeyPolicy(ork::EKEYPOLICY_MULTILUT);
   mChildrenTopoSorted.UnLock();
 }
@@ -281,9 +281,9 @@ graph_inst::~graph_inst() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 graph_inst::graph_inst(const graph_inst& oth)
-    : mScheduler(0)
-    , mbInProgress(false)
-    , mExternal(0) {
+    : mExternal(0)
+    , mScheduler(0)
+    , mbInProgress(false) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void graph_inst::doNotify(const ork::event::Event* event) {
@@ -358,7 +358,7 @@ void graph_inst::RefreshTopology(dgcontext& ctx) {
   { ///////////////////////////////////////
     if (debug_dump) {
       printf("/////////////////////////////////////\n");
-      printf("graph<%p> RefreshTopology\n", this);
+      printf("graph<%p> RefreshTopology\n", (void*) this);
     }
     ///////////////////////////////////////
     while (dq.NumPending()) {

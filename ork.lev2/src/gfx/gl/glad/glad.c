@@ -158,6 +158,9 @@
 #include <string.h>
 #include "glad.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+
 static void* get_proc(const char *namez);
 
 #if defined(_WIN32) || defined(__CYGWIN__)
@@ -4407,4 +4410,6 @@ int gladLoadGLLoader(GLADloadproc load) {
 	load_GL_NV_viewport_swizzle(load);
 	return GLVersion.major != 0 || GLVersion.minor != 0;
 }
+
+#pragma GCC diagnostic pop
 

@@ -1,6 +1,14 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <ork/hdl/vcd.h>
 #include <ork/file/file.h>
 #include <stack>
+
 
 namespace ork::hdl::vcd {
 ////////////////////////////////////////////////////////////////////////////////
@@ -235,6 +243,7 @@ void File::parse(ork::file::Path& inppath) {
                 lstate = LineState::Z;
                 break;
               default:
+                lstate = LineState::FALSE;
                 OrkAssert(false);
                 break;
             }
@@ -338,6 +347,9 @@ void Sample::left_extend(int width) {
     case LineState::FALSE:
     case LineState::TRUE:
       extension = LineState::FALSE;
+      break;
+    case LineState::X:
+    case LineState::Z:
       break;
   }
   for (int i = _numbits; i < width; i++) {

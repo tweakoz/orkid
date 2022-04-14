@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -25,14 +25,14 @@ bool TopNode::IsTokenOneOfTheBlockTypes(const Token& tok) {
 }
 ///////////////////////////////////////////////////////////
 TopNode::TopNode(GlSlFxParser* parser)
-    : _scanner(parser->_scanner)
-    , _parser(parser)
+    : _parser(parser)
+    , _scanner(parser->_scanner)
 {
   //printf( "TopNode<%p>::construct()\n", this );
 
   std::string typenames = "mat2 mat3 mat4 vec2 vec3 vec4 uvec2 uvec3 uvec4 "
                           "ivec2 ivec3 ivec4 "
-                          "float double half uint int "
+                          "float double half uint int float16_t "
                           "void bool "
 #if !defined(__APPLE__)
                           "int8_t int16_t int32_t int64_t "
@@ -89,6 +89,8 @@ TopNode::TopNode(GlSlFxParser* parser)
   _stddefines["SQRT2"]       = "1.4142135623730951";
   _stddefines["GOLDENRATIO"] = "1.6180339887498948482";
   _stddefines["EPSILON"]     = "0.0000001";
+  _stddefines["DTOR"]     = "0.017453292519943295";
+  _stddefines["RTOD"]     = "57.29577951308232";
 
   for (auto item : _stddefines) {
     _keywords.insert(item.first);

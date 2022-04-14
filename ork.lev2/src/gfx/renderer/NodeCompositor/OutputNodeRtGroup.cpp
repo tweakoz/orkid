@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -40,17 +40,23 @@ struct RTGIMPL {
   ///////////////////////////////////////
   void gpuInit(lev2::Context* ctx) {
     if (_needsinit) {
-      _blit2screenmtl.gpuInit(ctx, "orkshader://compositor");
-      _fxtechnique1x1 = _blit2screenmtl.technique("OutputNodeRtGroupDual");
+      _blit2screenmtl.gpuInit(ctx, "orkshader://solid");
+      _blit2screenmtl.gpuInit(ctx, "orkshader://solid");
+      _fxtechnique1x1 = _blit2screenmtl.technique("texcolor");
+      _fxtechnique2x2 = _blit2screenmtl.technique("downsample_2x2");
+      _fxtechnique3x3 = _blit2screenmtl.technique("downsample_3x3");
+      _fxtechnique4x4 = _blit2screenmtl.technique("downsample_4x4");
+      _fxtechnique5x5 = _blit2screenmtl.technique("downsample_5x5");
+      _fxtechnique6x6 = _blit2screenmtl.technique("downsample_6x6");
+      _fxtechnique7x7 = _blit2screenmtl.technique("downsample_7x7");
       _fxpMVP         = _blit2screenmtl.param("MatMVP");
-      _fxpColorMapA   = _blit2screenmtl.param("MapA");
-      _fxpColorMapB   = _blit2screenmtl.param("MapB");
+      _fxpColorMap   = _blit2screenmtl.param("ColorMap");
       _needsinit      = false;
       int w           = ctx->mainSurfaceWidth();
       int h           = ctx->mainSurfaceHeight();
       if (ctx->hiDPI()) {
-        w /= 2;
-        h /= 2;
+        //w /= 2;
+        //h /= 2;
       }
       _width  = w;
       _height = h;
@@ -62,8 +68,13 @@ struct RTGIMPL {
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();
     auto CIMPL                   = drawdata._cimpl;
+    const auto& CCTX = CIMPL->compositingContext();
     auto DB                      = RCFD.GetDB();
     Context* targ                = drawdata.context();
+    int w                        = CCTX.miWidth;
+    int h                        = CCTX.miHeight;
+    _width  = w * (_node->supersample() + 1);
+    _height = h * (_node->supersample() + 1);
     //////////////////////////////////////////////////////
     drawdata._properties["OutputWidth"_crcu].set<int>(_width);
     drawdata._properties["OutputHeight"_crcu].set<int>(_height);
@@ -79,21 +90,28 @@ struct RTGIMPL {
     CIMPL->popCPD();
   }
   ///////////////////////////////////////
-  PoolString _camname, _layers;
   RtGroupOutputCompositingNode* _node = nullptr;
+  PoolString _camname, _layers;
   CompositingPassData _CPD;
   FreestyleMaterial _blit2screenmtl;
   const FxShaderTechnique* _fxtechnique1x1;
+  const FxShaderTechnique* _fxtechnique2x2;
+  const FxShaderTechnique* _fxtechnique3x3;
+  const FxShaderTechnique* _fxtechnique4x4;
+  const FxShaderTechnique* _fxtechnique5x5;
+  const FxShaderTechnique* _fxtechnique6x6;
+  const FxShaderTechnique* _fxtechnique7x7;
   const FxShaderParam* _fxpMVP;
-  const FxShaderParam* _fxpColorMapA;
-  const FxShaderParam* _fxpColorMapB;
+  const FxShaderParam* _fxpColorMap;
   bool _needsinit = true;
   int _width      = 0;
   int _height     = 0;
 };
 ///////////////////////////////////////////////////////////////////////////////
-RtGroupOutputCompositingNode::RtGroupOutputCompositingNode() {
-  _impl = std::make_shared<RTGIMPL>(this);
+RtGroupOutputCompositingNode::RtGroupOutputCompositingNode(rtgroup_ptr_t defaultrtg) 
+  : _supersample(0) {
+  _impl       = std::make_shared<RTGIMPL>(this);
+  _static_rtg = defaultrtg;
 }
 RtGroupOutputCompositingNode::~RtGroupOutputCompositingNode() {
 }
@@ -121,33 +139,69 @@ void RtGroupOutputCompositingNode::composite(CompositorDrawData& drawdata) {
   RenderContextFrameData& framedata = framerenderer.framedata();
   Context* context                  = framedata.GetTarget();
   auto fbi                          = context->FBI();
-  if (auto try_outgroup = drawdata._properties["render_outgroup"_crcu].tryAs<RtGroup*>()) {
-    auto rtgroup = try_outgroup.value();
-    if (rtgroup) {
-      auto bufA = rtgroup->GetMrt(0);
-      auto bufB = rtgroup->GetMrt(1);
-      assert(bufA != nullptr);
-      assert(bufB != nullptr);
-      auto texA = bufA->texture();
-      auto texB = bufB->texture();
-      if (texA and texB) {
-        /////////////////////////////////////////////////////////////////////////////
-        // be nice and composite to main screen as well...
-        /////////////////////////////////////////////////////////////////////////////
-        drawdata.context()->debugPushGroup("RtGroupOutputCompositingNode::output");
-        auto this_buf = context->FBI()->GetThisBuffer();
+  auto gbi = context->GBI();
+  RtGroup* output_rtg = _static_rtg.get();
+
+  if (output_rtg) {
+    if (auto try_final = drawdata._properties["final_out"_crcu].tryAs<RtBuffer*>()) {
+      auto src_buffer = try_final.value();
+      if (src_buffer) {
+
+        fbi->PushRtGroup(output_rtg);
+
+        auto output_buffer = output_rtg->GetMrt(0);
+
+        int srcw = src_buffer->_width;
+        int srch = src_buffer->_height;
+        int dstw = output_buffer->_width;
+        int dsth = output_buffer->_height;
+
+        //printf( "src<%d %d> dst<%d %d>\n", srcw, srch, dstw, dsth );
+
+        assert(src_buffer != nullptr);
+        auto tex = src_buffer->texture();
         auto& mtl     = impl->_blit2screenmtl;
-        mtl.begin(impl->_fxtechnique1x1, framedata);
+        switch (this->supersample()) {
+          case 0:
+            mtl.begin(impl->_fxtechnique1x1, framedata);
+            break;
+          case 1:
+            mtl.begin(impl->_fxtechnique2x2, framedata);
+            break;
+          case 2:
+            mtl.begin(impl->_fxtechnique3x3, framedata);
+            break;
+          case 3:
+            mtl.begin(impl->_fxtechnique4x4, framedata);
+            break;
+          case 4:
+            mtl.begin(impl->_fxtechnique5x5, framedata);
+            break;
+          case 5:
+            mtl.begin(impl->_fxtechnique6x6, framedata);
+            break;
+          case 6:
+            mtl.begin(impl->_fxtechnique7x7, framedata);
+            break;
+        }
         mtl._rasterstate.SetBlending(Blending::OFF);
-        mtl.bindParamCTex(impl->_fxpColorMapA, texA);
-        mtl.bindParamCTex(impl->_fxpColorMapB, texB);
+        mtl.bindParamCTex(impl->_fxpColorMap, tex);
         mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
-        this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+        ViewportRect extents(0, 0, dstw, dsth);
+        fbi->pushViewport(extents);
+        fbi->pushScissor(extents);
+        gbi->render2dQuadEML( fvec4(-1, -1, 2, 2), //
+                              fvec4(0, 0, 1, 1), //
+                              fvec4(0, 0, 1, 1)); //
+        fbi->popViewport();
+        fbi->popScissor();
         mtl.end(framedata);
-        drawdata.context()->debugPopGroup();
+
+        fbi->PopRtGroup();
       }
     }
   }
+
   drawdata.context()->debugPopGroup();
 }
 ///////////////////////////////////////////////////////////////////////////////

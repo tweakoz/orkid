@@ -1,56 +1,74 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
+
 #pragma once
-#include <ork/kernel/string/string.h>
-////////////////////////////////////////////////////////////////////////////////
+
+#include <ork/reflect/properties/codec.h>
+
+namespace ork{
+  class PoolString;
+}
+namespace ork::file{
+  class Path;
+}
+namespace ork::rtti{
+  struct Class;
+}
+namespace ork::object{
+  struct ObjectClass;
+}
+
 namespace ork::reflect::serdes {
 ////////////////////////////////////////////////////////////////////////////////
-using ulong_t = unsigned long int;
-using uint_t  = unsigned int;
+// forward declare specializations
+////////////////////////////////////////////////////////////////////////////////
+template <> void decode_key(std::string keystr, int& key_out);
+template <> void decode_key(std::string keystr, float& key_out);
+template <> void decode_key(std::string keystr, double& key_out);
+template <> void decode_key(std::string keystr, std::string& key_out);
+template <> void decode_key(std::string keystr, file::Path& key_out);
+template <> void decode_key(std::string keystr, PoolString& key_out);
+template <> void decode_key(std::string keystr, object::ObjectClass*& key_out);
+//
+template <> void decode_value(var_t val_inp, int& val_out);
+template <> void decode_value(var_t val_inp, uint_t& val_out);
+template <> void decode_value(var_t val_inp, ulong_t& val_out);
+template <> void decode_value(var_t val_inp, float& val_out);
+template <> void decode_value(var_t val_inp, file::Path& val_out);
+template <> void decode_value(var_t val_inp, PoolString& val_out);
+template <> void decode_value(var_t val_inp, rtti::Class*& val_out);
+template <> void decode_value(var_t val_inp, svar64_t& val_out);
+//
+template <>void encode_key(std::string& keystr_out, const int& key_inp);
+template <>void encode_key(std::string& keystr_out, const float& key_inp);
+template <>void encode_key(std::string& keystr_out, const double& key_inp);
+template <>void encode_key(std::string& keystr_out, const PoolString& key_inp);
+template <>void encode_key(std::string& keystr_out, const std::string& key_inp);
+template <>void encode_key(std::string& keystr_out, rtti::Class* const& key_inp);
+template <>void encode_key(std::string& keystr_out, object::ObjectClass* const& key_inp);
 
+////////////////////////////////////////////////////////////////////////////////
+// fallthroughs
+////////////////////////////////////////////////////////////////////////////////
 template <typename T> //
 inline void decode_key(std::string keystr, T& key_out) {
+  printf("keystr_inp<%s> typeid(T)<%s>\n", keystr.c_str(), typeid(T).name());
   OrkAssert(false);
-}
-template <> //
-inline void decode_key(std::string keystr, int& key_out) {
-  key_out = atoi(keystr.c_str());
-}
-template <> //
-inline void decode_key(std::string keystr, std::string& key_out) {
-  key_out = keystr;
 }
 template <typename T> //
 inline void decode_value(var_t val_inp, T& val_out) {
   val_out = val_inp.get<T>();
 }
-template <> //
-inline void decode_value(var_t val_inp, int& val_out) {
-  val_out = int(val_inp.get<double>());
-}
-template <> //
-inline void decode_value(var_t val_inp, uint_t& val_out) {
-  val_out = uint_t(val_inp.get<double>());
-}
-template <> //
-inline void decode_value(var_t val_inp, ulong_t& val_out) {
-  val_out = ulong_t(val_inp.get<double>());
-}
-template <> //
-inline void decode_value(var_t val_inp, float& val_out) {
-  val_out = float(val_inp.get<double>());
-}
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
 template <typename T> //
-inline void encode_key(std::string& keystr_out, const T& key_inp) {
+void encode_key(std::string& keystr_out, const T& key_inp) {
+  printf("keystr_out<%s> typeid(T)<%s>\n", keystr_out.c_str(), typeid(T).name());
   OrkAssert(false);
 }
-template <> //
-inline void encode_key(std::string& keystr_out, const int& key_inp) {
-  keystr_out = FormatString("%d", key_inp);
-}
-template <> //
-inline void encode_key(std::string& keystr_out, const std::string& key_inp) {
-  keystr_out = key_inp;
-}
+
 ////////////////////////////////////////////////////////////////////////////////
-} // namespace ork::reflect::serdes
+} // namespace ork::reflect::serdes {

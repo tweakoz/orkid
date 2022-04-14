@@ -16,13 +16,7 @@ static const int ksplith = 7;
 /////////////////////////////////////////////////////////////////////////
 
 SplitPanel::SplitPanel(const std::string& name, int x, int y, int w, int h)
-    : Group(name, x, y, w, h)
-    , _child1(nullptr)
-    , _child2(nullptr)
-    , mSplitVal(0.5f)
-    , mDockedAtTop(false)
-    , mEnableCloseButton(false)
-    , mPanelUiState(0) {
+    : Group(name, x, y, w, h){
 }
 
 SplitPanel::~SplitPanel() {

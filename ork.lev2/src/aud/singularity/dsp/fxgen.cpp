@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include <ork/lev2/aud/singularity/fxgen.h>
 #include <ork/lev2/aud/singularity/alg_filters.h>
 
@@ -134,7 +141,7 @@ dspblkdata_ptr_t appendStereoReverbX(
   fdn4->_axis.x = rg.rangedf(-1, 1);
   fdn4->_axis.y = rg.rangedf(-1, 1);
   fdn4->_axis.z = rg.rangedf(-1, 1);
-  fdn4->_axis.Normalize();
+  fdn4->_axis.normalizeInPlace();
   fdn4->_speed            = rg.rangedf(minspeed, maxspeed);
   fdn4->param(1)->_coarse = tscale * rg.rangedf(mint, maxt);
   fdn4->param(2)->_coarse = tscale * rg.rangedf(mint, maxt);

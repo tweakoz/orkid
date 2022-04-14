@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -87,14 +87,14 @@ scopesource_ptr_t LayerData::createScopeSource() {
 ///////////////////////////////////////////////////////////////////////////////
 
 Layer::Layer()
-    : _layerdata(nullptr)
+    : _curnote(0)
     , _layerLinGain(1.0)
     , _curPitchOffsetInCents(0.0f)
     , _centsPerKey(100.0f)
     , _lyrPhase(-1)
-    , _curnote(0)
-    , _alg(nullptr)
     , _doNoise(false)
+    , _alg(nullptr)
+    , _layerdata(nullptr)
     , _keepalive(0) {
   // printf( "Layer Init<%p>\n", this );
   _dspbuffer = std::make_shared<DspBuffer>();
@@ -106,8 +106,15 @@ Layer::Layer()
 }
 
 Layer::~Layer() {
-  if (_ctrlBlock)
-    delete _ctrlBlock;
+  std::lock_guard<std::mutex> lock(_mutex);
+  _pchBlock = nullptr;
+  _outbus = nullptr;
+  _ctrlBlock = nullptr;
+  _alg = nullptr;
+  _dspbuffer = nullptr;
+  _layerdata = nullptr;
+  _controlMap.clear();
+  _controld2iMap.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -128,22 +135,12 @@ void Layer::retain() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-void Layer::release() {
-  if ((--_keepalive) == 0) {
-    // printf("LAYER<%p> DONE\n", this);
-    the_synth->freeLayer(this);
-  }
-  assert(_keepalive >= 0);
-  // printf( "layer<%p> release cnt<%d>\n", this, _keepalive );
-}
-///////////////////////////////////////////////////////////////////////////////
 void Layer::compute(int base, int count) {
   _dspwritecount = count;
   _dspwritebase  = base;
   ///////////////////////
   if (nullptr == _layerdata) {
-    printf("gotnull ld layer<%p>\n", this);
+    printf("gotnull ld layer<%p>\n", (void*)this);
     return;
   }
   ////////////////////////////////////////
@@ -229,7 +226,7 @@ void Layer::endCompute() {
 // SignalScope
 //////////////////////////////////////
 void Layer::updateScopes(int ibase, int icount) {
-  if (this == the_synth->_hudLayer) {
+  if (this == the_synth->_hudLayer.get()) {
     if (_layerdata and _layerdata->_scopesource) {
       const float* lyroutl = _dspbuffer->channel(0) + ibase;
       const float* lyroutr = _dspbuffer->channel(1) + ibase;
@@ -243,7 +240,7 @@ void Layer::updateScopes(int ibase, int icount) {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool Layer::isHudLayer() const {
-  return (this == the_synth->_hudLayer);
+  return (this == the_synth->_hudLayer.get());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -360,96 +357,12 @@ controller_t Layer::getSRC2(dspparammod_constptr_t mods) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Layer::keyOn(int note, int vel, lyrdata_constptr_t ld) {
-  std::lock_guard<std::mutex> lock(_mutex);
-
-  reset();
-
-  assert(ld != nullptr);
-
-  _koi._key       = note;
-  _koi._vel       = vel;
-  _koi._layer     = this;
-  _koi._layerdata = ld;
-
-  _HKF._miscText   = "";
-  _HKF._note       = note;
-  _HKF._vel        = vel;
-  _HKF._layerdata  = ld;
-  _HKF._layerIndex = _ldindex;
-  _HKF._useFm4     = false;
-
-  _layerBasePitch = clip_float(note * 100, -0, 12700);
-
-  _ignoreRelease = ld->_ignRels;
-  _curnote       = note;
-  _layerdata     = ld;
-  _outbus        = the_synth->outputBus(ld->_outbus);
-  _layerLinGain  = ld->_layerLinGain;
-
-  _curvel = vel;
-
-  _layerTime = 0.0f;
-
-  this->retain();
-
-  /////////////////////////////////////////////
-  // controllers
-  /////////////////////////////////////////////
-
-  if (ld->_ctrlBlock) {
-    _ctrlBlock = new ControlBlockInst;
-    _ctrlBlock->keyOn(_koi, ld->_ctrlBlock);
-  }
-
-  ///////////////////////////////////////
-
-  _alg = _layerdata->_algdata->createAlgInst();
-  // assert(_alg);
-  if (_alg) {
-    _alg->keyOn(_koi);
-  }
-
-  _HKF._alg = _alg;
-
-  ///////////////////////////////////////
-
-  _lyrPhase = 0;
-  _sinrepPH = 0.0f;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void Layer::keyOff() {
-  _lyrPhase = 1;
-  this->release();
-
-  ///////////////////////////////////////
-
-  if (_ctrlBlock)
-    _ctrlBlock->keyOff();
-
-  ///////////////////////////////////////
-
-  if (_ignoreRelease)
-    return;
-
-  ///////////////////////////////////////
-
-  if (_alg)
-    _alg->keyOff();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 void Layer::reset() {
   _layerdata = nullptr;
   _curnote   = 0;
   _keepalive = 0;
 
   // todo pool controllers
-  if (_ctrlBlock)
-    delete _ctrlBlock;
   _ctrlBlock = nullptr;
 
   _controlMap.clear();

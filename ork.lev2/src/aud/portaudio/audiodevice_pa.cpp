@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -43,8 +43,6 @@ const int DESIRED_NUMFRAMES = 8192;
 #endif
 ///////////////////////////////////////////////////////////////////////////////
 
-static synth_ptr_t the_synth = synth::instance();
-
 static int patestCallback(
     const void* inputBuffer,
     void* outputBuffer,
@@ -56,6 +54,8 @@ static int patestCallback(
   float* out = (float*)outputBuffer;
   unsigned int i;
   (void)inputBuffer; /* Prevent unused variable warning. */
+
+  synth_ptr_t the_synth = synth::instance();
 
   the_synth->compute(framesPerBuffer, inputBuffer);
 
@@ -89,11 +89,15 @@ static int patestCallback(
 
  static void _startupAudio() {
 
+  synth::bringUp();
+  
+  synth_ptr_t the_synth = synth::instance();
+
   float SR = getSampleRate();
 
   the_synth->setSampleRate(SR);
 
-  printf("SingularitySynth<%p> SR<%g>\n", the_synth.get(), SR);
+  printf("SingularitySynth<%p> SR<%g>\n", (void*) the_synth.get(), SR);
   // loadPrograms();
 
   auto err = Pa_Initialize();
@@ -127,11 +131,12 @@ static int patestCallback(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void tearDownAudio() {
+void _tearDownAudio() {
   auto err = Pa_StopStream(pa_stream);
   assert(err == paNoError);
   err = Pa_Terminate();
   assert(err == paNoError);
+  synth::tearDown();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -141,6 +146,9 @@ AudioDevicePa::AudioDevicePa()
     _startupAudio();
 }
 
+AudioDevicePa::~AudioDevicePa(){
+  _tearDownAudio();
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 } // namespace ork::lev2

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -18,10 +18,10 @@ File::File(FileDev* pdev)
     , msFileName("NoFile")
     , meFileMode(EFM_READ)
     , miFileLen(0)
-    , miUserPos(0)
     , mHandle(0)
+    , mbEnableBuffering(true)
     , miPhysicalPos(0)
-    , mbEnableBuffering(true) {
+    , miUserPos(0) {
   if (NULL == mpDevice)
     mpDevice = FileEnv::GetRef().GetDefaultDevice();
 }
@@ -33,10 +33,10 @@ File::File(const char* sFileName, EFileMode eMode, FileDev* pdev)
     , msFileName(sFileName)
     , meFileMode(eMode)
     , miFileLen(0)
-    , miUserPos(0)
     , mHandle(0)
+    , mbEnableBuffering(true)
     , miPhysicalPos(0)
-    , mbEnableBuffering(true) {
+    , miUserPos(0){
   if (NULL == mpDevice)
     mpDevice = FileEnv::GetRef().GetDeviceForUrl(msFileName);
 
@@ -48,10 +48,10 @@ File::File(const file::Path& sFileName, EFileMode eMode, FileDev* pdev)
     , msFileName(sFileName)
     , meFileMode(eMode)
     , miFileLen(0)
-    , miUserPos(0)
     , mHandle(0)
+    , mbEnableBuffering(true)
     , miPhysicalPos(0)
-    , mbEnableBuffering(true) {
+    , miUserPos(0){
   if (NULL == mpDevice)
     mpDevice = FileEnv::GetRef().GetDeviceForUrl(msFileName);
 

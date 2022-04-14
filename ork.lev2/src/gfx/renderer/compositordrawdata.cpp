@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -44,6 +44,13 @@ ViewData CompositorDrawData::computeViewData() const {
   ViewData VD;
   VD._isStereo   = TOPCPD.isStereoOnePass();
   VD._camposmono = TOPCPD.monoCamPos(fmtx4());
+
+  auto nf = TOPCPD.nearAndFar();
+
+  VD._near = nf.x;
+  VD._far = nf.y;
+  VD._time = RCFD().getUserProperty("time"_crc).get<float>();
+
   if (VD._isStereo) {
     auto L = TOPCPD._stereoCameraMatrices->_left;
     auto R = TOPCPD._stereoCameraMatrices->_right;
@@ -86,10 +93,10 @@ ViewData CompositorDrawData::computeViewData() const {
 
   fmtx4 IVL;
   IVL.inverseOf(VD.VL);
-  VD._camposmono = IVL.GetColumn(3).xyz();
+  VD._camposmono = IVL.column(3).xyz();
 
   const auto& PZ = VD._p[0];
-  VD._zndc2eye   = fvec2(PZ.GetElemXY(3, 2), PZ.GetElemXY(2, 2));
+  VD._zndc2eye   = fvec2(PZ.elemXY(3, 2), PZ.elemXY(2, 2));
 
   return VD;
 }

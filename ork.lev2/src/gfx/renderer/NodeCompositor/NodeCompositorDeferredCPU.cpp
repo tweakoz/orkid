@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -93,6 +93,7 @@ struct CpuNodeImpl {
     _context.renderGbuffer(drawdata, VD);
     auto depthclusterbase = _context.captureDepthClusters(drawdata, VD);
     targ->debugPushGroup("Deferred::LightAccum");
+    printf( "WTF1\n");
     _context.renderBaseLighting(drawdata, VD);
     this->renderPointLights(drawdata, VD);
     targ->debugPopGroup(); // "Deferred::LightAccum"
@@ -264,9 +265,9 @@ struct CpuNodeImpl {
       numchunks++;
       /////////////////////////////////////
     } // while (num_pending_tiles) {
-    // float time_tile_out = _timer.SecsSinceStart();
-    // printf( "Deferred::_render tiletime<%g>\n", time_tile_out-time_tile_in );
-    // printf( "numchunks<%zu>\n", numchunks );
+     //float time_tile_out = _timer.SecsSinceStart();
+     //printf( "Deferred::_render tiletime<%g>\n", time_tile_out-time_tile_in );
+     printf( "numchunks<%zu>\n", numchunks );
     /////////////////////////////////////
     _context.endPointLighting(drawdata, VD);
   }
@@ -307,7 +308,7 @@ void DeferredCompositingNode::DoRender(CompositorDrawData& drawdata) {
   impl->_render(this, drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
-RtBuffer* DeferredCompositingNode::GetOutput() const {
+rtbuffer_ptr_t DeferredCompositingNode::GetOutput() const {
   static int i = 0;
   i++;
   return _impl.get<std::shared_ptr<CpuNodeImpl>>()->_context._rtgLaccum->GetMrt(0);

@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #pragma once
 
 #include "reflection.h"
@@ -7,8 +14,14 @@
 #include <ork/file/path.h>
 #include <ork/util/hexdump.inl>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunknown-pragmas"
+
 #include <rapidjson/reader.h>
 #include <rapidjson/document.h>
+
+#pragma GCC diagnostic pop
+
 using namespace rapidjson;
 
 namespace ork::audio::singularity {

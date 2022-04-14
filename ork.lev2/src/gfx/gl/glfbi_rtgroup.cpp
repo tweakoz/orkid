@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -21,8 +21,6 @@ namespace ork::lev2 {
 
 void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
 
-  // mTargetGL.debugPushGroup("GlFrameBufferInterface::SetRtGroup");
-
   // printf("FBI<%p> SetRTG<%p>\n", this, Base );
 
   if (0 == Base) {
@@ -35,8 +33,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
     // on xbox, happens after resolve
     ////////////////////////////////////////////////
     _setAsRenderTarget();
-    mCurrentRtGroup = 0;
-    // mTargetGL.debugPopGroup();
+    _currentRtGroup = nullptr;
     return;
   }
 
@@ -70,7 +67,6 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
   GL_ERRORCHECK();
 
   if (0 == FboObj) {
-    // mTargetGL.debugPushGroup("GlFrameBufferInterface::SetRtGroup::newFbo");
     FboObj = new GlFboObject;
 
     Base->SetInternalHandle(FboObj);
@@ -89,7 +85,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
     //////////////////////////////////////////
 
     for (int it = 0; it < inumtargets; it++) {
-      RtBuffer* pB = Base->GetMrt(it);
+      rtbuffer_ptr_t pB = Base->GetMrt(it);
       if (pB->_impl.isA<GlRtBufferImpl*>() == false) {
         auto bufferimpl = new GlRtBufferImpl;
         // printf("RtGroup<%p> RtBuffer<%p> initcolor1\n", Base, pB);
@@ -137,12 +133,10 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
     }
 
     Base->SetSizeDirty(true);
-    // mTargetGL.debugPopGroup();
   }
   GL_ERRORCHECK();
 
   if (Base->IsSizeDirty()) {
-    // mTargetGL.debugPushGroup("GlFrameBufferInterface::SetRtGroup::SizeDirty");
     //////////////////////////////////////////
     // initialize depth renderbuffer
     if (Base->_needsDepth) {
@@ -185,7 +179,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
     }
     //////
     for (int it = 0; it < inumtargets; it++) {
-      RtBuffer* rtbuffer = Base->GetMrt(it);
+      rtbuffer_ptr_t rtbuffer = Base->GetMrt(it);
       auto bufferimpl    = rtbuffer->_impl.get<GlRtBufferImpl*>();
 
       auto tex = rtbuffer->texture();
@@ -242,6 +236,12 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
           case EBufferFormat::RGB32UI:
             glformat                      = GL_RGB_INTEGER;
             glinternalformat              = GL_RGB32UI;
+            gltype                        = GL_UNSIGNED_INT;
+            tex->_formatSupportsFiltering = false;
+            break;
+          case EBufferFormat::RGBA32UI:
+            glformat                      = GL_RGBA_INTEGER;
+            glinternalformat              = GL_RGBA32UI;
             gltype                        = GL_UNSIGNED_INT;
             tex->_formatSupportsFiltering = false;
             break;
@@ -304,7 +304,6 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
         mTargetGL.debugPopGroup();
       }
       rtbuffer->SetSizeDirty(false);
-      // mTargetGL.debugPopGroup();
     }
     Base->SetSizeDirty(false);
     GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -349,11 +348,10 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
   //////////////////////////////////////////
 
   static const SRasterState defstate;
-  mTarget.RSI()->BindRasterState(defstate, true);
+  _target.RSI()->BindRasterState(defstate, true);
 
-  mCurrentRtGroup = Base;
+  _currentRtGroup = Base;
 
-  // mTargetGL.debugPopGroup();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -14,23 +14,6 @@
 #include <ork/lev2/gfx/renderer/compositor.h>
 
 namespace ork::lev2 {
-
-class CameraData;
-class CameraMatrices;
-class UiCamera;
-class IRenderer;
-class Texture;
-struct LightingGroup;
-class LightManager;
-class Context;
-class OffscreenBuffer;
-class RtGroup;
-class Window;
-class XgmMaterialStateInst;
-class IRenderable;
-class IRenderTarget;
-class DrawableBuffer;
-struct RenderContextFrameData;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Rendering Context Data that can change per draw instance

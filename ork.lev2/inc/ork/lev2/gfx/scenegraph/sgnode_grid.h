@@ -5,12 +5,15 @@
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
+struct GridDrawableData;
 struct GridDrawableInst;
-typedef std::shared_ptr<GridDrawableInst> griddrawableinstptr_t;
+
+using griddrawableinstptr_t = std::shared_ptr<GridDrawableInst> ;
+using griddrawabledataptr_t = std::shared_ptr<GridDrawableData> ;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class GridDrawableData final : public ork::Object {
+struct GridDrawableData final : public ork::Object {
 
   DeclareConcreteX(GridDrawableData, ork::Object);
 

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -53,7 +53,7 @@ bool DummyFxInterface::LoadFxShader(const AssetPath& pth, FxShader* pfxshader) {
 
 fmtx4 DuMatrixStackInterface::Ortho(float left, float right, float top, float bottom, float fnear, float ffar) {
   fmtx4 mat;
-  mat.Ortho(left, right, top, bottom, fnear, ffar);
+  mat.ortho(left, right, top, bottom, fnear, ffar);
   return mat;
 }
 
@@ -75,10 +75,10 @@ ContextDummy::~ContextDummy() {
 
 ContextDummy::ContextDummy()
     : Context()
-    , mFbI(*this)
     , mMtxI(*this)
     , mRsI(*this)
     , mGbI(*this)
+    , mFbI(*this)
     , mDWI(*this) {
   DummyContextInit();
   static bool binit = true;
@@ -190,7 +190,7 @@ void DuGeometryBufferInterface::DrawInstancedIndexedPrimitiveEML(
     size_t instance_count) {
 }
 
-bool DuTextureInterface::LoadTexture(const AssetPath& fname, Texture* ptex) {
+bool DuTextureInterface::LoadTexture(const AssetPath& fname, texture_ptr_t ptex) {
   ///////////////////////////////////////////////
   AssetPath Filename = fname;
   bool bHasExt       = Filename.HasExtension();

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -8,25 +8,13 @@
 #pragma once
 
 #include <map>
+#include <ork/lev2/lev2_types.h>
 #include <ork/kernel/core/singleton.h>
 #include <ork/kernel/mutex.h>
 #include <ork/kernel/svariant.h>
 #include <unordered_map>
 
 namespace ork { namespace lev2 {
-
-struct InputGroup;
-struct InputManager;
-struct InputDevice;
-
-using inputgroup_ptr_t      = std::shared_ptr<InputGroup>;
-using inputgroup_constptr_t = std::shared_ptr<const InputGroup>;
-
-using inputdevice_ptr_t      = std::shared_ptr<InputDevice>;
-using inputdevice_constptr_t = std::shared_ptr<const InputDevice>;
-
-using inputmanager_ptr_t       = std::shared_ptr<InputManager>;
-using inputmanager_const_ptr_t = std::shared_ptr<const InputManager>;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -214,8 +202,6 @@ enum EMappedTriggerNames {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class InputManager;
-
 static const int KMAX_TRIGGERS = 1024;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -288,8 +274,8 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class InputDevice {
-  friend class InputManager;
+struct InputDevice {
+  friend struct InputManager;
 
 public:
   // Enum: CONN_STATUS
@@ -377,6 +363,8 @@ protected:
       : mConnectionStatus(CONN_STATUS_UNKNOWN)
       , mRumbleEnabled(true)
       , mMasterRumbleEnabled(true) {
+  }
+  virtual ~InputDevice() {
   }
 
   void SetInputMap(EMappedTriggerNames inch, ERawTriggerNames outch);

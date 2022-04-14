@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -35,9 +35,11 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 RenderContextFrameData::RenderContextFrameData(Context* ptarg)
-    : _lightmgr(0)
-    , _target(ptarg)
-    , _cimpl(nullptr) {
+    : _cimpl(nullptr)
+    , _lightmgr(0)
+    , _target(ptarg) {
+    setUserProperty("time"_crc,0.0f);
+    setUserProperty("pbr_model"_crc,0);
 }
 
 void RenderContextFrameData::setUserProperty(CrcString key, rendervar_t val) {

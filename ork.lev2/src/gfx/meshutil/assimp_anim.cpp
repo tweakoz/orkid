@@ -9,38 +9,22 @@
 namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 
-#if 0
-bool ASS_XGA_Filter_ConvertAsset(const tokenlist& toklist) {
+// TODO - implement datablock cache for anims
+
+datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
 
   typedef std::vector<fmtx4> framevect_t;
 
-  bool rval = false;
-  ork::tool::FilterOptMap options;
-  options.SetDefault("--in", "yo");
-  options.SetDefault("--out", "yo");
-  options.SetOptions(toklist);
-  std::string inf  = options.GetOption("--in")->GetValue();
-  std::string outf = options.GetOption("--out")->GetValue();
-
-  ColladaExportPolicy policy;
-  policy.mUnits            = UNITS_METER;
+  //ColladaExportPolicy policy;
+  //policy.mUnits            = UNITS_METER;
   const PoolString JointPS = AddPooledString("Joint");
-
-  ork::file::Path GlbPath = inf;
-  auto base_dir           = GlbPath.toBFS().parent_path();
-
-  OrkAssert(boost::filesystem::exists(GlbPath.toBFS()));
-  OrkAssert(boost::filesystem::is_regular_file(GlbPath.toBFS()));
-
-  // printf("base_dir<%s>\n", base_dir.c_str());
-  OrkAssert(boost::filesystem::exists(base_dir));
-  OrkAssert(boost::filesystem::is_directory(base_dir));
 
   auto color = fvec3(1, 0, 1);
 
-  deco::printf(color, "BEGIN: importing<%s> via Assimp\n", GlbPath.c_str());
+  //deco::printf(color, "BEGIN: importing<%s> via Assimp\n", GlbPath.c_str());
 
-  auto scene = aiImportFile(GlbPath.c_str(), assimpImportFlags());
+  auto& extension = inp_datablock->_vars->typedValueForKey<std::string>("file-extension").value();
+  auto scene = aiImportFileFromMemory((const char*)inp_datablock->data(), inp_datablock->length(), assimpImportFlags(), extension.c_str());
   deco::printf(color, "END: importing scene<%p>\n", scene);
   if (scene) {
     lev2::XgmAnim xgmanim;
@@ -159,10 +143,10 @@ bool ASS_XGA_Filter_ConvertAsset(const tokenlist& toklist) {
 
       PoolString objnameps         = AddPooledString("");
       PoolString ChannelPooledName = AddPooledString(channel_name.c_str());
-      auto XgmChan                 = new ork::lev2::XgmDecompAnimChannel(objnameps, ChannelPooledName, JointPS);
-      XgmChan->ReserveFrames(framecount);
+      auto XgmChan                 = std::make_shared<ork::lev2::XgmDecompAnimChannel>(objnameps, ChannelPooledName, JointPS);
+      XgmChan->reserveFrames(framecount);
       xgmanim.AddChannel(ChannelPooledName, XgmChan);
-      skelnode->_varmap["xgmchan"].make<lev2::XgmDecompAnimChannel*>(XgmChan);
+      skelnode->_varmap["xgmchan"].make<lev2::animchannel_ptr_t>(XgmChan);
 
       /////////////////////////////
       // we assume pre-sampled frames here
@@ -207,9 +191,9 @@ bool ASS_XGA_Filter_ConvertAsset(const tokenlist& toklist) {
         /////////////////////////////
 
         fmtx4 R, S, T;
-        R.FromQuaternion(currot);
-        S.SetScale(cursca.x, cursca.x, cursca.x);
-        T.SetTranslation(curpos);
+        R.fromQuaternion(currot);
+        S.setScale(cursca.x, cursca.x, cursca.x);
+        T.setTranslation(curpos);
         fmtx4 XF_NSPACE = R * T;
         // fmtx4 XF_NSPACE = T * R;
         skelnode_framevect_n.push_back(XF_NSPACE);
@@ -249,7 +233,7 @@ bool ASS_XGA_Filter_ConvertAsset(const tokenlist& toklist) {
           std::string channel_name = remapSkelName(channel->mNodeName.data);
           auto its                 = skelnodes.find(channel_name);
           auto skelnode            = its->second;
-          auto XgmChan             = skelnode->_varmap["xgmchan"].get<lev2::XgmDecompAnimChannel*>();
+          auto XgmChan             = skelnode->_varmap["xgmchan"].get<lev2::animchannel_ptr_t>();
           fmtx4 OSPACE             = skelnode->concatenatednode();
           deco::printf(color, "fr<%d> ", f);
           deco::printf(yel, "%s (O): ", channel_name.c_str());
@@ -263,7 +247,7 @@ bool ASS_XGA_Filter_ConvertAsset(const tokenlist& toklist) {
       deco::printf(fvec3::White(), "/////////////////////////////////////////////\n");
       for (int i = 0; i < anim->mNumChannels; i++) {
         deco::printf(color, "///////////\n");
-        for (int f = 0; f < framecount; f++) {
+        for (size_t f = 0; f < framecount; f++) {
           ////////////////////////////////////////////////////
           // apply anim channels to generate pose
           ////////////////////////////////////////////////////
@@ -281,7 +265,7 @@ bool ASS_XGA_Filter_ConvertAsset(const tokenlist& toklist) {
           std::string channel_name = remapSkelName(channel->mNodeName.data);
           auto its                 = skelnodes.find(channel_name);
           auto skelnode            = its->second;
-          auto XgmChan             = skelnode->_varmap["xgmchan"].get<lev2::XgmDecompAnimChannel*>();
+          auto XgmChan             = skelnode->_varmap["xgmchan"].get<lev2::animchannel_ptr_t>();
           fmtx4 OSPACE             = skelnode->concatenated2();
           auto par                 = skelnode->_parent;
           fmtx4 POSPACE            = par ? skelnode->_parent->concatenated2() : fmtx4();
@@ -292,9 +276,11 @@ bool ASS_XGA_Filter_ConvertAsset(const tokenlist& toklist) {
 
           skelnode->_varmap["framevect_j"].get<framevect_t>().push_back(JSPACE);
 
+          auto as_decomchan = std::dynamic_pointer_cast<lev2::XgmDecompAnimChannel>(XgmChan);
+
           ork::lev2::DecompMtx44 decomp;
           JSPACE.decompose(decomp.mTrans, decomp.mRot, decomp.mScale);
-          XgmChan->AddFrame(decomp);
+          as_decomchan->setFrame(f,decomp);
         }
       }
     }
@@ -329,14 +315,14 @@ bool ASS_XGA_Filter_ConvertAsset(const tokenlist& toklist) {
         }
       }
     }
+
     ////////////////////////////////////////////////////////////////
-    rval = ork::lev2::XgmAnim::Save(file::Path(outf.c_str()), &xgmanim);
-    ////////////////////////////////////////////////////////////////
+    return ork::lev2::XgmAnim::Save(&xgmanim);
   } // if scene
-
-  return rval;
+  else{
+    OrkAssert(false);
+  }
+  return nullptr;
 }
-
-#endif
 
 } // namespace ork::meshutil

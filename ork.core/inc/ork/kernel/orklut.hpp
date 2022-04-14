@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -10,6 +10,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include <ork/kernel/orklut.h>
+#include <assert.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -75,9 +76,9 @@ typename orklut<K,V,Allocator>::iterator orklut<K,V,Allocator>::AddSorted( const
 
 	value_type InsertPair( key,val );
 
-	OrkAssertI( (find(key)==end()) || (meKeyPolicy==EKEYPOLICY_MULTILUT),
-				"lut is a singlekey lut and can not have multiple items with the same key, use EKEYPOLICY_MULTILUT if you want a multilut"
-		      );
+	auto as_const = const_cast<const orklut<K,V,Allocator>*>(this);
+
+	assert( (as_const->find(key)==as_const->end()) || (meKeyPolicy==EKEYPOLICY_MULTILUT) ); // "lut is a singlekey lut and can not have multiple items with the same key, use EKEYPOLICY_MULTILUT if you want a multilut"
 
 	iterator WhereIt = UpperBound( key );
 

@@ -1,0 +1,72 @@
+import "skintools.i";
+import "picktools.i";
+import "pbrtools.i";
+///////////////////////////////////////////////////////////////
+// FxConfigs
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default {
+	glsl_version = "130";
+}
+///////////////////////////////////////////////////////////////
+libblock lib_pbr_frg_grid : lib_gbuf_encode {
+float filteredGrid( vec2 p, vec2 dpdx, vec2 dpdy, float width )
+{
+	vec2 pp = p + vec2(width,width)*0.5;
+
+    const float N = 1.0/width;
+    vec2 w = max(abs(dpdx), abs(dpdy));
+    vec2 a = pp + 0.5*w;                        
+    vec2 b = pp - 0.5*w;           
+    vec2 i = (floor(a)+min(fract(a)*N,1.0)-
+              floor(b)-min(fract(b)*N,1.0))/(N*w);
+    return (1.0-i.x)*(1.0-i.y);
+}
+void pscommon(){
+	vec3 normal = vec3(0,1,0);
+	float mtl = 0.0;
+	float ruf = 1.0;
+
+	vec2 paramMajor = frg_uv0+vec2(100.0,100.0);
+	vec2 dpdxMajor = dFdx(paramMajor)*2;
+	vec2 dpdyMajor = dFdy(paramMajor)*2;
+
+	vec2 paramMinor = paramMajor*10.0;
+	vec2 dpdxMinor = dFdx(paramMinor);
+	vec2 dpdyMinor = dFdy(paramMinor);
+
+	float gMajor = filteredGrid(paramMajor,dpdxMajor,dpdyMajor,0.02);	
+	float gMinor = filteredGrid(paramMinor,dpdxMinor,dpdyMinor,0.02);	
+	vec3 basecolor = vec3(0.1,0.1,0.1);
+	vec3 majorcolor = vec3(1,1,1);
+	vec3 minorcolor = vec3(.5,.5,.5);
+
+	vec3 color = mix(minorcolor,basecolor,gMinor);
+	vec3 color2 = mix(majorcolor,color,gMajor);
+
+
+	out_gbuf = packGbuffer(color2,normal,ruf,mtl,false);
+
+}
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_gbuffer_nx 
+	: iface_fgbuffer
+    : lib_pbr_frg_grid {
+    pscommon();
+}///////////////////////////////////////////////////////////////
+fragment_shader ps_gbuffer_nx_stereo 
+	: iface_fgbuffer
+    : lib_pbr_frg_grid {
+    pscommon();
+}
+
+///////////////////////////////////////////////////////////////
+technique rigid_gbuffer_n {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_rigid_gbuffer,ps_gbuffer_nx,sb_default}
+}
+technique rigid_gbuffer_n_stereo {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_rigid_gbuffer_stereo,ps_gbuffer_nx_stereo,sb_default}
+}
+///////////////////////////////////////////////////////////////

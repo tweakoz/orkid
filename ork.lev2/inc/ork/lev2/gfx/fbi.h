@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #pragma once
 
 /// ////////////////////////////////////////////////////////////////////////////
@@ -20,38 +27,38 @@ public:
     return _clearColor;
   }
   void SetAutoClear(bool bv) {
-    mbAutoClear = bv;
+    _autoClear = bv;
   }
   bool GetAutoClear() const {
-    return mbAutoClear;
+    return _autoClear;
   }
   void SetVSyncEnable(bool bv) {
-    mbEnableVSync = bv;
+    _enableVSync = bv;
   }
 
   ///////////////////////////////////////////////////////
 
   Texture* GetBufferTexture() {
-    return mpBufferTex;
+    return _bufferTex;
   }
   void SetBufferTexture(Texture* ptex) {
-    mpBufferTex = ptex;
+    _bufferTex = ptex;
   }
 
   ///////////////////////////////////////////////////////
 
   OffscreenBuffer* GetThisBuffer() {
-    return mpThisBuffer;
+    return _thisBuffer;
   }
   void SetThisBuffer(OffscreenBuffer* pbuf) {
-    mpThisBuffer = pbuf;
+    _thisBuffer = pbuf;
   }
 
   ///////////////////////////////////////////////////////
 
   virtual void SetRtGroup(RtGroup* Base) = 0;
   RtGroup* GetRtGroup() const {
-    return mCurrentRtGroup;
+    return _currentRtGroup;
   }
 
   void PushRtGroup(RtGroup* Base);
@@ -94,23 +101,25 @@ public:
   int GetVPH() {
     return viewport()._h;
   }
+  float currentAspectRatio() {
+    return float(GetVPW())/float(GetVPH());
+  }
 
   ///////////////////////////////////////////////////////
   // Capture Interface
   ///////////////////////////////////////////////////////
 
-  virtual bool capture(const RtGroup& inpbuf, int irt, CaptureBuffer* buffer) {
+  virtual bool captureAsFormat(const RtBuffer* inpbuf, CaptureBuffer* buffer, EBufferFormat destfmt) {
     return false;
   }
-  virtual bool captureAsFormat(const RtGroup& inpbuf, int irt, CaptureBuffer* buffer, EBufferFormat destfmt) {
-    return false;
+  virtual void capture(const RtBuffer* inpbuf, const file::Path& pth) {
   }
-  virtual void Capture(const RtGroup& inpbuf, int irt, const file::Path& pth) {
-  }
-  virtual bool CaptureToTexture(const CaptureBuffer& capbuf, Texture& tex) {
+  virtual bool captureToTexture(const CaptureBuffer& capbuf, Texture& tex) {
     return false;
   }
   virtual void GetPixel(const fvec4& rAt, PixelFetchContext& ctx) = 0;
+
+  bool capture(const RtBuffer* rtb, CaptureBuffer* capbuf);
 
   //////////////////////////////////////////////
 
@@ -132,20 +141,22 @@ public:
 
   static const int kiVPStackMax = 16;
 
+  Context& _target;
+  Texture* _bufferTex          = nullptr;
+  OffscreenBuffer* _thisBuffer = nullptr;
+  RtGroup* _currentRtGroup     = nullptr;
+  PickBuffer* _pickbuffer      = nullptr;
+
+  bool _enableVSync;
+  bool _enableFullScreen;
+  bool _autoClear;
+
   int miViewportStackIndex;
   int miScissorStackIndex;
   ork::fixedvector<ViewportRect, kiVPStackMax> maScissorStack;
   ork::fixedvector<ViewportRect, kiVPStackMax> maViewportStack;
 
-  OffscreenBuffer* mpThisBuffer;
-  Texture* mpBufferTex;
-  RtGroup* mCurrentRtGroup;
   fcolor4 _clearColor;
-  bool mbAutoClear;
-  bool mbEnableFullScreen;
-  bool mbEnableVSync;
-  int miPickState;
-  Context& mTarget;
-  PickBuffer* _pickbuffer;
+  int _pickState;
   std::stack<lev2::RtGroup*> mRtGroupStack;
 };

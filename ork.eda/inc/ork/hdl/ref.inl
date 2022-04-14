@@ -270,7 +270,8 @@ expr_t Ref::operator == (int rhs) const {
     else
         return (*this==kuc);
 }
-expr_t Ref::operator != (Rvalue rhs) const {
+
+expr_t Ref::not_equal_to(Rvalue rhs) const {
     auto s = FrontEnd::segment();
     expr_t rval = s->createExpression(false);
     rval->MakeAstNode<OperationNotEqualsTo>(*this,rhs);

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -16,56 +16,78 @@ namespace ork::reflect {
 
 using bidi_t = serdes::BidirectionalSerializer;
 
+using voidfn_t = void(*)();
+
 template <typename FunctionType> struct Function {};
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <> struct Function<void (*)()> {
-  typedef void ReturnType;
-  typedef void (*FunctionType)();
-
+template <> struct Function<voidfn_t> {
+  
   struct Parameters__ {
     enum { Count = 0 };
-    void Apply(bidi_t& bidi, int) {
-      bidi.Fail();
-    };
-    void Apply(bidi_t& bidi, int) const {
-      bidi.Fail();
-    }
+    void Apply(bidi_t& bidi, int);
+    void Apply(bidi_t& bidi, int) const;
   };
 
-  typedef Parameters__ Parameters;
+  using ReturnType = void;
+  using FunctionType = voidfn_t;
+  using Parameters = Parameters__;
 
-  static void invoke(FunctionType f, const Parameters&) {
-    return (*f)();
-  }
+  static void invoke(FunctionType f, const Parameters&);
+  static void SetParameters(void*);
+};
 
-  static void SetParameters(void*) {
-  }
+template <typename A0> 
+struct Function<void(*)(A0)> {
+  
+  struct Parameters__ {
+    enum { Count = 0 };
+    void Apply(bidi_t& bidi, int);
+    void Apply(bidi_t& bidi, int) const;
+  };
+
+  using ReturnType = void;
+  using FunctionType =  void(*)(A0);
+  using Parameters = Parameters__;
+
+  static void invoke(FunctionType f, const Parameters&);
+  static void SetParameters(void*);
+};
+
+template <typename C>
+struct Function<void(C::*)()> {
+  struct Parameters__ {
+    enum { Count = 0 };
+    void Apply(bidi_t& bidi, int);
+    void Apply(bidi_t& bidi, int) const;
+  };
+
+  using GenericFunction__ = Function<void (*)()>;
+  using ClassType = C ;
+  using FunctionType = void(C::*)();
+  using Parameters = Parameters__ ;
+  using ReturnType = void;
+
+  static void invoke(ClassType& object, FunctionType f, const Parameters&);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename R> struct Function<R (*)()> {
-  typedef Function<void (*)()> GenericFunction__;
+/*template <typename R> struct Function<R (*)()> {
+  //typedef Function<void (*)()> GenericFunction__;
   typedef R ReturnType;
   typedef R (*FunctionType)();
 
   struct Parameters__ {
     enum { Count = 0 };
-    void Apply(bidi_t& bidi, int) {
-      bidi.Fail();
-    };
-    void Apply(bidi_t& bidi, int) const {
-      bidi.Fail();
-    }
+    void Apply(bidi_t& bidi, int);
+    void Apply(bidi_t& bidi, int) const;
   };
 
-  typedef typename GenericFunction__::Parameters__ Parameters;
+  using Parameters = Parameters__;
 
-  static R invoke(FunctionType f, const Parameters&) {
-    return (*f)();
-  }
+  static R invoke(FunctionType f, const Parameters&);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -83,26 +105,13 @@ struct Function<R (*)(P0)> {
 
     enum { Count = 1 + ParentFunction__::Parameters::Count };
 
-    void Apply(bidi_t& bidi, int parameter_index) {
-      if (parameter_index == Count - 1)
-        ; // Serialize<P0>(&mParam_00, &mParam_00, bidi);
-      else
-        ; // ParentFunction__::Parameters::Apply(bidi, parameter_index);
-    }
-
-    void Apply(bidi_t& bidi, int parameter_index) const {
-      if (parameter_index == Count - 1)
-        ; // Serialize<P0>(&mParam_00, NULL, bidi);
-      else
-        ; // ParentFunction__::Parameters::Apply(bidi, parameter_index);
-    }
+    void Apply(bidi_t& bidi, int parameter_index);
+    void Apply(bidi_t& bidi, int parameter_index) const;
   };
 
-  typedef typename GenericFunction__::Parameters__ Parameters;
+  using Parameters = Parameters__ ;
 
-  static R invoke(FunctionType f, const Parameters& params) {
-    return (*f)(params.mParam_00);
-  }
+  static R invoke(FunctionType f, const Parameters& params);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -110,11 +119,7 @@ struct Function<R (*)(P0)> {
 template <
     typename ReturnType, //
     typename P0>
-inline void SetParameters(ReturnType (*)(P0), void* param_data, P0 a0) {
-  typedef typename Function<ReturnType (*)(P0)>::Parameters Parameters;
-  Parameters* params = static_cast<Parameters*>(param_data);
-  params->mParam_00  = a0;
-}
+    void SetParameters(ReturnType (*)(P0), void* param_data, P0 a0);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -133,26 +138,14 @@ struct Function<R (*)(P0, P1)> {
 
     enum { Count = 1 + ParentFunction__::Parameters::Count };
 
-    void Apply(bidi_t& bidi, int parameter_index) {
-      if (parameter_index == Count - 1)
-        ; // Serialize<P1>(&mParam_01, &mParam_01, bidi);
-      else
-        ; // ParentFunction__::Parameters::Apply(bidi, parameter_index);
-    }
+    void Apply(bidi_t& bidi, int parameter_index);
+    void Apply(bidi_t& bidi, int parameter_index) const;
 
-    void Apply(bidi_t& bidi, int parameter_index) const {
-      if (parameter_index == Count - 1)
-        ; // Serialize<P1>(&mParam_01, NULL, bidi);
-      else
-        ; // ParentFunction__::Parameters::Apply(bidi, parameter_index);
-    }
+    using Parameters = Parameters__ ;
+
+    static R invoke(FunctionType f, const Parameters& params);
   };
 
-  typedef typename GenericFunction__::Parameters__ Parameters;
-
-  static R invoke(FunctionType f, const Parameters& params) {
-    return (*f)(params.mParam_00, params.mParam_01);
-  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -161,12 +154,7 @@ template <
     typename ReturnType, //
     typename P0,
     typename P1>
-inline void SetParameters(ReturnType (*)(P0, P1), void* param_data, P0 a0, P1 a1) {
-  typedef typename Function<ReturnType (*)(P0, P1)>::Parameters Parameters;
-  Parameters* params = static_cast<Parameters*>(param_data);
-  params->mParam_00  = a0;
-  params->mParam_01  = a1;
-}
+    void SetParameters(ReturnType (*)(P0, P1), void* param_data, P0 a0, P1 a1);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -181,19 +169,13 @@ struct Function<R (C::*)()> {
 
   struct Parameters__ {
     enum { Count = 0 };
-    void Apply(bidi_t& bidi, int) {
-      bidi.Fail();
-    };
-    void Apply(bidi_t& bidi, int) const {
-      bidi.Fail();
-    }
+    void Apply(bidi_t& bidi, int);
+    void Apply(bidi_t& bidi, int) const;
   };
 
-  typedef typename GenericFunction__::Parameters__ Parameters;
+  using Parameters = Parameters__ ;
 
-  static R invoke(ClassType& object, FunctionType f, const Parameters&) {
-    return (object.*f)();
-  }
+  static R invoke(ClassType& object, FunctionType f, const Parameters&);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -214,26 +196,13 @@ struct Function<R (C::*)(P0)> {
 
     enum { Count = 1 + ParentFunction__::Parameters::Count };
 
-    void Apply(bidi_t& bidi, int parameter_index) {
-      if (parameter_index == Count - 1)
-        ; // Serialize<P0>(&mParam_00, &mParam_00, bidi);
-      else
-        ; // ParentFunction__::Parameters::Apply(bidi, parameter_index);
-    }
-
-    void Apply(bidi_t& bidi, int parameter_index) const {
-      if (parameter_index == Count - 1)
-        ; // Serialize<P0>(&mParam_00, NULL, bidi);
-      else
-        ; // ParentFunction__::Parameters::Apply(bidi, parameter_index);
-    }
+    void Apply(bidi_t& bidi, int parameter_index);
+    void Apply(bidi_t& bidi, int parameter_index) const;
   };
 
-  typedef typename GenericFunction__::Parameters__ Parameters;
+  using Parameters = Parameters__ ;
 
-  static R invoke(ClassType& object, FunctionType f, const Parameters& params) {
-    return (object.*f)(params.mParam_00);
-  }
+  static R invoke(ClassType& object, FunctionType f, const Parameters& params);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -242,11 +211,7 @@ template <
     typename ReturnType, //
     typename ClassType,
     typename P0>
-inline void SetParameters(ReturnType (ClassType::*)(P0), void* param_data, P0 a0) {
-  typedef typename Function<ReturnType (ClassType::*)(P0)>::Parameters Parameters;
-  Parameters* params = static_cast<Parameters*>(param_data);
-  params->mParam_00  = a0;
-}
+    void SetParameters(ReturnType (ClassType::*)(P0), void* param_data, P0 a0);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -267,26 +232,13 @@ struct Function<R (C::*)(P0, P1)> {
 
     enum { Count = 1 + ParentFunction__::Parameters::Count };
 
-    void Apply(bidi_t& bidi, int parameter_index) {
-      if (parameter_index == Count - 1)
-        ; // Serialize<P1>(&mParam_01, &mParam_01, bidi);
-      else
-        ; // ParentFunction__::Parameters::Apply(bidi, parameter_index);
-    }
-
-    void Apply(bidi_t& bidi, int parameter_index) const {
-      if (parameter_index == Count - 1)
-        ; // Serialize<P1>(&mParam_01, NULL, bidi);
-      else
-        ; // ParentFunction__::Parameters::Apply(bidi, parameter_index);
-    }
+    void Apply(bidi_t& bidi, int parameter_index);
+    void Apply(bidi_t& bidi, int parameter_index) const;
   };
 
-  typedef typename GenericFunction__::Parameters__ Parameters;
+  using Parameters = Parameters__ ;
 
-  static R invoke(ClassType& object, FunctionType f, const Parameters& params) {
-    return (object.*f)(params.mParam_00, params.mParam_01);
-  }
+  static R invoke(ClassType& object, FunctionType f, const Parameters& params);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -296,12 +248,8 @@ template <
     typename ClassType,
     typename P0,
     typename P1>
-inline void SetParameters(ReturnType (ClassType::*)(P0, P1), void* param_data, P0 a0, P1 a1) {
-  typedef typename Function<ReturnType (ClassType::*)(P0, P1)>::Parameters Parameters;
-  Parameters* params = static_cast<Parameters*>(param_data);
-  params->mParam_00  = a0;
-  params->mParam_01  = a1;
-}
+    void SetParameters(ReturnType (ClassType::*)(P0, P1), //
+                          void* param_data, P0 a0, P1 a1);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -314,19 +262,13 @@ struct Function<R (C::*)() const> {
 
   struct Parameters__ {
     enum { Count = 0 };
-    void Apply(bidi_t& bidi, int) {
-      bidi.Fail();
-    };
-    void Apply(bidi_t& bidi, int) const {
-      bidi.Fail();
-    }
+    void Apply(bidi_t& bidi, int);
+    void Apply(bidi_t& bidi, int) const;
   };
 
-  typedef typename GenericFunction__::Parameters__ Parameters;
+  using Parameters = Parameters__ ;
 
-  static R invoke(ClassType& object, FunctionType f, const Parameters&) {
-    return (object.*f)();
-  }
+  static R invoke(ClassType& object, FunctionType f, const Parameters&);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -347,26 +289,13 @@ struct Function<R (C::*)(P0) const> {
 
     enum { Count = 1 + ParentFunction__::Parameters::Count };
 
-    void Apply(bidi_t& bidi, int parameter_index) {
-      if (parameter_index == Count - 1)
-        ; // Serialize<P0>(&mParam_00, &mParam_00, bidi);
-      else
-        ; // ParentFunction__::Parameters::Apply(bidi, parameter_index);
-    }
-
-    void Apply(bidi_t& bidi, int parameter_index) const {
-      if (parameter_index == Count - 1)
-        ; // Serialize<P0>(&mParam_00, NULL, bidi);
-      else
-        ; // ParentFunction__::Parameters::Apply(bidi, parameter_index);
-    }
+    void Apply(bidi_t& bidi, int parameter_index);
+    void Apply(bidi_t& bidi, int parameter_index) const;
   };
 
-  typedef typename GenericFunction__::Parameters__ Parameters;
+  using Parameters = Parameters__ ;
 
-  static R invoke(ClassType& object, FunctionType f, const Parameters& params) {
-    return (object.*f)(params.mParam_00);
-  }
+  static R invoke(ClassType& object, FunctionType f, const Parameters& params);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -375,11 +304,7 @@ template <
     typename ReturnType, //
     typename ClassType,
     typename P0>
-inline void SetParameters(ReturnType (ClassType::*)(P0) const, void* param_data, P0 a0) {
-  typedef typename Function<ReturnType (ClassType::*)(P0) const>::Parameters Parameters;
-  Parameters* params = static_cast<Parameters*>(param_data);
-  params->mParam_00  = a0;
-}
+    void SetParameters(ReturnType (ClassType::*)(P0) const, void* param_data, P0 a0);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -400,26 +325,13 @@ struct Function<R (C::*)(P0, P1) const> {
 
     enum { Count = 1 + ParentFunction__::Parameters::Count };
 
-    void Apply(bidi_t& bidi, int parameter_index) {
-      if (parameter_index == Count - 1)
-        ; // Serialize<P1>(&mParam_01, &mParam_01, bidi);
-      else
-        ; // ParentFunction__::Parameters::Apply(bidi, parameter_index);
-    }
-
-    void Apply(bidi_t& bidi, int parameter_index) const {
-      if (parameter_index == Count - 1)
-        ; // Serialize<P1>(&mParam_01, NULL, bidi);
-      else
-        ; // ParentFunction__::Parameters::Apply(bidi, parameter_index);
-    }
+    void Apply(bidi_t& bidi, int parameter_index);
+    void Apply(bidi_t& bidi, int parameter_index) const;
   };
 
-  typedef typename GenericFunction__::Parameters__ Parameters;
+  using Parameters = Parameters__ ;
 
-  static R invoke(ClassType& object, FunctionType f, const Parameters& params) {
-    return (object.*f)(params.mParam_00, params.mParam_01);
-  }
+  static R invoke(ClassType& object, FunctionType f, const Parameters& params);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -429,13 +341,8 @@ template <
     typename ClassType,
     typename P0,
     typename P1>
-inline void SetParameters(ReturnType (ClassType::*)(P0, P1) const, void* param_data, P0 a0, P1 a1) {
-  typedef typename Function<ReturnType (ClassType::*)(P0, P1) const>::Parameters Parameters;
-  Parameters* params = static_cast<Parameters*>(param_data);
-  params->mParam_00  = a0;
-  params->mParam_01  = a1;
-}
+    void SetParameters(ReturnType (ClassType::*)(P0, P1) const, void* param_data, P0 a0, P1 a1);
 
 ///////////////////////////////////////////////////////////////////////////////
-
+*/
 } // namespace ork::reflect

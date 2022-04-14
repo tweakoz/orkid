@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -76,10 +76,9 @@ public:
   const FontDesc& GetFontDesc(void) {
     return mFontDesc;
   }
-  GfxMaterial* GetMaterial(void) {
-    return mpMaterial;
-  }
-  void QueChar(Context* pTarg, VtxWriter<SVtxV12C4T16>& vw, int ix, int iy, int iu, int iv, U32 ucolor);
+  GfxMaterial* GetMaterial();
+
+  void enqueueCharacter(VtxWriter<SVtxV12C4T16>& vw, float fx, float fy, int iu, int iv, U32 ucolor);
   const FontDesc& description() const {
     return mFontDesc;
   }
@@ -87,13 +86,34 @@ public:
   std::string msFileName;
   std::string msFontName;
   GfxMaterial* mpMaterial;
+  pbrmaterial_ptr_t _materialDeferred;
+  bool _use_deferred = false;
+  texture_ptr_t _texture;
   FontDesc mFontDesc;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
+static constexpr size_t KFIXEDSTRINGLEN = 1024;
+using fixedstring_t                     = FixedString<KFIXEDSTRINGLEN>;
+
+struct TextItem {
+  fmtx4 _wmatrix;
+  fixedstring_t _text;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+using textitem_vect = std::vector<TextItem>;
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct FontMan { //: public NoRttiSingleton<FontMan> {
   /////////////////////////////////////////////
+
+  using vtxwriter_t = VtxWriter<SVtxV12C4T16>;
+  using vtxwriter_ptr_t = std::shared_ptr<vtxwriter_t>;
+  using vtxwriter_vect_t = std::vector<vtxwriter_ptr_t>;
 
   static FontMan* instance();
   static FontMan& GetRef();
@@ -115,12 +135,10 @@ struct FontMan { //: public NoRttiSingleton<FontMan> {
     mpCurrentFont = pFont;
     return pFont;
   }
-  static constexpr size_t KFIXEDSTRINGLEN = 1024;
-  using fixedstring_t                     = FixedString<KFIXEDSTRINGLEN>;
 
   void _beginTextBlock(Context* pTARG, int imaxcharcount = 0);
   void _endTextBlock(Context* pTARG);
-  void _drawText(Context* pTARG, int iX, int iY, const fixedstring_t& text);
+  void _enqueueText(float fx, float fy, vtxwriter_t& vwriter, const fixedstring_t& text, const fvec4& color);
 
   //////////////////////////////////////////////////////
 
@@ -130,6 +148,8 @@ struct FontMan { //: public NoRttiSingleton<FontMan> {
 
   static void DrawText(Context* pTARG, int iX, int iY, const char* pFmt, ...);
   static void DrawCenteredText(Context* pTARG, int iY, const char* pFmt, ...);
+
+  static void DrawTextItems( Context* pTARG, const textitem_vect& items );
 
   static Font* currentFont(void) {
     return GetRef().mpCurrentFont;
@@ -179,8 +199,9 @@ protected:
   orkmap<std::string, Font*> mFontMap;
   Font* mpCurrentFont;
   Font* mpDefaultFont;
-  VtxWriter<SVtxV12C4T16> mTextWriter;
+  vtxwriter_t mTextWriter;
   CharDesc mCharDescriptions[256];
+  vtxwriter_vect_t _writers;
   bool _doGpuInit = true;
 
   FontMan();

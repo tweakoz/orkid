@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #include "pyext.h"
 #include <ork/kernel/string/deco.inl>
 
@@ -11,6 +18,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
   auto base_init_qtapp = []() {
 
   };
+
   /////////////////////////////////////////////////////////////////////////////////
   using drawevent_ptr_t = std::shared_ptr<ui::DrawEvent>;
   py::class_<ui::DrawEvent, drawevent_ptr_t>(module_lev2, "DrawEvent")       //
@@ -81,11 +89,13 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               });
   type_codec->registerStdCodec<ui::updatedata_ptr_t>(updata_type);
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<OrkEzQtApp, qtezapp_ptr_t>(module_lev2, "OrkEzQtApp") //
+  py::class_<OrkEzApp, orkezapp_ptr_t>(module_lev2, "OrkEzApp") //
       .def_static(
           "create",
           [type_codec](py::object appinstance) { //
-            auto rval                                              = OrkEzQtApp::create();
+
+            auto appinitdata = std::make_shared<AppInitData>();
+            auto rval                                              = OrkEzApp::create(appinitdata);
             auto d_ev                                              = std::make_shared<ui::DrawEvent>(nullptr);
             rval->_vars.makeValueForKey<drawevent_ptr_t>("drawev") = d_ev;
             ////////////////////////////////////////////////////////////////////
@@ -129,6 +139,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 try {
                   pyfn.value()(drwev);
                 } catch (std::exception& e) {
+                  std::cerr << e.what();
                   OrkAssert(false);
                 }
               });
@@ -151,6 +162,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 try {
                   pyfn.value()(updata);
                 } catch (std::exception& e) {
+                  std::cerr << e.what();
                   OrkAssert(false);
                 }
               });
@@ -167,6 +179,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 try {
                   pyfn.value()(ev);
                 } catch (std::exception& e) {
+                  std::cerr << e.what();
                   OrkAssert(false);
                 }
                 return ui::HandlerResult();
@@ -178,18 +191,18 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
       ///////////////////////////////////////////////////////
       .def(
           "setRefreshPolicy",
-          [](qtezapp_ptr_t app, ERefreshPolicy policy, int fps) { //
+          [](orkezapp_ptr_t app, ERefreshPolicy policy, int fps) { //
             app->setRefreshPolicy(RefreshPolicyItem{policy, fps});
           })
       .def(
-          "exec",
-          [](qtezapp_ptr_t app) -> int { //
+          "mainThreadLoop",
+          [](orkezapp_ptr_t app) -> int { //
             auto wrapped = [&]() -> int {
               py::gil_scoped_release release_gil;
               // The main thread is now owned by C++
               //  therefore the main thread has to let go of the GIL
               // it will be reacquired post-runloop()
-              return app->runloop();
+              return app->mainThreadLoop();
             };
             int rval = wrapped();
             // GIL reacquired

@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #pragma once
 
 #include <ork/kernel/string/string.h>
@@ -6,6 +13,19 @@
 namespace ork::deco {
 
 ///////////////////////////////////////////////////////////////////////////////
+
+template <typename str_t>
+inline void asciic_rgb256_inplace(str_t& the_str, int r, int g, int b) {
+  int _r    = int((r * 5) / 255);
+  int _g    = int((g * 5) / 255);
+  int _b    = int((b * 5) / 255);
+  int color = 16 + 36 * _r + 6 * _g + _b;
+  the_str.format("\033[38;5;%dm", color);
+}
+template <typename str_t>
+inline void asciic_reset_inplace(str_t& the_str) {
+  the_str.format("\033[0m");
+}
 
 inline std::string asciic_rgb256(int r, int g, int b) {
   int _r    = int((r * 5) / 255);
@@ -18,6 +38,12 @@ inline std::string asciic_rgb256(int r, int g, int b) {
   return rval;
 }
 inline std::string asciic_rgb(const fvec3& color) {
+  int r = int(color.x * 255.0f);
+  int g = int(color.y * 255.0f);
+  int b = int(color.z * 255.0f);
+  return asciic_rgb256(r, g, b);
+}
+inline std::string asciic_rgb(const dvec3& color) {
   int r = int(color.x * 255.0f);
   int g = int(color.y * 255.0f);
   int b = int(color.z * 255.0f);

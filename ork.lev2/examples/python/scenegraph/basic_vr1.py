@@ -17,7 +17,7 @@ class PyOrkApp(object):
     super().__init__()
     self.sceneparams = VarMap()
     self.sceneparams.preset = "PBRVR"
-    self.qtapp = OrkEzQtApp.create(self)
+    self.qtapp = OrkEzApp.create(self)
     self.qtapp.setRefreshPolicy(RefreshFastest, 0)
   ################################################
   # gpu data init:
@@ -92,4 +92,4 @@ class PyOrkApp(object):
   #  so c++ will implement a (potentially faster) default
 ################################################
 app = PyOrkApp()
-app.qtapp.exec()
+app.qtapp.mainThreadLoop()

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -15,7 +15,7 @@
 namespace ork {
 
 template <typename T> bool Plane<T>::IsCoPlanar(const Plane<T>& OtherPlane) const {
-  T fdot  = Abs(n.Dot(OtherPlane.n) - T(1.0f));
+  T fdot  = Abs(n.dotWith(OtherPlane.n) - T(1.0f));
   T fDelD = Abs(d - OtherPlane.d);
   return ((fdot < T(0.01f)) && (fDelD < T(0.01f)));
 }
@@ -115,13 +115,13 @@ template <typename T> bool Plane<T>::IsPointBehind(const Vector3<T>& point) cons
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void Plane<T>::CalcD(const Vector3<T>& pt) {
-  d = -pt.Dot(n);
+  d = -pt.dotWith(n);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> T Plane<T>::pointDistance(const Vector3<T>& pt) const {
-  return n.Dot(pt) + d;
+  return n.dotWith(pt) + d;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -165,9 +165,9 @@ void Plane<T>::CalcPlaneFromTriangle(const Vector3<T>& p0, const Vector3<T>& p1,
   Vector4<T> p2mp1 = p2 - p1;
   Vector4<T> p0mp2 = p0 - p2;
 
-  len0 = p1mp0.Mag();
-  len1 = p2mp1.Mag();
-  len2 = p0mp2.Mag();
+  len0 = p1mp0.magnitude();
+  len1 = p2mp1.magnitude();
+  len2 = p0mp2.magnitude();
 
   if ((len0 >= len1) && (len0 >= len2)) {
     ii1 = (p0.x - p2.x);
@@ -206,8 +206,7 @@ void Plane<T>::CalcPlaneFromTriangle(const Vector3<T>& p0, const Vector3<T>& p1,
 
   // get plane normal
 
-  n.SetXYZ((T)iicp, (T)jjcp, (T)kkcp);
-  n.Normalize();
+  n = Vector3<T>((T)iicp, (T)jjcp, (T)kkcp).normalized();
 
   // get plane distance from origin
   d = T(0.0f);
@@ -227,16 +226,15 @@ template <typename T> void Plane<T>::CalcNormal(const Vector3<T>& pta, const Vec
   Vector3<T> bminusa = (ptb - pta);
   Vector3<T> cminusa = (ptc - pta);
 
-  n = bminusa.Cross(cminusa);
-  n.Normalize();
-  d = -ptc.Dot(n);
+  n = bminusa.crossWith(cminusa).normalized();
+  d = -ptc.dotWith(n);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> bool Plane<T>::Intersect(const TLineSegment3<T>& lseg, T& dis, Vector3<T>& result) const {
   Vector3<T> dif = (lseg.mEnd - lseg.mStart);
-  T length       = dif.Mag();
+  T length       = dif.magnitude();
 
   Ray3<T> ray;
   ray.mDirection = dif * (T(1.0f) / length); // cheaper normalize since we need the length anyway
@@ -263,7 +261,7 @@ template <typename T> bool Plane<T>::Intersect(const Ray3<T>& ray, T& dis, Vecto
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> bool Plane<T>::Intersect(const Ray3<T>& ray, T& dis) const {
-  T denom = n.Dot(ray.mDirection);
+  T denom = n.dotWith(ray.mDirection);
   // Line is parallel to the plane or plane normal faces away from ray
   if (Abs(denom) < Epsilon())
     return false;
@@ -297,8 +295,8 @@ template <typename T> template <typename PolyType> bool Plane<T>::ClipPoly(const
         T isectdist;
         LineSegment3 lseg(vA.Pos(), vB.Pos());
         if (Intersect(lseg, isectdist, vPos)) {
-          T fDist   = (vA.Pos() - vB.Pos()).Mag();
-          T fDist2  = (vA.Pos() - vPos).Mag();
+          T fDist   = (vA.Pos() - vB.Pos()).magnitude();
+          T fDist2  = (vA.Pos() - vPos).magnitude();
           T fScalar = (Abs(fDist) < Epsilon()) ? 0.0f : fDist2 / fDist;
           typename PolyType::VertexType LerpedVertex;
           LerpedVertex.lerp(vA, vB, fScalar);
@@ -335,8 +333,8 @@ bool Plane<T>::ClipPoly(const PolyType& PolyToClip, PolyType& OutPolyFront, Poly
       T isectdist;
       TLineSegment3<T> lseg(vA.Pos(), vB.Pos());
       if (Intersect(lseg, isectdist, vPos)) {
-        T fDist   = (vA.Pos() - vB.Pos()).Mag();
-        T fDist2  = (vA.Pos() - vPos).Mag();
+        T fDist   = (vA.Pos() - vB.Pos()).magnitude();
+        T fDist2  = (vA.Pos() - vPos).magnitude();
         T fScalar = (Abs(fDist) < Epsilon()) ? T(0.0) : fDist2 / fDist;
         typename PolyType::VertexType LerpedVertex;
         LerpedVertex.lerp(vA, vB, fScalar);
@@ -362,10 +360,9 @@ template <typename T> void Plane<T>::EndianSwap() {
 
 template <typename T> void Plane<T>::SimpleTransform(const Matrix44<T>& transform) {
   Vector3<T> point(n * -d);
-  point = point.Transform(transform).xyz();
-  n     = n.Transform3x3(transform);
-  n.Normalize();
-  d = -n.Dot(point);
+  point = point.transform(transform).xyz();
+  n     = n.transform3x3(transform).normalized();
+  d = -n.dotWith(point);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

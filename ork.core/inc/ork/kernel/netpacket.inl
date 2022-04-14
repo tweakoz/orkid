@@ -1,8 +1,9 @@
-///////////////////////////////////////////////////////////////////////////////
-// MicroOrk (Orkid)
-// Copyright 1996-2020, Michael T. Mayers
-// Provided under the MIT License (see LICENSE.txt)
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -13,8 +14,12 @@
 #include <string.h>
 #include <ork/kernel/fixedstring.h>
 #include <ork/kernel/atomic.h>
+#include <zmq.hpp>
+#include <zmq_addon.hpp>
 
 namespace ork {
+
+using zmq_socket_ptr_t = std::shared_ptr<::zmq::socket_t>;
 
 template <size_t ksize> struct MessagePacket;
 typedef MessagePacket<4096> NetworkMessage;
@@ -37,8 +42,46 @@ template <size_t ksize> struct MessagePacketIterator
 
     }
 
+    template <typename T> T readItem() {
+    	T rval;
+        mMessage.read(rval,*this);
+	return rval;
+    }
+
+    template <typename T> inline void _swapBytesInPlace( T& item ) // inplace endian swap
+    {
+	int isize = sizeof(T);
+
+	T temp = item;
+
+	auto src = reinterpret_cast<uint8_t *>( & item );
+	auto tmp = reinterpret_cast<uint8_t *>( & temp );
+
+	for( int i=0, j=isize-1; i<isize; i++, j-- )
+	{
+		tmp[j] = src[i];
+	}
+
+	for( int i=0; i<isize; i++ )
+	{
+		src[i] = tmp[i];
+	}
+
+    }
+
+    template <typename T> T readItemSwapped() {
+        T rval;
+        mMessage.read(rval,*this);
+	_swapBytesInPlace<T>(rval);
+        return rval;
+    }
+
+
     ///////////////////////////////////////////////////
     void clear() { mireadIndex=0; }
+    bool valid() const { return mireadIndex<mMessage.length(); }
+    int index() const { return mireadIndex; }
+    void skip(int count) { mireadIndex+=count; }
     ////////////////////////////////////////////////////
     // Variable: mMessage
     // Network Message this iterator is iterating inside
@@ -83,6 +126,16 @@ template <size_t ksize> struct MessagePacket : public MessagePacketBase
     //
     ///////////////////////////////////////////////////////
     MessagePacket() { clear(); }
+
+
+    ///////////////////////////////////////////////////////
+    // create a read iterator (pointing to the start of this message)
+    ///////////////////////////////////////////////////////
+
+    iter_t makeIterator() const {  
+        return iter_t(*this);
+    }
+
     ///////////////////////////////////////////////////////
     // method: write
     //
@@ -187,6 +240,17 @@ template <size_t ksize> struct MessagePacket : public MessagePacketBase
             memcpy(mBuffer,rhs.mBuffer,miSize);
 
         return *this;
+    }
+    ////////////////////////////////////////////////////
+    void sendZmq(zmq_socket_ptr_t skt) {
+        zmq::message_t zmqmsg_send(this->data(), this->length());
+        skt->send(zmqmsg_send, zmq::send_flags::dontwait);
+    }
+    void recvZmq(zmq_socket_ptr_t skt) {
+        zmq::message_t zmqmsg_recv;
+        auto recv_status = skt->recv(zmqmsg_recv);
+        this->clear();
+        this->writeDataInternal(zmqmsg_recv.data(), zmqmsg_recv.size());
     }
     ////////////////////////////////////////////////////
     void dump(const char* label)
@@ -331,5 +395,6 @@ struct MessageInpStream : public MessageStreamBase // outof netmessage
 
 
 };
+
 
 } // ork

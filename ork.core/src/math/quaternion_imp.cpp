@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -14,8 +14,8 @@
 #include <ork/reflect/IDeserializer.h>
 
 namespace ork {
-template class Quaternion<float>; // explicit template instantiation
-typedef class Quaternion<float> fquat;
+template struct Quaternion<float>; // explicit template instantiation
+typedef struct Quaternion<float> fquat;
 template <> const EPropType PropType<fquat>::meType   = EPROPTYPE_QUATERNION;
 template <> const char* PropType<fquat>::mstrTypeName = "QUATERNION";
 

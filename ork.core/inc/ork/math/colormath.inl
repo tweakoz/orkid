@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2022, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
 #pragma once
 
 #include <ork/math/cvector3.h>
@@ -9,9 +16,9 @@ namespace ork::color {
 
 fvec3 cieXyz_to_D65AdobeRGB(fvec3 xyx) {
   fmtx3 xyz2adobergb;
-  xyz2adobergb.SetRow(0, fvec3(2.0413690, -0.5649464, -0.3446944));
-  xyz2adobergb.SetRow(1, fvec3(-0.9692660, 1.8760108, 0.0415560));
-  xyz2adobergb.SetRow(2, fvec3(0.0134474, -0.1183897, 1.0154096));
+  xyz2adobergb.setRow(0, fvec3(2.0413690, -0.5649464, -0.3446944));
+  xyz2adobergb.setRow(1, fvec3(-0.9692660, 1.8760108, 0.0415560));
+  xyz2adobergb.setRow(2, fvec3(0.0134474, -0.1183897, 1.0154096));
   return xyx.Transform(xyz2adobergb);
 }
 
@@ -19,9 +26,9 @@ fvec3 cieXyz_to_D65AdobeRGB(fvec3 xyx) {
 
 fvec3 cieXyz_to_D50AdobeRGB(fvec3 xyx) {
   fmtx3 xyz2adobergb;
-  xyz2adobergb.SetRow(0, fvec3(1.9624274, -0.6105343, -0.3413404));
-  xyz2adobergb.SetRow(1, fvec3(-0.9787684, 1.9161415, 0.0334540));
-  xyz2adobergb.SetRow(2, fvec3(0.0286869, -0.1406752, 1.3487655));
+  xyz2adobergb.setRow(0, fvec3(1.9624274, -0.6105343, -0.3413404));
+  xyz2adobergb.setRow(1, fvec3(-0.9787684, 1.9161415, 0.0334540));
+  xyz2adobergb.setRow(2, fvec3(0.0286869, -0.1406752, 1.3487655));
   return xyx.Transform(xyz2adobergb);
 }
 
@@ -29,9 +36,9 @@ fvec3 cieXyz_to_D50AdobeRGB(fvec3 xyx) {
 
 fvec3 cieXyz_to_D65sRGB(fvec3 xyx) {
   fmtx3 xyz2srgb;
-  xyz2srgb.SetRow(0, fvec3(3.2404542, -1.5371385, -0.4985314));
-  xyz2srgb.SetRow(1, fvec3(-0.9692660, 1.8760108, 0.0415560));
-  xyz2srgb.SetRow(2, fvec3(0.0556434, -0.2040259, 1.0572252));
+  xyz2srgb.setRow(0, fvec3(3.2404542, -1.5371385, -0.4985314));
+  xyz2srgb.setRow(1, fvec3(-0.9692660, 1.8760108, 0.0415560));
+  xyz2srgb.setRow(2, fvec3(0.0556434, -0.2040259, 1.0572252));
   return xyx.Transform(xyz2srgb);
 }
 
@@ -39,9 +46,9 @@ fvec3 cieXyz_to_D65sRGB(fvec3 xyx) {
 
 fvec3 cieXyz_to_D50sRGB(fvec3 xyx) {
   fmtx3 xyz2srgb;
-  xyz2srgb.SetRow(0, fvec3(3.1338561, -1.6168667, -0.4906146));
-  xyz2srgb.SetRow(1, fvec3(-0.9787684, 1.9161415, 0.0334540));
-  xyz2srgb.SetRow(2, fvec3(0.0719453, -0.2289914, 1.4052427));
+  xyz2srgb.setRow(0, fvec3(3.1338561, -1.6168667, -0.4906146));
+  xyz2srgb.setRow(1, fvec3(-0.9787684, 1.9161415, 0.0334540));
+  xyz2srgb.setRow(2, fvec3(0.0719453, -0.2289914, 1.4052427));
   return xyx.Transform(xyz2srgb);
 }
 

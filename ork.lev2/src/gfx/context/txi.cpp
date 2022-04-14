@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -20,8 +20,14 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 size_t TextureInitData::computeSize() const {
-  size_t length = _w * _h;
+  size_t length = _w * _h * _d;
   switch (_format) {
+
+
+    case EBufferFormat::RGB8:
+      length *= 3;
+      break;
+
     case EBufferFormat::R32F:
     case EBufferFormat::RG16F:
     case EBufferFormat::RGB10A2:

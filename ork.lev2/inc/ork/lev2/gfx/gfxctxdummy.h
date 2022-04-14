@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -71,6 +71,10 @@ public:
   }
   void BindParamVect4Array(const FxShaderParam* hpar, const fvec4* Vec, const int icount) final {
   }
+  void BindParamVect2Array(const FxShaderParam* hpar, const fvec2* Vec, const int icount) final {
+  }
+  void BindParamVect3Array(const FxShaderParam* hpar, const fvec3* Vec, const int icount) final {
+  }
   void BindParamFloatArray(const FxShaderParam* hpar, const float* pfA, const int icnt) final {
   }
   void BindParamFloat(const FxShaderParam* hpar, float fA) final {
@@ -103,6 +107,9 @@ struct DuRasterStateInterface : public RasterStateInterface {
   void SetZWriteMask(bool bv) override {
   }
   void SetRGBAWriteMask(bool rgb, bool a) override {
+  }
+  RGBAMask SetRGBAWriteMask(const RGBAMask& newmask) override {
+    return _curmask;
   }
   void SetBlending(Blending eVal) override {
   }
@@ -222,11 +229,11 @@ public:
   void TexManInit(void) final {
   }
 
-  bool DestroyTexture(Texture* ptex) final {
+  bool destroyTexture(texture_ptr_t ptex) final {
     return false;
   }
-  bool LoadTexture(const AssetPath& fname, Texture* ptex) final;
-  bool LoadTexture(Texture* ptex, datablock_ptr_t inpdata) final {
+  bool LoadTexture(const AssetPath& fname, texture_ptr_t ptex) final;
+  bool LoadTexture(texture_ptr_t ptex, datablock_ptr_t inpdata) final {
     return false;
   }
   void SaveTexture(const ork::AssetPath& fname, Texture* ptex) final {

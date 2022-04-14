@@ -1,0 +1,5 @@
+#include <stdio.h>
+#include <ork/application/application.h>
+#include <ork/ecs/types.h>
+
+//export using namespace ork::ecs;

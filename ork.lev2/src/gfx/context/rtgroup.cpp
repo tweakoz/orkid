@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -15,10 +15,11 @@
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-RtBuffer::RtBuffer(RtgSlot slot, EBufferFormat efmt, int iW, int iH)
-    : miW(iW)
-    , miH(iH)
-    , mType(slot)
+RtBuffer::RtBuffer(const RtGroup* rtg, int slot, EBufferFormat efmt, int iW, int iH)
+    : _rtgroup(rtg)
+    , _width(iW)
+    , _height(iH)
+    , _slot(slot)
     , mFormat(efmt)
     , _mipgen(EMG_NONE) {
   _texture = new Texture;
@@ -28,30 +29,35 @@ RtBuffer::RtBuffer(RtgSlot slot, EBufferFormat efmt, int iW, int iH)
 
 RtGroup::RtGroup(Context* ptgt, int iW, int iH, int iSamples)
     : _parentTarget(ptgt)
+    , mDepth(0)
+    , mNumMrts(0)
     , miW(iW)
     , miH(iH)
-    , mNumMrts(0)
-    , mInternalHandle(0)
     , miSamples(iSamples)
-    , mDepth(0)
-    , mbSizeDirty(true) {
-  for (int i = 0; i < kmaxmrts; i++) {
-    mMrt[i] = nullptr;
-  }
+    , mbSizeDirty(true)
+    , mInternalHandle(0) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 RtGroup::~RtGroup() {
-  for (int i = 0; i < kmaxmrts; i++) {
-    if (mMrt[i])
-      delete mMrt[i];
-  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void RtGroup::SetMrt(int idx, RtBuffer* buf) {
+rtbuffer_ptr_t RtGroup::createRenderTarget(EBufferFormat efmt) {
+
+  int islot = mNumMrts++;
+
+  rtbuffer_ptr_t rtb = std::make_shared<RtBuffer>(this, islot, efmt, miW, miH);
+  OrkAssert(islot < kmaxmrts);
+  mMrt[islot] = rtb;
+  return rtb;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void RtGroup::SetMrt(int idx, rtbuffer_ptr_t buf) {
   OrkAssert((idx >= 0) && (idx < kmaxmrts)); // ensure our mrt index is in range
   // OrkAssert( (RtgSlot::Slot0+idx) == Buffer->GetTargetType() );	// ensure our mrt type matches the index
   OrkAssert(idx == mNumMrts); // ensure we add mrt's sequentially
@@ -69,8 +75,8 @@ void RtGroup::Resize(int iw, int ih) {
     for (int i = 0; i < kmaxmrts; i++) {
       if (mMrt[i]) {
 
-        mMrt[i]->miW = iw;
-        mMrt[i]->miH = ih;
+        mMrt[i]->_width  = iw;
+        mMrt[i]->_height = ih;
         mMrt[i]->SetSizeDirty(true);
       }
     }

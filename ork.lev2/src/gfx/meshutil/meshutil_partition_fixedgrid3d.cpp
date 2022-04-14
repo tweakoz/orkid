@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////
 // Orkid Media Engine
-// Copyright 1996-2020, Michael T. Mayers.
+// Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
@@ -21,17 +21,12 @@ GridGraph::GridGraph(int fgsize)
     , miDimY(0)
     , miDimZ(0)
     , miNumGrids(0)
-    , mppGrids(0)
-    , vsize(0.0f, 0.0f, 0.0f)
-    , vmin(0.0f, 0.0f, 0.0f)
-    , vmax(0.0f, 0.0f, 0.0f)
-    , areamax(0.0f)
+    , miNumFilledGrids(0)
     , areamin(0.0f)
-    , areatot(0.0f)
+    , areamax(0.0f)
     , areaavg(0.0f)
-    , totpolys(0)
-    , mMtxWorldToGrid(fmtx4::Identity())
-    , miNumFilledGrids(0) {
+    , areatot(0.0f)
+    , totpolys(0) {
 }
 
 GridGraph::~GridGraph() {
@@ -129,7 +124,7 @@ void GridGraph::SetGridNode(const GridAddr& addr, GridNode* node) {
 ////////////////////////////////////////////////////
 
 GridAddr GridGraph::GetGridAddress(const fvec3& v) {
-  fvec3 vxf = v.Transform(mMtxWorldToGrid).xyz();
+  fvec3 vxf = v.transform(mMtxWorldToGrid).xyz();
 
   GridAddr ret;
   ret.ix = int(vxf.x);
@@ -246,13 +241,13 @@ void GridGraph::EndPreMerge() {
   fmtx4 MatS;
   fmtx4 MatT;
 
-  MatS.Scale(fscal, fscal, fscal);
-  MatT.SetTranslation(-vmin);
+  MatS.scale(fscal, fscal, fscal);
+  MatT.setTranslation(-vmin);
   mMtxWorldToGrid = MatT * MatS;
 
-  fvec3 vtest_min = vmin.Transform(mMtxWorldToGrid).xyz();
-  fvec3 vtest_max = vmax.Transform(mMtxWorldToGrid).xyz();
-  fvec3 vtest_ctr = vctr.Transform(mMtxWorldToGrid).xyz();
+  fvec3 vtest_min = vmin.transform(mMtxWorldToGrid).xyz();
+  fvec3 vtest_max = vmax.transform(mMtxWorldToGrid).xyz();
+  fvec3 vtest_ctr = vctr.transform(mMtxWorldToGrid).xyz();
 
   ///////////////////////////////////////////////
 
@@ -296,9 +291,9 @@ void GridGraph::MergeMesh(const submesh& MeshIn, Mesh& MeshOut) {
     fvec3 pntA = InVPool.GetVertex(ply.GetVertexID(0)).mPos;
     fvec3 pntB = InVPool.GetVertex(ply.GetVertexID(1)).mPos;
     fvec3 pntC = InVPool.GetVertex(ply.GetVertexID(2)).mPos;
-    fvec3 dirA = (pntA - pntB).Normal();
-    fvec3 dirB = (pntA - pntC).Normal();
-    fvec3 pnrm = dirA.Cross(dirB);
+    fvec3 dirA = (pntA - pntB).normalized();
+    fvec3 dirB = (pntA - pntC).normalized();
+    fvec3 pnrm = dirA.crossWith(dirB);
     fvec3 pctr = (pntA + pntB + pntC) * 0.333333333f;
     fplane3 PolyPlane(pnrm, pctr);
 
