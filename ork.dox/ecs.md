@@ -10,7 +10,7 @@
 
  3. Clear separation of external (stimulus) and internal processes, even from separate threads.
 
- 4. Supports stimulus event trace record and playback (useful for repeatable deterministic debugging and diagnostics, even if the stimulus source is non-deterministic (for example, a live game server). 
+ 4. Supports stimulus event trace record and playback (useful for repeatable deterministic debugging and diagnostics, even if the stimulus source is non-deterministic (for example, a live game server). THe developer could also play back a pre-recorded stimuli stream with a modified scene - so long as the addressed objects are still present.
  
  5. SceneGraph Component/System wraps lev2 rendering. ECS simulation occurs on update thread, and data is passed to rendering thread via this SceneGraph system.
  
