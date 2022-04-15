@@ -49,7 +49,7 @@ B. The Simulation aspect. Mutable objects that evolve over time as part of a sim
 
 * Entity - An addressable  molecule of state with an assigned set of components in the simulation. 
 
-* Component - An addressable atom of state with an associated state mutator (system). Components can also have subordinate objects related to the domain of the component/system - which will not be listed here.
+* Component - An addressable atom of state with an associated state mutator (system). Components can also have *entity-scoped* subordinate objects related to the domain of the component/system - which will not be listed here.
 
 * System - An addressable state mutator responsible for the simulation of a specific aspect of the whole of the simulation. eg. physics, scripting, scenegraph, etc.. Systems can also have subordinate objects related to the domain of the system and *not* associated with a specific entity - these are *system-scoped* as opposed to *entity-scoped*. 
 
