@@ -20,7 +20,7 @@
 
  8. Included ImGui based Editor.
  
- 9. Scenes can be serialized/deserialized from standard orkid reflection based serialization JSON data.
+ 9. Scenes can be serialized/deserialized to/from standard orkid reflection based serialization JSON data.
 
 ---
 
