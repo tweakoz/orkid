@@ -72,7 +72,7 @@ There are obviously state transitions required to go from one state to the other
 
 ![ECS Lifecycle:2](ECSLifecycle.png)
 
---
+---
 
 ### Example code 
 
