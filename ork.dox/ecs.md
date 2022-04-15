@@ -47,11 +47,11 @@ B. The Simulation aspect. Mutable objects that evolve over time as part of a sim
 
 * The Simulation - The root level simulation object. Contains a set of *Entities* and *Systems*. Entities contain *Components*, and Systems reference entity components and are responsible for the "updating" of state.
 
-* Entity - A molecule of state with an assigned set of components in the simulation. 
+* Entity - An addressable  molecule of state with an assigned set of components in the simulation. 
 
-* Component - An atom of state with an associated state mutator (system).
+* Component - An addressable atom of state with an associated state mutator (system). Components can also have subordinate objects related to the domain of the component - which will not be listed here.
 
-* System - State mutator responsible for the simulation of a specific aspect of the whole of the simulation. eg. physics, scripting, scenegraph, etc..
+* System - An addressable state mutator responsible for the simulation of a specific aspect of the whole of the simulation. eg. physics, scripting, scenegraph, etc..
 
 
 ![ECS Architecture:1](EcsArchitectureDiagram.png)
