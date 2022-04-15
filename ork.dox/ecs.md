@@ -134,7 +134,7 @@ void main(int argc, char** argv, char** envp) {
   // enqueue spawning of a bunch of "a1" entities
   ////////////////////////////
 
-  SpawnAnonDynamic SAD{._edataname = "e1"_pool}; // by anon we mean "unnamed"
+  SpawnAnonDynamic SAD{._edataname = "e1"_pool}; 
 
   float at_timestamp = 0.0f;
 
