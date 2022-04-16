@@ -31,14 +31,15 @@
 3. Higher level renderers
   * Deferred Metallic-Roughness PBR renderer.
      * Implemented as a Node Compositor technique.
-  		 * Uses Tiled Deferred Shading.
-  		 * CPU based light processor.
-  		 * NV Mesh Shader based light processor.
-  		 * Point lights.
-  		 * Spot lights (textured and untextured.
-  		 * Directional lights.
   		 * Supports monoscopic and stereo-VR. 
-  		 * Forward variant pending.
+  		 * Tiled Deferred Shading.
+  		 * Simple light processor (CPU submits light batches without light-tile-culling).
+  		 * CPU based light processor (CPU light-tile-culls and submits light batches).
+  		 * NV Mesh Shader based light processor (GPU light-tile-culls and submits light batches).
+  		 * Point lights.
+  		 * Spot lights (textured and untextured).
+  		 * Directional lights.
+  		 * Forward/Hybrid permutations pending.
   * Picking renderer.
      *  Implemented as a Node Compositor technique. Pixel perfect picking support.
 
@@ -52,11 +53,14 @@
      * Animation blending support
      * Instanced rendering 
    * Dynamic 3d meshes (supply mesh data from c++/python)
-     * Built in mesh processing utilities
-     * IGL also integrated for mesh processing
+     * Built in mesh processing utilities (partitioning, dicing, skinned clusterization, etc..)
+     * IGL also integrated for mesh processing (Heavy duty geometry algorithms)
      * Instanced rendering 
    * Node based particles systems
-     * Instanced rendering 
+     * Instanced rendering (render multiple instances of a given system)
+     * Mesh rendering (render each particle as a mesh)
+     * Sprite rendering (render each particle as a billboarded sprite)
+     * Streak rendering (render each particle as a billboarded streak)
    * Node based procedural textures
    * Billboard Drawables
      * Text
