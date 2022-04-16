@@ -8,11 +8,14 @@
   * State Management.
   * RenderTarget Management (FBO's, etc..)
   * Buffer Management (Textures, Geometry, UBO, SSBO)
-  * *material* based primitive drawing.
+  * Image/Texture Loaders (leveraging OpenImageIO). 
+  * *material* pass based primitive drawing.
+     * the combination of [material pass, primitive type and Framebuffer output] map to pipeline objects
      * instancing support
   * Custom Shader Language (GLFX) - will be portable across all device APIs.
-  * Compute Shaders. 
-  * Image/Texture Loading. 
+  * Compute Shader support. 
+  * NVidia Mesh Shader support.
+  * NVidia Single Pass Stereo support.
   * OpenGL 4.1-core (MacOs) 
   * OpenGL 4.6-core (Linux)
   * Vulkan and Metal pending.
@@ -52,6 +55,16 @@
    * Node based particles systems
      * Instanced rendering 
    * Node based procedural textures
+   * Billboard Drawables
+     * Text
+     * Images
+     * Custom textured vector art
+     * Instanced rendering support
+   * Callback Drawable
+     * User specified rendering type utilizing lambda's
+     * Standardized method for passing data from update thread to render thread in *drawbuffers*
+     * Instanced rendering supported for callback drawables as well.
+     * Used for custom renderables not covered internally by engine 
 
 5. SceneGraph (highest level)
    * Wraps all above functionality into a scene node based paradigm
