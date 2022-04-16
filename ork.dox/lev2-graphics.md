@@ -10,7 +10,7 @@
   * Buffer Management (Textures, Geometry, UBO, SSBO)
   * Image/Texture Loaders (leveraging OpenImageIO). 
   * *material* pass based primitive drawing.
-     * The combination of [material pass, primitive type and Framebuffer output] map to pipeline objects
+     * The combination of [material pass, primitive type and Framebuffer output] will map to pipeline objects
      * Instancing support
   * Custom Shader Language (GLFX) - will be portable across all device APIs.
   * Compute Shader support. 
@@ -18,6 +18,7 @@
   * NVidia Single Pass Stereo support.
   * OpenGL 4.1-core (MacOs) 
   * OpenGL 4.6-core (Linux)
+  * Pipeline object support pending.
   * Vulkan and Metal pending.
   
 2. Mid level renderer building blocks
