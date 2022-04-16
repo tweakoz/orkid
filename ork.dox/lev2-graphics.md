@@ -40,6 +40,7 @@
   		 * Point lights.
   		 * Spot lights (textured and untextured).
   		 * Directional lights.
+  		 * Signed Distance Field / Deferred shading hybrid rendering support.
   		 * Forward/Hybrid permutations pending.
   * Picking renderer.
      *  Implemented as a Node Compositor technique. Pixel perfect picking support.
