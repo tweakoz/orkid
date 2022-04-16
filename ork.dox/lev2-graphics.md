@@ -248,24 +248,30 @@ int main(int argc, char** argv,char** envp) {
   // draw handler (called on main(rendering) thread)
   //////////////////////////////////////////////////////////
   ezapp->onDraw([&](ui::drawevent_constptr_t drwev) {
+    ///////////////////////////////////////
+    // acquire readonly drawbuffer
+    ///////////////////////////////////////
     auto DB = dbufcontext->acquireForReadLocked();
     if (nullptr == DB)
-      return;
-
-    float time = timer.SecsSinceStart();
+      return; // none available so no point rendering anything...
+    ///////////////////////////////////////
+    // fetch interfaces
+    ///////////////////////////////////////
     auto context = drwev->GetTarget();
+    auto fbi  = context->FBI();  // FrameBufferInterface
+    auto fxi  = context->FXI();  // FX Interface
+    auto mtxi = context->MTXI(); // matrix Interface
+    auto gbi  = context->GBI();  // GeometryBuffer Interface
+    ///////////////////////////////////////
+    float time = timer.SecsSinceStart();
     RenderContextFrameData RCFD(context); // renderer per/frame data
     RCFD._cimpl = gpurec->_compositorimpl;
     RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
     RCFD.setUserProperty("time"_crc, time);
     RCFD.setUserProperty("pbr_model"_crc, 1);
     context->pushRenderContextFrameData(&RCFD);
-    auto fbi  = context->FBI();  // FrameBufferInterface
-    auto fxi  = context->FXI();  // FX Interface
-    auto mtxi = context->MTXI(); // matrix Interface
-    auto gbi  = context->GBI();  // GeometryBuffer Interface
     ///////////////////////////////////////
-    // compositor setup
+    // compositor and frame setup
     ///////////////////////////////////////
     lev2::UiViewportRenderTarget rt(nullptr);
     auto tgtrect           = context->mainSurfaceRectAtOrigin();
@@ -274,12 +280,6 @@ int main(int argc, char** argv,char** envp) {
     gpurec->_TOPCPD->SetDstRect(tgtrect);
     gpurec->_compositorimpl->pushCPD(*gpurec->_TOPCPD);
     ///////////////////////////////////////
-    // Draw!
-    ///////////////////////////////////////
-    fbi->SetClearColor(fvec4(0, 0, 0, 1));
-    fbi->setViewport(tgtrect);
-    fbi->setScissor(tgtrect);
-    context->beginFrame();
     FrameRenderer framerenderer(RCFD, [&]() {});
     CompositorDrawData drawdata(framerenderer);
     drawdata._properties["primarycamindex"_crcu].set<int>(0);
@@ -288,6 +288,13 @@ int main(int argc, char** argv,char** envp) {
     drawdata._properties["simrunning"_crcu].set<bool>(true);
     drawdata._properties["DB"_crcu].set<const DrawableBuffer*>(DB);
     drawdata._cimpl = gpurec->_compositorimpl;
+    ///////////////////////////////////////
+    // Draw!
+    ///////////////////////////////////////
+    fbi->SetClearColor(fvec4(0, 0, 0, 1));
+    fbi->setViewport(tgtrect);
+    fbi->setScissor(tgtrect);
+    context->beginFrame();
     gpurec->_compositorimpl->assemble(drawdata);
     gpurec->_compositorimpl->composite(drawdata);
     gpurec->_compositorimpl->popCPD();
