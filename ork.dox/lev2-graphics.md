@@ -30,8 +30,9 @@
      * Allows for abstract variation of pipeline based on criteria such as mono/stereo, etc..
   
 3. Higher level renderers
-  * Deferred Metallic-Roughness PBR renderer.
+  * Deferred PBR renderer.
      * Implemented as a Node Compositor technique.
+     * Metallic-Roughness workflow.
   		 * Supports monoscopic and stereo-VR. 
   		 * Tiled Deferred Shading.
   		 * Simple light processor (CPU submits light batches without light-tile-culling).
@@ -40,6 +41,7 @@
   		 * Point lights.
   		 * Spot lights (textured and untextured).
   		 * Directional lights.
+  		 * Shadowing support
   		 * Signed Distance Field / Deferred shading hybrid rendering support.
   		 * Forward/Hybrid permutations pending.
   * Picking renderer.
