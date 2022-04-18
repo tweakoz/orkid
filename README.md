@@ -80,17 +80,25 @@ Other (video) examples of content:
 
 [Singularity-ModulatorHUD](https://www.youtube.com/watch?v=1PEXp9-6eRA)
 
-More Information
+Software Development Information
 ========
-
-[EngineLayout](ork.dox/engine_layout.md)
 
 [How to build](ork.dox/building.md)
 
 [How to run](ork.dox/running.md)
 
-[Blender pipeline notes](ork.dox/blender.md)
-
 [GLSLFX shader format docs](ork.dox/glslfx.md)
 
+[EngineLibraryTopology](ork.dox/engine_layout.md)
+   * [Ork.Core.Reflection](ork.dox/reflection.md)
+   * [Ork.Core.Datablocks](ork.dox/datablocks.md)
+   * [Ork.Lev2.Graphics](ork.dox/lev2-graphics.md)
+   * [Ork.ECS](ork.dox/ecs.md)
+
 [Doxygen - code documentation](http://tweakoz.com:8099/doxygen_html/index.html)
+
+Artist Information
+========
+
+[Blender pipeline notes](ork.dox/blender.md)
+
