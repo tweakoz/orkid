@@ -2,6 +2,8 @@
 
 ---
 
+### Summary
+
 Orkid now has it's own effect file format. Currently this is only compatible with GLSL 1.5+ (OpenGL 3.2+)
 
 Previously Nvidia's CgFx was used on GL targets. Due to CgFx's incompatibility with OpenGL 3.2 on Osx Lion+ I was forced to write a new effect format. Note that this decision was made far prior to the announcement of the existence of NvFx. Maybe in the future I will add support for NvFx, but for now - Say hi to "Ork.Fx".
@@ -10,18 +12,19 @@ An OpenGLes2 version will be coming soon - This is the last prerequisite for get
 
 ---
 
-* Features
-	 - import/include from other glfx files 
-	 - familiar shader/technique/pass layout
-	 - "state blocks" - reusable state vectors
-	 - "library blocks" - reusable code libraries
-	 - shader "interfaces" - uniform/attribute declarations with semantics
-	 - data inheritance for stateblocks and interfaces
-	 - supports Vertex, Tessellation, Geometry and Fragment shaders
+### Features
+
+  - import/include from other glfx files 
+  - familiar shader/technique/pass layout
+  - "state blocks" - reusable state vectors
+  - "library blocks" - reusable code libraries
+  - shader "interfaces" - uniform/attribute declarations with semantics
+  - data inheritance for stateblocks and interfaces
+  - supports Vertex, Tessellation, Geometry and Fragment shaders
 
 ---
 
-Example "skintools.i"
+### Example "skintools.i"
 
 ```
 uniform_set ublock_skinned { mat4 BoneMatrices[32]; }
