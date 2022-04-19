@@ -66,8 +66,97 @@ misc
 * ```obt.replace.py "findphrase" "replace"``` - search source folders for a quoted phrase - the quotes are optional for simple single word seaches
 * ```ork.doxygen.py``` <- regenerate doxygen docs
 
-* to generate JSON dump of all top level actions (relative to the current staging folder state) that will be taken to perform an orkid build (which will also execute the actions). Actions which execute commandlines will include working folder and environment variable data. The output from this theoretically should be enough for an externally managed process to complete a build. TODO - can we generate the trace without executing ?
+* to generate JSON dump of all top level actions (relative to the current staging folder state) that will be taken to perform an orkid build (which will also execute the actions). Actions which execute commandlines will include working folder and environment variable data. The output from this theoretically should be enough for an externally managed process to complete a build *entirely without OBT*. TODO - can we generate the trace without executing ?
 
 ```
 ork.build.py --obttrace
+```
+
+This will generate a dump like the below much abbreviated snippet:
+
+```
+[
+  {
+    "topenv": {
+      "ORKID_WORKSPACE_DIR": "${OWSDIR}",
+      "OBT_PYTHON_DECOD_NAME": "python3.9d",
+      "OBT_VULKAN_VERSION": "1.2.170.0",
+      "OBT_NUM_CORES": "96",
+      "PKG_CONFIG_PATH": "${OBT_STAGE}/qt5/lib/pkgconfig:${OBT_STAGE}/lib64/pkgconfig:${OBT_STAGE}/lib/pkgconfig:/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig",
+      "PYTHONNOUSERSITE": "TRUE",
+      "PREFIX": "${OBT_STAGE}",
+      "LITEX_ROOT": "${OBT_STAGE}/builds/litex",
+      "OBT_SEARCH_EXTLIST": ".cpp:.c:.cc:.h:.hpp:.inl:.qml:.m:.mm:.py:.txt:.md:.glfx:.ini",
+      "OBT_PYLIB": "${OBT_STAGE}/python-3.9.4/lib",
+      "PWD": "${TOPEXECDIR}",
+      "LOGNAME": "${USER}",
+      "OBT_PYTHON_LIB_PATH": "${OBT_STAGE}/python-3.9.4/lib",
+      "OBT_PYPKG": "${OBT_STAGE}/pyvenv/lib64/python3.9/site-packages",
+      "LITEX_BOARDS": "${OBT_STAGE}/builds/litex/litex-boards/litex_boards",
+      "OBT_PYTHON_LIB_FILE": "libpython3.9d.so",
+      "OBT_SEARCH_PATH": "${OWSDIR}/obt.project:${OWSDIR}/ork.dox:${OWSDIR}/ork.data:${OWSDIR}/ork.core:${OWSDIR}/ork.lev2:${OWSDIR}/ork.eda:${OWSDIR}/ork.ecs:${OWSDIR}/ork.tool",
+      "USERNAME": "${USER}",
+      "IM_CONFIG_PHASE": "1",
+      "VULKAN_SDK": "${OBT_STAGE}/builds/vulkan/1.2.170.0/x86_64",
+      "VIRTUAL_ENV": "${OBT_STAGE}/pyvenv",
+      "OBT_PYTHON_LIB_NAME": "libpython3.9d",
+      "OBT_BUILDS": "${OBT_STAGE}/builds",
+      "OBT_STAGE": "${OBT_STAGE}",
+      "OBT_DEP_PATH": "${OWSDIR}/ork.build/deps",
+      "ISPC": "${OBT_STAGE}/bin/ispc",
+      "PYTHONPATH": "${OWSDIR}/ork.build/scripts:${OBT_STAGE}/lib/python",
+      "OBT_PYTHON_HEADER_PATH": "${OBT_STAGE}/python-3.9.4/include/python3.9d",
+      "HFS": "/opt/hfs19.0",
+      "SHLVL": "3",
+      "OBT_VULKAN_ROOT": "${OBT_STAGE}/builds/vulkan/1.2.170.0/x86_64",
+      "OBT_PYTHON_DECO_NAME": "python3.9",
+      "LD_LIBRARY_PATH": "${OBT_STAGE}/builds/vulkan/1.2.170.0/x86_64/lib:${OBT_STAGE}/python-3.9.4/lib:${OBT_STAGE}/qt5/lib:${OBT_STAGE}/lib64:${OBT_STAGE}/lib:${OBT_STAGE}/pyvenv/lib64/python3.9/site-packages/PySide2:${OBT_STAGE}/pyvenv/lib64/python3.9/site-packages/shiboken2",
+      "OBT_ROOT": "${OWSDIR}/ork.build",
+      "PATH": "${OBT_STAGE}/pyvenv/bin:${OBT_STAGE}/qt5/bin:${OWSDIR}/obt.project/scripts/../bin:${OBT_STAGE}/bin:${OWSDIR}/ork.build/bin:${HOME}/.sdkman/candidates/sbt/current/bin:${HOME}/.sdkman/candidates/java/current/bin:${HOME}/.cargo/bin:${HOME}/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/opt/Xilinx/Vivado/bin:${OBT_STAGE}/opt/toolchain/m68k-amiga/bin:/opt/Xilinx/Vivado/2020.1/bin:${OBT_STAGE}/opt/toolchain/aarch64-elf/bin:${OBT_STAGE}/builds/litex/litex-boards/litex_boards/targets:${OBT_STAGE}/builds/litex/riscv64-unknown-elf-gcc-8.3.0-2019.08.0-x86_64-linux-ubuntu14/bin:${OBT_STAGE}/builds/vulkan/1.2.170.0/x86_64/bin:/opt/hfs19.0/bin",
+      "LUA_PATH": "${OWSDIR}/ork.data/src/scripts/?.lua",
+      "OLDPWD": "${OWSDIR}",
+      "OBT_PYTHON_PYLIB_PATH": "${OBT_STAGE}/python-3.9.4/lib/python3.9",
+      "PKG_CONFIG": "${OBT_STAGE}/bin/pkg-config",
+      "_": "${OWSDIR}/obt.project/scripts/../bin/ork.build.py"
+    }
+  },
+  {
+    "sysargv": [
+      "${OWSDIR}/obt.project/scripts/../bin/ork.build.py",
+      "--obttrace"
+    ]
+  },
+  {
+    "op": "ork.build.py",
+    "subops": [
+      {
+        "op": "path.chdir(${OBT_STAGE}/orkid)"
+      },
+      {
+        "op": "dep.require(['vulkan', 'openvr', 'rtmidi', 'glm', 'eigen', 'lexertl14', 'parsertl14', 'rapidjson', 'luajit', 'pybind11', 'ispctexc', 'openexr', 'oiio', 'openvdb', 'embree', 'igl', 'glfw', 'assimp', 'easyprof', 'bullet'])",
+        "subops": [
+          {
+            "op": "Provider.provide(vulkan)",
+            "subops": [
+              {
+                "op": "command(cmd.exec)",
+                "curwd": "${OBT_STAGE}/orkid",
+                "arglist": [
+                  "wget",
+                  "-O",
+                  "${OBT_STAGE}/downloads/vulkansdk-linux-x86_64-1.2.170.0.tar.gz",
+                  "https://sdk.lunarg.com/sdk/download/1.2.170.0/linux/vulkansdk-linux-x86_64-1.2.170.0.tar.gz"
+                ],
+                "os_env": {
+                  "PYTHONHOME": "${OBT_STAGE}/python-3.9.4"
+                },
+                "use_shell": "False"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]
 ```
