@@ -19,7 +19,6 @@ parser.add_argument('--profiler',action="store_true", help=" profiled build")
 parser.add_argument('--trace',action="store_true", help=" cmake trace")
 parser.add_argument('--obttrace',action="store_true",help='enable OBT buildtrace logging')
 parser.add_argument('--xcode',action="store_true", help=" xcode debug build")
-parser.add_argument('--ez',action="store_true", help=" ez build (use workarounds)")
 parser.add_argument("--builddir")
 
 _args = vars(parser.parse_args())
@@ -56,68 +55,22 @@ with buildtrace.NestedBuildTrace({ "op": "ork.build.py"}) as nested:
   ork.env.set("PYTHONHOME",PYTHON.home_dir)
 
   ######################################################################
-  # ez install
-  ######################################################################
-
-  if _args["ez"]!=False:
-      this_script = ork_root/"build.py"
-      init_env_script = ork_root/"ork.build"/"bin"/"init_env.py"
-      init_env = [init_env_script,"--launch",stage_dir]
-      ch_ork_root = ["--chdir",ork_root]
-      ch_tuio = ["--chdir",stage_dir/"orkid"/"ork.tuio"]
-      ################
-      # workarounds
-      ################
-
-      def docmd(cmdlist):
-        global ok
-        if ok:
-          ok = Command(cmdlist).exec()==0
-
-      ##########################################
-      # boostrap pkgconfig/python
-      ##########################################
-      docmd(init_env+ch_ork_root+["--command","obt.dep.build.py python"]) # bootstrap python
-
-      ##########################################
-      # start ork build
-      ##########################################
-
-      if ok:
-        ok = Command(init_env+ch_ork_root+["--command","./build.py --debug"]).exec()==0 # start ork build
-
-      ##########################################
-      # ork.build probably failed here because of the tuio issue
-      #  need to move tuio to a dependency module
-      ##########################################
-
-      if False==ok:
-        docmd(init_env+ch_tuio+["--command","make install"]) # hackinstall tuio
-
-      ##########################################
-      # continue ork build
-      ##########################################
-
-      docmd(init_env+ch_ork_root+["--command","./build.py --debug"]) # continue...
-
-      ##########################################
-
-      if ok:
-          sys.exit(0)
-      else:
-          sys.exit(-1)
-
-  ######################################################################
   # ensure deps present
   ######################################################################
 
-  dep_list = ["openexr","oiio","assimp","glm",
-              "luajit","glfw","ispctexc",
-              "lexertl14", "parsertl14","rapidjson","bullet",
-              "easyprof","eigen","embree","igl", "pybind11", "python", "pydefaults"]
+  dep_list = []
 
   if ork.host.IsLinux:
-     dep_list += ["vulkan","openvr","rtmidi"]
+    dep_list += ["vulkan","openvr","rtmidi"]
+
+  dep_list += ["glm","eigen",
+               "lexertl14", "parsertl14","rapidjson",
+               "luajit", "pybind11", "ispctexc",
+               "openexr","oiio","openvdb",
+               "embree","igl",
+               "glfw","assimp", "easyprof",
+               "bullet"]
+
   #if ork.host.IsOsx: # until moltenvk fixed on big sur
   #   dep_list += ["moltenvk"]
 
