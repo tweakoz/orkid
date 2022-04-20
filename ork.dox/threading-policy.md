@@ -55,10 +55,10 @@ using namespace ork;
 
 void function_executed_on_any_thread(){
   auto conq = opq::concurrentQueue(); // parallel queue
-  auto group1 = opq::createCompletionGroup(conq,"workgroup");
-  auto group2 = opq::createCompletionGroup(conq,"workgroup");
+  auto group1 = opq::createCompletionGroup(conq,"workgroup1");
+  auto group2 = opq::createCompletionGroup(conq,"workgroup2");
   for(int i=0; i<4096; i++){
-    group->enqueue([=]() {
+    group1->enqueue([=]() {
       // from group1, ....
       group2->enqueue([](){
       // do something in group2
