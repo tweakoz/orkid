@@ -130,43 +130,42 @@ std::string maptest_generate() {
 ///////////////////////////////////////////////////////////////////////////////
 int main( int argc, char** argv, char** envp ){
 
-	///////////////////////////
-	// required initialization for apps using reflection
-	///////////////////////////
+  ///////////////////////////
+  // required initialization for apps using reflection
+  ///////////////////////////
 
-	auto init_data = std::make_shared<ork::AppInitData>(argc,argv,envp);
-    auto stringpoolctx = std::make_shared<StringPoolContext>();
-    StringPoolStack::Push(stringpoolctx);
+  auto init_data = std::make_shared<ork::AppInitData>(argc,argv,envp);
+  auto stringpoolctx = std::make_shared<StringPoolContext>();
+  StringPoolStack::Push(stringpoolctx);
 
-	/////////////////////
-	// touch class reflection data to prevent stripping linkers from stripping
-	/////////////////////
+  /////////////////////
+  // touch class reflection data to prevent stripping linkers from stripping
+  /////////////////////
 	
-	SimpleTest::GetClassStatic(); 
-    MapTest::GetClassStatic();
-    rtti::Class::InitializeClasses(); // build class tree
+  SimpleTest::GetClassStatic(); 
+  MapTest::GetClassStatic();
+  rtti::Class::InitializeClasses(); // build class tree
 
-	///////////////////////////
-	// serialize object to json
-	///////////////////////////
+  ///////////////////////////
+  // serialize object to json
+  ///////////////////////////
 
-	auto json = maptest_generate();
-	printf( "json:\n%s\n", json.c_str() );
+  auto json = maptest_generate();
+  printf( "json:\n%s\n", json.c_str() );
 
-	///////////////////////////
-	// clone object by deserializing the JSON
-	///////////////////////////
+  ///////////////////////////
+  // clone object by deserializing the JSON
+  ///////////////////////////
 
-  	object_ptr_t instance_out;
-  	serdes::JsonDeserializer deser(json.c_str());
-  	deser.deserializeTop(instance_out);
-  	auto clone = objcast<MapTest>(instance_out);
+  object_ptr_t instance_out;
+  serdes::JsonDeserializer deser(json.c_str());
+  deser.deserializeTop(instance_out);
+  auto clone = objcast<MapTest>(instance_out);
 
-	///////////////////////////
+  ///////////////////////////
+  StringPoolStack::Pop();
 
-    StringPoolStack::Pop();
-
-	return 0;
+  return 0;
 }
 
 ```
