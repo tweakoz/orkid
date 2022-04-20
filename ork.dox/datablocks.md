@@ -61,7 +61,7 @@ datablock_ptr_t loadMyProcessedAsset( std::vector<uint8_t> src_data ) { // src_d
 //////////////////////
 
 void test() {
-  std::vector<uint8_t> src_data; some arbitrary source data filled in somewhere else
+  std::vector<uint8_t> src_data; // some arbitrary source data filled in somewhere else
    
   auto processed = loadMyProcessedAsset(src_data);
   size_t processed_data_length = processed->length();
