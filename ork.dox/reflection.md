@@ -155,6 +155,8 @@ int main( int argc, char** argv, char** envp ){
 
   ///////////////////////////
   // clone object by deserializing the JSON
+  //. the clone will have the same UUID's as the original.
+  //  TODO: add a clone (with UUID regen option)
   ///////////////////////////
 
   object_ptr_t instance_out;
