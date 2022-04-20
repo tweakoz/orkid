@@ -90,6 +90,8 @@ IF(PROFILER)
   list(APPEND libs easy_profiler)
 ENDIF()
 
+target_compile_definitions( ork_lev2 PRIVATE ENABLE_VULKAN )
+
 list(APPEND libs  mpfr gmp )
 
 target_include_directories (ork_lev2 PRIVATE ${INCD} )

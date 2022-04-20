@@ -6,7 +6,7 @@
 namespace ork::lev2::vk {
 
 void init() {
-  return;
+
   VkApplicationInfo vkappdata  = {};
   vkappdata.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO;
   vkappdata.pNext              = NULL;
@@ -14,7 +14,7 @@ void init() {
   vkappdata.applicationVersion = 1;
   vkappdata.pEngineName        = "Orkid";
   vkappdata.engineVersion      = 1;
-  vkappdata.apiVersion         = VK_API_VERSION_1_0;
+  vkappdata.apiVersion         = VK_API_VERSION_1_1;
 
   VkInstanceCreateInfo vkinstancedata    = {};
   vkinstancedata.sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -32,8 +32,36 @@ void init() {
 
   deco::printf(fvec3::Yellow(), "vk::init res<%d>\n", int(res));
 
+  /////////////////////////////////////////////////////////////////////////////
+  // check device groups (for later multidevice support)
+  /////////////////////////////////////////////////////////////////////////////
+
+  uint32_t numgroups = 0;
+  res = vkEnumeratePhysicalDeviceGroups(vkinst,&numgroups,nullptr);
+  std::vector<VkPhysicalDeviceGroupProperties> phygroups;
+  phygroups.resize(numgroups);
+  vkEnumeratePhysicalDeviceGroups(vkinst, &numgroups, phygroups.data());
+  deco::printf(fvec3::Yellow(), "vk::init numgroups<%u>\n", numgroups);
+  int igroup = 0;
+  for (auto& group : phygroups) {
+
+    int devcount = group.physicalDeviceCount;
+    deco::printf(fvec3::Yellow(), "vk::init grp<%d> numgpus<%d>\n", igroup, devcount);
+    for( int idev=0; idev<devcount; idev++){
+     const VkPhysicalDevice& dev = group.physicalDevices[idev];
+      VkPhysicalDeviceProperties devprops;
+      vkGetPhysicalDeviceProperties(dev, &devprops);
+      bool is_discrete = (devprops.deviceType == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU);
+    deco::printf(
+        fvec3::Yellow(), "    gouup<%d> gpu<%d:%s> is_discrete<%d>\n", igroup, devprops.deviceID, devprops.deviceName, int(is_discrete));
+    }
+    igroup++;
+  }
+
+  /////////////////////////////////////////////////////////////////////////////
+
   uint32_t numgpus = 0;
-  vkEnumeratePhysicalDevices(vkinst, &numgpus, nullptr);
+  res = vkEnumeratePhysicalDevices(vkinst, &numgpus, nullptr);
   std::vector<VkPhysicalDevice> phydevs(numgpus);
   vkEnumeratePhysicalDevices(vkinst, &numgpus, phydevs.data());
   deco::printf(fvec3::Yellow(), "vk::init numgpus<%u>\n", numgpus);

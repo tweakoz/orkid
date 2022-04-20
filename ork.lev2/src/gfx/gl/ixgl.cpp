@@ -145,6 +145,14 @@ void ContextGL::GLinit() {
   global_ctxbase->makeCurrent();
   gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
+
+  ////////////////////////////////////
+  
+  //GLint num_gpus = 0;
+  //glGetIntegerv(GL_MULTICAST_GPUS_NV, &num_gpus);
+  //printf( "GPU count <%d>\n", num_gpus );
+  //OrkAssert(false);
+
   ////////////////////////////////////
   for (int i = 0; i < 1; i++) {
     GlxLoadContext* loadctx = new GlxLoadContext;
