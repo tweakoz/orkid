@@ -1,5 +1,5 @@
 
-![logo](https://github.com/tweakoz/orkid/blob/compositor2system/ork.data/dox/doxylogo.png "OrkidLogo")
+![logo](https://github.com/tweakoz/orkid/blob/develop/ork.data/dox/doxylogo.png "OrkidLogo")
 
 
 ### BuildStatus
