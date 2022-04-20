@@ -12,28 +12,30 @@
 
 Orkid is a C++20 flexible media presentation engine. By media, we mean games, realtime 2d/3d graphics, and/or audio. Orkid itself is licensed with the permissive Boost Software License v1.0, that said Orkid does have dependencies on other libraries which will have different licenses and it is left up to the user to remain compliant with them. Orkid, being fairly modular can be run with less dependencies and reduced functionality to simplify license creep.
 
-Some Features Include:
-* Built in multiplatform asset management.
-* Batch conversion system (asset filters), I suppose its similar to assimp.
-* Built in Scene/Object Editor.
-* Data Driven Design.
-* Entity/Component (ECS) based scene/simulation system.
-* LuaScript ECS component
-* Embedded Python3 interpreter, and Python3 extension modules
-* External references of character archetypes (prefabs) for sharing across scenes.
-* Generic dataflow modeling primitives used for modular audio synthesis, modular particle systems and modular terrain synthesis .
-* Flexible simulation architecture does not to dictate game/simulation policy, but does provide tools to help with implementation.
-* Game-Genre agnostic..
-* Integrated Bullet Physics Engine.
-* GlFx shader based renderer. Uses OpenGL 4.1 on OSX and 4.5 on Linux.
-* Deferred Renderer with MetallicRoughness-PBR / Light Projection support
-* GLTF2-PBR/FBX/assimp import support
-* Realtime fixed function and node based compositor with offline rendering mode (dumps to image files on disk).
-* QT5/OpenGL based UI
-* Singularity - Pro synthesizer inspired audio engine. Loads Kurzweil k2000, Casio CZ1, Yamaha TX81Z and SoundFont SF2 patches.
-* Now has OpenVR/Linux support!
-* Fairly lightweight build. A clean build builds in about 5 mins on a 2.8ghz 4core ivybridge 2013 macbook pro or 80 seconds on a 2.8ghz 20core ivybridge xeon. This time does not include time building dependencies (Qt5,OpenImageIO,etc..)
-* Many more...
+Software Development Information
+========
+
+[How to build](ork.dox/building.md)
+
+[How to run](ork.dox/running.md)
+
+[GLSLFX shader format docs](ork.dox/glslfx.md)
+
+[EngineLibraryTopology](ork.dox/engine_layout.md)
+   * [Ork.Core.Reflection](ork.dox/reflection.md)
+   * [Ork.Core.Datablocks](ork.dox/datablocks.md)
+   * [Ork.Lev2.Graphics](ork.dox/lev2-graphics.md)
+   * [Ork.ECS](ork.dox/ecs.md)
+
+[Doxygen - code documentation](https://www.orkid-engine.dev:4430/doxygen_html/index.html)
+
+Artist Information
+========
+
+[Blender pipeline notes](ork.dox/blender.md)
+
+Example Content (most of it old, updates coming soon.)
+========
 
 <a href="https://media.githubusercontent.com/media/tweakoz/orkid/master/ork.data/misc/screenshot_pbr.png"><img src="https://github.com/tweakoz/orkid/blob/master/ork.data/misc/th_screenshot_pbr.png" title="Github Logo"></a>
 <a href="https://media.githubusercontent.com/media/tweakoz/orkid/master/ork.data/misc/shadowedptexspotlight.png"><img src="https://github.com/tweakoz/orkid/blob/master/ork.data/misc/th_shadowedptexspotlight.png" title="Github Logo"></a>
@@ -79,26 +81,4 @@ Other (video) examples of content:
 [Singularity-NewAudioSynth](https://www.youtube.com/watch?v=irBaba13quQ)
 
 [Singularity-ModulatorHUD](https://www.youtube.com/watch?v=1PEXp9-6eRA)
-
-Software Development Information
-========
-
-[How to build](ork.dox/building.md)
-
-[How to run](ork.dox/running.md)
-
-[GLSLFX shader format docs](ork.dox/glslfx.md)
-
-[EngineLibraryTopology](ork.dox/engine_layout.md)
-   * [Ork.Core.Reflection](ork.dox/reflection.md)
-   * [Ork.Core.Datablocks](ork.dox/datablocks.md)
-   * [Ork.Lev2.Graphics](ork.dox/lev2-graphics.md)
-   * [Ork.ECS](ork.dox/ecs.md)
-
-[Doxygen - code documentation](https://www.orkid-engine.dev:4430/doxygen_html/index.html)
-
-Artist Information
-========
-
-[Blender pipeline notes](ork.dox/blender.md)
 
