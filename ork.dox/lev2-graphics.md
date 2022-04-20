@@ -44,6 +44,7 @@
      * Shadowing support
      * Signed Distance Field / Deferred shading hybrid rendering support.
      * Forward/Hybrid permutations pending.
+     * Single layer transparency / blending support
   * Picking renderer.
      *  Implemented as a Node Compositor technique. Pixel perfect picking support.
 
