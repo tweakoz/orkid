@@ -22,7 +22,7 @@ For custom developer implemented asset types, the following example should give 
 
 ### Custom datablock cache example
 
-```
+```cpp
 using namespace ork;
 
 datablock_ptr_t loadMyProcessedAsset( std::vector<uint8_t> src_data ) { // src_data: some arbitrary source data filled in somewhere else
@@ -37,17 +37,17 @@ datablock_ptr_t loadMyProcessedAsset( std::vector<uint8_t> src_data ) { // src_d
   datablock_ptr_t dblock = DataBlockCache::findDataBlock(datahash); // search cache
 
   if(dblock){ // processed content was found 
-	// data is ready for re-use and nothing left to do.
+    // data is ready for re-use and nothing left to do.
   }
   else { // processed content was NOT found - we need to regenerate it
 	
-	dblock = std::make_shared<DataBlock>(); // create a new datablock
+    dblock = std::make_shared<DataBlock>(); // create a new datablock
 	  
-	dblock->reserve(sizeof(uint64_t)*16); // reserve 128 byes
+    dblock->reserve(sizeof(uint64_t)*16); // reserve 128 byes
 
-	// for this example we will just fill with 0's
-	for(int i=0; i<16; i++)
-		dblock->addItem<uint64_t>(0); 
+    // for this example we will just fill with 0's
+    for(int i=0; i<16; i++)
+      dblock->addItem<uint64_t>(0); 
 	
     DataBlockCache::setDataBlock(datahash, dblock); // cache the datablock for later use
 	
@@ -59,13 +59,13 @@ datablock_ptr_t loadMyProcessedAsset( std::vector<uint8_t> src_data ) { // src_d
 //////////////////////
 
 void test() {
-   std::vector<uint8_t> src_data; some arbitrary source data filled in somewhere else
+  std::vector<uint8_t> src_data; some arbitrary source data filled in somewhere else
    
-	auto processed = loadMyProcessedAsset(src_data);
-	size_t processed_data_length = processed->length();
-	const uint8_t* processed_data = processed->data();
-	
-	// Load the processed data..
+  auto processed = loadMyProcessedAsset(src_data);
+  size_t processed_data_length = processed->length();
+  const uint8_t* processed_data = processed->data();
+
+  // Load the processed data..
 	
 }
 
@@ -82,41 +82,38 @@ Chunkfiles provide another layer of developer convenience when reading, writing 
 
 * example datablock/chunk writer
 
-```
+```cpp
 
 datablock_ptr_t gpu_data_writer() {
 
-	constexpr size_t block_count = 8;
-  	uint64_t src_content_hashkey = 0x1234567812345678; // compute real hash key from source data
-    std::vector<uint8_t> gpu_data[block_count]; some arbitrary GPU data filled in somewhere else
+  constexpr size_t block_count = 8;
+  uint64_t src_content_hashkey = 0x1234567812345678; // compute real hash key from source data
+  std::vector<uint8_t> gpu_data[block_count]; some arbitrary GPU data filled in somewhere else
 
    
-    chunkfile::Writer chunkwriter("mygpuchunkformat");
-    auto hdrstream = chunkwriter.AddStream("header");
-    auto gpustream = chunkwriter.AddStream("gpudata");
+  chunkfile::Writer chunkwriter("mygpuchunkformat");
+  auto hdrstream = chunkwriter.AddStream("header");
+  auto gpustream = chunkwriter.AddStream("gpudata");
  
-	hdrstream->AddItem<uint64_t>("gpublockcount"_crcu); // key 
-	hdrstream->AddItem<uint64_t>(block_count);          // value 
+  hdrstream->AddItem<uint64_t>("gpublockcount"_crcu); // key 
+  hdrstream->AddItem<uint64_t>(block_count);          // value 
 
-	for(size_t i=0; i<block_count; i++){
-
-		const auto& gpudataitem = gpu_data[i];
-
-		// write header information
-		
-	    hdrstream->AddItem<uint64_t>("gpudataoffset"_crcu); // key 
-    	hdrstream->AddItem<uint64_t>(gpustream->GetSize()); // value
-	    hdrstream->AddItem<uint64_t>("gpudatalength"_crcu); // key 
-    	hdrstream->AddItem<uint64_t>(gpudataitem.length()); // value
+  for(size_t i=0; i<block_count; i++){
+    const auto& gpudataitem = gpu_data[i];
+    // write header information
+    hdrstream->AddItem<uint64_t>("gpudataoffset"_crcu); // key 
+    hdrstream->AddItem<uint64_t>(gpustream->GetSize()); // value
+    hdrstream->AddItem<uint64_t>("gpudatalength"_crcu); // key 
+    hdrstream->AddItem<uint64_t>(gpudataitem.length()); // value
 	
-		// write gpu block information
+    // write gpu block information
 
-	 	gpustream->Write(gpudataitem.data(),gpudataitem.length()); // write gpu block data item
-	}
+    gpustream->Write(gpudataitem.data(),gpudataitem.length()); // write gpu block data item
+  }
 	
-    dblock = std::make_shared<DataBlock>();
-    chunkwriter.writeToDataBlock(dblock);
-    DataBlockCache::setDataBlock(hashkey, dblock);
+  dblock = std::make_shared<DataBlock>();
+  chunkwriter.writeToDataBlock(dblock);
+  DataBlockCache::setDataBlock(hashkey, dblock);
 
 }
 
@@ -125,7 +122,7 @@ datablock_ptr_t gpu_data_writer() {
 * example datablock/chunk reader
 
 
-``` 
+```cpp
 void gpu_data_reader(datablock_ptr_t dblock){
 
   chunkfile::DefaultLoadAllocator allocator;
@@ -135,26 +132,26 @@ void gpu_data_reader(datablock_ptr_t dblock){
     auto hdrstream = chunkreader.GetStream("header");
     auto gpustream = chunkreader.GetStream("gpudata");
     
-	uint64_t key, offset, length, count;
+    uint64_t key, offset, length, count;
 
-	hdrstream->GetItem<uint64_t>(count);
+    hdrstream->GetItem<uint64_t>(count);
 	
-	std::vector<uint8_t> gpu_data;
-	for( size_t i=0; i<count; i++ ){
-  	  hdrstream->GetItem<uint64_t>(key);
-	  switch(key){
-		case  "gpudataoffset"_crcu:
-		    hdrstream->GetItem<uint64_t>(offset);
-			break;
-		case  "gpudatalength"_crcu:{
-		    hdrstream->GetItem<uint64_t>(length);
-		    auto gpudata = (const uint8_t*) geostream->GetDataAt(offset);
+    std::vector<uint8_t> gpu_data;
+    for( size_t i=0; i<count; i++ ){
+      hdrstream->GetItem<uint64_t>(key);
+      switch(key){
+ 	case  "gpudataoffset"_crcu:
+          hdrstream->GetItem<uint64_t>(offset);
+	  break;
+	case  "gpudatalength"_crcu:{
+	  hdrstream->GetItem<uint64_t>(length);
+	  auto gpudata = (const uint8_t*) geostream->GetDataAt(offset);
 			// we now have length and offset of gpu data item
 			// send it to the GPU !
-			break;
-		}
-	  }
-	}
+	  break;
+        }
+      }
+    }
   }
 }
 ```
