@@ -26,7 +26,7 @@ An OpenGLes2 version will be coming soon - This is the last prerequisite for get
 
 ### Example "skintools.i"
 
-```
+```glsl
 uniform_set ublock_skinned { mat4 BoneMatrices[32]; }
 
 vertex_interface iface_skintools : ublock_skinned {
@@ -83,7 +83,7 @@ libblock skin_tools {
 
 example "pbr.glfx"
 
-```
+```glsl
 	///////////////////////////////////////////////////////////////
 	// FxConfigs
 	///////////////////////////////////////////////////////////////
