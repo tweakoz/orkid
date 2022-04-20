@@ -7,7 +7,7 @@ ork.core includes a built in reflection system facilitating easy editors and ser
 
 * reflection property registration example 
 
-``` 
+```cpp
 
 #include <ork/rtti/RTTIX.inl>
 #include <ork/reflect/properties/registerX.inl>
@@ -173,7 +173,7 @@ int main( int argc, char** argv, char** envp ){
 
 * executing the above snippet will result in the following json being produced (with different UUIDs of course)
 
-```
+```json
 {
  "root": {
   "object": {
