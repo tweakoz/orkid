@@ -46,6 +46,8 @@ datablock_ptr_t loadMyProcessedAsset( std::vector<uint8_t> src_data ) { // src_d
     dblock->reserve(sizeof(uint64_t)*16); // reserve 128 byes
 
     // for this example we will just fill with 0's
+    //  but a real world example would do something like compress textures,
+    //   generate and compress PBR-irradiance texure-maps, process a mesh, heightmap, etc...
     for(int i=0; i<16; i++)
       dblock->addItem<uint64_t>(0); 
 	
