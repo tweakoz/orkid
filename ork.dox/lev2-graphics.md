@@ -87,7 +87,7 @@
 
 ### Example (low level) code:
 
-```
+```cpp
 using namespace std::string_literals;
 using namespace ork;
 using namespace ork::lev2;
