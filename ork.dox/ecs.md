@@ -83,7 +83,8 @@ void main(int argc, char** argv, char** envp) {
   // init application
   //////////////////////////////////////////////////////////
 
-  auto init_data = std::make_shared<ork::AppInitData>(argc, argv, envp); // auto OK - type is in the template argument! - DRY principle
+  // auto OK - type is in the template argument! - use the DRY principle
+  auto init_data = std::make_shared<ork::AppInitData>(argc, argv, envp); 
 
   lev2::initModule(init_data); // lev2 registration
   ecs::initModule(init_data); // ecs registration
