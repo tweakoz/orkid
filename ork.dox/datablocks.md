@@ -29,7 +29,7 @@ datablock_ptr_t loadMyProcessedAsset( std::vector<uint8_t> src_data ) { // src_d
 
   auto datahasher = DataBlock::createHasher();
   datahasher->accumulateString("my-asset-type");               // type code
-  datahasher->accumulateItem<float>(1.0);   		             // version code
+  datahasher->accumulateItem<float>(1.0);   		       // version code
   datahasher->accumulate(src_data.data(),src_data.length());   // source content
   datahasher->finish();
   uint64_t datahash = datahasher->result();
