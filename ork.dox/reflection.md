@@ -171,6 +171,7 @@ int main( int argc, char** argv, char** envp ){
 ```
 
 * executing the above snippet will result in the following json being produced (with different UUIDs of course)
+* Note that Orkid Reflection JSON is human readable (and some might say writable). This is by design - It will come in hella handy when diffing.
 
 ```json
 {
