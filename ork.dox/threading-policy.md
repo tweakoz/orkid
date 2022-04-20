@@ -10,16 +10,16 @@ For long lived steady state uses, you should prefer ork::Thread over std::thread
 
 * An example of ork::Thread use:
 
-```
+```cpp
 #include <ork/kernel/thread.h>
 
 void function(){
-    auto thread = std::make_shared<ork::Thread>"my-thread");
-    thread->start([this](anyp data) {
+  auto thread = std::make_shared<ork::Thread>"my-thread");
+  thread->start([this](anyp data) {
     // do stuff in thread
-    });
-    thread->join(); // explicit join
-    thread = nullptr; // implicit join on destruction
+  });
+  thread->join(); // explicit join
+  thread = nullptr; // implicit join on destruction
 }
 ```
 
@@ -27,148 +27,143 @@ For short asynchronous or parallel uses, or for synchronizing on a specific thre
 
 * An example of concurrent OPQ use:
 
-```
+```cpp
 #include <ork/kernel/opq.h>
 
 using namespace ork;
 
 void function_executed_on_any_thread(){
-	auto conq = opq::concurrentQueue(); // parallel queue
-	for(int i=0; i<4096; i++){
-    	conq->enqueue([=]() {
-		// compute a portion of the solution leading to 42 here
-			conq->enqueue([](){
-				// recursion is allowed..
-			});		
-    	});
-	}
-	conq->drain(); // all work items now complete..
+  auto conq = opq::concurrentQueue(); // parallel queue
+  for(int i=0; i<4096; i++){
+    conq->enqueue([=]() {
+      // compute a portion of the solution leading to 42 here
+      conq->enqueue([](){
+        // recursion is allowed..
+      });		
+    });
+  }
+  conq->drain(); // all work items now complete..
 }
 ```
 
 * Completion groups *aka workgroups* are also supported
 
-```
+```cpp
 #include <ork/kernel/opq.h>
 
 using namespace ork;
 
 void function_executed_on_any_thread(){
-	auto conq = opq::concurrentQueue(); // parallel queue
-	auto group1 = opq::createCompletionGroup(conq,"workgroup");
-	auto group2 = opq::createCompletionGroup(conq,"workgroup");
-	for(int i=0; i<4096; i++){
-    	group->enqueue([=]() {
-			// from group1, ....
-			group2->enqueue([](){
-				// do something in group2
-			});		
-    	});
-	}
-	group1->join(); // all work items on group1 now complete..
-	group2->join(); // all work items on group2 now complete..
+  auto conq = opq::concurrentQueue(); // parallel queue
+  auto group1 = opq::createCompletionGroup(conq,"workgroup");
+  auto group2 = opq::createCompletionGroup(conq,"workgroup");
+  for(int i=0; i<4096; i++){
+    group->enqueue([=]() {
+      // from group1, ....
+      group2->enqueue([](){
+      // do something in group2
+      });		
+    });
+  }
+  group1->join(); // all work items on group1 now complete..
+  group2->join(); // all work items on group2 now complete..
 }
 ```
 
 * An example of typical main thread serial OPQ use:
 
-```
+```cpp
 #include <ork/kernel/opq.h>
 
 using namespace ork;
 
 void function_executed_on_any_thread(){
-	auto serq = opq::mainSerialQueue(); // main thread serial queue
-	serq->enqueue([=]() {
-		// do something on main thread
-	});
+  auto serq = opq::mainSerialQueue(); // main thread serial queue
+  serq->enqueue([=]() {
+    // do something on main thread
+  });
 }
 
 /////////////
 
 int main(int argc, char** argv, char** envp){
-
-	bool keep_going = true;
-	while(keep_going){
-	    opq::mainSerialQueue()->Process();	// executes operations in queue
-	}
-	
-	return 0;
+  bool keep_going = true;
+  while(keep_going){
+    opq::mainSerialQueue()->Process();	// executes operations in queue
+  }
+  return 0;
 }
 
 ```
 
 * And the same for the update thread serial OPQ use:
 
-```
+```cpp
 #include <ork/kernel/opq.h>
 
 using namespace ork;
 
 void function_executed_on_any_thread(){
-	auto serq = opq::updateSerialQueue(); // main thread serial queue
-	serq->enqueue([=]() {
-		// do something on main thread
-	});
+  auto serq = opq::updateSerialQueue(); // main thread serial queue
+  serq->enqueue([=]() {
+    // do something on main thread
+  });
 }
 
 /////////////
 
 int main(int argc, char** argv, char** envp){
+  /////////////
+  // update thread
+  /////////////
+  auto updserq = opq::updateSerialQueue(); // update thread serial
+  auto updthr = std::make_shared<Thread>("updatethread");
+  bool updthread_keep_going = true;
+  updthr->start([&](anyp data) {
+    while(updthread_keep_going){
+      updserq->Process();	// executes operations in queue
+    }
+  });
 
-	/////////////
-	// update thread
-	/////////////
+  /////////////
+  // main thread
+  /////////////
 
-	auto updserq = opq::updateSerialQueue(); // update thread serial
-	auto updthr = std::make_shared<Thread>("updatethread");
-	bool updthread_keep_going = true;
-    updthr->start([&](anyp data) {
-		while(updthread_keep_going){
-		    updserq->Process();	// executes operations in queue
-		}
-    });
+  updserq->enqueue([&](){
+    printf("doing something on update thread");
+    updthread_keep_going = false; // tell update thread we are all done
+  });
 
-   	/////////////
-	// main thread
-	/////////////
-
-   	updserq->enqueue([&](){
-		printf("doing something on update thread");
-		updthread_keep_going = false; // tell update thread we are all done
-    });
-
-	updserq->drain(); // explicit drain
-	updserq = nullptr;
-	updthr->join();
+  updserq->drain(); // explicit drain
+  updserq = nullptr;
+  updthr->join();
 		
-	return 0;
+  return 0;
 }
 
 ```
 
 * You can also create your own queues if the default ones do not suffice for some reason.
 
-```
+```cpp
 #include <ork/kernel/thread.h>
 
 int main(int argc, char** argv, char** envp){
-	constexpr size_t knumthreads = 4;
-    auto my_opq = std::make_shared<OperationsQueue>(knumthreads);
-    auto my_opgroup = my_opq->createConcurrencyGroup("grp1");
-    my_opgroup->_limit_maxops_inflight = 3; // group with a limit of 3 concurrent operations
-    for( int i=0; i<100; i++){
-    	my_opgroup->enqueue([](){
-			// do something, up to 3 at a time
-        });
-    }
-    my_opq->enqueue([](){
-    	// while doing something else on the remaining thread
+  constexpr size_t knumthreads = 4;
+  auto my_opq = std::make_shared<OperationsQueue>(knumthreads);
+  auto my_opgroup = my_opq->createConcurrencyGroup("grp1");
+  my_opgroup->_limit_maxops_inflight = 3; // group with a limit of 3 concurrent operations
+  for( int i=0; i<100; i++){
+    my_opgroup->enqueue([](){
+      // do something, up to 3 at a time
     });
-    my_opgroup->drain(); // the 3 ops on my_opgroup are now done.
-    my_opq->drain(); // now everything is complete..
-
-	return 42;
+  }
+  my_opq->enqueue([](){
+    // while doing something else on the remaining thread
+  });
+  my_opgroup->drain(); // the 3 ops on my_opgroup are now done.
+  my_opq->drain(); // now everything is complete..
+  return 42;
 }
 ```
 
@@ -181,7 +176,7 @@ Lev2 (and ECS) apps have a slightly stricter policy. There are 2 primary threads
 
 * A fairly simple example lev2 app using main and update threads - uses OrkEzApp which manages the threads and opq's for you.
 
-```
+```cpp
 #include <ork/kernel/string/deco.inl>
 #include <ork/lev2/ezapp.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
@@ -239,13 +234,13 @@ int main(int argc, char** argv,char** envp) {
   auto dbufcontext = std::make_shared<DrawBufContext>();
   ezapp->onUpdate([&](ui::updatedata_ptr_t updata) { // update thread tick
     // do something every tick of update thread
-	double dt      = updata->_dt;
+    double dt      = updata->_dt;
     double abstime = updata->_abstime;
     // acquire drawable buffer for passing frame data to rendering thread
-	auto DB = dbufcontext->acquireForWriteLocked();
+    auto DB = dbufcontext->acquireForWriteLocked();
     DB->Reset(); // clear DB data
     
-	// presumably now we would put more data into the drawable buffer, but that is beyond the scope of this readme. 
+    // presumably now we would put more data into the drawable buffer, but that is beyond the scope of this readme. 
 	
     dbufcontext->releaseFromWriteLocked(DB); // release acquired drawbuffer
   });
@@ -253,16 +248,16 @@ int main(int argc, char** argv,char** envp) {
   ezapp->onDraw([&](ui::drawevent_constptr_t drwev) { // render thread tick
 
 
-   	// acquire a read only buffer from update thread
-	auto DB = dbufcontext->acquireForReadLocked(); 
+    // acquire a read only buffer from update thread
+    auto DB = dbufcontext->acquireForReadLocked(); 
    	
     if (nullptr == DB)
       return; // apparently no draw buffer has been issued, so just return ...
    
-	// we now have a draw buffer, so render whatever it contains
-	//   also beyond the scope of this readme..
+    // we now have a draw buffer, so render whatever it contains
+    //   also beyond the scope of this readme..
     
-	dbufcontext->releaseFromReadLocked(DB); // release acquired read only drawbuffer
+    dbufcontext->releaseFromReadLocked(DB); // release acquired read only drawbuffer
   });
   //////////////////////////////////////////////////////////
   return ezapp->mainThreadLoop();
