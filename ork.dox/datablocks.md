@@ -79,8 +79,7 @@ void test() {
 
 # ChunkFiles
 
-Chunkfiles provide another layer of developer convenience when reading, writing and processing asset data. I commonly embed chunkfiles into datablocks. They are a modernized c++ centric adaptation of old school EA IFF chunkfiles. The word *file* in chunkfile is a bit of a misnomer, since in orkid, chunkfiles are just formatted datablocks and datablocks may come from files or maybe from network packets or other sources.
-
+Chunkfiles provide another layer of developer convenience when reading, writing and processing asset data. I commonly embed chunkfiles into datablocks. They are a modernized c++ centric adaptation of old school EA IFF chunkfiles. The word *file* in chunkfile is a bit of a misnomer, since in orkid, chunkfiles are just formatted datablocks and datablocks may come from files or maybe from network packets or other sources. Part of the convience comes from the fact you can read/write from/to multiple streams in any order and the streams will each occupy contiguous chunks of the file/datablock - this makes for cleaner code when keeping CPU bound header data separate from GPU bound data.
 
 * example datablock/chunk writer
 
