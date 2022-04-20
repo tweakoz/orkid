@@ -11,7 +11,7 @@ Reasons behind this methodology include:
 
 Asset conversion for common types is handled by the engine. It is implemented with hashing and content addressable filesystem techniques. For performance reasons, the hashing mechanism currently uses CRC64, so collision rates will match that of CRC64. I personally do not worry about it, but if you do worry about that sort of thing and your application really requires that guarantee, replacing the hash algorithm for the datablock cache is very simple.
 
-Future plans include allowing the developer to bypass the source asset hashing through the use of a *manifest* 
+Future plans include allowing the developer to bypass the source asset hashing through the use of a *manifest* and a pregenerated datablock-cache.
 
 For 3d models and textures, and a few other asset types the datablock cache is already integrated into those asset managers. 
 
