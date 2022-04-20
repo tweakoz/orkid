@@ -76,7 +76,7 @@ There are obviously state transitions required to go from one state to the other
 
 ### Example code 
 
-```
+```cpp
 void main(int argc, char** argv, char** envp) {
 
   //////////////////////////////////////////////////////////
