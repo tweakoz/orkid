@@ -14,7 +14,7 @@ For long lived steady state uses, you should prefer ork::Thread over std::thread
 #include <ork/kernel/thread.h>
 
 void function(){
-  auto thread = std::make_shared<ork::Thread>"my-thread");
+  auto thread = std::make_shared<ork::Thread>("my-thread");
   thread->start([this](anyp data) {
     // do stuff in thread
   });
