@@ -2,13 +2,12 @@
 ![logo](https://github.com/tweakoz/orkid/blob/develop/ork.data/dox/doxylogo.png "OrkidLogo")
 
 
-### BuildStatus
+### [BuildStatus](https://www.orkid-engine.dev:4431)
 
 * Ubuntu 19.10 [![CISTATUS](https://www.orkid-engine.dev:4431/orkid-ix-ub1910/master/status.svg)](https://www.orkid-engine.dev:4431)
 * Ubuntu 20.04 [![CISTATUS](https://www.orkid-engine.dev:4431/orkid-ix-ub2004/master/status.svg)](https://www.orkid-engine.dev:4431)
 * MacOs Big Sur [![CISTATUS](https://www.orkid-engine.dev:4431/orkid-osx-catalina/master/status.svg)](https://www.orkid-engine.dev:4431)
 
-* Full Build Status https://www.orkid-engine.dev:4431
 ### Description
 
 Orkid is a C++20 flexible media presentation engine. By media, we mean games, realtime 2d/3d graphics, and/or audio. Orkid itself is licensed with the permissive Boost Software License v1.0, that said Orkid does have dependencies on other libraries which will have different licenses and it is left up to the user to remain compliant with them. Orkid, being fairly modular can be run with less dependencies and reduced functionality to simplify license creep.
