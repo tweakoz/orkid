@@ -4,7 +4,7 @@
 
 ### [BuildStatus](https://www.orkid-engine.dev:4431)
 
-* Ubuntu 19.10 [![CISTATUS](https://www.orkid-engine.dev:4431/orkid-ix-ub1910/master/status.svg)](https://www.orkid-engine.dev:4431)
+* Ubuntu 22.04 [![CISTATUS](https://www.orkid-engine.dev:4431/orkid-ix-ub2204/master/status.svg)](https://www.orkid-engine.dev:4431)
 * Ubuntu 20.04 [![CISTATUS](https://www.orkid-engine.dev:4431/orkid-ix-ub2004/master/status.svg)](https://www.orkid-engine.dev:4431)
 * MacOs Big Sur [![CISTATUS](https://www.orkid-engine.dev:4431/orkid-osx-catalina/master/status.svg)](https://www.orkid-engine.dev:4431)
 
