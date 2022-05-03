@@ -290,6 +290,12 @@ int OldSchool::GetNumCores()
 	fflush(stdout);
 }
 #endif
+
+	const char* numcores_env = getenv("OBT_NUM_CORES");
+	if(numcores_env){
+		numCPUs = atoi(numcores_env);
+	}
+
 	return numCPUs;
 
 }

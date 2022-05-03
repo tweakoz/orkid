@@ -9,6 +9,7 @@
 #include <ork/kernel/string/deco.inl>
 #include <ork/kernel/timer.h>
 #include <ork/lev2/ezapp.h>
+#include <ork/lev2/vr/vr.h>
 
 #include <ork/lev2/gfx/scenegraph/scenegraph.h>
 #include <ork/lev2/gfx/terrain/terrain_drawable.h>
@@ -38,11 +39,17 @@ int main(int argc, char** argv,char** envp) {
   //  at startup time
   //////////////////////////////////////////////////////////
   qtapp->onGpuInit([&](Context* ctx) {
+
+    auto vrdev = orkidvr::openvr::openvr_device();
+    orkidvr::setDevice(vrdev);
     //////////////////////////////////////////////////////////
     // create scenegraph
     //////////////////////////////////////////////////////////
 
-    sg_scene = std::make_shared<scenegraph::Scene>();
+  auto params  = std::make_shared<varmap::VarMap>();
+  params->makeValueForKey<std::string>("preset") = "PBR";
+
+    sg_scene = std::make_shared<scenegraph::Scene>(params);
     auto sg_layer = sg_scene->createLayer("Default");
 
     //////////////////////////////////////////////////////////

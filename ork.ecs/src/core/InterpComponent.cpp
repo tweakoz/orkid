@@ -34,7 +34,7 @@ using namespace ork::object;
 using namespace ork::reflect;
 
 void InterpComponentData::describeX(ComponentDataClass* clazz) {
-  clazz->floatProperty("InterpolationRate", float_range{0.00001,0.001}, &InterpComponentData::_interpolation_rate);
+  clazz->floatProperty("InterpolationRate", float_range{0,10}, &InterpComponentData::_interpolation_rate);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -204,7 +204,9 @@ void InterpSystem::_onUpdate(Simulation* inst){
 		auto e = c->GetEntity();
 
     fvec3 delta = c->_target_pos-c->_current_pos;
-		c->_current_pos += delta*c->mCD._interpolation_rate;
+
+    float fr = c->mCD._interpolation_rate*0.001;
+		c->_current_pos += delta*fr;
 
 		auto tpos = c->_current_pos;
 		e->transform()->_translation = tpos;
