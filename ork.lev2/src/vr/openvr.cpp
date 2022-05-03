@@ -55,7 +55,6 @@ std::string trackedDeviceString(
 OpenVrDevice::OpenVrDevice()
     : _vrmutex("vrmutex") {
 
-      OrkAssert(false);
   _leftControllerDeviceIndex  = -1;
   _rightControllerDeviceIndex = -1;
 

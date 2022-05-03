@@ -165,7 +165,7 @@ void SceneGraphComponent::_onNotify(Simulation* psi, token_t evID, svar64_t data
             instance_data->_modcolors[iid] = fvec4(1,1,1,1);
             instance_data->_pickids[iid] = 0;
 
-            printf( "setname<%s>\n", name.c_str() );
+            //printf( "setname<%s>\n", name.c_str() );
           }
 
         }

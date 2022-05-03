@@ -10,7 +10,7 @@ add_executable (ork.example.lev2.gfx.sdfscene.exe ${srcs} )
 
 ork_std_target_opts(ork.example.lev2.gfx.sdfscene.exe)
 
-target_link_libraries(ork.example.lev2.gfx.sdfscene.exe LINK_PRIVATE ork_core ork_lev2 openvdb tbb )
+target_link_libraries(ork.example.lev2.gfx.sdfscene.exe LINK_PRIVATE ork_core ork_lev2 tbb )
 
 set_target_properties(ork.example.lev2.gfx.sdfscene.exe PROPERTIES LINKER_LANGUAGE CXX)
 target_include_directories (ork.example.lev2.gfx.sdfscene.exe PRIVATE ${ORKROOT}/ork.core/inc )

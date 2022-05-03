@@ -66,7 +66,7 @@ with buildtrace.NestedBuildTrace({ "op": "ork.build.py"}) as nested:
   dep_list += ["glm","eigen",
                "lexertl14", "parsertl14","rapidjson",
                "luajit", "pybind11", "ispctexc",
-               "openexr","oiio","openvdb",
+               "openexr","oiio",
                "embree","igl",
                "glfw","assimp", "easyprof",
                "bullet"]

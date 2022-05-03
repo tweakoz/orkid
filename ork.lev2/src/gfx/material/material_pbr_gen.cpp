@@ -96,7 +96,7 @@ static texture_ptr_t _getbrdfintmap(Context* targ) {
   // verify (debug)
   ///////////////////////////////
 
-  if (1) {
+  if (0) {
     auto outpath = file::Path::temp_dir() / "brdftest.exr";
     auto out     = ImageOutput::create(outpath.c_str());
     assert(out != nullptr);
