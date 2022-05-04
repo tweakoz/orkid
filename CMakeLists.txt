@@ -17,7 +17,6 @@ include(orkid)
 
 ##############################
 
-add_subdirectory (ork.tuio)
 add_subdirectory (ork.utpp)
 add_subdirectory (ork.core)
 add_subdirectory (ork.lev2)

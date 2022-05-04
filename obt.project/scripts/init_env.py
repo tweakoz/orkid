@@ -24,6 +24,7 @@ def setup():
   ork.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.eda")
   ork.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.ecs")
   ork.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.tool")
+  ork.env.append("OBT_SEARCH_PATH",orkid_dir/"ork.tuio")
   ork.env.append("LUA_PATH",orkid_dir/"ork.data"/"src"/"scripts"/"?.lua")
 
   ork.env.append("OBT_SEARCH_EXTLIST", ".cpp:.c:.cc:.h:.hpp:.inl")
