@@ -222,10 +222,12 @@ function(ork_std_target_set_libdirs the_target)
 
   IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
 
-    list(APPEND CMAKE_MODULE_PATH "${LIBIGL_INCLUDE_DIR}/../cmake")
-    option(LIBIGL_USE_STATIC_LIBRARY "Use libigl as static library" ON)
+    list(APPEND CMAKE_MODULE_PATH $ENV{OBT_STAGE}/lib/cmake/igl)
+    set( LIBIGL_DIR $ENV{OBT_STAGE}/lib/cmake/igl )
+
+    option(LIBIGL_USE_STATIC_LIBRARY "Use libigl as static library" OFF)
     #option(LIBIGL_WITH_ANTTWEAKBAR      "Use AntTweakBar"    OFF)
-    option(LIBIGL_WITH_CGAL             "Use CGAL"           ON)
+    option(LIBIGL_WITH_CGAL             "Use CGAL"           OFF)
     option(LIBIGL_WITH_COMISO           "Use CoMiso"         ON)
     option(LIBIGL_WITH_CORK             "Use Cork"           ON)
     option(LIBIGL_WITH_EMBREE           "Use Embree"         ON)
