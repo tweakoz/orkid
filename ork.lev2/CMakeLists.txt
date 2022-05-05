@@ -111,9 +111,7 @@ target_link_libraries(ork_lev2 PRIVATE assimp audiofile )
 ###################################
 
 IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
-  target_link_libraries(ork_lev2 PUBLIC triangle tetgen )
-  #target_include_directories (ork_lev2 PRIVATE $ENV{OBT_BUILDS}/igl/external/glad/include )
-  target_include_directories (ork_lev2 PRIVATE $ENV{OBT_BUILDS}/igl/external/tetgen )
+  target_link_libraries(ork_lev2 PUBLIC triangle )
 ENDIF()
 
 ###################################

@@ -28,7 +28,7 @@
 #include <igl/harmonic.h>
 #include <igl/flipped_triangles.h>
 #include <igl/topological_hole_fill.h>
-#include <igl/scaf.h>
+#include <igl/triangle/scaf.h>
 
 namespace ork::meshutil {
 //////////////////////////////////////////////////////////////////////////////
@@ -65,7 +65,7 @@ iglmesh_ptr_t IglMesh::parameterizedSCAF(int numiters, double scale, double bias
 
   Eigen::MatrixXd V = _verts;
   Eigen::MatrixXi F = _faces;
-  igl::SCAFData scaf_data;
+  igl::triangle::SCAFData scaf_data;
 
   Eigen::MatrixXd bnd_uv, uv_init;
 
@@ -108,12 +108,12 @@ iglmesh_ptr_t IglMesh::parameterizedSCAF(int numiters, double scale, double bias
 
   Eigen::VectorXi b;
   Eigen::MatrixXd bc;
-  igl::scaf_precompute(V, F, uv_init, scaf_data, igl::MappingEnergyType::SYMMETRIC_DIRICHLET, b, bc, 0);
+  igl::triangle::scaf_precompute(V, F, uv_init, scaf_data, igl::MappingEnergyType::SYMMETRIC_DIRICHLET, b, bc, 0);
 
   //_verts = V;
   //_faces = F;
 
-  igl::scaf_solve(scaf_data, numiters);
+  igl::triangle::scaf_solve(scaf_data, numiters);
 
   auto rval                           = std::make_shared<IglMesh>(V, F);
   double uv_scale                     = 0.2 * 0.5 * scale;

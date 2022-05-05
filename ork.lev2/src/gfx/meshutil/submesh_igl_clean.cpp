@@ -26,10 +26,10 @@
 #if defined(USE_CGAL)
 #include <igl/copyleft/cgal/remesh_self_intersections.h> // GNU GPL (todo move to external executable?)
 #include <igl/copyleft/cgal/extract_cells.h>             // GNU GPL (todo move to external executable?)
-#endif
-
 #include <igl/copyleft/tetgen/tetrahedralize.h>
 #include <igl/copyleft/tetgen/cdt.h>
+#endif
+
 #include <igl/remove_unreferenced.h>
 #include <igl/unique_simplices.h>
 #include <igl/barycenter.h>

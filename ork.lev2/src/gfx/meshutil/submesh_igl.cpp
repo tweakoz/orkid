@@ -24,7 +24,8 @@
 #include <igl/per_vertex_normals.h>
 #include <igl/per_face_normals.h>
 #include <igl/per_corner_normals.h>
-#include <igl/polygon_mesh_to_triangle_mesh.h>
+#include <igl/polygon_corners.h>
+#include <igl/polygons_to_triangles.h>
 #include <igl/shortest_edge_and_midpoint.h>
 #include <igl/unique_edge_map.h>
 #include <igl/avg_edge_length.h>
@@ -340,14 +341,17 @@ submesh_ptr_t IglMesh::toSubMesh() const {
 //////////////////////////////////////////////////////////////////////////////
 iglmesh_ptr_t IglMesh::triangulated() const {
   auto rval = std::make_shared<IglMesh>();
-  igl::polygon_mesh_to_triangle_mesh(_faces, rval->_faces);
+  Eigen::VectorXi I,C;
+  igl::polygon_corners(_faces,I,C);
+  Eigen::VectorXi J;
+  igl::polygons_to_triangles(I,C,rval->_faces,J);
   rval->_verts = _verts;
   return rval;
 }
 //////////////////////////////////////////////////////////////////////////////
 iglmesh_ptr_t IglMesh::decimated(float amount) const {
   auto rval = std::make_shared<IglMesh>();
-  Eigen::MatrixXd V;
+  /*Eigen::MatrixXd V;
   Eigen::MatrixXi F;
   Eigen::MatrixXd OV = _verts;
   Eigen::MatrixXi OF = _faces;
@@ -403,7 +407,7 @@ iglmesh_ptr_t IglMesh::decimated(float amount) const {
     }
   }
   rval->_verts = V;
-  rval->_faces = F;
+  rval->_faces = F;*/
   return rval;
 }
 //////////////////////////////////////////////////////////////////////////////
