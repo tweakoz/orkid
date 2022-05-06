@@ -36,8 +36,8 @@ Artist Information
 Example Content (most of it old, updates coming soon.)
 ========
 
-<a href="https://media.githubusercontent.com/media/tweakoz/orkid/master/ork.data/misc/screenshot_pbr.png"><img src="https://github.com/tweakoz/orkid/blob/master/ork.data/misc/th_screenshot_pbr.png" title="Github Logo"></a>
-<a href="https://media.githubusercontent.com/media/tweakoz/orkid/master/ork.data/misc/shadowedptexspotlight.png"><img src="https://github.com/tweakoz/orkid/blob/master/ork.data/misc/th_shadowedptexspotlight.png" title="Github Logo"></a>
+<a href="https://media.githubusercontent.com/media/tweakoz/orkid/develop/ork.data/misc/screenshot_pbr.png"><img src="https://github.com/tweakoz/orkid/blob/develop/ork.data/misc/th_screenshot_pbr.png" title="Github Logo"></a>
+<a href="https://media.githubusercontent.com/media/tweakoz/orkid/develop/ork.data/misc/shadowedptexspotlight.png"><img src="https://github.com/tweakoz/orkid/blob/develop/ork.data/misc/th_shadowedptexspotlight.png" title="Github Logo"></a>
 
 ![Particles](http://tweakoz.com/resources/images/th_sshot_psys.jpg)
 
