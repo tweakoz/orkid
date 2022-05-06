@@ -23,7 +23,7 @@ ork_std_target_opts(ork_ecs)
 
 ###################################
 
-set( libs ork_core ork_lev2 ork_tuio )
+set( libs ork_core ork_lev2 )
 list(APPEND libs OpenImageIO OpenImageIO_Util )
 list(APPEND libs BulletCollision BulletDynamics LinearMath )
 list(APPEND libs luajit-5.1 )
