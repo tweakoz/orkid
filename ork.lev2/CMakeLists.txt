@@ -6,7 +6,6 @@ include (GenerateExportHeader)
 set( SRCD ${CMAKE_CURRENT_SOURCE_DIR}/src )
 set( INCD ${CMAKE_CURRENT_SOURCE_DIR}/inc )
 set( COREINCD ${CMAKE_CURRENT_SOURCE_DIR}/../ork.core/inc )
-set( TUIOINCD ${CMAKE_CURRENT_SOURCE_DIR}/../ork.tuio/inc/tuio )
 ###################################
 
 file(GLOB_RECURSE src_aud ${SRCD}/aud/*.cpp)
@@ -58,7 +57,7 @@ add_library (ork_lev2 SHARED ${orksrcs} )
 
 ork_std_target_opts(ork_lev2)
 
-set( libs ork_core ork_tuio )
+set( libs ork_core )
 list(APPEND libs OpenImageIO OpenImageIO_Util portaudio rtmidi )
 
 IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
@@ -96,10 +95,6 @@ list(APPEND libs  mpfr gmp )
 
 target_include_directories (ork_lev2 PRIVATE ${INCD} )
 target_include_directories (ork_lev2 PRIVATE ${COREINCD} )
-target_include_directories (ork_lev2 PRIVATE ${TUIOINCD} )
-target_include_directories (ork_lev2 PRIVATE ${TUIOINCD}/oscpack )
-target_include_directories (ork_lev2 PRIVATE ${TUIOINCD}/oscpack/osc )
-target_include_directories (ork_lev2 PRIVATE ${TUIOINCD}/oscpack/ip )
 target_include_directories (ork_lev2 PRIVATE $ENV{OBT_VULKAN_ROOT}/include)
 
 target_link_libraries(ork_lev2 PUBLIC ${libs} )
