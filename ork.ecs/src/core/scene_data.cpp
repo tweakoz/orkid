@@ -162,7 +162,8 @@ void SceneData::AddSceneObject(sceneobject_ptr_t object) {
       name_attempt = basestr;
       name_attempt += CreateFormattedString("%d", ++counter).c_str();
       PoolString pooled_name = AddPooledString(name_attempt);
-      while (_sceneObjects.contains(pooled_name)) {
+      //while (_sceneObjects.contains(pooled_name)) {
+      while (_sceneObjects.find(pooled_name)!=_sceneObjects.end()) {
         name_attempt = basestr;
         name_attempt += CreateFormattedString("%d", ++counter).c_str();
         pooled_name = AddPooledString(name_attempt);

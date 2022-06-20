@@ -3,6 +3,12 @@ include (GenerateExportHeader)
 project (Orkid)
 
 set(CMAKE_CXX_STANDARD 20)
+IF(${APPLE})
+ELSE()
+  IF( "${ARCHITECTURE}" STREQUAL "AARCH64" )
+    set(CMAKE_CXX_STANDARD 17)
+  ENDIF()
+ENDIF()
 set(CMAKE_CXX_STANDARD_REQUIRED on)
 
 set(CMAKE_INSTALL_RPATH "$ENV{OBT_STAGE}/lib")

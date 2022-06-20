@@ -23,6 +23,15 @@ parser.add_argument("--builddir")
 
 _args = vars(parser.parse_args())
 
+this_path = os.path.realpath(__file__)
+this_dir = os.path.dirname(this_path)
+this_dir = os.path.dirname(this_dir)
+this_dir = os.path.dirname(this_dir)
+
+print(this_dir)
+
+os.environ["ORKID_WORKSPACE_DIR"] = this_dir
+
 stage_dir = Path(os.path.abspath(str(ork.path.stage())))
 
 build_dest = ork.path.stage()/"orkid"
@@ -45,6 +54,8 @@ with buildtrace.NestedBuildTrace({ "op": "ork.build.py"}) as nested:
   build_dest.mkdir(parents=True,exist_ok=True)
   build_dest.chdir()
 
+  os.environ["ORKID_BUILD_DEST"]=str(build_dest)
+
   prj_root = Path(os.environ["ORKID_WORKSPACE_DIR"])
   ork_root = prj_root
   ok = True
@@ -54,25 +65,15 @@ with buildtrace.NestedBuildTrace({ "op": "ork.build.py"}) as nested:
   print(PYTHON)
   ork.env.set("PYTHONHOME",PYTHON.home_dir)
 
+  BOOST = ork.dep.instance("boost")
+
   ######################################################################
   # ensure deps present
   ######################################################################
 
-  dep_list = []
+  ORKID_DEPMODULE = ork.dep.instance("orkid") # fetch from orkid depper to reduce code bloat
 
-  if ork.host.IsLinux:
-    dep_list += ["vulkan","openvr","rtmidi"]
-
-  dep_list += ["glm","eigen",
-               "lexertl14", "parsertl14","rapidjson",
-               "luajit", "pybind11", "ispctexc",
-               "openexr","oiio",
-               "embree","igl",
-               "glfw","assimp", "easyprof",
-               "bullet"]
-
-  #if ork.host.IsOsx: # until moltenvk fixed on big sur
-  #   dep_list += ["moltenvk"]
+  dep_list = ORKID_DEPMODULE.deplist
 
   l = list()
   chain = ork.dep.Chain(dep_list)
@@ -124,6 +125,14 @@ with buildtrace.NestedBuildTrace({ "op": "ork.build.py"}) as nested:
     cmd += ["-DARCHITECTURE=AARCH64"]
   else:
     cmd += ["-DARCHITECTURE=x86_64"]
+
+
+  ###################################################
+
+  BOOST_FLAGS = BOOST.cmake_additional_flags()
+  for key in BOOST_FLAGS.keys():
+    val = BOOST_FLAGS[key]
+    cmd += ["-D%s=%s"%(key,val)]
 
   ###################################################
   if _args["trace"]==True:

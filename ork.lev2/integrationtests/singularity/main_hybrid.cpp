@@ -13,6 +13,7 @@
 #include <ork/lev2/aud/singularity/dsp_ringmod.h>
 #include <ork/lev2/aud/singularity/dsp_mix.h>
 #include <ork/lev2/aud/singularity/alg_filters.h>
+#include <ork/math/audiomath.h>
 #include <random>
 
 using namespace ork::audio::singularity;
@@ -77,7 +78,7 @@ int main(int argc, char** argv,char**envp) {
   std::uniform_int_distribution<> rdist(0, 1000000);
   auto irandom = [&]() -> int { return rdist(gen); };
   auto frandom = [&]() -> float { return double(rdist(gen)) * 0.000001f; };
-  auto rangedf = [&](float fmin, float fmax) -> float { return std::lerp(fmin, fmax, frandom()); };
+  auto rangedf = [&](float fmin, float fmax) -> float { return ork::audiomath::lerp(fmin, fmax, frandom()); };
   ////////////////////////////////////////////////
   // create random dsp programs and trigger them
   ////////////////////////////////////////////////
@@ -242,7 +243,7 @@ int main(int argc, char** argv,char**envp) {
     PANCONTROL->_oncompute = [](CustomControllerInst* cci) { //
       float index  = cci->_layer->_layerTime / 3.0f;
       index        = std::clamp(index, 0.0f, 1.0f);
-      float pan    = std::lerp(-1.0f, 1.0f, index);
+      float pan    = ork::audiomath::lerp(-1.0f, 1.0f, index);
       pan          = std::clamp(pan, -1.0f, 1.0f);
       cci->_curval = pan;
     };

@@ -44,6 +44,13 @@ public: //
   texture_ptr_t _texture;
 };
 
+struct StaticTexFileLoader : public ork::asset::FileAssetLoader {
+  StaticTexFileLoader();
+  ork::asset::asset_ptr_t _doLoadAsset(AssetPath assetpath, ork::asset::vars_constptr_t vars) override;
+  void destroy(ork::asset::asset_ptr_t asset) override;
+  void initLoadersForUriProto(const std::string& uriproto) override;
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct XgmModelAsset : public ork::asset::Asset {

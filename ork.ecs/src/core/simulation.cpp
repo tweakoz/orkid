@@ -188,7 +188,8 @@ void Simulation::registerActivatedEntity(ecs::Entity* pent) {
 
   //debugBanner(255, 255, 0, "ACTIVATING DYNAMIC ENTITY<%p>\n", (void*) pent );
 
-  if (not mActiveEntities.contains(pent)) {
+  //if (not mActiveEntities.contains(pent)) {
+  if (mActiveEntities.find(pent)==mActiveEntities.end()) {
     mActiveEntities.insert(pent);
 
     /////////////////////////////////////////

@@ -19,10 +19,16 @@ namespace ork {
 struct float_range {
   float _min = 0.0f;
   float _max = 0.0f;
+  bool operator==(const float_range& rhs) const {
+    return (_min==rhs._min) and (_max==rhs._max);
+  }
 };
 struct int_range {
   int _min = 0;
   int _max = 0;
+  bool operator==(const int_range& rhs) const {
+    return (_min==rhs._min) and (_max==rhs._max);
+  }
 };
 } // namespace ork
 namespace ork::object {

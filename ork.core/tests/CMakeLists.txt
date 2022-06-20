@@ -12,10 +12,8 @@ add_executable (ork.test.core.exe ${testsrcs} )
 
 ork_std_target_opts(ork.test.core.exe)
 
-
 target_link_libraries(ork.test.core.exe LINK_PRIVATE ork_utpp )
 target_link_libraries(ork.test.core.exe LINK_PRIVATE ork_core )
-target_link_libraries(ork.test.core.exe LINK_PRIVATE boost_filesystem boost_system )
 
 set_target_properties(ork.test.core.exe PROPERTIES LINKER_LANGUAGE CXX)
 target_include_directories (ork.test.core.exe PRIVATE ${ORKROOT}/ork.core/inc )

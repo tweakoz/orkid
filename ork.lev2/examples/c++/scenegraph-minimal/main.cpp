@@ -9,6 +9,7 @@
 #include <ork/kernel/string/deco.inl>
 #include <ork/kernel/timer.h>
 #include <ork/lev2/ezapp.h>
+
 #include <ork/lev2/vr/vr.h>
 
 #include <ork/lev2/gfx/scenegraph/scenegraph.h>
@@ -39,9 +40,12 @@ int main(int argc, char** argv,char** envp) {
   //  at startup time
   //////////////////////////////////////////////////////////
   qtapp->onGpuInit([&](Context* ctx) {
-
+  
+    #if defined(ENABLE_OPENVR)
     auto vrdev = orkidvr::openvr::openvr_device();
     orkidvr::setDevice(vrdev);
+    #endif
+    
     //////////////////////////////////////////////////////////
     // create scenegraph
     //////////////////////////////////////////////////////////

@@ -429,7 +429,7 @@ ork::FileEnv::filespec_search(const file::Path::NameType& wildcards, const ork::
   const char* path    = initdir.ToAbsolute(ork::file::Path::EPATHTYPE_POSIX).c_str();
   char* const paths[] = {(char* const)path, 0};
 
-  // printf( "path<%s>\n", path );
+   printf( "path<%s>\n", path );
 
   FTS* tree = fts_open(&paths[0], FTS_NOCHDIR, 0);
   if (!tree) {

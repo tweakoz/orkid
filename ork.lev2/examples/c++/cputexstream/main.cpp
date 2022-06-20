@@ -21,6 +21,7 @@ constexpr float finvdim     = 1.0f / float(DIM);
 
 using float_vect_t = std::vector<float>;
 
+
 struct Resources {
 
   Resources(Context* ctx){

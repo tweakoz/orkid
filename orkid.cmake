@@ -5,6 +5,14 @@ project (Orkid)
 ################################################################################
 
 set(CMAKE_CXX_STANDARD 20)
+IF(${APPLE})
+ELSE()
+  # Linux/Arm64 does not yet support CPP20 fully...
+  IF( "${ARCHITECTURE}" STREQUAL "AARCH64" )
+    set(CMAKE_CXX_STANDARD 17)
+  ENDIF()
+ENDIF()
+
 set(CMAKE_CXX_STANDARD_REQUIRED on)
 
 ################################################################################
@@ -26,6 +34,11 @@ find_package(pybind11 REQUIRED)
 
 #############################################################################################################
 
+SET(BUILD_SHARED_LIBS ON)
+find_package(Boost REQUIRED COMPONENTS system filesystem program_options)
+
+#############################################################################################################
+
 set( ORKROOT $ENV{ORKID_WORKSPACE_DIR} )
 set( ORK_CORE_INCD ${ORKROOT}/ork.core/inc )
 set( ORK_LEV2_INCD ${ORKROOT}/ork.lev2/inc )
@@ -35,9 +48,18 @@ set( ORK_ECS_SRCD ${ORKROOT}/ork.ecs/src )
 ################################################################################
 
 IF(${APPLE})
+  IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
+    set( HOMEBREW_PREFIX  /usr/local )
+  ELSEIF( "${ARCHITECTURE}" STREQUAL "AARCH64" )
+    set( HOMEBREW_PREFIX  /opt/homebrew )
+  ENDIF()
+ENDIF()
+
+################################################################################
+
+IF(${APPLE})
     #set(MACOSX_DEPLOYMENT_TARGET=11)
-    set(XCODE_SDKBASE /Library/Developer/CommandLineTools/SDKs)
-    set(CMAKE_OSX_SYSROOT ${XCODE_SDKBASE}/MacOSX10.15.sdk)
+    #set(CMAKE_OSX_SYSROOT $ENV{OBT_MACOS_SDK_DIR})
     set(CMAKE_MACOSX_RPATH 1)
     LIST(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "$ENV{OBT_STAGE}/lib" isSystemDir)
     IF("${isSystemDir}" STREQUAL "-1")
@@ -89,7 +111,7 @@ function(ork_std_target_set_incdirs the_target)
 
   # use homebrew last
   IF(${APPLE})
-    set_property( TARGET ${the_target} APPEND PROPERTY TGT_INCLUDE_PATHS /usr/local/include)
+    set_property( TARGET ${the_target} APPEND PROPERTY TGT_INCLUDE_PATHS ${HOMEBREW_PREFIX}/include)
   ENDIF()
 
 endfunction()
@@ -210,11 +232,10 @@ function(ork_std_target_set_libdirs the_target)
 
   set( private_libdir_list "" )
   list(APPEND private_libdir_list $ENV{OBT_STAGE}/lib )
-  list(APPEND private_libdir_list $ENV{OBT_STAGE}/orkid/ork.tuio )
-  list(APPEND private_libdir_list $ENV{OBT_STAGE}/orkid/ork.utpp )
-  list(APPEND private_libdir_list $ENV{OBT_STAGE}/orkid/ork.core )
-  list(APPEND private_libdir_list $ENV{OBT_STAGE}/orkid/ork.lev2 )
-  list(APPEND private_libdir_list $ENV{OBT_STAGE}/orkid/ork.ecs )
+  list(APPEND private_libdir_list $ENV{ORKID_BUILD_DEST}/ork.utpp )
+  list(APPEND private_libdir_list $ENV{ORKID_BUILD_DEST}/ork.core )
+  list(APPEND private_libdir_list $ENV{ORKID_BUILD_DEST}/ork.lev2 )
+  list(APPEND private_libdir_list $ENV{ORKID_BUILD_DEST}/ork.ecs )
 
   ################################################################################
   # IGL (its a beast, needs a cmake update)
@@ -274,16 +295,19 @@ function(ork_std_target_opts_linker the_target)
   target_link_directories(${the_target} PRIVATE ${TGT_PRIVATE_LIBPATHS} )
   target_link_directories(${the_target} PUBLIC ${TGT_PUBLIC_LIBPATHS} )
 
+  set( BOOST_LIBS "" )
+  list(APPEND BOOST_LIBS ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY}  )
+
   IF(${APPLE})
-    target_link_directories(${the_target} PUBLIC /usr/local/lib )
-      target_link_libraries(${the_target} LINK_PRIVATE m pthread)
-      target_link_libraries(${the_target} LINK_PRIVATE
+    target_link_directories(${the_target} PUBLIC ${HOMEBREW_PREFIX}/lib )
+    target_link_libraries(${the_target} LINK_PRIVATE m pthread)
+    target_link_libraries(${the_target} LINK_PRIVATE
           "-framework AppKit"
           "-framework IOKit"
-      )
-      target_link_libraries(${the_target} LINK_PRIVATE objc boost_filesystem  boost_system boost_program_options )
+    )
+    target_link_libraries(${the_target} LINK_PRIVATE objc ${BOOST_LIBS} )
   ELSEIF(${UNIX})
-      target_link_libraries(${the_target} LINK_PRIVATE rt dl pthread boost_filesystem boost_system boost_program_options)
+    target_link_libraries(${the_target} LINK_PRIVATE rt dl pthread ${BOOST_LIBS})
   ENDIF()
   target_link_libraries(${the_target} LINK_PRIVATE $ENV{OBT_PYTHON_DECOD_NAME} )
   #target_link_options(${TARGET} PRIVATE ${Python3_LINK_OPTIONS})
@@ -294,9 +318,6 @@ endfunction()
 function(ork_std_target_opts the_target)
   ork_std_target_opts_compiler(${the_target})
   ork_std_target_opts_linker(${the_target})
-  IF(${APPLE})
-  target_link_directories(${the_target} PRIVATE /usr/local/lib) # homebrew
-  ENDIF()
 endfunction()
 
 #############################################################################################################

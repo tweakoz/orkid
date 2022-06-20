@@ -103,7 +103,7 @@ bool FileAssetLoader::_find(
     }
   }
 
-  // printf("FindAsset<%s> has_valid_extension<%d>\n", ork::Application::AddPooledString(name).c_str(), int(has_valid_extension));
+   //printf("FindAsset<%s> has_valid_extension<%d>\n", ork::Application::AddPooledString(name).c_str(), int(has_valid_extension));
 
   //////////////////////////////////////////
   // check Munged Paths first (Munged path is a path run thru 1 or more path converters)
@@ -113,7 +113,7 @@ bool FileAssetLoader::_find(
 
   auto filedevctx = ork::FileEnv::contextForUriProto(url.c_str());
 
-  // printf("filedevctx<%p>\n", filedevctx.get());
+   printf("filedevctx<%p>\n", filedevctx.get());
 
   if(nullptr==filedevctx){
     

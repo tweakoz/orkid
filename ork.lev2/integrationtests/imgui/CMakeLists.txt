@@ -15,6 +15,6 @@ add_executable (${target}
   imgui_demo.cpp
  )
 ork_std_target_opts(${target})
-target_link_libraries(${target} LINK_PRIVATE ork_core ork_lev2 glfw boost_program_options )
+target_link_libraries(${target} LINK_PRIVATE ork_core ork_lev2 glfw )
 set_target_properties(${target} PROPERTIES LINKER_LANGUAGE CXX)
 install(TARGETS ${target} DESTINATION $ENV{OBT_STAGE}/bin )

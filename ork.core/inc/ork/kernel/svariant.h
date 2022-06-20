@@ -34,7 +34,6 @@
 #include <type_traits>
 #include <typeinfo>
 #include <functional>
-#include <concepts>
 #include <atomic>
 
 #include <ork/kernel/atomic.h>
@@ -44,6 +43,12 @@
 //#if !defined(__APPLE__)
 #define SVAR_DEBUG
 //#endif
+
+//#define HAS_CONCEPTS
+
+#if defined(HAS_CONCEPTS)
+  #include <concepts>
+#endif
 
 namespace ork {
 #if defined(SVAR_DEBUG)
@@ -123,6 +128,8 @@ struct TypeId {
 
 namespace __svartraits {
 
+#if defined(HAS_CONCEPTS)
+
 template <typename T>
 concept equality_comparable = requires (T obj) {
   { obj == obj } -> std::same_as<bool>;
@@ -131,7 +138,7 @@ concept equality_comparable = requires (T obj) {
 
 template <typename T, typename T2>  //
 struct __equal_to {
-  static bool compare(const T& lhs, const T2& rhs) requires equality_comparable<T> {
+  static bool compare(const T& lhs, const T2& rhs) { requires equality_comparable<T> {
     return bool(lhs == rhs);
   }
   static bool compare(const T& lhs, const T2& rhs) requires( not equality_comparable<T> ) {
@@ -139,6 +146,46 @@ struct __equal_to {
     return false;
   }
 };
+
+//////////////////////////////////////////////////
+#else // non concept methods
+//////////////////////////////////////////////////
+
+template<typename T>
+class IsEqualityComparable
+{
+  private:
+  static void* conv(bool);  // to check convertibility to bool
+  template<typename U>
+  static std::true_type test(decltype(conv(std::declval<U const&>() ==
+                                           std::declval<U const&>())),
+                             decltype(conv(!(std::declval<U const&>() ==
+                                           std::declval<U const&>()))));
+  // fallback:
+  template<typename U>
+  static std::false_type test(...);
+  public:
+  static constexpr bool value = decltype(test<T>(nullptr, nullptr))::value;
+};
+
+struct __equal_to {
+  template <typename T, typename T2,typename std::enable_if<not std::is_same<T,T2>::value, void>::type* = nullptr>  //
+  static bool compare(const T& lhs, const T2& rhs) { 
+    return false;
+  }
+template <typename T,typename std::enable_if<IsEqualityComparable<T>::value, void>::type* = nullptr>  //
+  static bool compare(const T& lhs, const T& rhs) { 
+    return bool(lhs == rhs);
+  }
+template <typename T,typename std::enable_if<not IsEqualityComparable<T>::value, void>::type* = nullptr>  //
+  static bool compare(const T& lhs, const T& rhs) { 
+    return bool(false);
+  }
+};
+
+//////////////////////////////////////////////////
+#endif 
+//////////////////////////////////////////////////
 
 } // namespace __svartraits
 
@@ -167,7 +214,7 @@ template <int tsize> struct SvarDescriptor {
       };
 
       _equals = [](const static_variant<tsize>& lhs, const static_variant<tsize>& rhs) -> bool {
-        return __svartraits::__equal_to<T, T>::compare(lhs.template get<T>(), rhs.template get<T>());
+        return __svartraits::__equal_to::compare<T>(lhs.template get<T>(), rhs.template get<T>());
       };
 
       _curlength = sizeof(T);

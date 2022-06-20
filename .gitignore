@@ -23,6 +23,7 @@ hotkeys.ork
 .idea
 cmake-build*
 mocs
+*imgui.ini*
 nocommit/*
 *__pycache__*
 */nocommit/*

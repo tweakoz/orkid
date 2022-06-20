@@ -11,7 +11,7 @@
 #include <stdint.h>
 #include <functional>
 #include <memory>
-#include <numbers>
+//#include <numbers>
 
 typedef double f64;
 typedef double F64;
@@ -128,8 +128,8 @@ using FunctionH  = size_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-constexpr double PI                = std::numbers::pi;
-constexpr double PI2               = std::numbers::pi * 2.0;
+constexpr double PI                = 3.14159265; //std::numbers::pi;
+constexpr double PI2               = PI * 2.0;
 constexpr double PI1               = PI;
 constexpr double PI_DIV_2          = (PI / 2.0);
 constexpr double PI_DIV_3          = (PI / 3.0);

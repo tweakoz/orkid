@@ -823,7 +823,8 @@ void GlGeometryBufferInterface::DrawPrimitiveEML(const VertexBufferBase& VBuf, P
         break;
       case PrimitiveType::POINTS:
         GL_ERRORCHECK();
-        glPointSize(1.0f);
+        //glPointSize(1.0f);
+        glEnable(GL_PROGRAM_POINT_SIZE);
         glDrawArrays(GL_POINTS, ivbase, inum);
         GL_ERRORCHECK();
         break;

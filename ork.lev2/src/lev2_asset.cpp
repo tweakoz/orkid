@@ -91,40 +91,41 @@ void XgmModelAsset::describeX(class_t* clazz) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-class StaticTexFileLoader : public FileAssetLoader {
-public:
-  StaticTexFileLoader()
-      : FileAssetLoader(TextureAsset::GetClassStatic()) {
-    auto datactx = FileEnv::contextForUriProto("data://");
-    auto lev2ctx = FileEnv::contextForUriProto("lev2://");
-    addLocation(datactx, ".vds");
-    addLocation(datactx, ".qtz");
-    addLocation(datactx, ".dds");
-    addLocation(datactx, ".png");
-    addLocation(lev2ctx, ".dds");
-  }
+StaticTexFileLoader::StaticTexFileLoader()
+    : FileAssetLoader(TextureAsset::GetClassStatic()) {
+  initLoadersForUriProto("data://");
+  initLoadersForUriProto("lev2://");
+}
 
-  asset_ptr_t _doLoadAsset(AssetPath assetpath, vars_constptr_t vars) {
-    auto texture_asset = std::make_shared<TextureAsset>();
-    if (vars) {
-      texture_asset->_varmap               = vars;
-      texture_asset->GetTexture()->_varmap = *vars;
-      // if (vars->hasKey("postproc"))
-      // printf("texasset<%p:%s> has postproc\n", texture_asset.get(), assetpath.c_str());
-    }
-    // OrkAssert(false == texture_asset->GetTexture()->_varmap.hasKey("preproc"));
-    auto context = lev2::contextForCurrentThread();
-
-    auto txi = context->TXI();
-    bool bOK = txi->LoadTexture(assetpath, texture_asset->GetTexture());
-    OrkAssert(bOK);
-    return texture_asset;
+asset_ptr_t StaticTexFileLoader::_doLoadAsset(AssetPath assetpath, vars_constptr_t vars) {
+  auto texture_asset = std::make_shared<TextureAsset>();
+  if (vars) {
+    texture_asset->_varmap               = vars;
+    texture_asset->GetTexture()->_varmap = *vars;
+    // if (vars->hasKey("postproc"))
+    // printf("texasset<%p:%s> has postproc\n", texture_asset.get(), assetpath.c_str());
   }
+  // OrkAssert(false == texture_asset->GetTexture()->_varmap.hasKey("preproc"));
+  auto context = lev2::contextForCurrentThread();
 
-  void destroy(asset_ptr_t asset) {
-    auto texture_asset = std::dynamic_pointer_cast<TextureAsset>(asset);
-  }
-};
+  auto txi = context->TXI();
+  bool bOK = txi->LoadTexture(assetpath, texture_asset->GetTexture());
+  OrkAssert(bOK);
+  return texture_asset;
+}
+
+void StaticTexFileLoader::destroy(asset_ptr_t asset) {
+  auto texture_asset = std::dynamic_pointer_cast<TextureAsset>(asset);
+}
+
+void StaticTexFileLoader::initLoadersForUriProto(const std::string& uriproto){
+  auto ctx = FileEnv::contextForUriProto(uriproto);
+  addLocation(ctx, ".vds");
+  addLocation(ctx, ".qtz");
+  addLocation(ctx, ".dds");
+  addLocation(ctx, ".png");
+  addLocation(ctx, ".dds");
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
