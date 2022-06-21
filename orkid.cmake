@@ -5,13 +5,6 @@ project (Orkid)
 ################################################################################
 
 set(CMAKE_CXX_STANDARD 20)
-IF(${APPLE})
-ELSE()
-  # Linux/Arm64 does not yet support CPP20 fully...
-  IF( "${ARCHITECTURE}" STREQUAL "AARCH64" )
-    set(CMAKE_CXX_STANDARD 17)
-  ENDIF()
-ENDIF()
 
 set(CMAKE_CXX_STANDARD_REQUIRED on)
 
