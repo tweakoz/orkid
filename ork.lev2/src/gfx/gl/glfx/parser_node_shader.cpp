@@ -33,11 +33,14 @@ void ShaderNode::_generate2Common(shaderbuilder::BackEnd& backend) const {
   codegen.flush();
 
 ////////////////////////////////////////////////////
-#if defined(__APPLE__)
-  codegen.formatLine("#version 410 core");
-#else
+#if defined(OPENGL_46)
   codegen.formatLine("#version 460 core");
+#elif defined(OPENGL_41)
+  codegen.formatLine("#version 410 core");
+#elif defined(OPENGL_40)
+  codegen.formatLine("#version 400 core");
 #endif
+
   ////////////////////////////////////////////////////
 
   pshader->mName = _name;

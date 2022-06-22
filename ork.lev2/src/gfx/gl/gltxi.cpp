@@ -57,7 +57,7 @@ void GlTextureInterface::bindTextureToUnit(const Texture* tex, GLenum tex_target
     //  GL texture referencing the external memory...
     /////////////////////////////////////////////////////////////
 
-#if defined(LINUX)
+#if defined(LINUX) and defined(OPENGL_46)
     auto ipcdata = tex->_external_memory;
     if (ipcdata) {
 
@@ -240,7 +240,7 @@ pboptr_t PboSet::alloc() {
       GL_ERRORCHECK();
       glBindBuffer(GL_PIXEL_UNPACK_BUFFER, new_pbo->_handle);
       GL_ERRORCHECK();
-#if defined(LINUX)
+#if defined(OPENGL_46)
       u32 create_flags = GL_MAP_WRITE_BIT;
       create_flags |= GL_MAP_PERSISTENT_BIT;
       create_flags |= GL_MAP_COHERENT_BIT;
@@ -401,9 +401,9 @@ void GlTextureInterface::ApplySamplingMode(Texture* ptex) {
 
       // printf( "linmiplin inummips<%d>\n", inummips );
 
-#if defined(__APPLE__)
+#if defined(OPENGL_41)
       glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 16.0f);
-#else
+#elif defined(OPENGL_46)
       glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, 16.0f);
 #endif
     }
@@ -455,18 +455,7 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   ///////////////////////////////////
 
-#if defined(__APPLE__)
-  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboitem->_handle);
-  GL_ERRORCHECK();
-  u32 map_flags = GL_MAP_WRITE_BIT;
-  map_flags |= GL_MAP_INVALIDATE_BUFFER_BIT;
-  map_flags |= GL_MAP_INVALIDATE_RANGE_BIT;
-  map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
-  void* mapped = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, length, map_flags);
-  memcpy_fast(mapped, tid._data, length);
-  glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-  GL_ERRORCHECK();
-#else
+#if defined(OPENGL_46)
   auto mapped = pboitem->_mapped;
   size_t pbolen = pboitem->_length;
   //printf("UPDATE IMAGE UNC mapped<%p> pbolen<%zu> from<%p>\n", mapped, pbolen, tid._data );
@@ -479,6 +468,17 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   for( int i=0; i<length; i++)
     dest[i] = src[i];
 
+#else
+  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboitem->_handle);
+  GL_ERRORCHECK();
+  u32 map_flags = GL_MAP_WRITE_BIT;
+  map_flags |= GL_MAP_INVALIDATE_BUFFER_BIT;
+  map_flags |= GL_MAP_INVALIDATE_RANGE_BIT;
+  map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
+  void* mapped = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, length, map_flags);
+  memcpy_fast(mapped, tid._data, length);
+  glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+  GL_ERRORCHECK();
 #endif
 
   //printf("UPDATE IMAGE UNC iw<%d> ih<%d> id<%d> length<%zu> pbo<%d> mem<%p>\n", tid._w, tid._h, tid._d, length, pboitem->_handle, mapped);

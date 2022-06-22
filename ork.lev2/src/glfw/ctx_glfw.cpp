@@ -653,11 +653,15 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
 
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
     glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 4 );
-#if defined(__APPLE__)
-    glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 1 );
-#else 
+
+#if defined(OPENGL_46)
     glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 6 );
+#elif defined(OPENGL_41)
+    glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 1 );
+#elif defined(OPENGL_40)
+    glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 0 );
 #endif
+
     glfwWindowHint( GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE );
     glfwWindowHint( GLFW_CLIENT_API, GLFW_OPENGL_API );
     glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );

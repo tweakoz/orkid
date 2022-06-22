@@ -9,6 +9,13 @@
 
 #if defined(ORK_ARCHITECTURE_X86_64)
 //#define ENABLE_IGL
+  #if defined(LINUX)
+    #define OPENGL_46
+  #else
+    #define OPENGL_41
+  #endif
+#else
+  #define OPENGL_40
 #endif
 
 #if defined(LINUX) and defined(ORK_ARCHITECTURE_X86_64)
