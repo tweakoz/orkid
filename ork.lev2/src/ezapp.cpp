@@ -89,10 +89,12 @@ orkezapp_ptr_t OrkEzApp::create(appinitdata_ptr_t initdata) {
   if (initdata->_imgui) {
     auto ezwin = ezapp->_mainWindow;
     ImGui_ImplGlfw_InitForOpenGL(ezwin->_ctqt->_glfwWindow, true);
-    #if defined(__APPLE__)
-    ImGui_ImplOpenGL3_Init("#version 410 core");
-    #else 
+    #if defined(OPENGL_460)
     ImGui_ImplOpenGL3_Init("#version 460 core");
+    #elif defined(OPENGL_410)
+    ImGui_ImplOpenGL3_Init("#version 410 core");
+    #else
+    ImGui_ImplOpenGL3_Init("#version 400 core");
     #endif
   }
   return ezapp;

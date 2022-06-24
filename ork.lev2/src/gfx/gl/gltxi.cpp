@@ -494,6 +494,9 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     if (ptex->_debugName.length()) {
       mTargetGL.debugLabel(GL_TEXTURE, pTEXOBJ->mObject, ptex->_debugName);
     }
+
+    ptex->_varmap.makeValueForKey<GLuint>("gltexobj") = pTEXOBJ->mObject;
+
   } else {
     pTEXOBJ = (GLTextureObject*)ptex->_internalHandle;
     glBindTexture(texture_target, pTEXOBJ->mObject);
@@ -538,6 +541,19 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       type           = GL_FLOAT;
       break;
     }
+    case EBufferFormat::R16: {
+      internalformat = GL_R16UI;
+      format         = GL_RED_INTEGER;
+      type           = GL_UNSIGNED_SHORT;
+      break;
+    }
+    case EBufferFormat::R8: {
+      internalformat = GL_R8;
+      format         = GL_RED;
+      type           = GL_UNSIGNED_BYTE;
+      break;
+    }
+
     default:
       OrkAssert(false);
       break;

@@ -74,6 +74,8 @@ enum ETextureType {
 
 ///////////////////////////////////////////////////////////////////////////////
 enum struct EBufferFormat : crc_enum_t {
+  CrcEnum(R8),
+  CrcEnum(R16),
   CrcEnum(RGB8),
   CrcEnum(RGBA8),
   CrcEnum(RG16F),

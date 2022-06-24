@@ -13,7 +13,7 @@ float filteredGrid( vec2 p, vec2 dpdx, vec2 dpdy, float width )
 {
 	vec2 pp = p + vec2(width,width)*0.5;
 
-    const float N = 1.0/width;
+    float N = 1.0/width;
     vec2 w = max(abs(dpdx), abs(dpdy));
     vec2 a = pp + 0.5*w;                        
     vec2 b = pp - 0.5*w;           

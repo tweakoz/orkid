@@ -23,9 +23,17 @@ size_t TextureInitData::computeSize() const {
   size_t length = _w * _h * _d;
   switch (_format) {
 
+    case EBufferFormat::R8:
+      length *= 1;
+      break;
+
 
     case EBufferFormat::RGB8:
       length *= 3;
+      break;
+
+    case EBufferFormat::R16:
+      length *= 2;
       break;
 
     case EBufferFormat::R32F:
