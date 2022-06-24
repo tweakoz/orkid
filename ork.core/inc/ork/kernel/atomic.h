@@ -17,4 +17,4 @@
 namespace ork
 {
 	template <typename T> using atomic = std::atomic<T>;
-};
+}
