@@ -200,7 +200,7 @@ template <size_t ksize> struct MessagePacket : public MessagePacketBase
     template <typename T> void read( T& outp, iter_t& it ) const
     {
         static_assert(std::is_trivially_copyable<T>::value,"can only read is_trivially_copyable's from a NetworkMessage!");
-        int ilen = sizeof(T);
+        size_t ilen = sizeof(T);
         assert( (it.mireadIndex+ilen)<=kmaxsize );
         readDataInternal((void*)&outp,ilen,it);
     }
