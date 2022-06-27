@@ -121,6 +121,7 @@ struct RenderContextFrameData {
   usermap_t _userProperties;
   Context* const _target = nullptr;
   const IRenderer* _renderer;
+  uint64_t _renderingmodel = 0;
 };
 
 typedef std::function<void(RenderContextFrameData&)> PreRenderCallback_t;

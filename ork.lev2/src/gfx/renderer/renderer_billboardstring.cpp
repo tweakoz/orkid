@@ -61,7 +61,7 @@ void BillboardStringDrawable::enqueueToRenderQueue(const DrawableBufItem& item, 
   cb_renderable.SetRenderCallback(_rendercb);
   cb_renderable.SetSortKey(0x7fff);
   cb_renderable._drawDataA.set<std::string>(_currentString);
-  cb_renderable.SetModColor(renderer->GetTarget()->RefModColor());  
+  cb_renderable.SetModColor(renderer->GetTarget()->RefModColor());
 }
 ///////////////////////////////////////////////////////////////////////////////
 BillboardStringDrawable::BillboardStringDrawable()
@@ -99,7 +99,9 @@ BillboardStringDrawable::BillboardStringDrawable()
     context->PushModColor(fcolor4::Yellow());
     FontMan::PushFont("i14");
     auto font = FontMan::currentFont();
-    font->_use_deferred = true;
+
+    font->_use_deferred = not (RCFD->_renderingmodel=="FORWARD"_crcu);
+
     FontMan::beginTextBlock(context);
     FontMan::DrawText(context, 0, 0, current_string.c_str());
     FontMan::endTextBlock(context);

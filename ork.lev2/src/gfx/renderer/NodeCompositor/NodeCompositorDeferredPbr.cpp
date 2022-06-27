@@ -137,6 +137,7 @@ struct PbrNodeImpl {
     RCFD.setUserProperty("rtg_gbuffer"_crc,_context._rtgGbuffer);
     RCFD.setUserProperty("rtb_gbuffer"_crc,_context._rtbGbuffer);
     RCFD.setUserProperty("rtb_accum"_crc,_context._rtbLightAccum );
+    RCFD._renderingmodel = node->_renderingmodel;
     //////////////////////////////////////////////////////
     _context.renderUpdate(drawdata);
     auto VD = drawdata.computeViewData();
@@ -284,6 +285,7 @@ struct PbrNodeImpl {
 
 ///////////////////////////////////////////////////////////////////////////////
 DeferredCompositingNodePbr::DeferredCompositingNodePbr() {
+  _renderingmodel = "DPBR"_crcu;
   _impl           = std::make_shared<PbrNodeImpl>(this);
   _texAssetVarMap = std::make_shared<asset::vars_t>();
   ///////////////////////////////////////////////////////////////

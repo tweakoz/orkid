@@ -192,6 +192,8 @@ using fxshaderasset_constptr_t = std::shared_ptr<const FxShaderAsset>;
 
 using rtgroup_ptr_t  = std::shared_ptr<RtGroup>;
 using rtbuffer_ptr_t = std::shared_ptr<RtBuffer>;
+struct FreestyleMaterial;
+using freestyle_mtl_ptr_t = std::shared_ptr<FreestyleMaterial>;
 
 ///////////////////////////////////////////////////////////////////////////////
 using CameraDataLut     = fixedlut<std::string, const CameraData*, 16>;

@@ -107,6 +107,9 @@ void GfxMaterial3DSolid::gpuInit(ork::lev2::Context* pTarg) {
     hTekTexModColor    = fxi->technique(_shader, "texmodcolor");
     hTekTexTexModColor = fxi->technique(_shader, "textexmodcolor");
     hTekTexVertexColor = fxi->technique(_shader, "texvtxcolor");
+    hTekObjNormal = fxi->technique(_shader, "tek_objnormal");
+    hTekWldNormal = fxi->technique(_shader, "tek_wldnormal");
+
   }
 
   hTekPick = fxi->technique(_shader, "tek_pick");
@@ -187,6 +190,12 @@ int GfxMaterial3DSolid::BeginBlock(Context* pTarg, const RenderContextInstData& 
         break;
       case EMODE_TEXVERTEX_COLOR:
         return pTarg->FXI()->BeginBlock(hTekTexVertexColor, RCID);
+        break;
+      case EMODE_WNORMAL_COLOR:
+        return pTarg->FXI()->BeginBlock(hTekWldNormal, RCID);
+        break;
+      case EMODE_ONORMAL_COLOR:
+        return pTarg->FXI()->BeginBlock(hTekObjNormal, RCID);
         break;
       case EMODE_USER:
         return pTarg->FXI()->BeginBlock(is_stereo ? hTekUserStereo : hTekUser, RCID);

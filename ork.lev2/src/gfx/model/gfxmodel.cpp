@@ -14,6 +14,7 @@
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/kernel/string/deco.inl>
 #include <ork/lev2/gfx/material_pbr.inl>
+#include <ork/lev2/gfx/material_freestyle.h>
 
 template class ork::orklut<ork::PoolString, ork::lev2::XgmMesh*>;
 int eggtestcount = 0;
@@ -261,6 +262,18 @@ void XgmModel::RenderRigid(
   OrkAssert(imat < inumclusset);
   material_ptr_t pmat = XgmClusSet.GetMaterial();
 
+  if(RCFD->_renderingmodel=="FORWARD"_crcu){
+    // todo - use forward version of model assets shader
+    static material_ptr_t fmtl;
+    if(fmtl==nullptr){
+      auto nmtl = std::make_shared<GfxMaterial3DSolid>(pTARG);
+      nmtl->SetColorMode(GfxMaterial3DSolid::EMODE_ONORMAL_COLOR);
+      //fmtl->gpuInit(pTARG,"orkshader://solid");
+      fmtl = nmtl;
+    }
+    pmat = fmtl;
+  }
+
   pTARG->debugPushGroup(FormatString(
       "XgmModel::RenderRigid stereo1pass<%d> inummesh<%d> inumclusset<%d> imat<%d>",
       int(stereo1pass),
@@ -307,7 +320,7 @@ void XgmModel::RenderRigid(
       static bool gbDRAW                 = false;
       static bool gbGROUPENABLED         = false;
       static RenderGroupState gLASTSTATE = ork::lev2::RenderGroupState::NONE;
-
+      if(1)
       switch (rgs) {
         /////////////////////////////////////////////////////
         case ork::lev2::RenderGroupState::NONE: {

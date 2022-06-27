@@ -55,6 +55,7 @@ struct IMPL {
   void _render(ForwardCompositingNode* node, CompositorDrawData& drawdata) {
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();
+    RCFD._renderingmodel = node->_renderingmodel;
     auto targ                    = RCFD.GetTarget();
     auto CIMPL                   = drawdata._cimpl;
     auto FBI                     = targ->FBI();
@@ -124,6 +125,8 @@ struct IMPL {
 ///////////////////////////////////////////////////////////////////////////////
 ForwardCompositingNode::ForwardCompositingNode() {
   _impl = std::make_shared<forwardnode::IMPL>();
+  _renderingmodel = "FORWARD"_crcu;
+  _clearColor = fvec4(0,0,0,1);
 }
 ///////////////////////////////////////////////////////////////////////////////
 ForwardCompositingNode::~ForwardCompositingNode() {
