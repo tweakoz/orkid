@@ -444,9 +444,11 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras) {
     auto drawable              = item._idrawable;
 
 
+    #if 0 // TODO fix
     drawable->_onrenderable = [=](lev2::IRenderable* renderable){
-      //renderable->_modColor = n->_modcolor;
+      renderable->_modColor = n->_modcolor;
     };
+    #endif
 
     static const DrawQueueXfData xfdata;
     drawable->enqueueOnLayer(xfdata, *drawable_layer);
@@ -456,12 +458,14 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras) {
 
   for (auto item : _nodes2draw) {
     auto& drawable_layer = item._layer;
-    auto& n              = item._drwnode;
+    auto n              = item._drwnode;
 
 
+    #if 0 // TODO fix
     n->_drawable->_onrenderable = [n](lev2::IRenderable* renderable){
       renderable->_modColor = n->_modcolor;
     };
+    #endif
 
     n->_drawable->enqueueOnLayer(n->_dqxfdata, *drawable_layer);
   }
