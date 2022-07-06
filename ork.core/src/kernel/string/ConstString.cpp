@@ -123,8 +123,8 @@ bool ConstString::operator>(const ConstString& other) const {
   return PieceString(*this) > other;
 }
 
-//bool ConstString::operator!=(const PieceString& other) const {
-  //return PieceString(*this) != other;
-//}
+bool ConstString::operator!=(const PieceString& other) const {
+  return PieceString(*this) != other;
+}
 
 } // namespace ork

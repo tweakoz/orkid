@@ -56,7 +56,7 @@ public:
 	bool operator >=(const ConstString &other) const;
 	bool operator < (const ConstString &other) const;
 	bool operator > (const ConstString &other) const;
-	//bool operator !=(const PieceString &other) const;
+	bool operator !=(const PieceString &other) const;
 private:
 	const char *mpString;
 	size_type mLength;
