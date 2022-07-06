@@ -259,6 +259,7 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     outRTG = try_rtgroup.value();
   }
 
+  bool is_pbr_node = false;
 
   if (preset == "PBR") {
     _compositorPreset = _compositorData->presetPBR(outRTG);
@@ -270,47 +271,52 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
         outpnode->setSuperSample(try_supersample.value());
       }
     }
+    is_pbr_node = true;
 
-  } else if (preset == "PBRVR")
+  } else if (preset == "PBRVR") {
     _compositorPreset = _compositorData->presetPBRVR();
-  else {
+    is_pbr_node = true;
+  } else if (preset == "USER"){
+    _compositorData = params->typedValueForKey<compositordata_ptr_t>("compositordata").value();
+  } else {
     throw std::runtime_error("unknown compositor preset type");
   }
   //////////////////////////////////////////////
 
-  auto pbrnode = (deferrednode::DeferredCompositingNodePbr*)_compositorPreset._rendernode;
+  if(is_pbr_node){
+      auto pbrnode = (deferrednode::DeferredCompositingNodePbr*)_compositorPreset._rendernode;
 
-  if (auto try_bgtex = params->typedValueForKey<std::string>("backgroundTexPathStr")) {
-    auto texture_path        = try_bgtex.value();
-    auto assetVars           = pbrnode->_texAssetVarMap;
-    auto enviromentmap_asset = asset::AssetManager<lev2::TextureAsset>::load(texture_path, assetVars);
-    OrkAssert(enviromentmap_asset->GetTexture() != nullptr);
-    OrkAssert(enviromentmap_asset->_varmap->hasKey("postproc"));
-    pbrnode->_writeEnvTexture(enviromentmap_asset);
-  }
+      if (auto try_bgtex = params->typedValueForKey<std::string>("backgroundTexPathStr")) {
+        auto texture_path        = try_bgtex.value();
+        auto assetVars           = pbrnode->_texAssetVarMap;
+        auto enviromentmap_asset = asset::AssetManager<lev2::TextureAsset>::load(texture_path, assetVars);
+        OrkAssert(enviromentmap_asset->GetTexture() != nullptr);
+        OrkAssert(enviromentmap_asset->_varmap->hasKey("postproc"));
+        pbrnode->_writeEnvTexture(enviromentmap_asset);
+      }
 
-  if (auto try_envintensity = params->typedValueForKey<float>("EnvironmentIntensity")) {
-    pbrnode->_environmentIntensity = try_envintensity.value();
+      if (auto try_envintensity = params->typedValueForKey<float>("EnvironmentIntensity")) {
+        pbrnode->_environmentIntensity = try_envintensity.value();
+      }
+      if (auto try_diffuseLevel = params->typedValueForKey<float>("DiffuseIntensity")) {
+        pbrnode->_diffuseLevel = try_diffuseLevel.value();
+      }
+      if (auto try_ambientLevel = params->typedValueForKey<float>("AmbientIntensity")) {
+        pbrnode->_ambientLevel = try_ambientLevel.value();
+      }
+      if (auto try_skyboxLevel = params->typedValueForKey<float>("SkyboxIntensity")) {
+        pbrnode->_skyboxLevel = try_skyboxLevel.value();
+      }
+      if (auto try_specularLevel = params->typedValueForKey<float>("SpecularIntensity")) {
+        pbrnode->_specularLevel = try_specularLevel.value();
+      }
+      if (auto try_DepthFogDistance = params->typedValueForKey<float>("DepthFogDistance")) {
+        pbrnode->_depthFogDistance = try_DepthFogDistance.value();
+      }
+      if (auto try_DepthFogPower = params->typedValueForKey<float>("DepthFogPower")) {
+        pbrnode->_depthFogPower = try_DepthFogPower.value();
+      }
   }
-  if (auto try_diffuseLevel = params->typedValueForKey<float>("DiffuseIntensity")) {
-    pbrnode->_diffuseLevel = try_diffuseLevel.value();
-  }
-  if (auto try_ambientLevel = params->typedValueForKey<float>("AmbientIntensity")) {
-    pbrnode->_ambientLevel = try_ambientLevel.value();
-  }
-  if (auto try_skyboxLevel = params->typedValueForKey<float>("SkyboxIntensity")) {
-    pbrnode->_skyboxLevel = try_skyboxLevel.value();
-  }
-  if (auto try_specularLevel = params->typedValueForKey<float>("SpecularIntensity")) {
-    pbrnode->_specularLevel = try_specularLevel.value();
-  }
-  if (auto try_DepthFogDistance = params->typedValueForKey<float>("DepthFogDistance")) {
-    pbrnode->_depthFogDistance = try_DepthFogDistance.value();
-  }
-  if (auto try_DepthFogPower = params->typedValueForKey<float>("DepthFogPower")) {
-    pbrnode->_depthFogPower = try_DepthFogPower.value();
-  }
-
   //////////////////////////////////////////////
 
   _compositorData->mbEnable = true;
@@ -322,6 +328,7 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
   //_outputNode = _compostorTechnique->tryOutputNodeAs<VrCompositingNode>();
   // throw std::runtime_error("unknown compositor outputnode type");
   // outpnode->setSuperSample(4);
+
 
   auto rendnodePBR = _compostorTechnique->tryRenderNodeAs<lev2::deferrednode::DeferredCompositingNodePbr>();
   if (rendnodePBR) {

@@ -38,7 +38,7 @@ public:
 		return *sSingleton;
 	}
 
-	NoRttiSingleton<TClass>()
+	NoRttiSingleton()
 	{
 		//OrkAssertI(!sSingleton, "Singleton class is already instantiated") ;
 		//U32 offset = (U32)(TClass *)1 - (U32)(NoRttiSingleton <TClass> *)(TClass *)1 ;

@@ -67,6 +67,8 @@ public:
   enum EColorMode {
     EMODE_VERTEXMOD_COLOR = 0,
     EMODE_VERTEX_COLOR,
+    EMODE_ONORMAL_COLOR,
+    EMODE_WNORMAL_COLOR,
     EMODE_TEX_COLOR,
     EMODE_TEXMOD_COLOR,
     EMODE_TEXTEXMOD_COLOR,
@@ -159,6 +161,8 @@ protected:
   const FxShaderTechnique* hTekVertexColor    = nullptr;
   const FxShaderTechnique* hTekVertexModColor = nullptr;
   const FxShaderTechnique* hTekModColor       = nullptr;
+  const FxShaderTechnique* hTekObjNormal      = nullptr;
+  const FxShaderTechnique* hTekWldNormal      = nullptr;
   const FxShaderTechnique* hTekPick           = nullptr;
 
   const FxShaderParam* hMatM            = nullptr;

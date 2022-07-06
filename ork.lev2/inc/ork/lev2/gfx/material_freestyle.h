@@ -14,8 +14,6 @@
 
 namespace ork::lev2 {
 
-struct FreestyleMaterial;
-using freestyle_mtl_ptr_t = std::shared_ptr<FreestyleMaterial>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

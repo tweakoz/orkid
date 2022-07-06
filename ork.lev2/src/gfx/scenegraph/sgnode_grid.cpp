@@ -1,5 +1,6 @@
 #include <ork/lev2/gfx/scenegraph/sgnode_grid.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
+#include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/gfx/material_pbr.inl>
 ///////////////////////////////////////////////////////////////////////////////
@@ -44,15 +45,19 @@ struct GridRenderImpl {
     _colortexture = texasset->GetTexture();
     OrkAssert(_colortexture);
 
-    auto material       = new PBRMaterial();
-    material->_shaderpath = "orkshader://pbr_grid";
-    material->_texColor = _colortexture;
-    //_material->_enablePick         = true;
-    material->gpuInit(ctx);
-    material->_metallicFactor  = 0.0f;
-    material->_roughnessFactor = 1.0f;
-    material->_baseColor       = fvec3(1, 1, 1);
-    _material                  = material;
+    _pbrmaterial       = new PBRMaterial();
+    _pbrmaterial->_shaderpath = "orkshader://grid";
+    _pbrmaterial->_texColor = _colortexture;
+    //_pbrmaterial->_enablePick         = true;
+    _pbrmaterial->gpuInit(ctx);
+    _pbrmaterial->_metallicFactor  = 0.0f;
+    _pbrmaterial->_roughnessFactor = 1.0f;
+    _pbrmaterial->_baseColor       = fvec3(1, 1, 1);
+
+    _fwdmaterial = new FreestyleMaterial;
+    _fwdmaterial->gpuInit(ctx, "orkshader://grid");
+    _tekFWGRID = _fwdmaterial->technique("fwd_grid");
+    _parMatFWMVP = _fwdmaterial->param("mvp");
     _initted                   = true;
   }
   void _render(const RenderContextInstData& RCID){
@@ -70,10 +75,10 @@ struct GridRenderImpl {
     bool isPickState = context->FBI()->isPickState();
 
     const RenderContextFrameData* RCFD = RCID._RCFD;
+
+    bool is_forward = (RCFD->_renderingmodel=="FORWARD"_crcu);
+
     const auto& CPD  = RCFD->topCPD();
-    auto cammatrices = CPD.cameraMatrices();
-    const auto& FRUS = cammatrices->GetFrustum();
-    bool stereo1pass = CPD.isStereoOnePass();
 
     float extent = data._extent;
     fvec3 topl(-extent, 0, -extent);
@@ -119,7 +124,27 @@ struct GridRenderImpl {
       modcolor.setRGBAU64(uint64_t(0xffffffffffffffff));
     }
     context->PushModColor(modcolor);
-    gbi->DrawPrimitive(this->_material, vw, PrimitiveType::TRIANGLES, 6);
+
+    if( is_forward ){
+
+      auto cammatrices = CPD.cameraMatrices();
+      const fmtx4& PMTX_mono = cammatrices->_pmatrix;
+      const fmtx4& VMTX_mono = cammatrices->_vmatrix;
+      auto MVP               = VMTX_mono * PMTX_mono;
+
+      _fwdmaterial->_rasterstate.SetBlending(Blending::ALPHA_ADDITIVE);
+      _fwdmaterial->_rasterstate.SetDepthTest(EDepthTest::EDEPTHTEST_OFF);
+      _fwdmaterial->_rasterstate.SetZWriteMask(false);
+      _fwdmaterial->begin(_tekFWGRID,*RCFD);
+      _fwdmaterial->bindParamMatrix(_parMatFWMVP, MVP);
+      gbi->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES, 6);
+      _fwdmaterial->end(*RCFD);
+
+    }
+    else{
+      gbi->DrawPrimitive(_pbrmaterial, vw, PrimitiveType::TRIANGLES, 6);
+    }
+
     context->PopModColor();
     mtxi->PopMMatrix();
   }
@@ -128,7 +153,11 @@ struct GridRenderImpl {
     renderable->GetDrawableDataA().getShared<GridRenderImpl>()->_render(RCID);
   }
   GridDrawableInst* _gridinst;
-  PBRMaterial* _material;
+  PBRMaterial* _pbrmaterial;
+  FreestyleMaterial* _fwdmaterial;
+  const FxShaderTechnique* _tekFWGRID = nullptr;
+  const FxShaderParam* _parMatFWMVP = nullptr;
+
   texture_ptr_t _colortexture;
   bool _initted = false;
 

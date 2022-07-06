@@ -60,6 +60,8 @@ public:
     return nullptr;
   }
 
+  uint64_t _renderingmodel = 0;
+
 private:
   virtual void doGpuInit(lev2::Context* pTARG, int w, int h) = 0;
   virtual void DoRender(CompositorDrawData& drawdata)        = 0;
