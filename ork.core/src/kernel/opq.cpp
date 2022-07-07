@@ -597,7 +597,7 @@ opq_ptr_t concurrentQueue() {
       numthreads = 4;
       break;
     case 6:
-      numthreads = 3;
+      numthreads = 12;
       break;
     case 4:
       numthreads = 2;
