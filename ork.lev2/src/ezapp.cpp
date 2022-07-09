@@ -69,6 +69,22 @@ orkezapp_ptr_t OrkEzApp::create(appinitdata_ptr_t initdata) {
     imgui::initModule(initdata);
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
+
+    Environment env;
+    env.init_from_envp(initdata->_envp);
+    std::string home_out;
+    static file::Path imgui_ini_path;
+    if( env.get("HOME", home_out ) ) {
+      auto base = file::Path(home_out);
+      imgui_ini_path = base / FormatString(".%s-imgui.ini",initdata->_application_name.c_str());
+      printf( "imgui_ini_path<%s>\n", imgui_ini_path.c_str() );
+    }
+    else{
+      OrkAssert(false); // HOME not set ???
+    }
+
+    io.IniFilename = strdup(imgui_ini_path.c_str());
+
     // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
     // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Enable Docking
