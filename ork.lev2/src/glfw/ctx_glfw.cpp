@@ -574,6 +574,13 @@ void CtxGLFW::onResize(int W, int H) {
   _height = H;
 }
 ///////////////////////////////////////////////////////////////////////////////
+void CtxGLFW::_doEnqueueWindowResize( int w, int h ) {
+  auto op = [=](){
+    glfwSetWindowSize(_glfwWindow, w, h);
+  };
+  opq::mainSerialQueue()->enqueue(op);
+}
+///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::SlotRepaint() {
   auto lamb = [&]() {
     if (not GfxEnv::initialized())

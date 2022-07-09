@@ -58,6 +58,7 @@ struct CtxGLFW : public CTXBASE {
   void swapBuffers();
   void signalExit();
   void pollEvents();
+  void _doEnqueueWindowResize( int w, int h ) final;
 
   ui::event_constptr_t uievent() const;
   ui::event_ptr_t uievent();

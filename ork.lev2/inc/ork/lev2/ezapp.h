@@ -85,6 +85,8 @@ public:
   //void withStandardCompositorFrameRender(ui::drawevent_constptr_t drawEvent, StandardCompositorFrame& sframe);
 
 
+  void enqueueWindowResize(int w, int h);
+
   OrkEzApp& _app;
 
   bool _update_rendersync                   = false;
@@ -170,6 +172,8 @@ public:
   void enqueueOnRenderer(const void_lambda_t& l);
 
   void signalExit();
+
+  void enqueueWindowResize(int w, int h);
 
   bool isExiting() const;
 

@@ -65,6 +65,8 @@ public:
   void pushRefreshPolicy(RefreshPolicyItem policy);
   void popRefreshPolicy();
 
+  void enqueueWindowResize( int w, int h );
+
   Context* GetTarget() const;
   Window* GetWindow() const;
   void setContext(Context* ctx);
@@ -85,6 +87,8 @@ public:
   virtual fvec2 MapCoordToGlobal(const fvec2& v) const {
     return v;
   }
+  virtual void _doEnqueueWindowResize( int w, int h ) {}
+
   RefreshPolicyItem currentRefreshPolicy() const;
 
 protected:

@@ -50,6 +50,10 @@ CTXBASE::CTXBASE(Window* pwin)
   _uievent = std::make_shared<ui::Event>();
 }
 ///////////////////////////////////////////////////////////////////////////////
+void CTXBASE::enqueueWindowResize( int w, int h ){
+  _doEnqueueWindowResize(w,h);
+}
+///////////////////////////////////////////////////////////////////////////////
 bool CTXBASE::isGlobal() const {
   return (_orkwindow==nullptr);
 }

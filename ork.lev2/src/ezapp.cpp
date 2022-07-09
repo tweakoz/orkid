@@ -115,6 +115,12 @@ orkezapp_ptr_t OrkEzApp::createWithScene(varmap::varmap_ptr_t sceneparams) {
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
+void OrkEzApp::enqueueWindowResize(int w, int h){
+  if(_mainWindow){
+    _mainWindow->enqueueWindowResize(w,h);
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
 
 EzViewport::EzViewport(EzMainWin* mainwin)
     : ui::Viewport("ezviewport", 1, 1, 1, 1, fvec3(0, 0, 0), 1.0f)
@@ -498,6 +504,10 @@ EzMainWin::EzMainWin(OrkEzApp& app)
     : _app(app) {
   _execsceneparams = std::make_shared<varmap::VarMap>();
   _update_rendersync = app._initdata->_update_rendersync;
+}
+///////////////////////////////////////////////////////////////////////////////
+void EzMainWin::enqueueWindowResize(int w, int h){
+  _ctqt->enqueueWindowResize(w,h);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void EzMainWin::_updateEnqueueLockedAndReleaseFrame(DrawableBuffer* dbuf) {
