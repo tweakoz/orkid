@@ -235,6 +235,7 @@ void EzUiCam::RotBegin(const CamEvTrackData& ed) {
   // printf( "Rot: vPushNZ<%g %g %g>\n", vPushNZ.x, vPushNZ.y, vPushNZ.z );
 
   pmousepos = ork::lev2::logicalMousePos();
+
   // OrkGlobalDisableMousePointer();
 }
 
@@ -428,7 +429,7 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
       float fy   = float(esy) / _vpdim.y - 0.5f;
       float frad = sqrtf((fx * fx) + (fy * fy));
 
-      meRotMode = (frad > 0.35f) ? EROT_SCREENZ : EROT_SCREENXY;
+      //meRotMode = (frad > 0.35f) ? EROT_SCREENZ : EROT_SCREENXY;
 
       //////////////////////////////////////////////////
       // intersect ray with worlds XZ/XY/YZ planes
@@ -579,7 +580,7 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
         fvec3 RightVector;
         _curMatrices.GetPixelLengthVectors(Pos, _vpdim, UpVector, RightVector);
         float CameraFactor   = RightVector.magnitude() * 20.0f; // 20 pixels of movement
-        constexpr float kmin = 0.1f;
+        constexpr float kmin = 0.2f;
         constexpr float kmax = 20000.0f;
         mfLoc                = std::clamp(mfLoc, kmin, kmax);
         float DeltaInMeters  = float(-EV->miMWY) * CameraFactor * zmoveamt;

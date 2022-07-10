@@ -126,8 +126,8 @@ CameraMatrices CameraData::computeMatrices(float faspect) const {
   float fnear = mNear;
   float ffar  = mFar;
   ///////////////////////////////////////////////////
-  if (faper < 1.0f)
-    faper = 1.0f;
+  if (faper < 0.2f)
+    faper = 0.2f;
   if (fnear < 0.1f)
     fnear = 0.1f;
   if (ffar < 0.5f)
