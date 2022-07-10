@@ -250,12 +250,20 @@ static void _glfw_callback_cursor(GLFWwindow* window, double xoffset, double yof
 
   // InputManager::instance()->poll();
 
+
   //int ix = event->x();
   //int iy = event->y();
   //if (_HIDPI()) {
     //ix /= 2;
     //iy /= 2;
   //}
+
+#if defined(__APPLE__)
+  if (false and _macosUseHIDPI) {
+    xoffset *= 2;
+    yoffset *= 2;
+  }
+#endif
 
   uiev->miLastX = uiev->miX;
   uiev->miLastY = uiev->miY;
@@ -585,17 +593,6 @@ void CtxGLFW::SlotRepaint() {
   auto lamb = [&]() {
     if (not GfxEnv::initialized())
       return;
-
-    auto pos = ork::lev2::logicalMousePos();
-
-    msgrouter::content_t c;
-
-    float fx = (gpos.x / 1440.0) * 2.0f - 1.0f;
-    float fy = (gpos.y / 900.0) * 2.0f - 1.0f;
-
-    c.set<fvec2>(fvec2(fx, fy));
-
-    msgrouter::channel("qtmousepos")->post(c);
 
     ork::PerfMarkerPush("ork.viewport.draw.begin");
 

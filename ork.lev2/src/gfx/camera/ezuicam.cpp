@@ -152,7 +152,7 @@ void EzUiCam::draw(Context* context) const {
   ///////////////////////////////////////////////////////////////
   // printf( "CAMHUD\n" );
   float aspect = float(context->mainSurfaceWidth()) / float(context->mainSurfaceHeight());
-  _curMatrices = _camcamdata.computeMatrices(aspect);
+  //_curMatrices = _camcamdata.computeMatrices(aspect);
   auto RCFD    = context->topRenderContextFrameData();
   lev2::RenderContextInstData RCID(RCFD);
   fmtx4 worldmtx;
