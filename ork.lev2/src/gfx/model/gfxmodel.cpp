@@ -267,10 +267,26 @@ void XgmModel::RenderRigid(
     static material_ptr_t fmtl;
     if(fmtl==nullptr){
       auto nmtl = std::make_shared<GfxMaterial3DSolid>(pTARG);
-      nmtl->SetColorMode(GfxMaterial3DSolid::EMODE_ONORMAL_COLOR);
+      nmtl->SetColorMode(GfxMaterial3DSolid::EMODE_INTERNAL_COLOR);
       //fmtl->gpuInit(pTARG,"orkshader://solid");
       fmtl = nmtl;
     }
+
+    auto as_pbr = std::dynamic_pointer_cast<PBRMaterial>(pmat);
+
+    if(as_pbr){
+      auto f_as_solid = std::dynamic_pointer_cast<GfxMaterial3DSolid>(fmtl);
+      if(f_as_solid){
+        auto color = as_pbr->_baseColor;
+        f_as_solid->SetColor(color);
+
+        //f_as_solid->SetTexture(as_pbr->_asset_texcolor->GetTexture().get());
+
+      }
+
+    }
+
+
     pmat = fmtl;
   }
 
