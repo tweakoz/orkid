@@ -86,6 +86,7 @@ EzUiCam::EzUiCam()
     , tz(0.0f)
     , far_max(10000.0f)
     , near_min(0.01f)
+    , mDoZoom(false)
     , mDoRotate(false)
     , mDoDolly(false)
     , mDoPan(false) {
@@ -93,9 +94,6 @@ EzUiCam::EzUiCam()
   _camcamdata.Lookat(fvec3(0.0f, 0.0f, 0.0f), fvec3(0.0f, 0.0f, 1.0f), fvec3(0.0f, 1.0f, 0.0f));
   type_name     = "Perspective";
   instance_name = "Default";
-  leftbutton    = false;
-  middlebutton  = false;
-  rightbutton   = false;
 
   mfWorldSizeAtLocator = 150.0f;
 
@@ -180,11 +178,22 @@ static fvec2 pmousepos;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void EzUiCam::ZoomBegin(const CamEvTrackData& ed){
+   printf("ZoomBegin\n");
+}
+void EzUiCam::ZoomUpdate(const CamEvTrackData& ed){
+
+}
+void EzUiCam::ZoomEnd(){
+   printf("ZoomEnd\n");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void EzUiCam::PanBegin(const CamEvTrackData& ed) {
-  // printf("BeginPan\n");
+   printf("BeginPan\n");
   pmousepos = ork::lev2::logicalMousePos();
   // OrkGlobalDisableMousePointer();
-  mDoPan = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -202,7 +211,7 @@ void EzUiCam::PanUpdate(const CamEvTrackData& ed) {
   _curMatrices.GetPixelLengthVectors(mvCenter, _vpdim, outx, outy);
 
   float fvl = ViewLengthToWorldLength(mvCenter, 1.0f);
-  float fdx = float(esx - ipushx);
+  float fdx = -float(esx - ipushx);
   float fdy = float(esy - ipushy);
 
   mvCenter = ed.vPushCenter + (outx * fdx) + (outy * fdy);
@@ -213,46 +222,42 @@ void EzUiCam::PanUpdate(const CamEvTrackData& ed) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void EzUiCam::PanEnd() {
-  // printf("EndPan\n");
+  printf("EndPan\n");
   // QCursor::setPos(pmousepos);
   // OrkGlobalEnableMousePointer();
-  mDoPan = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void EzUiCam::RotBegin(const CamEvTrackData& ed) {
-  // printf("BeginRot\n");
+   printf("BeginRot\n");
 
   // printf( "Rot: vPushNZ<%g %g %g>\n", vPushNZ.x, vPushNZ.y, vPushNZ.z );
 
   pmousepos = ork::lev2::logicalMousePos();
   // OrkGlobalDisableMousePointer();
-  mDoRotate = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void EzUiCam::RotEnd() {
-  // printf("EndRot\n");
+   printf("EndRot\n");
   // QCursor::setPos(pmousepos);
   // OrkGlobalEnableMousePointer();
-  mDoRotate = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void EzUiCam::DollyBegin(const CamEvTrackData& ed) {
-  // printf("BeginDolly\n");
+   printf("BeginDolly\n");
   pmousepos = ork::lev2::logicalMousePos();
   // OrkGlobalDisableMousePointer();
-  mDoDolly = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void EzUiCam::DollyEnd() {
-  // printf("EndDolly\n");
+   printf("EndDolly\n");
   // QCursor::setPos(pmousepos);
   // OrkGlobalEnableMousePointer();
   mDoDolly = false;
@@ -277,9 +282,6 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
   bool isalt   = filtev.mALT;
   bool isshift = filtev.mSHIFT;
   bool ismeta  = filtev.mMETA;
-  bool isleft  = filtev.mBut0;
-  bool ismid   = filtev.mBut1;
-  bool isright = filtev.mBut2;
 
   static int ipushx = 0;
   static int ipushy = 0;
@@ -287,9 +289,9 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
 
   _vpdim = EV->_vpdim;
 
-  switch (filtev._eventcode) {
-    case EventCode::PUSH: {
+  ///////////////////////////////////////////////////////////////
 
+  auto on_begin = [&](){
       QuatCPushed = QuatC;
 
       float fx   = float(esx) / _vpdim.x - 0.5f;
@@ -314,7 +316,7 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
 
       GenerateDepthRay(pos2D, vrn, vrf, _curMatrices.GetIVPMatrix());
 
-      if (isleft || isright) {
+      if (mDoRotate or mDoPan) {
         ////////////////////////////////////////////////////////
         // calculate planes with world rotation, but current view target as origin
 
@@ -328,35 +330,25 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
       ipushx = esx;
       ipushy = esy;
 
-      leftbutton   = filtev.mBut0;
-      middlebutton = filtev.mBut1;
-      rightbutton  = filtev.mBut2;
-
-      bool filt_kpush = (filtev.mAction == "keypush");
-
-      bool do_rot = (isleft && (isalt || filt_kpush));
-      bool do_pan = (ismid && (isalt || filt_kpush));
-
-      if (do_rot) {
+      if(mDoRotate or mDoPan or mDoZoom){
         mEvTrackData.vPushCenter = mvCenter;
         mEvTrackData.ipushX      = ipushx;
         mEvTrackData.ipushY      = ipushy;
-        RotBegin(mEvTrackData);
-      } else if (do_pan) {
-        mEvTrackData.vPushCenter = mvCenter;
-        mEvTrackData.ipushX      = ipushx;
-        mEvTrackData.ipushY      = ipushy;
-        PanBegin(mEvTrackData);
       }
 
-      break;
-    }
-    case EventCode::RELEASE: {
+      if (mDoRotate)
+        RotBegin(mEvTrackData);
+      else if (mDoPan)
+        PanBegin(mEvTrackData);
+      else if (mDoZoom)
+        ZoomBegin(mEvTrackData);
+
+  };
+
+  ///////////////////////////////////////////////////////////////
+
+  auto on_end = [&](){
       CommonPostSetup();
-      // could do fall-through or maybe even but this outside of switch
-      leftbutton   = filtev.mBut0;
-      middlebutton = filtev.mBut1;
-      rightbutton  = filtev.mBut2;
 
       if (mDoDolly)
         DollyEnd();
@@ -364,14 +356,73 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
         PanEnd();
       if (mDoRotate)
         RotEnd();
+      if (mDoZoom)
+        ZoomEnd();
 
       mDoPan    = false;
       mDoDolly  = false;
       mDoRotate = false;
+      mDoZoom = false;
 
+
+  };
+
+  ///////////////////////////////////////////////////////////////
+
+  switch (filtev._eventcode) {
+
+    case EventCode::KEY_DOWN: {
+      mDoPan = false;
+      mDoZoom = false;
+      mDoDolly = false;
+      mDoRotate = false;
+
+      switch(filtev.miKeyCode){
+        case 'Z': {
+          mDoRotate = true;
+          isalt = true;
+          on_begin();
+          break;
+        }
+        case 'X': {
+          mDoPan = true;
+          on_begin();
+          break;
+        }
+        case 'C': {
+          mDoDolly = true;
+          on_begin();
+          break;
+        }
+        case 'V': {
+          mDoZoom = true;
+          on_begin();
+          break;
+        }
+        default:
+          break;
+      }
       break;
     }
-    case EventCode::MOVE: {
+    case EventCode::KEY_UP: {
+      on_end();
+      break;
+    }
+    case EventCode::PUSH: {
+      mDoRotate = filtev.mBut0;
+      mDoPan = filtev.mBut1;
+      mDoDolly = filtev.mBut2;
+      mDoZoom = false;
+      on_begin();
+      break;
+    }
+    case EventCode::RELEASE: {
+      on_end();
+      break;
+    }
+
+    case EventCode::MOVE:
+    case EventCode::DRAG: {
 
       float fx   = float(esx) / _vpdim.x - 0.5f;
       float fy   = float(esy) / _vpdim.y - 0.5f;
@@ -379,13 +430,10 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
 
       meRotMode = (frad > 0.35f) ? EROT_SCREENZ : EROT_SCREENXY;
 
-      break;
-    }
-    case EventCode::DRAG: {
       //////////////////////////////////////////////////
       // intersect ray with worlds XZ/XY/YZ planes
 
-      _manipHandler.Intersect(pos2D);
+      //_manipHandler.Intersect(pos2D);
 
       float dx = float(esx - beginx);
       float dy = float(esy - beginy);
@@ -441,10 +489,10 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
             float ang0   = rect2pol_ang(v0.x, v0.y);
             float ang1   = rect2pol_ang(v1.x, v1.y);
             float dangle = (ang1 - ang0);
-            fvec4 rotz   = fvec4(_pushNZ, dangle);
+            fvec4 rotz   = fvec4(_pushNZ, -dangle);
             fquat QuatZ;
             QuatZ.fromAxisAngle(rotz);
-            QuatC = QuatZ.multiply(QuatCPushed);
+            QuatC = QuatCPushed.multiply(QuatZ);
             // printf( "v0 <%g %g> v1<%g %g>\n", v0.x, v0.y, v1.x, v1.y );
             // printf( "ang0 <%g> ang1<%g>\n", ang0, ang1 );
             // printf( "rotz <%g %g %g %g>\n", rotz.x, rotz.y, rotz.z, rotz.w );
@@ -483,7 +531,7 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
         float fdx = float(esx - beginx);
         float fdy = float(esy - beginy);
 
-        float fdolly = (outx.magnitude() * fdx);
+        float fdolly = (outx.magnitude() * fdy);
 
         if (isshift) {
           fdolly *= 3.0f;
@@ -512,11 +560,15 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
       break;
     }
     case EventCode::MOUSEWHEEL: {
-      float zmoveamt = 0.003f;
+      mDoZoom = true;
+      float zmoveamt = 0.3f;
       if (isctrl)
         zmoveamt *= 0.2f;
       else if (isshift)
         zmoveamt *= 5.0f;
+
+
+      printf( "mw - zmoveamt<%g> isalt<%d>\n", zmoveamt,int(isalt) );
       if (isalt) {
         fvec4 Center = mvCenter;
         fvec4 Delta  = _pushNZ * zmoveamt * EV->miMWY;
@@ -533,7 +585,12 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
         float DeltaInMeters  = float(-EV->miMWY) * CameraFactor * zmoveamt;
         mfLoc += DeltaInMeters;
         mfLoc = std::clamp(mfLoc, kmin, kmax);
+              printf( "mfLoc<%g>\n", mfLoc );
+
       }
+
+      mDoZoom = false;
+
       break;
     }
     default:

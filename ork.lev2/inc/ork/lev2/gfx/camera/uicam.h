@@ -207,11 +207,11 @@ public: //
   fvec4 CamBaseLoc;
 
   int beginx, beginy;
-  int leftbutton, middlebutton, rightbutton;
 
   bool mDoRotate;
   bool mDoDolly;
   bool mDoPan;
+  bool mDoZoom;
 
   fvec3 _pushNZ, _pushNX, _pushNY;
   svar32_t _private;
@@ -231,6 +231,10 @@ public: //
   void PanBegin(const CamEvTrackData& ed);
   void PanUpdate(const CamEvTrackData& ed);
   void PanEnd();
+
+  void ZoomBegin(const CamEvTrackData& ed);
+  void ZoomUpdate(const CamEvTrackData& ed);
+  void ZoomEnd();
 
   void RotBegin(const CamEvTrackData& ed);
   void RotEnd();
