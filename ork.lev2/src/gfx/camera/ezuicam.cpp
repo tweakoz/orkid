@@ -80,7 +80,7 @@ using uicamprivate_t = std::shared_ptr<UiCamPrivate>;
 EzUiCam::EzUiCam()
     : UiCamera()
     , meRotMode(EROT_SCREENXY)
-    , aper(40.0f)
+    , aper(40*DTOR)
     , tx(0.0f)
     , ty(0.0f)
     , tz(0.0f)
