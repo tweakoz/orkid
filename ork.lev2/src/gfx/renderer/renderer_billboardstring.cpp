@@ -66,6 +66,9 @@ void BillboardStringDrawable::enqueueToRenderQueue(const DrawableBufItem& item, 
 ///////////////////////////////////////////////////////////////////////////////
 BillboardStringDrawable::BillboardStringDrawable()
     : Drawable() {
+
+      _color = fcolor4::Yellow();
+
   _rendercb = [this](lev2::RenderContextInstData& RCID){
     auto context = RCID.context();
     auto mtxi = context->MTXI();
@@ -77,26 +80,25 @@ BillboardStringDrawable::BillboardStringDrawable()
     auto worldmatrix = renderable->_worldMatrix;
     auto& current_string = renderable->_drawDataA.get<std::string>();
 
-
     auto PMatrix = cmtcs->GetPMatrix();
     auto VMatrix = cmtcs->GetVMatrix();
 
-    fmtx4 bbrotmtx;
-    bbrotmtx.createBillboard2(worldmatrix.translation(),cdata.mEye,this->_upvec);
+    fmtx4 bbrotmtx = VMatrix.inverse();
+    fmtx4 mtxflipy;
+    mtxflipy.setScale(1,-1,1);
 
-    fmtx4 bbmatrix;
 
     fvec3 offset = this->_offset;
 
     fvec3 trans = worldmatrix.translation()+offset;
-    fquat rot = fquat();
-    bbmatrix.compose(trans,rot,this->_scale);
+    fmtx4 bbmatrix;
+    bbmatrix.compose(trans,fquat(),_scale);
 
 
-    mtxi->PushMMatrix(bbrotmtx*bbmatrix);
+    mtxi->PushMMatrix((mtxflipy*bbrotmtx)*bbmatrix);
     mtxi->PushVMatrix(VMatrix);
     mtxi->PushPMatrix(PMatrix);
-    context->PushModColor(fcolor4::Yellow());
+    context->PushModColor(_color);
     FontMan::PushFont("i14");
     auto font = FontMan::currentFont();
 

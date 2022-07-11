@@ -438,6 +438,7 @@ struct BillboardStringDrawable final : public Drawable {
   fvec3 _offset;
   float _scale = 1.0f;
   fvec3 _upvec;
+  fvec4 _color;
   std::function<void(lev2::RenderContextInstData& RCID)> _rendercb;
 };
 
