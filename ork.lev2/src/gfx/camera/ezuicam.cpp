@@ -504,7 +504,7 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
           }
           case EROT_SCREENXY: {
 
-            fvec4 rotx = fvec4(_pushNX, -dy);
+            fvec4 rotx = fvec4(_pushNX, dy);
             fvec4 roty = fvec4(_pushNY, dx);
 
             fquat QuatX, QuatY;
@@ -512,8 +512,12 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
             QuatX.fromAxisAngle(rotx);
             QuatY.fromAxisAngle(roty);
 
-            QuatC = QuatY.multiply(QuatC);
-            QuatC = QuatX.multiply(QuatC);
+            //QuatC = QuatY.multiply(QuatC);
+            //QuatC = QuatX.multiply(QuatC);
+
+            QuatC = QuatC.multiply(QuatY);
+            QuatC = QuatC.multiply(QuatX);
+            //QuatC = QuatCPushed.multiply(QuatZ);
 
             break;
           }
