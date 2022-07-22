@@ -514,7 +514,7 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
           case EROT_SCREENXY: {
 
             fquat QuatX, QuatY;
-            QuatX.fromAxisAngle(fvec4(_pushNX, dy));
+            QuatX.fromAxisAngle(fvec4(_pushNX, -dy));
             QuatY.fromAxisAngle(fvec4(_pushNY, dx));
 
             if(_constrainZ){
