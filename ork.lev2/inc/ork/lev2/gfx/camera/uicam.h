@@ -105,7 +105,7 @@ public:
 
   fmtx4 mCamRot;
 
-  fquat QuatC, QuatL, QuatCPushed;
+  fquat QuatC, QuatL, QuatM, QuatCPushed;
 
   fmtx4 lookatmatrix;
   fmtx4 eyematrixROT;
@@ -212,6 +212,7 @@ public: //
   bool mDoDolly;
   bool mDoPan;
   bool mDoZoom;
+  bool _constrainZ = false;
 
   fvec3 _pushNZ, _pushNX, _pushNY;
   svar32_t _private;

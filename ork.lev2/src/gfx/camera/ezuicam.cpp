@@ -305,9 +305,16 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
 
       CommonPostSetup();
 
-      _pushNX = _camcamdata.xNormal();
-      _pushNY = _camcamdata.yNormal();
-      _pushNZ = _camcamdata.zNormal();
+      if(_constrainZ){
+        _pushNX = fvec3(1,0,0);
+        _pushNY = fvec3(0,1,0);
+        _pushNZ = fvec3(0,0,1);
+      }
+      else{
+        _pushNX = _camcamdata.xNormal();
+        _pushNY = _camcamdata.yNormal();
+        _pushNZ = _camcamdata.zNormal();
+      }
 
       // printf( "nx <%g %g %g>\n", _pushNX.x, _pushNX.y, _pushNX.z );
       // printf( "ny <%g %g %g>\n", _pushNY.x, _pushNY.y, _pushNY.z );
@@ -470,54 +477,55 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
 
         switch (meRotMode) {
           case EROT_SCREENZ: {
-            float fvpx   = _vpdim.x;
-            float fvpy   = _vpdim.y;
-            float fvpwd2 = fvpx * 0.5f;
-            float fvphd2 = fvpy * 0.5f;
-            float fipx   = float(ipushx);
-            float fipy   = float(ipushy);
-            float fesx   = float(esx);
-            float fesy   = float(esy);
 
-            float fx0 = (fipx - fvpwd2) / fvpwd2;
-            float fy0 = (fipy - fvphd2) / fvphd2;
-            float fx1 = (fesx - fvpwd2) / fvpwd2;
-            float fy1 = (fesy - fvphd2) / fvphd2;
-            fvec2 v0(fx0, fy0);
-            fvec2 v1(fx1, fy1);
-            v0.normalizeInPlace();
-            v1.normalizeInPlace();
-            float ang0   = rect2pol_ang(v0.x, v0.y);
-            float ang1   = rect2pol_ang(v1.x, v1.y);
-            float dangle = (ang1 - ang0);
-            fvec4 rotz   = fvec4(_pushNZ, -dangle);
-            fquat QuatZ;
-            QuatZ.fromAxisAngle(rotz);
-            QuatC = QuatCPushed.multiply(QuatZ);
-            // printf( "v0 <%g %g> v1<%g %g>\n", v0.x, v0.y, v1.x, v1.y );
-            // printf( "ang0 <%g> ang1<%g>\n", ang0, ang1 );
-            // printf( "rotz <%g %g %g %g>\n", rotz.x, rotz.y, rotz.z, rotz.w );
-            // printf( "QuatZ <%g %g %g %g>\n", QuatZ.x, QuatZ.y, QuatZ.z, QuatZ.w );
-            // printf( "QuatC <%g %g %g %g>\n", QuatC.x, QuatC.y, QuatC.z, QuatC.w );
+            if(not _constrainZ){
+                float fvpx   = _vpdim.x;
+                float fvpy   = _vpdim.y;
+                float fvpwd2 = fvpx * 0.5f;
+                float fvphd2 = fvpy * 0.5f;
+                float fipx   = float(ipushx);
+                float fipy   = float(ipushy);
+                float fesx   = float(esx);
+                float fesy   = float(esy);
 
+                float fx0 = (fipx - fvpwd2) / fvpwd2;
+                float fy0 = (fipy - fvphd2) / fvphd2;
+                float fx1 = (fesx - fvpwd2) / fvpwd2;
+                float fy1 = (fesy - fvphd2) / fvphd2;
+                fvec2 v0(fx0, fy0);
+                fvec2 v1(fx1, fy1);
+                v0.normalizeInPlace();
+                v1.normalizeInPlace();
+                float ang0   = rect2pol_ang(v0.x, v0.y);
+                float ang1   = rect2pol_ang(v1.x, v1.y);
+                float dangle = (ang1 - ang0);
+                fvec4 rotz   = fvec4(_pushNZ, -dangle);
+                fquat QuatZ;
+                QuatZ.fromAxisAngle(rotz);
+                QuatC = QuatCPushed.multiply(QuatZ);
+                // printf( "v0 <%g %g> v1<%g %g>\n", v0.x, v0.y, v1.x, v1.y );
+                // printf( "ang0 <%g> ang1<%g>\n", ang0, ang1 );
+                // printf( "rotz <%g %g %g %g>\n", rotz.x, rotz.y, rotz.z, rotz.w );
+                // printf( "QuatZ <%g %g %g %g>\n", QuatZ.x, QuatZ.y, QuatZ.z, QuatZ.w );
+                // printf( "QuatC <%g %g %g %g>\n", QuatC.x, QuatC.y, QuatC.z, QuatC.w );
+            }
             break;
           }
           case EROT_SCREENXY: {
 
-            fvec4 rotx = fvec4(_pushNX, dy);
-            fvec4 roty = fvec4(_pushNY, dx);
-
             fquat QuatX, QuatY;
+            QuatX.fromAxisAngle(fvec4(_pushNX, dy));
+            QuatY.fromAxisAngle(fvec4(_pushNY, dx));
 
-            QuatX.fromAxisAngle(rotx);
-            QuatY.fromAxisAngle(roty);
-
-            //QuatC = QuatY.multiply(QuatC);
-            //QuatC = QuatX.multiply(QuatC);
-
-            QuatC = QuatC.multiply(QuatY);
-            QuatC = QuatC.multiply(QuatX);
-            //QuatC = QuatCPushed.multiply(QuatZ);
+            if(_constrainZ){
+              QuatL = QuatL.multiply(QuatX);
+              QuatM = QuatM.multiply(QuatY);
+              QuatC = QuatL.multiply(QuatM);
+            }
+            else{
+              QuatC = QuatC.multiply(QuatY);
+              QuatC = QuatC.multiply(QuatX);
+            }
 
             break;
           }
