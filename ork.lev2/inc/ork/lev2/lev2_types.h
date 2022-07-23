@@ -78,6 +78,7 @@ struct CallbackDrawable;
 struct InstancedModelDrawable;
 struct ModelDrawable;
 struct BillboardStringDrawable;
+struct OverlayStringDrawable;
 struct InstancedBillboardStringDrawable;
 ///////////////////////////////////////////////////////////////////////////////
 struct DrawableBufItem;
@@ -216,6 +217,7 @@ using instanced_modeldrawable_ptr_t = std::shared_ptr<InstancedModelDrawable>;
 using model_drawable_ptr_t          = std::shared_ptr<ModelDrawable>;
 using callback_drawable_ptr_t       = std::shared_ptr<CallbackDrawable>;
 using billboard_string_drawable_ptr_t = std::shared_ptr<BillboardStringDrawable>;
+using overlay_string_drawable_ptr_t = std::shared_ptr<OverlayStringDrawable>;
 using instanced_billboard_string_drawable_ptr_t = std::shared_ptr<InstancedBillboardStringDrawable>;
 ///////////////////////////////////////////////////////////////////////////////
 using rcfd_ptr_t = std::shared_ptr<RenderContextFrameData>;

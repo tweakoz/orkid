@@ -444,6 +444,21 @@ struct BillboardStringDrawable final : public Drawable {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct OverlayStringDrawable final : public Drawable {
+
+  OverlayStringDrawable();
+  ~OverlayStringDrawable();
+  void enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const override;
+  std::string _font;
+  std::string _currentString;
+  fvec2 _position;
+  float _scale = 1.0f;
+  fvec4 _color;
+  std::function<void(lev2::RenderContextInstData& RCID)> _rendercb;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct InstancedBillboardStringDrawable final : public InstancedDrawable {
 
   InstancedBillboardStringDrawable();

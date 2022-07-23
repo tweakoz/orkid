@@ -377,10 +377,12 @@ layer_ptr_t Scene::findLayer(std::string named) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras) {
+void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras,on_enqueue_fn_t on_enqueue) {
   auto DB = _dbufcontext->acquireForWriteLocked();
   DB->Reset();
   DB->copyCameras(*cameras.get());
+
+  on_enqueue(DB);
 
   //printf( "SG<%p>::enqueueToRenderer DB<%p>\n", this, DB );
 
@@ -394,7 +396,10 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras) {
       layers.push_back(layer_item.second);
     }
   });
+
+
   auto drawable_layer = DB->MergeLayer("Default");
+
 
   ////////////////////////////////////////////////////////////////////////////
 

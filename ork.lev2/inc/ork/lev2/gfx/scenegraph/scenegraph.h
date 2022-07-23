@@ -149,12 +149,15 @@ struct Scene {
   Scene(varmap::varmap_ptr_t _initialdata);
   ~Scene();
 
+
   void initWithParams(varmap::varmap_ptr_t _initialdata);
 
   layer_ptr_t createLayer(std::string named);
   layer_ptr_t findLayer(std::string named);
 
-  void enqueueToRenderer(cameradatalut_ptr_t cameras);
+  using on_enqueue_fn_t = std::function<void(DrawableBuffer* DB)>;
+
+  void enqueueToRenderer(cameradatalut_ptr_t cameras,on_enqueue_fn_t on_enqueue=[](DrawableBuffer* DB){});
   void renderOnContext(Context* ctx);
   void renderOnContext(Context* ctx,RenderContextFrameData& RCFD);
   void renderWithStandardCompositorFrame(standardcompositorframe_ptr_t sframe);
