@@ -105,7 +105,7 @@ EzUiCam::EzUiCam()
   _pushNZ = fvec3(0,0,1);
 
   fquat QuatX, QuatY;
-  QuatX.fromAxisAngle(fvec4(_pushNX, 0));
+  QuatX.fromAxisAngle(fvec4(_pushNX, -15*DTOR));
   QuatY.fromAxisAngle(fvec4(_pushNY, 180*DTOR));
   QuatL = QuatL.multiply(QuatX);
   QuatM = QuatM.multiply(QuatY);
