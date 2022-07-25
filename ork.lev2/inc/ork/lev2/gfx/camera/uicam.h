@@ -206,7 +206,7 @@ public: //
 
   fvec4 CamBaseLoc;
 
-  int beginx, beginy;
+  int _begin_evx, _begin_evy;
 
   bool mDoRotate;
   bool mDoDolly;

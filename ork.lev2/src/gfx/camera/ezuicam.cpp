@@ -99,6 +99,18 @@ EzUiCam::EzUiCam()
 
   auto uicampriv = std::make_shared<UiCamPrivate>();
   _private.set<uicamprivate_t>(uicampriv);
+
+  _pushNX = fvec3(1,0,0);
+  _pushNY = fvec3(0,1,0);
+  _pushNZ = fvec3(0,0,1);
+
+  fquat QuatX, QuatY;
+  QuatX.fromAxisAngle(fvec4(_pushNX, 0));
+  QuatY.fromAxisAngle(fvec4(_pushNY, 180*DTOR));
+  QuatL = QuatL.multiply(QuatX);
+  QuatM = QuatM.multiply(QuatY);
+  QuatC = QuatL.multiply(QuatM);
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -269,12 +281,14 @@ void EzUiCam::DollyEnd() {
 bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
   const ui::EventCooked& filtev = EV->mFilteredEvent;
 
-  int esx    = filtev.miX;
-  int esy    = filtev.miY;
+  int evx    = filtev.miX;
+  int evy    = filtev.miY;
   float fux  = filtev.mUnitX;
   float fuy  = filtev.mUnitY;
   float fpux = (fux * 2.0f) - 1.0f;
   float fpuy = (fuy * 2.0f) - 1.0f;
+  fvec2 vpc = EV->xfToVpUnitCoord(fvec2(evx,evy));
+  float frad = sqrtf((vpc.x * vpc.x) + (vpc.y * vpc.y));
 
   fvec2 pos2D(fpux, fpuy);
 
@@ -294,10 +308,6 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
 
   auto on_begin = [&](){
       QuatCPushed = QuatC;
-
-      float fx   = float(esx) / _vpdim.x - 0.5f;
-      float fy   = float(esy) / _vpdim.y - 0.5f;
-      float frad = sqrtf((fx * fx) + (fy * fy));
 
       // printf( "fx<%g %g> frad<%g>\n", fx, fy, frad);
 
@@ -333,10 +343,10 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
       }
       //////////////////////////////////////////////////
 
-      beginx = esx;
-      beginy = esy;
-      ipushx = esx;
-      ipushy = esy;
+      _begin_evx = evx;
+      _begin_evy = evy;
+      ipushx = evx;
+      ipushy = evy;
 
       if(mDoRotate or mDoPan or mDoZoom){
         mEvTrackData.vPushCenter = mvCenter;
@@ -432,10 +442,6 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
     case EventCode::MOVE:
     case EventCode::DRAG: {
 
-      float fx   = float(esx) / _vpdim.x - 0.5f;
-      float fy   = float(esy) / _vpdim.y - 0.5f;
-      float frad = sqrtf((fx * fx) + (fy * fy));
-
       //meRotMode = (frad > 0.35f) ? EROT_SCREENZ : EROT_SCREENXY;
 
       //////////////////////////////////////////////////
@@ -443,8 +449,8 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
 
       //_manipHandler.Intersect(pos2D);
 
-      float dx = float(esx - beginx);
-      float dy = float(esy - beginy);
+      float dx = float(evx - _begin_evx);
+      float dy = float(evy - _begin_evy);
 
       // input  1 . 10 . 100
       // output .1  10 . 1000
@@ -485,13 +491,13 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
                 float fvphd2 = fvpy * 0.5f;
                 float fipx   = float(ipushx);
                 float fipy   = float(ipushy);
-                float fesx   = float(esx);
-                float fesy   = float(esy);
+                float fevx   = float(evx);
+                float fevy   = float(evy);
 
                 float fx0 = (fipx - fvpwd2) / fvpwd2;
                 float fy0 = (fipy - fvphd2) / fvphd2;
-                float fx1 = (fesx - fvpwd2) / fvpwd2;
-                float fy1 = (fesy - fvphd2) / fvphd2;
+                float fx1 = (fevx - fvpwd2) / fvpwd2;
+                float fy1 = (fevy - fvphd2) / fvphd2;
                 fvec2 v0(fx0, fy0);
                 fvec2 v1(fx1, fy1);
                 v0.normalizeInPlace();
@@ -517,6 +523,8 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
             QuatX.fromAxisAngle(fvec4(_pushNX, -dy));
             QuatY.fromAxisAngle(fvec4(_pushNY, dx));
 
+            printf( "dy <%g> dx <%g>\n", _pushNX.x, _pushNX.y, _pushNX.z );
+
             if(_constrainZ){
               QuatL = QuatL.multiply(QuatX);
               QuatM = QuatM.multiply(QuatY);
@@ -531,8 +539,8 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
           }
         }
 
-        beginx = esx;
-        beginy = esy;
+        _begin_evx = evx;
+        _begin_evy = evy;
 
       } else if (mDoDolly) {
 
@@ -541,10 +549,8 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
         _curMatrices.GetPixelLengthVectors(mvCenter, _vpdim, outx, outy);
 
         float fvl = ViewLengthToWorldLength(mvCenter, 1.0f);
-        float fdx = float(esx - beginx);
-        float fdy = float(esy - beginy);
 
-        float fdolly = (outx.magnitude() * fdy);
+        float fdolly = (outx.magnitude() * dy);
 
         if (isshift) {
           fdolly *= 3.0f;
@@ -563,11 +569,11 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
 
         mvCenter += MoveVec;
 
-        beginx = esx;
-        beginy = esy;
+        _begin_evx = evx;
+        _begin_evy = evy;
       } else if (mDoPan) {
-        mEvTrackData.icurX = esx;
-        mEvTrackData.icurY = esy;
+        mEvTrackData.icurX = evx;
+        mEvTrackData.icurY = evy;
         PanUpdate(mEvTrackData);
       }
       break;

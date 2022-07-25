@@ -117,6 +117,14 @@ struct Event final // RawEvent
     rval.y = (-(2.0f * mfUnitY - 1.0f));
     return rval;
   }
+
+  fvec2 xfToVpUnitCoord(fvec2 inp) const {
+    fvec2 rval;
+    rval.x = float(inp.x) / _vpdim.x - 0.5f;
+    rval.y = float(inp.y) / _vpdim.y - 0.5f;
+    return rval;
+  }
+
   void setvpDim(Widget* w);
   Event()
       : mvRayN(float(0.0f), float(0.0f), float(0.0f), float(0.0f))
