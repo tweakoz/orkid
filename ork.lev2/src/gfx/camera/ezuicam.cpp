@@ -318,7 +318,8 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
       if(_constrainZ){
         _pushNX = fvec3(1,0,0);
         _pushNY = fvec3(0,1,0);
-        _pushNZ = fvec3(0,0,1);
+        //_pushNZ = fvec3(0,0,1);
+        _pushNZ = _camcamdata.zNormal();
       }
       else{
         _pushNX = _camcamdata.xNormal();
