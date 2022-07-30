@@ -11,6 +11,7 @@
 
 #pragma once
 #include <memory>
+#include <unordered_map>
 #include <ork/kernel/fixedlut.h>
 #include <ork/kernel/svariant.h>
 #include <ork/util/crc.h>
@@ -31,6 +32,7 @@ struct RtGroup;
 struct RtBuffer;
 struct CameraData;
 struct CameraMatrices;
+struct CameraDataLut;
 ///////////////////////////////////////////////////////////////////////////////
 struct GfxMaterial;
 struct MaterialInstItem;
@@ -170,6 +172,7 @@ using context_ptr_t          = std::shared_ptr<Context>;
 using vtxbufferbase_ptr_t    = std::shared_ptr<VertexBufferBase>;
 using ipctexture_ptr_t       = std::shared_ptr<IpcTexture>;
 using cameradata_ptr_t       = std::shared_ptr<CameraData>;
+using cameradata_constptr_t  = std::shared_ptr<const CameraData>;
 using compositordata_ptr_t   = std::shared_ptr<CompositingData>;
 using compositorimpl_ptr_t   = std::shared_ptr<CompositingImpl>;
 using fxshader_ptr_t         = FxShader*;
@@ -197,8 +200,7 @@ struct FreestyleMaterial;
 using freestyle_mtl_ptr_t = std::shared_ptr<FreestyleMaterial>;
 
 ///////////////////////////////////////////////////////////////////////////////
-using CameraDataLut     = fixedlut<std::string, const CameraData*, 16>;
-using CameraMatricesLut = fixedlut<std::string, CameraMatrices, 16>;
+using CameraMatricesLut = std::unordered_map<std::string, CameraMatrices>;
 ///////////////////////////////////////////////////////////////////////////////
 using irenderer_ptr_t         = std::shared_ptr<IRenderer>;
 using defaultrenderer_ptr_t         = std::shared_ptr<DefaultRenderer>;
@@ -206,6 +208,8 @@ using cameradatalut_ptr_t           = std::shared_ptr<CameraDataLut>;
 using drawable_ptr_t                = std::shared_ptr<Drawable>;
 using drawablecache_ptr_t           = std::shared_ptr<DrawableCache>;
 using dbufcontext_ptr_t = std::shared_ptr<DrawBufContext>;
+using drawablebufitem_ptr_t = std::shared_ptr<DrawableBufItem>;
+using drawablebufitem_constptr_t = std::shared_ptr<const DrawableBufItem>;
 ///////////////////////////////////////////////////////////////////////////////
 using drawabledata_ptr_t            = std::shared_ptr<DrawableData>;
 using modeldrawabledata_ptr_t = std::shared_ptr<ModelDrawableData>;

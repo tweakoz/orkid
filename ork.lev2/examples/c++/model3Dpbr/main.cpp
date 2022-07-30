@@ -47,7 +47,7 @@ struct GpuResources {
 
     _camlut = std::make_shared<CameraDataLut>();
     _camdata = std::make_shared<CameraData>();
-    _camlut->AddSorted("spawncam", _camdata.get());
+    (*_camlut)["spawncam"] = _camdata;
 
     _instanced_drawable = std::make_shared<InstancedModelDrawable>();
 

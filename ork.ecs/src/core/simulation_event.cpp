@@ -173,7 +173,7 @@ bool Simulation::_onControllerRequest(const Controller::Request& request) {
                 posrec._name = item.first;
                 posrec._entref = pent->_entref;
                 posrec._archetype = pent->data()->GetArchetype();
-                posrec._xform = *(pent->transform());
+                posrec._xform = pent->transform();
                 records->push_back(posrec);
               }
               as_future.value()->Signal<entityposmap_ptr_t>(records);

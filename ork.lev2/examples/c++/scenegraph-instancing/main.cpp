@@ -63,8 +63,7 @@ int main(int argc, char** argv,char** envp) {
   //  it will never be called before onGpuInit() is complete...
   //////////////////////////////////////////////////////////
   auto cameralut = std::make_shared<CameraDataLut>();
-  auto camera    = std::make_shared<CameraData>();
-  cameralut->AddSorted("spawncam", camera.get());
+  auto camera    = cameralut->create("spawncam");
   qtapp->onUpdate([&](ui::updatedata_ptr_t updata) {
     double dt      = updata->_dt;
     double abstime = updata->_abstime;

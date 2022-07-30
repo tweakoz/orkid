@@ -89,7 +89,7 @@ public:
     return _dagnode;
   }
 
-  void setTransform(const DecompTransform& xf); // set this (Entity) matrix
+  void setTransform(decompxf_ptr_t xf); // set this (Entity) matrix
   void setTransform(const fvec3& pos, const fquat& rot, float uscale); // set this (Entity) matrix
   void setRotAxisAngle(fvec4 axisaa);                                  // set this (Entity) rotation
   void setRotation(fquat rot);                                         // set this (Entity) rotation

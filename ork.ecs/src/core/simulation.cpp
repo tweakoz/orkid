@@ -148,20 +148,8 @@ float Simulation::random(float mmin, float mmax) {
 
 
 ///////////////////////////////////////////////////////////////////////////////
-void Simulation::setCameraData(const std::string& name, const lev2::CameraData* camdat) {
-  CameraDataLut::iterator it = _cameraDataLUT.find(name);
-
-  if (it == _cameraDataLUT.end()) {
-    if (camdat != 0) {
-      _cameraDataLUT.AddSorted(name, camdat);
-    }
-  } else {
-    if (camdat == 0) {
-      _cameraDataLUT.erase(it);
-    } else {
-      it->second = camdat;
-    }
-  }
+void Simulation::setCameraData(const std::string& name, lev2::cameradata_constptr_t camdat) {
+  _cameraDataLUT[name] = camdat;
 
   lev2::UiCamera* pcam = (camdat != 0) ? camdat->getUiCamera() : 0;
 
@@ -170,9 +158,8 @@ void Simulation::setCameraData(const std::string& name, const lev2::CameraData* 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-const lev2::CameraData* Simulation::cameraData(const std::string& name) const {
-  CameraDataLut::const_iterator it = _cameraDataLUT.find(name);
-  return (it == _cameraDataLUT.end()) ? 0 : it->second;
+lev2::cameradata_constptr_t Simulation::cameraData(const std::string& name) const {
+  return _cameraDataLUT.find(name);
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::enqueueActivateDynamicEntity(const EntityActivationQueueItem& item) {
@@ -275,13 +262,14 @@ Entity* Simulation::_spawnNamedDynamicEntity(spawndata_constptr_t spawn_rec, Poo
   /////////////////////////////////////
   if(ovxf){
     newent->_override_initial_xf = ovxf;
-    (*newent->transform()) = (*ovxf);
+    newent->setTransform(ovxf);
   }
   /////////////////////////////////////
   auto arch   = spawn_rec->GetArchetype();
   arch->composeEntity(this,newent);
   arch->linkEntity(this, newent);
-  EntityActivationQueueItem qi(DecompTransform(), newent);
+  auto xform = std::make_shared<DecompTransform>();
+  EntityActivationQueueItem qi(xform, newent);
   //debugBanner(255, 0, 0, "_spawnNamedDynamicEntity<%s:%p>\n", name.c_str(), (void*) newent );
   this->enqueueActivateDynamicEntity(qi);
   mEntities[name] = newent;

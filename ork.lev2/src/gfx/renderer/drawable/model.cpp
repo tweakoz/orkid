@@ -128,7 +128,7 @@ void ModelDrawable::bindModel(model_ptr_t model) {
   SetModelInst(modelinst);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const {
+void ModelDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const {
   ork::opq::assertOnQueue2(opq::mainSerialQueue());
   auto RCFD                   = renderer->GetTarget()->topRenderContextFrameData();
   const auto& topCPD          = RCFD->topCPD();
@@ -137,7 +137,7 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
 
   // TODO - resolve frustum in case of stereo camera
 
-  const ork::fmtx4 matw         = item.mXfData._worldTransform->composed();
+  const ork::fmtx4 matw         = item->mXfData._worldTransform->composed();
   bool isPickState              = renderer->GetTarget()->FBI()->isPickState();
   bool isSkinned                = Model->isSkinned();
   ork::fvec3 center_plus_offset = mOffset + Model->boundingCenter();
@@ -252,8 +252,8 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
             renderable.SetSortKey(isortkey);
             // orkprintf( " ModelDrawable::enqueueToRenderQueue() rable<%p> \n", & renderable );
 
-            if(item._onrenderable){
-              item._onrenderable(&renderable);
+            if(item->_onrenderable){
+              item->_onrenderable(&renderable);
             }
 
             inumacc++;

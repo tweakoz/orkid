@@ -74,6 +74,31 @@ struct CameraData {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+struct CameraDataLut{
+
+
+  CameraDataLut();
+  ~CameraDataLut();
+
+  using map_t = std::unordered_map<std::string, cameradata_constptr_t>;
+
+  cameradata_ptr_t create(std::string named);
+
+  cameradata_constptr_t& operator[] (const std::string& named);
+  cameradata_constptr_t find(const std::string& named) const;
+  size_t size() const;
+  void clear();
+  map_t::iterator begin();
+  map_t::const_iterator begin() const;
+  map_t::iterator end();
+  map_t::const_iterator end() const;
+  std::atomic<int> _state;
+
+  map_t _lut;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
 struct CameraMatrices {
   ////////////////////////////////////////////////////////////////////
   const Frustum& GetFrustum() const;

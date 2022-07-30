@@ -70,13 +70,8 @@ struct DrawableBufItem {
 public:
   typedef ork::lev2::IRenderable::var_t var_t;
 
-  DrawableBufItem()
-      : _drawable(0)
-      , _bufferIndex(0) {
-  }
-
-  ~DrawableBufItem() {
-  }
+  DrawableBufItem();
+  ~DrawableBufItem();
 
   const Drawable* GetDrawable() const {
     return _drawable;
@@ -91,6 +86,7 @@ public:
   DrawQueueXfData mXfData;
   int _bufferIndex;
   onrenderable_fn_t _onrenderable;
+  std::atomic<int> _state;
 
 }; // ~100 bytes
 
@@ -104,17 +100,23 @@ struct LayerData { /// deprecated (this struct does not do much...)
 ///////////////////////////////////////////////////////////////////////////
 
 struct DrawableBufLayer {
-  std::vector<DrawableBufItem> _items;
+
+  using itemvect_t = std::vector<drawablebufitem_constptr_t>;
+
+  LockedResource<itemvect_t> _items;
   int _itemIndex;
   int miBufferIndex;
+  std::atomic<int> _state;
   bool HasData() const {
     return (_itemIndex != -1);
   }
   void Reset(const DrawableBuffer& dB);
-  DrawableBufItem& enqueueDrawable(const DrawQueueXfData& xfdata, const Drawable* d);
+  drawablebufitem_ptr_t enqueueDrawable(const DrawQueueXfData& xfdata, const Drawable* d);
   //void terminate();
 
   DrawableBufLayer();
+  ~DrawableBufLayer();
+
 }; // ~ 100K
 
 
@@ -133,12 +135,13 @@ public:
   typedef ork::fixedlut<std::string, DrawableBufLayer*, kmaxlayers> LayerLut;
   typedef ork::fixedlut<int, prerendercallback_t, 32> CallbackLut_t;
 
-  CameraDataLut _cameraDataLUT;
+  LockedResource<cameradatalut_ptr_t> _cameraDataLUT;
   DrawableBufLayer mRawLayers[kmaxlayers];
   LayerLut mLayerLut;
   orkset<std::string> mLayers;
   CallbackLut_t _preRenderCallbacks;
   usermap_t _userProperties;
+  std::atomic<int> _state;
 
   int miNumLayersUsed = 0;
   int miBufferIndex = -1;
@@ -177,8 +180,8 @@ public:
   static void ClearAndSyncWriters();
   static void terminateAll();
 
-  const CameraData* cameraData(int icam) const;
-  const CameraData* cameraData(const std::string& named) const;
+  cameradata_constptr_t cameraData(int icam) const;
+  cameradata_constptr_t cameraData(const std::string& named) const;
 
   DrawableBufLayer* MergeLayer(const std::string& layername);
 
@@ -215,7 +218,7 @@ struct Drawable {
   virtual ~Drawable();
 
   virtual void enqueueToRenderQueue(
-      const DrawableBufItem& item,
+      drawablebufitem_constptr_t item,
       lev2::IRenderer* prenderer) const;
 
   virtual void enqueueOnLayer(
@@ -325,7 +328,7 @@ struct ModelDrawable : public Drawable {
   void SetEngineParamFloat(int idx, float fv);
   float GetEngineParamFloat(int idx) const;
   void ShowBoundingSphere(bool bflg);
-  void enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const final;
+  void enqueueToRenderQueue(drawablebufitem_constptr_t, lev2::IRenderer* renderer) const final;
   void bindModelAsset(AssetPath assetpath);
   void bindModelAsset(xgmmodelassetptr_t asset);
   void bindModel(model_ptr_t model);
@@ -375,7 +378,7 @@ struct InstancedModelDrawable final : public InstancedDrawable {
 
   InstancedModelDrawable();
   ~InstancedModelDrawable();
-  void enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const override;
+  void enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const override;
   void bindModelAsset(AssetPath assetpath);
   void bindModel(model_ptr_t model);
   void gpuInit(Context* ctx) const;
@@ -433,7 +436,7 @@ struct BillboardStringDrawable final : public Drawable {
 
   BillboardStringDrawable();
   ~BillboardStringDrawable();
-  void enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const override;
+  void enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const override;
   std::string _currentString;
   fvec3 _offset;
   float _scale = 1.0f;
@@ -448,7 +451,7 @@ struct OverlayStringDrawable final : public Drawable {
 
   OverlayStringDrawable();
   ~OverlayStringDrawable();
-  void enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const override;
+  void enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const override;
   std::string _font;
   std::string _currentString;
   fvec2 _position;
@@ -463,7 +466,7 @@ struct InstancedBillboardStringDrawable final : public InstancedDrawable {
 
   InstancedBillboardStringDrawable();
   ~InstancedBillboardStringDrawable();
-  void enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const override;
+  void enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const override;
   //std::string _currentString;
   const InstancedBillboardStringDrawableData* _data = nullptr;
   fvec3 _offset;
@@ -488,8 +491,8 @@ public:
 
 struct CallbackDrawable : public Drawable {
 
-  using Q2LCBType     = void(DrawableBufItem& cdb);
-  using Q2LLambdaType = std::function<void(DrawableBufItem&)>;
+  using Q2LCBType     = void(drawablebufitem_constptr_t cdb);
+  using Q2LLambdaType = std::function<void(drawablebufitem_constptr_t)>;
 
   CallbackDrawable(DrawableOwner* owner);
   ~CallbackDrawable();
@@ -512,7 +515,7 @@ struct CallbackDrawable : public Drawable {
   void SetSortKey(U32 uv) {
     mSortKey = uv;
   }
-  void enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const final;
+  void enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const final;
   void enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const final;
 
   ICallbackDrawableDataDestroyer* mDataDestroyer;

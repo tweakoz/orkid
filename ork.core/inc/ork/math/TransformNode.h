@@ -31,11 +31,17 @@ struct DecompTransform : public ork::Object {
 
   DeclareConcreteX(DecompTransform, ork::Object);
 
+  DecompTransform();
+  ~DecompTransform();
+
   fvec3 _translation;
   fquat _rotation;
   float _uniformScale = 1.0f;
-
+  std::atomic<int> _state;
+  
   void set(fvec3 t, fquat r, float s) { _translation=t; _rotation=r; _uniformScale=s; }
+  void set(decompxf_const_ptr_t rhs);
+
   fmtx4 composed() const;
   fmtx4 composed2() const;
   void decompose( const fmtx4& inmtx );

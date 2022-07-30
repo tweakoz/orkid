@@ -219,8 +219,7 @@ struct GpuResources {
     _lightmgr = std::make_shared<LightManager>(_lmd);
 
     _camlut  = std::make_shared<CameraDataLut>();
-    _camdata = std::make_shared<CameraData>();
-    _camlut->AddSorted("spawncam", _camdata.get());
+    _camdata = _camlut->create("spawncam");
 
     auto filecontext = FileEnv::createContextForUriBase("demo://", this_dir);
     filecontext->SetFilesystemBaseEnable(true);

@@ -30,8 +30,8 @@ struct EditorContext {
       : _rdb(rdb) {
   }
 
-  inline lev2::CameraData* getCamera() {
-    return (lev2::CameraData*)_rdb._DB->cameraData("spawncam"_pool);
+  inline lev2::cameradata_constptr_t getCamera() {
+    return (lev2::cameradata_constptr_t)_rdb._DB->cameraData("spawncam");
   }
 
   const lev2::AcquiredRenderDrawBuffer& _rdb;

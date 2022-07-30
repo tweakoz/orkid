@@ -68,7 +68,7 @@ int main(int argc, char** argv, char** envp) {
     compositorimpl->bindLighting(lightmgr.get());
     TOPCPD = std::make_shared<lev2::CompositingPassData>();
     TOPCPD->addStandardLayers();
-    cameras->AddSorted("spawncam", camdata.get());
+    (*cameras)["spawncam"] = camdata;
     //////////////////////////////////////////////////////////
     _terrainData->_rock1 = fvec3(1, 1, 1);
     _terrainData->_writeHmapPath("src://terrain/testhmap2_2048.png");

@@ -32,7 +32,7 @@ CallbackDrawable::~CallbackDrawable() {
 ///////////////////////////////////////////////////////////////////////////////
 void CallbackDrawable::enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const {
   // ork::opq::assertOnQueue2(opq::updateSerialQueue());
-  DrawableBufItem& cdb = buffer.enqueueDrawable(xfdata, this);
+  auto cdb = buffer.enqueueDrawable(xfdata, this);
   if (_enqueueOnLayerCallback) {
     _enqueueOnLayerCallback(cdb);
   }
@@ -41,11 +41,11 @@ void CallbackDrawable::enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBuf
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void CallbackDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const {
+void CallbackDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const {
   ork::opq::assertOnQueue2(opq::mainSerialQueue());
 
   lev2::CallbackRenderable& renderable = renderer->enqueueCallback();
-  auto matrix                   = item.mXfData._worldTransform->composed();
+  auto matrix                   = item->mXfData._worldTransform->composed();
   // auto str                             = matrix.dump4x3cn();
   // printf("XFX: %s\n", str.c_str());
   renderable.SetMatrix(matrix);

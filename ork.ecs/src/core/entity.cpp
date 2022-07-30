@@ -141,8 +141,8 @@ void Entity::_deleteComponents(){
   _components.clear();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Entity::setTransform(const DecompTransform& xf) {
-  *transform() = xf;
+void Entity::setTransform(decompxf_ptr_t xf) {
+  _dagnode->_xfnode->_transform = xf;
 }
 void Entity::setTransform(const fvec3& pos, const fquat& rot, float uscale) {
   transform()->set(pos, rot, uscale);

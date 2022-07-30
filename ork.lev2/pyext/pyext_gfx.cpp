@@ -8,7 +8,7 @@
 #include "pyext.h"
 #include <ork/lev2/input/inputdevice.h>
 #include <ork/lev2/gfx/terrain/terrain_drawable.h>
-
+#include <ork/lev2/gfx/camera/cameradata.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -513,7 +513,7 @@ void pyinit_gfx(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto camdattype = //
       py::class_<CameraData, cameradata_ptr_t>(module_lev2, "CameraData")
-          .def(py::init<>())
+          .def(py::init([]()->cameradata_ptr_t{ return std::make_shared<CameraData>(); }))
           .def(
               "perspective",                                                    //
               [](cameradata_ptr_t camera, float near, float ffar, float fovy) { //
@@ -537,8 +537,12 @@ void pyinit_gfx(py::module& module_lev2) {
   auto camdatluttype = //
       py::class_<CameraDataLut, cameradatalut_ptr_t>(module_lev2, "CameraDataLut")
           .def(py::init<>())
-          .def("addCamera", [](cameradatalut_ptr_t lut, std::string key, cameradata_ptr_t camera) {
-            lut->AddSorted(key, camera.get());
+          .def("addCamera", [](cameradatalut_ptr_t lut, std::string key, cameradata_constptr_t camera) {
+            (*lut)[key] = camera;
+          })
+          .def("create", [](cameradatalut_ptr_t lut, std::string key) -> cameradata_ptr_t {
+            auto camera = lut->create(key);
+            return camera;
           });
   type_codec->registerStdCodec<cameradatalut_ptr_t>(camdatluttype);
   /////////////////////////////////////////////////////////////////////////////////

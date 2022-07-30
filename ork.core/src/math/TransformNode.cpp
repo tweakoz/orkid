@@ -19,14 +19,28 @@ ImplementReflectionX(ork::DecompTransform, "DecompTransform");
 
 namespace ork {
 
+
 ///////////////////////////////////////////////////////////////////////////////
 void DecompTransform::describeX(class_t* c) {
   c->directProperty("translation", &DecompTransform::_translation);
   c->directProperty("rotation", &DecompTransform::_rotation);
   c->directProperty("uniformScale", &DecompTransform::_uniformScale);
 }
-
-
+///////////////////////////////////////////////////////////////////////////////
+DecompTransform::DecompTransform(){
+  _state.store(100);
+}
+///////////////////////////////////////////////////////////////////////////////
+DecompTransform::~DecompTransform(){
+  _state.store(0);
+}
+void DecompTransform::set(decompxf_const_ptr_t rhs){
+    OrkAssert(rhs->_state.load()!=0);
+    OrkAssert(_state.load()!=0);
+    _translation = rhs->_translation;
+    _rotation = rhs->_rotation;
+    _uniformScale = rhs->_uniformScale;
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 fmtx4 DecompTransform::composed() const{

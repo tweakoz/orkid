@@ -87,15 +87,19 @@ void DrawableBuffer::enqueueLayerToRenderQueue(const std::string& LayerName, lev
     if (DoAll || (Match && topCPD.HasLayer(TestLayerName))) {
       //printf( "layer<%s> count<%d>\n", TestLayerName.c_str(), player->_itemIndex );
       target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue layer itemcount<%d>", player->_itemIndex + 1));
-      for (int id = 0; id <= player->_itemIndex; id++) {
-        const lev2::DrawableBufItem& item = player->_items[id];
-        const lev2::Drawable* pdrw        = item.GetDrawable();
-        target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue layer item <%d> drw<%p>", id, pdrw));
-        if (pdrw) {
-          numdrawables++;
-          pdrw->enqueueToRenderQueue(item, renderer);
+
+      player->_items.atomicOp([player,target,renderer,&numdrawables](const DrawableBufLayer::itemvect_t& unlocked){
+        int max_index = player->_itemIndex;
+        for (int id = 0; id < max_index; id++) {
+          auto item = unlocked[id];
+          const lev2::Drawable* pdrw        = item->GetDrawable();
+          target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue layer item <%d> drw<%p>", id, pdrw));
+          if (pdrw) {
+            numdrawables++;
+            pdrw->enqueueToRenderQueue(item, renderer);
+          }
         }
-      }
+      }); // player->_items.atomicOp
     }
   }
 
@@ -105,15 +109,16 @@ void DrawableBuffer::enqueueLayerToRenderQueue(const std::string& LayerName, lev
 ///////////////////////////////////////////////////////////////////////////////
 
 void DrawableBuffer::Reset() {
-  // ork::opq::assertOnQueue2( opq::updateSerialQueue() );
-
+  ork::opq::assertOnQueue2( opq::updateSerialQueue() );
+  _state.store(999);
   miNumLayersUsed = 0;
   mLayers.clear();
   for (int il = 0; il < kmaxlayers; il++) {
     mRawLayers[il].Reset(*this);
   }
   _preRenderCallbacks.clear();
-  _cameraDataLUT.clear();
+  _cameraDataLUT.atomicOp([](cameradatalut_ptr_t& unlocked){unlocked->clear();});
+  _state.store(1000);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void DrawableBuffer::terminate() {
@@ -127,8 +132,10 @@ void DrawableBuffer::terminate() {
 void DrawableBufLayer::Reset(const DrawableBuffer& dB) {
   // ork::opq::assertOnQueue2( opq::updateSerialQueue() );
   miBufferIndex = dB.miBufferIndex;
-  _items.clear();
+  _items.atomicOp([this](DrawableBufLayer::itemvect_t& unlocked){
+    unlocked.clear();
   _itemIndex   = -1;
+  });
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -150,14 +157,17 @@ DrawableBufLayer* DrawableBuffer::MergeLayer(const std::string& layername) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-DrawableBufItem& DrawableBufLayer::enqueueDrawable(const DrawQueueXfData& xfdata, const Drawable* d) {
+drawablebufitem_ptr_t DrawableBufLayer::enqueueDrawable(const DrawQueueXfData& xfdata, const Drawable* d) {
   // ork::opq::assertOnQueue2(opq::updateSerialQueue());
   // _items.push_back(DrawableBufItem()); // replace std::vector with an array so we can amortize construction costs
-  _itemIndex++;
-  DrawableBufItem& item = _items.emplace_back();
-  item.SetDrawable(d);
-  item.mXfData       = xfdata;
-  item._bufferIndex = miBufferIndex;
+  auto item = std::make_shared<DrawableBufItem>(); // todo USE POOL
+  item->SetDrawable(d);
+  item->mXfData       = xfdata;
+  item->_bufferIndex = miBufferIndex;
+  _items.atomicOp([this,item](DrawableBufLayer::itemvect_t& unlocked){
+    unlocked.push_back(item);
+    _itemIndex = unlocked.size();
+  });
   return item;
 }
 
@@ -166,11 +176,34 @@ DrawableBufItem& DrawableBufLayer::enqueueDrawable(const DrawQueueXfData& xfdata
 DrawableBuffer::DrawableBuffer(int ibidx)
     : miNumLayersUsed(0) 
     , miBufferIndex(ibidx) {
+    _state.store(1000);
+
+    _cameraDataLUT.atomicOp([](cameradatalut_ptr_t& unlocked){
+      unlocked = std::make_shared<CameraDataLut>();
+    });
 }
+DrawableBuffer::~DrawableBuffer() {
+  _state.store(0);
+}
+DrawableBufItem::DrawableBufItem()
+      : _drawable(0)
+      , _bufferIndex(0) {
+  _state.store(1000);
+  }
+
+DrawableBufItem::~DrawableBufItem() {
+    _state.store(0);
+  }
+
+///////////////////////////////////////////////////////////////////////////////
 
 DrawableBufLayer::DrawableBufLayer()
     : _itemIndex(-1)
     , miBufferIndex(-1) {
+    _state.store(107);
+}
+DrawableBufLayer::~DrawableBufLayer(){
+    _state.store(0);
 }
 
 //void DrawableBufLayer::terminate() {
@@ -181,56 +214,68 @@ void DrawableBufItem::terminate() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-DrawableBuffer::~DrawableBuffer() {
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void DrawableBuffer::copyCameras(const CameraDataLut& cameras) {
-  _cameraDataLUT.clear();
-  for (auto itCAM = cameras.begin(); itCAM != cameras.end(); itCAM++) {
-    const std::string& CameraName       = itCAM->first;
-    const lev2::CameraData* pcameradata = itCAM->second;
-    if (pcameradata) {
-      _cameraDataLUT.AddSorted(CameraName, pcameradata);
+  _state.store(999);
+  ork::opq::assertOnQueue2( opq::updateSerialQueue() );
+  _cameraDataLUT.atomicOp([&cameras](cameradatalut_ptr_t& unlocked){
+    unlocked->clear();
+    for (auto itCAM = cameras.begin(); itCAM != cameras.end(); itCAM++) {
+      const std::string& CameraName       = itCAM->first;
+      cameradata_constptr_t pcameradata = itCAM->second;
+      if (pcameradata) {
+        (*unlocked)[CameraName]=pcameradata;
+      }
     }
-  }
+  });
+  _state.store(1000);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const CameraData* DrawableBuffer::cameraData(int icam) const {
-  int inumscenecameras = _cameraDataLUT.size();
-  // printf( "NumSceneCameras<%d>\n", inumscenecameras );
-  if (icam >= 0 && inumscenecameras) {
-    icam                    = icam % inumscenecameras;
-    auto& itCAM             = _cameraDataLUT.GetItemAtIndex(icam);
-    const CameraData* pdata = itCAM.second;
-    auto pcam               = pdata->getUiCamera();
-    // printf( "icam<%d> pdata<%p> pcam<%p>\n", icam, pdata, pcam );
-    return pdata;
-  }
-  return 0;
+cameradata_constptr_t DrawableBuffer::cameraData(int index) const {
+  ork::opq::assertOnQueue2( opq::mainSerialQueue() );
+
+  int state = _state.load();
+
+  OrkAssert(state == 1000);
+
+  cameradata_constptr_t rval = nullptr;
+  _cameraDataLUT.atomicOp([index,&rval](const cameradatalut_ptr_t& unlocked){
+    int inumscenecameras = unlocked->size();
+    if( index<inumscenecameras){
+      auto itCAM             = unlocked->begin();
+      for( int i=0; i<index; i++ ){
+        itCAM++;
+      }
+      cameradata_constptr_t pdata = itCAM->second;
+      rval = pdata;
+    }
+  });
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const CameraData* DrawableBuffer::cameraData(const std::string& named) const {
-  int inumscenecameras = _cameraDataLUT.size();
-  auto itCAM           = _cameraDataLUT.find(named);
-  if (itCAM != _cameraDataLUT.end()) {
-    const CameraData* pdata = itCAM->second;
-    return pdata;
-  }
-  return 0;
+cameradata_constptr_t DrawableBuffer::cameraData(const std::string& named) const {
+  ork::opq::assertOnQueue2( opq::mainSerialQueue() );
+  cameradata_constptr_t rval = nullptr;
+  _cameraDataLUT.atomicOp([this,named,&rval](const cameradatalut_ptr_t& unlocked){
+    int inumscenecameras = unlocked->size();
+    //printf( "DB<%p> NumSceneCameras<%d>\n", this, inumscenecameras );
+    rval = unlocked->find(named);
+  });
+  return rval;
 }
 
 /////////////////////////////////////////////////////////////////////
 
-static concurrent_triple_buffer<DrawableBuffer>& GetGBUFFER(){
+/*static concurrent_triple_buffer<DrawableBuffer>& GetGBUFFER(){
   static concurrent_triple_buffer<DrawableBuffer> gBuffers;
   return gBuffers;
-}
+}*/
 
 /////////////////////////////////////////////////////////////////////
 //const DrawableBuffer* DrawableBuffer::acquireForRead(int lid) {

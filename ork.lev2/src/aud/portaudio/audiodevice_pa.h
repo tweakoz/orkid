@@ -13,7 +13,7 @@ namespace ork::lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class AudioDevicePa : public AudioDevice {
+class AudioDevicePa final : public AudioDevice {
 public:
   AudioDevicePa();
   ~AudioDevicePa() final;

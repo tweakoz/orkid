@@ -117,15 +117,15 @@ DrawQueueXfData::DrawQueueXfData() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Drawable::enqueueToRenderQueue(
-      const DrawableBufItem& item,
+      drawablebufitem_constptr_t item,
       lev2::IRenderer* prenderer) const{
 
 }
 
 void Drawable::enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const {
   // ork::opq::assertOnQueue2(opq::updateSerialQueue());
-  DrawableBufItem& item = buffer.enqueueDrawable(xfdata, this);
-  item._onrenderable = this->_onrenderable;
+  auto item = buffer.enqueueDrawable(xfdata, this);
+  item->_onrenderable = this->_onrenderable;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -91,7 +91,7 @@ void InstancedModelDrawable::gpuInit(Context* ctx) const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void InstancedModelDrawable::enqueueToRenderQueue(
-    const DrawableBufItem& item, //
+    drawablebufitem_constptr_t item, //
     lev2::IRenderer* renderer) const {
   ork::opq::assertOnQueue2(opq::mainSerialQueue());
   ////////////////////////////////////////////////////////////////////
@@ -117,8 +117,8 @@ void InstancedModelDrawable::enqueueToRenderQueue(
   renderable.SetSortKey(0x00000001);
   renderable.SetDrawableDataA(GetUserDataA());
   renderable.SetDrawableDataB(GetUserDataB());
-  //renderable.SetUserData0(item._userdata[0]);
-  //renderable.SetUserData1(item._userdata[1]);
+  //renderable.SetUserData0(item->_userdata[0]);
+  //renderable.SetUserData1(item->_userdata[1]);
   renderable._instanced = true;
   ////////////////////////////////////////////////////////////////////
   renderable.SetRenderCallback([this](lev2::RenderContextInstData& RCID) { //

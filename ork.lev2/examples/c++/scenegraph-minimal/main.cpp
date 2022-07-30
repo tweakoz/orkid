@@ -31,8 +31,7 @@ int main(int argc, char** argv,char** envp) {
   terraindrawableinst_ptr_t terrainInst;
   scenegraph::scene_ptr_t sg_scene;
   auto cameralut = std::make_shared<CameraDataLut>();
-  auto camera    = std::make_shared<CameraData>();
-  cameralut->AddSorted("spawncam", camera.get());
+  auto camera    = cameralut->create("spawncam");
   DrawableCache dcache;
 
   //////////////////////////////////////////////////////////

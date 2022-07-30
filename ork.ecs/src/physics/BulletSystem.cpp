@@ -38,7 +38,7 @@ ImplementReflectionX(ork::ecs::BulletSystem, "EcsBulletSystem");
 namespace ork::ecs {
 ///////////////////////////////////////////////////////////////////////////////
 
-void bulletDebugEnqueueToLayer(ork::lev2::DrawableBufItem& cdb);
+void bulletDebugEnqueueToLayer(ork::lev2::drawablebufitem_constptr_t cdb);
 void bulletDebugRender(const ork::lev2::RenderContextInstData& RCID);
 
 ///////////////////////////////////////////////////////////////////////////////

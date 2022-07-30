@@ -71,7 +71,7 @@ simpleuiapp_ptr_t createSimpleUiApp(appinitdata_ptr_t initdata ) {
   auto compositorimpl = compdata->createImpl();
   compositorimpl->bindLighting(lightmgr.get());
   CPD->addStandardLayers();
-  cameras->AddSorted("spawncam", camdata.get());
+  (*cameras)["spawncam"] = camdata;
   //////////////////////////////////////////////////////////
   qtapp->onGpuInit([=](lev2::Context* ctx) {
     renderer->setContext(ctx);

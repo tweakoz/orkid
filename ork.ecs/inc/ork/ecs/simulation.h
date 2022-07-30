@@ -24,10 +24,10 @@ namespace ork::ecs {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct EntityActivationQueueItem {
-  DecompTransform _world;
+  decompxf_ptr_t _world;
   Entity* _entity;
 
-  EntityActivationQueueItem(const DecompTransform& mtx = DecompTransform(), Entity* pent = nullptr)
+  EntityActivationQueueItem(decompxf_ptr_t mtx = std::make_shared<DecompTransform>(), Entity* pent = nullptr)
       : _world(mtx)
       , _entity(pent) {
   }
@@ -37,7 +37,7 @@ struct EntityPosRecord{
   int _entref = -1;
   PoolString _name;
   archetype_constptr_t _archetype = nullptr;
-  DecompTransform _xform;
+  decompxf_ptr_t _xform;
 };
 using entityposmap_t = std::vector<EntityPosRecord>;
 using entityposmap_ptr_t = std::shared_ptr<entityposmap_t>;
@@ -74,8 +74,8 @@ struct Simulation {
 
   ///////////////////////////////////////////////////
 
-  void setCameraData(const std::string& name, const lev2::CameraData* camdat);
-  const lev2::CameraData* cameraData(const std::string& name) const;
+  void setCameraData(const std::string& name, lev2::cameradata_constptr_t camdat);
+  lev2::cameradata_constptr_t cameraData(const std::string& name) const;
 
   ///////////////////////////////////////////////////
 
@@ -103,9 +103,6 @@ struct Simulation {
   //////////////////////////////////////////////////////////
 
   template <typename T> T* findSystem() const;
-
-  typedef lev2::CameraDataLut CameraDataLut;
-
 
   inline void setOnLinkLambda(void_lambda_t l) {
     _onLink = l;
@@ -266,7 +263,7 @@ private:
 
   void_lambda_t _onLink;
 
-  CameraDataLut _cameraDataLUT; // camera list
+  lev2::CameraDataLut _cameraDataLUT; // camera list
   //////////////////////////////////////////////////////////
   //ActiveComponentType mActiveEntityComponents;
   orkvector<EntityActivationQueueItem> mEntityActivateQueue;

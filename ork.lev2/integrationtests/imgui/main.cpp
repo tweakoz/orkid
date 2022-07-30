@@ -67,7 +67,7 @@ int main(int argc, char** argv, char** envp) {
 
   auto cameras = std::make_shared<CameraDataLut>();
   auto camdata = std::make_shared<CameraData>();
-  cameras->AddSorted("spawncam", camdata.get());
+  (*cameras)["spawncam"] = camdata;
 
   /////////////////////////////////////////////////////////////////////////
   // GPU init

@@ -86,10 +86,10 @@ EzUiCam::EzUiCam()
     , tz(0.0f)
     , far_max(10000.0f)
     , near_min(0.01f)
-    , mDoZoom(false)
     , mDoRotate(false)
     , mDoDolly(false)
-    , mDoPan(false) {
+    , mDoPan(false)
+    , mDoZoom(false) {
   _camcamdata.Persp(1.0f, 1000.0f, 70.0f);
   _camcamdata.Lookat(fvec3(0.0f, 0.0f, 0.0f), fvec3(0.0f, 0.0f, 1.0f), fvec3(0.0f, 1.0f, 0.0f));
   type_name     = "Perspective";
@@ -524,7 +524,7 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
             QuatX.fromAxisAngle(fvec4(_pushNX, -dy));
             QuatY.fromAxisAngle(fvec4(_pushNY, dx));
 
-            printf( "dy <%g> dx <%g>\n", _pushNX.x, _pushNX.y, _pushNX.z );
+            printf( "dy <%g> dx <%g> dz <%g>\n", _pushNX.x, _pushNX.y, _pushNX.z );
 
             if(_constrainZ){
               QuatL = QuatL.multiply(QuatX);

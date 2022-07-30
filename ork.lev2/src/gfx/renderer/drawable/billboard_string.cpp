@@ -52,10 +52,10 @@ drawable_ptr_t InstancedBillboardStringDrawableData::createDrawable() const {
   return drw;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void BillboardStringDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const {
+void BillboardStringDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const {
   ork::opq::assertOnQueue2(opq::mainSerialQueue());
   auto& cb_renderable = renderer->enqueueCallback();
-  auto worldmatrix = item.mXfData._worldTransform->composed();
+  auto worldmatrix = item->mXfData._worldTransform->composed();
   cb_renderable.SetMatrix(worldmatrix);
   cb_renderable.SetObject(GetOwner());
   cb_renderable.SetRenderCallback(_rendercb);
@@ -120,10 +120,10 @@ BillboardStringDrawable::BillboardStringDrawable()
 BillboardStringDrawable::~BillboardStringDrawable() {
 }
 /////////////////////////////////////////////////////////////////////
-void InstancedBillboardStringDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const {
+void InstancedBillboardStringDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const {
   ork::opq::assertOnQueue2(opq::mainSerialQueue());
   auto& cb_renderable = renderer->enqueueCallback();
-  //auto worldmatrix = item.mXfData._worldTransform->composed();
+  //auto worldmatrix = item->mXfData._worldTransform->composed();
   //cb_renderable.SetMatrix(worldmatrix);
   cb_renderable.SetObject(GetOwner());
   cb_renderable.SetRenderCallback(_rendercb);

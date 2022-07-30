@@ -197,8 +197,8 @@ void SceneGraphComponent::_onRequest(Simulation* psi, impl::comp_response_ptr_t 
 
         auto layer          = _system->_default_layer;
         auto sgnode         = layer->createDrawableNode(nodename, drawable);
-        auto xform          = *_entity->transform();
-        xform._uniformScale = scale;
+        auto xform          = _entity->transform();
+        xform->_uniformScale = scale;
 
         auto nitem       = std::make_shared<SceneGraphNodeItem>();
         nitem->_drawable = drawable;
@@ -207,7 +207,7 @@ void SceneGraphComponent::_onRequest(Simulation* psi, impl::comp_response_ptr_t 
 
         _nodeitems[nodename] = nitem;
 
-        *(sgnode->_dqxfdata._worldTransform) = xform;
+        sgnode->_dqxfdata._worldTransform->set(xform);
 
         ///////////////////////////////
         // track sgnode in response
@@ -311,7 +311,7 @@ SceneGraphSystem::SceneGraphSystem(const SceneGraphSystemData& data, ork::ecs::S
     _camera = std::make_shared<CameraData>();
   }
   _camlut = std::make_shared<CameraDataLut>();
-  _camlut->AddSorted("spawncam", _camera.get());
+  (*_camlut)["spawncam"] = _camera;
   _drwcache = std::make_shared<DrawableCache>();
 
   for (auto item : data._onCreateSystemOperations) {
@@ -466,12 +466,12 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
     auto ent              = component->GetEntity();
     auto init_xf          = ent->data()->_dagnode->_xfnode;
     auto ent_xf           = ent->GetDagNode()->_xfnode;
-    (*ent_xf->_transform) = (*init_xf->_transform);
-    component->_currentXF = init_xf;
+    ent_xf->_transform->set(init_xf->_transform);
+    component->_currentXF = ent_xf;
     for (auto NITEM : component->_nodeitems) {
       auto node = NITEM.second->_sgnode;
       if (node) {
-        node->_dqxfdata._worldTransform = init_xf->_transform;
+        node->_dqxfdata._worldTransform = ent_xf->_transform;
       }
     }
   };

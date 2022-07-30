@@ -113,7 +113,7 @@ singularitytestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
   auto compositorimpl = compdata->createImpl();
   compositorimpl->bindLighting(lightmgr.get());
   CPD->addStandardLayers();
-  cameras->AddSorted("spawncam", camdata.get());
+  (*cameras)["spawncam"] = camdata;
   //////////////////////////////////////////////////////////
   qtapp->onGpuInit([=](Context* ctx) {
     renderer->setContext(ctx);

@@ -16,10 +16,10 @@
 namespace ork::lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
-void OverlayStringDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const {
+void OverlayStringDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const {
   ork::opq::assertOnQueue2(opq::mainSerialQueue());
   auto& cb_renderable = renderer->enqueueCallback();
-  auto worldmatrix = item.mXfData._worldTransform->composed();
+  auto worldmatrix = item->mXfData._worldTransform->composed();
   cb_renderable.SetMatrix(worldmatrix);
   cb_renderable.SetObject(GetOwner());
   cb_renderable.SetRenderCallback(_rendercb);
