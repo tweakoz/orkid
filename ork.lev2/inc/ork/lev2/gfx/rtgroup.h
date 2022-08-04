@@ -30,7 +30,7 @@ struct RtBuffer final {
   RtBuffer(const RtGroup* rtg, int slot, EBufferFormat efmt, int iW, int iH);
 
   Texture* texture() const {
-    return _texture;
+    return _texture.get();
   }
   EBufferFormat format() const {
     return mFormat;
@@ -43,7 +43,7 @@ struct RtBuffer final {
   const RtGroup* _rtgroup;
   int _width, _height;
   int _slot;
-  Texture* _texture;
+  texture_ptr_t _texture;
   //RtgSlot mType;
   EBufferFormat mFormat;
   svarp_t _impl;

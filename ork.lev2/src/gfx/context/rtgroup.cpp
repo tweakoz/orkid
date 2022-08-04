@@ -22,7 +22,7 @@ RtBuffer::RtBuffer(const RtGroup* rtg, int slot, EBufferFormat efmt, int iW, int
     , _slot(slot)
     , mFormat(efmt)
     , _mipgen(EMG_NONE) {
-  _texture = new Texture;
+  _texture = std::make_shared<Texture>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
