@@ -82,39 +82,34 @@ void ModelDrawable::bindModelAsset(AssetPath assetpath) {
 
   asset::vars_ptr_t asset_vars;
 
-  if(_data){
+  if (_data) {
 
     asset_vars = std::make_shared<asset::vars_t>();
 
-    for( auto item : _data->_assetvars ){
+    for (auto item : _data->_assetvars) {
 
       const std::string& k = item.first;
       const rendervar_t& v = item.second;
 
       std::string v_str;
-      if(auto as_str = v.tryAs<std::string>() ){
-        asset_vars->makeValueForKey<std::string>(k,as_str.value());
+      if (auto as_str = v.tryAs<std::string>()) {
+        asset_vars->makeValueForKey<std::string>(k, as_str.value());
         v_str = as_str.value();
-      }
-      else if(auto as_bool = v.tryAs<bool>() ){
-        asset_vars->makeValueForKey<bool>(k,as_bool.value());
+      } else if (auto as_bool = v.tryAs<bool>()) {
+        asset_vars->makeValueForKey<bool>(k, as_bool.value());
         v_str = as_bool.value() ? "true" : "false";
-      }
-      else if(auto as_dbl = v.tryAs<double>() ){
-        asset_vars->makeValueForKey<double>(k,as_dbl.value());
-        v_str = FormatString("%f",as_dbl.value());
-      }
-      else {
+      } else if (auto as_dbl = v.tryAs<double>()) {
+        asset_vars->makeValueForKey<double>(k, as_dbl.value());
+        v_str = FormatString("%f", as_dbl.value());
+      } else {
         OrkAssert(false);
       }
 
-      printf("modelassetvar k<%s> v<%s>\n", k.c_str(), v_str.c_str() );
-
+      printf("modelassetvar k<%s> v<%s>\n", k.c_str(), v_str.c_str());
     }
-
   }
 
-  _asset = asset::AssetManager<XgmModelAsset>::load(assetpath,asset_vars);
+  _asset = asset::AssetManager<XgmModelAsset>::load(assetpath, asset_vars);
   bindModel(_asset->_model.atomicCopy());
 }
 void ModelDrawable::bindModelAsset(xgmmodelassetptr_t asset) {
@@ -160,14 +155,105 @@ void ModelDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::
 
   matw.decompose(matw_trans, matw_rot, matw_scale);
 
-  //////////////////////////////////////////////////////////////////////
-
   int inumacc = 0;
   int inumrej = 0;
 
+  //////////////////////////////////////////////////////////////////////
+
+  auto do_submesh = [&](const XgmMesh* mesh, const XgmSubMesh* submesh) {
+    auto material = submesh->_material;
+
+    int inumclus = submesh->_clusters.size();
+
+    for (int ic = 0; ic < inumclus; ic++) {
+      bool btest = true;
+
+      auto cluster = submesh->cluster(ic);
+
+      if (isSkinned) {
+
+        float fdb = monofrustum._bottomPlane.pointDistance(ctr);
+        float fdt = monofrustum._topPlane.pointDistance(ctr);
+        float fdl = monofrustum._leftPlane.pointDistance(ctr);
+        float fdr = monofrustum._rightPlane.pointDistance(ctr);
+        float fdn = monofrustum._nearPlane.pointDistance(ctr);
+        float fdf = monofrustum._farPlane.pointDistance(ctr);
+
+        const float kdist = -5.0f;
+        btest             = (fdb > kdist) && (fdt > kdist) && (fdl > kdist) && (fdr > kdist) &&
+                (fdn > kdist)
+                //&&  (fdn<100.0f); // 50m actors
+                && (fdf > kdist);
+        if (false == btest) {
+        }
+        btest = true; // todo fix culler
+      } else {        // Rigid
+        const Sphere& bsph = cluster->mBoundingSphere;
+
+        float clussphrad = bsph.mRadius * matw_scale * mfScale;
+        fvec3 clussphctr = ((bsph.mCenter + mOffset) * mfScale).transform(matw);
+        Sphere sph2(clussphctr, clussphrad);
+
+        btest = true; // CollisionTester::FrustumSphereTest( frus, sph2 );
+      }
+
+      if (btest) {
+        lev2::ModelRenderable& renderable = renderer->enqueueModel();
+
+        // if(mEngineParamFloats[0] < 1.0f && mEngineParamFloats[0] > 0.0f)
+        //  orkprintf("mEngineParamFloats[0] = %g\n", mEngineParamFloats[0]);
+
+        for (int i = 0; i < kMaxEngineParamFloats; i++)
+          renderable.SetEngineParamFloat(i, mEngineParamFloats[i]);
+
+        renderable.SetModelInst(std::const_pointer_cast<const XgmModelInst>(_modelinst));
+        renderable.SetObject(GetOwner());
+        renderable.SetMesh(mesh);
+        renderable.SetSubMesh(submesh);
+        renderable._cluster = cluster;
+        renderable.SetModColor(_modcolor);
+        renderable.SetMatrix(matw);
+        // renderable.SetLightMask(lmask);
+        renderable.SetScale(mfScale);
+        renderable.SetRotate(mRotate);
+        renderable.SetOffset(mOffset);
+
+        size_t umat = size_t(material.get());
+        u32 imtla   = (umat & 0xff);
+        u32 imtlb   = ((umat >> 8) & 0xff);
+        u32 imtlc   = ((umat >> 16) & 0xff);
+        u32 imtld   = ((umat >> 24) & 0xff);
+        u32 imtl    = (imtla + imtlb + imtlc + imtld) & 0xff;
+
+        int isortpass = (material->GetRenderQueueSortingData().miSortingPass + 16) & 0xff;
+        int isortoffs = material->GetRenderQueueSortingData().miSortingOffset;
+
+        int isortkey = (isortpass << 24) | (isortoffs << 16) | imtl;
+
+        renderable.SetSortKey(isortkey);
+        // orkprintf( " ModelDrawable::enqueueToRenderQueue() rable<%p> \n", & renderable );
+
+        if (item->_onrenderable) {
+          item->_onrenderable(&renderable);
+        }
+
+        inumacc++;
+      } else {
+        inumrej++;
+      }
+    }
+  };
+  //////////////////////////////////////////////////////////////////////
+
+  if (_singlesubmesh != nullptr) {
+    do_submesh(_singlesubmesh->_parentmesh, _singlesubmesh);
+    return;
+  }
+
   int inummeshes = Model->numMeshes();
   for (int imesh = 0; imesh < inummeshes; imesh++) {
-    const lev2::XgmMesh& mesh = *Model->mesh(imesh);
+
+    const lev2::XgmMesh* meshptr = Model->mesh(imesh);
 
     // if( 0 == strcmp(mesh.meshName().c_str(),"fg_2_1_3_ground_SG_ground_GeoDaeId") )
     //{
@@ -175,92 +261,10 @@ void ModelDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::
     //}
 
     if (_modelinst->isMeshEnabled(imesh)) {
-      int inumclusset = mesh.numSubMeshes();
-
+      int inumclusset = meshptr->numSubMeshes();
       for (int ics = 0; ics < inumclusset; ics++) {
-        const lev2::XgmSubMesh& submesh = *mesh.subMesh(ics);
-
-        auto material                   = submesh._material;
-
-        int inumclus = submesh._clusters.size();
-
-        for (int ic = 0; ic < inumclus; ic++) {
-          bool btest = true;
-
-          auto cluster = submesh.cluster(ic);
-
-          if (isSkinned) {
-
-            float fdb = monofrustum._bottomPlane.pointDistance(ctr);
-            float fdt = monofrustum._topPlane.pointDistance(ctr);
-            float fdl = monofrustum._leftPlane.pointDistance(ctr);
-            float fdr = monofrustum._rightPlane.pointDistance(ctr);
-            float fdn = monofrustum._nearPlane.pointDistance(ctr);
-            float fdf = monofrustum._farPlane.pointDistance(ctr);
-
-            const float kdist = -5.0f;
-            btest             = (fdb > kdist) && (fdt > kdist) && (fdl > kdist) && (fdr > kdist) &&
-                    (fdn > kdist)
-                    //&&	(fdn<100.0f); // 50m actors
-                    && (fdf > kdist);
-            if (false == btest) {
-            }
-            btest = true; // todo fix culler
-          } else {        // Rigid
-            const Sphere& bsph = cluster->mBoundingSphere;
-
-            float clussphrad = bsph.mRadius * matw_scale * mfScale;
-            fvec3 clussphctr = ((bsph.mCenter + mOffset) * mfScale).transform(matw);
-            Sphere sph2(clussphctr, clussphrad);
-
-            btest = true; // CollisionTester::FrustumSphereTest( frus, sph2 );
-          }
-
-          if (btest) {
-            lev2::ModelRenderable& renderable = renderer->enqueueModel();
-
-            // if(mEngineParamFloats[0] < 1.0f && mEngineParamFloats[0] > 0.0f)
-            //	orkprintf("mEngineParamFloats[0] = %g\n", mEngineParamFloats[0]);
-
-            for (int i = 0; i < kMaxEngineParamFloats; i++)
-              renderable.SetEngineParamFloat(i, mEngineParamFloats[i]);
-
-            renderable.SetModelInst(std::const_pointer_cast<const XgmModelInst>(_modelinst));
-            renderable.SetObject(GetOwner());
-            renderable.SetMesh(&mesh);
-            renderable.SetSubMesh(&submesh);
-            renderable._cluster = cluster;
-            renderable.SetModColor(_modcolor);
-            renderable.SetMatrix(matw);
-            // renderable.SetLightMask(lmask);
-            renderable.SetScale(mfScale);
-            renderable.SetRotate(mRotate);
-            renderable.SetOffset(mOffset);
-
-            size_t umat = size_t(material.get());
-            u32 imtla   = (umat & 0xff);
-            u32 imtlb   = ((umat >> 8) & 0xff);
-            u32 imtlc   = ((umat >> 16) & 0xff);
-            u32 imtld   = ((umat >> 24) & 0xff);
-            u32 imtl    = (imtla + imtlb + imtlc + imtld) & 0xff;
-
-            int isortpass = (material->GetRenderQueueSortingData().miSortingPass + 16) & 0xff;
-            int isortoffs = material->GetRenderQueueSortingData().miSortingOffset;
-
-            int isortkey = (isortpass << 24) | (isortoffs << 16) | imtl;
-
-            renderable.SetSortKey(isortkey);
-            // orkprintf( " ModelDrawable::enqueueToRenderQueue() rable<%p> \n", & renderable );
-
-            if(item->_onrenderable){
-              item->_onrenderable(&renderable);
-            }
-
-            inumacc++;
-          } else {
-            inumrej++;
-          }
-        }
+        const lev2::XgmSubMesh* submesh = meshptr->subMesh(ics);
+        do_submesh(meshptr,submesh);
       }
     }
   }
@@ -268,7 +272,7 @@ void ModelDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::
 ///////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
-ModelRenderable::ModelRenderable(IRenderer* renderer){
+ModelRenderable::ModelRenderable(IRenderer* renderer) {
   for (int i = 0; i < kMaxEngineParamFloats; i++)
     mEngineParamFloats[i] = 0.0f;
 }

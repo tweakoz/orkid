@@ -130,6 +130,7 @@ struct XgmSubMesh final // Run Time Cluster Set
 
   material_ptr_t _material;
   xgmcluster_ptr_list_t _clusters;
+  XgmMesh* _parentmesh = nullptr;
 
   XgmSubMesh()
       : _material(nullptr) {
@@ -206,6 +207,7 @@ struct XgmMesh final {
     mSubMeshes.reserve(icount);
   }
   void AddSubMesh(XgmSubMesh* psubmesh) {
+    psubmesh->_parentmesh = this;
     mSubMeshes.push_back(psubmesh);
   }
   void dump() const;
