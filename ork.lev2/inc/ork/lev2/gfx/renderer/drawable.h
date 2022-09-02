@@ -338,6 +338,7 @@ struct ModelDrawable : public Drawable {
   xgmworldpose_ptr_t _worldpose;
   xgmmodelassetptr_t _asset;
   model_ptr_t _model;
+  XgmSubMesh* _singlesubmesh = nullptr;
 
   float mfScale             = 1.0f;
   bool mbShowBoundingSphere = false;
