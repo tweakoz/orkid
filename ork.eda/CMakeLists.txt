@@ -32,7 +32,7 @@ IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
 	target_link_libraries(ork_eda PUBLIC ${libs} )
 ENDIF()
 
-install(TARGETS ork_eda LIBRARY DESTINATION $ENV{OBT_STAGE}/lib )
+install(TARGETS ork_eda LIBRARY DESTINATION $ENV{OBT_SUBSPACE_LIB_DIR} )
 
 ###################################
 

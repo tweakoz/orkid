@@ -8,7 +8,7 @@ include_directories(AFTER ${CMAKE_INSTALL_PREFIX}/include)
 file(GLOB srcs ./*.cpp)
 add_executable (ork.example.lev2.gfx.sdfscene.exe ${srcs} )
 
-ork_std_target_opts(ork.example.lev2.gfx.sdfscene.exe)
+ork_std_target_opts_exe(ork.example.lev2.gfx.sdfscene.exe)
 
 target_link_libraries(ork.example.lev2.gfx.sdfscene.exe LINK_PRIVATE ork_core ork_lev2 tbb )
 
@@ -16,5 +16,3 @@ set_target_properties(ork.example.lev2.gfx.sdfscene.exe PROPERTIES LINKER_LANGUA
 target_include_directories (ork.example.lev2.gfx.sdfscene.exe PRIVATE ${ORKROOT}/ork.core/inc )
 target_include_directories (ork.example.lev2.gfx.sdfscene.exe PRIVATE ${ORKROOT}/ork.lev2/inc )
 target_include_directories (ork.example.lev2.gfx.sdfscene.exe PRIVATE ${SRCD} )
-
-install(TARGETS ork.example.lev2.gfx.sdfscene.exe DESTINATION $ENV{OBT_STAGE}/bin )

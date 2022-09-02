@@ -28,7 +28,7 @@ this_dir = os.path.dirname(this_path)
 this_dir = os.path.dirname(this_dir)
 this_dir = os.path.dirname(this_dir)
 
-print(this_dir)
+#print(this_dir)
 
 os.environ["ORKID_WORKSPACE_DIR"] = this_dir
 
@@ -60,10 +60,9 @@ with buildtrace.NestedBuildTrace({ "op": "ork.build.py"}) as nested:
   ork_root = prj_root
   ok = True
 
-
   PYTHON = ork.dep.instance("python")
-  print(PYTHON)
-  ork.env.set("PYTHONHOME",PYTHON.home_dir)
+  #print(PYTHON)
+  #ork.env.set("PYTHONHOME",PYTHON.home_dir)
 
   BOOST = ork.dep.instance("boost")
 
@@ -81,7 +80,7 @@ with buildtrace.NestedBuildTrace({ "op": "ork.build.py"}) as nested:
     l += [item._name]
 
   l.reverse()
-  print(l)
+  #print(l)
   #assert(False)
 
   ork.dep.require(dep_list)
@@ -113,8 +112,8 @@ with buildtrace.NestedBuildTrace({ "op": "ork.build.py"}) as nested:
   # inject relevant state from deppers into cmake
   ###################################################
 
-  cmd += ["-DPYTHON_HEADER_PATH=%s"%PYTHON.include_dir]
-  cmd += ["-DPYTHON_LIBRARY_PATH=%s"%PYTHON.library_file]
+  #cmd += ["-DPYTHON_HEADER_PATH=%s"%PYTHON.include_dir]
+  #cmd += ["-DPYTHON_LIBRARY_PATH=%s"%PYTHON.library_file]
 
   clangdep = ork.dep.instance("clang")
 

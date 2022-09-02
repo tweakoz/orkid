@@ -8,12 +8,10 @@ include_directories(AFTER ${CMAKE_INSTALL_PREFIX}/include)
 file(GLOB srcs ./*.cpp)
 add_executable (ork.example.lev2.gfx.terrain.exe ${srcs} )
 
-ork_std_target_opts(ork.example.lev2.gfx.terrain.exe)
+ork_std_target_opts_exe(ork.example.lev2.gfx.terrain.exe)
 target_link_libraries(ork.example.lev2.gfx.terrain.exe LINK_PRIVATE ork_core ork_lev2 )
 
 set_target_properties(ork.example.lev2.gfx.terrain.exe PROPERTIES LINKER_LANGUAGE CXX)
 target_include_directories (ork.example.lev2.gfx.terrain.exe PRIVATE ${ORKROOT}/ork.core/inc )
 target_include_directories (ork.example.lev2.gfx.terrain.exe PRIVATE ${ORKROOT}/ork.lev2/inc )
 target_include_directories (ork.example.lev2.gfx.terrain.exe PRIVATE ${SRCD} )
-
-install(TARGETS ork.example.lev2.gfx.terrain.exe DESTINATION $ENV{OBT_STAGE}/bin )

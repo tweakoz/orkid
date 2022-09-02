@@ -13,7 +13,7 @@ set( TESTSRCD ${CMAKE_CURRENT_SOURCE_DIR} )
 
 file(GLOB testsrcs ${TESTSRCD}/*.mm)
 add_executable (${EXE} ${testsrcs} )
-
+ork_std_target_opts_exe(${EXE})
 target_link_libraries(${EXE} LINK_PRIVATE ork_utpp )
 target_link_libraries(${EXE} LINK_PRIVATE ork_core )
 target_link_libraries(${EXE} LINK_PRIVATE ork_lev2 )

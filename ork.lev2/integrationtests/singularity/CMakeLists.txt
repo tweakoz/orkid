@@ -11,10 +11,9 @@ include_directories(AFTER $ENV{QTDIR}/include)
 
 function(setupEXE target sources)
   add_executable (${target} harness.cpp harness_midi.cpp harness_sequence.cpp ${sources} )
-  ork_std_target_opts(${target})
+  ork_std_target_opts_exe(${target})
   target_link_libraries(${target} LINK_PRIVATE ork_core ork_lev2 rtmidi )
   set_target_properties(${target} PROPERTIES LINKER_LANGUAGE CXX)
-  install(TARGETS ${target} DESTINATION $ENV{OBT_STAGE}/bin )
 endfunction()
 
 setupEXE(ork.test.lev2.aud.singularity.krzrom.exe main_krzrom.cpp )

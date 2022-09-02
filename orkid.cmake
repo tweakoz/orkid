@@ -13,17 +13,62 @@ set(CMAKE_CXX_STANDARD_REQUIRED on)
 set(CMAKE_INSTALL_RPATH "$ENV{OBT_STAGE}/lib")
 set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
 
+#############################################################################################################
+
+function(orkid_find_python)
+
+  #################################
+  # hints for find_package
+  #  to find the python for the active subspace 
+  #################################
+
+  set(CMAKE_FIND_DEBUG_MODE OFF)
+  set(PYTHON_EXECUTABLE $ENV{OBT_PYTHONHOME}/bin/python3)
+  set(PYTHON_LIBRARY $ENV{OBT_PYTHONHOME}/lib/libpython3.9d.so)
+
+  set(Python3_FIND_STRATEGY "LOCATION")
+  set(Python3_ROOT_DIR $ENV{OBT_PYTHONHOME} )
+  set(Python3_FIND_VIRTUALENV ONLY)
+
+  find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
+  find_package(pybind11 REQUIRED)
+
+  #################################
+  # export found python variables
+  # to parent scope
+  #################################
+
+  #message( ${Python3_INCLUDE_DIRS} )
+  set(Python3_INCLUDE_DIRS ${Python3_INCLUDE_DIRS} PARENT_SCOPE)
+  set(Python3_LIBRARY_DIRS ${Python3_LIBRARY_DIRS} PARENT_SCOPE)
+  set(Python3_RUNTIME_LIBRARY_DIRS ${Python3_RUNTIME_LIBRARY_DIRS} PARENT_SCOPE)
+  set(Python3_LINK_OPTIONS ${Python3_LINK_OPTIONS} PARENT_SCOPE)
+  set(Python3_LIBRARIES ${Python3_LIBRARIES} PARENT_SCOPE)
+
+
+  #error()
+
+  #################################
+
+endfunction()
+
+orkid_find_python()
+
+################################################################################
+# enable python for a given target
+#  meant to be used by orkid, and orkid based projects
+#  as it will function correctly for the host and other subspaces
 ################################################################################
 
-set(CMAKE_FIND_DEBUG_MODE OFF)
-set(PYTHON_EXECUTABLE $ENV{PYTHONHOME}/bin/python3)
-set(PYTHON_LIBRARY $ENV{PYTHONHOME}/lib/libpython3.9d.so)
-
-set(Python3_FIND_STRATEGY "LOCATION")
-set(Python3_ROOT_DIR $ENV{PYTHONHOME} )
-
-find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
-find_package(pybind11 REQUIRED)
+function(enable_python_on_target the_target)
+  set_property( TARGET ${the_target} APPEND PROPERTY TGT_INCLUDE_PATHS ${Python3_INCLUDE_DIRS} ${PYBIND11_INCLUDE_DIRS} )
+  target_include_directories(${the_target} PUBLIC ${Python3_INCLUDE_DIRS} )
+  target_link_directories(${the_target} PUBLIC ${Python3_RUNTIME_LIBRARY_DIRS} )
+  target_link_directories(${the_target} PUBLIC ${Python3_LIBRARY_DIRS} )
+  target_link_options(${the_target} PUBLIC ${Python3_LINK_OPTIONS})
+  target_link_libraries(${the_target} PUBLIC ${Python3_LIBRARIES} )
+  set_property( TARGET ${the_target} APPEND PROPERTY TGT_PUBLIC_LIBPATHS PUBLIC $ENV{OBT_PYTHON_LIB_PATH}  )
+endfunction()
 
 #############################################################################################################
 
@@ -94,7 +139,6 @@ function(ork_std_target_set_incdirs the_target)
   set_property( TARGET ${the_target} APPEND PROPERTY TGT_INCLUDE_PATHS $ENV{OBT_STAGE}/include/eigen3 )
   set_property( TARGET ${the_target} APPEND PROPERTY TGT_INCLUDE_PATHS $ENV{OBT_STAGE}/include)
   set_property( TARGET ${the_target} APPEND PROPERTY TGT_INCLUDE_PATHS $ENV{OBT_STAGE}/include/tuio/oscpack)
-  set_property( TARGET ${the_target} APPEND PROPERTY TGT_INCLUDE_PATHS ${Python3_INCLUDE_DIRS} ${PYBIND11_INCLUDE_DIRS} )
 
   # IGL (its a beast, needs a cmake update)
   IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
@@ -265,7 +309,6 @@ function(ork_std_target_set_libdirs the_target)
   ENDIF()
 
   set_property( TARGET ${the_target} APPEND PROPERTY TGT_PRIVATE_LIBPATHS PRIVATE ${private_libdir_list} )
-  set_property( TARGET ${the_target} APPEND PROPERTY TGT_PUBLIC_LIBPATHS PUBLIC $ENV{OBT_PYTHON_LIB_PATH}  )
 
 endfunction()
 
@@ -302,8 +345,6 @@ function(ork_std_target_opts_linker the_target)
   ELSEIF(${UNIX})
     target_link_libraries(${the_target} LINK_PRIVATE rt dl pthread ${BOOST_LIBS})
   ENDIF()
-  target_link_libraries(${the_target} LINK_PRIVATE $ENV{OBT_PYTHON_DECOD_NAME} )
-  #target_link_options(${TARGET} PRIVATE ${Python3_LINK_OPTIONS})
 endfunction()
 
 #############################################################################################################
@@ -312,6 +353,12 @@ function(ork_std_target_opts the_target)
   ork_std_target_opts_compiler(${the_target})
   ork_std_target_opts_linker(${the_target})
 endfunction()
+
+function(ork_std_target_opts_exe the_target)
+  ork_std_target_opts(${the_target})
+  install(TARGETS ${the_target} DESTINATION $ENV{OBT_SUBSPACE_BIN_DIR} )
+endfunction()
+
 
 #############################################################################################################
 # ISPC compile option
@@ -355,4 +402,3 @@ function(gen_ispc_object_list
   set(${ISPC_OUTPUT_OBJECT_LIST} ${_INTERNAL_ISPC_OUTPUT_OBJECT_LIST} PARENT_SCOPE)
 endfunction()
 
-#############################################################################################################

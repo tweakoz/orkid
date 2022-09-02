@@ -26,4 +26,4 @@ set_target_properties(ork.luxhmdenum.exe PROPERTIES LINKER_LANGUAGE CXX)
 target_include_directories (ork.luxhmdenum.exe PRIVATE ${ORKROOT}/ork.core/inc )
 target_include_directories (ork.luxhmdenum.exe PRIVATE ${ORKROOT}/ork.lev2/inc )
 
-install(TARGETS ork.luxhmdenum.exe DESTINATION $ENV{OBT_STAGE}/bin )
+ork_std_target_opts_exe(ork.luxhmdenum.exe)

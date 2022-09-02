@@ -19,4 +19,4 @@ set_target_properties(ork.test.core.exe PROPERTIES LINKER_LANGUAGE CXX)
 target_include_directories (ork.test.core.exe PRIVATE ${ORKROOT}/ork.core/inc )
 target_include_directories (ork.test.core.exe PRIVATE ${SRCD} )
 
-install(TARGETS ork.test.core.exe DESTINATION $ENV{OBT_STAGE}/bin )
+install(TARGETS ork.test.core.exe DESTINATION $ENV{OBT_SUBSPACE_BIN_DIR} )

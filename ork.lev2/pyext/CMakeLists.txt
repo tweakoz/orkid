@@ -24,6 +24,7 @@ add_library( _lev2 SHARED ${sources} )
 ork_std_target_opts(_lev2)
 
 target_include_directories (_lev2 PRIVATE ${INCD} ${INCD2} )
+enable_python_on_target(_lev2)
 
 
 target_link_libraries(_lev2 LINK_PUBLIC ork_core ork_lev2 )
@@ -31,10 +32,11 @@ target_link_libraries(_lev2 LINK_PUBLIC ork_core ork_lev2 )
 #target_link_libraries(_lev2 PUBLIC ${PYTHON_LIBRARY_PATH} )
 target_link_options(_lev2 PUBLIC -Wl,-rpath )
 
-set_target_properties( _lev2
+install(TARGETS _lev2 LIBRARY DESTINATION ${INSTALL_DEST} )
+
+SET_TARGET_PROPERTIES( _lev2
   PROPERTIES
     PREFIX ""
-    LIBRARY_OUTPUT_DIRECTORY ${INSTALL_DEST}
 )
 
 if( APPLE )

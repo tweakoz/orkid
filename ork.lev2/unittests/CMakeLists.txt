@@ -21,4 +21,4 @@ target_include_directories (ork.test.lev2.exe PRIVATE ${ORKROOT}/ork.core/inc )
 target_include_directories (ork.test.lev2.exe PRIVATE ${ORKROOT}/ork.lev2/inc )
 target_include_directories (ork.test.lev2.exe PRIVATE ${SRCD} )
 
-install(TARGETS ork.test.lev2.exe DESTINATION $ENV{OBT_STAGE}/bin )
+install(TARGETS ork.test.lev2.exe DESTINATION $ENV{OBT_SUBSPACE_BIN_DIR} )

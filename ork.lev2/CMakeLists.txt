@@ -118,7 +118,7 @@ ELSE()
 ENDIF()
 ###################################
 
-install(TARGETS ork_lev2 LIBRARY DESTINATION $ENV{OBT_STAGE}/lib )
+install(TARGETS ork_lev2 LIBRARY DESTINATION $ENV{OBT_SUBSPACE_LIB_DIR} )
 
 ###################################
 

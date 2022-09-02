@@ -30,4 +30,4 @@ target_include_directories (ork.colorcheck.exe PRIVATE ${ORKROOT}/ork.lev2/inc )
 target_include_directories (ork.colorcheck.exe PRIVATE ${SRCD} )
 target_include_directories (ork.colorcheck.exe PRIVATE $ENV{QTDIR}/include)
 
-install(TARGETS ork.colorcheck.exe DESTINATION $ENV{OBT_STAGE}/bin )
+ork_std_target_opts_exe(ork.colorcheck.exe)

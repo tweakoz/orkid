@@ -12,7 +12,7 @@ set( SRCD ${CMAKE_CURRENT_SOURCE_DIR} )
 file(GLOB testsrcs ${SRCD}/*.cpp)
 add_executable (${EXE} ${testsrcs} )
 
-ork_std_target_opts(${EXE})
+ork_std_target_opts_exe(${EXE})
 
 target_link_libraries(${EXE} LINK_PRIVATE ork_core )
 target_link_libraries(${EXE} LINK_PRIVATE ork_eda )
@@ -23,5 +23,3 @@ target_include_directories (${EXE} PRIVATE ${ORKROOT}/ork.core/inc )
 target_include_directories (${EXE} PRIVATE ${ORKROOT}/ork.eda/inc )
 target_include_directories (${EXE} PRIVATE ${ORKROOT}/ork.lev2/inc )
 target_include_directories (${EXE} PRIVATE ${SRCD} )
-
-install(TARGETS ${EXE} DESTINATION $ENV{OBT_STAGE}/bin )
