@@ -10,6 +10,7 @@
 #include <ork/kernel/thread.h>
 #include <ork/kernel/opq.h>
 #include <ork/kernel/environment.h>
+#include <ork/kernel/timer.h>
 #include <ork/file/path.h>
 #include <ork/kernel/fixedstring.h>
 #include <ork/kernel/string/string.h>
@@ -50,26 +51,15 @@ int harness(
   scoped_test_init_lambda(scoped_var);
   /////////////////////////////////////////////
   int iret      = 0;
-  bool testdone = false;
+  int exec_state = 0;
   Thread testthr("testthread");
   /////////////////////////////////////////////
   auto mainq   = opq::mainSerialQueue();
   auto updateq = opq::updateSerialQueue();
   auto conq    = opq::concurrentQueue();
   /////////////////////////////////////////////
-  // update thread (for handling the update opq)
-  /////////////////////////////////////////////
-  ork::Thread updthr("updatethread");
-  bool upddone = false;
-  updthr.start([&](anyp data) {
-    opq::TrackCurrent opqtest(updateq);
-    while (false == testdone)
-      updateq->Process();
-    upddone = true;
-  });
-  /////////////////////////////////////////////
   int test_failures = 0;
-  testthr.start([&](anyp data) {
+  auto run_tests = [&,initdata,test_exename](anyp data) {
     /////////////////////////////////////////////
     // default Run All Tests
     /////////////////////////////////////////////
@@ -144,38 +134,71 @@ int harness(
         } // } else { // run tests
         ptest = ptest->next;
         itest++;
+        //mainq->Process();
       }
     }
-    testdone = true;
+    exec_state = 1;
     return 0;
-  }); // testthr.start([&](anyp data){}())
+  };
+  testthr.start(run_tests);
   /////////////////////////////////////////////
-  // meanwhile, back on the main thread..
-  //  process main thread opq
-  //  while tests are running
+  // update thread (for handling the update opq)
   /////////////////////////////////////////////
-  while (false == testdone) {
-    opq::TrackCurrent opqtest(mainq);
-    mainq->Process();
-  }
+  int ok_to_exit_update = false;
+  ork::Thread updthr("updatethread");
+  bool upddone = false;
+  updthr.start([&](anyp data) {
+    opq::TrackCurrent opqtest(updateq);
+    while (not ok_to_exit_update)
+      updateq->Process();
+    upddone = true;
+  });
+  //run_tests(anyp());
   /////////////////////////////////////////////
   // drain all opq's
   /////////////////////////////////////////////
-  for (int i = 0; i < 10; i++) {
-    mainq->drain();
+  ork::Timer timer;
+  timer.Start();
+
+  bool done_waiting = false;
+
+  while(not done_waiting){
+    mainq->Process();
     updateq->drain();
     conq->drain();
+    switch(exec_state){
+      default:
+      case 0:
+        break;
+      case 1:
+        exec_state = 2;
+        testthr.join();
+        timer.Start();
+        break;
+      case 2:
+        exec_state = 3;
+        printf( "Waiting for operation queues to drain...\n");
+        break;
+      case 3:
+        if(timer.SecsSinceStart()>2.0f){
+            done_waiting = true;
+            exec_state = 4;
+        }
+        break;
+    }
   }
+  ok_to_exit_update = true;
   /////////////////////////////////////////////
   // wait for test thread exit
   /////////////////////////////////////////////
-  testthr.join();
   /////////////////////////////////////////////
   // final summary
   /////////////////////////////////////////////
   auto deco_string = deco::format(255, 255, 255, "Total Failures: ");
   deco_string += deco::format(255, 255, 0, "%d", test_failures);
   printf("%s\n", deco_string.c_str());
+  /////////////////////////////////////////////
+  scoped_var = nullptr;
   /////////////////////////////////////////////
   return -test_failures;
 } // int harness(

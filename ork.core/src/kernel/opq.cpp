@@ -530,8 +530,10 @@ void ConcurrencyGroup::drain() {
   while (false == was_drained) {
 
     _ops.atomicOp([this, &was_drained](ConcurrencyGroup::internal_oper_queue_t& q) {
+      int opsinfl = _opsinflight.load();
       was_drained = q.empty();
-      was_drained &= (_opsinflight.load() == 0);
+      was_drained &= (opsinfl == 0);
+      //printf( "qempty<%d> opsinfl<%d>\n", int(q.empty()), opsinfl );
     });
 
     if (false == was_drained) {

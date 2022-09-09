@@ -18,8 +18,6 @@ ImplementReflectionX(ork::audio::singularity::AlgData, "SynAlgorithm");
 
 namespace ork::audio::singularity {
 
-static synth_ptr_t the_synth = synth::instance();
-
 dspblk_ptr_t createDspBlock(const DspBlockData* dbd);
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -96,7 +94,7 @@ dspblk_ptr_t Alg::lastBlock() const {
       for( int i=0; i<kmaxdspblocksperlayer; i++ )
           if( _block[i] )
           {
-              bool ena = the_synth->_stageEnable[i];
+              bool ena = synth::instance()->_stageEnable[i];
               if( ena )
                   r = _block[i];
           }
@@ -182,7 +180,7 @@ void Alg::doComputePass() {
   ////////////////////////////////////////////////
   auto& dspbuf = *_layer->_dspbuffer;
   int istage   = 0;
-  auto syn     = the_synth;
+  auto syn     = synth::instance();
   forEachStage([&](dspstage_ptr_t stage) {
     bool ena = syn->_stageEnable[istage];
     if (ena)

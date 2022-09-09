@@ -20,9 +20,7 @@ public:
   AudioDeviceAlsa();
 
 protected:
-  ork::Thread _alsaThread;
-  ork::Thread _synthThread;
-
+  ork::svar64_t _impl;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

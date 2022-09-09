@@ -231,7 +231,7 @@ void ClassInit() {
   //////////////////////////////////////////
 }
 
-static ork::lev2::context_ptr_t gloadercontext;
+ork::lev2::context_ptr_t gloadercontext;
 
 void GfxInit(const std::string& gfxlayer) {
 

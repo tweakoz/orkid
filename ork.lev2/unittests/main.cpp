@@ -22,6 +22,7 @@ using namespace ork;
 namespace ork::lev2 {
 void ClassInit();
 void GfxInit(const std::string& gfxlayer);
+extern context_ptr_t gloadercontext;
 } // namespace ork::lev2
 
 ///////////////////////////////////////////////////////////
@@ -34,27 +35,37 @@ struct TestApplication {
   TestApplication(appinitdata_ptr_t initdata) {
     _spctx = std::make_shared<StringPoolContext>();
     StringPoolStack::Push(_spctx);
-
-    lev2::ClassInit();
+    /////////////////////////////////////////////
+    for (auto item : initdata->_preinitoperations)
+      item();
+    /////////////////////////////////////////////
     rtti::Class::InitializeClasses();
     lev2::GfxInit("");
+    auto target = lev2::gloadercontext.get();
+    _l2ctx_track = std::make_shared<lev2::ThreadGfxContext>(target);
+    target->makeCurrentContext();
   }
 
   ~TestApplication() {
     StringPoolStack::Pop();
   }
   stringpoolctx_ptr_t _spctx;
+  std::shared_ptr<lev2::ThreadGfxContext> _l2ctx_track;
 };
 
 ///////////////////////////////////////////////////////////
 
 int main(int argc, char** argv, char** envp) {
-  auto init_data = std::make_shared<ork::AppInitData>(argc,argv,envp);
-  return test::harness(
-      init_data,
+  auto initdata = std::make_shared<ork::AppInitData>(argc,argv,envp);
+  ork::lev2::initModule(initdata);
+  auto app = std::make_shared<TestApplication>(initdata);
+  int rval = test::harness(
+      initdata,
       "ork.lev2-unittests",
       [=](test::appvar_t& scoped_var) { //
         // instantiate a TestApplication on the harness's stack
-        scoped_var.makeShared<TestApplication>(init_data);
+        scoped_var = app;
       });
+  app = nullptr;
+  return rval;
 }
