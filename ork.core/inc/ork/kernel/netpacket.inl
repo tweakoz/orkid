@@ -101,6 +101,8 @@ typedef MessagePacketIterator<4096> NetworkMessageIterator;
 
 struct MessagePacketBase
 {
+    virtual ~MessagePacketBase(){}
+
     size_t                  miSize;
     mutable uint64_t        miSerial;
     mutable uint64_t        miTimeSent;
