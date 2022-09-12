@@ -95,8 +95,8 @@ struct avg_filter
 	}
 	//////////////////////////////////////////////////////////////////////////////
 	avg_filter()
-		: mbEnable( true )
-		, mfWindow( float(stages) )
+		: mfWindow( float(stages) )
+		, mbEnable( true )
 	{
 		for( int i=0; i<stages; i++ )
 		{
