@@ -103,17 +103,15 @@ struct MessagePacketBase
 {
     virtual ~MessagePacketBase(){}
 
-    size_t                  miSize;
     mutable uint64_t        miSerial;
     mutable uint64_t        miTimeSent;
 
     ///////////////////////////////////////////////////////
-    void clear() { miSize = 0; }
-    ///////////////////////////////////////////////////////
+    virtual void clear() = 0;
     virtual const void* data() const = 0;
     virtual void* data() = 0;
     virtual size_t max() const = 0;
-    size_t length() const { return miSize; }
+    virtual size_t length() const =0;
     ///////////////////////////////////////////////////////
 };
 
@@ -128,7 +126,6 @@ template <size_t ksize> struct MessagePacket : public MessagePacketBase
     //
     ///////////////////////////////////////////////////////
     MessagePacket() { clear(); }
-
 
     ///////////////////////////////////////////////////////
     // create a read iterator (pointing to the start of this message)
@@ -275,10 +272,11 @@ template <size_t ksize> struct MessagePacket : public MessagePacketBase
             printf("\n");
         }
     }
-    const void* data() const override { return (const void*) mBuffer; }
-    void* data() override { return (void*) mBuffer; }
-    size_t max() const override { return kmaxsize; }
-    size_t length() const { return miSize; }
+    const void* data() const final { return (const void*) mBuffer; }
+    void* data() final { return (void*) mBuffer; }
+    size_t max() const final { return kmaxsize; }
+    size_t length() const final { return miSize; }
+    void clear() final { miSize = 0; }
 
     ////////////////////////////////////////////////////
     // Constant: kmaxsize
@@ -288,6 +286,7 @@ template <size_t ksize> struct MessagePacket : public MessagePacketBase
     // Variable: mBuffer
     // statically sized buffer for holding a network message's content
     char                mBuffer[kmaxsize];
+    size_t                  miSize;
     ////////////////////////////////////////////////////
 };
 
