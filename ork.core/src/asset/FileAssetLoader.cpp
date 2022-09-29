@@ -113,7 +113,7 @@ bool FileAssetLoader::_find(
 
   auto filedevctx = ork::FileEnv::contextForUriProto(url.c_str());
 
-   printf("filedevctx<%p>\n", filedevctx.get());
+   //printf("filedevctx<%p>\n", filedevctx.get());
 
   if(nullptr==filedevctx){
     

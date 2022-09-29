@@ -524,7 +524,7 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
             QuatX.fromAxisAngle(fvec4(_pushNX, -dy));
             QuatY.fromAxisAngle(fvec4(_pushNY, dx));
 
-            printf( "dy <%g> dx <%g> dz <%g>\n", _pushNX.x, _pushNX.y, _pushNX.z );
+            //printf( "dy <%g> dx <%g> dz <%g>\n", _pushNX.x, _pushNX.y, _pushNX.z );
 
             if(_constrainZ){
               QuatL = QuatL.multiply(QuatX);
