@@ -61,7 +61,7 @@ set( libs ork_core )
 list(APPEND libs OpenImageIO OpenImageIO_Util portaudio rtmidi )
 
 IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
-  list(APPEND libs ispc_texcomp embree3 )
+  list(APPEND libs ispc_texcomp  )
 ENDIF()
 
 IF(${APPLE})
