@@ -63,6 +63,9 @@ PYBIND11_MODULE(_core, module_core) {
   /////////////////////////////////////////////////////////////////////////////////
   auto crcstr_type =                                                   //
       py::class_<CrcString, crcstring_ptr_t>(module_core, "CrcString") //
+          .def(py::init<>([](std::string str)->crcstring_ptr_t{
+            return std::make_shared<CrcString>(str.c_str());
+          }))
           .def_property_readonly(
               "hashed",
               [](crcstring_ptr_t s) -> uint64_t { //
