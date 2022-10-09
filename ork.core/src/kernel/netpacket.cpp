@@ -52,8 +52,7 @@ void MessagePacketBase::writeString(const std::string& str) {
 }
 ////////////////////////////////////////////////////
 void MessagePacketBase::writeData(const void* pdata, size_t ilen) {
-  assert((miSize + ilen) <= kmaxsize);
-  write(ilen);
+  write<size_t>(ilen);
   writeDataInternal(pdata, ilen);
 }
 ///////////////////////////////////////////////////////
