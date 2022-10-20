@@ -47,6 +47,7 @@ class GfxEnv;
 class IndexBufferBase;
 class XgmMaterialStateInst;
 class UiCamera;
+class EzUiCam;
 ///////////////////////////////////////////////////////////////////////////////
 struct IRenderTarget;
 struct RtGroupRenderTarget;
@@ -172,6 +173,8 @@ using context_ptr_t          = std::shared_ptr<Context>;
 using vtxbufferbase_ptr_t    = std::shared_ptr<VertexBufferBase>;
 using ipctexture_ptr_t       = std::shared_ptr<IpcTexture>;
 using cameradata_ptr_t       = std::shared_ptr<CameraData>;
+using uicam_ptr_t       		 = std::shared_ptr<UiCamera>;
+using ezuicam_ptr_t       	 = std::shared_ptr<EzUiCam>;
 using cameradata_constptr_t  = std::shared_ptr<const CameraData>;
 using compositordata_ptr_t   = std::shared_ptr<CompositingData>;
 using compositorimpl_ptr_t   = std::shared_ptr<CompositingImpl>;

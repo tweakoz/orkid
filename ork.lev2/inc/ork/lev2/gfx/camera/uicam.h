@@ -97,6 +97,8 @@ public:
   UiCamera();
   /////////////////////////////////////////////////////////////////////
 
+  callback_drawable_ptr_t createOverlayDrawable();
+
   CameraData _camcamdata;
   mutable CameraMatrices _curMatrices;
   fvec2 _vpdim;

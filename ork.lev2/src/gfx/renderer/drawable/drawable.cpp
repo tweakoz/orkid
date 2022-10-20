@@ -178,6 +178,4 @@ const DrawableOwner::DrawableVector* DrawableOwner::GetDrawables(const std::stri
   return pldrawables;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
 } // namespace ork::lev2

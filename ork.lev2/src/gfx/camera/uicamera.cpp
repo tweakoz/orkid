@@ -12,6 +12,8 @@
 #include <ork/lev2/gfx/camera/uicam.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/ui/viewport.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
+#include <ork/lev2/gfx/gfxprimitives.h>
 
 ImplementReflectionX(ork::lev2::UiCamera, "UiCamera");
 
@@ -110,6 +112,38 @@ fquat UiCamera::HorizontalRot(float amt) const {
     qrot.fromAxisAngle(aarot);
   }
   return qrot;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+callback_drawable_ptr_t UiCamera::createOverlayDrawable(){
+  auto drawable = std::make_shared<CallbackDrawable>(nullptr); 
+
+  drawable->setRenderLambda([this](RenderContextInstData& RCID){
+    const RenderContextFrameData* RCFD = RCID._RCFD;
+    auto context                       = RCID.context();
+    auto renderable                    = dynamic_cast<const CallbackRenderable*>(RCID._dagrenderable);
+
+    switch (RCFD->_renderingmodel){
+      case "FORWARD"_crcu:{
+        fmtx4 mtx_center;
+        mtx_center.compose(mvCenter,fquat(),0.015);
+        context->MTXI()->SetMMatrix(mtx_center);
+        GfxPrimitives::RenderTriCircle(context);
+        break;
+      }
+      case "DPBR"_crcu:
+        OrkAssert(false);
+        break;
+      default:
+        OrkAssert(false);
+        break;
+    }
+
+
+  });
+
+  return drawable;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -492,6 +492,7 @@ public:
 
 struct CallbackDrawable : public Drawable {
 
+  using RLCBType     = std::function<void(RenderContextInstData& RCID)>;
   using Q2LCBType     = void(drawablebufitem_constptr_t cdb);
   using Q2LLambdaType = std::function<void(drawablebufitem_constptr_t)>;
 
@@ -504,6 +505,9 @@ struct CallbackDrawable : public Drawable {
   void SetRenderCallback(lev2::CallbackRenderable::cbtype_t cb) {
     mRenderCallback = cb;
   }
+  static void _renderWithLambda(RenderContextInstData& RCID);
+  void setRenderLambda(RLCBType cb);
+
   void setEnqueueOnLayerCallback(Q2LCBType cb) {
     _enqueueOnLayerCallback = cb;
   }
@@ -523,6 +527,7 @@ struct CallbackDrawable : public Drawable {
   lev2::CallbackRenderable::cbtype_t mRenderCallback;
   Q2LCBType* _enqueueOnLayerCallback;
   Q2LLambdaType _enqueueOnLayerLambda;
+  RLCBType _renderLambda;
   U32 mSortKey;
 };
 

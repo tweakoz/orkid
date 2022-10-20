@@ -203,7 +203,7 @@ Serializer::Serializer(bool std_types) {
   });
   registerType<float_vect_t>([](Serializer* ser, msgpacketbase_ref_t msg, const val_t& value) {
     const auto& the_fvect = value.get<float_vect_t>();
-  	printf( "write array.float count<%zu>\n", the_fvect.size() );
+  	//printf( "write array.float count<%zu>\n", the_fvect.size() );
     msg.writeString("array.float");
     msg.template write<size_t>(the_fvect.size());
     msg.writeData(the_fvect.data(), the_fvect.size() * sizeof(float));
@@ -409,7 +409,7 @@ Deserializer::Deserializer(bool std_types) {
   	packet.template read<size_t>(count,iter);
   	auto& out_array = out_value.make<float_vect_t>();
   	out_array.resize(count);
-  	printf( "read array.float count<%zu>\n", out_array.size() );
+  	//printf( "read array.float count<%zu>\n", out_array.size() );
   	packet.readData(out_array.data(), count*sizeof(float),iter);
   });
   registerType("double",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {

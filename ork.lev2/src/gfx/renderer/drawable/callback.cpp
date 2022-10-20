@@ -15,20 +15,41 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 CallbackDrawable::CallbackDrawable(DrawableOwner* pent)
     : Drawable()
-    , mDataDestroyer(0)
-    , mRenderCallback(0)
-    , _enqueueOnLayerCallback(0) 
+    , mDataDestroyer(nullptr)
+    , mRenderCallback(nullptr)
+    , _enqueueOnLayerCallback(nullptr)
+    , _renderLambda(nullptr)
     , mSortKey(4){
 }
 ///////////////////////////////////////////////////////////////////////////////
+
 CallbackDrawable::~CallbackDrawable() {
   if (mDataDestroyer) {
     mDataDestroyer->Destroy();
   }
-  mDataDestroyer          = 0;
-  _enqueueOnLayerCallback = 0;
-  mRenderCallback         = 0;
+  mDataDestroyer          = nullptr;
+  _enqueueOnLayerCallback = nullptr;
+  mRenderCallback         = nullptr;
+  _renderLambda = nullptr;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+void CallbackDrawable::_renderWithLambda(RenderContextInstData& RCID) {
+    auto renderable = dynamic_cast<const CallbackRenderable*>(RCID._dagrenderable);
+    auto drawable = renderable->_drawable;
+    OrkAssert(drawable!=nullptr);
+    OrkAssert(drawable->_renderLambda!=nullptr);
+    drawable->_renderLambda(RCID);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void CallbackDrawable::setRenderLambda(RLCBType cb) {
+  mRenderCallback = _renderWithLambda;
+  _renderLambda = cb;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 void CallbackDrawable::enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const {
   // ork::opq::assertOnQueue2(opq::updateSerialQueue());
@@ -55,6 +76,7 @@ void CallbackDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev
   renderable.SetDrawableDataA(GetUserDataA());
   renderable.SetDrawableDataB(GetUserDataB());
   renderable.SetModColor(renderer->GetTarget()->RefModColor());
+  renderable._drawable = this;
 }
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
@@ -64,7 +86,7 @@ CallbackRenderable::CallbackRenderable(IRenderer* renderer)
     , mSortKey(0)
     , mMaterialIndex(0)
     , mMaterialPassIndex(0)
-    //, mUserData0()
+    , _drawable(nullptr)
     //, mUserData1()
     , mRenderCallback(0) {
 }

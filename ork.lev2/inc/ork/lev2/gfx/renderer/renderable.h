@@ -143,6 +143,7 @@ struct CallbackRenderable : public IRenderable {
   int mMaterialIndex;
   int mMaterialPassIndex;
   cbtype_t mRenderCallback;
+  const CallbackDrawable* _drawable;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
