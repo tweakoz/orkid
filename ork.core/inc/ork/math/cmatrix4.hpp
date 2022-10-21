@@ -79,9 +79,9 @@ template <typename T> void Matrix44<T>::setToIdentity() {
 template <typename T> void Matrix44<T>::dump(std::string name) const {
   orkprintf("Matrix %p %s\n{	", this, name.c_str());
 
-  for (int i = 0; i < 4; i++) {
+  for (int j = 0; j < 4; j++) {
 
-    for (int j = 0; j < 4; j++) {
+    for (int i = 0; i < 4; i++) {
       orkprintf("%f ", elemXY(i,j));
     }
 
