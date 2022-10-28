@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
 // Orkid Media Engine
 // Copyright 1996-2022, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
@@ -188,7 +188,7 @@ void pyinit_math(py::module& module_core) {
       py::class_<fquat, fquat_ptr_t>(module_core, "quat", pybind11::buffer_protocol())
           //////////////////////////////////////////////////////////////////////////
           .def_buffer([](fquat& quat) -> pybind11::buffer_info {
-            auto data = &quat.x; // Pointer to buffer
+            auto data = &quat.w; // Pointer to buffer
             return pybind11::buffer_info(
                 data,          // Pointer to buffer
                 sizeof(float), // Size of one scalar

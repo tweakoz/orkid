@@ -138,7 +138,7 @@ template <typename T> struct Quaternion final
 
   /////////
 
-  T* asArray() { return & this->x; }
+  T* asArray() { return & this->w; }
 
 
 };
