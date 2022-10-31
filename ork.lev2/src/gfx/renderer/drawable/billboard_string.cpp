@@ -102,7 +102,7 @@ BillboardStringDrawable::BillboardStringDrawable()
     FontMan::PushFont("i14");
     auto font = FontMan::currentFont();
 
-    font->_use_deferred = not (RCFD->_renderingmodel=="FORWARD"_crcu);
+    font->_use_deferred = RCFD->_renderingmodel.isDeferredPBR();
 
     FontMan::beginTextBlock(context);
     FontMan::DrawText(context, 0, 0, current_string.c_str());

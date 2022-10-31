@@ -76,8 +76,6 @@ struct GridRenderImpl {
 
     const RenderContextFrameData* RCFD = RCID._RCFD;
 
-    bool is_forward = (RCFD->_renderingmodel=="FORWARD"_crcu);
-
     const auto& CPD  = RCFD->topCPD();
 
     float extent = data._extent;
@@ -125,7 +123,7 @@ struct GridRenderImpl {
     }
     context->PushModColor(modcolor);
 
-    if( is_forward ){
+    if( RCFD->_renderingmodel.isForward() ){
 
       auto cammatrices = CPD.cameraMatrices();
       const fmtx4& PMTX_mono = cammatrices->_pmatrix;

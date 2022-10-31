@@ -15,6 +15,23 @@
 
 namespace ork::lev2 {
 
+enum class ERenderModelID : uint64_t {
+  CrcEnum(NONE),
+  CrcEnum(FORWARD_UNLIT),
+  CrcEnum(DEFERRED_PBR),
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct RenderingModel {
+  RenderingModel(ERenderModelID id=ERenderModelID::NONE);
+  bool isDeferred() const;
+  bool isForward() const;
+  bool isDeferredPBR() const;
+  bool isForwardUnlit() const;
+  ERenderModelID _modelID;
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 // Rendering Context Data that can change per draw instance
 //  ie, per renderable (or even finer grained than that)
@@ -121,7 +138,7 @@ struct RenderContextFrameData {
   usermap_t _userProperties;
   Context* const _target = nullptr;
   const IRenderer* _renderer;
-  uint64_t _renderingmodel = 0;
+  RenderingModel _renderingmodel;
 };
 
 typedef std::function<void(RenderContextFrameData&)> PreRenderCallback_t;

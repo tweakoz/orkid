@@ -262,7 +262,7 @@ void XgmModel::RenderRigid(
   OrkAssert(imat < inumclusset);
   material_ptr_t pmat = XgmClusSet.GetMaterial();
 
-  if(RCFD->_renderingmodel=="FORWARD"_crcu){
+  if(RCFD->_renderingmodel.isForward()){
     // todo - use forward version of model assets shader
     static material_ptr_t fmtl;
     if(fmtl==nullptr){

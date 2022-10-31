@@ -60,7 +60,7 @@ public:
     return nullptr;
   }
 
-  uint64_t _renderingmodel = 0;
+  RenderingModel _renderingmodel;
 
 private:
   virtual void doGpuInit(lev2::Context* pTARG, int w, int h) = 0;

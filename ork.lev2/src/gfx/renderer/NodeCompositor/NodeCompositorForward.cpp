@@ -125,7 +125,7 @@ struct IMPL {
 ///////////////////////////////////////////////////////////////////////////////
 ForwardCompositingNode::ForwardCompositingNode() {
   _impl = std::make_shared<forwardnode::IMPL>();
-  _renderingmodel = "FORWARD"_crcu;
+  _renderingmodel = RenderingModel(ERenderModelID::FORWARD_UNLIT);
   _clearColor = fvec4(0,0,0,1);
 }
 ///////////////////////////////////////////////////////////////////////////////

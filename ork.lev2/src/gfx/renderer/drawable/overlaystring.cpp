@@ -57,7 +57,7 @@ OverlayStringDrawable::OverlayStringDrawable()
     context->PushModColor(_color);
     FontMan::PushFont(_font);
     auto font = FontMan::currentFont();
-    font->_use_deferred = not (RCFD->_renderingmodel=="FORWARD"_crcu);
+    font->_use_deferred = RCFD->_renderingmodel.isDeferredPBR();
 
     FontMan::beginTextBlock(context);
     FontMan::DrawText(context, 0, 0, current_string.c_str());

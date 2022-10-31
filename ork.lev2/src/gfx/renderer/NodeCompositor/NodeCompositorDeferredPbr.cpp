@@ -285,7 +285,7 @@ struct PbrNodeImpl {
 
 ///////////////////////////////////////////////////////////////////////////////
 DeferredCompositingNodePbr::DeferredCompositingNodePbr() {
-  _renderingmodel = "DPBR"_crcu;
+  _renderingmodel = RenderingModel(ERenderModelID::DEFERRED_PBR);
   _impl           = std::make_shared<PbrNodeImpl>(this);
   _texAssetVarMap = std::make_shared<asset::vars_t>();
   ///////////////////////////////////////////////////////////////
