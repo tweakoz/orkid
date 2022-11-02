@@ -48,6 +48,7 @@ struct Node {
   std::string _name;
   DrawQueueXfData _dqxfdata;
   varmap::varmap_ptr_t _userdata;
+  bool _enabled = true;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

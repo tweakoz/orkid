@@ -407,7 +407,7 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras,on_enqueue_fn_t on_enq
 
     l->_drawable_nodes.atomicOp([drawable_layer, this](const Layer::drawablenodevect_t& unlocked) {
       for (auto n : unlocked) {
-        if (n->_drawable) {
+        if (n->_drawable and n->_enabled) {
           DrawItem item;
           item._layer   = drawable_layer;
           item._drwnode = n;
