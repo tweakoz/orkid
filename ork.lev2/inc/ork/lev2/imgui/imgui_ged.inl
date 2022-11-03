@@ -137,7 +137,6 @@ inline void DirectTypedProp_float(object_ptr_t obj, const reflect::DirectTyped<f
 
   ImGuiSliderFlags flags = use_log ? ImGuiSliderFlags_Logarithmic : 0;
 
-  printf( "format_str<%s>\n", format_str.c_str() );
   ImGui::SliderFloat(name.c_str(), &the_float, range_min, range_max, format_str.c_str(), flags);
 }
 
