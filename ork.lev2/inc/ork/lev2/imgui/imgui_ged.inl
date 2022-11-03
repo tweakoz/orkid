@@ -105,10 +105,16 @@ inline void DirectTypedProp_float(object_ptr_t obj, const reflect::DirectTyped<f
 
   float range_min = 0.0;
   float range_max = 1.0;
+  bool use_log = false;
+  int precision = 3;
 
   auto anno_min = prop->annotation("editor.range.min");
   auto anno_max = prop->annotation("editor.range.max");
   auto anno_rng = prop->annotation("editor.range");
+  auto anno_log = prop->annotation("editor.range.log");
+  auto anno_prec = prop->annotation("editor.range.precision");
+
+
 
   if (auto as_f = anno_min.tryAs<float>()) {
     range_min = as_f.value();
@@ -120,10 +126,19 @@ inline void DirectTypedProp_float(object_ptr_t obj, const reflect::DirectTyped<f
     range_min = as_f.value()._min;
     range_max = as_f.value()._max;
   }
+  if (auto as_bool = anno_log.tryAs<bool>()) {
+    use_log = as_bool.value();
+  }
+  if (auto as_int = anno_prec.tryAs<int>()) {
+    precision = as_int.value();
+  }
 
-  float power = 1.0f;
+  auto format_str = FormatString("%%.%df", precision);
 
-  ImGui::SliderFloat(name.c_str(), &the_float, range_min, range_max, "%.3f", power);
+  ImGuiSliderFlags flags = use_log ? ImGuiSliderFlags_Logarithmic : 0;
+
+  printf( "format_str<%s>\n", format_str.c_str() );
+  ImGui::SliderFloat(name.c_str(), &the_float, range_min, range_max, format_str.c_str(), flags);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
