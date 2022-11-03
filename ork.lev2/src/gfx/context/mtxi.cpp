@@ -69,8 +69,8 @@ void MatrixStackInterface::PopUIMatrix() {
 void MatrixStackInterface::OnMMatrixDirty(void) {
   const fmtx4& wmat = RefMMatrix();
   //
-  mmMVMatrix  = wmat * RefVMatrix();
-  mmMVPMatrix = wmat * mmVPMatrix;
+  mmMVMatrix  = fmtx4::multiply_ltor(wmat,RefVMatrix());
+  mmMVPMatrix = fmtx4::multiply_ltor(wmat,mmVPMatrix);
   mmR3Matrix  = mmMVMatrix.rotMatrix33();
   // mmMVPMatrix.transpose();
 }
@@ -80,8 +80,8 @@ void MatrixStackInterface::OnMMatrixDirty(void) {
 void MatrixStackInterface::OnVMatrixDirty(void) {
   //////////////////////////////////////////////////////
   const fmtx4& VMatrix = RefVMatrix();
-  mmMVMatrix           = RefMMatrix() * VMatrix;
-  mmVPMatrix           = RefVMatrix() * RefPMatrix();
+  mmMVMatrix           = fmtx4::multiply_ltor(RefMMatrix(),VMatrix);
+  mmVPMatrix           = fmtx4::multiply_ltor(RefVMatrix(),RefPMatrix());
   //////////////////////////////////////////////////////
   const float* pfmatrix    = VMatrix.asArray();
   mVectorScreenRightNormal = fvec4(pfmatrix[0], pfmatrix[4], pfmatrix[8]);
@@ -92,7 +92,7 @@ void MatrixStackInterface::OnVMatrixDirty(void) {
   //////////////////////////////////////////////////////
   fmtx4 matiy;
   matiy.scale(1.0f, -1.0f, 1.0f);
-  mMatrixVITIY = mMatrixVIT * matiy;
+  mMatrixVITIY = fmtx4::multiply_ltor(mMatrixVIT,matiy);
   //////////////////////////////////////////////////////
   mMatrixVITG.inverseOf(VMatrix);
   mMatrixVITG.transpose();
@@ -102,8 +102,8 @@ void MatrixStackInterface::OnVMatrixDirty(void) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void MatrixStackInterface::OnPMatrixDirty(void) {
-  mmVPMatrix  = RefVMatrix() * RefPMatrix();
-  mmMVPMatrix = RefMMatrix() * mmVPMatrix;
+  mmVPMatrix  = fmtx4::multiply_ltor(RefVMatrix(),RefPMatrix());
+  mmMVPMatrix = fmtx4::multiply_ltor(RefMMatrix(),mmVPMatrix);
 }
 
 ///////////////////////////////////////////////////////////////////////

@@ -188,7 +188,7 @@ void pyinit_math(py::module& module_core) {
       py::class_<fquat, fquat_ptr_t>(module_core, "quat", pybind11::buffer_protocol())
           //////////////////////////////////////////////////////////////////////////
           .def_buffer([](fquat& quat) -> pybind11::buffer_info {
-            auto data = &quat.w; // Pointer to buffer
+            auto data = quat.asArray(); // Pointer to buffer
             return pybind11::buffer_info(
                 data,          // Pointer to buffer
                 sizeof(float), // Size of one scalar
@@ -358,7 +358,7 @@ void pyinit_math(py::module& module_core) {
                 return rval;
               })
           //.def("lookAt", &fmtx4::decompose)
-          .def(py::self * py::self)
+          //.def(py::self * py::self)
           .def(py::self == py::self)
           .def("__repr__", [](fmtx4_ptr_t mtx) -> std::string {
             auto str = mtx->dump4x3cn();

@@ -48,12 +48,12 @@ void DefaultRenderer::RenderModel(const ModelRenderable& mdl_renderable, RenderG
   /////////////////////////////////////////////////////////////
   // compute world matrix
   /////////////////////////////////////////////////////////////
-  fmtx4 nmat = tmat * rmat * smat * wmat;
+  fmtx4 nmat = fmtx4::multiply_ltor(tmat,rmat,smat,wmat);
   if (minst->IsBlenderZup()) { // zup to yup conversion matrix
     fmtx4 rmatx, rmaty;
     rmatx.rotateOnX(3.14159f * -0.5f);
     rmaty.rotateOnX(3.14159f);
-    nmat = (rmatx * rmaty) * nmat;
+    nmat = fmtx4::multiply_ltor(rmatx,rmaty,nmat);
   }
   /////////////////////////////////////////////////////////////
   RenderContextInstData RCID;

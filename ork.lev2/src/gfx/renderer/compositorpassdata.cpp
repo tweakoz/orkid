@@ -67,7 +67,7 @@ fvec3 CompositingPassData::monoCamPos(const fmtx4& vizoffsetmtx) const {
   // vizoffsetmtx : use in visual offset cases such as the heightfield
   //   (todo: elaborate on this subject)
   fmtx4 vmono = isStereoOnePass() ? _stereoCameraMatrices->VMONO() : _cameraMatrices->_vmatrix;
-  auto mvmono = (vizoffsetmtx * vmono);
+  auto mvmono = fmtx4::multiply_ltor(vizoffsetmtx,vmono);
   fmtx4 imvmono;
   imvmono.inverseOf(mvmono);
   return imvmono.translation();

@@ -238,9 +238,9 @@ void OpenVrDevice::_processControllerEvents() {
     ry.setRotateY(PI * 0.5);
     rz.setRotateZ(PI * 0.5);
     ivomatrix.inverseOf(_outputViewOffsetMatrix);
-    auto rotmtx         = (rx * ry * rz);
+    auto rotmtx         = fmtx4::multiply_ltor(rx,ry,rz);
     auto tracking2world = [&](const fmtx4& input) -> fmtx4 { //
-      return rotmtx * (input * ivomatrix) * _baseMatrix.inverse();
+      return fmtx4::multiply_ltor(rotmtx,fmtx4::multiply_ltor(input,ivomatrix),_baseMatrix.inverse());
     };
     ////////////////////////////////////////////////////////////////////////////
     // left/right controller assignment heuristic

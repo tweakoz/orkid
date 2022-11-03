@@ -74,7 +74,7 @@ template <typename T> struct Quaternion final
   // converters
   //////////////////////////////////////////////////////
 
-  base_t asGlmQuat() const {
+  const base_t& asGlmQuat() const {
     return *this;
   }
 
@@ -84,8 +84,8 @@ template <typename T> struct Quaternion final
   void fromMatrix3(const Matrix33<T>& matrix);
   Matrix33<T> toMatrix3() const;
 
-  QuatCodec Compress() const;
-  void DeCompress(QuatCodec qc);
+  QuatCodec compress() const;
+  void deCompress(QuatCodec qc);
 
   Vector3<T> toEuler() const;
 
@@ -120,6 +120,8 @@ template <typename T> struct Quaternion final
   T norm() const;
   Quaternion conjugate() const;
   Quaternion inverse() const;
+  void inverseOf( const Quaternion& of);
+
   Quaternion square() const;
   Quaternion negate() const;
 
@@ -138,8 +140,11 @@ template <typename T> struct Quaternion final
 
   /////////
 
+  #if defined(GLM_FORCE_QUAT_DATA_XYZW)
+  T* asArray() { return & this->x; }
+  #else
   T* asArray() { return & this->w; }
-
+  #endif
 
 };
 

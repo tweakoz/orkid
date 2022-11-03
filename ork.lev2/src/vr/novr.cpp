@@ -104,9 +104,9 @@ void NoVrDevice::_updatePoses(RenderContextFrameData& RCFD) {
   // rotzL.setRotateZ(_stereoTileRotationDegreesL*DTOR);
   // rotzR.setRotateZ(_stereoTileRotationDegreesR*DTOR);
 
-  LMATRIX = lp * rotzL;
+  LMATRIX = fmtx4::multiply_ltor(lp,rotzL);
   CMATRIX = cp;
-  RMATRIX = rp * rotzR;
+  RMATRIX = fmtx4::multiply_ltor(rp,rotzR);
 
   _updatePosesCommon();
 }

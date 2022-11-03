@@ -138,7 +138,7 @@ void Octaves::compute(ProcTex& ptex) {
       mtxS.scale(ffrq, ffrq, famp);
       mtxR.setRotateZ(0.0f);
 
-      mOctMaterial.SetAuxMatrix(mtxS * mtxT);
+      mOctMaterial.SetAuxMatrix(fmtx4::multiply_ltor(mtxS,mtxT));
       {
         // printf( "DrawUnitTexQuad oct<%d>\n", i );
         UnitTexQuad(&mOctMaterial, pTARG);

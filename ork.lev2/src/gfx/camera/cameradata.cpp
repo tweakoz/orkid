@@ -208,7 +208,7 @@ CameraMatrices CameraData::computeMatrices(float faspect) const {
   ///////////////////////////////////////////////////
   rval._vmatrix.lookAt(mEye, mTarget, mUp);
   rval._ivmatrix.inverseOf(rval._vmatrix);
-  rval._vpmatrix = rval._vmatrix * rval._pmatrix;
+  rval._vpmatrix = fmtx4::multiply_ltor(rval._vmatrix,rval._pmatrix);
   rval._ivpmatrix.inverseOf(rval._vpmatrix);
   rval._frustum.set(rval._ivpmatrix);
   ///////////////////////////////////////////////////
@@ -255,7 +255,7 @@ float CameraMatrices::GetAspect() const {
 ///////////////////////////////////////////////////////////////////////////////
 fmtx4 CameraMatrices::MVPMONO(const fmtx4& M) const {
   // deco::prints(M.dump4x3cn(), true);
-  return (M * _vmatrix) * _pmatrix;
+  return fmtx4::multiply_ltor(M,_vmatrix,_pmatrix);
 }
 ////////////////////////////////////////////////////////////////////////////////
 // StereoCameraMatrices
@@ -277,11 +277,11 @@ fmtx4 StereoCameraMatrices::PR() const {
 }
 ////////////////////////////////////////////////////////////////////////////////
 fmtx4 StereoCameraMatrices::VPL() const {
-  return _left->GetVMatrix() * _left->GetPMatrix();
+  return fmtx4::multiply_ltor(_left->GetVMatrix(),_left->GetPMatrix());
 }
 ////////////////////////////////////////////////////////////////////////////////
 fmtx4 StereoCameraMatrices::VPR() const {
-  return _right->GetVMatrix() * _right->GetPMatrix();
+  return fmtx4::multiply_ltor(_right->GetVMatrix(),_right->GetPMatrix());
 }
 ////////////////////////////////////////////////////////////////////////////////
 fmtx4 StereoCameraMatrices::VMONO() const {
@@ -293,20 +293,20 @@ fmtx4 StereoCameraMatrices::PMONO() const {
 }
 ////////////////////////////////////////////////////////////////////////////////
 fmtx4 StereoCameraMatrices::VPMONO() const {
-  return _mono->GetVMatrix() * _mono->GetPMatrix();
+  return fmtx4::multiply_ltor(_mono->GetVMatrix(),_mono->GetPMatrix());
 }
 ////////////////////////////////////////////////////////////////////////////////
 fmtx4 StereoCameraMatrices::MVPL(const fmtx4& M) const {
-  return (M * VL()) * PL();
+  return fmtx4::multiply_ltor(M,VL(),PL());
 }
 ////////////////////////////////////////////////////////////////////////////////
 fmtx4 StereoCameraMatrices::MVPR(const fmtx4& M) const {
-  return (M * VR()) * PR();
+  return fmtx4::multiply_ltor(M,VR(),PR());
 }
 ////////////////////////////////////////////////////////////////////////////////
 fmtx4 StereoCameraMatrices::MVPMONO(const fmtx4& M) const {
   // deco::prints(M.dump4x3cn(), true);
-  return (M * VMONO()) * PMONO();
+  return fmtx4::multiply_ltor(M,VMONO(),PMONO());
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

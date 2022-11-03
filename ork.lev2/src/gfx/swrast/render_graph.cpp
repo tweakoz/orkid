@@ -128,8 +128,8 @@ void RenderData::Update() {
   mMatrixM.setToIdentity();
   mMatrixM.rotateOnY(fi * PI2);
 
-  mMatrixMV  = (mMatrixM * mMatrixV);
-  mMatrixMVP = mMatrixMV * mMatrixP;
+  mMatrixMV  = ork::fmtx4::multiply_ltor(mMatrixM,mMatrixV);
+  mMatrixMVP = ork::fmtx4::multiply_ltor(mMatrixMV,mMatrixP);
 
   ork::fvec3 root_topn = mFrustum._topPlane.GetNormal();
   ork::fvec3 root_botn = mFrustum._bottomPlane.GetNormal();

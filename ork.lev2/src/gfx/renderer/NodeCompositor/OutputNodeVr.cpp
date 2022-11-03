@@ -76,7 +76,7 @@ struct VRIMPL {
 
       fmtx4 controller_worldspace = controller->_world_matrix;
 
-      fmtx4 mmtx = (scalemtx * rx * ry * rz * controller_worldspace);
+      fmtx4 mmtx = fmtx4::multiply_ltor(scalemtx,rx,ry,rz,controller_worldspace);
 
       targ->MTXI()->PushMMatrix(mmtx);
       targ->MTXI()->PushVMatrix(camdat->GetVMatrix());

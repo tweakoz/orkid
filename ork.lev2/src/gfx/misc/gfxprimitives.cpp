@@ -1319,14 +1319,14 @@ void GfxPrimitives::RenderCapsule(Context* pTarg, float radius) {
   trans = trans.transform(pTarg->MTXI()->RefMMatrix());
   MatTrans.setTranslation(trans);
 
-  pTarg->MTXI()->PushMMatrix(MatScale * MatRotate * MatTrans);
+  pTarg->MTXI()->PushMMatrix(fmtx4::multiply_ltor(MatScale,MatRotate,MatTrans));
   pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_Dome);
   pTarg->MTXI()->PopMMatrix();
 
   // Bottom dome
   MatRotate.rotateOnZ(PI);
   MatTrans.setTranslation(pTarg->MTXI()->RefMMatrix().translation());
-  pTarg->MTXI()->PushMMatrix(MatScale * MatRotate * MatTrans);
+  pTarg->MTXI()->PushMMatrix(fmtx4::multiply_ltor(MatScale,MatRotate,MatTrans));
   pTarg->GBI()->DrawPrimitive(&GetRef().mMaterial, GetRef().mVtxBuf_Dome);
   pTarg->MTXI()->PopMMatrix();
 
@@ -1419,7 +1419,7 @@ void GfxPrimitives::RenderOrthoQuad(
 
   fmtx4 OrthoMat = pTarg->MTXI()->GetUIOrthoProjectionMatrix();
   pTarg->MTXI()->PushPMatrix(OrthoMat);
-  pTarg->MTXI()->PushVMatrix(MatTrans * MatScale);
+  pTarg->MTXI()->PushVMatrix(fmtx4::multiply_ltor(MatTrans,MatScale));
   pTarg->MTXI()->PushMMatrix(fmtx4::Identity());
   {
     // pTarg->GBI()->DrawPrimitive(vw, PrimitiveType::TRIANGLES);

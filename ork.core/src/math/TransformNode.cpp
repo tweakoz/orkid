@@ -96,7 +96,7 @@ TransformNode::~TransformNode() {
 
 fmtx4 TransformNode::computeMatrix() const {
   if(_parent){
-    return _transform->composed() * _parent->_transform->composed();
+    return fmtx4::multiply_ltor(_transform->composed(),_parent->_transform->composed());
   }
   else{
     return _transform->composed();

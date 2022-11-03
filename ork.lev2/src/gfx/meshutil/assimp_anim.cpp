@@ -194,7 +194,7 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
         R.fromQuaternion(currot);
         S.setScale(cursca.x, cursca.x, cursca.x);
         T.setTranslation(curpos);
-        fmtx4 XF_NSPACE = R * T;
+        fmtx4 XF_NSPACE = fmtx4::multiply_ltor(R,T);
         // fmtx4 XF_NSPACE = T * R;
         skelnode_framevect_n.push_back(XF_NSPACE);
 
@@ -269,7 +269,7 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
           fmtx4 OSPACE             = skelnode->concatenated2();
           auto par                 = skelnode->_parent;
           fmtx4 POSPACE            = par ? skelnode->_parent->concatenated2() : fmtx4();
-          fmtx4 JSPACE             = POSPACE.inverse() * OSPACE;
+          fmtx4 JSPACE             = fmtx4::multiply_ltor(POSPACE.inverse(),OSPACE);
           deco::printf(color, "fr<%d> ", f);
           deco::printf(yel, "%s (J): ", channel_name.c_str());
           deco::prints(JSPACE.dump4x3cn(), true);

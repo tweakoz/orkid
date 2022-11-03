@@ -129,7 +129,7 @@ void Device::_updatePosesCommon() {
         avgrotmtx.fromNormalVectors(nx, ny, nz);
         fmtx4 avgtramtx;
         avgtramtx.setTranslation(avgpos);
-        fmtx4 refmtx = avgtramtx * avgrotmtx;
+        fmtx4 refmtx = fmtx4::multiply_ltor(avgtramtx,avgrotmtx);
         _baseMatrix.setTranslation(hmd.inverse().translation());
         // deco::prints(hmd.dump4x3cn(), true);
         // deco::prints(hmd.inverse().dump4x3cn(), true);
@@ -168,9 +168,9 @@ void Device::_updatePosesCommon() {
 
   _outputViewOffsetMatrix = usermtx;
 
-  fmtx4 relmtx = (_baseMatrix * _hmdMatrix);
+  fmtx4 relmtx = fmtx4::multiply_ltor(_baseMatrix,_hmdMatrix);
 
-  fmtx4 cmv = usermtx * relmtx;
+  fmtx4 cmv = fmtx4::multiply_ltor(usermtx,relmtx);
 
   if (_calibstate == 2) {
     deco::printf(fvec3::White(), "_baseMatrix: %s\n", _baseMatrix.dump4x3cn().c_str());
@@ -180,8 +180,8 @@ void Device::_updatePosesCommon() {
     deco::printf(fvec3::White(), "cmv: %s\n", cmv.dump4x3cn().c_str());
   }
 
-  fmtx4 lmv = cmv * eyeL;
-  fmtx4 rmv = cmv * eyeR;
+  fmtx4 lmv = fmtx4::multiply_ltor(cmv,eyeL);
+  fmtx4 rmv = fmtx4::multiply_ltor(cmv,eyeR);
 
   msgrouter::content_t c;
   c.set<fmtx4>(cmv);

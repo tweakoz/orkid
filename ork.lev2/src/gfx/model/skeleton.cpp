@@ -26,19 +26,23 @@ XgmSkelNode::XgmSkelNode(const std::string& Name)
 ///////////////////////////////////////////////////////////////////////////////
 
 fmtx4 XgmSkelNode::concatenated() const {
-  return _parent ? (_jointMatrix * _parent->concatenated()) : _jointMatrix;
+  return _parent ? fmtx4::multiply_ltor(_jointMatrix,_parent->concatenated()) //
+                 : _jointMatrix;
 }
 fmtx4 XgmSkelNode::concatenatednode() const {
-  return _parent ? (_nodeMatrix * _parent->concatenatednode()) : _nodeMatrix;
+  return _parent ? fmtx4::multiply_ltor(_nodeMatrix, _parent->concatenatednode()) //
+                 : _nodeMatrix;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 fmtx4 XgmSkelNode::concatenated2() const {
-  return _parent ? (_parent->concatenated2() * _jointMatrix) : _jointMatrix;
+  return _parent ? fmtx4::multiply_ltor(_parent->concatenated2() , _jointMatrix) //
+                 : _jointMatrix;
 }
 fmtx4 XgmSkelNode::concatenatednode2() const {
-  return _parent ? (_parent->concatenatednode2() * _nodeMatrix) : _nodeMatrix;
+  return _parent ? fmtx4::multiply_ltor(_parent->concatenatednode2() , _nodeMatrix) //
+                 : _nodeMatrix;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -337,7 +341,7 @@ fmtx4 XgmSkeleton::concatenated(PoolString named) const {
   for (int i = walklen; i >= 0; i--) {
     int jidx = walk[i];
     auto mtx = RefJointMatrix(jidx);
-    rval     = rval * mtx;
+    rval     = fmtx4::multiply_ltor(rval,mtx);
   }
   return rval;
 }

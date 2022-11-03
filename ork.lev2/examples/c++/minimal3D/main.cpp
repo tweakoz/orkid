@@ -96,7 +96,7 @@ int main(int argc, char** argv,char** envp) {
     fbi->SetClearColor(fvec4(0, 0, 0, 1));
     context->beginFrame();
     resources->_material->begin(resources->_fxtechnique, RCFD);
-    resources->_material->bindParamMatrix(resources->_fxparameterMVP, view * projection);
+    resources->_material->bindParamMatrix(resources->_fxparameterMVP, fmtx4::multiply_ltor(view,projection));
     resources->_frustum_prim->renderEML(context);
     resources->_material->end(RCFD);
     context->endFrame();

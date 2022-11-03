@@ -248,7 +248,7 @@ bool GfxMaterial3DSolid::BeginPass(Context* pTarg, int iPass) {
     FXI->BindParamMatrix(hMatMVPR, MVPR);
   } else if (CPD._cameraMatrices) {
     auto mcams = CPD._cameraMatrices;
-    auto MVP   = world * mcams->_vmatrix * mcams->_pmatrix;
+    auto MVP   = fmtx4::multiply_ltor(world,mcams->_vmatrix,mcams->_pmatrix);
     FXI->BindParamMatrix(hMatMVP, MVP);
   } else {
     auto MVP = MTXI->RefMVPMatrix();

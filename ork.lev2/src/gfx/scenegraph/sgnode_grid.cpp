@@ -128,7 +128,7 @@ struct GridRenderImpl {
       auto cammatrices = CPD.cameraMatrices();
       const fmtx4& PMTX_mono = cammatrices->_pmatrix;
       const fmtx4& VMTX_mono = cammatrices->_vmatrix;
-      auto MVP               = VMTX_mono * PMTX_mono;
+      auto MVP               = fmtx4::multiply_ltor(VMTX_mono,PMTX_mono);
 
       _fwdmaterial->_rasterstate.SetBlending(Blending::ALPHA_ADDITIVE);
       _fwdmaterial->_rasterstate.SetDepthTest(EDepthTest::EDEPTHTEST_OFF);

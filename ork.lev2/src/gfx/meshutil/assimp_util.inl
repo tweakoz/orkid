@@ -248,7 +248,7 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
     fmtx4 Bp = par ? par->concatenatednode2() : fmtx4::Identity();
     fmtx4 J;
     J.correctionMatrix(Bp, Bc);
-    J                  = Bp.inverse() * Bc;
+    J                  = fmtx4::multiply_ltor(Bp.inverse(),Bc);
     node->_jointMatrix = J;
   });
 
@@ -277,7 +277,7 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
       fmtx4 J    = node->_jointMatrix;
       fmtx4 Jk   = node->concatenated(); // object space
       fmtx4 Ji   = J.inverse();
-      fmtx4 D    = Bp * J;
+      fmtx4 D    = fmtx4::multiply_ltor(Bp,J);
       auto n     = node->_name;
       deco::printe(fvec3::White(), n + ".ASSO: " + ASSO.dump4x3cn(), true);
       deco::printe(fvec3::White(), n + ".N: " + N.dump4x3cn(), true);

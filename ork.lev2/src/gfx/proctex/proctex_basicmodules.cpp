@@ -628,7 +628,7 @@ void Transform::compute(ProcTex& ptex) {
     float cosa = cosf(rot);
     ////////////////////////////////////////////////////////////////
     mMaterial->SetTexture(conplug->GetValue().GetTexture(ptex));
-    mMaterial->SetAuxMatrix((mtxTO1 * (mtxR * mtxS) * mtxTO2) * mtxT);
+    mMaterial->SetAuxMatrix(fmtx4::multiply_ltor(mtxTO1,mtxR,mtxS,mtxTO2,mtxT));
     mMaterial->SetUser0(fvec4(sina, cosa, 0.0f, float(buffer.miW)));
     ////////////////////////////////////////////////////////////////
     UnitTexQuad(mMaterial, pTARG);

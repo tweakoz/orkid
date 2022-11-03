@@ -127,7 +127,7 @@ void Fdn4ReverbX::compute(DspBuffer& dspbuf) // final
     fquat q;
     q.fromAxisAngle(fvec4(_axis, _speed * time));
     auto rotMatrix = q.toMatrix();
-    auto curmatrix = _feedbackMatrix * rotMatrix;
+    auto curmatrix = fmtx4::multiply_ltor(_feedbackMatrix,rotMatrix);
 
     fvec4 grp0 = curmatrix.column(0);
     fvec4 grp1 = curmatrix.column(1);

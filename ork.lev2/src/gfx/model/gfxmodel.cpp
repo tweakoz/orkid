@@ -569,8 +569,8 @@ void XgmModel::RenderSkinned(
         vw.Lock(pTARG, &vtxbuf, numlines);
         for (int ib = 0; ib < inumbones; ib++) {
           const XgmBone& bone = skeleton().bone(ib);
-          fmtx4 bone_head     = WorldMat * LocalPose.RefLocalMatrix(bone._parentIndex);
-          fmtx4 bone_tail     = WorldMat * LocalPose.RefLocalMatrix(bone._childIndex);
+          fmtx4 bone_head     = fmtx4::multiply_ltor(WorldMat,LocalPose.RefLocalMatrix(bone._parentIndex));
+          fmtx4 bone_tail     = fmtx4::multiply_ltor(WorldMat,LocalPose.RefLocalMatrix(bone._childIndex));
           fvec3 h             = bone_head.translation();
           fvec3 t             = bone_tail.translation();
 
@@ -648,8 +648,8 @@ void XgmModel::RenderSkinned(
       }
       for (int ib = 0; ib < inumbones; ib++) {
         const XgmBone& bone = skeleton().bone(ib);
-        fmtx4 bone_head     = WorldMat * LocalPose.RefLocalMatrix(bone._parentIndex);
-        fmtx4 bone_tail     = WorldMat * LocalPose.RefLocalMatrix(bone._childIndex);
+        fmtx4 bone_head     = fmtx4::multiply_ltor(WorldMat,LocalPose.RefLocalMatrix(bone._parentIndex));
+        fmtx4 bone_tail     = fmtx4::multiply_ltor(WorldMat,LocalPose.RefLocalMatrix(bone._childIndex));
         pTARG->MTXI()->PushMMatrix(bone_head);
         // GfxPrimitives::GetRef().RenderAxis(pTARG);
         pTARG->MTXI()->PopMMatrix();

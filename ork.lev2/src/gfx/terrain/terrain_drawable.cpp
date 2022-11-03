@@ -1024,8 +1024,8 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
     auto mcams             = CPD._cameraMatrices;
     const fmtx4& PMTX_mono = mcams->_pmatrix;
     const fmtx4& VMTX_mono = mcams->_vmatrix;
-    auto MV_mono           = (viz_offset * VMTX_mono);
-    auto MVP               = MV_mono * PMTX_mono;
+    auto MV_mono           = fmtx4::multiply_ltor(viz_offset,VMTX_mono);
+    auto MVP               = fmtx4::multiply_ltor(MV_mono,PMTX_mono);
     MVPL                   = MVP;
     MVPC                   = MVP;
     MVPR                   = MVP;

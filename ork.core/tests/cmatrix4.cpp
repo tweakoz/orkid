@@ -22,7 +22,7 @@ TEST(Matrix44CompDecomp) {
   ms.setScale(0.5);
   mt.setTranslation(1,2,3);
 
-  mm = (ms*mr)*mt;
+  mm = fmtx4::multiply_ltor(ms,mr,mt);
 
   fvec3 t;
   fquat r;

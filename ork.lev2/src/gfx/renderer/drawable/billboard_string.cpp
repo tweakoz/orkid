@@ -95,7 +95,7 @@ BillboardStringDrawable::BillboardStringDrawable()
     bbmatrix.compose(trans,fquat(),_scale);
 
 
-    mtxi->PushMMatrix((mtxflipy*bbrotmtx)*bbmatrix);
+    mtxi->PushMMatrix(fmtx4::multiply_ltor(mtxflipy,bbrotmtx,bbmatrix));
     mtxi->PushVMatrix(VMatrix);
     mtxi->PushPMatrix(PMatrix);
     context->PushModColor(_color);
@@ -175,7 +175,7 @@ InstancedBillboardStringDrawable::InstancedBillboardStringDrawable(){
           bbrotmtx.createBillboard2(wtrans,cdata.mEye,this->_upvec);
           fvec3 trans = wtrans+offset;
           bbmatrix.compose(trans,rot,this->_scale);
-          out_item._wmatrix = bbrotmtx*bbmatrix;
+          out_item._wmatrix = fmtx4::multiply_ltor(bbrotmtx,bbmatrix);
           out_item._text = string.c_str();
         }
     }

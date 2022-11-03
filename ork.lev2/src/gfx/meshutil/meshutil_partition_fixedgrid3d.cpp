@@ -243,7 +243,7 @@ void GridGraph::EndPreMerge() {
 
   MatS.scale(fscal, fscal, fscal);
   MatT.setTranslation(-vmin);
-  mMtxWorldToGrid = MatT * MatS;
+  mMtxWorldToGrid = fmtx4::multiply_ltor(MatT,MatS);
 
   fvec3 vtest_min = vmin.transform(mMtxWorldToGrid).xyz();
   fvec3 vtest_max = vmax.transform(mMtxWorldToGrid).xyz();

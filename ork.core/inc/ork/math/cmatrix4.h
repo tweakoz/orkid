@@ -139,11 +139,27 @@ template <typename T> struct Matrix44 final
   Matrix44<T> rotMatrix44() const;
 
   Matrix44<T> multiply(T scalar) const;
-  Matrix44<T> multiply(const Matrix44<T>& mat1) const;
 
+  ////////////////////////////////////
+  // traditional matrix multiplication (rtol)
+  ////////////////////////////////////
+
+  Matrix44<T> multiply_rtol(const Matrix44<T>& mat1) const;
+  
   inline Matrix44<T> operator*(const Matrix44<T>& mat) const {
-    return multiply(mat);
+    return multiply_rtol(mat);
   }
+
+  ////////////////////////////////////
+  // ltor matrix multiplication
+  ////////////////////////////////////
+
+  static Matrix44<T> multiply_ltor(const Matrix44<T>& a,const Matrix44<T>& b);
+  static Matrix44<T> multiply_ltor(const Matrix44<T>& a,const Matrix44<T>& b, const Matrix44<T>& c);
+  static Matrix44<T> multiply_ltor(const Matrix44<T>& a,const Matrix44<T>& b, const Matrix44<T>& c, const Matrix44<T>& d);
+  static Matrix44<T> multiply_ltor(const Matrix44<T>& a,const Matrix44<T>& b, const Matrix44<T>& c,const Matrix44<T>& d, const Matrix44<T>& e );
+
+  ////////////////////////////////////
 
   void transpose();
   void normalizeInPlace();
@@ -233,6 +249,7 @@ template <typename T> struct Matrix44 final
     const base_t& as_base = *this;
     return (T*)&as_base[0][0];
   }
+
 
   ///////////////////////////////////////////////////////////////////////////////
 };

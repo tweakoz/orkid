@@ -332,7 +332,7 @@ fmtx4 SpotLight::shadowMatrix() const {
   fmtx4 matV, matP;
   matV.lookAt(wpos, ctr, wny);
   matP.perspective(fovy, aspect, near, far);
-  return matV * matP;
+  return fmtx4::multiply_ltor(matV,matP);
 }
 
 CameraData SpotLight::shadowCamDat() const {

@@ -356,7 +356,7 @@ bool PBRMaterial::BeginPass(Context* targ, int iPass) {
   auto mvmtx  = mtxi->RefMVMatrix();
   auto vmtx   = mtxi->RefVMatrix();
   auto pmtx   = mtxi->RefPMatrix();
-  auto vpmtx = vmtx*pmtx;
+  auto vpmtx = fmtx4::multiply_ltor(vmtx,pmtx);
 
   // vmtx.dump("vmtx");
   const RenderContextInstData* RCID  = targ->GetRenderContextInstData();
@@ -397,8 +397,8 @@ bool PBRMaterial::BeginPass(Context* targ, int iPass) {
     fxi->BindParamMatrix(_paramMROT, (world).rotMatrix33());
   } else {
     auto mcams = CPD._cameraMatrices;
-    auto VP = (mcams->_vmatrix * mcams->_pmatrix);
-    auto MVP   = world * VP;
+    auto VP = fmtx4::multiply_ltor(mcams->_vmatrix,mcams->_pmatrix);
+    auto MVP   = fmtx4::multiply_ltor(world,VP);
     fxi->BindParamMatrix(_paramMVP, MVP);
     fxi->BindParamMatrix(_paramVP, VP);
     fxi->BindParamMatrix(_paramMROT, (world).rotMatrix33());
@@ -428,7 +428,7 @@ void PBRMaterial::UpdateMVPMatrix(Context* context) {
   else{
     auto mcams = CPD._cameraMatrices;
     const auto& world = mtxi->RefMMatrix();
-    auto MVP   = world * mcams->_vmatrix * mcams->_pmatrix;
+    auto MVP   = fmtx4::multiply_ltor(world,mcams->_vmatrix,mcams->_pmatrix);
     fxi->BindParamMatrix(_paramMVP, MVP);
 
   }
@@ -534,7 +534,7 @@ void PBRMaterial::setupCamera(const RenderContextFrameData& RCFD) {
     FXI->BindParamMatrix(_paramMVPR, MVPR);
   } else if (CPD._cameraMatrices) {
     auto mcams = CPD._cameraMatrices;
-    auto MVP   = world * mcams->_vmatrix * mcams->_pmatrix;
+    auto MVP   = fmtx4::multiply_ltor(world,mcams->_vmatrix,mcams->_pmatrix);
     FXI->BindParamMatrix(_paramMVP, MVP);
   } else {
     auto MVP = MTXI->RefMVPMatrix();

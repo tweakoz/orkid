@@ -286,6 +286,12 @@ template <typename T> Quaternion<T> Quaternion<T>::inverse() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+template <typename T> void Quaternion<T>::inverseOf(const Quaternion<T>& of) {
+  *this = Quaternion<T>(glm::inverse(of.asGlmQuat()));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename T> T Quaternion<T>::norm() const {
   return (this->w * this->w + this->x * this->x + this->y * this->y + this->z * this->z);
 }
@@ -397,7 +403,7 @@ template <typename T> void Quaternion<T>::dump(void) {
 // smallest 3 compression - 16 bytes -> 4 bytes  (game gems 3, page 189)
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> QuatCodec Quaternion<T>::Compress(void) const {
+template <typename T> QuatCodec Quaternion<T>::compress(void) const {
   static const T frange = T((1 << 9) - 1);
 
   QuatCodec uquat;
@@ -504,7 +510,7 @@ template <typename T> QuatCodec Quaternion<T>::Compress(void) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Quaternion<T>::DeCompress(QuatCodec uquat) {
+template <typename T> void Quaternion<T>::deCompress(QuatCodec uquat) {
   static const T frange  = T((1 << 9) - 1);
   static const T fsqr2d2 = sqrtf(T(2)) / T(2);
   static const T firange = fsqr2d2 / frange;

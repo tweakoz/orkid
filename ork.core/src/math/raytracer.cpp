@@ -992,7 +992,7 @@ void Engine::InitRender(fvec3& eye, fvec3& target) {
   // mtxViewport.Scale(
   ///////////////////////////////////////
 
-  const fmtx4 matVP = (mtxLookat * mtxP);
+  const fmtx4 matVP = fmtx4::multiply_ltor(mtxLookat,mtxP);
   fmtx4 matIVP;
   matIVP.inverseOf(matVP);
 

@@ -250,7 +250,7 @@ void SignalTrackWidget::DoDraw(ui::drawevent_constptr_t drwev) {
   fmtx4 scale_matrix, trans_matrix;
   scale_matrix.setScale(matrix_xscale, matrix_yscale, 1.0f);
   trans_matrix.translate(matrix_xoffset, matrix_yoffset, 0.0f);
-  auto mmatrix = scale_matrix * trans_matrix;
+  auto mmatrix = fmtx4::multiply_ltor(scale_matrix,trans_matrix);
   ////////////////////////////////
   int ix1, iy1, ix2, iy2, ixc, iyc;
   LocalToRoot(0, 0, ix1, iy1);

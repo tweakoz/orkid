@@ -59,13 +59,13 @@ void DecompMtx44::Compose(fmtx4& mtx, EXFORM_COMPONENT components) const {
     ork::fmtx4 scaleMat;
     scaleMat.setScale(mScale, mScale, mScale);
     ork::fmtx4 rotMat = mRot.toMatrix();
-    mtx               = scaleMat * rotMat;
+    mtx               = fmtx4::multiply_ltor(scaleMat,rotMat);
   } else if ((XFORM_COMPONENT_TRANS | XFORM_COMPONENT_SCALE) == components) {
     ork::fmtx4 scaleMat;
     scaleMat.setScale(mScale, mScale, mScale);
     ork::fmtx4 transMat;
     mtx.setTranslation(mTrans);
-    mtx = scaleMat * transMat;
+    mtx = fmtx4::multiply_ltor(scaleMat,transMat);
   } else if (XFORM_COMPONENT_SCALE == components) {
     mtx.setToIdentity();
     mtx.setScale(mScale, mScale, mScale);
@@ -73,7 +73,7 @@ void DecompMtx44::Compose(fmtx4& mtx, EXFORM_COMPONENT components) const {
     ork::fmtx4 transMat;
     transMat.setTranslation(mTrans);
     ork::fmtx4 rotMat = mRot.toMatrix();
-    mtx               = rotMat * transMat;
+    mtx               = fmtx4::multiply_ltor(rotMat,transMat);
   }
 }
 
@@ -388,7 +388,7 @@ void XgmLocalPose::Concatenate(void) {
 
   if (mSkeleton.miRootNode >= 0) {
     const fmtx4& RootAnimMat    = RefLocalMatrix(mSkeleton.miRootNode);
-    pmats[mSkeleton.miRootNode] = RootAnimMat * mSkeleton.mTopNodesMatrix;
+    pmats[mSkeleton.miRootNode] = fmtx4::multiply_ltor(RootAnimMat,mSkeleton.mTopNodesMatrix);
 
     int inumbones = mSkeleton.numBones();
     for (int ib = 0; ib < inumbones; ib++) {
@@ -402,7 +402,7 @@ void XgmLocalPose::Concatenate(void) {
       std::string chiname = mSkeleton.GetJointName(ichild).c_str();
 
       // fmtx4 temp    = (ParentMatrix * LocMatrix);
-      fmtx4 temp    = (LocMatrix * ParentMatrix);
+      fmtx4 temp    = fmtx4::multiply_ltor(LocMatrix,ParentMatrix);
       pmats[ichild] = temp;
 
       if (RefBlendPoseInfo(ichild).GetPoseCallback())

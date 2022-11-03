@@ -86,7 +86,7 @@ bool FxStateInstance::beginPass(const RenderContextInstData& RCID, int ipass) {
           if (monocams) {
             FXI->BindParamMatrix(param, monocams->MVPMONO(worldmatrix));
           } else {
-            auto MVP = worldmatrix * MTXI->RefVPMatrix();
+            auto MVP = fmtx4::multiply_ltor(worldmatrix,MTXI->RefVPMatrix());
             FXI->BindParamMatrix(param, MVP);
           }
           break;

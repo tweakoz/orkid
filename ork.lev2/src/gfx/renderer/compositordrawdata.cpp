@@ -61,9 +61,9 @@ ViewData CompositorDrawData::computeViewData() const {
     VD.PL  = L->_pmatrix;
     VD.PR  = R->_pmatrix;
     VD.PM  = M->_pmatrix;
-    VD.VPL = VD.VL * VD.PL;
-    VD.VPR = VD.VR * VD.PR;
-    VD.VPM = VD.VM * VD.PM;
+    VD.VPL = fmtx4::multiply_ltor(VD.VL,VD.PL);
+    VD.VPR = fmtx4::multiply_ltor(VD.VR,VD.PR);
+    VD.VPM = fmtx4::multiply_ltor(VD.VM,VD.PM);
     // VR projection matrix
     //[ +0.7842  +0  +0  +0 ] [ +0  +0.7048  +0  +0 ] [ -0.05671  +0.0023  -1  -1 ] [ +0  +0  -0.1  +0 ]   axis<-0.001 -0.04 -0>
   } else {
@@ -74,7 +74,7 @@ ViewData CompositorDrawData::computeViewData() const {
     VD.VR  = VD.VM;
     VD.PL  = VD.PM;
     VD.PR  = VD.PM;
-    VD.VPM = VD.VM * VD.PM;
+    VD.VPM = fmtx4::multiply_ltor(VD.VM,VD.PM);
     VD.VPL = VD.VPM;
     VD.VPR = VD.VPM;
     // editor projection matrix

@@ -150,7 +150,7 @@ void Frustum::set( const mtx44_type& IVPMatrix )
 void Frustum::set( const mtx44_type& VMatrix, const mtx44_type& PMatrix )
 {
 	mtx44_type IVPMatrix;
-	mtx44_type VPMatrix = VMatrix*PMatrix;
+	mtx44_type VPMatrix = mtx44_type::multiply_ltor(VMatrix,PMatrix);
 	IVPMatrix.inverseOf(VPMatrix);
 	set( IVPMatrix );
 }

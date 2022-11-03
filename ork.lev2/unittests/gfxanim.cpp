@@ -33,7 +33,7 @@ TEST(gfxanim1) {
   t.setTranslation(1, 0, 0);
   r.rotateOnX(PI * 0.01);
   it.setTranslation(-1, 0, 0);
-  auto x  = it * r * t;
+  auto x  = fmtx4::multiply_ltor(it,r,t);
   auto xx = fvec4(0, 1, 0).transform(x);
   deco::printe(orange, x.dump(), true);
   printf("xx<%g %g %g>\n", xx.x, xx.y, xx.z);

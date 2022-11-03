@@ -301,7 +301,7 @@ TEST(Vector4_YO) {
   fmtx4 w2u_mtx, w2u_Smtx, w2u_Tmtx;
   w2u_Smtx.setScale(fw2u_hsca, fw2u_vsca, 1.0f);
   w2u_Tmtx.setTranslation(fw2u_hoff, fw2u_voff, 0.0f);
-  w2u_mtx = w2u_Tmtx * w2u_Smtx;
+  w2u_mtx = fmtx4::multiply_ltor(w2u_Tmtx,w2u_Smtx);
 
   fvec4 v0 = fvec4(fx0, fy0, 0.0f).transform(w2u_mtx);
   fvec4 v1 = fvec4(fx1, fy1, 0.0f).transform(w2u_mtx);

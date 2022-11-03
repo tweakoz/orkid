@@ -309,7 +309,7 @@ void Mesh::SetRangeTransform(const fvec4& vscale, const fvec4& vtrans) {
   fmtx4 MatS, MatT;
   MatS.scale(vscale.x, vscale.y, vscale.z);
   MatT.setTranslation(vtrans.x, vtrans.y, vtrans.z);
-  mMatRange = MatS * MatT;
+  mMatRange = fmtx4::multiply_ltor(MatS,MatT);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

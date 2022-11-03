@@ -34,6 +34,28 @@ template <typename T> const Matrix44<T> Matrix44<T>::Identity() {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> 
+Matrix44<T> Matrix44<T>::multiply_ltor(const Matrix44<T>& a,const Matrix44<T>& b){
+  return b.multiply_rtol(a);
+}
+
+template <typename T> 
+Matrix44<T> Matrix44<T>::multiply_ltor(const Matrix44<T>& a,const Matrix44<T>& b, const Matrix44<T>& c){
+  return c.multiply_rtol(b.multiply_rtol(a));
+}
+
+template <typename T> 
+Matrix44<T> Matrix44<T>::multiply_ltor(const Matrix44<T>& a,const Matrix44<T>& b, const Matrix44<T>& c, const Matrix44<T>& d){
+  return d.multiply_rtol(c.multiply_rtol(b.multiply_rtol(a)));
+}
+
+template <typename T> 
+Matrix44<T> Matrix44<T>::multiply_ltor(const Matrix44<T>& a,const Matrix44<T>& b, const Matrix44<T>& c,const Matrix44<T>& d, const Matrix44<T>& e ){
+  return e.multiply_rtol(d.multiply_rtol(c.multiply_rtol(b.multiply_rtol(a))));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> 
   void Matrix44<T>::toEulerXYZ(T& ex, T& ey, T& ez) const {
     const base_t& as_base = *this;
     glm::extractEulerAngleXYZ(as_base,ex,ey,ez);
@@ -544,12 +566,12 @@ template <typename T> void Matrix44<T>::createBillboard2(Vector3<T> objectPos, V
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> Matrix44<T> Matrix44<T>::multiply(const Matrix44<T>& mat1) const {
+template <typename T> Matrix44<T> Matrix44<T>::multiply_rtol(const Matrix44<T>& rhs) const {
   Matrix44<T> result;
   base_t& result_as_base = result;
-  const base_t& a_as_base = *this;
-  const base_t& b_as_base = mat1;
-  result_as_base = b_as_base*a_as_base; // TODO b*a -> a*b
+  const base_t& lhs_base = *this;
+  const base_t& rhs_base = rhs;
+  result_as_base = lhs_base*rhs_base;
   return (result);
 }
 
@@ -578,7 +600,7 @@ template <typename T> void Matrix44<T>::correctionMatrix(const Matrix44<T>& from
 
   Matrix44<T> inv_from = from.inverse();
   inv_from.dump();
-  *this = (inv_from * to); // B
+  *this = multiply_ltor(inv_from,to); // B
   this->dump();
 }
 
@@ -678,7 +700,7 @@ void Matrix44<T>::lerp(const Matrix44<T>& from, const Matrix44<T>& to, T par) //
 
   //////////////////
 
-  *this = (FromR * matR * matT);
+  *this = multiply_ltor(FromR , matR , matT);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -778,7 +800,7 @@ template <typename T> void Matrix44<T>::compose(const Vector3<T>& pos,
     matS[2][2] = scalez;
     matR = glm::toMat4 ( qrot.asGlmQuat() );
 
-    auto mtxout = matT*matR*matS;
+    auto mtxout = multiply_ltor(matT,matR,matS);
 
     auto mtxstrT = Matrix44<T>(matT).dump4x3cn();
     auto mtxstrR = Matrix44<T>(matR).dump4x3cn();
@@ -855,7 +877,7 @@ template <typename T> void Matrix44<T>::compose2(const Vector3<T>& pos,
   matS.setScale(scalex,scaley,scalez);
   matR = qrot.toMatrix();
 
-  auto mtxout = (matR*matS)*matT;
+  auto mtxout = multiply_ltor(matR,matS,matT);
   *this = Matrix44<T>(mtxout);
 }
 ///////////////////////////////////////////////////////////////////////////////

@@ -406,7 +406,7 @@ void FontMan::DrawTextItems( Context* context, const textitem_vect& items ){
         const auto& item = items[i];
         auto vw = fontman->_writers[i];
         const auto& wmatrix = item._wmatrix;
-        mtxi->PushMMatrix(matscale*wmatrix);
+        mtxi->PushMMatrix(fmtx4::multiply_ltor(matscale,wmatrix));
         material->UpdateMMatrix(context);
         gbi->DrawPrimitiveEML(*vw, ork::lev2::PrimitiveType::TRIANGLES);
         mtxi->PopMMatrix();

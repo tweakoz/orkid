@@ -685,7 +685,7 @@ void EzUiCam::updateMatrices(void) {
   mRot = QuatC.toMatrix();
   mTrans.setTranslation(mvCenter * -1.0f);
 
-  fmtx4 matxf = (mTrans * mRot);
+  fmtx4 matxf = fmtx4::multiply_ltor(mTrans,mRot);
   fmtx4 matixf;
   matxf.inverseOf(matxf);
 

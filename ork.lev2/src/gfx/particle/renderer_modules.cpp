@@ -539,7 +539,7 @@ void SpriteRenderer::Render(
         bound_mtl->SetUser2(user2);
 
         bound_mtl->_rasterstate.SetBlending(meBlendMode);
-        targ->MTXI()->PushMMatrix(MatScale * mtx);
+        targ->MTXI()->PushMMatrix(fmtx4::multiply_ltor(MatScale,mtx));
         targ->GBI()->DrawPrimitive(bound_mtl, vw, ork::lev2::PrimitiveType::POINTS, ivertexlockcount);
         mpVB = 0;
         targ->MTXI()->PopMMatrix();
@@ -724,7 +724,7 @@ void StreakRenderer::describeX(class_t* clazz) {
       //////////////////////////////////////////
       // Draw Particles
       //////////////////////////////////////////
-      targ->MTXI()->PushMMatrix(mtx_scale * mtx);
+      targ->MTXI()->PushMMatrix(fmtx4::multiply_ltor(mtx_scale,mtx));
       targ->GBI()->DrawPrimitive(mpMaterial, vw, ork::lev2::PrimitiveType::POINTS, icnt);
       targ->MTXI()->PopMMatrix();
       //////////////////////////////////////////
@@ -857,7 +857,7 @@ void StreakRenderer::describeX(class_t* clazz) {
         nmtx.fromNormalVectors(xaxis, yaxis, zaxis);
         nmtx.setTranslation(ptcl->mPosition);
 
-        gmatrixblock[i] = (rmtx * r2mtx * smtx * nmtx * mtx);
+        gmatrixblock[i] = fmtx4::multiply_ltor(rmtx,r2mtx,smtx,nmtx,mtx);
       }
       ork::lev2::XgmModelInst minst(GetModel());
       ork::lev2::RenderContextInstData MatCtx;

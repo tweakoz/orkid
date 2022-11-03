@@ -105,7 +105,7 @@ void PickBuffer::mydraw(fray3_constptr_t ray) {
     auto mtcs                 = _camdat.computeMatrices(1.0);
     fmtx4 P                   = mtcs.GetPMatrix();
     fmtx4 V                   = mtcs.GetVMatrix();
-    (*_pick_mvp_matrix.get()) = V * P;
+    (*_pick_mvp_matrix.get()) = fmtx4::multiply_ltor(V,P);
     auto screen_coordinate    = fvec4(0.5, 0.5, 0, 0);
     /////////////////////////////////////////////////////////////
 
