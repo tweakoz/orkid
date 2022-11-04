@@ -127,14 +127,14 @@ RenderPresetContext CompositingData::presetForwardPBR(rtgroup_ptr_t outputgrp) {
   t1->_writeRenderNode(r1);
 
   // t1->_writePostFxNode(p1);
-  auto assetVars  = r1->_texAssetVarMap;
+  auto assetVars  = r1->_pbrcommon->_texAssetVarMap;
   auto envl_asset = asset::AssetManager<TextureAsset>::load(
       "src://envmaps/tozenv_nebula", //
       assetVars);
   // todo inject postload ops
   OrkAssert(envl_asset->GetTexture() != nullptr);
   OrkAssert(envl_asset->_varmap->hasKey("postproc"));
-  r1->_writeEnvTexture(envl_asset);
+  r1->_pbrcommon->_writeEnvTexture(envl_asset);
 
   auto s1 = new CompositingScene;
   auto i1 = new CompositingSceneItem;
@@ -176,7 +176,7 @@ RenderPresetContext CompositingData::presetDeferredPBR(rtgroup_ptr_t outputgrp) 
   // todo inject postload ops
   OrkAssert(envl_asset->GetTexture() != nullptr);
   OrkAssert(envl_asset->_varmap->hasKey("postproc"));
-  r1->_writeEnvTexture(envl_asset);
+  pbr_common->_writeEnvTexture(envl_asset);
 
   auto s1 = new CompositingScene;
   auto i1 = new CompositingSceneItem;
@@ -211,7 +211,7 @@ RenderPresetContext CompositingData::presetPBRVR() {
   // todo inject postload ops
   OrkAssert(envl_asset->GetTexture() != nullptr);
   OrkAssert(envl_asset->_varmap->hasKey("postproc"));
-  r1->_writeEnvTexture(envl_asset);
+  pbr_common->_writeEnvTexture(envl_asset);
 
   auto s1 = new CompositingScene;
   auto i1 = new CompositingSceneItem;

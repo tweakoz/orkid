@@ -59,8 +59,9 @@ int main(int argc, char** argv, char** envp) {
     compositordata->mbEnable     = true;
     auto nodetek                = compositordata->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
     auto rendnode               = nodetek->tryRenderNodeAs<deferrednode::DeferredCompositingNodePbr>();
-    rendnode->_depthFogDistance = 4000.0f;
-    rendnode->_depthFogPower    = 5.0f;
+    auto pbrcommon              = rendnode->_pbrcommon;
+    pbrcommon->_depthFogDistance = 4000.0f;
+    pbrcommon->_depthFogPower    = 5.0f;
     ///////////////////////////////////////
     // compositor instance
     ///////////////////////////////////////

@@ -285,37 +285,37 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
 
   if(is_pbr_node){
       auto pbrnode = (deferrednode::DeferredCompositingNodePbr*)_compositorPreset._rendernode;
+      auto pbrcommon = pbrnode->_pbrcommon;
 
       if (auto try_bgtex = params->typedValueForKey<std::string>("backgroundTexPathStr")) {
         auto texture_path        = try_bgtex.value();
-        auto pbrcommon = pbrnode->_pbrcommon;
         auto assetVars           = pbrcommon->_texAssetVarMap;
         auto enviromentmap_asset = asset::AssetManager<lev2::TextureAsset>::load(texture_path, assetVars);
         OrkAssert(enviromentmap_asset->GetTexture() != nullptr);
         OrkAssert(enviromentmap_asset->_varmap->hasKey("postproc"));
-        pbrnode->_writeEnvTexture(enviromentmap_asset);
+        pbrcommon->_writeEnvTexture(enviromentmap_asset);
       }
 
       if (auto try_envintensity = params->typedValueForKey<float>("EnvironmentIntensity")) {
-        pbrnode->_environmentIntensity = try_envintensity.value();
+        pbrcommon->_environmentIntensity = try_envintensity.value();
       }
       if (auto try_diffuseLevel = params->typedValueForKey<float>("DiffuseIntensity")) {
-        pbrnode->_diffuseLevel = try_diffuseLevel.value();
+        pbrcommon->_diffuseLevel = try_diffuseLevel.value();
       }
       if (auto try_ambientLevel = params->typedValueForKey<float>("AmbientIntensity")) {
-        pbrnode->_ambientLevel = try_ambientLevel.value();
+        pbrcommon->_ambientLevel = try_ambientLevel.value();
       }
       if (auto try_skyboxLevel = params->typedValueForKey<float>("SkyboxIntensity")) {
-        pbrnode->_skyboxLevel = try_skyboxLevel.value();
+        pbrcommon->_skyboxLevel = try_skyboxLevel.value();
       }
       if (auto try_specularLevel = params->typedValueForKey<float>("SpecularIntensity")) {
-        pbrnode->_specularLevel = try_specularLevel.value();
+        pbrcommon->_specularLevel = try_specularLevel.value();
       }
       if (auto try_DepthFogDistance = params->typedValueForKey<float>("DepthFogDistance")) {
-        pbrnode->_depthFogDistance = try_DepthFogDistance.value();
+        pbrcommon->_depthFogDistance = try_DepthFogDistance.value();
       }
       if (auto try_DepthFogPower = params->typedValueForKey<float>("DepthFogPower")) {
-        pbrnode->_depthFogPower = try_DepthFogPower.value();
+        pbrcommon->_depthFogPower = try_DepthFogPower.value();
       }
   }
   //////////////////////////////////////////////
@@ -333,11 +333,12 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
 
   auto rendnodePBR = _compostorTechnique->tryRenderNodeAs<lev2::deferrednode::DeferredCompositingNodePbr>();
   if (rendnodePBR) {
+    auto pbrcommon = rendnodePBR->_pbrcommon;
     if (auto try_dfdist = params->typedValueForKey<float>("depthFogDistance")) {
-      rendnodePBR->_depthFogDistance = try_dfdist.value();
+      pbrcommon->_depthFogDistance = try_dfdist.value();
     }
     if (auto try_dfpwr = params->typedValueForKey<float>("depthFogPower")) {
-      rendnodePBR->_depthFogPower = try_dfpwr.value();
+      pbrcommon->_depthFogPower = try_dfpwr.value();
     }
   }
 

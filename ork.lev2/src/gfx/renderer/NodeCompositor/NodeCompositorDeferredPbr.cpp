@@ -40,68 +40,7 @@ ImplementReflectionX(ork::lev2::deferrednode::DeferredCompositingNodePbr, "Defer
 namespace ork::lev2::deferrednode {
 ///////////////////////////////////////////////////////////////////////////////
 void DeferredCompositingNodePbr::describeX(class_t* c) {
-
-  using namespace asset;
-
   class_t::CreateClassAlias("DeferredCompositingNodeDebugNormal", c);
-
-  c->directProperty("ClearColor", &DeferredCompositingNodePbr::_clearColor);
-  c->directProperty("AmbientLevel", &DeferredCompositingNodePbr::_ambientLevel);
-  c->floatProperty("EnvironmentIntensity", float_range{0, 100}, &DeferredCompositingNodePbr::_environmentIntensity);
-  c->floatProperty("EnvironmentMipBias", float_range{0, 12}, &DeferredCompositingNodePbr::_environmentMipBias);
-  c->floatProperty("EnvironmentMipScale", float_range{0, 100}, &DeferredCompositingNodePbr::_environmentMipScale);
-  c->floatProperty("DiffuseLevel", float_range{0, 10}, &DeferredCompositingNodePbr::_diffuseLevel);
-  c->floatProperty("SpecularLevel", float_range{0, 10}, &DeferredCompositingNodePbr::_specularLevel);
-  c->floatProperty("SkyboxLevel", float_range{0, 10}, &DeferredCompositingNodePbr::_skyboxLevel);
-  c->floatProperty("DepthFogDistance", float_range{0.1, 5000}, &DeferredCompositingNodePbr::_depthFogDistance);
-  c->floatProperty("DepthFogPower", float_range{0.01, 100.0}, &DeferredCompositingNodePbr::_depthFogPower);
-
-  c->accessorProperty(
-       "EnvironmentTexture", //
-       &DeferredCompositingNodePbr::_readEnvTexture,
-       &DeferredCompositingNodePbr::_writeEnvTexture)
-      ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
-      ->annotate<ConstString>("editor.assettype", "lev2tex")
-      ->annotate<ConstString>("editor.assetclass", "lev2tex")
-      ->annotate<asset::vars_gen_t>(
-          "asset.deserialize.vargen", //
-          [](ork::object_ptr_t obj) -> asset::vars_ptr_t {
-            auto node = std::dynamic_pointer_cast<DeferredCompositingNodePbr>(obj);
-            OrkAssert(node);
-            OrkAssert(false);
-            return node->_pbrcommon->_texAssetVarMap;
-          });
-}
-
-void DeferredCompositingNodePbr::_readEnvTexture(asset::asset_ptr_t& tex) const {
-  tex = _environmentTextureAsset;
-}
-
-void DeferredCompositingNodePbr::setEnvTexturePath(file::Path path) {
-  auto envl_asset = asset::AssetManager<TextureAsset>::load(path.c_str());
-  OrkAssert(false);
-  // TODO - inject asset postload ops ()
-}
-
-void DeferredCompositingNodePbr::_writeEnvTexture(asset::asset_ptr_t const& tex) {
-  asset::vars_constptr_t old_varmap;
-  if(_environmentTextureAsset){
-    old_varmap = _environmentTextureAsset->_varmap;
-    //printf("OLD <%p:%s>\n\n", _environmentTextureAsset.get(),_environmentTextureAsset->name().c_str());
-  }
-  //printf("NEW <%p:%s>\n\n", tex.get(),tex->name().c_str());
-
-  _environmentTextureAsset = tex;
-  if (nullptr == _environmentTextureAsset)
-    return;
-  _environmentTextureAsset->_varmap = _pbrcommon->_texAssetVarMap;
-}
-
-lev2::texture_ptr_t DeferredCompositingNodePbr::envSpecularTexture() const {
-  return _pbrcommon->_filtenvSpecularMap;
-}
-lev2::texture_ptr_t DeferredCompositingNodePbr::envDiffuseTexture() const {
-  return _pbrcommon->_filtenvDiffuseMap;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -126,6 +65,7 @@ struct PbrNodeImpl {
     EASY_BLOCK("pbr-_render");
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();
+    auto pbrcommon               = node->_pbrcommon;
     auto targ                    = RCFD.GetTarget();
     auto CIMPL                   = drawdata._cimpl;
     auto FBI                     = targ->FBI();
@@ -142,7 +82,7 @@ struct PbrNodeImpl {
     _context.renderUpdate(drawdata);
     auto VD = drawdata.computeViewData();
     _context.updateDebugLights(VD);
-    _context._clearColor = node->_clearColor;
+    _context._clearColor = pbrcommon->_clearColor;
     /////////////////////////////////////////////////////////////////////////////////////////
     bool is_stereo = VD._isStereo;
     /////////////////////////////////////////////////////////////////////////////////////////
@@ -158,11 +98,11 @@ struct PbrNodeImpl {
     _context._accumCPD._cameraMatrices       = nullptr;
     _context._accumCPD._stereoCameraMatrices = nullptr;
     _context._accumCPD._stereo1pass          = false;
-    _context._specularLevel                  = node->specularLevel() * node->environmentIntensity();
-    _context._diffuseLevel                   = node->diffuseLevel() * node->environmentIntensity();
-    _context._depthFogDistance               = node->depthFogDistance();
-    _context._depthFogPower                  = node->depthFogPower();
-    float skybox_level                       = node->skyboxLevel() * node->environmentIntensity();
+    _context._specularLevel                  = pbrcommon->specularLevel() * pbrcommon->environmentIntensity();
+    _context._diffuseLevel                   = pbrcommon->diffuseLevel() * pbrcommon->environmentIntensity();
+    _context._depthFogDistance               = pbrcommon->depthFogDistance();
+    _context._depthFogPower                  = pbrcommon->depthFogPower();
+    float skybox_level                       = pbrcommon->skyboxLevel() * pbrcommon->environmentIntensity();
     CIMPL->pushCPD(_context._accumCPD); // base lighting
     FBI->SetAutoClear(true);
     FBI->PushRtGroup(_context._rtgLaccum.get());
@@ -207,8 +147,8 @@ struct PbrNodeImpl {
     }
     //////////////////////////////////////////////////////
 
-    _context._lightingmtl.bindParamFloat(_context._parDepthFogDistance, 1.0f / node->depthFogDistance());
-    _context._lightingmtl.bindParamFloat(_context._parDepthFogPower, node->depthFogPower());
+    _context._lightingmtl.bindParamFloat(_context._parDepthFogDistance, 1.0f / pbrcommon->depthFogDistance());
+    _context._lightingmtl.bindParamFloat(_context._parDepthFogPower, pbrcommon->depthFogPower());
 
     /////////////////////////
 
@@ -219,8 +159,8 @@ struct PbrNodeImpl {
     //_context._lightingmtl.bindParamCTex(_context._parMapGBufRufMtlAlpha, _context._rtgGbuffer->GetMrt(2)->texture());
     _context._lightingmtl.bindParamCTex(_context._parMapDepth, _context._rtgGbuffer->_depthTexture);
 
-    _context._lightingmtl.bindParamCTex(_context._parMapSpecularEnv, node->envSpecularTexture().get());
-    _context._lightingmtl.bindParamCTex(_context._parMapDiffuseEnv, node->envDiffuseTexture().get());
+    _context._lightingmtl.bindParamCTex(_context._parMapSpecularEnv, pbrcommon->envSpecularTexture().get());
+    _context._lightingmtl.bindParamCTex(_context._parMapDiffuseEnv, pbrcommon->envDiffuseTexture().get());
 
     OrkAssert(_context.brdfIntegrationTexture() != nullptr);
     _context._lightingmtl.bindParamCTex(_context._parMapBrdfIntegration, _context.brdfIntegrationTexture().get());
@@ -229,12 +169,12 @@ struct PbrNodeImpl {
 
     /////////////////////////
     _context._lightingmtl.bindParamFloat(_context._parSkyboxLevel, skybox_level);
-    _context._lightingmtl.bindParamVec3(_context._parAmbientLevel, node->ambientLevel());
+    _context._lightingmtl.bindParamVec3(_context._parAmbientLevel, pbrcommon->ambientLevel());
     _context._lightingmtl.bindParamFloat(_context._parSpecularLevel, _context._specularLevel);
     _context._lightingmtl.bindParamFloat(_context._parDiffuseLevel, _context._diffuseLevel);
     /////////////////////////
-    _context._lightingmtl.bindParamFloat(_context._parEnvironmentMipBias, node->environmentMipBias());
-    _context._lightingmtl.bindParamFloat(_context._parEnvironmentMipScale, node->environmentMipScale());
+    _context._lightingmtl.bindParamFloat(_context._parEnvironmentMipBias, pbrcommon->environmentMipBias());
+    _context._lightingmtl.bindParamFloat(_context._parEnvironmentMipScale, pbrcommon->environmentMipScale());
     /////////////////////////
     _context._lightingmtl._rasterstate.SetZWriteMask(false);
     _context._lightingmtl._rasterstate.SetDepthTest(EDEPTHTEST_OFF);
