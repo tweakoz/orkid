@@ -55,7 +55,7 @@ int main(int argc, char** argv, char** envp) {
   qtapp->onGpuInit([&](Context* ctx) {
 
     compositordata = std::make_shared<CompositingData>();
-    compositordata->presetPBR();
+    compositordata->presetDeferredPBR();
     compositordata->mbEnable     = true;
     auto nodetek                = compositordata->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
     auto rendnode               = nodetek->tryRenderNodeAs<deferrednode::DeferredCompositingNodePbr>();

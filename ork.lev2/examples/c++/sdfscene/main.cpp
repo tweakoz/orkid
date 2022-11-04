@@ -235,7 +235,7 @@ struct GpuResources {
     //////////////////////////////////////////////////////////
 
     _compositordata = std::make_shared<CompositingData>();
-    _compositordata->presetPBR();
+    _compositordata->presetDeferredPBR();
     _compositordata->mbEnable = true;
     auto nodetek              = _compositordata->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
     auto outpnode             = nodetek->tryOutputNodeAs<ScreenOutputCompositingNode>();

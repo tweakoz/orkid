@@ -218,7 +218,8 @@ public:
   void presetDefault();
   void presetForward();
   void presetPicking();
-  RenderPresetContext presetPBR(rtgroup_ptr_t outputgrp = nullptr);
+  RenderPresetContext presetDeferredPBR(rtgroup_ptr_t outputgrp = nullptr);
+  RenderPresetContext presetForwardPBR(rtgroup_ptr_t outputgrp = nullptr);
   RenderPresetContext presetPBRVR();
 
   const orklut<PoolString, ork::Object*>& GetGroups() const {

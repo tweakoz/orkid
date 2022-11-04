@@ -142,7 +142,7 @@ int main(int argc, char** argv, char** envp) {
 
     play_icon  = asset::AssetManager<lev2::TextureAsset>::load("lev2://textures/play_icon");
     pause_icon = asset::AssetManager<lev2::TextureAsset>::load("lev2://textures/pause_icon");
-    compositordata->presetPBR();
+    compositordata->presetDeferredPBR();
     renderer->setContext(ctx);
 
 

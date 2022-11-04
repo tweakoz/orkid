@@ -81,7 +81,7 @@ int main(int argc, char** argv, char** envp) {
     printf( "onGpuInit ctx<%p>\n", (void*) ctx);
     ctx->debugPushGroup("main.onGpuInit");
     renderer->setContext(ctx);
-    compdata->presetPBR();
+    compdata->presetDeferredPBR();
     compdata->mbEnable = true;
     compdata->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
 

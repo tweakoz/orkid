@@ -173,7 +173,7 @@ Scene::Scene() {
 
   auto params //
       = std::make_shared<varmap::VarMap>();
-  params->makeValueForKey<std::string>("preset") = "PBR";
+  params->makeValueForKey<std::string>("preset") = "DeferredPBR";
   this->initWithParams(params);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -245,7 +245,7 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     //printf( "INITSCENE P<%s:%s>\n", k.c_str(), v.typeName());
   }
 
-  std::string preset = "PBR";
+  std::string preset = "DeferredPBR";
   // std::string output = "SCREEN";
 
   if (auto try_preset = params->typedValueForKey<std::string>("preset"))
@@ -261,8 +261,8 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
 
   bool is_pbr_node = false;
 
-  if (preset == "PBR") {
-    _compositorPreset = _compositorData->presetPBR(outRTG);
+  if (preset == "DeferredPBR") {
+    _compositorPreset = _compositorData->presetDeferredPBR(outRTG);
     auto nodetek  = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
     auto outpnode = nodetek->tryOutputNodeAs<RtGroupOutputCompositingNode>();
 
