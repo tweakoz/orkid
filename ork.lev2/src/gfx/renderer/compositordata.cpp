@@ -166,8 +166,10 @@ RenderPresetContext CompositingData::presetDeferredPBR(rtgroup_ptr_t outputgrp) 
   t1->_writeOutputNode(selected_output_node);
   t1->_writeRenderNode(r1);
 
+  auto pbr_common = r1->_pbrcommon;
+
   // t1->_writePostFxNode(p1);
-  auto assetVars  = r1->_texAssetVarMap;
+  auto assetVars  = pbr_common->_texAssetVarMap;
   auto envl_asset = asset::AssetManager<TextureAsset>::load(
       "src://envmaps/tozenv_nebula", //
       assetVars);
@@ -201,7 +203,10 @@ RenderPresetContext CompositingData::presetPBRVR() {
   t1->_writeOutputNode(o1);
   t1->_writeRenderNode(r1);
   // t1->_writePostFxNode(p1);
-  auto assetVars  = r1->_texAssetVarMap;
+
+  auto pbr_common = r1->_pbrcommon;
+
+  auto assetVars  = pbr_common->_texAssetVarMap;
   auto envl_asset = asset::AssetManager<TextureAsset>::load("src://envmaps/tozenv_nebula", assetVars);
   // todo inject postload ops
   OrkAssert(envl_asset->GetTexture() != nullptr);

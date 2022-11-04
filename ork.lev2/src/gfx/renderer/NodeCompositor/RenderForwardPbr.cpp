@@ -157,21 +157,23 @@ struct ForwardPbrNodeImpl {
   static const int KMAXLIGHTS = 32;
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ForwardPbrNodeImpl(ForwardCompositingNodePbr* node)
-      : _camname(AddPooledString("Camera"))
-      , _context(node, "orkshader://deferred", KMAXLIGHTS)
-      , _lightProcessor(_context, node) {
+      : _camname(AddPooledString("Camera")){
+      //, _context(node, "orkshader://deferred", KMAXLIGHTS)
+      //, _lightProcessor(_context, node) {
+
+      _pbrcommon = std::make_shared<pbr::CommonStuff>();
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ~ForwardPbrNodeImpl() {
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   void init(lev2::Context* context) {
-    _context.gpuInit(context);
+    //_context.gpuInit(context);
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   void _render(ForwardCompositingNodePbr* node, CompositorDrawData& drawdata) {
     _timer.Start();
-    EASY_BLOCK("pbr-_render");
+    /*EASY_BLOCK("pbr-_render");
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();
     auto targ                    = RCFD.GetTarget();
@@ -318,45 +320,49 @@ struct ForwardPbrNodeImpl {
     targ->debugPopGroup(); // "Deferred::render"
      //float totaltime = _timer.SecsSinceStart();
      //printf( "Deferred::_render totaltime<%g>\n", totaltime );
+     */
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   PoolString _camname;
 
-  DeferredContext _context;
+  //DeferredContext _context;
   int _sequence = 0;
   std::atomic<int> _lightjobcount;
   ork::Timer _timer;
-  EnumeratedLights _enumeratedLights;
-  SimpleLightProcessor _lightProcessor;
+  pbr::commonstuff_ptr_t _pbrcommon;
+  //EnumeratedLights _enumeratedLights;
+  //SimpleLightProcessor _lightProcessor;
 
 }; // IMPL
 
 ///////////////////////////////////////////////////////////////////////////////
 ForwardCompositingNodePbr::ForwardCompositingNodePbr() {
-  _impl = std::make_shared<ForwardPbrNodeImpl>();
-  _renderingmodel = RenderingModel(ERenderModelID::FORWARD_UNLIT);
+  _impl = std::make_shared<ForwardPbrNodeImpl>(this);
+  _renderingmodel = RenderingModel(ERenderModelID::FORWARD_PBR);
   _clearColor = fvec4(0,0,0,1);
+  //_texAssetVarMap->makeValueForKey<Texture::proc_t>("postproc") =
 }
 ///////////////////////////////////////////////////////////////////////////////
 ForwardCompositingNodePbr::~ForwardCompositingNodePbr() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ForwardCompositingNodePbr::doGpuInit(lev2::Context* pTARG, int iW, int iH) {
-  _impl.get<std::shared_ptr<forwardnode::IMPL>>()->init(pTARG);
+  _impl.get<std::shared_ptr<ForwardPbrNodeImpl>>()->init(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ForwardCompositingNodePbr::DoRender(CompositorDrawData& drawdata) {
-  auto impl = _impl.get<std::shared_ptr<forwardnode::IMPL>>();
+  auto impl = _impl.get<std::shared_ptr<ForwardPbrNodeImpl>>();
   impl->_render(this, drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
 rtbuffer_ptr_t ForwardCompositingNodePbr::GetOutput() const {
-  return _impl.get<std::shared_ptr<forwardnode::IMPL>>()->_rtg->GetMrt(0);
+  return nullptr; //_impl.get<std::shared_ptr<ForwardPbrNodeImpl>>()->_rtg->GetMrt(0);
 }
 ///////////////////////////////////////////////////////////////////////////////
 rtgroup_ptr_t ForwardCompositingNodePbr::GetOutputGroup() const {
-  auto& CTX = _impl.get<std::shared_ptr<ForwardPbrNodeImpl>>()->_context;
-  return CTX._rtgGbuffer;
+  //auto& CTX = _impl.get<std::shared_ptr<ForwardPbrNodeImpl>>()->_context;
+  //return CTX._rtgGbuffer;
+  return nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ForwardCompositingNodePbr::_readEnvTexture(asset::asset_ptr_t& tex) const {

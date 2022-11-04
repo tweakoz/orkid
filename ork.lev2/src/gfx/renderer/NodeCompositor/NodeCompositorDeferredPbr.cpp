@@ -69,7 +69,7 @@ void DeferredCompositingNodePbr::describeX(class_t* c) {
             auto node = std::dynamic_pointer_cast<DeferredCompositingNodePbr>(obj);
             OrkAssert(node);
             OrkAssert(false);
-            return node->_texAssetVarMap;
+            return node->_pbrcommon->_texAssetVarMap;
           });
 }
 
@@ -94,14 +94,14 @@ void DeferredCompositingNodePbr::_writeEnvTexture(asset::asset_ptr_t const& tex)
   _environmentTextureAsset = tex;
   if (nullptr == _environmentTextureAsset)
     return;
-  _environmentTextureAsset->_varmap = _texAssetVarMap;
+  _environmentTextureAsset->_varmap = _pbrcommon->_texAssetVarMap;
 }
 
 lev2::texture_ptr_t DeferredCompositingNodePbr::envSpecularTexture() const {
-  return _filtenvSpecularMap;
+  return _pbrcommon->_filtenvSpecularMap;
 }
 lev2::texture_ptr_t DeferredCompositingNodePbr::envDiffuseTexture() const {
-  return _filtenvDiffuseMap;
+  return _pbrcommon->_filtenvDiffuseMap;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -287,40 +287,7 @@ struct PbrNodeImpl {
 DeferredCompositingNodePbr::DeferredCompositingNodePbr() {
   _renderingmodel = RenderingModel(ERenderModelID::DEFERRED_PBR);
   _impl           = std::make_shared<PbrNodeImpl>(this);
-  _texAssetVarMap = std::make_shared<asset::vars_t>();
-  ///////////////////////////////////////////////////////////////
-  // texture postprocessor for generating equirectangular environment
-  //  PBR irradiance diffuse and specular maps
-  ///////////////////////////////////////////////////////////////
-  _texAssetVarMap->makeValueForKey<Texture::proc_t>("postproc") =
-      [this](texture_ptr_t tex, Context* targ, datablock_constptr_t inp_datablock) -> datablock_ptr_t {
-    /*printf(
-        "EnvironmentTexture Irradiance PreProcessor tex<%p:%s> datablocklen<%zu>...\n",
-        tex.get(),
-        tex->_debugName.c_str(),
-        inp_datablock->length());*/
-    // targ->beginFrame();
-    auto hasher = DataBlock::createHasher();
-    hasher->accumulateString("irradiancemap-v0");
-    hasher->accumulateItem<uint64_t>(inp_datablock->hash()); // data content
-    hasher->finish();
-    uint64_t cachekey = hasher->result();
-    auto irrmapdblock = DataBlockCache::findDataBlock(cachekey);
-    if (false) { // irrmapdblock) {
-      // found in cache, nothing to do..
-      OrkAssert(false);
-    } else {
-      // not found in cache, generate
-      irrmapdblock = std::make_shared<DataBlock>();
-      ///////////////////////////
-      _filtenvSpecularMap = PBRMaterial::filterSpecularEnvMap(tex, targ);
-      _filtenvDiffuseMap  = PBRMaterial::filterDiffuseEnvMap(tex, targ);
-      //////////////////////////////////////////////////////////////
-      DataBlockCache::setDataBlock(cachekey, irrmapdblock);
-    }
-    // targ->endFrame();
-    return irrmapdblock;
-  };
+  _pbrcommon = std::make_shared<pbr::CommonStuff>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

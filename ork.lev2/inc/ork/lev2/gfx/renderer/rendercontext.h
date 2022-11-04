@@ -18,6 +18,7 @@ namespace ork::lev2 {
 enum class ERenderModelID : uint64_t {
   CrcEnum(NONE),
   CrcEnum(FORWARD_UNLIT),
+  CrcEnum(FORWARD_PBR),
   CrcEnum(DEFERRED_PBR),
 };
 

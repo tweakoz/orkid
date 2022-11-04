@@ -13,6 +13,7 @@
 #include <ork/lev2/gfx/renderer/compositor.h>
 #include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <ork/kernel/varmap.inl>
+#include "PBRCommon.inl"
 
 namespace ork::lev2::deferrednode {
 
@@ -275,11 +276,14 @@ public:
   float _depthFogDistance     = 1000.0f;
   float _depthFogPower        = 1.0f;
   fvec3 _ambientLevel;
-  lev2::texture_ptr_t _filtenvSpecularMap;
-  lev2::texture_ptr_t _filtenvDiffuseMap;
+  //lev2::texture_ptr_t _filtenvSpecularMap;
+  //lev2::texture_ptr_t _filtenvDiffuseMap;
   fvec4 _clearColor;
 
-  asset::vars_ptr_t _texAssetVarMap;
+  //asset::vars_ptr_t _texAssetVarMap;
+
+  pbr::commonstuff_ptr_t _pbrcommon;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -37,11 +37,28 @@ RenderingModel::RenderingModel(ERenderModelID id) //
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool RenderingModel::isDeferred() const { //
-	return _modelID==ERenderModelID::DEFERRED_PBR; //
+	bool rval = false;
+	switch(_modelID){
+		case ERenderModelID::DEFERRED_PBR:
+			rval = true;
+			break;
+		default:
+			break;
+	}
+	return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool RenderingModel::isForward() const{
-	return _modelID==ERenderModelID::FORWARD_UNLIT; //
+	bool rval = false;
+	switch(_modelID){
+		case ERenderModelID::FORWARD_UNLIT:
+		case ERenderModelID::FORWARD_PBR:
+			rval = true;
+			break;
+		default:
+			break;
+	}
+	return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool RenderingModel::isDeferredPBR() const { //

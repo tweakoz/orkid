@@ -288,7 +288,8 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
 
       if (auto try_bgtex = params->typedValueForKey<std::string>("backgroundTexPathStr")) {
         auto texture_path        = try_bgtex.value();
-        auto assetVars           = pbrnode->_texAssetVarMap;
+        auto pbrcommon = pbrnode->_pbrcommon;
+        auto assetVars           = pbrcommon->_texAssetVarMap;
         auto enviromentmap_asset = asset::AssetManager<lev2::TextureAsset>::load(texture_path, assetVars);
         OrkAssert(enviromentmap_asset->GetTexture() != nullptr);
         OrkAssert(enviromentmap_asset->_varmap->hasKey("postproc"));
