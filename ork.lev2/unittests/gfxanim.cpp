@@ -72,9 +72,9 @@ TEST(gfxanim1) {
     auto modelinst = new XgmModelInst(model);
     printf("modelinst<%p>\n", (void*)modelinst);
 
-    modelinst->SetBlenderZup(true);
-    modelinst->EnableSkinning();
-    modelinst->EnableAllMeshes();
+    modelinst->setBlenderZup(true);
+    modelinst->enableSkinning();
+    modelinst->enableAllMeshes();
 
     animinst->BindAnim(anim);
     animinst->RefMask().EnableAll();

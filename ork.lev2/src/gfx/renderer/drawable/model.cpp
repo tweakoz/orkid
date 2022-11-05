@@ -162,7 +162,9 @@ void ModelDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::
 
   //////////////////////////////////////////////////////////////////////
 
-  auto do_submesh = [&](const XgmSubMesh* submesh) {
+  auto do_submesh = [&](xgmsubmeshinst_ptr_t submeshinst) {
+    auto submesh = submeshinst->_submesh;
+
     auto material = submesh->_material;
 
     int inumclus = submesh->_clusters.size();
@@ -247,29 +249,12 @@ void ModelDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::
   };
   //////////////////////////////////////////////////////////////////////
 
-  if (_singlesubmeshinst) {
-    do_submesh(_singlesubmeshinst->_submesh);
-    return;
+  for( auto submeshinst : _modelinst->_submeshinsts ){
+    auto submesh = submeshinst->_submesh;
+    if(submeshinst->_enabled)
+      do_submesh(submeshinst);
   }
 
-  int inummeshes = Model->numMeshes();
-  for (int imesh = 0; imesh < inummeshes; imesh++) {
-
-    const lev2::XgmMesh* meshptr = Model->mesh(imesh);
-
-    // if( 0 == strcmp(mesh.meshName().c_str(),"fg_2_1_3_ground_SG_ground_GeoDaeId") )
-    //{
-    //	orkprintf( "yo\n" );
-    //}
-
-    if (_modelinst->isMeshEnabled(imesh)) {
-      int inumclusset = meshptr->numSubMeshes();
-      for (int ics = 0; ics < inumclusset; ics++) {
-        const lev2::XgmSubMesh* submesh = meshptr->subMesh(ics);
-        do_submesh(submesh);
-      }
-    }
-  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
@@ -308,7 +293,7 @@ void ModelRenderable::Render(const IRenderer* renderer) const {
   // compute world matrix
   /////////////////////////////////////////////////////////////
   fmtx4 nmat = fmtx4::multiply_ltor(tmat,rmat,smat,wmat);
-  if (minst->IsBlenderZup()) { // zup to yup conversion matrix
+  if (minst->isBlenderZup()) { // zup to yup conversion matrix
     fmtx4 rmatx, rmaty;
     rmatx.rotateOnX(3.14159f * -0.5f);
     rmaty.rotateOnX(3.14159f);

@@ -160,6 +160,7 @@ struct XgmSubMeshInst {
   XgmSubMeshInst(const XgmSubMesh* submesh);
 
   const XgmSubMesh* _submesh = nullptr;
+  bool _enabled = true;
   fxinstance_ptr_t _fxinstance[FxStateBasePermutation::COUNT];
 };
 
@@ -426,33 +427,29 @@ struct XgmModelInst final {
     return mMaterialStateInst;
   }
 
-  void EnableMesh(const PoolString& ps);
-  void DisableMesh(const PoolString& ps);
+  void enableMesh(const PoolString& ps);
+  void disableMesh(const PoolString& ps);
 
-  void EnableMesh(int index);
-  void DisableMesh(int index);
+  void enableMesh(const XgmMesh* mesh);
+  void disableMesh(const XgmMesh* mesh);
 
-  void EnableAllMeshes();
-  void DisableAllMeshes();
+  void enableAllMeshes();
+  void disableAllMeshes();
 
-  bool isMeshEnabled(int index);
-  bool isMeshEnabled(const PoolString& ps);
-  bool IsAnyMeshEnabled();
+  bool isAnyMeshEnabled();
   bool isSkinned() const {
     return mbSkinned;
   }
-  void EnableSkinning() {
+  void enableSkinning() {
     mbSkinned = true;
   }
-  bool IsBlenderZup() const {
+  bool isBlenderZup() const {
     return mBlenderZup;
   }
-  void SetBlenderZup(bool bv) {
+  void setBlenderZup(bool bv) {
     mBlenderZup = bv;
   }
 
-  static const int knummaskbytes = 32;
-  U8 mMaskBits[knummaskbytes];
   const XgmModel* mXgmModel;
   XgmLocalPose mLocalPose;
   mutable XgmWorldPose _worldPose;

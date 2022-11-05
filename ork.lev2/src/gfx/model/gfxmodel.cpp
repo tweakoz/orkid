@@ -53,7 +53,6 @@ XgmModelInst::XgmModelInst(const XgmModel* Model)
     , mbSkinned(false)
     , mBlenderZup(false)
     , _drawSkeleton(true) {
-  EnableAllMeshes();
 
   OrkAssert(Model != 0);
   miNumChannels = Model->skeleton().numJoints();
@@ -79,8 +78,11 @@ XgmModelInst::XgmModelInst(const XgmModel* Model)
 
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 XgmSubMeshInst::XgmSubMeshInst(const XgmSubMesh* submesh)
-  : _submesh(submesh) {
+  : _submesh(submesh)
+  , _enabled(true) {
     FxStateInstanceConfig cfg_mono, cfg_stereo, cfg_pick;
     cfg_mono._instanced_primitive   = true;
     cfg_stereo._instanced_primitive = true;
@@ -100,81 +102,60 @@ XgmModelInst::~XgmModelInst() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmModelInst::EnableMesh(const PoolString& ps) {
-  int index = mXgmModel->meshIndex(ps);
-  EnableMesh(index);
+void XgmModelInst::enableMesh(const PoolString& ps) {
+  auto mesh = mXgmModel->mesh(ps);
+  enableMesh(mesh);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmModelInst::DisableMesh(const PoolString& ps) {
-  int index = mXgmModel->meshIndex(ps);
-  DisableMesh(index);
+void XgmModelInst::disableMesh(const PoolString& ps) {
+  auto mesh = mXgmModel->mesh(ps);
+  disableMesh(mesh);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmModelInst::EnableMesh(int imeshindex) {
-  int icharindex = (imeshindex >> 3);
-  int ibitindex  = (imeshindex & 0x00000007);
-  OrkAssert(icharindex < knummaskbytes);
-  mMaskBits[icharindex] |= (1 << ibitindex);
+void XgmModelInst::enableMesh(const XgmMesh* mesh) {
+  for (auto submeshinst : _submeshinsts){
+    auto item_mesh = submeshinst->_submesh->_parentmesh;
+    if(item_mesh==mesh)
+      submeshinst->_enabled = true;
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmModelInst::DisableMesh(int imeshindex) {
-  int icharindex = (imeshindex >> 3);
-  int ibitindex  = (imeshindex & 0x00000007);
-  OrkAssert(icharindex < knummaskbytes);
-  mMaskBits[icharindex] &= ~(1 << ibitindex);
+void XgmModelInst::disableMesh(const XgmMesh* mesh) {
+  for (auto submeshinst : _submeshinsts){
+    auto item_mesh = submeshinst->_submesh->_parentmesh;
+    if(item_mesh==mesh)
+      submeshinst->_enabled = false;
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmModelInst::EnableAllMeshes() {
-  for (int i = 0; i < knummaskbytes; i++)
-    mMaskBits[i] = 0xff;
+void XgmModelInst::enableAllMeshes() {
+  for (auto submeshinst : _submeshinsts){
+    submeshinst->_enabled = true;
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmModelInst::DisableAllMeshes() {
-  for (int i = 0; i < knummaskbytes; i++)
-    mMaskBits[i] = 0;
+void XgmModelInst::disableAllMeshes() {
+  for (auto submeshinst : _submeshinsts){
+    submeshinst->_enabled = false;
+  }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-bool XgmModelInst::isMeshEnabled(int imeshindex) {
-  if (imeshindex >= mXgmModel->numMeshes())
-    return false;
-
-  int icharindex = (imeshindex >> 3);
-  OrkAssert(icharindex < knummaskbytes);
-  int ibitindex = (imeshindex & 0x00000007);
-  return (mMaskBits[icharindex] & (1 << ibitindex));
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-bool XgmModelInst::isMeshEnabled(const PoolString& ps) {
-  int index = mXgmModel->meshIndex(ps);
-  if (index >= 0) {
-    return isMeshEnabled(index);
+bool XgmModelInst::isAnyMeshEnabled() {
+  for( auto submeshinst : _submeshinsts ){
+    if(submeshinst->_enabled)
+      return true;
   }
   return false;
-}
-
-bool XgmModelInst::IsAnyMeshEnabled() {
-  if (mXgmModel->numMeshes() == 1)
-    return true;
-
-  for (int i = 0; i < knummaskbytes; i++)
-    if (mMaskBits[i])
-      return (true);
-
-  return (false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
