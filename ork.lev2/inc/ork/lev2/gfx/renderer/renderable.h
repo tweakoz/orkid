@@ -54,7 +54,6 @@ struct IRenderable {
   const var_t& GetDrawableDataB() const;
   //////////////////////////////////////////////////////////////////////////////
   virtual void Render(const IRenderer* renderer) const = 0;
-  virtual bool CanGroup(const IRenderable* oth) const;
   //////////////////////////////////////////////////////////////////////////////
   /// Renderables implement this function to set the sort key used when all Renderables are sorted together.
   /// The default is 0 for all Renderables. If no Renderable overrides this, then the RenderableQueue is not
@@ -81,47 +80,25 @@ struct ModelRenderable : public IRenderable {
 
   ModelRenderable(IRenderer* renderer = NULL);
 
-  void SetMaterialIndex(int idx);
-  void SetMaterialPassIndex(int idx);
-  void SetModelInst(xgmmodelinst_constptr_t modelInst);
-  void SetEdgeColor(int edge_color);
-  void SetScale(float scale);
-  void SetSubMesh(const XgmSubMesh* cs);
-  void SetMesh(const XgmMesh* m);
-  float GetScale() const;
-  xgmmodelinst_constptr_t GetModelInst() const;
-  int GetMaterialIndex(void) const;
-  int GetMaterialPassIndex(void) const;
-  int GetEdgeColor() const;
-  const XgmSubMesh* subMesh(void) const;
-  xgmcluster_ptr_t GetCluster(void) const;
-  const XgmMesh* mesh(void) const;
-  void SetSortKey(uint32_t skey);
-  void SetRotate(const fvec3& v);
-  void SetOffset(const fvec3& v);
-  const fvec3& GetRotate() const;
-  const fvec3& GetOffset() const;
   void SetEngineParamFloat(int idx, float fv);
   float GetEngineParamFloat(int idx) const;
   uint32_t ComposeSortKey(const IRenderer* renderer) const final;
   void Render(const IRenderer* renderer) const final;
-  bool CanGroup(const IRenderable* oth) const final;
 
-  const XgmSubMesh* mSubMesh = nullptr;
-  const XgmMesh* mMesh       = nullptr;
+  xgmsubmeshinst_ptr_t _submeshinst;
 
   xgmmodelinst_constptr_t _modelinst;
-  uint32_t mSortKey      = 0;
+  uint32_t _sortkey      = 0;
   int mSubMeshIndex      = 0;
   int mMaterialIndex     = 0;
   int mMaterialPassIndex = 0;
   int mEdgeColor         = -1;
-  float mScale           = 1.0f;
+  float _scale           = 1.0f;
 
   float mEngineParamFloats[kMaxEngineParamFloats];
 
-  fvec3 mOffset;
-  fvec3 mRotate;
+  fvec3 _offset;
+  fquat _orientation;
   xgmcluster_ptr_t _cluster;
 };
 

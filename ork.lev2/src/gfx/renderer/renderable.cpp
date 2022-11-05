@@ -22,9 +22,6 @@ IRenderable::IRenderable()
 }
 IRenderable::~IRenderable() { // virtual
 }
-bool IRenderable::CanGroup(const IRenderable* oth) const { // virtual
-  return false;
-}
 uint32_t IRenderable::ComposeSortKey(const IRenderer* renderer) const { // virtual
   return 0;
 }

@@ -317,17 +317,9 @@ struct ModelDrawable : public Drawable {
   ModelDrawable(DrawableOwner* owner = NULL);
   ~ModelDrawable();
 
-  void SetModelInst(xgmmodelinst_ptr_t pModelInst); // { mModelInst = pModelInst; }
-  xgmmodelinst_ptr_t GetModelInst() const;
-  void SetScale(float fscale);
-  float GetScale() const;
-  const fvec3& GetRotate() const;
-  const fvec3& GetOffset() const;
-  void SetRotate(const fvec3& v);
-  void SetOffset(const fvec3& v);
-  void SetEngineParamFloat(int idx, float fv);
-  float GetEngineParamFloat(int idx) const;
-  void ShowBoundingSphere(bool bflg);
+  void bindModelInst(xgmmodelinst_ptr_t pModelInst); // { mModelInst = pModelInst; }
+  void setEngineParamFloat(int idx, float fv);
+  float getEngineParamFloat(int idx) const;
   void enqueueToRenderQueue(drawablebufitem_constptr_t, lev2::IRenderer* renderer) const final;
   void bindModelAsset(AssetPath assetpath);
   void bindModelAsset(xgmmodelassetptr_t asset);
@@ -338,13 +330,12 @@ struct ModelDrawable : public Drawable {
   xgmworldpose_ptr_t _worldpose;
   xgmmodelassetptr_t _asset;
   model_ptr_t _model;
-  xgmsubmeshinst_ptr_t _singlesubmeshinst;
 
-  float mfScale             = 1.0f;
-  bool mbShowBoundingSphere = false;
+  float _scale             = 1.0f;
+  bool _showBoundingSphere = false;
 
-  fvec3 mOffset;
-  fvec3 mRotate;
+  fvec3 _offset;
+  fquat _orientation;
 
   static const int kMaxEngineParamFloats = ork::lev2::RenderContextInstData::kMaxEngineParamFloats;
   float mEngineParamFloats[kMaxEngineParamFloats];

@@ -22,18 +22,18 @@ ModelDrawable::ModelDrawable(DrawableOwner* pent) {
 ModelDrawable::~ModelDrawable() {
 }
 /////////////////////////////////////////////////////////////////////
-void ModelDrawable::SetEngineParamFloat(int idx, float fv) {
+void ModelDrawable::setEngineParamFloat(int idx, float fv) {
   OrkAssert(idx >= 0 && idx < kMaxEngineParamFloats);
   mEngineParamFloats[idx] = fv;
 }
 /////////////////////////////////////////////////////////////////////
-float ModelDrawable::GetEngineParamFloat(int idx) const {
+float ModelDrawable::getEngineParamFloat(int idx) const {
   OrkAssert(idx >= 0 && idx < kMaxEngineParamFloats);
   return mEngineParamFloats[idx];
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ModelDrawable::SetModelInst(xgmmodelinst_ptr_t pModelInst) {
-  _modelinst                  = pModelInst;
+void ModelDrawable::bindModelInst(xgmmodelinst_ptr_t minst) {
+  _modelinst                  = minst;
   const lev2::XgmModel* Model = _modelinst->xgmModel();
   bool isSkinned              = Model->isSkinned();
   if (isSkinned) {
@@ -42,38 +42,6 @@ void ModelDrawable::SetModelInst(xgmmodelinst_ptr_t pModelInst) {
   Drawable::var_t ap;
   ap.set(_worldpose);
   SetUserDataA(ap);
-}
-///////////////////////////////////////////////////////////////////////////////
-xgmmodelinst_ptr_t ModelDrawable::GetModelInst() const {
-  return _modelinst;
-}
-///////////////////////////////////////////////////////////////////////////////
-void ModelDrawable::SetScale(float fscale) {
-  mfScale = fscale;
-}
-///////////////////////////////////////////////////////////////////////////////
-float ModelDrawable::GetScale() const {
-  return mfScale;
-}
-///////////////////////////////////////////////////////////////////////////////
-const fvec3& ModelDrawable::GetRotate() const {
-  return mRotate;
-}
-///////////////////////////////////////////////////////////////////////////////
-const fvec3& ModelDrawable::GetOffset() const {
-  return mOffset;
-}
-///////////////////////////////////////////////////////////////////////////////
-void ModelDrawable::SetRotate(const fvec3& v) {
-  mRotate = v;
-}
-///////////////////////////////////////////////////////////////////////////////
-void ModelDrawable::SetOffset(const fvec3& v) {
-  mOffset = v;
-}
-///////////////////////////////////////////////////////////////////////////////
-void ModelDrawable::ShowBoundingSphere(bool bflg) {
-  mbShowBoundingSphere = bflg;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ModelDrawable::bindModelAsset(AssetPath assetpath) {
@@ -120,9 +88,7 @@ void ModelDrawable::bindModelAsset(xgmmodelassetptr_t asset) {
 void ModelDrawable::bindModel(model_ptr_t model) {
   _model         = model;
   auto modelinst = std::make_shared<XgmModelInst>(_model.get());
-  SetModelInst(modelinst);
-
-
+  bindModelInst(modelinst);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ModelDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const {
@@ -137,8 +103,8 @@ void ModelDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::
   const ork::fmtx4 matw         = item->mXfData._worldTransform->composed();
   bool isPickState              = renderer->GetTarget()->FBI()->isPickState();
   bool isSkinned                = Model->isSkinned();
-  ork::fvec3 center_plus_offset = mOffset + Model->boundingCenter();
-  ork::fvec3 ctr                = ork::fvec4(center_plus_offset * mfScale).transform(matw);
+  ork::fvec3 center_plus_offset = _offset + Model->boundingCenter();
+  ork::fvec3 ctr                = ork::fvec4(center_plus_offset * _scale).transform(matw);
   ork::fvec3 vwhd               = Model->boundingAA_WHD();
   float frad                    = vwhd.x;
   if (vwhd.y > frad)
@@ -194,8 +160,8 @@ void ModelDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::
       } else {        // Rigid
         const Sphere& bsph = cluster->mBoundingSphere;
 
-        float clussphrad = bsph.mRadius * matw_scale * mfScale;
-        fvec3 clussphctr = ((bsph.mCenter + mOffset) * mfScale).transform(matw);
+        float clussphrad = bsph.mRadius * matw_scale * _scale;
+        fvec3 clussphctr = ((bsph.mCenter + _offset) * _scale).transform(matw);
         Sphere sph2(clussphctr, clussphrad);
 
         btest = true; // CollisionTester::FrustumSphereTest( frus, sph2 );
@@ -210,17 +176,16 @@ void ModelDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::
         for (int i = 0; i < kMaxEngineParamFloats; i++)
           renderable.SetEngineParamFloat(i, mEngineParamFloats[i]);
 
-        renderable.SetModelInst(std::const_pointer_cast<const XgmModelInst>(_modelinst));
+        renderable._modelinst = std::const_pointer_cast<const XgmModelInst>(_modelinst);
         renderable.SetObject(GetOwner());
-        renderable.SetMesh(submesh->_parentmesh);
-        renderable.SetSubMesh(submesh);
+        renderable._submeshinst = submeshinst;
         renderable._cluster = cluster;
         renderable.SetModColor(_modcolor);
         renderable.SetMatrix(matw);
         // renderable.SetLightMask(lmask);
-        renderable.SetScale(mfScale);
-        renderable.SetRotate(mRotate);
-        renderable.SetOffset(mOffset);
+        renderable._scale = _scale;
+        renderable._orientation = _orientation;
+        renderable._offset = _offset;
 
         size_t umat = size_t(material.get());
         u32 imtla   = (umat & 0xff);
@@ -229,12 +194,14 @@ void ModelDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::
         u32 imtld   = ((umat >> 24) & 0xff);
         u32 imtl    = (imtla + imtlb + imtlc + imtld) & 0xff;
 
-        int isortpass = (material->GetRenderQueueSortingData().miSortingPass + 16) & 0xff;
-        int isortoffs = material->GetRenderQueueSortingData().miSortingOffset;
+        const auto& rqsortdata = material->GetRenderQueueSortingData();
+
+        int isortpass = (rqsortdata.miSortingPass + 16) & 0xff;
+        int isortoffs = rqsortdata.miSortingOffset;
 
         int isortkey = (isortpass << 24) | (isortoffs << 16) | imtl;
 
-        renderable.SetSortKey(isortkey);
+        renderable._sortkey = isortkey;
         // orkprintf( " ModelDrawable::enqueueToRenderQueue() rable<%p> \n", & renderable );
 
         if (item->_onrenderable) {
@@ -277,17 +244,20 @@ float ModelRenderable::GetEngineParamFloat(int idx) const {
 void ModelRenderable::Render(const IRenderer* renderer) const {
   //renderer->RenderModel(*this);
   auto context = renderer->GetTarget();
-  auto minst   = this->GetModelInst();
+  auto minst   = this->_modelinst;
   auto model   = minst->xgmModel();
+  auto submesh = _submeshinst->_submesh;
+  auto mesh = submesh->_parentmesh;
+
   context->debugPushGroup(FormatString("DefaultRenderer::RenderModel model<%p> minst<%p>", model, minst.get()));
   /////////////////////////////////////////////////////////////
-  float fscale        = this->GetScale();
-  const fvec3& offset = this->GetOffset();
-  const fvec3& rotate = this->GetRotate();
+  float fscale        = this->_scale;
+  const fvec3& offset = this->_offset;
   fmtx4 smat, tmat, rmat;
   smat.setScale(fscale);
   tmat.setTranslation(offset);
-  rmat.setRotateY(rotate.y + rotate.z);
+  //rmat.setRotateY(rotate.y + rotate.z);
+  rmat.fromQuaternion(_orientation);
   fmtx4 wmat = this->GetMatrix();
   /////////////////////////////////////////////////////////////
   // compute world matrix
@@ -303,9 +273,9 @@ void ModelRenderable::Render(const IRenderer* renderer) const {
   RenderContextInstData RCID;
   RenderContextInstModelData RCID_MD;
   RCID.SetMaterialInst(&minst->RefMaterialInst());
-  RCID_MD.mMesh    = this->mesh();
-  RCID_MD.mSubMesh = this->subMesh();
-  RCID_MD._cluster = this->GetCluster();
+  RCID_MD.mMesh    = mesh;
+  RCID_MD.mSubMesh = submesh;
+  RCID_MD._cluster = this->_cluster;
   RCID.SetMaterialIndex(0);
   RCID.SetRenderer(renderer);
   RCID._dagrenderable = this;
@@ -325,100 +295,9 @@ void ModelRenderable::Render(const IRenderer* renderer) const {
   }
   context->debugPopGroup();
 }
-///////////////////////////////////////////////////////////////////////////////
-bool ModelRenderable::CanGroup(const IRenderable* oth) const {
-  auto pren = dynamic_cast<const ModelRenderable*>(oth);
-  if (pren) {
-    const lev2::XgmSubMesh* submesh = pren->subMesh();
-    auto mtl                        = submesh->GetMaterial();
-    auto mtl2                       = subMesh()->GetMaterial();
-    return (mtl == mtl2);
-  }
-  return false;
-}
-/////////////////////////////////////////////////////////////////////
-void ModelRenderable::SetMaterialIndex(int idx) {
-  mMaterialIndex = idx;
-}
-/////////////////////////////////////////////////////////////////////
-void ModelRenderable::SetMaterialPassIndex(int idx) {
-  mMaterialPassIndex = idx;
-}
-/////////////////////////////////////////////////////////////////////
-void ModelRenderable::SetModelInst(xgmmodelinst_constptr_t modelInst) {
-  _modelinst = modelInst;
-}
-/////////////////////////////////////////////////////////////////////
-void ModelRenderable::SetEdgeColor(int edge_color) {
-  mEdgeColor = edge_color;
-}
-/////////////////////////////////////////////////////////////////////
-void ModelRenderable::SetScale(float scale) {
-  mScale = scale;
-}
-/////////////////////////////////////////////////////////////////////
-void ModelRenderable::SetSubMesh(const lev2::XgmSubMesh* cs) {
-  mSubMesh = cs;
-}
-/////////////////////////////////////////////////////////////////////
-void ModelRenderable::SetMesh(const lev2::XgmMesh* m) {
-  mMesh = m;
-}
-/////////////////////////////////////////////////////////////////////
-float ModelRenderable::GetScale() const {
-  return mScale;
-}
-/////////////////////////////////////////////////////////////////////
-xgmmodelinst_constptr_t ModelRenderable::GetModelInst() const {
-  return _modelinst;
-}
-/////////////////////////////////////////////////////////////////////
-int ModelRenderable::GetMaterialIndex(void) const {
-  return mMaterialIndex;
-}
-/////////////////////////////////////////////////////////////////////
-int ModelRenderable::GetMaterialPassIndex(void) const {
-  return mMaterialPassIndex;
-}
-/////////////////////////////////////////////////////////////////////
-int ModelRenderable::GetEdgeColor() const {
-  return mEdgeColor;
-}
-/////////////////////////////////////////////////////////////////////
-const lev2::XgmSubMesh* ModelRenderable::subMesh(void) const {
-  return mSubMesh;
-}
-/////////////////////////////////////////////////////////////////////
-xgmcluster_ptr_t ModelRenderable::GetCluster(void) const {
-  return _cluster;
-}
-/////////////////////////////////////////////////////////////////////
-const lev2::XgmMesh* ModelRenderable::mesh(void) const {
-  return mMesh;
-}
-/////////////////////////////////////////////////////////////////////
-void ModelRenderable::SetSortKey(uint32_t skey) {
-  mSortKey = skey;
-}
-/////////////////////////////////////////////////////////////////////
-void ModelRenderable::SetRotate(const fvec3& v) {
-  mRotate = v;
-}
-/////////////////////////////////////////////////////////////////////
-void ModelRenderable::SetOffset(const fvec3& v) {
-  mOffset = v;
-}
-/////////////////////////////////////////////////////////////////////
-const fvec3& ModelRenderable::GetRotate() const {
-  return mRotate;
-}
-/////////////////////////////////////////////////////////////////////
-const fvec3& ModelRenderable::GetOffset() const {
-  return mOffset;
-}
 /////////////////////////////////////////////////////////////////////
 uint32_t ModelRenderable::ComposeSortKey(const IRenderer* renderer) const {
-  return mSortKey;
+  return _sortkey;
 }
 /////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
