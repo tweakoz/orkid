@@ -155,6 +155,18 @@ using xgmsubmesh_ptr_t = std::shared_ptr<XgmSubMesh>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct XgmSubMeshInst {
+
+  XgmSubMeshInst(const XgmSubMesh* submesh);
+
+  const XgmSubMesh* _submesh = nullptr;
+  fxinstance_ptr_t _fxinstance[FxStateBasePermutation::COUNT];
+};
+
+using xgmsubmeshinst_ptr_t = std::shared_ptr<XgmSubMeshInst>;
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct XgmMesh final {
 
   /////////////////////////////////////
@@ -450,6 +462,9 @@ struct XgmModelInst final {
   bool mbSkinned;
   bool mBlenderZup;
   bool _drawSkeleton;
+
+  std::vector<xgmsubmeshinst_ptr_t> _submeshinsts;
+
 };
 
 using xgmmodelinst_ptr_t      = std::shared_ptr<XgmModelInst>;
@@ -461,6 +476,7 @@ struct RenderContextInstModelData final {
   xgmmodelinst_constptr_t _modelinst;
   const XgmMesh* mMesh;
   const XgmSubMesh* mSubMesh;
+  xgmsubmeshinst_ptr_t _submeshinst;
   xgmcluster_ptr_t _cluster;
 
   bool mbisSkinned;

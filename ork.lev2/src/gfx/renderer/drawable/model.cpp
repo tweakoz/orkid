@@ -121,6 +121,8 @@ void ModelDrawable::bindModel(model_ptr_t model) {
   _model         = model;
   auto modelinst = std::make_shared<XgmModelInst>(_model.get());
   SetModelInst(modelinst);
+
+
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ModelDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const {
@@ -160,7 +162,7 @@ void ModelDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::
 
   //////////////////////////////////////////////////////////////////////
 
-  auto do_submesh = [&](const XgmMesh* mesh, const XgmSubMesh* submesh) {
+  auto do_submesh = [&](const XgmSubMesh* submesh) {
     auto material = submesh->_material;
 
     int inumclus = submesh->_clusters.size();
@@ -208,7 +210,7 @@ void ModelDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::
 
         renderable.SetModelInst(std::const_pointer_cast<const XgmModelInst>(_modelinst));
         renderable.SetObject(GetOwner());
-        renderable.SetMesh(mesh);
+        renderable.SetMesh(submesh->_parentmesh);
         renderable.SetSubMesh(submesh);
         renderable._cluster = cluster;
         renderable.SetModColor(_modcolor);
@@ -245,8 +247,8 @@ void ModelDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::
   };
   //////////////////////////////////////////////////////////////////////
 
-  if (_singlesubmesh != nullptr) {
-    do_submesh(_singlesubmesh->_parentmesh, _singlesubmesh);
+  if (_singlesubmeshinst) {
+    do_submesh(_singlesubmeshinst->_submesh);
     return;
   }
 
@@ -264,7 +266,7 @@ void ModelDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::
       int inumclusset = meshptr->numSubMeshes();
       for (int ics = 0; ics < inumclusset; ics++) {
         const lev2::XgmSubMesh* submesh = meshptr->subMesh(ics);
-        do_submesh(meshptr,submesh);
+        do_submesh(submesh);
       }
     }
   }
@@ -288,7 +290,55 @@ float ModelRenderable::GetEngineParamFloat(int idx) const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ModelRenderable::Render(const IRenderer* renderer) const {
-  renderer->RenderModel(*this);
+  //renderer->RenderModel(*this);
+  auto context = renderer->GetTarget();
+  auto minst   = this->GetModelInst();
+  auto model   = minst->xgmModel();
+  context->debugPushGroup(FormatString("DefaultRenderer::RenderModel model<%p> minst<%p>", model, minst.get()));
+  /////////////////////////////////////////////////////////////
+  float fscale        = this->GetScale();
+  const fvec3& offset = this->GetOffset();
+  const fvec3& rotate = this->GetRotate();
+  fmtx4 smat, tmat, rmat;
+  smat.setScale(fscale);
+  tmat.setTranslation(offset);
+  rmat.setRotateY(rotate.y + rotate.z);
+  fmtx4 wmat = this->GetMatrix();
+  /////////////////////////////////////////////////////////////
+  // compute world matrix
+  /////////////////////////////////////////////////////////////
+  fmtx4 nmat = fmtx4::multiply_ltor(tmat,rmat,smat,wmat);
+  if (minst->IsBlenderZup()) { // zup to yup conversion matrix
+    fmtx4 rmatx, rmaty;
+    rmatx.rotateOnX(3.14159f * -0.5f);
+    rmaty.rotateOnX(3.14159f);
+    nmat = fmtx4::multiply_ltor(rmatx,rmaty,nmat);
+  }
+  /////////////////////////////////////////////////////////////
+  RenderContextInstData RCID;
+  RenderContextInstModelData RCID_MD;
+  RCID.SetMaterialInst(&minst->RefMaterialInst());
+  RCID_MD.mMesh    = this->mesh();
+  RCID_MD.mSubMesh = this->subMesh();
+  RCID_MD._cluster = this->GetCluster();
+  RCID.SetMaterialIndex(0);
+  RCID.SetRenderer(renderer);
+  RCID._dagrenderable = this;
+  // context->debugMarker(FormatString("toolrenderer::RenderModel isskinned<%d> owner_as_ent<%p>", int(model->isSkinned()),
+  // as_ent));
+  ///////////////////////////////////////
+  // printf( "Renderer::RenderModel() rable<%p>\n", & ModelRen );
+  bool model_is_skinned = model->isSkinned();
+  RCID._isSkinned       = model_is_skinned;
+  RCID_MD.SetSkinned(model_is_skinned);
+  RCID_MD.SetModelInst(minst);
+  auto ObjColor = this->_modColor;
+  if (model_is_skinned) {
+    model->RenderSkinned(minst.get(), ObjColor, nmat, context, RCID, RCID_MD);
+  } else {
+    model->RenderRigid(ObjColor, nmat, context, RCID, RCID_MD);
+  }
+  context->debugPopGroup();
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool ModelRenderable::CanGroup(const IRenderable* oth) const {

@@ -9,6 +9,7 @@
 #include <ork/lev2/ui/event.h>
 #include <ork/application/application.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorForward.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
 #include <ork/reflect/properties/registerX.inl>
@@ -259,23 +260,37 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     outRTG = try_rtgroup.value();
   }
 
-  bool is_pbr_node = false;
+  //bool is_pbr_node = false;
 
-  if (preset == "DeferredPBR") {
+  pbr::commonstuff_ptr_t pbrcommon;
+
+  if (preset == "ForwardPBR") {
+    _compositorPreset = _compositorData->presetForwardPBR(outRTG);
+    auto nodetek  = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
+    auto outrnode = nodetek->tryRenderNodeAs<ForwardCompositingNodePbr>();
+
+    //if (auto try_supersample = params->typedValueForKey<int>("supersample")) {
+      //if(outpnode){
+        //outpnode->setSuperSample(try_supersample.value());
+      //}
+    //}
+    pbrcommon = outrnode->_pbrcommon;
+  }
+  else if (preset == "DeferredPBR") {
     _compositorPreset = _compositorData->presetDeferredPBR(outRTG);
     auto nodetek  = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
     auto outpnode = nodetek->tryOutputNodeAs<RtGroupOutputCompositingNode>();
+    auto outrnode = nodetek->tryOutputNodeAs<deferrednode::DeferredCompositingNodePbr>();
 
     if (auto try_supersample = params->typedValueForKey<int>("supersample")) {
       if(outpnode){
         outpnode->setSuperSample(try_supersample.value());
       }
     }
-    is_pbr_node = true;
-
+    pbrcommon = outrnode->_pbrcommon;
   } else if (preset == "PBRVR") {
     _compositorPreset = _compositorData->presetPBRVR();
-    is_pbr_node = true;
+    //is_pbr_node = true;
   } else if (preset == "USER"){
     _compositorData = params->typedValueForKey<compositordata_ptr_t>("compositordata").value();
   } else {
@@ -283,9 +298,7 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
   }
   //////////////////////////////////////////////
 
-  if(is_pbr_node){
-      auto pbrnode = (deferrednode::DeferredCompositingNodePbr*)_compositorPreset._rendernode;
-      auto pbrcommon = pbrnode->_pbrcommon;
+  if(pbrcommon){
 
       if (auto try_bgtex = params->typedValueForKey<std::string>("backgroundTexPathStr")) {
         auto texture_path        = try_bgtex.value();

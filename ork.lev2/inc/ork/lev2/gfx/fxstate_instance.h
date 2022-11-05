@@ -24,7 +24,7 @@ using fxinstance_constptr_t = std::shared_ptr<const FxStateInstance>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enum FxStateBasePermutation { MONO = 0, STEREO, PICK };
+enum FxStateBasePermutation { MONO = 0, STEREO, PICK, COUNT };
 
 ///////////////////////////////////////////////////////////////////////////////
 // FxStateInstance : instance of a material "class"

@@ -65,6 +65,32 @@ XgmModelInst::XgmModelInst(const XgmModel* Model)
   mLocalPose.BuildPose();
   mLocalPose.Concatenate();
   _worldPose.apply(fmtx4(), mLocalPose);
+
+  int nummeshes = Model->numMeshes();
+  for( int i=0; i<nummeshes; i++ ){
+    auto mesh = Model->mesh(i);
+    int numsubmeshes = mesh->numSubMeshes();
+    for( int j=0; j<numsubmeshes; j++ ){
+      auto submesh = mesh->subMesh(j);
+      auto smi = std::make_shared<XgmSubMeshInst>(submesh);
+      _submeshinsts.push_back(smi);
+    }
+  }
+
+}
+
+XgmSubMeshInst::XgmSubMeshInst(const XgmSubMesh* submesh)
+  : _submesh(submesh) {
+    FxStateInstanceConfig cfg_mono, cfg_stereo, cfg_pick;
+    cfg_mono._instanced_primitive   = true;
+    cfg_stereo._instanced_primitive = true;
+    cfg_pick._instanced_primitive   = true;
+    cfg_mono._base_perm             = FxStateBasePermutation::MONO;
+    cfg_stereo._base_perm           = FxStateBasePermutation::STEREO;
+    cfg_pick._base_perm             = FxStateBasePermutation::PICK;
+    _fxinstance[0]         = submesh->_material->createFxStateInstance(cfg_mono);
+    _fxinstance[1]       = submesh->_material->createFxStateInstance(cfg_stereo);
+    _fxinstance[2]         = submesh->_material->createFxStateInstance(cfg_pick);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
