@@ -20,6 +20,7 @@ enum class ERenderModelID : uint64_t {
   CrcEnum(FORWARD_UNLIT),
   CrcEnum(FORWARD_PBR),
   CrcEnum(DEFERRED_PBR),
+  CrcEnum(PICKING),
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -74,6 +75,7 @@ struct RenderContextInstData {
   RenderGroupState GetRenderGroupState() const;   // deprecated
 
   bool _isSkinned                           = false;
+  bool _isInstanced = false;
   int miMaterialIndex                       = 0;
   int miMaterialPassIndex                   = 0;
   const IRenderer* mpActiveRenderer         = nullptr;
@@ -81,6 +83,7 @@ struct RenderContextInstData {
   const RenderContextFrameData* _RCFD       = nullptr;
   const XgmMaterialStateInst* mMaterialInst = nullptr;
   RenderGroupState mRenderGroupState        = RenderGroupState::NONE;
+  fxinstancelut_ptr_t _fx_instance_lut;
 
   float mEngineParamFloats[kMaxEngineParamFloats];
 };

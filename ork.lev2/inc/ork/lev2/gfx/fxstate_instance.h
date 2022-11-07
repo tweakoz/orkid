@@ -24,7 +24,10 @@ using fxinstance_constptr_t = std::shared_ptr<const FxStateInstance>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enum FxStateBasePermutation { MONO = 0, STEREO, PICK, COUNT };
+/*enum FxStateBasePermutation { MONO = 0, //
+                              STEREO, // 
+                              PICK, // 
+                              COUNT };*/
 
 ///////////////////////////////////////////////////////////////////////////////
 // FxStateInstance : instance of a material "class"
@@ -32,12 +35,18 @@ enum FxStateBasePermutation { MONO = 0, STEREO, PICK, COUNT };
 ///////////////////////////////////////////////////////////////////////////////
 
 struct FxStateInstanceConfig {
-  FxStateBasePermutation _base_perm = MONO;
-  bool _instanced_primitive         = false;
-  bool _skinned                     = false;
+
+  void dump() const;
+
+  ERenderModelID _rendering_model = ERenderModelID::DEFERRED_PBR;
+  bool _stereo = false;
+  bool _instanced = false;
+  bool _skinned = false;
 };
 
-struct FxStateInstance : public std::enable_shared_from_this<FxStateInstance> {
+///////////////////////////////////////////////////////////////////////////////
+
+struct FxStateInstance {
 
   FxStateInstance(FxStateInstanceConfig& config);
 
@@ -49,12 +58,24 @@ struct FxStateInstance : public std::enable_shared_from_this<FxStateInstance> {
   void wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_t drawcall);
 
   using varval_t                    = varmap::VarMap::value_type;
+  
+  GfxMaterial* _material = nullptr;
   fxtechnique_constptr_t _technique = nullptr;
   FxStateInstanceConfig _config;
   std::unordered_map<fxparam_constptr_t, varval_t> _params;
   fxparam_constptr_t _parInstanceMatrixMap = nullptr;
   fxparam_constptr_t _parInstanceIdMap     = nullptr;
   fxparam_constptr_t _parInstanceColorMap  = nullptr;
+  svar64_t _impl;
+
+};
+
+struct FxStateInstanceLut {
+
+  static uint64_t genIndex(const FxStateInstanceConfig& config);
+  fxinstance_ptr_t findfxinst(const RenderContextInstData& RCID) const;
+  void assignfxinst(const FxStateInstanceConfig& config, fxinstance_ptr_t fxi);
+  std::unordered_map<uint64_t,fxinstance_ptr_t> _lut;
 };
 
 } // namespace ork::lev2

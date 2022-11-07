@@ -68,5 +68,5 @@ bool RenderingModel::isDeferredPBR() const { //
 bool RenderingModel::isForwardUnlit() const{
 	return _modelID==ERenderModelID::FORWARD_UNLIT; //
 }
-///////////////////////////////////////////////////////////////////////////////
+
 } // namespace ork::lev2

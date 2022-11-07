@@ -8,55 +8,81 @@ fxconfig fxcfg_default {
 	glsl_version = "130";
 }
 ///////////////////////////////////////////////////////////////
-technique rigid_gbuffer {
+technique PIK_RI_NI {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_test,ps_forward_test,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique PIK_RI_IN {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_instanced,ps_forward_test,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique FWD_CT_NM_RI_NI_MO {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_test,ps_forward_test,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique FWD_CT_NM_RI_IN_MO {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_instanced,ps_forward_test,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique GBU_CT_VN_RI_NI_MO {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_rigid_gbuffer,ps_gbuffer,sb_default}
 }
 ///////////////////////////////////////////////////////////////
-technique rigid_gbuffer_vtxcolor {
+technique GBU_VC_VN_RI_NI_MO {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_rigid_gbuffer_vtxcolor,ps_gbuffer_vtxcolor,sb_default}
 }
 ///////////////////////////////////////////////////////////////
-technique rigid_gbuffer_font {
+technique GBU_CF_NI_MO { // deferred font non-instanced
 	fxconfig=fxcfg_default;
 	vf_pass={vs_rigid_gbuffer_font,ps_gbuffer_font,sb_default}
 }
 ///////////////////////////////////////////////////////////////
-technique rigid_gbuffer_font_instanced {
+technique GBU_CF_IN_MO { // deferred font instanced
 	fxconfig=fxcfg_default;
 	vf_pass={vs_rigid_gbuffer_font_instanced,ps_gbuffer_font,sb_default}
 }
 ///////////////////////////////////////////////////////////////
-technique rigid_gbuffer_vizn {
+technique GBU_DB_NM_NI_MO {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_rigid_gbuffer,ps_gbuffer_vizn,sb_default}
 }
 ///////////////////////////////////////////////////////////////
-technique rigid_gbuffer_n {
+technique GBU_CT_NM_RI_NI_MO {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_rigid_gbuffer,ps_gbuffer_n,sb_default}
 }
-technique rigid_gbuffer_n_stereo {
+///////////////////////////////////////////////////////////////
+technique GBU_CM_NM_RI_NI_MO {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_rigid_gbuffer,ps_gbuffer_n,sb_default}
+}
+technique GBU_CM_NM_RI_NI_ST {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_rigid_gbuffer_stereo,ps_gbuffer_n_stereo,sb_default}
 }
-technique rigid_gbuffer_n_tex_stereo {
+technique GBU_CT_NM_RI_NI_ST {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_rigid_gbuffer_stereo,ps_gbuffer_n_tex_stereo,sb_default}
 }
 ///////////////////////////////////////////////////////////////
-technique skinned_gbuffer_n {
+technique GBU_CT_NM_SK_NI_MO {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_skinned_gbuffer,ps_gbuffer_n,sb_default}
 }
 ///////////////////////////////////////////////////////////////
-technique rigid_gbuffer_n_instanced {
+technique GBU_CT_NM_RI_IN_MO {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_rigid_gbuffer_instanced,ps_gbuffer_n_instanced,sb_default}
 }
-technique rigid_gbuffer_n_instanced_stereo {
+technique GBU_CT_NM_RI_IN_ST {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_rigid_gbuffer_instanced_stereo,ps_gbuffer_n_stereo_instanced,sb_default}
 }
 ///////////////////////////////////////////////////////////////
+

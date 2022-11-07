@@ -161,7 +161,7 @@ struct XgmSubMeshInst {
 
   const XgmSubMesh* _submesh = nullptr;
   bool _enabled = true;
-  fxinstance_ptr_t _fxinstance[FxStateBasePermutation::COUNT];
+  fxinstancelut_ptr_t _fxinstancelut;
 };
 
 using xgmsubmeshinst_ptr_t = std::shared_ptr<XgmSubMeshInst>;

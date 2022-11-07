@@ -86,7 +86,7 @@ bool FxStateInstance::beginPass(const RenderContextInstData& RCID, int ipass) {
           if (monocams) {
             FXI->BindParamMatrix(param, monocams->MVPMONO(worldmatrix));
           } else {
-            auto MVP = fmtx4::multiply_ltor(worldmatrix,MTXI->RefVPMatrix());
+            auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix());
             FXI->BindParamMatrix(param, MVP);
           }
           break;
@@ -149,6 +149,54 @@ void FxStateInstance::endPass(const RenderContextInstData& RCID) {
 void FxStateInstance::endBlock(const RenderContextInstData& RCID) {
   auto context = RCID._RCFD->GetTarget();
   context->FXI()->EndBlock();
+}
+///////////////////////////////////////////////////////////////////////////////
+uint64_t FxStateInstanceLut::genIndex(const FxStateInstanceConfig& config) {
+  uint64_t index = 0;
+  index += (uint64_t(config._stereo) << 1);
+  index += (uint64_t(config._instanced) << 2);
+  index += (uint64_t(config._skinned) << 3);
+  index += (uint64_t(config._rendering_model) << 4);
+  return index;
+}
+///////////////////////////////////////////////////////////////////////////////
+fxinstance_ptr_t FxStateInstanceLut::findfxinst(const RenderContextInstData& RCID) const {
+  auto RCFD       = RCID._RCFD;
+  auto context    = RCFD->_target;
+  auto fxi        = context->FXI();
+  const auto& CPD = RCFD->topCPD();
+  /////////////////
+  FxStateInstanceConfig config;
+  fxinstance_ptr_t fxinst;
+  config._stereo          = CPD.isStereoOnePass();
+  config._skinned         = RCID._isSkinned;
+  config._instanced       = RCID._isInstanced;
+  config._rendering_model = RCFD->_renderingmodel._modelID;
+  //config.dump();
+  /////////////////
+  uint64_t index = genIndex(config);
+  //printf( "fxlut<%p> findfxinst index<%zu>\n", this, index );
+  auto it = _lut.find(index);
+  if (it != _lut.end()) {
+    fxinst = it->second;
+  }
+  /////////////////
+  return fxinst;
+}
+///////////////////////////////////////////////////////////////////////////////
+void FxStateInstanceLut::assignfxinst(const FxStateInstanceConfig& config, fxinstance_ptr_t fxi) {
+  uint64_t index   = genIndex(config);
+  printf( "fxlut<%p> assignfxinst fxi<%p> to index<%zu>\n", this, fxi.get(), index );
+  _lut[index] = fxi;
+}
+///////////////////////////////////////////////////////////////////////////////
+void FxStateInstanceConfig::dump() const {
+  printf(
+      "FxStateInstanceConfig: model<0x%zx> stereo<%d> instanced<%d> skinned<%d>\n",
+      uint64_t(_rendering_model),
+      int(_stereo),
+      int(_instanced),
+      int(_skinned));
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

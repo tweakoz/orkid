@@ -126,13 +126,12 @@ void PBRMaterial::describeX(class_t* c) {
     ctx._inputStream->GetItem<float>(mtl->_roughnessFactor);
     ctx._inputStream->GetItem<fvec4>(mtl->_baseColor);
 
-    if( auto try_ov = ctx._varmap->typedValueForKey<std::string>("override.shader.gbuf") ){
+    if (auto try_ov = ctx._varmap->typedValueForKey<std::string>("override.shader.gbuf")) {
       const auto& ov_val = try_ov.value();
-      if(ov_val == "normalviz"){
+      if (ov_val == "normalviz") {
         mtl->_variant = "normalviz"_crcu;
       }
     }
-
 
     return mtl;
   };
@@ -186,40 +185,53 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _initialTarget = targ;
   auto fxi       = targ->FXI();
 
-  _asset_shader  = ork::asset::AssetManager<FxShaderAsset>::load(_shaderpath);
-  _shader        = _asset_shader->GetFxShader();
+  _asset_shader = ork::asset::AssetManager<FxShaderAsset>::load(_shaderpath);
+  _shader       = _asset_shader->GetFxShader();
 
-  _tekRigidPICKING           = fxi->technique(_shader, "picking_rigid");
-  _tekRigidPICKING_INSTANCED = fxi->technique(_shader, "picking_rigid_instanced");
+  // specials
 
-  _tekRigidGBUFFER              = fxi->technique(_shader, "rigid_gbuffer");
-  _tekRigidGBUFFER_N            = fxi->technique(_shader, "rigid_gbuffer_n");
-  _tekRigidGBUFFER_VIZ_N        = fxi->technique(_shader, "rigid_gbuffer_vizn");
-  _tekRigidGBUFFER_N_STEREO     = fxi->technique(_shader, "rigid_gbuffer_n_stereo");
-  _tekRigidGBUFFER_N_TEX_STEREO = fxi->technique(_shader, "rigid_gbuffer_n_tex_stereo");
-  _tekRigidGBUFFER_N_SKINNED    = fxi->technique(_shader, "skinned_gbuffer_n");
+  _tek_GBU_DB_NM_NI_MO = fxi->technique(_shader, "GBU_DB_NM_NI_MO");
 
-  _tekRigidGBUFFER_N_INSTANCED        = fxi->technique(_shader, "rigid_gbuffer_n_instanced");
-  _tekRigidGBUFFER_N_INSTANCED_STEREO = fxi->technique(_shader, "rigid_gbuffer_n_instanced_stereo");
+  _tek_GBU_CF_IN_MO = fxi->technique(_shader, "GBU_CF_IN_MO");
+  _tek_GBU_CF_NI_MO = fxi->technique(_shader, "GBU_CF_NI_MO");
+
+  _tek_PIK_RI_IN = fxi->technique(_shader, "PIK_RI_IN");
+  _tek_PIK_RI_NI = fxi->technique(_shader, "PIK_RI_NI");
+
+  // forwards
+
+  _tek_FWD_CT_NM_RI_NI_MO = fxi->technique(_shader, "FWD_CT_NM_RI_NI_MO");
+  _tek_FWD_CT_NM_RI_IN_MO = fxi->technique(_shader, "FWD_CT_NM_RI_IN_MO");
+
+  // deferreds
+
+  _tek_GBU_CM_NM_RI_NI_MO = fxi->technique(_shader, "GBU_CM_NM_RI_NI_MO");
+  _tek_GBU_CM_NM_SK_NI_MO = fxi->technique(_shader, "GBU_CM_NM_SK_NI_MO");
+  _tek_GBU_CM_NM_RI_NI_ST = fxi->technique(_shader, "GBU_CM_NM_RI_NI_ST");
 
 
-  _tekRigidGBUFFER_VTXCOLOR = fxi->technique(_shader, "rigid_gbuffer_vtxcolor");
+  _tek_GBU_CT_NM_RI_IN_MO = fxi->technique(_shader, "GBU_CT_NM_RI_IN_MO");
+  _tek_GBU_CT_NM_RI_IN_ST = fxi->technique(_shader, "GBU_CT_NM_RI_IN_ST");
+  _tek_GBU_CT_NM_RI_NI_ST = fxi->technique(_shader, "GBU_CT_NM_RI_NI_ST");
+  _tek_GBU_CT_NM_RI_NI_MO = fxi->technique(_shader, "GBU_CT_NM_RI_NI_MO");
 
-  _tekRigidGBUFFER_FONT = fxi->technique(_shader, "rigid_gbuffer_font");
-  _tekRigidGBUFFER_FONT_INSTANCED = fxi->technique(_shader, "rigid_gbuffer_font_instanced");
+  _tek_GBU_CT_NM_SK_IN_MO = fxi->technique(_shader, "GBU_CT_NM_SK_IN_MO");
 
-  _tekSkinnedGBUFFER_N = fxi->technique(_shader, "skinned_gbuffer_n");
+  _tek_GBU_CT_NM_SK_NI_MO = fxi->technique(_shader, "GBU_CT_NM_SK_NI_MO");
+
+  _tek_GBU_CT_NV_RI_NI_MO = fxi->technique(_shader, "GBU_CT_NV_RI_NI_MO");
+
+  _tek_GBU_CV_NM_RI_NI_MO = fxi->technique(_shader, "GBU_CV_NM_RI_NI_MO");
 
 
-  /*assert(_tekRigidPICKING);
-  assert(_tekRigidPICKING_INSTANCED);
-  assert(_tekRigidGBUFFER);
-  assert(_tekRigidGBUFFER_N);
-  assert(_tekRigidGBUFFER_N_STEREO);
-  assert(_tekRigidGBUFFER_N_TEX_STEREO);
-  assert(_tekRigidGBUFFER_N_SKINNED);
-  assert(_tekRigidGBUFFER_N_INSTANCED);
-  assert(_tekRigidGBUFFER_N_INSTANCED_STEREO);*/
+  OrkAssert(_tek_GBU_CT_NM_RI_NI_ST);
+  OrkAssert(_tek_GBU_CT_NM_RI_IN_ST);
+  OrkAssert(_tek_GBU_CT_NM_RI_IN_MO);
+  OrkAssert(_tek_GBU_CT_NM_RI_NI_MO);
+  OrkAssert(_tek_FWD_CT_NM_RI_NI_MO);
+  OrkAssert(_tek_FWD_CT_NM_RI_IN_MO);
+
+  // parameters
 
   _paramM                 = fxi->parameter(_shader, "m");
   _paramVP                = fxi->parameter(_shader, "vp");
@@ -261,18 +273,18 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
     // printf("substituted white for non-existant mtlrufao texture\n");
     OrkAssert(_texMtlRuf != nullptr);
   }
-  if (_texEmissive ) {
+  if (_texEmissive) {
     //_asset_emissive = _asset_texcolor;
     //_texEmissive       = _asset_emissive->GetTexture();
     printf("substituted white for non-existant color texture\n");
-    //OrkAssert(_texEmissive != nullptr);
+    // OrkAssert(_texEmissive != nullptr);
     forceEmissive();
     //_asset_texcolor = asset::AssetManager<lev2::TextureAsset>::load("src://effect_textures/white");
-    _texColor       = _texEmissive;
+    _texColor = _texEmissive;
   }
 }
 
-void PBRMaterial::forceEmissive(){
+void PBRMaterial::forceEmissive() {
   // to force emissive set normal map to black
   // shader will interpret as emissive
   _asset_texnormal = asset::AssetManager<lev2::TextureAsset>::load("src://effect_textures/black");
@@ -282,46 +294,196 @@ void PBRMaterial::forceEmissive(){
 
 ////////////////////////////////////////////
 
-int PBRMaterial::BeginBlock(Context* targ, const RenderContextInstData& RCID) {
-  auto fxi                           = targ->FXI();
-  const RenderContextFrameData* RCFD = targ->topRenderContextFrameData();
-  const auto& CPD                    = RCFD->topCPD();
-  bool is_stereo                     = CPD.isStereoOnePass();
-  bool is_skinned                    = RCID._isSkinned;
-  bool is_picking                    = CPD.isPicking();
+fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg) const {
 
-  const FxShaderTechnique* tek = _tekRigidGBUFFER;
+  cfg.dump();
 
+  auto fxinst = std::make_shared<FxStateInstance>(cfg);
 
-
-  if (is_picking) {
-    tek = _tekRigidPICKING;
-  } else if (is_stereo) {
-    if (_stereoVtex)
-      tek = _tekRigidGBUFFER_N_TEX_STEREO;
-    else
-      tek = _tekRigidGBUFFER_N_STEREO;
-  } else {
-    switch(_variant){
-        case 0:
-          tek = is_skinned ? _tekRigidGBUFFER_N_SKINNED : _tekRigidGBUFFER_N;
+  switch (_variant) {
+    case 0: { // STANDARD VARIANT
+      switch (cfg._rendering_model) {
+        //////////////////////////////////////////
+        case ERenderModelID::PICKING: {
+          OrkAssert(cfg._stereo==false);
+          if (cfg._instanced) {
+            fxinst->_technique = _tek_PIK_RI_IN;
+          }
+          ////////////////
+          else { // non-instanced
+            if (cfg._skinned)
+              fxinst->_technique = nullptr;
+            else // rigid
+              fxinst->_technique = _tek_PIK_RI_NI;
+            ////////////////
+          }
+          OrkAssert(fxinst->_technique!=nullptr);
+          fxinst->_params[_paramMVP] = "RCFD_Camera_Pick"_crcsh;
           break;
-        case "normalviz"_crcu:
-          tek = _tekRigidGBUFFER_VIZ_N;
+        }
+        //////////////////////////////////////////
+        case ERenderModelID::DEFERRED_PBR: {
+          if (cfg._stereo) {                                     // stereo
+            if (cfg._instanced) {                                // stereo-instanced
+              fxinst->_technique = cfg._skinned                  //
+                                       ? _tek_GBU_CT_NM_SK_IN_ST //
+                                       : _tek_GBU_CT_NM_RI_IN_ST;
+              OrkAssert(fxinst->_technique!=nullptr);
+            } else {                                             // stereo-non-instanced
+              fxinst->_technique = cfg._skinned                  //
+                                       ? _tek_GBU_CT_NM_SK_NI_ST //
+                                       : _tek_GBU_CT_NM_RI_NI_ST;
+              OrkAssert(fxinst->_technique!=nullptr);
+            }
+            fxinst->_params[_paramMVPL] = "RCFD_Camera_MVP_Left"_crcsh;
+            fxinst->_params[_paramMVPR] = "RCFD_Camera_MVP_Right"_crcsh;
+          } else {                                               // mono
+            if (cfg._instanced) {                                // mono-instanced
+              fxinst->_technique = cfg._skinned                  //
+                                       ? _tek_GBU_CT_NM_SK_IN_MO //
+                                       : _tek_GBU_CT_NM_RI_IN_MO;
+              OrkAssert(fxinst->_technique!=nullptr);
+            } else {                                             // mono-non-instanced
+              fxinst->_technique = cfg._skinned                  //
+                                       ? _tek_GBU_CT_NM_SK_NI_MO //
+                                       : _tek_GBU_CT_NM_RI_NI_MO;
+              OrkAssert(fxinst->_technique!=nullptr);
+            }
+            fxinst->_params[_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
+          }
+          OrkAssert(fxinst->_technique!=nullptr);
           break;
-        case "vertexcolor"_crcu:
-          tek = _tekRigidGBUFFER_VTXCOLOR;
+        } // ERenderModelID::DEFERRED_PBR
+        //////////////////////////////////////////
+        case ERenderModelID::FORWARD_UNLIT:
+          OrkAssert(false);
           break;
-        case "font"_crcu:
-          tek = _tekRigidGBUFFER_FONT;
+        case ERenderModelID::FORWARD_PBR:
+          if (cfg._instanced and not cfg._skinned and not cfg._stereo) {
+              fxinst->_technique = _tek_FWD_CT_NM_RI_IN_MO;
+              fxinst->_params[_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
+          }
+          OrkAssert(fxinst->_technique!=nullptr);
           break;
-        case "font-instanced"_crcu:
-          tek = _tekRigidGBUFFER_FONT_INSTANCED;
+        default:
+          OrkAssert(false);
           break;
-    }
-    if (is_skinned) {
-    }
+        //////////////////////////////////////////
+      }  //switch (cfg._rendering_model) {
+      break;
+    } // case 0: // STANDARD VARIANT
+    //////////////////////////////////////////
+    case "normalviz"_crcu:
+      OrkAssert(false);
+      break;
+    //////////////////////////////////////////
+    case "vertexcolor"_crcu:
+      OrkAssert(false);
+      break;
+    //////////////////////////////////////////
+    case "font"_crcu:
+      OrkAssert(false);
+      break;
+    //////////////////////////////////////////
+    case "font-instanced"_crcu:
+      OrkAssert(false);
+      break;
+    //////////////////////////////////////////
+    default:
+      OrkAssert(false);
+      break;
   }
+
+  OrkAssert(fxinst->_technique != nullptr);
+
+  fxinst->_params[_paramMROT] = "RCFD_Model_Rot"_crcsh;
+
+  fxinst->_params[_paramMapColor]  = _texColor;
+  fxinst->_params[_paramMapNormal] = _texNormal;
+  fxinst->_params[_paramMapMtlRuf] = _texMtlRuf;
+
+  fxinst->_params[_parMetallicFactor]  = _metallicFactor;
+  fxinst->_params[_parRoughnessFactor] = _roughnessFactor;
+  fxinst->_params[_parModColor]        = fvec4(1, 1, 1, 1);
+
+  fxinst->_parInstanceMatrixMap = _paramInstanceMatrixMap;
+  fxinst->_parInstanceIdMap     = _paramInstanceIdMap;
+  fxinst->_parInstanceColorMap  = _paramInstanceColorMap;
+  fxinst->_material = (GfxMaterial*) this;
+
+  return fxinst;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+fxinstancelut_ptr_t PBRMaterial::createFxStateInstanceLut() const {
+  fxinstancelut_ptr_t fxlut = std::make_shared<FxStateInstanceLut>();
+
+  FxStateInstanceConfig config;
+
+  printf( "fxlut<%p> createFxStateInstanceLut\n", fxlut.get() );
+
+  /////////////////////
+  // picking
+  /////////////////////
+
+  config._rendering_model = ERenderModelID::PICKING;
+
+  config._stereo    = false;
+  config._instanced = false;
+  config._skinned   = false;
+  fxlut->assignfxinst(config, _createFxStateInstance(config));
+
+  /////////////////////
+  // deferred PBR
+  /////////////////////
+
+  config._rendering_model = ERenderModelID::DEFERRED_PBR;
+
+  config._stereo    = false;
+  config._instanced = false;
+  config._skinned   = false;
+  fxlut->assignfxinst(config, _createFxStateInstance(config));
+
+  config._stereo    = false;
+  config._instanced = true;
+  config._skinned   = false;
+  fxlut->assignfxinst(config, _createFxStateInstance(config));
+
+  config._stereo    = true;
+  config._instanced = false;
+  config._skinned   = false;
+  fxlut->assignfxinst(config, _createFxStateInstance(config));
+
+  config._stereo    = true;
+  config._instanced = true;
+  config._skinned   = false;
+  fxlut->assignfxinst(config, _createFxStateInstance(config));
+
+  /////////////////////
+  // forward PBR
+  /////////////////////
+
+  config._rendering_model = ERenderModelID::FORWARD_PBR;
+
+  config._stereo    = false;
+  config._instanced = true;
+  config._skinned   = false;
+  fxlut->assignfxinst(config, _createFxStateInstance(config));
+
+  return fxlut;
+}
+
+////////////////////////////////////////////
+
+int PBRMaterial::BeginBlock(Context* context, const RenderContextInstData& RCID) {
+  auto fxi   = context->FXI();
+  auto fxlut = RCID._fx_instance_lut;
+  OrkAssert(fxlut);
+  auto fxinstance = fxlut->findfxinst(RCID);
+  OrkAssert(fxinstance);
+  auto tek = fxinstance->_technique;
+  OrkAssert(tek);
 
   int numpasses = fxi->BeginBlock(tek, RCID);
   assert(numpasses == 1);
@@ -330,8 +492,8 @@ int PBRMaterial::BeginBlock(Context* targ, const RenderContextInstData& RCID) {
 
 ////////////////////////////////////////////
 
-void PBRMaterial::EndBlock(Context* targ) {
-  auto fxi = targ->FXI();
+void PBRMaterial::EndBlock(Context* context) {
+  auto fxi = context->FXI();
   fxi->EndBlock();
 }
 
@@ -339,9 +501,9 @@ void PBRMaterial::EndBlock(Context* targ) {
 
 void PBRMaterial::gpuUpdate(Context* context) {
   GfxMaterial::gpuUpdate(context);
-  //auto modcolor = context->RefModColor();
-  //auto fxi    = context->FXI();
-  //fxi->BindParamVect4(_parModColor, modcolor*_baseColor);
+  // auto modcolor = context->RefModColor();
+  // auto fxi    = context->FXI();
+  // fxi->BindParamVect4(_parModColor, modcolor*_baseColor);
 }
 
 ////////////////////////////////////////////
@@ -356,7 +518,7 @@ bool PBRMaterial::BeginPass(Context* targ, int iPass) {
   auto mvmtx  = mtxi->RefMVMatrix();
   auto vmtx   = mtxi->RefVMatrix();
   auto pmtx   = mtxi->RefPMatrix();
-  auto vpmtx = fmtx4::multiply_ltor(vmtx,pmtx);
+  auto vpmtx  = fmtx4::multiply_ltor(vmtx, pmtx);
 
   // vmtx.dump("vmtx");
   const RenderContextInstData* RCID  = targ->GetRenderContextInstData();
@@ -397,18 +559,18 @@ bool PBRMaterial::BeginPass(Context* targ, int iPass) {
     fxi->BindParamMatrix(_paramMROT, (world).rotMatrix33());
   } else {
     auto mcams = CPD._cameraMatrices;
-    auto VP = fmtx4::multiply_ltor(mcams->_vmatrix,mcams->_pmatrix);
-    auto MVP   = fmtx4::multiply_ltor(world,VP);
+    auto VP    = fmtx4::multiply_ltor(mcams->_vmatrix, mcams->_pmatrix);
+    auto MVP   = fmtx4::multiply_ltor(world, VP);
     fxi->BindParamMatrix(_paramMVP, MVP);
     fxi->BindParamMatrix(_paramVP, VP);
     fxi->BindParamMatrix(_paramMROT, (world).rotMatrix33());
   }
 
-  switch(_variant){
-      case "font-instanced"_crcu:
-        break;
-      default:
-        break;
+  switch (_variant) {
+    case "font-instanced"_crcu:
+      break;
+    default:
+      break;
   }
 
   rsi->BindRasterState(_rasterstate);
@@ -417,26 +579,24 @@ bool PBRMaterial::BeginPass(Context* targ, int iPass) {
 }
 
 void PBRMaterial::UpdateMVPMatrix(Context* context) {
-  auto fxi    = context->FXI();
-  auto rsi    = context->RSI();
-  auto mtxi   = context->MTXI();
+  auto fxi                           = context->FXI();
+  auto rsi                           = context->RSI();
+  auto mtxi                          = context->MTXI();
   const RenderContextInstData* RCID  = context->GetRenderContextInstData();
   const RenderContextFrameData* RCFD = context->topRenderContextFrameData();
   const auto& CPD                    = RCFD->topCPD();
   if (CPD.isStereoOnePass() and CPD._stereoCameraMatrices) {
-  }
-  else{
-    auto mcams = CPD._cameraMatrices;
+  } else {
+    auto mcams        = CPD._cameraMatrices;
     const auto& world = mtxi->RefMMatrix();
-    auto MVP   = fmtx4::multiply_ltor(world,mcams->_vmatrix,mcams->_pmatrix);
+    auto MVP          = fmtx4::multiply_ltor(world, mcams->_vmatrix, mcams->_pmatrix);
     fxi->BindParamMatrix(_paramMVP, MVP);
-
   }
 }
 
 void PBRMaterial::UpdateMMatrix(Context* context) {
-  auto fxi    = context->FXI();
-  auto mtxi   = context->MTXI();
+  auto fxi          = context->FXI();
+  auto mtxi         = context->MTXI();
   const auto& world = mtxi->RefMMatrix();
   fxi->BindParamMatrix(_paramM, world);
 }
@@ -534,7 +694,7 @@ void PBRMaterial::setupCamera(const RenderContextFrameData& RCFD) {
     FXI->BindParamMatrix(_paramMVPR, MVPR);
   } else if (CPD._cameraMatrices) {
     auto mcams = CPD._cameraMatrices;
-    auto MVP   = fmtx4::multiply_ltor(world,mcams->_vmatrix,mcams->_pmatrix);
+    auto MVP   = fmtx4::multiply_ltor(world, mcams->_vmatrix, mcams->_pmatrix);
     FXI->BindParamMatrix(_paramMVP, MVP);
   } else {
     auto MVP = MTXI->RefMVPMatrix();
@@ -550,88 +710,6 @@ void PBRMaterial::begin(const RenderContextFrameData& RCFD) {
 ////////////////////////////////////////////
 
 void PBRMaterial::end(const RenderContextFrameData& RCFD) {
-}
-
-////////////////////////////////////////////
-
-fxinstance_ptr_t PBRMaterial::createFxStateInstance(FxStateInstanceConfig& cfg) const {
-
-  auto fxinst = std::make_shared<FxStateInstance>(cfg);
-
-  switch (cfg._base_perm) {
-    //////////////////////////////////////////
-    case FxStateBasePermutation::PICK:
-      if (cfg._instanced_primitive) {
-        fxinst->_technique = _tekRigidPICKING_INSTANCED;
-      }
-      ////////////////
-      else { // non-instanced
-        if (cfg._skinned)
-          fxinst->_technique = nullptr;
-        else // rigid
-          fxinst->_technique = _tekRigidPICKING;
-        ////////////////
-      }
-      fxinst->_params[_paramMVP] = "RCFD_Camera_Pick"_crcsh;
-      break;
-    //////////////////////////////////////////
-    case FxStateBasePermutation::MONO:
-      if (cfg._instanced_primitive) {
-        if (cfg._skinned)
-          fxinst->_technique = nullptr;
-        else { // rigid
-          fxinst->_technique = _tekRigidGBUFFER_N_INSTANCED;
-        }
-      }
-      ////////////////
-      else { // non-instanced
-        if (cfg._skinned)
-          fxinst->_technique = _tekRigidGBUFFER_N_SKINNED;
-        else // rigid
-          fxinst->_technique = _tekRigidGBUFFER_N;
-        ////////////////
-      }
-      fxinst->_params[_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
-      break;
-    //////////////////////////////////////////
-    case FxStateBasePermutation::STEREO:
-      if (cfg._instanced_primitive) {
-        if (cfg._skinned)
-          fxinst->_technique = nullptr;
-        else // rigid
-          fxinst->_technique = _tekRigidGBUFFER_N_INSTANCED_STEREO;
-      }
-      ////////////////
-      else { // non-instanced
-        if (cfg._skinned)
-          fxinst->_technique = nullptr;
-        else // rigid
-          fxinst->_technique = _tekRigidGBUFFER_N_STEREO;
-        ////////////////
-      }
-      fxinst->_params[_paramMVPL] = "RCFD_Camera_MVP_Left"_crcsh;
-      fxinst->_params[_paramMVPR] = "RCFD_Camera_MVP_Right"_crcsh;
-      break;
-      //////////////////////////////////////////
-  }
-
-  OrkAssert(fxinst->_technique != nullptr);
-
-  fxinst->_params[_paramMROT] = "RCFD_Model_Rot"_crcsh;
-
-  fxinst->_params[_paramMapColor]  = _texColor;
-  fxinst->_params[_paramMapNormal] = _texNormal;
-  fxinst->_params[_paramMapMtlRuf] = _texMtlRuf;
-
-  fxinst->_params[_parMetallicFactor]  = _metallicFactor;
-  fxinst->_params[_parRoughnessFactor] = _roughnessFactor;
-  fxinst->_params[_parModColor]        = fvec4(1, 1, 1, 1);
-
-  fxinst->_parInstanceMatrixMap = _paramInstanceMatrixMap;
-  fxinst->_parInstanceIdMap     = _paramInstanceIdMap;
-  fxinst->_parInstanceColorMap  = _paramInstanceColorMap;
-
-  return fxinst;
 }
 
 ////////////////////////////////////////////

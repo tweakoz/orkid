@@ -272,13 +272,14 @@ void ModelRenderable::Render(const IRenderer* renderer) const {
   /////////////////////////////////////////////////////////////
   RenderContextInstData RCID;
   RenderContextInstModelData RCID_MD;
-  RCID.SetMaterialInst(&minst->RefMaterialInst());
+  //RCID.SetMaterialInst(&minst->RefMaterialInst());
   RCID_MD.mMesh    = mesh;
   RCID_MD.mSubMesh = submesh;
   RCID_MD._cluster = this->_cluster;
-  RCID.SetMaterialIndex(0);
+  //RCID.SetMaterialIndex(0);
   RCID.SetRenderer(renderer);
   RCID._dagrenderable = this;
+  RCID._fx_instance_lut = _submeshinst->_fxinstancelut;
   // context->debugMarker(FormatString("toolrenderer::RenderModel isskinned<%d> owner_as_ent<%p>", int(model->isSkinned()),
   // as_ent));
   ///////////////////////////////////////

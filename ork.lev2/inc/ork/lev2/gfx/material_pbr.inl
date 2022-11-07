@@ -84,7 +84,8 @@ public:
   void forceEmissive();
 
   ////////////////////////////////////////////
-  fxinstance_ptr_t createFxStateInstance(FxStateInstanceConfig& cfg) const override;
+  fxinstance_ptr_t _createFxStateInstance(FxStateInstanceConfig& cfg) const;
+  fxinstancelut_ptr_t createFxStateInstanceLut() const final;
   ////////////////////////////////////////////
   void setupCamera(const RenderContextFrameData& RCFD);
   ////////////////////////////////////////////
@@ -127,25 +128,103 @@ public:
   uint32_t _variant = 0;
   ///////////////////////////////////////////
 
-  fxtechnique_constptr_t _tekRigidGBUFFER              = nullptr;
-  fxtechnique_constptr_t _tekRigidGBUFFER_VTXCOLOR     = nullptr;
-  fxtechnique_constptr_t _tekRigidGBUFFER_N            = nullptr;
-  fxtechnique_constptr_t _tekRigidGBUFFER_VIZ_N        = nullptr;
-  fxtechnique_constptr_t _tekRigidGBUFFER_N_SKINNED    = nullptr;
-  fxtechnique_constptr_t _tekRigidGBUFFER_N_STEREO     = nullptr;
-  fxtechnique_constptr_t _tekRigidGBUFFER_N_TEX_STEREO = nullptr;
+  // PIK: Picking
+  // FWD: Forward
+  // GBU: Deferred (gbuffer pass)
+  // RI: Rigid
+  // SK: Skinned
+  // CM: ModColor
+  // CT: Textured
+  // CV: Vertex Color
+  // CF: Font
+  // NM: NormalMapped
+  // NV: VertexNormals
+  // DB: DebugVisualizer
+  // NI: Non-Instanced
+  // IN: Instanced
+  // MO: Mono
+  // ST: Stereo
 
-  fxtechnique_constptr_t _tekRigidGBUFFER_N_INSTANCED        = nullptr;
-  fxtechnique_constptr_t _tekRigidGBUFFER_N_INSTANCED_STEREO = nullptr;
+  //////////////////
+  // pick/special techniques
+  //////////////////
 
-  fxtechnique_constptr_t _tekSkinnedGBUFFER_N = nullptr;
+  fxtechnique_constptr_t _tek_GBU_DB_NM_NI_MO = nullptr;
 
-  fxtechnique_constptr_t _tekRigidPICKING           = nullptr;
-  fxtechnique_constptr_t _tekRigidPICKING_INSTANCED = nullptr;
+  fxtechnique_constptr_t _tek_GBU_CF_IN_MO = nullptr;
+  fxtechnique_constptr_t _tek_GBU_CF_NI_MO = nullptr;
 
-  fxtechnique_constptr_t _tekRigidGBUFFER_FONT = nullptr;
-  fxtechnique_constptr_t _tekRigidGBUFFER_FONT_INSTANCED = nullptr;
+  fxtechnique_constptr_t _tek_PIK_RI_IN = nullptr;
+  fxtechnique_constptr_t _tek_PIK_RI_NI = nullptr;
 
+  //////////////////////
+  // forward techniques
+  //////////////////////
+
+  // modcolor
+
+  fxtechnique_constptr_t _tek_FWD_CM_NM_RI_IN_MO = nullptr;
+  fxtechnique_constptr_t _tek_FWD_CM_NM_RI_NI_MO = nullptr;
+  fxtechnique_constptr_t _tek_FWD_CM_NM_RI_IN_ST = nullptr;
+  fxtechnique_constptr_t _tek_FWD_CM_NM_RI_NI_ST = nullptr;
+  
+  fxtechnique_constptr_t _tek_FWD_CM_NM_SK_IN_MO = nullptr;
+  fxtechnique_constptr_t _tek_FWD_CM_NM_SK_NI_MO = nullptr;
+  fxtechnique_constptr_t _tek_FWD_CM_NM_SK_IN_ST = nullptr;
+  fxtechnique_constptr_t _tek_FWD_CM_NM_SK_NI_ST = nullptr;
+
+  // texcolor
+
+  fxtechnique_constptr_t _tek_FWD_CT_NM_RI_IN_MO = nullptr;
+  fxtechnique_constptr_t _tek_FWD_CT_NM_RI_NI_MO = nullptr;
+  fxtechnique_constptr_t _tek_FWD_CT_NM_RI_IN_ST = nullptr;
+  fxtechnique_constptr_t _tek_FWD_CT_NM_RI_NI_ST = nullptr;
+  
+  fxtechnique_constptr_t _tek_FWD_CT_NM_SK_IN_MO = nullptr;
+  fxtechnique_constptr_t _tek_FWD_CT_NM_SK_NI_MO = nullptr;
+  fxtechnique_constptr_t _tek_FWD_CT_NM_SK_IN_ST = nullptr;
+  fxtechnique_constptr_t _tek_FWD_CT_NM_SK_NI_ST = nullptr;
+
+  // vtxcolor
+
+  fxtechnique_constptr_t _tek_FWD_CV_VN_RI_NI_MO = nullptr;
+
+  //////////////////////
+  // deferred (gbuffer) techniques
+  //////////////////////
+
+  // modcolor
+
+  fxtechnique_constptr_t _tek_GBU_CM_NM_RI_IN_MO = nullptr;
+  fxtechnique_constptr_t _tek_GBU_CM_NM_RI_NI_MO = nullptr;
+  fxtechnique_constptr_t _tek_GBU_CM_NM_RI_IN_ST = nullptr;
+  fxtechnique_constptr_t _tek_GBU_CM_NM_RI_NI_ST = nullptr;
+
+  fxtechnique_constptr_t _tek_GBU_CM_NM_SK_IN_MO = nullptr;
+  fxtechnique_constptr_t _tek_GBU_CM_NM_SK_NI_MO = nullptr;
+  fxtechnique_constptr_t _tek_GBU_CM_NM_SK_IN_ST = nullptr;
+  fxtechnique_constptr_t _tek_GBU_CM_NM_SK_NI_ST = nullptr;
+
+  // texcolor
+
+  fxtechnique_constptr_t _tek_GBU_CT_NV_RI_NI_MO = nullptr;
+
+  fxtechnique_constptr_t _tek_GBU_CT_NM_RI_IN_MO = nullptr;
+  fxtechnique_constptr_t _tek_GBU_CT_NM_RI_NI_MO = nullptr;
+  fxtechnique_constptr_t _tek_GBU_CT_NM_RI_IN_ST = nullptr;
+  fxtechnique_constptr_t _tek_GBU_CT_NM_RI_NI_ST = nullptr;
+
+  fxtechnique_constptr_t _tek_GBU_CT_NM_SK_IN_MO = nullptr;
+  fxtechnique_constptr_t _tek_GBU_CT_NM_SK_NI_MO = nullptr;
+  fxtechnique_constptr_t _tek_GBU_CT_NM_SK_IN_ST = nullptr;
+  fxtechnique_constptr_t _tek_GBU_CT_NM_SK_NI_ST = nullptr;
+
+  // vtxcolor
+
+  fxtechnique_constptr_t _tek_GBU_CV_VN_RI_NI_MO = nullptr;
+  fxtechnique_constptr_t _tek_GBU_CV_NM_RI_NI_MO = nullptr;
+
+  ////////////////////////////////////
 
   std::string _colorMapName;
   std::string _normalMapName;

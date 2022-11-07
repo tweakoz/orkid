@@ -42,6 +42,16 @@ libblock lib_pbr_vtx_instanced {
 		////////////////////////////////
 	}
 }
+libblock lib_pbrfwd_frg : lib_gbuf_encode {
+	void ps_common_n(vec4 modc, vec3 N,vec2 UV,bool emissive) {
+		vec3 normal = normalize(frg_tbn*N);
+		vec3 rufmtlamb = texture(MtlRufMap,UV).zyx;
+		float mtl = rufmtlamb.x * MetallicFactor;
+		float ruf = rufmtlamb.y * RoughnessFactor;
+		vec3 color = (modc*frg_clr*texture(ColorMap,UV)).xyz;
+		//out_gbuf = packGbuffer(color,normal,ruf,mtl,emissive);
+	}
+}
 ///////////////////////////////////////////////////////////////
 libblock lib_pbr_frg : lib_gbuf_encode {
 	void ps_common_n(vec4 modc, vec3 N,vec2 UV,bool emissive) {
@@ -139,6 +149,34 @@ vertex_interface iface_vgbuffer_skinned
 ///////////////////////////////////////////////////////////////
 // vs-non-instanced-rigid
 ///////////////////////////////////////////////////////////////
+vertex_shader vs_forward_test
+	: iface_vgbuffer
+  : lib_pbr_vtx {
+		vs_common(position,normal,binormal);
+		gl_Position = mvp*position;
+}
+///////////////////////////////////////////////////////////////
+// vs-instanced-rigid
+///////////////////////////////////////////////////////////////
+vertex_shader vs_forward_instanced
+	: iface_vgbuffer_instanced
+  : lib_pbr_vtx_instanced {
+    int matrix_v = (gl_InstanceID>>10);
+		int matrix_u = (gl_InstanceID&0x3ff)<<2;
+		mat4 instancemtx = mat4(
+        texelFetch(InstanceMatrices, ivec2(matrix_u+0,matrix_v), 0),
+ 		    texelFetch(InstanceMatrices, ivec2(matrix_u+1,matrix_v), 0),
+		    texelFetch(InstanceMatrices, ivec2(matrix_u+2,matrix_v), 0),
+		    texelFetch(InstanceMatrices, ivec2(matrix_u+3,matrix_v), 0));
+  	////////////////////////////////
+		vec4 instanced_pos = (instancemtx*position);
+		vs_instanced(position,normal,binormal,instancemtx);
+		////////////////////////////////
+		gl_Position = mvp*instanced_pos;
+}
+///////////////////////////////////////////////////////////////
+// vs-non-instanced-rigid
+///////////////////////////////////////////////////////////////
 vertex_shader vs_rigid_gbuffer
 	: iface_vgbuffer
   : lib_pbr_vtx {
@@ -218,6 +256,20 @@ vertex_shader vs_skinned_gbuffer
 ///////////////////////////////////////////////////////////////
 // fragment shaders
 ///////////////////////////////////////////////////////////////
+fragment_interface iface_forward
+	: ub_frg {
+  inputs {
+    vec4 frg_clr;
+  	vec2 frg_uv0;
+  	mat3 frg_tbn;
+		float frg_camdist;
+		vec3 frg_camz;
+	}
+	outputs {
+		layout(location = 0) vec4 out_color;
+	}
+}
+//
 fragment_interface iface_fgbuffer
 	: ub_frg {
   inputs {
@@ -345,4 +397,10 @@ fragment_shader ps_gbuffer_n_tex_stereo // normalmap (stereo texture - vsplit)
   	vec3 N = TN*2.0-vec3(1,1,1);
 		bool emissive = length(TN)<0.1;
 		ps_common_n(ModColor,N,map_uv,emissive);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_forward_test 
+	: iface_forward
+  : lib_pbrfwd_frg {
+		out_color = vec4(1,1,1,1);
 }

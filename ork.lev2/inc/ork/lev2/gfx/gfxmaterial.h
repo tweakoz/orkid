@@ -135,6 +135,7 @@ public:
   virtual void EndPass(Context* pTARG)                                                                         = 0;
   virtual int BeginBlock(Context* pTARG, const RenderContextInstData& MatCtx = RenderContextInstData::Default) = 0;
   virtual void EndBlock(Context* pTARG)                                                                        = 0;
+  virtual fxinstancelut_ptr_t createFxStateInstanceLut() const { return nullptr; }
 
   void SetTexture(ETextureDest edest, const TextureContext& htex);
   const TextureContext& GetTexture(ETextureDest edest) const;
@@ -178,7 +179,7 @@ public:
   void PopDebug();
   bool IsDebug();
 
-  virtual fxinstance_ptr_t createFxStateInstance(FxStateInstanceConfig& cfg) const;
+  //virtual fxinstance_ptr_t createFxStateInstance(FxStateInstanceConfig& cfg) const;
 
   //////////////////////////////////////////////////////////////////////////////
   SRasterState swapRasterState(SRasterState rstate);

@@ -36,7 +36,7 @@ InstancedModelDrawable::~InstancedModelDrawable() {
 ///////////////////////////////////////////////////////////////////////////////
 struct IMDIMPL_SUBMESH {
   const XgmSubMesh* _xgmsubmesh = nullptr;
-  fxinstance_ptr_t _mtlinst[3];
+  fxinstancelut_ptr_t _fxlut;
 };
 struct IMDIMPL_MODEL {
   std::vector<IMDIMPL_SUBMESH> _submeshes;
@@ -60,21 +60,9 @@ void InstancedModelDrawable::bindModel(model_ptr_t model) {
     int inumclusset = mesh->numSubMeshes();
     for (int ics = 0; ics < inumclusset; ics++) {
       auto xgmsub = mesh->subMesh(ics);
-      FxStateInstanceConfig cfg_mono, cfg_stereo, cfg_pick;
-      cfg_mono._instanced_primitive   = true;
-      cfg_stereo._instanced_primitive = true;
-      cfg_pick._instanced_primitive   = true;
-      cfg_mono._base_perm             = FxStateBasePermutation::MONO;
-      cfg_stereo._base_perm           = FxStateBasePermutation::STEREO;
-      cfg_pick._base_perm             = FxStateBasePermutation::PICK;
       IMDIMPL_SUBMESH submesh_impl;
-      auto fxinst_mono         = xgmsub->_material->createFxStateInstance(cfg_mono);
-      auto fxinst_stereo       = xgmsub->_material->createFxStateInstance(cfg_stereo);
-      auto fxinst_pick         = xgmsub->_material->createFxStateInstance(cfg_pick);
+      submesh_impl._fxlut = xgmsub->_material->createFxStateInstanceLut();
       submesh_impl._xgmsubmesh = xgmsub;
-      submesh_impl._mtlinst[0] = fxinst_mono;
-      submesh_impl._mtlinst[1] = fxinst_stereo;
-      submesh_impl._mtlinst[2] = fxinst_pick;
       impl->_submeshes.push_back(submesh_impl);
     }
   }
@@ -166,9 +154,12 @@ void InstancedModelDrawable::enqueueToRenderQueue(
     ////////////////////////////////////////////////////////
     // instanced render
     ////////////////////////////////////////////////////////
+    RCID._isInstanced = true;
     for (auto& sub : impl->_submeshes) {
       auto xgmsub = sub._xgmsubmesh;
-      auto fxinst = sub._mtlinst[fxinst_index];
+      auto fxlut = sub._fxlut;
+      OrkAssert(fxlut);
+      auto fxinst = fxlut->findfxinst(RCID);
       OrkAssert(fxinst);
       fxinst->wrappedDrawCall(RCID, [&]() {
         auto idata = _instancedata;
@@ -194,6 +185,7 @@ void InstancedModelDrawable::enqueueToRenderQueue(
         }
       }); // mtlinst->wrappedDrawCall(RCID, [&]() {
     }     // for (auto& sub : impl._submeshes) {
+    RCID._isInstanced = false;
   });     // renderable.SetRenderCallback
   ////////////////////////////////////////////////////////////////////
 } // InstancedModelDrawable::enqueueToRenderQueue(

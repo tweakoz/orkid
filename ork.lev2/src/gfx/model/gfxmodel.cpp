@@ -83,16 +83,8 @@ XgmModelInst::XgmModelInst(const XgmModel* Model)
 XgmSubMeshInst::XgmSubMeshInst(const XgmSubMesh* submesh)
   : _submesh(submesh)
   , _enabled(true) {
-    FxStateInstanceConfig cfg_mono, cfg_stereo, cfg_pick;
-    cfg_mono._instanced_primitive   = true;
-    cfg_stereo._instanced_primitive = true;
-    cfg_pick._instanced_primitive   = true;
-    cfg_mono._base_perm             = FxStateBasePermutation::MONO;
-    cfg_stereo._base_perm           = FxStateBasePermutation::STEREO;
-    cfg_pick._base_perm             = FxStateBasePermutation::PICK;
-    _fxinstance[0]         = submesh->_material->createFxStateInstance(cfg_mono);
-    _fxinstance[1]       = submesh->_material->createFxStateInstance(cfg_stereo);
-    _fxinstance[2]         = submesh->_material->createFxStateInstance(cfg_pick);
+
+    _fxinstancelut = submesh->_material->createFxStateInstanceLut();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -256,6 +248,7 @@ void XgmModel::RenderRigid(
     ork::lev2::Context* pTARG,
     const RenderContextInstData& RCID,
     const RenderContextInstModelData& mdlctx) const {
+
   auto R                       = RCID.GetRenderer();
   auto RCFD                    = pTARG->topRenderContextFrameData();
   const auto& CPD              = RCFD->topCPD();
@@ -265,44 +258,19 @@ void XgmModel::RenderRigid(
   const XgmSubMesh& XgmClusSet = *mdlctx.mSubMesh;
   int inummesh                 = numMeshes();
   int inumclusset              = XgmMesh.numSubMeshes();
-  int imat                     = RCID.GetMaterialIndex();
-  OrkAssert(imat < inumclusset);
-  material_ptr_t pmat = XgmClusSet.GetMaterial();
 
-  if(RCFD->_renderingmodel.isForward()){
-    // todo - use forward version of model assets shader
-    static material_ptr_t fmtl;
-    if(fmtl==nullptr){
-      auto nmtl = std::make_shared<GfxMaterial3DSolid>(pTARG);
-      nmtl->SetColorMode(GfxMaterial3DSolid::EMODE_INTERNAL_COLOR);
-      //fmtl->gpuInit(pTARG,"orkshader://solid");
-      fmtl = nmtl;
-    }
-
-    auto as_pbr = std::dynamic_pointer_cast<PBRMaterial>(pmat);
-
-    if(as_pbr){
-      auto f_as_solid = std::dynamic_pointer_cast<GfxMaterial3DSolid>(fmtl);
-      if(f_as_solid){
-        auto color = as_pbr->_baseColor;
-        f_as_solid->SetColor(color);
-
-        //f_as_solid->SetTexture(as_pbr->_asset_texcolor->GetTexture().get());
-
-      }
-
-    }
-
-
-    pmat = fmtl;
-  }
+  auto fxlut = RCID._fx_instance_lut;
+  OrkAssert(fxlut);
+  auto fxinst = fxlut->findfxinst(RCID);
+  OrkAssert(fxinst);
+  auto pmat = fxinst->_material;
+  OrkAssert(pmat);
 
   pTARG->debugPushGroup(FormatString(
-      "XgmModel::RenderRigid stereo1pass<%d> inummesh<%d> inumclusset<%d> imat<%d>",
+      "XgmModel::RenderRigid stereo1pass<%d> inummesh<%d> inumclusset<%d>",
       int(stereo1pass),
       inummesh,
-      inumclusset,
-      imat));
+      inumclusset));
 
   ork::lev2::RenderGroupState rgs = RCID.GetRenderGroupState();
 
@@ -311,7 +279,7 @@ void XgmModel::RenderRigid(
   {
     if (mdlctx.GetModelInst()) {
       if (mdlctx.GetModelInst()->_overrideMaterial != nullptr) {
-        pmat = mdlctx.GetModelInst()->_overrideMaterial;
+        pmat = mdlctx.GetModelInst()->_overrideMaterial.get();
       }
     }
     pmat->gpuUpdate(pTARG);
@@ -350,7 +318,7 @@ void XgmModel::RenderRigid(
           pTARG->debugPushGroup("XgmModel::RenderRigid::RenderGroupState::NONE");
           // pTARG->BindMaterial(pmat.get());
           int inumpasses = pmat->BeginBlock(pTARG, RCID);
-          { RenderClus::RenderStd(pTARG, pmat.get(), cluster, inumpasses); }
+          { RenderClus::RenderStd(pTARG, pmat, cluster, inumpasses); }
           pmat->EndBlock(pTARG);
           gbGROUPENABLED = false;
           pTARG->debugPopGroup();
@@ -358,7 +326,7 @@ void XgmModel::RenderRigid(
         }
         /////////////////////////////////////////////////////
         case ork::lev2::RenderGroupState::FIRST: {
-          // pTARG->BindMaterial(pmat.get());
+          // pTARG->BindMaterial(pmat);
           giNUMPASSES = pmat->BeginBlock(pTARG, RCID);
           if (giNUMPASSES == 1) {
             gbGROUPENABLED = true;
@@ -369,7 +337,7 @@ void XgmModel::RenderRigid(
           } else {
             gbGROUPENABLED = false;
             {
-              RenderClus::RenderStd(pTARG, pmat.get(), cluster, giNUMPASSES); // inumpasses );
+              RenderClus::RenderStd(pTARG, pmat, cluster, giNUMPASSES); // inumpasses );
             }
             pmat->EndBlock(pTARG);
           }
@@ -384,9 +352,9 @@ void XgmModel::RenderRigid(
               RenderClus::RenderPrim(pTARG, cluster);
             }
           } else {
-            // pTARG->BindMaterial(pmat.get());
+            // pTARG->BindMaterial(pmat);
             int inumpasses = pmat->BeginBlock(pTARG, RCID);
-            { RenderClus::RenderStd(pTARG, pmat.get(), cluster, inumpasses); }
+            { RenderClus::RenderStd(pTARG, pmat, cluster, inumpasses); }
             pmat->EndBlock(pTARG);
           }
           break;
@@ -403,9 +371,9 @@ void XgmModel::RenderRigid(
             }
             pmat->EndBlock(pTARG);
           } else {
-            // pTARG->BindMaterial(pmat.get());
+            // pTARG->BindMaterial(pmat);
             int inumpasses = pmat->BeginBlock(pTARG, RCID);
-            { RenderClus::RenderStd(pTARG, pmat.get(), cluster, inumpasses); }
+            { RenderClus::RenderStd(pTARG, pmat, cluster, inumpasses); }
             pmat->EndBlock(pTARG);
           }
           break;
@@ -431,6 +399,11 @@ void XgmModel::RenderSkinned(
     ork::lev2::Context* pTARG,
     const RenderContextInstData& RCID,
     const RenderContextInstModelData& mdlctx) const {
+
+  auto fxlut = RCID._fx_instance_lut;
+  auto fxinst = fxlut->findfxinst(RCID);
+  auto pmat = fxinst->_material;
+  
   auto R           = RCID.GetRenderer();
   auto RCFD        = pTARG->topRenderContextFrameData();
   const auto& CPD  = RCFD->topCPD();
