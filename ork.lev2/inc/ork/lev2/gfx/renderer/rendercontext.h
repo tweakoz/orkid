@@ -143,6 +143,7 @@ struct RenderContextFrameData {
   Context* const _target = nullptr;
   const IRenderer* _renderer;
   RenderingModel _renderingmodel;
+  pbr::commonstuff_ptr_t _pbrcommon;
 };
 
 typedef std::function<void(RenderContextFrameData&)> PreRenderCallback_t;

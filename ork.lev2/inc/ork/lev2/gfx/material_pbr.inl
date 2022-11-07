@@ -113,6 +113,21 @@ public:
   fxparam_constptr_t _parRoughnessFactor = nullptr;
   fxparam_constptr_t _parModColor        = nullptr;
   fxparam_constptr_t _parBoneMatrices    = nullptr;
+
+  // fwd
+
+  fxparam_constptr_t _paramEyePostion      = nullptr;
+  fxparam_constptr_t _paramAmbientLevel    = nullptr;
+  fxparam_constptr_t _paramDiffuseLevel    = nullptr;
+  fxparam_constptr_t _paramSpecularLevel   = nullptr;
+  fxparam_constptr_t _paramSkyboxLevel     = nullptr;
+
+  fxparam_constptr_t _parMapSpecularEnv      = nullptr;
+  fxparam_constptr_t _parMapDiffuseEnv       = nullptr;
+  fxparam_constptr_t _parMapBrdfIntegration  = nullptr;
+  fxparam_constptr_t _parEnvironmentMipBias  = nullptr;
+  fxparam_constptr_t _parEnvironmentMipScale = nullptr;
+
   ///////////////////////////////////////////
   // instancing (via texture)
   fxparam_constptr_t _paramInstanceMatrixMap = nullptr; // 1k*1k texture containing instance matrices

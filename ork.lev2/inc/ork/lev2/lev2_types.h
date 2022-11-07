@@ -276,6 +276,12 @@ using pointlight_ptr_t      = std::shared_ptr<PointLight>;
 using pointlight_constptr_t = std::shared_ptr<const PointLight>;
 using spotlight_ptr_t      = std::shared_ptr<SpotLight>;
 using spotlight_constptr_t = std::shared_ptr<const SpotLight>;
+
+namespace pbr {
+struct CommonStuff;
+using commonstuff_ptr_t = std::shared_ptr<CommonStuff>;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
 ///////////////////////////////////////////////////////////////////////////////

@@ -8,6 +8,7 @@
 #include <ork/lev2/gfx/fxstate_instance.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/renderer/renderable.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/PBRCommon.h>
 
 namespace ork::lev2 {
 /////////////////////////////////////////////////////////////////////////
@@ -43,6 +44,7 @@ bool FxStateInstance::beginPass(const RenderContextInstData& RCID, int ipass) {
   const auto& RCFDPROPS = RCID._RCFD->userProperties();
   bool is_picking       = CPD.isPicking();
   bool is_stereo        = CPD.isStereoOnePass();
+  auto pbrcommon = RCID._RCFD->_pbrcommon;
 
   bool rval = FXI->BindPass(ipass);
   if (not rval)
@@ -106,6 +108,51 @@ bool FxStateInstance::beginPass(const RenderContextInstData& RCID, int ipass) {
         case "RCFD_Model_Rot"_crcu: {
           auto rotmtx = worldmatrix.rotMatrix33();
           FXI->BindParamMatrix(param, rotmtx);
+          break;
+        }
+        case "EyePosition"_crcu: {
+          if (monocams) {
+            auto eye_pos = monocams->_vmatrix.inverse().translation();
+            FXI->BindParamVect3(param,eye_pos);
+          } else {
+            OrkAssert(false);
+          }
+          break;
+        }
+        case "AmbientLevel"_crcu: {
+          FXI->BindParamVect3(param, pbrcommon->_ambientLevel);
+          break;
+        }
+        case "SpecularLevel"_crcu: {
+          FXI->BindParamFloat(param, pbrcommon->_specularLevel);
+          break;
+        }
+        case "DiffuseLevel"_crcu: {
+          FXI->BindParamFloat(param, pbrcommon->_diffuseLevel);
+          break;
+        }
+        case "SkyboxLevel"_crcu: {
+          FXI->BindParamFloat(param, pbrcommon->_skyboxLevel);
+          break;
+        }
+        case "MapSpecularEnv"_crcu: {
+          FXI->BindParamCTex(param, pbrcommon->envSpecularTexture().get());
+          break;
+        }
+        case "MapDiffuseEnv"_crcu: {
+          FXI->BindParamCTex(param, pbrcommon->envDiffuseTexture().get());
+          break;
+        }
+        case "MapBrdfIntegration"_crcu: {
+          FXI->BindParamCTex(param, pbrcommon->_brdfIntegrationMap.get());
+          break;
+        }
+        case "EnvironmentMipBias"_crcu: {
+          FXI->BindParamFloat(param, pbrcommon->_environmentMipBias);
+          break;
+        }
+        case "EnvironmentMipScale"_crcu: {
+          FXI->BindParamFloat(param, pbrcommon->_environmentMipScale);
           break;
         }
         default:

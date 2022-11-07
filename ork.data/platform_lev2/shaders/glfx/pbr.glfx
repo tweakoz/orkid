@@ -1,11 +1,16 @@
-import "skintools.i";
-import "picktools.i";
-import "pbrtools.i";
 ///////////////////////////////////////////////////////////////
 // FxConfigs
 ///////////////////////////////////////////////////////////////
 fxconfig fxcfg_default {
-	glsl_version = "130";
+	glsl_version = "330";
+  import "mathtools.i";
+  import "misctools.i";
+  import "envtools.i";
+  //import "brdftools.i";
+  //import "deftools.i";
+  //import "gbuftools.i";
+	import "picktools.i";
+	import "pbrtools.i";
 }
 ///////////////////////////////////////////////////////////////
 technique PIK_RI_NI {

@@ -1,76 +1,7 @@
 import "gbuftools.i";
-///////////////////////////////////////////////////////////////
-libblock lib_pbr_vtx {
-	void vs_common(vec4 pos, vec3 nrm, vec3 bin) {
-		vec4 cpos  = mv * pos;
-    vec3 wnormal = normalize(mrot*normal);
-    vec3 wbitangent = normalize(mrot*binormal); // technically binormal is a bitangent
-		vec3 wtangent = cross(wbitangent,wnormal);
-		//frg_clr = vtxcolor;
-		frg_clr = vec4(1,1,1,1); //TODO - split vs_rigid_gbuffer into vertexcolor vs identity
-		frg_uv0 = uv0*vec2(1,-1);
-		frg_tbn = mat3(
-	        wtangent,
-    	    wbitangent,
-					wnormal
-        );
-		frg_camz = wnormal.xyz;
-		frg_camdist = -cpos.z;
-	}
-}
-///////////////////////////////////////////////////////////////
-libblock lib_pbr_vtx_instanced {
-	void vs_instanced(vec4 pos, vec3 nrm, vec3 bin,mat4 instance_matrix) {
-		mat3 instance_rot = mat3(instance_matrix);
-		vec4 cpos  = mv * (instance_matrix*pos);
-    vec3 wnormal = normalize(instance_rot*normal);
-    vec3 wbitangent = normalize(instance_rot*binormal); // technically binormal is a bitangent
-		vec3 wtangent = cross(wbitangent,wnormal);
-		//frg_clr = vtxcolor;
-		frg_clr = vec4(1,1,1,1); //TODO - split vs_rigid_gbuffer into vertexcolor vs identity
-		frg_uv0 = uv0*vec2(1,-1);
-		frg_tbn = mat3(wtangent,
-    	    wbitangent,
-					wnormal
-    	);
-		frg_camz = wnormal.xyz;
-		frg_camdist = -cpos.z;
-		////////////////////////////////
-		int modcolor_u = (gl_InstanceID&0xfff);
-		int modcolor_v = (gl_InstanceID>>12);
-		frg_modcolor = texelFetch(InstanceColors, ivec2(modcolor_u,modcolor_v), 0);
-		////////////////////////////////
-	}
-}
-libblock lib_pbrfwd_frg : lib_gbuf_encode {
-	void ps_common_n(vec4 modc, vec3 N,vec2 UV,bool emissive) {
-		vec3 normal = normalize(frg_tbn*N);
-		vec3 rufmtlamb = texture(MtlRufMap,UV).zyx;
-		float mtl = rufmtlamb.x * MetallicFactor;
-		float ruf = rufmtlamb.y * RoughnessFactor;
-		vec3 color = (modc*frg_clr*texture(ColorMap,UV)).xyz;
-		//out_gbuf = packGbuffer(color,normal,ruf,mtl,emissive);
-	}
-}
-///////////////////////////////////////////////////////////////
-libblock lib_pbr_frg : lib_gbuf_encode {
-	void ps_common_n(vec4 modc, vec3 N,vec2 UV,bool emissive) {
-		vec3 normal = normalize(frg_tbn*N);
-		vec3 rufmtlamb = texture(MtlRufMap,UV).zyx;
-		float mtl = rufmtlamb.x * MetallicFactor;
-		float ruf = rufmtlamb.y * RoughnessFactor;
-		vec3 color = (modc*frg_clr*texture(ColorMap,UV)).xyz;
-		out_gbuf = packGbuffer(color,normal,ruf,mtl,emissive);
-	}
-	void ps_common_vizn(vec4 modc, vec3 N) {
-		vec3 normal = normalize(frg_tbn*N);
-		//vec3 rufmtlamb = texture(MtlRufMap,UV).zyx;
-		float mtl = 0; //rufmtlamb.x * MetallicFactor;
-		float ruf = 1; //rufmtlamb.y * RoughnessFactor;
-		//vec3 color = (modc*frg_clr*texture(ColorMap,UV)).xyz;
-		out_gbuf = packGbuffer(normal,vec3(0,0,0),ruf,mtl,true);
-	}
-}
+import "brdftools.i";
+import "deftools.i";
+import "skintools.i";
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
@@ -98,13 +29,37 @@ uniform_set ub_frg {
 	float MetallicFactor;
 	float RoughnessFactor;
 }
-///////////////////////////////////////////////////////////////
-// StateBlocks
-///////////////////////////////////////////////////////////////
-state_block sb_default : default {
+
+uniform_set ub_frg_fwd {
+  sampler2D ColorMap;
+  sampler2D NormalMap;
+  sampler2D MtlRufMap;
+
+	sampler2D MapBrdfIntegration;
+	sampler2D MapSpecularEnv;
+	sampler2D MapDiffuseEnv;
+
+	float SkyboxLevel;
+  float SpecularLevel;
+  float DiffuseLevel;
+	vec3 AmbientLevel;
+
+	float MetallicFactor;
+	float RoughnessFactor;
+
+  float DepthFogDistance;
+  float DepthFogPower;
+  vec4 ShadowParams;
+
+  float EnvironmentMipBias;
+  float EnvironmentMipScale;
+
+	vec4 ModColor;
+	//vec2 InvViewportSize; // inverse target size
+	vec3 EyePostion;
 }
 ///////////////////////////////////////////////////////////////
-// shaders
+// Vertex Interfaces
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_vgbuffer
 	: ub_vtx {
@@ -116,6 +71,7 @@ vertex_interface iface_vgbuffer
     vec2 uv0 : TEXCOORD0;
 	}
   outputs {
+  	vec4 frg_wpos;
     vec4 frg_clr;
     vec2 frg_uv0;
     mat3 frg_tbn;
@@ -146,6 +102,119 @@ vertex_interface iface_vgbuffer_skinned
 	: iface_vgbuffer
 	: iface_skintools {
 }
+///////////////////////////////////////////////////////////////
+// Fragmentertex Interfaces
+///////////////////////////////////////////////////////////////
+fragment_interface iface_forward
+	: ub_frg_fwd {
+  inputs {
+  	vec4 frg_wpos;
+    vec4 frg_clr;
+  	vec2 frg_uv0;
+  	mat3 frg_tbn;
+		float frg_camdist;
+		vec3 frg_camz;
+	}
+	outputs {
+		layout(location = 0) vec4 out_color;
+	}
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_fgbuffer
+	: ub_frg {
+  inputs {
+    vec4 frg_wpos;
+    vec4 frg_clr;
+  	vec2 frg_uv0;
+  	mat3 frg_tbn;
+		float frg_camdist;
+		vec3 frg_camz;
+	}
+	outputs {
+		layout(location = 0) uvec4 out_gbuf;
+	}
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_fgbuffer_instanced
+	: iface_fgbuffer {
+  inputs {
+    vec4 frg_modcolor;
+	}
+}
+///////////////////////////////////////////////////////////////
+// StateBlocks
+///////////////////////////////////////////////////////////////
+state_block sb_default : default {
+}
+///////////////////////////////////////////////////////////////
+// Library Blocks
+///////////////////////////////////////////////////////////////
+libblock lib_pbr_vtx {
+	void vs_common(vec4 pos, vec3 nrm, vec3 bin) {
+		vec4 cpos  = mv * pos;
+    vec3 wnormal = normalize(mrot*normal);
+    vec3 wbitangent = normalize(mrot*binormal); // technically binormal is a bitangent
+		vec3 wtangent = cross(wbitangent,wnormal);
+		//frg_clr = vtxcolor;
+		frg_wpos = m*pos;
+		frg_clr = vec4(1,1,1,1); //TODO - split vs_rigid_gbuffer into vertexcolor vs identity
+		frg_uv0 = uv0*vec2(1,-1);
+		frg_tbn = mat3(
+	        wtangent,
+    	    wbitangent,
+					wnormal
+        );
+		frg_camz = wnormal.xyz;
+		frg_camdist = -cpos.z;
+	}
+}
+///////////////////////////////////////////////////////////////
+libblock lib_pbr_vtx_instanced {
+	void vs_instanced(vec4 pos, vec3 nrm, vec3 bin,mat4 instance_matrix) {
+		mat3 instance_rot = mat3(instance_matrix);
+		vec4 cpos  = mv * (instance_matrix*pos);
+    vec3 wnormal = normalize(instance_rot*normal);
+    vec3 wbitangent = normalize(instance_rot*binormal); // technically binormal is a bitangent
+		vec3 wtangent = cross(wbitangent,wnormal);
+		//frg_clr = vtxcolor;
+		frg_wpos = m*(instance_matrix*pos);
+		frg_clr = vec4(1,1,1,1); //TODO - split vs_rigid_gbuffer into vertexcolor vs identity
+		frg_uv0 = uv0*vec2(1,-1);
+		frg_tbn = mat3(wtangent,
+    	    wbitangent,
+					wnormal
+    	);
+		frg_camz = wnormal.xyz;
+		frg_camdist = -cpos.z;
+		////////////////////////////////
+		int modcolor_u = (gl_InstanceID&0xfff);
+		int modcolor_v = (gl_InstanceID>>12);
+		frg_modcolor = texelFetch(InstanceColors, ivec2(modcolor_u,modcolor_v), 0);
+		////////////////////////////////
+	}
+}
+///////////////////////////////////////////////////////////////
+libblock lib_pbr_frg : lib_gbuf_encode {
+	void ps_common_n(vec4 modc, vec3 N,vec2 UV,bool emissive) {
+		vec3 normal = normalize(frg_tbn*N);
+		vec3 rufmtlamb = texture(MtlRufMap,UV).zyx;
+		float mtl = rufmtlamb.x * MetallicFactor;
+		float ruf = rufmtlamb.y * RoughnessFactor;
+		vec3 color = (modc*frg_clr*texture(ColorMap,UV)).xyz;
+		out_gbuf = packGbuffer(color,normal,ruf,mtl,emissive);
+	}
+	void ps_common_vizn(vec4 modc, vec3 N) {
+		vec3 normal = normalize(frg_tbn*N);
+		//vec3 rufmtlamb = texture(MtlRufMap,UV).zyx;
+		float mtl = 0; //rufmtlamb.x * MetallicFactor;
+		float ruf = 1; //rufmtlamb.y * RoughnessFactor;
+		//vec3 color = (modc*frg_clr*texture(ColorMap,UV)).xyz;
+		out_gbuf = packGbuffer(normal,vec3(0,0,0),ruf,mtl,true);
+	}
+}
+///////////////////////////////////////////////////////////////
+// shaders
+///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 // vs-non-instanced-rigid
 ///////////////////////////////////////////////////////////////
@@ -255,40 +324,6 @@ vertex_shader vs_skinned_gbuffer
 }
 ///////////////////////////////////////////////////////////////
 // fragment shaders
-///////////////////////////////////////////////////////////////
-fragment_interface iface_forward
-	: ub_frg {
-  inputs {
-    vec4 frg_clr;
-  	vec2 frg_uv0;
-  	mat3 frg_tbn;
-		float frg_camdist;
-		vec3 frg_camz;
-	}
-	outputs {
-		layout(location = 0) vec4 out_color;
-	}
-}
-//
-fragment_interface iface_fgbuffer
-	: ub_frg {
-  inputs {
-    vec4 frg_clr;
-  	vec2 frg_uv0;
-  	mat3 frg_tbn;
-		float frg_camdist;
-		vec3 frg_camz;
-	}
-	outputs {
-		layout(location = 0) uvec4 out_gbuf;
-	}
-}
-fragment_interface iface_fgbuffer_instanced
-	: iface_fgbuffer {
-  inputs {
-    vec4 frg_modcolor;
-	}
-}
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer
 	: iface_fgbuffer
@@ -401,6 +436,25 @@ fragment_shader ps_gbuffer_n_tex_stereo // normalmap (stereo texture - vsplit)
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_forward_test 
 	: iface_forward
-  : lib_pbrfwd_frg {
-		out_color = vec4(1,1,1,1);
+	: lib_math
+  : lib_brdf
+  : lib_def {
+		vec3 TN = texture(NormalMap,frg_uv0).xyz;
+  	vec3 N = TN*2.0-vec3(1,1,1);
+		vec3 normal = normalize(frg_tbn*N);
+		vec3 rufmtlamb = texture(MtlRufMap,frg_uv0).zyx;
+
+		PbrData pbd;
+		pbd._emissive = length(TN)<0.1;
+		pbd._metallic = rufmtlamb.x * MetallicFactor;
+		pbd._roughness = rufmtlamb.y * RoughnessFactor;
+		pbd._albedo = (ModColor*frg_clr*texture(ColorMap,frg_uv0)).xyz;
+		pbd._wpos = frg_wpos.xyz;
+		pbd._wnrm = normal;
+		pbd._fogZ = 0.0;
+		pbd._atmos = 0.0;
+		pbd._alpha = 1.0;
+		vec3 rgb = pbrEnvironmentLightingXXX(pbd);
+
+		out_color = vec4(rgb,1);
 }

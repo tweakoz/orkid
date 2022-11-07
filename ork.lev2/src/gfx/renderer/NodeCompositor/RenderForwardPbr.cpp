@@ -78,6 +78,8 @@ struct ForwardPbrNodeImpl {
     int newwidth   = ddprops["OutputWidth"_crcu].get<int>();
     int newheight  = ddprops["OutputHeight"_crcu].get<int>();
 
+    RCFD._pbrcommon = pbrcommon;
+
     /////////////////////////////////////////////////
     // enumerate lights
     /////////////////////////////////////////////////

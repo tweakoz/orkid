@@ -99,6 +99,7 @@ CommonStuff::CommonStuff() {
       ///////////////////////////
       _filtenvSpecularMap = PBRMaterial::filterSpecularEnvMap(tex, targ);
       _filtenvDiffuseMap  = PBRMaterial::filterDiffuseEnvMap(tex, targ);
+      _brdfIntegrationMap = PBRMaterial::brdfIntegrationMap(targ);
       //////////////////////////////////////////////////////////////
       DataBlockCache::setDataBlock(cachekey, irrmapdblock);
     }

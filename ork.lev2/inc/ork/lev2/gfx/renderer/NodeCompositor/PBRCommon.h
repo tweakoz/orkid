@@ -57,6 +57,8 @@ struct CommonStuff : public ork::Object {
 
   texture_ptr_t _filtenvSpecularMap;
   texture_ptr_t _filtenvDiffuseMap;
+  lev2::texture_ptr_t _brdfIntegrationMap = nullptr;
+
   asset::asset_ptr_t _environmentTextureAsset;
   asset::vars_ptr_t _texAssetVarMap;
   float _environmentIntensity = 1.0f;
@@ -71,8 +73,6 @@ struct CommonStuff : public ork::Object {
   fvec4 _clearColor;
 
 };
-
-using commonstuff_ptr_t = std::shared_ptr<CommonStuff>;
 
 
 } // namespace ork::lev2::pbr {

@@ -7,6 +7,7 @@ fxconfig fxcfg_default {
   import "misctools.i";
   import "envtools.i";
   import "brdftools.i";
+  import "deftools.i";
   import "gbuftools.i";
 ///////////////////////////////////////////////////////////////
 }
@@ -86,6 +87,7 @@ libblock lib_deferred
   : lib_cellnoise
   : lib_brdf
   : lib_gbuf_decode
+  : lib_deftools
   : lib_mmnoise {
   /////////////////////////////////////////////////////////
   vec3 gammaCorrect(vec3 inp){
@@ -101,14 +103,6 @@ libblock lib_deferred
     return gbd._albedo * l;
   }
   /////////////////////////////////////////////////////////
-  struct LightCtx {
-    vec3 _viewdir;
-    vec3 _normal;
-    vec3 _lightdel;
-    vec3 _F0;
-    float _roughness;
-    float _metallic;
-  };
   /////////////////////////////////////////////////////////
   LightCtx lcalc1(WPosData wpd,GBufData gbd){
     LightCtx plc;
@@ -328,12 +322,6 @@ libblock lib_deferred
     float depth_fogval = 1.0-clamp(pow(gbd._fogZ*DepthFogDistance,DepthFogPower),0,1);
     return l*depth_fogval;
   }
-  /////////////////////////////////////////////////////////
-  struct XXX {
-    vec3 _finallitcolor;
-    vec3 _diffuse_env;
-    float _depth_fogval;
-  };
   /////////////////////////////////////////////////////////
   XXX environX(WPosData wpd, GBufData gbd) {
     XXX rval;
