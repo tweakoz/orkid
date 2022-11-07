@@ -106,6 +106,8 @@ struct GpuResources {
 
 int main(int argc, char** argv,char** envp) {
   auto init_data = std::make_shared<ork::AppInitData>(argc,argv,envp);
+  init_data->_msaa_samples = 16;
+  
   auto qtapp  = OrkEzApp::create(init_data);
   auto qtwin              = qtapp->_mainWindow;
   auto gfxwin             = qtwin->_gfxwin;
