@@ -224,12 +224,12 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _tek_GBU_CV_NM_RI_NI_MO = fxi->technique(_shader, "GBU_CV_NM_RI_NI_MO");
 
 
-  OrkAssert(_tek_GBU_CT_NM_RI_NI_ST);
-  OrkAssert(_tek_GBU_CT_NM_RI_IN_ST);
-  OrkAssert(_tek_GBU_CT_NM_RI_IN_MO);
-  OrkAssert(_tek_GBU_CT_NM_RI_NI_MO);
-  OrkAssert(_tek_FWD_CT_NM_RI_NI_MO);
-  OrkAssert(_tek_FWD_CT_NM_RI_IN_MO);
+  //OrkAssert(_tek_GBU_CT_NM_RI_NI_ST);
+  //OrkAssert(_tek_GBU_CT_NM_RI_IN_ST);
+  //OrkAssert(_tek_GBU_CT_NM_RI_IN_MO);
+  //OrkAssert(_tek_GBU_CT_NM_RI_NI_MO);
+  //OrkAssert(_tek_FWD_CT_NM_RI_NI_MO);
+  //OrkAssert(_tek_FWD_CT_NM_RI_IN_MO);
 
   // parameters
 
