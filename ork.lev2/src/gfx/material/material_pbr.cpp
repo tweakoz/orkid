@@ -51,7 +51,7 @@ PBRMaterial::PBRMaterial()
   _rasterstate.SetBlending(Blending::OFF);
   _rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
   _rasterstate.SetZWriteMask(true);
-  _rasterstate.SetCullTest(ECULLTEST_OFF);
+  _rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
   miNumPasses = 1;
   _shaderpath = "orkshader://pbr";
 }

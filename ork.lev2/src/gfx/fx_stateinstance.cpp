@@ -40,6 +40,7 @@ bool FxStateInstance::beginPass(const RenderContextInstData& RCID, int ipass) {
   auto context          = RCID._RCFD->GetTarget();
   auto MTXI             = context->MTXI();
   auto FXI              = context->FXI();
+  auto RSI              = context->RSI();
   const auto& CPD       = RCID._RCFD->topCPD();
   const auto& RCFDPROPS = RCID._RCFD->userProperties();
   bool is_picking       = CPD.isPicking();
@@ -49,6 +50,8 @@ bool FxStateInstance::beginPass(const RenderContextInstData& RCID, int ipass) {
   bool rval = FXI->BindPass(ipass);
   if (not rval)
     return rval;
+
+  RSI->BindRasterState(_material->_rasterstate);
 
   const auto& worldmatrix = RCID._dagrenderable //
                                 ? RCID._dagrenderable->_worldMatrix
