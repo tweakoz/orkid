@@ -5,6 +5,8 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
+#include <iostream>
+
 #include <ork/application/application.h>
 #include <ork/kernel/environment.h>
 #include <ork/kernel/string/deco.inl>
@@ -35,13 +37,13 @@ struct Instance {
   float _timeout     = 0.0f;
 };
 
-  using instances_t       = std::vector<Instance>;
+using instances_t       = std::vector<Instance>;
 
 ///////////////////////////////////////////////////////////////////
 
 struct GpuResources {
 
-  GpuResources(Context* ctx){
+  GpuResources(Context* ctx, bool use_forward){
     _renderer       = std::make_shared<DefaultRenderer>();
     _lightmgr       = std::make_shared<LightManager>(_lmd);
 
@@ -58,8 +60,12 @@ struct GpuResources {
   //////////////////////////////////////////////////////////
 
     _compositordata = std::make_shared<CompositingData>();
-    //_compositordata->presetDeferredPBR();
-    _compositordata->presetForwardPBR();
+    if(use_forward){
+      _compositordata->presetForwardPBR();
+    }
+    else{
+      _compositordata->presetDeferredPBR();
+    }
     _compositordata->mbEnable = true;
     auto nodetek             = _compositordata->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
     auto outpnode            = nodetek->tryOutputNodeAs<ScreenOutputCompositingNode>();
@@ -105,9 +111,25 @@ struct GpuResources {
 ///////////////////////////////////////////////////////////////////
 
 int main(int argc, char** argv,char** envp) {
+
   auto init_data = std::make_shared<ork::AppInitData>(argc,argv,envp);
-  init_data->_msaa_samples = 16;
-  
+
+  auto desc = init_data->commandLineOptions("model3dpbr example Options");
+  desc->add_options() //
+    ("help", "produce help message") //
+    ("forward", po::bool_switch()->default_value(false), "forward renderer");
+
+  auto vars        = *init_data->parse();
+
+  if (vars.count("help")) {
+    std::cout << (*desc) << "\n";
+    exit(0);
+  }
+
+  bool use_forward = vars["forward"].as<bool>();
+
+  init_data->_msaa_samples = use_forward ? 4 : 1;
+
   auto qtapp  = OrkEzApp::create(init_data);
   auto qtwin              = qtapp->_mainWindow;
   auto gfxwin             = qtwin->_gfxwin;
@@ -118,7 +140,7 @@ int main(int argc, char** argv,char** envp) {
   //////////////////////////////////////////////////////////
   qtapp->onGpuInit([&](Context* ctx) {
 
-    gpurec = std::make_shared<GpuResources>(ctx);
+    gpurec = std::make_shared<GpuResources>(ctx,use_forward);
   });
   //////////////////////////////////////////////////////////
   // update handler (called on update thread)
