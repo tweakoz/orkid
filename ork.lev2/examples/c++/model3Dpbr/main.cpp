@@ -222,7 +222,7 @@ int main(int argc, char** argv,char** envp) {
     RCFD._cimpl = gpurec->_compositorimpl;
     RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
     RCFD.setUserProperty("time"_crc, time);
-    RCFD.setUserProperty("pbr_model"_crc, 1);
+    //RCFD.setUserProperty("pbr_model"_crc, 1);
     context->pushRenderContextFrameData(&RCFD);
     auto fbi  = context->FBI();  // FrameBufferInterface
     auto fxi  = context->FXI();  // FX Interface

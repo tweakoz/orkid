@@ -47,6 +47,7 @@ uniform_set ub_frg {
   sampler2D MapLightingCookie;
   sampler2D MapShadowDepth;
   sampler3D MapVolTexA;
+  vec3 EyePostion;
   vec2 InvViewportSize; // inverse target size
   float Time;
   vec2 NearFar;
@@ -87,7 +88,7 @@ libblock lib_deferred
   : lib_cellnoise
   : lib_brdf
   : lib_gbuf_decode
-  : lib_deftools
+  : lib_def
   : lib_mmnoise {
   /////////////////////////////////////////////////////////
   vec3 gammaCorrect(vec3 inp){
