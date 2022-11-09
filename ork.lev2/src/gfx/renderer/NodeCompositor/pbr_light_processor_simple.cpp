@@ -25,12 +25,12 @@
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/texman.h>
 
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
-#include <ork/lev2/gfx/renderer/NodeCompositor/SimpleLightProcessor.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_light_processor_simple.h>
 #include <ork/profiling.inl>
 
 ////////////////////////////////////////////////////////////////
-namespace ork::lev2::deferrednode {
+namespace ork::lev2::pbr::deferrednode {
 ////////////////////////////////////////////////////////////////
 
 SimpleLightProcessor::SimpleLightProcessor(DeferredContext& defctx, DeferredCompositingNodePbr* compnode)

@@ -19,14 +19,14 @@
 #include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <ork/lev2/gfx/material_freestyle.h>
 
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
 
-ImplementReflectionX(ork::lev2::deferrednode::DeferredCompositingNode, "DeferredCompositingNode");
+ImplementReflectionX(ork::lev2::pbr::deferrednode::DeferredCompositingNode, "DeferredCompositingNode");
 
 // fvec3 LightColor
 // fvec4 LightPosR 16byte
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork::lev2::deferrednode {
+namespace ork::lev2::pbr::deferrednode {
 ///////////////////////////////////////////////////////////////////////////////
 void DeferredCompositingNode::describeX(class_t* c) {
   c->directProperty("ClearColor", &DeferredCompositingNode::_clearColor);

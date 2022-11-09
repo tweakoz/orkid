@@ -15,6 +15,41 @@
 
 namespace ork::lev2::pbr {
 
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> inline bool doRangesOverlap(T amin, T amax, T bmin, T bmax) {
+  return std::max(amin, bmin) <= std::min(amax, bmax);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct PointLight {
+
+  PointLight() {
+  }
+  fvec3 _pos;
+  fvec3 _dst;
+  fvec3 _color;
+  float _radius;
+  int _counter   = 0;
+  float dist2cam = 0;
+  AABox _aabox;
+  fvec3 _aamin, _aamax;
+  int _minX, _minY;
+  int _maxX, _maxY;
+  float _minZ, _maxZ;
+
+  void next() {
+    float x  = float((rand() & 0x3fff) - 0x2000);
+    float z  = float((rand() & 0x3fff) - 0x2000);
+    float y  = float((rand() & 0x1fff) - 0x1000);
+    _dst     = fvec3(x, y, z);
+    _counter = 256 + rand() & 0xff;
+  }
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct CommonStuff : public ork::Object {
   DeclareConcreteX(CommonStuff, ork::Object);
 

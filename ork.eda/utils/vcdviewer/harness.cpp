@@ -9,8 +9,6 @@
 #include <iostream>
 #include <ork/lev2/aud/singularity/hud.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorForward.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorPicking.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScaleBias.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>

@@ -16,16 +16,16 @@
 #include <ork/pch.h>
 #include <ork/reflect/properties/registerX.inl>
 
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorForward.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
 #include <ork/asset/Asset.inl>
 #include <ork/profiling.inl>
 
-ImplementReflectionX(ork::lev2::ForwardCompositingNodePbr, "ForwardCompositingNodePbr");
+ImplementReflectionX(ork::lev2::pbr::ForwardNode, "PbrForwardNode");
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace lev2 {
+namespace ork::lev2::pbr {
 ///////////////////////////////////////////////////////////////////////////////
-void ForwardCompositingNodePbr::describeX(class_t* c) {
+void ForwardNode::describeX(class_t* c) {
 }
 ///////////////////////////////////////////////////////////////////////////
 constexpr int NUMSAMPLES = 1;
@@ -33,7 +33,7 @@ constexpr int NUMSAMPLES = 1;
 struct ForwardPbrNodeImpl {
   static const int KMAXLIGHTS = 32;
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ForwardPbrNodeImpl(ForwardCompositingNodePbr* node)
+  ForwardPbrNodeImpl(ForwardNode* node)
       : _node(node)
       , _camname("Camera")
       , _layername("All") { //
@@ -142,7 +142,7 @@ struct ForwardPbrNodeImpl {
     targ->debugPopGroup();
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  ForwardCompositingNodePbr* _node;
+  ForwardNode* _node;
   std::string _camname, _layername;
   EnumeratedLights _enumeratedLights;
   CompositingMaterial _material;
@@ -152,30 +152,30 @@ struct ForwardPbrNodeImpl {
 }; // IMPL
 
 ///////////////////////////////////////////////////////////////////////////////
-ForwardCompositingNodePbr::ForwardCompositingNodePbr() {
+ForwardNode::ForwardNode() {
   _impl           = std::make_shared<ForwardPbrNodeImpl>(this);
   _renderingmodel = RenderingModel(ERenderModelID::FORWARD_PBR);
   _pbrcommon      = std::make_shared<pbr::CommonStuff>();
 }
 ///////////////////////////////////////////////////////////////////////////////
-ForwardCompositingNodePbr::~ForwardCompositingNodePbr() {
+ForwardNode::~ForwardNode() {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ForwardCompositingNodePbr::doGpuInit(lev2::Context* pTARG, int iW, int iH) {
+void ForwardNode::doGpuInit(lev2::Context* pTARG, int iW, int iH) {
   _impl.get<std::shared_ptr<ForwardPbrNodeImpl>>()->init(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ForwardCompositingNodePbr::DoRender(CompositorDrawData& drawdata) {
+void ForwardNode::DoRender(CompositorDrawData& drawdata) {
   auto impl = _impl.get<std::shared_ptr<ForwardPbrNodeImpl>>();
   impl->_render(drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
-rtbuffer_ptr_t ForwardCompositingNodePbr::GetOutput() const {
+rtbuffer_ptr_t ForwardNode::GetOutput() const {
   return _impl.get<std::shared_ptr<ForwardPbrNodeImpl>>()->_rtg->GetMrt(0);
 }
 ///////////////////////////////////////////////////////////////////////////////
-rtgroup_ptr_t ForwardCompositingNodePbr::GetOutputGroup() const {
+rtgroup_ptr_t ForwardNode::GetOutputGroup() const {
   return _impl.get<std::shared_ptr<ForwardPbrNodeImpl>>()->_rtg;
 }
 ///////////////////////////////////////////////////////////////////////////////
-}} // namespace ork::lev2
+} // namespace ork::lev2::pbr

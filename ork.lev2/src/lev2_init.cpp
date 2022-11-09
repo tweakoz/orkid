@@ -29,9 +29,11 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorPtx.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScaleBias.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorForward.h>
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
 #include <ork/lev2/gfx/scenegraph/scenegraph.h>
+///////////////////////////////////////////////////////////////////////////////
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/unlit_node.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/aud/singularity/synthdata.h>
 #include <ork/lev2/aud/singularity/layer.h>
@@ -168,12 +170,12 @@ void ClassInit() {
   RegisterClassX(ScreenOutputCompositingNode);
 
   RegisterClassX(RenderCompositingNode);
-  RegisterClassX(ForwardCompositingNode);
-  RegisterClassX(deferrednode::DeferredCompositingNode);
-  RegisterClassX(deferrednode::DeferredCompositingNodePbr);
+  RegisterClassX(compositor::UnlitNode);
+  RegisterClassX(pbr::deferrednode::DeferredCompositingNode);
+  RegisterClassX(pbr::deferrednode::DeferredCompositingNodePbr);
 
 #if defined(ENABLE_NVMESH_SHADERS)
-  RegisterClassX(deferrednode::DeferredCompositingNodeNvMs);
+  RegisterClassX(pbr::deferrednode::DeferredCompositingNodeNvMs);
 #endif
 
   RegisterClassX(CompositingScene);

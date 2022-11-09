@@ -15,20 +15,20 @@
 #include <ork/pch.h>
 #include <ork/reflect/properties/registerX.inl>
 
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorForward.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/unlit_node.h>
 
-ImplementReflectionX(ork::lev2::ForwardCompositingNode, "ForwardCompositingNode");
+ImplementReflectionX(ork::lev2::compositor::UnlitNode, "UnlitNode");
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace lev2 {
+namespace ork::lev2::compositor {
 ///////////////////////////////////////////////////////////////////////////////
-void ForwardCompositingNode::describeX(class_t* c) {
-  c->directProperty("ClearColor", &ForwardCompositingNode::_clearColor);
+void UnlitNode::describeX(class_t* c) {
+  c->directProperty("ClearColor", &UnlitNode::_clearColor);
 }
 ///////////////////////////////////////////////////////////////////////////
 constexpr int NUMSAMPLES = 1;
 ///////////////////////////////////////////////////////////////////////////////
-namespace forwardnode {
+namespace _unlitnode {
 struct IMPL {
   ///////////////////////////////////////
   IMPL()
@@ -52,7 +52,7 @@ struct IMPL {
     pTARG->debugPopGroup();
   }
   ///////////////////////////////////////
-  void _render(ForwardCompositingNode* node, CompositorDrawData& drawdata) {
+  void _render(UnlitNode* node, CompositorDrawData& drawdata) {
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();
     RCFD._renderingmodel = node->_renderingmodel;
@@ -123,26 +123,26 @@ struct IMPL {
 } // namespace forwardnode
 
 ///////////////////////////////////////////////////////////////////////////////
-ForwardCompositingNode::ForwardCompositingNode() {
-  _impl = std::make_shared<forwardnode::IMPL>();
+UnlitNode::UnlitNode() {
+  _impl = std::make_shared<_unlitnode::IMPL>();
   _renderingmodel = RenderingModel(ERenderModelID::FORWARD_UNLIT);
   _clearColor = fvec4(0,0,0,1);
 }
 ///////////////////////////////////////////////////////////////////////////////
-ForwardCompositingNode::~ForwardCompositingNode() {
+UnlitNode::~UnlitNode() {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ForwardCompositingNode::doGpuInit(lev2::Context* pTARG, int iW, int iH) {
-  _impl.get<std::shared_ptr<forwardnode::IMPL>>()->init(pTARG);
+void UnlitNode::doGpuInit(lev2::Context* pTARG, int iW, int iH) {
+  _impl.get<std::shared_ptr<_unlitnode::IMPL>>()->init(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ForwardCompositingNode::DoRender(CompositorDrawData& drawdata) {
-  auto impl = _impl.get<std::shared_ptr<forwardnode::IMPL>>();
+void UnlitNode::DoRender(CompositorDrawData& drawdata) {
+  auto impl = _impl.get<std::shared_ptr<_unlitnode::IMPL>>();
   impl->_render(this, drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
-rtbuffer_ptr_t ForwardCompositingNode::GetOutput() const {
-  return _impl.get<std::shared_ptr<forwardnode::IMPL>>()->_rtg->GetMrt(0);
+rtbuffer_ptr_t UnlitNode::GetOutput() const {
+  return _impl.get<std::shared_ptr<_unlitnode::IMPL>>()->_rtg->GetMrt(0);
 }
 ///////////////////////////////////////////////////////////////////////////////
-}} // namespace ork::lev2
+} // namespace ork::lev2::compositor {

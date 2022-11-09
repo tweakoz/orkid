@@ -9,8 +9,6 @@
 #include <iostream>
 #include <ork/lev2/aud/singularity/hud.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorForward.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorPicking.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScaleBias.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
@@ -63,7 +61,7 @@ uitestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
   auto camdata  = qtapp->_vars.makeSharedForKey<CameraData>("camdata");
   auto dbufcontext = qtapp->_vars.makeSharedForKey<DrawBufContext>("dbufcontext");
   //////////////////////////////////////////////////////////
-  compdata->presetForward();
+  compdata->presetUnlit();
   compdata->mbEnable  = true;
   auto nodetek        = compdata->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
   auto outpnode       = nodetek->tryOutputNodeAs<RtGroupOutputCompositingNode>();

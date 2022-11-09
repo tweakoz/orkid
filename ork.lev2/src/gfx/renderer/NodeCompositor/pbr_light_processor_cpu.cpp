@@ -26,11 +26,11 @@
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/texman.h>
 
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
-#include <ork/lev2/gfx/renderer/NodeCompositor/CpuLightProcessor.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_light_processor_cpu.h>
 
 ////////////////////////////////////////////////////////////////
-namespace ork::lev2::deferrednode {
+namespace ork::lev2::pbr::deferrednode {
 ////////////////////////////////////////////////////////////////
 
 CpuLightProcessor::CpuLightProcessor(DeferredContext& defctx, DeferredCompositingNodePbr* compnode)
@@ -92,7 +92,7 @@ void CpuLightProcessor::_renderUnshadowedUnTexturedPointLights(
   const int KTILEMAXX = _deferredContext._clusterW - 1;
   const int KTILEMAXY = _deferredContext._clusterH - 1;
 
-  deferrednode::PointLight deferred_pointlight;
+  pbr::PointLight deferred_pointlight;
 
   for (auto l : scene_lights) {
 

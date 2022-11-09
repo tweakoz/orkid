@@ -14,7 +14,7 @@
 #include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <ork/lev2/gfx/lighting/gfx_lighting.h>
 
-namespace ork::lev2::deferrednode {
+namespace ork::lev2::pbr::deferrednode {
 
 ///////////////////////////////////////////////////////////////////////////////
 // SimpleLightProcessor :

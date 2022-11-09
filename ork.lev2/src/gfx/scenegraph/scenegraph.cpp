@@ -8,12 +8,14 @@
 #include <ork/lev2/gfx/scenegraph/scenegraph.h>
 #include <ork/lev2/ui/event.h>
 #include <ork/application/application.h>
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorForward.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
 #include <ork/reflect/properties/registerX.inl>
 #include <ork/kernel/opq.h>
+///////////////////////////////////////////////////////////////////////////////
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/unlit_node.h>
 
 using namespace std::string_literals;
 using namespace ork;
@@ -264,23 +266,22 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
 
   pbr::commonstuff_ptr_t pbrcommon;
 
+  if (preset == "Unlit") {
+    _compositorPreset = _compositorData->presetUnlit(outRTG);
+    auto nodetek  = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
+    auto outrnode = nodetek->tryRenderNodeAs<compositor::UnlitNode>();
+  }
   if (preset == "ForwardPBR") {
     _compositorPreset = _compositorData->presetForwardPBR(outRTG);
     auto nodetek  = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
-    auto outrnode = nodetek->tryRenderNodeAs<ForwardCompositingNodePbr>();
-
-    //if (auto try_supersample = params->typedValueForKey<int>("supersample")) {
-      //if(outpnode){
-        //outpnode->setSuperSample(try_supersample.value());
-      //}
-    //}
+    auto outrnode = nodetek->tryRenderNodeAs<pbr::ForwardNode>();
     pbrcommon = outrnode->_pbrcommon;
   }
   else if (preset == "DeferredPBR") {
     _compositorPreset = _compositorData->presetDeferredPBR(outRTG);
     auto nodetek  = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
     auto outpnode = nodetek->tryOutputNodeAs<RtGroupOutputCompositingNode>();
-    auto outrnode = nodetek->tryOutputNodeAs<deferrednode::DeferredCompositingNodePbr>();
+    auto outrnode = nodetek->tryOutputNodeAs<pbr::deferrednode::DeferredCompositingNodePbr>();
 
     if (auto try_supersample = params->typedValueForKey<int>("supersample")) {
       if(outpnode){
@@ -330,6 +331,12 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
       if (auto try_DepthFogPower = params->typedValueForKey<float>("DepthFogPower")) {
         pbrcommon->_depthFogPower = try_DepthFogPower.value();
       }
+      if (auto try_dfdist = params->typedValueForKey<float>("depthFogDistance")) {
+        pbrcommon->_depthFogDistance = try_dfdist.value();
+      }
+      if (auto try_dfpwr = params->typedValueForKey<float>("depthFogPower")) {
+        pbrcommon->_depthFogPower = try_dfpwr.value();
+      }
   }
   //////////////////////////////////////////////
 
@@ -338,22 +345,6 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
 
   _outputNode = _compostorTechnique->tryOutputNodeAs<OutputCompositingNode>();
   _renderNode = _compostorTechnique->tryRenderNodeAs<RenderCompositingNode>();
-
-  //_outputNode = _compostorTechnique->tryOutputNodeAs<VrCompositingNode>();
-  // throw std::runtime_error("unknown compositor outputnode type");
-  // outpnode->setSuperSample(4);
-
-
-  auto rendnodePBR = _compostorTechnique->tryRenderNodeAs<lev2::deferrednode::DeferredCompositingNodePbr>();
-  if (rendnodePBR) {
-    auto pbrcommon = rendnodePBR->_pbrcommon;
-    if (auto try_dfdist = params->typedValueForKey<float>("depthFogDistance")) {
-      pbrcommon->_depthFogDistance = try_dfdist.value();
-    }
-    if (auto try_dfpwr = params->typedValueForKey<float>("depthFogPower")) {
-      pbrcommon->_depthFogPower = try_dfpwr.value();
-    }
-  }
 
   _compositorImpl = _compositorData->createImpl();
   _compositorImpl->bindLighting(_lightManager.get());

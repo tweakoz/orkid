@@ -117,6 +117,12 @@ void RenderContextInstData::SetRenderGroupState(RenderGroupState rgs) {
 RenderGroupState RenderContextInstData::GetRenderGroupState() const {
   return mRenderGroupState;
 }
+///////////////////////////////////////////////////////////////////////////////
+fmtx4 RenderContextInstData::worldMatrix() const {
+  auto MTXI               = _RCFD->GetTarget()->MTXI();
+  return _dagrenderable ? _dagrenderable->_worldMatrix //
+                        : MTXI->RefMMatrix();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

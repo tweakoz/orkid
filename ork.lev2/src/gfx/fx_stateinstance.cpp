@@ -8,7 +8,6 @@
 #include <ork/lev2/gfx/fxstate_instance.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/renderer/renderable.h>
-#include <ork/lev2/gfx/renderer/NodeCompositor/PBRCommon.h>
 
 namespace ork::lev2 {
 /////////////////////////////////////////////////////////////////////////
@@ -53,12 +52,23 @@ bool FxStateInstance::beginPass(const RenderContextInstData& RCID, int ipass) {
 
   RSI->BindRasterState(_material->_rasterstate);
 
-  const auto& worldmatrix = RCID._dagrenderable //
-                                ? RCID._dagrenderable->_worldMatrix
-                                : MTXI->RefMMatrix();
+  ///////////////////////////////
+  // run state lambdas
+  ///////////////////////////////
+
+  for( auto& item: _statelambdas ){
+    item(RCID,ipass);
+  }
+
+  ///////////////////////////////
+  // run individual state items
+  ///////////////////////////////
+
+  auto worldmatrix = RCID.worldMatrix();
 
   auto stereocams = CPD._stereoCameraMatrices;
   auto monocams   = CPD._cameraMatrices;
+
 
   for (auto item : _params) {
     fxparam_constptr_t param = item.first;
@@ -111,51 +121,6 @@ bool FxStateInstance::beginPass(const RenderContextInstData& RCID, int ipass) {
         case "RCFD_Model_Rot"_crcu: {
           auto rotmtx = worldmatrix.rotMatrix33();
           FXI->BindParamMatrix(param, rotmtx);
-          break;
-        }
-        case "EyePosition"_crcu: {
-          if (monocams) {
-            auto eye_pos = monocams->_vmatrix.inverse().translation();
-            FXI->BindParamVect3(param,eye_pos);
-          } else {
-            OrkAssert(false);
-          }
-          break;
-        }
-        case "AmbientLevel"_crcu: {
-          FXI->BindParamVect3(param, pbrcommon->_ambientLevel);
-          break;
-        }
-        case "SpecularLevel"_crcu: {
-          FXI->BindParamFloat(param, pbrcommon->_specularLevel);
-          break;
-        }
-        case "DiffuseLevel"_crcu: {
-          FXI->BindParamFloat(param, pbrcommon->_diffuseLevel);
-          break;
-        }
-        case "SkyboxLevel"_crcu: {
-          FXI->BindParamFloat(param, pbrcommon->_skyboxLevel);
-          break;
-        }
-        case "MapSpecularEnv"_crcu: {
-          FXI->BindParamCTex(param, pbrcommon->envSpecularTexture().get());
-          break;
-        }
-        case "MapDiffuseEnv"_crcu: {
-          FXI->BindParamCTex(param, pbrcommon->envDiffuseTexture().get());
-          break;
-        }
-        case "MapBrdfIntegration"_crcu: {
-          FXI->BindParamCTex(param, pbrcommon->_brdfIntegrationMap.get());
-          break;
-        }
-        case "EnvironmentMipBias"_crcu: {
-          FXI->BindParamFloat(param, pbrcommon->_environmentMipBias);
-          break;
-        }
-        case "EnvironmentMipScale"_crcu: {
-          FXI->BindParamFloat(param, pbrcommon->_environmentMipScale);
           break;
         }
         default:

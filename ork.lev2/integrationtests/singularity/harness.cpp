@@ -11,8 +11,6 @@
 #include <ork/lev2/aud/audiodevice.h>
 #include <ork/lev2/aud/singularity/hud.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorForward.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorPicking.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScaleBias.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
@@ -21,6 +19,10 @@
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/ui/layoutgroup.inl>
+///////////////////////////////////////////////////////////////////////////////
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/unlit_node.h>
 ///////////////////////////////////////////////////////////////////////////////
 namespace po = boost::program_options;
 ///////////////////////////////////////////////////////////////////////////////
@@ -106,7 +108,7 @@ singularitytestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
   auto cameras  = qtapp->_vars.makeSharedForKey<CameraDataLut>("cameras");
   auto camdata  = qtapp->_vars.makeSharedForKey<CameraData>("camdata");
   //////////////////////////////////////////////////////////
-  compdata->presetForward();
+  compdata->presetUnlit();
   compdata->mbEnable  = true;
   auto nodetek        = compdata->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
   auto outpnode       = nodetek->tryOutputNodeAs<RtGroupOutputCompositingNode>();

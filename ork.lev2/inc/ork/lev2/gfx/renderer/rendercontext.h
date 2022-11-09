@@ -60,6 +60,9 @@ struct RenderContextInstData {
 
   void SetEngineParamFloat(int idx, float fv);
   float GetEngineParamFloat(int idx) const;
+  //////////////////////////////////////
+
+  fmtx4 worldMatrix() const;
 
   //////////////////////////////////////
   // material interface

@@ -17,14 +17,18 @@
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/lighting/gfx_lighting.h>
 #include <ork/lev2/gfx/renderer/compositor.h>
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
 #include <ork/lev2/gfx/material_freestyle.h>
+
+///////////////////////////////////////////////////////////////////////////////
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/unlit_node.h>
 
 using namespace std::string_literals;
 using namespace ork;
 using namespace ork::lev2;
-using namespace ork::lev2::deferrednode;
+using namespace ork::lev2::pbr::deferrednode;
 typedef SVtxV12C4T16 vtx_t; // position, vertex color, 2 UV sets
 
 struct Instance {

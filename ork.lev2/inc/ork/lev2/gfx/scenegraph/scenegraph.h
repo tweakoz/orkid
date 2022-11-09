@@ -17,7 +17,7 @@
 #include <ork/lev2/gfx/pickbuffer.h>
 #include <ork/lev2/gfx/lighting/gfx_lighting.h>
 #include <ork/lev2/gfx/renderer/compositor.h>
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorVr.h>
 #include <ork/lev2/gfx/material_freestyle.h>

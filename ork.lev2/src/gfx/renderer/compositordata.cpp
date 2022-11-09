@@ -15,18 +15,19 @@
 #include <ork/pch.h>
 #include <ork/reflect/properties/register.h>
 #include <ork/rtti/downcast.h>
+#include <ork/application/application.h>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
+#include <ork/reflect/properties/DirectTyped.hpp>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorForward.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorPicking.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScaleBias.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorVr.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
-#include <ork/application/application.h>
-#include <ork/reflect/properties/DirectTypedMap.hpp>
-#include <ork/reflect/properties/DirectTyped.hpp>
-
+///////////////////////////////////////////////////////////////////////////////
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/unlit_node.h>
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::lev2::CompositingData, "CompositingData");
 ///////////////////////////////////////////////////////////////////////////////
@@ -64,12 +65,19 @@ void CompositingData::presetDefault() {
 
 //////////////////////////////////////////////////////////////////////////////
 
-void CompositingData::presetForward() {
+RenderPresetContext CompositingData::presetUnlit(rtgroup_ptr_t outputgrp) {
+
+  OutputCompositingNode* selected_output_node = nullptr;
+  if(outputgrp){
+    selected_output_node = new RtGroupOutputCompositingNode(outputgrp);
+  }else{
+    selected_output_node = new ScreenOutputCompositingNode;
+  }
+
 
   auto t1 = new NodeCompositingTechnique;
-  auto o1 = new RtGroupOutputCompositingNode;
-  auto r1 = new ForwardCompositingNode;
-  t1->_writeOutputNode(o1);
+  auto r1 = new compositor::UnlitNode;
+  t1->_writeOutputNode(selected_output_node);
   t1->_writeRenderNode(r1);
   // t1->_writePostFxNode(p1);
 
@@ -80,6 +88,13 @@ void CompositingData::presetForward() {
   _activeScene = "scene1"_pool;
   _activeItem  = "item1"_pool;
   _scenes.AddSorted("scene1"_pool, s1);
+
+  RenderPresetContext rval;
+  rval._nodetek    = t1;
+  rval._outputnode = selected_output_node;
+  rval._rendernode = r1;
+
+  return rval;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -116,7 +131,7 @@ RenderPresetContext CompositingData::presetForwardPBR(rtgroup_ptr_t outputgrp) {
   RenderPresetContext rval;
   auto t1 = new NodeCompositingTechnique;
   OutputCompositingNode* selected_output_node = nullptr;
-  auto r1 = new ForwardCompositingNodePbr;
+  auto r1 = new pbr::ForwardNode;
   if(outputgrp){
     selected_output_node = new RtGroupOutputCompositingNode(outputgrp);
   }else{
@@ -156,7 +171,7 @@ RenderPresetContext CompositingData::presetDeferredPBR(rtgroup_ptr_t outputgrp) 
   RenderPresetContext rval;
   auto t1 = new NodeCompositingTechnique;
   OutputCompositingNode* selected_output_node = nullptr;
-  auto r1 = new deferrednode::DeferredCompositingNodePbr;
+  auto r1 = new pbr::deferrednode::DeferredCompositingNodePbr;
   if(outputgrp){
     selected_output_node = new RtGroupOutputCompositingNode(outputgrp);
   }else{
@@ -199,7 +214,7 @@ RenderPresetContext CompositingData::presetPBRVR() {
   RenderPresetContext rval;
   auto t1 = new NodeCompositingTechnique;
   auto o1 = new VrCompositingNode;
-  auto r1 = new deferrednode::DeferredCompositingNodePbr;
+  auto r1 = new pbr::deferrednode::DeferredCompositingNodePbr;
   t1->_writeOutputNode(o1);
   t1->_writeRenderNode(r1);
   // t1->_writePostFxNode(p1);

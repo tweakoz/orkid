@@ -15,17 +15,18 @@
 #include <ork/pch.h>
 #include <ork/reflect/properties/register.h>
 #include <ork/rtti/downcast.h>
-///////////////////////////////////////////////////////////////////////////////
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorForward.h>
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScaleBias.h>
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorVr.h>
 #include <ork/application/application.h>
 #include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/profiling.inl>
-
+///////////////////////////////////////////////////////////////////////////////
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScaleBias.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorVr.h>
+///////////////////////////////////////////////////////////////////////////////
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/unlit_node.h>
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////

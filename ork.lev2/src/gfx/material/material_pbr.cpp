@@ -18,7 +18,6 @@
 #include <ork/lev2/gfx/gfxmaterial.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/shadman.h>
-#include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/gfx/brdf.inl>
 #include <ork/pch.h>
@@ -26,6 +25,9 @@
 #include <OpenImageIO/imageio.h>
 #include <ork/kernel/datacache.h>
 #include <ork/reflect/properties/registerX.inl>
+//
+#include <ork/lev2/gfx/material_pbr.inl>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_common.h>
 
 OIIO_NAMESPACE_USING
 
@@ -209,7 +211,6 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _tek_GBU_CM_NM_SK_NI_MO = fxi->technique(_shader, "GBU_CM_NM_SK_NI_MO");
   _tek_GBU_CM_NM_RI_NI_ST = fxi->technique(_shader, "GBU_CM_NM_RI_NI_ST");
 
-
   _tek_GBU_CT_NM_RI_IN_MO = fxi->technique(_shader, "GBU_CT_NM_RI_IN_MO");
   _tek_GBU_CT_NM_RI_IN_ST = fxi->technique(_shader, "GBU_CT_NM_RI_IN_ST");
   _tek_GBU_CT_NM_RI_NI_ST = fxi->technique(_shader, "GBU_CT_NM_RI_NI_ST");
@@ -223,13 +224,12 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   _tek_GBU_CV_NM_RI_NI_MO = fxi->technique(_shader, "GBU_CV_NM_RI_NI_MO");
 
-
-  //OrkAssert(_tek_GBU_CT_NM_RI_NI_ST);
-  //OrkAssert(_tek_GBU_CT_NM_RI_IN_ST);
-  //OrkAssert(_tek_GBU_CT_NM_RI_IN_MO);
-  //OrkAssert(_tek_GBU_CT_NM_RI_NI_MO);
-  //OrkAssert(_tek_FWD_CT_NM_RI_NI_MO);
-  //OrkAssert(_tek_FWD_CT_NM_RI_IN_MO);
+  // OrkAssert(_tek_GBU_CT_NM_RI_NI_ST);
+  // OrkAssert(_tek_GBU_CT_NM_RI_IN_ST);
+  // OrkAssert(_tek_GBU_CT_NM_RI_IN_MO);
+  // OrkAssert(_tek_GBU_CT_NM_RI_NI_MO);
+  // OrkAssert(_tek_FWD_CT_NM_RI_NI_MO);
+  // OrkAssert(_tek_FWD_CT_NM_RI_IN_MO);
 
   // parameters
 
@@ -251,19 +251,19 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _paramInstanceMatrixMap = fxi->parameter(_shader, "InstanceMatrices");
   _paramInstanceIdMap     = fxi->parameter(_shader, "InstanceIds");
   _paramInstanceColorMap  = fxi->parameter(_shader, "InstanceColors");
-  
+
   // fwd
 
-  _paramEyePostion        = fxi->parameter(_shader, "EyePostion");
-  _paramAmbientLevel      = fxi->parameter(_shader, "AmbientLevel");
-  _paramDiffuseLevel      = fxi->parameter(_shader, "DiffuseLevel");
-  _paramSpecularLevel      = fxi->parameter(_shader, "SpecularLevel");
-  _paramSkyboxLevel      = fxi->parameter(_shader, "SkyboxLevel");
+  _paramEyePostion    = fxi->parameter(_shader, "EyePostion");
+  _paramAmbientLevel  = fxi->parameter(_shader, "AmbientLevel");
+  _paramDiffuseLevel  = fxi->parameter(_shader, "DiffuseLevel");
+  _paramSpecularLevel = fxi->parameter(_shader, "SpecularLevel");
+  _paramSkyboxLevel   = fxi->parameter(_shader, "SkyboxLevel");
 
-  _parMapSpecularEnv = fxi->parameter(_shader, "MapSpecularEnv");
-  _parMapDiffuseEnv = fxi->parameter(_shader, "MapDiffuseEnv");
-  _parMapBrdfIntegration = fxi->parameter(_shader, "MapBrdfIntegration");
-  _parEnvironmentMipBias = fxi->parameter(_shader, "EnvironmentMipBias");
+  _parMapSpecularEnv      = fxi->parameter(_shader, "MapSpecularEnv");
+  _parMapDiffuseEnv       = fxi->parameter(_shader, "MapDiffuseEnv");
+  _parMapBrdfIntegration  = fxi->parameter(_shader, "MapBrdfIntegration");
+  _parEnvironmentMipBias  = fxi->parameter(_shader, "EnvironmentMipBias");
   _parEnvironmentMipScale = fxi->parameter(_shader, "EnvironmentMipScale");
 
   //
@@ -321,7 +321,7 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
       switch (cfg._rendering_model) {
         //////////////////////////////////////////
         case ERenderModelID::PICKING: {
-          OrkAssert(cfg._stereo==false);
+          OrkAssert(cfg._stereo == false);
           if (cfg._instanced) {
             fxinst->_technique = _tek_PIK_RI_IN;
           }
@@ -333,7 +333,7 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
               fxinst->_technique = _tek_PIK_RI_NI;
             ////////////////
           }
-          OrkAssert(fxinst->_technique!=nullptr);
+          OrkAssert(fxinst->_technique != nullptr);
           fxinst->_params[_paramMVP] = "RCFD_Camera_Pick"_crcsh;
           break;
         }
@@ -344,30 +344,51 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
               fxinst->_technique = cfg._skinned                  //
                                        ? _tek_GBU_CT_NM_SK_IN_ST //
                                        : _tek_GBU_CT_NM_RI_IN_ST;
-              OrkAssert(fxinst->_technique!=nullptr);
+              OrkAssert(fxinst->_technique != nullptr);
             } else {                                             // stereo-non-instanced
               fxinst->_technique = cfg._skinned                  //
                                        ? _tek_GBU_CT_NM_SK_NI_ST //
                                        : _tek_GBU_CT_NM_RI_NI_ST;
-              OrkAssert(fxinst->_technique!=nullptr);
+              OrkAssert(fxinst->_technique != nullptr);
             }
-            fxinst->_params[_paramMVPL] = "RCFD_Camera_MVP_Left"_crcsh;
-            fxinst->_params[_paramMVPR] = "RCFD_Camera_MVP_Right"_crcsh;
+            //////////////////////////////////
+            fxinst->addStateLambda([this](const RenderContextInstData& RCID, int ipass) {
+              auto RCFD        = RCID._RCFD;
+              auto context     = RCFD->GetTarget();
+              auto MTXI        = context->MTXI();
+              auto FXI         = context->FXI();
+              const auto& CPD  = RCFD->topCPD();
+              auto stereocams  = CPD._stereoCameraMatrices;
+              auto worldmatrix = RCID.worldMatrix();
+              FXI->BindParamMatrix(_paramMVPL, stereocams->MVPL(worldmatrix));
+              FXI->BindParamMatrix(_paramMVPR, stereocams->MVPR(worldmatrix));
+              // fxinst->_params[_paramMVPL] = "RCFD_Camera_MVP_Left"_crcsh;
+              // fxinst->_params[_paramMVPR] = "RCFD_Camera_MVP_Right"_crcsh;
+            });
+            //////////////////////////////////
           } else {                                               // mono
             if (cfg._instanced) {                                // mono-instanced
               fxinst->_technique = cfg._skinned                  //
                                        ? _tek_GBU_CT_NM_SK_IN_MO //
                                        : _tek_GBU_CT_NM_RI_IN_MO;
-              OrkAssert(fxinst->_technique!=nullptr);
+              OrkAssert(fxinst->_technique != nullptr);
             } else {                                             // mono-non-instanced
               fxinst->_technique = cfg._skinned                  //
                                        ? _tek_GBU_CT_NM_SK_NI_MO //
                                        : _tek_GBU_CT_NM_RI_NI_MO;
-              OrkAssert(fxinst->_technique!=nullptr);
+              OrkAssert(fxinst->_technique != nullptr);
             }
-            fxinst->_params[_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
+            //////////////////////////////////
+            fxinst->addStateLambda([this](const RenderContextInstData& RCID, int ipass) {
+              auto RCFD        = RCID._RCFD;
+              auto FXI         = RCFD->GetTarget()->FXI();
+              const auto& CPD  = RCFD->topCPD();
+              auto monocams    = CPD._cameraMatrices;
+              auto worldmatrix = RCID.worldMatrix();
+              FXI->BindParamMatrix(_paramMVP, monocams->MVPMONO(worldmatrix));
+            });
           }
-          OrkAssert(fxinst->_technique!=nullptr);
+          OrkAssert(fxinst->_technique != nullptr);
           break;
         } // ERenderModelID::DEFERRED_PBR
         //////////////////////////////////////////
@@ -376,28 +397,47 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
           break;
         case ERenderModelID::FORWARD_PBR:
           if (cfg._instanced and not cfg._skinned and not cfg._stereo) {
-              fxinst->_technique = _tek_FWD_CT_NM_RI_IN_MO;
-              fxinst->_params[_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
-              fxinst->_params[_paramEyePostion] = "EyePosition"_crcsh;
-              fxinst->_params[_paramAmbientLevel] = "AmbientLevel"_crcsh;
-              fxinst->_params[_paramDiffuseLevel] = "DiffuseLevel"_crcsh;
-              fxinst->_params[_paramSpecularLevel] = "SpecularLevel"_crcsh;
-              fxinst->_params[_paramSkyboxLevel] = "SkyboxLevel"_crcsh;
+            fxinst->_technique         = _tek_FWD_CT_NM_RI_IN_MO;
+            fxinst->_params[_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
+            fxinst->addStateLambda([this](const RenderContextInstData& RCID, int ipass) {
+              auto context          = RCID._RCFD->GetTarget();
+              auto MTXI             = context->MTXI();
+              auto FXI              = context->FXI();
+              auto RSI              = context->RSI();
+              const auto& CPD       = RCID._RCFD->topCPD();
+              const auto& RCFDPROPS = RCID._RCFD->userProperties();
+              bool is_picking       = CPD.isPicking();
+              bool is_stereo        = CPD.isStereoOnePass();
+              auto pbrcommon        = RCID._RCFD->_pbrcommon;
 
-              fxinst->_params[_parEnvironmentMipBias] = "EnvironmentMipBias"_crcsh;
-              fxinst->_params[_parEnvironmentMipScale] = "EnvironmentMipScale"_crcsh;
+              FXI->BindParamVect3(_paramAmbientLevel, pbrcommon->_ambientLevel);
+              FXI->BindParamFloat(_paramSpecularLevel, pbrcommon->_specularLevel);
+              FXI->BindParamFloat(_paramDiffuseLevel, pbrcommon->_diffuseLevel);
+              FXI->BindParamFloat(_paramSkyboxLevel, pbrcommon->_skyboxLevel);
+              FXI->BindParamCTex(_parMapSpecularEnv, pbrcommon->envSpecularTexture().get());
+              FXI->BindParamCTex(_parMapDiffuseEnv, pbrcommon->envDiffuseTexture().get());
+              FXI->BindParamCTex(_parMapBrdfIntegration, pbrcommon->_brdfIntegrationMap.get());
+              FXI->BindParamFloat(_parEnvironmentMipBias, pbrcommon->_environmentMipBias);
+              FXI->BindParamFloat(_parEnvironmentMipScale, pbrcommon->_environmentMipScale);
 
-              fxinst->_params[_parMapSpecularEnv] = "MapSpecularEnv"_crcsh;
-              fxinst->_params[_parMapDiffuseEnv] = "MapDiffuseEnv"_crcsh;
-              fxinst->_params[_parMapBrdfIntegration] = "MapBrdfIntegration"_crcsh;
+              auto worldmatrix = RCID.worldMatrix();
+
+              auto stereocams = CPD._stereoCameraMatrices;
+              auto monocams   = CPD._cameraMatrices;
+              if (monocams) {
+                auto eye_pos = monocams->_vmatrix.inverse().translation();
+                FXI->BindParamVect3(_paramEyePostion, eye_pos);
+                FXI->BindParamMatrix(_paramMVP, monocams->MVPMONO(worldmatrix));
+              }
+            });
           }
-          OrkAssert(fxinst->_technique!=nullptr);
+          OrkAssert(fxinst->_technique != nullptr);
           break;
         default:
           OrkAssert(false);
           break;
-        //////////////////////////////////////////
-      }  //switch (cfg._rendering_model) {
+          //////////////////////////////////////////
+      } // switch (cfg._rendering_model) {
       break;
     } // case 0: // STANDARD VARIANT
     //////////////////////////////////////////
@@ -437,7 +477,7 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
   fxinst->_parInstanceMatrixMap = _paramInstanceMatrixMap;
   fxinst->_parInstanceIdMap     = _paramInstanceIdMap;
   fxinst->_parInstanceColorMap  = _paramInstanceColorMap;
-  fxinst->_material = (GfxMaterial*) this;
+  fxinst->_material             = (GfxMaterial*)this;
 
   return fxinst;
 }
@@ -449,7 +489,7 @@ fxinstancelut_ptr_t PBRMaterial::createFxStateInstanceLut() const {
 
   FxStateInstanceConfig config;
 
-  printf( "fxlut<%p> createFxStateInstanceLut\n", fxlut.get() );
+  printf("fxlut<%p> createFxStateInstanceLut\n", fxlut.get());
 
   /////////////////////
   // picking
@@ -587,7 +627,6 @@ bool PBRMaterial::BeginPass(Context* targ, int iPass) {
     fxi->BindParamMatrix(_paramMVPR, MVPR);
     fxi->BindParamMatrix(_paramMROT, (world).rotMatrix33());
 
-
   } else {
     auto mcams = CPD._cameraMatrices;
     auto VP    = fmtx4::multiply_ltor(mcams->_vmatrix, mcams->_pmatrix);
@@ -598,11 +637,9 @@ bool PBRMaterial::BeginPass(Context* targ, int iPass) {
 
     auto eye_pos = mcams->_vmatrix.inverse().translation();
 
-    printf( "eye_pos<%g %g %g>\n", eye_pos.x, eye_pos.y, eye_pos.z );
-    fxi->BindParamVect3(_paramEyePostion,eye_pos);
-
+    printf("eye_pos<%g %g %g>\n", eye_pos.x, eye_pos.y, eye_pos.z);
+    fxi->BindParamVect3(_paramEyePostion, eye_pos);
   }
-
 
   switch (_variant) {
     case "font-instanced"_crcu:

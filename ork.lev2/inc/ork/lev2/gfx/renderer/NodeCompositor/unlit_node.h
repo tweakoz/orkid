@@ -8,17 +8,16 @@
 #pragma once
 
 #include "NodeCompositor.h"
-#include "PBRCommon.h"
 
-namespace ork::lev2 {
+namespace ork::lev2::compositor {
 ///////////////////////////////////////////////////////////////////////////////
 
-class ForwardCompositingNode : public RenderCompositingNode {
-  DeclareConcreteX(ForwardCompositingNode, RenderCompositingNode);
+class UnlitNode : public RenderCompositingNode {
+  DeclareConcreteX(UnlitNode, RenderCompositingNode);
 
 public:
-  ForwardCompositingNode();
-  ~ForwardCompositingNode();
+  UnlitNode();
+  ~UnlitNode();
 
   std::string _layername;
   fvec4 _clearColor;
@@ -29,26 +28,6 @@ private:
 
   lev2::rtbuffer_ptr_t GetOutput() const final;
   svar256_t _impl;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct ForwardCompositingNodePbr : public RenderCompositingNode {
-  DeclareConcreteX(ForwardCompositingNodePbr, RenderCompositingNode);
-
-public:
-  ForwardCompositingNodePbr();
-  ~ForwardCompositingNodePbr();
-
-  void doGpuInit(lev2::Context* pTARG, int w, int h) final;
-  void DoRender(CompositorDrawData& drawdata) final;
-
-  lev2::rtbuffer_ptr_t GetOutput() const final;
-  lev2::rtgroup_ptr_t GetOutputGroup() const final;
-
-  svar256_t _impl;
-  pbr::commonstuff_ptr_t _pbrcommon;
-
 };
 
 ///////////////////////////////////////////////////////////////////////////////

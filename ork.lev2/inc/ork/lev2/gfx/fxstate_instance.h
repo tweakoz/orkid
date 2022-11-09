@@ -57,12 +57,15 @@ struct FxStateInstance {
 
   void wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_t drawcall);
 
-  using varval_t                    = varmap::VarMap::value_type;
-  
+  using varval_t = varmap::VarMap::value_type;
+  using statelambda_t = std::function<void(const RenderContextInstData& RCID, int ipass)>;
+
+  void addStateLambda(statelambda_t sl){_statelambdas.push_back(sl);}
   GfxMaterial* _material = nullptr;
   fxtechnique_constptr_t _technique = nullptr;
   FxStateInstanceConfig _config;
   std::unordered_map<fxparam_constptr_t, varval_t> _params;
+  std::vector<statelambda_t> _statelambdas;
   fxparam_constptr_t _parInstanceMatrixMap = nullptr;
   fxparam_constptr_t _parInstanceIdMap     = nullptr;
   fxparam_constptr_t _parInstanceColorMap  = nullptr;

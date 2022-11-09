@@ -16,14 +16,18 @@
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/lighting/gfx_lighting.h>
 #include <ork/lev2/gfx/renderer/compositor.h>
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
 #include <ork/lev2/gfx/material_freestyle.h>
+
+///////////////////////////////////////////////////////////////////////////////
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/unlit_node.h>
 
 using namespace std::string_literals;
 using namespace ork;
 using namespace ork::lev2;
-using namespace ork::lev2::deferrednode;
+using namespace ork::lev2::pbr::deferrednode;
 
 int main(int argc, char** argv, char** envp) {
   auto init_data = std::make_shared<ork::AppInitData>(argc,argv,envp);
@@ -58,7 +62,7 @@ int main(int argc, char** argv, char** envp) {
     compositordata->presetDeferredPBR();
     compositordata->mbEnable     = true;
     auto nodetek                = compositordata->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
-    auto rendnode               = nodetek->tryRenderNodeAs<deferrednode::DeferredCompositingNodePbr>();
+    auto rendnode               = nodetek->tryRenderNodeAs<pbr::deferrednode::DeferredCompositingNodePbr>();
     auto pbrcommon              = rendnode->_pbrcommon;
     pbrcommon->_depthFogDistance = 4000.0f;
     pbrcommon->_depthFogPower    = 5.0f;

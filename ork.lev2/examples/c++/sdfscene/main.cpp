@@ -17,8 +17,6 @@
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/lighting/gfx_lighting.h>
 #include <ork/lev2/gfx/renderer/compositor.h>
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
 #include <ork/lev2/gfx/material_freestyle.h>
 
 #include <ork/reflect/properties/DirectObject.h>
@@ -27,6 +25,11 @@
 #include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/asset/DynamicAssetLoader.h>
+
+///////////////////////////////////////////////////////////////////////////////
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/unlit_node.h>
 
 #include <ork/lev2/imgui/imgui.h>
 #include <ork/lev2/imgui/imgui_impl_glfw.h>
@@ -38,7 +41,7 @@
 using namespace std::string_literals;
 using namespace ork;
 using namespace ork::lev2;
-using namespace ork::lev2::deferrednode;
+using namespace ork::lev2::pbr::deferrednode;
 
 const int KSUPERSAMPLE = 0;
 

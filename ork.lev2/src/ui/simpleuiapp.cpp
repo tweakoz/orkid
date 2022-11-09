@@ -8,16 +8,18 @@
 #include <iostream>
 #include <ork/lev2/aud/singularity/hud.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorForward.h>
+#include <ork/lev2/ui/context.h>
+#include <ork/lev2/ui/simpleuiapp.h>
+///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorPicking.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/lev2/ui/context.h>
-#include <ork/lev2/ui/simpleuiapp.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/unlit_node.h>
 ///////////////////////////////////////////////////////////////////////////////
 namespace po = boost::program_options;
 ///////////////////////////////////////////////////////////////////////////////
@@ -64,7 +66,7 @@ simpleuiapp_ptr_t createSimpleUiApp(appinitdata_ptr_t initdata ) {
   auto cameras  = qtapp->_vars.makeSharedForKey<CameraDataLut>("cameras");
   auto camdata  = qtapp->_vars.makeSharedForKey<CameraData>("camdata");
   //////////////////////////////////////////////////////////
-  compdata->presetForward();
+  compdata->presetUnlit();
   compdata->mbEnable  = true;
   auto nodetek        = compdata->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
   auto outpnode       = nodetek->tryOutputNodeAs<RtGroupOutputCompositingNode>();

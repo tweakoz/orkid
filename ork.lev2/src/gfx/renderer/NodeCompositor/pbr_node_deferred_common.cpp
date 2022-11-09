@@ -20,10 +20,10 @@
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/gfx/material_pbr.inl>
 
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
 #include <ork/profiling.inl>
 
-namespace ork::lev2::deferrednode {
+namespace ork::lev2::pbr::deferrednode {
 ///////////////////////////////////////////////////////////////////////////////
 
 DeferredContext::DeferredContext(RenderCompositingNode* node, std::string shadername, int numlights)

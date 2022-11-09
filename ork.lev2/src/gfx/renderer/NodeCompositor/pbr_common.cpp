@@ -22,13 +22,12 @@
 #include <ork/kernel/datacache.h>
 #include <ork/gfx/brdf.inl>
 #include <ork/gfx/dds.h>
-//#include <ork/gfx/image.inl>
-#include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/texman.h>
 
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorDeferred.h>
-#include <ork/lev2/gfx/renderer/NodeCompositor/CpuLightProcessor.h>
-#include <ork/lev2/gfx/renderer/NodeCompositor/SimpleLightProcessor.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_light_processor_cpu.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_light_processor_simple.h>
+
 #include <ork/profiling.inl>
 #include <ork/asset/Asset.inl>
 
