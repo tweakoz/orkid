@@ -135,7 +135,10 @@ RenderPresetContext CompositingData::presetForwardPBR(rtgroup_ptr_t outputgrp) {
   if(outputgrp){
     selected_output_node = new RtGroupOutputCompositingNode(outputgrp);
   }else{
-    selected_output_node = new ScreenOutputCompositingNode;
+    auto screennode = new ScreenOutputCompositingNode;
+    //screennode->setSuperSample(4);
+
+    selected_output_node = screennode;
   }
 
   t1->_writeOutputNode(selected_output_node);
@@ -175,7 +178,9 @@ RenderPresetContext CompositingData::presetDeferredPBR(rtgroup_ptr_t outputgrp) 
   if(outputgrp){
     selected_output_node = new RtGroupOutputCompositingNode(outputgrp);
   }else{
-    selected_output_node = new ScreenOutputCompositingNode;
+    auto screennode = new ScreenOutputCompositingNode;
+    //screennode->setSuperSample(4);
+    selected_output_node = screennode;
   }
 
   t1->_writeOutputNode(selected_output_node);
