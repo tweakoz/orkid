@@ -237,6 +237,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   _paramM                 = fxi->parameter(_shader, "m");
   _paramVP                = fxi->parameter(_shader, "vp");
+  _paramVPinv             = fxi->parameter(_shader, "inv_vp");
   _paramMVP               = fxi->parameter(_shader, "mvp");
   _paramMVPL              = fxi->parameter(_shader, "mvp_l");
   _paramMVPR              = fxi->parameter(_shader, "mvp_r");
@@ -343,7 +344,11 @@ FxStateInstance::statelambda_t PBRMaterial::createBasicStateLambda() const{
       FXI->BindParamVect3(_paramEyePostion, eye_pos);
       FXI->BindParamMatrix(_paramMVP, monocams->MVPMONO(worldmatrix));
 
-      FXI->BindParamMatrix(_paramVP, monocams->VPMONO());
+      auto VP = monocams->VPMONO();
+      FXI->BindParamMatrix(_paramVP, VP);
+      FXI->BindParamMatrix(_paramVPinv, VP.inverse());
+
+
     }
 
   };

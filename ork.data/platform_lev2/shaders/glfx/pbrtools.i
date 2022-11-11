@@ -9,6 +9,7 @@ uniform_set ub_vtx {
 	mat4 m;
 	mat4 mv;
 	mat4 vp;
+	mat4 inv_vp;
 	mat4 mvp;
 	mat4 mvp_l;
 	mat4 mvp_r;
@@ -33,6 +34,7 @@ uniform_set ub_frg {
 uniform_set ub_frg_fwd {
 
 	mat4 vp;
+	mat4 inv_vp;
 
   sampler2D ColorMap;
   sampler2D NormalMap;
@@ -493,11 +495,11 @@ fragment_shader ps_forward_skybox_mono
  	///////////////////////
 
   vec4 xyzw = vec4(frg_clr.xy,0,1);
-  xyzw = inverse(vp)*xyzw;
+  xyzw = inv_vp*xyzw;
   xyzw.xyz *= (1.0/xyzw.w);
 	vec3 posA = xyzw.xyz;
   xyzw = vec4(frg_clr.xy,1,1);
-  xyzw = inverse(vp)*xyzw;
+  xyzw = inv_vp*xyzw;
   xyzw.xyz *= (1.0/xyzw.w);
 	vec3 posB = xyzw.xyz;
 	vec3 VN = normalize(posA-posB);
