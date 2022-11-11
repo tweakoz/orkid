@@ -253,9 +253,14 @@ float CameraMatrices::GetAspect() const {
   return _aspectRatio;
 }
 ///////////////////////////////////////////////////////////////////////////////
+fmtx4 CameraMatrices::VPMONO() const {
+  // deco::prints(M.dump4x3cn(), true);
+  return fmtx4::multiply_ltor(_vmatrix,_pmatrix);
+}
+///////////////////////////////////////////////////////////////////////////////
 fmtx4 CameraMatrices::MVPMONO(const fmtx4& M) const {
   // deco::prints(M.dump4x3cn(), true);
-  return fmtx4::multiply_ltor(M,_vmatrix,_pmatrix);
+  return fmtx4::multiply_ltor(M,VPMONO());
 }
 ////////////////////////////////////////////////////////////////////////////////
 // StereoCameraMatrices

@@ -31,6 +31,9 @@ uniform_set ub_frg {
 }
 
 uniform_set ub_frg_fwd {
+
+	mat4 vp;
+
   sampler2D ColorMap;
   sampler2D NormalMap;
   sampler2D MtlRufMap;
@@ -474,9 +477,9 @@ fragment_shader ps_forward_test
 vertex_shader vs_forward_skybox_mono
 	: iface_vgbuffer
   : lib_pbr_vtx {
-		gl_Position = mvp*position;
+		gl_Position = position; // screen space quad
+		frg_clr = position;
 		// todo: compute Uvs from camera information
-		frg_uv0 = uv0;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_forward_skybox_mono
@@ -484,16 +487,35 @@ fragment_shader ps_forward_skybox_mono
 	: lib_math
   : lib_brdf
   : lib_def {
-		
-	// todo: compute Uvs from camera information
-	vec3 rgb = texture(MapSpecularEnv,frg_uv0).rgb;
+
+ 	///////////////////////
+ 	// compute view normal vector
+ 	///////////////////////
+
+  vec4 xyzw = vec4(frg_clr.xy,0,1);
+  xyzw = inverse(vp)*xyzw;
+  xyzw.xyz *= (1.0/xyzw.w);
+	vec3 posA = xyzw.xyz;
+  xyzw = vec4(frg_clr.xy,1,1);
+  xyzw = inverse(vp)*xyzw;
+  xyzw.xyz *= (1.0/xyzw.w);
+	vec3 posB = xyzw.xyz;
+	vec3 VN = normalize(posA-posB);
+
+ 	///////////////////////
+ 	// environment map
+ 	///////////////////////
+
+	vec3 rgb = env_equirectangularFlipV(VN,MapSpecularEnv,0);
 	out_color = vec4(rgb,1);
+
+ 	///////////////////////
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_forward_skybox_stereo
 	: iface_vgbuffer
   : lib_pbr_vtx {
-		gl_Position = mvp*position;
+		gl_Position = position; // screen space quad
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_forward_skybox_stereo

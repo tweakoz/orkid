@@ -122,6 +122,7 @@ struct CameraMatrices {
   const fmtx4& GetVPMatrix() const;
   ////////////////////////////////////////////////////////////////////
   float GetAspect() const;
+  fmtx4 VPMONO() const;
   fmtx4 MVPMONO(const fmtx4& M) const;
   ////////////////////////////////////////////////////////////////////
   void setCustomView(const ork::fmtx4& view);

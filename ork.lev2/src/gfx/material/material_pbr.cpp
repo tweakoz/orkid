@@ -342,6 +342,8 @@ FxStateInstance::statelambda_t PBRMaterial::createBasicStateLambda() const{
       auto eye_pos = monocams->_vmatrix.inverse().translation();
       FXI->BindParamVect3(_paramEyePostion, eye_pos);
       FXI->BindParamMatrix(_paramMVP, monocams->MVPMONO(worldmatrix));
+
+      FXI->BindParamMatrix(_paramVP, monocams->VPMONO());
     }
 
   };
@@ -511,7 +513,7 @@ fxinstancelut_ptr_t PBRMaterial::createSkyboxFxInstLut() const {
   config._stereo     = false;
   auto fxinst_mono   = std::make_shared<FxStateInstance>(config);
   fxinst_mono->_technique         = _tek_FWD_SKYBOX_MO;
-  fxinst_mono->_params[_paramMVP] = fmtx4();
+  //fxinst_mono->_params[_paramMVP] = fmtx4();
   fxinst_mono->addStateLambda(skybox_lambda);
   fxinst_mono->_material = (GfxMaterial*) this;
   fxlut->assignfxinst(config, fxinst_mono);
@@ -520,7 +522,7 @@ fxinstancelut_ptr_t PBRMaterial::createSkyboxFxInstLut() const {
   config._stereo     = true;
   auto fxinst_stereo = std::make_shared<FxStateInstance>(config);
   fxinst_stereo->_technique         = _tek_FWD_SKYBOX_ST;
-  fxinst_stereo->_params[_paramMVP] = fmtx4();
+  //fxinst_stereo->_params[_paramMVP] = fmtx4();
   fxinst_stereo->addStateLambda(skybox_lambda);
   fxinst_stereo->_material = (GfxMaterial*) this;
   fxlut->assignfxinst(config, fxinst_stereo);
