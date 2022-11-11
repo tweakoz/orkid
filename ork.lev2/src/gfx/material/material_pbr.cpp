@@ -325,9 +325,9 @@ FxStateInstance::statelambda_t PBRMaterial::createBasicStateLambda() const{
     bool is_stereo        = CPD.isStereoOnePass();
     auto pbrcommon        = RCID._RCFD->_pbrcommon;
 
-    FXI->BindParamVect3(_paramAmbientLevel, pbrcommon->_ambientLevel * 2);
-    FXI->BindParamFloat(_paramSpecularLevel, pbrcommon->_specularLevel * 2);
-    FXI->BindParamFloat(_paramDiffuseLevel, pbrcommon->_diffuseLevel * 2);
+    FXI->BindParamVect3(_paramAmbientLevel, pbrcommon->_ambientLevel);
+    FXI->BindParamFloat(_paramSpecularLevel, pbrcommon->_specularLevel);
+    FXI->BindParamFloat(_paramDiffuseLevel, pbrcommon->_diffuseLevel);
     FXI->BindParamFloat(_paramSkyboxLevel, pbrcommon->_skyboxLevel);
     FXI->BindParamCTex(_parMapSpecularEnv, pbrcommon->envSpecularTexture().get());
     FXI->BindParamCTex(_parMapDiffuseEnv, pbrcommon->envDiffuseTexture().get());

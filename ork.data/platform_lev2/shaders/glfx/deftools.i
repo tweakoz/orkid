@@ -95,12 +95,9 @@ libblock lib_def
     float depth_fogval = saturateF(pow(pbd._fogZ*DepthFogDistance,DepthFogPower));
     vec3 skybox_n = vec3(0,0,1);
     vec3 skyboxColor = env_equirectangularFlipV(skybox_n,MapSpecularEnv,0)*SkyboxLevel;
-    out_color = mix(finallitcolor,skyboxColor,depth_fogval);
 
-    float atmos = pbd._atmos;
-    float alpha = clamp(pbd._alpha,0,1);
 
-    return out_color; //mix(out_color,vec3(atmos),clamp(alpha,0,1));
+    return mix(finallitcolor,skyboxColor,depth_fogval);
 
 	} // vec3 environmentLighting(){
 }

@@ -77,6 +77,7 @@ struct AppInitData{
   int _width = 1280;
   int _height = 720;
   int _msaa_samples = 1;
+  int _ssaa_samples = 1;
   int _swap_interval = 1;
   bool _update_rendersync = false;
   bool _allowHIDPI = true;

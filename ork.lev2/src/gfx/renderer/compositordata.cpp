@@ -31,6 +31,10 @@
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::lev2::CompositingData, "CompositingData");
 ///////////////////////////////////////////////////////////////////////////////
+namespace ork::lev2{
+extern appinitdata_ptr_t _ginitdata;
+} // namespace ork::lev2{
+///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 void CompositingData::describeX(class_t* c) {
@@ -136,8 +140,7 @@ RenderPresetContext CompositingData::presetForwardPBR(rtgroup_ptr_t outputgrp) {
     selected_output_node = new RtGroupOutputCompositingNode(outputgrp);
   }else{
     auto screennode = new ScreenOutputCompositingNode;
-    screennode->setSuperSample(2);
-
+    screennode->setSuperSample(_ginitdata->_ssaa_samples);
     selected_output_node = screennode;
   }
 
@@ -179,7 +182,7 @@ RenderPresetContext CompositingData::presetDeferredPBR(rtgroup_ptr_t outputgrp) 
     selected_output_node = new RtGroupOutputCompositingNode(outputgrp);
   }else{
     auto screennode = new ScreenOutputCompositingNode;
-    //screennode->setSuperSample(4);
+    screennode->setSuperSample(_ginitdata->_ssaa_samples);
     selected_output_node = screennode;
   }
 

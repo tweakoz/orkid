@@ -27,9 +27,7 @@ public:
   int supersample() const {
     return _supersample;
   }
-  void setSuperSample(int ss) {
-    _supersample = ss;
-  }
+  void setSuperSample(int ss);
 
 private:
   void gpuInit(lev2::Context* pTARG, int w, int h) final;

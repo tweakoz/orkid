@@ -109,6 +109,31 @@ ScreenOutputCompositingNode::ScreenOutputCompositingNode()
 }
 ScreenOutputCompositingNode::~ScreenOutputCompositingNode() {
 }
+void ScreenOutputCompositingNode::setSuperSample(int ss) {
+  switch(ss){
+    case 1:
+      _supersample = 0;
+      break;
+    case 4:
+      _supersample = 1;
+      break;
+    case 9:
+      _supersample = 2;
+      break;
+    case 16:
+      _supersample = 3;
+      break;
+    case 25:
+      _supersample = 4;
+      break;
+    case 36:
+      _supersample = 5;
+      break;
+    default:
+      OrkAssert(false);
+      break;
+  }
+}
 void ScreenOutputCompositingNode::gpuInit(lev2::Context* pTARG, int iW, int iH) {
   _impl.get<std::shared_ptr<SCRIMPL>>()->gpuInit(pTARG);
 }
