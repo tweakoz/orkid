@@ -23,6 +23,16 @@ technique PIK_RI_IN {
 	vf_pass={vs_forward_instanced,ps_forward_test,sb_default}
 }
 ///////////////////////////////////////////////////////////////
+technique FWD_SKYBOX_MO {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_skybox_mono,ps_forward_skybox_mono,sb_default}
+}
+///////////////////////////////////////////////////////////////
+technique FWD_SKYBOX_ST {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_skybox_stereo,ps_forward_skybox_stereo,sb_default}
+}
+///////////////////////////////////////////////////////////////
 technique FWD_CT_NM_RI_NI_MO {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_forward_test,ps_forward_test,sb_default}

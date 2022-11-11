@@ -84,8 +84,10 @@ public:
   void forceEmissive();
 
   ////////////////////////////////////////////
+  FxStateInstance::statelambda_t createBasicStateLambda() const;
   fxinstance_ptr_t _createFxStateInstance(FxStateInstanceConfig& cfg) const;
   fxinstancelut_ptr_t createFxStateInstanceLut() const final;
+  fxinstancelut_ptr_t createSkyboxFxInstLut() const;
   ////////////////////////////////////////////
   void setupCamera(const RenderContextFrameData& RCFD);
   ////////////////////////////////////////////
@@ -175,6 +177,9 @@ public:
   //////////////////////
   // forward techniques
   //////////////////////
+
+  fxtechnique_constptr_t _tek_FWD_SKYBOX_MO = nullptr;
+  fxtechnique_constptr_t _tek_FWD_SKYBOX_ST = nullptr;
 
   // modcolor
 

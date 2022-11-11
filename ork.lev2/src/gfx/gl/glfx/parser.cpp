@@ -118,12 +118,12 @@ Program::Program(const std::string name) : _name(name) {
 }
 ///////////////////////////////////////////////////////////
 void Program::addBlockNode(decoblocknode_ptr_t node) {
-  printf( "Program<%p:%s>::addBlockNode(%p:%s)\n", 
-           this, _name.c_str(),
-           node.get(), node->_name.c_str() );
+  //printf( "Program<%p:%s>::addBlockNode(%p:%s)\n", 
+  //         this, _name.c_str(),
+  //         node.get(), node->_name.c_str() );
   auto it = _blockNodes.find(node->_name);
   if(it != _blockNodes.end()){
-    printf( "adding dup block<%s>\n", node->_name.c_str() );
+    //printf( "adding dup block<%s>\n", node->_name.c_str() );
     OrkAssert(false);
   }
   auto its = node->_name.find("lib_math");

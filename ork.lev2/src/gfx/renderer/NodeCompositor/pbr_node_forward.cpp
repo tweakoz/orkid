@@ -23,12 +23,16 @@
 ImplementReflectionX(ork::lev2::pbr::ForwardNode, "PbrForwardNode");
 
 ///////////////////////////////////////////////////////////////////////////////
+
+namespace ork::lev2{
+extern appinitdata_ptr_t _ginitdata;
+} // namespace ork::lev2{
+
+///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::pbr {
 ///////////////////////////////////////////////////////////////////////////////
 void ForwardNode::describeX(class_t* c) {
 }
-///////////////////////////////////////////////////////////////////////////
-constexpr int NUMSAMPLES = 1;
 ///////////////////////////////////////////////////////////////////////////////
 struct ForwardPbrNodeImpl {
   static const int KMAXLIGHTS = 32;
@@ -44,12 +48,11 @@ struct ForwardPbrNodeImpl {
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   void init(lev2::Context* context) {
     if (nullptr == _rtg) {
-      _material.gpuInit(context);
-      _rtg             = std::make_shared<RtGroup>(context, 8, 8, NUMSAMPLES);
+      _rtg             = std::make_shared<RtGroup>(context, 8, 8, _ginitdata->_msaa_samples);
       auto buf1        = _rtg->createRenderTarget(lev2::EBufferFormat::RGBA32F);
-      auto buf2        = _rtg->createRenderTarget(lev2::EBufferFormat::RGBA32F);
       buf1->_debugName = "ForwardRt0";
-      buf2->_debugName = "ForwardRt1";
+      _skybox_material = std::make_shared<PBRMaterial>(context);
+      _skybox_fxinstlut = _skybox_material->createSkyboxFxInstLut();
     }
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -67,6 +70,7 @@ struct ForwardPbrNodeImpl {
     auto targ         = RCFD.GetTarget();
     auto CIMPL        = drawdata._cimpl;
     auto FBI          = targ->FBI();
+    auto GBI          = targ->GBI();
     auto this_buf     = FBI->GetThisBuffer();
     auto RSI          = targ->RSI();
     auto DWI          = targ->DWI();
@@ -91,8 +95,6 @@ struct ForwardPbrNodeImpl {
       //printf("got lights<%zu>\n", lights.size());
     }
 
-    RCFD._renderingmodel = _node->_renderingmodel;
-
     //////////////////////////////////////////////////////
     // Resize RenderTargets
     //////////////////////////////////////////////////////
@@ -105,8 +107,8 @@ struct ForwardPbrNodeImpl {
     targ->debugPushGroup("ForwardPBR::render");
     RtGroupRenderTarget rt(_rtg.get());
     {
-      targ->FBI()->PushRtGroup(_rtg.get());
-      targ->FBI()->SetAutoClear(false); // explicit clear
+      FBI->PushRtGroup(_rtg.get());
+      FBI->SetAutoClear(false); // explicit clear
       targ->beginFrame();
       /////////////////////////////////////////////////////////////////////////////////////////
       auto DB             = RCFD.GetDB();
@@ -118,6 +120,27 @@ struct ForwardPbrNodeImpl {
       CPD.SetDstRect(tgt_rect);
       ///////////////////////////////////////////////////////////////////////////
       if (DB) {
+
+        CIMPL->pushCPD(CPD);
+        auto MTXI = targ->MTXI();
+        FBI->Clear(pbrcommon->_clearColor, 1.0f);
+
+        /////////////////////////////////////////////////////
+        // Render Skybox first so AA can blend with it
+        /////////////////////////////////////////////////////
+
+        RenderContextInstData RCID(&RCFD);
+        RCID._fx_instance_lut = _skybox_fxinstlut;
+        RCFD._renderingmodel = ERenderModelID::CUSTOM;
+        auto fxinst = _skybox_fxinstlut->findfxinst(RCID);
+        fxinst->wrappedDrawCall(RCID,[GBI](){
+          GBI->render2dQuadEML(); // full screen quad
+        });
+
+        ///////////////////////////////////////////////////////////////////////////
+
+        RCFD._renderingmodel = _node->_renderingmodel;
+
         ///////////////////////////////////////////////////////////////////////////
         // DrawableBuffer -> RenderQueue enqueue
         ///////////////////////////////////////////////////////////////////////////
@@ -126,18 +149,19 @@ struct ForwardPbrNodeImpl {
           DB->enqueueLayerToRenderQueue(layer_name, irenderer);
         }
         /////////////////////////////////////////////////
-        auto MTXI = targ->MTXI();
-        CIMPL->pushCPD(CPD);
+
         targ->debugPushGroup("toolvp::DrawEnqRenderables");
-        targ->FBI()->Clear(pbrcommon->_clearColor, 1.0f);
         irenderer->drawEnqueuedRenderables();
         framerenderer.renderMisc();
         targ->debugPopGroup();
+
+        /////////////////////////////////////////////////
+
         CIMPL->popCPD();
       }
       /////////////////////////////////////////////////////////////////////////////////////////
       targ->endFrame();
-      targ->FBI()->PopRtGroup();
+      FBI->PopRtGroup();
     }
     targ->debugPopGroup();
   }
@@ -145,9 +169,10 @@ struct ForwardPbrNodeImpl {
   ForwardNode* _node;
   std::string _camname, _layername;
   EnumeratedLights _enumeratedLights;
-  CompositingMaterial _material;
   rtgroup_ptr_t _rtg;
   fmtx4 _viewOffsetMatrix;
+  pbrmaterial_ptr_t _skybox_material;
+  fxinstancelut_ptr_t _skybox_fxinstlut;
 
 }; // IMPL
 

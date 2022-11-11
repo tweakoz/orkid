@@ -31,7 +31,7 @@ GeometryBufferInterface::~GeometryBufferInterface() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GeometryBufferInterface::render2dQuadEML(const fvec4& QuadRect, const fvec4& UvRect, const fvec4& UvRect2) {
+void GeometryBufferInterface::render2dQuadEML(fvec4 QuadRect, fvec4 UvRect, fvec4 UvRect2) {
   _context.DWI()->quad2DEML(QuadRect, UvRect, UvRect2);
 }
 

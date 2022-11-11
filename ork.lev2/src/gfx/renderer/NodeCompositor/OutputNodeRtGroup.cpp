@@ -190,9 +190,7 @@ void RtGroupOutputCompositingNode::composite(CompositorDrawData& drawdata) {
         ViewportRect extents(0, 0, dstw, dsth);
         fbi->pushViewport(extents);
         fbi->pushScissor(extents);
-        gbi->render2dQuadEML( fvec4(-1, -1, 2, 2), //
-                              fvec4(0, 0, 1, 1), //
-                              fvec4(0, 0, 1, 1)); //
+        gbi->render2dQuadEML(); // full screen quad
         fbi->popViewport();
         fbi->popScissor();
         mtl.end(framedata);

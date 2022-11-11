@@ -77,8 +77,10 @@ bool FxStateInstance::beginPass(const RenderContextInstData& RCID, int ipass) {
     // try to order these by commonalitiy
     //  or find a quicker dispatch method
     ////////////////////////////////////////////////////////////
-    if (auto as_mtx4 = val.tryAs<fmtx4_ptr_t>()) {
-      FXI->BindParamMatrix(param, *as_mtx4.value().get());
+    if (auto as_mtx4 = val.tryAs<fmtx4>()) {
+      FXI->BindParamMatrix(param, as_mtx4.value());
+    } else if (auto as_mtx4ptr = val.tryAs<fmtx4_ptr_t>()) {
+      FXI->BindParamMatrix(param, *as_mtx4ptr.value().get());
     } else if (auto as_texture = val.tryAs<Texture*>()) {
       auto texture = as_texture.value();
       FXI->BindParamCTex(param, texture);

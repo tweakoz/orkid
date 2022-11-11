@@ -52,6 +52,8 @@ namespace ork {
 
 namespace lev2 {
 
+appinitdata_ptr_t _ginitdata;
+
 #if !defined(ORK_OSX)
 namespace vk {
 void init();
@@ -251,6 +253,8 @@ void GfxInit(const std::string& gfxlayer) {
 }
 
 void initModule(ork::appinitdata_ptr_t init_data){
+
+  _ginitdata = init_data;
 
   auto it = init_data->_miscvars.find("lev2_init");
 

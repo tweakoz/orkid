@@ -89,7 +89,10 @@ public:
   virtual void ReleaseIB(IndexBufferBase& VBuf) = 0;
 
   void DrawPrimitiveEML(const VtxWriterBase& VW, PrimitiveType eType, int icount = 0);
-  void render2dQuadEML(const fvec4& QuadRect, const fvec4& UvRect, const fvec4& UvRect2);
+  
+  void render2dQuadEML(fvec4 quadrect=fvec4(-1, -1, 2, 2), //
+                       fvec4 uvrecta=fvec4(0, 0, 1, 1), //
+                       fvec4 uvrectb=fvec4(0, 0, 1, 1) );
 
   //////////////////////////////////////////////
   // nvidia mesh shaders

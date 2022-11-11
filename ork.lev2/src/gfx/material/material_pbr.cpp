@@ -202,6 +202,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   // forwards
 
+  _tek_FWD_SKYBOX_MO         = fxi->technique(_shader, "FWD_SKYBOX_MO");
+  _tek_FWD_SKYBOX_ST         = fxi->technique(_shader, "FWD_SKYBOX_ST");
   _tek_FWD_CT_NM_RI_NI_MO = fxi->technique(_shader, "FWD_CT_NM_RI_NI_MO");
   _tek_FWD_CT_NM_RI_IN_MO = fxi->technique(_shader, "FWD_CT_NM_RI_IN_MO");
 
@@ -310,11 +312,49 @@ void PBRMaterial::forceEmissive() {
 
 ////////////////////////////////////////////
 
+FxStateInstance::statelambda_t PBRMaterial::createBasicStateLambda() const{
+    return  [this](const RenderContextInstData& RCID, int ipass) {
+    auto context          = RCID._RCFD->GetTarget();
+    auto MTXI             = context->MTXI();
+    auto FXI              = context->FXI();
+    auto RSI              = context->RSI();
+    const auto& CPD       = RCID._RCFD->topCPD();
+    const auto& RCFDPROPS = RCID._RCFD->userProperties();
+    bool is_picking       = CPD.isPicking();
+    bool is_stereo        = CPD.isStereoOnePass();
+    auto pbrcommon        = RCID._RCFD->_pbrcommon;
+
+    FXI->BindParamVect3(_paramAmbientLevel, pbrcommon->_ambientLevel * 2);
+    FXI->BindParamFloat(_paramSpecularLevel, pbrcommon->_specularLevel * 2);
+    FXI->BindParamFloat(_paramDiffuseLevel, pbrcommon->_diffuseLevel * 2);
+    FXI->BindParamFloat(_paramSkyboxLevel, pbrcommon->_skyboxLevel);
+    FXI->BindParamCTex(_parMapSpecularEnv, pbrcommon->envSpecularTexture().get());
+    FXI->BindParamCTex(_parMapDiffuseEnv, pbrcommon->envDiffuseTexture().get());
+    FXI->BindParamCTex(_parMapBrdfIntegration, pbrcommon->_brdfIntegrationMap.get());
+    FXI->BindParamFloat(_parEnvironmentMipBias, pbrcommon->_environmentMipBias);
+    FXI->BindParamFloat(_parEnvironmentMipScale, pbrcommon->_environmentMipScale);
+
+    auto worldmatrix = RCID.worldMatrix();
+
+    auto stereocams = CPD._stereoCameraMatrices;
+    auto monocams   = CPD._cameraMatrices;
+    if (monocams) {
+      auto eye_pos = monocams->_vmatrix.inverse().translation();
+      FXI->BindParamVect3(_paramEyePostion, eye_pos);
+      FXI->BindParamMatrix(_paramMVP, monocams->MVPMONO(worldmatrix));
+    }
+
+  };
+}
+
+////////////////////////////////////////////
+
 fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg) const {
 
   cfg.dump();
 
   auto fxinst = std::make_shared<FxStateInstance>(cfg);
+
 
   switch (_variant) {
     case 0: { // STANDARD VARIANT
@@ -399,37 +439,7 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
           if (cfg._instanced and not cfg._skinned and not cfg._stereo) {
             fxinst->_technique         = _tek_FWD_CT_NM_RI_IN_MO;
             fxinst->_params[_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
-            fxinst->addStateLambda([this](const RenderContextInstData& RCID, int ipass) {
-              auto context          = RCID._RCFD->GetTarget();
-              auto MTXI             = context->MTXI();
-              auto FXI              = context->FXI();
-              auto RSI              = context->RSI();
-              const auto& CPD       = RCID._RCFD->topCPD();
-              const auto& RCFDPROPS = RCID._RCFD->userProperties();
-              bool is_picking       = CPD.isPicking();
-              bool is_stereo        = CPD.isStereoOnePass();
-              auto pbrcommon        = RCID._RCFD->_pbrcommon;
-
-              FXI->BindParamVect3(_paramAmbientLevel, pbrcommon->_ambientLevel*2);
-              FXI->BindParamFloat(_paramSpecularLevel, pbrcommon->_specularLevel*2);
-              FXI->BindParamFloat(_paramDiffuseLevel, pbrcommon->_diffuseLevel*2);
-              FXI->BindParamFloat(_paramSkyboxLevel, pbrcommon->_skyboxLevel);
-              FXI->BindParamCTex(_parMapSpecularEnv, pbrcommon->envSpecularTexture().get());
-              FXI->BindParamCTex(_parMapDiffuseEnv, pbrcommon->envDiffuseTexture().get());
-              FXI->BindParamCTex(_parMapBrdfIntegration, pbrcommon->_brdfIntegrationMap.get());
-              FXI->BindParamFloat(_parEnvironmentMipBias, pbrcommon->_environmentMipBias);
-              FXI->BindParamFloat(_parEnvironmentMipScale, pbrcommon->_environmentMipScale);
-
-              auto worldmatrix = RCID.worldMatrix();
-
-              auto stereocams = CPD._stereoCameraMatrices;
-              auto monocams   = CPD._cameraMatrices;
-              if (monocams) {
-                auto eye_pos = monocams->_vmatrix.inverse().translation();
-                FXI->BindParamVect3(_paramEyePostion, eye_pos);
-                FXI->BindParamMatrix(_paramMVP, monocams->MVPMONO(worldmatrix));
-              }
-            });
+            fxinst->addStateLambda(createBasicStateLambda());
           }
           OrkAssert(fxinst->_technique != nullptr);
           break;
@@ -480,6 +490,43 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
   fxinst->_material             = (GfxMaterial*)this;
 
   return fxinst;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+fxinstancelut_ptr_t PBRMaterial::createSkyboxFxInstLut() const {
+  fxinstancelut_ptr_t fxlut = std::make_shared<FxStateInstanceLut>();
+  printf("fxlut<%p> createSkyboxFxInstLut\n", fxlut.get());
+  //////////////////////////////////////////////////////////
+  FxStateInstanceConfig config;
+  config._rendering_model = ERenderModelID::CUSTOM;
+  //////////////////////////////////////////////////////////
+  auto basic_lambda = createBasicStateLambda();
+  auto skybox_lambda = [this,basic_lambda](const RenderContextInstData& RCID, int ipass) {
+    basic_lambda(RCID,ipass);
+    ((PBRMaterial*)this)->_rasterstate.SetCullTest(ECULLTEST_OFF);
+    ((PBRMaterial*)this)->_rasterstate.SetZWriteMask(false);
+  };
+  //////////////////////////////////////////////////////////
+  config._stereo     = false;
+  auto fxinst_mono   = std::make_shared<FxStateInstance>(config);
+  fxinst_mono->_technique         = _tek_FWD_SKYBOX_MO;
+  fxinst_mono->_params[_paramMVP] = fmtx4();
+  fxinst_mono->addStateLambda(skybox_lambda);
+  fxinst_mono->_material = (GfxMaterial*) this;
+  fxlut->assignfxinst(config, fxinst_mono);
+  config.dump();
+  //////////////////////////////////////////////////////////
+  config._stereo     = true;
+  auto fxinst_stereo = std::make_shared<FxStateInstance>(config);
+  fxinst_stereo->_technique         = _tek_FWD_SKYBOX_ST;
+  fxinst_stereo->_params[_paramMVP] = fmtx4();
+  fxinst_stereo->addStateLambda(skybox_lambda);
+  fxinst_stereo->_material = (GfxMaterial*) this;
+  fxlut->assignfxinst(config, fxinst_stereo);
+  config.dump();
+  //////////////////////////////////////////////////////////
+  return fxlut;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -577,77 +624,9 @@ void PBRMaterial::gpuUpdate(Context* context) {
 ////////////////////////////////////////////
 
 bool PBRMaterial::BeginPass(Context* targ, int iPass) {
-  // printf( "_name<%s>\n", mMaterialName.c_str() );
-
   auto fxi    = targ->FXI();
   auto rsi    = targ->RSI();
-  auto mtxi   = targ->MTXI();
-  auto mvpmtx = mtxi->RefMVPMatrix();
-  auto rotmtx = mtxi->RefR3Matrix();
-  auto mvmtx  = mtxi->RefMVMatrix();
-  auto vmtx   = mtxi->RefVMatrix();
-  auto pmtx   = mtxi->RefPMatrix();
-  auto vpmtx  = fmtx4::multiply_ltor(vmtx, pmtx);
-
-  // vmtx.dump("vmtx");
-  const RenderContextInstData* RCID  = targ->GetRenderContextInstData();
-  const RenderContextFrameData* RCFD = targ->topRenderContextFrameData();
-  const auto& CPD                    = RCFD->topCPD();
-  bool is_picking                    = CPD.isPicking();
-  const auto& world                  = mtxi->RefMMatrix();
   fxi->BindPass(0);
-
-  fvec4 modcolor = _baseColor;
-  if (is_picking) {
-    modcolor = targ->RefModColor();
-    // printf("modcolor<%g %g %g %g>\n", modcolor.x, modcolor.y, modcolor.z, modcolor.w);
-  } else {
-    modcolor = _baseColor * targ->RefModColor();
-    fxi->BindParamCTex(_paramMapColor, _texColor.get());
-    fxi->BindParamCTex(_paramMapNormal, _texNormal.get());
-    fxi->BindParamCTex(_paramMapMtlRuf, _texMtlRuf.get());
-    fxi->BindParamFloat(_parMetallicFactor, _metallicFactor);
-    fxi->BindParamFloat(_parRoughnessFactor, _roughnessFactor);
-    auto brdfintegtex = PBRMaterial::brdfIntegrationMap(targ);
-    const auto& drect = CPD.GetDstRect();
-    const auto& mrect = CPD.GetMrtRect();
-    float w           = mrect._w;
-    float h           = mrect._h;
-    fxi->BindParamVect2(_parInvViewSize, fvec2(1.0 / w, 1.0f / h));
-  }
-
-  fxi->BindParamVect4(_parModColor, modcolor);
-  fxi->BindParamMatrix(_paramMV, mvmtx);
-
-  if (CPD.isStereoOnePass() and CPD._stereoCameraMatrices) {
-    auto stereomtx = CPD._stereoCameraMatrices;
-    auto MVPL      = stereomtx->MVPL(world);
-    auto MVPR      = stereomtx->MVPR(world);
-    fxi->BindParamMatrix(_paramMVPL, MVPL);
-    fxi->BindParamMatrix(_paramMVPR, MVPR);
-    fxi->BindParamMatrix(_paramMROT, (world).rotMatrix33());
-
-  } else {
-    auto mcams = CPD._cameraMatrices;
-    auto VP    = fmtx4::multiply_ltor(mcams->_vmatrix, mcams->_pmatrix);
-    auto MVP   = fmtx4::multiply_ltor(world, VP);
-    fxi->BindParamMatrix(_paramMVP, MVP);
-    fxi->BindParamMatrix(_paramVP, VP);
-    fxi->BindParamMatrix(_paramMROT, (world).rotMatrix33());
-
-    auto eye_pos = mcams->_vmatrix.inverse().translation();
-
-    printf("eye_pos<%g %g %g>\n", eye_pos.x, eye_pos.y, eye_pos.z);
-    fxi->BindParamVect3(_paramEyePostion, eye_pos);
-  }
-
-  switch (_variant) {
-    case "font-instanced"_crcu:
-      break;
-    default:
-      break;
-  }
-
   rsi->BindRasterState(_rasterstate);
   fxi->CommitParams();
   return true;

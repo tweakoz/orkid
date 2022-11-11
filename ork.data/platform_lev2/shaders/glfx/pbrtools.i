@@ -213,36 +213,13 @@ libblock lib_pbr_frg : lib_gbuf_encode {
 	}
 }
 ///////////////////////////////////////////////////////////////
-// shaders
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
-// vs-non-instanced-rigid
+// DEFERRED
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_forward_test
-	: iface_vgbuffer
-  : lib_pbr_vtx {
-		vs_common(position,normal,binormal);
-		gl_Position = mvp*position;
-}
 ///////////////////////////////////////////////////////////////
-// vs-instanced-rigid
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_forward_instanced
-	: iface_vgbuffer_instanced
-  : lib_pbr_vtx_instanced {
-    int matrix_v = (gl_InstanceID>>10);
-		int matrix_u = (gl_InstanceID&0x3ff)<<2;
-		mat4 instancemtx = mat4(
-        texelFetch(InstanceMatrices, ivec2(matrix_u+0,matrix_v), 0),
- 		    texelFetch(InstanceMatrices, ivec2(matrix_u+1,matrix_v), 0),
-		    texelFetch(InstanceMatrices, ivec2(matrix_u+2,matrix_v), 0),
-		    texelFetch(InstanceMatrices, ivec2(matrix_u+3,matrix_v), 0));
-  	////////////////////////////////
-		vec4 instanced_pos = (instancemtx*position);
-		vs_instanced(position,normal,binormal,instancemtx);
-		////////////////////////////////
-		gl_Position = mvp*instanced_pos;
-}
+
 ///////////////////////////////////////////////////////////////
 // vs-non-instanced-rigid
 ///////////////////////////////////////////////////////////////
@@ -433,6 +410,40 @@ fragment_shader ps_gbuffer_n_tex_stereo // normalmap (stereo texture - vsplit)
 		bool emissive = length(TN)<0.1;
 		ps_common_n(ModColor,N,map_uv,emissive);
 }
+
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+// FORWARD
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+
+vertex_shader vs_forward_test
+	: iface_vgbuffer
+  : lib_pbr_vtx {
+		vs_common(position,normal,binormal);
+		gl_Position = mvp*position;
+}
+///////////////////////////////////////////////////////////////
+// vs-instanced-rigid
+///////////////////////////////////////////////////////////////
+vertex_shader vs_forward_instanced
+	: iface_vgbuffer_instanced
+  : lib_pbr_vtx_instanced {
+    int matrix_v = (gl_InstanceID>>10);
+		int matrix_u = (gl_InstanceID&0x3ff)<<2;
+		mat4 instancemtx = mat4(
+        texelFetch(InstanceMatrices, ivec2(matrix_u+0,matrix_v), 0),
+ 		    texelFetch(InstanceMatrices, ivec2(matrix_u+1,matrix_v), 0),
+		    texelFetch(InstanceMatrices, ivec2(matrix_u+2,matrix_v), 0),
+		    texelFetch(InstanceMatrices, ivec2(matrix_u+3,matrix_v), 0));
+  	////////////////////////////////
+		vec4 instanced_pos = (instancemtx*position);
+		vs_instanced(position,normal,binormal,instancemtx);
+		////////////////////////////////
+		gl_Position = mvp*instanced_pos;
+}
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_forward_test 
 	: iface_forward
@@ -457,4 +468,39 @@ fragment_shader ps_forward_test
 		vec3 rgb = pbrEnvironmentLightingXXX(pbd);
 
 		out_color = vec4(rgb,1);
+}
+
+///////////////////////////////////////////////////////////////
+vertex_shader vs_forward_skybox_mono
+	: iface_vgbuffer
+  : lib_pbr_vtx {
+		gl_Position = mvp*position;
+		// todo: compute Uvs from camera information
+		frg_uv0 = uv0;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_forward_skybox_mono
+	: iface_forward
+	: lib_math
+  : lib_brdf
+  : lib_def {
+		
+	// todo: compute Uvs from camera information
+	vec3 rgb = texture(MapSpecularEnv,frg_uv0).rgb;
+	out_color = vec4(rgb,1);
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_forward_skybox_stereo
+	: iface_vgbuffer
+  : lib_pbr_vtx {
+		gl_Position = mvp*position;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_forward_skybox_stereo
+	: iface_forward
+	: lib_math
+  : lib_brdf
+  : lib_def {
+		
+		out_color = vec4(1,0,0,1);
 }

@@ -136,7 +136,7 @@ RenderPresetContext CompositingData::presetForwardPBR(rtgroup_ptr_t outputgrp) {
     selected_output_node = new RtGroupOutputCompositingNode(outputgrp);
   }else{
     auto screennode = new ScreenOutputCompositingNode;
-    //screennode->setSuperSample(4);
+    screennode->setSuperSample(2);
 
     selected_output_node = screennode;
   }
