@@ -240,6 +240,9 @@ pboptr_t PboSet::alloc() {
       GL_ERRORCHECK();
       glBindBuffer(GL_PIXEL_UNPACK_BUFFER, new_pbo->_handle);
       GL_ERRORCHECK();
+
+      // ??? persistent mapped objects
+
 #if defined(OPENGL_46)
       u32 create_flags = GL_MAP_WRITE_BIT;
       create_flags |= GL_MAP_PERSISTENT_BIT;
@@ -451,22 +454,37 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   size_t length = tid.computeSize();
   auto pboitem  = this->_getPBO(length);
 
-  //printf("UPDATE IMAGE UNC iw<%d> ih<%d> id<%d> length<%zu> pbo<%d>\n", tid._w, tid._h, tid._d, length, pboitem->_handle);
 
-  ///////////////////////////////////
+  ////////////////////////////////////////
+  // OpenGL4.6 - persistent mapped objects
+  ////////////////////////////////////////
 
 #if defined(OPENGL_46)
+
   auto mapped = pboitem->_mapped;
   size_t pbolen = pboitem->_length;
-  //printf("UPDATE IMAGE UNC mapped<%p> pbolen<%zu> from<%p>\n", mapped, pbolen, tid._data );
   GL_ERRORCHECK();
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboitem->_handle);
   GL_ERRORCHECK();
-  //memcpy_fast(mapped, tid._data, length);
-  auto dest = (char*) mapped;
-  auto src = (char*) tid._data;
-  for( int i=0; i<length; i++)
-    dest[i] = src[i];
+  if(tid._truncation_length!=0){
+
+    /////////////////////////////////////////////////////////
+    // pad truncation length to next hightest multiple of 128
+    /////////////////////////////////////////////////////////
+
+    tid._truncation_length += 127;
+    tid._truncation_length = (tid._truncation_length&0xfffffff80);
+
+    /////////////////////////////////////////////////////////
+
+    //printf("UPDATE IMAGE UNC iw<%d> ih<%d> id<%d> length<%zu> trunclen<%zu> pbo<%d>\n", tid._w, tid._h, tid._d, length, tid._truncation_length, pboitem->_handle);
+    OrkAssert(tid._truncation_length<pbolen);
+    //memcpy_fast(mapped, tid._data, length);
+    memcpy_fast(mapped, tid._data, tid._truncation_length);
+  }
+  else{
+    memcpy_fast(mapped, tid._data, length);
+  }
 
 #else
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboitem->_handle);

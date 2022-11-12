@@ -37,7 +37,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#if 1 // defined( _DEBUG )
+#if 0 // defined( _DEBUG )
 #define GL_ERRORCHECK()                                                                                                            \
   {                                                                                                                                \
     GLenum iErr = GetGlError();                                                                                                    \

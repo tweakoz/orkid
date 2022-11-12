@@ -98,7 +98,7 @@ static void _glfw_callback_refresh(GLFWwindow* window) {
   gistackctr++;
   if ((1 == gistackctr) && (gictr > 0)) {
     ctx->uievent()->mpBlindEventData = (void*)nullptr;
-    ctx->SlotRepaint();
+    //ctx->SlotRepaint();
   }
   gistackctr--;
   gictr++;
@@ -590,7 +590,9 @@ void CtxGLFW::_doEnqueueWindowResize( int w, int h ) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::SlotRepaint() {
-  auto lamb = [&]() {
+  OrkAssert(opq::TrackCurrent::is(opq::mainSerialQueue()));
+
+  //auto lamb = [&]() {
     if (not GfxEnv::initialized())
       return;
 
@@ -613,15 +615,10 @@ void CtxGLFW::SlotRepaint() {
     }
     this->mDrawLock--;
     ork::PerfMarkerPush("ork.viewport.draw.end");
-  };
+    glFinish();
+  //};
 
-  if (opq::TrackCurrent::is(opq::mainSerialQueue())) {
-    // already on main Q
-    lamb();
-  } else {
-    OrkAssert(false);
-    opq::mainSerialQueue()->enqueue(lamb);
-  }
+  //lamb();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void error_callback( int error, const char *msg ) {

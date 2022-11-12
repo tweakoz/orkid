@@ -26,6 +26,7 @@ struct TextureInitData {
   EBufferFormat _format = EBufferFormat::NONE;
   bool _autogenmips     = false;
   const void* _data     = nullptr;
+  size_t _truncation_length = 0;
 };
 
 class TextureInterface {

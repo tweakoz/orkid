@@ -87,7 +87,7 @@ struct GpuResources {
 
     _instanced_drawable->bindModel(_modelasset->getSharedModel());
 
-    constexpr size_t KNUMINSTANCES = 30;
+    constexpr size_t KNUMINSTANCES = 100;
 
     _instanced_drawable->resize(KNUMINSTANCES);
     _instanced_drawable->gpuInit(ctx);

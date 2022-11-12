@@ -130,22 +130,24 @@ void InstancedModelDrawable::enqueueToRenderQueue(
     texdata._format      = EBufferFormat::RGBA32F;
     texdata._autogenmips = false;
     texdata._data        = (const void*)_instancedata->_worldmatrices.data();
+    texdata._truncation_length = _count*64;
     OrkAssert(_count <= k_max_instances);
     if(updatetex)
       TXI->initTextureFromData(_instanceMatrixTex.get(), texdata);
     ////////////////////////////////////////////////////////
     texdata._w    = k_texture_dimension_x; // 16 bytes per instance
-    texdata._h    = k_texture_dimension_y / 4;
+    texdata._h    = k_texture_dimension_y/4;
     texdata._data = (const void*)_instancedata->_modcolors.data();
+    texdata._truncation_length = _count*16;
     if(updatetex)
       TXI->initTextureFromData(_instanceColorTex.get(), texdata);
     ////////////////////////////////////////////////////////
     texdata._w           = k_texture_dimension_x; // 8 bytes per instance
-    texdata._h           = k_texture_dimension_y / 8;
+    texdata._h           = k_texture_dimension_y/8;
     texdata._format      = EBufferFormat::RGBA16UI;
     texdata._autogenmips = false;
     texdata._data        = (const void*)_instancedata->_pickids.data();
-
+    texdata._truncation_length = _count*8;
     if(updatetex)
       TXI->initTextureFromData(_instanceIdTex.get(), texdata);
 

@@ -157,7 +157,7 @@ void GlFrameBufferInterface::_doEndFrame(void) {
     int inumtargets     = rtg->GetNumTargets();
     // printf( "ENDFRAME<RtGroup>\n" );
   } else {
-    glFinish();
+    //glFinish();
     mTargetGL.SwapGLContext(mTargetGL.GetCtxBase());
   }
   ////////////////////////////////

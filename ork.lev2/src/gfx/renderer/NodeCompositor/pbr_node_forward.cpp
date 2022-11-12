@@ -51,8 +51,8 @@ struct ForwardPbrNodeImpl {
       _rtg             = std::make_shared<RtGroup>(context, 8, 8, _ginitdata->_msaa_samples);
       auto buf1        = _rtg->createRenderTarget(lev2::EBufferFormat::RGBA8);
       buf1->_debugName = "ForwardRt0";
-      _rtg_donly = _rtg->clone();
-      _rtg_donly->_depthOnly = true;
+      //_rtg_donly = _rtg->clone();
+      //_rtg_donly->_depthOnly = true;
       _skybox_material = std::make_shared<PBRMaterial>(context);
       _skybox_fxinstlut = _skybox_material->createSkyboxFxInstLut();
     }
@@ -102,7 +102,7 @@ struct ForwardPbrNodeImpl {
     //////////////////////////////////////////////////////
     if (_rtg->width() != newwidth or _rtg->height() != newheight) {
       _rtg->Resize(newwidth, newheight);
-      _rtg_donly->Resize(newwidth, newheight);
+      //_rtg_donly->Resize(newwidth, newheight);
     }
     //////////////////////////////////////////////////////
     //////////////////////////////////////////////////////
@@ -123,14 +123,6 @@ struct ForwardPbrNodeImpl {
       CPD.SetDstRect(tgt_rect);
       ///////////////////////////////////////////////////////////////////////////
       if (DB) {
-
-        ///////////////////////////////////////////////////////////////////////////
-        // DrawableBuffer -> RenderQueue enqueue
-        ///////////////////////////////////////////////////////////////////////////
-        for (const auto& layer_name : CPD.getLayerNames()) {
-          targ->debugMarker(FormatString("ForwardPBR::renderEnqueuedScene::layer<%s>", layer_name.c_str()));
-          DB->enqueueLayerToRenderQueue(layer_name, irenderer);
-        }
 
         ///////////////////////////////////////////////////////////////////////////
         // clear
@@ -177,11 +169,18 @@ struct ForwardPbrNodeImpl {
 
         ///////////////////////////////////////////////////////////////////////////
 
+        
+        for (const auto& layer_name : CPD.getLayerNames()) {
+          targ->debugMarker(FormatString("ForwardPBR::renderEnqueuedScene::layer<%s>", layer_name.c_str()));
+          DB->enqueueLayerToRenderQueue(layer_name, irenderer);
+        }
+
         RCFD._renderingmodel = "FORWARD_PBR"_crcu;
         targ->debugPushGroup("ForwardPBR::color pass");
         irenderer->drawEnqueuedRenderables();
         framerenderer.renderMisc();
         targ->debugPopGroup();
+        irenderer->resetQueue();
 
         FBI->PopRtGroup();
 
@@ -189,7 +188,6 @@ struct ForwardPbrNodeImpl {
 
         CIMPL->popCPD();
 
-        irenderer->resetQueue();
 
       }
       /////////////////////////////////////////////////////////////////////////////////////////
