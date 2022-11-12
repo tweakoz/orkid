@@ -15,24 +15,15 @@
 
 namespace ork::lev2 {
 
-enum class ERenderModelID : uint64_t {
-  CrcEnum(NONE),
-  CrcEnum(CUSTOM),
-  CrcEnum(FORWARD_UNLIT),
-  CrcEnum(FORWARD_PBR),
-  CrcEnum(DEFERRED_PBR),
-  CrcEnum(PICKING),
-};
-
 ///////////////////////////////////////////////////////////////////////////////
 
 struct RenderingModel {
-  RenderingModel(ERenderModelID id=ERenderModelID::NONE);
+  RenderingModel(uint32_t id="NONE"_crcu);
   bool isDeferred() const;
   bool isForward() const;
   bool isDeferredPBR() const;
   bool isForwardUnlit() const;
-  ERenderModelID _modelID;
+  uint32_t _modelID;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

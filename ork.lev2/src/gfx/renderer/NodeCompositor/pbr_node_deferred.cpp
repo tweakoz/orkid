@@ -225,7 +225,7 @@ struct PbrNodeImpl {
 
 ///////////////////////////////////////////////////////////////////////////////
 DeferredCompositingNodePbr::DeferredCompositingNodePbr() {
-  _renderingmodel = RenderingModel(ERenderModelID::DEFERRED_PBR);
+  _renderingmodel = RenderingModel("DEFERRED_PBR"_crcu);
   _impl           = std::make_shared<PbrNodeImpl>(this);
   _pbrcommon = std::make_shared<pbr::CommonStuff>();
 }

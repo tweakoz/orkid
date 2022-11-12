@@ -84,6 +84,15 @@ vertex_interface iface_vgbuffer
 		vec3 frg_camz;
 	}
 }
+vertex_interface iface_vdprepass
+	: ub_vtx {
+		inputs{
+	    vec4 position : POSITION;
+		}
+  	outputs {
+  		float frg_depth;
+  	}
+}
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_vgbuffer_instanced : iface_vgbuffer {
   outputs {
@@ -122,6 +131,18 @@ fragment_interface iface_forward
 	}
 	outputs {
 		layout(location = 0) vec4 out_color;
+	}
+}
+///////////////////////////////////////////////////////////////
+// Fragmentertex Interfaces
+///////////////////////////////////////////////////////////////
+fragment_interface iface_fdprepass
+	: ub_frg_fwd {
+  inputs {
+  	float frg_depth;
+	}
+	outputs {
+		//layout(location = 0) vec4 out_color;
 	}
 }
 ///////////////////////////////////////////////////////////////
@@ -424,15 +445,51 @@ fragment_shader ps_gbuffer_n_tex_stereo // normalmap (stereo texture - vsplit)
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 
+///////////////////////////////////////////////////////////////
+// Forward Depth Prepass
+///////////////////////////////////////////////////////////////
+
+vertex_shader vs_forward_depthprepass_mono
+	: iface_vdprepass {
+  	vec4 hpos = mvp*position;
+		gl_Position = hpos;
+		gl_FragDepth = hpos.z/hpos.w;
+}
+vertex_shader vs_forward_depthprepass_mono_instanced
+	: iface_vdprepass {
+    int matrix_v = (gl_InstanceID>>10);
+		int matrix_u = (gl_InstanceID&0x3ff)<<2;
+		mat4 instancemtx = mat4(
+        texelFetch(InstanceMatrices, ivec2(matrix_u+0,matrix_v), 0),
+ 		    texelFetch(InstanceMatrices, ivec2(matrix_u+1,matrix_v), 0),
+		    texelFetch(InstanceMatrices, ivec2(matrix_u+2,matrix_v), 0),
+		    texelFetch(InstanceMatrices, ivec2(matrix_u+3,matrix_v), 0));
+  	////////////////////////////////
+		vec4 instanced_pos = (instancemtx*position);
+  	vec4 hpos = mvp*instanced_pos;
+		gl_Position = hpos;
+		//gl_FragDepth = hpos.z/hpos.w;
+}
+fragment_shader vs_forward_depthprepass_stereo
+	: iface_vdprepass {
+  	vec4 hpos = mvp*position;
+		gl_Position = hpos;
+		gl_FragDepth = hpos.z/hpos.w;
+}
+fragment_shader ps_forward_depthprepass 
+	: iface_fdprepass {
+}
+
+///////////////////////////////////////////////////////////////
+// Forward pbr
+///////////////////////////////////////////////////////////////
+
 vertex_shader vs_forward_test
 	: iface_vgbuffer
   : lib_pbr_vtx {
 		vs_common(position,normal,binormal);
 		gl_Position = mvp*position;
 }
-///////////////////////////////////////////////////////////////
-// vs-instanced-rigid
-///////////////////////////////////////////////////////////////
 vertex_shader vs_forward_instanced
 	: iface_vgbuffer_instanced
   : lib_pbr_vtx_instanced {
@@ -449,7 +506,6 @@ vertex_shader vs_forward_instanced
 		////////////////////////////////
 		gl_Position = mvp*instanced_pos;
 }
-///////////////////////////////////////////////////////////////
 fragment_shader ps_forward_test 
 	: iface_forward
 	: lib_math
@@ -475,6 +531,8 @@ fragment_shader ps_forward_test
 		out_color = vec4(rgb,1);
 }
 
+///////////////////////////////////////////////////////////////
+// Forward SkyBox
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_forward_skybox_mono
 	: iface_vgbuffer

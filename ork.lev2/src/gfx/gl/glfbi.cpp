@@ -154,7 +154,6 @@ void GlFrameBufferInterface::_doEndFrame(void) {
   auto rtg = mTargetGL.FBI()->GetRtGroup();
 
   if (rtg) {
-    GlFboObject* FboObj = (GlFboObject*)rtg->GetInternalHandle();
     int inumtargets     = rtg->GetNumTargets();
     // printf( "ENDFRAME<RtGroup>\n" );
   } else {
@@ -405,20 +404,23 @@ bool GlFrameBufferInterface::captureAsFormat(const RtBuffer* rtb, CaptureBuffer*
   GL_ERRORCHECK();
 
   if( rtb ){
-    the_fbo = (GlFboObject*) rtb->_rtgroup->GetInternalHandle();
-    irt = rtb->_slot;
-    w = rtb->_width;
-    h = rtb->_height;
-    if (0 == the_fbo->mFBOMaster) {
-      OrkAssert(false);
-      return false;
-    }
+    auto as_impl = rtb->_rtgroup->_impl.tryAs<glrtgroupimpl_ptr_t>();
+    if(as_impl){
+      the_fbo = as_impl.value()->_standard.get();
+      irt = rtb->_slot;
+      w = rtb->_width;
+      h = rtb->_height;
+      if (0 == the_fbo->_fbo) {
+        OrkAssert(false);
+        return false;
+      }
 
-    GL_ERRORCHECK();
-    glBindFramebuffer(GL_FRAMEBUFFER, the_fbo->mFBOMaster);
-    GL_ERRORCHECK();
-    glReadBuffer(GL_COLOR_ATTACHMENT0 + irt);
-    GL_ERRORCHECK();
+      GL_ERRORCHECK();
+      glBindFramebuffer(GL_FRAMEBUFFER, the_fbo->_fbo);
+      GL_ERRORCHECK();
+      glReadBuffer(GL_COLOR_ATTACHMENT0 + irt);
+      GL_ERRORCHECK();
+    }
   }
   else{
     w = mTargetGL.mainSurfaceWidth();
@@ -596,18 +598,17 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
       int sx = int((rAt.x) * float(W));
       int sy = int((1.0f - rAt.y) * float(H));
 
-      GlFboObject* FboObj = (GlFboObject*)ctx._rtgroup->GetInternalHandle();
-
       // printf("GetPixel<%d %d> FboObj<%p>\n", sx, sy, FboObj);
-
-      if (FboObj) {
+      auto as_impl = ctx._rtgroup->_impl.tryAs<glrtgroupimpl_ptr_t>();
+      if(as_impl){
+        auto fboobj = as_impl.value()->_standard;
         GL_ERRORCHECK();
-        glBindFramebuffer(GL_FRAMEBUFFER, FboObj->mFBOMaster);
+        glBindFramebuffer(GL_FRAMEBUFFER, fboobj->_fbo);
         GL_ERRORCHECK();
 
-        // printf("GetPixel<%d %d> FboMaster<%u>\n", sx, sy, FboObj->mFBOMaster);
+        // printf("GetPixel<%d %d> FboMaster<%u>\n", sx, sy, fboobj->_fbo);
 
-        if (FboObj->mFBOMaster) {
+        if (fboobj->_fbo) {
 
           int MrtMask = ctx.miMrtMask;
 
@@ -676,7 +677,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
           // glReadBuffer( readbuffer );
           GL_ERRORCHECK();
         } else {
-          printf("!!!ERR - GetPix BindFBO<%d>\n", FboObj->mFBOMaster);
+          printf("!!!ERR - GetPix BindFBO<%d>\n", fboobj->_fbo);
         }
       }
     } else {
@@ -687,12 +688,6 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) 
   _target.debugPopGroup();
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-GlFboObject::GlFboObject() {
-  mDSBO      = 0;
-  mFBOMaster = 0;
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2

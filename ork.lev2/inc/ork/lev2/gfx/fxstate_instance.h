@@ -38,7 +38,7 @@ struct FxStateInstanceConfig {
 
   void dump() const;
 
-  ERenderModelID _rendering_model = ERenderModelID::DEFERRED_PBR;
+  uint32_t _rendering_model = "DEFERRED_PBR"_crcu;
   bool _stereo = false;
   bool _instanced = false;
   bool _skinned = false;

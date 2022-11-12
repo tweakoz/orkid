@@ -32,14 +32,14 @@ template class ork::orklut<ork::CrcString, ork::lev2::rendervar_t>;
 
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-RenderingModel::RenderingModel(ERenderModelID id) //
+RenderingModel::RenderingModel(uint32_t id) //
 	: _modelID(id) { //
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool RenderingModel::isDeferred() const { //
 	bool rval = false;
 	switch(_modelID){
-		case ERenderModelID::DEFERRED_PBR:
+		case "DEFERRED_PBR"_crcu:
 			rval = true;
 			break;
 		default:
@@ -51,8 +51,8 @@ bool RenderingModel::isDeferred() const { //
 bool RenderingModel::isForward() const{
 	bool rval = false;
 	switch(_modelID){
-		case ERenderModelID::FORWARD_UNLIT:
-		case ERenderModelID::FORWARD_PBR:
+		case "FORWARD_UNLIT"_crcu:
+		case "FORWARD_PBR"_crcu:
 			rval = true;
 			break;
 		default:
@@ -62,11 +62,11 @@ bool RenderingModel::isForward() const{
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool RenderingModel::isDeferredPBR() const { //
-	return _modelID==ERenderModelID::DEFERRED_PBR; //
+	return _modelID=="DEFERRED_PBR"_crcu; //
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool RenderingModel::isForwardUnlit() const{
-	return _modelID==ERenderModelID::FORWARD_UNLIT; //
+	return _modelID=="FORWARD_UNLIT"_crcu; //
 }
 
 } // namespace ork::lev2

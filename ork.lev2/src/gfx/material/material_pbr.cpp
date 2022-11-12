@@ -204,8 +204,9 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   _tek_FWD_SKYBOX_MO         = fxi->technique(_shader, "FWD_SKYBOX_MO");
   _tek_FWD_SKYBOX_ST         = fxi->technique(_shader, "FWD_SKYBOX_ST");
-  _tek_FWD_CT_NM_RI_NI_MO = fxi->technique(_shader, "FWD_CT_NM_RI_NI_MO");
-  _tek_FWD_CT_NM_RI_IN_MO = fxi->technique(_shader, "FWD_CT_NM_RI_IN_MO");
+  _tek_FWD_CT_NM_RI_NI_MO    = fxi->technique(_shader, "FWD_CT_NM_RI_NI_MO");
+  _tek_FWD_CT_NM_RI_IN_MO    = fxi->technique(_shader, "FWD_CT_NM_RI_IN_MO");
+  _tek_FWD_DEPTHPREPASS_IN_MO   = fxi->technique(_shader, "FWD_DEPTHPREPASS_IN_MO");
 
   // deferreds
 
@@ -367,7 +368,7 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
     case 0: { // STANDARD VARIANT
       switch (cfg._rendering_model) {
         //////////////////////////////////////////
-        case ERenderModelID::PICKING: {
+        case "PICKING"_crcu: {
           OrkAssert(cfg._stereo == false);
           if (cfg._instanced) {
             fxinst->_technique = _tek_PIK_RI_IN;
@@ -385,7 +386,7 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
           break;
         }
         //////////////////////////////////////////
-        case ERenderModelID::DEFERRED_PBR: {
+        case "DEFERRED_PBR"_crcu:{
           if (cfg._stereo) {                                     // stereo
             if (cfg._instanced) {                                // stereo-instanced
               fxinst->_technique = cfg._skinned                  //
@@ -400,6 +401,7 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
             }
             //////////////////////////////////
             fxinst->addStateLambda([this](const RenderContextInstData& RCID, int ipass) {
+              auto _this = (PBRMaterial*) this;
               auto RCFD        = RCID._RCFD;
               auto context     = RCFD->GetTarget();
               auto MTXI        = context->MTXI();
@@ -409,6 +411,8 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
               auto worldmatrix = RCID.worldMatrix();
               FXI->BindParamMatrix(_paramMVPL, stereocams->MVPL(worldmatrix));
               FXI->BindParamMatrix(_paramMVPR, stereocams->MVPR(worldmatrix));
+              _this->_rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
+              _this->_rasterstate.SetZWriteMask(true);
               // fxinst->_params[_paramMVPL] = "RCFD_Camera_MVP_Left"_crcsh;
               // fxinst->_params[_paramMVPR] = "RCFD_Camera_MVP_Right"_crcsh;
             });
@@ -427,26 +431,47 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
             }
             //////////////////////////////////
             fxinst->addStateLambda([this](const RenderContextInstData& RCID, int ipass) {
+              auto _this = (PBRMaterial*) this;
               auto RCFD        = RCID._RCFD;
               auto FXI         = RCFD->GetTarget()->FXI();
               const auto& CPD  = RCFD->topCPD();
               auto monocams    = CPD._cameraMatrices;
               auto worldmatrix = RCID.worldMatrix();
               FXI->BindParamMatrix(_paramMVP, monocams->MVPMONO(worldmatrix));
+              _this->_rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
+              _this->_rasterstate.SetZWriteMask(true);
             });
           }
           OrkAssert(fxinst->_technique != nullptr);
           break;
-        } // ERenderModelID::DEFERRED_PBR
+        } // "DEFERRED_PB"_crcuR
         //////////////////////////////////////////
-        case ERenderModelID::FORWARD_UNLIT:
+        case "FORWARD_UNLIT"_crcu:
           OrkAssert(false);
           break;
-        case ERenderModelID::FORWARD_PBR:
+        case "FORWARD_PBR"_crcu:
           if (cfg._instanced and not cfg._skinned and not cfg._stereo) {
             fxinst->_technique         = _tek_FWD_CT_NM_RI_IN_MO;
             fxinst->_params[_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
             fxinst->addStateLambda(createBasicStateLambda());
+            fxinst->addStateLambda([this](const RenderContextInstData& RCID, int ipass){
+              auto _this = (PBRMaterial*) this;
+              _this->_rasterstate.SetDepthTest(EDEPTHTEST_LESS);
+              _this->_rasterstate.SetZWriteMask(false);
+            });
+          }
+          OrkAssert(fxinst->_technique != nullptr);
+          break;
+        case "DEPTH_PREPASS"_crcu:
+          if (cfg._instanced and not cfg._skinned and not cfg._stereo) {
+            fxinst->_technique         = _tek_FWD_DEPTHPREPASS_IN_MO;
+            fxinst->_params[_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
+            fxinst->addStateLambda(createBasicStateLambda());
+            fxinst->addStateLambda([this](const RenderContextInstData& RCID, int ipass){
+              auto _this = (PBRMaterial*) this;
+              _this->_rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
+              _this->_rasterstate.SetZWriteMask(true);
+            });
           }
           OrkAssert(fxinst->_technique != nullptr);
           break;
@@ -506,7 +531,7 @@ fxinstancelut_ptr_t PBRMaterial::createSkyboxFxInstLut() const {
   printf("fxlut<%p> createSkyboxFxInstLut\n", fxlut.get());
   //////////////////////////////////////////////////////////
   FxStateInstanceConfig config;
-  config._rendering_model = ERenderModelID::CUSTOM;
+  config._rendering_model = "CUSTOM"_crcu;
   //////////////////////////////////////////////////////////
   auto basic_lambda = createBasicStateLambda();
   auto skybox_lambda = [this,basic_lambda](const RenderContextInstData& RCID, int ipass) {
@@ -549,7 +574,7 @@ fxinstancelut_ptr_t PBRMaterial::createFxStateInstanceLut() const {
   // picking
   /////////////////////
 
-  config._rendering_model = ERenderModelID::PICKING;
+  config._rendering_model = "PICKING"_crcu;
 
   config._stereo    = false;
   config._instanced = false;
@@ -557,10 +582,21 @@ fxinstancelut_ptr_t PBRMaterial::createFxStateInstanceLut() const {
   fxlut->assignfxinst(config, _createFxStateInstance(config));
 
   /////////////////////
+  // depth prepeass
+  /////////////////////
+
+  config._rendering_model = "DEPTH_PREPASS"_crcu;
+
+  config._stereo    = false;
+  config._instanced = true;
+  config._skinned   = false;
+  fxlut->assignfxinst(config, _createFxStateInstance(config));
+
+  /////////////////////
   // deferred PBR
   /////////////////////
 
-  config._rendering_model = ERenderModelID::DEFERRED_PBR;
+  config._rendering_model = "DEFERRED_PBR"_crcu;
 
   config._stereo    = false;
   config._instanced = false;
@@ -586,7 +622,7 @@ fxinstancelut_ptr_t PBRMaterial::createFxStateInstanceLut() const {
   // forward PBR
   /////////////////////
 
-  config._rendering_model = ERenderModelID::FORWARD_PBR;
+  config._rendering_model = "FORWARD_PBR"_crcu;
 
   config._stereo    = false;
   config._instanced = true;

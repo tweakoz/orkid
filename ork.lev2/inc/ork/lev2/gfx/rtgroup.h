@@ -56,8 +56,9 @@ struct RtGroup final {
 
   /////////////////////////////////////////
   RtGroup(Context* partarg, int iW, int iH, int iSamples = 1);
-
   ~RtGroup();
+  /////////////////////////////////////////
+  rtgroup_ptr_t clone() const;
   /////////////////////////////////////////
   rtbuffer_ptr_t GetMrt(int idx) const {
     OrkAssert((idx >= 0) && (idx < kmaxmrts));
@@ -69,12 +70,6 @@ struct RtGroup final {
   void SetMrt(int idx, rtbuffer_ptr_t buffer);
   int GetNumTargets(void) const {
     return mNumMrts;
-  }
-  void SetInternalHandle(void* h) {
-    mInternalHandle = h;
-  }
-  void* GetInternalHandle(void) const {
-    return mInternalHandle;
   }
   void Resize(int iw, int ih);
   void SetSizeDirty(bool bv) {
@@ -111,10 +106,12 @@ struct RtGroup final {
   int miH;
   int miSamples;
   bool mbSizeDirty;
-  void* mInternalHandle;
+  svar16_t _impl;
   bool _needsDepth = true;
   bool _autoclear  = true;
   fvec4 _clearColor;
+  bool _depthOnly = false;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -125,14 +125,14 @@ callback_drawable_ptr_t UiCamera::createOverlayDrawable(){
     auto renderable                    = dynamic_cast<const CallbackRenderable*>(RCID._dagrenderable);
 
     switch (RCFD->_renderingmodel._modelID){
-      case ERenderModelID::FORWARD_UNLIT:{
+      case "FORWARD_UNLIT"_crcu:{
         fmtx4 mtx_center;
         mtx_center.compose(mvCenter,fquat(),0.015);
         context->MTXI()->SetMMatrix(mtx_center);
         GfxPrimitives::RenderTriCircle(context);
         break;
       }
-      case ERenderModelID::DEFERRED_PBR:
+      case "DEFERRED_PBR"_crcu:
         OrkAssert(false);
         break;
       default:

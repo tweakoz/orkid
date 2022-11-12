@@ -132,7 +132,8 @@ int main(int argc, char** argv,char** envp) {
 
   bool use_forward = vars["forward"].as<bool>();
 
-  init_data->_msaa_samples = use_forward ? 4 : 1;
+  //init_data->_msaa_samples = use_forward ? 4 : 1;
+  //init_data->_ssaa_samples = use_forward ? 4 : 1;
 
   auto qtapp  = OrkEzApp::create(init_data);
   auto qtwin              = qtapp->_mainWindow;

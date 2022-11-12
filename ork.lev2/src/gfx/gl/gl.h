@@ -70,17 +70,25 @@ struct GLTextureObject;
 
 struct GlFboObject {
   static const int kmaxrt = RtGroup::kmaxmrts;
-  GLuint mFBOMaster;
-  GLuint mDSBO;
-  GLuint _depthTexture;
+  GLuint _fbo = 0;
+  GLuint _dsbo = 0;
+  GLuint _depthTexture = 0;
   GlFboObject();
 };
+using glfbo_ptr_t = std::shared_ptr<GlFboObject>;
 
 struct GlRtBufferImpl {
   GLuint _texture           = 0;
   GLTextureObject* _teximpl = nullptr;
   bool _init                = true;
 };
+
+struct GlRtGroupImpl {
+  glfbo_ptr_t _standard;
+  glfbo_ptr_t _depthonly;
+};
+
+using glrtgroupimpl_ptr_t = std::shared_ptr<GlRtGroupImpl>;
 
 int GetGlError(void);
 

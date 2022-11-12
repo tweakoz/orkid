@@ -51,6 +51,8 @@ struct ForwardPbrNodeImpl {
       _rtg             = std::make_shared<RtGroup>(context, 8, 8, _ginitdata->_msaa_samples);
       auto buf1        = _rtg->createRenderTarget(lev2::EBufferFormat::RGBA32F);
       buf1->_debugName = "ForwardRt0";
+      _rtg_donly = _rtg->clone();
+      _rtg_donly->_depthOnly = true;
       _skybox_material = std::make_shared<PBRMaterial>(context);
       _skybox_fxinstlut = _skybox_material->createSkyboxFxInstLut();
     }
@@ -100,6 +102,7 @@ struct ForwardPbrNodeImpl {
     //////////////////////////////////////////////////////
     if (_rtg->width() != newwidth or _rtg->height() != newheight) {
       _rtg->Resize(newwidth, newheight);
+      _rtg_donly->Resize(newwidth, newheight);
     }
     //////////////////////////////////////////////////////
     //////////////////////////////////////////////////////
@@ -107,7 +110,6 @@ struct ForwardPbrNodeImpl {
     targ->debugPushGroup("ForwardPBR::render");
     RtGroupRenderTarget rt(_rtg.get());
     {
-      FBI->PushRtGroup(_rtg.get());
       FBI->SetAutoClear(false); // explicit clear
       targ->beginFrame();
       /////////////////////////////////////////////////////////////////////////////////////////
@@ -121,25 +123,13 @@ struct ForwardPbrNodeImpl {
       ///////////////////////////////////////////////////////////////////////////
       if (DB) {
 
+        RenderContextInstData RCID(&RCFD);
+
+        //_rtg->_depthOnly = true;
+        //FBI->PushRtGroup(_rtg.get());
         CIMPL->pushCPD(CPD);
         auto MTXI = targ->MTXI();
         FBI->Clear(pbrcommon->_clearColor, 1.0f);
-
-        /////////////////////////////////////////////////////
-        // Render Skybox first so AA can blend with it
-        /////////////////////////////////////////////////////
-
-        RenderContextInstData RCID(&RCFD);
-        RCID._fx_instance_lut = _skybox_fxinstlut;
-        RCFD._renderingmodel = ERenderModelID::CUSTOM;
-        auto fxinst = _skybox_fxinstlut->findfxinst(RCID);
-        fxinst->wrappedDrawCall(RCID,[GBI](){
-          GBI->render2dQuadEML(); // full screen quad
-        });
-
-        ///////////////////////////////////////////////////////////////////////////
-
-        RCFD._renderingmodel = _node->_renderingmodel;
 
         ///////////////////////////////////////////////////////////////////////////
         // DrawableBuffer -> RenderQueue enqueue
@@ -148,12 +138,42 @@ struct ForwardPbrNodeImpl {
           targ->debugMarker(FormatString("ForwardPBR::renderEnqueuedScene::layer<%s>", layer_name.c_str()));
           DB->enqueueLayerToRenderQueue(layer_name, irenderer);
         }
-        /////////////////////////////////////////////////
 
+        /////////////////////////////////////////////////////
+        // Depth Prepass
+        /////////////////////////////////////////////////////
+
+        //RCFD._renderingmodel = RenderingModel("DEPTH_PREPASS"_crcu);
+        //irenderer->drawEnqueuedRenderables();
+
+        //FBI->PopRtGroup();
+
+        /////////////////////////////////////////////////////
+        // Render Skybox first so AA can blend with it
+        /////////////////////////////////////////////////////
+        _rtg->_depthOnly = false;
+        FBI->PushRtGroup(_rtg.get());
+
+        RCFD._renderingmodel = "CUSTOM"_crcu;
+        RCID._fx_instance_lut = _skybox_fxinstlut;
+        auto fxinst = _skybox_fxinstlut->findfxinst(RCID);
+        fxinst->wrappedDrawCall(RCID,[GBI](){
+          GBI->render2dQuadEML(); // full screen quad
+        });
+
+        ///////////////////////////////////////////////////////////////////////////
+
+        for (const auto& layer_name : CPD.getLayerNames()) {
+          targ->debugMarker(FormatString("ForwardPBR::renderEnqueuedScene::layer<%s>", layer_name.c_str()));
+          DB->enqueueLayerToRenderQueue(layer_name, irenderer);
+        }
+
+        RCFD._renderingmodel = _node->_renderingmodel;
         targ->debugPushGroup("toolvp::DrawEnqRenderables");
         irenderer->drawEnqueuedRenderables();
         framerenderer.renderMisc();
         targ->debugPopGroup();
+        FBI->PopRtGroup();
 
         /////////////////////////////////////////////////
 
@@ -161,7 +181,6 @@ struct ForwardPbrNodeImpl {
       }
       /////////////////////////////////////////////////////////////////////////////////////////
       targ->endFrame();
-      FBI->PopRtGroup();
     }
     targ->debugPopGroup();
   }
@@ -170,6 +189,7 @@ struct ForwardPbrNodeImpl {
   std::string _camname, _layername;
   EnumeratedLights _enumeratedLights;
   rtgroup_ptr_t _rtg;
+  rtgroup_ptr_t _rtg_donly;
   fmtx4 _viewOffsetMatrix;
   pbrmaterial_ptr_t _skybox_material;
   fxinstancelut_ptr_t _skybox_fxinstlut;
@@ -179,7 +199,7 @@ struct ForwardPbrNodeImpl {
 ///////////////////////////////////////////////////////////////////////////////
 ForwardNode::ForwardNode() {
   _impl           = std::make_shared<ForwardPbrNodeImpl>(this);
-  _renderingmodel = RenderingModel(ERenderModelID::FORWARD_PBR);
+  _renderingmodel = RenderingModel("FORWARD_PBR"_crcu);
   _pbrcommon      = std::make_shared<pbr::CommonStuff>();
 }
 ///////////////////////////////////////////////////////////////////////////////

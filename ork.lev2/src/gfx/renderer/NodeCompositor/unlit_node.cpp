@@ -125,7 +125,7 @@ struct IMPL {
 ///////////////////////////////////////////////////////////////////////////////
 UnlitNode::UnlitNode() {
   _impl = std::make_shared<_unlitnode::IMPL>();
-  _renderingmodel = RenderingModel(ERenderModelID::FORWARD_UNLIT);
+  _renderingmodel = RenderingModel("FORWARD_UNLIT"_crcu);
   _clearColor = fvec4(0,0,0,1);
 }
 ///////////////////////////////////////////////////////////////////////////////

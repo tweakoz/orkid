@@ -34,13 +34,31 @@ RtGroup::RtGroup(Context* ptgt, int iW, int iH, int iSamples)
     , miW(iW)
     , miH(iH)
     , miSamples(iSamples)
-    , mbSizeDirty(true)
-    , mInternalHandle(0) {
+    , mbSizeDirty(true) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 RtGroup::~RtGroup() {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+rtgroup_ptr_t RtGroup::clone() const {
+  auto _this = (RtGroup*) this;
+
+  auto rval = std::make_shared<RtGroup>(_parentTarget,miW,miH,miSamples);
+  for( int i=0; i<kmaxmrts; i++ )
+    rval->mMrt[i] = _this->mMrt[i];
+  rval->mDepth = _this->mDepth;
+  rval->mNumMrts = _this->mNumMrts;
+  rval->mbSizeDirty = _this->mbSizeDirty;
+  rval->_impl = _this->_impl;
+  rval->_needsDepth = _this->_needsDepth;
+  rval->_autoclear = _this->_autoclear;
+  rval->_clearColor = _this->_clearColor;
+  rval->_depthOnly = _this->_depthOnly;
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
