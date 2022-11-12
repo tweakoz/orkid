@@ -92,7 +92,8 @@ public:
   
   void render2dQuadEML(fvec4 quadrect=fvec4(-1, -1, 2, 2), //
                        fvec4 uvrecta=fvec4(0, 0, 1, 1), //
-                       fvec4 uvrectb=fvec4(0, 0, 1, 1) );
+                       fvec4 uvrectb=fvec4(0, 0, 1, 1), //
+                       float depth = 0.0f );
 
   //////////////////////////////////////////////
   // nvidia mesh shaders

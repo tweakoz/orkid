@@ -107,6 +107,7 @@ struct ForwardPbrNodeImpl {
     //////////////////////////////////////////////////////
     //////////////////////////////////////////////////////
     //////////////////////////////////////////////////////
+    _rtg->_autoclear = false;
     targ->debugPushGroup("ForwardPBR::render");
     RtGroupRenderTarget rt(_rtg.get());
     {
@@ -123,14 +124,6 @@ struct ForwardPbrNodeImpl {
       ///////////////////////////////////////////////////////////////////////////
       if (DB) {
 
-        RenderContextInstData RCID(&RCFD);
-
-        //_rtg->_depthOnly = true;
-        //FBI->PushRtGroup(_rtg.get());
-        CIMPL->pushCPD(CPD);
-        auto MTXI = targ->MTXI();
-        FBI->Clear(pbrcommon->_clearColor, 1.0f);
-
         ///////////////////////////////////////////////////////////////////////////
         // DrawableBuffer -> RenderQueue enqueue
         ///////////////////////////////////////////////////////////////////////////
@@ -139,45 +132,65 @@ struct ForwardPbrNodeImpl {
           DB->enqueueLayerToRenderQueue(layer_name, irenderer);
         }
 
+        ///////////////////////////////////////////////////////////////////////////
+        // clear
+        ///////////////////////////////////////////////////////////////////////////
+
+        //_rtg->_depthOnly = true;
+        targ->debugMarker(FormatString("ForwardPBR::preclear"));
+        FBI->PushRtGroup(_rtg.get());
+        CIMPL->pushCPD(CPD);
+        auto MTXI = targ->MTXI();
+        FBI->Clear(pbrcommon->_clearColor, 1.0f);
+
+
         /////////////////////////////////////////////////////
         // Depth Prepass
         /////////////////////////////////////////////////////
 
+        //targ->debugPushGroup("ForwardPBR::depth-pre pass");
         //RCFD._renderingmodel = RenderingModel("DEPTH_PREPASS"_crcu);
         //irenderer->drawEnqueuedRenderables();
-
+        //targ->debugPopGroup();
         //FBI->PopRtGroup();
 
         /////////////////////////////////////////////////////
         // Render Skybox first so AA can blend with it
         /////////////////////////////////////////////////////
+
+        //FBI->PushRtGroup(_rtg.get());
+
+        targ->debugPushGroup("ForwardPBR::skybox pass");
         _rtg->_depthOnly = false;
-        FBI->PushRtGroup(_rtg.get());
 
         RCFD._renderingmodel = "CUSTOM"_crcu;
+        RenderContextInstData RCID(&RCFD);
         RCID._fx_instance_lut = _skybox_fxinstlut;
         auto fxinst = _skybox_fxinstlut->findfxinst(RCID);
         fxinst->wrappedDrawCall(RCID,[GBI](){
-          GBI->render2dQuadEML(); // full screen quad
+          GBI->render2dQuadEML(fvec4(-1, -1, 2, 2), //
+                               fvec4(0, 0, 1, 1), //
+                               fvec4(0, 0, 1, 1), //
+                               0.9999f); // full screen quad
         });
+        targ->debugPopGroup();
 
         ///////////////////////////////////////////////////////////////////////////
 
-        for (const auto& layer_name : CPD.getLayerNames()) {
-          targ->debugMarker(FormatString("ForwardPBR::renderEnqueuedScene::layer<%s>", layer_name.c_str()));
-          DB->enqueueLayerToRenderQueue(layer_name, irenderer);
-        }
-
-        RCFD._renderingmodel = _node->_renderingmodel;
-        targ->debugPushGroup("toolvp::DrawEnqRenderables");
+        RCFD._renderingmodel = "FORWARD_PBR"_crcu;
+        targ->debugPushGroup("ForwardPBR::color pass");
         irenderer->drawEnqueuedRenderables();
         framerenderer.renderMisc();
         targ->debugPopGroup();
+
         FBI->PopRtGroup();
 
         /////////////////////////////////////////////////
 
         CIMPL->popCPD();
+
+        irenderer->resetQueue();
+
       }
       /////////////////////////////////////////////////////////////////////////////////////////
       targ->endFrame();

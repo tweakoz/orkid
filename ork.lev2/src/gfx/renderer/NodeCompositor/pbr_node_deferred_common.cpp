@@ -215,6 +215,7 @@ void DeferredContext::renderGbuffer(CompositorDrawData& drawdata, const ViewData
     RSI->SetRGBAWriteMask(oldmask);
     targ->debugPopGroup(); // drawenq
     CIMPL->popCPD();
+    irenderer->resetQueue();
   }
   /////////////////////////////////////////////////////////////////////////////////////////
   targ->endFrame();

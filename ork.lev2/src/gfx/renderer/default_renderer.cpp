@@ -24,13 +24,6 @@ DefaultRenderer::DefaultRenderer(Context* ptarg)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void DefaultRenderer::RenderModelGroup(const modelgroup_t& mdlgroup) const {
-  for (auto r : mdlgroup)
-    RenderModel(*r);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 void DefaultRenderer::RenderModel(const ModelRenderable& mdl_renderable, RenderGroupState rgs) const {
 
 }

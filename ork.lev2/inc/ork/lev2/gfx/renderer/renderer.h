@@ -46,11 +46,8 @@ protected:
   ork::fixedvector<U32, RenderQueue::krqmaxsize> _sortkeys;
   ork::fixedvector<const RenderQueue::Node*, RenderQueue::krqmaxsize> _sortedNodes;
 
-  ork::fixedvector<ModelRenderable, kmaxrables> mModels;
-  ork::fixedvector<CallbackRenderable, kmaxrablesmed> mCallbacks;
-
-  typedef ork::fixedvector<const ModelRenderable*, kmaxrablesmed> modelgroup_t;
-  modelgroup_t _groupedModels;
+  ork::fixedvector<ModelRenderable, kmaxrables> _models;
+  ork::fixedvector<CallbackRenderable, kmaxrablesmed> _callbacks;
 
 public:
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -58,7 +55,6 @@ public:
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   virtual void RenderModel(const ModelRenderable& ModelRen, RenderGroupState rgs = RenderGroupState::NONE) const = 0;
-  virtual void RenderModelGroup(const modelgroup_t& group) const                                     = 0;
   void RenderCallback(const CallbackRenderable& cbren) const;
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -66,12 +62,12 @@ public:
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   ModelRenderable& enqueueModel() {
-    ModelRenderable& rend = mModels.create();
+    ModelRenderable& rend = _models.create();
     enqueueRenderable(&rend);
     return rend;
   }
   CallbackRenderable& enqueueCallback() {
-    CallbackRenderable& rend = mCallbacks.create();
+    CallbackRenderable& rend = _callbacks.create();
     enqueueRenderable(&rend);
     return rend;
   }
@@ -95,12 +91,13 @@ public:
     _target = ptarg;
   }
 
-  void FakeDraw() {
-    ResetQueue();
+  void fakeDraw() {
+    resetQueue();
   }
 
+  void resetQueue(void);
+
 protected:
-  void ResetQueue(void);
   RadixSort _radixsorter;
   RenderQueue _unsortedNodes;
   PerformanceItem* mPerformanceItem;
@@ -117,7 +114,6 @@ public:
 
 private:
   void RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::RenderGroupState rgs = ork::lev2::RenderGroupState::NONE) const final;
-  void RenderModelGroup(const lev2::IRenderer::modelgroup_t&) const final;
 };
 
 

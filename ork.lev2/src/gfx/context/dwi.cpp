@@ -17,7 +17,8 @@ DrawingInterface::DrawingInterface(Context& ctx)
 void DrawingInterface::quad2DEML(const fvec2& v0, const fvec2& v1, const fvec2& v2, const fvec2& v3, //
                const fvec2& uva0, const fvec2& uva1, const fvec2& uva2, const fvec2& uva3, //
                const fvec2& uvb0, const fvec2& uvb1, const fvec2& uvb2, const fvec2& uvb3, //
-               const fvec4& vertex_color ){
+               const fvec4& vertex_color, //
+               float depth ){
 
   auto GBI = _context.GBI();
 
@@ -25,13 +26,13 @@ void DrawingInterface::quad2DEML(const fvec2& v0, const fvec2& v1, const fvec2& 
   U32 uc                                = vertex_color.ABGRU32();
   ork::lev2::VtxWriter<SVtxV12C4T16> vw;
   vw.Lock(GBI, &vb, 6);
-  vw.AddVertex(SVtxV12C4T16(v0.x, v0.y, 0.0f, uva0.x, uva0.y, uva0.x, uva0.y, uc));
-  vw.AddVertex(SVtxV12C4T16(v2.x, v2.y, 0.0f, uva2.x, uva2.y, uvb2.x, uvb2.y, uc));
-  vw.AddVertex(SVtxV12C4T16(v1.x, v1.y, 0.0f, uva1.x, uva1.y, uvb1.x, uvb1.y, uc));
+  vw.AddVertex(SVtxV12C4T16(v0.x, v0.y, depth, uva0.x, uva0.y, uva0.x, uva0.y, uc));
+  vw.AddVertex(SVtxV12C4T16(v2.x, v2.y, depth, uva2.x, uva2.y, uvb2.x, uvb2.y, uc));
+  vw.AddVertex(SVtxV12C4T16(v1.x, v1.y, depth, uva1.x, uva1.y, uvb1.x, uvb1.y, uc));
 
-  vw.AddVertex(SVtxV12C4T16(v0.x, v0.y, 0.0f, uva0.x, uva0.y, uva0.x, uva0.y, uc));
-  vw.AddVertex(SVtxV12C4T16(v3.x, v3.y, 0.0f, uva3.x, uva3.y, uvb3.x, uvb3.y, uc));
-  vw.AddVertex(SVtxV12C4T16(v2.x, v2.y, 0.0f, uva2.x, uva2.y, uvb2.x, uvb2.y, uc));
+  vw.AddVertex(SVtxV12C4T16(v0.x, v0.y, depth, uva0.x, uva0.y, uva0.x, uva0.y, uc));
+  vw.AddVertex(SVtxV12C4T16(v3.x, v3.y, depth, uva3.x, uva3.y, uvb3.x, uvb3.y, uc));
+  vw.AddVertex(SVtxV12C4T16(v2.x, v2.y, depth, uva2.x, uva2.y, uvb2.x, uvb2.y, uc));
   vw.UnLock(GBI);
 
   GBI->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES, 6);
@@ -42,7 +43,8 @@ void DrawingInterface::quad2DEML(const fvec2& v0, const fvec2& v1, const fvec2& 
 
 void DrawingInterface::quad2DEML(const fvec4& QuadRect, //
                                  const fvec4& UvRect, //
-                                 const fvec4& UvRect2) {
+                                 const fvec4& UvRect2, //
+                                 float depth ) {
   auto GBI = _context.GBI();
   // align source pixels to target pixels if sizes match
   float fx0 = QuadRect.x;
@@ -64,13 +66,13 @@ void DrawingInterface::quad2DEML(const fvec4& QuadRect, //
   U32 uc                                = 0xffffffff;
   ork::lev2::VtxWriter<SVtxV12C4T16> vw;
   vw.Lock(GBI, &vb, 6);
-  vw.AddVertex(SVtxV12C4T16(fx0, fy0, 0.0f, fua0, fva0, fub0, fvb0, uc));
-  vw.AddVertex(SVtxV12C4T16(fx1, fy1, 0.0f, fua1, fva1, fub1, fvb1, uc));
-  vw.AddVertex(SVtxV12C4T16(fx1, fy0, 0.0f, fua1, fva0, fub1, fvb0, uc));
+  vw.AddVertex(SVtxV12C4T16(fx0, fy0, depth, fua0, fva0, fub0, fvb0, uc));
+  vw.AddVertex(SVtxV12C4T16(fx1, fy1, depth, fua1, fva1, fub1, fvb1, uc));
+  vw.AddVertex(SVtxV12C4T16(fx1, fy0, depth, fua1, fva0, fub1, fvb0, uc));
 
-  vw.AddVertex(SVtxV12C4T16(fx0, fy0, 0.0f, fua0, fva0, fub0, fvb0, uc));
-  vw.AddVertex(SVtxV12C4T16(fx0, fy1, 0.0f, fua0, fva1, fub0, fvb1, uc));
-  vw.AddVertex(SVtxV12C4T16(fx1, fy1, 0.0f, fua1, fva1, fub1, fvb1, uc));
+  vw.AddVertex(SVtxV12C4T16(fx0, fy0, depth, fua0, fva0, fub0, fvb0, uc));
+  vw.AddVertex(SVtxV12C4T16(fx0, fy1, depth, fua0, fva1, fub0, fvb1, uc));
+  vw.AddVertex(SVtxV12C4T16(fx1, fy1, depth, fua1, fva1, fub1, fvb1, uc));
   vw.UnLock(GBI);
 
   GBI->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES, 6);

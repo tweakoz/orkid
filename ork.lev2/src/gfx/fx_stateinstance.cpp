@@ -50,8 +50,6 @@ bool FxStateInstance::beginPass(const RenderContextInstData& RCID, int ipass) {
   if (not rval)
     return rval;
 
-  RSI->BindRasterState(_material->_rasterstate);
-
   ///////////////////////////////
   // run state lambdas
   ///////////////////////////////

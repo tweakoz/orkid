@@ -78,10 +78,6 @@ void IRenderer::drawEnqueuedRenderables() {
   float fruntot = 0.0f;
 
   ///////////////////////////////////////////////////////
-  // attempt renderable grouping...
-  ///////////////////////////////////////////////////////
-
-  _groupedModels.clear();
 
   for (size_t i = 0; i < renderQueueSize; i++) {
     int sorted = _sortkeys[i];
@@ -100,7 +96,7 @@ void IRenderer::drawEnqueuedRenderables() {
   float favgrun = fruntot / float(imdlcount);
   ///////////////////////////////////////////////////////
 
-  ResetQueue();
+  //resetQueue();
   ///////////////////////////////////////////////////////
 
   if (mPerformanceItem)
@@ -111,10 +107,10 @@ void IRenderer::drawEnqueuedRenderables() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void IRenderer::ResetQueue(void) {
+void IRenderer::resetQueue(void) {
   _unsortedNodes.Reset();
-  mModels.clear();
-  mCallbacks.clear();
+  _models.clear();
+  _callbacks.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

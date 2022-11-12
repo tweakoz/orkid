@@ -406,6 +406,7 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
               auto context     = RCFD->GetTarget();
               auto MTXI        = context->MTXI();
               auto FXI         = context->FXI();
+              auto RSI         = context->RSI();
               const auto& CPD  = RCFD->topCPD();
               auto stereocams  = CPD._stereoCameraMatrices;
               auto worldmatrix = RCID.worldMatrix();
@@ -413,6 +414,8 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
               FXI->BindParamMatrix(_paramMVPR, stereocams->MVPR(worldmatrix));
               _this->_rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
               _this->_rasterstate.SetZWriteMask(true);
+              _this->_rasterstate.SetRGBAWriteMask(true,true);
+              RSI->BindRasterState(_this->_rasterstate);
               // fxinst->_params[_paramMVPL] = "RCFD_Camera_MVP_Left"_crcsh;
               // fxinst->_params[_paramMVPR] = "RCFD_Camera_MVP_Right"_crcsh;
             });
@@ -433,13 +436,18 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
             fxinst->addStateLambda([this](const RenderContextInstData& RCID, int ipass) {
               auto _this = (PBRMaterial*) this;
               auto RCFD        = RCID._RCFD;
-              auto FXI         = RCFD->GetTarget()->FXI();
+              auto context     = RCFD->GetTarget();
+              auto FXI         = context->FXI();
+              auto MTXI        = context->MTXI();
+              auto RSI         = context->RSI();
               const auto& CPD  = RCFD->topCPD();
               auto monocams    = CPD._cameraMatrices;
               auto worldmatrix = RCID.worldMatrix();
               FXI->BindParamMatrix(_paramMVP, monocams->MVPMONO(worldmatrix));
               _this->_rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
               _this->_rasterstate.SetZWriteMask(true);
+              _this->_rasterstate.SetRGBAWriteMask(true,true);
+              RSI->BindRasterState(_this->_rasterstate);
             });
           }
           OrkAssert(fxinst->_technique != nullptr);
@@ -456,8 +464,15 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
             fxinst->addStateLambda(createBasicStateLambda());
             fxinst->addStateLambda([this](const RenderContextInstData& RCID, int ipass){
               auto _this = (PBRMaterial*) this;
+              auto RCFD        = RCID._RCFD;
+              auto context     = RCFD->GetTarget();
+              auto FXI         = context->FXI();
+              auto MTXI        = context->MTXI();
+              auto RSI         = context->RSI();
               _this->_rasterstate.SetDepthTest(EDEPTHTEST_LESS);
-              _this->_rasterstate.SetZWriteMask(false);
+              _this->_rasterstate.SetZWriteMask(true);
+              _this->_rasterstate.SetRGBAWriteMask(true,true);
+              RSI->BindRasterState(_this->_rasterstate);
             });
           }
           OrkAssert(fxinst->_technique != nullptr);
@@ -469,8 +484,15 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
             fxinst->addStateLambda(createBasicStateLambda());
             fxinst->addStateLambda([this](const RenderContextInstData& RCID, int ipass){
               auto _this = (PBRMaterial*) this;
+              auto RCFD        = RCID._RCFD;
+              auto context     = RCFD->GetTarget();
+              auto FXI         = context->FXI();
+              auto MTXI        = context->MTXI();
+              auto RSI         = context->RSI();
               _this->_rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
               _this->_rasterstate.SetZWriteMask(true);
+              _this->_rasterstate.SetRGBAWriteMask(false,false);
+              RSI->BindRasterState(_this->_rasterstate);
             });
           }
           OrkAssert(fxinst->_technique != nullptr);
@@ -535,9 +557,19 @@ fxinstancelut_ptr_t PBRMaterial::createSkyboxFxInstLut() const {
   //////////////////////////////////////////////////////////
   auto basic_lambda = createBasicStateLambda();
   auto skybox_lambda = [this,basic_lambda](const RenderContextInstData& RCID, int ipass) {
+    auto _this = (PBRMaterial*)this;
+    auto RCFD        = RCID._RCFD;
+    auto context     = RCFD->GetTarget();
+    auto FXI         = context->FXI();
+    auto MTXI        = context->MTXI();
+    auto RSI         = context->RSI();
+
     basic_lambda(RCID,ipass);
-    ((PBRMaterial*)this)->_rasterstate.SetCullTest(ECULLTEST_OFF);
-    ((PBRMaterial*)this)->_rasterstate.SetZWriteMask(false);
+    _this->_rasterstate.SetCullTest(ECULLTEST_OFF);
+    _this->_rasterstate.SetZWriteMask(false);
+    _this->_rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
+    _this->_rasterstate.SetRGBAWriteMask(true,true);
+    RSI->BindRasterState(_this->_rasterstate);
   };
   //////////////////////////////////////////////////////////
   config._stereo     = false;
