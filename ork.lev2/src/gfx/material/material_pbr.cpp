@@ -412,6 +412,7 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
               auto worldmatrix = RCID.worldMatrix();
               FXI->BindParamMatrix(_paramMVPL, stereocams->MVPL(worldmatrix));
               FXI->BindParamMatrix(_paramMVPR, stereocams->MVPR(worldmatrix));
+              _this->_rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
               _this->_rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
               _this->_rasterstate.SetZWriteMask(true);
               _this->_rasterstate.SetRGBAWriteMask(true,true);
@@ -444,6 +445,7 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
               auto monocams    = CPD._cameraMatrices;
               auto worldmatrix = RCID.worldMatrix();
               FXI->BindParamMatrix(_paramMVP, monocams->MVPMONO(worldmatrix));
+              _this->_rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
               _this->_rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
               _this->_rasterstate.SetZWriteMask(true);
               _this->_rasterstate.SetRGBAWriteMask(true,true);
@@ -469,6 +471,7 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
               auto FXI         = context->FXI();
               auto MTXI        = context->MTXI();
               auto RSI         = context->RSI();
+              _this->_rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
               _this->_rasterstate.SetDepthTest(EDEPTHTEST_LESS);
               _this->_rasterstate.SetZWriteMask(true);
               _this->_rasterstate.SetRGBAWriteMask(true,true);
@@ -489,6 +492,7 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
               auto FXI         = context->FXI();
               auto MTXI        = context->MTXI();
               auto RSI         = context->RSI();
+              _this->_rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
               _this->_rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
               _this->_rasterstate.SetZWriteMask(true);
               _this->_rasterstate.SetRGBAWriteMask(false,false);

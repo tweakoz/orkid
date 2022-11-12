@@ -165,7 +165,7 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
         drawdata.context()->debugPushGroup("ScreenCompositingNode::to_screen");
         auto this_buf = context->FBI()->GetThisBuffer();
         auto& mtl     = impl->_blit2screenmtl;
-        switch (this->supersample()) {
+        switch (this->_supersample) {
           case 0:
             mtl.begin(impl->_fxtechnique1x1, framedata);
             break;
