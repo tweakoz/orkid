@@ -39,91 +39,179 @@ struct Instance {
   fvec3 _targetaxis;
   float _targetangle = 0.0f;
   float _timeout     = 0.0f;
+
+  void update(float dt, float abstime, float base_h, float maxh, float powr) {
+    fvec3 delta = _target - _curpos;
+    _curpos += delta.normalized() * dt * 1.0;
+
+    delta    = _targetaxis - _curaxis;
+    _curaxis = (_curaxis + delta.normalized() * dt * 0.1).normalized();
+    _curangle += (_targetangle - _curangle) * dt * 0.1;
+
+    if (_timeout < abstime) {
+      _timeout  = abstime + float(rand() % 255) / 32.0;
+      _target.x = ((float(rand() % 255) / 2.55) - 50) * 3;
+
+      float fi = float(rand() % 255) / 255.0;
+
+      _target.y = base_h + powf(fi, powr) * maxh;
+
+      fi = float(rand() % 255) / 255.0;
+
+      _target.z = -2.5 + fi * 10.0f;
+      //_target *= 10.0f;
+
+      fvec3 axis;
+      axis.x       = (float(rand() % 255) / 255.0f) - 0.5f;
+      axis.y       = (float(rand() % 255) / 255.0f) - 0.5f;
+      axis.z       = (float(rand() % 255) / 255.0f) - 0.5f;
+      _targetaxis  = axis.normalized();
+      _targetangle = PI2 * (float(rand() % 255) / 255.0f) - 0.5f;
+    }
+  }
 };
 
-using instances_t       = std::vector<Instance>;
+struct PointLightInstance : public Instance {
+  scenegraph::lightnode_ptr_t _lightnode;
+  pointlightdata_ptr_t _data;
+  pointlight_ptr_t _instance;
+
+  fvec3 _curcolor;
+  fvec3 _tgtcolor;
+};
+
+using instances_t           = std::vector<Instance>;
+using pointlightinstances_t = std::vector<PointLightInstance>;
 
 ///////////////////////////////////////////////////////////////////
 
 struct GpuResources {
 
-  GpuResources(Context* ctx, bool use_forward){
-    _renderer       = std::make_shared<DefaultRenderer>();
-    _lightmgr       = std::make_shared<LightManager>(_lmd);
+  GpuResources(Context* ctx, bool use_forward) {
 
-    _camlut = std::make_shared<CameraDataLut>();
-    _camdata = std::make_shared<CameraData>();
+    _camlut                = std::make_shared<CameraDataLut>();
+    _camdata               = std::make_shared<CameraData>();
     (*_camlut)["spawncam"] = _camdata;
 
-    _instanced_drawable = std::make_shared<InstancedModelDrawable>();
+    _spikee_instanced_drawable = std::make_shared<InstancedModelDrawable>();
 
-  //////////////////////////////////////////////////////////
-  // initialize compositor (necessary for PBR models)
-  //  use a deferredPBR compositing node
-  //  which does all the gbuffer and lighting passes
-  //////////////////////////////////////////////////////////
+    //////////////////////////////////////////////
+    // create scenegraph
+    //////////////////////////////////////////////
 
-    _compositordata = std::make_shared<CompositingData>();
-    if(use_forward){
-      _compositordata->presetForwardPBR();
+    _sg_params                                         = std::make_shared<varmap::VarMap>();
+    _sg_params->makeValueForKey<std::string>("preset") = use_forward ? "ForwardPBR" : "DeferredPBR";
+
+    if (use_forward) {
+    } else {
     }
-    else{
-      _compositordata->presetDeferredPBR();
-    }
-    _compositordata->mbEnable = true;
-    auto nodetek             = _compositordata->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
-    auto outpnode            = nodetek->tryOutputNodeAs<ScreenOutputCompositingNode>();
-    // outpnode->setSuperSample(4);
-    _compositorimpl = _compositordata->createImpl();
-    _compositorimpl->bindLighting(_lightmgr.get());
 
-    _TOPCPD = std::make_shared<lev2::CompositingPassData>();
-    _TOPCPD->addStandardLayers();
-    _instances          = std::make_shared<instances_t>();
+    _sg_scene        = std::make_shared<scenegraph::Scene>(_sg_params);
+    auto sg_layer    = _sg_scene->createLayer("default");
+    auto sg_compdata = _sg_scene->_compositorData;
 
-     ctx->debugPushGroup("main.onGpuInit");
-    _modelasset = asset::AssetManager<XgmModelAsset>::load("data://tests/pbr1/pbr1");
-    _renderer->setContext(ctx);
+    //////////////////////////////////////////////////////////
 
-    _instanced_drawable->bindModel(_modelasset->getSharedModel());
+    _spikee_instances = std::make_shared<instances_t>();
 
-    constexpr size_t KNUMINSTANCES = 100;
+    ctx->debugPushGroup("main.onGpuInit");
+    _spikee_modelasset = asset::AssetManager<XgmModelAsset>::load("data://tests/pbr1/pbr1");
 
-    _instanced_drawable->resize(KNUMINSTANCES);
-    _instanced_drawable->gpuInit(ctx);
+    _spikee_instanced_drawable->bindModel(_spikee_modelasset->getSharedModel());
+
+    constexpr size_t KNUMINSTANCES = 30;
+
+    _spikee_instanced_drawable->resize(KNUMINSTANCES);
+    _spikee_instanced_drawable->gpuInit(ctx);
 
     for (int i = 0; i < KNUMINSTANCES; i++) {
       Instance inst;
-      _instances->push_back(inst);
+      _spikee_instances->push_back(inst);
     }
-     ctx->debugPopGroup();
 
+    _spikee_mesh_instance_data = _spikee_instanced_drawable->_instancedata;
+
+    //////////////////////////////////////////////////////////
+    // create lighting
+    //////////////////////////////////////////////////////////
+
+    _lights          = std::make_shared<pointlightinstances_t>();
+    _lights_drawable = std::make_shared<InstancedModelDrawable>();
+    _light_modelasset = asset::AssetManager<XgmModelAsset>::load("data://tests/pbr_emissive");
+    _lights_drawable->bindModel(_light_modelasset->getSharedModel());
+
+    constexpr size_t NUMLIGHTS = 4;
+    _lights_drawable->resize(NUMLIGHTS);
+    _lights_drawable->gpuInit(ctx);
+
+    // create light instances
+
+    for (int i = 0; i < NUMLIGHTS; i++) {
+      auto create_light = [&](fvec3 pos, float intensity) {
+        auto lightdata      = std::make_shared<ork::lev2::PointLightData>();
+        lightdata->_radius  = 100.0f;
+        lightdata->_falloff = 0.5f;
+        lightdata->SetColor(fvec3::White() * intensity);
+        auto light         = std::make_shared<ork::lev2::PointLight>(nullptr, lightdata.get());
+        auto sg_light_node = sg_layer->createLightNode("lightnode", light);
+
+        light->_xformgenerator = [sg_light_node]() -> fmtx4 { return sg_light_node->_dqxfdata._worldTransform->composed(); };
+
+        PointLightInstance lr;
+        lr._instance  = light;
+        lr._lightnode = sg_light_node;
+        lr._data      = lightdata;
+        lr._curpos    = fvec3(0, 0, 2);
+
+        _lights->push_back(lr);
+      };
+
+      create_light(fvec3(0, 5, 10), 1.0f);
+    }
+
+    _light_mesh_instance_data = _lights_drawable->_instancedata;
+
+    //////////////////////////////////////////////
+    // scenegraph nodes
+    //////////////////////////////////////////////
+
+    _lightsnode  = sg_layer->createDrawableNode("lightmeshes-node", _lights_drawable);
+    _spikee_node = sg_layer->createDrawableNode("meshes-node", _spikee_instanced_drawable);
+
+    ctx->debugPopGroup();
   }
-  instanced_modeldrawable_ptr_t _instanced_drawable;
-  renderer_ptr_t _renderer;
-  LightManagerData _lmd;
-  lightmanager_ptr_t _lightmgr;
-  compositingpassdata_ptr_t _TOPCPD;
-  compositorimpl_ptr_t _compositorimpl;
-  compositordata_ptr_t _compositordata;
-  std::shared_ptr<instances_t> _instances;
-  lev2::xgmmodelassetptr_t _modelasset; // retain model
+
+  std::shared_ptr<instances_t> _spikee_instances;
+  lev2::xgmmodelassetptr_t _spikee_modelasset; // retain model
+  instanced_modeldrawable_ptr_t _spikee_instanced_drawable;
+  instanceddrawinstancedata_ptr_t _spikee_mesh_instance_data;
+  scenegraph::node_ptr_t _spikee_node;
+
+  std::shared_ptr<pointlightinstances_t> _lights;
+  lev2::xgmmodelassetptr_t _light_modelasset; // retain model
+  instanced_modeldrawable_ptr_t _lights_drawable;
+  instanceddrawinstancedata_ptr_t _light_mesh_instance_data;
+  scenegraph::node_ptr_t _lightsnode;
+
+  varmap::varmap_ptr_t _sg_params;
+  scenegraph::scene_ptr_t _sg_scene;
+
   cameradata_ptr_t _camdata;
   cameradatalut_ptr_t _camlut;
 };
 
 ///////////////////////////////////////////////////////////////////
 
-int main(int argc, char** argv,char** envp) {
+int main(int argc, char** argv, char** envp) {
 
-  auto init_data = std::make_shared<ork::AppInitData>(argc,argv,envp);
+  auto init_data = std::make_shared<ork::AppInitData>(argc, argv, envp);
 
   auto desc = init_data->commandLineOptions("model3dpbr example Options");
-  desc->add_options() //
-    ("help", "produce help message") //
-    ("forward", po::bool_switch()->default_value(false), "forward renderer");
+  desc->add_options()                  //
+      ("help", "produce help message") //
+      ("forward", po::bool_switch()->default_value(false), "forward renderer");
 
-  auto vars        = *init_data->parse();
+  auto vars = *init_data->parse();
 
   if (vars.count("help")) {
     std::cout << (*desc) << "\n";
@@ -132,21 +220,18 @@ int main(int argc, char** argv,char** envp) {
 
   bool use_forward = vars["forward"].as<bool>();
 
-  //init_data->_msaa_samples = use_forward ? 4 : 1;
-  //init_data->_ssaa_samples = use_forward ? 4 : 1;
+  init_data->_msaa_samples = use_forward ? 1 : 1;
+  init_data->_ssaa_samples = use_forward ? 4 : 1;
 
   auto qtapp  = OrkEzApp::create(init_data);
-  auto qtwin              = qtapp->_mainWindow;
-  auto gfxwin             = qtwin->_gfxwin;
+  auto qtwin  = qtapp->_mainWindow;
+  auto gfxwin = qtwin->_gfxwin;
   std::shared_ptr<GpuResources> gpurec;
   //////////////////////////////////////////////////////////
   // gpuInit handler, called once on main(rendering) thread
   //  at startup time
   //////////////////////////////////////////////////////////
-  qtapp->onGpuInit([&](Context* ctx) {
-
-    gpurec = std::make_shared<GpuResources>(ctx,use_forward);
-  });
+  qtapp->onGpuInit([&](Context* ctx) { gpurec = std::make_shared<GpuResources>(ctx, use_forward); });
   //////////////////////////////////////////////////////////
   // update handler (called on update thread)
   //  it will never be called before onGpuInit() is complete...
@@ -167,111 +252,83 @@ int main(int argc, char** argv,char** envp) {
     fvec3 up(0, 1, 0);
     gpurec->_camdata->Lookat(eye, tgt, up);
     gpurec->_camdata->Persp(1, 20.0, 45.0);
-    ///////////////////////////////////////
-    auto DB = dbufcontext->acquireForWriteLocked();
-    DB->Reset();
-    DB->copyCameras(*gpurec->_camlut);
-    auto layer = DB->MergeLayer("Default");
+
     ////////////////////////////////////////
-    // animate and enqueue all instances
+    // animate all instances
     ////////////////////////////////////////
 
-    auto drawable = gpurec->_instanced_drawable;
-    auto instdata = drawable->_instancedata;
-
-    int index = 0;
-    for (auto& inst : *gpurec->_instances) {
-      //auto drawable = static_cast<Drawable*>(inst._drawable);
-      fvec3 delta   = inst._target - inst._curpos;
-      inst._curpos += delta.normalized() * dt * 1.0;
-
-      delta         = inst._targetaxis - inst._curaxis;
-      inst._curaxis = (inst._curaxis + delta.normalized() * dt * 0.1).normalized();
-      inst._curangle += (inst._targetangle - inst._curangle) * dt * 0.1;
-
-      if (inst._timeout < abstime) {
-        inst._timeout  = abstime + float(rand() % 255) / 64.0;
-        inst._target.x = (float(rand() % 255) / 2.55) - 50;
-        inst._target.y = (float(rand() % 255) / 2.55) - 50;
-        inst._target.z = (float(rand() % 255) / 2.55) - 50;
-        inst._target *= (4.5f/50.0f);
-
-        fvec3 axis;
-        axis.x            = (float(rand() % 255) / 255.0f) - 0.5f;
-        axis.y            = (float(rand() % 255) / 255.0f) - 0.5f;
-        axis.z            = (float(rand() % 255) / 255.0f) - 0.5f;
-        inst._targetaxis  = axis.normalized();
-        inst._targetangle = PI2 * (float(rand() % 255) / 255.0f) - 0.5f;
-      }
-
+    int spikee_index = 0;
+    for (auto& inst : *gpurec->_spikee_instances) {
+      inst.update(dt, abstime, 0, 20, 2);
       fquat q;
       q.fromAxisAngle(fvec4(inst._curaxis, inst._curangle));
-      instdata->_worldmatrices[index++].compose(inst._curpos, q, 0.3f);
+      gpurec->_spikee_mesh_instance_data->_worldmatrices[spikee_index++].compose(inst._curpos, q, 0.3f);
     }
-    DrawQueueXfData ident;
-    drawable->enqueueOnLayer(ident, *layer);
+
     ////////////////////////////////////////
-    dbufcontext->releaseFromWriteLocked(DB);
+    // animate lights
+    ////////////////////////////////////////
+
+    int light_index = 0;
+    for (auto& light : *gpurec->_lights) {
+
+      /////////////////////
+      // update light fsm
+      /////////////////////
+
+      fvec3 delta = light._tgtcolor - light._curcolor;
+      light._curcolor += delta.normalized() * dt * 1.0;
+      if (light._timeout < abstime) {
+        light._tgtcolor.x = (float(rand() % 255) / 255.0f);
+        light._tgtcolor.y = (float(rand() % 255) / 255.0f);
+        light._tgtcolor.z = (float(rand() % 255) / 255.0f);
+      }
+      light.update(dt, abstime, 0, 22, 3);
+
+      /////////////////////
+      // set visual mesh data
+      /////////////////////
+
+      fquat q;
+      q.fromAxisAngle(fvec4(light._curaxis, light._curangle));
+      fmtx4 mtxM;
+      mtxM.compose(light._curpos, q, 0.25f);
+      gpurec->_light_mesh_instance_data->_worldmatrices[light_index] = mtxM;
+      gpurec->_light_mesh_instance_data->_modcolors[light_index]     = light._curcolor * 2.0;
+
+      /////////////////////
+      // set lighting data
+      /////////////////////
+
+      light._data->SetColor(light._curcolor * 8.0);
+      light._lightnode->_dqxfdata._worldTransform->set(light._curpos, fquat(), 1.0f);
+
+      light_index++;
+    }
+
+    ////////////////////////////////////////
+    // enqueue scenegraph to renderer
+    ////////////////////////////////////////
+
+    gpurec->_sg_scene->enqueueToRenderer(gpurec->_camlut);
+
+    ////////////////////////////////////////
   });
   //////////////////////////////////////////////////////////
   // draw handler (called on main(rendering) thread)
   //////////////////////////////////////////////////////////
   qtapp->onDraw([&](ui::drawevent_constptr_t drwev) {
-    auto DB = dbufcontext->acquireForReadLocked();
-    if (nullptr == DB)
-      return;
-
-    float time = timer.SecsSinceStart();
     auto context = drwev->GetTarget();
     RenderContextFrameData RCFD(context); // renderer per/frame data
-    RCFD._cimpl = gpurec->_compositorimpl;
-    RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
-    RCFD.setUserProperty("time"_crc, time);
-    //RCFD.setUserProperty("pbr_model"_crc, 1);
-    context->pushRenderContextFrameData(&RCFD);
-    auto fbi  = context->FBI();  // FrameBufferInterface
-    auto fxi  = context->FXI();  // FX Interface
-    auto mtxi = context->MTXI(); // matrix Interface
-    auto gbi  = context->GBI();  // GeometryBuffer Interface
-    ///////////////////////////////////////
-    // compositor setup
-    ///////////////////////////////////////
-    lev2::UiViewportRenderTarget rt(nullptr);
-    auto tgtrect           = context->mainSurfaceRectAtOrigin();
-    gpurec->_TOPCPD->_time = time;
-    gpurec->_TOPCPD->_irendertarget = &rt;
-    gpurec->_TOPCPD->SetDstRect(tgtrect);
-    gpurec->_compositorimpl->pushCPD(*gpurec->_TOPCPD);
-    ///////////////////////////////////////
-    // Draw!
-    ///////////////////////////////////////
-    fbi->SetClearColor(fvec4(0, 0, 0, 1));
-    fbi->setViewport(tgtrect);
-    fbi->setScissor(tgtrect);
-    context->beginFrame();
-    FrameRenderer framerenderer(RCFD, [&]() {});
-    CompositorDrawData drawdata(framerenderer);
-    drawdata._properties["primarycamindex"_crcu].set<int>(0);
-    drawdata._properties["cullcamindex"_crcu].set<int>(0);
-    drawdata._properties["irenderer"_crcu].set<lev2::IRenderer*>(gpurec->_renderer.get());
-    drawdata._properties["simrunning"_crcu].set<bool>(true);
-    drawdata._properties["DB"_crcu].set<const DrawableBuffer*>(DB);
-    drawdata._cimpl = gpurec->_compositorimpl;
-    gpurec->_compositorimpl->assemble(drawdata);
-    gpurec->_compositorimpl->composite(drawdata);
-    gpurec->_compositorimpl->popCPD();
-    context->popRenderContextFrameData();
-    context->endFrame();
-    dbufcontext->releaseFromReadLocked(DB);
+    gpurec->_sg_scene->renderOnContext(context, RCFD);
   });
   //////////////////////////////////////////////////////////
   qtapp->onResize([&](int w, int h) {
     //
-    gpurec->_compositorimpl->compositingContext().Resize(w, h);
+    // gpurec->_compositorimpl->compositingContext().Resize(w, h);
+    gpurec->_sg_scene->_compositorImpl->compositingContext().Resize(w, h);
   });
-  qtapp->onGpuExit([&](Context* ctx) {
-    gpurec = nullptr;
-  });
+  qtapp->onGpuExit([&](Context* ctx) { gpurec = nullptr; });
   //////////////////////////////////////////////////////////
   qtapp->setRefreshPolicy({EREFRESH_FASTEST, -1});
   return qtapp->mainThreadLoop();

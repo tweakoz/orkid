@@ -615,7 +615,7 @@ void CtxGLFW::SlotRepaint() {
     }
     this->mDrawLock--;
     ork::PerfMarkerPush("ork.viewport.draw.end");
-    glFinish();
+    //glFinish();
   //};
 
   //lamb();

@@ -281,13 +281,14 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     _compositorPreset = _compositorData->presetDeferredPBR(outRTG);
     auto nodetek  = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
     auto outpnode = nodetek->tryOutputNodeAs<RtGroupOutputCompositingNode>();
-    auto outrnode = nodetek->tryOutputNodeAs<pbr::deferrednode::DeferredCompositingNodePbr>();
+    auto outrnode = nodetek->tryRenderNodeAs<pbr::deferrednode::DeferredCompositingNodePbr>();
 
     if (auto try_supersample = params->typedValueForKey<int>("supersample")) {
       if(outpnode){
         outpnode->setSuperSample(try_supersample.value());
       }
     }
+    OrkAssert(outrnode);
     pbrcommon = outrnode->_pbrcommon;
   } else if (preset == "PBRVR") {
     _compositorPreset = _compositorData->presetPBRVR();
