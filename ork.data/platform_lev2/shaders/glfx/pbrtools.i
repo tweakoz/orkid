@@ -93,15 +93,6 @@ vertex_interface iface_vgbuffer
 		vec3 frg_camz;
 	}
 }
-vertex_interface iface_vdprepass
-	: ub_vtx {
-		inputs{
-	    vec4 position : POSITION;
-		}
-  	outputs {
-  		float frg_depth;
-  	}
-}
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_vgbuffer_instanced : iface_vgbuffer {
   outputs {
@@ -138,6 +129,7 @@ fragment_interface iface_forward
   	mat3 frg_tbn;
 		float frg_camdist;
 		vec3 frg_camz;
+		vec4 frg_modcolor;
 	}
 	outputs {
 		layout(location = 0) vec4 out_color;
@@ -455,6 +447,16 @@ fragment_shader ps_gbuffer_n_tex_stereo // normalmap (stereo texture - vsplit)
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 
+vertex_interface iface_vdprepass
+	: ub_vtx {
+		inputs{
+	    vec4 position : POSITION;
+		}
+  	outputs {
+  		float frg_depth;
+  	}
+}
+
 ///////////////////////////////////////////////////////////////
 // Forward Depth Prepass
 ///////////////////////////////////////////////////////////////
@@ -521,38 +523,14 @@ fragment_shader ps_forward_test
 	: lib_math
   : lib_brdf
   : lib_def {
-		vec3 TN = texture(NormalMap,frg_uv0).xyz;
-  	vec3 N = TN*2.0-vec3(1,1,1);
-		vec3 normal = normalize(frg_tbn*N);
-		vec3 rufmtlamb = texture(MtlRufMap,frg_uv0).zyx;
-
-		vec3 wpos = frg_wpos.xyz;
-		PbrData pbd;
-		pbd._emissive = length(TN)<0.1;
-		pbd._metallic = rufmtlamb.x * MetallicFactor;
-		pbd._roughness = rufmtlamb.y * RoughnessFactor;
-		pbd._albedo = (ModColor*frg_clr*texture(ColorMap,frg_uv0)).xyz;
-		pbd._wpos = wpos;
-		pbd._wnrm = normal;
-		pbd._fogZ = 0.0;
-		pbd._atmos = 0.0;
-		pbd._alpha = 1.0;
-		vec3 env_lighting = pbrEnvironmentLightingXXX(pbd);
-
-		///////////////////////////////////////////////
-		// point lighting
-		///////////////////////////////////////////////
-
-    LightCtx plc = lcalc_forward(wpos,pbd);
-    vec3 point_lighting       = vec3(0, 0, 0);
-		for(int i=0; i<point_light_count; i++){
-      plc._lightdel = _lightpos[i].xyz - wpos;
-      point_lighting += plcalc_forward(plc,pbd)*_lightcolor[i].xyz;
-		}
-
-		///////////////////////////////////////////////
-
-		out_color = vec4(env_lighting+point_lighting,1);
+ 	out_color = vec4(forward_lighting(ModColor.xyz),1);
+}
+fragment_shader ps_forward_test_instanced
+	: iface_forward
+	: lib_math
+  : lib_brdf
+  : lib_def {
+ 	out_color = vec4(forward_lighting(frg_modcolor.xyz),1);
 }
 
 ///////////////////////////////////////////////////////////////
