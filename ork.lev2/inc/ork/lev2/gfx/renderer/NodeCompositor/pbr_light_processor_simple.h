@@ -34,9 +34,9 @@ struct SimpleLightProcessor {
   SimpleLightProcessor(DeferredContext& defctx, DeferredCompositingNodePbr* compnode);
 
   /////////////////////////////////////////////////////
-  void gpuUpdate(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights);
-  void renderDecals(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights);
-  void renderLights(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights);
+  void gpuUpdate(CompositorDrawData& drawdata, const ViewData& VD, enumeratedlights_constptr_t enumlights);
+  void renderDecals(CompositorDrawData& drawdata, const ViewData& VD, enumeratedlights_constptr_t enumlights);
+  void renderLights(CompositorDrawData& drawdata, const ViewData& VD, enumeratedlights_constptr_t enumlights);
   /////////////////////////////////////////////////////
 
 
@@ -47,11 +47,11 @@ struct SimpleLightProcessor {
   /////////////////////////////////////////////////////
 
   void _gpuInit(lev2::Context* target);
-  void _renderUnshadowedUntexturedPointLights(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights);
-  void _renderUnshadowedTexturedPointLights(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights);
-  void _renderUnshadowedTexturedSpotLights(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights);
-  void _renderShadowedTexturedSpotLights(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights);
-  void _renderTexturedSpotDecals(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights);
+  void _renderUnshadowedUntexturedPointLights(CompositorDrawData& drawdata, const ViewData& VD, enumeratedlights_constptr_t enumlights);
+  void _renderUnshadowedTexturedPointLights(CompositorDrawData& drawdata, const ViewData& VD, enumeratedlights_constptr_t enumlights);
+  void _renderUnshadowedTexturedSpotLights(CompositorDrawData& drawdata, const ViewData& VD, enumeratedlights_constptr_t enumlights);
+  void _renderShadowedTexturedSpotLights(CompositorDrawData& drawdata, const ViewData& VD, enumeratedlights_constptr_t enumlights);
+  void _renderTexturedSpotDecals(CompositorDrawData& drawdata, const ViewData& VD, enumeratedlights_constptr_t enumlights);
 
   /////////////////////////////////////////////////////
 

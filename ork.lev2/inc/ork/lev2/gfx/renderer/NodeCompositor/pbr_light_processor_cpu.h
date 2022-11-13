@@ -38,12 +38,12 @@ struct CpuLightProcessor {
 
   /////////////////////////////////////////////////////
 
-  void render(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights);
+  void render(CompositorDrawData& drawdata, const ViewData& VD, enumeratedlights_constptr_t enumlights);
 
   /////////////////////////////////////////////////////
   void _gpuInit(lev2::Context* target);
   void _clearFrameLighting();
-  void _renderUnshadowedUnTexturedPointLights(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights);
+  void _renderUnshadowedUnTexturedPointLights(CompositorDrawData& drawdata, const ViewData& VD, enumeratedlights_constptr_t enumlights);
 
   typedef std::vector<PointLight> pllist_t;
   typedef ork::LockedResource<pllist_t> locked_pllist_t;

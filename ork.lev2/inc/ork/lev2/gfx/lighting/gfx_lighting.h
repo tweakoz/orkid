@@ -482,13 +482,15 @@ public:
 
 struct EnumeratedLights;
 
+using enumeratedlights_ptr_t = std::shared_ptr<EnumeratedLights>;
+using enumeratedlights_constptr_t = std::shared_ptr<const EnumeratedLights>;
 using pointlightlist_t    = std::vector<PointLight*>;
 using spotlightlist_t     = std::vector<SpotLight*>;
 using tex2pointlightmap_t = std::map<Texture*, pointlightlist_t>;
 using tex2spotlightmap_t  = std::map<Texture*, spotlightlist_t>;
 
 struct EnumeratedLights {
-  std::vector<Light*> _enumeratedLights;
+  std::vector<Light*> _alllights;
   pointlightlist_t _untexturedpointlights;
   tex2pointlightmap_t _tex2pointlightmap;
   spotlightlist_t _untexturedspotlights;
@@ -512,7 +514,7 @@ public:
   GlobalLightContainer mGlobalStationaryLights; // non-moving, potentially animating color or texture (and => not lightmappable)
   LightContainer mGlobalMovingLights;           // moving lights
 
-  void enumerateInPass(const CompositingPassData& CPD, EnumeratedLights& out) const;
+  void enumerateInPass(const CompositingPassData& CPD, enumeratedlights_ptr_t out_lights) const;
 
   void QueueInstance(const LightMask& lgid, const fmtx4& mtx);
 

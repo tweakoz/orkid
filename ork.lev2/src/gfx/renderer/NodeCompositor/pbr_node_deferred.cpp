@@ -51,6 +51,7 @@ struct PbrNodeImpl {
       : _camname(AddPooledString("Camera"))
       , _context(node, "orkshader://deferred", KMAXLIGHTS)
       , _lightProcessor(_context, node) {
+    _enumeratedLights = std::make_shared<EnumeratedLights>();
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ~PbrNodeImpl() {
@@ -113,7 +114,7 @@ struct PbrNodeImpl {
       EASY_BLOCK("lights-1");
       lmgr->enumerateInPass(_context._accumCPD, _enumeratedLights);
       _lightProcessor.gpuUpdate(drawdata, VD, _enumeratedLights);
-      auto& lights = _enumeratedLights._enumeratedLights;
+      auto& lights = _enumeratedLights->_alllights;
       if (lights.size())
         _lightProcessor.renderDecals(drawdata, VD, _enumeratedLights);
     }
@@ -194,7 +195,7 @@ struct PbrNodeImpl {
 
     if (auto lmgr = CIMPL->lightManager()) {
       EASY_BLOCK("lights-2");
-      if (_enumeratedLights._enumeratedLights.size())
+      if (_enumeratedLights->_alllights.size())
         _lightProcessor.renderLights(drawdata, VD, _enumeratedLights);
     }
 
@@ -218,7 +219,7 @@ struct PbrNodeImpl {
   int _sequence = 0;
   std::atomic<int> _lightjobcount;
   ork::Timer _timer;
-  EnumeratedLights _enumeratedLights;
+  enumeratedlights_ptr_t _enumeratedLights;
   SimpleLightProcessor _lightProcessor;
 
 }; // IMPL

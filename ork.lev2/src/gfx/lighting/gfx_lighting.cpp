@@ -486,8 +486,8 @@ void LightManagerData::describeX(class_t* c) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void LightManager::enumerateInPass(const CompositingPassData& CPD, EnumeratedLights& out) const {
-  out._enumeratedLights.clear();
+void LightManager::enumerateInPass(const CompositingPassData& CPD, enumeratedlights_ptr_t out_lights) const {
+  out_lights->_alllights.clear();
   ////////////////////////////////////////////////////////////
   for (GlobalLightContainer::map_type::const_iterator it = mGlobalStationaryLights.mPrioritizedLights.begin();
        it != mGlobalStationaryLights.mPrioritizedLights.end();
@@ -495,10 +495,10 @@ void LightManager::enumerateInPass(const CompositingPassData& CPD, EnumeratedLig
     Light* plight = it->second;
 
     if (true) { // plight->IsInFrustum(frustum)) {
-      size_t idx = out._enumeratedLights.size();
+      size_t idx = out_lights->_alllights.size();
 
       plight->miInFrustumID = 1 << idx;
-      out._enumeratedLights.push_back(plight);
+      out_lights->_alllights.push_back(plight);
     } else {
       plight->miInFrustumID = -1;
     }
@@ -510,10 +510,10 @@ void LightManager::enumerateInPass(const CompositingPassData& CPD, EnumeratedLig
     Light* plight = it->second;
 
     if (true) { // plight->IsInFrustum(frustum)) {
-      size_t idx = out._enumeratedLights.size();
+      size_t idx = out_lights->_alllights.size();
 
       plight->miInFrustumID = 1 << idx;
-      out._enumeratedLights.push_back(plight);
+      out_lights->_alllights.push_back(plight);
     } else {
       plight->miInFrustumID = -1;
     }
@@ -523,37 +523,37 @@ void LightManager::enumerateInPass(const CompositingPassData& CPD, EnumeratedLig
   // categorize
   ////////////////////////////////////////////////////////////
 
-  out._untexturedpointlights.clear();
-  out._untexturedspotlights.clear();
-  out._tex2pointlightmap.clear();
-  out._tex2spotlightmap.clear();
-  out._tex2spotdecalmap.clear();
-  out._tex2shadowedspotlightmap.clear();
+  out_lights->_untexturedpointlights.clear();
+  out_lights->_untexturedspotlights.clear();
+  out_lights->_tex2pointlightmap.clear();
+  out_lights->_tex2spotlightmap.clear();
+  out_lights->_tex2spotdecalmap.clear();
+  out_lights->_tex2shadowedspotlightmap.clear();
 
-  for (auto l : out._enumeratedLights) {
+  for (auto l : out_lights->_alllights) {
     if (l->isShadowCaster()) {
       if (auto as_spot = dynamic_cast<lev2::SpotLight*>(l)) {
         auto cookie = as_spot->cookie();
         if (cookie)
-          out._tex2shadowedspotlightmap[cookie.get()].push_back(as_spot);
+          out_lights->_tex2shadowedspotlightmap[cookie.get()].push_back(as_spot);
       }
     } else if (auto as_point = dynamic_cast<lev2::PointLight*>(l)) {
       auto cookie = as_point->cookie();
       if (cookie)
-        out._tex2pointlightmap[cookie.get()].push_back(as_point);
+        out_lights->_tex2pointlightmap[cookie.get()].push_back(as_point);
       else
-        out._untexturedpointlights.push_back(as_point);
+        out_lights->_untexturedpointlights.push_back(as_point);
     } else if (auto as_spot = dynamic_cast<lev2::SpotLight*>(l)) {
       auto cookie = as_spot->cookie();
       bool decal  = as_spot->decal();
       if (decal) {
         if (cookie)
-          out._tex2spotdecalmap[cookie.get()].push_back(as_spot);
+          out_lights->_tex2spotdecalmap[cookie.get()].push_back(as_spot);
       } else {
         if (cookie)
-          out._tex2spotlightmap[cookie.get()].push_back(as_spot);
+          out_lights->_tex2spotlightmap[cookie.get()].push_back(as_spot);
         else
-          out._untexturedspotlights.push_back(as_spot);
+          out_lights->_untexturedspotlights.push_back(as_spot);
       }
     }
   }
@@ -658,7 +658,7 @@ HeadLightManager::HeadLightManager(RenderContextFrameData& FrameData)
     mHeadLightGroup.mLightManager = FrameData.GetLightManager();
     mHeadLightMatrix.SetTranslation( vP );
     mHeadLightManager.mGlobalMovingLights.AddLight( & mHeadLight );
-    mHeadLightManager._enumeratedLights.push_back(& mHeadLight);*/
+    mHeadLightManager._alllights.push_back(& mHeadLight);*/
 }
 
 ///////////////////////////////////////////////////////////////////////////////

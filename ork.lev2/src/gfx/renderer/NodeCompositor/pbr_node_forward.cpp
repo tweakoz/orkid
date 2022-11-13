@@ -55,6 +55,7 @@ struct ForwardPbrNodeImpl {
       //_rtg_donly->_depthOnly = true;
       _skybox_material = std::make_shared<PBRMaterial>(context);
       _skybox_fxinstlut = _skybox_material->createSkyboxFxInstLut();
+      _enumeratedLights = std::make_shared<EnumeratedLights>();
     }
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -93,8 +94,8 @@ struct ForwardPbrNodeImpl {
     if (auto lmgr = CIMPL->lightManager()) {
       EASY_BLOCK("lights-1");
       lmgr->enumerateInPass(TOPCPD, _enumeratedLights);
-      auto& lights = _enumeratedLights._enumeratedLights;
-      printf("got lights<%zu>\n", lights.size());
+      printf("got alllights<%zu>\n", _enumeratedLights->_alllights.size());
+      //_untexturedpointlights.clear();
       //RCFD._lightmgr = lmgr.get();
     }
 
@@ -170,6 +171,8 @@ struct ForwardPbrNodeImpl {
 
         ///////////////////////////////////////////////////////////////////////////
 
+        //auto& pointlights_untextured = _enumeratedLights._untexturedpointlights;
+
         
         for (const auto& layer_name : CPD.getLayerNames()) {
           targ->debugMarker(FormatString("ForwardPBR::renderEnqueuedScene::layer<%s>", layer_name.c_str()));
@@ -199,7 +202,7 @@ struct ForwardPbrNodeImpl {
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ForwardNode* _node;
   std::string _camname, _layername;
-  EnumeratedLights _enumeratedLights;
+  enumeratedlights_ptr_t _enumeratedLights;
   rtgroup_ptr_t _rtg;
   rtgroup_ptr_t _rtg_donly;
   fmtx4 _viewOffsetMatrix;

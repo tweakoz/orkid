@@ -59,7 +59,7 @@ void CpuLightProcessor::_clearFrameLighting() {
     _lighttiles[i].atomicOp([](pllist_t& item) { item.clear(); });
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void CpuLightProcessor::render(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights) {
+void CpuLightProcessor::render(CompositorDrawData& drawdata, const ViewData& VD, enumeratedlights_constptr_t enumlights) {
   FrameRenderer& framerenderer = drawdata.mFrameRenderer;
   RenderContextFrameData& RCFD = framerenderer.framedata();
   auto context                 = RCFD.GetTarget();
@@ -73,7 +73,7 @@ void CpuLightProcessor::render(CompositorDrawData& drawdata, const ViewData& VD,
 void CpuLightProcessor::_renderUnshadowedUnTexturedPointLights(
     CompositorDrawData& drawdata,
     const ViewData& VD,
-    const EnumeratedLights& enumlights) {
+    enumeratedlights_constptr_t enumlights) {
   bool is_stereo = VD._isStereo;
   /////////////////////////////////////////////////////////////////
   FrameRenderer& framerenderer = drawdata.mFrameRenderer;
@@ -87,7 +87,7 @@ void CpuLightProcessor::_renderUnshadowedUnTexturedPointLights(
   // convert enumerated scenelights to deferred format
   /////////////////////////////////////
 
-  const auto& scene_lights = enumlights._enumeratedLights;
+  const auto& scene_lights = enumlights->_alllights;
 
   const int KTILEMAXX = _deferredContext._clusterW - 1;
   const int KTILEMAXY = _deferredContext._clusterH - 1;

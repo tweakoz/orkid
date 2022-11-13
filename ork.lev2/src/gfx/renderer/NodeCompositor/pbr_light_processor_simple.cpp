@@ -51,7 +51,7 @@ void SimpleLightProcessor::_gpuInit(lev2::Context* target) {
   }
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void SimpleLightProcessor::gpuUpdate(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights) {
+void SimpleLightProcessor::gpuUpdate(CompositorDrawData& drawdata, const ViewData& VD, enumeratedlights_constptr_t enumlights) {
   FrameRenderer& framerenderer = drawdata.mFrameRenderer;
   RenderContextFrameData& RCFD = framerenderer.framedata();
   auto context                 = drawdata.context();
@@ -63,16 +63,16 @@ void SimpleLightProcessor::gpuUpdate(CompositorDrawData& drawdata, const ViewDat
   //  update items incrementally
   /////////////////////////////////////
 
-  //const auto& scene_lights = enumlights._enumeratedLights;
+  //const auto& scene_lights = enumlights->_enumeratedLights;
 
 
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void SimpleLightProcessor::renderDecals(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights) {
+void SimpleLightProcessor::renderDecals(CompositorDrawData& drawdata, const ViewData& VD, enumeratedlights_constptr_t enumlights) {
   _renderTexturedSpotDecals(drawdata, VD, enumlights);
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void SimpleLightProcessor::renderLights(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights) {
+void SimpleLightProcessor::renderLights(CompositorDrawData& drawdata, const ViewData& VD, enumeratedlights_constptr_t enumlights) {
   _renderUnshadowedUntexturedPointLights(drawdata, VD, enumlights);
   _renderUnshadowedTexturedPointLights(drawdata, VD, enumlights);
   _renderUnshadowedTexturedSpotLights(drawdata, VD, enumlights);
@@ -143,15 +143,15 @@ void SimpleLightProcessor::_updateSpotLightUBOparams(Context* ctx, const spotlig
 void SimpleLightProcessor::_renderUnshadowedUntexturedPointLights(
     CompositorDrawData& drawdata,
     const ViewData& VD,
-    const EnumeratedLights& enumlights) {
+    enumeratedlights_constptr_t enumlights) {
   /////////////////////////////////////////////////////////////////
   auto context  = drawdata.context();
   auto FXI      = context->FXI();
   auto this_buf = context->FBI()->GetThisBuffer();
   context->debugPushGroup("SimpleLightProcessor::_renderUnshadowedUntexturedPointLights");
   _deferredContext.beginPointLighting(drawdata, VD, nullptr);
-  _updatePointLightUBOparams(context, enumlights._untexturedpointlights, VD._camposmono);
-  int numlights = enumlights._untexturedpointlights.size();
+  _updatePointLightUBOparams(context, enumlights->_untexturedpointlights, VD._camposmono);
+  int numlights = enumlights->_untexturedpointlights.size();
   //printf("numlights<%d>\n", numlights );
   //////////////////////////////////////////////////
   fvec4 quad_pos(-1, -1, 2, 2);
@@ -166,14 +166,14 @@ void SimpleLightProcessor::_renderUnshadowedUntexturedPointLights(
 void SimpleLightProcessor::_renderUnshadowedTexturedPointLights(
     CompositorDrawData& drawdata,
     const ViewData& VD,
-    const EnumeratedLights& enumlights) {
+    enumeratedlights_constptr_t enumlights) {
   /////////////////////////////////////////////////////////////////
   auto context  = drawdata.context();
   auto FXI      = context->FXI();
   auto this_buf = context->FBI()->GetThisBuffer();
   /////////////////////////////////////////////////////////
   context->debugPushGroup("SimpleLightProcessor::_renderUnshadowedTexturedPointLights");
-  for (auto texture_item : enumlights._tex2pointlightmap) {
+  for (auto texture_item : enumlights->_tex2pointlightmap) {
     auto texture = texture_item.first;
     int lidx     = 0;
     _deferredContext.beginPointLighting(drawdata, VD, texture);
@@ -193,14 +193,14 @@ void SimpleLightProcessor::_renderUnshadowedTexturedPointLights(
 void SimpleLightProcessor::_renderUnshadowedTexturedSpotLights(
     CompositorDrawData& drawdata,
     const ViewData& VD,
-    const EnumeratedLights& enumlights) {
+    enumeratedlights_constptr_t enumlights) {
   /////////////////////////////////////////////////////////////////
   auto context  = drawdata.context();
   auto FXI      = context->FXI();
   auto this_buf = context->FBI()->GetThisBuffer();
   /////////////////////////////////////////////////////////
   context->debugPushGroup("SimpleLightProcessor::_renderUnshadowedTexturedSpotLights");
-  for (auto texture_item : enumlights._tex2spotlightmap) {
+  for (auto texture_item : enumlights->_tex2spotlightmap) {
     auto texture = texture_item.first;
     int lidx     = 0;
     _deferredContext.beginSpotLighting(drawdata, VD, texture);
@@ -220,14 +220,14 @@ void SimpleLightProcessor::_renderUnshadowedTexturedSpotLights(
 void SimpleLightProcessor::_renderTexturedSpotDecals(
     CompositorDrawData& drawdata,
     const ViewData& VD,
-    const EnumeratedLights& enumlights) {
+    enumeratedlights_constptr_t enumlights) {
   /////////////////////////////////////////////////////////////////
   auto context  = drawdata.context();
   auto FXI      = context->FXI();
   auto this_buf = context->FBI()->GetThisBuffer();
   /////////////////////////////////////////////////////////
   context->debugPushGroup("SimpleLightProcessor::_renderTexturedSpotDecals");
-  for (auto texture_item : enumlights._tex2spotdecalmap) {
+  for (auto texture_item : enumlights->_tex2spotdecalmap) {
     auto texture = texture_item.first;
     int lidx     = 0;
     _deferredContext.beginSpotDecaling(drawdata, VD, texture);
@@ -247,7 +247,7 @@ void SimpleLightProcessor::_renderTexturedSpotDecals(
 void SimpleLightProcessor::_renderShadowedTexturedSpotLights(
     CompositorDrawData& drawdata,
     const ViewData& VD,
-    const EnumeratedLights& enumlights) {
+    enumeratedlights_constptr_t enumlights) {
   auto& RCFD     = drawdata.RCFD();
   auto context   = drawdata.context();
   auto& ddprops  = drawdata._properties;
@@ -263,7 +263,7 @@ void SimpleLightProcessor::_renderShadowedTexturedSpotLights(
   context->debugPushGroup("SimpleLightProcessor::_renderShadowedTexturedSpotLights::depthmaps");
 
   auto DEPTHRENDERCPD = CIMPL->topCPD();
-  for (auto texture_item : enumlights._tex2shadowedspotlightmap) {
+  for (auto texture_item : enumlights->_tex2shadowedspotlightmap) {
     for (auto light : texture_item.second) {
       auto irt              = light->rendertarget(context);
       auto shadowrect       = ViewportRect(0, 0, light->_shadowmapDim, light->_shadowmapDim);
@@ -304,7 +304,7 @@ void SimpleLightProcessor::_renderShadowedTexturedSpotLights(
   context->debugPushGroup("SimpleLightProcessor::_renderShadowedTexturedSpotLights::accum");
   auto& lightmtl = _deferredContext._lightingmtl;
 
-  for (auto texture_item : enumlights._tex2shadowedspotlightmap) {
+  for (auto texture_item : enumlights->_tex2shadowedspotlightmap) {
     auto cookie  = texture_item.first;
     auto& lights = texture_item.second;
 
