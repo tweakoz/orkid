@@ -1,6 +1,7 @@
 import "gbuftools.i";
 import "brdftools.i";
 import "deftools.i";
+import "fwdtools.i";
 import "skintools.i";
 ///////////////////////////////////////////////////////////////
 // Interfaces
@@ -522,14 +523,16 @@ fragment_shader ps_forward_test
 	: iface_forward
 	: lib_math
   : lib_brdf
-  : lib_def {
+  : lib_def
+  : lib_fwd {
  	out_color = vec4(forward_lighting(ModColor.xyz),1);
 }
 fragment_shader ps_forward_test_instanced
 	: iface_forward
 	: lib_math
   : lib_brdf
-  : lib_def {
+  : lib_def
+  : lib_fwd {
  	out_color = vec4(forward_lighting(frg_modcolor.xyz),1);
 }
 
@@ -548,7 +551,8 @@ fragment_shader ps_forward_skybox_mono
 	: iface_forward
 	: lib_math
   : lib_brdf
-  : lib_def {
+  : lib_def 
+  : lib_fwd {
 
  	///////////////////////
  	// compute view normal vector
@@ -584,7 +588,7 @@ fragment_shader ps_forward_skybox_stereo
 	: iface_forward
 	: lib_math
   : lib_brdf
-  : lib_def {
+  : lib_fwd {
 		
 		out_color = vec4(1,0,0,1);
 }
