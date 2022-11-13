@@ -63,42 +63,9 @@ void SimpleLightProcessor::gpuUpdate(CompositorDrawData& drawdata, const ViewDat
   //  update items incrementally
   /////////////////////////////////////
 
-  const auto& scene_lights = enumlights._enumeratedLights;
+  //const auto& scene_lights = enumlights._enumeratedLights;
 
-  _untexturedpointlights.clear();
-  _untexturedspotlights.clear();
-  _tex2pointlightmap.clear();
-  _tex2spotlightmap.clear();
-  _tex2spotdecalmap.clear();
-  _tex2shadowedspotlightmap.clear();
 
-  for (auto l : scene_lights) {
-    if (l->isShadowCaster()) {
-      if (auto as_spot = dynamic_cast<lev2::SpotLight*>(l)) {
-        auto cookie = as_spot->cookie();
-        if (cookie)
-          _tex2shadowedspotlightmap[cookie.get()].push_back(as_spot);
-      }
-    } else if (auto as_point = dynamic_cast<lev2::PointLight*>(l)) {
-      auto cookie = as_point->cookie();
-      if (cookie)
-        _tex2pointlightmap[cookie.get()].push_back(as_point);
-      else
-        _untexturedpointlights.push_back(as_point);
-    } else if (auto as_spot = dynamic_cast<lev2::SpotLight*>(l)) {
-      auto cookie = as_spot->cookie();
-      bool decal  = as_spot->decal();
-      if (decal) {
-        if (cookie)
-          _tex2spotdecalmap[cookie.get()].push_back(as_spot);
-      } else {
-        if (cookie)
-          _tex2spotlightmap[cookie.get()].push_back(as_spot);
-        else
-          _untexturedspotlights.push_back(as_spot);
-      }
-    }
-  }
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void SimpleLightProcessor::renderDecals(CompositorDrawData& drawdata, const ViewData& VD, const EnumeratedLights& enumlights) {
@@ -112,7 +79,7 @@ void SimpleLightProcessor::renderLights(CompositorDrawData& drawdata, const View
   _renderShadowedTexturedSpotLights(drawdata, VD, enumlights);
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void SimpleLightProcessor::_updatePointLightUBOparams(Context* ctx, pointlightlist_t& lights, fvec3 campos) {
+void SimpleLightProcessor::_updatePointLightUBOparams(Context* ctx, const pointlightlist_t& lights, fvec3 campos) {
   auto FXI           = ctx->FXI();
   size_t offset_cd   = 0;
   size_t offset_mtx  = offset_cd + KMAXLIGHTSPERCHUNK * sizeof(fvec4);
@@ -142,7 +109,7 @@ void SimpleLightProcessor::_updatePointLightUBOparams(Context* ctx, pointlightli
   ctx->debugPopGroup();
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void SimpleLightProcessor::_updateSpotLightUBOparams(Context* ctx, spotlightlist_t& lights, fvec3 campos) {
+void SimpleLightProcessor::_updateSpotLightUBOparams(Context* ctx, const spotlightlist_t& lights, fvec3 campos) {
   auto FXI           = ctx->FXI();
   size_t offset_cd   = 0;
   size_t offset_mtx  = offset_cd + KMAXLIGHTSPERCHUNK * sizeof(fvec4);
@@ -183,8 +150,8 @@ void SimpleLightProcessor::_renderUnshadowedUntexturedPointLights(
   auto this_buf = context->FBI()->GetThisBuffer();
   context->debugPushGroup("SimpleLightProcessor::_renderUnshadowedUntexturedPointLights");
   _deferredContext.beginPointLighting(drawdata, VD, nullptr);
-  _updatePointLightUBOparams(context, _untexturedpointlights, VD._camposmono);
-  int numlights = _untexturedpointlights.size();
+  _updatePointLightUBOparams(context, enumlights._untexturedpointlights, VD._camposmono);
+  int numlights = enumlights._untexturedpointlights.size();
   //printf("numlights<%d>\n", numlights );
   //////////////////////////////////////////////////
   fvec4 quad_pos(-1, -1, 2, 2);
@@ -206,7 +173,7 @@ void SimpleLightProcessor::_renderUnshadowedTexturedPointLights(
   auto this_buf = context->FBI()->GetThisBuffer();
   /////////////////////////////////////////////////////////
   context->debugPushGroup("SimpleLightProcessor::_renderUnshadowedTexturedPointLights");
-  for (auto texture_item : _tex2pointlightmap) {
+  for (auto texture_item : enumlights._tex2pointlightmap) {
     auto texture = texture_item.first;
     int lidx     = 0;
     _deferredContext.beginPointLighting(drawdata, VD, texture);
@@ -233,7 +200,7 @@ void SimpleLightProcessor::_renderUnshadowedTexturedSpotLights(
   auto this_buf = context->FBI()->GetThisBuffer();
   /////////////////////////////////////////////////////////
   context->debugPushGroup("SimpleLightProcessor::_renderUnshadowedTexturedSpotLights");
-  for (auto texture_item : _tex2spotlightmap) {
+  for (auto texture_item : enumlights._tex2spotlightmap) {
     auto texture = texture_item.first;
     int lidx     = 0;
     _deferredContext.beginSpotLighting(drawdata, VD, texture);
@@ -260,7 +227,7 @@ void SimpleLightProcessor::_renderTexturedSpotDecals(
   auto this_buf = context->FBI()->GetThisBuffer();
   /////////////////////////////////////////////////////////
   context->debugPushGroup("SimpleLightProcessor::_renderTexturedSpotDecals");
-  for (auto texture_item : _tex2spotdecalmap) {
+  for (auto texture_item : enumlights._tex2spotdecalmap) {
     auto texture = texture_item.first;
     int lidx     = 0;
     _deferredContext.beginSpotDecaling(drawdata, VD, texture);
@@ -296,7 +263,7 @@ void SimpleLightProcessor::_renderShadowedTexturedSpotLights(
   context->debugPushGroup("SimpleLightProcessor::_renderShadowedTexturedSpotLights::depthmaps");
 
   auto DEPTHRENDERCPD = CIMPL->topCPD();
-  for (auto texture_item : _tex2shadowedspotlightmap) {
+  for (auto texture_item : enumlights._tex2shadowedspotlightmap) {
     for (auto light : texture_item.second) {
       auto irt              = light->rendertarget(context);
       auto shadowrect       = ViewportRect(0, 0, light->_shadowmapDim, light->_shadowmapDim);
@@ -337,7 +304,7 @@ void SimpleLightProcessor::_renderShadowedTexturedSpotLights(
   context->debugPushGroup("SimpleLightProcessor::_renderShadowedTexturedSpotLights::accum");
   auto& lightmtl = _deferredContext._lightingmtl;
 
-  for (auto texture_item : _tex2shadowedspotlightmap) {
+  for (auto texture_item : enumlights._tex2shadowedspotlightmap) {
     auto cookie  = texture_item.first;
     auto& lights = texture_item.second;
 

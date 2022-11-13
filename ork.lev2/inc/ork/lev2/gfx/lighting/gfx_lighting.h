@@ -480,8 +480,21 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct EnumeratedLights;
+
+using pointlightlist_t    = std::vector<PointLight*>;
+using spotlightlist_t     = std::vector<SpotLight*>;
+using tex2pointlightmap_t = std::map<Texture*, pointlightlist_t>;
+using tex2spotlightmap_t  = std::map<Texture*, spotlightlist_t>;
+
 struct EnumeratedLights {
   std::vector<Light*> _enumeratedLights;
+  pointlightlist_t _untexturedpointlights;
+  tex2pointlightmap_t _tex2pointlightmap;
+  spotlightlist_t _untexturedspotlights;
+  tex2spotlightmap_t _tex2spotlightmap;
+  tex2spotlightmap_t _tex2shadowedspotlightmap;
+  tex2spotlightmap_t _tex2spotdecalmap;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -533,5 +546,6 @@ however some lights are dynamically created, destroyed and moved
 ///////////////////////
 ///////////////////////
 */
+
 
 }} // namespace ork::lev2

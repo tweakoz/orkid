@@ -94,7 +94,8 @@ struct ForwardPbrNodeImpl {
       EASY_BLOCK("lights-1");
       lmgr->enumerateInPass(TOPCPD, _enumeratedLights);
       auto& lights = _enumeratedLights._enumeratedLights;
-      //printf("got lights<%zu>\n", lights.size());
+      printf("got lights<%zu>\n", lights.size());
+      //RCFD._lightmgr = lmgr.get();
     }
 
     //////////////////////////////////////////////////////

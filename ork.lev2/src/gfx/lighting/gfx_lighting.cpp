@@ -520,6 +520,44 @@ void LightManager::enumerateInPass(const CompositingPassData& CPD, EnumeratedLig
   }
 
   ////////////////////////////////////////////////////////////
+  // categorize
+  ////////////////////////////////////////////////////////////
+
+  out._untexturedpointlights.clear();
+  out._untexturedspotlights.clear();
+  out._tex2pointlightmap.clear();
+  out._tex2spotlightmap.clear();
+  out._tex2spotdecalmap.clear();
+  out._tex2shadowedspotlightmap.clear();
+
+  for (auto l : out._enumeratedLights) {
+    if (l->isShadowCaster()) {
+      if (auto as_spot = dynamic_cast<lev2::SpotLight*>(l)) {
+        auto cookie = as_spot->cookie();
+        if (cookie)
+          out._tex2shadowedspotlightmap[cookie.get()].push_back(as_spot);
+      }
+    } else if (auto as_point = dynamic_cast<lev2::PointLight*>(l)) {
+      auto cookie = as_point->cookie();
+      if (cookie)
+        out._tex2pointlightmap[cookie.get()].push_back(as_point);
+      else
+        out._untexturedpointlights.push_back(as_point);
+    } else if (auto as_spot = dynamic_cast<lev2::SpotLight*>(l)) {
+      auto cookie = as_spot->cookie();
+      bool decal  = as_spot->decal();
+      if (decal) {
+        if (cookie)
+          out._tex2spotdecalmap[cookie.get()].push_back(as_spot);
+      } else {
+        if (cookie)
+          out._tex2spotlightmap[cookie.get()].push_back(as_spot);
+        else
+          out._untexturedspotlights.push_back(as_spot);
+      }
+    }
+  }
+  ////////////////////////////////////////////////////////////
   // mcollector.SetManager(this);
   // mcollector.Clear();
 }
