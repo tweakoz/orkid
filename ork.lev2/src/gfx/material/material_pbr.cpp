@@ -344,6 +344,9 @@ FxStateInstance::statelambda_t PBRMaterial::createBasicStateLambda() const{
 
     auto stereocams = CPD._stereoCameraMatrices;
     auto monocams   = CPD._cameraMatrices;
+
+    FXI->BindParamMatrix(_paramM, worldmatrix );
+
     if (monocams) {
       auto eye_pos = monocams->_vmatrix.inverse().translation();
       FXI->BindParamVect3(_paramEyePostion, eye_pos);

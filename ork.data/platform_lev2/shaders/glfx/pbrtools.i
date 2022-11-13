@@ -526,19 +526,33 @@ fragment_shader ps_forward_test
 		vec3 normal = normalize(frg_tbn*N);
 		vec3 rufmtlamb = texture(MtlRufMap,frg_uv0).zyx;
 
+		vec3 wpos = frg_wpos.xyz;
 		PbrData pbd;
 		pbd._emissive = length(TN)<0.1;
 		pbd._metallic = rufmtlamb.x * MetallicFactor;
 		pbd._roughness = rufmtlamb.y * RoughnessFactor;
 		pbd._albedo = (ModColor*frg_clr*texture(ColorMap,frg_uv0)).xyz;
-		pbd._wpos = frg_wpos.xyz;
+		pbd._wpos = wpos;
 		pbd._wnrm = normal;
 		pbd._fogZ = 0.0;
 		pbd._atmos = 0.0;
 		pbd._alpha = 1.0;
-		vec3 rgb = pbrEnvironmentLightingXXX(pbd);
+		vec3 env_lighting = pbrEnvironmentLightingXXX(pbd);
 
-		out_color = vec4(rgb,1);
+		///////////////////////////////////////////////
+		// point lighting
+		///////////////////////////////////////////////
+
+    LightCtx plc = lcalc_forward(wpos,pbd);
+    vec3 point_lighting       = vec3(0, 0, 0);
+		for(int i=0; i<point_light_count; i++){
+      plc._lightdel = _lightpos[i].xyz - wpos;
+      point_lighting += plcalc_forward(plc,pbd)*_lightcolor[i].xyz;
+		}
+
+		///////////////////////////////////////////////
+
+		out_color = vec4(env_lighting+point_lighting,1);
 }
 
 ///////////////////////////////////////////////////////////////

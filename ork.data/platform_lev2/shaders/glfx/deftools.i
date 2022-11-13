@@ -31,6 +31,43 @@ libblock lib_def
   	vec3 _albedo;
   };
   /////////////////////////////////////////////////////////
+  LightCtx lcalc_forward(vec3 wpos,PbrData pbd){
+    LightCtx plc;
+    const vec3 metalbase = vec3(0.04);
+    float metallic = clamp(pbd._metallic,0.02,0.99);
+    vec3 basecolor = pbd._albedo;
+    vec3 diffcolor = mix(basecolor,vec3(0),metallic);
+    vec3 speccolor = mix(vec3(0.02),basecolor,metallic);
+    /////////////////////////
+    plc._viewdir = normalize(EyePostion-wpos);
+    plc._metallic = pbd._metallic;
+    plc._roughness = pbd._roughness;
+    plc._normal = pbd._wnrm;
+    plc._F0 = mix(metalbase,basecolor,metallic);
+    return plc;
+  }
+  /////////////////////////////////////////////////////////
+  vec3 plcalc_forward(LightCtx plc,PbrData pbd){
+      float dist2lightsq = plc._lightdel.x*plc._lightdel.x
+                         + plc._lightdel.y*plc._lightdel.y
+                         + plc._lightdel.z*plc._lightdel.z;
+      float atten = 1.0 / max(.05,dist2lightsq);
+      vec3 lightdir = normalize(plc._lightdel);
+      vec3 halfdir = normalize(plc._viewdir + lightdir);
+      float ggx = computeGGX(plc._normal, halfdir, plc._roughness);
+      float geo = geometrySmith(plc._normal, plc._viewdir, lightdir, plc._roughness);
+      vec3 fres = fresnelSchlickRoughness(satdot(halfdir,plc._viewdir), plc._F0,plc._roughness);
+      vec3 numerator  = min(ggx * geo * SpecularLevel, 16)*fres;
+      float denominator = 4 * satdot(plc._normal,plc._viewdir) * satdot(plc._normal, lightdir) + EPSILON;
+      vec3 diffusel = vec3(1) - fres;
+      diffusel *= (1 - plc._metallic);
+      float ndotl = satdot(plc._normal,lightdir);
+      vec3 diffuse_term = (diffusel*pbd._albedo*INV_PI)*DiffuseLevel;
+      vec3 specular_term = numerator / max(.0625, denominator);
+
+      return (diffuse_term + specular_term) * atten * ndotl;
+  }
+  /////////////////////////////////////////////////////////
   vec3 pbrEnvironmentLightingXXX(PbrData pbd){
 
     vec3 out_color;
