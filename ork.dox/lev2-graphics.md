@@ -38,7 +38,7 @@
      * Spot lights (textured and untextured).
      * Directional lights.
      * Shadowing support
-     * Hybrid permutations pending.
+     * Hybrid permutations pending (eg. Forward+).
      * Deferred 
        * Tiled Deferred Shading (Deferred only).
        * Simple light processor (CPU submits light batches without light-tile-culling).
