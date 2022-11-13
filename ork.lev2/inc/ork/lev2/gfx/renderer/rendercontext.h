@@ -123,6 +123,11 @@ struct RenderContextFrameData {
   void unSetUserProperty(CrcString);
   rendervar_t getUserProperty(CrcString prop) const;
 
+  template <typename T>
+  T userPropertyAs(CrcString prop) const{
+    return getUserProperty(prop).get<T>();
+  }
+
   const DrawableBuffer* GetDB() const;
 
   const CompositingPassData& topCPD() const;

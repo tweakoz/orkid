@@ -85,20 +85,6 @@ struct ForwardPbrNodeImpl {
     int newwidth   = ddprops["OutputWidth"_crcu].get<int>();
     int newheight  = ddprops["OutputHeight"_crcu].get<int>();
 
-    RCFD._pbrcommon = pbrcommon;
-
-    /////////////////////////////////////////////////
-    // enumerate lights
-    /////////////////////////////////////////////////
-
-    if (auto lmgr = CIMPL->lightManager()) {
-      EASY_BLOCK("lights-1");
-      lmgr->enumerateInPass(TOPCPD, _enumeratedLights);
-      printf("got alllights<%zu>\n", _enumeratedLights->_alllights.size());
-      //_untexturedpointlights.clear();
-      //RCFD._lightmgr = lmgr.get();
-    }
-
     //////////////////////////////////////////////////////
     // Resize RenderTargets
     //////////////////////////////////////////////////////
@@ -106,6 +92,18 @@ struct ForwardPbrNodeImpl {
       _rtg->Resize(newwidth, newheight);
       //_rtg_donly->Resize(newwidth, newheight);
     }
+
+    /////////////////////////////////////////////////
+    // enumerate lights / PBR
+    /////////////////////////////////////////////////
+
+    if (auto lmgr = CIMPL->lightManager()) {
+      EASY_BLOCK("lights-1");
+      lmgr->enumerateInPass(TOPCPD, _enumeratedLights);
+    }
+
+    RCFD._pbrcommon = pbrcommon;
+
     //////////////////////////////////////////////////////
     //////////////////////////////////////////////////////
     //////////////////////////////////////////////////////
@@ -173,6 +171,7 @@ struct ForwardPbrNodeImpl {
 
         //auto& pointlights_untextured = _enumeratedLights._untexturedpointlights;
 
+        RCFD.setUserProperty("enumeratedlights"_crcu,_enumeratedLights);
         
         for (const auto& layer_name : CPD.getLayerNames()) {
           targ->debugMarker(FormatString("ForwardPBR::renderEnqueuedScene::layer<%s>", layer_name.c_str()));

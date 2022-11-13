@@ -34,6 +34,38 @@ extern std::atomic<int> __FIND_IT;
 
 /////////////////////////////////////////////////////////////////////////
 
+static FxShaderParamBuffer* _getPointLightDataBuffer(Context* context) {
+  FxShaderParamBuffer* _buffer;
+
+  uint64_t LOCK = lev2::GfxEnv::createLock();
+  context->makeCurrentContext();
+
+  std::vector<uint8_t> initial_bytes;
+  initial_bytes.resize(64*32*sizeof(float)*4);
+
+    _buffer = context->FXI()->createParamBuffer(65536);
+    auto mapped  = context->FXI()->mapParamBuffer(_buffer);
+    //size_t base  = 0;
+    //for (int i = 0; i < KMAXLIGHTSPERCHUNK; i++)
+      //mapped->ref<fvec3>(base + i * sizeof(fvec4)) = fvec3(0, 0, 0);
+    //base += KMAXLIGHTSPERCHUNK * sizeof(fvec4);
+    //for (int i = 0; i < KMAXLIGHTSPERCHUNK; i++)
+      //mapped->ref<fvec4>(base + i * sizeof(fvec4)) = fvec4();
+    mapped->unmap();
+
+  lev2::GfxEnv::releaseLock(LOCK);
+  return _buffer;
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+FxShaderParamBuffer* PBRMaterial::pointLightDataBuffer(Context* targ) {
+  static FxShaderParamBuffer* _buffer = _getPointLightDataBuffer(targ);
+  return _buffer;
+}
+
+/////////////////////////////////////////////////////////////////////////
+
 static texture_ptr_t _getbrdfintmap(Context* targ) {
   texture_ptr_t _map;
 

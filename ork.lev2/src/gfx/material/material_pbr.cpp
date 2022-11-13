@@ -18,6 +18,7 @@
 #include <ork/lev2/gfx/gfxmaterial.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/shadman.h>
+#include <ork/lev2/gfx/lighting/gfx_lighting.h>
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/gfx/brdf.inl>
 #include <ork/pch.h>
@@ -270,6 +271,9 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _parEnvironmentMipBias  = fxi->parameter(_shader, "EnvironmentMipBias");
   _parEnvironmentMipScale = fxi->parameter(_shader, "EnvironmentMipScale");
 
+  _parUnTexPointLightsCount = fxi->parameter(_shader, "point_light_count");
+  _parUnTexPointLightsData = fxi->parameterBlock(_shader, "ub_frg_fwd_lighting");
+
   //
 
   assert(_paramMapNormal != nullptr);
@@ -467,15 +471,52 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
             fxinst->addStateLambda([this](const RenderContextInstData& RCID, int ipass){
               auto _this = (PBRMaterial*) this;
               auto RCFD        = RCID._RCFD;
+              auto enumlights = RCFD->userPropertyAs<enumeratedlights_ptr_t>("enumeratedlights"_crcu);
               auto context     = RCFD->GetTarget();
               auto FXI         = context->FXI();
               auto MTXI        = context->MTXI();
               auto RSI         = context->RSI();
+
+              ////////////////////////////////////////////////
+              // set raster state
+              ////////////////////////////////////////////////
+
               _this->_rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
               _this->_rasterstate.SetDepthTest(EDEPTHTEST_LESS);
               _this->_rasterstate.SetZWriteMask(true);
               _this->_rasterstate.SetRGBAWriteMask(true,true);
               RSI->BindRasterState(_this->_rasterstate);
+
+              ////////////////////////////////////////////////
+              // setup forward lighting
+              ////////////////////////////////////////////////
+
+              //printf("fwd: all lights count<%zu>\n", enumlights->_alllights.size());
+
+              int num_untextured_pointlights = enumlights->_untexturedpointlights.size();
+
+              auto pl_buffer = PBRMaterial::pointLightDataBuffer(context);
+              auto pl_mapped = FXI->mapParamBuffer(pl_buffer, 0, pl_buffer->_length);
+
+              size_t f32_stride   = sizeof(float);
+              size_t vec4_stride   = sizeof(fvec4);
+              size_t base_color    = 0;
+              size_t base_position = base_color+vec4_stride*16;
+              size_t base_radius   = base_position+vec4_stride*16;
+
+              size_t index = 0;
+              for( auto light : enumlights->_untexturedpointlights ){
+                pl_mapped->ref<fvec4>(base_color+(index*vec4_stride)) = light->color();
+                pl_mapped->ref<fvec4>(base_position+(index*vec4_stride)) = light->worldPosition();
+                pl_mapped->ref<float>(base_radius+(index*f32_stride)) = light->radius();
+                index++;
+              }
+
+              pl_mapped->unmap();
+
+              FXI->BindParamInt(_parUnTexPointLightsCount, num_untextured_pointlights );
+              FXI->bindParamBlockBuffer(_parUnTexPointLightsData, pl_buffer);
+
             });
           }
           OrkAssert(fxinst->_technique != nullptr);

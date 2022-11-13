@@ -113,7 +113,7 @@ struct FxShaderParamBufferMapping {
 
   template <typename T> T& ref(size_t offset) {
     size_t end = offset + sizeof(T);
-    assert(end <= _length);
+    OrkAssert(end <= _length);
     auto tstar = (T*)(((char*)_mappedaddr) + offset);
     return *tstar;
   }

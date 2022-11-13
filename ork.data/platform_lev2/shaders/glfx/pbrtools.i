@@ -59,9 +59,18 @@ uniform_set ub_frg_fwd {
   float EnvironmentMipBias;
   float EnvironmentMipScale;
 
+	int point_light_count;
+	sampler2D UnTexPointLightsData;
+
 	vec4 ModColor;
 	//vec2 InvViewportSize; // inverse target size
 	vec3 EyePostion;
+}
+///////////////////////////////////////////////////////////////
+uniform_block ub_frg_fwd_lighting {
+  vec4 _lightcolor[16];
+  vec4 _lightpos[16];
+  float _lightradius[16];
 }
 ///////////////////////////////////////////////////////////////
 // Vertex Interfaces
@@ -120,7 +129,8 @@ vertex_interface iface_vgbuffer_skinned
 // Fragmentertex Interfaces
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_forward
-	: ub_frg_fwd {
+	: ub_frg_fwd
+	: ub_frg_fwd_lighting {
   inputs {
   	vec4 frg_wpos;
     vec4 frg_clr;
