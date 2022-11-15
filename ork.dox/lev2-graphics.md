@@ -30,21 +30,22 @@
      * Allows for abstract variation of pipeline based on criteria such as mono/stereo, etc..
   
 3. Higher level renderers
-  * Deferred PBR renderer.
-     * Implemented as a Node Compositor technique.
+  * Forward & Deferred PBR renderer.
+     * Implemented as Node Compositor nodes.
      * Metallic-Roughness workflow.
      * Supports monoscopic and stereo-VR. 
-     * Tiled Deferred Shading.
-     * Simple light processor (CPU submits light batches without light-tile-culling).
-     * CPU based light processor (CPU light-tile-culls and submits light batches).
-     * NV Mesh Shader based light processor (GPU light-tile-culls and submits light batches).
      * Point lights.
      * Spot lights (textured and untextured).
      * Directional lights.
      * Shadowing support
-     * Signed Distance Field / Deferred shading hybrid rendering support.
-     * Forward/Hybrid permutations pending.
-     * Single layer transparency / blending support
+     * Hybrid permutations pending (eg. Forward+).
+     * Deferred 
+       * Tiled Deferred Shading (Deferred only).
+       * Simple light processor (CPU submits light batches without light-tile-culling).
+       * CPU based light processor (CPU light-tile-culls and submits light batches).
+       * NV Mesh Shader based light processor (GPU light-tile-culls and submits light batches).
+       * Signed Distance Field / Deferred shading hybrid rendering support.
+       * Single layer transparency / blending support
   * Picking renderer.
      *  Implemented as a Node Compositor technique. Pixel perfect picking support.
 
