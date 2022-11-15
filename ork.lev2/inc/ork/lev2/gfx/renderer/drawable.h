@@ -18,7 +18,7 @@
 #include <ork/object/Object.h>
 #include <ork/object/ObjectClass.h>
 #include <ork/rtti/RTTI.h>
-#include <ork/util/multi_buffer.h>
+#include <ork/util/triple_buffer.h>
 
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/renderer/renderable.h>
@@ -70,23 +70,20 @@ struct DrawableBufItem {
 public:
   typedef ork::lev2::IRenderable::var_t var_t;
 
+  using usermap_t   = std::unordered_map<uint32_t, rendervar_t>;
+
   DrawableBufItem();
   ~DrawableBufItem();
-
-  const Drawable* GetDrawable() const {
-    return _drawable;
-  }
-  void SetDrawable(const Drawable* pdrw) {
-    _drawable = pdrw;
-  }
 
   void terminate();
 
   const Drawable* _drawable;
   DrawQueueXfData mXfData;
   int _bufferIndex;
+  int _serialno = 0;
   onrenderable_fn_t _onrenderable;
   std::atomic<int> _state;
+  usermap_t _usermap;
 
 }; // ~100 bytes
 
@@ -129,8 +126,6 @@ public:
   using rendervar_t = svar64_t;
   using usermap_t   = orklut<CrcString, rendervar_t>;
 
-  static std::atomic<int> _gate;
-
   static const int kmaxlayers = 8;
   typedef ork::fixedlut<std::string, DrawableBufLayer*, kmaxlayers> LayerLut;
   typedef ork::fixedlut<int, prerendercallback_t, 32> CallbackLut_t;
@@ -157,8 +152,6 @@ public:
   void setUserProperty(CrcString, rendervar_t data);
   void unSetUserProperty(CrcString);
   rendervar_t getUserProperty(CrcString prop) const;
-
-  static ork::atomic<bool> gbInsideClearAndSync;
 
   void copyCameras(const CameraDataLut& cameras);
   void Reset();
@@ -201,11 +194,8 @@ struct DrawBufContext {
   const DrawableBuffer* acquireForReadLocked();
   void releaseFromReadLocked(const DrawableBuffer* db);
 
-  ork::mutex _lockedBufferMutex;
-  ork::semaphore _rendersync_sema;
-  ork::semaphore _rendersync_sema2;
-  int  _rendersync_counter = 0;
-  std::shared_ptr<DrawableBuffer> _lockeddrawablebuffer;
+  concurrent_triple_buffer<DrawableBuffer> _triple;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -221,7 +211,7 @@ struct Drawable {
       drawablebufitem_constptr_t item,
       lev2::IRenderer* prenderer) const;
 
-  virtual void enqueueOnLayer(
+  virtual drawablebufitem_ptr_t enqueueOnLayer(
       const DrawQueueXfData& xfdata,
       DrawableBufLayer& buffer) const; 
 
@@ -263,6 +253,7 @@ struct Drawable {
   fvec4 _modcolor;
   onrenderable_fn_t _onrenderable;
   bool mEnabled;
+  std::string _name;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -349,6 +340,9 @@ struct InstancedDrawable : public Drawable {
 
   void resize(size_t count);
   bool isInstanced() const final { return true; }
+  drawablebufitem_ptr_t enqueueOnLayer(
+      const DrawQueueXfData& xfdata,
+      DrawableBufLayer& buffer) const final; 
 
   static constexpr size_t k_texture_dimension_x = 4096;
   static constexpr size_t k_texture_dimension_y = 64;
@@ -512,7 +506,7 @@ struct CallbackDrawable : public Drawable {
     mSortKey = uv;
   }
   void enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const final;
-  void enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const final;
+  drawablebufitem_ptr_t enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const final;
 
   ICallbackDrawableDataDestroyer* mDataDestroyer;
   lev2::CallbackRenderable::cbtype_t mRenderCallback;

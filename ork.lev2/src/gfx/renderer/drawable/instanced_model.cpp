@@ -13,18 +13,29 @@
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/fxstate_instance.h>
 
+#include <ork/kernel/orklut.hpp>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
+#include <ork/reflect/properties/registerX.inl>
+
+ImplementReflectionX(ork::lev2::InstancedModelDrawableData, "InstancedModelDrawableData");
+
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-InstancedDrawable::InstancedDrawable() 
-  : Drawable() {
-  _instancedata = std::make_shared<InstancedDrawableInstanceData>();
-  _drawcount = 0;
+
+void InstancedModelDrawableData::describeX(object::ObjectClass* clazz){
+  clazz->directProperty("assetpath", &InstancedModelDrawableData::_assetpath);
+  clazz->directMapProperty("assetvars", &InstancedModelDrawableData::_assetvars);
+}
+
+InstancedModelDrawableData::InstancedModelDrawableData(AssetPath path) : _assetpath(path) {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void InstancedDrawable::resize(size_t count) {
-  OrkAssert(count <= k_max_instances);
-  _instancedata->resize(count);
-  _count = count;
+drawable_ptr_t InstancedModelDrawableData::createDrawable() const {
+  auto drw = std::make_shared<InstancedModelDrawable>();
+  drw->_data = this;
+  drw->bindModelAsset(_assetpath);
+  drw->_modcolor = _modcolor;
+  return drw;
 }
 ///////////////////////////////////////////////////////////////////////////////
 InstancedModelDrawable::InstancedModelDrawable()
@@ -79,7 +90,7 @@ void InstancedModelDrawable::gpuInit(Context* ctx) const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void InstancedModelDrawable::enqueueToRenderQueue(
-    drawablebufitem_constptr_t item, //
+    drawablebufitem_constptr_t dbufitem, //
     lev2::IRenderer* renderer) const {
   ork::opq::assertOnQueue2(opq::mainSerialQueue());
   ////////////////////////////////////////////////////////////////////
@@ -105,11 +116,13 @@ void InstancedModelDrawable::enqueueToRenderQueue(
   renderable.SetSortKey(0x00000001);
   renderable.SetDrawableDataA(GetUserDataA());
   renderable.SetDrawableDataB(GetUserDataB());
-  //renderable.SetUserData0(item->_userdata[0]);
-  //renderable.SetUserData1(item->_userdata[1]);
   renderable._instanced = true;
+  //printf( "dbufitem _serialno<%d>\n", dbufitem->_serialno );
+    auto it = dbufitem->_usermap.find("rtthread_instance_data"_crcu);
+    OrkAssert(it!=dbufitem->_usermap.end());
+
   ////////////////////////////////////////////////////////////////////
-  renderable.SetRenderCallback([this](lev2::RenderContextInstData& RCID) { //
+  renderable.SetRenderCallback([this,dbufitem](lev2::RenderContextInstData& RCID) { //
     auto context     = RCID.context();
     auto GBI         = context->GBI();
     auto TXI         = context->TXI();
@@ -129,7 +142,11 @@ void InstancedModelDrawable::enqueueToRenderQueue(
     texdata._h           = k_texture_dimension_y;
     texdata._format      = EBufferFormat::RGBA32F;
     texdata._autogenmips = false;
-    texdata._data        = (const void*)_instancedata->_worldmatrices.data();
+    //printf( "dbufitem->_usermap size<%zu>\n", dbufitem->_usermap.size() );
+    auto it = dbufitem->_usermap.find("rtthread_instance_data"_crcu);
+    OrkAssert(it!=dbufitem->_usermap.end());
+    auto instances_copy = it->second.get<instanceddrawinstancedata_ptr_t>();
+    texdata._data        = (const void*) instances_copy->_worldmatrices.data();
     texdata._truncation_length = _count*64;
     OrkAssert(_count <= k_max_instances);
     if(updatetex)
@@ -137,7 +154,7 @@ void InstancedModelDrawable::enqueueToRenderQueue(
     ////////////////////////////////////////////////////////
     texdata._w    = k_texture_dimension_x; // 16 bytes per instance
     texdata._h    = k_texture_dimension_y/4;
-    texdata._data = (const void*)_instancedata->_modcolors.data();
+    texdata._data = (const void*)instances_copy->_modcolors.data();
     texdata._truncation_length = _count*16;
     if(updatetex)
       TXI->initTextureFromData(_instanceColorTex.get(), texdata);
@@ -146,7 +163,7 @@ void InstancedModelDrawable::enqueueToRenderQueue(
     texdata._h           = k_texture_dimension_y/8;
     texdata._format      = EBufferFormat::RGBA16UI;
     texdata._autogenmips = false;
-    texdata._data        = (const void*)_instancedata->_pickids.data();
+    texdata._data        = (const void*)instances_copy->_pickids.data();
     texdata._truncation_length = _count*8;
     if(updatetex)
       TXI->initTextureFromData(_instanceIdTex.get(), texdata);
@@ -164,7 +181,7 @@ void InstancedModelDrawable::enqueueToRenderQueue(
       auto fxinst = fxlut->findfxinst(RCID);
       OrkAssert(fxinst);
       fxinst->wrappedDrawCall(RCID, [&]() {
-        auto idata = _instancedata;
+        auto idata = instances_copy;
         ////////////////////////////////////
         // bind instancetex to sampler
         ////////////////////////////////////

@@ -116,9 +116,9 @@ instanced_drawable_node_ptr_t Layer::createInstancedDrawableNode(std::string nam
   size_t count = 0;
   _instanced_drawable_map.atomicOp([rval,drawable,&count](Layer::instanced_drawmap_t& unlocked) { //
     auto& vect = unlocked[drawable];
-    rval->_instance_id = vect.size();
+    rval->_instanced_drawable_id = vect.size();
     vect.push_back(rval);
-    count = rval->_instance_id+1;
+    count = rval->_instanced_drawable_id+1;
   });
   drawable->_instancedata->resize(count);
   return rval;
@@ -138,7 +138,7 @@ void Layer::removeInstancedDrawableNode(instanced_drawable_node_ptr_t node) {
     auto& vect = it_d->second;
 
     if(vect.size()>1){
-      auto it = vect.begin() + node->_instance_id;
+      auto it = vect.begin() + node->_instanced_drawable_id;
       auto rit = vect.rbegin();
       *it = *rit;
       vect.erase(rit.base());
@@ -215,7 +215,7 @@ void Scene::gpuExit(Context* ctx){
   });
   _userdata = nullptr;
   _nodes2draw.clear();
-  _instancednodes2draw.clear();
+  //_instancednodes2draw.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -383,6 +383,8 @@ layer_ptr_t Scene::findLayer(std::string named) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// enqueue scenegraph to renderer (update thread)
+///////////////////////////////////////////////////////////////////////////////
 
 void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras,on_enqueue_fn_t on_enqueue) {
   auto DB = _dbufcontext->acquireForWriteLocked();
@@ -394,7 +396,7 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras,on_enqueue_fn_t on_enq
   //printf( "SG<%p>::enqueueToRenderer DB<%p>\n", this, DB );
 
   _nodes2draw.clear();
-  _instancednodes2draw.clear();
+  //_instancednodes2draw.clear();
 
   std::vector<layer_ptr_t> layers;
 
@@ -429,20 +431,22 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras,on_enqueue_fn_t on_enq
       for (const auto& map_item : unlocked) {
         instanced_drawable_ptr_t drawable = map_item.first;
         if(drawable){
-          const Layer::instanced_drawablenodevect_t& vect = map_item.second;
-          size_t count = vect.size();
-          drawable->resize(count);
-
-          auto instance_data = drawable->_instancedata;
-          for( instanced_drawable_node_ptr_t node : vect ){
-            size_t iid = node->_instance_id;
-            instance_data->_worldmatrices[iid] = node->_dqxfdata._worldTransform->composed();
-          }
-
-          InstancedDrawItem item;
-          item._layer   = drawable_layer;
-          item._idrawable = drawable;
-          _instancednodes2draw.push_back(item);
+          const Layer::instanced_drawablenodevect_t& instances_vect = map_item.second;
+          size_t instances_count = instances_vect.size();
+          drawable->resize(instances_count);
+          printf( "drw<%s> instances_count<%zu>\n", drawable->_name.c_str(), instances_count );
+          //auto instance_data = drawable->_instancedata;
+          //auto instances_copy = std::make_shared<InstancedDrawableInstanceData>();
+          //*instances_copy = *instance_data;
+          //for( instanced_drawable_node_ptr_t node : instances_vect ){
+            //size_t iid = node->_instanced_drawable_id;
+            //instance_data->_worldmatrices[iid] = node->_dqxfdata._worldTransform->composed();
+          //}
+          //static const DrawQueueXfData xfdata;
+          //drawablebufitem_ptr_t dbufitem = drawable->enqueueOnLayer(xfdata, *drawable_layer);
+          //dbufitem->_usermap["rtthread_instance_data"_crcu].set<instanceddrawinstancedata_ptr_t>(instances_copy);
+          //auto it = dbufitem->_usermap.find("rtthread_instance_data"_crcu);
+          //OrkAssert(it!=dbufitem->_usermap.end());
         }
       }
     });
@@ -451,40 +455,22 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras,on_enqueue_fn_t on_enq
 
   ////////////////////////////////////////////////////////////////////////////
 
-  for (auto item : _instancednodes2draw) {
-    auto drawable_layer = item._layer;
-    auto drawable              = item._idrawable;
-
-
-    #if 0 // TODO fix
-    drawable->_onrenderable = [=](lev2::IRenderable* renderable){
-      renderable->_modColor = n->_modcolor;
-    };
-    #endif
-
-    static const DrawQueueXfData xfdata;
-    drawable->enqueueOnLayer(xfdata, *drawable_layer);
-  }
+  //for (auto item : _instancednodes2draw) {
+    //auto drawable_layer = item._layer;
+    //auto drawable              = item._idrawable;
+  //}
 
   ////////////////////////////////////////////////////////////////////////////
 
-  for (auto item : _nodes2draw) {
+  if(1)for (auto item : _nodes2draw) {
     auto& drawable_layer = item._layer;
     auto n              = item._drwnode;
-
-
-    #if 0 // TODO fix
-    n->_drawable->_onrenderable = [n](lev2::IRenderable* renderable){
-      renderable->_modColor = n->_modcolor;
-    };
-    #endif
-
     n->_drawable->enqueueOnLayer(n->_dqxfdata, *drawable_layer);
   }
 
   ////////////////////////////////////////////////////////////////////////////
 
-  for (auto item : _staticDrawables) {
+  if(0)for (auto item : _staticDrawables) {
     auto drawable_layer = DB->MergeLayer(item._layername);
     auto drawable = item._drawable;
     DrawQueueXfData xfd;

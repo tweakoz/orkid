@@ -102,10 +102,6 @@ struct GpuResources {
     _sg_params                                         = std::make_shared<varmap::VarMap>();
     _sg_params->makeValueForKey<std::string>("preset") = use_forward ? "ForwardPBR" : "DeferredPBR";
 
-    if (use_forward) {
-    } else {
-    }
-
     _sg_scene        = std::make_shared<scenegraph::Scene>(_sg_params);
     auto sg_layer    = _sg_scene->createLayer("default");
     auto sg_compdata = _sg_scene->_compositorData;
@@ -118,6 +114,7 @@ struct GpuResources {
     _spikee_modelasset = asset::AssetManager<XgmModelAsset>::load("data://tests/pbr1/pbr1");
 
     _spikee_instanced_drawable->bindModel(_spikee_modelasset->getSharedModel());
+    _spikee_instanced_drawable->_name = "spikee";
 
     constexpr size_t KNUMINSTANCES = 30;
 
@@ -139,6 +136,7 @@ struct GpuResources {
     _lights_drawable = std::make_shared<InstancedModelDrawable>();
     _light_modelasset = asset::AssetManager<XgmModelAsset>::load("data://tests/pbr_emissive");
     _lights_drawable->bindModel(_light_modelasset->getSharedModel());
+    _lights_drawable->_name = "lights";
 
     constexpr size_t NUMLIGHTS = 4;
     _lights_drawable->resize(NUMLIGHTS);
@@ -155,7 +153,9 @@ struct GpuResources {
         auto light         = std::make_shared<ork::lev2::PointLight>(nullptr, lightdata.get());
         auto sg_light_node = sg_layer->createLightNode("lightnode", light);
 
-        light->_xformgenerator = [sg_light_node]() -> fmtx4 { return sg_light_node->_dqxfdata._worldTransform->composed(); };
+        light->_xformgenerator = [sg_light_node]() -> fmtx4 { //
+          return sg_light_node->_dqxfdata._worldTransform->composed(); //
+        };
 
         PointLightInstance lr;
         lr._instance  = light;
@@ -221,11 +221,9 @@ int main(int argc, char** argv, char** envp) {
   bool use_forward = vars["forward"].as<bool>();
 
   init_data->_msaa_samples = use_forward ? 1 : 1;
-  init_data->_ssaa_samples = use_forward ? 9 : 1;
+  init_data->_ssaa_samples = use_forward ? 4 : 4;
 
   auto qtapp  = OrkEzApp::create(init_data);
-  auto qtwin  = qtapp->_mainWindow;
-  auto gfxwin = qtwin->_gfxwin;
   std::shared_ptr<GpuResources> gpurec;
   //////////////////////////////////////////////////////////
   // gpuInit handler, called once on main(rendering) thread
@@ -245,13 +243,13 @@ int main(int argc, char** argv, char** envp) {
     ///////////////////////////////////////
     // compute camera data
     ///////////////////////////////////////
-    float phase    = abstime * PI2 * 0.1f;
+    float phase    = abstime * PI2 * 0.01f;
     float distance = 10.0f;
     auto eye       = fvec3(sinf(phase), 1.0f, -cosf(phase)) * distance;
     fvec3 tgt(0, 0, 0);
     fvec3 up(0, 1, 0);
     gpurec->_camdata->Lookat(eye, tgt, up);
-    gpurec->_camdata->Persp(1, 20.0, 45.0);
+    gpurec->_camdata->Persp(1, 50.0, 45.0);
 
     ////////////////////////////////////////
     // animate all instances
@@ -324,8 +322,6 @@ int main(int argc, char** argv, char** envp) {
   });
   //////////////////////////////////////////////////////////
   qtapp->onResize([&](int w, int h) {
-    //
-    // gpurec->_compositorimpl->compositingContext().Resize(w, h);
     gpurec->_sg_scene->_compositorImpl->compositingContext().Resize(w, h);
   });
   qtapp->onGpuExit([&](Context* ctx) { gpurec = nullptr; });

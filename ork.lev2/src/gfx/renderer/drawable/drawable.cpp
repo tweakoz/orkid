@@ -28,7 +28,6 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::DrawableOwner, "DrawableOwner");
 
 ImplementReflectionX(ork::lev2::DrawableData, "DrawableData");
 ImplementReflectionX(ork::lev2::ModelDrawableData, "ModelDrawableData");
-ImplementReflectionX(ork::lev2::InstancedModelDrawableData, "InstancedModelDrawableData");
 
 namespace ork::lev2 {
 
@@ -59,24 +58,7 @@ drawable_ptr_t ModelDrawableData::createDrawable() const {
   drw->_modcolor = _modcolor;
   return drw;
 }
-///////////////////////////////////////////////////////////////////////////////
 
-void InstancedModelDrawableData::describeX(object::ObjectClass* clazz){
-  clazz->directProperty("assetpath", &InstancedModelDrawableData::_assetpath);
-  clazz->directMapProperty("assetvars", &InstancedModelDrawableData::_assetvars);
-}
-
-InstancedModelDrawableData::InstancedModelDrawableData(AssetPath path) : _assetpath(path) {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-drawable_ptr_t InstancedModelDrawableData::createDrawable() const {
-  auto drw = std::make_shared<InstancedModelDrawable>();
-  drw->_data = this;
-  drw->bindModelAsset(_assetpath);
-  drw->_modcolor = _modcolor;
-  return drw;
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -122,10 +104,10 @@ void Drawable::enqueueToRenderQueue(
 
 }
 
-void Drawable::enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const {
-  // ork::opq::assertOnQueue2(opq::updateSerialQueue());
+drawablebufitem_ptr_t Drawable::enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const {
   auto item = buffer.enqueueDrawable(xfdata, this);
   item->_onrenderable = this->_onrenderable;
+  return item;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

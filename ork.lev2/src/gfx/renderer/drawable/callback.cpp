@@ -51,15 +51,16 @@ void CallbackDrawable::setRenderLambda(RLCBType cb) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void CallbackDrawable::enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const {
+drawablebufitem_ptr_t CallbackDrawable::enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const {
   // ork::opq::assertOnQueue2(opq::updateSerialQueue());
-  auto cdb = buffer.enqueueDrawable(xfdata, this);
+  auto item = buffer.enqueueDrawable(xfdata, this);
   if (_enqueueOnLayerCallback) {
-    _enqueueOnLayerCallback(cdb);
+    _enqueueOnLayerCallback(item);
   }
   if (_enqueueOnLayerLambda) {
-    _enqueueOnLayerLambda(cdb);
+    _enqueueOnLayerLambda(item);
   }
+  return item;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CallbackDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const {

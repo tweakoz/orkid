@@ -5,7 +5,6 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-
 #pragma once
 
 #include <ork/kernel/atomic.h>
@@ -20,23 +19,21 @@ template <typename T> struct concurrent_triple_buffer {
 
   static constexpr int kquanta = 100;
 
+  struct Item{
+    std::shared_ptr<T> _payload;
+    int _wrindex = -1;
+  };
+
   /////////////////////////////
-  concurrent_triple_buffer() : _mutex("CTB"){
-
-    mValues[0] = new T(0);
-    mValues[1] = new T(1);
-    mValues[2] = new T(2);
-
-    _avail_for_write.insert(mValues[0]);
-    _avail_for_write.insert(mValues[1]);
-    _avail_for_write.insert(mValues[2]);
+  concurrent_triple_buffer()
+      : _mutex("CTB") {
+    _values[0]._payload = std::make_shared<T>(0);
+    _values[1]._payload = std::make_shared<T>(1);
+    _values[2]._payload = std::make_shared<T>(2);
   }
   /////////////////////////////
   ~concurrent_triple_buffer() {
     disable();
-    delete mValues[2];
-    delete mValues[1];
-    delete mValues[0];
   }
   /////////////////////////////
   // compute and return new write buffer
@@ -44,18 +41,27 @@ template <typename T> struct concurrent_triple_buffer {
   T* begin_push(void) // get handle to a write buffer
   {
     T* rval = nullptr;
-    while (nullptr==rval) {
-      bool do_sleep = false;
-
+    while (nullptr == rval) {
       _mutex.Lock();
-      auto it = _avail_for_write.begin();
-      if(it!=_avail_for_write.end()){
-        rval = *it;
-        _avail_for_write.erase(it);
+      switch (_write) {
+        case -1:
+          _write = 0;
+          break;
+        case 0:
+          rval = _values[0]._payload.get();
+          break;
+        case 1:
+          rval = _values[1]._payload.get();
+          break;
+        case 2:
+          rval = _values[2]._payload.get();
+          break;
+        default:
+          OrkAssert(false);
+          break;
       }
       _mutex.UnLock();
-
-      if(do_sleep) {
+      if (nullptr == rval) {
         usleep(kquanta);
       }
     }
@@ -65,37 +71,70 @@ template <typename T> struct concurrent_triple_buffer {
   // publish write buffer
   /////////////////////////////
   void end_push(T* pret) {
-      _mutex.Lock();
-      if(_freshest){
-        _avail_for_write.insert(_freshest);
-      }
-      _freshest = pret;
-      _mutex.UnLock();
+    _mutex.Lock();
+
+    _values[_write]._wrindex = _wrindex++;
+
+    switch (_write) {
+      case -1:
+        OrkAssert(false);
+        break;
+      case 0:
+        _write = (_values[1]._wrindex<_values[2]._wrindex) ? 1 : 2;
+        _nextread  = 0;
+        break;
+      case 1:
+        _write = (_values[0]._wrindex<_values[2]._wrindex) ? 0 : 2;
+        _nextread  = 1;
+        break;
+      case 2:
+        _write = (_values[0]._wrindex<_values[1]._wrindex) ? 0 : 1;
+        _nextread  = 2;
+        break;
+      default:
+        OrkAssert(false);
+        break;
+    }
+    _mutex.UnLock();
   }
   /////////////////////////////
   const T* begin_pull(void) const // get a read buffer
   {
-      const T* rval = nullptr;
-      while( nullptr == rval ){
-        _mutex.Lock();
-        rval = _freshest;
-        _freshest = nullptr;
-        _mutex.UnLock();
+    const T* rval = nullptr;
+    while (nullptr == rval) {
+      _mutex.Lock();
+      switch (_nextread) {
+        case -1:
+          usleep(kquanta);
+          break;
+        case 0:
+          rval   = _values[0]._payload.get();
+          _write = (_values[1]._wrindex<_values[2]._wrindex) ? 1 : 2;
+          _read = 0;
+          break;
+        case 1:
+          rval   = _values[1]._payload.get();
+          _write = (_values[0]._wrindex<_values[2]._wrindex) ? 0 : 2;
+          _read = 1;
+          break;
+        case 2:
+          rval   = _values[2]._payload.get();
+          _write = (_values[0]._wrindex<_values[1]._wrindex) ? 0 : 1;
+          _read = 2;
+          break;
+        default:
+          OrkAssert(false);
+          break;
       }
-
-      return rval;
+      _mutex.UnLock();
+    }
+    return rval;
   }
   /////////////////////////////
   // done reading
   /////////////////////////////
   void end_pull(const T* pret) const {
-      bool done = false;
-      _mutex.Lock();
-      if(_freshest){
-        _avail_for_write.insert(_freshest);
-      }
-      _freshest = (T*) pret;
-      _mutex.UnLock();
+    OrkAssert(pret==_values[_read]._payload.get());
   }
   /////////////////////////////
   void disable() {
@@ -107,13 +146,15 @@ template <typename T> struct concurrent_triple_buffer {
   T* rawAccess(int index) {
     OrkAssert(index >= 0);
     OrkAssert(index < 3);
-    return mValues[index];
+    return _values[index]._payload.get();
   }
   /////////////////////////////
 private: //
   /////////////////////////////
-  T* mValues[3];
-  mutable std::unordered_set<T*> _avail_for_write;
+  Item _values[3];
   mutable ork::mutex _mutex;
-  mutable T* _freshest = nullptr;
+  mutable int _nextread          = -1;
+  mutable int _read          = -1;
+  mutable int _write = -1;
+  mutable int _wrindex = -1;
 };

@@ -484,7 +484,7 @@ vertex_shader vs_forward_depthprepass_mono_instanced
 		//gl_FragDepth = hpos.z/hpos.w;
 }
 fragment_shader vs_forward_depthprepass_stereo
-	: iface_vdprepass {
+	: iface_fdprepass {
   	vec4 hpos = mvp*position;
 		gl_Position = hpos;
 		gl_FragDepth = hpos.z/hpos.w;

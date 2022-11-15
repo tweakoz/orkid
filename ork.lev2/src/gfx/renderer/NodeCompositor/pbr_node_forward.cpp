@@ -173,10 +173,12 @@ struct ForwardPbrNodeImpl {
 
         RCFD.setUserProperty("enumeratedlights"_crcu,_enumeratedLights);
         
+        //printf( "BEG FWD PBR ENQ\n");
         for (const auto& layer_name : CPD.getLayerNames()) {
           targ->debugMarker(FormatString("ForwardPBR::renderEnqueuedScene::layer<%s>", layer_name.c_str()));
           DB->enqueueLayerToRenderQueue(layer_name, irenderer);
         }
+        //printf( "END FWD PBR ENQ\n");
 
         RCFD._renderingmodel = "FORWARD_PBR"_crcu;
         targ->debugPushGroup("ForwardPBR::color pass");

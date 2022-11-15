@@ -30,8 +30,7 @@
 
 namespace ork::lev2 {
 
-ork::atomic<bool> DrawableBuffer::gbInsideClearAndSync;
-ork::atomic<int> DrawableBuffer::_gate = 1;
+static ork::atomic<bool> _gInsideClearAndSync = 0;
 
 ////////////////////////////////////////////////////////////////
 
@@ -92,7 +91,7 @@ void DrawableBuffer::enqueueLayerToRenderQueue(const std::string& LayerName, lev
         int max_index = player->_itemIndex;
         for (int id = 0; id < max_index; id++) {
           auto item = unlocked[id];
-          const lev2::Drawable* pdrw        = item->GetDrawable();
+          const lev2::Drawable* pdrw        = item->_drawable;
           target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue layer item <%d> drw<%p>", id, pdrw));
           if (pdrw) {
             numdrawables++;
@@ -161,9 +160,11 @@ drawablebufitem_ptr_t DrawableBufLayer::enqueueDrawable(const DrawQueueXfData& x
   // ork::opq::assertOnQueue2(opq::updateSerialQueue());
   // _items.push_back(DrawableBufItem()); // replace std::vector with an array so we can amortize construction costs
   auto item = std::make_shared<DrawableBufItem>(); // todo USE POOL
-  item->SetDrawable(d);
+  item->_drawable = d;
   item->mXfData       = xfdata;
   item->_bufferIndex = miBufferIndex;
+  static std::atomic<int> counter = 0;
+  item->_serialno = counter++;
   _items.atomicOp([this,item](DrawableBufLayer::itemvect_t& unlocked){
     unlocked.push_back(item);
     _itemIndex = unlocked.size();
@@ -272,97 +273,25 @@ cameradata_constptr_t DrawableBuffer::cameraData(const std::string& named) const
 
 /////////////////////////////////////////////////////////////////////
 
-/*static concurrent_triple_buffer<DrawableBuffer>& GetGBUFFER(){
-  static concurrent_triple_buffer<DrawableBuffer> gBuffers;
-  return gBuffers;
-}*/
-
-/////////////////////////////////////////////////////////////////////
-//const DrawableBuffer* DrawableBuffer::acquireForRead(int lid) {
-  //return GetGBUFFER().begin_pull();
-//}
-/////////////////////
-//void DrawableBuffer::releaseFromRead(const DrawableBuffer* db) {
-  //GetGBUFFER().end_pull(db);
-//}
-/////////////////////////////////////////////////////////////////////
-//DrawableBuffer* DrawableBuffer::acquireForWrite(int lid) {
-  // ork::opq::assertOnQueue2(opq::updateSerialQueue());
-  //DrawableBuffer* wbuf = GetGBUFFER().begin_push();
-  //return wbuf;
-//}
-//void DrawableBuffer::releaseFromWrite(DrawableBuffer* db) {
-  // ork::opq::assertOnQueue2(opq::updateSerialQueue());
-  //GetGBUFFER().end_push(db);
-//}
-/////////////////////////////////////////////////////////////////////
-DrawBufContext::DrawBufContext()
-  :_lockedBufferMutex("lbuf")
-  ,_rendersync_sema("lsema")
-  ,_rendersync_sema2("lsema2") {
-    _lockeddrawablebuffer = std::make_shared<DrawableBuffer>(99);
-    _rendersync_sema2.notify();
+DrawBufContext::DrawBufContext() {
 }
 
 DrawBufContext::~DrawBufContext(){
 }
 
 DrawableBuffer* DrawBufContext::acquireForWriteLocked(){
-  int gate = DrawableBuffer::_gate.load();
-  /*if(gate){
-    if(_rendersync_counter>0){
-      _rendersync_sema2.wait();
-    }
-    _rendersync_counter++;
-    return _lockeddrawablebuffer.get();
-  }*/
-   return _lockeddrawablebuffer.get();;
+   return _triple.begin_push();
 }
 void DrawBufContext::releaseFromWriteLocked(DrawableBuffer* db){
-  if(db){
-    _rendersync_sema.notify();
-  }
+   _triple.end_push(db);;
 }
 const DrawableBuffer* DrawBufContext::acquireForReadLocked(){
-
-  int gate = DrawableBuffer::_gate.load();
-  /*if(gate){
-  if(gate){
-    _rendersync_sema.wait();
-    return _lockeddrawablebuffer.get();
-  }
-  }*/
-    return _lockeddrawablebuffer.get();
+   return _triple.begin_pull();
 }
 void DrawBufContext::releaseFromReadLocked(const DrawableBuffer* db){
-  if(db){
-    _rendersync_sema2.notify();
-  }
+   _triple.end_pull(db);;
 }
-/////////////////////////////////////////////////////////////////////
-//static ork::mutex _glockedBufferMutex("glbuf");
-//static ork::semaphore _grendersync_sema("glbuf_sema");
-//static ork::semaphore _grendersync_sema2("glbuf_sema");
-//static int  _grendersync_counter = 0;
-//static auto  _glockeddrawablebuffer = std::make_shared<DrawableBuffer>(99);
-/////////////////////////////////////////////////////////////////////
-/*DrawableBuffer* DrawableBuffer::acquireForWriteLocked(){
-  if(_grendersync_counter>0){
-    _grendersync_sema2.wait();
-  }
-  _grendersync_counter++;
-  return _glockeddrawablebuffer.get();
-}
-void DrawableBuffer::releaseFromWriteLocked(DrawableBuffer* db){
-  _grendersync_sema.notify();
-}
-const DrawableBuffer* DrawableBuffer::acquireForReadLocked(){
-  _grendersync_sema.wait();
-  return _glockeddrawablebuffer.get();
-}
-void DrawableBuffer::releaseFromReadLocked(const DrawableBuffer* db){
-  _grendersync_sema2.notify();
-}*/
+
 /////////////////////////////////////////////////////////////////////
 // flush all renderer side data
 //  sync until flushed
@@ -370,36 +299,20 @@ void DrawableBuffer::releaseFromReadLocked(const DrawableBuffer* db){
 void DrawableBuffer::BeginClearAndSyncReaders() {
   ork::opq::assertOnQueue2(opq::updateSerialQueue());
 
-  bool b = gbInsideClearAndSync.exchange(true);
+  bool b = _gInsideClearAndSync.exchange(true);
   OrkAssert(b == false);
-  // printf( "DrawableBuffer::BeginClearAndSyncReaders()\n");
-  //GetGBUFFER().disable();
-  _gate.store(0);
 }
 /////////////////////////////////////////////////////////////////////
 void DrawableBuffer::EndClearAndSyncReaders() {
   ork::opq::assertOnQueue2(opq::updateSerialQueue());
-  bool b = gbInsideClearAndSync.exchange(false);
+  bool b = _gInsideClearAndSync.exchange(false);
   OrkAssert(b == true);
-  ////////////////////
-  // printf( "DrawableBuffer::EndClearAndSyncReaders()\n");
-  //GetGBUFFER().enable();
-  _gate.store(1);
 }
 /////////////////////////////////////////////////////////////////////
 void DrawableBuffer::BeginClearAndSyncWriters() {
-  // ork::opq::assertOnQueue2( opq::updateSerialQueue() );
-  // printf( "DrawableBuffer::BeginClearAndSyncWriters()\n");
-  //GetGBUFFER().disable();
-  _gate.store(0);
 }
 /////////////////////////////////////////////////////////////////////
 void DrawableBuffer::EndClearAndSyncWriters() {
-  // ork::opq::assertOnQueue2( opq::updateSerialQueue() );
-  ////////////////////
-  // printf( "DrawableBuffer::EndClearAndSyncWriters()\n");
-  //GetGBUFFER().enable();
-  _gate.store(1);
 }
 /////////////////////////////////////////////////////////////////////
 void DrawableBuffer::ClearAndSyncReaders() {

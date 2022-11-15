@@ -63,6 +63,9 @@ struct DrawableNode final : public Node {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+// InstancedDrawableNode: a scenegraph node
+//  that is part of another instancing group
+///////////////////////////////////////////////////////////////////////////////
 
 struct InstancedDrawableNode final : public Node {
 
@@ -70,7 +73,7 @@ struct InstancedDrawableNode final : public Node {
   ~InstancedDrawableNode();
 
   instanced_drawable_ptr_t _drawable;
-  size_t _instance_id = 0;
+  size_t _instanced_drawable_id = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -86,26 +89,37 @@ struct LightNode final : public Node {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct Layer {
-  Layer(Scene* scene, std::string name);
-  ~Layer();
-
-  drawable_node_ptr_t createDrawableNode(std::string named, drawable_ptr_t drawable);
-  void removeDrawableNode(drawable_node_ptr_t node);
-
-  instanced_drawable_node_ptr_t createInstancedDrawableNode(std::string named, instanced_drawable_ptr_t drawable);
-  void removeInstancedDrawableNode(instanced_drawable_node_ptr_t node);
-
-  lightnode_ptr_t createLightNode(std::string named, light_ptr_t drawable);
-  void removeLightNode(lightnode_ptr_t node);
-
-  Scene* _scene = nullptr;
-
-  std::string _name;
 
   using drawablenodevect_t = std::vector<drawable_node_ptr_t>;
   using instanced_drawablenodevect_t = std::vector<instanced_drawable_node_ptr_t>;
   using instanced_drawmap_t = std::unordered_map<instanced_drawable_ptr_t,instanced_drawablenodevect_t>;
   using lightnodevect_t = std::vector<lightnode_ptr_t>;
+
+  Layer(Scene* scene, std::string name);
+  ~Layer();
+
+  //! create/remove drawable nodes
+
+  drawable_node_ptr_t createDrawableNode(std::string named, drawable_ptr_t drawable);
+  void removeDrawableNode(drawable_node_ptr_t node);
+
+  //! create/remove "instanced" drawable node
+  /*!
+      create an instanced node and assign as an instance in parent_drawable
+  */
+
+  instanced_drawable_node_ptr_t createInstancedDrawableNode(std::string named, instanced_drawable_ptr_t parent_drawable);
+  void removeInstancedDrawableNode(instanced_drawable_node_ptr_t node);
+
+  //! create/remove drawable nodes
+
+  lightnode_ptr_t createLightNode(std::string named, light_ptr_t drawable);
+  void removeLightNode(lightnode_ptr_t node);
+
+  //
+  Scene* _scene = nullptr;
+
+  std::string _name;
 
   LockedResource<drawablenodevect_t> _drawable_nodes;
   LockedResource<instanced_drawmap_t> _instanced_drawable_map;
@@ -203,13 +217,13 @@ struct Scene {
     ork::lev2::DrawableBufLayer * _layer;
     drawable_node_ptr_t _drwnode;
   };
-  struct InstancedDrawItem{
-    ork::lev2::DrawableBufLayer * _layer;
-    instanced_drawable_ptr_t _idrawable;
-  };
+  //struct InstancedDrawItem{
+    //ork::lev2::DrawableBufLayer * _layer;
+    //instanced_drawable_ptr_t _idrawable;
+  //};
 
   std::vector<DrawItem> _nodes2draw;
-  std::vector<InstancedDrawItem> _instancednodes2draw;
+  //std::vector<InstancedDrawItem> _instancednodes2draw;
 
 };
 

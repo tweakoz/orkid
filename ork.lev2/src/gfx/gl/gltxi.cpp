@@ -253,7 +253,7 @@ pboptr_t PboSet::alloc() {
       map_flags |= GL_MAP_PERSISTENT_BIT;
       map_flags |= GL_MAP_INVALIDATE_RANGE_BIT;
       map_flags |= GL_MAP_COHERENT_BIT;
-      map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
+      //map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
       new_pbo->_mapped = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, _size, map_flags);
 #else
       glBufferData(GL_PIXEL_UNPACK_BUFFER, _size, NULL, GL_STREAM_DRAW);

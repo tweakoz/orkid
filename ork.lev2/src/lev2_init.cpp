@@ -248,7 +248,6 @@ void GfxInit(const std::string& gfxlayer) {
     gloadercontext = OpenGlContextInit();
 #endif
   }
-  DrawableBuffer::gbInsideClearAndSync = false;
   opq::init();
 }
 
