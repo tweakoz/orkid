@@ -36,6 +36,7 @@ private:
   void composite(CompositorDrawData& drawdata) final;
 
   svar256_t _impl;
+  rtgroup_ptr_t _downsamplebuffer;
   int _supersample;
 };
 

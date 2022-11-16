@@ -75,7 +75,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   auto defmtl = lev2::defaultUIMaterial();
 
   if (nullptr == _rtgroup) {
-    _rtgroup  = std::make_shared<lev2::RtGroup>(tgt, _geometry._w, _geometry._h, 1);
+    _rtgroup  = std::make_shared<lev2::RtGroup>(tgt, _geometry._w, _geometry._h, lev2::MsaaSamples::MSAA_1X);
     auto mrt0 = _rtgroup->createRenderTarget(lev2::EBufferFormat::RGBA8);
   }
   ///////////////////////////////////////

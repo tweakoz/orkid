@@ -233,6 +233,7 @@ struct Texture {
   int _width                    = 0;
   int _height                   = 0;
   int _depth                    = 0;
+  MsaaSamples _msaa_samples     = MsaaSamples::MSAA_1X;
   uint64_t _flags               = 0;
   uint64_t _contentHash         = 0;
   MipChain* _chain              = nullptr;

@@ -55,7 +55,7 @@ struct RtBuffer final {
 struct RtGroup final {
 
   /////////////////////////////////////////
-  RtGroup(Context* partarg, int iW, int iH, int iSamples = 1);
+  RtGroup(Context* partarg, int iW, int iH, MsaaSamples msaa_samples = MsaaSamples::MSAA_1X);
   ~RtGroup();
   /////////////////////////////////////////
   rtgroup_ptr_t clone() const;
@@ -91,9 +91,6 @@ struct RtGroup final {
   ViewportRect viewportRect() const {
     return ViewportRect(0, 0, miW, miH);
   }
-  int GetSamples() const {
-    return miSamples;
-  }
   /////////////////////////////////////////
   static const int kmaxmrts = 4;
 
@@ -104,7 +101,7 @@ struct RtGroup final {
   int mNumMrts;
   int miW;
   int miH;
-  int miSamples;
+  MsaaSamples _msaa_samples;
   bool mbSizeDirty;
   svar16_t _impl;
   bool _needsDepth = true;

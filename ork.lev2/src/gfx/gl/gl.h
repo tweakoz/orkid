@@ -37,7 +37,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#if 0 // defined( _DEBUG )
+#if 1 // defined( _DEBUG )
 #define GL_ERRORCHECK()                                                                                                            \
   {                                                                                                                                \
     GLenum iErr = GetGlError();                                                                                                    \
@@ -244,6 +244,7 @@ public:
 
   void rtGroupClear(RtGroup* rtg) final;
   void rtGroupMipGen(RtGroup* rtg) final;
+  void msaaBlit(rtgroup_ptr_t src, rtgroup_ptr_t dst) final;
 
   //////////////////////////////////////////////
 

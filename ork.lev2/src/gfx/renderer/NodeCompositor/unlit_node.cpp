@@ -25,8 +25,6 @@ namespace ork::lev2::compositor {
 void UnlitNode::describeX(class_t* c) {
   c->directProperty("ClearColor", &UnlitNode::_clearColor);
 }
-///////////////////////////////////////////////////////////////////////////
-constexpr int NUMSAMPLES = 1;
 ///////////////////////////////////////////////////////////////////////////////
 namespace _unlitnode {
 struct IMPL {
@@ -43,7 +41,7 @@ struct IMPL {
     pTARG->debugPushGroup("Forward::rendeinitr");
     if (nullptr == _rtg) {
       _material.gpuInit(pTARG);
-      _rtg             = new RtGroup(pTARG, 8, 8, NUMSAMPLES);
+      _rtg             = new RtGroup(pTARG, 8, 8);
       auto buf1        = _rtg->createRenderTarget(lev2::EBufferFormat::RGBA32F);
       auto buf2        = _rtg->createRenderTarget(lev2::EBufferFormat::RGBA32F);
       buf1->_debugName = "ForwardRt0";

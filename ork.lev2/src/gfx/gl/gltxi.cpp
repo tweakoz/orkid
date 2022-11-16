@@ -86,22 +86,22 @@ void GlTextureInterface::bindTextureToUnit(const Texture* tex, GLenum tex_target
 
       GL_ERRORCHECK();
 
-      glCreateTextures(GL_TEXTURE_2D, 1, &new_tex_obj->mObject);
-      glBindTexture(GL_TEXTURE_2D, new_tex_obj->mObject);
+      glCreateTextures(tex_target, 1, &new_tex_obj->mObject);
+      glBindTexture(tex_target, new_tex_obj->mObject);
 
       GL_ERRORCHECK();
 
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_TILING_EXT, GL_OPTIMAL_TILING_EXT);
-      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+      glTexParameteri(tex_target, GL_TEXTURE_TILING_EXT, GL_OPTIMAL_TILING_EXT);
+      glTexParameterf(tex_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glTexParameterf(tex_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glTexParameterf(tex_target, GL_TEXTURE_MAX_LEVEL, 0);
+      glTexParameterf(tex_target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+      glTexParameterf(tex_target, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
       GL_ERRORCHECK();
 
       glTexStorageMem2DEXT(
-          GL_TEXTURE_2D,          // texture target
+          tex_target,          // texture target
           1,                      // mip count
           GL_RGB10_A2,            // internal format
           ipcdata->_image_width,  // width
@@ -110,7 +110,7 @@ void GlTextureInterface::bindTextureToUnit(const Texture* tex, GLenum tex_target
           0);                     // offset into memobject's data
 
       GL_ERRORCHECK();
-      glBindTexture(GL_TEXTURE_2D, 0);
+      glBindTexture(tex_target, 0);
       GL_ERRORCHECK();
 
       // int _sema_complete_fd = 0;
@@ -380,6 +380,11 @@ void GlTextureInterface::ApplySamplingMode(Texture* ptex) {
   GLTextureObject* pTEXOBJ = (GLTextureObject*)ptex->GetTexIH();
   if (pTEXOBJ) {
     GLenum tgt = (pTEXOBJ->mTarget != GL_NONE) ? pTEXOBJ->mTarget : GL_TEXTURE_2D;
+
+    int numsamples = msaaEnumToInt(ptex->_msaa_samples);
+    if(numsamples>1)
+      tgt = GL_TEXTURE_2D_MULTISAMPLE;
+
     mTargetGL.makeCurrentContext();
     __FIND_IT.store(1);
     mTargetGL.debugPushGroup("ApplySamplingMode");
@@ -404,24 +409,28 @@ void GlTextureInterface::ApplySamplingMode(Texture* ptex) {
 
       // printf( "linmiplin inummips<%d>\n", inummips );
 
-#if defined(OPENGL_41)
-      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 16.0f);
-#elif defined(OPENGL_46)
-      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, 16.0f);
-#endif
+
     }
 
     GL_ERRORCHECK();
-    glTexParameterf(tgt, GL_TEXTURE_MAG_FILTER, magfiltlamb(texmode));
-    GL_ERRORCHECK();
-    glTexParameterf(tgt, GL_TEXTURE_MIN_FILTER, minfilt);
-    GL_ERRORCHECK();
-    glTexParameterf(tgt, GL_TEXTURE_MAX_LEVEL, inummips);
-    GL_ERRORCHECK();
-    glTexParameterf(tgt, GL_TEXTURE_WRAP_S, addrlamb(texmode.GetAddrModeU()));
-    GL_ERRORCHECK();
-    glTexParameterf(tgt, GL_TEXTURE_WRAP_T, addrlamb(texmode.GetAddrModeV()));
-    GL_ERRORCHECK();
+    // sampler state..
+    if(tgt!=GL_TEXTURE_2D_MULTISAMPLE){
+      #if defined(OPENGL_41)
+        glTexParameterf(tgt, GL_TEXTURE_MAX_ANISOTROPY_EXT, 16.0f);
+      #elif defined(OPENGL_46)
+        glTexParameterf(tgt, GL_TEXTURE_MAX_ANISOTROPY, 16.0f);
+      #endif
+      glTexParameterf(tgt, GL_TEXTURE_MAG_FILTER, magfiltlamb(texmode));
+      GL_ERRORCHECK();
+      glTexParameterf(tgt, GL_TEXTURE_MIN_FILTER, minfilt);
+      GL_ERRORCHECK();
+      glTexParameterf(tgt, GL_TEXTURE_MAX_LEVEL, inummips);
+      GL_ERRORCHECK();
+      glTexParameterf(tgt, GL_TEXTURE_WRAP_S, addrlamb(texmode.GetAddrModeU()));
+      GL_ERRORCHECK();
+      glTexParameterf(tgt, GL_TEXTURE_WRAP_T, addrlamb(texmode.GetAddrModeV()));
+      GL_ERRORCHECK();
+    }
 
     mTargetGL.debugPopGroup();
   }

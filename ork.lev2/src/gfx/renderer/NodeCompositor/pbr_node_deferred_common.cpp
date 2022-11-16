@@ -133,34 +133,34 @@ void DeferredContext::gpuInit(Context* target) {
     _parDepthFogPower       = _lightingmtl.param("DepthFogPower");
     _parShadowParams        = _lightingmtl.param("ShadowParams");
     //////////////////////////////////////////////////////////////
-    _rtgGbuffer             = std::make_shared<RtGroup>(target, 8, 8, 1);
+    _rtgGbuffer             = std::make_shared<RtGroup>(target, 8, 8, MsaaSamples::MSAA_1X);
     _rtgGbuffer->_autoclear = false;
-    _rtbGbuffer             = _rtgGbuffer->createRenderTarget(lev2::EBufferFormat::RGBA32UI);
+    _rtbGbuffer             = _rtgGbuffer->createRenderTarget(EBufferFormat::RGBA32UI);
     _rtbGbuffer->_debugName = "DeferredGbuffer";
     _rtbGbuffer->_texture->TexSamplingMode().PresetPointAndClamp();
     //////////////////////////////////////////////////////////////
-    _rtgDecal              = std::make_shared<RtGroup>(target, 8, 8, 1);
+    _rtgDecal              = std::make_shared<RtGroup>(target, 8, 8, MsaaSamples::MSAA_1X);
     _rtgDecal->_needsDepth = false;
     _rtgDecal->SetMrt(0, _rtbGbuffer);
     _gbuffRT = new RtGroupRenderTarget(_rtgGbuffer.get());
     _decalRT = new RtGroupRenderTarget(_rtgDecal.get());
     //////////////////////////////////////////////////////////////
-    _rtgDepthCluster = std::make_shared<RtGroup>(target, 8, 8, 1);
-    _rtbDepthCluster = _rtgDepthCluster->createRenderTarget(lev2::EBufferFormat::R32UI);
+    _rtgDepthCluster = std::make_shared<RtGroup>(target, 8, 8, MsaaSamples::MSAA_1X);
+    _rtbDepthCluster = _rtgDepthCluster->createRenderTarget(EBufferFormat::R32UI);
     _rtbDepthCluster->_texture->TexSamplingMode().PresetPointAndClamp();
     _rtbDepthCluster->_debugName = "DeferredDepthCluster";
     _clusterRT                   = new RtGroupRenderTarget(_rtgDepthCluster.get());
     ///////////
     //////////////////////////////////////////////////////////////
-    _rtgLaccum             = std::make_shared<RtGroup>(target, 8, 8, 1);
+    _rtgLaccum             = std::make_shared<RtGroup>(target, 8, 8, MsaaSamples::MSAA_1X);
     _rtgLaccum->_autoclear = false;
-    _rtbLightAccum         = _rtgLaccum->createRenderTarget(lev2::EBufferFormat::RGBA16F);
+    _rtbLightAccum         = _rtgLaccum->createRenderTarget(EBufferFormat::RGBA16F);
     _rtbLightAccum->_texture->TexSamplingMode().PresetPointAndClamp();
     _rtbLightAccum->_debugName = "DeferredLightAccum";
     _accumRT                   = new RtGroupRenderTarget(_rtgLaccum.get());
     //////////////////////////////////////////////////////////////
-    _whiteTexture = asset::AssetManager<lev2::TextureAsset>::load("src://effect_textures/white");
-    _voltexA      = asset::AssetManager<lev2::TextureAsset>::load("src://effect_textures/voltex_pn2");
+    _whiteTexture = asset::AssetManager<TextureAsset>::load("src://effect_textures/white");
+    _voltexA      = asset::AssetManager<TextureAsset>::load("src://effect_textures/voltex_pn2");
   }
   target->debugPopGroup();
 }

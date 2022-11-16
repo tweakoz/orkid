@@ -115,14 +115,13 @@ FrameTechniqueBase::FrameTechniqueBase(int iW, int iH)
 }
 
 void FrameTechniqueBase::Init(Context* targ) {
-  static const int kmultisamples = 1;
 
   auto fbi                = targ->FBI();
   OffscreenBuffer* parent = fbi->GetThisBuffer();
   targ                    = parent ? parent->context() : targ;
   auto clear_color        = fbi->GetClearColor();
 
-  mpMrtFinal = new RtGroup(targ, kFINALW, kFINALH, kmultisamples);
+  mpMrtFinal = new RtGroup(targ, kFINALW, kFINALH, MsaaSamples::MSAA_1X);
 
   auto buf = mpMrtFinal->createRenderTarget(lev2::EBufferFormat::RGBA8);
 

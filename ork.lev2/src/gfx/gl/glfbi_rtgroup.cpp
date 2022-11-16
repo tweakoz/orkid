@@ -59,6 +59,8 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
   glrtgroupimpl_ptr_t impl;
 
   int inumtargets = rtgroup->GetNumTargets();
+  int numsamples = msaaEnumToInt(rtgroup->_msaa_samples);
+  auto texture_target_2D = (numsamples==1) ? GL_TEXTURE_2D : GL_TEXTURE_2D_MULTISAMPLE;
 
   if (auto as_impl = rtgroup->_impl.tryAs<glrtgroupimpl_ptr_t>()) {
     impl = as_impl.value();
@@ -105,17 +107,20 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
         pB->SetSizeDirty(true);
         //////////////////////////////////////////
         Texture* ptex            = pB->texture();
+        ptex->_msaa_samples = rtgroup->_msaa_samples;
         ptex->_debugName         = pB->_debugName;
         GLTextureObject* ptexOBJ = new GLTextureObject;
         bufferimpl->_teximpl     = ptexOBJ;
 
         GL_ERRORCHECK();
         glGenTextures(1, (GLuint*)&bufferimpl->_texture);
-        glBindTexture(GL_TEXTURE_2D, bufferimpl->_texture);
+        glBindTexture(texture_target_2D, bufferimpl->_texture);
+
+
         if (pB->_debugName.length()) {
           mTargetGL.debugLabel(GL_TEXTURE, bufferimpl->_texture, pB->_debugName);
         }
-        glBindTexture(GL_TEXTURE_2D, 0);
+        glBindTexture(texture_target_2D, 0);
         GL_ERRORCHECK();
         ptexOBJ->mObject = bufferimpl->_texture;
         //////////////////////////////////////////
@@ -149,27 +154,44 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
       GL_ERRORCHECK();
       glBindRenderbuffer(GL_RENDERBUFFER, impl->_standard->_dsbo);
       GL_ERRORCHECK();
-      glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32, iw, ih);
+      if(numsamples==1){
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32, iw, ih);
+      }
+      else{
+        glRenderbufferStorageMultisample(GL_RENDERBUFFER, numsamples, GL_DEPTH_COMPONENT32, iw, ih);
+      }
       GL_ERRORCHECK();
       glGenTextures(1, &impl->_standard->_depthTexture);
-      glBindTexture(GL_TEXTURE_2D, impl->_standard->_depthTexture);
+      glBindTexture(texture_target_2D, impl->_standard->_depthTexture);
 
       impl->_depthonly->_depthTexture = impl->_standard->_depthTexture;
 
       GL_ERRORCHECK();
       std::string DepthTexName("RtgDepth");
       mTargetGL.debugLabel(GL_TEXTURE, impl->_standard->_depthTexture, DepthTexName);
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, iw, ih, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-      // glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY);
-      // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
-      // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+      if(numsamples==1){
+        glTexImage2D(texture_target_2D, 0, GL_DEPTH_COMPONENT32, iw, ih, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+        glTexParameteri(texture_target_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(texture_target_2D, GL_TEXTURE_MAX_LEVEL, 0);
+      }
+      else{
+        glTexImage2DMultisample(texture_target_2D, // target
+                                numsamples, // numsamples
+                                GL_DEPTH_COMPONENT32, // internal format
+                                iw, // w
+                                ih,  // h
+                                GL_TRUE ); // fixed sample locations
+        //glTexParameteri(texture_target_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        //glTexParameteri(texture_target_2D, GL_TEXTURE_MAX_LEVEL, 0);
+      }
+      // glTexParameteri(texture_target_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY);
+      // glTexParameteri(texture_target_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
+      // glTexParameteri(texture_target_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
       GL_ERRORCHECK();
     } else {
       glBindRenderbuffer(GL_RENDERBUFFER, 0);
     }
-    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindTexture(texture_target_2D, 0);
     GL_ERRORCHECK();
     glBindFramebuffer(GL_FRAMEBUFFER, impl->_standard->_fbo);
     GL_ERRORCHECK();
@@ -177,7 +199,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
       // printf("RtGroup<%p> initdepth3\n", rtgroup);
       glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, impl->_standard->_dsbo);
       GL_ERRORCHECK();
-      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, impl->_standard->_depthTexture, 0);
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, texture_target_2D, impl->_standard->_depthTexture, 0);
       GL_ERRORCHECK();
       rtgroup->_depthTexture->_varmap.makeValueForKey<GLuint>("gltexobj") = impl->_standard->_depthTexture;
       mTargetGL.TXI()->ApplySamplingMode(rtgroup->_depthTexture);
@@ -274,16 +296,16 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
 
         mTargetGL.debugPushGroup("init-rt-tex");
 
-        glBindTexture(GL_TEXTURE_2D, texobj);
+        glBindTexture(texture_target_2D, texobj);
         GL_ERRORCHECK();
         void* initialdata = calloc(1, iw * ih * 16);
-        glTexImage2D(GL_TEXTURE_2D, 0, glinternalformat, iw, ih, 0, glformat, gltype, initialdata);
+        glTexImage2D(texture_target_2D, 0, glinternalformat, iw, ih, 0, glformat, gltype, initialdata);
         free(initialdata);
 
         switch (rtbuffer->_mipgen) {
           case RtBuffer::EMG_AUTOCOMPUTE:
           case RtBuffer::EMG_USER: {
-            glGenerateMipmap(GL_TEXTURE_2D);
+            glGenerateMipmap(texture_target_2D);
             int nummips         = std::ceil(log_base(2, std::max(iw, ih))) + 1;
             orkteximpl->_maxmip = nummips - 2;
             // printf("SetRtg::gentex<%d> w<%d> h<%d> nummips<%d>\n", int(bufferimpl->_texture), iw, ih, nummips);
@@ -303,8 +325,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
       // attach texture to framebuffercolor buffer
 
       // printf("RtGroup<%p> RtBuffer<%p> attachcoloridx<%d> fbo<%d>\n", rtgroup, rtbuffer, it, int(bufferimpl->_texture));
-
-      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + it, GL_TEXTURE_2D, bufferimpl->_texture, 0);
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + it, texture_target_2D, bufferimpl->_texture, 0);
       GL_ERRORCHECK();
 
       if (bufferimpl->_init or rtbuffer->mSizeDirty) {
@@ -403,7 +424,7 @@ void GlFrameBufferInterface::rtGroupMipGen(RtGroup* rtg) {
       auto b = rtg->GetMrt(it);
       if (b) {
         auto bufferimpl = b->_impl.get<GlRtBufferImpl*>();
-        auto tex_obj    = bufferimpl->_texture;
+        GLuint tex_obj    = bufferimpl->_texture;
         if (b->_mipgen == RtBuffer::EMG_AUTOCOMPUTE) {
           glBindTexture(GL_TEXTURE_2D, tex_obj);
           glGenerateMipmap(GL_TEXTURE_2D);
@@ -413,6 +434,22 @@ void GlFrameBufferInterface::rtGroupMipGen(RtGroup* rtg) {
       }
     }
   }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void GlFrameBufferInterface::msaaBlit(rtgroup_ptr_t src, rtgroup_ptr_t dst) {
+  dst->Resize(src->width(),src->height());
+  PushRtGroup(dst.get());
+  auto src_rtb = src->GetMrt(0);
+  auto dst_rtb = dst->GetMrt(0);
+  auto src_bufferimpl = src_rtb->_impl.get<GlRtBufferImpl*>();
+  auto dst_bufferimpl = dst_rtb->_impl.get<GlRtBufferImpl*>();
+  GLuint src_texture    = src_bufferimpl->_texture;
+  int numsamples = msaaEnumToInt(src->_msaa_samples);
+  OrkAssert(numsamples!=1);
+  PopRtGroup();
+  //OrkAssert(false);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

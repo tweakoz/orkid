@@ -25,8 +25,6 @@ namespace ork { namespace lev2 {
 void PickingCompositingNode::describeX(class_t* c) {
   c->directProperty("ClearColor", &PickingCompositingNode::_clearColor);
 }
-///////////////////////////////////////////////////////////////////////////
-constexpr int NUMSAMPLES = 1;
 ///////////////////////////////////////////////////////////////////////////////
 namespace picking {
 struct IMPL {
@@ -45,9 +43,9 @@ struct IMPL {
     pTARG->debugPushGroup("Picking::rendeinitr");
     if (nullptr == _rtg) {
       _material.gpuInit(pTARG);
-      _rtg             = std::make_shared<RtGroup>(pTARG, _width, _height, NUMSAMPLES);
-      auto buf1        = _rtg->createRenderTarget(lev2::EBufferFormat::RGBA16UI);
-      auto buf2        = _rtg->createRenderTarget(lev2::EBufferFormat::RGBA32F);
+      _rtg             = std::make_shared<RtGroup>(pTARG, _width, _height, MsaaSamples::MSAA_1X);
+      auto buf1        = _rtg->createRenderTarget(EBufferFormat::RGBA16UI);
+      auto buf2        = _rtg->createRenderTarget(EBufferFormat::RGBA32F);
       buf1->_debugName = "PickingRt0";
       buf2->_debugName = "PickingRt1";
     }

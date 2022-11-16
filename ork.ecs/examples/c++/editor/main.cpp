@@ -124,7 +124,7 @@ int main(int argc, char** argv, char** envp) {
   auto compositordata = std::make_shared<CompositingData>();
   auto compositorimpl = compositordata->createImpl();
   auto renderer = std::make_shared<DefaultRenderer>();
-  auto CPD = std::make_shared<lev2::CompositingPassData>();
+  auto CPD = std::make_shared<CompositingPassData>();
   CPD->addStandardLayers();
   compositordata->mbEnable = true;
   auto ecs_camera = std::make_shared<CameraData>();
@@ -135,13 +135,13 @@ int main(int argc, char** argv, char** envp) {
 
   qtapp->onGpuInit([&](Context* ctx) {
    printf( "T4<%g>\n", timer.SecsSinceStart() );
-    outgroup  = std::make_shared<RtGroup>(ctx, 100, 100, 1);
-    outbuffer = outgroup->createRenderTarget(lev2::EBufferFormat::RGBA32F);
+    outgroup  = std::make_shared<RtGroup>(ctx, 100, 100, MsaaSamples::MSAA_1X);
+    outbuffer = outgroup->createRenderTarget(EBufferFormat::RGBA32F);
     ecs_sg_sysdata->bindToRtGroup(outgroup);
     ecs_sg_sysdata->bindToCamera(ecs_camera);
 
-    play_icon  = asset::AssetManager<lev2::TextureAsset>::load("lev2://textures/play_icon");
-    pause_icon = asset::AssetManager<lev2::TextureAsset>::load("lev2://textures/pause_icon");
+    play_icon  = asset::AssetManager<TextureAsset>::load("lev2://textures/play_icon");
+    pause_icon = asset::AssetManager<TextureAsset>::load("lev2://textures/pause_icon");
     compositordata->presetDeferredPBR();
     renderer->setContext(ctx);
 

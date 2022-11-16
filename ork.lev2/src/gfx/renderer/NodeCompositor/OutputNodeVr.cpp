@@ -48,8 +48,8 @@ struct VRIMPL {
       _blit2screenmtl.gpuInit(pTARG);
 
       printf("vr width<%d> height<%d>\n", width, height);
-      _rtg            = new RtGroup(pTARG, width, height, 1);
-      auto buf        = _rtg->createRenderTarget(lev2::EBufferFormat::RGBA8);
+      _rtg            = new RtGroup(pTARG, width, height, MsaaSamples::MSAA_1X);
+      auto buf        = _rtg->createRenderTarget(EBufferFormat::RGBA8);
       buf->_debugName = "WtfVrRt";
 
       pTARG->debugPopGroup();

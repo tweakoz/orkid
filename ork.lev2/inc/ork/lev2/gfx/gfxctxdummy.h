@@ -195,28 +195,32 @@ public:
   DuFrameBufferInterface(Context& target);
   ~DuFrameBufferInterface();
 
-  virtual void SetRtGroup(RtGroup* Base) {
+  void SetRtGroup(RtGroup* Base) final {
   }
 
   ///////////////////////////////////////////////////////
 
-  virtual void _setViewport(int iX, int iY, int iW, int iH) {
+  void _setViewport(int iX, int iY, int iW, int iH) final {
   }
-  virtual void _setScissor(int iX, int iY, int iW, int iH) {
+  void _setScissor(int iX, int iY, int iW, int iH) final {
   }
-  virtual void Clear(const fcolor4& rCol, float fdepth) {
+  void Clear(const fcolor4& rCol, float fdepth) final {
   }
-  virtual void clearDepth(float fdepth) {
+  void clearDepth(float fdepth) final {
   }
 
-  virtual void GetPixel(const fvec4& rAt, PixelFetchContext& ctx) {
+  void GetPixel(const fvec4& rAt, PixelFetchContext& ctx) final {
   }
 
   //////////////////////////////////////////////
 
-  virtual void _doBeginFrame(void) {
+  void _doBeginFrame(void) final {
   }
-  virtual void _doEndFrame(void) {
+  void _doEndFrame(void) final {
+  }
+
+  void msaaBlit(rtgroup_ptr_t src, rtgroup_ptr_t dst) final {
+
   }
 
 protected:

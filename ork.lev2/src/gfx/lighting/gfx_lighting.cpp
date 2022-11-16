@@ -258,7 +258,8 @@ SpotLight::SpotLight(xform_generator_t mtx, const SpotLightData* sld)
 RtGroupRenderTarget* SpotLight::rendertarget(Context* ctx) {
   if (nullptr == _shadowIRT or (_SLD->shadowMapSize() != _shadowmapDim)) {
     _shadowmapDim = _SLD->shadowMapSize();
-    _shadowRTG    = new RtGroup(ctx, _shadowmapDim, _shadowmapDim, _SLD->shadowSamples());
+    MsaaSamples msaasamps = intToMsaaEnum(_SLD->shadowSamples());
+    _shadowRTG    = new RtGroup(ctx, _shadowmapDim, _shadowmapDim, msaasamps);
     _shadowIRT    = new RtGroupRenderTarget(_shadowRTG);
   }
   return _shadowIRT;

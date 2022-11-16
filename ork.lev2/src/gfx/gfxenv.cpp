@@ -38,6 +38,37 @@ ork::lev2::Context* ork::lev2::contextForCurrentThread(){
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::lev2 {
+
+int msaaEnumToInt( const MsaaSamples& samples ){
+  return int(samples);
+}
+
+MsaaSamples intToMsaaEnum( int samples ){
+  MsaaSamples rval;
+  switch(samples){
+    case 1:
+      rval = MsaaSamples::MSAA_1X;
+      break;
+    case 4:
+      rval = MsaaSamples::MSAA_4X;
+      break;
+    case 9:
+      rval = MsaaSamples::MSAA_9X;
+      break;
+    case 16:
+      rval = MsaaSamples::MSAA_16X;
+      break;
+    case 25:
+      rval = MsaaSamples::MSAA_25X;
+      break;
+    default:
+      OrkAssert(false);
+      break;
+  }
+  return rval;
+}
+
+
 extern std::atomic<int> __FIND_IT;
 int G_MSAASAMPLES = 4;
 }

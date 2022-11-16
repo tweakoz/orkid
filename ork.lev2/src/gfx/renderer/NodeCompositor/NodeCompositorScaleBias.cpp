@@ -24,8 +24,6 @@ namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 void ScaleBiasCompositingNode::describeX(class_t* c) {
 }
-///////////////////////////////////////////////////////////////////////////
-constexpr int NUMSAMPLES = 1;
 ///////////////////////////////////////////////////////////////////////////////
 namespace scaleandbias {
 struct IMPL {
@@ -41,7 +39,7 @@ struct IMPL {
     if (nullptr == _rtg) {
       int w           = pTARG->mainSurfaceWidth();
       int h           = pTARG->mainSurfaceHeight();
-      _rtg            = new RtGroup(pTARG, w, h, NUMSAMPLES);
+      _rtg            = new RtGroup(pTARG, w, h, lev2::MsaaSamples::MSAA_1X);
       auto buf        = _rtg->createRenderTarget(lev2::EBufferFormat::RGBA8);
       buf->_debugName = FormatString("ScaleBiasCompositingNode::output");
       _material.gpuInit(pTARG);

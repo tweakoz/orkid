@@ -209,6 +209,8 @@ int main(int argc, char** argv, char** envp) {
   auto desc = init_data->commandLineOptions("model3dpbr example Options");
   desc->add_options()                  //
       ("help", "produce help message") //
+      ("msaa", po::value<int>()->default_value(1), "msaa samples(*1,4,9,16,25)")
+      ("ssaa", po::value<int>()->default_value(1), "ssaa samples(*1,4,9,16,25)")
       ("forward", po::bool_switch()->default_value(false), "forward renderer");
 
   auto vars = *init_data->parse();
@@ -217,11 +219,11 @@ int main(int argc, char** argv, char** envp) {
     std::cout << (*desc) << "\n";
     exit(0);
   }
+  init_data->_msaa_samples = vars["msaa"].as<int>();
+  init_data->_ssaa_samples = vars["ssaa"].as<int>();
 
   bool use_forward = vars["forward"].as<bool>();
 
-  init_data->_msaa_samples = use_forward ? 1 : 1;
-  init_data->_ssaa_samples = use_forward ? 4 : 4;
 
   auto qtapp  = OrkEzApp::create(init_data);
   std::shared_ptr<GpuResources> gpurec;

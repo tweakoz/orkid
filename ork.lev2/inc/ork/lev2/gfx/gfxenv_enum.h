@@ -12,6 +12,20 @@ namespace ork::lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+enum class MsaaSamples {
+  MSAA_1X = 1,
+  MSAA_4X = 4,
+  MSAA_9X = 9,
+  MSAA_16X = 16,
+  MSAA_25X = 25,
+  MSAA_36X = 36,
+};
+
+int msaaEnumToInt( const MsaaSamples& samples );
+MsaaSamples intToMsaaEnum( int ival );
+
+///////////////////////////////////////////////////////////////////////////////
+
 enum class TargetType {
   NONE = 0,
   LOADING,

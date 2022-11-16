@@ -53,6 +53,9 @@ struct SCRIMPL {
       _fxpMVP         = _blit2screenmtl.param("MatMVP");
       _fxpColorMap    = _blit2screenmtl.param("ColorMap");
       _needsinit      = false;
+      _msaadownsamplebuffer = std::make_shared<RtGroup>(ctx, 8, 8, MsaaSamples::MSAA_1X);
+      auto dsbuf        = _msaadownsamplebuffer->createRenderTarget(EBufferFormat::RGBA8);
+      dsbuf->_debugName = "MsaaDownsampleBuffer";
     }
   }
   ///////////////////////////////////////
@@ -101,6 +104,7 @@ struct SCRIMPL {
   bool _needsinit = true;
   int _width      = 0;
   int _height     = 0;
+  rtgroup_ptr_t _msaadownsamplebuffer;
 };
 ///////////////////////////////////////////////////////////////////////////////
 ScreenOutputCompositingNode::ScreenOutputCompositingNode()
@@ -162,41 +166,50 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
         /////////////////////////////////////////////////////////////////////////////
         // be nice and composite to main screen as well...
         /////////////////////////////////////////////////////////////////////////////
-        drawdata.context()->debugPushGroup("ScreenCompositingNode::to_screen");
-        auto this_buf = context->FBI()->GetThisBuffer();
-        auto& mtl     = impl->_blit2screenmtl;
-        switch (this->_supersample) {
-          case 0:
-            mtl.begin(impl->_fxtechnique1x1, framedata);
-            break;
-          case 1:
-            mtl.begin(impl->_fxtechnique2x2, framedata);
-            break;
-          case 2:
-            mtl.begin(impl->_fxtechnique3x3, framedata);
-            break;
-          case 3:
-            mtl.begin(impl->_fxtechnique4x4, framedata);
-            break;
-          case 4:
-            mtl.begin(impl->_fxtechnique5x5, framedata);
-            break;
-          case 5:
-            mtl.begin(impl->_fxtechnique6x6, framedata);
-            break;
-        }
-        mtl._rasterstate.SetBlending(Blending::OFF);
-        mtl.bindParamCTex(impl->_fxpColorMap, tex);
-        mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
-        ViewportRect extents(0, 0, context->mainSurfaceWidth(), context->mainSurfaceHeight());
-        fbi->pushViewport(extents);
-        fbi->pushScissor(extents);
-        this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
-        fbi->popViewport();
-        fbi->popScissor();
-        mtl.end(framedata);
 
+        int num_msaa_samples = msaaEnumToInt(tex->_msaa_samples);
+
+        if(num_msaa_samples==1){
+          drawdata.context()->debugPushGroup("ScreenCompositingNode::to_screen");
+          auto this_buf = context->FBI()->GetThisBuffer();
+          auto& mtl     = impl->_blit2screenmtl;
+          switch (this->_supersample) {
+            case 0:
+              mtl.begin(impl->_fxtechnique1x1, framedata);
+              break;
+            case 1:
+              mtl.begin(impl->_fxtechnique2x2, framedata);
+              break;
+            case 2:
+              mtl.begin(impl->_fxtechnique3x3, framedata);
+              break;
+            case 3:
+              mtl.begin(impl->_fxtechnique4x4, framedata);
+              break;
+            case 4:
+              mtl.begin(impl->_fxtechnique5x5, framedata);
+              break;
+            case 5:
+              mtl.begin(impl->_fxtechnique6x6, framedata);
+              break;
+          }
+          mtl._rasterstate.SetBlending(Blending::OFF);
+         mtl.bindParamCTex(impl->_fxpColorMap, tex);
+         mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
+         ViewportRect extents(0, 0, context->mainSurfaceWidth(), context->mainSurfaceHeight());
+         fbi->pushViewport(extents);
+         fbi->pushScissor(extents);
+         this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+         fbi->popViewport();
+         fbi->popScissor();
+         mtl.end(framedata);
         drawdata.context()->debugPopGroup();
+        }
+        else{
+          auto inp_rtg = drawdata._properties["render_outgroup"_crcu].get<rtgroup_ptr_t>();
+          context->FBI()->msaaBlit(inp_rtg,impl->_msaadownsamplebuffer);
+        }
+
       }
     }
   }

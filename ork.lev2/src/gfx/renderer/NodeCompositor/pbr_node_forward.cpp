@@ -48,8 +48,8 @@ struct ForwardPbrNodeImpl {
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   void init(lev2::Context* context) {
     if (nullptr == _rtg) {
-      _rtg             = std::make_shared<RtGroup>(context, 8, 8, _ginitdata->_msaa_samples);
-      auto buf1        = _rtg->createRenderTarget(lev2::EBufferFormat::RGBA8);
+      _rtg             = std::make_shared<RtGroup>(context, 8, 8, intToMsaaEnum(_ginitdata->_msaa_samples));
+      auto buf1        = _rtg->createRenderTarget(EBufferFormat::RGBA8);
       buf1->_debugName = "ForwardRt0";
       //_rtg_donly = _rtg->clone();
       //_rtg_donly->_depthOnly = true;
