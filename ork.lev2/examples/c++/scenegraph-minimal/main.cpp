@@ -49,7 +49,7 @@ int main(int argc, char** argv,char** envp) {
     //////////////////////////////////////////////////////////
 
   auto params  = std::make_shared<varmap::VarMap>();
-  params->makeValueForKey<std::string>("preset") = "PBR";
+  params->makeValueForKey<std::string>("preset") = "DeferredPBR";
 
     sg_scene = std::make_shared<scenegraph::Scene>(params);
     auto sg_layer = sg_scene->createLayer("Default");

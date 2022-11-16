@@ -116,7 +116,7 @@ ScreenOutputCompositingNode::~ScreenOutputCompositingNode() {
 void ScreenOutputCompositingNode::setSuperSample(int ss) {
   switch(ss){
     case 1:
-      _supersample = 0;
+      _supersample = 1;
       break;
     case 4:
       _supersample = 1;

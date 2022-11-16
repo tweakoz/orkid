@@ -5,6 +5,8 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
+#include <iostream>
+
 #include <ork/application/application.h>
 #include <ork/kernel/datacache.h>
 #include <ork/kernel/string/deco.inl>
@@ -31,6 +33,25 @@ using namespace ork::lev2::pbr::deferrednode;
 
 int main(int argc, char** argv, char** envp) {
   auto init_data = std::make_shared<ork::AppInitData>(argc,argv,envp);
+
+  auto desc = init_data->commandLineOptions("model3dpbr example Options");
+  desc->add_options()                  //
+      ("help", "produce help message") //
+      ("msaa", po::value<int>()->default_value(1), "msaa samples(*1,4,9,16,25)")
+      ("ssaa", po::value<int>()->default_value(1), "ssaa samples(*1,4,9,16,25)")
+      ("forward", po::bool_switch()->default_value(false), "forward renderer");
+
+  auto vars = *init_data->parse();
+
+  if (vars.count("help")) {
+    std::cout << (*desc) << "\n";
+    exit(0);
+  }
+  init_data->_msaa_samples = vars["msaa"].as<int>();
+  init_data->_ssaa_samples = vars["ssaa"].as<int>();
+
+  bool use_forward = vars["forward"].as<bool>();
+
   auto qtapp        = OrkEzApp::create(init_data);
   auto qtwin        = qtapp->_mainWindow;
   auto gfxwin       = qtwin->_gfxwin;
@@ -59,7 +80,11 @@ int main(int argc, char** argv, char** envp) {
   qtapp->onGpuInit([&](Context* ctx) {
 
     compositordata = std::make_shared<CompositingData>();
-    compositordata->presetDeferredPBR();
+    if(use_forward)
+      compositordata->presetForwardPBR();
+    else
+      compositordata->presetDeferredPBR();
+
     compositordata->mbEnable     = true;
     auto nodetek                = compositordata->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
     auto rendnode               = nodetek->tryRenderNodeAs<pbr::deferrednode::DeferredCompositingNodePbr>();

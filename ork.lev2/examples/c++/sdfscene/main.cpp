@@ -43,7 +43,7 @@ using namespace ork;
 using namespace ork::lev2;
 using namespace ork::lev2::pbr::deferrednode;
 
-const int KSUPERSAMPLE = 0;
+const int KSUPERSAMPLE = 1;
 
 ///////////////////////////////////////////////////////////////////
 
