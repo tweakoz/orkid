@@ -132,6 +132,10 @@ public:
   fxparam_constptr_t _parMapBrdfIntegration  = nullptr;
   fxparam_constptr_t _parEnvironmentMipBias  = nullptr;
   fxparam_constptr_t _parEnvironmentMipScale = nullptr;
+  fxparam_constptr_t _parDepthFogDistance = nullptr;
+  fxparam_constptr_t _parDepthFogPower = nullptr;
+  
+
 
   fxparam_constptr_t _parUnTexPointLightsCount  = nullptr;
   const FxShaderParamBlock* _parUnTexPointLightsData   = nullptr;

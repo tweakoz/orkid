@@ -40,7 +40,31 @@ ork::lev2::Context* ork::lev2::contextForCurrentThread(){
 namespace ork::lev2 {
 
 int msaaEnumToInt( const MsaaSamples& samples ){
-  return int(samples);
+  int convsamples = 0;
+  switch(samples){
+    case MsaaSamples::MSAA_1X:
+      convsamples = 1;
+      break;
+    case MsaaSamples::MSAA_4X:
+      convsamples = 4;
+      break;
+    case MsaaSamples::MSAA_8X:
+      convsamples = 8;
+      break;
+    case MsaaSamples::MSAA_9X:
+      convsamples = 9;
+      break;
+    case MsaaSamples::MSAA_16X:
+      convsamples = 16;
+      break;
+    case MsaaSamples::MSAA_25X:
+      convsamples = 25;
+      break;
+    default:
+      OrkAssert(false);
+      break;
+  }
+  return convsamples;
 }
 
 MsaaSamples intToMsaaEnum( int samples ){
@@ -51,6 +75,9 @@ MsaaSamples intToMsaaEnum( int samples ){
       break;
     case 4:
       rval = MsaaSamples::MSAA_4X;
+      break;
+    case 8:
+      rval = MsaaSamples::MSAA_8X;
       break;
     case 9:
       rval = MsaaSamples::MSAA_9X;

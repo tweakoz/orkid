@@ -213,7 +213,7 @@ void ContextGL::initializeOffscreenContext( OffscreenBuffer *pBuf )
   plato->_thiscontext = global_plato->_thiscontext;
   plato->_needsInit   = false;
 
-  _defaultRTG  = new RtGroup(this, miW, miH, 1);
+  _defaultRTG  = new RtGroup(this, miW, miH, MsaaSamples::MSAA_1X);
   auto rtb     = _defaultRTG->createRenderTarget(EBufferFormat::RGBA8);
   auto texture = rtb->texture();
   FBI()->SetBufferTexture(texture);
@@ -237,7 +237,7 @@ void ContextGL::initializeLoaderContext() {
   plato->_thiscontext = global_plato->_thiscontext;
   plato->_needsInit   = false;
 
-  _defaultRTG  = new RtGroup(this, miW, miH, 16);
+  _defaultRTG  = new RtGroup(this, miW, miH, MsaaSamples::MSAA_1X);
   auto rtb     = _defaultRTG->createRenderTarget(EBufferFormat::RGBA8);
   auto texture = rtb->texture();
   FBI()->SetBufferTexture(texture);

@@ -15,6 +15,7 @@ namespace ork::lev2 {
 enum class MsaaSamples {
   MSAA_1X = 1,
   MSAA_4X = 4,
+  MSAA_8X = 8,
   MSAA_9X = 9,
   MSAA_16X = 16,
   MSAA_25X = 25,

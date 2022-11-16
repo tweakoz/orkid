@@ -270,6 +270,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _parMapBrdfIntegration  = fxi->parameter(_shader, "MapBrdfIntegration");
   _parEnvironmentMipBias  = fxi->parameter(_shader, "EnvironmentMipBias");
   _parEnvironmentMipScale = fxi->parameter(_shader, "EnvironmentMipScale");
+  _parDepthFogDistance = fxi->parameter(_shader, "DepthFogDistance");
+  _parDepthFogPower = fxi->parameter(_shader, "DepthFogPower");
 
   _parUnTexPointLightsCount = fxi->parameter(_shader, "point_light_count");
   _parUnTexPointLightsData = fxi->parameterBlock(_shader, "ub_frg_fwd_lighting");
@@ -339,6 +341,8 @@ FxStateInstance::statelambda_t PBRMaterial::createBasicStateLambda() const{
     FXI->BindParamCTex(_parMapBrdfIntegration, pbrcommon->_brdfIntegrationMap.get());
     FXI->BindParamFloat(_parEnvironmentMipBias, pbrcommon->_environmentMipBias);
     FXI->BindParamFloat(_parEnvironmentMipScale, pbrcommon->_environmentMipScale);
+    FXI->BindParamFloat(_parDepthFogDistance, pbrcommon->_depthFogDistance);
+    FXI->BindParamFloat(_parDepthFogPower, pbrcommon->_depthFogPower);
 
     auto worldmatrix = RCID.worldMatrix();
 

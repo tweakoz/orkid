@@ -222,6 +222,7 @@ int main(int argc, char** argv, char** envp) {
   init_data->_msaa_samples = vars["msaa"].as<int>();
   init_data->_ssaa_samples = vars["ssaa"].as<int>();
 
+  printf( "_msaa_samples<%d>\n", init_data->_msaa_samples );
   bool use_forward = vars["forward"].as<bool>();
 
 

@@ -125,7 +125,7 @@ libblock lib_fwd
     pbd._emissive = length(TN)<0.1;
     pbd._metallic = rufmtlamb.x * MetallicFactor;
     pbd._roughness = rufmtlamb.y * RoughnessFactor;
-    pbd._albedo = (ModColor*frg_clr*texture(ColorMap,frg_uv0)).xyz;
+    pbd._albedo = (modcolor*frg_clr.xyz*texture(ColorMap,frg_uv0).xyz);
     pbd._wpos = wpos;
     pbd._wnrm = normal;
     pbd._fogZ = 0.0;

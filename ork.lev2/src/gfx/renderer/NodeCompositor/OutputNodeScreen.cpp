@@ -194,20 +194,34 @@ void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata) {
               break;
           }
           mtl._rasterstate.SetBlending(Blending::OFF);
-         mtl.bindParamCTex(impl->_fxpColorMap, tex);
-         mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
-         ViewportRect extents(0, 0, context->mainSurfaceWidth(), context->mainSurfaceHeight());
-         fbi->pushViewport(extents);
-         fbi->pushScissor(extents);
-         this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
-         fbi->popViewport();
-         fbi->popScissor();
-         mtl.end(framedata);
-        drawdata.context()->debugPopGroup();
+          mtl.bindParamCTex(impl->_fxpColorMap, tex);
+          mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
+          ViewportRect extents(0, 0, context->mainSurfaceWidth(), context->mainSurfaceHeight());
+          fbi->pushViewport(extents);
+          fbi->pushScissor(extents);
+          this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+          fbi->popViewport();
+          fbi->popScissor();
+          mtl.end(framedata);
+          drawdata.context()->debugPopGroup();
         }
         else{
           auto inp_rtg = drawdata._properties["render_outgroup"_crcu].get<rtgroup_ptr_t>();
           context->FBI()->msaaBlit(inp_rtg,impl->_msaadownsamplebuffer);
+          auto this_buf = context->FBI()->GetThisBuffer();
+          auto& mtl     = impl->_blit2screenmtl;
+          mtl.begin(impl->_fxtechnique1x1, framedata);
+          mtl._rasterstate.SetBlending(Blending::OFF);
+          tex = impl->_msaadownsamplebuffer->GetMrt(0)->texture();
+          mtl.bindParamCTex(impl->_fxpColorMap, tex);
+          mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
+          ViewportRect extents(0, 0, context->mainSurfaceWidth(), context->mainSurfaceHeight());
+          fbi->pushViewport(extents);
+          fbi->pushScissor(extents);
+          this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+          fbi->popViewport();
+          fbi->popScissor();
+          mtl.end(framedata);
         }
 
       }

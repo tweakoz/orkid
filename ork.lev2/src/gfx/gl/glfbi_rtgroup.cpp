@@ -89,6 +89,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
       rtgroup->_depthTexture                  = new Texture;
       rtgroup->_depthTexture->_width          = iw;
       rtgroup->_depthTexture->_height         = ih;
+      rtgroup->_depthTexture->_msaa_samples = rtgroup->_msaa_samples;
       GLTextureObject* depthtexobj         = new GLTextureObject;
       rtgroup->_depthTexture->_internalHandle = (void*)depthtexobj;
       GL_ERRORCHECK();
@@ -150,7 +151,6 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
     //////////////////////////////////////////
     // initialize depth renderbuffer
     if (rtgroup->_needsDepth) {
-      // printf("RtGroup<%p> initdepth2\n", rtgroup);
       GL_ERRORCHECK();
       glBindRenderbuffer(GL_RENDERBUFFER, impl->_standard->_dsbo);
       GL_ERRORCHECK();
@@ -299,8 +299,14 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
         glBindTexture(texture_target_2D, texobj);
         GL_ERRORCHECK();
         void* initialdata = calloc(1, iw * ih * 16);
-        glTexImage2D(texture_target_2D, 0, glinternalformat, iw, ih, 0, glformat, gltype, initialdata);
+        if(numsamples==1){
+          glTexImage2D(texture_target_2D, 0, glinternalformat, iw, ih, 0, glformat, gltype, initialdata);
+        }
+        else{
+          glTexImage2DMultisample(texture_target_2D, numsamples, glinternalformat, iw, ih, GL_TRUE);
+        }
         free(initialdata);
+        GL_ERRORCHECK();
 
         switch (rtbuffer->_mipgen) {
           case RtBuffer::EMG_AUTOCOMPUTE:
@@ -316,6 +322,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
         }
         // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LEVEL, 0);
         // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, nummips - 1);
+        GL_ERRORCHECK();
         mTargetGL.TXI()->ApplySamplingMode(tex);
         GL_ERRORCHECK();
       } // if (bufferimpl->_init or rtbuffer->mSizeDirty) {
@@ -426,10 +433,12 @@ void GlFrameBufferInterface::rtGroupMipGen(RtGroup* rtg) {
         auto bufferimpl = b->_impl.get<GlRtBufferImpl*>();
         GLuint tex_obj    = bufferimpl->_texture;
         if (b->_mipgen == RtBuffer::EMG_AUTOCOMPUTE) {
+          GL_ERRORCHECK();
           glBindTexture(GL_TEXTURE_2D, tex_obj);
           glGenerateMipmap(GL_TEXTURE_2D);
           b->texture()->TexSamplingMode().PresetPointAndClamp();
           mTargetGL.TXI()->ApplySamplingMode(b->texture());
+          GL_ERRORCHECK();
         }
       }
     }
@@ -443,13 +452,22 @@ void GlFrameBufferInterface::msaaBlit(rtgroup_ptr_t src, rtgroup_ptr_t dst) {
   PushRtGroup(dst.get());
   auto src_rtb = src->GetMrt(0);
   auto dst_rtb = dst->GetMrt(0);
-  auto src_bufferimpl = src_rtb->_impl.get<GlRtBufferImpl*>();
-  auto dst_bufferimpl = dst_rtb->_impl.get<GlRtBufferImpl*>();
-  GLuint src_texture    = src_bufferimpl->_texture;
+  auto src_groupimpl = src->_impl.get<glrtgroupimpl_ptr_t>();
+  auto dst_groupimpl = dst->_impl.get<glrtgroupimpl_ptr_t>();
+
+  //auto src_bufferimpl = src_rtb->_impl.get<GlRtBufferImpl*>();
+  //auto dst_bufferimpl = dst_rtb->_impl.get<GlRtBufferImpl*>();
+  //GLuint src_texture    = src_bufferimpl->_texture;
   int numsamples = msaaEnumToInt(src->_msaa_samples);
   OrkAssert(numsamples!=1);
+  GL_ERRORCHECK();
+  glBindFramebuffer(GL_READ_FRAMEBUFFER, src_groupimpl->_standard->_fbo);
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst_groupimpl->_standard->_fbo);
+  glBlitFramebuffer(0, 0, src->width(), src->height(), //
+                    0, 0, dst->width(), dst->height(), //
+                    GL_COLOR_BUFFER_BIT, GL_LINEAR); 
+  GL_ERRORCHECK();
   PopRtGroup();
-  //OrkAssert(false);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -377,19 +377,19 @@ static auto minfiltlamb = [](const TextureSamplingModeData& inp) -> GLenum {
 extern std::atomic<int> __FIND_IT;
 
 void GlTextureInterface::ApplySamplingMode(Texture* ptex) {
+  int numsamples = msaaEnumToInt(ptex->_msaa_samples);
+  if(numsamples>1)
+    return;
+
   GLTextureObject* pTEXOBJ = (GLTextureObject*)ptex->GetTexIH();
   if (pTEXOBJ) {
     GLenum tgt = (pTEXOBJ->mTarget != GL_NONE) ? pTEXOBJ->mTarget : GL_TEXTURE_2D;
 
-    int numsamples = msaaEnumToInt(ptex->_msaa_samples);
-    if(numsamples>1)
-      tgt = GL_TEXTURE_2D_MULTISAMPLE;
 
     mTargetGL.makeCurrentContext();
     __FIND_IT.store(1);
     mTargetGL.debugPushGroup("ApplySamplingMode");
     GL_ERRORCHECK();
-    glBindTexture(tgt, pTEXOBJ->mObject);
 
     const auto& texmode = ptex->TexSamplingMode();
 
@@ -414,23 +414,22 @@ void GlTextureInterface::ApplySamplingMode(Texture* ptex) {
 
     GL_ERRORCHECK();
     // sampler state..
-    if(tgt!=GL_TEXTURE_2D_MULTISAMPLE){
-      #if defined(OPENGL_41)
-        glTexParameterf(tgt, GL_TEXTURE_MAX_ANISOTROPY_EXT, 16.0f);
-      #elif defined(OPENGL_46)
-        glTexParameterf(tgt, GL_TEXTURE_MAX_ANISOTROPY, 16.0f);
-      #endif
-      glTexParameterf(tgt, GL_TEXTURE_MAG_FILTER, magfiltlamb(texmode));
-      GL_ERRORCHECK();
-      glTexParameterf(tgt, GL_TEXTURE_MIN_FILTER, minfilt);
-      GL_ERRORCHECK();
-      glTexParameterf(tgt, GL_TEXTURE_MAX_LEVEL, inummips);
-      GL_ERRORCHECK();
-      glTexParameterf(tgt, GL_TEXTURE_WRAP_S, addrlamb(texmode.GetAddrModeU()));
-      GL_ERRORCHECK();
-      glTexParameterf(tgt, GL_TEXTURE_WRAP_T, addrlamb(texmode.GetAddrModeV()));
-      GL_ERRORCHECK();
-    }
+    glBindTexture(tgt, pTEXOBJ->mObject);
+    #if defined(OPENGL_41)
+      glTexParameterf(tgt, GL_TEXTURE_MAX_ANISOTROPY_EXT, 16.0f);
+    #elif defined(OPENGL_46)
+      glTexParameterf(tgt, GL_TEXTURE_MAX_ANISOTROPY, 16.0f);
+    #endif
+    glTexParameterf(tgt, GL_TEXTURE_MAG_FILTER, magfiltlamb(texmode));
+    GL_ERRORCHECK();
+    glTexParameterf(tgt, GL_TEXTURE_MIN_FILTER, minfilt);
+    GL_ERRORCHECK();
+    glTexParameterf(tgt, GL_TEXTURE_MAX_LEVEL, inummips);
+    GL_ERRORCHECK();
+    glTexParameterf(tgt, GL_TEXTURE_WRAP_S, addrlamb(texmode.GetAddrModeU()));
+    GL_ERRORCHECK();
+    glTexParameterf(tgt, GL_TEXTURE_WRAP_T, addrlamb(texmode.GetAddrModeV()));
+    GL_ERRORCHECK();
 
     mTargetGL.debugPopGroup();
   }
