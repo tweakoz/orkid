@@ -5,6 +5,8 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
+#include <iostream>
+
 #include <ork/kernel/string/deco.inl>
 #include <ork/kernel/timer.h>
 #include <ork/lev2/ezapp.h>
@@ -56,6 +58,21 @@ using resources_ptr_t = std::shared_ptr<Resources>;
 
 int main(int argc, char** argv,char** envp) {
   auto init_data = std::make_shared<ork::AppInitData>(argc,argv,envp);
+
+  auto desc = init_data->commandLineOptions("minimal3d example Options");
+  desc->add_options()                  //
+      ("help", "produce help message") //
+      ("msaa", po::value<int>()->default_value(1), "msaa samples(*1,4,9,16,25)");
+
+  auto vars = *init_data->parse();
+
+  if (vars.count("help")) {
+    std::cout << (*desc) << "\n";
+    exit(0);
+  }
+
+  init_data->_msaa_samples = vars["msaa"].as<int>();
+
   auto qtapp  = OrkEzApp::create(init_data);
   auto qtwin                           = qtapp->_mainWindow;
   auto gfxwin                          = qtwin->_gfxwin;
@@ -82,7 +99,7 @@ int main(int argc, char** argv,char** envp) {
     float TARGW  = context->mainSurfaceWidth();
     float TARGH  = context->mainSurfaceHeight();
     float aspect = TARGW / TARGH;
-    float phase  = timer.SecsSinceStart() * PI2 * 0.1f;
+    float phase  = timer.SecsSinceStart() * PI2 * 0.001f;
     fvec3 eye(sinf(phase) * 5.0f, 5.0f, -cosf(phase) * 5.0f);
     fvec3 tgt(0, 0, 0);
     fvec3 up(0, 1, 0);
