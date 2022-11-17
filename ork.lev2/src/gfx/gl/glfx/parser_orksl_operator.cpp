@@ -24,7 +24,7 @@
 namespace ork::lev2::glslfx::parser {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-match_results_t UnaryOp::match(FnParseContext ctx) {
+match_results_t MathOp::match(FnParseContext ctx) {
   match_results_t rval;
   if (auto m = AddOp::match(ctx))
     rval = m;
@@ -141,6 +141,7 @@ match_results_t SubOp::match(FnParseContext ctx) {
   return rval;
 }
 match_results_t MulOp::match(FnParseContext ctx) {
+  //ctx._view->dump("MulOp");
   match_results_t rval;
   rval.make<match_t>(ctx);
   if (ctx.tokenValue(0) == "*") {

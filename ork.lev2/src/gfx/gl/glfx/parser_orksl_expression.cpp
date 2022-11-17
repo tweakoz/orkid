@@ -51,9 +51,10 @@ match_results_t Expression::match(FnParseContext ctx) {
   bool match   = true;
   while (not done) {
     auto mva = ExpressionNode::match(ctx);
+    mva.dump("enode");
     if (mva) {
     // todo fix left recursive
-      return mva;
+      //return mva;
     }
     auto try_tok = ctx.tokenValue(0);
     if (try_tok == ",") {
@@ -95,28 +96,23 @@ match_results_t ExpressionNode::match(FnParseContext ctx) {
   bool has_typename = false;
   bool has_ref = false;
   bool has_idp = false;
+  //ctx._view->dump("ExpressionNode");
   while(not done) {
+    //ctx._view->dump("ExpressionNode::A");
     if (auto mvo = OpenParen::match(ctx)) {
+      //ctx._view->dump("ExpressionNode::(");
       rval = rval+mvo;
       ctx = rval->consume();
       numparen++;
-      if( has_typename or has_ref ){
-        if( auto max = ArgumentExpressionList::match(ctx) ){
-          rval = rval+max;
-          ctx = rval->consume();
-        }
-      }
-      else { // expression scope
-        printf( "yo\n");
-        //assert(false);
-      }
-      if(auto mvc = CloseParen::match(ctx)) {
-         rval = rval+mvc;
-         ctx = rval->consume();
-         numparen--;
-      }
+    }
+    else if (auto mvo = CloseParen::match(ctx)) {
+      //ctx._view->dump("ExpressionNode::)");
+      numparen--;
+      rval = rval+mvo;
+      ctx = rval->consume();
     }
     else if (auto mvq = TypeName::match(ctx)) {
+      //ctx._view->dump("ExpressionNode::typename");
       has_typename = true;
       rval = rval + mvq;
       ctx = mvq->consume();
@@ -126,6 +122,7 @@ match_results_t ExpressionNode::match(FnParseContext ctx) {
       }
     }
     else if (auto mvq = Reference::match(ctx)) {
+      //ctx._view->dump("ExpressionNode::reference");
       rval = rval + mvq;
       has_ref = true;
       ctx = rval->consume();
@@ -135,19 +132,31 @@ match_results_t ExpressionNode::match(FnParseContext ctx) {
       }
     }
     else if (auto mvc = Constant::match(ctx)) {
+      //ctx._view->dump("ExpressionNode::constant");
       rval = rval + mvc;
       ctx = rval->consume();
     }
-    else if (auto mvo = UnaryOp::match(ctx)) {
+    else if (auto mvo = MathOp::match(ctx)) {
+      //ctx._view->dump("ExpressionNode::uop");
       rval = rval + mvo;
       ctx = rval->consume();
     }
     else if (auto mvo = MutatingAssignmentOperator::match(ctx)) {
+      //ctx._view->dump("ExpressionNode::mao");
       rval = rval + mvo;
+      ctx = rval->consume();
+    }
+    else if(auto mve = CommaOp::match(ctx)){
+      //ctx._view->dump("CommaOp::subexp");
+      rval = rval+mve;
       ctx = rval->consume();
     }
     else {
       if( numparen>0 ){
+        printf("numparen<%zd>\n", numparen);
+        ctx.dump("ExpressionNode::???");
+        rval.dump("rven");
+        OrkAssert(false);
       }
       else
         done = true;
@@ -176,7 +185,7 @@ match_results_t UnaryExpression::match(FnParseContext ctx) {
       return (m+m2);
     }
   }
-  else if( auto m = UnaryOp::match(ctx)){
+  else if( auto m = MathOp::match(ctx)){
     auto c2 = m->consume();
     if( auto m2 = CastExpression::match(c2)){
       return (m+m2);

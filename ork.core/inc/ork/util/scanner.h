@@ -143,7 +143,7 @@ struct ScannerView {
   size_t globalTokenIndex(size_t i) const;
   void scanBlock(size_t is, bool checkterm = true, bool checkdecos = true);
   void scanUntil(size_t start, std::string terminator, bool includeterminator);
-  void dump();
+  void dump(const std::string& dumpid) const;
   size_t blockEnd() const;
   std::string blockName() const;
 

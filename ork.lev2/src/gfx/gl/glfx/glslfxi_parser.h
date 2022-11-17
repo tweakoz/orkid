@@ -198,6 +198,7 @@ struct FnParseContext {
   FnParseContext& operator=(const FnParseContext& oth);
   FnParseContext advance(size_t count) const;
   std::string tokenValue(size_t offset) const;
+  void dump(const std::string dumpid) const;
 
   GlSlFxParser* _parser;
   size_t _startIndex        = 0;
@@ -236,7 +237,7 @@ struct FnMatchResultsBas {
   size_t _start = 0;
   size_t _count = 0;
   size_t end() const {
-    return _start + _count;
+    return _start + _count-1;
   }
   bool _matched = false;
   FnParseContext _ctx;
@@ -248,6 +249,18 @@ struct FnMatchResultsBas {
 struct FnMatchResultsWrap {
   FnMatchResultsWrap(match_ptr_t p = nullptr)
       : _results(p) {
+  }
+  void dump(std::string dumpid) const {
+    if(this->operator bool()){
+      size_t st = _results->_start;
+      size_t en = _results->end();
+      std::string sttok = _results->_ctx._view->token(st)->text;
+      std::string entok = _results->_ctx._view->token(en)->text;
+      printf( "matchres<%s> matched st<%zd:%s> en<%zd:%s>\n", dumpid.c_str(), st,sttok.c_str(), en, entok.c_str() );
+    }
+    else{
+      printf( "matchres<%s> no-match\n", dumpid.c_str() );
+    }
   }
   template <typename T> inline FnMatchResultsWrap& operator=(std::shared_ptr<T> p) {
     _results = std::dynamic_pointer_cast<FnMatchResultsBas>(p);
@@ -358,7 +371,7 @@ DECLARE_STD_EMITTABLE(OpenParen);
 DECLARE_STD_EMITTABLE(CloseParen);
 
 DECLARE_STD_EMITTABLE(SizeofOp);
-DECLARE_STD_EMITTABLE(UnaryOp);
+DECLARE_STD_EMITTABLE(MathOp);
 
 DECLARE_STD_EMITTABLE(SemicolonOp);
 DECLARE_STD_EMITTABLE(CommaOp);

@@ -48,31 +48,82 @@ FnParseContext FnParseContext::advance(size_t count) const {
   rval._startIndex = count;
   return rval;
 }
+void FnParseContext::dump(const std::string dumpid) const{
+  printf( "FPC<%p:%s> idx<%zd>\n", this, dumpid.c_str(), _startIndex );
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 int ParsedFunctionNode::parse(GlSlFxParser* parser, const ork::ScannerView& view) {
   int i         = 0;
+  view.dump("pfnstart");
   auto open_tok = view.token(i);
-  assert(open_tok->text == "{");
+  OrkAssert(open_tok->text == "(");
+  i++;
+  /////////////////////////////////
+  // arguments
+  /////////////////////////////////
+  bool args_done       = false;
+  const Token* dirspec = nullptr;
+  while (false == args_done) {
+    auto argtype_tok = view.token(i);
+    if (argtype_tok->text == ")") {
+      args_done = true;
+      i++;
+    } else if (argtype_tok->text == "in") {
+      dirspec = argtype_tok;
+      i++;
+    } else if (argtype_tok->text == "out") {
+      dirspec = argtype_tok;
+      i++;
+    } else if (argtype_tok->text == "inout") {
+      dirspec = argtype_tok;
+      i++;
+    } else {
+      i++;
+      auto nam_tok = view.token(i);
+      i++;
+      auto argnode        = std::make_shared<FunctionArgumentNode>();
+      argnode->_type      = argtype_tok;
+      argnode->_name      = nam_tok;
+      argnode->_direction = dirspec;
+      dirspec             = nullptr;
+      //_arguments.push_back(argnode);
+      auto try_comma = view.token(i)->text;
+      if (try_comma == ",") {
+        i++;
+      }
+    }
+  }
+
+  /////////////////////////////////
+  // body
+  /////////////////////////////////
+
+  auto open_body_tok = view.token(i);
+  assert(open_body_tok->text == "{");
   bool done = false;
-  FnParseContext pctx(parser, &view);
+  ScannerView body_view(view,i);
+  body_view.dump("pfnbody");
+  FnParseContext pctx(parser, &body_view);
+  int j = 0;
   while (not done) {
-    auto try_tok     = view.token(i)->text;
-    pctx._startIndex = i;
+    auto try_tok     = body_view.token(j)->text;
     if (auto m = VariableDeclaration::match(pctx)) {
       auto parsed = m->parse();
-      i += m->_count;
+      j += m->_count;
       //_elements.push_back(parsed._node);
     } else if (auto m = CompoundStatement::match(pctx)) {
       auto parsed = m->parse();
-      i += m->_count;
+      j += m->_count;
       //_elements.push_back(parsed._node);
     } else {
-      assert(false);
+      body_view.dump("ParsedFunctionNode::XXX");
+      OrkAssert(false);
     }
-    done = i >= view._indices.size();
+    done = j >= body_view._indices.size();
   }
+  i+=j;
   auto close_tok = view.token(i - 1);
   assert(close_tok->text == "}");
   return i;

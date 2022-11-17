@@ -173,8 +173,8 @@ void ScannerView::scanUntil(size_t start, std::string terminator, bool includete
   _end   = _indices.size() - 1;
 }
 
-void ScannerView::dump() {
-  printf("ScannerView<%p>::Dump()\n", (void*) this);
+void ScannerView::dump(const std::string& dumpid) const {
+  printf("ScannerView<%p>::Dump(id:%s)\n", (void*) this, dumpid.c_str() );
 
   printf(" _blockOk<%d>\n", int(_blockOk));
   printf(" _start<%d>\n", int(_start));

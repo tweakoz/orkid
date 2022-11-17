@@ -32,6 +32,7 @@ match_results_t OpenCurly::match(FnParseContext ctx) {
     rval->_count = 1;
     rval->_start = ctx._startIndex;
   }
+  //rval.dump("{");
   return rval;
 }
 
@@ -54,6 +55,7 @@ match_results_t CloseCurly::match(FnParseContext ctx) {
     rval->_count = 1;
     rval->_start = ctx._startIndex;
   }
+  //rval.dump("}");
   return rval;
 }
 
@@ -76,6 +78,7 @@ match_results_t OpenSquare::match(FnParseContext ctx) {
     rval->_count = 1;
     rval->_start = ctx._startIndex;
   }
+  //rval.dump("[");
   return rval;
 }
 
@@ -98,6 +101,7 @@ match_results_t CloseSquare::match(FnParseContext ctx) {
     rval->_count = 1;
     rval->_start = ctx._startIndex;
   }
+  //rval.dump("]");
   return rval;
 }
 
@@ -120,6 +124,7 @@ match_results_t OpenParen::match(FnParseContext ctx) {
     rval->_count = 1;
     rval->_start = ctx._startIndex;
   }
+  //rval.dump("(");
   return rval;
 }
 
@@ -142,6 +147,7 @@ match_results_t CloseParen::match(FnParseContext ctx) {
     rval->_count = 1;
     rval->_start = ctx._startIndex;
   }
+  //rval.dump(")");
   return rval;
 }
 

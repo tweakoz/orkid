@@ -27,7 +27,7 @@ namespace ork::lev2::glslfx::parser {
 int FunctionNode::parse(GlSlFxParser* parser,const ork::ScannerView& view) {
   int i         = 0;
   auto open_tok = view.token(i);
-  assert(open_tok->text == "(");
+  OrkAssert(open_tok->text == "(");
   i++;
 
   auto topnode = parser->_topNode;
@@ -70,18 +70,12 @@ int FunctionNode::parse(GlSlFxParser* parser,const ork::ScannerView& view) {
   /////////////////////////////////
   // body
   /////////////////////////////////
-  assert(view.token(i)->text == "{");
+  OrkAssert(view.token(i)->text == "{");
   ScannerView bodyview(view, i);
   size_t bodycount = _body.parse(parser,bodyview);
   i += bodycount;
   bodyview.numTokens();
-  assert(i == view.numTokens());
-  /////////////////////////////////
-  // parsedfnnode
-  /////////////////////////////////
-  _parsedfnnode = std::make_shared<ParsedFunctionNode>();
-  // int j = _parsedfnnode->parse(bodyview);
-  // assert(j==bodycount);
+  OrkAssert(i == view.numTokens());
   /////////////////////////////////
   return i;
 }
@@ -94,6 +88,7 @@ void FunctionNode::pregen(shaderbuilder::BackEnd& backend) const {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void FunctionNode::emit(shaderbuilder::BackEnd& backend) const {
+  OrkAssert(false);
   ///////////////////////////////////////////////////
   for( auto argnode : _arguments ){
      backend.validateTypeName(argnode->_type->text);

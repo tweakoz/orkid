@@ -38,6 +38,7 @@ match_results_t Statement::match(FnParseContext ctx) {
   } else if (auto mrs = ReturnStatement::match(ctx)) {
     rval = mrs; // empty statement
   }
+  rval.dump("sta");
   return rval;
 }
 
@@ -67,6 +68,7 @@ match_results_t InstantiationStatement::match(FnParseContext ctx) {
       }
     }
   }
+  rval.dump("sta-inst");
   return rval;
 }
 
@@ -93,6 +95,7 @@ match_results_t AssignmentStatement::match(FnParseContext ctx) {
       }
     }
   }
+  rval.dump("sta-ass");
   return rval;
 }
 
@@ -106,10 +109,12 @@ match_results_t ExpressionStatement::match(FnParseContext ctx) {
     rval->_matched = true;
     rval->_start   = ctx._startIndex;
     rval->_count   = 1;
+    rval.dump("sta-exp1");
     return rval;
   } else if (auto mve = Expression::match(ctx)) {
     rval = mve;
   }
+  rval.dump("sta-exp2");
   return rval;
 }
 
@@ -130,6 +135,7 @@ match_results_t IterationStatement::match(FnParseContext ctx) {
     rval = mfs;
     return rval;
   }
+  rval.dump("sta-iter");
   return rval;
 }
 
@@ -207,6 +213,7 @@ match_results_t ForLoopStatement::match(FnParseContext ctx) {
     auto mblock = CompoundStatement::match(ctx);
     rval = rval + mblock;
     ctx = rval->consume();
+    rval.dump("sta-for");
     return rval;
   }
   return rval;
@@ -234,9 +241,9 @@ match_results_t StatementList::match(FnParseContext ctx) {
        ctx.tokenValue(1)=="nz"){
       printf( "yo\n");
     }
-    auto mvd = Statement::match(ctx);
-    if (mvd) {
-      rval = rval + mvd;
+    auto sta = Statement::match(ctx);
+    if (sta) {
+      rval = rval + sta;
       ctx = rval->consume();
       if (auto msemi = SemicolonOp::match(ctx)) {
         rval = rval + msemi;
@@ -246,6 +253,7 @@ match_results_t StatementList::match(FnParseContext ctx) {
       done = true;
     }
   }
+  rval.dump("stalist");
   return rval;
 }
 
@@ -261,34 +269,41 @@ void StatementList::emit(shaderbuilder::BackEnd& backend) const {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 match_results_t CompoundStatement::match(FnParseContext ctx) {
-  match_results_t rval;
+  ctx._view->dump("CompoundStatement::");
+  match_results_t mfinal;
   ////////////////////////////////////
-  auto mfinal = OpenCurly::match(ctx);
-  if (not mfinal)
-    return rval;
+  auto mopen = OpenCurly::match(ctx);
+  mopen.dump("oc");
+  if (not mopen)
+    return mfinal; // no match
+  mfinal = mopen;
   ////////////////////////////////////
   // empty statement ?
   ////////////////////////////////////
   if (auto mcb = CloseCurly::match(mfinal->consume())) {
-    mfinal = mfinal + mcb;
-    rval = mfinal;
+    mcb.dump("cc");
+    return mfinal + mcb;
   }
   ////////////////////////////////////
   // declaration list optional
   ////////////////////////////////////
-  if (auto mdl = DeclarationList::match(mfinal->consume()))
+  if (auto mdl = DeclarationList::match(mfinal->consume())){
+    mdl.dump("mdl");
     mfinal = mfinal + mdl;
+  }
   ////////////////////////////////////
   // statement list mandatory
   ////////////////////////////////////
   auto msl = StatementList::match(mfinal->consume());
-  assert(msl); // statement list non optional in this case
+  msl.dump("msl");
+  OrkAssert(msl); // statement list non optional in this case
   mfinal = mfinal + msl;
   ////////////////////////////////////
   // closing bracket mandatory
   ////////////////////////////////////
   auto ctxx = mfinal->consume();
   auto mcb = CloseCurly::match(ctxx);
+  mcb.dump("mcb");
   mfinal   = mfinal + mcb;
   return mfinal;
 }
@@ -315,6 +330,7 @@ match_results_t ReturnStatement::match(FnParseContext ctx) {
       rval->_count++; //  consume return keyword
     }
   }
+  rval.dump("sta-ret");
   return rval;
 }
 
