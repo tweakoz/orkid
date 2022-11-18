@@ -147,6 +147,8 @@ struct ScannerView {
   size_t blockEnd() const;
   std::string blockName() const;
 
+  std::string asString() const;
+
   const int numBlockDecorators() const {
     return _blockDecorators.size();
   }

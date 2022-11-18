@@ -62,7 +62,7 @@ void LibraryBlockNode::parse(GlSlFxParser* parser,
       /////////////////////////////////
       // parsedfnnode
       /////////////////////////////////
-      auto parsedfnnode = std::make_shared<ParsedFunctionNode>();
+      auto parsedfnnode = std::make_shared<OrkSlFunctionNode>();
       //parsedfnnode->_name       = namtok;
       //parsedfnnode->_returnType = ptok;
       ScannerView pfnview(view, i);

@@ -23,122 +23,7 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::glslfx::parser {
 /////////////////////////////////////////////////////////////////////////////////////////////////
-
-std::string FnParseContext::tokenValue(size_t offset) const {
-  return _view->token(_startIndex + offset)->text;
-}
-
-FnParseContext::FnParseContext(GlSlFxParser* parser, const ScannerView* v)
-    : _parser(parser)
-    , _view(v) {
-}
-FnParseContext::FnParseContext(const FnParseContext& oth)
-    : _parser(oth._parser)
-    , _startIndex(oth._startIndex)
-    , _view(oth._view) {
-}
-FnParseContext& FnParseContext::operator=(const FnParseContext& oth) {
-  _parser     = oth._parser;
-  _startIndex = oth._startIndex;
-  _view       = oth._view;
-  return *this;
-}
-FnParseContext FnParseContext::advance(size_t count) const {
-  FnParseContext rval(*this);
-  rval._startIndex = count;
-  return rval;
-}
-void FnParseContext::dump(const std::string dumpid) const{
-  printf( "FPC<%p:%s> idx<%zd>\n", this, dumpid.c_str(), _startIndex );
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////
-
-int ParsedFunctionNode::parse(GlSlFxParser* parser, const ork::ScannerView& view) {
-  int i         = 0;
-  view.dump("pfnstart");
-  auto open_tok = view.token(i);
-  OrkAssert(open_tok->text == "(");
-  i++;
-  /////////////////////////////////
-  // arguments
-  /////////////////////////////////
-  bool args_done       = false;
-  const Token* dirspec = nullptr;
-  while (false == args_done) {
-    auto argtype_tok = view.token(i);
-    if (argtype_tok->text == ")") {
-      args_done = true;
-      i++;
-    } else if (argtype_tok->text == "in") {
-      dirspec = argtype_tok;
-      i++;
-    } else if (argtype_tok->text == "out") {
-      dirspec = argtype_tok;
-      i++;
-    } else if (argtype_tok->text == "inout") {
-      dirspec = argtype_tok;
-      i++;
-    } else {
-      i++;
-      auto nam_tok = view.token(i);
-      i++;
-      auto argnode        = std::make_shared<FunctionArgumentNode>();
-      argnode->_type      = argtype_tok;
-      argnode->_name      = nam_tok;
-      argnode->_direction = dirspec;
-      dirspec             = nullptr;
-      //_arguments.push_back(argnode);
-      auto try_comma = view.token(i)->text;
-      if (try_comma == ",") {
-        i++;
-      }
-    }
-  }
-
-  /////////////////////////////////
-  // body
-  /////////////////////////////////
-
-  auto open_body_tok = view.token(i);
-  assert(open_body_tok->text == "{");
-  bool done = false;
-  ScannerView body_view(view,i);
-  body_view.dump("pfnbody");
-  FnParseContext pctx(parser, &body_view);
-  int j = 0;
-  while (not done) {
-    auto try_tok     = body_view.token(j)->text;
-    if (auto m = VariableDeclaration::match(pctx)) {
-      auto parsed = m->parse();
-      j += m->_count;
-      //_elements.push_back(parsed._node);
-    } else if (auto m = CompoundStatement::match(pctx)) {
-      auto parsed = m->parse();
-      j += m->_count;
-      //_elements.push_back(parsed._node);
-    } else {
-      body_view.dump("ParsedFunctionNode::XXX");
-      OrkAssert(false);
-    }
-    done = j >= body_view._indices.size();
-  }
-  i+=j;
-  auto close_tok = view.token(i - 1);
-  assert(close_tok->text == "}");
-  return i;
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////
-
-void ParsedFunctionNode::emit(ork::lev2::glslfx::shaderbuilder::BackEnd& backend) const {
-  for (auto elem : _elements)
-    elem->emit(backend);
-  assert(false); // not implemented yet...
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////
-
+/*
 match_results_t Constant::match(FnParseContext ctx) {
   match_results_t rval;
   auto token = ctx.tokenValue(0);
@@ -218,34 +103,37 @@ match_results_t Constant::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-match_results_t StringLiteral::match(FnParseContext ctx) {
+match_results_t DeclarationList::match(FnParseContext ctx) {
   match_results_t rval;
-  // std::make_shared<match_t>(ctx);
-  // dont need these yet, GLSL does not natively support them
-  return rval;
-};
-
-/////////////////////////////////////////////////////////////////////////////////////////////////
-
-match_results_t TypeName::match(FnParseContext ctx) {
-  match_results_t rval;
-  int count = 0;
-  ////////////////////////////////////
-  // check variable instantiation
-  ////////////////////////////////////
-  auto tokDT = ctx.tokenValue(count++);
-  if (tokDT == "const") {
-    tokDT = ctx.tokenValue(count++);
+  size_t count = 0;
+  size_t start = -1;
+  bool done    = false;
+  while (not done) {
+    auto mvd = VariableDeclaration::match(ctx);
+    if (mvd) {
+      count += mvd->_count;
+      count++; // consume }
+      ctx = mvd->consume();
+    } else {
+      done = true;
+    }
   }
-  ////////////////////////////////////
-  auto topnode = ctx._parser->_topNode;
-  if (topnode->isTypeName(tokDT)) {
+  if (count) {
     rval           = std::make_shared<match_t>(ctx);
-    rval->_matched = true;
-    rval->_start   = ctx._startIndex;
     rval->_count   = count;
+    rval->_start   = start;
+    rval->_matched = true;
   }
   return rval;
+}
+// DeclarationList::parsed_t DeclarationList::parse(const match_t& match) {
+// parsed_t rval;
+// return rval;
+//}
+void DeclarationList::emit(shaderbuilder::BackEnd& backend) const {
+  for (auto c : _children)
+    c->emit(backend);
+  assert(false);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -344,6 +232,39 @@ match_results_t Reference::match(FnParseContext ctx) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+match_results_t StringLiteral::match(FnParseContext ctx) {
+  match_results_t rval;
+  // std::make_shared<match_t>(ctx);
+  // dont need these yet, GLSL does not natively support them
+  return rval;
+};
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+match_results_t TypeName::match(FnParseContext ctx) {
+  match_results_t rval;
+  int count = 0;
+  ////////////////////////////////////
+  // check variable instantiation
+  ////////////////////////////////////
+  auto tokDT = ctx.tokenValue(count++);
+  if (tokDT == "const") {
+    tokDT = ctx.tokenValue(count++);
+  }
+  ////////////////////////////////////
+  auto topnode = ctx._parser->_topNode;
+  if (topnode->isTypeName(tokDT)) {
+    rval           = std::make_shared<match_t>(ctx);
+    rval->_matched = true;
+    rval->_start   = ctx._startIndex;
+    rval->_count   = count;
+  }
+  return rval;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
 match_results_t VariableDeclaration::match(FnParseContext ctx) {
   match_results_t rval;
   if (auto m = TypeName::match(ctx)) {
@@ -367,7 +288,7 @@ void VariableDeclaration::emit(shaderbuilder::BackEnd& backend) const {
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
-/*
+
 FnMatchResults VariableDefinitionStatement::match(const FnParseContext& ctx) {
   FnMatchResults rval;
   ////////////////////////////////////
@@ -414,10 +335,10 @@ int VariableDefinitionStatement::parse(const FnParseContext& ctx, const FnMatchR
 }
 void VariableDefinitionStatement::emit(shaderbuilder::BackEnd& backend) const {
   assert(false);
-}*/
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
-/*
+
 FnMatchResults VariableAssignmentStatement::match(const FnParseContext& ctx) {
   FnMatchResults rval;
   auto matchlv = LValue::match(ctx);
@@ -446,43 +367,7 @@ void VariableAssignmentStatement::emit(shaderbuilder::BackEnd& backend) const {
 }
 */
 
-/////////////////////////////////////////////////////////////////////////////////////////////////
-
-match_results_t DeclarationList::match(FnParseContext ctx) {
-  match_results_t rval;
-  size_t count = 0;
-  size_t start = -1;
-  bool done    = false;
-  while (not done) {
-    auto mvd = VariableDeclaration::match(ctx);
-    if (mvd) {
-      count += mvd->_count;
-      count++; // consume }
-      ctx = mvd->consume();
-    } else {
-      done = true;
-    }
-  }
-  if (count) {
-    rval           = std::make_shared<match_t>(ctx);
-    rval->_count   = count;
-    rval->_start   = start;
-    rval->_matched = true;
-  }
-  return rval;
-}
-// DeclarationList::parsed_t DeclarationList::parse(const match_t& match) {
-// parsed_t rval;
-// return rval;
-//}
-void DeclarationList::emit(shaderbuilder::BackEnd& backend) const {
-  for (auto c : _children)
-    c->emit(backend);
-  assert(false);
-}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
-
-/////////////////////////////////////////////////////////////////////////////////////////////////
-} // namespace ork::lev2::glslfx::parser
+} //namespace ork::lev2::glslfx::parser {
 /////////////////////////////////////////////////////////////////////////////////////////////////

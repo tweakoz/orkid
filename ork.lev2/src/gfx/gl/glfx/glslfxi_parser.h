@@ -31,7 +31,7 @@ struct RequiredExtensionNode;
 struct InterfaceLayoutNode;
 struct StructMemberNode;
 struct FunctionArgumentNode;
-struct ParsedFunctionNode;
+struct OrkSlFunctionNode;
 struct FnElement;
 struct PassNode;
 struct DecoBlockNode;
@@ -60,7 +60,7 @@ using uniformblocknode_ptr_t = std::shared_ptr<UniformBlockNode>;
 using requiredextensionnode_ptr_t = std::shared_ptr<RequiredExtensionNode>;
 using structmembernode_ptr_t = std::shared_ptr<StructMemberNode>;
 using functionargumentnode_ptr_t = std::shared_ptr<FunctionArgumentNode>;
-using parsedfunctionnode_ptr_t = std::shared_ptr<ParsedFunctionNode>;
+using orkslfunctionnode_ptr_t = std::shared_ptr<OrkSlFunctionNode>;
 using fnelementnode_ptr_t = std::shared_ptr<FnElement>;
 using techniquenode_ptr_t = std::shared_ptr<TechniqueNode>;
 using passnode_ptr_t = std::shared_ptr<PassNode>;
@@ -137,7 +137,7 @@ struct Program {
 
 void performScan(scanner_ptr_t scanner);
 
-enum class TokenClass {
+enum class TokenClass : int {
   SINGLE_LINE_COMMENT = 1,
   MULTI_LINE_COMMENT,
   WHITESPACE,
@@ -148,15 +148,16 @@ enum class TokenClass {
   FLOATING_POINT,
   STRING,
   KW_OR_ID,
-  CURLY_BRACKET,
-  SQUARE_BRACKET,
-  PARENTHESIS,
+  L_CURLY,
+  R_CURLY,
+  L_SQUARE,
+  R_SQUARE,
+  L_PAREN,
+  R_PAREN,
   COLON,
   SEMICOLON,
-  COMMA_OR_DOT,
-  ARITHMETIC_OP,
-  LEFT_SHIFT,
-  RIGHT_SHIFT,
+  L_SHIFT,
+  R_SHIFT,
   LESS_THAN,
   GREATER_THAN,
   LESS_THAN_EQ,
@@ -173,6 +174,84 @@ enum class TokenClass {
   LOGICAL_AND,
   INCREMENT,
   DECREMENT,
+
+  EQUALS,
+  COMMA,
+  DOT,
+  QUESTION_MARK,
+  STAR,
+  SLASH,
+  PERCENT,
+  EXCLAMATION,
+  AMPERSAND,
+  CARET,
+  PIPE,
+  PLUS,
+  MINUS
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename rule_receiver_t> //
+inline void loadScannerRules(rule_receiver_t& r){ //
+  r.addRule("\\/\\*([^*]|\\*+[^/*])*\\*+\\/", int(TokenClass::MULTI_LINE_COMMENT));
+  r.addRule("\\/\\/.*[\\n\\r]", int(TokenClass::SINGLE_LINE_COMMENT));
+  r.addRule("\\s+", int(TokenClass::WHITESPACE));
+  r.addRule("[\\n\\r]+", int(TokenClass::NEWLINE));
+  /////////
+  r.addRule("[0-9]+u", int(TokenClass::UNSIGNED_DECIMAL_INTEGER));
+  r.addRule("0x[0-9a-fA-F]+u?", int(TokenClass::HEX_INTEGER));
+  r.addRule("-?(\\d+)", int(TokenClass::MISC_INTEGER));
+  r.addRule("-?(\\d*\\.?)(\\d+)([eE][-+]?\\d+)?", int(TokenClass::FLOATING_POINT));
+  /////////
+  r.addRule("[\"].*[\"]", int(TokenClass::STRING));
+  /////////
+  r.addRule("[a-zA-Z_]+[a-zA-Z0-9_]+", int(TokenClass::KW_OR_ID));
+  /////////
+  r.addRule("\\{", int(TokenClass::L_CURLY));
+  r.addRule("\\}", int(TokenClass::R_CURLY));
+  r.addRule("\\(", int(TokenClass::L_PAREN));
+  r.addRule("\\)", int(TokenClass::R_PAREN));
+  r.addRule("\\[", int(TokenClass::L_SQUARE));
+  r.addRule("\\]", int(TokenClass::R_SQUARE));
+  /////////
+  r.addRule("\\?", int(TokenClass::QUESTION_MARK));
+  r.addRule(":", int(TokenClass::COLON));
+  r.addRule(";", int(TokenClass::SEMICOLON));
+  r.addRule("<", int(TokenClass::LESS_THAN));
+  r.addRule(">", int(TokenClass::GREATER_THAN));
+  r.addRule("&", int(TokenClass::AMPERSAND));
+  r.addRule("\\|", int(TokenClass::PIPE));
+  r.addRule("\\*", int(TokenClass::STAR));
+  r.addRule("\\/", int(TokenClass::SLASH));
+  r.addRule("%", int(TokenClass::PERCENT));
+  r.addRule("!", int(TokenClass::EXCLAMATION));
+  r.addRule("\\+", int(TokenClass::PLUS));
+  r.addRule("\\-", int(TokenClass::MINUS));
+  r.addRule("=", int(TokenClass::EQUALS));
+  r.addRule(",", int(TokenClass::COMMA));
+  r.addRule(".", int(TokenClass::DOT));
+  r.addRule("\\^", int(TokenClass::CARET));
+  /////////
+  r.addRule("<<", int(TokenClass::L_SHIFT));
+  r.addRule(">>", int(TokenClass::R_SHIFT));
+  r.addRule("<=", int(TokenClass::LESS_THAN_EQ));
+  r.addRule(">=", int(TokenClass::GREATER_THAN_EQ));
+  r.addRule("==", int(TokenClass::EQUAL_TO));
+  r.addRule("!=", int(TokenClass::NOT_EQUAL_TO));
+  r.addRule("\\+=", int(TokenClass::PLUS_EQ));
+  r.addRule("\\-=", int(TokenClass::MINUS_EQ));
+  r.addRule("\\*=", int(TokenClass::TIMES_EQ));
+  r.addRule("\\/=", int(TokenClass::DIVIDE_EQ));
+  r.addRule("\\|=", int(TokenClass::OR_EQ));
+  r.addRule("&=", int(TokenClass::AND_EQ));
+  /////////
+  r.addRule("\\+\\+", int(TokenClass::INCREMENT));
+  r.addRule("--", int(TokenClass::DECREMENT));
+  /////////
+  r.addRule("\\|\\|", int(TokenClass::LOGICAL_OR));
+  r.addRule("&&", int(TokenClass::LOGICAL_AND));
+  
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -206,7 +285,7 @@ struct FnParseContext {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
+/*
 struct ParseResult {
   size_t _numtokens = 0;
   astnode_ptr_t _node    = nullptr;
@@ -307,7 +386,7 @@ template <typename T> struct FnMatchResults : public FnMatchResultsBas {
     return rval;
   }
 };
-
+*/
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ShaderBodyElement : public AstNode {
@@ -326,11 +405,12 @@ struct ShaderEmittable : public AstNode {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
+/*
 #define DECLARE_STD_FNS(xxx)                                                                                                       \
   typedef FnMatchResults<xxx> match_t;                                                                                             \
   static match_results_t match(FnParseContext ctx);
 // static parsed_t parse(const match_t& match);
+
 #define DECLARE_STD_EMITTABLE_FNS(xxx)                                                                                             \
   DECLARE_STD_FNS(xxx)                                                                                                             \
   void emit(shaderbuilder::BackEnd& backend) const final;
@@ -351,11 +431,33 @@ struct ShaderEmittable : public AstNode {
     DECLARE_STD_FNS(xxx)                                                                                                           \
   };
 
+#define DECLARE_RECURSIVE_FNS(xxx)                                                                                                       \
+  typedef FnMatchResults<xxx> match_t;                                                                                             \
+  static match_results_t match(FnParseContext ctx, int level=0);
+
+#define DECLARE_RECURSIVE_EMITTABLE_FNS(xxx)                                                                                             \
+  DECLARE_RECURSIVE_FNS(xxx)                                                                                                             \
+  void emit(shaderbuilder::BackEnd& backend) const final;
+
+#define DECLARE_RECURSIVE_EMITTABLE(xxx)                                                                                                 \
+  struct xxx : public ShaderEmittable {                                                                                            \
+    xxx()                                                                                                      \
+        : ShaderEmittable() {                                                                                                 \
+    }                                                                                                                              \
+    DECLARE_RECURSIVE_EMITTABLE_FNS(xxx)                                                                                                 \
+  };
+*/
+///////////////////////////////////////////////////////////////////////////////
+// good
+
+//DECLARE_STD_EMITTABLE(PrimaryExpression);
+//DECLARE_RECURSIVE_EMITTABLE(PostFixExpression);
+
 ///////////////////////////////////////////////////////////////////////////////
 // elemental types
 ///////////////////////////////////////////////////////////////////////////////
 
-DECLARE_STD_EMITTABLE(Constant);
+/*DECLARE_STD_EMITTABLE(Constant);
 DECLARE_STD_EMITTABLE(StringLiteral);
 DECLARE_STD_EMITTABLE(TypeName);
 DECLARE_STD_EMITTABLE(Identifier);
@@ -400,11 +502,39 @@ DECLARE_STD_EMITTABLE(MulOp);
 DECLARE_STD_EMITTABLE(DivOp);
 DECLARE_STD_EMITTABLE(ModOp);
 
+///////////////////////////////////////////////////////////////////////////////
+// ???
+
 DECLARE_STD_EMITTABLE(InitialAssignmentOperator);
 DECLARE_STD_EMITTABLE(MutatingAssignmentOperator);
-
 ///////////////////////////////////////////////////////////////////////////////
+DECLARE_STD_EMITTABLE(ArgumentExpressionList);
 
+DECLARE_STD_EMITTABLE(CastExpression);
+DECLARE_STD_EMITTABLE(ExpressionNode);
+DECLARE_STD_EMITTABLE(MultiplicativeExpression);
+DECLARE_STD_EMITTABLE(LogicalOrExpression);
+DECLARE_STD_EMITTABLE(LogicalAndExpression);
+DECLARE_STD_EMITTABLE(ExclusiveOrExpression);
+DECLARE_STD_EMITTABLE(InclusiveOrExpression);
+DECLARE_STD_EMITTABLE(AndExpression);
+DECLARE_STD_EMITTABLE(EqualityExpression);
+DECLARE_STD_EMITTABLE(RelationalExpression);
+DECLARE_STD_EMITTABLE(ShiftExpression);
+DECLARE_STD_EMITTABLE(AdditiveExpression);
+DECLARE_STD_EMITTABLE(UnaryExpression);
+
+DECLARE_STD_EMITTABLE(Statement);
+DECLARE_STD_EMITTABLE(ExpressionStatement);
+DECLARE_STD_EMITTABLE(InstantiationStatement);
+DECLARE_STD_EMITTABLE(ReturnStatement);
+DECLARE_STD_EMITTABLE(AssignmentStatement);
+
+DECLARE_STD_ABSTRACT_EMITTABLE(ConditionalExpression);
+DECLARE_STD_ABSTRACT_EMITTABLE(IterationStatement);
+*/
+///////////////////////////////////////////////////////////////////////////////
+/*
 struct FnElement : public ShaderEmittable {
   FnElement()
       : ShaderEmittable() {
@@ -429,37 +559,10 @@ struct DeclarationList : public ShaderEmittable {
   DECLARE_STD_EMITTABLE_FNS(DeclarationList);
   std::vector<vardecl_ptr_t> _children;
 };
+*/
 
 ///////////////////////////////////////////////////////////////////////////////
-DECLARE_STD_EMITTABLE(ArgumentExpressionList);
-DECLARE_STD_EMITTABLE(PrimaryExpression);
-
-DECLARE_STD_EMITTABLE(CastExpression);
-DECLARE_STD_EMITTABLE(PostFixExpression);
-DECLARE_STD_EMITTABLE(ExpressionNode);
-DECLARE_STD_EMITTABLE(MultiplicativeExpression);
-DECLARE_STD_EMITTABLE(LogicalOrExpression);
-DECLARE_STD_EMITTABLE(LogicalAndExpression);
-DECLARE_STD_EMITTABLE(ExclusiveOrExpression);
-DECLARE_STD_EMITTABLE(InclusiveOrExpression);
-DECLARE_STD_EMITTABLE(AndExpression);
-DECLARE_STD_EMITTABLE(EqualityExpression);
-DECLARE_STD_EMITTABLE(RelationalExpression);
-DECLARE_STD_EMITTABLE(ShiftExpression);
-DECLARE_STD_EMITTABLE(AdditiveExpression);
-DECLARE_STD_EMITTABLE(UnaryExpression);
-
-DECLARE_STD_EMITTABLE(Statement);
-DECLARE_STD_EMITTABLE(ExpressionStatement);
-DECLARE_STD_EMITTABLE(InstantiationStatement);
-DECLARE_STD_EMITTABLE(ReturnStatement);
-DECLARE_STD_EMITTABLE(AssignmentStatement);
-
-DECLARE_STD_ABSTRACT_EMITTABLE(ConditionalExpression);
-DECLARE_STD_ABSTRACT_EMITTABLE(IterationStatement);
-
-///////////////////////////////////////////////////////////////////////////////
-
+/*
 struct Expression : public ShaderEmittable {
   Expression()
       : ShaderEmittable() {
@@ -495,7 +598,7 @@ struct CompoundStatement : public FnElement {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-/*
+
 struct ReturnStatement : public StatementNode {
   ReturnStatement(TopNode* cnode)
       : StatementNode() {}
@@ -511,7 +614,7 @@ struct ReturnStatement : public StatementNode {
 */
 
 ///////////////////////////////////////////////////////////////////////////////
-
+/*
 struct ForLoopStatement : public IterationStatement {
   ForLoopStatement()
       : IterationStatement() {
@@ -523,7 +626,7 @@ struct ForLoopStatement : public IterationStatement {
   expression_ptr_t _condition = nullptr;
   // AssignmentNode* _advance = nullptr;
 };
-
+*/
 ///////////////////////////////////////////////////////////////////////////////
 /*
 struct WhileLoopStatement : public IterationStatement {
@@ -582,15 +685,17 @@ struct IfStatement : public StatementNode {
 */
 ///////////////////////////////////////////////////////////////////////////////
 
-struct ParsedFunctionNode : public AstNode {
-  ParsedFunctionNode()
-      : AstNode() {
-  }
+struct _orksl_parser_internals;
+using _orksl_parser_internals_ptr_t = std::shared_ptr<_orksl_parser_internals>;
 
+struct OrkSlFunctionNode : public AstNode {
+
+  OrkSlFunctionNode();
   int parse(GlSlFxParser* parser, const ScannerView& view);
   void emit(shaderbuilder::BackEnd& backend) const;
 
-  std::vector<fnelementnode_ptr_t> _elements;
+  //std::vector<fnelementnode_ptr_t> _elements;
+  static _orksl_parser_internals_ptr_t _get_internals();
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -732,7 +837,7 @@ struct FunctionNode : public AstNode {
   const Token* _returnType = nullptr;
   ShaderBody _body;
 
-  parsedfunctionnode_ptr_t _parsedfnnode = nullptr;
+  //orkslfunctionnode_ptr_t _parsedfnnode = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

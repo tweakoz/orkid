@@ -29,52 +29,18 @@ void performScan(scanner_ptr_t scanner) {
 
   int tokclass = 1;
 
-  scanner->addRule("\\/\\*([^*]|\\*+[^/*])*\\*+\\/", int(TokenClass::MULTI_LINE_COMMENT));
-  scanner->addRule("\\/\\/.*[\\n\\r]", int(TokenClass::SINGLE_LINE_COMMENT));
-  scanner->addRule("\\s+", int(TokenClass::WHITESPACE));
-  scanner->addRule("[\\n\\r]+", int(TokenClass::NEWLINE));
-  /////////
-  scanner->addRule("[0-9]+u", int(TokenClass::UNSIGNED_DECIMAL_INTEGER));
-  scanner->addRule("0x[0-9a-fA-F]+u?", int(TokenClass::HEX_INTEGER));
-  scanner->addRule("-?(\\d+)", int(TokenClass::MISC_INTEGER));
-  scanner->addRule("-?(\\d*\\.?)(\\d+)([eE][-+]?\\d+)?", int(TokenClass::FLOATING_POINT));
-  /////////
-  scanner->addRule("[\"].*[\"]", int(TokenClass::STRING));
-  /////////
-  scanner->addRule("[a-zA-Z_]+[a-zA-Z0-9_]+", int(TokenClass::KW_OR_ID));
-  /////////
-  scanner->addRule("[{}]", int(TokenClass::CURLY_BRACKET));
-  scanner->addRule("[()]", int(TokenClass::PARENTHESIS));
-  scanner->addRule("[\\[\\]]", int(TokenClass::SQUARE_BRACKET));
-  /////////
-  scanner->addRule(":", int(TokenClass::COLON));
-  scanner->addRule(";", int(TokenClass::SEMICOLON));
-  scanner->addRule("[,.]", int(TokenClass::COMMA_OR_DOT));
-  /////////
-  scanner->addRule("<<", int(TokenClass::LEFT_SHIFT));
-  scanner->addRule(">>", int(TokenClass::RIGHT_SHIFT));
-  /////////
-  scanner->addRule("<", int(TokenClass::LESS_THAN));
-  scanner->addRule(">", int(TokenClass::GREATER_THAN));
-  /////////
-  scanner->addRule("<=", int(TokenClass::LESS_THAN_EQ));
-  scanner->addRule(">=", int(TokenClass::GREATER_THAN_EQ));
-  scanner->addRule("==", int(TokenClass::EQUAL_TO));
-  scanner->addRule("!=", int(TokenClass::NOT_EQUAL_TO));
-  scanner->addRule("\\+=", int(TokenClass::PLUS_EQ));
-  scanner->addRule("\\-=", int(TokenClass::MINUS_EQ));
-  scanner->addRule("\\*=", int(TokenClass::TIMES_EQ));
-  scanner->addRule("\\/=", int(TokenClass::DIVIDE_EQ));
-  scanner->addRule("\\|=", int(TokenClass::OR_EQ));
-  scanner->addRule("&=", int(TokenClass::AND_EQ));
-  /////////
-  scanner->addRule("[*+-/~]", int(TokenClass::ARITHMETIC_OP));
-  /////////
-  scanner->addRule("\\+\\+", int(TokenClass::INCREMENT));
-  scanner->addRule("--", int(TokenClass::DECREMENT));
-  /////////
-  scanner->addRule("\\|\\|", int(TokenClass::LOGICAL_OR));
-  scanner->addRule("&&", int(TokenClass::LOGICAL_AND));
+  struct RR {
+    RR(scanner_ptr_t s) : _scanner(s){}
+
+    void addRule(const char* rule, int id){
+      _scanner->addRule(rule,id);
+    }
+    scanner_ptr_t _scanner;
+  };
+
+  RR _rr(scanner);
+
+  loadScannerRules(_rr);
 
   scanner->buildStateMachine();
   scanner->scan();

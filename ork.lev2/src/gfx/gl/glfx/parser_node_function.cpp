@@ -88,7 +88,7 @@ void FunctionNode::pregen(shaderbuilder::BackEnd& backend) const {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void FunctionNode::emit(shaderbuilder::BackEnd& backend) const {
-  OrkAssert(false);
+
   ///////////////////////////////////////////////////
   for( auto argnode : _arguments ){
      backend.validateTypeName(argnode->_type->text);

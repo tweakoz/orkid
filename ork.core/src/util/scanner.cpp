@@ -191,6 +191,16 @@ void ScannerView::dump(const std::string& dumpid) const {
   }
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+std::string ScannerView::asString() const{
+  std::string rval;
+  for (int tokidx : _indices) {
+    rval += _scanner.tokens[tokidx].text + " ";
+  }
+  return rval;
+}
+
 const Token* Scanner::token(size_t i) const {
   const Token* pt = nullptr;
   if (i < tokens.size()) {
