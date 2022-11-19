@@ -32,6 +32,7 @@ TopNode::TopNode(GlSlFxParser* parser)
 
   std::string typenames = "mat2 mat3 mat4 vec2 vec3 vec4 uvec2 uvec3 uvec4 "
                           "ivec2 ivec3 ivec4 "
+                          "bvec2 bvec3 bvec4 "
                           "float double half uint int float16_t "
                           "void bool "
 #if !defined(__APPLE__)

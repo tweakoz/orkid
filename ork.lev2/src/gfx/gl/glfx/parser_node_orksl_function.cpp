@@ -95,9 +95,18 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
     DOUBLE_COLON  <- '::'
     SEMI_COLON    <- ';'
     QUESTION_MARK <- '?'
+
     EQUALS        <- '='
-    EQUAL_TO      <- '=='
-    NOT_EQUAL_TO  <- '!='
+    STAR_EQUALS   <- '*='
+    PLUS_EQUALS   <- '+='
+    ASSIGNMENT_OP <- (EQUALS/STAR_EQUALS/PLUS_EQUALS)
+
+    EQUAL_TO               <- '=='
+    NOT_EQUAL_TO           <- '!='
+    LESS_THAN              <- '<'
+    GREATER_THAN           <- '>'
+    LESS_THAN_EQUAL_TO     <- '<'
+    GREATER_THAN_EQUAL_TO  <- '>'
 
     PLUS   <- '+'
     MINUS  <- '-'
@@ -112,37 +121,57 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
     LEFT_SHIFT   <- '<<'
     RIGHT_SHIFT  <- '>>'
 
-    FLOAT    <- <MINUS? [0-9]+ '.'? [0-9]*>
-    INTEGER  <- <MINUS? [0-9]+>
-    NUMBER   <- (FLOAT/INTEGER)
+    PLUS_PLUS    <- '++'
+    MINUS_MINUS  <- '--'
+
+    INTEGER          <- (HEX_INTEGER/DEC_INTEGER)
+    FLOAT            <- <MINUS? [0-9]+ '.' [0-9]*>
+    DEC_INTEGER      <- <MINUS? [0-9]+ 'u'?>
+    HEX_INTEGER      <- < ('x'/'0x') [0-9a-fA-F]+ 'u'? >
+    NUMBER           <- (FLOAT/INTEGER)
 
     WHITESPACE          <- [ \t\n]*
     %whitespace         <- WHITESPACE
 
+    TYPENAME <- (BUILTIN_TYPENAME)
     IDENTIFIER <- < [A-Za-z_][-A-Za-z_0-9]* >
-    TYPENAME <- (BUILTIN_TYPENAME/IDENTIFIER)
 
     ################################################
     # language constructs
     ################################################
 
-    argument_decl_list  <- L_PAREN arg_items R_PAREN
-    arg_pair            <- TYPENAME IDENTIFIER
-    arg_pair_comma      <- TYPENAME IDENTIFIER COMMA
-    arg_items           <- (arg_pair / arg_pair_comma) +
-
-
-    function_body        <- L_CURLY statement_list? R_CURLY
+    function_body        <- L_CURLY statement_list* R_CURLY
 
     statement_list       <- statement+
 
-    statement            <- (return_statement/assignment_statement) SEMI_COLON+
+    statement            <- (return_statement/for_statement/assignment_statement2/assignment_statement) SEMI_COLON+
 
-    return_statement     <- 'return' expression* 
-    assignment_statement <- IDENTIFIER EQUALS expression* SEMI_COLON+
+    return_statement     <- 'return' expression*
+    for_statement        <- 'for' L_PAREN assignment_statement2 SEMI_COLON expression SEMI_COLON expression? R_PAREN L_CURLY statement_list* R_CURLY
+    assignment_statement2 <- TYPENAME IDENTIFIER EQUALS expression
+    assignment_statement <- IDENTIFIER ASSIGNMENT_OP expression
 
-    expression           <- primary_expression
-    primary_expression   <- (KEYWORD/IDENTIFIER/SLASH/NUMBER/DOT/COMMA/L_PAREN/R_PAREN)+
+    binary_math_op       <- (PLUS/MINUS/STAR/SLASH/AMPERSAND/PIPE)
+    comparison_op        <- (EQUAL_TO/NOT_EQUAL_TO/LESS_THAN/GREATER_THAN/LESS_THAN_EQUAL_TO/GREATER_THAN_EQUAL_TO)
+    shift_op             <- (LEFT_SHIFT/RIGHT_SHIFT)
+    inc_dec_op           <- (PLUS_PLUS/MINUS_MINUS)
+    operator             <- (inc_dec_op/shift_op/binary_math_op/comparison_op/DOT/COMMA/EQUALS)
+
+    expression           <- (primary_expression3/primary_expression2/primary_expression)
+
+    primary_expression2  <- L_PAREN expression+ R_PAREN
+
+    primary_expression3  <- primary_expression operator primary_expression
+                          / primary_expression2 operator primary_expression   
+                          / primary_expression operator primary_expression2   
+                          / primary_expression2 operator primary_expression2   
+
+    primary_expression   <- (TYPENAME/KEYWORD/IDENTIFIER/operator/NUMBER)+
+
+    argument_decl_list  <- L_PAREN arg_items R_PAREN
+    arg_pair            <- TYPENAME IDENTIFIER
+    comma_arg_pair      <- COMMA TYPENAME IDENTIFIER 
+    arg_items           <- arg_pair comma_arg_pair*
 
     ################################################
 
@@ -187,7 +216,7 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
                              size_t col,                //
                              const std::string& msg,    //
                              const std::string& rule) { //
-    std::cerr << line << ":" << col << ": " << msg << "\n";
+    std::cerr << line << ":" << col << ": " << rule << " : " << msg << "\n";
   });
 
   auto& parser = *_peg_parser;
@@ -196,7 +225,17 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
 
   // validate rules
 
-  OrkAssert(static_cast<bool>(parser));
+  if( not static_cast<bool>(parser) ){
+
+    auto as_lines = SplitString(peg_rules,'\n');
+    int iline = 1;
+    for( auto l: as_lines ){
+      printf( "%03d: %s\n", iline, l.c_str() );
+      iline++;
+    }
+    OrkAssert(false);
+
+  }
 
   ///////////////////////////////////////////////////////////
 
@@ -230,12 +269,12 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
   //};
 
 
-  //parser["IDENTIFIER"].predicate = [valid_typenames,valid_keywords](const peg::SemanticValues& vs, const std::any& /*dt*/, std::string& msg) {
-  //  auto tok = vs.token_to_string(0);
-  //  auto itt = valid_typenames.find(tok);
-  //  auto itk = valid_keywords.find(tok);
-  //  return (itt!=valid_typenames.end()) and (itk!=valid_keywords.end());
-  //};
+  parser["IDENTIFIER"].predicate = [valid_typenames,valid_keywords](const peg::SemanticValues& vs, const std::any& /*dt*/, std::string& msg) {
+    auto tok = vs.token_to_string(0);
+    auto itt = valid_typenames.find(tok);
+    auto itk = valid_keywords.find(tok);
+    return (itt==valid_typenames.end()) and (itk==valid_keywords.end());
+  };
 
   ///////////////////////////////////////////////////////////
   // hierarchy token semantic actions
@@ -251,8 +290,8 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
   impl_default_handler("COMMA");
 
   impl_default_handler("NUMBER");
-  impl_default_handler("INTEGER");
-  impl_default_handler("FLOAT");
+  //impl_default_handler("INTEGER");
+  //impl_default_handler("FLOAT");
   
   ///////////////////////////////////////////////////////////
   // language construct semantic actions
@@ -264,11 +303,16 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
   impl_default_handler("arg_items");
   impl_default_handler("function_body");
   impl_default_handler("statement_list");
-  impl_default_handler("statement");
-  impl_default_handler("empty_statement");
+  //impl_default_handler("statement");
+  //impl_default_handler("empty_statement");
   impl_default_handler("return_statement");
+  impl_default_handler("for_statement");
+  impl_default_handler("assignment_statement");
+  impl_default_handler("assignment_statement2");
   impl_default_handler("expression");
   impl_default_handler("primary_expression");
+  impl_default_handler("primary_expression2");
+  impl_default_handler("operator");
 
 
   /*_grules.push("CONSTANT", //
@@ -445,7 +489,6 @@ int OrkSlFunctionNode::parse(const ScannerView& view) {
     std::cout << e.what() << '\n';
     OrkAssert(false);
   }
-  OrkAssert(false);
   return 0;
 }
 void OrkSlFunctionNode::emit(shaderbuilder::BackEnd& backend) const {
