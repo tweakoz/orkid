@@ -1,8 +1,6 @@
 #pragma once
 
 #include <ork/util/scanner.h>
-//#include <parsertl/generator.hpp>
-//#include <parsertl/match.hpp>
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::glslfx {
