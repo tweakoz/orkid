@@ -58,15 +58,46 @@ _orksl_parser_internals::_orksl_parser_internals(){
 
   std::string peg_rules = R"(
     # OrkSl Grammar
-    TEST_D  <- TEST_A L_CURLY
+
+    TOP  <- TEST_A L_CURLY
+
     KW_OR_ID  <- < [A-Za-z_.][-A-Za-z_.0-9]* >
-    COMMA  <- ','
+    KEYWORD   <- KW_OR_ID
+    IDENTIFIER   <- KW_OR_ID
+
     L_PAREN  <- '('
     R_PAREN  <- ')'
     L_CURLY  <- '{'
+    R_CURLY  <- '}'
+    L_SQUARE  <- '['
+    R_SQUARE  <- ']'
+
+    COMMA  <- ','
+    DOT  <- '.'
+
+    COLON  <- ':'
+    SEMICOLON  <- ':'
+    QUESTION_MARK  <- '?'
+    EQUALS  <- '='
+    EQUAL_TO  <- '=='
+    NOT_EQUAL_TO  <- '!='
+
+    PLUS  <- '+'
+    MINUS  <- '-'
+    STAR  <- '*'
+    SLASH  <- '/'
+    CARET  <- '^'
+
+    AMPERSAND  <- '&'
+    PIPE  <- '|'
+    LOGICAL_AND  <- '&&'
+    LOGICAL_OR  <- '||'
+    LEFT_SHIFT  <- '<<'
+    RIGHT_SHIFT  <- '>>'
+
     TEST_A  <- L_PAREN TEST_C R_PAREN
-    TEST_B  <- KW_OR_ID KW_OR_ID
-    TEST_B2 <- KW_OR_ID KW_OR_ID COMMA
+    TEST_B  <- IDENTIFIER IDENTIFIER
+    TEST_B2 <- IDENTIFIER IDENTIFIER COMMA
     TEST_C  <- (TEST_B / TEST_B2) +
     %whitespace <- [ \t]*
   )";
@@ -90,6 +121,25 @@ _orksl_parser_internals::_orksl_parser_internals(){
     auto tok = vs.token_to_string(0);
     printf("KW_OR_ID: %s\n", tok.c_str() );
   };
+  parser["KEYWORD"] = [](const peg::SemanticValues &vs){
+    auto tok = vs.token_to_string(0);
+    printf("KEYWORD: %s\n", tok.c_str() );
+  };
+  parser["KEYWORD"].predicate = [](const peg::SemanticValues &vs,
+                                const std::any & /*dt*/, std::string &msg) {
+    auto tok = vs.token_to_string(0);
+    return tok=="yo";
+  };
+  parser["IDENTIFIER"] = [](const peg::SemanticValues &vs){
+    auto tok = vs.token_to_string(0);
+    printf("IDENTIFIER: %s\n", tok.c_str() );
+  };
+  parser["IDENTIFIER"].predicate = [](const peg::SemanticValues &vs,
+                                const std::any & /*dt*/, std::string &msg) {
+    auto tok = vs.token_to_string(0);
+    return tok!="yo";
+  };
+
   parser["L_PAREN"] = [](const peg::SemanticValues &vs){
     auto tok = vs.token_to_string(0);
     printf("L_PAREN: %s\n", tok.c_str() );
@@ -118,9 +168,9 @@ _orksl_parser_internals::_orksl_parser_internals(){
     auto tok = vs.token_to_string(0);
     printf("TEST_C: %s\n", tok.c_str() );
   };
-  parser["TEST_D"] = [](const peg::SemanticValues &vs){
+  parser["TOP"] = [](const peg::SemanticValues &vs){
     auto tok = vs.token_to_string(0);
-    printf("TEST_D: %s\n", tok.c_str() );
+    printf("TOP: %s\n", tok.c_str() );
   };
 
   /*_grules.push("CONSTANT", //
