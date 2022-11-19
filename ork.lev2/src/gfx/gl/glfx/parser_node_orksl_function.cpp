@@ -75,7 +75,11 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
   std::string peg_rules = R"(
     # OrkSl Grammar
 
-    top  <- ARGUMENT_DECL_LIST function_body 
+    top  <- argument_decl_list function_body 
+
+    ################################################
+    # low level constructs
+    ################################################
 
     L_PAREN   <- '('
     R_PAREN   <- ')'
@@ -108,11 +112,6 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
     LEFT_SHIFT   <- '<<'
     RIGHT_SHIFT  <- '>>'
 
-    ARGUMENT_DECL_LIST  <- L_PAREN ARG_ITEMS R_PAREN
-    ARG_PAIR            <- TYPENAME IDENTIFIER
-    ARG_PAIR_COMMA      <- TYPENAME IDENTIFIER COMMA
-    ARG_ITEMS           <- (ARG_PAIR / ARG_PAIR_COMMA) +
-
     FLOAT    <- <MINUS? [0-9]+ '.'? [0-9]*>
     INTEGER  <- <MINUS? [0-9]+>
     NUMBER   <- (FLOAT/INTEGER)
@@ -122,6 +121,16 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
 
     IDENTIFIER <- < [A-Za-z_][-A-Za-z_0-9]* >
     TYPENAME <- (BUILTIN_TYPENAME/IDENTIFIER)
+
+    ################################################
+    # language constructs
+    ################################################
+
+    argument_decl_list  <- L_PAREN arg_items R_PAREN
+    arg_pair            <- TYPENAME IDENTIFIER
+    arg_pair_comma      <- TYPENAME IDENTIFIER COMMA
+    arg_items           <- (arg_pair / arg_pair_comma) +
+
 
     function_body        <- L_CURLY statement_list? R_CURLY
 
@@ -135,9 +144,7 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
     expression           <- primary_expression
     primary_expression   <- (KEYWORD/IDENTIFIER/SLASH/NUMBER/DOT/COMMA/L_PAREN/R_PAREN)+
 
-
-
-
+    ################################################
 
   )";
 
@@ -252,9 +259,9 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
   ///////////////////////////////////////////////////////////
 
   impl_default_handler("top");
-  impl_default_handler("ARGUMENT_DECL_LIST");
-  impl_default_handler("ARG_PAIR_COMMA");
-  impl_default_handler("ARG_ITEMS");
+  impl_default_handler("argument_decl_list");
+  impl_default_handler("arg_pair_comma");
+  impl_default_handler("arg_items");
   impl_default_handler("function_body");
   impl_default_handler("statement_list");
   impl_default_handler("statement");
