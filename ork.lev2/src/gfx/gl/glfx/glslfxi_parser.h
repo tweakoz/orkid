@@ -39,6 +39,9 @@ struct FunctionNode;
 struct UniformDeclNode;
 struct ImportNode;
 
+using parser_ptr_t = std::shared_ptr<GlSlFxParser>;
+using parser_rawptr_t = GlSlFxParser*;
+
 using program_ptr_t = std::shared_ptr<Program>;
 using topnode_ptr_t = std::shared_ptr<TopNode>;
 using astnode_ptr_t = std::shared_ptr<AstNode>;
@@ -70,7 +73,6 @@ using uniformdeclnode_ptr_t = std::shared_ptr<UniformDeclNode>;
 using importnode_ptr_t = std::shared_ptr<ImportNode>;
 
 using match_ptr_t = std::shared_ptr<FnMatchResultsBas>;
-using parser_ptr_t = std::shared_ptr<GlSlFxParser>;
 
 using libblock_constptr_t = std::shared_ptr<const LibraryBlockNode>;
 using decoblocknode_rawconstptr_t = const DecoBlockNode*;
@@ -255,7 +257,8 @@ inline void loadScannerRules(rule_receiver_t& r){ //
 ///////////////////////////////////////////////////////////////////////////////
 
 struct AstNode {
-  AstNode() {
+  AstNode(parser_rawptr_t parser=nullptr)
+    : _parser(parser) {
   }
   virtual ~AstNode() {
   }
@@ -265,10 +268,11 @@ struct AstNode {
   }
   virtual void pregen(shaderbuilder::BackEnd& backend) const {
   }
+  parser_rawptr_t _parser;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
+/*
 struct FnParseContext {
   FnParseContext(GlSlFxParser* parser, const ScannerView* v);
   FnParseContext(const FnParseContext& oth);
@@ -281,7 +285,7 @@ struct FnParseContext {
   size_t _startIndex        = 0;
   const ScannerView* _view;
 };
-
+*/
 ///////////////////////////////////////////////////////////////////////////////
 /*
 struct ParseResult {
@@ -683,17 +687,13 @@ struct IfStatement : public StatementNode {
 */
 ///////////////////////////////////////////////////////////////////////////////
 
-struct _orksl_parser_internals;
-using _orksl_parser_internals_ptr_t = std::shared_ptr<_orksl_parser_internals>;
-
 struct OrkSlFunctionNode : public AstNode {
 
-  OrkSlFunctionNode();
-  int parse(GlSlFxParser* parser, const ScannerView& view);
+  OrkSlFunctionNode(parser_rawptr_t parser);
+  int parse(const ScannerView& view);
   void emit(shaderbuilder::BackEnd& backend) const;
 
-  //std::vector<fnelementnode_ptr_t> _elements;
-  static _orksl_parser_internals_ptr_t _get_internals();
+  static svar16_t _getimpl(OrkSlFunctionNode* node);
 };
 
 ///////////////////////////////////////////////////////////////////////////////

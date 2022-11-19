@@ -62,11 +62,11 @@ void LibraryBlockNode::parse(GlSlFxParser* parser,
       /////////////////////////////////
       // parsedfnnode
       /////////////////////////////////
-      auto parsedfnnode = std::make_shared<OrkSlFunctionNode>();
+      auto parsedfnnode = std::make_shared<OrkSlFunctionNode>(parser);
       //parsedfnnode->_name       = namtok;
       //parsedfnnode->_returnType = ptok;
       ScannerView pfnview(view, i);
-      int k = parsedfnnode->parse(parser,pfnview);
+      int k = parsedfnnode->parse(pfnview);
       OrkAssert(j==k);
 
       i += j;

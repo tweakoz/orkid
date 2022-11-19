@@ -27,87 +27,136 @@ namespace ork::lev2::glslfx::parser {
 
 using peg_parser_ptr_t = std::shared_ptr<peg::parser>;
 
-struct _orksl_parser_internals{
-  _orksl_parser_internals();
-
+struct _ORKSL_IMPL {
+  _ORKSL_IMPL(OrkSlFunctionNode* node);
   peg_parser_ptr_t _peg_parser;
-
 };
 
-_orksl_parser_internals::_orksl_parser_internals(){
+using impl_ptr_t = std::shared_ptr<_ORKSL_IMPL>;
 
- struct RR {
-    RR(){}
-    void addRule(const char* rule, int id){
+_ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
+
+  auto glfx_parser = node->_parser;
+  auto top_node    = glfx_parser->_topNode;
+
+  using str_set_t     = std::set<std::string>;
+  using str_map_t     = std::map<std::string, std::string>;
+  using struct_map_t  = std::map<std::string, structnode_ptr_t>;
+  using import_vect_t = std::vector<importnode_ptr_t>;
+
+  str_set_t valid_typenames      = top_node->_validTypeNames;
+  str_set_t valid_keywords       = top_node->_keywords;
+  str_set_t valid_outdecos       = top_node->_validOutputDecorators;
+  struct_map_t valid_structtypes = top_node->_structTypes;
+  str_map_t valid_defines        = top_node->_stddefines;
+  import_vect_t imports          = top_node->_imports;
+
+  struct RR {
+    RR() {
+    }
+    void addRule(const char* rule, int id) {
       _id2rule[id] = rule;
     }
     const std::string& rule(TokenClass id) const {
       auto it = _id2rule.find(int(id));
-      OrkAssert(it!=_id2rule.end());
+      OrkAssert(it != _id2rule.end());
       return it->second;
     }
-    std::map<int,std::string> _id2rule;
+    std::map<int, std::string> _id2rule;
   };
   RR _rr;
 
   loadScannerRules(_rr);
 
   ////////////////////////////////////////////////
-  // parser
+  // parser rules
   ////////////////////////////////////////////////
 
   std::string peg_rules = R"(
     # OrkSl Grammar
 
-    TOP  <- TEST_A L_CURLY
+    TOP  <- ARGUMENT_DECL_LIST L_CURLY
 
-    KW_OR_ID  <- < [A-Za-z_.][-A-Za-z_.0-9]* >
-    KEYWORD   <- KW_OR_ID
-    IDENTIFIER   <- KW_OR_ID
-
-    L_PAREN  <- '('
-    R_PAREN  <- ')'
-    L_CURLY  <- '{'
-    R_CURLY  <- '}'
+    L_PAREN   <- '('
+    R_PAREN   <- ')'
+    L_CURLY   <- '{'
+    R_CURLY   <- '}'
     L_SQUARE  <- '['
     R_SQUARE  <- ']'
 
     COMMA  <- ','
-    DOT  <- '.'
+    DOT    <- '.'
 
-    COLON  <- ':'
-    SEMICOLON  <- ':'
-    QUESTION_MARK  <- '?'
-    EQUALS  <- '='
-    EQUAL_TO  <- '=='
+    COLON         <- ':'
+    DOUBLE_COLON  <- '::'
+    SEMI_COLON    <- ';'
+    QUESTION_MARK <- '?'
+    EQUALS        <- '='
+    EQUAL_TO      <- '=='
     NOT_EQUAL_TO  <- '!='
 
-    PLUS  <- '+'
+    PLUS   <- '+'
     MINUS  <- '-'
-    STAR  <- '*'
+    STAR   <- '*'
     SLASH  <- '/'
     CARET  <- '^'
 
-    AMPERSAND  <- '&'
-    PIPE  <- '|'
+    AMPERSAND    <- '&'
+    PIPE         <- '|'
     LOGICAL_AND  <- '&&'
-    LOGICAL_OR  <- '||'
-    LEFT_SHIFT  <- '<<'
+    LOGICAL_OR   <- '||'
+    LEFT_SHIFT   <- '<<'
     RIGHT_SHIFT  <- '>>'
 
-    TEST_A  <- L_PAREN TEST_C R_PAREN
-    TEST_B  <- IDENTIFIER IDENTIFIER
-    TEST_B2 <- IDENTIFIER IDENTIFIER COMMA
-    TEST_C  <- (TEST_B / TEST_B2) +
-    %whitespace <- [ \t]*
+    ARGUMENT_DECL_LIST  <- L_PAREN ARG_ITEMS R_PAREN
+    ARG_PAIR            <- TYPENAME KW_OR_ID
+    ARG_PAIR_COMMA      <- TYPENAME KW_OR_ID COMMA
+    ARG_ITEMS           <- (ARG_PAIR / ARG_PAIR_COMMA) +
+    %whitespace         <- [ \t]*
+
+    KW_OR_ID <- < [A-Za-z_.][-A-Za-z_.0-9]* >
+
   )";
+
+  ////////////////////////////////////////////////
+
+  peg_rules += FormatString("    KEYWORD <- (");
+  size_t num_keywords = valid_keywords.size();
+  int ik = 0;
+  for( auto item : valid_keywords  ){
+    bool is_last = (ik==(num_keywords-1));
+    auto format_str = is_last ? "'%s'" : "'%s'/";
+    peg_rules += FormatString(format_str, item.c_str() );
+    ik++;
+  }
+  peg_rules += FormatString(")\n\n");
+
+  ////////////////////////////////////////////////
+
+  peg_rules += FormatString("    TYPENAME <- (");
+  size_t num_typenames = valid_typenames.size();
+  int it = 0;
+  for( auto item : valid_typenames ){
+    bool is_last = (it==(num_typenames-1));
+    auto format_str = is_last ? "'%s'" : "'%s'/";
+    peg_rules += FormatString(format_str, item.c_str() );
+    it++;
+  }
+  peg_rules += FormatString(")\n\n");
+
+
+  ////////////////////////////////////////////////
+  // parser initialization
+  ////////////////////////////////////////////////
+
+  printf( "peg_rules: %s\n", peg_rules.c_str() );
 
   _peg_parser = std::make_shared<peg::parser>();
 
-  _peg_parser->set_logger([]( size_t line, //
-                              size_t col, //
-                              const std::string& msg, //
-                              const std::string &rule) { //
+  _peg_parser->set_logger([](size_t line,               //
+                             size_t col,                //
+                             const std::string& msg,    //
+                             const std::string& rule) { //
     std::cerr << line << ":" << col << ": " << msg << "\n";
   });
 
@@ -115,62 +164,104 @@ _orksl_parser_internals::_orksl_parser_internals(){
 
   parser.load_grammar(peg_rules);
 
+  // validate rules
+
   OrkAssert(static_cast<bool>(parser));
 
-  parser["KW_OR_ID"] = [](const peg::SemanticValues &vs){
+  ///////////////////////////////////////////////////////////
+  // keyword / identifier semantic actions
+  ///////////////////////////////////////////////////////////
+
+  //parser["KW_OR_ID"] = [](const peg::SemanticValues& vs) {
+    //auto tok = vs.token_to_string(0);
+    //printf("KW_OR_ID: %s\n", tok.c_str());
+  //};
+  parser["KEYWORD"] = [](const peg::SemanticValues& vs) {
     auto tok = vs.token_to_string(0);
-    printf("KW_OR_ID: %s\n", tok.c_str() );
+    printf("KEYWORD: %s\n", tok.c_str());
   };
-  parser["KEYWORD"] = [](const peg::SemanticValues &vs){
+  parser["TYPENAME"] = [](const peg::SemanticValues& vs) {
     auto tok = vs.token_to_string(0);
-    printf("KEYWORD: %s\n", tok.c_str() );
+    printf("TYPENAME: %s\n", tok.c_str());
   };
-  parser["KEYWORD"].predicate = [](const peg::SemanticValues &vs,
-                                const std::any & /*dt*/, std::string &msg) {
+  /*parser["KEYWORD"].predicate = [valid_keywords](const peg::SemanticValues& vs, const std::any& dt, std::string& msg) {
     auto tok = vs.token_to_string(0);
-    return tok=="yo";
+    auto it = valid_keywords.find(tok);
+    return (it!=valid_keywords.end());
+  };*/
+
+  parser["IDENTIFIER"] = [](const peg::SemanticValues& vs) {
+    auto tok = vs.token_to_string(0);
+    printf("IDENTIFIER: %s\n", tok.c_str());
   };
-  parser["IDENTIFIER"] = [](const peg::SemanticValues &vs){
+  //parser["IDENTIFIER"].predicate = [valid_typenames,valid_keywords](const peg::SemanticValues& vs, const std::any& /*dt*/, std::string& msg) {
+  //  auto tok = vs.token_to_string(0);
+  //  auto itt = valid_typenames.find(tok);
+  //  auto itk = valid_keywords.find(tok);
+  //  return (itt!=valid_typenames.end()) and (itk!=valid_keywords.end());
+  //};
+  //parser["TYPENAME"].predicate = [valid_typenames](const peg::SemanticValues& vs, const std::any& /*dt*/, std::string& msg) {
+    //auto tok = vs.token_to_string(0);
+    //auto it = valid_typenames.find(tok);
+    //return (it!=valid_typenames.end());
+  //};
+
+  ///////////////////////////////////////////////////////////
+  // hierarchy token semantic actions
+  ///////////////////////////////////////////////////////////
+
+  parser["L_PAREN"] = [](const peg::SemanticValues& vs) {
     auto tok = vs.token_to_string(0);
-    printf("IDENTIFIER: %s\n", tok.c_str() );
+    printf("L_PAREN: %s\n", tok.c_str());
   };
-  parser["IDENTIFIER"].predicate = [](const peg::SemanticValues &vs,
-                                const std::any & /*dt*/, std::string &msg) {
+  parser["R_PAREN"] = [](const peg::SemanticValues& vs) {
     auto tok = vs.token_to_string(0);
-    return tok!="yo";
+    printf("R_PAREN: %s\n", tok.c_str());
+  };
+  parser["L_CURLY"] = [](const peg::SemanticValues& vs) {
+    auto tok = vs.token_to_string(0);
+    printf("L_CURLY: %s\n", tok.c_str());
+  };
+  parser["R_CURLY"] = [](const peg::SemanticValues& vs) {
+    auto tok = vs.token_to_string(0);
+    printf("R_CURLY: %s\n", tok.c_str());
+  };
+  parser["L_SQUARE"] = [](const peg::SemanticValues& vs) {
+    auto tok = vs.token_to_string(0);
+    printf("L_SQUARE: %s\n", tok.c_str());
+  };
+  parser["R_SQUARE"] = [](const peg::SemanticValues& vs) {
+    auto tok = vs.token_to_string(0);
+    printf("R_SQUARE: %s\n", tok.c_str());
+  };
+  parser["DOT"] = [](const peg::SemanticValues& vs) {
+    auto tok = vs.token_to_string(0);
+    printf("DOT: %s\n", tok.c_str());
   };
 
-  parser["L_PAREN"] = [](const peg::SemanticValues &vs){
+  ///////////////////////////////////////////////////////////
+  // language construct semantic actions
+  ///////////////////////////////////////////////////////////
+
+  parser["ARGUMENT_DECL_LIST"] = [](const peg::SemanticValues& vs) {
     auto tok = vs.token_to_string(0);
-    printf("L_PAREN: %s\n", tok.c_str() );
+    printf("ARGUMENT_DECL_LIST: %s\n", tok.c_str());
   };
-  parser["R_PAREN"] = [](const peg::SemanticValues &vs){
+  parser["ARG_PAIR"] = [](const peg::SemanticValues& vs) {
     auto tok = vs.token_to_string(0);
-    printf("R_PAREN: %s\n", tok.c_str() );
+    printf("ARG_PAIR: %s\n", tok.c_str());
   };
-  parser["L_CURLY"] = [](const peg::SemanticValues &vs){
+  parser["ARG_PAIR_COMMA"] = [](const peg::SemanticValues& vs) {
     auto tok = vs.token_to_string(0);
-    printf("L_CURLY: %s\n", tok.c_str() );
+    printf("ARG_PAIR_COMMA: %s\n", tok.c_str());
   };
-  parser["TEST_A"] = [](const peg::SemanticValues &vs){
+  parser["ARG_ITEMS"] = [](const peg::SemanticValues& vs) {
     auto tok = vs.token_to_string(0);
-    printf("TEST_A: %s\n", tok.c_str() );
+    printf("ARG_ITEMS: %s\n", tok.c_str());
   };
-  parser["TEST_B"] = [](const peg::SemanticValues &vs){
+  parser["TOP"] = [](const peg::SemanticValues& vs) {
     auto tok = vs.token_to_string(0);
-    printf("TEST_B: %s\n", tok.c_str() );
-  };
-  parser["TEST_B2"] = [](const peg::SemanticValues &vs){
-    auto tok = vs.token_to_string(0);
-    printf("TEST_B2: %s\n", tok.c_str() );
-  };
-  parser["TEST_C"] = [](const peg::SemanticValues &vs){
-    auto tok = vs.token_to_string(0);
-    printf("TEST_C: %s\n", tok.c_str() );
-  };
-  parser["TOP"] = [](const peg::SemanticValues &vs){
-    auto tok = vs.token_to_string(0);
-    printf("TOP: %s\n", tok.c_str() );
+    printf("TOP: %s\n", tok.c_str());
   };
 
   /*_grules.push("CONSTANT", //
@@ -250,7 +341,7 @@ _orksl_parser_internals::_orksl_parser_internals(){
   _multiplicative_expression = _grules.push("multiplicative_expression", //
     "  cast_expression " //
     "| multiplicative_expression STAR cast_expression " // *
-    "| multiplicative_expression SLASH cast_expression " // / 
+    "| multiplicative_expression SLASH cast_expression " // /
     "| multiplicative_expression PERCENT cast_expression " // %
   );
 
@@ -308,17 +399,18 @@ _orksl_parser_internals::_orksl_parser_internals(){
   ////////////////////////////////////////////////
 }
 
-_orksl_parser_internals_ptr_t OrkSlFunctionNode::_get_internals() {
-  static auto _gint = std::make_shared<_orksl_parser_internals>();
+svar16_t OrkSlFunctionNode::_getimpl(OrkSlFunctionNode* node) {
+  static auto _gint = std::make_shared<_ORKSL_IMPL>(node);
   return _gint;
 }
 
-OrkSlFunctionNode::OrkSlFunctionNode() {
+OrkSlFunctionNode::OrkSlFunctionNode(parser_rawptr_t parser)
+    : AstNode(parser) {
 }
 
-int OrkSlFunctionNode::parse(GlSlFxParser* parser, const ScannerView& view) {
+int OrkSlFunctionNode::parse(const ScannerView& view) {
 
-  auto internals = _get_internals();
+  auto internals = _getimpl(this).get<impl_ptr_t>();
 
   int i = 0;
   view.dump("OrkSlFunctionNode::start");
@@ -333,7 +425,7 @@ int OrkSlFunctionNode::parse(GlSlFxParser* parser, const ScannerView& view) {
     printf("input<%s>\n", input.c_str());
 
     auto str_start = input.c_str();
-    auto str_end = str_start+14; //input.size();
+    auto str_end   = str_start + 14; // input.size();
 
     printf("input.st<%c>\n", *str_start);
     printf("input.en<%c>\n", *str_end);
