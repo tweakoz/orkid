@@ -19,11 +19,14 @@
 #include <ork/util/crc.h>
 #include <regex>
 #include <stdlib.h>
-//#include <parsertl/include/parsertl/generator.hpp>
+//#include <parsertl/search_iterator.hpp>
+#include <peglib.h>
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::glslfx::parser {
 /////////////////////////////////////////////////////////////////////////////////////////////////
+
+using peg_parser_ptr_t = std::shared_ptr<peg::parser>;
 
 struct _orksl_parser_internals{
   _orksl_parser_internals();
@@ -32,6 +35,8 @@ struct _orksl_parser_internals{
   parsertl::state_machine _gsm;
   lexertl::rules _lrules;
   lexertl::state_machine _lsm;
+
+  peg_parser_ptr_t _peg_parser;
 
   size_t _additive_expression = -1;
   size_t _and_expression = -1;
@@ -62,11 +67,16 @@ struct _orksl_parser_internals{
   size_t _test_A = -1;
   size_t _test_B = -1;
   size_t _test_C = -1;
+  size_t _KW_OR_ID = -1;
+  size_t _L_PAREN = -1;
+  size_t _R_PAREN = -1;
+  size_t _L_CURLY = -1;
+  size_t _COMMA = -1;
 
 };
 
 _orksl_parser_internals::_orksl_parser_internals()
-    : _grules(/*parsertl::enable_captures*/)
+    : _grules(parsertl::enable_captures)
     , _gsm()
     , _lrules()
     , _lsm() {
@@ -93,15 +103,20 @@ _orksl_parser_internals::_orksl_parser_internals()
 
   // terminals (tokens)
 
-  _grules.token("KW_OR_ID TYPENAME");
-  _grules.token("FLOAT UINT XINT CONSTANT");
-  _grules.token("IDENTIFIER STRING_LITERAL");
-  _grules.token("INCREMENT DECREMENT");
-  _grules.token("L_PAREN R_PAREN L_CURLY R_CURLY L_SQUARE R_SQUARE");
-  _grules.token("LESS_THAN LESS_THAN_EQ GREATER_THAN GREATER_THAN_EQ");
-  _grules.token("EQUAL_TO NOT_EQUAL_TO L_SHIFT R_SHIFT");
-  _grules.token("COLON SEMICOLON CARET LOGICAL_AND LOGICAL_OR");
-  _grules.token("EQUALS COMMA DOT QUESTION_MARK STAR SLASH PERCENT EXCLAMATION AMPERSAND PIPE PLUS MINUS");
+   _grules.token("KW_OR_ID");
+  //_grules.token("TYPENAME");
+  //_grules.token("FLOAT UINT XINT CONSTANT");
+  //_grules.token("IDENTIFIER STRING_LITERAL");
+  //_grules.token("INCREMENT DECREMENT");
+  _grules.token("L_PAREN");
+  _grules.token("R_PAREN");
+  _grules.token("L_CURLY");// R_CURLY");
+  _grules.token("COMMA");
+  //_grules.token("L_SQUARE R_SQUARE");
+  //_grules.token("LESS_THAN LESS_THAN_EQ GREATER_THAN GREATER_THAN_EQ");
+  //_grules.token("EQUAL_TO NOT_EQUAL_TO L_SHIFT R_SHIFT");
+  //_grules.token("COLON SEMICOLON CARET LOGICAL_AND LOGICAL_OR");
+  //_grules.token("EQUALS COMMA DOT QUESTION_MARK STAR SLASH PERCENT EXCLAMATION AMPERSAND PIPE PLUS MINUS");
 
   // rules
 
@@ -110,8 +125,7 @@ _orksl_parser_internals::_orksl_parser_internals()
   );
 
   _test_A = _grules.push("test_A", //
-    "L_PAREN R_PAREN " //
-    "| L_PAREN test_B R_PAREN" //
+    "L_PAREN{test_B}R_PAREN" //
   );
 
   _test_B = _grules.push("test_B", //
@@ -122,6 +136,74 @@ _orksl_parser_internals::_orksl_parser_internals()
   printf( "RULE _test_C<%zu>\n", _test_C );
   printf( "RULE _test_A<%zu>\n", _test_A );
   printf( "RULE _test_B<%zu>\n", _test_B );
+
+
+  std::string peg_rules = R"(
+    # OrkSl Grammar
+    TEST_D  <- TEST_A L_CURLY
+    KW_OR_ID  <- < [A-Za-z_.][-A-Za-z_.0-9]* >
+    COMMA  <- ','
+    L_PAREN  <- '('
+    R_PAREN  <- ')'
+    L_CURLY  <- '{'
+    TEST_A  <- L_PAREN TEST_C R_PAREN
+    TEST_B  <- KW_OR_ID KW_OR_ID
+    TEST_B2 <- KW_OR_ID KW_OR_ID COMMA
+    TEST_C  <- (TEST_B / TEST_B2) +
+    %whitespace <- [ \t]*
+  )";
+
+  _peg_parser = std::make_shared<peg::parser>();
+
+  _peg_parser->set_logger([]( size_t line, //
+                              size_t col, //
+                              const std::string& msg, //
+                              const std::string &rule) { //
+    std::cerr << line << ":" << col << ": " << msg << "\n";
+  });
+
+  auto& parser = *_peg_parser;
+
+  parser.load_grammar(peg_rules);
+
+  OrkAssert(static_cast<bool>(parser));
+
+  parser["KW_OR_ID"] = [](const peg::SemanticValues &vs){
+    auto tok = vs.token_to_string(0);
+    printf("KW_OR_ID: %s\n", tok.c_str() );
+  };
+  parser["L_PAREN"] = [](const peg::SemanticValues &vs){
+    auto tok = vs.token_to_string(0);
+    printf("L_PAREN: %s\n", tok.c_str() );
+  };
+  parser["R_PAREN"] = [](const peg::SemanticValues &vs){
+    auto tok = vs.token_to_string(0);
+    printf("R_PAREN: %s\n", tok.c_str() );
+  };
+  parser["L_CURLY"] = [](const peg::SemanticValues &vs){
+    auto tok = vs.token_to_string(0);
+    printf("L_CURLY: %s\n", tok.c_str() );
+  };
+  parser["TEST_A"] = [](const peg::SemanticValues &vs){
+    auto tok = vs.token_to_string(0);
+    printf("TEST_A: %s\n", tok.c_str() );
+  };
+  parser["TEST_B"] = [](const peg::SemanticValues &vs){
+    auto tok = vs.token_to_string(0);
+    printf("TEST_B: %s\n", tok.c_str() );
+  };
+  parser["TEST_B2"] = [](const peg::SemanticValues &vs){
+    auto tok = vs.token_to_string(0);
+    printf("TEST_B2: %s\n", tok.c_str() );
+  };
+  parser["TEST_C"] = [](const peg::SemanticValues &vs){
+    auto tok = vs.token_to_string(0);
+    printf("TEST_C: %s\n", tok.c_str() );
+  };
+  parser["TEST_D"] = [](const peg::SemanticValues &vs){
+    auto tok = vs.token_to_string(0);
+    printf("TEST_D: %s\n", tok.c_str() );
+  };
 
   /*_grules.push("CONSTANT", //
     "  FLOAT " //
@@ -258,17 +340,42 @@ _orksl_parser_internals::_orksl_parser_internals()
 
   parsertl::generator::build(_grules, _gsm);
 
+  _KW_OR_ID = _grules.token_id("KW_OR_ID");
+  _L_PAREN = _grules.token_id("L_PAREN");
+  _R_PAREN = _grules.token_id("R_PAREN");
+  _L_CURLY = _grules.token_id("L_CURLY");
+  _COMMA = _grules.token_id("COMMA");
+
+  printf( "_KW_OR_ID<%d>\n", _KW_OR_ID);
+  printf( "_L_PAREN<%d>\n", _L_PAREN);
+  printf( "_R_PAREN<%d>\n", _R_PAREN);
+  printf( "_L_CURLY<%d>\n", _L_CURLY);
+  printf( "_COMMA<%d>\n", _COMMA);
+
   ////////////////////////////////////////////////
   // lexer
   ////////////////////////////////////////////////
 
-  if(1){
+  if(0){
+    _lrules.insert_macro("TERMINAL",   
+                          "'(\\\\([^0-9cx]|[0-9]{1,3}|c[@a-zA-Z]|x\\d+)|[^'])+'|"
+                          "[\"](\\\\([^0-9cx]|[0-9]{1,3}|c[@a-zA-Z]|x\\d+)|[^\"])+[\"]");
+    _lrules.insert_macro("KW_OR_ID", "[A-Za-z_.][-A-Za-z_.0-9]*");
+    _lrules.push("{TERMINAL}", 100);
+    _lrules.push("{KW_OR_ID}", _KW_OR_ID);
+    _lrules.push("[(]", _L_PAREN);
+    _lrules.push("[)]", _R_PAREN);
+    _lrules.push("[{]", _L_CURLY);
+    _lrules.push("[,]", _COMMA);
+    _lrules.push("\\s+", _lrules.skip());
+  }
+  else if(1){
     _lrules.push("[a-zA-Z_]+[a-zA-Z0-9_]+", _grules.token_id("KW_OR_ID"));
-    _lrules.push("\\(", _grules.token_id("L_PAREN"));
-    _lrules.push("\\)", _grules.token_id("R_PAREN"));
-    _lrules.push("\\{", _grules.token_id("L_CURLY"));
-    _lrules.push("\\}", _grules.token_id("R_CURLY"));
-    _lrules.push(",", _grules.token_id("COMMA"));
+    _lrules.push("[(]", _grules.token_id("L_PAREN"));
+    _lrules.push("[)]", _grules.token_id("R_PAREN"));
+    _lrules.push("[{]", _grules.token_id("L_CURLY"));
+    //_lrules.push("\\}", _grules.token_id("R_CURLY"));
+    _lrules.push("[,]", _grules.token_id("COMMA"));
     _lrules.push("\\s+", _lrules.skip());
   }
   else{
@@ -346,18 +453,94 @@ int OrkSlFunctionNode::parse(GlSlFxParser* parser, const ScannerView& view) {
   i++;
 
   try {
-    using capture_vector = std::vector<std::pair<const char*, const char*>>;
-    std::vector<capture_vector> captures;
 
     std::string input = view.asString();
 
     printf("input<%s>\n", input.c_str());
-    printf("input.st<%c>\n", input.c_str()[0]);
-    printf("input.en<%c>\n", input.c_str()[input.size()-1]);
+
+    auto str_start = input.c_str();
+    auto str_end = str_start+14; //input.size();
+
+    printf("input.st<%c>\n", *str_start);
+    printf("input.en<%c>\n", *str_end);
+
+    auto ret = internals->_peg_parser->parse(input);
+
+
+  #if 0
+   parsertl::csearch_iterator iter(str_start, 
+                                   str_end, 
+                                   internals->_lsm, 
+                                   internals->_gsm);
+
+    parsertl::csearch_iterator iter_end;
+
+    for (; iter != iter_end; ++iter)
+    {
+        for (const auto &vec : *iter)
+        {
+            for (const auto &pair : vec)
+            {
+                std::cout << std::string(pair.first, pair.second) << '\n';
+
+                for( auto item : *iter ){
+
+                  for( auto jitem : item ){
+
+                    auto token = std::string(jitem.first, jitem.second);
+
+                    std::cout << token << std::endl;
+                  }
+                }
+            }
+        }
+
+        std::cout << '\n';
+    }
+    OrkAssert(false);
+
+    using capture_vector = std::vector<std::pair<const char*, const char*>>;
+    std::vector<capture_vector> captures;
+
+#endif
+
+#if 0
+    if (parsertl::match(input.c_str(),
+                        input.c_str()+input.size(),
+                        captures, 
+                        internals->_lsm, 
+                        internals->_gsm))
+    {
+        auto cvi = captures.cbegin();
+        auto cve = captures.cend();
+
+        for (; cvi != cve ; ++cvi)
+        {
+            auto vi = cvi->cbegin();
+            auto ve = cvi->cend();
+
+            for (; vi != ve; ++vi)
+            {
+                std::cout << std::string(vi->first, vi->second) << '\n';
+            }
+        }
+    }
+    else
+    {
+        std::cout << "No match\n";
+        OrkAssert(false);
+    }
+
+#endif
+
+
+
+    #if 0
 
     lexertl::citerator iter(
-        input.c_str(),                // start
-        input.c_str() + input.size(), // end
+        str_start,                // start
+        //input.c_str() + input.size(), // end
+        str_start + 14, // end
         internals->_lsm);             // lsm
 
     parsertl::match_results results(iter->id, internals->_gsm);
@@ -365,42 +548,67 @@ int OrkSlFunctionNode::parse(GlSlFxParser* parser, const ScannerView& view) {
     using token = parsertl::token<lexertl::citerator>;
     token::token_vector productions;
 
-    while (results.entry.action != parsertl::eaction::error) { //
+while (results.entry.action != parsertl::action::error &&
+       results.entry.action != parsertl::action::accept){
+  
       switch (results.entry.action) {
-        case parsertl::eaction::error:
+        case parsertl::action::error:
           throw std::runtime_error("Parser error");
           break;
-        case parsertl::eaction::shift:{
-          printf( "shift\n");
+        case parsertl::action::shift:{
+          auto a = results.stack.rbegin();
+          printf( "shift<%d>\n",*a);
           break;
         }
-        case parsertl::eaction::go_to:
+        case parsertl::action::go_to:
           printf( "go_to\n");
           break;
-        case parsertl::eaction::accept:
+        case parsertl::action::accept:
           printf( "accept\n");
           break;
-        case parsertl::eaction::reduce: {
+        case parsertl::action::reduce: {
 
           printf( "reduce\n");
 
           std::size_t rule = results.reduce_id();
 
+          size_t psize = results.production_size(internals->_gsm, results.entry.param);
+
+          auto get_str = [&](int idx) -> std::string {
+              auto item = results.dollar(internals->_gsm, idx, productions);
+              return std::string(item.first,item.second);
+          };
+          auto get_rule_id = [&](int idx) -> size_t {
+              auto item = results.dollar(internals->_gsm, idx, productions);
+              return item.id;
+          };
+
           if(rule==internals->_test_A){
-            printf( "_test_A\n");
+            printf( "_test_A psize<%zd>\n", psize );
+            for( int i=0; i<psize; i++ ){
+              auto str = get_str(i);
+              auto rid = get_rule_id(i);
+              printf( " item<%d:%s>\n", rid, str.c_str() );
+            }
+            OrkAssert(get_rule_id(0)==internals->_L_PAREN);
+            OrkAssert(get_rule_id(1)==8); // ???
+            OrkAssert(get_rule_id(2)==internals->_R_PAREN);
           }
           else if(rule==internals->_test_B){
-            printf( "_test_B\n");
+            printf( "_test_B psize<%zd>\n", psize );
+            for( int i=0; i<psize; i++ ){
+              auto str = get_str(i);
+              auto rid = get_rule_id(i);
+              printf( " item<%d:%s>\n", rid, str.c_str() );
+            }
           }
           else if(rule==internals->_test_C){
-            printf( "_test_C\n");
-            auto& wtf = results.dollar(internals->_gsm,0,productions);
-
-            const char* wtf_first = wtf.first;
-            const char* wtf_second = wtf.second;
-
-            printf( "wtf_first<%s> wtf_second<%s>\n", wtf_first, wtf_second );
-            OrkAssert(false);
+            printf( "_test_C psize<%zd>\n", psize );
+            for( int i=0; i<psize; i++ ){
+              auto str = get_str(i);
+              auto rid = get_rule_id(i);
+              printf( " item<%d:%s>\n", rid, str.c_str() );
+            }
           }/*
           if(rule==internals->_additive_expression){
             printf( "_additive_expression\n");
@@ -480,14 +688,19 @@ int OrkSlFunctionNode::parse(GlSlFxParser* parser, const ScannerView& view) {
 
       parsertl::lookup(internals->_gsm, iter, results, productions);
 
-    } // while ((results.entry.action != parsertl::eaction::error)
+    } // while ((results.entry.action != parsertl::action::error)
 
-    printf( "num_productions<%zu>\n", productions.size() );
-    OrkAssert(productions.size());
+    #endif
 
-    for( auto p : productions ){
-      printf( "item<%s>\n", p.str().c_str() );
-    }
+    //bool success_ = parsertl::parse(internals->_gsm, iter, results);
+
+    //OrkAssert(success);
+   // printf( "num_productions<%zu>\n", productions.size() );
+    //OrkAssert(productions.size());
+
+    //for( auto p : productions ){
+      //printf( "item<%s>\n", p.str().c_str() );
+    //}
     // bool success = parsertl::parse(internals->_gsm, iter, results_);
     // OrkAssert(success);
 
