@@ -1,8 +1,8 @@
 #pragma once
 
 #include <ork/util/scanner.h>
-#include <parsertl/generator.hpp>
-#include <parsertl/match.hpp>
+//#include <parsertl/generator.hpp>
+//#include <parsertl/match.hpp>
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::glslfx {
@@ -1211,8 +1211,6 @@ struct GlSlFxParser {
 
   std::string _name;
   int itokidx = 0;
-  parsertl::rules _grules;
-  parsertl::state_machine _gsm;
 
   scanner_constptr_t _scanner;
   topnode_ptr_t _topNode;

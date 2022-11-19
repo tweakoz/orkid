@@ -59,7 +59,6 @@ GlSlFxParser::GlSlFxParser(std::string name,
                            program_ptr_t progam,
                            scanner_constptr_t s)
     : _name(name)
-    , _grules(parsertl::enable_captures)
     , _scanner(s)
     , _program(progam){
   _topNode = std::make_shared<TopNode>(this);
