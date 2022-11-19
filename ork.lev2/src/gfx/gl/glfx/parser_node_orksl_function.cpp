@@ -75,7 +75,7 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
   std::string peg_rules = R"(
     # OrkSl Grammar
 
-    TOP  <- ARGUMENT_DECL_LIST L_CURLY
+    top  <- ARGUMENT_DECL_LIST function_body 
 
     L_PAREN   <- '('
     R_PAREN   <- ')'
@@ -109,12 +109,35 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
     RIGHT_SHIFT  <- '>>'
 
     ARGUMENT_DECL_LIST  <- L_PAREN ARG_ITEMS R_PAREN
-    ARG_PAIR            <- TYPENAME KW_OR_ID
-    ARG_PAIR_COMMA      <- TYPENAME KW_OR_ID COMMA
+    ARG_PAIR            <- TYPENAME IDENTIFIER
+    ARG_PAIR_COMMA      <- TYPENAME IDENTIFIER COMMA
     ARG_ITEMS           <- (ARG_PAIR / ARG_PAIR_COMMA) +
-    %whitespace         <- [ \t]*
 
-    KW_OR_ID <- < [A-Za-z_.][-A-Za-z_.0-9]* >
+    FLOAT    <- <MINUS? [0-9]+ '.'? [0-9]*>
+    INTEGER  <- <MINUS? [0-9]+>
+    NUMBER   <- (FLOAT/INTEGER)
+
+    WHITESPACE          <- [ \t\n]*
+    %whitespace         <- WHITESPACE
+
+    IDENTIFIER <- < [A-Za-z_][-A-Za-z_0-9]* >
+    TYPENAME <- (BUILTIN_TYPENAME/IDENTIFIER)
+
+    function_body        <- L_CURLY statement_list? R_CURLY
+
+    statement_list       <- statement+
+
+    statement            <- (return_statement/assignment_statement) SEMI_COLON+
+
+    return_statement     <- 'return' expression* 
+    assignment_statement <- IDENTIFIER EQUALS expression* SEMI_COLON+
+
+    expression           <- primary_expression
+    primary_expression   <- (KEYWORD/IDENTIFIER/SLASH/NUMBER/DOT/COMMA/L_PAREN/R_PAREN)+
+
+
+
+
 
   )";
 
@@ -133,7 +156,7 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
 
   ////////////////////////////////////////////////
 
-  peg_rules += FormatString("    TYPENAME <- (");
+  peg_rules += FormatString("    BUILTIN_TYPENAME <- (");
   size_t num_typenames = valid_typenames.size();
   int it = 0;
   for( auto item : valid_typenames ){
@@ -169,100 +192,77 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
   OrkAssert(static_cast<bool>(parser));
 
   ///////////////////////////////////////////////////////////
-  // keyword / identifier semantic actions
+
+
+  auto impl_default_handler = [&parser](std::string key){
+    parser[key.c_str()] = [key](const peg::SemanticValues& vs) {
+      auto tok = vs.token_to_string(0);
+      printf("%s: %s\n", key.c_str(), tok.c_str());
+    };
+  };
+
+  ///////////////////////////////////////////////////////////
+  // keyword / typename / identifier semantic actions
   ///////////////////////////////////////////////////////////
 
-  //parser["KW_OR_ID"] = [](const peg::SemanticValues& vs) {
-    //auto tok = vs.token_to_string(0);
-    //printf("KW_OR_ID: %s\n", tok.c_str());
-  //};
-  parser["KEYWORD"] = [](const peg::SemanticValues& vs) {
-    auto tok = vs.token_to_string(0);
-    printf("KEYWORD: %s\n", tok.c_str());
-  };
-  parser["TYPENAME"] = [](const peg::SemanticValues& vs) {
-    auto tok = vs.token_to_string(0);
-    printf("TYPENAME: %s\n", tok.c_str());
-  };
+  impl_default_handler("KEYWORD");
+  impl_default_handler("TYPENAME");
+  impl_default_handler("IDENTIFIER");
+
   /*parser["KEYWORD"].predicate = [valid_keywords](const peg::SemanticValues& vs, const std::any& dt, std::string& msg) {
     auto tok = vs.token_to_string(0);
     auto it = valid_keywords.find(tok);
     return (it!=valid_keywords.end());
   };*/
 
-  parser["IDENTIFIER"] = [](const peg::SemanticValues& vs) {
-    auto tok = vs.token_to_string(0);
-    printf("IDENTIFIER: %s\n", tok.c_str());
-  };
-  //parser["IDENTIFIER"].predicate = [valid_typenames,valid_keywords](const peg::SemanticValues& vs, const std::any& /*dt*/, std::string& msg) {
-  //  auto tok = vs.token_to_string(0);
-  //  auto itt = valid_typenames.find(tok);
-  //  auto itk = valid_keywords.find(tok);
-  //  return (itt!=valid_typenames.end()) and (itk!=valid_keywords.end());
-  //};
+
   //parser["TYPENAME"].predicate = [valid_typenames](const peg::SemanticValues& vs, const std::any& /*dt*/, std::string& msg) {
     //auto tok = vs.token_to_string(0);
     //auto it = valid_typenames.find(tok);
     //return (it!=valid_typenames.end());
   //};
 
+
+  //parser["IDENTIFIER"].predicate = [valid_typenames,valid_keywords](const peg::SemanticValues& vs, const std::any& /*dt*/, std::string& msg) {
+  //  auto tok = vs.token_to_string(0);
+  //  auto itt = valid_typenames.find(tok);
+  //  auto itk = valid_keywords.find(tok);
+  //  return (itt!=valid_typenames.end()) and (itk!=valid_keywords.end());
+  //};
+
   ///////////////////////////////////////////////////////////
   // hierarchy token semantic actions
   ///////////////////////////////////////////////////////////
 
-  parser["L_PAREN"] = [](const peg::SemanticValues& vs) {
-    auto tok = vs.token_to_string(0);
-    printf("L_PAREN: %s\n", tok.c_str());
-  };
-  parser["R_PAREN"] = [](const peg::SemanticValues& vs) {
-    auto tok = vs.token_to_string(0);
-    printf("R_PAREN: %s\n", tok.c_str());
-  };
-  parser["L_CURLY"] = [](const peg::SemanticValues& vs) {
-    auto tok = vs.token_to_string(0);
-    printf("L_CURLY: %s\n", tok.c_str());
-  };
-  parser["R_CURLY"] = [](const peg::SemanticValues& vs) {
-    auto tok = vs.token_to_string(0);
-    printf("R_CURLY: %s\n", tok.c_str());
-  };
-  parser["L_SQUARE"] = [](const peg::SemanticValues& vs) {
-    auto tok = vs.token_to_string(0);
-    printf("L_SQUARE: %s\n", tok.c_str());
-  };
-  parser["R_SQUARE"] = [](const peg::SemanticValues& vs) {
-    auto tok = vs.token_to_string(0);
-    printf("R_SQUARE: %s\n", tok.c_str());
-  };
-  parser["DOT"] = [](const peg::SemanticValues& vs) {
-    auto tok = vs.token_to_string(0);
-    printf("DOT: %s\n", tok.c_str());
-  };
+  impl_default_handler("L_PAREN");
+  impl_default_handler("R_PAREN");
+  impl_default_handler("L_CURLY");
+  impl_default_handler("R_CURLY");
+  impl_default_handler("L_SQUARE");
+  impl_default_handler("R_SQUARE");
+  impl_default_handler("DOT");
+  impl_default_handler("COMMA");
 
+  impl_default_handler("NUMBER");
+  impl_default_handler("INTEGER");
+  impl_default_handler("FLOAT");
+  
   ///////////////////////////////////////////////////////////
   // language construct semantic actions
   ///////////////////////////////////////////////////////////
 
-  parser["ARGUMENT_DECL_LIST"] = [](const peg::SemanticValues& vs) {
-    auto tok = vs.token_to_string(0);
-    printf("ARGUMENT_DECL_LIST: %s\n", tok.c_str());
-  };
-  parser["ARG_PAIR"] = [](const peg::SemanticValues& vs) {
-    auto tok = vs.token_to_string(0);
-    printf("ARG_PAIR: %s\n", tok.c_str());
-  };
-  parser["ARG_PAIR_COMMA"] = [](const peg::SemanticValues& vs) {
-    auto tok = vs.token_to_string(0);
-    printf("ARG_PAIR_COMMA: %s\n", tok.c_str());
-  };
-  parser["ARG_ITEMS"] = [](const peg::SemanticValues& vs) {
-    auto tok = vs.token_to_string(0);
-    printf("ARG_ITEMS: %s\n", tok.c_str());
-  };
-  parser["TOP"] = [](const peg::SemanticValues& vs) {
-    auto tok = vs.token_to_string(0);
-    printf("TOP: %s\n", tok.c_str());
-  };
+  impl_default_handler("top");
+  impl_default_handler("ARGUMENT_DECL_LIST");
+  impl_default_handler("ARG_PAIR_COMMA");
+  impl_default_handler("ARG_ITEMS");
+  impl_default_handler("function_body");
+  impl_default_handler("statement_list");
+  impl_default_handler("statement");
+  impl_default_handler("empty_statement");
+  impl_default_handler("return_statement");
+  impl_default_handler("expression");
+  impl_default_handler("primary_expression");
+
 
   /*_grules.push("CONSTANT", //
     "  FLOAT " //
@@ -430,7 +430,9 @@ int OrkSlFunctionNode::parse(const ScannerView& view) {
     printf("input.st<%c>\n", *str_start);
     printf("input.en<%c>\n", *str_end);
 
-    auto ret = internals->_peg_parser->parse(input);
+    bool ret = internals->_peg_parser->parse(input);
+
+    OrkAssert(ret==true);
 
   } catch (const std::exception& e) {
     std::cout << e.what() << '\n';
