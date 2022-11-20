@@ -113,6 +113,8 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
     STAR   <- '*'
     SLASH  <- '/'
     CARET  <- '^'
+    EXCLAMATION  <- '^'
+    TILDE  <- '~'
 
     AMPERSAND    <- '&'
     PIPE         <- '|'
@@ -142,14 +144,22 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
 
     function_body        <- L_CURLY statement_list* R_CURLY
 
+    ##################################   
+    # statements
+    ##################################   
+
     statement_list       <- statement+
 
-    statement            <- (return_statement/for_statement/assignment_statement2/assignment_statement) SEMI_COLON+
+    statement            <- (return_statement/for_statement/decl_and_assignment_statement/assignment_statement) SEMI_COLON+
 
     return_statement     <- 'return' expression*
-    for_statement        <- 'for' L_PAREN assignment_statement2 SEMI_COLON expression SEMI_COLON expression? R_PAREN L_CURLY statement_list* R_CURLY
-    assignment_statement2 <- TYPENAME IDENTIFIER EQUALS expression
+    for_statement        <- 'for' L_PAREN decl_and_assignment_statement  SEMI_COLON expression SEMI_COLON expression? R_PAREN L_CURLY statement_list* R_CURLY
+    decl_and_assignment_statement  <- TYPENAME IDENTIFIER EQUALS expression
     assignment_statement <- IDENTIFIER ASSIGNMENT_OP expression
+
+    ##################################
+    # operators
+    ##################################   
 
     binary_math_op       <- (PLUS/MINUS/STAR/SLASH/AMPERSAND/PIPE)
     comparison_op        <- (EQUAL_TO/NOT_EQUAL_TO/LESS_THAN/GREATER_THAN/LESS_THAN_EQUAL_TO/GREATER_THAN_EQUAL_TO)
@@ -157,16 +167,90 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
     inc_dec_op           <- (PLUS_PLUS/MINUS_MINUS)
     operator             <- (inc_dec_op/shift_op/binary_math_op/comparison_op/DOT/COMMA/EQUALS)
 
-    expression           <- (primary_expression3/primary_expression2/primary_expression)
+    unary_operator       <- (AMPERSAND/STAR/PLUS/MINUS/EXCLAMATION/TILDE) 
 
-    primary_expression2  <- L_PAREN expression+ R_PAREN
+    ##################################
+    # expressions
+    ##################################   
 
-    primary_expression3  <- primary_expression operator primary_expression
-                          / primary_expression2 operator primary_expression   
-                          / primary_expression operator primary_expression2   
-                          / primary_expression2 operator primary_expression2   
+    additive_expression <- multiplicative_expression <PLUS multiplicative_expression>*
+                         / multiplicative_expression <MINUS multiplicative_expression>*
 
-    primary_expression   <- (TYPENAME/KEYWORD/IDENTIFIER/operator/NUMBER)+
+    and_expression  <- equality_expression <AMPERSAND equality_expression>*
+
+    argument_expression_list <- assignment_expression <COMMA assignment_expression>*
+
+    assignment_operator <- ASSIGNMENT_OP
+
+    assignment_expression <- conditional_expression 
+                           / unary_expression ASSIGNMENT_OP assignment_expression
+
+    cast_expression <- unary_expression 
+                     / < L_PAREN TYPENAME R_PAREN >
+                     / < TYPENAME L_PAREN expression R_PAREN >
+
+    conditional_expression  <- logical_or_expression ternary_expression?
+
+    constant_expression  <- conditional_expression
+
+    #declaration  <- declaration_specifiers SEMI_COLON
+    #              / declaration_specifiers init_declarator_list SEMI_COLON
+
+    #declaration_specifiers <- type_s
+
+    #init_declarator_list <- init_declarator <COMMA init_declarator>*
+
+    #init_declarator <- declarator < EQUALS initializer >?
+
+    equality_expression  <- relational_expression 
+                          / relational_expression <EQUAL_TO relational_expression>*
+                          / relational_expression <NOT_EQUAL_TO relational_expression>*
+
+    exclusive_or_expression <- and_expression <CARET and_expression>*
+
+    expression <- assignment_expression <COMMA assignment_expression>*
+
+    inclusive_or_expression <- exclusive_or_expression <PIPE exclusive_or_expression>*
+    logical_and_expression  <- inclusive_or_expression <LOGICAL_AND logical_and_expression>*
+    logical_or_expression   <- logical_and_expression <LOGICAL_OR logical_and_expression>*
+
+    multiplicative_expression <- cast_expression <STAR cast_expression>*
+                               / cast_expression <SLASH cast_expression>*   
+    #                          / cast_expression <PERCENT cast_expression>*   
+
+
+
+    postfix_combo <- primary_expression <L_SQUARE expression R_SQUARE>
+                   / primary_expression L_PAREN R_PAREN
+                   / primary_expression L_PAREN argument_expression_list R_PAREN
+                   / primary_expression DOT IDENTIFIER
+                   / primary_expression PLUS_PLUS
+                   / primary_expression MINUS_MINUS
+
+    postfix_expression <- primary_expression postfix_combo*
+
+    primary_expression <- (IDENTIFIER/NUMBER/<L_PAREN expression R_PAREN>)
+
+    relational_combo <- LESS_THAN shift_expression
+                      / LESS_THAN_EQUAL_TO shift_expression
+                      / GREATER_THAN shift_expression
+                      / GREATER_THAN_EQUAL_TO shift_expression
+
+    relational_expression <- shift_expression relational_combo*
+
+    shift_combo <- LEFT_SHIFT additive_expression
+                 / RIGHT_SHIFT additive_expression
+
+    shift_expression <- additive_expression shift_combo*
+
+    ternary_expression      <- "?=" expression COLON conditional_expression
+
+    unary_expression     <-   postfix_expression
+                          / < PLUS_PLUS unary_expression >
+                          / < MINUS_MINUS unary_expression >
+                          / < unary_operator cast_expression >
+
+    # EXCLAMATION TILDE
 
     argument_decl_list  <- L_PAREN arg_items R_PAREN
     arg_pair            <- TYPENAME IDENTIFIER
@@ -298,154 +382,32 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
   ///////////////////////////////////////////////////////////
 
   impl_default_handler("top");
+  impl_default_handler("statement");
   impl_default_handler("argument_decl_list");
-  impl_default_handler("arg_pair_comma");
-  impl_default_handler("arg_items");
   impl_default_handler("function_body");
-  impl_default_handler("statement_list");
-  //impl_default_handler("statement");
-  //impl_default_handler("empty_statement");
-  impl_default_handler("return_statement");
-  impl_default_handler("for_statement");
-  impl_default_handler("assignment_statement");
-  impl_default_handler("assignment_statement2");
-  impl_default_handler("expression");
+
+  impl_default_handler("additive_expression");
+  impl_default_handler("and_expression");
+  impl_default_handler("argument_expression_list");
+  impl_default_handler("assignment_expression");
+  impl_default_handler("cast_expression");
+  impl_default_handler("conditional_expression");
+  impl_default_handler("equality_expression");
+  impl_default_handler("exclusive_or_expression");
+  impl_default_handler("expression ");
+
+  impl_default_handler("inclusive_or_expression");
+
+  impl_default_handler("logical_and_expression");
+
+  impl_default_handler("logical_or_expression");
+  impl_default_handler("multiplicative_expression");
+  impl_default_handler("postfix_expression");
   impl_default_handler("primary_expression");
-  impl_default_handler("primary_expression2");
-  impl_default_handler("operator");
-
-
-  /*_grules.push("CONSTANT", //
-    "  FLOAT " //
-    "| UINT" //
-    "| XINT" //
-  );*/
-
-  /*_additive_expression = _grules.push("additive_expression", //
-    "  multiplicative_expression " //
-    "| additive_expression PLUS multiplicative_expression" //
-    "| additive_expression MINUS multiplicative_expression" //
-  );
-
-  _and_expression = _grules.push("and_expression", //
-    "  equality_expression " //
-    "| and_expression AMPERSAND equality_expression" //
-  );
-
-  _argument_expression_list = _grules.push("argument_expression_list", //
-    "  assignment_expression " //
-    "| argument_expression_list COMMA assignment_expression" //
-  );
-
-  _assignment_expression = _grules.push("assignment_expression", //
-    "  conditional_expression " //
-    "| unary_expression assignment_operator assignment_expression " //
-  );
-
-  _assignment_operator = _grules.push("assignment_operator", //
-    "  EQUALS" //
-    //"| EQUALS" //
-  );
-
-  _cast_expression = _grules.push("cast_expression", //
-    "  unary_expression " //
-    "| L_PAREN TYPENAME R_PAREN " //
-  );
-
-
-  _conditional_expression = _grules.push("conditional_expression", //
-    "  logical_or_expression " //
-    "| logical_or_expression ternary_expression " //
-  );
-
-  _equality_expression = _grules.push("equality_expression", //
-    "  relational_expression " //
-    "| equality_expression EQUAL_TO relational_expression" //
-    "| equality_expression NOT_EQUAL_TO relational_expression" //
-  );
-
-  _exclusive_or_expression = _grules.push("exclusive_or_expression", //
-    "  and_expression " //
-    "| exclusive_or_expression CARET and_expression " //
-  );
-
-  _expression = _grules.push("expression", //
-    "  assignment_expression " //
-    "| expression COMMA assignment_expression" //
-  );
-
-  _inclusive_or_expression = _grules.push("inclusive_or_expression", //
-    "  logical_or_expression " //
-    "| inclusive_or_expression PIPE exclusive_or_expression " //
-  );
-
-  _logical_and_expression = _grules.push("logical_and_expression", //
-    "  inclusive_or_expression " //
-    "| logical_and_expression LOGICAL_AND inclusive_or_expression " //
-  );
-
-  _logical_or_expression = _grules.push("logical_or_expression", //
-    "  logical_and_expression " //
-    "| logical_or_expression LOGICAL_OR logical_and_expression " //
-  );
-
-  _multiplicative_expression = _grules.push("multiplicative_expression", //
-    "  cast_expression " //
-    "| multiplicative_expression STAR cast_expression " // *
-    "| multiplicative_expression SLASH cast_expression " // /
-    "| multiplicative_expression PERCENT cast_expression " // %
-  );
-
-  _postfix_expression = _grules.push("postfix_expression", //
-    "  primary_expression " //
-    "| postfix_expression L_SQUARE expression R_SQUARE " // *
-    "| postfix_expression L_PAREN R_PAREN " // *
-    "| postfix_expression L_PAREN argument_expression_list R_PAREN " // *
-    "| postfix_expression DOT IDENTIFIER " // *
-    "| postfix_expression INCREMENT " // *
-    "| postfix_expression DECREMENT " // *
-  );
-
-  _primary_expression = _grules.push("primary_expression", //
-    "| IDENTIFIER " // *
-    "| CONSTANT " // *
-    "| STRING_LITERAL " // *
-    "| L_PAREN expression R_PAREN " // *
-  );
-
-  _relational_expression = _grules.push("relational_expression", //
-    "  shift_expression " //
-    "| relational_expression LESS_THAN shift_expression " //
-    "| relational_expression LESS_THAN_EQ shift_expression " //
-    "| relational_expression GREATER_THAN shift_expression " //
-    "| relational_expression GREATER_THAN_EQ shift_expression " //
-  );
-
-  _shift_expression = _grules.push("shift_expression", //
-    "  additive_expression " //
-    "| shift_expression L_SHIFT additive_expression " //
-    "| shift_expression R_SHIFT additive_expression " //
-  );
-
-  _ternary_expression = _grules.push("ternary_expression", //
-    "QUESTION_MARK expression COLON conditional_expression" //
-  );
-
-  _unary_expression = _grules.push("unary_expression", //
-    "  postfix_expression " //
-    "| INCREMENT unary_expression " //
-    "| DECREMENT unary_expression " //
-    "| unary_operator cast_expression " //
-  );
-
-  _unary_operator = _grules.push("unary_operator", //
-    "  AMPERSAND " //
-    "| STAR " //
-    "| PLUS " //
-    "| MINUS " //
-    "| EXCLAMATION " //
-    //"| TILDE " // ~
-  );*/
+  impl_default_handler("relational_expression");
+  impl_default_handler("shift_expression");
+  impl_default_handler("ternary_expression");
+  impl_default_handler("unary_expression");
 
   ////////////////////////////////////////////////
 }
