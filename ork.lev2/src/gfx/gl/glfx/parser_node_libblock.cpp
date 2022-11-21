@@ -62,9 +62,9 @@ void LibraryBlockNode::parse(GlSlFxParser* parser,
       /////////////////////////////////
       // parsedfnnode (testing, wip...)
       /////////////////////////////////
-      auto parsedfnnode = std::make_shared<OrkSlFunctionNode>(parser);
-      ScannerView pfnview(view, i);
-      int k = parsedfnnode->parse(pfnview);
+      //auto parsedfnnode = std::make_shared<OrkSlFunctionNode>(parser);
+      //ScannerView pfnview(view, i);
+      //int k = parsedfnnode->parse(pfnview);
       /////////////////////////////////
 
       i += j;
