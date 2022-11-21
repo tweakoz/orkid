@@ -459,10 +459,70 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   ///////////////////////////////////
 
-  size_t length = tid.computeSize();
-  auto pboitem  = this->_getPBO(length);
+  size_t dst_length = tid.computeDstSize();
+  auto pboitem  = this->_getPBO(dst_length);
+
+  ///////////////////////////////////////////////////////////////////
+
+  auto src_buffer = (const uint8_t*) tid._data;
+
+  ///////////////////////////////////////////////////////////////////
+
+  bool need_convert = (tid._src_format != tid._dst_format);
+
+  if(need_convert){
+    static auto rgb_buffer = (uint8_t*) malloc(16<<20);
+    int srcw = tid._w;
+    int srch = tid._h;
+    OrkAssert(not tid._autogenmips);
+    int numpixels = srcw*srch;
 
 
+    switch(tid._src_format){
+      case EBufferFormat::YUV420P:{
+        auto src_channel_y = src_buffer;
+        auto src_channel_u = src_channel_y + numpixels;
+        auto src_channel_v = src_channel_u + (numpixels>>2);
+        std::atomic<int> opcounter = 0;
+        for (int row=0; row<srch; row++) {
+          int row_base = row*srcw;
+          auto row_ybase = src_channel_y + row_base;
+          int uv_base_index = (row>>1) * (srcw>>1);
+          opcounter++;
+          opq::concurrentQueue()->enqueue([=,&opcounter](){
+            auto ptr = rgb_buffer + (srch-1-row)*srcw*3;
+            for (int col = 0; col<srcw; col++) {
+              float yy = float(row_ybase[col]);
+              int uvindex = uv_base_index + (col>>1);
+              int uuu = src_channel_u[uvindex];
+              int vvv = src_channel_v[uvindex];
+              float uu = float(uuu);
+              float vv = float(vvv);
+              float r = 1.164f * (yy - 16.0f) + 1.596f * (vv - 128.0f);
+              float g = 1.164f * (yy - 16.0f) - 0.813f * (vv - 128.0f) - 0.391f * (uu - 128.0f);
+              float b = 1.164f * (yy - 16.0f) + 2.018f * (uu - 128.0f);
+              *ptr++ = uint8_t(ork::clamp<float>(r,0,255));
+              *ptr++ = uint8_t(ork::clamp<float>(g,0,255));
+              *ptr++ = uint8_t(ork::clamp<float>(b,0,255));
+            }
+            opcounter--;
+          });
+        }
+        while(opcounter.load()>0){
+          usleep(0);
+        }
+        src_buffer = rgb_buffer;
+        break;
+      }
+      case EBufferFormat::RGB8:{
+        
+        break;
+      }
+      default:
+        OrkAssert(false);
+        break;
+    }
+  }
   ////////////////////////////////////////
   // OpenGL4.6 - persistent mapped objects
   ////////////////////////////////////////
@@ -476,6 +536,8 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   GL_ERRORCHECK();
   if(tid._truncation_length!=0){
 
+    OrkAssert(src_buffer==tid._data);
+
     /////////////////////////////////////////////////////////
     // pad truncation length to next hightest multiple of 128
     /////////////////////////////////////////////////////////
@@ -485,16 +547,19 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
     /////////////////////////////////////////////////////////
 
-    //printf("UPDATE IMAGE UNC iw<%d> ih<%d> id<%d> length<%zu> trunclen<%zu> pbo<%d>\n", tid._w, tid._h, tid._d, length, tid._truncation_length, pboitem->_handle);
+    //printf("UPDATE IMAGE UNC iw<%d> ih<%d> id<%d> dst_length<%zu> trunclen<%zu> pbo<%d>\n", tid._w, tid._h, tid._d, dst_length, tid._truncation_length, pboitem->_handle);
     OrkAssert(tid._truncation_length<pbolen);
-    //memcpy_fast(mapped, tid._data, length);
-    memcpy_fast(mapped, tid._data, tid._truncation_length);
+    //memcpy_fast(mapped, tid._data, dst_length);
+    memcpy_fast(mapped, src_buffer, tid._truncation_length);
   }
   else{
-    memcpy_fast(mapped, tid._data, length);
+    memcpy_fast(mapped, src_buffer, dst_length);
   }
 
 #else
+
+  ///////////////////////////////////////////////////////////////////
+
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboitem->_handle);
   GL_ERRORCHECK();
   u32 map_flags = GL_MAP_WRITE_BIT;
@@ -502,7 +567,7 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   map_flags |= GL_MAP_INVALIDATE_RANGE_BIT;
   map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
   void* mapped = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, length, map_flags);
-  memcpy_fast(mapped, tid._data, length);
+  memcpy_fast(mapped, src_buffer, length);
   glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
   GL_ERRORCHECK();
 #endif
@@ -530,7 +595,7 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
   ///////////////////////////////////
   GLenum internalformat, format, type;
-  switch (tid._format) {
+  switch (tid._dst_format) {
     case EBufferFormat::RGB8: {
       internalformat = GL_RGB8;
       format         = GL_RGB;
@@ -591,7 +656,7 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   bool size_or_fmt_dirty = (ptex->_width != tid._w) or  //
                            (ptex->_height != tid._h) or //
                            (ptex->_depth != tid._d) or  //
-                           (ptex->_texFormat != tid._format);
+                           (ptex->_texFormat != tid._dst_format);
 
   if (is_3d) {
     if (size_or_fmt_dirty)
@@ -613,7 +678,7 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   ptex->_width     = tid._w;
   ptex->_height    = tid._h;
   ptex->_depth    = tid._d;
-  ptex->_texFormat = tid._format;
+  ptex->_texFormat = tid._dst_format;
 
   ///////////////////////////////////
   // update texture parameters

@@ -18,12 +18,14 @@ struct MipChain;
 
 struct TextureInitData {
 
-  size_t computeSize() const;
+  size_t computeSrcSize() const;
+  size_t computeDstSize() const;
 
   int _w                = 0;
   int _h                = 0;
   int _d                = 1;
-  EBufferFormat _format = EBufferFormat::NONE;
+  EBufferFormat _src_format = EBufferFormat::NONE;
+  EBufferFormat _dst_format = EBufferFormat::RGB8;
   bool _autogenmips     = false;
   const void* _data     = nullptr;
   size_t _truncation_length = 0;

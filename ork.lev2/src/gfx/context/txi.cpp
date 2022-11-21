@@ -19,9 +19,51 @@
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-size_t TextureInitData::computeSize() const {
+size_t TextureInitData::computeSrcSize() const {
   size_t length = _w * _h * _d;
-  switch (_format) {
+  switch (_src_format) {
+
+    case EBufferFormat::R8:
+      length *= 1;
+      break;
+    case EBufferFormat::YUV420P:
+      length = length+(length>>1);
+      break;
+
+    case EBufferFormat::RGB8:
+      length *= 3;
+      break;
+
+    case EBufferFormat::R16:
+      length *= 2;
+      break;
+
+    case EBufferFormat::R32F:
+    case EBufferFormat::RG16F:
+    case EBufferFormat::RGB10A2:
+    case EBufferFormat::RGBA8:
+    case EBufferFormat::Z32:
+    case EBufferFormat::Z24S8:
+      length *= 4;
+      break;
+    case EBufferFormat::RG32F:
+    case EBufferFormat::RGBA16F:
+    case EBufferFormat::RGBA16UI:
+      length *= 8;
+      break;
+    case EBufferFormat::RGBA32F:
+    case EBufferFormat::RGB32UI:
+      length *= 16;
+      break;
+    default:
+      OrkAssert(false);
+      break;
+  }
+  return length;
+}
+size_t TextureInitData::computeDstSize() const {
+  size_t length = _w * _h * _d;
+  switch (_dst_format) {
 
     case EBufferFormat::R8:
       length *= 1;
@@ -59,7 +101,6 @@ size_t TextureInitData::computeSize() const {
   }
   return length;
 }
-
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
 ///////////////////////////////////////////////////////////////////////////////

@@ -123,7 +123,8 @@ int main(int argc, char** argv,char** envp) {
     TextureInitData tid;
     tid._w           = DIM;
     tid._h           = DIM;
-    tid._format      = EBufferFormat::RGBA32F;
+    tid._src_format      = EBufferFormat::RGBA32F;
+    tid._dst_format      = EBufferFormat::RGBA32F;
     tid._autogenmips = false;
     tid._data        = resources->_texturedata->data();
 

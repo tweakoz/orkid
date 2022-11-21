@@ -104,6 +104,7 @@ enum struct EBufferFormat : crc_enum_t {
   CrcEnum(R32F),
   CrcEnum(R32UI),
   CrcEnum(NV12),
+  CrcEnum(YUV420P),
   CrcEnum(Z16),
   CrcEnum(Z24S8),
   CrcEnum(Z32),

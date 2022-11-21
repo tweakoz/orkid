@@ -140,7 +140,8 @@ void InstancedModelDrawable::enqueueToRenderQueue(
     TextureInitData texdata;
     texdata._w           = k_texture_dimension_x; // 64 bytes per instance
     texdata._h           = k_texture_dimension_y;
-    texdata._format      = EBufferFormat::RGBA32F;
+    texdata._src_format  = EBufferFormat::RGBA32F;
+    texdata._dst_format  = EBufferFormat::RGBA32F;
     texdata._autogenmips = false;
     //printf( "dbufitem->_usermap size<%zu>\n", dbufitem->_usermap.size() );
     auto it = dbufitem->_usermap.find("rtthread_instance_data"_crcu);
@@ -161,7 +162,8 @@ void InstancedModelDrawable::enqueueToRenderQueue(
     ////////////////////////////////////////////////////////
     texdata._w           = k_texture_dimension_x; // 8 bytes per instance
     texdata._h           = k_texture_dimension_y/8;
-    texdata._format      = EBufferFormat::RGBA16UI;
+    texdata._src_format  = EBufferFormat::RGBA16UI;
+    texdata._dst_format  = EBufferFormat::RGBA16UI;
     texdata._autogenmips = false;
     texdata._data        = (const void*)instances_copy->_pickids.data();
     texdata._truncation_length = _count*8;
