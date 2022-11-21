@@ -187,7 +187,7 @@ fxinstance_ptr_t FxStateInstanceLut::findfxinst(const RenderContextInstData& RCI
   config._skinned         = RCID._isSkinned;
   config._instanced       = RCID._isInstanced;
   config._rendering_model = RCFD->_renderingmodel._modelID;
-  config.dump();
+  //config.dump();
   /////////////////
   uint64_t index = genIndex(config);
   //printf( "fxlut<%p> findfxinst index<%zu>\n", this, index );

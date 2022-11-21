@@ -130,7 +130,7 @@ struct GridRenderImpl {
       const fmtx4& VMTX_mono = cammatrices->_vmatrix;
       auto MVP               = fmtx4::multiply_ltor(VMTX_mono,PMTX_mono);
 
-      _fwdmaterial->_rasterstate.SetBlending(Blending::ALPHA_ADDITIVE);
+      _fwdmaterial->_rasterstate.SetBlending(Blending::OFF);
       _fwdmaterial->_rasterstate.SetDepthTest(EDepthTest::EDEPTHTEST_OFF);
       _fwdmaterial->_rasterstate.SetZWriteMask(false);
       _fwdmaterial->begin(_tekFWGRID,*RCFD);

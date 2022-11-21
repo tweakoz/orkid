@@ -76,7 +76,7 @@ struct IMPL {
     RtGroupRenderTarget rt(_rtg);
     {
       targ->FBI()->PushRtGroup(_rtg);
-      targ->FBI()->SetAutoClear(false); // explicit clear
+      targ->FBI()->SetAutoClear(true); // explicit clear
       targ->beginFrame();
       /////////////////////////////////////////////////////////////////////////////////////////
       auto DB             = RCFD.GetDB();

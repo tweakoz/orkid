@@ -121,7 +121,7 @@ fragment_shader ps_grid_forward
 	: iface_grid_forward
   : lib_frg_grid {
   vec4 gout = grid_output();
-  out_clr = gout; //vec4(1,1,1,gout.w);
+  out_clr = gout; 
 }
 ///////////////////////////////////////////////////////////////
 technique GBU_CT_NM_RI_NI_MO {

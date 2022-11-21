@@ -596,7 +596,7 @@ fragment_shader ps_forward_skybox_stereo
 vertex_shader vs_forward_unlit
 	: iface_vgbuffer
   : lib_pbr_vtx {
-		gl_Position = position; // screen space quad
+		gl_Position = mvp*position; // screen space quad
 		frg_uv0 = uv0;
 }
 fragment_shader ps_forward_unlit
