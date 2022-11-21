@@ -75,7 +75,7 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
   std::string peg_rules = R"(
     # OrkSl Grammar
 
-    top  <- argument_decl_list function_body 
+    top  <- parameter_decl_list function_body 
 
     ################################################
     # low level constructs
@@ -142,6 +142,11 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
     # language constructs
     ################################################
 
+    parameter_decl_list  <- L_PAREN parameter_items R_PAREN
+    parameter_pair       <- TYPENAME IDENTIFIER
+    comma_parameter_pair <- COMMA TYPENAME IDENTIFIER 
+    parameter_items      <- parameter_pair comma_parameter_pair*
+
     function_body        <- L_CURLY statement_list* R_CURLY
 
     ##################################   
@@ -150,22 +155,20 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
 
     statement_list       <- statement+
 
-    statement            <- (return_statement/for_statement/decl_and_assignment_statement/assignment_statement) SEMI_COLON+
+    statement            <- (compound_statement/expression_statement/iteration_statement/return_statement)
 
-    return_statement     <- 'return' expression*
-    for_statement        <- 'for' L_PAREN decl_and_assignment_statement  SEMI_COLON expression SEMI_COLON expression? R_PAREN L_CURLY statement_list* R_CURLY
-    decl_and_assignment_statement  <- TYPENAME IDENTIFIER EQUALS expression
-    assignment_statement <- IDENTIFIER ASSIGNMENT_OP expression
+    compound_statement   <- L_CURLY R_CURLY
+                          / L_CURLY statement_list R_CURLY
+
+    expression_statement <- expression? SEMI_COLON
+    iteration_statement  <- for_statement
+
+    return_statement     <- 'return' expression
+    for_statement        <- 'for' L_PAREN expression_statement expression_statement expression? R_PAREN statement
 
     ##################################
     # operators
     ##################################   
-
-    binary_math_op       <- (PLUS/MINUS/STAR/SLASH/AMPERSAND/PIPE)
-    comparison_op        <- (EQUAL_TO/NOT_EQUAL_TO/LESS_THAN/GREATER_THAN/LESS_THAN_EQUAL_TO/GREATER_THAN_EQUAL_TO)
-    shift_op             <- (LEFT_SHIFT/RIGHT_SHIFT)
-    inc_dec_op           <- (PLUS_PLUS/MINUS_MINUS)
-    operator             <- (inc_dec_op/shift_op/binary_math_op/comparison_op/DOT/COMMA/EQUALS)
 
     unary_operator       <- (AMPERSAND/STAR/PLUS/MINUS/EXCLAMATION/TILDE) 
 
@@ -185,22 +188,13 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
     assignment_expression <- conditional_expression 
                            / unary_expression ASSIGNMENT_OP assignment_expression
 
-    cast_expression <- unary_expression 
-                     / < L_PAREN TYPENAME R_PAREN >
-                     / < TYPENAME L_PAREN expression R_PAREN >
+    cast_expression <- unary_expression <L_PAREN TYPENAME R_PAREN unary_expression>*
 
     conditional_expression  <- logical_or_expression ternary_expression?
 
     constant_expression  <- conditional_expression
 
-    #declaration  <- declaration_specifiers SEMI_COLON
-    #              / declaration_specifiers init_declarator_list SEMI_COLON
-
-    #declaration_specifiers <- type_s
-
-    #init_declarator_list <- init_declarator <COMMA init_declarator>*
-
-    #init_declarator <- declarator < EQUALS initializer >?
+    constructor_expression  <- TYPENAME L_PAREN expression <COMMA expression>* R_PAREN
 
     equality_expression  <- relational_expression 
                           / relational_expression <EQUAL_TO relational_expression>*
@@ -209,6 +203,7 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
     exclusive_or_expression <- and_expression <CARET and_expression>*
 
     expression <- assignment_expression <COMMA assignment_expression>*
+                / constructor_expression
 
     inclusive_or_expression <- exclusive_or_expression <PIPE exclusive_or_expression>*
     logical_and_expression  <- inclusive_or_expression <LOGICAL_AND logical_and_expression>*
@@ -220,42 +215,37 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
 
 
 
-    postfix_combo <- primary_expression <L_SQUARE expression R_SQUARE>
-                   / primary_expression L_PAREN R_PAREN
-                   / primary_expression L_PAREN argument_expression_list R_PAREN
-                   / primary_expression DOT IDENTIFIER
-                   / primary_expression PLUS_PLUS
-                   / primary_expression MINUS_MINUS
+    postfix_combo <- <L_SQUARE expression R_SQUARE>
+                   / L_PAREN R_PAREN
+                   / L_PAREN argument_expression_list R_PAREN
+                   / DOT IDENTIFIER
+                   / PLUS_PLUS
+                   / MINUS_MINUS
 
     postfix_expression <- primary_expression postfix_combo*
 
-    primary_expression <- (IDENTIFIER/NUMBER/<L_PAREN expression R_PAREN>)
+    primary_expression    <- IDENTIFIER
+                           / NUMBER
+                           / L_PAREN expression R_PAREN
 
-    relational_combo <- LESS_THAN shift_expression
-                      / LESS_THAN_EQUAL_TO shift_expression
-                      / GREATER_THAN shift_expression
-                      / GREATER_THAN_EQUAL_TO shift_expression
+    relational_combo      <- LESS_THAN shift_expression
+                           / LESS_THAN_EQUAL_TO shift_expression
+                           / GREATER_THAN shift_expression
+                           / GREATER_THAN_EQUAL_TO shift_expression
 
     relational_expression <- shift_expression relational_combo*
 
-    shift_combo <- LEFT_SHIFT additive_expression
-                 / RIGHT_SHIFT additive_expression
+    shift_combo           <- LEFT_SHIFT additive_expression
+                           / RIGHT_SHIFT additive_expression
 
-    shift_expression <- additive_expression shift_combo*
+    shift_expression      <- additive_expression shift_combo*
 
-    ternary_expression      <- "?=" expression COLON conditional_expression
+    ternary_expression    <- "?=" expression COLON conditional_expression
 
-    unary_expression     <-   postfix_expression
-                          / < PLUS_PLUS unary_expression >
-                          / < MINUS_MINUS unary_expression >
-                          / < unary_operator cast_expression >
-
-    # EXCLAMATION TILDE
-
-    argument_decl_list  <- L_PAREN arg_items R_PAREN
-    arg_pair            <- TYPENAME IDENTIFIER
-    comma_arg_pair      <- COMMA TYPENAME IDENTIFIER 
-    arg_items           <- arg_pair comma_arg_pair*
+    unary_expression      <- postfix_expression
+                           / PLUS_PLUS unary_expression
+                           / MINUS_MINUS unary_expression
+                           / unary_operator cast_expression
 
     ################################################
 
@@ -339,20 +329,6 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
   impl_default_handler("TYPENAME");
   impl_default_handler("IDENTIFIER");
 
-  /*parser["KEYWORD"].predicate = [valid_keywords](const peg::SemanticValues& vs, const std::any& dt, std::string& msg) {
-    auto tok = vs.token_to_string(0);
-    auto it = valid_keywords.find(tok);
-    return (it!=valid_keywords.end());
-  };*/
-
-
-  //parser["TYPENAME"].predicate = [valid_typenames](const peg::SemanticValues& vs, const std::any& /*dt*/, std::string& msg) {
-    //auto tok = vs.token_to_string(0);
-    //auto it = valid_typenames.find(tok);
-    //return (it!=valid_typenames.end());
-  //};
-
-
   parser["IDENTIFIER"].predicate = [valid_typenames,valid_keywords](const peg::SemanticValues& vs, const std::any& /*dt*/, std::string& msg) {
     auto tok = vs.token_to_string(0);
     auto itt = valid_typenames.find(tok);
@@ -382,8 +358,14 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
   ///////////////////////////////////////////////////////////
 
   impl_default_handler("top");
+  impl_default_handler("compound_statement");
+  impl_default_handler("expression_statement");
+  impl_default_handler("iteration_statement");
+  impl_default_handler("return_statement");
+  impl_default_handler("for_statement");
   impl_default_handler("statement");
-  impl_default_handler("argument_decl_list");
+  impl_default_handler("statement_list");
+  impl_default_handler("parameter_decl_list");
   impl_default_handler("function_body");
 
   impl_default_handler("additive_expression");
@@ -392,6 +374,8 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
   impl_default_handler("assignment_expression");
   impl_default_handler("cast_expression");
   impl_default_handler("conditional_expression");
+  impl_default_handler("constant_expression");
+  impl_default_handler("constructor_expression");
   impl_default_handler("equality_expression");
   impl_default_handler("exclusive_or_expression");
   impl_default_handler("expression ");
@@ -402,9 +386,12 @@ _ORKSL_IMPL::_ORKSL_IMPL(OrkSlFunctionNode* node) {
 
   impl_default_handler("logical_or_expression");
   impl_default_handler("multiplicative_expression");
+  impl_default_handler("postfix_combo");
   impl_default_handler("postfix_expression");
   impl_default_handler("primary_expression");
+  impl_default_handler("relational_combo");
   impl_default_handler("relational_expression");
+  impl_default_handler("shift_combo");
   impl_default_handler("shift_expression");
   impl_default_handler("ternary_expression");
   impl_default_handler("unary_expression");
