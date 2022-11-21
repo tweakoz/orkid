@@ -31,6 +31,7 @@
 namespace ork::lev2 {
 
 static ork::atomic<bool> _gInsideClearAndSync = 0;
+ork::atomic<int> DrawableBuffer::_gate = 1;
 
 ////////////////////////////////////////////////////////////////
 
@@ -273,6 +274,7 @@ cameradata_constptr_t DrawableBuffer::cameraData(const std::string& named) const
 
 /////////////////////////////////////////////////////////////////////
 
+#if 0 // TRIPLE BUFFER
 DrawBufContext::DrawBufContext() {
 }
 
@@ -291,6 +293,51 @@ const DrawableBuffer* DrawBufContext::acquireForReadLocked(){
 void DrawBufContext::releaseFromReadLocked(const DrawableBuffer* db){
    _triple.end_pull(db);;
 }
+#else // MUTEX/GATE
+DrawBufContext::DrawBufContext()
+  :_lockedBufferMutex("lbuf")
+  ,_rendersync_sema("lsema")
+  ,_rendersync_sema2("lsema2") {
+    _lockeddrawablebuffer = std::make_shared<DrawableBuffer>(99);
+    _rendersync_sema2.notify();
+}
+
+DrawBufContext::~DrawBufContext(){
+}
+
+DrawableBuffer* DrawBufContext::acquireForWriteLocked(){
+  int gate = DrawableBuffer::_gate.load();
+  /*if(gate){
+    if(_rendersync_counter>0){
+      _rendersync_sema2.wait();
+    }
+    _rendersync_counter++;
+    return _lockeddrawablebuffer.get();
+  }*/
+   return _lockeddrawablebuffer.get();;
+}
+void DrawBufContext::releaseFromWriteLocked(DrawableBuffer* db){
+  if(db){
+    _rendersync_sema.notify();
+  }
+}
+const DrawableBuffer* DrawBufContext::acquireForReadLocked(){
+
+  int gate = DrawableBuffer::_gate.load();
+  /*if(gate){
+  if(gate){
+    _rendersync_sema.wait();
+    return _lockeddrawablebuffer.get();
+  }
+  }*/
+    return _lockeddrawablebuffer.get();
+}
+void DrawBufContext::releaseFromReadLocked(const DrawableBuffer* db){
+  if(db){
+    _rendersync_sema2.notify();
+  }
+}
+#endif
 
 /////////////////////////////////////////////////////////////////////
 // flush all renderer side data
@@ -301,18 +348,22 @@ void DrawableBuffer::BeginClearAndSyncReaders() {
 
   bool b = _gInsideClearAndSync.exchange(true);
   OrkAssert(b == false);
+  _gate.store(0);
 }
 /////////////////////////////////////////////////////////////////////
 void DrawableBuffer::EndClearAndSyncReaders() {
   ork::opq::assertOnQueue2(opq::updateSerialQueue());
   bool b = _gInsideClearAndSync.exchange(false);
   OrkAssert(b == true);
+  _gate.store(1);
 }
 /////////////////////////////////////////////////////////////////////
 void DrawableBuffer::BeginClearAndSyncWriters() {
+  _gate.store(0);
 }
 /////////////////////////////////////////////////////////////////////
 void DrawableBuffer::EndClearAndSyncWriters() {
+  _gate.store(1);
 }
 /////////////////////////////////////////////////////////////////////
 void DrawableBuffer::ClearAndSyncReaders() {

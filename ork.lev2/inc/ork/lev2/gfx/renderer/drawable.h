@@ -126,6 +126,8 @@ public:
   using rendervar_t = svar64_t;
   using usermap_t   = orklut<CrcString, rendervar_t>;
 
+  static std::atomic<int> _gate;
+
   static const int kmaxlayers = 8;
   typedef ork::fixedlut<std::string, DrawableBufLayer*, kmaxlayers> LayerLut;
   typedef ork::fixedlut<int, prerendercallback_t, 32> CallbackLut_t;
@@ -152,6 +154,8 @@ public:
   void setUserProperty(CrcString, rendervar_t data);
   void unSetUserProperty(CrcString);
   rendervar_t getUserProperty(CrcString prop) const;
+
+  static ork::atomic<bool> gbInsideClearAndSync;
 
   void copyCameras(const CameraDataLut& cameras);
   void Reset();
@@ -195,6 +199,12 @@ struct DrawBufContext {
   void releaseFromReadLocked(const DrawableBuffer* db);
 
   concurrent_triple_buffer<DrawableBuffer> _triple;
+
+  ork::mutex _lockedBufferMutex;
+  ork::semaphore _rendersync_sema;
+  ork::semaphore _rendersync_sema2;
+  int  _rendersync_counter = 0;
+  std::shared_ptr<DrawableBuffer> _lockeddrawablebuffer;
 
 };
 

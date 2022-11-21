@@ -101,6 +101,7 @@ template <typename T> struct concurrent_triple_buffer {
   const T* begin_pull(void) const // get a read buffer
   {
     const T* rval = nullptr;
+    size_t attempts = 0;
     while (nullptr == rval) {
       _mutex.Lock();
       switch (_nextread) {
@@ -127,6 +128,10 @@ template <typename T> struct concurrent_triple_buffer {
           break;
       }
       _mutex.UnLock();
+      attempts++;
+      if(attempts>50){
+        return nullptr;
+      }
     }
     return rval;
   }
