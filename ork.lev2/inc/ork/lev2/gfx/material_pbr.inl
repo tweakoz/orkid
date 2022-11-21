@@ -188,6 +188,8 @@ public:
   // forward techniques
   //////////////////////
 
+  fxtechnique_constptr_t _tek_FWD_UNLIT_NI_MO = nullptr;
+
   fxtechnique_constptr_t _tek_FWD_SKYBOX_MO = nullptr;
   fxtechnique_constptr_t _tek_FWD_SKYBOX_ST = nullptr;
   fxtechnique_constptr_t _tek_FWD_DEPTHPREPASS_IN_MO = nullptr;

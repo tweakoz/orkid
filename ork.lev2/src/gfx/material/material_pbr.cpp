@@ -203,6 +203,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   // forwards
 
+  _tek_FWD_UNLIT_NI_MO       = fxi->technique(_shader, "FWD_UNLIT_NI_MO");
+
   _tek_FWD_SKYBOX_MO         = fxi->technique(_shader, "FWD_SKYBOX_MO");
   _tek_FWD_SKYBOX_ST         = fxi->technique(_shader, "FWD_SKYBOX_ST");
   _tek_FWD_CT_NM_RI_NI_MO    = fxi->technique(_shader, "FWD_CT_NM_RI_NI_MO");
@@ -468,7 +470,25 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
         } // "DEFERRED_PB"_crcuR
         //////////////////////////////////////////
         case "FORWARD_UNLIT"_crcu:
-          OrkAssert(false);
+            fxinst->_technique = _tek_FWD_UNLIT_NI_MO;
+            //////////////////////////////////
+            fxinst->addStateLambda([this](const RenderContextInstData& RCID, int ipass) {
+              auto _this = (PBRMaterial*) this;
+              auto RCFD        = RCID._RCFD;
+              auto context     = RCFD->GetTarget();
+              auto FXI         = context->FXI();
+              auto MTXI        = context->MTXI();
+              auto RSI         = context->RSI();
+              const auto& CPD  = RCFD->topCPD();
+              auto monocams    = CPD._cameraMatrices;
+              auto worldmatrix = RCID.worldMatrix();
+              FXI->BindParamMatrix(_paramMVP, monocams->MVPMONO(worldmatrix));
+              _this->_rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
+              _this->_rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
+              _this->_rasterstate.SetZWriteMask(true);
+              _this->_rasterstate.SetRGBAWriteMask(true,true);
+              RSI->BindRasterState(_this->_rasterstate);
+            });
           break;
         case "FORWARD_PBR"_crcu:
           if (cfg._instanced and not cfg._skinned and not cfg._stereo) {
@@ -710,6 +730,17 @@ fxinstancelut_ptr_t PBRMaterial::createFxStateInstanceLut() const {
 
   config._stereo    = false;
   config._instanced = true;
+  config._skinned   = false;
+  fxlut->assignfxinst(config, _createFxStateInstance(config));
+
+  /////////////////////
+  // forward PBR
+  /////////////////////
+
+  config._rendering_model = "FORWARD_UNLIT"_crcu;
+
+  config._stereo    = false;
+  config._instanced = false;
   config._skinned   = false;
   fxlut->assignfxinst(config, _createFxStateInstance(config));
 

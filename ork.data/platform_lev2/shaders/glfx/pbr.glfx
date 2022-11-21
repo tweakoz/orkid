@@ -33,6 +33,11 @@ technique FWD_SKYBOX_ST {
 	vf_pass={vs_forward_skybox_stereo,ps_forward_skybox_stereo,sb_default}
 }
 ///////////////////////////////////////////////////////////////
+technique FWD_UNLIT_NI_MO {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_unlit,ps_forward_unlit,sb_default}
+}
+///////////////////////////////////////////////////////////////
 technique FWD_DEPTHPREPASS_IN_MO {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_forward_depthprepass_mono_instanced,ps_forward_depthprepass,sb_default}

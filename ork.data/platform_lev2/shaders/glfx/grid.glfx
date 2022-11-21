@@ -1,6 +1,8 @@
-//import "skintools.i";
-import "picktools.i";
-import "pbrtools.i";
+  import "mathtools.i";
+  import "misctools.i";
+  import "envtools.i";
+  import "picktools.i";
+  import "pbrtools.i";
 ///////////////////////////////////////////////////////////////
 // FxConfigs
 ///////////////////////////////////////////////////////////////

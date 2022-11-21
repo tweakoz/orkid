@@ -85,6 +85,7 @@ XgmSubMeshInst::XgmSubMeshInst(const XgmSubMesh* submesh)
   , _enabled(true) {
 
     _fxinstancelut = submesh->_material->createFxStateInstanceLut();
+    OrkAssert(_fxinstancelut);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

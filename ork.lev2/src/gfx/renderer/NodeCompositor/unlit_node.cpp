@@ -53,7 +53,6 @@ struct IMPL {
   void _render(UnlitNode* node, CompositorDrawData& drawdata) {
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();
-    RCFD._renderingmodel = node->_renderingmodel;
     auto targ                    = RCFD.GetTarget();
     auto CIMPL                   = drawdata._cimpl;
     auto FBI                     = targ->FBI();
@@ -97,6 +96,7 @@ struct IMPL {
           DB->enqueueLayerToRenderQueue(layer_name, irenderer);
         }
         /////////////////////////////////////////////////
+        RCFD._renderingmodel = node->_renderingmodel;
         auto MTXI = targ->MTXI();
         CIMPL->pushCPD(CPD);
         targ->debugPushGroup("toolvp::DrawEnqRenderables");

@@ -273,6 +273,8 @@ void ModelRenderable::Render(const IRenderer* renderer) const {
   RenderContextInstData RCID;
   RenderContextInstModelData RCID_MD;
   //RCID.SetMaterialInst(&minst->RefMaterialInst());
+  auto RCFD = context->topRenderContextFrameData();
+  RCID._RCFD = RCFD;
   RCID_MD.mMesh    = mesh;
   RCID_MD.mSubMesh = submesh;
   RCID_MD._cluster = this->_cluster;

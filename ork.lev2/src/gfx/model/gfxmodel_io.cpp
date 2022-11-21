@@ -276,6 +276,9 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
       HeaderStream->GetItem(imatclass);
       const char* pmatname                = chunkreader.GetString(imatname);
       const char* pmatclassname           = chunkreader.GetString(imatclass);
+
+      printf( "pmatname<%s>\n", pmatname );
+      printf( "pmatclassname<%s>\n", pmatclassname );
       ork::object::ObjectClass* pmatclass = rtti::autocast(rtti::Class::FindClass(pmatclassname));
 
       static const int kdefaulttranssortpass = 100;
