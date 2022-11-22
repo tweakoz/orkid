@@ -273,13 +273,18 @@ cameradata_constptr_t DrawableBuffer::cameraData(const std::string& named) const
 }
 
 /////////////////////////////////////////////////////////////////////
-
-#if 0 // TRIPLE BUFFER
-DrawBufContext::DrawBufContext() {
+DrawBufContext::DrawBufContext()
+  :_lockedBufferMutex("lbuf")
+  ,_rendersync_sema("lsema")
+  ,_rendersync_sema2("lsema2") {
+    _lockeddrawablebuffer = std::make_shared<DrawableBuffer>(99);
+    _rendersync_sema2.notify();
 }
 
 DrawBufContext::~DrawBufContext(){
 }
+
+#if 1 // TRIPLE BUFFER
 
 DrawableBuffer* DrawBufContext::acquireForWriteLocked(){
    return _triple.begin_push();
@@ -294,26 +299,10 @@ void DrawBufContext::releaseFromReadLocked(const DrawableBuffer* db){
    _triple.end_pull(db);;
 }
 #else // MUTEX/GATE
-DrawBufContext::DrawBufContext()
-  :_lockedBufferMutex("lbuf")
-  ,_rendersync_sema("lsema")
-  ,_rendersync_sema2("lsema2") {
-    _lockeddrawablebuffer = std::make_shared<DrawableBuffer>(99);
-    _rendersync_sema2.notify();
-}
 
-DrawBufContext::~DrawBufContext(){
-}
 
 DrawableBuffer* DrawBufContext::acquireForWriteLocked(){
   int gate = DrawableBuffer::_gate.load();
-  /*if(gate){
-    if(_rendersync_counter>0){
-      _rendersync_sema2.wait();
-    }
-    _rendersync_counter++;
-    return _lockeddrawablebuffer.get();
-  }*/
    return _lockeddrawablebuffer.get();;
 }
 void DrawBufContext::releaseFromWriteLocked(DrawableBuffer* db){
@@ -324,13 +313,7 @@ void DrawBufContext::releaseFromWriteLocked(DrawableBuffer* db){
 const DrawableBuffer* DrawBufContext::acquireForReadLocked(){
 
   int gate = DrawableBuffer::_gate.load();
-  /*if(gate){
-  if(gate){
-    _rendersync_sema.wait();
-    return _lockeddrawablebuffer.get();
-  }
-  }*/
-    return _lockeddrawablebuffer.get();
+  return _lockeddrawablebuffer.get();
 }
 void DrawBufContext::releaseFromReadLocked(const DrawableBuffer* db){
   if(db){
