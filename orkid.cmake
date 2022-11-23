@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED on)
 
 ################################################################################
 
-set(CMAKE_INSTALL_RPATH "$ENV{OBT_STAGE}/lib")
+set(CMAKE_INSTALL_RPATH "$ENV{OBT_SUBSPACE_LIB_DIR}")
 set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
 
 #############################################################################################################
@@ -268,11 +268,8 @@ endfunction()
 function(ork_std_target_set_libdirs the_target)
 
   set( private_libdir_list "" )
+  list(APPEND private libdir_list $ENV{OBT_SUBSPACE_LIB_DIR} )
   list(APPEND private_libdir_list $ENV{OBT_STAGE}/lib )
-  list(APPEND private_libdir_list $ENV{ORKID_BUILD_DEST}/ork.utpp )
-  list(APPEND private_libdir_list $ENV{ORKID_BUILD_DEST}/ork.core )
-  list(APPEND private_libdir_list $ENV{ORKID_BUILD_DEST}/ork.lev2 )
-  list(APPEND private_libdir_list $ENV{ORKID_BUILD_DEST}/ork.ecs )
 
   ################################################################################
   # IGL (its a beast, needs a cmake update)
