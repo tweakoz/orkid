@@ -274,11 +274,12 @@ cameradata_constptr_t DrawableBuffer::cameraData(const std::string& named) const
 
 /////////////////////////////////////////////////////////////////////
 DrawBufContext::DrawBufContext()
-  :_lockedBufferMutex("lbuf")
+  : _lockedBufferMutex("lbuf")
   ,_rendersync_sema("lsema")
   ,_rendersync_sema2("lsema2") {
     _lockeddrawablebuffer = std::make_shared<DrawableBuffer>(99);
     _rendersync_sema2.notify();
+  _triple = std::make_shared<tbuf_t>();
 }
 
 DrawBufContext::~DrawBufContext(){
@@ -287,16 +288,16 @@ DrawBufContext::~DrawBufContext(){
 #if 1 // TRIPLE BUFFER
 
 DrawableBuffer* DrawBufContext::acquireForWriteLocked(){
-   return _triple.begin_push();
+   return _triple->begin_push();
 }
 void DrawBufContext::releaseFromWriteLocked(DrawableBuffer* db){
-   _triple.end_push(db);;
+   _triple->end_push(db);;
 }
 const DrawableBuffer* DrawBufContext::acquireForReadLocked(){
-   return _triple.begin_pull();
+   return _triple->begin_pull();
 }
 void DrawBufContext::releaseFromReadLocked(const DrawableBuffer* db){
-   _triple.end_pull(db);;
+   _triple->end_pull(db);;
 }
 #else // MUTEX/GATE
 

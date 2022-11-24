@@ -170,7 +170,7 @@ int harness(
       default:
       case 0:
         break;
-      case 1:
+      case 1: // test done
         exec_state = 2;
         testthr.join();
         timer.Start();
@@ -188,6 +188,7 @@ int harness(
     }
   }
   ok_to_exit_update = true;
+  updthr.join();
   /////////////////////////////////////////////
   // wait for test thread exit
   /////////////////////////////////////////////

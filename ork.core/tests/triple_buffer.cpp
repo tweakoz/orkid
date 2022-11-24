@@ -61,19 +61,18 @@ template <typename queue_type> struct yo {
       while (tm.SecsSinceStart() < ktesttime) {
         auto pv = the_queue.begin_push();
         pyo->mProdCounter++;
-        if (pv) {
-          pyo->mProdGot++;
-          extstring_t str;
-          str.format("to<%d>", i);
-          pv->mVar.template set(str);
-          // usleep(rand()%3);
-        }
+        pyo->mProdGot++;
+        extstring_t str;
+        str.format("to<%d>", i);
+        pv->mVar.template set<extstring_t>(str);
+        // usleep(rand()%3);
         the_queue.end_push(pv);
         if (tm2.SecsSinceStart() > 1.0f) {
           printf("push ictr<%d> igot<%d> delt<%d>\n", pyo->mProdCounter, pyo->mProdGot, (pyo->mProdCounter - pyo->mProdGot));
           tm2.Start();
         }
       }
+      printf("producer done\n");
     };
 
     auto l_consumer = [&](anyp inp) {
@@ -87,19 +86,20 @@ template <typename queue_type> struct yo {
 
       while (tm.SecsSinceStart() < ktesttime) {
         auto pv = the_queue.begin_pull();
-        pyo->mConsCounter++;
         if (pv) {
+          pyo->mConsCounter++;
           pyo->mConsGot++;
           auto str = pv->mVar.template get<extstring_t>();
           // usleep(rand()%3);
+          the_queue.end_pull(pv);
         }
-        the_queue.end_pull(pv);
-
+  
         if (tm2.SecsSinceStart() > 1.0f) {
           printf("pull ictr<%d> igot<%d> delt<%d>\n", pyo->mConsCounter, pyo->mConsGot, (pyo->mConsCounter - pyo->mConsGot));
           tm2.Start();
         }
       }
+      printf("consumer done\n");
     };
 
     double fsynctime = ork::get_sync_time();
@@ -118,6 +118,8 @@ template <typename queue_type> struct yo {
     double bps      = msg_size * mps;
     double gbps     = bps / double(1 << 30);
     printf("nummsgs<%g> elapsed<%g> msgpersec<%g> GBps(%g)\n", double(mConsGot), elapsed, mps, gbps);
+
+    fflush(stdout);
   }
 };
 ///////////////////////////////////////////////////////////////////////////////
@@ -128,9 +130,8 @@ TEST(triplebuffer) {
   printf("//////////////////////////////////////\n");
 
   typedef concurrent_triple_buffer<YOTEST> tb_type;
-  auto the_yo = new yo<tb_type>;
+  auto the_yo = std::make_shared<yo<tb_type>>();
   the_yo->RunTest();
-  delete the_yo;
 
   printf("//////////////////////////////////////\n");
 }

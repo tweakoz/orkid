@@ -18,12 +18,14 @@
 #include <ork/object/Object.h>
 #include <ork/object/ObjectClass.h>
 #include <ork/rtti/RTTI.h>
-#include <ork/util/triple_buffer.h>
+//#include <ork/util/triple_buffer.h>
 
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/lev2_asset.h>
 #include <ork/lev2/gfx/dbgfontman.h>
+
+template <typename T> struct concurrent_triple_buffer;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -198,7 +200,10 @@ struct DrawBufContext {
   const DrawableBuffer* acquireForReadLocked();
   void releaseFromReadLocked(const DrawableBuffer* db);
 
-  concurrent_triple_buffer<DrawableBuffer> _triple;
+  using tbuf_t = concurrent_triple_buffer<DrawableBuffer>;
+  using tbuf_ptr_t = std::shared_ptr<tbuf_t>;
+
+  tbuf_ptr_t _triple;
 
   ork::mutex _lockedBufferMutex;
   ork::semaphore _rendersync_sema;
