@@ -523,6 +523,20 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
         break;
     }
   }
+
+  if(tid._truncation_length!=0){
+
+    OrkAssert(src_buffer==tid._data);
+
+    /////////////////////////////////////////////////////////
+    // pad truncation length to next hightest multiple of 128
+    /////////////////////////////////////////////////////////
+
+    tid._truncation_length += 127;
+    tid._truncation_length = (tid._truncation_length&0xfffffff80);
+  dst_length = tid._truncation_length;
+  }
+
   ////////////////////////////////////////
   // OpenGL4.6 - persistent mapped objects
   ////////////////////////////////////////
@@ -535,26 +549,9 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboitem->_handle);
   GL_ERRORCHECK();
   if(tid._truncation_length!=0){
-
-    OrkAssert(src_buffer==tid._data);
-
-    /////////////////////////////////////////////////////////
-    // pad truncation length to next hightest multiple of 128
-    /////////////////////////////////////////////////////////
-
-    tid._truncation_length += 127;
-    tid._truncation_length = (tid._truncation_length&0xfffffff80);
-
-    /////////////////////////////////////////////////////////
-
-    //printf("UPDATE IMAGE UNC iw<%d> ih<%d> id<%d> dst_length<%zu> trunclen<%zu> pbo<%d>\n", tid._w, tid._h, tid._d, dst_length, tid._truncation_length, pboitem->_handle);
     OrkAssert(tid._truncation_length<pbolen);
-    //memcpy_fast(mapped, tid._data, dst_length);
-    memcpy_fast(mapped, src_buffer, tid._truncation_length);
   }
-  else{
-    memcpy_fast(mapped, src_buffer, dst_length);
-  }
+  memcpy_fast(mapped, src_buffer, dst_length);
 
 #else
 
@@ -566,8 +563,8 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   map_flags |= GL_MAP_INVALIDATE_BUFFER_BIT;
   map_flags |= GL_MAP_INVALIDATE_RANGE_BIT;
   map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
-  void* mapped = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, length, map_flags);
-  memcpy_fast(mapped, src_buffer, length);
+  void* mapped = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, dst_length, map_flags);
+  memcpy_fast(mapped, src_buffer, dst_length);
   glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
   GL_ERRORCHECK();
 #endif
