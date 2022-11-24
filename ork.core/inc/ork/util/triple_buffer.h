@@ -43,22 +43,8 @@ template <typename T> struct concurrent_triple_buffer {
     T* rval = nullptr;
     while (nullptr == rval) {
       _mutex.Lock();
-      switch (_read) {
-        case -1:
-          _write = 0;
-          break;
-        case 0:
-          _write = (_values[1]._wrindex < _values[2]._wrindex) ? 1 : 2;
-          break;
-        case 1:
-          _write = (_values[0]._wrindex < _values[2]._wrindex) ? 0 : 2;
-          break;
-        case 2:
-          _write = (_values[0]._wrindex < _values[1]._wrindex) ? 0 : 1;
-          break;
-        default:
-          OrkAssert(false);
-          break;
+      while ((_write == _read) or (_write == _nextread)) {
+        _write = (_write + 1) % 3;
       }
       rval = _values[_write]._payload.get();
       _mutex.UnLock();
@@ -66,7 +52,7 @@ template <typename T> struct concurrent_triple_buffer {
         usleep(kquanta);
       }
     }
-    //printf("begin_push w<%d>\n", _write);
+    // printf("begin_push w<%d>\n", _write);
     return rval;
   }
   /////////////////////////////
@@ -76,7 +62,7 @@ template <typename T> struct concurrent_triple_buffer {
     _mutex.Lock();
     _nextread                = _write;
     _values[_write]._wrindex = _wrindex++;
-    //printf("end_push w<%d> mr<%d>\n", _write, _nextread);
+    // printf("end_push w<%d> mr<%d>\n", _write, _nextread);
     _mutex.UnLock();
   }
   /////////////////////////////
@@ -96,7 +82,7 @@ template <typename T> struct concurrent_triple_buffer {
         return nullptr;
       }
     }
-    //printf("begin_pull r<%d> attempts<%d>\n", _read, int(attempts));
+    // printf("begin_pull r<%d> attempts<%d>\n", _read, int(attempts));
     return rval;
   }
   /////////////////////////////
@@ -104,7 +90,7 @@ template <typename T> struct concurrent_triple_buffer {
   /////////////////////////////
   void end_pull(const T* pret) const {
     _mutex.Lock();
-    //printf("end_pull r<%d>\n", _read);
+    // printf("end_pull r<%d>\n", _read);
     OrkAssert(pret == _values[_read]._payload.get());
     _mutex.UnLock();
   }

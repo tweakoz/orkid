@@ -435,9 +435,9 @@ int OrkEzApp::mainThreadLoop() {
       double raw_delta = this_time - _update_prevtime;
       _update_prevtime = this_time;
       _update_timeaccumulator += raw_delta;
-      double step = 1.0 / 240.0;
+      double step = 1.0 / 120.0;
 
-      while (_update_timeaccumulator > step) {
+      while (_update_timeaccumulator >= step) {
 
         bool do_update = bool(_mainWindow->_onUpdate);
 
@@ -468,7 +468,7 @@ int OrkEzApp::mainThreadLoop() {
         }
       }
       opq::updateSerialQueue()->Process();
-      usleep(1000);
+      usleep(10);
       sched_yield();
     } // while (not checkAppState(KAPPSTATEFLAG_JOINED)) {
 
