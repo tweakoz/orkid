@@ -15,8 +15,6 @@
 ////////////////////////////////////////////////////////////////
 
 #define ORK_CONFIG_OPENGL
-#define ORK_CONFIG_QT
-#define USE_FCOLLADA
 #define INCLUDE_UNIT_TEST
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -32,3 +30,4 @@
 #define ORK_POP_SYMVIZ _Pragma("GCC visibility pop")
 
 #define ORK_API __attribute__ ((visibility("default")))
+

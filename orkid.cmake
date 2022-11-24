@@ -267,9 +267,8 @@ endfunction()
 
 function(ork_std_target_set_libdirs the_target)
 
-  set( private_libdir_list "" )
-  list(APPEND private libdir_list $ENV{OBT_SUBSPACE_LIB_DIR} )
-  list(APPEND private_libdir_list $ENV{OBT_STAGE}/lib )
+  list(APPEND private_libdir_list "$ENV{OBT_SUBSPACE_LIB_DIR}" )
+  list(APPEND private_libdir_list "$ENV{OBT_STAGE}/lib" )
 
   ################################################################################
   # IGL (its a beast, needs a cmake update)
@@ -277,7 +276,7 @@ function(ork_std_target_set_libdirs the_target)
 
   IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
 
-    list(APPEND CMAKE_MODULE_PATH $ENV{OBT_STAGE}/lib/cmake/igl)
+    list(APPEND CMAKE_MODULE_PATH "$ENV{OBT_STAGE}/lib/cmake/igl" )
     set( LIBIGL_DIR $ENV{OBT_STAGE}/lib/cmake/igl )
 
     option(LIBIGL_USE_STATIC_LIBRARY "Use libigl as static library" OFF)
@@ -301,11 +300,11 @@ function(ork_std_target_set_libdirs the_target)
     find_package(LIBIGL REQUIRED)
     #include($ENV{OBT_BUILDS}/igl/cmake/libigl.cmake )
 
-    list(APPEND private_libdir_list $ENV{OBT_BUILDS}/igl/.build)
+    list(APPEND private_libdir_list "$ENV{OBT_BUILDS}/igl/.build" )
 
   ENDIF()
 
-  set_property( TARGET ${the_target} APPEND PROPERTY TGT_PRIVATE_LIBPATHS PRIVATE ${private_libdir_list} )
+  set_target_properties( ${the_target} PROPERTIES TGT_PRIVATE_LIBPATHS "${private_libdir_list}" )
 
 endfunction()
 

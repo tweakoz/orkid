@@ -11,9 +11,7 @@
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/gfx/rtgroup.h>
 
-#if defined(ORK_CONFIG_QT)
 #include <ork/lev2/glfw/ctx_glfw.h>
-#endif
 #include <ork/kernel/prop.h>
 #include <ork/lev2/ui/ui.h>
 #include <ork/lev2/ui/viewport.h>
