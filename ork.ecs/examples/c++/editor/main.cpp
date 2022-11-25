@@ -14,6 +14,7 @@
 #include <ork/lev2/imgui/imgui_impl_opengl3.h>
 #include <ork/lev2/imgui/imgui_ged.inl>
 #include <ork/lev2/imgui/imgui_internal.h>
+#include <ork/util/logger.h>
 
 #include <ork/lev2/gfx/util/movie.inl>
 
@@ -31,6 +32,8 @@ using namespace ork;
 using namespace ork::lev2;
 using namespace ork::ecs;
 
+static logchannel_ptr_t logchan_editor = logger()->createChannel("EDITOR",fvec3(1,1,1));
+
 ///////////////////////////////////////////////////////////////////////////////
 
 int main(int argc, char** argv, char** envp) {
@@ -44,7 +47,7 @@ int main(int argc, char** argv, char** envp) {
   static int transport_mode      = 0;
   static int prev_transport_mode = 0;
 
-  printf( "T0<%g>\n", timer.SecsSinceStart() );
+  logchan_editor->log( "T0<%g>", timer.SecsSinceStart() );
 
   //////////////////////////////////////////////////////////
   // init application
@@ -54,7 +57,7 @@ int main(int argc, char** argv, char** envp) {
   imgui::initModule(init_data);
   ecs::initModule(init_data); // ecs registration
 
-  printf( "T1<%g>\n", timer.SecsSinceStart() );
+  logchan_editor->log( "T1<%g>", timer.SecsSinceStart() );
 
   std::shared_ptr<MovieContext> movie = nullptr;
   
@@ -67,11 +70,11 @@ int main(int argc, char** argv, char** envp) {
     movie->init(init_data->_width,init_data->_height);
   }
 
-  auto qtapp  = OrkEzApp::create(init_data);
-  auto qtwin  = qtapp->_mainWindow;
+  auto ezapp  = OrkEzApp::create(init_data);
+  auto qtwin  = ezapp->_mainWindow;
   auto gfxwin = qtwin->_gfxwin;
 
-  auto this_dir = qtapp->_orkidWorkspaceDir //
+  auto this_dir = ezapp->_orkidWorkspaceDir //
                   / "ork.ecs"               //
                   / "examples"              //
                   / "c++"                   //
@@ -82,7 +85,7 @@ int main(int argc, char** argv, char** envp) {
 
   fmtx4 xfmtx;
 
-  printf( "T2<%g>\n", timer.SecsSinceStart() );
+  logchan_editor->log( "T2<%g>", timer.SecsSinceStart() );
   //////////////////////////////////////////////////////////
 
   lev2::rtgroup_ptr_t outgroup;
@@ -115,7 +118,7 @@ int main(int argc, char** argv, char** envp) {
 
   float at_timestamp = 0.0f;
 
-  printf( "T3<%g>\n", timer.SecsSinceStart() );
+  logchan_editor->log( "T3<%g>", timer.SecsSinceStart() );
 
   //////////////////////////////////////////////////////////
   // create our simulation
@@ -133,8 +136,8 @@ int main(int argc, char** argv, char** envp) {
   //  at startup time
   //////////////////////////////////////////////////////////
 
-  qtapp->onGpuInit([&](Context* ctx) {
-   printf( "T4<%g>\n", timer.SecsSinceStart() );
+  ezapp->onGpuInit([&](Context* ctx) {
+   logchan_editor->log( "T4<%g>", timer.SecsSinceStart() );
     outgroup  = std::make_shared<RtGroup>(ctx, 100, 100, MsaaSamples::MSAA_1X);
     outbuffer = outgroup->createRenderTarget(EBufferFormat::RGBA32F);
     ecs_sg_sysdata->bindToRtGroup(outgroup);
@@ -170,10 +173,10 @@ int main(int argc, char** argv, char** envp) {
     controller->stopSimulation(); // stop simulation
   };
 
-  qtapp->onUpdateInit([&]() { 
-    printf( "T5<%g>\n", timer.SecsSinceStart() );
+  ezapp->onUpdateInit([&]() { 
+    logchan_editor->log( "T5<%g>", timer.SecsSinceStart() );
     START_SCENE();    
-  }); // qtapp->onUpdateInit([&]() {
+  }); // ezapp->onUpdateInit([&]() {
 
   //////////////////////////////////////////////////////////
   // update handler (called on update thread)
@@ -181,10 +184,9 @@ int main(int argc, char** argv, char** envp) {
   //  it will never be called after onUpdateExit() is invoked...
   //////////////////////////////////////////////////////////
 
-  qtapp->onUpdate([&](ui::updatedata_ptr_t updata) {
+  ezapp->onUpdate([&](ui::updatedata_ptr_t updata) {
     double dt      = updata->_dt;
     double abstime = updata->_abstime;
-
     ////////////////////////////////////////////////////////
     // handle transport
     ////////////////////////////////////////////////////////
@@ -230,7 +232,7 @@ int main(int argc, char** argv, char** envp) {
 
   auto sframe_ecs = std::make_shared<StandardCompositorFrame>();
 
-  qtapp->onDraw([&](ui::drawevent_constptr_t drwev) { //
+  ezapp->onDraw([&](ui::drawevent_constptr_t drwev) { //
     sframe_outer->_drawEvent = drwev;
     sframe_ecs->_drawEvent = drwev;
     ///////////////////////////////////////////////////////////////////////
@@ -242,7 +244,7 @@ int main(int argc, char** argv, char** envp) {
     auto context = drwev->GetTarget();
     context->beginFrame();
     controller->renderWithStandardCompositorFrame(sframe_ecs);
-
+    sframe_outer->attachDrawBufContext(sframe_ecs->_dbufcontextSFRAME);
     ///////////////////////////////////////////////////////////////////////
     sframe_outer->onImguiRender = [&](const AcquiredRenderDrawBuffer& rdb) {
       ImGuiStyle& style       = ImGui::GetStyle();
@@ -383,22 +385,22 @@ int main(int argc, char** argv, char** envp) {
         auto try_xfstate = ImGuizmo::shouldManipulate(v_array,p_array,m_array);
         switch (try_xfstate) {
           case ImGuizmo::TransformState::BEGIN:{
-            printf("BEGIN\n");
+            logchan_editor->log("BEGIN");
             _tempmatrix = (transform->composed());
             break;
           }
           case ImGuizmo::TransformState::TRANSFORMING: {
             // deco::prints(_testmatrix.dump4x3cn(), true);
-            // printf("transformed<%p>\n", manip_target.value().get() );
+            // logchan_editor->log("transformed<%p>", manip_target.value().get() );
             // transform->decompose(result);
-            printf("TRANSFORMING\n");
+            logchan_editor->log("TRANSFORMING");
             break;
           }
           case ImGuizmo::TransformState::END_APPLY:
-            printf("END_APPLY\n");
+            logchan_editor->log("END_APPLY");
             break;
           case ImGuizmo::TransformState::END_CANCEL:
-            printf("END_CANCEL\n");
+            logchan_editor->log("END_CANCEL");
             break;
           case ImGuizmo::TransformState::NONE:
             break;
@@ -460,15 +462,15 @@ int main(int argc, char** argv, char** envp) {
   // when resizing the app - we need to resize the entire rendering pipe
   //////////////////////////////////////////////////////////
 
-  qtapp->onResize([&](int w, int h) {});
+  ezapp->onResize([&](int w, int h) {});
 
   //////////////////////////////////////////////////////////
   // updateExit handler, called once on update thread
   //  at app exit, always called before onGpuExit()
   //////////////////////////////////////////////////////////
 
-  qtapp->onUpdateExit([&]() {
-    printf("ONUPDATEEXIT!\n");
+  ezapp->onUpdateExit([&]() {
+    logchan_editor->log("ONUPDATEEXIT!");
     controller->stopSimulation();
   });
 
@@ -477,8 +479,8 @@ int main(int argc, char** argv, char** envp) {
   //  at app exit, always called after onUpdateExit()
   //////////////////////////////////////////////////////////
 
-  qtapp->onGpuExit([&](Context* ctx) {
-    printf("ONGPUEXIT!\n");
+  ezapp->onGpuExit([&](Context* ctx) {
+    logchan_editor->log("ONGPUEXIT!");
     movie = nullptr; 
     controller->gpuExit(ctx); // clean up controller's GPU resources
     controller = nullptr;     // release controller
@@ -489,8 +491,8 @@ int main(int argc, char** argv, char** envp) {
   // main thread run loop
   //////////////////////////////////////////////////////////
 
-  qtapp->setRefreshPolicy({EREFRESH_FASTEST, -1});
-  return qtapp->mainThreadLoop();
+  ezapp->setRefreshPolicy({EREFRESH_FASTEST, -1});
+  return ezapp->mainThreadLoop();
 }
 
 #pragma GCC diagnostic pop

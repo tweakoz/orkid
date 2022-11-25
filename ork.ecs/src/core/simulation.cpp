@@ -19,12 +19,15 @@
 #include <ork/ecs/system.h>
 #include <ork/ecs/controller.h>
 #include <ork/ecs/scene.inl>
+#include <ork/util/logger.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template class ork::orklut<const ork::object::ObjectClass*, ork::ecs::System*>;
 
 namespace ork::ecs {
+
+static logchannel_ptr_t logchan_simulation = logger()->createChannel("ecs-simulation",fvec3(0.8,0.8,0));
 
 using namespace ::ork;
 using namespace ::ork::object;
@@ -35,7 +38,8 @@ using namespace ::ork::rtti;
 Simulation::Simulation(Controller* c)
     : _controller(c) {
 
-  _dbufctx = std::make_shared<lev2::DrawBufContext>();
+  _dbufctxSIM = std::make_shared<lev2::DrawBufContext>();
+  _dbufctxSIM->_name = "DBC.Simulation";
 
   ///////////////////////////////////////////////////////////
 
@@ -153,7 +157,7 @@ void Simulation::setCameraData(const std::string& name, lev2::cameradata_constpt
 
   lev2::UiCamera* pcam = (camdat != 0) ? camdat->getUiCamera() : 0;
 
-  // orkprintf( "Simulation::setCameraData() name<%s> camdat<%p> l2cam<%p>\n",
+  // logchan_simulation->log( "Simulation::setCameraData() name<%s> camdat<%p> l2cam<%p>\n",
   // name.c_str(), camdat, pcam );
 }
 
@@ -190,7 +194,7 @@ void Simulation::registerActivatedEntity(ecs::Entity* pent) {
     }
 
   } else {
-    orkprintf("WARNING, activating an already active entity <%p>\n", pent);
+    logchan_simulation->log("WARNING, activating an already active entity <%p>\n", pent);
   }
 }
 ///////////////////////////////////////////////////////////////////////////
@@ -206,9 +210,9 @@ void Simulation::registerDeactivatedEntity(ecs::Entity* pent) {
     PoolString parchname = (parch != 0) ? parch->GetName() : AddPooledLiteral("none");
     PoolString pentname  = pent->name();
 
-    orkprintf(
+    logchan_simulation->log(
         "uhoh, someone is deactivating an entity<%p:%s> of arch<%s> that "
-        "is not active!!!\n",
+        "is not active!!!",
         pent,
         pentname.c_str(),
         parchname.c_str());
@@ -364,6 +368,7 @@ void Simulation::addSystem(systemkey_t key, System* system) {
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::render(ui::drawevent_constptr_t drwev) {
+  OrkAssert(false);
   _currentdrwev = drwev;
   _renderThreadSM->update();
   _currentdrwev = nullptr;

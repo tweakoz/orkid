@@ -24,6 +24,13 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/unlit_node.h>
+///////////////////////////////////////////////////////////////////////////////
+#include <ork/lev2/imgui/imgui.h>
+#include <ork/lev2/imgui/imgui_impl_glfw.h>
+#include <ork/lev2/imgui/imgui_impl_opengl3.h>
+#include <ork/lev2/imgui/imgui_ged.inl>
+#include <ork/lev2/imgui/imgui_internal.h>
+///////////////////////////////////////////////////////////////////////////////
 
 using namespace std::string_literals;
 using namespace ork;
@@ -224,8 +231,10 @@ int main(int argc, char** argv, char** envp) {
 
   printf( "_msaa_samples<%d>\n", init_data->_msaa_samples );
   bool use_forward = vars["forward"].as<bool>();
-
-
+  //////////////////////////////////////////////////////////
+  init_data->_imgui = true;
+  init_data->_application_name = "ork.model3dpbr";
+  //////////////////////////////////////////////////////////
   auto qtapp  = OrkEzApp::create(init_data);
   std::shared_ptr<GpuResources> gpurec;
   //////////////////////////////////////////////////////////
@@ -240,9 +249,10 @@ int main(int argc, char** argv, char** envp) {
   ork::Timer timer;
   timer.Start();
   auto dbufcontext = std::make_shared<DrawBufContext>();
+  auto sframe = std::make_shared<StandardCompositorFrame>();
   qtapp->onUpdate([&](ui::updatedata_ptr_t updata) {
     double dt      = updata->_dt;
-    double abstime = updata->_abstime;
+    double abstime = updata->_abstime+dt+.016;
     ///////////////////////////////////////
     // compute camera data
     ///////////////////////////////////////

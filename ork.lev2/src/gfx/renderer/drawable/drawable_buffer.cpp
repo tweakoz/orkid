@@ -288,15 +288,22 @@ DrawBufContext::~DrawBufContext(){
 #if 1 // TRIPLE BUFFER
 
 DrawableBuffer* DrawBufContext::acquireForWriteLocked(){
-   return _triple->begin_push();
+   auto rval = _triple->begin_push();
+   printf( "dbufctx<%p:%s> acquireForWriteLocked<%p>\n", this, _name.c_str(), (void*) rval );
+   _triple->dump();
+   return rval;
 }
 void DrawBufContext::releaseFromWriteLocked(DrawableBuffer* db){
+   printf( "dbufctx<%p:%s> releaseFromWriteLocked<%p>\n", this, _name.c_str(), (void*) db );
    _triple->end_push(db);;
 }
 const DrawableBuffer* DrawBufContext::acquireForReadLocked(){
-   return _triple->begin_pull();
+   auto rval = _triple->begin_pull();
+   printf( "dbufctx<%p:%s> acquireForReadLocked<%p>\n", this, _name.c_str(), (void*) rval );
+   return rval;
 }
 void DrawBufContext::releaseFromReadLocked(const DrawableBuffer* db){
+   printf( "dbufctx<%p:%s> releaseFromReadLocked<%p>\n", this, _name.c_str(), (void*) db );
    _triple->end_pull(db);;
 }
 #else // MUTEX/GATE

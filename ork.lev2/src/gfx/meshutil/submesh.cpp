@@ -10,10 +10,12 @@
 #include <ork/lev2/gfx/meshutil/submesh.h>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
+#include<ork/util/logger.h>
 
 template class ork::orklut<std::string, ork::meshutil::submesh_ptr_t>;
 
 namespace ork::meshutil {
+static logchannel_ptr_t logchan_submesh = logger()->createChannel("meshutil.submesh",fvec3(.9,.9,1));
 
 const vertexpool vertexpool::EmptyPool;
 
@@ -353,10 +355,10 @@ void submesh::MergeSubMesh(const submesh& inp_mesh) {
     NewPoly.SetAnnoMap(ply.GetAnnoMap());
     MergePoly(NewPoly);
   }
-  orkprintf("inumpingroup<%d> numoutpolys<%d>\n", inumpingroup, GetNumPolys() );
+  logchan_submesh->log("inumpingroup<%d> numoutpolys<%d>", inumpingroup, GetNumPolys() );
   float ftimeB = float(OldSchool::GetRef().GetLoResTime());
   float ftime  = (ftimeB - ftimeA);
-  orkprintf("<<PROFILE>> <<submesh::MergeSubMesh %f seconds>>\n", ftime);
+  logchan_submesh->log("<<PROFILE>> <<submesh::MergeSubMesh %f seconds>>", ftime);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void submesh::MergePoly(const poly& ply) {
@@ -371,8 +373,8 @@ void submesh::MergePoly(const poly& ply) {
       if ((ply._vertices[0]->_poolindex == ply._vertices[1]->_poolindex) ||
           (ply._vertices[1]->_poolindex == ply._vertices[2]->_poolindex) ||
           (ply._vertices[2]->_poolindex == ply._vertices[0]->_poolindex)) {
-        orkprintf(
-            "Mesh::MergePoly() removing zero area tri<%d %d %d>\n",
+        logchan_submesh->log(
+            "Mesh::MergePoly() removing zero area tri<%d %d %d>",
             ply._vertices[0]->_poolindex,
             ply._vertices[1]->_poolindex,
             ply._vertices[2]->_poolindex);
@@ -388,8 +390,8 @@ void submesh::MergePoly(const poly& ply) {
           (ply._vertices[1]->_poolindex == ply._vertices[2]->_poolindex) ||
           (ply._vertices[1]->_poolindex == ply._vertices[3]->_poolindex) ||
           (ply._vertices[2]->_poolindex == ply._vertices[3]->_poolindex)) {
-        orkprintf(
-            "Mesh::MergePoly() removing zero area quad<%d %d %d %d>\n",
+        logchan_submesh->log(
+            "Mesh::MergePoly() removing zero area quad<%d %d %d %d>",
             ply._vertices[0]->_poolindex,
             ply._vertices[1]->_poolindex,
             ply._vertices[2]->_poolindex,

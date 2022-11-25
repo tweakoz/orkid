@@ -9,6 +9,7 @@
 #include <ork/lev2/imgui/imgui_impl_opengl3.h>
 #include <boost/program_options.hpp>
 #include <ork/kernel/environment.h>
+#include <ork/util/logger.h>
 
 using namespace std::string_literals; 
 
@@ -24,6 +25,9 @@ void ClassInit();
 void GfxInit(const std::string& gfxlayer);
 constexpr uint64_t KAPPSTATEFLAG_UPDRUNNING = 1 << 0;
 constexpr uint64_t KAPPSTATEFLAG_JOINED     = 1 << 1;
+
+static logchannel_ptr_t logchan_ezapp = logger()->createChannel("ezapp",fvec3(0.7,0.7,0.9));
+
 ////////////////////////////////////////////////////////////////////////////////
 ezappctx_ptr_t EzAppContext::get(appinitdata_ptr_t initdata) {
   if(nullptr==initdata){
@@ -77,7 +81,7 @@ orkezapp_ptr_t OrkEzApp::create(appinitdata_ptr_t initdata) {
     if( env.get("HOME", home_out ) ) {
       auto base = file::Path(home_out);
       imgui_ini_path = base / FormatString(".%s-imgui.ini",initdata->_application_name.c_str());
-      printf( "imgui_ini_path<%s>\n", imgui_ini_path.c_str() );
+      logchan_ezapp->log( "imgui_ini_path<%s>", imgui_ini_path.c_str() );
     }
     else{
       OrkAssert(false); // HOME not set ???
@@ -181,7 +185,7 @@ void EzViewport::DoDraw(ui::drawevent_constptr_t drwev) {
   _mainwin->_render_stats_timeaccum += raw_delta;
   if (_mainwin->_render_stats_timeaccum >= 5.0) {
     double FPS = _mainwin->_render_state_numiters / _mainwin->_render_stats_timeaccum;
-    printf("FPS<%g>\n", FPS);
+    logchan_ezapp->log("FPS<%g>", FPS);
     _mainwin->_render_stats_timeaccum = 0.0;
     _mainwin->_render_state_numiters  = 0.0;
   } else {
@@ -430,12 +434,14 @@ int OrkEzApp::mainThreadLoop() {
 
     ////////////////////////////////////////
 
+
+
     while (not checkAppState(KAPPSTATEFLAG_JOINED)) {
       double this_time = _update_timer.SecsSinceStart();
       double raw_delta = this_time - _update_prevtime;
       _update_prevtime = this_time;
       _update_timeaccumulator += raw_delta;
-      double step = 1.0 / 120.0;
+      double step = 1.0 / 480.0;
 
       while (_update_timeaccumulator >= step) {
 
@@ -462,13 +468,14 @@ int OrkEzApp::mainThreadLoop() {
         _update_timeaccumulator -= step;
         stats_timeaccum += step;
         if (stats_timeaccum >= 5.0) {
-          printf("UPS<%g>\n", state_numiters / stats_timeaccum);
+
+          logchan_ezapp->log("UPS<%g>", state_numiters / stats_timeaccum);
           stats_timeaccum = 0.0;
           state_numiters  = 0.0;
         }
       }
       opq::updateSerialQueue()->Process();
-      usleep(10);
+      usleep(100);
       sched_yield();
     } // while (not checkAppState(KAPPSTATEFLAG_JOINED)) {
 

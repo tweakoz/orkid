@@ -9,8 +9,11 @@
 #include <ork/kernel/orklut.hpp>
 #include <ork/math/plane.h>
 #include <ork/lev2/gfx/meshutil/meshutil.h>
+#include <ork/util/logger.h>
 
 namespace ork { namespace meshutil {
+
+static logchannel_ptr_t logchan_meshutil = logger()->createChannel("meshutil",fvec3(1,.9,1));
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -331,12 +334,12 @@ FlatSubMesh::FlatSubMesh( const AssetPath& from_path, lev2::rendervar_strmap_t a
   Mesh mesh;
   mesh.readFromAssimp(from_path);
   const auto& submeshes = mesh.RefSubMeshLut();
-  printf( "found submeshcount<%d>\n", int(submeshes.size()));
+  logchan_meshutil->log( "found submeshcount<%d>", int(submeshes.size()));
 
   auto out_submesh = std::make_shared<submesh>();
   for( auto item : submeshes ){
     auto groupname = item.first;
-    printf( "merging submesh<%s>\n", groupname.c_str() );
+    logchan_meshutil->log( "merging submesh<%s>", groupname.c_str() );
     out_submesh->MergeSubMesh(*item.second);
   }
   fromSubmesh(*out_submesh);

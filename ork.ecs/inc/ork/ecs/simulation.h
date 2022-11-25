@@ -126,7 +126,7 @@ struct Simulation {
   impl::sys_response_ptr_t _findSystemResponseFromRef(response_ref_t ref);
   impl::comp_response_ptr_t _findComponentResponseFromRef(response_ref_t ref);
 
-  lev2::dbufcontext_ptr_t dbufcontext() { return _dbufctx; }
+  lev2::dbufcontext_ptr_t dbufcontext() { return _dbufctxSIM; }
 
   void debugBanner( int r, int g, int b, const char* formatstring, ... );
 
@@ -293,7 +293,7 @@ private:
   bool _needsGpuExit = false;
   bool _waitingForRLock = false;
 
-  lev2::dbufcontext_ptr_t _dbufctx;
+  lev2::dbufcontext_ptr_t _dbufctxSIM;
 
   using destructables_vect_t = std::vector<svar64_t>;
 

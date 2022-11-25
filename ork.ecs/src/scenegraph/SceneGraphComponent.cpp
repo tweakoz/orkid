@@ -20,9 +20,12 @@
 #include <ork/ecs/datatable.h>
 
 #include "../core/message_private.h"
+#include <ork/util/logger.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ecs {
+///////////////////////////////////////////////////////////////////////////////
+static logchannel_ptr_t logchan_sgcomp = logger()->createChannel("ecs.sgcomp",fvec3(0.9,0.7,0));
 ///////////////////////////////////////////////////////////////////////////////
 using namespace ork;
 using namespace ork::object;
@@ -364,7 +367,7 @@ void SceneGraphSystem::_onGpuInit(Simulation* sim, lev2::Context* ctx) { // fina
     _scene->_staticDrawables.push_back(item);
   }
 
-  _scene->_dbufcontext = sim->dbufcontext();
+  _scene->_dbufcontext_SG = sim->dbufcontext();
 
   _scene->gpuInit(ctx);
 
@@ -405,6 +408,7 @@ void SceneGraphSystem::_onStageComponent(SceneGraphComponent* component) {
   });
   //////////////////////////////
   auto setdrw_op = [=]() {
+
     auto& COMPDATA = component->_SGCD;
     for (auto NID_item : COMPDATA._nodedatas) {
       auto NID     = NID_item.second;
@@ -595,6 +599,7 @@ void SceneGraphSystem::_onDeactivate(Simulation* inst) // final
 }
 void SceneGraphSystem::_onUpdate(Simulation* psi) // final
 {
+  //logchan_sgcomp->log("SceneGraphSystem<%p>::update", this );
   if (_scene) {
     _scene->enqueueToRenderer(_camlut);
   }

@@ -4,9 +4,12 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include "assimp_util.inl"
+#include<ork/util/logger.h>
+
 namespace bfs = boost::filesystem;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::meshutil {
+static logchannel_ptr_t logchan_meshutilassimp = logger()->createChannel("meshutil.assimp",fvec3(1,.9,.9));
 ///////////////////////////////////////////////////////////////////////////////
 typedef std::set<std::string> bonemarkset_t;
 ///////////////////////////////////////////////////////////////////////////////
@@ -21,15 +24,15 @@ void Mesh::readFromAssimp(const file::Path& BasePath) {
   auto dblock                                                  = datablockFromFileAtPath(GlbPath);
   dblock->_vars->makeValueForKey<std::string>("file-extension") = GlbPath.GetExtension().c_str();
   dblock->_vars->makeValueForKey<bfs::path>("base-directory")   = base_dir;
-  //printf("BEGIN: importing<%s> via Assimp\n", GlbPath.c_str());
+  //logchan_meshutilassimp->log("BEGIN: importing<%s> via Assimp\n", GlbPath.c_str());
   readFromAssimp(dblock);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Mesh::readFromAssimp(datablock_ptr_t datablock) {
   auto& extension = datablock->_vars->typedValueForKey<std::string>("file-extension").value();
-  //printf("BEGIN: importing scene from datablock length<%zu> extension<%s>\n", datablock->length(), extension.c_str());
+  //logchan_meshutilassimp->log("BEGIN: importing scene from datablock length<%zu> extension<%s>\n", datablock->length(), extension.c_str());
   auto scene = aiImportFileFromMemory((const char*)datablock->data(), datablock->length(), assimpImportFlags(), extension.c_str());
-  //printf("END: importing scene<%p>\n", (void*) scene);
+  //logchan_meshutilassimp->log("END: importing scene<%p>\n", (void*) scene);
   if (scene) {
     auto& embtexmap = _varmap->makeValueForKey<lev2::embtexmap_t>("embtexmap");
     aiVector3D scene_min, scene_max, scene_center;
@@ -50,7 +53,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
     // parse embedded textures
     //////////////////////////////////////////////
 
-    //printf("NumTex<%d>\n", scene->mNumTextures);
+    //logchan_meshutilassimp->log("NumTex<%d>\n", scene->mNumTextures);
 
     for (int i = 0; i < scene->mNumTextures; i++) {
       auto texture        = scene->mTextures[i];
@@ -76,7 +79,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
         embtex->_name       = texname;
       } else {
 
-        //printf("texpath<%s>\n", texname.c_str());
+        //logchan_meshutilassimp->log("texpath<%s>\n", texname.c_str());
         OrkAssert(false);
       }
 
@@ -107,10 +110,10 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
       } else {
         // find by path
         auto base_dir = datablock->_vars->typedValueForKey<bfs::path>("base-directory").value();
-        //printf("base_dir<%s> texname<%s>\n", base_dir.c_str(), texname.c_str());
+        //logchan_meshutilassimp->log("base_dir<%s> texname<%s>\n", base_dir.c_str(), texname.c_str());
         auto tex_path = base_dir / texname;
         auto tex_ext  = std::string(tex_path.extension().c_str());
-        //printf("texpath<%s> tex_ext<%s>\n", tex_path.c_str(), tex_ext.c_str());
+        //logchan_meshutilassimp->log("texpath<%s> tex_ext<%s>\n", tex_path.c_str(), tex_ext.c_str());
         if (boost::filesystem::exists(tex_path) and boost::filesystem::is_regular_file(tex_path)) {
           ork::file::Path as_ork_path;
           as_ork_path.fromBFS(tex_path);
@@ -118,7 +121,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
           texfile.OpenFile(as_ork_path, ork::EFM_READ);
           size_t length = 0;
           texfile.GetLength(length);
-          //printf("texlen<%zu>\n", length);
+          //logchan_meshutilassimp->log("texlen<%zu>\n", length);
 
           if (tex_ext == ".jpg" or tex_ext == ".jpeg" or tex_ext == ".png" or tex_ext == ".tga") {
 
@@ -147,7 +150,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
       return rval;
     };
 
-    //printf("/////////////////////////////////////////////////////////////////\n");
+    //logchan_meshutilassimp->log("/////////////////////////////////////////////////////////////////\n");
 
     //////////////////////////////////////////////
 
@@ -167,59 +170,59 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
       if (AI_SUCCESS == aiGetMaterialString(material, AI_MATKEY_NAME, &string)) {
         material_name = (const char*)string.data;
         outmtl->_name = material_name;
-        printf("has name<%s>\n", material_name.c_str());
+        logchan_meshutilassimp->log("has name<%s>", material_name.c_str());
       }
       if (AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_DIFFUSE, &color)) {
         outmtl->_baseColor = fvec4(color.r, color.g, color.b, color.a);
-        //printf("has_uniform_diffuse<%f %f %f %f>\n", color.r, color.g, color.b, color.a);
+        //logchan_meshutilassimp->log("has_uniform_diffuse<%f %f %f %f>\n", color.r, color.g, color.b, color.a);
       }
       if (AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_SPECULAR, &color)) {
-        //printf("has_uniform_specular<%f %f %f %f>\n", color.r, color.g, color.b, color.a);
+        //logchan_meshutilassimp->log("has_uniform_specular<%f %f %f %f>\n", color.r, color.g, color.b, color.a);
       }
       if (AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_AMBIENT, &color)) {
-        //printf("has_uniform_ambient\n");
+        //logchan_meshutilassimp->log("has_uniform_ambient\n");
       }
       if (AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_EMISSIVE, &color)) {
-        //printf("has_uniform_emissive\n");
+        //logchan_meshutilassimp->log("has_uniform_emissive\n");
       }
       if (AI_SUCCESS == aiGetMaterialFloat(material, AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLIC_FACTOR, &f)) {
         outmtl->_metallicFactor = f;
-        //printf("has_pbr_MetallicFactor<%g>\n", f);
+        //logchan_meshutilassimp->log("has_pbr_MetallicFactor<%g>\n", f);
       }
       if (AI_SUCCESS == aiGetMaterialFloat(material, AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_ROUGHNESS_FACTOR, &f)) {
         outmtl->_roughnessFactor = f;
-        //printf("has_pbr_RoughnessFactor<%g>\n", f);
+        //logchan_meshutilassimp->log("has_pbr_RoughnessFactor<%g>\n", f);
       }
       if (AI_SUCCESS == material->GetTexture(aiTextureType_DIFFUSE, 0, &string, NULL, NULL, NULL, NULL, NULL)) {
         outmtl->_colormap = (const char*)string.data;
         auto tex          = find_texture(outmtl->_colormap, lev2::ETEXUSAGE_COLOR);
-        //printf("has_pbr_colormap<%s> tex<%p>\n", outmtl->_colormap.c_str(), (void*) tex);
+        //logchan_meshutilassimp->log("has_pbr_colormap<%s> tex<%p>\n", outmtl->_colormap.c_str(), (void*) tex);
       }
       if (AI_SUCCESS == aiGetMaterialTexture(material, AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &string)) {
         outmtl->_metallicAndRoughnessMap = (const char*)string.data;
         auto tex                         = find_texture(outmtl->_metallicAndRoughnessMap, lev2::ETEXUSAGE_COLOR);
-        //printf("has_pbr_MetallicAndRoughnessMap<%s> tex<%p>\n", outmtl->_metallicAndRoughnessMap.c_str(), (void*) tex);
+        //logchan_meshutilassimp->log("has_pbr_MetallicAndRoughnessMap<%s> tex<%p>\n", outmtl->_metallicAndRoughnessMap.c_str(), (void*) tex);
       }
 
       if (AI_SUCCESS == material->GetTexture(aiTextureType_NORMALS, 0, &string, NULL, NULL, NULL, NULL, NULL)) {
         outmtl->_normalmap = (const char*)string.data;
         auto tex           = find_texture(outmtl->_normalmap, lev2::ETEXUSAGE_NORMAL);
-        //printf("has_pbr_normalmap<%s> tex<%p>\n", outmtl->_normalmap.c_str(), (void*) tex);
+        //logchan_meshutilassimp->log("has_pbr_normalmap<%s> tex<%p>\n", outmtl->_normalmap.c_str(), (void*) tex);
       }
       if (AI_SUCCESS == material->GetTexture(aiTextureType_AMBIENT, 0, &string, NULL, NULL, NULL, NULL, NULL)) {
         outmtl->_amboccmap = (const char*)string.data;
         auto tex           = find_texture(outmtl->_amboccmap, lev2::ETEXUSAGE_GREYSCALE);
-        //printf("has_pbr_amboccmap<%s> tex<%p>", outmtl->_amboccmap.c_str(), (void*) tex);
+        //logchan_meshutilassimp->log("has_pbr_amboccmap<%s> tex<%p>", outmtl->_amboccmap.c_str(), (void*) tex);
       }
       if (AI_SUCCESS == material->GetTexture(aiTextureType_EMISSIVE, 0, &string, NULL, NULL, NULL, NULL, NULL)) {
         outmtl->_emissivemap = (const char*)string.data;
         auto tex             = find_texture(outmtl->_emissivemap, lev2::ETEXUSAGE_GREYSCALE);
-        printf("has_pbr_emissivemap<%s> tex<%p> \n", outmtl->_emissivemap.c_str(), (void*) tex);
+        logchan_meshutilassimp->log("has_pbr_emissivemap<%s> tex<%p>", outmtl->_emissivemap.c_str(), (void*) tex);
       }
-      //printf("\n");
+      //logchan_meshutilassimp->log("\n");
     }
 
-    //printf("/////////////////////////////////////////////////////////////////\n");
+    //logchan_meshutilassimp->log("/////////////////////////////////////////////////////////////////\n");
 
     //////////////////////////////////////////////
 
@@ -237,7 +240,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
     // count, visit dagnodes
     //////////////////////////////////////////////
 
-    //printf("/////////////////////////////////////////////////////////////////\n");
+    //logchan_meshutilassimp->log("/////////////////////////////////////////////////////////////////\n");
 
     //////////////////////////////////////////////
     // visit meshes, marking dagnodes as bones and fetching joint matrices
@@ -322,7 +325,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
     // parse nodes
     //////////////////////////////////////////////
 
-    //printf("parsing nodes for meshdata\n");
+    //logchan_meshutilassimp->log("parsing nodes for meshdata\n");
 
     while (not nodestack.empty()) {
 
@@ -337,7 +340,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
       auto it_nod_skelnode                 = xgmskelnodes.find(nren);
       ork::lev2::XgmSkelNode* nod_skelnode = (it_nod_skelnode != xgmskelnodes.end()) ? it_nod_skelnode->second : nullptr;
 
-      //printf("xgmnode<%p:%s>\n", (void*) nod_skelnode, nod_skelnode->_name.c_str());
+      //logchan_meshutilassimp->log("xgmnode<%p:%s>\n", (void*) nod_skelnode, nod_skelnode->_name.c_str());
       // auto ppar_skelnode = nod_skelnode->_parent;
       std::string name = nod_skelnode->_name;
       auto nodematrix  = nod_skelnode->_nodeMatrix;
@@ -357,7 +360,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
       fmtx4 ork_model_mtx;
       fmtx3 ork_normal_mtx;
       if (false == is_skinned) {
-        //deco::printf(fvec3(1, 0, 0), "/////////////////////////////\n");
+        //deco::logchan_meshutilassimp->log(fvec3(1, 0, 0), "/////////////////////////////\n");
         std::deque<aiNode*> nodehier;
         bool done = false;
         auto walk = n;
@@ -365,7 +368,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
           nodehier.push_back(n);
           fmtx4 test = convertMatrix44(walk->mTransformation);
           //auto test_str = test.dump4x3cn();
-          //printf("NODE<%s> : %s\n", walk->mName.data, test_str.c_str() );
+          //logchan_meshutilassimp->log("NODE<%s> : %s\n", walk->mName.data, test_str.c_str() );
           walk = walk->mParent;
           done = (walk == nullptr);
         }
@@ -375,10 +378,10 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
 
         ork_model_mtx = convertMatrix44(n->mTransformation);
         //auto test_str = ork_model_mtx.dump4x3cn();
-        //printf("NODE<%s> : %s\n", n->mName.data, test_str.c_str() );
+        //logchan_meshutilassimp->log("NODE<%s> : %s\n", n->mName.data, test_str.c_str() );
         // ork_model_mtx  = ork_model_mtx.dump(n->mName.data);
         ork_normal_mtx = ork_model_mtx.rotMatrix33();
-        //deco::printf(fvec3(1, 0, 0), "/////////////////////////////\n");
+        //deco::logchan_meshutilassimp->log(fvec3(1, 0, 0), "/////////////////////////////\n");
       }
 
       //////////////////////////////////////////////
@@ -412,7 +415,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
         auto& mtlref = out_submesh.typedAnnotation<GltfMaterial*>("gltfmaterial");
         mtlref       = outmtl;
         ork::meshutil::vertex muverts[4];
-        printf("processing numfaces<%d> %s\n", mesh->mNumFaces, outmtl->_name.c_str() );
+        logchan_meshutilassimp->log("processing numfaces<%d> %s", mesh->mNumFaces, outmtl->_name.c_str() );
         for (int t = 0; t < mesh->mNumFaces; ++t) {
           const aiFace* face = &mesh->mFaces[t];
           bool is_triangle   = (face->mNumIndices == 3);
@@ -431,8 +434,8 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
 
               _vertexExtents.Grow(muvtx.mPos);
 
-              // printf("v<%g %g %g>\n", v.x, v.y, v.z);
-              // printf("norm<%g %g %g>\n", muvtx.mNrm.x, muvtx.mNrm.y, muvtx.mNrm.z);
+              // logchan_meshutilassimp->log("v<%g %g %g>\n", v.x, v.y, v.z);
+              // logchan_meshutilassimp->log("norm<%g %g %g>\n", muvtx.mNrm.x, muvtx.mNrm.y, muvtx.mNrm.z);
               if (has_colors)
                 muvtx.mCol[0] = fvec4(1, 1, 1, 1);
               if (has_uvs) {
@@ -450,7 +453,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
                   auto influences = itw->second;
                   int numinf      = influences->_items.size();
                   OrkAssert(numinf > 0);
-                  // printf("vertex<%d> raw_numweights<%d>\n", index, numinf);
+                  // logchan_meshutilassimp->log("vertex<%d> raw_numweights<%d>\n", index, numinf);
                   ///////////////////////////////////////////////////
                   // prune to no more than 4 weights
                   ///////////////////////////////////////////////////
@@ -469,7 +472,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
                       auto pr      = std::make_pair(1.0f - fw, xgminfl);
                       largestWeightMap.insert(pr);
                     }
-                    // printf(" inf<%d> bone<%s> weight<%g>\n", inf, remapped.c_str(), fw);
+                    // logchan_meshutilassimp->log(" inf<%d> bone<%s> weight<%g>\n", inf, remapped.c_str(), fw);
                   }
                   int icount      = 0;
                   float totweight = 0.0f;
@@ -494,12 +497,12 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
                       ++icount;
                     }
                   }
-                  // printf("newtotweight<%f>\n", newtotweight);
+                  // logchan_meshutilassimp->log("newtotweight<%f>\n", newtotweight);
                   float fwtest = fabs(1.0f - newtotweight);
                   if (fwtest >= 0.001f) // ensure within tolerable error limit
                   {
-                    printf(
-                        "WARNING weight pruning tolerance: vertex<%d> fwtest<%f> icount<%d> prunedWeightMapSize<%zu>\n",
+                    logchan_meshutilassimp->log(
+                        "WARNING weight pruning tolerance: vertex<%d> fwtest<%f> icount<%d> prunedWeightMapSize<%zu>",
                         index,
                         fwtest,
                         icount,
@@ -532,15 +535,15 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
                     OrkAssert(w <= 1.0f);
                     muvtx.mJointNames[windex]   = it->second;
                     muvtx.mJointWeights[windex] = w;
-                    // printf("inf<%s:%g> ", it->second.c_str(), w);
+                    // logchan_meshutilassimp->log("inf<%s:%g> ", it->second.c_str(), w);
                     totw += w;
                     windex++;
                   }
-                  // printf("numw<%d> totw<%g>\n", muvtx.miNumWeights, totw);
+                  // logchan_meshutilassimp->log("numw<%d> totw<%g>\n", muvtx.miNumWeights, totw);
                   fwtest = fabs(1.0f - totw);
                   if (fwtest >= 0.01f) { // ensure within tolerable error limit
                     OrkAssert(false);
-                    // printf( "\n");
+                    // logchan_meshutilassimp->log( "\n");
                   }
                 }
               }
@@ -552,19 +555,19 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
             ork::meshutil::poly ply(outvtx, 3);
             out_submesh.MergePoly(ply);
           } else {
-            printf("non triangle\n");
+            logchan_meshutilassimp->log("non triangle");
           }
         }
-        // printf("  done processing numfaces<%d> ..\n", mesh->mNumFaces);
+        // logchan_meshutilassimp->log("  done processing numfaces<%d> ..\n", mesh->mNumFaces);
         /////////////////////////////////////////////
         // stats
         /////////////////////////////////////////////
         // int meshout_numtris = out_submesh.GetNumPolys(3);
         // int meshout_numquads = out_submesh.GetNumPolys(4);
         // int meshout_numverts = out_submesh.RefVertexPool().GetNumVertices();
-        // printf( "meshout_numtris<%d>\n", meshout_numtris );
-        // printf( "meshout_numquads<%d>\n", meshout_numquads );
-        // printf( "meshout_numverts<%d>\n", meshout_numverts );
+        // logchan_meshutilassimp->log( "meshout_numtris<%d>\n", meshout_numtris );
+        // logchan_meshutilassimp->log( "meshout_numquads<%d>\n", meshout_numquads );
+        // logchan_meshutilassimp->log( "meshout_numverts<%d>\n", meshout_numverts );
         /////////////////////////////////////////////
       }
 
@@ -582,8 +585,8 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
         nodestack.push(child);
       }
     }
-    // printf("done parsing nodes for meshdata\n");
-    //printf("/////////////////////////////////////////////////////////////////\n");
+    // logchan_meshutilassimp->log("done parsing nodes for meshdata\n");
+    //logchan_meshutilassimp->log("/////////////////////////////////////////////////////////////////\n");
 
     // is_skinned = false; // not yet
     (*_varmap)["is_skinned"].set<bool>(is_skinned);
@@ -601,7 +604,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
     //////////////////////////////////////////////
   } // if(scene)
 
-  //printf("DONE: readFromAssimp\n");
+  //logchan_meshutilassimp->log("DONE: readFromAssimp\n");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -612,7 +615,7 @@ void configureXgmSkeleton(const ork::meshutil::Mesh& input, lev2::XgmModel& xgmm
 
   const auto& xgmskelnodes = parsedskel->_xgmskelmap;
 
-  //printf("NumSkelNodes<%d>\n", int(xgmskelnodes.size()));
+  //logchan_meshutilassimp->log("NumSkelNodes<%d>\n", int(xgmskelnodes.size()));
   xgmmdlout.SetSkinned(true);
   auto& xgmskel = xgmmdlout.skeleton();
   xgmskel.resize(xgmskelnodes.size());
@@ -622,7 +625,7 @@ void configureXgmSkeleton(const ork::meshutil::Mesh& input, lev2::XgmModel& xgmm
     auto parskelnode             = skelnode->_parent;
     int idx                      = skelnode->miSkelIndex;
     int pidx                     = parskelnode ? parskelnode->miSkelIndex : -1;
-    //printf("JointName<%s> skelnode<%p> parskelnode<%p> idx<%d> pidx<%d>\n", JointName.c_str(), (void*) skelnode, (void*) parskelnode, idx, pidx);
+    //logchan_meshutilassimp->log("JointName<%s> skelnode<%p> parskelnode<%p> idx<%d> pidx<%d>\n", JointName.c_str(), (void*) skelnode, (void*) parskelnode, idx, pidx);
 
     PoolString JointNameSidx = AddPooledString(JointName.c_str());
     xgmskel.AddJoint(idx, pidx, JointNameSidx);
@@ -634,7 +637,7 @@ void configureXgmSkeleton(const ork::meshutil::Mesh& input, lev2::XgmModel& xgmm
   // flatten the skeleton (WIP)
   /////////////////////////////////////
 
-  //printf("Flatten Skeleton\n");
+  //logchan_meshutilassimp->log("Flatten Skeleton\n");
   const auto& bonemarkset = (*input._varmap)["bonemarkset"].get<bonemarkset_t>();
 
   auto root          = parsedskel->rootXgmSkelNode();
@@ -646,10 +649,10 @@ void configureXgmSkeleton(const ork::meshutil::Mesh& input, lev2::XgmModel& xgmm
         bool ignore = (parent->_numBoundVertices == 0);
         ignore      = ignore and (node->_numBoundVertices == 0);
         if (ignore){
-          //printf("IGNORE<%s>\n", node->_name.c_str());
+          //logchan_meshutilassimp->log("IGNORE<%s>\n", node->_name.c_str());
         }
         else {
-          //printf("ADD<%s>\n", node->_name.c_str());
+          //logchan_meshutilassimp->log("ADD<%s>\n", node->_name.c_str());
           int iparentindex   = parent->miSkelIndex;
           int ichildindex    = node->miSkelIndex;
           lev2::XgmBone Bone = {iparentindex, ichildindex};
@@ -660,7 +663,7 @@ void configureXgmSkeleton(const ork::meshutil::Mesh& input, lev2::XgmModel& xgmm
     // xgmskel.dump();
   }
 
-  //printf("skeleton configuration complete..\n");
+  //logchan_meshutilassimp->log("skeleton configuration complete..\n");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -668,7 +671,7 @@ void configureXgmSkeleton(const ork::meshutil::Mesh& input, lev2::XgmModel& xgmm
 template <typename ClusterizerType>
 void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2::XgmModel& out_model) {
 
-  // printf("BEGIN: clusterizing model\n");
+  // logchan_meshutilassimp->log("BEGIN: clusterizing model\n");
   bool is_skinned = false;
   if (auto as_bool = inp_model._varmap->valueForKey("is_skinned").tryAs<bool>()) {
     is_skinned = as_bool.value();
@@ -701,7 +704,7 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
 
   int subindex = 0;
   for (auto item : inp_model.RefSubMeshLut()) {
-    // printf("BEGIN: clusterizing submesh<%d>\n", subindex);
+    // logchan_meshutilassimp->log("BEGIN: clusterizing submesh<%d>\n", subindex);
     subindex++;
     auto inp_submesh = item.second;
     auto& mtlset     = inp_submesh->typedAnnotation<std::set<int>>("materialset");
@@ -759,7 +762,7 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
     mtlsubmap[gltfmtl].push_back(srec);
 
     ///////////////////////////////////////
-    // printf("END: clusterizing submesh<%d>\n", subindex);
+    // logchan_meshutilassimp->log("END: clusterizing submesh<%d>\n", subindex);
   }
 
   //////////////////////////////////////////////////////////////////
@@ -776,7 +779,7 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
   out_mesh->ReserveSubMeshes(count_subs);
   subindex = 0;
 
-  //printf("generating %d submeshes\n", (int)count_subs);
+  //logchan_meshutilassimp->log("generating %d submeshes\n", (int)count_subs);
 
   for (auto item : mtlsubmap) {
     GltfMaterial* gltfm = item.first;
@@ -799,12 +802,12 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
         auto xgm_cluster = std::make_shared<lev2::XgmCluster>();
         xgm_submesh->_clusters.push_back(xgm_cluster);
 
-        // printf("building tristrip cluster<%d>\n", icluster);
+        // logchan_meshutilassimp->log("building tristrip cluster<%d>\n", icluster);
 
         buildXgmCluster(DummyTarget, xgm_cluster, clusterbuilder,true);
 
         const int imaxvtx = xgm_cluster->_vertexBuffer->GetNumVertices();
-        //printf("xgm_cluster->_vertexBuffer<%p> imaxvtx<%d>\n", (void*) xgm_cluster->_vertexBuffer.get(), imaxvtx);
+        //logchan_meshutilassimp->log("xgm_cluster->_vertexBuffer<%p> imaxvtx<%d>\n", (void*) xgm_cluster->_vertexBuffer.get(), imaxvtx);
         // OrkAssert(false);
         // int inumclusjoints = XgmClus.mJoints.size();
         // for( int ib=0; ib<inumclusjoints; ib++ )
@@ -832,7 +835,7 @@ datablock_ptr_t assimpToXgm(datablock_ptr_t inp_datablock) {
     if (is_skinned)
       configureXgmSkeleton(tmesh, xgmmdlout);
   }
-  //printf("clusterizing..\n");
+  //logchan_meshutilassimp->log("clusterizing..\n");
   clusterizeToolMeshToXgmMesh<ork::meshutil::XgmClusterizerStd>(tmesh, xgmmdlout);
 
   auto vmin = tmesh._vertexExtents.Min();
@@ -840,10 +843,10 @@ datablock_ptr_t assimpToXgm(datablock_ptr_t inp_datablock) {
   auto smin = tmesh._skeletonExtents.Min();
   auto smax = tmesh._skeletonExtents.Max();
 
-  //deco::printf(fvec3::White(), "vtxext min<%g %g %g>\n", vmin.x, vmin.y, vmin.z);
-  //deco::printf(fvec3::White(), "vtxext max<%g %g %g>\n", vmax.x, vmax.y, vmax.z);
-  //deco::printf(fvec3::Yellow(), "sklext min<%g %g %g>\n", smin.x, smin.y, smin.z);
-  //deco::printf(fvec3::Yellow(), "sklext max<%g %g %g>\n", smax.x, smax.y, smax.z);
+  //deco::logchan_meshutilassimp->log(fvec3::White(), "vtxext min<%g %g %g>\n", vmin.x, vmin.y, vmin.z);
+  //deco::logchan_meshutilassimp->log(fvec3::White(), "vtxext max<%g %g %g>\n", vmax.x, vmax.y, vmax.z);
+  //deco::logchan_meshutilassimp->log(fvec3::Yellow(), "sklext min<%g %g %g>\n", smin.x, smin.y, smin.z);
+  //deco::logchan_meshutilassimp->log(fvec3::Yellow(), "sklext max<%g %g %g>\n", smax.x, smax.y, smax.z);
 
   return writeXgmToDatablock(&xgmmdlout);
 }

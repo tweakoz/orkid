@@ -15,10 +15,13 @@
 #include <ork/ecs/scene.inl>
 
 #include "message_private.h"
+#include <ork/util/logger.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ecs {
 ///////////////////////////////////////////////////////////////////////////////
+
+static logchannel_ptr_t logchan_controller = logger()->createChannel("ecs.controller",fvec3(0.7,0.7,0));
 
 using namespace ::ork;
 
@@ -450,6 +453,7 @@ void Controller::bindScene(scenedata_ptr_t scene) {
 
 void Controller::createSimulation() {
   OrkAssert(_scenedata);
+  logchan_controller->log( "INSTANTIATING SIMULATION");
   _simulation.atomicOp([this](simulation_ptr_t& unlocked){
     unlocked = std::make_shared<Simulation>(this);
   });
@@ -459,6 +463,7 @@ void Controller::createSimulation() {
 
 void Controller::startSimulation() {
   _timer.Start();
+  logchan_controller->log( "STARTING SIMULATION");
   _simulation.atomicOp([](simulation_ptr_t& unlocked){
     unlocked->SetSimulationMode(ESimulationMode::ACTIVE);
     unlocked->_serviceEventQueues();
@@ -468,7 +473,7 @@ void Controller::startSimulation() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Controller::stopSimulation() {
-  printf( "STOPPING SIM\n");
+  logchan_controller->log( "STOPPING SIMULATION");
   _delopq.atomicOp([=](delayed_opq_t& unlocked){
       unlocked.clear();
   });
@@ -484,6 +489,7 @@ void Controller::stopSimulation() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Controller::update() {
+  //logchan_controller->log( "update");
   _simulation.atomicOp([](simulation_ptr_t& unlocked){
     unlocked->_update();
   });

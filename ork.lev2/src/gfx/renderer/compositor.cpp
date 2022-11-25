@@ -112,7 +112,8 @@ AcquiredRenderDrawBuffer::AcquiredRenderDrawBuffer(rcfd_ptr_t rcfd) {
 ///////////////////////////////////////////////////////////////////////////////
 StandardCompositorFrame::StandardCompositorFrame(uidrawevent_constptr_t drawEvent)
     : _drawEvent(drawEvent) {
-  _dbufcontext = std::make_shared<DrawBufContext>();
+  _dbufcontextSFRAME = std::make_shared<DrawBufContext>();
+  _dbufcontextSFRAME->_name = "DBC.StandardCompositorFrame";
 }
 ///////////////////////////////////////////////////////////////////////////////
 void StandardCompositorFrame::withAcquiredUpdateDrawBuffer(
@@ -123,7 +124,7 @@ void StandardCompositorFrame::withAcquiredUpdateDrawBuffer(
   DrawableBuffer* DB = nullptr;
 
   while (nullptr == DB) {
-    DB = _dbufcontext->acquireForWriteLocked();
+    DB = _dbufcontextSFRAME->acquireForWriteLocked();
 
     if (DB) {
       DB->Reset();
@@ -139,22 +140,22 @@ void StandardCompositorFrame::withAcquiredUpdateDrawBuffer(
 }
 ///////////////////////////////////////////////////////////////////////////////
 void StandardCompositorFrame::_updateEnqueueLockedAndReleaseFrame(bool rendersync, DrawableBuffer* dbuf) {
-  _dbufcontext->releaseFromWriteLocked(dbuf);
+  _dbufcontextSFRAME->releaseFromWriteLocked(dbuf);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void StandardCompositorFrame::_updateEnqueueUnlockedAndReleaseFrame(bool rendersync, DrawableBuffer* dbuf) {
-  _dbufcontext->releaseFromWriteLocked(dbuf);
+  _dbufcontextSFRAME->releaseFromWriteLocked(dbuf);
 }
 ///////////////////////////////////////////////////////////////////////////////
 const DrawableBuffer* StandardCompositorFrame::_tryAcquireDrawBuffer() {
-  return _dbufcontext->acquireForReadLocked();
+  return _dbufcontextSFRAME->acquireForReadLocked();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void StandardCompositorFrame::render() {
   const DrawableBuffer* DB = nullptr;
 
   while (nullptr == DB) {
-    DB = _dbufcontext->acquireForReadLocked();
+    DB = _dbufcontextSFRAME->acquireForReadLocked();
     if (nullptr == DB) {
       usleep(0);
     }
@@ -254,9 +255,14 @@ void StandardCompositorFrame::render() {
     }
     /////////////////////////////////////////////
 
-    _dbufcontext->releaseFromReadLocked(DB);
+    _dbufcontextSFRAME->releaseFromReadLocked(DB);
   }
 }
+
+void StandardCompositorFrame::attachDrawBufContext(dbufcontext_ptr_t dbc){
+  _dbufcontextSFRAME = dbc;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 

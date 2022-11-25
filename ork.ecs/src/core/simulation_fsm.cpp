@@ -19,23 +19,26 @@
 #include <ork/ecs/system.h>
 #include <ork/ecs/controller.h>
 #include <ork/ecs/scene.inl>
+#include <ork/util/logger.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ecs {
 ///////////////////////////////////////////////////////////////////////////////
+
+static logchannel_ptr_t logchan_simfsm = logger()->createChannel("ecs.simfsm",fvec3(1.0,0.9,0));
 
 struct RootState : public fsm::State {
   RootState(fsm::StateMachine* machine)
       : State(machine) {
   }
   void onEnter() {
-    // printf("ROOT.enter\n");
+    // logchan_simfsm->log("ROOT.enter");
   }
   void onExit() {
-    // printf("ROOT.exit\n");
+    // logchan_simfsm->log("ROOT.exit");
   }
   void onUpdate() {
-    // printf("ROOT.update\n");
+    // logchan_simfsm->log("ROOT.update");
   }
 };
 
@@ -56,7 +59,7 @@ void Simulation::_buildStateMachine() {
   // READY STATE
   ////////////////////////////////////////////////////////
   _updateReadySimState->_onenter = [this]() {
-    printf("entering readymode\n");
+    logchan_simfsm->log("entering readymode");
     if (_updateThreadSM->currentState() == nullptr) {
       _needsGpuInit = true;
       _needsGpuExit = true;
@@ -72,9 +75,9 @@ void Simulation::_buildStateMachine() {
   };
   //
   _updateReadySimState->_onupdate = [this]() {
-    auto DB = _dbufctx->acquireForWriteLocked();
+    auto DB = _dbufctxSIM->acquireForWriteLocked();
     DB->Reset();
-    _dbufctx->releaseFromWriteLocked(DB);
+    _dbufctxSIM->releaseFromWriteLocked(DB);
   };
   //
   _updateReadySimState->_onexit = [this]() {};
@@ -83,17 +86,17 @@ void Simulation::_buildStateMachine() {
   ////////////////////////////////////////////////////////
   _updateEditSimState->_onenter = [this]() {
     _needsGpuInit = true;
-    printf("entering editmode\n");
+    logchan_simfsm->log("entering editmode");
     //////////////////////////
     // did we come from ready or active state ?
     //////////////////////////
     if (_updateThreadSM->currentState() == _updateReadySimState) {
-      printf(" .. from ready mode\n");
+      logchan_simfsm->log(" .. from ready mode");
       lev2::DrawableBuffer::BeginClearAndSyncReaders();
       _stage();
       lev2::DrawableBuffer::EndClearAndSyncReaders();
     } else if (_updateThreadSM->currentState() == _updateActiveSimState) {
-      printf(" .. from active mode\n");
+      logchan_simfsm->log(" .. from active mode");
       lev2::DrawableBuffer::BeginClearAndSyncReaders();
       ork::opq::assertOnQueue2(opq::updateSerialQueue());
       _deactivate();
@@ -113,7 +116,7 @@ void Simulation::_buildStateMachine() {
   // ACTIVE STATE
   ////////////////////////////////////////////////////////
   _updateActiveSimState->_onenter = [this]() {
-    printf("entering activemode\n");
+    logchan_simfsm->log("entering activemode");
     //////////////////////////
     // did we come from ready or pause state ?
     //////////////////////////
@@ -127,10 +130,10 @@ void Simulation::_buildStateMachine() {
     _needsGpuInit = true;
     _needsGpuExit = true;
 
-    // auto str = FormatString("////////////////////////\n");
-    // str += FormatString("Simulation<%p> EnterRunState\n", (void*)this);
-    // str += FormatString("////////////////////////\n");
-    // printf("%s", deco::decorate(255, 0, 0, str).c_str());
+    // auto str = FormatString("////////////////////////");
+    // str += FormatString("Simulation<%p> EnterRunState", (void*)this);
+    // str += FormatString("////////////////////////");
+    // logchan_simfsm->log("%s", deco::decorate(255, 0, 0, str).c_str());
     // ork::opq::assertOnQueue2(opq::updateSerialQueue());
     // AllocationLabel label("Simulation::EnterRunState::255");
 
@@ -149,9 +152,9 @@ void Simulation::_buildStateMachine() {
   _updatePausedSimState->_onupdate = [this]() {
     _serviceEventQueues();
     // todo actually render...
-    auto DB = _dbufctx->acquireForWriteLocked();
+    auto DB = _dbufctxSIM->acquireForWriteLocked();
     DB->Reset();
-    _dbufctx->releaseFromWriteLocked(DB);
+    _dbufctxSIM->releaseFromWriteLocked(DB);
   };
   ////////////////////////////////////////////////////////
 
@@ -160,9 +163,9 @@ void Simulation::_buildStateMachine() {
       unlocked.clear();
     });
     // todo actually render...
-    auto DB = _dbufctx->acquireForWriteLocked();
+    auto DB = _dbufctxSIM->acquireForWriteLocked();
     DB->Reset();
-    _dbufctx->releaseFromWriteLocked(DB);
+    _dbufctxSIM->releaseFromWriteLocked(DB);
 
     if (_updateThreadSM->currentState() == _updateEditSimState) {
       _unstage();
@@ -204,6 +207,11 @@ void Simulation::_buildStateMachine() {
 
       auto LOCKS = lev2::GfxEnv::dumpLocks();
 
+      auto try_sframe = _renderThreadSM->getVar("sframe"_crc);
+      auto sframe = try_sframe.get<lev2::standardcompositorframe_ptr_t>();
+
+      sframe->attachDrawBufContext(_dbufctxSIM);
+
       lev2::GfxEnv::onLocksDone([=]() {                     //
         _renderThreadSM->enqueueStateChange(ren_sim_state); //
       });
@@ -219,13 +227,15 @@ void Simulation::_buildStateMachine() {
       _needsGpuInit    = false;
       _waitingForRLock = true;
 
+
       lev2::GfxEnv::releaseLock(l);
     }
   };
   //////////////////
   // RENDER SIMULATION
   //////////////////
-  ren_sim_state->_onenter = [this]() {};
+  ren_sim_state->_onenter = [this]() {
+  };
   //
   ren_sim_state->_onupdate = [this]() {
     auto try_sframe = _renderThreadSM->getVar("sframe"_crc);
@@ -286,7 +296,7 @@ void Simulation::SetSimulationMode(ESimulationMode emode) {
       break;
     ///////////////////////////////////////
     case ESimulationMode::READY:
-      printf("SetMode: READY\n");
+      logchan_simfsm->log("SetMode: READY");
       switch (_currentSimulationMode) {
         case ork::ecs::ESimulationMode::NEW:
           _updateThreadSM->enqueueStateChange(_updateReadySimState);
@@ -298,7 +308,7 @@ void Simulation::SetSimulationMode(ESimulationMode emode) {
       break;
     ///////////////////////////////////////
     case ESimulationMode::EDIT:
-      printf("SetMode: EDIT\n");
+      logchan_simfsm->log("SetMode: EDIT");
       switch (_currentSimulationMode) {
         case ork::ecs::ESimulationMode::NEW:
           _updateThreadSM->enqueueStateChange(_updateReadySimState);
@@ -317,7 +327,7 @@ void Simulation::SetSimulationMode(ESimulationMode emode) {
       break;
     ///////////////////////////////////////
     case ESimulationMode::ACTIVE:
-      printf("SetMode: ACTIVE\n");
+      logchan_simfsm->log("SetMode: ACTIVE");
       switch (_currentSimulationMode) {
         case ork::ecs::ESimulationMode::NEW:
           _updateThreadSM->enqueueStateChange(_updateReadySimState);
@@ -358,13 +368,13 @@ void Simulation::SetSimulationMode(ESimulationMode emode) {
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::_initialize() {
   _initializeEntities();
-  debugBanner(255, 255, 0, "Simulation<%p> _initialized\n", (void*)this);
+  logchan_simfsm->log("Simulation<%p> _initialized", (void*)this);
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::_compose() {
   _composeSystems();
   _composeEntities();
-  debugBanner(255, 255, 0, "Simulation<%p> _composed\n", (void*)this);
+  logchan_simfsm->log("Simulation<%p> _composed", (void*)this);
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::_link() {
@@ -372,7 +382,7 @@ void Simulation::_link() {
   _linkEntities();
   if (_onLink)
     _onLink();
-  debugBanner(255, 255, 0, "Simulation<%p> _linked\n", (void*)this);
+  logchan_simfsm->log("Simulation<%p> _linked", (void*)this);
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::_stage() {
@@ -380,36 +390,36 @@ void Simulation::_stage() {
   _stageEntities();
   _resetClock();
   _serviceDeactivateQueue();
-  debugBanner(255, 255, 0, "Simulation<%p> _staged\n", (void*)this);
+  logchan_simfsm->log("Simulation<%p> _staged", (void*)this);
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::_activate() {
   _activateSystems();
   _activateEntities();
-  debugBanner(255, 255, 0, "Simulation<%p> _activated\n", (void*)this);
+  logchan_simfsm->log("Simulation<%p> _activated", (void*)this);
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::_uninitialize() {
   _uninitializeEntities();
-  debugBanner(255, 255, 0, "Simulation<%p> _uninitialized\n", (void*)this);
+  logchan_simfsm->log("Simulation<%p> _uninitialized", (void*)this);
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::_decompose() {
   _decomposeEntities();
   _decomposeSystems();
-  debugBanner(255, 255, 0, "Simulation<%p> _decomposed\n", (void*)this);
+  logchan_simfsm->log("Simulation<%p> _decomposed", (void*)this);
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::_unlink() {
   _unlinkEntities();
   _unlinkSystems();
-  debugBanner(255, 255, 0, "Simulation<%p> _unlinked\n", (void*)this);
+  logchan_simfsm->log("Simulation<%p> _unlinked", (void*)this);
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::_unstage() {
   _unstageEntities();
   _unstageSystems();
-  debugBanner(255, 255, 0, "Simulation<%p> _unstaged\n", (void*)this);
+  logchan_simfsm->log("Simulation<%p> _unstaged", (void*)this);
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::_deactivate() {
@@ -417,7 +427,7 @@ void Simulation::_deactivate() {
   _deactivateSystems();
   mActiveEntities.clear();
   mEntityDeactivateQueue.clear();
-  debugBanner(255, 255, 0, "Simulation<%p> _deactivated\n", (void*)this);
+  logchan_simfsm->log("Simulation<%p> _deactivated", (void*)this);
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::_initializeEntities() {
@@ -434,7 +444,7 @@ void Simulation::_initializeEntities() {
   // Compose Entities
   ///////////////////////////////////
 
-  // orkprintf( "beg si<%p> Compose Entities..\n", this );
+  // orklogchan_simfsm->log( "beg si<%p> Compose Entities..", this );
 
   auto scene = _controller->_scenedata;
 
@@ -465,7 +475,7 @@ void Simulation::_initializeEntities() {
         }
         ////////////////////////////////////////////////////////////////
 
-        // printf( "Compose Entity<%p> arch<%p> layer<%s>\n", pent, arch,
+        // logchan_simfsm->log( "Compose Entity<%p> arch<%p> layer<%s>", pent, arch,
         // layer_name.c_str() );
         assert(pent != nullptr);
 

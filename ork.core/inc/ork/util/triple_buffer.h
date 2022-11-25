@@ -79,10 +79,11 @@ template <typename T> struct concurrent_triple_buffer {
       _mutex.UnLock();
       attempts++;
       if (attempts > 50) {
+        printf("triplebuf<%p> begin_pull _read<%d> _nextread<%d> attempts<%d> \n", this, _read, _nextread, int(attempts));
         return nullptr;
       }
     }
-    // printf("begin_pull r<%d> attempts<%d>\n", _read, int(attempts));
+    printf("triplebuf<%p> begin_pull _read<%d> _nextread<%d> attempts<%d> \n", this, _read, _nextread, int(attempts));
     return rval;
   }
   /////////////////////////////
@@ -105,6 +106,15 @@ template <typename T> struct concurrent_triple_buffer {
     OrkAssert(index >= 0);
     OrkAssert(index < 3);
     return _values[index]._payload.get();
+  }
+  /////////////////////////////
+  void dump() const{
+    printf( "triplebuf<%p> _wrindex<%d> _write<%d> _read<%d> _nextread<%d>\n", //
+            this, //
+            _wrindex, //
+            _write, //
+            _read, //
+            _nextread );
   }
   /////////////////////////////
 private: //

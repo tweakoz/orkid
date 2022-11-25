@@ -22,12 +22,14 @@
 #include <ork/ecs/scene.inl>
 #include <ork/ecs/simulation.inl>
 #include <ork/ecs/physics/bullet.h>
+#include <ork/util/logger.h>
 
 #include "bullet_impl.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 
 static const bool USE_GIMPACT = true;
+static constexpr bool DEBUG_LOG = true;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -37,6 +39,9 @@ ImplementReflectionX(ork::ecs::BulletSystem, "EcsBulletSystem");
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ecs {
 ///////////////////////////////////////////////////////////////////////////////
+
+
+static logchannel_ptr_t logchan_bull = logger()->createChannel("ecs.bulletphy",fvec3(.8,1,.3));
 
 void bulletDebugEnqueueToLayer(ork::lev2::drawablebufitem_constptr_t cdb);
 void bulletDebugRender(const ork::lev2::RenderContextInstData& RCID);
@@ -157,7 +162,9 @@ void BulletSystem::_onActivateComponent(BulletObjectComponent* component){
     if (btDynamicsWorld* world = this->GetDynamicsWorld()) {
       auto shapedata = component->data()._shapedata;
 
-      //_simulation->debugBanner(255, 128, 0, "BulletObjectComponent<%p> shapedata<%p>\n", (void*)this, (void*)shapedata.get());
+      if(DEBUG_LOG){
+        logchan_bull->log("BulletObjectComponent<%p> shapedata<%p>", (void*)this, (void*)shapedata.get());
+      }
 
       // printf( "SHAPEDATA<%p>\n", shapedata );
       if (shapedata) {
@@ -191,7 +198,9 @@ void BulletSystem::_onActivateComponent(BulletObjectComponent* component){
           }
           rigid_body->setActivationState(ballowsleep ? WANTS_DEACTIVATION : DISABLE_DEACTIVATION);
           rigid_body->activate();
-          //_simulation->debugBanner(255, 128, 0, "BulletObjectComponent<%p> rigid_body<%p>\n", (void*) component, (void*)rigid_body);
+          if(DEBUG_LOG){
+            logchan_bull->log("BulletObjectComponent<%p> rigid_body<%p>", (void*) component, (void*)rigid_body);
+          }
           component->_rigidbody          = rigid_body;
         }
       }
@@ -328,7 +337,9 @@ void BulletSystem::InitWorld() {
   //auto G = orkv3tobtv3(_systemData.GetGravity());
   //mDynamicsWorld->setGravity(G);
 
-  //_simulation->debugBanner(255, 128, 0, "BulletSystem<%p> mDynamicsWorld<%p>\n", (void*)this, (void*) mDynamicsWorld );
+  if(DEBUG_LOG){
+    logchan_bull->log("BulletSystem<%p> mDynamicsWorld<%p>", (void*)this, (void*) mDynamicsWorld );
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -348,6 +359,7 @@ bool BulletSystem::_onLink(Simulation* psi) {
   auto pdata       = new BulletDebugDrawDBData(_debugger);
   pdata->_debugger = _debugger;
   _debugDrawable->SetUserDataA(pdata);
+  _debugDrawable->_name = "bulletphysdebugger";
 
   _sgsystem = psi->findSystem<SceneGraphSystem>();
   OrkAssert(_sgsystem!=nullptr);
@@ -378,10 +390,9 @@ void BulletSystem::_onEndRender() {
 void BulletSystem::_onUpdate(Simulation* inst) {
   if (mDynamicsWorld) {
     float dt = inst->deltaTime();
+    _fdtaccum += dt;
 
-    static float fdtaccum = 0.0f;
-
-    float fps = 1.0f / fdtaccum;
+    float fps = 1.0f / _fdtaccum;
 
     float fdts  = dt * _systemData.GetTimeScale();
     float frate = _systemData.GetSimulationRate();

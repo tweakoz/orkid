@@ -372,11 +372,13 @@ struct StandardCompositorFrame {
   void _updateEnqueueLockedAndReleaseFrame(bool rendersync, DrawableBuffer* dbuf);
   void _updateEnqueueUnlockedAndReleaseFrame(bool rendersync, DrawableBuffer* dbuf);
   
+  void attachDrawBufContext(dbufcontext_ptr_t dbc);
+
   void render();
   const DrawableBuffer* _tryAcquireDrawBuffer();
 
   rcfd_ptr_t _RCFD;
-  dbufcontext_ptr_t _dbufcontext;
+  dbufcontext_ptr_t _dbufcontextSFRAME;
   uidrawevent_constptr_t _drawEvent;
   rendertarget_uiviewport_ptr_t _rendertarget;
   compositorimpl_ptr_t compositor;

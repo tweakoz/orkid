@@ -12,6 +12,7 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
 #include <ork/reflect/properties/registerX.inl>
 #include <ork/kernel/opq.h>
+#include <ork/util/logger.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
@@ -20,9 +21,12 @@
 using namespace std::string_literals;
 using namespace ork;
 
+static constexpr bool DEBUG_LOG = true;
+
 ImplementReflectionX(ork::lev2::scenegraph::DrawableDataKvPair, "SgDrawableDataKvPair");
 
 namespace ork::lev2::scenegraph {
+static logchannel_ptr_t logchan_sg = logger()->createChannel("scenegraph",fvec3(0.9,0.2,0.9));
 
 void DrawableDataKvPair::describeX(object::ObjectClass* clazz){
   clazz->directProperty("Layer", &DrawableDataKvPair::_layername);
@@ -94,6 +98,13 @@ Layer::~Layer() {
 drawable_node_ptr_t Layer::createDrawableNode(std::string named, drawable_ptr_t drawable) {
   drawable_node_ptr_t rval = std::make_shared<DrawableNode>(named, drawable);
   _drawable_nodes.atomicOp([rval](Layer::drawablenodevect_t& unlocked) { unlocked.push_back(rval); });
+  if(DEBUG_LOG){
+    logchan_sg->log( "createDrawableNode layer<%s> named<%s> drawable<%p> node<%p>", //
+                     _name.c_str(), //
+                     named.c_str(), // 
+                     drawable.get(), // 
+                     rval.get() ); //
+  }
   return rval;
 }
 
@@ -235,7 +246,9 @@ uint64_t Scene::pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord) {
 
 void Scene::initWithParams(varmap::varmap_ptr_t params) {
   
-  _dbufcontext = std::make_shared<DrawBufContext>();
+  _dbufcontext_SG = std::make_shared<DrawBufContext>();
+  _dbufcontext_SG->_name = "DBC.SceneGraph";
+
   _renderer = std::make_shared<DefaultRenderer>();
   _lightManagerData = std::make_shared<LightManagerData>();
   _lightManager     = std::make_shared<LightManager>(*_lightManagerData.get());
@@ -387,13 +400,15 @@ layer_ptr_t Scene::findLayer(std::string named) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras,on_enqueue_fn_t on_enqueue) {
-  auto DB = _dbufcontext->acquireForWriteLocked();
+  auto DB = _dbufcontext_SG->acquireForWriteLocked();
   DB->Reset();
   DB->copyCameras(*cameras.get());
 
   on_enqueue(DB);
 
-  //printf( "SG<%p>::enqueueToRenderer DB<%p>\n", this, DB );
+  if(DEBUG_LOG){
+    //logchan_sg->log( "enqueueToRenderer DB<%p>",  DB );
+  }
 
   _nodes2draw.clear();
   //_instancednodes2draw.clear();
@@ -434,7 +449,9 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras,on_enqueue_fn_t on_enq
           const Layer::instanced_drawablenodevect_t& instances_vect = map_item.second;
           size_t instances_count = instances_vect.size();
           drawable->resize(instances_count);
-          printf( "drw<%s> instances_count<%zu>\n", drawable->_name.c_str(), instances_count );
+          if(DEBUG_LOG){
+            logchan_sg->log( "enqueue instanced-drawable<%s> instances_count<%zu>", drawable->_name.c_str(), instances_count );
+          }
           //auto instance_data = drawable->_instancedata;
           //auto instances_copy = std::make_shared<InstancedDrawableInstanceData>();
           //*instances_copy = *instance_data;
@@ -455,29 +472,28 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras,on_enqueue_fn_t on_enq
 
   ////////////////////////////////////////////////////////////////////////////
 
-  //for (auto item : _instancednodes2draw) {
-    //auto drawable_layer = item._layer;
-    //auto drawable              = item._idrawable;
-  //}
-
-  ////////////////////////////////////////////////////////////////////////////
-
   if(1)for (auto item : _nodes2draw) {
     auto& drawable_layer = item._layer;
     auto n              = item._drwnode;
+    if(DEBUG_LOG){
+      logchan_sg->log( "enqueue drawable<%s>",  (void*) n->_drawable->_name.c_str() );
+    }
     n->_drawable->enqueueOnLayer(n->_dqxfdata, *drawable_layer);
   }
 
   ////////////////////////////////////////////////////////////////////////////
 
-  if(0)for (auto item : _staticDrawables) {
+  if(1)for (auto item : _staticDrawables) {
     auto drawable_layer = DB->MergeLayer(item._layername);
     auto drawable = item._drawable;
     DrawQueueXfData xfd;
+    if(DEBUG_LOG){
+      //logchan_sg->log( "enqueue static-drawable<%s>",  (void*) drawable->_name.c_str() );
+    }
     drawable->enqueueOnLayer(xfd, *drawable_layer);
   }
 
-  _dbufcontext->releaseFromWriteLocked(DB);
+  _dbufcontext_SG->releaseFromWriteLocked(DB);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -489,7 +505,7 @@ void Scene::_renderIMPL(Context* context,RenderContextFrameData& RCFD){
     gpuInit(context);
   }
 
-  auto DB = _dbufcontext->acquireForReadLocked();
+  auto DB = _dbufcontext_SG->acquireForReadLocked();
 
   RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
   RCFD._cimpl = _compositorImpl;
@@ -544,17 +560,16 @@ void Scene::_renderIMPL(Context* context,RenderContextFrameData& RCFD){
 
     context->endFrame();
   }
-  _dbufcontext->releaseFromReadLocked(DB);
+  _dbufcontext_SG->releaseFromReadLocked(DB);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void Scene::renderWithStandardCompositorFrame(standardcompositorframe_ptr_t sframe){
   auto context = sframe->_drawEvent->GetTarget();
-
-  sframe->_dbufcontext = _dbufcontext;
   
   if (_dogpuinit) {
+    sframe->attachDrawBufContext(_dbufcontext_SG);
     gpuInit(context);
   }
   _renderer->setContext(context);

@@ -8,8 +8,10 @@
 #include <ork/lev2/gfx/fxstate_instance.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/renderer/renderable.h>
+#include <ork/util/logger.h>
 
 namespace ork::lev2 {
+static logchannel_ptr_t logchan_fxstate = logger()->createChannel("fxstate",fvec3(0.7,0.7,0.5));
 /////////////////////////////////////////////////////////////////////////
 FxStateInstance::FxStateInstance(FxStateInstanceConfig& config)
     : _config(config) {
@@ -201,13 +203,13 @@ fxinstance_ptr_t FxStateInstanceLut::findfxinst(const RenderContextInstData& RCI
 ///////////////////////////////////////////////////////////////////////////////
 void FxStateInstanceLut::assignfxinst(const FxStateInstanceConfig& config, fxinstance_ptr_t fxi) {
   uint64_t index   = genIndex(config);
-  printf( "fxlut<%p> assignfxinst fxi<%p> to index<%zu>\n", this, fxi.get(), index );
+  logchan_fxstate->log( "fxlut<%p> assignfxinst fxi<%p> to index<%zu>", this, fxi.get(), index );
   _lut[index] = fxi;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FxStateInstanceConfig::dump() const {
-  printf(
-      "FxStateInstanceConfig: model<0x%zx> stereo<%d> instanced<%d> skinned<%d>\n",
+  logchan_fxstate->log(
+      "configdump: model<0x%zx> stereo<%d> instanced<%d> skinned<%d>",
       uint64_t(_rendering_model),
       int(_stereo),
       int(_instanced),

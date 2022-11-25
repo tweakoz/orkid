@@ -18,8 +18,11 @@
 #include <ork/ecs/system.h>
 #include <ork/ecs/controller.h>
 #include <ork/ecs/scene.inl>
+#include <ork/util/logger.h>
 
 namespace ork::ecs {
+
+static logchannel_ptr_t logchan_simupdate = logger()->createChannel("ecs-simupdate",fvec3(0.9,0.9,0));
 
 ///////////////////////////////////////////////////////////////////////////////
 float Simulation::_computeDeltaTime() {
@@ -42,15 +45,15 @@ float Simulation::_computeDeltaTime() {
   // allowed FPS range is 1000hz to .5 hz
   ////////////////////////////////////////////
   if (fdelta < 0.00001f) {
-    // orkprintf( "FPS is over 10000HZ!!!! you need to reset valid fps range\n"
+    // orklogchan_simupdate->log( "FPS is over 10000HZ!!!! you need to reset valid fps range"
     // ); fdelta=0.001f; ork::msleep(1);
     systime      = float(OldSchool::GetRef().GetLoResTime());
     fdelta       = 0.00001f;
     mUpTime      = systime;
     mUpDeltaTime = fdelta;
   } else if (fdelta > 0.1f) {
-    // orkprintf( "FPS is less than 10HZ!!!! you need to reset valid fps
-    // range\n" );
+    // orklogchan_simupdate->log( "FPS is less than 10HZ!!!! you need to reset valid fps
+    // range" );
     fdelta = 0.1f;
   }
 
@@ -84,7 +87,7 @@ float Simulation::_computeDeltaTime() {
     }
   }
 
-  //	printf( "mGameTime<%f>\n", mGameTime );
+  //	logchan_simupdate->log( "mGameTime<%f>", mGameTime );
 
   return fdelta;
 }
@@ -107,13 +110,13 @@ void Simulation::_update_SIMSTATE() {
 
   switch (_currentSimulationMode) {
     case ork::ecs::ESimulationMode::PAUSE: {
-      printf( "sim<%p> _update_SIMSTATE::PAUSE\n", (void*) this );
+      logchan_simupdate->log( "sim<%p> _update_SIMSTATE::PAUSE", (void*) this );
       ork::lev2::InputManager::instance()->poll();
       break;
     }
     case ork::ecs::ESimulationMode::ACTIVE: {
 
-      //printf( "sim<%p> _update_SIMSTATE::ACTIVE\n", (void*) this );
+      //logchan_simupdate->log( "sim<%p> _update_SIMSTATE::ACTIVE", (void*) this );
 
       ork::PerfMarkerPush("ork.simulation.update.begin");
 
@@ -179,7 +182,7 @@ void Simulation::_update_SIMSTATE() {
       break;
     }
     default:
-      printf( "sim<%p> _update_SIMSTATE::???\n", (void*) this );
+      logchan_simupdate->log( "sim<%p> _update_SIMSTATE::???", (void*) this );
       break;
   }
 

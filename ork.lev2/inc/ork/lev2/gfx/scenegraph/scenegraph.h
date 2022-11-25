@@ -192,7 +192,7 @@ struct Scene {
     return dynamic_cast<T*>(_outputNode);
   }
 
-  dbufcontext_ptr_t _dbufcontext;
+  dbufcontext_ptr_t _dbufcontext_SG;
   irenderer_ptr_t _renderer;
   lightmanager_ptr_t _lightManager;
   lightmanagerdata_ptr_t _lightManagerData;
@@ -204,7 +204,7 @@ struct Scene {
   RenderCompositingNode* _renderNode = nullptr;
   compositingpassdata_ptr_t _topCPD;
   RenderPresetContext _compositorPreset;
-  std::vector<DrawableKvPair> _staticDrawables;
+  std::vector<DrawableKvPair> _staticDrawables; //! global drawables owned by the scenegraph, not owned by nodes...
 
   using layer_map_t = std::map<std::string, layer_ptr_t>;
 
@@ -217,13 +217,8 @@ struct Scene {
     ork::lev2::DrawableBufLayer * _layer;
     drawable_node_ptr_t _drwnode;
   };
-  //struct InstancedDrawItem{
-    //ork::lev2::DrawableBufLayer * _layer;
-    //instanced_drawable_ptr_t _idrawable;
-  //};
 
   std::vector<DrawItem> _nodes2draw;
-  //std::vector<InstancedDrawItem> _instancednodes2draw;
 
 };
 

@@ -13,6 +13,7 @@
 #include <ork/application/application.h>
 #include <ork/kernel/orklut.hpp>
 #include <ork/kernel/opq.h>
+#include <ork/util/logger.h>
 #include <ork/asset/AssetManager.hpp>
 #include <ork/lev2/aud/audiodevice.h>
 
@@ -32,6 +33,8 @@ template struct ork::asset::AssetManager<ork::lev2::XgmAnimAsset>;
 using namespace ork::asset;
 namespace ork::lev2 {
 
+static logchannel_ptr_t logchan_l2asso = logger()->createChannel("lev2ass",fvec3(1,1,.9));
+
 XgmModelAsset::~XgmModelAsset() {
 }
 
@@ -48,7 +51,7 @@ XgmModelLoader::XgmModelLoader()
 ork::asset::asset_ptr_t XgmModelLoader::_doLoadAsset(AssetPath assetpath, ork::asset::vars_constptr_t vars) {
   auto absolutepath = assetpath.ToAbsolute();
   auto modelasset   = std::make_shared<XgmModelAsset>();
-  printf("LoadModelAsset<%s>\n", absolutepath.c_str());
+  logchan_l2asso->log("LoadModelAsset<%s>", absolutepath.c_str());
   bool OK = false;
   if (absolutepath.GetExtension() == "xgm" or //
       absolutepath.GetExtension() == "dae" or //
@@ -103,7 +106,7 @@ asset_ptr_t StaticTexFileLoader::_doLoadAsset(AssetPath assetpath, vars_constptr
     texture_asset->_varmap               = vars;
     texture_asset->GetTexture()->_varmap = *vars;
     // if (vars->hasKey("postproc"))
-    // printf("texasset<%p:%s> has postproc\n", texture_asset.get(), assetpath.c_str());
+    // logchan_l2asso->log("texasset<%p:%s> has postproc", texture_asset.get(), assetpath.c_str());
   }
   // OrkAssert(false == texture_asset->GetTexture()->_varmap.hasKey("preproc"));
   auto context = lev2::contextForCurrentThread();

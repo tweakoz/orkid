@@ -205,6 +205,7 @@ struct DrawBufContext {
 
   tbuf_ptr_t _triple;
 
+  std::string _name;
   ork::mutex _lockedBufferMutex;
   ork::semaphore _rendersync_sema;
   ork::semaphore _rendersync_sema2;

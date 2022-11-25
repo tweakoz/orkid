@@ -12,11 +12,13 @@
 #include <ork/math/cvector3.h>
 #include <ork/math/cvector4.h>
 #include <ork/object/Object.h>
+#include <ork/util/logger.h>
 namespace ork {
   PoolString AddPooledString(const PieceString& ps);
 }
 ////////////////////////////////////////////////////////////////////////////////
 namespace ork::reflect::serdes {
+static logchannel_ptr_t logchan_rcodec = logger()->createChannel("reflection.codec",fvec3(0.9,1,0.9));
 ////////////////////////////////////////////////////////////////////////////////
 using ulong_t = unsigned long int;
 using uint_t  = unsigned int;
@@ -118,23 +120,23 @@ void encode_key(std::string& keystr_out, const double& key_inp) {
 template <> //
 void encode_key(std::string& keystr_out, const PoolString& key_inp) {
   keystr_out = key_inp.c_str();
-  printf("encode key<%s>\n", keystr_out.c_str());
+  logchan_rcodec->log("encode key<%s>", keystr_out.c_str());
 }
 template <> //
 void encode_key(std::string& keystr_out, const std::string& key_inp) {
   keystr_out = key_inp;
-  printf("encode key<%s>\n", keystr_out.c_str());
+  logchan_rcodec->log("encode key<%s>", keystr_out.c_str());
 }
 template <> //
 void encode_key(std::string& keystr_out, rtti::Class* const & key_inp) {
   keystr_out = key_inp->Name();
-  printf("encode key<%s>\n", keystr_out.c_str());
+  logchan_rcodec->log("encode key<%s>", keystr_out.c_str());
 }
 template <> // TODO - use rtti::CLass for all subclasses as the impl will be the same
 void encode_key(std::string& keystr_out, object::ObjectClass* const & key_inp) {
   auto clazzname = key_inp->Name();
   keystr_out = clazzname.c_str();
-  printf("encode class<%p> key<%s>\n", (void*) key_inp, keystr_out.c_str());
+  logchan_rcodec->log("encode class<%p> key<%s>", (void*) key_inp, keystr_out.c_str());
 }
 ////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::reflect::serdes

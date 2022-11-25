@@ -38,7 +38,7 @@ void ITypedMap<KeyType, ValueType>::serialize(serdes::node_ptr_t sernode) const 
   mapnode->_parent       = sernode;
   mapnode->_ser_instance = instance;
   int numelements        = elementCount(instance);
-  printf( "map<%s> ser numelem<%d>\n", _name.c_str(), numelements );
+  //printf( "map<%s> ser numelem<%d>\n", _name.c_str(), numelements );
   for (size_t i = 0; i < numelements; i++) {
     //////////////////////////////
     KeyType K;

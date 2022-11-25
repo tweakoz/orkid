@@ -29,12 +29,15 @@
 //
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_common.h>
+#include <ork/util/logger.h>
 
 OIIO_NAMESPACE_USING
 
 ImplementReflectionX(ork::lev2::PBRMaterial, "PBRMaterial");
 
 namespace ork::lev2 {
+
+static logchannel_ptr_t logchan_pbr = logger()->createChannel("mtlpbr",fvec3(0.8,0.8,0.1));
 
 material_ptr_t default3DMaterial() {
   return std::make_shared<PBRMaterial>(lev2::contextForCurrentThread());
@@ -89,7 +92,7 @@ void PBRMaterial::describeX(class_t* c) {
     auto texbasename = ctx._reader.GetString(istring);
     auto mtl         = std::make_shared<PBRMaterial>();
     mtl->SetName(AddPooledString(materialname));
-    // printf("materialName<%s>\n", materialname);
+    // logchan_pbr->log("materialName<%s>", materialname);
     ctx._inputStream->GetItem(istring);
     auto begintextures = ctx._reader.GetString(istring);
     assert(0 == strcmp(begintextures, "begintextures"));
@@ -102,7 +105,7 @@ void PBRMaterial::describeX(class_t* c) {
       else {
         ctx._inputStream->GetItem(istring);
         auto texname = ctx._reader.GetString(istring);
-        // printf("find tex channel<%s> channel<%s> .. ", token, texname);
+        // logchan_pbr->log("find tex channel<%s> channel<%s> .. ", token, texname);
         auto itt = embtexmap.find(texname);
         assert(itt != embtexmap.end());
         auto embtex    = itt->second;
@@ -110,7 +113,7 @@ void PBRMaterial::describeX(class_t* c) {
         auto datablock = std::make_shared<DataBlock>(embtex->_srcdata, embtex->_srcdatalen);
         bool ok        = txi->LoadTexture(tex, datablock);
         assert(ok);
-        // printf(" embtex<%p> datablock<%p> len<%zu>\n", embtex, datablock.get(), datablock->length());
+        // logchan_pbr->log(" embtex<%p> datablock<%p> len<%zu>", embtex, datablock.get(), datablock->length());
         if (0 == strcmp(token, "colormap")) {
           mtl->_texColor = tex;
         }
@@ -286,25 +289,25 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   if (_texColor == nullptr) {
     _asset_texcolor = asset::AssetManager<lev2::TextureAsset>::load("src://effect_textures/white");
     _texColor       = _asset_texcolor->GetTexture();
-    // printf("substituted white for non-existant color texture\n");
+    // logchan_pbr->log("substituted white for non-existant color texture");
     OrkAssert(_texColor != nullptr);
   }
   if (_texNormal == nullptr) {
     _asset_texnormal = asset::AssetManager<lev2::TextureAsset>::load("src://effect_textures/default_normal");
     _texNormal       = _asset_texnormal->GetTexture();
-    // printf("substituted blue for non-existant normal texture\n");
+    // logchan_pbr->log("substituted blue for non-existant normal texture");
     OrkAssert(_texNormal != nullptr);
   }
   if (_texMtlRuf == nullptr) {
     _asset_mtlruf = asset::AssetManager<lev2::TextureAsset>::load("src://effect_textures/white");
     _texMtlRuf    = _asset_mtlruf->GetTexture();
-    // printf("substituted white for non-existant mtlrufao texture\n");
+    // logchan_pbr->log("substituted white for non-existant mtlrufao texture");
     OrkAssert(_texMtlRuf != nullptr);
   }
   if (_texEmissive) {
     //_asset_emissive = _asset_texcolor;
     //_texEmissive       = _asset_emissive->GetTexture();
-    printf("substituted white for non-existant color texture\n");
+    logchan_pbr->log("substituted white for non-existant color texture");
     // OrkAssert(_texEmissive != nullptr);
     forceEmissive();
     //_asset_texcolor = asset::AssetManager<lev2::TextureAsset>::load("src://effect_textures/white");
@@ -518,7 +521,7 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
               // setup forward lighting
               ////////////////////////////////////////////////
 
-              //printf("fwd: all lights count<%zu>\n", enumlights->_alllights.size());
+              //logchan_pbr->log("fwd: all lights count<%zu>", enumlights->_alllights.size());
 
               int num_untextured_pointlights = enumlights->_untexturedpointlights.size();
 
@@ -622,7 +625,7 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
 
 fxinstancelut_ptr_t PBRMaterial::createSkyboxFxInstLut() const {
   fxinstancelut_ptr_t fxlut = std::make_shared<FxStateInstanceLut>();
-  printf("fxlut<%p> createSkyboxFxInstLut\n", fxlut.get());
+  logchan_pbr->log("fxlut<%p> createSkyboxFxInstLut", fxlut.get());
   //////////////////////////////////////////////////////////
   FxStateInstanceConfig config;
   config._rendering_model = "CUSTOM"_crcu;
@@ -672,7 +675,7 @@ fxinstancelut_ptr_t PBRMaterial::createFxStateInstanceLut() const {
 
   FxStateInstanceConfig config;
 
-  printf("fxlut<%p> createFxStateInstanceLut\n", fxlut.get());
+  logchan_pbr->log("fxlut<%p> createFxStateInstanceLut", fxlut.get());
 
   /////////////////////
   // picking

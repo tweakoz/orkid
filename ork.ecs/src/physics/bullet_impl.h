@@ -247,6 +247,7 @@ public:
   float mfAvgDtAcc;
   float mfAvgDtCtr;
   SceneGraphSystem* _sgsystem = nullptr;
+  float _fdtaccum = 0.0f;
 
   std::unordered_set<BulletObjectComponent*> _activeComponents;
 };

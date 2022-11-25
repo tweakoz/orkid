@@ -16,6 +16,7 @@
 #include <ork/object/Object.h>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/uuid/string_generator.hpp>
+#include <ork/util/logger.h>
 
 #include <ork/orkprotos.h>
 #include <cstring>
@@ -23,6 +24,7 @@
 using namespace rapidjson;
 
 namespace ork::reflect::serdes {
+static logchannel_ptr_t logchan_ds = logger()->createChannel("reflection.json.deser",fvec3(0.9,1,0.9));
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -110,7 +112,7 @@ void JsonDeserializer::deserializeTop(object_ptr_t& instance_out) {
   std::string uuids           = boost::uuids::to_string(instance_out->_uuid);
 
   if (0)
-    printf(
+    logchan_ds->log(
         "top instance<%p> class<%s> uuid<%s>\n", //
         (void*) instance_out.get(),
         instance_out_classname.c_str(),
@@ -165,8 +167,8 @@ serdes::node_ptr_t JsonDeserializer::_parseSubNode(
             child_node->_value.set<object_ptr_t>(instance_out);
             trackObject(instance_out->_uuid, instance_out);
             if (1)
-              printf(
-                  "instance<%p> class<%s> uuid<%s>\n", //
+              logchan_ds->log(
+                  "instance<%p> class<%s> uuid<%s>", //
                   (void*) instance_out.get(),
                   instance_out_classname.c_str(),
                   uuids.c_str());
@@ -214,7 +216,7 @@ serdes::node_ptr_t JsonDeserializer::_parseSubNode(
       break;
     case rapidjson::kStringType:
       child_node->_value.set<std::string>(subvalue.GetString());
-      // printf("gotstr<%s>\n", child_node->_value.get<std::string>().c_str());
+      // logchan_ds->log("gotstr<%s>", child_node->_value.get<std::string>().c_str());
       break;
     case rapidjson::kNumberType:
       child_node->_value.set<double>(subvalue.GetDouble());
@@ -240,7 +242,7 @@ serdes::node_ptr_t JsonDeserializer::deserializeElement(node_ptr_t elemnode) {
       auto mapimplnode                = mapnode->_impl.getShared<JsonObjectNode>();
       const rapidjson::Value& objnode = mapimplnode->_jsonobjectnode;
       OrkAssert(mapimplnode->_iterator != objnode.MemberEnd());
-       printf("mapnode key<%s>\n", mapimplnode->_iterator->name.GetString());
+       logchan_ds->log("mapnode key<%s>", mapimplnode->_iterator->name.GetString());
       const auto& childvalue = mapimplnode->_iterator->value;
       childnode              = _parseSubNode(elemnode, childvalue);
       childnode->_key        = mapimplnode->_iterator->name.GetString();
@@ -253,7 +255,7 @@ serdes::node_ptr_t JsonDeserializer::deserializeElement(node_ptr_t elemnode) {
       auto aryimplnode               = arynode->_impl.getShared<JsonArrayNode>();
       const rapidjson::Value& jarray = aryimplnode->_jsonarray;
       OrkAssert(aryimplnode->_iterator != jarray.End());
-       printf("array element<%zu>\n", arynode->_index);
+       logchan_ds->log("array element<%zu>", arynode->_index);
       const auto& childjsonvalue = *aryimplnode->_iterator;
       childnode                  = _parseSubNode(elemnode, childjsonvalue);
       aryimplnode->_iterator++;
@@ -315,7 +317,7 @@ object_ptr_t JsonDeserializer::_parseObjectNode(serdes::node_ptr_t dsernode) {
     auto prop     = description.property(propname);
 
     if (prop) {
-       printf("found propname<%s> prop<%p>\n", propname, (void*) prop);
+       logchan_ds->log("found propname<%s> prop<%p>", propname, (void*) prop);
       dsernode->_property = prop;
       auto child_node     = std::make_shared<Node>();
 
@@ -359,7 +361,7 @@ object_ptr_t JsonDeserializer::_parseObjectNode(serdes::node_ptr_t dsernode) {
       prop->deserialize(child_node);
 
     } else { // drop property, no longer registered
-      printf("dropping property<%s>\n", propname);
+      logchan_ds->log("dropping property<%s>", propname);
     }
   }
   instance_out->postDeserialize(*this);

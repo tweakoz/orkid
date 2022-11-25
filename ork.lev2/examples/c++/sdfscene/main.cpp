@@ -369,14 +369,14 @@ int main(int argc, char** argv,char** envp) {
     gpurec->_camdata->Lookat(eye, tgt, up);
     gpurec->_camdata->Persp(_near, _far, 45.0);
     ///////////////////////////////////////
-    auto DB = sframe->_dbufcontext->acquireForWriteLocked();
+    auto DB = sframe->_dbufcontextSFRAME->acquireForWriteLocked();
     DB->Reset();
     DB->copyCameras(*gpurec->_camlut);
     auto layer = DB->MergeLayer("Default");
     DrawQueueXfData ident;
     gpurec->_sdf_drawable->enqueueOnLayer(ident, *layer);
     ////////////////////////////////////////
-    sframe->_dbufcontext->releaseFromWriteLocked(DB);
+    sframe->_dbufcontextSFRAME->releaseFromWriteLocked(DB);
   });
   //////////////////////////////////////////////////////////
   // draw handler (called on main(rendering) thread)
