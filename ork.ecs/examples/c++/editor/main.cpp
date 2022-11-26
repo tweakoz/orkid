@@ -8,6 +8,7 @@
 #include <ork/lev2/ezapp.h>
 #include <ork/kernel/varmap.inl>
 #include <ork/kernel/string/deco.inl>
+#include <ork/kernel/environment.h>
 
 #include <ork/lev2/imgui/imgui.h>
 #include <ork/lev2/imgui/imgui_impl_glfw.h>
@@ -86,10 +87,11 @@ int main(int argc, char** argv, char** envp) {
   fmtx4 xfmtx;
 
   logchan_editor->log( "T2<%g>", timer.SecsSinceStart() );
+
   //////////////////////////////////////////////////////////
 
-  lev2::rtgroup_ptr_t outgroup;
-  lev2::rtbuffer_ptr_t outbuffer;
+  lev2::rtgroup_ptr_t ecs_outgroup;
+  lev2::rtbuffer_ptr_t ecs_outbuffer;
   std::shared_ptr<lev2::TextureAsset> play_icon, pause_icon;
 
   ////////////////////////////
@@ -103,6 +105,9 @@ int main(int argc, char** argv, char** envp) {
   EcsEditor ecsdedit(scene);
   auto ecs_sg_sysdata  = scene->getTypedSystemData<SceneGraphSystemData>();
 
+  auto ecs_ball_spawner = scene->findTypedObject<SpawnData>("ent_ball"_pool);
+
+  OrkAssert(ecs_ball_spawner!=nullptr);
   //ecs_sg_sysdata->setSceneParam("supersample",int(4));
 
   ////////////////////////////
@@ -138,9 +143,9 @@ int main(int argc, char** argv, char** envp) {
 
   ezapp->onGpuInit([&](Context* ctx) {
    logchan_editor->log( "T4<%g>", timer.SecsSinceStart() );
-    outgroup  = std::make_shared<RtGroup>(ctx, 100, 100, MsaaSamples::MSAA_1X);
-    outbuffer = outgroup->createRenderTarget(EBufferFormat::RGBA32F);
-    ecs_sg_sysdata->bindToRtGroup(outgroup);
+    ecs_outgroup  = std::make_shared<RtGroup>(ctx, 100, 100, MsaaSamples::MSAA_1X);
+    ecs_outbuffer = ecs_outgroup->createRenderTarget(EBufferFormat::RGBA32F);
+    ecs_sg_sysdata->bindToRtGroup(ecs_outgroup);
     ecs_sg_sysdata->bindToCamera(ecs_camera);
 
     play_icon  = asset::AssetManager<TextureAsset>::load("lev2://textures/play_icon");
@@ -184,9 +189,14 @@ int main(int argc, char** argv, char** envp) {
   //  it will never be called after onUpdateExit() is invoked...
   //////////////////////////////////////////////////////////
 
+  double spawn_timer = 0.0;
+
   ezapp->onUpdate([&](ui::updatedata_ptr_t updata) {
     double dt      = updata->_dt;
     double abstime = updata->_abstime;
+
+    spawn_timer += dt;
+
     ////////////////////////////////////////////////////////
     // handle transport
     ////////////////////////////////////////////////////////
@@ -199,6 +209,13 @@ int main(int argc, char** argv, char** envp) {
     }
 
     prev_transport_mode = transport_mode;
+
+    printf( "spawn_timer<%g>\n", spawn_timer );
+    if( (transport_mode==0) and (spawn_timer>1.0) ){
+      SpawnAnonDynamic SAD{._edataname = "ent_ball"_pool}; // by anon we mean "unnamed"
+      auto ent     = controller->spawnAnonDynamicEntity(SAD);
+      spawn_timer = 0.0;
+    }
 
     ////////////////////////////
     // compute camera data
@@ -233,13 +250,7 @@ int main(int argc, char** argv, char** envp) {
   auto sframe_ecs = std::make_shared<StandardCompositorFrame>();
 
   ezapp->onDraw([&](ui::drawevent_constptr_t drwev) { //
-    sframe_imgui->_drawEvent = drwev;
     sframe_ecs->_drawEvent = drwev;
-    ///////////////////////////////////////////////////////////////////////
-    sframe_imgui->compositor = compositorimpl;
-    sframe_imgui->renderer   = renderer;
-    sframe_imgui->passdata   = CPD;
-    sframe_imgui->_updrendersync = init_data->_update_rendersync;
     ///////////////////////////////////////////////////////////////////////
     auto context = drwev->GetTarget();
     context->beginFrame();
@@ -253,13 +264,9 @@ int main(int argc, char** argv, char** envp) {
     controller->renderWithStandardCompositorFrame(sframe_ecs);
 
     ///////////////////////////////////////////////////////////////////////
-    // imgui render 
+    // imgui renderpass callback
     ///////////////////////////////////////////////////////////////////////
 
-    sframe_imgui->pushEmptyUpdateDrawBuf(); // empty drawbuf update
-
-    //sframe_imgui->attachDrawBufContext(sframe_ecs->_dbufcontextSFRAME);
-    ///////////////////////////////////////////////////////////////////////
     sframe_imgui->onImguiRender = [&](const AcquiredRenderDrawBuffer& rdb) {
       ImGuiStyle& style       = ImGui::GetStyle();
       style.WindowRounding    = 5.3f;
@@ -283,10 +290,21 @@ int main(int argc, char** argv, char** envp) {
       // e.g. Leave a fixed amount of width for labels (by passing a negative value), the rest goes to widgets.
       ImGui::PushItemWidth(ImGui::GetFontSize() * -12);
 
-      // ImGui::Text("dear imgui says hello. (%s)", IMGUI_VERSION);
-      ImGui::Spacing();
+      ////////////////////////////////////////////////
+      // reflection object editor
+      ////////////////////////////////////////////////
 
       editor::EditorContext edctx(rdb);
+      Outliner(edctx, ecsdedit);
+      editor::imgui::ObjectEditor(edctx, ecsdedit._currentobject);
+
+      ////////////////////////////////////////////////
+
+      ImGui::Spacing();
+
+      //////////////////////////////////////////////////////////
+      // render transport buttons
+      //////////////////////////////////////////////////////////
 
       ImGui::Begin("Transport");
 
@@ -316,12 +334,8 @@ int main(int argc, char** argv, char** envp) {
 
       ImGui::End();
 
-      Outliner(edctx, ecsdedit);
-
-      editor::imgui::ObjectEditor(edctx, ecsdedit._currentobject);
-
       ////////////////////////////////////////////////
-      // draw editor viewport
+      // draw editor 3D viewport
       ////////////////////////////////////////////////
 
       ImGui::Begin("Viewport");
@@ -335,6 +349,8 @@ int main(int argc, char** argv, char** envp) {
       bool in_window = origpos.x >= wpos.x and origpos.x < wpos.x + wsiz.x;
       in_window &= origpos.y >= wpos.y and origpos.y < wpos.y + wsiz.y;
 
+      // resize ecs_outgroup to size of viewport window.
+
       int vpsize_w = wsiz.x;
       int vpsize_h = wsiz.y;
 
@@ -342,14 +358,20 @@ int main(int argc, char** argv, char** envp) {
       fbsize_data["width"_tok]  = vpsize_w;
       fbsize_data["height"_tok] = vpsize_h;
       controller->systemNotify(_sgsystem, SceneGraphSystem::UpdateFramebufferSize, fbsize_data);
-      outgroup->Resize(vpsize_w, vpsize_h);
+      ecs_outgroup->Resize(vpsize_w, vpsize_h);
+
+      // compute viewport extents
 
       auto pa = ori;
       auto pb = ori + ImVec2(wsiz.x, 0);
       auto pc = ori + ImVec2(wsiz.x, wsiz.y);
       auto pd = ori + ImVec2(0, wsiz.y);
 
-      auto tex = outbuffer->texture();
+      ////////////////////////////////////////////////
+      // grab texture from ECS rtgroup/rtbuffer
+      ////////////////////////////////////////////////
+
+      auto tex = ecs_outbuffer->texture();
 
       ////////////////////////////////////////////////
 
@@ -367,6 +389,8 @@ int main(int argc, char** argv, char** envp) {
             0xffffffff);
       }
 
+      ////////////////////////////////////////////////
+      // manipulator support
       ////////////////////////////////////////////////
 
       if (auto manip_target = edctx._varmap.typedValueForKey<ork::xfnode_ptr_t>("manip_target")) {
@@ -446,6 +470,7 @@ int main(int argc, char** argv, char** envp) {
       }
 
       ImGui::End();
+     
       ////////////////////////////////////////////////
 
       ImGui::PopItemWidth();
@@ -454,8 +479,28 @@ int main(int argc, char** argv, char** envp) {
 
       ImGui::End();
     };
+
+    ///////////////////////////////////////////////////////////////////////
+    // imgui render
+    ///////////////////////////////////////////////////////////////////////
+
+    sframe_imgui->_drawEvent = drwev;
+    sframe_imgui->compositor = compositorimpl;
+    sframe_imgui->renderer   = renderer;
+    sframe_imgui->passdata   = CPD;
+    sframe_imgui->_updrendersync = init_data->_update_rendersync;
+    sframe_imgui->pushEmptyUpdateDrawBuf(); // produce empty drawbuf update
     sframe_imgui->render(); // will consume drawbufs from sframe_imgui
+
+    ///////////////////////////////////////////////////////////////////////
+    // done with frame
+    ///////////////////////////////////////////////////////////////////////
+
     context->endFrame();
+
+    ///////////////////////////////////////////////////////////////////////
+    // render to movie ?
+    ///////////////////////////////////////////////////////////////////////
 
     if(movie){
       //sframe_top->onPostCompositorRender = [&](const AcquiredRenderDrawBuffer& rdb) {
@@ -469,7 +514,8 @@ int main(int argc, char** argv, char** envp) {
 
     }
 
-    //controller->renderWithStandardCompositorFrame(sframe_imgui);
+    ///////////////////////////////////////////////////////////////////////
+
   });
 
   //////////////////////////////////////////////////////////

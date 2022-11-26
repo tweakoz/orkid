@@ -231,7 +231,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   _tek_GBU_CT_NV_RI_NI_MO = fxi->technique(_shader, "GBU_CT_NV_RI_NI_MO");
 
-  _tek_GBU_CV_NM_RI_NI_MO = fxi->technique(_shader, "GBU_CV_NM_RI_NI_MO");
+  _tek_GBU_CV_EMI_RI_NI_MO = fxi->technique(_shader, "GBU_CV_EMI_RI_NI_MO");
 
   // OrkAssert(_tek_GBU_CT_NM_RI_NI_ST);
   // OrkAssert(_tek_GBU_CT_NM_RI_IN_ST);
@@ -585,7 +585,25 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
       break;
     //////////////////////////////////////////
     case "vertexcolor"_crcu:
-      OrkAssert(false);
+      if (not cfg._instanced and not cfg._skinned and not cfg._stereo) {
+        fxinst->_technique         = _tek_GBU_CV_EMI_RI_NI_MO;
+        fxinst->_params[_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
+        fxinst->addStateLambda(createBasicStateLambda());
+        fxinst->addStateLambda([this](const RenderContextInstData& RCID, int ipass){
+          auto _this = (PBRMaterial*) this;
+          auto RCFD        = RCID._RCFD;
+          auto context     = RCFD->GetTarget();
+          auto FXI         = context->FXI();
+          auto MTXI        = context->MTXI();
+          auto RSI         = context->RSI();
+          _this->_rasterstate.SetCullTest(ECULLTEST_OFF);
+          _this->_rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
+          _this->_rasterstate.SetZWriteMask(true);
+          _this->_rasterstate.SetRGBAWriteMask(true,false);
+          RSI->BindRasterState(_this->_rasterstate);
+        });
+        OrkAssert(fxinst->_technique != nullptr);
+      }
       break;
     //////////////////////////////////////////
     case "font"_crcu:
@@ -601,22 +619,24 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
       break;
   }
 
-  OrkAssert(fxinst->_technique != nullptr);
+  if(fxinst->_technique){
 
-  fxinst->_params[_paramMROT] = "RCFD_Model_Rot"_crcsh;
+    fxinst->_params[_paramMROT] = "RCFD_Model_Rot"_crcsh;
 
-  fxinst->_params[_paramMapColor]  = _texColor;
-  fxinst->_params[_paramMapNormal] = _texNormal;
-  fxinst->_params[_paramMapMtlRuf] = _texMtlRuf;
+    fxinst->_params[_paramMapColor]  = _texColor;
+    fxinst->_params[_paramMapNormal] = _texNormal;
+    fxinst->_params[_paramMapMtlRuf] = _texMtlRuf;
 
-  fxinst->_params[_parMetallicFactor]  = _metallicFactor;
-  fxinst->_params[_parRoughnessFactor] = _roughnessFactor;
-  fxinst->_params[_parModColor]        = fvec4(1, 1, 1, 1);
+    fxinst->_params[_parMetallicFactor]  = _metallicFactor;
+    fxinst->_params[_parRoughnessFactor] = _roughnessFactor;
+    fxinst->_params[_parModColor]        = fvec4(1, 1, 1, 1);
 
-  fxinst->_parInstanceMatrixMap = _paramInstanceMatrixMap;
-  fxinst->_parInstanceIdMap     = _paramInstanceIdMap;
-  fxinst->_parInstanceColorMap  = _paramInstanceColorMap;
-  fxinst->_material             = (GfxMaterial*)this;
+    fxinst->_parInstanceMatrixMap = _paramInstanceMatrixMap;
+    fxinst->_parInstanceIdMap     = _paramInstanceIdMap;
+    fxinst->_parInstanceColorMap  = _paramInstanceColorMap;
+    fxinst->_material             = (GfxMaterial*)this;
+
+  }
 
   return fxinst;
 }

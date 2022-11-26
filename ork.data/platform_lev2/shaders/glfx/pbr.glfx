@@ -58,7 +58,7 @@ technique GBU_CT_VN_RI_NI_MO {
 	vf_pass={vs_rigid_gbuffer,ps_gbuffer,sb_default}
 }
 ///////////////////////////////////////////////////////////////
-technique GBU_VC_VN_RI_NI_MO {
+technique GBU_CV_EMI_RI_NI_MO {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_rigid_gbuffer_vtxcolor,ps_gbuffer_vtxcolor,sb_default}
 }

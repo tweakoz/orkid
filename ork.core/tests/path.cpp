@@ -24,6 +24,21 @@ TEST(PathCanComposeAndDecomposeUrlPaths) {
   CHECK(p1 == p2);
 }
 
+TEST(PathCanRemoveDoubleSlashesCorrectly) {
+  Path p1("//path/to/leading_doubleslash_bad");
+  CHECK(strcmp(p1.ToAbsolute().c_str(),"/path/to/leading_doubleslash_bad")==0);
+  Path p1a("///path/to/leading_doubleslash_bad");
+  CHECK(strcmp(p1a.ToAbsolute().c_str(),"/path/to/leading_doubleslash_bad")==0);
+  Path p1b("////path/to/leading_doubleslash_bad");
+  CHECK(strcmp(p1b.ToAbsolute().c_str(),"/path/to/leading_doubleslash_bad")==0);
+  Path p2("/path/to//nonleading_doubleslash_bad");
+  CHECK(strcmp(p2.ToAbsolute().c_str(),"/path/to/nonleading_doubleslash_bad")==0);
+  Path p2a("/path/to///nonleading_doubleslash_bad");
+  CHECK(strcmp(p2a.ToAbsolute().c_str(),"/path/to/nonleading_doubleslash_bad")==0);
+  Path p2b("/path///to////nonleading_doubleslash_bad");
+  CHECK(strcmp(p2b.ToAbsolute().c_str(),"/path/to/nonleading_doubleslash_bad")==0);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 TEST(PathOperatorAssignmentEquals) {

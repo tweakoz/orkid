@@ -197,6 +197,10 @@ public:
 
   //////////////////////////////////////
 
+  void eatDoubleSlashes();
+
+  //////////////////////////////////////
+
   bool DoesPathExist() const;
   bool IsFile() const;
   bool IsFolder() const;

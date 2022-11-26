@@ -257,8 +257,7 @@ public:
 
   // vtxcolor
 
-  fxtechnique_constptr_t _tek_GBU_CV_VN_RI_NI_MO = nullptr;
-  fxtechnique_constptr_t _tek_GBU_CV_NM_RI_NI_MO = nullptr;
+  fxtechnique_constptr_t _tek_GBU_CV_EMI_RI_NI_MO = nullptr;
 
   ////////////////////////////////////
 

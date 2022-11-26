@@ -24,6 +24,7 @@
 
 #include "LuaIntf/LuaIntf.h"
 #include "LuaImpl.h"
+#include <ork/util/logger.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -37,6 +38,8 @@ namespace ork::ecs {
 using namespace ork;
 using namespace ork::object;
 using namespace ork::reflect;
+
+static logchannel_ptr_t logchan_luacomp = logger()->createChannel("ecs.luacomp",fvec3(0.9,0.8,0.0));
 
 void LuaComponentData::describeX(ComponentDataClass* clazz) {
   clazz->directProperty("ScriptFile", &LuaComponentData::mScriptPath)
@@ -130,9 +133,12 @@ bool LuaComponent::_onLink(ork::ecs::Simulation* sim) {
 
   auto path = mCD.GetPath();
 
-  //sim->debugBanner( 0,255,255, "LuaComponent::_onLink: scm<%p> path<%s>\n", scm, path.ToAbsolute().c_str() );
-  if (nullptr == scm)
+  logchan_luacomp->log( "LuaComponent::_onLink: scm<%p> path<%s>", scm, path.ToAbsolute().c_str() );
+  
+  if (nullptr == scm){
+    logerrchannel()->log( "LuaComponent::_onLink: scm is nullptr!!!!" );
     return false;
+  }
 
   auto asluasys = scm->GetLuaManager().get<LuaContext*>();
   OrkAssert(asluasys);
@@ -171,7 +177,7 @@ bool LuaComponent::_onLink(ork::ecs::Simulation* sim) {
       lua.push(_luaentity);
       int iret = lua.pcall(1, 0, 0);
       if (iret != 0) {
-        sim->debugBanner(255, 0, 0, "PCALL-ERROR: LuaComponent::_onLink: scm<%p> path<%s>\n", scm, path.ToAbsolute().c_str());
+        logchan_luacomp->log("PCALL-ERROR: LuaComponent::_onLink: scm<%p> path<%s>", scm, path.ToAbsolute().c_str());
         // printf( "CALL mOnEntLink\n");
       }
       OrkAssert(iret == 0);
@@ -204,7 +210,7 @@ void LuaComponent::_onUnlink(ork::ecs::Simulation* psi) {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool LuaComponent::_onStage(ork::ecs::Simulation* sim) {
-  //sim->debugBanner(0, 255, 255, "LuaComponent::_onStage: mScriptObject<%p>\n", mScriptObject);
+  logchan_luacomp->log("LuaComponent::_onStage: mScriptObject<%p>", mScriptObject);
   if (mScriptObject) {
     auto scm      = sim->findSystem<LuaSystem>();
     auto asluasys = scm->GetLuaManager().get<LuaContext*>();

@@ -21,7 +21,7 @@
 using namespace std::string_literals;
 using namespace ork;
 
-static constexpr bool DEBUG_LOG = false;
+static constexpr bool DEBUG_LOG = true;
 
 ImplementReflectionX(ork::lev2::scenegraph::DrawableDataKvPair, "SgDrawableDataKvPair");
 
@@ -488,7 +488,7 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras,on_enqueue_fn_t on_enq
     auto drawable = item._drawable;
     DrawQueueXfData xfd;
     if(DEBUG_LOG){
-      //logchan_sg->log( "enqueue static-drawable<%s>",  (void*) drawable->_name.c_str() );
+      logchan_sg->log( "enqueue static-drawable<%s>",  (void*) drawable->_name.c_str() );
     }
     drawable->enqueueOnLayer(xfd, *drawable_layer);
   }

@@ -59,7 +59,7 @@ void BulletSystemData::describeX(SystemDataClass* clazz) {
     ->annotate<float>("editor.range.max", 50.0f);
 
   clazz->directProperty("Gravity", &BulletSystemData::_gravity);
-  clazz->directProperty("Debug", &BulletSystemData::mbDEBUG);
+  clazz->directProperty("Debug", &BulletSystemData::_debug);
 
 }
 

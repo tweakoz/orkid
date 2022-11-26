@@ -44,8 +44,10 @@ scenedata_ptr_t generateScene(path_t path){
 
   auto scene = std::make_shared<SceneData>();
  	auto ecs_sg_sysdata  = scene->getTypedSystemData<SceneGraphSystemData>();
+  auto ecs_lua_sysdata  = scene->getTypedSystemData<LuaSystemData>();
   auto ecs_phys_sysdata  = scene->getTypedSystemData<BulletSystemData>();
-  ecs_phys_sysdata->mbDEBUG = false;
+  ecs_phys_sysdata->_debug = true;
+
   ///////////////////////////////////////////
   // ground
   ///////////////////////////////////////////
@@ -92,7 +94,7 @@ scenedata_ptr_t generateScene(path_t path){
     else{
       auto phys_shape = std::make_shared<BulletShapeSphereData>();
       phys_shape->_radius = 2.2f;
-      ecs_physics_compdata->_allowSleeping = false;
+      ecs_physics_compdata->_allowSleeping = true;
       ecs_physics_compdata->_shapedata = phys_shape;
     }
 
@@ -104,6 +106,7 @@ scenedata_ptr_t generateScene(path_t path){
   	auto ecs_spawner = scene->createSceneObject<SpawnData>("ent_ball"_pool);
   	ecs_spawner->SetArchetype(ecs_arch);
     ecs_spawner->transform()->_translation = fvec3(-2.377,7.9,-3.52);
+    ecs_spawner->setAutoSpawn(false);
 	  ecs_sg_sysdata->declarePrefetchDrawableData(modeldata);
   }
 

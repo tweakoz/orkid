@@ -363,11 +363,11 @@ typename FixedString<kmaxlen>::size_type FixedString<kmaxlen>::cue_to_char( char
 ///////////////////////////////////////////////////////////////////////////////
 
 template <unsigned int kmaxlen>
-typename FixedString<kmaxlen>::size_type FixedString<kmaxlen>::find_first_of( const char* srch ) const
+typename FixedString<kmaxlen>::size_type FixedString<kmaxlen>::find_last_of( const char* srch ) const
 {
 	size_type rval = npos;
 
-	const char* pfound = strstr( buffer, srch );
+	const char* pfound = strrstr( buffer, srch );
 
 	if( pfound )
 	{
@@ -377,14 +377,15 @@ typename FixedString<kmaxlen>::size_type FixedString<kmaxlen>::find_first_of( co
 	return rval;
 }
 
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template <unsigned int kmaxlen>
-typename FixedString<kmaxlen>::size_type FixedString<kmaxlen>::find_last_of( const char* srch ) const
+typename FixedString<kmaxlen>::size_type FixedString<kmaxlen>::find_first_of( const char* srch ) const
 {
 	size_type rval = npos;
 
-	const char* pfound = strrstr( buffer, srch );
+	const char* pfound = strstr( buffer, srch );
 
 	if( pfound )
 	{

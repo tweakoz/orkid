@@ -6,9 +6,11 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/kernel/any.h>
+#include <ork/kernel/environment.h>
 #include <ork/pch.h>
 #include <ork/reflect/properties/register.h>
 #include <ork/util/md5.h>
+#include <ork/util/logger.h>
 
 #include <cxxabi.h>
 #include <iostream>
@@ -38,6 +40,8 @@ using namespace ork;
 using namespace ork::object;
 using namespace ork::reflect;
 
+static logchannel_ptr_t logchan_luasys = logger()->createChannel("ecs.luasys",fvec3(0.9,0.6,0.0));
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void LuaSystemData::describeX(SystemDataClass* clazz) {
@@ -59,12 +63,9 @@ System* LuaSystemData::createSystem(ork::ecs::Simulation* pinst) const {
 LuaSystem::LuaSystem(const LuaSystemData& data, ork::ecs::Simulation* pinst)
     : ork::ecs::System(&data, pinst)
     , mScriptRef(LUA_NOREF) {
-  // printf("SCMI<%p>\n", this);
+  logchan_luasys->log("LuaSystem::LuaSystem() <%p>", this);
   auto luasys = new LuaContext(pinst, this);
   mLuaManager.set<LuaContext*>(luasys);
-
-  auto luapath = getenv("LUA_PATH");
-  assert(luapath != nullptr);
 
   ///////////////////////////////////////////////
 
@@ -72,27 +73,42 @@ LuaSystem::LuaSystem(const LuaSystemData& data, ork::ecs::Simulation* pinst)
     lua_getglobal(luasys->mLuaState, "package");
     lua_getfield(luasys->mLuaState, -1, "path");
 
-    fxstring<256> lua_path;
-    lua_path.format("%s;%s", lua_tostring(luasys->mLuaState, -1), pth);
+    //logchan_luasys->log("LuaSystem AppendPath pth<%s>", pth );
+
+    auto orig_path = lua_tostring(luasys->mLuaState, -1);
+
+    //logchan_luasys->log("LuaSystem AppendPath orig_path<%s>", orig_path );
+
+    fxstring<1024> lua_path;
+    lua_path.format("%s;%s", orig_path, pth);
 
     lua_pop(luasys->mLuaState, 1);
     lua_pushstring(luasys->mLuaState, lua_path.c_str());
     lua_setfield(luasys->mLuaState, -2, "path");
     lua_pop(luasys->mLuaState, 1);
+
+    logchan_luasys->log("LuaSystem AppendPath lua_path<%s>", lua_path.c_str() );
   };
 
   ///////////////////////////////////////////////
   // Set Lua Search Path
   ///////////////////////////////////////////////
 
-  auto searchpath  = file::Path("src://scripts/");
+  std::string orkdirstr;
+  genviron.get("ORKID_WORKSPACE_DIR", orkdirstr);
+  OrkAssert(orkdirstr!="");
+  auto orkidWorkspaceDir = file::Path(orkdirstr);
+  auto searchpath = (orkidWorkspaceDir/"ork.data"/"src"/"scripts");
   auto abssrchpath = searchpath.ToAbsolute();
+  OrkAssert(abssrchpath.DoesPathExist());
 
   if (abssrchpath.DoesPathExist()) {
-    fxstring<256> lua_path;
-    lua_path.format("%s?.lua", abssrchpath.c_str());
+    fxstring<1024> lua_path;
+    lua_path.format("%s/?.lua", abssrchpath.c_str());
     AppendPath(lua_path.c_str());
   }
+
+  //logchan_luasys->log("LuaSystem LUA_PATH <%s>", abssrchpath.c_str() );
 
   ///////////////////////////////////////////////
   // find & init scene file
@@ -119,7 +135,7 @@ LuaSystem::LuaSystem(const LuaSystemData& data, ork::ecs::Simulation* pinst)
     int ret = luaL_loadstring(asluasys->mLuaState, mScriptText.c_str());
 
     mScriptRef = luaL_ref(asluasys->mLuaState, LUA_REGISTRYINDEX);
-    // printf( "mScriptRef<%d>\n", mScriptRef );
+    logchan_luasys->log( "mScriptRef<%d>", mScriptRef );
     //  lua_pop(asluasys->mLuaState, 1); // dont call, just reference
 
     // LuaProtectedCallByRef( asluasys->mLuaState, mScriptRef );
@@ -206,6 +222,7 @@ void LuaSystem::_onDeactivateComponent(LuaComponent* component) {
 
 bool LuaSystem::_onLink(Simulation* psi) // final
 {
+  logchan_luasys->log( "_onLink() ");
   // printf("LuaSystem::DoLink()\n");
   auto asluasys = mLuaManager.get<LuaContext*>();
   OrkAssert(asluasys);
@@ -218,6 +235,7 @@ bool LuaSystem::_onLink(Simulation* psi) // final
 
 void LuaSystem::_onUnLink(Simulation* psi) // final
 {
+  logchan_luasys->log( "_onUnLink() ");
   // printf("LuaSystem::DoUnLink()\n");
   auto asluasys = mLuaManager.get<LuaContext*>();
   OrkAssert(asluasys);
@@ -228,7 +246,7 @@ void LuaSystem::_onUnLink(Simulation* psi) // final
 
 bool LuaSystem::_onActivate(Simulation* psi) // final
 {
-  // printf("LuaSystem::DoStart()\n");
+  logchan_luasys->log( "_onActivate() ");
   auto asluasys = mLuaManager.get<LuaContext*>();
   OrkAssert(asluasys);
   // LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneStart");
@@ -239,7 +257,7 @@ bool LuaSystem::_onActivate(Simulation* psi) // final
 
 void LuaSystem::_onDeactivate(Simulation* inst) // final
 {
-  // printf("LuaSystem::DoStop()\n");
+  logchan_luasys->log( "_onDeactivate() ");
   auto asluasys = mLuaManager.get<LuaContext*>();
   OrkAssert(asluasys);
   // LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneStop");
@@ -248,12 +266,14 @@ void LuaSystem::_onDeactivate(Simulation* inst) // final
 ///////////////////////////////////////////////////////////////////////////////
 
 bool LuaSystem::_onStage(Simulation* inst) {
+  logchan_luasys->log( "_onStage() ");
   return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void LuaSystem::_onUnstage(Simulation* inst) {
+  logchan_luasys->log( "_onUnstage() ");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -266,6 +286,8 @@ void LuaSystem::_onUpdate(Simulation* psi) // final
 
   double dt = psi->deltaTime();
   double gt = psi->gameTime();
+
+  //logchan_luasys->log( "_onUpdate() ");
 
   // LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneUpdate", ldt,lgt);
 

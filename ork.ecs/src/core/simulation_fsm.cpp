@@ -444,7 +444,7 @@ void Simulation::_initializeEntities() {
   // Compose Entities
   ///////////////////////////////////
 
-  // orklogchan_simfsm->log( "beg si<%p> Compose Entities..", this );
+  logchan_simfsm->log( "simulation<%p> Composing AutoSpawn Entities..", (void*) this );
 
   auto scene = _controller->_scenedata;
 
@@ -475,8 +475,11 @@ void Simulation::_initializeEntities() {
         }
         ////////////////////////////////////////////////////////////////
 
-        // logchan_simfsm->log( "Compose Entity<%p> arch<%p> layer<%s>", pent, arch,
-        // layer_name.c_str() );
+        logchan_simfsm->log( "Compose AutoSpawn Entity<%p> arch<%p> layer<%s>", //
+                             (void*) pent, //
+                             (void*) arch.get(), //
+                             layer_name.c_str() );
+
         assert(pent != nullptr);
 
         auto node  = spawner->_dagnode;

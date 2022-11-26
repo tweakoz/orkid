@@ -342,7 +342,7 @@ fragment_shader ps_gbuffer
 vertex_shader vs_rigid_gbuffer_vtxcolor
 	: iface_vgbuffer
   : lib_pbr_vtx {
-		vs_common(position,normal,binormal);
+		//vs_common(position,normal,binormal);
 		frg_clr = vtxcolor;
 		gl_Position = mvp*position;
 }

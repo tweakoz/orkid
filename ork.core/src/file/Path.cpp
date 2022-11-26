@@ -5,7 +5,6 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-
 #include <ork/pch.h>
 #include <ork/file/file.h>
 #include <ork/file/path.h>
@@ -418,6 +417,8 @@ Path Path::ToAbsolute(EPathType etype) const {
     etype = EPATHTYPE_POSIX;
 #endif
 
+  rval.eatDoubleSlashes();
+
   switch (etype) {
     case EPATHTYPE_DOS: {
       Path::NameType nt = rval._pathstring;
@@ -438,9 +439,47 @@ Path Path::ToAbsolute(EPathType etype) const {
     default:
       OrkAssert(false);
   }
-  // printf("Path::ToAbsolute (end) inp<%s> out<%s> tmp<%s>\n", this->c_str(), rval.c_str(), tmp.c_str());
+  //printf("Path::ToAbsolute (end) inp<%s> out<%s> tmp<%s>\n", this->c_str(), rval.c_str(), tmp.c_str());
   return rval;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// replace redundant double-slashes with slashes
+///////////////////////////////////////////////////////////////////////////////
+
+void Path::eatDoubleSlashes() {
+  bool keep_going    = true;
+  auto& str_contents = _pathstring;
+  size_t from        = 0;
+  while (keep_going) {
+    size_t it_doubleslash = str_contents.find("//", from);
+    if (it_doubleslash == Path::NameType::npos) {
+      // not found...
+      keep_going = false;
+    } else if (it_doubleslash == 0) { // leading double slash
+      // printf( "a0<%s>\n", str_contents.c_str());
+      str_contents = str_contents.substr(1, str_contents.size() - 1);
+      // printf( "a1<%s>\n", str_contents.c_str());
+    } else if (it_doubleslash > 0) { // not leading
+      int prev = it_doubleslash - 1;
+      if (str_contents.c_str()[prev] == ':') { // do we have a preceding colon ?
+        // if so, skip
+        from = it_doubleslash + 1;
+      } else { // no preceding slash, remove...
+        from = it_doubleslash;
+        // printf( "b0<%s> from<%zu>\n", str_contents.c_str(), from);
+        auto prefix  = str_contents.substr(0, from);
+        auto suffix  = str_contents.substr(from + 1, str_contents.size() - (from + 1));
+        str_contents = prefix + suffix;
+        // printf( "b1 prefix<%s> suffix<%s> total<%s>\n", prefix.c_str(), suffix.c_str(), str_contents.c_str());
+      }
+    } else {
+      OrkAssert(false);
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 Path Path::ToAbsoluteFolder(EPathType etype) const {
   // printf( " Path::ToAbsoluteFolder (begin) inp<%s>\n", this->c_str()  );

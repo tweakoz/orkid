@@ -81,14 +81,14 @@ struct BulletSystemData : public SystemData {
 
   float mfTimeScale = 1.0f;
   float mSimulationRate = 120.0f;
-  bool mbDEBUG = false;
+  bool _debug = false;
   fvec3 _gravity;
 
 public:
   BulletSystemData();
 
   float GetTimeScale() const { return mfTimeScale; }
-  bool IsDebug() const { return mbDEBUG; }
+  bool IsDebug() const { return _debug; }
   float GetSimulationRate() const { return mSimulationRate; }
   const fvec3& GetGravity() const { return _gravity; }
 

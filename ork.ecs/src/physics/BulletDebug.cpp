@@ -153,11 +153,13 @@ void PhysicsDebugger::_onGpuExit(Simulation* psi, lev2::Context* ctx) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void PhysicsDebugger::render(const RenderContextInstData& RCID, lineqptr_t lines) {
+void PhysicsDebugger::render(const RenderContextInstData& _RCID, lineqptr_t lines) {
 
   //printf( "rendering...\n");
 
-  auto context = RCID.context();
+  RenderContextInstData RCIDCOPY = _RCID;
+
+  auto context = RCIDCOPY.context();
   typedef SVtxV12C4T16 vtx_t;
 
   if (nullptr == lines)
@@ -168,7 +170,13 @@ void PhysicsDebugger::render(const RenderContextInstData& RCID, lineqptr_t lines
   int inumlines = lines->size();
 
   //printf( "draw numlines<%d>\n", inumlines );
-  auto prenderer = RCID.GetRenderer();
+  auto prenderer = RCIDCOPY.GetRenderer();
+
+  if( nullptr == _fxinstancelut){
+    _fxinstancelut = _pbrmaterial->createFxStateInstanceLut();
+  }
+  RCIDCOPY._fx_instance_lut = _fxinstancelut;
+
 
   auto pcamdata = context->topRenderContextFrameData()->topCPD().cameraMatrices();
 
@@ -199,7 +207,25 @@ void PhysicsDebugger::render(const RenderContextInstData& RCID, lineqptr_t lines
     mtx_dbg.setTranslation(cam_z * -.013f);
 
     context->MTXI()->PushMMatrix(mtx_dbg);
-    context->GBI()->DrawPrimitive(_pbrmaterial.get(), vwriter, ork::lev2::PrimitiveType::LINES);
+
+    auto pmat = _pbrmaterial.get();
+
+    ///////////////////////////////////////////////
+    // draw with modified RCID (containing _fx_instance_lut)
+    ///////////////////////////////////////////////
+
+    OrkAssert(_RCID._RCFD!=nullptr);
+    OrkAssert(_RCID._RCFD->_pbrcommon!=nullptr);
+    OrkAssert(RCIDCOPY._RCFD!=nullptr);
+    OrkAssert(RCIDCOPY._RCFD->_pbrcommon!=nullptr);
+
+    auto fxinst = _fxinstancelut->findfxinst(RCIDCOPY);
+    OrkAssert(fxinst!=nullptr);
+    fxinst->wrappedDrawCall(RCIDCOPY,[&](){
+      context->GBI()->DrawPrimitiveEML(vwriter, ork::lev2::PrimitiveType::LINES);
+    });
+
+    ///////////////////////////////////////////////
     context->MTXI()->PopMMatrix();
     context->PopModColor();
   }

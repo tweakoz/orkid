@@ -79,6 +79,7 @@ struct PbrNodeImpl {
     RCFD.setUserProperty("rtb_gbuffer"_crc,_context._rtbGbuffer);
     RCFD.setUserProperty("rtb_accum"_crc,_context._rtbLightAccum );
     RCFD._renderingmodel = node->_renderingmodel;
+    RCFD._pbrcommon = pbrcommon;
     //////////////////////////////////////////////////////
     _context.renderUpdate(drawdata);
     auto VD = drawdata.computeViewData();
