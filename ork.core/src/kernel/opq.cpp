@@ -35,7 +35,7 @@ static progress_handler_t g_handler = [](progressdata_ptr_t data) {
       name_str.c_str(),
       grpn_str.c_str(),
       pend_str.c_str());
-  ::usleep(10);
+  ork::usleep(10);
 };
 ///////////////////////////////////////////////////////////////////////
 void setProgressHandler(progress_handler_t new_handler) {
@@ -65,7 +65,7 @@ void dispersed_sleep(int idx, int iquantausec) {
       57,
       59,
   };
-  usleep(ktab[idx & 0xf] * iquantausec);
+  ork::usleep(ktab[idx & 0xf] * iquantausec);
 }
 static void _assertNotOnQueue(OperationsQueue* the_opQ) {
   auto ot = TrackCurrent::context();
@@ -268,7 +268,7 @@ void OperationsQueue::_internalBeginLock() {
     for (auto thread : thset)
       while (thread->_state.load() != EPOQSTATE_LOCKED) {
         mSemaphore.notify();
-        usleep(0);
+        ork::usleep(0);
       }
   });
   printf("Opq<%s> Locked!\n", _name.c_str());
@@ -286,7 +286,7 @@ void OperationsQueue::_internalEndLock() {
     for (auto thread : thset)
       while (thread->_state.load() != EPOQSTATE_RUNNING) {
         mSemaphore.notify();
-        usleep(0);
+        ork::usleep(0);
       }
   });
   printf("Opq<%s> Unlocked!\n", _name.c_str());
@@ -478,7 +478,7 @@ OperationsQueue::~OperationsQueue() {
         numthreads--;
       }
     });
-    usleep(0);
+    ork::usleep(0);
   }
 
   // printf( "Opq<%p:%s> joined numthreadsrem<%zu>\n", this,_name.c_str(), numthreads);

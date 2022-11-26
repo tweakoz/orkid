@@ -70,7 +70,7 @@ TEST(LuaScripting1)
 
         for(int i=0; i<10; i++){
           controller->update();
-          usleep(16000);
+          ork::usleep(16000);
         }
 
         counter--;
@@ -81,7 +81,7 @@ TEST(LuaScripting1)
   while( counter != 0 )
   {
     printf( "waiting for counter<%d>\n", counter.load() );
-    usleep(1<<20);
+    ork::usleep(1<<20);
   }
 
   printf( "SceneManip1 DONE counter<%d>\n", int(counter));

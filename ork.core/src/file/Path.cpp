@@ -788,7 +788,7 @@ void Path::ComputeMarkers(char pathsep) {
     printf("instr<%s> itot<%d> ilen<%d>\n", instr, itot, ilen);
 
     while (1) {
-      usleep(1000);
+      ork::usleep(1000);
     }
   }
 

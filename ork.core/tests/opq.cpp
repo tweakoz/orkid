@@ -255,7 +255,7 @@ TEST(opq_maxinflight) {
         int i = 0;
 
         while (throttle.SecsSinceStart() < fr) {
-          usleep(100);
+          ork::usleep(100);
         }
 
         ops_in_flight--;

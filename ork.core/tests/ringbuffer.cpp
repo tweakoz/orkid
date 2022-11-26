@@ -77,7 +77,7 @@ template <typename queue_type> struct yo {
           else
             assert(false);
         }
-        usleep(2000);
+        ork::usleep(2000);
       }
     };
 

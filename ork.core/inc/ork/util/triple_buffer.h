@@ -49,7 +49,7 @@ template <typename T> struct concurrent_triple_buffer {
       rval = _values[_write]._payload.get();
       _mutex.UnLock();
       if (nullptr == rval) {
-        usleep(kquanta);
+        ork::usleep(kquanta);
       }
     }
     // printf("begin_push w<%d>\n", _write);
@@ -79,6 +79,7 @@ template <typename T> struct concurrent_triple_buffer {
       _mutex.UnLock();
       attempts++;
       if (attempts > 50) {
+        ork::usleep(10);
         //printf("triplebuf<%p> begin_pull _read<%d> _nextread<%d> attempts<%d> \n", this, _read, _nextread, int(attempts));
         return nullptr;
       }

@@ -475,7 +475,7 @@ int OrkEzApp::mainThreadLoop() {
         }
       }
       opq::updateSerialQueue()->Process();
-      usleep(100);
+      ork::usleep(100);
       sched_yield();
     } // while (not checkAppState(KAPPSTATEFLAG_JOINED)) {
 

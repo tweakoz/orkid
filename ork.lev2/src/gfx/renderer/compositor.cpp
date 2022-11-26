@@ -163,7 +163,7 @@ void StandardCompositorFrame::render() {
   while (nullptr == DB) {
     DB = _dbufcontextSFRAME->acquireForReadLocked();
     if (nullptr == DB) {
-      usleep(0);
+      ork::usleep(0);
     }
   }
   // printf( "sframe renderdb<%p>\n", DB );

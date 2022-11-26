@@ -68,7 +68,7 @@ template <typename queue_type> struct yo {
       extstring_t str;
       str.format("to<%d>", i);
       pv->mVar.template set(str);
-      // usleep(rand()%3);
+      // ork::usleep(rand()%3);
       mQueue01.EndWrite(pv);
     }
     printf("QSIZE<%d> Stage0 Exiting....\n", queue_type::knumitems);
@@ -95,7 +95,7 @@ template <typename queue_type> struct yo {
       } else if (mStage1ExitPlease)
         return;
       else
-        usleep(queue_type::kquanta);
+        ork::usleep(queue_type::kquanta);
     }
 
     printf("QSIZE<%d> Stage1 Exiting....\n", queue_type::knumitems);
@@ -125,7 +125,7 @@ template <typename queue_type> struct yo {
       } else if (mStage2ExitPlease)
         return;
       else
-        usleep(queue_type::kquanta);
+        ork::usleep(queue_type::kquanta);
     }
 
     printf("QSIZE<%d> Stage2 Exiting....\n", queue_type::knumitems);
@@ -142,7 +142,7 @@ template <typename queue_type> struct yo {
     stage1.start([=](anyp data) { this->Stage1(); });
     stage2.start([=](anyp data) { this->Stage2(); });
 
-    usleep(4 << 20);
+    ork::usleep(4 << 20);
     this->mStage0ExitPlease = true;
     stage0.join();
     this->mStage1ExitPlease = true;

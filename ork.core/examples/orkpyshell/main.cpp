@@ -38,7 +38,7 @@ int main(int argc, const char** argv) {
   bool testdone = false;
   testthr.start([&](anyp data) {
     while (false == testdone) {
-      usleep(1000);
+      ork::usleep(1000);
     }
   });
   /////////////////////////////////////////////

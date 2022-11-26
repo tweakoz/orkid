@@ -49,7 +49,7 @@ void* ix_kb_thread(void* pctx) {
 
   if (fd < 0)
     while (1)
-      usleep(1 << 20);
+      ork::usleep(1 << 20);
 
   struct input_event ev[64];
 

@@ -510,7 +510,7 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
           });
         }
         while(opcounter.load()>0){
-          usleep(0);
+          ork::usleep(0);
         }
         src_buffer = rgb_buffer;
         break;

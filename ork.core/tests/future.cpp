@@ -23,7 +23,7 @@ TEST(OrkFuture)
 /*
  * auto l_thread = [](anyp data)({
     	Future* pfut = static_cast<Future*>(ctx);
-	    usleep(1<<20);
+	    ork::usleep(1<<20);
     	pfut->Signal(fut_yo());
 	};
 

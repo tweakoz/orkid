@@ -61,6 +61,7 @@ function ShinyBall:OnEntityUpdate(dt)
     --self.ent:setRotation(self.quat)
     --self.ent:setPos(self.pos)
     --self.ent:setScale(self.scale)
+    --printf("entpos <%s>", self.pos)
 
     self.scale = (self.scale*0.99)+(self.new_scale*0.01)
 end

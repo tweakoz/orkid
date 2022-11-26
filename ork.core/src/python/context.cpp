@@ -217,7 +217,7 @@ void init()
 	gPythonEnabled = true;
 
 	opq::mainSerialQueue()->enqueue([&]() {
-		usleep(1500000);
+		ork::msleep(1500);
 		Py_SetProgramName(L"TheMachine");
 		auto& ctx = context();
 

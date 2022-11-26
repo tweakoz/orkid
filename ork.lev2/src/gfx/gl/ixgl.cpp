@@ -440,7 +440,7 @@ void* ContextGL::_doBeginLoad() {
   void* pvoiddat = nullptr;
 
   while (false == _loadTokens.try_pop(pvoiddat)) {
-    usleep(1 << 10);
+    ork::usleep(1000);
   }
   GlxLoadContext* loadctx    = (GlxLoadContext*)pvoiddat;
   GLFWwindow* current_window = glfwGetCurrentContext();

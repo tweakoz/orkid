@@ -155,7 +155,7 @@ PrivateImplementation::PrivateImplementation() {
 
   _synthThread.start([=](anyp data) {
     while (_execstate.load()!=1) {
-      usleep(1000);
+      ork::usleep(1000);
     }
     buffer_t popped;
     while (_execstate.load()==1) {
@@ -179,7 +179,7 @@ PrivateImplementation::PrivateImplementation() {
 PrivateImplementation::~PrivateImplementation() {
   _execstate.store(2);
   while (_execstate.load()==2) {
-    usleep(1000);
+    ork::usleep(1000);
   }
   synth::tearDown();
 }

@@ -65,7 +65,7 @@ template <typename queue_type> struct yo {
         extstring_t str;
         str.format("to<%d>", i);
         pv->mVar.template set<extstring_t>(str);
-        // usleep(rand()%3);
+        // ork::usleep(rand()%3);
         the_queue.end_push(pv);
         if (tm2.SecsSinceStart() > 1.0f) {
           printf("push ictr<%d> igot<%d> delt<%d>\n", pyo->mProdCounter, pyo->mProdGot, (pyo->mProdCounter - pyo->mProdGot));
@@ -90,7 +90,7 @@ template <typename queue_type> struct yo {
           pyo->mConsCounter++;
           pyo->mConsGot++;
           auto str = pv->mVar.template get<extstring_t>();
-          // usleep(rand()%3);
+          // ork::usleep(rand()%3);
           the_queue.end_pull(pv);
         }
   

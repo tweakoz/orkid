@@ -76,7 +76,7 @@ TEST(SceneTransition1)
 
 		    for(int i=0; i<10; i++){
           controller->update();
-		      usleep(16000);
+		      ork::msleep(16);
 		    }
 
 		    counter--;
@@ -87,7 +87,7 @@ TEST(SceneTransition1)
 	while( counter != 0 )
 	{
 		printf( "waiting for counter<%d>\n", counter.load() );
-		usleep(1<<20);
+		ork::usleep(1<<20);
 	}
 
 	printf( "SceneManip1 DONE counter<%d>\n", int(counter));
