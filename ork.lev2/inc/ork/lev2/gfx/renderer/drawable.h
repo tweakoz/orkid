@@ -199,7 +199,7 @@ struct DrawBufContext {
   void releaseFromWriteLocked(DrawableBuffer* db);
   const DrawableBuffer* acquireForReadLocked();
   void releaseFromReadLocked(const DrawableBuffer* db);
-
+  
   using tbuf_t = concurrent_triple_buffer<DrawableBuffer>;
   using tbuf_ptr_t = std::shared_ptr<tbuf_t>;
 

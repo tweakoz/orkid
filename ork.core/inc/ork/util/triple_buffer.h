@@ -79,11 +79,11 @@ template <typename T> struct concurrent_triple_buffer {
       _mutex.UnLock();
       attempts++;
       if (attempts > 50) {
-        printf("triplebuf<%p> begin_pull _read<%d> _nextread<%d> attempts<%d> \n", this, _read, _nextread, int(attempts));
+        //printf("triplebuf<%p> begin_pull _read<%d> _nextread<%d> attempts<%d> \n", this, _read, _nextread, int(attempts));
         return nullptr;
       }
     }
-    printf("triplebuf<%p> begin_pull _read<%d> _nextread<%d> attempts<%d> \n", this, _read, _nextread, int(attempts));
+    //printf("triplebuf<%p> begin_pull _read<%d> _nextread<%d> attempts<%d> \n", this, _read, _nextread, int(attempts));
     return rval;
   }
   /////////////////////////////

@@ -16,6 +16,7 @@
 #include <ork/math/misc_math.h>
 #include <ork/kernel/opq.h>
 #include <ork/kernel/debug.h>
+#include <ork/util/logger.h>
 
 GLuint gLastBoundNonZeroTex = 0;
 
@@ -534,7 +535,7 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
     tid._truncation_length += 127;
     tid._truncation_length = (tid._truncation_length&0xfffffff80);
-  dst_length = tid._truncation_length;
+    dst_length = tid._truncation_length;
   }
 
   ////////////////////////////////////////
@@ -549,7 +550,12 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboitem->_handle);
   GL_ERRORCHECK();
   if(tid._truncation_length!=0){
-    OrkAssert(tid._truncation_length<pbolen);
+    if(tid._truncation_length>pbolen){
+      logerrchannel()->log("ERROR: PBO overflow trunclen<%zu> pbolen<%zu>", //
+             tid._truncation_length, //
+             pbolen );
+      OrkAssert(false);
+    }
   }
   memcpy_fast(mapped, src_buffer, dst_length);
 

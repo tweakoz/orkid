@@ -227,26 +227,40 @@ int main(int argc, char** argv, char** envp) {
   // draw handler (called on main(rendering) thread)
   //////////////////////////////////////////////////////////
 
-  auto sframe_outer = std::make_shared<StandardCompositorFrame>();
-  sframe_outer->_use_imgui_docking = true;
+  auto sframe_imgui = std::make_shared<StandardCompositorFrame>();
+  sframe_imgui->_use_imgui_docking = true;
 
   auto sframe_ecs = std::make_shared<StandardCompositorFrame>();
 
   ezapp->onDraw([&](ui::drawevent_constptr_t drwev) { //
-    sframe_outer->_drawEvent = drwev;
+    sframe_imgui->_drawEvent = drwev;
     sframe_ecs->_drawEvent = drwev;
     ///////////////////////////////////////////////////////////////////////
-    sframe_outer->compositor = compositorimpl;
-    sframe_outer->renderer   = renderer;
-    sframe_outer->passdata   = CPD;
-    sframe_outer->_updrendersync = init_data->_update_rendersync;
+    sframe_imgui->compositor = compositorimpl;
+    sframe_imgui->renderer   = renderer;
+    sframe_imgui->passdata   = CPD;
+    sframe_imgui->_updrendersync = init_data->_update_rendersync;
     ///////////////////////////////////////////////////////////////////////
     auto context = drwev->GetTarget();
     context->beginFrame();
-    controller->renderWithStandardCompositorFrame(sframe_ecs);
-    sframe_outer->attachDrawBufContext(sframe_ecs->_dbufcontextSFRAME);
+
     ///////////////////////////////////////////////////////////////////////
-    sframe_outer->onImguiRender = [&](const AcquiredRenderDrawBuffer& rdb) {
+    // first render ecs into sframe_ecs
+    //  this will consume drawbufs owned by the ecs simulation
+    //  updated from controller->update() in the update thread
+    ///////////////////////////////////////////////////////////////////////
+
+    controller->renderWithStandardCompositorFrame(sframe_ecs);
+
+    ///////////////////////////////////////////////////////////////////////
+    // imgui render 
+    ///////////////////////////////////////////////////////////////////////
+
+    sframe_imgui->pushEmptyUpdateDrawBuf(); // empty drawbuf update
+
+    //sframe_imgui->attachDrawBufContext(sframe_ecs->_dbufcontextSFRAME);
+    ///////////////////////////////////////////////////////////////////////
+    sframe_imgui->onImguiRender = [&](const AcquiredRenderDrawBuffer& rdb) {
       ImGuiStyle& style       = ImGui::GetStyle();
       style.WindowRounding    = 5.3f;
       style.FrameRounding     = 2.3f;
@@ -440,7 +454,7 @@ int main(int argc, char** argv, char** envp) {
 
       ImGui::End();
     };
-    sframe_outer->render();
+    sframe_imgui->render(); // will consume drawbufs from sframe_imgui
     context->endFrame();
 
     if(movie){
@@ -455,7 +469,7 @@ int main(int argc, char** argv, char** envp) {
 
     }
 
-    //controller->renderWithStandardCompositorFrame(sframe_outer);
+    //controller->renderWithStandardCompositorFrame(sframe_imgui);
   });
 
   //////////////////////////////////////////////////////////

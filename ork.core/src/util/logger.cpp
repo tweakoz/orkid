@@ -84,5 +84,12 @@ namespace ork {
 	  	auto chan = the_logger->getChannel(named);
 	  	return chan;
 	  }
+    logchannel_ptr_t logerrchannel(){
+      logchannel_ptr_t errchan = logger()->getChannel("ERROR");
+      if(nullptr==errchan){
+        errchan = logger()->createChannel("ERROR",fvec3(1,0,0));
+      }
+      return errchan;
+    }
 
 }

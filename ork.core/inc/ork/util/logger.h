@@ -40,6 +40,7 @@ namespace ork {
 
   logger_ptr_t logger();
   logchannel_ptr_t logchannel(const std::string& named);
+  logchannel_ptr_t logerrchannel();
 
   /////////////////////////////////////////////////////////////////////
 }

@@ -116,6 +116,12 @@ StandardCompositorFrame::StandardCompositorFrame(uidrawevent_constptr_t drawEven
   _dbufcontextSFRAME->_name = "DBC.StandardCompositorFrame";
 }
 ///////////////////////////////////////////////////////////////////////////////
+void StandardCompositorFrame::pushEmptyUpdateDrawBuf(){
+  auto DB = _dbufcontextSFRAME->acquireForWriteLocked();
+  OrkAssert(DB);
+  _dbufcontextSFRAME->releaseFromWriteLocked(DB);
+}
+///////////////////////////////////////////////////////////////////////////////
 void StandardCompositorFrame::withAcquiredUpdateDrawBuffer(
     int debugcode,   //
     bool rendersync, //

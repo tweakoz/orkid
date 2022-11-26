@@ -376,6 +376,7 @@ struct StandardCompositorFrame {
 
   void render();
   const DrawableBuffer* _tryAcquireDrawBuffer();
+  void pushEmptyUpdateDrawBuf();
 
   rcfd_ptr_t _RCFD;
   dbufcontext_ptr_t _dbufcontextSFRAME;
