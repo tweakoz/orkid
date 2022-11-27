@@ -101,6 +101,7 @@ private:
 
 };
 
+PoolString addPooledStringFromStdString(const std::string& str);
 PoolString AddPooledString(const PieceString &ps);
 PoolString AddPooledLiteral(const ConstString &cs);
 PoolString FindPooledString(const PieceString &ps);

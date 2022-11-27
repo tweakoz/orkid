@@ -95,6 +95,9 @@ StdFileSystemInitalizer::~StdFileSystemInitalizer() {
   //po::notify(vars);
 
 
+PoolString addPooledStringFromStdString(const std::string& str) {
+  return StringPoolContext::AddPooledString(PieceString(str.c_str()));
+}
 PoolString AddPooledString(const PieceString& ps) {
   return StringPoolContext::AddPooledString(ps);
 }

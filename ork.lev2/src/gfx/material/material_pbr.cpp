@@ -92,10 +92,10 @@ void PBRMaterial::describeX(class_t* c) {
     auto texbasename = ctx._reader.GetString(istring);
     auto mtl         = std::make_shared<PBRMaterial>();
     mtl->SetName(AddPooledString(materialname));
-    // logchan_pbr->log("materialName<%s>", materialname);
+    logchan_pbr->log("read.xgm: materialName<%s>", materialname);
     ctx._inputStream->GetItem(istring);
     auto begintextures = ctx._reader.GetString(istring);
-    assert(0 == strcmp(begintextures, "begintextures"));
+    OrkAssert(0 == strcmp(begintextures, "begintextures"));
     bool done = false;
     while (false == done) {
       ctx._inputStream->GetItem(istring);
@@ -105,14 +105,16 @@ void PBRMaterial::describeX(class_t* c) {
       else {
         ctx._inputStream->GetItem(istring);
         auto texname = ctx._reader.GetString(istring);
-        // logchan_pbr->log("find tex channel<%s> channel<%s> .. ", token, texname);
+        logchan_pbr->log("read.xgm: find tex channel<%s> texname<%s> .. ", token, texname);
         auto itt = embtexmap.find(texname);
-        assert(itt != embtexmap.end());
+        OrkAssert(itt != embtexmap.end());
         auto embtex    = itt->second;
+        logchan_pbr->log("read.xgm: embtex<%p> data<%p> len<%zu>", embtex, embtex->_srcdata, embtex->_srcdatalen);
         auto tex       = std::make_shared<lev2::Texture>();
+        // crashes here...
         auto datablock = std::make_shared<DataBlock>(embtex->_srcdata, embtex->_srcdatalen);
         bool ok        = txi->LoadTexture(tex, datablock);
-        assert(ok);
+        OrkAssert(ok);
         // logchan_pbr->log(" embtex<%p> datablock<%p> len<%zu>", embtex, datablock.get(), datablock->length());
         if (0 == strcmp(token, "colormap")) {
           mtl->_texColor = tex;
@@ -154,6 +156,7 @@ void PBRMaterial::describeX(class_t* c) {
     ctx._outputStream->AddItem(istring);
 
     auto dotex = [&](std::string channelname, std::string texname) {
+      logchan_pbr->log("write.xgm: tex channel<%s> texname<%s>", channelname.c_str(), texname.c_str());
       if (texname.length()) {
         istring = ctx._writer.stringIndex(channelname.c_str());
         ctx._outputStream->AddItem(istring);
@@ -174,6 +177,13 @@ void PBRMaterial::describeX(class_t* c) {
     ctx._outputStream->AddItem<float>(pbrmtl->_metallicFactor);
     ctx._outputStream->AddItem<float>(pbrmtl->_roughnessFactor);
     ctx._outputStream->AddItem<fvec4>(pbrmtl->_baseColor);
+    logchan_pbr->log("write.xgm: _metallicFactor<%g>", pbrmtl->_metallicFactor);
+    logchan_pbr->log("write.xgm: _roughnessFactor<%g>", pbrmtl->_roughnessFactor);
+    logchan_pbr->log("write.xgm: _baseColor<%g %g %g %g>", //
+                     pbrmtl->_baseColor.x, //
+                     pbrmtl->_baseColor.y, //
+                     pbrmtl->_baseColor.z, //
+                     pbrmtl->_baseColor.w );
   };
 
   /////////////////////////////////////////////////////////////////
@@ -283,8 +293,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   //
 
-  assert(_paramMapNormal != nullptr);
-  assert(_parBoneMatrices != nullptr);
+  OrkAssert(_paramMapNormal != nullptr);
+  OrkAssert(_parBoneMatrices != nullptr);
 
   if (_texColor == nullptr) {
     _asset_texcolor = asset::AssetManager<lev2::TextureAsset>::load("src://effect_textures/white");
@@ -783,7 +793,7 @@ int PBRMaterial::BeginBlock(Context* context, const RenderContextInstData& RCID)
   OrkAssert(tek);
 
   int numpasses = fxi->BeginBlock(tek, RCID);
-  assert(numpasses == 1);
+  OrkAssert(numpasses == 1);
   return numpasses;
 }
 

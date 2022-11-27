@@ -60,6 +60,8 @@ struct SceneDagObject;
 struct DagComponent;
 struct SceneComposer;
 
+struct SceneGraphComponentData;
+
 struct EntRef;
 
 struct ECSTOK;
@@ -173,6 +175,8 @@ using componentdata_constptr_t = std::shared_ptr<const ComponentData>;
 using systemdata_constptr_t = std::shared_ptr<const SystemData>;
 using dagnodedata_constptr_t = std::shared_ptr<const DagNodeData>;
 using scenedagobject_constptr_t = std::shared_ptr<const SceneDagObject>;
+
+using sgcomponentdata_ptr_t = std::shared_ptr<SceneGraphComponentData>;
 
 using controller_ptr_t = std::shared_ptr<Controller>;
 using simulation_ptr_t = std::shared_ptr<Simulation>;

@@ -53,7 +53,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
     // parse embedded textures
     //////////////////////////////////////////////
 
-    //logchan_meshutilassimp->log("NumTex<%d>\n", scene->mNumTextures);
+    logchan_meshutilassimp->log("NumTex<%d>", scene->mNumTextures);
 
     for (int i = 0; i < scene->mNumTextures; i++) {
       auto texture        = scene->mTextures[i];
@@ -79,7 +79,6 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
         embtex->_name       = texname;
       } else {
 
-        //logchan_meshutilassimp->log("texpath<%s>\n", texname.c_str());
         OrkAssert(false);
       }
 
@@ -92,6 +91,15 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
       } else {
         assert(false);
       }
+
+      logchan_meshutilassimp->log("embtex: name<%s> fmt<%s> texpath<%s> texlen<%d>", //
+                                  embtex->_name.c_str(), //
+                                  fmt.c_str(), //
+                                  texname.c_str(), //
+                                  int(texture->mWidth));
+
+      //logchan_meshutilassimp->log("embtex: texpath<%s>\n", texname.c_str());
+
     }
 
     //////////////////////////////////////////////
@@ -110,10 +118,10 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
       } else {
         // find by path
         auto base_dir = datablock->_vars->typedValueForKey<bfs::path>("base-directory").value();
-        //logchan_meshutilassimp->log("base_dir<%s> texname<%s>\n", base_dir.c_str(), texname.c_str());
+        logchan_meshutilassimp->log("findtex: base_dir<%s> texname<%s>", base_dir.c_str(), texname.c_str());
         auto tex_path = base_dir / texname;
         auto tex_ext  = std::string(tex_path.extension().c_str());
-        //logchan_meshutilassimp->log("texpath<%s> tex_ext<%s>\n", tex_path.c_str(), tex_ext.c_str());
+        logchan_meshutilassimp->log("findtex: findtex: texpath<%s> tex_ext<%s>", tex_path.c_str(), tex_ext.c_str());
         if (boost::filesystem::exists(tex_path) and boost::filesystem::is_regular_file(tex_path)) {
           ork::file::Path as_ork_path;
           as_ork_path.fromBFS(tex_path);
@@ -142,11 +150,35 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
             embtexmap[texname] = embtex;
             rval               = embtex;
           } else {
-
-            OrkAssert(false);
+            logerrchannel()->log("findtex: file extension not supported <%s> texname<%s>", tex_path.c_str(), texname.c_str());
           }
         } // if (boost::filesystem::exists
+        else{
+          logerrchannel()->log("findtex: file not found<%s> texname<%s>", tex_path.c_str(), texname.c_str());
+        }
       }   // else
+
+      ////////////////////////////////
+      // catchall
+      ////////////////////////////////
+
+      if(rval==nullptr){
+          logerrchannel()->log("findtex: texname<%s> substituting", texname.c_str());
+
+          std::string texid   = FormatString("*%d", int(embtexmap.size()));
+
+          auto embtex     = new ork::lev2::EmbeddedTexture;
+          embtex->_name       = texname;
+          embtex->_format = "bin.nodata";
+          embtex->_usage  = usage;
+          embtexmap[texname] = embtex;
+          rval               = embtex;
+
+          embtex->fetchDDSdata();
+
+      }
+
+
       return rval;
     };
 

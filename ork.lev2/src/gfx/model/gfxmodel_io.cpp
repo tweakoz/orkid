@@ -29,10 +29,11 @@ datablock_ptr_t assimpToXgm(datablock_ptr_t inp_datablock);
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
-static logchannel_ptr_t logchan_mio = logger()->createChannel("gfxmodelIO",fvec3(0.8,0.8,0.4));
+static logchannel_ptr_t logchan_mioR = logger()->createChannel("gfxmodelIOREAD",fvec3(0.8,0.8,0.4));
+static logchannel_ptr_t logchan_mioW = logger()->createChannel("gfxmodelIOWRITE",fvec3(0.8,0.7,0.4));
 ///////////////////////////////////////////////////////////////////////////////
 bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
-  //logchan_mio->log("Writing Xgm<%p> to path<%s>d, (void*) mdl, Filename.c_str());
+  //logchan_mioR->log("Writing Xgm<%p> to path<%s>d, (void*) mdl, Filename.c_str());
   auto datablock = writeXgmToDatablock(mdl);
   if (datablock) {
     ork::File outputfile(Filename, ork::EFM_WRITE);
@@ -117,7 +118,7 @@ bool XgmModel::_loadAssimp(XgmModel* mdl, datablock_ptr_t inp_datablock) {
     basehasher->accumulateString(k);
     if(auto as_str = v.tryAs<std::string>() ){
       basehasher->accumulateString(as_str.value());
-      logchan_mio->log( "LOADASSIMP VAR<%s> <%s>", k.c_str(), as_str.value().c_str());
+      logchan_mioR->log( "LOADASSIMP VAR<%s> <%s>", k.c_str(), as_str.value().c_str());
     }
     else if(auto as_bool = v.tryAs<bool>() ){
       basehasher->accumulateItem<bool>(as_bool.value());
@@ -251,7 +252,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
         embtex->_srcdata    = texdatcopy;
         embtex->_srcdatalen = datasize;
         embtexmap[texname]  = embtex;
-        // logchan_mio->log("embtex<%zu:%s> datasiz<%zu> dataptr<%p>d, i, texname, datasize, texturedata);
+        // logchan_mioR->log("embtex<%zu:%s> datasiz<%zu> dataptr<%p>d, i, texname, datasize, texturedata);
       }
     }
 
@@ -279,8 +280,8 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
       const char* pmatname                = chunkreader.GetString(imatname);
       const char* pmatclassname           = chunkreader.GetString(imatclass);
 
-      logchan_mio->log( "pmatname<%s>", pmatname );
-      logchan_mio->log( "pmatclassname<%s>", pmatclassname );
+      logchan_mioR->log( "pmatname<%s>", pmatname );
+      logchan_mioR->log( "pmatclassname<%s>", pmatclassname );
       ork::object::ObjectClass* pmatclass = rtti::autocast(rtti::Class::FindClass(pmatclassname));
 
       static const int kdefaulttranssortpass = 100;
@@ -377,12 +378,12 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
           cluster->mBoundingBox.SetMinMax(boxmin, boxmax);
           cluster->mBoundingSphere = Sphere(boxmin, boxmax);
           ////////////////////////////////////////////////////////////////////////
-          // logchan_mio->log( "XGMLOAD vbfmt<%s> efmt<%d>d, vbfmt, int(efmt) );
+          // logchan_mioR->log( "XGMLOAD vbfmt<%s> efmt<%d>d, vbfmt, int(efmt) );
           ////////////////////////////////////////////////////////////////////////
           cluster->_vertexBuffer = VertexBufferBase::CreateVertexBuffer(efmt, ivbnum, true);
           void* pverts           = (void*)(ModelDataStream->GetDataAt(ivboffset));
           int ivblen             = ivbnum * ivbsize;
-          // logchan_mio->log("ReadVB NumVerts<%d> VtxSize<%d>d, ivbnum, pvb->GetVtxSize());
+          // logchan_mioR->log("ReadVB NumVerts<%d> VtxSize<%d>d, ivbnum, pvb->GetVtxSize());
           void* poutverts = context->GBI()->LockVB(*cluster->_vertexBuffer.get(), 0, ivbnum); // ivblen );
           {
             memcpy(poutverts, pverts, ivblen);
@@ -394,7 +395,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
                 auto& p = v.mPosition;
                 auto& n = v.mNormal;
                 OrkAssert(n.length() > 0.95);
-                // logchan_mio->log( " iv<%d> pos<%f %f %f> bi<%08x> bw<%08x>d, iv, p.x, p.y, p.z, v.mBoneIndices,
+                // logchan_mioR->log( " iv<%d> pos<%f %f %f> bi<%08x> bw<%08x>d, iv, p.x, p.y, p.z, v.mBoneIndices,
                 // v.mBoneWeights );
               }
             }
@@ -458,7 +459,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
 
           mdl->mbSkinned |= (inumbb > 0);
 
-          //logchan_mio->log("mdl<%p> mbSkinned<%d>d, (void*) mdl, int(mdl->mbSkinned));
+          //logchan_mioR->log("mdl<%p> mbSkinned<%d>d, (void*) mdl, int(mdl->mbSkinned));
           ////////////////////////////////////////////////////////////////////////
         }
       }
@@ -496,7 +497,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
   int32_t iVERSION    = 1;
   HeaderStream->AddItem(iVERSIONTAG);
   HeaderStream->AddItem(iVERSION);
-  // logchan_mio->log("WriteXgm<%s> VERSION<%d>d, Filename.c_str(), iVERSION);
+  logchan_mioW->log("WriteXgm: VERSION<%d>", iVERSION);
 
   ///////////////////////////////////
   // write out joints
@@ -509,7 +510,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
   HeaderStream->AddItem(inumjoints);
 
   int32_t istring;
-  // logchan_mio->log("WriteXgm<%s> numjoints<%d>d, Filename.c_str(), inumjoints);
+  logchan_mioW->log("WriteXgm: numjoints<%d>", inumjoints);
 
   for (int32_t ib = 0; ib < inumjoints; ib++) {
     const PoolString& JointName = skel.GetJointName(ib);
@@ -546,7 +547,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
 
   HeaderStream->AddItem(inumbones);
 
-  // logchan_mio->log("WriteXgm<%s> numbones<%d>d, Filename.c_str(), inumbones);
+  logchan_mioW->log("WriteXgm: numbones<%d>", inumbones);
   for (int32_t ib = 0; ib < inumbones; ib++) {
     const lev2::XgmBone& Bone = skel.bone(ib);
 
@@ -562,8 +563,8 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
   int32_t inummeshes = mdl->numMeshes();
   int32_t inummats   = mdl->GetNumMaterials();
 
-  // logchan_mio->log("WriteXgm<%s> nummeshes<%d>d, Filename.c_str(), inummeshes);
-  // logchan_mio->log("WriteXgm<%s> nummtls<%d>d, Filename.c_str(), inummats);
+  logchan_mioW->log("WriteXgm: nummeshes<%d>", inummeshes);
+  logchan_mioW->log("WriteXgm: nummtls<%d>", inummats);
 
   const fvec3& bc    = mdl->boundingCenter();
   float br           = mdl->GetBoundingRadius();
@@ -630,11 +631,11 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
     const PoolString& classname = pclass->Name();
     const char* pclassname      = classname.c_str();
 
-    // logchan_mio->log("WriteXgm<%s> material<%d> class<%s> name<%s>d, Filename.c_str(), imat, pclassname, pmat->GetName().c_str());
+    logchan_mioW->log("WriteXgm: material<%d> class<%s> name<%s>", imat, pclassname, pmat->GetName().c_str());
     istring = chunkwriter.stringIndex(classname.c_str());
     HeaderStream->AddItem(istring);
 
-    // logchan_mio->log("Material Name<%s> Class<%s>d, pmat->GetName().c_str(), classname.c_str());
+    logchan_mioW->log("Material Name<%s> Class<%s>", pmat->GetName().c_str(), classname.c_str());
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     // new style material writer
@@ -668,7 +669,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
     HeaderStream->AddItem(istring);
     HeaderStream->AddItem(inumsubmeshes);
 
-    // logchan_mio->log("WriteXgm<%s> mesh<%d:%s> numsubmeshes<%d>d, Filename.c_str(), imesh, Mesh.meshName().c_str(), inumsubmeshes);
+    logchan_mioW->log("WriteXgm: mesh<%d:%s> numsubmeshes<%d>", imesh, Mesh.meshName().c_str(), inumsubmeshes);
     for (int32_t ics = 0; ics < inumsubmeshes; ics++) {
       const lev2::XgmSubMesh& xgm_sub_mesh = *Mesh.subMesh(ics);
       auto pmat                            = xgm_sub_mesh.GetMaterial();
@@ -687,14 +688,14 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
         if (VB->GetNumVertices() > 0) {
           inumenabledclus++;
         } else {
-          logchan_mio->log("WARNING: material<%s> cluster<%d> has a zero length vertex buffer, skipping", pmat->GetName().c_str(), ic);
+          logchan_mioW->log("WARNING: material<%s> cluster<%d> has a zero length vertex buffer, skipping", pmat->GetName().c_str(), ic);
         }
       }
 
       HeaderStream->AddItem(ics);
       HeaderStream->AddItem(inumenabledclus);
 
-      // logchan_mio->log("WriteXgm<%s>  submesh<%d> numenaclus<%d>d, Filename.c_str(), ics, inumenabledclus);
+      logchan_mioW->log("WriteXgm:  submesh<%d> numenaclus<%d>", ics, inumenabledclus);
       ////////////////////////////////////////////////////////////
       istring = chunkwriter.stringIndex(pmat ? pmat->GetName().c_str() : "None");
       HeaderStream->AddItem(istring);
@@ -711,8 +712,8 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
         int32_t inumpg = cluster->numPrimGroups();
         int32_t inumjb = (int)cluster->GetNumJointBindings();
 
-        //logchan_mio->log("VB<%p> NumVerts<%d>d, (void*) VB.get(), VB->GetNumVertices());
-        //logchan_mio->log("clus<%d> numjb<%d>d, ic, inumjb);
+        logchan_mioW->log("VB<%p> NumVerts<%d>", (void*) VB.get(), VB->GetNumVertices());
+        logchan_mioW->log("clus<%d> numjb<%d>", ic, inumjb);
 
         int32_t ivbufoffset = ModelDataStream->GetSize();
         const u8* VBdata    = (const u8*)DummyTarget.GBI()->LockVB(*VB);
@@ -721,7 +722,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
 
           int VBlen = VB->GetNumVertices() * VB->GetVtxSize();
 
-          //logchan_mio->log("WriteVB VB<%p> NumVerts<%d> VtxSize<%d>d, (void*) VB.get(), VB->GetNumVertices(), VB->GetVtxSize());
+          logchan_mioW->log("WriteVB VB<%p> NumVerts<%d> VtxSize<%d>", (void*) VB.get(), VB->GetNumVertices(), VB->GetVtxSize());
 
           HeaderStream->AddItem(ic);
           HeaderStream->AddItem(inumpg);
@@ -745,7 +746,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
 
           int32_t inumidx = PG->GetNumIndices();
 
-          //logchan_mio->log("WritePG<%d> NumIndices<%d>d, ipg, inumidx);
+          logchan_mioW->log("WritePG<%d> NumIndices<%d>", ipg, inumidx);
 
           HeaderStream->AddItem(ipg);
           HeaderStream->AddItem<PrimitiveType>(PG->GetPrimType());
@@ -758,7 +759,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
           for (int32_t ii = 0; ii < inumidx; ii++) {
             int32_t iv = int32_t(pidx[ii]);
             if (iv >= VB->GetNumVertices()) {
-              //orklogchan_mio->log("index id<%d> val<%d> is > vertex count<%d>d, ii, iv, VB->GetNumVertices());
+              logchan_mioW->log("index id<%d> val<%d> is > vertex count<%d>", ii, iv, VB->GetNumVertices());
             }
             OrkAssert(iv < VB->GetNumVertices());
 
@@ -780,6 +781,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
     }
   }
   chunkwriter.writeToDataBlock(out_datablock);
+  //OrkAssert(false);
   return out_datablock;
 }
 

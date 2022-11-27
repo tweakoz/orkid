@@ -68,6 +68,7 @@ scenedata_ptr_t generateScene(path_t path){
     auto ecs_griddata = std::make_shared<GridDrawableData>();
     ecs_sg_compdata->createNodeOnLayer("gridnode", ecs_griddata, "sg_default");
     ecs_spawner->SetArchetype(ecs_arch);
+    ecs_spawner->transform()->_translation = fvec3(0,-0.01,0);
   }
 
   ///////////////////////////////////////////
@@ -95,6 +96,83 @@ scenedata_ptr_t generateScene(path_t path){
     auto ecs_spawner = scene->createSceneObject<SpawnData>("ent_xground"_pool);
     ecs_spawner->transform()->_translation = fvec3(0,-2,0);
     ecs_spawner->SetArchetype(ecs_arch);
+  }
+
+  ///////////////////////////////////////////
+  // sponza
+  ///////////////////////////////////////////
+
+  {
+    auto modeldata = std::make_shared<ModelDrawableData>("data://tests/sponza/sponza2.glb");
+    auto ecs_arch        = scene->createSceneObject<Archetype>("arch_sponza"_pool);
+    auto ecs_sg_compdata = ecs_arch->addComponent<SceneGraphComponentData>();
+    ecs_sg_compdata->createNodeOnLayer("modelnode", modeldata, "sg_default");
+    auto ecs_spawner = scene->createSceneObject<SpawnData>("ent_sponza"_pool);
+    ecs_spawner->SetArchetype(ecs_arch);
+    ecs_spawner->transform()->_translation = fvec3(0,-0.01,0);
+    ecs_spawner->transform()->_uniformScale = 14.0f;
+  }
+
+  ///////////////////////////////////////////
+  // lights
+  ///////////////////////////////////////////
+  {
+    struct LightInfo{
+      std::string _id;
+      archetype_ptr_t _archetype;
+      pointlightdata_ptr_t _lightdata;
+      sgcomponentdata_ptr_t _sgcompdata;
+      //spawndata_ptr_t _spawndata;
+    };
+
+    using lightinfo_ptr_t = std::shared_ptr<LightInfo>;
+
+    std::unordered_map<uint64_t,lightinfo_ptr_t> _lightinfos;
+
+      auto create_light = [&](std::string entname, //
+                              fvec3 pos, //
+                              float intensity) {
+        boost::Crc64 hasher;
+        //hasher.accumulateItem<fvec3>(pos);
+        hasher.accumulateItem<float>(intensity);
+        hasher.finish();
+        uint64_t hash = hasher.result();
+
+        auto it_linfo = _lightinfos.find(hash);
+
+        lightinfo_ptr_t light_info;
+
+        if(it_linfo==_lightinfos.end()){
+
+          auto id_str = FormatString("id-%zx", hash);
+
+          light_info = std::make_shared<LightInfo>();
+
+          auto arch_name = addPooledStringFromStdString("arch-light-"+id_str);
+
+          light_info->_id = id_str;
+          light_info->_lightdata      = std::make_shared<ork::lev2::PointLightData>();
+          light_info->_lightdata->_radius  = 1000.0f;
+          light_info->_lightdata->_falloff = 0.5f;
+          light_info->_lightdata->SetColor(fvec3::White() * intensity);
+          light_info->_archetype        = scene->createSceneObject<Archetype>(arch_name);
+          light_info->_sgcompdata = light_info->_archetype->addComponent<SceneGraphComponentData>();
+          light_info->_sgcompdata->createNodeOnLayer("lightnode", light_info->_lightdata, "sg_default");
+
+          _lightinfos[hash] = light_info;
+        }
+        else{
+          light_info = it_linfo->second;
+        }
+
+        auto ps_ent_name = addPooledStringFromStdString(entname+light_info->_id);
+        auto spawndata = scene->createSceneObject<SpawnData>(ps_ent_name);
+        spawndata->SetArchetype(light_info->_archetype);
+        spawndata->transform()->_translation = pos;
+      };
+
+      create_light("ent_light1",fvec3(-50, 15, 0), 4000.0f);
+      create_light("ent_light2",fvec3(50, 15, 0), 4000.0f);
   }
 
   ///////////////////////////////////////////
