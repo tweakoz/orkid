@@ -27,7 +27,7 @@ XgmModel::XgmModel()
     , mpUserData(0)
     , miNumMaterials(0)
     , mbSkinned(false) {
-    _varmap = std::make_shared<asset::vars_t>();
+  _varmap = std::make_shared<asset::vars_t>();
 }
 
 XgmModel::~XgmModel() {
@@ -66,26 +66,25 @@ XgmModelInst::XgmModelInst(const XgmModel* Model)
   _worldPose.apply(fmtx4(), mLocalPose);
 
   int nummeshes = Model->numMeshes();
-  for( int i=0; i<nummeshes; i++ ){
-    auto mesh = Model->mesh(i);
+  for (int i = 0; i < nummeshes; i++) {
+    auto mesh        = Model->mesh(i);
     int numsubmeshes = mesh->numSubMeshes();
-    for( int j=0; j<numsubmeshes; j++ ){
+    for (int j = 0; j < numsubmeshes; j++) {
       auto submesh = mesh->subMesh(j);
-      auto smi = std::make_shared<XgmSubMeshInst>(submesh);
+      auto smi     = std::make_shared<XgmSubMeshInst>(submesh);
       _submeshinsts.push_back(smi);
     }
   }
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 XgmSubMeshInst::XgmSubMeshInst(const XgmSubMesh* submesh)
-  : _submesh(submesh)
-  , _enabled(true) {
+    : _submesh(submesh)
+    , _enabled(true) {
 
-    _fxinstancelut = submesh->_material->createFxStateInstanceLut();
-    OrkAssert(_fxinstancelut);
+  _fxinstancelut = submesh->_material->createFxStateInstanceLut();
+  OrkAssert(_fxinstancelut);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -110,9 +109,9 @@ void XgmModelInst::disableMesh(const PoolString& ps) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void XgmModelInst::enableMesh(const XgmMesh* mesh) {
-  for (auto submeshinst : _submeshinsts){
+  for (auto submeshinst : _submeshinsts) {
     auto item_mesh = submeshinst->_submesh->_parentmesh;
-    if(item_mesh==mesh)
+    if (item_mesh == mesh)
       submeshinst->_enabled = true;
   }
 }
@@ -120,9 +119,9 @@ void XgmModelInst::enableMesh(const XgmMesh* mesh) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void XgmModelInst::disableMesh(const XgmMesh* mesh) {
-  for (auto submeshinst : _submeshinsts){
+  for (auto submeshinst : _submeshinsts) {
     auto item_mesh = submeshinst->_submesh->_parentmesh;
-    if(item_mesh==mesh)
+    if (item_mesh == mesh)
       submeshinst->_enabled = false;
   }
 }
@@ -130,7 +129,7 @@ void XgmModelInst::disableMesh(const XgmMesh* mesh) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void XgmModelInst::enableAllMeshes() {
-  for (auto submeshinst : _submeshinsts){
+  for (auto submeshinst : _submeshinsts) {
     submeshinst->_enabled = true;
   }
 }
@@ -138,14 +137,14 @@ void XgmModelInst::enableAllMeshes() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void XgmModelInst::disableAllMeshes() {
-  for (auto submeshinst : _submeshinsts){
+  for (auto submeshinst : _submeshinsts) {
     submeshinst->_enabled = false;
   }
 }
 
 bool XgmModelInst::isAnyMeshEnabled() {
-  for( auto submeshinst : _submeshinsts ){
-    if(submeshinst->_enabled)
+  for (auto submeshinst : _submeshinsts) {
+    if (submeshinst->_enabled)
       return true;
   }
   return false;
@@ -267,13 +266,8 @@ void XgmModel::RenderRigid(
   auto pmat = fxinst->_material;
   OrkAssert(pmat);
 
-  pTARG->debugPushGroup(FormatString(
-      "XgmModel::RenderRigid stereo1pass<%d> inummesh<%d> inumclusset<%d>",
-      int(stereo1pass),
-      inummesh,
-      inumclusset));
-
-  ork::lev2::RenderGroupState rgs = RCID.GetRenderGroupState();
+  pTARG->debugPushGroup(
+      FormatString("XgmModel::RenderRigid stereo1pass<%d> inummesh<%d> inumclusset<%d>", int(stereo1pass), inummesh, inumclusset));
 
   pTARG->MTXI()->SetMMatrix(WorldMat);
   pTARG->PushModColor(ModColor);
@@ -285,103 +279,18 @@ void XgmModel::RenderRigid(
     }
     pmat->gpuUpdate(pTARG);
     //////////////////////////////////////////////
-
-    struct RenderClus {
-      static void RenderPrim(ork::lev2::Context* pTARG, xgmcluster_ptr_t clust) {
-        auto vtxbuffer = clust->_vertexBuffer;
-        int inumprim   = clust->numPrimGroups();
-        for (int iprim = 0; iprim < inumprim; iprim++) {
-          auto primgroup = clust->primgroup(iprim);
-          auto idxbuffer = primgroup->GetIndexBuffer();
-          pTARG->GBI()->DrawIndexedPrimitiveEML(*vtxbuffer, *idxbuffer, primgroup->GetPrimType());
-        }
-      }
-      static void RenderStd(ork::lev2::Context* pTARG, ork::lev2::GfxMaterial* pmat, xgmcluster_ptr_t clust, int inumpasses) {
-        for (int ipass = 0; ipass < inumpasses; ipass++) {
-          if (pmat->BeginPass(pTARG, ipass)) {
-            RenderClus::RenderPrim(pTARG, clust);
-            pmat->EndPass(pTARG);
-          }
-        }
-      }
-    };
-
+    // fxinst wrapped draw call
     //////////////////////////////////////////////
-    if (0 != pmat) {
-      static int giNUMPASSES             = 0;
-      static bool gbDRAW                 = false;
-      static bool gbGROUPENABLED         = false;
-      static RenderGroupState gLASTSTATE = ork::lev2::RenderGroupState::NONE;
-      if(1)
-      switch (rgs) {
-        /////////////////////////////////////////////////////
-        case ork::lev2::RenderGroupState::NONE: {
-          pTARG->debugPushGroup("XgmModel::RenderRigid::RenderGroupState::NONE");
-          // pTARG->BindMaterial(pmat.get());
-          int inumpasses = pmat->BeginBlock(pTARG, RCID);
-          { RenderClus::RenderStd(pTARG, pmat, cluster, inumpasses); }
-          pmat->EndBlock(pTARG);
-          gbGROUPENABLED = false;
-          pTARG->debugPopGroup();
-          break;
-        }
-        /////////////////////////////////////////////////////
-        case ork::lev2::RenderGroupState::FIRST: {
-          // pTARG->BindMaterial(pmat);
-          giNUMPASSES = pmat->BeginBlock(pTARG, RCID);
-          if (giNUMPASSES == 1) {
-            gbGROUPENABLED = true;
-            gbDRAW         = pmat->BeginPass(pTARG, 0);
-            if (gbDRAW) {
-              RenderClus::RenderPrim(pTARG, cluster);
-            }
-          } else {
-            gbGROUPENABLED = false;
-            {
-              RenderClus::RenderStd(pTARG, pmat, cluster, giNUMPASSES); // inumpasses );
-            }
-            pmat->EndBlock(pTARG);
-          }
-          break;
-        }
-        /////////////////////////////////////////////////////
-        case ork::lev2::RenderGroupState::CONTINUE: {
-          OrkAssert((gLASTSTATE == ork::lev2::RenderGroupState::FIRST) || (gLASTSTATE == ork::lev2::RenderGroupState::CONTINUE));
-          if (gbGROUPENABLED) {
-            if (gbDRAW) {
-              pmat->UpdateMVPMatrix(pTARG);
-              RenderClus::RenderPrim(pTARG, cluster);
-            }
-          } else {
-            // pTARG->BindMaterial(pmat);
-            int inumpasses = pmat->BeginBlock(pTARG, RCID);
-            { RenderClus::RenderStd(pTARG, pmat, cluster, inumpasses); }
-            pmat->EndBlock(pTARG);
-          }
-          break;
-        }
-        /////////////////////////////////////////////////////
-        case ork::lev2::RenderGroupState::LAST: {
-          OrkAssert((gLASTSTATE == ork::lev2::RenderGroupState::CONTINUE) || (gLASTSTATE == ork::lev2::RenderGroupState::FIRST));
-
-          if (gbGROUPENABLED) {
-            if (gbDRAW) {
-              pmat->UpdateMVPMatrix(pTARG);
-              RenderClus::RenderPrim(pTARG, cluster);
-              pmat->EndPass(pTARG);
-            }
-            pmat->EndBlock(pTARG);
-          } else {
-            // pTARG->BindMaterial(pmat);
-            int inumpasses = pmat->BeginBlock(pTARG, RCID);
-            { RenderClus::RenderStd(pTARG, pmat, cluster, inumpasses); }
-            pmat->EndBlock(pTARG);
-          }
-          break;
-        }
+    fxinst->wrappedDrawCall(RCID, [&]() {
+      auto vtxbuffer = cluster->_vertexBuffer;
+      int inumprim   = cluster->numPrimGroups();
+      for (int iprim = 0; iprim < inumprim; iprim++) {
+        auto primgroup = cluster->primgroup(iprim);
+        auto idxbuffer = primgroup->GetIndexBuffer();
+        pTARG->GBI()->DrawIndexedPrimitiveEML(*vtxbuffer, *idxbuffer, primgroup->GetPrimType());
       }
-      gLASTSTATE = rgs;
-    }
+    });
+    //////////////////////////////////////////////
   }
   pTARG->PopModColor();
   pTARG->debugPopGroup();
@@ -401,10 +310,10 @@ void XgmModel::RenderSkinned(
     const RenderContextInstData& RCID,
     const RenderContextInstModelData& mdlctx) const {
 
-  auto fxlut = RCID._fx_instance_lut;
+  auto fxlut  = RCID._fx_instance_lut;
   auto fxinst = fxlut->findfxinst(RCID);
-  auto pmat = fxinst->_material;
-  
+  auto pmat   = fxinst->_material;
+
   auto R           = RCID.GetRenderer();
   auto RCFD        = pTARG->topRenderContextFrameData();
   const auto& CPD  = RCFD->topCPD();
@@ -550,8 +459,8 @@ void XgmModel::RenderSkinned(
         vw.Lock(pTARG, &vtxbuf, numlines);
         for (int ib = 0; ib < inumbones; ib++) {
           const XgmBone& bone = skeleton().bone(ib);
-          fmtx4 bone_head     = fmtx4::multiply_ltor(WorldMat,LocalPose.RefLocalMatrix(bone._parentIndex));
-          fmtx4 bone_tail     = fmtx4::multiply_ltor(WorldMat,LocalPose.RefLocalMatrix(bone._childIndex));
+          fmtx4 bone_head     = fmtx4::multiply_ltor(WorldMat, LocalPose.RefLocalMatrix(bone._parentIndex));
+          fmtx4 bone_tail     = fmtx4::multiply_ltor(WorldMat, LocalPose.RefLocalMatrix(bone._childIndex));
           fvec3 h             = bone_head.translation();
           fvec3 t             = bone_tail.translation();
 
@@ -629,8 +538,8 @@ void XgmModel::RenderSkinned(
       }
       for (int ib = 0; ib < inumbones; ib++) {
         const XgmBone& bone = skeleton().bone(ib);
-        fmtx4 bone_head     = fmtx4::multiply_ltor(WorldMat,LocalPose.RefLocalMatrix(bone._parentIndex));
-        fmtx4 bone_tail     = fmtx4::multiply_ltor(WorldMat,LocalPose.RefLocalMatrix(bone._childIndex));
+        fmtx4 bone_head     = fmtx4::multiply_ltor(WorldMat, LocalPose.RefLocalMatrix(bone._parentIndex));
+        fmtx4 bone_tail     = fmtx4::multiply_ltor(WorldMat, LocalPose.RefLocalMatrix(bone._childIndex));
         pTARG->MTXI()->PushMMatrix(bone_head);
         // GfxPrimitives::GetRef().RenderAxis(pTARG);
         pTARG->MTXI()->PopMMatrix();

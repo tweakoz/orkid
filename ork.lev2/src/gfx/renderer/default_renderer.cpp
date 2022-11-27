@@ -24,7 +24,7 @@ DefaultRenderer::DefaultRenderer(Context* ptarg)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void DefaultRenderer::RenderModel(const ModelRenderable& mdl_renderable, RenderGroupState rgs) const {
+void DefaultRenderer::RenderModel(const ModelRenderable& mdl_renderable) const {
 
 }
 

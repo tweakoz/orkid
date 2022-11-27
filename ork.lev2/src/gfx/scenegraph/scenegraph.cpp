@@ -500,7 +500,6 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras,on_enqueue_fn_t on_enq
 
 void Scene::_renderIMPL(Context* context,RenderContextFrameData& RCFD){
 
-
   if (_dogpuinit) {
     gpuInit(context);
   }
@@ -567,7 +566,6 @@ void Scene::_renderIMPL(Context* context,RenderContextFrameData& RCFD){
 
 void Scene::renderWithStandardCompositorFrame(standardcompositorframe_ptr_t sframe){
   auto context = sframe->_drawEvent->GetTarget();
-  
   if (_dogpuinit) {
     sframe->attachDrawBufContext(_dbufcontext_SG);
     gpuInit(context);
@@ -576,13 +574,7 @@ void Scene::renderWithStandardCompositorFrame(standardcompositorframe_ptr_t sfra
   sframe->compositor = _compositorImpl;
   sframe->renderer = _renderer;
   sframe->passdata   = _topCPD;
-
   sframe->render();
-
-  //printf( "scene<%p> renderWithStandardCompositorFrame\n", this);
-
-  //RenderContextFrameData RCFD(context); // renderer per/frame data
-  //_renderIMPL(context,RCFD);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -594,6 +586,7 @@ void Scene::renderOnContext(Context* context, RenderContextFrameData& RCFD) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Scene::renderOnContext(Context* context) {
+  // from SceneGraphSystem::_onRender
   RenderContextFrameData RCFD(context); // renderer per/frame data
   _renderIMPL(context,RCFD);
 }

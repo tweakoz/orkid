@@ -38,8 +38,7 @@ const RenderContextInstData RenderContextInstData::Default;
 ///////////////////////////////////////////////////////////////////////////////
 
 RenderContextInstData::RenderContextInstData(const RenderContextFrameData* RCFD)
-    : _RCFD(RCFD)                                 //
-    , mRenderGroupState(RenderGroupState::NONE) { //
+    : _RCFD(RCFD) { //
   if (_RCFD) {
     mpActiveRenderer = _RCFD->_renderer;
   }
@@ -110,12 +109,6 @@ void RenderContextInstData::SetMaterialPassIndex(int idx) {
 }
 void RenderContextInstData::SetMaterialInst(const XgmMaterialStateInst* mi) {
   mMaterialInst = mi;
-}
-void RenderContextInstData::SetRenderGroupState(RenderGroupState rgs) {
-  mRenderGroupState = rgs;
-}
-RenderGroupState RenderContextInstData::GetRenderGroupState() const {
-  return mRenderGroupState;
 }
 ///////////////////////////////////////////////////////////////////////////////
 fmtx4 RenderContextInstData::worldMatrix() const {

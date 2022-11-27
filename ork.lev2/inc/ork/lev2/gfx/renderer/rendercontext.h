@@ -66,8 +66,6 @@ struct RenderContextInstData {
   int GetMaterialPassIndex(void) const;           // deprecated
   void SetMaterialIndex(int idx);                 // deprecated
   void SetMaterialPassIndex(int idx);             // deprecated
-  void SetRenderGroupState(RenderGroupState rgs); // deprecated
-  RenderGroupState GetRenderGroupState() const;   // deprecated
 
   bool _isSkinned                           = false;
   bool _isInstanced = false;
@@ -77,7 +75,6 @@ struct RenderContextInstData {
   const IRenderable* _dagrenderable         = nullptr;
   const RenderContextFrameData* _RCFD       = nullptr;
   const XgmMaterialStateInst* mMaterialInst = nullptr;
-  RenderGroupState mRenderGroupState        = RenderGroupState::NONE;
   fxinstancelut_ptr_t _fx_instance_lut;
 
   float mEngineParamFloats[kMaxEngineParamFloats];

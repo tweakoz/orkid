@@ -93,14 +93,14 @@ scenedata_ptr_t generateScene(path_t path){
     }
     else{
       auto phys_shape = std::make_shared<BulletShapeSphereData>();
-      phys_shape->_radius = 2.2f;
+      phys_shape->_radius = 2.5f;
       ecs_physics_compdata->_allowSleeping = true;
       ecs_physics_compdata->_shapedata = phys_shape;
     }
 
     auto grav_force = std::make_shared<DirectionalForceData>();
     grav_force->_direction = fvec3(0,-1,0);
-    grav_force->_force = 0.98;
+    grav_force->_force = 9.8;
 
     ecs_physics_compdata->_forcedatas["gravity"] = grav_force;
   	auto ecs_spawner = scene->createSceneObject<SpawnData>("ent_ball"_pool);
@@ -112,7 +112,7 @@ scenedata_ptr_t generateScene(path_t path){
 
   ///////////////////////////////////////////
 
-  if(1){
+  if(0){
 	  auto modeldata = std::make_shared<ModelDrawableData>("data://tests/bridge.glb");
 	  auto ecs_arch        = scene->createSceneObject<Archetype>("arch_terrain"_pool);
   	auto ecs_sg_compdata = ecs_arch->addComponent<SceneGraphComponentData>();

@@ -54,7 +54,7 @@ public:
   // Immediate Rendering (sort of, actually just submit the renderable to the target, which might itself place into a display list)
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  virtual void RenderModel(const ModelRenderable& ModelRen, RenderGroupState rgs = RenderGroupState::NONE) const = 0;
+  virtual void RenderModel(const ModelRenderable& ModelRen) const = 0;
   void RenderCallback(const CallbackRenderable& cbren) const;
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -113,7 +113,7 @@ public:
   DefaultRenderer(lev2::Context* ptarg = nullptr);
 
 private:
-  void RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::RenderGroupState rgs = ork::lev2::RenderGroupState::NONE) const final;
+  void RenderModel(const lev2::ModelRenderable& ModelRen) const final;
 };
 
 

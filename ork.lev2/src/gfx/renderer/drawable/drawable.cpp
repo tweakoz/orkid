@@ -56,6 +56,7 @@ drawable_ptr_t ModelDrawableData::createDrawable() const {
   drw->_data = this;
   drw->bindModelAsset(_assetpath);
   drw->_modcolor = _modcolor;
+  drw->_name = _assetpath.c_str();
   return drw;
 }
 

@@ -2,13 +2,6 @@
 
 namespace ork::lev2 {
 
-enum class RenderGroupState {
-  NONE = 0,
-  FIRST,
-  CONTINUE,
-  LAST,
-};
-
 ///////////////////////////////////////////////////////////////////////////////
 
 enum class CompositeBlendMode {

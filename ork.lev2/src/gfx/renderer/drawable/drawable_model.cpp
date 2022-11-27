@@ -11,8 +11,10 @@
 #include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/gfx/gfxmodel.h>
+#include <ork/util/logger.h>
 
 namespace ork::lev2 {
+static logchannel_ptr_t logchan_model = logger()->createChannel("model",fvec3(0.9,0.2,0.9));
 ///////////////////////////////////////////////////////////////////////////////
 ModelDrawable::ModelDrawable(DrawableOwner* pent) {
   for (int i = 0; i < kMaxEngineParamFloats; i++)
@@ -33,6 +35,7 @@ float ModelDrawable::getEngineParamFloat(int idx) const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ModelDrawable::bindModelInst(xgmmodelinst_ptr_t minst) {
+  logchan_model->log("drw<%s> bindModelInst(%p)", _name.c_str(), minst.get() );
   _modelinst                  = minst;
   const lev2::XgmModel* Model = _modelinst->xgmModel();
   bool isSkinned              = Model->isSkinned();
@@ -45,6 +48,8 @@ void ModelDrawable::bindModelInst(xgmmodelinst_ptr_t minst) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ModelDrawable::bindModelAsset(AssetPath assetpath) {
+
+  logchan_model->log("drw<%s> bindModelAsset(%s)", _name.c_str(), assetpath.c_str() );
 
   ork::opq::assertOnQueue(opq::mainSerialQueue());
 
@@ -73,7 +78,7 @@ void ModelDrawable::bindModelAsset(AssetPath assetpath) {
         OrkAssert(false);
       }
 
-      printf("modelassetvar k<%s> v<%s>\n", k.c_str(), v_str.c_str());
+      logchan_model->log("modelassetvar k<%s> v<%s>", k.c_str(), v_str.c_str());
     }
   }
 
@@ -86,6 +91,7 @@ void ModelDrawable::bindModelAsset(xgmmodelassetptr_t asset) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ModelDrawable::bindModel(model_ptr_t model) {
+  logchan_model->log("drw<%s> bindModel(%p)", _name.c_str(), (void*) model.get() );
   _model         = model;
   auto modelinst = std::make_shared<XgmModelInst>(_model.get());
   bindModelInst(modelinst);
@@ -286,6 +292,7 @@ void ModelRenderable::Render(const IRenderer* renderer) const {
   // as_ent));
   ///////////////////////////////////////
   // printf( "Renderer::RenderModel() rable<%p>\n", & ModelRen );
+  //logchan_model->log("renderable<%p> fxlut(%p)", (void*) this, (void*) RCID._fx_instance_lut.get() );
   bool model_is_skinned = model->isSkinned();
   RCID._isSkinned       = model_is_skinned;
   RCID_MD.SetSkinned(model_is_skinned);
