@@ -39,7 +39,12 @@ ork::fvec3 btv3toorkv3(const btVector3& v3) {
 }
 
 ork::fquat btqtoorkq(const btQuaternion& q) {
-  return ork::fquat(float(q.w()), float(q.z()), float(q.y()),float(q.x()));
+  ork::fquat q_out;
+  q_out.x = q.x();
+  q_out.y = q.y();
+  q_out.z = q.z();
+  q_out.w = q.w();
+  return q_out.inverse();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
