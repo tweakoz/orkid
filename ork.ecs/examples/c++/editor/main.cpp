@@ -195,7 +195,6 @@ int main(int argc, char** argv, char** envp) {
     double dt      = updata->_dt;
     double abstime = updata->_abstime;
 
-    spawn_timer += dt;
 
     ////////////////////////////////////////////////////////
     // handle transport
@@ -203,16 +202,25 @@ int main(int argc, char** argv, char** envp) {
 
     if (transport_mode == 0 and prev_transport_mode == 1) {
       START_SCENE();
+      spawn_timer = 0.0;
     }
     if (transport_mode == 1 and prev_transport_mode == 0) {
       STOP_SCENE();
+      spawn_timer = 0.0;
+    }
+    if(transport_mode==0){
+      spawn_timer += dt;
     }
 
     prev_transport_mode = transport_mode;
 
-    printf( "spawn_timer<%g>\n", spawn_timer );
-    if( (transport_mode==0) and (spawn_timer>1.0) ){
+    //printf( "spawn_timer<%g>\n", spawn_timer );
+    if( (transport_mode==0) and (spawn_timer>4.0) ){
       SpawnAnonDynamic SAD{._edataname = "ent_ball"_pool}; // by anon we mean "unnamed"
+      float x = controller->random(-1,1);
+      float z = controller->random(-1,1);
+      SAD._overridexf = std::make_shared<DecompTransform>();
+      SAD._overridexf->set(fvec3(x,10,z),fquat(),1);
       auto ent     = controller->spawnAnonDynamicEntity(SAD);
       spawn_timer = 0.0;
     }
@@ -224,11 +232,11 @@ int main(int argc, char** argv, char** envp) {
     ////////////////////////////
     ///
     if (_sgsystem._sysID != NO_OBJECT_ID) {
-      float phase    = 0; // abstime * PI2 * 0.1f;
+      float phase    = abstime * PI2 * 0.01f;
       float distance = 20.0f;
       DataTable camera_data;
-      camera_data["eye"_tok]  = fvec3::unitCircleXZ(phase) * distance;
-      camera_data["tgt"_tok]  = fvec3(0, 0, 0);
+      camera_data["eye"_tok]  = fvec3(0,10,0)+fvec3::unitCircleXZ(phase) * distance;
+      camera_data["tgt"_tok]  = fvec3(0, 4, 0);
       camera_data["up"_tok]   = fvec3(0, 1, 0);
       camera_data["near"_tok] = 0.1f;
       camera_data["far"_tok]  = 100.0f;

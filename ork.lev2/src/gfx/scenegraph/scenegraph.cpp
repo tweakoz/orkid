@@ -21,7 +21,7 @@
 using namespace std::string_literals;
 using namespace ork;
 
-static constexpr bool DEBUG_LOG = true;
+static constexpr bool DEBUG_LOG = false;
 
 ImplementReflectionX(ork::lev2::scenegraph::DrawableDataKvPair, "SgDrawableDataKvPair");
 

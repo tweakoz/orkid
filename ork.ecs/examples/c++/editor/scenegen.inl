@@ -52,7 +52,7 @@ scenedata_ptr_t generateScene(path_t path){
   // ground
   ///////////////////////////////////////////
 
-  if(0) { // plane based ground
+  if(1) { // plane based ground
     auto ecs_arch        = scene->createSceneObject<Archetype>("arch_xground"_pool);
     auto ecs_physics_compdata = ecs_arch->addComponent<BulletObjectComponentData>();
     auto phys_shape = std::make_shared<BulletShapePlaneData>();

@@ -295,8 +295,8 @@ void PhysicsDebugger::setDebugMode(int debugMode) {
 
 int PhysicsDebugger::getDebugMode() const {
   return _enabled ? (btIDebugDraw::DBG_DrawContactPoints 
-                  //| btIDebugDraw::DBG_DrawWireframe  
-                  | btIDebugDraw::DBG_DrawAabb)
+                  | btIDebugDraw::DBG_DrawWireframe)
+                  //| btIDebugDraw::DBG_DrawAabb)
                   : (btIDebugDraw::DBG_NoDebug);
 }
 
