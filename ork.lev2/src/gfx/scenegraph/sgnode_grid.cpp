@@ -80,12 +80,12 @@ struct GridRenderImpl {
     vw.Lock(context, &VB, 6);
 
     vw.AddVertex(v0);
-    vw.AddVertex(v1);
     vw.AddVertex(v2);
+    vw.AddVertex(v1);
 
     vw.AddVertex(v0);
-    vw.AddVertex(v2);
     vw.AddVertex(v3);
+    vw.AddVertex(v2);
 
     vw.UnLock(context);
 

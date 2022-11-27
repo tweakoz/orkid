@@ -462,6 +462,7 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
               auto worldmatrix = RCID.worldMatrix();
               FXI->BindParamMatrix(_paramMVP, monocams->MVPMONO(worldmatrix));
               _this->_rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
+              //_this->_rasterstate.SetCullTest(ECULLTEST_OFF);
               _this->_rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
               _this->_rasterstate.SetZWriteMask(true);
               _this->_rasterstate.SetRGBAWriteMask(true,true);
