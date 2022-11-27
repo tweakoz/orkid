@@ -397,7 +397,7 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
               fxinst->_technique = _tek_PIK_RI_NI;
             ////////////////
           }
-          OrkAssert(fxinst->_technique != nullptr);
+          //OrkAssert(fxinst->_technique != nullptr);
           fxinst->_params[_paramMVP] = "RCFD_Camera_Pick"_crcsh;
           break;
         }
@@ -408,12 +408,12 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
               fxinst->_technique = cfg._skinned                  //
                                        ? _tek_GBU_CT_NM_SK_IN_ST //
                                        : _tek_GBU_CT_NM_RI_IN_ST;
-              OrkAssert(fxinst->_technique != nullptr);
+              //OrkAssert(fxinst->_technique != nullptr);
             } else {                                             // stereo-non-instanced
               fxinst->_technique = cfg._skinned                  //
                                        ? _tek_GBU_CT_NM_SK_NI_ST //
                                        : _tek_GBU_CT_NM_RI_NI_ST;
-              OrkAssert(fxinst->_technique != nullptr);
+              //OrkAssert(fxinst->_technique != nullptr);
             }
             //////////////////////////////////
             fxinst->addStateLambda([this](const RenderContextInstData& RCID, int ipass) {
@@ -442,12 +442,12 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
               fxinst->_technique = cfg._skinned                  //
                                        ? _tek_GBU_CT_NM_SK_IN_MO //
                                        : _tek_GBU_CT_NM_RI_IN_MO;
-              OrkAssert(fxinst->_technique != nullptr);
+              //OrkAssert(fxinst->_technique != nullptr);
             } else {                                             // mono-non-instanced
               fxinst->_technique = cfg._skinned                  //
                                        ? _tek_GBU_CT_NM_SK_NI_MO //
                                        : _tek_GBU_CT_NM_RI_NI_MO;
-              OrkAssert(fxinst->_technique != nullptr);
+              //OrkAssert(fxinst->_technique != nullptr);
             }
             //////////////////////////////////
             fxinst->addStateLambda([this](const RenderContextInstData& RCID, int ipass) {
@@ -468,7 +468,7 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
               RSI->BindRasterState(_this->_rasterstate);
             });
           }
-          OrkAssert(fxinst->_technique != nullptr);
+          //OrkAssert(fxinst->_technique != nullptr);
           break;
         } // "DEFERRED_PB"_crcuR
         //////////////////////////////////////////
@@ -549,7 +549,7 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
 
             });
           }
-          OrkAssert(fxinst->_technique != nullptr);
+          //OrkAssert(fxinst->_technique != nullptr);
           break;
         case "DEPTH_PREPASS"_crcu:
           if (cfg._instanced and not cfg._skinned and not cfg._stereo) {
@@ -570,7 +570,7 @@ fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg)
               RSI->BindRasterState(_this->_rasterstate);
             });
           }
-          OrkAssert(fxinst->_technique != nullptr);
+          //OrkAssert(fxinst->_technique != nullptr);
           break;
         default:
           OrkAssert(false);

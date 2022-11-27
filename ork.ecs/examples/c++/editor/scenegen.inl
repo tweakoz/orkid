@@ -19,6 +19,7 @@
 #include <ork/ecs/archetype.inl>
 #include <ork/ecs/controller.inl>
 #include <ork/ecs/physics/bullet.h>
+#include <ork/lev2/gfx/scenegraph/sgnode_grid.h>
 
 namespace ork::ecs {
 ///////////////////////////////////////////////////////////////////////////////
@@ -49,6 +50,27 @@ scenedata_ptr_t generateScene(path_t path){
   ecs_phys_sysdata->_debug = true;
 
   ///////////////////////////////////////////
+  // set pbr params
+  ///////////////////////////////////////////
+
+  ecs_sg_sysdata->setInternalSceneParam("DepthFogDistance",10000.0f);
+  ecs_sg_sysdata->setInternalSceneParam("DepthFogPower",2.1f);
+  ecs_sg_sysdata->setInternalSceneParam("AmbientIntensity",fvec3(1,1,1));
+
+  ///////////////////////////////////////////
+  // grid
+  ///////////////////////////////////////////
+
+  if(1) { // plane based ground
+    auto ecs_arch        = scene->createSceneObject<Archetype>("arch_grid"_pool);
+    auto ecs_spawner = scene->createSceneObject<SpawnData>("ent_grid"_pool);
+    auto ecs_sg_compdata = ecs_arch->addComponent<SceneGraphComponentData>();
+    auto ecs_griddata = std::make_shared<GridDrawableData>();
+    ecs_sg_compdata->createNodeOnLayer("gridnode", ecs_griddata, "sg_default");
+    ecs_spawner->SetArchetype(ecs_arch);
+  }
+
+  ///////////////////////////////////////////
   // ground
   ///////////////////////////////////////////
 
@@ -62,7 +84,7 @@ scenedata_ptr_t generateScene(path_t path){
     auto ecs_spawner = scene->createSceneObject<SpawnData>("ent_xground"_pool);
     ecs_spawner->SetArchetype(ecs_arch);
   }
-  else if(1) { // mesh based ground
+  else { // mesh based ground
     auto ecs_arch        = scene->createSceneObject<Archetype>("arch_xground"_pool);
     auto ecs_physics_compdata = ecs_arch->addComponent<BulletObjectComponentData>();
     auto phys_shape = std::make_shared<BulletShapeModelData>();
@@ -145,7 +167,7 @@ scenedata_ptr_t generateScene(path_t path){
   // save it to disk
   ///////////////////////////////////////////
 
-  saveScene(path,scene);
+  //saveScene(path,scene);
   //OrkAssert(false); // must Archetype->compose first !!!
 
 

@@ -13,32 +13,19 @@ using griddrawabledataptr_t = std::shared_ptr<GridDrawableData> ;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct GridDrawableData final : public ork::Object {
+struct GridDrawableData final : public DrawableData {
 
-  DeclareConcreteX(GridDrawableData, ork::Object);
+  DeclareConcreteX(GridDrawableData, DrawableData);
 
 public:
-  griddrawableinstptr_t createInstance() const;
+  drawable_ptr_t createDrawable() const final;
   GridDrawableData();
   ~GridDrawableData();
 
-  textureassetptr_t _colorTexture;
+  std::string _colortexpath;
   float _extent = 100.0f;
   float _majorTileDim = 1.0f;
   float _minorTileDim = 0.1f;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct GridDrawableInst {
-
-  GridDrawableInst(const GridDrawableData& data);
-  ~GridDrawableInst();
-  callback_drawable_ptr_t createCallbackDrawable();
-
-  const GridDrawableData& _data;
-  callback_drawable_ptr_t _rawdrawable = nullptr;
-  ork::svar16_t _impl;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

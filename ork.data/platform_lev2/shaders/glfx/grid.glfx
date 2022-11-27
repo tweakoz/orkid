@@ -83,28 +83,17 @@ vec4 grid_output(){
 
 }
 
-libblock lib_frg_grid_pbr : lib_frg_grid {
-	void pscommon(){
-		vec3 normal = vec3(0,1,0);
-		float mtl = 0.0;
-		float ruf = 1.0;
-
-		vec3 grid_color = grid_output().xyz;
-		out_gbuf = packGbuffer(grid_color,normal,ruf,mtl,false);
-
-	}
-}
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_gbuffer_nx 
-	: iface_fgbuffer
-  : lib_frg_grid_pbr {
-    pscommon();
-}
-///////////////////////////////////////////////////////////////
-fragment_shader ps_gbuffer_nx_stereo 
-	: iface_fgbuffer
-  : lib_frg_grid_pbr {
-    pscommon();
+fragment_interface iface_fgrid_gbuffer
+  : ub_frg {
+  inputs {
+    vec3 frg_pos;
+    vec4 frg_clr;
+    vec2 frg_uv0;
+  }
+  outputs {
+    layout(location = 0) uvec4 out_gbuf;
+  }
 }
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_grid_forward {
@@ -124,9 +113,37 @@ fragment_shader ps_grid_forward
   out_clr = gout; 
 }
 ///////////////////////////////////////////////////////////////
+vertex_shader vs_rigid_gbuffer_grid
+  : iface_vtx_fwd_grid {
+    frg_uv0 = uv0;
+    frg_pos = position.xyz;
+    frg_clr = vec4(1,1,1,1);
+    gl_Position = mvp*position;
+}
+libblock lib_frgdeferred_grid_pbr : lib_frg_grid {
+  void pscommon(){
+    vec3 normal = vec3(0,0,0);
+    float mtl = 1.0;
+    float ruf = 0.0;
+
+    vec3 grid_color = vec3(1,0,0); //grid_output().xyz;
+    out_gbuf = packGbuffer(grid_color,normal,ruf,mtl,true);
+
+  }
+}
+fragment_shader ps_gbuffer_nx 
+  : iface_fgrid_gbuffer
+  : lib_frgdeferred_grid_pbr {
+    pscommon();
+}
+fragment_shader ps_gbuffer_nx_stereo 
+  : iface_fgrid_gbuffer
+  : lib_frgdeferred_grid_pbr {
+    pscommon();
+}
 technique GBU_CT_NM_RI_NI_MO {
 	fxconfig=fxcfg_default;
-	vf_pass={vs_rigid_gbuffer,ps_gbuffer_nx,sb_default}
+	vf_pass={vs_rigid_gbuffer_grid,ps_gbuffer_nx,sb_default}
 }
 technique GBU_CT_NM_RI_NI_ST {
 	fxconfig=fxcfg_default;

@@ -9,39 +9,18 @@ ImplementReflectionX(ork::lev2::GridDrawableData, "GridDrawableData");
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-void GridDrawableData::describeX(class_t* c) {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-griddrawableinstptr_t GridDrawableData::createInstance() const {
-  return std::make_shared<GridDrawableInst>(*this);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-GridDrawableData::GridDrawableData() {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-GridDrawableData::~GridDrawableData() {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 struct GridRenderImpl {
 
-  GridRenderImpl(GridDrawableInst* grid) : _gridinst(grid) {
+  GridRenderImpl(const GridDrawableData* grid) : _griddata(grid) {
 
   }
   ~GridRenderImpl(){
   }
   void gpuInit(lev2::Context* ctx) {
 
-    const GridDrawableData& data  = _gridinst->_data;
-    auto texasset = data._colorTexture;
+    auto texasset = asset::AssetManager<lev2::TextureAsset>::load(_griddata->_colortexpath);
     OrkAssert(texasset);
+
     _colortexture = texasset->GetTexture();
     OrkAssert(_colortexture);
 
@@ -54,10 +33,12 @@ struct GridRenderImpl {
     _pbrmaterial->_roughnessFactor = 1.0f;
     _pbrmaterial->_baseColor       = fvec3(1, 1, 1);
 
-    _fwdmaterial = new FreestyleMaterial;
-    _fwdmaterial->gpuInit(ctx, "orkshader://grid");
-    _tekFWGRID = _fwdmaterial->technique("fwd_grid");
-    _parMatFWMVP = _fwdmaterial->param("mvp");
+    _fxlut = _pbrmaterial->createFxStateInstanceLut();
+
+    //_fwdmaterial = new FreestyleMaterial;
+    //_fwdmaterial->gpuInit(ctx, "orkshader://grid");
+    //_tekFWGRID = _fwdmaterial->technique("fwd_grid");
+    //_parMatFWMVP = _fwdmaterial->param("mvp");
     _initted                   = true;
   }
   void _render(const RenderContextInstData& RCID){
@@ -68,23 +49,19 @@ struct GridRenderImpl {
       gpuInit(context);
     }
 
-
-
-    const GridDrawableData& data  = _gridinst->_data;
-
     bool isPickState = context->FBI()->isPickState();
 
     const RenderContextFrameData* RCFD = RCID._RCFD;
 
     const auto& CPD  = RCFD->topCPD();
 
-    float extent = data._extent;
+    float extent = _griddata->_extent;
     fvec3 topl(-extent, 0, -extent);
     fvec3 topr(+extent, 0, -extent);
     fvec3 botr(+extent, 0, +extent);
     fvec3 botl(-extent, 0, +extent);
 
-    float uvextent = extent / data._majorTileDim;
+    float uvextent = extent / _griddata->_majorTileDim;
 
     auto uv_topl  = fvec2(-uvextent, -uvextent);
     auto uv_topr  = fvec2(+uvextent, -uvextent);
@@ -123,25 +100,11 @@ struct GridRenderImpl {
     }
     context->PushModColor(modcolor);
 
-    if( RCFD->_renderingmodel.isForward() ){
-
-      auto cammatrices = CPD.cameraMatrices();
-      const fmtx4& PMTX_mono = cammatrices->_pmatrix;
-      const fmtx4& VMTX_mono = cammatrices->_vmatrix;
-      auto MVP               = fmtx4::multiply_ltor(VMTX_mono,PMTX_mono);
-
-      _fwdmaterial->_rasterstate.SetBlending(Blending::OFF);
-      _fwdmaterial->_rasterstate.SetDepthTest(EDepthTest::EDEPTHTEST_OFF);
-      _fwdmaterial->_rasterstate.SetZWriteMask(false);
-      _fwdmaterial->begin(_tekFWGRID,*RCFD);
-      _fwdmaterial->bindParamMatrix(_parMatFWMVP, MVP);
+    auto fxinst = _fxlut->findfxinst(RCID);
+    OrkAssert(fxinst);
+    fxinst->wrappedDrawCall(RCID, [&]() {
       gbi->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES, 6);
-      _fwdmaterial->end(*RCFD);
-
-    }
-    else{
-      gbi->DrawPrimitive(_pbrmaterial, vw, PrimitiveType::TRIANGLES, 6);
-    }
+    });
 
     context->PopModColor();
     mtxi->PopMMatrix();
@@ -150,41 +113,45 @@ struct GridRenderImpl {
     auto renderable = dynamic_cast<const CallbackRenderable*>(RCID._dagrenderable);
     renderable->GetDrawableDataA().getShared<GridRenderImpl>()->_render(RCID);
   }
-  GridDrawableInst* _gridinst;
+  const GridDrawableData* _griddata;
   PBRMaterial* _pbrmaterial;
   FreestyleMaterial* _fwdmaterial;
-  const FxShaderTechnique* _tekFWGRID = nullptr;
-  const FxShaderParam* _parMatFWMVP = nullptr;
+  //const FxShaderTechnique* _tekFWGRID = nullptr;
+  //const FxShaderParam* _parMatFWMVP = nullptr;
 
   texture_ptr_t _colortexture;
+  fxinstancelut_ptr_t _fxlut;
   bool _initted = false;
 
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-GridDrawableInst::GridDrawableInst(const GridDrawableData& data)
-    : _data(data) {
+void GridDrawableData::describeX(class_t* c) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-GridDrawableInst::~GridDrawableInst() {
+drawable_ptr_t GridDrawableData::createDrawable() const {
+
+  auto impl = std::make_shared<GridRenderImpl>(this);
+
+  auto rval = std::make_shared<CallbackDrawable>(nullptr);
+  rval->SetRenderCallback(GridRenderImpl::renderGrid);
+  rval->SetUserDataA(impl);
+  rval->SetSortKey(1000);
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
+GridDrawableData::GridDrawableData() {
+  _colortexpath = "lev2://textures/gridcell_grey";
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-callback_drawable_ptr_t GridDrawableInst::createCallbackDrawable() {
-  auto impl = _impl.makeShared<GridRenderImpl>(this);
-
-  _rawdrawable = std::make_shared<CallbackDrawable>(nullptr);
-  _rawdrawable->SetRenderCallback(GridRenderImpl::renderGrid);
-  _rawdrawable->SetUserDataA(impl);
-  _rawdrawable->SetSortKey(1000);
-  return _rawdrawable;
+GridDrawableData::~GridDrawableData() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
