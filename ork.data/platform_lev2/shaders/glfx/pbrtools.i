@@ -342,7 +342,12 @@ fragment_shader ps_gbuffer
 vertex_shader vs_rigid_gbuffer_vtxcolor
 	: iface_vgbuffer
   : lib_pbr_vtx {
-		//vs_common(position,normal,binormal);
+		frg_clr = vtxcolor;
+		gl_Position = mvp*position;
+}
+vertex_shader vs_forward_rigid_vtxcolor
+	: iface_vgbuffer
+  : lib_pbr_vtx {
 		frg_clr = vtxcolor;
 		gl_Position = mvp*position;
 }
@@ -351,6 +356,11 @@ fragment_shader ps_gbuffer_vtxcolor
 	: iface_fgbuffer
   : lib_pbr_frg {
 	out_gbuf = packGbuffer(frg_clr.xyz,vec3(0,0,0),1,0,true);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_forward_frgcolor
+	: iface_forward {
+	out_color = frg_clr;
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_rigid_gbuffer_font

@@ -13,7 +13,7 @@ fxconfig fxcfg_default {
 uniform_set ub_fwd_grid_vtx {
   mat4 mvp;
 }
-vertex_interface iface_vtx_fwd_grid : ub_fwd_grid_vtx {
+vertex_interface iface_vtx_fwd_grid_unlit : ub_fwd_grid_vtx {
   inputs {
     vec4 position : POSITION;
     vec2 uv0 : TEXCOORD0;
@@ -24,12 +24,35 @@ vertex_interface iface_vtx_fwd_grid : ub_fwd_grid_vtx {
     vec2 frg_uv0;
   }
 }
+vertex_interface iface_vtx_fwd_grid_lit : ub_fwd_grid_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec3 normal : NORMAL;
+    vec3 binormal : BINORMAL;
+    vec4 vtxcolor : COLOR0;
+    vec2 uv0 : TEXCOORD0;
+  }
+  outputs {
+    vec4 frg_wpos;
+    vec4 frg_clr;
+    vec2 frg_uv0;
+    mat3 frg_tbn;
+    float frg_camdist;
+    vec3 frg_camz;
+  }
+}
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_grid_forward
-	: iface_vtx_fwd_grid {
+vertex_shader vs_grid_forward_unlit
+	: iface_vtx_fwd_grid_unlit {
 		gl_Position = mvp*position;
 		frg_uv0 = uv0;
     frg_pos = position.xyz;
+}
+vertex_shader vs_grid_forward_lit
+  : iface_vtx_fwd_grid_lit {
+    gl_Position = mvp*position;
+    frg_uv0 = uv0;
+    frg_wpos = position;
 }
 ///////////////////////////////////////////////////////////////
 libblock lib_frg_grid : lib_gbuf_encode {
@@ -46,7 +69,7 @@ float filteredGrid( vec2 p, vec2 dpdx, vec2 dpdy, float width )
     return (1.0-i.x)*(1.0-i.y);
 }
 
-vec4 grid_output(){
+vec4 grid_output(vec3 pos){
 	vec2 paramMajor = frg_uv0+vec2(100.0,100.0);
 	vec2 dpdxMajor = dFdx(paramMajor)*2;
 	vec2 dpdyMajor = dFdy(paramMajor)*2;
@@ -64,18 +87,18 @@ vec4 grid_output(){
 	vec3 color = mix(minorcolor,basecolor,gMinor);
 	vec4 oc =  vec4(mix(majorcolor,color,gMajor),1.0-gMajor);
 
-  float xlerp = clamp(1-pow(abs(frg_pos.x*10),2),0,1);
-  float zlerp = clamp(1-pow(abs(frg_pos.z*10),2),0,1);
+  float xlerp = clamp(1-pow(abs(pos.x*10),2),0,1);
+  float zlerp = clamp(1-pow(abs(pos.z*10),2),0,1);
 
-  if(frg_pos.x<0)
+  if(pos.x<0)
     zlerp = 0.0;
 
-  if(frg_pos.z<0)
+  if(pos.z<0)
     xlerp = 0.0;
 
   vec3 col_x = mix(vec3(1,1,1),vec3(0,0,1),xlerp);
   vec3 col_z = mix(vec3(1,1,1),vec3(1,0,0),zlerp);
-  //oc.y *= clamp(1-pow(abs(frg_pos.y),10),0,1);
+  //oc.y *= clamp(1-pow(abs(pos.y),10),0,1);
   vec3 color2 = oc.xyz*col_x*col_z;
 
   return vec4(color2,1);
@@ -96,7 +119,7 @@ fragment_interface iface_fgrid_gbuffer
   }
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_grid_forward {
+fragment_interface iface_grid_forward_unlit {
   inputs {
     vec2 frg_uv0;
     vec3 frg_pos;
@@ -106,15 +129,37 @@ fragment_interface iface_grid_forward {
   }
 
 }
-fragment_shader ps_grid_forward
-	: iface_grid_forward
+fragment_interface iface_grid_forward_lit {
+  inputs {
+    vec2 frg_uv0;
+    vec4 frg_wpos;
+    mat3 frg_tbn;
+    vec4 frg_clr;
+  }
+  outputs {
+    layout(location = 0) vec4 out_clr;
+  }
+
+}
+fragment_shader ps_grid_forward_unlit
+	: iface_grid_forward_unlit
   : lib_frg_grid {
-  vec4 gout = grid_output();
+  vec4 gout = grid_output(frg_pos.xyz);
   out_clr = gout; 
+}
+fragment_shader ps_grid_forward_lit
+  : iface_grid_forward_lit
+  : lib_frg_grid
+  : lib_fwd
+  : ub_frg_fwd 
+  : ub_frg_fwd_lighting{
+  vec4 gout = grid_output(frg_wpos.xyz);
+  vec3 oc = forward_lighting(gout.xyz);
+  out_clr = vec4(oc,1); 
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_rigid_gbuffer_grid
-  : iface_vtx_fwd_grid {
+  : iface_vtx_fwd_grid_unlit {
     frg_uv0 = uv0;
     frg_pos = position.xyz;
     frg_clr = vec4(1,1,1,1);
@@ -126,7 +171,7 @@ libblock lib_frgdeferred_grid_pbr : lib_frg_grid {
     float mtl = 1.0;
     float ruf = 0.0;
 
-    vec3 grid_color = grid_output().xyz;
+    vec3 grid_color = grid_output(frg_pos.xyz).xyz;
     out_gbuf = packGbuffer(grid_color,normal,ruf,mtl,true);
 
   }
@@ -141,6 +186,7 @@ fragment_shader ps_gbuffer_nx_stereo
   : lib_frgdeferred_grid_pbr {
     pscommon();
 }
+///////////////////////////////////////////////////////////////
 technique GBU_CT_NM_RI_NI_MO {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_rigid_gbuffer_grid,ps_gbuffer_nx,sb_default}
@@ -149,6 +195,7 @@ technique GBU_CT_NM_RI_NI_ST {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_rigid_gbuffer_stereo,ps_gbuffer_nx_stereo,sb_default}
 }
+
 ///////////////////////////////////////////////////////////////
 state_block sb_additive : default {
   BlendMode = ALPHA_ADDITIVE;
@@ -158,5 +205,9 @@ state_block sb_additive : default {
 }
 technique fwd_grid {
 	fxconfig=fxcfg_default;
-	vf_pass={vs_grid_forward,ps_grid_forward,sb_additive}
+	vf_pass={vs_grid_forward_unlit,ps_grid_forward_unlit,sb_additive}
+}
+technique FWD_CT_NM_RI_NI_MO {
+  fxconfig=fxcfg_default;
+  vf_pass={vs_grid_forward_lit,ps_grid_forward_lit,sb_additive}
 }

@@ -18,6 +18,7 @@
 #include <ork/pch.h>
 #include <ork/kernel/string/string.h>
 #include <ork/kernel/string/deco.inl>
+#include <ork/util/logger.h>
 #include <regex>
 #include <stdlib.h>
 
@@ -88,7 +89,7 @@ void Program::addBlockNode(decoblocknode_ptr_t node) {
   //         node.get(), node->_name.c_str() );
   auto it = _blockNodes.find(node->_name);
   if(it != _blockNodes.end()){
-    //printf( "adding dup block<%s>\n", node->_name.c_str() );
+    logerrchannel()->log( "adding dup block<%s>", node->_name.c_str() );
     OrkAssert(false);
   }
   auto its = node->_name.find("lib_math");

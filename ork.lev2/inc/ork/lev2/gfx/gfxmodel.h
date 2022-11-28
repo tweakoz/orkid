@@ -161,7 +161,7 @@ struct XgmSubMeshInst {
 
   const XgmSubMesh* _submesh = nullptr;
   bool _enabled = true;
-  fxinstancelut_ptr_t _fxinstancelut;
+  fxinstancecache_constptr_t _fxinstancecache;
 };
 
 using xgmsubmeshinst_ptr_t = std::shared_ptr<XgmSubMeshInst>;
@@ -454,7 +454,6 @@ struct XgmModelInst final {
   XgmLocalPose mLocalPose;
   mutable XgmWorldPose _worldPose;
   XgmMaterialStateInst mMaterialStateInst;
-  material_ptr_t _overrideMaterial;
   int miNumChannels;
   bool mbSkinned;
   bool mBlenderZup;

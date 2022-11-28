@@ -47,7 +47,7 @@ InstancedModelDrawable::~InstancedModelDrawable() {
 ///////////////////////////////////////////////////////////////////////////////
 struct IMDIMPL_SUBMESH {
   const XgmSubMesh* _xgmsubmesh = nullptr;
-  fxinstancelut_ptr_t _fxlut;
+  fxinstancecache_constptr_t _fxcache;
 };
 struct IMDIMPL_MODEL {
   std::vector<IMDIMPL_SUBMESH> _submeshes;
@@ -72,7 +72,7 @@ void InstancedModelDrawable::bindModel(model_ptr_t model) {
     for (int ics = 0; ics < inumclusset; ics++) {
       auto xgmsub = mesh->subMesh(ics);
       IMDIMPL_SUBMESH submesh_impl;
-      submesh_impl._fxlut = xgmsub->_material->createFxStateInstanceLut();
+      submesh_impl._fxcache = xgmsub->_material->fxInstanceCache();
       submesh_impl._xgmsubmesh = xgmsub;
       impl->_submeshes.push_back(submesh_impl);
     }
@@ -178,7 +178,7 @@ void InstancedModelDrawable::enqueueToRenderQueue(
     RCID._isInstanced = true;
     for (auto& sub : impl->_submeshes) {
       auto xgmsub = sub._xgmsubmesh;
-      auto fxlut = sub._fxlut;
+      auto fxlut = sub._fxcache;
       OrkAssert(fxlut);
       auto fxinst = fxlut->findfxinst(RCID);
       OrkAssert(fxinst);

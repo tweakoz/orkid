@@ -368,7 +368,6 @@ void Simulation::addSystem(systemkey_t key, System* system) {
 }
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::render(ui::drawevent_constptr_t drwev) {
-  OrkAssert(false);
   _currentdrwev = drwev;
   _renderThreadSM->update();
   _currentdrwev = nullptr;

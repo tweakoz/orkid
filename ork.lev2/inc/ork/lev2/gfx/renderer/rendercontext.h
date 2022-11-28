@@ -75,7 +75,7 @@ struct RenderContextInstData {
   const IRenderable* _dagrenderable         = nullptr;
   const RenderContextFrameData* _RCFD       = nullptr;
   const XgmMaterialStateInst* mMaterialInst = nullptr;
-  fxinstancelut_ptr_t _fx_instance_lut;
+  fxinstancecache_constptr_t _fx_instance_cache;
 
   float mEngineParamFloats[kMaxEngineParamFloats];
 };

@@ -38,6 +38,11 @@ technique FWD_UNLIT_NI_MO {
 	vf_pass={vs_forward_unlit,ps_forward_unlit,sb_default}
 }
 ///////////////////////////////////////////////////////////////
+technique FWD_CV_EMI_RI_NI_MO {
+	fxconfig=fxcfg_default;
+	vf_pass={vs_forward_rigid_vtxcolor,ps_forward_frgcolor,sb_default}
+}
+///////////////////////////////////////////////////////////////
 technique FWD_DEPTHPREPASS_IN_MO {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_forward_depthprepass_mono_instanced,ps_forward_depthprepass,sb_default}

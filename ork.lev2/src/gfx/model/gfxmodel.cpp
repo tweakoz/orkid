@@ -83,8 +83,8 @@ XgmSubMeshInst::XgmSubMeshInst(const XgmSubMesh* submesh)
     : _submesh(submesh)
     , _enabled(true) {
 
-  _fxinstancelut = submesh->_material->createFxStateInstanceLut();
-  OrkAssert(_fxinstancelut);
+  _fxinstancecache = submesh->_material->fxInstanceCache();
+  OrkAssert(_fxinstancecache);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -259,12 +259,10 @@ void XgmModel::RenderRigid(
   int inummesh                 = numMeshes();
   int inumclusset              = XgmMesh.numSubMeshes();
 
-  auto fxlut = RCID._fx_instance_lut;
-  OrkAssert(fxlut);
-  auto fxinst = fxlut->findfxinst(RCID);
+  auto fxcache = RCID._fx_instance_cache;
+  OrkAssert(fxcache);
+  auto fxinst = fxcache->findfxinst(RCID);
   OrkAssert(fxinst);
-  auto pmat = fxinst->_material;
-  OrkAssert(pmat);
 
   pTARG->debugPushGroup(
       FormatString("XgmModel::RenderRigid stereo1pass<%d> inummesh<%d> inumclusset<%d>", int(stereo1pass), inummesh, inumclusset));
@@ -272,12 +270,6 @@ void XgmModel::RenderRigid(
   pTARG->MTXI()->SetMMatrix(WorldMat);
   pTARG->PushModColor(ModColor);
   {
-    if (mdlctx.GetModelInst()) {
-      if (mdlctx.GetModelInst()->_overrideMaterial != nullptr) {
-        pmat = mdlctx.GetModelInst()->_overrideMaterial.get();
-      }
-    }
-    pmat->gpuUpdate(pTARG);
     //////////////////////////////////////////////
     // fxinst wrapped draw call
     //////////////////////////////////////////////
@@ -310,8 +302,8 @@ void XgmModel::RenderSkinned(
     const RenderContextInstData& RCID,
     const RenderContextInstModelData& mdlctx) const {
 
-  auto fxlut  = RCID._fx_instance_lut;
-  auto fxinst = fxlut->findfxinst(RCID);
+  auto fxcache  = RCID._fx_instance_cache;
+  auto fxinst = fxcache->findfxinst(RCID);
   auto pmat   = fxinst->_material;
 
   auto R           = RCID.GetRenderer();
@@ -354,9 +346,6 @@ void XgmModel::RenderSkinned(
       bool bmatpushed = false;
 
       auto mtl = XgmClusSet.GetMaterial();
-
-      if (minst->_overrideMaterial != 0)
-        mtl = minst->_overrideMaterial;
 
       mtl->gpuUpdate(pTARG);
 

@@ -145,7 +145,7 @@ void PhysicsDebugger::_onGpuInit(Simulation* psi, lev2::Context* ctx) {
   _pbrmaterial = std::make_shared<PBRMaterial>(ctx);
   _pbrmaterial->_rasterstate.SetZWriteMask(true);
   _pbrmaterial->_variant = "vertexcolor"_crcu;
-  //_pbrmaterial->SetColorMode(GfxMaterial3DSolid::EMODE_VERTEX_COLOR);
+  _fxcache = _pbrmaterial->fxInstanceCache();
 }
 void PhysicsDebugger::_onGpuExit(Simulation* psi, lev2::Context* ctx) {
 
@@ -172,10 +172,7 @@ void PhysicsDebugger::render(const RenderContextInstData& _RCID, lineqptr_t line
   //printf( "draw numlines<%d>\n", inumlines );
   auto prenderer = RCIDCOPY.GetRenderer();
 
-  if( nullptr == _fxinstancelut){
-    _fxinstancelut = _pbrmaterial->createFxStateInstanceLut();
-  }
-  RCIDCOPY._fx_instance_lut = _fxinstancelut;
+  RCIDCOPY._fx_instance_cache = _fxcache;
 
 
   auto pcamdata = context->topRenderContextFrameData()->topCPD().cameraMatrices();
@@ -211,7 +208,7 @@ void PhysicsDebugger::render(const RenderContextInstData& _RCID, lineqptr_t line
     auto pmat = _pbrmaterial.get();
 
     ///////////////////////////////////////////////
-    // draw with modified RCID (containing _fx_instance_lut)
+    // draw with modified RCID (containing _fxcache)
     ///////////////////////////////////////////////
 
     OrkAssert(_RCID._RCFD!=nullptr);
@@ -219,7 +216,7 @@ void PhysicsDebugger::render(const RenderContextInstData& _RCID, lineqptr_t line
     OrkAssert(RCIDCOPY._RCFD!=nullptr);
     OrkAssert(RCIDCOPY._RCFD->_pbrcommon!=nullptr);
 
-    auto fxinst = _fxinstancelut->findfxinst(RCIDCOPY);
+    auto fxinst = _fxcache->findfxinst(RCIDCOPY);
     OrkAssert(fxinst!=nullptr);
     fxinst->wrappedDrawCall(RCIDCOPY,[&](){
       context->GBI()->DrawPrimitiveEML(vwriter, ork::lev2::PrimitiveType::LINES);

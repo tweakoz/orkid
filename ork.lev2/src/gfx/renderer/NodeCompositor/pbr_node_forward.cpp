@@ -54,7 +54,7 @@ struct ForwardPbrNodeImpl {
       //_rtg_donly = _rtg->clone();
       //_rtg_donly->_depthOnly = true;
       _skybox_material = std::make_shared<PBRMaterial>(context);
-      _skybox_fxinstlut = _skybox_material->createSkyboxFxInstLut();
+      _skybox_fxcache = _skybox_material->skyboxFxInstanceCache();
       _enumeratedLights = std::make_shared<EnumeratedLights>();
     }
   }
@@ -157,8 +157,8 @@ struct ForwardPbrNodeImpl {
 
         RCFD._renderingmodel = "CUSTOM"_crcu;
         RenderContextInstData RCID(&RCFD);
-        RCID._fx_instance_lut = _skybox_fxinstlut;
-        auto fxinst = _skybox_fxinstlut->findfxinst(RCID);
+        RCID._fx_instance_cache = _skybox_fxcache;
+        auto fxinst = _skybox_fxcache->findfxinst(RCID);
         fxinst->wrappedDrawCall(RCID,[GBI](){
           GBI->render2dQuadEML(fvec4(-1, -1, 2, 2), //
                                fvec4(0, 0, 1, 1), //
@@ -208,7 +208,7 @@ struct ForwardPbrNodeImpl {
   rtgroup_ptr_t _rtg_donly;
   fmtx4 _viewOffsetMatrix;
   pbrmaterial_ptr_t _skybox_material;
-  fxinstancelut_ptr_t _skybox_fxinstlut;
+  fxinstancecache_constptr_t _skybox_fxcache;
 
 }; // IMPL
 

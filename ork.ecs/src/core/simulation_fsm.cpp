@@ -208,9 +208,9 @@ void Simulation::_buildStateMachine() {
       auto LOCKS = lev2::GfxEnv::dumpLocks();
 
       auto try_sframe = _renderThreadSM->getVar("sframe"_crc);
-      auto sframe = try_sframe.get<lev2::standardcompositorframe_ptr_t>();
-
-      sframe->attachDrawBufContext(_dbufctxSIM);
+      if( auto sframe = try_sframe.tryAs<lev2::standardcompositorframe_ptr_t>() ){
+        sframe.value()->attachDrawBufContext(_dbufctxSIM);
+      }
 
       lev2::GfxEnv::onLocksDone([=]() {                     //
         _renderThreadSM->enqueueStateChange(ren_sim_state); //

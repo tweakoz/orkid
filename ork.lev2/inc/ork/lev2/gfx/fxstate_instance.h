@@ -73,7 +73,7 @@ struct FxStateInstance {
 
 };
 
-struct FxStateInstanceLut {
+struct FxStateInstanceCache {
 
   static uint64_t genIndex(const FxStateInstanceConfig& config);
   fxinstance_ptr_t findfxinst(const RenderContextInstData& RCID) const;

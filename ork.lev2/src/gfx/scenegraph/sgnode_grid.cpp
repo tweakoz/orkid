@@ -33,12 +33,8 @@ struct GridRenderImpl {
     _pbrmaterial->_roughnessFactor = 1.0f;
     _pbrmaterial->_baseColor       = fvec3(1, 1, 1);
 
-    _fxlut = _pbrmaterial->createFxStateInstanceLut();
+    _fxcache = _pbrmaterial->fxInstanceCache();
 
-    //_fwdmaterial = new FreestyleMaterial;
-    //_fwdmaterial->gpuInit(ctx, "orkshader://grid");
-    //_tekFWGRID = _fwdmaterial->technique("fwd_grid");
-    //_parMatFWMVP = _fwdmaterial->param("mvp");
     _initted                   = true;
   }
   void _render(const RenderContextInstData& RCID){
@@ -100,7 +96,7 @@ struct GridRenderImpl {
     }
     context->PushModColor(modcolor);
 
-    auto fxinst = _fxlut->findfxinst(RCID);
+    auto fxinst = _fxcache->findfxinst(RCID);
     OrkAssert(fxinst);
     fxinst->wrappedDrawCall(RCID, [&]() {
       gbi->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES, 6);
@@ -115,12 +111,9 @@ struct GridRenderImpl {
   }
   const GridDrawableData* _griddata;
   PBRMaterial* _pbrmaterial;
-  FreestyleMaterial* _fwdmaterial;
-  //const FxShaderTechnique* _tekFWGRID = nullptr;
-  //const FxShaderParam* _parMatFWMVP = nullptr;
 
   texture_ptr_t _colortexture;
-  fxinstancelut_ptr_t _fxlut;
+  fxinstancecache_constptr_t _fxcache;
   bool _initted = false;
 
 };

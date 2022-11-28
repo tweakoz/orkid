@@ -87,9 +87,8 @@ public:
 
   ////////////////////////////////////////////
   FxStateInstance::statelambda_t createBasicStateLambda() const;
-  fxinstance_ptr_t _createFxStateInstance(FxStateInstanceConfig& cfg) const;
-  fxinstancelut_ptr_t createFxStateInstanceLut() const final;
-  fxinstancelut_ptr_t createSkyboxFxInstLut() const;
+  fxinstancecache_constptr_t fxInstanceCache() const final;
+  fxinstancecache_constptr_t skyboxFxInstanceCache() const;
   ////////////////////////////////////////////
   void setupCamera(const RenderContextFrameData& RCFD);
   ////////////////////////////////////////////
@@ -223,7 +222,7 @@ public:
 
   // vtxcolor
 
-  fxtechnique_constptr_t _tek_FWD_CV_VN_RI_NI_MO = nullptr;
+  fxtechnique_constptr_t _tek_FWD_CV_EMI_RI_NI_MO = nullptr;
 
   //////////////////////
   // deferred (gbuffer) techniques
@@ -273,6 +272,11 @@ public:
   fvec4 _baseColor;
 
   bool _stereoVtex = false;
+
+private:
+
+  fxinstance_ptr_t _createFxStateInstance(FxStateInstanceConfig& cfg) const;
+
 };
 
 material_ptr_t default3DMaterial();

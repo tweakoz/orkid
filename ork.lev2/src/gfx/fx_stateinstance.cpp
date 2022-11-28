@@ -11,7 +11,7 @@
 #include <ork/util/logger.h>
 
 namespace ork::lev2 {
-static logchannel_ptr_t logchan_fxstate = logger()->createChannel("fxstate",fvec3(0.7,0.7,0.5));
+static logchannel_ptr_t logchan_fxcache = logger()->createChannel("fxcache",fvec3(0.7,0.7,0.5));
 /////////////////////////////////////////////////////////////////////////
 FxStateInstance::FxStateInstance(FxStateInstanceConfig& config)
     : _config(config) {
@@ -168,7 +168,7 @@ void FxStateInstance::endBlock(const RenderContextInstData& RCID) {
   context->FXI()->EndBlock();
 }
 ///////////////////////////////////////////////////////////////////////////////
-uint64_t FxStateInstanceLut::genIndex(const FxStateInstanceConfig& config) {
+uint64_t FxStateInstanceCache::genIndex(const FxStateInstanceConfig& config) {
   uint64_t index = 0;
   index += (uint64_t(config._stereo) << 1);
   index += (uint64_t(config._instanced) << 2);
@@ -177,7 +177,7 @@ uint64_t FxStateInstanceLut::genIndex(const FxStateInstanceConfig& config) {
   return index;
 }
 ///////////////////////////////////////////////////////////////////////////////
-fxinstance_ptr_t FxStateInstanceLut::findfxinst(const RenderContextInstData& RCID) const {
+fxinstance_ptr_t FxStateInstanceCache::findfxinst(const RenderContextInstData& RCID) const {
   auto RCFD       = RCID._RCFD;
   auto context    = RCFD->_target;
   auto fxi        = context->FXI();
@@ -201,15 +201,18 @@ fxinstance_ptr_t FxStateInstanceLut::findfxinst(const RenderContextInstData& RCI
   return fxinst;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void FxStateInstanceLut::assignfxinst(const FxStateInstanceConfig& config, fxinstance_ptr_t fxi) {
-  uint64_t index   = genIndex(config);
-  logchan_fxstate->log( "fxlut<%p> assignfxinst fxi<%p> to index<%zu>", this, fxi.get(), index );
-  _lut[index] = fxi;
+void FxStateInstanceCache::assignfxinst(const FxStateInstanceConfig& config, fxinstance_ptr_t fxi) {
+  if(fxi){
+    OrkAssert(fxi->_material);
+    uint64_t index   = genIndex(config);
+    logchan_fxcache->log( "fxlut<%p> assignfxinst fxi<%p> to index<%zu>", this, fxi.get(), index );
+    _lut[index] = fxi;
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FxStateInstanceConfig::dump() const {
-  logchan_fxstate->log(
-      "configdump: model<0x%zx> stereo<%d> instanced<%d> skinned<%d>",
+  logchan_fxcache->log(
+      "configdump: rendering_model<0x%zx> stereo<%d> instanced<%d> skinned<%d>",
       uint64_t(_rendering_model),
       int(_stereo),
       int(_instanced),

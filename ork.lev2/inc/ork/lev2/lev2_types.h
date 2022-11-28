@@ -167,9 +167,10 @@ struct FxShaderParamBufferMapping;
 typedef std::shared_ptr<FxShaderParamBufferMapping> parambuffermappingptr_t;
 ///////////////////////////////////////////////////////////////////////////////
 struct FxStateInstance;
-struct FxStateInstanceLut;
+struct FxStateInstanceCache;
 using fxinstance_ptr_t = std::shared_ptr<FxStateInstance>;
-using fxinstancelut_ptr_t = std::shared_ptr<FxStateInstanceLut>;
+using fxinstancecache_ptr_t = std::shared_ptr<FxStateInstanceCache>;
+using fxinstancecache_constptr_t = std::shared_ptr<const FxStateInstanceCache>;
 ///////////////////////////////////////////////////////////////////////////////
 struct InputGroup;
 struct InputManager;
