@@ -47,7 +47,7 @@ material_ptr_t default3DMaterial() {
 
 //////////////////////////////////////////////////////
 
-fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,const PBRMaterial*mtl);
+static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,const PBRMaterial*mtl);
 
 struct PbrCacheImpl{
 
@@ -86,7 +86,7 @@ static pbrcache_impl_ptr_t _getpbrcache(){
 
 ////////////////////////////////////////////
 
-FxStateInstance::statelambda_t createBasicStateLambda(const PBRMaterial* mtl){
+static FxStateInstance::statelambda_t _createBasicStateLambda(const PBRMaterial* mtl){
   return [mtl](const RenderContextInstData& RCID, int ipass) {
     auto context          = RCID._RCFD->GetTarget();
     auto MTXI             = context->MTXI();
@@ -132,13 +132,13 @@ FxStateInstance::statelambda_t createBasicStateLambda(const PBRMaterial* mtl){
 
 ////////////////////////////////////////////
 
-fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,const PBRMaterial*mtl){
+static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,const PBRMaterial*mtl){
 
   fxinstance_ptr_t fxinst;
 
   switch (mtl->_variant) {
     case "skybox.forward"_crcu: { // FORWARD SKYBOX VARIANT
-      auto basic_lambda  = createBasicStateLambda(mtl);
+      auto basic_lambda  = _createBasicStateLambda(mtl);
       auto skybox_lambda = [mtl, basic_lambda](const RenderContextInstData& RCID, int ipass) {
         auto _this   = (PBRMaterial*)mtl;
         auto RCFD    = RCID._RCFD;
@@ -359,7 +359,7 @@ fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,const PB
               fxinst          = std::make_shared<FxStateInstance>(permu);
               fxinst->_technique         = mtl->_tek_FWD_CT_NM_RI_IN_MO;
               fxinst->_params[mtl->_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
-              fxinst->addStateLambda(createBasicStateLambda(mtl));
+              fxinst->addStateLambda(_createBasicStateLambda(mtl));
               fxinst->addStateLambda(lighting_lambda);
               fxinst->addStateLambda(rsi_lambda);
             }
@@ -369,7 +369,7 @@ fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,const PB
               fxinst          = std::make_shared<FxStateInstance>(permu);
               fxinst->_technique         = mtl->_tek_FWD_CT_NM_RI_NI_MO;
               fxinst->_params[mtl->_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
-              fxinst->addStateLambda(createBasicStateLambda(mtl));
+              fxinst->addStateLambda(_createBasicStateLambda(mtl));
               fxinst->addStateLambda(lighting_lambda);
               fxinst->addStateLambda(rsi_lambda);
             }
@@ -383,7 +383,7 @@ fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,const PB
               fxinst                     = std::make_shared<FxStateInstance>(permu);
               fxinst->_technique         = mtl->_tek_FWD_DEPTHPREPASS_IN_MO;
               fxinst->_params[mtl->_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
-              fxinst->addStateLambda(createBasicStateLambda(mtl));
+              fxinst->addStateLambda(_createBasicStateLambda(mtl));
               fxinst->addStateLambda([mtl](const RenderContextInstData& RCID, int ipass) {
                 auto _this   = (PBRMaterial*)mtl;
                 auto RCFD    = RCID._RCFD;
@@ -434,7 +434,7 @@ fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,const PB
               fxinst                     = std::make_shared<FxStateInstance>(permu);
               fxinst->_technique         = mtl->_tek_FWD_CV_EMI_RI_NI_MO;
               fxinst->_params[mtl->_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
-              fxinst->addStateLambda(createBasicStateLambda(mtl));
+              fxinst->addStateLambda(_createBasicStateLambda(mtl));
               fxinst->addStateLambda(no_cull_stateblock);
               OrkAssert(fxinst->_technique != nullptr);
             }
@@ -447,7 +447,7 @@ fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,const PB
               fxinst                     = std::make_shared<FxStateInstance>(permu);
               fxinst->_technique         = mtl->_tek_GBU_CV_EMI_RI_NI_MO;
               fxinst->_params[mtl->_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
-              fxinst->addStateLambda(createBasicStateLambda(mtl));
+              fxinst->addStateLambda(_createBasicStateLambda(mtl));
               fxinst->addStateLambda(no_cull_stateblock);
               OrkAssert(fxinst->_technique != nullptr);
             }
