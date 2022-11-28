@@ -86,9 +86,7 @@ public:
   void forceEmissive();
 
   ////////////////////////////////////////////
-  FxStateInstance::statelambda_t createBasicStateLambda() const;
   fxinstancecache_constptr_t _doFxInstanceCache(fxcachepermutation_set_constptr_t perms) const final;
-  //fxinstancecache_constptr_t skyboxFxInstanceCache() const;
   ////////////////////////////////////////////
   void setupCamera(const RenderContextFrameData& RCFD);
   ////////////////////////////////////////////

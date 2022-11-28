@@ -86,8 +86,8 @@ static pbrcache_impl_ptr_t _getpbrcache(){
 
 ////////////////////////////////////////////
 
-FxStateInstance::statelambda_t PBRMaterial::createBasicStateLambda() const {
-  return [this](const RenderContextInstData& RCID, int ipass) {
+FxStateInstance::statelambda_t createBasicStateLambda(const PBRMaterial* mtl){
+  return [mtl](const RenderContextInstData& RCID, int ipass) {
     auto context          = RCID._RCFD->GetTarget();
     auto MTXI             = context->MTXI();
     auto FXI              = context->FXI();
@@ -98,35 +98,36 @@ FxStateInstance::statelambda_t PBRMaterial::createBasicStateLambda() const {
     bool is_stereo        = CPD.isStereoOnePass();
     auto pbrcommon        = RCID._RCFD->_pbrcommon;
 
-    FXI->BindParamVect3(_paramAmbientLevel, pbrcommon->_ambientLevel);
-    FXI->BindParamFloat(_paramSpecularLevel, pbrcommon->_specularLevel);
-    FXI->BindParamFloat(_paramDiffuseLevel, pbrcommon->_diffuseLevel);
-    FXI->BindParamFloat(_paramSkyboxLevel, pbrcommon->_skyboxLevel);
-    FXI->BindParamCTex(_parMapSpecularEnv, pbrcommon->envSpecularTexture().get());
-    FXI->BindParamCTex(_parMapDiffuseEnv, pbrcommon->envDiffuseTexture().get());
-    FXI->BindParamCTex(_parMapBrdfIntegration, pbrcommon->_brdfIntegrationMap.get());
-    FXI->BindParamFloat(_parEnvironmentMipBias, pbrcommon->_environmentMipBias);
-    FXI->BindParamFloat(_parEnvironmentMipScale, pbrcommon->_environmentMipScale);
-    FXI->BindParamFloat(_parDepthFogDistance, pbrcommon->_depthFogDistance);
-    FXI->BindParamFloat(_parDepthFogPower, pbrcommon->_depthFogPower);
+    FXI->BindParamVect3(mtl->_paramAmbientLevel, pbrcommon->_ambientLevel);
+    FXI->BindParamFloat(mtl->_paramSpecularLevel, pbrcommon->_specularLevel);
+    FXI->BindParamFloat(mtl->_paramDiffuseLevel, pbrcommon->_diffuseLevel);
+    FXI->BindParamFloat(mtl->_paramSkyboxLevel, pbrcommon->_skyboxLevel);
+    FXI->BindParamCTex(mtl->_parMapSpecularEnv, pbrcommon->envSpecularTexture().get());
+    FXI->BindParamCTex(mtl->_parMapDiffuseEnv, pbrcommon->envDiffuseTexture().get());
+    FXI->BindParamCTex(mtl->_parMapBrdfIntegration, pbrcommon->_brdfIntegrationMap.get());
+    FXI->BindParamFloat(mtl->_parEnvironmentMipBias, pbrcommon->_environmentMipBias);
+    FXI->BindParamFloat(mtl->_parEnvironmentMipScale, pbrcommon->_environmentMipScale);
+    FXI->BindParamFloat(mtl->_parDepthFogDistance, pbrcommon->_depthFogDistance);
+    FXI->BindParamFloat(mtl->_parDepthFogPower, pbrcommon->_depthFogPower);
 
     auto worldmatrix = RCID.worldMatrix();
 
     auto stereocams = CPD._stereoCameraMatrices;
     auto monocams   = CPD._cameraMatrices;
 
-    FXI->BindParamMatrix(_paramM, worldmatrix);
+    FXI->BindParamMatrix(mtl->_paramM, worldmatrix);
 
     if (monocams) {
       auto eye_pos = monocams->_vmatrix.inverse().translation();
-      FXI->BindParamVect3(_paramEyePostion, eye_pos);
-      FXI->BindParamMatrix(_paramMVP, monocams->MVPMONO(worldmatrix));
+      FXI->BindParamVect3(mtl->_paramEyePostion, eye_pos);
+      FXI->BindParamMatrix(mtl->_paramMVP, monocams->MVPMONO(worldmatrix));
 
       auto VP = monocams->VPMONO();
-      FXI->BindParamMatrix(_paramVP, VP);
-      FXI->BindParamMatrix(_paramVPinv, VP.inverse());
+      FXI->BindParamMatrix(mtl->_paramVP, VP);
+      FXI->BindParamMatrix(mtl->_paramVPinv, VP.inverse());
     }
   };
+
 }
 
 ////////////////////////////////////////////
@@ -137,7 +138,7 @@ fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,const PB
 
   switch (mtl->_variant) {
     case "skybox.forward"_crcu: { // FORWARD SKYBOX VARIANT
-      auto basic_lambda  = mtl->createBasicStateLambda();
+      auto basic_lambda  = createBasicStateLambda(mtl);
       auto skybox_lambda = [mtl, basic_lambda](const RenderContextInstData& RCID, int ipass) {
         auto _this   = (PBRMaterial*)mtl;
         auto RCFD    = RCID._RCFD;
@@ -358,7 +359,7 @@ fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,const PB
               fxinst          = std::make_shared<FxStateInstance>(permu);
               fxinst->_technique         = mtl->_tek_FWD_CT_NM_RI_IN_MO;
               fxinst->_params[mtl->_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
-              fxinst->addStateLambda(mtl->createBasicStateLambda());
+              fxinst->addStateLambda(createBasicStateLambda(mtl));
               fxinst->addStateLambda(lighting_lambda);
               fxinst->addStateLambda(rsi_lambda);
             }
@@ -368,7 +369,7 @@ fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,const PB
               fxinst          = std::make_shared<FxStateInstance>(permu);
               fxinst->_technique         = mtl->_tek_FWD_CT_NM_RI_NI_MO;
               fxinst->_params[mtl->_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
-              fxinst->addStateLambda(mtl->createBasicStateLambda());
+              fxinst->addStateLambda(createBasicStateLambda(mtl));
               fxinst->addStateLambda(lighting_lambda);
               fxinst->addStateLambda(rsi_lambda);
             }
@@ -382,7 +383,7 @@ fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,const PB
               fxinst                     = std::make_shared<FxStateInstance>(permu);
               fxinst->_technique         = mtl->_tek_FWD_DEPTHPREPASS_IN_MO;
               fxinst->_params[mtl->_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
-              fxinst->addStateLambda(mtl->createBasicStateLambda());
+              fxinst->addStateLambda(createBasicStateLambda(mtl));
               fxinst->addStateLambda([mtl](const RenderContextInstData& RCID, int ipass) {
                 auto _this   = (PBRMaterial*)mtl;
                 auto RCFD    = RCID._RCFD;
@@ -433,7 +434,7 @@ fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,const PB
               fxinst                     = std::make_shared<FxStateInstance>(permu);
               fxinst->_technique         = mtl->_tek_FWD_CV_EMI_RI_NI_MO;
               fxinst->_params[mtl->_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
-              fxinst->addStateLambda(mtl->createBasicStateLambda());
+              fxinst->addStateLambda(createBasicStateLambda(mtl));
               fxinst->addStateLambda(no_cull_stateblock);
               OrkAssert(fxinst->_technique != nullptr);
             }
@@ -446,7 +447,7 @@ fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,const PB
               fxinst                     = std::make_shared<FxStateInstance>(permu);
               fxinst->_technique         = mtl->_tek_GBU_CV_EMI_RI_NI_MO;
               fxinst->_params[mtl->_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
-              fxinst->addStateLambda(mtl->createBasicStateLambda());
+              fxinst->addStateLambda(createBasicStateLambda(mtl));
               fxinst->addStateLambda(no_cull_stateblock);
               OrkAssert(fxinst->_technique != nullptr);
             }
