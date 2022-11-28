@@ -72,7 +72,7 @@ struct DrawableBufItem {
 public:
   typedef ork::lev2::IRenderable::var_t var_t;
 
-  using usermap_t   = std::unordered_map<uint32_t, rendervar_t>;
+  using usermap_t = std::unordered_map<uint32_t, rendervar_t>;
 
   DrawableBufItem();
   ~DrawableBufItem();
@@ -111,13 +111,12 @@ struct DrawableBufLayer {
   }
   void Reset(const DrawableBuffer& dB);
   drawablebufitem_ptr_t enqueueDrawable(const DrawQueueXfData& xfdata, const Drawable* d);
-  //void terminate();
+  // void terminate();
 
   DrawableBufLayer();
   ~DrawableBufLayer();
 
 }; // ~ 100K
-
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -143,8 +142,8 @@ public:
   std::atomic<int> _state;
 
   int miNumLayersUsed = 0;
-  int miBufferIndex = -1;
-  int miReadCount = 0;
+  int miBufferIndex   = -1;
+  int miReadCount     = 0;
 
   const usermap_t& userProperties() const {
     return _userProperties;
@@ -156,6 +155,45 @@ public:
   void setUserProperty(CrcString, rendervar_t data);
   void unSetUserProperty(CrcString);
   rendervar_t getUserProperty(CrcString prop) const;
+
+  template <typename T> void setUserPropertyAs(CrcString key, const T& data) {
+    rendervar_t rv;
+    rv.set<T>(data);
+    auto it = _userProperties.find(key);
+    if (it == _userProperties.end())
+      _userProperties.AddSorted(key, rv);
+    else
+      it->second = rv;
+  }
+
+  template <typename T> std::shared_ptr<T> //
+  mergeSharedUserPropertyAs(CrcString key) {
+    std::shared_ptr<T> shared;
+    auto it = _userProperties.find(key);
+    if (it == _userProperties.end()) {
+      rendervar_t rv;
+      shared = rv.makeShared<T>();
+      _userProperties.AddSorted(key, rv);
+    } else {
+      shared = it->second.getShared<T>();
+    }
+    return shared;
+  }
+
+  template <typename T> std::shared_ptr<T> //
+  getSharedUserPropertyAs(CrcString key) const {
+    std::shared_ptr<T> shared;
+    auto it = _userProperties.find(key);
+    OrkAssert(it != _userProperties.end());
+    return it->second.getShared<T>();
+  }
+
+  template <typename T> const T& getUserPropertyAs(CrcString key) const {
+    rendervar_t rv;
+    auto it = _userProperties.find(key);
+    OrkAssert(it != _userProperties.end());
+    return it->second.get<T>();
+  }
 
   static ork::atomic<bool> gbInsideClearAndSync;
 
@@ -194,13 +232,13 @@ struct DrawBufContext {
 
   DrawBufContext();
   ~DrawBufContext();
-  
+
   DrawableBuffer* acquireForWriteLocked();
   void releaseFromWriteLocked(DrawableBuffer* db);
   const DrawableBuffer* acquireForReadLocked();
   void releaseFromReadLocked(const DrawableBuffer* db);
-  
-  using tbuf_t = concurrent_triple_buffer<DrawableBuffer>;
+
+  using tbuf_t     = concurrent_triple_buffer<DrawableBuffer>;
   using tbuf_ptr_t = std::shared_ptr<tbuf_t>;
 
   tbuf_ptr_t _triple;
@@ -209,9 +247,8 @@ struct DrawBufContext {
   ork::mutex _lockedBufferMutex;
   ork::semaphore _rendersync_sema;
   ork::semaphore _rendersync_sema2;
-  int  _rendersync_counter = 0;
+  int _rendersync_counter = 0;
   std::shared_ptr<DrawableBuffer> _lockeddrawablebuffer;
-
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -223,13 +260,9 @@ struct Drawable {
   Drawable();
   virtual ~Drawable();
 
-  virtual void enqueueToRenderQueue(
-      drawablebufitem_constptr_t item,
-      lev2::IRenderer* prenderer) const;
+  virtual void enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* prenderer) const;
 
-  virtual drawablebufitem_ptr_t enqueueOnLayer(
-      const DrawQueueXfData& xfdata,
-      DrawableBufLayer& buffer) const; 
+  virtual drawablebufitem_ptr_t enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const;
 
   const ork::Object* GetOwner() const {
     return mOwner;
@@ -261,7 +294,9 @@ struct Drawable {
   }
   void terminate();
 
-  virtual bool isInstanced() const { return false; }
+  virtual bool isInstanced() const {
+    return false;
+  }
 
   const ork::Object* mOwner;
   var_t mDataA;
@@ -297,7 +332,8 @@ struct ModelDrawableData : public DrawableData {
 
   DeclareConcreteX(ModelDrawableData, DrawableData);
 
-  ModelDrawableData() {}
+  ModelDrawableData() {
+  }
   ModelDrawableData(AssetPath path);
   drawable_ptr_t createDrawable() const final;
   AssetPath _assetpath;
@@ -310,7 +346,8 @@ struct InstancedModelDrawableData : public DrawableData {
 
   DeclareConcreteX(InstancedModelDrawableData, DrawableData);
 
-  InstancedModelDrawableData() {}
+  InstancedModelDrawableData() {
+  }
   InstancedModelDrawableData(AssetPath path);
   drawable_ptr_t createDrawable() const final;
   AssetPath _assetpath;
@@ -355,10 +392,10 @@ struct InstancedDrawable : public Drawable {
   InstancedDrawable();
 
   void resize(size_t count);
-  bool isInstanced() const final { return true; }
-  drawablebufitem_ptr_t enqueueOnLayer(
-      const DrawQueueXfData& xfdata,
-      DrawableBufLayer& buffer) const final; 
+  bool isInstanced() const final {
+    return true;
+  }
+  drawablebufitem_ptr_t enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const final;
 
   static constexpr size_t k_texture_dimension_x = 4096;
   static constexpr size_t k_texture_dimension_y = 64;
@@ -371,12 +408,10 @@ struct InstancedDrawable : public Drawable {
   instanceddrawinstancedata_ptr_t _instancedata;
   mutable int _drawcount = 0;
   size_t _count;
-
 };
 ///////////////////////////////////////////////////////////////////////////////
 
 struct InstancedModelDrawable final : public InstancedDrawable {
-
 
   InstancedModelDrawable();
   ~InstancedModelDrawable();
@@ -409,7 +444,8 @@ struct BillboardStringDrawableData : public DrawableData {
 
   DeclareConcreteX(BillboardStringDrawableData, DrawableData);
 
-  BillboardStringDrawableData() {}
+  BillboardStringDrawableData() {
+  }
   BillboardStringDrawableData(AssetPath path);
   drawable_ptr_t createDrawable() const final;
   std::string _initialString;
@@ -469,7 +505,7 @@ struct InstancedBillboardStringDrawable final : public InstancedDrawable {
   InstancedBillboardStringDrawable();
   ~InstancedBillboardStringDrawable();
   void enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const override;
-  //std::string _currentString;
+  // std::string _currentString;
   const InstancedBillboardStringDrawableData* _data = nullptr;
   fvec3 _offset;
   float _scale = 1.0f;
@@ -493,7 +529,7 @@ public:
 
 struct CallbackDrawable : public Drawable {
 
-  using RLCBType     = std::function<void(RenderContextInstData& RCID)>;
+  using RLCBType      = std::function<void(RenderContextInstData& RCID)>;
   using Q2LCBType     = void(drawablebufitem_constptr_t cdb);
   using Q2LLambdaType = std::function<void(drawablebufitem_constptr_t)>;
 

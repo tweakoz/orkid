@@ -611,6 +611,6 @@ vertex_shader vs_forward_unlit
 }
 fragment_shader ps_forward_unlit
 	: iface_forward {
-	vec3 rgb = texture(ColorMap,frg_uv0).xyz;
-	out_color = vec4(rgb,1);
+	vec3 rgb = texture(ColorMap,frg_uv0).xyz*ModColor.xyz;
+	out_color = vec4(ModColor.xyz,1);
 }

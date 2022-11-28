@@ -291,12 +291,15 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
               const auto& CPD  = RCFD->topCPD();
               auto monocams    = CPD._cameraMatrices;
               auto worldmatrix = RCID.worldMatrix();
+              auto modcolor = context->RefModColor();
               FXI->BindParamMatrix(_this->_paramMVP, monocams->MVPMONO(worldmatrix));
+              FXI->BindParamVect4(_this->_parModColor, modcolor*_this->_baseColor);
               _this->_rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
               _this->_rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
               _this->_rasterstate.SetZWriteMask(true);
               _this->_rasterstate.SetRGBAWriteMask(true, true);
               RSI->BindRasterState(_this->_rasterstate);
+
             });
           }
           break;
@@ -590,6 +593,7 @@ void PBRMaterial::describeX(class_t* c) {
     ctx._inputStream->GetItem<float>(mtl->_metallicFactor);
     ctx._inputStream->GetItem<float>(mtl->_roughnessFactor);
     ctx._inputStream->GetItem<fvec4>(mtl->_baseColor);
+    logchan_pbr->log("read.xgm: basecolor<%g %g %g>", mtl->_baseColor.x,mtl->_baseColor.y,mtl->_baseColor.z);
 
     if (auto try_ov = ctx._varmap->typedValueForKey<std::string>("override.shader.gbuf")) {
       const auto& ov_val = try_ov.value();
@@ -820,9 +824,7 @@ void PBRMaterial::EndBlock(Context* context) {
 
 void PBRMaterial::gpuUpdate(Context* context) {
   GfxMaterial::gpuUpdate(context);
-  // auto modcolor = context->RefModColor();
   // auto fxi    = context->FXI();
-  // fxi->BindParamVect4(_parModColor, modcolor*_baseColor);
 }
 
 ////////////////////////////////////////////

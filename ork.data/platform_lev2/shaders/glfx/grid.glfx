@@ -203,7 +203,7 @@ state_block sb_additive : default {
   DepthMask = false;
   CullTest  = OFF;
 }
-technique fwd_grid {
+technique FWD_UNLIT_NI_MO {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_grid_forward_unlit,ps_grid_forward_unlit,sb_additive}
 }

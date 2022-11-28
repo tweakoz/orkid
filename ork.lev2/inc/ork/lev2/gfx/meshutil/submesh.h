@@ -59,6 +59,8 @@ using iglmesh_constptr_t    = std::shared_ptr<const IglMesh>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 struct HashU6432 : public std::unary_function<U64, std::size_t> {
   std::size_t operator()(U64 v) const {
     U64 sh   = v >> 32;

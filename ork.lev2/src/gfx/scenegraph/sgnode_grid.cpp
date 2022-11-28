@@ -27,7 +27,6 @@ struct GridRenderImpl {
     _pbrmaterial       = new PBRMaterial();
     _pbrmaterial->_shaderpath = "orkshader://grid";
     _pbrmaterial->_texColor = _colortexture;
-    //_pbrmaterial->_enablePick         = true;
     _pbrmaterial->gpuInit(ctx);
     _pbrmaterial->_metallicFactor  = 0.0f;
     _pbrmaterial->_roughnessFactor = 1.0f;
