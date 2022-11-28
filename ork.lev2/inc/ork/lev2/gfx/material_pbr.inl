@@ -88,7 +88,7 @@ public:
   ////////////////////////////////////////////
   FxStateInstance::statelambda_t createBasicStateLambda() const;
   fxinstancecache_constptr_t _doFxInstanceCache(fxcachepermutation_set_constptr_t perms) const final;
-  fxinstancecache_constptr_t skyboxFxInstanceCache() const;
+  //fxinstancecache_constptr_t skyboxFxInstanceCache() const;
   ////////////////////////////////////////////
   void setupCamera(const RenderContextFrameData& RCFD);
   ////////////////////////////////////////////
@@ -272,10 +272,6 @@ public:
   fvec4 _baseColor;
 
   bool _stereoVtex = false;
-
-private:
-
-  fxinstance_ptr_t _createFxStateInstance(FxCachePermutation& cfg) const;
 
 };
 

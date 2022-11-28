@@ -51,10 +51,9 @@ struct ForwardPbrNodeImpl {
       _rtg             = std::make_shared<RtGroup>(context, 8, 8, intToMsaaEnum(_ginitdata->_msaa_samples));
       auto buf1        = _rtg->createRenderTarget(EBufferFormat::RGBA8);
       buf1->_debugName = "ForwardRt0";
-      //_rtg_donly = _rtg->clone();
-      //_rtg_donly->_depthOnly = true;
       _skybox_material = std::make_shared<PBRMaterial>(context);
-      _skybox_fxcache = _skybox_material->skyboxFxInstanceCache();
+      _skybox_material->_variant = "skybox.forward"_crcu;
+      _skybox_fxcache = _skybox_material->fxInstanceCache();
       _enumeratedLights = std::make_shared<EnumeratedLights>();
     }
   }

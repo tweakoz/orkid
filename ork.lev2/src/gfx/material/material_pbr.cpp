@@ -39,8 +39,464 @@ namespace ork::lev2 {
 
 static logchannel_ptr_t logchan_pbr = logger()->createChannel("mtlpbr", fvec3(0.8, 0.8, 0.1));
 
+//////////////////////////////////////////////////////
+
 material_ptr_t default3DMaterial() {
   return std::make_shared<PBRMaterial>(lev2::contextForCurrentThread());
+}
+
+//////////////////////////////////////////////////////
+
+fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,const PBRMaterial*mtl);
+
+struct PbrCacheImpl{
+
+  PbrCacheImpl(){}
+
+  fxinstancecache_constptr_t getCache(const PBRMaterial*mtl){
+
+    fxinstancecache_constptr_t rval;
+
+    auto it = _fxcachemap.find(mtl);
+    if(it==_fxcachemap.end()){
+      auto newcache = std::make_shared<FxStateInstanceCache>();
+      newcache->_impl.set<const PBRMaterial*>(mtl);
+      newcache->_on_miss = [=](const FxCachePermutation& permu) -> fxinstance_ptr_t {
+        return _createFxStateInstance(permu,mtl);
+      };
+      rval = newcache;
+      _fxcachemap[mtl] = newcache;
+    }
+    else{
+      rval = it->second;
+    }
+
+    return rval;    
+  }
+
+  std::unordered_map<const PBRMaterial*,fxinstancecache_ptr_t> _fxcachemap;
+};
+
+using pbrcache_impl_ptr_t = std::shared_ptr<PbrCacheImpl>;
+
+static pbrcache_impl_ptr_t _getpbrcache(){
+  static pbrcache_impl_ptr_t _gcache = std::make_shared<PbrCacheImpl>();
+  return _gcache;
+}
+
+////////////////////////////////////////////
+
+FxStateInstance::statelambda_t PBRMaterial::createBasicStateLambda() const {
+  return [this](const RenderContextInstData& RCID, int ipass) {
+    auto context          = RCID._RCFD->GetTarget();
+    auto MTXI             = context->MTXI();
+    auto FXI              = context->FXI();
+    auto RSI              = context->RSI();
+    const auto& CPD       = RCID._RCFD->topCPD();
+    const auto& RCFDPROPS = RCID._RCFD->userProperties();
+    bool is_picking       = CPD.isPicking();
+    bool is_stereo        = CPD.isStereoOnePass();
+    auto pbrcommon        = RCID._RCFD->_pbrcommon;
+
+    FXI->BindParamVect3(_paramAmbientLevel, pbrcommon->_ambientLevel);
+    FXI->BindParamFloat(_paramSpecularLevel, pbrcommon->_specularLevel);
+    FXI->BindParamFloat(_paramDiffuseLevel, pbrcommon->_diffuseLevel);
+    FXI->BindParamFloat(_paramSkyboxLevel, pbrcommon->_skyboxLevel);
+    FXI->BindParamCTex(_parMapSpecularEnv, pbrcommon->envSpecularTexture().get());
+    FXI->BindParamCTex(_parMapDiffuseEnv, pbrcommon->envDiffuseTexture().get());
+    FXI->BindParamCTex(_parMapBrdfIntegration, pbrcommon->_brdfIntegrationMap.get());
+    FXI->BindParamFloat(_parEnvironmentMipBias, pbrcommon->_environmentMipBias);
+    FXI->BindParamFloat(_parEnvironmentMipScale, pbrcommon->_environmentMipScale);
+    FXI->BindParamFloat(_parDepthFogDistance, pbrcommon->_depthFogDistance);
+    FXI->BindParamFloat(_parDepthFogPower, pbrcommon->_depthFogPower);
+
+    auto worldmatrix = RCID.worldMatrix();
+
+    auto stereocams = CPD._stereoCameraMatrices;
+    auto monocams   = CPD._cameraMatrices;
+
+    FXI->BindParamMatrix(_paramM, worldmatrix);
+
+    if (monocams) {
+      auto eye_pos = monocams->_vmatrix.inverse().translation();
+      FXI->BindParamVect3(_paramEyePostion, eye_pos);
+      FXI->BindParamMatrix(_paramMVP, monocams->MVPMONO(worldmatrix));
+
+      auto VP = monocams->VPMONO();
+      FXI->BindParamMatrix(_paramVP, VP);
+      FXI->BindParamMatrix(_paramVPinv, VP.inverse());
+    }
+  };
+}
+
+////////////////////////////////////////////
+
+fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,const PBRMaterial*mtl){
+
+  fxinstance_ptr_t fxinst;
+
+  switch (mtl->_variant) {
+    case "skybox.forward"_crcu: { // FORWARD SKYBOX VARIANT
+      auto basic_lambda  = mtl->createBasicStateLambda();
+      auto skybox_lambda = [mtl, basic_lambda](const RenderContextInstData& RCID, int ipass) {
+        auto _this   = (PBRMaterial*)mtl;
+        auto RCFD    = RCID._RCFD;
+        auto context = RCFD->GetTarget();
+        auto FXI     = context->FXI();
+        auto MTXI    = context->MTXI();
+        auto RSI     = context->RSI();
+
+        basic_lambda(RCID, ipass);
+        _this->_rasterstate.SetCullTest(ECULLTEST_OFF);
+        _this->_rasterstate.SetZWriteMask(false);
+        _this->_rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
+        _this->_rasterstate.SetRGBAWriteMask(true, true);
+        RSI->BindRasterState(_this->_rasterstate);
+      };
+      //////////////////////////////////////////////////////////
+      OrkAssert(permu._instanced==false);
+      OrkAssert(permu._skinned==false);
+      //////////////////////////////////////////////////////////
+      if(permu._stereo and mtl->_tek_FWD_SKYBOX_ST){
+        auto fxinst_stereo        = std::make_shared<FxStateInstance>(permu);
+        fxinst_stereo->_technique = mtl->_tek_FWD_SKYBOX_ST;
+        // fxinst_stereo->_params[_paramMVP] = fmtx4();
+        fxinst_stereo->addStateLambda(skybox_lambda);
+        fxinst_stereo->_material = (GfxMaterial*)mtl;
+        fxinst = fxinst_stereo;
+      }
+      else if(mtl->_tek_FWD_SKYBOX_MO){
+        auto fxinst_mono        = std::make_shared<FxStateInstance>(permu);
+        fxinst_mono->_technique = mtl->_tek_FWD_SKYBOX_MO;
+        // fxinst_mono->_params[_paramMVP] = fmtx4();
+        fxinst_mono->addStateLambda(skybox_lambda);
+        fxinst_mono->_material = (GfxMaterial*)mtl;
+        fxinst = fxinst_mono;
+      }
+      //////////////////////////////////////////////////////////
+      break;
+    }
+    case 0: { // STANDARD VARIANT
+      switch (permu._rendering_model) {
+        //////////////////////////////////////////
+        case "PICKING"_crcu: {
+          OrkAssert(permu._stereo == false);
+          if (permu._instanced and mtl->_tek_PIK_RI_IN) {
+            fxinst                     = std::make_shared<FxStateInstance>(permu);
+            fxinst->_technique         = mtl->_tek_PIK_RI_IN;
+            fxinst->_params[mtl->_paramMVP] = "RCFD_Camera_Pick"_crcsh;
+          }
+          ////////////////
+          else { // non-instanced
+            if (not permu._skinned and mtl->_tek_PIK_RI_NI) {
+              fxinst                     = std::make_shared<FxStateInstance>(permu);
+              fxinst->_technique         = mtl->_tek_PIK_RI_NI;
+              fxinst->_params[mtl->_paramMVP] = "RCFD_Camera_Pick"_crcsh;
+            }
+            ////////////////
+          }
+          // OrkAssert(fxinst->_technique != nullptr);
+          break;
+        }
+        //////////////////////////////////////////
+        case "DEFERRED_PBR"_crcu: {
+          fxtechnique_constptr_t tek;
+          if (permu._stereo) {                                     // stereo
+            if (permu._instanced) {                                // stereo-instanced
+              tek = permu._skinned                  //
+                                       ? mtl->_tek_GBU_CT_NM_SK_IN_ST //
+                                       : mtl->_tek_GBU_CT_NM_RI_IN_ST;
+            } else {                                             // stereo-non-instanced
+              tek = permu._skinned                  //
+                                       ? mtl->_tek_GBU_CT_NM_SK_NI_ST //
+                                       : mtl->_tek_GBU_CT_NM_RI_NI_ST;
+            }
+            //////////////////////////////////
+            if(tek){
+              fxinst = std::make_shared<FxStateInstance>(permu);
+              fxinst->_technique = tek;
+              fxinst->addStateLambda([mtl](const RenderContextInstData& RCID, int ipass) {
+                auto _this       = (PBRMaterial*)mtl;
+                auto RCFD        = RCID._RCFD;
+                auto context     = RCFD->GetTarget();
+                auto MTXI        = context->MTXI();
+                auto FXI         = context->FXI();
+                auto RSI         = context->RSI();
+                const auto& CPD  = RCFD->topCPD();
+                auto stereocams  = CPD._stereoCameraMatrices;
+                auto worldmatrix = RCID.worldMatrix();
+                FXI->BindParamMatrix(_this->_paramMVPL, stereocams->MVPL(worldmatrix));
+                FXI->BindParamMatrix(_this->_paramMVPR, stereocams->MVPR(worldmatrix));
+                _this->_rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
+                _this->_rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
+                _this->_rasterstate.SetZWriteMask(true);
+                _this->_rasterstate.SetRGBAWriteMask(true, true);
+                RSI->BindRasterState(_this->_rasterstate);
+                // fxinst->_params[_paramMVPL] = "RCFD_Camera_MVP_Left"_crcsh;
+                // fxinst->_params[_paramMVPR] = "RCFD_Camera_MVP_Right"_crcsh;
+              });
+            }
+            //////////////////////////////////
+          } else {                                               // mono
+            if (permu._instanced) {                                // mono-instanced
+              tek = permu._skinned                  //
+                                       ? mtl->_tek_GBU_CT_NM_SK_IN_MO //
+                                       : mtl->_tek_GBU_CT_NM_RI_IN_MO;
+            } else {                                             // mono-non-instanced
+              tek = permu._skinned                  //
+                                       ? mtl->_tek_GBU_CT_NM_SK_NI_MO //
+                                       : mtl->_tek_GBU_CT_NM_RI_NI_MO;
+            }
+            //////////////////////////////////
+            if(tek){
+              fxinst = std::make_shared<FxStateInstance>(permu);
+              fxinst->_technique = tek;
+              fxinst->addStateLambda([mtl](const RenderContextInstData& RCID, int ipass) {
+                auto _this       = (PBRMaterial*)mtl;
+                auto RCFD        = RCID._RCFD;
+                auto context     = RCFD->GetTarget();
+                auto FXI         = context->FXI();
+                auto MTXI        = context->MTXI();
+                auto RSI         = context->RSI();
+                const auto& CPD  = RCFD->topCPD();
+                auto monocams    = CPD._cameraMatrices;
+                auto worldmatrix = RCID.worldMatrix();
+                FXI->BindParamMatrix(_this->_paramMVP, monocams->MVPMONO(worldmatrix));
+                _this->_rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
+                //_this->_rasterstate.SetCullTest(ECULLTEST_OFF);
+                _this->_rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
+                _this->_rasterstate.SetZWriteMask(true);
+                _this->_rasterstate.SetRGBAWriteMask(true, true);
+                RSI->BindRasterState(_this->_rasterstate);
+              });
+            }
+          }
+          // OrkAssert(fxinst->_technique != nullptr);
+          break;
+        } // "DEFERRED_PB"_crcuR
+        //////////////////////////////////////////
+        case "FORWARD_UNLIT"_crcu:
+          if(mtl->_tek_FWD_UNLIT_NI_MO){
+            fxinst             = std::make_shared<FxStateInstance>(permu);
+            fxinst->_technique = mtl->_tek_FWD_UNLIT_NI_MO;
+            //////////////////////////////////
+            fxinst->addStateLambda([mtl](const RenderContextInstData& RCID, int ipass) {
+              auto _this       = (PBRMaterial*)mtl;
+              auto RCFD        = RCID._RCFD;
+              auto context     = RCFD->GetTarget();
+              auto FXI         = context->FXI();
+              auto MTXI        = context->MTXI();
+              auto RSI         = context->RSI();
+              const auto& CPD  = RCFD->topCPD();
+              auto monocams    = CPD._cameraMatrices;
+              auto worldmatrix = RCID.worldMatrix();
+              FXI->BindParamMatrix(_this->_paramMVP, monocams->MVPMONO(worldmatrix));
+              _this->_rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
+              _this->_rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
+              _this->_rasterstate.SetZWriteMask(true);
+              _this->_rasterstate.SetRGBAWriteMask(true, true);
+              RSI->BindRasterState(_this->_rasterstate);
+            });
+          }
+          break;
+        case "FORWARD_PBR"_crcu: {
+          ////////////////////////////////////////////////
+          // setup forward lighting
+          ////////////////////////////////////////////////
+
+          auto lighting_lambda = [mtl](const RenderContextInstData& RCID, int ipass) {
+
+            auto RCFD       = RCID._RCFD;
+            auto enumlights = RCFD->userPropertyAs<enumeratedlights_ptr_t>("enumeratedlights"_crcu);
+            auto context    = RCFD->GetTarget();
+            auto FXI        = context->FXI();
+            // logchan_pbr->log("fwd: all lights count<%zu>", enumlights->_alllights.size());
+
+            int num_untextured_pointlights = enumlights->_untexturedpointlights.size();
+
+            auto pl_buffer = PBRMaterial::pointLightDataBuffer(context);
+            auto pl_mapped = FXI->mapParamBuffer(pl_buffer, 0, pl_buffer->_length);
+
+            size_t f32_stride    = sizeof(float);
+            size_t vec4_stride   = sizeof(fvec4);
+            size_t base_color    = 0;
+            size_t base_position = base_color + vec4_stride * 16;
+            size_t base_radius   = base_position + vec4_stride * 16;
+
+            size_t index = 0;
+            for (auto light : enumlights->_untexturedpointlights) {
+              pl_mapped->ref<fvec4>(base_color + (index * vec4_stride))    = light->color();
+              pl_mapped->ref<fvec4>(base_position + (index * vec4_stride)) = light->worldPosition();
+              pl_mapped->ref<float>(base_radius + (index * f32_stride))    = light->radius();
+              index++;
+            }
+
+            pl_mapped->unmap();
+
+            if(mtl->_parUnTexPointLightsCount)
+              FXI->BindParamInt(mtl->_parUnTexPointLightsCount, num_untextured_pointlights);
+            if(mtl->_parUnTexPointLightsData)
+              FXI->bindParamBlockBuffer(mtl->_parUnTexPointLightsData, pl_buffer);
+          };
+          ////////////////////////////////////////////////
+          // set raster state
+          ////////////////////////////////////////////////
+          auto rsi_lambda = [mtl](const RenderContextInstData& RCID, int ipass) {
+            auto _this      = (PBRMaterial*)mtl;
+            auto RCFD       = RCID._RCFD;
+            auto context    = RCFD->GetTarget();
+            auto RSI        = context->RSI();
+            _this->_rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
+            _this->_rasterstate.SetDepthTest(EDEPTHTEST_LESS);
+            _this->_rasterstate.SetZWriteMask(true);
+            _this->_rasterstate.SetRGBAWriteMask(true, true);
+            RSI->BindRasterState(_this->_rasterstate);
+          };
+
+          if (permu._instanced and not permu._skinned and not permu._stereo) {
+            if(mtl->_tek_FWD_CT_NM_RI_IN_MO){
+              fxinst          = std::make_shared<FxStateInstance>(permu);
+              fxinst->_technique         = mtl->_tek_FWD_CT_NM_RI_IN_MO;
+              fxinst->_params[mtl->_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
+              fxinst->addStateLambda(mtl->createBasicStateLambda());
+              fxinst->addStateLambda(lighting_lambda);
+              fxinst->addStateLambda(rsi_lambda);
+            }
+          }
+          if (not permu._instanced and not permu._skinned and not permu._stereo) {
+            if(mtl->_tek_FWD_CT_NM_RI_NI_MO){
+              fxinst          = std::make_shared<FxStateInstance>(permu);
+              fxinst->_technique         = mtl->_tek_FWD_CT_NM_RI_NI_MO;
+              fxinst->_params[mtl->_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
+              fxinst->addStateLambda(mtl->createBasicStateLambda());
+              fxinst->addStateLambda(lighting_lambda);
+              fxinst->addStateLambda(rsi_lambda);
+            }
+          }
+          // OrkAssert(fxinst->_technique != nullptr);
+          break;
+        }
+        case "DEPTH_PREPASS"_crcu:
+          if (permu._instanced and not permu._skinned and not permu._stereo) {
+            if(mtl->_tek_FWD_DEPTHPREPASS_IN_MO){
+              fxinst                     = std::make_shared<FxStateInstance>(permu);
+              fxinst->_technique         = mtl->_tek_FWD_DEPTHPREPASS_IN_MO;
+              fxinst->_params[mtl->_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
+              fxinst->addStateLambda(mtl->createBasicStateLambda());
+              fxinst->addStateLambda([mtl](const RenderContextInstData& RCID, int ipass) {
+                auto _this   = (PBRMaterial*)mtl;
+                auto RCFD    = RCID._RCFD;
+                auto context = RCFD->GetTarget();
+                auto FXI     = context->FXI();
+                auto MTXI    = context->MTXI();
+                auto RSI     = context->RSI();
+                _this->_rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
+                _this->_rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
+                _this->_rasterstate.SetZWriteMask(true);
+                _this->_rasterstate.SetRGBAWriteMask(false, false);
+                RSI->BindRasterState(_this->_rasterstate);
+              });
+            }
+          }
+          // OrkAssert(fxinst->_technique != nullptr);
+          break;
+        default:
+          OrkAssert(false);
+          break;
+          //////////////////////////////////////////
+      } // switch (cfg._rendering_model) {
+      break;
+    } // case 0: // STANDARD VARIANT
+    //////////////////////////////////////////
+    case "normalviz"_crcu:
+      OrkAssert(false);
+      break;
+    //////////////////////////////////////////
+    case "vertexcolor"_crcu: {
+      auto no_cull_stateblock = [mtl](const RenderContextInstData& RCID, int ipass) {
+        auto _this   = (PBRMaterial*)mtl;
+        auto RCFD    = RCID._RCFD;
+        auto context = RCFD->GetTarget();
+        auto FXI     = context->FXI();
+        auto MTXI    = context->MTXI();
+        auto RSI     = context->RSI();
+        _this->_rasterstate.SetCullTest(ECULLTEST_OFF);
+        _this->_rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
+        _this->_rasterstate.SetZWriteMask(true);
+        _this->_rasterstate.SetRGBAWriteMask(true, false);
+        RSI->BindRasterState(_this->_rasterstate);
+      };
+      switch (permu._rendering_model) {
+        case "FORWARD_PBR"_crcu: {
+          if (not permu._instanced and not permu._skinned and not permu._stereo) {
+            if(mtl->_tek_FWD_CV_EMI_RI_NI_MO){
+              fxinst                     = std::make_shared<FxStateInstance>(permu);
+              fxinst->_technique         = mtl->_tek_FWD_CV_EMI_RI_NI_MO;
+              fxinst->_params[mtl->_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
+              fxinst->addStateLambda(mtl->createBasicStateLambda());
+              fxinst->addStateLambda(no_cull_stateblock);
+              OrkAssert(fxinst->_technique != nullptr);
+            }
+          }
+          break;
+        }
+        case "DEFERRED_PBR"_crcu: {
+          if (not permu._instanced and not permu._skinned and not permu._stereo) {
+            if(mtl->_tek_GBU_CV_EMI_RI_NI_MO){
+              fxinst                     = std::make_shared<FxStateInstance>(permu);
+              fxinst->_technique         = mtl->_tek_GBU_CV_EMI_RI_NI_MO;
+              fxinst->_params[mtl->_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
+              fxinst->addStateLambda(mtl->createBasicStateLambda());
+              fxinst->addStateLambda(no_cull_stateblock);
+              OrkAssert(fxinst->_technique != nullptr);
+            }
+          }
+          break;
+        }
+        default:
+          break;
+      }
+      break;
+    }
+    //////////////////////////////////////////
+    case "font"_crcu:
+      OrkAssert(false);
+      break;
+    //////////////////////////////////////////
+    case "font-instanced"_crcu:
+      OrkAssert(false);
+      break;
+    //////////////////////////////////////////
+    default:
+      OrkAssert(false);
+      break;
+  }
+
+  if (fxinst and fxinst->_technique) {
+
+    fxinst->_params[mtl->_paramMROT] = "RCFD_Model_Rot"_crcsh;
+
+    fxinst->_params[mtl->_paramMapColor]  = mtl->_texColor;
+    fxinst->_params[mtl->_paramMapNormal] = mtl->_texNormal;
+    fxinst->_params[mtl->_paramMapMtlRuf] = mtl->_texMtlRuf;
+
+    fxinst->_params[mtl->_parMetallicFactor]  = mtl->_metallicFactor;
+    fxinst->_params[mtl->_parRoughnessFactor] = mtl->_roughnessFactor;
+    fxinst->_params[mtl->_parModColor]        = fvec4(1, 1, 1, 1);
+
+    fxinst->_parInstanceMatrixMap = mtl->_paramInstanceMatrixMap;
+    fxinst->_parInstanceIdMap     = mtl->_paramInstanceIdMap;
+    fxinst->_parInstanceColorMap  = mtl->_paramInstanceColorMap;
+    fxinst->_material             = (GfxMaterial*)mtl;
+  }
+
+  return fxinst;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+fxinstancecache_constptr_t PBRMaterial::_doFxInstanceCache(fxcachepermutation_set_constptr_t perms) const { // final
+  return _getpbrcache()->getCache(this);
 }
 
 //////////////////////////////////////////////////////
@@ -334,509 +790,6 @@ void PBRMaterial::forceEmissive() {
   _asset_texnormal = asset::AssetManager<lev2::TextureAsset>::load("src://effect_textures/black");
   _texNormal       = _asset_texnormal->GetTexture();
   OrkAssert(_texNormal != nullptr);
-}
-
-////////////////////////////////////////////
-
-FxStateInstance::statelambda_t PBRMaterial::createBasicStateLambda() const {
-  return [this](const RenderContextInstData& RCID, int ipass) {
-    auto context          = RCID._RCFD->GetTarget();
-    auto MTXI             = context->MTXI();
-    auto FXI              = context->FXI();
-    auto RSI              = context->RSI();
-    const auto& CPD       = RCID._RCFD->topCPD();
-    const auto& RCFDPROPS = RCID._RCFD->userProperties();
-    bool is_picking       = CPD.isPicking();
-    bool is_stereo        = CPD.isStereoOnePass();
-    auto pbrcommon        = RCID._RCFD->_pbrcommon;
-
-    FXI->BindParamVect3(_paramAmbientLevel, pbrcommon->_ambientLevel);
-    FXI->BindParamFloat(_paramSpecularLevel, pbrcommon->_specularLevel);
-    FXI->BindParamFloat(_paramDiffuseLevel, pbrcommon->_diffuseLevel);
-    FXI->BindParamFloat(_paramSkyboxLevel, pbrcommon->_skyboxLevel);
-    FXI->BindParamCTex(_parMapSpecularEnv, pbrcommon->envSpecularTexture().get());
-    FXI->BindParamCTex(_parMapDiffuseEnv, pbrcommon->envDiffuseTexture().get());
-    FXI->BindParamCTex(_parMapBrdfIntegration, pbrcommon->_brdfIntegrationMap.get());
-    FXI->BindParamFloat(_parEnvironmentMipBias, pbrcommon->_environmentMipBias);
-    FXI->BindParamFloat(_parEnvironmentMipScale, pbrcommon->_environmentMipScale);
-    FXI->BindParamFloat(_parDepthFogDistance, pbrcommon->_depthFogDistance);
-    FXI->BindParamFloat(_parDepthFogPower, pbrcommon->_depthFogPower);
-
-    auto worldmatrix = RCID.worldMatrix();
-
-    auto stereocams = CPD._stereoCameraMatrices;
-    auto monocams   = CPD._cameraMatrices;
-
-    FXI->BindParamMatrix(_paramM, worldmatrix);
-
-    if (monocams) {
-      auto eye_pos = monocams->_vmatrix.inverse().translation();
-      FXI->BindParamVect3(_paramEyePostion, eye_pos);
-      FXI->BindParamMatrix(_paramMVP, monocams->MVPMONO(worldmatrix));
-
-      auto VP = monocams->VPMONO();
-      FXI->BindParamMatrix(_paramVP, VP);
-      FXI->BindParamMatrix(_paramVPinv, VP.inverse());
-    }
-  };
-}
-
-////////////////////////////////////////////
-
-fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxCachePermutation& cfg) const {
-
-  cfg.dump();
-
-  fxinstance_ptr_t fxinst;
-
-  switch (_variant) {
-    case 0: { // STANDARD VARIANT
-      switch (cfg._rendering_model) {
-        //////////////////////////////////////////
-        case "PICKING"_crcu: {
-          OrkAssert(cfg._stereo == false);
-          if (cfg._instanced and _tek_PIK_RI_IN) {
-            fxinst                     = std::make_shared<FxStateInstance>(cfg);
-            fxinst->_technique         = _tek_PIK_RI_IN;
-            fxinst->_params[_paramMVP] = "RCFD_Camera_Pick"_crcsh;
-          }
-          ////////////////
-          else { // non-instanced
-            if (not cfg._skinned and _tek_PIK_RI_NI) {
-              fxinst                     = std::make_shared<FxStateInstance>(cfg);
-              fxinst->_technique         = _tek_PIK_RI_NI;
-              fxinst->_params[_paramMVP] = "RCFD_Camera_Pick"_crcsh;
-            }
-            ////////////////
-          }
-          // OrkAssert(fxinst->_technique != nullptr);
-          break;
-        }
-        //////////////////////////////////////////
-        case "DEFERRED_PBR"_crcu: {
-          fxtechnique_constptr_t tek;
-          if (cfg._stereo) {                                     // stereo
-            if (cfg._instanced) {                                // stereo-instanced
-              tek = cfg._skinned                  //
-                                       ? _tek_GBU_CT_NM_SK_IN_ST //
-                                       : _tek_GBU_CT_NM_RI_IN_ST;
-            } else {                                             // stereo-non-instanced
-              tek = cfg._skinned                  //
-                                       ? _tek_GBU_CT_NM_SK_NI_ST //
-                                       : _tek_GBU_CT_NM_RI_NI_ST;
-            }
-            //////////////////////////////////
-            if(tek){
-              fxinst = std::make_shared<FxStateInstance>(cfg);
-              fxinst->_technique = tek;
-              fxinst->addStateLambda([this](const RenderContextInstData& RCID, int ipass) {
-                auto _this       = (PBRMaterial*)this;
-                auto RCFD        = RCID._RCFD;
-                auto context     = RCFD->GetTarget();
-                auto MTXI        = context->MTXI();
-                auto FXI         = context->FXI();
-                auto RSI         = context->RSI();
-                const auto& CPD  = RCFD->topCPD();
-                auto stereocams  = CPD._stereoCameraMatrices;
-                auto worldmatrix = RCID.worldMatrix();
-                FXI->BindParamMatrix(_paramMVPL, stereocams->MVPL(worldmatrix));
-                FXI->BindParamMatrix(_paramMVPR, stereocams->MVPR(worldmatrix));
-                _this->_rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
-                _this->_rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
-                _this->_rasterstate.SetZWriteMask(true);
-                _this->_rasterstate.SetRGBAWriteMask(true, true);
-                RSI->BindRasterState(_this->_rasterstate);
-                // fxinst->_params[_paramMVPL] = "RCFD_Camera_MVP_Left"_crcsh;
-                // fxinst->_params[_paramMVPR] = "RCFD_Camera_MVP_Right"_crcsh;
-              });
-            }
-            //////////////////////////////////
-          } else {                                               // mono
-            if (cfg._instanced) {                                // mono-instanced
-              tek = cfg._skinned                  //
-                                       ? _tek_GBU_CT_NM_SK_IN_MO //
-                                       : _tek_GBU_CT_NM_RI_IN_MO;
-            } else {                                             // mono-non-instanced
-              tek = cfg._skinned                  //
-                                       ? _tek_GBU_CT_NM_SK_NI_MO //
-                                       : _tek_GBU_CT_NM_RI_NI_MO;
-            }
-            //////////////////////////////////
-            if(tek){
-              fxinst = std::make_shared<FxStateInstance>(cfg);
-              fxinst->_technique = tek;
-              fxinst->addStateLambda([this](const RenderContextInstData& RCID, int ipass) {
-                auto _this       = (PBRMaterial*)this;
-                auto RCFD        = RCID._RCFD;
-                auto context     = RCFD->GetTarget();
-                auto FXI         = context->FXI();
-                auto MTXI        = context->MTXI();
-                auto RSI         = context->RSI();
-                const auto& CPD  = RCFD->topCPD();
-                auto monocams    = CPD._cameraMatrices;
-                auto worldmatrix = RCID.worldMatrix();
-                FXI->BindParamMatrix(_paramMVP, monocams->MVPMONO(worldmatrix));
-                _this->_rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
-                //_this->_rasterstate.SetCullTest(ECULLTEST_OFF);
-                _this->_rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
-                _this->_rasterstate.SetZWriteMask(true);
-                _this->_rasterstate.SetRGBAWriteMask(true, true);
-                RSI->BindRasterState(_this->_rasterstate);
-              });
-            }
-          }
-          // OrkAssert(fxinst->_technique != nullptr);
-          break;
-        } // "DEFERRED_PB"_crcuR
-        //////////////////////////////////////////
-        case "FORWARD_UNLIT"_crcu:
-          if(_tek_FWD_UNLIT_NI_MO){
-            fxinst             = std::make_shared<FxStateInstance>(cfg);
-            fxinst->_technique = _tek_FWD_UNLIT_NI_MO;
-            //////////////////////////////////
-            fxinst->addStateLambda([this](const RenderContextInstData& RCID, int ipass) {
-              auto _this       = (PBRMaterial*)this;
-              auto RCFD        = RCID._RCFD;
-              auto context     = RCFD->GetTarget();
-              auto FXI         = context->FXI();
-              auto MTXI        = context->MTXI();
-              auto RSI         = context->RSI();
-              const auto& CPD  = RCFD->topCPD();
-              auto monocams    = CPD._cameraMatrices;
-              auto worldmatrix = RCID.worldMatrix();
-              FXI->BindParamMatrix(_paramMVP, monocams->MVPMONO(worldmatrix));
-              _this->_rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
-              _this->_rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
-              _this->_rasterstate.SetZWriteMask(true);
-              _this->_rasterstate.SetRGBAWriteMask(true, true);
-              RSI->BindRasterState(_this->_rasterstate);
-            });
-          }
-          break;
-        case "FORWARD_PBR"_crcu: {
-          ////////////////////////////////////////////////
-          // setup forward lighting
-          ////////////////////////////////////////////////
-
-          auto lighting_lambda = [this](const RenderContextInstData& RCID, int ipass) {
-
-            auto RCFD       = RCID._RCFD;
-            auto enumlights = RCFD->userPropertyAs<enumeratedlights_ptr_t>("enumeratedlights"_crcu);
-            auto context    = RCFD->GetTarget();
-            auto FXI        = context->FXI();
-            // logchan_pbr->log("fwd: all lights count<%zu>", enumlights->_alllights.size());
-
-            int num_untextured_pointlights = enumlights->_untexturedpointlights.size();
-
-            auto pl_buffer = PBRMaterial::pointLightDataBuffer(context);
-            auto pl_mapped = FXI->mapParamBuffer(pl_buffer, 0, pl_buffer->_length);
-
-            size_t f32_stride    = sizeof(float);
-            size_t vec4_stride   = sizeof(fvec4);
-            size_t base_color    = 0;
-            size_t base_position = base_color + vec4_stride * 16;
-            size_t base_radius   = base_position + vec4_stride * 16;
-
-            size_t index = 0;
-            for (auto light : enumlights->_untexturedpointlights) {
-              pl_mapped->ref<fvec4>(base_color + (index * vec4_stride))    = light->color();
-              pl_mapped->ref<fvec4>(base_position + (index * vec4_stride)) = light->worldPosition();
-              pl_mapped->ref<float>(base_radius + (index * f32_stride))    = light->radius();
-              index++;
-            }
-
-            pl_mapped->unmap();
-
-            if(_parUnTexPointLightsCount)
-              FXI->BindParamInt(_parUnTexPointLightsCount, num_untextured_pointlights);
-            if(_parUnTexPointLightsData)
-              FXI->bindParamBlockBuffer(_parUnTexPointLightsData, pl_buffer);
-          };
-          ////////////////////////////////////////////////
-          // set raster state
-          ////////////////////////////////////////////////
-          auto rsi_lambda = [this](const RenderContextInstData& RCID, int ipass) {
-            auto _this      = (PBRMaterial*)this;
-            auto RCFD       = RCID._RCFD;
-            auto context    = RCFD->GetTarget();
-            auto RSI        = context->RSI();
-            _this->_rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
-            _this->_rasterstate.SetDepthTest(EDEPTHTEST_LESS);
-            _this->_rasterstate.SetZWriteMask(true);
-            _this->_rasterstate.SetRGBAWriteMask(true, true);
-            RSI->BindRasterState(_this->_rasterstate);
-          };
-
-          if (cfg._instanced and not cfg._skinned and not cfg._stereo) {
-            if(_tek_FWD_CT_NM_RI_IN_MO){
-              fxinst          = std::make_shared<FxStateInstance>(cfg);
-              fxinst->_technique         = _tek_FWD_CT_NM_RI_IN_MO;
-              fxinst->_params[_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
-              fxinst->addStateLambda(createBasicStateLambda());
-              fxinst->addStateLambda(lighting_lambda);
-              fxinst->addStateLambda(rsi_lambda);
-            }
-          }
-          if (not cfg._instanced and not cfg._skinned and not cfg._stereo) {
-            if(_tek_FWD_CT_NM_RI_NI_MO){
-              fxinst          = std::make_shared<FxStateInstance>(cfg);
-              fxinst->_technique         = _tek_FWD_CT_NM_RI_NI_MO;
-              fxinst->_params[_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
-              fxinst->addStateLambda(createBasicStateLambda());
-              fxinst->addStateLambda(lighting_lambda);
-              fxinst->addStateLambda(rsi_lambda);
-            }
-          }
-          // OrkAssert(fxinst->_technique != nullptr);
-          break;
-        }
-        case "DEPTH_PREPASS"_crcu:
-          if (cfg._instanced and not cfg._skinned and not cfg._stereo) {
-            if(_tek_FWD_DEPTHPREPASS_IN_MO){
-              fxinst                     = std::make_shared<FxStateInstance>(cfg);
-              fxinst->_technique         = _tek_FWD_DEPTHPREPASS_IN_MO;
-              fxinst->_params[_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
-              fxinst->addStateLambda(createBasicStateLambda());
-              fxinst->addStateLambda([this](const RenderContextInstData& RCID, int ipass) {
-                auto _this   = (PBRMaterial*)this;
-                auto RCFD    = RCID._RCFD;
-                auto context = RCFD->GetTarget();
-                auto FXI     = context->FXI();
-                auto MTXI    = context->MTXI();
-                auto RSI     = context->RSI();
-                _this->_rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
-                _this->_rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
-                _this->_rasterstate.SetZWriteMask(true);
-                _this->_rasterstate.SetRGBAWriteMask(false, false);
-                RSI->BindRasterState(_this->_rasterstate);
-              });
-            }
-          }
-          // OrkAssert(fxinst->_technique != nullptr);
-          break;
-        default:
-          OrkAssert(false);
-          break;
-          //////////////////////////////////////////
-      } // switch (cfg._rendering_model) {
-      break;
-    } // case 0: // STANDARD VARIANT
-    //////////////////////////////////////////
-    case "normalviz"_crcu:
-      OrkAssert(false);
-      break;
-    //////////////////////////////////////////
-    case "vertexcolor"_crcu: {
-      auto no_cull_stateblock = [this](const RenderContextInstData& RCID, int ipass) {
-        auto _this   = (PBRMaterial*)this;
-        auto RCFD    = RCID._RCFD;
-        auto context = RCFD->GetTarget();
-        auto FXI     = context->FXI();
-        auto MTXI    = context->MTXI();
-        auto RSI     = context->RSI();
-        _this->_rasterstate.SetCullTest(ECULLTEST_OFF);
-        _this->_rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
-        _this->_rasterstate.SetZWriteMask(true);
-        _this->_rasterstate.SetRGBAWriteMask(true, false);
-        RSI->BindRasterState(_this->_rasterstate);
-      };
-      switch (cfg._rendering_model) {
-        case "FORWARD_PBR"_crcu: {
-          if (not cfg._instanced and not cfg._skinned and not cfg._stereo) {
-            if(_tek_FWD_CV_EMI_RI_NI_MO){
-              fxinst                     = std::make_shared<FxStateInstance>(cfg);
-              fxinst->_technique         = _tek_FWD_CV_EMI_RI_NI_MO;
-              fxinst->_params[_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
-              fxinst->addStateLambda(createBasicStateLambda());
-              fxinst->addStateLambda(no_cull_stateblock);
-              OrkAssert(fxinst->_technique != nullptr);
-            }
-          }
-          break;
-        }
-        case "DEFERRED_PBR"_crcu: {
-          if (not cfg._instanced and not cfg._skinned and not cfg._stereo) {
-            if(_tek_GBU_CV_EMI_RI_NI_MO){
-              fxinst                     = std::make_shared<FxStateInstance>(cfg);
-              fxinst->_technique         = _tek_GBU_CV_EMI_RI_NI_MO;
-              fxinst->_params[_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
-              fxinst->addStateLambda(createBasicStateLambda());
-              fxinst->addStateLambda(no_cull_stateblock);
-              OrkAssert(fxinst->_technique != nullptr);
-            }
-          }
-          break;
-        }
-        default:
-          break;
-      }
-      break;
-    }
-    //////////////////////////////////////////
-    case "font"_crcu:
-      OrkAssert(false);
-      break;
-    //////////////////////////////////////////
-    case "font-instanced"_crcu:
-      OrkAssert(false);
-      break;
-    //////////////////////////////////////////
-    default:
-      OrkAssert(false);
-      break;
-  }
-
-  if (fxinst and fxinst->_technique) {
-
-    fxinst->_params[_paramMROT] = "RCFD_Model_Rot"_crcsh;
-
-    fxinst->_params[_paramMapColor]  = _texColor;
-    fxinst->_params[_paramMapNormal] = _texNormal;
-    fxinst->_params[_paramMapMtlRuf] = _texMtlRuf;
-
-    fxinst->_params[_parMetallicFactor]  = _metallicFactor;
-    fxinst->_params[_parRoughnessFactor] = _roughnessFactor;
-    fxinst->_params[_parModColor]        = fvec4(1, 1, 1, 1);
-
-    fxinst->_parInstanceMatrixMap = _paramInstanceMatrixMap;
-    fxinst->_parInstanceIdMap     = _paramInstanceIdMap;
-    fxinst->_parInstanceColorMap  = _paramInstanceColorMap;
-    fxinst->_material             = (GfxMaterial*)this;
-  }
-
-  return fxinst;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-fxinstancecache_constptr_t PBRMaterial::skyboxFxInstanceCache() const {
-  fxinstancecache_ptr_t fxcache = std::make_shared<FxStateInstanceCache>();
-  logchan_pbr->log("fxcache<%p> skyboxFxInstanceCache", fxcache.get());
-  //////////////////////////////////////////////////////////
-  FxCachePermutation config;
-  config._rendering_model = "CUSTOM"_crcu;
-  //////////////////////////////////////////////////////////
-  auto basic_lambda  = createBasicStateLambda();
-  auto skybox_lambda = [this, basic_lambda](const RenderContextInstData& RCID, int ipass) {
-    auto _this   = (PBRMaterial*)this;
-    auto RCFD    = RCID._RCFD;
-    auto context = RCFD->GetTarget();
-    auto FXI     = context->FXI();
-    auto MTXI    = context->MTXI();
-    auto RSI     = context->RSI();
-
-    basic_lambda(RCID, ipass);
-    _this->_rasterstate.SetCullTest(ECULLTEST_OFF);
-    _this->_rasterstate.SetZWriteMask(false);
-    _this->_rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
-    _this->_rasterstate.SetRGBAWriteMask(true, true);
-    RSI->BindRasterState(_this->_rasterstate);
-  };
-  //////////////////////////////////////////////////////////
-  config._stereo          = false;
-  auto fxinst_mono        = std::make_shared<FxStateInstance>(config);
-  fxinst_mono->_technique = _tek_FWD_SKYBOX_MO;
-  // fxinst_mono->_params[_paramMVP] = fmtx4();
-  fxinst_mono->addStateLambda(skybox_lambda);
-  fxinst_mono->_material = (GfxMaterial*)this;
-  fxcache->assignfxinst(config, fxinst_mono);
-  config.dump();
-  //////////////////////////////////////////////////////////
-  config._stereo            = true;
-  auto fxinst_stereo        = std::make_shared<FxStateInstance>(config);
-  fxinst_stereo->_technique = _tek_FWD_SKYBOX_ST;
-  // fxinst_stereo->_params[_paramMVP] = fmtx4();
-  fxinst_stereo->addStateLambda(skybox_lambda);
-  fxinst_stereo->_material = (GfxMaterial*)this;
-  fxcache->assignfxinst(config, fxinst_stereo);
-  config.dump();
-  //////////////////////////////////////////////////////////
-  return fxcache;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-fxinstancecache_constptr_t PBRMaterial::_doFxInstanceCache(fxcachepermutation_set_constptr_t perms) const { // final
-  fxinstancecache_ptr_t fxcache = std::make_shared<FxStateInstanceCache>();
-
-  FxCachePermutation config;
-
-  logchan_pbr->log("fxcache<%p> fxInstanceCache", fxcache.get());
-
-  /////////////////////
-  // picking
-  /////////////////////
-
-  config._rendering_model = "PICKING"_crcu;
-
-  config._stereo    = false;
-  config._instanced = false;
-  config._skinned   = false;
-  fxcache->assignfxinst(config, _createFxStateInstance(config));
-
-  /////////////////////
-  // depth prepeass
-  /////////////////////
-
-  config._rendering_model = "DEPTH_PREPASS"_crcu;
-
-  config._stereo    = false;
-  config._instanced = true;
-  config._skinned   = false;
-  fxcache->assignfxinst(config, _createFxStateInstance(config));
-
-  /////////////////////
-  // deferred PBR
-  /////////////////////
-
-  config._rendering_model = "DEFERRED_PBR"_crcu;
-
-  config._stereo    = false;
-  config._instanced = false;
-  config._skinned   = false;
-  fxcache->assignfxinst(config, _createFxStateInstance(config));
-
-  config._stereo    = false;
-  config._instanced = true;
-  config._skinned   = false;
-  fxcache->assignfxinst(config, _createFxStateInstance(config));
-
-  config._stereo    = true;
-  config._instanced = false;
-  config._skinned   = false;
-  fxcache->assignfxinst(config, _createFxStateInstance(config));
-
-  config._stereo    = true;
-  config._instanced = true;
-  config._skinned   = false;
-  fxcache->assignfxinst(config, _createFxStateInstance(config));
-
-  /////////////////////
-  // forward PBR
-  /////////////////////
-
-  config._rendering_model = "FORWARD_PBR"_crcu;
-
-  config._stereo    = false;
-  config._instanced = true;
-  config._skinned   = false;
-  fxcache->assignfxinst(config, _createFxStateInstance(config));
-
-  config._instanced = false;
-  fxcache->assignfxinst(config, _createFxStateInstance(config));
-
-  /////////////////////
-  // forward PBR
-  /////////////////////
-
-  config._rendering_model = "FORWARD_UNLIT"_crcu;
-
-  config._stereo    = false;
-  config._instanced = false;
-  config._skinned   = false;
-  fxcache->assignfxinst(config, _createFxStateInstance(config));
-
-  return fxcache;
 }
 
 ////////////////////////////////////////////

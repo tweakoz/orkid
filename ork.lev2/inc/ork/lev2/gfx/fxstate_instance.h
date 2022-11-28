@@ -54,7 +54,7 @@ struct FxCachePermutationSet {
 
 struct FxStateInstance {
 
-  FxStateInstance(FxCachePermutation& config);
+  FxStateInstance(const FxCachePermutation& config);
 
   int beginBlock(const RenderContextInstData& RCID);
   bool beginPass(const RenderContextInstData& RCID, int ipass);
@@ -69,7 +69,7 @@ struct FxStateInstance {
   void addStateLambda(statelambda_t sl){_statelambdas.push_back(sl);}
   GfxMaterial* _material = nullptr;
   fxtechnique_constptr_t _technique = nullptr;
-  FxCachePermutation __permutation;
+  const FxCachePermutation __permutation;
   std::unordered_map<fxparam_constptr_t, varval_t> _params;
   std::vector<statelambda_t> _statelambdas;
   fxparam_constptr_t _parInstanceMatrixMap = nullptr;
@@ -81,9 +81,11 @@ struct FxStateInstance {
 
 struct FxStateInstanceCache {
 
+  using cache_miss_fn_t = std::function<fxinstance_ptr_t(const FxCachePermutation&)>;
   fxinstance_ptr_t findfxinst(const RenderContextInstData& RCID) const;
-  void assignfxinst(const FxCachePermutation& config, fxinstance_ptr_t fxi);
-  std::unordered_map<uint64_t,fxinstance_ptr_t> _lut;
+  cache_miss_fn_t _on_miss;
+  mutable std::unordered_map<uint64_t,fxinstance_ptr_t> _lut;
+  svar64_t _impl;
 };
 
 } // namespace ork::lev2

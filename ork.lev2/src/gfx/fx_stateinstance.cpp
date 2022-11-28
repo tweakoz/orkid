@@ -30,8 +30,12 @@ void FxCachePermutation::dump() const {
       int(_instanced),
       int(_skinned));
 }
+///////////////////////////////////////////////////////////////////////////////
+void FxCachePermutationSet::add(fxcachepermutation_constptr_t perm){
+  __permutations.insert(perm);
+}
 /////////////////////////////////////////////////////////////////////////
-FxStateInstance::FxStateInstance(FxCachePermutation& config)
+FxStateInstance::FxStateInstance(const FxCachePermutation& config)
     : __permutation(config) {
 }
 /////////////////////////////////////////////////////////////////////////
@@ -193,12 +197,13 @@ fxinstance_ptr_t FxStateInstanceCache::findfxinst(const RenderContextInstData& R
   const auto& CPD = RCFD->topCPD();
   /////////////////
   FxCachePermutation perm;
-  fxinstance_ptr_t fxinst;
   perm._stereo          = CPD.isStereoOnePass();
   perm._skinned         = RCID._isSkinned;
   perm._instanced       = RCID._isInstanced;
   perm._rendering_model = RCFD->_renderingmodel._modelID;
   //perm.dump();
+  /////////////////
+  fxinstance_ptr_t fxinst;
   /////////////////
   uint64_t index = perm.genIndex();
   //printf( "fxlut<%p> findfxinst index<%zu>\n", this, index );
@@ -206,21 +211,13 @@ fxinstance_ptr_t FxStateInstanceCache::findfxinst(const RenderContextInstData& R
   if (it != _lut.end()) {
     fxinst = it->second;
   }
+  else{ // miss
+    OrkAssert(_on_miss);
+    fxinst = _on_miss(perm);
+    _lut[index] = fxinst;
+  }
   /////////////////
   return fxinst;
-}
-///////////////////////////////////////////////////////////////////////////////
-void FxCachePermutationSet::add(fxcachepermutation_constptr_t perm){
-  __permutations.insert(perm);
-}
-///////////////////////////////////////////////////////////////////////////////
-void FxStateInstanceCache::assignfxinst(const FxCachePermutation& perm, fxinstance_ptr_t fxi) {
-  if(fxi){
-    OrkAssert(fxi->_material);
-    uint64_t index   = perm.genIndex();
-    logchan_fxcache->log( "fxlut<%p> assignfxinst fxi<%p> to index<%zu>", this, fxi.get(), index );
-    _lut[index] = fxi;
-  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
