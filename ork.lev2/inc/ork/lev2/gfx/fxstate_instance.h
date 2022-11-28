@@ -34,9 +34,10 @@ using fxinstance_constptr_t = std::shared_ptr<const FxStateInstance>;
 //  with independent parameter values
 ///////////////////////////////////////////////////////////////////////////////
 
-struct FxStateInstanceConfig {
+struct FxCachePermutation {
 
   void dump() const;
+  uint64_t genIndex() const;
 
   uint32_t _rendering_model = "DEFERRED_PBR"_crcu;
   bool _stereo = false;
@@ -44,11 +45,16 @@ struct FxStateInstanceConfig {
   bool _skinned = false;
 };
 
+struct FxCachePermutationSet {
+  void add(fxcachepermutation_constptr_t perm);
+  std::unordered_set<fxcachepermutation_constptr_t> __permutations;
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct FxStateInstance {
 
-  FxStateInstance(FxStateInstanceConfig& config);
+  FxStateInstance(FxCachePermutation& config);
 
   int beginBlock(const RenderContextInstData& RCID);
   bool beginPass(const RenderContextInstData& RCID, int ipass);
@@ -63,7 +69,7 @@ struct FxStateInstance {
   void addStateLambda(statelambda_t sl){_statelambdas.push_back(sl);}
   GfxMaterial* _material = nullptr;
   fxtechnique_constptr_t _technique = nullptr;
-  FxStateInstanceConfig _config;
+  FxCachePermutation __permutation;
   std::unordered_map<fxparam_constptr_t, varval_t> _params;
   std::vector<statelambda_t> _statelambdas;
   fxparam_constptr_t _parInstanceMatrixMap = nullptr;
@@ -75,9 +81,8 @@ struct FxStateInstance {
 
 struct FxStateInstanceCache {
 
-  static uint64_t genIndex(const FxStateInstanceConfig& config);
   fxinstance_ptr_t findfxinst(const RenderContextInstData& RCID) const;
-  void assignfxinst(const FxStateInstanceConfig& config, fxinstance_ptr_t fxi);
+  void assignfxinst(const FxCachePermutation& config, fxinstance_ptr_t fxi);
   std::unordered_map<uint64_t,fxinstance_ptr_t> _lut;
 };
 

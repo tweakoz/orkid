@@ -59,6 +59,10 @@ void GfxMaterial::Describe() {
 
 /////////////////////////////////////////////////////////////////////////
 
+fxinstancecache_constptr_t GfxMaterial::fxInstanceCache(fxcachepermutation_set_constptr_t perms) const{
+  return _doFxInstanceCache(perms);
+}
+
 SRasterState GfxMaterial::swapRasterState(SRasterState rstate) {
   auto rval    = _rasterstate;
   _rasterstate = rstate;

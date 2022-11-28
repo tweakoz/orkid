@@ -12,9 +12,27 @@
 
 namespace ork::lev2 {
 static logchannel_ptr_t logchan_fxcache = logger()->createChannel("fxcache",fvec3(0.7,0.7,0.5));
+///////////////////////////////////////////////////////////////////////////////
+uint64_t FxCachePermutation::genIndex() const {
+  uint64_t index = 0;
+  index += (uint64_t(_stereo) << 1);
+  index += (uint64_t(_instanced) << 2);
+  index += (uint64_t(_skinned) << 3);
+  index += (uint64_t(_rendering_model) << 4);
+  return index;
+}
+///////////////////////////////////////////////////////////////////////////////
+void FxCachePermutation::dump() const {
+  logchan_fxcache->log(
+      "configdump: rendering_model<0x%zx> stereo<%d> instanced<%d> skinned<%d>",
+      uint64_t(_rendering_model),
+      int(_stereo),
+      int(_instanced),
+      int(_skinned));
+}
 /////////////////////////////////////////////////////////////////////////
-FxStateInstance::FxStateInstance(FxStateInstanceConfig& config)
-    : _config(config) {
+FxStateInstance::FxStateInstance(FxCachePermutation& config)
+    : __permutation(config) {
 }
 /////////////////////////////////////////////////////////////////////////
 void FxStateInstance::wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_t drawcall) {
@@ -168,30 +186,21 @@ void FxStateInstance::endBlock(const RenderContextInstData& RCID) {
   context->FXI()->EndBlock();
 }
 ///////////////////////////////////////////////////////////////////////////////
-uint64_t FxStateInstanceCache::genIndex(const FxStateInstanceConfig& config) {
-  uint64_t index = 0;
-  index += (uint64_t(config._stereo) << 1);
-  index += (uint64_t(config._instanced) << 2);
-  index += (uint64_t(config._skinned) << 3);
-  index += (uint64_t(config._rendering_model) << 4);
-  return index;
-}
-///////////////////////////////////////////////////////////////////////////////
 fxinstance_ptr_t FxStateInstanceCache::findfxinst(const RenderContextInstData& RCID) const {
   auto RCFD       = RCID._RCFD;
   auto context    = RCFD->_target;
   auto fxi        = context->FXI();
   const auto& CPD = RCFD->topCPD();
   /////////////////
-  FxStateInstanceConfig config;
+  FxCachePermutation perm;
   fxinstance_ptr_t fxinst;
-  config._stereo          = CPD.isStereoOnePass();
-  config._skinned         = RCID._isSkinned;
-  config._instanced       = RCID._isInstanced;
-  config._rendering_model = RCFD->_renderingmodel._modelID;
-  //config.dump();
+  perm._stereo          = CPD.isStereoOnePass();
+  perm._skinned         = RCID._isSkinned;
+  perm._instanced       = RCID._isInstanced;
+  perm._rendering_model = RCFD->_renderingmodel._modelID;
+  //perm.dump();
   /////////////////
-  uint64_t index = genIndex(config);
+  uint64_t index = perm.genIndex();
   //printf( "fxlut<%p> findfxinst index<%zu>\n", this, index );
   auto it = _lut.find(index);
   if (it != _lut.end()) {
@@ -201,22 +210,17 @@ fxinstance_ptr_t FxStateInstanceCache::findfxinst(const RenderContextInstData& R
   return fxinst;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void FxStateInstanceCache::assignfxinst(const FxStateInstanceConfig& config, fxinstance_ptr_t fxi) {
+void FxCachePermutationSet::add(fxcachepermutation_constptr_t perm){
+  __permutations.insert(perm);
+}
+///////////////////////////////////////////////////////////////////////////////
+void FxStateInstanceCache::assignfxinst(const FxCachePermutation& perm, fxinstance_ptr_t fxi) {
   if(fxi){
     OrkAssert(fxi->_material);
-    uint64_t index   = genIndex(config);
+    uint64_t index   = perm.genIndex();
     logchan_fxcache->log( "fxlut<%p> assignfxinst fxi<%p> to index<%zu>", this, fxi.get(), index );
     _lut[index] = fxi;
   }
-}
-///////////////////////////////////////////////////////////////////////////////
-void FxStateInstanceConfig::dump() const {
-  logchan_fxcache->log(
-      "configdump: rendering_model<0x%zx> stereo<%d> instanced<%d> skinned<%d>",
-      uint64_t(_rendering_model),
-      int(_stereo),
-      int(_instanced),
-      int(_skinned));
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

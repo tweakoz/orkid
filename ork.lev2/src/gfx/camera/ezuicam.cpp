@@ -54,9 +54,11 @@ void EzUiCam::describeX(object::ObjectClass* clazz) {
 struct UiCamPrivate {
   UiCamPrivate() {
     _material = std::make_shared<FreestyleMaterial>();
-    FxStateInstanceConfig config;
-    _materialinst_mono   = std::make_shared<FxStateInstance>(config); // _material
-    _materialinst_stereo = std::make_shared<FxStateInstance>(config); // _material
+    FxCachePermutation perm;
+    _materialinst_mono   = std::make_shared<FxStateInstance>(perm); // _material
+    perm._stereo = true;
+    _materialinst_stereo = std::make_shared<FxStateInstance>(perm); // _material
+
   }
   void gpuUpdate(Context* ctx) {
     if (_doGpuInit) {

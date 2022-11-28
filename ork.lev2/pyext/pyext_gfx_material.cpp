@@ -123,8 +123,8 @@ void pyinit_gfx_material(py::module& module_lev2) {
           .def(
               "createFxInstance",                                    //
               [](freestyle_mtl_ptr_t material) -> fxinstance_ptr_t { //
-                FxStateInstanceConfig cfg;
-                return std::make_shared<FxStateInstance>(cfg); // material
+                FxCachePermutation perm;
+                return std::make_shared<FxStateInstance>(perm); // material
               })
           .def(
               "gpuInit",

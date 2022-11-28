@@ -383,7 +383,7 @@ FxStateInstance::statelambda_t PBRMaterial::createBasicStateLambda() const {
 
 ////////////////////////////////////////////
 
-fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxStateInstanceConfig& cfg) const {
+fxinstance_ptr_t PBRMaterial::_createFxStateInstance(FxCachePermutation& cfg) const {
 
   cfg.dump();
 
@@ -713,7 +713,7 @@ fxinstancecache_constptr_t PBRMaterial::skyboxFxInstanceCache() const {
   fxinstancecache_ptr_t fxcache = std::make_shared<FxStateInstanceCache>();
   logchan_pbr->log("fxcache<%p> skyboxFxInstanceCache", fxcache.get());
   //////////////////////////////////////////////////////////
-  FxStateInstanceConfig config;
+  FxCachePermutation config;
   config._rendering_model = "CUSTOM"_crcu;
   //////////////////////////////////////////////////////////
   auto basic_lambda  = createBasicStateLambda();
@@ -756,10 +756,10 @@ fxinstancecache_constptr_t PBRMaterial::skyboxFxInstanceCache() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-fxinstancecache_constptr_t PBRMaterial::fxInstanceCache() const {
+fxinstancecache_constptr_t PBRMaterial::_doFxInstanceCache(fxcachepermutation_set_constptr_t perms) const { // final
   fxinstancecache_ptr_t fxcache = std::make_shared<FxStateInstanceCache>();
 
-  FxStateInstanceConfig config;
+  FxCachePermutation config;
 
   logchan_pbr->log("fxcache<%p> fxInstanceCache", fxcache.get());
 
