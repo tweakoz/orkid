@@ -31,8 +31,11 @@ GLTextureObject::GLTextureObject()
 
 ///////////////////////////////////////////////////////////////////////////////
 
+static ork::Timer _proftimer;
+
 GlTextureInterface::GlTextureInterface(ContextGL& tgt)
     : mTargetGL(tgt) {
+      _proftimer.Start();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -481,37 +484,45 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
     switch(tid._src_format){
       case EBufferFormat::YUV420P:{
+        //float t1 = _proftimer.SecsSinceStart();
         auto src_channel_y = src_buffer;
         auto src_channel_u = src_channel_y + numpixels;
         auto src_channel_v = src_channel_u + (numpixels>>2);
+        OrkAssert((srch&0xf)==0);
         std::atomic<int> opcounter = 0;
-        for (int row=0; row<srch; row++) {
-          int row_base = row*srcw;
-          auto row_ybase = src_channel_y + row_base;
-          int uv_base_index = (row>>1) * (srcw>>1);
+        for (int rowm=0; rowm<srch; rowm+=16) {
           opcounter++;
           opq::concurrentQueue()->enqueue([=,&opcounter](){
-            auto ptr = rgb_buffer + (srch-1-row)*srcw*3;
-            for (int col = 0; col<srcw; col++) {
-              float yy = float(row_ybase[col]);
-              int uvindex = uv_base_index + (col>>1);
-              int uuu = src_channel_u[uvindex];
-              int vvv = src_channel_v[uvindex];
-              float uu = float(uuu);
-              float vv = float(vvv);
-              float r = 1.164f * (yy - 16.0f) + 1.596f * (vv - 128.0f);
-              float g = 1.164f * (yy - 16.0f) - 0.813f * (vv - 128.0f) - 0.391f * (uu - 128.0f);
-              float b = 1.164f * (yy - 16.0f) + 2.018f * (uu - 128.0f);
-              *ptr++ = uint8_t(ork::clamp<float>(r,0,255));
-              *ptr++ = uint8_t(ork::clamp<float>(g,0,255));
-              *ptr++ = uint8_t(ork::clamp<float>(b,0,255));
+            for( int rown=0; rown<16; rown++){
+              int row = rowm+rown;
+              int row_base = row*srcw;
+              auto row_ybase = src_channel_y + row_base;
+              int uv_base_index = (row>>1) * (srcw>>1);
+              auto ptr = rgb_buffer + (srch-1-row)*srcw*3;
+              for (int col = 0; col<srcw; col++) {
+                float yy = float(row_ybase[col]);
+                int uvindex = uv_base_index + (col>>1);
+                int uuu = src_channel_u[uvindex];
+                int vvv = src_channel_v[uvindex];
+                float uu = float(uuu);
+                float vv = float(vvv);
+                float r = 1.164f * (yy - 16.0f) + 1.596f * (vv - 128.0f);
+                float g = 1.164f * (yy - 16.0f) - 0.813f * (vv - 128.0f) - 0.391f * (uu - 128.0f);
+                float b = 1.164f * (yy - 16.0f) + 2.018f * (uu - 128.0f);
+                *ptr++ = uint8_t(ork::clamp<float>(r,0,255));
+                *ptr++ = uint8_t(ork::clamp<float>(g,0,255));
+                *ptr++ = uint8_t(ork::clamp<float>(b,0,255));
+              }
             }
             opcounter--;
           });
         }
         while(opcounter.load()>0){
-          ork::usleep(0);
+          ork::usleep(10);
         }
+        // 11msec -> 2msec
+        //float t2 = _proftimer.SecsSinceStart();
+        //printf( "yuv msecs<%g>\n", (t2-t1)*1000.0f );
         src_buffer = rgb_buffer;
         break;
       }
