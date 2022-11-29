@@ -226,6 +226,8 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
                 const auto& CPD  = RCFD->topCPD();
                 auto stereocams  = CPD._stereoCameraMatrices;
                 auto worldmatrix = RCID.worldMatrix();
+                auto modcolor = context->RefModColor();
+                FXI->BindParamVect4(_this->_parModColor, modcolor*_this->_baseColor);
                 FXI->BindParamMatrix(_this->_paramMVPL, stereocams->MVPL(worldmatrix));
                 FXI->BindParamMatrix(_this->_paramMVPR, stereocams->MVPR(worldmatrix));
                 _this->_rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
@@ -262,6 +264,8 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
                 const auto& CPD  = RCFD->topCPD();
                 auto monocams    = CPD._cameraMatrices;
                 auto worldmatrix = RCID.worldMatrix();
+                auto modcolor = context->RefModColor();
+                FXI->BindParamVect4(_this->_parModColor, modcolor*_this->_baseColor);
                 FXI->BindParamMatrix(_this->_paramMVP, monocams->MVPMONO(worldmatrix));
                 _this->_rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
                 //_this->_rasterstate.SetCullTest(ECULLTEST_OFF);
@@ -292,8 +296,8 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
               auto monocams    = CPD._cameraMatrices;
               auto worldmatrix = RCID.worldMatrix();
               auto modcolor = context->RefModColor();
-              FXI->BindParamMatrix(_this->_paramMVP, monocams->MVPMONO(worldmatrix));
               FXI->BindParamVect4(_this->_parModColor, modcolor*_this->_baseColor);
+              FXI->BindParamMatrix(_this->_paramMVP, monocams->MVPMONO(worldmatrix));
               _this->_rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
               _this->_rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
               _this->_rasterstate.SetZWriteMask(true);
@@ -341,6 +345,10 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
               FXI->BindParamInt(mtl->_parUnTexPointLightsCount, num_untextured_pointlights);
             if(mtl->_parUnTexPointLightsData)
               FXI->bindParamBlockBuffer(mtl->_parUnTexPointLightsData, pl_buffer);
+
+            auto modcolor = context->RefModColor();
+            FXI->BindParamVect4(mtl->_parModColor, modcolor*mtl->_baseColor);
+
           };
           ////////////////////////////////////////////////
           // set raster state
@@ -486,7 +494,6 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
 
     fxinst->_params[mtl->_parMetallicFactor]  = mtl->_metallicFactor;
     fxinst->_params[mtl->_parRoughnessFactor] = mtl->_roughnessFactor;
-    fxinst->_params[mtl->_parModColor]        = fvec4(1, 1, 1, 1);
 
     fxinst->_parInstanceMatrixMap = mtl->_paramInstanceMatrixMap;
     fxinst->_parInstanceIdMap     = mtl->_paramInstanceIdMap;
