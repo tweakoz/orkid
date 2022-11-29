@@ -46,11 +46,13 @@ struct IMPL {
       auto buf2        = _rtg->createRenderTarget(lev2::EBufferFormat::RGBA32F);
       buf1->_debugName = "ForwardRt0";
       buf2->_debugName = "ForwardRt1";
+      _profile_timer.Start();
     }
     pTARG->debugPopGroup();
   }
   ///////////////////////////////////////
   void _render(UnlitNode* node, CompositorDrawData& drawdata) {
+    //float t1 = _profile_timer.SecsSinceStart();
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();
     auto targ                    = RCFD.GetTarget();
@@ -69,6 +71,7 @@ struct IMPL {
     if (_rtg->width() != newwidth or _rtg->height() != newheight) {
       _rtg->Resize(newwidth, newheight);
     }
+    //float t2 = _profile_timer.SecsSinceStart();
     //////////////////////////////////////////////////////
     auto irenderer = ddprops["irenderer"_crcu].get<lev2::IRenderer*>();
     //////////////////////////////////////////////////////
@@ -87,6 +90,7 @@ struct IMPL {
       CPD._cameraMatrices = ddprops["defcammtx"_crcu].get<const CameraMatrices*>();
       CPD.SetDstRect(tgt_rect);
       ///////////////////////////////////////////////////////////////////////////
+      //float t3 = _profile_timer.SecsSinceStart();
       if (DB) {
         ///////////////////////////////////////////////////////////////////////////
         // DrawableBuffer -> RenderQueue enqueue
@@ -106,17 +110,25 @@ struct IMPL {
         targ->debugPopGroup();
         CIMPL->popCPD();
       }
+      irenderer->resetQueue();
+      //float t4 = _profile_timer.SecsSinceStart();
+      //printf( "unlitnode t4-t3 %g(mSec)\n", (t2-t1)*1000.0f);
       /////////////////////////////////////////////////////////////////////////////////////////
       targ->endFrame();
       targ->FBI()->PopRtGroup();
     }
     targ->debugPopGroup();
+  //float t5 = _profile_timer.SecsSinceStart();
+
+ // printf( "unlitnode t5-t1 %g(mSec)\n", (t5-t1)*1000.0f);
   }
   ///////////////////////////////////////
   std::string _camname, _layername;
   CompositingMaterial _material;
   RtGroup* _rtg = nullptr;
   fmtx4 _viewOffsetMatrix;
+  Timer _profile_timer;
+
 };
 } // namespace forwardnode
 

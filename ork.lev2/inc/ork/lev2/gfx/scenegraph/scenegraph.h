@@ -205,7 +205,8 @@ struct Scene {
   compositingpassdata_ptr_t _topCPD;
   RenderPresetContext _compositorPreset;
   std::vector<DrawableKvPair> _staticDrawables; //! global drawables owned by the scenegraph, not owned by nodes...
-
+  Timer _profile_timer;
+  
   using layer_map_t = std::map<std::string, layer_ptr_t>;
 
   LockedResource<layer_map_t> _layers;

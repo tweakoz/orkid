@@ -206,13 +206,13 @@ fxinstance_ptr_t FxStateInstanceCache::findfxinst(const RenderContextInstData& R
   fxinstance_ptr_t fxinst;
   /////////////////
   uint64_t index = perm.genIndex();
-  //printf( "fxlut<%p> findfxinst index<%zu>\n", this, index );
   auto it = _lut.find(index);
   if (it != _lut.end()) {
     fxinst = it->second;
   }
   else{ // miss
     OrkAssert(_on_miss);
+    logchan_fxcache->log( "fxlut<%p> findfxinst onmiss index<%zu>", this, index );
     fxinst = _on_miss(perm);
     _lut[index] = fxinst;
   }

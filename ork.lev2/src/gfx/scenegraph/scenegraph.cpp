@@ -193,6 +193,7 @@ Scene::Scene() {
 ///////////////////////////////////////////////////////////////////////////////
 
 Scene::Scene(varmap::varmap_ptr_t params) {
+  _profile_timer.Start();
   _userdata = std::make_shared<varmap::VarMap>();
   initWithParams(params);
 }
@@ -560,6 +561,7 @@ void Scene::_renderIMPL(Context* context,RenderContextFrameData& RCFD){
     context->endFrame();
   }
   _dbufcontext_SG->releaseFromReadLocked(DB);
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -580,12 +582,14 @@ void Scene::renderWithStandardCompositorFrame(standardcompositorframe_ptr_t sfra
 ///////////////////////////////////////////////////////////////////////////////
 
 void Scene::renderOnContext(Context* context, RenderContextFrameData& RCFD) {
+  OrkAssert(false);
   _renderIMPL(context,RCFD);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void Scene::renderOnContext(Context* context) {
+  OrkAssert(false);
   // from SceneGraphSystem::_onRender
   RenderContextFrameData RCFD(context); // renderer per/frame data
   _renderIMPL(context,RCFD);
