@@ -53,11 +53,11 @@ vertex_shader vs_grid_forward_lit
     gl_Position = mvp*position;
     frg_uv0 = uv0;
     frg_wpos = position;
-    // prevent macos glsl compiler from stripping variables (WIP)
-    frg_tbn = mat3(normal,binormal,vec3(0,0,1));
+    vec3 tangent = cross(binormal,normal);
+		frg_tbn = mat3(tangent,binormal,normal);
     frg_camdist = 0.0;
     frg_camz = vec3(0,0,0);
-    frg_clr = vec4(0,0,0,0);
+    frg_clr = vec4(1,1,1,1);
 
 }
 ///////////////////////////////////////////////////////////////
@@ -163,9 +163,7 @@ fragment_shader ps_grid_forward_lit
   : ub_frg_fwd_lighting{
   vec4 gout = grid_output(frg_wpos.xyz);
   vec3 oc = forward_lighting(gout.xyz);
-  out_clr = vec4(oc,1); 
-  // prevent macos glsl compiler from stripping variables (WIP)
-  float x = frg_clr.x+frg_tbn[0].x+frg_camz.x+frg_camdist;
+  out_clr = vec4(oc.xyz,1); 
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_rigid_gbuffer_grid

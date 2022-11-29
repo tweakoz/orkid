@@ -188,11 +188,7 @@ libblock lib_pbr_vtx {
 		frg_wpos = m*pos;
 		frg_clr = vec4(1,1,1,1); //TODO - split vs_rigid_gbuffer into vertexcolor vs identity
 		frg_uv0 = uv0*vec2(1,-1);
-		frg_tbn = mat3(
-	        wtangent,
-    	    wbitangent,
-					wnormal
-        );
+		frg_tbn = mat3(wtangent,wbitangent,wnormal);
 		frg_camz = wnormal.xyz;
 		frg_camdist = -cpos.z;
 	}
