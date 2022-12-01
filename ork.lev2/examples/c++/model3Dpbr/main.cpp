@@ -218,7 +218,12 @@ int main(int argc, char** argv, char** envp) {
       ("help", "produce help message") //
       ("msaa", po::value<int>()->default_value(1), "msaa samples(*1,4,9,16,25)")
       ("ssaa", po::value<int>()->default_value(1), "ssaa samples(*1,4,9,16,25)")
-      ("forward", po::bool_switch()->default_value(false), "forward renderer");
+      ("forward", po::bool_switch()->default_value(false), "forward renderer")
+      ("fullscreen", po::bool_switch()->default_value(false), "fullscreen mode")                              
+      ("left",  po::value<int>()->default_value(100), "left window offset")                              
+      ("top",  po::value<int>()->default_value(100), "top window offset")                              
+      ("width",  po::value<int>()->default_value(1280), "window width")                              
+      ("height",  po::value<int>()->default_value(720), "window height");
 
   auto vars = *init_data->parse();
 
@@ -226,6 +231,12 @@ int main(int argc, char** argv, char** envp) {
     std::cout << (*desc) << "\n";
     exit(0);
   }
+  init_data->_fullscreen = vars["fullscreen"].as<bool>();;
+  init_data->_top = vars["top"].as<int>();
+  init_data->_left = vars["left"].as<int>();
+  init_data->_width = vars["width"].as<int>();
+  init_data->_height = vars["height"].as<int>();
+
   init_data->_msaa_samples = vars["msaa"].as<int>();
   init_data->_ssaa_samples = vars["ssaa"].as<int>();
 
