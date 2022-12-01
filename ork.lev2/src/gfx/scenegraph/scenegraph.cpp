@@ -582,14 +582,12 @@ void Scene::renderWithStandardCompositorFrame(standardcompositorframe_ptr_t sfra
 ///////////////////////////////////////////////////////////////////////////////
 
 void Scene::renderOnContext(Context* context, RenderContextFrameData& RCFD) {
-  OrkAssert(false);
   _renderIMPL(context,RCFD);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void Scene::renderOnContext(Context* context) {
-  OrkAssert(false);
   // from SceneGraphSystem::_onRender
   RenderContextFrameData RCFD(context); // renderer per/frame data
   _renderIMPL(context,RCFD);

@@ -287,6 +287,14 @@ private:
   void UpdateFBO(GLTextureObject& glto, float ftime);
 };
 
+struct GLTextureAsyncTask{
+  GLTextureAsyncTask();
+  std::atomic<int> _lock;
+  std::queue<void_lambda_t> _onFinished;
+};
+
+using gltexasynctask_ptr_t = std::shared_ptr<GLTextureAsyncTask>;
+
 struct GLTextureObject {
 
   GLTextureObject();
@@ -296,6 +304,7 @@ struct GLTextureObject {
   GLuint mDbo;
   GLenum mTarget;
   int _maxmip = 0;
+  gltexasynctask_ptr_t _async;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

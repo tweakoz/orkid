@@ -168,7 +168,7 @@ void Set2D(
       void* pgfxmem = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, isiz2, map_flags);
       // printf( "UPDATE IMAGE UNC imip<%d> iw<%d> ih<%d> isiz<%d> pbo<%d> mem<%p>\n", imip, iw, ih, isiz2, PBOOBJ, pgfxmem );
       auto copy_src = inpstream.current();
-      memcpy(pgfxmem, copy_src, isiz2);
+      memcpy_fast(pgfxmem, copy_src, isiz2);
       inpstream.advance(isiz2);
       glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
       GL_ERRORCHECK();

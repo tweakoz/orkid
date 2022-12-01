@@ -19,6 +19,7 @@
 #include <OpenImageIO/imageio.h>
 #include <OpenImageIO/filesystem.h>
 #include <ork/file/chunkfile.inl>
+#include <ork/kernel/memcpy.inl>
 
 #if defined(ENABLE_ISPC)
 #include <ispc_texcomp.h>
@@ -199,7 +200,7 @@ void Image::convertToRGBA(Image& imgout) const {
       }
       break;
     case 4:
-      memcpy(out_pixels, inp_pixels, _width * _height * 4);
+      memcpy_fast(out_pixels, inp_pixels, _width * _height * 4);
       break;
     default:
       OrkAssert(false);

@@ -29,6 +29,7 @@ struct TextureInitData {
   bool _autogenmips     = false;
   const void* _data     = nullptr;
   size_t _truncation_length = 0;
+  bool _allow_async = false;
 };
 
 class TextureInterface {

@@ -13,6 +13,7 @@
 #include <ork/util/crc.h>
 #include <ork/math/cmatrix3.h>
 #include <ork/math/cmatrix4.h>
+#include <ork/kernel/memcpy.inl>
 
 using namespace std::literals;
 
@@ -339,7 +340,7 @@ bool Reader::readFromDataBlock(datablock_ptr_t datablock) {
   ///////////////////////////
   mistrtablen = dblockstream.getItem<int>();
   char* pst   = new char[mistrtablen];
-  memcpy(pst, dblockstream.current(), mistrtablen);
+  memcpy_fast(pst, dblockstream.current(), mistrtablen);
   dblockstream.advance(mistrtablen);
   mpstrtab = pst;
   OrkHeapCheck();
@@ -374,7 +375,7 @@ bool Reader::readFromDataBlock(datablock_ptr_t datablock) {
     if (mStreamBank[ic].GetLength()) {
       auto destaddr = mStreamBank[ic].GetDataAt(0);
       size_t length = mStreamBank[ic].GetLength();
-      memcpy(destaddr, dblockstream.current(), length);
+      memcpy_fast(destaddr, dblockstream.current(), length);
       dblockstream.advance(length);
     }
   }

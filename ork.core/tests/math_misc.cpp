@@ -9,8 +9,108 @@
 #include <cmath>
 #include <limits>
 #include <ork/math/misc_math.h>
+#include <ork/orkstd.h>
 
 using namespace ork;
+
+
+/*struct Aligner {
+
+    using addr_int_t = uint64_t;
+
+    uint8_t* _dst;
+    const uint8_t* _src;
+    size_t _size;
+
+    addr_int_t _dst_unaligned;
+    addr_int_t _dst_aligned;
+    addr_int_t _src_unaligned;
+    addr_int_t _src_aligned;
+    addr_int_t _alignment;
+
+    Aligner(uint8_t* dst, const uint8_t* src, size_t size, size_t alignment)
+        : _dst(dst)
+        , _src(src)
+        , _size(size) {
+
+        _src = src;
+        _dst = dst;
+        _size = size;
+        _alignment = alignment;
+
+        addr_int_t alignm1 = addr_int_t(alignment-1);
+        addr_int_t align_mask = addr_int_t(~alignm1);
+
+        _src_aligned = (addr_int_t(_src)+alignm1)&align_mask;
+        _src_unaligned = addr_int_t(_src);
+
+        _dst_aligned = (addr_int_t(_dst)+alignm1)&align_mask;
+        _dst_unaligned = addr_int_t(_dst);
+
+        bool src_is_aligned = (src_aligned&alignm1)==0;
+        bool dst_is_aligned = (dst_unaligned&alignm1)==0;
+
+        printf( "align_mask<%p> dst_unaligned<%p> dst_aligned<%p> dst_is_aligned<%d> dst_size_is_aligned<%d> dst_size_unaligned<%d> dst_size_aligned<%d> _size<%d>\n", 
+                align_mask, 
+                dst_unaligned, 
+                dst_aligned, 
+                int(dst_is_aligned), 
+                int(dst_size_is_aligned), 
+                dst_size_unaligned, 
+                dst_size_aligned, 
+                _size);
+
+        int iter_count =0;
+        while(_size>0){
+
+            //printf( "src<%p> align_mask<%p> src_aligned<%p> is_aligned<%d>\n", _src, align_mask, src_aligned, int(src_is_aligned));
+
+            uint64_t dst_unaligned = uint64_t(_dst);
+            uint64_t dst_aligned = (dst_unaligned+alignm1)&align_mask;
+            size_t dst_size_unaligned = (dst_aligned-dst_unaligned);
+            uint64_t dst_size_aligned = (dst_size_unaligned+alignm1)&align_mask;
+            bool dst_size_is_aligned = (dst_size_unaligned&alignm1)==0;
+
+
+            if(dst_is_aligned and dst_size_is_aligned){
+                printf( "path1\n");
+                _dst += dst_size_aligned;
+                _size -= dst_size_aligned;
+            }
+            else if (dst_is_aligned and not dst_size_is_aligned){
+                printf( "path2\n");
+                _dst += dst_size_unaligned;
+                _size -= dst_size_unaligned;
+            }
+            else if (not dst_is_aligned and dst_size_is_aligned){
+                printf( "path3\n");
+                _dst += dst_size_unaligned;
+                _size -= dst_size_unaligned;
+            }
+            else{
+                printf( "path4(slowpath)\n");
+                OrkAssert(not dst_is_aligned);
+                OrkAssert(not dst_size_is_aligned);
+                _dst += dst_size_unaligned;
+                _size -= dst_size_unaligned;
+            }
+
+            if( iter_count>4){
+                OrkAssert(false);
+            }
+            iter_count++;
+        }
+
+    }
+};
+
+TEST(aligner){
+
+    Aligner a((uint8_t*)0xff07,(const uint8_t*)0x8000,256,16);
+
+    OrkAssert(false);
+}
+*/
 
 TEST(npot_dynamic)
 {
