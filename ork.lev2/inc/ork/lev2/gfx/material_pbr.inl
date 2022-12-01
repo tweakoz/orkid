@@ -88,7 +88,7 @@ public:
   ////////////////////////////////////////////
   fxinstancecache_constptr_t _doFxInstanceCache(fxcachepermutation_set_constptr_t perms) const final;
   ////////////////////////////////////////////
-  void setupCamera(const RenderContextFrameData& RCFD);
+  //void setupCamera(const RenderContextFrameData& RCFD);
   ////////////////////////////////////////////
   fxshaderasset_constptr_t _asset_shader;
   textureassetptr_t _asset_texcolor;

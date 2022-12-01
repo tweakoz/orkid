@@ -42,12 +42,12 @@ struct VRIMPL {
   void gpuInit(lev2::Context* pTARG) {
     if (_doinit) {
       pTARG->debugPushGroup("VRIMPL::gpuInit");
-      int width  = orkidvr::device()._width * 2 * (_vrnode->supersample() + 1);
-      int height = orkidvr::device()._height * (_vrnode->supersample() + 1);
+      int width  = orkidvr::device()->_width * 2 * (_vrnode->supersample() + 1);
+      int height = orkidvr::device()->_height * (_vrnode->supersample() + 1);
       _blit2screenmtl.SetUserFx("orkshader://solid", "texcolor");
       _blit2screenmtl.gpuInit(pTARG);
 
-      printf("vr width<%d> height<%d>\n", width, height);
+      printf("A: vr width<%d> height<%d>\n", width, height);
       _rtg            = new RtGroup(pTARG, width, height, MsaaSamples::MSAA_1X);
       auto buf        = _rtg->createRenderTarget(EBufferFormat::RGBA8);
       buf->_debugName = "WtfVrRt";
@@ -104,16 +104,16 @@ struct VRIMPL {
     auto DB                      = RCFD.GetDB();
     Context* targ                = drawdata.context();
 
-    bool simrunning = drawdata._properties["simrunning"_crcu].get<bool>();
-    bool use_vr     = (orkidvr::device()._active and simrunning);
+    bool simrunning = true; //drawdata._properties["simrunning"_crcu].get<bool>();
+    bool use_vr     = (orkidvr::device()->_active and simrunning);
 
     /////////////////////////////////////////////////////////////////////////////
     // get VR camera
     /////////////////////////////////////////////////////////////////////////////
 
+    fmtx4 rootmatrix;
     if (use_vr) {
       auto vrcamprop = RCFD.getUserProperty("vrcam"_crc);
-      fmtx4 rootmatrix;
       if (auto as_cam = vrcamprop.tryAs<const CameraData*>()) {
         targ->debugMarker("Vr::gotcamera");
         auto vrcam = as_cam.value();
@@ -125,36 +125,39 @@ struct VRIMPL {
         targ->debugMarker("Vr::nocamera");
       }
 
-      _viewOffsetMatrix = orkidvr::device()._outputViewOffsetMatrix;
+      _viewOffsetMatrix = orkidvr::device()->_outputViewOffsetMatrix;
     }
 
     /////////////////////////////////////////////////////////////////////////////
 
     if (use_vr)
-      orkidvr::device().gpuUpdate(RCFD);
+      orkidvr::device()->gpuUpdate(RCFD);
 
     ///////////////////////////////////
 
-    auto& VRDEV = orkidvr::device();
-    int width   = VRDEV._width * 2 * (_vrnode->supersample() + 1);
-    int height  = VRDEV._height * (_vrnode->supersample() + 1);
-    // printf( "vr width<%d> height<%d>\n", width, height );
+    auto VRDEV = orkidvr::device();
+    int width   = VRDEV->_width * 2 * (_vrnode->supersample() + 1);
+    int height  = VRDEV->_height * (_vrnode->supersample() + 1);
+     //printf( "B: vr width<%d> height<%d>\n", width, height );
 
     drawdata._properties["OutputWidth"_crcu].set<int>(width);
     drawdata._properties["OutputHeight"_crcu].set<int>(height);
-    bool doing_stereo = (use_vr and VRDEV._supportsStereo);
+    bool doing_stereo = (use_vr and VRDEV->_supportsStereo);
     drawdata._properties["StereoEnable"_crcu].set<bool>(doing_stereo);
     if (simrunning)
-      drawdata._properties["simcammtx"_crcu].set<const CameraMatrices*>(VRDEV._centercamera);
+      drawdata._properties["simcammtx"_crcu].set<const CameraMatrices*>(VRDEV->_centercamera);
 
-    if (use_vr and VRDEV._supportsStereo) {
-      _stereomatrices->_left  = VRDEV._leftcamera;
-      _stereomatrices->_right = VRDEV._rightcamera;
-      _stereomatrices->_mono  = VRDEV._leftcamera;
+    if (use_vr and VRDEV->_supportsStereo) {
+      RCFD.setUserProperty("vrroot"_crc,rootmatrix);
+      _stereomatrices->_left  = VRDEV->_leftcamera;
+      _stereomatrices->_right = VRDEV->_rightcamera;
+      _stereomatrices->_mono  = VRDEV->_leftcamera;
       drawdata._properties["StereoMatrices"_crcu].set<const StereoCameraMatrices*>(_stereomatrices);
     }
 
     _CPD.defaultSetup(drawdata);
+
+    _CPD._stereoCameraMatrices = _stereomatrices;
 
     //////////////////////////////////////////////////////
 
@@ -223,7 +226,7 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
 
         drawdata.context()->debugPushGroup("VrCompositingNode::to_hmd");
         targ->FBI()->PushRtGroup(impl->_rtg);
-        vrdev.__composite(targ, tex);
+        vrdev->__composite(targ, tex);
         targ->FBI()->PopRtGroup();
         drawdata.context()->debugPopGroup();
         /////////////////////////////////////////////////////////////////////////////

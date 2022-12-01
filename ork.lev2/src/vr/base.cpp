@@ -9,13 +9,13 @@
 ////////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::orkidvr {
 ////////////////////////////////////////////////////////////////////////////////
-static std::shared_ptr<Device> _gdevice = nullptr;
+static device_ptr_t _gdevice = nullptr;
 void setDevice(std::shared_ptr<Device> device) {
   assert(_gdevice == nullptr);
   _gdevice = device;
 }
-Device& device() {
-  return *_gdevice;
+device_ptr_t device() {
+  return _gdevice;
 }
 ////////////////////////////////////////////////////////////////////////////////
 ork::LockedResource<VrTrackingNotificationReceiver_set> gnotifset;
@@ -59,6 +59,19 @@ Device::~Device() {
   delete _leftcamera;
   delete _centercamera;
   delete _rightcamera;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void Device::overrideSize(int w, int h){
+  _width          = w;
+  _height         = h;
+  float aspect    = 50.0;//float(_width*2) / float(_height);
+
+  _posemap["projl"].perspective(_fov, aspect, .01, 10000);
+  _posemap["projr"].perspective(_fov, aspect, .01, 10000);
+  _posemap["projc"].perspective(_fov, aspect, .01, 10000);
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////

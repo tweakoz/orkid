@@ -76,7 +76,7 @@ void NoVrDevice::_updatePoses(RenderContextFrameData& RCFD) {
   //_posemap["hmd"] = w;
   auto& CPD    = RCFD.topCPD();
   auto rt      = CPD._irendertarget;
-  float aspect = 0.5 * float(_width) / float(_height);
+  float aspect = float(_width) / float(_height);
 
   // printf("_fov<%g> aspect<%g>\n", _fov,aspect);
 

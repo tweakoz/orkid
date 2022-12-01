@@ -117,7 +117,11 @@ static FxStateInstance::statelambda_t _createBasicStateLambda(const PBRMaterial*
 
     FXI->BindParamMatrix(mtl->_paramM, worldmatrix);
 
-    if (monocams) {
+    if(stereocams){
+      OrkAssert(false);
+    }
+    else if (monocams) {
+      OrkAssert(false);
       auto eye_pos = monocams->_vmatrix.inverse().translation();
       FXI->BindParamVect3(mtl->_paramEyePostion, eye_pos);
       FXI->BindParamMatrix(mtl->_paramMVP, monocams->MVPMONO(worldmatrix));
@@ -202,6 +206,7 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
         //////////////////////////////////////////
         case "DEFERRED_PBR"_crcu: {
           fxtechnique_constptr_t tek;
+          ////////////////////////////////////////////////////////////////////////////////////////////
           if (permu._stereo) {                                     // stereo
             if (permu._instanced) {                                // stereo-instanced
               tek = permu._skinned                  //
@@ -227,9 +232,14 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
                 auto stereocams  = CPD._stereoCameraMatrices;
                 auto worldmatrix = RCID.worldMatrix();
                 auto modcolor = context->RefModColor();
+                fmtx4 vrroot;
+                auto vrrootprop = RCFD->getUserProperty("vrroot"_crc);
+                if (auto as_mtx = vrrootprop.tryAs<fmtx4>()) {
+                  vrroot = as_mtx.value();
+                }
                 FXI->BindParamVect4(_this->_parModColor, modcolor*_this->_baseColor);
-                FXI->BindParamMatrix(_this->_paramMVPL, stereocams->MVPL(worldmatrix));
-                FXI->BindParamMatrix(_this->_paramMVPR, stereocams->MVPR(worldmatrix));
+                FXI->BindParamMatrix(_this->_paramMVPL, stereocams->MVPL(vrroot*worldmatrix));
+                FXI->BindParamMatrix(_this->_paramMVPR, stereocams->MVPR(vrroot*worldmatrix));
                 _this->_rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
                 _this->_rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
                 _this->_rasterstate.SetZWriteMask(true);
@@ -239,8 +249,13 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
                 // fxinst->_params[_paramMVPR] = "RCFD_Camera_MVP_Right"_crcsh;
               });
             }
+            else{
+              OrkAssert(false);
+            }
             //////////////////////////////////
-          } else {                                               // mono
+          }
+          ///// mono ///////////////////////////////////////////////////////////////////////////////////
+          else {                                               
             if (permu._instanced) {                                // mono-instanced
               tek = permu._skinned                  //
                                        ? mtl->_tek_GBU_CT_NM_SK_IN_MO //
@@ -943,7 +958,7 @@ void PBRMaterial::Update() {
 
 ////////////////////////////////////////////
 
-void PBRMaterial::setupCamera(const RenderContextFrameData& RCFD) {
+/*void PBRMaterial::setupCamera(const RenderContextFrameData& RCFD) {
   auto target     = RCFD._target;
   auto MTXI       = target->MTXI();
   auto FXI        = target->FXI();
@@ -953,9 +968,17 @@ void PBRMaterial::setupCamera(const RenderContextFrameData& RCFD) {
 
   const auto& world = MTXI->RefMMatrix();
   if (is_stereo and CPD._stereoCameraMatrices) {
+
+   fmtx4 vrroot;
+    auto vrrootprop = RCFD.getUserProperty("vrroot"_crc);
+    if (auto as_mtx = vrrootprop.tryAs<fmtx4>()) {
+      vrroot = as_mtx.value();
+      vrroot.dump("vrroot");
+    }
+
     auto stereomtx = CPD._stereoCameraMatrices;
-    auto MVPL      = stereomtx->MVPL(world);
-    auto MVPR      = stereomtx->MVPR(world);
+    auto MVPL      = stereomtx->MVPL(world*vrroot);
+    auto MVPR      = stereomtx->MVPR(world*vrroot);
     // todo fix for stereo..
     FXI->BindParamMatrix(_paramMVPL, MVPL);
     FXI->BindParamMatrix(_paramMVPR, MVPR);
@@ -967,7 +990,7 @@ void PBRMaterial::setupCamera(const RenderContextFrameData& RCFD) {
     auto MVP = MTXI->RefMVPMatrix();
     FXI->BindParamMatrix(_paramMVP, MVP);
   }
-}
+}*/
 
 ////////////////////////////////////////////
 

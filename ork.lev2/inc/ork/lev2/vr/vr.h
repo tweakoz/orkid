@@ -114,6 +114,8 @@ struct Device {
   CameraMatrices* _rightcamera      = nullptr;
   usermatrixgenerator_t _usermtxgen = nullptr;
 
+  void overrideSize(int w, int h);
+
   uint32_t _width      = 128;
   uint32_t _height     = 128;
   float _fov           = 45.0f;
@@ -153,6 +155,8 @@ protected:
 private:
   Device(const Device& rhs) = delete;
 };
+
+using device_ptr_t = std::shared_ptr<Device>;
 
 #if defined(ENABLE_OPENVR)
 namespace openvr {
@@ -199,16 +203,14 @@ struct NoVrDevice final : public Device {
   msgrouter::subscriber_t _qtkbdownsubs;
   msgrouter::subscriber_t _qtkbupsubs;
   fvec2 _qtmousepos;
-  int _width;
-  int _height;
 };
 std::shared_ptr<NoVrDevice> novr_device();
 } // namespace novr
 ////////////////////////////////////////////////////////////////////////////////
 
-void setDevice(std::shared_ptr<Device> device);
+void setDevice(device_ptr_t device);
 
-Device& device();
+device_ptr_t device();
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////

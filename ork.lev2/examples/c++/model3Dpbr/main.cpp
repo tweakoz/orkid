@@ -19,6 +19,7 @@
 #include <ork/lev2/gfx/renderer/compositor.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
 #include <ork/lev2/gfx/material_freestyle.h>
+#include <ork/lev2/vr/vr.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
@@ -94,7 +95,16 @@ using pointlightinstances_t = std::vector<PointLightInstance>;
 
 struct GpuResources {
 
-  GpuResources(Context* ctx, bool use_forward) {
+  GpuResources(appinitdata_ptr_t init_data, //
+               Context* ctx, //
+               bool use_forward, //
+               bool use_vr) { //
+
+    if(use_vr){
+      auto vrdev = orkidvr::novr::novr_device();
+      orkidvr::setDevice(vrdev);
+      vrdev->overrideSize(init_data->_width,init_data->_height);
+    }
 
     _camlut                = std::make_shared<CameraDataLut>();
     _camdata               = std::make_shared<CameraData>();
@@ -108,6 +118,11 @@ struct GpuResources {
 
     _sg_params                                         = std::make_shared<varmap::VarMap>();
     _sg_params->makeValueForKey<std::string>("preset") = use_forward ? "ForwardPBR" : "DeferredPBR";
+
+    if(use_vr){
+      _sg_params->makeValueForKey<std::string>("preset") = "PBRVR";
+    }
+
 
     _sg_scene        = std::make_shared<scenegraph::Scene>(_sg_params);
     auto sg_layer    = _sg_scene->createLayer("default");
@@ -223,7 +238,8 @@ int main(int argc, char** argv, char** envp) {
       ("left",  po::value<int>()->default_value(100), "left window offset")                              
       ("top",  po::value<int>()->default_value(100), "top window offset")                              
       ("width",  po::value<int>()->default_value(1280), "window width")                              
-      ("height",  po::value<int>()->default_value(720), "window height");
+      ("height",  po::value<int>()->default_value(720), "window height")
+      ("usevr",  po::bool_switch()->default_value(false), "use vr output");                             
 
   auto vars = *init_data->parse();
 
@@ -242,17 +258,18 @@ int main(int argc, char** argv, char** envp) {
 
   printf( "_msaa_samples<%d>\n", init_data->_msaa_samples );
   bool use_forward = vars["forward"].as<bool>();
+  bool use_vr = vars["usevr"].as<bool>();
   //////////////////////////////////////////////////////////
   init_data->_imgui = true;
   init_data->_application_name = "ork.model3dpbr";
   //////////////////////////////////////////////////////////
-  auto qtapp  = OrkEzApp::create(init_data);
+  auto ezapp  = OrkEzApp::create(init_data);
   std::shared_ptr<GpuResources> gpurec;
   //////////////////////////////////////////////////////////
   // gpuInit handler, called once on main(rendering) thread
   //  at startup time
   //////////////////////////////////////////////////////////
-  qtapp->onGpuInit([&](Context* ctx) { gpurec = std::make_shared<GpuResources>(ctx, use_forward); });
+  ezapp->onGpuInit([&](Context* ctx) { gpurec = std::make_shared<GpuResources>(init_data, ctx, use_forward,use_vr); });
   //////////////////////////////////////////////////////////
   // update handler (called on update thread)
   //  it will never be called before onGpuInit() is complete...
@@ -261,7 +278,7 @@ int main(int argc, char** argv, char** envp) {
   timer.Start();
   auto dbufcontext = std::make_shared<DrawBufContext>();
   auto sframe = std::make_shared<StandardCompositorFrame>();
-  qtapp->onUpdate([&](ui::updatedata_ptr_t updata) {
+  ezapp->onUpdate([&](ui::updatedata_ptr_t updata) {
     double dt      = updata->_dt;
     double abstime = updata->_abstime+dt+.016;
     ///////////////////////////////////////
@@ -339,17 +356,18 @@ int main(int argc, char** argv, char** envp) {
   //////////////////////////////////////////////////////////
   // draw handler (called on main(rendering) thread)
   //////////////////////////////////////////////////////////
-  qtapp->onDraw([&](ui::drawevent_constptr_t drwev) {
+  ezapp->onDraw([&](ui::drawevent_constptr_t drwev) {
     auto context = drwev->GetTarget();
     RenderContextFrameData RCFD(context); // renderer per/frame data
+    RCFD.setUserProperty("vrcam"_crc, (const CameraData*) gpurec->_camdata.get() );
     gpurec->_sg_scene->renderOnContext(context, RCFD);
   });
   //////////////////////////////////////////////////////////
-  qtapp->onResize([&](int w, int h) {
+  ezapp->onResize([&](int w, int h) {
     gpurec->_sg_scene->_compositorImpl->compositingContext().Resize(w, h);
   });
-  qtapp->onGpuExit([&](Context* ctx) { gpurec = nullptr; });
+  ezapp->onGpuExit([&](Context* ctx) { gpurec = nullptr; });
   //////////////////////////////////////////////////////////
-  qtapp->setRefreshPolicy({EREFRESH_FASTEST, -1});
-  return qtapp->mainThreadLoop();
+  ezapp->setRefreshPolicy({EREFRESH_FASTEST, -1});
+  return ezapp->mainThreadLoop();
 }
