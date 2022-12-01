@@ -54,7 +54,7 @@ int main(int argc, char** argv, char** envp) {
   std::shared_ptr<MovieContext> movie = nullptr;
   
   //init_data->_ssaa_samples = 16;
-  init_data->_msaa_samples = 16;
+  //init_data->_msaa_samples = 16;
 
   if(0){
     init_data->_top = 0;

@@ -29,7 +29,7 @@ vertex_interface iface_vtx_fwd_grid_lit : ub_fwd_grid_vtx {
     vec4 position : POSITION;
     vec3 normal : NORMAL;
     vec3 binormal : BINORMAL;
-    vec4 vtxcolor : COLOR0;
+    //vec4 vtxcolor : COLOR0;
     vec2 uv0 : TEXCOORD0;
   }
   outputs {
@@ -53,6 +53,12 @@ vertex_shader vs_grid_forward_lit
     gl_Position = mvp*position;
     frg_uv0 = uv0;
     frg_wpos = position;
+    vec3 tangent = cross(binormal,normal);
+		frg_tbn = mat3(tangent,binormal,normal);
+    frg_camdist = 0.0;
+    frg_camz = vec3(0,0,0);
+    frg_clr = vec4(1,1,1,1);
+
 }
 ///////////////////////////////////////////////////////////////
 libblock lib_frg_grid : lib_gbuf_encode {
@@ -135,6 +141,8 @@ fragment_interface iface_grid_forward_lit {
     vec4 frg_wpos;
     mat3 frg_tbn;
     vec4 frg_clr;
+    float frg_camdist;
+    vec3 frg_camz;
   }
   outputs {
     layout(location = 0) vec4 out_clr;
@@ -155,7 +163,7 @@ fragment_shader ps_grid_forward_lit
   : ub_frg_fwd_lighting{
   vec4 gout = grid_output(frg_wpos.xyz);
   vec3 oc = forward_lighting(gout.xyz);
-  out_clr = vec4(oc,1); 
+  out_clr = vec4(oc.xyz,1); 
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_rigid_gbuffer_grid
