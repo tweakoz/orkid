@@ -21,6 +21,7 @@
 #include <boost/filesystem.hpp>
 #include <ork/kernel/datacache.h>
 #include <ork/util/logger.h>
+#include <ork/kernel/memcpy.inl>
 
 namespace bfs = boost::filesystem;
 namespace ork::meshutil {
@@ -246,7 +247,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
         EmbTexStream->GetItem(datasize);
         auto texturedata = EmbTexStream->GetCurrent();
         auto texdatcopy  = malloc(datasize);
-        memcpy(texdatcopy, texturedata, datasize);
+        memcpy_fast(texdatcopy, texturedata, datasize);
         EmbTexStream->advance(datasize);
         auto embtex         = new EmbeddedTexture;
         embtex->_srcdata    = texdatcopy;
@@ -386,7 +387,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
           // logchan_mioR->log("ReadVB NumVerts<%d> VtxSize<%d>d, ivbnum, pvb->GetVtxSize());
           void* poutverts = context->GBI()->LockVB(*cluster->_vertexBuffer.get(), 0, ivbnum); // ivblen );
           {
-            memcpy(poutverts, pverts, ivblen);
+            memcpy_fast(poutverts, pverts, ivblen);
             cluster->_vertexBuffer->SetNumVertices(ivbnum);
             if (efmt == EVtxStreamFormat::V12N12B12T8I4W4) {
               auto pv = (const SVtxV12N12B12T8I4W4*)pverts;
@@ -430,7 +431,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
                     MeshName,
                     matname);
 
-              memcpy(poutidx, pidx, newprimgroup->miNumIndices * sizeof(U16));
+              memcpy_fast(poutidx, pidx, newprimgroup->miNumIndices * sizeof(U16));
             }
             context->GBI()->UnLockIB(*pidxbuf);
 

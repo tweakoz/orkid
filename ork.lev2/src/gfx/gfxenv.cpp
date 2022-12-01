@@ -24,6 +24,7 @@
 #include <ork/lev2/ui/ui.h>
 #include <ork/reflect/enum_serializer.inl>
 #include <ork/util/Context.hpp>
+#include <ork/kernel/memcpy.inl>
 
 #include <ork/reflect/properties/register.h>
 
@@ -360,7 +361,7 @@ EBufferFormat CaptureBuffer::format() const {
 void CaptureBuffer::CopyData(const void* pfrom, int isize) {
   int icapsize = GetStride() * miW * miH;
   OrkAssert(isize == icapsize);
-  memcpy(_data, pfrom, isize);
+  memcpy_fast(_data, pfrom, isize);
 }
 
 void CaptureBuffer::setFormatAndSize(EBufferFormat fmt, int w, int h) {
