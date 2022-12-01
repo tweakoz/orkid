@@ -17,6 +17,9 @@ libblock lib_gbuf_decode {
     int _emissive;
     float _atmos;
     float _alpha;
+    float _specscale[9];
+    vec3 _wnrm_samples[9];
+    float _z_samples[9];
   };
   struct WPosData {
     vec2 _muv;
@@ -93,6 +96,38 @@ libblock lib_gbuf_decode {
     if(signof_nz)
       nz = -nz;
     vec3 nn      = vec3(nx,ny,nz);
+
+    ///////////////////////////////
+    // multiple normal samples
+    //  (for filtered specular)
+    ///////////////////////////////
+
+    int i=0;
+    for( int x=-1; x<2; x++){
+      for( int y=-1; y<2; y++ ){
+        vec2 uv_sample = (vec2(x,y)+gl_FragCoord.xy)* InvViewportSize;
+        uvec4 gbuf = textureLod(MapGBuffer, uv_sample,0);
+        float nx = float(gbuf.z&0xffffu)*inverse_nrm-1.0; // 16 bits (52)
+        float ny = float((gbuf.z>>16)&0xffffu)*inverse_nrm-1.0; // 16 bits (68)
+        float nz = sqrt(abs(1-nx*nx-ny*ny)); // rebuild normal z component
+        bool signof_nz = bool((gbuf.x>>25)&1u);  // 1 bit (61)
+        if(signof_nz)
+          nz = -nz;
+        vec3 N = normalize(vec3(nx,ny,nz));
+        decoded._wnrm_samples[i] = N;
+        vec3 nndx = dFdx(N);
+        vec3 nndy = dFdy(N);
+        decoded._specscale[i] = 1.0-pow(length(nndx)+length(nndy),0.45);
+
+        float depthtex       = texture(MapDepth, uv_sample).x;
+        float ndc            = depthtex * 2.0 - 1.0;
+        float zeye           = Zndc2eye.x / (ndc - Zndc2eye.y);
+
+        decoded._z_samples[i] = zeye;
+        i++;
+      }
+    }
+
     ///////////////////////////////
     decoded._wnrm   = normalize(nn);
     decoded._albedo = vec3(float(ur),float(ug),float(ub))*inverse_255;
@@ -104,6 +139,10 @@ libblock lib_gbuf_decode {
     decoded._mask = mask;
     decoded._atmos = float(gbuf.a&0xffffu)/32768.0;
     decoded._alpha = float((gbuf.a>>16)&0xffffu)/1024.0;
+    ///////////////////////////////
+    //decoded._emissive = 1;
+    //decoded._albedo = vec3(decoded._specscale);
+    ///////////////////////////////
     return decoded;
   }
   /////////////////////////////////////////////////////////

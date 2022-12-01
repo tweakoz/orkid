@@ -285,8 +285,6 @@ void DeferredContext::renderUpdate(CompositorDrawData& drawdata) {
   int newwidth  = ddprops["OutputWidth"_crcu].get<int>();
   int newheight = ddprops["OutputHeight"_crcu].get<int>();
   if (_rtgGbuffer->width() != newwidth or _rtgGbuffer->height() != newheight) {
-    // printf("newwidth<%d>\n", newwidth);
-    // printf("newheight<%d>\n", newheight);
     _width    = newwidth;
     _height   = newheight;
     _clusterW = (newwidth + KTILEDIMXY - 1) / KTILEDIMXY;
