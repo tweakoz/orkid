@@ -86,7 +86,7 @@ constexpr uint64_t crc32_recurse(uint64_t crc, const char* s) {
 ///////////////////////////////////////////////////////////////////////////////
 
 typedef uint64_t crc_enum_t;
-#define CrcEnum(X) X = crc32_recurse(KENDHASH, #X /**/)
+#define CrcEnum(X) X = ::ork::crc32_recurse(::ork::KENDHASH, #X /**/)
 
 int constexpr conststrlength(const char* str) {
   return *str ? 1 + conststrlength(str + 1) : 0;
