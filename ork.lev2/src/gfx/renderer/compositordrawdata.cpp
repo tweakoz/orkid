@@ -55,15 +55,18 @@ ViewData CompositorDrawData::computeViewData() const {
     auto L = TOPCPD._stereoCameraMatrices->_left;
     auto R = TOPCPD._stereoCameraMatrices->_right;
     auto M = TOPCPD._stereoCameraMatrices->_mono;
-    VD.VL  = L->_vmatrix;
-    VD.VR  = R->_vmatrix;
+
     VD.VM  = M->_vmatrix;
-    VD.PL  = L->_pmatrix;
-    VD.PR  = R->_pmatrix;
     VD.PM  = M->_pmatrix;
-    VD.VPL = fmtx4::multiply_ltor(VD.VL,VD.PL);
-    VD.VPR = fmtx4::multiply_ltor(VD.VR,VD.PR);
     VD.VPM = fmtx4::multiply_ltor(VD.VM,VD.PM);
+
+    VD.VL  = L->_vmatrix;
+    VD.PL  = L->_pmatrix;
+    VD.VPL = fmtx4::multiply_ltor(VD.VL,VD.PL);
+
+    VD.VR  = R->_vmatrix;
+    VD.PR  = R->_pmatrix;
+    VD.VPR = fmtx4::multiply_ltor(VD.VR,VD.PR);
     // VR projection matrix
     //[ +0.7842  +0  +0  +0 ] [ +0  +0.7048  +0  +0 ] [ -0.05671  +0.0023  -1  -1 ] [ +0  +0  -0.1  +0 ]   axis<-0.001 -0.04 -0>
   } else {

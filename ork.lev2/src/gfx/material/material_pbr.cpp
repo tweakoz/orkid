@@ -207,6 +207,22 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
         case "DEFERRED_PBR"_crcu: {
           fxtechnique_constptr_t tek;
           ////////////////////////////////////////////////////////////////////////////////////////////
+          auto common_lambda = [mtl](const RenderContextInstData& RCID, int ipass){
+              auto _this       = (PBRMaterial*)mtl;
+              auto RCFD        = RCID._RCFD;
+              auto context     = RCFD->GetTarget();
+              auto RSI         = context->RSI();
+              const auto& CPD  = RCFD->topCPD();
+              auto FXI         = context->FXI();
+              auto modcolor = context->RefModColor();
+              _this->_rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
+              _this->_rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
+              _this->_rasterstate.SetZWriteMask(true);
+              _this->_rasterstate.SetRGBAWriteMask(true, true);
+              RSI->BindRasterState(mtl->_rasterstate);
+              FXI->BindParamVect4(_this->_parModColor, modcolor*_this->_baseColor);
+          };
+          ////////////////////////////////////////////////////////////////////////////////////////////
           if (permu._stereo) {                                     // stereo
             if (permu._instanced) {                                // stereo-instanced
               tek = permu._skinned                  //
@@ -221,6 +237,7 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
             if(tek){
               fxinst = std::make_shared<FxStateInstance>(permu);
               fxinst->_technique = tek;
+              fxinst->addStateLambda(common_lambda);
               fxinst->addStateLambda([mtl](const RenderContextInstData& RCID, int ipass) {
                 auto _this       = (PBRMaterial*)mtl;
                 auto RCFD        = RCID._RCFD;
@@ -237,16 +254,8 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
                 if (auto as_mtx = vrrootprop.tryAs<fmtx4>()) {
                   vrroot = as_mtx.value();
                 }
-                FXI->BindParamVect4(_this->_parModColor, modcolor*_this->_baseColor);
                 FXI->BindParamMatrix(_this->_paramMVPL, stereocams->MVPL(vrroot*worldmatrix));
                 FXI->BindParamMatrix(_this->_paramMVPR, stereocams->MVPR(vrroot*worldmatrix));
-                _this->_rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
-                _this->_rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
-                _this->_rasterstate.SetZWriteMask(true);
-                _this->_rasterstate.SetRGBAWriteMask(true, true);
-                RSI->BindRasterState(_this->_rasterstate);
-                // fxinst->_params[_paramMVPL] = "RCFD_Camera_MVP_Left"_crcsh;
-                // fxinst->_params[_paramMVPR] = "RCFD_Camera_MVP_Right"_crcsh;
               });
             }
             else{
@@ -269,6 +278,7 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
             if(tek){
               fxinst = std::make_shared<FxStateInstance>(permu);
               fxinst->_technique = tek;
+              fxinst->addStateLambda(common_lambda);
               fxinst->addStateLambda([mtl](const RenderContextInstData& RCID, int ipass) {
                 auto _this       = (PBRMaterial*)mtl;
                 auto RCFD        = RCID._RCFD;
@@ -279,15 +289,7 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
                 const auto& CPD  = RCFD->topCPD();
                 auto monocams    = CPD._cameraMatrices;
                 auto worldmatrix = RCID.worldMatrix();
-                auto modcolor = context->RefModColor();
-                FXI->BindParamVect4(_this->_parModColor, modcolor*_this->_baseColor);
                 FXI->BindParamMatrix(_this->_paramMVP, monocams->MVPMONO(worldmatrix));
-                _this->_rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
-                //_this->_rasterstate.SetCullTest(ECULLTEST_OFF);
-                _this->_rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
-                _this->_rasterstate.SetZWriteMask(true);
-                _this->_rasterstate.SetRGBAWriteMask(true, true);
-                RSI->BindRasterState(_this->_rasterstate);
               });
             }
           }

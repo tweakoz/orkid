@@ -116,7 +116,7 @@ libblock lib_deferred
     vec3 wpos = gbd._wpos;
     vec3 epos = posatdepth(wpd,0.0);
     /////////////////////////
-    plc._viewdir = normalize(epos-wpos);
+    plc._viewdir = normalize(epos);//-wpos);
     plc._metallic = gbd._metallic;
     plc._roughness = gbd._roughness;
     plc._normal = normalize(gbd._wnrm);
@@ -148,14 +148,22 @@ libblock lib_deferred
       float ndotl = 0.0;
       vec3 specular_term = vec3(0,0,0);
       float zbase = gbd._z_samples[4];
+      vec3 Nbase = gbd._wnrm_samples[4];
+
       float sdiv = 0.0;
+
+      float nd = 0.0;
+
       for( int i=0; i<9; i++){
 
+        vec3 N = gbd._wnrm_samples[i];
         float ztest = gbd._z_samples[i];
-        float dZ = ztest-zbase;
-        if(dZ<.1){
+        float dZ = abs(ztest-zbase);
+
+        nd += pow(clamp(1.0-dot(Nbase,N),0,1),2);
+
+        if(dZ<.01){
           sdiv += 1.0;
-          vec3 N = gbd._wnrm_samples[i];
           float ggx = computeGGX(N, halfdir, plc._roughness);
           float geo = geometrySmith(N, plc._viewdir, lightdir, plc._roughness);
           float denominator = 4 * satdot(N,plc._viewdir) * satdot(N, lightdir) + EPSILON;
@@ -168,8 +176,7 @@ libblock lib_deferred
      ndotl /= sdiv;
 
     //////////////////////////
-
-    return (diffuse_term + specular_term) * atten * ndotl;
+    return (diffuse_term + specular_term*(9.0-nd)/9.0) * atten * ndotl;
   }
   /////////////////////////////////////////////////////////
   vec3 pntlighting_clustered(WPosData wpd,GBufData gbd) {
@@ -215,7 +222,15 @@ libblock lib_deferred
     return l*depth_fogval;
   }
   /////////////////////////////////////////////////////////
+  vec3 TEST(WPosData wpd,GBufData gbd){
+    LightCtx plc = lcalc1(wpd,gbd);
+    return vec3(mod(gbd._linZ*0.1,1));
+  }
+  /////////////////////////////////////////////////////////
   vec3 pntlighting_untextured_simple(WPosData wpd,GBufData gbd) {
+    if( gbd._mask==1 ){
+      return TEST(wpd,gbd);
+    }
     vec3 l       = vec3(0, 0, 0);
     if( gbd._mask==1 ){
       LightCtx plc = lcalc1(wpd,gbd);
@@ -615,32 +630,6 @@ libblock lib_deferred
 
   } // vec3 environmentLighting(){
 
-WPosData stereoWPD(){
-    WPosData wpd;
-    wpd._muv   = gl_FragCoord.xy * InvViewportSize;
-    int index = int(wpd._muv.x >= 0.5);
-    wpd._ivp   = IVPArray[index];
-    wpd._scruv = wpd._muv;
-    wpd._scruv.x = mod(wpd._scruv.x * 2, 1);
-    wpd._index = index;
-    return wpd;
-}
-WPosData monoWPD(){
-  WPosData wpd;
-  wpd._muv   = gl_FragCoord.xy * InvViewportSize;
-  wpd._index = 0;
-  wpd._ivp   = IVPArray[0];
-  wpd._scruv = wpd._muv;
-  return wpd;
-}
-WPosData monoWPDdisp(vec2 disp){
-  WPosData wpd;
-  wpd._muv   = (gl_FragCoord.xy+disp) * InvViewportSize;
-  wpd._index = 0;
-  wpd._ivp   = IVPArray[0];
-  wpd._scruv = wpd._muv;
-  return wpd;
-}
 ///////////////////////////////////////////////////////////////
 } // libblock lib_deferred : ub_light : ub_frg {
 ///////////////////////////////////////////////////////////////
@@ -677,13 +666,13 @@ fragment_shader ps_downsampledepthcluster : iface_fdownsampledepthcluster : lib_
 fragment_shader ps_baselight : iface_f2uv : lib_deferred {
   WPosData wpd = monoWPD();
  vec3 c = baselighting(wpd);
-  out_clr    = vec4(c*1.0/25.0, 1);
+  out_clr    = vec4(0,0,0,0);//vec4(c*1.0/25.0, 1);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_baselight_stereo : iface_f2uv : lib_deferred {
   WPosData wpd = stereoWPD();
   vec3 c       = baselighting(wpd);
-  out_clr      = vec4(c, 1);
+  out_clr      = vec4(0,0,0,0);//vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_pointlight_textured : iface_f2uv : lib_deferred {

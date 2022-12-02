@@ -28,6 +28,33 @@ libblock lib_gbuf_decode {
     int _index;
   };
   /////////////////////////////////////////////////////////
+  WPosData stereoWPD(){
+    WPosData wpd;
+    wpd._muv   = gl_FragCoord.xy * InvViewportSize;
+    int index = int(wpd._muv.x >= 0.5);
+    wpd._index = index;
+    wpd._ivp   = IVPArray[index];
+    wpd._scruv = wpd._muv;
+    wpd._scruv.x = mod(wpd._scruv.x * 2, 1);
+    return wpd;
+  }
+  WPosData monoWPD(){
+    WPosData wpd;
+    wpd._muv   = gl_FragCoord.xy * InvViewportSize;
+    wpd._index = 0;
+    wpd._ivp   = IVPArray[0];
+    wpd._scruv = wpd._muv;
+    return wpd;
+  }
+  WPosData monoWPDdisp(vec2 disp){
+    WPosData wpd;
+    wpd._muv   = (gl_FragCoord.xy+disp) * InvViewportSize;
+    wpd._index = 0;
+    wpd._ivp   = IVPArray[0];
+    wpd._scruv = wpd._muv;
+    return wpd;
+  }
+  /////////////////////////////////////////////////////////
   float eyedepth(vec2 depthuv) {
     float depthtex = textureLod(MapDepth, depthuv,0).r;
     float ndc      = depthtex * 2.0 - 1.0;
@@ -102,6 +129,11 @@ libblock lib_gbuf_decode {
     //  (for filtered specular)
     ///////////////////////////////
 
+    //vec2 basexy = gl_FragCoord.xy;
+    //int stereo_index = int(basexy >= 0.5);
+    //wpd._scruv = wpd._muv;
+    //wpd._scruv.x = mod(wpd._scruv.x * 2, 1);
+
     int i=0;
     for( int x=-1; x<2; x++){
       for( int y=-1; y<2; y++ ){
@@ -141,7 +173,7 @@ libblock lib_gbuf_decode {
     decoded._alpha = float((gbuf.a>>16)&0xffffu)/1024.0;
     ///////////////////////////////
     //decoded._emissive = 1;
-    //decoded._albedo = vec3(decoded._specscale);
+    //decoded._albedo = vec3(decoded._specscale[4]);
     ///////////////////////////////
     return decoded;
   }
