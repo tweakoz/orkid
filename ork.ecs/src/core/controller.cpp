@@ -97,9 +97,11 @@ void Controller::render(ui::drawevent_constptr_t drwev) {
 ///////////////////////////////////////////////////////////////////////////
 
 void Controller::renderWithStandardCompositorFrame(lev2::standardcompositorframe_ptr_t sframe) {
-  _simulation.atomicOp([sframe](simulation_ptr_t& unlocked){
-    unlocked->renderWithStandardCompositorFrame(sframe);
+  simulation_ptr_t copy;
+  _simulation.atomicOp([sframe,&copy](simulation_ptr_t& unlocked){
+    copy = unlocked;
   });
+  copy->renderWithStandardCompositorFrame(sframe);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
