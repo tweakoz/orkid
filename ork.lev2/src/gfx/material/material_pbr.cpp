@@ -121,7 +121,6 @@ static FxStateInstance::statelambda_t _createBasicStateLambda(const PBRMaterial*
       OrkAssert(false);
     }
     else if (monocams) {
-      OrkAssert(false);
       auto eye_pos = monocams->_vmatrix.inverse().translation();
       FXI->BindParamVect3(mtl->_paramEyePostion, eye_pos);
       FXI->BindParamMatrix(mtl->_paramMVP, monocams->MVPMONO(worldmatrix));

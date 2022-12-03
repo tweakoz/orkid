@@ -159,6 +159,10 @@ Serializer::Serializer(bool std_types) {
     msg.writeString("std::string");
     msg.writeString(value.get<std::string>());
   });
+  registerType<bool>([](Serializer* ser, msgpacketbase_ref_t msg, const val_t& value) {
+    msg.writeString("bool");
+    msg.template write<bool>(value.get<bool>());
+  });
   registerType<int>([](Serializer* ser, msgpacketbase_ref_t msg, const val_t& value) {
     msg.writeString("int");
     msg.template write<int>(value.get<int>());
@@ -358,6 +362,10 @@ Deserializer::Deserializer(bool std_types) {
   registerType("std::string",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
   	const auto& packet = iter._basepacket;
     out_value.template set<std::string>(packet.readString(iter));
+  });
+  registerType("bool",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
+    const auto& packet = iter._basepacket;
+    packet.template read<bool>(out_value.template make<bool>(),iter);
   });
   registerType("size_t",[](Deserializer* deser, MessagePacketIteratorBase& iter, val_t& out_value, const on_fixup_t& fixupfn) {
   	const auto& packet = iter._basepacket;
