@@ -87,9 +87,11 @@ void Controller::updateExit() {
 ///////////////////////////////////////////////////////////////////////////
 
 void Controller::render(ui::drawevent_constptr_t drwev) {
-  _simulation.atomicOp([drwev](simulation_ptr_t& unlocked){
-    unlocked->render(drwev);
+  simulation_ptr_t copy;
+  _simulation.atomicOp([drwev,&copy](simulation_ptr_t& unlocked){
+    copy = unlocked;
   });
+    copy->render(drwev);
 }
 
 ///////////////////////////////////////////////////////////////////////////

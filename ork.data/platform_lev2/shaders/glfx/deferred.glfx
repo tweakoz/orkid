@@ -142,6 +142,36 @@ libblock lib_deferred
       // filtered specular (WIP)
       //////////////////////////
 
+      vec3 N = gbd._wnrm_samples[4];
+      float ggx = computeGGX(N, halfdir, plc._roughness);
+      float geo = geometrySmith(N, plc._viewdir, lightdir, plc._roughness);
+      float denominator = 4 * satdot(N,plc._viewdir) * satdot(N, lightdir) + EPSILON;
+      vec3 numerator  = min(ggx * geo * SpecularLevel, 16)*fres;
+      vec3 specular_term = (numerator / max(.0625, denominator)) * gbd._specscale[4];
+      float ndotl = satdot(N,lightdir);
+
+    //////////////////////////
+    return (diffuse_term + specular_term) * atten * ndotl;
+  }
+  /////////////////////////////////////////////////////////
+  vec3 plcalc2_aa(LightCtx plc,GBufData gbd){
+      if( gbd._emissive==1 )
+        return vec3(0,0,0);
+      float dist2lightsq = plc._lightdel.x*plc._lightdel.x
+                         + plc._lightdel.y*plc._lightdel.y
+                         + plc._lightdel.z*plc._lightdel.z;
+      float atten = 1.0 / max(.05,dist2lightsq);
+      vec3 lightdir = normalize(plc._lightdel);
+      vec3 halfdir = normalize(plc._viewdir + lightdir);
+      vec3 fres = fresnelSchlickRoughness(satdot(halfdir,plc._viewdir), plc._F0,plc._roughness);
+      vec3 diffusel = vec3(1) - fres;
+      diffusel *= (1 - plc._metallic);
+      vec3 diffuse_term = (diffusel*gbd._albedo*INV_PI)*DiffuseLevel;
+
+      //////////////////////////
+      // filtered specular (WIP)
+      //////////////////////////
+
       float ggx = 0.0;
       float geo = 0.0;
       float denominator = 0.0;
@@ -228,9 +258,9 @@ libblock lib_deferred
   }
   /////////////////////////////////////////////////////////
   vec3 pntlighting_untextured_simple(WPosData wpd,GBufData gbd) {
-    if( gbd._mask==1 ){
-      return TEST(wpd,gbd);
-    }
+    //if( gbd._mask==1 ){
+      //return TEST(wpd,gbd);
+    //}
     vec3 l       = vec3(0, 0, 0);
     if( gbd._mask==1 ){
       LightCtx plc = lcalc1(wpd,gbd);
