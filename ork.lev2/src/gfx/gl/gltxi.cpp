@@ -291,10 +291,11 @@ void PboSet::free(pboptr_t item) {
 
 pboptr_t GlTextureInterface::_getPBO(size_t isize) {
   pbosetptr_t pbs = nullptr;
-  auto it         = _pbosets.find(isize);
+  size_t npot = nextPowerOfTwo(isize);
+  auto it         = _pbosets.find(npot);
   if (it == _pbosets.end()) {
-    pbs             = std::make_shared<PboSet>(isize);
-    _pbosets[isize] = pbs;
+    pbs             = std::make_shared<PboSet>(npot);
+    _pbosets[npot] = pbs;
   } else {
     pbs = it->second;
   }
