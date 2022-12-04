@@ -20,6 +20,8 @@
 
 namespace ork::lev2 {
 
+std::atomic<size_t> Texture::_texture_count = 0;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void TextureSamplingModeData::PresetPointAndClamp() {
@@ -84,17 +86,22 @@ texture_ptr_t Texture::createBlank(int iw, int ih, EBufferFormat efmt) {
 Texture::Texture(const TextureAsset* asset)
     : _asset(asset) {
  _residenceState.store(0);
+ _texture_count.fetch_add(1);
+  //printf( "_texture_count: %zu\n", _texture_count.load() );
 }
 
 Texture::Texture(ipctexture_ptr_t external_memory)
   : _asset(nullptr)
   , _external_memory(external_memory) {
  _residenceState.store(0);
+ _texture_count.fetch_add(1);
+  //printf( "_texture_count: %zu\n", _texture_count.load() );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 Texture::~Texture() {
+ _texture_count.fetch_add(-1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

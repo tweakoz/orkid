@@ -307,6 +307,8 @@ struct GLTextureObject {
   int _maxmip = 0;
   gltexasynctask_ptr_t _async;
   GlTextureInterface* _txi = nullptr;
+
+  static std::atomic<size_t> _glto_count;
 };
 
 

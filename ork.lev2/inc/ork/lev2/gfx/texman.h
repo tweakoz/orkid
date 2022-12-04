@@ -159,6 +159,8 @@ struct MipChain {
 struct Texture {
   typedef std::function<datablock_ptr_t(texture_ptr_t, Context*, datablock_constptr_t)> proc_t;
 
+  static std::atomic<size_t> _texture_count;
+
   //////////////////////////////////////////////////////
 
   Texture(const TextureAsset* asset = nullptr);

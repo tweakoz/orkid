@@ -24,17 +24,26 @@ GLuint gLastBoundNonZeroTex = 0;
 
 namespace ork::lev2 {
 
+std::atomic<size_t> GLTextureObject::_glto_count = 0;
+
 GLTextureObject::GLTextureObject(GlTextureInterface* txi)
     : _txi(txi) 
     , mObject(0)
     , mFbo(0)
     , mDbo(0)
     , mTarget(GL_NONE) {
+  _glto_count.fetch_add(1);
+  //printf( "create glto_count: %zu\n", _glto_count.load() );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 GLTextureObject::~GLTextureObject() {
+  _glto_count.fetch_add(-1);
+  //printf( "destroy glto_count: %zu\n", _glto_count.load() );
+  if(mObject!=0){
+    glDeleteTextures(1, &mObject);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -610,6 +619,7 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     //printf( "OLD obj<%p:%d>\n", (void*) glto.get(), int(glto->mObject));
   } else { // new texture
     glto       = ptex->_impl.makeShared<GLTextureObject>(this);
+    
     GL_ERRORCHECK();
     glGenTextures(1, &glto->mObject);
     glBindTexture(texture_target, glto->mObject);
