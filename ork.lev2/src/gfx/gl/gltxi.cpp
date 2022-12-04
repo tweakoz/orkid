@@ -5,28 +5,36 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include <ork/pch.h>
-#include <ork/kernel/memcpy.inl>
-#include <ork/lev2/gfx/gfxenv.h>
+#include <ork/file/file.h>
 #include <ork/gfx/dds.h>
-#include "gl.h"
+#include <ork/kernel/debug.h>
+#include <ork/kernel/opq.h>
+#include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/ui/ui.h>
-#include <ork/file/file.h>
 #include <ork/math/misc_math.h>
-#include <ork/kernel/opq.h>
-#include <ork/kernel/debug.h>
+#include <ork/pch.h>
 #include <ork/util/logger.h>
+
+#include <ork/kernel/memcpy.inl>
+
+#include "gl.h"
 
 GLuint gLastBoundNonZeroTex = 0;
 
 namespace ork::lev2 {
 
-GLTextureObject::GLTextureObject()
-    : mObject(0)
+GLTextureObject::GLTextureObject(GlTextureInterface* txi)
+    : _txi(txi) 
+    , mObject(0)
     , mFbo(0)
     , mDbo(0)
     , mTarget(GL_NONE) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+GLTextureObject::~GLTextureObject() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -35,25 +43,26 @@ static ork::Timer _proftimer;
 
 GlTextureInterface::GlTextureInterface(ContextGL& tgt)
     : mTargetGL(tgt) {
-      _proftimer.Start();
+  _proftimer.Start();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlTextureInterface::bindTextureToUnit(const Texture* tex, GLenum tex_target, int tex_unit) {
+  gltexobj_ptr_t tex_obj;
 
-  auto tex_obj = (const GLTextureObject*)tex->_internalHandle;
-  if (nullptr == tex_obj) {
-
-    auto new_tex_obj     = new GLTextureObject;
-    tex->_internalHandle = new_tex_obj;
-    tex_obj              = new_tex_obj;
-
+  if (tex->_impl.isA<gltexobj_ptr_t>()) {
+    tex_obj = tex->_impl.get<gltexobj_ptr_t>();;
+  }
+  else {
+    tex_obj = tex->_impl.makeShared<GLTextureObject>(this);
+    tex_obj->_txi = this;
+    
     /////////////////////////////////////////////////////////////
     // assign default texture object (0) to start out with
     /////////////////////////////////////////////////////////////
 
-    new_tex_obj->mObject = 0;
+    tex_obj->mObject = 0;
 
     /////////////////////////////////////////////////////////////
     // check to see if we are referencing external memory objects
@@ -64,7 +73,6 @@ void GlTextureInterface::bindTextureToUnit(const Texture* tex, GLenum tex_target
 #if defined(LINUX) and defined(OPENGL_46)
     auto ipcdata = tex->_external_memory;
     if (ipcdata) {
-
       GLuint mem_object = 0;
       glCreateMemoryObjectsEXT(1, &mem_object);
 
@@ -90,8 +98,8 @@ void GlTextureInterface::bindTextureToUnit(const Texture* tex, GLenum tex_target
 
       GL_ERRORCHECK();
 
-      glCreateTextures(tex_target, 1, &new_tex_obj->mObject);
-      glBindTexture(tex_target, new_tex_obj->mObject);
+      glCreateTextures(tex_target, 1, &tex_obj->mObject);
+      glBindTexture(tex_target, tex_obj->mObject);
 
       GL_ERRORCHECK();
 
@@ -105,7 +113,7 @@ void GlTextureInterface::bindTextureToUnit(const Texture* tex, GLenum tex_target
       GL_ERRORCHECK();
 
       glTexStorageMem2DEXT(
-          tex_target,          // texture target
+          tex_target,             // texture target
           1,                      // mip count
           GL_RGB10_A2,            // internal format
           ipcdata->_image_width,  // width
@@ -192,14 +200,13 @@ bool GlTextureInterface::LoadTexture(texture_ptr_t ptex, datablock_ptr_t datablo
 ///////////////////////////////////////////////////////////////////////////////
 
 bool GlTextureInterface::destroyTexture(texture_ptr_t tex) {
-  auto glto            = (GLTextureObject*)tex->_internalHandle;
-  tex->_internalHandle = nullptr;
+  auto glto = tex->_impl.get<gltexobj_ptr_t>();
+  tex->_impl.set<void*>(nullptr);
 
   void_lambda_t lamb = [=]() {
     if (glto) {
       if (glto->mObject != 0)
         glDeleteTextures(1, &glto->mObject);
-      delete glto;
     }
   };
   // opq::mainSerialQueue()->push(lamb,get_backtrace());
@@ -222,7 +229,6 @@ PboSet::PboSet(size_t size)
 
 PboSet::~PboSet() {
   for (pboptr_t item : _pbos_perm) {
-
     glDeleteBuffers(1, &item->_handle);
   }
 }
@@ -231,11 +237,8 @@ PboSet::~PboSet() {
 
 static std::atomic<int> ipbocount = 0;
 pboptr_t PboSet::alloc() {
-
   if (_pbos.empty()) {
-
     for (int i = 0; i < 4; i++) {
-
       auto new_pbo = std::make_shared<PboItem>();
 
       new_pbo->_length = _size;
@@ -246,7 +249,7 @@ pboptr_t PboSet::alloc() {
       glBindBuffer(GL_PIXEL_UNPACK_BUFFER, new_pbo->_handle);
       GL_ERRORCHECK();
 
-      printf( "GlTextureInterface:: ipbocount<%d>\n", ipbocount.fetch_add(1) );
+      printf("GlTextureInterface:: ipbocount<%d>\n", ipbocount.fetch_add(1));
 
       // ??? persistent mapped objects
 
@@ -260,7 +263,7 @@ pboptr_t PboSet::alloc() {
       map_flags |= GL_MAP_PERSISTENT_BIT;
       map_flags |= GL_MAP_INVALIDATE_RANGE_BIT;
       map_flags |= GL_MAP_COHERENT_BIT;
-      //map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
+      // map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
       new_pbo->_mapped = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, _size, map_flags);
 #else
       glBufferData(GL_PIXEL_UNPACK_BUFFER, _size, NULL, GL_STREAM_DRAW);
@@ -270,13 +273,13 @@ pboptr_t PboSet::alloc() {
       // GL_ERRORCHECK();
       _pbos.push(new_pbo);
       _pbos_perm.insert(new_pbo);
-      //printf("AllocPBO objid<%d> size<%zu> mapped<%p>\n", int(new_pbo->_handle), _size, (void*) new_pbo->_mapped);
+      // printf("AllocPBO objid<%d> size<%zu> mapped<%p>\n",
+      // int(new_pbo->_handle), _size, (void*) new_pbo->_mapped);
     }
   }
 
   auto rval = _pbos.front();
   _pbos.pop();
-
 
   return rval;
 }
@@ -291,10 +294,10 @@ void PboSet::free(pboptr_t item) {
 
 pboptr_t GlTextureInterface::_getPBO(size_t isize) {
   pbosetptr_t pbs = nullptr;
-  size_t npot = nextPowerOfTwo(isize);
+  size_t npot     = nextPowerOfTwo(isize);
   auto it         = _pbosets.find(npot);
   if (it == _pbosets.end()) {
-    pbs             = std::make_shared<PboSet>(npot);
+    pbs            = std::make_shared<PboSet>(npot);
     _pbosets[npot] = pbs;
   } else {
     pbs = it->second;
@@ -314,9 +317,10 @@ void GlTextureInterface::_returnPBO(pboptr_t pbo) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlTextureInterface::UpdateAnimatedTexture(Texture* ptex, TextureAnimationInst* tai) {
-  // printf( "GlTextureInterface::UpdateAnimatedTexture( ptex<%p> tai<%p> )\n", ptex, tai );
-  GLTextureObject* pTEXOBJ = (GLTextureObject*)ptex->GetTexIH();
-  if (pTEXOBJ && ptex->GetTexAnim()) {
+  // printf( "GlTextureInterface::UpdateAnimatedTexture( ptex<%p> tai<%p> )\n",
+  // ptex, tai );
+  auto glto = ptex->_impl.get<gltexobj_ptr_t>();
+  if (glto && ptex->GetTexAnim()) {
     ptex->GetTexAnim()->UpdateTexture(this, ptex, tai);
   }
 }
@@ -387,13 +391,12 @@ extern std::atomic<int> __FIND_IT;
 
 void GlTextureInterface::ApplySamplingMode(Texture* ptex) {
   int numsamples = msaaEnumToInt(ptex->_msaa_samples);
-  if(numsamples>1)
+  if (numsamples > 1)
     return;
 
-  GLTextureObject* pTEXOBJ = (GLTextureObject*)ptex->GetTexIH();
-  if (pTEXOBJ) {
-    GLenum tgt = (pTEXOBJ->mTarget != GL_NONE) ? pTEXOBJ->mTarget : GL_TEXTURE_2D;
-
+  auto glto = ptex->_impl.get<gltexobj_ptr_t>();
+  if (glto) {
+    GLenum tgt = (glto->mTarget != GL_NONE) ? glto->mTarget : GL_TEXTURE_2D;
 
     mTargetGL.makeCurrentContext();
     __FIND_IT.store(1);
@@ -402,33 +405,31 @@ void GlTextureInterface::ApplySamplingMode(Texture* ptex) {
 
     const auto& texmode = ptex->TexSamplingMode();
 
-    // printf( "pTEXOBJ<%p> tgt<%p>\n", pTEXOBJ, (void*)pTEXOBJ->mTarget );
+    // printf( "glto<%p> tgt<%p>\n", glto, (void*)glto->mTarget );
 
-    // assert(pTEXOBJ->mTarget == GL_TEXTURE_2D );
+    // assert(glto->mTarget == GL_TEXTURE_2D );
 
     auto minfilt = minfiltlamb(texmode);
 
     int inummips = 0;
     if (minfilt == GL_LINEAR_MIPMAP_LINEAR) {
-      inummips = pTEXOBJ->_maxmip;
+      inummips = glto->_maxmip;
       if (inummips < 3) {
         inummips = 0;
         minfilt  = GL_LINEAR;
       }
 
       // printf( "linmiplin inummips<%d>\n", inummips );
-
-
     }
 
     GL_ERRORCHECK();
     // sampler state..
-    glBindTexture(tgt, pTEXOBJ->mObject);
-    #if defined(OPENGL_41)
-      glTexParameterf(tgt, GL_TEXTURE_MAX_ANISOTROPY_EXT, 16.0f);
-    #elif defined(OPENGL_46)
-      glTexParameterf(tgt, GL_TEXTURE_MAX_ANISOTROPY, 16.0f);
-    #endif
+    glBindTexture(tgt, glto->mObject);
+#if defined(OPENGL_41)
+    glTexParameterf(tgt, GL_TEXTURE_MAX_ANISOTROPY_EXT, 16.0f);
+#elif defined(OPENGL_46)
+    glTexParameterf(tgt, GL_TEXTURE_MAX_ANISOTROPY, 16.0f);
+#endif
     glTexParameterf(tgt, GL_TEXTURE_MAG_FILTER, magfiltlamb(texmode));
     GL_ERRORCHECK();
     glTexParameterf(tgt, GL_TEXTURE_MIN_FILTER, minfilt);
@@ -445,8 +446,8 @@ void GlTextureInterface::ApplySamplingMode(Texture* ptex) {
 }
 
 void GlTextureInterface::generateMipMaps(Texture* ptex) {
-  auto plattex = (GLTextureObject*)ptex->_internalHandle;
-  glBindTexture(GL_TEXTURE_2D, plattex->mObject);
+  auto glto = ptex->_impl.get<gltexobj_ptr_t>();
+  glBindTexture(GL_TEXTURE_2D, glto->mObject);
   glGenerateMipmap(GL_TEXTURE_2D);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
@@ -459,7 +460,6 @@ void GlTextureInterface::generateMipMaps(Texture* ptex) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid) {
-
   bool is_3d = (tid._d > 1);
 
   ///////////////////////////////////
@@ -469,70 +469,68 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   ///////////////////////////////////
 
   size_t dst_length = tid.computeDstSize();
-  auto pboitem  = this->_getPBO(dst_length);
+  auto pboitem      = this->_getPBO(dst_length);
 
   ///////////////////////////////////////////////////////////////////
 
-  auto src_buffer = (const uint8_t*) tid._data;
+  auto src_buffer = (const uint8_t*)tid._data;
 
   ///////////////////////////////////////////////////////////////////
 
   bool need_convert = (tid._src_format != tid._dst_format);
 
-  if(need_convert){
-    static auto rgb_buffer = (uint8_t*) malloc(16<<20);
-    int srcw = tid._w;
-    int srch = tid._h;
+  if (need_convert) {
+    static auto rgb_buffer = (uint8_t*)malloc(16 << 20);
+    int srcw               = tid._w;
+    int srch               = tid._h;
     OrkAssert(not tid._autogenmips);
-    int numpixels = srcw*srch;
+    int numpixels = srcw * srch;
 
-
-    switch(tid._src_format){
-      case EBufferFormat::YUV420P:{
-        //float t1 = _proftimer.SecsSinceStart();
+    switch (tid._src_format) {
+      case EBufferFormat::YUV420P: {
+        // float t1 = _proftimer.SecsSinceStart();
         auto src_channel_y = src_buffer;
         auto src_channel_u = src_channel_y + numpixels;
-        auto src_channel_v = src_channel_u + (numpixels>>2);
-        OrkAssert((srch&0xf)==0);
+        auto src_channel_v = src_channel_u + (numpixels >> 2);
+        OrkAssert((srch & 0xf) == 0);
         std::atomic<int> opcounter = 0;
-        for (int rowm=0; rowm<srch; rowm+=16) {
+        for (int rowm = 0; rowm < srch; rowm += 16) {
           opcounter++;
-          opq::concurrentQueue()->enqueue([=,&opcounter](){
-            for( int rown=0; rown<16; rown++){
-              int row = rowm+rown;
-              int row_base = row*srcw;
-              auto row_ybase = src_channel_y + row_base;
-              int uv_base_index = (row>>1) * (srcw>>1);
-              auto ptr = rgb_buffer + (srch-1-row)*srcw*3;
-              for (int col = 0; col<srcw; col++) {
-                float yy = float(row_ybase[col]);
-                int uvindex = uv_base_index + (col>>1);
-                int uuu = src_channel_u[uvindex];
-                int vvv = src_channel_v[uvindex];
-                float uu = float(uuu);
-                float vv = float(vvv);
-                float r = 1.164f * (yy - 16.0f) + 1.596f * (vv - 128.0f);
-                float g = 1.164f * (yy - 16.0f) - 0.813f * (vv - 128.0f) - 0.391f * (uu - 128.0f);
-                float b = 1.164f * (yy - 16.0f) + 2.018f * (uu - 128.0f);
-                *ptr++ = uint8_t(ork::clamp<float>(r,0,255));
-                *ptr++ = uint8_t(ork::clamp<float>(g,0,255));
-                *ptr++ = uint8_t(ork::clamp<float>(b,0,255));
+          opq::concurrentQueue()->enqueue([=, &opcounter]() {
+            for (int rown = 0; rown < 16; rown++) {
+              int row           = rowm + rown;
+              int row_base      = row * srcw;
+              auto row_ybase    = src_channel_y + row_base;
+              int uv_base_index = (row >> 1) * (srcw >> 1);
+              auto ptr          = rgb_buffer + (srch - 1 - row) * srcw * 3;
+              for (int col = 0; col < srcw; col++) {
+                float yy    = float(row_ybase[col]);
+                int uvindex = uv_base_index + (col >> 1);
+                int uuu     = src_channel_u[uvindex];
+                int vvv     = src_channel_v[uvindex];
+                float uu    = float(uuu);
+                float vv    = float(vvv);
+                float r     = 1.164f * (yy - 16.0f) + 1.596f * (vv - 128.0f);
+                float g     = 1.164f * (yy - 16.0f) - 0.813f * (vv - 128.0f) - 0.391f * (uu - 128.0f);
+                float b     = 1.164f * (yy - 16.0f) + 2.018f * (uu - 128.0f);
+                *ptr++      = uint8_t(ork::clamp<float>(r, 0, 255));
+                *ptr++      = uint8_t(ork::clamp<float>(g, 0, 255));
+                *ptr++      = uint8_t(ork::clamp<float>(b, 0, 255));
               }
             }
             opcounter--;
           });
         }
-        while(opcounter.load()>0){
+        while (opcounter.load() > 0) {
           ork::usleep(10);
         }
         // 11msec -> 2msec
-        //float t2 = _proftimer.SecsSinceStart();
-        //printf( "yuv msecs<%g>\n", (t2-t1)*1000.0f );
+        // float t2 = _proftimer.SecsSinceStart();
+        // printf( "yuv msecs<%g>\n", (t2-t1)*1000.0f );
         src_buffer = rgb_buffer;
         break;
       }
-      case EBufferFormat::RGB8:{
-        
+      case EBufferFormat::RGB8: {
         break;
       }
       default:
@@ -541,17 +539,16 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     }
   }
 
-  if(tid._truncation_length!=0){
-
-    OrkAssert(src_buffer==tid._data);
+  if (tid._truncation_length != 0) {
+    OrkAssert(src_buffer == tid._data);
 
     /////////////////////////////////////////////////////////
     // pad truncation length to next hightest multiple of 128
     /////////////////////////////////////////////////////////
 
     tid._truncation_length += 127;
-    tid._truncation_length = (tid._truncation_length&0xfffffff80);
-    dst_length = tid._truncation_length;
+    tid._truncation_length = (tid._truncation_length & 0xfffffff80);
+    dst_length             = tid._truncation_length;
   }
 
   ////////////////////////////////////////
@@ -560,16 +557,17 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
 
 #if defined(OPENGL_46)
 
-  auto mapped = pboitem->_mapped;
+  auto mapped   = pboitem->_mapped;
   size_t pbolen = pboitem->_length;
   GL_ERRORCHECK();
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboitem->_handle);
   GL_ERRORCHECK();
-  if(tid._truncation_length!=0){
-    if(tid._truncation_length>pbolen){
-      logerrchannel()->log("ERROR: PBO overflow trunclen<%zu> pbolen<%zu>", //
-             tid._truncation_length, //
-             pbolen );
+  if (tid._truncation_length != 0) {
+    if (tid._truncation_length > pbolen) {
+      logerrchannel()->log(
+          "ERROR: PBO overflow trunclen<%zu> pbolen<%zu>", //
+          tid._truncation_length,                          //
+          pbolen);
       OrkAssert(false);
     }
   }
@@ -591,26 +589,42 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
   GL_ERRORCHECK();
 #endif
 
-  //printf("UPDATE IMAGE UNC iw<%d> ih<%d> id<%d> length<%zu> pbo<%d> mem<%p>\n", tid._w, tid._h, tid._d, length, pboitem->_handle, mapped);
+  /*printf(
+      "UPDATE IMAGE UNC iw<%d> ih<%d> id<%d> dst_length<%zu> pbo<%d> mem<%p>\n",
+      tid._w,
+      tid._h,
+      tid._d,
+      dst_length,
+      pboitem->_handle,
+      mapped);*/
 
   ///////////////////////////////////
 
-  GLTextureObject* pTEXOBJ = nullptr;
-  if (nullptr == ptex->_internalHandle) {
-    pTEXOBJ               = new GLTextureObject;
-    ptex->_internalHandle = (void*)pTEXOBJ;
-    glGenTextures(1, &pTEXOBJ->mObject);
-    glBindTexture(texture_target, pTEXOBJ->mObject);
+  gltexobj_ptr_t glto;
+
+  if (ptex->_impl.isA<gltexobj_ptr_t>()) {
+    glto = ptex->_impl.get<gltexobj_ptr_t>();
+    GL_ERRORCHECK();
+    glBindTexture(texture_target, glto->mObject);
+    GL_ERRORCHECK();
+    //printf( "OLD obj<%p:%d>\n", (void*) glto.get(), int(glto->mObject));
+  } else { // new texture
+    glto       = ptex->_impl.makeShared<GLTextureObject>(this);
+    GL_ERRORCHECK();
+    glGenTextures(1, &glto->mObject);
+    glBindTexture(texture_target, glto->mObject);
+    GL_ERRORCHECK();
     if (ptex->_debugName.length()) {
-      mTargetGL.debugLabel(GL_TEXTURE, pTEXOBJ->mObject, ptex->_debugName);
+      mTargetGL.debugLabel(GL_TEXTURE, glto->mObject, ptex->_debugName);
     }
 
-    ptex->_varmap.makeValueForKey<GLuint>("gltexobj") = pTEXOBJ->mObject;
+    ptex->_varmap.makeValueForKey<GLuint>("gltexobj") = glto->mObject;
+    //printf( "NEW obj<%p:%d>\n",  (void*) glto.get(), int(glto->mObject));
 
-  } else {
-    pTEXOBJ = (GLTextureObject*)ptex->_internalHandle;
-    glBindTexture(texture_target, pTEXOBJ->mObject);
+    //ptex->_impl._assert_on_destroy = true;
   }
+
+  GL_ERRORCHECK();
 
   ///////////////////////////////////
   GLenum internalformat, format, type;
@@ -682,21 +696,24 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
       glTexImage3D(texture_target, 0, internalformat, tid._w, tid._h, tid._d, 0, format, type, nullptr);
     else
       glTexSubImage3D(texture_target, 0, 0, 0, 0, tid._w, tid._h, tid._d, format, type, nullptr);
+    GL_ERRORCHECK();
   } else {
     if (size_or_fmt_dirty)
       glTexImage2D(texture_target, 0, internalformat, tid._w, tid._h, 0, format, type, nullptr);
     else
       glTexSubImage2D(texture_target, 0, 0, 0, tid._w, tid._h, format, type, nullptr);
+    GL_ERRORCHECK();
   }
 
   ///////////////////////////////////
+  GL_ERRORCHECK();
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0); // unbind pbo
   this->_returnPBO(pboitem);
   ///////////////////////////////////
 
   ptex->_width     = tid._w;
   ptex->_height    = tid._h;
-  ptex->_depth    = tid._d;
+  ptex->_depth     = tid._d;
   ptex->_texFormat = tid._dst_format;
 
   ///////////////////////////////////
@@ -718,29 +735,27 @@ void GlTextureInterface::initTextureFromData(Texture* ptex, TextureInitData tid)
     }
     glTexParameterf(texture_target, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameterf(texture_target, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    if(is_3d){
+    if (is_3d) {
       glTexParameterf(texture_target, GL_TEXTURE_WRAP_R, GL_REPEAT);
     }
-
   }
-  if(is_3d){
+  if (is_3d) {
     glTexParameterf(texture_target, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameterf(texture_target, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameterf(texture_target, GL_TEXTURE_WRAP_R, GL_REPEAT);
   }
 
-  if(is_3d){
-    //ptex->TexSamplingMode().PresetTrilinearWrap();
-    //this->ApplySamplingMode(ptex);
+  if (is_3d) {
+    // ptex->TexSamplingMode().PresetTrilinearWrap();
+    // this->ApplySamplingMode(ptex);
   }
 
-  pTEXOBJ->mTarget = texture_target;
+  glto->mTarget = texture_target;
 
   ///////////////////////////////////
 
   glBindTexture(texture_target, 0);
   GL_ERRORCHECK();
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -756,14 +771,14 @@ Texture* GlTextureInterface::createFromMipChain(MipChain* from_chain) {
 
   assert(tex->_texType == ETEXTYPE_2D);
 
-  GLTextureObject* texobj = new GLTextureObject;
-  tex->_internalHandle    = (void*)texobj;
-  glGenTextures(1, &texobj->mObject);
-  glBindTexture(GL_TEXTURE_2D, texobj->mObject);
+  auto glto = tex->_impl.makeShared<GLTextureObject>(this);
+
+  glGenTextures(1, &glto->mObject);
+  glBindTexture(GL_TEXTURE_2D, glto->mObject);
 
   if (from_chain->_debugName.length()) {
     tex->_debugName = from_chain->_debugName;
-    mTargetGL.debugLabel(GL_TEXTURE, texobj->mObject, tex->_debugName);
+    mTargetGL.debugLabel(GL_TEXTURE, glto->mObject, tex->_debugName);
   }
 
   size_t nummips = from_chain->_levels.size();

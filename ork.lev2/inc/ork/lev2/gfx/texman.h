@@ -175,10 +175,6 @@ struct Texture {
     return _dirty;
   }
 
-  void* GetTexIH(void) const {
-    return _internalHandle;
-  }
-
   ETextureType GetTexType(void) const {
     return _texType;
   }
@@ -240,7 +236,7 @@ struct Texture {
   mutable bool _dirty           = true;
   const void* _data             = nullptr;
   TextureAnimationBase* _anim   = nullptr;
-  mutable void* _internalHandle = nullptr;
+  mutable svar64_t _impl        = nullptr;
   Context* _creatingTarget      = nullptr;
   std::string _debugName;
   bool _isDepthTexture = false;

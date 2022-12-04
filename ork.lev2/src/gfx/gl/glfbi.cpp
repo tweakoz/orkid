@@ -308,7 +308,9 @@ void GlFrameBufferInterface::capture(const RtBuffer* rtb, const file::Path& pth)
   if (not rtb->_impl.Isset())
     return;
 
-  auto tex_id = rtb->_impl.get<GlRtBufferImpl*>()->_texture;
+  auto bufimpl = rtb->_impl.get<GlRtBufferImpl*>();
+  auto teximpl = bufimpl->_teximpl.get<gltexobj_ptr_t>();
+  auto tex_id = teximpl->mObject;
 
   int iw        = rtb->_width;
   int ih        = rtb->_height;

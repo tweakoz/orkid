@@ -78,7 +78,7 @@ void ComputeInterface::bindImage(const FxComputeShader* shader, uint32_t binding
   auto csh = shader->_impl.get<ComputeShader*>();
   assert(csh);
   bindComputeShader(csh);
-  auto texobj = (GLTextureObject*)tex->GetTexIH();
+  auto texobj = tex->_impl.get<gltexobj_ptr_t>();
   glActiveTexture(GL_TEXTURE0 + binding_index);
   glBindTexture(GL_TEXTURE_2D, texobj->mObject);
   GL_ERRORCHECK();

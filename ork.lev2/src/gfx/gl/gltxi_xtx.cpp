@@ -27,8 +27,7 @@ bool GlTextureInterface::_loadXTXTexture(texture_ptr_t ptex, datablock_ptr_t dat
   load_req._cmipchain            = std::make_shared<CompressedImageMipChain>();
   load_req._cmipchain->readXTX(datablock);
   ///////////////////////////////////////////////
-  GLTextureObject* pTEXOBJ = new GLTextureObject;
-  ptex->_internalHandle    = (void*)pTEXOBJ;
+  auto glto = ptex->_impl.makeShared<GLTextureObject>(this);
   ////////////////////////////////////////////////////////////////////
   ptex->_width     = load_req._cmipchain->_width;
   ptex->_height    = load_req._cmipchain->_height;
@@ -70,13 +69,13 @@ void GlTextureInterface::_loadXTXTextureMainThreadPart(GlTexLoadReq req) {
   mTargetGL.makeCurrentContext();
   mTargetGL.debugPushGroup("_loadXTXTextureMainThreadPart");
   OrkAssert(req._cmipchain.get() != nullptr);
-  auto teximpl = (GLTextureObject*)req.ptex->_internalHandle;
-  glGenTextures(1, &teximpl->mObject);
-  glBindTexture(GL_TEXTURE_2D, teximpl->mObject);
+  auto glto = req.ptex->_impl.get<gltexobj_ptr_t>();
+  glGenTextures(1, &glto->mObject);
+  glBindTexture(GL_TEXTURE_2D, glto->mObject);
   GL_ERRORCHECK();
-  req.ptex->_varmap.makeValueForKey<GLuint>("gltexobj") = teximpl->mObject;
+  req.ptex->_varmap.makeValueForKey<GLuint>("gltexobj") = glto->mObject;
   if (req.ptex->_debugName.length()) {
-    mTargetGL.debugLabel(GL_TEXTURE, teximpl->mObject, req.ptex->_debugName);
+    mTargetGL.debugLabel(GL_TEXTURE, glto->mObject, req.ptex->_debugName);
   }
   int inummips = req._cmipchain->_levels.size();
   OrkAssert(inummips > 0);

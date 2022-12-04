@@ -81,7 +81,7 @@ void Set2D(
   // EFileErrCode eFileErr = file.GetLength(ifilelen);
 
   int isize = iw * ih * BPP;
-  auto glto = (GLTextureObject*)tex->_internalHandle;
+  auto glto = tex->_impl.get<gltexobj_ptr_t>();
 
   glto->_maxmip = 0;
 

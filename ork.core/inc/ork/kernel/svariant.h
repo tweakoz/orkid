@@ -204,6 +204,11 @@ template <int tsize> struct SvarDescriptor {
   template <typename T> void assign() {
 
       _destroyer = [](static_variant<tsize>& var) {
+
+        if(var._assert_on_destroy){
+          OrkAssert(false);
+        }
+
         // just call T's destructor, as opposed to delete
         //  because the variant owns the memory.
         //  aka 'placement delete'
@@ -408,15 +413,14 @@ public:
   // construct and return a reference to a shared_ptr<T>
   //////////////////////////////////////////////////////////////
   template <typename T, typename... A> std::shared_ptr<T>& makeShared(A&&... args) {
-    using sharedptr_t = std::shared_ptr<T>;
-    static_assert(sizeof(sharedptr_t) <= ksize, "static_variant size violation");
+    static_assert(sizeof(std::shared_ptr<T>) <= ksize, "static_variant size violation");
     _destroy();
-    auto pval = (sharedptr_t*)&_buffer[0];
-    new (pval) sharedptr_t;
+    auto pval = (std::shared_ptr<T>*)&_buffer[0];
+    new (pval) std::shared_ptr<T>;
     (*pval) = std::make_shared<T>(std::forward<A>(args)...);
-    _mtinfo = &typeid(sharedptr_t);
-    assignDescriptor<sharedptr_t>();
-    assert(typeid(sharedptr_t) == *_mtinfo);
+    _mtinfo = &typeid(std::shared_ptr<T>);
+    assignDescriptor<std::shared_ptr<T>>();
+    assert(typeid(std::shared_ptr<T>) == *_mtinfo);
     return (*pval);
   }
   //////////////////////////////////////////////////////////////
@@ -480,6 +484,8 @@ public:
   TypeId getOrkTypeId() const {
     return TypeId::fromStdTypeInfo(_mtinfo);
   }
+  //////////////////////////////////////////////////////////////
+  bool _assert_on_destroy = false;
   //////////////////////////////////////////////////////////////
 private:
   char _buffer[ksize];

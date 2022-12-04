@@ -37,8 +37,8 @@ bool GlTextureInterface::_loadDDSTexture(texture_ptr_t ptex, datablock_ptr_t dat
   int iheight = ddsh->dwHeight;
   int idepth  = ddsh->dwDepth;
   ///////////////////////////////////////////////
-  GLTextureObject* pTEXOBJ = new GLTextureObject;
-  ptex->_internalHandle    = (void*)pTEXOBJ;
+  gltexobj_ptr_t pTEXOBJ = std::make_shared<GLTextureObject>(this);
+  ptex->_impl.set<gltexobj_ptr_t>(pTEXOBJ);
 
   ///////////////////////////////////////////////
   load_req._ddsheader = ddsh;
@@ -95,7 +95,7 @@ void GlTextureInterface::_loadDDSTextureMainThreadPart(GlTexLoadReq req) {
   mTargetGL.debugPushGroup("loadDDSTextureMainThreadPart");
   const dds::DDS_HEADER* ddsh = req._ddsheader;
   texture_ptr_t ptex               = req.ptex;
-  GLTextureObject* pTEXOBJ    = req.pTEXOBJ;
+  auto pTEXOBJ    = req.pTEXOBJ;
   // File& TextureFile = *req.pTEXFILE;
 
   int NumMips  = (ddsh->dwFlags & dds::DDSD_MIPMAPCOUNT) ? ddsh->dwMipMapCount : 1;

@@ -122,7 +122,9 @@ void* VdsTextureAnimation::ReadFromFrameCache(int iframe, int isize) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void VdsTextureAnimation::UpdateTexture(TextureInterface* txi, lev2::Texture* ptex, TextureAnimationInst* pinst) {
-  GLTextureObject* pTEXOBJ   = (GLTextureObject*)ptex->GetTexIH();
+
+  auto glto = ptex->_impl.get<gltexobj_ptr_t>();
+
   GlTextureInterface* pgltxi = (GlTextureInterface*)txi;
   float ftime                = pinst->GetCurrentTime();
   float fps                  = 30.0f;
@@ -147,13 +149,13 @@ void VdsTextureAnimation::UpdateTexture(TextureInterface* txi, lev2::Texture* pt
     //  this decouples allocation from writing, allowing you to overwrite more efficiently
     /////////////////////////////////////////////////
 
-    glBindTexture(GL_TEXTURE_2D, pTEXOBJ->mObject);
+    glBindTexture(GL_TEXTURE_2D, glto->mObject);
 
     /////////////////////////////
     // imgdata->PBO
     /////////////////////////////
 
-    // printf( "UPDATE IMAGE UNC iw<%d> ih<%d> to<%d>\n", miW, miH, int(pTEXOBJ->mObject) );
+    // printf( "UPDATE IMAGE UNC iw<%d> ih<%d> to<%d>\n", miW, miH, int(glto->mObject) );
 
     auto pbo = pgltxi->_getPBO(miFrameBaseSize);
 
@@ -188,13 +190,13 @@ void VdsTextureAnimation::UpdateTexture(TextureInterface* txi, lev2::Texture* pt
     //  this decouples allocation from writing, allowing you to overwrite more efficiently
     /////////////////////////////////////////////////
 
-    glBindTexture(GL_TEXTURE_2D, pTEXOBJ->mObject);
+    glBindTexture(GL_TEXTURE_2D, glto->mObject);
 
     /////////////////////////////
     // imgdata->PBO
     /////////////////////////////
 
-    // printf( "UPDATE IMAGE UNC iw<%d> ih<%d> to<%d>\n", miW, miH, int(pTEXOBJ->mObject) );
+    // printf( "UPDATE IMAGE UNC iw<%d> ih<%d> to<%d>\n", miW, miH, int(glto->mObject) );
 
     auto pbo = pgltxi->_getPBO(miFrameBaseSize);
 
@@ -224,9 +226,10 @@ float VdsTextureAnimation::GetLengthOfTime() const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool GlTextureInterface::_loadVDSTexture(const AssetPath& infname, texture_ptr_t ptex) {
-  GLTextureObject* pTEXOBJ = new GLTextureObject;
-  ptex->_internalHandle    = (void*)pTEXOBJ;
-  glGenTextures(1, &pTEXOBJ->mObject);
+
+  auto glto = ptex->_impl.makeShared<GLTextureObject>(this);
+
+  glGenTextures(1, &glto->mObject);
 
   VdsTextureAnimation* vta = new VdsTextureAnimation(infname);
   ptex->SetTexAnim(vta);
@@ -235,7 +238,7 @@ bool GlTextureInterface::_loadVDSTexture(const AssetPath& infname, texture_ptr_t
   ptex->_height = vta->miH;
   ptex->_depth  = 1;
 
-  glBindTexture(GL_TEXTURE_2D, pTEXOBJ->mObject);
+  glBindTexture(GL_TEXTURE_2D, glto->mObject);
 
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);

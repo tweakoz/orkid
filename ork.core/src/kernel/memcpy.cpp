@@ -111,8 +111,8 @@ void memcpy_fast( void* dest, //
                   const void* src, //
                   size_t length) { //
 
-  memcpy_parallel(dest, src, length);
-  //memcpy(dest, src, length);
+  //memcpy_parallel(dest, src, length);
+  memcpy(dest, src, length);
 }
 
 } // namespace ork

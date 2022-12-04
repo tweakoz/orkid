@@ -67,6 +67,7 @@ namespace ork { namespace lev2 {
 class ContextGL;
 class GlslFxInterface;
 struct GLTextureObject;
+using gltexobj_ptr_t = std::shared_ptr<GLTextureObject>;
 
 struct GlFboObject {
   static const int kmaxrt = RtGroup::kmaxmrts;
@@ -78,8 +79,7 @@ struct GlFboObject {
 using glfbo_ptr_t = std::shared_ptr<GlFboObject>;
 
 struct GlRtBufferImpl {
-  GLuint _texture           = 0;
-  GLTextureObject* _teximpl = nullptr;
+  svar64_t _teximpl;
   bool _init                = true;
 };
 
@@ -297,7 +297,8 @@ using gltexasynctask_ptr_t = std::shared_ptr<GLTextureAsyncTask>;
 
 struct GLTextureObject {
 
-  GLTextureObject();
+  GLTextureObject(GlTextureInterface* txi);
+  ~GLTextureObject();
 
   GLuint mObject;
   GLuint mFbo;
@@ -305,7 +306,9 @@ struct GLTextureObject {
   GLenum mTarget;
   int _maxmip = 0;
   gltexasynctask_ptr_t _async;
+  GlTextureInterface* _txi = nullptr;
 };
+
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -335,7 +338,7 @@ using pbosetptr_t = std::shared_ptr<PboSet>;
 struct GlTexLoadReq {
   texture_ptr_t ptex;
   const dds::DDS_HEADER* _ddsheader = nullptr;
-  GLTextureObject* pTEXOBJ          = nullptr;
+  gltexobj_ptr_t pTEXOBJ          = nullptr;
   std::string _texname;
   DataBlockInputStream _inpstream;
   std::shared_ptr<CompressedImageMipChain> _cmipchain;
