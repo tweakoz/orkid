@@ -127,13 +127,20 @@ public:
     _mutex.UnLock();
   }
 
+  T& _unprotected_ref(){
+    return (*_resource);
+  }
+  const T& _unprotected_ref() const {
+    return (*_resource);
+  }
+
   const T& LockForRead(int lid = -1) const {
     _mutex.Lock(lid);
-    return (*_resource);
+    return _unprotected_ref();
   }
   T& LockForWrite(int lid = -1) {
     _mutex.Lock(lid);
-    return (*_resource);
+    return _unprotected_ref();
   }
   void UnLock() const {
     _mutex.UnLock();

@@ -56,7 +56,9 @@ template <typename T> inline std::string demangled_typename() {
   auto typestr          = typeid(T).name();
   int status            = 0;
   const char* demangled = abi::__cxa_demangle(typestr, 0, 0, &status);
-  return std::string(demangled);
+  auto rval = std::string(demangled);
+  free((void*)demangled);
+  return rval;
 }
 #endif
 

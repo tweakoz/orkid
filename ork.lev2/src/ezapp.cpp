@@ -441,7 +441,7 @@ int OrkEzApp::mainThreadLoop() {
       double raw_delta = this_time - _update_prevtime;
       _update_prevtime = this_time;
       _update_timeaccumulator += raw_delta;
-      double step = 1.0 / 120.0;
+      double step = 1.0 / 240.0;
 
       while (_update_timeaccumulator >= step) {
 

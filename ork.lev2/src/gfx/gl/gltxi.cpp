@@ -229,6 +229,7 @@ PboSet::~PboSet() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+static std::atomic<int> ipbocount = 0;
 pboptr_t PboSet::alloc() {
 
   if (_pbos.empty()) {
@@ -244,6 +245,8 @@ pboptr_t PboSet::alloc() {
       GL_ERRORCHECK();
       glBindBuffer(GL_PIXEL_UNPACK_BUFFER, new_pbo->_handle);
       GL_ERRORCHECK();
+
+      printf( "GlTextureInterface:: ipbocount<%d>\n", ipbocount.fetch_add(1) );
 
       // ??? persistent mapped objects
 
@@ -273,6 +276,7 @@ pboptr_t PboSet::alloc() {
 
   auto rval = _pbos.front();
   _pbos.pop();
+
 
   return rval;
 }

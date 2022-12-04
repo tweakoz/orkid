@@ -399,9 +399,14 @@ void BulletSystem::_onUpdate(Simulation* inst) {
 
     float ffts = 1.0f / frate;
 
-    _debugger->SetDebug(_systemData.IsDebug());
+    //printf("frate<%g> fdts<%g> fps<%g> mMaxSubSteps<%d>\n", frate, fdts, fps, mMaxSubSteps );
 
-    _debugger->beginSimFrame(this);
+    bool is_debug = _systemData.IsDebug();
+
+    _debugger->SetDebug(is_debug);
+
+    if(is_debug)
+      _debugger->beginSimFrame(this);
 
     if (mMaxSubSteps > 0) {
 
@@ -411,7 +416,8 @@ void BulletSystem::_onUpdate(Simulation* inst) {
       mNumSubStepsTaken += m;
     }
 
-    _debugger->endSimFrame(this);
+    if(is_debug)
+      _debugger->endSimFrame(this);
   }
 }
 

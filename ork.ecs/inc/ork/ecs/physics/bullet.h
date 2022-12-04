@@ -80,7 +80,7 @@ struct BulletSystemData : public SystemData {
   DeclareConcreteX(BulletSystemData, SystemData);
 
   float mfTimeScale = 1.0f;
-  float mSimulationRate = 120.0f;
+  float mSimulationRate = 240.0f;
   bool _debug = false;
   fvec3 _gravity;
 

@@ -13,6 +13,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED on)
 set(CMAKE_INSTALL_RPATH "$ENV{OBT_SUBSPACE_LIB_DIR}")
 set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
 
+
 #############################################################################################################
 
 function(orkid_find_python)
@@ -68,6 +69,16 @@ function(enable_python_on_target the_target)
   target_link_options(${the_target} PUBLIC ${Python3_LINK_OPTIONS})
   target_link_libraries(${the_target} PUBLIC ${Python3_LIBRARIES} )
   set_property( TARGET ${the_target} APPEND PROPERTY TGT_PUBLIC_LIBPATHS PUBLIC $ENV{OBT_PYTHON_LIB_PATH}  )
+endfunction()
+
+#############################################################################################################
+
+function(enable_memdebug_on_target the_target)
+  target_compile_options(${the_target} PUBLIC -fno-omit-frame-pointer)
+  target_compile_options(${the_target} PUBLIC -fsanitize=address)
+  target_compile_options(${the_target} PUBLIC -fsanitize=undefined)
+  target_compile_options(${the_target} PUBLIC -fsanitize=leak)
+  target_link_options(${the_target} PUBLIC -fsanitize=address)
 endfunction()
 
 #############################################################################################################

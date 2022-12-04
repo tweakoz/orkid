@@ -87,21 +87,13 @@ void Controller::updateExit() {
 ///////////////////////////////////////////////////////////////////////////
 
 void Controller::render(ui::drawevent_constptr_t drwev) {
-  simulation_ptr_t copy;
-  _simulation.atomicOp([drwev,&copy](simulation_ptr_t& unlocked){
-    copy = unlocked;
-  });
-    copy->render(drwev);
+  _simulation._unprotected_ref()->render(drwev);
 }
 
 ///////////////////////////////////////////////////////////////////////////
 
 void Controller::renderWithStandardCompositorFrame(lev2::standardcompositorframe_ptr_t sframe) {
-  simulation_ptr_t copy;
-  _simulation.atomicOp([sframe,&copy](simulation_ptr_t& unlocked){
-    copy = unlocked;
-  });
-  copy->renderWithStandardCompositorFrame(sframe);
+  _simulation._unprotected_ref()->renderWithStandardCompositorFrame(sframe);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
