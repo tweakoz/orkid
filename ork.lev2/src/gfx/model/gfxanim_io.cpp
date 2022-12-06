@@ -20,6 +20,7 @@
 #include <ork/rtti/downcast.h>
 #include <boost/filesystem.hpp>
 #include <ork/kernel/datacache.h>
+#include <ork/util/logger.h>
 
 namespace bfs = boost::filesystem;
 namespace ork::meshutil {
@@ -29,6 +30,7 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock);
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
+static logchannel_ptr_t logchan_anmio = logger()->createChannel("gfxanimIOREAD", fvec3(1, 0.8, 1));
 
 ///////////////////////////////////////////////////////////////////////////////
 struct chansettter {
@@ -42,7 +44,7 @@ struct chansettter {
       DecChannel->reserveFrames(anm->GetNumFrames());
       for (size_t ifr = 0; ifr < anm->GetNumFrames(); ifr++) {
         DecompMtx44 DecMtx = DecBase[ifr];
-        DecChannel->setFrame(ifr,DecMtx);
+        DecChannel->setFrame(ifr, DecMtx);
       }
     }
     if (MtxChannel) {
@@ -50,21 +52,21 @@ struct chansettter {
       MtxChannel->reserveFrames(anm->GetNumFrames());
       for (size_t ifr = 0; ifr < anm->GetNumFrames(); ifr++) {
         fmtx4 Matrix = MatBase[ifr];
-        MtxChannel->setFrame(ifr,Matrix);
+        MtxChannel->setFrame(ifr, Matrix);
       }
     } else if (F32Channel) {
       const float* f32Base = (const float*)pdata;
       F32Channel->reserveFrames(anm->GetNumFrames());
       for (size_t ifr = 0; ifr < anm->GetNumFrames(); ifr++) {
         float value = f32Base[ifr];
-        F32Channel->setFrame(ifr,value);
+        F32Channel->setFrame(ifr, value);
       }
     } else if (Ve3Channel) {
       const fvec3* Ve3Base = (const fvec3*)pdata;
       Ve3Channel->reserveFrames(anm->GetNumFrames());
       for (size_t ifr = 0; ifr < anm->GetNumFrames(); ifr++) {
         fvec3 value = Ve3Base[ifr];
-        Ve3Channel->setFrame(ifr,value);
+        Ve3Channel->setFrame(ifr, value);
       }
     }
   }
@@ -80,7 +82,7 @@ bool XgmAnim::unloadUnManaged(XgmAnim* anm) {
 #endif
   return true;
 }
-bool XgmAnim::_loaderSelect(XgmAnim* anm, datablock_ptr_t datablock){
+bool XgmAnim::_loaderSelect(XgmAnim* anm, datablock_ptr_t datablock) {
   DataBlockInputStream datablockstream(datablock);
   Char4 check_magic(datablockstream.getItem<uint32_t>());
   if (check_magic == Char4("chkf")) // its a chunkfile
@@ -94,10 +96,10 @@ bool XgmAnim::_loaderSelect(XgmAnim* anm, datablock_ptr_t datablock){
   OrkAssert(false);
   return false;
 }
-bool XgmAnim::_loadXGA(XgmAnim* anm, datablock_ptr_t datablock){
-  //AssetPath fnameext(fname);
-  //fnameext.SetExtension("xga");
-  //AssetPath ActualPath = fnameext.ToAbsolute();
+bool XgmAnim::_loadXGA(XgmAnim* anm, datablock_ptr_t datablock) {
+  // AssetPath fnameext(fname);
+  // fnameext.SetExtension("xga");
+  // AssetPath ActualPath = fnameext.ToAbsolute();
   /////////////////////////////////////////////////////////////
   OrkHeapCheck();
   chunkfile::DefaultLoadAllocator allocator;
@@ -129,12 +131,12 @@ bool XgmAnim::_loadXGA(XgmAnim* anm, datablock_ptr_t datablock){
       const char* pobjname             = chunkreader.GetString(iobjname);
       const char* pchnname             = chunkreader.GetString(ichnname);
       const char* pusgname             = chunkreader.GetString(iusgname);
-      printf( "pchannelclass<%s>\n", pchannelclass );
       void* pdata                      = AnimDataStream->GetDataAt(idataoffset);
       ork::object::ObjectClass* pclass = rtti::autocast(rtti::Class::FindClass(pchannelclass));
       auto Channel                     = std::dynamic_pointer_cast<XgmAnimChannel>(pclass->createShared());
 
-      printf("LoadAnim MatrixChannel<%s> objname<%s> numframes<%d>\n", pchnname, pobjname, inumframes);
+      logchan_anmio->log(
+          "MatrixChannel<%s> ChannelClass<%s> objname<%s> numframes<%d>", pchnname, pchannelclass, pobjname, inumframes);
 
       Channel->SetChannelName(AddPooledString(pchnname));
       Channel->SetObjectName(AddPooledString(pobjname));
@@ -169,7 +171,7 @@ bool XgmAnim::_loadXGA(XgmAnim* anm, datablock_ptr_t datablock){
     HeaderStream->GetItem(inumposebones);
     DecompMtx44 decmtx;
     anm->mPose.reserve(inumposebones);
-    printf("inumposebones<%d>\n", inumposebones);
+    logchan_anmio->log("inumposebones<%d>", inumposebones);
     for (int iposeb = 0; iposeb < inumposebones; iposeb++) {
       HeaderStream->GetItem(ichnname);
       HeaderStream->GetItem(decmtx);
@@ -183,7 +185,7 @@ bool XgmAnim::_loadXGA(XgmAnim* anm, datablock_ptr_t datablock){
   return chunkreader.IsOk();
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool XgmAnim::_loadAssimp(XgmAnim* anm, datablock_ptr_t inp_datablock){
+bool XgmAnim::_loadAssimp(XgmAnim* anm, datablock_ptr_t inp_datablock) {
   auto basehasher = DataBlock::createHasher();
   basehasher->accumulateString("assimp2xga");
   basehasher->accumulateString("version-0");
@@ -192,19 +194,19 @@ bool XgmAnim::_loadAssimp(XgmAnim* anm, datablock_ptr_t inp_datablock){
   uint64_t hashkey   = basehasher->result();
   auto xga_datablock = DataBlockCache::findDataBlock(hashkey);
   if (not xga_datablock) {
-	//datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock);
+    // datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock);
     xga_datablock = meshutil::assimpToXga(inp_datablock);
     DataBlockCache::setDataBlock(hashkey, xga_datablock);
   }
   return _loadXGA(anm, xga_datablock);
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool XgmAnim::LoadUnManaged(XgmAnim* anm, const AssetPath& fname) { 
-bool rval        = false;
-  auto ActualPath  = fname.ToAbsolute();
+bool XgmAnim::LoadUnManaged(XgmAnim* anm, const AssetPath& fname) {
+  bool rval       = false;
+  auto ActualPath = fname.ToAbsolute();
 
-  printf( "ActualPath<%s>\n", ActualPath.c_str() );
-  //anm->msModelName = AddPooledString(fname.c_str());
+  printf("ActualPath<%s>\n", ActualPath.c_str());
+  // anm->msModelName = AddPooledString(fname.c_str());
   if (auto datablock = datablockFromFileAtPath(ActualPath)) {
     ///////////////////////////////////
     // annotate the datablock with some info
@@ -224,7 +226,6 @@ bool rval        = false;
   return rval;
 }
 
-
 ///////////////////////////////////////////////////////////////////////////////
-} //namespace ork { namespace lev2 {
+} // namespace ork::lev2
 ///////////////////////////////////////////////////////////////////////////////
