@@ -223,6 +223,8 @@ using freestyle_mtl_ptr_t = std::shared_ptr<FreestyleMaterial>;
 ///////////////////////////////////////////////////////////////////////////////
 using xgmaniminst_ptr_t = std::shared_ptr<XgmAnimInst>;
 using xgmanimmask_ptr_t = std::shared_ptr<XgmAnimMask>;
+using xgmlocalpose_ptr = std::shared_ptr<XgmLocalPose>;
+using xgmworldpose_ptr = std::shared_ptr<XgmWorldPose>;
 ///////////////////////////////////////////////////////////////////////////////
 using CameraMatricesLut = std::unordered_map<std::string, CameraMatrices>;
 ///////////////////////////////////////////////////////////////////////////////

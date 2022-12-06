@@ -92,17 +92,19 @@ struct GpuResources {
     _char_modelasset = asset::AssetManager<XgmModelAsset>::load("data://tests/chartest/char_mesh");
     _char_animasset = asset::AssetManager<XgmAnimAsset>::load("data://tests/chartest/char_idle");
 
-    _char_drawable->bindModel(_char_modelasset->getSharedModel());
+    auto model = _char_modelasset->getSharedModel();
+    _char_drawable->bindModel(model);
     _char_drawable->_name = "char";
+    auto modelinst = _char_drawable->_modelinst;
+    //modelinst->setBlenderZup(true);
+    modelinst->enableSkinning();
+    modelinst->enableAllMeshes();
 
     auto anim = _char_animasset->GetAnim();
     _char_animinst = std::make_shared<XgmAnimInst>();
     _char_animinst->BindAnim(anim);
-    _char_animinst->SetCurrentFrame(0);
     _char_animinst->SetWeight(1.0f);
     _char_animinst->RefMask().EnableAll();
-
-    _char_drawable->_modelinst->mLocalPose.ApplyAnimInst(*_char_animinst);
 
     //////////////////////////////////////////////
     // scenegraph nodes
@@ -113,6 +115,7 @@ struct GpuResources {
     ctx->debugPopGroup();
   }
 
+  //lev2::xgmworldpose_ptr _char_worldpose;
   lev2::xgmanimmask_ptr_t _char_animmask;
   lev2::xgmaniminst_ptr_t _char_animinst;
   lev2::xgmanimassetptr_t _char_animasset; // retain anim
@@ -209,6 +212,22 @@ int main(int argc, char** argv, char** envp) {
   // draw handler (called on main(rendering) thread)
   //////////////////////////////////////////////////////////
   ezapp->onDraw([&](ui::drawevent_constptr_t drwev) {
+
+
+    static int counter = 0;
+    gpurec->_char_animinst->SetCurrentFrame(counter);
+    gpurec->_char_animinst->SetWeight(1.0f);
+
+    auto modelinst = gpurec->_char_drawable->_modelinst;
+    auto& localpose = modelinst->mLocalPose;
+
+    localpose.BindPose();
+    localpose.ApplyAnimInst(*(gpurec->_char_animinst));
+    localpose.BuildPose();
+    localpose.Concatenate();
+
+    counter = (counter+1) % 40;
+
     auto context = drwev->GetTarget();
     RenderContextFrameData RCFD(context); // renderer per/frame data
     RCFD.setUserProperty("vrcam"_crc, (const CameraData*) gpurec->_camdata.get() );

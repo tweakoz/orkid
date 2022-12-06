@@ -354,7 +354,6 @@ void XgmModel::RenderSkinned(
       mtl->gpuUpdate(pTARG);
 
       if (0 != mtl) {
-        // pTARG->BindMaterial(mtl.get());
 
         auto fxcache = RCID._fx_instance_cache;
         OrkAssert(fxcache);

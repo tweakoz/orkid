@@ -943,7 +943,7 @@ void PbrMatrixBlockApplicator::ApplyToTarget(Context* targ) // virtual
   size_t inumbones                   = _matrixblock->GetNumMatrices();
   const fmtx4* Matrices              = _matrixblock->GetMatrices();
 
-  if (0)
+  if (1)
     for (int i = 0; i < inumbones; i++) {
       const auto& b = Matrices[i];
       b.dump(FormatString("pbr-bone<%d>", i));
