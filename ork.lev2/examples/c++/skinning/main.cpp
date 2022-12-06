@@ -88,7 +88,9 @@ struct GpuResources {
     //////////////////////////////////////////////////////////
 
     ctx->debugPushGroup("main.onGpuInit");
+
     _char_modelasset = asset::AssetManager<XgmModelAsset>::load("data://tests/chartest/char_mesh");
+    _char_animation = asset::AssetManager<XgmAnimAsset>::load("data://tests/chartest/char_anim");
 
     _char_drawable->bindModel(_char_modelasset->getSharedModel());
     _char_drawable->_name = "char";
@@ -102,6 +104,7 @@ struct GpuResources {
     ctx->debugPopGroup();
   }
 
+  lev2::xgmanimassetptr_t _char_animation; // retain anim
   lev2::xgmmodelassetptr_t _char_modelasset; // retain model
   model_drawable_ptr_t _char_drawable;
   scenegraph::node_ptr_t _char_node;
