@@ -76,7 +76,7 @@ TEST(gfxanim1) {
     modelinst->enableSkinning();
     modelinst->enableAllMeshes();
 
-    animinst->BindAnim(anim);
+    animinst->bindAnim(anim);
     animinst->RefMask().EnableAll();
 
     deco::prints(skel.dump(cyan), true);
@@ -100,12 +100,12 @@ TEST(gfxanim1) {
     deco::printe(aqua, "Skel-BindPose (Bc)", true);
     deco::prints(skel.dumpBind(aqua), true);
 
-    auto& localpose = modelinst->RefLocalPose();
-    localpose.BindPose();
+    auto& localpose = modelinst->_localPose;
+    localpose.bindPose();
     deco::printe(white, "Skel-LocalPose-Bind (J)", true);
     deco::prints(localpose.dumpc(white), true);
 
-    localpose.Concatenate();
+    localpose.concatenate();
     deco::printe(orange, "Skel-LocalPose-Cat (K)", true);
     deco::prints(localpose.dumpc(orange), true);
 
@@ -133,15 +133,15 @@ TEST(gfxanim1) {
 
       iframe = (iframe + 1) % num_frames;
 
-      localpose.BindPose();
-      animinst->SetCurrentFrame(iframe);
+      localpose.bindPose();
+      animinst->_current_frame = iframe;
       animinst->SetWeight(1);
-      localpose.ApplyAnimInst(*animinst);
-      localpose.BuildPose();
+      localpose.applyAnimInst(*animinst);
+      localpose.buildPose();
       deco::printf(white, "AnimPose (J) fr<%d>\n", iframe);
       deco::prints(localpose.dumpc(white), true);
 
-      localpose.Concatenate();
+      localpose.concatenate();
       deco::printf(orange, "AnimPose (K) fr<%d>\n", iframe);
       deco::prints(localpose.dumpc(orange), true);
 

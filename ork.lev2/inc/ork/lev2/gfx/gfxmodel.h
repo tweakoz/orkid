@@ -413,13 +413,6 @@ struct XgmModelInst final {
   }
   int GetNumChannels(void) const;
 
-  XgmLocalPose& RefLocalPose() {
-    return mLocalPose;
-  }
-  const XgmLocalPose& RefLocalPose() const {
-    return mLocalPose;
-  }
-
   XgmMaterialStateInst& RefMaterialInst() {
     return mMaterialStateInst;
   }
@@ -451,7 +444,7 @@ struct XgmModelInst final {
   }
 
   const XgmModel* mXgmModel;
-  XgmLocalPose mLocalPose;
+  XgmLocalPose _localPose;
   mutable XgmWorldPose _worldPose;
   XgmMaterialStateInst mMaterialStateInst;
   int miNumChannels;

@@ -128,9 +128,9 @@ struct XgmModel;
 class XgmAnim;
 struct XgmAnimMask;
 struct XgmSkeleton;
-class XgmAnimInst;
-class XgmLocalPose;
-class XgmWorldPose;
+struct XgmAnimInst;
+struct XgmLocalPose;
+struct XgmWorldPose;
 class XgmAnimChannel;
 ///////////////////////////////////////////////////////////////////////////////
 class VertexBufferBase;

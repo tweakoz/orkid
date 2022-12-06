@@ -321,8 +321,8 @@ struct XgmAnimMask {
 /// mWeight:	Matrix Weighting for this instance
 /// ///////////////////////////////////////////////////////////////////////////
 
-class XgmAnimInst {
-public:
+struct XgmAnimInst {
+
   static const int kmaxbones = 64;
 
   struct Binding {
@@ -334,44 +334,21 @@ public:
     }
   };
 
-private:
-  const XgmAnim* mAnim;
-  XgmAnimMask mMask;
-  float mFrame;
-  float mWeight;
-
-  Binding mPoseBindings[kmaxbones];
-  Binding mAnimBindings[kmaxbones];
-  static const Binding gBadBinding;
-
-public:
   XgmAnimInst();
 
-  const XgmAnim* anim() const {
-    return mAnim;
-  }
 
-  void BindAnim(const XgmAnim* anim);
-  const XgmAnim* GetAnim() const {
-    return mAnim;
-  }
+  void bindAnim(const XgmAnim* anim);
 
   float GetSampleRate() const {
     return 30.0f;
   }
-  float GetCurrentFrame() const {
-    return mFrame;
-  }
   float GetNumFrames() const {
-    return (mAnim != 0) ? mAnim->GetNumFrames() : 0.0f;
+    return (_animation != 0) ? _animation->GetNumFrames() : 0.0f;
   }
   float GetWeight() const {
     return mWeight;
   }
 
-  void SetCurrentFrame(float fr) {
-    mFrame = fr;
-  }
   void SetWeight(float fw) {
     mWeight = fw;
   }
@@ -397,6 +374,16 @@ public:
     if (i < kmaxbones)
       mAnimBindings[i] = inp;
   }
+
+  const XgmAnim* _animation;
+  XgmAnimMask mMask;
+  float _current_frame;
+  float mWeight;
+
+  Binding mPoseBindings[kmaxbones];
+  Binding mAnimBindings[kmaxbones];
+  static const Binding gBadBinding;
+
 };
 
 /// ///////////////////////////////////////////////////////////////////////////
@@ -508,32 +495,20 @@ private:
 ///  computes bounding volumes in Concatenate()
 /// ///////////////////////////////////////////////////////////////////////////
 
-class XgmLocalPose {
-  const XgmSkeleton& mSkeleton;
-  orkvector<fmtx4> mLocalMatrices;
-  orkvector<XgmBlendPoseInfo> mBlendPoseInfos;
-  fvec4 mObjSpaceBoundingSphere;
-  AABox mObjSpaceAABoundingBox;
+struct XgmLocalPose {
 
-public:
   void BindAnimInst(XgmAnimInst& AnimInst);
   void UnBindAnimInst(XgmAnimInst& AnimInst);
 
   XgmLocalPose(const XgmSkeleton& Skeleton);
-  void BindPose(void);  /// set pose to the skeletons bind pose
-  void BuildPose(void); /// Blend Poses
-  void Concatenate(void);
+  void bindPose(void);  /// set pose to the skeletons bind pose
+  void buildPose(void); /// Blend Poses
+  void concatenate(void);
   int NumJoints() const;
   std::string dumpc(fvec3 color) const;
   std::string invdumpc(fvec3 color) const;
   std::string dump() const;
 
-  fmtx4& RefLocalMatrix(int idx) {
-    return mLocalMatrices[idx];
-  }
-  XgmBlendPoseInfo& RefBlendPoseInfo(int idx) {
-    return mBlendPoseInfos[idx];
-  }
   fvec4& RefObjSpaceBoundingSphere() {
     return mObjSpaceBoundingSphere;
   }
@@ -541,12 +516,6 @@ public:
     return mObjSpaceAABoundingBox;
   }
 
-  const fmtx4& RefLocalMatrix(int idx) const {
-    return mLocalMatrices[idx];
-  }
-  const XgmBlendPoseInfo& RefBlendPoseInfo(int idx) const {
-    return mBlendPoseInfos[idx];
-  }
   const fvec4& RefObjSpaceBoundingSphere() const {
     return mObjSpaceBoundingSphere;
   }
@@ -557,9 +526,16 @@ public:
   ////////////////////////////////////////////////////////////////
   // Application Methods (from anim, ik, physics, etc....)
 
-  void ApplyAnimInst(const XgmAnimInst& AnimInst); /// Apply an Animation Instance (weighted) to this pose
+  void applyAnimInst(const XgmAnimInst& AnimInst); /// Apply an Animation Instance (weighted) to this pose
 
   ////////////////////////////////////////////////////////////////
+
+  const XgmSkeleton& _skeleton;
+  orkvector<fmtx4> _localmatrices;
+  orkvector<XgmBlendPoseInfo> _blendposeinfos;
+  fvec4 mObjSpaceBoundingSphere;
+  AABox mObjSpaceAABoundingBox;
+
 };
 
 /// ///////////////////////////////////////////////////////////////////////////
@@ -567,20 +543,16 @@ public:
 ///  a world space joint buffer for rendering or other purposes
 /// ///////////////////////////////////////////////////////////////////////////
 
-class XgmWorldPose {
-  const XgmSkeleton& mSkeleton;
-  orkvector<fmtx4> mWorldMatrices;
+struct XgmWorldPose {
 
-public:
   XgmWorldPose(const XgmSkeleton& Skeleton);
-  orkvector<fmtx4>& GetMatrices() {
-    return mWorldMatrices;
-  }
-  const orkvector<fmtx4>& GetMatrices() const {
-    return mWorldMatrices;
-  }
+
   void apply(const fmtx4& worldmtx, const XgmLocalPose& LocalPose);
   std::string dumpc(fvec3 color) const;
+
+  const XgmSkeleton& _skeleton;
+  orkvector<fmtx4> _worldmatrices;
+
 };
 
 using xgmworldpose_ptr_t = std::shared_ptr<XgmWorldPose>;
@@ -605,7 +577,7 @@ public:
   void BindAnimInst(const XgmAnimInst& AnimInst);
   void UnBindAnimInst(const XgmAnimInst& AnimInst);
 
-  void ApplyAnimInst(const XgmAnimInst& AnimInst); /// Apply an Animation Instance (weighted) to this pose
+  void applyAnimInst(const XgmAnimInst& AnimInst); /// Apply an Animation Instance (weighted) to this pose
 
   XgmMaterialStateInst(const XgmModelInst& minst);
 };
