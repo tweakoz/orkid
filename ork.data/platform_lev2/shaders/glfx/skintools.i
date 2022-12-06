@@ -25,7 +25,7 @@ libblock skin_tools {
   }
   vec3 SkinNormal(vec3 InNrm) {
     ivec4 idcss = ivec4(boneindices);
-    vec4 Nrm4   = vec4(InNrm, 0.0f);
+    vec4 Nrm4   = vec4(InNrm, 0.0);
 
     vec3 WeightedNormal = ((BoneMatrices[idcss.w] * Nrm4) * boneweights.w).xyz;
     WeightedNormal += ((BoneMatrices[idcss.z] * Nrm4) * boneweights.z).xyz;

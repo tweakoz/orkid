@@ -316,7 +316,7 @@ vertex_shader vs_rigid_gbuffer_instanced_stereo
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_skinned_gbuffer
 	: iface_vgbuffer_skinned
-  //: skin_tools
+  : skin_tools
   : lib_pbr_vtx {
   vec4 skn_pos = vec4(SkinPosition(position.xyz),1);
 	vec3 skn_nrm  = SkinNormal(normal);

@@ -302,9 +302,9 @@ void XgmModel::RenderSkinned(
     const RenderContextInstData& RCID,
     const RenderContextInstModelData& mdlctx) const {
 
-  auto fxcache  = RCID._fx_instance_cache;
-  auto fxinst = fxcache->findfxinst(RCID);
-  auto pmat   = fxinst->_material;
+  auto fxcache = RCID._fx_instance_cache;
+  auto fxinst  = fxcache->findfxinst(RCID);
+  auto pmat    = fxinst->_material;
 
   auto R           = RCID.GetRenderer();
   auto RCFD        = pTARG->topRenderContextFrameData();
@@ -335,8 +335,12 @@ void XgmModel::RenderSkinned(
   {
     const XgmSkeleton& Skeleton = skeleton();
 
+    fmtx4 TESTW;
+    TESTW.scale(5,5,5);
+    TESTW.translate(0,-3,0);
+
     pTARG->debugPushGroup("RenderSkinnedMesh");
-    pTARG->MTXI()->PushMMatrix(WorldMat);
+    pTARG->MTXI()->PushMMatrix(TESTW);
     pTARG->PushModColor(ModColor);
     {
       const XgmMesh& XgmMesh       = *mdlctx.mMesh;
@@ -351,69 +355,61 @@ void XgmModel::RenderSkinned(
 
       if (0 != mtl) {
         // pTARG->BindMaterial(mtl.get());
-        int inumpasses = mtl->BeginBlock(pTARG, RCID);
 
-        for (int ip = 0; ip < inumpasses; ip++) {
-          OrkAssert(ip < inumpasses);
-          bool bDRAW = mtl->BeginPass(pTARG, ip);
+        auto fxcache = RCID._fx_instance_cache;
+        OrkAssert(fxcache);
+        auto fxinst = fxcache->findfxinst(RCID);
+        OrkAssert(fxinst);
 
-          if (bDRAW) {
-            //////////////////////////////////////////////////////
-            // upload bones to bone registers (probably vertex shader constant registers (Lev2), possibly matrix palette registers
-            // (PSP, GameCube)
+        fxinst->wrappedDrawCall(RCID, [&]() {
+          size_t inumjoints = cluster->mJoints.size();
 
-            size_t inumjoints = cluster->mJoints.size();
+          OrkAssert(miBonesPerCluster <= kMatrixBlockSize);
 
-            OrkAssert(miBonesPerCluster <= kMatrixBlockSize);
-
-            for (size_t ijointreg = 0; ijointreg < inumjoints; ijointreg++) {
-              const PoolString& JointName = cluster->mJoints[ijointreg];
-              int JointSkelIndex          = cluster->mJointSkelIndices[ijointreg];
-              const fmtx4& finalmtx       = minst->_worldPose.GetMatrices()[JointSkelIndex];
-              //////////////////////////////////////
-              MatrixBlock[ijointreg] = finalmtx;
-            }
-
-            //////////////////////////////////////////////////////
-            // apply bones
-            //////////////////////////////////////////////////////
-
-            MaterialInstItemMatrixBlock mtxblockitem;
-            mtxblockitem.SetNumMatrices(inumjoints);
-            mtxblockitem.SetMatrixBlock(MatrixBlock);
-            mtl->BindMaterialInstItem(&mtxblockitem);
-            { mtxblockitem.mApplicator->ApplyToTarget(pTARG); }
-            mtl->UnBindMaterialInstItem(&mtxblockitem);
-
-            mtl->UpdateMVPMatrix(pTARG);
-
-            //////////////////////////////////////////////////////
-            auto vtxbuffer = cluster->GetVertexBuffer();
-            if (vtxbuffer) {
-              int inumprim = cluster->numPrimGroups();
-              for (int iprim = 0; iprim < inumprim; iprim++) {
-                auto primgroup = cluster->primgroup(iprim);
-                auto idxbuffer = primgroup->GetIndexBuffer();
-                pTARG->GBI()->DrawIndexedPrimitiveEML(*vtxbuffer, *idxbuffer, primgroup->GetPrimType());
-              }
-            }
-            //////////////////////////////////////////////////////
-            mtl->EndPass(pTARG);
+          for (size_t ijointreg = 0; ijointreg < inumjoints; ijointreg++) {
+            const PoolString& JointName = cluster->mJoints[ijointreg];
+            int JointSkelIndex          = cluster->mJointSkelIndices[ijointreg];
+            const fmtx4& finalmtx       = minst->_worldPose.GetMatrices()[JointSkelIndex];
+            //////////////////////////////////////
+            MatrixBlock[ijointreg] = finalmtx;
           }
-        }
-        if (inumpasses)
-          mtl->EndBlock(pTARG);
+
+          //////////////////////////////////////////////////////
+          // apply bones
+          //////////////////////////////////////////////////////
+
+          MaterialInstItemMatrixBlock mtxblockitem;
+          mtxblockitem.SetNumMatrices(inumjoints);
+          mtxblockitem.SetMatrixBlock(MatrixBlock);
+          mtl->BindMaterialInstItem(&mtxblockitem);
+          { mtxblockitem.mApplicator->ApplyToTarget(pTARG); }
+          mtl->UnBindMaterialInstItem(&mtxblockitem);
+
+          mtl->UpdateMVPMatrix(pTARG);
+
+          //////////////////////////////////////////////////////
+          auto vtxbuffer = cluster->GetVertexBuffer();
+          if (vtxbuffer) {
+            int inumprim = cluster->numPrimGroups();
+            for (int iprim = 0; iprim < inumprim; iprim++) {
+              auto primgroup = cluster->primgroup(iprim);
+              auto idxbuffer = primgroup->GetIndexBuffer();
+              pTARG->GBI()->DrawIndexedPrimitiveEML(*vtxbuffer, *idxbuffer, primgroup->GetPrimType());
+            }
+          }
+          //////////////////////////////////////////////////////
+        });
       }
+      pTARG->PopModColor();
+      pTARG->MTXI()->PopMMatrix();
+      pTARG->debugPopGroup();
     }
-    pTARG->PopModColor();
-    pTARG->MTXI()->PopMMatrix();
-    pTARG->debugPopGroup();
   }
 
   ////////////////////////////////////////
   // Draw Skeleton
 
-  if (minst->_drawSkeleton) {
+  /*if (minst->_drawSkeleton) {
     const XgmLocalPose& LocalPose = minst->RefLocalPose();
     pTARG->debugPushGroup("DrawSkeleton");
     pTARG->PushModColor(fvec4::White());
@@ -536,7 +532,7 @@ void XgmModel::RenderSkinned(
     }
     pTARG->PopModColor();
     pTARG->debugPopGroup();
-  }
+  }*/
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -601,5 +597,4 @@ RenderContextInstModelData::RenderContextInstModelData()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
 }} // namespace ork::lev2
