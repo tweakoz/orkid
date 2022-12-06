@@ -90,10 +90,19 @@ struct GpuResources {
     ctx->debugPushGroup("main.onGpuInit");
 
     _char_modelasset = asset::AssetManager<XgmModelAsset>::load("data://tests/chartest/char_mesh");
-    _char_animation = asset::AssetManager<XgmAnimAsset>::load("data://tests/chartest/char_idle");
+    _char_animasset = asset::AssetManager<XgmAnimAsset>::load("data://tests/chartest/char_idle");
 
     _char_drawable->bindModel(_char_modelasset->getSharedModel());
     _char_drawable->_name = "char";
+
+    auto anim = _char_animasset->GetAnim();
+    _char_animinst = std::make_shared<XgmAnimInst>();
+    _char_animinst->BindAnim(anim);
+    _char_animinst->SetCurrentFrame(0);
+    _char_animinst->SetWeight(1.0f);
+    _char_animinst->RefMask().EnableAll();
+
+    _char_drawable->_modelinst->mLocalPose.ApplyAnimInst(*_char_animinst);
 
     //////////////////////////////////////////////
     // scenegraph nodes
@@ -104,7 +113,9 @@ struct GpuResources {
     ctx->debugPopGroup();
   }
 
-  lev2::xgmanimassetptr_t _char_animation; // retain anim
+  lev2::xgmanimmask_ptr_t _char_animmask;
+  lev2::xgmaniminst_ptr_t _char_animinst;
+  lev2::xgmanimassetptr_t _char_animasset; // retain anim
   lev2::xgmmodelassetptr_t _char_modelasset; // retain model
   model_drawable_ptr_t _char_drawable;
   scenegraph::node_ptr_t _char_node;

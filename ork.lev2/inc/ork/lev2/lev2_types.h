@@ -126,6 +126,7 @@ struct XgmModelInst;
 struct XgmModel;
 ///////////////////////////////////////////////////////////////////////////////
 class XgmAnim;
+struct XgmAnimMask;
 struct XgmSkeleton;
 class XgmAnimInst;
 class XgmLocalPose;
@@ -219,6 +220,9 @@ using rtbuffer_ptr_t = std::shared_ptr<RtBuffer>;
 struct FreestyleMaterial;
 using freestyle_mtl_ptr_t = std::shared_ptr<FreestyleMaterial>;
 
+///////////////////////////////////////////////////////////////////////////////
+using xgmaniminst_ptr_t = std::shared_ptr<XgmAnimInst>;
+using xgmanimmask_ptr_t = std::shared_ptr<XgmAnimMask>;
 ///////////////////////////////////////////////////////////////////////////////
 using CameraMatricesLut = std::unordered_map<std::string, CameraMatrices>;
 ///////////////////////////////////////////////////////////////////////////////
