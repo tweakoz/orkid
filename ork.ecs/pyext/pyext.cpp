@@ -8,6 +8,7 @@
 #include "pyext.h"
 #include <ork/lev2/ui/event.h>
 #include <ork/ecs/ecs.h>
+#include <iostream>
 
 ///////////////////////////////////////////////////////////////////////////////
 
