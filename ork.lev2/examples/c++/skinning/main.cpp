@@ -90,7 +90,7 @@ struct GpuResources {
     ctx->debugPushGroup("main.onGpuInit");
 
     _char_modelasset = asset::AssetManager<XgmModelAsset>::load("data://tests/chartest/char_mesh");
-    _char_animation = asset::AssetManager<XgmAnimAsset>::load("data://tests/chartest/char_anim");
+    _char_animation = asset::AssetManager<XgmAnimAsset>::load("data://tests/chartest/char_idle");
 
     _char_drawable->bindModel(_char_modelasset->getSharedModel());
     _char_drawable->_name = "char";
