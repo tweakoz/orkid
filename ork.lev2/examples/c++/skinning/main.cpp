@@ -102,7 +102,7 @@ struct GpuResources {
 
     auto anim = _char_animasset->GetAnim();
     _char_animinst = std::make_shared<XgmAnimInst>();
-    _char_animinst->BindAnim(anim);
+    _char_animinst->bindAnim(anim);
     _char_animinst->SetWeight(1.0f);
     _char_animinst->RefMask().EnableAll();
 
@@ -215,16 +215,22 @@ int main(int argc, char** argv, char** envp) {
 
 
     static int counter = 0;
-    gpurec->_char_animinst->SetCurrentFrame(counter);
+    gpurec->_char_animinst->_current_frame = counter;
     gpurec->_char_animinst->SetWeight(1.0f);
 
     auto modelinst = gpurec->_char_drawable->_modelinst;
-    auto& localpose = modelinst->mLocalPose;
+    auto& localpose = modelinst->_localPose;
+    auto& worldpose = modelinst->_worldPose;
 
-    localpose.BindPose();
-    localpose.ApplyAnimInst(*(gpurec->_char_animinst));
-    localpose.BuildPose();
-    localpose.Concatenate();
+    localpose.bindPose();
+    localpose.applyAnimInst(*(gpurec->_char_animinst));
+    localpose.buildPose();
+    localpose.concatenate();
+
+    auto lpdump = localpose.dump();
+    //printf( "%s\n", lpdump.c_str() );
+
+    worldpose.apply(fmtx4(),localpose);
 
     counter = (counter+1) % 40;
 

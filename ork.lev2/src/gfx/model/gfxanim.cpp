@@ -218,7 +218,7 @@ public:
   }
 
   void set() final {
-    const XgmAnim& anim = *mAnimInst.GetAnim();
+    const XgmAnim& anim = *mAnimInst._animation;
 
     /*float fx = 0.0f;
     if( 0 != strstr( anim.GetName().c_str(), "electric" ) )
@@ -232,7 +232,7 @@ public:
     }*/
 
     float fw         = mAnimInst.GetWeight();
-    float fr         = mAnimInst.GetCurrentFrame();
+    float fr         = mAnimInst._current_frame;
     const fmtx4& mtx = mChannel->GetFrame(int(fr));
     SetMatrix(mtx);
   }
@@ -245,8 +245,8 @@ public:
 /// ////////////////////////////////////////////////////////////////////////////
 
 void XgmMaterialStateInst::BindAnimInst(const XgmAnimInst& AnimInst) {
-  if (AnimInst.GetAnim()) {
-    const XgmAnim& anim = *AnimInst.GetAnim();
+  if (AnimInst._animation) {
+    const XgmAnim& anim = *AnimInst._animation;
 
     size_t inummaterialchannels = anim.GetNumMaterialChannels();
     int nummaterials            = mModel->GetNumMaterials();
@@ -313,7 +313,7 @@ void XgmMaterialStateInst::UnBindAnimInst(const XgmAnimInst& AnimInst) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmMaterialStateInst::ApplyAnimInst(const XgmAnimInst& AnimInst) {
+void XgmMaterialStateInst::applyAnimInst(const XgmAnimInst& AnimInst) {
   auto lb = mVarMap.LowerBound(&AnimInst);
   auto ub = mVarMap.UpperBound(&AnimInst);
 
@@ -359,16 +359,16 @@ void XgmAnim::AddChannel(const PoolString& Name, animchannel_ptr_t pchan) {
 const XgmAnimInst::Binding XgmAnimInst::gBadBinding;
 
 XgmAnimInst::XgmAnimInst()
-    : mAnim(NULL)
-    , mFrame(0.0f)
+    : _animation(nullptr)
+    , _current_frame(0.0f)
     , mWeight(1.0f) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmAnimInst::BindAnim(const XgmAnim* anim) {
-  mAnim  = anim;
-  mFrame = 0.0f;
+void XgmAnimInst::bindAnim(const XgmAnim* anim) {
+  _animation  = anim;
+  _current_frame = 0.0f;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

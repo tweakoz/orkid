@@ -158,15 +158,15 @@ void XgmBlendPoseInfo::ComputeMatrix(fmtx4& outmatrix) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-XgmLocalPose::XgmLocalPose(const XgmSkeleton& Skeleton)
-    : mSkeleton(Skeleton) {
-  int inumchannels = Skeleton.numJoints();
+XgmLocalPose::XgmLocalPose(const XgmSkeleton& skel)
+    : _skeleton(skel) {
+  int inumchannels = skel.numJoints();
   if (inumchannels == 0) {
     inumchannels = 1;
   }
 
-  mLocalMatrices.resize(inumchannels);
-  mBlendPoseInfos.resize(inumchannels);
+  _localmatrices.resize(inumchannels);
+  _blendposeinfos.resize(inumchannels);
 }
 
 /// ////////////////////////////////////////////////////////////////////////////
@@ -176,10 +176,10 @@ XgmLocalPose::XgmLocalPose(const XgmSkeleton& Skeleton)
 /// ////////////////////////////////////////////////////////////////////////////
 
 void XgmLocalPose::BindAnimInst(XgmAnimInst& AnimInst) {
-  if (AnimInst.GetAnim()) {
+  if (AnimInst._animation) {
     float fweight = AnimInst.GetWeight();
 
-    const XgmAnim& anim                                  = *AnimInst.GetAnim();
+    const XgmAnim& anim                                  = *AnimInst._animation;
     const ork::lev2::XgmAnim::JointChannelsMap& Channels = anim.RefJointChannels();
 
     const orklut<PoolString, DecompMtx44>& StaticPose = anim.GetStaticPose();
@@ -188,11 +188,11 @@ void XgmLocalPose::BindAnimInst(XgmAnimInst& AnimInst) {
     for (orklut<PoolString, DecompMtx44>::const_iterator it = StaticPose.begin(); it != StaticPose.end(); it++) {
       const PoolString& JointName = it->first;
 
-      int iskelindex = mSkeleton.jointIndex(JointName);
+      int iskelindex = _skeleton.jointIndex(JointName);
 
-      int inumjinmap = mSkeleton.mmJointNameMap.size();
+      int inumjinmap = _skeleton.mmJointNameMap.size();
 
-       //printf("spose jname<%s> iskelindex<%d> inumjinmap<%d>\n", JointName.c_str(), iskelindex, inumjinmap);
+       printf("spose jname<%s> iskelindex<%d> inumjinmap<%d>\n", JointName.c_str(), iskelindex, inumjinmap);
 
       if (-1 != iskelindex) {
         EXFORM_COMPONENT components = AnimInst.RefMask().GetComponents(iskelindex);
@@ -200,14 +200,14 @@ void XgmLocalPose::BindAnimInst(XgmAnimInst& AnimInst) {
           ork::lev2::XgmAnim::JointChannelsMap::const_iterator itanim = Channels.find(JointName);
 
           bool found = itanim == Channels.end();
-           //printf( "spose jname<%s> found<%d>\n", JointName.c_str(), int(found) );
+           printf( "spose jname<%s> found<%d>\n", JointName.c_str(), int(found) );
 
           if (itanim == Channels.end()) {
             int ispi = int(it - StaticPose.begin());
 
             const DecompMtx44& PoseMatrix = it->second;
             // TODO: Callback for programmer-controlled joints, pre-blended
-            // RefBlendPoseInfo(iskelindex).AddPose(PoseMatrix, fweight, components);
+            // _blendposeinfos[iskelindex].AddPose(PoseMatrix, fweight, components);
 
             AnimInst.SetPoseBinding(ipidx++, XgmAnimInst::Binding(iskelindex, ispi));
           }
@@ -222,15 +222,15 @@ void XgmLocalPose::BindAnimInst(XgmAnimInst& AnimInst) {
     // int iframe = int(frame);
     int ichidx = 0;
 
-     //for( int is=0; is<mSkeleton.numJoints(); is++ )
-    	//printf( "skel bone<%d:%s>\n", is, mSkeleton.GetJointName(is).c_str() );
+     //for( int is=0; is<_skeleton.numJoints(); is++ )
+    	//printf( "skel bone<%d:%s>\n", is, _skeleton.GetJointName(is).c_str() );
 
     for (ork::lev2::XgmAnim::JointChannelsMap::const_iterator it = Channels.begin(); it != Channels.end(); it++) {
       const PoolString& ChannelName                                    = it->first;
       const ork::lev2::XgmDecompAnimChannel* __restrict MtxChannelData = it->second;
-      int iskelindex                                                   = mSkeleton.jointIndex(ChannelName);
+      int iskelindex                                                   = _skeleton.jointIndex(ChannelName);
 
-       //printf("bind channel<%s> skidx<%d>\n", ChannelName.c_str(), iskelindex);
+       printf("bind channel<%s> skidx<%d>\n", ChannelName.c_str(), iskelindex);
 
       if (-1 != iskelindex) {
         EXFORM_COMPONENT components = AnimInst.RefMask().GetComponents(iskelindex);
@@ -239,7 +239,7 @@ void XgmLocalPose::BindAnimInst(XgmAnimInst& AnimInst) {
           AnimInst.SetAnimBinding(ichidx++, XgmAnimInst::Binding(iskelindex, ichiti));
           // const DecompMtx44 &ChannelDecomp = MtxChannelData->GetFrame(iframe);
           // TODO: Callback for programmer-controlled joints, pre-blended
-          // RefBlendPoseInfo(iskelindex).AddPose(ChannelDecomp, fweight, components);
+          // _blendposeinfos[iskelindex].AddPose(ChannelDecomp, fweight, components);
         }
       }
     }
@@ -254,8 +254,8 @@ void XgmLocalPose::BindAnimInst(XgmAnimInst& AnimInst) {
 void XgmLocalPose::UnBindAnimInst(XgmAnimInst& AnimInst) {
   AnimInst.SetPoseBinding(0, XgmAnimInst::Binding(0xffff, 0xffff));
   AnimInst.SetAnimBinding(0, XgmAnimInst::Binding(0xffff, 0xffff));
-  if (AnimInst.GetAnim()) {
-    const XgmAnim& anim = *AnimInst.GetAnim();
+  if (AnimInst._animation) {
+    const XgmAnim& anim = *AnimInst._animation;
 
     size_t inumjointchannels = anim.GetNumJointChannels();
   }
@@ -263,13 +263,13 @@ void XgmLocalPose::UnBindAnimInst(XgmAnimInst& AnimInst) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmLocalPose::ApplyAnimInst(const XgmAnimInst& AnimInst) {
+void XgmLocalPose::applyAnimInst(const XgmAnimInst& AnimInst) {
 #ifdef ENABLE_ANIM
   const XgmAnimMask& Mask = AnimInst.RefMask();
   float fweight           = AnimInst.GetWeight();
   ////////////////////////////////////////////////////
   // retrieve anim information
-  const ork::lev2::AnimType* __restrict pl2anim = AnimInst.GetAnim();
+  const ork::lev2::AnimType* __restrict pl2anim = AnimInst._animation;
   ////////////////////////////////////////////////////
   if (pl2anim) {
     const ork::lev2::XgmAnim::JointChannelsMap& Channels = pl2anim->RefJointChannels();
@@ -285,7 +285,7 @@ void XgmLocalPose::ApplyAnimInst(const XgmAnimInst& AnimInst) {
         int iposeindex                = binding.mChanIndex;
         const DecompMtx44& decompPose = StaticPose.GetItemAtIndex(iposeindex).second;
         EXFORM_COMPONENT components   = AnimInst.RefMask().GetComponents(iskelindex);
-        RefBlendPoseInfo(iskelindex).AddPose(decompPose, fweight, components);
+        _blendposeinfos[iskelindex].AddPose(decompPose, fweight, components);
       } else {
         break;
       }
@@ -294,21 +294,21 @@ void XgmLocalPose::ApplyAnimInst(const XgmAnimInst& AnimInst) {
     // normal anim on a skinned model
     //////////////////////////////////////////////////////////////////////////////////////////
     size_t inumanimchannels = pl2anim->GetNumJointChannels();
-    float frame             = AnimInst.GetCurrentFrame();
+    float frame             = AnimInst._current_frame;
     float numframes         = AnimInst.GetNumFrames();
     int iframe              = int(frame);
     for (int iaidx = 0; iaidx < XgmAnimInst::kmaxbones; iaidx++) {
-      const XgmAnimInst::Binding& binding = AnimInst.GetAnimBinding(iaidx);
+      auto& binding = AnimInst.GetAnimBinding(iaidx);
       int iskelindex                      = binding.mSkelIndex;
-       //printf( "iaidx<%d> iskelindex<%d> inumanimchannels<%zu>\n", iaidx, iskelindex, inumanimchannels );
+       printf( "iaidx<%d> iskelindex<%d> inumanimchannels<%zu>\n", iaidx, iskelindex, inumanimchannels );
       if (iskelindex != 0xffff) {
         int ichanindex                                                   = binding.mChanIndex;
-        const ork::lev2::XgmDecompAnimChannel* __restrict MtxChannelData = Channels.GetItemAtIndex(ichanindex).second;
+        auto MtxChannelData = Channels.GetItemAtIndex(ichanindex).second;
         const DecompMtx44& AnimMtx                                       = MtxChannelData->GetFrame(iframe);
         EXFORM_COMPONENT components                                      = AnimInst.RefMask().GetComponents(iskelindex);
-        RefBlendPoseInfo(iskelindex).AddPose(AnimMtx, fweight, components);
+        _blendposeinfos[iskelindex].AddPose(AnimMtx, fweight, components);
 
-        //printf( "apply frame<%d> on iskelidx<%d>\n", iframe, iskelindex );
+        printf( "apply frame<%d> on iskelidx<%d>\n", iframe, iskelindex );
 
       } else {
         break;
@@ -320,7 +320,7 @@ void XgmLocalPose::ApplyAnimInst(const XgmAnimInst& AnimInst) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmLocalPose::BindPose(void) {
+void XgmLocalPose::bindPose(void) {
 #ifdef ENABLE_ANIM
   int inumjoints = NumJoints();
 
@@ -328,7 +328,7 @@ void XgmLocalPose::BindPose(void) {
   // initialize to Skeletons Bind Pose
   ///////////////////////////////////////////
   for (int ij = 0; ij < inumjoints; ij++) {
-    mLocalMatrices[ij] = mSkeleton.RefJointMatrix(ij);
+    _localmatrices[ij] = _skeleton.RefJointMatrix(ij);
   }
 
   ///////////////////////////////////////////
@@ -336,7 +336,7 @@ void XgmLocalPose::BindPose(void) {
   ///////////////////////////////////////////
 
   for (int ij = 0; ij < inumjoints; ij++) {
-    mBlendPoseInfos[ij].InitBlendPose();
+    _blendposeinfos[ij].InitBlendPose();
   }
 #endif
 }
@@ -345,7 +345,7 @@ void XgmLocalPose::BindPose(void) {
 // Blended Matrices and Concatenate
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmLocalPose::BuildPose(void) {
+void XgmLocalPose::buildPose(void) {
 #ifdef ENABLE_ANIM
   int inumjoints = NumJoints();
 
@@ -353,18 +353,18 @@ void XgmLocalPose::BuildPose(void) {
 
   static int gctr = 0;
   for (int i = 0; i < inumjoints; i++) {
-    int inumanms = mBlendPoseInfos[i].GetNumAnims();
+    int inumanms = _blendposeinfos[i].GetNumAnims();
 
      //printf("j<%d> inumanms<%d>\n", i, inumanms);
     if (inumanms) {
-      mBlendPoseInfos[i].ComputeMatrix(mLocalMatrices[i]);
+      _blendposeinfos[i].ComputeMatrix(_localmatrices[i]);
 
       if (1) //( i == ((gctr/1000)%inumjoints) )
       {
-        const auto& name = mSkeleton.GetJointName(i);
+        const auto& name = _skeleton.GetJointName(i);
         ork::FixedString<64> fxs;
         fxs.format("buildpose i<%s>", name.c_str());
-        mLocalMatrices[i].dump((char*)fxs.c_str());
+        _localmatrices[i].dump((char*)fxs.c_str());
       }
       // TODO: Callback for after previous/current have been blended in local space
     }
@@ -376,8 +376,8 @@ void XgmLocalPose::BuildPose(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmLocalPose::Concatenate(void) {
-  fmtx4* __restrict pmats = &RefLocalMatrix(0);
+void XgmLocalPose::concatenate(void) {
+  fmtx4* __restrict pmats = &_localmatrices[0];
 
   float fminx = std::numeric_limits<float>::max();
   float fminy = std::numeric_limits<float>::max();
@@ -386,27 +386,30 @@ void XgmLocalPose::Concatenate(void) {
   float fmaxy = -std::numeric_limits<float>::max();
   float fmaxz = -std::numeric_limits<float>::max();
 
-  if (mSkeleton.miRootNode >= 0) {
-    const fmtx4& RootAnimMat    = RefLocalMatrix(mSkeleton.miRootNode);
-    pmats[mSkeleton.miRootNode] = fmtx4::multiply_ltor(RootAnimMat,mSkeleton.mTopNodesMatrix);
+  if (_skeleton.miRootNode >= 0) {
+    const fmtx4& RootAnimMat    = _localmatrices[_skeleton.miRootNode];
+    pmats[_skeleton.miRootNode] = fmtx4::multiply_ltor(RootAnimMat,_skeleton.mTopNodesMatrix);
 
-    int inumbones = mSkeleton.numBones();
+    int inumbones = _skeleton.numBones();
     for (int ib = 0; ib < inumbones; ib++) {
-      const XgmBone& Bone       = mSkeleton.bone(ib);
+      const XgmBone& Bone       = _skeleton.bone(ib);
       int iparent               = Bone._parentIndex;
       int ichild                = Bone._childIndex;
       const fmtx4& ParentMatrix = pmats[iparent];
       const fmtx4& LocMatrix    = pmats[ichild];
 
-      std::string parname = mSkeleton.GetJointName(iparent).c_str();
-      std::string chiname = mSkeleton.GetJointName(ichild).c_str();
+      std::string parname = _skeleton.GetJointName(iparent).c_str();
+      std::string chiname = _skeleton.GetJointName(ichild).c_str();
 
       // fmtx4 temp    = (ParentMatrix * LocMatrix);
       fmtx4 temp    = fmtx4::multiply_ltor(LocMatrix,ParentMatrix);
       pmats[ichild] = temp;
 
-      if (RefBlendPoseInfo(ichild).GetPoseCallback())
-        RefBlendPoseInfo(ichild).GetPoseCallback()->PostBlendPostConcat(pmats[ichild]);
+      auto& child_pose_info = _blendposeinfos[ichild];
+      auto child_pose_cb = child_pose_info.GetPoseCallback();
+
+      if (child_pose_cb)
+        child_pose_cb->PostBlendPostConcat(pmats[ichild]);
 
       fvec3 vtrans = pmats[ichild].translation();
 
@@ -437,12 +440,12 @@ void XgmLocalPose::Concatenate(void) {
 
 std::string XgmLocalPose::dump() const {
   std::string rval;
-  if (mSkeleton.miRootNode >= 0) {
-    const fmtx4& RootAnimMat = RefLocalMatrix(mSkeleton.miRootNode);
-    int inumjoints           = mSkeleton.numJoints();
+  if (_skeleton.miRootNode >= 0) {
+    const fmtx4& RootAnimMat = _localmatrices[_skeleton.miRootNode];
+    int inumjoints           = _skeleton.numJoints();
     for (int ij = 0; ij < inumjoints; ij++) {
-      std::string name = mSkeleton.GetJointName(ij).c_str();
-      const auto& jmtx = RefLocalMatrix(ij);
+      std::string name = _skeleton.GetJointName(ij).c_str();
+      const auto& jmtx = _localmatrices[ij];
       rval += FormatString("%28s", name.c_str());
       rval += ": "s + jmtx.dump() + "\n"s;
     }
@@ -454,16 +457,16 @@ std::string XgmLocalPose::dump() const {
 
 std::string XgmLocalPose::dumpc(fvec3 color) const {
   std::string rval;
-  if (mSkeleton.miRootNode >= 0) {
-    const fmtx4& RootAnimMat = RefLocalMatrix(mSkeleton.miRootNode);
-    int inumjoints           = mSkeleton.numJoints();
+  if (_skeleton.miRootNode >= 0) {
+    const fmtx4& RootAnimMat = _localmatrices[_skeleton.miRootNode];
+    int inumjoints           = _skeleton.numJoints();
     fvec3 ca                 = color;
     fvec3 cb                 = color * 0.7;
 
     for (int ij = 0; ij < inumjoints; ij++) {
       fvec3 cc         = (ij & 1) ? cb : ca;
-      std::string name = mSkeleton.GetJointName(ij).c_str();
-      const auto& jmtx = RefLocalMatrix(ij);
+      std::string name = _skeleton.GetJointName(ij).c_str();
+      const auto& jmtx = _localmatrices[ij];
       rval += deco::format(cc, "%28s: ", name.c_str());
       rval += jmtx.dump4x3cn() + "\n"s;
     }
@@ -475,16 +478,16 @@ std::string XgmLocalPose::dumpc(fvec3 color) const {
 
 std::string XgmLocalPose::invdumpc(fvec3 color) const {
   std::string rval;
-  if (mSkeleton.miRootNode >= 0) {
-    const fmtx4& RootAnimMat = RefLocalMatrix(mSkeleton.miRootNode);
-    int inumjoints           = mSkeleton.numJoints();
+  if (_skeleton.miRootNode >= 0) {
+    const fmtx4& RootAnimMat = _localmatrices[_skeleton.miRootNode];
+    int inumjoints           = _skeleton.numJoints();
     fvec3 ca                 = color;
     fvec3 cb                 = color * 0.7;
 
     for (int ij = 0; ij < inumjoints; ij++) {
       fvec3 cc         = (ij & 1) ? cb : ca;
-      std::string name = mSkeleton.GetJointName(ij).c_str();
-      auto jmtx        = RefLocalMatrix(ij).inverse();
+      std::string name = _skeleton.GetJointName(ij).c_str();
+      auto jmtx        = _localmatrices[ij].inverse();
       rval += deco::asciic_rgb(cc);
       rval += FormatString("%28s", name.c_str());
       rval += ": "s + jmtx.dump4x3(cc) + "\n"s;
@@ -497,7 +500,7 @@ std::string XgmLocalPose::invdumpc(fvec3 color) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 int XgmLocalPose::NumJoints() const {
-  return mSkeleton.numJoints();
+  return _skeleton.numJoints();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -505,20 +508,21 @@ int XgmLocalPose::NumJoints() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 XgmWorldPose::XgmWorldPose(const XgmSkeleton& skel)
-    : mSkeleton(skel) {
+    : _skeleton(skel) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void XgmWorldPose::apply(const fmtx4& worldmtx, const XgmLocalPose& localpose) {
   int inumj = localpose.NumJoints();
-  mWorldMatrices.resize(inumj);
+  _worldmatrices.resize(inumj);
   for (int ij = 0; ij < inumj; ij++) {
-    fmtx4 MatAnimJCat = localpose.RefLocalMatrix(ij);
-    auto InvBind      = mSkeleton.RefInverseBindMatrix(ij);
-    // auto finalmtx     = worldmtx * (InvBind * MatAnimJCat);
-    auto finalmtx      = worldmtx;
-    mWorldMatrices[ij] = finalmtx;
+    fmtx4 MatAnimJCat = localpose._localmatrices[ij];
+    auto InvBind      = _skeleton.RefInverseBindMatrix(ij);
+    auto jointmtx = fmtx4::multiply_ltor(MatAnimJCat,InvBind);
+     auto finalmtx     = fmtx4::multiply_ltor(worldmtx,jointmtx);
+    //auto finalmtx      = worldmtx;
+    _worldmatrices[ij] = finalmtx;
   }
 }
 
@@ -526,15 +530,15 @@ void XgmWorldPose::apply(const fmtx4& worldmtx, const XgmLocalPose& localpose) {
 
 std::string XgmWorldPose::dumpc(fvec3 color) const {
   std::string rval;
-  if (mSkeleton.miRootNode >= 0) {
-    int inumjoints = mSkeleton.numJoints();
+  if (_skeleton.miRootNode >= 0) {
+    int inumjoints = _skeleton.numJoints();
     fvec3 ca       = color;
     fvec3 cb       = color * 0.7;
 
     for (int ij = 0; ij < inumjoints; ij++) {
       fvec3 cc         = (ij & 1) ? cb : ca;
-      std::string name = mSkeleton.GetJointName(ij).c_str();
-      const auto& jmtx = mWorldMatrices[ij];
+      std::string name = _skeleton.GetJointName(ij).c_str();
+      const auto& jmtx = _worldmatrices[ij];
       rval += deco::format(cc, "%28s: ", name.c_str());
       rval += jmtx.dump4x3cn() + "\n"s;
     }

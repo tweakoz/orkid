@@ -47,7 +47,7 @@ int XgmModel::meshIndex(const PoolString& name) const {
 
 XgmModelInst::XgmModelInst(const XgmModel* Model)
     : mXgmModel(Model)
-    , mLocalPose(Model->skeleton())
+    , _localPose(Model->skeleton())
     , _worldPose(Model->skeleton())
     , mMaterialStateInst(*this)
     , mbSkinned(false)
@@ -60,10 +60,10 @@ XgmModelInst::XgmModelInst(const XgmModel* Model)
     miNumChannels = 1;
   }
 
-  mLocalPose.BindPose();
-  mLocalPose.BuildPose();
-  mLocalPose.Concatenate();
-  _worldPose.apply(fmtx4(), mLocalPose);
+  _localPose.bindPose();
+  _localPose.buildPose();
+  _localPose.concatenate();
+  _worldPose.apply(fmtx4(), _localPose);
 
   int nummeshes = Model->numMeshes();
   for (int i = 0; i < nummeshes; i++) {
@@ -315,7 +315,7 @@ void XgmModel::RenderSkinned(
   // apply local pose to world pose
   ///////////////////////////////////
 
-  const auto& localpose = minst->RefLocalPose();
+  const auto& localpose = minst->_localPose;
   minst->_worldPose.apply(WorldMat, localpose);
 
   if (0) {
@@ -368,7 +368,7 @@ void XgmModel::RenderSkinned(
           for (size_t ijointreg = 0; ijointreg < inumjoints; ijointreg++) {
             const PoolString& JointName = cluster->mJoints[ijointreg];
             int JointSkelIndex          = cluster->mJointSkelIndices[ijointreg];
-            const fmtx4& finalmtx       = minst->_worldPose.GetMatrices()[JointSkelIndex];
+            const fmtx4& finalmtx       = minst->_worldPose._worldmatrices[JointSkelIndex];
             //////////////////////////////////////
             MatrixBlock[ijointreg] = finalmtx;
           }
@@ -409,7 +409,7 @@ void XgmModel::RenderSkinned(
   // Draw Skeleton
 
   /*if (minst->_drawSkeleton) {
-    const XgmLocalPose& LocalPose = minst->RefLocalPose();
+    const Xg_localPose& LocalPose = minst->RefLocalPose();
     pTARG->debugPushGroup("DrawSkeleton");
     pTARG->PushModColor(fvec4::White());
 
