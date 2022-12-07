@@ -185,7 +185,7 @@ void XgmLocalPose::BindAnimInst(XgmAnimInst& AnimInst) {
     const orklut<PoolString, DecompMtx44>& StaticPose = anim.GetStaticPose();
 
     int ipidx = 0;
-    for (orklut<PoolString, DecompMtx44>::const_iterator it = StaticPose.begin(); it != StaticPose.end(); it++) {
+    for (auto it = StaticPose.begin(); it != StaticPose.end(); it++) {
       const PoolString& JointName = it->first;
 
       int iskelindex = _skeleton.jointIndex(JointName);
@@ -197,7 +197,7 @@ void XgmLocalPose::BindAnimInst(XgmAnimInst& AnimInst) {
       if (-1 != iskelindex) {
         EXFORM_COMPONENT components = AnimInst.RefMask().GetComponents(iskelindex);
         if (XFORM_COMPONENT_NONE != components) {
-          ork::lev2::XgmAnim::JointChannelsMap::const_iterator itanim = Channels.find(JointName);
+          auto itanim = Channels.find(JointName);
 
           bool found = itanim == Channels.end();
            printf( "spose jname<%s> found<%d>\n", JointName.c_str(), int(found) );

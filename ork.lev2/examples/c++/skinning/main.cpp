@@ -100,6 +100,9 @@ struct GpuResources {
     modelinst->enableSkinning();
     modelinst->enableAllMeshes();
 
+    auto skeldump = model->mSkeleton.dump(fvec3(1,1,1));
+    printf( "skeldump<%s>\n", skeldump.c_str() );
+
     auto anim = _char_animasset->GetAnim();
     _char_animinst = std::make_shared<XgmAnimInst>();
     _char_animinst->bindAnim(anim);
