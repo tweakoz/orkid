@@ -187,9 +187,6 @@ struct XgmAnim {
   typedef orklut<PoolString, animchannel_ptr_t> MaterialChannelsMap;
 
   void AddChannel(const PoolString& Name, animchannel_ptr_t pchan);
-  void SetNumFrames(int ifr) {
-    miNumFrames = ifr;
-  }
 
   //////////////////////////
 
@@ -208,9 +205,6 @@ struct XgmAnim {
 
   XgmAnim();
 
-  int GetNumFrames(void) const {
-    return miNumFrames;
-  }
   size_t GetNumJointChannels(void) const {
     return mJointAnimationChannels.size();
   }
@@ -231,7 +225,7 @@ struct XgmAnim {
     return _pose;
   }
 
-  int miNumFrames;
+  size_t _numframes = 0;
   JointChannelsMap mJointAnimationChannels;
   MaterialChannelsMap mMaterialAnimationChannels;
   orklut<PoolString, fmtx4> _pose;
@@ -291,8 +285,8 @@ struct XgmAnimInst {
   float GetSampleRate() const {
     return 30.0f;
   }
-  float GetNumFrames() const {
-    return (_animation != 0) ? _animation->GetNumFrames() : 0.0f;
+  size_t numFrames() const {
+    return (_animation != nullptr) ? _animation->_numframes : 0;
   }
   float GetWeight() const {
     return mWeight;

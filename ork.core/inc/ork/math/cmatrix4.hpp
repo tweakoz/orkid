@@ -223,7 +223,7 @@ template <typename T> std::string Matrix44<T>::dump4x3cn() const {
       //////////////////////////////////
       // round down small numbers
       //////////////////////////////////
-      float elem = elemYX(i,j);
+      float elem = elemXY(i,j);
       elem       = float(int(elem * 10000)) / 10000.0f;
       //////////////////////////////////
       rval += ork::deco::format(fcol, " %+0.4g ", elem);

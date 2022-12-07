@@ -54,7 +54,7 @@ TEST(gfxanim1) {
     bool loadOK = XgmAnim::LoadUnManaged(anim, "data://tests/hfstest/hfs_rigtest_anim.fbx");
     OrkAssert(loadOK);
     auto animinst  = new XgmAnimInst;
-    int num_frames = anim->GetNumFrames();
+    int num_frames = anim->_numframes;
 
     printf("num_frames<%d>\n", num_frames);
 

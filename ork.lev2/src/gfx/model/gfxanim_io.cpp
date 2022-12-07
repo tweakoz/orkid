@@ -40,22 +40,24 @@ struct chansettter {
     XgmVect3AnimChannel* Ve3Channel  = rtti::autocast(Channel.get());
     if (MtxChannel) {
       const fmtx4* MatBase = (const fmtx4*)pdata;
-      MtxChannel->reserveFrames(anm->GetNumFrames());
-      for (size_t ifr = 0; ifr < anm->GetNumFrames(); ifr++) {
+      MtxChannel->reserveFrames(anm->_numframes);
+      for (size_t ifr = 0; ifr < anm->_numframes; ifr++) {
         fmtx4 Matrix = MatBase[ifr];
+        auto LDUMP = Matrix.dump4x3cn();
+        printf("LDUMP: %s\n", LDUMP.c_str());
         MtxChannel->setFrame(ifr, Matrix);
       }
     } else if (F32Channel) {
       const float* f32Base = (const float*)pdata;
-      F32Channel->reserveFrames(anm->GetNumFrames());
-      for (size_t ifr = 0; ifr < anm->GetNumFrames(); ifr++) {
+      F32Channel->reserveFrames(anm->_numframes);
+      for (size_t ifr = 0; ifr < anm->_numframes; ifr++) {
         float value = f32Base[ifr];
         F32Channel->setFrame(ifr, value);
       }
     } else if (Ve3Channel) {
       const fvec3* Ve3Base = (const fvec3*)pdata;
-      Ve3Channel->reserveFrames(anm->GetNumFrames());
-      for (size_t ifr = 0; ifr < anm->GetNumFrames(); ifr++) {
+      Ve3Channel->reserveFrames(anm->_numframes);
+      for (size_t ifr = 0; ifr < anm->_numframes; ifr++) {
         fvec3 value = Ve3Base[ifr];
         Ve3Channel->setFrame(ifr, value);
       }
@@ -109,7 +111,7 @@ bool XgmAnim::_loadXGA(XgmAnim* anm, datablock_ptr_t datablock) {
     ////////////////////////////////////////////////////////
     HeaderStream->GetItem(inumframes);
     HeaderStream->GetItem(inumchannels);
-    anm->SetNumFrames(inumframes);
+    anm->_numframes = inumframes;
     ////////////////////////////////////////////////////////
     HeaderStream->GetItem(inumjointchannels);
     for (int ichan = 0; ichan < inumjointchannels; ichan++) {
@@ -179,7 +181,7 @@ bool XgmAnim::_loadXGA(XgmAnim* anm, datablock_ptr_t datablock) {
 bool XgmAnim::_loadAssimp(XgmAnim* anm, datablock_ptr_t inp_datablock) {
   auto basehasher = DataBlock::createHasher();
   basehasher->accumulateString("assimp2xga");
-  basehasher->accumulateString("version-120622a");
+  basehasher->accumulateString("version-120622d");
   inp_datablock->accumlateHash(basehasher);
   basehasher->finish();
   uint64_t hashkey   = basehasher->result();

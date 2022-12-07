@@ -32,7 +32,7 @@ datablock_ptr_t XgmAnim::Save(const XgmAnim* anm) {
 
   int inumchannels = inumjointchannels + inummaterialchannels;
 
-  int inumframes = anm->GetNumFrames();
+  int inumframes = anm->_numframes;
 
   printf("XGAOUT inumjointchannels<%d> inumframes<%d>\n", inumchannels, inumframes);
 

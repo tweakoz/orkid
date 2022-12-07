@@ -81,14 +81,12 @@ void XgmBlendPoseInfo::computeMatrix(fmtx4& outmatrix) const {
 
     case 2: // decompose 2 matrices and lerp components (ideally anims will be stored pre-decomposed)
     {
-      /*float fw = fabs(_weights[0] + _weights[1] - 1.0f);
+      float fw = fabs(_weights[0] + _weights[1] - 1.0f);
       // printf( "aw0<%f> aw1<%f>\n", AnimWeight[0], AnimWeight[1]);
       OrkAssert(fw < float(0.01f));
 
       const fmtx4& a = _matrices[0];
       const fmtx4& b = _matrices[1];
-
-      // TODO: Callback for decomposed, pre-concatenated, pre-blended joint info
 
       float flerp = _weights[1];
 
@@ -98,32 +96,7 @@ void XgmBlendPoseInfo::computeMatrix(fmtx4& outmatrix) const {
         flerp = 1.0f;
       float iflerp = 1.0f - flerp;
 
-      if (acomp & XFORM_COMPONENT_ORIENT && bcomp & XFORM_COMPONENT_ORIENT)
-        c.mRot = fquat::lerp(a.mRot, b.mRot, flerp);
-      else if (acomp & XFORM_COMPONENT_ORIENT)
-        c.mRot = a.mRot;
-      else if (bcomp & XFORM_COMPONENT_ORIENT)
-        c.mRot = b.mRot;
 
-      if (acomp & XFORM_COMPONENT_TRANS && bcomp & XFORM_COMPONENT_TRANS)
-        c.mTrans.lerp(a.mTrans, b.mTrans, flerp);
-      else if (acomp & XFORM_COMPONENT_TRANS)
-        c.mTrans = a.mTrans;
-      else if (bcomp & XFORM_COMPONENT_TRANS)
-        c.mTrans = b.mTrans;
-
-      if (acomp & XFORM_COMPONENT_SCALE && bcomp & XFORM_COMPONENT_SCALE)
-        c.mScale = (a.mScale * iflerp) + (b.mScale * flerp);
-      else if (acomp & XFORM_COMPONENT_SCALE)
-        c.mScale = a.mScale;
-      else if (bcomp & XFORM_COMPONENT_SCALE)
-        c.mScale = b.mScale;
-
-      // Callback for decomposed, pre-concatenated, blended joint info
-      if (_posecallback)
-        _posecallback->PostBlendPreConcat(c);
-
-      outmatrix.compose(c.mTrans, c.mRot, c.mScale);*/
       OrkAssert(false);
     } break;
 
@@ -274,10 +247,10 @@ void XgmLocalPose::applyAnimInst(const XgmAnimInst& animinst) {
     //////////////////////////////////////////////////////////////////////////////////////////
     size_t inumanimchannels = pl2anim->GetNumJointChannels();
     float frame             = animinst._current_frame;
-    float numframes         = animinst.GetNumFrames();
+    size_t numframes         = animinst.numFrames();
     int iframe              = int(frame);
 
-    printf( "apply animinst frame<%d> numframes<%d> inumanimchannels<%d>\n", iframe, numframes, inumanimchannels );
+    printf( "apply animinst frame<%d> numframes<%zu> inumanimchannels<%zu>\n", iframe, numframes, inumanimchannels );
 
 
     for (int iaidx = 0; iaidx < XgmAnimInst::kmaxbones; iaidx++) {

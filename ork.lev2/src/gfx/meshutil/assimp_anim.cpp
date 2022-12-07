@@ -98,7 +98,7 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
     // compute number of frames
     /////////////////////////////////////////////////////
 
-    int framecount = 0;
+    size_t framecount = 0;
 
     for (int i = 0; i < anim->mNumChannels; i++) {
       aiNodeAnim* channel = anim->mChannels[i];
@@ -110,7 +110,9 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
         framecount = channel->mNumScalingKeys;
     }
 
-    xgmanim.SetNumFrames(framecount);
+    deco::printf(color, "framecount<%zu>\n", framecount);
+
+    xgmanim._numframes = framecount;
 
     /////////////////////////////////////////////////////
     // pull out channel data
