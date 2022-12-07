@@ -14,7 +14,7 @@
 #include "layer.h"
 #include <ork/kernel/concurrent_queue.h>
 #include <ork/kernel/svariant.h>
-#include <ork/lev2/gfx/gfxenv.h>
+//#include <ork/lev2/gfx/gfxenv.h>
 
 namespace ork::audio::singularity {
 

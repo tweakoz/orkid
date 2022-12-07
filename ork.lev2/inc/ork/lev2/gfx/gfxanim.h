@@ -12,6 +12,7 @@
 #include <ork/math/box.h>
 #include <ork/file/path.h>
 #include <ork/kernel/varmap.inl>
+#include <ork/kernel/orklut.h>
 #include <ork/rtti/RTTIX.inl>
 
 namespace ork { namespace lev2 {
@@ -183,8 +184,9 @@ public:
 
 struct XgmAnim {
 
-  typedef std::unordered_map<std::string, ork::lev2::XgmMatrixAnimChannel*> JointChannelsMap;
-  typedef std::unordered_map<std::string, animchannel_ptr_t> MaterialChannelsMap;
+  using joint_channels_lut_t = ork::orklut<std::string, ork::lev2::XgmMatrixAnimChannel*>;
+  using material_channels_lut_t = ork::orklut<std::string, animchannel_ptr_t>;
+  using matrix_lut_t = ork::orklut<std::string,fmtx4>;
 
   void AddChannel(const std::string& Name, animchannel_ptr_t pchan);
 
@@ -205,30 +207,32 @@ struct XgmAnim {
 
   XgmAnim();
 
+
+
   size_t GetNumJointChannels(void) const {
     return mJointAnimationChannels.size();
   }
   size_t GetNumMaterialChannels(void) const {
     return mMaterialAnimationChannels.size();
   }
-  const JointChannelsMap& RefJointChannels(void) const {
+  const joint_channels_lut_t& RefJointChannels(void) const {
     return mJointAnimationChannels;
   }
-  const MaterialChannelsMap& RefMaterialChannels(void) const {
+  const material_channels_lut_t& RefMaterialChannels(void) const {
     return mMaterialAnimationChannels;
   }
 
-  orklut<std::string, fmtx4>& GetStaticPose() {
+  matrix_lut_t& GetStaticPose() {
     return _pose;
   }
-  const orklut<std::string, fmtx4>& GetStaticPose() const {
+  const matrix_lut_t& GetStaticPose() const {
     return _pose;
   }
 
   size_t _numframes = 0;
-  JointChannelsMap mJointAnimationChannels;
-  MaterialChannelsMap mMaterialAnimationChannels;
-  orklut<std::string, fmtx4> _pose;
+  joint_channels_lut_t mJointAnimationChannels;
+  material_channels_lut_t mMaterialAnimationChannels;
+  matrix_lut_t _pose;
 };
 
 /// ///////////////////////////////////////////////////////////////////////////

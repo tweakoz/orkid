@@ -366,7 +366,7 @@ void XgmModel::RenderSkinned(
           OrkAssert(miBonesPerCluster <= kMatrixBlockSize);
 
           for (size_t ijointreg = 0; ijointreg < inumjoints; ijointreg++) {
-            const PoolString& JointName = cluster->mJoints[ijointreg];
+            const std::string& JointName = cluster->mJoints[ijointreg];
             int JointSkelIndex          = cluster->mJointSkelIndices[ijointreg];
             const fmtx4& finalmtx       = minst->_worldPose._worldmatrices[JointSkelIndex];
             //////////////////////////////////////

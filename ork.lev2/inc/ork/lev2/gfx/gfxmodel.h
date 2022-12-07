@@ -101,7 +101,7 @@ struct XgmCluster final { // Run Time Cluster
   vtxbufferbase_ptr_t GetVertexBuffer(void) const {
     return _vertexBuffer;
   }
-  const PoolString& GetJointBinding(int idx) const {
+  const std::string& GetJointBinding(int idx) const {
     return mJoints[idx];
   }
   size_t GetNumJointBindings(void) const {
@@ -110,7 +110,7 @@ struct XgmCluster final { // Run Time Cluster
 
   void dump() const;
 
-  orkvector<PoolString> mJoints;
+  orkvector<std::string> mJoints;
   orkvector<int> mJointSkelIndices;
 
   std::vector<xgmprimgroup_ptr_t> _primgroups;

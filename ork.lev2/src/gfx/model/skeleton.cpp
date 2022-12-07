@@ -263,22 +263,20 @@ std::string XgmSkeleton::dump(fvec3 color) const {
   rval += deco::format(color, " rootindex<%d>\n", miRootNode);
 
   int i = 0;
-  for (orklut<PoolString, int>::const_iterator it = mmJointNameMap.begin(); it != mmJointNameMap.end(); it++) {
-    PoolString sidx = (*it).first;
-    int idx         = (*it).second;
+  for (auto item : mmJointNameMap ) {
+    const std::string& sidx = item.first;
+    int idx         = item.second;
     // rval += deco::format(color," jointnamemap<%d> <%s>:<%d>\n", i, sidx.c_str(), idx);
     i++;
   }
   i = 0;
-  for (orkvector<PoolString>::const_iterator it = mvJointNameVect.begin(); it != mvJointNameVect.end(); it++) {
-    const PoolString& s = (*it);
+  for (const std::string& name : mvJointNameVect ) {
     // rval += deco::format(color," jointnamevect<%d> <%s>\n", i, s.c_str());
     i++;
   }
   i = 0;
-  for (orkvector<XgmBone>::const_iterator it = _bones.begin(); it != _bones.end(); it++) {
-    const XgmBone& b = (*it);
-    rval += deco::format(color, " bone<%d> p<%d> c<%d>\n", i, b._parentIndex, b._childIndex);
+  for (const XgmBone& bone : _bones ) {
+    rval += deco::format(color, " bone<%d> p<%d> c<%d>\n", i, bone._parentIndex, bone._childIndex);
     i++;
   }
 
@@ -302,11 +300,11 @@ std::string XgmSkeleton::dump(fvec3 color) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-int XgmSkeleton::jointIndex(const ork::PoolString& Named) const {
-  orklut<PoolString, int>::const_iterator it = mmJointNameMap.find(Named);
-  int index                                  = (it == mmJointNameMap.end()) ? -1 : it->second;
+int XgmSkeleton::jointIndex(const std::string& named) const {
+  auto it = mmJointNameMap.find(named);
+  int index = (it == mmJointNameMap.end()) ? -1 : it->second;
   if (index == -1) {
-    // printf( "find joint<%s> in map\n", Named.c_str() );
+    // printf( "find joint<%s> in map\n", named.c_str() );
     for (auto it : mmJointNameMap) {
       // printf( "in map key<%s>\n", it.first.c_str());
     }
@@ -316,7 +314,7 @@ int XgmSkeleton::jointIndex(const ork::PoolString& Named) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmSkeleton::AddJoint(int iskelindex, int iparindex, const PoolString& name) {
+void XgmSkeleton::AddJoint(int iskelindex, int iparindex, const std::string& name) {
   mvJointNameVect[iskelindex] = name;
   mmJointNameMap.AddSorted(name, iskelindex);
   maJointParents[iskelindex] = iparindex;
@@ -330,7 +328,7 @@ void XgmSkeleton::addBone(const XgmBone& bone) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-fmtx4 XgmSkeleton::concatenated(PoolString named) const {
+fmtx4 XgmSkeleton::concatenated(std::string named) const {
   std::vector<int> walk;
   int index = jointIndex(named);
   while (index != -1) {

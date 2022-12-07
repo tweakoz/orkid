@@ -514,7 +514,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
   logchan_mioW->log("WriteXgm: numjoints<%d>", inumjoints);
 
   for (int32_t ib = 0; ib < inumjoints; ib++) {
-    const PoolString& JointName = skel.GetJointName(ib);
+    const std::string& JointName = skel.GetJointName(ib);
 
     int32_t JointParentIndex   = skel.GetJointParent(ib);
     const fmtx4& InvRestMatrix = skel.RefInverseBindMatrix(ib);
@@ -773,7 +773,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
         }
 
         for (int32_t ij = 0; ij < inumjb; ij++) {
-          const PoolString& bound = cluster->GetJointBinding(ij);
+          const std::string& bound = cluster->GetJointBinding(ij);
           HeaderStream->AddItem(ij);
           istring = chunkwriter.stringIndex(bound.c_str());
           HeaderStream->AddItem(istring);

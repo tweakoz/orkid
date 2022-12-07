@@ -21,6 +21,7 @@
 #include <boost/filesystem.hpp>
 #include <ork/kernel/datacache.h>
 #include <ork/util/logger.h>
+#include <ork/kernel/orklut.hpp>
 
 namespace bfs = boost::filesystem;
 namespace ork::meshutil {
@@ -163,14 +164,13 @@ bool XgmAnim::_loadXGA(XgmAnim* anm, datablock_ptr_t datablock) {
     ////////////////////////////////////////////////////////
     HeaderStream->GetItem(inumposebones);
     fmtx4 bone_matrix;
-    anm->_pose.reserve(inumposebones);
     logchan_anmio->log("inumposebones<%d>", inumposebones);
     for (int iposeb = 0; iposeb < inumposebones; iposeb++) {
       HeaderStream->GetItem(ichnname);
       HeaderStream->GetItem(bone_matrix);
       std::string PoseChannelName = chunkreader.GetString(ichnname);
       PoseChannelName             = ork::string::replaced(PoseChannelName, "_", ".");
-      anm->_pose.AddSorted((PoseChannelName.c_str()), bone_matrix);
+      anm->_pose.AddSorted(PoseChannelName,bone_matrix);
     }
     ////////////////////////////////////////////////////////
   }

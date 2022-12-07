@@ -18,13 +18,11 @@
 #include "synth.h"
 #include "fft.h"
 #include <ork/lev2/gfx/dbgfontman.h>
-#include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/ui/surface.h>
 #include <ork/lev2/ui/viewport.h>
 #include <ork/lev2/ui/panel.h>
 #include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/lev2/ui/event.h>
-#include <ork/lev2/ezapp.h> // todo move updatedata_ptr_t out..
 
 namespace ork::audio::singularity {
 

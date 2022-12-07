@@ -203,11 +203,11 @@ void XgmMaterialStateInst::BindAnimInst(const XgmAnimInst& AnimInst) {
     size_t inummaterialchannels = anim.GetNumMaterialChannels();
     int nummaterials            = mModel->GetNumMaterials();
 
-    const XgmAnim::MaterialChannelsMap& map = anim.RefMaterialChannels();
+    const auto& material_channels = anim.RefMaterialChannels();
 
-    for (XgmAnim::MaterialChannelsMap::const_iterator it = map.begin(); it != map.end(); it++) {
-      const std::string& channelname = it->first;
-      auto channel                  = it->second.get();
+    for (auto it : material_channels ) {
+      const std::string& channelname = it.first;
+      auto channel                  = it.second.get();
       const std::string& objectname  = channel->GetObjectName();
 
       const XgmFloatAnimChannel* __restrict fchan  = rtti::autocast(channel);
@@ -293,16 +293,16 @@ void XgmAnim::AddChannel(const std::string& Name, animchannel_ptr_t pchan) {
   const std::string& usage = pchan->GetUsageSemantic();
 
   if (usage == "Joint") {
-    auto MtxChan = std::dynamic_pointer_cast<XgmMatrixAnimChannel>(pchan).get();
-    OrkAssert(MtxChan);
-    mJointAnimationChannels[Name]=MtxChan;
+    auto joint_channel = std::dynamic_pointer_cast<XgmMatrixAnimChannel>(pchan).get();
+    OrkAssert(joint_channel);
+    mJointAnimationChannels.AddSorted(Name,joint_channel);
   } else if (usage == "UvTransform") {
-    auto MtxChan = std::dynamic_pointer_cast<XgmMatrixAnimChannel>(pchan).get();
-    OrkAssert(MtxChan);
-    mMaterialAnimationChannels[Name]=pchan;
+    auto uvxf_channel = std::dynamic_pointer_cast<XgmMatrixAnimChannel>(pchan).get();
+    OrkAssert(uvxf_channel);
+    mMaterialAnimationChannels.AddSorted(Name,pchan);
   } else if (usage == "FxParam") {
     OrkAssert(pchan);
-    mMaterialAnimationChannels[Name] = pchan;
+    mMaterialAnimationChannels.AddSorted(Name,pchan);
   }
 }
 

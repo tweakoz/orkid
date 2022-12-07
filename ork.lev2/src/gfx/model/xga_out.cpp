@@ -41,14 +41,14 @@ datablock_ptr_t XgmAnim::Save(const XgmAnim* anm) {
 
   ///////////////////////////////////////////////////////////////////////////////////////////////
 
-  const XgmAnim::JointChannelsMap& JointChannels = anm->RefJointChannels();
+  const auto& joint_channels = anm->RefJointChannels();
 
-  HeaderStream->AddItem(int(JointChannels.size()));
-  for (XgmAnim::JointChannelsMap::const_iterator it = JointChannels.begin(); it != JointChannels.end(); it++) {
-    const PoolString& ChannelName          = it->first;
-    const PoolString& ChannelUsage         = it->second->GetUsageSemantic();
-    const XgmMatrixAnimChannel* MtxChannel = rtti::autocast(it->second);
-    const PoolString& ObjectName           = MtxChannel->GetObjectName();
+  HeaderStream->AddItem(int(joint_channels.size()));
+  for (auto it : joint_channels ) {
+    const std::string& ChannelName          = it.first;
+    const std::string& ChannelUsage         = it.second->GetUsageSemantic();
+    const XgmMatrixAnimChannel* MtxChannel = rtti::autocast(it.second);
+    const std::string& ObjectName           = MtxChannel->GetObjectName();
 
     int idataoffset = AnimDataStream->GetSize();
 
@@ -59,7 +59,9 @@ datablock_ptr_t XgmAnim::Save(const XgmAnim* anm) {
       }
     }
 
-    int ichnclas = chunkwriter.stringIndex(it->second->GetClass()->Name().c_str());
+    auto channel_clazz = it.second->GetClass();
+
+    int ichnclas = chunkwriter.stringIndex(channel_clazz->Name().c_str());
     int iobjname = chunkwriter.stringIndex(ObjectName.c_str());
     int ichnname = chunkwriter.stringIndex(ChannelName.c_str());
     int iusgname = chunkwriter.stringIndex(ChannelUsage.c_str());
@@ -74,17 +76,17 @@ datablock_ptr_t XgmAnim::Save(const XgmAnim* anm) {
 
   ///////////////////////////////////////////////////////////////////////////////////////////////
 
-  const XgmAnim::MaterialChannelsMap& MaterialChannels = anm->RefMaterialChannels();
+  const auto& material_channels = anm->RefMaterialChannels();
 
-  HeaderStream->AddItem(int(MaterialChannels.size()));
-  for (XgmAnim::MaterialChannelsMap::const_iterator it = MaterialChannels.begin(); it != MaterialChannels.end(); it++) {
-    const PoolString& ChannelName  = it->first;
-    const PoolString& ChannelUsage = it->second->GetUsageSemantic();
-    const PoolString& ObjectName   = it->second->GetObjectName();
+  HeaderStream->AddItem(int(material_channels.size()));
+  for (auto it : material_channels ) {
+    const std::string& ChannelName  = it.first;
+    const std::string& ChannelUsage = it.second->GetUsageSemantic();
+    const std::string& ObjectName   = it.second->GetObjectName();
 
-    auto MtxChannel  = std::dynamic_pointer_cast<XgmMatrixAnimChannel>(it->second);
-    auto F32Channel  = std::dynamic_pointer_cast<XgmFloatAnimChannel>(it->second);
-    auto Vec3Channel = std::dynamic_pointer_cast<XgmVect3AnimChannel>(it->second);
+    auto MtxChannel  = std::dynamic_pointer_cast<XgmMatrixAnimChannel>(it.second);
+    auto F32Channel  = std::dynamic_pointer_cast<XgmFloatAnimChannel>(it.second);
+    auto Vec3Channel = std::dynamic_pointer_cast<XgmVect3AnimChannel>(it.second);
 
     int idataoffset = AnimDataStream->GetSize();
 
@@ -105,7 +107,8 @@ datablock_ptr_t XgmAnim::Save(const XgmAnim* anm) {
       }
     }
 
-    int ichnclas = chunkwriter.stringIndex(it->second->GetClass()->Name().c_str());
+    auto channel_clazz = it.second->GetClass();
+    int ichnclas = chunkwriter.stringIndex(channel_clazz->Name().c_str());
     int iobjname = chunkwriter.stringIndex(ObjectName.c_str());
     int ichnname = chunkwriter.stringIndex(ChannelName.c_str());
     int iusgname = chunkwriter.stringIndex(ChannelUsage.c_str());
@@ -124,7 +127,7 @@ datablock_ptr_t XgmAnim::Save(const XgmAnim* anm) {
   HeaderStream->AddItem(inumposebones);
 
   for (auto it : anm->_pose ) {
-    const PoolString& name = it.first;
+    const std::string& name = it.first;
     const fmtx4& mtx = it.second;
 
     // int idataoffset = AnimDataStream->GetSize();

@@ -8,6 +8,8 @@
 #include <ork/math/cvector3.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
 #include <ork/lev2/aud/singularity/hud.h>
+#include <ork/lev2/gfx/material_freestyle.h>
+#include <ork/lev2/ezapp.h> // todo move updatedata_ptr_t out..
 
 using namespace ork;
 using namespace ork::lev2;
