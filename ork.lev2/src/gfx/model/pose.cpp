@@ -38,8 +38,11 @@ void XgmBlendPoseInfo::initBlendPose() {
 void XgmBlendPoseInfo::addPose(const fmtx4& mat, float weight) {
   OrkAssert(_numanims < kmaxblendanims);
 
-  /*const auto& pos    = mat.mTrans;
-  const auto& orient = mat.mRot;
+  DecompTransform decomp;
+  decomp.decompose(mat);
+
+  const auto& pos    = decomp._translation;
+  const auto& orient = decomp._rotation;
 
   printf(
       "XgmBlendPoseInfo pos<%g %g %g> orient<%g %g %g %g>\n", //
@@ -49,7 +52,7 @@ void XgmBlendPoseInfo::addPose(const fmtx4& mat, float weight) {
       orient.w,
       orient.x,
       orient.y,
-      orient.z);*/
+      orient.z);
 
   _matrices[_numanims] = mat;
   _weights[_numanims]  = weight;
@@ -240,13 +243,13 @@ void XgmLocalPose::unbindAnimInst(XgmAnimInst& AnimInst) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmLocalPose::applyAnimInst(const XgmAnimInst& AnimInst) {
+void XgmLocalPose::applyAnimInst(const XgmAnimInst& animinst) {
 #ifdef ENABLE_ANIM
-  const XgmAnimMask& Mask = AnimInst.RefMask();
-  float fweight           = AnimInst.GetWeight();
+  const XgmAnimMask& Mask = animinst.RefMask();
+  float fweight           = animinst.GetWeight();
   ////////////////////////////////////////////////////
   // retrieve anim information
-  const ork::lev2::AnimType* __restrict pl2anim = AnimInst._animation;
+  const ork::lev2::AnimType* __restrict pl2anim = animinst._animation;
   ////////////////////////////////////////////////////
   if (pl2anim) {
     const ork::lev2::XgmAnim::JointChannelsMap& Channels = pl2anim->RefJointChannels();
@@ -255,7 +258,7 @@ void XgmLocalPose::applyAnimInst(const XgmAnimInst& AnimInst) {
     ////////////////////////////////////////////////////
     const orklut<PoolString, fmtx4>& StaticPose = pl2anim->GetStaticPose();
     for (int ipidx = 0; ipidx < XgmAnimInst::kmaxbones; ipidx++) {
-      const XgmAnimInst::Binding& binding = AnimInst.getPoseBinding(ipidx);
+      const XgmAnimInst::Binding& binding = animinst.getPoseBinding(ipidx);
       int iskelindex                      = binding.mSkelIndex;
       if (iskelindex != 0xffff) {
 
@@ -270,11 +273,15 @@ void XgmLocalPose::applyAnimInst(const XgmAnimInst& AnimInst) {
     // normal anim on a skinned model
     //////////////////////////////////////////////////////////////////////////////////////////
     size_t inumanimchannels = pl2anim->GetNumJointChannels();
-    float frame             = AnimInst._current_frame;
-    float numframes         = AnimInst.GetNumFrames();
+    float frame             = animinst._current_frame;
+    float numframes         = animinst.GetNumFrames();
     int iframe              = int(frame);
+
+    printf( "apply animinst frame<%d> numframes<%d> inumanimchannels<%d>\n", iframe, numframes, inumanimchannels );
+
+
     for (int iaidx = 0; iaidx < XgmAnimInst::kmaxbones; iaidx++) {
-      auto& binding  = AnimInst.getAnimBinding(iaidx);
+      auto& binding  = animinst.getAnimBinding(iaidx);
       int iskelindex = binding.mSkelIndex;
       // printf( "iaidx<%d> iskelindex<%d> inumanimchannels<%zu>\n", iaidx, iskelindex, inumanimchannels );
       if (iskelindex != 0xffff) {
@@ -283,7 +290,9 @@ void XgmLocalPose::applyAnimInst(const XgmAnimInst& AnimInst) {
         const fmtx4& matrix  = MtxChannelData->GetFrame(iframe);
         _blendposeinfos[iskelindex].addPose(matrix, fweight);
 
-        // printf( "apply frame<%d> on iskelidx<%d>\n", iframe, iskelindex );
+        printf( "apply on iskelidx<%d>\n", iskelindex );
+        auto adump = matrix.dump4x3cn();
+        printf("adump: %s\n", adump.c_str());
 
       } else {
         break;

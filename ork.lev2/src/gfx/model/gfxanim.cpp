@@ -425,6 +425,7 @@ void XgmMatrixAnimChannel::setFrame(size_t i, const fmtx4& v) {
 
 fmtx4 XgmMatrixAnimChannel::GetFrame(int index) const {
   if(index>=_sampledFrames.size()){
+    printf( "channel<%p:%s> getfr<%d> out of range %zd\n", this, mChannelName.c_str(), index, _sampledFrames.size() );
     return fmtx4();
   }
   return _sampledFrames[index];

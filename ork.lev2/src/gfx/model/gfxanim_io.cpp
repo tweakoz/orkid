@@ -127,7 +127,7 @@ bool XgmAnim::_loadXGA(XgmAnim* anm, datablock_ptr_t datablock) {
       auto Channel                     = std::dynamic_pointer_cast<XgmAnimChannel>(pclass->createShared());
 
       logchan_anmio->log(
-          "MatrixChannel<%s> ChannelClass<%s> objname<%s> numframes<%d>", pchnname, pchannelclass, pobjname, inumframes);
+          "MatrixChannel<%s> ChannelClass<%s> pchnname<%s> objname<%s> numframes<%d>", pchnname, pchannelclass, pchnname, pobjname, inumframes);
 
       Channel->SetChannelName(AddPooledString(pchnname));
       Channel->SetObjectName(AddPooledString(pobjname));

@@ -236,6 +236,9 @@ int main(int argc, char** argv, char** envp) {
 
     worldpose.apply(fmtx4(),localpose);
 
+    if(counter==3){
+      OrkAssert(false);
+    }
     counter = (counter+1) % 40;
 
     auto context = drwev->GetTarget();
