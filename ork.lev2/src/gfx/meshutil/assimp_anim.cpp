@@ -143,7 +143,7 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
 
       PoolString objnameps         = AddPooledString("");
       PoolString ChannelPooledName = AddPooledString(channel_name.c_str());
-      auto XgmChan                 = std::make_shared<ork::lev2::XgmDecompAnimChannel>(objnameps, ChannelPooledName, JointPS);
+      auto XgmChan                 = std::make_shared<ork::lev2::XgmMatrixAnimChannel>(objnameps, ChannelPooledName, JointPS);
       XgmChan->reserveFrames(framecount);
       xgmanim.AddChannel(ChannelPooledName, XgmChan);
       skelnode->_varmap["xgmchan"].make<lev2::animchannel_ptr_t>(XgmChan);
@@ -276,11 +276,9 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
 
           skelnode->_varmap["framevect_j"].get<framevect_t>().push_back(JSPACE);
 
-          auto as_decomchan = std::dynamic_pointer_cast<lev2::XgmDecompAnimChannel>(XgmChan);
+          auto as_decomchan = std::dynamic_pointer_cast<lev2::XgmMatrixAnimChannel>(XgmChan);
 
-          ork::lev2::DecompMtx44 decomp;
-          JSPACE.decompose(decomp.mTrans, decomp.mRot, decomp.mScale);
-          as_decomchan->setFrame(f,decomp);
+          as_decomchan->setFrame(f,JSPACE);
         }
       }
     }

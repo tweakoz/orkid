@@ -29,10 +29,10 @@ using AnimChannelsMap = orkmap<PoolString, ork::lev2::AnimChannelType*>;
 /// each channel also has a usage semantic (such as "Joint" or "Effect")
 /// ///////////////////////////////////////////////////////////////////////////
 
-class XgmAnimChannel : public ork::Object {
+struct XgmAnimChannel : public ork::Object {
   DeclareAbstractX(XgmAnimChannel, ork::Object);
-
 public:
+
   enum EChannelType {
     EXGMAC_FLOAT = 0,
     EXGMAC_VECT2, // fvec2
@@ -70,7 +70,6 @@ public:
     mUsageSemantic = usage;
   }
 
-protected:
   PoolString mChannelName;
   PoolString mObjectName;
   PoolString mUsageSemantic;
@@ -80,12 +79,11 @@ protected:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class XgmFloatAnimChannel : public XgmAnimChannel {
+struct XgmFloatAnimChannel : public XgmAnimChannel {
   DeclareConcreteX(XgmFloatAnimChannel, XgmAnimChannel);
-
-  orkvector<float> _sampledFrames;
-
 public:
+
+
   XgmFloatAnimChannel(const PoolString& ObjName, const PoolString& ChanName, const PoolString& Usage);
   XgmFloatAnimChannel();
 
@@ -99,20 +97,18 @@ public:
     _sampledFrames.reserve(iv);
   }
 
-private:
   size_t numFrames() const final {
     return int(_sampledFrames.size());
   }
+  orkvector<float> _sampledFrames;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class XgmVect3AnimChannel : public XgmAnimChannel {
+struct XgmVect3AnimChannel : public XgmAnimChannel {
   DeclareConcreteX(XgmVect3AnimChannel, XgmAnimChannel);
-
-  orkvector<fvec3> _sampledFrames;
-
 public:
+
   XgmVect3AnimChannel(const PoolString& ObjName, const PoolString& ChanName, const PoolString& Usage);
   XgmVect3AnimChannel();
 
@@ -126,20 +122,19 @@ public:
     _sampledFrames.reserve(iv);
   }
 
-private:
   size_t numFrames() const final {
     return int(_sampledFrames.size());
   }
+  orkvector<fvec3> _sampledFrames;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class XgmVect4AnimChannel : public XgmAnimChannel {
+struct XgmVect4AnimChannel : public XgmAnimChannel {
   DeclareConcreteX(XgmVect4AnimChannel, XgmAnimChannel);
 
-  orkvector<fvec4> _sampledFrames;
-
 public:
+
   XgmVect4AnimChannel(const PoolString& ObjName, const PoolString& ChanName, const PoolString& Usage);
   XgmVect4AnimChannel();
 
@@ -153,74 +148,31 @@ public:
     _sampledFrames.reserve(iv);
   }
 
-private:
   size_t numFrames() const final {
     return int(_sampledFrames.size());
   }
-};
 
-///////////////////////////////////////////////////////////////////////////////
-enum EXFORM_COMPONENT {
-  // NONE always results in no change for Enable/Disable and returns false for Check
-  XFORM_COMPONENT_NONE = 0,
-
-  XFORM_COMPONENT_TRANS  = (1 << 0),
-  XFORM_COMPONENT_ORIENT = (1 << 1),
-  XFORM_COMPONENT_SCALE  = (1 << 2),
-
-  // TRANSORIENT always results in the SCALE being unchanged for Enable/Disable and SCALE is ignored for Check
-  XFORM_COMPONENT_TRANSORIENT = XFORM_COMPONENT_TRANS | XFORM_COMPONENT_ORIENT,
-
-  // ALL always results in the whole bone being changed for Enable/Disable and returns true for Check, if *any* component is enabled
-  XFORM_COMPONENT_ALL = XFORM_COMPONENT_TRANS | XFORM_COMPONENT_ORIENT | XFORM_COMPONENT_SCALE
-};
-
-struct DecompMtx44 {
-  fquat mRot;
-  fvec3 mTrans;
-  float mScale;
-
-  void Compose(fmtx4& mtx, EXFORM_COMPONENT components) const;
+  orkvector<fvec4> _sampledFrames;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class XgmDecompAnimChannel : public XgmAnimChannel {
-
-  DeclareConcreteX(XgmDecompAnimChannel, XgmAnimChannel);
-
-  size_t numFrames() const final;
-
-protected:
-  ork::vector<DecompMtx44> _sampledFrames;
-
-public:
-  XgmDecompAnimChannel(const PoolString& ObjName, const PoolString& ChanName, const PoolString& Usage);
-  XgmDecompAnimChannel();
-
-  void setFrame(size_t i, const DecompMtx44& v);
-  DecompMtx44 GetFrame(int index) const;
-  void reserveFrames(size_t iv);
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-class XgmMatrixAnimChannel : public XgmAnimChannel {
-
+struct XgmMatrixAnimChannel : public XgmAnimChannel {
   DeclareConcreteX(XgmMatrixAnimChannel, XgmAnimChannel);
 
+public:
+
   size_t numFrames() const final;
 
-protected:
-  ork::vector<fmtx4> _sampledFrames;
 
-public:
   XgmMatrixAnimChannel(const PoolString& ObjName, const PoolString& ChanName, const PoolString& Usage);
   XgmMatrixAnimChannel();
 
   void setFrame(size_t i, const fmtx4& v);
   fmtx4 GetFrame(int index) const;
   void reserveFrames(size_t iv);
+
+  ork::vector<fmtx4> _sampledFrames;
 };
 
 /// ///////////////////////////////////////////////////////////////////////////
@@ -229,9 +181,9 @@ public:
 /// mPose:				static state of joints (when there is no animated data)
 /// ///////////////////////////////////////////////////////////////////////////
 
-class XgmAnim {
-public:
-  typedef orklut<PoolString, ork::lev2::XgmDecompAnimChannel*> JointChannelsMap;
+struct XgmAnim {
+
+  typedef orklut<PoolString, ork::lev2::XgmMatrixAnimChannel*> JointChannelsMap;
   typedef orklut<PoolString, animchannel_ptr_t> MaterialChannelsMap;
 
   void AddChannel(const PoolString& Name, animchannel_ptr_t pchan);
@@ -272,18 +224,17 @@ public:
     return mMaterialAnimationChannels;
   }
 
-  orklut<PoolString, DecompMtx44>& GetStaticPose() {
-    return mPose;
+  orklut<PoolString, fmtx4>& GetStaticPose() {
+    return _pose;
   }
-  const orklut<PoolString, DecompMtx44>& GetStaticPose() const {
-    return mPose;
+  const orklut<PoolString, fmtx4>& GetStaticPose() const {
+    return _pose;
   }
 
-private:
   int miNumFrames;
   JointChannelsMap mJointAnimationChannels;
   MaterialChannelsMap mMaterialAnimationChannels;
-  orklut<PoolString, DecompMtx44> mPose;
+  orklut<PoolString, fmtx4> _pose;
 };
 
 /// ///////////////////////////////////////////////////////////////////////////
@@ -300,18 +251,16 @@ struct XgmAnimMask {
   XgmAnimMask& operator=(const XgmAnimMask& mask);
 
   void EnableAll();
-  void Enable(const XgmSkeleton& Skeleton, const PoolString& BoneName, EXFORM_COMPONENT component);
-  void Enable(int iboneindex, EXFORM_COMPONENT component);
+  void Enable(const XgmSkeleton& Skeleton, const PoolString& BoneName);
+  void Enable(int iboneindex);
 
   void DisableAll();
-  void Disable(const XgmSkeleton& Skeleton, const PoolString& BoneName, EXFORM_COMPONENT component);
-  void Disable(int iboneindex, EXFORM_COMPONENT component);
+  void Disable(const XgmSkeleton& Skeleton, const PoolString& BoneName);
+  void Disable(int iboneindex);
 
-  bool Check(const XgmSkeleton& Skeleton, const PoolString& BoneName, EXFORM_COMPONENT component) const;
-  bool Check(int iboneindex, EXFORM_COMPONENT component) const;
+  bool isEnabled(const XgmSkeleton& Skeleton, const PoolString& BoneName) const;
+  bool isEnabled(int iboneindex) const;
 
-  EXFORM_COMPONENT GetComponents(const XgmSkeleton& Skeleton, const PoolString& BoneName) const;
-  EXFORM_COMPONENT GetComponents(int iboneindex) const;
 };
 
 /// ///////////////////////////////////////////////////////////////////////////
@@ -360,28 +309,18 @@ struct XgmAnimInst {
     return mMask;
   }
 
-  const Binding& GetPoseBinding(int i) const {
-    return (i < kmaxbones) ? mPoseBindings[i] : gBadBinding;
-  }
-  const Binding& GetAnimBinding(int i) const {
-    return (i < kmaxbones) ? mAnimBindings[i] : gBadBinding;
-  }
-  void SetPoseBinding(int i, const Binding& inp) {
-    if (i < kmaxbones)
-      mPoseBindings[i] = inp;
-  }
-  void SetAnimBinding(int i, const Binding& inp) {
-    if (i < kmaxbones)
-      mAnimBindings[i] = inp;
-  }
+  const Binding& getPoseBinding(int i) const;
+  const Binding& getAnimBinding(int i) const;
+  void setPoseBinding(int i, const Binding& inp);
+  void setAnimBinding(int i, const Binding& inp);
 
   const XgmAnim* _animation;
   XgmAnimMask mMask;
   float _current_frame;
   float mWeight;
 
-  Binding mPoseBindings[kmaxbones];
-  Binding mAnimBindings[kmaxbones];
+  Binding _poseBindings[kmaxbones];
+  Binding _animBindings[kmaxbones];
   static const Binding gBadBinding;
 
 };
@@ -452,40 +391,24 @@ struct XgmBone {
 /// ///////////////////////////////////////////////////////////////////////////
 
 struct PoseCallback {
-  virtual void PostBlendPreConcat(DecompMtx44& decomposed_local) = 0;
+  virtual void PostBlendPreConcat(fmtx4& decomposed_local) = 0;
   virtual void PostBlendPostConcat(fmtx4& composed_object)       = 0;
 };
 
 struct XgmBlendPoseInfo {
-public:
+
   static const int kmaxblendanims = 2;
 
   XgmBlendPoseInfo();
 
-  void InitBlendPose();
-  void AddPose(const DecompMtx44& mat, float weight, EXFORM_COMPONENT components);
+  void initBlendPose();
+  void addPose(const fmtx4& mat, float weight);
+  void computeMatrix(fmtx4& mtx) const;
 
-  void ComputeMatrix(fmtx4& mtx) const;
-
-  int GetNumAnims() const {
-    return miNumAnims;
-  }
-
-  void SetPoseCallback(PoseCallback* callback) {
-    mPoseCallback = callback;
-  }
-  PoseCallback* GetPoseCallback() const {
-    return mPoseCallback;
-  }
-
-private:
-  int miNumAnims;
-
-  DecompMtx44 AnimMat[kmaxblendanims];
-  float AnimWeight[kmaxblendanims];
-  EXFORM_COMPONENT Ani_components[kmaxblendanims];
-
-  PoseCallback* mPoseCallback;
+  int _numanims = 0;
+  PoseCallback* _posecallback = nullptr;
+  fmtx4 _matrices[kmaxblendanims];
+  float _weights[kmaxblendanims];
 };
 
 /// ///////////////////////////////////////////////////////////////////////////
@@ -497,8 +420,8 @@ private:
 
 struct XgmLocalPose {
 
-  void BindAnimInst(XgmAnimInst& AnimInst);
-  void UnBindAnimInst(XgmAnimInst& AnimInst);
+  void bindAnimInst(XgmAnimInst& AnimInst);
+  void unbindAnimInst(XgmAnimInst& AnimInst);
 
   XgmLocalPose(const XgmSkeleton& Skeleton);
   void bindPose(void);  /// set pose to the skeletons bind pose

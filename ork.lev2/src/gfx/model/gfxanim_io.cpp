@@ -35,18 +35,9 @@ static logchannel_ptr_t logchan_anmio = logger()->createChannel("gfxanimIOREAD",
 ///////////////////////////////////////////////////////////////////////////////
 struct chansettter {
   static void set(XgmAnim* anm, animchannel_ptr_t Channel, const void* pdata) {
-    XgmDecompAnimChannel* DecChannel = rtti::autocast(Channel.get());
     XgmMatrixAnimChannel* MtxChannel = rtti::autocast(Channel.get());
     XgmFloatAnimChannel* F32Channel  = rtti::autocast(Channel.get());
     XgmVect3AnimChannel* Ve3Channel  = rtti::autocast(Channel.get());
-    if (DecChannel) {
-      const DecompMtx44* DecBase = (const DecompMtx44*)pdata;
-      DecChannel->reserveFrames(anm->GetNumFrames());
-      for (size_t ifr = 0; ifr < anm->GetNumFrames(); ifr++) {
-        DecompMtx44 DecMtx = DecBase[ifr];
-        DecChannel->setFrame(ifr, DecMtx);
-      }
-    }
     if (MtxChannel) {
       const fmtx4* MatBase = (const fmtx4*)pdata;
       MtxChannel->reserveFrames(anm->GetNumFrames());
@@ -169,15 +160,15 @@ bool XgmAnim::_loadXGA(XgmAnim* anm, datablock_ptr_t datablock) {
     OrkHeapCheck();
     ////////////////////////////////////////////////////////
     HeaderStream->GetItem(inumposebones);
-    DecompMtx44 decmtx;
-    anm->mPose.reserve(inumposebones);
+    fmtx4 bone_matrix;
+    anm->_pose.reserve(inumposebones);
     logchan_anmio->log("inumposebones<%d>", inumposebones);
     for (int iposeb = 0; iposeb < inumposebones; iposeb++) {
       HeaderStream->GetItem(ichnname);
-      HeaderStream->GetItem(decmtx);
+      HeaderStream->GetItem(bone_matrix);
       std::string PoseChannelName = chunkreader.GetString(ichnname);
       PoseChannelName             = ork::string::replaced(PoseChannelName, "_", ".");
-      anm->mPose.AddSorted(AddPooledString(PoseChannelName.c_str()), decmtx);
+      anm->_pose.AddSorted(AddPooledString(PoseChannelName.c_str()), bone_matrix);
     }
     ////////////////////////////////////////////////////////
   }
@@ -188,7 +179,7 @@ bool XgmAnim::_loadXGA(XgmAnim* anm, datablock_ptr_t datablock) {
 bool XgmAnim::_loadAssimp(XgmAnim* anm, datablock_ptr_t inp_datablock) {
   auto basehasher = DataBlock::createHasher();
   basehasher->accumulateString("assimp2xga");
-  basehasher->accumulateString("version-0");
+  basehasher->accumulateString("version-120622a");
   inp_datablock->accumlateHash(basehasher);
   basehasher->finish();
   uint64_t hashkey   = basehasher->result();

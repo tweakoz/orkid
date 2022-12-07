@@ -89,13 +89,13 @@ XgmSkelNode* XgmSkelNode::findCentimeterToMeterNode() {
     if (rval == nullptr) {
       auto parent = node->_parent;
       if (parent) {
-        DecompMtx44 pdc, cdc;
-        parent->_jointMatrix.decompose(pdc.mTrans, pdc.mRot, pdc.mScale);
-        node->_jointMatrix.decompose(cdc.mTrans, cdc.mRot, cdc.mScale);
-        printf("parscale<%s:%g>\n", parent->_name.c_str(), pdc.mScale);
-        printf("chiscale<%s:%g>\n", node->_name.c_str(), cdc.mScale);
-        bool parent_match = math::areValuesClose(pdc.mScale, 1.0, 0.00001);
-        bool child_match  = math::areValuesClose(cdc.mScale, 0.01, 0.00001);
+        DecompTransform pdc, cdc;
+        pdc.decompose(parent->_jointMatrix);
+        cdc.decompose(node->_jointMatrix);
+        printf("parscale<%s:%g>\n", parent->_name.c_str(), pdc._uniformScale);
+        printf("chiscale<%s:%g>\n", node->_name.c_str(), cdc._uniformScale);
+        bool parent_match = math::areValuesClose(pdc._uniformScale, 1.0, 0.00001);
+        bool child_match  = math::areValuesClose(cdc._uniformScale, 0.01, 0.00001);
         if (parent_match and child_match) {
           rval = node;
           printf("FOUND SCALENODE\n");
@@ -115,18 +115,19 @@ bool XgmSkelNode::applyCentimeterToMeterScale() {
     deco::printf(fvec3::Red(), "cmscalenode<%s> %s\n", cmscalenode->_name.c_str(), d.c_str());
   }
   if (cmscalenode) {
-    DecompMtx44 ScaleXf;
-    cmscalenode->_jointMatrix.decompose(ScaleXf.mTrans, ScaleXf.mRot, ScaleXf.mScale);
-    ScaleXf.mTrans *= 0.01f;
-    cmscalenode->_jointMatrix.compose(ScaleXf.mTrans, ScaleXf.mRot, 1.0f);
+    DecompTransform ScaleXf;
+    ScaleXf.decompose(cmscalenode->_jointMatrix);
+    ScaleXf._translation *= 0.01f;
+    ScaleXf._uniformScale = 1.0f;
+    cmscalenode->_jointMatrix = ScaleXf.composed();
     cmscalenode->visitHierarchy([cmscalenode, &ScaleXf](XgmSkelNode* node) {
       if (node != cmscalenode) {
-        DecompMtx44 cdc;
-        node->_jointMatrix.decompose(cdc.mTrans, cdc.mRot, cdc.mScale);
-        cdc.mTrans *= ScaleXf.mScale;
-        cdc.mScale *= ScaleXf.mScale;
+        DecompTransform cdc;
+        cdc.decompose(node->_jointMatrix);
+        cdc._translation *= ScaleXf._uniformScale;
+        cdc._uniformScale *= ScaleXf._uniformScale;
         if (node->nodetype() == XgmSkelNode::ENODE_LEAF)
-          node->_jointMatrix.compose(cdc.mTrans, cdc.mRot, cdc.mScale);
+          node->_jointMatrix = cdc.composed();
       }
       fvec3 color;
       switch (node->nodetype()) {

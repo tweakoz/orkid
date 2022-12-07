@@ -171,14 +171,14 @@ datablock_ptr_t XgmAnim::Save(const XgmAnim* anm) {
   for (XgmAnim::JointChannelsMap::const_iterator it = JointChannels.begin(); it != JointChannels.end(); it++) {
     const PoolString& ChannelName          = it->first;
     const PoolString& ChannelUsage         = it->second->GetUsageSemantic();
-    const XgmDecompAnimChannel* MtxChannel = rtti::autocast(it->second);
+    const XgmMatrixAnimChannel* MtxChannel = rtti::autocast(it->second);
     const PoolString& ObjectName           = MtxChannel->GetObjectName();
 
     int idataoffset = AnimDataStream->GetSize();
 
     if (MtxChannel) {
       for (int ifr = 0; ifr < inumframes; ifr++) {
-        const DecompMtx44& Matrix = MtxChannel->GetFrame(ifr);
+        const fmtx4& Matrix = MtxChannel->GetFrame(ifr);
         AnimDataStream->AddItem(Matrix);
       }
     }
@@ -243,13 +243,13 @@ datablock_ptr_t XgmAnim::Save(const XgmAnim* anm) {
   ///////////////////////////////////
   // write out pose information
 
-  int inumposebones = (int)anm->mPose.size();
+  int inumposebones = (int)anm->_pose.size();
 
   HeaderStream->AddItem(inumposebones);
 
-  for (orklut<PoolString, ork::lev2::DecompMtx44>::const_iterator it = anm->mPose.begin(); it != anm->mPose.end(); it++) {
-    const PoolString& name            = (*it).first;
-    const ork::lev2::DecompMtx44& mtx = (*it).second;
+  for (auto it : anm->_pose ) {
+    const PoolString& name = it.first;
+    const fmtx4& mtx = it.second;
 
     // int idataoffset = AnimDataStream->GetSize();
     int ichannelname = chunkwriter.stringIndex(name.c_str());

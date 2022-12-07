@@ -108,6 +108,7 @@ struct GpuResources {
     _char_animinst->bindAnim(anim);
     _char_animinst->SetWeight(1.0f);
     _char_animinst->RefMask().EnableAll();
+    modelinst->_localPose.bindAnimInst(*_char_animinst);
 
     //////////////////////////////////////////////
     // scenegraph nodes
@@ -230,7 +231,7 @@ int main(int argc, char** argv, char** envp) {
     localpose.buildPose();
     localpose.concatenate();
 
-    auto lpdump = localpose.dump();
+    //auto lpdump = localpose.dump();
     //printf( "%s\n", lpdump.c_str() );
 
     worldpose.apply(fmtx4(),localpose);

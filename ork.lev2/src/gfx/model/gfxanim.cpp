@@ -21,7 +21,6 @@ ImplementReflectionX(ork::lev2::XgmFloatAnimChannel, "XgmFloatAnimChannel");
 ImplementReflectionX(ork::lev2::XgmVect3AnimChannel, "XgmVect3AnimChannel");
 ImplementReflectionX(ork::lev2::XgmVect4AnimChannel, "XgmVect4AnimChannel");
 ImplementReflectionX(ork::lev2::XgmMatrixAnimChannel, "XgmMatrixAnimChannel");
-ImplementReflectionX(ork::lev2::XgmDecompAnimChannel, "XgmDecompAnimChannel");
 
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
@@ -35,8 +34,6 @@ void XgmVect3AnimChannel::describeX(class_t* clazz) {
 void XgmVect4AnimChannel::describeX(class_t* clazz) {
 }
 void XgmMatrixAnimChannel::describeX(class_t* clazz) {
-}
-void XgmDecompAnimChannel::describeX(class_t* clazz) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -65,45 +62,33 @@ void XgmAnimMask::EnableAll() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-// because there are 2 bones per char (4 bits each)
-#define BONE_TO_CHAR(iboneindex) (iboneindex >> 1)
-#define BONE_TO_BIT(iboneindex) ((iboneindex & 0x1) << 2)
+// because there are 8 bones per char 
+inline int BONE_TO_CHAR(int iboneindex) { return (iboneindex >> 3); }
+inline int BONE_TO_BIT(int iboneindex) { return  (iboneindex & 0x7); }
 
-#define CHECK_BONE(iboneindex) (iboneindex >= 0 && iboneindex < ((XgmAnimMask::knummaskbytes << 3) >> 2))
-#define ASSERT_BONE(iboneindex) OrkAssert(CHECK_BONE(iboneindex))
-
-#define SET_BITS(c, ibitindex, bits) (c |= (bits << ibitindex))
-#define CLEAR_BITS(c, ibitindex, bits) (c &= ~(bits << ibitindex))
-#define CHECK_BITS(c, ibitindex, bits) ((c >> ibitindex) & bits)
-
-void XgmAnimMask::Enable(const XgmSkeleton& Skel, const PoolString& BoneName, EXFORM_COMPONENT components) {
-  if (XFORM_COMPONENT_NONE == components)
-    return;
+void XgmAnimMask::Enable(const XgmSkeleton& Skel, const PoolString& BoneName) {
 
   int iboneindex = Skel.jointIndex(BoneName);
 
   // this used to be assert, but designers may someday be setting bone names in tool. Be nicer to them.
-  if (!CHECK_BONE(iboneindex)) {
+  if (iboneindex==-1) {
     orkprintf("Bone does not exist: %s!\n", BoneName.c_str());
     return;
   }
 
-  Enable(iboneindex, components);
+  Enable(iboneindex);
 }
 
-void XgmAnimMask::Enable(int iboneindex, EXFORM_COMPONENT components) {
+void XgmAnimMask::Enable(int iboneindex) {
   // this used to be assert, but designers may someday be setting bone names in tool. Be nicer to them.
-  if (!CHECK_BONE(iboneindex)) {
+  if (iboneindex==-1) {
     orkprintf("Bone index does not exist: %d!\n", iboneindex);
     return;
   }
 
-  if (XFORM_COMPONENT_NONE == components)
-    return;
-
   int icharindex = BONE_TO_CHAR(iboneindex);
   int ibitindex  = BONE_TO_BIT(iboneindex);
-  SET_BITS(mMaskBits[icharindex], ibitindex, components);
+  mMaskBits[icharindex] |= (1<<ibitindex);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -115,82 +100,49 @@ void XgmAnimMask::DisableAll() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmAnimMask::Disable(const XgmSkeleton& Skel, const PoolString& BoneName, EXFORM_COMPONENT components) {
-  if (XFORM_COMPONENT_NONE == components)
-    return;
+void XgmAnimMask::Disable(const XgmSkeleton& Skel, const PoolString& BoneName) {
 
   int iboneindex = Skel.jointIndex(BoneName);
 
   // this used to be assert, but designers may someday be setting bone names in tool. Be nicer to them.
-  if (!CHECK_BONE(iboneindex)) {
+  if (iboneindex==-1) {
     orkprintf("Bone does not exist: %s!\n", BoneName.c_str());
     return;
   }
 
-  Disable(iboneindex, components);
+  Disable(iboneindex);
 }
 
-void XgmAnimMask::Disable(int iboneindex, EXFORM_COMPONENT components) {
-  ASSERT_BONE(iboneindex);
-
-  if (XFORM_COMPONENT_NONE == components)
-    return;
+void XgmAnimMask::Disable(int iboneindex) {
+  OrkAssert(iboneindex>=0);
 
   int icharindex = BONE_TO_CHAR(iboneindex);
   int ibitindex  = BONE_TO_BIT(iboneindex);
-  CLEAR_BITS(mMaskBits[icharindex], ibitindex, components);
+  mMaskBits[icharindex] &= ~(1<<ibitindex);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool XgmAnimMask::Check(const XgmSkeleton& Skel, const PoolString& BoneName, EXFORM_COMPONENT components) const {
-  if (XFORM_COMPONENT_NONE == components)
-    return false;
+bool XgmAnimMask::isEnabled(const XgmSkeleton& Skel, const PoolString& BoneName) const {
 
   int iboneindex = Skel.jointIndex(BoneName);
 
   // this used to be assert, but designers may someday be setting bone names in tool. Be nicer to them.
-  if (!CHECK_BONE(iboneindex)) {
+  if (iboneindex==-1) {
     orkprintf("Bone does not exist: %s!\n", BoneName.c_str());
     return false;
   }
 
-  return Check(iboneindex, components);
+  return isEnabled(iboneindex);
 }
 
-bool XgmAnimMask::Check(int iboneindex, EXFORM_COMPONENT components) const {
-  ASSERT_BONE(iboneindex);
-
-  if (XFORM_COMPONENT_NONE == components)
-    return false;
+bool XgmAnimMask::isEnabled(int iboneindex) const {
+  OrkAssert(iboneindex>=0);
 
   int icharindex = BONE_TO_CHAR(iboneindex);
   int ibitindex  = BONE_TO_BIT(iboneindex);
-  return CHECK_BITS(mMaskBits[icharindex], ibitindex, components);
-}
-
-EXFORM_COMPONENT XgmAnimMask::GetComponents(const XgmSkeleton& Skel, const PoolString& BoneName) const {
-  int iboneindex = Skel.jointIndex(BoneName);
-
-  // this used to be assert, but designers may someday be setting bone names in tool. Be nicer to them.
-  if (!CHECK_BONE(iboneindex)) {
-    orkprintf("Bone does not exist: %s!\n", BoneName.c_str());
-    return XFORM_COMPONENT_NONE;
-  }
-
-  return GetComponents(iboneindex);
-}
-
-EXFORM_COMPONENT XgmAnimMask::GetComponents(int iboneindex) const {
-  // this used to be assert, but designers may someday be setting bone names in tool. Be nicer to them.
-  if (!CHECK_BONE(iboneindex)) {
-    orkprintf("Bone does not exist: %d!\n", iboneindex);
-    return XFORM_COMPONENT_NONE;
-  }
-
-  int icharindex = BONE_TO_CHAR(iboneindex);
-  int ibitindex  = BONE_TO_BIT(iboneindex);
-  return EXFORM_COMPONENT(CHECK_BITS(mMaskBits[icharindex], ibitindex, XFORM_COMPONENT_ALL));
+  int imask = 1<<ibitindex;
+  return (mMaskBits[icharindex]&imask)!=0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -341,7 +293,7 @@ void XgmAnim::AddChannel(const PoolString& Name, animchannel_ptr_t pchan) {
   const PoolString& usage = pchan->GetUsageSemantic();
 
   if (usage == FindPooledString("Joint")) {
-    auto MtxChan = std::dynamic_pointer_cast<XgmDecompAnimChannel>(pchan).get();
+    auto MtxChan = std::dynamic_pointer_cast<XgmMatrixAnimChannel>(pchan).get();
     OrkAssert(MtxChan);
     mJointAnimationChannels.AddSorted(Name, MtxChan);
   } else if (usage == FindPooledString("UvTransform")) {
@@ -353,6 +305,7 @@ void XgmAnim::AddChannel(const PoolString& Name, animchannel_ptr_t pchan) {
     mMaterialAnimationChannels.AddSorted(Name, pchan);
   }
 }
+
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -369,6 +322,34 @@ XgmAnimInst::XgmAnimInst()
 void XgmAnimInst::bindAnim(const XgmAnim* anim) {
   _animation  = anim;
   _current_frame = 0.0f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+const XgmAnimInst::Binding& XgmAnimInst::getPoseBinding(int i) const {
+  OrkAssert(i<kmaxbones);
+  return _poseBindings[i];
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+const XgmAnimInst::Binding& XgmAnimInst::getAnimBinding(int i) const {
+  OrkAssert(i<kmaxbones);
+  return _animBindings[i];
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void XgmAnimInst::setPoseBinding(int i, const Binding& inp) {
+  OrkAssert(i<kmaxbones);
+  _poseBindings[i] = inp;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void XgmAnimInst::setAnimBinding(int i, const Binding& inp) {
+  OrkAssert(i<kmaxbones);
+  _animBindings[i] = inp;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -463,46 +444,7 @@ void XgmMatrixAnimChannel::reserveFrames(size_t icount) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-XgmDecompAnimChannel::XgmDecompAnimChannel()
-    : XgmAnimChannel(EXGMAC_DCMTX) {
-}
-
-XgmDecompAnimChannel::XgmDecompAnimChannel(const PoolString& ObjName, const PoolString& ChanName, const PoolString& Usage)
-    : XgmAnimChannel(ObjName, ChanName, Usage, EXGMAC_DCMTX){
-
-}
- 
-
-///////////////////////////////////////////////////////////////////////////////
-
-void XgmDecompAnimChannel::setFrame(size_t i,const DecompMtx44& v) {
-  _sampledFrames[i]=v;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-DecompMtx44 XgmDecompAnimChannel::GetFrame(int index) const {
-  if(index>=_sampledFrames.size()){
-    return DecompMtx44();
-  }
-  return _sampledFrames[index];
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-size_t XgmDecompAnimChannel::numFrames() const {
-  return _sampledFrames.size();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void XgmDecompAnimChannel::reserveFrames(size_t icount) {
-  _sampledFrames.resize(icount);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 } // namespace ork::lev2
 
-template void ork::chunkfile::OutputStream::AddItem<ork::lev2::DecompMtx44>(const ork::lev2::DecompMtx44& item);
-template class ork::orklut<ork::PoolString, ork::lev2::DecompMtx44>;
+//template void ork::chunkfile::OutputStream::AddItem<ork::lev2::DecompMtx44>(const ork::lev2::DecompMtx44& item);
+//template class ork::orklut<ork::PoolString, ork::lev2::DecompMtx44>;
