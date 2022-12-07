@@ -657,8 +657,7 @@ void configureXgmSkeleton(const ork::meshutil::Mesh& input, lev2::XgmModel& xgmm
     int pidx                     = parskelnode ? parskelnode->miSkelIndex : -1;
     //logchan_meshutilassimp->log("JointName<%s> skelnode<%p> parskelnode<%p> idx<%d> pidx<%d>\n", JointName.c_str(), (void*) skelnode, (void*) parskelnode, idx, pidx);
 
-    PoolString JointNameSidx = AddPooledString(JointName.c_str());
-    xgmskel.AddJoint(idx, pidx, JointNameSidx);
+    xgmskel.AddJoint(idx, pidx, JointName);
     xgmskel.RefInverseBindMatrix(idx) = skelnode ? skelnode->_bindMatrixInverse : fmtx4();
     xgmskel.RefJointMatrix(idx)       = skelnode ? skelnode->_jointMatrix : fmtx4();
     xgmskel.RefNodeMatrix(idx)        = skelnode ? skelnode->_nodeMatrix : fmtx4();

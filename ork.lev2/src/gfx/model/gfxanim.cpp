@@ -66,7 +66,7 @@ void XgmAnimMask::EnableAll() {
 inline int BONE_TO_CHAR(int iboneindex) { return (iboneindex >> 3); }
 inline int BONE_TO_BIT(int iboneindex) { return  (iboneindex & 0x7); }
 
-void XgmAnimMask::Enable(const XgmSkeleton& Skel, const PoolString& BoneName) {
+void XgmAnimMask::Enable(const XgmSkeleton& Skel, const std::string& BoneName) {
 
   int iboneindex = Skel.jointIndex(BoneName);
 
@@ -100,7 +100,7 @@ void XgmAnimMask::DisableAll() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmAnimMask::Disable(const XgmSkeleton& Skel, const PoolString& BoneName) {
+void XgmAnimMask::Disable(const XgmSkeleton& Skel, const std::string& BoneName) {
 
   int iboneindex = Skel.jointIndex(BoneName);
 
@@ -123,7 +123,7 @@ void XgmAnimMask::Disable(int iboneindex) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool XgmAnimMask::isEnabled(const XgmSkeleton& Skel, const PoolString& BoneName) const {
+bool XgmAnimMask::isEnabled(const XgmSkeleton& Skel, const std::string& BoneName) const {
 
   int iboneindex = Skel.jointIndex(BoneName);
 
@@ -206,9 +206,9 @@ void XgmMaterialStateInst::BindAnimInst(const XgmAnimInst& AnimInst) {
     const XgmAnim::MaterialChannelsMap& map = anim.RefMaterialChannels();
 
     for (XgmAnim::MaterialChannelsMap::const_iterator it = map.begin(); it != map.end(); it++) {
-      const PoolString& channelname = it->first;
+      const std::string& channelname = it->first;
       auto channel                  = it->second.get();
-      const PoolString& objectname  = channel->GetObjectName();
+      const std::string& objectname  = channel->GetObjectName();
 
       const XgmFloatAnimChannel* __restrict fchan  = rtti::autocast(channel);
       const XgmVect3AnimChannel* __restrict v3chan = rtti::autocast(channel);
@@ -217,7 +217,7 @@ void XgmMaterialStateInst::BindAnimInst(const XgmAnimInst& AnimInst) {
       if (mchan) {
         for (int imat = 0; imat < nummaterials; imat++) {
           auto material             = mModel->GetMaterial(imat);
-          const PoolString& matname = material->GetName();
+          std::string matname = material->GetName().c_str();
 
           if (matname == objectname) {
             /*
@@ -289,20 +289,20 @@ XgmAnim::XgmAnim()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmAnim::AddChannel(const PoolString& Name, animchannel_ptr_t pchan) {
-  const PoolString& usage = pchan->GetUsageSemantic();
+void XgmAnim::AddChannel(const std::string& Name, animchannel_ptr_t pchan) {
+  const std::string& usage = pchan->GetUsageSemantic();
 
-  if (usage == FindPooledString("Joint")) {
+  if (usage == "Joint") {
     auto MtxChan = std::dynamic_pointer_cast<XgmMatrixAnimChannel>(pchan).get();
     OrkAssert(MtxChan);
-    mJointAnimationChannels.AddSorted(Name, MtxChan);
-  } else if (usage == FindPooledString("UvTransform")) {
+    mJointAnimationChannels[Name]=MtxChan;
+  } else if (usage == "UvTransform") {
     auto MtxChan = std::dynamic_pointer_cast<XgmMatrixAnimChannel>(pchan).get();
     OrkAssert(MtxChan);
-    mMaterialAnimationChannels.AddSorted(Name, pchan);
-  } else if (usage == FindPooledString("FxParam")) {
+    mMaterialAnimationChannels[Name]=pchan;
+  } else if (usage == "FxParam") {
     OrkAssert(pchan);
-    mMaterialAnimationChannels.AddSorted(Name, pchan);
+    mMaterialAnimationChannels[Name] = pchan;
   }
 }
 
@@ -355,9 +355,9 @@ void XgmAnimInst::setAnimBinding(int i, const Binding& inp) {
 ///////////////////////////////////////////////////////////////////////////////
 
 XgmAnimChannel::XgmAnimChannel(
-    const PoolString& ObjName,
-    const PoolString& ChanName,
-    const PoolString& UsageSemantic,
+    const std::string& ObjName,
+    const std::string& ChanName,
+    const std::string& UsageSemantic,
     EChannelType etype)
     : mChannelName(ChanName)
     , mObjectName(ObjName)
@@ -381,7 +381,7 @@ XgmFloatAnimChannel::XgmFloatAnimChannel()
     : XgmAnimChannel(EXGMAC_FLOAT) {
 }
 
-XgmFloatAnimChannel::XgmFloatAnimChannel(const PoolString& ObjName, const PoolString& ChanName, const PoolString& Usage)
+XgmFloatAnimChannel::XgmFloatAnimChannel(const std::string& ObjName, const std::string& ChanName, const std::string& Usage)
     : XgmAnimChannel(ObjName, ChanName, Usage, EXGMAC_FLOAT) {
 }
 
@@ -391,7 +391,7 @@ XgmVect3AnimChannel::XgmVect3AnimChannel()
     : XgmAnimChannel(EXGMAC_VECT3) {
 }
 
-XgmVect3AnimChannel::XgmVect3AnimChannel(const PoolString& ObjName, const PoolString& ChanName, const PoolString& Usage)
+XgmVect3AnimChannel::XgmVect3AnimChannel(const std::string& ObjName, const std::string& ChanName, const std::string& Usage)
     : XgmAnimChannel(ObjName, ChanName, Usage, EXGMAC_VECT3) {
 }
 
@@ -401,7 +401,7 @@ XgmVect4AnimChannel::XgmVect4AnimChannel()
     : XgmAnimChannel(EXGMAC_VECT4) {
 }
 
-XgmVect4AnimChannel::XgmVect4AnimChannel(const PoolString& ObjName, const PoolString& ChanName, const PoolString& Usage)
+XgmVect4AnimChannel::XgmVect4AnimChannel(const std::string& ObjName, const std::string& ChanName, const std::string& Usage)
     : XgmAnimChannel(ObjName, ChanName, Usage, EXGMAC_VECT4) {
 }
 
@@ -411,7 +411,7 @@ XgmMatrixAnimChannel::XgmMatrixAnimChannel()
     : XgmAnimChannel(EXGMAC_MTX44) {
 }
 
-XgmMatrixAnimChannel::XgmMatrixAnimChannel(const PoolString& ObjName, const PoolString& ChanName, const PoolString& Usage)
+XgmMatrixAnimChannel::XgmMatrixAnimChannel(const std::string& ObjName, const std::string& ChanName, const std::string& Usage)
     : XgmAnimChannel(ObjName, ChanName, Usage, EXGMAC_MTX44) {
 }
 
@@ -448,4 +448,4 @@ void XgmMatrixAnimChannel::reserveFrames(size_t icount) {
 } // namespace ork::lev2
 
 //template void ork::chunkfile::OutputStream::AddItem<ork::lev2::DecompMtx44>(const ork::lev2::DecompMtx44& item);
-//template class ork::orklut<ork::PoolString, ork::lev2::DecompMtx44>;
+//template class ork::orklut<ork::std::string, ork::lev2::DecompMtx44>;

@@ -222,10 +222,9 @@ void XgmLocalPose::applyAnimInst(const XgmAnimInst& animinst) {
   float fweight           = animinst.GetWeight();
   ////////////////////////////////////////////////////
   // retrieve anim information
-  const ork::lev2::AnimType* __restrict pl2anim = animinst._animation;
+  const ork::lev2::AnimType* pl2anim = animinst._animation;
   ////////////////////////////////////////////////////
   if (pl2anim) {
-    const ork::lev2::XgmAnim::JointChannelsMap& Channels = pl2anim->RefJointChannels();
     ////////////////////////////////////////////////////
     // set pose channels (that do not have animation) first
     ////////////////////////////////////////////////////
@@ -252,18 +251,23 @@ void XgmLocalPose::applyAnimInst(const XgmAnimInst& animinst) {
 
     printf( "apply animinst frame<%d> numframes<%zu> inumanimchannels<%zu>\n", iframe, numframes, inumanimchannels );
 
-
+    const ork::lev2::XgmAnim::JointChannelsMap& Channels = pl2anim->RefJointChannels();
     for (int iaidx = 0; iaidx < XgmAnimInst::kmaxbones; iaidx++) {
       auto& binding  = animinst.getAnimBinding(iaidx);
       int iskelindex = binding.mSkelIndex;
       // printf( "iaidx<%d> iskelindex<%d> inumanimchannels<%zu>\n", iaidx, iskelindex, inumanimchannels );
       if (iskelindex != 0xffff) {
         int ichanindex              = binding.mChanIndex;
+
+        printf( "apply on iskelidx<%d> ichanindex<%d>\n", iskelindex, ichanindex );
+
         auto MtxChannelData         = Channels.GetItemAtIndex(ichanindex).second;
+        OrkAssert(MtxChannelData);
+        size_t numframes = MtxChannelData->_sampledFrames.size();
+        printf( "MtxChannelData<%p> numframes<%zu>\n", (void*) MtxChannelData, numframes );
         const fmtx4& matrix  = MtxChannelData->GetFrame(iframe);
         _blendposeinfos[iskelindex].addPose(matrix, fweight);
 
-        printf( "apply on iskelidx<%d>\n", iskelindex );
         auto adump = matrix.dump4x3cn();
         printf("adump: %s\n", adump.c_str());
 

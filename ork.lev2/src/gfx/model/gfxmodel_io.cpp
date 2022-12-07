@@ -192,7 +192,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
         const char* pjntname = chunkreader.GetString(ijointname);
 
         fxstring<256> jnamp(pjntname);
-        mdl->mSkeleton.AddJoint(iskelindex, iparentindex, AddPooledString(jnamp.c_str()));
+        mdl->mSkeleton.AddJoint(iskelindex, iparentindex, jnamp.c_str());
         ptstring.set(chunkreader.GetString(inodematrix));
         mdl->mSkeleton.RefNodeMatrix(iskelindex) = PropType<fmtx4>::FromString(ptstring);
         ptstring.set(chunkreader.GetString(ijointmatrix));
@@ -449,12 +449,12 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
 
             const char* jointname = chunkreader.GetString(ibindingname);
             fxstring<256> jnamp(jointname);
-            PoolString JointNameIndex                      = FindPooledString(jnamp.c_str());
-            orklut<PoolString, int>::const_iterator itfind = mdl->mSkeleton.mmJointNameMap.find(JointNameIndex);
+            std::string JointNameIndex                      = jnamp.c_str();
+            auto itfind = mdl->mSkeleton.mmJointNameMap.find(JointNameIndex);
 
             OrkAssert(itfind != mdl->mSkeleton.mmJointNameMap.end());
             int iskelindex                 = (*itfind).second;
-            cluster->mJoints[ib]           = AddPooledString(jnamp.c_str());
+            cluster->mJoints[ib]           = jnamp.c_str();
             cluster->mJointSkelIndices[ib] = iskelindex;
           }
 

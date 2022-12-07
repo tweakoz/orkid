@@ -17,7 +17,7 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
 
   //ColladaExportPolicy policy;
   //policy.mUnits            = UNITS_METER;
-  const PoolString JointPS = AddPooledString("Joint");
+  const std::string JointPS = "Joint";
 
   auto color = fvec3(1, 0, 1);
 
@@ -143,11 +143,10 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
 
       /////////////////////////////
 
-      PoolString objnameps         = AddPooledString("");
-      PoolString ChannelPooledName = AddPooledString(channel_name.c_str());
-      auto XgmChan                 = std::make_shared<ork::lev2::XgmMatrixAnimChannel>(objnameps, ChannelPooledName, JointPS);
+      std::string objnameps         = "";
+      auto XgmChan                 = std::make_shared<ork::lev2::XgmMatrixAnimChannel>(objnameps, channel_name, JointPS);
       XgmChan->reserveFrames(framecount);
-      xgmanim.AddChannel(ChannelPooledName, XgmChan);
+      xgmanim.AddChannel(channel_name, XgmChan);
       skelnode->_varmap["xgmchan"].make<lev2::animchannel_ptr_t>(XgmChan);
 
       /////////////////////////////

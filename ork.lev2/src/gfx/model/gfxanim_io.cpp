@@ -131,9 +131,9 @@ bool XgmAnim::_loadXGA(XgmAnim* anm, datablock_ptr_t datablock) {
       logchan_anmio->log(
           "MatrixChannel<%s> ChannelClass<%s> pchnname<%s> objname<%s> numframes<%d>", pchnname, pchannelclass, pchnname, pobjname, inumframes);
 
-      Channel->SetChannelName(AddPooledString(pchnname));
-      Channel->SetObjectName(AddPooledString(pobjname));
-      Channel->SetChannelUsage(AddPooledString(pusgname));
+      Channel->SetChannelName((pchnname));
+      Channel->SetObjectName((pobjname));
+      Channel->SetChannelUsage((pusgname));
       chansettter::set(anm, Channel, pdata);
       anm->AddChannel(Channel->GetChannelName(), Channel);
     }
@@ -153,9 +153,9 @@ bool XgmAnim::_loadXGA(XgmAnim* anm, datablock_ptr_t datablock) {
       void* pdata                      = AnimDataStream->GetDataAt(idataoffset);
       ork::object::ObjectClass* pclass = rtti::autocast(rtti::Class::FindClass(pchannelclass));
       auto Channel                     = std::dynamic_pointer_cast<XgmAnimChannel>(pclass->createShared());
-      Channel->SetChannelName(AddPooledString(pchnname));
-      Channel->SetObjectName(AddPooledString(pobjname));
-      Channel->SetChannelUsage(AddPooledString(pusgname));
+      Channel->SetChannelName((pchnname));
+      Channel->SetObjectName((pobjname));
+      Channel->SetChannelUsage((pusgname));
       chansettter::set(anm, Channel, pdata);
       anm->AddChannel(Channel->GetChannelName(), Channel);
     }
@@ -170,7 +170,7 @@ bool XgmAnim::_loadXGA(XgmAnim* anm, datablock_ptr_t datablock) {
       HeaderStream->GetItem(bone_matrix);
       std::string PoseChannelName = chunkreader.GetString(ichnname);
       PoseChannelName             = ork::string::replaced(PoseChannelName, "_", ".");
-      anm->_pose.AddSorted(AddPooledString(PoseChannelName.c_str()), bone_matrix);
+      anm->_pose.AddSorted((PoseChannelName.c_str()), bone_matrix);
     }
     ////////////////////////////////////////////////////////
   }
@@ -199,7 +199,7 @@ bool XgmAnim::LoadUnManaged(XgmAnim* anm, const AssetPath& fname) {
   auto ActualPath = fname.ToAbsolute();
 
   printf("ActualPath<%s>\n", ActualPath.c_str());
-  // anm->msModelName = AddPooledString(fname.c_str());
+  // anm->msModelName = (fname.c_str());
   if (auto datablock = datablockFromFileAtPath(ActualPath)) {
     ///////////////////////////////////
     // annotate the datablock with some info

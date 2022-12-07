@@ -17,9 +17,9 @@
 namespace ork { namespace lev2 {
 
 using TXGMBoneRegMap  = orkmap<int, int>;
-using AnimChannelType = XgmAnimChannel;
-using AnimType        = XgmAnim;
-using AnimChannelsMap = orkmap<PoolString, ork::lev2::AnimChannelType*>;
+//using xgm_anim_channel_ptr_t = std::shared_ptr<XgmAnimChannel>;
+//using AnimType        = XgmAnim;
+//using anim_channel_map_t = std::map<std::string, xgm_anim_channel_ptr_t>;
 
 /// ///////////////////////////////////////////////////////////////////////////
 /// Animation Channel
@@ -43,36 +43,36 @@ public:
     EXGMAC_DCMTX, // Decomposed 4x4 Matrix (quat, scale and pos)
   };
 
-  XgmAnimChannel(const PoolString& ObjName, const PoolString& ChanName, const PoolString& UsageSemantic, EChannelType etype);
+  XgmAnimChannel(const std::string& ObjName, const std::string& ChanName, const std::string& UsageSemantic, EChannelType etype);
   XgmAnimChannel(EChannelType etype);
 
-  const PoolString& GetChannelName() const {
+  const std::string& GetChannelName() const {
     return mChannelName;
   }
-  const PoolString& GetObjectName() const {
+  const std::string& GetObjectName() const {
     return mObjectName;
   }
   EChannelType GetChannelType() const {
     return meChannelType;
   }
-  const PoolString& GetUsageSemantic() const {
+  const std::string& GetUsageSemantic() const {
     return mUsageSemantic;
   }
   virtual size_t numFrames() const = 0;
 
-  void SetChannelName(const PoolString& name) {
+  void SetChannelName(const std::string& name) {
     mChannelName = name;
   }
-  void SetObjectName(const PoolString& name) {
+  void SetObjectName(const std::string& name) {
     mObjectName = name;
   }
-  void SetChannelUsage(const PoolString& usage) {
+  void SetChannelUsage(const std::string& usage) {
     mUsageSemantic = usage;
   }
 
-  PoolString mChannelName;
-  PoolString mObjectName;
-  PoolString mUsageSemantic;
+  std::string mChannelName;
+  std::string mObjectName;
+  std::string mUsageSemantic;
   int miNumFrames;
   EChannelType meChannelType;
 };
@@ -84,7 +84,7 @@ struct XgmFloatAnimChannel : public XgmAnimChannel {
 public:
 
 
-  XgmFloatAnimChannel(const PoolString& ObjName, const PoolString& ChanName, const PoolString& Usage);
+  XgmFloatAnimChannel(const std::string& ObjName, const std::string& ChanName, const std::string& Usage);
   XgmFloatAnimChannel();
 
   void setFrame(size_t i, float v) {
@@ -109,7 +109,7 @@ struct XgmVect3AnimChannel : public XgmAnimChannel {
   DeclareConcreteX(XgmVect3AnimChannel, XgmAnimChannel);
 public:
 
-  XgmVect3AnimChannel(const PoolString& ObjName, const PoolString& ChanName, const PoolString& Usage);
+  XgmVect3AnimChannel(const std::string& ObjName, const std::string& ChanName, const std::string& Usage);
   XgmVect3AnimChannel();
 
   void setFrame(size_t i, const fvec3& v) {
@@ -135,7 +135,7 @@ struct XgmVect4AnimChannel : public XgmAnimChannel {
 
 public:
 
-  XgmVect4AnimChannel(const PoolString& ObjName, const PoolString& ChanName, const PoolString& Usage);
+  XgmVect4AnimChannel(const std::string& ObjName, const std::string& ChanName, const std::string& Usage);
   XgmVect4AnimChannel();
 
   void setFrame(size_t i, const fvec4& v) {
@@ -165,7 +165,7 @@ public:
   size_t numFrames() const final;
 
 
-  XgmMatrixAnimChannel(const PoolString& ObjName, const PoolString& ChanName, const PoolString& Usage);
+  XgmMatrixAnimChannel(const std::string& ObjName, const std::string& ChanName, const std::string& Usage);
   XgmMatrixAnimChannel();
 
   void setFrame(size_t i, const fmtx4& v);
@@ -183,10 +183,10 @@ public:
 
 struct XgmAnim {
 
-  typedef orklut<PoolString, ork::lev2::XgmMatrixAnimChannel*> JointChannelsMap;
-  typedef orklut<PoolString, animchannel_ptr_t> MaterialChannelsMap;
+  typedef std::unordered_map<std::string, ork::lev2::XgmMatrixAnimChannel*> JointChannelsMap;
+  typedef std::unordered_map<std::string, animchannel_ptr_t> MaterialChannelsMap;
 
-  void AddChannel(const PoolString& Name, animchannel_ptr_t pchan);
+  void AddChannel(const std::string& Name, animchannel_ptr_t pchan);
 
   //////////////////////////
 
@@ -218,17 +218,17 @@ struct XgmAnim {
     return mMaterialAnimationChannels;
   }
 
-  orklut<PoolString, fmtx4>& GetStaticPose() {
+  orklut<std::string, fmtx4>& GetStaticPose() {
     return _pose;
   }
-  const orklut<PoolString, fmtx4>& GetStaticPose() const {
+  const orklut<std::string, fmtx4>& GetStaticPose() const {
     return _pose;
   }
 
   size_t _numframes = 0;
   JointChannelsMap mJointAnimationChannels;
   MaterialChannelsMap mMaterialAnimationChannels;
-  orklut<PoolString, fmtx4> _pose;
+  orklut<std::string, fmtx4> _pose;
 };
 
 /// ///////////////////////////////////////////////////////////////////////////
@@ -245,14 +245,14 @@ struct XgmAnimMask {
   XgmAnimMask& operator=(const XgmAnimMask& mask);
 
   void EnableAll();
-  void Enable(const XgmSkeleton& Skeleton, const PoolString& BoneName);
+  void Enable(const XgmSkeleton& Skeleton, const std::string& BoneName);
   void Enable(int iboneindex);
 
   void DisableAll();
-  void Disable(const XgmSkeleton& Skeleton, const PoolString& BoneName);
+  void Disable(const XgmSkeleton& Skeleton, const std::string& BoneName);
   void Disable(int iboneindex);
 
-  bool isEnabled(const XgmSkeleton& Skeleton, const PoolString& BoneName) const;
+  bool isEnabled(const XgmSkeleton& Skeleton, const std::string& BoneName) const;
   bool isEnabled(int iboneindex) const;
 
 };
@@ -524,7 +524,7 @@ struct XgmSkeleton {
 
   float boneLength(int ibone) const;
 
-  const PoolString& GetJointName(int idx) const {
+  const std::string& GetJointName(int idx) const {
     return mvJointNameVect[idx];
   }
   int GetJointParent(int idx) const {
@@ -536,12 +536,12 @@ struct XgmSkeleton {
   const XgmBone& bone(int idx) const {
     return _bones[idx];
   }
-  int jointIndex(const PoolString& Named) const;
+  int jointIndex(const std::string& Named) const;
 
   /////////////////////////////////////
 
   void resize(int inumjoints); // set number of joints
-  void AddJoint(int iskelindex, int iparindex, const PoolString& name);
+  void AddJoint(int iskelindex, int iparindex, const std::string& name);
   void addBone(const XgmBone& bone);
 
   /////////////////////////////////////
@@ -565,7 +565,7 @@ struct XgmSkeleton {
     return _inverseBindMatrices[idx];
   }
 
-  fmtx4 concatenated(PoolString named) const;
+  fmtx4 concatenated(std::string named) const;
 
   /////////////////////////////////////
 
@@ -581,7 +581,7 @@ struct XgmSkeleton {
   int miNumJoints = 0;
   int miRootNode  = -1;
 
-  PoolString msSkelName;
+  std::string msSkelName;
 
   fvec4 mBoundMin;
   fvec4 mBoundMax;
@@ -591,9 +591,9 @@ struct XgmSkeleton {
   orkvector<fmtx4> _inverseBindMatrices;
   orkvector<fmtx4> _jointMatrices;
   orkvector<fmtx4> _nodeMatrices;
-  orkvector<PoolString> mvJointNameVect;
+  orkvector<std::string> mvJointNameVect;
   orkvector<XgmBone> _bones;
   orkvector<int> maJointParents;
-  orklut<PoolString, int> mmJointNameMap;
+  orklut<std::string, int> mmJointNameMap;
 };
 }} // namespace ork::lev2
