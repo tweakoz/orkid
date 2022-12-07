@@ -71,16 +71,14 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
 
       embtex->_format = fmt;
 
-      if (texname.length() == 0) {
-        embedded            = true;
-        embtex->_srcdatalen = texture->mWidth;
-        embtex->_srcdata    = (const void*)texture->pcData;
-        texname             = FormatString("*%d", i);
-        embtex->_name       = texname;
-      } else {
 
-        OrkAssert(false);
-      }
+
+      embedded            = true;
+      embtex->_srcdatalen = texture->mWidth;
+      embtex->_srcdata    = (const void*)texture->pcData;
+      embtex->_origname   = texname;
+      texname             = FormatString("*%d", i);
+      embtex->_name       = texname;
 
       if (fmt == "png" or fmt == "jpg") {
         embtexmap[texname] = embtex;

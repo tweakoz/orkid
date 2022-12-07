@@ -43,6 +43,7 @@ struct EmbeddedTexture final {
   const void* _srcdata = nullptr;
   std::string _format;
   std::string _name;
+  std::string _origname;
   bool _compressionPending = true;
   ETextureUsage _usage     = ETEXUSAGE_DATA;
   datablock_ptr_t _ddsdestdatablock;
