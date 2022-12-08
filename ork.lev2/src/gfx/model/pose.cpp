@@ -275,10 +275,14 @@ void XgmLocalPose::applyAnimInst(const XgmAnimInst& animinst) {
         size_t numframes = joint_data->_sampledFrames.size();
         //logchan_pose->log("joint_data<%p> numframes<%zu>", (void*)joint_data, numframes);
         const fmtx4& matrix = joint_data->GetFrame(iframe);
-        _blendposeinfos[iskelindex].addPose(matrix*skel_rel, fweight);//yoyo
 
-        //auto adump = matrix.dump4x3cn();
-        //logchan_pose->log("adump: anm<%p> iskelindex<%d> mtx: %s", (void*) animation, iskelindex, adump.c_str());
+        //_blendposeinfos[iskelindex].addPose(matrix, fweight);//yoyo
+        _blendposeinfos[iskelindex].addPose(matrix, fweight);//yoyo
+
+        auto adump = matrix.dump4x3cn();
+        logchan_pose->log("adump: anm<%p> iskelindex<%d> mtx: %s", (void*) animation, iskelindex, adump.c_str());
+        auto bdump = skel_rel.dump4x3cn();
+        logchan_pose->log("bdump: anm<%p> iskelindex<%d> skel_rel: %s", (void*) animation, iskelindex, bdump.c_str());
 
       } else {
         break;

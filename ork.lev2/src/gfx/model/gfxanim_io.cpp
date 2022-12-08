@@ -114,7 +114,7 @@ bool XgmAnim::_loadXGA(XgmAnim* anm, datablock_ptr_t datablock) {
                          matrix_src_data );
 
       fmtx4 scalematrix;
-      scalematrix.compose(fvec3(0,0,0),fquat(),0.01f);
+      //scalematrix.compose(fvec3(0,0,0),fquat(),0.01f);
 
       for (size_t ifr = 0; ifr < anm->_numframes; ifr++) {
         fmtx4 src_matrix = scalematrix*matrix_src_data[ifr];
