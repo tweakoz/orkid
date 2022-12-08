@@ -31,24 +31,14 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock);
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_anmio = logger()->createChannel("gfxanimIOREAD", fvec3(1, 0.8, 1));
+static logchannel_ptr_t logchan_anmio = logger()->createChannel("gfxanim.io.read", fvec3(1, 0.8, 1));
 
 ///////////////////////////////////////////////////////////////////////////////
 struct chansettter {
   static void set(XgmAnim* anm, animchannel_ptr_t Channel, const void* pdata) {
-    XgmMatrixAnimChannel* MtxChannel = rtti::autocast(Channel.get());
     XgmFloatAnimChannel* F32Channel  = rtti::autocast(Channel.get());
     XgmVect3AnimChannel* Ve3Channel  = rtti::autocast(Channel.get());
-    if (MtxChannel) {
-      const fmtx4* MatBase = (const fmtx4*)pdata;
-      MtxChannel->reserveFrames(anm->_numframes);
-      for (size_t ifr = 0; ifr < anm->_numframes; ifr++) {
-        fmtx4 Matrix = MatBase[ifr];
-        auto LDUMP = Matrix.dump4x3cn();
-        printf("LDUMP: %s\n", LDUMP.c_str());
-        MtxChannel->setFrame(ifr, Matrix);
-      }
-    } else if (F32Channel) {
+    if (F32Channel) {
       const float* f32Base = (const float*)pdata;
       F32Channel->reserveFrames(anm->_numframes);
       for (size_t ifr = 0; ifr < anm->_numframes; ifr++) {
@@ -114,6 +104,22 @@ bool XgmAnim::_loadXGA(XgmAnim* anm, datablock_ptr_t datablock) {
     HeaderStream->GetItem(inumchannels);
     anm->_numframes = inumframes;
     ////////////////////////////////////////////////////////
+    auto do_matrix_channel = [&]( std::shared_ptr<XgmMatrixAnimChannel> matrix_channel, //
+                                  const fmtx4* matrix_src_data ){ //
+
+      matrix_channel->reserveFrames(anm->_numframes);
+      logchan_anmio->log("LDUMP: anm<%p> mtxchan<%p> matrix_src_data<%p>", //
+                         anm, //
+                         (void*) matrix_channel.get(), //
+                         matrix_src_data );
+      for (size_t ifr = 0; ifr < anm->_numframes; ifr++) {
+        fmtx4 src_matrix = matrix_src_data[ifr];
+        auto LDUMP = src_matrix.dump4x3cn();
+        logchan_anmio->log("LDUMP:   mtx<%s>", LDUMP.c_str());
+        matrix_channel->setFrame(ifr, src_matrix);
+      }
+    };
+    ////////////////////////////////////////////////////////
     HeaderStream->GetItem(inumjointchannels);
     for (int ichan = 0; ichan < inumjointchannels; ichan++) {
       HeaderStream->GetItem(ichannelclass);
@@ -125,18 +131,19 @@ bool XgmAnim::_loadXGA(XgmAnim* anm, datablock_ptr_t datablock) {
       const char* pobjname             = chunkreader.GetString(iobjname);
       const char* pchnname             = chunkreader.GetString(ichnname);
       const char* pusgname             = chunkreader.GetString(iusgname);
-      void* pdata                      = AnimDataStream->GetDataAt(idataoffset);
+      auto pdata                       = (const fmtx4*) AnimDataStream->GetDataAt(idataoffset);
       ork::object::ObjectClass* pclass = rtti::autocast(rtti::Class::FindClass(pchannelclass));
-      auto Channel                     = std::dynamic_pointer_cast<XgmAnimChannel>(pclass->createShared());
+      auto channelobj = pclass->createShared();
+      auto matrixchannel               = std::dynamic_pointer_cast<XgmMatrixAnimChannel>(channelobj);
 
       logchan_anmio->log(
-          "MatrixChannel<%s> ChannelClass<%s> pchnname<%s> objname<%s> numframes<%d>", pchnname, pchannelclass, pchnname, pobjname, inumframes);
+          "MatrixChannel<%p:%s> ChannelClass<%s> pchnname<%s> objname<%s> numframes<%d>", (void*) matrixchannel.get(), pchnname, pchannelclass, pchnname, pobjname, inumframes);
 
-      Channel->SetChannelName((pchnname));
-      Channel->SetObjectName((pobjname));
-      Channel->SetChannelUsage((pusgname));
-      chansettter::set(anm, Channel, pdata);
-      anm->AddChannel(Channel->GetChannelName(), Channel);
+      matrixchannel->SetChannelName((pchnname));
+      matrixchannel->SetObjectName((pobjname));
+      matrixchannel->SetChannelUsage((pusgname));
+      do_matrix_channel(matrixchannel, pdata);
+      anm->AddChannel(pchnname, matrixchannel);
     }
     OrkHeapCheck();
     ////////////////////////////////////////////////////////

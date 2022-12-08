@@ -199,7 +199,7 @@ template <typename T> std::string Matrix44<T>::dump4x3(Vector3<T> color) const {
   }
   return rval;
 }
-template <typename T> std::string Matrix44<T>::dump4x3cn() const {
+template <typename T> std::string Matrix44<T>::dump4x3cn(bool do_axis_angle) const {
   std::string rval;
   auto brace_color = fvec3(0.7, 0.7, 0.7);
   for (int i = 0; i < 4; i++) {
@@ -230,16 +230,18 @@ template <typename T> std::string Matrix44<T>::dump4x3cn() const {
     }
     rval += ork::deco::decorate(brace_color, "]");
   }
-  Quaternion<T> q(*this);
-  // auto rot = q.toEuler();
-  auto rot = q.toAxisAngle();
-  float ang = round(rot.w * RTOD);
-  if(ang==0.0f){
+  if(do_axis_angle){
+    Quaternion<T> q(*this);
+    // auto rot = q.toEuler();
+    auto rot = q.toAxisAngle();
+    float ang = round(rot.w * RTOD);
+    if(ang==0.0f){
+    }
+    else{
+      rval += ork::deco::format(fvec3(0.8, 0.8, 0.8), "  axis<%g %g %g> ang<%g>", rot.x, rot.y, rot.z, ang);
+    }
+    // rval += ork::deco::format(fvec3(0.8, 0.8, 0.8), "  quat<%g %g %g %g>", q.x, q.y, q.z, q.w);
   }
-  else{
-    rval += ork::deco::format(fvec3(0.8, 0.8, 0.8), "  axis<%g %g %g> ang<%g>", rot.x, rot.y, rot.z, ang);
-  }
-  // rval += ork::deco::format(fvec3(0.8, 0.8, 0.8), "  quat<%g %g %g %g>", q.x, q.y, q.z, q.w);
   return rval;
 }
 template <typename T> std::string Matrix44<T>::dump() const {

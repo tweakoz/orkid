@@ -13,11 +13,13 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/kernel/string/deco.inl>
+#include <ork/util/logger.h>
 
 using namespace std::string_literals;
 
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
+static logchannel_ptr_t logchan_skel = logger()->createChannel("gfxanim.skel", fvec3(1, 0.7, 1));
 
 XgmSkelNode::XgmSkelNode(const std::string& Name)
     : _name(Name) {
@@ -92,13 +94,14 @@ XgmSkelNode* XgmSkelNode::findCentimeterToMeterNode() {
         DecompTransform pdc, cdc;
         pdc.decompose(parent->_jointMatrix);
         cdc.decompose(node->_jointMatrix);
-        printf("parscale<%s:%g>\n", parent->_name.c_str(), pdc._uniformScale);
-        printf("chiscale<%s:%g>\n", node->_name.c_str(), cdc._uniformScale);
+        logchan_skel->log("parscale<%s:%g>", parent->_name.c_str(), pdc._uniformScale);
+        logchan_skel->log("chiscale<%s:%g>", node->_name.c_str(), cdc._uniformScale);
         bool parent_match = math::areValuesClose(pdc._uniformScale, 1.0, 0.00001);
         bool child_match  = math::areValuesClose(cdc._uniformScale, 0.01, 0.00001);
         if (parent_match and child_match) {
           rval = node;
-          printf("FOUND SCALENODE\n");
+          logchan_skel->log("FOUND SCALENODE\n");
+          OrkAssert(false);
         }
       }
     }
@@ -280,8 +283,8 @@ std::string XgmSkeleton::dump(fvec3 color) const {
     i++;
   }
 
-  rval += deco::format(color, " topmat: ") + mTopNodesMatrix.dump4x3(color) + "\n";
-  rval += deco::format(color, " bindmat: ") + mBindShapeMatrix.dump4x3(color) + "\n";
+  rval += deco::format(color, " topmat: ") + mTopNodesMatrix.dump4x3cn() + "\n";
+  rval += deco::format(color, " bindmat: ") + mBindShapeMatrix.dump4x3cn() + "\n";
 
   for (int ij = 0; ij < miNumJoints; ij++) {
     auto name = GetJointName(ij);
@@ -291,9 +294,9 @@ std::string XgmSkeleton::dump(fvec3 color) const {
     const char* parname = (parent >= 0) ? GetJointName(parent).c_str() : "none";
     rval += deco::format(color, "     parent<%d:%s>\n", parent, parname);
 
-    rval += deco::format(color, "     ljmat: ") + _jointMatrices[ij].dump4x3(color) + "\n";
-    rval += deco::format(color, "     ibmat: ") + _inverseBindMatrices[ij].dump4x3(color) + "\n";
-    rval += deco::format(color, "     ndmat: ") + _nodeMatrices[ij].dump4x3(color) + "\n";
+    rval += deco::format(color, "     ljmat: ") + _jointMatrices[ij].dump4x3cn() + "\n";
+    rval += deco::format(color, "     ibmat: ") + _inverseBindMatrices[ij].dump4x3cn() + "\n";
+    rval += deco::format(color, "     ndmat: ") + _nodeMatrices[ij].dump4x3cn() + "\n";
   }
   return rval;
 }

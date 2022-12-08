@@ -132,6 +132,10 @@ struct XgmAnimInst;
 struct XgmLocalPose;
 struct XgmWorldPose;
 struct XgmAnimChannel;
+struct XgmMatrixAnimChannel;
+struct XgmVect4AnimChannel;
+struct XgmVect3AnimChannel;
+struct XgmFloatAnimChannel;
 ///////////////////////////////////////////////////////////////////////////////
 class VertexBufferBase;
 ///////////////////////////////////////////////////////////////////////////////
@@ -205,6 +209,10 @@ using fxtechnique_constptr_t = const FxShaderTechnique*;
 using fxparamptrmap_t        = std::map<std::string, fxparam_constptr_t>;
 using fxtechniqueptrmap_t    = std::map<std::string, fxtechnique_constptr_t>;
 using animchannel_ptr_t      = std::shared_ptr<XgmAnimChannel>;
+using animfloatchannel_ptr_t = std::shared_ptr<XgmFloatAnimChannel>;
+using animvec3channel_ptr_t = std::shared_ptr<XgmVect3AnimChannel>;
+using animvec4channel_ptr_t = std::shared_ptr<XgmVect4AnimChannel>;
+using animmatrixchannel_ptr_t = std::shared_ptr<XgmMatrixAnimChannel>;
 ///////////////////////////////////////////////////////////////////////////////
 using material_ptr_t           = std::shared_ptr<GfxMaterial>;
 using material_constptr_t      = std::shared_ptr<const GfxMaterial>;

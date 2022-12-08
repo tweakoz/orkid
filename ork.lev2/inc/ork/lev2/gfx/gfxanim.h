@@ -46,6 +46,7 @@ public:
 
   XgmAnimChannel(const std::string& ObjName, const std::string& ChanName, const std::string& UsageSemantic, EChannelType etype);
   XgmAnimChannel(EChannelType etype);
+  virtual ~XgmAnimChannel() {}
 
   const std::string& GetChannelName() const {
     return mChannelName;
@@ -158,22 +159,23 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct XgmMatrixAnimChannel : public XgmAnimChannel {
+struct XgmMatrixAnimChannel : public XgmAnimChannel  {
   DeclareConcreteX(XgmMatrixAnimChannel, XgmAnimChannel);
 
 public:
 
-  size_t numFrames() const final;
-
+  size_t numFrames() const override;
 
   XgmMatrixAnimChannel(const std::string& ObjName, const std::string& ChanName, const std::string& Usage);
   XgmMatrixAnimChannel();
+  ~XgmMatrixAnimChannel() override;
 
   void setFrame(size_t i, const fmtx4& v);
   fmtx4 GetFrame(int index) const;
   void reserveFrames(size_t iv);
 
-  ork::vector<fmtx4> _sampledFrames;
+
+  std::vector<fmtx4> _sampledFrames;
 };
 
 /// ///////////////////////////////////////////////////////////////////////////
@@ -184,7 +186,7 @@ public:
 
 struct XgmAnim {
 
-  using joint_channels_lut_t = ork::orklut<std::string, ork::lev2::XgmMatrixAnimChannel*>;
+  using joint_channels_lut_t = ork::orklut<std::string, animmatrixchannel_ptr_t>;
   using material_channels_lut_t = ork::orklut<std::string, animchannel_ptr_t>;
   using matrix_lut_t = ork::orklut<std::string,fmtx4>;
 

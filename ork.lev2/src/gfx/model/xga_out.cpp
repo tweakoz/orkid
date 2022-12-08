@@ -47,14 +47,14 @@ datablock_ptr_t XgmAnim::Save(const XgmAnim* anm) {
   for (auto it : joint_channels ) {
     const std::string& ChannelName          = it.first;
     const std::string& ChannelUsage         = it.second->GetUsageSemantic();
-    const XgmMatrixAnimChannel* MtxChannel = rtti::autocast(it.second);
-    const std::string& ObjectName           = MtxChannel->GetObjectName();
+    auto matrix_channel = it.second;
+    const std::string& ObjectName           = matrix_channel->GetObjectName();
 
     int idataoffset = AnimDataStream->GetSize();
 
-    if (MtxChannel) {
+    if (matrix_channel) {
       for (int ifr = 0; ifr < inumframes; ifr++) {
-        const fmtx4& Matrix = MtxChannel->GetFrame(ifr);
+        const fmtx4& Matrix = matrix_channel->GetFrame(ifr);
         AnimDataStream->AddItem(Matrix);
       }
     }

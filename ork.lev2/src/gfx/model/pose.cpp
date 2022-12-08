@@ -13,6 +13,7 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/kernel/string/deco.inl>
+#include <ork/util/logger.h>
 
 #define ENABLE_ANIM
 
@@ -20,6 +21,7 @@ using namespace std::string_literals;
 
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
+static logchannel_ptr_t logchan_pose = logger()->createChannel("gfxanim.pose", fvec3(1, 0.7, 1));
 ///////////////////////////////////////////////////////////////////////////////
 
 XgmBlendPoseInfo::XgmBlendPoseInfo()
@@ -44,8 +46,8 @@ void XgmBlendPoseInfo::addPose(const fmtx4& mat, float weight) {
   const auto& pos    = decomp._translation;
   const auto& orient = decomp._rotation;
 
-  printf(
-      "XgmBlendPoseInfo pos<%g %g %g> orient<%g %g %g %g>\n", //
+  if(0)logchan_pose->log(
+      "XgmBlendPoseInfo pos<%g %g %g> orient<%g %g %g %g>", //
       pos.x,
       pos.y,
       pos.z, //
@@ -63,7 +65,7 @@ void XgmBlendPoseInfo::addPose(const fmtx4& mat, float weight) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void XgmBlendPoseInfo::computeMatrix(fmtx4& outmatrix) const {
-  // printf("_numanims<%d>\n", _numanims);
+  // printf("_numanims<%d>", _numanims);
 
   switch (_numanims) {
     case 1: // just copy the first matrix
@@ -74,15 +76,15 @@ void XgmBlendPoseInfo::computeMatrix(fmtx4& outmatrix) const {
       if (_posecallback) // Callback for decomposed, pre-concatenated, blended joint info
         _posecallback->PostBlendPreConcat(outmatrix);
 
-      auto cdump = outmatrix.dump();
-      printf("cdump: %s\n", cdump.c_str());
+      //auto cdump = outmatrix.dump();
+      //logchan_pose->log("cdump: %s", cdump.c_str());
 
     } break;
 
     case 2: // decompose 2 matrices and lerp components (ideally anims will be stored pre-decomposed)
     {
       float fw = fabs(_weights[0] + _weights[1] - 1.0f);
-      // printf( "aw0<%f> aw1<%f>\n", AnimWeight[0], AnimWeight[1]);
+      // printf( "aw0<%f> aw1<%f>", AnimWeight[0], AnimWeight[1]);
       OrkAssert(fw < float(0.01f));
 
       const fmtx4& a = _matrices[0];
@@ -148,14 +150,14 @@ void XgmLocalPose::bindAnimInst(XgmAnimInst& animinst) {
 
       int inumjinmap = _skeleton.mmJointNameMap.size();
 
-      printf("spose jname<%s> iskelindex<%d> inumjinmap<%d>\n", JointName.c_str(), iskelindex, inumjinmap);
+      logchan_pose->log("bindAnimInst jname<%s> iskelindex<%d> inumjinmap<%d>", JointName.c_str(), iskelindex, inumjinmap);
 
       if (-1 != iskelindex) {
 
         auto itanim = channels.find(JointName);
 
         bool found = itanim == channels.end();
-        printf("spose jname<%s> found<%d>\n", JointName.c_str(), int(found));
+        logchan_pose->log("bindAnimInst jname<%s> found<%d>", JointName.c_str(), int(found));
 
         if (itanim == channels.end()) {
 
@@ -177,15 +179,15 @@ void XgmLocalPose::bindAnimInst(XgmAnimInst& animinst) {
     int ichidx = 0;
 
     for (int is = 0; is < _skeleton.numJoints(); is++)
-      printf("skel bone<%d:%s>\n", is, _skeleton.GetJointName(is).c_str());
+      logchan_pose->log("skel bone<%d:%s>", is, _skeleton.GetJointName(is).c_str());
 
     int ichiti = 0;
     for (auto it : channels) {
       const auto& channel_name = it.first;
-      const auto* matrixdata   = it.second;
+      auto matrix_channel   = it.second;
       int iskelindex           = _skeleton.jointIndex(channel_name);
 
-      printf("bind channel<%s> skidx<%d>\n", channel_name.c_str(), iskelindex);
+      //logchan_pose->log("bind channel<%s> skidx<%d>", channel_name.c_str(), iskelindex);
 
       if (-1 != iskelindex) {
         animinst.setAnimBinding(ichidx++, XgmAnimInst::Binding(iskelindex, ichiti));
@@ -248,27 +250,27 @@ void XgmLocalPose::applyAnimInst(const XgmAnimInst& animinst) {
     size_t numframes        = animinst.numFrames();
     int iframe              = int(frame);
 
-    printf("apply animinst frame<%d> numframes<%zu> inumanimchannels<%zu>\n", iframe, numframes, inumanimchannels);
+    logchan_pose->log("apply animinst frame<%d> numframes<%zu> inumanimchannels<%zu>", iframe, numframes, inumanimchannels);
 
     const auto& joint_channels = animation->RefJointChannels();
     for (int iaidx = 0; iaidx < XgmAnimInst::kmaxbones; iaidx++) {
       auto& binding  = animinst.getAnimBinding(iaidx);
       int iskelindex = binding.mSkelIndex;
-      // printf( "iaidx<%d> iskelindex<%d> inumanimchannels<%zu>\n", iaidx, iskelindex, inumanimchannels );
+      // printf( "iaidx<%d> iskelindex<%d> inumanimchannels<%zu>", iaidx, iskelindex, inumanimchannels );
       if (iskelindex != 0xffff) {
         int ichanindex = binding.mChanIndex;
 
-        printf("apply on iskelidx<%d> ichanindex<%d>\n", iskelindex, ichanindex);
+        //logchan_pose->log("apply on iskelidx<%d> ichanindex<%d>", iskelindex, ichanindex);
 
         auto joint_data = joint_channels.GetItemAtIndex(ichanindex).second;
         OrkAssert(joint_data);
         size_t numframes = joint_data->_sampledFrames.size();
-        printf("joint_data<%p> numframes<%zu>\n", (void*)joint_data, numframes);
+        //logchan_pose->log("joint_data<%p> numframes<%zu>", (void*)joint_data, numframes);
         const fmtx4& matrix = joint_data->GetFrame(iframe);
         _blendposeinfos[iskelindex].addPose(matrix, fweight);
 
-        auto adump = matrix.dump4x3cn();
-        printf("adump: %s\n", adump.c_str());
+        //auto adump = matrix.dump4x3cn();
+        //logchan_pose->log("adump: anm<%p> iskelindex<%d> mtx: %s", (void*) animation, iskelindex, adump.c_str());
 
       } else {
         break;
@@ -309,13 +311,13 @@ void XgmLocalPose::buildPose(void) {
 #ifdef ENABLE_ANIM
   int inumjoints = NumJoints();
 
-  // printf("XgmLocalPose<%p>::BuildPose inumjoints<%d>\n", (void*) this, inumjoints);
+  // printf("XgmLocalPose<%p>::BuildPose inumjoints<%d>", (void*) this, inumjoints);
 
   static int gctr = 0;
   for (int i = 0; i < inumjoints; i++) {
     int inumanms = _blendposeinfos[i]._numanims;
 
-    // printf("j<%d> inumanms<%d>\n", i, inumanms);
+    // printf("j<%d> inumanms<%d>", i, inumanms);
     if (inumanms) {
       _blendposeinfos[i].computeMatrix(_localmatrices[i]);
 
@@ -450,7 +452,7 @@ std::string XgmLocalPose::invdumpc(fvec3 color) const {
       auto jmtx        = _localmatrices[ij].inverse();
       rval += deco::asciic_rgb(cc);
       rval += FormatString("%28s", name.c_str());
-      rval += ": "s + jmtx.dump4x3(cc) + "\n"s;
+      rval += ": "s + jmtx.dump4x3(cc) + ""s;
       rval += deco::asciic_reset();
     }
   }

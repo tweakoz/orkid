@@ -13,6 +13,7 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/kernel/string/deco.inl>
+#include <ork/util/logger.h>
 
 using namespace std::string_literals;
 
@@ -24,6 +25,7 @@ ImplementReflectionX(ork::lev2::XgmMatrixAnimChannel, "XgmMatrixAnimChannel");
 
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
+static logchannel_ptr_t logchan_anim = logger()->createChannel("gfxanim", fvec3(1, 0.6, 1));
 
 void XgmAnimChannel::describeX(class_t* clazz) {
 }
@@ -34,6 +36,10 @@ void XgmVect3AnimChannel::describeX(class_t* clazz) {
 void XgmVect4AnimChannel::describeX(class_t* clazz) {
 }
 void XgmMatrixAnimChannel::describeX(class_t* clazz) {
+}
+
+XgmMatrixAnimChannel::~XgmMatrixAnimChannel() { // final
+  OrkAssert(false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -72,7 +78,7 @@ void XgmAnimMask::Enable(const XgmSkeleton& Skel, const std::string& BoneName) {
 
   // this used to be assert, but designers may someday be setting bone names in tool. Be nicer to them.
   if (iboneindex==-1) {
-    orkprintf("Bone does not exist: %s!\n", BoneName.c_str());
+    logchan_anim->log("Bone does not exist: %s!", BoneName.c_str());
     return;
   }
 
@@ -82,7 +88,7 @@ void XgmAnimMask::Enable(const XgmSkeleton& Skel, const std::string& BoneName) {
 void XgmAnimMask::Enable(int iboneindex) {
   // this used to be assert, but designers may someday be setting bone names in tool. Be nicer to them.
   if (iboneindex==-1) {
-    orkprintf("Bone index does not exist: %d!\n", iboneindex);
+    logchan_anim->log("Bone index does not exist: %d!", iboneindex);
     return;
   }
 
@@ -106,7 +112,7 @@ void XgmAnimMask::Disable(const XgmSkeleton& Skel, const std::string& BoneName) 
 
   // this used to be assert, but designers may someday be setting bone names in tool. Be nicer to them.
   if (iboneindex==-1) {
-    orkprintf("Bone does not exist: %s!\n", BoneName.c_str());
+    logchan_anim->log("Bone does not exist: %s!", BoneName.c_str());
     return;
   }
 
@@ -129,7 +135,7 @@ bool XgmAnimMask::isEnabled(const XgmSkeleton& Skel, const std::string& BoneName
 
   // this used to be assert, but designers may someday be setting bone names in tool. Be nicer to them.
   if (iboneindex==-1) {
-    orkprintf("Bone does not exist: %s!\n", BoneName.c_str());
+    logchan_anim->log("Bone does not exist: %s!", BoneName.c_str());
     return false;
   }
 
@@ -293,16 +299,19 @@ void XgmAnim::AddChannel(const std::string& Name, animchannel_ptr_t pchan) {
   const std::string& usage = pchan->GetUsageSemantic();
 
   if (usage == "Joint") {
-    auto joint_channel = std::dynamic_pointer_cast<XgmMatrixAnimChannel>(pchan).get();
-    OrkAssert(joint_channel);
-    mJointAnimationChannels.AddSorted(Name,joint_channel);
+    auto matrix_channel = std::dynamic_pointer_cast<XgmMatrixAnimChannel>(pchan);
+    OrkAssert(matrix_channel);
+    mJointAnimationChannels.AddSorted(Name,matrix_channel);
   } else if (usage == "UvTransform") {
-    auto uvxf_channel = std::dynamic_pointer_cast<XgmMatrixAnimChannel>(pchan).get();
+    auto uvxf_channel = std::dynamic_pointer_cast<XgmMatrixAnimChannel>(pchan);
     OrkAssert(uvxf_channel);
     mMaterialAnimationChannels.AddSorted(Name,pchan);
   } else if (usage == "FxParam") {
     OrkAssert(pchan);
     mMaterialAnimationChannels.AddSorted(Name,pchan);
+  }
+  else{
+    OrkAssert(false);
   }
 }
 
@@ -426,6 +435,7 @@ void XgmMatrixAnimChannel::setFrame(size_t i, const fmtx4& v) {
 fmtx4 XgmMatrixAnimChannel::GetFrame(int index) const {
   if(index>=_sampledFrames.size()){
     printf( "channel<%p:%s> getfr<%d> out of range %zd\n", this, mChannelName.c_str(), index, _sampledFrames.size() );
+    OrkAssert(false);
     return fmtx4();
   }
   return _sampledFrames[index];
