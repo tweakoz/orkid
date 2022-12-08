@@ -230,7 +230,7 @@ int main(int argc, char** argv, char** envp) {
 
     localpose.bindPose();
     //localpose.applyAnimInst(*(gpurec->_char_animinst));
-    localpose.blendPoses();
+    //localpose.blendPoses();
     localpose.concatenate();
 
     //auto lpdump = localpose.dump();

@@ -304,7 +304,7 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
 
   // bool fixup_applied = root->applyCentimeterToMeterScale();
 
-   OrkAssert(false);
+   //OrkAssert(false);
   return rval;
 }
 

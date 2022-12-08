@@ -290,7 +290,13 @@ void XgmLocalPose::bindPose(void) {
   // initialize to Skeletons Bind Pose
   ///////////////////////////////////////////
   for (int ij = 0; ij < inumjoints; ij++) {
-    _localmatrices[ij] = _skeleton.RefJointMatrix(ij);
+
+    int par = _skeleton.GetJointParent(ij);
+
+    auto this_bind = _skeleton.RefInverseBindMatrix(ij).inverse();
+    auto par_bind = _skeleton.RefInverseBindMatrix(par).inverse();
+
+    _localmatrices[ij].correctionMatrix(par_bind,this_bind);
   }
 
   ///////////////////////////////////////////
