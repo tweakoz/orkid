@@ -239,7 +239,7 @@ int main(int argc, char** argv, char** envp) {
     auto& worldpose = modelinst->_worldPose;
 
     localpose.bindPose();
-    //localpose.applyAnimInst(*(gpurec->_char_animinst));
+    localpose.applyAnimInst(*(gpurec->_char_animinst));
     localpose.blendPoses();
     localpose.concatenate();
 

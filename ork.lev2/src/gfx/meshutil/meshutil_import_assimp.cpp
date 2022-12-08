@@ -376,7 +376,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
       auto nodematrix  = nod_skelnode->_nodeMatrix;
       fmtx4 local      = nod_skelnode->_jointMatrix;
       fmtx4 invbind    = nod_skelnode->_bindMatrixInverse;
-      fmtx4 bind       = nod_skelnode->bindMatrix();
+      fmtx4 bind       = nod_skelnode->_bindMatrix;
 
       fvec3 trans = bind.translation();
 
@@ -658,7 +658,8 @@ void configureXgmSkeleton(const ork::meshutil::Mesh& input, lev2::XgmModel& xgmm
     //logchan_meshutilassimp->log("JointName<%s> skelnode<%p> parskelnode<%p> idx<%d> pidx<%d>\n", JointName.c_str(), (void*) skelnode, (void*) parskelnode, idx, pidx);
 
     xgmskel.AddJoint(idx, pidx, JointName);
-    xgmskel.RefInverseBindMatrix(idx) = skelnode ? skelnode->_bindMatrixInverse : fmtx4();
+    xgmskel._bindMatrices[idx] = skelnode ? skelnode->_bindMatrix : fmtx4();
+    xgmskel._inverseBindMatrices[idx] = skelnode ? skelnode->_bindMatrixInverse : fmtx4();
     xgmskel.RefJointMatrix(idx)       = skelnode ? skelnode->_jointMatrix : fmtx4();
     xgmskel.RefNodeMatrix(idx)        = skelnode ? skelnode->_nodeMatrix : fmtx4();
   }

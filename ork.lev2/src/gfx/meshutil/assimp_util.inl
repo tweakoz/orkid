@@ -220,7 +220,7 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
     auto itp = xgmskelnodes.find(remapSkelName(p->mName.data));
     OrkAssert(itp != xgmskelnodes.end());
     auto pskelnode = itp->second;
-    // fmtx4 pmtx     = pskelnode->bindMatrix();
+    // fmtx4 pmtx     = pskelnode->_bindMatrix;
     // deco::printf(fvec3::White(), "pskelnode<%s> %s\n", pskelnode->_name.c_str(), pskelnode->_jointMatrix.dump().c_str());
     // deco::printf(fvec3::White(), "pskelnode<%s> %s\n", pskelnode->_name.c_str(), pmtx.dump().c_str());
     //////////////////////////////
@@ -260,11 +260,12 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
   });
 
   /////////////////////////////////////////////////
-  // set inversebind pose (from nodes)
+  // set bindpose/inverse matrices (from _assimpOffsetMatrix)
   /////////////////////////////////////////////////
 
   lev2::XgmSkelNode::visitHierarchy(root,[](lev2::xgmskelnode_ptr_t node) { //
-    node->_bindMatrixInverse = node->_assimpOffsetMatrix.inverse();//concatenated().inverse(); //
+    node->_bindMatrix = node->_assimpOffsetMatrix;
+    node->_bindMatrixInverse = node->_bindMatrix.inverse();
   });
 
   /////////////////////////////////////////////////
@@ -280,9 +281,9 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
       fmtx4 nodecat    = node->concatenatednode();  // object space
       //fmtx4 K2   = node->concatenatednode2(); // object space
       fmtx4 Bi   = node->_bindMatrixInverse;
-      fmtx4 Bc   = node->bindMatrix();
+      fmtx4 Bc   = node->_bindMatrix;
       auto par   = node->_parent;
-      fmtx4 Bp   = par ? par->bindMatrix() : fmtx4::Identity();
+      fmtx4 Bp   = par ? par->_bindMatrix : fmtx4::Identity();
       fmtx4 J    = node->_jointMatrix;
       fmtx4 O   = node->concatenated(); // object space
       //fmtx4 Ji   = J.inverse();

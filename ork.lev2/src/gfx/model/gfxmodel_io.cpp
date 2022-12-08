@@ -201,7 +201,9 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
         ptstring.set(chunkreader.GetString(ijointmatrix));
         mdl->mSkeleton.RefJointMatrix(iskelindex) = scalematrix*PropType<fmtx4>::FromString(ptstring);
         ptstring.set(chunkreader.GetString(iinvrestmatrix));
-        mdl->mSkeleton.RefInverseBindMatrix(iskelindex) = scalematrix*PropType<fmtx4>::FromString(ptstring);
+        auto bind_matrix = scalematrix*PropType<fmtx4>::FromString(ptstring);
+        mdl->mSkeleton._bindMatrices[iskelindex] = bind_matrix;
+        mdl->mSkeleton._inverseBindMatrices[iskelindex] = bind_matrix.inverse();
       }
     }
     ///////////////////////////////////
@@ -524,7 +526,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
     const std::string& JointName = skel.GetJointName(ib);
 
     int32_t JointParentIndex   = skel.GetJointParent(ib);
-    const fmtx4& InvRestMatrix = skel.RefInverseBindMatrix(ib);
+    const fmtx4& bind_matrix = skel._bindMatrices[ib];
     const fmtx4& JointMatrix   = skel.RefJointMatrix(ib);
     const fmtx4& NodeMatrix    = skel.RefNodeMatrix(ib);
 
@@ -542,7 +544,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
     istring = chunkwriter.stringIndex(tstr.c_str());
     HeaderStream->AddItem(istring);
 
-    PropType<fmtx4>::ToString(InvRestMatrix, tstr);
+    PropType<fmtx4>::ToString(bind_matrix, tstr);
     istring = chunkwriter.stringIndex(tstr.c_str());
     HeaderStream->AddItem(istring);
   }

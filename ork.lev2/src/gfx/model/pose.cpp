@@ -264,8 +264,8 @@ void XgmLocalPose::applyAnimInst(const XgmAnimInst& animinst) {
 
         int par = _skeleton.GetJointParent(iskelindex);
 
-        auto this_bind = _skeleton.RefInverseBindMatrix(iskelindex).inverse();
-        auto par_bind = _skeleton.RefInverseBindMatrix(par).inverse();
+        auto this_bind = _skeleton._bindMatrices[iskelindex];
+        auto par_bind = _skeleton._bindMatrices[par];
 
         fmtx4 skel_rel;
         skel_rel.correctionMatrix(par_bind,this_bind);
@@ -305,8 +305,8 @@ void XgmLocalPose::bindPose(void) {
 
     int par = _skeleton.GetJointParent(ij);
 
-    auto this_bind = _skeleton.RefInverseBindMatrix(ij).inverse();
-    auto par_bind = _skeleton.RefInverseBindMatrix(par).inverse();
+    auto this_bind = _skeleton._bindMatrices[ij];
+    auto par_bind = _skeleton._bindMatrices[par];
 
     _localmatrices[ij].correctionMatrix(par_bind,this_bind);
   }
@@ -337,7 +337,11 @@ void XgmLocalPose::blendPoses(void) {
 
     // printf("j<%d> inumanms<%d>", i, inumanms);
     if (inumanms) {
-      _blendposeinfos[i].computeMatrix(_localmatrices[i]);
+      //_blendposeinfos[i].computeMatrix(_localmatrices[i]);
+
+      auto InvBind      = _skeleton._inverseBindMatrices[i];
+      auto Bind      = _skeleton._bindMatrices[i];
+      _localmatrices[i] = fmtx4::multiply_ltor(InvBind,Bind);
 
       if (1) //( i == ((gctr/1000)%inumjoints) )
       {
@@ -370,6 +374,7 @@ void XgmLocalPose::concatenate(void) {
   if (_skeleton.miRootNode >= 0) {
     const fmtx4& RootAnimMat    = _localmatrices[_skeleton.miRootNode];
     _localmatrices[_skeleton.miRootNode] = fmtx4::multiply_ltor(RootAnimMat, _skeleton.mTopNodesMatrix);
+
 
     int inumbones = _skeleton.numBones();
     for (int ib = 0; ib < inumbones; ib++) {
@@ -498,10 +503,10 @@ void XgmWorldPose::apply(const fmtx4& worldmtx, const XgmLocalPose& localpose) {
   int inumj = localpose.NumJoints();
   _worldmatrices.resize(inumj);
   for (int ij = 0; ij < inumj; ij++) {
-    fmtx4 MatAnimJCat = localpose._localmatrices[ij];
-    auto InvBind      = _skeleton.RefInverseBindMatrix(ij);
-    auto jointmtx     = fmtx4::multiply_ltor(InvBind,MatAnimJCat);
-    auto finalmtx     = fmtx4::multiply_ltor(jointmtx,worldmtx);
+    fmtx4 anim_concat = localpose._localmatrices[ij];
+    auto inverse_bind = _skeleton._inverseBindMatrices[ij];
+    auto jointmtx     = anim_concat; //fmtx4::multiply_ltor(inverse_bind,anim_concat);
+    auto finalmtx     = fmtx4::multiply_ltor(worldmtx,jointmtx);
     _worldmatrices[ij] = finalmtx;
   }
 }

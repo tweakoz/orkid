@@ -121,7 +121,7 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
 
       auto its        = skelnodes.find(channel_name);
       auto skelnode   = its->second;
-      auto bindmatrix = skelnode->bindMatrix();
+      auto bindmatrix = skelnode->_bindMatrix;
       auto invbindmtx = skelnode->_bindMatrixInverse;
 
         auto xdump = bindmatrix.dump4x3cn();
@@ -249,8 +249,8 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
             auto par_bind = parskelnode->_bindMatrixInverse.inverse();
             auto& par_skelnode_framevect_n = parskelnode->_varmap["framevect_n"].get<framevect_t>();
             auto par_mtx = par_skelnode_framevect_n[f];
-            JSPACE.correctionMatrix(par_mtx,//
-                                    this_mtx);
+            JSPACE.correctionMatrix(this_bind,//
+                                    par_bind);
 
           }
           ////////////////////////////////////////////////////////////////////

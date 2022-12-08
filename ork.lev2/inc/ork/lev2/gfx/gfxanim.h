@@ -337,7 +337,6 @@ struct XgmSkelNode {
 
   ///////////////////////////
 
-  fmtx4 bindMatrix() const;
   fmtx4 concatenated() const;
   fmtx4 concatenated2() const;
   fmtx4 concatenatednode() const;
@@ -557,12 +556,6 @@ struct XgmSkeleton {
   const fmtx4& RefJointMatrix(int idx) const {
     return _jointMatrices[idx];
   }
-  fmtx4& RefInverseBindMatrix(int idx) {
-    return _inverseBindMatrices[idx];
-  }
-  const fmtx4& RefInverseBindMatrix(int idx) const {
-    return _inverseBindMatrices[idx];
-  }
 
   fmtx4 concatenated(std::string named) const;
 
@@ -588,6 +581,7 @@ struct XgmSkeleton {
   fmtx4 mTopNodesMatrix;
 
   orkvector<fmtx4> _inverseBindMatrices;
+  orkvector<fmtx4> _bindMatrices;
   orkvector<fmtx4> _jointMatrices;
   orkvector<fmtx4> _nodeMatrices;
   orkvector<std::string> mvJointNameVect;
