@@ -61,7 +61,7 @@ XgmModelInst::XgmModelInst(const XgmModel* Model)
   }
 
   _localPose.bindPose();
-  _localPose.buildPose();
+  _localPose.blendPoses();
   _localPose.concatenate();
   _worldPose.apply(fmtx4(), _localPose);
 

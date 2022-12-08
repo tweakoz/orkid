@@ -112,10 +112,16 @@ bool XgmAnim::_loadXGA(XgmAnim* anm, datablock_ptr_t datablock) {
                          anm, //
                          (void*) matrix_channel.get(), //
                          matrix_src_data );
+
+      fmtx4 scalematrix;
+      scalematrix.compose(fvec3(0,0,0),fquat(),0.01f);
+
       for (size_t ifr = 0; ifr < anm->_numframes; ifr++) {
-        fmtx4 src_matrix = matrix_src_data[ifr];
-        auto LDUMP = src_matrix.dump4x3cn();
-        logchan_anmio->log("LDUMP:   mtx<%s>", LDUMP.c_str());
+        fmtx4 src_matrix = scalematrix*matrix_src_data[ifr];
+        if(ifr==0){
+          auto LDUMP = src_matrix.dump4x3cn();
+          logchan_anmio->log("LDUMP:   mtx<%s>", LDUMP.c_str());
+        }
         matrix_channel->setFrame(ifr, src_matrix);
       }
     };

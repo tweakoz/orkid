@@ -1084,6 +1084,15 @@ template <typename T> void Matrix44<T>::transpose() {
     }
   }
 }
+template <typename T> Matrix44<T> Matrix44<T>::transposed() const {
+  Matrix44<T> temp = *this;
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
+      temp.setElemYX(i, j, elemYX(j, i));
+    }
+  }
+  return temp;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

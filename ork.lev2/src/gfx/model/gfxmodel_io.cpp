@@ -106,7 +106,7 @@ bool XgmModel::_loadAssimp(XgmModel* mdl, datablock_ptr_t inp_datablock) {
   auto basehasher = DataBlock::createHasher();
   basehasher->accumulateString("assimp2xgm");
 
-  auto str   = FormatString("version-x1");
+  auto str   = FormatString("version-x%05d",rand()%10000);
   basehasher->accumulateString(str); 
   inp_datablock->accumlateHash(basehasher);
   /////////////////////////////////////
@@ -191,14 +191,17 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
         HeaderStream->GetItem(iinvrestmatrix);
         const char* pjntname = chunkreader.GetString(ijointname);
 
+        fmtx4 scalematrix;
+        scalematrix.compose(fvec3(0,0,0),fquat(),0.01f);
+
         fxstring<256> jnamp(pjntname);
         mdl->mSkeleton.AddJoint(iskelindex, iparentindex, jnamp.c_str());
         ptstring.set(chunkreader.GetString(inodematrix));
-        mdl->mSkeleton.RefNodeMatrix(iskelindex) = PropType<fmtx4>::FromString(ptstring);
+        mdl->mSkeleton.RefNodeMatrix(iskelindex) = scalematrix*PropType<fmtx4>::FromString(ptstring);
         ptstring.set(chunkreader.GetString(ijointmatrix));
-        mdl->mSkeleton.RefJointMatrix(iskelindex) = PropType<fmtx4>::FromString(ptstring);
+        mdl->mSkeleton.RefJointMatrix(iskelindex) = scalematrix*PropType<fmtx4>::FromString(ptstring);
         ptstring.set(chunkreader.GetString(iinvrestmatrix));
-        mdl->mSkeleton.RefInverseBindMatrix(iskelindex) = PropType<fmtx4>::FromString(ptstring);
+        mdl->mSkeleton.RefInverseBindMatrix(iskelindex) = scalematrix*PropType<fmtx4>::FromString(ptstring);
       }
     }
     ///////////////////////////////////
@@ -448,13 +451,17 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
             HeaderStream->GetItem(ibindingname);
 
             const char* jointname = chunkreader.GetString(ibindingname);
-            fxstring<256> jnamp(jointname);
-            std::string JointNameIndex                      = jnamp.c_str();
-            auto itfind = mdl->mSkeleton.mmJointNameMap.find(JointNameIndex);
+            auto itfind = mdl->mSkeleton.mmJointNameMap.find(jointname);
 
-            OrkAssert(itfind != mdl->mSkeleton.mmJointNameMap.end());
+            if(itfind == mdl->mSkeleton.mmJointNameMap.end()){
+              logerrchannel()->log( "\n\ncannot find joint<%s> in:", jointname );
+              for( auto it: mdl->mSkeleton.mmJointNameMap ){
+                logerrchannel()->log( "  %s", it.first.c_str() );
+              }
+              OrkAssert(false);
+            }
             int iskelindex                 = (*itfind).second;
-            cluster->mJoints[ib]           = jnamp.c_str();
+            cluster->mJoints[ib]           = jointname;
             cluster->mJointSkelIndices[ib] = iskelindex;
           }
 
@@ -771,11 +778,13 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
 
           ModelDataStream->Write((const unsigned char*)pidx, inumidx * sizeof(U16));
         }
-
+        // write cluster bindings
         for (int32_t ij = 0; ij < inumjb; ij++) {
           const std::string& bound = cluster->GetJointBinding(ij);
+          OrkAssert(bound!="");
           HeaderStream->AddItem(ij);
           istring = chunkwriter.stringIndex(bound.c_str());
+          logchan_mioW->log( "bound<%s> istring<%d>", bound.c_str(), istring );
           HeaderStream->AddItem(istring);
         }
       }

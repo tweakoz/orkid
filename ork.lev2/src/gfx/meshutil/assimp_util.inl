@@ -256,7 +256,9 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
   // set inversebind pose (from nodes)
   /////////////////////////////////////////////////
 
-  root->visitHierarchy([root](lev2::XgmSkelNode* node) { node->_bindMatrixInverse = node->concatenated().inverse(); });
+  root->visitHierarchy([root](lev2::XgmSkelNode* node) { //
+    node->_bindMatrixInverse = node->concatenated().inverse(); //
+  });
 
   /////////////////////////////////////////////////
   // debug dump

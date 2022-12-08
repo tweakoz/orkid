@@ -424,9 +424,9 @@ struct XgmLocalPose {
   void unbindAnimInst(XgmAnimInst& AnimInst);
 
   XgmLocalPose(const XgmSkeleton& Skeleton);
-  void bindPose(void);  /// set pose to the skeletons bind pose
-  void buildPose(void); /// Blend Poses
-  void concatenate(void);
+  void bindPose();  /// set pose to the skeletons bind pose
+  void blendPoses(); /// Blend Poses
+  void concatenate();
   int NumJoints() const;
   std::string dumpc(fvec3 color) const;
   std::string invdumpc(fvec3 color) const;

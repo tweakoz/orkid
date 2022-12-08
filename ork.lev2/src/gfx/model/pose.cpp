@@ -304,10 +304,10 @@ void XgmLocalPose::bindPose(void) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Blended Matrices and Concatenate
+// compute blended matrices
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmLocalPose::buildPose(void) {
+void XgmLocalPose::blendPoses(void) {
 #ifdef ENABLE_ANIM
   int inumjoints = NumJoints();
 
@@ -336,6 +336,8 @@ void XgmLocalPose::buildPose(void) {
 #endif
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Concatenate
 ///////////////////////////////////////////////////////////////////////////////
 
 void XgmLocalPose::concatenate(void) {
@@ -482,7 +484,7 @@ void XgmWorldPose::apply(const fmtx4& worldmtx, const XgmLocalPose& localpose) {
     fmtx4 MatAnimJCat = localpose._localmatrices[ij];
     auto InvBind      = _skeleton.RefInverseBindMatrix(ij);
     auto jointmtx     = fmtx4::multiply_ltor(MatAnimJCat, InvBind);
-    auto finalmtx     = fmtx4::multiply_ltor(worldmtx, jointmtx);
+    auto finalmtx     = fmtx4::multiply_ltor(jointmtx,worldmtx);
     // auto finalmtx      = worldmtx;
     _worldmatrices[ij] = finalmtx;
   }

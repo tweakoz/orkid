@@ -236,7 +236,7 @@ void buildXgmCluster( lev2::Context& context,
     for (orkmap<std::string, int>::const_iterator it = BoneMap.begin(); it != BoneMap.end(); it++) {
       const std::string& JointName        = it->first;  // the index of the bone in the skeleton
       int JointRegister                   = it->second; // the shader register index the bone goes into
-      xgm_cluster->mJoints[JointRegister] = AddPooledString(JointName.c_str());
+      xgm_cluster->mJoints[JointRegister] = JointName;
     }
   }
 

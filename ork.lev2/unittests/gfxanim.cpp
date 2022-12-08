@@ -137,7 +137,7 @@ TEST(gfxanim1) {
       animinst->_current_frame = iframe;
       animinst->SetWeight(1);
       localpose.applyAnimInst(*animinst);
-      localpose.buildPose();
+      localpose.blendPoses();
       deco::printf(white, "AnimPose (J) fr<%d>\n", iframe);
       deco::prints(localpose.dumpc(white), true);
 

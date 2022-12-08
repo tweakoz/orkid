@@ -100,10 +100,10 @@ struct GpuResources {
     modelinst->enableSkinning();
     modelinst->enableAllMeshes();
 
-    model->mSkeleton.mTopNodesMatrix.compose(fvec3(),fquat(),0.01);
+    //model->mSkeleton.mTopNodesMatrix.compose(fvec3(),fquat(),0.0001);
 
-    //auto skeldump = model->mSkeleton.dump(fvec3(1,1,1));
-    //printf( "skeldump<%s>\n", skeldump.c_str() );
+    auto skeldump = model->mSkeleton.dump(fvec3(1,1,1));
+    printf( "skeldump<%s>\n", skeldump.c_str() );
 
     auto anim = _char_animasset->GetAnim();
     _char_animinst = std::make_shared<XgmAnimInst>();
@@ -229,15 +229,15 @@ int main(int argc, char** argv, char** envp) {
     auto& worldpose = modelinst->_worldPose;
 
     localpose.bindPose();
-    localpose.applyAnimInst(*(gpurec->_char_animinst));
-    localpose.buildPose();
+    //localpose.applyAnimInst(*(gpurec->_char_animinst));
+    localpose.blendPoses();
     localpose.concatenate();
 
-    auto lpdump = localpose.dump();
-    printf( "%s\n", lpdump.c_str() );
+    //auto lpdump = localpose.dump();
+    //printf( "%s\n", lpdump.c_str() );
 
     fmtx4 world;
-    world.compose(fvec3(0,-44,0),fquat(),1); 
+    world.compose(fvec3(0,0,0),fquat(),0.01); 
 
     worldpose.apply(world,localpose);
 

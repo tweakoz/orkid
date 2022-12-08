@@ -162,6 +162,7 @@ template <typename T> struct Matrix44 final
   ////////////////////////////////////
 
   void transpose();
+  Matrix44<T> transposed() const;
   void normalizeInPlace();
   void inverseOf(const Matrix44<T>& in);
   Matrix44<T> inverse() const;
