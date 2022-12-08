@@ -59,7 +59,7 @@ XgmSkelNode::NodeType XgmSkelNode::nodetype() const {
   if (_parent == nullptr) {
     return ENODE_ROOT;
   }
-  if (mChildren.size()) {
+  if (_children.size()) {
     return ENODE_NONLEAF;
   }
   return ENODE_LEAF;
@@ -67,27 +67,27 @@ XgmSkelNode::NodeType XgmSkelNode::nodetype() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmSkelNode::visitHierarchy(nodevisitfn_t visitfn) {
-  visitfn(this);
-  for (auto child : mChildren) {
-    child->visitHierarchy(visitfn);
+void XgmSkelNode::visitHierarchy(xgmskelnode_ptr_t node,nodevisitfn_t visitfn) {
+  visitfn(node);
+  for (auto child : node->_children) {
+    visitHierarchy(child,visitfn);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmSkelNode::visitHierarchyUp(nodevisitfn_t visitfn) {
-  visitfn(this);
-  if (_parent) {
-    _parent->visitHierarchyUp(visitfn);
+void XgmSkelNode::visitHierarchyUp(xgmskelnode_ptr_t node,nodevisitfn_t visitfn) {
+  visitfn(node);
+  if (node->_parent) {
+    visitHierarchyUp(node->_parent,visitfn);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-XgmSkelNode* XgmSkelNode::findCentimeterToMeterNode() {
-  XgmSkelNode* rval = nullptr;
-  visitHierarchy([&rval](XgmSkelNode* node) {
+xgmskelnode_ptr_t XgmSkelNode::findCentimeterToMeterNode(xgmskelnode_ptr_t root) {
+  xgmskelnode_ptr_t rval = nullptr;
+  XgmSkelNode::visitHierarchy(root,[&rval](xgmskelnode_ptr_t node) {
     if (rval == nullptr) {
       auto parent = node->_parent;
       if (parent) {
@@ -96,8 +96,9 @@ XgmSkelNode* XgmSkelNode::findCentimeterToMeterNode() {
         cdc.decompose(node->_jointMatrix);
         logchan_skel->log("parscale<%s:%g>", parent->_name.c_str(), pdc._uniformScale);
         logchan_skel->log("chiscale<%s:%g>", node->_name.c_str(), cdc._uniformScale);
-        bool parent_match = math::areValuesClose(pdc._uniformScale, 1.0, 0.00001);
-        bool child_match  = math::areValuesClose(cdc._uniformScale, 0.01, 0.00001);
+        constexpr float my_epsilon = 0.00001;
+        bool parent_match = math::areValuesClose(pdc._uniformScale, 1.0, my_epsilon);
+        bool child_match  = math::areValuesClose(cdc._uniformScale, 0.01, my_epsilon);
         if (parent_match and child_match) {
           rval = node;
           logchan_skel->log("FOUND SCALENODE\n");
@@ -111,8 +112,8 @@ XgmSkelNode* XgmSkelNode::findCentimeterToMeterNode() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool XgmSkelNode::applyCentimeterToMeterScale() {
-  auto cmscalenode = findCentimeterToMeterNode();
+bool XgmSkelNode::applyCentimeterToMeterScale(xgmskelnode_ptr_t root) {
+  auto cmscalenode = findCentimeterToMeterNode(root);
   if (cmscalenode) {
     auto d = cmscalenode->concatenated().dump();
     deco::printf(fvec3::Red(), "cmscalenode<%s> %s\n", cmscalenode->_name.c_str(), d.c_str());
@@ -123,7 +124,7 @@ bool XgmSkelNode::applyCentimeterToMeterScale() {
     ScaleXf._translation *= 0.01f;
     ScaleXf._uniformScale = 1.0f;
     cmscalenode->_jointMatrix = ScaleXf.composed();
-    cmscalenode->visitHierarchy([cmscalenode, &ScaleXf](XgmSkelNode* node) {
+    XgmSkelNode::visitHierarchy(cmscalenode,[cmscalenode, &ScaleXf](xgmskelnode_ptr_t node) {
       if (node != cmscalenode) {
         DecompTransform cdc;
         cdc.decompose(node->_jointMatrix);
@@ -152,29 +153,34 @@ bool XgmSkelNode::applyCentimeterToMeterScale() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// is this node a parent of testnode
+// is parnode a parent of childnode ?
 ///////////////////////////////////////////////////////////////////////////////
 
-bool XgmSkelNode::isParentOf(XgmSkelNode* testnode) {
+bool XgmSkelNode::isParentOf(xgmskelnode_ptr_t parnode, xgmskelnode_ptr_t childnode) {
+  //////////////////////////
+  if(parnode==childnode)
+    return false;
+  if(parnode==nullptr)
+    return false;
+  if(childnode==nullptr)
+    return false;
+  //////////////////////////
   bool rval = false;
-  visitHierarchy([this, testnode, &rval](XgmSkelNode* node) {
-    if (node != this and node == testnode)
+  //////////////////////////
+  visitHierarchyUp(childnode,[parnode, &rval](xgmskelnode_ptr_t node) {
+    if (node == parnode)
       rval = true;
   });
+  //////////////////////////
   return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// is this node a descendant of testnode
+// is childnode a descendant of parnode ?
 ///////////////////////////////////////////////////////////////////////////////
 
-bool XgmSkelNode::isDescendantOf(XgmSkelNode* testnode) {
-  bool rval = false;
-  visitHierarchyUp([this, testnode, &rval](XgmSkelNode* node) {
-    if (node != this and node == testnode)
-      rval = true;
-  });
-  return rval;
+bool XgmSkelNode::isDescendantOf(xgmskelnode_ptr_t childnode, xgmskelnode_ptr_t parnode) {
+  return isParentOf(parnode,childnode);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

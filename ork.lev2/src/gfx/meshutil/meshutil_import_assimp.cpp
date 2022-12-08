@@ -349,7 +349,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
     // ork_mtxstack.push_front(convertMatrix44(scene->mRootNode->mTransformation));
 
     auto it_root_skelnode                 = xgmskelnodes.find(remapSkelName(scene->mRootNode->mName.data));
-    ork::lev2::XgmSkelNode* root_skelnode = (it_root_skelnode != xgmskelnodes.end()) ? it_root_skelnode->second : nullptr;
+    ork::lev2::xgmskelnode_ptr_t root_skelnode = (it_root_skelnode != xgmskelnodes.end()) ? it_root_skelnode->second : nullptr;
 
     //////////////////////////////////////////////
     // parse nodes
@@ -368,7 +368,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
       auto nren = remapSkelName(n->mName.data);
 
       auto it_nod_skelnode                 = xgmskelnodes.find(nren);
-      ork::lev2::XgmSkelNode* nod_skelnode = (it_nod_skelnode != xgmskelnodes.end()) ? it_nod_skelnode->second : nullptr;
+      ork::lev2::xgmskelnode_ptr_t nod_skelnode = (it_nod_skelnode != xgmskelnodes.end()) ? it_nod_skelnode->second : nullptr;
 
       //logchan_meshutilassimp->log("xgmnode<%p:%s>\n", (void*) nod_skelnode, nod_skelnode->_name.c_str());
       // auto ppar_skelnode = nod_skelnode->_parent;
@@ -672,7 +672,7 @@ void configureXgmSkeleton(const ork::meshutil::Mesh& input, lev2::XgmModel& xgmm
   auto root          = parsedskel->rootXgmSkelNode();
   xgmskel.miRootNode = root ? root->miSkelIndex : -1;
   if (root) {
-    root->visitHierarchy([&xgmskel, root](lev2::XgmSkelNode* node) {
+    lev2::XgmSkelNode::visitHierarchy(root,[&xgmskel](lev2::xgmskelnode_ptr_t node) {
       auto parent = node->_parent;
       if (parent) {
         bool ignore = (parent->_numBoundVertices == 0);

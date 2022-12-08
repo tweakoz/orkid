@@ -333,7 +333,7 @@ struct XgmSkelNode {
     ENODE_LEAF,
   };
 
-  typedef std::function<void(XgmSkelNode* node)> nodevisitfn_t;
+  typedef std::function<void(xgmskelnode_ptr_t node)> nodevisitfn_t;
 
   ///////////////////////////
 
@@ -343,18 +343,20 @@ struct XgmSkelNode {
   fmtx4 concatenatednode() const;
   fmtx4 concatenatednode2() const;
   NodeType nodetype() const;
-  void visitHierarchy(nodevisitfn_t visitfn);
-  void visitHierarchyUp(nodevisitfn_t visitfn);
-  XgmSkelNode* findCentimeterToMeterNode();
-  bool applyCentimeterToMeterScale();
-  bool isParentOf(XgmSkelNode* testnode);     // is this node a parent of testnode
-  bool isDescendantOf(XgmSkelNode* testnode); // is this node a descendant of testnode
+  static void visitHierarchy(xgmskelnode_ptr_t node,nodevisitfn_t visitfn);
+  static void visitHierarchyUp(xgmskelnode_ptr_t node,nodevisitfn_t visitfn);
+  static xgmskelnode_ptr_t findCentimeterToMeterNode(xgmskelnode_ptr_t root);
+  static bool applyCentimeterToMeterScale(xgmskelnode_ptr_t root);
+  static bool isParentOf(xgmskelnode_ptr_t parnode, xgmskelnode_ptr_t childnode);     // is this node a parent of testnode
+  static bool isDescendantOf(xgmskelnode_ptr_t childnode, xgmskelnode_ptr_t parnode); // is this node a descendant of testnode
 
   ///////////////////////////
 
-  XgmSkelNode* _parent  = nullptr;
+  xgmskelnode_ptr_t _parent  = nullptr;
   int miSkelIndex       = -1;
   int _numBoundVertices = 0;
+
+  orkvector<xgmskelnode_ptr_t> _children;
 
   std::string _name;
   fmtx4 _bindMatrixInverse;
@@ -362,7 +364,6 @@ struct XgmSkelNode {
   fmtx4 _jointMatrix;
   fmtx4 _nodeMatrix;
   fmtx4 _assimpOffsetMatrix;
-  orkvector<XgmSkelNode*> mChildren;
   ork::varmap::VarMap _varmap;
 };
 

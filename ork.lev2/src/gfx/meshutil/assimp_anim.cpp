@@ -36,10 +36,10 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
     scene_center.z = (scene_min.z + scene_max.z) / 2.0f;
 
     /////////////////////////////
-    // get skeleton
 
-    auto parsedskel = parseSkeleton(scene);
+    auto parsedskel = parseSkeleton(scene); // create and link skeleton
     auto& skelnodes = parsedskel->_xgmskelmap;
+
     /////////////////////////////
     // we assume a single animation per file
     /////////////////////////////
@@ -128,7 +128,7 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
         printf("xdump: channel_name<%s> mtx: %s\n", channel_name.c_str(), xdump.c_str());
         auto ydump = invbindmtx.dump4x3cn();
         printf("ydump: channel_name<%s> mtx: %s\n", channel_name.c_str(), ydump.c_str());
-        printf("channel_name<%s> skelnode<%p> par<%p>\n", channel_name.c_str(), (void*) skelnode, (void*) skelnode->_parent);
+        printf("channel_name<%s> skelnode<%p> par<%p>\n", channel_name.c_str(), (void*) skelnode.get(), (void*) skelnode->_parent.get());
 
       auto& skelnode_framevect_n = skelnode->_varmap["framevect_n"].make<framevect_t>();
 
@@ -237,7 +237,7 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
         auto this_bind = skelnode->_bindMatrixInverse.inverse();
         ////////////////////////////////////////////////////////////////////
         bool par_has_fvn = parskelnode->_varmap.hasKey("framevect_n");
-        printf( "parskelnode<%p>\n", (void*) parskelnode );
+        printf( "parskelnode<%p>\n", (void*) parskelnode.get() );
         printf( "par_has_fvn<%d>\n", (int) par_has_fvn );
         for (size_t f = 0; f < framecount; f++) {
 

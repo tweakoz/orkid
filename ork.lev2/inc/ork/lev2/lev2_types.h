@@ -128,6 +128,7 @@ struct XgmModel;
 struct XgmAnim;
 struct XgmAnimMask;
 struct XgmSkeleton;
+struct XgmSkelNode;
 struct XgmAnimInst;
 struct XgmLocalPose;
 struct XgmWorldPose;
@@ -229,6 +230,8 @@ struct FreestyleMaterial;
 using freestyle_mtl_ptr_t = std::shared_ptr<FreestyleMaterial>;
 
 ///////////////////////////////////////////////////////////////////////////////
+using xgmskeleton_ptr_t = std::shared_ptr<XgmSkeleton>;
+using xgmskelnode_ptr_t = std::shared_ptr<XgmSkelNode>;
 using xgmaniminst_ptr_t = std::shared_ptr<XgmAnimInst>;
 using xgmanimmask_ptr_t = std::shared_ptr<XgmAnimMask>;
 using xgmlocalpose_ptr = std::shared_ptr<XgmLocalPose>;
