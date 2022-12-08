@@ -32,7 +32,7 @@ fmtx4 XgmSkelNode::concatenated() const {
                  : _jointMatrix;
 }
 fmtx4 XgmSkelNode::concatenatednode() const {
-  return _parent ? fmtx4::multiply_ltor(_parent->concatenatednode(),_nodeMatrix) //
+  return _parent ? fmtx4::multiply_ltor(_nodeMatrix,_parent->concatenatednode()) //
                  : _nodeMatrix;
 }
 

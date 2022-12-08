@@ -341,7 +341,6 @@ void XgmLocalPose::blendPoses(void) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void XgmLocalPose::concatenate(void) {
-  fmtx4* __restrict pmats = &_localmatrices[0];
 
   float fminx = std::numeric_limits<float>::max();
   float fminy = std::numeric_limits<float>::max();
@@ -352,30 +351,30 @@ void XgmLocalPose::concatenate(void) {
 
   if (_skeleton.miRootNode >= 0) {
     const fmtx4& RootAnimMat    = _localmatrices[_skeleton.miRootNode];
-    pmats[_skeleton.miRootNode] = fmtx4::multiply_ltor(RootAnimMat, _skeleton.mTopNodesMatrix);
+    _localmatrices[_skeleton.miRootNode] = fmtx4::multiply_ltor(RootAnimMat, _skeleton.mTopNodesMatrix);
 
     int inumbones = _skeleton.numBones();
     for (int ib = 0; ib < inumbones; ib++) {
       const XgmBone& Bone       = _skeleton.bone(ib);
       int iparent               = Bone._parentIndex;
       int ichild                = Bone._childIndex;
-      const fmtx4& ParentMatrix = pmats[iparent];
-      const fmtx4& LocMatrix    = pmats[ichild];
+      const fmtx4& ParentMatrix = _localmatrices[iparent];
+      const fmtx4& LocMatrix    = _localmatrices[ichild];
 
       std::string parname = _skeleton.GetJointName(iparent).c_str();
       std::string chiname = _skeleton.GetJointName(ichild).c_str();
 
       // fmtx4 temp    = (ParentMatrix * LocMatrix);
-      fmtx4 temp    = fmtx4::multiply_ltor(LocMatrix, ParentMatrix);
-      pmats[ichild] = temp;
+      fmtx4 temp    = fmtx4::multiply_ltor(ParentMatrix,LocMatrix);
+      _localmatrices[ichild] = temp;
 
       auto& child_pose_info = _blendposeinfos[ichild];
       auto child_pose_cb    = child_pose_info._posecallback;
 
       if (child_pose_cb)
-        child_pose_cb->PostBlendPostConcat(pmats[ichild]);
+        child_pose_cb->PostBlendPostConcat(_localmatrices[ichild]);
 
-      fvec3 vtrans = pmats[ichild].translation();
+      fvec3 vtrans = _localmatrices[ichild].translation();
 
       fminx = std::min(fminx, vtrans.x);
       fminy = std::min(fminy, vtrans.y);
@@ -483,7 +482,7 @@ void XgmWorldPose::apply(const fmtx4& worldmtx, const XgmLocalPose& localpose) {
   for (int ij = 0; ij < inumj; ij++) {
     fmtx4 MatAnimJCat = localpose._localmatrices[ij];
     auto InvBind      = _skeleton.RefInverseBindMatrix(ij);
-    auto jointmtx     = fmtx4::multiply_ltor(MatAnimJCat, InvBind);
+    auto jointmtx     = fmtx4::multiply_ltor(InvBind,MatAnimJCat);
     auto finalmtx     = fmtx4::multiply_ltor(jointmtx,worldmtx);
     // auto finalmtx      = worldmtx;
     _worldmatrices[ij] = finalmtx;

@@ -192,7 +192,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
         const char* pjntname = chunkreader.GetString(ijointname);
 
         fmtx4 scalematrix;
-        scalematrix.compose(fvec3(0,0,0),fquat(),0.01f);
+        //scalematrix.compose(fvec3(0,0,0),fquat(),0.01f);
 
         fxstring<256> jnamp(pjntname);
         mdl->mSkeleton.AddJoint(iskelindex, iparentindex, jnamp.c_str());
