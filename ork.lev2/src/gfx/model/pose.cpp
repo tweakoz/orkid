@@ -502,7 +502,6 @@ void XgmWorldPose::apply(const fmtx4& worldmtx, const XgmLocalPose& localpose) {
     auto InvBind      = _skeleton.RefInverseBindMatrix(ij);
     auto jointmtx     = fmtx4::multiply_ltor(InvBind,MatAnimJCat);
     auto finalmtx     = fmtx4::multiply_ltor(jointmtx,worldmtx);
-    // auto finalmtx      = worldmtx;
     _worldmatrices[ij] = finalmtx;
   }
 }

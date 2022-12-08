@@ -207,6 +207,16 @@ int main(int argc, char** argv, char** envp) {
     gpurec->_camdata->Persp(1, 50.0, 45.0);
 
     ////////////////////////////////////////
+    // set character node's world transform
+    ////////////////////////////////////////
+
+    fvec3 wpos(0,-2,0);
+    fquat wori(fvec3(0,1,0),phase+PI);
+    float wsca = 2;
+
+    gpurec->_char_node->_dqxfdata._worldTransform->set(wpos, wori, wsca);
+
+    ////////////////////////////////////////
     // enqueue scenegraph to renderer
     ////////////////////////////////////////
 
@@ -229,17 +239,12 @@ int main(int argc, char** argv, char** envp) {
     auto& worldpose = modelinst->_worldPose;
 
     localpose.bindPose();
-    localpose.applyAnimInst(*(gpurec->_char_animinst));
+    //localpose.applyAnimInst(*(gpurec->_char_animinst));
     localpose.blendPoses();
     localpose.concatenate();
 
     //auto lpdump = localpose.dump();
     //printf( "%s\n", lpdump.c_str() );
-
-    fmtx4 world;
-    world.compose(fvec3(0,0,0),fquat(),0.01); 
-
-    worldpose.apply(world,localpose);
 
     if(counter==3){
       //OrkAssert(false);
