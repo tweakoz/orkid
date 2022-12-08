@@ -209,16 +209,8 @@ struct XgmAnim {
 
   XgmAnim();
 
-
-
-  size_t GetNumJointChannels(void) const {
-    return mJointAnimationChannels.size();
-  }
   size_t GetNumMaterialChannels(void) const {
     return mMaterialAnimationChannels.size();
-  }
-  const joint_channels_lut_t& RefJointChannels(void) const {
-    return mJointAnimationChannels;
   }
   const material_channels_lut_t& RefMaterialChannels(void) const {
     return mMaterialAnimationChannels;
@@ -232,7 +224,7 @@ struct XgmAnim {
   }
 
   size_t _numframes = 0;
-  joint_channels_lut_t mJointAnimationChannels;
+  joint_channels_lut_t _jointanimationchannels;
   material_channels_lut_t mMaterialAnimationChannels;
   matrix_lut_t _pose;
 };

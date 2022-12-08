@@ -19,7 +19,6 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
 
   //ColladaExportPolicy policy;
   //policy.mUnits            = UNITS_METER;
-  const std::string JointPS = "Joint";
 
   auto color = fvec3(1, 0, 1);
 
@@ -143,10 +142,12 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
       deco::printf(fvec3::White(), "  num rotkeys<%d>\n", channel->mNumRotationKeys);
       deco::printf(fvec3::White(), "  num scakeys<%d>\n", channel->mNumScalingKeys);
 
-      /////////////////////////////
+      //////////////////////////////////////////////
+      // create matrix channel and add to animation
+      //////////////////////////////////////////////
 
       std::string objnameps         = "";
-      auto XgmChan                 = std::make_shared<XgmMatrixAnimChannel>(objnameps, channel_name, JointPS);
+      auto XgmChan                 = std::make_shared<XgmMatrixAnimChannel>(objnameps, channel_name, "Joint");
       XgmChan->reserveFrames(framecount);
       xgmanim.AddChannel(channel_name, XgmChan);
       skelnode->_varmap["xgmchan"].make<animchannel_ptr_t>(XgmChan);
@@ -197,16 +198,18 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
         R.fromQuaternion(currot);
         S.setScale(cursca.x, cursca.x, cursca.x);
         T.setTranslation(curpos);
-        fmtx4 XF_NSPACE = fmtx4::multiply_ltor(R,T);
-        // fmtx4 XF_NSPACE = T * R;
+        fmtx4 XF_NSPACE = T*(R*S); //yoyo
         skelnode_framevect_n.push_back(XF_NSPACE);
 
-        auto yel        = fvec3(1, 1, 0);
-        auto whi        = fvec3(1, 1, 1);
-        std::string xxx = deco::format(color, "fr<%d> ", f);
-        xxx += deco::decorate(yel, channel_name + "(N):");
-        xxx += XF_NSPACE.dump4x3cn();
-        deco::prints(xxx, true);
+        if(f==0){
+          auto yel        = fvec3(1, 1, 0);
+          auto whi        = fvec3(1, 1, 1);
+          std::string xxx = deco::format(color, "fr<%d> ", f);
+          xxx += deco::decorate(yel, channel_name + "(N):");
+          xxx += XF_NSPACE.dump4x3cn();
+          deco::prints(xxx, true);
+        }
+
 
       } // for (int f = 0; f < framecount; f++) {
     }   // for (int i = 0; i < anim->mNumChannels; i++) {
@@ -217,7 +220,7 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
       deco::printf(fvec3::White(), "// O Space Anim\n");
       deco::printf(fvec3::White(), "/////////////////////////////////////////////\n");
       for (int i = 0; i < anim->mNumChannels; i++) {
-        deco::printf(color, "///////////\n");
+        //deco::printf(color, "///////////\n");
         for (int f = 0; f < framecount; f++) {
           ////////////////////////////////////////////////////
           // apply anim channels to generate pose
@@ -231,16 +234,6 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
             fmtx4 joint_JSPACE         = skelnode_framevect_j[f];
             skelnode->_nodeMatrix      = joint_JSPACE;
           }
-          ////////////////////////////////////////////////////
-          aiNodeAnim* channel      = anim->mChannels[i];
-          std::string channel_name = remapSkelName(channel->mNodeName.data);
-          auto its                 = skelnodes.find(channel_name);
-          auto skelnode            = its->second;
-          auto XgmChan             = skelnode->_varmap["xgmchan"].get<animchannel_ptr_t>();
-          fmtx4 OSPACE             = skelnode->concatenatednode();
-          deco::printf(color, "fr<%d> ", f);
-          deco::printf(yel, "%s (O): ", channel_name.c_str());
-          deco::prints(OSPACE.dump4x3cn(), true);
         }
       }
     }
@@ -249,7 +242,7 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
       deco::printf(fvec3::White(), "// J Space Anim\n");
       deco::printf(fvec3::White(), "/////////////////////////////////////////////\n");
       for (int i = 0; i < anim->mNumChannels; i++) {
-        deco::printf(color, "///////////\n");
+        //deco::printf(color, "///////////\n");
         for (size_t f = 0; f < framecount; f++) {
           ////////////////////////////////////////////////////
           // apply anim channels to generate pose
@@ -264,19 +257,29 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
             skelnode->_jointMatrix     = joint_NSPACE;
           }
           ////////////////////////////////////////////////////
+          // 
+          ////////////////////////////////////////////////////
           aiNodeAnim* channel      = anim->mChannels[i];
           std::string channel_name = remapSkelName(channel->mNodeName.data);
           auto its                 = skelnodes.find(channel_name);
           auto skelnode            = its->second;
           auto XgmChan             = skelnode->_varmap["xgmchan"].get<animchannel_ptr_t>();
+          auto& skelnode_framevect_n = skelnode->_varmap["framevect_n"].get<framevect_t>();
           fmtx4 OSPACE             = skelnode->concatenated2();
           auto par                 = skelnode->_parent;
           fmtx4 POSPACE            = par ? skelnode->_parent->concatenated2() : fmtx4();
           fmtx4 JSPACE             = fmtx4::multiply_ltor(POSPACE.inverse(),OSPACE);
-          deco::printf(color, "fr<%d> ", f);
-          deco::printf(yel, "%s (J): ", channel_name.c_str());
-          deco::prints(JSPACE.dump4x3cn(), true);
 
+          //JSPACE = skelnode_framevect_n[f];
+          
+          if(f==0){
+            deco::printf(color, "fr<%d> ", f);
+            deco::printf(yel, "%s (J): ", channel_name.c_str());
+            deco::prints(JSPACE.dump4x3cn(), true);
+          }
+          ////////////////////////////////////////////////////
+          // add to animation ! // yoyo
+          ////////////////////////////////////////////////////
           skelnode->_varmap["framevect_j"].get<framevect_t>().push_back(JSPACE);
 
           auto as_decomchan = std::dynamic_pointer_cast<XgmMatrixAnimChannel>(XgmChan);
@@ -285,38 +288,7 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
         }
       }
     }
-    if (1) {
-      deco::printf(fvec3::White(), "/////////////////////////////////////////////\n");
-      deco::printf(fvec3::White(), "// O Space Anim (reconstruct from J)\n");
-      deco::printf(fvec3::White(), "/////////////////////////////////////////////\n");
-      for (int i = 0; i < anim->mNumChannels; i++) {
-        deco::printf(color, "///////////\n");
-        for (int f = 0; f < framecount; f++) {
-          ////////////////////////////////////////////////////
-          // apply anim channels to generate pose
-          ////////////////////////////////////////////////////
-          for (int c = 0; c < anim->mNumChannels; c++) {
-            aiNodeAnim* channel        = anim->mChannels[c];
-            std::string channel_name   = remapSkelName(channel->mNodeName.data);
-            auto its                   = skelnodes.find(channel_name);
-            auto skelnode              = its->second;
-            auto& skelnode_framevect_j = skelnode->_varmap["framevect_j"].get<framevect_t>();
-            fmtx4 joint_JSPACE         = skelnode_framevect_j[f];
-            skelnode->_jointMatrix     = joint_JSPACE;
-          }
-          ////////////////////////////////////////////////////
-          aiNodeAnim* channel      = anim->mChannels[i];
-          std::string channel_name = remapSkelName(channel->mNodeName.data);
-          auto its                 = skelnodes.find(channel_name);
-          auto skelnode            = its->second;
-          fmtx4 OSPACE             = skelnode->concatenated();
-          deco::printf(color, "fr<%d> ", f);
-          deco::printf(yel, "%s (O): ", channel_name.c_str());
-          deco::prints(OSPACE.dump4x3cn(), true);
-        }
-      }
-    }
-    OrkAssert(false);
+    //OrkAssert(false);
     ////////////////////////////////////////////////////////////////
     return XgmAnim::Save(&xgmanim);
   } // if scene

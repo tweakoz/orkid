@@ -301,7 +301,7 @@ void XgmAnim::AddChannel(const std::string& Name, animchannel_ptr_t pchan) {
   if (usage == "Joint") {
     auto matrix_channel = std::dynamic_pointer_cast<XgmMatrixAnimChannel>(pchan);
     OrkAssert(matrix_channel);
-    mJointAnimationChannels.AddSorted(Name,matrix_channel);
+    _jointanimationchannels.AddSorted(Name,matrix_channel);
   } else if (usage == "UvTransform") {
     auto uvxf_channel = std::dynamic_pointer_cast<XgmMatrixAnimChannel>(pchan);
     OrkAssert(uvxf_channel);

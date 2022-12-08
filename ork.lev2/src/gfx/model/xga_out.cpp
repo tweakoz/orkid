@@ -27,7 +27,7 @@ datablock_ptr_t XgmAnim::Save(const XgmAnim* anm) {
   chunkfile::OutputStream* AnimDataStream = chunkwriter.AddStream("animdata");
   ///////////////////////////////////
 
-  int inumjointchannels    = (int)anm->GetNumJointChannels();
+  int inumjointchannels    = (int)anm->_jointanimationchannels.size();
   int inummaterialchannels = (int)anm->GetNumMaterialChannels();
 
   int inumchannels = inumjointchannels + inummaterialchannels;
@@ -41,7 +41,7 @@ datablock_ptr_t XgmAnim::Save(const XgmAnim* anm) {
 
   ///////////////////////////////////////////////////////////////////////////////////////////////
 
-  const auto& joint_channels = anm->RefJointChannels();
+  const auto& joint_channels = anm->_jointanimationchannels;
 
   HeaderStream->AddItem(int(joint_channels.size()));
   for (auto it : joint_channels ) {

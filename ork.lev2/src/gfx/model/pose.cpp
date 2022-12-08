@@ -137,7 +137,7 @@ void XgmLocalPose::bindAnimInst(XgmAnimInst& animinst) {
     float fweight = animinst.GetWeight();
 
     const XgmAnim& anim  = *animinst._animation;
-    const auto& channels = anim.RefJointChannels();
+    const auto& joint_channels = anim._jointanimationchannels;
 
     const XgmAnim::matrix_lut_t& static_pose = anim.GetStaticPose();
 
@@ -154,12 +154,12 @@ void XgmLocalPose::bindAnimInst(XgmAnimInst& animinst) {
 
       if (-1 != iskelindex) {
 
-        auto itanim = channels.find(JointName);
+        auto itanim = joint_channels.find(JointName);
 
-        bool found = itanim == channels.end();
+        bool found = itanim == joint_channels.end();
         logchan_pose->log("bindAnimInst jname<%s> found<%d>", JointName.c_str(), int(found));
 
-        if (itanim == channels.end()) {
+        if (itanim == joint_channels.end()) {
 
           const fmtx4& PoseMatrix = it.second;
           // TODO: Callback for programmer-controlled joints, pre-blended
@@ -172,7 +172,7 @@ void XgmLocalPose::bindAnimInst(XgmAnimInst& animinst) {
     }
     animinst.setPoseBinding(ipidx++, XgmAnimInst::Binding(0xffff, 0xffff));
 
-    size_t inumanimchannels = anim.GetNumJointChannels();
+    size_t inumanimchannels = joint_channels.size();
     // float frame = animinst.GetCurrentFrame();
     // float numframes = animinst.GetNumFrames();
     // int iframe = int(frame);
@@ -182,7 +182,7 @@ void XgmLocalPose::bindAnimInst(XgmAnimInst& animinst) {
       logchan_pose->log("skel bone<%d:%s>", is, _skeleton.GetJointName(is).c_str());
 
     int ichiti = 0;
-    for (auto it : channels) {
+    for (auto it : joint_channels) {
       const auto& channel_name = it.first;
       auto matrix_channel   = it.second;
       int iskelindex           = _skeleton.jointIndex(channel_name);
@@ -211,7 +211,7 @@ void XgmLocalPose::unbindAnimInst(XgmAnimInst& AnimInst) {
   if (AnimInst._animation) {
     const XgmAnim& anim = *AnimInst._animation;
 
-    size_t inumjointchannels = anim.GetNumJointChannels();
+    size_t inumjointchannels = anim._jointanimationchannels.size();
   }
 }
 
@@ -245,14 +245,14 @@ void XgmLocalPose::applyAnimInst(const XgmAnimInst& animinst) {
     //////////////////////////////////////////////////////////////////////////////////////////
     // normal anim on a skinned model
     //////////////////////////////////////////////////////////////////////////////////////////
-    size_t inumanimchannels = animation->GetNumJointChannels();
+    size_t inumanimchannels = animation->_jointanimationchannels.size();
     float frame             = animinst._current_frame;
     size_t numframes        = animinst.numFrames();
     int iframe              = int(frame);
 
     logchan_pose->log("apply animinst frame<%d> numframes<%zu> inumanimchannels<%zu>", iframe, numframes, inumanimchannels);
 
-    const auto& joint_channels = animation->RefJointChannels();
+    const auto& joint_channels = animation->_jointanimationchannels;
     for (int iaidx = 0; iaidx < XgmAnimInst::kmaxbones; iaidx++) {
       auto& binding  = animinst.getAnimBinding(iaidx);
       int iskelindex = binding.mSkelIndex;
@@ -262,12 +262,20 @@ void XgmLocalPose::applyAnimInst(const XgmAnimInst& animinst) {
 
         //logchan_pose->log("apply on iskelidx<%d> ichanindex<%d>", iskelindex, ichanindex);
 
+        int par = _skeleton.GetJointParent(iskelindex);
+
+        auto this_bind = _skeleton.RefInverseBindMatrix(iskelindex).inverse();
+        auto par_bind = _skeleton.RefInverseBindMatrix(par).inverse();
+
+        fmtx4 skel_rel;
+        skel_rel.correctionMatrix(par_bind,this_bind);
+
         auto joint_data = joint_channels.GetItemAtIndex(ichanindex).second;
         OrkAssert(joint_data);
         size_t numframes = joint_data->_sampledFrames.size();
         //logchan_pose->log("joint_data<%p> numframes<%zu>", (void*)joint_data, numframes);
         const fmtx4& matrix = joint_data->GetFrame(iframe);
-        _blendposeinfos[iskelindex].addPose(matrix, fweight);
+        _blendposeinfos[iskelindex].addPose(matrix*skel_rel, fweight);//yoyo
 
         //auto adump = matrix.dump4x3cn();
         //logchan_pose->log("adump: anm<%p> iskelindex<%d> mtx: %s", (void*) animation, iskelindex, adump.c_str());
