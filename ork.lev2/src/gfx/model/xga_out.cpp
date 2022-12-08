@@ -122,11 +122,11 @@ datablock_ptr_t XgmAnim::Save(const XgmAnim* anm) {
   ///////////////////////////////////
   // write out pose information
 
-  int inumposebones = (int)anm->_pose.size();
+  int inumposebones = (int)anm->_static_pose.size();
 
   HeaderStream->AddItem(inumposebones);
 
-  for (auto it : anm->_pose ) {
+  for (auto it : anm->_static_pose ) {
     const std::string& name = it.first;
     const fmtx4& mtx = it.second;
 

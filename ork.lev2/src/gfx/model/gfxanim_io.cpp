@@ -183,7 +183,7 @@ bool XgmAnim::_loadXGA(XgmAnim* anm, datablock_ptr_t datablock) {
       HeaderStream->GetItem(bone_matrix);
       std::string PoseChannelName = chunkreader.GetString(ichnname);
       PoseChannelName             = ork::string::replaced(PoseChannelName, "_", ".");
-      anm->_pose.AddSorted(PoseChannelName,bone_matrix);
+      anm->_static_pose.AddSorted(PoseChannelName,bone_matrix);
     }
     ////////////////////////////////////////////////////////
   }

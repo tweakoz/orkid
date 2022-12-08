@@ -216,17 +216,10 @@ struct XgmAnim {
     return mMaterialAnimationChannels;
   }
 
-  matrix_lut_t& GetStaticPose() {
-    return _pose;
-  }
-  const matrix_lut_t& GetStaticPose() const {
-    return _pose;
-  }
-
   size_t _numframes = 0;
   joint_channels_lut_t _jointanimationchannels;
   material_channels_lut_t mMaterialAnimationChannels;
-  matrix_lut_t _pose;
+  matrix_lut_t _static_pose;
 };
 
 /// ///////////////////////////////////////////////////////////////////////////
@@ -446,7 +439,8 @@ struct XgmLocalPose {
   ////////////////////////////////////////////////////////////////
 
   const XgmSkeleton& _skeleton;
-  orkvector<fmtx4> _localmatrices;
+  orkvector<fmtx4> _local_matrices;
+  orkvector<fmtx4> _concat_matrices;
   orkvector<XgmBlendPoseInfo> _blendposeinfos;
   fvec4 mObjSpaceBoundingSphere;
   AABox mObjSpaceAABoundingBox;

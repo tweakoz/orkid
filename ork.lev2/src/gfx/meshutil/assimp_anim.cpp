@@ -52,7 +52,7 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
     //  from static position of all aiNodes
     ////////////////////////////////////////
 
-    auto& staticpose = xgmanim.GetStaticPose();
+    auto& staticpose = xgmanim._static_pose;
     std::set<std::string> uniqskelnodeset;
     std::map<std::string, std::string> channel_remap;
     std::map<std::string, fmtx4> inv_bind_map;
@@ -249,14 +249,16 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
             auto par_bind = parskelnode->_bindMatrixInverse.inverse();
             auto& par_skelnode_framevect_n = parskelnode->_varmap["framevect_n"].get<framevect_t>();
             auto par_mtx = par_skelnode_framevect_n[f];
-            JSPACE.correctionMatrix(this_bind,//
-                                    par_bind);
+            JSPACE.correctionMatrix(this_mtx,//
+                                    par_mtx);
 
           }
           ////////////////////////////////////////////////////////////////////
           else{
             JSPACE = this_mtx;
           }
+
+          //JSPACE.compose(fvec3(0,1,0),fquat(),0.5);
           ////////////////////////////////////////////////////////////////////
           
           if(f==0){
