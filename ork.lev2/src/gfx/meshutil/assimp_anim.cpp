@@ -13,6 +13,8 @@ namespace ork::meshutil {
 
 datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
 
+  using namespace ::ork::lev2;
+
   typedef std::vector<fmtx4> framevect_t;
 
   //ColladaExportPolicy policy;
@@ -27,7 +29,7 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
   auto scene = aiImportFileFromMemory((const char*)inp_datablock->data(), inp_datablock->length(), assimpImportFlags(), extension.c_str());
   deco::printf(color, "END: importing scene<%p>\n", scene);
   if (scene) {
-    lev2::XgmAnim xgmanim;
+    XgmAnim xgmanim;
     aiVector3D scene_min, scene_max, scene_center;
     aiMatrix4x4 identity;
     aiIdentityMatrix4(&identity);
@@ -144,10 +146,10 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
       /////////////////////////////
 
       std::string objnameps         = "";
-      auto XgmChan                 = std::make_shared<ork::lev2::XgmMatrixAnimChannel>(objnameps, channel_name, JointPS);
+      auto XgmChan                 = std::make_shared<XgmMatrixAnimChannel>(objnameps, channel_name, JointPS);
       XgmChan->reserveFrames(framecount);
       xgmanim.AddChannel(channel_name, XgmChan);
-      skelnode->_varmap["xgmchan"].make<lev2::animchannel_ptr_t>(XgmChan);
+      skelnode->_varmap["xgmchan"].make<animchannel_ptr_t>(XgmChan);
 
       /////////////////////////////
       // we assume pre-sampled frames here
@@ -234,7 +236,7 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
           std::string channel_name = remapSkelName(channel->mNodeName.data);
           auto its                 = skelnodes.find(channel_name);
           auto skelnode            = its->second;
-          auto XgmChan             = skelnode->_varmap["xgmchan"].get<lev2::animchannel_ptr_t>();
+          auto XgmChan             = skelnode->_varmap["xgmchan"].get<animchannel_ptr_t>();
           fmtx4 OSPACE             = skelnode->concatenatednode();
           deco::printf(color, "fr<%d> ", f);
           deco::printf(yel, "%s (O): ", channel_name.c_str());
@@ -266,7 +268,7 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
           std::string channel_name = remapSkelName(channel->mNodeName.data);
           auto its                 = skelnodes.find(channel_name);
           auto skelnode            = its->second;
-          auto XgmChan             = skelnode->_varmap["xgmchan"].get<lev2::animchannel_ptr_t>();
+          auto XgmChan             = skelnode->_varmap["xgmchan"].get<animchannel_ptr_t>();
           fmtx4 OSPACE             = skelnode->concatenated2();
           auto par                 = skelnode->_parent;
           fmtx4 POSPACE            = par ? skelnode->_parent->concatenated2() : fmtx4();
@@ -277,7 +279,7 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
 
           skelnode->_varmap["framevect_j"].get<framevect_t>().push_back(JSPACE);
 
-          auto as_decomchan = std::dynamic_pointer_cast<lev2::XgmMatrixAnimChannel>(XgmChan);
+          auto as_decomchan = std::dynamic_pointer_cast<XgmMatrixAnimChannel>(XgmChan);
 
           as_decomchan->setFrame(f,JSPACE);
         }
@@ -314,9 +316,9 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
         }
       }
     }
-
+    OrkAssert(false);
     ////////////////////////////////////////////////////////////////
-    return ork::lev2::XgmAnim::Save(&xgmanim);
+    return XgmAnim::Save(&xgmanim);
   } // if scene
   else{
     OrkAssert(false);
