@@ -299,7 +299,7 @@ struct XgmAnimInst {
   void setPoseBinding(int i, const Binding& inp);
   void setAnimBinding(int i, const Binding& inp);
 
-  const XgmAnim* _animation;
+  const XgmAnim* _animation = nullptr;
   XgmAnimMask mMask;
   float _current_frame;
   float mWeight;

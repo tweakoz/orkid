@@ -89,8 +89,11 @@ struct GpuResources {
 
     ctx->debugPushGroup("main.onGpuInit");
 
-    _char_modelasset = asset::AssetManager<XgmModelAsset>::load("data://tests/chartest/char_mesh");
-    _char_animasset = asset::AssetManager<XgmAnimAsset>::load("data://tests/chartest/char_idle");
+    _char_modelasset = asset::AssetManager<XgmModelAsset>::load("data://tests/blender-rigtest/blender-rigtest-mesh");
+    _char_animasset = asset::AssetManager<XgmAnimAsset>::load("data://tests/blender-rigtest/blender-rigtest-anim1f.fbx");
+
+    OrkAssert(_char_modelasset);
+    OrkAssert(_char_animasset);
 
     auto model = _char_modelasset->getSharedModel();
     _char_drawable->bindModel(model);
@@ -249,7 +252,7 @@ int main(int argc, char** argv, char** envp) {
     if(counter==3){
       //OrkAssert(false);
     }
-    counter = (counter+1) % 40;
+    counter = (counter+1) & 1;
 
     auto context = drwev->GetTarget();
     RenderContextFrameData RCFD(context); // renderer per/frame data

@@ -329,6 +329,8 @@ XgmAnimInst::XgmAnimInst()
 ///////////////////////////////////////////////////////////////////////////////
 
 void XgmAnimInst::bindAnim(const XgmAnim* anim) {
+  OrkAssert(anim);
+  
   _animation  = anim;
   _current_frame = 0.0f;
 }
