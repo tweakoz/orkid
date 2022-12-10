@@ -237,20 +237,30 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
         auto this_bind = skelnode->_bindMatrixInverse.inverse();
         ////////////////////////////////////////////////////////////////////
         bool par_has_fvn = parskelnode->_varmap.hasKey("framevect_n");
-        printf( "parskelnode<%p>\n", (void*) parskelnode.get() );
-        printf( "par_has_fvn<%d>\n", (int) par_has_fvn );
+        //printf( "parskelnode<%p>\n", (void*) parskelnode.get() );
+        //printf( "par_has_fvn<%d>\n", (int) par_has_fvn );
         for (size_t f = 0; f < framecount; f++) {
 
           fmtx4 JSPACE;
 
           auto this_mtx = skelnode_framevect_n[f];
 
-          if(parskelnode and par_has_fvn){
+          bool has_par = parskelnode and par_has_fvn;
+
+          if(has_par){
             auto par_bind = parskelnode->_bindMatrixInverse.inverse();
             auto& par_skelnode_framevect_n = parskelnode->_varmap["framevect_n"].get<framevect_t>();
             auto par_mtx = par_skelnode_framevect_n[f];
-            JSPACE.correctionMatrix(this_mtx,//
-                                    par_mtx);
+
+            std::vector<xgmskelnode_ptr_t> nodewalk;
+            lev2::XgmSkelNode::visitHierarchyUp(skelnode,[&](xgmskelnode_ptr_t node){
+              nodewalk.push_back(node);
+            });
+
+
+            JSPACE = this_mtx;
+            //JSPACE.correctionMatrix(this_mtx,//
+              //                      par_mtx);
 
           }
           ////////////////////////////////////////////////////////////////////
@@ -274,7 +284,10 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
           auto as_decomchan = std::dynamic_pointer_cast<XgmMatrixAnimChannel>(XgmChan);
 
           auto jdump = JSPACE.dump4x3cn();
-          printf("jdump: joint<%s> mtx: %s\n", channel_name.c_str(), jdump.c_str());
+          printf("jdump: joint<%s> has_par<%d> mtx: %s\n", //
+                 channel_name.c_str(), //
+                 int(has_par), //
+                 jdump.c_str());
 
           as_decomchan->setFrame(f,JSPACE);
         }

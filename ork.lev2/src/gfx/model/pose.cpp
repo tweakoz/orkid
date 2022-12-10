@@ -22,6 +22,7 @@ using namespace std::string_literals;
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 static logchannel_ptr_t logchan_pose = logger()->createChannel("gfxanim.pose", fvec3(1, 0.7, 1));
+static logchannel_ptr_t logchan_pose2 = logger()->createChannel("gfxanim.pose", fvec3(1, 0.8, .9));
 ///////////////////////////////////////////////////////////////////////////////
 
 XgmBlendPoseInfo::XgmBlendPoseInfo()
@@ -251,9 +252,39 @@ void XgmLocalPose::applyAnimInst(const XgmAnimInst& animinst) {
     size_t numframes        = animinst.numFrames();
     int iframe              = int(frame);
 
-    logchan_pose->log("apply animinst frame<%d> numframes<%zu> inumanimchannels<%zu>", iframe, numframes, inumanimchannels);
+    logchan_pose->log("apply animinst anm<%p> frame<%d> numframes<%zu> inumanimchannels<%zu>", //
+                      (void*) animation, //
+                      iframe, //
+                      numframes, //
+                      inumanimchannels);
 
     const auto& joint_channels = animation->_jointanimationchannels;
+
+    //////////////////////////////////////////////////////////////////////
+    // dump skeleton for reference
+    //////////////////////////////////////////////////////////////////////
+
+    for (int iaidx = 0; iaidx < XgmAnimInst::kmaxbones; iaidx++) {
+      auto& binding  = animinst.getAnimBinding(iaidx);
+      int iskelindex = binding.mSkelIndex;
+      if (iskelindex != 0xffff) {
+        auto jname = _skeleton.GetJointName(iskelindex);
+        int par = _skeleton.GetJointParent(iskelindex);
+        auto this_bind = _skeleton._bindMatrices[iskelindex];
+        auto par_bind = _skeleton._bindMatrices[par];
+        fmtx4 skel_rel;
+        skel_rel.correctionMatrix(par_bind,this_bind);
+        auto skdump = skel_rel.dump4x3cn();
+        logchan_pose->log("skldump: joint<%d:%s> skel_rel: %s", //
+                          iskelindex, //
+                          jname.c_str(), // 
+                          skdump.c_str());
+
+      }
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
     for (int iaidx = 0; iaidx < XgmAnimInst::kmaxbones; iaidx++) {
       auto& binding  = animinst.getAnimBinding(iaidx);
       int iskelindex = binding.mSkelIndex;
@@ -261,15 +292,10 @@ void XgmLocalPose::applyAnimInst(const XgmAnimInst& animinst) {
       if (iskelindex != 0xffff) {
         int ichanindex = binding.mChanIndex;
 
+
         //logchan_pose->log("apply on iskelidx<%d> ichanindex<%d>", iskelindex, ichanindex);
 
-        int par = _skeleton.GetJointParent(iskelindex);
 
-        auto this_bind = _skeleton._bindMatrices[iskelindex];
-        auto par_bind = _skeleton._bindMatrices[par];
-
-        fmtx4 skel_rel;
-        skel_rel.correctionMatrix(par_bind,this_bind);
 
         auto joint_data = joint_channels.GetItemAtIndex(ichanindex).second;
         OrkAssert(joint_data);
@@ -277,18 +303,20 @@ void XgmLocalPose::applyAnimInst(const XgmAnimInst& animinst) {
         //logchan_pose->log("joint_data<%p> numframes<%zu>", (void*)joint_data, numframes);
         const fmtx4& matrix = joint_data->GetFrame(iframe);
 
+        auto jname = _skeleton.GetJointName(iskelindex);
+        auto adump = matrix.dump4x3cn();
+        logchan_pose2->log("anmdump: joint<%d:%s> anm_jmtx: %s", //
+                          iskelindex, //
+                          jname.c_str(), //
+                          adump.c_str());
         //_blendposeinfos[iskelindex].addPose(matrix, fweight);//yoyo
         _blendposeinfos[iskelindex].addPose(matrix, fweight);//yoyo
 
-        auto adump = matrix.dump4x3cn();
-        logchan_pose->log("adump: anm<%p> iskelindex<%d> mtx: %s", (void*) animation, iskelindex, adump.c_str());
-        auto bdump = skel_rel.dump4x3cn();
-        logchan_pose->log("bdump: anm<%p> iskelindex<%d> skel_rel: %s", (void*) animation, iskelindex, bdump.c_str());
 
-      } else {
-        break;
-      }
+      } 
     }
+    //OrkAssert(false);
+
   }
 #endif
 }

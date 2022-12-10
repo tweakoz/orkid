@@ -252,7 +252,7 @@ int main(int argc, char** argv, char** envp) {
     if(counter==3){
       //OrkAssert(false);
     }
-    counter = (counter+1) & 1;
+    counter = (counter+1) %60;
 
     auto context = drwev->GetTarget();
     RenderContextFrameData RCFD(context); // renderer per/frame data
