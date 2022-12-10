@@ -518,8 +518,8 @@ void XgmWorldPose::apply(const fmtx4& worldmtx, const XgmLocalPose& localpose) {
     std::string bname = _skeleton.GetJointName(ij);
     //fmtx4 anim_concat = fmtx4::multiply_ltor(invbind, //
     //                                         localpose._concat_matrices[ij]);
-    //fmtx4 anim_concat = invbind*localpose._concat_matrices[ij];
-    fmtx4 anim_concat = localpose._concat_matrices[ij]*invbind;
+    fmtx4 anim_concat = invbind*localpose._concat_matrices[ij];
+    //fmtx4 anim_concat = localpose._concat_matrices[ij]*invbind;
     auto finalmtx     = fmtx4::multiply_ltor(anim_concat,worldmtx);
     auto fdump = finalmtx.dump4x3cn();
     printf("fdump: joint<%d:%s> mtx: %s\n", //

@@ -161,6 +161,7 @@ public:
       : FileAssetLoader(XgmAnimAsset::GetClassStatic()) {
     auto datactx = FileEnv::contextForUriProto("data://");
     addLocation(datactx, ".xga");
+    addLocation(datactx, ".gltf");
     addLocation(datactx, ".fbx");
   }
 

@@ -93,18 +93,20 @@ struct GpuResources {
     auto anim_load_req = std::make_shared<asset::LoadRequest>();
 
     model_load_req->_asset_path = "data://tests/blender-rigtest/blender-rigtest-mesh";
-    anim_load_req->_asset_path = "data://tests/blender-rigtest/blender-rigtest-anim1f.fbx";
+    anim_load_req->_asset_path = "data://tests/blender-rigtest/blender-rigtest-anim1";
 
-    _char_animasset = asset::AssetManager<XgmAnimAsset>::load(anim_load_req);
     _char_modelasset = asset::AssetManager<XgmModelAsset>::load(model_load_req);
-
-    OrkAssert(_char_animasset);
     OrkAssert(_char_modelasset);
-
     model_load_req->waitForCompletion();
-    anim_load_req->waitForCompletion();
 
     auto model = _char_modelasset->getSharedModel();
+    auto skeldump = model->mSkeleton.dump(fvec3(1,1,1));
+    printf( "skeldump<%s>\n", skeldump.c_str() );
+
+    _char_animasset = asset::AssetManager<XgmAnimAsset>::load(anim_load_req);
+    OrkAssert(_char_animasset);
+    anim_load_req->waitForCompletion();
+
     _char_drawable->bindModel(model);
     _char_drawable->_name = "char";
     auto modelinst = _char_drawable->_modelinst;
@@ -114,8 +116,6 @@ struct GpuResources {
 
     //model->mSkeleton.mTopNodesMatrix.compose(fvec3(),fquat(),0.0001);
 
-    auto skeldump = model->mSkeleton.dump(fvec3(1,1,1));
-    printf( "skeldump<%s>\n", skeldump.c_str() );
 
     auto anim = _char_animasset->GetAnim();
     _char_animinst = std::make_shared<XgmAnimInst>();
@@ -133,7 +133,7 @@ struct GpuResources {
     localpose.blendPoses();
     localpose.concatenate();
     worldpose.apply(fmtx4(),localpose);
-    OrkAssert(false);
+    //OrkAssert(false);
 
     //////////////////////////////////////////////
     // scenegraph nodes
@@ -220,9 +220,9 @@ int main(int argc, char** argv, char** envp) {
     ///////////////////////////////////////
     // compute camera data
     ///////////////////////////////////////
-    float phase    = abstime * PI2 * 0.01f;
+    float phase    = PI;
     float distance = 10.0f;
-    auto eye       = fvec3(sinf(phase), 1.0f, -cosf(phase)) * distance;
+    auto eye       = fvec3(sinf(phase), 0.3f, -cosf(phase)) * distance;
     fvec3 tgt(0, 0, 0);
     fvec3 up(0, 1, 0);
     gpurec->_camdata->Lookat(eye, tgt, up);
@@ -234,7 +234,7 @@ int main(int argc, char** argv, char** envp) {
 
     fvec3 wpos(0,0,0);
     fquat wori;//fvec3(0,1,0),phase+PI);
-    float wsca = 0.25;
+    float wsca = 0.15;
 
     gpurec->_char_node->_dqxfdata._worldTransform->set(wpos, wori, wsca);
 
@@ -253,7 +253,7 @@ int main(int argc, char** argv, char** envp) {
 
 
     static int counter = 0;
-    gpurec->_char_animinst->_current_frame = 59; //(counter>>3)%60;
+    gpurec->_char_animinst->_current_frame = (counter>>5)%60;
     gpurec->_char_animinst->SetWeight(1.0f);
 
     auto modelinst = gpurec->_char_drawable->_modelinst;
