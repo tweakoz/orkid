@@ -244,10 +244,12 @@ int main(int argc, char** argv, char** envp) {
     localpose.bindPose();
     localpose.applyAnimInst(*(gpurec->_char_animinst));
     localpose.blendPoses();
+
+    auto lpdump = localpose.dump();
+    printf( "%s\n", lpdump.c_str() );
+
     localpose.concatenate();
 
-    //auto lpdump = localpose.dump();
-    //printf( "%s\n", lpdump.c_str() );
 
     if(counter==3){
       //OrkAssert(false);

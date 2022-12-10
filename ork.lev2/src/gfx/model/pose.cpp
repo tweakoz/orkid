@@ -69,8 +69,9 @@ void XgmBlendPoseInfo::computeMatrix(fmtx4& outmatrix) const {
   // printf("_numanims<%d>", _numanims);
 
   switch (_numanims) {
-    case 1: // just copy the first matrix
-    {
+    case 0: // nop
+      break;
+    case 1: { // just copy the first matrix
 
       outmatrix = _matrices[0];
 
@@ -82,8 +83,8 @@ void XgmBlendPoseInfo::computeMatrix(fmtx4& outmatrix) const {
 
     } break;
 
-    case 2: // decompose 2 matrices and lerp components (ideally anims will be stored pre-decomposed)
-    {
+    case 2: { // decompose 2 matrices and lerp components (ideally anims will be stored pre-decomposed)
+
       float fw = fabs(_weights[0] + _weights[1] - 1.0f);
       // printf( "aw0<%f> aw1<%f>", AnimWeight[0], AnimWeight[1]);
       OrkAssert(fw < float(0.01f));
@@ -102,11 +103,10 @@ void XgmBlendPoseInfo::computeMatrix(fmtx4& outmatrix) const {
       OrkAssert(false);
     } break;
 
-    default:
+    default: {
       // gotta figure out a N-way quaternion blend first
       // on the DS, Lerping each matrix column (NormalX, NormalY, NormalZ) gives
       // decent results. Try it.
-      {
         OrkAssert(false);
         outmatrix = fmtx4::Identity();
       }
@@ -332,12 +332,17 @@ void XgmLocalPose::bindPose(void) {
   ///////////////////////////////////////////
   for (int ij = 0; ij < inumjoints; ij++) {
 
-    int par = _skeleton.GetJointParent(ij);
-
     auto this_bind = _skeleton._bindMatrices[ij];
-    auto par_bind = _skeleton._bindMatrices[par];
 
-    _local_matrices[ij].correctionMatrix(par_bind,this_bind);
+    int par = _skeleton.GetJointParent(ij);
+   // printf( "par[%d]: %d\n", ij, par );
+    if(par>=0){
+      auto par_bind = _skeleton._bindMatrices[par];
+      _local_matrices[ij].correctionMatrix(par_bind,this_bind);
+    }
+    else{
+      _local_matrices[ij] = this_bind;
+    }
   }
 
   ///////////////////////////////////////////
@@ -359,16 +364,7 @@ void XgmLocalPose::blendPoses(void) {
   int inumjoints = NumJoints();
   for (int i = 0; i < inumjoints; i++) {
     int inumanms = _blendposeinfos[i]._numanims;
-
-    // printf("j<%d> inumanms<%d>", i, inumanms);
-    if (inumanms) {
       _blendposeinfos[i].computeMatrix(_local_matrices[i]);
-      const auto& name = _skeleton.GetJointName(i);
-      ork::FixedString<64> fxs;
-      fxs.format("buildpose i<%s>", name.c_str());
-      //_local_matrices[i].dump((char*)fxs.c_str());
-      // TODO: Callback for after previous/current have been blended in local space
-    }
   }
 #endif
 }
@@ -406,7 +402,7 @@ void XgmLocalPose::concatenate(void) {
 
       fmtx4 temp    = (ParentMatrix * LocMatrix);
       //fmtx4 temp    = fmtx4::multiply_ltor(ParentMatrix,LocMatrix);
-     // _concat_matrices[ichild] = temp;
+      _concat_matrices[ichild] = temp;
 
       auto& child_pose_info = _blendposeinfos[ichild];
       auto child_pose_cb    = child_pose_info._posecallback;
@@ -444,7 +440,6 @@ void XgmLocalPose::concatenate(void) {
 std::string XgmLocalPose::dump() const {
   std::string rval;
   if (_skeleton.miRootNode >= 0) {
-    const fmtx4& RootAnimMat = _local_matrices[_skeleton.miRootNode];
     int inumjoints           = _skeleton.numJoints();
     for (int ij = 0; ij < inumjoints; ij++) {
       std::string name = _skeleton.GetJointName(ij).c_str();
@@ -520,7 +515,11 @@ void XgmWorldPose::apply(const fmtx4& worldmtx, const XgmLocalPose& localpose) {
   int inumj = localpose.NumJoints();
   _worldmatrices.resize(inumj);
   for (int ij = 0; ij < inumj; ij++) {
-    fmtx4 anim_concat = localpose._concat_matrices[ij];
+    fmtx4 invbind = _skeleton._inverseBindMatrices[ij];
+    //fmtx4 anim_concat = fmtx4::multiply_ltor(invbind, //
+    //                                         localpose._concat_matrices[ij]);
+    //fmtx4 anim_concat = invbind*localpose._concat_matrices[ij];
+    fmtx4 anim_concat = localpose._concat_matrices[ij]*invbind;
     auto finalmtx     = fmtx4::multiply_ltor(anim_concat,worldmtx);
     auto fdump = finalmtx.dump4x3cn();
     printf("fdump: joint<%d> mtx: %s\n", //

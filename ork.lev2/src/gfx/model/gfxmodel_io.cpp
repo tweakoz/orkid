@@ -180,7 +180,11 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
     if (inumjoints) {
       mdl->mSkeleton.resize(inumjoints);
       for (int ib = 0; ib < inumjoints; ib++) {
-        int iskelindex = 0, iparentindex = 0, ijointname = 0, ijointmatrix = 0, iinvrestmatrix = 0;
+        int iskelindex = 0;
+        int iparentindex = 0;
+        int ijointname = 0;
+        int ijointmatrix = 0;
+        int iinvrestmatrix = 0;
         int inodematrix = 0;
         HeaderStream->GetItem(iskelindex);
         OrkAssert(ib == iskelindex);

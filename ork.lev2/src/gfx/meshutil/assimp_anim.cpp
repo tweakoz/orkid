@@ -202,7 +202,7 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock) {
         R.fromQuaternion(currot);
         S.setScale(cursca.x, cursca.y, cursca.z);
         T.setTranslation(curpos);
-        fmtx4 XF_NSPACE = (R * S)*T; // yoyo
+        fmtx4 XF_NSPACE = T*(R * S); // yoyo
         skelnode_framevect_n.push_back(XF_NSPACE);
 
         if (f == 0) {
@@ -258,7 +258,7 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock) {
             JSPACE = skelnode->concatenated_joint();
           }
 
-            JSPACE = skelnode->concatenated_joint();
+            //JSPACE = skelnode->concatenated_joint();
           auto XgmChan      = skelnode->_varmap["xgmchan"].get<animchannel_ptr_t>();
           auto as_decomchan = std::dynamic_pointer_cast<XgmMatrixAnimChannel>(XgmChan);
           auto jdump = JSPACE.dump4x3cn();
