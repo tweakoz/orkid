@@ -220,9 +220,6 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
     auto itp = xgmskelnodes.find(remapSkelName(p->mName.data));
     OrkAssert(itp != xgmskelnodes.end());
     auto pskelnode = itp->second;
-    // fmtx4 pmtx     = pskelnode->_bindMatrix;
-    // deco::printf(fvec3::White(), "pskelnode<%s> %s\n", pskelnode->_name.c_str(), pskelnode->_jointMatrix.dump().c_str());
-    // deco::printf(fvec3::White(), "pskelnode<%s> %s\n", pskelnode->_name.c_str(), pmtx.dump().c_str());
     //////////////////////////////
     for (int i = 0; i < p->mNumChildren; ++i) {
       auto c   = p->mChildren[i];
@@ -250,9 +247,9 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
   /////////////////////////////////////////////////
 
   lev2::XgmSkelNode::visitHierarchy(root,[](lev2::xgmskelnode_ptr_t node) {
-    fmtx4 Bc = node->concatenatednode2();
+    fmtx4 Bc = node->concatenated_node();
     auto par = node->_parent;
-    fmtx4 Bp = par ? par->concatenatednode2() : fmtx4::Identity();
+    fmtx4 Bp = par ? par->concatenated_node() : fmtx4::Identity();
     fmtx4 J;
     J.correctionMatrix(Bp, Bc);
     J                  = fmtx4::multiply_ltor(Bp.inverse(),Bc);
@@ -264,8 +261,8 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
   /////////////////////////////////////////////////
 
   lev2::XgmSkelNode::visitHierarchy(root,[](lev2::xgmskelnode_ptr_t node) { //
-    node->_bindMatrix = node->_assimpOffsetMatrix;
-    node->_bindMatrixInverse = node->_bindMatrix.inverse();
+    node->_bindMatrixInverse = node->_assimpOffsetMatrix;
+    node->_bindMatrix = node->_bindMatrixInverse.inverse();
   });
 
   /////////////////////////////////////////////////
@@ -278,16 +275,13 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
     lev2::XgmSkelNode::visitHierarchy(root,[](lev2::xgmskelnode_ptr_t node) {
       fmtx4 ASSO = node->_assimpOffsetMatrix;
       fmtx4 nodemtx    = node->_nodeMatrix;
-      fmtx4 nodecat    = node->concatenatednode();  // object space
-      //fmtx4 K2   = node->concatenatednode2(); // object space
+      fmtx4 nodecat    = node->concatenated_node();  // object space
       fmtx4 Bi   = node->_bindMatrixInverse;
       fmtx4 Bc   = node->_bindMatrix;
       auto par   = node->_parent;
       fmtx4 Bp   = par ? par->_bindMatrix : fmtx4::Identity();
       fmtx4 J    = node->_jointMatrix;
       fmtx4 O   = node->concatenated_joint(); // object space
-      //fmtx4 Ji   = J.inverse();
-      //fmtx4 D    = fmtx4::multiply_ltor(Bp,J);
       auto n     = node->_name;
       auto pn    = par ? par->_name : "---";
       deco::printe(fvec3::White(), n + ".par: " + pn, true);
@@ -296,13 +290,10 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
       deco::printe(fvec3::White(), n + ".nodemtx: " + nodemtx.dump4x3cn(), true);
       deco::printe(fvec3::White(), n + ".nodecat: " + nodecat.dump4x3cn(), true);
       deco::printe(fvec3::White(), n + ".J: " + J.dump4x3cn(), true);
-      //deco::printe(fvec3::White(), n + ".K2: " + K2.dump4x3cn(), true);
       deco::printe(fvec3::White(), n + ".Bi: " + Bi.dump4x3cn(), true);
       deco::printe(fvec3::White(), n + ".Bc: " + Bc.dump4x3cn(), true);
       deco::printe(fvec3::White(), n + ".Bp: " + Bp.dump4x3cn(), true);
-      //deco::printe(fvec3::White(), n + ".Ji: " + Ji.dump4x3cn(), true);
       deco::printe(fvec3::White(), n + ".O: " + O.dump4x3cn(), true);
-      //deco::printe(fvec3::White(), n + ".Bp*J: " + D.dump4x3cn(), true);
       printf("\n");
     });
   }

@@ -128,7 +128,7 @@ struct GpuResources {
     auto& worldpose = modelinst->_worldPose;
 
     localpose.bindPose();
-    _char_animinst->_current_frame = 59; 
+    _char_animinst->_current_frame = 1;//59; 
     localpose.applyAnimInst(*_char_animinst);
     localpose.blendPoses();
     localpose.concatenate();

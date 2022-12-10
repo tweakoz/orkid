@@ -253,6 +253,7 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock) {
           if (skelnode->_parent) {
             JSPACE.correctionMatrix(skelnode->_parent->concatenated_joint(), //
                                              skelnode->concatenated_joint() );
+            //JSPACE = JSPACE.inverse();
           }
           else{
             JSPACE = skelnode->concatenated_joint();
