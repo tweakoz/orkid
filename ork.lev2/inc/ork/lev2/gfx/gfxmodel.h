@@ -384,6 +384,8 @@ struct XgmModel final {
     return msModelName;
   }
 
+  asset::loadrequest_ptr_t _getLoadRequest();
+
   orklut<PoolString, XgmMesh*> mMeshes;
   orkvector<material_ptr_t> mvMaterials;
   int miBonesPerCluster;

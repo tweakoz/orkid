@@ -281,7 +281,6 @@ void XgmLocalPose::applyAnimInst(const XgmAnimInst& animinst) {
 
       }
     }
-    OrkAssert(false);
 
     //////////////////////////////////////////////////////////////////////
 

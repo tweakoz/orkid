@@ -101,6 +101,9 @@ struct GpuResources {
     OrkAssert(_char_animasset);
     OrkAssert(_char_modelasset);
 
+    model_load_req->waitForCompletion();
+    anim_load_req->waitForCompletion();
+
     auto model = _char_modelasset->getSharedModel();
     _char_drawable->bindModel(model);
     _char_drawable->_name = "char";

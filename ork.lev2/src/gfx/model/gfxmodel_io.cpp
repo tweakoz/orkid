@@ -43,6 +43,16 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
   }
   return false;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+asset::loadrequest_ptr_t XgmModel::_getLoadRequest(){
+  if( _asset ){
+    return _asset->_load_request;
+  }
+  return nullptr;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename, const asset::vars_t& vars) {
@@ -53,6 +63,11 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename, const ass
   // merge in asset vars
   /////////////////////
   mdl->_varmap.mergeVars(vars);
+  /////////////////////
+  auto load_req = mdl->_getLoadRequest();
+  if(load_req){
+    load_req->incrementPartialLoadCount();
+  }
   /////////////////////
   if (auto datablock = datablockFromFileAtPath(ActualPath)) {
     ///////////////////////////////////
@@ -73,6 +88,9 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename, const ass
     datablock->_vars->mergeVars(vars);
     ///////////////////////////////////
     rval = _loaderSelect(mdl, datablock);
+  }
+  if(load_req){
+    load_req->decrementPartialLoadCount();
   }
   return rval;
 }
