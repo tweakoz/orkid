@@ -131,6 +131,7 @@ struct GpuResources {
     _char_animinst->_current_frame = 59; 
     localpose.applyAnimInst(*_char_animinst);
     localpose.blendPoses();
+    localpose.concatenate();
     worldpose.apply(fmtx4(),localpose);
     OrkAssert(false);
 
