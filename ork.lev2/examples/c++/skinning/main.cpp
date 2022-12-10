@@ -39,6 +39,9 @@ using namespace ork::lev2;
 using namespace ork::lev2::pbr::deferrednode;
 typedef SVtxV12C4T16 vtx_t; // position, vertex color, 2 UV sets
 
+
+constexpr bool USE_CHARMESH = false;
+
 ///////////////////////////////////////////////////////////////////
 
 struct GpuResources {
@@ -92,8 +95,15 @@ struct GpuResources {
     auto model_load_req = std::make_shared<asset::LoadRequest>();
     auto anim_load_req = std::make_shared<asset::LoadRequest>();
 
-    model_load_req->_asset_path = "data://tests/blender-rigtest/blender-rigtest-mesh";
-    anim_load_req->_asset_path = "data://tests/blender-rigtest/blender-rigtest-anim1";
+    if(USE_CHARMESH){
+      model_load_req->_asset_path = "data://tests/chartest/char_mesh";
+      anim_load_req->_asset_path = "data://tests/chartest/char_idle";
+    }
+    else{
+      model_load_req->_asset_path = "data://tests/blender-rigtest/blender-rigtest-mesh";
+      anim_load_req->_asset_path = "data://tests/blender-rigtest/blender-rigtest-anim1";
+    }
+
 
     _char_modelasset = asset::AssetManager<XgmModelAsset>::load(model_load_req);
     OrkAssert(_char_modelasset);
@@ -221,12 +231,18 @@ int main(int argc, char** argv, char** envp) {
     // compute camera data
     ///////////////////////////////////////
     float phase    = PI;
-    float distance = 10.0f;
+    float distance = USE_CHARMESH ? 300.0f : 10.0f;
     auto eye       = fvec3(sinf(phase), 0.3f, -cosf(phase)) * distance;
     fvec3 tgt(0, 0, 0);
     fvec3 up(0, 1, 0);
     gpurec->_camdata->Lookat(eye, tgt, up);
-    gpurec->_camdata->Persp(1, 50.0, 45.0);
+
+    if(USE_CHARMESH){
+      gpurec->_camdata->Persp(1, 500.0, 45.0);
+    }
+    else{
+      gpurec->_camdata->Persp(1, 50.0, 45.0);
+    }
 
     ////////////////////////////////////////
     // set character node's world transform
@@ -234,7 +250,7 @@ int main(int argc, char** argv, char** envp) {
 
     fvec3 wpos(0,0,0);
     fquat wori;//fvec3(0,1,0),phase+PI);
-    float wsca = 0.15;
+    float wsca = USE_CHARMESH ? 1 : 0.1;
 
     gpurec->_char_node->_dqxfdata._worldTransform->set(wpos, wori, wsca);
 
@@ -251,9 +267,11 @@ int main(int argc, char** argv, char** envp) {
   //////////////////////////////////////////////////////////
   ezapp->onDraw([&](ui::drawevent_constptr_t drwev) {
 
+    auto anim = gpurec->_char_animasset->GetAnim();
+
 
     static int counter = 0;
-    gpurec->_char_animinst->_current_frame = (counter>>5)%60;
+    gpurec->_char_animinst->_current_frame = (counter>>3)%anim->_numframes;
     gpurec->_char_animinst->SetWeight(1.0f);
 
     auto modelinst = gpurec->_char_drawable->_modelinst;
@@ -264,8 +282,8 @@ int main(int argc, char** argv, char** envp) {
     localpose.applyAnimInst(*(gpurec->_char_animinst));
     localpose.blendPoses();
 
-    auto lpdump = localpose.dump();
-    printf( "%s\n", lpdump.c_str() );
+    //auto lpdump = localpose.dump();
+    //printf( "%s\n", lpdump.c_str() );
 
     localpose.concatenate();
 

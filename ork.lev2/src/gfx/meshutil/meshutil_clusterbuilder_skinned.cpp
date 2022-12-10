@@ -10,6 +10,7 @@
 #include <ork/lev2/gfx/meshutil/clusterizer.h>
 #include <ork/lev2/gfx/meshutil/meshutil_stripper.h>
 #include <ork/lev2/gfx/meshutil/meshutil_fixedgrid.h>
+#include <ork/util/logger.h>
 
 const bool gbFORCEDICE = true;
 const int kDICESIZE    = 512;
@@ -196,8 +197,9 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12B12T8I4W4(lev2::Context& 
       }
       sequence++;
     }
-    // printf("points_remaining<%d>\n", points_remaining);
-    OrkAssert(points_remaining == 0);
+    if(points_remaining > 0){
+      logerrchannel()->log(" skinned cluster points_remaining<%d> (check numweights < 4)\n", points_remaining);
+    }
 
     vwriter.AddVertex(OutVtx);
   }

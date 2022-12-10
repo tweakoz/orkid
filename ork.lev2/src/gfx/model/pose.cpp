@@ -21,7 +21,7 @@ using namespace std::string_literals;
 
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_pose = logger()->createChannel("gfxanim.pose", fvec3(1, 0.7, 1));
+static logchannel_ptr_t logchan_pose  = logger()->createChannel("gfxanim.pose", fvec3(1, 0.7, 1));
 static logchannel_ptr_t logchan_pose2 = logger()->createChannel("gfxanim.pose", fvec3(1, 0.8, .9));
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -47,15 +47,16 @@ void XgmBlendPoseInfo::addPose(const fmtx4& mat, float weight) {
   const auto& pos    = decomp._translation;
   const auto& orient = decomp._rotation;
 
-  if(0)logchan_pose->log(
-      "XgmBlendPoseInfo pos<%g %g %g> orient<%g %g %g %g>", //
-      pos.x,
-      pos.y,
-      pos.z, //
-      orient.w,
-      orient.x,
-      orient.y,
-      orient.z);
+  if (0)
+    logchan_pose->log(
+        "XgmBlendPoseInfo pos<%g %g %g> orient<%g %g %g %g>", //
+        pos.x,
+        pos.y,
+        pos.z, //
+        orient.w,
+        orient.x,
+        orient.y,
+        orient.z);
 
   _matrices[_numanims] = mat;
   _weights[_numanims]  = weight;
@@ -78,8 +79,8 @@ void XgmBlendPoseInfo::computeMatrix(fmtx4& outmatrix) const {
       if (_posecallback) // Callback for decomposed, pre-concatenated, blended joint info
         _posecallback->PostBlendPreConcat(outmatrix);
 
-      auto cdump = outmatrix.dump();
-      logchan_pose->log("cdump: %s", cdump.c_str());
+      // auto cdump = outmatrix.dump();
+      // logchan_pose->log("cdump: %s", cdump.c_str());
 
     } break;
 
@@ -107,10 +108,9 @@ void XgmBlendPoseInfo::computeMatrix(fmtx4& outmatrix) const {
       // gotta figure out a N-way quaternion blend first
       // on the DS, Lerping each matrix column (NormalX, NormalY, NormalZ) gives
       // decent results. Try it.
-        OrkAssert(false);
-        outmatrix = fmtx4::Identity();
-      }
-      break;
+      OrkAssert(false);
+      outmatrix = fmtx4::Identity();
+    } break;
   }
 }
 
@@ -138,7 +138,7 @@ void XgmLocalPose::bindAnimInst(XgmAnimInst& animinst) {
   if (animinst._animation) {
     float fweight = animinst.GetWeight();
 
-    const XgmAnim& anim  = *animinst._animation;
+    const XgmAnim& anim        = *animinst._animation;
     const auto& joint_channels = anim._jointanimationchannels;
 
     const XgmAnim::matrix_lut_t& static_pose = anim._static_pose;
@@ -152,14 +152,14 @@ void XgmLocalPose::bindAnimInst(XgmAnimInst& animinst) {
 
       int inumjinmap = _skeleton.mmJointNameMap.size();
 
-      logchan_pose->log("bindAnimInst jname<%s> iskelindex<%d> inumjinmap<%d>", JointName.c_str(), iskelindex, inumjinmap);
+      // logchan_pose->log("bindAnimInst jname<%s> iskelindex<%d> inumjinmap<%d>", JointName.c_str(), iskelindex, inumjinmap);
 
       if (-1 != iskelindex) {
 
         auto itanim = joint_channels.find(JointName);
 
-        bool found = itanim == joint_channels.end();
-        logchan_pose->log("bindAnimInst jname<%s> found<%d>", JointName.c_str(), int(found));
+        // bool found = itanim == joint_channels.end();
+        // logchan_pose->log("bindAnimInst jname<%s> found<%d>", JointName.c_str(), int(found));
 
         if (itanim == joint_channels.end()) {
 
@@ -180,16 +180,16 @@ void XgmLocalPose::bindAnimInst(XgmAnimInst& animinst) {
     // int iframe = int(frame);
     int ichidx = 0;
 
-    for (int is = 0; is < _skeleton.numJoints(); is++)
-      logchan_pose->log("skel bone<%d:%s>", is, _skeleton.GetJointName(is).c_str());
+    // for (int is = 0; is < _skeleton.numJoints(); is++)
+    // logchan_pose->log("skel bone<%d:%s>", is, _skeleton.GetJointName(is).c_str());
 
     int ichiti = 0;
     for (auto it : joint_channels) {
       const auto& channel_name = it.first;
-      auto matrix_channel   = it.second;
+      auto matrix_channel      = it.second;
       int iskelindex           = _skeleton.jointIndex(channel_name);
 
-      //logchan_pose->log("bind channel<%s> skidx<%d>", channel_name.c_str(), iskelindex);
+      // logchan_pose->log("bind channel<%s> skidx<%d>", channel_name.c_str(), iskelindex);
 
       if (-1 != iskelindex) {
         animinst.setAnimBinding(ichidx++, XgmAnimInst::Binding(iskelindex, ichiti));
@@ -251,11 +251,11 @@ void XgmLocalPose::applyAnimInst(const XgmAnimInst& animinst) {
     size_t numframes        = animinst.numFrames();
     int iframe              = int(frame);
 
-    logchan_pose2->log("apply animinst anm<%p> frame<%d> numframes<%zu> inumanimchannels<%zu>", //
-                      (void*) animation, //
-                      iframe, //
-                      numframes, //
-                      inumanimchannels);
+    // logchan_pose2->log("apply animinst anm<%p> frame<%d> numframes<%zu> inumanimchannels<%zu>", //
+    //                 (void*) animation, //
+    //               iframe, //
+    //             numframes, //
+    //           inumanimchannels);
 
     const auto& joint_channels = animation->_jointanimationchannels;
 
@@ -263,22 +263,24 @@ void XgmLocalPose::applyAnimInst(const XgmAnimInst& animinst) {
     // dump skeleton for reference
     //////////////////////////////////////////////////////////////////////
 
-    for (int iaidx = 0; iaidx < XgmAnimInst::kmaxbones; iaidx++) {
-      auto& binding  = animinst.getAnimBinding(iaidx);
-      int iskelindex = binding.mSkelIndex;
-      if (iskelindex != 0xffff) {
-        auto jname = _skeleton.GetJointName(iskelindex);
-        int par = _skeleton.GetJointParent(iskelindex);
-        //auto this_bind = _skeleton._bindMatrices[iskelindex];
-        //auto par_bind = _skeleton._bindMatrices[par];
-        //fmtx4 skel_rel;
-        //skel_rel.correctionMatrix(par_bind,this_bind);
-        //auto skdump = skel_rel.dump4x3cn();
-        //logchan_pose->log("skldump: joint<%d:%s> skel_rel: %s", //
-        //                  iskelindex, //
-        //                  jname.c_str(), // 
-        //                  skdump.c_str());
-
+    if (0) {
+      for (int iaidx = 0; iaidx < XgmAnimInst::kmaxbones; iaidx++) {
+        auto& binding  = animinst.getAnimBinding(iaidx);
+        int iskelindex = binding.mSkelIndex;
+        if (iskelindex != 0xffff) {
+          auto jname     = _skeleton.GetJointName(iskelindex);
+          int par        = _skeleton.GetJointParent(iskelindex);
+          auto this_bind = _skeleton._bindMatrices[iskelindex];
+          auto par_bind  = _skeleton._bindMatrices[par];
+          fmtx4 skel_rel;
+          skel_rel.correctionMatrix(par_bind, this_bind);
+          auto skdump = skel_rel.dump4x3cn();
+          logchan_pose->log(
+              "skldump: joint<%d:%s> skel_rel: %s", //
+              iskelindex,                           //
+              jname.c_str(),                        //
+              skdump.c_str());
+        }
       }
     }
 
@@ -291,31 +293,25 @@ void XgmLocalPose::applyAnimInst(const XgmAnimInst& animinst) {
       if (iskelindex != 0xffff) {
         int ichanindex = binding.mChanIndex;
 
-
-        //logchan_pose->log("apply on iskelidx<%d> ichanindex<%d>", iskelindex, ichanindex);
-
-
+        // logchan_pose->log("apply on iskelidx<%d> ichanindex<%d>", iskelindex, ichanindex);
 
         auto joint_data = joint_channels.GetItemAtIndex(ichanindex).second;
         OrkAssert(joint_data);
         size_t numframes = joint_data->_sampledFrames.size();
-        //logchan_pose->log("joint_data<%p> numframes<%zu>", (void*)joint_data, numframes);
+        // logchan_pose->log("joint_data<%p> numframes<%zu>", (void*)joint_data, numframes);
         const fmtx4& matrix = joint_data->GetFrame(iframe);
 
-        auto jname = _skeleton.GetJointName(iskelindex);
-        auto adump = matrix.dump4x3cn();
-        logchan_pose2->log("anmdump: joint<%d:%s> anm_jmtx: %s", //
-                          iskelindex, //
-                          jname.c_str(), //
-                          adump.c_str());
+        // auto jname = _skeleton.GetJointName(iskelindex);
+        // auto adump = matrix.dump4x3cn();
+        // logchan_pose2->log("anmdump: joint<%d:%s> anm_jmtx: %s", //
+        //                 iskelindex, //
+        //               jname.c_str(), //
+        //             adump.c_str());
         //_blendposeinfos[iskelindex].addPose(matrix, fweight);//yoyo
-        _blendposeinfos[iskelindex].addPose(matrix, fweight);//yoyo
-
-
-      } 
+        _blendposeinfos[iskelindex].addPose(matrix, fweight); // yoyo
+      }
     }
-    //OrkAssert(false);
-
+    // OrkAssert(false);
   }
 #endif
 }
@@ -334,12 +330,11 @@ void XgmLocalPose::bindPose(void) {
     auto this_bind = _skeleton._bindMatrices[ij];
 
     int par = _skeleton.GetJointParent(ij);
-   // printf( "par[%d]: %d\n", ij, par );
-    if(par>=0){
+    // printf( "par[%d]: %d\n", ij, par );
+    if (par >= 0) {
       auto par_bind = _skeleton._bindMatrices[par];
-      _local_matrices[ij].correctionMatrix(par_bind,this_bind);
-    }
-    else{
+      _local_matrices[ij].correctionMatrix(par_bind, this_bind);
+    } else {
       _local_matrices[ij] = this_bind;
     }
   }
@@ -363,7 +358,7 @@ void XgmLocalPose::blendPoses(void) {
   int inumjoints = NumJoints();
   for (int i = 0; i < inumjoints; i++) {
     int inumanms = _blendposeinfos[i]._numanims;
-      _blendposeinfos[i].computeMatrix(_local_matrices[i]);
+    _blendposeinfos[i].computeMatrix(_local_matrices[i]);
   }
 #endif
 }
@@ -384,9 +379,8 @@ void XgmLocalPose::concatenate(void) {
   _concat_matrices = _local_matrices;
 
   if (_skeleton.miRootNode >= 0) {
-    const fmtx4& RootAnimMat    = _concat_matrices[_skeleton.miRootNode];
+    const fmtx4& RootAnimMat               = _concat_matrices[_skeleton.miRootNode];
     _concat_matrices[_skeleton.miRootNode] = fmtx4::multiply_ltor(RootAnimMat, _skeleton.mTopNodesMatrix);
-
 
     int inumbones = _skeleton.numBones();
     for (int ib = 0; ib < inumbones; ib++) {
@@ -394,31 +388,30 @@ void XgmLocalPose::concatenate(void) {
       int iparent               = Bone._parentIndex;
       int ichild                = Bone._childIndex;
       const fmtx4& ParentMatrix = _concat_matrices[iparent];
-      const fmtx4& LocMatrix    = _local_matrices[ichild];
+      const fmtx4& LocMatrix    = _concat_matrices[ichild];
 
-      std::string parname = _skeleton.GetJointName(iparent).c_str();
-      std::string chiname = _skeleton.GetJointName(ichild).c_str();
+      // std::string parname = _skeleton.GetJointName(iparent).c_str();
+      // std::string chiname = _skeleton.GetJointName(ichild).c_str();
 
-      //fmtx4 temp    = (ParentMatrix * LocMatrix);
-      fmtx4 temp    = fmtx4::multiply_ltor(ParentMatrix,LocMatrix);
+      // fmtx4 temp    = (ParentMatrix * LocMatrix);
+      fmtx4 temp = fmtx4::multiply_ltor(ParentMatrix, LocMatrix);
 
-      logchan_pose2->log("ib<%d> ip<%d:%s> ic<%d:%s>", //
-        ib, 
-        iparent, parname.c_str(),
-        ichild, chiname.c_str());
+      // logchan_pose2->log("ib<%d> ip<%d:%s> ic<%d:%s>", //
+      // ib,
+      // iparent, parname.c_str(),
+      // ichild, chiname.c_str());
 
-      auto this_bind = _skeleton._bindMatrices[ichild];
-      auto par_bind = _skeleton._bindMatrices[iparent];
-      fmtx4 skel_rel;
-      skel_rel.correctionMatrix(par_bind,this_bind);
+      // auto this_bind = _skeleton._bindMatrices[ichild];
+      // auto par_bind = _skeleton._bindMatrices[iparent];
+      // fmtx4 skel_rel;
+      // skel_rel.correctionMatrix(par_bind,this_bind);
 
-
-      logchan_pose2->log(" par<%s>", ParentMatrix.dump4x3cn().c_str() );
-      logchan_pose ->log(" pbi<%s>", par_bind.dump4x3cn().c_str() );
-      logchan_pose2->log(" chi<%s>", LocMatrix.dump4x3cn().c_str() );
-      logchan_pose ->log(" cbi<%s>", this_bind.dump4x3cn().c_str() );
-      logchan_pose2->log(" tmp<%s>", temp.dump4x3cn().c_str() );
-      logchan_pose ->log(" skr<%s>", skel_rel.dump4x3cn().c_str() );
+      // logchan_pose2->log(" par<%s>", ParentMatrix.dump4x3cn().c_str() );
+      // logchan_pose ->log(" pbi<%s>", par_bind.dump4x3cn().c_str() );
+      // logchan_pose2->log(" chi<%s>", LocMatrix.dump4x3cn().c_str() );
+      // logchan_pose ->log(" cbi<%s>", this_bind.dump4x3cn().c_str() );
+      // logchan_pose2->log(" tmp<%s>", temp.dump4x3cn().c_str() );
+      // logchan_pose ->log(" skr<%s>", skel_rel.dump4x3cn().c_str() );
 
       _concat_matrices[ichild] = temp;
 
@@ -458,7 +451,7 @@ void XgmLocalPose::concatenate(void) {
 std::string XgmLocalPose::dump() const {
   std::string rval;
   if (_skeleton.miRootNode >= 0) {
-    int inumjoints           = _skeleton.numJoints();
+    int inumjoints = _skeleton.numJoints();
     for (int ij = 0; ij < inumjoints; ij++) {
       std::string name = _skeleton.GetJointName(ij).c_str();
       const auto& jmtx = _local_matrices[ij];
@@ -533,18 +526,17 @@ void XgmWorldPose::apply(const fmtx4& worldmtx, const XgmLocalPose& localpose) {
   int inumj = localpose.NumJoints();
   _worldmatrices.resize(inumj);
   for (int ij = 0; ij < inumj; ij++) {
-    fmtx4 invbind = _skeleton._inverseBindMatrices[ij];
+    fmtx4 invbind     = _skeleton._inverseBindMatrices[ij];
     std::string bname = _skeleton.GetJointName(ij);
-    //fmtx4 anim_concat = fmtx4::multiply_ltor(invbind, //
-    //                                         localpose._concat_matrices[ij]);
-    //fmtx4 anim_concat = invbind*localpose._concat_matrices[ij];
-    fmtx4 anim_concat = localpose._concat_matrices[ij]*invbind;
-    auto finalmtx     = fmtx4::multiply_ltor(anim_concat,worldmtx);
-    auto fdump = finalmtx.dump4x3cn();
-    printf("fdump: joint<%d:%s> mtx: %s\n", //
-           ij, //
-           bname.c_str(), //
-           fdump.c_str());
+    fmtx4 anim_concat = fmtx4::multiply_ltor(
+        invbind, //
+        localpose._concat_matrices[ij]);
+    auto finalmtx = fmtx4::multiply_ltor(anim_concat, worldmtx);
+    // auto fdump = finalmtx.dump4x3cn();
+    // printf("fdump: joint<%d:%s> mtx: %s\n", //
+    //      ij, //
+    //    bname.c_str(), //
+    //  fdump.c_str());
     _worldmatrices[ij] = finalmtx;
   }
 }
