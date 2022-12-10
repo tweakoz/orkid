@@ -118,7 +118,7 @@ bool XgmAnim::_loadXGA(XgmAnim* anm, datablock_ptr_t datablock) {
 
       for (size_t ifr = 0; ifr < anm->_numframes; ifr++) {
         fmtx4 src_matrix = scalematrix*matrix_src_data[ifr];
-        if(ifr==0){
+        if(1){ //ifr==0){
           auto LDUMP = src_matrix.dump4x3cn();
           logchan_anmio->log("LDUMP:   mtx<%s>", LDUMP.c_str());
         }

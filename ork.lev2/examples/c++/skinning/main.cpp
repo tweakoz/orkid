@@ -213,9 +213,9 @@ int main(int argc, char** argv, char** envp) {
     // set character node's world transform
     ////////////////////////////////////////
 
-    fvec3 wpos(0,-2,0);
+    fvec3 wpos(0,0,0);
     fquat wori(fvec3(0,1,0),phase+PI);
-    float wsca = 2;
+    float wsca = 1;
 
     gpurec->_char_node->_dqxfdata._worldTransform->set(wpos, wori, wsca);
 

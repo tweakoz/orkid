@@ -11,7 +11,7 @@ namespace ork::meshutil {
 
 // TODO - implement datablock cache for anims
 
-datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
+datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock) {
 
   using namespace ::ork::lev2;
 
@@ -20,7 +20,8 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
   auto color = fvec3(1, 0, 1);
 
   auto& extension = inp_datablock->_vars->typedValueForKey<std::string>("file-extension").value();
-  auto scene = aiImportFileFromMemory((const char*)inp_datablock->data(), inp_datablock->length(), assimpImportFlags(), extension.c_str());
+  auto scene =
+      aiImportFileFromMemory((const char*)inp_datablock->data(), inp_datablock->length(), assimpImportFlags(), extension.c_str());
   deco::printf(color, "END: importing scene<%p>\n", scene);
   if (scene) {
     XgmAnim xgmanim;
@@ -124,11 +125,12 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
       auto bindmatrix = skelnode->_bindMatrix;
       auto invbindmtx = skelnode->_bindMatrixInverse;
 
-        auto xdump = bindmatrix.dump4x3cn();
-        printf("xdump: channel_name<%s> mtx: %s\n", channel_name.c_str(), xdump.c_str());
-        auto ydump = invbindmtx.dump4x3cn();
-        printf("ydump: channel_name<%s> mtx: %s\n", channel_name.c_str(), ydump.c_str());
-        printf("channel_name<%s> skelnode<%p> par<%p>\n", channel_name.c_str(), (void*) skelnode.get(), (void*) skelnode->_parent.get());
+      auto xdump = bindmatrix.dump4x3cn();
+      printf("xdump: channel_name<%s> mtx: %s\n", channel_name.c_str(), xdump.c_str());
+      auto ydump = invbindmtx.dump4x3cn();
+      printf("ydump: channel_name<%s> mtx: %s\n", channel_name.c_str(), ydump.c_str());
+      printf(
+          "channel_name<%s> skelnode<%p> par<%p>\n", channel_name.c_str(), (void*)skelnode.get(), (void*)skelnode->_parent.get());
 
       auto& skelnode_framevect_n = skelnode->_varmap["framevect_n"].make<framevect_t>();
 
@@ -146,8 +148,8 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
       // create matrix channel and add to animation
       //////////////////////////////////////////////
 
-      std::string objnameps         = "";
-      auto XgmChan                 = std::make_shared<XgmMatrixAnimChannel>(objnameps, channel_name, "Joint");
+      std::string objnameps = "";
+      auto XgmChan          = std::make_shared<XgmMatrixAnimChannel>(objnameps, channel_name, "Joint");
       XgmChan->reserveFrames(framecount);
       xgmanim.AddChannel(channel_name, XgmChan);
       skelnode->_varmap["xgmchan"].make<animchannel_ptr_t>(XgmChan);
@@ -192,18 +194,18 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
         /////////////////////////////
         // compose matrix
         //  generates node space matrix
-        // The transformation matrix computed from these values replaces the node's original transformation matrix at a specific time
-        // https://assimp.sourceforge.net/lib_html/structai_node_anim.html
+        // The transformation matrix computed from these values replaces the node's original transformation matrix at a specific
+        // time https://assimp.sourceforge.net/lib_html/structai_node_anim.html
         /////////////////////////////
 
         fmtx4 R, S, T;
         R.fromQuaternion(currot);
         S.setScale(cursca.x, cursca.y, cursca.z);
         T.setTranslation(curpos);
-        fmtx4 XF_NSPACE = T*(R*S); //yoyo
+        fmtx4 XF_NSPACE = (R * S) * T; // yoyo
         skelnode_framevect_n.push_back(XF_NSPACE);
 
-        if(f==0){
+        if (f == 0) {
           auto yel        = fvec3(1, 1, 0);
           auto whi        = fvec3(1, 1, 1);
           std::string xxx = deco::format(color, "fr<%d> ", f);
@@ -211,7 +213,6 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
           xxx += XF_NSPACE.dump4x3cn();
           deco::prints(xxx, true);
         }
-
 
       } // for (int f = 0; f < framecount; f++) {
     }   // for (int i = 0; i < anim->mNumChannels; i++) {
@@ -226,78 +227,64 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock){
       deco::printf(fvec3::White(), "/////////////////////////////////////////////\n");
       deco::printf(fvec3::White(), "// J Space Anim\n");
       deco::printf(fvec3::White(), "/////////////////////////////////////////////\n");
-      for (int i = 0; i < anim->mNumChannels; i++) {
-        //deco::printf(color, "///////////\n");
-        aiNodeAnim* channel        = anim->mChannels[i];
-        std::string channel_name   = remapSkelName(channel->mNodeName.data);
-        auto its                   = skelnodes.find(channel_name);
-        auto skelnode              = its->second;
-        auto& skelnode_framevect_n = skelnode->_varmap["framevect_n"].get<framevect_t>();
-        auto parskelnode           = skelnode->_parent;
-        auto this_bind = skelnode->_bindMatrixInverse.inverse();
-        ////////////////////////////////////////////////////////////////////
-        bool par_has_fvn = parskelnode->_varmap.hasKey("framevect_n");
-        //printf( "parskelnode<%p>\n", (void*) parskelnode.get() );
-        //printf( "par_has_fvn<%d>\n", (int) par_has_fvn );
-        for (size_t f = 0; f < framecount; f++) {
+      for (size_t f = 0; f < framecount; f++) {
 
-          fmtx4 JSPACE;
-
-          auto this_mtx = skelnode_framevect_n[f];
-
-          bool has_par = parskelnode and par_has_fvn;
-
-          if(has_par){
-            auto par_bind = parskelnode->_bindMatrixInverse.inverse();
-            auto& par_skelnode_framevect_n = parskelnode->_varmap["framevect_n"].get<framevect_t>();
-            auto par_mtx = par_skelnode_framevect_n[f];
-
-            std::vector<xgmskelnode_ptr_t> nodewalk;
-            lev2::XgmSkelNode::visitHierarchyUp(skelnode,[&](xgmskelnode_ptr_t node){
-              nodewalk.push_back(node);
-            });
-
-
-            JSPACE = this_mtx;
-            //JSPACE.correctionMatrix(this_mtx,//
-              //                      par_mtx);
-
+        ////////////////////////////////////////////////////
+        // apply anim to skelnodes
+        ////////////////////////////////////////////////////
+        for (int i = 0; i < anim->mNumChannels; i++) {
+          // deco::printf(color, "///////////\n");
+          aiNodeAnim* channel        = anim->mChannels[i];
+          std::string channel_name   = remapSkelName(channel->mNodeName.data);
+          auto its                   = skelnodes.find(channel_name);
+          auto skelnode              = its->second;
+          auto& skelnode_framevect_n = skelnode->_varmap["framevect_n"].get<framevect_t>();
+          skelnode->_jointMatrix = skelnode_framevect_n[f];
+        }
+        ////////////////////////////////////////////////////
+        // add to animation ! // yoyo
+        ////////////////////////////////////////////////////
+        for (int i = 0; i < anim->mNumChannels; i++) {
+          aiNodeAnim* channel        = anim->mChannels[i];
+          std::string channel_name   = remapSkelName(channel->mNodeName.data);
+          auto its                   = skelnodes.find(channel_name);
+          auto skelnode              = its->second;
+          fmtx4 JSPACE; 
+          if (skelnode->_parent) {
+            JSPACE.correctionMatrix(skelnode->_parent->concatenated_joint(), //
+                                             skelnode->concatenated_joint() );
           }
-          ////////////////////////////////////////////////////////////////////
           else{
-            JSPACE = this_mtx;
+            JSPACE = skelnode->concatenated_joint();
           }
 
-          //JSPACE.compose(fvec3(0,1,0),fquat(),0.5);
-          ////////////////////////////////////////////////////////////////////
-          
-          if(f==0){
+          auto XgmChan      = skelnode->_varmap["xgmchan"].get<animchannel_ptr_t>();
+          auto as_decomchan = std::dynamic_pointer_cast<XgmMatrixAnimChannel>(XgmChan);
+          auto jdump = JSPACE.dump4x3cn();
+
+          if (f == 0) {
             deco::printf(color, "fr<%d> ", f);
             deco::printf(yel, "%s (J): ", channel_name.c_str());
             deco::prints(JSPACE.dump4x3cn(), true);
           }
-          ////////////////////////////////////////////////////
-          // add to animation ! // yoyo
-          ////////////////////////////////////////////////////
 
-          auto XgmChan = skelnode->_varmap["xgmchan"].get<animchannel_ptr_t>();
-          auto as_decomchan = std::dynamic_pointer_cast<XgmMatrixAnimChannel>(XgmChan);
+          printf(
+              "jdump: joint<%s> mtx: %s\n", //
+              channel_name.c_str(),                     //
+              jdump.c_str());
 
-          auto jdump = JSPACE.dump4x3cn();
-          printf("jdump: joint<%s> has_par<%d> mtx: %s\n", //
-                 channel_name.c_str(), //
-                 int(has_par), //
-                 jdump.c_str());
 
-          as_decomchan->setFrame(f,JSPACE);
+          as_decomchan->setFrame(f, JSPACE);
+
         }
+
       }
     }
-   // OrkAssert(false);
+    // OrkAssert(false);
     ////////////////////////////////////////////////////////////////
     return XgmAnim::Save(&xgmanim);
   } // if scene
-  else{
+  else {
     OrkAssert(false);
   }
   return nullptr;

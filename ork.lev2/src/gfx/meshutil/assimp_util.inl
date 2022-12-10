@@ -285,7 +285,7 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
       auto par   = node->_parent;
       fmtx4 Bp   = par ? par->_bindMatrix : fmtx4::Identity();
       fmtx4 J    = node->_jointMatrix;
-      fmtx4 O   = node->concatenated(); // object space
+      fmtx4 O   = node->concatenated_joint(); // object space
       //fmtx4 Ji   = J.inverse();
       //fmtx4 D    = fmtx4::multiply_ltor(Bp,J);
       auto n     = node->_name;

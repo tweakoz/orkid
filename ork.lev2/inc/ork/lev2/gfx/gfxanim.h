@@ -330,7 +330,7 @@ struct XgmSkelNode {
 
   ///////////////////////////
 
-  fmtx4 concatenated() const;
+  fmtx4 concatenated_joint() const;
   fmtx4 concatenated2() const;
   fmtx4 concatenatednode() const;
   fmtx4 concatenatednode2() const;

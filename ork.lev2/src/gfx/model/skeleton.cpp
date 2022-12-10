@@ -27,8 +27,8 @@ XgmSkelNode::XgmSkelNode(const std::string& Name)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-fmtx4 XgmSkelNode::concatenated() const {
-  return _parent ? fmtx4::multiply_ltor(_parent->concatenated(),_jointMatrix) //
+fmtx4 XgmSkelNode::concatenated_joint() const {
+  return _parent ? fmtx4::multiply_ltor(_parent->concatenated_joint(),_jointMatrix) //
                  : _jointMatrix;
 }
 fmtx4 XgmSkelNode::concatenatednode() const {
@@ -109,7 +109,7 @@ xgmskelnode_ptr_t XgmSkelNode::findCentimeterToMeterNode(xgmskelnode_ptr_t root)
 bool XgmSkelNode::applyCentimeterToMeterScale(xgmskelnode_ptr_t root) {
   auto cmscalenode = findCentimeterToMeterNode(root);
   if (cmscalenode) {
-    auto d = cmscalenode->concatenated().dump();
+    auto d = cmscalenode->concatenated_joint().dump();
     deco::printf(fvec3::Red(), "cmscalenode<%s> %s\n", cmscalenode->_name.c_str(), d.c_str());
   }
   if (cmscalenode) {
@@ -139,7 +139,7 @@ bool XgmSkelNode::applyCentimeterToMeterScale(xgmskelnode_ptr_t root) {
           color = fvec3::White();
           break;
       }
-      auto d = node->concatenated().dump();
+      auto d = node->concatenated_joint().dump();
       deco::printf(color, "node<%s> %s\n", node->_name.c_str(), d.c_str());
     });
   }

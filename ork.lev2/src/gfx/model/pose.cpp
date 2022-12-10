@@ -77,8 +77,8 @@ void XgmBlendPoseInfo::computeMatrix(fmtx4& outmatrix) const {
       if (_posecallback) // Callback for decomposed, pre-concatenated, blended joint info
         _posecallback->PostBlendPreConcat(outmatrix);
 
-      //auto cdump = outmatrix.dump();
-      //logchan_pose->log("cdump: %s", cdump.c_str());
+      auto cdump = outmatrix.dump();
+      logchan_pose->log("cdump: %s", cdump.c_str());
 
     } break;
 
@@ -357,29 +357,19 @@ void XgmLocalPose::bindPose(void) {
 void XgmLocalPose::blendPoses(void) {
 #ifdef ENABLE_ANIM
   int inumjoints = NumJoints();
-
-  // printf("XgmLocalPose<%p>::BuildPose inumjoints<%d>", (void*) this, inumjoints);
-
-  static int gctr = 0;
   for (int i = 0; i < inumjoints; i++) {
     int inumanms = _blendposeinfos[i]._numanims;
 
     // printf("j<%d> inumanms<%d>", i, inumanms);
     if (inumanms) {
       _blendposeinfos[i].computeMatrix(_local_matrices[i]);
-
-      if (1) //( i == ((gctr/1000)%inumjoints) )
-      {
-        const auto& name = _skeleton.GetJointName(i);
-        ork::FixedString<64> fxs;
-        fxs.format("buildpose i<%s>", name.c_str());
-        //_local_matrices[i].dump((char*)fxs.c_str());
-      }
+      const auto& name = _skeleton.GetJointName(i);
+      ork::FixedString<64> fxs;
+      fxs.format("buildpose i<%s>", name.c_str());
+      //_local_matrices[i].dump((char*)fxs.c_str());
       // TODO: Callback for after previous/current have been blended in local space
     }
   }
-  gctr++;
-
 #endif
 }
 
@@ -532,8 +522,13 @@ void XgmWorldPose::apply(const fmtx4& worldmtx, const XgmLocalPose& localpose) {
   for (int ij = 0; ij < inumj; ij++) {
     fmtx4 anim_concat = localpose._concat_matrices[ij];
     auto finalmtx     = fmtx4::multiply_ltor(anim_concat,worldmtx);
+    auto fdump = finalmtx.dump4x3cn();
+    printf("fdump: joint<%d> mtx: %s\n", //
+           ij, //
+           fdump.c_str());
     _worldmatrices[ij] = finalmtx;
   }
+  OrkAssert(false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
