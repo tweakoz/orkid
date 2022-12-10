@@ -404,9 +404,9 @@ void XgmLocalPose::concatenate(void) {
       std::string parname = _skeleton.GetJointName(iparent).c_str();
       std::string chiname = _skeleton.GetJointName(ichild).c_str();
 
-      // fmtx4 temp    = (ParentMatrix * LocMatrix);
-      fmtx4 temp    = fmtx4::multiply_ltor(ParentMatrix,LocMatrix);
-      _concat_matrices[ichild] = temp;
+      fmtx4 temp    = (ParentMatrix * LocMatrix);
+      //fmtx4 temp    = fmtx4::multiply_ltor(ParentMatrix,LocMatrix);
+     // _concat_matrices[ichild] = temp;
 
       auto& child_pose_info = _blendposeinfos[ichild];
       auto child_pose_cb    = child_pose_info._posecallback;
@@ -528,7 +528,7 @@ void XgmWorldPose::apply(const fmtx4& worldmtx, const XgmLocalPose& localpose) {
            fdump.c_str());
     _worldmatrices[ij] = finalmtx;
   }
-  OrkAssert(false);
+  //OrkAssert(false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

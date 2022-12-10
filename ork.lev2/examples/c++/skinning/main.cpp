@@ -214,8 +214,8 @@ int main(int argc, char** argv, char** envp) {
     ////////////////////////////////////////
 
     fvec3 wpos(0,0,0);
-    fquat wori(fvec3(0,1,0),phase+PI);
-    float wsca = 1;
+    fquat wori;//fvec3(0,1,0),phase+PI);
+    float wsca = 0.25;
 
     gpurec->_char_node->_dqxfdata._worldTransform->set(wpos, wori, wsca);
 
@@ -234,7 +234,7 @@ int main(int argc, char** argv, char** envp) {
 
 
     static int counter = 0;
-    gpurec->_char_animinst->_current_frame = counter;
+    gpurec->_char_animinst->_current_frame = (counter>>3)%60;
     gpurec->_char_animinst->SetWeight(1.0f);
 
     auto modelinst = gpurec->_char_drawable->_modelinst;
@@ -252,7 +252,7 @@ int main(int argc, char** argv, char** envp) {
     if(counter==3){
       //OrkAssert(false);
     }
-    counter = (counter+1) %60;
+    counter++;
 
     auto context = drwev->GetTarget();
     RenderContextFrameData RCFD(context); // renderer per/frame data

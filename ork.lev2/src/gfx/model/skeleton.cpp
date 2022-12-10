@@ -28,7 +28,7 @@ XgmSkelNode::XgmSkelNode(const std::string& Name)
 ///////////////////////////////////////////////////////////////////////////////
 
 fmtx4 XgmSkelNode::concatenated_joint() const {
-  return _parent ? fmtx4::multiply_ltor(_parent->concatenated_joint(),_jointMatrix) //
+  return _parent ? fmtx4::multiply_ltor(_jointMatrix,_parent->concatenated_joint()) //
                  : _jointMatrix;
 }
 fmtx4 XgmSkelNode::concatenatednode() const {
