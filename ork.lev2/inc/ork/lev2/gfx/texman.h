@@ -243,7 +243,7 @@ struct Texture {
   std::string _debugName;
   bool _isDepthTexture = false;
   varmap::VarMap _varmap;
-  const TextureAsset* _asset;
+  const TextureAsset* _asset = nullptr;
   bool _formatSupportsFiltering = true;
   ipctexture_ptr_t _external_memory;
   std::atomic<int> _residenceState;

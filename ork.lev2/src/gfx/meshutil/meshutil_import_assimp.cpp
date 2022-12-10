@@ -706,9 +706,9 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
   if (auto as_bool = inp_model._varmap->valueForKey("is_skinned").tryAs<bool>()) {
     is_skinned = as_bool.value();
   }
-
-  auto& inp_embtexmap = inp_model._varmap->typedValueForKey<lev2::embtexmap_t>("embtexmap").value();
-  auto& out_embtexmap = out_model._varmap->makeValueForKey<lev2::embtexmap_t>("embtexmap") = inp_embtexmap;
+  out_model._varmap.mergeVars(*inp_model._varmap);
+  //auto& inp_embtexmap = inp_model._varmap->typedValueForKey<lev2::embtexmap_t>("embtexmap").value();
+  //auto& out_embtexmap = out_model._varmap.makeValueForKey<lev2::embtexmap_t>("embtexmap") = inp_embtexmap;
 
   out_model.ReserveMeshes(inp_model.RefSubMeshLut().size());
   ork::lev2::XgmMesh* out_mesh = new ork::lev2::XgmMesh;

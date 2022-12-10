@@ -17,7 +17,7 @@ using set_t = std::set<file::Path>;
 struct DynamicAssetLoader : public AssetLoader {
 
   using check_fn_t = std::function<bool(const AssetPath& name)>;
-  using load_fn_t  = std::function<asset_ptr_t(const AssetPath& name, vars_constptr_t vars)>;
+  using load_fn_t  = std::function<asset_ptr_t(loadrequest_ptr_t loadreq)>;
   using enum_fn_t  = std::function<set_t()>;
 
   DynamicAssetLoader();
@@ -26,7 +26,7 @@ struct DynamicAssetLoader : public AssetLoader {
   bool resolvePath(
       const AssetPath& pathin, //
       AssetPath& resolved_path) override;
-  asset_ptr_t load(const AssetPath&, vars_constptr_t vars) override;
+  asset_ptr_t load(loadrequest_ptr_t loadreq) override;
   void destroy(asset_ptr_t asset) override;
   set_t EnumerateExisting() override;
 

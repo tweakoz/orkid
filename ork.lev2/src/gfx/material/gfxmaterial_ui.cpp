@@ -43,7 +43,9 @@ GfxMaterialUI::GfxMaterialUI(Context* pTarg)
   _rasterstate.SetZWriteMask(false);
   _rasterstate.SetCullTest(ECULLTEST_OFF);
 
-  _shaderasset = asset::AssetManager<FxShaderAsset>::load("orkshader://ui");
+  auto mtl_load_req = std::make_shared<asset::LoadRequest>();
+  mtl_load_req->_asset_path = "orkshader://ui";
+  _shaderasset = asset::AssetManager<FxShaderAsset>::load(mtl_load_req);
   _shader      = _shaderasset->GetFxShader();
   // printf( "HMODFX<%p> pTarg<%p>\n", _shader, pTarg );
   OrkAssertI(_shader != 0, "did you copy the shaders folder!\n");
@@ -148,7 +150,10 @@ GfxMaterialUIText::GfxMaterialUIText(Context* pTarg)
 
   miNumPasses = 1;
 
-  _shaderasset = asset::AssetManager<FxShaderAsset>::load("orkshader://ui");
+  auto mtl_load_req = std::make_shared<asset::LoadRequest>();
+  mtl_load_req->_asset_path = "orkshader://ui";
+
+  _shaderasset = asset::AssetManager<FxShaderAsset>::load(mtl_load_req);
   _shader      = _shaderasset->GetFxShader();
   if (pTarg) {
     gpuInit(pTarg);
@@ -247,7 +252,11 @@ void GfxMaterialUITextured::EffectInit(void) {
 
 void GfxMaterialUITextured::gpuInit(ork::lev2::Context* pTarg) {
   if (hTek == nullptr) {
-    _shaderasset = asset::AssetManager<FxShaderAsset>::load("orkshader://ui");
+
+    auto mtl_load_req = std::make_shared<asset::LoadRequest>();
+    mtl_load_req->_asset_path = "orkshader://ui";
+
+    _shaderasset = asset::AssetManager<FxShaderAsset>::load(mtl_load_req);
     _shader      = _shaderasset->GetFxShader();
 
     hTek = pTarg->FXI()->technique(_shader, mTechniqueName);

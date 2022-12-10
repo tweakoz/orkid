@@ -18,7 +18,8 @@ struct GridRenderImpl {
   }
   void gpuInit(lev2::Context* ctx) {
 
-    auto texasset = asset::AssetManager<lev2::TextureAsset>::load(_griddata->_colortexpath);
+    auto load_req = std::make_shared<asset::LoadRequest>(_griddata->_colortexpath);
+    auto texasset = asset::AssetManager<lev2::TextureAsset>::load(load_req);
     OrkAssert(texasset);
 
     _colortexture = texasset->GetTexture();

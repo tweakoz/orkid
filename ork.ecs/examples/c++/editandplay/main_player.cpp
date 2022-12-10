@@ -86,7 +86,6 @@ int main(int argc, char** argv, char** envp) {
 
   lev2::rtgroup_ptr_t ecs_outgroup;
   lev2::rtbuffer_ptr_t ecs_outbuffer;
-  std::shared_ptr<lev2::TextureAsset> play_icon, pause_icon;
 
   ////////////////////////////
   // create ecs scene data
@@ -140,8 +139,6 @@ int main(int argc, char** argv, char** envp) {
     //ecs_sg_sysdata->bindToRtGroup(ecs_outgroup);
     ecs_sg_sysdata->bindToCamera(ecs_camera);
 
-    play_icon  = asset::AssetManager<TextureAsset>::load("lev2://textures/play_icon");
-    pause_icon = asset::AssetManager<TextureAsset>::load("lev2://textures/pause_icon");
     compositordata->presetDeferredPBR();
     renderer->setContext(ctx);
 

@@ -36,7 +36,9 @@ GfxMaterial3DSolid::GfxMaterial3DSolid(Context* pTARG)
   miNumPasses = 1;
 
   if (false == gearlyhack) {
-    _shaderasset = asset::AssetManager<FxShaderAsset>::load("orkshader://solid");
+    auto mtl_load_req = std::make_shared<asset::LoadRequest>();
+    mtl_load_req->_asset_path = "orkshader://solid";
+    _shaderasset = asset::AssetManager<FxShaderAsset>::load(mtl_load_req);
     _shader      = _shaderasset->GetFxShader();
   }
 
@@ -64,7 +66,9 @@ GfxMaterial3DSolid::GfxMaterial3DSolid(Context* pTARG, const char* puserfx, cons
     gpuInit(pTARG);
   } else {
     std::shared_ptr<FxShaderAsset> fxshaderasset;
-    _shaderasset = asset::AssetManager<FxShaderAsset>::load(mUserFxName.c_str());
+    auto mtl_load_req = std::make_shared<asset::LoadRequest>();
+    mtl_load_req->_asset_path = mUserFxName.c_str();
+    _shaderasset = asset::AssetManager<FxShaderAsset>::load(mtl_load_req);
     _shader      = _shaderasset->GetFxShader();
 
     if (_shader)
@@ -79,7 +83,9 @@ void GfxMaterial3DSolid::gpuInit(ork::lev2::Context* pTarg) {
   auto fxi = pTarg->FXI();
 
   if (mUserFxName.length()) {
-    _shaderasset = asset::AssetManager<FxShaderAsset>::load(mUserFxName.c_str());
+    auto mtl_load_req = std::make_shared<asset::LoadRequest>();
+    mtl_load_req->_asset_path = mUserFxName.c_str();
+    _shaderasset = asset::AssetManager<FxShaderAsset>::load(mtl_load_req);
 
     _shader = _shaderasset ? _shaderasset->GetFxShader() : 0;
 
@@ -88,7 +94,9 @@ void GfxMaterial3DSolid::gpuInit(ork::lev2::Context* pTarg) {
 
   } else {
     // orkprintf( "Attempting to Load Shader<orkshader://solid>\n" );
-    _shaderasset = asset::AssetManager<FxShaderAsset>::load("orkshader://solid");
+    auto mtl_load_req = std::make_shared<asset::LoadRequest>();
+    mtl_load_req->_asset_path = "orkshader://solid";
+    _shaderasset = asset::AssetManager<FxShaderAsset>::load(mtl_load_req);
     _shader      = _shaderasset->GetFxShader();
   }
   if (0 == _shader) {

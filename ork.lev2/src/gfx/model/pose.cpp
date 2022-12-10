@@ -236,7 +236,6 @@ void XgmLocalPose::applyAnimInst(const XgmAnimInst& animinst) {
       const XgmAnimInst::Binding& binding = animinst.getPoseBinding(ipidx);
       int iskelindex                      = binding.mSkelIndex;
       if (iskelindex != 0xffff) {
-
         int iposeindex      = binding.mChanIndex;
         const fmtx4& matrix = static_pose.GetItemAtIndex(iposeindex).second;
         _blendposeinfos[iskelindex].addPose(matrix, fweight);
@@ -252,7 +251,7 @@ void XgmLocalPose::applyAnimInst(const XgmAnimInst& animinst) {
     size_t numframes        = animinst.numFrames();
     int iframe              = int(frame);
 
-    logchan_pose->log("apply animinst anm<%p> frame<%d> numframes<%zu> inumanimchannels<%zu>", //
+    logchan_pose2->log("apply animinst anm<%p> frame<%d> numframes<%zu> inumanimchannels<%zu>", //
                       (void*) animation, //
                       iframe, //
                       numframes, //
@@ -282,6 +281,7 @@ void XgmLocalPose::applyAnimInst(const XgmAnimInst& animinst) {
 
       }
     }
+    OrkAssert(false);
 
     //////////////////////////////////////////////////////////////////////
 
@@ -516,18 +516,19 @@ void XgmWorldPose::apply(const fmtx4& worldmtx, const XgmLocalPose& localpose) {
   _worldmatrices.resize(inumj);
   for (int ij = 0; ij < inumj; ij++) {
     fmtx4 invbind = _skeleton._inverseBindMatrices[ij];
+    std::string bname = _skeleton.GetJointName(ij);
     //fmtx4 anim_concat = fmtx4::multiply_ltor(invbind, //
     //                                         localpose._concat_matrices[ij]);
     //fmtx4 anim_concat = invbind*localpose._concat_matrices[ij];
     fmtx4 anim_concat = localpose._concat_matrices[ij]*invbind;
     auto finalmtx     = fmtx4::multiply_ltor(anim_concat,worldmtx);
     auto fdump = finalmtx.dump4x3cn();
-    printf("fdump: joint<%d> mtx: %s\n", //
+    printf("fdump: joint<%d:%s> mtx: %s\n", //
            ij, //
+           bname.c_str(), //
            fdump.c_str());
     _worldmatrices[ij] = finalmtx;
   }
-  //OrkAssert(false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

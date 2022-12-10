@@ -90,12 +90,19 @@ struct CommonStuff : public ork::Object {
     return _depthFogPower;
   }
 
+  asset::loadrequest_ptr_t createSkyboxTextureLoadRequest(const AssetPath& texture_path) const {
+    auto load_req = std::make_shared<asset::LoadRequest>(texture_path);
+    load_req->_asset_vars = _texAssetVarMap;
+    return load_req;
+  }
+
+
   texture_ptr_t _filtenvSpecularMap;
   texture_ptr_t _filtenvDiffuseMap;
   lev2::texture_ptr_t _brdfIntegrationMap = nullptr;
 
   asset::asset_ptr_t _environmentTextureAsset;
-  asset::vars_ptr_t _texAssetVarMap;
+  asset::vars_t _texAssetVarMap;
   float _environmentIntensity = 1.0f;
   float _environmentMipBias   = 0.0f;
   float _environmentMipScale  = 0.0f;

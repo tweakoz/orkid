@@ -106,7 +106,7 @@ using object_rawconstptr_t = const Object*;
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace asset {
-class Asset;
+struct Asset;
 class AssetSet;
 class AssetLoader;
 

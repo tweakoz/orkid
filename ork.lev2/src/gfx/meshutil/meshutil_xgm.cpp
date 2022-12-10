@@ -27,7 +27,8 @@ void Mesh::ReadFromXGM(const file::Path& BasePath) {
 
   lev2::XgmModel* mdl = new lev2::XgmModel;
 
-  bool bOK = lev2::XgmModel::LoadUnManaged(mdl, BasePath);
+  asset::vars_t no_vars;
+  bool bOK = lev2::XgmModel::LoadUnManaged(mdl, BasePath,no_vars);
 
   if (bOK) {
     ////////////////////////////////////////////////////////

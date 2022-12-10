@@ -148,8 +148,10 @@ int main(int argc, char** argv, char** envp) {
     ecs_sg_sysdata->bindToRtGroup(ecs_outgroup);
     ecs_sg_sysdata->bindToCamera(ecs_camera);
 
-    play_icon  = asset::AssetManager<TextureAsset>::load("lev2://textures/play_icon");
-    pause_icon = asset::AssetManager<TextureAsset>::load("lev2://textures/pause_icon");
+    auto load_req1 = std::make_shared<asset::LoadRequest>("lev2://textures/play_icon");
+    auto load_req2 = std::make_shared<asset::LoadRequest>("lev2://textures/pause_icon");
+    play_icon  = asset::AssetManager<TextureAsset>::load(load_req1);
+    pause_icon = asset::AssetManager<TextureAsset>::load(load_req2);
     compositordata->presetDeferredPBR();
     renderer->setContext(ctx);
 

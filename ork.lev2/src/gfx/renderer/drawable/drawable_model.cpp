@@ -53,11 +53,11 @@ void ModelDrawable::bindModelAsset(AssetPath assetpath) {
 
   ork::opq::assertOnQueue(opq::mainSerialQueue());
 
-  asset::vars_ptr_t asset_vars;
+  auto load_req = std::make_shared<asset::LoadRequest>(assetpath);
 
   if (_data) {
 
-    asset_vars = std::make_shared<asset::vars_t>();
+    auto& asset_vars = load_req->_asset_vars;
 
     for (auto item : _data->_assetvars) {
 
@@ -66,13 +66,13 @@ void ModelDrawable::bindModelAsset(AssetPath assetpath) {
 
       std::string v_str;
       if (auto as_str = v.tryAs<std::string>()) {
-        asset_vars->makeValueForKey<std::string>(k, as_str.value());
+        asset_vars.makeValueForKey<std::string>(k, as_str.value());
         v_str = as_str.value();
       } else if (auto as_bool = v.tryAs<bool>()) {
-        asset_vars->makeValueForKey<bool>(k, as_bool.value());
+        asset_vars.makeValueForKey<bool>(k, as_bool.value());
         v_str = as_bool.value() ? "true" : "false";
       } else if (auto as_dbl = v.tryAs<double>()) {
-        asset_vars->makeValueForKey<double>(k, as_dbl.value());
+        asset_vars.makeValueForKey<double>(k, as_dbl.value());
         v_str = FormatString("%f", as_dbl.value());
       } else {
         OrkAssert(false);
@@ -82,7 +82,8 @@ void ModelDrawable::bindModelAsset(AssetPath assetpath) {
     }
   }
 
-  _asset = asset::AssetManager<XgmModelAsset>::load(assetpath, asset_vars);
+  
+  _asset = asset::AssetManager<XgmModelAsset>::load(load_req);
   bindModel(_asset->_model.atomicCopy());
 }
 void ModelDrawable::bindModelAsset(xgmmodelassetptr_t asset) {

@@ -133,6 +133,7 @@ struct GpuResources {
     _spikee_instances = std::make_shared<instances_t>();
 
     ctx->debugPushGroup("main.onGpuInit");
+
     _spikee_modelasset = asset::AssetManager<XgmModelAsset>::load("data://tests/pbr1/pbr1");
 
     _spikee_instanced_drawable->bindModel(_spikee_modelasset->getSharedModel());

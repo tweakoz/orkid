@@ -56,7 +56,8 @@ using imdimpl_model_ptr_t = std::shared_ptr<IMDIMPL_MODEL>;
 
 ///////////////////////////////////////////////////////////////////////////////
 void InstancedModelDrawable::bindModelAsset(AssetPath assetpath) {
-  _asset = asset::AssetManager<XgmModelAsset>::load(assetpath);
+  auto load_req = std::make_shared<asset::LoadRequest>(assetpath);
+  _asset = asset::AssetManager<XgmModelAsset>::load(load_req);
   bindModel(_asset->_model.atomicCopy());
 }
 ///////////////////////////////////////////////////////////////////////////////

@@ -15,18 +15,16 @@ namespace ork { namespace asset {
 
 struct FileAssetLoader;
 
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename AssetType> struct AssetManager {
 
   using typed_asset_ptr_t      = std::shared_ptr<AssetType>;
   using typed_asset_constptr_t = std::shared_ptr<const AssetType>;
 
-public:
-  static varmap::VarMap novars();
-  //////////////////////////////////////////////////////////////////////////////
-  static typed_asset_ptr_t load(
-      const AssetPath& asset_name, //
-      vars_constptr_t vmap = nullptr);
-  //////////////////////////////////////////////////////////////////////////////
+  static typed_asset_ptr_t load(loadrequest_ptr_t lreq); // async load with options
+  static typed_asset_ptr_t load(const AssetPath& pth); // default async load 
+
 private:
   static ork::recursive_mutex gLock;
 };

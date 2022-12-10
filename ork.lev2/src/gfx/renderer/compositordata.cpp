@@ -148,13 +148,12 @@ RenderPresetContext CompositingData::presetForwardPBR(rtgroup_ptr_t outputgrp) {
   t1->_writeRenderNode(r1);
 
   // t1->_writePostFxNode(p1);
-  auto assetVars  = r1->_pbrcommon->_texAssetVarMap;
-  auto envl_asset = asset::AssetManager<TextureAsset>::load(
-      "src://envmaps/tozenv_nebula", //
-      assetVars);
+
+  auto load_req = r1->_pbrcommon->createSkyboxTextureLoadRequest("src://envmaps/tozenv_nebula");
+  auto envl_asset = asset::AssetManager<TextureAsset>::load(load_req);
   // todo inject postload ops
   OrkAssert(envl_asset->GetTexture() != nullptr);
-  OrkAssert(envl_asset->_varmap->hasKey("postproc"));
+  OrkAssert(envl_asset->_varmap.hasKey("postproc"));
   r1->_pbrcommon->_writeEnvTexture(envl_asset);
 
   auto s1 = new CompositingScene;
@@ -192,13 +191,13 @@ RenderPresetContext CompositingData::presetDeferredPBR(rtgroup_ptr_t outputgrp) 
   auto pbr_common = r1->_pbrcommon;
 
   // t1->_writePostFxNode(p1);
-  auto assetVars  = pbr_common->_texAssetVarMap;
-  auto envl_asset = asset::AssetManager<TextureAsset>::load(
-      "src://envmaps/tozenv_nebula", //
-      assetVars);
+
+  auto load_req = pbr_common->createSkyboxTextureLoadRequest("src://envmaps/tozenv_nebula");
+
+  auto envl_asset = asset::AssetManager<TextureAsset>::load(load_req);
   // todo inject postload ops
   OrkAssert(envl_asset->GetTexture() != nullptr);
-  OrkAssert(envl_asset->_varmap->hasKey("postproc"));
+  OrkAssert(envl_asset->_varmap.hasKey("postproc"));
   pbr_common->_writeEnvTexture(envl_asset);
 
   auto s1 = new CompositingScene;
@@ -229,11 +228,13 @@ RenderPresetContext CompositingData::presetPBRVR() {
 
   auto pbr_common = r1->_pbrcommon;
 
+  auto load_req = pbr_common->createSkyboxTextureLoadRequest("src://envmaps/tozenv_nebula");
+
   auto assetVars  = pbr_common->_texAssetVarMap;
-  auto envl_asset = asset::AssetManager<TextureAsset>::load("src://envmaps/tozenv_nebula", assetVars);
+  auto envl_asset = asset::AssetManager<TextureAsset>::load(load_req);
   // todo inject postload ops
   OrkAssert(envl_asset->GetTexture() != nullptr);
-  OrkAssert(envl_asset->_varmap->hasKey("postproc"));
+  OrkAssert(envl_asset->_varmap.hasKey("postproc"));
   pbr_common->_writeEnvTexture(envl_asset);
 
   auto s1 = new CompositingScene;

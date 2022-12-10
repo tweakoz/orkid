@@ -318,10 +318,10 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
 
       if (auto try_bgtex = params->typedValueForKey<std::string>("backgroundTexPathStr")) {
         auto texture_path        = try_bgtex.value();
-        auto assetVars           = pbrcommon->_texAssetVarMap;
-        auto enviromentmap_asset = asset::AssetManager<lev2::TextureAsset>::load(texture_path, assetVars);
+        auto load_req = pbrcommon->createSkyboxTextureLoadRequest(texture_path);
+        auto enviromentmap_asset = asset::AssetManager<lev2::TextureAsset>::load(load_req);
         OrkAssert(enviromentmap_asset->GetTexture() != nullptr);
-        OrkAssert(enviromentmap_asset->_varmap->hasKey("postproc"));
+        OrkAssert(enviromentmap_asset->_varmap.hasKey("postproc"));
         pbrcommon->_writeEnvTexture(enviromentmap_asset);
       }
 

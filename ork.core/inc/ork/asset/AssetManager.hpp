@@ -19,18 +19,23 @@ namespace ork::asset {
 ///////////////////////////////////////////////////////////////////////////////
 template <typename AssetType> ork::recursive_mutex AssetManager<AssetType>::gLock("AssetManagerMutex");
 ///////////////////////////////////////////////////////////////////////////////
-template <typename AssetType> varmap::VarMap AssetManager<AssetType>::novars() {
-  return varmap::VarMap();
-};
+template <typename AssetType>
+inline typename AssetManager<AssetType>::typed_asset_ptr_t //
+AssetManager<AssetType>::load(loadrequest_ptr_t loadreq) {
+  auto loader = getLoader<AssetType>();
+  gLock.Lock();
+  auto asset = loader->load(loadreq);
+  gLock.UnLock();
+  return std::dynamic_pointer_cast<AssetType>(asset);
+}
 ///////////////////////////////////////////////////////////////////////////////
 template <typename AssetType>
 inline typename AssetManager<AssetType>::typed_asset_ptr_t //
-AssetManager<AssetType>::load(
-    const AssetPath& asset_name, //
-    vars_constptr_t vmap) {
+AssetManager<AssetType>::load(const AssetPath& pth) {
   auto loader = getLoader<AssetType>();
   gLock.Lock();
-  auto asset = loader->load(asset_name, vmap);
+  auto loadreq = std::make_shared<LoadRequest>(pth);
+  auto asset = loader->load(loadreq);
   gLock.UnLock();
   return std::dynamic_pointer_cast<AssetType>(asset);
 }

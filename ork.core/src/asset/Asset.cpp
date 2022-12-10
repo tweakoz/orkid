@@ -19,10 +19,47 @@ ImplementReflectionX(ork::asset::Asset, "Asset");
 namespace ork { namespace asset {
 ///////////////////////////////////////////////////////////////////////////////
 
-const vars_t novars() {
-  static const vars_t gnovars;
-  return gnovars;
+LoadRequest::LoadRequest() { //
+
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+LoadRequest::LoadRequest(const AssetPath& p) //
+  : _asset_path(p) { //
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void LoadRequest::incrementPartialLoadCount(){
+  _partial_load_counter.fetch_add(1);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void LoadRequest::decrementPartialLoadCount(){
+  int this_count = _partial_load_counter.fetch_add(-1);
+  if(this_count==1){
+    if(_on_load_complete){
+      _on_load_complete();
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void LoadRequest::waitForCompletion() const { //
+  bool done = false;
+  while(not done){
+    done = (_partial_load_counter.load()==0);
+    if(not done){
+      ork::usleep(100);
+    }
+  }
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
 
 void Asset::describeX(object::ObjectClass* clazz) {
 }
@@ -32,8 +69,9 @@ Asset::Asset() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Asset::setName(AssetPath name) {
-  _name = name;
+void Asset::setRequest(loadrequest_ptr_t req) {
+  _load_request = req;
+  _name = _load_request->_asset_path;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

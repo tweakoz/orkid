@@ -27,7 +27,6 @@ XgmModel::XgmModel()
     , mpUserData(0)
     , miNumMaterials(0)
     , mbSkinned(false) {
-  _varmap = std::make_shared<asset::vars_t>();
 }
 
 XgmModel::~XgmModel() {

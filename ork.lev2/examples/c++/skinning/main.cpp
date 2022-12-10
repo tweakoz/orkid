@@ -89,11 +89,17 @@ struct GpuResources {
 
     ctx->debugPushGroup("main.onGpuInit");
 
-    _char_modelasset = asset::AssetManager<XgmModelAsset>::load("data://tests/blender-rigtest/blender-rigtest-mesh");
-    _char_animasset = asset::AssetManager<XgmAnimAsset>::load("data://tests/blender-rigtest/blender-rigtest-anim1f.fbx");
+    auto model_load_req = std::make_shared<asset::LoadRequest>();
+    auto anim_load_req = std::make_shared<asset::LoadRequest>();
 
-    OrkAssert(_char_modelasset);
+    model_load_req->_asset_path = "data://tests/blender-rigtest/blender-rigtest-mesh";
+    anim_load_req->_asset_path = "data://tests/blender-rigtest/blender-rigtest-anim1f.fbx";
+
+    _char_animasset = asset::AssetManager<XgmAnimAsset>::load(anim_load_req);
+    _char_modelasset = asset::AssetManager<XgmModelAsset>::load(model_load_req);
+
     OrkAssert(_char_animasset);
+    OrkAssert(_char_modelasset);
 
     auto model = _char_modelasset->getSharedModel();
     _char_drawable->bindModel(model);
@@ -115,6 +121,16 @@ struct GpuResources {
     _char_animinst->RefMask().EnableAll();
     modelinst->_localPose.bindAnimInst(*_char_animinst);
 
+    auto& localpose = modelinst->_localPose;
+    auto& worldpose = modelinst->_worldPose;
+
+    localpose.bindPose();
+    _char_animinst->_current_frame = 59; 
+    localpose.applyAnimInst(*_char_animinst);
+    localpose.blendPoses();
+    worldpose.apply(fmtx4(),localpose);
+    OrkAssert(false);
+
     //////////////////////////////////////////////
     // scenegraph nodes
     //////////////////////////////////////////////
@@ -124,7 +140,6 @@ struct GpuResources {
     ctx->debugPopGroup();
   }
 
-  //lev2::xgmworldpose_ptr _char_worldpose;
   lev2::xgmanimmask_ptr_t _char_animmask;
   lev2::xgmaniminst_ptr_t _char_animinst;
   lev2::xgmanimassetptr_t _char_animasset; // retain anim
@@ -234,7 +249,7 @@ int main(int argc, char** argv, char** envp) {
 
 
     static int counter = 0;
-    gpurec->_char_animinst->_current_frame = (counter>>3)%60;
+    gpurec->_char_animinst->_current_frame = 59; //(counter>>3)%60;
     gpurec->_char_animinst->SetWeight(1.0f);
 
     auto modelinst = gpurec->_char_drawable->_modelinst;

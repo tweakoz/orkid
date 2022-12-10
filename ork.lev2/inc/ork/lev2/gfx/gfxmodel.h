@@ -371,7 +371,7 @@ struct XgmModel final {
 
   /////////////////////////////////////
 
-  static bool LoadUnManaged(XgmModel* mdl, const AssetPath& fname, asset::vars_constptr_t vars=nullptr);
+  static bool LoadUnManaged(XgmModel* mdl, const AssetPath& fname, const asset::vars_t& vars);
   static bool _loaderSelect(XgmModel* mdl, datablock_ptr_t dblock);
   static bool _loadXGM(XgmModel* mdl, datablock_ptr_t dblock);
   static bool _loadAssimp(XgmModel* mdl, datablock_ptr_t dblock);
@@ -396,7 +396,8 @@ struct XgmModel final {
   fvec3 mBoundingCenter;
   float mBoundingRadius;
   bool mbSkinned;
-  asset::vars_ptr_t _varmap;
+  asset::vars_t _varmap;
+  XgmModelAsset* _asset = nullptr;
 };
 
 using model_ptr_t      = std::shared_ptr<XgmModel>;

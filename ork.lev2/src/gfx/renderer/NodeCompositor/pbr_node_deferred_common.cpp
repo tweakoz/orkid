@@ -159,8 +159,10 @@ void DeferredContext::gpuInit(Context* target) {
     _rtbLightAccum->_debugName = "DeferredLightAccum";
     _accumRT                   = new RtGroupRenderTarget(_rtgLaccum.get());
     //////////////////////////////////////////////////////////////
-    _whiteTexture = asset::AssetManager<TextureAsset>::load("src://effect_textures/white");
-    _voltexA      = asset::AssetManager<TextureAsset>::load("src://effect_textures/voltex_pn2");
+    auto mtl_load_req1 = std::make_shared<asset::LoadRequest>("src://effect_textures/white");
+    auto mtl_load_req2 = std::make_shared<asset::LoadRequest>("src://effect_textures/voltex_pn2");
+    _whiteTexture = asset::AssetManager<TextureAsset>::load(mtl_load_req1);
+    _voltexA      = asset::AssetManager<TextureAsset>::load(mtl_load_req2);
   }
   target->debugPopGroup();
 }

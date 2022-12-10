@@ -16,17 +16,34 @@
 
 namespace ork::asset {
 
-using vars_t          = varmap::VarMap;
-using vars_ptr_t      = std::shared_ptr<vars_t>;
-using vars_constptr_t = std::shared_ptr<const vars_t>;
-using vars_gen_t      = std::function<vars_ptr_t(object_ptr_t)>;
+struct LoadRequest;
 
-class Asset : public Object {
+using vars_t          = varmap::VarMap;
+using vars_gen_t      = std::function<vars_t(object_ptr_t)>;
+using loadrequest_ptr_t = std::shared_ptr<LoadRequest>;
+
+struct LoadRequest{
+
+  LoadRequest();
+  LoadRequest(const AssetPath& p);
+
+  void incrementPartialLoadCount();
+  void decrementPartialLoadCount();
+  void waitForCompletion() const;
+
+  asset_ptr_t _asset;
+  AssetPath _asset_path;
+  vars_t _asset_vars;
+  void_lambda_t _on_load_complete;
+  std::atomic<int> _partial_load_counter = 0;
+};
+
+struct Asset : public Object {
   DeclareConcreteX(Asset, ork::Object);
 
 public:
   Asset();
-  void setName(AssetPath name);
+  void setRequest(loadrequest_ptr_t req);
   AssetPath name() const;
   virtual std::string type() const;
   bool Load() const;
@@ -34,8 +51,9 @@ public:
   bool IsLoaded() const;
   assetset_ptr_t assetset() const;
 
-  vars_constptr_t _varmap;
+  vars_t _varmap;
   AssetPath _name;
+  loadrequest_ptr_t _load_request;
 };
 
 } // namespace ork::asset

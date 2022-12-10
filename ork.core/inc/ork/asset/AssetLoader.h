@@ -20,7 +20,7 @@ public:
   virtual bool resolvePath(
       const AssetPath& pathin, //
       AssetPath& resolved_path)                                    = 0;
-  virtual asset_ptr_t load(const AssetPath&, vars_constptr_t vmap) = 0;
+  virtual asset_ptr_t load(loadrequest_ptr_t loadreq)              = 0;
   virtual void destroy(asset_ptr_t asset)                          = 0;
 
   virtual std::set<file::Path> EnumerateExisting() = 0;

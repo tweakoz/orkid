@@ -34,7 +34,8 @@ CompositingMaterial::~CompositingMaterial() {
 /////////////////////////////////////////////////
 void CompositingMaterial::gpuInit(lev2::Context* pTarg) {
   if (0 == _shader) {
-    _shaderasset = asset::AssetManager<lev2::FxShaderAsset>::load("orkshader://compositor");
+    auto mtl_load_req = std::make_shared<asset::LoadRequest>("orkshader://compositor");
+    _shaderasset = asset::AssetManager<lev2::FxShaderAsset>::load(mtl_load_req);
     _shader      = _shaderasset->GetFxShader();
 
     auto fxi = pTarg->FXI();

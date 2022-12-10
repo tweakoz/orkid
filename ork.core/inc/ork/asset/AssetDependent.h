@@ -13,8 +13,6 @@ class Provider;
 
 namespace ork { namespace asset {
 
-class Asset;
-
 util::dependency::Provider *assetLoadProvider(const Asset *asset);
 
 } }

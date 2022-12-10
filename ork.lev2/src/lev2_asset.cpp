@@ -48,8 +48,8 @@ XgmModelLoader::XgmModelLoader()
   initLoadersForUriProto("src://");
 }
 
-ork::asset::asset_ptr_t XgmModelLoader::_doLoadAsset(AssetPath assetpath, ork::asset::vars_constptr_t vars) {
-  auto absolutepath = assetpath.ToAbsolute();
+ork::asset::asset_ptr_t XgmModelLoader::_doLoadAsset(ork::asset::loadrequest_ptr_t loadreq) {
+  auto absolutepath = loadreq->_asset_path.ToAbsolute();
   auto modelasset   = std::make_shared<XgmModelAsset>();
   logchan_l2asso->log("LoadModelAsset<%s>", absolutepath.c_str());
   bool OK = false;
@@ -60,7 +60,10 @@ ork::asset::asset_ptr_t XgmModelLoader::_doLoadAsset(AssetPath assetpath, ork::a
       absolutepath.GetExtension() == "fbx" or //
       absolutepath.GetExtension() == "gltf") {
     modelasset->clearModel();
-    OK = XgmModel::LoadUnManaged(modelasset->GetModel(), assetpath,vars);
+    OK = XgmModel::LoadUnManaged(modelasset->GetModel(), //
+                                 loadreq->_asset_path, //
+                                 loadreq->_asset_vars);
+
     // route to caching assimp->xgm processor
     OrkAssert(OK);
   }
@@ -100,19 +103,17 @@ StaticTexFileLoader::StaticTexFileLoader()
   initLoadersForUriProto("lev2://");
 }
 
-asset_ptr_t StaticTexFileLoader::_doLoadAsset(AssetPath assetpath, vars_constptr_t vars) {
+asset_ptr_t StaticTexFileLoader::_doLoadAsset(ork::asset::loadrequest_ptr_t loadreq) {
   auto texture_asset = std::make_shared<TextureAsset>();
-  if (vars) {
-    texture_asset->_varmap               = vars;
-    texture_asset->GetTexture()->_varmap = *vars;
-    // if (vars->hasKey("postproc"))
-    // logchan_l2asso->log("texasset<%p:%s> has postproc", texture_asset.get(), assetpath.c_str());
+  texture_asset->_varmap               = loadreq->_asset_vars;
+  texture_asset->GetTexture()->_varmap = loadreq->_asset_vars;
+  if (loadreq->_asset_vars.hasKey("postproc")){ //
+    logchan_l2asso->log("texasset<%p:%s> has postproc", texture_asset.get(), loadreq->_asset_path.c_str());
   }
-  // OrkAssert(false == texture_asset->GetTexture()->_varmap.hasKey("preproc"));
   auto context = lev2::contextForCurrentThread();
 
   auto txi = context->TXI();
-  bool bOK = txi->LoadTexture(assetpath, texture_asset->GetTexture());
+  bool bOK = txi->LoadTexture(loadreq->_asset_path, texture_asset->GetTexture());
   OrkAssert(bOK);
   return texture_asset;
 }
@@ -134,6 +135,7 @@ void StaticTexFileLoader::initLoadersForUriProto(const std::string& uriproto){
 
 TextureAsset::TextureAsset() {
   _texture = std::make_shared<Texture>(this);
+  _texture->_asset = this;
 }
 TextureAsset::~TextureAsset() {
   _texture = nullptr;
@@ -146,6 +148,7 @@ void TextureAsset::describeX(class_t* clazz) {
 
 void TextureAsset::SetTexture(texture_ptr_t pt) {
   _texture = pt;
+  _texture->_asset = this;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -161,14 +164,14 @@ public:
     addLocation(datactx, ".fbx");
   }
 
-  asset_ptr_t _doLoadAsset(AssetPath filename, vars_constptr_t vars) override {
+  asset_ptr_t _doLoadAsset(asset::loadrequest_ptr_t loadreq) final {
     auto animasset = std::make_shared<XgmAnimAsset>();
-    bool bOK       = XgmAnim::LoadUnManaged(animasset->GetAnim(), filename);
+    bool bOK       = XgmAnim::LoadUnManaged(animasset->GetAnim(), loadreq->_asset_path);
     OrkAssert(bOK);
     return animasset;
   }
 
-  void destroy(asset_ptr_t asset) override {
+  void destroy(asset_ptr_t asset) final {
 #if defined(ORKCONFIG_ASSET_UNLOAD)
     auto animasset = std::dynamic_pointer_cast<XgmAnimAsset>(asset);
     bool bOK       = XgmAnim::unloadUnManaged(animasset->GetAnim());
@@ -199,7 +202,7 @@ class FxShaderLoader final : public FileAssetLoader {
 public:
   FxShaderLoader();
 
-  asset_ptr_t _doLoadAsset(AssetPath filename, vars_constptr_t vars) override;
+  asset_ptr_t _doLoadAsset(asset::loadrequest_ptr_t loadreq) override;
   void destroy(asset_ptr_t asset) override {
     auto shader_asset = std::dynamic_pointer_cast<FxShaderAsset>(asset);
   }
@@ -226,14 +229,15 @@ FxShaderLoader::FxShaderLoader()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-asset_ptr_t FxShaderLoader::_doLoadAsset(AssetPath resolvedpath, vars_constptr_t vars) {
+asset_ptr_t FxShaderLoader::_doLoadAsset(asset::loadrequest_ptr_t loadreq) {
   auto pshader = std::make_shared<FxShaderAsset>();
   auto context = lev2::contextForCurrentThread();
   auto fxi     = context->FXI();
-  bool bOK     = fxi->LoadFxShader(resolvedpath, pshader->GetFxShader());
+  auto path = loadreq->_asset_path;
+  bool bOK     = fxi->LoadFxShader(path, pshader->GetFxShader());
   OrkAssert(bOK);
   if (bOK)
-    pshader->GetFxShader()->SetName(resolvedpath.c_str());
+    pshader->GetFxShader()->SetName(path.c_str());
   return pshader;
 }
 

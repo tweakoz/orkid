@@ -479,7 +479,8 @@ void pyinit_gfx(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<XgmModel, model_ptr_t>(module_lev2, "Model") //
       .def(py::init([](const std::string& model_path) -> model_ptr_t {
-        auto modl_asset = asset::AssetManager<XgmModelAsset>::load(model_path.c_str());
+        auto loadreq = std::make_shared<asset::LoadRequest>(model_path.c_str());
+        auto modl_asset = asset::AssetManager<XgmModelAsset>::load(loadreq);
         return modl_asset->_model.atomicCopy();
       }))
       .def(

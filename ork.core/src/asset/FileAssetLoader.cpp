@@ -223,16 +223,25 @@ bool FileAssetLoader::resolvePath(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-asset_ptr_t FileAssetLoader::load(const AssetPath& assetinppath, vars_constptr_t vars) {
-  AssetPath resolved_path;
+asset_ptr_t FileAssetLoader::load(loadrequest_ptr_t loadreq) {
   ///////////////////////////////////////////////////////////////////////////////
-  if (false == _find(assetinppath, resolved_path)) {
-    printf("Error Loading File Asset %s\n", assetinppath.c_str());
+  auto orig_path = loadreq->_asset_path;
+  ///////////////////////////////////////////////////////////////////////////////
+  // resolve extension / search path, etc..
+  ///////////////////////////////////////////////////////////////////////////////
+  if (not _find(orig_path, loadreq->_asset_path)) {
+    printf("Error Loading File Asset %s\n", orig_path.c_str());
     return nullptr;
   }
-  auto asset = _doLoadAsset(resolved_path, vars);
-  if (asset)
-    asset->_name = assetinppath;
+  ///////////////////////////////////////////////////////////////////////////////
+  loadreq->incrementPartialLoadCount();
+  auto asset = _doLoadAsset(loadreq);
+  if (asset){
+    asset->_name = orig_path;
+    asset->_load_request = loadreq;
+    loadreq->_asset = asset;
+  }
+  loadreq->decrementPartialLoadCount();
   return asset;
 }
 

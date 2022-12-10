@@ -45,16 +45,14 @@ bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename, asset::vars_constptr_t vars) {
+bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename, const asset::vars_t& vars) {
   bool rval        = false;
   auto ActualPath  = Filename.ToAbsolute();
   mdl->msModelName = AddPooledString(Filename.c_str());
   /////////////////////
   // merge in asset vars
   /////////////////////
-  if(vars){
-    mdl->_varmap->mergeVars(*vars);
-  }
+  mdl->_varmap.mergeVars(vars);
   /////////////////////
   if (auto datablock = datablockFromFileAtPath(ActualPath)) {
     ///////////////////////////////////
@@ -72,9 +70,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename, asset::va
     /////////////////////
     // merge in asset vars
     /////////////////////
-    if(vars){
-      datablock->_vars->mergeVars(*vars);
-    }
+    datablock->_vars->mergeVars(vars);
     ///////////////////////////////////
     rval = _loaderSelect(mdl, datablock);
   }
@@ -113,7 +109,7 @@ bool XgmModel::_loadAssimp(XgmModel* mdl, datablock_ptr_t inp_datablock) {
   // include asset vars as hash mutator 
   //  because they may influence the loading mechanism 
   /////////////////////////////////////
-  for( auto item : mdl->_varmap->_themap ){
+  for( auto item : mdl->_varmap._themap ){
     const std::string& k = item.first;
     const rendervar_t& v = item.second;
     basehasher->accumulateString(k);
@@ -244,7 +240,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
     ///////////////////////////////////
     // embedded textures
     ///////////////////////////////////
-    auto& embtexmap = mdl->_varmap->makeValueForKey<embtexmap_t>("embtexmap");
+    auto& embtexmap = mdl->_varmap.makeValueForKey<embtexmap_t>("embtexmap");
     if (EmbTexStream) {
       size_t numembtex = 0;
       EmbTexStream->GetItem(numembtex);
@@ -268,13 +264,13 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
 
     ///////////////////////////////////
     chunkfile::XgmMaterialReaderContext materialread_ctx(chunkreader);
-    materialread_ctx._varmap->mergeVars(*mdl->_varmap);
+    materialread_ctx._varmap->mergeVars(mdl->_varmap);
     materialread_ctx._varmap->makeValueForKey<Context*>("gfxtarget")    = context;
     materialread_ctx._inputStream = HeaderStream;
 
     ///////////////////////////////////
     bool use_normalviz = false;
-    if( auto try_override = mdl->_varmap->typedValueForKey<std::string>("override.shader.gbuf") ){
+    if( auto try_override = mdl->_varmap.typedValueForKey<std::string>("override.shader.gbuf") ){
       const auto& override_sh = try_override.value();
       if(override_sh=="normalviz"){
         use_normalviz = true;
@@ -611,7 +607,7 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
   // embedded textures chunk
   ///////////////////////////////////////////////////////////////////////////////////////////
 
-  if (auto as_embtexmap = mdl->_varmap->typedValueForKey<embtexmap_t>("embtexmap")) {
+  if (auto as_embtexmap = mdl->_varmap.typedValueForKey<embtexmap_t>("embtexmap")) {
     auto& embtexmap    = as_embtexmap.value();
     auto textureStream = chunkwriter.AddStream("embtexmap");
     textureStream->AddItem<size_t>(embtexmap.size());

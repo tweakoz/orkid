@@ -81,7 +81,9 @@ void FreestyleMaterial::gpuInit(Context* targ, const AssetPath& assetname) {
   if (_initialTarget == nullptr) {
     _initialTarget = targ;
     auto fxi       = targ->FXI();
-    _shaderasset   = asset::AssetManager<FxShaderAsset>::load(assetname.c_str());
+    auto mtl_load_req = std::make_shared<asset::LoadRequest>();
+    mtl_load_req->_asset_path = assetname.c_str();
+    _shaderasset   = asset::AssetManager<FxShaderAsset>::load(mtl_load_req);
     _shader        = _shaderasset->GetFxShader();
     OrkAssert(_shader);
   }
@@ -90,8 +92,10 @@ void FreestyleMaterial::gpuInit(Context* targ, const AssetPath& assetname) {
 void FreestyleMaterial::gpuInitFromShaderText(Context* targ, const std::string& shadername, const std::string& shadertext) {
   if (_initialTarget == nullptr) {
     _initialTarget = targ;
+    auto loadreq = std::make_shared<asset::LoadRequest>();
+    loadreq->_asset_path = "shaderFromShaderText";
     _shaderasset   = std::make_shared<FxShaderAsset>();
-    _shaderasset->setName("shaderFromShaderText");
+    _shaderasset->setRequest(loadreq);
     _shader = targ->FXI()->shaderFromShaderText(shadername, shadertext);
     OrkAssert(_shader);
 

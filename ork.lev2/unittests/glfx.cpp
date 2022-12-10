@@ -22,7 +22,8 @@ TEST(glfx1) {
     printf("fxi<%p>\n", (void*)fxi);
     CHECK(fxi != nullptr);
 
-    auto asset = ork::asset::AssetManager<ork::lev2::FxShaderAsset>::load("orkshader://deferrednvms");
+    auto loadreq = std::make_shared<ork::asset::LoadRequest>("orkshader://deferrednvms");
+    auto asset = ork::asset::AssetManager<ork::lev2::FxShaderAsset>::load(loadreq);
     printf("asset<%p>\n", (void*)asset.get());
     CHECK(asset != nullptr);
 

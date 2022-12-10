@@ -60,7 +60,10 @@ TEST(gfxanim1) {
 
     // auto modl_asset = asset::AssetManager<XgmModelAsset>::load("data://test/bonetest_mesh");
     // auto modl_asset = asset::AssetManager<XgmModelAsset>::load("data://test/rigtest_exp");
-    auto modl_asset = asset::AssetManager<XgmModelAsset>::load("data://tests/hfstest/hfs_rigtest.fbx");
+
+    auto loadreq = std::make_shared<asset::LoadRequest>("data://tests/hfstest/hfs_rigtest.fbx");
+
+    auto modl_asset = asset::AssetManager<XgmModelAsset>::load(loadreq);
     // auto modl_asset = asset::AssetManager<XgmModelAsset>::load("data://test/char_mesh");
     printf("modl_asset<%p>\n", (void*)modl_asset.get());
     CHECK(modl_asset != nullptr);

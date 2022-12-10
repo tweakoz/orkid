@@ -58,7 +58,7 @@ void CommonStuff::describeX(class_t* c) {
       ->annotate<ConstString>("editor.assetclass", "lev2tex")
       ->annotate<asset::vars_gen_t>(
           "asset.deserialize.vargen", //
-          [](ork::object_ptr_t obj) -> asset::vars_ptr_t {
+          [](ork::object_ptr_t obj) -> asset::vars_t {
             auto _this = std::dynamic_pointer_cast<CommonStuff>(obj);
             OrkAssert(_this);
             OrkAssert(false);
@@ -70,9 +70,7 @@ void CommonStuff::describeX(class_t* c) {
 CommonStuff::CommonStuff() {
   _clearColor = fvec4(0,0,0,1);
 
-  _texAssetVarMap = std::make_shared<asset::vars_t>();
-
-  _texAssetVarMap->makeValueForKey<Texture::proc_t>("postproc") = //
+  _texAssetVarMap.makeValueForKey<Texture::proc_t>("postproc") = //
       [this](texture_ptr_t tex, //
              Context* targ, //
              datablock_constptr_t inp_datablock) -> datablock_ptr_t {
@@ -121,13 +119,14 @@ void CommonStuff::_readEnvTexture(asset::asset_ptr_t& tex) const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CommonStuff::setEnvTexturePath(file::Path path) {
-  auto envl_asset = asset::AssetManager<TextureAsset>::load(path.c_str());
+  auto mtl_load_req = std::make_shared<asset::LoadRequest>(path);
+  auto envl_asset = asset::AssetManager<TextureAsset>::load(mtl_load_req);
   OrkAssert(false);
   // TODO - inject asset postload ops ()
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CommonStuff::_writeEnvTexture(asset::asset_ptr_t const& tex) {
-  asset::vars_constptr_t old_varmap;
+  asset::vars_t old_varmap;
   if(_environmentTextureAsset){
     old_varmap = _environmentTextureAsset->_varmap;
     //printf("OLD <%p:%s>\n\n", _environmentTextureAsset.get(),_environmentTextureAsset->name().c_str());

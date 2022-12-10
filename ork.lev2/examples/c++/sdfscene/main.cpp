@@ -229,7 +229,8 @@ struct GpuResources {
 
     _sdf_drawable = std::make_shared<CallbackDrawable>(nullptr);
 
-    _voltexA = asset::AssetManager<lev2::TextureAsset>::load("src://effect_textures/voltex_pn2");
+    auto loadreq = std::make_shared<asset::LoadRequest>("src://effect_textures/voltex_pn2");
+    _voltexA = asset::AssetManager<lev2::TextureAsset>::load(loadreq); // loadreq now owned by asset
 
     //////////////////////////////////////////////////////////
     // initialize compositor (necessary for PBR models)
@@ -250,7 +251,8 @@ struct GpuResources {
     _TOPCPD->addStandardLayers();
 
     ctx->debugPushGroup("main.onGpuInit");
-    _modelasset = asset::AssetManager<XgmModelAsset>::load("data://tests/pbr1/pbr1");
+    loadreq = std::make_shared<asset::LoadRequest>("data://tests/pbr1/pbr1");
+    _modelasset = asset::AssetManager<XgmModelAsset>::load(loadreq);
 
     ctx->debugPopGroup();
   }
@@ -437,7 +439,7 @@ int main(int argc, char** argv,char** envp) {
     sframe->passdata   = gpurec->_TOPCPD;
     sframe->_updrendersync = init_data->_update_rendersync;
 
-    sframe->_userprops.AddSorted("time"_crc, float(timer.SecsSinceStart()));
+    sframe->_userprops.Replace("time"_crc, float(timer.SecsSinceStart()));
 
     sframe->render();
 

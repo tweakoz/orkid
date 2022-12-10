@@ -686,7 +686,10 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _initialTarget = targ;
   auto fxi       = targ->FXI();
 
-  _asset_shader = ork::asset::AssetManager<FxShaderAsset>::load(_shaderpath);
+  auto loadreq = std::make_shared<asset::LoadRequest>();
+  loadreq->_asset_path = _shaderpath;
+
+  _asset_shader = ork::asset::AssetManager<FxShaderAsset>::load(loadreq);
   _shader       = _asset_shader->GetFxShader();
 
   // specials
@@ -784,19 +787,25 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   OrkAssert(_parBoneMatrices != nullptr);
 
   if (_texColor == nullptr) {
-    _asset_texcolor = asset::AssetManager<lev2::TextureAsset>::load("src://effect_textures/white");
+    auto loadreq = std::make_shared<asset::LoadRequest>();
+    loadreq->_asset_path = "src://effect_textures/white";
+    _asset_texcolor = asset::AssetManager<lev2::TextureAsset>::load(loadreq);
     _texColor       = _asset_texcolor->GetTexture();
     // logchan_pbr->log("substituted white for non-existant color texture");
     OrkAssert(_texColor != nullptr);
   }
   if (_texNormal == nullptr) {
-    _asset_texnormal = asset::AssetManager<lev2::TextureAsset>::load("src://effect_textures/default_normal");
+    auto loadreq = std::make_shared<asset::LoadRequest>();
+    loadreq->_asset_path = "src://effect_textures/default_normal";
+    _asset_texnormal = asset::AssetManager<lev2::TextureAsset>::load(loadreq);
     _texNormal       = _asset_texnormal->GetTexture();
     // logchan_pbr->log("substituted blue for non-existant normal texture");
     OrkAssert(_texNormal != nullptr);
   }
   if (_texMtlRuf == nullptr) {
-    _asset_mtlruf = asset::AssetManager<lev2::TextureAsset>::load("src://effect_textures/white");
+    auto loadreq = std::make_shared<asset::LoadRequest>();
+    loadreq->_asset_path = "src://effect_textures/white";
+    _asset_mtlruf = asset::AssetManager<lev2::TextureAsset>::load(loadreq);
     _texMtlRuf    = _asset_mtlruf->GetTexture();
     // logchan_pbr->log("substituted white for non-existant mtlrufao texture");
     OrkAssert(_texMtlRuf != nullptr);
@@ -813,9 +822,11 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 }
 
 void PBRMaterial::forceEmissive() {
+    auto loadreq = std::make_shared<asset::LoadRequest>();
+    loadreq->_asset_path = "src://effect_textures/black";
   // to force emissive set normal map to black
   // shader will interpret as emissive
-  _asset_texnormal = asset::AssetManager<lev2::TextureAsset>::load("src://effect_textures/black");
+  _asset_texnormal = asset::AssetManager<lev2::TextureAsset>::load(loadreq);
   _texNormal       = _asset_texnormal->GetTexture();
   OrkAssert(_texNormal != nullptr);
 }

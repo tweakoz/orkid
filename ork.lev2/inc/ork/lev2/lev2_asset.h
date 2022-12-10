@@ -44,16 +44,16 @@ public: //
   texture_ptr_t _texture;
 };
 
-struct StaticTexFileLoader : public ork::asset::FileAssetLoader {
+struct StaticTexFileLoader final : public ork::asset::FileAssetLoader {
   StaticTexFileLoader();
-  ork::asset::asset_ptr_t _doLoadAsset(AssetPath assetpath, ork::asset::vars_constptr_t vars) override;
-  void destroy(ork::asset::asset_ptr_t asset) override;
-  void initLoadersForUriProto(const std::string& uriproto) override;
+  ork::asset::asset_ptr_t _doLoadAsset(ork::asset::loadrequest_ptr_t loadreq) final;
+  void destroy(ork::asset::asset_ptr_t asset) final;
+  void initLoadersForUriProto(const std::string& uriproto) final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct XgmModelAsset : public ork::asset::Asset {
+struct XgmModelAsset final : public ork::asset::Asset {
   DeclareConcreteX(XgmModelAsset, ork::asset::Asset);
 
 public:
@@ -62,21 +62,26 @@ public:
   }
 
   XgmModelAsset() {
-    _model.atomicWrite(std::make_shared<XgmModel>());
+    clearModel();
   }
-  ~XgmModelAsset() override;
+  ~XgmModelAsset() final;
 
   void clearModel() {
-    _model.atomicWrite(std::make_shared<XgmModel>());
+    auto the_model = std::make_shared<XgmModel>();
+    the_model->_asset = this;
+    _model.atomicWrite(the_model);
   }
 
   XgmModel* GetModel() { // todo unsafe
+    OrkAssert(this);
     return _model.atomicCopy().get();
   }
   model_ptr_t getSharedModel() { // todo unsafe
+    OrkAssert(this);
     return _model.atomicCopy();
   }
   const XgmModel* GetModel() const { // todo unsafe
+    OrkAssert(this);
     return _model.atomicCopy().get();
   }
 
@@ -86,9 +91,9 @@ public:
 struct XgmModelLoader final : public ork::asset::FileAssetLoader {
 public:
   XgmModelLoader();
-  ork::asset::asset_ptr_t _doLoadAsset(AssetPath assetpath, ork::asset::vars_constptr_t vars) override;
-  void destroy(ork::asset::asset_ptr_t asset) override;
-  void initLoadersForUriProto(const std::string& uriproto) override;
+  ork::asset::asset_ptr_t _doLoadAsset(ork::asset::loadrequest_ptr_t loadreq) final;
+  void destroy(ork::asset::asset_ptr_t asset) final;
+  void initLoadersForUriProto(const std::string& uriproto) final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

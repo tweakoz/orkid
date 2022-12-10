@@ -42,7 +42,7 @@ struct FileAssetLoader : public AssetLoader {
       AssetPath& resolved_path) override;
 
   bool doesExist(const AssetPath&) override;
-  asset_ptr_t load(const AssetPath&, vars_constptr_t) override;
+  asset_ptr_t load(loadrequest_ptr_t loadreq) override;
   void addLocation(
       filedevctx_constptr_t b, //
       file_ext_t e);
@@ -50,7 +50,7 @@ struct FileAssetLoader : public AssetLoader {
   virtual void initLoadersForUriProto(const std::string& uriproto) {}
 
 protected:
-  virtual asset_ptr_t _doLoadAsset(AssetPath resolvedpath, vars_constptr_t vars) = 0;
+  virtual asset_ptr_t _doLoadAsset(loadrequest_ptr_t loadreq) = 0;
   std::set<file::Path> EnumerateExisting() override;
 
   const object::ObjectClass* _assetClass;

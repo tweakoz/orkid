@@ -49,10 +49,15 @@ bool DynamicAssetLoader::resolvePath(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-asset_ptr_t DynamicAssetLoader::load(const AssetPath& name, vars_constptr_t vars) {
-  asset_ptr_t loaded = (_loadFn != nullptr) ? _loadFn(name, vars) : nullptr;
-  if (loaded)
-    loaded->_name = name;
+asset_ptr_t DynamicAssetLoader::load(loadrequest_ptr_t loadreq) {
+  loadreq->incrementPartialLoadCount();
+  asset_ptr_t loaded = (_loadFn != nullptr) ? _loadFn(loadreq) : nullptr;
+  if (loaded){
+    loaded->_load_request = loadreq;
+    loaded->_name = loadreq->_asset_path;
+    loadreq->_asset = loaded;
+  }
+  loadreq->decrementPartialLoadCount();
   return loaded;
 }
 
