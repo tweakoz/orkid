@@ -40,7 +40,7 @@ using namespace ork::lev2::pbr::deferrednode;
 typedef SVtxV12C4T16 vtx_t; // position, vertex color, 2 UV sets
 
 
-constexpr bool USE_CHARMESH = true;
+int testlevel = 0;
 
 ///////////////////////////////////////////////////////////////////
 
@@ -95,15 +95,23 @@ struct GpuResources {
     auto model_load_req = std::make_shared<asset::LoadRequest>();
     auto anim_load_req = std::make_shared<asset::LoadRequest>();
 
-    if(USE_CHARMESH){
-      model_load_req->_asset_path = "data://tests/chartest/char_mesh";
-      anim_load_req->_asset_path = "data://tests/chartest/char_testanim1";
+    switch(testlevel){
+      case 0:
+        model_load_req->_asset_path = "data://tests/blender-rigtest/blender-rigtest-mesh";
+        anim_load_req->_asset_path = "data://tests/blender-rigtest/blender-rigtest-anim1";
+        break;
+      case 1:
+        model_load_req->_asset_path = "data://tests/misc_gltf_samples/RiggedFigure/RiggedFigure";
+        anim_load_req->_asset_path = "data://tests/misc_gltf_samples/RiggedFigure/RiggedFigure";
+        break;
+      case 2:
+        model_load_req->_asset_path = "data://tests/chartest/char_mesh";
+        anim_load_req->_asset_path = "data://tests/chartest/char_testanim1";
+        break;
+      default:
+        OrkAssert(false);
+        break;
     }
-    else{
-      model_load_req->_asset_path = "data://tests/blender-rigtest/blender-rigtest-mesh";
-      anim_load_req->_asset_path = "data://tests/blender-rigtest/blender-rigtest-anim1";
-    }
-
 
     _char_modelasset = asset::AssetManager<XgmModelAsset>::load(model_load_req);
     OrkAssert(_char_modelasset);
@@ -185,7 +193,8 @@ int main(int argc, char** argv, char** envp) {
       ("top",  po::value<int>()->default_value(100), "top window offset")                              
       ("width",  po::value<int>()->default_value(1280), "window width")                              
       ("height",  po::value<int>()->default_value(720), "window height")
-      ("usevr",  po::bool_switch()->default_value(false), "use vr output");                             
+      ("usevr",  po::bool_switch()->default_value(false), "use vr output")                          
+      ("testlevel",  po::value<int>()->default_value(0), "animation test level");                             
 
   auto vars = *init_data->parse();
 
@@ -193,12 +202,15 @@ int main(int argc, char** argv, char** envp) {
     std::cout << (*desc) << "\n";
     exit(0);
   }
+  //////////////////////////////////////////////////////////
+  testlevel = vars["testlevel"].as<int>();
+  //////////////////////////////////////////////////////////
+
   init_data->_fullscreen = vars["fullscreen"].as<bool>();;
   init_data->_top = vars["top"].as<int>();
   init_data->_left = vars["left"].as<int>();
   init_data->_width = vars["width"].as<int>();
   init_data->_height = vars["height"].as<int>();
-
   init_data->_msaa_samples = vars["msaa"].as<int>();
   init_data->_ssaa_samples = vars["ssaa"].as<int>();
 
@@ -231,18 +243,31 @@ int main(int argc, char** argv, char** envp) {
     // compute camera data
     ///////////////////////////////////////
     float phase    = PI;
-    float distance = USE_CHARMESH ? 300.0f : 10.0f;
-    auto eye       = fvec3(sinf(phase), 0.3f, -cosf(phase)) * distance;
+
     fvec3 tgt(0, 0, 0);
     fvec3 up(0, 1, 0);
-    gpurec->_camdata->Lookat(eye, tgt, up);
+    auto eye = fvec3(sinf(phase), 0.3f, -cosf(phase));
+    float wsca = 1.0f;
 
-    if(USE_CHARMESH){
-      gpurec->_camdata->Persp(1, 500.0, 45.0);
-    }
-    else{
-      gpurec->_camdata->Persp(1, 50.0, 45.0);
-    }
+    switch(testlevel){
+      case 0:
+        gpurec->_camdata->Persp(1, 50.0, 45.0);
+        gpurec->_camdata->Lookat(eye*10.0f, tgt, up);
+        wsca = 0.1f;
+        break;
+      case 1:
+        gpurec->_camdata->Persp(1, 500.0, 45.0);
+        gpurec->_camdata->Lookat(eye*100.0f, tgt, up);
+        wsca = 100.0f;
+        break;
+      case 2:
+        gpurec->_camdata->Persp(1, 500.0, 45.0);
+        gpurec->_camdata->Lookat(eye*300.0f, tgt, up);
+        wsca = 100.0f;
+        break;
+      default:
+        break;
+    }      
 
     ////////////////////////////////////////
     // set character node's world transform
@@ -250,7 +275,6 @@ int main(int argc, char** argv, char** envp) {
 
     fvec3 wpos(0,0,0);
     fquat wori;//fvec3(0,1,0),phase+PI);
-    float wsca = USE_CHARMESH ? 10 : 0.1;
 
     gpurec->_char_node->_dqxfdata._worldTransform->set(wpos, wori, wsca);
 

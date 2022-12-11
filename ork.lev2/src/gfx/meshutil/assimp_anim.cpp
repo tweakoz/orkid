@@ -202,7 +202,7 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock) {
         R.fromQuaternion(currot);
         S.setScale(cursca.x, cursca.y, cursca.z);
         T.setTranslation(curpos);
-        fmtx4 XF_NSPACE = T*(S * R); // yoyo
+        fmtx4 XF_NSPACE = T*(R*S); // yoyo
         skelnode_framevect_n.push_back(XF_NSPACE);
 
         if (f == 0) {
