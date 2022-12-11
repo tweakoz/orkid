@@ -301,7 +301,7 @@ inline parsedskeletonptr_t parseSkeleton(const aiScene* scene) {
 
   /////////////////////////////////////////////////
 
-   bool fixup_applied = lev2::XgmSkelNode::applyCentimeterToMeterScale(root);
+   //bool fixup_applied = lev2::XgmSkelNode::applyCentimeterToMeterScale(root);
 
    //OrkAssert(false);
   return rval;

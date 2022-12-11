@@ -61,6 +61,7 @@ To export a pure armature animation with blender (tested with blender 3.4):
 
 To export a rigged animation with blender (tested with blender 3.4):
 ==================================
+* use quaternion mode for bones - axis/ang has interpolation issues
 * start an export as GLTF
 * format: GLTF-embedded (gltf extension)
 * Include: (all off)

@@ -107,23 +107,23 @@ bool XgmAnim::_loadXGA(XgmAnim* anm, datablock_ptr_t datablock) {
     auto do_matrix_channel = [&](std::shared_ptr<XgmMatrixAnimChannel> matrix_channel, //
                                  const fmtx4* matrix_src_data) {                       //
       matrix_channel->reserveFrames(anm->_numframes);
-      if (0) {
+      for (size_t ifr = 0; ifr < anm->_numframes; ifr++) {
+        fmtx4 src_matrix = matrix_src_data[ifr];
+        matrix_channel->setFrame(ifr, src_matrix);
+      }
+      if (1) {
         logchan_anmio->log(
             "LDUMP: anm<%p> mtxchan<%p> matrix_src_data<%p>", //
             anm,                                              //
             (void*)matrix_channel.get(),                      //
             matrix_src_data);
 
-        fmtx4 scalematrix;
-        // scalematrix.compose(fvec3(0,0,0),fquat(),0.01f);
-
         for (size_t ifr = 0; ifr < anm->_numframes; ifr++) {
-          fmtx4 src_matrix = scalematrix * matrix_src_data[ifr];
+          fmtx4 src_matrix = matrix_src_data[ifr];
           if (ifr==0){
             auto LDUMP = src_matrix.dump4x3cn();
             logchan_anmio->log("LDUMP:   mtx<%s>", LDUMP.c_str());
           }
-          matrix_channel->setFrame(ifr, src_matrix);
         }
       }
     };

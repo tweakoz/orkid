@@ -146,7 +146,7 @@ struct GpuResources {
     auto& worldpose = modelinst->_worldPose;
 
     localpose.bindPose();
-    _char_animinst->_current_frame = 1;//59; 
+    _char_animinst->_current_frame = 0; 
     localpose.applyAnimInst(*_char_animinst);
     localpose.blendPoses();
     localpose.concatenate();
@@ -236,13 +236,14 @@ int main(int argc, char** argv, char** envp) {
   timer.Start();
   auto dbufcontext = std::make_shared<DrawBufContext>();
   auto sframe = std::make_shared<StandardCompositorFrame>();
+  int speed_shift = 3;
   ezapp->onUpdate([&](ui::updatedata_ptr_t updata) {
     double dt      = updata->_dt;
     double abstime = updata->_abstime+dt+.016;
     ///////////////////////////////////////
     // compute camera data
     ///////////////////////////////////////
-    float phase    = PI;
+    float phase    = PI*abstime*0.05;
 
     fvec3 tgt(0, 0, 0);
     fvec3 up(0, 1, 0);
@@ -253,17 +254,18 @@ int main(int argc, char** argv, char** envp) {
       case 0:
         gpurec->_camdata->Persp(1, 50.0, 45.0);
         gpurec->_camdata->Lookat(eye*10.0f, tgt, up);
-        wsca = 0.1f;
+        wsca = 0.15f;
         break;
       case 1:
         gpurec->_camdata->Persp(1, 500.0, 45.0);
-        gpurec->_camdata->Lookat(eye*100.0f, tgt, up);
-        wsca = 100.0f;
+        gpurec->_camdata->Lookat((eye+fvec3(0,-1,0))*100.0f, tgt, up);
+        wsca = 10.0f;
+        speed_shift = 6;
         break;
       case 2:
         gpurec->_camdata->Persp(1, 500.0, 45.0);
         gpurec->_camdata->Lookat(eye*300.0f, tgt, up);
-        wsca = 100.0f;
+        wsca = 10.0f;
         break;
       default:
         break;
@@ -295,7 +297,7 @@ int main(int argc, char** argv, char** envp) {
 
 
     static int counter = 0;
-    gpurec->_char_animinst->_current_frame = (counter>>3)%anim->_numframes;
+    gpurec->_char_animinst->_current_frame = (counter>>speed_shift)%anim->_numframes;
     gpurec->_char_animinst->SetWeight(1.0f);
 
     auto modelinst = gpurec->_char_drawable->_modelinst;
