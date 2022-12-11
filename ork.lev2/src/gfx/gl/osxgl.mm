@@ -31,7 +31,7 @@ extern "C"
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-bool _macosUseHIDPI = true;
+bool _macosUseHIDPI = false;
 bool g_allow_HIDPI = false;
 
 ork::MpMcBoundedQueue<void*> ContextGL::_loadTokens;

@@ -40,7 +40,7 @@ using namespace ork::lev2::pbr::deferrednode;
 typedef SVtxV12C4T16 vtx_t; // position, vertex color, 2 UV sets
 
 
-constexpr bool USE_CHARMESH = false;
+constexpr bool USE_CHARMESH = true;
 
 ///////////////////////////////////////////////////////////////////
 

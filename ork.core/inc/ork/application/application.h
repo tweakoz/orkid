@@ -80,7 +80,7 @@ struct AppInitData{
   int _ssaa_samples = 1;
   int _swap_interval = 1;
   bool _update_rendersync = false;
-  bool _allowHIDPI = true;
+  bool _allowHIDPI = false;
   std::string _monitor_id = "";
   std::string _application_name = "orkid_app";
   std::vector<void_lambda_t> _preinitoperations;
