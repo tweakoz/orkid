@@ -390,28 +390,32 @@ void XgmLocalPose::concatenate(void) {
       const fmtx4& ParentMatrix = _concat_matrices[iparent];
       const fmtx4& LocMatrix    = _concat_matrices[ichild];
 
-      // std::string parname = _skeleton.GetJointName(iparent).c_str();
-      // std::string chiname = _skeleton.GetJointName(ichild).c_str();
+      std::string parname = _skeleton.GetJointName(iparent).c_str();
+      std::string chiname = _skeleton.GetJointName(ichild).c_str();
 
       // fmtx4 temp    = (ParentMatrix * LocMatrix);
       fmtx4 temp = fmtx4::multiply_ltor(ParentMatrix, LocMatrix);
 
-      // logchan_pose2->log("ib<%d> ip<%d:%s> ic<%d:%s>", //
-      // ib,
-      // iparent, parname.c_str(),
-      // ichild, chiname.c_str());
+      logchan_pose2->log("////////\n");
+      logchan_pose2->log(
+          "ib<%d> ip<%d:%s> ic<%d:%s>", //
+          ib,
+          iparent,
+          parname.c_str(),
+          ichild,
+          chiname.c_str());
 
-      // auto this_bind = _skeleton._bindMatrices[ichild];
-      // auto par_bind = _skeleton._bindMatrices[iparent];
-      // fmtx4 skel_rel;
-      // skel_rel.correctionMatrix(par_bind,this_bind);
+      auto this_bind = _skeleton._bindMatrices[ichild];
+      auto par_bind  = _skeleton._bindMatrices[iparent];
+      fmtx4 skel_rel;
+      skel_rel.correctionMatrix(par_bind, this_bind);
 
-      // logchan_pose2->log(" par<%s>", ParentMatrix.dump4x3cn().c_str() );
-      // logchan_pose ->log(" pbi<%s>", par_bind.dump4x3cn().c_str() );
-      // logchan_pose2->log(" chi<%s>", LocMatrix.dump4x3cn().c_str() );
-      // logchan_pose ->log(" cbi<%s>", this_bind.dump4x3cn().c_str() );
-      // logchan_pose2->log(" tmp<%s>", temp.dump4x3cn().c_str() );
-      // logchan_pose ->log(" skr<%s>", skel_rel.dump4x3cn().c_str() );
+      //logchan_pose2->log(" par<%s>", ParentMatrix.dump4x3cn().c_str());
+      //logchan_pose->log(" pbi<%s>", par_bind.dump4x3cn().c_str());
+      logchan_pose2->log(" chi<%s>", LocMatrix.dump4x3cn().c_str());
+      logchan_pose2->log(" cbi<%s>", this_bind.dump4x3cn().c_str());
+      logchan_pose->log(" tmp<%s>", temp.dump4x3cn().c_str());
+      //logchan_pose->log(" skr<%s>", skel_rel.dump4x3cn().c_str());
 
       _concat_matrices[ichild] = temp;
 

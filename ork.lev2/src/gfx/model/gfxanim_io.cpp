@@ -36,8 +36,8 @@ static logchannel_ptr_t logchan_anmio = logger()->createChannel("gfxanim.io.read
 ///////////////////////////////////////////////////////////////////////////////
 struct chansettter {
   static void set(XgmAnim* anm, animchannel_ptr_t Channel, const void* pdata) {
-    XgmFloatAnimChannel* F32Channel  = rtti::autocast(Channel.get());
-    XgmVect3AnimChannel* Ve3Channel  = rtti::autocast(Channel.get());
+    XgmFloatAnimChannel* F32Channel = rtti::autocast(Channel.get());
+    XgmVect3AnimChannel* Ve3Channel = rtti::autocast(Channel.get());
     if (F32Channel) {
       const float* f32Base = (const float*)pdata;
       F32Channel->reserveFrames(anm->_numframes);
@@ -104,25 +104,27 @@ bool XgmAnim::_loadXGA(XgmAnim* anm, datablock_ptr_t datablock) {
     HeaderStream->GetItem(inumchannels);
     anm->_numframes = inumframes;
     ////////////////////////////////////////////////////////
-    auto do_matrix_channel = [&]( std::shared_ptr<XgmMatrixAnimChannel> matrix_channel, //
-                                  const fmtx4* matrix_src_data ){ //
-
+    auto do_matrix_channel = [&](std::shared_ptr<XgmMatrixAnimChannel> matrix_channel, //
+                                 const fmtx4* matrix_src_data) {                       //
       matrix_channel->reserveFrames(anm->_numframes);
-      logchan_anmio->log("LDUMP: anm<%p> mtxchan<%p> matrix_src_data<%p>", //
-                         anm, //
-                         (void*) matrix_channel.get(), //
-                         matrix_src_data );
+      if (0) {
+        logchan_anmio->log(
+            "LDUMP: anm<%p> mtxchan<%p> matrix_src_data<%p>", //
+            anm,                                              //
+            (void*)matrix_channel.get(),                      //
+            matrix_src_data);
 
-      fmtx4 scalematrix;
-      //scalematrix.compose(fvec3(0,0,0),fquat(),0.01f);
+        fmtx4 scalematrix;
+        // scalematrix.compose(fvec3(0,0,0),fquat(),0.01f);
 
-      for (size_t ifr = 0; ifr < anm->_numframes; ifr++) {
-        fmtx4 src_matrix = scalematrix*matrix_src_data[ifr];
-        if(1){ //ifr==0){
-          auto LDUMP = src_matrix.dump4x3cn();
-          logchan_anmio->log("LDUMP:   mtx<%s>", LDUMP.c_str());
+        for (size_t ifr = 0; ifr < anm->_numframes; ifr++) {
+          fmtx4 src_matrix = scalematrix * matrix_src_data[ifr];
+          if (ifr==0){
+            auto LDUMP = src_matrix.dump4x3cn();
+            logchan_anmio->log("LDUMP:   mtx<%s>", LDUMP.c_str());
+          }
+          matrix_channel->setFrame(ifr, src_matrix);
         }
-        matrix_channel->setFrame(ifr, src_matrix);
       }
     };
     ////////////////////////////////////////////////////////
@@ -137,13 +139,19 @@ bool XgmAnim::_loadXGA(XgmAnim* anm, datablock_ptr_t datablock) {
       const char* pobjname             = chunkreader.GetString(iobjname);
       const char* pchnname             = chunkreader.GetString(ichnname);
       const char* pusgname             = chunkreader.GetString(iusgname);
-      auto pdata                       = (const fmtx4*) AnimDataStream->GetDataAt(idataoffset);
+      auto pdata                       = (const fmtx4*)AnimDataStream->GetDataAt(idataoffset);
       ork::object::ObjectClass* pclass = rtti::autocast(rtti::Class::FindClass(pchannelclass));
-      auto channelobj = pclass->createShared();
+      auto channelobj                  = pclass->createShared();
       auto matrixchannel               = std::dynamic_pointer_cast<XgmMatrixAnimChannel>(channelobj);
 
       logchan_anmio->log(
-          "MatrixChannel<%p:%s> ChannelClass<%s> pchnname<%s> objname<%s> numframes<%d>", (void*) matrixchannel.get(), pchnname, pchannelclass, pchnname, pobjname, inumframes);
+          "MatrixChannel<%p:%s> ChannelClass<%s> pchnname<%s> objname<%s> numframes<%d>",
+          (void*)matrixchannel.get(),
+          pchnname,
+          pchannelclass,
+          pchnname,
+          pobjname,
+          inumframes);
 
       matrixchannel->SetChannelName((pchnname));
       matrixchannel->SetObjectName((pobjname));
@@ -183,7 +191,7 @@ bool XgmAnim::_loadXGA(XgmAnim* anm, datablock_ptr_t datablock) {
       HeaderStream->GetItem(bone_matrix);
       std::string PoseChannelName = chunkreader.GetString(ichnname);
       PoseChannelName             = ork::string::replaced(PoseChannelName, "_", ".");
-      anm->_static_pose.AddSorted(PoseChannelName,bone_matrix);
+      anm->_static_pose.AddSorted(PoseChannelName, bone_matrix);
     }
     ////////////////////////////////////////////////////////
   }
@@ -194,7 +202,7 @@ bool XgmAnim::_loadXGA(XgmAnim* anm, datablock_ptr_t datablock) {
 bool XgmAnim::_loadAssimp(XgmAnim* anm, datablock_ptr_t inp_datablock) {
   auto basehasher = DataBlock::createHasher();
   basehasher->accumulateString("assimp2xga");
-  basehasher->accumulateString(FormatString("version-%05d",rand()%9999));
+  basehasher->accumulateString(FormatString("version-%05d", rand() % 9999));
   inp_datablock->accumlateHash(basehasher);
   basehasher->finish();
   uint64_t hashkey   = basehasher->result();

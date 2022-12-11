@@ -40,7 +40,7 @@ using namespace ork::lev2::pbr::deferrednode;
 typedef SVtxV12C4T16 vtx_t; // position, vertex color, 2 UV sets
 
 
-constexpr bool USE_CHARMESH = false;
+constexpr bool USE_CHARMESH = true;
 
 ///////////////////////////////////////////////////////////////////
 
@@ -97,7 +97,7 @@ struct GpuResources {
 
     if(USE_CHARMESH){
       model_load_req->_asset_path = "data://tests/chartest/char_mesh";
-      anim_load_req->_asset_path = "data://tests/chartest/char_idle";
+      anim_load_req->_asset_path = "data://tests/chartest/char_testanim1";
     }
     else{
       model_load_req->_asset_path = "data://tests/blender-rigtest/blender-rigtest-mesh";
@@ -250,7 +250,7 @@ int main(int argc, char** argv, char** envp) {
 
     fvec3 wpos(0,0,0);
     fquat wori;//fvec3(0,1,0),phase+PI);
-    float wsca = USE_CHARMESH ? 1 : 0.1;
+    float wsca = USE_CHARMESH ? 10 : 0.1;
 
     gpurec->_char_node->_dqxfdata._worldTransform->set(wpos, wori, wsca);
 

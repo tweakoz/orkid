@@ -34,6 +34,7 @@ datablock_ptr_t XgmAnim::Save(const XgmAnim* anm) {
 
   int inumframes = anm->_numframes;
 
+  
   printf("XGAOUT inumjointchannels<%d> inumframes<%d>\n", inumchannels, inumframes);
 
   HeaderStream->AddItem(inumframes);
@@ -66,7 +67,7 @@ datablock_ptr_t XgmAnim::Save(const XgmAnim* anm) {
     int ichnname = chunkwriter.stringIndex(ChannelName.c_str());
     int iusgname = chunkwriter.stringIndex(ChannelUsage.c_str());
 
-    printf("XGAOUT channelname<%s>\n", ChannelName.c_str());
+    //printf("XGAOUT channelname<%s>\n", ChannelName.c_str());
     HeaderStream->AddItem(ichnclas);
     HeaderStream->AddItem(iobjname);
     HeaderStream->AddItem(ichnname);
