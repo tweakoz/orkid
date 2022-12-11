@@ -20,6 +20,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
+float content_scale_x = 1.0f;
+float content_scale_y = 1.0f;
 #if defined(__APPLE__)
 extern bool _macosUseHIDPI;
 #endif
@@ -107,8 +109,8 @@ static void _glfw_callback_refresh(GLFWwindow* window) {
 static void _glfw_callback_winresized(GLFWwindow* window, int w, int h) {
 #if defined(__APPLE__)
   if (_macosUseHIDPI) {
-    w *= 2;
-    h *= 2;
+    w *= content_scale_x;
+    h *= content_scale_y;
   }
 #endif
 
@@ -120,8 +122,8 @@ static void _glfw_callback_winresized(GLFWwindow* window, int w, int h) {
 static void _glfw_callback_fbresized(GLFWwindow* window, int w, int h) {
 #if defined(__APPLE__)
   if (_macosUseHIDPI) {
-    w *= 2;
-    h *= 2;
+    w *= content_scale_x;
+    h *= content_scale_y;
   }
 #endif
   //printf("fb resized<%p %d %d>\n", window, w, h);
@@ -330,7 +332,7 @@ CtxGLFW::CtxGLFW(Window* ork_win) //, QWidget* pparent)
 void CtxGLFW::initWithData(appinitdata_ptr_t aid) {
   _appinitdata = aid;
   glfwSwapInterval(aid->_swap_interval);
-  glfwWindowHint(GLFW_SAMPLES, aid->_msaa_samples);
+  glfwWindowHint(GLFW_SAMPLES, aid->_msaa_samples);  
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::Show() {
@@ -388,6 +390,11 @@ void CtxGLFW::Show() {
       //printf( "USING GLFW _height<%d> \n", _height );
       //////////////////////////////////////
     }
+
+    #if defined(__APPLE__)
+      glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, //
+                     _appinitdata->_allowHIDPI ? GLFW_TRUE : GLFW_FALSE);
+    #endif
 
     if( _appinitdata->_offscreen ){
       glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
@@ -457,6 +464,8 @@ void CtxGLFW::Show() {
   if( not _appinitdata->_offscreen ){
     glfwShowWindow(_glfwWindow);
   }
+
+  glfwGetWindowContentScale	(	_glfwWindow, &content_scale_x, &content_scale_y);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::Hide() {
