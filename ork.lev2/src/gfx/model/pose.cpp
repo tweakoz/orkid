@@ -74,9 +74,13 @@ void XgmBlendPoseInfo::computeMatrix(fmtx4& outmatrix) const {
       break;
     case 1: { // just copy the first matrix
 
-      const auto& decom0 = _matrices[0];
+      const DecompMatrix& decom0 = _matrices[0];
 
-      outmatrix.compose2(decom0._position,decom0._orientation,decom0._scale.x,decom0._scale.y,decom0._scale.z);
+      outmatrix.compose2(decom0._position, //
+                         decom0._orientation, //
+                         decom0._scale.x, //
+                         decom0._scale.y, //
+                         decom0._scale.z);
 
       if (_posecallback) // Callback for decomposed, pre-concatenated, blended joint info
         _posecallback->PostBlendPreConcat(outmatrix);
@@ -92,8 +96,8 @@ void XgmBlendPoseInfo::computeMatrix(fmtx4& outmatrix) const {
       // printf( "aw0<%f> aw1<%f>", AnimWeight[0], AnimWeight[1]);
       OrkAssert(fw < float(0.01f));
 
-      /*const fmtx4& a = _matrices[0];
-      const fmtx4& b = _matrices[1];
+      const DecompMatrix& a = _matrices[0];
+      const DecompMatrix& b = _matrices[1];
 
       float flerp = _weights[1];
 
@@ -101,9 +105,20 @@ void XgmBlendPoseInfo::computeMatrix(fmtx4& outmatrix) const {
         flerp = 0.0f;
       if (flerp > 1.0f)
         flerp = 1.0f;
-      float iflerp = 1.0f - flerp;*/
+      float iflerp = 1.0f - flerp;
 
-      OrkAssert(false);
+      DecompMatrix blended;
+      blended._position.lerp(a._position,b._position,flerp);
+      blended._scale.lerp(a._scale,b._scale,flerp);
+      blended._orientation = fquat::slerp(a._orientation,b._orientation,flerp);
+
+      outmatrix.compose2( blended._position, //
+                          blended._orientation, //
+                          blended._scale.x, //
+                          blended._scale.y, //
+                          blended._scale.z);
+
+
     } break;
 
     default: {
