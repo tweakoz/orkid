@@ -330,6 +330,7 @@ struct XgmAnimInst {
   XgmAnimMask mMask;
   float _current_frame;
   float mWeight;
+  bool _use_temporal_lerp = false;
 
   Binding _poseBindings[kmaxbones];
   Binding _animBindings[kmaxbones];

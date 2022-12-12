@@ -351,7 +351,21 @@ void XgmLocalPose::applyAnimInst(const XgmAnimInst& animinst) {
         auto joint_data = joint_channels.GetItemAtIndex(ichanindex).second;
         OrkAssert(joint_data);
         size_t numframes = joint_data->_sampledFrames.size();
-        const DecompMatrix& decomp = joint_data->GetFrame(iframe);
+
+        DecompMatrix decomp;
+
+        if(animinst._use_temporal_lerp){
+          int iframeB = (iframe+1)%numframes;
+          const DecompMatrix& frameA = joint_data->GetFrame(iframe);
+          const DecompMatrix& frameB = joint_data->GetFrame(iframeB);
+          float alpha = frame-float(iframe);
+          decomp._position.lerp(frameA._position,frameB._position,alpha);
+          decomp._scale.lerp(frameA._scale,frameB._scale,alpha);
+          decomp._orientation = fquat::slerp(frameA._orientation,frameB._orientation,alpha);
+        }
+        else{
+          decomp = joint_data->GetFrame(iframe);
+        }
         _blendposeinfos[iskelindex].addPose(decomp, fweight); // yoyo
 
         //////////////////////////////

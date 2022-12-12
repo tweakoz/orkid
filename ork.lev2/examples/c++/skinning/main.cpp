@@ -144,6 +144,7 @@ struct GpuResources {
     _char_animinst->bindAnim(anim);
     _char_animinst->SetWeight(1.0f);
     _char_animinst->RefMask().EnableAll();
+    _char_animinst->_use_temporal_lerp = true;
     modelinst->_localPose.bindAnimInst(*_char_animinst);
 
     auto& localpose = modelinst->_localPose;
@@ -307,13 +308,12 @@ int main(int argc, char** argv, char** envp) {
   ezapp->onDraw([&](ui::drawevent_constptr_t drwev) {
 
     float time = timer.SecsSinceStart();
-    int iframe = int(time*30.0f*animspeed);
+    float frame = (time*30.0f*animspeed);
 
     auto anim = gpurec->_char_animasset->GetAnim();
 
 
-    static int counter = 0;
-    gpurec->_char_animinst->_current_frame = iframe%anim->_numframes;
+    gpurec->_char_animinst->_current_frame = fmod(frame,float(anim->_numframes));
     gpurec->_char_animinst->SetWeight(1.0f);
 
     auto modelinst = gpurec->_char_drawable->_modelinst;
@@ -328,12 +328,6 @@ int main(int argc, char** argv, char** envp) {
     //printf( "%s\n", lpdump.c_str() );
 
     localpose.concatenate();
-
-
-    if(counter==3){
-      //OrkAssert(false);
-    }
-    counter++;
 
     auto context = drwev->GetTarget();
     RenderContextFrameData RCFD(context); // renderer per/frame data
