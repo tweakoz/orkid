@@ -38,10 +38,10 @@ void XgmBlendPoseInfo::initBlendPose() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmBlendPoseInfo::addPose(const fmtx4& mat, float weight) {
+void XgmBlendPoseInfo::addPose(const DecompMatrix& mat, float weight) {
   OrkAssert(_numanims < kmaxblendanims);
 
-  DecompTransform decomp;
+  /*DecompTransform decomp;
   decomp.decompose(mat);
 
   const auto& pos    = decomp._translation;
@@ -56,7 +56,7 @@ void XgmBlendPoseInfo::addPose(const fmtx4& mat, float weight) {
         orient.w,
         orient.x,
         orient.y,
-        orient.z);
+        orient.z);*/
 
   _matrices[_numanims] = mat;
   _weights[_numanims]  = weight;
@@ -74,7 +74,9 @@ void XgmBlendPoseInfo::computeMatrix(fmtx4& outmatrix) const {
       break;
     case 1: { // just copy the first matrix
 
-      outmatrix = _matrices[0];
+      const auto& decom0 = _matrices[0];
+
+      outmatrix.compose2(decom0._position,decom0._orientation,decom0._scale.x,decom0._scale.y,decom0._scale.z);
 
       if (_posecallback) // Callback for decomposed, pre-concatenated, blended joint info
         _posecallback->PostBlendPreConcat(outmatrix);
@@ -90,7 +92,7 @@ void XgmBlendPoseInfo::computeMatrix(fmtx4& outmatrix) const {
       // printf( "aw0<%f> aw1<%f>", AnimWeight[0], AnimWeight[1]);
       OrkAssert(fw < float(0.01f));
 
-      const fmtx4& a = _matrices[0];
+      /*const fmtx4& a = _matrices[0];
       const fmtx4& b = _matrices[1];
 
       float flerp = _weights[1];
@@ -99,7 +101,7 @@ void XgmBlendPoseInfo::computeMatrix(fmtx4& outmatrix) const {
         flerp = 0.0f;
       if (flerp > 1.0f)
         flerp = 1.0f;
-      float iflerp = 1.0f - flerp;
+      float iflerp = 1.0f - flerp;*/
 
       OrkAssert(false);
     } break;
@@ -163,7 +165,7 @@ void XgmLocalPose::bindAnimInst(XgmAnimInst& animinst) {
 
         if (itanim == joint_channels.end()) {
 
-          const fmtx4& PoseMatrix = it.second;
+          const DecompMatrix& PoseMatrix = it.second;
           // TODO: Callback for programmer-controlled joints, pre-blended
           // _blendposeinfos[iskelindex].AddPose(PoseMatrix, fweight, components);
 
@@ -270,8 +272,8 @@ void XgmLocalPose::applyAnimInst(const XgmAnimInst& animinst) {
       int iskelindex                      = binding.mSkelIndex;
       if (iskelindex != 0xffff) {
         int iposeindex      = binding.mChanIndex;
-        const fmtx4& matrix = static_pose.GetItemAtIndex(iposeindex).second;
-        _blendposeinfos[iskelindex].addPose(matrix, fweight);
+        const DecompMatrix& decomp = static_pose.GetItemAtIndex(iposeindex).second;
+        _blendposeinfos[iskelindex].addPose(decomp, fweight);
       } else {
         break;
       }
@@ -334,15 +336,17 @@ void XgmLocalPose::applyAnimInst(const XgmAnimInst& animinst) {
         auto joint_data = joint_channels.GetItemAtIndex(ichanindex).second;
         OrkAssert(joint_data);
         size_t numframes = joint_data->_sampledFrames.size();
-        const fmtx4& matrix = joint_data->GetFrame(iframe);
-        _blendposeinfos[iskelindex].addPose(matrix, fweight); // yoyo
+        const DecompMatrix& decomp = joint_data->GetFrame(iframe);
+        _blendposeinfos[iskelindex].addPose(decomp, fweight); // yoyo
 
         //////////////////////////////
         if(0){
           logchan_pose->log("apply on iskelidx<%d> ichanindex<%d>", iskelindex, ichanindex);
           logchan_pose->log("joint_data<%p> numframes<%zu>", (void*)joint_data.get(), numframes);
            auto jname = _skeleton.GetJointName(iskelindex);
-           auto adump = matrix.dump4x3cn();
+           fmtx4 as_matrix;
+           as_matrix.compose(decomp._position,decomp._orientation,decomp._scale);
+           auto adump = as_matrix.dump4x3cn();
            logchan_pose2->log("anmdump: joint<%d:%s> anm_jmtx: %s", //
                            iskelindex, //
                            jname.c_str(), //

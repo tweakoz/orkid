@@ -106,7 +106,7 @@ void ClassInit() {
   XgmFloatAnimChannel::GetClassStatic();
   XgmVect3AnimChannel::GetClassStatic();
   XgmVect4AnimChannel::GetClassStatic();
-  XgmMatrixAnimChannel::GetClassStatic();
+  XgmDecompMatrixAnimChannel::GetClassStatic();
 
   particle::ParticleModule::GetClassStatic();
   particle::ParticlePool::GetClassStatic();

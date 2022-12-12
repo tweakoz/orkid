@@ -214,6 +214,7 @@ template <typename T> struct Matrix44 final
   bool decompose(Vector3<T>& pos, Quaternion<T>& rot, T& Scale) const;
   void compose(const Vector3<T>& pos, const Quaternion<T>& rot, const T& Scale);
   void compose(const Vector3<T>& pos, const Quaternion<T>& rot, const T& ScaleX, const T& ScaleY, const T& ScaleZ);
+  void compose(const Vector3<T>& pos, const Quaternion<T>& rot, const Vector3<T>& scale);
   void compose2(const Vector3<T>& pos, const Quaternion<T>& rot, const T& Scale);
   void compose2(const Vector3<T>& pos, const Quaternion<T>& rot, const T& ScaleX, const T& ScaleY, const T& ScaleZ);
 

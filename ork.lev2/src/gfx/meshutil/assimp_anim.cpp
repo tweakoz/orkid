@@ -53,6 +53,13 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock) {
     //  from static position of all aiNodes
     ////////////////////////////////////////
 
+    //const fmtx4& mtx = it.second;
+    //DecompMatrix decomp;
+    //float uniscale = 0.0f;
+    //mtx.decompose(decomp._postition,decomp._orientation,uniscale);
+    // TODO - non uniform scale
+//    decomp._scale = fvec3(uniscale,uniscale,uniscale);
+
     auto& staticpose = xgmanim._static_pose;
     std::set<std::string> uniqskelnodeset;
     std::map<std::string, std::string> channel_remap;
@@ -149,7 +156,7 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock) {
       //////////////////////////////////////////////
 
       std::string objnameps = "";
-      auto XgmChan          = std::make_shared<XgmMatrixAnimChannel>(objnameps, channel_name, "Joint");
+      auto XgmChan          = std::make_shared<XgmDecompMatrixAnimChannel>(objnameps, channel_name, "Joint");
       XgmChan->reserveFrames(framecount);
       xgmanim.AddChannel(channel_name, XgmChan);
       skelnode->_varmap["xgmchan"].make<animchannel_ptr_t>(XgmChan);
@@ -261,7 +268,7 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock) {
 
             //JSPACE = skelnode->concatenated_joint();
           auto XgmChan      = skelnode->_varmap["xgmchan"].get<animchannel_ptr_t>();
-          auto as_decomchan = std::dynamic_pointer_cast<XgmMatrixAnimChannel>(XgmChan);
+          auto as_decomchan = std::dynamic_pointer_cast<XgmDecompMatrixAnimChannel>(XgmChan);
 
           if (f == 0) {
             deco::printf(color, "fr<%d> ", f);
@@ -269,7 +276,14 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock) {
             deco::prints(JSPACE.dump4x3cn(), true);
           }
 
-          as_decomchan->setFrame(f, JSPACE);
+          DecompMatrix decomp;
+          JSPACE.decompose(decomp._position, //
+                           decomp._orientation, //
+                           decomp._scale.x );
+          decomp._scale.y = decomp._scale.x;
+          decomp._scale.z = decomp._scale.x;
+
+          as_decomchan->setFrame(f, decomp);
 
         }
 

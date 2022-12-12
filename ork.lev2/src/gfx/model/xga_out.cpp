@@ -48,15 +48,17 @@ datablock_ptr_t XgmAnim::Save(const XgmAnim* anm) {
   for (auto it : joint_channels ) {
     const std::string& ChannelName          = it.first;
     const std::string& ChannelUsage         = it.second->GetUsageSemantic();
-    auto matrix_channel = it.second;
-    const std::string& ObjectName           = matrix_channel->GetObjectName();
+    auto decomp_channel = it.second;
+    const std::string& ObjectName           = decomp_channel->GetObjectName();
 
     int idataoffset = AnimDataStream->GetSize();
 
-    if (matrix_channel) {
+    if (decomp_channel) {
       for (int ifr = 0; ifr < inumframes; ifr++) {
-        const fmtx4& Matrix = matrix_channel->GetFrame(ifr);
-        AnimDataStream->AddItem(Matrix);
+        const DecompMatrix& decomp = decomp_channel->GetFrame(ifr);
+        AnimDataStream->AddItem(decomp._position);
+        AnimDataStream->AddItem(decomp._orientation);
+        AnimDataStream->AddItem(decomp._scale);
       }
     }
 
@@ -85,7 +87,7 @@ datablock_ptr_t XgmAnim::Save(const XgmAnim* anm) {
     const std::string& ChannelUsage = it.second->GetUsageSemantic();
     const std::string& ObjectName   = it.second->GetObjectName();
 
-    auto MtxChannel  = std::dynamic_pointer_cast<XgmMatrixAnimChannel>(it.second);
+    auto MtxChannel  = std::dynamic_pointer_cast<XgmDecompMatrixAnimChannel>(it.second);
     auto F32Channel  = std::dynamic_pointer_cast<XgmFloatAnimChannel>(it.second);
     auto Vec3Channel = std::dynamic_pointer_cast<XgmVect3AnimChannel>(it.second);
 
@@ -93,8 +95,10 @@ datablock_ptr_t XgmAnim::Save(const XgmAnim* anm) {
 
     if (MtxChannel) {
       for (int ifr = 0; ifr < inumframes; ifr++) {
-        const fmtx4& Matrix = MtxChannel->GetFrame(ifr);
-        AnimDataStream->AddItem(Matrix);
+        const DecompMatrix& decomp = MtxChannel->GetFrame(ifr);
+        AnimDataStream->AddItem(decomp._position);
+        AnimDataStream->AddItem(decomp._orientation);
+        AnimDataStream->AddItem(decomp._scale);
       }
     } else if (F32Channel) {
       for (int ifr = 0; ifr < inumframes; ifr++) {
@@ -129,14 +133,15 @@ datablock_ptr_t XgmAnim::Save(const XgmAnim* anm) {
 
   for (auto it : anm->_static_pose ) {
     const std::string& name = it.first;
-    const fmtx4& mtx = it.second;
-
+    const DecompMatrix& decomp = it.second;
     // int idataoffset = AnimDataStream->GetSize();
     int ichannelname = chunkwriter.stringIndex(name.c_str());
 
     HeaderStream->AddItem(ichannelname);
     // HeaderStream->AddItem( idataoffset );
-    HeaderStream->AddItem(mtx);
+    HeaderStream->AddItem(decomp._position);
+    HeaderStream->AddItem(decomp._orientation);
+    HeaderStream->AddItem(decomp._scale);
   }
 
   ////////////////////////////////////////////////////////////////////////////////////

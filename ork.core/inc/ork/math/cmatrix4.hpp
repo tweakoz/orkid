@@ -777,6 +777,9 @@ template <typename T> bool Matrix44<T>::decompose(Vector3<T>& pos, Quaternion<T>
 
 ///////////////////////////////////////////////////////////////////////////////
 
+template <typename T> void Matrix44<T>::compose(const Vector3<T>& pos, const Quaternion<T>& qrot, const Vector3<T>& scale) {
+  compose(pos,qrot,scale.x,scale.y,scale.z);
+}
 template <typename T> void Matrix44<T>::compose(const Vector3<T>& pos, const Quaternion<T>& qrot, const T& scale) {
   compose(pos,qrot,scale,scale,scale);
 }

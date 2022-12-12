@@ -133,7 +133,7 @@ struct XgmAnimInst;
 struct XgmLocalPose;
 struct XgmWorldPose;
 struct XgmAnimChannel;
-struct XgmMatrixAnimChannel;
+struct XgmDecompMatrixAnimChannel;
 struct XgmVect4AnimChannel;
 struct XgmVect3AnimChannel;
 struct XgmFloatAnimChannel;
@@ -213,7 +213,7 @@ using animchannel_ptr_t      = std::shared_ptr<XgmAnimChannel>;
 using animfloatchannel_ptr_t = std::shared_ptr<XgmFloatAnimChannel>;
 using animvec3channel_ptr_t = std::shared_ptr<XgmVect3AnimChannel>;
 using animvec4channel_ptr_t = std::shared_ptr<XgmVect4AnimChannel>;
-using animmatrixchannel_ptr_t = std::shared_ptr<XgmMatrixAnimChannel>;
+using animdecompmatrixchannel_ptr_t = std::shared_ptr<XgmDecompMatrixAnimChannel>;
 ///////////////////////////////////////////////////////////////////////////////
 using material_ptr_t           = std::shared_ptr<GfxMaterial>;
 using material_constptr_t      = std::shared_ptr<const GfxMaterial>;

@@ -64,6 +64,14 @@ void OutputStream::AddItem(const fmtx4& data) {
   Write((unsigned char*)&temp, sizeof(temp));
 }
 ///////////////////////////////////////////////////////////////////////////////
+void OutputStream::AddItem(const fquat& data) {
+  fquat temp = data;
+  for (int i = 0; i < 4; i++) {
+    swapbytes_dynamic(temp.asArray()[i]);
+  }
+  Write((unsigned char*)&temp, sizeof(temp));
+}
+///////////////////////////////////////////////////////////////////////////////
 void OutputStream::AddItem(const fvec4& data) {
   fvec4 temp = data;
   for (int i = 0; i < 4; i++) {

@@ -104,12 +104,12 @@ bool XgmAnim::_loadXGA(XgmAnim* anm, datablock_ptr_t datablock) {
     HeaderStream->GetItem(inumchannels);
     anm->_numframes = inumframes;
     ////////////////////////////////////////////////////////
-    auto do_matrix_channel = [&](std::shared_ptr<XgmMatrixAnimChannel> matrix_channel, //
-                                 const fmtx4* matrix_src_data) {                       //
+    auto do_matrix_channel = [&](std::shared_ptr<XgmDecompMatrixAnimChannel> matrix_channel, //
+                                 const DecompMatrix* matrix_src_data) {                       //
       matrix_channel->reserveFrames(anm->_numframes);
       for (size_t ifr = 0; ifr < anm->_numframes; ifr++) {
-        fmtx4 src_matrix = matrix_src_data[ifr];
-        matrix_channel->setFrame(ifr, src_matrix);
+        DecompMatrix src_decomp = matrix_src_data[ifr];
+        matrix_channel->setFrame(ifr, src_decomp);
       }
       if (1) {
         logchan_anmio->log(
@@ -119,9 +119,14 @@ bool XgmAnim::_loadXGA(XgmAnim* anm, datablock_ptr_t datablock) {
             matrix_src_data);
 
         for (size_t ifr = 0; ifr < anm->_numframes; ifr++) {
-          fmtx4 src_matrix = matrix_src_data[ifr];
+          DecompMatrix src_decomp = matrix_src_data[ifr];
           if (ifr==0){
-            auto LDUMP = src_matrix.dump4x3cn();
+            fmtx4 M; 
+            M.compose( src_decomp._position, //
+                       src_decomp._orientation, //
+                       src_decomp._scale);
+
+            auto LDUMP = M.dump4x3cn();
             logchan_anmio->log("LDUMP:   mtx<%s>", LDUMP.c_str());
           }
         }
@@ -139,10 +144,10 @@ bool XgmAnim::_loadXGA(XgmAnim* anm, datablock_ptr_t datablock) {
       const char* pobjname             = chunkreader.GetString(iobjname);
       const char* pchnname             = chunkreader.GetString(ichnname);
       const char* pusgname             = chunkreader.GetString(iusgname);
-      auto pdata                       = (const fmtx4*)AnimDataStream->GetDataAt(idataoffset);
+      auto pdata                       = (const DecompMatrix*) AnimDataStream->GetDataAt(idataoffset);
       ork::object::ObjectClass* pclass = rtti::autocast(rtti::Class::FindClass(pchannelclass));
       auto channelobj                  = pclass->createShared();
-      auto matrixchannel               = std::dynamic_pointer_cast<XgmMatrixAnimChannel>(channelobj);
+      auto matrixchannel               = std::dynamic_pointer_cast<XgmDecompMatrixAnimChannel>(channelobj);
 
       logchan_anmio->log(
           "MatrixChannel<%p:%s> ChannelClass<%s> pchnname<%s> objname<%s> numframes<%d>",
@@ -184,11 +189,13 @@ bool XgmAnim::_loadXGA(XgmAnim* anm, datablock_ptr_t datablock) {
     OrkHeapCheck();
     ////////////////////////////////////////////////////////
     HeaderStream->GetItem(inumposebones);
-    fmtx4 bone_matrix;
+    DecompMatrix bone_matrix;
     logchan_anmio->log("inumposebones<%d>", inumposebones);
     for (int iposeb = 0; iposeb < inumposebones; iposeb++) {
       HeaderStream->GetItem(ichnname);
-      HeaderStream->GetItem(bone_matrix);
+      HeaderStream->GetItem(bone_matrix._position);
+      HeaderStream->GetItem(bone_matrix._orientation);
+      HeaderStream->GetItem(bone_matrix._scale);
       std::string PoseChannelName = chunkreader.GetString(ichnname);
       PoseChannelName             = ork::string::replaced(PoseChannelName, "_", ".");
       anm->_static_pose.AddSorted(PoseChannelName, bone_matrix);

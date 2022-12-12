@@ -30,6 +30,12 @@ using TXGMBoneRegMap  = orkmap<int, int>;
 /// each channel also has a usage semantic (such as "Joint" or "Effect")
 /// ///////////////////////////////////////////////////////////////////////////
 
+struct DecompMatrix{
+  fvec3 _position;
+  fquat _orientation;
+  fvec3 _scale;
+};
+
 struct XgmAnimChannel : public ork::Object {
   DeclareAbstractX(XgmAnimChannel, ork::Object);
 public:
@@ -159,7 +165,7 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct XgmMatrixAnimChannel : public XgmAnimChannel  {
+/*struct XgmMatrixAnimChannel : public XgmAnimChannel  {
   DeclareConcreteX(XgmMatrixAnimChannel, XgmAnimChannel);
 
 public:
@@ -176,6 +182,27 @@ public:
 
 
   std::vector<fmtx4> _sampledFrames;
+};*/
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct XgmDecompMatrixAnimChannel : public XgmAnimChannel  {
+  DeclareConcreteX(XgmDecompMatrixAnimChannel, XgmAnimChannel);
+
+public:
+
+  size_t numFrames() const override;
+
+  XgmDecompMatrixAnimChannel(const std::string& ObjName, const std::string& ChanName, const std::string& Usage);
+  XgmDecompMatrixAnimChannel();
+  ~XgmDecompMatrixAnimChannel() override;
+
+  void setFrame(size_t i, const DecompMatrix& v);
+  DecompMatrix GetFrame(int index) const;
+  void reserveFrames(size_t iv);
+
+
+  std::vector<DecompMatrix> _sampledFrames;
 };
 
 /// ///////////////////////////////////////////////////////////////////////////
@@ -186,9 +213,9 @@ public:
 
 struct XgmAnim {
 
-  using joint_channels_lut_t = ork::orklut<std::string, animmatrixchannel_ptr_t>;
+  using joint_channels_lut_t = ork::orklut<std::string, animdecompmatrixchannel_ptr_t>;
   using material_channels_lut_t = ork::orklut<std::string, animchannel_ptr_t>;
-  using matrix_lut_t = ork::orklut<std::string,fmtx4>;
+  using matrix_lut_t = ork::orklut<std::string,DecompMatrix>;
 
   void AddChannel(const std::string& Name, animchannel_ptr_t pchan);
 
@@ -385,12 +412,12 @@ struct XgmBlendPoseInfo {
   XgmBlendPoseInfo();
 
   void initBlendPose();
-  void addPose(const fmtx4& mat, float weight);
+  void addPose(const DecompMatrix& mat, float weight);
   void computeMatrix(fmtx4& mtx) const;
 
   int _numanims = 0;
   PoseCallback* _posecallback = nullptr;
-  fmtx4 _matrices[kmaxblendanims];
+  DecompMatrix _matrices[kmaxblendanims];
   float _weights[kmaxblendanims];
 };
 

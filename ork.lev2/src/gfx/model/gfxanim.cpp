@@ -17,32 +17,9 @@
 
 using namespace std::string_literals;
 
-ImplementReflectionX(ork::lev2::XgmAnimChannel, "XgmAnimChannel");
-ImplementReflectionX(ork::lev2::XgmFloatAnimChannel, "XgmFloatAnimChannel");
-ImplementReflectionX(ork::lev2::XgmVect3AnimChannel, "XgmVect3AnimChannel");
-ImplementReflectionX(ork::lev2::XgmVect4AnimChannel, "XgmVect4AnimChannel");
-ImplementReflectionX(ork::lev2::XgmMatrixAnimChannel, "XgmMatrixAnimChannel");
-
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 static logchannel_ptr_t logchan_anim = logger()->createChannel("gfxanim", fvec3(1, 0.6, 1));
-
-void XgmAnimChannel::describeX(class_t* clazz) {
-}
-void XgmFloatAnimChannel::describeX(class_t* clazz) {
-}
-void XgmVect3AnimChannel::describeX(class_t* clazz) {
-}
-void XgmVect4AnimChannel::describeX(class_t* clazz) {
-}
-void XgmMatrixAnimChannel::describeX(class_t* clazz) {
-}
-
-XgmMatrixAnimChannel::~XgmMatrixAnimChannel() { // final
-  OrkAssert(false);
-}
-
-///////////////////////////////////////////////////////////////////////////////
 
 XgmAnimMask::XgmAnimMask() {
   EnableAll();
@@ -167,10 +144,10 @@ XgmMaterialStateInst::XgmMaterialStateInst(const XgmModelInst& minst)
 class MaterialInstItem_UvXf : public MaterialInstItemMatrix {
 
   const XgmAnimInst& mAnimInst;
-  const XgmMatrixAnimChannel* mChannel;
+  const XgmDecompMatrixAnimChannel* mChannel;
 
 public:
-  MaterialInstItem_UvXf(const XgmAnimInst& ai, const XgmMatrixAnimChannel* chan)
+  MaterialInstItem_UvXf(const XgmAnimInst& ai, const XgmDecompMatrixAnimChannel* chan)
       : mAnimInst(ai)
       , mChannel(chan) {
   }
@@ -191,7 +168,11 @@ public:
 
     float fw         = mAnimInst.GetWeight();
     float fr         = mAnimInst._current_frame;
-    const fmtx4& mtx = mChannel->GetFrame(int(fr));
+    const DecompMatrix& decomp = mChannel->GetFrame(int(fr));
+    fmtx4 mtx;
+    mtx.compose(decomp._position, //
+                decomp._orientation, //
+                decomp._scale );
     SetMatrix(mtx);
   }
 };
@@ -218,7 +199,7 @@ void XgmMaterialStateInst::BindAnimInst(const XgmAnimInst& AnimInst) {
 
       const XgmFloatAnimChannel* __restrict fchan  = rtti::autocast(channel);
       const XgmVect3AnimChannel* __restrict v3chan = rtti::autocast(channel);
-      const XgmMatrixAnimChannel* __restrict mchan = rtti::autocast(channel);
+      const XgmDecompMatrixAnimChannel* __restrict mchan = rtti::autocast(channel);
 
       if (mchan) {
         for (int imat = 0; imat < nummaterials; imat++) {
@@ -299,11 +280,11 @@ void XgmAnim::AddChannel(const std::string& Name, animchannel_ptr_t pchan) {
   const std::string& usage = pchan->GetUsageSemantic();
 
   if (usage == "Joint") {
-    auto matrix_channel = std::dynamic_pointer_cast<XgmMatrixAnimChannel>(pchan);
+    auto matrix_channel = std::dynamic_pointer_cast<XgmDecompMatrixAnimChannel>(pchan);
     OrkAssert(matrix_channel);
     _jointanimationchannels.AddSorted(Name,matrix_channel);
   } else if (usage == "UvTransform") {
-    auto uvxf_channel = std::dynamic_pointer_cast<XgmMatrixAnimChannel>(pchan);
+    auto uvxf_channel = std::dynamic_pointer_cast<XgmDecompMatrixAnimChannel>(pchan);
     OrkAssert(uvxf_channel);
     mMaterialAnimationChannels.AddSorted(Name,pchan);
   } else if (usage == "FxParam") {
@@ -361,98 +342,6 @@ void XgmAnimInst::setPoseBinding(int i, const Binding& inp) {
 void XgmAnimInst::setAnimBinding(int i, const Binding& inp) {
   OrkAssert(i<kmaxbones);
   _animBindings[i] = inp;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-XgmAnimChannel::XgmAnimChannel(
-    const std::string& ObjName,
-    const std::string& ChanName,
-    const std::string& UsageSemantic,
-    EChannelType etype)
-    : mChannelName(ChanName)
-    , mObjectName(ObjName)
-    , mUsageSemantic(UsageSemantic) 
-    , miNumFrames(0)
-    , meChannelType(etype) {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-XgmAnimChannel::XgmAnimChannel(EChannelType etype)
-    : mChannelName()
-    , mUsageSemantic() 
-    , miNumFrames(0)
-    , meChannelType(etype) {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-XgmFloatAnimChannel::XgmFloatAnimChannel()
-    : XgmAnimChannel(EXGMAC_FLOAT) {
-}
-
-XgmFloatAnimChannel::XgmFloatAnimChannel(const std::string& ObjName, const std::string& ChanName, const std::string& Usage)
-    : XgmAnimChannel(ObjName, ChanName, Usage, EXGMAC_FLOAT) {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-XgmVect3AnimChannel::XgmVect3AnimChannel()
-    : XgmAnimChannel(EXGMAC_VECT3) {
-}
-
-XgmVect3AnimChannel::XgmVect3AnimChannel(const std::string& ObjName, const std::string& ChanName, const std::string& Usage)
-    : XgmAnimChannel(ObjName, ChanName, Usage, EXGMAC_VECT3) {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-XgmVect4AnimChannel::XgmVect4AnimChannel()
-    : XgmAnimChannel(EXGMAC_VECT4) {
-}
-
-XgmVect4AnimChannel::XgmVect4AnimChannel(const std::string& ObjName, const std::string& ChanName, const std::string& Usage)
-    : XgmAnimChannel(ObjName, ChanName, Usage, EXGMAC_VECT4) {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-XgmMatrixAnimChannel::XgmMatrixAnimChannel()
-    : XgmAnimChannel(EXGMAC_MTX44) {
-}
-
-XgmMatrixAnimChannel::XgmMatrixAnimChannel(const std::string& ObjName, const std::string& ChanName, const std::string& Usage)
-    : XgmAnimChannel(ObjName, ChanName, Usage, EXGMAC_MTX44) {
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void XgmMatrixAnimChannel::setFrame(size_t i, const fmtx4& v) {
-  _sampledFrames[i] = v;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-fmtx4 XgmMatrixAnimChannel::GetFrame(int index) const {
-  if(index>=_sampledFrames.size()){
-    printf( "channel<%p:%s> getfr<%d> out of range %zd\n", this, mChannelName.c_str(), index, _sampledFrames.size() );
-    OrkAssert(false);
-    return fmtx4();
-  }
-  return _sampledFrames[index];
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-size_t XgmMatrixAnimChannel::numFrames() const {
-  return _sampledFrames.size();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void XgmMatrixAnimChannel::reserveFrames(size_t icount) {
-  _sampledFrames.resize(icount);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
