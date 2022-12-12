@@ -231,7 +231,7 @@ void XgmLocalPose::bindPose(void) {
     auto this_bind = _skeleton._bindMatrices[ij];
 
     int par = _skeleton.GetJointParent(ij);
-     printf( "ij<%d> par<%d>\n", ij, par );
+     //printf( "ij<%d> par<%d>\n", ij, par );
     if (par >= 0) {
       auto par_bind = _skeleton._bindMatrices[par];
       _local_matrices[ij].correctionMatrix(par_bind, this_bind);
@@ -284,7 +284,7 @@ void XgmLocalPose::applyAnimInst(const XgmAnimInst& animinst) {
     size_t numframes        = animinst.numFrames();
     int iframe              = int(frame);
 
-    if(1){
+    if(0){
        logchan_pose2->log("apply animinst anm<%p> frame<%d> numframes<%zu> inumanimchannels<%zu>", //
                      (void*) animation, //
                    iframe, //
@@ -338,7 +338,7 @@ void XgmLocalPose::applyAnimInst(const XgmAnimInst& animinst) {
         _blendposeinfos[iskelindex].addPose(matrix, fweight); // yoyo
 
         //////////////////////////////
-        if(1){
+        if(0){
           logchan_pose->log("apply on iskelidx<%d> ichanindex<%d>", iskelindex, ichanindex);
           logchan_pose->log("joint_data<%p> numframes<%zu>", (void*)joint_data.get(), numframes);
            auto jname = _skeleton.GetJointName(iskelindex);
@@ -425,7 +425,7 @@ void XgmLocalPose::concatenate(void) {
 
       /////////////////////////////////////////////////////////////
 
-      if(1){
+      if(0){
         logchan_pose2->log("////////\n");
         logchan_pose2->log(
             "ib<%d> ip<%d:%s> ic<%d:%s>", //
@@ -555,7 +555,7 @@ void XgmWorldPose::apply(const fmtx4& worldmtx, const XgmLocalPose& localpose) {
     auto finalmtx = fmtx4::multiply_ltor(anim_concat, worldmtx);
     _worldmatrices[ij] = finalmtx;
     //////////////////////////////////
-    if(1){
+    if(0){
       std::string bname = _skeleton.GetJointName(ij);
       auto fdump = finalmtx.dump4x3cn();
        printf("fdump: joint<%d:%s> mtx: %s\n", //

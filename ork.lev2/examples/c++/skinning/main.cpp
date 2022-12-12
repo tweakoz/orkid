@@ -108,6 +108,10 @@ struct GpuResources {
         model_load_req->_asset_path = "data://tests/chartest/char_mesh";
         anim_load_req->_asset_path = "data://tests/chartest/char_testanim1";
         break;
+      case 3:
+        model_load_req->_asset_path = "data://tests/hfstest/hfs_rigtest";
+        anim_load_req->_asset_path = "data://tests/hfstest/hfs_rigtest_anim";
+        break;
       default:
         OrkAssert(false);
         break;
@@ -264,6 +268,12 @@ int main(int argc, char** argv, char** envp) {
         break;
       case 2:
         gpurec->_camdata->Persp(1, 500.0, 45.0);
+        gpurec->_camdata->Lookat(eye*100.0f, tgt, up);
+        wsca = 0.8f;
+        speed_shift = 4;
+        break;
+      case 3:
+        gpurec->_camdata->Persp(1, 500.0, 45.0);
         gpurec->_camdata->Lookat(eye*300.0f, tgt, up);
         wsca = 10.0f;
         break;
@@ -293,11 +303,14 @@ int main(int argc, char** argv, char** envp) {
   //////////////////////////////////////////////////////////
   ezapp->onDraw([&](ui::drawevent_constptr_t drwev) {
 
+    float time = timer.SecsSinceStart();
+    int iframe = int(time*30.0f);
+
     auto anim = gpurec->_char_animasset->GetAnim();
 
 
     static int counter = 0;
-    gpurec->_char_animinst->_current_frame = (counter>>speed_shift)%anim->_numframes;
+    gpurec->_char_animinst->_current_frame = iframe%anim->_numframes;
     gpurec->_char_animinst->SetWeight(1.0f);
 
     auto modelinst = gpurec->_char_drawable->_modelinst;
