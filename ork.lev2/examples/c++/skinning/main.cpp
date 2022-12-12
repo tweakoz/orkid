@@ -240,7 +240,7 @@ int main(int argc, char** argv, char** envp) {
   timer.Start();
   auto dbufcontext = std::make_shared<DrawBufContext>();
   auto sframe = std::make_shared<StandardCompositorFrame>();
-  int speed_shift = 3;
+  float animspeed = 1.0f;
   ezapp->onUpdate([&](ui::updatedata_ptr_t updata) {
     double dt      = updata->_dt;
     double abstime = updata->_abstime+dt+.016;
@@ -253,33 +253,36 @@ int main(int argc, char** argv, char** envp) {
     fvec3 up(0, 1, 0);
     auto eye = fvec3(sinf(phase), 0.3f, -cosf(phase));
     float wsca = 1.0f;
+    float near = 1;
+    float far = 500.0f;
+    float fovy = 45.0f;
 
     switch(testlevel){
       case 0:
-        gpurec->_camdata->Persp(1, 50.0, 45.0);
-        gpurec->_camdata->Lookat(eye*10.0f, tgt, up);
+        far = 50.0f;
+        eye *= 10.0f;
         wsca = 0.15f;
         break;
       case 1:
-        gpurec->_camdata->Persp(1, 500.0, 45.0);
-        gpurec->_camdata->Lookat((eye+fvec3(0,-1,0))*100.0f, tgt, up);
+        eye += fvec3(0,-1,0);
+        eye *= 10.0f;
         wsca = 10.0f;
-        speed_shift = 6;
         break;
       case 2:
-        gpurec->_camdata->Persp(1, 500.0, 45.0);
-        gpurec->_camdata->Lookat(eye*100.0f, tgt, up);
-        wsca = 0.8f;
-        speed_shift = 4;
+        tgt += fvec3(0,50,0);
+        eye *= 100.0f;
+        eye += fvec3(0,-50,0);
+        wsca = 1.5f;
         break;
       case 3:
-        gpurec->_camdata->Persp(1, 500.0, 45.0);
-        gpurec->_camdata->Lookat(eye*300.0f, tgt, up);
+        eye *= 100.0f;
         wsca = 10.0f;
         break;
       default:
         break;
     }      
+    gpurec->_camdata->Persp(near,far,fovy);
+    gpurec->_camdata->Lookat(eye, tgt, up);
 
     ////////////////////////////////////////
     // set character node's world transform
@@ -304,7 +307,7 @@ int main(int argc, char** argv, char** envp) {
   ezapp->onDraw([&](ui::drawevent_constptr_t drwev) {
 
     float time = timer.SecsSinceStart();
-    int iframe = int(time*30.0f);
+    int iframe = int(time*30.0f*animspeed);
 
     auto anim = gpurec->_char_animasset->GetAnim();
 
