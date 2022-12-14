@@ -209,7 +209,7 @@ bool XgmAnim::_loadXGA(XgmAnim* anm, datablock_ptr_t datablock) {
 bool XgmAnim::_loadAssimp(XgmAnim* anm, datablock_ptr_t inp_datablock) {
   auto basehasher = DataBlock::createHasher();
   basehasher->accumulateString("assimp2xga");
-  basehasher->accumulateString(FormatString("version-%05d", rand() % 9999));
+  basehasher->accumulateString("version-121322");
   inp_datablock->accumlateHash(basehasher);
   basehasher->finish();
   uint64_t hashkey   = basehasher->result();

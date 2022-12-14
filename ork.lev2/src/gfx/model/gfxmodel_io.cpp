@@ -120,8 +120,7 @@ bool XgmModel::_loadAssimp(XgmModel* mdl, datablock_ptr_t inp_datablock) {
   auto basehasher = DataBlock::createHasher();
   basehasher->accumulateString("assimp2xgm");
 
-  auto str   = FormatString("version-x%05d",rand()%10000);
-  basehasher->accumulateString(str); 
+  basehasher->accumulateString("version-x121322"); 
   inp_datablock->accumlateHash(basehasher);
   /////////////////////////////////////
   // include asset vars as hash mutator 
