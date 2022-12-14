@@ -21,8 +21,6 @@ ImplementReflectionX(ork::audio::singularity::LayerData, "SynLayer");
 
 namespace ork::audio::singularity {
 
-static synth_ptr_t the_synth = synth::instance();
-
 ///////////////////////////////////////////////////////////////////////////////
 
 void LayerData::describeX(class_t* clazz) {
@@ -226,7 +224,7 @@ void Layer::endCompute() {
 // SignalScope
 //////////////////////////////////////
 void Layer::updateScopes(int ibase, int icount) {
-  if (this == the_synth->_hudLayer.get()) {
+  if (this == synth::instance()->_hudLayer.get()) {
     if (_layerdata and _layerdata->_scopesource) {
       const float* lyroutl = _dspbuffer->channel(0) + ibase;
       const float* lyroutr = _dspbuffer->channel(1) + ibase;
@@ -240,7 +238,7 @@ void Layer::updateScopes(int ibase, int icount) {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool Layer::isHudLayer() const {
-  return (this == the_synth->_hudLayer.get());
+  return (this == synth::instance()->_hudLayer.get());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -271,14 +269,14 @@ controller_t Layer::getController(const std::string& srcn) const {
   else if (srcn == "MPress") {
     auto state = new float(0);
     return [this, state]() {
-      float v  = the_synth->_doPressure;
+      float v  = synth::instance()->_doPressure;
       (*state) = (*state) * 0.99 + v * 0.01;
       return (*state);
     };
   } else if (srcn == "MWheel") {
     auto state = new float(0);
     return [this, state]() {
-      float v  = the_synth->_doModWheel;
+      float v  = synth::instance()->_doModWheel;
       (*state) = (*state) * 0.99 + v * 0.01;
       return (*state);
     };

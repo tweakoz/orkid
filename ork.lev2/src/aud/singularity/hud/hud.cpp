@@ -53,8 +53,6 @@ void Rect::PopOrtho(Context* context) const {
   context->MTXI()->PopUIMatrix();
 }
 ///////////////////////////////////////////////////////////////////////////////
-auto the_synth = synth::instance();
-///////////////////////////////////////////////////////////////////////////////
 HudLayoutGroup::HudLayoutGroup() //
     : ui::LayoutGroup("HUD", 0, 0, 1280, 720) {
 
@@ -111,7 +109,7 @@ HudLayoutGroup::HudLayoutGroup() //
       case ui::EventCode::KEY_DOWN: {
         switch (ev->miKeyCode) {
           case '5': {
-            the_synth->nextEffect();
+            synth::instance()->nextEffect();
             was_handled = true;
             break;
           }
@@ -128,12 +126,12 @@ HudLayoutGroup::HudLayoutGroup() //
             break;
           }
           case '6': {
-            the_synth->nextProgram();
+            synth::instance()->nextProgram();
             was_handled = true;
             break;
           }
           case '4': {
-            the_synth->prevProgram();
+            synth::instance()->prevProgram();
             was_handled = true;
             break;
           }
@@ -152,20 +150,20 @@ HudLayoutGroup::HudLayoutGroup() //
           case ' ': {
             for (auto item : _activenotes) {
               auto pi = item.second;
-              the_synth->liveKeyOff(pi);
+              synth::instance()->liveKeyOff(pi);
             }
             _activenotes.clear();
             was_handled = true;
             break;
           }
           default: {
-            auto prog = the_synth->_globalprog;
+            auto prog = synth::instance()->_globalprog;
             auto it   = _notemap.find(ev->miKeyCode);
             if (it != _notemap.end()) {
               int note = it->second;
               note += (_octaveshift * 12);
               printf("note<%d>\n", note);
-              auto pi            = the_synth->liveKeyOn(note, _velocity, prog);
+              auto pi            = synth::instance()->liveKeyOn(note, _velocity, prog);
               _activenotes[note] = pi;
               was_handled        = true;
             }
@@ -188,7 +186,7 @@ HudLayoutGroup::HudLayoutGroup() //
               if (it2 != _activenotes.end()) {
                 auto pi = it2->second;
                 if (pi)
-                  the_synth->liveKeyOff(pi);
+                  synth::instance()->liveKeyOff(pi);
                 _activenotes.erase(it2);
               }
             }

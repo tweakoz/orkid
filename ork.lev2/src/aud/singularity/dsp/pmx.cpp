@@ -84,10 +84,11 @@ void PMX::compute(DspBuffer& dspbuf) { // final
   float fbl        = _param[2].eval();
   float note       = pitch * 0.01;
   float frq        = midi_note_to_frequency(note);
+  OrkAssert(false);
   float clampedamp = std::clamp(amp, 0.0f, 1.0f);
   float clampefbl  = std::clamp(fbl, 0.0f, 1.0f);
   ///////////////////////////////////////////////////////////////
-  // printf("frq<%g> amp<%g> fbl<%g>\n", frq, amp, fbl);
+  //printf("frq<%g> amp<%g> fbl<%g>\n", frq, amp, fbl);
   ///////////////////////////////////////////////////////////////
   const float* modinputs[PMXData::kmaxmodulators] = {
       nullptr,

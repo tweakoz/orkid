@@ -108,7 +108,6 @@ void InstancedModelDrawable::enqueueToRenderQueue(
   ////////////////////////////////////////////////////////////////////
   bool isPick    = context->FBI()->isPickState();
   bool isSkinned = _model->isSkinned();
-  OrkAssert(false == isSkinned); // not yet..
   if (not _instanceMatrixTex) {
     gpuInit(context); // todo figure out better do-only-once method...
   }

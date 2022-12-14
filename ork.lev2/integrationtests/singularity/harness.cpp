@@ -32,19 +32,18 @@ extern bool _macosUseHIDPI;
 }
 #endif
 ///////////////////////////////////////////////////////////////////////////////
-static auto the_synth = synth::instance();
 audiodevice_ptr_t gaudiodevice;
 ///////////////////////////////////////////////////////////////////////////////
 SingularityTestApp::SingularityTestApp(appinitdata_ptr_t initdata)
-  // TODO - get init data with lev2 enabled...
+    // TODO - get init data with lev2 enabled...
     : OrkEzApp(initdata) {
-  _hudvp = the_synth->_hudvp;
   gaudiodevice = AudioDevice::instance();
-  //startupAudio();
+  _hudvp       = synth::instance()->_hudvp;
+  // startupAudio();
 }
 ///////////////////////////////////////////////////////////////////////////////
 SingularityTestApp::~SingularityTestApp() {
-  //tearDownAudio();
+  // tearDownAudio();
 }
 ///////////////////////////////////////////////////////////////////////////////
 std::string testpatternname = "";
@@ -55,10 +54,10 @@ std::string midiportname    = "";
 ///////////////////////////////////////////////////////////////////////////////
 singularitytestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
 
-  //lev2::initModule(init_data);
+  // lev2::initModule(init_data);
 
   auto desc = init_data->commandLineOptions("Singularity Options");
-  desc->add_options()                                                //
+  desc->add_options()                                               //
       ("help", "produce help message")                              //
       ("test", po::value<std::string>(), "test name (list,vo,nvo)") //
       ("port", po::value<std::string>(), "midiport name (list)")    //
@@ -190,7 +189,7 @@ singularitytestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
       case ui::EventCode::KEY_REPEAT:
         switch (ev->miKeyCode) {
           case 'p':
-            the_synth->_hudpage = (the_synth->_hudpage + 1) % 2;
+            synth::instance()->_hudpage = (synth::instance()->_hudpage + 1) % 2;
             break;
           default:
             break;
@@ -208,9 +207,7 @@ singularitytestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
-singularitybenchapp_ptr_t createBenchmarkApp(
-    appinitdata_ptr_t initdata,
-    prgdata_constptr_t program) {
+singularitybenchapp_ptr_t createBenchmarkApp(appinitdata_ptr_t initdata, prgdata_constptr_t program) {
   //////////////////////////////////////////////////////////////////////////////
   // benchmark
   //////////////////////////////////////////////////////////////////////////////
@@ -240,19 +237,19 @@ singularitybenchapp_ptr_t createBenchmarkApp(
   });
   //////////////////////////////////////////////////////////////////////////////
   app->onUpdate([=](ui::updatedata_ptr_t updata) {
-    const auto& obuf = the_synth->_obuf;
+    const auto& obuf = synth::instance()->_obuf;
     /////////////////////////////////////////
     double upd_time = 0.0;
     bool done       = false;
     while (done == false) {
 
-      int numcurvoices = the_synth->_numactivevoices.load();
+      int numcurvoices = synth::instance()->_numactivevoices.load();
       if (numcurvoices < int(app->_maxvoices)) {
         int irand = rand() & 0xffff;
         if (irand < 32768)
           enqueue_audio_event(program, 0.0f, 2.5, 48);
       }
-      the_synth->compute(SingularityBenchMarkApp::KNUMFRAMES, app->_inpbuf);
+      synth::instance()->compute(SingularityBenchMarkApp::KNUMFRAMES, app->_inpbuf);
       app->_cur_time   = app->_timer.SecsSinceStart();
       double iter_time = app->_cur_time - app->_prev_time;
       upd_time += iter_time;
@@ -410,7 +407,7 @@ singularitybenchapp_ptr_t createBenchmarkApp(
           str[0] = "     Synth Compute Timing Histogram";
           str[1] = FormatString("Program<%s>", program->_name.c_str());
           str[2] = FormatString("NumIters<%d>", app->_numiters);
-          str[3] = FormatString("NumActiveVoices<%d>", the_synth->_numactivevoices.load());
+          str[3] = FormatString("NumActiveVoices<%d>", synth::instance()->_numactivevoices.load());
           str[4] = FormatString("AvgActiveVoices<%d>", int(avgnumvoices));
           lev2::FontMan::DrawText(context, 32, y += 32, str[0].c_str());
           lev2::FontMan::DrawText(context, 32, y += 32, str[1].c_str());
@@ -486,11 +483,11 @@ prgdata_constptr_t testpattern(
     }
     return nullptr;
   } else if (testpatternname == "none") {
-    the_synth->_globalprog = program;
+    synth::instance()->_globalprog = program;
     return program;
   } else if (testpatternname == "midi") {
-    midictx->startMidiInputByName(midiportname,&mymidicallback);
-    the_synth->_globalprog = program;
+    midictx->startMidiInputByName(midiportname, &mymidicallback);
+    synth::instance()->_globalprog = program;
     return program;
   } else if (testpatternname == "sq1") {
     seq1(120.0f, 0, program);
@@ -519,17 +516,27 @@ prgdata_constptr_t testpattern(
       for (int n = 0; n <= 64; n += 12) {                        // note
         for (int velocity = 0; velocity <= 128; velocity += 8) { // velocity
           // printf("getProgramByName<%s>\n", program->_name.c_str());
-          enqueue_audio_event(program, count * 0.15, (i + 1) * 0.05, 36 + n, velocity);
+          enqueue_audio_event(
+              program,        // program
+              count * 0.15,   // time
+              (i + 1) * 0.05, // duration
+              36 + n,         // midinote
+              velocity);      // velocity
           count++;
         }
       }
     }
   } else if (testpatternname == "vo3") {
-    for (int i = 0; i < 12; i++) {                               // note length
-      for (int n = 0; n <= 64; n += 12) {                        // note
-        for (int velocity = 0; velocity <= 128; velocity += 8) { // velocity
+    for (int i = 0; i < 12; i++) {          // note length
+      for (int n = 0; n <= 64; n += 12) {   // note
+        for (int v = 0; v <= 128; v += 8) { // velocity
           // printf("getProgramByName<%s>\n", program->_name.c_str());
-          enqueue_audio_event(program, count * 0.15, (velocity / 128.0f) * 0.33, 36 + n, velocity);
+          enqueue_audio_event(
+              program,             // program
+              count * 0.15,        // time
+              0.33,                // duration
+              48 + n,              // midinote
+              v);                  // velocity
           count++;
         }
       }

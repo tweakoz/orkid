@@ -324,6 +324,7 @@ struct DrawableData : public ork::Object { // todo subclass reflection Object
   DrawableData();
   virtual drawable_ptr_t createDrawable() const = 0;
   fvec4 _modcolor;
+  rendervar_strmap_t _assetvars;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -337,7 +338,6 @@ struct ModelDrawableData : public DrawableData {
   ModelDrawableData(AssetPath path);
   drawable_ptr_t createDrawable() const final;
   AssetPath _assetpath;
-  rendervar_strmap_t _assetvars;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -351,7 +351,6 @@ struct InstancedModelDrawableData : public DrawableData {
   InstancedModelDrawableData(AssetPath path);
   drawable_ptr_t createDrawable() const final;
   AssetPath _assetpath;
-  rendervar_strmap_t _assetvars;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

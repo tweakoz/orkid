@@ -1,0 +1,48 @@
+{
+  "folders": [
+    {
+      "path": "ork.core",
+      "folder_exclude_patterns": [],
+      "follow_symlinks": true
+    },
+    {
+      "path": "ork.lev2",
+      "folder_exclude_patterns": [],
+      "follow_symlinks": true
+    },
+    {
+      "path": "ork.ecs",
+      "folder_exclude_patterns": [],
+      "follow_symlinks": true
+    }
+  ],
+  "settings": {
+    "tab_size": 4
+  },
+  "build_systems": [],
+  "auto_complete": true,
+  "auto_complete_selector": "source - comment",
+  "auto_complete_triggers": [
+    {
+      "characters": "."
+    },
+    {
+      "characters": ">"
+    }
+  ],
+  "extensions": [
+    "cpp",
+    "h",
+    "hpp",
+    "inl"
+  ],
+  "include_dirs": [
+    "/usr/include/c++/4.4.7",
+    "/usr/lib/clang/3.4.2/include",
+    "/usr/include/c++/4.4.4/x86_64-redhat-linux/",
+    "/usr/include",
+    "$ORKID_WORKSPACE_DIR/ork.core/inc",
+    "$ORKID_WORKSPACE_DIR/ork.lev2/inc",
+    "$ORKID_WORKSPACE_DIR/ork.ecs/inc",
+  ]
+}

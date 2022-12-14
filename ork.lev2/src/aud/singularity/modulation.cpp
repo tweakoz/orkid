@@ -149,6 +149,8 @@ void DspParamData::usePitchEvaluator() {
   _edit_keytrack_max      = 200.0f;
   _edit_keytrack_numsteps = 400;
 
+
+
   _mods->_evaluator = [this](DspParam& cec) -> float {
     float kt       = _keyTrack * cec._keyOff;
     float vt       = _velTrack * cec._unitVel;

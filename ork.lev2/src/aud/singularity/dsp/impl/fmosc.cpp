@@ -65,6 +65,8 @@ float PmOsc::compute(float frequency, float phase_offset) {
   validateSample(frequency);
   validateSample(phase_offset);
 
+  //printf( "frequency<%g>\n", frequency );
+
   float phaseinc = _wtsXisr * frequency;
 
   _pbIncrBase           = int64_t(phaseinc * 65536.0f);

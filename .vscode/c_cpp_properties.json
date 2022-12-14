@@ -1,0 +1,28 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${env:ORKID_WORKSPACE_DIR}/ork.core/inc/**",
+                "${env:ORKID_WORKSPACE_DIR}/ork.lev2/inc/**",
+                "${env:ORKID_WORKSPACE_DIR}/ork.ecs/inc/**",
+                "${env:OBT_STAGE}/include/**",
+            ],
+            "defines": [
+              "BUILD_WITH_EASY_PROFILER",
+              "ORK_ARCHITECTURE_X86_64",
+              "ORK_CONFIG_IX",
+              "LINUX",
+              "GCC",
+              "_REENTRANT",
+              "_LARGEFILE64_SOURCE",
+              "_LARGEFILE_SOURCE",
+            ],
+            "compilerPath": "/usr/bin/clang",
+            "cStandard": "c17",
+            "cppStandard": "c++20",
+            "intelliSenseMode": "linux-clang-x64"
+        }
+    ],
+    "version": 4
+}

@@ -8,10 +8,24 @@
             "name": "(gdb) attach model3Dpbr",
             "type": "cppdbg",
             "request": "attach",
-            "processId":"${command:pickProcess}"
-            "program": "${workspaceFolder}/../staging-orkid/bin/ork.example.lev2.gfx.model3Dpbr.exe",
-            "stopAtEntry": false,
+            "processId":"${command:pickProcess}",
+            "program": "${env:OBT_STAGE}/bin/ork.example.lev2.gfx.model3Dpbr.exe",
             "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "(gdb) debug tx81z.bank test=vo3",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${env:OBT_STAGE}/bin/ork.test.lev2.aud.singularity.tx81z.bank.exe",
+            "MIMode": "gdb",
+            "args": ["--test","vo3"],
+            "cwd": "${env:OBT_STAGE}",
             "setupCommands": [
                 {
                     "text": "-enable-pretty-printing",
