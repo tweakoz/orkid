@@ -757,10 +757,11 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _parMetallicFactor      = fxi->parameter(_shader, "MetallicFactor");
   _parRoughnessFactor     = fxi->parameter(_shader, "RoughnessFactor");
   _parModColor            = fxi->parameter(_shader, "ModColor");
-  _parBoneMatrices        = fxi->parameter(_shader, "BoneMatrices");
   _paramInstanceMatrixMap = fxi->parameter(_shader, "InstanceMatrices");
   _paramInstanceIdMap     = fxi->parameter(_shader, "InstanceIds");
   _paramInstanceColorMap  = fxi->parameter(_shader, "InstanceColors");
+
+  _parBoneBlock = fxi->parameterBlock(_shader, "ub_vtx_boneblock");
 
   // fwd
 
@@ -781,10 +782,11 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _parUnTexPointLightsCount = fxi->parameter(_shader, "point_light_count");
   _parUnTexPointLightsData  = fxi->parameterBlock(_shader, "ub_frg_fwd_lighting");
 
+
   //
 
   OrkAssert(_paramMapNormal != nullptr);
-  OrkAssert(_parBoneMatrices != nullptr);
+  OrkAssert(_parBoneBlock != nullptr);
 
   if (_texColor == nullptr) {
     auto loadreq = std::make_shared<asset::LoadRequest>();
@@ -940,12 +942,12 @@ void PBRMaterial::UnBindMaterialInstItem(MaterialInstItem* pitem) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void PbrMatrixBlockApplicator::ApplyToTarget(Context* targ) // virtual
+void PbrMatrixBlockApplicator::ApplyToTarget(Context* context) // virtual
 {
-  auto fxi                           = targ->FXI();
-  auto mtxi                          = targ->MTXI();
-  const RenderContextInstData* RCID  = targ->GetRenderContextInstData();
-  const RenderContextFrameData* RCFD = targ->topRenderContextFrameData();
+  auto fxi                           = context->FXI();
+  auto mtxi                          = context->MTXI();
+  const RenderContextInstData* RCID  = context->GetRenderContextInstData();
+  const RenderContextFrameData* RCFD = context->topRenderContextFrameData();
   const auto& CPD                    = RCFD->topCPD();
   const auto& world                  = mtxi->RefMMatrix();
   const auto& drect                  = CPD.GetDstRect();
@@ -953,56 +955,25 @@ void PbrMatrixBlockApplicator::ApplyToTarget(Context* targ) // virtual
   FxShader* shader                   = _pbrmaterial->_shader;
   size_t inumbones                   = _matrixblock->GetNumMatrices();
   const fmtx4* Matrices              = _matrixblock->GetMatrices();
+  size_t fmtx4_stride    = sizeof(fmtx4);
 
-  if (1)
-    for (int i = 0; i < inumbones; i++) {
-      const auto& b = Matrices[i];
-      //b.dump(FormatString("pbr-bone<%d>", i));
-    }
-  fxi->BindParamMatrixArray(_pbrmaterial->_parBoneMatrices, Matrices, (int)inumbones);
-  fxi->CommitParams();
+  auto bones_buffer = PBRMaterial::boneDataBuffer(context);
+  auto bones_mapped = fxi->mapParamBuffer(bones_buffer, 0, bones_buffer->_length);
+
+  for (int i = 0; i < inumbones; i++) {
+    bones_mapped->ref<fmtx4>(fmtx4_stride*i) = Matrices[i];
+  }
+
+  bones_mapped->unmap();
+
+  if(_pbrmaterial->_parBoneBlock)
+    fxi->bindParamBlockBuffer(_pbrmaterial->_parBoneBlock, bones_buffer);
 }
 
 ////////////////////////////////////////////
 
 void PBRMaterial::Update() {
 }
-
-////////////////////////////////////////////
-
-/*void PBRMaterial::setupCamera(const RenderContextFrameData& RCFD) {
-  auto target     = RCFD._target;
-  auto MTXI       = target->MTXI();
-  auto FXI        = target->FXI();
-  auto CIMPL      = RCFD._cimpl;
-  const auto& CPD = CIMPL->topCPD();
-  bool is_stereo  = CPD.isStereoOnePass();
-
-  const auto& world = MTXI->RefMMatrix();
-  if (is_stereo and CPD._stereoCameraMatrices) {
-
-   fmtx4 vrroot;
-    auto vrrootprop = RCFD.getUserProperty("vrroot"_crc);
-    if (auto as_mtx = vrrootprop.tryAs<fmtx4>()) {
-      vrroot = as_mtx.value();
-      vrroot.dump("vrroot");
-    }
-
-    auto stereomtx = CPD._stereoCameraMatrices;
-    auto MVPL      = stereomtx->MVPL(world*vrroot);
-    auto MVPR      = stereomtx->MVPR(world*vrroot);
-    // todo fix for stereo..
-    FXI->BindParamMatrix(_paramMVPL, MVPL);
-    FXI->BindParamMatrix(_paramMVPR, MVPR);
-  } else if (CPD._cameraMatrices) {
-    auto mcams = CPD._cameraMatrices;
-    auto MVP   = fmtx4::multiply_ltor(world, mcams->_vmatrix, mcams->_pmatrix);
-    FXI->BindParamMatrix(_paramMVP, MVP);
-  } else {
-    auto MVP = MTXI->RefMVPMatrix();
-    FXI->BindParamMatrix(_paramMVP, MVP);
-  }
-}*/
 
 ////////////////////////////////////////////
 

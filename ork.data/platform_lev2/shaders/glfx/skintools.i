@@ -1,8 +1,10 @@
 //
 
-uniform_set ublock_skinned { mat4 BoneMatrices[32]; }
+uniform_block ub_vtx_boneblock {
+  mat4 _bone_matrices[1024];
+}
 
-vertex_interface iface_skintools : ublock_skinned {
+vertex_interface iface_skintools : ub_vtx_boneblock {
   inputs {
     vec4 boneindices : BONEINDICES;
     vec4 boneweights : BONEWEIGHTS;
@@ -16,10 +18,10 @@ libblock skin_tools {
     //wghts = vec4(0.25,0.25,0.25,0.25);
     vec4 Pos4   = vec4(objpos, 1.0);
 
-    vec3 WeightedVertex = ((BoneMatrices[idcsi.w] * Pos4).xyz * boneweights.w);
-    WeightedVertex += ((BoneMatrices[idcsi.z] * Pos4).xyz * boneweights.z);
-    WeightedVertex += ((BoneMatrices[idcsi.y] * Pos4).xyz * boneweights.y);
-    WeightedVertex += ((BoneMatrices[idcsi.x] * Pos4).xyz * boneweights.x);
+    vec3 WeightedVertex = ((_bone_matrices[idcsi.w] * Pos4).xyz * boneweights.w);
+    WeightedVertex += ((_bone_matrices[idcsi.z] * Pos4).xyz * boneweights.z);
+    WeightedVertex += ((_bone_matrices[idcsi.y] * Pos4).xyz * boneweights.y);
+    WeightedVertex += ((_bone_matrices[idcsi.x] * Pos4).xyz * boneweights.x);
 
     return WeightedVertex;
   }
@@ -27,10 +29,10 @@ libblock skin_tools {
     ivec4 idcss = ivec4(boneindices);
     vec4 Nrm4   = vec4(InNrm, 0.0);
 
-    vec3 WeightedNormal = ((BoneMatrices[idcss.w] * Nrm4) * boneweights.w).xyz;
-    WeightedNormal += ((BoneMatrices[idcss.z] * Nrm4) * boneweights.z).xyz;
-    WeightedNormal += ((BoneMatrices[idcss.y] * Nrm4) * boneweights.y).xyz;
-    WeightedNormal += ((BoneMatrices[idcss.x] * Nrm4) * boneweights.x).xyz;
+    vec3 WeightedNormal = ((_bone_matrices[idcss.w] * Nrm4) * boneweights.w).xyz;
+    WeightedNormal += ((_bone_matrices[idcss.z] * Nrm4) * boneweights.z).xyz;
+    WeightedNormal += ((_bone_matrices[idcss.y] * Nrm4) * boneweights.y).xyz;
+    WeightedNormal += ((_bone_matrices[idcss.x] * Nrm4) * boneweights.x).xyz;
 
     return normalize(WeightedNormal);
   }

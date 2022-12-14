@@ -59,6 +59,7 @@ public:
   ////////////////////////////////////////////
 
   static FxShaderParamBuffer* pointLightDataBuffer(Context* targ);
+  static FxShaderParamBuffer* boneDataBuffer(Context* targ);
 
   static texture_ptr_t brdfIntegrationMap(Context* targ);
   static texture_ptr_t filterSpecularEnvMap(texture_ptr_t rawenvmap, Context* targ);
@@ -114,7 +115,7 @@ public:
   fxparam_constptr_t _parMetallicFactor  = nullptr;
   fxparam_constptr_t _parRoughnessFactor = nullptr;
   fxparam_constptr_t _parModColor        = nullptr;
-  fxparam_constptr_t _parBoneMatrices    = nullptr;
+  fxparamblock_constptr_t _parBoneBlock  = nullptr;
 
   // fwd
 
@@ -135,7 +136,7 @@ public:
 
 
   fxparam_constptr_t _parUnTexPointLightsCount  = nullptr;
-  const FxShaderParamBlock* _parUnTexPointLightsData   = nullptr;
+  fxparamblock_constptr_t _parUnTexPointLightsData   = nullptr;
 
   ///////////////////////////////////////////
   // instancing (via texture)

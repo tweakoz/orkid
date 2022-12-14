@@ -207,6 +207,7 @@ using fxtechnique_ptr_t      = FxShaderTechnique*;
 using fxshader_constptr_t    = const FxShader*;
 using fxparam_constptr_t     = const FxShaderParam*;
 using fxtechnique_constptr_t = const FxShaderTechnique*;
+using fxparamblock_constptr_t     = const FxShaderParamBlock*;
 using fxparamptrmap_t        = std::map<std::string, fxparam_constptr_t>;
 using fxtechniqueptrmap_t    = std::map<std::string, fxtechnique_constptr_t>;
 using animchannel_ptr_t      = std::shared_ptr<XgmAnimChannel>;

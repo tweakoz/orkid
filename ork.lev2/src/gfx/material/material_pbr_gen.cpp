@@ -66,6 +66,27 @@ FxShaderParamBuffer* PBRMaterial::pointLightDataBuffer(Context* targ) {
 
 /////////////////////////////////////////////////////////////////////////
 
+static FxShaderParamBuffer* _getBoneDataBuffer(Context* context) {
+  FxShaderParamBuffer* _buffer;
+  uint64_t LOCK = lev2::GfxEnv::createLock(); { //
+    context->makeCurrentContext();
+    _buffer = context->FXI()->createParamBuffer(65536);
+    auto mapped  = context->FXI()->mapParamBuffer(_buffer);
+    mapped->unmap();
+  }
+  lev2::GfxEnv::releaseLock(LOCK);
+  return _buffer;
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+FxShaderParamBuffer* PBRMaterial::boneDataBuffer(Context* targ) {
+  static FxShaderParamBuffer* _buffer = _getBoneDataBuffer(targ);
+  return _buffer;
+}
+
+/////////////////////////////////////////////////////////////////////////
+
 static texture_ptr_t _getbrdfintmap(Context* targ) {
   texture_ptr_t _map;
 
