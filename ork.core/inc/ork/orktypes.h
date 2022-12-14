@@ -11,7 +11,6 @@
 #include <stdint.h>
 #include <functional>
 #include <memory>
-//#include <numbers>
 
 typedef double f64;
 typedef double F64;
@@ -123,6 +122,15 @@ using FileH      = size_t;
 using FileStampH = size_t; // (Y6M4D5:H5M6S6) (15:17) Base Year 2000 6 bits for year goes to 2063
 using LibraryH   = size_t;
 using FunctionH  = size_t;
+
+
+class File;
+class FileDev;
+class FileProgressWatcher;
+
+using file_ptr_t = std::shared_ptr<File>;
+using filedev_ptr_t = std::shared_ptr<FileDev>;
+using fileprogresswatcher_ptr_t = std::shared_ptr<FileProgressWatcher>;
 
 } // namespace ork
 

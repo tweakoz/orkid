@@ -16,9 +16,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
-class File;
-class FileDev;
-///////////////////////////////////////////////////////////////////////////////
 
 class FileProgressWatcher {
   bool mbEnable;
@@ -45,92 +42,89 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class FileDev {
-  virtual EFileErrCode DoRead(File& rFile, void* pTo, size_t iSize, size_t& iactualread) = 0;
-  virtual EFileErrCode DoOpenFile(File& rFile)                                           = 0;
-  virtual EFileErrCode DoCloseFile(File& rFile)                                          = 0;
-  virtual EFileErrCode DoSeekFromStart(File& rFile, size_t iTo)                          = 0;
-  virtual EFileErrCode DoSeekFromCurrent(File& rFile, size_t iOffset)                    = 0;
-  virtual EFileErrCode DoGetLength(File& rFile, size_t& riLength)                        = 0;
 
 public:
+
   static const int kBUFFERMASK    = 0xffffffe0;
   static const int kBUFFERALIGN   = 32;
   static const int kBUFFERALIGNM1 = (kBUFFERALIGN - 1);
   static const int kSEEKALIGN     = 4;
 
-  EFileErrCode CheckFileDevCaps(File& rFile);
+  EFileErrCode checkFileDevCaps(File& rFile);
 
-  inline bool CanRead(void) {
+  inline bool canRead(void) {
     return (bool)(muDeviceCaps & EFDF_CAN_READ);
   }
-  inline bool CanWrite(void) {
+  inline bool canWrite(void) {
     return (bool)(muDeviceCaps & EFDF_CAN_WRITE);
   }
-  inline bool CanReadAsync(void) {
-    return (bool)(muDeviceCaps & EFDF_CAN_READ_ASYNC);
-  }
-  inline bool IsPakFileActive(void) {
-    return (bool)(muDeviceCaps & EFDF_PAKFILE_ACTIVE);
-  }
-  inline void SetPrependFilesystemBase(bool setting) {
+  inline void setPrependFilesystemBase(bool setting) {
     mbPrependFSBase = setting;
   }
-  inline bool GetPrependFilesystemBase(void) const {
+  inline bool getPrependFilesystemBase(void) const {
     return mbPrependFSBase;
   }
-  inline void SetFileSystemBaseAbs(const file::Path::NameType& Base) {
+  inline void setFileSystemBaseAbs(const file::Path::NameType& Base) {
     mFsBaseAbs = Base;
   }
-  inline void SetFileSystemBaseRel(const file::Path::NameType& Base) {
+  inline void setFileSystemBaseRel(const file::Path::NameType& Base) {
     mFsBaseRel = Base;
   }
-  inline const file::Path::NameType& GetFilesystemBaseAbs(void) const {
+  inline const file::Path::NameType& getFilesystemBaseAbs(void) const {
     return mFsBaseAbs;
   }
-  inline const file::Path::NameType& GetFilesystemBaseRel(void) const {
+  inline const file::Path::NameType& getFilesystemBaseRel(void) const {
     return mFsBaseRel;
   }
 
   //////////////////////////////////////////
 
-  EFileErrCode Read(File& rFile, void* pTo, size_t iSize);
-  EFileErrCode OpenFile(File& rFile);
-  EFileErrCode CloseFile(File& rFile);
-  EFileErrCode SeekFromStart(File& rFile, size_t iTo);
-  EFileErrCode SeekFromCurrent(File& rFile, size_t iOffset);
-  EFileErrCode GetLength(File& rFile, size_t& riLength);
+  EFileErrCode read(File& rFile, void* pTo, size_t iSize);
+  EFileErrCode openFile(File& rFile);
+  EFileErrCode closeFile(File& rFile);
+  EFileErrCode seekFromStart(File& rFile, size_t iTo);
+  EFileErrCode seekFromCurrent(File& rFile, size_t iOffset);
+  EFileErrCode getLength(File& rFile, size_t& riLength);
 
   //////////////////////////////////////////
   // Abstract Interface
 
-  virtual EFileErrCode Write(File& rFile, const void* pFrom, size_t iSize)        = 0;
-  virtual EFileErrCode GetCurrentDirectory(file::Path::NameType& directory)       = 0;
-  virtual EFileErrCode SetCurrentDirectory(const file::Path::NameType& directory) = 0;
+  virtual EFileErrCode write(File& rFile, const void* pFrom, size_t iSize)        = 0;
+  virtual EFileErrCode getCurrentDirectory(file::Path::NameType& directory)       = 0;
+  virtual EFileErrCode setCurrentDirectory(const file::Path::NameType& directory) = 0;
 
-  virtual bool DoesFileExist(const file::Path& filespec)      = 0;
-  virtual bool DoesDirectoryExist(const file::Path& filespec) = 0;
-  virtual bool IsFileWritable(const file::Path& filespec)     = 0;
+  virtual bool doesFileExist(const file::Path& filespec)      = 0;
+  virtual bool doesDirectoryExist(const file::Path& filespec) = 0;
+  virtual bool isFileWritable(const file::Path& filespec)     = 0;
+
+
+  void setWatcher(fileprogresswatcher_ptr_t watcher) {
+    _watcher = watcher;
+  }
+  fileprogresswatcher_ptr_t getWatcher() const {
+    return _watcher;
+  }
+
+protected:
 
   FileDev(file::Path::NameType devicename, file::Path fsbase, U32 devcaps);
 
   virtual ~FileDev() {
   }
 
-  void SetWatcher(FileProgressWatcher* watcher) {
-    mWatcher = watcher;
-  }
-  FileProgressWatcher* GetWatcher() const {
-    return mWatcher;
-  }
-
-protected:
+  virtual EFileErrCode _doRead(File& rFile, void* pTo, size_t iSize, size_t& iactualread) = 0;
+  virtual EFileErrCode _doOpenFile(File& rFile)                                           = 0;
+  virtual EFileErrCode _doCloseFile(File& rFile)                                          = 0;
+  virtual EFileErrCode _doSeekFromStart(File& rFile, size_t iTo)                          = 0;
+  virtual EFileErrCode _doSeekFromCurrent(File& rFile, size_t iOffset)                    = 0;
+  virtual EFileErrCode _doGetLength(File& rFile, size_t& riLength)                        = 0;
 
   static const int kFileDevContextStackMax = 4;
 
   file::Path::NameType msDeviceName;
   U32 muDeviceCaps;
   int mFileDevContextStackDepth;
-  FileProgressWatcher* mWatcher;
+  fileprogresswatcher_ptr_t _watcher;
 
   FileDevContext mFileDevContext[kFileDevContextStackMax];
 

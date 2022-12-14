@@ -76,7 +76,7 @@ EFileErrCode File::Open() {
   //		"Time<%f> Opening<%s>\n", ftime, this->msFileName.c_str() );
   //	orkprintf( filename.c_str() );
 
-  return mpDevice->OpenFile(*this);
+  return mpDevice->openFile(*this);
 }
 
 EFileErrCode File::OpenFile(const file::Path& fname, EFileMode eMode) {

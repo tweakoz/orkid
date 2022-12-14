@@ -19,12 +19,12 @@ namespace ork {
 
 class FileDevRam : public FileDev
 {
-	virtual EFileErrCode DoOpenFile(File &rFile);
-	virtual EFileErrCode DoCloseFile(File &rFile);
-	virtual EFileErrCode DoRead(File &rFile, void *pTo, size_t iSize, size_t &iactualread);
-	virtual EFileErrCode DoSeekFromStart(File &rFile, size_t iTo);
-	virtual EFileErrCode DoSeekFromCurrent(File &rFile, size_t iOffset);
-	virtual EFileErrCode DoGetLength(File &rFile, size_t &riLength);
+	virtual EFileErrCode _doOpenFile(File &rFile);
+	virtual EFileErrCode _doCloseFile(File &rFile);
+	virtual EFileErrCode _doRead(File &rFile, void *pTo, size_t iSize, size_t &iactualread);
+	virtual EFileErrCode _doSeekFromStart(File &rFile, size_t iTo);
+	virtual EFileErrCode _doSeekFromCurrent(File &rFile, size_t iOffset);
+	virtual EFileErrCode _doGetLength(File &rFile, size_t &riLength);
 
 	struct RamFile
 	{
@@ -39,13 +39,13 @@ public:
 
 	FileDevRam();
 	
-	EFileErrCode Write(File &rFile, const void *pFrom, size_t iSize) final;
-	EFileErrCode GetCurrentDirectory(file::Path::NameType& directory) final;
-	EFileErrCode SetCurrentDirectory(const file::Path::NameType &directory) final;
+	EFileErrCode write(File &rFile, const void *pFrom, size_t iSize) final;
+	EFileErrCode getCurrentDirectory(file::Path::NameType& directory) final;
+	EFileErrCode setCurrentDirectory(const file::Path::NameType &directory) final;
 
-	bool DoesFileExist(const file::Path& filespec) final;
-	bool DoesDirectoryExist(const file::Path& filespec) final;
-	bool IsFileWritable(const file::Path& filespec) final;
+	bool doesFileExist(const file::Path& filespec) final;
+	bool doesDirectoryExist(const file::Path& filespec) final;
+	bool isFileWritable(const file::Path& filespec) final;
 
 	void RegisterRamFile(const file::Path &path, const char *pBuffer, size_t isize);
 };

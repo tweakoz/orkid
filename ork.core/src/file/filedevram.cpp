@@ -20,7 +20,7 @@ FileDevRam::FileDevRam()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode FileDevRam::DoOpenFile(File &rFile)
+EFileErrCode FileDevRam::_doOpenFile(File &rFile)
 {
 	OrkAssert(!rFile.IsOpen());
 
@@ -39,7 +39,7 @@ EFileErrCode FileDevRam::DoOpenFile(File &rFile)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode FileDevRam::DoCloseFile(File &rFile)
+EFileErrCode FileDevRam::_doCloseFile(File &rFile)
 {
 	OrkAssert(rFile.IsOpen());
 
@@ -50,7 +50,7 @@ EFileErrCode FileDevRam::DoCloseFile(File &rFile)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode FileDevRam::DoRead(File &rFile, void *pTo, size_t icount, size_t &iactualread)
+EFileErrCode FileDevRam::_doRead(File &rFile, void *pTo, size_t icount, size_t &iactualread)
 {
 	OrkAssert(rFile.IsOpen());
 
@@ -85,7 +85,7 @@ EFileErrCode FileDevRam::DoRead(File &rFile, void *pTo, size_t icount, size_t &i
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode FileDevRam::Write(File &rFile, const void *pFrom, size_t iSize)
+EFileErrCode FileDevRam::write(File &rFile, const void *pFrom, size_t iSize)
 {
 	OrkAssertNotImpl();
 	return EFEC_FILE_UNSUPPORTED;
@@ -93,7 +93,7 @@ EFileErrCode FileDevRam::Write(File &rFile, const void *pFrom, size_t iSize)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode FileDevRam::DoSeekFromStart(File &rFile, size_t iTo)
+EFileErrCode FileDevRam::_doSeekFromStart(File &rFile, size_t iTo)
 {
 	OrkAssertNotImpl();
 
@@ -116,7 +116,7 @@ EFileErrCode FileDevRam::DoSeekFromStart(File &rFile, size_t iTo)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode FileDevRam::DoSeekFromCurrent(File &rFile, size_t iOffset)
+EFileErrCode FileDevRam::_doSeekFromCurrent(File &rFile, size_t iOffset)
 {
 	OrkAssertNotImpl();
 
@@ -141,7 +141,7 @@ EFileErrCode FileDevRam::DoSeekFromCurrent(File &rFile, size_t iOffset)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode FileDevRam::DoGetLength(File &rFile, size_t &riLen)
+EFileErrCode FileDevRam::_doGetLength(File &rFile, size_t &riLen)
 {
 	OrkAssert(rFile.IsOpen());
 
@@ -157,7 +157,7 @@ EFileErrCode FileDevRam::DoGetLength(File &rFile, size_t &riLen)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode FileDevRam::GetCurrentDirectory(file::Path::NameType &directory)
+EFileErrCode FileDevRam::getCurrentDirectory(file::Path::NameType &directory)
 {
 	directory = "/";
 	return EFEC_FILE_OK;
@@ -165,14 +165,14 @@ EFileErrCode FileDevRam::GetCurrentDirectory(file::Path::NameType &directory)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode FileDevRam::SetCurrentDirectory(const file::Path::NameType &inspec)
+EFileErrCode FileDevRam::setCurrentDirectory(const file::Path::NameType &inspec)
 {
 	return EFEC_FILE_UNSUPPORTED;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool FileDevRam::DoesFileExist(const file::Path &filespec)
+bool FileDevRam::doesFileExist(const file::Path &filespec)
 {
 	//orkprintf("FileDevRam::DoesFileExist(%s)\n", filespec.c_str());
 	//orkprintf("  filespec.toAbsolute() = %s\n", filespec.toAbsolute().c_str());
@@ -188,12 +188,12 @@ bool FileDevRam::DoesFileExist(const file::Path &filespec)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool FileDevRam::DoesDirectoryExist(const file::Path &filespec)
+bool FileDevRam::doesDirectoryExist(const file::Path &filespec)
 {
 	return false;
 }
 
-bool FileDevRam::IsFileWritable(const file::Path &filespec)
+bool FileDevRam::isFileWritable(const file::Path &filespec)
 {
 	return false;
 }

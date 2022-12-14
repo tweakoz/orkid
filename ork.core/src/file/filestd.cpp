@@ -55,7 +55,7 @@ static int GetLengthFromToc(const ork::file::Path& fname) {
 
 int ifilecount = 0;
 
-EFileErrCode FileDevStd::DoOpenFile(File& rFile) {
+EFileErrCode FileDevStd::_doOpenFile(File& rFile) {
   ifilecount++;
 
   const ork::file::Path& fname = rFile.GetFileName();
@@ -71,7 +71,7 @@ EFileErrCode FileDevStd::DoOpenFile(File& rFile) {
   ork::file::Path fullfname = fname.toAbsolute();
 
   if (breading) {
-    bool bexists = this->DoesFileExist(fname);
+    bool bexists = this->doesFileExist(fname);
 
     if (false == bexists) {
       return ork::EFEC_FILE_DOES_NOT_EXIST;
@@ -104,7 +104,7 @@ EFileErrCode FileDevStd::DoOpenFile(File& rFile) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::EFileErrCode FileDevStd::DoCloseFile(File& rFile) {
+ork::EFileErrCode FileDevStd::_doCloseFile(File& rFile) {
   ifilecount--;
   FILE* pFILE = reinterpret_cast<FILE*>(rFile.mHandle);
   if (pFILE)
@@ -114,7 +114,7 @@ ork::EFileErrCode FileDevStd::DoCloseFile(File& rFile) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::EFileErrCode FileDevStd::DoRead(File& rFile, void* pTo, size_t icount, size_t& iactualread) {
+ork::EFileErrCode FileDevStd::_doRead(File& rFile, void* pTo, size_t icount, size_t& iactualread) {
   FILE* pFILE  = reinterpret_cast<FILE*>(rFile.mHandle);
   int iphyspos = ftell(pFILE);
   if (rFile.GetPhysicalPos() != iphyspos) {
@@ -139,8 +139,8 @@ ork::EFileErrCode FileDevStd::DoRead(File& rFile, void* pTo, size_t icount, size
     memset(((char*)pTo) + iphysleft, 0, itail);
   }
 
-  if (mWatcher)
-    mWatcher->Reading(&rFile, iactualread);
+  if (_watcher)
+    _watcher->Reading(&rFile, iactualread);
 
   /////////////////////////////////////////////////////////
   // orkprintf( "PostDoRead<%d> tell<%d> phys<%d>\n", iSize, ipos, rFile.GetPhysicalPos() );
@@ -158,7 +158,7 @@ ork::EFileErrCode FileDevStd::DoRead(File& rFile, void* pTo, size_t icount, size
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::EFileErrCode FileDevStd::Write(File& rFile, const void* pFrom, size_t iSize) {
+ork::EFileErrCode FileDevStd::write(File& rFile, const void* pFrom, size_t iSize) {
   if (!rFile.IsOpen()) {
     return ork::EFEC_FILE_NOT_OPEN;
   }
@@ -184,7 +184,7 @@ ork::EFileErrCode FileDevStd::Write(File& rFile, const void* pFrom, size_t iSize
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode FileDevStd::DoSeekFromStart(File& rFile, size_t iTo) {
+EFileErrCode FileDevStd::_doSeekFromStart(File& rFile, size_t iTo) {
   FILE* pFILE = reinterpret_cast<FILE*>(rFile.mHandle);
   OrkAssert(pFILE);
   fseek(pFILE, iTo, SEEK_SET);
@@ -194,7 +194,7 @@ EFileErrCode FileDevStd::DoSeekFromStart(File& rFile, size_t iTo) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::EFileErrCode FileDevStd::DoSeekFromCurrent(File& rFile, size_t iOffset) {
+ork::EFileErrCode FileDevStd::_doSeekFromCurrent(File& rFile, size_t iOffset) {
   FILE* pFILE = reinterpret_cast<FILE*>(rFile.mHandle);
   OrkAssert(pFILE);
   fseek(pFILE, iOffset, SEEK_CUR);
@@ -204,7 +204,7 @@ ork::EFileErrCode FileDevStd::DoSeekFromCurrent(File& rFile, size_t iOffset) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode FileDevStd::DoGetLength(File& rFile, size_t& riLen) {
+EFileErrCode FileDevStd::_doGetLength(File& rFile, size_t& riLen) {
   riLen = 0;
 
   const ork::file::Path& fname  = rFile.GetFileName();
@@ -230,7 +230,7 @@ EFileErrCode FileDevStd::DoGetLength(File& rFile, size_t& riLen) {
 // but what they are is the current directory of the process
 ///////////////////////////////////////////////
 
-EFileErrCode FileDevStd::GetCurrentDirectory(file::Path::NameType& directory) {
+EFileErrCode FileDevStd::getCurrentDirectory(file::Path::NameType& directory) {
   file::Path::NameType outspec;
   // Not implemented for this platform!
   OrkAssert(false);
@@ -239,14 +239,14 @@ EFileErrCode FileDevStd::GetCurrentDirectory(file::Path::NameType& directory) {
   return ork::EFEC_FILE_OK;
 }
 
-EFileErrCode FileDevStd::SetCurrentDirectory(const file::Path::NameType& directory) {
+EFileErrCode FileDevStd::setCurrentDirectory(const file::Path::NameType& directory) {
   OrkAssert(false);
   return ork::EFEC_FILE_UNKNOWN;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool FileDevStd::DoesFileExist(const file::Path& filespec) {
+bool FileDevStd::doesFileExist(const file::Path& filespec) {
   auto url = filespec.getUrlBase();
   auto ctx = ork::FileEnv::contextForUriProto(url.c_str());
 
@@ -272,7 +272,7 @@ bool FileDevStd::DoesFileExist(const file::Path& filespec) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool FileDevStd::IsFileWritable(const file::Path& filespec) {
+bool FileDevStd::isFileWritable(const file::Path& filespec) {
   file::Path absol = filespec.toAbsolute();
 
   FILE* fin = fopen(absol.c_str(), "a+");
@@ -285,7 +285,7 @@ bool FileDevStd::IsFileWritable(const file::Path& filespec) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool FileDevStd::DoesDirectoryExist(const file::Path& filespec) {
+bool FileDevStd::doesDirectoryExist(const file::Path& filespec) {
   file::Path absol = filespec.toAbsolute();
 
   const char* pFn = absol.c_str();

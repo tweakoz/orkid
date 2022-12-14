@@ -17,29 +17,28 @@ namespace ork {
 
 class FileDevStd : public ork::FileDev
 {
-protected:
-
-	orkmap< ork::File *, ork::FileH >	mmFileHandleMap;
 
 public:
 
 	FileDevStd( );
 
 private:
-	virtual ork::EFileErrCode DoOpenFile( ork::File &rFile );
-	virtual ork::EFileErrCode DoCloseFile( ork::File &rFile );
-	virtual ork::EFileErrCode DoRead( ork::File &rFile, void *pTo, size_t iSize, size_t& actualread );
-	virtual ork::EFileErrCode DoSeekFromStart( ork::File &rFile, size_t iTo );
-	virtual ork::EFileErrCode DoSeekFromCurrent( ork::File &rFile, size_t iOffset );
-	virtual ork::EFileErrCode DoGetLength( ork::File &rFile, size_t &riLength );
+	virtual ork::EFileErrCode _doOpenFile( ork::File &rFile );
+	virtual ork::EFileErrCode _doCloseFile( ork::File &rFile );
+	virtual ork::EFileErrCode _doRead( ork::File &rFile, void *pTo, size_t iSize, size_t& actualread );
+	virtual ork::EFileErrCode _doSeekFromStart( ork::File &rFile, size_t iTo );
+	virtual ork::EFileErrCode _doSeekFromCurrent( ork::File &rFile, size_t iOffset );
+	virtual ork::EFileErrCode _doGetLength( ork::File &rFile, size_t &riLength );
 
-	virtual ork::EFileErrCode Write( ork::File &rFile, const void *pFrom, size_t iSize );
-	virtual ork::EFileErrCode GetCurrentDirectory( file::Path::NameType& directory );
-	virtual ork::EFileErrCode SetCurrentDirectory( const file::Path::NameType& directory );
+	virtual ork::EFileErrCode write( ork::File &rFile, const void *pFrom, size_t iSize );
+	virtual ork::EFileErrCode getCurrentDirectory( file::Path::NameType& directory );
+	virtual ork::EFileErrCode setCurrentDirectory( const file::Path::NameType& directory );
 
-	virtual bool DoesFileExist( const file::Path& filespec );
-	virtual bool DoesDirectoryExist( const file::Path& filespec );
-	virtual bool IsFileWritable( const file::Path& filespec );
+	virtual bool doesFileExist( const file::Path& filespec );
+	virtual bool doesDirectoryExist( const file::Path& filespec );
+	virtual bool isFileWritable( const file::Path& filespec );
+
+  orkmap< ork::File *, ork::FileH > _fileHandleMap;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -60,25 +60,22 @@ FileDev* FileEnv::GetDeviceForUrl(const file::Path& fileName) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool FileEnv::CanRead(void) {
-  return GetRef().mpDefaultDevice->CanRead();
+  return GetRef().mpDefaultDevice->canRead();
 }
 bool FileEnv::CanWrite(void) {
-  return GetRef().mpDefaultDevice->CanWrite();
-}
-bool FileEnv::CanReadAsync(void) {
-  return GetRef().mpDefaultDevice->CanReadAsync();
+  return GetRef().mpDefaultDevice->canWrite();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void FileEnv::SetFilesystemBase(file::Path::NameType FSBase) {
-  GetRef().mpDefaultDevice->SetFileSystemBaseAbs(FSBase);
+  GetRef().mpDefaultDevice->setFileSystemBaseAbs(FSBase);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 const file::Path::NameType& FileEnv::GetFilesystemBase(void) {
-  return GetRef().mpDefaultDevice->GetFilesystemBaseAbs();
+  return GetRef().mpDefaultDevice->getFilesystemBaseAbs();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -182,31 +179,31 @@ file::Path::NameType FileEnv::StripUrlFromPath(const file::Path::NameType& urlNa
 ///////////////////////////////////////////////////////////////////////////////
 
 bool FileEnv::DoesFileExist(const file::Path& filespec) {
-  return FileEnv::GetRef().GetDeviceForUrl(filespec)->DoesFileExist(filespec);
+  return FileEnv::GetRef().GetDeviceForUrl(filespec)->doesFileExist(filespec);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 bool FileEnv::DoesDirectoryExist(const file::Path& filespec) {
-  return FileEnv::GetRef().GetDeviceForUrl(filespec)->DoesDirectoryExist(filespec);
+  return FileEnv::GetRef().GetDeviceForUrl(filespec)->doesDirectoryExist(filespec);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 bool FileEnv::IsFileWritable(const file::Path& filespec) {
-  return FileEnv::GetRef().GetDeviceForUrl(filespec)->IsFileWritable(filespec);
+  return FileEnv::GetRef().GetDeviceForUrl(filespec)->isFileWritable(filespec);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void FileEnv::SetPrependFilesystemBase(bool setting) {
-  FileEnv::GetRef().mpDefaultDevice->SetPrependFilesystemBase(setting);
+  FileEnv::GetRef().mpDefaultDevice->setPrependFilesystemBase(setting);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 bool FileEnv::GetPrependFilesystemBase(void) {
-  return (FileEnv::GetRef().mpDefaultDevice->GetPrependFilesystemBase());
+  return (FileEnv::GetRef().mpDefaultDevice->getPrependFilesystemBase());
 }
 
 ///////////////////////////////////////////////////////////////////////////////

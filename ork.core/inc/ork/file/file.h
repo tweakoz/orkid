@@ -104,37 +104,37 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 inline EFileErrCode File::Read(void* pTo, size_t iSize) {
-  return mpDevice->Read(*this, pTo, iSize);
+  return mpDevice->read(*this, pTo, iSize);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 inline EFileErrCode File::Write(const void* pFrom, size_t iSize) {
-  return mpDevice->Write(*this, pFrom, iSize);
+  return mpDevice->write(*this, pFrom, iSize);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 inline EFileErrCode File::SeekFromStart(size_t iOffset) {
-  return mpDevice->SeekFromStart(*this, iOffset);
+  return mpDevice->seekFromStart(*this, iOffset);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 inline EFileErrCode File::SeekFromCurrent(size_t iOffset) {
-  return mpDevice->SeekFromCurrent(*this, iOffset);
+  return mpDevice->seekFromCurrent(*this, iOffset);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 inline EFileErrCode File::GetLength(size_t& riOffset) {
-  return mpDevice->GetLength(*this, riOffset);
+  return mpDevice->getLength(*this, riOffset);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 inline EFileErrCode File::Close(void) {
-  return mpDevice->CloseFile(*this);
+  return mpDevice->closeFile(*this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -147,7 +147,7 @@ template <class T> File& File::operator<<(const T& d) {
     // strStream << d;
     // FileEnv::Write( *this, (void *)strStream.str().c_str(), strStream.str().length() * sizeof( char ) );
   } else
-    mpDevice->Write(*this, (void*)&d, sizeof(T));
+    mpDevice->write(*this, (void*)&d, sizeof(T));
 
   return *this;
 }
@@ -156,7 +156,7 @@ template <class T> File& File::operator<<(const T& d) {
 
 template <class T> File& File::operator>>(T& d) {
   OrkAssert(Reading());
-  mpDevice->Read(*this, (void*)&d, sizeof(T));
+  mpDevice->read(*this, (void*)&d, sizeof(T));
   return *this;
 }
 

@@ -17,8 +17,6 @@ enum EFileDevFlags
 {
 	EFDF_CAN_READ       = 0x00000001,
 	EFDF_CAN_WRITE      = 0x00000002,
-	EFDF_CAN_READ_ASYNC = 0x00000004,
-	EFDF_PAKFILE_ACTIVE = 0x80000000
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -42,10 +40,9 @@ enum EFileMode
 {
 	EFM_READ    = 0x00000001,
 	EFM_ASCII   = 0x00000002,
-	EFM_ASYNC   = 0x00000004,
-	EFM_WRITE   = 0x00000008,
-	EFM_APPEND  = 0x00000010,
-	EFM_FAST    = 0x00000020,
+	EFM_WRITE   = 0x00000004,
+	EFM_APPEND  = 0x00000008,
+	EFM_FAST    = 0x00000010,
 	EFM_READ_FAST  = EFM_READ | EFM_FAST,
 };
 
