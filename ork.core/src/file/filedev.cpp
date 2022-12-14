@@ -31,8 +31,7 @@ FileDevContext::FileDevContext()
 FileDevContext::FileDevContext(const FileDevContext& oth)
     : _absolute_basepath(oth._absolute_basepath)
     , mbPrependFilesystemBase(oth.mbPrependFilesystemBase)
-    , mpFileDevice(oth.mpFileDevice)
-    , mPathConverters(oth.mPathConverters) {
+    , mpFileDevice(oth.mpFileDevice) {
 }
 void FileDevContext::setFilesystemBaseAbs(const file::Path& base) {
   _absolute_basepath = base;

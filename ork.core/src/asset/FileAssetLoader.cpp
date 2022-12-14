@@ -115,65 +115,27 @@ bool FileAssetLoader::_find(
 
    //printf("filedevctx<%p>\n", filedevctx.get());
 
-  if(nullptr==filedevctx){
-    
-  }
-
-  //////////////////////
-  // munge the path
-  //////////////////////
-
-  const auto& converters = filedevctx->GetPathConverters();
-
-  int inumc = int(converters.size());
-
-  ork::fixedvector<ork::file::Path, 8> MungedPaths;
-
-  for (int i = 0; i < inumc; i++) {
-    file::Path MungedPath = pathobjnoq;
-    bool bret             = converters[i](MungedPath);
-    if (bret) {
-      MungedPaths.push_back(MungedPath);
-      // orkprintf( "MungedPaths<%s>\n", MungedPath.c_str() );
-    }
-  }
-  //////////////////////////////////////
-  // original path has lower priority
-  MungedPaths.push_back(pathobjnoq);
-  //////////////////////////////////////
-  // printf("MungedPaths<%s>\n", pathobjnoq.c_str());
-
-  //////////////////////
-  // path is munged
-  //////////////////////
-
-  size_t inummunged = MungedPaths.size();
-
-  for (size_t i = 0; i < inummunged; i++) {
-    ork::file::Path MungedPath = MungedPaths[i];
-
     if (has_valid_extension) // path already have an extension ?
     {
-      if (FileEnv::DoesFileExist(MungedPath)) {
-        result_out = MungedPath.c_str();
+      if (FileEnv::DoesFileExist(pathobjnoq)) {
+        result_out = pathobjnoq.c_str();
         return true;
       }
     } else // no extension test the registered extensions
     {
       for (auto l : mLocations) {
-        MungedPath.setExtension(l.mExt.c_str());
+        pathobjnoq.setExtension(l.mExt.c_str());
 
-        // printf("munged_ext<%s>\n", MungedPath.c_str());
+        // printf("munged_ext<%s>\n", pathobjnoq.c_str());
 
-        if (FileEnv::DoesFileExist(MungedPath)) {
+        if (FileEnv::DoesFileExist(pathobjnoq)) {
           // pathobj.SetExtension( extension.c_str() );
 
-          result_out = MungedPath.c_str();
+          result_out = pathobjnoq.c_str();
           return true;
         }
       }
     }
-  }
 
   //////////////////////////////////////////
   // if we got here then munged paths do not exist

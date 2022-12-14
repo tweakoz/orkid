@@ -23,17 +23,9 @@ class File;
 
 struct FileDevContext {
 
-  typedef bool (*path_converter_type)(file::Path& pth);
 
   FileDevContext();
   FileDevContext(const FileDevContext& oth);
-
-  void AddPathConverter(path_converter_type cvr) {
-    mPathConverters.push_back(cvr);
-  }
-  const orkvector<path_converter_type>& GetPathConverters() const {
-    return mPathConverters;
-  }
 
   void setFilesystemBaseAbs(const file::Path& base);
 
@@ -62,7 +54,6 @@ struct FileDevContext {
   varmap::VarMap _vars;
   bool mbPrependFilesystemBase;
   FileDev* mpFileDevice;
-  orkvector<path_converter_type> mPathConverters;
 };
 
 typedef std::shared_ptr<FileDevContext> filedevctx_ptr_t;
