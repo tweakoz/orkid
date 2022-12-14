@@ -38,29 +38,29 @@ class PathMarkers {
   unsigned int mQueryStringLen : 8; // 32
 
 public:
-  unsigned int GetDriveBase() const;
-  unsigned int GetUrlBase() const;
-  unsigned int GetFolderBase() const;
-  unsigned int GetFileNameBase() const;
-  unsigned int GetExtensionBase() const;
-  unsigned int GetQueryStringBase() const;
+  unsigned int getDriveBase() const;
+  unsigned int getUrlBase() const;
+  unsigned int getFolderBase() const;
+  unsigned int getFileNameBase() const;
+  unsigned int getExtensionBase() const;
+  unsigned int getQueryStringBase() const;
 
-  unsigned int GetDriveLength() const {
+  unsigned int getDriveLength() const {
     return mDriveLen;
   }
-  unsigned int GetUrlLength() const {
+  unsigned int getUrlLength() const {
     return mUrlBaseLen;
   }
-  unsigned int GetFolderLength() const {
+  unsigned int getFolderLength() const {
     return mFolderLen;
   }
-  unsigned int GetFileNameLength() const {
+  unsigned int getFileNameLength() const {
     return mFileNameLen;
   }
-  unsigned int GetExtensionLength() const {
+  unsigned int getExtensionLength() const {
     return mExtensionLen;
   }
-  unsigned int GetQueryStringLength() const {
+  unsigned int getQueryStringLength() const {
     return mQueryStringLen;
   }
 
@@ -96,7 +96,7 @@ public:
     EPATHTYPE_NATIVE = 0,
     EPATHTYPE_DOS,
     EPATHTYPE_POSIX,
-    EPATHTYPE_NDS,
+    //EPATHTYPE_NDS,
 
     EPATHTYPE_URL,
     EPATHTYPE_ASSET = EPATHTYPE_URL,
@@ -167,33 +167,33 @@ public:
 
   //////////////////////////////////////////////
 
-  void SplitQuery(NameType& BeforeQuerySep, NameType& AfterQuerySep) const;
-  void Split(NameType& BeforeQuerySep, NameType& AfterQuerySep, char sep) const;
+  void splitQuery(NameType& BeforeQuerySep, NameType& AfterQuerySep) const;
+  void split(NameType& BeforeQuerySep, NameType& AfterQuerySep, char sep) const;
 
   //////////////////////////////////////////////
 
-  Path ToRelative(EPathType etype = EPATHTYPE_NATIVE) const;
-  Path ToAbsolute(EPathType etype = EPATHTYPE_NATIVE) const;
-  Path ToAbsoluteFolder(EPathType etype = EPATHTYPE_NATIVE) const;
+  Path toRelative(EPathType etype = EPATHTYPE_NATIVE) const;
+  Path toAbsolute(EPathType etype = EPATHTYPE_NATIVE) const;
+  Path toAbsoluteFolder(EPathType etype = EPATHTYPE_NATIVE) const;
 
   //////////////////////////////////////////////
 
-  SmallNameType GetDrive() const;
-  SmallNameType GetExtension() const;
-  SmallNameType GetUrlBase() const;
+  SmallNameType getDrive() const;
+  SmallNameType getExtension() const;
+  SmallNameType getUrlBase() const;
 
-  NameType GetName() const;
-  NameType GetQueryString() const;
-  NameType GetFolder(EPathType etype) const;
+  NameType getName() const;
+  NameType getQueryString() const;
+  NameType getFolder(EPathType etype) const;
 
-  Path StripBasePath(const NameType& base) const;
+  Path stripBasePath(const NameType& base) const;
 
   const char* c_str() const;
   std::string toStdString() const;
 
   boost::filesystem::path toBFS() const;
   void fromBFS(const boost::filesystem::path& p);
-  HashType Hash() const;
+  HashType hash() const;
 
   //////////////////////////////////////
 

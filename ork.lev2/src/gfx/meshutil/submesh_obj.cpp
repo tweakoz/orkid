@@ -40,7 +40,7 @@ void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath) {
   outstr += "# Miniork ToolMesh Dump <Wavefront OBJ format>\n";
   outstr += "\n";
 
-  outstr += CreateFormattedString("mtllib %s.mtl\n", MtlPath.GetName().c_str());
+  outstr += CreateFormattedString("mtllib %s.mtl\n", MtlPath.getName().c_str());
 
   ///////////////////////////////////////////////////
   ///////////////////////////////////////////////////

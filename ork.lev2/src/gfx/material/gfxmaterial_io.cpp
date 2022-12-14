@@ -26,7 +26,7 @@ bool LoadMaterialMap(const ork::file::Path& pth, MaterialMap& mmap) {
   bool rval = false;
 
   TiXmlDocument XmlDoc;
-  if (XmlDoc.LoadFile(pth.ToAbsolute().c_str())) {
+  if (XmlDoc.LoadFile(pth.toAbsolute().c_str())) {
     const TiXmlElement* RootNode = XmlDoc.FirstChild("miniork_materials")->ToElement();
     printf("LoadMaterialMap<%s> RootNode<%p>\n", pth.c_str(), (void*) RootNode);
 

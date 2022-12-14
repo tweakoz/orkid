@@ -25,7 +25,7 @@ using namespace ::ork;
 
 Controller::TraceWriter::TraceWriter(Controller* c, file::Path path) : _controller(c) {
 
-	auto abspath = path.ToAbsolute();
+	auto abspath = path.toAbsolute();
 	printf( "abspath<%s>\n", abspath.c_str() );
 	_output_file = fopen(abspath.c_str(),"wt");
 	fprintf(_output_file,"[\n");

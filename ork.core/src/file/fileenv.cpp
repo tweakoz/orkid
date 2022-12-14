@@ -46,7 +46,7 @@ FileEnv::FileEnv()
 
 FileDev* FileEnv::GetDeviceForUrl(const file::Path& fileName) const {
   auto& env    = FileEnv::GetRef();
-  auto urlbase = env.uriProtoToBase(fileName.GetUrlBase().c_str());
+  auto urlbase = env.uriProtoToBase(fileName.getUrlBase().c_str());
   auto it      = env.uriRegistry().find(urlbase.c_str());
   bool found   = (it != env.uriRegistry().end());
   // printf("GetDeviceForUrl filename<%s> urlbase<%s> found<%d>\n", fileName.c_str(), urlbase.c_str(), int(found));

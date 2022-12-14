@@ -198,7 +198,7 @@ bool ChoiceList::DoesSlashNodePassFilter(
 void ChoiceList::FindAssetChoices(const file::Path& sdir, const std::string& wildcard) {
   orkvector<file::Path::NameType> files = FileEnv::filespec_search(wildcard.c_str(), sdir.c_str());
   int inumfiles                         = (int)files.size();
-  file::Path::NameType searchdir(sdir.ToAbsolute().c_str());
+  file::Path::NameType searchdir(sdir.toAbsolute().c_str());
   searchdir.replace_in_place("\\", "/");
   for (int ifile = 0; ifile < inumfiles; ifile++) {
     auto the_file                  = files[ifile];

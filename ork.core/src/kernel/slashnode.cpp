@@ -39,13 +39,13 @@ void breakup_slash_path(std::string str, orkvector<std::string>& outvec) {
 
   outvec.clear();
   if (AsPath.hasUrlBase()) {
-    outvec.push_back(AsPath.GetUrlBase().c_str());
+    outvec.push_back(AsPath.getUrlBase().c_str());
   }
   if (AsPath.hasDrive()) {
-    outvec.push_back(AsPath.GetDrive().c_str());
+    outvec.push_back(AsPath.getDrive().c_str());
   }
   if (AsPath.hasFolder()) {
-    const std::string str2 = AsPath.GetFolder(ork::file::Path::EPATHTYPE_POSIX).c_str();
+    const std::string str2 = AsPath.getFolder(ork::file::Path::EPATHTYPE_POSIX).c_str();
 
     const std::string delims("/");
     int word                    = 0;
@@ -71,11 +71,11 @@ void breakup_slash_path(std::string str, orkvector<std::string>& outvec) {
     }
   }
   if (AsPath.hasFile()) {
-    outvec.push_back(AsPath.GetName().c_str());
+    outvec.push_back(AsPath.getName().c_str());
   }
   if (AsPath.hasExtension()) {
     outvec[outvec.size() - 1] += '.';
-    outvec[outvec.size() - 1] += AsPath.GetExtension().c_str();
+    outvec[outvec.size() - 1] += AsPath.getExtension().c_str();
   }
 }
 

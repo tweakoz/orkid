@@ -83,7 +83,7 @@ bool XgmAnim::_loaderSelect(XgmAnim* anm, datablock_ptr_t datablock) {
 bool XgmAnim::_loadXGA(XgmAnim* anm, datablock_ptr_t datablock) {
   // AssetPath fnameext(fname);
   // fnameext.SetExtension("xga");
-  // AssetPath ActualPath = fnameext.ToAbsolute();
+  // AssetPath ActualPath = fnameext.toAbsolute();
   /////////////////////////////////////////////////////////////
   OrkHeapCheck();
   chunkfile::DefaultLoadAllocator allocator;
@@ -224,7 +224,7 @@ bool XgmAnim::_loadAssimp(XgmAnim* anm, datablock_ptr_t inp_datablock) {
 ///////////////////////////////////////////////////////////////////////////////
 bool XgmAnim::LoadUnManaged(XgmAnim* anm, const AssetPath& fname) {
   bool rval       = false;
-  auto ActualPath = fname.ToAbsolute();
+  auto ActualPath = fname.toAbsolute();
 
   printf("ActualPath<%s>\n", ActualPath.c_str());
   // anm->msModelName = (fname.c_str());
@@ -239,7 +239,7 @@ bool XgmAnim::LoadUnManaged(XgmAnim* anm, const AssetPath& fname) {
     OrkAssert(bfs::is_regular_file(actual_as_bfs));
     OrkAssert(bfs::exists(base_dir));
     OrkAssert(bfs::is_directory(base_dir));
-    datablock->_vars->makeValueForKey<std::string>("file-extension") = ActualPath.GetExtension().c_str();
+    datablock->_vars->makeValueForKey<std::string>("file-extension") = ActualPath.getExtension().c_str();
     datablock->_vars->makeValueForKey<bfs::path>("base-directory")   = base_dir;
     ///////////////////////////////////
     rval = _loaderSelect(anm, datablock);

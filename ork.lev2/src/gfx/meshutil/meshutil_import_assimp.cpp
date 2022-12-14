@@ -22,7 +22,7 @@ void Mesh::readFromAssimp(const file::Path& BasePath) {
   OrkAssert(bfs::exists(base_dir));
   OrkAssert(bfs::is_directory(base_dir));
   auto dblock                                                  = datablockFromFileAtPath(GlbPath);
-  dblock->_vars->makeValueForKey<std::string>("file-extension") = GlbPath.GetExtension().c_str();
+  dblock->_vars->makeValueForKey<std::string>("file-extension") = GlbPath.getExtension().c_str();
   dblock->_vars->makeValueForKey<bfs::path>("base-directory")   = base_dir;
   //logchan_meshutilassimp->log("BEGIN: importing<%s> via Assimp\n", GlbPath.c_str());
   readFromAssimp(dblock);

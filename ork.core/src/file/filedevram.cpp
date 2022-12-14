@@ -24,7 +24,7 @@ EFileErrCode FileDevRam::DoOpenFile(File &rFile)
 {
 	OrkAssert(!rFile.IsOpen());
 
-	orkmap<file::Path, RamFile *>::const_iterator it = mTOC.find(rFile.GetFileName().ToAbsolute());
+	orkmap<file::Path, RamFile *>::const_iterator it = mTOC.find(rFile.GetFileName().toAbsolute());
 	if(it != mTOC.end())
 	{
 		rFile.mHandle = reinterpret_cast<FileH>(it->second);
@@ -145,7 +145,7 @@ EFileErrCode FileDevRam::DoGetLength(File &rFile, size_t &riLen)
 {
 	OrkAssert(rFile.IsOpen());
 
-	orkmap<file::Path, RamFile *>::const_iterator it = mTOC.find(rFile.GetFileName().ToAbsolute());
+	orkmap<file::Path, RamFile *>::const_iterator it = mTOC.find(rFile.GetFileName().toAbsolute());
 	if(it != mTOC.end())
 	{
 		riLen = it->second->miSize;
@@ -175,12 +175,12 @@ EFileErrCode FileDevRam::SetCurrentDirectory(const file::Path::NameType &inspec)
 bool FileDevRam::DoesFileExist(const file::Path &filespec)
 {
 	//orkprintf("FileDevRam::DoesFileExist(%s)\n", filespec.c_str());
-	//orkprintf("  filespec.ToAbsolute() = %s\n", filespec.ToAbsolute().c_str());
+	//orkprintf("  filespec.toAbsolute() = %s\n", filespec.toAbsolute().c_str());
 
 	//for(orkmap<file::Path, RamFile *>::const_iterator ittmp = mTOC.begin(); ittmp != mTOC.end(); ittmp++)
 	// 	orkprintf("  :  = %s\n", ittmp->first.c_str());
 
-	orkmap<file::Path, RamFile *>::const_iterator it = mTOC.find(filespec.ToAbsolute());
+	orkmap<file::Path, RamFile *>::const_iterator it = mTOC.find(filespec.toAbsolute());
 	if(it != mTOC.end())
 		return true;
 	return false;
@@ -203,7 +203,7 @@ void FileDevRam::RegisterRamFile(const file::Path &path, const char *pBuffer, si
 	OrkAssert(pBuffer);
 	OrkAssert(isize >= 0);
 
-	file::Path absol = path.ToAbsolute();
+	file::Path absol = path.toAbsolute();
 
 	orkmap<file::Path, RamFile *>::const_iterator it = mTOC.find(absol);
 	if(it == mTOC.end())

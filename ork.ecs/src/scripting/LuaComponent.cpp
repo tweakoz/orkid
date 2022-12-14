@@ -133,7 +133,7 @@ bool LuaComponent::_onLink(ork::ecs::Simulation* sim) {
 
   auto path = mCD.GetPath();
 
-  logchan_luacomp->log( "LuaComponent::_onLink: scm<%p> path<%s>", scm, path.ToAbsolute().c_str() );
+  logchan_luacomp->log( "LuaComponent::_onLink: scm<%p> path<%s>", scm, path.toAbsolute().c_str() );
   
   if (nullptr == scm){
     logerrchannel()->log( "LuaComponent::_onLink: scm is nullptr!!!!" );
@@ -177,7 +177,7 @@ bool LuaComponent::_onLink(ork::ecs::Simulation* sim) {
       lua.push(_luaentity);
       int iret = lua.pcall(1, 0, 0);
       if (iret != 0) {
-        logchan_luacomp->log("PCALL-ERROR: LuaComponent::_onLink: scm<%p> path<%s>", scm, path.ToAbsolute().c_str());
+        logchan_luacomp->log("PCALL-ERROR: LuaComponent::_onLink: scm<%p> path<%s>", scm, path.toAbsolute().c_str());
         // printf( "CALL mOnEntLink\n");
       }
       OrkAssert(iret == 0);

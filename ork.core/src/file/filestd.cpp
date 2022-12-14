@@ -68,7 +68,7 @@ EFileErrCode FileDevStd::DoOpenFile(File& rFile) {
   /////////////////////////////////////////////////////////////////////////////
   // compute the filename
 
-  ork::file::Path fullfname = fname.ToAbsolute();
+  ork::file::Path fullfname = fname.toAbsolute();
 
   if (breading) {
     bool bexists = this->DoesFileExist(fname);
@@ -208,7 +208,7 @@ EFileErrCode FileDevStd::DoGetLength(File& rFile, size_t& riLen) {
   riLen = 0;
 
   const ork::file::Path& fname  = rFile.GetFileName();
-  file::Path::SmallNameType url = fname.GetUrlBase();
+  file::Path::SmallNameType url = fname.getUrlBase();
   auto ctx                      = ork::FileEnv::contextForUriProto(url.c_str());
   ///////////////////////////////
 
@@ -247,11 +247,11 @@ EFileErrCode FileDevStd::SetCurrentDirectory(const file::Path::NameType& directo
 ///////////////////////////////////////////////////////////////////////////////
 
 bool FileDevStd::DoesFileExist(const file::Path& filespec) {
-  auto url = filespec.GetUrlBase();
+  auto url = filespec.getUrlBase();
   auto ctx = ork::FileEnv::contextForUriProto(url.c_str());
 
   file::Path pathspec(filespec.c_str());
-  file::Path abspath = pathspec.ToAbsolute();
+  file::Path abspath = pathspec.toAbsolute();
   const char* pFn    = abspath.c_str();
 
   // printf("FileDevStd<%p> DoesFileExist<%s> url<%s> Abs<%s>\n", this, filespec.c_str(), url.c_str(), abspath.c_str());
@@ -273,7 +273,7 @@ bool FileDevStd::DoesFileExist(const file::Path& filespec) {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool FileDevStd::IsFileWritable(const file::Path& filespec) {
-  file::Path absol = filespec.ToAbsolute();
+  file::Path absol = filespec.toAbsolute();
 
   FILE* fin = fopen(absol.c_str(), "a+");
   bool bv   = (fin == 0) ? false : true;
@@ -286,7 +286,7 @@ bool FileDevStd::IsFileWritable(const file::Path& filespec) {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool FileDevStd::DoesDirectoryExist(const file::Path& filespec) {
-  file::Path absol = filespec.ToAbsolute();
+  file::Path absol = filespec.toAbsolute();
 
   const char* pFn = absol.c_str();
 
@@ -426,7 +426,7 @@ ork::FileEnv::filespec_search(const file::Path::NameType& wildcards, const ork::
   if (_wildcards == (file::Path::NameType) "")
     _wildcards = (file::Path::NameType) "*";
 
-  const char* path    = initdir.ToAbsolute(ork::file::Path::EPATHTYPE_POSIX).c_str();
+  const char* path    = initdir.toAbsolute(ork::file::Path::EPATHTYPE_POSIX).c_str();
   char* const paths[] = {(char* const)path, 0};
 
    printf( "path<%s>\n", path );

@@ -21,7 +21,7 @@ const s16* getK2V3InternalSoundBlock() {
   if (nullptr == gdata) {
     auto filename = basePath() / "kurzweil" / "k2v3internalsamplerom.bin";
     printf("Loading Soundblock<%s>\n", filename.c_str());
-    FILE* fin = fopen(filename.ToAbsolute().c_str(), "rb");
+    FILE* fin = fopen(filename.toAbsolute().c_str(), "rb");
     if (fin == nullptr) {
       printf("You will need the K2000 ROM sampledata at <%s> to use this method!\n", filename.c_str());
       OrkAssert(false);

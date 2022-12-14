@@ -53,27 +53,27 @@ PathMarkers::PathMarkers()
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-unsigned int PathMarkers::GetDriveBase() const {
+unsigned int PathMarkers::getDriveBase() const {
   return unsigned(0);
 }
-unsigned int PathMarkers::GetUrlBase() const {
+unsigned int PathMarkers::getUrlBase() const {
   return unsigned(0);
 }
-unsigned int PathMarkers::GetFolderBase() const {
+unsigned int PathMarkers::getFolderBase() const {
   OrkAssert(false == ((mDriveLen > 0) && (mUrlBaseLen > 0)));
   unsigned int ib = (mDriveLen > mUrlBaseLen) ? mDriveLen : mUrlBaseLen;
   return ib;
 }
-unsigned int PathMarkers::GetFileNameBase() const {
-  return GetFolderBase() + mFolderLen;
+unsigned int PathMarkers::getFileNameBase() const {
+  return getFolderBase() + mFolderLen;
 }
-unsigned int PathMarkers::GetExtensionBase() const {
+unsigned int PathMarkers::getExtensionBase() const {
   bool bdot = (mExtensionLen > 0);
 
-  return GetFileNameBase() + (bdot ? mFileNameLen + 1 : mFileNameLen);
+  return getFileNameBase() + (bdot ? mFileNameLen + 1 : mFileNameLen);
 }
-unsigned int PathMarkers::GetQueryStringBase() const {
-  unsigned iebas = GetExtensionBase();
+unsigned int PathMarkers::getQueryStringBase() const {
+  unsigned iebas = getExtensionBase();
   unsigned ielen = mExtensionLen;
   return (ielen > 0) ? iebas + ielen + 1 // extension base + extension length +  ?
                      : iebas + 1;        // extension base + ?
@@ -124,7 +124,7 @@ std::string Path::toStdString() const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-Path::HashType Path::Hash() const {
+Path::HashType Path::hash() const {
   NameType copy = _pathstring;
   //////////////////
   // 1st pass hash
@@ -243,13 +243,13 @@ void Path::set(const char* instr) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Path::appendFolder(const char* folderappend) {
-  NameType Folder = GetFolder(EPATHTYPE_POSIX);
+  NameType Folder = getFolder(EPATHTYPE_POSIX);
   Folder.append(folderappend, strlen(folderappend));
   setFolder(Folder.c_str());
 }
 
 void Path::appendFile(const char* fileappend) {
-  NameType File = GetName();
+  NameType File = getName();
   File.append(fileappend, strlen(fileappend));
   setFile(File.c_str());
 }
@@ -321,8 +321,6 @@ void Path::setFile(const char* newfile) {
 Path::EPathType Path::GetNative() {
 #if defined(_WIN32)
   return EPATHTYPE_DOS;
-#elif defined(NITRO)
-  return EPATHTYPE_NDS;
 #else
   return EPATHTYPE_POSIX;
 #endif
@@ -382,25 +380,25 @@ bool Path::isRelative() const {
 ///////////////////////////////////////////////////////////////////////////////
 // relative means relative to the working folder
 
-Path Path::ToRelative(EPathType etype) const {
-  Path rval = ToAbsoluteFolder(etype);
-  rval += Path(GetName());
-  rval += GetExtension().c_str();
+Path Path::toRelative(EPathType etype) const {
+  Path rval = toAbsoluteFolder(etype);
+  rval += Path(getName());
+  rval += getExtension().c_str();
   return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Path Path::ToAbsolute(EPathType etype) const {
-  // printf( "Path::ToAbsolute (begin) inp<%s>\n", this->c_str()  );
-  Path tmp = ToAbsoluteFolder(etype);
+Path Path::toAbsolute(EPathType etype) const {
+  // printf( "Path::toAbsolute (begin) inp<%s>\n", this->c_str()  );
+  Path tmp = toAbsoluteFolder(etype);
   Path rval;
   if (hasExtension()) {
     OrkHeapCheck();
     char buffer[1024];
 
-    Path::NameType fname     = GetName();
-    Path::SmallNameType fext = GetExtension();
+    Path::NameType fname     = getName();
+    Path::SmallNameType fext = getExtension();
     const char* ptmp         = tmp.c_str();
     const char* pname        = fname.c_str();
     const char* pext         = fext.c_str();
@@ -409,7 +407,7 @@ Path Path::ToAbsolute(EPathType etype) const {
     rval._pathstring = Path::NameType(&buffer[0]); //.format( "%s%s.%s",  );
     OrkHeapCheck();
   } else {
-    rval._pathstring.format("%s%s", tmp.c_str(), GetName().c_str());
+    rval._pathstring.format("%s%s", tmp.c_str(), getName().c_str());
   }
 
 #if defined(WIN32)
@@ -442,7 +440,7 @@ Path Path::ToAbsolute(EPathType etype) const {
     default:
       OrkAssert(false);
   }
-  //printf("Path::ToAbsolute (end) inp<%s> out<%s> tmp<%s>\n", this->c_str(), rval.c_str(), tmp.c_str());
+  //printf("Path::toAbsolute (end) inp<%s> out<%s> tmp<%s>\n", this->c_str(), rval.c_str(), tmp.c_str());
   return rval;
 }
 
@@ -484,8 +482,8 @@ void Path::eatDoubleSlashes() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Path Path::ToAbsoluteFolder(EPathType etype) const {
-  // printf( " Path::ToAbsoluteFolder (begin) inp<%s>\n", this->c_str()  );
+Path Path::toAbsoluteFolder(EPathType etype) const {
+  // printf( " Path::toAbsoluteFolder (begin) inp<%s>\n", this->c_str()  );
 
   if (etype == EPATHTYPE_NATIVE)
     etype = Path::GetNative();
@@ -493,7 +491,7 @@ Path Path::ToAbsoluteFolder(EPathType etype) const {
   Path rval;
 
   if (hasUrlBase()) {
-    std::string urlbase  = GetUrlBase().c_str();
+    std::string urlbase  = getUrlBase().c_str();
     auto urictx          = ork::FileEnv::contextForUriProto(urlbase.c_str());
     auto basepath        = urictx->getFilesystemBaseAbs();
     std::string thispath = this->c_str();
@@ -502,7 +500,7 @@ Path Path::ToAbsoluteFolder(EPathType etype) const {
 
     auto path = basepath; // / stripped;
     if(0)printf(
-        " Path::ToAbsoluteFolder urlbase<%s> basepath<%s> stripped<%s> pstr<%s>\n", //
+        " Path::toAbsoluteFolder urlbase<%s> basepath<%s> stripped<%s> pstr<%s>\n", //
         urlbase.c_str(),
         basepath.c_str(),
         stripped.c_str(),
@@ -529,11 +527,6 @@ Path Path::ToAbsoluteFolder(EPathType etype) const {
         rval._pathstring.format("/");
         break;
       }
-      case EPATHTYPE_NDS: {
-        // rval._pathstring.format( "rom:%s/", _pathstring.c_str() );
-        rval._pathstring.format("%s", _pathstring.c_str());
-        break;
-      }
     }
   } else {
     switch (etype) {
@@ -542,30 +535,26 @@ Path Path::ToAbsoluteFolder(EPathType etype) const {
       case EPATHTYPE_NATIVE:
       case EPATHTYPE_URL:
         break;
-      case EPATHTYPE_NDS: {
-        rval._pathstring.format("");
-        break;
-      }
     }
   }
 
-  rval._pathstring += GetFolder(etype); // GetFolder already does tonative pathsep
+  rval._pathstring += getFolder(etype); // getFolder already does tonative pathsep
   switch (etype) {
     default: {
       rval.computeMarkers('/');
       break;
     }
   }
-  // printf( " Path::ToAbsoluteFolder (end) inp<%s> AbsoluteFolder<%s>\n", this->c_str(), rval.c_str() );
+  // printf( " Path::toAbsoluteFolder (end) inp<%s> AbsoluteFolder<%s>\n", this->c_str(), rval.c_str() );
   return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Path::SmallNameType Path::GetUrlBase() const {
+Path::SmallNameType Path::getUrlBase() const {
   Path::SmallNameType rval;
   int ilen = int(_markers.mUrlBaseLen);
-  int ibas = int(_markers.GetUrlBase());
+  int ibas = int(_markers.getUrlBase());
   for (int i = 0; i < ilen; i++) {
     rval.SetChar(int(i), c_str()[ibas + i]);
   }
@@ -575,10 +564,10 @@ Path::SmallNameType Path::GetUrlBase() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Path::SmallNameType Path::GetDrive() const {
+Path::SmallNameType Path::getDrive() const {
   Path::SmallNameType rval;
   int ilen = _markers.mDriveLen;
-  int ibas = _markers.GetDriveBase();
+  int ibas = _markers.getDriveBase();
   for (int i = 0; i < ilen; i++) {
     rval.SetChar(i, c_str()[ibas + i]);
     // strncpy( rval.c_str(), c_str()+ibas, ilen );
@@ -589,10 +578,10 @@ Path::SmallNameType Path::GetDrive() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Path::NameType Path::GetName() const {
+Path::NameType Path::getName() const {
   Path::NameType rval;
   int ilen = int(_markers.mFileNameLen);
-  int ibas = int(_markers.GetFileNameBase());
+  int ibas = int(_markers.getFileNameBase());
   for (int i = 0; i < ilen; i++) {
     rval.SetChar(i, c_str()[ibas + i]);
     // strncpy( rval.c_str(), c_str()+ibas, ilen );
@@ -603,10 +592,10 @@ Path::NameType Path::GetName() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Path::SmallNameType Path::GetExtension() const {
+Path::SmallNameType Path::getExtension() const {
   Path::SmallNameType rval;
   int ilen = int(_markers.mExtensionLen);
-  int ibas = int(_markers.GetExtensionBase());
+  int ibas = int(_markers.getExtensionBase());
   for (int i = 0; i < ilen; i++) {
     rval.SetChar(i, c_str()[ibas + i]);
     // strncpy( rval.c_str(), c_str()+ibas, ilen );
@@ -617,13 +606,13 @@ Path::SmallNameType Path::GetExtension() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Path::NameType Path::GetQueryString() const {
+Path::NameType Path::getQueryString() const {
   if (_markers.mQueryStringLen) {
     // orkprintf( "yo\n" );
   }
   Path::NameType rval;
   int ilen = _markers.mQueryStringLen;
-  int ibas = _markers.GetQueryStringBase();
+  int ibas = _markers.getQueryStringBase();
   if (ilen) {
     for (int i = 0; i < ilen; i++) {
       rval.SetChar(i, c_str()[ibas + i]);
@@ -636,10 +625,10 @@ Path::NameType Path::GetQueryString() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Path::NameType Path::GetFolder(EPathType etype) const {
+Path::NameType Path::getFolder(EPathType etype) const {
   Path::NameType rval;
   int ilen = _markers.mFolderLen;
-  int ibas = _markers.GetFolderBase();
+  int ibas = _markers.getFolderBase();
   for (int i = 0; i < ilen; i++) {
     rval.SetChar(i, c_str()[ibas + i]);
     // strncpy( rval.c_str(), c_str()+ibas, ilen );
@@ -650,10 +639,10 @@ Path::NameType Path::GetFolder(EPathType etype) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Path Path::StripBasePath(const NameType& base) const {
+Path Path::stripBasePath(const NameType& base) const {
   Path basePath(base);
-  file::Path::NameType thisString = this->ToAbsolute(EPATHTYPE_POSIX).c_str();
-  file::Path::NameType baseString = basePath.ToAbsolute(EPATHTYPE_POSIX).c_str();
+  file::Path::NameType thisString = this->toAbsolute(EPATHTYPE_POSIX).c_str();
+  file::Path::NameType baseString = basePath.toAbsolute(EPATHTYPE_POSIX).c_str();
 
   if (thisString.find(baseString) == 0)
     return Path(thisString.substr(baseString.length()).c_str());
@@ -1025,56 +1014,56 @@ void Path::decompose(
     ork::file::Path::NameType& query) {
 
   OrkAssert(false == (hasUrlBase() && hasDrive()));
-  if (hasUrlBase()) { // strncpy( url.c_str(), c_str()+_markers.GetUrlBase(), _markers.GetUrlLength() );
-    // url.c_str()[ _markers.GetUrlLength() ] = 0;
-    url.set(c_str() + _markers.GetUrlBase(), _markers.GetUrlLength());
-    url.SetChar(_markers.GetUrlLength(), 0);
+  if (hasUrlBase()) { // strncpy( url.c_str(), c_str()+_markers.getUrlBase(), _markers.getUrlLength() );
+    // url.c_str()[ _markers.getUrlLength() ] = 0;
+    url.set(c_str() + _markers.getUrlBase(), _markers.getUrlLength());
+    url.SetChar(_markers.getUrlLength(), 0);
   } else {
     // url.c_str()[0] = 0;
     url.SetChar(0, 0);
   }
   if (hasDrive()) {
-    // strncpy( drive.c_str(), c_str()+_markers.GetDriveBase(), _markers.GetDriveLength() );
-    // drive.c_str()[ _markers.GetDriveLength() ] = 0;
-    drive.set(c_str() + _markers.GetDriveBase(), _markers.GetDriveLength());
-    drive.SetChar(_markers.GetDriveLength(), 0);
+    // strncpy( drive.c_str(), c_str()+_markers.getDriveBase(), _markers.getDriveLength() );
+    // drive.c_str()[ _markers.getDriveLength() ] = 0;
+    drive.set(c_str() + _markers.getDriveBase(), _markers.getDriveLength());
+    drive.SetChar(_markers.getDriveLength(), 0);
   } else {
     // drive.c_str()[0] = 0;
     drive.SetChar(0, 0);
   }
   if (hasFolder()) {
-    // strncpy( folder.c_str(), c_str()+_markers.GetFolderBase(), _markers.GetFolderLength() );
-    // folder.c_str()[ _markers.GetFolderLength() ] = 0;
-    folder.set(c_str() + _markers.GetFolderBase(), _markers.GetFolderLength());
-    folder.SetChar(_markers.GetFolderLength(), 0);
+    // strncpy( folder.c_str(), c_str()+_markers.getFolderBase(), _markers.getFolderLength() );
+    // folder.c_str()[ _markers.getFolderLength() ] = 0;
+    folder.set(c_str() + _markers.getFolderBase(), _markers.getFolderLength());
+    folder.SetChar(_markers.getFolderLength(), 0);
   } else {
     // folder.c_str()[0] = 0;
     folder.SetChar(0, 0);
   }
   if (hasFile()) {
-    // strncpy( file.c_str(), c_str()+_markers.GetFileNameBase(), _markers.GetFileNameLength() );
-    // file.c_str()[ _markers.GetFileNameLength() ] = 0;
-    file.set(c_str() + _markers.GetFileNameBase(), _markers.GetFileNameLength());
-    file.SetChar(_markers.GetFileNameLength(), 0);
+    // strncpy( file.c_str(), c_str()+_markers.getFileNameBase(), _markers.getFileNameLength() );
+    // file.c_str()[ _markers.getFileNameLength() ] = 0;
+    file.set(c_str() + _markers.getFileNameBase(), _markers.getFileNameLength());
+    file.SetChar(_markers.getFileNameLength(), 0);
   } else {
     // file.c_str()[0] = 0;
     file.SetChar(0, 0);
   }
   if (hasExtension()) {
-    // strncpy( ext.c_str(), c_str()+_markers.GetExtensionBase(), _markers.GetExtensionLength() );
-    // ext.c_str()[ _markers.GetExtensionBase() ] = 0;
-    int ibase = _markers.GetExtensionBase();
-    ext.set(c_str() + ibase, _markers.GetExtensionLength());
-    ext.SetChar(_markers.GetExtensionLength(), 0);
+    // strncpy( ext.c_str(), c_str()+_markers.getExtensionBase(), _markers.getExtensionLength() );
+    // ext.c_str()[ _markers.getExtensionBase() ] = 0;
+    int ibase = _markers.getExtensionBase();
+    ext.set(c_str() + ibase, _markers.getExtensionLength());
+    ext.SetChar(_markers.getExtensionLength(), 0);
   } else {
     ext.SetChar(0, 0);
     // ext.c_str()[0] = 0;
   }
   if (hasQueryString()) {
-    // strncpy( query.c_str(), c_str()+_markers.GetQueryStringBase(), _markers.GetQueryStringLength() );
-    // query.c_str()[ _markers.GetQueryStringLength() ] = 0;
-    query.set(c_str() + _markers.GetQueryStringBase(), _markers.GetQueryStringLength());
-    query.SetChar(_markers.GetQueryStringLength(), 0);
+    // strncpy( query.c_str(), c_str()+_markers.getQueryStringBase(), _markers.getQueryStringLength() );
+    // query.c_str()[ _markers.getQueryStringLength() ] = 0;
+    query.set(c_str() + _markers.getQueryStringBase(), _markers.getQueryStringLength());
+    query.SetChar(_markers.getQueryStringLength(), 0);
   } else {
     query.SetChar(0, 0);
     // query.c_str()[0] = 0;
@@ -1118,56 +1107,56 @@ void Path::compose(const DecomposedPath& decomposed) {
 void Path::decompose(DecomposedPath& decomposed) {
   OrkAssert(false == (hasUrlBase() && hasDrive()));
   if (hasUrlBase()) {
-    // strncpy( url.c_str(), c_str()+_markers.GetUrlBase(), _markers.GetUrlLength() );
-    // url.c_str()[ _markers.GetUrlLength() ] = 0;
-    decomposed.mProtocol.set(c_str() + _markers.GetUrlBase(), _markers.GetUrlLength());
-    decomposed.mProtocol.SetChar(_markers.GetUrlLength(), 0);
+    // strncpy( url.c_str(), c_str()+_markers.getUrlBase(), _markers.getUrlLength() );
+    // url.c_str()[ _markers.getUrlLength() ] = 0;
+    decomposed.mProtocol.set(c_str() + _markers.getUrlBase(), _markers.getUrlLength());
+    decomposed.mProtocol.SetChar(_markers.getUrlLength(), 0);
   } else {
     // url.c_str()[0] = 0;
     decomposed.mProtocol.SetChar(0, 0);
   }
   if (hasDrive()) {
-    // strncpy( drive.c_str(), c_str()+_markers.GetDriveBase(), _markers.GetDriveLength() );
-    // drive.c_str()[ _markers.GetDriveLength() ] = 0;
-    decomposed.mDrive.set(c_str() + _markers.GetDriveBase(), _markers.GetDriveLength());
-    decomposed.mDrive.SetChar(_markers.GetDriveLength(), 0);
+    // strncpy( drive.c_str(), c_str()+_markers.getDriveBase(), _markers.getDriveLength() );
+    // drive.c_str()[ _markers.getDriveLength() ] = 0;
+    decomposed.mDrive.set(c_str() + _markers.getDriveBase(), _markers.getDriveLength());
+    decomposed.mDrive.SetChar(_markers.getDriveLength(), 0);
   } else {
     // drive.c_str()[0] = 0;
     decomposed.mDrive.SetChar(0, 0);
   }
   if (hasFolder()) {
-    // strncpy( folder.c_str(), c_str()+_markers.GetFolderBase(), _markers.GetFolderLength() );
-    // folder.c_str()[ _markers.GetFolderLength() ] = 0;
-    decomposed.mFolder.set(c_str() + _markers.GetFolderBase(), _markers.GetFolderLength());
-    decomposed.mFolder.SetChar(_markers.GetFolderLength(), 0);
+    // strncpy( folder.c_str(), c_str()+_markers.getFolderBase(), _markers.getFolderLength() );
+    // folder.c_str()[ _markers.getFolderLength() ] = 0;
+    decomposed.mFolder.set(c_str() + _markers.getFolderBase(), _markers.getFolderLength());
+    decomposed.mFolder.SetChar(_markers.getFolderLength(), 0);
   } else {
     // folder.c_str()[0] = 0;
     decomposed.mFolder.SetChar(0, 0);
   }
   if (hasFile()) {
-    // strncpy( file.c_str(), c_str()+_markers.GetFileNameBase(), _markers.GetFileNameLength() );
-    // file.c_str()[ _markers.GetFileNameLength() ] = 0;
-    decomposed.mFile.set(c_str() + _markers.GetFileNameBase(), _markers.GetFileNameLength());
-    decomposed.mFile.SetChar(_markers.GetFileNameLength(), 0);
+    // strncpy( file.c_str(), c_str()+_markers.getFileNameBase(), _markers.getFileNameLength() );
+    // file.c_str()[ _markers.getFileNameLength() ] = 0;
+    decomposed.mFile.set(c_str() + _markers.getFileNameBase(), _markers.getFileNameLength());
+    decomposed.mFile.SetChar(_markers.getFileNameLength(), 0);
   } else {
     // file.c_str()[0] = 0;
     decomposed.mFile.SetChar(0, 0);
   }
   if (hasExtension()) {
-    // strncpy( ext.c_str(), c_str()+_markers.GetExtensionBase(), _markers.GetExtensionLength() );
-    // ext.c_str()[ _markers.GetExtensionBase() ] = 0;
-    int ibase = _markers.GetExtensionBase();
-    decomposed.mExtension.set(c_str() + ibase, _markers.GetExtensionLength());
-    decomposed.mExtension.SetChar(_markers.GetExtensionLength(), 0);
+    // strncpy( ext.c_str(), c_str()+_markers.getExtensionBase(), _markers.getExtensionLength() );
+    // ext.c_str()[ _markers.getExtensionBase() ] = 0;
+    int ibase = _markers.getExtensionBase();
+    decomposed.mExtension.set(c_str() + ibase, _markers.getExtensionLength());
+    decomposed.mExtension.SetChar(_markers.getExtensionLength(), 0);
   } else {
     decomposed.mExtension.SetChar(0, 0);
     // ext.c_str()[0] = 0;
   }
   if (hasQueryString()) {
-    // strncpy( query.c_str(), c_str()+_markers.GetQueryStringBase(), _markers.GetQueryStringLength() );
-    // query.c_str()[ _markers.GetQueryStringLength() ] = 0;
-    decomposed.mQuery.set(c_str() + _markers.GetQueryStringBase(), _markers.GetQueryStringLength());
-    decomposed.mQuery.SetChar(_markers.GetQueryStringLength(), 0);
+    // strncpy( query.c_str(), c_str()+_markers.getQueryStringBase(), _markers.getQueryStringLength() );
+    // query.c_str()[ _markers.getQueryStringLength() ] = 0;
+    decomposed.mQuery.set(c_str() + _markers.getQueryStringBase(), _markers.getQueryStringLength());
+    decomposed.mQuery.SetChar(_markers.getQueryStringLength(), 0);
   } else {
     decomposed.mQuery.SetChar(0, 0);
     // query.c_str()[0] = 0;
@@ -1176,13 +1165,13 @@ void Path::decompose(DecomposedPath& decomposed) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Path::SplitQuery(NameType& preq, NameType& postq) const {
+void Path::splitQuery(NameType& preq, NameType& postq) const {
   if (hasQueryString()) {
-    unsigned qpos = _markers.GetQueryStringBase();
+    unsigned qpos = _markers.getQueryStringBase();
     preq.SetChar(0, 0);
     preq.append(c_str(), int(qpos - 1));
     postq.SetChar(0, 0);
-    postq.append(c_str() + qpos, int(_markers.GetQueryStringLength()));
+    postq.append(c_str() + qpos, int(_markers.getQueryStringLength()));
 
   } else {
     preq = _pathstring;
@@ -1192,7 +1181,7 @@ void Path::SplitQuery(NameType& preq, NameType& postq) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Path::Split(NameType& preq, NameType& postq, char sep) const {
+void Path::split(NameType& preq, NameType& postq, char sep) const {
   const char* c_str   = _pathstring.c_str();
   const char* sep_loc = strrchr(c_str, sep);
 
@@ -1213,25 +1202,25 @@ void Path::Split(NameType& preq, NameType& postq, char sep) const {
 
 bool Path::doesPathExist() const {
   struct stat file_stat;
-  int ist = stat(ToAbsolute().c_str(), &file_stat);
+  int ist = stat(toAbsolute().c_str(), &file_stat);
    //printf( "stat<%s> : %d\n", c_str(), ist );
   return (ist == 0);
 }
 bool Path::isFile() const {
   struct stat file_stat;
-  int ist = stat(ToAbsolute().c_str(), &file_stat);
+  int ist = stat(toAbsolute().c_str(), &file_stat);
    //printf( "stat<%s> : %d\n", c_str(), ist );
   return (ist == 0) ? bool(S_ISREG(file_stat.st_mode)) : false;
 }
 bool Path::isFolder() const {
   struct stat file_stat;
-  int ist = stat(ToAbsolute().c_str(), &file_stat);
+  int ist = stat(toAbsolute().c_str(), &file_stat);
    //printf( "stat<%s> : %d\n", c_str(), ist );
   return (ist == 0) ? bool(((file_stat.st_mode & S_IFMT) == S_IFDIR)) : false;
 }
 bool Path::isSymLink() const {
   struct stat file_stat;
-  int ist = stat(ToAbsolute().c_str(), &file_stat);
+  int ist = stat(toAbsolute().c_str(), &file_stat);
    //printf( "stat<%s> : %d\n", c_str(), ist );
   return (ist == 0) ? bool(S_ISLNK(file_stat.st_mode)) : false;
 }
@@ -1264,8 +1253,8 @@ Path Path::operator/(const Path& rhs) const {
 }
 
 void Path::dump(const std::string& idstr) const{
-  auto as_abs = ToAbsolute();
-  auto as_abs_folder = ToAbsoluteFolder();
+  auto as_abs = toAbsolute();
+  auto as_abs_folder = toAbsoluteFolder();
   logchan_path->log("///////////////////////////" );
   logchan_path->log("path dump idstr<%s>", idstr.c_str() );
   logchan_path->log("  rawpath<%s>", c_str() );

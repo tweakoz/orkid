@@ -39,7 +39,7 @@ std::set<file::Path> FileAssetLoader::EnumerateExisting() {
 
     printf("FileAssetLoader<%p> searching<%s> for<%s> inumfiles<%d>\n", (void*) this, dir.c_str(), wild.c_str(), inumfiles);
 
-    file::Path::NameType searchdir(dir.ToAbsolute().c_str());
+    file::Path::NameType searchdir(dir.toAbsolute().c_str());
     searchdir.replace_in_place("\\", "/");
     for (int ifile = 0; ifile < inumfiles; ifile++) {
       auto the_file                  = files[ifile];
@@ -88,12 +88,12 @@ bool FileAssetLoader::_find(
   file::Path pathobjnoq(name);
   file::Path pathobj(name);
   AssetPath::NameType pathsp, qrysp;
-  pathobj.SplitQuery(pathsp, qrysp);
+  pathobj.splitQuery(pathsp, qrysp);
   pathobjnoq.set(pathsp.c_str());
 
   file::Path::NameType preext;
-  preext.format(".%s", pathobjnoq.GetExtension().c_str());
-  bool has_extension       = pathobjnoq.GetExtension().length() != 0;
+  preext.format(".%s", pathobjnoq.getExtension().c_str());
+  bool has_extension       = pathobjnoq.getExtension().length() != 0;
   bool has_valid_extension = false;
   if (has_extension) {
     for (auto l : mLocations) {
@@ -109,7 +109,7 @@ bool FileAssetLoader::_find(
   // check Munged Paths first (Munged path is a path run thru 1 or more path converters)
   //////////////////////////////////////////
 
-  auto url = pathobjnoq.GetUrlBase();
+  auto url = pathobjnoq.getUrlBase();
 
   auto filedevctx = ork::FileEnv::contextForUriProto(url.c_str());
 

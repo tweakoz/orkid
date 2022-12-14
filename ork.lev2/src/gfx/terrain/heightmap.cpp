@@ -151,7 +151,7 @@ HeightMap::HeightMap(int isx, int isz)
   }
 
   bool HeightMap::Load(const ork::file::Path& pth) {
-    auto abs_path = pth.ToAbsolute();
+    auto abs_path = pth.toAbsolute();
 
     bool bexists = FileEnv::DoesFileExist(abs_path);
 

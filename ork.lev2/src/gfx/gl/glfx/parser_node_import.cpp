@@ -41,13 +41,13 @@ void ImportNode::load(){
     // if import file has datasource (xxx://), use that
     //  instead of inferring from container's path
     //////////////////////////////////
-    file::Path(_name).Split(a, b, ':');
+    file::Path(_name).split(a, b, ':');
     if (b.length() != 0) { // use from import
       imppath = _name;
     } else { // infer from container
       imppath = parent_parser->_name.c_str();
       //printf( "parent_parser<%s> imppath1<%s>\n", parent_parser->_name.c_str(), imppath.c_str());
-      imppath.Split(a, b, ':');
+      imppath.split(a, b, ':');
       ork::FixedString<256> fxs;
       fxs.format("%s://%s", a.c_str(), _name.c_str());
       imppath = fxs.c_str();

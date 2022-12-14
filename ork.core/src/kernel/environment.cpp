@@ -63,11 +63,11 @@ void Environment::set( const std::string& k, const std::string& v )
 void Environment::appendPath( const std::string& k, const file::Path& v ) {
   auto it = mEnvMap.find(k);
   if( it == mEnvMap.end() ){
-      set(k,v.ToAbsolute().toStdString());
+      set(k,v.toAbsolute().toStdString());
   }
   else {
     auto prev_val = it->second;
-    set(k,prev_val+":"+v.ToAbsolute().toStdString());
+    set(k,prev_val+":"+v.toAbsolute().toStdString());
   }
 }
 

@@ -49,16 +49,16 @@ XgmModelLoader::XgmModelLoader()
 }
 
 ork::asset::asset_ptr_t XgmModelLoader::_doLoadAsset(ork::asset::loadrequest_ptr_t loadreq) {
-  auto absolutepath = loadreq->_asset_path.ToAbsolute();
+  auto absolutepath = loadreq->_asset_path.toAbsolute();
   auto modelasset   = std::make_shared<XgmModelAsset>();
   logchan_l2asso->log("LoadModelAsset<%s>", absolutepath.c_str());
   bool OK = false;
-  if (absolutepath.GetExtension() == "xgm" or //
-      absolutepath.GetExtension() == "dae" or //
-      absolutepath.GetExtension() == "obj" or //
-      absolutepath.GetExtension() == "glb" or //
-      absolutepath.GetExtension() == "fbx" or //
-      absolutepath.GetExtension() == "gltf") {
+  if (absolutepath.getExtension() == "xgm" or //
+      absolutepath.getExtension() == "dae" or //
+      absolutepath.getExtension() == "obj" or //
+      absolutepath.getExtension() == "glb" or //
+      absolutepath.getExtension() == "fbx" or //
+      absolutepath.getExtension() == "gltf") {
     modelasset->clearModel();
     OK = XgmModel::LoadUnManaged(modelasset->GetModel(), //
                                  loadreq->_asset_path, //

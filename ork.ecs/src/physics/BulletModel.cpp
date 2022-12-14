@@ -80,7 +80,7 @@ BulletShapeModelData::BulletShapeModelData() {
     _shapeFactory._createShape = [=](const ShapeCreateData& data) -> BulletShapeBaseInst* {
       auto rval = new BulletShapeBaseInst(this);
 
-      auto abs_path = _meshpath.ToAbsolute();
+      auto abs_path = _meshpath.toAbsolute();
 
       /////////////////////////////
       // todo : datablock based caching

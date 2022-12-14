@@ -24,7 +24,7 @@ Sf2TestSynthData::Sf2TestSynthData(const file::Path& filename, const std::string
   _staticBankName = bankname;
 
   auto sfpath  = basePath() / "soundfonts" / filename;
-  auto abspath = sfpath.ToAbsolute();
+  auto abspath = sfpath.toAbsolute();
   _sfont       = new SoundFont(abspath.c_str(), bankname);
 }
 Sf2TestSynthData::~Sf2TestSynthData() {

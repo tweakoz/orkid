@@ -57,7 +57,7 @@ asset::loadrequest_ptr_t XgmModel::_getLoadRequest(){
 
 bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename, const asset::vars_t& vars) {
   bool rval        = false;
-  auto ActualPath  = Filename.ToAbsolute();
+  auto ActualPath  = Filename.toAbsolute();
   mdl->msModelName = AddPooledString(Filename.c_str());
   /////////////////////
   // merge in asset vars
@@ -80,7 +80,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename, const ass
     OrkAssert(bfs::is_regular_file(actual_as_bfs));
     OrkAssert(bfs::exists(base_dir));
     OrkAssert(bfs::is_directory(base_dir));
-    datablock->_vars->makeValueForKey<std::string>("file-extension") = ActualPath.GetExtension().c_str();
+    datablock->_vars->makeValueForKey<std::string>("file-extension") = ActualPath.getExtension().c_str();
     datablock->_vars->makeValueForKey<bfs::path>("base-directory")   = base_dir;
     /////////////////////
     // merge in asset vars
