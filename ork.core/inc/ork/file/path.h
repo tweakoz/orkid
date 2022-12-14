@@ -129,30 +129,30 @@ public:
 
   static EPathType GetNative();
 
-  void SetFile(const char* filename);
-  void AppendFile(const char* filename);
-  void SetFolder(const char* pathName);
-  void AppendFolder(const char* filename);
-  void SetExtension(const char* ext);
-  void SetUrlBase(const char* UrlBase);
-  void SetDrive(const char* UrlBase);
+  void setFile(const char* filename);
+  void appendFile(const char* filename);
+  void setFolder(const char* pathName);
+  void appendFolder(const char* filename);
+  void setExtension(const char* ext);
+  void setUrlBase(const char* UrlBase);
+  void setDrive(const char* UrlBase);
 
   void set(const char* pathName);
 
-  bool IsAbsolute() const;
-  bool IsRelative() const;
-  bool HasUrlBase() const;
-  bool HasFolder() const;
-  bool HasDrive() const;
-  bool HasQueryString() const;
-  bool HasExtension() const;
-  bool HasFile() const;
+  bool isAbsolute() const;
+  bool isRelative() const;
+  bool hasUrlBase() const;
+  bool hasFolder() const;
+  bool hasDrive() const;
+  bool hasQueryString() const;
+  bool hasExtension() const;
+  bool hasFile() const;
 
   //////////////////////////////////////////////
 
-  void DeCompose(SmallNameType& url, SmallNameType& drive, NameType& folder, NameType& file, SmallNameType& ext, NameType& query);
+  void decompose(SmallNameType& url, SmallNameType& drive, NameType& folder, NameType& file, SmallNameType& ext, NameType& query);
 
-  void Compose(
+  void compose(
       const SmallNameType& url,
       const SmallNameType& drive,
       const NameType& folder,
@@ -160,10 +160,10 @@ public:
       const SmallNameType& ext,
       const NameType& query);
 
-  void DeCompose(DecomposedPath& decomposed);
-  void Compose(const DecomposedPath& decomposed);
+  void decompose(DecomposedPath& decomposed);
+  void compose(const DecomposedPath& decomposed);
 
-  void ComputeMarkers(char pathsep);
+  void computeMarkers(char pathsep);
 
   //////////////////////////////////////////////
 
@@ -201,10 +201,16 @@ public:
 
   //////////////////////////////////////
 
-  bool DoesPathExist() const;
-  bool IsFile() const;
-  bool IsFolder() const;
-  bool IsSymLink() const;
+  bool doesPathExist() const;
+  bool isFile() const;
+  bool isFolder() const;
+  bool isSymLink() const;
+
+  //////////////////////////////////////
+
+  void dump(const std::string& idstr) const;
+
+  //////////////////////////////////////
 
   static Path orkroot_dir();
   static Path stage_dir();
@@ -214,6 +220,7 @@ public:
   static Path share_dir();
   static Path temp_dir();
   static Path data_dir();
+
 
 private:
   //////////////////////////////////////

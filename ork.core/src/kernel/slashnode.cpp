@@ -38,13 +38,13 @@ void breakup_slash_path(std::string str, orkvector<std::string>& outvec) {
   file::Path AsPath(str.c_str());
 
   outvec.clear();
-  if (AsPath.HasUrlBase()) {
+  if (AsPath.hasUrlBase()) {
     outvec.push_back(AsPath.GetUrlBase().c_str());
   }
-  if (AsPath.HasDrive()) {
+  if (AsPath.hasDrive()) {
     outvec.push_back(AsPath.GetDrive().c_str());
   }
-  if (AsPath.HasFolder()) {
+  if (AsPath.hasFolder()) {
     const std::string str2 = AsPath.GetFolder(ork::file::Path::EPATHTYPE_POSIX).c_str();
 
     const std::string delims("/");
@@ -70,10 +70,10 @@ void breakup_slash_path(std::string str, orkvector<std::string>& outvec) {
       }
     }
   }
-  if (AsPath.HasFile()) {
+  if (AsPath.hasFile()) {
     outvec.push_back(AsPath.GetName().c_str());
   }
-  if (AsPath.HasExtension()) {
+  if (AsPath.hasExtension()) {
     outvec[outvec.size() - 1] += '.';
     outvec[outvec.size() - 1] += AsPath.GetExtension().c_str();
   }

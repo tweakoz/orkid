@@ -35,8 +35,8 @@ struct objmat {
 void Mesh::WriteToWavefrontObj(const file::Path& BasePath) const {
   /*ork::file::Path ObjPath = BasePath;
   ork::file::Path MtlPath = BasePath;
-  ObjPath.SetExtension("obj");
-  MtlPath.SetExtension("mtl");
+  ObjPath.setExtension("obj");
+  MtlPath.setExtension("mtl");
 
   std::string outstr;
   std::string mtloutstr;
@@ -54,10 +54,10 @@ void Mesh::WriteToWavefrontObj(const file::Path& BasePath) const {
   orkvector<objmesh> ObjMeshPool;
   orkmap<std::string, objmat> ObjMaterialPool;
   ///////////////////////////////////////////////////
-  for (orklut<std::string, submesh*>::const_iterator it = mPolyGroupLut.begin(); it != mPolyGroupLut.end(); it++) {
+  for (auto it : mPolyGroupLut ) {
 
-    const submesh& pgroup      = *it->second;
-    const std::string& grpname = it->first;
+    const submesh& pgroup      = *it.second;
+    const std::string& grpname = it.first;
     const vertexpool& vpool    = pgroup.RefVertexPool();
   }
 
@@ -222,9 +222,9 @@ void Mesh::ReadFromWavefrontObj(const file::Path& BasePath) {
   ork::file::Path MtlPath = BasePath;
   ork::file::Path FxmPath = BasePath;
 
-  ObjPath.SetExtension("obj");
-  MtlPath.SetExtension("mtl");
-  FxmPath.SetExtension("fxm");
+  ObjPath.setExtension("obj");
+  MtlPath.setExtension("mtl");
+  FxmPath.setExtension("fxm");
 
   File objfile(ObjPath, EFM_READ);
   // objfile.Open(  );

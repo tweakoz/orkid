@@ -39,9 +39,6 @@ using namespace ork::lev2;
 using namespace ork::lev2::pbr::deferrednode;
 typedef SVtxV12C4T16 vtx_t; // position, vertex color, 2 UV sets
 
-
-int testlevel = 0;
-
 ///////////////////////////////////////////////////////////////////
 
 struct GpuResources {
@@ -50,6 +47,12 @@ struct GpuResources {
                Context* ctx, //
                bool use_forward, //
                bool use_vr) { //
+
+    auto vars = *init_data->parse();
+
+    //////////////////////////////////////////////////////////
+    int testnum = vars["testnum"].as<int>();
+    //////////////////////////////////////////////////////////
 
     if(use_vr){
       auto vrdev = orkidvr::novr::novr_device();
@@ -95,7 +98,7 @@ struct GpuResources {
     auto model_load_req = std::make_shared<asset::LoadRequest>();
     auto anim_load_req = std::make_shared<asset::LoadRequest>();
 
-    switch(testlevel){
+    switch(testnum){
       case 0:
         model_load_req->_asset_path = "data://tests/blender-rigtest/blender-rigtest-mesh";
         anim_load_req->_asset_path = "data://tests/blender-rigtest/blender-rigtest-anim1";
@@ -115,6 +118,16 @@ struct GpuResources {
       default:
         OrkAssert(false);
         break;
+    }
+
+    auto mesh_override = vars["mesh"].as<std::string>();
+    auto anim_override = vars["anim"].as<std::string>();
+
+    if(mesh_override.length()){
+      model_load_req->_asset_path = mesh_override;
+    }
+    if(anim_override.length()){
+      anim_load_req->_asset_path = anim_override;
     }
 
     _char_modelasset = asset::AssetManager<XgmModelAsset>::load(model_load_req);
@@ -199,7 +212,10 @@ int main(int argc, char** argv, char** envp) {
       ("width",  po::value<int>()->default_value(1280), "window width")                              
       ("height",  po::value<int>()->default_value(720), "window height")
       ("usevr",  po::bool_switch()->default_value(false), "use vr output")                          
-      ("testlevel",  po::value<int>()->default_value(0), "animation test level");                             
+      ("testnum",  po::value<int>()->default_value(0), "animation test level")
+      ("fbase",   po::value<std::string>()->default_value(""), "set user fbase")
+      ("mesh",  po::value<std::string>()->default_value(""), "mesh file override")                             
+      ("anim",  po::value<std::string>()->default_value(""), "animation file override");                             
 
   auto vars = *init_data->parse();
 
@@ -208,7 +224,12 @@ int main(int argc, char** argv, char** envp) {
     exit(0);
   }
   //////////////////////////////////////////////////////////
-  testlevel = vars["testlevel"].as<int>();
+  int testnum = vars["testnum"].as<int>();
+  std::string fbase = vars["fbase"].as<std::string>();
+  //////////////////////////////////////////////////////////
+  if(fbase.length()){
+    auto fdevctx = FileEnv::createContextForUriBase("fbase://", fbase);
+  }
   //////////////////////////////////////////////////////////
 
   init_data->_fullscreen = vars["fullscreen"].as<bool>();;
@@ -258,7 +279,7 @@ int main(int argc, char** argv, char** envp) {
     float far = 500.0f;
     float fovy = 45.0f;
 
-    switch(testlevel){
+    switch(testnum){
       case 0:
         far = 50.0f;
         eye *= 10.0f;
@@ -277,7 +298,7 @@ int main(int argc, char** argv, char** envp) {
         break;
       case 3:
         eye *= 100.0f;
-        wsca = 10.0f;
+        wsca = 100.1f;
         break;
       default:
         break;

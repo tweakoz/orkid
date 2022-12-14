@@ -167,9 +167,9 @@ bool GlTextureInterface::LoadTexture(const AssetPath& infname, texture_ptr_t pte
   AssetPath DdsFilename = infname;
   AssetPath PngFilename = infname;
   AssetPath XtxFilename = infname;
-  DdsFilename.SetExtension("dds");
-  PngFilename.SetExtension("png");
-  XtxFilename.SetExtension("xtx");
+  DdsFilename.setExtension("dds");
+  PngFilename.setExtension("png");
+  XtxFilename.setExtension("xtx");
   ptex->_debugName = infname.toStdString();
   AssetPath final_fname;
   if (FileEnv::GetRef().DoesFileExist(PngFilename))

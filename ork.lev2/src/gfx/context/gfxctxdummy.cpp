@@ -41,7 +41,7 @@ DummyDrawingInterface::DummyDrawingInterface(ContextDummy& ctx)
 
 bool DummyFxInterface::LoadFxShader(const AssetPath& pth, FxShader* pfxshader) {
   AssetPath assetname = pth;
-  assetname.SetExtension("fxml");
+  assetname.setExtension("fxml");
   FxShader* shader = new FxShader;
   printf("DUMMYFX::LOADED<%s>\n", pth.c_str());
   // bool bOK = LoadFxShader( shader );
@@ -193,9 +193,9 @@ void DuGeometryBufferInterface::DrawInstancedIndexedPrimitiveEML(
 bool DuTextureInterface::LoadTexture(const AssetPath& fname, texture_ptr_t ptex) {
   ///////////////////////////////////////////////
   AssetPath Filename = fname;
-  bool bHasExt       = Filename.HasExtension();
+  bool bHasExt       = Filename.hasExtension();
   if (false == bHasExt) {
-    Filename.SetExtension("dds");
+    Filename.setExtension("dds");
   }
   ///////////////////////////////////////////////
   File TextureFile(Filename, ork::EFM_READ);

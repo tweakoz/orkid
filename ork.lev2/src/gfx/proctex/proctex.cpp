@@ -539,12 +539,12 @@ void ProcTex::compute(ProcTexContext& ptctx) {
 
     if (ptctx.mWritePath.length()) {
       file::DecomposedPath dpath;
-      ptctx.mWritePath.DeCompose(dpath);
+      ptctx.mWritePath.decompose(dpath);
       fxstring<64> fidstr;
       fidstr.format("_%04d", ptctx.mWriteFrameIndex);
       dpath.mFile += fidstr.c_str();
       ork::file::Path indexed_path;
-      indexed_path.Compose(dpath);
+      indexed_path.compose(dpath);
       printf("indexed_path<%s>\n", indexed_path.c_str());
       auto buf0 = rtg->GetMrt(0);
       fbi->capture(buf0.get(), indexed_path);

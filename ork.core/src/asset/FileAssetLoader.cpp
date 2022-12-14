@@ -161,7 +161,7 @@ bool FileAssetLoader::_find(
     } else // no extension test the registered extensions
     {
       for (auto l : mLocations) {
-        MungedPath.SetExtension(l.mExt.c_str());
+        MungedPath.setExtension(l.mExt.c_str());
 
         // printf("munged_ext<%s>\n", MungedPath.c_str());
 
@@ -191,7 +191,7 @@ bool FileAssetLoader::_find(
     }
   } else {
     for (auto l : mLocations) {
-      pathobjnoq.SetExtension(l.mExt.c_str());
+      pathobjnoq.setExtension(l.mExt.c_str());
       bool exists = FileEnv::DoesFileExist(pathobjnoq);
       printf("TESTPTH4<%s> exists<%d>\n", pathobjnoq.c_str(), int(exists));
       if (exists) {

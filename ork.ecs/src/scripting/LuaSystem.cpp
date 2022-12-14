@@ -100,9 +100,9 @@ LuaSystem::LuaSystem(const LuaSystemData& data, ork::ecs::Simulation* pinst)
   auto orkidWorkspaceDir = file::Path(orkdirstr);
   auto searchpath = (orkidWorkspaceDir/"ork.data"/"src"/"scripts");
   auto abssrchpath = searchpath.ToAbsolute();
-  OrkAssert(abssrchpath.DoesPathExist());
+  OrkAssert(abssrchpath.doesPathExist());
 
-  if (abssrchpath.DoesPathExist()) {
+  if (abssrchpath.doesPathExist()) {
     fxstring<1024> lua_path;
     lua_path.format("%s/?.lua", abssrchpath.c_str());
     AppendPath(lua_path.c_str());
@@ -118,7 +118,7 @@ LuaSystem::LuaSystem(const LuaSystemData& data, ork::ecs::Simulation* pinst)
   auto path      = scenedata->_sceneScriptPath;
   auto abspath   = path.ToAbsolute();
 
-  if (abspath.DoesPathExist()) {
+  if (abspath.doesPathExist()) {
     File scriptfile(abspath, EFM_READ);
     size_t filesize = 0;
     scriptfile.GetLength(filesize);
@@ -333,7 +333,7 @@ ScriptObject* LuaSystem::FlyweightScriptObject(const ork::file::Path& pth) {
 
   auto it = mScriptObjects.find(pth);
   if (it == mScriptObjects.end()) {
-    if (abspath.DoesPathExist()) {
+    if (abspath.doesPathExist()) {
       rval = new ScriptObject;
 
       //////////////////////////////////////////

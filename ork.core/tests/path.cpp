@@ -18,9 +18,9 @@ using namespace ork::file;
 TEST(PathCanComposeAndDecomposeUrlPaths) {
   DecomposedPath decomp;
   Path p1("testaa://archetypes/yo.txt");
-  p1.DeCompose(decomp);
+  p1.decompose(decomp);
   Path p2;
-  p2.Compose(decomp);
+  p2.compose(decomp);
   CHECK(p1 == p2);
 }
 
@@ -96,7 +96,7 @@ TEST(PathCorrectlyReturnsTheExtensionPartOfAPath) {
 
 TEST(PathCanStoreQueryStrings) {
   Path testPath("testaa://hello/world/test.txt?yo=dude");
-  CHECK_EQUAL(true, testPath.HasQueryString());
+  CHECK_EQUAL(true, testPath.hasQueryString());
   CHECK_EQUAL("yo=dude", testPath.GetQueryString().c_str());
 }
 
@@ -104,7 +104,7 @@ TEST(PathCanStoreQueryStrings) {
 
 TEST(PathCanNotStoreQueryStrings) {
   Path testPath("testaa://hello/world/test.txt");
-  CHECK_EQUAL(false, testPath.HasQueryString());
+  CHECK_EQUAL(false, testPath.hasQueryString());
   CHECK_EQUAL("", testPath.GetQueryString().c_str());
 }
 

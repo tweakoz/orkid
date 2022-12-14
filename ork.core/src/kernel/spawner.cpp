@@ -125,7 +125,7 @@ void Spawner::spawn()
             if( 0 == i )
             {
                 auto argpath = file::Path(arg);
-                argpath.DeCompose(decomposed_path);
+                argpath.decompose(decomposed_path);
 
                 auto exe = decomposed_path.mFile + decomposed_path.mExtension;
 

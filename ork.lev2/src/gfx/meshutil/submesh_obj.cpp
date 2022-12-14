@@ -31,8 +31,8 @@ struct objmat {
 void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath) {
   ork::file::Path ObjPath = BasePath;
   ork::file::Path MtlPath = BasePath;
-  ObjPath.SetExtension("obj");
-  MtlPath.SetExtension("mtl");
+  ObjPath.setExtension("obj");
+  MtlPath.setExtension("mtl");
 
   std::string outstr;
   std::string mtloutstr;

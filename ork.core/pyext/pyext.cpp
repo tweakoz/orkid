@@ -99,8 +99,8 @@ PYBIND11_MODULE(_core, module_core) {
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<file::Path>(module_core, "Path")
       .def(py::init<std::string>())
-      .def("isAbsolute", &file::Path::IsAbsolute)
-      .def("IsRelative", &file::Path::IsRelative)
+      .def("isAbsolute", &file::Path::isAbsolute)
+      .def("IsRelative", &file::Path::isRelative)
       .def("__repr__", [](const file::Path& s) -> std::string {
         fxstring<64> fxs;
         fxs.format("Path(%s)", s.c_str());

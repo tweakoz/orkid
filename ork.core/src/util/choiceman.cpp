@@ -59,7 +59,7 @@ void ChoiceList::add(const AttrChoiceValue& val) {
 
   file::Path apath(LongName.c_str());
 
-  if (apath.HasUrlBase() == false) {
+  if (apath.hasUrlBase() == false) {
     char ch0 = val.GetName().c_str()[0];
 
     if (ch0 != '/') {
