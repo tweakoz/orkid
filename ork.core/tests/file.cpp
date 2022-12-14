@@ -9,7 +9,6 @@
 #include <utpp/UnitTest++.h>
 #include <ork/file/path.h>
 #include <ork/file/fileenv.h>
-#include <ork/kernel/environment.h>
 #include <boost/filesystem.hpp>
 
 
@@ -20,9 +19,7 @@ using namespace ork::file;
 
 TEST(fdevctx1) {
 
-  std::string obt_stage_dir;
-  genviron.get("OBT_STAGE", obt_stage_dir);
-  auto incdir = Path(obt_stage_dir) / "include";
+  auto incdir =  Path::stage_dir() / "include";
   auto fdevctx = FileEnv::createContextForUriBase("includes://", incdir);
 
   auto P1 = Path("includes://assimp");
