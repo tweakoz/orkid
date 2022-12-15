@@ -55,6 +55,7 @@ YmEnvInst::YmEnvInst(const YmEnvData* data, layer_ptr_t l)
     , _data(data)
     , _curseg(-1) {
 }
+
 void YmEnvInst::compute() {
   switch (_curseg) {
     case 0: // attack
@@ -109,6 +110,9 @@ void YmEnvInst::compute() {
   }
   validateSample(_curval);
 }
+
+
+
 void YmEnvInst::keyOn(const KeyOnInfo& KOI) {
   _koi    = KOI;
   _curseg = 0;
@@ -116,9 +120,10 @@ void YmEnvInst::keyOn(const KeyOnInfo& KOI) {
   _layer  = KOI._layer;
   _layer->retain();
   float abas          = controlPeriod();
-  _atkinc             = abas / (_data->_attackTime * 10.0f);
+  _atkinc             = abas / (_data->_attackTime);
+  OrkAssert(abas>0.0f);
   int kb              = KOI._key - 24;
-  float unit_keyscale = float(kb) / 67.0f;
+  float unit_keyscale = ork::clamp<float>(float(kb) / 67.0f,0.01,16.0);
   float pow_keyscale  = powf(unit_keyscale, 2.0);
   switch (_data->_rateScale) {
     case 0:
@@ -139,8 +144,7 @@ void YmEnvInst::keyOn(const KeyOnInfo& KOI) {
       //_dec1ratefactor = _data->_decay1Rate;
       //_dec2ratefactor = _data->_decay2Rate;
       //_relratefactor  = _data->_releaseRate;
-      _atkinc *= atkscale;
-      if (0)
+      if (1)
         printf(
             "kb<%d> uk<%g> rs<%d> atkscale<%g> _decratefactor<%g>\n", //
             kb,
@@ -148,12 +152,20 @@ void YmEnvInst::keyOn(const KeyOnInfo& KOI) {
             _data->_rateScale,
             atkscale,
             _dec1ratefactor);
+      _atkinc *= atkscale;
       break;
     }
   }
   if (_atkinc > 0.3f) {
     _atkinc = 0.3f;
   }
+  /*validateSample(_rawout);
+  validateSample(_relratefactor);
+  validateSample(_dec1ratefactor);
+  validateSample(_dec2ratefactor);
+  validateSample(_data->_rateScale);
+  validateSample(_atkinc);
+  validateSample(_curval);*/
 }
 void YmEnvInst::keyOff() {
   _curseg = 3;
