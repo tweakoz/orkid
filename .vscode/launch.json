@@ -19,12 +19,12 @@
             ]
         },
         {
-            "name": "(gdb) debug tx81z.bank test=vo3",
+            "name": "(gdb) debug tx81z.bank",
             "type": "cppdbg",
             "request": "launch",
             "program": "${env:OBT_STAGE}/bin/ork.test.lev2.aud.singularity.tx81z.bank.exe",
             "MIMode": "gdb",
-            "args": ["--test","vo3"],
+            "args": ["--test","midi","--port","2"],
             "cwd": "${env:OBT_STAGE}",
             "setupCommands": [
                 {
