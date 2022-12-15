@@ -165,7 +165,7 @@ struct GpuResources {
 
     localpose.bindPose();
     _char_animinst->_current_frame = 0; 
-    localpose.applyAnimInst(*_char_animinst);
+    _char_animinst->applyToPose(localpose);
     localpose.blendPoses();
     localpose.concatenate();
     worldpose.apply(fmtx4(),localpose);
@@ -342,7 +342,7 @@ int main(int argc, char** argv, char** envp) {
     auto& worldpose = modelinst->_worldPose;
 
     localpose.bindPose();
-    localpose.applyAnimInst(*(gpurec->_char_animinst));
+    gpurec->_char_animinst->applyToPose(localpose);
     localpose.blendPoses();
 
     //auto lpdump = localpose.dump();

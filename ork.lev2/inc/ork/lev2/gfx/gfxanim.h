@@ -278,6 +278,7 @@ struct XgmAnimInst {
 
   void bindToSkeleton(const XgmSkeleton& skeleton);
   void unbindFromSkeleton(const XgmSkeleton& skeleton);
+  void applyToPose(XgmLocalPose& localpose) const;
 
   void bindAnim(const XgmAnim* anim);
 
@@ -434,11 +435,6 @@ struct XgmLocalPose {
   const AABox& RefObjSpaceAABoundingBox() const {
     return mObjSpaceAABoundingBox;
   }
-
-  ////////////////////////////////////////////////////////////////
-  // Application Methods (from anim, ik, physics, etc....)
-
-  void applyAnimInst(const XgmAnimInst& AnimInst); /// Apply an Animation Instance (weighted) to this pose
 
   ////////////////////////////////////////////////////////////////
 
