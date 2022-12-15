@@ -165,27 +165,6 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-/*struct XgmMatrixAnimChannel : public XgmAnimChannel  {
-  DeclareConcreteX(XgmMatrixAnimChannel, XgmAnimChannel);
-
-public:
-
-  size_t numFrames() const override;
-
-  XgmMatrixAnimChannel(const std::string& ObjName, const std::string& ChanName, const std::string& Usage);
-  XgmMatrixAnimChannel();
-  ~XgmMatrixAnimChannel() override;
-
-  void setFrame(size_t i, const fmtx4& v);
-  fmtx4 GetFrame(int index) const;
-  void reserveFrames(size_t iv);
-
-
-  std::vector<fmtx4> _sampledFrames;
-};*/
-
-///////////////////////////////////////////////////////////////////////////////
-
 struct XgmDecompMatrixAnimChannel : public XgmAnimChannel  {
   DeclareConcreteX(XgmDecompMatrixAnimChannel, XgmAnimChannel);
 
@@ -297,6 +276,8 @@ struct XgmAnimInst {
 
   XgmAnimInst();
 
+  void bindToSkeleton(const XgmSkeleton& skeleton);
+  void unbindFromSkeleton(const XgmSkeleton& skeleton);
 
   void bindAnim(const XgmAnim* anim);
 
@@ -430,9 +411,6 @@ struct XgmBlendPoseInfo {
 /// ///////////////////////////////////////////////////////////////////////////
 
 struct XgmLocalPose {
-
-  void bindAnimInst(XgmAnimInst& AnimInst);
-  void unbindAnimInst(XgmAnimInst& AnimInst);
 
   XgmLocalPose(const XgmSkeleton& Skeleton);
   void bindPose();  /// set pose to the skeletons bind pose

@@ -9,7 +9,6 @@
 
 #include <ork/kernel/orklut.hpp>
 #include <ork/math/basicfilters.h>
-#include <ork/math/PIDController.h>
 
 #include <ork/reflect/properties/registerX.inl>
 #include <ork/reflect/properties/DirectTypedMap.hpp>

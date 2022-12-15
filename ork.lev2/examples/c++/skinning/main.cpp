@@ -158,7 +158,7 @@ struct GpuResources {
     _char_animinst->SetWeight(1.0f);
     _char_animinst->RefMask().EnableAll();
     _char_animinst->_use_temporal_lerp = true;
-    modelinst->_localPose.bindAnimInst(*_char_animinst);
+    _char_animinst->bindToSkeleton(model->mSkeleton);
 
     auto& localpose = modelinst->_localPose;
     auto& worldpose = modelinst->_worldPose;

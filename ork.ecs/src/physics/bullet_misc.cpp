@@ -12,7 +12,6 @@
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 
-//#include <ork/ecs/ModelComponent.h>
 #include <ork/ecs/scene.h>
 #include <ork/ecs/entity.h>
 #include <ork/ecs/entity.inl>
@@ -22,8 +21,6 @@
 #include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/kernel/orklut.hpp>
 #include <ork/math/basicfilters.h>
-
-#include <ork/math/PIDController.h>
 
 #include "bullet_impl.h"
 

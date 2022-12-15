@@ -115,7 +115,7 @@ TEST(gfxanim1) {
     deco::printf(somc, "Skel-LocalPose-Cat (Bi)\n");
     deco::prints(localpose.invdumpc(somc), true);
 
-    localpose.bindAnimInst(*animinst);
+    animinst->bindToSkeleton(skel);
 
     int iframe = 0;
 

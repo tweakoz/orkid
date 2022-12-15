@@ -13,7 +13,6 @@
 #include <ork/reflect/properties/DirectTypedMap.hpp>
 
 #include <ork/math/basicfilters.h>
-#include <ork/math/PIDController.h>
 
 #include <ork/lev2/gfx/meshutil/meshutil.h>
 

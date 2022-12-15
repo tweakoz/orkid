@@ -15,7 +15,6 @@
 #include <ork/reflect/properties/DirectTyped.hpp>
 
 #include <ork/math/basicfilters.h>
-#include <ork/math/PIDController.h>
 #include <ork/math/misc_math.h>
 
 #include <ork/lev2/gfx/gfxmaterial_test.h>

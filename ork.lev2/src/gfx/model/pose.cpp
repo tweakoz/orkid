@@ -151,23 +151,22 @@ XgmLocalPose::XgmLocalPose(const XgmSkeleton& skel)
 /// so that it does not have to be done every frame
 /// ////////////////////////////////////////////////////////////////////////////
 
-void XgmLocalPose::bindAnimInst(XgmAnimInst& animinst) {
-  if (animinst._animation) {
-    float fweight = animinst.GetWeight();
+void XgmAnimInst::bindToSkeleton(const XgmSkeleton& skeleton) {
+  if (_animation) {
+    float fweight = GetWeight();
 
-    const XgmAnim& anim        = *animinst._animation;
-    const auto& joint_channels = anim._jointanimationchannels;
+    const auto& joint_channels = _animation->_jointanimationchannels;
 
-    const XgmAnim::matrix_lut_t& static_pose = anim._static_pose;
+    const XgmAnim::matrix_lut_t& static_pose = _animation->_static_pose;
 
     int ipidx = 0;
     int ispi  = 0;
     for (auto it : static_pose) {
       const std::string& JointName = it.first;
 
-      int iskelindex = _skeleton.jointIndex(JointName);
+      int iskelindex = skeleton.jointIndex(JointName);
 
-      int inumjinmap = _skeleton.mmJointNameMap.size();
+      int inumjinmap = skeleton.mmJointNameMap.size();
 
       // logchan_pose->log("bindAnimInst jname<%s> iskelindex<%d> inumjinmap<%d>", JointName.c_str(), iskelindex, inumjinmap);
 
@@ -184,39 +183,39 @@ void XgmLocalPose::bindAnimInst(XgmAnimInst& animinst) {
           // TODO: Callback for programmer-controlled joints, pre-blended
           // _blendposeinfos[iskelindex].AddPose(PoseMatrix, fweight, components);
 
-          animinst.setPoseBinding(ipidx++, XgmAnimInst::Binding(iskelindex, ispi));
+          setPoseBinding(ipidx++, XgmAnimInst::Binding(iskelindex, ispi));
         }
       }
       ispi++;
     }
-    animinst.setPoseBinding(ipidx++, XgmAnimInst::Binding(0xffff, 0xffff));
+    setPoseBinding(ipidx++, XgmAnimInst::Binding(0xffff, 0xffff));
 
     size_t inumanimchannels = joint_channels.size();
-    // float frame = animinst.GetCurrentFrame();
-    // float numframes = animinst.GetNumFrames();
+    // float frame = GetCurrentFrame();
+    // float numframes = GetNumFrames();
     // int iframe = int(frame);
     int ichidx = 0;
 
-    // for (int is = 0; is < _skeleton.numJoints(); is++)
-    // logchan_pose->log("skel bone<%d:%s>", is, _skeleton.GetJointName(is).c_str());
+    // for (int is = 0; is < skeleton.numJoints(); is++)
+    // logchan_pose->log("skel bone<%d:%s>", is, skeleton.GetJointName(is).c_str());
 
     int ichiti = 0;
     for (auto it : joint_channels) {
       const auto& channel_name = it.first;
       auto matrix_channel      = it.second;
-      int iskelindex           = _skeleton.jointIndex(channel_name);
+      int iskelindex           = skeleton.jointIndex(channel_name);
 
       // logchan_pose->log("bind channel<%s> skidx<%d>", channel_name.c_str(), iskelindex);
 
       if (-1 != iskelindex) {
-        animinst.setAnimBinding(ichidx++, XgmAnimInst::Binding(iskelindex, ichiti));
+        setAnimBinding(ichidx++, XgmAnimInst::Binding(iskelindex, ichiti));
         // const fmtx4 &ChannelDecomp = MtxChannelData->GetFrame(iframe);
         // TODO: Callback for programmer-controlled joints, pre-blended
         // _blendposeinfos[iskelindex].AddPose(ChannelDecomp, fweight, components);
       }
       ichiti++;
     }
-    animinst.setAnimBinding(ichidx++, XgmAnimInst::Binding(0xffff, 0xffff));
+    setAnimBinding(ichidx++, XgmAnimInst::Binding(0xffff, 0xffff));
   }
 }
 
@@ -224,13 +223,11 @@ void XgmLocalPose::bindAnimInst(XgmAnimInst& animinst) {
 /// unbind the animinst to the pose
 /// ////////////////////////////////////////////////////////////////////////////
 
-void XgmLocalPose::unbindAnimInst(XgmAnimInst& AnimInst) {
-  AnimInst.setPoseBinding(0, XgmAnimInst::Binding(0xffff, 0xffff));
-  AnimInst.setAnimBinding(0, XgmAnimInst::Binding(0xffff, 0xffff));
-  if (AnimInst._animation) {
-    const XgmAnim& anim = *AnimInst._animation;
-
-    size_t inumjointchannels = anim._jointanimationchannels.size();
+void XgmAnimInst::unbindFromSkeleton(const XgmSkeleton& skeleton) {
+  setPoseBinding(0, XgmAnimInst::Binding(0xffff, 0xffff));
+  setAnimBinding(0, XgmAnimInst::Binding(0xffff, 0xffff));
+  if (_animation) {
+    size_t inumjointchannels = _animation->_jointanimationchannels.size();
   }
 }
 

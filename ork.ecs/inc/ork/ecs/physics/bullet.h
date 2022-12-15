@@ -11,7 +11,7 @@
 
 #include <ork/object/Object.h>
 #include <ork/rtti/RTTIX.inl>
-#include <ork/math/PIDController.h>
+#include <ork/math/PIDController.inl>
 
 #include <ork/math/box.h>
 #include <ork/math/cmatrix3.h>
