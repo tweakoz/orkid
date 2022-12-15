@@ -16,11 +16,13 @@
 #include <ork/lev2/aud/singularity/synth.h>
 #include <ork/reflect/properties/registerX.inl>
 #include <ork/reflect/properties/DirectObject.inl>
+#include <ork/util/logger.h>
 
 ImplementReflectionX(ork::audio::singularity::BlockModulationData, "SynBlockModulation");
 ImplementReflectionX(ork::audio::singularity::DspParamData, "SynDspParam");
 
 namespace ork::audio::singularity {
+static logchannel_ptr_t logchan_modulation = logger()->createChannel("singul.mod", fvec3(1, 0.3, 1));
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -137,7 +139,6 @@ void DspParamData::usePitchEvaluator() {
   _evaluatorid = "pitch";
 
   _units = "cents";
-
   _edit_coarse_min        = 0.0f;
   _edit_coarse_numsteps   = 120;
   _edit_coarse_max        = _edit_coarse_numsteps * 100.0f;
@@ -149,16 +150,15 @@ void DspParamData::usePitchEvaluator() {
   _edit_keytrack_max      = 200.0f;
   _edit_keytrack_numsteps = 400;
 
-
-
   _mods->_evaluator = [this](DspParam& cec) -> float {
     float kt       = _keyTrack * cec._keyOff;
     float vt       = _velTrack * cec._unitVel;
-    float totcents = (_coarse)   //
-                     + _fine     //
-                     + cec._C1() //
-                     + cec._C2() //
-                     + kt        //
+    float totcents = 6000 // 60(midi-middle-C) * 100 cents
+                     + (_coarse)   //
+                     + _fine       //
+                     + cec._C1()   //
+                     + cec._C2()   //
+                     + kt          //
                      + vt;
     // float ratio = cents_to_linear_freq_ratio(totcents);
     // printf( "rat<%f>\n", ratio);
@@ -239,6 +239,9 @@ void DspParam::reset() {
 }
 
 void DspParam::keyOn(int ikey, int ivel) {
+
+   //logchan_modulation->log( "DspParam::keyOn: ikey<%d> ivel<%d>", ikey, ivel );
+
   _keyOff  = float(ikey - _data->_keystartNote);
   _unitVel = float(ivel) / 127.0f;
 
@@ -249,12 +252,17 @@ void DspParam::keyOn(int ikey, int ivel) {
     if (_data->_keystartNote == 0)
       _keyOff = 0;
 
-    // printf( "ikey<%d> ksn<%d> ko<%d>\n", ikey, _keystartNote, int(_keyOff) );
   }
 
-  // printf( "_keystartNote<%d>\n", _keystartNote );
-  // printf( "_keyOff<%f>\n", _keyOff );
-  // printf( "_unitVel<%f>\n", _unitVel );
+  //logchan_modulation->log( "DspParam: _keystartNote<%d>", _data->_keystartNote );
+  //logchan_modulation->log( "DspParam: _keyOff<%f>", _keyOff );
+  //logchan_modulation->log( "DspParam: _unitVel<%f>", _unitVel );
+
+  if(ikey!=0){
+    //OrkAssert(false);
+
+  }
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////

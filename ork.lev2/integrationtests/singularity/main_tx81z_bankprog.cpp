@@ -14,7 +14,7 @@ int main(int argc, char** argv,char**envp) {
   auto initdata = std::make_shared<ork::AppInitData>(argc,argv,envp);
   auto app = createEZapp(initdata);
   // auto toplayoutgroup            = app->_topLayoutGroup;
-  synth::instance()->_masterGain = decibel_to_linear_amp_ratio(30.0f);
+  synth::instance()->_masterGain = decibel_to_linear_amp_ratio(0.0f);
   ////////////////////////////////////////////////
   // main bus effect
   ////////////////////////////////////////////////

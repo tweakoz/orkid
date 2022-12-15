@@ -79,12 +79,13 @@ PMX::PMX(const DspBlockData* dbd)
 void PMX::compute(DspBuffer& dspbuf) { // final
   int inumframes   = _layer->_dspwritecount;
   float* output    = dspbuf.channel(_dspchannel[0]) + _layer->_dspwritebase;
-  float pitch      = _param[0].eval(); // cents
+  float centoff      = _param[0].eval(); // cents
   float amp        = _param[1].eval();
   float fbl        = _param[2].eval();
-  float note       = pitch * 0.01;
+  float lyrcents = _layer->_layerBasePitch;
+  float note      = (lyrcents + centoff) * 0.01;
   float frq        = midi_note_to_frequency(note);
-  OrkAssert(false);
+  
   float clampedamp = std::clamp(amp, 0.0f, 1.0f);
   float clampefbl  = std::clamp(fbl, 0.0f, 1.0f);
   ///////////////////////////////////////////////////////////////
@@ -132,7 +133,7 @@ void PMX::doKeyOn(const KeyOnInfo& koi) { // final
   if (_pmxdata->_txprogramdata) {
     auto name = _pmxdata->_txprogramdata->_name;
     int alg   = _pmxdata->_txprogramdata->_alg;
-    // printf("keyon prog<%s> alg<%d>\n", name.c_str(), alg);
+     printf("keyon prog<%s> alg<%d>\n", name.c_str(), alg);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////

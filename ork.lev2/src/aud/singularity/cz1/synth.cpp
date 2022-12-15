@@ -80,8 +80,8 @@ void CZX::compute(DspBuffer& dspbuf) // final
   float modindex = std::clamp(_param[1].eval(), 0.0f, 1.0f);
   modindex       = powf(modindex, 0.5);
   _fval[0]       = centoff;
-  double cin     = (lyrcents + centoff) * 0.01;
-  double frq     = midi_note_to_frequency(cin) * _oscdata->_octaveScale;
+  double note     = (lyrcents + centoff) * 0.01;
+  double frq     = midi_note_to_frequency(note) * _oscdata->_octaveScale;
   double per     = SR / frq;
 
   // printf("osc<%p> frq<%g>\n", this, frq);

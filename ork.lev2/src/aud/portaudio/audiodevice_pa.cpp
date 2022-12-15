@@ -27,6 +27,8 @@
 
 #if defined(ENABLE_PORTAUDIO)
 
+int WTF = 0;
+
 using namespace ork::audio::singularity;
 
 template class ork::orklut<ork::Char8, float>;
@@ -39,7 +41,7 @@ const bool ENABLE_OUTPUT = true; // allow disabling for long debug sessions
 #if defined(__APPLE__)
 const int DESIRED_NUMFRAMES = 256;
 #else
-const int DESIRED_NUMFRAMES = 8192;
+const int DESIRED_NUMFRAMES = 1024;
 #endif
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -64,7 +66,8 @@ static int patestCallback(
   if (false) { // test tone ?
     static int64_t _testtoneph = 0;
     for (int i = 0; i < framesPerBuffer; i++) {
-      double phase = 60.0 * pi2 * double(_testtoneph) / getSampleRate();
+      double phase = 440.0 * pi2 * double(_testtoneph) / getSampleRate();
+      //printf( "phase<%g>\n", phase );
       float samp   = sinf(phase) * .6;
       *out++       = samp; // interleaved
       *out++       = samp; // interleaved
@@ -74,8 +77,8 @@ static int patestCallback(
     const auto& obuf = the_synth->_obuf;
     float gain       = the_synth->_masterGain;
     for (i = 0; i < framesPerBuffer; i++) {
-      *out++ = obuf._leftBuffer[i] * gain;  // interleaved
-      *out++ = obuf._rightBuffer[i] * gain; // interleaved
+      *out++ = obuf._leftBuffer[i]* gain;  // interleaved
+      *out++ = obuf._rightBuffer[i]* gain; // interleaved
     }
   } else {
     for (i = 0; i < framesPerBuffer; i++) {

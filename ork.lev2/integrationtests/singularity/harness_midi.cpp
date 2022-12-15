@@ -10,12 +10,17 @@
 #include <cstdlib>
 
 #include <rtmidi/RtMidi.h>
+#include <ork/util/logger.h>
+
+static logchannel_ptr_t logchan_midicb = ork::logger()->createChannel("midi.cb", fvec3(1, 0.3, 1));
 
 void mymidicallback(double deltatime, std::vector<unsigned char>* message, void* userData) {
+  
   auto numbytes = message->size();
+  std::string outstr;
   for (unsigned int i = 0; i < numbytes; i++)
-    printf("%02x ", (int)message->at(i));
-  printf("\n");
+    outstr += ork::FormatString("%02x ", (int)message->at(i));
+  logchan_midicb->log("%s", outstr.c_str());
 
   static std::map<int, programInst*> _keymap;
 
@@ -33,6 +38,12 @@ void mymidicallback(double deltatime, std::vector<unsigned char>* message, void*
           if (it == _keymap.end()) {
             auto pi       = synth::instance()->liveKeyOn(note, vel, prog);
             _keymap[note] = pi;
+          }
+          else if(vel==0){
+            // yep, this again..
+            auto pi = it->second;
+            synth::instance()->liveKeyOff(pi);
+            _keymap.erase(it);
           }
           break;
         }

@@ -113,12 +113,12 @@ float cents_to_linear_freq_ratio(float cents) {
 ///////////////////////////////////////////////////////////////////////////////
 
 //#define TUNING_CONSTANT	32.7033
-const double TUNING_CONSTANT = 16.3515978307 * 2.0; // derived by tweak given note 57 = 440.00000000 hz
+const double TUNING_CONSTANT = 16.3515978307 * 0.5; // derived by tweak given note 57 = 440.00000000 hz
 //#define TUNING_CONSTANT	32.7031956614 // derived by tweak given note 57 = 440.00000000 hz
 
 float midi_note_to_frequency(float midinote) {
   float frequency = (TUNING_CONSTANT)*cents_to_linear_freq_ratio(midinote * 100.0f);
-   orkprintf( "midinote->frequency( note: %g ) = frequency: %g\n", midinote, frequency );
+   //orkprintf( "midinote->frequency( note: %g ) = frequency: %g\n", midinote, frequency );
   return frequency;
 }
 

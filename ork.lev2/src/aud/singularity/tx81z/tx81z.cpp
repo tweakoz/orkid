@@ -131,7 +131,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       for (int i = 0; i < bytesperprog; i++)
         bytes.push_back(data[base + i]);
     }
-    hexdumpbytes(bytes);
+    //hexdumpbytes(bytes);
 
     ///////////////////////////
 
@@ -149,8 +149,8 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
     auto fm4pd     = std::make_shared<Tx81zProgData>();
     auto layerdata = zpmprg->newLayer();
 
-    printf("////////////////////////////\n");
-    printf("V<%d:%s>\n", progid, name.c_str());
+    //printf("////////////////////////////\n");
+    //printf("V<%d:%s>\n", progid, name.c_str());
 
     ////////////
     // voice global
@@ -197,7 +197,7 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
     int middleC            = TRPS;
     fm4pd->_pitchBendRange = PBR;
 
-    printf("prog<%s> TRPS<%d> PBR<%d> ALG<%d> FBL<%d>\n", name.c_str(), TRPS, PBR, ALG, FBL);
+    //printf("prog<%s> TRPS<%d> PBR<%d> ALG<%d> FBL<%d>\n", name.c_str(), TRPS, PBR, ALG, FBL);
 
     bool CH = bytes[48] & 0x10;
     bool MO = bytes[48] & 0x08; // mono mode ?
@@ -298,14 +298,14 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       float baselev = expf(a * float(outLevel) - b); // / 1.86607;
       baselev       = powf(baselev, 1.0f);
 
-      printf(
+      /*printf(
           "prog<%s> op<%d> outLevel<%d> a<%g> b<%g> baselev<%g>\n", //
           name.c_str(),
           opindex,
           outLevel,
           a,
           b,
-          baselev);
+          baselev);*/
 
       ////////////////////////////
       // translate tx operator frequency params

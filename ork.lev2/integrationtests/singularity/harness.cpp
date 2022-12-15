@@ -486,7 +486,8 @@ prgdata_constptr_t testpattern(
     synth::instance()->_globalprog = program;
     return program;
   } else if (testpatternname == "midi") {
-    midictx->startMidiInputByName(midiportname, &mymidicallback);
+    int portindex = atoi(midiportname.c_str());
+    midictx->startMidiInputByIndex(portindex, &mymidicallback);
     synth::instance()->_globalprog = program;
     return program;
   } else if (testpatternname == "sq1") {
@@ -533,8 +534,8 @@ prgdata_constptr_t testpattern(
           // printf("getProgramByName<%s>\n", program->_name.c_str());
           enqueue_audio_event(
               program,             // program
-              count * 0.15,        // time
-              0.33,                // duration
+              count * 0.5,        // time
+              0.25,                // duration
               48 + n,              // midinote
               v);                  // velocity
           count++;

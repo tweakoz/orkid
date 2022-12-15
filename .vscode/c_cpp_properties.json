@@ -17,6 +17,7 @@
               "_REENTRANT",
               "_LARGEFILE64_SOURCE",
               "_LARGEFILE_SOURCE",
+              "ENABLE_PORTAUDIO"
             ],
             "compilerPath": "/usr/bin/clang",
             "cStandard": "c17",

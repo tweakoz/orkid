@@ -8,15 +8,18 @@
 #include <cstdlib>
 
 #include <rtmidi/RtMidi.h>
+#include <ork/util/logger.h>
 
 /////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::midi {
 ///////////////////////////////////////////////////////////////////////////////
+static logchannel_ptr_t logchan_midi = logger()->createChannel("midi.context", fvec3(1, 0.3, 1));
 using input_impl_t  = std::shared_ptr<RtMidiIn>;
 using output_impl_t = std::shared_ptr<RtMidiOut>;
 /////////////////////////////////////////////////////////////////////////////
 inputcontext_ptr_t InputContext::instance() {
-  return std::make_shared<InputContext>();
+  static auto i = std::make_shared<InputContext>();
+  return i;
 }
 /////////////////////////////////////////////////////////////////////////////
 InputContext::InputContext() {
@@ -40,6 +43,8 @@ midiinputmap_t InputContext::enumerateMidiInputs() {
 }
 /////////////////////////////////////////////////////////////////////////////
 void InputContext::startMidiInputByName(std::string named, midi_callback_t input_callback) {
+  logchan_midi->log("startMidiInputByName<%s>", named.c_str() );
+
   auto it   = _portmap.find(named);
   int index = 0;
   if (it != _portmap.end()) {
@@ -49,6 +54,7 @@ void InputContext::startMidiInputByName(std::string named, midi_callback_t input
 }
 /////////////////////////////////////////////////////////////////////////////
 void InputContext::startMidiInputByIndex(int inputid, midi_callback_t input_callback) {
+  logchan_midi->log("startMidiInputByIndex<%d>", inputid );
   auto rtinpimpl = _impl.get<input_impl_t>();
   rtinpimpl->openPort(inputid);
   rtinpimpl->ignoreTypes( false, true, true );

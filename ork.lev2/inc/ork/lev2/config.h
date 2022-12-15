@@ -24,7 +24,8 @@
 #endif
 
 #if defined(LINUX)
-#define ENABLE_ALSA
+//#define ENABLE_ALSA
+ #define ENABLE_PORTAUDIO 
 #else 
 #define ENABLE_PORTAUDIO
 #endif
