@@ -41,8 +41,16 @@ static logchannel_ptr_t logchan_pbr = logger()->createChannel("mtlpbr", fvec3(0.
 
 //////////////////////////////////////////////////////
 
-material_ptr_t default3DMaterial() {
-  return std::make_shared<PBRMaterial>(lev2::contextForCurrentThread());
+struct GlobalDefaultMaterial{
+  GlobalDefaultMaterial(Context* ctx){
+     _material = std::make_shared<PBRMaterial>(ctx);
+  }
+  pbrmaterial_ptr_t _material;
+};
+
+pbrmaterial_ptr_t default3DMaterial(Context* ctx) {
+  static GlobalDefaultMaterial _gdm(ctx);
+  return _gdm._material;
 }
 
 //////////////////////////////////////////////////////
@@ -449,7 +457,7 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
         auto MTXI    = context->MTXI();
         auto RSI     = context->RSI();
         _this->_rasterstate.SetCullTest(ECULLTEST_OFF);
-        _this->_rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
+        _this->_rasterstate.SetDepthTest(EDEPTHTEST_OFF);
         _this->_rasterstate.SetZWriteMask(true);
         _this->_rasterstate.SetRGBAWriteMask(true, false);
         RSI->BindRasterState(_this->_rasterstate);

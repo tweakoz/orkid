@@ -200,7 +200,9 @@ fmtx4 DecompMatrix::compose() const {
       _scale.x,     //
       _scale.y,     //
       _scale.z);
+  return rval;
 }
+
 void DecompMatrix::decompose(fmtx4 inp) {
   inp.decompose(
       _position,    //
@@ -637,27 +639,8 @@ XgmWorldPose::XgmWorldPose(const XgmSkeleton& skel)
 void XgmWorldPose::apply(const fmtx4& worldmtx, const XgmLocalPose& localpose) {
   int inumj = localpose.NumJoints();
   _worldmatrices.resize(inumj);
-  //////////////////////////////////
   for (int ij = 0; ij < inumj; ij++) {
-    //////////////////////////////////
-    // fmtx4 anim_concat = fmtx4::multiply_ltor(
-    //                   _skeleton._inverseBindMatrices[ij], //
-    //                 localpose._concat_matrices[ij]);
-    fmtx4 anim_concat = localpose._concat_matrices[ij];
-    //////////////////////////////////
-    auto finalmtx      = fmtx4::multiply_ltor(anim_concat, worldmtx);
-    _worldmatrices[ij] = finalmtx;
-    //////////////////////////////////
-    if (0) {
-      std::string bname = _skeleton.GetJointName(ij);
-      auto fdump        = finalmtx.dump4x3cn();
-      printf(
-          "fdump: joint<%d:%s> mtx: %s\n", //
-          ij,                              //
-          bname.c_str(),                   //
-          fdump.c_str());
-    }
-    //////////////////////////////////
+    _worldmatrices[ij] = worldmtx*localpose._concat_matrices[ij];
   }
 }
 

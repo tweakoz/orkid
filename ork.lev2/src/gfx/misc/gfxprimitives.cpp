@@ -1255,7 +1255,7 @@ void GfxPrimitives::Init(Context* pTarg) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void GfxPrimitives::RenderAxis(Context* pTarg) {
-  pTarg->GBI()->DrawPrimitive(default3DMaterial().get(), GetRef().mVtxBuf_Axis);
+  pTarg->GBI()->DrawPrimitive(default3DMaterial(pTarg).get(), GetRef().mVtxBuf_Axis);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -407,18 +407,22 @@ void XgmModel::RenderSkinned(
   ////////////////////////////////////////
   // Draw Skeleton
 
-  /*if (minst->_drawSkeleton) {
-    const Xg_localPose& LocalPose = minst->RefLocalPose();
+  if (minst->_drawSkeleton) {
+    const auto& worldpose = minst->_worldPose;
     pTARG->debugPushGroup("DrawSkeleton");
     pTARG->PushModColor(fvec4::White());
 
-    auto material = default3DMaterial();
-
-    //////////////
-    // bone x-ray
-    //////////////
-
-    material->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+    static pbrmaterial_ptr_t material = default3DMaterial(pTARG);
+    material->_variant = "vertexcolor"_crcu;
+    material->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_OFF);
+    material->_rasterstate.SetZWriteMask(true);
+    auto fxcache = material->fxInstanceCache();
+    OrkAssert(fxcache);
+    RenderContextInstData RCIDCOPY = RCID;
+    RCIDCOPY._isSkinned = false;
+    RCIDCOPY._fx_instance_cache = fxcache;
+    auto fxinst = fxcache->findfxinst(RCIDCOPY);
+    OrkAssert(fxinst);
 
     //////////////
 
@@ -442,8 +446,12 @@ void XgmModel::RenderSkinned(
         vw.Lock(pTARG, &vtxbuf, numlines);
         for (int ib = 0; ib < inumbones; ib++) {
           const XgmBone& bone = skeleton().bone(ib);
-          fmtx4 bone_head     = fmtx4::multiply_ltor(WorldMat, LocalPose.RefLocalMatrix(bone._parentIndex));
-          fmtx4 bone_tail     = fmtx4::multiply_ltor(WorldMat, LocalPose.RefLocalMatrix(bone._childIndex));
+          fmtx4 bone_head     = worldpose._worldmatrices[bone._parentIndex];
+          fmtx4 bone_tail     = worldpose._worldmatrices[bone._childIndex];
+
+          bone_head = bone_head * mSkeleton._bindMatrices[bone._parentIndex];
+          bone_tail = bone_tail * mSkeleton._bindMatrices[bone._childIndex];
+
           fvec3 h             = bone_head.translation();
           fvec3 t             = bone_tail.translation();
 
@@ -475,7 +483,7 @@ void XgmModel::RenderSkinned(
           }
 
           auto add_vertex = [&](const fvec3 pos, const fvec3& col) {
-            hvtx.mPosition = pos;
+            hvtx.mPosition = pos*3.3;
             hvtx.mColor    = col.ABGRU32();
             vw.AddVertex(hvtx);
           };
@@ -484,53 +492,61 @@ void XgmModel::RenderSkinned(
           // printf("hny<%g %g %g>\n", hny.x, hny.y, hny.z);
           // printf("hnz<%g %g %g>\n", hnz.x, hnz.y, hnz.z);
 
-          add_vertex(h, fvec3::White());
-          add_vertex(a, fvec3::White());
-          add_vertex(a, fvec3::White());
-          add_vertex(t, fvec3::White());
+          auto color = fvec3::Yellow();
 
-          add_vertex(h, fvec3::White());
-          add_vertex(b, fvec3::White());
-          add_vertex(b, fvec3::White());
-          add_vertex(t, fvec3::White());
+          add_vertex(h, color);
+          add_vertex(a, color);
+          add_vertex(a, color);
+          add_vertex(t, color);
 
-          add_vertex(h, fvec3::White());
-          add_vertex(c, fvec3::White());
-          add_vertex(c, fvec3::White());
-          add_vertex(t, fvec3::White());
+          add_vertex(h, color);
+          add_vertex(b, color);
+          add_vertex(b, color);
+          add_vertex(t, color);
 
-          add_vertex(h, fvec3::White());
-          add_vertex(d, fvec3::White());
-          add_vertex(d, fvec3::White());
-          add_vertex(t, fvec3::White());
+          add_vertex(h, color);
+          add_vertex(c, color);
+          add_vertex(c, color);
+          add_vertex(t, color);
 
-          add_vertex(a, fvec3::White());
-          add_vertex(c, fvec3::White());
-          add_vertex(c, fvec3::White());
-          add_vertex(b, fvec3::White());
+          add_vertex(h, color);
+          add_vertex(d, color);
+          add_vertex(d, color);
+          add_vertex(t, color);
 
-          add_vertex(b, fvec3::White());
-          add_vertex(d, fvec3::White());
-          add_vertex(d, fvec3::White());
-          add_vertex(a, fvec3::White());
+          add_vertex(a, color);
+          add_vertex(c, color);
+          add_vertex(c, color);
+          add_vertex(b, color);
+
+          add_vertex(b, color);
+          add_vertex(d, color);
+          add_vertex(d, color);
+          add_vertex(a, color);
         }
         vw.UnLock(pTARG);
         pTARG->MTXI()->PushMMatrix(fmtx4::Identity());
-        pTARG->GBI()->DrawPrimitive(material.get(), vw, PrimitiveType::LINES, numlines);
+        fxinst->wrappedDrawCall(RCID, [&]() {
+          pTARG->GBI()->DrawPrimitiveEML(vw, PrimitiveType::LINES, numlines);
+        });
         pTARG->MTXI()->PopMMatrix();
       }
       for (int ib = 0; ib < inumbones; ib++) {
         const XgmBone& bone = skeleton().bone(ib);
-        fmtx4 bone_head     = fmtx4::multiply_ltor(WorldMat, LocalPose.RefLocalMatrix(bone._parentIndex));
-        fmtx4 bone_tail     = fmtx4::multiply_ltor(WorldMat, LocalPose.RefLocalMatrix(bone._childIndex));
+        fmtx4 bone_head     = worldpose._worldmatrices[bone._parentIndex];
+         bone_head = bone_head * mSkeleton._bindMatrices[bone._parentIndex];
+        //fmtx4 bone_tail     = worldpose._worldmatrices[bone._childIndex];
         pTARG->MTXI()->PushMMatrix(bone_head);
-        // GfxPrimitives::GetRef().RenderAxis(pTARG);
+        fxinst->wrappedDrawCall(RCID, [&]() {
+            auto& axis =  GfxPrimitives::GetRef().mVtxBuf_Axis;
+            pTARG->GBI()->DrawPrimitiveEML(axis);
+        });
         pTARG->MTXI()->PopMMatrix();
       }
     }
     pTARG->PopModColor();
     pTARG->debugPopGroup();
-  }*/
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

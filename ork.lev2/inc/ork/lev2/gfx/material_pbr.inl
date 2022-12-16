@@ -274,6 +274,6 @@ public:
 
 };
 
-material_ptr_t default3DMaterial();
+pbrmaterial_ptr_t default3DMaterial(Context* ctx);
 
 } // namespace ork::lev2

@@ -87,9 +87,9 @@ struct GpuResources {
 
     pbrcommon->_depthFogDistance = 4000.0f;
     pbrcommon->_depthFogPower    = 5.0f;
-    pbrcommon->_skyboxLevel      = 2.5;
-    pbrcommon->_diffuseLevel     = 2.4; 
-    pbrcommon->_specularLevel    = 15.2; 
+    pbrcommon->_skyboxLevel      = 0.5;
+    pbrcommon->_diffuseLevel     = 0.4; 
+    pbrcommon->_specularLevel    = 5.2; 
 
     //////////////////////////////////////////////////////////
 
@@ -148,6 +148,7 @@ struct GpuResources {
     //modelinst->setBlenderZup(true);
     modelinst->enableSkinning();
     modelinst->enableAllMeshes();
+    modelinst->_drawSkeleton = true;
 
     //model->mSkeleton.mTopNodesMatrix.compose(fvec3(),fquat(),0.0001);
 
@@ -438,20 +439,40 @@ int main(int argc, char** argv, char** envp) {
         ci = (rotmtx*ci);
       });
     }
-    else{
+    { //else{
 
       int ji_rshoulder = skel.jointIndex("mixamorig.RightShoulder");
-      auto rshoulder_base = localpose._concat_matrices[ji_rshoulder];
-      auto rshoulder_basei = rshoulder_base.inverse();
+      int ji_rarm = skel.jointIndex("mixamorig.RightArm");
+      int ji_rfarm = skel.jointIndex("mixamorig.RightForeArm");
+      int ji_rhand = skel.jointIndex("mixamorig.RightHand");
 
-      fmtx4 rotmtx;
-      rotmtx.setRotateZ((sinf(time*5) * 7.5)*DTOR);
+      auto& rshoulder = localpose._concat_matrices[ji_rshoulder];
+      auto rshoulderi = rshoulder.inverse();
 
-      rotmtx = rshoulder_basei*rotmtx*rshoulder_base;
+      auto rarm = localpose._concat_matrices[ji_rarm];
+      auto rarm_i = rarm.inverse();
+      auto rfarm = localpose._concat_matrices[ji_rfarm];
+      auto rfarm_i = rfarm.inverse();
+
+      auto rhand = localpose._concat_matrices[ji_rhand];
+      auto rhand_i = rhand.inverse();
+
+      auto v_farm_arm = rfarm.translation()-rarm.translation();
+      auto v_hand_farm = rhand.translation()-rfarm.translation();
+
+      float rarm_len = v_farm_arm.length();
+      float rfarm_len = v_hand_farm.length();
+
+
+      //fquat rotq(v_farm_arm.normalized(),time * 17.5*DTOR);
+      fquat rotq(fvec3(0,1,0),time * 17.5*DTOR);
+
+      //auto rotmtx = rarm*rotq.toMatrix()*rarm_i;
+      auto rotmtx = rshoulderi*rotq.toMatrix()*rshoulder;
 
       gpurec->_char_applicatorR->apply([&](int index){
         auto& ci = localpose._concat_matrices[index];
-        ci = (rotmtx*ci);
+        ci = rotmtx*ci;
       });
     }
     ///////////////////////////////////////////////////////////
