@@ -186,21 +186,33 @@ struct GpuResources {
     _char_animinst3->_use_temporal_lerp = true;
     _char_animinst3->bindToSkeleton(model->mSkeleton);
 
-    _char_applicator = std::make_shared<lev2::XgmSkelApplicator>(model->mSkeleton);
+    _char_applicatorL = std::make_shared<lev2::XgmSkelApplicator>(model->mSkeleton);
+    _char_applicatorL->bindToBone("mixamorig.LeftShoulder");
+    _char_applicatorL->bindToBone("mixamorig.LeftArm");
+    _char_applicatorL->bindToBone("mixamorig.LeftForeArm");
+    _char_applicatorL->bindToBone("mixamorig.LeftHand");
+    _char_applicatorL->bindToBone("mixamorig.LeftHandIndex1");
+    _char_applicatorL->bindToBone("mixamorig.LeftHandIndex2");
+    _char_applicatorL->bindToBone("mixamorig.LeftHandIndex3");
+    _char_applicatorL->bindToBone("mixamorig.LeftHandIndex4");
+    _char_applicatorL->bindToBone("mixamorig.LeftHandThumb1");
+    _char_applicatorL->bindToBone("mixamorig.LeftHandThumb2");
+    _char_applicatorL->bindToBone("mixamorig.LeftHandThumb3");
+    _char_applicatorL->bindToBone("mixamorig.LeftHandThumb4");
 
-
-    _char_applicator->bindToBone("mixamorig.RightShoulder");
-    _char_applicator->bindToBone("mixamorig.RightArm");
-    _char_applicator->bindToBone("mixamorig.RightForeArm");
-    _char_applicator->bindToBone("mixamorig.RightHand");
-    _char_applicator->bindToBone("mixamorig.RightHandIndex1");
-    _char_applicator->bindToBone("mixamorig.RightHandIndex2");
-    _char_applicator->bindToBone("mixamorig.RightHandIndex3");
-    _char_applicator->bindToBone("mixamorig.RightHandIndex4");
-    _char_applicator->bindToBone("mixamorig.RightHandThumb1");
-    _char_applicator->bindToBone("mixamorig.RightHandThumb2");
-    _char_applicator->bindToBone("mixamorig.RightHandThumb3");
-    _char_applicator->bindToBone("mixamorig.RightHandThumb4");
+    _char_applicatorR = std::make_shared<lev2::XgmSkelApplicator>(model->mSkeleton);
+    _char_applicatorR->bindToBone("mixamorig.RightShoulder");
+    _char_applicatorR->bindToBone("mixamorig.RightArm");
+    _char_applicatorR->bindToBone("mixamorig.RightForeArm");
+    _char_applicatorR->bindToBone("mixamorig.RightHand");
+    _char_applicatorR->bindToBone("mixamorig.RightHandIndex1");
+    _char_applicatorR->bindToBone("mixamorig.RightHandIndex2");
+    _char_applicatorR->bindToBone("mixamorig.RightHandIndex3");
+    _char_applicatorR->bindToBone("mixamorig.RightHandIndex4");
+    _char_applicatorR->bindToBone("mixamorig.RightHandThumb1");
+    _char_applicatorR->bindToBone("mixamorig.RightHandThumb2");
+    _char_applicatorR->bindToBone("mixamorig.RightHandThumb3");
+    _char_applicatorR->bindToBone("mixamorig.RightHandThumb4");
 
   //OrkAssert(false);
     auto& localpose = modelinst->_localPose;
@@ -229,7 +241,8 @@ struct GpuResources {
   lev2::xgmaniminst_ptr_t _char_animinst3;
   lev2::xgmanimassetptr_t _char_animasset; // retain anim
   lev2::xgmmodelassetptr_t _char_modelasset; // retain model
-  lev2::xgmskelapplicator_ptr_t _char_applicator;
+  lev2::xgmskelapplicator_ptr_t _char_applicatorL;
+  lev2::xgmskelapplicator_ptr_t _char_applicatorR;
 
   model_drawable_ptr_t _char_drawable;
   scenegraph::node_ptr_t _char_node;
@@ -409,13 +422,22 @@ int main(int argc, char** argv, char** envp) {
 
 
     if(fmod(time,10)<5){
-    fmtx4 rotmtx;
-    rotmtx.setRotateY((sinf(time*5) * 15.5)*DTOR);
-    gpurec->_char_applicator->apply([&](int index){
-      auto& ci = localpose._concat_matrices[index];
-      auto cii = ci.inverse();
-      ci = (rotmtx*cii)*ci*ci;
-    });
+      fmtx4 rotmtx;
+      rotmtx.setRotateY((sinf(time*5) * 7.5)*DTOR);
+      gpurec->_char_applicatorL->apply([&](int index){
+        auto& ci = localpose._concat_matrices[index];
+        auto cii = ci.inverse();
+        ci = (rotmtx*cii)*ci*ci;
+      });
+    }
+    else{
+      fmtx4 rotmtx;
+      rotmtx.setRotateY((sinf(time*5) * 7.5)*DTOR);
+      gpurec->_char_applicatorR->apply([&](int index){
+        auto& ci = localpose._concat_matrices[index];
+        auto cii = ci.inverse();
+        ci = (rotmtx*cii)*ci*ci;
+      });
     }
     ///////////////////////////////////////////////////////////
 
