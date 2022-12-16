@@ -420,23 +420,30 @@ int main(int argc, char** argv, char** envp) {
     // use skel applicator on post concatenated bones
     ///////////////////////////////////////////////////////////
 
+    auto model = gpurec->_char_modelasset->getSharedModel();
+    auto& skel = model->mSkeleton;
+
+    int skelLS = skel.jointIndex("mixamorig.LeftShoulder");
+    int skelRS = skel.jointIndex("mixamorig.RightShoulder");
+
+    fmtx4 rotmtx;
 
     if(fmod(time,10)<5){
-      fmtx4 rotmtx;
-      rotmtx.setRotateY((sinf(time*5) * 7.5)*DTOR);
+    rotmtx.setRotateY(((1.0+sinf(time*5)) * -5)*DTOR);
+      auto lsmtx = localpose._concat_matrices[skelLS];
+      auto lsmtxI = lsmtx.inverse();
       gpurec->_char_applicatorL->apply([&](int index){
         auto& ci = localpose._concat_matrices[index];
-        auto cii = ci.inverse();
-        ci = (rotmtx*cii)*ci*ci;
+        ci = lsmtxI*rotmtx*lsmtx*ci;
       });
     }
     else{
-      fmtx4 rotmtx;
-      rotmtx.setRotateY((sinf(time*5) * 7.5)*DTOR);
+    rotmtx.setRotateX((sinf(time*5) * 7.5)*DTOR);
+      auto rsmtx = localpose._concat_matrices[skelRS];
+      auto rsmtxI = rsmtx.inverse();
       gpurec->_char_applicatorR->apply([&](int index){
         auto& ci = localpose._concat_matrices[index];
-        auto cii = ci.inverse();
-        ci = (rotmtx*cii)*ci*ci;
+        ci = rsmtxI*rotmtx*rsmtx*ci;
       });
     }
     ///////////////////////////////////////////////////////////
