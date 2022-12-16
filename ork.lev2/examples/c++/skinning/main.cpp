@@ -421,22 +421,40 @@ int main(int argc, char** argv, char** envp) {
     ///////////////////////////////////////////////////////////
 
 
+
+    auto model = gpurec->_char_modelasset->getSharedModel();
+    auto& skel = model->skeleton();
+
+
     if(fmod(time,10)<5){
+
+      int ji_lshoulder = skel.jointIndex("mixamorig.LeftShoulder");
+      auto lshoulder_base = localpose._concat_matrices[ji_lshoulder];
+      auto lshoulder_basei = lshoulder_base.inverse();
+
       fmtx4 rotmtx;
       rotmtx.setRotateY((sinf(time*5) * 7.5)*DTOR);
+      rotmtx = lshoulder_basei*rotmtx*lshoulder_base;
+
       gpurec->_char_applicatorL->apply([&](int index){
         auto& ci = localpose._concat_matrices[index];
-        auto cii = ci.inverse();
-        ci = (rotmtx*cii)*ci*ci;
+        ci = (rotmtx*ci);
       });
     }
     else{
+
+      int ji_rshoulder = skel.jointIndex("mixamorig.RightShoulder");
+      auto rshoulder_base = localpose._concat_matrices[ji_rshoulder];
+      auto rshoulder_basei = rshoulder_base.inverse();
+
       fmtx4 rotmtx;
-      rotmtx.setRotateY((sinf(time*5) * 7.5)*DTOR);
+      rotmtx.setRotateZ((sinf(time*5) * 7.5)*DTOR);
+
+      rotmtx = rshoulder_basei*rotmtx*rshoulder_base;
+
       gpurec->_char_applicatorR->apply([&](int index){
         auto& ci = localpose._concat_matrices[index];
-        auto cii = ci.inverse();
-        ci = (rotmtx*cii)*ci*ci;
+        ci = (rotmtx*ci);
       });
     }
     ///////////////////////////////////////////////////////////
