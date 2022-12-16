@@ -17,6 +17,8 @@
 
 namespace ork { namespace lev2 {
 
+static const int kmaxbones = 64;
+
 using TXGMBoneRegMap  = orkmap<int, int>;
 //using xgm_anim_channel_ptr_t = std::shared_ptr<XgmAnimChannel>;
 //using AnimType        = XgmAnim;
@@ -31,6 +33,9 @@ using TXGMBoneRegMap  = orkmap<int, int>;
 /// ///////////////////////////////////////////////////////////////////////////
 
 struct DecompMatrix{
+
+  fmtx4 compose() const;
+  void decompose(fmtx4) ;
   fvec3 _position;
   fquat _orientation;
   fvec3 _scale;
@@ -254,6 +259,48 @@ struct XgmAnimMask {
 
 };
 
+struct XgmSkeletonBinding {
+  unsigned int mSkelIndex : 16;
+  unsigned int mChanIndex : 16;
+  XgmSkeletonBinding(int is = -1, int ic = -1)
+      : mSkelIndex(is)
+      , mChanIndex(ic) {
+  }
+};
+
+struct XgmPoser {
+
+  const XgmSkeletonBinding& getPoseBinding(int i) const;
+  const XgmSkeletonBinding& getAnimBinding(int i) const;
+  void setPoseBinding(int i, const XgmSkeletonBinding& inp);
+  void setAnimBinding(int i, const XgmSkeletonBinding& inp);
+
+
+  XgmSkeletonBinding _poseBindings[kmaxbones];
+  XgmSkeletonBinding _animBindings[kmaxbones];
+
+};
+
+struct XgmXk3Solve {
+
+  XgmXk3Solve(const XgmSkeleton& skeleton);
+
+  void bindToBones(const std::string& a, //
+                   const std::string& b, //
+                   const std::string& c);
+
+  void solve(const DecompMatrix& refA, //
+             float lenB, //
+             const DecompMatrix& refC);
+
+  void applyToPose(XgmLocalPose& localpose) const;
+
+  const XgmSkeleton& _skeleton;
+  int _iskelindexA;
+  int _iskelindexB;
+  int _iskelindexC;
+};
+
 /// ///////////////////////////////////////////////////////////////////////////
 /// Animation Instance
 /// A running instance of an animation
@@ -263,21 +310,9 @@ struct XgmAnimMask {
 
 struct XgmAnimInst {
 
-  static const int kmaxbones = 64;
-
-  struct Binding {
-    unsigned int mSkelIndex : 16;
-    unsigned int mChanIndex : 16;
-    Binding(int is = -1, int ic = -1)
-        : mSkelIndex(is)
-        , mChanIndex(ic) {
-    }
-  };
-
   XgmAnimInst();
 
   void bindToSkeleton(const XgmSkeleton& skeleton);
-  void unbindFromSkeleton(const XgmSkeleton& skeleton);
   void applyToPose(XgmLocalPose& localpose) const;
 
   void bindAnim(const XgmAnim* anim);
@@ -303,20 +338,13 @@ struct XgmAnimInst {
     return mMask;
   }
 
-  const Binding& getPoseBinding(int i) const;
-  const Binding& getAnimBinding(int i) const;
-  void setPoseBinding(int i, const Binding& inp);
-  void setAnimBinding(int i, const Binding& inp);
-
   const XgmAnim* _animation = nullptr;
   XgmAnimMask mMask;
   float _current_frame;
   float mWeight;
   bool _use_temporal_lerp = false;
 
-  Binding _poseBindings[kmaxbones];
-  Binding _animBindings[kmaxbones];
-  static const Binding gBadBinding;
+  XgmPoser _poser;
 
 };
 
@@ -401,6 +429,7 @@ struct XgmBlendPoseInfo {
   int _numanims = 0;
   PoseCallback* _posecallback = nullptr;
   DecompMatrix _matrices[kmaxblendanims];
+  int _operations[kmaxblendanims];
   float _weights[kmaxblendanims];
 };
 

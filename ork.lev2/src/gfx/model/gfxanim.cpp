@@ -98,10 +98,11 @@ void XgmAnimMask::Disable(const XgmSkeleton& Skel, const std::string& BoneName) 
 
 void XgmAnimMask::Disable(int iboneindex) {
   OrkAssert(iboneindex>=0);
-
   int icharindex = BONE_TO_CHAR(iboneindex);
   int ibitindex  = BONE_TO_BIT(iboneindex);
   mMaskBits[icharindex] &= ~(1<<ibitindex);
+  printf( "XgmAnimMask<%p> disable iboneindex<%d> icharindex<%d> ibitindex<%d> mMaskBits<%zx>\n", //
+          this, iboneindex, icharindex, ibitindex, mMaskBits[icharindex] );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -299,8 +300,6 @@ void XgmAnim::AddChannel(const std::string& Name, animchannel_ptr_t pchan) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const XgmAnimInst::Binding XgmAnimInst::gBadBinding;
-
 XgmAnimInst::XgmAnimInst()
     : _animation(nullptr)
     , _current_frame(0.0f)
@@ -318,28 +317,28 @@ void XgmAnimInst::bindAnim(const XgmAnim* anim) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const XgmAnimInst::Binding& XgmAnimInst::getPoseBinding(int i) const {
+const XgmSkeletonBinding& XgmPoser::getPoseBinding(int i) const {
   OrkAssert(i<kmaxbones);
   return _poseBindings[i];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const XgmAnimInst::Binding& XgmAnimInst::getAnimBinding(int i) const {
+const XgmSkeletonBinding& XgmPoser::getAnimBinding(int i) const {
   OrkAssert(i<kmaxbones);
   return _animBindings[i];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmAnimInst::setPoseBinding(int i, const Binding& inp) {
+void XgmPoser::setPoseBinding(int i, const XgmSkeletonBinding& inp) {
   OrkAssert(i<kmaxbones);
   _poseBindings[i] = inp;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmAnimInst::setAnimBinding(int i, const Binding& inp) {
+void XgmPoser::setAnimBinding(int i, const XgmSkeletonBinding& inp) {
   OrkAssert(i<kmaxbones);
   _animBindings[i] = inp;
 }
@@ -347,6 +346,3 @@ void XgmAnimInst::setAnimBinding(int i, const Binding& inp) {
 ///////////////////////////////////////////////////////////////////////////////
 
 } // namespace ork::lev2
-
-//template void ork::chunkfile::OutputStream::AddItem<ork::lev2::DecompMtx44>(const ork::lev2::DecompMtx44& item);
-//template class ork::orklut<ork::std::string, ork::lev2::DecompMtx44>;

@@ -157,9 +157,43 @@ struct GpuResources {
     _char_animinst->bindAnim(anim);
     _char_animinst->SetWeight(1.0f);
     _char_animinst->RefMask().EnableAll();
+    //_char_animinst->RefMask().Disable(model->mSkeleton,"mixamorig.RightShoulder");
+    //_char_animinst->RefMask().Disable(model->mSkeleton,"mixamorig.RightArm");
+    //_char_animinst->RefMask().Disable(model->mSkeleton,"mixamorig.RightForeArm");
+    //_char_animinst->RefMask().Disable(model->mSkeleton,"mixamorig.RightHand");
     _char_animinst->_use_temporal_lerp = true;
     _char_animinst->bindToSkeleton(model->mSkeleton);
 
+    _char_animinst2 = std::make_shared<XgmAnimInst>();
+    _char_animinst2->bindAnim(anim);
+    _char_animinst2->SetWeight(0.5);
+    _char_animinst2->RefMask().DisableAll();
+    _char_animinst2->RefMask().Enable(model->mSkeleton,"mixamorig.RightShoulder");
+    _char_animinst2->RefMask().Enable(model->mSkeleton,"mixamorig.RightArm");
+    _char_animinst2->RefMask().Enable(model->mSkeleton,"mixamorig.RightForeArm");
+    _char_animinst2->RefMask().Enable(model->mSkeleton,"mixamorig.RightHand");
+    _char_animinst2->_use_temporal_lerp = true;
+    _char_animinst2->bindToSkeleton(model->mSkeleton);
+
+    _char_animinst3 = std::make_shared<XgmAnimInst>();
+    _char_animinst3->bindAnim(anim);
+    _char_animinst3->SetWeight(0.5);
+    _char_animinst3->RefMask().DisableAll();
+    _char_animinst3->RefMask().Enable(model->mSkeleton,"mixamorig.RightShoulder");
+    _char_animinst3->RefMask().Enable(model->mSkeleton,"mixamorig.RightArm");
+    _char_animinst3->RefMask().Enable(model->mSkeleton,"mixamorig.RightForeArm");
+    _char_animinst3->RefMask().Enable(model->mSkeleton,"mixamorig.RightHand");
+    _char_animinst3->_use_temporal_lerp = true;
+    _char_animinst3->bindToSkeleton(model->mSkeleton);
+
+    _char_solvechain = std::make_shared<lev2::XgmXk3Solve>(model->mSkeleton);
+
+
+    _char_solvechain->bindToBones("mixamorig.RightShoulder", //
+                                  "mixamorig.RightArm", //
+                                  "mixamorig.RightForeArm");
+
+  //OrkAssert(false);
     auto& localpose = modelinst->_localPose;
     auto& worldpose = modelinst->_worldPose;
 
@@ -182,8 +216,12 @@ struct GpuResources {
 
   lev2::xgmanimmask_ptr_t _char_animmask;
   lev2::xgmaniminst_ptr_t _char_animinst;
+  lev2::xgmaniminst_ptr_t _char_animinst2;
+  lev2::xgmaniminst_ptr_t _char_animinst3;
   lev2::xgmanimassetptr_t _char_animasset; // retain anim
   lev2::xgmmodelassetptr_t _char_modelasset; // retain model
+  lev2::xgmxk3solve_ptr_t _char_solvechain;
+
   model_drawable_ptr_t _char_drawable;
   scenegraph::node_ptr_t _char_node;
 
@@ -335,7 +373,11 @@ int main(int argc, char** argv, char** envp) {
 
 
     gpurec->_char_animinst->_current_frame = fmod(frame,float(anim->_numframes));
-    gpurec->_char_animinst->SetWeight(1.0f);
+    gpurec->_char_animinst->SetWeight(0.5f);
+    gpurec->_char_animinst2->_current_frame = fmod(frame*1.3,float(anim->_numframes));
+    gpurec->_char_animinst2->SetWeight(0.5);
+    gpurec->_char_animinst3->_current_frame = fmod(frame,float(anim->_numframes));
+    gpurec->_char_animinst3->SetWeight(0.75);
 
     auto modelinst = gpurec->_char_drawable->_modelinst;
     auto& localpose = modelinst->_localPose;
@@ -343,6 +385,9 @@ int main(int argc, char** argv, char** envp) {
 
     localpose.bindPose();
     gpurec->_char_animinst->applyToPose(localpose);
+    //gpurec->_char_animinst2->applyToPose(localpose);
+    //gpurec->_char_animinst3->applyToPose(localpose);
+    gpurec->_char_solvechain->applyToPose(localpose);
     localpose.blendPoses();
 
     //auto lpdump = localpose.dump();
