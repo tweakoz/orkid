@@ -420,11 +420,8 @@ int main(int argc, char** argv, char** envp) {
     // use skel applicator on post concatenated bones
     ///////////////////////////////////////////////////////////
 
-
-
     auto model = gpurec->_char_modelasset->getSharedModel();
     auto& skel = model->skeleton();
-
 
     if(fmod(time,10)<5){
 
