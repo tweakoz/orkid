@@ -281,24 +281,20 @@ struct XgmPoser {
 
 };
 
-struct XgmXk3Solve {
+struct XgmSkelApplicator {
 
-  XgmXk3Solve(const XgmSkeleton& skeleton);
+  using fn_t = std::function<void(int i)>;
 
-  void bindToBones(const std::string& a, //
-                   const std::string& b, //
-                   const std::string& c);
+  XgmSkelApplicator(const XgmSkeleton& skeleton);
 
-  void solve(const DecompMatrix& refA, //
-             float lenB, //
-             const DecompMatrix& refC);
+  void bindToBone(const std::string& a);
 
-  void applyToPose(XgmLocalPose& localpose) const;
+  void apply(fn_t the_fn) const;
 
   const XgmSkeleton& _skeleton;
-  int _iskelindexA;
-  int _iskelindexB;
-  int _iskelindexC;
+
+  std::vector<int> _bones2apply;
+
 };
 
 /// ///////////////////////////////////////////////////////////////////////////

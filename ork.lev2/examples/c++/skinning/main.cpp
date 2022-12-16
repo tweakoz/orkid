@@ -186,12 +186,21 @@ struct GpuResources {
     _char_animinst3->_use_temporal_lerp = true;
     _char_animinst3->bindToSkeleton(model->mSkeleton);
 
-    _char_solvechain = std::make_shared<lev2::XgmXk3Solve>(model->mSkeleton);
+    _char_applicator = std::make_shared<lev2::XgmSkelApplicator>(model->mSkeleton);
 
 
-    _char_solvechain->bindToBones("mixamorig.RightShoulder", //
-                                  "mixamorig.RightArm", //
-                                  "mixamorig.RightForeArm");
+    _char_applicator->bindToBone("mixamorig.RightShoulder");
+    _char_applicator->bindToBone("mixamorig.RightArm");
+    _char_applicator->bindToBone("mixamorig.RightForeArm");
+    _char_applicator->bindToBone("mixamorig.RightHand");
+    _char_applicator->bindToBone("mixamorig.RightHandIndex1");
+    _char_applicator->bindToBone("mixamorig.RightHandIndex2");
+    _char_applicator->bindToBone("mixamorig.RightHandIndex3");
+    _char_applicator->bindToBone("mixamorig.RightHandIndex4");
+    _char_applicator->bindToBone("mixamorig.RightHandThumb1");
+    _char_applicator->bindToBone("mixamorig.RightHandThumb2");
+    _char_applicator->bindToBone("mixamorig.RightHandThumb3");
+    _char_applicator->bindToBone("mixamorig.RightHandThumb4");
 
   //OrkAssert(false);
     auto& localpose = modelinst->_localPose;
@@ -220,7 +229,7 @@ struct GpuResources {
   lev2::xgmaniminst_ptr_t _char_animinst3;
   lev2::xgmanimassetptr_t _char_animasset; // retain anim
   lev2::xgmmodelassetptr_t _char_modelasset; // retain model
-  lev2::xgmxk3solve_ptr_t _char_solvechain;
+  lev2::xgmskelapplicator_ptr_t _char_applicator;
 
   model_drawable_ptr_t _char_drawable;
   scenegraph::node_ptr_t _char_node;
@@ -387,13 +396,28 @@ int main(int argc, char** argv, char** envp) {
     gpurec->_char_animinst->applyToPose(localpose);
     //gpurec->_char_animinst2->applyToPose(localpose);
     //gpurec->_char_animinst3->applyToPose(localpose);
-    gpurec->_char_solvechain->applyToPose(localpose);
     localpose.blendPoses();
 
     //auto lpdump = localpose.dump();
     //printf( "%s\n", lpdump.c_str() );
 
     localpose.concatenate();
+
+    ///////////////////////////////////////////////////////////
+    // use skel applicator on post concatenated bones
+    ///////////////////////////////////////////////////////////
+
+
+    if(fmod(time,10)<5){
+    fmtx4 rotmtx;
+    rotmtx.setRotateY((sinf(time*5) * 15.5)*DTOR);
+    gpurec->_char_applicator->apply([&](int index){
+      auto& ci = localpose._concat_matrices[index];
+      auto cii = ci.inverse();
+      ci = (rotmtx*cii)*ci*ci;
+    });
+    }
+    ///////////////////////////////////////////////////////////
 
     auto context = drwev->GetTarget();
     RenderContextFrameData RCFD(context); // renderer per/frame data

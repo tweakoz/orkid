@@ -181,30 +181,15 @@ XgmLocalPose::XgmLocalPose(const XgmSkeleton& skel)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-XgmXk3Solve::XgmXk3Solve(const XgmSkeleton& skeleton)
+XgmSkelApplicator::XgmSkelApplicator(const XgmSkeleton& skeleton)
     : _skeleton(skeleton) {
 }
 
-void XgmXk3Solve::bindToBones(
-    const std::string& a,   //
-    const std::string& b,   //
-    const std::string& c) { //
+void XgmSkelApplicator::bindToBone(const std::string& a){
 
-  _iskelindexA = _skeleton.jointIndex(a);
-  _iskelindexB = _skeleton.jointIndex(b);
-  _iskelindexC = _skeleton.jointIndex(c);
-
-  printf("XgmXk3Solve ska<%d> skb<%d> skc<%d>\n", _iskelindexA, _iskelindexB, _iskelindexC);
-}
-
-void XgmXk3Solve::solve(const DecompMatrix& refA, float lenB, const DecompMatrix& refC) {
-
-  fmtx4 as_mtxA, as_mtxB, as_mtxC;
-  as_mtxA.compose(refA._position, refA._orientation, refA._scale);
-  as_mtxC.compose(refC._position, refC._orientation, refC._scale);
-  as_mtxB      = as_mtxA;
-  auto res_pos = fvec4(0, -lenB, 0, 1).transform(as_mtxA);
-  as_mtxB.setTranslation(res_pos.xyz());
+  int skelindex = _skeleton.jointIndex(a);
+  _bones2apply.push_back(skelindex);
+  //printf("XgmSkelApplicator ska<%d> skb<%d> skc<%d>\n", _iskelindexA, _iskelindexB, _iskelindexC);
 }
 
 fmtx4 DecompMatrix::compose() const {
@@ -225,32 +210,9 @@ void DecompMatrix::decompose(fmtx4 inp) {
   _scale.z = _scale.x;
 }
 
-void XgmXk3Solve::applyToPose(XgmLocalPose& localpose) const {
-
-  auto& BPI    = localpose._blendposeinfos[_iskelindexA];
-  auto refmtxi = _skeleton._inverseBindMatrices[_iskelindexA];
-  auto refmtxb = _skeleton._bindMatrices[_iskelindexA];
-
-  int par = _skeleton.GetJointParent(_iskelindexA);
-  if (par >= 0) {
-    auto par_bind    = _skeleton._bindMatrices[par];
-    auto par_invbind = _skeleton._inverseBindMatrices[par];
-    fmtx4 corr;
-    corr.correctionMatrix(par_bind, refmtxb);
-
-    static float phase = 0.0f;
-    float fscale       = 1.0f + sinf(phase) * 0.5;
-
-    fmtx4 outmtx;
-    outmtx.setRotateY(fscale);
-
-    outmtx = par_invbind*outmtx*par_bind;
-
-    BPI._operations[BPI._numanims] = 1;
-    BPI._matrices[BPI._numanims].decompose(outmtx);
-    BPI._numanims++;
-
-    phase += 0.01f;
+void XgmSkelApplicator::apply(fn_t the_fn) const {
+  for( int i : _bones2apply ){
+    the_fn(i);
   }
 }
 
@@ -571,6 +533,18 @@ void XgmLocalPose::concatenate(void) {
     }
   }
 
+  /////////////////////////////////////////////////////////////
+  // inverse bind pose XF
+  /////////////////////////////////////////////////////////////
+
+  int imtx = 0;
+  for( auto& cm : _concat_matrices ){
+    cm = cm * _skeleton._inverseBindMatrices[imtx];
+    imtx++;
+  }
+
+  /////////////////////////////////////////////////////////////
+
   float fmidx = (fminx + fmaxx) * 0.5f;
   float fmidy = (fminy + fmaxy) * 0.5f;
   float fmidz = (fminz + fmaxz) * 0.5f;
@@ -669,7 +643,7 @@ void XgmWorldPose::apply(const fmtx4& worldmtx, const XgmLocalPose& localpose) {
     // fmtx4 anim_concat = fmtx4::multiply_ltor(
     //                   _skeleton._inverseBindMatrices[ij], //
     //                 localpose._concat_matrices[ij]);
-    fmtx4 anim_concat = localpose._concat_matrices[ij] * _skeleton._inverseBindMatrices[ij];
+    fmtx4 anim_concat = localpose._concat_matrices[ij];
     //////////////////////////////////
     auto finalmtx      = fmtx4::multiply_ltor(anim_concat, worldmtx);
     _worldmatrices[ij] = finalmtx;
