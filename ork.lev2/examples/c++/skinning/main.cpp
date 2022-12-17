@@ -43,10 +43,11 @@ typedef SVtxV12C4T16 vtx_t; // position, vertex color, 2 UV sets
 
 struct GpuResources {
 
-  GpuResources(appinitdata_ptr_t init_data, //
-               Context* ctx, //
-               bool use_forward, //
-               bool use_vr) { //
+  GpuResources(
+      appinitdata_ptr_t init_data, //
+      Context* ctx,                //
+      bool use_forward,            //
+      bool use_vr) {               //
 
     auto vars = *init_data->parse();
 
@@ -54,10 +55,10 @@ struct GpuResources {
     int testnum = vars["testnum"].as<int>();
     //////////////////////////////////////////////////////////
 
-    if(use_vr){
+    if (use_vr) {
       auto vrdev = orkidvr::novr::novr_device();
       orkidvr::setDevice(vrdev);
-      vrdev->overrideSize(init_data->_width,init_data->_height);
+      vrdev->overrideSize(init_data->_width, init_data->_height);
     }
 
     _camlut                = std::make_shared<CameraDataLut>();
@@ -73,10 +74,9 @@ struct GpuResources {
     _sg_params                                         = std::make_shared<varmap::VarMap>();
     _sg_params->makeValueForKey<std::string>("preset") = use_forward ? "ForwardPBR" : "DeferredPBR";
 
-    if(use_vr){
+    if (use_vr) {
       _sg_params->makeValueForKey<std::string>("preset") = "PBRVR";
     }
-
 
     _sg_scene        = std::make_shared<scenegraph::Scene>(_sg_params);
     auto sg_layer    = _sg_scene->createLayer("default");
@@ -88,32 +88,32 @@ struct GpuResources {
     pbrcommon->_depthFogDistance = 4000.0f;
     pbrcommon->_depthFogPower    = 5.0f;
     pbrcommon->_skyboxLevel      = 0.5;
-    pbrcommon->_diffuseLevel     = 0.4; 
-    pbrcommon->_specularLevel    = 5.2; 
+    pbrcommon->_diffuseLevel     = 0.4;
+    pbrcommon->_specularLevel    = 5.2;
 
     //////////////////////////////////////////////////////////
 
     ctx->debugPushGroup("main.onGpuInit");
 
     auto model_load_req = std::make_shared<asset::LoadRequest>();
-    auto anim_load_req = std::make_shared<asset::LoadRequest>();
+    auto anim_load_req  = std::make_shared<asset::LoadRequest>();
 
-    switch(testnum){
+    switch (testnum) {
       case 0:
         model_load_req->_asset_path = "data://tests/blender-rigtest/blender-rigtest-mesh";
-        anim_load_req->_asset_path = "data://tests/blender-rigtest/blender-rigtest-anim1";
+        anim_load_req->_asset_path  = "data://tests/blender-rigtest/blender-rigtest-anim1";
         break;
       case 1:
         model_load_req->_asset_path = "data://tests/misc_gltf_samples/RiggedFigure/RiggedFigure";
-        anim_load_req->_asset_path = "data://tests/misc_gltf_samples/RiggedFigure/RiggedFigure";
+        anim_load_req->_asset_path  = "data://tests/misc_gltf_samples/RiggedFigure/RiggedFigure";
         break;
       case 2:
         model_load_req->_asset_path = "data://tests/chartest/char_mesh";
-        anim_load_req->_asset_path = "data://tests/chartest/char_testanim1";
+        anim_load_req->_asset_path  = "data://tests/chartest/char_testanim1";
         break;
       case 3:
         model_load_req->_asset_path = "data://tests/hfstest/hfs_rigtest";
-        anim_load_req->_asset_path = "data://tests/hfstest/hfs_rigtest_anim";
+        anim_load_req->_asset_path  = "data://tests/hfstest/hfs_rigtest_anim";
         break;
       default:
         OrkAssert(false);
@@ -123,10 +123,10 @@ struct GpuResources {
     auto mesh_override = vars["mesh"].as<std::string>();
     auto anim_override = vars["anim"].as<std::string>();
 
-    if(mesh_override.length()){
+    if (mesh_override.length()) {
       model_load_req->_asset_path = mesh_override;
     }
-    if(anim_override.length()){
+    if (anim_override.length()) {
       anim_load_req->_asset_path = anim_override;
     }
 
@@ -134,9 +134,9 @@ struct GpuResources {
     OrkAssert(_char_modelasset);
     model_load_req->waitForCompletion();
 
-    auto model = _char_modelasset->getSharedModel();
-    auto skeldump = model->mSkeleton.dump(fvec3(1,1,1));
-    printf( "skeldump<%s>\n", skeldump.c_str() );
+    auto model    = _char_modelasset->getSharedModel();
+    auto skeldump = model->mSkeleton.dump(fvec3(1, 1, 1));
+    printf("skeldump<%s>\n", skeldump.c_str());
 
     _char_animasset = asset::AssetManager<XgmAnimAsset>::load(anim_load_req);
     OrkAssert(_char_animasset);
@@ -144,16 +144,15 @@ struct GpuResources {
 
     _char_drawable->bindModel(model);
     _char_drawable->_name = "char";
-    auto modelinst = _char_drawable->_modelinst;
-    //modelinst->setBlenderZup(true);
+    auto modelinst        = _char_drawable->_modelinst;
+    // modelinst->setBlenderZup(true);
     modelinst->enableSkinning();
     modelinst->enableAllMeshes();
     modelinst->_drawSkeleton = true;
 
-    //model->mSkeleton.mTopNodesMatrix.compose(fvec3(),fquat(),0.0001);
+    // model->mSkeleton.mTopNodesMatrix.compose(fvec3(),fquat(),0.0001);
 
-
-    auto anim = _char_animasset->GetAnim();
+    auto anim      = _char_animasset->GetAnim();
     _char_animinst = std::make_shared<XgmAnimInst>();
     _char_animinst->bindAnim(anim);
     _char_animinst->SetWeight(1.0f);
@@ -169,10 +168,10 @@ struct GpuResources {
     _char_animinst2->bindAnim(anim);
     _char_animinst2->SetWeight(0.5);
     _char_animinst2->RefMask().DisableAll();
-    _char_animinst2->RefMask().Enable(model->mSkeleton,"mixamorig.RightShoulder");
-    _char_animinst2->RefMask().Enable(model->mSkeleton,"mixamorig.RightArm");
-    _char_animinst2->RefMask().Enable(model->mSkeleton,"mixamorig.RightForeArm");
-    _char_animinst2->RefMask().Enable(model->mSkeleton,"mixamorig.RightHand");
+    _char_animinst2->RefMask().Enable(model->mSkeleton, "mixamorig.RightShoulder");
+    _char_animinst2->RefMask().Enable(model->mSkeleton, "mixamorig.RightArm");
+    _char_animinst2->RefMask().Enable(model->mSkeleton, "mixamorig.RightForeArm");
+    _char_animinst2->RefMask().Enable(model->mSkeleton, "mixamorig.RightHand");
     _char_animinst2->_use_temporal_lerp = true;
     _char_animinst2->bindToSkeleton(model->mSkeleton);
 
@@ -180,10 +179,10 @@ struct GpuResources {
     _char_animinst3->bindAnim(anim);
     _char_animinst3->SetWeight(0.5);
     _char_animinst3->RefMask().DisableAll();
-    _char_animinst3->RefMask().Enable(model->mSkeleton,"mixamorig.RightShoulder");
-    _char_animinst3->RefMask().Enable(model->mSkeleton,"mixamorig.RightArm");
-    _char_animinst3->RefMask().Enable(model->mSkeleton,"mixamorig.RightForeArm");
-    _char_animinst3->RefMask().Enable(model->mSkeleton,"mixamorig.RightHand");
+    _char_animinst3->RefMask().Enable(model->mSkeleton, "mixamorig.RightShoulder");
+    _char_animinst3->RefMask().Enable(model->mSkeleton, "mixamorig.RightArm");
+    _char_animinst3->RefMask().Enable(model->mSkeleton, "mixamorig.RightForeArm");
+    _char_animinst3->RefMask().Enable(model->mSkeleton, "mixamorig.RightHand");
     _char_animinst3->_use_temporal_lerp = true;
     _char_animinst3->bindToSkeleton(model->mSkeleton);
 
@@ -215,17 +214,17 @@ struct GpuResources {
     _char_applicatorR->bindToBone("mixamorig.RightHandThumb3");
     _char_applicatorR->bindToBone("mixamorig.RightHandThumb4");
 
-  //OrkAssert(false);
+    // OrkAssert(false);
     auto& localpose = modelinst->_localPose;
     auto& worldpose = modelinst->_worldPose;
 
     localpose.bindPose();
-    _char_animinst->_current_frame = 0; 
+    _char_animinst->_current_frame = 0;
     _char_animinst->applyToPose(localpose);
     localpose.blendPoses();
     localpose.concatenate();
-    worldpose.apply(fmtx4(),localpose);
-    //OrkAssert(false);
+    worldpose.apply(fmtx4(), localpose);
+    // OrkAssert(false);
 
     //////////////////////////////////////////////
     // scenegraph nodes
@@ -240,7 +239,7 @@ struct GpuResources {
   lev2::xgmaniminst_ptr_t _char_animinst;
   lev2::xgmaniminst_ptr_t _char_animinst2;
   lev2::xgmaniminst_ptr_t _char_animinst3;
-  lev2::xgmanimassetptr_t _char_animasset; // retain anim
+  lev2::xgmanimassetptr_t _char_animasset;   // retain anim
   lev2::xgmmodelassetptr_t _char_modelasset; // retain model
   lev2::xgmskelapplicator_ptr_t _char_applicatorL;
   lev2::xgmskelapplicator_ptr_t _char_applicatorR;
@@ -264,19 +263,19 @@ int main(int argc, char** argv, char** envp) {
   auto desc = init_data->commandLineOptions("model3dpbr example Options");
   desc->add_options()                  //
       ("help", "produce help message") //
-      ("msaa", po::value<int>()->default_value(1), "msaa samples(*1,4,9,16,25)")
-      ("ssaa", po::value<int>()->default_value(1), "ssaa samples(*1,4,9,16,25)")
-      ("forward", po::bool_switch()->default_value(false), "forward renderer")
-      ("fullscreen", po::bool_switch()->default_value(false), "fullscreen mode")                              
-      ("left",  po::value<int>()->default_value(100), "left window offset")                              
-      ("top",  po::value<int>()->default_value(100), "top window offset")                              
-      ("width",  po::value<int>()->default_value(1280), "window width")                              
-      ("height",  po::value<int>()->default_value(720), "window height")
-      ("usevr",  po::bool_switch()->default_value(false), "use vr output")                          
-      ("testnum",  po::value<int>()->default_value(0), "animation test level")
-      ("fbase",   po::value<std::string>()->default_value(""), "set user fbase")
-      ("mesh",  po::value<std::string>()->default_value(""), "mesh file override")                             
-      ("anim",  po::value<std::string>()->default_value(""), "animation file override");                             
+      ("msaa", po::value<int>()->default_value(1), "msaa samples(*1,4,9,16,25)")(
+          "ssaa", po::value<int>()->default_value(1), "ssaa samples(*1,4,9,16,25)")(
+          "forward", po::bool_switch()->default_value(false), "forward renderer")(
+          "fullscreen", po::bool_switch()->default_value(false), "fullscreen mode")(
+          "left", po::value<int>()->default_value(100), "left window offset")(
+          "top", po::value<int>()->default_value(100), "top window offset")(
+          "width", po::value<int>()->default_value(1280), "window width")(
+          "height", po::value<int>()->default_value(720), "window height")(
+          "usevr", po::bool_switch()->default_value(false), "use vr output")(
+          "testnum", po::value<int>()->default_value(0), "animation test level")(
+          "fbase", po::value<std::string>()->default_value(""), "set user fbase")(
+          "mesh", po::value<std::string>()->default_value(""), "mesh file override")(
+          "anim", po::value<std::string>()->default_value(""), "animation file override");
 
   auto vars = *init_data->parse();
 
@@ -285,36 +284,37 @@ int main(int argc, char** argv, char** envp) {
     exit(0);
   }
   //////////////////////////////////////////////////////////
-  int testnum = vars["testnum"].as<int>();
+  int testnum       = vars["testnum"].as<int>();
   std::string fbase = vars["fbase"].as<std::string>();
   //////////////////////////////////////////////////////////
-  if(fbase.length()){
+  if (fbase.length()) {
     auto fdevctx = FileEnv::createContextForUriBase("fbase://", fbase);
   }
   //////////////////////////////////////////////////////////
 
-  init_data->_fullscreen = vars["fullscreen"].as<bool>();;
-  init_data->_top = vars["top"].as<int>();
-  init_data->_left = vars["left"].as<int>();
-  init_data->_width = vars["width"].as<int>();
-  init_data->_height = vars["height"].as<int>();
+  init_data->_fullscreen = vars["fullscreen"].as<bool>();
+  ;
+  init_data->_top          = vars["top"].as<int>();
+  init_data->_left         = vars["left"].as<int>();
+  init_data->_width        = vars["width"].as<int>();
+  init_data->_height       = vars["height"].as<int>();
   init_data->_msaa_samples = vars["msaa"].as<int>();
   init_data->_ssaa_samples = vars["ssaa"].as<int>();
 
-  printf( "_msaa_samples<%d>\n", init_data->_msaa_samples );
+  printf("_msaa_samples<%d>\n", init_data->_msaa_samples);
   bool use_forward = vars["forward"].as<bool>();
-  bool use_vr = vars["usevr"].as<bool>();
+  bool use_vr      = vars["usevr"].as<bool>();
   //////////////////////////////////////////////////////////
-  init_data->_imgui = true;
+  init_data->_imgui            = true;
   init_data->_application_name = "ork.model3dpbr";
   //////////////////////////////////////////////////////////
-  auto ezapp  = OrkEzApp::create(init_data);
+  auto ezapp = OrkEzApp::create(init_data);
   std::shared_ptr<GpuResources> gpurec;
   //////////////////////////////////////////////////////////
   // gpuInit handler, called once on main(rendering) thread
   //  at startup time
   //////////////////////////////////////////////////////////
-  ezapp->onGpuInit([&](Context* ctx) { gpurec = std::make_shared<GpuResources>(init_data, ctx, use_forward,use_vr); });
+  ezapp->onGpuInit([&](Context* ctx) { gpurec = std::make_shared<GpuResources>(init_data, ctx, use_forward, use_vr); });
   //////////////////////////////////////////////////////////
   // update handler (called on update thread)
   //  it will never be called before onGpuInit() is complete...
@@ -322,39 +322,39 @@ int main(int argc, char** argv, char** envp) {
   ork::Timer timer;
   timer.Start();
   auto dbufcontext = std::make_shared<DrawBufContext>();
-  auto sframe = std::make_shared<StandardCompositorFrame>();
-  float animspeed = 1.0f;
+  auto sframe      = std::make_shared<StandardCompositorFrame>();
+  float animspeed  = 1.0f;
   ezapp->onUpdate([&](ui::updatedata_ptr_t updata) {
     double dt      = updata->_dt;
-    double abstime = updata->_abstime+dt+.016;
+    double abstime = updata->_abstime + dt + .016;
     ///////////////////////////////////////
     // compute camera data
     ///////////////////////////////////////
-    float phase    = PI*abstime*0.05;
+    float phase = PI * abstime * 0.05;
 
     fvec3 tgt(0, 0, 0);
     fvec3 up(0, 1, 0);
-    auto eye = fvec3(sinf(phase), 0.3f, -cosf(phase));
+    auto eye   = fvec3(sinf(phase), 0.3f, -cosf(phase));
     float wsca = 1.0f;
     float near = 1;
-    float far = 500.0f;
+    float far  = 500.0f;
     float fovy = 45.0f;
 
-    switch(testnum){
+    switch (testnum) {
       case 0:
         far = 50.0f;
         eye *= 10.0f;
         wsca = 0.15f;
         break;
       case 1:
-        eye += fvec3(0,-1,0);
+        eye += fvec3(0, -1, 0);
         eye *= 10.0f;
         wsca = 10.0f;
         break;
       case 2:
-        tgt += fvec3(0,50,0);
+        tgt += fvec3(0, 50, 0);
         eye *= 100.0f;
-        eye += fvec3(0,-50,0);
+        eye += fvec3(0, -50, 0);
         wsca = 1.5f;
         break;
       case 3:
@@ -363,16 +363,16 @@ int main(int argc, char** argv, char** envp) {
         break;
       default:
         break;
-    }      
-    gpurec->_camdata->Persp(near,far,fovy);
+    }
+    gpurec->_camdata->Persp(near, far, fovy);
     gpurec->_camdata->Lookat(eye, tgt, up);
 
     ////////////////////////////////////////
     // set character node's world transform
     ////////////////////////////////////////
 
-    fvec3 wpos(0,0,0);
-    fquat wori;//fvec3(0,1,0),phase+PI);
+    fvec3 wpos(0, 0, 0);
+    fquat wori; // fvec3(0,1,0),phase+PI);
 
     gpurec->_char_node->_dqxfdata._worldTransform->set(wpos, wori, wsca);
 
@@ -388,32 +388,30 @@ int main(int argc, char** argv, char** envp) {
   // draw handler (called on main(rendering) thread)
   //////////////////////////////////////////////////////////
   ezapp->onDraw([&](ui::drawevent_constptr_t drwev) {
-
-    float time = timer.SecsSinceStart();
-    float frame = (time*30.0f*animspeed);
+    float time  = timer.SecsSinceStart();
+    float frame = (time * 30.0f * animspeed);
 
     auto anim = gpurec->_char_animasset->GetAnim();
 
-
-    gpurec->_char_animinst->_current_frame = fmod(frame,float(anim->_numframes));
+    gpurec->_char_animinst->_current_frame = fmod(frame, float(anim->_numframes));
     gpurec->_char_animinst->SetWeight(0.5f);
-    gpurec->_char_animinst2->_current_frame = fmod(frame*1.3,float(anim->_numframes));
+    gpurec->_char_animinst2->_current_frame = fmod(frame * 1.3, float(anim->_numframes));
     gpurec->_char_animinst2->SetWeight(0.5);
-    gpurec->_char_animinst3->_current_frame = fmod(frame,float(anim->_numframes));
+    gpurec->_char_animinst3->_current_frame = fmod(frame, float(anim->_numframes));
     gpurec->_char_animinst3->SetWeight(0.75);
 
-    auto modelinst = gpurec->_char_drawable->_modelinst;
+    auto modelinst  = gpurec->_char_drawable->_modelinst;
     auto& localpose = modelinst->_localPose;
     auto& worldpose = modelinst->_worldPose;
 
     localpose.bindPose();
     gpurec->_char_animinst->applyToPose(localpose);
-    //gpurec->_char_animinst2->applyToPose(localpose);
-    //gpurec->_char_animinst3->applyToPose(localpose);
+    // gpurec->_char_animinst2->applyToPose(localpose);
+    // gpurec->_char_animinst3->applyToPose(localpose);
     localpose.blendPoses();
 
-    //auto lpdump = localpose.dump();
-    //printf( "%s\n", lpdump.c_str() );
+    // auto lpdump = localpose.dump();
+    // printf( "%s\n", lpdump.c_str() );
 
     localpose.concatenate();
 
@@ -423,69 +421,67 @@ int main(int argc, char** argv, char** envp) {
 
     auto model = gpurec->_char_modelasset->getSharedModel();
     auto& skel = model->skeleton();
+    if (0) {
+      if (fmod(time, 10) < 5) {
 
-    if(fmod(time,10)<5){
+        int ji_lshoulder     = skel.jointIndex("mixamorig.LeftShoulder");
+        auto lshoulder_base  = localpose._concat_matrices[ji_lshoulder];
+        auto lshoulder_basei = lshoulder_base.inverse();
 
-      int ji_lshoulder = skel.jointIndex("mixamorig.LeftShoulder");
-      auto lshoulder_base = localpose._concat_matrices[ji_lshoulder];
-      auto lshoulder_basei = lshoulder_base.inverse();
+        fmtx4 rotmtx;
+        rotmtx.setRotateY((sinf(time * 5) * 7.5) * DTOR);
+        rotmtx = lshoulder_basei * rotmtx * lshoulder_base;
 
-      fmtx4 rotmtx;
-      rotmtx.setRotateY((sinf(time*5) * 7.5)*DTOR);
-      rotmtx = lshoulder_basei*rotmtx*lshoulder_base;
+        gpurec->_char_applicatorL->apply([&](int index) {
+          auto& ci = localpose._concat_matrices[index];
+          ci       = (rotmtx * ci);
+        });
+      }
+      { // else{
 
-      gpurec->_char_applicatorL->apply([&](int index){
-        auto& ci = localpose._concat_matrices[index];
-        ci = (rotmtx*ci);
-      });
-    }
-    { //else{
+        int ji_rshoulder = skel.jointIndex("mixamorig.RightShoulder");
+        int ji_rarm      = skel.jointIndex("mixamorig.RightArm");
+        int ji_rfarm     = skel.jointIndex("mixamorig.RightForeArm");
+        int ji_rhand     = skel.jointIndex("mixamorig.RightHand");
 
-      int ji_rshoulder = skel.jointIndex("mixamorig.RightShoulder");
-      int ji_rarm = skel.jointIndex("mixamorig.RightArm");
-      int ji_rfarm = skel.jointIndex("mixamorig.RightForeArm");
-      int ji_rhand = skel.jointIndex("mixamorig.RightHand");
+        auto& rshoulder = localpose._concat_matrices[ji_rshoulder];
+        auto rshoulderi = rshoulder.inverse();
 
-      auto& rshoulder = localpose._concat_matrices[ji_rshoulder];
-      auto rshoulderi = rshoulder.inverse();
+        auto rarm    = localpose._concat_matrices[ji_rarm];
+        auto rarm_i  = rarm.inverse();
+        auto rfarm   = localpose._concat_matrices[ji_rfarm];
+        auto rfarm_i = rfarm.inverse();
 
-      auto rarm = localpose._concat_matrices[ji_rarm];
-      auto rarm_i = rarm.inverse();
-      auto rfarm = localpose._concat_matrices[ji_rfarm];
-      auto rfarm_i = rfarm.inverse();
+        auto rhand   = localpose._concat_matrices[ji_rhand];
+        auto rhand_i = rhand.inverse();
 
-      auto rhand = localpose._concat_matrices[ji_rhand];
-      auto rhand_i = rhand.inverse();
+        auto v_farm_arm  = rfarm.translation() - rarm.translation();
+        auto v_hand_farm = rhand.translation() - rfarm.translation();
 
-      auto v_farm_arm = rfarm.translation()-rarm.translation();
-      auto v_hand_farm = rhand.translation()-rfarm.translation();
+        float rarm_len  = v_farm_arm.length();
+        float rfarm_len = v_hand_farm.length();
 
-      float rarm_len = v_farm_arm.length();
-      float rfarm_len = v_hand_farm.length();
+        // fquat rotq(v_farm_arm.normalized(),time * 17.5*DTOR);
+        fquat rotq(fvec3(0, 1, 0), time * 17.5 * DTOR);
 
+        // auto rotmtx = rarm*rotq.toMatrix()*rarm_i;
+        auto rotmtx = rshoulderi * rotq.toMatrix() * rshoulder;
 
-      //fquat rotq(v_farm_arm.normalized(),time * 17.5*DTOR);
-      fquat rotq(fvec3(0,1,0),time * 17.5*DTOR);
-
-      //auto rotmtx = rarm*rotq.toMatrix()*rarm_i;
-      auto rotmtx = rshoulderi*rotq.toMatrix()*rshoulder;
-
-      gpurec->_char_applicatorR->apply([&](int index){
-        auto& ci = localpose._concat_matrices[index];
-        ci = rotmtx*ci;
-      });
+        gpurec->_char_applicatorR->apply([&](int index) {
+          auto& ci = localpose._concat_matrices[index];
+          ci       = rotmtx * ci;
+        });
+      }
     }
     ///////////////////////////////////////////////////////////
 
     auto context = drwev->GetTarget();
     RenderContextFrameData RCFD(context); // renderer per/frame data
-    RCFD.setUserProperty("vrcam"_crc, (const CameraData*) gpurec->_camdata.get() );
+    RCFD.setUserProperty("vrcam"_crc, (const CameraData*)gpurec->_camdata.get());
     gpurec->_sg_scene->renderOnContext(context, RCFD);
   });
   //////////////////////////////////////////////////////////
-  ezapp->onResize([&](int w, int h) {
-    gpurec->_sg_scene->_compositorImpl->compositingContext().Resize(w, h);
-  });
+  ezapp->onResize([&](int w, int h) { gpurec->_sg_scene->_compositorImpl->compositingContext().Resize(w, h); });
   ezapp->onGpuExit([&](Context* ctx) { gpurec = nullptr; });
   //////////////////////////////////////////////////////////
   ezapp->setRefreshPolicy({EREFRESH_FASTEST, -1});
