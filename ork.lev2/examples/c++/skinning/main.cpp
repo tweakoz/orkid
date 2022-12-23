@@ -436,7 +436,7 @@ int main(int argc, char** argv, char** envp) {
           ci       = (rotmtx * ci);
         });
       }
-      if(0){ // else{
+      if(1){ // else{
 
         int ji_rshoulder = skel.jointIndex("mixamorig.RightShoulder");
         int ji_rarm      = skel.jointIndex("mixamorig.RightArm");
@@ -464,20 +464,19 @@ int main(int argc, char** argv, char** envp) {
         float rfarm_len = v_hand_farm.length();
 
         // fquat rotq(v_farm_arm.normalized(),time * 17.5*DTOR);
-        fquat rotq(fvec3(0, 0, 1), time * 200.5 * DTOR);
+        fquat rotq(fvec3(0, 1, 0), time * 200.5 * DTOR);
 
-        //auto rotmtx = rshoulderi * rotq.toMatrix() * rshoulder;
+        auto rotmtx = rshoulder * rotq.toMatrix() * rshoulderi;
 
 
 
 
         gpurec->_char_applicatorR->apply([&](int index) {
-          auto ci = localpose._concat_matrices[index];
-          fvec3 N = ci.zNormal();
-          auto rot = fquat(N,time * 200.5 * DTOR);
-    
-          //ci       = rot.toMatrix()*ci;
-          //ci = fmtx4();//skel._bindMatrices[index];
+          auto& ci = localpose._concat_matrices[index];
+          auto cii = ci.inverse();
+          auto rot = fquat(fvec3(0,0,1),time * 200.5 * DTOR);
+          auto ci2       = rotmtx*ci;
+          ci = ci2;
         });
       }
   
