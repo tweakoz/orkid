@@ -176,7 +176,9 @@ XgmLocalPose::XgmLocalPose(const XgmSkeleton& skel)
 
   _local_matrices.resize(inumchannels);
   _concat_matrices.resize(inumchannels);
+  _bindrela_matrices.resize(inumchannels);
   _blendposeinfos.resize(inumchannels);
+  _boneprops.resize(inumchannels);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -296,6 +298,8 @@ void XgmLocalPose::bindPose(void) {
   // initialize to Skeletons Bind Pose
   ///////////////////////////////////////////
   for (int ij = 0; ij < inumjoints; ij++) {
+
+    _boneprops[ij] = 0;
 
     auto this_bind = _skeleton._bindMatrices[ij];
 
@@ -539,11 +543,11 @@ void XgmLocalPose::concatenate(void) {
   // inverse bind pose XF
   /////////////////////////////////////////////////////////////
 
-  int imtx = 0;
-  for( auto& cm : _concat_matrices ){
-    cm = cm * _skeleton._inverseBindMatrices[imtx];
-    imtx++;
-  }
+  int inumbones = _skeleton.numBones();
+  for( int i=0; i < inumbones; i++){
+    _bindrela_matrices[i] = _concat_matrices[i] //
+                          * _skeleton._inverseBindMatrices[i]; //
+   }
 
   /////////////////////////////////////////////////////////////
 
@@ -638,10 +642,22 @@ XgmWorldPose::XgmWorldPose(const XgmSkeleton& skel)
 
 void XgmWorldPose::apply(const fmtx4& worldmtx, const XgmLocalPose& localpose) {
   int inumj = localpose.NumJoints();
-  _worldmatrices.resize(inumj);
+  _world_bindrela_matrices.resize(inumj);
+  _world_concat_matrices.resize(inumj);
+  _boneprops = localpose._boneprops;
   for (int ij = 0; ij < inumj; ij++) {
-    _worldmatrices[ij] = worldmtx*localpose._concat_matrices[ij];
+    const auto& C = localpose._concat_matrices[ij];
+    const auto& IB = _skeleton._inverseBindMatrices[ij];
+    _world_concat_matrices[ij]   = C * worldmtx;
+    _world_bindrela_matrices[ij] = worldmtx * (C*IB);
   }
+
+  /*int inumbones = _skeleton.numBones();
+  for( int i=0; i < inumbones; i++){
+    _bindrela_matrices[i] = _concat_matrices[i] //
+                          * _skeleton._inverseBindMatrices[i]; //
+   }*/
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -656,7 +672,7 @@ std::string XgmWorldPose::dumpc(fvec3 color) const {
     for (int ij = 0; ij < inumjoints; ij++) {
       fvec3 cc         = (ij & 1) ? cb : ca;
       std::string name = _skeleton.GetJointName(ij).c_str();
-      const auto& jmtx = _worldmatrices[ij];
+      const auto& jmtx = _world_bindrela_matrices[ij];
       rval += deco::format(cc, "%28s: ", name.c_str());
       rval += jmtx.dump4x3cn() + "\n"s;
     }

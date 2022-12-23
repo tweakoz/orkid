@@ -466,7 +466,9 @@ struct XgmLocalPose {
   const XgmSkeleton& _skeleton;
   orkvector<fmtx4> _local_matrices;
   orkvector<fmtx4> _concat_matrices;
+  orkvector<fmtx4> _bindrela_matrices;
   orkvector<XgmBlendPoseInfo> _blendposeinfos;
+  orkvector<int> _boneprops;
   fvec4 mObjSpaceBoundingSphere;
   AABox mObjSpaceAABoundingBox;
 
@@ -485,7 +487,9 @@ struct XgmWorldPose {
   std::string dumpc(fvec3 color) const;
 
   const XgmSkeleton& _skeleton;
-  orkvector<fmtx4> _worldmatrices;
+  orkvector<fmtx4> _world_bindrela_matrices;
+  orkvector<fmtx4> _world_concat_matrices;
+  orkvector<int> _boneprops;
 
 };
 

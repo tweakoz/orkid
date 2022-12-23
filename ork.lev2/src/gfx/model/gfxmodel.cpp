@@ -334,12 +334,8 @@ void XgmModel::RenderSkinned(
   {
     const XgmSkeleton& Skeleton = skeleton();
 
-    fmtx4 TESTW;
-    TESTW.scale(5,5,5);
-    TESTW.translate(0,-3,0);
-
     pTARG->debugPushGroup("RenderSkinnedMesh");
-    pTARG->MTXI()->PushMMatrix(TESTW);
+    pTARG->MTXI()->PushMMatrix(fmtx4());
     pTARG->PushModColor(ModColor);
     {
       const XgmMesh& XgmMesh       = *mdlctx.mMesh;
@@ -367,7 +363,7 @@ void XgmModel::RenderSkinned(
           for (size_t ijointreg = 0; ijointreg < inumjoints; ijointreg++) {
             const std::string& JointName = cluster->mJoints[ijointreg];
             int JointSkelIndex          = cluster->mJointSkelIndices[ijointreg];
-            const fmtx4& finalmtx       = minst->_worldPose._worldmatrices[JointSkelIndex];
+            const fmtx4& finalmtx       = minst->_worldPose._world_bindrela_matrices[JointSkelIndex];
             //////////////////////////////////////
             MatrixBlock[ijointreg] = finalmtx;
           }
@@ -446,14 +442,17 @@ void XgmModel::RenderSkinned(
         vw.Lock(pTARG, &vtxbuf, numlines);
         for (int ib = 0; ib < inumbones; ib++) {
           const XgmBone& bone = skeleton().bone(ib);
-          fmtx4 bone_head     = worldpose._worldmatrices[bone._parentIndex];
-          fmtx4 bone_tail     = worldpose._worldmatrices[bone._childIndex];
-
-          bone_head = bone_head * mSkeleton._bindMatrices[bone._parentIndex];
-          bone_tail = bone_tail * mSkeleton._bindMatrices[bone._childIndex];
+          fmtx4 bone_head     = worldpose._world_concat_matrices[bone._parentIndex];
+          fmtx4 bone_tail     = worldpose._world_concat_matrices[bone._childIndex];
 
           fvec3 h             = bone_head.translation();
           fvec3 t             = bone_tail.translation();
+
+          fvec3 delta      = (t - h);
+          float bonelength = delta.length();
+          fvec3 n          = delta.normalized();
+          float bl2        = bonelength * 0.1;
+          fvec3 hh         = h + n * bl2;
 
           fvec3 hnx, hny, hnz;
           bone_head.toNormalVectors(hnx, hny, hnz);
@@ -461,11 +460,10 @@ void XgmModel::RenderSkinned(
           hny.normalizeInPlace();
           hnz.normalizeInPlace();
 
-          fvec3 delta      = (t - h);
-          float bonelength = delta.length();
-          fvec3 n          = delta.normalized();
-          float bl2        = bonelength * 0.1;
-          fvec3 hh         = h + n * bl2;
+          auto hnx_ = hnx.crossWith(n);
+          hnx = hnx_.crossWith(n);
+          auto hnz_ = hnz.crossWith(n);
+          hnz = hnz_.crossWith(n);
 
           fvec3 a, b, c, d;
 
@@ -483,7 +481,7 @@ void XgmModel::RenderSkinned(
           }
 
           auto add_vertex = [&](const fvec3 pos, const fvec3& col) {
-            hvtx.mPosition = pos*3.3;
+            hvtx.mPosition = pos;
             hvtx.mColor    = col.ABGRU32();
             vw.AddVertex(hvtx);
           };
@@ -492,7 +490,9 @@ void XgmModel::RenderSkinned(
           // printf("hny<%g %g %g>\n", hny.x, hny.y, hny.z);
           // printf("hnz<%g %g %g>\n", hnz.x, hnz.y, hnz.z);
 
-          auto color = fvec3::Yellow();
+          bool bonep = (worldpose._boneprops[bone._parentIndex]==0);
+
+          auto color = bonep ? fvec3::Yellow() : fvec3::Red();
 
           add_vertex(h, color);
           add_vertex(a, color);
@@ -533,9 +533,9 @@ void XgmModel::RenderSkinned(
       }
       for (int ib = 0; ib < inumbones; ib++) {
         const XgmBone& bone = skeleton().bone(ib);
-        fmtx4 bone_head     = worldpose._worldmatrices[bone._parentIndex];
+        fmtx4 bone_head     = worldpose._world_bindrela_matrices[bone._parentIndex];
          bone_head = bone_head * mSkeleton._bindMatrices[bone._parentIndex];
-        //fmtx4 bone_tail     = worldpose._worldmatrices[bone._childIndex];
+        //fmtx4 bone_tail     = worldpose._world_bindrela_matrices[bone._childIndex];
         pTARG->MTXI()->PushMMatrix(bone_head);
         fxinst->wrappedDrawCall(RCID, [&]() {
             auto& axis =  GfxPrimitives::GetRef().mVtxBuf_Axis;

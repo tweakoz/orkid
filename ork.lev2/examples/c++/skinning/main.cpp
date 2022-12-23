@@ -201,7 +201,7 @@ struct GpuResources {
     _char_applicatorL->bindToBone("mixamorig.LeftHandThumb4");
 
     _char_applicatorR = std::make_shared<lev2::XgmSkelApplicator>(model->mSkeleton);
-    _char_applicatorR->bindToBone("mixamorig.RightShoulder");
+    //_char_applicatorR->bindToBone("mixamorig.RightShoulder");
     _char_applicatorR->bindToBone("mixamorig.RightArm");
     _char_applicatorR->bindToBone("mixamorig.RightForeArm");
     _char_applicatorR->bindToBone("mixamorig.RightHand");
@@ -355,7 +355,7 @@ int main(int argc, char** argv, char** envp) {
         tgt += fvec3(0, 50, 0);
         eye *= 100.0f;
         eye += fvec3(0, -50, 0);
-        wsca = 1.5f;
+        wsca = 6.0f;
         break;
       case 3:
         eye *= 100.0f;
@@ -421,8 +421,7 @@ int main(int argc, char** argv, char** envp) {
 
     auto model = gpurec->_char_modelasset->getSharedModel();
     auto& skel = model->skeleton();
-    if (0) {
-      if (fmod(time, 10) < 5) {
+      if (0) { //fmod(time, 10) < 5) {
 
         int ji_lshoulder     = skel.jointIndex("mixamorig.LeftShoulder");
         auto lshoulder_base  = localpose._concat_matrices[ji_lshoulder];
@@ -437,7 +436,7 @@ int main(int argc, char** argv, char** envp) {
           ci       = (rotmtx * ci);
         });
       }
-      { // else{
+      if(0){ // else{
 
         int ji_rshoulder = skel.jointIndex("mixamorig.RightShoulder");
         int ji_rarm      = skel.jointIndex("mixamorig.RightArm");
@@ -446,11 +445,14 @@ int main(int argc, char** argv, char** envp) {
 
         auto& rshoulder = localpose._concat_matrices[ji_rshoulder];
         auto rshoulderi = rshoulder.inverse();
-
+        
         auto rarm    = localpose._concat_matrices[ji_rarm];
         auto rarm_i  = rarm.inverse();
         auto rfarm   = localpose._concat_matrices[ji_rfarm];
         auto rfarm_i = rfarm.inverse();
+
+        localpose._boneprops[ji_rshoulder] = 1;
+
 
         auto rhand   = localpose._concat_matrices[ji_rhand];
         auto rhand_i = rhand.inverse();
@@ -462,17 +464,23 @@ int main(int argc, char** argv, char** envp) {
         float rfarm_len = v_hand_farm.length();
 
         // fquat rotq(v_farm_arm.normalized(),time * 17.5*DTOR);
-        fquat rotq(fvec3(0, 1, 0), time * 17.5 * DTOR);
+        fquat rotq(fvec3(0, 0, 1), time * 200.5 * DTOR);
 
-        // auto rotmtx = rarm*rotq.toMatrix()*rarm_i;
-        auto rotmtx = rshoulderi * rotq.toMatrix() * rshoulder;
+        //auto rotmtx = rshoulderi * rotq.toMatrix() * rshoulder;
+
+
+
 
         gpurec->_char_applicatorR->apply([&](int index) {
-          auto& ci = localpose._concat_matrices[index];
-          ci       = rotmtx * ci;
+          auto ci = localpose._concat_matrices[index];
+          fvec3 N = ci.zNormal();
+          auto rot = fquat(N,time * 200.5 * DTOR);
+    
+          //ci       = rot.toMatrix()*ci;
+          //ci = fmtx4();//skel._bindMatrices[index];
         });
       }
-    }
+  
     ///////////////////////////////////////////////////////////
 
     auto context = drwev->GetTarget();
