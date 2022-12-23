@@ -582,13 +582,18 @@ struct XgmSkeleton {
     return _jointMatrices[idx];
   }
 
-  fmtx4 concatenated(std::string named) const;
+  fmtx4 concatenated(const std::string& named) const;
 
   /////////////////////////////////////
 
   std::string dump(fvec3 color) const;
   std::string dumpInvBind(fvec3 color) const;
   std::string dumpBind(fvec3 color) const;
+
+  /////////////////////////////////////
+
+  fmtx4 bindMatrixByName(const std::string& named) const;
+  fmtx4 invBindMatrixByName(const std::string& named) const;
 
   /////////////////////////////////////
 

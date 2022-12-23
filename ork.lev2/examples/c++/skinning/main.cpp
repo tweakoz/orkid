@@ -201,22 +201,10 @@ struct GpuResources {
     _char_applicatorL->bindToBone("mixamorig.LeftHandThumb4");
 
     _char_applicatorR1 = std::make_shared<lev2::XgmSkelApplicator>(model->mSkeleton);
-    _char_applicatorR1->bindToBone("mixamorig.RightForeArm");
-    //_char_applicatorR1->bindToBone("mixamorig.RightHand");
-    //_char_applicatorR1->bindToBone("mixamorig.RightHandIndex1");
-    //_char_applicatorR1->bindToBone("mixamorig.RightHandIndex2");
-    //_char_applicatorR1->bindToBone("mixamorig.RightHandIndex3");
-    //_char_applicatorR1->bindToBone("mixamorig.RightHandIndex4");
-    //_char_applicatorR1->bindToBone("mixamorig.RightHandThumb1");
-    //_char_applicatorR1->bindToBone("mixamorig.RightHandThumb2");
-    //_char_applicatorR1->bindToBone("mixamorig.RightHandThumb3");
-    //_char_applicatorR1->bindToBone("mixamorig.RightHandThumb4");
+    _char_applicatorR1->bindToBone("mixamorig.RightArm");
 
-    _char_applicatorR2 = _char_applicatorR1->clone();
-    _char_applicatorR2->bindToBone("mixamorig.RightArm");
-
-    _char_applicatorR3 = _char_applicatorR2->clone();
-    _char_applicatorR3->bindToBone("mixamorig.RightShoulder");
+    _char_applicatorR2 = std::make_shared<lev2::XgmSkelApplicator>(model->mSkeleton);
+    _char_applicatorR2->bindToBone("mixamorig.RightForeArm");
 
     // OrkAssert(false);
     auto& localpose = modelinst->_localPose;
@@ -229,6 +217,25 @@ struct GpuResources {
     localpose.concatenate();
     worldpose.apply(fmtx4(), localpose);
     // OrkAssert(false);
+
+    auto rarm = model->mSkeleton.bindMatrixByName("mixamorig.RightArm");
+    auto rfarm = model->mSkeleton.bindMatrixByName("mixamorig.RightForeArm");
+    auto rhand = model->mSkeleton.bindMatrixByName("mixamorig.RightHand");
+
+    fvec3 rarm_pos, rfarm_pos;
+    fquat rarm_quat, rfarm_quat;
+    float rarm_scale, rfarm_scale;
+
+    rarm.decompose(rarm_pos,rarm_quat,rarm_scale);
+    rfarm.decompose(rfarm_pos,rfarm_quat,rfarm_scale);
+
+    auto v_farm_arm  = rfarm.translation() - rarm.translation();
+    auto v_hand_farm = rhand.translation() - rfarm.translation();
+
+    _rarm_len  = v_farm_arm.length();
+    _rfarm_len = v_hand_farm.length();
+    _rarm_scale = rarm_scale;
+    _rfarm_scale = rfarm_scale;
 
     //////////////////////////////////////////////
     // scenegraph nodes
@@ -258,6 +265,11 @@ struct GpuResources {
 
   cameradata_ptr_t _camdata;
   cameradatalut_ptr_t _camlut;
+
+  float _rarm_len = 0.0f;
+  float _rfarm_len = 0.0f;
+  float _rarm_scale = 0.0f;
+  float _rfarm_scale = 0.0f;
 };
 
 ///////////////////////////////////////////////////////////////////
@@ -449,7 +461,7 @@ int main(int argc, char** argv, char** envp) {
         int ji_rfarm     = skel.jointIndex("mixamorig.RightForeArm");
         int ji_rhand     = skel.jointIndex("mixamorig.RightHand");
 
-        auto& rshoulder = localpose._concat_matrices[ji_rshoulder];
+        const auto& rshoulder = localpose._concat_matrices[ji_rshoulder];
         auto rshoulder_i = rshoulder.inverse();
         
         auto rarm    = localpose._concat_matrices[ji_rarm];
@@ -457,31 +469,35 @@ int main(int argc, char** argv, char** envp) {
         auto rfarm   = localpose._concat_matrices[ji_rfarm];
         auto rfarm_i = rfarm.inverse();
 
-        localpose._boneprops[ji_rshoulder] = 1;
+        localpose._boneprops[ji_rarm] = 1;
 
+        ///////////////////////
 
         auto rhand   = localpose._concat_matrices[ji_rhand];
-        auto rhand_i = rhand.inverse();
+        auto wrist_xnormal = rhand.xNormal();
+        auto wrist_ynormal = rhand.yNormal();
+        auto wrist_znormal = rhand.zNormal();
 
-        auto v_farm_arm  = rfarm.translation() - rarm.translation();
-        auto v_hand_farm = rhand.translation() - rfarm.translation();
+        auto elbow_pos = rhand.translation() - (wrist_ynormal*gpurec->_rfarm_len);
+        auto elbow_normal = (elbow_pos-rshoulder.translation()).normalized();
 
-        float rarm_len  = v_farm_arm.length();
-        float rfarm_len = v_hand_farm.length();
+        fmtx4 elbowR, elbowS, elbowT;
+        elbowR.fromNormalVectors(wrist_xnormal, //
+                                 -wrist_ynormal, //
+                                 wrist_znormal);
+        elbowS.setScale(gpurec->_rfarm_scale);
+        elbowT.setTranslation(elbow_pos);
 
-        gpurec->_char_applicatorR1->apply([&](int index) {
-          fquat rotq(fvec3(0, 0, 1), time * 50.5 * DTOR);
-          auto rotmtx = rfarm * rotq.toMatrix() * rfarm_i;
-          auto& ci = localpose._concat_matrices[index];
-          ci  = rotmtx*ci;
-        });
+        rfarm = elbowT*(elbowR*elbowS);
 
-        gpurec->_char_applicatorR2->apply([&](int index) {
-          fquat rotq(fvec3(0, 0, 1), time * 40.5 * DTOR);
-          auto rotmtx = rarm * rotq.toMatrix() * rarm_i;
-          auto& ci = localpose._concat_matrices[index];
-          ci  = rotmtx*ci;
-        });
+        fmtx4 MM, MS; 
+        MM.correctionMatrix(rshoulder, rfarm);
+        MS.setScale(gpurec->_rarm_scale);
+
+        ///////////////////////
+
+        //localpose._concat_matrices[ji_rfarm] = (MS*MM)*rshoulder;
+        //localpose._concat_matrices[ji_rfarm] = rhand;
 
       }
   

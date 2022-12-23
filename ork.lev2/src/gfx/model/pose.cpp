@@ -657,13 +657,6 @@ void XgmWorldPose::apply(const fmtx4& worldmtx, const XgmLocalPose& localpose) {
     _world_concat_matrices[ij]   = C * worldmtx;
     _world_bindrela_matrices[ij] = (worldmtx*C)*IB;
   }
-
-  /*int inumbones = _skeleton.numBones();
-  for( int i=0; i < inumbones; i++){
-    _bindrela_matrices[i] = _concat_matrices[i] //
-                          * _skeleton._inverseBindMatrices[i]; //
-   }*/
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////

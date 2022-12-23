@@ -323,7 +323,21 @@ void XgmSkeleton::addBone(const XgmBone& bone) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-fmtx4 XgmSkeleton::concatenated(std::string named) const {
+fmtx4 XgmSkeleton::bindMatrixByName(const std::string& named) const {
+  int index = jointIndex(named);
+  return _bindMatrices[index];
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+fmtx4 XgmSkeleton::invBindMatrixByName(const std::string& named) const {
+  int index = jointIndex(named);
+  return _inverseBindMatrices[index];
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+fmtx4 XgmSkeleton::concatenated(const std::string& named) const {
   std::vector<int> walk;
   int index = jointIndex(named);
   while (index != -1) {
