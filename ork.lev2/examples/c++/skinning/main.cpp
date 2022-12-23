@@ -474,7 +474,8 @@ int main(int argc, char** argv, char** envp) {
         gpurec->_char_applicatorR->apply([&](int index) {
           auto& ci = localpose._concat_matrices[index];
           auto cii = ci.inverse();
-          auto rot = fquat(fvec3(0,0,1),time * 200.5 * DTOR);
+          auto rotq = fquat(fvec3(0,1,0),time * 200.5 * DTOR);
+          auto rotmtx = ci * rotq.toMatrix() * cii;
           auto ci2       = rotmtx*ci;
           ci = ci2;
         });
