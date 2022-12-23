@@ -287,6 +287,8 @@ struct XgmSkelApplicator {
 
   XgmSkelApplicator(const XgmSkeleton& skeleton);
 
+  xgmskelapplicator_ptr_t clone() const;
+
   void bindToBone(const std::string& a);
 
   void apply(fn_t the_fn) const;

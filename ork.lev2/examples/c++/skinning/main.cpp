@@ -200,19 +200,23 @@ struct GpuResources {
     _char_applicatorL->bindToBone("mixamorig.LeftHandThumb3");
     _char_applicatorL->bindToBone("mixamorig.LeftHandThumb4");
 
-    _char_applicatorR = std::make_shared<lev2::XgmSkelApplicator>(model->mSkeleton);
-    //_char_applicatorR->bindToBone("mixamorig.RightShoulder");
-    _char_applicatorR->bindToBone("mixamorig.RightArm");
-    _char_applicatorR->bindToBone("mixamorig.RightForeArm");
-    _char_applicatorR->bindToBone("mixamorig.RightHand");
-    _char_applicatorR->bindToBone("mixamorig.RightHandIndex1");
-    _char_applicatorR->bindToBone("mixamorig.RightHandIndex2");
-    _char_applicatorR->bindToBone("mixamorig.RightHandIndex3");
-    _char_applicatorR->bindToBone("mixamorig.RightHandIndex4");
-    _char_applicatorR->bindToBone("mixamorig.RightHandThumb1");
-    _char_applicatorR->bindToBone("mixamorig.RightHandThumb2");
-    _char_applicatorR->bindToBone("mixamorig.RightHandThumb3");
-    _char_applicatorR->bindToBone("mixamorig.RightHandThumb4");
+    _char_applicatorR1 = std::make_shared<lev2::XgmSkelApplicator>(model->mSkeleton);
+    _char_applicatorR1->bindToBone("mixamorig.RightForeArm");
+    //_char_applicatorR1->bindToBone("mixamorig.RightHand");
+    //_char_applicatorR1->bindToBone("mixamorig.RightHandIndex1");
+    //_char_applicatorR1->bindToBone("mixamorig.RightHandIndex2");
+    //_char_applicatorR1->bindToBone("mixamorig.RightHandIndex3");
+    //_char_applicatorR1->bindToBone("mixamorig.RightHandIndex4");
+    //_char_applicatorR1->bindToBone("mixamorig.RightHandThumb1");
+    //_char_applicatorR1->bindToBone("mixamorig.RightHandThumb2");
+    //_char_applicatorR1->bindToBone("mixamorig.RightHandThumb3");
+    //_char_applicatorR1->bindToBone("mixamorig.RightHandThumb4");
+
+    _char_applicatorR2 = _char_applicatorR1->clone();
+    _char_applicatorR2->bindToBone("mixamorig.RightArm");
+
+    _char_applicatorR3 = _char_applicatorR2->clone();
+    _char_applicatorR3->bindToBone("mixamorig.RightShoulder");
 
     // OrkAssert(false);
     auto& localpose = modelinst->_localPose;
@@ -242,7 +246,9 @@ struct GpuResources {
   lev2::xgmanimassetptr_t _char_animasset;   // retain anim
   lev2::xgmmodelassetptr_t _char_modelasset; // retain model
   lev2::xgmskelapplicator_ptr_t _char_applicatorL;
-  lev2::xgmskelapplicator_ptr_t _char_applicatorR;
+  lev2::xgmskelapplicator_ptr_t _char_applicatorR1;
+  lev2::xgmskelapplicator_ptr_t _char_applicatorR2;
+  lev2::xgmskelapplicator_ptr_t _char_applicatorR3;
 
   model_drawable_ptr_t _char_drawable;
   scenegraph::node_ptr_t _char_node;
@@ -444,7 +450,7 @@ int main(int argc, char** argv, char** envp) {
         int ji_rhand     = skel.jointIndex("mixamorig.RightHand");
 
         auto& rshoulder = localpose._concat_matrices[ji_rshoulder];
-        auto rshoulderi = rshoulder.inverse();
+        auto rshoulder_i = rshoulder.inverse();
         
         auto rarm    = localpose._concat_matrices[ji_rarm];
         auto rarm_i  = rarm.inverse();
@@ -463,22 +469,20 @@ int main(int argc, char** argv, char** envp) {
         float rarm_len  = v_farm_arm.length();
         float rfarm_len = v_hand_farm.length();
 
-        // fquat rotq(v_farm_arm.normalized(),time * 17.5*DTOR);
-        fquat rotq(fvec3(0, 1, 0), time * 200.5 * DTOR);
-
-        auto rotmtx = rshoulder * rotq.toMatrix() * rshoulderi;
-
-
-
-
-        gpurec->_char_applicatorR->apply([&](int index) {
+        gpurec->_char_applicatorR1->apply([&](int index) {
+          fquat rotq(fvec3(0, 0, 1), time * 50.5 * DTOR);
+          auto rotmtx = rfarm * rotq.toMatrix() * rfarm_i;
           auto& ci = localpose._concat_matrices[index];
-          auto cii = ci.inverse();
-          auto rotq = fquat(fvec3(0,1,0),time * 200.5 * DTOR);
-          auto rotmtx = ci * rotq.toMatrix() * cii;
-          auto ci2       = rotmtx*ci;
-          ci = ci2;
+          ci  = rotmtx*ci;
         });
+
+        gpurec->_char_applicatorR2->apply([&](int index) {
+          fquat rotq(fvec3(0, 0, 1), time * 40.5 * DTOR);
+          auto rotmtx = rarm * rotq.toMatrix() * rarm_i;
+          auto& ci = localpose._concat_matrices[index];
+          ci  = rotmtx*ci;
+        });
+
       }
   
     ///////////////////////////////////////////////////////////

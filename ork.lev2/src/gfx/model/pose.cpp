@@ -194,6 +194,12 @@ void XgmSkelApplicator::bindToBone(const std::string& a){
   //printf("XgmSkelApplicator ska<%d> skb<%d> skc<%d>\n", _iskelindexA, _iskelindexB, _iskelindexC);
 }
 
+xgmskelapplicator_ptr_t XgmSkelApplicator::clone() const{
+  auto clone = std::make_shared<XgmSkelApplicator>(_skeleton);
+  clone->_bones2apply = _bones2apply;
+  return clone;
+}
+
 fmtx4 DecompMatrix::compose() const {
   fmtx4 rval;
   rval.compose2(

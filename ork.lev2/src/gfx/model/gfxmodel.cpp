@@ -462,8 +462,8 @@ void XgmModel::RenderSkinned(
 
           auto hnx_ = hnx.crossWith(n);
           hnx = hnx_.crossWith(n);
-          auto hnz_ = hnz.crossWith(n);
-          hnz = hnz_.crossWith(n);
+          //auto hnz_ = hnz.crossWith(n);
+          hnz = hnx.crossWith(n);
 
           fvec3 a, b, c, d;
 
