@@ -11,7 +11,7 @@
 #include <ork/kernel/environment.h>
 #include <ork/util/logger.h>
 
-using namespace std::string_literals; 
+using namespace std::string_literals;
 
 namespace ork::imgui {
 void initModule(appinitdata_ptr_t initdata) {
@@ -26,15 +26,15 @@ void GfxInit(const std::string& gfxlayer);
 constexpr uint64_t KAPPSTATEFLAG_UPDRUNNING = 1 << 0;
 constexpr uint64_t KAPPSTATEFLAG_JOINED     = 1 << 1;
 
-static logchannel_ptr_t logchan_ezapp = logger()->createChannel("ezapp",fvec3(0.7,0.7,0.9));
+static logchannel_ptr_t logchan_ezapp = logger()->createChannel("ezapp", fvec3(0.7, 0.7, 0.9));
 
 ////////////////////////////////////////////////////////////////////////////////
 ezappctx_ptr_t EzAppContext::get(appinitdata_ptr_t initdata) {
-  if(nullptr==initdata){
+  if (nullptr == initdata) {
     initdata = std::make_shared<AppInitData>();
   }
   initModule(initdata);
-  static auto app  = std::shared_ptr<EzAppContext>(new EzAppContext(initdata));
+  static auto app = std::shared_ptr<EzAppContext>(new EzAppContext(initdata));
   return app;
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -65,9 +65,29 @@ EzAppContext::~EzAppContext() {
   StringPoolStack::Pop();
 }
 ///////////////////////////////////////////////////////////////////////////////
+boost::program_options::options_description_easy_init OrkEzApp::createDefaultOptions( //
+  appinitdata_ptr_t init_data, std::string appinfo){ //
+
+  auto desc = init_data->commandLineOptions(appinfo.c_str());
+
+  auto rval = desc->add_options() //
+      ("help", "produce help message") //
+      ("msaa", po::value<int>()->default_value(1), "msaa samples(*1,4,9,16,25)") //
+      ("ssaa", po::value<int>()->default_value(1), "ssaa samples(*1,4,9,16,25)") //
+      ("forward", po::bool_switch()->default_value(false), "forward renderer") //
+      ("fullscreen", po::bool_switch()->default_value(false), "fullscreen mode") //
+      ("left", po::value<int>()->default_value(100), "left window offset") // 
+      ("top", po::value<int>()->default_value(100), "top window offset") //
+      ("width", po::value<int>()->default_value(1280), "window width") //
+      ("height", po::value<int>()->default_value(720), "window height")//
+      ("usevr", po::bool_switch()->default_value(false), "use vr output"); 
+
+  return rval;
+}
+///////////////////////////////////////////////////////////////////////////////
 orkezapp_ptr_t OrkEzApp::create(appinitdata_ptr_t initdata) {
-  //static auto& qti = qtinit(argc, argv, init);
-  // QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
+  // static auto& qti = qtinit(argc, argv, init);
+  //  QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
   lev2::initModule(initdata);
   if (initdata->_imgui) {
     imgui::initModule(initdata);
@@ -78,12 +98,11 @@ orkezapp_ptr_t OrkEzApp::create(appinitdata_ptr_t initdata) {
     env.init_from_envp(initdata->_envp);
     std::string home_out;
     static file::Path imgui_ini_path;
-    if( env.get("HOME", home_out ) ) {
-      auto base = file::Path(home_out);
-      imgui_ini_path = base / FormatString(".%s-imgui.ini",initdata->_application_name.c_str());
-      logchan_ezapp->log( "imgui_ini_path<%s>", imgui_ini_path.c_str() );
-    }
-    else{
+    if (env.get("HOME", home_out)) {
+      auto base      = file::Path(home_out);
+      imgui_ini_path = base / FormatString(".%s-imgui.ini", initdata->_application_name.c_str());
+      logchan_ezapp->log("imgui_ini_path<%s>", imgui_ini_path.c_str());
+    } else {
       OrkAssert(false); // HOME not set ???
     }
 
@@ -109,13 +128,13 @@ orkezapp_ptr_t OrkEzApp::create(appinitdata_ptr_t initdata) {
   if (initdata->_imgui) {
     auto ezwin = ezapp->_mainWindow;
     ImGui_ImplGlfw_InitForOpenGL(ezwin->_ctqt->_glfwWindow, true);
-    #if defined(OPENGL_460)
+#if defined(OPENGL_460)
     ImGui_ImplOpenGL3_Init("#version 460 core");
-    #elif defined(OPENGL_410)
+#elif defined(OPENGL_410)
     ImGui_ImplOpenGL3_Init("#version 410 core");
-    #else
+#else
     ImGui_ImplOpenGL3_Init("#version 400 core");
-    #endif
+#endif
   }
   return ezapp;
 }
@@ -136,8 +155,8 @@ orkezapp_ptr_t OrkEzApp::createWithScene(varmap::varmap_ptr_t sceneparams) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::enqueueWindowResize(int w, int h){
-  if(_mainWindow){
-    _mainWindow->enqueueWindowResize(w,h);
+  if (_mainWindow) {
+    _mainWindow->enqueueWindowResize(w, h);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -145,7 +164,6 @@ void OrkEzApp::enqueueWindowResize(int w, int h){
 EzViewport::EzViewport(EzMainWin* mainwin)
     : ui::Viewport("ezviewport", 1, 1, 1, 1, fvec3(0, 0, 0), 1.0f)
     , _mainwin(mainwin) {
-
   _geometry._w = 1;
   _geometry._h = 1;
   _initstate.store(0);
@@ -161,7 +179,6 @@ void EzViewport::DoInit(ork::lev2::Context* pTARG) {
 }
 /////////////////////////////////////////////////
 void EzViewport::DoDraw(ui::drawevent_constptr_t drwev) {
-
   lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
 
   //////////////////////////////////////////////////////
@@ -199,7 +216,7 @@ void EzViewport::DoDraw(ui::drawevent_constptr_t drwev) {
 }
 /////////////////////////////////////////////////
 void EzViewport::DoSurfaceResize() {
-  if (_mainwin->_onResize){
+  if (_mainwin->_onResize) {
     _mainwin->_onResize(width(), height());
   }
   _topLayoutGroup->SetSize(width(), height());
@@ -207,10 +224,10 @@ void EzViewport::DoSurfaceResize() {
 /////////////////////////////////////////////////
 ui::HandlerResult EzViewport::DoOnUiEvent(ui::event_constptr_t ev) {
   if (_mainwin->_onUiEvent) {
-    auto hacked_event                = std::make_shared<ui::Event>();
-    *hacked_event                    = *ev;
-    hacked_event->_vpdim.x           = width();
-    hacked_event->_vpdim.y           = height();
+    auto hacked_event      = std::make_shared<ui::Event>();
+    *hacked_event          = *ev;
+    hacked_event->_vpdim.x = width();
+    hacked_event->_vpdim.y = height();
     return _mainwin->_onUiEvent(hacked_event);
   } else
     return ui::HandlerResult();
@@ -227,8 +244,8 @@ OrkEzAppBase* OrkEzAppBase::get() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 OrkEzAppBase::OrkEzAppBase(ezappctx_ptr_t ezapp) {
-  _staticapp = this;
-  _ezapp     = ezapp;
+  _staticapp    = this;
+  _ezapp        = ezapp;
   _update_count = 0;
   _render_count = 0;
 }
@@ -242,10 +259,10 @@ void OrkEzApp::enqueueOnRenderer(const void_lambda_t& l) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 static std::atomic<OrkEzApp*> __priv_gapp;
-void atexit_app(void) { 
-  if(__priv_gapp){
+void atexit_app(void) {
+  if (__priv_gapp) {
     auto app = __priv_gapp.load();
-    if(app->_onAppEarlyTerminated){
+    if (app->_onAppEarlyTerminated) {
       app->_onAppEarlyTerminated();
     }
   }
@@ -256,12 +273,11 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
     , _initdata(initdata)
     , _mainWindow(0) 
     , _updateThread("updatethread") {
-
   __priv_gapp.store(this);
   atexit(atexit_app);
 
   /////////////////////////////////////////////
-  if(initdata->_envp){
+  if (initdata->_envp) {
     genviron.init_from_envp(initdata->_envp);
     std::string orkdirstr;
     genviron.get("ORKID_WORKSPACE_DIR", orkdirstr);
@@ -291,8 +307,9 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
   _ezviewport                       = std::make_shared<EzViewport>(_mainWindow);
   _ezviewport->_uicontext           = _uicontext.get();
   _mainWindow->_gfxwin->mRootWidget = _ezviewport.get();
-  _ezviewport->_topLayoutGroup = _uicontext->makeTop<ui::LayoutGroup>("top-layoutgroup", 0, 0, _initdata->_width, _initdata->_height);
-  _topLayoutGroup              = _ezviewport->_topLayoutGroup;
+  _ezviewport->_topLayoutGroup =
+      _uicontext->makeTop<ui::LayoutGroup>("top-layoutgroup", 0, 0, _initdata->_width, _initdata->_height);
+  _topLayoutGroup = _ezviewport->_topLayoutGroup;
   /////////////////////////////////////////////
   _updq     = ork::opq::updateSerialQueue();
   _conq     = ork::opq::concurrentQueue();
@@ -413,7 +430,6 @@ filedevctx_ptr_t OrkEzApp::newFileDevContext(std::string uriproto, const file::P
 }
 ///////////////////////////////////////////////////////////////////////////////
 int OrkEzApp::mainThreadLoop() {
-
   auto glfw_ctx = _mainWindow->_ctqt;
 
   ///////////////////////////////
@@ -440,8 +456,6 @@ int OrkEzApp::mainThreadLoop() {
     _appstate.fetch_or(KAPPSTATEFLAG_UPDRUNNING);
 
     ////////////////////////////////////////
-
-
 
     while (not checkAppState(KAPPSTATEFLAG_JOINED)) {
       double this_time = _update_timer.SecsSinceStart();
@@ -491,7 +505,6 @@ int OrkEzApp::mainThreadLoop() {
     if (_mainWindow->_onUpdateExit) {
       _mainWindow->_onUpdateExit();
     }
-
   };
 
   ///////////////////////////////
@@ -499,14 +512,12 @@ int OrkEzApp::mainThreadLoop() {
   //   ensuring _onGpuInit called before onUpdateInit
   ///////////////////////////////
 
-  glfw_ctx->_onGpuInit = [this,update_thread_impl](lev2::Context* context){
-    
-    if(_mainWindow->_onGpuInit){
+  glfw_ctx->_onGpuInit = [this, update_thread_impl](lev2::Context* context) {
+    if (_mainWindow->_onGpuInit) {
       _mainWindow->_onGpuInit(context);
     }
 
     _updateThread.start(update_thread_impl);
-
   };
 
   ///////////////////////////////
@@ -514,11 +525,10 @@ int OrkEzApp::mainThreadLoop() {
   //   ensuring onGpuExit called after onUpdateExit
   ///////////////////////////////
 
-  glfw_ctx->_onGpuExit = [this](lev2::Context* context){
-
+  glfw_ctx->_onGpuExit = [this](lev2::Context* context) {
     joinUpdate();
 
-    if(_mainWindow->_onGpuExit){
+    if (_mainWindow->_onGpuExit) {
       _mainWindow->_onGpuExit(context);
     }
   };
@@ -534,62 +544,62 @@ void OrkEzApp::setRefreshPolicy(RefreshPolicyItem policy) {
 ///////////////////////////////////////////////////////////////////////////////
 EzMainWin::EzMainWin(OrkEzApp& app)
     : _app(app) {
-  _execsceneparams = std::make_shared<varmap::VarMap>();
+  _execsceneparams   = std::make_shared<varmap::VarMap>();
   _update_rendersync = app._initdata->_update_rendersync;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void EzMainWin::enqueueWindowResize(int w, int h){
-  _ctqt->enqueueWindowResize(w,h);
+  _ctqt->enqueueWindowResize(w, h);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void EzMainWin::_updateEnqueueLockedAndReleaseFrame(DrawableBuffer* dbuf) {
-  //if(_app._initdata->_update_rendersync){
-    //DrawableBuffer::releaseFromWriteLocked(dbuf);
+  // if(_app._initdata->_update_rendersync){
+  // DrawableBuffer::releaseFromWriteLocked(dbuf);
   //}
-  //else{
-    //DrawableBuffer::releaseFromWrite(dbuf);
+  // else{
+  // DrawableBuffer::releaseFromWrite(dbuf);
   //}
 }
 ///////////////////////////////////////////////////////////////////////////////
 void EzMainWin::_updateEnqueueUnlockedAndReleaseFrame(DrawableBuffer* dbuf) {
-  //if(_app._initdata->_update_rendersync){
-    //DrawableBuffer::releaseFromWriteLocked(dbuf);
+  // if(_app._initdata->_update_rendersync){
+  // DrawableBuffer::releaseFromWriteLocked(dbuf);
   //}
-  //else{
-    //DrawableBuffer::releaseFromWrite(dbuf);
+  // else{
+  // DrawableBuffer::releaseFromWrite(dbuf);
   //}
 }
 ///////////////////////////////////////////////////////////////////////////////
 const DrawableBuffer* EzMainWin::_tryAcquireDrawBuffer(ui::drawevent_constptr_t drawEvent) {
   //_curframecontext = drawEvent->GetTarget();
 
-  //if(_app._initdata->_update_rendersync){
-    //return DrawableBuffer::acquireForReadLocked();
+  // if(_app._initdata->_update_rendersync){
+  // return DrawableBuffer::acquireForReadLocked();
   //}
-  //else {
-    //return DrawableBuffer::acquireForRead(7);
+  // else {
+  // return DrawableBuffer::acquireForRead(7);
   //
-return nullptr;
+  return nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
 DrawableBuffer* EzMainWin::_tryAcquireUpdateBuffer() {
   DrawableBuffer* rval = nullptr;
-  //if(_app._initdata->_update_rendersync){
-    //rval = DrawableBuffer::acquireForWriteLocked();
+  // if(_app._initdata->_update_rendersync){
+  // rval = DrawableBuffer::acquireForWriteLocked();
   //}
-  //else {
-    //rval = DrawableBuffer::acquireForWrite(7);
+  // else {
+  // rval = DrawableBuffer::acquireForWrite(7);
   //}
-  //rval->Reset();
+  // rval->Reset();
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void EzMainWin::_releaseAcquireUpdateBuffer(DrawableBuffer*db){
-  //if(_app._initdata->_update_rendersync){
-//    DrawableBuffer::releaseFromWriteLocked(db);
+  // if(_app._initdata->_update_rendersync){
+  //    DrawableBuffer::releaseFromWriteLocked(db);
   //}
-  //else {
-    //DrawableBuffer::releaseFromWrite(db);
+  // else {
+  // DrawableBuffer::releaseFromWrite(db);
   //}
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -600,28 +610,27 @@ void EzMainWin::_beginFrame(const DrawableBuffer* dbuf) {
 ///////////////////////////////////////////////////////////////////////////////
 void EzMainWin::_endFrame(const DrawableBuffer* dbuf) {
   if (_update_rendersync) {
-    //auto do_rlock = dbuf->getUserProperty("RENDERLOCK"_crcu);
-    //if (auto as_lock = do_rlock.tryAs<atom_rlock_ptr_t>()) {
-      //as_lock.value()->store(1);
+    // auto do_rlock = dbuf->getUserProperty("RENDERLOCK"_crcu);
+    // if (auto as_lock = do_rlock.tryAs<atom_rlock_ptr_t>()) {
+    // as_lock.value()->store(1);
     //}
   }
   _curframecontext->endFrame();
-  //if(_app._initdata->_update_rendersync){
-    //DrawableBuffer::releaseFromReadLocked(dbuf);
+  // if(_app._initdata->_update_rendersync){
+  // DrawableBuffer::releaseFromReadLocked(dbuf);
   //}
-  //else{
-    //DrawableBuffer::releaseFromRead(dbuf);
+  // else{
+  // DrawableBuffer::releaseFromRead(dbuf);
   //}
 }
 ///////////////////////////////////////////////////////////////////////////////
 void EzMainWin::withAcquiredUpdateDrawBuffer(int debugcode, std::function<void(const AcquiredUpdateDrawBuffer&)> l) {
   DrawableBuffer* DB = nullptr;
 
-  if(_update_rendersync){
-    //DB = DrawableBuffer::acquireForWriteLocked();
-  }
-  else{
-    //DB = DrawableBuffer::acquireForWrite(debugcode);
+  if (_update_rendersync) {
+    // DB = DrawableBuffer::acquireForWriteLocked();
+  } else {
+    // DB = DrawableBuffer::acquireForWrite(debugcode);
   }
 
   if (DB) {

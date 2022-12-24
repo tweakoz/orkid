@@ -148,6 +148,8 @@ public:
   ///////////////////////////////////
   static orkezapp_ptr_t create(appinitdata_ptr_t appinitdata);
   static orkezapp_ptr_t createWithScene(varmap::varmap_ptr_t sceneparams);
+  static boost::program_options::options_description_easy_init createDefaultOptions(appinitdata_ptr_t appinitdata, //
+                                                            std::string appinfo);
   ///////////////////////////////////
 
   filedevctx_ptr_t newFileDevContext(std::string uriproto, const file::Path& basepath);

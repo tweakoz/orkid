@@ -5,6 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
+#include <iostream>
 #include <ork/pch.h>
 #include <ork/application/application.h>
 #include <ork/rtti/Class.h>
@@ -45,6 +46,20 @@ AppInitData::opts_var_map_ptr_t AppInitData::parse(){
     po::store(cmdline,*_commandline_vars);
     po::notify(*_commandline_vars);
   }
+  if (_commandline_vars->count("help")) {
+    std::cout << (*_commandline_desc) << "\n";
+    exit(0);
+  }
+  auto& vars = *_commandline_vars;
+  this->_fullscreen = vars["fullscreen"].as<bool>();
+  this->_top          = vars["top"].as<int>();
+  this->_left         = vars["left"].as<int>();
+  this->_width        = vars["width"].as<int>();
+  this->_height       = vars["height"].as<int>();
+  this->_msaa_samples = vars["msaa"].as<int>();
+  this->_ssaa_samples = vars["ssaa"].as<int>();
+
+  printf("_msaa_samples<%d>\n", this->_msaa_samples);
   return _commandline_vars;
 }
 
