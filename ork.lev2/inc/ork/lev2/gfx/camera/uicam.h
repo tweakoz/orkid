@@ -125,6 +125,8 @@ public:
 
   float mfLoc;
 
+  float _base_zmoveamt = 0.3;
+
   fvec3 mvCenter;
 
   float locscale;

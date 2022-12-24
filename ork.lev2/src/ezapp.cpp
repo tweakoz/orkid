@@ -145,6 +145,9 @@ void OrkEzApp::enqueueWindowResize(int w, int h){
 EzViewport::EzViewport(EzMainWin* mainwin)
     : ui::Viewport("ezviewport", 1, 1, 1, 1, fvec3(0, 0, 0), 1.0f)
     , _mainwin(mainwin) {
+
+  _geometry._w = 1;
+  _geometry._h = 1;
   _initstate.store(0);
   lev2::DrawableBuffer::ClearAndSyncWriters();
   _mainwin->_render_timer.Start();
@@ -204,7 +207,11 @@ void EzViewport::DoSurfaceResize() {
 /////////////////////////////////////////////////
 ui::HandlerResult EzViewport::DoOnUiEvent(ui::event_constptr_t ev) {
   if (_mainwin->_onUiEvent) {
-    return _mainwin->_onUiEvent(ev);
+    auto hacked_event                = std::make_shared<ui::Event>();
+    *hacked_event                    = *ev;
+    hacked_event->_vpdim.x           = width();
+    hacked_event->_vpdim.y           = height();
+    return _mainwin->_onUiEvent(hacked_event);
   } else
     return ui::HandlerResult();
 }

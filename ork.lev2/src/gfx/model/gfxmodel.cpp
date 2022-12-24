@@ -438,7 +438,7 @@ void XgmModel::RenderSkinned(
         t.mNormal      = fvec3(1, 0, 0);
         hvtx.mBiNormal = fvec3(1, 1, 0);
         t.mBiNormal    = fvec3(1, 1, 0);
-        int numlines   = inumbones * (24);
+        int numlines   = inumbones * (28);
         vw.Lock(pTARG, &vtxbuf, numlines);
         for (int ib = 0; ib < inumbones; ib++) {
           const XgmBone& bone = skeleton().bone(ib);
@@ -482,7 +482,7 @@ void XgmModel::RenderSkinned(
 
           auto add_vertex = [&](const fvec3 pos, const fvec3& col) {
             hvtx.mPosition = pos;
-            hvtx.mColor    = col.ABGRU32();
+            hvtx.mColor    = (col*5).ABGRU32();
             vw.AddVertex(hvtx);
           };
           // printf("n<%g %g %g>\n", n.x, n.y, n.z);
@@ -492,37 +492,45 @@ void XgmModel::RenderSkinned(
 
           bool bonep = (worldpose._boneprops[bone._parentIndex]==0);
 
-          auto color = bonep ? fvec3::Yellow() : fvec3::Red();
+          auto colorN = fvec3::White();
+          auto colorX = bonep ? fvec3(1,.5,.5) : fvec3::Yellow();
+          auto colorZ = bonep ? fvec3(.5,.5,1) : fvec3::White();
 
-          add_vertex(h, color);
-          add_vertex(a, color);
-          add_vertex(a, color);
-          add_vertex(t, color);
+          add_vertex(h, colorX);
+          add_vertex(a, colorX);
+          add_vertex(a, colorX);
+          add_vertex(t, colorX);
 
-          add_vertex(h, color);
-          add_vertex(b, color);
-          add_vertex(b, color);
-          add_vertex(t, color);
+          add_vertex(h, colorX);
+          add_vertex(b, colorX);
+          add_vertex(b, colorX);
+          add_vertex(t, colorX);
 
-          add_vertex(h, color);
-          add_vertex(c, color);
-          add_vertex(c, color);
-          add_vertex(t, color);
+          add_vertex(a, colorX);
+          add_vertex(hh, colorX);
 
-          add_vertex(h, color);
-          add_vertex(d, color);
-          add_vertex(d, color);
-          add_vertex(t, color);
+          add_vertex(h, colorZ);
+          add_vertex(c, colorZ);
+          add_vertex(c, colorZ);
+          add_vertex(t, colorZ);
 
-          add_vertex(a, color);
-          add_vertex(c, color);
-          add_vertex(c, color);
-          add_vertex(b, color);
+          add_vertex(h, colorZ);
+          add_vertex(d, colorZ);
+          add_vertex(d, colorZ);
+          add_vertex(t, colorZ);
 
-          add_vertex(b, color);
-          add_vertex(d, color);
-          add_vertex(d, color);
-          add_vertex(a, color);
+          add_vertex(c, colorZ);
+          add_vertex(hh, colorZ);
+
+          add_vertex(a, colorN);
+          add_vertex(c, colorN);
+          add_vertex(c, colorN);
+          add_vertex(b, colorN);
+
+          add_vertex(b, colorN);
+          add_vertex(d, colorN);
+          add_vertex(d, colorN);
+          add_vertex(a, colorN);
         }
         vw.UnLock(pTARG);
         pTARG->MTXI()->PushMMatrix(fmtx4::Identity());

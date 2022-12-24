@@ -91,7 +91,8 @@ EzUiCam::EzUiCam()
     , mDoRotate(false)
     , mDoDolly(false)
     , mDoPan(false)
-    , mDoZoom(false) {
+    , mDoZoom(false)
+    , _constrainZ(false)  {
   _camcamdata.Persp(1.0f, 1000.0f, 70.0f);
   _camcamdata.Lookat(fvec3(0.0f, 0.0f, 0.0f), fvec3(0.0f, 0.0f, 1.0f), fvec3(0.0f, 1.0f, 0.0f));
   type_name     = "Perspective";
@@ -583,7 +584,7 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
     }
     case EventCode::MOUSEWHEEL: {
       mDoZoom = true;
-      float zmoveamt = 0.3f;
+      float zmoveamt = _base_zmoveamt;
       if (isctrl)
         zmoveamt *= 0.2f;
       else if (isshift)

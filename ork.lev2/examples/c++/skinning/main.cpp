@@ -19,7 +19,6 @@
 #include <ork/lev2/gfx/renderer/compositor.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
 #include <ork/lev2/gfx/material_freestyle.h>
-#include <ork/lev2/vr/vr.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
@@ -31,6 +30,7 @@
 #include <ork/lev2/imgui/imgui_impl_opengl3.h>
 #include <ork/lev2/imgui/imgui_ged.inl>
 #include <ork/lev2/imgui/imgui_internal.h>
+#include <ork/lev2/gfx/camera/uicam.h>
 ///////////////////////////////////////////////////////////////////////////////
 
 using namespace std::string_literals;
@@ -46,20 +46,13 @@ struct GpuResources {
   GpuResources(
       appinitdata_ptr_t init_data, //
       Context* ctx,                //
-      bool use_forward,            //
-      bool use_vr) {               //
+      bool use_forward ) {         //
 
     auto vars = *init_data->parse();
 
     //////////////////////////////////////////////////////////
     int testnum = vars["testnum"].as<int>();
     //////////////////////////////////////////////////////////
-
-    if (use_vr) {
-      auto vrdev = orkidvr::novr::novr_device();
-      orkidvr::setDevice(vrdev);
-      vrdev->overrideSize(init_data->_width, init_data->_height);
-    }
 
     _camlut                = std::make_shared<CameraDataLut>();
     _camdata               = std::make_shared<CameraData>();
@@ -74,10 +67,6 @@ struct GpuResources {
     _sg_params                                         = std::make_shared<varmap::VarMap>();
     _sg_params->makeValueForKey<std::string>("preset") = use_forward ? "ForwardPBR" : "DeferredPBR";
 
-    if (use_vr) {
-      _sg_params->makeValueForKey<std::string>("preset") = "PBRVR";
-    }
-
     _sg_scene        = std::make_shared<scenegraph::Scene>(_sg_params);
     auto sg_layer    = _sg_scene->createLayer("default");
     auto sg_compdata = _sg_scene->_compositorData;
@@ -87,9 +76,9 @@ struct GpuResources {
 
     pbrcommon->_depthFogDistance = 4000.0f;
     pbrcommon->_depthFogPower    = 5.0f;
-    pbrcommon->_skyboxLevel      = 0.5;
-    pbrcommon->_diffuseLevel     = 0.4;
-    pbrcommon->_specularLevel    = 5.2;
+    pbrcommon->_skyboxLevel      = 0.25;
+    pbrcommon->_diffuseLevel     = 0.2;
+    pbrcommon->_specularLevel    = 3.2;
 
     //////////////////////////////////////////////////////////
 
@@ -218,7 +207,7 @@ struct GpuResources {
     worldpose.apply(fmtx4(), localpose);
     // OrkAssert(false);
 
-    auto rarm = model->mSkeleton.bindMatrixByName("mixamorig.RightArm");
+    auto rarm  = model->mSkeleton.bindMatrixByName("mixamorig.RightArm");
     auto rfarm = model->mSkeleton.bindMatrixByName("mixamorig.RightForeArm");
     auto rhand = model->mSkeleton.bindMatrixByName("mixamorig.RightHand");
 
@@ -226,15 +215,15 @@ struct GpuResources {
     fquat rarm_quat, rfarm_quat;
     float rarm_scale, rfarm_scale;
 
-    rarm.decompose(rarm_pos,rarm_quat,rarm_scale);
-    rfarm.decompose(rfarm_pos,rfarm_quat,rfarm_scale);
+    rarm.decompose(rarm_pos, rarm_quat, rarm_scale);
+    rfarm.decompose(rfarm_pos, rfarm_quat, rfarm_scale);
 
     auto v_farm_arm  = rfarm.translation() - rarm.translation();
     auto v_hand_farm = rhand.translation() - rfarm.translation();
 
-    _rarm_len  = v_farm_arm.length();
-    _rfarm_len = v_hand_farm.length();
-    _rarm_scale = rarm_scale;
+    _rarm_len    = v_farm_arm.length();
+    _rfarm_len   = v_hand_farm.length();
+    _rarm_scale  = rarm_scale;
     _rfarm_scale = rfarm_scale;
 
     //////////////////////////////////////////////
@@ -243,6 +232,10 @@ struct GpuResources {
 
     _char_node = sg_layer->createDrawableNode("mesh-node", _char_drawable);
 
+    _uicamera = std::make_shared<EzUiCam>();
+    _uicamera->_constrainZ = true;
+    _uicamera->_base_zmoveamt = 2.0f;
+    _uicamera->mfLoc = 100.0f;
     ctx->debugPopGroup();
   }
 
@@ -256,7 +249,7 @@ struct GpuResources {
   lev2::xgmskelapplicator_ptr_t _char_applicatorR1;
   lev2::xgmskelapplicator_ptr_t _char_applicatorR2;
   lev2::xgmskelapplicator_ptr_t _char_applicatorR3;
-
+  lev2::ezuicam_ptr_t _uicamera;
   model_drawable_ptr_t _char_drawable;
   scenegraph::node_ptr_t _char_node;
 
@@ -266,15 +259,18 @@ struct GpuResources {
   cameradata_ptr_t _camdata;
   cameradatalut_ptr_t _camlut;
 
-  float _rarm_len = 0.0f;
-  float _rfarm_len = 0.0f;
-  float _rarm_scale = 0.0f;
+  float _rarm_len    = 0.0f;
+  float _rfarm_len   = 0.0f;
+  float _rarm_scale  = 0.0f;
   float _rfarm_scale = 0.0f;
 };
 
 ///////////////////////////////////////////////////////////////////
 
 int main(int argc, char** argv, char** envp) {
+
+  float camera_distance = 10.0f;
+  fquat camROT;
 
   auto init_data = std::make_shared<ork::AppInitData>(argc, argv, envp);
 
@@ -321,7 +317,6 @@ int main(int argc, char** argv, char** envp) {
 
   printf("_msaa_samples<%d>\n", init_data->_msaa_samples);
   bool use_forward = vars["forward"].as<bool>();
-  bool use_vr      = vars["usevr"].as<bool>();
   //////////////////////////////////////////////////////////
   init_data->_imgui            = true;
   init_data->_application_name = "ork.model3dpbr";
@@ -332,7 +327,7 @@ int main(int argc, char** argv, char** envp) {
   // gpuInit handler, called once on main(rendering) thread
   //  at startup time
   //////////////////////////////////////////////////////////
-  ezapp->onGpuInit([&](Context* ctx) { gpurec = std::make_shared<GpuResources>(init_data, ctx, use_forward, use_vr); });
+  ezapp->onGpuInit([&](Context* ctx) { gpurec = std::make_shared<GpuResources>(init_data, ctx, use_forward); });
   //////////////////////////////////////////////////////////
   // update handler (called on update thread)
   //  it will never be called before onGpuInit() is complete...
@@ -343,12 +338,14 @@ int main(int argc, char** argv, char** envp) {
   auto sframe      = std::make_shared<StandardCompositorFrame>();
   float animspeed  = 1.0f;
   ezapp->onUpdate([&](ui::updatedata_ptr_t updata) {
+
+
     double dt      = updata->_dt;
     double abstime = updata->_abstime + dt + .016;
     ///////////////////////////////////////
     // compute camera data
     ///////////////////////////////////////
-    float phase = PI * abstime * 0.05;
+    float phase = 4; // PI * abstime * 0.05;
 
     fvec3 tgt(0, 0, 0);
     fvec3 up(0, 1, 0);
@@ -382,8 +379,11 @@ int main(int argc, char** argv, char** envp) {
       default:
         break;
     }
-    gpurec->_camdata->Persp(near, far, fovy);
-    gpurec->_camdata->Lookat(eye, tgt, up);
+
+    gpurec->_uicamera->aper = fovy * DTOR;
+    gpurec->_uicamera->updateMatrices();
+
+    (*gpurec->_camdata) = gpurec->_uicamera->_camcamdata;
 
     ////////////////////////////////////////
     // set character node's world transform
@@ -439,68 +439,68 @@ int main(int argc, char** argv, char** envp) {
 
     auto model = gpurec->_char_modelasset->getSharedModel();
     auto& skel = model->skeleton();
-      if (0) { //fmod(time, 10) < 5) {
+    if (0) { // fmod(time, 10) < 5) {
 
-        int ji_lshoulder     = skel.jointIndex("mixamorig.LeftShoulder");
-        auto lshoulder_base  = localpose._concat_matrices[ji_lshoulder];
-        auto lshoulder_basei = lshoulder_base.inverse();
+      int ji_lshoulder     = skel.jointIndex("mixamorig.LeftShoulder");
+      auto lshoulder_base  = localpose._concat_matrices[ji_lshoulder];
+      auto lshoulder_basei = lshoulder_base.inverse();
 
-        fmtx4 rotmtx;
-        rotmtx.setRotateY((sinf(time * 5) * 7.5) * DTOR);
-        rotmtx = lshoulder_basei * rotmtx * lshoulder_base;
+      fmtx4 rotmtx;
+      rotmtx.setRotateY((sinf(time * 5) * 7.5) * DTOR);
+      rotmtx = lshoulder_basei * rotmtx * lshoulder_base;
 
-        gpurec->_char_applicatorL->apply([&](int index) {
-          auto& ci = localpose._concat_matrices[index];
-          ci       = (rotmtx * ci);
-        });
-      }
-      if(1){ // else{
+      gpurec->_char_applicatorL->apply([&](int index) {
+        auto& ci = localpose._concat_matrices[index];
+        ci       = (rotmtx * ci);
+      });
+    }
+    if (1) { // else{
 
-        int ji_rshoulder = skel.jointIndex("mixamorig.RightShoulder");
-        int ji_rarm      = skel.jointIndex("mixamorig.RightArm");
-        int ji_rfarm     = skel.jointIndex("mixamorig.RightForeArm");
-        int ji_rhand     = skel.jointIndex("mixamorig.RightHand");
+      int ji_rshoulder = skel.jointIndex("mixamorig.RightShoulder");
+      int ji_rarm      = skel.jointIndex("mixamorig.RightArm");
+      int ji_rfarm     = skel.jointIndex("mixamorig.RightForeArm");
+      int ji_rhand     = skel.jointIndex("mixamorig.RightHand");
 
-        const auto& rshoulder = localpose._concat_matrices[ji_rshoulder];
-        auto rshoulder_i = rshoulder.inverse();
-        
-        auto rarm    = localpose._concat_matrices[ji_rarm];
-        auto rarm_i  = rarm.inverse();
-        auto rfarm   = localpose._concat_matrices[ji_rfarm];
-        auto rfarm_i = rfarm.inverse();
+      const auto& rshoulder = localpose._concat_matrices[ji_rshoulder];
+      auto rshoulder_i      = rshoulder.inverse();
 
-        localpose._boneprops[ji_rarm] = 1;
+      auto rarm    = localpose._concat_matrices[ji_rarm];
+      auto rarm_i  = rarm.inverse();
+      auto rfarm   = localpose._concat_matrices[ji_rfarm];
+      auto rfarm_i = rfarm.inverse();
 
-        ///////////////////////
+      localpose._boneprops[ji_rarm] = 1;
 
-        auto rhand   = localpose._concat_matrices[ji_rhand];
-        auto wrist_xnormal = rhand.xNormal();
-        auto wrist_ynormal = rhand.yNormal();
-        auto wrist_znormal = rhand.zNormal();
+      ///////////////////////
 
-        auto elbow_pos = rhand.translation() - (wrist_ynormal*gpurec->_rfarm_len);
-        auto elbow_normal = (elbow_pos-rshoulder.translation()).normalized();
+      auto rhand         = localpose._concat_matrices[ji_rhand];
+      auto wrist_xnormal = rhand.xNormal();
+      auto wrist_ynormal = rhand.yNormal();
+      auto wrist_znormal = rhand.zNormal();
 
-        fmtx4 elbowR, elbowS, elbowT;
-        elbowR.fromNormalVectors(wrist_xnormal, //
-                                 -wrist_ynormal, //
-                                 wrist_znormal);
-        elbowS.setScale(gpurec->_rfarm_scale);
-        elbowT.setTranslation(elbow_pos);
+      auto elbow_pos    = rhand.translation() - (wrist_ynormal * gpurec->_rfarm_len);
+      auto elbow_normal = (elbow_pos - rshoulder.translation()).normalized();
 
-        rfarm = elbowT*(elbowR*elbowS);
+      fmtx4 elbowR, elbowS, elbowT;
+      elbowR.fromNormalVectors(
+          wrist_xnormal,  //
+          -wrist_ynormal, //
+          wrist_znormal);
+      elbowS.setScale(gpurec->_rfarm_scale);
+      elbowT.setTranslation(elbow_pos);
 
-        fmtx4 MM, MS; 
-        MM.correctionMatrix(rshoulder, rfarm);
-        MS.setScale(gpurec->_rarm_scale);
+      rfarm = elbowT * (elbowR * elbowS);
 
-        ///////////////////////
+      fmtx4 MM, MS;
+      MM.correctionMatrix(rshoulder, rfarm);
+      MS.setScale(gpurec->_rarm_scale);
 
-        //localpose._concat_matrices[ji_rfarm] = (MS*MM)*rshoulder;
-        //localpose._concat_matrices[ji_rfarm] = rhand;
+      ///////////////////////
 
-      }
-  
+      // localpose._concat_matrices[ji_rfarm] = (MS*MM)*rshoulder;
+      // localpose._concat_matrices[ji_rfarm] = rhand;
+    }
+
     ///////////////////////////////////////////////////////////
 
     auto context = drwev->GetTarget();
@@ -509,8 +509,16 @@ int main(int argc, char** argv, char** envp) {
     gpurec->_sg_scene->renderOnContext(context, RCFD);
   });
   //////////////////////////////////////////////////////////
-  ezapp->onResize([&](int w, int h) { gpurec->_sg_scene->_compositorImpl->compositingContext().Resize(w, h); });
+  ezapp->onResize([&](int w, int h) { //
+    gpurec->_sg_scene->_compositorImpl->compositingContext().Resize(w, h); 
+    gpurec->_uicamera->_vpdim      = fvec2(w,h);
+  });
   ezapp->onGpuExit([&](Context* ctx) { gpurec = nullptr; });
+  //////////////////////////////////////////////////////////
+  ezapp->onUiEvent([&](ui::event_constptr_t ev) -> ui::HandlerResult {
+    bool handled =  gpurec->_uicamera->UIEventHandler(ev);
+    return ui::HandlerResult();
+  });
   //////////////////////////////////////////////////////////
   ezapp->setRefreshPolicy({EREFRESH_FASTEST, -1});
   return ezapp->mainThreadLoop();

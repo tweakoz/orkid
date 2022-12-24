@@ -37,7 +37,8 @@ UiCamera::UiCamera()
     , mfLoc(3.0f)
     , mvCenter(0.0f, 0.0, 0.0f)
     , locscale(1.0f)
-    , mbInMotion(false) {
+    , mbInMotion(false)
+    , _vpdim(1,1) {
   other_info = (std::string) "";
   _camcamdata.setUiCamera(this);
   printf("SETLEV2CAM<%p>\n", (void*)this);
@@ -150,7 +151,9 @@ callback_drawable_ptr_t UiCamera::createOverlayDrawable(){
 
 void UiCamera::CommonPostSetup(void) {
 
-  float aspect = _vpdim.x / _vpdim.y;
+  bool bad_aspect = (_vpdim.x==0 and _vpdim.y==0 );
+
+  float aspect = bad_aspect ? 1.0f : (_vpdim.x / _vpdim.y);
   _curMatrices = _camcamdata.computeMatrices(aspect);
 
   fmtx4 ivmtx = _curMatrices.GetIVMatrix();
