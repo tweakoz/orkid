@@ -54,9 +54,12 @@ struct AppInitData{
   opts_desc_ptr_t commandLineOptions(const char* header_text);
 
   opts_var_map_ptr_t parse();
+  const po::variable_value& commandLineOption(const std::string& named);
 
   AppInitData(int argc=0, char** argv=nullptr, char** envp = nullptr);
   ~AppInitData();
+
+
 
   int _argc = 0;
   char** _argv = nullptr;

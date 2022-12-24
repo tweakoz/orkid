@@ -40,6 +40,14 @@ AppInitData::opts_desc_ptr_t AppInitData::commandLineOptions(const char* header_
   return _commandline_desc;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+const po::variable_value& AppInitData::commandLineOption(const std::string& named){
+  return (*_commandline_vars)[named];
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 AppInitData::opts_var_map_ptr_t AppInitData::parse(){
   if(_commandline_desc){
     auto cmdline = po::parse_command_line(_argc,_argv,*_commandline_desc);
