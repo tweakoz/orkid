@@ -130,7 +130,13 @@ int main(int argc, char** argv, char** envp) {
         ImGui::EndCombo();
       }
 
+      static float animspeed = 1.0f;
+      ImGui::SliderFloat("AnimSpeed", &animspeed, 0.0f, 3.0f, "ratio = %.3f");
+
+      ////////////////////////////////////////////////
+
       gpurec->_active_test = gpurec->_sktests[test_item_current_idx];
+      gpurec->_animspeed = animspeed;
 
       ////////////////////////////////////////////////
       // draw editor 3D viewport

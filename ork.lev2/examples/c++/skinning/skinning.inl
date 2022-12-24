@@ -63,12 +63,14 @@ struct GpuResources {
   varmap::varmap_ptr_t _sg_params;
   scenegraph::scene_ptr_t _sg_scene;
   scenegraph::layer_ptr_t _sg_layer;
+  lev2::pbr::commonstuff_ptr_t _pbrcommon;
 
   cameradata_ptr_t _camdata;
   cameradatalut_ptr_t _camlut;
 
   skinning_test_ptr_t _sktests[4];
   skinning_test_ptr_t _active_test;
+  float _animspeed = 1.0f;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -111,13 +113,13 @@ inline GpuResources::GpuResources(
   auto sg_compdata = _sg_scene->_compositorData;
   auto nodetek     = sg_compdata->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
   auto rendnode    = nodetek->tryRenderNodeAs<ork::lev2::pbr::deferrednode::DeferredCompositingNodePbr>();
-  auto pbrcommon   = rendnode->_pbrcommon;
+  _pbrcommon   = rendnode->_pbrcommon;
 
-  pbrcommon->_depthFogDistance = 4000.0f;
-  pbrcommon->_depthFogPower    = 5.0f;
-  pbrcommon->_skyboxLevel      = 0.25;
-  pbrcommon->_diffuseLevel     = 0.2;
-  pbrcommon->_specularLevel    = 3.2;
+  _pbrcommon->_depthFogDistance = 4000.0f;
+  _pbrcommon->_depthFogPower    = 5.0f;
+  _pbrcommon->_skyboxLevel      = 0.25;
+  _pbrcommon->_diffuseLevel     = 0.2;
+  _pbrcommon->_specularLevel    = 3.2;
 
   auto outpnode = nodetek->tryOutputNodeAs<ScreenOutputCompositingNode>();
 
@@ -145,12 +147,12 @@ inline GpuResources::GpuResources(
   _uicamera->mfLoc          = 100.0f;
   ctx->debugPopGroup();
 
-  _sktests[0] = createTest2(this);
-  _sktests[1] = createTest2(this);
+  _sktests[0] = createTest0(this);
+  _sktests[1] = createTest1(this);
   _sktests[2] = createTest2(this);
   _sktests[3] = createTest3(this);
 
-  _active_test = _sktests[2];
+  _active_test = _sktests[0];
 
 }
 

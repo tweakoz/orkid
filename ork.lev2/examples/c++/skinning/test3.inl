@@ -145,24 +145,27 @@ skinning_test_ptr_t createTest3(GpuResources* gpurec) {
   test->onDraw = [test]() {
     auto impl   = test->_impl.getShared<Test3IMPL>();
     auto gpurec = impl->_gpurec;
-
-    float animspeed = 1.0f;
+    gpurec->_pbrcommon->_depthFogDistance = 4000.0f;
+    gpurec->_pbrcommon->_depthFogPower    = 5.0f;
+    gpurec->_pbrcommon->_skyboxLevel      = 0.25;
+    gpurec->_pbrcommon->_diffuseLevel     = 0.2;
+    gpurec->_pbrcommon->_specularLevel    = 3.2;
 
     ///////////////////////////////////////////////////////////
     // use skel applicator on post concatenated bones
     ///////////////////////////////////////////////////////////
 
     float time  = impl->_timer.SecsSinceStart();
-    float frame = (time * 30.0f * animspeed);
+    float frame = (time * 30.0f * gpurec->_animspeed);
 
     auto anim = impl->_char_animasset->GetAnim();
 
     impl->_char_animinstA->_current_frame = fmod(frame, float(anim->_numframes));
-    impl->_char_animinstA->SetWeight(0.33f);
-    impl->_char_animinstB->_current_frame = fmod(frame*2, float(anim->_numframes));
-    impl->_char_animinstB->SetWeight(0.33f);
-    impl->_char_animinstC->_current_frame = fmod(frame*5, float(anim->_numframes));
-    impl->_char_animinstC->SetWeight(0.33f);
+    impl->_char_animinstA->SetWeight(1);
+    impl->_char_animinstB->_current_frame = fmod(frame*1.3, float(anim->_numframes));
+    impl->_char_animinstB->SetWeight(1);
+    impl->_char_animinstC->_current_frame = fmod(frame*1.7, float(anim->_numframes));
+    impl->_char_animinstC->SetWeight(1);
 
     auto modelinst  = impl->_char_drawable->_modelinst;
     auto& localpose = modelinst->_localPose;
@@ -180,57 +183,3 @@ skinning_test_ptr_t createTest3(GpuResources* gpurec) {
 
   return test;
 }
-
-/*
-
-    auto anim = gpurec->_char_animasset->GetAnim();
-
-    gpurec->_char_animinst->_current_frame = fmod(frame, float(anim->_numframes));
-    gpurec->_char_animinst->SetWeight(0.5f);
-    //gpurec->_char_animinst2->_current_frame = fmod(frame * 1.3, float(anim->_numframes));
-    //gpurec->_char_animinst2->SetWeight(0.5);
-    //gpurec->_char_animinst3->_current_frame = fmod(frame, float(anim->_numframes));
-    //gpurec->_char_animinst3->SetWeight(0.75);
-    localpose.bindPose();
-    gpurec->_char_animinst->applyToPose(localpose);
-    // gpurec->_char_animinst2->applyToPose(localpose);
-    // gpurec->_char_animinst3->applyToPose(localpose);
-    localpose.blendPoses();
-    // auto lpdump = localpose.dump();
-    // printf( "%s\n", lpdump.c_str() );
-
-    auto anim      = _char_animasset->GetAnim();
-    _char_animinst = std::make_shared<XgmAnimInst>();
-    _char_animinst->bindAnim(anim);
-    _char_animinst->SetWeight(1.0f);
-    _char_animinst->RefMask().EnableAll();
-    //_char_animinst->RefMask().Disable(model->mSkeleton,"mixamorig.RightShoulder");
-    //_char_animinst->RefMask().Disable(model->mSkeleton,"mixamorig.RightArm");
-    //_char_animinst->RefMask().Disable(model->mSkeleton,"mixamorig.RightForeArm");
-    //_char_animinst->RefMask().Disable(model->mSkeleton,"mixamorig.RightHand");
-    _char_animinst->_use_temporal_lerp = true;
-    _char_animinst->bindToSkeleton(model->mSkeleton);
-
-    //_char_animinst2 = std::make_shared<XgmAnimInst>();
-    //_char_animinst2->bindAnim(anim);
-    //_char_animinst2->SetWeight(0.5);
-    //_char_animinst2->RefMask().DisableAll();
-    //_char_animinst2->RefMask().Enable(model->mSkeleton, "mixamorig.RightShoulder");
-    //_char_animinst2->RefMask().Enable(model->mSkeleton, "mixamorig.RightArm");
-    //_char_animinst2->RefMask().Enable(model->mSkeleton, "mixamorig.RightForeArm");
-    //_char_animinst2->RefMask().Enable(model->mSkeleton, "mixamorig.RightHand");
-    //_char_animinst2->_use_temporal_lerp = true;
-    //_char_animinst2->bindToSkeleton(model->mSkeleton);
-
-    //_char_animinst3 = std::make_shared<XgmAnimInst>();
-    //_char_animinst3->bindAnim(anim);
-    //_char_animinst3->SetWeight(0.5);
-    //_char_animinst3->RefMask().DisableAll();
-    //_char_animinst3->RefMask().Enable(model->mSkeleton, "mixamorig.RightShoulder");
-    //_char_animinst3->RefMask().Enable(model->mSkeleton, "mixamorig.RightArm");
-    //_char_animinst3->RefMask().Enable(model->mSkeleton, "mixamorig.RightForeArm");
-    //_char_animinst3->RefMask().Enable(model->mSkeleton, "mixamorig.RightHand");
-    //_char_animinst3->_use_temporal_lerp = true;
-    //_char_animinst3->bindToSkeleton(model->mSkeleton);
-
-*/

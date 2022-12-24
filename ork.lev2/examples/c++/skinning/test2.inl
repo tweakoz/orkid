@@ -131,15 +131,18 @@ skinning_test_ptr_t createTest2(GpuResources* gpurec) {
   test->onDraw = [test]() {
     auto impl   = test->_impl.getShared<Test2IMPL>();
     auto gpurec = impl->_gpurec;
-
-    float animspeed = 1.0f;
+    gpurec->_pbrcommon->_depthFogDistance = 4000.0f;
+    gpurec->_pbrcommon->_depthFogPower    = 5.0f;
+    gpurec->_pbrcommon->_skyboxLevel      = 0.25;
+    gpurec->_pbrcommon->_diffuseLevel     = 0.2;
+    gpurec->_pbrcommon->_specularLevel    = 3.2;
 
     ///////////////////////////////////////////////////////////
     // use skel applicator on post concatenated bones
     ///////////////////////////////////////////////////////////
 
     float time  = impl->_timer.SecsSinceStart();
-    float frame = (time * 30.0f * animspeed);
+    float frame = (time * 30.0f * gpurec->_animspeed);
 
     auto anim = impl->_char_animasset->GetAnim();
 
