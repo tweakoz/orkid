@@ -113,7 +113,7 @@ int main(int argc, char** argv, char** envp) {
       ImGui::Spacing();
 
       ImGuiComboFlags flags            = 0;
-      const char* test_items[]         = {"Test0", "Test1", "Test1a", "Test2", "Test3"};
+      const char* test_items[]         = {"Test0", "Test1", "Test1a", "Test1b", "Test2", "Test3"};
       static int test_item_current_idx = 0; 
       const char* combo_preview_value =
           test_items[test_item_current_idx]; // Pass in the preview value visible before opening the combo (it could be anything)
