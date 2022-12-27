@@ -208,6 +208,7 @@ skinning_test_ptr_t createTest1B(GpuResources* gpurec) {
             auto KCB = kpN[i+1];
             auto CJ = (CB-CA).normalized();
             kpN[i] = kln::translator(-l,CJ.x,CJ.y,CJ.z)(KCB);
+            pN[i] = fvec3(kpN[i].x(),kpN[i].y(),kpN[i].z());
         }
 
         for( int i=1; i<5; i++ ){ // run forwards, restore lengths again
@@ -217,16 +218,17 @@ skinning_test_ptr_t createTest1B(GpuResources* gpurec) {
             auto CB = pN[i];
             auto CJ = (CB-CA).normalized();
             kpN[i] = kln::translator(-l,CJ.x,CJ.y,CJ.z)(KCA);
+            pN[i] = fvec3(kpN[i].x(),kpN[i].y(),kpN[i].z());
         }
 
     }
 
     auto do_mtx = [&](int i){
-        auto pa = kpN[i];
-        auto pb = kpN[i+1];
+        auto pa = pN[i];
+        auto pb = pN[i+1];
         fmtx4 mtx;
-        mtx.lookAt(fvec3(pa.x(),pa.y(),pa.z()), //
-                   fvec3(pb.x(),pb.y(),pb.z()), //
+        mtx.lookAt(pa, //
+                   pb, //
                    fvec3(0,1,0)); //
         localpose._concat_matrices[i] = mtx;//* myz;
     };
