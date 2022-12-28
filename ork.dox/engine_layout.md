@@ -103,6 +103,8 @@
   - Notable dependencies (License):
     + Ork.Core (Boost, permissive)
     + OpenGL (Permissive)
+    + GLM (OpenGL Math Library)
+    + Klein (3D Geometric Algebra Library)
     + PortAudio (Custom, permissive)
     + PortMIDI (Apache2.0, permissive)
     + TUIO (LGPL, permissive)
