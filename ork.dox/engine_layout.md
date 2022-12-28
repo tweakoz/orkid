@@ -7,10 +7,10 @@
   - File IO
   - Performance minded containers
   - Math 
-    + Linear Algebra
+    + Linear Algebra - Layered on GLM
     + Trigonemtry
     + General 3D
-    + Geometric Algebra (3D only)
+    + Geometric Algebra (3D only - Layered on Klein)
     + Audio/DSP
     + PID
   - Operations Queue (higher level concurrency, inspired by Apple's GCD)
