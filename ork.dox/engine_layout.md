@@ -6,7 +6,13 @@
   - General OS utilities
   - File IO
   - Performance minded containers
-  - Math (LA/trig/audio/etc)
+  - Math 
+    + Linear Algebra
+    + Trigonemtry
+    + General 3D
+    + Geometric Algebra
+    + Audio/DSP
+    + PID
   - Operations Queue (higher level concurrency, inspired by Apple's GCD)
   - Threading / low-level concurrency
   - DataBlocks / DataCache - cache output of processed data.
