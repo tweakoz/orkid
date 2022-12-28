@@ -53,7 +53,7 @@
       - Loads DAE, OBJ and probably other assimp formats
       - Instancing Support via instance textures
     + Custom callback/lambda based renderables
-    + Animation controllers with masking and blending
+    + Animation controllers with masking, blending, and procedural animation support.
     + Dataflow graph based particle systems
     + PTEX: dataflow graph based procedural texturing system
       - you can put a PTEX on a light projector! (if you can afford the gpu time)
