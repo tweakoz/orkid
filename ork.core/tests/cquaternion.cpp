@@ -34,8 +34,8 @@ TEST(QuatConjugate) {
   fquat cq = q.conjugate();
 
   printf("axis<%g %g %g> angle<%g>\n", v.x, v.y, v.z, v.w);
-  printf("%s\n", q.formatcn("q").c_str() );
-  printf("%s\n", cq.formatcn("cq").c_str() );
+  printf("%s\n", q.formatcn("q").c_str());
+  printf("%s\n", cq.formatcn("cq").c_str());
 }
 
 TEST(QuatInverse) {
@@ -43,48 +43,67 @@ TEST(QuatInverse) {
   fquat q;
   q.fromAxisAngle(v);
 
-  fquat iq = q.inverse();
+  fquat iq  = q.inverse();
   fquat iiq = iq.inverse();
 
-  fquat chk = iq*iiq;
+  fquat chk = iq * iiq;
   fquat identity;
 
-  CHECK(identity==chk);
+  CHECK(identity == chk);
 
   printf("axis<%g %g %g> angle<%g>\n", v.x, v.y, v.z, v.w);
-  printf("%s\n", q.formatcn("q").c_str() );
-  printf("%s\n", iq.formatcn("iq").c_str() );
-  printf("%s\n", identity.formatcn("identity").c_str() );
-  printf("%s\n", chk.formatcn("chk").c_str() );
+  printf("%s\n", q.formatcn("q").c_str());
+  printf("%s\n", iq.formatcn("iq").c_str());
+  printf("%s\n", identity.formatcn("identity").c_str());
+  printf("%s\n", chk.formatcn("chk").c_str());
 }
 
 TEST(QuatKlnRotorConversion) {
 
-  fvec4 aa(0, 1, 0, PI * 0.5);
-  printf("AA<%g %g %g> <%g>\n", aa.x,aa.y,aa.z, aa.w);
+  float this_EPSILON = 0.0001;
 
-  fquat q;
-  q.fromAxisAngle(aa);
+  math::FRANDOMGEN RG(10);
 
-  auto r = q.asKleinRotor();
-  auto q2 = fquat(r);
-  CHECK_CLOSE(q.x, q2.x, MyEPSILON);
-  CHECK_CLOSE(q.y, q2.y, MyEPSILON);
-  CHECK_CLOSE(q.z, q2.z, MyEPSILON);
-  CHECK_CLOSE(q.w, q2.w, MyEPSILON);
+  for (int i = 0; i < 100; i++) {
+    float fx = RG.rangedf(-1, 1);
+    float fy = RG.rangedf(-1, 1);
+    float fz = RG.rangedf(-1, 1);
+    float fa = RG.rangedf(-PI2, PI2);
 
-  auto P = fvec3(1,1,1);
-  auto P2 = q.transform(P);
+    auto axis = fvec3(fx, fy, fz).normalized();
+    fvec4 aa(axis.x, axis.y, axis.z, fa);
 
-  auto KP = P.asKleinPoint();
-  auto KP2 = r(KP);  
+    fquat q;
+    q.fromAxisAngle(aa);
 
-  printf("P<%g %g %g>\n", P.x,P.y,P.z);
-  printf("P2<%g %g %g>\n", P2.x,P2.y,P2.z);
-  printf("KP2<%g %g %g>\n", KP2.x(),KP2.y(),KP2.z());
+    auto r  = q.asKleinRotor();
+    auto q2 = fquat(r);
+    CHECK_CLOSE(q.x, q2.x, this_EPSILON);
+    CHECK_CLOSE(q.y, q2.y, this_EPSILON);
+    CHECK_CLOSE(q.z, q2.z, this_EPSILON);
+    CHECK_CLOSE(q.w, q2.w, this_EPSILON);
 
-  CHECK_CLOSE(P2.x, KP2.x(), MyEPSILON);
-  CHECK_CLOSE(P2.y, KP2.y(), MyEPSILON);
-  CHECK_CLOSE(P2.z, KP2.z(), MyEPSILON);
+    auto P  = fvec3(1, 1, 1);
+    auto P2 = q.transform(P);
 
+    auto KP  = P.asKleinPoint();
+    auto KP2 = r(KP);
+
+    bool XOK = fabs(P2.x - KP2.x()) < this_EPSILON;
+    bool YOK = fabs(P2.y - KP2.y()) < this_EPSILON;
+    bool ZOK = fabs(P2.z - KP2.z()) < this_EPSILON;
+
+    if (XOK and YOK and ZOK) {
+
+    } else {
+      printf("AA<%g %g %g> <%g>\n", aa.x, aa.y, aa.z, aa.w);
+      printf("P<%g %g %g>\n", P.x, P.y, P.z);
+      printf("P2<%g %g %g>\n", P2.x, P2.y, P2.z);
+      printf("KP2<%g %g %g>\n", KP2.x(), KP2.y(), KP2.z());
+    }
+
+    CHECK_CLOSE(P2.x, KP2.x(), this_EPSILON);
+    CHECK_CLOSE(P2.y, KP2.y(), this_EPSILON);
+    CHECK_CLOSE(P2.z, KP2.z(), this_EPSILON);
+  }
 }
