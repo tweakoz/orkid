@@ -9,7 +9,7 @@
   - Math 
     + Linear Algebra - Layered on GLM
     + Trigonemtry
-    + General 3D
+    + General 3D (Planes, Lines, Rays, Spheres, etc..)
     + Geometric Algebra (3D only - Layered on Klein)
     + Audio/DSP
     + PID
