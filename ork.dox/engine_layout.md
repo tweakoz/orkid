@@ -120,15 +120,12 @@
     + Python3 (PSF, permissive)
     + PyBind11 (Custom, permissive)
     + Assimp (BSD3, Permissive) 
-    + QT5 (LGPL3)
-    + PyQT5 (GPL, or commercial - your choice)
-    + Pyside2 (LGPL3)
 
 ##### python3 module: orkengine.lev2
 
 ---
 
-## ork.ent
+## ork.ecs
 archetype / entity / component / scene system. Lets you load a pregenerated 'scene' document and run it as a simulation. Contains a collection of commonly useful components, including:
 
   - Lev2 Compositor system
