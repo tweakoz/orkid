@@ -10,6 +10,7 @@
 #include <memory>
 #include <ork/math/quaternion.h>
 #include <ork/orktypes.h>
+#include <ork/math/math_types.h>
 
 #include <ork/config/config.h>
 
@@ -43,6 +44,7 @@ template <typename T> struct Matrix44 final
   Matrix44(const base_t& m) : base_t(m) {}
   Matrix44(const Matrix44<T>& m) : base_t(m) {}
   Matrix44(const Quaternion<T>& q);
+  Matrix44(const kln::translator& t);
 
   Matrix44() {
     setToIdentity();

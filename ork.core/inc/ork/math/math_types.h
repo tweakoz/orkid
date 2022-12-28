@@ -5,4 +5,6 @@ namespace kln {
   class direction;
   class plane;
   class rotor;
+  class translator;
+  class motor;
 };

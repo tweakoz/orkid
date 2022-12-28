@@ -7,6 +7,7 @@
 #pragma once
 ////////////////////////////////////////////////////////////////
 #include <cmath>
+#include <ork/math/math_types.inl>
 #include <ork/math/cvector3.h>
 #include <ork/math/cvector4.h>
 #include <ork/math/cmatrix3.h>
@@ -29,6 +30,12 @@ namespace ork {
 
 template <typename T> const Matrix44<T> Matrix44<T>::Identity() {
   return Matrix44<T>();
+}
+
+template <typename T>
+Matrix44<T>::Matrix44(const kln::translator& t){
+  const auto scalar = T(-2);
+  setTranslation(t.e01()*scalar,t.e02()*scalar,t.e03()*scalar);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
