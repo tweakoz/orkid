@@ -66,7 +66,7 @@
       - Screen, RtGroup and OpenVR Output Nodes
       - Binary (2in,1out) Operator Post Node
       - PTEX dataflow graph Post Node
-      - Forward Rendering Node
+      - Forward (unlit) Rendering Node
       - PickBuffer Rendering Node
       - Clustered/Deferred PBR Rendering node
         + Metallic, Roughness workflow
@@ -75,7 +75,8 @@
         + Cpu Light Processor
         + NvidiaMeshShader Light Processor (WIP)
         + Mono/Stereo support
-
+      - Forward PBR Rendering node
+        + Generally same features/lighting model as the deferred PBR node
 
   - Lower level audio
     + Spatialized audio effect system
