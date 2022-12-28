@@ -8,6 +8,7 @@
 #pragma once
 
 #include <memory>
+#include <ork/math/math_types.h>
 #include <ork/math/cmatrix4.h>
 #include <ork/math/cvector3.h>
 #include <ork/math/cvector4.h>
@@ -35,6 +36,9 @@ public: //
   Plane(T nx, T ny, T nz, T dist);                                            /// init from normal and distance
   Plane(T* f32p);                                                             /// set explicitly
   Plane(const Vector3<T>& NormalVec, const Vector3<T>& PosVec);               /// calc given normal and position of plane origin
+
+  Plane(const kln::plane& klein_plane);                                            /// init from normal and distance
+
   void CalcFromNormalAndOrigin(
       const Vector3<T>& NormalVec,
       const Vector3<T>& PosVec); //! calc given normal and position of plane origin

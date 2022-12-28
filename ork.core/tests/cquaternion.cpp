@@ -13,6 +13,7 @@
 #include <ork/math/cmatrix4.h>
 #include <ork/math/quaternion.h>
 #include <ork/math/misc_math.h>
+#include <ork/math/math_types.inl>
 
 using namespace ork;
 static const float MyEPSILON = 5.0e-07f; // std::numeric_limits<float>::epsilon();
@@ -55,4 +56,35 @@ TEST(QuatInverse) {
   printf("%s\n", iq.formatcn("iq").c_str() );
   printf("%s\n", identity.formatcn("identity").c_str() );
   printf("%s\n", chk.formatcn("chk").c_str() );
+}
+
+TEST(QuatKlnRotorConversion) {
+
+  fvec4 aa(0, 1, 0, PI * 0.5);
+  printf("AA<%g %g %g> <%g>\n", aa.x,aa.y,aa.z, aa.w);
+
+  fquat q;
+  q.fromAxisAngle(aa);
+
+  auto r = q.asKleinRotor();
+  auto q2 = fquat(r);
+  CHECK_CLOSE(q.x, q2.x, MyEPSILON);
+  CHECK_CLOSE(q.y, q2.y, MyEPSILON);
+  CHECK_CLOSE(q.z, q2.z, MyEPSILON);
+  CHECK_CLOSE(q.w, q2.w, MyEPSILON);
+
+  auto P = fvec3(1,1,1);
+  auto P2 = q.transform(P);
+
+  auto KP = P.asKleinPoint();
+  auto KP2 = r(KP);  
+
+  printf("P<%g %g %g>\n", P.x,P.y,P.z);
+  printf("P2<%g %g %g>\n", P2.x,P2.y,P2.z);
+  printf("KP2<%g %g %g>\n", KP2.x(),KP2.y(),KP2.z());
+
+  CHECK_CLOSE(P2.x, KP2.x(), MyEPSILON);
+  CHECK_CLOSE(P2.y, KP2.y(), MyEPSILON);
+  CHECK_CLOSE(P2.z, KP2.z(), MyEPSILON);
+
 }

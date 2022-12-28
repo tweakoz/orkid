@@ -10,6 +10,7 @@
 #include <memory>
 #include <ork/config/config.h>
 #include <ork/orktypes.h>
+#include <ork/math/math_types.h>
 
 #define GLM_FORCE_PURE
 #define GLM_FORCE_XYZW_ONLY
@@ -56,27 +57,22 @@ template <typename T> struct Quaternion final
   // constructors/destructors
   //////////////////////////////////////////////////////
 
-  Quaternion() {
-    setToIdentity();
-  }
-
+  Quaternion();
   Quaternion(T _x, T _y, T _z, T _w);
   Quaternion(const base_t& base);
   Quaternion(const Vector3<T>& axis, float angle);
 
   Quaternion(const Matrix44<T>& matrix);
   Quaternion(const Matrix33<T>& matrix);
+  Quaternion(const kln::rotor& rotor);
 
-  ~Quaternion() {
-  }
+  ~Quaternion();
 
   //////////////////////////////////////////////////////
   // converters
   //////////////////////////////////////////////////////
 
-  const base_t& asGlmQuat() const {
-    return *this;
-  }
+  const base_t& asGlmQuat() const;
 
   void fromMatrix(const Matrix44<T>& matrix);
   Matrix44<T> toMatrix() const;
@@ -88,6 +84,8 @@ template <typename T> struct Quaternion final
   void deCompress(QuatCodec qc);
 
   Vector3<T> toEuler() const;
+
+  kln::rotor asKleinRotor() const;
 
   //////////////////////////////////////////////////////
   // operators

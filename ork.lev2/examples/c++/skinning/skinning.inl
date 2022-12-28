@@ -4,6 +4,7 @@
 #include <ork/application/application.h>
 #include <ork/kernel/environment.h>
 #include <ork/kernel/timer.h>
+#include <ork/math/math_types.inl>
 #include <ork/lev2/ezapp.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/lev2_asset.h>

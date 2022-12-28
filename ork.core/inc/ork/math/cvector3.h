@@ -11,8 +11,8 @@
 
 #include <memory>
 #include <ork/orkstd.h> // For OrkAssert
+#include <ork/math/math_types.h>
 #include <ork/math/cvector2.h>
-
 #include <ork/config/config.h>
 
 #define GLM_FORCE_PURE
@@ -44,6 +44,10 @@ template <typename T> struct Vector3 final
   Vector3(const Vector3& vec);        
   Vector3(const Vector4<T>& vec);
   Vector3(const Vector2<T>& vec);
+
+  Vector3(const kln::point& klein_point);
+  Vector3(const kln::direction& klein_direction);
+
   Vector3(U32 uval) {
     setRGBAU32(uval);
   }
@@ -55,6 +59,9 @@ template <typename T> struct Vector3 final
   base4_t asGlmVec4() const {
     return base4_t(this->x,this->y,this->z,1);
   }
+
+  kln::point asKleinPoint() const;
+  kln::direction asKleinDirection() const;
 
   void rotateOnX(T rad);
   void rotateOnY(T rad);

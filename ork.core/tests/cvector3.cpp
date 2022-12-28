@@ -12,6 +12,7 @@
 #include <ork/math/cvector4.h>
 #include <ork/math/cmatrix4.h>
 #include <ork/math/misc_math.h>
+#include <ork/math/math_types.inl>
 
 using namespace ork;
 static const float MyEPSILON = 5.0e-07f; // std::numeric_limits<float>::epsilon();
@@ -242,4 +243,25 @@ TEST(Vector3Transform) {
   CHECK_CLOSE(0.0f, res.y, MyEPSILON);
   CHECK_CLOSE(1.0f, res.z, MyEPSILON);
   CHECK_CLOSE(1.0f, res.w, MyEPSILON);
+}
+
+TEST(Vector3KlnPointConversion) {
+  fvec3 v(0.0f, 1.0f, 0.0f);
+  auto kp = v.asKleinPoint();
+  auto v2 = fvec3(kp);
+  CHECK_CLOSE(v.x, v2.x, MyEPSILON);
+  CHECK_CLOSE(v.y, v2.y, MyEPSILON);
+  CHECK_CLOSE(v.z, v2.z, MyEPSILON);
+
+}
+
+TEST(Vector3KlnDirectionConversion) {
+  fvec3 v(0.0f, 1.0f, 1.0f);
+  auto vn = v.normalized();
+  auto kd = v.asKleinDirection();
+  auto v2 = fvec3(kd);
+  CHECK_CLOSE(vn.x, v2.x, MyEPSILON);
+  CHECK_CLOSE(vn.y, v2.y, MyEPSILON);
+  CHECK_CLOSE(vn.z, v2.z, MyEPSILON);
+
 }

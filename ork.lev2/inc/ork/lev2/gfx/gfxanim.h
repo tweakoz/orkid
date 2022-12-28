@@ -14,7 +14,6 @@
 #include <ork/kernel/varmap.inl>
 #include <ork/kernel/orklut.h>
 #include <ork/rtti/RTTIX.inl>
-#include <klein/klein.hpp>
 
 namespace ork { namespace lev2 {
 

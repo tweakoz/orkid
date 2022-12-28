@@ -9,6 +9,7 @@
 
 #include <cmath>
 #include <ork/math/plane.h>
+#include <ork/math/math_types.inl>
 #include <ork/util/endian.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -56,6 +57,14 @@ template <typename T>
 Plane<T>::Plane(T nx, T ny, T nz, T dist)
     : n(nx, ny, nz)
     , d(dist) {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T>
+Plane<T>::Plane(const kln::plane& klein_plane)
+  : n(klein_plane.x(),klein_plane.y(),klein_plane.z())
+  , d(klein_plane.d()){
 }
 
 ///////////////////////////////////////////////////////////////////////////////

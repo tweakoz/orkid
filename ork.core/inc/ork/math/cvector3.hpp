@@ -6,15 +6,13 @@
 ////////////////////////////////////////////////////////////////
 #pragma once
 ////////////////////////////////////////////////////////////////
+#include <ork/math/math_types.inl>
 #include <ork/math/cmatrix4.h>
 #include <ork/math/cmatrix3.h>
 #include <ork/math/cvector4.h>
 #include <ork/reflect/properties/ITyped.hpp>
 #include <ork/reflect/ISerializer.h>
 #include <ork/reflect/IDeserializer.inl>
-
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/vector_angle.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -133,6 +131,27 @@ Vector3<T>::Vector3()
 template <typename T>
 Vector3<T>::Vector3(T _x, T _y, T _z)
     : base_t(_x,_y,_z) {
+}
+
+template <typename T>
+Vector3<T>::Vector3(const kln::point& klein_point)
+  : base_t(T(klein_point.x()), T(klein_point.y()), T(klein_point.z()) ){
+
+}
+template <typename T>
+Vector3<T>::Vector3(const kln::direction& klein_direction)
+  : base_t(T(klein_direction.x()), T(klein_direction.y()), T(klein_direction.z()) ){
+
+}
+
+template <typename T>
+kln::point Vector3<T>::asKleinPoint() const{
+  return kln::point(float(this->x),float(this->y),float(this->z));
+}
+template <typename T>
+kln::direction Vector3<T>::asKleinDirection() const{
+  auto N = normalized();
+  return kln::direction(float(N.x),float(N.y),float(N.z));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

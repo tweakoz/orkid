@@ -7,6 +7,7 @@
 #pragma once
 ////////////////////////////////////////////////////////////////
 #include <cmath>
+#include <ork/math/math_types.inl>
 #include <ork/math/cmatrix3.h>
 #include <ork/math/cmatrix4.h>
 #include <ork/math/cvector4.h>
@@ -15,11 +16,21 @@
 #include <ork/reflect/ISerializer.h>
 #include <ork/reflect/IDeserializer.h>
 
-#include <glm/gtc/quaternion.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> Quaternion<T>::Quaternion() {
+    setToIdentity();
+}
+
+template <typename T> Quaternion<T>::~Quaternion() {
+}
+
+template <typename T> const typename Quaternion<T>::base_t& Quaternion<T>::asGlmQuat() const {
+  return *this;
+}
 
 template <typename T> Quaternion<T>::Quaternion(T _x, T _y, T _z, T _w) {
   this->x = (_x);
@@ -43,12 +54,27 @@ template <typename T> Quaternion<T>::Quaternion(const Vector3<T>& axis, float an
   this->fromAxisAngle(Vector4<T>(axis, angle));
 }
 
+template <typename T> Quaternion<T>::Quaternion(const kln::rotor& rotor) {
+  auto rn = rotor;
+  rn.normalize();
+  this->w = rn.scalar();
+  this->x = rn.e23();
+  this->y = rn.e31(); // or e13()?
+  this->z = rn.e12();
+}
+
+template <typename T> kln::rotor Quaternion<T>::asKleinRotor() const{
+  // TODO : does this handle double-coverage?
+  auto aa = normalized().toAxisAngle();
+  return kln::rotor(aa.w,aa.x,aa.y,aa.z);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> 
 Vector3<T> Quaternion<T>::transform(const Vector3<T>& point) const {
   Vector4<T> p4(point);
-  Vector4<T> result = (*this)*p4;
+  Vector4<T> result = p4*(*this);
   return result.xyz();
 }
 
