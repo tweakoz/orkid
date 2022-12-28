@@ -10,7 +10,7 @@
     + Linear Algebra
     + Trigonemtry
     + General 3D
-    + Geometric Algebra
+    + Geometric Algebra (3D only)
     + Audio/DSP
     + PID
   - Operations Queue (higher level concurrency, inspired by Apple's GCD)
