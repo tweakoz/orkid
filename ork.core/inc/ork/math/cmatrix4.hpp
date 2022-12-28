@@ -38,6 +38,21 @@ Matrix44<T>::Matrix44(const kln::translator& t){
   setTranslation(t.e01()*scalar,t.e02()*scalar,t.e03()*scalar);
 }
 
+template <typename T>
+Matrix44<T>::Matrix44(const kln::rotor& r){
+  auto q = Quaternion<T>(r);
+  this->fromQuaternion(q);
+}
+
+template <typename T>
+Matrix44<T>::Matrix44(const kln::motor& m){
+  const auto& M = m.as_mat4x4();
+  auto dest = asArray();
+  for( int i=0; i<16; i++ ){
+    dest[i] = M.data[i];
+  }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> 

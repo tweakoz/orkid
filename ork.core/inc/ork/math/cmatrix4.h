@@ -45,6 +45,8 @@ template <typename T> struct Matrix44 final
   Matrix44(const Matrix44<T>& m) : base_t(m) {}
   Matrix44(const Quaternion<T>& q);
   Matrix44(const kln::translator& t);
+  Matrix44(const kln::rotor& r);
+  Matrix44(const kln::motor& m);
 
   Matrix44() {
     setToIdentity();

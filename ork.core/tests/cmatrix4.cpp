@@ -156,3 +156,91 @@ TEST(Matrix44KlnTranslator) {
     }
   }
 }
+
+TEST(Matrix44KlnRotor) {
+
+  float this_EPSILON = 0.0001;
+
+  math::FRANDOMGEN RG(10);
+
+  for (int i = 0; i < 100; i++) {
+
+    float fx = RG.rangedf(-1, 1);
+    float fy = RG.rangedf(-1, 1);
+    float fz = RG.rangedf(-1, 1);
+    float fd = RG.rangedf(-1000, 1000);
+
+    kln::rotor KR(fd, fx, fy, fz);
+    kln::point KP(0, 0, 0);
+    kln::point KP2 = KR(KP);
+
+    auto MR = fmtx4(KR);
+    auto P  = fvec3(0, 0, 0);
+    auto P2 = P.transform(MR);
+
+    CHECK_CLOSE(P2.x, KP2.x(), this_EPSILON);
+    CHECK_CLOSE(P2.y, KP2.y(), this_EPSILON);
+    CHECK_CLOSE(P2.z, KP2.z(), this_EPSILON);
+
+    bool XOK = fabs(P2.x - KP2.x()) < this_EPSILON;
+    bool YOK = fabs(P2.y - KP2.y()) < this_EPSILON;
+    bool ZOK = fabs(P2.z - KP2.z()) < this_EPSILON;
+
+    if (XOK and YOK and ZOK) {
+    } else {
+      printf("KP(x,y,z) <%g %g %g>\n", KP.x(), KP.y(), KP.z());
+      printf("KP2(x,y,z) <%g %g %g>\n", KP2.x(), KP2.y(), KP2.z());
+
+      printf("P(x,y,z) <%g %g %g>\n", P.x, P.y, P.z);
+      printf("P2(x,y,z) <%g %g %g>\n", P2.x, P2.y, P2.z);
+    }
+  }
+}
+
+TEST(Matrix44KlnMotor) {
+
+  float this_EPSILON = 0.0001;
+
+  math::FRANDOMGEN RG(10);
+
+  for (int i = 0; i < 100; i++) {
+
+    float fx = RG.rangedf(-1, 1);
+    float fy = RG.rangedf(-1, 1);
+    float fz = RG.rangedf(-1, 1);
+    float fd = RG.rangedf(-1000, 1000);
+    float fx2 = RG.rangedf(-1, 1);
+    float fy2 = RG.rangedf(-1, 1);
+    float fz2 = RG.rangedf(-1, 1);
+    float fd2 = RG.rangedf(-1000, 1000);
+
+
+    kln::rotor KR(fd, fx, fy, fz);
+    kln::translator KT(fd2, fx2, fy2, fz2);
+
+    kln::motor KM = KR*KT;
+    kln::point KP(0, 0, 0);
+    kln::point KP2 = KM(KP);
+
+    auto MR = fmtx4(KM);
+    auto P  = fvec3(0, 0, 0);
+    auto P2 = P.transform(MR);
+
+    CHECK_CLOSE(P2.x, KP2.x(), this_EPSILON);
+    CHECK_CLOSE(P2.y, KP2.y(), this_EPSILON);
+    CHECK_CLOSE(P2.z, KP2.z(), this_EPSILON);
+
+    bool XOK = fabs(P2.x - KP2.x()) < this_EPSILON;
+    bool YOK = fabs(P2.y - KP2.y()) < this_EPSILON;
+    bool ZOK = fabs(P2.z - KP2.z()) < this_EPSILON;
+
+    if (XOK and YOK and ZOK) {
+    } else {
+      printf("KP(x,y,z) <%g %g %g>\n", KP.x(), KP.y(), KP.z());
+      printf("KP2(x,y,z) <%g %g %g>\n", KP2.x(), KP2.y(), KP2.z());
+
+      printf("P(x,y,z) <%g %g %g>\n", P.x, P.y, P.z);
+      printf("P2(x,y,z) <%g %g %g>\n", P2.x, P2.y, P2.z);
+    }
+  }
+}
