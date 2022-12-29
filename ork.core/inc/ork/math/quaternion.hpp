@@ -80,7 +80,7 @@ Vector3<T> Quaternion<T>::transform(const Vector3<T>& point) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> Vector3<T> Quaternion<T>::toEuler() const {
+template <typename T> Vector3<T> Quaternion<T>::asEuler() const {
   Vector3<T> angles;
 
   // roll (x-axis rotation)
@@ -609,6 +609,65 @@ template <typename T> std::string Quaternion<T>::formatcn(const std::string name
   return rval;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> //
+DualQuaternion<T>::DualQuaternion() //
+  : base_t() {
+
+}
+
+template <typename T> //
+DualQuaternion<T>::DualQuaternion(const base_t& base) //
+  : base_t(base) {
+
+}
+
+template <typename T> //
+DualQuaternion<T>::DualQuaternion(const kln::motor& motor) //
+  : base_t() {
+
+  // a: p1[0] scalar
+  // b: p1[1] (e23): 
+  // c: p1[2] (e31): 
+  // d: p1[3] (e12): 
+
+  this->real.w = motor.scalar();
+  this->real.x = motor.e23();
+  this->real.y = motor.e31();
+  this->real.z = motor.e12();
+
+  this->dual.w = motor.e0123();
+  this->dual.x = motor.e01();
+  this->dual.y = motor.e02();
+  this->dual.z = motor.e03();
+
+  // e: p1[3] : (e01)
+  // f: p1[2] : (e02)
+  // g: p1[1] : (e03)
+  // h: p2[0] : (e0123)
+
+}
+
+template <typename T> //
+const typename DualQuaternion<T>::base_t& DualQuaternion<T>::asGlmDualQuaternion() const { //
+  return *this; // slice
+}
+
+template <typename T> //
+kln::motor DualQuaternion<T>::asKleinMotor() const { //
+  T a = this->real.w;
+  T b = this->real.x;
+  T c = this->real.y;
+  T d = this->real.z;
+  T h = this->dual.w;
+  T g = this->dual.x;
+  T f = this->dual.y;
+  T e = this->dual.z;
+  return kln::motor(a,b,c,d,e,f,g,h);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork

@@ -18,6 +18,7 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/dual_quaternion.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -83,7 +84,7 @@ template <typename T> struct Quaternion final
   QuatCodec compress() const;
   void deCompress(QuatCodec qc);
 
-  Vector3<T> toEuler() const;
+  Vector3<T> asEuler() const;
 
   kln::rotor asKleinRotor() const;
 
@@ -154,6 +155,25 @@ template <>                       //
 struct use_custom_serdes<fquat> { //
   static constexpr bool enable = true;
 };
+
+
+template <typename T> struct DualQuaternion final 
+  : public glm::tdualquat<T, glm::defaultp> {
+
+  using base_t = glm::tdualquat<T, glm::defaultp>;
+
+  DualQuaternion();
+  DualQuaternion(const base_t& base);
+  DualQuaternion(const kln::motor& motor);
+
+  const base_t& asGlmDualQuaternion() const;
+  kln::motor asKleinMotor() const;
+
+};
+
+using fdualquat       = DualQuaternion<float>;
+using fdualquat_ptr_t = std::shared_ptr<fdualquat>;
+using ddualquat       = DualQuaternion<double>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

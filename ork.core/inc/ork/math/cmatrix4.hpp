@@ -209,7 +209,7 @@ template <typename T> std::string Matrix44<T>::dump4x3(Vector3<T> color) const {
   }
   {
     Quaternion<T> q(*this);
-    auto rot = q.toEuler();
+    auto rot = q.asEuler();
     if (use_color) {
       rval += ork::deco::asciic_rgb(color);
     }
