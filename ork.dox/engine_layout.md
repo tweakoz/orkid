@@ -6,7 +6,13 @@
   - General OS utilities
   - File IO
   - Performance minded containers
-  - Math (LA/trig/audio/etc)
+  - Math 
+    + Linear Algebra - Layered on GLM
+    + Trigonemtry
+    + General 3D (Planes, Lines, Rays, Spheres, etc..)
+    + Geometric Algebra (3D only - Layered on Klein)
+    + Audio/DSP
+    + PID
   - Operations Queue (higher level concurrency, inspired by Apple's GCD)
   - Threading / low-level concurrency
   - DataBlocks / DataCache - cache output of processed data.
@@ -47,7 +53,7 @@
       - Loads DAE, OBJ and probably other assimp formats
       - Instancing Support via instance textures
     + Custom callback/lambda based renderables
-    + Animation controllers with masking and blending
+    + Animation controllers with masking, blending, and procedural animation support.
     + Dataflow graph based particle systems
     + PTEX: dataflow graph based procedural texturing system
       - you can put a PTEX on a light projector! (if you can afford the gpu time)
@@ -60,7 +66,7 @@
       - Screen, RtGroup and OpenVR Output Nodes
       - Binary (2in,1out) Operator Post Node
       - PTEX dataflow graph Post Node
-      - Forward Rendering Node
+      - Forward (unlit) Rendering Node
       - PickBuffer Rendering Node
       - Clustered/Deferred PBR Rendering node
         + Metallic, Roughness workflow
@@ -69,7 +75,8 @@
         + Cpu Light Processor
         + NvidiaMeshShader Light Processor (WIP)
         + Mono/Stereo support
-
+      - Forward PBR Rendering node
+        + Generally same features/lighting model as the deferred PBR node
 
   - Lower level audio
     + Spatialized audio effect system
@@ -96,6 +103,8 @@
   - Notable dependencies (License):
     + Ork.Core (Boost, permissive)
     + OpenGL (Permissive)
+    + GLM (OpenGL Math Library)
+    + Klein (3D Geometric Algebra Library)
     + PortAudio (Custom, permissive)
     + PortMIDI (Apache2.0, permissive)
     + TUIO (LGPL, permissive)
@@ -111,15 +120,12 @@
     + Python3 (PSF, permissive)
     + PyBind11 (Custom, permissive)
     + Assimp (BSD3, Permissive) 
-    + QT5 (LGPL3)
-    + PyQT5 (GPL, or commercial - your choice)
-    + Pyside2 (LGPL3)
 
 ##### python3 module: orkengine.lev2
 
 ---
 
-## ork.ent
+## ork.ecs
 archetype / entity / component / scene system. Lets you load a pregenerated 'scene' document and run it as a simulation. Contains a collection of commonly useful components, including:
 
   - Lev2 Compositor system
