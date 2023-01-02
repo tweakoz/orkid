@@ -10,6 +10,7 @@
 
 #include <ork/orkconfig.h>
 #include <stack>
+#include <memory>
 
 namespace ork { namespace util {
 
@@ -25,13 +26,15 @@ namespace ork { namespace util {
 // Don't forget to instantiate your stuff too:
 
 template <typename T>
-class GlobalStack
+struct GlobalStack
 {
-    public:
-    static std::stack<T> gStack;
-    static T& Top();
-    static void Push( T v );
-    static void Pop();
+    using stack_t = std::stack<T> ;
+    using stack_ptr_t = std::shared_ptr<stack_t>;
+
+    static stack_ptr_t g_stack();
+    static T& top();
+    static void push( T v );
+    static void pop();
 
 };
 

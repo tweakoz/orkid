@@ -145,7 +145,7 @@ PoolString StringPoolContext::AddPooledString(const PieceString& string) {
   const char* data = copy.c_str();
   new (&copy) ResizableString;
 
-  auto papp = StringPoolStack::Top();
+  auto papp = StringPoolStack::top();
   OrkAssert(papp);
 
   return papp->_stringpool.String(data);
@@ -158,7 +158,7 @@ PoolString StringPoolContext::AddPooledLiteral(const ConstString& string) {
   if (result)
     return result;
 
-  auto app = StringPoolStack::Top();
+  auto app = StringPoolStack::top();
   OrkAssert(app);
 
   return app->_stringpool.Literal(string);
@@ -168,7 +168,7 @@ PoolString StringPoolContext::AddPooledLiteral(const ConstString& string) {
 
 PoolString StringPoolContext::FindPooledString(const PieceString& string) {
 
-  auto pAPP         = StringPoolStack::Top();
+  auto pAPP         = StringPoolStack::top();
   PoolString result = pAPP->_stringpool.Find(string);
   if (result)
     return result;
@@ -185,4 +185,4 @@ PoolString operator"" _pool(const char* s, size_t len) {
 } // namespace ork
 ///////////////////////////////////////////////////////////////////////////////
 
-template class ork::util::GlobalStack<stringpoolctx_ptr_t>;
+template struct ork::util::GlobalStack<stringpoolctx_ptr_t>;

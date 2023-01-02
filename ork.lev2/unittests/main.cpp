@@ -34,7 +34,7 @@ struct TestApplication {
 
   TestApplication(appinitdata_ptr_t initdata) {
     _spctx = std::make_shared<StringPoolContext>();
-    StringPoolStack::Push(_spctx);
+    StringPoolStack::push(_spctx);
     /////////////////////////////////////////////
     for (auto item : initdata->_preinitoperations)
       item();
@@ -47,7 +47,7 @@ struct TestApplication {
   }
 
   ~TestApplication() {
-    StringPoolStack::Pop();
+    StringPoolStack::pop();
   }
   stringpoolctx_ptr_t _spctx;
   std::shared_ptr<lev2::ThreadGfxContext> _l2ctx_track;

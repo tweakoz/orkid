@@ -42,7 +42,7 @@ EzAppContext::EzAppContext(appinitdata_ptr_t initdata)
     : _initdata(initdata) {
   ork::SetCurrentThreadName("main");
   _stringpoolctx = std::make_shared<StringPoolContext>();
-  StringPoolStack::Push(_stringpoolctx);
+  StringPoolStack::push(_stringpoolctx);
   /////////////////////////////////////////////
   _mainq  = ork::opq::mainSerialQueue();
   _trackq = new opq::TrackCurrent(_mainq);
@@ -62,7 +62,7 @@ EzAppContext::~EzAppContext() {
     ImGui::DestroyContext();
   }
 
-  StringPoolStack::Pop();
+  StringPoolStack::pop();
 }
 ///////////////////////////////////////////////////////////////////////////////
 boost::program_options::options_description_easy_init OrkEzApp::createDefaultOptions( //

@@ -42,7 +42,7 @@ TEST(LuaScripting1)
 
     auto opl1 = [&counter]()
     {
-        auto app = StringPoolStack::Top();
+        auto app = StringPoolStack::top();
 
         auto scenedata = std::make_shared<SceneData>();
 

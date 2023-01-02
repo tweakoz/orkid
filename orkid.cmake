@@ -155,11 +155,21 @@ function(ork_std_target_set_incdirs the_target)
   IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
     set_property( TARGET ${the_target} APPEND PROPERTY TGT_INCLUDE_PATHS $ENV{OBT_BUILDS}/igl/include )
     set_property( TARGET ${the_target} APPEND PROPERTY TGT_INCLUDE_PATHS $ENV{OBT_BUILDS}/igl/external/triangle )
+
+    IF(${APPLE})
+    ELSE()
+      set_property( TARGET ${the_target} APPEND PROPERTY TGT_INCLUDE_PATHS /usr/include/libdrm )
+    ENDIF()
+
   ENDIF()
 
   # use homebrew last
   IF(${APPLE})
     set_property( TARGET ${the_target} APPEND PROPERTY TGT_INCLUDE_PATHS ${HOMEBREW_PREFIX}/include)
+  ENDIF()
+
+  IF( "${ARCHITECTURE}" STREQUAL "AARCH64" )
+    set_property( TARGET ${the_target} APPEND PROPERTY TGT_INCLUDE_PATHS $ENV{OBT_BUILDS}/sse2neon )
   ENDIF()
 
 endfunction()
@@ -178,6 +188,8 @@ function(ork_std_target_set_defs the_target)
     list(APPEND def_list -DORK_ARCHITECTURE_X86_64)
   ELSEIF( "${ARCHITECTURE}" STREQUAL "AARCH64" )
     list(APPEND def_list -DORK_ARCHITECTURE_ARM_64)
+    list(APPEND def_list -DKLEIN_ARCHITECTURE_ARM)
+
   ENDIF()
 
   if(${APPLE})

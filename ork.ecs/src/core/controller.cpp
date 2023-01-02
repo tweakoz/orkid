@@ -31,7 +31,7 @@ Controller::Controller(stringpoolctx_ptr_t strpoolctx)
     : _stringpoolcontext(strpoolctx) {
 
   if (_stringpoolcontext == nullptr) {
-    _stringpoolcontext = StringPoolStack::Top();
+    _stringpoolcontext = StringPoolStack::top();
   }
 
   ork::opq::assertOnQueue(opq::mainSerialQueue());

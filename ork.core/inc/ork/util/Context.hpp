@@ -23,14 +23,18 @@
 
 namespace ork { namespace util {
 
-template <typename T> orkstack<T> GlobalStack<T>::gStack;
+template <typename T> //
+typename GlobalStack<T>::stack_ptr_t GlobalStack<T>::g_stack(){
+  static stack_ptr_t _g_stack = std::make_shared<stack_t>();
+  return _g_stack;
+}
 
 
 ////////////////////////////////////////////////////////////////////////////
 
-template <typename T> T& GlobalStack<T>::Top() { return gStack.top(); }
-template <typename T> void GlobalStack<T>::Push( T v ) { gStack.push(v); }
-template <typename T> void GlobalStack<T>::Pop() { gStack.pop(); }
+template <typename T> T& GlobalStack<T>::top() { return g_stack()->top(); }
+template <typename T> void GlobalStack<T>::push( T v ) { g_stack()->push(v); }
+template <typename T> void GlobalStack<T>::pop() { g_stack()->pop(); }
 
 ////////////////////////////////////////////////////////////////////////////
 

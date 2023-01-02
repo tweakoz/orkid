@@ -19,12 +19,12 @@ using namespace ork;
 struct TestApplication final {
   TestApplication(appinitdata_ptr_t initdata) {
       _stringpoolctx = std::make_shared<StringPoolContext>();
-    StringPoolStack::Push(_stringpoolctx);
+    StringPoolStack::push(_stringpoolctx);
     rtti::Class::InitializeClasses();
   }
 
   ~TestApplication() {
-    StringPoolStack::Pop();
+    StringPoolStack::pop();
   }
 
   stringpoolctx_ptr_t _stringpoolctx;

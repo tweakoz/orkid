@@ -29,7 +29,7 @@ void lev2appinit() {
   static auto init_data = std::make_shared<AppInitData>();
 
   static auto _gpsctx = std::make_shared<ork::StringPoolContext>();
-  StringPoolStack::Push(_gpsctx);
+  StringPoolStack::push(_gpsctx);
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wwritable-strings"

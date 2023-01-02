@@ -11,10 +11,10 @@ struct CorePythonApplication  {
 
   CorePythonApplication(){
         _stringpoolctx = std::make_shared<ork::StringPoolContext>();
-    StringPoolStack::Push(_stringpoolctx);
+    StringPoolStack::push(_stringpoolctx);
   }
   ~CorePythonApplication(){
-    StringPoolStack::Pop();
+    StringPoolStack::pop();
   }
   stringpoolctx_ptr_t _stringpoolctx;
 };

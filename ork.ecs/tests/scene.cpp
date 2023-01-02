@@ -64,7 +64,7 @@ TEST(SceneTransition1)
 		    // controller
 		    ////////////////////////////////////////////////////////////
 
-		    auto app = StringPoolStack::Top();
+		    auto app = StringPoolStack::top();
         auto controller = std::make_shared<ecs::Controller>(app);
         controller->bindScene(scenedata);
 

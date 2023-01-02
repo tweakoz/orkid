@@ -21,7 +21,7 @@ using namespace ork;
 struct TestApplication {
   TestApplication(appinitdata_ptr_t initdata) {
       _stringpoolctx = std::make_shared<StringPoolContext>();
-    StringPoolStack::Push(_stringpoolctx);
+    StringPoolStack::push(_stringpoolctx);
 
     SimpleTest::GetClassStatic();
     AssetTest::GetClassStatic();
@@ -36,7 +36,7 @@ struct TestApplication {
   }
 
   ~TestApplication() {
-    StringPoolStack::Pop();
+    StringPoolStack::pop();
   }
   stringpoolctx_ptr_t _stringpoolctx;
 
