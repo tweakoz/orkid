@@ -224,6 +224,16 @@ skinning_test_ptr_t createTest1B(GpuResources* gpurec) {
     }
 
     auto do_mtx = [&](int i){
+
+        fvec3 T;  fquat R;  float S;
+        skel._bindMatrices[i].decompose(T,R,S);
+        //printf( "S<%d> %g\n", i, S);
+
+        fmtx4 MS;
+        MS.setScale(S,S,S);
+        //fmtx4 bone_head_unitscale;
+        //bone_head_unitscale.compose2(T,R,1);           
+
         auto pa = pN[i];
         auto pb = pN[i+1];
         fmtx4 mtx;

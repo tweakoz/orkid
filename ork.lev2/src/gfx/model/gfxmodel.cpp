@@ -450,45 +450,25 @@ void XgmModel::RenderSkinned(
 
           fvec3 delta      = (t - h);
           float bonelength = delta.length();
-          fvec3 n          = delta.normalized();
           float bl2        = bonelength * 0.1;
-          fvec3 hh         = h + n * bl2;
 
-          fvec3 hnx, hny, hnz;
-          bone_head.toNormalVectors(hnx, hny, hnz);
-          hnx.normalizeInPlace();
-          hny.normalizeInPlace();
-          hnz.normalizeInPlace();
+          fvec3 T;  fquat R;  float S;
+          bone_head.decompose(T,R,S);
+          fmtx4 bone_head_unitscale;
+          bone_head_unitscale.compose2(T,R,1);           
 
-          auto hnx_ = hnx.crossWith(n);
-          hnx = hnx_.crossWith(n);
-          //auto hnz_ = hnz.crossWith(n);
-          hnz = hnx.crossWith(n);
+          auto a = fvec4(bl2,bl2,0).transform(bone_head_unitscale);
+          auto b = fvec4(-bl2,bl2,0).transform(bone_head_unitscale);
+          auto c = fvec4(0,bl2,bl2).transform(bone_head_unitscale);
+          auto d = fvec4(0,bl2,-bl2).transform(bone_head_unitscale);
 
-          fvec3 a, b, c, d;
-
-          if (math::areValuesClose(abs(n.dotWith(hnz)), 1, 0.01)) {
-            a = hh + hnx * bl2;
-            b = hh - hnx * bl2;
-            c = hh + hny * bl2;
-            d = hh - hny * bl2;
-          } else {
-
-            a = hh + hnx * bl2;
-            b = hh - hnx * bl2;
-            c = hh + hnz * bl2;
-            d = hh - hnz * bl2;
-          }
+          fvec3 hh         = fvec4(0,bl2,0).transform(bone_head_unitscale);
 
           auto add_vertex = [&](const fvec3 pos, const fvec3& col) {
             hvtx.mPosition = pos;
             hvtx.mColor    = (col*5).ABGRU32();
             vw.AddVertex(hvtx);
           };
-          // printf("n<%g %g %g>\n", n.x, n.y, n.z);
-          // printf("hnx<%g %g %g>\n", hnx.x, hnx.y, hnx.z);
-          // printf("hny<%g %g %g>\n", hny.x, hny.y, hny.z);
-          // printf("hnz<%g %g %g>\n", hnz.x, hnz.y, hnz.z);
 
           bool bonep = (worldpose._boneprops[bone._parentIndex]==0);
 
