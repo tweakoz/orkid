@@ -426,9 +426,9 @@ void XgmModel::RenderSkinned(
       typedef SVtxV12N12B12T8C4 vertex_t;
       auto& vtxbuf = GfxEnv::GetSharedDynamicVB2();
       VtxWriter<vertex_t> vw;
-      int inumbones = skeleton().numBones();
-      // printf("inumbones<%d>\n", inumbones);
-      if (inumbones) {
+      int inumjoints = skeleton().miNumJoints;
+      // printf("inumjoints<%d>\n", inumjoints);
+      if (inumjoints) {
         vertex_t hvtx, t;
         hvtx.mColor    = uint32_t(0xff00ffff);
         t.mColor       = uint32_t(0xff0000ff);
@@ -438,31 +438,27 @@ void XgmModel::RenderSkinned(
         t.mNormal      = fvec3(1, 0, 0);
         hvtx.mBiNormal = fvec3(1, 1, 0);
         t.mBiNormal    = fvec3(1, 1, 0);
-        int numlines   = inumbones * (28);
+        int numlines   = inumjoints * (28);
         vw.Lock(pTARG, &vtxbuf, numlines);
-        for (int ib = 0; ib < inumbones; ib++) {
-          const XgmBone& bone = skeleton().bone(ib);
-          fmtx4 bone_head     = worldpose._world_concat_matrices[bone._parentIndex];
-          fmtx4 bone_tail     = worldpose._world_concat_matrices[bone._childIndex];
+        for (int ij = 0; ij < inumjoints; ij++) {
+          fmtx4 joint_head     = worldpose._world_concat_matrices[ij];
+          fvec3 h             = joint_head.translation();
 
-          fvec3 h             = bone_head.translation();
-          fvec3 t             = bone_tail.translation();
-
-          fvec3 delta      = (t - h);
-          float bonelength = delta.length();
+          float bonelength = 1;
           float bl2        = bonelength * 0.1;
 
           fvec3 T;  fquat R;  float S;
-          bone_head.decompose(T,R,S);
-          fmtx4 bone_head_unitscale;
-          bone_head_unitscale.compose2(T,R,1);           
+          joint_head.decompose(T,R,S);
+          fmtx4 joint_head_unitscale;
+          joint_head_unitscale.compose2(T,R,1);           
 
-          auto a = fvec4(bl2,bl2,0).transform(bone_head_unitscale);
-          auto b = fvec4(-bl2,bl2,0).transform(bone_head_unitscale);
-          auto c = fvec4(0,bl2,bl2).transform(bone_head_unitscale);
-          auto d = fvec4(0,bl2,-bl2).transform(bone_head_unitscale);
+          auto a = fvec4(bl2,bl2,0).transform(joint_head_unitscale);
+          auto b = fvec4(-bl2,bl2,0).transform(joint_head_unitscale);
+          auto c = fvec4(0,bl2,bl2).transform(joint_head_unitscale);
+          auto d = fvec4(0,bl2,-bl2).transform(joint_head_unitscale);
+          auto t = fvec4(0,1,0).transform(joint_head_unitscale);
 
-          fvec3 hh         = fvec4(0,bl2,0).transform(bone_head_unitscale);
+          fvec3 hh         = fvec4(0,bl2,0).transform(joint_head_unitscale);
 
           auto add_vertex = [&](const fvec3 pos, const fvec3& col) {
             hvtx.mPosition = pos;
@@ -470,7 +466,7 @@ void XgmModel::RenderSkinned(
             vw.AddVertex(hvtx);
           };
 
-          bool bonep = (worldpose._boneprops[bone._parentIndex]==0);
+          bool bonep = false; //(worldpose._boneprops[bone._parentIndex]==0);
 
           auto colorN = fvec3::White();
           auto colorX = bonep ? fvec3(1,.5,.5) : fvec3::Yellow();
@@ -519,12 +515,10 @@ void XgmModel::RenderSkinned(
         });
         pTARG->MTXI()->PopMMatrix();
       }
-      for (int ib = 0; ib < inumbones; ib++) {
-        const XgmBone& bone = skeleton().bone(ib);
-        fmtx4 bone_head     = worldpose._world_bindrela_matrices[bone._parentIndex];
-         bone_head = bone_head * mSkeleton._bindMatrices[bone._parentIndex];
-        //fmtx4 bone_tail     = worldpose._world_bindrela_matrices[bone._childIndex];
-        pTARG->MTXI()->PushMMatrix(bone_head);
+      for (int ij = 0; ij < inumjoints; ij++) {
+        fmtx4 joint_head     = worldpose._world_bindrela_matrices[ij];
+         joint_head = joint_head * mSkeleton._bindMatrices[ij];
+        pTARG->MTXI()->PushMMatrix(joint_head);
         fxinst->wrappedDrawCall(RCID, [&]() {
             auto& axis =  GfxPrimitives::GetRef().mVtxBuf_Axis;
             pTARG->GBI()->DrawPrimitiveEML(axis);
