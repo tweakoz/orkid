@@ -664,12 +664,15 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
     glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 4 );
 
+    std::set<int> _try_minors;
+    _try_minors.insert(0);
+
 #if defined(OPENGL_46)
-    glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 6 );
+    _try_minors.insert(6);
+    _try_minors.insert(5);
+    _try_minors.insert(3);
 #elif defined(OPENGL_41)
-    glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 1 );
-#elif defined(OPENGL_40)
-    glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 0 );
+    _try_minors.insert(1);
 #endif
 
     glfwWindowHint( GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE );
@@ -679,19 +682,43 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
     // this can fail on nvidia aarch64 devices
     //  see: https://github.com/isl-org/Open3D/issues/2549
 
-    auto offscreen_window = glfwCreateWindow(
-        32,     //
-        32,     //
-        "",      //
-        nullptr, //
-        nullptr);
+    GLFWwindow* offscreen_window = nullptr;
+
+    bool done = false;
+
+    auto it_minor = _try_minors.rbegin();
+
+    auto ctx_vars = std::make_shared<varmap::VarMap>();
+
+    while( not done ){
+
+      int this_minor = *it_minor;
+
+      ctx_vars->makeValueForKey<int>("GL_API_MAJOR_VERSION") = 4;
+      ctx_vars->makeValueForKey<int>("GL_API_MINOR_VERSION") = this_minor;
+
+      glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, this_minor );
+
+      offscreen_window = glfwCreateWindow(
+          32,     //
+          32,     //
+          "",      //
+          nullptr, //
+          nullptr);
+    
+      it_minor++;
+      done |= (offscreen_window!=nullptr);
+      done |= (it_minor==_try_minors.rend());
+    }
+
     //printf( "offscreen_window<%p>\n", offscreen_window );
     OrkAssert(offscreen_window!=nullptr);
     gctx->_glfwWindow = offscreen_window;
     glfwSetWindowAttrib(offscreen_window,GLFW_OPENGL_PROFILE,GLFW_OPENGL_CORE_PROFILE);
     glfwSetWindowUserPointer(offscreen_window, (void*)gctx);
-    OrkAssert(offscreen_window);
     glfwSwapInterval(0);
+
+    gctx->_vars = ctx_vars;
   }
   return gctx;
 }

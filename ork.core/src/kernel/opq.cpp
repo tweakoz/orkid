@@ -592,25 +592,14 @@ opq_ptr_t mainSerialQueue() {
 }
 ///////////////////////////////////////////////////////////////////////
 opq_ptr_t concurrentQueue() {
-  int numcores   = OldSchool::GetNumCores();
-  int numthreads = 1;
-  switch (numcores) {
-    case 8:
-      numthreads = 4;
-      break;
-    case 6:
-      numthreads = 12;
-      break;
-    case 4:
-      numthreads = 2;
-      break;
-    case 2:
-      numthreads = 1;
-      break;
-    default:
-      numthreads = (numcores / 2) - 2;
-      break;
-  }
+  int numcores = OldSchool::GetNumCores();
+  int numthreads = (numcores / 2);
+  /////////////////////////////////////////////////////////
+  // we never want less than 4 threads for IO/BGPROC related tasks
+  /////////////////////////////////////////////////////////
+  if(numthreads<4)
+    numthreads = 4;
+  /////////////////////////////////////////////////////////
   static opq_ptr_t gconcurrentq = std::make_shared<OperationsQueue>(numthreads, "concurrentQueue");
   return gconcurrentq;
 }

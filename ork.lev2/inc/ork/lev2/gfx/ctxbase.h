@@ -14,6 +14,7 @@
 #include <ork/kernel/core/singleton.h>
 #include <ork/kernel/timer.h>
 #include <ork/kernel/opq.h>
+#include <ork/kernel/varmap.inl>
 
 #include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/lev2/ui/ui.h>
@@ -91,7 +92,6 @@ public:
 
   RefreshPolicyItem currentRefreshPolicy() const;
 
-protected:
   std::stack<RefreshPolicyItem> _policyStack;
 
   Context* _target;
@@ -99,6 +99,7 @@ protected:
   ui::event_ptr_t _uievent;
   bool _needsInitialize;
   svar16_t _pimpl_progress;
+  varmap::varmap_constptr_t _vars;
 
   RefreshPolicyItem _curpolicy;
 };

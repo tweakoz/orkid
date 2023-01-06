@@ -139,7 +139,7 @@ ENDIF()
 ##############################
 
 IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
-    add_compile_options(-mavx)
+    add_compile_options(-march=native)
 ELSEIF( "${ARCHITECTURE}" STREQUAL "AARCH64" )
 ENDIF()
 

@@ -13,6 +13,7 @@
 #include "../gl.h"
 #include "glslfxi.h"
 #include "glslfxi_parser.h"
+#include <ork/lev2/glfw/ctx_glfw.h>
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::glslfx::parser {
@@ -33,13 +34,31 @@ void ShaderNode::_generate2Common(shaderbuilder::BackEnd& backend) const {
   codegen.flush();
 
 ////////////////////////////////////////////////////
-#if defined(OPENGL_46)
-  codegen.formatLine("#version 460 core");
-#elif defined(OPENGL_41)
-  codegen.formatLine("#version 410 core");
-#elif defined(OPENGL_40)
-  codegen.formatLine("#version 400 core");
-#endif
+
+  auto global_ctxbase = CtxGLFW::globalOffscreenContext();
+
+  int minor_api_version = global_ctxbase->_vars->typedValueForKey<int>("GL_API_MINOR_VERSION");
+
+  switch(minor_api_version){
+    case 6:
+      codegen.formatLine("#version 460 core");
+      break;
+    case 5:
+      codegen.formatLine("#version 450 core");
+      break;
+    case 3:
+      codegen.formatLine("#version 430 core");
+      break;
+    case 1:
+      codegen.formatLine("#version 410 core");
+      break;
+    case 0:
+      codegen.formatLine("#version 400 core");
+      break;
+    default:
+      OrkAssert(false);
+      break;
+  }
 
   ////////////////////////////////////////////////////
 
