@@ -187,6 +187,7 @@ void XgmSkeleton::resize(int inumjoints) {
   mvJointNameVect.resize(inumjoints);
   maJointParents.resize(inumjoints);
   _bindMatrices.resize(inumjoints);
+  _bindDecomps.resize(inumjoints);
   _inverseBindMatrices.resize(inumjoints);
   _jointMatrices.resize(inumjoints);
   _nodeMatrices.resize(inumjoints);

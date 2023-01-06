@@ -220,6 +220,16 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
         ptstring.set(chunkreader.GetString(iinvrestmatrix));
         auto bind_matrix = scalematrix*PropType<fmtx4>::FromString(ptstring);
         mdl->mSkeleton._bindMatrices[iskelindex] = bind_matrix;
+
+        auto& decomp_out = mdl->mSkeleton._bindDecomps[iskelindex];
+
+        bind_matrix.decompose(decomp_out._position, //
+                              decomp_out._orientation, //
+                              decomp_out._scale.x );
+
+        decomp_out._scale.y = decomp_out._scale.x;
+        decomp_out._scale.z = decomp_out._scale.x;
+        
         mdl->mSkeleton._inverseBindMatrices[iskelindex] = bind_matrix.inverse();
       }
     }

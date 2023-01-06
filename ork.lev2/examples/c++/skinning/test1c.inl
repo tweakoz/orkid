@@ -1,5 +1,5 @@
 
-skinning_test_ptr_t createTest1B(GpuResources* gpurec) {
+skinning_test_ptr_t createTest1C(GpuResources* gpurec) {
 
   using namespace lev2;
 
@@ -7,9 +7,9 @@ skinning_test_ptr_t createTest1B(GpuResources* gpurec) {
 
   //////////////////////////////////////
 
-  struct Test1BIMPL {
+  struct Test1CIMPL {
 
-    Test1BIMPL(GpuResources* gpurec)
+    Test1CIMPL(GpuResources* gpurec)
         : _gpurec(gpurec) {
 
       auto model_load_req         = std::make_shared<asset::LoadRequest>();
@@ -85,19 +85,19 @@ skinning_test_ptr_t createTest1B(GpuResources* gpurec) {
 
   /////////////////////////////////////////////////////////////////////////////
 
-  test->_impl.makeShared<Test1BIMPL>(gpurec);
+  test->_impl.makeShared<Test1CIMPL>(gpurec);
 
   /////////////////////////////////////////////////////////////////////////////
 
   test->onActivate = [test]() {
-    auto impl                  = test->_impl.getShared<Test1BIMPL>();
+    auto impl                  = test->_impl.getShared<Test1CIMPL>();
     impl->_char_node->_enabled = true;
   };
 
   /////////////////////////////////////////////////////////////////////////////
 
   test->onDeactivate = [test]() {
-    auto impl                  = test->_impl.getShared<Test1BIMPL>();
+    auto impl                  = test->_impl.getShared<Test1CIMPL>();
     impl->_char_node->_enabled = false;
   };
 
@@ -107,7 +107,7 @@ skinning_test_ptr_t createTest1B(GpuResources* gpurec) {
     double dt      = updata->_dt;
     double abstime = updata->_abstime + dt + .016;
 
-    auto impl = test->_impl.getShared<Test1BIMPL>();
+    auto impl = test->_impl.getShared<Test1CIMPL>();
 
     ///////////////////////////
     // set model base transformation
@@ -122,7 +122,7 @@ skinning_test_ptr_t createTest1B(GpuResources* gpurec) {
   /////////////////////////////////////////////////////////////////////////////
 
   test->onDraw = [test]() {
-    auto impl   = test->_impl.getShared<Test1BIMPL>();
+    auto impl   = test->_impl.getShared<Test1CIMPL>();
     auto gpurec = impl->_gpurec;
     gpurec->_pbrcommon->_depthFogDistance = 4000.0f;
     gpurec->_pbrcommon->_depthFogPower    = 5.0f;
@@ -201,6 +201,28 @@ skinning_test_ptr_t createTest1B(GpuResources* gpurec) {
     myz.rotateOnX(-90*DTOR);
 
     pN[5] = target; // set end of chain to target
+
+    /*for( int outer_loop=0; outer_loop<4; outer_loop++){
+
+
+        for( int i=4; i>0; i-- ){ // run backwards, restore lengths
+            float l = lens[i];
+            auto CA = pN[i];
+            auto CB = pN[i+1];
+            auto CJ = (CB-CA).normalized();
+            pN[i] = CB + CJ*l;
+        }
+
+        for( int i=1; i<=4; i++ ){ // run forwards, restore lengths again
+            float l = lens[i];
+            auto CA = pN[i-1];
+            auto CB = pN[i];
+            auto CJ = (CB-CA).normalized();
+            pN[i] = CA + CJ*l;
+        }
+
+    }*/
+
 
     auto pa = pN[4];
     auto pb = pN[5];

@@ -612,6 +612,7 @@ struct XgmSkeleton {
 
   orkvector<fmtx4> _inverseBindMatrices;
   orkvector<fmtx4> _bindMatrices;
+  orkvector<DecompMatrix> _bindDecomps;
   orkvector<fmtx4> _jointMatrices;
   orkvector<fmtx4> _nodeMatrices;
   orkvector<std::string> mvJointNameVect;

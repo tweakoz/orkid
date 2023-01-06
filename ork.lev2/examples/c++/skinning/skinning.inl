@@ -69,7 +69,7 @@ struct GpuResources {
   cameradata_ptr_t _camdata;
   cameradatalut_ptr_t _camlut;
 
-  skinning_test_ptr_t _sktests[6];
+  skinning_test_ptr_t _sktests[7];
   skinning_test_ptr_t _active_test;
   float _animspeed = 1.0f;
 };
@@ -80,6 +80,7 @@ struct GpuResources {
 #include "test1.inl"
 #include "test1a.inl"
 #include "test1b.inl"
+#include "test1c.inl"
 #include "test2.inl"
 #include "test3.inl"
 
@@ -154,8 +155,9 @@ inline GpuResources::GpuResources(
   _sktests[1] = createTest1(this);
   _sktests[2] = createTest1A(this);
   _sktests[3] = createTest1B(this);
-  _sktests[4] = createTest2(this);
-  _sktests[5] = createTest3(this);
+  _sktests[4] = createTest1C(this);
+  _sktests[5] = createTest2(this);
+  _sktests[6] = createTest3(this);
 
   _active_test = _sktests[0];
 
