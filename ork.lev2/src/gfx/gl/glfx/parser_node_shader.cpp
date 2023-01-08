@@ -50,8 +50,6 @@ void ShaderNode::_generate2Common(shaderbuilder::BackEnd& backend) const {
       codegen.formatLine("#version 430 core");
       break;
     case 1:
-      codegen.formatLine("#version 410 core");
-      break;
     case 0:
       codegen.formatLine("#version 400 core");
       break;
