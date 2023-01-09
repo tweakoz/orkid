@@ -14,6 +14,7 @@
 #include <ork/math/cmatrix4.h>
 #include <ork/math/quaternion.h>
 #include <ork/math/frustum.h>
+#include <ork/math/TransformNode.h>
 #include <ork/kernel/fixedstring.h>
 #include <ork/kernel/fixedstring.hpp>
 #include <ork/kernel/thread.h>

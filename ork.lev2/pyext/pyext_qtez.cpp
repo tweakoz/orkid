@@ -114,17 +114,32 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 //} catch (std::exception& e) {
                 // OrkAssert(false);
                 //}
+
+                ////////////////////////////////////////////////////////////////////
+                if (py::hasattr(appinstance, "sceneparams")) {
+                  auto sceneparams //
+                      = py::cast<varmap::varmap_ptr_t>(appinstance.attr("sceneparams"));
+                  auto scene = std::make_shared<scenegraph::Scene>(sceneparams);
+                  varmap::VarMap::value_type scenevar;
+                  scenevar.set<scenegraph::scene_ptr_t>(scene);
+                  auto pyscene = type_codec->encode(scenevar);
+                  py::setattr(appinstance, "scene", pyscene);
+
+
+                  rval->onDraw([=](ui::drawevent_constptr_t drwev) { //
+                    ork::opq::mainSerialQueue()->Process();
+                    auto context = drwev->GetTarget();
+                    scene->renderOnContext(context);
+                  });
+
+
+                  rval->onResize([=](int w, int h) {
+                    scene->_compositorImpl->compositingContext().Resize(w, h);
+                  });
+
+                }
+
               });
-            }
-            ////////////////////////////////////////////////////////////////////
-            if (py::hasattr(appinstance, "sceneparams")) {
-              auto sceneparams //
-                  = py::cast<varmap::varmap_ptr_t>(appinstance.attr("sceneparams"));
-              auto scene = std::make_shared<scenegraph::Scene>(sceneparams);
-              varmap::VarMap::value_type scenevar;
-              scenevar.set<scenegraph::scene_ptr_t>(scene);
-              auto pyscene = type_codec->encode(scenevar);
-              py::setattr(appinstance, "scene", pyscene);
             }
             ////////////////////////////////////////////////////////////////////
             if (py::hasattr(appinstance, "onDraw")) {
@@ -145,12 +160,6 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 }
               });
             } else {
-              auto scene = py::cast<scenegraph::scene_ptr_t>(appinstance.attr("scene"));
-              rval->onDraw([=](ui::drawevent_constptr_t drwev) { //
-                ork::opq::mainSerialQueue()->Process();
-                auto context = drwev->GetTarget();
-                scene->renderOnContext(context);
-              });
             }
             ////////////////////////////////////////////////////////////////////
             if (py::hasattr(appinstance, "onUpdate")) {

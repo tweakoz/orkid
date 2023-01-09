@@ -8,7 +8,7 @@
 
 #pip3 install numpi Pillow
 
-import numpy, time
+import numpy, time, sys
 from PIL import Image
 from orkengine.core import *
 from orkengine.lev2 import *
@@ -17,7 +17,16 @@ tokens = CrcStringProxy()
 WIDTH = 2560
 HEIGHT = 1440
 
-lev2appinit()
+class MyApp:
+  def __init__(self):
+    pass
+  def onGpuInit(self):
+    assert(False)
+
+
+appi = MyApp()
+
+ezapp = OrkEzApp.create(appi)
 gfxenv = GfxEnv.ref
 ctx = gfxenv.loadingContext()
 FBI = ctx.FBI()

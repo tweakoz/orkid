@@ -24,17 +24,17 @@ class PyOrkApp(object):
   ################################################
   def __init__(self):
     super().__init__()
-    self.sceneparams = VarMap()
-    self.sceneparams.preset = "PBR"
     self.qtapp = OrkEzApp.create(self)
     self.qtapp.setRefreshPolicy(RefreshFastest, 0)
-    self.scene = scenegraph.Scene(self.sceneparams)
   ################################################
   # gpu data init:
   #  called on main thread when graphics context is
   #   made available
   ##############################################
   def onGpuInit(self,ctx):
+    self.sceneparams = VarMap()
+    self.sceneparams.preset = "DeferredPBR"
+    self.scene = scenegraph.Scene(self.sceneparams)
     frustum = Frustum()
     frustum.set(ctx.lookAt( vec3(0,0,-1),
                             vec3(0,0,0),
@@ -86,11 +86,10 @@ class PyOrkApp(object):
                        vec3(0, 0, 0), # tgt
                        vec3(0, 1, 0)) # up
     ###################################
-    self.primnode.\
-         worldMatrix.\
-         compose( vec3(0,0,0), # pos
-                  quat(), # rot
-                  math.sin(updinfo.absolutetime*2)*3) # scale
+    xf = self.primnode.worldTransform
+    xf.translation = vec3(0,0,0) 
+    xf.orientation = quat() 
+    xf.scale = math.sin(updinfo.absolutetime*2)*3
     ###################################
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
   ############################################

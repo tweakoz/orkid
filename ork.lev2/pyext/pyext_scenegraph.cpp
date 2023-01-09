@@ -21,10 +21,10 @@ void pyinit_scenegraph(py::module& module_lev2) {
       py::class_<Node, node_ptr_t>(sgmodule, "Node") //
           .def_property(
               "worldTransform",                     //
-              [](node_ptr_t node) -> decxf_t { //
+              [](node_ptr_t node) -> decompxf_ptr_t { //
                 return node->_dqxfdata._worldTransform;
               },
-              [](node_ptr_t node, decxf_t mtx) { //
+              [](node_ptr_t node, decompxf_ptr_t mtx) { //
                 node->_dqxfdata._worldTransform = mtx;
               })
           .def_property_readonly(

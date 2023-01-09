@@ -465,6 +465,33 @@ void pyinit_math(py::module& module_core) {
             return fxs.c_str();
           });
   type_codec->registerStdCodec<fray3_ptr_t>(fray3_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
+  auto dcxf2str = [](const DecompTransform& dcxf) -> std::string {
+    fxstring<64> fxs;
+    auto o = dcxf._translation;
+    auto r = dcxf._rotation;
+    float s = dcxf._uniformScale;
+    fxs.format("dcxf p(%g,%g,%g) o(%g,%g,%g,%g) s:%g", o.x, o.y, o.z, r.w, r.x, r.y, r.z, s);
+    return fxs.c_str();
+  };
+  //
+  auto dcxf_type = //
+      py::class_<DecompTransform, decompxf_ptr_t>(module_core, "DecompTransform")
+          //////////////////////////////////////////////////////////////////////////
+          .def(py::init<>())
+          .def_property("translation", 
+            [](decompxf_const_ptr_t dcxf) -> fvec3 { return dcxf->_translation; },
+            [](decompxf_ptr_t dcxf, fvec3 inp) { dcxf->_translation = inp; })
+          .def_property("orientation", 
+            [](decompxf_const_ptr_t dcxf) -> fquat { return dcxf->_rotation; },
+            [](decompxf_ptr_t dcxf, fquat inp) { dcxf->_rotation; })
+          .def_property("scale", 
+            [](decompxf_const_ptr_t dcxf) -> float { return dcxf->_uniformScale; },
+            [](decompxf_ptr_t dcxf, float sc) { dcxf->_uniformScale = sc; })
+          .def("__str__", dcxf2str)
+          .def("__repr__", dcxf2str);
+  type_codec->registerStdCodec<decompxf_ptr_t>(dcxf_type);
 }
 
 } // namespace ork

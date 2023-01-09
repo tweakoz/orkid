@@ -23,13 +23,8 @@ void GfxInit(const std::string& gfxlayer);
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void lev2appinit() {
+orkezapp_ptr_t lev2appinit() {
   ork::SetCurrentThreadName("main");
-
-  static auto init_data = std::make_shared<AppInitData>();
-
-  static auto _gpsctx = std::make_shared<ork::StringPoolContext>();
-  StringPoolStack::push(_gpsctx);
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wwritable-strings"
@@ -39,10 +34,19 @@ void lev2appinit() {
 
 #pragma GCC diagnostic pop
 
+  static auto init_data = std::make_shared<AppInitData>(argc,argv);
+
+  auto vars = *init_data->parse();
+
+  auto ezapp = OrkEzApp::create(init_data);
+
+
   ork::lev2::ClassInit();
   ork::rtti::Class::InitializeClasses();
   ork::lev2::GfxInit("");
   ork::lev2::FontMan::GetRef();
+
+  return ezapp;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
