@@ -19,11 +19,6 @@ namespace ork { namespace lev2 {
 
 static const int kmaxbones = 64;
 
-using TXGMBoneRegMap  = orkmap<int, int>;
-//using xgm_anim_channel_ptr_t = std::shared_ptr<XgmAnimChannel>;
-//using AnimType        = XgmAnim;
-//using anim_channel_map_t = std::map<std::string, xgm_anim_channel_ptr_t>;
-
 /// ///////////////////////////////////////////////////////////////////////////
 /// Animation Channel
 /// there can be multiple animation channels per anim

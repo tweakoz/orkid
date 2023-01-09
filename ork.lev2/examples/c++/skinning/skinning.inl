@@ -148,7 +148,7 @@ inline GpuResources::GpuResources(
   _uicamera                 = std::make_shared<EzUiCam>();
   _uicamera->_constrainZ    = true;
   _uicamera->_base_zmoveamt = 2.0f;
-  _uicamera->mfLoc          = 100.0f;
+  _uicamera->mfLoc          = 125.0f;
   ctx->debugPopGroup();
 
   _sktests[0] = createTest0(this);
@@ -159,7 +159,7 @@ inline GpuResources::GpuResources(
   _sktests[5] = createTest2(this);
   _sktests[6] = createTest3(this);
 
-  _active_test = _sktests[0];
+  _active_test = _sktests[4];
 
 }
 

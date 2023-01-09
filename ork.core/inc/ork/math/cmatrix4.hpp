@@ -304,6 +304,23 @@ template <typename T> std::string Matrix44<T>::dump4x3() const {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> 
+Matrix44<T> Matrix44<T>::translationOnly() const {
+  Matrix44<T> rval = *this;
+  rval.setColumn(0, Vector4<T>(1,0,0,0));
+  rval.setColumn(1, Vector4<T>(0,1,0,0));
+  rval.setColumn(2, Vector4<T>(0,0,1,0));
+  return rval;
+
+}
+template <typename T> 
+Matrix44<T> Matrix44<T>::rotScaleOnly() const{
+  Matrix44<T> rval = *this;
+  rval.setColumn(3, Vector4<T>(0,0,0,1));
+  return rval;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void Matrix44<T>::setElemYX(int ix, int iy, T val) {

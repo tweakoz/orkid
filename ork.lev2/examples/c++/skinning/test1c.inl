@@ -21,7 +21,7 @@ skinning_test_ptr_t createTest1C(GpuResources* gpurec) {
       OrkAssert(_char_modelasset);
       model_load_req->waitForCompletion();
 
-      _model    = _char_modelasset->getSharedModel();
+      _model        = _char_modelasset->getSharedModel();
       auto skeldump = _model->mSkeleton.dump(fvec3(1, 1, 1));
       printf("skeldump<%s>\n", skeldump.c_str());
 
@@ -69,18 +69,80 @@ skinning_test_ptr_t createTest1C(GpuResources* gpurec) {
       _skel_applicator->bindToBone("Bone.004");
       _skel_applicator->bindToBone("Bone.004.end");
 
+      auto drw = std::make_shared<CallbackDrawable>(nullptr);
+      drw->SetRenderCallback([this](lev2::RenderContextInstData& RCID) { //
+        auto context                      = RCID.context();
+        static pbrmaterial_ptr_t material = default3DMaterial(context);
+        material->_variant                = "vertexcolor"_crcu;
+        auto fxcache = material->fxInstanceCache();
+        OrkAssert(fxcache);
+        RenderContextInstData RCIDCOPY = RCID;
+        RCIDCOPY._isSkinned            = false;
+        RCIDCOPY._fx_instance_cache    = fxcache;
+        this->onDebugDraw(RCIDCOPY);
+      });
+      _dbgdraw_node = gpurec->_sg_layer->createDrawableNode("skdebugnode", drw);
+
       _timer.Start();
     }
+
+    /////////////////////////////////////////////////////////////////////////////
+
+    void onDebugDraw(const RenderContextInstData& RCID) const {
+
+      auto RCFD    = RCID._RCFD;
+      auto context = RCFD->_target;
+      auto fxcache = RCID._fx_instance_cache;
+
+      auto fxinst = fxcache->findfxinst(RCID);
+      OrkAssert(fxinst);
+
+      using vertex_t = SVtxV12N12B12T8C4;
+
+      VtxWriter<vertex_t> vw;
+      auto add_vertex = [&](const fvec3 pos, const fvec3& col) {
+        vertex_t hvtx;
+        hvtx.mPosition = pos;
+        hvtx.mColor    = (col*5).ABGRU32();
+        hvtx.mUV0      = fvec2(0, 0);
+        hvtx.mNormal   = fvec3(0, 0, 0);
+        hvtx.mBiNormal = fvec3(1, 1, 0);
+        vw.AddVertex(hvtx);
+      };
+
+      auto& vtxbuf   = GfxEnv::GetSharedDynamicVB2();
+      int inumpoints = 6;
+      vw.Lock(context, &vtxbuf, inumpoints);
+      printf( "_target<%g %g %g>\n", _target.x, _target.y, _target.z );
+      add_vertex(_target - fvec3(-1, 0, 0), fvec3(1, 1, 1));
+      add_vertex(_target + fvec3(-1, 0, 0), fvec3(1, 1, 1));
+      add_vertex(_target - fvec3(0, -1, 0), fvec3(1, 1, 1));
+      add_vertex(_target + fvec3(0, -1, 0), fvec3(1, 1, 1));
+      add_vertex(_target - fvec3(0, 0, -1), fvec3(1, 1, 1));
+      add_vertex(_target + fvec3(0, 0, -1), fvec3(1, 1, 1));
+      vw.UnLock(context);
+
+      context->PushModColor(fvec4::White());
+      context->MTXI()->PushMMatrix(fmtx4::Identity());
+      fxinst->wrappedDrawCall(RCID, [&]() { context->GBI()->DrawPrimitiveEML(vw, PrimitiveType::LINES); });
+      context->MTXI()->PopMMatrix();
+      context->PopModColor();
+    };
+
+    /////////////////////////////////////////////////////////////////////////////
 
     xgmanimassetptr_t _char_animasset;   // retain anim
     xgmmodelassetptr_t _char_modelasset; // retain model
     xgmskelapplicator_ptr_t _skel_applicator;
     GpuResources* _gpurec = nullptr;
-    model_ptr_t _model = nullptr;
+    model_ptr_t _model    = nullptr;
     model_drawable_ptr_t _char_drawable;
     lev2::xgmaniminst_ptr_t _char_animinst;
     scenegraph::node_ptr_t _char_node;
+    scenegraph::node_ptr_t _dbgdraw_node;
     ork::Timer _timer;
+
+    fvec3 _target;
   };
 
   /////////////////////////////////////////////////////////////////////////////
@@ -122,15 +184,15 @@ skinning_test_ptr_t createTest1C(GpuResources* gpurec) {
   /////////////////////////////////////////////////////////////////////////////
 
   test->onDraw = [test]() {
-    auto impl   = test->_impl.getShared<Test1CIMPL>();
-    auto gpurec = impl->_gpurec;
+    auto impl                             = test->_impl.getShared<Test1CIMPL>();
+    auto gpurec                           = impl->_gpurec;
     gpurec->_pbrcommon->_depthFogDistance = 4000.0f;
     gpurec->_pbrcommon->_depthFogPower    = 5.0f;
     gpurec->_pbrcommon->_skyboxLevel      = 1;
     gpurec->_pbrcommon->_diffuseLevel     = 1;
     gpurec->_pbrcommon->_specularLevel    = 1;
 
-    float time  = impl->_timer.SecsSinceStart();
+    float time = impl->_timer.SecsSinceStart();
 
     ///////////////////////////////////////////////////////////
     // apply base animation
@@ -147,6 +209,9 @@ skinning_test_ptr_t createTest1C(GpuResources* gpurec) {
     ///////////////////////////////////////////////////////////
 
     const auto& skel = impl->_model->mSkeleton;
+    XgmLocalPose BINDPOSE(skel);
+    BINDPOSE.bindPose();
+    BINDPOSE.concatenate();
 
     int jntindices[5];
     int inv_jntindices[5];
@@ -157,83 +222,81 @@ skinning_test_ptr_t createTest1C(GpuResources* gpurec) {
     jntindices[3] = skel.jointIndex("Bone.003");
     jntindices[4] = skel.jointIndex("Bone.004");
 
-    inv_jntindices[skel.jointIndex("Bone")] = 0;
+    inv_jntindices[skel.jointIndex("Bone")]     = 0;
     inv_jntindices[skel.jointIndex("Bone.001")] = 1;
     inv_jntindices[skel.jointIndex("Bone.002")] = 2;
     inv_jntindices[skel.jointIndex("Bone.003")] = 3;
     inv_jntindices[skel.jointIndex("Bone.004")] = 4;
 
-    auto len = [&](int ia, int ib) -> float{ //
-        return (skel._bindMatrices[ia].translation() //
-              - skel._bindMatrices[ib].translation()).length();
+    auto len = [&](int ia, int ib) -> float {      //
+      return (BINDPOSE._concat_matrices[ia].translation() //
+              - BINDPOSE._concat_matrices[ib].translation())
+          .length();
     };
 
     float lens[5];
-    
-    lens[0] = len(jntindices[0],jntindices[1]);
-    lens[1] = len(jntindices[1],jntindices[2]);
-    lens[2] = len(jntindices[2],jntindices[3]);
-    lens[3] = len(jntindices[3],jntindices[4]);
+
+    lens[0] = len(jntindices[0], jntindices[1]);
+    lens[1] = len(jntindices[1], jntindices[2]);
+    lens[2] = len(jntindices[2], jntindices[3]);
+    lens[3] = len(jntindices[3], jntindices[4]);
     lens[4] = 1.0f;
 
-    for( int i=0; i<5; i++ ){
-      printf( "BONELEN<%d> : %g\n", i, lens[i]);
+
+    skel.mTopNodesMatrix.dump("TOP");
+
+    for (int i = 0; i < 5; i++) {
+      printf("BONELEN<%d> : %g\n", i, lens[i]);
     }
 
     ///////////////////////////////////////////////////////////
 
-    fvec3 pN[6];
+    fmtx4 pN[6];
 
+    pN[0] = localpose._concat_matrices[jntindices[0]];
+    pN[1] = localpose._concat_matrices[jntindices[1]];
+    pN[2] = localpose._concat_matrices[jntindices[2]];
+    pN[3] = localpose._concat_matrices[jntindices[3]];
+    pN[4] = localpose._concat_matrices[jntindices[4]];
 
-    pN[0] = localpose._concat_matrices[jntindices[0]].translation();
-    pN[1] = localpose._concat_matrices[jntindices[1]].translation();
-    pN[2] = localpose._concat_matrices[jntindices[2]].translation();
-    pN[3] = localpose._concat_matrices[jntindices[3]].translation();
-    pN[4] = localpose._concat_matrices[jntindices[4]].translation();
-
-    auto target = fvec3(sinf(time),10,-cosf(time));
+    impl->_target = fvec3(sinf(time), 1, -cosf(time))*25.0;
 
     ///////////////////////////////////////////////////////////
     // fill in pose
     ///////////////////////////////////////////////////////////
 
-    fmtx4 myz;
-    myz.rotateOnX(-90*DTOR);
+    pN[5].setTranslation(impl->_target); // set end of chain to target
 
-    pN[5] = target; // set end of chain to target
+    for (int outer_loop = 0; outer_loop < 4; outer_loop++) {
 
-    /*for( int outer_loop=0; outer_loop<4; outer_loop++){
+      for (int i = 4; i >= 0; i--) {
 
+        auto piv    = pN[i].translation();
+        auto tgt    = pN[i + 1].translation();
+        auto ori    = fvec3(0, 1, 0).transform(pN[i]).normalized();
+        auto del    = (tgt - piv).normalized();
+        auto cross  = ori.crossWith(del).normalized();
+        float theta = acos(del.dotWith(ori));
 
-        for( int i=4; i>0; i-- ){ // run backwards, restore lengths
-            float l = lens[i];
-            auto CA = pN[i];
-            auto CB = pN[i+1];
-            auto CJ = (CB-CA).normalized();
-            pN[i] = CB + CJ*l;
-        }
+        fquat Q(cross, theta);
 
-        for( int i=1; i<=4; i++ ){ // run forwards, restore lengths again
-            float l = lens[i];
-            auto CA = pN[i-1];
-            auto CB = pN[i];
-            auto CJ = (CB-CA).normalized();
-            pN[i] = CA + CJ*l;
-        }
+        auto piv_t = pN[i].translationOnly();
 
-    }*/
+        fmtx4 R = piv_t * fmtx4(Q) * piv_t.inverse();
+
+        printf( "piv<%d> <%g %g %g>\n", i, piv.x, piv.y, piv.z);
+
+        pN[i] = R * pN[i];
 
 
-    auto pa = pN[4];
-    auto pb = pN[5];
-    fmtx4 mtx;
-    mtx.lookAt(pa, //
-               pb, //
-               fvec3(0,1,0)); //
+        pN[i].dump(FormatString("PN[%d]",i));
 
-    localpose._concat_matrices[jntindices[4]] = mtx.inverse() * myz;
+      }
+    }
 
-
+    for (int i = 0; i < 5; i++) {
+      localpose._concat_matrices[jntindices[i]] = pN[i];
+    }
   };
 
   /////////////////////////////////////////////////////////////////////////////
@@ -241,8 +304,3 @@ skinning_test_ptr_t createTest1C(GpuResources* gpurec) {
   return test;
 }
 
-/*
-
-
-
-*/

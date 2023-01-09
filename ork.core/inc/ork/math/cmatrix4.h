@@ -165,6 +165,9 @@ template <typename T> struct Matrix44 final
 
   ////////////////////////////////////
 
+  Matrix44<T> translationOnly() const;
+  Matrix44<T> rotScaleOnly() const;
+
   void transpose();
   Matrix44<T> transposed() const;
   void normalizeInPlace();
