@@ -76,8 +76,26 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
 
       ///////////////////////////////////////////////////////////////
 
+      auto drw = std::make_shared<CallbackDrawable>(nullptr);
+      drw->SetRenderCallback([this](lev2::RenderContextInstData& RCID) { //
+        auto context                      = RCID.context();
+        static pbrmaterial_ptr_t material = default3DMaterial(context);
+        material->_variant                = "vertexcolor"_crcu;
+        auto fxcache                      = material->fxInstanceCache();
+        OrkAssert(fxcache);
+        RenderContextInstData RCIDCOPY = RCID;
+        RCIDCOPY._isSkinned            = false;
+        RCIDCOPY._fx_instance_cache    = fxcache;
+        _gpurec->drawTarget(RCIDCOPY,_target);
+      });
+      _dbgdraw_node = gpurec->_sg_layer->createDrawableNode("skdebugnode", drw);
+
+      ///////////////////////////////////////////////////////////////
+
       _timer.Start();
     }
+
+    /////////////////////////////////////////////////////////////////////////////
 
     xgmanimassetptr_t _char_animasset;   // retain anim
     xgmmodelassetptr_t _char_modelasset; // retain model
@@ -85,9 +103,11 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
     model_drawable_ptr_t _char_drawable;
     lev2::xgmaniminst_ptr_t _char_animinst;
     scenegraph::node_ptr_t _char_node;
+    scenegraph::node_ptr_t _dbgdraw_node;
     ikchain_ptr_t _ikchain;
 
     ork::Timer _timer;
+    fvec3 _target;
   };
 
   //////////////////////////////////////
@@ -127,8 +147,8 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
     gpurec->_pbrcommon->_depthFogDistance = 4000.0f;
     gpurec->_pbrcommon->_depthFogPower    = 5.0f;
     gpurec->_pbrcommon->_skyboxLevel      = 0.25;
-    gpurec->_pbrcommon->_diffuseLevel     = 0.2;
-    gpurec->_pbrcommon->_specularLevel    = 3.2;
+    gpurec->_pbrcommon->_diffuseLevel     = 0.4;
+    gpurec->_pbrcommon->_specularLevel    = 4.2;
 
     ///////////////////////////////////////////////////////////
     // use skel applicator on post concatenated bones
@@ -158,9 +178,24 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
     auto model = impl->_char_modelasset->getSharedModel();
     int hjoint = model->mSkeleton.jointIndex("mixamorig.RightHand");
     fmtx4 hmtx = localpose._concat_matrices[hjoint];
-    fvec3 target = hmtx.translation();
+    impl->_target = hmtx.translation();
 
-    impl->_ikchain->compute(localpose,target);
+    float rot_time = time * gpurec->_animspeed;
+    float sca_time = time * gpurec->_controller3;
+    float radius   = 1.0+sinf(sca_time * 3);
+
+    ///////////////////////////////////////////////////////////
+
+    //impl->_target += fvec3(sinf(rot_time), 1, -cosf(rot_time)) * radius;
+
+
+
+    impl->_ikchain->_C1 = gpurec->_controller1;
+    impl->_ikchain->_C2 = gpurec->_controller2;
+    impl->_ikchain->_C3 = gpurec->_controller3;
+    impl->_ikchain->_C4 = gpurec->_controller4;
+
+    impl->_ikchain->compute(localpose,impl->_target);
 
 
   };

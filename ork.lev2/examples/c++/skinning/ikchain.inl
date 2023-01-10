@@ -42,6 +42,7 @@ struct IkChain{
     ///////////////////////////////////////////////////////////
 
     int count = _jointindices.size();
+    int last = count-1;
 
     _jointtemp.resize(count);
 
@@ -63,7 +64,7 @@ struct IkChain{
     ///////////////////////////////////////////////////
 
     auto do_end = [&]() {
-      auto& end_joint = _jointtemp[4];
+      auto& end_joint = _jointtemp[last];
 
       auto head   = end_joint.translation();
       auto tail   = fvec3(0, 1, 0).transform(end_joint).xyz();
@@ -86,8 +87,6 @@ struct IkChain{
     int maxiters = int(_C1 * 512);
 
     for (int outer_loop = 0; outer_loop < maxiters; outer_loop++) {
-
-      int last = count-1;
 
       for (int i = last; i >= 0; i--) {
 
@@ -137,7 +136,7 @@ struct IkChain{
   float _C1 = 0.222f;
   float _C2 = 0.007f;
   float _C3 = 0.341f;
-  float _C$ = 1.000f;
+  float _C4 = 1.000f;
 };
 
 using ikchain_ptr_t = std::shared_ptr<IkChain>;

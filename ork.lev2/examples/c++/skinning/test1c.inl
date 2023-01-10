@@ -80,7 +80,7 @@ skinning_test_ptr_t createTest1C(GpuResources* gpurec) {
         RenderContextInstData RCIDCOPY = RCID;
         RCIDCOPY._isSkinned            = false;
         RCIDCOPY._fx_instance_cache    = fxcache;
-        this->onDebugDraw(RCIDCOPY);
+        _gpurec->drawTarget(RCIDCOPY,_target);
       });
       _dbgdraw_node = gpurec->_sg_layer->createDrawableNode("skdebugnode", drw);
 
@@ -88,49 +88,6 @@ skinning_test_ptr_t createTest1C(GpuResources* gpurec) {
 
       _timer.Start();
     }
-
-    /////////////////////////////////////////////////////////////////////////////
-
-    void onDebugDraw(const RenderContextInstData& RCID) const {
-
-      auto RCFD    = RCID._RCFD;
-      auto context = RCFD->_target;
-      auto fxcache = RCID._fx_instance_cache;
-
-      auto fxinst = fxcache->findfxinst(RCID);
-      OrkAssert(fxinst);
-
-      using vertex_t = SVtxV12N12B12T8C4;
-
-      VtxWriter<vertex_t> vw;
-      auto add_vertex = [&](const fvec3 pos, const fvec3& col) {
-        vertex_t hvtx;
-        hvtx.mPosition = pos;
-        hvtx.mColor    = (col * 5).ABGRU32();
-        hvtx.mUV0      = fvec2(0, 0);
-        hvtx.mNormal   = fvec3(0, 0, 0);
-        hvtx.mBiNormal = fvec3(1, 1, 0);
-        vw.AddVertex(hvtx);
-      };
-
-      auto& vtxbuf   = GfxEnv::GetSharedDynamicVB2();
-      int inumpoints = 6;
-      vw.Lock(context, &vtxbuf, inumpoints);
-      // printf( "_target<%g %g %g>\n", _target.x, _target.y, _target.z );
-      add_vertex(_target - fvec3(-1, 0, 0), fvec3(1, 1, 1));
-      add_vertex(_target + fvec3(-1, 0, 0), fvec3(1, 1, 1));
-      add_vertex(_target - fvec3(0, -1, 0), fvec3(1, 1, 1));
-      add_vertex(_target + fvec3(0, -1, 0), fvec3(1, 1, 1));
-      add_vertex(_target - fvec3(0, 0, -1), fvec3(1, 1, 1));
-      add_vertex(_target + fvec3(0, 0, -1), fvec3(1, 1, 1));
-      vw.UnLock(context);
-
-      context->PushModColor(fvec4::White());
-      context->MTXI()->PushMMatrix(fmtx4::Identity());
-      fxinst->wrappedDrawCall(RCID, [&]() { context->GBI()->DrawPrimitiveEML(vw, PrimitiveType::LINES); });
-      context->MTXI()->PopMMatrix();
-      context->PopModColor();
-    };
 
     /////////////////////////////////////////////////////////////////////////////
 

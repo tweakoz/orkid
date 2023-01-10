@@ -124,7 +124,7 @@ skinning_test_ptr_t createTest2(GpuResources* gpurec) {
 
     fvec3 position(0, 0, 0);
     fquat orientation;
-    float scale = 6.0f;
+    float scale = 1.0f;
     impl->_char_node->_dqxfdata._worldTransform->set(position, orientation, scale);
   };
 

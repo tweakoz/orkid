@@ -58,6 +58,48 @@ struct GpuResources {
 
   void onUpdate(ui::updatedata_ptr_t);
 
+  void drawTarget(const RenderContextInstData& RCID,
+                  fvec3 target ) const {
+
+      auto RCFD    = RCID._RCFD;
+      auto context = RCFD->_target;
+      auto fxcache = RCID._fx_instance_cache;
+
+      auto fxinst = fxcache->findfxinst(RCID);
+      OrkAssert(fxinst);
+
+      using vertex_t = SVtxV12N12B12T8C4;
+
+      VtxWriter<vertex_t> vw;
+      auto add_vertex = [&](const fvec3 pos, const fvec3& col) {
+        vertex_t hvtx;
+        hvtx.mPosition = pos;
+        hvtx.mColor    = (col * 5).ABGRU32();
+        hvtx.mUV0      = fvec2(0, 0);
+        hvtx.mNormal   = fvec3(0, 0, 0);
+        hvtx.mBiNormal = fvec3(1, 1, 0);
+        vw.AddVertex(hvtx);
+      };
+
+      auto& vtxbuf   = GfxEnv::GetSharedDynamicVB2();
+      int inumpoints = 6;
+      vw.Lock(context, &vtxbuf, inumpoints);
+      // printf( "target<%g %g %g>\n", target.x, target.y, target.z );
+      add_vertex(target - fvec3(-1, 0, 0), fvec3(1, 1, 1));
+      add_vertex(target + fvec3(-1, 0, 0), fvec3(1, 1, 1));
+      add_vertex(target - fvec3(0, -1, 0), fvec3(1, 1, 1));
+      add_vertex(target + fvec3(0, -1, 0), fvec3(1, 1, 1));
+      add_vertex(target - fvec3(0, 0, -1), fvec3(1, 1, 1));
+      add_vertex(target + fvec3(0, 0, -1), fvec3(1, 1, 1));
+      vw.UnLock(context);
+
+      context->PushModColor(fvec4::White());
+      context->MTXI()->PushMMatrix(fmtx4::Identity());
+      fxinst->wrappedDrawCall(RCID, [&]() { context->GBI()->DrawPrimitiveEML(vw, PrimitiveType::LINES); });
+      context->MTXI()->PopMMatrix();
+      context->PopModColor();
+    };
+
   lev2::rtbuffer_ptr_t _rtbuffer;
   lev2::rtgroup_ptr_t _rtgroup;
   lev2::ezuicam_ptr_t _uicamera;
@@ -76,6 +118,8 @@ struct GpuResources {
   float _controller2 = 1.0f;
   float _controller3 = 1.0f;
   float _controller4 = 1.0f;
+
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
