@@ -13,10 +13,7 @@
 #include <ork/math/cvector3.h>
 #include <ork/orkstd.h>   // For OrkAssert
 #include <ork/orktypes.h> // For float
-
-#define GLM_FORCE_PURE
-#define GLM_FORCE_XYZW_ONLY
-#define GLM_FORCE_UNRESTRICTED_GENTYPE
+#include <ork/math/math_types.h>
 
 #include <glm/glm.hpp>
 

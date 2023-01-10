@@ -131,12 +131,24 @@ int main(int argc, char** argv, char** envp) {
       }
 
       static float animspeed = 1.0f;
+      static float controller1 = 1.0f;
+      static float controller2 = 1.0f;
+      static float controller3 = 1.0f;
+      static float controller4 = 1.0f;
       ImGui::SliderFloat("AnimSpeed", &animspeed, 0.0f, 3.0f, "ratio = %.3f");
+      ImGui::SliderFloat("Controller1", &controller1, 0.0f, 1.0f, "ratio = %.3f");
+      ImGui::SliderFloat("Controller2", &controller2, 0.0f, 1.0f, "ratio = %.3f");
+      ImGui::SliderFloat("Controller3", &controller3, 0.0f, 1.0f, "ratio = %.3f");
+      ImGui::SliderFloat("Controller4", &controller4, 0.0f, 1.0f, "ratio = %.3f");
 
       ////////////////////////////////////////////////
 
       gpurec->_active_test = gpurec->_sktests[test_item_current_idx];
       gpurec->_animspeed = animspeed;
+      gpurec->_controller1 = controller1;
+      gpurec->_controller2 = controller2;
+      gpurec->_controller3 = controller3;
+      gpurec->_controller4 = controller4;
 
       ////////////////////////////////////////////////
       // draw editor 3D viewport

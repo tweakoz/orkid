@@ -15,10 +15,6 @@
 #include <ork/math/cvector2.h>
 #include <ork/config/config.h>
 
-#define GLM_FORCE_PURE
-#define GLM_FORCE_XYZW_ONLY
-#define GLM_FORCE_UNRESTRICTED_GENTYPE
-
 #include <glm/glm.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -12,10 +12,6 @@
 #include <ork/orktypes.h>
 #include <ork/math/math_types.h>
 
-#define GLM_FORCE_PURE
-#define GLM_FORCE_XYZW_ONLY
-#define GLM_FORCE_UNRESTRICTED_GENTYPE
-
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/dual_quaternion.hpp>
@@ -61,7 +57,7 @@ template <typename T> struct Quaternion final
   Quaternion();
   Quaternion(T _x, T _y, T _z, T _w);
   Quaternion(const base_t& base);
-  Quaternion(const Vector3<T>& axis, float angle);
+  Quaternion(const Vector3<T>& axis, float angle_radians);
 
   Quaternion(const Matrix44<T>& matrix);
   Quaternion(const Matrix33<T>& matrix);
@@ -114,7 +110,7 @@ template <typename T> struct Quaternion final
   void add(Quaternion& a);
 
   Vector4<T> toAxisAngle() const;
-  void fromAxisAngle(const Vector4<T>& v);
+  void fromAxisAngle(const Vector4<T>& v); // angle_radians
 
   T norm() const;
   Quaternion conjugate() const;

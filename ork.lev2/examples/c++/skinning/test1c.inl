@@ -74,7 +74,7 @@ skinning_test_ptr_t createTest1C(GpuResources* gpurec) {
         auto context                      = RCID.context();
         static pbrmaterial_ptr_t material = default3DMaterial(context);
         material->_variant                = "vertexcolor"_crcu;
-        auto fxcache = material->fxInstanceCache();
+        auto fxcache                      = material->fxInstanceCache();
         OrkAssert(fxcache);
         RenderContextInstData RCIDCOPY = RCID;
         RCIDCOPY._isSkinned            = false;
@@ -103,7 +103,7 @@ skinning_test_ptr_t createTest1C(GpuResources* gpurec) {
       auto add_vertex = [&](const fvec3 pos, const fvec3& col) {
         vertex_t hvtx;
         hvtx.mPosition = pos;
-        hvtx.mColor    = (col*5).ABGRU32();
+        hvtx.mColor    = (col * 5).ABGRU32();
         hvtx.mUV0      = fvec2(0, 0);
         hvtx.mNormal   = fvec3(0, 0, 0);
         hvtx.mBiNormal = fvec3(1, 1, 0);
@@ -113,7 +113,7 @@ skinning_test_ptr_t createTest1C(GpuResources* gpurec) {
       auto& vtxbuf   = GfxEnv::GetSharedDynamicVB2();
       int inumpoints = 6;
       vw.Lock(context, &vtxbuf, inumpoints);
-      printf( "_target<%g %g %g>\n", _target.x, _target.y, _target.z );
+      // printf( "_target<%g %g %g>\n", _target.x, _target.y, _target.z );
       add_vertex(_target - fvec3(-1, 0, 0), fvec3(1, 1, 1));
       add_vertex(_target + fvec3(-1, 0, 0), fvec3(1, 1, 1));
       add_vertex(_target - fvec3(0, -1, 0), fvec3(1, 1, 1));
@@ -177,7 +177,7 @@ skinning_test_ptr_t createTest1C(GpuResources* gpurec) {
 
     fvec3 position(0, 0, 0);
     fquat orientation;
-    float scale = 6.0f;
+    float scale = 1.0f;
     impl->_char_node->_dqxfdata._worldTransform->set(position, orientation, scale);
   };
 
@@ -228,7 +228,7 @@ skinning_test_ptr_t createTest1C(GpuResources* gpurec) {
     inv_jntindices[skel.jointIndex("Bone.003")] = 3;
     inv_jntindices[skel.jointIndex("Bone.004")] = 4;
 
-    auto len = [&](int ia, int ib) -> float {      //
+    auto len = [&](int ia, int ib) -> float {             //
       return (BINDPOSE._concat_matrices[ia].translation() //
               - BINDPOSE._concat_matrices[ib].translation())
           .length();
@@ -242,12 +242,17 @@ skinning_test_ptr_t createTest1C(GpuResources* gpurec) {
     lens[3] = len(jntindices[3], jntindices[4]);
     lens[4] = 1.0f;
 
+    // for (int i = 0; i < 5; i++) {
+    // printf("BONELEN<%d> : %g\n", i, lens[i]);
+    //}
 
-    skel.mTopNodesMatrix.dump("TOP");
+    ///////////////////////////////////////////////////////////
+    // controllers
 
-    for (int i = 0; i < 5; i++) {
-      printf("BONELEN<%d> : %g\n", i, lens[i]);
-    }
+    float C1 = 0.222; // gpurec->_controller1;
+    float C2 = 0.007; // gpurec->_controller2;
+    float C3 = 0.341; // gpurec->_controller3;
+    float C4 = 1.000; // gpurec->_controller4;
 
     ///////////////////////////////////////////////////////////
 
@@ -259,7 +264,11 @@ skinning_test_ptr_t createTest1C(GpuResources* gpurec) {
     pN[3] = localpose._concat_matrices[jntindices[3]];
     pN[4] = localpose._concat_matrices[jntindices[4]];
 
-    impl->_target = fvec3(sinf(time), 1, -cosf(time))*25.0;
+    float rot_time = time * gpurec->_animspeed;
+    float sca_time = time * C3;
+    float radius   = 8 + sinf(sca_time * 3) * 4 * C4;
+
+    impl->_target = fvec3(sinf(rot_time), 1, -cosf(rot_time)) * radius;
 
     ///////////////////////////////////////////////////////////
     // fill in pose
@@ -267,30 +276,71 @@ skinning_test_ptr_t createTest1C(GpuResources* gpurec) {
 
     pN[5].setTranslation(impl->_target); // set end of chain to target
 
-    for (int outer_loop = 0; outer_loop < 4; outer_loop++) {
+    ///////////////////////////////////////////////////
+
+    auto pivot = [](const fquat& Q, const fmtx4& pivot_matrix, fmtx4& dest_matrix) {
+      auto piv_t  = pivot_matrix.translationOnly();
+      fmtx4 R     = piv_t * fmtx4(Q) * piv_t.inverse();
+      dest_matrix = R * dest_matrix;
+    };
+
+    ///////////////////////////////////////////////////
+
+    auto do_end = [&]() {
+      auto& end_joint = pN[4];
+      auto& tgt_joint = pN[5];
+
+      auto tgt    = tgt_joint.translation();
+      auto head   = end_joint.translation();
+      auto tail   = fvec3(0, 1, 0).transform(end_joint).xyz();
+      auto h2tdir = (tail - head).normalized();
+      auto del    = (tgt - head).normalized();
+      auto axis   = h2tdir.crossWith(del).normalized();
+
+      float angle = glm::orientedAngle(
+          h2tdir.asGlmVec3(), //
+          del.asGlmVec3(),    //
+          axis.asGlmVec3());
+
+      auto Q = fquat(axis, angle * C2);
+
+      pivot(Q, end_joint, end_joint);
+    };
+
+    ///////////////////////////////////////////////////
+
+    int maxiters = int(C1 * 512);
+
+    for (int outer_loop = 0; outer_loop < maxiters; outer_loop++) {
 
       for (int i = 4; i >= 0; i--) {
 
-        auto piv    = pN[i].translation();
-        auto tgt    = pN[i + 1].translation();
-        auto ori    = fvec3(0, 1, 0).transform(pN[i]).normalized();
-        auto del    = (tgt - piv).normalized();
-        auto cross  = ori.crossWith(del).normalized();
-        float theta = acos(del.dotWith(ori));
+        bool end_link = (i == 4);
 
-        fquat Q(cross, theta);
+        if (end_link) {
+          do_end();
+        } else { // inner link
 
-        auto piv_t = pN[i].translationOnly();
+          auto tgt  = pN[5].translation();
+          auto head = pN[i].translation();
+          auto end  = pN[4].translation();
 
-        fmtx4 R = piv_t * fmtx4(Q) * piv_t.inverse();
+          auto del_tgt = (tgt - head).normalized();
+          auto del_end = (end - head).normalized();
 
-        printf( "piv<%d> <%g %g %g>\n", i, piv.x, piv.y, piv.z);
+          auto axis = del_end.crossWith(del_tgt).normalized();
 
-        pN[i] = R * pN[i];
+          float angle = glm::orientedAngle(
+              del_end.asGlmVec3(), //
+              del_tgt.asGlmVec3(), //
+              axis.asGlmVec3());
 
+          auto Q = fquat(axis, angle * C2);
 
-        pN[i].dump(FormatString("PN[%d]",i));
-
+          for (int j = i; j < 5; j++) {
+            pivot(Q, pN[i], pN[j]);
+          }
+        }
       }
     }
 
@@ -303,4 +353,3 @@ skinning_test_ptr_t createTest1C(GpuResources* gpurec) {
 
   return test;
 }
-

@@ -72,6 +72,10 @@ struct GpuResources {
   skinning_test_ptr_t _sktests[7];
   skinning_test_ptr_t _active_test;
   float _animspeed = 1.0f;
+  float _controller1 = 1.0f;
+  float _controller2 = 1.0f;
+  float _controller3 = 1.0f;
+  float _controller4 = 1.0f;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -148,7 +152,7 @@ inline GpuResources::GpuResources(
   _uicamera                 = std::make_shared<EzUiCam>();
   _uicamera->_constrainZ    = true;
   _uicamera->_base_zmoveamt = 2.0f;
-  _uicamera->mfLoc          = 125.0f;
+  _uicamera->mfLoc          = 25.0f;
   ctx->debugPopGroup();
 
   _sktests[0] = createTest0(this);
