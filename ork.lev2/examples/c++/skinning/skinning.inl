@@ -125,6 +125,7 @@ struct GpuResources {
 ///////////////////////////////////////////////////////////////////////////////
 
 #include "ikchain.inl"
+#include "transformer.inl"
 #include "test0.inl"
 #include "test1.inl"
 #include "test1a.inl"

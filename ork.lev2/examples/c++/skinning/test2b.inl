@@ -71,8 +71,22 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
       _ikchain = std::make_shared<IkChain>(model->mSkeleton);
       _ikchain->bindToBone("mixamorig.RightArm");
       _ikchain->bindToBone("mixamorig.RightForeArm");
-      //_ikchain->bindToBone("mixamorig.RightHand");
       _ikchain->prepare();
+
+      ///////////////////////////////////////////////////////////////
+      // create transformer
+      ///////////////////////////////////////////////////////////////
+
+      _transformer = std::make_shared<Transformer>(model->mSkeleton);
+      _transformer->bindToBone("mixamorig.RightHand");
+      _transformer->bindToBone("mixamorig.RightHandThumb1");
+      _transformer->bindToBone("mixamorig.RightHandThumb2");
+      _transformer->bindToBone("mixamorig.RightHandThumb3");
+      _transformer->bindToBone("mixamorig.RightHandThumb4");
+      _transformer->bindToBone("mixamorig.RightHandIndex1");
+      _transformer->bindToBone("mixamorig.RightHandIndex2");
+      _transformer->bindToBone("mixamorig.RightHandIndex3");
+      _transformer->bindToBone("mixamorig.RightHandIndex4");
 
       ///////////////////////////////////////////////////////////////
 
@@ -105,6 +119,7 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
     scenegraph::node_ptr_t _char_node;
     scenegraph::node_ptr_t _dbgdraw_node;
     ikchain_ptr_t _ikchain;
+    transformer_ptr_t _transformer;
 
     ork::Timer _timer;
     fvec3 _target;
@@ -162,6 +177,7 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
     impl->_char_animinst->_current_frame = fmod(frame, float(anim->_numframes));
     impl->_char_animinst->SetWeight(0.5f);
 
+    auto model = impl->_char_modelasset->getSharedModel();
     auto modelinst  = impl->_char_drawable->_modelinst;
     auto& localpose = modelinst->_localPose;
     auto& worldpose = modelinst->_worldPose;
@@ -171,24 +187,41 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
     localpose.blendPoses();
     localpose.concatenate();
 
-    /////////////////////////////////
-    // perform IK
-    /////////////////////////////////
+    ///////////////////////////////////////////////////////////
+    // get right hand. forearm
+    ///////////////////////////////////////////////////////////
 
-    auto model = impl->_char_modelasset->getSharedModel();
+    int fajoint = model->mSkeleton.jointIndex("mixamorig.RightForeArm");
     int hjoint = model->mSkeleton.jointIndex("mixamorig.RightHand");
     fmtx4 hmtx = localpose._concat_matrices[hjoint];
-    impl->_target = hmtx.translation();
+    fmtx4 famtx = localpose._concat_matrices[fajoint];
+
+    fvec3 hnx, hny, hnz;
+    hmtx.toNormalVectors(hnx,hny,hnz);
+
+    float forearm_len = (famtx.translation()-hmtx.translation()).length();
+
+    ///////////////////////////////////////////////////////////
+    // artificial motion
+    ///////////////////////////////////////////////////////////
 
     float rot_time = time * gpurec->_animspeed;
     float sca_time = time * gpurec->_controller3;
-    float radius   = 1.0+sinf(sca_time * 3);
+    float radius   = 0.25;
+    auto offset =  hnx*sinf(rot_time);
+         offset += hny*cosf(rot_time*2.1);
+         offset += hnz*-cosf(rot_time*3.1);
 
-    ///////////////////////////////////////////////////////////
+    fmtx4 xf_offset;
+    xf_offset.setTranslation(offset);
 
-    //impl->_target += fvec3(sinf(rot_time), 1, -cosf(rot_time)) * radius;
+    impl->_transformer->compute(localpose,xf_offset);
 
+    /////////////////////////////////
+    // perform IK (1stpass)
+    /////////////////////////////////
 
+    impl->_target = hmtx.translation()+offset;
 
     impl->_ikchain->_C1 = gpurec->_controller1;
     impl->_ikchain->_C2 = gpurec->_controller2;
@@ -197,6 +230,15 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
 
     impl->_ikchain->compute(localpose,impl->_target);
 
+    /////////////////////////////////
+
+    famtx = localpose._concat_matrices[fajoint];
+    auto old_hand_trans = localpose._concat_matrices[hjoint].translation();
+    auto new_hand_trans = fvec3(0,forearm_len,0).transform(famtx).xyz();
+    offset = new_hand_trans-old_hand_trans;
+
+    xf_offset.setTranslation(offset);
+    impl->_transformer->compute(localpose,xf_offset);
 
   };
 
