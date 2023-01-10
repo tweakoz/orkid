@@ -231,6 +231,8 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
     impl->_ikchain->compute(localpose,impl->_target);
 
     /////////////////////////////////
+    // fixup new hand pos based on forearm bone length
+    /////////////////////////////////
 
     famtx = localpose._concat_matrices[fajoint];
     auto old_hand_trans = localpose._concat_matrices[hjoint].translation();
