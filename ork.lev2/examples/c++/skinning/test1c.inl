@@ -51,6 +51,14 @@ skinning_test_ptr_t createTest1C(GpuResources* gpurec) {
       _char_animinst->_use_temporal_lerp = true;
       _char_animinst->bindToSkeleton(_model->mSkeleton);
 
+      _ikchain = std::make_shared<IkChain>(_model->mSkeleton);
+      _ikchain->bindToBone("Bone");
+      _ikchain->bindToBone("Bone.001");
+      _ikchain->bindToBone("Bone.002");
+      _ikchain->bindToBone("Bone.003");
+      _ikchain->bindToBone("Bone.004");
+      _ikchain->prepare();
+
       auto& localpose = modelinst->_localPose;
       auto& worldpose = modelinst->_worldPose;
 
@@ -61,13 +69,6 @@ skinning_test_ptr_t createTest1C(GpuResources* gpurec) {
       localpose.concatenate();
       worldpose.apply(fmtx4(), localpose);
 
-      _skel_applicator = std::make_shared<XgmSkelApplicator>(_model->mSkeleton);
-      //_skel_applicator->bindToBone("Bone");
-      _skel_applicator->bindToBone("Bone.001");
-      _skel_applicator->bindToBone("Bone.002");
-      _skel_applicator->bindToBone("Bone.003");
-      _skel_applicator->bindToBone("Bone.004");
-      _skel_applicator->bindToBone("Bone.004.end");
 
       auto drw = std::make_shared<CallbackDrawable>(nullptr);
       drw->SetRenderCallback([this](lev2::RenderContextInstData& RCID) { //
@@ -82,6 +83,8 @@ skinning_test_ptr_t createTest1C(GpuResources* gpurec) {
         this->onDebugDraw(RCIDCOPY);
       });
       _dbgdraw_node = gpurec->_sg_layer->createDrawableNode("skdebugnode", drw);
+
+
 
       _timer.Start();
     }
@@ -133,7 +136,6 @@ skinning_test_ptr_t createTest1C(GpuResources* gpurec) {
 
     xgmanimassetptr_t _char_animasset;   // retain anim
     xgmmodelassetptr_t _char_modelasset; // retain model
-    xgmskelapplicator_ptr_t _skel_applicator;
     GpuResources* _gpurec = nullptr;
     model_ptr_t _model    = nullptr;
     model_drawable_ptr_t _char_drawable;
@@ -141,6 +143,7 @@ skinning_test_ptr_t createTest1C(GpuResources* gpurec) {
     scenegraph::node_ptr_t _char_node;
     scenegraph::node_ptr_t _dbgdraw_node;
     ork::Timer _timer;
+    ikchain_ptr_t _ikchain;
 
     fvec3 _target;
   };
@@ -192,8 +195,6 @@ skinning_test_ptr_t createTest1C(GpuResources* gpurec) {
     gpurec->_pbrcommon->_diffuseLevel     = 1;
     gpurec->_pbrcommon->_specularLevel    = 1;
 
-    float time = impl->_timer.SecsSinceStart();
-
     ///////////////////////////////////////////////////////////
     // apply base animation
     ///////////////////////////////////////////////////////////
@@ -205,148 +206,17 @@ skinning_test_ptr_t createTest1C(GpuResources* gpurec) {
     localpose.concatenate();
 
     ///////////////////////////////////////////////////////////
-    // compute bone lengths
-    ///////////////////////////////////////////////////////////
 
-    const auto& skel = impl->_model->mSkeleton;
-    XgmLocalPose BINDPOSE(skel);
-    BINDPOSE.bindPose();
-    BINDPOSE.concatenate();
-
-    int jntindices[5];
-    int inv_jntindices[5];
-
-    jntindices[0] = skel.jointIndex("Bone");
-    jntindices[1] = skel.jointIndex("Bone.001");
-    jntindices[2] = skel.jointIndex("Bone.002");
-    jntindices[3] = skel.jointIndex("Bone.003");
-    jntindices[4] = skel.jointIndex("Bone.004");
-
-    inv_jntindices[skel.jointIndex("Bone")]     = 0;
-    inv_jntindices[skel.jointIndex("Bone.001")] = 1;
-    inv_jntindices[skel.jointIndex("Bone.002")] = 2;
-    inv_jntindices[skel.jointIndex("Bone.003")] = 3;
-    inv_jntindices[skel.jointIndex("Bone.004")] = 4;
-
-    auto len = [&](int ia, int ib) -> float {             //
-      return (BINDPOSE._concat_matrices[ia].translation() //
-              - BINDPOSE._concat_matrices[ib].translation())
-          .length();
-    };
-
-    float lens[5];
-
-    lens[0] = len(jntindices[0], jntindices[1]);
-    lens[1] = len(jntindices[1], jntindices[2]);
-    lens[2] = len(jntindices[2], jntindices[3]);
-    lens[3] = len(jntindices[3], jntindices[4]);
-    lens[4] = 1.0f;
-
-    // for (int i = 0; i < 5; i++) {
-    // printf("BONELEN<%d> : %g\n", i, lens[i]);
-    //}
-
-    ///////////////////////////////////////////////////////////
-    // controllers
-
-    float C1 = 0.222; // gpurec->_controller1;
-    float C2 = 0.007; // gpurec->_controller2;
-    float C3 = 0.341; // gpurec->_controller3;
-    float C4 = 1.000; // gpurec->_controller4;
-
-    ///////////////////////////////////////////////////////////
-
-    fmtx4 pN[6];
-
-    pN[0] = localpose._concat_matrices[jntindices[0]];
-    pN[1] = localpose._concat_matrices[jntindices[1]];
-    pN[2] = localpose._concat_matrices[jntindices[2]];
-    pN[3] = localpose._concat_matrices[jntindices[3]];
-    pN[4] = localpose._concat_matrices[jntindices[4]];
-
+    float time = impl->_timer.SecsSinceStart();
     float rot_time = time * gpurec->_animspeed;
-    float sca_time = time * C3;
-    float radius   = 8 + sinf(sca_time * 3) * 4 * C4;
+    float sca_time = time * gpurec->_controller3;
+    float radius   = 8 + sinf(sca_time * 3) * 4;
+
+    ///////////////////////////////////////////////////////////
 
     impl->_target = fvec3(sinf(rot_time), 1, -cosf(rot_time)) * radius;
+    impl->_ikchain->compute(localpose,impl->_target);
 
-    ///////////////////////////////////////////////////////////
-    // fill in pose
-    ///////////////////////////////////////////////////////////
-
-    pN[5].setTranslation(impl->_target); // set end of chain to target
-
-    ///////////////////////////////////////////////////
-
-    auto pivot = [](const fquat& Q, const fmtx4& pivot_matrix, fmtx4& dest_matrix) {
-      auto piv_t  = pivot_matrix.translationOnly();
-      fmtx4 R     = piv_t * fmtx4(Q) * piv_t.inverse();
-      dest_matrix = R * dest_matrix;
-    };
-
-    ///////////////////////////////////////////////////
-
-    auto do_end = [&]() {
-      auto& end_joint = pN[4];
-      auto& tgt_joint = pN[5];
-
-      auto tgt    = tgt_joint.translation();
-      auto head   = end_joint.translation();
-      auto tail   = fvec3(0, 1, 0).transform(end_joint).xyz();
-      auto h2tdir = (tail - head).normalized();
-      auto del    = (tgt - head).normalized();
-      auto axis   = h2tdir.crossWith(del).normalized();
-
-      float angle = glm::orientedAngle(
-          h2tdir.asGlmVec3(), //
-          del.asGlmVec3(),    //
-          axis.asGlmVec3());
-
-      auto Q = fquat(axis, angle * C2);
-
-      pivot(Q, end_joint, end_joint);
-    };
-
-    ///////////////////////////////////////////////////
-
-    int maxiters = int(C1 * 512);
-
-    for (int outer_loop = 0; outer_loop < maxiters; outer_loop++) {
-
-      for (int i = 4; i >= 0; i--) {
-
-        bool end_link = (i == 4);
-
-        if (end_link) {
-          do_end();
-        } else { // inner link
-
-          auto tgt  = pN[5].translation();
-          auto head = pN[i].translation();
-          auto end  = pN[4].translation();
-
-          auto del_tgt = (tgt - head).normalized();
-          auto del_end = (end - head).normalized();
-
-          auto axis = del_end.crossWith(del_tgt).normalized();
-
-          float angle = glm::orientedAngle(
-              del_end.asGlmVec3(), //
-              del_tgt.asGlmVec3(), //
-              axis.asGlmVec3());
-
-          auto Q = fquat(axis, angle * C2);
-
-          for (int j = i; j < 5; j++) {
-            pivot(Q, pN[i], pN[j]);
-          }
-        }
-      }
-    }
-
-    for (int i = 0; i < 5; i++) {
-      localpose._concat_matrices[jntindices[i]] = pN[i];
-    }
   };
 
   /////////////////////////////////////////////////////////////////////////////
