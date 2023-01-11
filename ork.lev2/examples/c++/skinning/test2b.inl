@@ -103,7 +103,7 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
         _gpurec->drawTarget(RCIDCOPY,_target);
       });
       _dbgdraw_node = gpurec->_sg_layer->createDrawableNode("skdebugnode", drw);
-
+      drw->mSortKey = 0x7fffffff;
       ///////////////////////////////////////////////////////////////
 
       _timer.Start();
@@ -207,10 +207,9 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
 
     float rot_time = time * gpurec->_animspeed;
     float sca_time = time * gpurec->_controller3;
-    float radius   = 0.25;
-    auto offset =  hnx*sinf(rot_time);
-         offset += hny*cosf(rot_time*2.1);
-         offset += hnz*-cosf(rot_time*3.1);
+    auto offset =  fvec3(sinf(rot_time)*0.25, //
+                         cosf(rot_time*2.1)*3.0, //
+                        -cosf(rot_time*3.1)*2.0);
 
     fmtx4 xf_offset;
     xf_offset.setTranslation(offset);
@@ -223,8 +222,8 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
 
     impl->_target = hmtx.translation()+offset;
 
-    impl->_ikchain->_C1 = gpurec->_controller1;
-    impl->_ikchain->_C2 = gpurec->_controller2;
+    impl->_ikchain->_C1 = .079; //gpurec->_controller1;
+    impl->_ikchain->_C2 = .029; //gpurec->_controller2;
     impl->_ikchain->_C3 = gpurec->_controller3;
     impl->_ikchain->_C4 = gpurec->_controller4;
 
