@@ -232,7 +232,6 @@ bool GfxMaterial3DSolid::BeginPass(Context* pTarg, int iPass) {
   bool is_picking                    = CPD.isPicking();
   bool is_stereo                     = CPD.isStereoOnePass();
 
-  pTarg->RSI()->BindRasterState(_rasterstate);
   pTarg->FXI()->BindPass(iPass);
 
   if (_shader->GetFailedCompile()) {
@@ -338,6 +337,7 @@ bool GfxMaterial3DSolid::BeginPass(Context* pTarg, int iPass) {
   }
 
   FXI->CommitParams();
+  pTarg->RSI()->BindRasterState(_rasterstate);
   return true;
 }
 
