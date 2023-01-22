@@ -243,8 +243,8 @@ void FreestyleMaterial::begin(const FxShaderTechnique* tek, const RenderContextF
   RenderContextInstData RCID(&RCFD);
   _selectedTEK = tek;
   int npasses  = this->BeginBlock(targ, RCID);
-  rsi->BindRasterState(_rasterstate);
   fxi->BindPass(0);
+  rsi->BindRasterState(_rasterstate);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void FreestyleMaterial::begin(

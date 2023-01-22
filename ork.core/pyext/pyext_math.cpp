@@ -93,6 +93,9 @@ void pyinit_math(py::module& module_core) {
           .def("clamped", &fvec3::clamped)
           .def("normalized", &fvec3::normalized)
           .def("normalize", &fvec3::normalizeInPlace)
+          .def("transform", [](fvec3& v, fmtx4 matrix) -> fvec3 {
+            return fvec4(v,1).transform(matrix).xyz();
+           })
           .def("rotx", &fvec3::rotateOnX)
           .def("roty", &fvec3::rotateOnY)
           .def("rotz", &fvec3::rotateOnZ)

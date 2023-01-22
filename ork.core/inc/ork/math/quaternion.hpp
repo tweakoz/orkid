@@ -335,15 +335,11 @@ template <typename T> void Quaternion<T>::fromAxisAngle(const Vector4<T>& v) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> Vector4<T> Quaternion<T>::toAxisAngle(void) const {
-  T tr = acosf(this->w);
-  bool is_nan = isnan(tr);
-  T wsq = this->w*this->w;
-  T invwsq = T(1)/sqrt(1-wsq);
-  T vx  = is_nan ? T(0) : this->x * invwsq;
-  T vy  = is_nan ? T(0) : this->y * invwsq;
-  T vz  = is_nan ? T(0) : this->z * invwsq;
-  T ang = is_nan ? T(0) : 2.0*tr;
-  return Vector4<T>(vx, vy, vz, ang);
+  
+  auto axis = glm::axis(asGlmQuat());
+  auto angle = glm::angle(asGlmQuat());
+
+  return Vector4<T>(axis.x,axis.y,axis.z,angle);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

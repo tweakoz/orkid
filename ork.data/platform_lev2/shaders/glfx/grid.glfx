@@ -206,10 +206,10 @@ technique GBU_CT_NM_RI_NI_ST {
 
 ///////////////////////////////////////////////////////////////
 state_block sb_additive : default {
-  BlendMode = ALPHA_ADDITIVE;
-  DepthTest = OFF;
-  DepthMask = false;
-  CullTest  = OFF;
+  //BlendMode = ALPHA;
+  //DepthTest = LEQUALS;
+  //DepthMask = true;
+  //CullTest  = OFF;
 }
 technique FWD_UNLIT_NI_MO {
 	fxconfig=fxcfg_default;
