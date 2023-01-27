@@ -39,7 +39,11 @@ uniform_set ub_frg {
 uniform_set ub_frg_fwd {
 
 	mat4 vp;
+  mat4 vp_l;
+  mat4 vp_r;
 	mat4 inv_vp;
+  mat4 inv_vp_l;
+  mat4 inv_vp_r;
 
   sampler2D ColorMap;
   sampler2D NormalMap;
@@ -188,7 +192,6 @@ libblock lib_pbr_vtx {
     vec3 wnormal = normalize(mrot*normal);
     vec3 wbitangent = normalize(mrot*binormal); // technically binormal is a bitangent
 		vec3 wtangent = cross(wbitangent,wnormal);
-		//frg_clr = vtxcolor;
 		frg_wpos = m*pos;
 		frg_clr = vec4(1,1,1,1); //TODO - split vs_rigid_gbuffer into vertexcolor vs identity
 		frg_uv0 = uv0*vec2(1,-1);
@@ -406,6 +409,16 @@ fragment_shader ps_gbuffer_n // normalmap
 	ps_common_n(ModColor,N,frg_uv0,emissive);
 }
 ///////////////////////////////////////////////////////////////
+fragment_shader ps_gbuffer_n_stereo // normalmap
+  : iface_fgbuffer
+  : lib_pbr_frg {
+    vec3 TN = texture(NormalMap,frg_uv0).xyz;
+    bool emissive = length(TN)<0.1;
+    vec3 N = normalize(TN*2.0-vec3(1,1,1));
+    if( length(TN)<0.1 ) N = vec3(0,0,0);
+  ps_common_n(ModColor,N,frg_uv0,emissive);
+}
+///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer_n_instanced
 	: iface_fgbuffer_instanced
   : lib_pbr_frg {
@@ -413,17 +426,8 @@ fragment_shader ps_gbuffer_n_instanced
 		TN = mix(TN,vec3(0.5,1,0.5),0.0);
 		bool emissive = length(TN)<0.1;
 		vec3 N = normalize(TN*2.0-vec3(1,1,1));
-	ps_common_n(frg_modcolor,N,frg_uv0,emissive);
-}
-///////////////////////////////////////////////////////////////
-fragment_shader ps_gbuffer_n_stereo // normalmap
-	: iface_fgbuffer
-  : lib_pbr_frg {
-		vec3 TN = texture(NormalMap,frg_uv0).xyz;
-		bool emissive = length(TN)<0.1;
-		vec3 N = normalize(TN*2.0-vec3(1,1,1));
-		if( length(TN)<0.1 ) N = vec3(0,0,0);
-	ps_common_n(ModColor,N,frg_uv0,emissive);
+    if( length(TN)<0.1 ) N = vec3(0,0,0);
+    ps_common_n(frg_modcolor,N,frg_uv0,emissive);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer_n_stereo_instanced
@@ -433,7 +437,7 @@ fragment_shader ps_gbuffer_n_stereo_instanced
 		bool emissive = length(TN)<0.1;
 		vec3 N = normalize(TN*2.0-vec3(1,1,1));
 		if( length(TN)<0.1 ) N = vec3(0,0,0);
-	ps_common_n(frg_modcolor,N,frg_uv0,emissive);
+	  ps_common_n(frg_modcolor,N,frg_uv0,emissive);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_gbuffer_n_tex_stereo // normalmap (stereo texture - vsplit)
@@ -506,6 +510,11 @@ fragment_shader ps_forward_depthprepass
 ///////////////////////////////////////////////////////////////
 // Forward pbr
 ///////////////////////////////////////////////////////////////
+vertex_interface iface_forward_stereo_instanced : iface_vgbuffer_instanced {
+  outputs {
+    layout(secondary_view_offset=1) int gl_Layer;
+  }
+}
 
 vertex_shader vs_forward_test
 	: iface_vgbuffer
@@ -514,28 +523,18 @@ vertex_shader vs_forward_test
 		gl_Position = mvp*position;
 }
 vertex_shader vs_forward_test_stereo
-  : iface_vgbuffer
-  : lib_pbr_vtx {
+  : iface_vgbuffer_stereo
+  : lib_pbr_vtx
+  : extension(GL_NV_stereo_view_rendering)
+  : extension(GL_NV_viewport_array2) {
     vs_common(position,normal,binormal);
-    gl_Position = mvp*position;
+    gl_Position = mvp_l*position;
+    gl_SecondaryPositionNV = mvp_r*position;
+    gl_Layer = 0;
+    gl_ViewportMask[0] = 1;
+    gl_SecondaryViewportMaskNV[0] = 2;
 }
 vertex_shader vs_forward_instanced
-	: iface_vgbuffer_instanced
-  : lib_pbr_vtx_instanced {
-    int matrix_v = (gl_InstanceID>>10);
-		int matrix_u = (gl_InstanceID&0x3ff)<<2;
-		mat4 instancemtx = mat4(
-        texelFetch(InstanceMatrices, ivec2(matrix_u+0,matrix_v), 0),
- 		    texelFetch(InstanceMatrices, ivec2(matrix_u+1,matrix_v), 0),
-		    texelFetch(InstanceMatrices, ivec2(matrix_u+2,matrix_v), 0),
-		    texelFetch(InstanceMatrices, ivec2(matrix_u+3,matrix_v), 0));
-  	////////////////////////////////
-		vec4 instanced_pos = (instancemtx*position);
-		vs_instanced(position,normal,binormal,instancemtx);
-		////////////////////////////////
-		gl_Position = mvp*instanced_pos;
-}
-vertex_shader vs_forward_instanced_stereo
   : iface_vgbuffer_instanced
   : lib_pbr_vtx_instanced {
     int matrix_v = (gl_InstanceID>>10);
@@ -550,6 +549,29 @@ vertex_shader vs_forward_instanced_stereo
     vs_instanced(position,normal,binormal,instancemtx);
     ////////////////////////////////
     gl_Position = mvp*instanced_pos;
+}
+vertex_shader vs_forward_instanced_stereo
+  : iface_forward_stereo_instanced
+  : lib_pbr_vtx_instanced
+  : extension(GL_NV_stereo_view_rendering)
+  : extension(GL_NV_viewport_array2) {
+
+    int matrix_v = (gl_InstanceID>>10);
+    int matrix_u = (gl_InstanceID&0x3ff)<<2;
+    mat4 instancemtx = mat4(
+        texelFetch(InstanceMatrices, ivec2(matrix_u+0,matrix_v), 0),
+        texelFetch(InstanceMatrices, ivec2(matrix_u+1,matrix_v), 0),
+        texelFetch(InstanceMatrices, ivec2(matrix_u+2,matrix_v), 0),
+        texelFetch(InstanceMatrices, ivec2(matrix_u+3,matrix_v), 0));
+    ////////////////////////////////
+    vec4 instanced_pos = (instancemtx*position);
+    vs_instanced(position,normal,binormal,instancemtx);
+    ////////////////////////////////
+    gl_Position = mvp_l*instanced_pos;
+    gl_SecondaryPositionNV = mvp_r*instanced_pos;
+    gl_Layer = 0;
+    gl_ViewportMask[0] = 1;
+    gl_SecondaryViewportMaskNV[0] = 2;
 }
 fragment_shader ps_forward_test 
 	: iface_forward
@@ -627,19 +649,47 @@ fragment_shader ps_forward_skybox_mono
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_forward_skybox_stereo
-	: iface_vgbuffer
-  : lib_pbr_vtx {
-		gl_Position = position; // screen space quad
+	: iface_vgbuffer_stereo
+  : lib_pbr_vtx 
+  : extension(GL_NV_stereo_view_rendering)
+  : extension(GL_NV_viewport_array2){
+    gl_Position = position;
+    gl_SecondaryPositionNV = position;
+    gl_Layer = 0;
+    gl_ViewportMask[0] = 1;
+    gl_SecondaryViewportMaskNV[0] = 2;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_forward_skybox_stereo
-	: iface_forward
-	: lib_math
+  : iface_forward
+  : lib_math
   : lib_brdf
+  : lib_def 
   : lib_fwd {
-		
-		out_color = vec4(1,0,0,1);
+
+  ///////////////////////
+  // compute view normal vector
+  ///////////////////////
+
+  vec4 xyzw = vec4(frg_clr.xy,0,1);
+  xyzw = inv_vp*xyzw;
+  xyzw.xyz *= (1.0/xyzw.w);
+  vec3 posA = xyzw.xyz;
+  xyzw = vec4(frg_clr.xy,1,1);
+  xyzw = inv_vp*xyzw;
+  xyzw.xyz *= (1.0/xyzw.w);
+  vec3 posB = xyzw.xyz;
+  vec3 VN = normalize(posA-posB);
+
+  ///////////////////////
+  // environment map
+  ///////////////////////
+
+  vec3 rgb = env_equirectangularFlipV(VN,MapSpecularEnv,0);
+  out_color = vec4(rgb,1);
+
 }
+
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_forward_unlit
 	: iface_vgbuffer
