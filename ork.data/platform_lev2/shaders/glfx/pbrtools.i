@@ -657,7 +657,7 @@ vertex_shader vs_forward_skybox_stereo
     gl_Layer = 0;
     gl_ViewportMask[0] = 1;
     gl_SecondaryViewportMaskNV[0] = 2;
-    frg_uv0 = uv0;
+    frg_uv0 = uv0*1.33;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_forward_skybox_stereo
