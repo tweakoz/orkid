@@ -130,6 +130,39 @@ bool FxStateInstance::beginPass(const RenderContextInstData& RCID, int ipass) {
           }
           break;
         }
+        case "RCFD_Camera_IVP_Mono"_crcu: {
+          if (monocams) {
+            FXI->BindParamMatrix(param, monocams->VPMONO().inverse());
+          } else {
+            auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix().inverse());
+            FXI->BindParamMatrix(param, MVP);
+          }
+          break;
+        }
+        case "RCFD_Camera_VP_Left"_crcu: {
+          if (is_stereo and stereocams) {
+            FXI->BindParamMatrix(param, stereocams->VPL());
+          }
+          break;
+        }
+        case "RCFD_Camera_VP_Right"_crcu: {
+          if (is_stereo and stereocams) {
+            FXI->BindParamMatrix(param, stereocams->VPR());
+          }
+          break;
+        }
+        case "RCFD_Camera_IVP_Left"_crcu: {
+          if (is_stereo and stereocams) {
+            FXI->BindParamMatrix(param, stereocams->VPL().inverse());
+          }
+          break;
+        }
+        case "RCFD_Camera_IVP_Right"_crcu: {
+          if (is_stereo and stereocams) {
+            FXI->BindParamMatrix(param, stereocams->VPR().inverse());
+          }
+          break;
+        }
         case "RCFD_Camera_MVP_Left"_crcu: {
           if (is_stereo and stereocams) {
             FXI->BindParamMatrix(param, stereocams->MVPL(worldmatrix));

@@ -172,6 +172,10 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
         auto FXI     = context->FXI();
         auto MTXI    = context->MTXI();
         auto RSI     = context->RSI();
+        auto pbrcommon        = RCFD->_pbrcommon;
+        auto envtex  = pbrcommon->envSpecularTexture();
+
+        FXI->BindParamCTex(_this->_parMapSpecularEnv, envtex.get() );
 
         basic_lambda(RCID, ipass);
         _this->_rasterstate.SetCullTest(ECULLTEST_OFF);
@@ -187,18 +191,19 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
       if(permu._stereo and mtl->_tek_FWD_SKYBOX_ST){
         auto fxinst_stereo        = std::make_shared<FxStateInstance>(permu);
         fxinst_stereo->_technique = mtl->_tek_FWD_SKYBOX_ST;
-        // fxinst_stereo->_params[_paramMVP] = fmtx4();
+        fxinst_stereo->_params[mtl->_paramIVPL] = "RCFD_Camera_IVP_Left"_crcsh;
+        fxinst_stereo->_params[mtl->_paramIVPR] = "RCFD_Camera_IVP_Right"_crcsh;
         fxinst_stereo->addStateLambda(skybox_lambda);
         fxinst_stereo->_material = (GfxMaterial*)mtl;
         fxinst = fxinst_stereo;
       }
       else if(mtl->_tek_FWD_SKYBOX_MO){
-        auto fxinst_mono        = std::make_shared<FxStateInstance>(permu);
-        fxinst_mono->_technique = mtl->_tek_FWD_SKYBOX_MO;
-        // fxinst_mono->_params[_paramMVP] = fmtx4();
-        fxinst_mono->addStateLambda(skybox_lambda);
-        fxinst_mono->_material = (GfxMaterial*)mtl;
-        fxinst = fxinst_mono;
+        auto fxinst_stereo        = std::make_shared<FxStateInstance>(permu);
+        fxinst_stereo->_technique = mtl->_tek_FWD_SKYBOX_MO;
+        fxinst_stereo->_params[mtl->_paramIVP] = "RCFD_Camera_IVP_Mono"_crcsh;
+        fxinst_stereo->addStateLambda(skybox_lambda);
+        fxinst_stereo->_material = (GfxMaterial*)mtl;
+        fxinst = fxinst_stereo;
       }
       //////////////////////////////////////////////////////////
       break;
@@ -797,8 +802,10 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   _paramM                 = fxi->parameter(_shader, "m");
   _paramVP                = fxi->parameter(_shader, "vp");
-  _paramVPL                = fxi->parameter(_shader, "vp_l");
-  _paramVPR                = fxi->parameter(_shader, "vp_r");
+  _paramVPL               = fxi->parameter(_shader, "vp_l");
+  _paramVPR               = fxi->parameter(_shader, "vp_r");
+  _paramIVPL              = fxi->parameter(_shader, "inv_vp_l");
+  _paramIVPR              = fxi->parameter(_shader, "inv_vp_r");
   _paramVPinv             = fxi->parameter(_shader, "inv_vp");
   _paramMVP               = fxi->parameter(_shader, "mvp");
   _paramMVPL              = fxi->parameter(_shader, "mvp_l");

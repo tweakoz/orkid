@@ -614,7 +614,6 @@ vertex_shader vs_forward_skybox_mono
   : lib_pbr_vtx {
 		gl_Position = position; // screen space quad
 		frg_clr = position;
-		// todo: compute Uvs from camera information
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_forward_skybox_mono
@@ -658,6 +657,7 @@ vertex_shader vs_forward_skybox_stereo
     gl_Layer = 0;
     gl_ViewportMask[0] = 1;
     gl_SecondaryViewportMaskNV[0] = 2;
+    frg_uv0 = uv0;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_forward_skybox_stereo
@@ -665,18 +665,21 @@ fragment_shader ps_forward_skybox_stereo
   : lib_math
   : lib_brdf
   : lib_def 
-  : lib_fwd {
+  : lib_fwd
+  : extension(GL_NV_viewport_array) {
 
   ///////////////////////
   // compute view normal vector
   ///////////////////////
 
-  vec4 xyzw = vec4(frg_clr.xy,0,1);
-  xyzw = inv_vp*xyzw;
+  mat4 IVP = bool(gl_ViewportIndex) ? inv_vp_r : inv_vp_l;
+
+  vec4 xyzw = vec4(frg_uv0.xy,0,1);
+  xyzw = IVP*xyzw;
   xyzw.xyz *= (1.0/xyzw.w);
   vec3 posA = xyzw.xyz;
-  xyzw = vec4(frg_clr.xy,1,1);
-  xyzw = inv_vp*xyzw;
+  xyzw = vec4(frg_uv0.xy,1,1);
+  xyzw = IVP*xyzw;
   xyzw.xyz *= (1.0/xyzw.w);
   vec3 posB = xyzw.xyz;
   vec3 VN = normalize(posA-posB);
@@ -687,6 +690,8 @@ fragment_shader ps_forward_skybox_stereo
 
   vec3 rgb = env_equirectangularFlipV(VN,MapSpecularEnv,0);
   out_color = vec4(rgb,1);
+
+  //out_color=vec4(VN,1);
 
 }
 
