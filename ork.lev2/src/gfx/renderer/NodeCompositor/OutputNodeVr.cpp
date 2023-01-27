@@ -39,20 +39,32 @@ struct VRIMPL {
     delete _tmpcameramatrices;
   }
   ///////////////////////////////////////
-  void gpuInit(lev2::Context* pTARG) {
+  void gpuInit(lev2::Context* context) {
     if (_doinit) {
-      pTARG->debugPushGroup("VRIMPL::gpuInit");
+      context->debugPushGroup("VRIMPL::gpuInit");
       int width  = orkidvr::device()->_width * 2 * (_vrnode->supersample() + 1);
       int height = orkidvr::device()->_height * (_vrnode->supersample() + 1);
-      _blit2screenmtl.SetUserFx("orkshader://solid", "texcolor");
-      _blit2screenmtl.gpuInit(pTARG);
+
+      _blit2screenmtl.gpuInit(context, "orkshader://solid");
+      _fxtechnique1x1 = _blit2screenmtl.technique("texcolor");
+      _fxtechnique2x2 = _blit2screenmtl.technique("downsample_2x2");
+      _fxtechnique3x3 = _blit2screenmtl.technique("downsample_3x3");
+      _fxtechnique4x4 = _blit2screenmtl.technique("downsample_4x4");
+      _fxtechnique5x5 = _blit2screenmtl.technique("downsample_5x5");
+      _fxtechnique6x6 = _blit2screenmtl.technique("downsample_6x6");
+      _fxpMVP         = _blit2screenmtl.param("MatMVP");
+      _fxpColorMap    = _blit2screenmtl.param("ColorMap");
 
       printf("A: vr width<%d> height<%d>\n", width, height);
-      _rtg            = new RtGroup(pTARG, width, height, MsaaSamples::MSAA_1X);
+      _rtg            = new RtGroup(context, width, height, MsaaSamples::MSAA_1X);
       auto buf        = _rtg->createRenderTarget(EBufferFormat::RGBA8);
       buf->_debugName = "WtfVrRt";
 
-      pTARG->debugPopGroup();
+      context->debugPopGroup();
+
+      _msaadownsamplebuffer = std::make_shared<RtGroup>(context, 8, 8, MsaaSamples::MSAA_1X);
+      auto dsbuf        = _msaadownsamplebuffer->createRenderTarget(EBufferFormat::RGBA8);
+      dsbuf->_debugName = "MsaaDownsampleBuffer";
 
       _doinit = false;
     }
@@ -180,7 +192,16 @@ struct VRIMPL {
   RtGroup* _rtg                      = nullptr;
   bool _doinit                       = true;
   CameraMatrices* _tmpcameramatrices = nullptr;
-  ork::lev2::GfxMaterial3DSolid _blit2screenmtl;
+  FreestyleMaterial _blit2screenmtl;
+  const FxShaderTechnique* _fxtechnique1x1;
+  const FxShaderTechnique* _fxtechnique2x2;
+  const FxShaderTechnique* _fxtechnique3x3;
+  const FxShaderTechnique* _fxtechnique4x4;
+  const FxShaderTechnique* _fxtechnique5x5;
+  const FxShaderTechnique* _fxtechnique6x6;
+  const FxShaderParam* _fxpMVP;
+  const FxShaderParam* _fxpColorMap;
+  rtgroup_ptr_t _msaadownsamplebuffer;
 };
 ///////////////////////////////////////////////////////////////////////////////
 VrCompositingNode::VrCompositingNode()
@@ -214,7 +235,9 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
   /////////////////////////////////////////////////////////////////////////////
   FrameRenderer& framerenderer      = drawdata.mFrameRenderer;
   RenderContextFrameData& framedata = framerenderer.framedata();
-  Context* targ                     = framedata.GetTarget();
+  Context* context                     = framedata.GetTarget();
+  auto fbi = context->FBI();
+
   if (auto try_final = drawdata._properties["final_out"_crcu].tryAs<RtBuffer*>()) {
     auto buffer = try_final.value();
     if (buffer) {
@@ -223,11 +246,35 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
       if (tex) {
 
         const auto& vrdev = orkidvr::device();
+        auto inp_rtg = drawdata._properties["render_outgroup"_crcu].get<rtgroup_ptr_t>();
+
+        int num_msaa_samples = msaaEnumToInt(tex->_msaa_samples);
+        if(num_msaa_samples==1){
+          OrkAssert(false);
+        }
+        else{
+          fbi->msaaBlit(inp_rtg,impl->_msaadownsamplebuffer);
+          auto this_buf = fbi->GetThisBuffer();
+          auto& mtl     = impl->_blit2screenmtl;
+          mtl.begin(impl->_fxtechnique1x1, framedata);
+          mtl._rasterstate.SetBlending(Blending::OFF);
+          tex = impl->_msaadownsamplebuffer->GetMrt(0)->texture();
+          mtl.bindParamCTex(impl->_fxpColorMap, tex);
+          mtl.bindParamMatrix(impl->_fxpMVP, fmtx4::Identity());
+          ViewportRect extents(0, 0, context->mainSurfaceWidth(), context->mainSurfaceHeight());
+          fbi->pushViewport(extents);
+          fbi->pushScissor(extents);
+          this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+          fbi->popViewport();
+          fbi->popScissor();
+          mtl.end(framedata);
+
+        }
 
         drawdata.context()->debugPushGroup("VrCompositingNode::to_hmd");
-        targ->FBI()->PushRtGroup(impl->_rtg);
-        vrdev->__composite(targ, tex);
-        targ->FBI()->PopRtGroup();
+        fbi->PushRtGroup(impl->_rtg);
+        vrdev->__composite(context, tex);
+        fbi->PopRtGroup();
         drawdata.context()->debugPopGroup();
         /////////////////////////////////////////////////////////////////////////////
         // be nice and composite to main screen as well...
@@ -237,15 +284,15 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
         if (_distorion_lambda) {
           _distorion_lambda(framedata, tex);
         } else {
-          auto& mtl = impl->_blit2screenmtl;
+          /*auto& mtl = impl->_blit2screenmtl;
           mtl.SetAuxMatrix(fmtx4::Identity());
           mtl.SetTexture(tex);
           mtl.SetTexture2(nullptr);
           mtl.SetColorMode(GfxMaterial3DSolid::EMODE_USER);
           mtl._rasterstate.SetBlending(Blending::OFF);
-          auto this_buf = targ->FBI()->GetThisBuffer();
-          int iw        = targ->mainSurfaceWidth();
-          int ih        = targ->mainSurfaceHeight();
+          auto this_buf = fbi->GetThisBuffer();
+          int iw        = context->mainSurfaceWidth();
+          int ih        = context->mainSurfaceHeight();
           SRect vprect(0, 0, iw, ih);
           fvec4 color(1.0f, 1.0f, 1.0f, 1.0f);
           SRect quadrect(0, ih, iw, 0);
@@ -258,7 +305,7 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
               1.0f,
               1.0f, // u1 v1
               nullptr,
-              color);
+              color);*/
         }
 
         drawdata.context()->debugPopGroup();

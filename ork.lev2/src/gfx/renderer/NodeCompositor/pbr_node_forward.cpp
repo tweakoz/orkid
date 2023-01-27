@@ -48,6 +48,9 @@ struct ForwardPbrNodeImpl {
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   void init(lev2::Context* context) {
     if (nullptr == _rtg) {
+      OrkAssert(_ginitdata->_msaa_samples!=1);
+
+      printf( "PBRFWD_MSAA<%d>\n", int(_ginitdata->_msaa_samples) );
       _rtg             = std::make_shared<RtGroup>(context, 8, 8, intToMsaaEnum(_ginitdata->_msaa_samples));
       auto buf1        = _rtg->createRenderTarget(EBufferFormat::RGBA8);
       buf1->_debugName = "ForwardRt0";

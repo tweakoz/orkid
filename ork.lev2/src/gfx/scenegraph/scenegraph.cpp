@@ -307,6 +307,9 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
   } else if (preset == "PBRVR") {
     _compositorPreset = _compositorData->presetPBRVR();
     //is_pbr_node = true;
+  } else if (preset == "FWDPBRVR") {
+    _compositorPreset = _compositorData->presetForwardPBRVR();
+    //is_pbr_node = true;
   } else if (preset == "USER"){
     _compositorData = params->typedValueForKey<compositordata_ptr_t>("compositordata").value();
   } else {

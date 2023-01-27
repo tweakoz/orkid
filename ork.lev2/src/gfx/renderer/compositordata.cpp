@@ -131,47 +131,6 @@ compositorimpl_ptr_t CompositingData::createImpl() const {
 
 //////////////////////////////////////////////////////////////////////////////
 
-RenderPresetContext CompositingData::presetForwardPBR(rtgroup_ptr_t outputgrp) {
-  RenderPresetContext rval;
-  auto t1 = new NodeCompositingTechnique;
-  OutputCompositingNode* selected_output_node = nullptr;
-  auto r1 = new pbr::ForwardNode;
-  if(outputgrp){
-    selected_output_node = new RtGroupOutputCompositingNode(outputgrp);
-  }else{
-    auto screennode = new ScreenOutputCompositingNode;
-    screennode->setSuperSample(_ginitdata->_ssaa_samples);
-    selected_output_node = screennode;
-  }
-
-  t1->_writeOutputNode(selected_output_node);
-  t1->_writeRenderNode(r1);
-
-  // t1->_writePostFxNode(p1);
-
-  auto load_req = r1->_pbrcommon->createSkyboxTextureLoadRequest("src://envmaps/tozenv_nebula");
-  auto envl_asset = asset::AssetManager<TextureAsset>::load(load_req);
-  // todo inject postload ops
-  OrkAssert(envl_asset->GetTexture() != nullptr);
-  OrkAssert(envl_asset->_varmap.hasKey("postproc"));
-  r1->_pbrcommon->_writeEnvTexture(envl_asset);
-
-  auto s1 = new CompositingScene;
-  auto i1 = new CompositingSceneItem;
-  i1->_writeTech(t1);
-  s1->items().AddSorted("item1"_pool, i1);
-  _activeScene = "scene1"_pool;
-  _activeItem  = "item1"_pool;
-  _scenes.AddSorted("scene1"_pool, s1);
-
-  rval._nodetek    = t1;
-  rval._outputnode = selected_output_node;
-  rval._rendernode = r1;
-
-  return rval;}
-
-//////////////////////////////////////////////////////////////////////////////
-
 RenderPresetContext CompositingData::presetDeferredPBR(rtgroup_ptr_t outputgrp) {
   RenderPresetContext rval;
   auto t1 = new NodeCompositingTechnique;
@@ -236,6 +195,79 @@ RenderPresetContext CompositingData::presetPBRVR() {
   OrkAssert(envl_asset->GetTexture() != nullptr);
   OrkAssert(envl_asset->_varmap.hasKey("postproc"));
   pbr_common->_writeEnvTexture(envl_asset);
+
+  auto s1 = new CompositingScene;
+  auto i1 = new CompositingSceneItem;
+  i1->_writeTech(t1);
+  s1->items().AddSorted("item1"_pool, i1);
+  _activeScene = "scene1"_pool;
+  _activeItem  = "item1"_pool;
+  _scenes.AddSorted("scene1"_pool, s1);
+
+  rval._nodetek    = t1;
+  rval._outputnode = o1;
+  rval._rendernode = r1;
+
+  return rval;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+RenderPresetContext CompositingData::presetForwardPBR(rtgroup_ptr_t outputgrp) {
+  RenderPresetContext rval;
+  auto t1 = new NodeCompositingTechnique;
+  OutputCompositingNode* selected_output_node = nullptr;
+  auto r1 = new pbr::ForwardNode;
+  if(outputgrp){
+    selected_output_node = new RtGroupOutputCompositingNode(outputgrp);
+  }else{
+    auto screennode = new ScreenOutputCompositingNode;
+    screennode->setSuperSample(_ginitdata->_ssaa_samples);
+    selected_output_node = screennode;
+  }
+
+  t1->_writeOutputNode(selected_output_node);
+  t1->_writeRenderNode(r1);
+
+  auto load_req = r1->_pbrcommon->createSkyboxTextureLoadRequest("src://envmaps/tozenv_nebula");
+  auto envl_asset = asset::AssetManager<TextureAsset>::load(load_req);
+  // todo inject postload ops
+  OrkAssert(envl_asset->GetTexture() != nullptr);
+  OrkAssert(envl_asset->_varmap.hasKey("postproc"));
+  r1->_pbrcommon->_writeEnvTexture(envl_asset);
+
+  auto s1 = new CompositingScene;
+  auto i1 = new CompositingSceneItem;
+  i1->_writeTech(t1);
+  s1->items().AddSorted("item1"_pool, i1);
+  _activeScene = "scene1"_pool;
+  _activeItem  = "item1"_pool;
+  _scenes.AddSorted("scene1"_pool, s1);
+
+  rval._nodetek    = t1;
+  rval._outputnode = selected_output_node;
+  rval._rendernode = r1;
+
+  return rval;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+RenderPresetContext CompositingData::presetForwardPBRVR() {
+  RenderPresetContext rval;
+  auto t1 = new NodeCompositingTechnique;
+  auto o1 = new VrCompositingNode;
+  auto r1 = new pbr::ForwardNode;
+
+  t1->_writeOutputNode(o1);
+  t1->_writeRenderNode(r1);
+
+  auto load_req = r1->_pbrcommon->createSkyboxTextureLoadRequest("src://envmaps/tozenv_nebula");
+  auto envl_asset = asset::AssetManager<TextureAsset>::load(load_req);
+  // todo inject postload ops
+  OrkAssert(envl_asset->GetTexture() != nullptr);
+  OrkAssert(envl_asset->_varmap.hasKey("postproc"));
+  r1->_pbrcommon->_writeEnvTexture(envl_asset);
 
   auto s1 = new CompositingScene;
   auto i1 = new CompositingSceneItem;

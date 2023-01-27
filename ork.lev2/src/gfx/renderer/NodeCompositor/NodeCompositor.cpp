@@ -123,8 +123,10 @@ bool NodeCompositingTechnique::assemble(CompositorDrawData& drawdata) {
     ////////////////////////////////////////////////////////////////////////////
     _outputNode->beginAssemble(drawdata);
     _renderNode->Render(drawdata);
-    if (_postfxNode)
+    if (_postfxNode){
+      OrkAssert(false);
       _postfxNode->Render(drawdata);
+    }
     _outputNode->endAssemble(drawdata);
   }
   drawdata.context()->debugPopGroup();

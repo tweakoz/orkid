@@ -126,7 +126,23 @@ static FxStateInstance::statelambda_t _createBasicStateLambda(const PBRMaterial*
     FXI->BindParamMatrix(mtl->_paramM, worldmatrix);
 
     if(stereocams){
-      OrkAssert(false);
+      fmtx4 vrroot;
+      auto vrrootprop = RCID._RCFD->getUserProperty("vrroot"_crc);
+      if (auto as_mtx = vrrootprop.tryAs<fmtx4>()) {
+        vrroot = as_mtx.value();
+      }
+
+      OrkAssert(mtl->_paramVPL);
+      OrkAssert(mtl->_paramVPR);
+
+      auto VPL = stereocams->VPL();
+      auto VPR = stereocams->VPL();
+      FXI->BindParamMatrix(mtl->_paramVPL, VPL);
+      FXI->BindParamMatrix(mtl->_paramVPR, VPR);
+      //FXI->BindParamMatrix(mtl->_paramVPinv, VP.inverse());
+
+      FXI->BindParamMatrix(mtl->_paramMVPL, stereocams->MVPL(vrroot*worldmatrix));
+      FXI->BindParamMatrix(mtl->_paramMVPR, stereocams->MVPR(vrroot*worldmatrix));
     }
     else if (monocams) {
       auto eye_pos = monocams->_vmatrix.inverse().translation();
@@ -389,26 +405,52 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
             RSI->BindRasterState(_this->_rasterstate);
           };
 
-          if (permu._instanced and not permu._skinned and not permu._stereo) {
-            if(mtl->_tek_FWD_CT_NM_RI_IN_MO){
-              fxinst          = std::make_shared<FxStateInstance>(permu);
-              fxinst->_technique         = mtl->_tek_FWD_CT_NM_RI_IN_MO;
-              fxinst->_params[mtl->_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
-              fxinst->addStateLambda(_createBasicStateLambda(mtl));
-              fxinst->addStateLambda(lighting_lambda);
-              fxinst->addStateLambda(rsi_lambda);
+          if(permu._stereo){
+            if (permu._instanced and not permu._skinned) {
+              if(mtl->_tek_FWD_CT_NM_RI_IN_ST){
+                fxinst          = std::make_shared<FxStateInstance>(permu);
+                fxinst->_technique         = mtl->_tek_FWD_CT_NM_RI_IN_ST;
+                fxinst->_params[mtl->_paramMVPL] = "RCFD_Camera_MVP_Left"_crcsh;
+                fxinst->addStateLambda(_createBasicStateLambda(mtl));
+                fxinst->addStateLambda(lighting_lambda);
+                fxinst->addStateLambda(rsi_lambda);
+              }
+            }
+            if (not permu._instanced and not permu._skinned) {
+              if(mtl->_tek_FWD_CT_NM_RI_NI_ST){
+                fxinst          = std::make_shared<FxStateInstance>(permu);
+                fxinst->_technique         = mtl->_tek_FWD_CT_NM_RI_NI_ST;
+                fxinst->_params[mtl->_paramMVPR] = "RCFD_Camera_MVP_Right"_crcsh;
+                fxinst->addStateLambda(_createBasicStateLambda(mtl));
+                fxinst->addStateLambda(lighting_lambda);
+                fxinst->addStateLambda(rsi_lambda);
+              }
             }
           }
-          if (not permu._instanced and not permu._skinned and not permu._stereo) {
-            if(mtl->_tek_FWD_CT_NM_RI_NI_MO){
-              fxinst          = std::make_shared<FxStateInstance>(permu);
-              fxinst->_technique         = mtl->_tek_FWD_CT_NM_RI_NI_MO;
-              fxinst->_params[mtl->_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
-              fxinst->addStateLambda(_createBasicStateLambda(mtl));
-              fxinst->addStateLambda(lighting_lambda);
-              fxinst->addStateLambda(rsi_lambda);
+          else{
+            if (permu._instanced and not permu._skinned) {
+              if(mtl->_tek_FWD_CT_NM_RI_IN_MO){
+                fxinst          = std::make_shared<FxStateInstance>(permu);
+                fxinst->_technique         = mtl->_tek_FWD_CT_NM_RI_IN_MO;
+                fxinst->_params[mtl->_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
+                fxinst->addStateLambda(_createBasicStateLambda(mtl));
+                fxinst->addStateLambda(lighting_lambda);
+                fxinst->addStateLambda(rsi_lambda);
+              }
             }
+            if (not permu._instanced and not permu._skinned) {
+              if(mtl->_tek_FWD_CT_NM_RI_NI_MO){
+                fxinst          = std::make_shared<FxStateInstance>(permu);
+                fxinst->_technique         = mtl->_tek_FWD_CT_NM_RI_NI_MO;
+                fxinst->_params[mtl->_paramMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
+                fxinst->addStateLambda(_createBasicStateLambda(mtl));
+                fxinst->addStateLambda(lighting_lambda);
+                fxinst->addStateLambda(rsi_lambda);
+              }
+            }            
           }
+
+
           // OrkAssert(fxinst->_technique != nullptr);
           break;
         }
@@ -718,6 +760,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _tek_FWD_SKYBOX_ST          = fxi->technique(_shader, "FWD_SKYBOX_ST");
   _tek_FWD_CT_NM_RI_NI_MO     = fxi->technique(_shader, "FWD_CT_NM_RI_NI_MO");
   _tek_FWD_CT_NM_RI_IN_MO     = fxi->technique(_shader, "FWD_CT_NM_RI_IN_MO");
+  _tek_FWD_CT_NM_RI_NI_ST     = fxi->technique(_shader, "FWD_CT_NM_RI_NI_ST");
+  _tek_FWD_CT_NM_RI_IN_ST     = fxi->technique(_shader, "FWD_CT_NM_RI_IN_ST");
   _tek_FWD_DEPTHPREPASS_IN_MO = fxi->technique(_shader, "FWD_DEPTHPREPASS_IN_MO");
 
   _tek_FWD_CV_EMI_RI_NI_MO = fxi->technique(_shader, "FWD_CV_EMI_RI_NI_MO");
@@ -752,6 +796,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
 
   _paramM                 = fxi->parameter(_shader, "m");
   _paramVP                = fxi->parameter(_shader, "vp");
+  _paramVPL                = fxi->parameter(_shader, "vp_l");
+  _paramVPR                = fxi->parameter(_shader, "vp_r");
   _paramVPinv             = fxi->parameter(_shader, "inv_vp");
   _paramMVP               = fxi->parameter(_shader, "mvp");
   _paramMVPL              = fxi->parameter(_shader, "mvp_l");

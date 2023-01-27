@@ -10,7 +10,11 @@ uniform_set ub_vtx {
 	mat4 m;
 	mat4 mv;
 	mat4 vp;
+  mat4 vp_l;
+  mat4 vp_r;
 	mat4 inv_vp;
+  mat4 inv_vp_l;
+  mat4 inv_vp_r;
 	mat4 mvp;
 	mat4 mvp_l;
 	mat4 mvp_r;
@@ -509,6 +513,12 @@ vertex_shader vs_forward_test
 		vs_common(position,normal,binormal);
 		gl_Position = mvp*position;
 }
+vertex_shader vs_forward_test_stereo
+  : iface_vgbuffer
+  : lib_pbr_vtx {
+    vs_common(position,normal,binormal);
+    gl_Position = mvp*position;
+}
 vertex_shader vs_forward_instanced
 	: iface_vgbuffer_instanced
   : lib_pbr_vtx_instanced {
@@ -525,6 +535,22 @@ vertex_shader vs_forward_instanced
 		////////////////////////////////
 		gl_Position = mvp*instanced_pos;
 }
+vertex_shader vs_forward_instanced_stereo
+  : iface_vgbuffer_instanced
+  : lib_pbr_vtx_instanced {
+    int matrix_v = (gl_InstanceID>>10);
+    int matrix_u = (gl_InstanceID&0x3ff)<<2;
+    mat4 instancemtx = mat4(
+        texelFetch(InstanceMatrices, ivec2(matrix_u+0,matrix_v), 0),
+        texelFetch(InstanceMatrices, ivec2(matrix_u+1,matrix_v), 0),
+        texelFetch(InstanceMatrices, ivec2(matrix_u+2,matrix_v), 0),
+        texelFetch(InstanceMatrices, ivec2(matrix_u+3,matrix_v), 0));
+    ////////////////////////////////
+    vec4 instanced_pos = (instancemtx*position);
+    vs_instanced(position,normal,binormal,instancemtx);
+    ////////////////////////////////
+    gl_Position = mvp*instanced_pos;
+}
 fragment_shader ps_forward_test 
 	: iface_forward
 	: lib_math
@@ -533,7 +559,23 @@ fragment_shader ps_forward_test
   : lib_fwd {
  	out_color = vec4(forward_lighting(ModColor.xyz),1);
 }
-fragment_shader ps_forward_test_instanced
+fragment_shader ps_forward_test_stereo
+  : iface_forward
+  : lib_math
+  : lib_brdf
+  : lib_def
+  : lib_fwd {
+  out_color = vec4(forward_lighting(ModColor.xyz),1);
+}
+fragment_shader ps_forward_test_instanced_mono
+  : iface_forward
+  : lib_math
+  : lib_brdf
+  : lib_def
+  : lib_fwd {
+  out_color = vec4(forward_lighting(frg_modcolor.xyz),1);
+}
+fragment_shader ps_forward_test_instanced_stereo
 	: iface_forward
 	: lib_math
   : lib_brdf

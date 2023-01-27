@@ -102,6 +102,8 @@ public:
   Context* _initialTarget                = nullptr;
   fxparam_constptr_t _paramM             = nullptr;
   fxparam_constptr_t _paramVP            = nullptr;
+  fxparam_constptr_t _paramVPL           = nullptr;
+  fxparam_constptr_t _paramVPR           = nullptr;
   fxparam_constptr_t _paramVPinv         = nullptr;
   fxparam_constptr_t _paramMVP           = nullptr;
   fxparam_constptr_t _paramMVPL          = nullptr;

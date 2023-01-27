@@ -221,6 +221,7 @@ public:
   RenderPresetContext presetDeferredPBR(rtgroup_ptr_t outputgrp = nullptr);
   RenderPresetContext presetForwardPBR(rtgroup_ptr_t outputgrp = nullptr);
   RenderPresetContext presetPBRVR();
+  RenderPresetContext presetForwardPBRVR();
 
   const orklut<PoolString, ork::Object*>& GetGroups() const {
     return _groups;
