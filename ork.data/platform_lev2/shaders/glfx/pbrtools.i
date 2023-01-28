@@ -641,7 +641,7 @@ fragment_shader ps_forward_skybox_mono
  	// environment map
  	///////////////////////
 
-	vec3 rgb = env_equirectangularFlipV(VN,MapSpecularEnv,0);
+	vec3 rgb = env_equirectangularFlipV(VN,MapSpecularEnv,0)*SkyboxLevel;
 	out_color = vec4(rgb,1);
 
  	///////////////////////
@@ -691,10 +691,8 @@ fragment_shader ps_forward_skybox_stereo
   // environment map
   ///////////////////////
 
-  vec3 rgb = env_equirectangularFlipV(VN,MapSpecularEnv,0);
+  vec3 rgb = env_equirectangularFlipV(VN,MapSpecularEnv,0)*SkyboxLevel;
   out_color = vec4(rgb,1);
-
-  //out_color=vec4(VN,1);
 
 }
 
