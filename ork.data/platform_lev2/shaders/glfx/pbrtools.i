@@ -657,7 +657,7 @@ vertex_shader vs_forward_skybox_stereo
     gl_Layer = 0;
     gl_ViewportMask[0] = 1;
     gl_SecondaryViewportMaskNV[0] = 2;
-    frg_uv0 = uv0*1.33;
+    frg_uv0 = uv0;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_forward_skybox_stereo
@@ -674,15 +674,18 @@ fragment_shader ps_forward_skybox_stereo
 
   mat4 IVP = bool(gl_ViewportIndex) ? inv_vp_r : inv_vp_l;
 
-  vec4 xyzw = vec4(frg_uv0.xy,0,1);
+  vec2 uvn = (frg_uv0.xy - vec2(.5,.5))*2;
+
+
+  vec4 xyzw = vec4(uvn,0,1);
   xyzw = IVP*xyzw;
   xyzw.xyz *= (1.0/xyzw.w);
   vec3 posA = xyzw.xyz;
-  xyzw = vec4(frg_uv0.xy,1,1);
+  xyzw = vec4(uvn,1,1);
   xyzw = IVP*xyzw;
   xyzw.xyz *= (1.0/xyzw.w);
   vec3 posB = xyzw.xyz;
-  vec3 VN = normalize(posA-posB);
+  vec3 VN = normalize(posB-posA);
 
   ///////////////////////
   // environment map
