@@ -421,10 +421,21 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
                 fxinst->addStateLambda(rsi_lambda);
               }
             }
-            if (not permu._instanced and not permu._skinned) {
+            else if (not permu._instanced and not permu._skinned) {
               if(mtl->_tek_FWD_CT_NM_RI_NI_ST){
                 fxinst          = std::make_shared<FxStateInstance>(permu);
                 fxinst->_technique         = mtl->_tek_FWD_CT_NM_RI_NI_ST;
+                fxinst->_params[mtl->_paramMVPL] = "RCFD_Camera_MVP_Left"_crcsh;
+                fxinst->_params[mtl->_paramMVPR] = "RCFD_Camera_MVP_Right"_crcsh;
+                fxinst->addStateLambda(_createBasicStateLambda(mtl));
+                fxinst->addStateLambda(lighting_lambda);
+                fxinst->addStateLambda(rsi_lambda);
+              }
+            }
+            else if (not permu._instanced and permu._skinned) {
+              if(mtl->_tek_FWD_CT_NM_SK_NI_ST){
+                fxinst          = std::make_shared<FxStateInstance>(permu);
+                fxinst->_technique         = mtl->_tek_FWD_CT_NM_SK_NI_ST;
                 fxinst->_params[mtl->_paramMVPL] = "RCFD_Camera_MVP_Left"_crcsh;
                 fxinst->_params[mtl->_paramMVPR] = "RCFD_Camera_MVP_Right"_crcsh;
                 fxinst->addStateLambda(_createBasicStateLambda(mtl));
@@ -771,6 +782,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _tek_FWD_DEPTHPREPASS_IN_MO = fxi->technique(_shader, "FWD_DEPTHPREPASS_IN_MO");
 
   _tek_FWD_CV_EMI_RI_NI_MO = fxi->technique(_shader, "FWD_CV_EMI_RI_NI_MO");
+
+  _tek_FWD_CT_NM_SK_NI_ST = fxi->technique(_shader, "FWD_CT_NM_SK_NI_ST");
 
   // deferreds
 

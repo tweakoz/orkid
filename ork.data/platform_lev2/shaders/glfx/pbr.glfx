@@ -68,6 +68,11 @@ technique FWD_CT_NM_RI_IN_ST {
   vf_pass={vs_forward_instanced_stereo,ps_forward_test_instanced_stereo,sb_default}
 }
 ///////////////////////////////////////////////////////////////
+technique FWD_CT_NM_SK_NI_ST {
+  fxconfig=fxcfg_default;
+  vf_pass={vs_forward_skinned_stereo,ps_forward_test_stereo,sb_default}
+}
+///////////////////////////////////////////////////////////////
 technique GBU_CT_VN_RI_NI_MO {
 	fxconfig=fxcfg_default;
 	vf_pass={vs_rigid_gbuffer,ps_gbuffer,sb_default}

@@ -276,8 +276,6 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     outRTG = try_rtgroup.value();
   }
 
-  //bool is_pbr_node = false;
-
   pbr::commonstuff_ptr_t pbrcommon;
 
   if (preset == "Unlit") {
@@ -306,10 +304,14 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     pbrcommon = outrnode->_pbrcommon;
   } else if (preset == "PBRVR") {
     _compositorPreset = _compositorData->presetPBRVR();
-    //is_pbr_node = true;
+    auto nodetek  = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
+    auto outrnode = nodetek->tryRenderNodeAs<pbr::deferrednode::DeferredCompositingNodePbr>();
+    pbrcommon = outrnode->_pbrcommon;
   } else if (preset == "FWDPBRVR") {
     _compositorPreset = _compositorData->presetForwardPBRVR();
-    //is_pbr_node = true;
+    auto nodetek  = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
+    auto outrnode = nodetek->tryRenderNodeAs<pbr::ForwardNode>();
+    pbrcommon = outrnode->_pbrcommon;
   } else if (preset == "USER"){
     _compositorData = params->typedValueForKey<compositordata_ptr_t>("compositordata").value();
   } else {
@@ -319,13 +321,9 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
 
   if(pbrcommon){
 
-      if (auto try_bgtex = params->typedValueForKey<std::string>("backgroundTexPathStr")) {
+      if (auto try_bgtex = params->typedValueForKey<std::string>("SkyboxTexPathStr")) {
         auto texture_path        = try_bgtex.value();
-        auto load_req = pbrcommon->createSkyboxTextureLoadRequest(texture_path);
-        auto enviromentmap_asset = asset::AssetManager<lev2::TextureAsset>::load(load_req);
-        OrkAssert(enviromentmap_asset->GetTexture() != nullptr);
-        OrkAssert(enviromentmap_asset->_varmap.hasKey("postproc"));
-        pbrcommon->_writeEnvTexture(enviromentmap_asset);
+        auto load_req = pbrcommon->requestSkyboxTexture(texture_path);
       }
 
       if (auto try_envintensity = params->typedValueForKey<float>("EnvironmentIntensity")) {

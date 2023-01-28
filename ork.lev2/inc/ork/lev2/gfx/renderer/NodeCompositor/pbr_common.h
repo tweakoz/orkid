@@ -90,9 +90,14 @@ struct CommonStuff : public ork::Object {
     return _depthFogPower;
   }
 
-  asset::loadrequest_ptr_t createSkyboxTextureLoadRequest(const AssetPath& texture_path) const {
+  asset::loadrequest_ptr_t requestSkyboxTexture(const AssetPath& texture_path) {
     auto load_req = std::make_shared<asset::LoadRequest>(texture_path);
     load_req->_asset_vars = _texAssetVarMap;
+    auto enviromentmap_asset = asset::AssetManager<lev2::TextureAsset>::load(load_req);
+    OrkAssert(enviromentmap_asset->GetTexture() != nullptr);
+    OrkAssert(enviromentmap_asset->_varmap.hasKey("postproc"));
+    this->_writeEnvTexture(enviromentmap_asset);
+    printf( "texture_path<%s> : %p\n", texture_path.c_str(), (void*) enviromentmap_asset.get() );
     return load_req;
   }
 

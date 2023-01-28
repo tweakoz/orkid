@@ -573,6 +573,23 @@ vertex_shader vs_forward_instanced_stereo
     gl_ViewportMask[0] = 1;
     gl_SecondaryViewportMaskNV[0] = 2;
 }
+vertex_shader vs_forward_skinned_stereo
+  : iface_vgbuffer_skinned
+  : skin_tools 
+  : lib_pbr_vtx
+  : extension(GL_NV_stereo_view_rendering)
+  : extension(GL_NV_viewport_array2) {
+  vec4 skn_pos = vec4(SkinPosition(position.xyz),1);
+  vec3 skn_nrm  = SkinNormal(normal);
+  vec3 skn_bit  = SkinNormal(binormal); // // technically binormal is a bitangent
+  vs_common(skn_pos,skn_nrm,skn_bit);
+  ////////////////////////////////
+  gl_Position = mvp_l*skn_pos;
+  gl_SecondaryPositionNV = mvp_r*skn_pos;
+  gl_Layer = 0;
+  gl_ViewportMask[0] = 1;
+  gl_SecondaryViewportMaskNV[0] = 2;
+}
 fragment_shader ps_forward_test 
 	: iface_forward
 	: lib_math

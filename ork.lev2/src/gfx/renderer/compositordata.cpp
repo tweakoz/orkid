@@ -151,13 +151,7 @@ RenderPresetContext CompositingData::presetDeferredPBR(rtgroup_ptr_t outputgrp) 
 
   // t1->_writePostFxNode(p1);
 
-  auto load_req = pbr_common->createSkyboxTextureLoadRequest("src://envmaps/tozenv_nebula");
-
-  auto envl_asset = asset::AssetManager<TextureAsset>::load(load_req);
-  // todo inject postload ops
-  OrkAssert(envl_asset->GetTexture() != nullptr);
-  OrkAssert(envl_asset->_varmap.hasKey("postproc"));
-  pbr_common->_writeEnvTexture(envl_asset);
+  auto load_req = pbr_common->requestSkyboxTexture("src://envmaps/tozenv_nebula");
 
   auto s1 = new CompositingScene;
   auto i1 = new CompositingSceneItem;
@@ -187,14 +181,7 @@ RenderPresetContext CompositingData::presetPBRVR() {
 
   auto pbr_common = r1->_pbrcommon;
 
-  auto load_req = pbr_common->createSkyboxTextureLoadRequest("src://envmaps/tozenv_nebula");
-
-  auto assetVars  = pbr_common->_texAssetVarMap;
-  auto envl_asset = asset::AssetManager<TextureAsset>::load(load_req);
-  // todo inject postload ops
-  OrkAssert(envl_asset->GetTexture() != nullptr);
-  OrkAssert(envl_asset->_varmap.hasKey("postproc"));
-  pbr_common->_writeEnvTexture(envl_asset);
+  auto load_req = pbr_common->requestSkyboxTexture("src://envmaps/tozenv_nebula");
 
   auto s1 = new CompositingScene;
   auto i1 = new CompositingSceneItem;
@@ -229,12 +216,7 @@ RenderPresetContext CompositingData::presetForwardPBR(rtgroup_ptr_t outputgrp) {
   t1->_writeOutputNode(selected_output_node);
   t1->_writeRenderNode(r1);
 
-  auto load_req = r1->_pbrcommon->createSkyboxTextureLoadRequest("src://envmaps/tozenv_nebula");
-  auto envl_asset = asset::AssetManager<TextureAsset>::load(load_req);
-  // todo inject postload ops
-  OrkAssert(envl_asset->GetTexture() != nullptr);
-  OrkAssert(envl_asset->_varmap.hasKey("postproc"));
-  r1->_pbrcommon->_writeEnvTexture(envl_asset);
+  auto load_req = r1->_pbrcommon->requestSkyboxTexture("src://envmaps/tozenv_nebula");
 
   auto s1 = new CompositingScene;
   auto i1 = new CompositingSceneItem;
@@ -262,12 +244,7 @@ RenderPresetContext CompositingData::presetForwardPBRVR() {
   t1->_writeOutputNode(o1);
   t1->_writeRenderNode(r1);
 
-  auto load_req = r1->_pbrcommon->createSkyboxTextureLoadRequest("src://envmaps/tozenv_nebula");
-  auto envl_asset = asset::AssetManager<TextureAsset>::load(load_req);
-  // todo inject postload ops
-  OrkAssert(envl_asset->GetTexture() != nullptr);
-  OrkAssert(envl_asset->_varmap.hasKey("postproc"));
-  r1->_pbrcommon->_writeEnvTexture(envl_asset);
+  auto load_req = r1->_pbrcommon->requestSkyboxTexture("src://envmaps/tozenv_nebula");
 
   auto s1 = new CompositingScene;
   auto i1 = new CompositingSceneItem;
