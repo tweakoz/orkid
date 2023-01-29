@@ -46,6 +46,8 @@ libblock lib_fwd
 
     vec3 out_color;
 
+    vec3 eyepos = bool(gl_ViewportIndex) ? EyePostionR : EyePostionL;
+
     vec3 wpos = pbd._wpos;
     vec3 metalbase = vec3(0.04);
     /////////////////////////
@@ -67,7 +69,7 @@ libblock lib_fwd
     vec3 basecolor = albedo;
     vec3 diffcolor = mix(basecolor,vec3(0),metallic);
     /////////////////////////
-    vec3 edir = normalize(wpos-EyePostion);
+    vec3 edir = normalize(wpos-eyepos);
     vec3 n    = rawn; //normalize(rawn*2-vec3(1));
     vec3 refl = normalize(reflect(edir,n));
     /////////////////////////
@@ -97,7 +99,7 @@ libblock lib_fwd
     /////////////////////////
     float spec_miplevel = clamp(EnvironmentMipBias + (roughness * EnvironmentMipScale), 0, 10);
     refl = vec3(refl.x,-refl.y,refl.z);
-    vec3 spec_env = env_equirectangularFlipV(refl,MapSpecularEnv,spec_miplevel);
+    vec3 spec_env = env_equirectangular(refl,MapSpecularEnv,spec_miplevel);
     vec3 specular_light = ambient+spec_env;
     vec3 specular = (F*brdf.x+brdf.y)*specular_light*F0*SpecularLevel;
     //vec3 ambient = invF*AmbientLevel;

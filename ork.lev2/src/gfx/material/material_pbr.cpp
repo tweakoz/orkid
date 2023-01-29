@@ -135,13 +135,19 @@ static FxStateInstance::statelambda_t _createBasicStateLambda(const PBRMaterial*
       OrkAssert(mtl->_paramVPL);
       OrkAssert(mtl->_paramVPR);
 
+      auto VL = stereocams->VL();
+      auto VR = stereocams->VR();
       auto VPL = stereocams->VPL();
-      auto VPR = stereocams->VPL();
+      auto VPR = stereocams->VPR();
       FXI->BindParamMatrix(mtl->_paramVPL, VPL);
       FXI->BindParamMatrix(mtl->_paramVPR, VPR);
       //FXI->BindParamMatrix(mtl->_paramVPinv, VP.inverse());
       FXI->BindParamMatrix(mtl->_paramMVPL, stereocams->MVPL(vrroot*worldmatrix));
       FXI->BindParamMatrix(mtl->_paramMVPR, stereocams->MVPR(vrroot*worldmatrix));
+
+      FXI->BindParamVect3(mtl->_paramEyePostionL, VL.inverse().translation());
+      FXI->BindParamVect3(mtl->_paramEyePostionR, VR.inverse().translation());
+
     }
     else if (monocams) {
       auto eye_pos = monocams->_vmatrix.inverse().translation();
@@ -841,6 +847,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   // fwd
 
   _paramEyePostion    = fxi->parameter(_shader, "EyePostion");
+  _paramEyePostionL    = fxi->parameter(_shader, "EyePostionL");
+  _paramEyePostionR    = fxi->parameter(_shader, "EyePostionR");
   _paramAmbientLevel  = fxi->parameter(_shader, "AmbientLevel");
   _paramDiffuseLevel  = fxi->parameter(_shader, "DiffuseLevel");
   _paramSpecularLevel = fxi->parameter(_shader, "SpecularLevel");

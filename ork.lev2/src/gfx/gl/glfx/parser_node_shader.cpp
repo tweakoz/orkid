@@ -37,7 +37,7 @@ void ShaderNode::_generate2Common(shaderbuilder::BackEnd& backend) const {
 
   auto global_ctxbase = CtxGLFW::globalOffscreenContext();
 
-  int minor_api_version = global_ctxbase->_vars->typedValueForKey<int>("GL_API_MINOR_VERSION");
+  int minor_api_version = global_ctxbase->_vars->typedValueForKey<int>("GL_API_MINOR_VERSION").value();
 
   switch(minor_api_version){
     case 6:
@@ -52,6 +52,7 @@ void ShaderNode::_generate2Common(shaderbuilder::BackEnd& backend) const {
     case 1:
     case 0:
       codegen.formatLine("#version 400 core");
+      OrkAssert(false);
       break;
     default:
       OrkAssert(false);

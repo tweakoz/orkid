@@ -74,6 +74,8 @@ uniform_set ub_frg_fwd {
 	vec4 ModColor;
 	//vec2 InvViewportSize; // inverse target size
 	vec3 EyePostion;
+  vec3 EyePostionL;
+  vec3 EyePostionR;
 }
 ///////////////////////////////////////////////////////////////
 uniform_block ub_frg_fwd_lighting {
@@ -579,7 +581,6 @@ vertex_shader vs_forward_skinned_stereo
   : lib_pbr_vtx
   : extension(GL_NV_stereo_view_rendering)
   : extension(GL_NV_viewport_array2) {
-  //vec4 skn_pos = vec4(position.xyz,1);
   vec4 skn_pos = vec4(SkinPosition(position.xyz),1);
   vec3 skn_nrm  = SkinNormal(normal);
   vec3 skn_bit  = SkinNormal(binormal); // // technically binormal is a bitangent
@@ -620,7 +621,9 @@ fragment_shader ps_forward_test_instanced_stereo
 	: lib_math
   : lib_brdf
   : lib_def
-  : lib_fwd {
+  : lib_fwd 
+  : extension(GL_NV_stereo_view_rendering)
+  : extension(GL_NV_viewport_array2) {
  	out_color = vec4(forward_lighting(frg_modcolor.xyz),1);
 }
 

@@ -2,7 +2,6 @@
 // FxConfigs
 ///////////////////////////////////////////////////////////////
 fxconfig fxcfg_default {
-  glsl_version = "330";
   import "mathtools.i";
   import "misctools.i";
   import "envtools.i";

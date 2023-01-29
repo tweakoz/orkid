@@ -125,6 +125,8 @@ public:
   // fwd
 
   fxparam_constptr_t _paramEyePostion      = nullptr;
+  fxparam_constptr_t _paramEyePostionL     = nullptr;
+  fxparam_constptr_t _paramEyePostionR     = nullptr;
   fxparam_constptr_t _paramAmbientLevel    = nullptr;
   fxparam_constptr_t _paramDiffuseLevel    = nullptr;
   fxparam_constptr_t _paramSpecularLevel   = nullptr;

@@ -690,6 +690,9 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
 
     auto ctx_vars = std::make_shared<varmap::VarMap>();
 
+    int MINOR = 0;
+
+
     while( not done ){
 
       int this_minor = *it_minor;
@@ -698,6 +701,7 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
       ctx_vars->makeValueForKey<int>("GL_API_MINOR_VERSION") = this_minor;
 
       glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, this_minor );
+      MINOR = this_minor;
 
       offscreen_window = glfwCreateWindow(
           32,     //
@@ -709,16 +713,21 @@ CtxGLFW* CtxGLFW::globalOffscreenContext() {
       it_minor++;
       done |= (offscreen_window!=nullptr);
       done |= (it_minor==_try_minors.rend());
+
+      printf( "try<%d> done<%d>\n", this_minor, int(done) );
     }
 
-    //printf( "offscreen_window<%p>\n", offscreen_window );
-    OrkAssert(offscreen_window!=nullptr);
+    gctx->_vars = ctx_vars;
     gctx->_glfwWindow = offscreen_window;
+
+    int minor_api_version = gctx->_vars->typedValueForKey<int>("GL_API_MINOR_VERSION").value();
+    printf( "offscreen_window<%p>\n", offscreen_window );
+    printf( "global_ctxbase<%p> vars<%p> minor version<%d : %d>\n", gctx, (void*) ctx_vars.get(), MINOR, minor_api_version );
+    OrkAssert(offscreen_window!=nullptr);
     glfwSetWindowAttrib(offscreen_window,GLFW_OPENGL_PROFILE,GLFW_OPENGL_CORE_PROFILE);
     glfwSetWindowUserPointer(offscreen_window, (void*)gctx);
     glfwSwapInterval(0);
 
-    gctx->_vars = ctx_vars;
   }
   return gctx;
 }
