@@ -125,6 +125,7 @@ void DeferredContext::gpuInit(Context* target) {
     _parZndc2eye            = _lightingmtl.param("Zndc2eye");
     _parEnvironmentMipBias  = _lightingmtl.param("EnvironmentMipBias");
     _parEnvironmentMipScale = _lightingmtl.param("EnvironmentMipScale");
+    _parSpecularMipBias     = _lightingmtl.param("SpecularMipBias");
     _parSpecularLevel       = _lightingmtl.param("SpecularLevel");
     _parDiffuseLevel        = _lightingmtl.param("DiffuseLevel");
     _parAmbientLevel        = _lightingmtl.param("AmbientLevel");

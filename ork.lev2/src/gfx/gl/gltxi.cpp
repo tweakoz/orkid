@@ -420,9 +420,8 @@ void GlTextureInterface::ApplySamplingMode(Texture* ptex) {
 
     auto minfilt = minfiltlamb(texmode);
 
-    int inummips = 0;
+    int inummips = glto->_maxmip;
     if (minfilt == GL_LINEAR_MIPMAP_LINEAR) {
-      inummips = glto->_maxmip;
       if (inummips < 3) {
         inummips = 0;
         minfilt  = GL_LINEAR;

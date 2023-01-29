@@ -41,5 +41,13 @@ libblock lib_envmapping {
     vec2 uv = env_equirectangularN2UV(n);
     return textureLod(envtex, vec2(-uv.x,uv.y), miplevel).xyz;
   }
+  vec3 env_equirectangularFlipVBL(vec3 normal, sampler2D envtex_spec, sampler2D envtex_diff, float blend) {
+    vec3 n = vec3(normal.x,normal.y,normal.z);
+    vec2 uv = env_equirectangularN2UV(n);
+    float miplevel = clamp(EnvironmentMipBias + (blend*EnvironmentMipScale), 0, 10);
+    vec3 spec = textureLod(envtex_spec, vec2(-uv.x,uv.y), miplevel).xyz;
+    vec3 diff = textureLod(envtex_diff, vec2(-uv.x,uv.y), miplevel).xyz;
+    return mix(spec,diff,blend);
+  }
 
 }

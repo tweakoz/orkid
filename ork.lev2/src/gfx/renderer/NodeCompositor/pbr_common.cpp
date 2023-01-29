@@ -75,14 +75,14 @@ CommonStuff::CommonStuff() {
              Context* targ, //
              datablock_constptr_t inp_datablock) -> datablock_ptr_t {
 
-    /*printf(
+    printf(
         "EnvironmentTexture Irradiance PreProcessor tex<%p:%s> datablocklen<%zu>...\n",
         tex.get(),
         tex->_debugName.c_str(),
-        inp_datablock->length());*/
+        inp_datablock->length());
 
     auto hasher = DataBlock::createHasher();
-    hasher->accumulateString("irradiancemap-v0");
+    hasher->accumulateString("irradiancemap-v1");
     hasher->accumulateItem<uint64_t>(inp_datablock->hash()); // data content
     hasher->finish();
     uint64_t cachekey = hasher->result();
@@ -97,6 +97,7 @@ CommonStuff::CommonStuff() {
       _filtenvSpecularMap = PBRMaterial::filterSpecularEnvMap(tex, targ);
       _filtenvDiffuseMap  = PBRMaterial::filterDiffuseEnvMap(tex, targ);
       _brdfIntegrationMap = PBRMaterial::brdfIntegrationMap(targ);
+      //_environmentMipScale = _filtenvSpecularMap->_num_mips-1;
       //////////////////////////////////////////////////////////////
       DataBlockCache::setDataBlock(cachekey, irrmapdblock);
     }

@@ -161,9 +161,6 @@ void Pass::bindUniformBlockBuffer(UniformBlock* block, UniformBuffer* buffer) {
     GL_ERRORCHECK();
     _ubobindings[ubo_bindingpoint] = buffer;
 
-    if(buffer->_glbufid==90){
-      OrkAssert(false);
-    }
   }
 }
 

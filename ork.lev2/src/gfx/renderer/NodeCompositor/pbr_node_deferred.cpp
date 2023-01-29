@@ -177,6 +177,7 @@ struct PbrNodeImpl {
     /////////////////////////
     _context._lightingmtl.bindParamFloat(_context._parEnvironmentMipBias, pbrcommon->environmentMipBias());
     _context._lightingmtl.bindParamFloat(_context._parEnvironmentMipScale, pbrcommon->environmentMipScale());
+    _context._lightingmtl.bindParamFloat(_context._parSpecularMipBias, pbrcommon->_specularMipBias );
     /////////////////////////
     _context._lightingmtl._rasterstate.SetZWriteMask(false);
     _context._lightingmtl._rasterstate.SetDepthTest(EDEPTHTEST_OFF);

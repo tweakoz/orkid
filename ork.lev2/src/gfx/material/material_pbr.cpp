@@ -106,8 +106,11 @@ static FxStateInstance::statelambda_t _createBasicStateLambda(const PBRMaterial*
     bool is_stereo        = CPD.isStereoOnePass();
     auto pbrcommon        = RCID._RCFD->_pbrcommon;
 
+    printf( "PBR: pbrcommon->_specularMipBias<%g>\n", pbrcommon->_specularMipBias );
+
     FXI->BindParamVect3(mtl->_paramAmbientLevel, pbrcommon->_ambientLevel);
     FXI->BindParamFloat(mtl->_paramSpecularLevel, pbrcommon->_specularLevel);
+    FXI->BindParamFloat(mtl->_parSpecularMipBias, pbrcommon->_specularMipBias);
     FXI->BindParamFloat(mtl->_paramDiffuseLevel, pbrcommon->_diffuseLevel);
     FXI->BindParamFloat(mtl->_paramSkyboxLevel, pbrcommon->_skyboxLevel);
     FXI->BindParamCTex(mtl->_parMapSpecularEnv, pbrcommon->envSpecularTexture().get());
@@ -853,6 +856,8 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _paramDiffuseLevel  = fxi->parameter(_shader, "DiffuseLevel");
   _paramSpecularLevel = fxi->parameter(_shader, "SpecularLevel");
   _paramSkyboxLevel   = fxi->parameter(_shader, "SkyboxLevel");
+
+  _parSpecularMipBias  = fxi->parameter(_shader, "SpecularMipBias");
 
   _parMapSpecularEnv      = fxi->parameter(_shader, "MapSpecularEnv");
   _parMapDiffuseEnv       = fxi->parameter(_shader, "MapDiffuseEnv");

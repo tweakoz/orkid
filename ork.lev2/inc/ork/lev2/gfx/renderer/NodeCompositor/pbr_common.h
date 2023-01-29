@@ -113,6 +113,7 @@ struct CommonStuff : public ork::Object {
   float _environmentMipScale  = 0.0f;
   float _diffuseLevel         = 1.0f;
   float _specularLevel        = 1.0f;
+  float _specularMipBias      = 0.0f;
   float _skyboxLevel          = 1.0f;
   float _depthFogDistance     = 1000.0f;
   float _depthFogPower        = 1.0f;

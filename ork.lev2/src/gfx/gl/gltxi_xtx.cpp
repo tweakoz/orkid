@@ -35,16 +35,16 @@ bool GlTextureInterface::_loadXTXTexture(texture_ptr_t ptex, datablock_ptr_t dat
   ptex->_texFormat = load_req._cmipchain->_format;
   ///////////////////////////////////////////////
    auto keys = load_req._cmipchain->_varmap.dumpkeys();
-   //printf("\nxtx w<%lu>\n", load_req._cmipchain->_width);
-   ///printf("xtx h<%lu>\n", load_req._cmipchain->_height);
-   //printf("xtx d<%lu>\n", load_req._cmipchain->_depth);
-   //printf("xtx fmt<%zx>\n", (uint64_t)load_req._cmipchain->_format);
-   //for (auto k : keys) {
-   //printf("xtx mipchain varmap-key<%s>\n", k.c_str());
-  //}
-   //for (auto k : ptex->_varmap.dumpkeys()) {
-   //printf("xtx ptex varmap-key<%s>\n", k.c_str());
-  //}
+   printf("\nxtx w<%lu>\n", ptex->_width);
+   printf("xtx h<%lu>\n", ptex->_height);
+   printf("xtx d<%lu>\n", load_req._cmipchain->_depth);
+   printf("xtx fmt<%zx>\n", (uint64_t)load_req._cmipchain->_format);
+   for (auto k : keys) {
+    printf("xtx mipchain varmap-key<%s>\n", k.c_str());
+  }
+   for (auto k : ptex->_varmap.dumpkeys()) {
+   printf("xtx ptex varmap-key<%s>\n", k.c_str());
+  }
   void_lambda_t lamb = [=]() {
     //printf( "XTX MAINTHREAD<%p>\n",ptex);
     /////////////////////////////////////////////
@@ -80,10 +80,10 @@ void GlTextureInterface::_loadXTXTextureMainThreadPart(GlTexLoadReq req) {
   int inummips = req._cmipchain->_levels.size();
   OrkAssert(inummips > 0);
   GL_ERRORCHECK();
-   //printf("inummips<%d>\n", inummips);
+   printf("inummips<%d>\n", inummips);
   for (int imip = 0; imip < inummips; imip++) {
     auto& level = req._cmipchain->_levels[imip];
-     //printf("mip<%d> w<%ld> h<%ld> len<%zu>\n", imip, level._width, level._height, level._data->length());
+     printf("tex<%s> mip<%d> w<%ld> h<%ld> len<%zu>\n", req.ptex->_debugName.c_str(), imip, level._width, level._height, level._data->length());
     switch (req.ptex->_texFormat) {
       case EBufferFormat::RGBA8:
         glTexImage2D(         //
@@ -119,6 +119,8 @@ void GlTextureInterface::_loadXTXTextureMainThreadPart(GlTexLoadReq req) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
   GL_ERRORCHECK();
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, inummips - 1);
+  glto->_maxmip = inummips - 1;
+  req.ptex->_num_mips = inummips;
   GL_ERRORCHECK();
   req.ptex->TexSamplingMode().PresetTrilinearWrap();
   this->ApplySamplingMode(req.ptex.get());
