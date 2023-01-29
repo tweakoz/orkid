@@ -1033,16 +1033,21 @@ void PbrMatrixBlockApplicator::ApplyToTarget(Context* context) // virtual
   size_t fmtx4_stride    = sizeof(fmtx4);
 
   auto bones_buffer = PBRMaterial::boneDataBuffer(context);
-  auto bones_mapped = fxi->mapParamBuffer(bones_buffer, 0, bones_buffer->_length);
+  auto bones_mapped = fxi->mapParamBuffer(bones_buffer, 0, inumbones*sizeof(fmtx4));
+
+  //printf( "inumbones<%d>\n", inumbones );
 
   for (int i = 0; i < inumbones; i++) {
     bones_mapped->ref<fmtx4>(fmtx4_stride*i) = Matrices[i];
+    //printf( "I<%d>: ", i );
+    //Matrices[i].dump("bonemtx");
   }
 
   bones_mapped->unmap();
 
-  if(_pbrmaterial->_parBoneBlock)
+  if(_pbrmaterial->_parBoneBlock){
     fxi->bindParamBlockBuffer(_pbrmaterial->_parBoneBlock, bones_buffer);
+  }
 }
 
 ////////////////////////////////////////////

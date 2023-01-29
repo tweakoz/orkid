@@ -579,6 +579,7 @@ vertex_shader vs_forward_skinned_stereo
   : lib_pbr_vtx
   : extension(GL_NV_stereo_view_rendering)
   : extension(GL_NV_viewport_array2) {
+  //vec4 skn_pos = vec4(position.xyz,1);
   vec4 skn_pos = vec4(SkinPosition(position.xyz),1);
   vec3 skn_nrm  = SkinNormal(normal);
   vec3 skn_bit  = SkinNormal(binormal); // // technically binormal is a bitangent

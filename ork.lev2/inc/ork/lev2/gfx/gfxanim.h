@@ -436,6 +436,7 @@ struct XgmBlendPoseInfo {
 struct XgmLocalPose {
 
   XgmLocalPose(const XgmSkeleton& Skeleton);
+  void identityPose();
   void bindPose();  /// set pose to the skeletons bind pose
   void blendPoses(); /// Blend Poses
   void concatenate();

@@ -289,10 +289,6 @@ void XgmModel::RenderRigid(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static const int kMatrixBlockSize = 32;
-static fmtx4 MatrixBlock[kMatrixBlockSize];
-int eggtest = 0;
-
 void XgmModel::RenderSkinned(
     const XgmModelInst* minst,
     const fcolor4& ModColor,
@@ -300,6 +296,10 @@ void XgmModel::RenderSkinned(
     ork::lev2::Context* pTARG,
     const RenderContextInstData& RCID,
     const RenderContextInstModelData& mdlctx) const {
+
+
+  static constexpr size_t kMatrixBlockSize = 1024;
+  static auto matrix_block = new fmtx4[kMatrixBlockSize];
 
   auto fxcache = RCID._fx_instance_cache;
   auto fxinst  = fxcache->findfxinst(RCID);
@@ -365,7 +365,7 @@ void XgmModel::RenderSkinned(
             int JointSkelIndex          = cluster->mJointSkelIndices[ijointreg];
             const fmtx4& finalmtx       = minst->_worldPose._world_bindrela_matrices[JointSkelIndex];
             //////////////////////////////////////
-            MatrixBlock[ijointreg] = finalmtx;
+            matrix_block[ijointreg] = finalmtx;
           }
 
           //////////////////////////////////////////////////////
@@ -374,7 +374,7 @@ void XgmModel::RenderSkinned(
 
           MaterialInstItemMatrixBlock mtxblockitem;
           mtxblockitem.SetNumMatrices(inumjoints);
-          mtxblockitem.SetMatrixBlock(MatrixBlock);
+          mtxblockitem.SetMatrixBlock(matrix_block);
           mtl->BindMaterialInstItem(&mtxblockitem);
           { mtxblockitem.mApplicator->ApplyToTarget(pTARG); }
           mtl->UnBindMaterialInstItem(&mtxblockitem);

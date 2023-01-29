@@ -172,6 +172,7 @@ struct UniformBlockBinding {
   Pass* _pass          = nullptr; // program to which this binding is bound
   UniformBlock* _block = nullptr;
   GLuint _blockIndex   = 0xffffffff;
+  GLuint _bindingPoint          = 0;
   std::string _name;
   GLint _blockSize = 0;
   std::vector<Item> _ubbitems;

@@ -277,7 +277,7 @@ parambuffermappingptr_t Interface::mapParamBuffer(FxShaderParamBuffer* b, size_t
       base,
       length,
       GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT |
-          // GL_MAP_FLUSH_EXPLICIT_BIT |
+           GL_MAP_FLUSH_EXPLICIT_BIT |
           0);
   assert(mapping->_mappedaddr != nullptr);
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
@@ -292,7 +292,7 @@ void Interface::unmapParamBuffer(FxShaderParamBufferMapping* mapping) {
   auto ub = mapping->_buffer->_impl.get<UniformBuffer*>();
   GL_ERRORCHECK();
   glBindBuffer(GL_UNIFORM_BUFFER, ub->_glbufid);
-  // glFlushMappedBufferRange(GL_UNIFORM_BUFFER,mapping->_offset,mapping->_length);
+  glFlushMappedBufferRange(GL_UNIFORM_BUFFER,mapping->_offset,mapping->_length);
   glUnmapBuffer(GL_UNIFORM_BUFFER);
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
   GL_ERRORCHECK();

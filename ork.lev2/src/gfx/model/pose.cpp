@@ -296,6 +296,32 @@ void XgmAnimInst::bindToSkeleton(const XgmSkeleton& skeleton) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void XgmLocalPose::identityPose(void) {
+#ifdef ENABLE_ANIM
+  int inumjoints = NumJoints();
+
+  ///////////////////////////////////////////
+  // initialize to Skeletons Bind Pose
+  ///////////////////////////////////////////
+  for (int ij = 0; ij < inumjoints; ij++) {
+
+    _boneprops[ij] = 0;
+
+    _local_matrices[ij] = fmtx4();
+  }
+
+  ///////////////////////////////////////////
+  // Init Matrix Blending infos
+  ///////////////////////////////////////////
+
+  for (int ij = 0; ij < inumjoints; ij++) {
+    _blendposeinfos[ij].initBlendPose();
+  }
+#endif
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void XgmLocalPose::bindPose(void) {
 #ifdef ENABLE_ANIM
   int inumjoints = NumJoints();

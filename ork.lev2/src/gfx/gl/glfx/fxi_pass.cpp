@@ -10,8 +10,11 @@
 #include <ork/file/file.h>
 #include <ork/kernel/prop.h>
 #include <ork/kernel/string/string.h>
+#include <ork/util/logger.h>
 
 namespace ork::lev2::glslfx {
+
+static logchannel_ptr_t logchan_pass = logger()->createChannel("GLSLFXPASS", fvec3(0.8, 0.8, 0.3));
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -39,24 +42,30 @@ UniformBlockBinding* Pass::uniformBlockBinding(UniformBlock* block) {
 
   auto rval = new UniformBlockBinding;
 
+  logchan_pass->log("PASS<%s> uniformBlockBinding", _name.c_str() );
+
   rval->_blockIndex = glGetUniformBlockIndex(_programObjectId, block->_name.c_str());
   rval->_pass       = this;
   rval->_block      = block;
+  rval->_bindingPoint = 0;
+
+  logchan_pass->log("block<%s> _blockIndex<%d>", block->_name.c_str(), rval->_blockIndex );
 
   if (rval->_blockIndex == GL_INVALID_INDEX) {
-    printf("block<%s> blockindex<0x%08x>\n", block->_name.c_str(), rval->_blockIndex);
-    printf("perhaps the UBO is not referenced...\n");
+    logchan_pass->log("block<%s> blockindex<0x%08x>", block->_name.c_str(), rval->_blockIndex);
+    logchan_pass->log("perhaps the UBO is not referenced...");
     return rval;
   }
 
-  glUniformBlockBinding(_programObjectId, rval->_blockIndex, 0);
+
+  glUniformBlockBinding(_programObjectId, rval->_blockIndex, rval->_bindingPoint);
 
   glGetActiveUniformBlockiv(_programObjectId, rval->_blockIndex, GL_UNIFORM_BLOCK_DATA_SIZE, &rval->_blockSize);
-  // printf("block<%s> blocksize<%d>\n", block->_name.c_str(), rval->_blockSize);
+  logchan_pass->log("block<%s> blocksize<%d>", block->_name.c_str(), rval->_blockSize);
 
   GLint numunis = 0;
   glGetActiveUniformBlockiv(_programObjectId, rval->_blockIndex, GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS, &numunis);
-  // printf("block<%s> numunis<%d>\n", block->_name.c_str(), numunis);
+  logchan_pass->log("block<%s> numunis<%d>", block->_name.c_str(), numunis);
 
   auto uniindices = new GLuint[numunis];
   glGetActiveUniformBlockiv(_programObjectId, rval->_blockIndex, GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES, (GLint*)uniindices);
@@ -91,13 +100,20 @@ UniformBlockBinding* Pass::uniformBlockBinding(UniformBlock* block) {
     item._arraystride  = uniarystrides[i];
     item._matrixstride = unimtxstrides[i];
     rval->_ubbitems.push_back(item);
-    // printf("block<%s> uni<%d> actidx<%d>\n", block->_name.c_str(), i, uniindices[i]);
-    // printf( "block<%s> uni<%d> blkidx<%d>\n", block->_name.c_str(), i, uniblkidcs[i] );
-    // printf("block<%s> uni<%d> offset<%d>\n", block->_name.c_str(), i, unioffsets[i]);
-    // printf("block<%s> uni<%d> type<%d>\n", block->_name.c_str(), i, unitypes[i]);
-    // printf("block<%s> uni<%d> size<%d>\n", block->_name.c_str(), i, unisizes[i]);
-    // printf("block<%s> uni<%d> arystride<%d>\n", block->_name.c_str(), i, uniarystrides[i]);
-    // printf("block<%s> uni<%d> mtxstride<%d>\n", block->_name.c_str(), i, unimtxstrides[i]);
+    logchan_pass->log("block<%s> uni<%d> actidx<%d>", block->_name.c_str(), i, uniindices[i]);
+    //logchan_pass->log("block<%s> uni<%d> blkidx<%d>", block->_name.c_str(), i, uniblkidcs[i] );
+    logchan_pass->log("block<%s> uni<%d> offset<%d>", block->_name.c_str(), i, unioffsets[i]);
+    logchan_pass->log("block<%s> uni<%d> type<%d>", block->_name.c_str(), i, unitypes[i]);
+    logchan_pass->log("block<%s> uni<%d> size<%d>", block->_name.c_str(), i, unisizes[i]);
+    logchan_pass->log("block<%s> uni<%d> arystride<%d>", block->_name.c_str(), i, uniarystrides[i]);
+    logchan_pass->log("block<%s> uni<%d> mtxstride<%d>", block->_name.c_str(), i, unimtxstrides[i]);
+  }
+
+  //////////////////////////////////////////////
+
+  if(block->_name=="ub_vtx_boneblock"){
+    //OrkAssert(rval->_blockIndex==0);
+    //OrkAssert(false);
   }
 
   //////////////////////////////////////////////
@@ -121,13 +137,14 @@ void Pass::bindUniformBlockBuffer(UniformBlock* block, UniformBuffer* buffer) {
   assert(binding != nullptr);
   assert(binding->_blockIndex != GL_INVALID_INDEX);
   GLuint ubo_bindingindex = binding->_blockIndex;
+  GLuint ubo_bindingpoint = binding->_bindingPoint;
 
   if (_ubobindings.size() < (ubo_bindingindex + 1)) {
     _ubobindings.resize(ubo_bindingindex + 1);
-    // printf("RESIZEUBOB<%d>\n", ubo_bindingindex + 1);
+    logchan_pass->log("RESIZEUBOB<%d>", ubo_bindingindex + 1);
   }
 
-  if (_ubobindings[ubo_bindingindex] != buffer) {
+  if(_ubobindings[ubo_bindingpoint] != buffer) {
     GLintptr ubo_offset = 0;
     GLintptr ubo_size   = buffer->_length;
     GL_ERRORCHECK();
@@ -138,11 +155,15 @@ void Pass::bindUniformBlockBuffer(UniformBlock* block, UniformBuffer* buffer) {
     //          ubo_size);           // length
     glBindBufferBase(
         GL_UNIFORM_BUFFER, // target
-        ubo_bindingindex,  // index
+        ubo_bindingpoint,  // index
         buffer->_glbufid); // buffer objid
-    printf("glBindBufferRange bidx<%d> bufid<%d>\n", int(ubo_bindingindex), int(buffer->_glbufid));
+    //logchan_pass->log("glBindBufferRange bidx<%d> bufid<%d>", int(ubo_bindingindex), int(buffer->_glbufid));
     GL_ERRORCHECK();
-    _ubobindings[ubo_bindingindex] = buffer;
+    _ubobindings[ubo_bindingpoint] = buffer;
+
+    if(buffer->_glbufid==90){
+      OrkAssert(false);
+    }
   }
 }
 
@@ -171,14 +192,14 @@ void Pass::postProc(rootcontainer_ptr_t container) {
       GLchar nambuf[256];
       glGetActiveUniform(_programObjectId, i, sizeof(nambuf), &namlen, &unisiz, &unityp, nambuf);
       OrkAssert(namlen < sizeof(nambuf));
-      // printf("find uni<%s>\n", nambuf);
+      // printf("find uni<%s>", nambuf);
       GL_ERRORCHECK();
 
       str_name = nambuf;
       auto its = str_name.find('[');
       if (its != str_name.npos) {
         str_name = str_name.substr(0, its);
-        // printf( "nnam<%s>\n", str_name.c_str() );
+        // printf( "nnam<%s>", str_name.c_str() );
       }
     }
     auto it = container->_uniforms.find(str_name);
@@ -214,7 +235,7 @@ void Pass::postProc(rootcontainer_ptr_t container) {
       this->_uniformInstances[puni->_name] = pinst;
     } else {
       it = flatunimap.find(str_name);
-      printf("uni<%s> not found!\n", str_name.c_str());
+      printf("uni<%s> not found!", str_name.c_str());
       OrkAssert(it != flatunimap.end());
       // prob a UBO uni
     }

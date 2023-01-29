@@ -13,16 +13,12 @@ vertex_interface iface_skintools : ub_vtx_boneblock {
 
 libblock skin_tools {
   vec3 SkinPosition(vec3 objpos) {
-    //ivec4 idcsi = ivec4(idcs);
     ivec4 idcsi = ivec4(boneindices);
-    //wghts = vec4(0.25,0.25,0.25,0.25);
-    vec4 Pos4   = vec4(objpos, 1.0);
-
-    vec3 WeightedVertex = ((_bone_matrices[idcsi.w] * Pos4).xyz * boneweights.w);
-    WeightedVertex += ((_bone_matrices[idcsi.z] * Pos4).xyz * boneweights.z);
-    WeightedVertex += ((_bone_matrices[idcsi.y] * Pos4).xyz * boneweights.y);
-    WeightedVertex += ((_bone_matrices[idcsi.x] * Pos4).xyz * boneweights.x);
-
+    vec4 pos4   = vec4(objpos, 1.0);
+    vec3 WeightedVertex = ((_bone_matrices[idcsi.w] * pos4).xyz * boneweights.w);
+    WeightedVertex += ((_bone_matrices[idcsi.z] * pos4).xyz * boneweights.z);
+    WeightedVertex += ((_bone_matrices[idcsi.y] * pos4).xyz * boneweights.y);
+    WeightedVertex += ((_bone_matrices[idcsi.x] * pos4).xyz * boneweights.x);
     return WeightedVertex;
   }
   vec3 SkinNormal(vec3 InNrm) {
