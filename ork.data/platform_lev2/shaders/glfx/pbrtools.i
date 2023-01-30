@@ -65,6 +65,8 @@ uniform_set ub_frg_fwd {
   float DepthFogPower;
   vec4 ShadowParams;
 
+  float SpecularMipBias;
+
   float EnvironmentMipBias;
   float EnvironmentMipScale;
 
@@ -712,7 +714,7 @@ fragment_shader ps_forward_skybox_stereo
   // environment map
   ///////////////////////
 
-  vec3 rgb = env_equirectangularFlipV(VN,MapSpecularEnv,0)*SkyboxLevel;
+  vec3 rgb = env_equirectangularFlipV(VN,MapSpecularEnv,EnvironmentMipBias)*SkyboxLevel;
   out_color = vec4(rgb,1);
 
 }

@@ -106,8 +106,6 @@ static FxStateInstance::statelambda_t _createBasicStateLambda(const PBRMaterial*
     bool is_stereo        = CPD.isStereoOnePass();
     auto pbrcommon        = RCID._RCFD->_pbrcommon;
 
-    printf( "PBR: pbrcommon->_specularMipBias<%g>\n", pbrcommon->_specularMipBias );
-
     FXI->BindParamVect3(mtl->_paramAmbientLevel, pbrcommon->_ambientLevel);
     FXI->BindParamFloat(mtl->_paramSpecularLevel, pbrcommon->_specularLevel);
     FXI->BindParamFloat(mtl->_parSpecularMipBias, pbrcommon->_specularMipBias);

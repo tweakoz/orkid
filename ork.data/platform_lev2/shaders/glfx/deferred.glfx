@@ -652,8 +652,6 @@ libblock lib_deferred
       float depth_fogval = saturateF(pow(gbd._fogZ*DepthFogDistance,DepthFogPower));
       vec3 skyboxColor = env_equirectangularFlipV(skybox_n,MapSpecularEnv,0)*SkyboxLevel;
       out_color = mix(finallitcolor,skyboxColor,depth_fogval);
-
-      //out_color = vec3(SpecularMipBias,SpecularMipBias,SpecularMipBias);
     }
     else {
       out_color = skyboxColor;
