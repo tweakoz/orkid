@@ -107,6 +107,11 @@ fragment_shader ps_texcolor4 : iface_fmt {
   out_clr   = texc;
 }
 ///////////////////////////////////////////////////////////////
+fragment_shader ps_blit : iface_fmt {
+  vec3 texc = texture(ColorMap, frg_uv0.xy).xyz;
+  out_clr = vec4(texc,1);
+}
+///////////////////////////////////////////////////////////////
 fragment_shader ps_downsample2x2 : iface_fmt {
   const float kscale = 1.0/4.0;
   vec2 uvb = gl_FragCoord.xy*2-vec2(0.5,0.5);
@@ -336,6 +341,14 @@ technique texcolor4 {
   pass p0 {
     vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_texcolor4;
+    state_block     = sb_default;
+  }
+}
+technique blit {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_blit;
     state_block     = sb_default;
   }
 }

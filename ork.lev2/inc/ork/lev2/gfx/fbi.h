@@ -89,6 +89,8 @@ public:
   virtual void Clear(const fcolor4& rCol, float fdepth)       = 0;
   virtual void clearDepth(float fdepth)                       = 0;
   virtual void msaaBlit(rtgroup_ptr_t src, rtgroup_ptr_t dst) = 0;
+  virtual void blit(rtgroup_ptr_t src, rtgroup_ptr_t dst) {}
+  virtual void downsample2x2(rtgroup_ptr_t src, rtgroup_ptr_t dst) {}
 
   int GetVPX() {
     return viewport()._x;

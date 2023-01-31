@@ -9,6 +9,7 @@
 #include <ork/kernel/string/deco.inl>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
+#include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/ui/viewport.h>
 #include <ork/pch.h>
@@ -470,6 +471,77 @@ void GlFrameBufferInterface::msaaBlit(rtgroup_ptr_t src, rtgroup_ptr_t dst) {
                     0, 0, dst->width(), dst->height(), //
                     GL_COLOR_BUFFER_BIT, GL_LINEAR); 
   GL_ERRORCHECK();
+  PopRtGroup();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void GlFrameBufferInterface::blit(rtgroup_ptr_t src, rtgroup_ptr_t dst) {
+
+  int w = dst->width();
+  int h = dst->height();
+
+  auto framedata = mTargetGL.topRenderContextFrameData();
+
+  //dst->Resize(w,h);
+  PushRtGroup(dst.get());
+  auto src_rtb = src->GetMrt(0);
+  auto dst_rtb = dst->GetMrt(0);
+  auto src_groupimpl = src->_impl.get<glrtgroupimpl_ptr_t>();
+  auto dst_groupimpl = dst->_impl.get<glrtgroupimpl_ptr_t>();
+  auto this_buf     = this->GetThisBuffer();
+
+  auto shader = utilshader();
+
+  shader->begin(_tek_blit,*framedata);
+  shader->_rasterstate.SetBlending(Blending::OFF);
+  shader->bindParamCTex(_fxpColorMap, src->GetMrt(0)->_texture.get());
+  shader->bindParamMatrix(_fxpMVP, fmtx4::Identity());
+  ViewportRect extents(0, 0, w, h);
+  this->pushViewport(extents);
+  this->pushScissor(extents);
+  this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+  this->popViewport();
+  this->popScissor();
+  shader->end(*framedata);
+
+  PopRtGroup();
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+void GlFrameBufferInterface::downsample2x2(rtgroup_ptr_t src, rtgroup_ptr_t dst) {
+
+  int w = src->width();
+  int h = src->height();
+  int wd2 = w/2;
+  int hd2 = h/2;
+
+  auto framedata = mTargetGL.topRenderContextFrameData();
+
+  dst->Resize(wd2,hd2);
+  PushRtGroup(dst.get());
+  auto src_rtb = src->GetMrt(0);
+  auto dst_rtb = dst->GetMrt(0);
+  auto src_groupimpl = src->_impl.get<glrtgroupimpl_ptr_t>();
+  auto dst_groupimpl = dst->_impl.get<glrtgroupimpl_ptr_t>();
+  auto this_buf     = this->GetThisBuffer();
+
+  auto shader = utilshader();
+
+  shader->begin(_tek_downsample2x2,*framedata);
+  shader->_rasterstate.SetBlending(Blending::OFF);
+  shader->bindParamCTex(_fxpColorMap, src->GetMrt(0)->_texture.get());
+  shader->bindParamMatrix(_fxpMVP, fmtx4::Identity());
+  ViewportRect extents(0, 0, wd2, hd2);
+  this->pushViewport(extents);
+  this->pushScissor(extents);
+  this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+  this->popViewport();
+  this->popScissor();
+  shader->end(*framedata);
+
   PopRtGroup();
 }
 

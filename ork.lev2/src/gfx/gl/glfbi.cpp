@@ -8,6 +8,7 @@
 #include "gl.h"
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
+#include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/ui/viewport.h>
 #include <ork/pch.h>
@@ -34,6 +35,19 @@ GlFrameBufferInterface::GlFrameBufferInterface(ContextGL& target)
 }
 
 GlFrameBufferInterface::~GlFrameBufferInterface() {
+}
+
+freestyle_mtl_ptr_t GlFrameBufferInterface::utilshader(){
+
+  if(nullptr==_freestyle_mtl){
+    _freestyle_mtl = std::make_shared<FreestyleMaterial>();
+    _freestyle_mtl->gpuInit(&_target, "orkshader://solid");
+    _tek_downsample2x2 = _freestyle_mtl->technique("downsample_2x2");
+    _tek_blit = _freestyle_mtl->technique("blit");
+    _fxpMVP         = _freestyle_mtl->param("MatMVP");
+    _fxpColorMap    = _freestyle_mtl->param("ColorMap");
+  }
+  return _freestyle_mtl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

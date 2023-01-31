@@ -253,18 +253,17 @@ void ForwardNode::DoRender(CompositorDrawData& drawdata) {
   impl->_render(drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
-rtbuffer_ptr_t ForwardNode::GetOutput() const {
-
+rtgroup_ptr_t ForwardNode::GetOutputGroup() const {
   auto fwd_impl = _impl.get<std::shared_ptr<ForwardPbrNodeImpl>>();
   auto rtg_output = fwd_impl->_rtg;
   if(fwd_impl->_rtg_resolve_msaa){
     rtg_output = fwd_impl->_rtg_resolve_msaa;
   }
-  return rtg_output->GetMrt(0);
+  return rtg_output;
 }
 ///////////////////////////////////////////////////////////////////////////////
-rtgroup_ptr_t ForwardNode::GetOutputGroup() const {
-  return _impl.get<std::shared_ptr<ForwardPbrNodeImpl>>()->_rtg;
+rtbuffer_ptr_t ForwardNode::GetOutput() const {
+  return GetOutputGroup()->GetMrt(0);
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::pbr

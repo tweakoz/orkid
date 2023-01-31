@@ -245,13 +245,24 @@ public:
   void rtGroupClear(RtGroup* rtg) final;
   void rtGroupMipGen(RtGroup* rtg) final;
   void msaaBlit(rtgroup_ptr_t src, rtgroup_ptr_t dst) final;
+  void blit(rtgroup_ptr_t src, rtgroup_ptr_t dst) final;
+  void downsample2x2(rtgroup_ptr_t src, rtgroup_ptr_t dst) final;
 
   //////////////////////////////////////////////
 
   void _setAsRenderTarget();
   void _initializeContext(OffscreenBuffer* pBuf);
 
+  freestyle_mtl_ptr_t utilshader();
+
 protected:
+
+  freestyle_mtl_ptr_t _freestyle_mtl;
+  const FxShaderTechnique* _tek_downsample2x2 = nullptr;
+  const FxShaderTechnique* _tek_blit = nullptr;
+  const FxShaderParam*     _fxpMVP = nullptr;
+  const FxShaderParam*     _fxpColorMap = nullptr;
+
   ContextGL& mTargetGL;
   int miCurScissorX;
   int miCurScissorY;

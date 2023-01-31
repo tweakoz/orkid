@@ -26,6 +26,7 @@ FrameBufferInterface::FrameBufferInterface(Context& tgt)
     , maViewportStack(kiVPStackMax)
     , _clearColor(fcolor4::Black())
     , _pickState(0) {
+
   // for( int i=0; i<kiVPStackMax; i++ )
   //	maViewportStack[i]
 }

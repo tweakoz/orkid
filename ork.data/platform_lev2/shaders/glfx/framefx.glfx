@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////
 // FxConfigs
 ///////////////////////////////////////////////////////////////
-fxconfig fxcfg_default { glsl_version = "130"; }
+fxconfig fxcfg_default {}
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
@@ -37,7 +37,9 @@ uniform_set ub_frg {
   float time;
   float BlurFactor;
   int BlurFactorI;
-  vec2 viewportdim;
+  float MaskThreshold;
+  int image_width;
+  int image_height;
   float EffectAmount;
   sampler2D MrtMap0;
   sampler2D MrtMap1;
@@ -210,74 +212,51 @@ fragment_shader ps_standard : iface_fmt {
   out_clr   = vec4(texc.xyz, texc.w);
 }
 ///////////////////////////////////////////////////////////////
-uniform_set ub_blur {
-  float BlurFactor;
-  int BlurFactorI;
-  sampler2D MrtMap0;
-  sampler2D AuxMap0;
-}
-fragment_interface iface_blurx : ub_blur {
-  //
-  outputs { vec4 out_clr; }
-  //
-  inputs { vec2 frg_uv; }
-}
-fragment_shader ps_blurx : iface_fmt : lib_cmn_funs {
-  const float stepval = (1.0 / 256.0);
-  float glowscale     = (1.0 / BlurFactor);
-  vec2 Uv0            = vec2(frg_uv.x, 1.0 - frg_uv.y);
+fragment_shader ps_maskbright : iface_fmt : lib_cmn_funs {
+  vec3 texc = texture(MrtMap0, frg_uv).xyz;
+  if(texc.x>MaskThreshold || texc.x>MaskThreshold || texc.x>MaskThreshold){
 
-  vec2 RealUv   = Uv0.xy;
-  vec4 PixOut   = vec4(0.0, 0.0, 0.0, 0.0);
-  vec2 UvOffset = vec2(stepval * -BlurFactor, 0.0);
-  float framp   = 0.0;
-
-  for (int i = 0; i < BlurFactorI; i++) {
-    PixOut += pointsampletex2d(MrtMap0, RealUv + UvOffset).xyzw * framp;
-    UvOffset += vec2(stepval, 0.0);
-    framp += (1.0 / BlurFactor);
   }
-  for (int i = 0; i < BlurFactorI; i++) {
-    PixOut += pointsampletex2d(MrtMap0, RealUv + UvOffset).xyzw * framp;
-    UvOffset += vec2(stepval, 0.0);
-    framp -= (1.0 / BlurFactor);
+  else{
+    texc = vec3(0,0,0);
   }
-  PixOut *= glowscale;
-  out_clr = PixOut;
+  out_clr = vec4(texc,1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_blury : ub_blur {
-  outputs { vec4 out_clr; }
-  //
-  inputs { vec2 frg_uv; }
-}
-fragment_shader ps_blury : iface_fmt : lib_cmn_funs {
-  float stepval   = (1.0 / 256.0);
-  float glowscale = (1.0 / BlurFactor);
-  vec2 Uv0        = vec2(frg_uv.x, 1.0 - frg_uv.y);
+fragment_shader ps_blurx : iface_fmt : lib_cmn_funs {
+  const float stepval = (1.0 / image_width);
+  vec3 PixOut   = vec3(0,0,0);
 
-  vec2 RealUv   = Uv0.xy;
-  vec4 PixOut   = vec4(0.0, 0.0, 0.0, 0.0);
-  vec2 UvOffset = vec2(0.0, stepval * -BlurFactor);
-  float framp   = 0.0;
-  for (int i = 0; i < BlurFactorI; i++) {
-    PixOut += pointsampletex2d(AuxMap0, RealUv + UvOffset).xyzw * framp;
-    UvOffset += vec2(0.0, stepval);
-    framp += (1.0 / BlurFactor);
+  for (int i = -BlurFactorI; i <=BlurFactorI; i++) {
+    vec2 UvOffset = vec2(stepval*i, 0.0);
+    vec3 inpix = texture(MrtMap0, frg_uv + UvOffset).xyz;
+
+    PixOut += inpix;
   }
-  for (int i = 0; i < BlurFactorI; i++) {
-    PixOut += pointsampletex2d(AuxMap0, RealUv + UvOffset).xyzw * framp;
-    UvOffset += vec2(0.0, stepval);
-    framp -= (1.0 / BlurFactor);
+  PixOut *= BlurFactor;
+  out_clr = vec4(PixOut,1);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_blury : iface_fmt : lib_cmn_funs {
+  const float stepval = (1.0 / image_height);
+  vec3 PixOut   = vec3(0,0,0);
+
+  for (int i = -BlurFactorI; i <=BlurFactorI; i++) {
+    vec2 UvOffset = vec2(0.0,stepval*i);
+    vec3 inpix = texture(MrtMap0, frg_uv + UvOffset).xyz;
+
+    PixOut += inpix;
   }
-  PixOut *= glowscale;
-  out_clr = PixOut;
+  PixOut *= BlurFactor;
+  out_clr = vec4(PixOut,1);
+
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_hdr_join : iface_fmt {
-  vec4 base = texture(MrtMap0, frg_uv);
-  vec4 glow = texture(AuxMap1, frg_uv);
-  vec3 full = mix(base.xyz, glow.xyz, EffectAmount).xyz;
+  vec4 glow = texture(MrtMap0, frg_uv);
+  vec4 base = texture(MrtMap1, frg_uv);
+  //vec3 full = mix(base.xyz, glow.xyz, EffectAmount).xyz;
+  vec3 full = base.xyz+glow.xyz*EffectAmount;
   out_clr   = vec4(full.xyz, 1.0);
 }
 ///////////////////////////////////////////////////////////////
@@ -399,7 +378,15 @@ technique frameeffect_fbin {
     state_block     = sb_default;
   }
 }
-technique frameeffect_glow_blurx {
+technique framefx_glow_maskbright {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_maskbright;
+    state_block     = sb_default;
+  }
+}
+technique framefx_glow_blurx {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_vtxcolor;
@@ -407,7 +394,7 @@ technique frameeffect_glow_blurx {
     state_block     = sb_default;
   }
 }
-technique frameeffect_glow_blury {
+technique framefx_glow_blury {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_vtxcolor;
@@ -431,7 +418,7 @@ technique frameeffect_comic {
     state_block     = sb_default;
   }
 }
-technique frameeffect_glow_join {
+technique framefx_glow_join {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_vtxcolor;

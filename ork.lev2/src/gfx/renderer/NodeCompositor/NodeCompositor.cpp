@@ -123,11 +123,10 @@ bool NodeCompositingTechnique::assemble(CompositorDrawData& drawdata) {
     ////////////////////////////////////////////////////////////////////////////
     _outputNode->beginAssemble(drawdata);
     _renderNode->Render(drawdata);
+    _outputNode->endAssemble(drawdata);
     if (_postfxNode){
-      OrkAssert(false);
       _postfxNode->Render(drawdata);
     }
-    _outputNode->endAssemble(drawdata);
   }
   drawdata.context()->debugPopGroup();
   return rval;
