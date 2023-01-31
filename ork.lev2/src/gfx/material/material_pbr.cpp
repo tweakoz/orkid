@@ -369,7 +369,7 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
             auto enumlights = RCFD->userPropertyAs<enumeratedlights_ptr_t>("enumeratedlights"_crcu);
             auto context    = RCFD->GetTarget();
             auto FXI        = context->FXI();
-            // logchan_pbr->log("fwd: all lights count<%zu>", enumlights->_alllights.size());
+             //logchan_pbr->log("fwd: all lights count<%zu>", enumlights->_alllights.size());
 
             int num_untextured_pointlights = enumlights->_untexturedpointlights.size();
 
@@ -384,6 +384,7 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
 
             size_t index = 0;
             for (auto light : enumlights->_untexturedpointlights) {
+              //logchan_pbr->log("doing light<%p>", (void*) light );
               pl_mapped->ref<fvec4>(base_color + (index * vec4_stride))    = light->color();
               pl_mapped->ref<fvec4>(base_position + (index * vec4_stride)) = light->worldPosition();
               pl_mapped->ref<float>(base_radius + (index * f32_stride))    = light->radius();
