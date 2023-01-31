@@ -68,9 +68,9 @@ void Device::overrideSize(int w, int h){
   _height         = h;
   float aspect    = 50.0;//float(_width*2) / float(_height);
 
-  _posemap["projl"].perspective(_fov, aspect, .01, 10000);
-  _posemap["projr"].perspective(_fov, aspect, .01, 10000);
-  _posemap["projc"].perspective(_fov, aspect, .01, 10000);
+  _posemap["projl"].perspective(_fov, aspect, _near, _far);
+  _posemap["projr"].perspective(_fov, aspect, _near, _far);
+  _posemap["projc"].perspective(_fov, aspect, _near, _far);
 
 }
 

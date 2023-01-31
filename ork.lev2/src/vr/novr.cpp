@@ -52,9 +52,9 @@ NoVrDevice::NoVrDevice()
   _height         = 1440;
   float aspect    = float(_width) / float(_height);
 
-  _posemap["projl"].perspective(_fov, aspect, .01, 10000);
-  _posemap["projr"].perspective(_fov, aspect, .01, 10000);
-  _posemap["projc"].perspective(_fov, aspect, .01, 10000);
+  _posemap["projl"].perspective(_fov, aspect, _near, _far);
+  _posemap["projr"].perspective(_fov, aspect, _near, _far);
+  _posemap["projc"].perspective(_fov, aspect, _near, _far);
 
   fmtx4 eyel, eyer;
   eyel.compose(fvec3(+_IPD * 0.5, 0, 0), fquat(), 1.0);
@@ -74,22 +74,21 @@ void NoVrDevice::_updatePoses(RenderContextFrameData& RCFD) {
   // fmtx4 w;
   // w.LookAt(fvec3(0, 0, 0), v3, fvec3(0, 1, 0));
   //_posemap["hmd"] = w;
+
+  ///////////////////////////////////////////////////////////////////
+  // eye matrices (part of viewing transformation, not including pose)
+  ///////////////////////////////////////////////////////////////////
+
+  _posemap["eyel"].compose(fvec3(+_IPD * 0.5, 0, 0), fquat(), 1.0);
+  _posemap["eyer"].compose(fvec3(-_IPD * 0.5, 0, 0), fquat(), 1.0);;
+
+  ///////////////////////////////////////////////////////////////////
+  // projection matrices
+  ///////////////////////////////////////////////////////////////////
+
   auto& CPD    = RCFD.topCPD();
-  auto rt      = CPD._irendertarget;
-  float aspect = float(_width) / float(_height);
+  //auto rt      = CPD._irendertarget;
 
-  // printf("_fov<%g> aspect<%g>\n", _fov,aspect);
-
-  _posemap["projl"].perspective(_fov, aspect, .01, 10000);
-  _posemap["projr"].perspective(_fov, aspect, .01, 10000);
-  _posemap["projc"].perspective(_fov, aspect, .01, 10000);
-
-  fmtx4 eyel, eyer;
-  eyel.compose(fvec3(+_IPD * 0.5, 0, 0), fquat(), 1.0);
-  eyer.compose(fvec3(-_IPD * 0.5, 0, 0), fquat(), 1.0);
-
-  _posemap["eyel"] = eyel;
-  _posemap["eyer"] = eyer;
 
   auto& LMATRIX = _posemap["projl"];
   auto& CMATRIX = _posemap["projc"];
@@ -97,16 +96,23 @@ void NoVrDevice::_updatePoses(RenderContextFrameData& RCFD) {
 
   fmtx4 lp, cp, rp, rotzL, rotzR;
 
+  float aspect = float(_width) / float(_height);
   lp.perspective(_fov, aspect, _near, _far);
   cp.perspective(_fov, aspect, _near, _far);
   rp.perspective(_fov, aspect, _near, _far);
 
-  // rotzL.setRotateZ(_stereoTileRotationDegreesL*DTOR);
-  // rotzR.setRotateZ(_stereoTileRotationDegreesR*DTOR);
+  ////////////////////////////////////////
+  // apply display panel rotation, if any..
+  ////////////////////////////////////////
+
+  rotzL.setRotateZ(_stereoTileRotationDegreesL*DTOR);
+  rotzR.setRotateZ(_stereoTileRotationDegreesR*DTOR);
 
   LMATRIX = fmtx4::multiply_ltor(lp,rotzL);
   CMATRIX = cp;
   RMATRIX = fmtx4::multiply_ltor(rp,rotzR);
+
+  ////////////////////////////////////////
 
   _updatePosesCommon();
 }
