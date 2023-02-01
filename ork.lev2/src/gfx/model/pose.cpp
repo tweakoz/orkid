@@ -45,23 +45,6 @@ void XgmBlendPoseInfo::initBlendPose() {
 void XgmBlendPoseInfo::addPose(const DecompMatrix& mat, float weight) {
   OrkAssert(_numanims < kmaxblendanims);
 
-  /*DecompTransform decomp;
-  decomp.decompose(mat);
-
-  const auto& pos    = decomp._translation;
-  const auto& orient = decomp._rotation;
-
-  if (0)
-    logchan_pose->log(
-        "XgmBlendPoseInfo pos<%g %g %g> orient<%g %g %g %g>", //
-        pos.x,
-        pos.y,
-        pos.z, //
-        orient.w,
-        orient.x,
-        orient.y,
-        orient.z);*/
-
   _matrices[_numanims] = mat;
   _weights[_numanims]  = weight;
 
@@ -80,12 +63,12 @@ void XgmBlendPoseInfo::computeMatrix(fmtx4& outmatrix) const {
 
       const DecompMatrix& decom0 = _matrices[0];
 
-      outmatrix.compose2(
-          decom0._position,    //
-          decom0._orientation, //
-          decom0._scale.x,     //
-          decom0._scale.y,     //
-          decom0._scale.z);
+      fmtx4 T, R, S;
+      T.setTranslation(decom0._position);
+      R = fmtx4(decom0._orientation);
+      S.setScale(decom0._scale);
+
+      outmatrix = T * R * S;
 
       if (_posecallback) // Callback for decomposed, pre-concatenated, blended joint info
         _posecallback->PostBlendPreConcat(outmatrix);
@@ -681,9 +664,10 @@ void XgmWorldPose::apply(const fmtx4& worldmtx, const XgmLocalPose& localpose) {
     const auto& C = localpose._concat_matrices[ij];
     const auto& IB = _skeleton._inverseBindMatrices[ij];
 
+    auto WC = worldmtx * C;
 
-    _world_concat_matrices[ij]   = C * worldmtx;
-    _world_bindrela_matrices[ij] = (worldmtx*C)*IB;
+    _world_concat_matrices[ij]   = WC;
+    _world_bindrela_matrices[ij] = WC*IB;
   }
 }
 

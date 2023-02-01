@@ -56,12 +56,14 @@ NoVrDevice::NoVrDevice()
   _posemap["projr"].perspective(_fov, aspect, _near, _far);
   _posemap["projc"].perspective(_fov, aspect, _near, _far);
 
-  fmtx4 eyel, eyer;
-  eyel.compose(fvec3(+_IPD * 0.5, 0, 0), fquat(), 1.0);
-  eyer.compose(fvec3(-_IPD * 0.5, 0, 0), fquat(), 1.0);
+  fmtx4 eyel_t, eyel_r, eyel_s;
+  fmtx4 eyer_t, eyer_r, eyer_s;
 
-  _posemap["eyel"] = eyel;
-  _posemap["eyer"] = eyer;
+  eyel_t.setTranslation(+_IPD * 0.5, 0, 0);
+  eyer_t.setTranslation(-_IPD * 0.5, 0, 0);
+
+  _posemap["eyel"] = eyel_t*eyel_r*eyel_s;
+  _posemap["eyer"] = eyer_t*eyer_r*eyer_s;
 }
 NoVrDevice::~NoVrDevice() {
 }
@@ -79,8 +81,14 @@ void NoVrDevice::_updatePoses(RenderContextFrameData& RCFD) {
   // eye matrices (part of viewing transformation, not including pose)
   ///////////////////////////////////////////////////////////////////
 
-  _posemap["eyel"].compose(fvec3(+_IPD * 0.5, 0, 0), fquat(), 1.0);
-  _posemap["eyer"].compose(fvec3(-_IPD * 0.5, 0, 0), fquat(), 1.0);;
+  fmtx4 eyel_t, eyel_r, eyel_s;
+  fmtx4 eyer_t, eyer_r, eyer_s;
+
+  eyel_t.setTranslation(+_IPD * 0.5, 0, 0);
+  eyer_t.setTranslation(-_IPD * 0.5, 0, 0);
+
+  _posemap["eyel"] = eyel_t*eyel_r*eyel_s;
+  _posemap["eyer"] = eyer_t*eyer_r*eyer_s;
 
   ///////////////////////////////////////////////////////////////////
   // projection matrices
