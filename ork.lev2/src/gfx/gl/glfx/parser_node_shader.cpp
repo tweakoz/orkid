@@ -52,7 +52,6 @@ void ShaderNode::_generate2Common(shaderbuilder::BackEnd& backend) const {
     case 1:
     case 0:
       codegen.formatLine("#version 400 core");
-      OrkAssert(false);
       break;
     default:
       OrkAssert(false);
