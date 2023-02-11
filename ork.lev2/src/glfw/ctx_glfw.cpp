@@ -114,7 +114,7 @@ static void _glfw_callback_winresized(GLFWwindow* window, int w, int h) {
   }
 #endif
 
-  //printf("win resized<%p %d %d>\n", window, w, h);
+  printf("win resized<%p %d %d>\n", window, w, h);
   auto ctx = (CtxGLFW*)glfwGetWindowUserPointer(window);
   ctx->onResize(w, h);
 }

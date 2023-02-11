@@ -31,7 +31,7 @@ datablock_ptr_t assimpToXga(datablock_ptr_t inp_datablock);
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-static logchannel_ptr_t logchan_anmio = logger()->createChannel("gfxanim.io.read", fvec3(1, 0.8, 1));
+static logchannel_ptr_t logchan_anmio = logger()->createChannel("gfxanim.io.read", fvec3(1, 0.8, 1), false);
 
 ///////////////////////////////////////////////////////////////////////////////
 struct chansettter {
@@ -226,7 +226,7 @@ bool XgmAnim::LoadUnManaged(XgmAnim* anm, const AssetPath& fname) {
   bool rval       = false;
   auto ActualPath = fname.toAbsolute();
 
-  printf("ActualPath<%s>\n", ActualPath.c_str());
+  //printf("ActualPath<%s>\n", ActualPath.c_str());
   // anm->msModelName = (fname.c_str());
   if (auto datablock = datablockFromFileAtPath(ActualPath)) {
     ///////////////////////////////////

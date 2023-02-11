@@ -10,7 +10,7 @@ namespace ork {
 
   struct LogChannel{
 
-    LogChannel(std::string named, ork::fvec3 color);
+    LogChannel(std::string named, ork::fvec3 color,bool enabled=true);
     void log_valist(const char *pMsgFormat, va_list args) const;
     void log(const char *pMsgFormat, ...);
     void log_begin_valist(const char *pMsgFormat, va_list args) const;
@@ -22,6 +22,7 @@ namespace ork {
     std::string _name;
     std::string _c1_prefix;
     std::string _reset;
+    bool _enabled;
 
   };
 
@@ -29,7 +30,7 @@ namespace ork {
 
   struct Logger {
 
-    logchannel_ptr_t createChannel(std::string named, ork::fvec3 color);
+    logchannel_ptr_t createChannel(std::string named, ork::fvec3 color, bool enabled=true);
     logchannel_ptr_t getChannel(std::string named) const;
 
 		using channel_map_t = std::map<std::string,logchannel_ptr_t>;

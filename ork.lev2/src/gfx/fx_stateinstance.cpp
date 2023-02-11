@@ -11,7 +11,7 @@
 #include <ork/util/logger.h>
 
 namespace ork::lev2 {
-static logchannel_ptr_t logchan_fxcache = logger()->createChannel("fxcache",fvec3(0.7,0.7,0.5));
+static logchannel_ptr_t logchan_fxcache = logger()->createChannel("fxcache",fvec3(0.7,0.7,0.5),false);
 ///////////////////////////////////////////////////////////////////////////////
 uint64_t FxCachePermutation::genIndex() const {
   uint64_t index = 0;

@@ -31,7 +31,7 @@ OIIO_NAMESPACE_USING
 
 namespace ork::lev2 {
 
-static logchannel_ptr_t logchan_pbrgen= logger()->createChannel("PBRGEN",fvec3(0.8,0.8,0.5));
+static logchannel_ptr_t logchan_pbrgen= logger()->createChannel("PBRGEN",fvec3(0.8,0.8,0.5),false);
 
 extern std::atomic<int> __FIND_IT;
 

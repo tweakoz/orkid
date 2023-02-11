@@ -258,7 +258,7 @@ pboptr_t PboSet::alloc() {
       glBindBuffer(GL_PIXEL_UNPACK_BUFFER, new_pbo->_handle);
       GL_ERRORCHECK();
 
-      printf("GlTextureInterface:: ipbocount<%d>\n", ipbocount.fetch_add(1));
+      //printf("GlTextureInterface:: ipbocount<%d>\n", ipbocount.fetch_add(1));
 
       // ??? persistent mapped objects
 

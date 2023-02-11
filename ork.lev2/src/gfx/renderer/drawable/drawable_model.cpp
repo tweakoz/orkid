@@ -14,7 +14,7 @@
 #include <ork/util/logger.h>
 
 namespace ork::lev2 {
-static logchannel_ptr_t logchan_model = logger()->createChannel("model",fvec3(0.9,0.2,0.9));
+static logchannel_ptr_t logchan_model = logger()->createChannel("model",fvec3(0.9,0.2,0.9),false);
 ///////////////////////////////////////////////////////////////////////////////
 ModelDrawable::ModelDrawable(DrawableOwner* pent) {
   for (int i = 0; i < kMaxEngineParamFloats; i++)

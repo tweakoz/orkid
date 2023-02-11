@@ -37,7 +37,7 @@ ImplementReflectionX(ork::lev2::PBRMaterial, "PBRMaterial");
 
 namespace ork::lev2 {
 
-static logchannel_ptr_t logchan_pbr = logger()->createChannel("mtlpbr", fvec3(0.8, 0.8, 0.1));
+static logchannel_ptr_t logchan_pbr = logger()->createChannel("mtlpbr", fvec3(0.8, 0.8, 0.1), false);
 
 //////////////////////////////////////////////////////
 
@@ -650,7 +650,7 @@ void PBRMaterial::describeX(class_t* c) {
     auto texbasename = ctx._reader.GetString(istring);
     auto mtl         = std::make_shared<PBRMaterial>();
     mtl->SetName(AddPooledString(materialname));
-    logchan_pbr->log("read.xgm: materialName<%s>", materialname);
+    //logchan_pbr->log("read.xgm: materialName<%s>", materialname);
     ctx._inputStream->GetItem(istring);
     auto begintextures = ctx._reader.GetString(istring);
     OrkAssert(0 == strcmp(begintextures, "begintextures"));
@@ -663,11 +663,11 @@ void PBRMaterial::describeX(class_t* c) {
       else {
         ctx._inputStream->GetItem(istring);
         auto texname = ctx._reader.GetString(istring);
-        logchan_pbr->log("read.xgm: find tex channel<%s> texname<%s> .. ", token, texname);
+        //logchan_pbr->log("read.xgm: find tex channel<%s> texname<%s> .. ", token, texname);
         auto itt = embtexmap.find(texname);
         OrkAssert(itt != embtexmap.end());
         auto embtex = itt->second;
-        logchan_pbr->log("read.xgm: embtex<%p> data<%p> len<%zu>", embtex, embtex->_srcdata, embtex->_srcdatalen);
+        //logchan_pbr->log("read.xgm: embtex<%p> data<%p> len<%zu>", embtex, embtex->_srcdata, embtex->_srcdatalen);
         auto tex = std::make_shared<lev2::Texture>();
         // crashes here...
         auto datablock = std::make_shared<DataBlock>(embtex->_srcdata, embtex->_srcdatalen);
@@ -691,7 +691,7 @@ void PBRMaterial::describeX(class_t* c) {
     ctx._inputStream->GetItem<float>(mtl->_metallicFactor);
     ctx._inputStream->GetItem<float>(mtl->_roughnessFactor);
     ctx._inputStream->GetItem<fvec4>(mtl->_baseColor);
-    logchan_pbr->log("read.xgm: basecolor<%g %g %g>", mtl->_baseColor.x,mtl->_baseColor.y,mtl->_baseColor.z);
+    //logchan_pbr->log("read.xgm: basecolor<%g %g %g>", mtl->_baseColor.x,mtl->_baseColor.y,mtl->_baseColor.z);
 
     if (auto try_ov = ctx._varmap->typedValueForKey<std::string>("override.shader.gbuf")) {
       const auto& ov_val = try_ov.value();
@@ -715,7 +715,7 @@ void PBRMaterial::describeX(class_t* c) {
     ctx._outputStream->AddItem(istring);
 
     auto dotex = [&](std::string channelname, std::string texname) {
-      logchan_pbr->log("write.xgm: tex channel<%s> texname<%s>", channelname.c_str(), texname.c_str());
+      //logchan_pbr->log("write.xgm: tex channel<%s> texname<%s>", channelname.c_str(), texname.c_str());
       if (texname.length()) {
         istring = ctx._writer.stringIndex(channelname.c_str());
         ctx._outputStream->AddItem(istring);
@@ -736,14 +736,14 @@ void PBRMaterial::describeX(class_t* c) {
     ctx._outputStream->AddItem<float>(pbrmtl->_metallicFactor);
     ctx._outputStream->AddItem<float>(pbrmtl->_roughnessFactor);
     ctx._outputStream->AddItem<fvec4>(pbrmtl->_baseColor);
-    logchan_pbr->log("write.xgm: _metallicFactor<%g>", pbrmtl->_metallicFactor);
-    logchan_pbr->log("write.xgm: _roughnessFactor<%g>", pbrmtl->_roughnessFactor);
-    logchan_pbr->log(
-        "write.xgm: _baseColor<%g %g %g %g>", //
-        pbrmtl->_baseColor.x,                 //
-        pbrmtl->_baseColor.y,                 //
-        pbrmtl->_baseColor.z,                 //
-        pbrmtl->_baseColor.w);
+    //logchan_pbr->log("write.xgm: _metallicFactor<%g>", pbrmtl->_metallicFactor);
+    //logchan_pbr->log("write.xgm: _roughnessFactor<%g>", pbrmtl->_roughnessFactor);
+    //logchan_pbr->log(
+      //  "write.xgm: _baseColor<%g %g %g %g>", //
+        //pbrmtl->_baseColor.x,                 //
+        //pbrmtl->_baseColor.y,                 //
+        //pbrmtl->_baseColor.z,                 //
+        //pbrmtl->_baseColor.w);
   };
 
   /////////////////////////////////////////////////////////////////
@@ -902,7 +902,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   if (_texEmissive) {
     //_asset_emissive = _asset_texcolor;
     //_texEmissive       = _asset_emissive->GetTexture();
-    logchan_pbr->log("substituted white for non-existant color texture");
+    //logchan_pbr->log("substituted white for non-existant color texture");
     // OrkAssert(_texEmissive != nullptr);
     forceEmissive();
     //_asset_texcolor = asset::AssetManager<lev2::TextureAsset>::load("src://effect_textures/white");
