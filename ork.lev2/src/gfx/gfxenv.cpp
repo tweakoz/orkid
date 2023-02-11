@@ -280,7 +280,7 @@ void GfxEnv::initializeWithContext(context_ptr_t target){
       target->makeCurrentContext();
       /////////////////////////////////////
       #if !defined(__APPLE__)
-      target->beginFrame();
+      //target->beginFrame();
       #endif
       /////////////////////////////////////
       target->debugPushGroup("GfxEnv.Lateinit");
@@ -289,7 +289,7 @@ void GfxEnv::initializeWithContext(context_ptr_t target){
       target->debugPopGroup();
       /////////////////////////////////////
       #if !defined(__APPLE__)
-      target->endFrame();
+      //target->endFrame();
       #endif
       /////////////////////////////////////
       GfxEnv::GetRef()._initialized = true;

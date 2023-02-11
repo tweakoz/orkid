@@ -179,7 +179,7 @@ void EzViewport::DoInit(ork::lev2::Context* pTARG) {
 }
 /////////////////////////////////////////////////
 void EzViewport::DoDraw(ui::drawevent_constptr_t drwev) {
-  lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
+  //lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
 
   //////////////////////////////////////////////////////
   // ensure onUpdateInit called before onGpuInit!
@@ -195,24 +195,29 @@ void EzViewport::DoDraw(ui::drawevent_constptr_t drwev) {
   }
 
   if (_mainwin->_onDraw) {
-    drwev->GetTarget()->makeCurrentContext();
+    //double a_time           = _mainwin->_render_timer.SecsSinceStart();
     _mainwin->_onDraw(drwev);
+
+    auto ctxbase = drwev->GetTarget()->mCtxBase;
+    drwev->GetTarget()->swapBuffers(ctxbase);
+
+    //double b_time           = _mainwin->_render_timer.SecsSinceStart();
+
+    //printf( "RTIME<%g msec>\n", (b_time-a_time)*1000.0 );
     ezapp->_render_count.fetch_add(1);
   }
   double this_time           = _mainwin->_render_timer.SecsSinceStart();
-  double raw_delta           = this_time - _mainwin->_render_prevtime;
   _mainwin->_render_prevtime = this_time;
-  _mainwin->_render_stats_timeaccum += raw_delta;
-  if (_mainwin->_render_stats_timeaccum >= 5.0) {
-    double FPS = _mainwin->_render_state_numiters / _mainwin->_render_stats_timeaccum;
+  if (this_time >= 5.0) {
+    double FPS = _mainwin->_render_state_numiters / this_time;
     logchan_ezapp->log("FPS<%g>", FPS);
-    _mainwin->_render_stats_timeaccum = 0.0;
     _mainwin->_render_state_numiters  = 0.0;
+    _mainwin->_render_timer.Start();
   } else {
     _mainwin->_render_state_numiters += 1.0;
   }
 
-  lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
+  //lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
 }
 /////////////////////////////////////////////////
 void EzViewport::DoSurfaceResize() {

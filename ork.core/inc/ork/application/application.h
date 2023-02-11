@@ -81,7 +81,7 @@ struct AppInitData{
   int _height = 720;
   int _msaa_samples = 1;
   int _ssaa_samples = 1;
-  int _swap_interval = 1;
+  int _swap_interval = 0;
   bool _update_rendersync = false;
   bool _allowHIDPI = false;
   std::string _monitor_id = "";

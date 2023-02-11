@@ -172,7 +172,7 @@ void GlFrameBufferInterface::_doEndFrame(void) {
     // printf( "ENDFRAME<RtGroup>\n" );
   } else {
     //glFinish();
-    mTargetGL.SwapGLContext(mTargetGL.GetCtxBase());
+    //mTargetGL.SwapGLContext(mTargetGL.GetCtxBase());
   }
   ////////////////////////////////
   popViewport();

@@ -536,6 +536,9 @@ public:
     return mFbI;
   }
 
+
+  void swapBuffers(CTXBASE* ctxbase) final;
+
   void initializeWindowContext(Window* pWin, CTXBASE* pctxbase) final; // make a window
   void initializeOffscreenContext(OffscreenBuffer* pBuf) final;        // make a pbuffer
   void initializeLoaderContext() final;

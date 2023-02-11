@@ -385,9 +385,9 @@ void CtxGLFW::Show() {
       glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
       _width = mode->width;
       _height = mode->height;
-      //printf( "USING GLFW_REFRESH_RATE<%d> \n", int(mode->refreshRate) );
-      //printf( "USING GLFW _width<%d> \n", _width );
-      //printf( "USING GLFW _height<%d> \n", _height );
+      printf( "USING GLFW_REFRESH_RATE<%d> \n", int(mode->refreshRate) );
+      printf( "USING GLFW _width<%d> \n", _width );
+      printf( "USING GLFW _height<%d> \n", _height );
       //////////////////////////////////////
     }
 
@@ -529,9 +529,6 @@ int CtxGLFW::runloop() {
     // redraw ?
     //////////////////////////////
 
-    auto policy_item = currentRefreshPolicy();
-    auto policy      = policy_item._policy;
-    // if( policy == EREFRESH_FASTEST)
     SlotRepaint();
 
 
@@ -599,7 +596,7 @@ void CtxGLFW::_doEnqueueWindowResize( int w, int h ) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CtxGLFW::SlotRepaint() {
-  OrkAssert(opq::TrackCurrent::is(opq::mainSerialQueue()));
+  //OrkAssert(opq::TrackCurrent::is(opq::mainSerialQueue()));
 
   //auto lamb = [&]() {
     if (not GfxEnv::initialized())
@@ -607,8 +604,8 @@ void CtxGLFW::SlotRepaint() {
 
     ork::PerfMarkerPush("ork.viewport.draw.begin");
 
-    this->mDrawLock++;
-    if (this->mDrawLock == 1) {
+    //this->mDrawLock++;
+    //if (this->mDrawLock == 1) {
       // printf( "CtxGLFW::SlotRepaint() _target<%p>\n", _target );
       if (this->_target) {
         _target->makeCurrentContext();
@@ -621,8 +618,8 @@ void CtxGLFW::SlotRepaint() {
         if (vp)
           vp->Draw(drwev);
       }
-    }
-    this->mDrawLock--;
+    //}
+    //this->mDrawLock--;
     ork::PerfMarkerPush("ork.viewport.draw.end");
     //glFinish();
   //};

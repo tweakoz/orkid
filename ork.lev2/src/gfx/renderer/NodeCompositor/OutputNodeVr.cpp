@@ -226,9 +226,9 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
         auto inp_rtg = drawdata._properties["render_outgroup"_crcu].get<rtgroup_ptr_t>();
 
         drawdata.context()->debugPushGroup("VrCompositingNode::to_hmd");
-        fbi->PushRtGroup(impl->_rtg);
-        vrdev->__composite(context, tex);
-        fbi->PopRtGroup();
+        //fbi->PushRtGroup(impl->_rtg);
+        //vrdev->__composite(context, tex);
+        //fbi->PopRtGroup();
         drawdata.context()->debugPopGroup();
         /////////////////////////////////////////////////////////////////////////////
         // be nice and composite to main screen as well...
