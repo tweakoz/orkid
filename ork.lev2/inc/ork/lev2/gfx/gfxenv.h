@@ -320,6 +320,8 @@ public:
     _onEndFrameCallbacks.push_back(l);
   }
 
+  virtual void swapBuffers(CTXBASE* ctxbase) {}
+
 private:
   std::vector<void_lambda_t> _onBeginFrameCallbacks;
   std::vector<void_lambda_t> _onEndFrameCallbacks;

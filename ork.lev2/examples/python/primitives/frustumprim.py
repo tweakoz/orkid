@@ -21,8 +21,7 @@ HEIGHT = 720
 ###################################
 
 lev2appinit()
-gfxenv = GfxEnv.ref
-ctx = gfxenv.loadingContext()
+ctx = GfxEnv.loadingContext()
 FBI = ctx.FBI()
 GBI = ctx.GBI()
 print(ctx)
@@ -30,11 +29,42 @@ ctx.makeCurrent()
 FontManager.gpuInit(ctx)
 
 ###################################
+# init material
+###################################
 
 mtl = FreestyleMaterial()
 mtl.gpuInit(ctx,Path("orkshader://solid"))
 tek = mtl.shader.technique("vtxcolor")
 par_mvp = mtl.shader.param("MatMVP")
+
+###################################
+# create RCFD, RCID
+###################################
+
+RCFD = RenderContextFrameData(ctx)
+RCFD.setRenderingModel("FORWARD_UNLIT")
+RCID = RenderContextInstData(RCFD)
+RCID.forceTechnique(tek)
+RCID.genMatrix(lambda: mtx4())
+
+print(RCID,RCFD)
+
+###################################
+# create simple compositor (needed for fxinst based rendering)
+###################################
+
+compdata = CompositingData()
+compimpl = CompositingImpl(compdata)
+CPD = CompositingPassData()
+CPD.cameramatrices = CameraMatrices()
+RCFD.cimpl = compimpl # bind compositor to RCFD
+
+###################################
+# create fx instance
+###################################
+
+fxinst = mtl.fxcache.findFxInst(RCID)
+fxinst.bindParam(par_mvp,CrcString("RCFD_Camera_MVP_Mono"))
 
 ###################################
 # setup primitive
@@ -55,11 +85,11 @@ prim.backColor = vec4(0.5,0.5,0.0,1)
 prim.gpuInit(ctx)
 
 ###################################
-# rtg setup
+# render target (rtg) setup - for capturing to PNG
 ###################################
 
 rtg = ctx.defaultRTG()
-rtb = rtg.buffer(0)
+rtb = rtg.buffer(0) #rtg's MRT buffer 0
 ctx.resize(WIDTH,HEIGHT)
 capbuf = CaptureBuffer()
 
@@ -74,52 +104,62 @@ vmatrix = ctx.lookAt(vec3(-5,3,3),
                      vec3(0,0,0),
                      vec3(0,1,0))
 
-mvp_matrix = vmatrix*pmatrix
-
-###################################
-
-vtx_t = VtxV12N12B12T8C4
-vbuf = vtx_t.staticBuffer(2)
-vw = GBI.lock(vbuf,2)
-vw.add(vtx_t(vec3(-.7,.78,0.5),vec3(),vec3(),vec2(),0xffffffff))
-vw.add(vtx_t(vec3(0,0,0.5),vec3(),vec3(),vec2(),0xffffffff))
-GBI.unlock(vw)
+CPD.cameramatrices.setCustomView(vmatrix)
+CPD.cameramatrices.setCustomProjection(pmatrix)
 
 ###################################
 # render frame
 ###################################
 
 ctx.beginFrame()
+compimpl.pushCPD(CPD)
 FBI.rtGroupPush(rtg)
 FBI.clear(vec4(0.6,0.6,0.7,1),1.0)
 ctx.debugMarker("yo")
 
-RCFD = RenderContextFrameData(ctx)
+###################################
+# render frustum primitive
+###################################
 
-# Todo - rework using fxinst
-#mtl.bindTechnique(tek)
-#mtl.begin(RCFD)
-#mtl.bindParamMatrix4(par_mvp,mvp_matrix)
-#prim.renderEML(ctx)
-#mtl.end(RCFD)
+fxinst.wrappedDrawCall(RCID, lambda: prim.renderEML(ctx) )
 
-#mtl.bindTechnique(tek)
-#mtl.begin(RCFD)
-#mtl.bindParamMatrix4(par_mvp,mtx4())
-#GBI.drawLines(vw)
-#mtl.end(RCFD)
+###################################
+# render overlay text
+###################################
 
 FontManager.beginTextBlock(ctx,"i48",vec4(.8,.8,1,1),WIDTH,HEIGHT,100)
 FontManager.draw(ctx,0,0,"!!! YO !!!\nThis is a Frustum.")
 FontManager.endTextBlock(ctx)
 
+###################################
+# end frame
+###################################
+
 FBI.rtGroupPop()
+compimpl.popCPD()
 ctx.endFrame()
 
 ###################################
+# capture to bytes
+###################################
 
 ok = FBI.captureAsFormat(rtb,capbuf,"RGBA8")
+
+###################################
+# convert to numpy
+###################################
+
 as_np = numpy.array(capbuf,dtype=numpy.uint8).reshape( HEIGHT, WIDTH, 4 )
+
+###################################
+# convert to flipped PIL image
+###################################
+
 img = Image.fromarray(as_np, 'RGBA')
 flipped = img.transpose(Image.FLIP_TOP_BOTTOM)
+
+###################################
+# save to PNG
+###################################
+
 flipped.save("frustumprim.png")

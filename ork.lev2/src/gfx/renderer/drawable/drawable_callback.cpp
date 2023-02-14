@@ -36,7 +36,7 @@ CallbackDrawable::~CallbackDrawable() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void CallbackDrawable::_renderWithLambda(RenderContextInstData& RCID) {
-    auto renderable = dynamic_cast<const CallbackRenderable*>(RCID._dagrenderable);
+    auto renderable = dynamic_cast<const CallbackRenderable*>(RCID._irenderable);
     auto drawable = renderable->_drawable;
     OrkAssert(drawable!=nullptr);
     OrkAssert(drawable->_renderLambda!=nullptr);

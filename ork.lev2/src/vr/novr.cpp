@@ -143,34 +143,6 @@ void NoVrDevice::gpuUpdate(RenderContextFrameData& RCFD) {
 }
 ////////////////////////////////////////////////////////////////////////////////
 void NoVrDevice::__composite(Context* targ, Texture* twoeyetex) const {
-  if (not _active) {
-    return;
-  }
-
-  auto fbi = targ->FBI();
-
-  auto twoeyetexOBJ = twoeyetex->_varmap.typedValueForKey<GLuint>("gltexobj").value();
-  //////////////////////////////////////////////////
-
-  int w = _width;
-  int h = _height;
-  ViewportRect VPRect(0, 0, w * 2, h);
-  fbi->pushViewport(VPRect);
-  fbi->pushScissor(VPRect);
-
-  //////////////////////////////////////////////////
-  // submit to openvr compositor
-  //////////////////////////////////////////////////
-
-  // GLuint erl = _ovr::VRCompositor()->Submit(_ovr::Eye_Left, &twoEyeTexture, &leftEyeBounds);
-  // GLuint err = _ovr::VRCompositor()->Submit(_ovr::Eye_Right, &twoEyeTexture, &rightEyeBounds);
-
-  //////////////////////////////////////////////////
-  // undo above PushVp/Scissor
-  //////////////////////////////////////////////////
-
-  fbi->popViewport();
-  fbi->popScissor();
 }
 ////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::orkidvr::novr

@@ -36,6 +36,7 @@ struct RenderContextInstData {
   static constexpr int kMaxEngineParamFloats = 4;
 
   static const RenderContextInstData Default;
+  static rcid_ptr_t create(rcfd_ptr_t the_rcfd);
 
   RenderContextInstData(const RenderContextFrameData* RCFD = nullptr);
 
@@ -46,7 +47,7 @@ struct RenderContextInstData {
   void SetRenderer(const IRenderer* rnd);
   void SetRenderable(const IRenderable* rnd);
   const IRenderer* GetRenderer(void) const;
-  const IRenderable* GetRenderable(void) const;
+  void setRenderable(const IRenderable*);
   const XgmMaterialStateInst* GetMaterialInst() const;
   Context* context() const;
 
@@ -60,6 +61,10 @@ struct RenderContextInstData {
   // material interface
   //////////////////////////////////////
 
+  inline void forceTechnique(fxtechnique_constptr_t technique){
+    _forced_technique = technique;
+  }
+
   void SetMaterialInst(const XgmMaterialStateInst* mi);
 
   int GetMaterialIndex(void) const;               // deprecated
@@ -72,8 +77,12 @@ struct RenderContextInstData {
   int miMaterialIndex                       = 0;
   int miMaterialPassIndex                   = 0;
   const IRenderer* mpActiveRenderer         = nullptr;
-  const IRenderable* _dagrenderable         = nullptr;
+  const IRenderable* _irenderable         = nullptr;
+
+  fxtechnique_constptr_t _forced_technique = nullptr;
+  matrix_lamda_t _genMatrix;
   const RenderContextFrameData* _RCFD       = nullptr;
+  rcfd_ptr_t                    _held_rcfd  = nullptr;
   const XgmMaterialStateInst* mMaterialInst = nullptr;
   fxinstancecache_constptr_t _fx_instance_cache;
 

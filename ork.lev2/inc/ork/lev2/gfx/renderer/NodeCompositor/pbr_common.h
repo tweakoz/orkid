@@ -97,7 +97,7 @@ struct CommonStuff : public ork::Object {
     OrkAssert(enviromentmap_asset->GetTexture() != nullptr);
     OrkAssert(enviromentmap_asset->_varmap.hasKey("postproc"));
     this->_writeEnvTexture(enviromentmap_asset);
-    printf( "texture_path<%s> : %p\n", texture_path.c_str(), (void*) enviromentmap_asset.get() );
+    //printf( "texture_path<%s> : %p\n", texture_path.c_str(), (void*) enviromentmap_asset.get() );
     return load_req;
   }
 

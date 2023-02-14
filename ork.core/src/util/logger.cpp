@@ -8,7 +8,8 @@ namespace ork {
 
     bool _ENABLE_LOGGING = true;
 
-    LogChannel::LogChannel(std::string named, ork::fvec3 color){
+    LogChannel::LogChannel(std::string named, ork::fvec3 color, bool enabled){
+      _enabled = enabled;
       _color = color;
       _name = named;
       _c1_prefix = ork::deco::asciic_rgb(color);
@@ -21,7 +22,7 @@ namespace ork {
       printf( "%s[%s]\t%s%s\n", _c1_prefix.c_str(), _name.c_str(), buf, _reset.c_str() );
     }
     void LogChannel::log(const char *pMsgFormat, ...) {
-      if(_ENABLE_LOGGING){
+      if(_ENABLE_LOGGING and _enabled){
         va_list args;
         va_start(args, pMsgFormat);
         log_valist(pMsgFormat, args);
@@ -57,8 +58,8 @@ namespace ork {
       }
     }
 
-    logchannel_ptr_t Logger::createChannel(std::string named, ork::fvec3 color){
-      auto channel = std::make_shared<LogChannel>(named,color);
+    logchannel_ptr_t Logger::createChannel(std::string named, ork::fvec3 color,bool enabled){
+      auto channel = std::make_shared<LogChannel>(named,color,enabled);
       _channels.atomicOp([named,channel](channel_map_t& unlocked){
       	unlocked[named]=channel;
       });

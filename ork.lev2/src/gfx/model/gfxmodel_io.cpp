@@ -30,7 +30,7 @@ datablock_ptr_t assimpToXgm(datablock_ptr_t inp_datablock);
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
-static logchannel_ptr_t logchan_mioR = logger()->createChannel("gfxmodelIOREAD",fvec3(0.8,0.8,0.4));
+static logchannel_ptr_t logchan_mioR = logger()->createChannel("gfxmodelIOREAD",fvec3(0.8,0.8,0.4), false);
 static logchannel_ptr_t logchan_mioW = logger()->createChannel("gfxmodelIOWRITE",fvec3(0.8,0.7,0.4));
 ///////////////////////////////////////////////////////////////////////////////
 bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
@@ -455,14 +455,6 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
 
             void* poutidx = (void*)context->GBI()->LockIB(*pidxbuf);
             {
-              // TODO: Make 16-bit indices a policy
-              if (newprimgroup->miNumIndices > 0xFFFF)
-                orkerrorlog(
-                    "WARNING: <%s> Wii cannot have num indices larger than 65535: MeshName=%s, MatName=%s",
-                    mdl->msModelName.c_str(),
-                    MeshName,
-                    matname);
-
               memcpy_fast(poutidx, pidx, newprimgroup->miNumIndices * sizeof(U16));
             }
             context->GBI()->UnLockIB(*pidxbuf);

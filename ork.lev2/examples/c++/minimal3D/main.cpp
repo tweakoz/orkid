@@ -21,17 +21,50 @@ using namespace ork::lev2;
 struct Resources {
 
   Resources(Context* ctx){
+
     ///////////////////////////////////////////////////
     // init material
     ///////////////////////////////////////////////////
+
     _material = std::make_shared<FreestyleMaterial>();
     _material->gpuInit(ctx, "orkshader://solid");
-    _fxtechnique    = _material->technique("vtxcolor");
-    _fxparameterMVP = _material->param("MatMVP");
+    auto fxtechnique    = _material->technique("vtxcolor");
+    auto fxparameterMVP = _material->param("MatMVP");
     deco::printf(fvec3::White(), "gpuINIT - context<%p>\n", ctx);
-    deco::printf(fvec3::Yellow(), "  fxtechnique<%p>\n", _fxtechnique);
-    deco::printf(fvec3::Yellow(), "  fxparameterMVP<%p>\n", _fxparameterMVP);
+    deco::printf(fvec3::Yellow(), "  fxtechnique<%p>\n", fxtechnique);
+    deco::printf(fvec3::Yellow(), "  fxparameterMVP<%p>\n", fxparameterMVP);
     _material->_rasterstate.SetCullTest(ECULLTEST_PASS_FRONT);
+
+    ///////////////////////////////////////////////////
+    // create RCFD, RCID
+    ///////////////////////////////////////////////////
+
+    _RCFD = std::make_shared<RenderContextFrameData>(ctx);
+    _RCFD->_renderingmodel = RenderingModel("FORWARD_UNLIT"_crcu);
+    _RCID = RenderContextInstData::create(_RCFD);
+    _RCID->forceTechnique(fxtechnique);
+
+    ///////////////////////////////////////////////////
+    // create simple compositor (needed for fxinst based rendering)
+    ///////////////////////////////////////////////////
+
+    _compdata = std::make_shared<CompositingData>();
+    _compimpl = std::make_shared<CompositingImpl>(*_compdata);
+    _CPD._cameraMatrices = & _cammatrices;
+    _RCFD->_cimpl = _compimpl; // bind compositor to _RCFD
+
+    ///////////////////////////////////////////////////
+    // primitive instance is always rendered at origin
+    ///////////////////////////////////////////////////
+
+    _RCID->_genMatrix = []() -> fmtx4{
+        return fmtx4();
+    };
+
+    ///////////////////////////////////////////////////
+    auto fxcache = _material->fxInstanceCache();
+    _fxinst = fxcache->findfxinst(*_RCID);
+    _fxinst->_params[fxparameterMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
     ///////////////////////////////////////////////////
     // init frustum primitive
     ///////////////////////////////////////////////////
@@ -48,10 +81,17 @@ struct Resources {
     _frustum_prim->gpuInit(ctx);
   }
 
+
+  compositordata_ptr_t _compdata;
+  compositorimpl_ptr_t _compimpl;
+  CompositingPassData _CPD;
+  CameraMatrices _cammatrices;
   freestyle_mtl_ptr_t _material;
   primitives::frustum_ptr_t _frustum_prim;
-  const FxShaderTechnique* _fxtechnique = nullptr;
-  const FxShaderParam* _fxparameterMVP  = nullptr;
+  fxinstance_ptr_t _fxinst;
+  rcfd_ptr_t _RCFD; // renderer per/frame data
+  rcid_ptr_t _RCID;
+
 };
 
 using resources_ptr_t = std::shared_ptr<Resources>;
@@ -88,7 +128,6 @@ int main(int argc, char** argv,char** envp) {
   //////////////////////////////////////////////////////////
   qtapp->onDraw([&](ui::drawevent_constptr_t drwev) {
     auto context = drwev->GetTarget();
-    RenderContextFrameData RCFD(context); // renderer per/frame data
     auto fbi  = context->FBI();           // FrameBufferInterface
     auto fxi  = context->FXI();           // FX Interface
     auto mtxi = context->MTXI();          // matrix Interface
@@ -96,26 +135,45 @@ int main(int argc, char** argv,char** envp) {
     ///////////////////////////////////////
     // compute view and projection matrices
     ///////////////////////////////////////
+
     float TARGW  = context->mainSurfaceWidth();
     float TARGH  = context->mainSurfaceHeight();
     float aspect = TARGW / TARGH;
-    float phase  = timer.SecsSinceStart() * PI2 * 0.001f;
+    float phase  = timer.SecsSinceStart() * PI2 * 0.1f;
     fvec3 eye(sinf(phase) * 5.0f, 5.0f, -cosf(phase) * 5.0f);
     fvec3 tgt(0, 0, 0);
     fvec3 up(0, 1, 0);
-    float N         = -1.0f;
-    float P         = +1.0f;
     auto projection = mtxi->Persp(45, aspect, 0.1, 100.0);
     auto view       = mtxi->LookAt(eye, tgt, up);
+
     ///////////////////////////////////////
-    // Draw!
+    // assign view/projection matrices
+    //  to compositor (via CPD's mono cameramatrices)
     ///////////////////////////////////////
+
+    resources->_cammatrices.setCustomView(view);
+    resources->_cammatrices.setCustomProjection(projection);
+
+    ///////////////////////////////////////
+    // set clear color
+    ///////////////////////////////////////
+
     fbi->SetClearColor(fvec4(0, 0, 0, 1));
+
+    ///////////////////////////////////////
+    // render frame
+    ///////////////////////////////////////
+
     context->beginFrame();
-    resources->_material->begin(resources->_fxtechnique, RCFD);
-    resources->_material->bindParamMatrix(resources->_fxparameterMVP, fmtx4::multiply_ltor(view,projection));
-    resources->_frustum_prim->renderEML(context);
-    resources->_material->end(RCFD);
+    // push compositing pass data
+    resources->_compimpl->pushCPD(resources->_CPD);
+    {
+      resources->_fxinst->wrappedDrawCall(*resources->_RCID,[=](){
+        resources->_frustum_prim->renderEML(context);
+      });
+    }
+    // pop compositing pass data
+    resources->_compimpl->popCPD();
     context->endFrame();
   });
   //////////////////////////////////////////////////////////

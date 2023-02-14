@@ -48,6 +48,12 @@ CompositingImpl::CompositingImpl(const CompositingData& data)
   _compcontext.Resize(data._defaultW,data._defaultH);
 }
 
+CompositingImpl::CompositingImpl(compositordata_constptr_t data)
+  : CompositingImpl(*data) {
+
+  _shared_compositingData = data;
+}
+
 CompositingImpl::~CompositingImpl() {
 }
 

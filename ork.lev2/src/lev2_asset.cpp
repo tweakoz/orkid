@@ -33,7 +33,7 @@ template struct ork::asset::AssetManager<ork::lev2::XgmAnimAsset>;
 using namespace ork::asset;
 namespace ork::lev2 {
 
-static logchannel_ptr_t logchan_l2asso = logger()->createChannel("lev2ass",fvec3(1,1,.9));
+static logchannel_ptr_t logchan_l2asso = logger()->createChannel("lev2ass",fvec3(1,1,.9),false);
 
 XgmModelAsset::~XgmModelAsset() {
 }

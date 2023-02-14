@@ -41,8 +41,7 @@ OverlayStringDrawable::OverlayStringDrawable()
     const auto& CPD             = RCFD->topCPD();
     const CameraMatrices* cmtcs = CPD.cameraMatrices();
     const CameraData& cdata     = cmtcs->_camdat;
-    auto renderable = (CallbackRenderable*) RCID._dagrenderable;
-    auto worldmatrix = renderable->_worldMatrix;
+    auto renderable = (CallbackRenderable*) RCID._irenderable;
     auto& current_string = renderable->_drawDataA.get<std::string>();
     const auto& vprect = CPD.mDstRect;
 

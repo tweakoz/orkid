@@ -19,7 +19,7 @@ CameraDataLut::CameraDataLut(){
   _state.store(77);
 }
 CameraDataLut::~CameraDataLut(){
-  printf( "!!!Destroy CameraDataLut<%p>!!!\n", (void*) this );
+  //printf( "!!!Destroy CameraDataLut<%p>!!!\n", (void*) this );
   //OrkAssert(false);
   _state.store(0);
 }

@@ -80,7 +80,9 @@ boost::program_options::options_description_easy_init OrkEzApp::createDefaultOpt
       ("top", po::value<int>()->default_value(100), "top window offset") //
       ("width", po::value<int>()->default_value(1280), "window width") //
       ("height", po::value<int>()->default_value(720), "window height")//
-      ("usevr", po::bool_switch()->default_value(false), "use vr output"); 
+      ("usevr", po::bool_switch()->default_value(false), "use vr output")
+      ("vsync", po::bool_switch()->default_value(true), "force vsync")
+      ("vsport", po::value<int>()->default_value(0), "vsync port # (0..3 -> DFP-0..DFP-3)");
 
   return rval;
 }
@@ -179,7 +181,7 @@ void EzViewport::DoInit(ork::lev2::Context* pTARG) {
 }
 /////////////////////////////////////////////////
 void EzViewport::DoDraw(ui::drawevent_constptr_t drwev) {
-  lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
+  //lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
 
   //////////////////////////////////////////////////////
   // ensure onUpdateInit called before onGpuInit!
@@ -195,24 +197,29 @@ void EzViewport::DoDraw(ui::drawevent_constptr_t drwev) {
   }
 
   if (_mainwin->_onDraw) {
-    drwev->GetTarget()->makeCurrentContext();
+    //double a_time           = _mainwin->_render_timer.SecsSinceStart();
     _mainwin->_onDraw(drwev);
+
+    auto ctxbase = drwev->GetTarget()->mCtxBase;
+    drwev->GetTarget()->swapBuffers(ctxbase);
+
+    //double b_time           = _mainwin->_render_timer.SecsSinceStart();
+
+    //printf( "RTIME<%g msec>\n", (b_time-a_time)*1000.0 );
     ezapp->_render_count.fetch_add(1);
   }
   double this_time           = _mainwin->_render_timer.SecsSinceStart();
-  double raw_delta           = this_time - _mainwin->_render_prevtime;
   _mainwin->_render_prevtime = this_time;
-  _mainwin->_render_stats_timeaccum += raw_delta;
-  if (_mainwin->_render_stats_timeaccum >= 5.0) {
-    double FPS = _mainwin->_render_state_numiters / _mainwin->_render_stats_timeaccum;
+  if (this_time >= 5.0) {
+    double FPS = _mainwin->_render_state_numiters / this_time;
     logchan_ezapp->log("FPS<%g>", FPS);
-    _mainwin->_render_stats_timeaccum = 0.0;
     _mainwin->_render_state_numiters  = 0.0;
+    _mainwin->_render_timer.Start();
   } else {
     _mainwin->_render_state_numiters += 1.0;
   }
 
-  lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
+  //lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
 }
 /////////////////////////////////////////////////
 void EzViewport::DoSurfaceResize() {
@@ -295,55 +302,57 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
 
   //////////////////////////////////////////////
 
-  _mainWindow = new EzMainWin(*this);
+  if(not initdata->_offscreen){
+    _mainWindow = new EzMainWin(*this);
 
-  //////////////////////////////////////
-  // create leve gfxwindow
-  //////////////////////////////////////
-  _mainWindow->_gfxwin = new AppWindow(nullptr);
-  GfxEnv::GetRef().RegisterWinContext(_mainWindow->_gfxwin);
-  //////////////////////////////////////
-  //////////////////////////////////////
-  _ezviewport                       = std::make_shared<EzViewport>(_mainWindow);
-  _ezviewport->_uicontext           = _uicontext.get();
-  _mainWindow->_gfxwin->mRootWidget = _ezviewport.get();
-  _ezviewport->_topLayoutGroup =
-      _uicontext->makeTop<ui::LayoutGroup>("top-layoutgroup", 0, 0, _initdata->_width, _initdata->_height);
-  _topLayoutGroup = _ezviewport->_topLayoutGroup;
-  /////////////////////////////////////////////
-  _updq     = ork::opq::updateSerialQueue();
-  _conq     = ork::opq::concurrentQueue();
-  _mainq    = ork::opq::mainSerialQueue();
-  _rthreadq = std::make_shared<opq::OperationsQueue>(0, "renderSerialQueue");
-  /////////////////////////////////////////////
-  _mainWindow->_ctqt = new CtxGLFW(_mainWindow->_gfxwin);
-  _mainWindow->_ctqt->initWithData(_initdata);
-  /////////////////////////////////////////////
-  // mainthread runloop callback
-  /////////////////////////////////////////////
-  _mainWindow->_ctqt->_onRunLoopIteration = [this]() {
-    //////////////////////////////
-    // handle main serialqueue
-    //////////////////////////////
-    opq::TrackCurrent opqtest(_mainq);
-    _mainq->Process();
-    //////////////////////////////
-  };
-
-  //////////////////////////////////////////////
-  _mainWindow->_ctqt->pushRefreshPolicy(RefreshPolicyItem{EREFRESH_WHENDIRTY});
-  /////////////////////////////////////////////
-  if (not genviron.has("ORKID_DISABLE_DBLOCK_PROGRESS")) {
-    auto handler = [this](opq::progressdata_ptr_t data) { //
-      if (_ezviewport->_initstate.load() == 1) {
-        _mainWindow->_ctqt->progressHandler(data);
-      } else {
-      }
+    //////////////////////////////////////
+    // create leve gfxwindow
+    //////////////////////////////////////
+    _mainWindow->_gfxwin = new AppWindow(nullptr);
+    GfxEnv::GetRef().RegisterWinContext(_mainWindow->_gfxwin);
+    //////////////////////////////////////
+    //////////////////////////////////////
+    _ezviewport                       = std::make_shared<EzViewport>(_mainWindow);
+    _ezviewport->_uicontext           = _uicontext.get();
+    _mainWindow->_gfxwin->mRootWidget = _ezviewport.get();
+    _ezviewport->_topLayoutGroup =
+        _uicontext->makeTop<ui::LayoutGroup>("top-layoutgroup", 0, 0, _initdata->_width, _initdata->_height);
+    _topLayoutGroup = _ezviewport->_topLayoutGroup;
+    /////////////////////////////////////////////
+    _updq     = ork::opq::updateSerialQueue();
+    _conq     = ork::opq::concurrentQueue();
+    _mainq    = ork::opq::mainSerialQueue();
+    _rthreadq = std::make_shared<opq::OperationsQueue>(0, "renderSerialQueue");
+    /////////////////////////////////////////////
+    _mainWindow->_ctqt = new CtxGLFW(_mainWindow->_gfxwin);
+    _mainWindow->_ctqt->initWithData(_initdata);
+    /////////////////////////////////////////////
+    // mainthread runloop callback
+    /////////////////////////////////////////////
+    _mainWindow->_ctqt->_onRunLoopIteration = [this]() {
+      //////////////////////////////
+      // handle main serialqueue
+      //////////////////////////////
+      opq::TrackCurrent opqtest(_mainq);
+      _mainq->Process();
+      //////////////////////////////
     };
-    opq::setProgressHandler(handler);
-  }
 
-  _mainWindow->_ctqt->Show();
+    //////////////////////////////////////////////
+    _mainWindow->_ctqt->pushRefreshPolicy(RefreshPolicyItem{EREFRESH_WHENDIRTY});
+    /////////////////////////////////////////////
+    if (not genviron.has("ORKID_DISABLE_DBLOCK_PROGRESS")) {
+      auto handler = [this](opq::progressdata_ptr_t data) { //
+        if (_ezviewport->_initstate.load() == 1) {
+          _mainWindow->_ctqt->progressHandler(data);
+        } else {
+        }
+      };
+      opq::setProgressHandler(handler);
+    }
+
+    _mainWindow->_ctqt->Show();
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -389,36 +398,44 @@ void OrkEzApp::OnTimer() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onDraw(EzMainWin::drawcb_t cb) {
-  _mainWindow->_onDraw = cb;
+  if(_mainWindow)
+    _mainWindow->_onDraw = cb;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onResize(EzMainWin::onresizecb_t cb) {
-  _mainWindow->_onResize = cb;
+  if(_mainWindow)
+    _mainWindow->_onResize = cb;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onGpuInit(EzMainWin::ongpuinit_t cb) {
-  _mainWindow->_onGpuInit = cb;
+  if(_mainWindow)
+    _mainWindow->_onGpuInit = cb;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onGpuExit(EzMainWin::ongpuexit_t cb) {
-  _mainWindow->_onGpuExit = cb;
+  if(_mainWindow)
+    _mainWindow->_onGpuExit = cb;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onUiEvent(EzMainWin::onuieventcb_t cb) {
   _ezviewport->_topLayoutGroup->_evhandler = cb;
-  _mainWindow->_onUiEvent                  = cb;
+  if(_mainWindow)
+    _mainWindow->_onUiEvent                  = cb;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onUpdate(EzMainWin::onupdate_t cb) {
-  _mainWindow->_onUpdate = cb;
+  if(_mainWindow)
+    _mainWindow->_onUpdate = cb;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onUpdateInit(EzMainWin::onupdateinit_t cb) {
-  _mainWindow->_onUpdateInit = cb;
+  if(_mainWindow)
+    _mainWindow->_onUpdateInit = cb;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onUpdateExit(EzMainWin::onupdateexit_t cb) {
-  _mainWindow->_onUpdateExit = cb;
+  if(_mainWindow)
+    _mainWindow->_onUpdateExit = cb;
 }
 /////////////////////////////////////////////////////////////////////////////////
 //void OrkEzApp::onUpdateWithScene(EzMainWin::onupdatewithscene_t cb) {
@@ -430,6 +447,10 @@ filedevctx_ptr_t OrkEzApp::newFileDevContext(std::string uriproto, const file::P
 }
 ///////////////////////////////////////////////////////////////////////////////
 int OrkEzApp::mainThreadLoop() {
+
+  if(not _mainWindow)
+    return -1;
+
   auto glfw_ctx = _mainWindow->_ctqt;
 
   ///////////////////////////////
@@ -539,7 +560,8 @@ int OrkEzApp::mainThreadLoop() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::setRefreshPolicy(RefreshPolicyItem policy) {
-  _mainWindow->_ctqt->_setRefreshPolicy(policy);
+  if(_mainWindow)
+    _mainWindow->_ctqt->_setRefreshPolicy(policy);
 }
 ///////////////////////////////////////////////////////////////////////////////
 EzMainWin::EzMainWin(OrkEzApp& app)

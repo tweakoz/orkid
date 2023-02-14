@@ -100,6 +100,13 @@ struct CompositingPassData {
 
   ////////////////////////////////////////////////////
 
+  inline void setSharedCameraMatrices(cameramatrices_ptr_t c){
+    _shared_cameraMatrices = c;
+    _cameraMatrices = c.get();
+  }
+
+  ////////////////////////////////////////////////////
+
   bool isStereoOnePass() const {
     return _stereo1pass;
   }
@@ -150,6 +157,7 @@ struct CompositingPassData {
   ork::fvec4 _clearColor;
   bool _stereo1pass                                 = false;
   const CameraMatrices* _cameraMatrices             = nullptr;
+  cameramatrices_ptr_t _shared_cameraMatrices  = nullptr;
   const StereoCameraMatrices* _stereoCameraMatrices = nullptr;
   ork::svarp_t _var;
   ViewportRect mDstRect;
@@ -273,6 +281,8 @@ public:
 struct CompositingImpl {
 
   CompositingImpl(const CompositingData& data);
+  CompositingImpl(compositordata_constptr_t data);
+
   ~CompositingImpl();
 
   void gpuInit(lev2::Context* ctx);
@@ -307,6 +317,7 @@ struct CompositingImpl {
 
 private:
   const CompositingData& _compositingData;
+  compositordata_constptr_t _shared_compositingData;
 
   LightManager* _lightmgr                = nullptr;
   CameraData* _cimplcamdat               = nullptr;

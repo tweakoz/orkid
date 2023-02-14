@@ -120,7 +120,7 @@ void IRenderer::RenderCallback(const CallbackRenderable& cbren) const {
     auto context = GetTarget();
     RenderContextInstData RCID(context->topRenderContextFrameData());
     RCID.SetRenderer(this);
-    RCID._dagrenderable = &cbren;
+    RCID.setRenderable(&cbren);
     cbren.GetRenderCallback()(RCID);
   }
 }

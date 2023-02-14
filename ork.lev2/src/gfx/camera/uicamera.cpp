@@ -123,7 +123,6 @@ callback_drawable_ptr_t UiCamera::createOverlayDrawable(){
   drawable->setRenderLambda([this](RenderContextInstData& RCID){
     const RenderContextFrameData* RCFD = RCID._RCFD;
     auto context                       = RCID.context();
-    auto renderable                    = dynamic_cast<const CallbackRenderable*>(RCID._dagrenderable);
 
     switch (RCFD->_renderingmodel._modelID){
       case "FORWARD_UNLIT"_crcu:{

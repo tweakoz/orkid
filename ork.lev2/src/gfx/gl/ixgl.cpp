@@ -434,6 +434,11 @@ void ContextGL::SwapGLContext(CTXBASE* pCTFL) {
   }
 }
 
+
+void ContextGL::swapBuffers(CTXBASE* ctxbase) {
+  SwapGLContext(ctxbase);
+}
+
 /////////////////////////////////////////////////////////////////////////
 
 void* ContextGL::_doBeginLoad() {

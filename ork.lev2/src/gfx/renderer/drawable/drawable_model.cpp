@@ -14,7 +14,7 @@
 #include <ork/util/logger.h>
 
 namespace ork::lev2 {
-static logchannel_ptr_t logchan_model = logger()->createChannel("model",fvec3(0.9,0.2,0.9));
+static logchannel_ptr_t logchan_model = logger()->createChannel("model",fvec3(0.9,0.2,0.9),false);
 ///////////////////////////////////////////////////////////////////////////////
 ModelDrawable::ModelDrawable(DrawableOwner* pent) {
   for (int i = 0; i < kMaxEngineParamFloats; i++)
@@ -287,7 +287,7 @@ void ModelRenderable::Render(const IRenderer* renderer) const {
   RCID_MD._cluster = this->_cluster;
   //RCID.SetMaterialIndex(0);
   RCID.SetRenderer(renderer);
-  RCID._dagrenderable = this;
+  RCID.setRenderable(this);
   RCID._fx_instance_cache = _submeshinst->_fxinstancecache;
   // context->debugMarker(FormatString("toolrenderer::RenderModel isskinned<%d> owner_as_ent<%p>", int(model->isSkinned()),
   // as_ent));

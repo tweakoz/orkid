@@ -42,14 +42,14 @@ UniformBlockBinding* Pass::uniformBlockBinding(UniformBlock* block) {
 
   auto rval = new UniformBlockBinding;
 
-  logchan_pass->log("PASS<%s> uniformBlockBinding", _name.c_str() );
+  //logchan_pass->log("PASS<%s> uniformBlockBinding", _name.c_str() );
 
   rval->_blockIndex = glGetUniformBlockIndex(_programObjectId, block->_name.c_str());
   rval->_pass       = this;
   rval->_block      = block;
   rval->_bindingPoint = 0;
 
-  logchan_pass->log("block<%s> _blockIndex<%d>", block->_name.c_str(), rval->_blockIndex );
+  //logchan_pass->log("block<%s> _blockIndex<%d>", block->_name.c_str(), rval->_blockIndex );
 
   if (rval->_blockIndex == GL_INVALID_INDEX) {
     logchan_pass->log("block<%s> blockindex<0x%08x>", block->_name.c_str(), rval->_blockIndex);
@@ -61,11 +61,11 @@ UniformBlockBinding* Pass::uniformBlockBinding(UniformBlock* block) {
   glUniformBlockBinding(_programObjectId, rval->_blockIndex, rval->_bindingPoint);
 
   glGetActiveUniformBlockiv(_programObjectId, rval->_blockIndex, GL_UNIFORM_BLOCK_DATA_SIZE, &rval->_blockSize);
-  logchan_pass->log("block<%s> blocksize<%d>", block->_name.c_str(), rval->_blockSize);
+  //logchan_pass->log("block<%s> blocksize<%d>", block->_name.c_str(), rval->_blockSize);
 
   GLint numunis = 0;
   glGetActiveUniformBlockiv(_programObjectId, rval->_blockIndex, GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS, &numunis);
-  logchan_pass->log("block<%s> numunis<%d>", block->_name.c_str(), numunis);
+  //logchan_pass->log("block<%s> numunis<%d>", block->_name.c_str(), numunis);
 
   auto uniindices = new GLuint[numunis];
   glGetActiveUniformBlockiv(_programObjectId, rval->_blockIndex, GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES, (GLint*)uniindices);
@@ -100,13 +100,13 @@ UniformBlockBinding* Pass::uniformBlockBinding(UniformBlock* block) {
     item._arraystride  = uniarystrides[i];
     item._matrixstride = unimtxstrides[i];
     rval->_ubbitems.push_back(item);
-    logchan_pass->log("block<%s> uni<%d> actidx<%d>", block->_name.c_str(), i, uniindices[i]);
+    //logchan_pass->log("block<%s> uni<%d> actidx<%d>", block->_name.c_str(), i, uniindices[i]);
     //logchan_pass->log("block<%s> uni<%d> blkidx<%d>", block->_name.c_str(), i, uniblkidcs[i] );
-    logchan_pass->log("block<%s> uni<%d> offset<%d>", block->_name.c_str(), i, unioffsets[i]);
-    logchan_pass->log("block<%s> uni<%d> type<%d>", block->_name.c_str(), i, unitypes[i]);
-    logchan_pass->log("block<%s> uni<%d> size<%d>", block->_name.c_str(), i, unisizes[i]);
-    logchan_pass->log("block<%s> uni<%d> arystride<%d>", block->_name.c_str(), i, uniarystrides[i]);
-    logchan_pass->log("block<%s> uni<%d> mtxstride<%d>", block->_name.c_str(), i, unimtxstrides[i]);
+    //logchan_pass->log("block<%s> uni<%d> offset<%d>", block->_name.c_str(), i, unioffsets[i]);
+    //logchan_pass->log("block<%s> uni<%d> type<%d>", block->_name.c_str(), i, unitypes[i]);
+    //logchan_pass->log("block<%s> uni<%d> size<%d>", block->_name.c_str(), i, unisizes[i]);
+    //logchan_pass->log("block<%s> uni<%d> arystride<%d>", block->_name.c_str(), i, uniarystrides[i]);
+    //logchan_pass->log("block<%s> uni<%d> mtxstride<%d>", block->_name.c_str(), i, unimtxstrides[i]);
   }
 
   //////////////////////////////////////////////
@@ -141,7 +141,7 @@ void Pass::bindUniformBlockBuffer(UniformBlock* block, UniformBuffer* buffer) {
 
   if (_ubobindings.size() < (ubo_bindingindex + 1)) {
     _ubobindings.resize(ubo_bindingindex + 1);
-    logchan_pass->log("RESIZEUBOB<%d>", ubo_bindingindex + 1);
+    //logchan_pass->log("RESIZEUBOB<%d>", ubo_bindingindex + 1);
   }
 
   if(_ubobindings[ubo_bindingpoint] != buffer) {
@@ -232,7 +232,7 @@ void Pass::postProc(rootcontainer_ptr_t container) {
       this->_uniformInstances[puni->_name] = pinst;
     } else {
       it = flatunimap.find(str_name);
-      printf("uni<%s> not found!", str_name.c_str());
+      //printf("uni<%s> not found!", str_name.c_str());
       OrkAssert(it != flatunimap.end());
       // prob a UBO uni
     }

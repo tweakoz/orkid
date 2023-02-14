@@ -44,6 +44,17 @@ RenderContextInstData::RenderContextInstData(const RenderContextFrameData* RCFD)
   }
   for (int i = 0; i < kMaxEngineParamFloats; i++)
     mEngineParamFloats[i] = 0.0f;
+
+  _genMatrix = [this]()->fmtx4{
+    return _RCFD->GetTarget()->MTXI()->RefMMatrix();
+  };
+
+}
+
+rcid_ptr_t RenderContextInstData::create(rcfd_ptr_t the_rcfd){
+  rcid_ptr_t rcid = std::make_shared<RenderContextInstData>(the_rcfd.get());
+  rcid->_held_rcfd = the_rcfd;
+  return rcid;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -77,8 +88,11 @@ void RenderContextInstData::SetRenderer(const IRenderer* rnd) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void RenderContextInstData::SetRenderable(const IRenderable* rnd) {
-  _dagrenderable = rnd;
+void RenderContextInstData::setRenderable(const IRenderable* rnd) {
+  _irenderable = rnd;
+  if(_irenderable){
+    _genMatrix = _irenderable->genMatrixLambda();
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -89,9 +103,6 @@ const IRenderer* RenderContextInstData::GetRenderer(void) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const IRenderable* RenderContextInstData::GetRenderable(void) const {
-  return _dagrenderable;
-}
 const XgmMaterialStateInst* RenderContextInstData::GetMaterialInst() const {
   return mMaterialInst;
 }
@@ -112,9 +123,7 @@ void RenderContextInstData::SetMaterialInst(const XgmMaterialStateInst* mi) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 fmtx4 RenderContextInstData::worldMatrix() const {
-  auto MTXI               = _RCFD->GetTarget()->MTXI();
-  return _dagrenderable ? _dagrenderable->_worldMatrix //
-                        : MTXI->RefMMatrix();
+  return _genMatrix();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
