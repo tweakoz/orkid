@@ -33,12 +33,12 @@ void pyinit_primitives(py::module& module_lev2) {
           [](primitives::CubePrimitive& prim, const fvec4& value) { prim._colorBottom = value; })
 
       .def_property(
-          "frontColor",
+          "nearColor",
           [](const primitives::CubePrimitive& prim) -> fvec4 { return prim._colorFront; },
           [](primitives::CubePrimitive& prim, const fvec4& value) { prim._colorFront = value; })
 
       .def_property(
-          "backColor",
+          "farColor",
           [](const primitives::CubePrimitive& prim) -> fvec4 { return prim._colorBack; },
           [](primitives::CubePrimitive& prim, const fvec4& value) { prim._colorBack = value; })
 
@@ -74,14 +74,14 @@ void pyinit_primitives(py::module& module_lev2) {
               [](primitives::frustum_ptr_t prim, const fvec4& value) { prim->_colorBottom = value; })
 
           .def_property(
-              "frontColor",
-              [](primitives::frustum_ptr_t prim) -> fvec4 { return prim->_colorFront; },
-              [](primitives::frustum_ptr_t prim, const fvec4& value) { prim->_colorFront = value; })
+              "farColor",
+              [](primitives::frustum_ptr_t prim) -> fvec4 { return prim->_colorFar; },
+              [](primitives::frustum_ptr_t prim, const fvec4& value) { prim->_colorFar = value; })
 
           .def_property(
-              "backColor",
-              [](primitives::frustum_ptr_t prim) -> fvec4 { return prim->_colorBack; },
-              [](primitives::frustum_ptr_t prim, const fvec4& value) { prim->_colorBack = value; })
+              "nearColor",
+              [](primitives::frustum_ptr_t prim) -> fvec4 { return prim->_colorNear; },
+              [](primitives::frustum_ptr_t prim, const fvec4& value) { prim->_colorNear = value; })
 
           .def_property(
               "leftColor",

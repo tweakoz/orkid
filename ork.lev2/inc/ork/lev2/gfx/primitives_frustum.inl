@@ -24,8 +24,8 @@ struct FrustumPrimitive {
       frustum_submesh.addQuad(
           vtxa, vtxb, vtxc, vtxd, normal, normal, normal, normal, fvec2(0, 0), fvec2(0, 1), fvec2(1, 1), fvec2(1, 0), col);
     };
-    addq(NC[3], NC[2], NC[1], NC[0], _colorFront);
-    addq(FC[0], FC[1], FC[2], FC[3], _colorBack);
+    addq(NC[3], NC[2], NC[1], NC[0], _colorNear);
+    addq(FC[0], FC[1], FC[2], FC[3], _colorFar);
     addq(NC[1], FC[1], FC[0], NC[0], _colorTop);
     addq(NC[3], FC[3], FC[2], NC[2], _colorBottom);
     addq(NC[0], FC[0], FC[3], NC[3], _colorLeft);
@@ -54,8 +54,8 @@ struct FrustumPrimitive {
   //////////////////////////////////////////////////////////////////////////////
   fvec4 _colorTop;
   fvec4 _colorBottom;
-  fvec4 _colorFront;
-  fvec4 _colorBack;
+  fvec4 _colorNear;
+  fvec4 _colorFar;
   fvec4 _colorLeft;
   fvec4 _colorRight;
   ork::Frustum _frustum;

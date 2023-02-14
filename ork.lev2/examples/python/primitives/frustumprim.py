@@ -81,8 +81,8 @@ prim.topColor = vec4(0.5,1.0,0.5,1)
 prim.bottomColor = vec4(0.5,0.0,0.5,1)
 prim.leftColor = vec4(0.0,0.5,0.5,1)
 prim.rightColor = vec4(1.0,0.5,0.5,1)
-prim.frontColor = vec4(0.5,0.5,1.0,1)
-prim.backColor = vec4(0.5,0.5,0.0,1)
+prim.nearColor = vec4(0.5,0.5,1.0,1)
+prim.farColor = vec4(0.5,0.5,0.0,1)
 prim.gpuInit(ctx)
 
 ###################################

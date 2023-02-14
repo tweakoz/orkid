@@ -71,8 +71,8 @@ struct Resources {
     _frustum_prim = std::make_shared<primitives::FrustumPrimitive>();
     _frustum_prim->_colorTop    = fvec3(.5, 1, .5);
     _frustum_prim->_colorBottom = fvec3(.5, 0, .5);
-    _frustum_prim->_colorFront  = fvec3(.5, .5, 1);
-    _frustum_prim->_colorBack   = fvec3(.5, .5, 0);
+    _frustum_prim->_colorNear  = fvec3(.5, .5, 1);
+    _frustum_prim->_colorFar   = fvec3(.5, .5, 0);
     _frustum_prim->_colorLeft   = fvec3(0, .5, .5);
     _frustum_prim->_colorRight  = fvec3(1, .5, .5);
     auto frus_p = ctx->MTXI()->Persp(45.0, 1.0f, .1, 3);
