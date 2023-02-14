@@ -64,7 +64,7 @@ RCFD.cimpl = compimpl # bind compositor to RCFD
 ###################################
 
 fxinst = mtl.fxcache.findFxInst(RCID)
-fxinst.bindParam(par_mvp,CrcString("RCFD_Camera_MVP_Mono"))
+fxinst.bindParam(par_mvp,tokens.RCFD_Camera_MVP_Mono)
 
 ###################################
 # setup primitive
