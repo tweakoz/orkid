@@ -90,9 +90,9 @@ class PyOrkApp(object):
   ################################################
   # update:
   # technically this runs from the orkid update thread
-  #  but since createWithScene() was called,
+  #  but since mainThreadLoop() is called,
   #  the main thread will surrender the GIL completely
-  #  until ezapp.exec() returns.
+  #  until ezapp.mainThreadLoop() returns.
   #  This is useful for doing background computation.
   #   (eg. the scene is updated from python, whilst
   #        concurrently c++ is rendering..)
