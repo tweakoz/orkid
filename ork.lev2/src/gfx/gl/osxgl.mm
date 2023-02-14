@@ -221,6 +221,12 @@ void ContextGL::initializeOffscreenContext( OffscreenBuffer *pBuf )
 
 /////////////////////////////////////////////////////////////////////////
 
+void ContextGL::swapBuffers(CTXBASE* ctxbase) {
+  SwapGLContext(ctxbase);
+}
+
+/////////////////////////////////////////////////////////////////////////
+
 void ContextGL::initializeLoaderContext() {
 
   meTargetType = TargetType::LOADING;
