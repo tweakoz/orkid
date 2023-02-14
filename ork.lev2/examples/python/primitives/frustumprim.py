@@ -33,13 +33,13 @@ FontManager.gpuInit(ctx)
 # init material
 ###################################
 
-mtl = FreestyleMaterial()
-mtl.gpuInit(ctx,Path("orkshader://solid"))
-tek = mtl.shader.technique("vtxcolor")
-par_mvp = mtl.shader.param("MatMVP")
+material = FreestyleMaterial()
+material.gpuInit(ctx,Path("orkshader://solid"))
+tek = material.shader.technique("vtxcolor")
+par_mvp = material.shader.param("MatMVP")
 
 ###################################
-# create RCFD, RCID
+# create RCFD, RCID (for explicit wrapped direct draw calls)
 ###################################
 
 RCFD = RenderContextFrameData(ctx)
@@ -47,8 +47,6 @@ RCFD.setRenderingModel("FORWARD_UNLIT")
 RCID = RenderContextInstData(RCFD)
 RCID.forceTechnique(tek)
 RCID.genMatrix(lambda: mtx4())
-
-print(RCID,RCFD)
 
 ###################################
 # create simple compositor (needed for fxinst based rendering)
@@ -61,10 +59,13 @@ CPD.cameramatrices = CameraMatrices()
 RCFD.cimpl = compimpl # bind compositor to RCFD
 
 ###################################
-# create fx instance
+# create an fxinst (a graphics pipeline)
 ###################################
 
-fxinst = mtl.fxcache.findFxInst(RCID)
+permu = FxCachePermutation()
+permu.rendering_model = "FORWARD_UNLIT"
+permu.technique = tek
+fxinst = material.fxcache.findFxInst(permu)
 fxinst.bindParam(par_mvp,tokens.RCFD_Camera_MVP_Mono)
 
 ###################################
