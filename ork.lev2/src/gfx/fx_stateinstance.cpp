@@ -227,21 +227,22 @@ fxinstance_ptr_t FxStateInstanceCache::findfxinst(const RenderContextInstData& R
   auto RCFD       = RCID._RCFD;
   auto context    = RCFD->_target;
   auto fxi        = context->FXI();
-
   bool stereo = RCFD->hasCPD() ? RCFD->topCPD().isStereoOnePass() : false;
-
   /////////////////
-  FxCachePermutation perm;
-  perm._stereo          = stereo;
-  perm._skinned         = RCID._isSkinned;
-  perm._instanced       = RCID._isInstanced;
-  perm._forced_technique = RCID._forced_technique;
-  perm._rendering_model = RCFD->_renderingmodel._modelID;
-  //perm.dump();
+  FxCachePermutation permu;
+  permu._stereo          = stereo;
+  permu._skinned         = RCID._isSkinned;
+  permu._instanced       = RCID._isInstanced;
+  permu._forced_technique = RCID._forced_technique;
+  permu._rendering_model = RCFD->_renderingmodel._modelID;
+  //permu.dump();
   /////////////////
+  return findfxinst(permu);
+}
+///////////////////////////////////////////////////////////////////////////////
+fxinstance_ptr_t FxStateInstanceCache::findfxinst(const FxCachePermutation& permu) const {
   fxinstance_ptr_t fxinst;
-  /////////////////
-  uint64_t index = perm.genIndex();
+  uint64_t index = permu.genIndex();
   auto it = _lut.find(index);
   if (it != _lut.end()) {
     fxinst = it->second;
@@ -249,11 +250,9 @@ fxinstance_ptr_t FxStateInstanceCache::findfxinst(const RenderContextInstData& R
   else{ // miss
     OrkAssert(_on_miss);
     logchan_fxcache->log( "fxlut<%p> findfxinst onmiss index<%zu>", this, index );
-    fxinst = _on_miss(perm);
+    fxinst = _on_miss(permu);
     _lut[index] = fxinst;
   }
-  /////////////////
   return fxinst;
-}
-///////////////////////////////////////////////////////////////////////////////
+}///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

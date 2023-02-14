@@ -90,10 +90,23 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               });
   type_codec->registerStdCodec<ui::updatedata_ptr_t>(updata_type);
   /////////////////////////////////////////////////////////////////////////////////
+  auto bind_scene = [](orkezapp_ptr_t app, scenegraph::scene_ptr_t scene){
+    app->onDraw([=](ui::drawevent_constptr_t drwev) { //
+      ork::opq::mainSerialQueue()->Process();
+      auto context = drwev->GetTarget();
+      scene->renderOnContext(context);
+    });
+    app->onResize([=](int w, int h) {
+      scene->_compositorImpl->compositingContext().Resize(w, h);
+    });
+    app->_mainWindow->_execsceneparams = scene->_params;
+    app->_mainWindow->_execscene = scene;
+  };
+  /////////////////////////////////////////////////////////////////////////////////
   py::class_<OrkEzApp, orkezapp_ptr_t>(module_lev2, "OrkEzApp") //
       .def_static(
           "create",
-          [type_codec](py::object appinstance) { //
+          [type_codec,bind_scene](py::object appinstance) { //
 
             auto appinitdata = std::make_shared<AppInitData>();
             auto rval                                              = OrkEzApp::create(appinitdata);
@@ -114,31 +127,6 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 //} catch (std::exception& e) {
                 // OrkAssert(false);
                 //}
-
-                ////////////////////////////////////////////////////////////////////
-                if (py::hasattr(appinstance, "sceneparams")) {
-                  auto sceneparams //
-                      = py::cast<varmap::varmap_ptr_t>(appinstance.attr("sceneparams"));
-                  auto scene = std::make_shared<scenegraph::Scene>(sceneparams);
-                  varmap::VarMap::value_type scenevar;
-                  scenevar.set<scenegraph::scene_ptr_t>(scene);
-                  auto pyscene = type_codec->encode(scenevar);
-                  py::setattr(appinstance, "scene", pyscene);
-
-
-                  rval->onDraw([=](ui::drawevent_constptr_t drwev) { //
-                    ork::opq::mainSerialQueue()->Process();
-                    auto context = drwev->GetTarget();
-                    scene->renderOnContext(context);
-                  });
-
-
-                  rval->onResize([=](int w, int h) {
-                    scene->_compositorImpl->compositingContext().Resize(w, h);
-                  });
-
-                }
-
               });
             }
             ////////////////////////////////////////////////////////////////////
@@ -197,6 +185,14 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             }
             ////////////////////////////////////////////////////////////////////
             return rval;
+          })
+      ///////////////////////////////////////////////////////
+      .def(
+          "createScene",
+          [bind_scene](orkezapp_ptr_t app, varmap::varmap_ptr_t params) -> scenegraph::scene_ptr_t { //
+              auto scene = std::make_shared<scenegraph::Scene>(params);
+              bind_scene(app,scene);
+              return scene;
           })
       ///////////////////////////////////////////////////////
       .def(

@@ -181,6 +181,7 @@ void Layer::removeLightNode(lightnode_ptr_t node) {
 ///////////////////////////////////////////////////////////////////////////////
 
 Scene::Scene() {
+
   ork::opq::assertOnQueue(opq::mainSerialQueue());
 
   _userdata = std::make_shared<varmap::VarMap>();
@@ -247,6 +248,8 @@ uint64_t Scene::pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord) {
 
 void Scene::initWithParams(varmap::varmap_ptr_t params) {
   
+  _params = params;
+
   _dbufcontext_SG = std::make_shared<DrawBufContext>();
   _dbufcontext_SG->_name = "DBC.SceneGraph";
 
@@ -379,6 +382,10 @@ layer_ptr_t Scene::createLayer(std::string named) {
     unlocked[named] = l;
   });
 
+  if(DEBUG_LOG){
+    logchan_sg->log( "Scene<%p> create layer<%p:%s>", this, l.get(), (void*) named.c_str() );
+  }
+
   return l;
 }
 
@@ -409,7 +416,7 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras,on_enqueue_fn_t on_enq
   on_enqueue(DB);
 
   if(DEBUG_LOG){
-    //logchan_sg->log( "enqueueToRenderer DB<%p>",  DB );
+    logchan_sg->log( "Scene<%p> enqueueToRenderer DB<%p>", this, DB );
   }
 
   _nodes2draw.clear();

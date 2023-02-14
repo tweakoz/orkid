@@ -19,10 +19,10 @@ struct CtxBaseProgressPimpl { //
   CtxBaseProgressPimpl(Context* context) {
     _material      = std::make_shared<GfxMaterialUITextured>(context);
     auto& rasstate = _material->_rasterstate;
-    rasstate.SetDepthTest(EDEPTHTEST_OFF);
+    rasstate.SetDepthTest(EDepthTest::OFF);
     rasstate.SetBlending(Blending::OFF);
     rasstate.SetAlphaTest(EALPHATEST_OFF, 0.0f);
-    rasstate.SetDepthTest(EDEPTHTEST_ALWAYS);
+    rasstate.SetDepthTest(EDepthTest::ALWAYS);
     auto txi                                                    = context->TXI();
     _loadingtex                                                 = std::make_shared<Texture>();
     _loadingtex->_varmap.makeValueForKey<bool>("loadimmediate") = true;

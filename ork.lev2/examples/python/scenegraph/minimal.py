@@ -36,21 +36,23 @@ class PyOrkApp(object):
     ###################################
     # material setup
     ###################################
-    material = FreestyleMaterial()
-    material.gpuInit(ctx,Path("orkshader://manip"))
-    tek = material.shader.technique("std_mono")
+    self.material = FreestyleMaterial()
+    self.material.gpuInit(ctx,Path("orkshader://manip"))
+    tek = self.material.shader.technique("std_mono")
+    self.material.rasterstate.culltest = tokens.PASS_FRONT
+    self.material.rasterstate.depthtest = tokens.LEQUALS
+    assert(tek)
     ###################################
     # create an fxinst (a graphics pipeline)
     ###################################
-    RCFD = RenderContextFrameData(ctx)
-    RCFD.setRenderingModel("DeferredPBR")
-    RCID = RenderContextInstData(RCFD)
-    fxinst = material.fxcache.findFxInst(RCID)
-    RCID.forceTechnique(tek)
+    permu = FxCachePermutation()
+    permu.rendering_model = "DeferredPBR"
+    permu.technique = tek
+    fxinst = self.material.fxcache.findFxInst(permu)
     ###################################
     # explicit shader parameters
     ###################################
-    fxinst.bindParam( material.param("mvp"),
+    fxinst.bindParam( self.material.param("mvp"),
                       tokens.RCFD_Camera_MVP_Mono)
     ###################################
     # frustum primitive
@@ -73,9 +75,9 @@ class PyOrkApp(object):
     ###################################
     # create scenegraph and sg node
     ###################################
-    self.sceneparams = VarMap()
-    self.sceneparams.preset = "DeferredPBR"
-    self.scene = scenegraph.Scene(self.sceneparams)
+    sceneparams = VarMap()
+    sceneparams.preset = "DeferredPBR"
+    self.scene = self.ezapp.createScene(sceneparams)
     layer = self.scene.createLayer("layer1")
     self.primnode = frustum_prim.createNode("node1",layer,fxinst)
     ###################################
@@ -107,7 +109,7 @@ class PyOrkApp(object):
     xf = self.primnode.worldTransform
     xf.translation = vec3(0,0,0) 
     xf.orientation = quat() 
-    xf.scale = math.sin(updinfo.absolutetime*2)*3
+    xf.scale = 1+(1+math.sin(updinfo.absolutetime*2))
     ###################################
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
   ############################################

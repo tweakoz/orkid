@@ -13,9 +13,9 @@ FreestyleMaterial::FreestyleMaterial() {
   _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
   _rasterstate.SetAlphaTest(EALPHATEST_OFF);
   _rasterstate.SetBlending(Blending::OFF);
-  _rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
+  _rasterstate.SetDepthTest(EDepthTest::LEQUALS);
   _rasterstate.SetZWriteMask(true);
-  _rasterstate.SetCullTest(ECULLTEST_PASS_BACK);
+  _rasterstate.SetCullTest(ECullTest::PASS_BACK);
   miNumPasses = 1;
 }
 ///////////////////////////////////////////////////////////////////////////////

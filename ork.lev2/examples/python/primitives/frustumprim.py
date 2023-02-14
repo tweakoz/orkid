@@ -12,6 +12,7 @@ import numpy, time
 from orkengine.core import *
 from orkengine.lev2 import *
 from PIL import Image
+tokens = CrcStringProxy()
 
 WIDTH = 1280
 HEIGHT = 720

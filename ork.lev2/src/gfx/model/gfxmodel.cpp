@@ -410,7 +410,7 @@ void XgmModel::RenderSkinned(
 
     static pbrmaterial_ptr_t material = default3DMaterial(pTARG);
     material->_variant = "vertexcolor"_crcu;
-    material->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_OFF);
+    material->_rasterstate.SetDepthTest(ork::lev2::EDepthTest::OFF);
     material->_rasterstate.SetZWriteMask(true);
     auto fxcache = material->fxInstanceCache();
     OrkAssert(fxcache);

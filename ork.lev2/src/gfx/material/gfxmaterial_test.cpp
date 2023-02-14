@@ -29,9 +29,9 @@ GfxMaterial3DSolid::GfxMaterial3DSolid(Context* pTARG)
   _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
   _rasterstate.SetAlphaTest(EALPHATEST_OFF);
   _rasterstate.SetBlending(Blending::OFF);
-  _rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
+  _rasterstate.SetDepthTest(EDepthTest::LEQUALS);
   _rasterstate.SetZWriteMask(true);
-  _rasterstate.SetCullTest(ECULLTEST_OFF);
+  _rasterstate.SetCullTest(ECullTest::OFF);
 
   miNumPasses = 1;
 
@@ -56,9 +56,9 @@ GfxMaterial3DSolid::GfxMaterial3DSolid(Context* pTARG, const char* puserfx, cons
   _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
   _rasterstate.SetAlphaTest(EALPHATEST_OFF);
   _rasterstate.SetBlending(Blending::OFF);
-  _rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
+  _rasterstate.SetDepthTest(EDepthTest::LEQUALS);
   _rasterstate.SetZWriteMask(true);
-  _rasterstate.SetCullTest(ECULLTEST_OFF);
+  _rasterstate.SetCullTest(ECullTest::OFF);
 
   miNumPasses = 1;
 

@@ -715,10 +715,10 @@ void StreakRenderer::describeX(class_t* clazz) {
       mpMaterial->SetUser0(mAlphaMux);
       mpMaterial->SetColorMode(ork::lev2::GfxMaterial3DSolid::EMODE_USER);
       mpMaterial->_rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_GREATER, 0.0f);
-      mpMaterial->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_LEQUALS);
+      mpMaterial->_rasterstate.SetDepthTest(ork::lev2::EDepthTest::LEQUALS);
       mpMaterial->_rasterstate.SetBlending(meBlendMode);
       mpMaterial->_rasterstate.SetZWriteMask(false);
-      mpMaterial->_rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+      mpMaterial->_rasterstate.SetCullTest(ork::lev2::ECullTest::OFF);
       mpMaterial->_rasterstate.SetPointSize(32.0f);
       mpMaterial->SetTexture(GetTexture());
       //////////////////////////////////////////
@@ -946,9 +946,9 @@ void StreakRenderer::describeX(class_t* clazz) {
     mpMaterial->SetTexture(GetTexture());
     mpMaterial->SetColorMode(ork::lev2::GfxMaterial3DSolid::EMODE_USER);
     mpMaterial->_rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_GREATER, 0.0f);
-    mpMaterial->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_LEQUALS);
+    mpMaterial->_rasterstate.SetDepthTest(ork::lev2::EDepthTest::LEQUALS);
     mpMaterial->_rasterstate.SetZWriteMask(false);
-    mpMaterial->_rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+    mpMaterial->_rasterstate.SetCullTest(ork::lev2::ECullTest::OFF);
     mpMaterial->_rasterstate.SetPointSize(32.0f);
     return mpMaterial;
   }
@@ -996,9 +996,9 @@ void StreakRenderer::describeX(class_t* clazz) {
     mpMaterial->SetVolumeTexture(GetTexture());
     mpMaterial->SetColorMode(ork::lev2::GfxMaterial3DSolid::EMODE_USER);
     mpMaterial->_rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_GREATER, 0.0f);
-    mpMaterial->_rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_LEQUALS);
+    mpMaterial->_rasterstate.SetDepthTest(ork::lev2::EDepthTest::LEQUALS);
     mpMaterial->_rasterstate.SetZWriteMask(false);
-    mpMaterial->_rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+    mpMaterial->_rasterstate.SetCullTest(ork::lev2::ECullTest::OFF);
     mpMaterial->_rasterstate.SetPointSize(32.0f);
 
     return mpMaterial;

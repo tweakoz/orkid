@@ -103,9 +103,7 @@ void pyinit_gfx(py::module& module_lev2) {
       .def("capturePixel", [](const fbi_t& fbi, const fvec4& at, PixelFetchContext& pfc) { return fbi.get()->GetPixel(at, pfc); })
       .def(
           "captureBuffer",
-          [](const fbi_t& fbi, rtb_t& rtb, CaptureBuffer& capbuf) -> bool {
-            return fbi.get()->capture(rtb.get(), &capbuf);
-          })
+          [](const fbi_t& fbi, rtb_t& rtb, CaptureBuffer& capbuf) -> bool { return fbi.get()->capture(rtb.get(), &capbuf); })
       .def(
           "captureAsFormat",
           [](const fbi_t& fbi, rtb_t& rtb, CaptureBuffer& capbuf, std::string format) -> bool {
@@ -170,7 +168,32 @@ void pyinit_gfx(py::module& module_lev2) {
     return fxs.c_str();
   });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<RtBuffer,rtb_t>(module_lev2, "RtBuffer")
+  py::class_<SRasterState>(module_lev2, "RasterState") //
+    .def_property(
+        "culltest",
+        [](const SRasterState& state) -> crcstring_ptr_t { //
+          auto crcstr = std::make_shared<CrcString>(uint64_t(state._culltest));
+          return crcstr;
+        },
+        [](SRasterState& state, crcstring_ptr_t ctest) { //
+          state._culltest = ECullTest(ctest->hashed());
+        })
+    .def_property(
+        "depthtest",
+        [](const SRasterState& state) -> crcstring_ptr_t { //
+          auto crcstr = std::make_shared<CrcString>(uint64_t(state._depthtest));
+          return crcstr;
+        },
+        [](SRasterState& state, crcstring_ptr_t ctest) { //
+          state._depthtest = EDepthTest(ctest->hashed());
+        })
+    .def("__repr__", [](const SRasterState& state) -> std::string {
+      fxstring<256> fxs;
+      fxs.format("RasterState()");
+      return fxs.c_str();
+    });
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<RtBuffer, rtb_t>(module_lev2, "RtBuffer")
       .def(
           "__repr__",
           [](const rtb_t& rtb) -> std::string {
@@ -180,7 +203,7 @@ void pyinit_gfx(py::module& module_lev2) {
           })
       .def_property_readonly("texture", [](rtb_t& rtb) -> tex_t { return tex_t(rtb->texture()); });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<RtGroup,rtg_t>(module_lev2, "RtGroup")
+  py::class_<RtGroup, rtg_t>(module_lev2, "RtGroup")
       .def("resize", [](rtg_t& rtg, int w, int h) { rtg.get()->Resize(w, h); })
       .def(
           "__repr__",
@@ -190,7 +213,7 @@ void pyinit_gfx(py::module& module_lev2) {
             return fxs.c_str();
           })
       .def("buffer", [](const rtg_t& rtg, int irtb) -> rtb_t { return rtg->GetMrt(irtb); });
-      //.def("texture", [](const rtg_t& rtg, int irtb) -> tex_t { return rtg->GetMrt(irtb)->texture(); });
+  //.def("texture", [](const rtg_t& rtg, int irtb) -> tex_t { return rtg->GetMrt(irtb)->texture(); });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<CaptureBuffer>(module_lev2, "CaptureBuffer", pybind11::buffer_protocol())
       .def(py::init<>())
@@ -215,7 +238,7 @@ void pyinit_gfx(py::module& module_lev2) {
       });
   /////////////////////////////////////////////////////////////////////////////////
   auto texture_type = //
-      py::class_<lev2::Texture,tex_t>(module_lev2, "Texture")
+      py::class_<lev2::Texture, tex_t>(module_lev2, "Texture")
           .def(
               "__repr__",
               [](const tex_t& tex) -> std::string {
@@ -230,121 +253,8 @@ void pyinit_gfx(py::module& module_lev2) {
                 return fxs.c_str();
               })
           .def_static("load", [](std::string path) -> tex_t { return Texture::LoadUnManaged(path); });
-  //using rawtexptr_t = Texture*;
+  // using rawtexptr_t = Texture*;
   type_codec->registerStdCodec<tex_t>(texture_type);
-  /////////////////////////////////////////////////////////////////////////////////
-  struct InstanceMatricesProxy {
-    instanceddrawinstancedata_ptr_t _instancedata;
-  };
-  using matrixinstdata_ptr_t = std::shared_ptr<InstanceMatricesProxy>;
-  auto matrixinstdata_type   = //
-      py::class_<InstanceMatricesProxy, matrixinstdata_ptr_t>(
-          module_lev2, //
-          "InstancedMatrices",
-          pybind11::buffer_protocol())
-          .def_buffer([](InstanceMatricesProxy& proxy) -> pybind11::buffer_info {
-            auto idata = proxy._instancedata;
-            auto data  = idata->_worldmatrices.data(); // Pointer to buffer
-            int count  = idata->_worldmatrices.size();
-            return pybind11::buffer_info(
-                data,          // Pointer to buffer
-                sizeof(float), // Size of one scalar
-                pybind11::format_descriptor<float>::format(),
-                3,                                                       // Number of dimensions
-                {count, 4, 4},                                           // Buffer dimensions
-                {sizeof(float) * 16, sizeof(float) * 4, sizeof(float)}); // Strides (in bytes) for each index
-          });
-  type_codec->registerStdCodec<matrixinstdata_ptr_t>(matrixinstdata_type);
-  /////////////////////////////////////////////////////////////////////////////////
-  struct InstanceColorsProxy {
-    instanceddrawinstancedata_ptr_t _instancedata;
-  };
-  using colorsinstdata_ptr_t = std::shared_ptr<InstanceColorsProxy>;
-  auto colorsinstdata_type   = //
-      py::class_<InstanceColorsProxy, colorsinstdata_ptr_t>(
-          module_lev2, //
-          "InstanceColors",
-          pybind11::buffer_protocol())
-          .def_buffer([](InstanceColorsProxy& proxy) -> pybind11::buffer_info {
-            auto idata = proxy._instancedata;
-            auto data  = idata->_modcolors.data(); // Pointer to buffer
-            int count  = idata->_modcolors.size();
-            return pybind11::buffer_info(
-                data,          // Pointer to buffer
-                sizeof(float), // Size of one scalar
-                pybind11::format_descriptor<float>::format(),
-                2,                                   // Number of dimensions
-                {count, 4},                          // Buffer dimensions
-                {sizeof(float) * 4, sizeof(float)}); // Strides (in bytes) for each index
-          });
-  type_codec->registerStdCodec<colorsinstdata_ptr_t>(colorsinstdata_type);
-  /////////////////////////////////////////////////////////////////////////////////
-  auto instancedata_type = //
-      py::class_<InstancedDrawableInstanceData, instanceddrawinstancedata_ptr_t>(
-          module_lev2, //
-          "InstancedDrawableInstanceData")
-          .def_property_readonly(
-              "matrices",
-              [](instanceddrawinstancedata_ptr_t idata) -> matrixinstdata_ptr_t {
-                auto proxy           = std::make_shared<InstanceMatricesProxy>();
-                proxy->_instancedata = idata;
-                return proxy;
-              })
-          .def_property_readonly("colors", [](instanceddrawinstancedata_ptr_t idata) -> colorsinstdata_ptr_t {
-            auto proxy           = std::make_shared<InstanceColorsProxy>();
-            proxy->_instancedata = idata;
-            return proxy;
-          });
-  type_codec->registerStdCodec<instanceddrawinstancedata_ptr_t>(instancedata_type);
-  /////////////////////////////////////////////////////////////////////////////////
-  auto terdrawdata_type = //
-      py::class_<TerrainDrawableData, terraindrawabledata_ptr_t>(module_lev2, "TerrainDrawableData")
-       .def(py::init<>())
-       .def_property("rock1",
-                     [](terraindrawabledata_ptr_t drw) -> fvec3 {
-                       return drw->_rock1;
-                     },
-                        [](terraindrawabledata_ptr_t drw, fvec3 val) {
-                          drw->_rock1 = val;
-                        }
-      )
-          .def(
-              "writeHmapPath",
-              [](terraindrawabledata_ptr_t drw, std::string path) {
-                drw->_writeHmapPath(path);
-              })
-      ;
-  type_codec->registerStdCodec<terraindrawabledata_ptr_t>(terdrawdata_type);
-  /////////////////////////////////////////////////////////////////////////////////
-  /*auto terdrawinst_type = //
-      py::class_<TerrainDrawableInst, terraindrawableinst_ptr_t>(module_lev2, "TerrainDrawableInst")
-          .def(py::init<>([](terraindrawabledata_ptr_t data)->terraindrawableinst_ptr_t{
-            return std::make_shared<TerrainDrawableInst>(data);
-          }))
-          // TODO - find shorter registration method for simple properties
-          .def_property("worldHeight",
-                        [](terraindrawableinst_ptr_t drwi) -> float {
-                          return drwi->_worldHeight;
-                        },
-                        [](terraindrawableinst_ptr_t drwi, float val) {
-                          drwi->_worldHeight = val;
-                        }
-          )
-          .def_property("worldSizeXZ",
-                        [](terraindrawableinst_ptr_t drwi) -> float {
-                          return drwi->_worldSizeXZ;
-                        },
-                        [](terraindrawableinst_ptr_t drwi, float val) {
-                          drwi->_worldSizeXZ = val;
-                        }
-          )
-          .def(
-              "createCallbackDrawable",
-              [](terraindrawableinst_ptr_t drwi) {
-                return drwi->createCallbackDrawable();
-              })
-  ;
-  type_codec->registerStdCodec<terraindrawableinst_ptr_t>(terdrawinst_type);*/
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<PixelFetchContext>(module_lev2, "PixelFetchContext")
       .def(py::init<>())
@@ -433,135 +343,6 @@ void pyinit_gfx(py::module& module_lev2) {
       .def_property_readonly("advanceWidth", [](const font_t& font) -> int { return font->mFontDesc.miAdvanceWidth; })
       .def_property_readonly("advanceHeight", [](const font_t& font) -> int { return font->mFontDesc.miAdvanceHeight; });
   */
-  /////////////////////////////////////////////////////////////////////////////////
-  py::class_<Drawable, drawable_ptr_t>(module_lev2, "Drawable");
-  auto cbdrawable_type = //
-      py::class_<CallbackDrawable, Drawable, callback_drawable_ptr_t>(module_lev2, "CallbackDrawable")
-  ;
-  type_codec->registerStdCodec<callback_drawable_ptr_t>(cbdrawable_type);
-  /////////////////////////////////////////////////////////////////////////////////
-  py::class_<LightData, lightdata_ptr_t>(module_lev2, "LightData")
-      .def_property(
-          "color",                                       //
-          [](lightdata_ptr_t lightdata) -> fvec3_ptr_t { //
-            auto color = std::make_shared<fvec3>(lightdata->mColor);
-            return color;
-          },
-          [](lightdata_ptr_t lightdata, fvec3_ptr_t color) { //
-            lightdata->mColor = *color.get();
-          });
-  py::class_<PointLightData, LightData, pointlightdata_ptr_t>(module_lev2, "PointLightData")
-      .def(py::init<>())
-      .def(
-          "createNode",                      //
-          [](pointlightdata_ptr_t lightdata, //
-             std::string named,
-             scenegraph::layer_ptr_t layer) -> scenegraph::lightnode_ptr_t { //
-            auto xfgen = []() -> fmtx4 { return fmtx4(); };
-            auto light = std::make_shared<PointLight>(xfgen, lightdata.get());
-            return layer->createLightNode(named, light);
-          });
-  py::class_<SpotLightData, LightData, spotlightdata_ptr_t>(module_lev2, "SpotLightData");
-  /////////////////////////////////////////////////////////////////////////////////
-  py::class_<Light, light_ptr_t>(module_lev2, "Light")
-      .def_property(
-          "matrix",                              //
-          [](light_ptr_t light) -> fmtx4_ptr_t { //
-            auto copy = std::make_shared<fmtx4>(light->worldMatrix());
-            return copy;
-          },
-          [](light_ptr_t light, fmtx4_ptr_t mtx) { //
-            light->worldMatrix() = *mtx.get();
-          });
-  py::class_<PointLight, Light, pointlight_ptr_t>(module_lev2, "PointLight");
-  py::class_<SpotLight, Light, spotlight_ptr_t>(module_lev2, "SpotLight");
-  /////////////////////////////////////////////////////////////////////////////////
-  py::class_<XgmModel, model_ptr_t>(module_lev2, "Model") //
-      .def(py::init([](const std::string& model_path) -> model_ptr_t {
-        auto loadreq = std::make_shared<asset::LoadRequest>(model_path.c_str());
-        auto modl_asset = asset::AssetManager<XgmModelAsset>::load(loadreq);
-        return modl_asset->_model.atomicCopy();
-      }))
-      .def(
-          "createNode",         //
-          [](model_ptr_t model, //
-             std::string named,
-             scenegraph::layer_ptr_t layer) -> scenegraph::node_ptr_t { //
-            auto drw        = std::make_shared<ModelDrawable>(nullptr);
-            drw->_modelinst = std::make_shared<XgmModelInst>(model.get());
-
-            auto node = layer->createDrawableNode(named, drw);
-            node->_userdata->makeValueForKey<model_ptr_t>("pyext.retain.model", model);
-            return node;
-          })
-      .def(
-          "createInstancedNode", //
-          [](model_ptr_t model,  //
-             int numinstances,
-             std::string named,
-             scenegraph::layer_ptr_t layer) -> scenegraph::drawable_node_ptr_t { //
-            auto drw = std::make_shared<InstancedModelDrawable>();
-            drw->bindModel(model);
-            auto node = layer->createDrawableNode(named, drw);
-            drw->resize(numinstances);
-            auto instdata = drw->_instancedata;
-            for (int i = 0; i < numinstances; i++) {
-              instdata->_worldmatrices[i].compose(fvec3(0, 0, 0), fquat(), 0.0f);
-            }
-            return node;
-          });
-  /////////////////////////////////////////////////////////////////////////////////
-  auto camdattype = //
-      py::class_<CameraData, cameradata_ptr_t>(module_lev2, "CameraData")
-          .def(py::init([]()->cameradata_ptr_t{ return std::make_shared<CameraData>(); }))
-          .def(
-              "perspective",                                                    //
-              [](cameradata_ptr_t camera, float near, float ffar, float fovy) { //
-                camera->Persp(near, ffar, fovy);
-              })
-          .def(
-              "lookAt",                                                        //
-              [](cameradata_ptr_t camera, fvec3& eye, fvec3& tgt, fvec3& up) { //
-                camera->Lookat(eye, tgt, up);
-              })
-          .def(
-              "projectDepthRay",                                              //
-              [](cameradata_ptr_t camera, fvec2_ptr_t pos2d) -> fray3_ptr_t { //
-                auto cammat = camera->computeMatrices(1280.0 / 720.0);
-                auto rval   = std::make_shared<fray3>();
-                cammat.projectDepthRay(*pos2d.get(), *rval.get());
-                return rval;
-              });
-  type_codec->registerStdCodec<cameradata_ptr_t>(camdattype);
-  /////////////////////////////////////////////////////////////////////////////////
-  auto camdatluttype = //
-      py::class_<CameraDataLut, cameradatalut_ptr_t>(module_lev2, "CameraDataLut")
-          .def(py::init<>())
-          .def("addCamera", [](cameradatalut_ptr_t lut, std::string key, cameradata_constptr_t camera) {
-            (*lut)[key] = camera;
-          })
-          .def("create", [](cameradatalut_ptr_t lut, std::string key) -> cameradata_ptr_t {
-            auto camera = lut->create(key);
-            return camera;
-          });
-  type_codec->registerStdCodec<cameradatalut_ptr_t>(camdatluttype);
-  /////////////////////////////////////////////////////////////////////////////////
-  auto cammatstype = //
-      py::class_<CameraMatrices, cameramatrices_ptr_t>(module_lev2, "CameraMatrices")
-          .def(py::init([]()->cameramatrices_ptr_t{ //
-             return std::make_shared<CameraMatrices>();
-           }))
-          .def(
-              "setCustomProjection",                                             //
-              [](cameramatrices_ptr_t cammats, fmtx4 matrix) { //
-                cammats->setCustomProjection(matrix);
-              })
-          .def(
-              "setCustomView",                                                        //
-              [](cameramatrices_ptr_t cammats, fmtx4 matrix) { //
-                cammats->setCustomView(matrix);
-              });
-  type_codec->registerStdCodec<cameramatrices_ptr_t>(cammatstype);
   /////////////////////////////////////////////////////////////////////////////////
   auto inpgrp_typ = //
       py::class_<InputGroup, inputgroup_ptr_t>(module_lev2, "InputGroup")

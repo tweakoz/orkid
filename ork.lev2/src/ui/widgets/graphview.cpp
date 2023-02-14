@@ -181,7 +181,7 @@ void GraphView::DoRePaintSurface(drawevent_constptr_t drwev) {
 
     if (0) { // alphabg
       defmtl->_rasterstate.SetBlending(lev2::Blending::ALPHA);
-      defmtl->_rasterstate.SetDepthTest(lev2::EDEPTHTEST_OFF);
+      defmtl->_rasterstate.SetDepthTest(lev2::EDepthTest::OFF);
       ///////////////////////////////
       tgt->PushModColor(color);
       defmtl->SetUIColorMode(lev2::UiColorMode::MOD);

@@ -76,12 +76,39 @@ void pyinit_gfx_material(py::module& module_lev2) {
 
   type_codec->registerStdCodec<matinst_param_proxy_ptr_t>(materialinst_params_type);
   /////////////////////////////////////////////////////////////////////////////////
+  auto fxcachepermu_type =                                                     //
+      py::class_<FxCachePermutation, fxcachepermutation_ptr_t>(module_lev2, "FxCachePermutation") //
+          .def(py::init<>())
+          .def_property("rendering_model",
+              [](fxcachepermutation_ptr_t permu) -> uint32_t { //
+                return permu->_rendering_model;
+              },
+              [](fxcachepermutation_ptr_t permu, std::string model) { //
+                permu->_rendering_model = CrcString(model.c_str()).hashed();
+              }
+          )
+          .def_property("technique",
+              [](fxcachepermutation_ptr_t permu) -> pyfxtechnique_ptr_t { //
+                return permu->_forced_technique;
+              },
+              [](fxcachepermutation_ptr_t permu, pyfxtechnique_ptr_t tek) { //
+                permu->_forced_technique = tek.get();
+              }
+          );
+  type_codec->registerStdCodec<fxcachepermutation_ptr_t>(fxcachepermu_type);
+  /////////////////////////////////////////////////////////////////////////////////
   auto fxcache_type =                                                     //
       py::class_<FxStateInstanceCache, fxinstancecache_ptr_t>(module_lev2, "FxStateInstanceCache") //
           .def(
               "findFxInst",                                                                    //
               [](fxinstancecache_ptr_t cache, rcid_ptr_t RCID) -> fxinstance_ptr_t { //
                 return cache->findfxinst(*RCID);
+              })
+          .def(
+              "findFxInst",                                                                    //
+              [](fxinstancecache_ptr_t cache, 
+                 fxcachepermutation_ptr_t permu ) -> fxinstance_ptr_t { //
+                return cache->findfxinst(*permu);
               });
   type_codec->registerStdCodec<fxinstancecache_ptr_t>(fxcache_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -170,24 +197,22 @@ void pyinit_gfx_material(py::module& module_lev2) {
               [](freestyle_mtl_ptr_t material) -> fxinstancecache_constptr_t { //
                 return material->fxInstanceCache(); // material
               })
-          
-          /*.def(
-              "createFxInstance",                                    //
-              [](freestyle_mtl_ptr_t material) -> fxinstance_ptr_t { //
-                FxCachePermutation perm;
-                return std::make_shared<FxStateInstance>(perm); // material
-              })*/
+          .def_property_readonly(
+              "rasterstate",                                    //
+              [](freestyle_mtl_ptr_t material) -> const SRasterState&  { //
+                return material->_rasterstate; 
+              })
           .def(
               "gpuInit",
               [](freestyle_mtl_ptr_t m, ctx_t& c, file::Path& path) {
                 m->gpuInit(c.get(), path);
-                m->_rasterstate.SetCullTest(ECULLTEST_OFF);
+                m->_rasterstate.SetCullTest(ECullTest::OFF);
               })
           .def(
               "gpuInitFromShaderText",
               [](freestyle_mtl_ptr_t m, ctx_t& c, const std::string& name, const std::string& shadertext) {
                 m->gpuInitFromShaderText(c.get(), name, shadertext);
-                m->_rasterstate.SetCullTest(ECULLTEST_OFF);
+                m->_rasterstate.SetCullTest(ECullTest::OFF);
               })
           .def_property_readonly(
               "shader",

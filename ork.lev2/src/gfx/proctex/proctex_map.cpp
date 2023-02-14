@@ -70,9 +70,9 @@ void Colorize::compute(ProcTex& ptex) {
         auto targ = mPTX.GetTarget();
         mtl.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
         mtl._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-        mtl._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+        mtl._rasterstate.SetCullTest(ork::lev2::ECullTest::OFF);
         mtl._rasterstate.SetBlending(ork::lev2::Blending::OFF);
-        mtl._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+        mtl._rasterstate.SetDepthTest(ork::lev2::EDepthTest::ALWAYS);
         auto inptexa = cpa->GetValue().GetTexture(ptex);
         auto inptexb = cpb->GetValue().GetTexture(ptex);
         inptexa->TexSamplingMode().PresetTrilinearWrap();
@@ -147,9 +147,9 @@ void UvMap::compute(ProcTex& ptex) {
         auto targ = mPTX.GetTarget();
         mtl.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
         mtl._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-        mtl._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+        mtl._rasterstate.SetCullTest(ork::lev2::ECullTest::OFF);
         mtl._rasterstate.SetBlending(ork::lev2::Blending::OFF);
-        mtl._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+        mtl._rasterstate.SetDepthTest(ork::lev2::EDepthTest::ALWAYS);
         auto inptexa = cpa->GetValue().GetTexture(ptex);
         auto inptexb = cpb->GetValue().GetTexture(ptex);
         inptexa->TexSamplingMode().PresetTrilinearWrap();
@@ -216,9 +216,9 @@ void SphMap::compute(ProcTex& ptex) {
         auto targ = mPTX.GetTarget();
         mtl.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
         mtl._rasterstate.SetAlphaTest(lev2::EALPHATEST_OFF);
-        mtl._rasterstate.SetCullTest(lev2::ECULLTEST_OFF);
+        mtl._rasterstate.SetCullTest(lev2::ECullTest::OFF);
         mtl._rasterstate.SetBlending(lev2::Blending::OFF);
-        mtl._rasterstate.SetDepthTest(lev2::EDEPTHTEST_ALWAYS);
+        mtl._rasterstate.SetDepthTest(lev2::EDepthTest::ALWAYS);
         auto inptexa = cpa->GetValue().GetTexture(ptex);
         auto inptexb = cpb->GetValue().GetTexture(ptex);
         inptexa->TexSamplingMode().PresetTrilinearWrap();
@@ -290,9 +290,9 @@ void SphRefract::compute(ProcTex& ptex) {
           , mtl(ptex.GetTarget(), "orkshader://proctex", "sphrefract") {
         mtl.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
         mtl._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-        mtl._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+        mtl._rasterstate.SetCullTest(ork::lev2::ECullTest::OFF);
         mtl._rasterstate.SetBlending(ork::lev2::Blending::OFF);
-        mtl._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+        mtl._rasterstate.SetDepthTest(ork::lev2::EDepthTest::ALWAYS);
         mtl.SetTexture(cpa->GetValue().GetTexture(ptex));
         mtl.SetTexture2(cpb->GetValue().GetTexture(ptex));
         mtl.SetUser0(fvec4(0.0f, direc, ior, float(bo.miW)));
@@ -356,9 +356,9 @@ H2N::H2N()
   mfScaleY = (1.0f);
 
   mMTL._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-  mMTL._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+  mMTL._rasterstate.SetCullTest(ork::lev2::ECullTest::OFF);
   mMTL._rasterstate.SetBlending(ork::lev2::Blending::OFF);
-  mMTL._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+  mMTL._rasterstate.SetDepthTest(ork::lev2::EDepthTest::ALWAYS);
   mMTL._rasterstate.SetZWriteMask(false);
   mMTL.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
 }
@@ -466,9 +466,9 @@ void Kaled::compute(ProcTex& ptex) {
     lev2::GfxMaterial3DSolid gridmat(targ);
     gridmat.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR);
     gridmat._rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_OFF);
-    gridmat._rasterstate.SetCullTest(ork::lev2::ECULLTEST_OFF);
+    gridmat._rasterstate.SetCullTest(ork::lev2::ECullTest::OFF);
     gridmat._rasterstate.SetBlending(ork::lev2::Blending::OFF);
-    gridmat._rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_ALWAYS);
+    gridmat._rasterstate.SetDepthTest(ork::lev2::EDepthTest::ALWAYS);
     auto inptexa = conplug->GetValue().GetTexture(ptex);
 
     inptexa->TexSamplingMode().PresetTrilinearWrap();

@@ -44,6 +44,7 @@ struct SCRIMPL {
   void gpuInit(lev2::Context* ctx) {
     if (_needsinit) {
       _blit2screenmtl.gpuInit(ctx, "orkshader://solid");
+      _blit2screenmtl._rasterstate.SetCullTest(ECullTest::OFF);
       _fxtechnique1x1 = _blit2screenmtl.technique("texcolor");
       _fxtechnique2x2 = _blit2screenmtl.technique("downsample_2x2");
       _fxtechnique3x3 = _blit2screenmtl.technique("downsample_3x3");

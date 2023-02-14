@@ -45,7 +45,7 @@ void Box::DoDraw(drawevent_constptr_t drwev) {
           iy2);
 
     defmtl->_rasterstate.SetBlending(lev2::Blending::ALPHA);
-    defmtl->_rasterstate.SetDepthTest(lev2::EDEPTHTEST_OFF);
+    defmtl->_rasterstate.SetDepthTest(lev2::EDepthTest::OFF);
     tgt->PushModColor(_color);
     defmtl->SetUIColorMode(lev2::UiColorMode::MOD);
     primi.RenderQuadAtZ(
@@ -183,7 +183,7 @@ void EvTestBox::DoDraw(drawevent_constptr_t drwev) {
     }
 
     defmtl->_rasterstate.SetBlending(lev2::Blending::ALPHA);
-    defmtl->_rasterstate.SetDepthTest(lev2::EDEPTHTEST_OFF);
+    defmtl->_rasterstate.SetDepthTest(lev2::EDepthTest::OFF);
     ///////////////////////////////
     if (not hasMouseFocus())
       color *= 0.9f;

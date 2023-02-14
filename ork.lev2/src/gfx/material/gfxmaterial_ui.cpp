@@ -39,9 +39,9 @@ GfxMaterialUI::GfxMaterialUI(Context* pTarg)
   _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
   _rasterstate.SetAlphaTest(EALPHATEST_OFF);
   _rasterstate.SetBlending(Blending::OFF);
-  _rasterstate.SetDepthTest(EDEPTHTEST_OFF);
+  _rasterstate.SetDepthTest(EDepthTest::OFF);
   _rasterstate.SetZWriteMask(false);
-  _rasterstate.SetCullTest(ECULLTEST_OFF);
+  _rasterstate.SetCullTest(ECullTest::OFF);
 
   auto mtl_load_req = std::make_shared<asset::LoadRequest>();
   mtl_load_req->_asset_path = "orkshader://ui";
@@ -144,9 +144,9 @@ GfxMaterialUIText::GfxMaterialUIText(Context* pTarg)
     , hColorMap(0) {
   _rasterstate.SetAlphaTest(EALPHATEST_GREATER, 0.0f);
   _rasterstate.SetBlending(Blending::OFF);
-  _rasterstate.SetDepthTest(EDEPTHTEST_ALWAYS);
+  _rasterstate.SetDepthTest(EDepthTest::ALWAYS);
   _rasterstate.SetZWriteMask(false);
-  _rasterstate.SetCullTest(ECULLTEST_OFF);
+  _rasterstate.SetCullTest(ECullTest::OFF);
 
   miNumPasses = 1;
 
@@ -169,7 +169,7 @@ void GfxMaterialUIText::gpuInit(ork::lev2::Context* pTarg) {
   hModColor  = pTarg->FXI()->parameter(_shader, "ModColor");
   hColorMap  = pTarg->FXI()->parameter(_shader, "ColorMap");
 
-  _rasterstate.SetDepthTest(ork::lev2::EDEPTHTEST_OFF);
+  _rasterstate.SetDepthTest(ork::lev2::EDepthTest::OFF);
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -232,8 +232,8 @@ GfxMaterialUITextured::GfxMaterialUITextured(Context* pTarg, const std::string& 
   _rasterstate.SetShadeModel(ESHADEMODEL_SMOOTH);
   _rasterstate.SetAlphaTest(EALPHATEST_OFF);
   _rasterstate.SetBlending(Blending::OFF);
-  _rasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
-  _rasterstate.SetCullTest(ECULLTEST_OFF);
+  _rasterstate.SetDepthTest(EDepthTest::LEQUALS);
+  _rasterstate.SetCullTest(ECullTest::OFF);
 
   if (pTarg) {
     gpuInit(pTarg);

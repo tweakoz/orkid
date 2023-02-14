@@ -262,8 +262,8 @@ const uint32_t* DeferredContext::captureDepthClusters(const CompositorDrawData& 
     _lightingmtl.bindParamVec2(_parZndc2eye, VD._zndc2eye);
     _lightingmtl.bindParamVec2(_parInvViewSize, fvec2(1.0 / float(_width), 1.0f / float(_height)));
     _lightingmtl._rasterstate.SetBlending(Blending::OFF);
-    _lightingmtl._rasterstate.SetDepthTest(EDEPTHTEST_OFF);
-    _lightingmtl._rasterstate.SetCullTest(ECULLTEST_PASS_BACK);
+    _lightingmtl._rasterstate.SetDepthTest(EDepthTest::OFF);
+    _lightingmtl._rasterstate.SetCullTest(ECullTest::OFF);
     _lightingmtl.commit();
     this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
     _lightingmtl.end(RCFD);
@@ -393,7 +393,7 @@ void DeferredContext::renderBaseLighting(CompositorDrawData& drawdata, const Vie
       RCFD);
   //////////////////////////////////////////////////////
   bindViewParams(VD);
-  bindRasterState(targ, ECULLTEST_PASS_BACK, EDEPTHTEST_OFF, Blending::OFF);
+  bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, Blending::OFF);
   //////////////////////////////////////////////////////
   _lightingmtl.bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
   _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
@@ -427,7 +427,7 @@ void DeferredContext::beginPointLighting(CompositorDrawData& drawdata, const Vie
   _lightingmtl.begin(tek, RCFD);
   //////////////////////////////////////////////////////
   bindViewParams(VD);
-  bindRasterState(targ, ECULLTEST_OFF, EDEPTHTEST_OFF, Blending::ADDITIVE);
+  bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, Blending::ADDITIVE);
   //////////////////////////////////////////////////////
   _lightingmtl.bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
   _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
@@ -478,7 +478,7 @@ void DeferredContext::beginSpotLighting(CompositorDrawData& drawdata, const View
   _lightingmtl.begin(tek, RCFD);
   //////////////////////////////////////////////////////
   bindViewParams(VD);
-  bindRasterState(targ, ECULLTEST_OFF, EDEPTHTEST_OFF, Blending::ADDITIVE);
+  bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, Blending::ADDITIVE);
   //////////////////////////////////////////////////////
   _lightingmtl.bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
   _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
@@ -526,7 +526,7 @@ void DeferredContext::beginShadowedSpotLighting(CompositorDrawData& drawdata, co
   _lightingmtl.begin(tek, RCFD);
   //////////////////////////////////////////////////////
   bindViewParams(VD);
-  bindRasterState(targ, ECULLTEST_OFF, EDEPTHTEST_OFF, Blending::ADDITIVE);
+  bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, Blending::ADDITIVE);
   //////////////////////////////////////////////////////
   _lightingmtl.bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
   _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
@@ -576,7 +576,7 @@ void DeferredContext::beginSpotDecaling(CompositorDrawData& drawdata, const View
   _lightingmtl.begin(tek, RCFD);
   //////////////////////////////////////////////////////
   bindViewParams(VD);
-  bindRasterState(targ, ECULLTEST_OFF, EDEPTHTEST_OFF, Blending::OFF);
+  bindRasterState(targ, ECullTest::OFF, EDepthTest::OFF, Blending::OFF);
   ///////////////////////////
   _lightingmtl.bindParamCTex(_parMapGBuf, _rtgGbuffer->GetMrt(0)->texture());
   _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);

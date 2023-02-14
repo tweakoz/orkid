@@ -85,6 +85,7 @@ struct FxStateInstanceCache {
 
   using cache_miss_fn_t = std::function<fxinstance_ptr_t(const FxCachePermutation&)>;
   fxinstance_ptr_t findfxinst(const RenderContextInstData& RCID) const;
+  fxinstance_ptr_t findfxinst(const FxCachePermutation& permu) const;
   cache_miss_fn_t _on_miss;
   mutable std::unordered_map<uint64_t,fxinstance_ptr_t> _lut;
   svar64_t _impl;

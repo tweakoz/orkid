@@ -211,6 +211,7 @@ struct Scene {
 
   LockedResource<layer_map_t> _layers;
   varmap::varmap_ptr_t _userdata;
+  varmap::varmap_ptr_t _params;
   bool _dogpuinit        = true;
   Context* _boundContext = nullptr;
 

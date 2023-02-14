@@ -134,8 +134,9 @@ const FxShaderTechnique* Interface::technique(FxShader* hfx, const std::string& 
 
 int Interface::BeginBlock(const FxShaderTechnique* tek, const RenderContextInstData& data) {
 
-  if (nullptr == tek)
+  if (nullptr == tek){
     return 0;
+  }
   auto tek_cont = static_cast<const Technique*>(tek->GetPlatformHandle());
   OrkAssert(tek_cont != nullptr);
   _activeTechnique = tek;

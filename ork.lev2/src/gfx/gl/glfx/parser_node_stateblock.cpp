@@ -68,11 +68,11 @@ void StateBlockNode::_generate2(shaderbuilder::BackEnd& backend) const {
 
   if (_culltest != "") {
     if (_culltest == "OFF")
-      psb->addStateFn([=](Context* t) { t->RSI()->SetCullTest(lev2::ECULLTEST_OFF); });
+      psb->addStateFn([=](Context* t) { t->RSI()->SetCullTest(lev2::ECullTest::OFF); });
     else if (_culltest == "PASS_FRONT")
-      psb->addStateFn([=](Context* t) { t->RSI()->SetCullTest(lev2::ECULLTEST_PASS_FRONT); });
+      psb->addStateFn([=](Context* t) { t->RSI()->SetCullTest(lev2::ECullTest::PASS_FRONT); });
     else if (_culltest == "PASS_BACK")
-      psb->addStateFn([=](Context* t) { t->RSI()->SetCullTest(lev2::ECULLTEST_PASS_BACK); });
+      psb->addStateFn([=](Context* t) { t->RSI()->SetCullTest(lev2::ECullTest::PASS_BACK); });
   }
   if (_depthmask != "") {
     bool bena = (_depthmask == "true");
@@ -80,17 +80,17 @@ void StateBlockNode::_generate2(shaderbuilder::BackEnd& backend) const {
   }
   if (_depthtest != "") {
     if (_depthtest == "OFF")
-      psb->addStateFn([=](Context* t) { t->RSI()->SetDepthTest(lev2::EDEPTHTEST_OFF); });
+      psb->addStateFn([=](Context* t) { t->RSI()->SetDepthTest(lev2::EDepthTest::OFF); });
     else if (_depthtest == "LESS")
-      psb->addStateFn([=](Context* t) { t->RSI()->SetDepthTest(lev2::EDEPTHTEST_LESS); });
+      psb->addStateFn([=](Context* t) { t->RSI()->SetDepthTest(lev2::EDepthTest::LESS); });
     else if (_depthtest == "LEQUALS")
-      psb->addStateFn([=](Context* t) { t->RSI()->SetDepthTest(lev2::EDEPTHTEST_LEQUALS); });
+      psb->addStateFn([=](Context* t) { t->RSI()->SetDepthTest(lev2::EDepthTest::LEQUALS); });
     else if (_depthtest == "GREATER")
-      psb->addStateFn([=](Context* t) { t->RSI()->SetDepthTest(lev2::EDEPTHTEST_GREATER); });
+      psb->addStateFn([=](Context* t) { t->RSI()->SetDepthTest(lev2::EDepthTest::GREATER); });
     else if (_depthtest == "GEQUALS")
-      psb->addStateFn([=](Context* t) { t->RSI()->SetDepthTest(lev2::EDEPTHTEST_GEQUALS); });
+      psb->addStateFn([=](Context* t) { t->RSI()->SetDepthTest(lev2::EDepthTest::GEQUALS); });
     else if (_depthtest == "EQUALS")
-      psb->addStateFn([=](Context* t) { t->RSI()->SetDepthTest(lev2::EDEPTHTEST_EQUALS); });
+      psb->addStateFn([=](Context* t) { t->RSI()->SetDepthTest(lev2::EDepthTest::EQUALS); });
   }
   if (_blendmode != "") {
     if (_blendmode == "ADDITIVE")

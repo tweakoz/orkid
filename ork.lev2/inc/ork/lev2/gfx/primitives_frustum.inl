@@ -44,7 +44,10 @@ struct FrustumPrimitive {
     auto drw = std::make_shared<CallbackDrawable>(nullptr);
     drw->SetRenderCallback([=](lev2::RenderContextInstData& RCID) { //
       auto context = RCID.context();
-      material_inst->wrappedDrawCall(RCID, [this, context]() { this->renderEML(context); });
+      material_inst->wrappedDrawCall(RCID, //
+                                     [this, context]() { //
+                                        this->renderEML(context); //
+                                    });
     });
     return layer->createDrawableNode(named, drw);
   }

@@ -124,8 +124,8 @@ struct PbrNodeImpl {
     //////////////////////////////////////////////////////////////////
     targ->debugPushGroup("Deferred::BaseLighting");
     _context._lightingmtl._rasterstate.SetBlending(Blending::OFF);
-    _context._lightingmtl._rasterstate.SetDepthTest(EDEPTHTEST_OFF);
-    _context._lightingmtl._rasterstate.SetCullTest(ECULLTEST_PASS_BACK);
+    _context._lightingmtl._rasterstate.SetDepthTest(EDepthTest::OFF);
+    _context._lightingmtl._rasterstate.SetCullTest(ECullTest::OFF);
 
 
     int pbr_model = RCFD.getUserProperty("pbr_model"_crc).get<int>();
@@ -180,7 +180,7 @@ struct PbrNodeImpl {
     _context._lightingmtl.bindParamFloat(_context._parSpecularMipBias, pbrcommon->_specularMipBias );
     /////////////////////////
     _context._lightingmtl._rasterstate.SetZWriteMask(false);
-    _context._lightingmtl._rasterstate.SetDepthTest(EDEPTHTEST_OFF);
+    _context._lightingmtl._rasterstate.SetDepthTest(EDepthTest::OFF);
     _context._lightingmtl._rasterstate.SetAlphaTest(EALPHATEST_OFF);
     /////////////////////////
     _context.bindViewParams(VD);

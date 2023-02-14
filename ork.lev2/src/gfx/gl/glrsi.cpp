@@ -105,30 +105,30 @@ void GlRasterStateInterface::SetDepthTest( EDepthTest eVal )
 	GL_ERRORCHECK();
 	switch( eVal )
 	{
-		case EDEPTHTEST_OFF:
+		case EDepthTest::OFF:
 			glDisable( GL_DEPTH_TEST );
 			break;
-		case EDEPTHTEST_LESS:
+		case EDepthTest::LESS:
 			glEnable( GL_DEPTH_TEST );
 			glDepthFunc( GL_LESS );
 			break;
-		case EDEPTHTEST_LEQUALS:
+		case EDepthTest::LEQUALS:
 			glEnable( GL_DEPTH_TEST );
 			glDepthFunc( GL_LEQUAL );
 			break;
-		case EDEPTHTEST_GREATER:
+		case EDepthTest::GREATER:
 			glEnable( GL_DEPTH_TEST );
 			glDepthFunc( GL_GREATER );
 			break;
-		case EDEPTHTEST_GEQUALS:
+		case EDepthTest::GEQUALS:
 			glEnable( GL_DEPTH_TEST );
 			glDepthFunc( GL_GEQUAL );
 			break;
-		case EDEPTHTEST_EQUALS:
+		case EDepthTest::EQUALS:
 			glEnable( GL_DEPTH_TEST );
 			glDepthFunc( GL_EQUAL );
 			break;
-		case EDEPTHTEST_ALWAYS:
+		case EDepthTest::ALWAYS:
 			glEnable( GL_DEPTH_TEST );
 			glDepthFunc( GL_ALWAYS );
 			break;
@@ -143,15 +143,15 @@ void GlRasterStateInterface::SetCullTest( ECullTest eVal )
 	GL_ERRORCHECK();
 	switch( eVal )
 	{
-		case ECULLTEST_OFF:
+		case ECullTest::OFF:
 			glDisable( GL_CULL_FACE );
 			break;
-		case ECULLTEST_PASS_FRONT:
+		case ECullTest::PASS_FRONT:
 			glCullFace( GL_BACK );
 			glFrontFace( GL_CCW );
 			glEnable( GL_CULL_FACE );
 			break;
-		case ECULLTEST_PASS_BACK:
+		case ECullTest::PASS_BACK:
 			glCullFace( GL_FRONT );
 			glFrontFace( GL_CCW );
 			glEnable( GL_CULL_FACE );

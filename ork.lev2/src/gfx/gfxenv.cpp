@@ -135,7 +135,7 @@ EndEnumRegistration();
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ECullTest GlobalCullTest = ECULLTEST_PASS_FRONT;
+ECullTest GlobalCullTest = ECullTest::PASS_FRONT;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -148,9 +148,9 @@ SRasterState::SRasterState() {
   setScissorTest(ESCISSORTEST_OFF);
   SetAlphaTest(EALPHATEST_OFF, 0);
   SetBlending(Blending::OFF);
-  SetDepthTest(EDEPTHTEST_LEQUALS);
+  SetDepthTest(EDepthTest::LEQUALS);
   SetShadeModel(ESHADEMODEL_SMOOTH);
-  SetCullTest(ECULLTEST_PASS_FRONT);
+  SetCullTest(ECullTest::PASS_FRONT);
   SetZWriteMask(true);
   SetRGBAWriteMask(true, true);
   SetStencilMode(ESTENCILTEST_OFF, ESTENCILOP_KEEP, ESTENCILOP_KEEP, 0, 0);

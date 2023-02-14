@@ -16,43 +16,33 @@ namespace ork { namespace lev2 {
 struct SRasterState {
   // Render States
 
-  unsigned muZWriteMask : 1;   // 1
-  unsigned muAWriteMask : 1;   // 2
-  unsigned muRGBWriteMask : 1; // 3
+  unsigned muZWriteMask : 1;   
+  unsigned muAWriteMask : 1;   
+  unsigned muRGBWriteMask : 1; 
 
-  unsigned muAlphaTest : 2; // 5
-  unsigned muAlphaRef : 4;  // 9
+  unsigned muAlphaTest : 2;
+  unsigned muAlphaRef : 4; 
 
-  unsigned muBlending : 3;    // 12
-  unsigned muDepthTest : 3;   // 15
-  unsigned muScissorTest : 1; // 16
-  unsigned muShadeModel : 1;  // 17
-  unsigned muCullTest : 2;    // 19
-  unsigned muStencilMode : 4; // 23
-  unsigned muStencilRef : 8;  // 27
-  unsigned muStencilMask : 3; // 30
+  unsigned muBlending : 3;    
+  unsigned muScissorTest : 1; 
+  unsigned muShadeModel : 1; 
+  unsigned muStencilMode : 4; 
+  unsigned muStencilRef : 8;  
+  unsigned muStencilMask : 3; 
   unsigned muStencilOpPass : 3;
   unsigned muStencilOpFail : 3;
 
   // Sort (Highest Priority)
 
-  unsigned muSortID : 11;     // 63		512 Hard Sort Bins (Use Object Depth and Pass Num for This)
-  unsigned muTransparent : 1; // 64		All Transparent Objects Should have Highest mu_SortID'S ( so they get drawn last )
+  unsigned muSortID : 11;     
+  unsigned muTransparent : 1; 
 
   float mPointSize;
 
   /////////////////////////////
-  // <> Ops For Sorting
 
-  inline U64 AsU64(int iIndex = 0) const {
-    return U64(((U64*)this)[iIndex]);
-  }
-  inline U32 AsU32LO(void) const {
-    return U32(*((U32*)this));
-  }
-  inline U32 AsU32HI(void) const {
-    return U32(*((U32*)this + 1));
-  }
+  ECullTest _culltest = ECullTest::OFF;         
+  EDepthTest _depthtest  = EDepthTest::LEQUALS; 
 
   /////////////////////////////
   // Accessors
@@ -88,13 +78,13 @@ struct SRasterState {
     muBlending = unsigned(eVal);
   }
   void SetDepthTest(EDepthTest eVal) {
-    muDepthTest = eVal;
+    _depthtest = eVal;
   }
   void SetShadeModel(EShadeModel eVal) {
     muShadeModel = eVal;
   }
   void SetCullTest(ECullTest eVal) {
-    muCullTest = eVal;
+    _culltest = eVal;
   }
   void SetStencilMode(EStencilMode eVal, EStencilOp ePassOp, EStencilOp eFailOp, u8 uRef, u8 uMsk) {
     muStencilOpPass = (unsigned)ePassOp;
@@ -114,13 +104,13 @@ struct SRasterState {
     return Blending(muBlending);
   }
   EDepthTest GetDepthTest(void) const {
-    return EDepthTest(muDepthTest);
+    return _depthtest;
   }
   EShadeModel GetShadeModel(void) const {
     return EShadeModel(muShadeModel);
   }
   ECullTest GetCullTest(void) const {
-    return ECullTest(muCullTest);
+    return _culltest;
   }
   void GetStencilMode(EStencilMode& eVal, EStencilOp& ePassOp, EStencilOp& eFailOp, u8& uRef, u8& uMsk) const {
     ePassOp = (EStencilOp)muStencilOpPass;

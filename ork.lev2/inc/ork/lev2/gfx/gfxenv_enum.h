@@ -166,14 +166,14 @@ enum class Blending {
 
 //////////////////////////////////////
 
-enum EDepthTest {
-  EDEPTHTEST_OFF = 0,
-  EDEPTHTEST_LESS,
-  EDEPTHTEST_LEQUALS,
-  EDEPTHTEST_GREATER,
-  EDEPTHTEST_GEQUALS,
-  EDEPTHTEST_EQUALS,
-  EDEPTHTEST_ALWAYS, // is this the same as off?
+enum struct EDepthTest : crc_enum_t {
+  CrcEnum(OFF),
+  CrcEnum(LESS),
+  CrcEnum(LEQUALS),
+  CrcEnum(GREATER),
+  CrcEnum(GEQUALS),
+  CrcEnum(EQUALS),
+  CrcEnum(ALWAYS), // is this the same as off?
 
 }; // 3 bits
 
@@ -215,11 +215,10 @@ enum EShadeModel {
 
 //////////////////////////////////////
 
-enum ECullTest {
-  ECULLTEST_OFF = 0,
-  ECULLTEST_PASS_FRONT,
-  ECULLTEST_PASS_BACK,
-
+enum struct ECullTest : crc_enum_t {
+  CrcEnum(OFF),
+  CrcEnum(PASS_FRONT),
+  CrcEnum(PASS_BACK),
 }; // 2 bits
 
 ///////////////////////////////////////////////////////////////////////////////
