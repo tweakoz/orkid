@@ -72,18 +72,18 @@ fxinst.bindParam(par_mvp,tokens.RCFD_Camera_MVP_Mono)
 ###################################
 
 fpmtx = ctx.perspective(45,1,0.1,3)
-fvmtx = ctx.lookAt(vec3(0,0,-1),vec3(0,0,0),vec3(0,1,0))
+fvmtx = ctx.lookAt(vec3(0,0,1),vec3(0,0,0),vec3(0,1,0))
 frust = Frustum()
 frust.set(fvmtx,fpmtx)
-prim = primitives.FrustumPrimitive()
-prim.frustum = frust
-prim.topColor = vec4(0.5,1.0,0.5,1)
-prim.bottomColor = vec4(0.5,0.0,0.5,1)
-prim.leftColor = vec4(0.0,0.5,0.5,1)
-prim.rightColor = vec4(1.0,0.5,0.5,1)
-prim.nearColor = vec4(0.5,0.5,1.0,1)
-prim.farColor = vec4(0.5,0.5,0.0,1)
-prim.gpuInit(ctx)
+frustum_prim = primitives.FrustumPrimitive()
+frustum_prim.frustum = frust
+frustum_prim.topColor = vec4(0.2,1.0,0.2,1)
+frustum_prim.bottomColor = vec4(0.5,0.5,0.5,1)
+frustum_prim.leftColor = vec4(0.2,0.2,1.0,1)
+frustum_prim.rightColor = vec4(1.0,0.2,0.2,1)
+frustum_prim.nearColor = vec4(0.0,0.0,0.0,1)
+frustum_prim.farColor = vec4(1.0,1.0,1.0,1)
+frustum_prim.gpuInit(ctx)
 
 ###################################
 # render target (rtg) setup - for capturing to PNG
@@ -122,7 +122,7 @@ ctx.debugMarker("yo")
 # render frustum primitive
 ###################################
 
-fxinst.wrappedDrawCall(RCID, lambda: prim.renderEML(ctx) )
+fxinst.wrappedDrawCall(RCID, lambda: frustum_prim.renderEML(ctx) )
 
 ###################################
 # render overlay text

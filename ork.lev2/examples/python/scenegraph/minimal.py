@@ -64,10 +64,10 @@ class PyOrkApp(object):
     pmatrix = ctx.perspective(45,1,0.1,3)
     frustum.set(vmatrix,pmatrix)
     frustum_prim = primitives.FrustumPrimitive()
-    frustum_prim.topColor = vec4(1.0,0.2,0.2,1)
+    frustum_prim.topColor = vec4(0.2,1.0,0.2,1)
     frustum_prim.bottomColor = vec4(0.5,0.5,0.5,1)
-    frustum_prim.leftColor = vec4(0.2,1.0,0.2,1)
-    frustum_prim.rightColor = vec4(0.2,0.2,1.0,1)
+    frustum_prim.leftColor = vec4(0.2,0.2,1.0,1)
+    frustum_prim.rightColor = vec4(1.0,0.2,0.2,1)
     frustum_prim.nearColor = vec4(0.0,0.0,0.0,1)
     frustum_prim.farColor = vec4(1.0,1.0,1.0,1)
     frustum_prim.frustum = frustum

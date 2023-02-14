@@ -94,7 +94,7 @@ void XgmRigidClusterBuilder::buildVertexBuffer(lev2::Context& context, lev2::EVt
         lev2::SVtxV12C4T16 out_vtx;
         out_vtx._position = inpvtx.mPos;
         out_vtx._uv0      = inpvtx.mUV[0].mMapTexCoord;
-        out_vtx._color    = inpvtx.mCol[0].ARGBU32();
+        out_vtx._color    = inpvtx.mCol[0].ABGRU32();
         return out_vtx;
       });
       break;
@@ -131,7 +131,7 @@ void XgmRigidClusterBuilder::buildVertexBuffer(lev2::Context& context, lev2::EVt
         out_vtx.mUV0      = inpvtx.mUV[0].mMapTexCoord;
         out_vtx.mUV1      = inpvtx.mUV[1].mMapTexCoord;
         out_vtx.mNormal   = inpvtx.mNrm;
-        out_vtx.mColor    = inpvtx.mCol[0].ARGBU32();
+        out_vtx.mColor    = inpvtx.mCol[0].ABGRU32();
         return out_vtx;
       });
       break;
@@ -144,7 +144,7 @@ void XgmRigidClusterBuilder::buildVertexBuffer(lev2::Context& context, lev2::EVt
         out_vtx.mUV0      = inpvtx.mUV[0].mMapTexCoord;
         out_vtx.mNormal   = inpvtx.mNrm;
         out_vtx.mBiNormal = inpvtx.mUV[0].mMapBiNormal;
-        out_vtx.mColor    = inpvtx.mCol[0].ARGBU32();
+        out_vtx.mColor    = inpvtx.mCol[0].ABGRU32();
         return out_vtx;
       });
       break;
