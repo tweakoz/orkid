@@ -17,6 +17,7 @@
 #include <ork/util/crc.h>
 #include <ork/lev2/config.h>
 #include <ork/lev2/gfx/config.h>
+#include <ork/math/cmatrix4.h>
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ui{
 	struct Event;
@@ -200,7 +201,9 @@ using cameradata_ptr_t       = std::shared_ptr<CameraData>;
 using uicam_ptr_t       		 = std::shared_ptr<UiCamera>;
 using ezuicam_ptr_t       	 = std::shared_ptr<EzUiCam>;
 using cameradata_constptr_t  = std::shared_ptr<const CameraData>;
+using compositingpassdata_ptr_t = std::shared_ptr<CompositingPassData>;
 using compositordata_ptr_t   = std::shared_ptr<CompositingData>;
+using compositordata_constptr_t = std::shared_ptr<const CompositingData>;
 using compositorimpl_ptr_t   = std::shared_ptr<CompositingImpl>;
 using fxshader_ptr_t         = FxShader*;
 using fxparam_ptr_t          = FxShaderParam*;
@@ -240,6 +243,8 @@ using xgmlocalpose_ptr = std::shared_ptr<XgmLocalPose>;
 using xgmworldpose_ptr = std::shared_ptr<XgmWorldPose>;
 using xgmskelapplicator_ptr_t = std::shared_ptr<XgmSkelApplicator>;
 ///////////////////////////////////////////////////////////////////////////////
+using cameramatrices_ptr_t = std::shared_ptr<CameraMatrices>;
+using cameramatrices_constptr_t = std::shared_ptr<const CameraMatrices>;
 using CameraMatricesLut = std::unordered_map<std::string, CameraMatrices>;
 ///////////////////////////////////////////////////////////////////////////////
 using irenderer_ptr_t         = std::shared_ptr<IRenderer>;
@@ -304,6 +309,9 @@ using pointlight_ptr_t      = std::shared_ptr<PointLight>;
 using pointlight_constptr_t = std::shared_ptr<const PointLight>;
 using spotlight_ptr_t      = std::shared_ptr<SpotLight>;
 using spotlight_constptr_t = std::shared_ptr<const SpotLight>;
+
+
+using matrix_lamda_t = std::function<fmtx4()>;
 
 namespace pbr {
 struct CommonStuff;

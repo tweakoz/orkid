@@ -13,12 +13,16 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::lev2 {
+void pyinit_gfx_compositor(py::module& module_lev2);
 void pyinit_gfx_material(py::module& module_lev2);
 void pyinit_gfx_shader(py::module& module_lev2);
+void pyinit_gfx_renderer(py::module& module_lev2);
 void pyinit_gfx(py::module& module_lev2) {
   auto type_codec = python::TypeCodec::instance();
   pyinit_gfx_material(module_lev2);
   pyinit_gfx_shader(module_lev2);
+  pyinit_gfx_renderer(module_lev2);
+  pyinit_gfx_compositor(module_lev2);
   /////////////////////////////////////////////////////////////////////////////////
   auto refresh_policy_type = //
       py::enum_<ERefreshPolicy>(module_lev2, "RefreshPolicy")
@@ -31,7 +35,7 @@ void pyinit_gfx(py::module& module_lev2) {
   auto gfxenv_type = //
       py::class_<GfxEnv>(module_lev2, "GfxEnv")
           .def_readonly_static("ref", &GfxEnv::GetRef())
-          .def("loadingContext", [](const GfxEnv& e) -> ctx_t { return ctx_t(ork::lev2::contextForCurrentThread()); })
+          .def_static("loadingContext", []() -> ctx_t { return ctx_t(ork::lev2::contextForCurrentThread()); })
           .def("__repr__", [](const GfxEnv& e) -> std::string {
             fxstring<64> fxs;
             fxs.format("GfxEnv(%p)", &e);
@@ -342,11 +346,6 @@ void pyinit_gfx(py::module& module_lev2) {
   ;
   type_codec->registerStdCodec<terraindrawableinst_ptr_t>(terdrawinst_type);*/
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<RenderContextFrameData>(module_lev2, "RenderContextFrameData").def(py::init([](ctx_t& ctx) { //
-    auto rcfd = std::unique_ptr<RenderContextFrameData>(new RenderContextFrameData(ctx.get()));
-    return rcfd;
-  }));
-  /////////////////////////////////////////////////////////////////////////////////
   py::class_<PixelFetchContext>(module_lev2, "PixelFetchContext")
       .def(py::init<>())
       .def(py::init([](rtg_t& rtg, int mask) {
@@ -546,6 +545,23 @@ void pyinit_gfx(py::module& module_lev2) {
             return camera;
           });
   type_codec->registerStdCodec<cameradatalut_ptr_t>(camdatluttype);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto cammatstype = //
+      py::class_<CameraMatrices, cameramatrices_ptr_t>(module_lev2, "CameraMatrices")
+          .def(py::init([]()->cameramatrices_ptr_t{ //
+             return std::make_shared<CameraMatrices>();
+           }))
+          .def(
+              "setCustomProjection",                                             //
+              [](cameramatrices_ptr_t cammats, fmtx4 matrix) { //
+                cammats->setCustomProjection(matrix);
+              })
+          .def(
+              "setCustomView",                                                        //
+              [](cameramatrices_ptr_t cammats, fmtx4 matrix) { //
+                cammats->setCustomView(matrix);
+              });
+  type_codec->registerStdCodec<cameramatrices_ptr_t>(cammatstype);
   /////////////////////////////////////////////////////////////////////////////////
   auto inpgrp_typ = //
       py::class_<InputGroup, inputgroup_ptr_t>(module_lev2, "InputGroup")

@@ -19,6 +19,9 @@ uint64_t FxCachePermutation::genIndex() const {
   index += (uint64_t(_instanced) << 2);
   index += (uint64_t(_skinned) << 3);
   index += (uint64_t(_rendering_model) << 4);
+
+  auto tekovr = uint64_t((const void*)_forced_technique);
+  index += tekovr;
   return index;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -52,9 +55,6 @@ void FxStateInstance::wrappedDrawCall(const RenderContextInstData& RCID, void_la
 ///////////////////////////////////////////////////////////////////////////////
 int FxStateInstance::beginBlock(const RenderContextInstData& RCID) {
   auto context    = RCID._RCFD->GetTarget();
-  const auto& CPD = RCID._RCFD->topCPD();
-  bool is_picking = CPD.isPicking();
-  bool is_stereo  = CPD.isStereoOnePass();
   auto FXI        = context->FXI();
   return FXI->BeginBlock(_technique, RCID);
 }
@@ -227,12 +227,15 @@ fxinstance_ptr_t FxStateInstanceCache::findfxinst(const RenderContextInstData& R
   auto RCFD       = RCID._RCFD;
   auto context    = RCFD->_target;
   auto fxi        = context->FXI();
-  const auto& CPD = RCFD->topCPD();
+
+  bool stereo = RCFD->hasCPD() ? RCFD->topCPD().isStereoOnePass() : false;
+
   /////////////////
   FxCachePermutation perm;
-  perm._stereo          = CPD.isStereoOnePass();
+  perm._stereo          = stereo;
   perm._skinned         = RCID._isSkinned;
   perm._instanced       = RCID._isInstanced;
+  perm._forced_technique = RCID._forced_technique;
   perm._rendering_model = RCFD->_renderingmodel._modelID;
   //perm.dump();
   /////////////////

@@ -38,7 +38,7 @@ struct GridRenderImpl {
     _initted                   = true;
   }
   void _render(const RenderContextInstData& RCID){
-    auto renderable = dynamic_cast<const CallbackRenderable*>(RCID._dagrenderable);
+    auto renderable = dynamic_cast<const CallbackRenderable*>(RCID._irenderable);
     auto context    = RCID.context();
 
     if (not _initted){
@@ -106,7 +106,7 @@ struct GridRenderImpl {
     mtxi->PopMMatrix();
   }
   static void renderGrid(RenderContextInstData& RCID) {
-    auto renderable = dynamic_cast<const CallbackRenderable*>(RCID._dagrenderable);
+    auto renderable = dynamic_cast<const CallbackRenderable*>(RCID._irenderable);
     renderable->GetDrawableDataA().getShared<GridRenderImpl>()->_render(RCID);
   }
   const GridDrawableData* _griddata;

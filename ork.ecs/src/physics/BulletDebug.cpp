@@ -98,7 +98,7 @@ void PhysicsDebugger::beginRenderFrame() {
 void bulletDebugRender(const RenderContextInstData& RCID) {
 
   auto context    = RCID.context();
-  auto renderable = dynamic_cast<const lev2::CallbackRenderable*>(RCID._dagrenderable);
+  auto renderable = dynamic_cast<const lev2::CallbackRenderable*>(RCID._irenderable);
   if (context->FBI()->isPickState())
     return;
   //////////////////////////////////////////

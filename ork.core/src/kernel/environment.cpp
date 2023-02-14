@@ -56,6 +56,8 @@ void Environment::init_from_envp(char** envp)
 void Environment::set( const std::string& k, const std::string& v )
 {
     mEnvMap[k] = v;
+    int ok = setenv(k.c_str(),v.c_str(),1/*overwrite*/);
+    OrkAssert(ok==0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

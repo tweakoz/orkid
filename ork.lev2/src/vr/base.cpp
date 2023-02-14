@@ -143,7 +143,7 @@ void Device::_updatePosesCommon() {
         fmtx4 avgtramtx;
         avgtramtx.setTranslation(avgpos);
         fmtx4 refmtx = fmtx4::multiply_ltor(avgtramtx,avgrotmtx);
-        _baseMatrix.setTranslation(hmd.inverse().translation());
+        //_baseMatrix.setTranslation(hmd.inverse().translation());
         // deco::prints(hmd.dump4x3cn(), true);
         // deco::prints(hmd.inverse().dump4x3cn(), true);
         deco::printf(fvec3::Yellow(), "vrstate: calibrated\n");

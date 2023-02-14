@@ -76,8 +76,53 @@ void pyinit_gfx_material(py::module& module_lev2) {
 
   type_codec->registerStdCodec<matinst_param_proxy_ptr_t>(materialinst_params_type);
   /////////////////////////////////////////////////////////////////////////////////
+  auto fxcache_type =                                                     //
+      py::class_<FxStateInstanceCache, fxinstancecache_ptr_t>(module_lev2, "FxStateInstanceCache") //
+          .def(
+              "findFxInst",                                                                    //
+              [](fxinstancecache_ptr_t cache, rcid_ptr_t RCID) -> fxinstance_ptr_t { //
+                return cache->findfxinst(*RCID);
+              });
+  type_codec->registerStdCodec<fxinstancecache_ptr_t>(fxcache_type);
+  /////////////////////////////////////////////////////////////////////////////////
   auto materialinst_type =                                                     //
-      py::class_<FxStateInstance, fxinstance_ptr_t>(module_lev2, "FxInstance") //
+      py::class_<FxStateInstance, fxinstance_ptr_t>(module_lev2, "FxStateInstance") //
+          .def(
+              "bindParam",                                                                    //
+              [](fxinstance_ptr_t fxinst, //
+                 pyfxparam_ptr_t param, //
+                 py::object inp_value) { //
+                if( py::isinstance<CrcString>(inp_value) ){
+                  fxinst->_params[param.get()] = py::cast<crcstring_ptr_t>(inp_value);
+                }
+                else if( py::isinstance<float>(inp_value) ){
+                  fxinst->_params[param.get()] = py::cast<float>(inp_value);
+                }
+                else if( py::isinstance<fvec2>(inp_value) ){
+                  fxinst->_params[param.get()] = py::cast<fvec2>(inp_value);
+                }
+                else if( py::isinstance<fvec3>(inp_value) ){
+                  fxinst->_params[param.get()] = py::cast<fvec3>(inp_value);
+                }
+                else if( py::isinstance<fvec4>(inp_value) ){
+                  fxinst->_params[param.get()] = py::cast<fvec4>(inp_value);
+                }
+                else{
+                  OrkAssert(false);
+                }
+              })
+          .def(
+              "wrappedDrawCall",                                                                    //
+              [](fxinstance_ptr_t fxinst, //
+                 rcid_ptr_t rcid, //
+                 py::object method
+                 ){
+                auto py_callback = method.cast<pybind11::object>();
+                fxinst->wrappedDrawCall(*rcid,[py_callback](){
+                  py::gil_scoped_acquire acquire;
+                  py_callback();
+                });
+              })
           .def(
               "__setattr__",                                                                    //
               [type_codec](fxinstance_ptr_t instance, const std::string& key, py::object val) { //
@@ -120,12 +165,18 @@ void pyinit_gfx_material(py::module& module_lev2) {
             rval->gpuInit(context.get(), asset);
             return rval;
           }))
-          .def(
+          .def_property_readonly(
+              "fxcache",                                    //
+              [](freestyle_mtl_ptr_t material) -> fxinstancecache_constptr_t { //
+                return material->fxInstanceCache(); // material
+              })
+          
+          /*.def(
               "createFxInstance",                                    //
               [](freestyle_mtl_ptr_t material) -> fxinstance_ptr_t { //
                 FxCachePermutation perm;
                 return std::make_shared<FxStateInstance>(perm); // material
-              })
+              })*/
           .def(
               "gpuInit",
               [](freestyle_mtl_ptr_t m, ctx_t& c, file::Path& path) {

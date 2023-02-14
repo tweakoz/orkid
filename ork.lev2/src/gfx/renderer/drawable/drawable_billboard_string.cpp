@@ -76,8 +76,8 @@ BillboardStringDrawable::BillboardStringDrawable()
     const auto& CPD             = RCFD->topCPD();
     const CameraMatrices* cmtcs = CPD.cameraMatrices();
     const CameraData& cdata     = cmtcs->_camdat;
-    auto renderable = (CallbackRenderable*) RCID._dagrenderable;
-    auto worldmatrix = renderable->_worldMatrix;
+    auto renderable = (CallbackRenderable*) RCID._irenderable;
+    auto worldmatrix = RCID.worldMatrix();
     auto& current_string = renderable->_drawDataA.get<std::string>();
 
     auto PMatrix = cmtcs->GetPMatrix();
@@ -142,8 +142,7 @@ InstancedBillboardStringDrawable::InstancedBillboardStringDrawable(){
     const auto& CPD             = RCFD->topCPD();
     const CameraMatrices* cmtcs = CPD.cameraMatrices();
     const CameraData& cdata     = cmtcs->_camdat;
-    auto renderable = (CallbackRenderable*) RCID._dagrenderable;
-    //auto instance_data = renderable->_drawDataA.get<instanceddrawinstancedata_ptr_t>();
+    auto renderable = (CallbackRenderable*) RCID._irenderable;
     auto drawable = renderable->_drawDataB.get<const InstancedBillboardStringDrawable*>();
     auto instance_data = drawable->_instancedata;
 

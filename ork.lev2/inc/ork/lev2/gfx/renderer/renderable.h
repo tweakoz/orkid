@@ -63,6 +63,8 @@ struct IRenderable {
   virtual uint32_t ComposeSortKey(const IRenderer* renderer) const;
   //////////////////////////////////////////////////////////////////////////////
 
+  matrix_lamda_t genMatrixLambda() const;
+
   const ork::Object* _object = nullptr;
   bool _instanced            = false;
 

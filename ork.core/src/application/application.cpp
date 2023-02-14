@@ -13,6 +13,7 @@
 #include <ork/kernel/string/PoolString.h>
 
 #include <ork/util/Context.hpp>
+#include <ork/kernel/environment.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -22,7 +23,7 @@ AppInitData::AppInitData(int argc, char** argv, char** envp){
     _argc = argc;
     _argv = argv;
     _envp = envp;
-
+    _commandline_vars = std::make_shared<opts_var_map_t>();
     _fsinit = std::make_shared<StdFileSystemInitalizer>(*this);
 }
 
@@ -59,13 +60,39 @@ AppInitData::opts_var_map_ptr_t AppInitData::parse(){
     exit(0);
   }
   auto& vars = *_commandline_vars;
-  this->_fullscreen = vars["fullscreen"].as<bool>();
-  this->_top          = vars["top"].as<int>();
-  this->_left         = vars["left"].as<int>();
-  this->_width        = vars["width"].as<int>();
-  this->_height       = vars["height"].as<int>();
-  this->_msaa_samples = vars["msaa"].as<int>();
-  this->_ssaa_samples = vars["ssaa"].as<int>();
+
+  if (_commandline_vars->count("fullscreen")) {
+    this->_fullscreen = vars["fullscreen"].as<bool>();
+  }
+  if (_commandline_vars->count("offscreen")) {
+    this->_offscreen = vars["offscreen"].as<bool>();
+    this->_fullscreen = false;
+  }
+  if (_commandline_vars->count("top")) {
+    this->_top          = vars["top"].as<int>();
+  }
+  if (_commandline_vars->count("left")) {
+    this->_left         = vars["left"].as<int>();
+  }
+  if (_commandline_vars->count("width")) {
+    this->_width        = vars["width"].as<int>();
+  }
+  if (_commandline_vars->count("height")) {
+    this->_height       = vars["height"].as<int>();
+  }
+  if (_commandline_vars->count("msaa")) {
+    this->_msaa_samples = vars["msaa"].as<int>();
+  }
+  if (_commandline_vars->count("ssaa")) {
+    this->_ssaa_samples = vars["ssaa"].as<int>();
+  }
+  if (_commandline_vars->count("vsync")) {
+    if(vars["vsync"].as<bool>()){
+      genviron.set("__GL_SYNC_TO_VBLANK", "1");
+      int vsport = vars["vsport"].as<int>();
+      genviron.set("__GL_SYNC_DISPLAY_DEVICE", FormatString("DFP-%d",vsport));
+    }
+  }
 
   printf("_msaa_samples<%d>\n", this->_msaa_samples);
   return _commandline_vars;

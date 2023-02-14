@@ -285,7 +285,7 @@ void pyinit_math(py::module& module_core) {
           .def("inverseOf", &fmtx4::inverseOf)
           .def("decompose", &fmtx4::decompose)
           .def("toRotMatrix3", &fmtx4::rotMatrix33)
-	  .def("toGlm", &fmtx4::asGlmMat4)
+	        .def("toGlm", &fmtx4::asGlmMat4)
           .def(
               "compose",
               [](fmtx4_ptr_t mtx, const fvec3& pos, const fquat& rot, float scale) { //
@@ -361,7 +361,7 @@ void pyinit_math(py::module& module_core) {
                 return rval;
               })
           //.def("lookAt", &fmtx4::decompose)
-          //.def(py::self * py::self)
+          .def(py::self * py::self)
           .def(py::self == py::self)
           .def("__repr__", [](fmtx4_ptr_t mtx) -> std::string {
             auto str = mtx->dump4x3cn();

@@ -56,39 +56,12 @@ pbrmaterial_ptr_t default3DMaterial(Context* ctx) {
 //////////////////////////////////////////////////////
 
 static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,const PBRMaterial*mtl);
+using cache_impl_t = FxStateInstanceCacheImpl<PBRMaterial>;
 
-struct PbrCacheImpl{
-
-  PbrCacheImpl(){}
-
-  fxinstancecache_constptr_t getCache(const PBRMaterial*mtl){
-
-    fxinstancecache_constptr_t rval;
-
-    auto it = _fxcachemap.find(mtl);
-    if(it==_fxcachemap.end()){
-      auto newcache = std::make_shared<FxStateInstanceCache>();
-      newcache->_impl.set<const PBRMaterial*>(mtl);
-      newcache->_on_miss = [=](const FxCachePermutation& permu) -> fxinstance_ptr_t {
-        return _createFxStateInstance(permu,mtl);
-      };
-      rval = newcache;
-      _fxcachemap[mtl] = newcache;
-    }
-    else{
-      rval = it->second;
-    }
-
-    return rval;    
-  }
-
-  std::unordered_map<const PBRMaterial*,fxinstancecache_ptr_t> _fxcachemap;
-};
-
-using pbrcache_impl_ptr_t = std::shared_ptr<PbrCacheImpl>;
+using pbrcache_impl_ptr_t = std::shared_ptr<cache_impl_t>;
 
 static pbrcache_impl_ptr_t _getpbrcache(){
-  static pbrcache_impl_ptr_t _gcache = std::make_shared<PbrCacheImpl>();
+  static pbrcache_impl_ptr_t _gcache = std::make_shared<cache_impl_t>();
   return _gcache;
 }
 
@@ -332,6 +305,7 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
         } // "DEFERRED_PB"_crcuR
         //////////////////////////////////////////
         case "FORWARD_UNLIT"_crcu:
+        case 0:
           if(mtl->_tek_FWD_UNLIT_NI_MO){
             fxinst             = std::make_shared<FxStateInstance>(permu);
             fxinst->_technique = mtl->_tek_FWD_UNLIT_NI_MO;

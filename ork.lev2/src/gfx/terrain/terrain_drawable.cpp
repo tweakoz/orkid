@@ -1086,7 +1086,7 @@ void TerrainRenderImpl::render(const RenderContextInstData& RCID) {
 ///////////////////////////////////////////////////////////////////////////////
 
 static void _RenderHeightfield(RenderContextInstData& RCID) {
-  auto renderable = dynamic_cast<const CallbackRenderable*>(RCID._dagrenderable);
+  auto renderable = dynamic_cast<const CallbackRenderable*>(RCID._irenderable);
   renderable->GetDrawableDataA().getShared<TerrainRenderImpl>()->render(RCID);
 }
 

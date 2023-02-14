@@ -158,8 +158,6 @@ public:
   texture_ptr_t _texEmissive;
   std::string _textureBaseName;
   ///////////////////////////////////////////
-  uint32_t _variant = 0;
-  ///////////////////////////////////////////
 
   // PIK: Picking
   // FWD: Forward

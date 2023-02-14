@@ -201,6 +201,7 @@ public:
   f32 mfParticleSize; // todo this does not belong here
 
   ork::varmap::VarMap _varmap;
+  uint32_t _variant = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

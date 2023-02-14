@@ -43,6 +43,8 @@ struct FxCachePermutation {
   bool _stereo = false;
   bool _instanced = false;
   bool _skinned = false;
+  fxtechnique_constptr_t _forced_technique = nullptr;
+
 };
 
 struct FxCachePermutationSet {
@@ -86,6 +88,35 @@ struct FxStateInstanceCache {
   cache_miss_fn_t _on_miss;
   mutable std::unordered_map<uint64_t,fxinstance_ptr_t> _lut;
   svar64_t _impl;
+};
+
+template <typename MtlClass>
+  struct FxStateInstanceCacheImpl{
+
+  FxStateInstanceCacheImpl(){}
+
+  fxinstancecache_constptr_t getCache(const MtlClass* material){
+
+    fxinstancecache_constptr_t rval;
+
+    auto it = _fxcachemap.find(material);
+    if(it==_fxcachemap.end()){
+      auto newcache = std::make_shared<FxStateInstanceCache>();
+      newcache->_impl.set<const MtlClass*>(material);
+      newcache->_on_miss = [=](const FxCachePermutation& permu) -> fxinstance_ptr_t {
+        return _createFxStateInstance(permu,material);
+      };
+      rval = newcache;
+      _fxcachemap[material] = newcache;
+    }
+    else{
+      rval = it->second;
+    }
+
+    return rval;    
+  }
+
+  std::unordered_map<const MtlClass*,fxinstancecache_ptr_t> _fxcachemap;
 };
 
 } // namespace ork::lev2
