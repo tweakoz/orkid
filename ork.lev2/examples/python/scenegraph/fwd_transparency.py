@@ -18,17 +18,11 @@ class PyOrkApp(object):
     super().__init__()
     self.ezapp = OrkEzApp.create(self)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
-  ################################################
-  # gpu data init:
-  #  called on main thread when graphics context is
-  #   made available
   ##############################################
   def onGpuInit(self,ctx):
-    ###################################
-    # material setup
-    ###################################
     permu = FxCachePermutation()
     permu.rendering_model = RENDERMODEL
+    ###################################
     def createMaterialAndPipeline(blending,culltest):
       material = FreestyleMaterial()
       material.gpuInit(ctx,Path("orkshader://manip"))
@@ -71,8 +65,6 @@ class PyOrkApp(object):
     frustum_prim.frustum = frustum
     frustum_prim.gpuInit(ctx)
     ###################################
-    # create scenegraph and layer
-    ###################################
     sceneparams = VarMap()
     sceneparams.preset = RENDERMODEL
     self.scene = self.ezapp.createScene(sceneparams)
@@ -83,13 +75,9 @@ class PyOrkApp(object):
       node.sortkey = sortkey
       return node
     ###################################
-    # create sg nodes in rendersorted order..
-    ###################################
     self.cube_node = createNode("cube",cube_prim,layer1,pipeline_cube,1)
     self.frustum_nodeB = createNode("frustumB",frustum_prim,layer1,pipeline_frustumB,2)
     self.frustum_nodeF = createNode("frustumF",frustum_prim,layer1,pipeline_frustumF,3)
-    ###################################
-    # create camera
     ###################################
     self.camera = CameraData()
     self.camera.perspective(0.1, 100.0, 45.0)
