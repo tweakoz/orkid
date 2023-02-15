@@ -111,13 +111,15 @@ class PyOrkApp(object):
                        vec3(0, 0, 0), # tgt
                        vec3(0, 1, 0)) # up
     ###################################
-    trans = vec3(0,0,0)
-    orient = quat()
-    scale = 1+(1+math.sin(updinfo.absolutetime*2))
     def nodesetxf(node,trans,orient,scale):
       node.worldTransform.translation = trans 
       node.worldTransform.orientation = orient 
       node.worldTransform.scale = scale
+    ###################################
+    trans = vec3(0,0,0)
+    orient = quat()
+    scale = 1+(1+math.sin(updinfo.absolutetime*2))
+    ###################################
     nodesetxf(self.frustum_nodeF,trans,orient,scale)
     nodesetxf(self.frustum_nodeB,trans,orient,scale)
     ###################################
