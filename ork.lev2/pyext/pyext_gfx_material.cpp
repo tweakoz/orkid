@@ -120,19 +120,19 @@ void pyinit_gfx_material(py::module& module_lev2) {
                  pyfxparam_ptr_t param, //
                  py::object inp_value) { //
                 if( py::isinstance<CrcString>(inp_value) ){
-                  fxinst->_params[param.get()] = py::cast<crcstring_ptr_t>(inp_value);
+                  fxinst->bindParam(param.get(),py::cast<crcstring_ptr_t>(inp_value));
                 }
                 else if( py::isinstance<float>(inp_value) ){
-                  fxinst->_params[param.get()] = py::cast<float>(inp_value);
+                  fxinst->bindParam(param.get(),py::cast<float>(inp_value));
                 }
                 else if( py::isinstance<fvec2>(inp_value) ){
-                  fxinst->_params[param.get()] = py::cast<fvec2>(inp_value);
+                  fxinst->bindParam(param.get(),py::cast<fvec2>(inp_value));
                 }
                 else if( py::isinstance<fvec3>(inp_value) ){
-                  fxinst->_params[param.get()] = py::cast<fvec3>(inp_value);
+                  fxinst->bindParam(param.get(),py::cast<fvec3>(inp_value));
                 }
                 else if( py::isinstance<fvec4>(inp_value) ){
-                  fxinst->_params[param.get()] = py::cast<fvec4>(inp_value);
+                  fxinst->bindParam(param.get(),py::cast<fvec4>(inp_value));
                 }
                 else{
                   OrkAssert(false);

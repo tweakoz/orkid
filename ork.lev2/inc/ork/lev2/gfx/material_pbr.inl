@@ -107,7 +107,6 @@ public:
   fxparam_constptr_t _paramVPR           = nullptr;
   fxparam_constptr_t _paramIVPL          = nullptr;
   fxparam_constptr_t _paramIVPR          = nullptr;
-  fxparam_constptr_t _paramVPinv         = nullptr;
   fxparam_constptr_t _paramMVP           = nullptr;
   fxparam_constptr_t _paramMVPL          = nullptr;
   fxparam_constptr_t _paramMVPR          = nullptr;

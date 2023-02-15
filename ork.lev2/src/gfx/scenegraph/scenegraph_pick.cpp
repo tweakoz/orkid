@@ -69,9 +69,9 @@ void PickBuffer::mydraw(fray3_constptr_t ray) {
 
     auto csi     = _compdata->findScene("scene1"_pool);
     auto itm     = csi->findItem("item1"_pool);
-    auto tek     = dynamic_cast<NodeCompositingTechnique*>(itm->technique());
-    auto rtgnode = dynamic_cast<RtGroupOutputCompositingNode*>(tek->_outputNode);
-    auto piknode = dynamic_cast<PickingCompositingNode*>(tek->_renderNode);
+    auto tek     = itm->tryTechniqueAs<NodeCompositingTechnique>();
+    auto rtgnode = tek->tryOutputNodeAs<RtGroupOutputCompositingNode>();
+    auto piknode = tek->tryRenderNodeAs<PickingCompositingNode>();
     rtgnode->resize(PICKBUFDIM, PICKBUFDIM);
     piknode->gpuInit(_context, PICKBUFDIM, PICKBUFDIM);
     _pixelfetchctx._rtgroup = piknode->GetOutputGroup();

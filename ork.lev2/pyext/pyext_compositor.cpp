@@ -36,6 +36,34 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
           });
   type_codec->registerStdCodec<compositingpassdata_ptr_t>(compositorpassdata_type);
   /////////////////////////////////////////////////////////////////////////////////
+  py::class_<RenderPresetContext>(module_lev2, "RenderPresetContext");
+  /////////////////////////////////////////////////////////////////////////////////
+  auto compositorrnode_type = //
+      py::class_<RenderCompositingNode, compositorrendernode_ptr_t>(module_lev2, "RenderCompositingNode")
+          .def_property("layers",
+            [](compositorrendernode_ptr_t rnode) -> std::string {
+              return rnode->_layers;
+            },
+            [](compositorrendernode_ptr_t rnode, std::string l){
+              rnode->_layers = l;
+            }
+          )
+          .def("__repr__", [](compositorrendernode_ptr_t d) -> std::string {
+            fxstring<64> fxs;
+            fxs.format("RenderCompositingNode(%p)", d.get());
+            return fxs.c_str();
+          });
+  type_codec->registerStdCodec<compositorrendernode_ptr_t>(compositorrnode_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto compositoronode_type = //
+      py::class_<OutputCompositingNode, compositoroutnode_ptr_t>(module_lev2, "OutputCompositingNode")
+          .def("__repr__", [](compositoroutnode_ptr_t d) -> std::string {
+            fxstring<64> fxs;
+            fxs.format("OutputCompositingNode(%p)", d.get());
+            return fxs.c_str();
+          });
+  type_codec->registerStdCodec<compositoroutnode_ptr_t>(compositoronode_type);
+  /////////////////////////////////////////////////////////////////////////////////
   auto compositordata_type = //
       py::class_<CompositingData, compositordata_ptr_t>(module_lev2, "CompositingData")
           .def(py::init<>())

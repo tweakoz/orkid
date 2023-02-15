@@ -69,6 +69,9 @@ struct FxStateInstance {
   using statelambda_t = std::function<void(const RenderContextInstData& RCID, int ipass)>;
 
   void addStateLambda(statelambda_t sl){_statelambdas.push_back(sl);}
+
+  void bindParam(fxparam_constptr_t p, varval_t v);
+
   GfxMaterial* _material = nullptr;
   fxtechnique_constptr_t _technique = nullptr;
   const FxCachePermutation __permutation;

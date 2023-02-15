@@ -83,6 +83,7 @@ public:
   DrawQueueXfData mXfData;
   int _bufferIndex;
   int _serialno = 0;
+  int _sortkey = 0;
   onrenderable_fn_t _onrenderable;
   std::atomic<int> _state;
   usermap_t _usermap;
@@ -102,10 +103,12 @@ struct DrawableBufLayer {
 
   using itemvect_t = std::vector<drawablebufitem_constptr_t>;
 
+  std::string _name;
   LockedResource<itemvect_t> _items;
   int _itemIndex;
   int miBufferIndex;
   std::atomic<int> _state;
+  int _sortkey = 0;
   bool HasData() const {
     return (_itemIndex != -1);
   }
@@ -305,6 +308,8 @@ struct Drawable {
   onrenderable_fn_t _onrenderable;
   bool mEnabled;
   std::string _name;
+
+  uint32_t _sortkey = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -550,12 +555,6 @@ struct CallbackDrawable : public Drawable {
   void setEnqueueOnLayerLambda(Q2LLambdaType cb) {
     _enqueueOnLayerLambda = cb;
   }
-  U32 GetSortKey() const {
-    return mSortKey;
-  }
-  void SetSortKey(U32 uv) {
-    mSortKey = uv;
-  }
   void enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const final;
   drawablebufitem_ptr_t enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const final;
 
@@ -564,7 +563,6 @@ struct CallbackDrawable : public Drawable {
   Q2LCBType* _enqueueOnLayerCallback;
   Q2LLambdaType _enqueueOnLayerLambda;
   RLCBType _renderLambda;
-  U32 mSortKey;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

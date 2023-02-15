@@ -360,10 +360,10 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
   //////////////////////////////////////////////
 
   _compositorData->mbEnable = true;
-  _compostorTechnique       = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
+  _compositorTechnique       = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
 
-  _outputNode = _compostorTechnique->tryOutputNodeAs<OutputCompositingNode>();
-  _renderNode = _compostorTechnique->tryRenderNodeAs<RenderCompositingNode>();
+  _outputNode = _compositorTechnique->tryOutputNodeAs<OutputCompositingNode>();
+  _renderNode = _compositorTechnique->tryRenderNodeAs<RenderCompositingNode>();
 
   _compositorImpl = _compositorData->createImpl();
   _compositorImpl->bindLighting(_lightManager.get());
@@ -430,13 +430,11 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras,on_enqueue_fn_t on_enq
     }
   });
 
-
-  auto drawable_layer = DB->MergeLayer("Default");
-
-
   ////////////////////////////////////////////////////////////////////////////
 
   for (auto l : layers) {
+
+    auto drawable_layer = DB->MergeLayer(l->_name);
 
     l->_drawable_nodes.atomicOp([drawable_layer, this](const Layer::drawablenodevect_t& unlocked) {
       for (auto n : unlocked) {
@@ -461,18 +459,6 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras,on_enqueue_fn_t on_enq
           if(DEBUG_LOG){
             logchan_sg->log( "enqueue instanced-drawable<%s> instances_count<%zu>", drawable->_name.c_str(), instances_count );
           }
-          //auto instance_data = drawable->_instancedata;
-          //auto instances_copy = std::make_shared<InstancedDrawableInstanceData>();
-          //*instances_copy = *instance_data;
-          //for( instanced_drawable_node_ptr_t node : instances_vect ){
-            //size_t iid = node->_instanced_drawable_id;
-            //instance_data->_worldmatrices[iid] = node->_dqxfdata._worldTransform->composed();
-          //}
-          //static const DrawQueueXfData xfdata;
-          //drawablebufitem_ptr_t dbufitem = drawable->enqueueOnLayer(xfdata, *drawable_layer);
-          //dbufitem->_usermap["rtthread_instance_data"_crcu].set<instanceddrawinstancedata_ptr_t>(instances_copy);
-          //auto it = dbufitem->_usermap.find("rtthread_instance_data"_crcu);
-          //OrkAssert(it!=dbufitem->_usermap.end());
         }
       }
     });
@@ -485,7 +471,10 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras,on_enqueue_fn_t on_enq
     auto& drawable_layer = item._layer;
     auto n              = item._drwnode;
     if(DEBUG_LOG){
-      logchan_sg->log( "enqueue drawable<%s>",  (void*) n->_drawable->_name.c_str() );
+
+      logchan_sg->log( "enqueue drawable<%s> on layer<%s>", //
+                       (void*) n->_drawable->_name.c_str(), //
+                       drawable_layer->_name.c_str() );
     }
     n->_drawable->enqueueOnLayer(n->_dqxfdata, *drawable_layer);
   }

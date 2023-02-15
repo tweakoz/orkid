@@ -23,7 +23,6 @@ struct SRasterState {
   unsigned muAlphaTest : 2;
   unsigned muAlphaRef : 4; 
 
-  unsigned muBlending : 3;    
   unsigned muScissorTest : 1; 
   unsigned muShadeModel : 1; 
   unsigned muStencilMode : 4; 
@@ -43,6 +42,7 @@ struct SRasterState {
 
   ECullTest _culltest = ECullTest::OFF;         
   EDepthTest _depthtest  = EDepthTest::LEQUALS; 
+  Blending _blending  = Blending::OFF; 
 
   /////////////////////////////
   // Accessors
@@ -75,7 +75,7 @@ struct SRasterState {
     muAlphaRef  = (unsigned)(falpharef * 16.0f);
   }
   void SetBlending(Blending eVal) {
-    muBlending = unsigned(eVal);
+    _blending = eVal;
   }
   void SetDepthTest(EDepthTest eVal) {
     _depthtest = eVal;
@@ -101,7 +101,7 @@ struct SRasterState {
     return EAlphaTest(muAlphaTest);
   }
   Blending GetBlending(void) const {
-    return Blending(muBlending);
+    return _blending;
   }
   EDepthTest GetDepthTest(void) const {
     return _depthtest;

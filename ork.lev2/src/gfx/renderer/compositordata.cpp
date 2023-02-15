@@ -71,23 +71,18 @@ void CompositingData::presetDefault() {
 
 RenderPresetContext CompositingData::presetUnlit(rtgroup_ptr_t outputgrp) {
 
-  OutputCompositingNode* selected_output_node = nullptr;
-  if(outputgrp){
-    selected_output_node = new RtGroupOutputCompositingNode(outputgrp);
-  }else{
-    selected_output_node = new ScreenOutputCompositingNode;
-  }
 
-
-  auto t1 = new NodeCompositingTechnique;
-  auto r1 = new compositor::UnlitNode;
-  t1->_writeOutputNode(selected_output_node);
-  t1->_writeRenderNode(r1);
-  // t1->_writePostFxNode(p1);
+  auto t1 = std::make_shared<NodeCompositingTechnique>();
+  auto r1 = t1->createRenderNode<compositor::UnlitNode>();
+  compositoroutnode_ptr_t o1;
+  if(outputgrp)
+    o1 = t1->createOutputNode<RtGroupOutputCompositingNode>();
+  else
+    o1 = t1->createOutputNode<ScreenOutputCompositingNode>();
 
   auto s1 = new CompositingScene;
   auto i1 = new CompositingSceneItem;
-  i1->_writeTech(t1);
+  i1->_technique = t1;
   s1->items().AddSorted("item1"_pool, i1);
   _activeScene = "scene1"_pool;
   _activeItem  = "item1"_pool;
@@ -95,7 +90,7 @@ RenderPresetContext CompositingData::presetUnlit(rtgroup_ptr_t outputgrp) {
 
   RenderPresetContext rval;
   rval._nodetek    = t1;
-  rval._outputnode = selected_output_node;
+  rval._outputnode = o1;
   rval._rendernode = r1;
 
   return rval;
@@ -105,16 +100,13 @@ RenderPresetContext CompositingData::presetUnlit(rtgroup_ptr_t outputgrp) {
 
 void CompositingData::presetPicking() {
 
-  auto t1 = new NodeCompositingTechnique;
-  auto o1 = new RtGroupOutputCompositingNode;
-  auto r1 = new PickingCompositingNode;
-  t1->_writeOutputNode(o1);
-  t1->_writeRenderNode(r1);
-  // t1->_writePostFxNode(p1);
+  auto t1 = std::make_shared<NodeCompositingTechnique>();
+  auto o1 = t1->createOutputNode<RtGroupOutputCompositingNode>();
+  auto r1 = t1->createRenderNode<PickingCompositingNode>();
 
   auto s1 = new CompositingScene;
   auto i1 = new CompositingSceneItem;
-  i1->_writeTech(t1);
+  i1->_technique = t1;
   s1->items().AddSorted("item1"_pool, i1);
   _activeScene = "scene1"_pool;
   _activeItem  = "item1"_pool;
@@ -124,38 +116,32 @@ void CompositingData::presetPicking() {
 //////////////////////////////////////////////////////////////////////////////
 
 compositorimpl_ptr_t CompositingData::createImpl() const {
-  auto impl = std::make_shared<CompositingImpl>(*this);
-
-  return impl;
+  return std::make_shared<CompositingImpl>(*this);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
 RenderPresetContext CompositingData::presetDeferredPBR(rtgroup_ptr_t outputgrp) {
   RenderPresetContext rval;
-  auto t1 = new NodeCompositingTechnique;
-  OutputCompositingNode* selected_output_node = nullptr;
-  auto r1 = new pbr::deferrednode::DeferredCompositingNodePbr;
+  auto t1 = std::make_shared<NodeCompositingTechnique>();
+  auto r1 = t1->createRenderNode<pbr::deferrednode::DeferredCompositingNodePbr>();
+
+  compositoroutnode_ptr_t selected_output_node = nullptr;
   if(outputgrp){
-    selected_output_node = new RtGroupOutputCompositingNode(outputgrp);
+    selected_output_node = t1->createOutputNode<RtGroupOutputCompositingNode>(outputgrp);
   }else{
-    auto screennode = new ScreenOutputCompositingNode;
+    auto screennode = t1->createOutputNode<ScreenOutputCompositingNode>();
     screennode->setSuperSample(_ginitdata->_ssaa_samples);
     selected_output_node = screennode;
   }
 
-  t1->_writeOutputNode(selected_output_node);
-  t1->_writeRenderNode(r1);
-
   auto pbr_common = r1->_pbrcommon;
-
-  // t1->_writePostFxNode(p1);
 
   auto load_req = pbr_common->requestSkyboxTexture("src://envmaps/tozenv_nebula");
 
   auto s1 = new CompositingScene;
   auto i1 = new CompositingSceneItem;
-  i1->_writeTech(t1);
+  i1->_technique = t1;
   s1->items().AddSorted("item1"_pool, i1);
   _activeScene = "scene1"_pool;
   _activeItem  = "item1"_pool;
@@ -172,12 +158,9 @@ RenderPresetContext CompositingData::presetDeferredPBR(rtgroup_ptr_t outputgrp) 
 
 RenderPresetContext CompositingData::presetPBRVR() {
   RenderPresetContext rval;
-  auto t1 = new NodeCompositingTechnique;
-  auto o1 = new VrCompositingNode;
-  auto r1 = new pbr::deferrednode::DeferredCompositingNodePbr;
-  t1->_writeOutputNode(o1);
-  t1->_writeRenderNode(r1);
-  // t1->_writePostFxNode(p1);
+  auto t1 = std::make_shared<NodeCompositingTechnique>();
+  auto o1 = t1->createOutputNode<VrCompositingNode>();
+  auto r1 = t1->createRenderNode<pbr::deferrednode::DeferredCompositingNodePbr>();
 
   auto pbr_common = r1->_pbrcommon;
 
@@ -185,7 +168,7 @@ RenderPresetContext CompositingData::presetPBRVR() {
 
   auto s1 = new CompositingScene;
   auto i1 = new CompositingSceneItem;
-  i1->_writeTech(t1);
+  i1->_technique = t1;
   s1->items().AddSorted("item1"_pool, i1);
   _activeScene = "scene1"_pool;
   _activeItem  = "item1"_pool;
@@ -202,25 +185,22 @@ RenderPresetContext CompositingData::presetPBRVR() {
 
 RenderPresetContext CompositingData::presetForwardPBR(rtgroup_ptr_t outputgrp) {
   RenderPresetContext rval;
-  auto t1 = new NodeCompositingTechnique;
-  OutputCompositingNode* selected_output_node = nullptr;
-  auto r1 = new pbr::ForwardNode;
+  auto t1 = std::make_shared<NodeCompositingTechnique>();
+  compositoroutnode_ptr_t selected_output_node = nullptr;
+  auto r1 = t1->createRenderNode<pbr::ForwardNode>();
   if(outputgrp){
-    selected_output_node = new RtGroupOutputCompositingNode(outputgrp);
+    selected_output_node = t1->createOutputNode<RtGroupOutputCompositingNode>(outputgrp);
   }else{
-    auto screennode = new ScreenOutputCompositingNode;
+    auto screennode = t1->createOutputNode<ScreenOutputCompositingNode>();
     screennode->setSuperSample(_ginitdata->_ssaa_samples);
     selected_output_node = screennode;
   }
-
-  t1->_writeOutputNode(selected_output_node);
-  t1->_writeRenderNode(r1);
 
   auto load_req = r1->_pbrcommon->requestSkyboxTexture("src://envmaps/tozenv_nebula");
 
   auto s1 = new CompositingScene;
   auto i1 = new CompositingSceneItem;
-  i1->_writeTech(t1);
+  i1->_technique = t1;
   s1->items().AddSorted("item1"_pool, i1);
   _activeScene = "scene1"_pool;
   _activeItem  = "item1"_pool;
@@ -237,18 +217,15 @@ RenderPresetContext CompositingData::presetForwardPBR(rtgroup_ptr_t outputgrp) {
 
 RenderPresetContext CompositingData::presetForwardPBRVR() {
   RenderPresetContext rval;
-  auto t1 = new NodeCompositingTechnique;
-  auto o1 = new VrCompositingNode;
-  auto r1 = new pbr::ForwardNode;
-
-  t1->_writeOutputNode(o1);
-  t1->_writeRenderNode(r1);
+  auto t1 = std::make_shared<NodeCompositingTechnique>();
+  auto o1 = t1->createOutputNode<VrCompositingNode>();
+  auto r1 = t1->createRenderNode<pbr::ForwardNode>();
 
   auto load_req = r1->_pbrcommon->requestSkyboxTexture("src://envmaps/tozenv_nebula");
 
   auto s1 = new CompositingScene;
   auto i1 = new CompositingSceneItem;
-  i1->_writeTech(t1);
+  i1->_technique = t1;
   s1->items().AddSorted("item1"_pool, i1);
   _activeScene = "scene1"_pool;
   _activeItem  = "item1"_pool;

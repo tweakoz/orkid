@@ -124,6 +124,8 @@ struct Layer {
   LockedResource<drawablenodevect_t> _drawable_nodes;
   LockedResource<instanced_drawmap_t> _instanced_drawable_map;
   LockedResource<lightnodevect_t> _lightnodes;
+
+  uint32_t _sortkey = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -199,9 +201,9 @@ struct Scene {
   compositorimpl_ptr_t _compositorImpl;
   compositordata_ptr_t _compositorData;
   pickbuffer_ptr_t _pickbuffer;
-  NodeCompositingTechnique* _compostorTechnique = nullptr;
-  OutputCompositingNode* _outputNode            = nullptr;
-  RenderCompositingNode* _renderNode = nullptr;
+  nodecompositortechnique_ptr_t _compositorTechnique = nullptr;
+  compositoroutnode_ptr_t _outputNode            = nullptr;
+  compositorrendernode_ptr_t _renderNode = nullptr;
   compositingpassdata_ptr_t _topCPD;
   RenderPresetContext _compositorPreset;
   std::vector<DrawableKvPair> _staticDrawables; //! global drawables owned by the scenegraph, not owned by nodes...

@@ -66,28 +66,13 @@ void DrawableBuffer::enqueueLayerToRenderQueue(const std::string& LayerName, lev
 
   int numdrawables = 0;
 
-  bool DoAll = LayerName == "All";
-  target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue doall<%d>", int(DoAll)));
+  bool do_all = (LayerName == "All");
+  target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue do_all<%d>", int(do_all)));
   target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue numlayers<%zu>", mLayerLut.size()));
 
-  for (const auto& layer_item : mLayerLut) {
-
-
-    const std::string& TestLayerName     = layer_item.first;
-    const lev2::DrawableBufLayer* player = layer_item.second;
-
-    bool Match = (LayerName == TestLayerName);
-
-    target->debugMarker(FormatString(
-        "DrawableBuffer::enqueueLayerToRenderQueue TestLayerName<%s> player<%p> Match<%d>",
-        TestLayerName.c_str(),
-        player,
-        int(Match)));
-
-    if (DoAll || (Match && topCPD.HasLayer(TestLayerName))) {
-      //printf( "layer<%s> count<%d>\n", TestLayerName.c_str(), player->_itemIndex );
-      target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue layer itemcount<%d>", player->_itemIndex + 1));
-
+  //printf( "rendering <%s> are_multiple_layers_selected<%d> do_all<%d>\n", LayerName.c_str(), int(are_multiple_layers_selected), int(do_all) );
+  //////////////////////////////////////////////////////////////////////////////////////////////
+  auto do_layer = [target,renderer,&numdrawables](const lev2::DrawableBufLayer* player){
       player->_items.atomicOp([player,target,renderer,&numdrawables](const DrawableBufLayer::itemvect_t& unlocked){
         int max_index = player->_itemIndex;
         for (int id = 0; id < max_index; id++) {
@@ -100,6 +85,27 @@ void DrawableBuffer::enqueueLayerToRenderQueue(const std::string& LayerName, lev
           }
         }
       }); // player->_items.atomicOp
+  };
+  //////////////////////////////////////////////////////////////////////////////////////////////
+  for (const auto& layer_item : mLayerLut) {
+
+    const std::string& TestLayerName     = layer_item.first;
+    const lev2::DrawableBufLayer* player = layer_item.second;
+
+    bool Match = (LayerName == TestLayerName);
+    bool has = topCPD.HasLayer(TestLayerName);
+    //printf( "against layer<%s> match<%d> has<%d>\n", TestLayerName.c_str(), int(Match), int(has) );
+
+    target->debugMarker(FormatString(
+        "DrawableBuffer::enqueueLayerToRenderQueue TestLayerName<%s> player<%p> Match<%d>",
+        TestLayerName.c_str(),
+        player,
+        int(Match)));
+
+    if (do_all || (Match && topCPD.HasLayer(TestLayerName))) {
+      //printf( "layer<%s> count<%d>\n", TestLayerName.c_str(), player->_itemIndex );
+      target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue layer itemcount<%d>", player->_itemIndex + 1));
+      do_layer(player);
     }
   }
 
@@ -149,6 +155,7 @@ DrawableBufLayer* DrawableBuffer::MergeLayer(const std::string& layername) {
   } else {
     OrkAssert(miNumLayersUsed < kmaxlayers);
     player = &mRawLayers[miNumLayersUsed++];
+    player->_name = layername;
     mLayers.insert(layername);
     mLayerLut.AddSorted(layername, player);
   }
@@ -166,6 +173,7 @@ drawablebufitem_ptr_t DrawableBufLayer::enqueueDrawable(const DrawQueueXfData& x
   item->_bufferIndex = miBufferIndex;
   static std::atomic<int> counter = 0;
   item->_serialno = counter++;
+  item->_sortkey = _sortkey;
   _items.atomicOp([this,item](DrawableBufLayer::itemvect_t& unlocked){
     unlocked.push_back(item);
     _itemIndex = unlocked.size();

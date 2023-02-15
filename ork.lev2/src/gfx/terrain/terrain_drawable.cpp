@@ -1145,7 +1145,7 @@ drawable_ptr_t TerrainDrawableData::createDrawable() const {
   drawable->SetRenderCallback(_RenderHeightfield);
   drawable->SetUserDataA(impl);
   drawable->SetUserDataB(inst);
-  drawable->SetSortKey(1000);
+  drawable->_sortkey = 10;
   return drawable;
 
 }

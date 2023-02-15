@@ -38,7 +38,6 @@ void CompositingPassData::defaultSetup(CompositorDrawData& drawdata) {
   this->mbDrawSource = true;
   this->mpFrameTek   = nullptr;
   this->_cameraName  = "";
-  this->_layerName   = "";
   this->_clearColor  = fvec4(0, 0, 0, 0);
   int w              = drawdata._properties["OutputWidth"_crcu].get<int>();
   int h              = drawdata._properties["OutputHeight"_crcu].get<int>();
@@ -94,21 +93,20 @@ const fvec3& CompositingPassData::monoCamZnormal() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-std::vector<std::string> CompositingPassData::getLayerNames() const {
-  std::vector<std::string> out_layernames;
-  if (_layerName.length()) {
-    const char* layer_cstr = _layerName.c_str();
-    char temp_buf[256];
-    strncpy(&temp_buf[0], layer_cstr, sizeof(temp_buf));
-    char* tok = strtok(&temp_buf[0], ",");
-    while (tok != 0) {
-      out_layernames.push_back(tok);
-      tok = strtok(0, ",");
-    }
+void CompositingPassData::assignLayers(const std::string& layers) {
+  if (layers.length()) {
+    _layernames = SplitString(layers,',');
   } else {
-    out_layernames.push_back("All");
+    _layernames.push_back("All");
   }
-  return out_layernames;
+  for(auto item : _layernames)
+    _layernameset.insert(item);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+std::vector<std::string> CompositingPassData::getLayerNames() const {
+  return _layernames;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -120,14 +118,11 @@ void CompositingPassData::updateCompositingSize(int w, int h) {
 bool CompositingPassData::isPicking() const {
   return _ispicking;
 }
-void CompositingPassData::ClearLayers() {
-  mLayers.clear();
-}
 void CompositingPassData::AddLayer(const std::string& layername) {
-  mLayers.insert(layername);
+  _layernameset.insert(layername);
 }
 bool CompositingPassData::HasLayer(const std::string& layername) const {
-  return (mLayers.find(layername) != mLayers.end());
+  return (_layernameset.find(layername) != _layernameset.end());
 }
 
 // void RenderContextFrameData::PushRenderTarget(IRenderTarget* ptarg) { mRenderTargetStack.push(ptarg); }

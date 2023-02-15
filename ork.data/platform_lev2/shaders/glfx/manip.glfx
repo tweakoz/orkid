@@ -45,7 +45,7 @@ fragment_interface iface_fmt
 	: ub_frg
 {
     inputs {
-	    //vec2 frg_uv;
+	    vec4 frg_clr;
 	}
 	outputs {
 	    vec4 out_clr;
@@ -95,6 +95,13 @@ fragment_shader ps_modclrd3
 {
 	out_clr = vec4(modcolor.xyz*0.3,1.0);
 }
+
+fragment_shader ps_vtxcolor
+  : iface_fmt
+{
+  out_clr = frg_clr;
+}
+
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_pbr_deferred
 	: ub_frg
@@ -112,6 +119,7 @@ fragment_shader ps_deferred_emissive_fragclr
   : lib_gbuf_encode {
 	out_gbuf = packGbuffer_unlit(frg_clr.xyz);
 }
+
 ///////////////////////////////////////////////////////////////
 state_block sb_m1 : sb_default
 {
@@ -139,6 +147,15 @@ technique std_mono
 		fragment_shader=ps_deferred_emissive_fragclr;
 		state_block=sb_m1;
 	}
+}
+technique std_mono_fwd
+{
+  fxconfig=fxcfg_default;
+  pass p0
+  { vertex_shader=vs_vtxcolor_mono;
+    fragment_shader=ps_vtxcolor;
+    state_block=sb_m1;
+  }
 }
 technique std_stereo
 {

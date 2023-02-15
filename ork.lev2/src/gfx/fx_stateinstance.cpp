@@ -42,6 +42,11 @@ FxStateInstance::FxStateInstance(const FxCachePermutation& config)
     : __permutation(config) {
 }
 /////////////////////////////////////////////////////////////////////////
+void FxStateInstance::bindParam(fxparam_constptr_t p, varval_t v){
+  OrkAssert(p!=nullptr);
+  _params[p] = v;
+}
+/////////////////////////////////////////////////////////////////////////
 void FxStateInstance::wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_t drawcall) {
   int inumpasses = beginBlock(RCID);
   for (int ipass = 0; ipass < inumpasses; ipass++) {

@@ -30,6 +30,7 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu, 
 
   switch (mtl->_variant) {
     case "FORWARD_UNLIT"_crcu:
+    case "CUSTOM"_crcu:
     case 0: { // free-freestyle
       fxinst             = std::make_shared<FxStateInstance>(permu);
 

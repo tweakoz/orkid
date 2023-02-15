@@ -41,7 +41,7 @@ struct ForwardPbrNodeImpl {
   ForwardPbrNodeImpl(ForwardNode* node)
       : _node(node)
       , _camname("Camera")
-      , _layername("All") { //
+      , _layername("None") { //
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ~ForwardPbrNodeImpl() {
@@ -49,6 +49,8 @@ struct ForwardPbrNodeImpl {
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   void init(lev2::Context* context) {
     if (nullptr == _rtg) {
+
+      _layername = _node->_layers;
 
       printf( "PBRFWD_MSAA<%d>\n", int(_ginitdata->_msaa_samples) );
       _rtg             = std::make_shared<RtGroup>(context, 8, 8, intToMsaaEnum(_ginitdata->_msaa_samples));
@@ -129,8 +131,8 @@ struct ForwardPbrNodeImpl {
       /////////////////////////////////////////////////////////////////////////////////////////
       auto DB             = RCFD.GetDB();
       auto CPD            = CIMPL->topCPD();
+      CPD.assignLayers(_layername);
       CPD._clearColor     = pbrcommon->_clearColor;
-      CPD._layerName      = _layername;
       CPD._irendertarget  = &rt;
       CPD._cameraMatrices = ddprops["defcammtx"_crcu].get<const CameraMatrices*>();
       CPD.SetDstRect(tgt_rect);

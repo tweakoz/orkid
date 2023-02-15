@@ -132,7 +132,7 @@ drawable_ptr_t GridDrawableData::createDrawable() const {
   auto rval = std::make_shared<CallbackDrawable>(nullptr);
   rval->SetRenderCallback(GridRenderImpl::renderGrid);
   rval->SetUserDataA(impl);
-  rval->SetSortKey(1000);
+  rval->_sortkey = 10;
   return rval;
 }
 

@@ -349,7 +349,7 @@ int main(int argc, char** argv,char** envp) {
     };
     ///////////////////////////////////////
     gpurec->_sdf_drawable->SetRenderCallback(render_sdf);
-    gpurec->_sdf_drawable->SetSortKey(0xffff);
+    gpurec->_sdf_drawable->_sortkey = 0xffff;
     /////////////////////////////////////
   });
   //////////////////////////////////////////////////////////

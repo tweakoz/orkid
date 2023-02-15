@@ -37,7 +37,7 @@ struct FrustumPrimitive {
     _primitive.renderEML(context);
   }
   //////////////////////////////////////////////////////////////////////////////
-  inline scenegraph::node_ptr_t createNode(
+  inline scenegraph::drawable_node_ptr_t createNode(
       std::string named, //
       scenegraph::layer_ptr_t layer,
       fxinstance_ptr_t material_inst) {

@@ -103,7 +103,7 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
         _gpurec->drawTarget(RCIDCOPY,_target);
       });
       _dbgdraw_node = gpurec->_sg_layer->createDrawableNode("skdebugnode", drw);
-      drw->mSortKey = 0x7fffffff;
+      drw->_sortkey = 0x7fffffff;
       ///////////////////////////////////////////////////////////////
 
       _timer.Start();

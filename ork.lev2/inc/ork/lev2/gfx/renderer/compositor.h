@@ -80,7 +80,7 @@ struct CompositingContext {
   int miWidth;
   int miHeight;
   GfxMaterial3DSolid* _utilMaterial           = nullptr;
-  CompositingTechnique* _compositingTechnique = nullptr;
+  compositortechnique_ptr_t _compositingTechnique = nullptr;
 
   CompositingContext();
   ~CompositingContext();
@@ -132,7 +132,7 @@ struct CompositingPassData {
   void SetMrtRect(const ViewportRect& rect) {
     mMrtRect = rect;
   }
-  void ClearLayers();
+  void assignLayers(const std::string& layers);
   void AddLayer(const std::string& layername);
   bool HasLayer(const std::string& layername) const;
   void addStandardLayers();
@@ -153,7 +153,6 @@ struct CompositingPassData {
   lev2::FrameTechniqueBase* mpFrameTek = nullptr;
   bool mbDrawSource                    = true;
   std::string _cameraName;
-  std::string _layerName;
   ork::fvec4 _clearColor;
   bool _stereo1pass                                 = false;
   const CameraMatrices* _cameraMatrices             = nullptr;
@@ -163,9 +162,10 @@ struct CompositingPassData {
   ViewportRect mDstRect;
   ViewportRect mMrtRect;
   uint32_t _passID = 0;
-  orkset<std::string> mLayers;
   float _time = 0.0f;
   bool _ispicking = false;
+  std::vector<std::string> _layernames;
+  std::unordered_set<std::string> _layernameset;
 };
 
 typedef std::stack<lev2::CompositingPassData> compositingpassdatastack_t;
@@ -209,10 +209,11 @@ struct CompositorDrawData {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct RenderPresetContext {
-  CompositingTechnique* _nodetek     = nullptr;
-  OutputCompositingNode* _outputnode = nullptr;
-  RenderCompositingNode* _rendernode = nullptr;
+  compositortechnique_ptr_t _nodetek = nullptr;
+  compositoroutnode_ptr_t _outputnode = nullptr;
+  compositorrendernode_ptr_t _rendernode = nullptr;
 };
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct CompositingData : public ork::Object {
@@ -261,7 +262,7 @@ public:
     mToggle = !mToggle;
   }
 
-  template <typename T> T* tryNodeTechnique(PoolString scenename, PoolString itemname) const;
+  template <typename T> std::shared_ptr<T> tryNodeTechnique(PoolString scenename, PoolString itemname) const;
 
   orklut<PoolString, ork::Object*> _groups;
   orklut<PoolString, ork::Object*> _scenes;
@@ -340,25 +341,27 @@ class CompositingSceneItem : public ork::Object {
 public:
   CompositingSceneItem();
 
-  CompositingTechnique* technique() const {
-    return mpTechnique;
+  compositortechnique_ptr_t technique() const {
+    return _technique;
   }
-  void _readTech(ork::rtti::ICastable*& val) const;
-  void _writeTech(ork::rtti::ICastable* const& val);
 
-  CompositingTechnique* mpTechnique;
+  template <typename T> std::shared_ptr<T> tryTechniqueAs() const {
+    return std::dynamic_pointer_cast<T>(_technique);
+  }
+
+  compositortechnique_ptr_t _technique;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-template <typename T> T* CompositingData::tryNodeTechnique(PoolString scenename, PoolString itemname) const {
-  T* rval  = nullptr;
+template <typename T> std::shared_ptr<T> CompositingData::tryNodeTechnique(PoolString scenename, PoolString itemname) const {
+  std::shared_ptr<T> rval  = nullptr;
   auto its = _scenes.find(scenename);
   if (its != _scenes.end()) {
     auto scene = (CompositingScene*)its->second;
     auto iti   = scene->items().find(itemname);
     if (iti != scene->items().end()) {
       auto sceneitem = (CompositingSceneItem*)iti->second;
-      rval           = dynamic_cast<T*>(sceneitem->mpTechnique);
+      rval           = std::dynamic_pointer_cast<T>(sceneitem->_technique);
     }
   }
   return rval;

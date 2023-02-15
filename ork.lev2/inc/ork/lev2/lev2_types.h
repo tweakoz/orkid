@@ -108,8 +108,11 @@ struct CompositingMorphable;
 struct CompositingPassData;
 struct CompositingImpl;
 struct CompositingData;
+struct CompositingTechnique;
+struct NodeCompositingTechnique;
 class OutputCompositingNode;
 class RenderCompositingNode;
+class PostCompositingNode;
 struct AcquiredUpdateDrawBuffer;
 struct AcquiredRenderDrawBuffer;
 struct StandardCompositorFrame;
@@ -205,6 +208,13 @@ using compositingpassdata_ptr_t = std::shared_ptr<CompositingPassData>;
 using compositordata_ptr_t   = std::shared_ptr<CompositingData>;
 using compositordata_constptr_t = std::shared_ptr<const CompositingData>;
 using compositorimpl_ptr_t   = std::shared_ptr<CompositingImpl>;
+
+using compositortechnique_ptr_t   = std::shared_ptr<CompositingTechnique>;
+using nodecompositortechnique_ptr_t   = std::shared_ptr<NodeCompositingTechnique>;
+using compositoroutnode_ptr_t   = std::shared_ptr<OutputCompositingNode>;
+using compositorrendernode_ptr_t   = std::shared_ptr<RenderCompositingNode>;
+using compositorpostnode_ptr_t   = std::shared_ptr<PostCompositingNode>;
+
 using fxshader_ptr_t         = FxShader*;
 using fxparam_ptr_t          = FxShaderParam*;
 using fxtechnique_ptr_t      = FxShaderTechnique*;

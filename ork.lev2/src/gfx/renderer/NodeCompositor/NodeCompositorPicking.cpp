@@ -83,7 +83,6 @@ struct IMPL {
       auto DB             = RCFD.GetDB();
       auto CPD            = CIMPL->topCPD();
       CPD._clearColor     = node->_clearColor;
-      CPD._layerName      = _layername;
       CPD._irendertarget  = &rt;
       CPD._ispicking      = true;
       CPD._cameraMatrices = ddprops["defcammtx"_crcu].get<const CameraMatrices*>();

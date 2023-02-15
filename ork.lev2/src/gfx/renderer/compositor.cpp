@@ -57,15 +57,12 @@ CompositingScene::CompositingScene() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void CompositingSceneItem::describeX(class_t* c) {
-
-  ork::reflect::RegisterProperty("Technique", &CompositingSceneItem::_readTech, &CompositingSceneItem::_writeTech);
-  ork::reflect::annotatePropertyForEditor<CompositingSceneItem>("Technique", "editor.factorylistbase", "CompositingTechnique");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 CompositingSceneItem::CompositingSceneItem()
-    : mpTechnique(nullptr) {
+    : _technique(nullptr) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -83,16 +80,6 @@ void CompositingMorphable::RecallMorphTarget(dataflow::MorphKey name) {
 void CompositingMorphable::Morph1D(const dataflow::morph_event* pme) {
 }
 
-///////////////////////////////////////////////////////////////////////////////
-void CompositingSceneItem::_readTech(ork::rtti::ICastable*& val) const {
-  CompositingTechnique* nonconst = const_cast<CompositingTechnique*>(mpTechnique);
-  val                            = nonconst;
-}
-///////////////////////////////////////////////////////////////////////////////
-void CompositingSceneItem::_writeTech(ork::rtti::ICastable* const& val) {
-  ork::rtti::ICastable* ptr = val;
-  mpTechnique               = ((ptr == 0) ? 0 : rtti::safe_downcast<CompositingTechnique*>(ptr));
-}
 ///////////////////////////////////////////////////////////////////////////////
 
 void PickingCompositorTechnique::gpuInit(lev2::Context* pTARG, int w, int h) {

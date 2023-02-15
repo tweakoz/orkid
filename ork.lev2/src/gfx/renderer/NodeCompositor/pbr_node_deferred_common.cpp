@@ -189,7 +189,7 @@ void DeferredContext::renderGbuffer(CompositorDrawData& drawdata, const ViewData
   ///////////////////////////////////////////////////////////////////////////
   const auto TOPCPD  = CIMPL->topCPD();
   auto CPD           = TOPCPD;
-  CPD._layerName     = _layername;
+  CPD.assignLayers(_layername);
   CPD._irendertarget = _gbuffRT;
   CPD.SetDstRect(tgt_rect);
   CPD.SetMrtRect(mrt_rect);
@@ -240,8 +240,8 @@ const uint32_t* DeferredContext::captureDepthClusters(const CompositorDrawData& 
 
   const auto TOPCPD = CIMPL->topCPD();
   auto CPD          = TOPCPD;
+  CPD.assignLayers(_layername);
   CPD._clearColor   = _clearColor;
-  CPD._layerName    = _layername;
   CPD.SetDstRect(tgt_rect);
   CPD._passID = "defcluster"_crcu;
   CPD.SetDstRect(vprect);

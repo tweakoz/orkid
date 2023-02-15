@@ -151,18 +151,17 @@ enum EAlphaTest {
 
 //////////////////////////////////////
 
-enum class Blending {
-  OFF = 0,
-  PREMA,             // (SrcClr) + (FBClr*(1-SrcAlpha))
-  ALPHA,             // (SrcClr*SrcAlpha) + (FBClr*(1-SrcAlpha))
-  DSTALPHA,          // (SrcClr*FBAlpha) + (FBClr*(1-FBAlpha))
-  ADDITIVE,          // (SrcClr*1) + (FBClr*1)
-  ALPHA_ADDITIVE,    // (SrcClr*SrcAlpha) + (FBClr*1)
-  SUBTRACTIVE,       // (SrcClr*0) + (FBClr*(1-SrcColor))
-  ALPHA_SUBTRACTIVE, // (SrcClr*0) + (FBClr*(1-SrcAlpha))
-  MODULATE,          // (SrcClr*0) + (FBClr*(1-SrcAlpha))
-  END,
-}; // 3 bit
+enum struct Blending : crc_enum_t {
+  CrcEnum(OFF),
+  CrcEnum(PREMA),             // (SrcClr) + (FBClr*(1-SrcAlpha))
+  CrcEnum(ALPHA),             // (SrcClr*SrcAlpha) + (FBClr*(1-SrcAlpha))
+  CrcEnum(DSTALPHA),          // (SrcClr*FBAlpha) + (FBClr*(1-FBAlpha))
+  CrcEnum(ADDITIVE),          // (SrcClr*1) + (FBClr*1)
+  CrcEnum(ALPHA_ADDITIVE),    // (SrcClr*SrcAlpha) + (FBClr*1)
+  CrcEnum(SUBTRACTIVE),       // (SrcClr*0) + (FBClr*(1-SrcColor))
+  CrcEnum(ALPHA_SUBTRACTIVE), // (SrcClr*0) + (FBClr*(1-SrcAlpha))
+  CrcEnum(MODULATE),          // (SrcClr*0) + (FBClr*(1-SrcAlpha))
+}; 
 
 //////////////////////////////////////
 
@@ -175,7 +174,7 @@ enum struct EDepthTest : crc_enum_t {
   CrcEnum(EQUALS),
   CrcEnum(ALWAYS), // is this the same as off?
 
-}; // 3 bits
+}; 
 
 //////////////////////////////////////
 

@@ -35,12 +35,12 @@ ImplementReflectionX(ork::lev2::NodeCompositingTechnique, "NodeCompositingTechni
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 void NodeCompositingTechnique::describeX(class_t* c) {
-  c->accessorProperty("RenderNode", &NodeCompositingTechnique::_readRenderNode, &NodeCompositingTechnique::_writeRenderNode)
+  /*c->accessorProperty("RenderNode", &NodeCompositingTechnique::_readRenderNode, &NodeCompositingTechnique::_writeRenderNode)
       ->annotate<ConstString>("editor.factorylistbase", "RenderCompositingNode");
   c->accessorProperty("PostFxNode", &NodeCompositingTechnique::_readPostFxNode, &NodeCompositingTechnique::_writePostFxNode)
       ->annotate<ConstString>("editor.factorylistbase", "PostCompositingNode");
   c->accessorProperty("OutputNode", &NodeCompositingTechnique::_readOutputNode, &NodeCompositingTechnique::_writeOutputNode)
-      ->annotate<ConstString>("editor.factorylistbase", "OutputCompositingNode");
+      ->annotate<ConstString>("editor.factorylistbase", "OutputCompositingNode");*/
 }
 ///////////////////////////////////////////////////////////////////////////////
 NodeCompositingTechnique::NodeCompositingTechnique()
@@ -50,42 +50,6 @@ NodeCompositingTechnique::NodeCompositingTechnique()
 }
 ///////////////////////////////////////////////////////////////////////////////
 NodeCompositingTechnique::~NodeCompositingTechnique() {
-  if (_renderNode)
-    delete _renderNode;
-  if (_postfxNode)
-    delete _postfxNode;
-  if (_outputNode)
-    delete _outputNode;
-}
-///////////////////////////////////////////////////////////////////////////////
-void NodeCompositingTechnique::_readRenderNode(ork::rtti::ICastable*& val) const {
-  auto nonconst = const_cast<RenderCompositingNode*>(_renderNode);
-  val           = nonconst;
-}
-///////////////////////////////////////////////////////////////////////////////
-void NodeCompositingTechnique::_writeRenderNode(ork::rtti::ICastable* const& val) {
-  ork::rtti::ICastable* ptr = val;
-  _renderNode               = ((ptr == nullptr) ? nullptr : rtti::safe_downcast<RenderCompositingNode*>(ptr));
-}
-///////////////////////////////////////////////////////////////////////////////
-void NodeCompositingTechnique::_readPostFxNode(ork::rtti::ICastable*& val) const {
-  auto nonconst = const_cast<PostCompositingNode*>(_postfxNode);
-  val           = nonconst;
-}
-///////////////////////////////////////////////////////////////////////////////
-void NodeCompositingTechnique::_writePostFxNode(ork::rtti::ICastable* const& val) {
-  ork::rtti::ICastable* ptr = val;
-  _postfxNode               = ((ptr == nullptr) ? nullptr : rtti::safe_downcast<PostCompositingNode*>(ptr));
-}
-///////////////////////////////////////////////////////////////////////////////
-void NodeCompositingTechnique::_readOutputNode(ork::rtti::ICastable*& val) const {
-  auto nonconst = const_cast<OutputCompositingNode*>(_outputNode);
-  val           = nonconst;
-}
-///////////////////////////////////////////////////////////////////////////////
-void NodeCompositingTechnique::_writeOutputNode(ork::rtti::ICastable* const& val) {
-  ork::rtti::ICastable* ptr = val;
-  _outputNode               = ((ptr == nullptr) ? nullptr : rtti::safe_downcast<OutputCompositingNode*>(ptr));
 }
 ///////////////////////////////////////////////////////////////////////////////
 void NodeCompositingTechnique::gpuInit(lev2::Context* pTARG, int w, int h) {
@@ -151,7 +115,8 @@ CompositingBuffer::~CompositingBuffer() {
 ///////////////////////////////////////////////////////////////////////////////
 void RenderCompositingNode::describeX(class_t* c) {
 }
-RenderCompositingNode::RenderCompositingNode() {
+RenderCompositingNode::RenderCompositingNode() 
+  : _layers("All") {
 }
 RenderCompositingNode::~RenderCompositingNode() {
 }

@@ -348,11 +348,10 @@ bool BulletSystem::_onLink(Simulation* psi) {
   auto drw = std::make_shared<lev2::CallbackDrawable>(nullptr);
   _debugDrawable = drw;
 
-  drw->SetSortKey(0x7fffffff);
   drw->setEnqueueOnLayerCallback(bulletDebugEnqueueToLayer);
   drw->SetRenderCallback(bulletDebugRender);
   drw->SetOwner(&_systemData);
-  drw->SetSortKey(0x3fffffff);
+  drw->_sortkey = (0x3fffffff);
 
 
   auto pdata       = new BulletDebugDrawDBData(_debugger);

@@ -61,7 +61,8 @@ public:
   }
 
   RenderingModel _renderingmodel;
-
+  std::string _layers;
+  
 private:
   virtual void doGpuInit(lev2::Context* pTARG, int w, int h) = 0;
   virtual void DoRender(CompositorDrawData& drawdata)        = 0;
@@ -138,45 +139,38 @@ public:
   NodeCompositingTechnique();
   ~NodeCompositingTechnique();
 
-  template <typename T> T* createRenderNode() {
-    auto rval = new T;
-    _writeRenderNode(rval);
+  template <typename T, typename... A> std::shared_ptr<T> createRenderNode(A&&... args) {
+    auto rval = std::make_shared<T>(std::forward<A>(args)...);
+    _renderNode = rval;
     return rval;
   }
-  template <typename T> T* createPostFxNode() {
-    auto rval = new T;
-    _writePostFxNode(rval);
+  template <typename T, typename... A> std::shared_ptr<T> createPostFxNode(A&&... args) {
+    auto rval = std::make_shared<T>(std::forward<A>(args)...);
+    _postfxNode = rval;
     return rval;
   }
-  template <typename T> T* createOutputNode() {
-    auto rval = new T;
-    _writeOutputNode(rval);
+  template <typename T, typename... A> std::shared_ptr<T> createOutputNode(A&&... args) {
+    auto rval = std::make_shared<T>(std::forward<A>(args)...);
+    _outputNode = rval;
     return rval;
   }
-
-  void _readRenderNode(ork::rtti::ICastable*& val) const;
-  void _writeRenderNode(ork::rtti::ICastable* const& val);
-  void _readPostFxNode(ork::rtti::ICastable*& val) const;
-  void _writePostFxNode(ork::rtti::ICastable* const& val);
-  void _readOutputNode(ork::rtti::ICastable*& val) const;
-  void _writeOutputNode(ork::rtti::ICastable* const& val);
 
   void gpuInit(lev2::Context* context, int w, int h) override;
   bool assemble(CompositorDrawData& drawdata) override;
   void composite(CompositorDrawData& drawdata) override;
   //
 
-  template <typename T> T* tryRenderNodeAs() {
-    return dynamic_cast<T*>(_renderNode);
+  template <typename T> std::shared_ptr<T> tryRenderNodeAs() {
+    return std::dynamic_pointer_cast<T>(_renderNode);
   }
-  template <typename T> T* tryOutputNodeAs() {
-    return dynamic_cast<T*>(_outputNode);
+  template <typename T> std::shared_ptr<T> tryOutputNodeAs() {
+    return std::dynamic_pointer_cast<T>(_outputNode);
   }
 
   ork::ObjectMap mBufferMap;
-  RenderCompositingNode* _renderNode;
-  PostCompositingNode* _postfxNode;
-  OutputCompositingNode* _outputNode;
+  compositorrendernode_ptr_t _renderNode;
+  compositorpostnode_ptr_t _postfxNode;
+  compositoroutnode_ptr_t _outputNode;
 };
 
 using outputcompositingnode_ptr_t      = std::shared_ptr<OutputCompositingNode>;

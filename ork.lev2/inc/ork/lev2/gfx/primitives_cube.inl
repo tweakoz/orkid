@@ -7,6 +7,8 @@
 
 #pragma once
 #include <ork/lev2/gfx/meshutil/rigid_primitive.inl>
+#include <ork/lev2/gfx/scenegraph/scenegraph.h>
+#include <ork/lev2/gfx/fxstate_instance.h>
 
 namespace ork::lev2::primitives {
 
@@ -104,6 +106,21 @@ struct CubePrimitive {
   }
 
   //////////////////////////////////////////////////////////////////////////////
+  inline scenegraph::drawable_node_ptr_t createNode(
+      std::string named, //
+      scenegraph::layer_ptr_t layer,
+      fxinstance_ptr_t material_inst) {
+    auto drw = std::make_shared<CallbackDrawable>(nullptr);
+    drw->SetRenderCallback([=](lev2::RenderContextInstData& RCID) { //
+      auto context = RCID.context();
+      material_inst->wrappedDrawCall(RCID, //
+                                     [this, context]() { //
+                                        this->renderEML(context); //
+                                    });
+    });
+    return layer->createDrawableNode(named, drw);
+  }
+  //////////////////////////////////////////////////////////////////////////////
 
   float _size = 0.0f;
 
@@ -117,5 +134,6 @@ struct CubePrimitive {
   using rigidprim_t = meshutil::RigidPrimitive<SVtxV12N12B12T8C4>;
   rigidprim_t _primitive;
 };
+using cube_ptr_t = std::shared_ptr<CubePrimitive>;
 
 } // namespace ork::lev2::primitives

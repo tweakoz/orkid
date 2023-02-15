@@ -18,8 +18,7 @@ CallbackDrawable::CallbackDrawable(DrawableOwner* pent)
     , mDataDestroyer(nullptr)
     , mRenderCallback(nullptr)
     , _enqueueOnLayerCallback(nullptr)
-    , _renderLambda(nullptr)
-    , mSortKey(4){
+    , _renderLambda(nullptr){
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -73,7 +72,7 @@ void CallbackDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev
   renderable.SetMatrix(matrix);
   renderable.SetObject(GetOwner());
   renderable.SetRenderCallback(mRenderCallback);
-  renderable.SetSortKey(mSortKey);
+  renderable.SetSortKey(_sortkey);
   renderable.SetDrawableDataA(GetUserDataA());
   renderable.SetDrawableDataB(GetUserDataB());
   renderable.SetModColor(renderer->GetTarget()->RefModColor());

@@ -39,6 +39,10 @@ void pyinit_scenegraph(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto drawablenode_type =                                                         //
       py::class_<DrawableNode, Node, drawable_node_ptr_t>(sgmodule, "DrawableNode") //
+          .def_property(
+              "sortkey",
+              [](drawable_node_ptr_t node) -> uint32_t { return node->_drawable->_sortkey; },
+              [](drawable_node_ptr_t node, uint32_t key) { node->_drawable->_sortkey = key; })
           .def_property_readonly(
               "instanceData",
               [](drawable_node_ptr_t drwnode) -> instanceddrawinstancedata_ptr_t {
@@ -95,6 +99,14 @@ void pyinit_scenegraph(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto layer_type = //
       py::class_<Layer, layer_ptr_t>(sgmodule, "Layer")
+        .def_property(
+            "sortkey",
+            [](layer_ptr_t layer) -> uint32_t { //
+              return layer->_sortkey;
+            },
+            [](layer_ptr_t layer, uint32_t sortkey) { //
+              layer->_sortkey = sortkey;
+            })
           .def(
               "createDrawableNode",
               [](layer_ptr_t layer, //
@@ -136,6 +148,26 @@ void pyinit_scenegraph(py::module& module_lev2) {
       py::class_<Scene, scene_ptr_t>(sgmodule, "Scene")
           .def(py::init<>())
           .def(py::init<varmap::varmap_ptr_t>())
+          .def_property_readonly(
+              "compositordata",                                      //
+              [](scene_ptr_t SG) -> compositordata_ptr_t { //
+                return SG->_compositorData;
+              })
+          .def_property_readonly(
+              "compositorimpl",                                      //
+              [](scene_ptr_t SG) -> compositorimpl_ptr_t { //
+                return SG->_compositorImpl;
+              })
+          .def_property_readonly(
+              "compositoroutputnode",                                //
+              [](scene_ptr_t SG) -> compositoroutnode_ptr_t { //
+                return SG->_outputNode;
+              })
+          .def_property_readonly(
+              "compositorrendernode",                                //
+              [](scene_ptr_t SG) -> compositorrendernode_ptr_t { //
+                return SG->_renderNode;
+              })
           .def_property_readonly(
               "user",                                      //
               [](scene_ptr_t SG) -> varmap::varmap_ptr_t { //

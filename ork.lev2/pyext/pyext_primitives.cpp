@@ -15,7 +15,8 @@ void pyinit_primitives(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto primitives = module_lev2.def_submodule("primitives", "BuiltIn Primitives");
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<primitives::CubePrimitive>(primitives, "CubePrimitive")
+  auto cubeprim_type = //
+    py::class_<primitives::CubePrimitive,primitives::cube_ptr_t>(primitives, "CubePrimitive")
       .def(py::init<>())
       .def_property(
           "size",
@@ -33,12 +34,12 @@ void pyinit_primitives(py::module& module_lev2) {
           [](primitives::CubePrimitive& prim, const fvec4& value) { prim._colorBottom = value; })
 
       .def_property(
-          "nearColor",
+          "frontColor",
           [](const primitives::CubePrimitive& prim) -> fvec4 { return prim._colorFront; },
           [](primitives::CubePrimitive& prim, const fvec4& value) { prim._colorFront = value; })
 
       .def_property(
-          "farColor",
+          "backColor",
           [](const primitives::CubePrimitive& prim) -> fvec4 { return prim._colorBack; },
           [](primitives::CubePrimitive& prim, const fvec4& value) { prim._colorBack = value; })
 
@@ -53,7 +54,19 @@ void pyinit_primitives(py::module& module_lev2) {
           [](primitives::CubePrimitive& prim, const fvec4& value) { prim._colorRight = value; })
 
       .def("gpuInit", [](primitives::CubePrimitive& prim, ctx_t& context) { prim.gpuInit(context.get()); })
-      .def("renderEML", [](primitives::CubePrimitive& prim, ctx_t& context) { prim.renderEML(context.get()); });
+      .def("renderEML", [](primitives::CubePrimitive& prim, ctx_t& context) { prim.renderEML(context.get()); })
+      .def(
+          "createNode",
+          [](primitives::cube_ptr_t prim,
+             std::string named, //
+             scenegraph::layer_ptr_t layer,
+             fxinstance_ptr_t mtl_inst) -> scenegraph::drawable_node_ptr_t { //
+            auto node                                                 //
+                = prim->createNode(named, layer, mtl_inst);
+            node->_userdata->makeValueForKey<primitives::cube_ptr_t>("_primitive") = prim; // hold on to reference
+            return node;
+          });
+  type_codec->registerStdCodec<primitives::cube_ptr_t>(cubeprim_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto frusprim_type = //
       py::class_<primitives::FrustumPrimitive, primitives::frustum_ptr_t>(primitives, "FrustumPrimitive")
@@ -100,7 +113,7 @@ void pyinit_primitives(py::module& module_lev2) {
               [](primitives::frustum_ptr_t prim,
                  std::string named, //
                  scenegraph::layer_ptr_t layer,
-                 fxinstance_ptr_t mtl_inst) -> scenegraph::node_ptr_t { //
+                 fxinstance_ptr_t mtl_inst) -> scenegraph::drawable_node_ptr_t { //
                 auto node                                                 //
                     = prim->createNode(named, layer, mtl_inst);
                 node->_userdata->makeValueForKey<primitives::frustum_ptr_t>("_primitive") = prim; // hold on to reference
