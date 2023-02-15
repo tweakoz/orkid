@@ -47,6 +47,7 @@ class PyOrkApp(object):
       material.rasterstate.blending = tokens.OFF
       permu.technique = material.shader.technique("std_mono_fwd")
       pipeline = material.fxcache.findFxInst(permu) # graphics pipeline
+      pipeline.bindParam( material.param("mvp"), tokens.RCFD_Camera_MVP_Mono)
       return material, pipeline
     ###################################
     self.material_frustumF, pipeline_frustumF = createMaterialAndPipeline()
@@ -57,15 +58,6 @@ class PyOrkApp(object):
     self.material_frustumB.rasterstate.blending = tokens.ALPHA
     ###################################
     self.material_cube, pipeline_cube = createMaterialAndPipeline()
-    ###################################
-    # explicit shader parameters
-    ###################################
-    pipeline_frustumF.bindParam( self.material_frustumF.param("mvp"),
-                               tokens.RCFD_Camera_MVP_Mono)
-    pipeline_frustumB.bindParam( self.material_frustumB.param("mvp"),
-                               tokens.RCFD_Camera_MVP_Mono)
-    pipeline_cube.bindParam(    self.material_cube.param("mvp"),
-                              tokens.RCFD_Camera_MVP_Mono)
     ###################################
     # frustum primitive
     ###################################
