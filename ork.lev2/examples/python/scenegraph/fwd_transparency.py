@@ -7,15 +7,6 @@
 ################################################################################
 import math, sys, os
 #########################################
-# Our intention is not to 'install' anything just for running the examples
-#  so we will just hack the sys,path
-#########################################
-from pathlib import Path
-this_dir = Path(os.path.dirname(os.path.abspath(__file__)))
-pyex_dir = (this_dir/"..").resolve()
-sys.path.append(str(pyex_dir))
-from common.shaders import Shader
-#########################################
 from orkengine.core import *
 from orkengine.lev2 import *
 tokens = CrcStringProxy()
@@ -50,33 +41,14 @@ class PyOrkApp(object):
       pipeline.bindParam( material.param("mvp"), tokens.RCFD_Camera_MVP_Mono)
       return material, pipeline
     ###################################
+    self.material_cube, pipeline_cube = createMaterialAndPipeline()
+    ###################################
     self.material_frustumF, pipeline_frustumF = createMaterialAndPipeline()
     self.material_frustumF.rasterstate.blending = tokens.ALPHA
     ###################################
     self.material_frustumB, pipeline_frustumB = createMaterialAndPipeline()
     self.material_frustumB.rasterstate.culltest = tokens.PASS_BACK
     self.material_frustumB.rasterstate.blending = tokens.ALPHA
-    ###################################
-    self.material_cube, pipeline_cube = createMaterialAndPipeline()
-    ###################################
-    # frustum primitive
-    ###################################
-    frustum = Frustum()
-    vmatrix = ctx.lookAt( vec3(0,0,-1),
-                          vec3(0,0,0),
-                          vec3(0,1,0) )
-    pmatrix = ctx.perspective(45,1,0.1,3)
-    frustum.set(vmatrix,pmatrix)
-    frustum_prim = primitives.FrustumPrimitive()
-    alpha = 0.5
-    frustum_prim.topColor = vec4(0.2,1.0,0.2,alpha)
-    frustum_prim.bottomColor = vec4(0.5,0.5,0.5,alpha)
-    frustum_prim.leftColor = vec4(0.2,0.2,1.0,alpha)
-    frustum_prim.rightColor = vec4(1.0,0.2,0.2,alpha)
-    frustum_prim.nearColor = vec4(0.0,0.0,0.0,alpha)
-    frustum_prim.farColor = vec4(1.0,1.0,1.0,alpha)
-    frustum_prim.frustum = frustum
-    frustum_prim.gpuInit(ctx)
     ###################################
     cube_prim = primitives.CubePrimitive()
     cube_prim.size = 1
@@ -88,18 +60,40 @@ class PyOrkApp(object):
     cube_prim.backColor = vec4(0.5,0.5,0.0,1)
     cube_prim.gpuInit(ctx)
     ###################################
-    # create scenegraph and sg node
+    frustum = Frustum()
+    vmatrix = ctx.lookAt( vec3(0,0,-1),
+                          vec3(0,0,0),
+                          vec3(0,1,0) )
+    pmatrix = ctx.perspective(45,1,0.1,3)
+    frustum.set(vmatrix,pmatrix)
+    frustum_prim = primitives.FrustumPrimitive()
+    alpha = 0.35
+    frustum_prim.topColor = vec4(0.2,1.0,0.2,alpha)
+    frustum_prim.bottomColor = vec4(0.5,0.5,0.5,alpha)
+    frustum_prim.leftColor = vec4(0.2,0.2,1.0,alpha)
+    frustum_prim.rightColor = vec4(1.0,0.2,0.2,alpha)
+    frustum_prim.nearColor = vec4(0.0,0.0,0.0,alpha)
+    frustum_prim.farColor = vec4(1.0,1.0,1.0,alpha)
+    frustum_prim.frustum = frustum
+    frustum_prim.gpuInit(ctx)
+    ###################################
+    # create scenegraph and layer
     ###################################
     sceneparams = VarMap()
     sceneparams.preset = RENDERMODEL
     self.scene = self.ezapp.createScene(sceneparams)
     layer1 = self.scene.createLayer("layer1")
-    self.frustum_nodeF = frustum_prim.createNode("frustumF",layer1,pipeline_frustumF)
-    self.frustum_nodeB = frustum_prim.createNode("frustumB",layer1,pipeline_frustumB)
-    self.cube_node = cube_prim.createNode("cube",layer1,pipeline_cube)
-    self.cube_node.sortkey = 1
-    self.frustum_nodeB.sortkey = 2
-    self.frustum_nodeF.sortkey = 3
+    ###################################
+    def createNode(name, prim, layer, pipeline, sortkey):
+      node = prim.createNode(name,layer,pipeline)
+      node.sortkey = sortkey
+      return node
+    ###################################
+    # create sg nodes in rendersorted order..
+    ###################################
+    self.cube_node = createNode("cube",cube_prim,layer1,pipeline_cube,1)
+    self.frustum_nodeB = createNode("frustumB",frustum_prim,layer1,pipeline_frustumB,2)
+    self.frustum_nodeF = createNode("frustumF",frustum_prim,layer1,pipeline_frustumF,3)
     ###################################
     # create camera
     ###################################
@@ -107,15 +101,6 @@ class PyOrkApp(object):
     self.camera.perspective(0.1, 100.0, 45.0)
     self.cameralut = CameraDataLut()
     self.cameralut.addCamera("spawncam",self.camera)
-  ################################################
-  # update:
-  # technically this runs from the orkid update thread
-  #  but since mainThreadLoop() is called,
-  #  the main thread will surrender the GIL completely
-  #  until ezapp.mainThreadLoop() returns.
-  #  This is useful for doing background computation.
-  #   (eg. the scene is updated from python, whilst
-  #        concurrently c++ is rendering..)
   ################################################
   def onUpdate(self,updinfo):
     θ    = updinfo.absolutetime * math.pi * 2.0 * 0.1
