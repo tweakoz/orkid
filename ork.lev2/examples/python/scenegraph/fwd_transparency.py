@@ -30,25 +30,20 @@ class PyOrkApp(object):
     ###################################
     permu = FxCachePermutation()
     permu.rendering_model = RENDERMODEL
-    def createMaterialAndPipeline():
+    def createMaterialAndPipeline(blending,culltest):
       material = FreestyleMaterial()
       material.gpuInit(ctx,Path("orkshader://manip"))
-      material.rasterstate.culltest = tokens.PASS_FRONT
+      material.rasterstate.blending = blending
+      material.rasterstate.culltest = culltest
       material.rasterstate.depthtest = tokens.LEQUALS
-      material.rasterstate.blending = tokens.OFF
       permu.technique = material.shader.technique("std_mono_fwd")
       pipeline = material.fxcache.findFxInst(permu) # graphics pipeline
       pipeline.bindParam( material.param("mvp"), tokens.RCFD_Camera_MVP_Mono)
       return material, pipeline
     ###################################
-    self.material_cube, pipeline_cube = createMaterialAndPipeline()
-    ###################################
-    self.material_frustumF, pipeline_frustumF = createMaterialAndPipeline()
-    self.material_frustumF.rasterstate.blending = tokens.ALPHA
-    ###################################
-    self.material_frustumB, pipeline_frustumB = createMaterialAndPipeline()
-    self.material_frustumB.rasterstate.culltest = tokens.PASS_BACK
-    self.material_frustumB.rasterstate.blending = tokens.ALPHA
+    self.material_cube, pipeline_cube = createMaterialAndPipeline(tokens.OFF,tokens.PASS_FRONT)
+    self.material_frustumF, pipeline_frustumF = createMaterialAndPipeline(tokens.ALPHA,tokens.PASS_FRONT)
+    self.material_frustumB, pipeline_frustumB = createMaterialAndPipeline(tokens.ALPHA,tokens.PASS_BACK)
     ###################################
     cube_prim = primitives.CubePrimitive()
     cube_prim.size = 1
