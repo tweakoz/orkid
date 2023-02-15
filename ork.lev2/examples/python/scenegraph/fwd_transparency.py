@@ -37,31 +37,34 @@ class PyOrkApp(object):
     ###################################
     # material setup
     ###################################
-    self.material_frustum = FreestyleMaterial()
-    self.material_frustum.gpuInit(ctx,Path("orkshader://manip"))
-    self.material_frustum.rasterstate.culltest = tokens.PASS_FRONT
-    self.material_frustum.rasterstate.depthtest = tokens.LEQUALS
-    self.material_frustum.rasterstate.blending = tokens.ALPHA
-    ###################################
-    self.material_cube = FreestyleMaterial()
-    self.material_cube.gpuInit(ctx,Path("orkshader://manip"))
-    self.material_cube.rasterstate.culltest = tokens.PASS_FRONT
-    self.material_cube.rasterstate.depthtest = tokens.LEQUALS
-    ###################################
-    # create an fxinst (a graphics pipeline)
-    ###################################
     permu = FxCachePermutation()
     permu.rendering_model = RENDERMODEL
-    permu.technique = self.material_frustum.shader.technique("std_mono_fwd")
-    fxinst_frustum = self.material_frustum.fxcache.findFxInst(permu)
-    permu.technique = self.material_cube.shader.technique("std_mono_fwd")
-    fxinst_cube = self.material_cube.fxcache.findFxInst(permu)
+    def createMaterialAndPipeline():
+      material = FreestyleMaterial()
+      material.gpuInit(ctx,Path("orkshader://manip"))
+      material.rasterstate.culltest = tokens.PASS_FRONT
+      material.rasterstate.depthtest = tokens.LEQUALS
+      material.rasterstate.blending = tokens.OFF
+      permu.technique = material.shader.technique("std_mono_fwd")
+      pipeline = material.fxcache.findFxInst(permu) # graphics pipeline
+      return material, pipeline
+    ###################################
+    self.material_frustumF, pipeline_frustumF = createMaterialAndPipeline()
+    self.material_frustumF.rasterstate.blending = tokens.ALPHA
+    ###################################
+    self.material_frustumB, pipeline_frustumB = createMaterialAndPipeline()
+    self.material_frustumB.rasterstate.culltest = tokens.PASS_BACK
+    self.material_frustumB.rasterstate.blending = tokens.ALPHA
+    ###################################
+    self.material_cube, pipeline_cube = createMaterialAndPipeline()
     ###################################
     # explicit shader parameters
     ###################################
-    fxinst_frustum.bindParam( self.material_frustum.param("mvp"),
-                              tokens.RCFD_Camera_MVP_Mono)
-    fxinst_cube.bindParam(    self.material_cube.param("mvp"),
+    pipeline_frustumF.bindParam( self.material_frustumF.param("mvp"),
+                               tokens.RCFD_Camera_MVP_Mono)
+    pipeline_frustumB.bindParam( self.material_frustumB.param("mvp"),
+                               tokens.RCFD_Camera_MVP_Mono)
+    pipeline_cube.bindParam(    self.material_cube.param("mvp"),
                               tokens.RCFD_Camera_MVP_Mono)
     ###################################
     # frustum primitive
@@ -83,7 +86,6 @@ class PyOrkApp(object):
     frustum_prim.frustum = frustum
     frustum_prim.gpuInit(ctx)
     ###################################
-
     cube_prim = primitives.CubePrimitive()
     cube_prim.size = 1
     cube_prim.topColor = vec4(0.5,1.0,0.5,1)
@@ -100,10 +102,12 @@ class PyOrkApp(object):
     sceneparams.preset = RENDERMODEL
     self.scene = self.ezapp.createScene(sceneparams)
     layer1 = self.scene.createLayer("layer1")
-    self.frustum_node = frustum_prim.createNode("frustum",layer1,fxinst_frustum)
-    self.cube_node = cube_prim.createNode("cube",layer1,fxinst_cube)
+    self.frustum_nodeF = frustum_prim.createNode("frustumF",layer1,pipeline_frustumF)
+    self.frustum_nodeB = frustum_prim.createNode("frustumB",layer1,pipeline_frustumB)
+    self.cube_node = cube_prim.createNode("cube",layer1,pipeline_cube)
     self.cube_node.sortkey = 1
-    self.frustum_node.sortkey = 2
+    self.frustum_nodeB.sortkey = 2
+    self.frustum_nodeF.sortkey = 3
     ###################################
     # create camera
     ###################################
@@ -130,10 +134,15 @@ class PyOrkApp(object):
                        vec3(0, 0, 0), # tgt
                        vec3(0, 1, 0)) # up
     ###################################
-    xf = self.frustum_node.worldTransform
-    xf.translation = vec3(0,0,0) 
-    xf.orientation = quat() 
-    xf.scale = 1+(1+math.sin(updinfo.absolutetime*2))
+    trans = vec3(0,0,0)
+    orient = quat()
+    scale = 1+(1+math.sin(updinfo.absolutetime*2))
+    def nodesetxf(node,trans,orient,scale):
+      node.worldTransform.translation = trans 
+      node.worldTransform.orientation = orient 
+      node.worldTransform.scale = scale
+    nodesetxf(self.frustum_nodeF,trans,orient,scale)
+    nodesetxf(self.frustum_nodeB,trans,orient,scale)
     ###################################
     self.cube_node.worldTransform.translation = vec3(0,0,math.sin(updinfo.absolutetime))
     ###################################
