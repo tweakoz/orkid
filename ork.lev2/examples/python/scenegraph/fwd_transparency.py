@@ -18,25 +18,27 @@ class PyOrkApp(object):
     super().__init__()
     self.ezapp = OrkEzApp.create(self)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
+    self.materials = set()
   ##############################################
   def onGpuInit(self,ctx):
     permu = FxCachePermutation()
     permu.rendering_model = RENDERMODEL
     ###################################
-    def createMaterialAndPipeline(blending,culltest):
+    def createPipeline(blending,culltest):
       material = FreestyleMaterial()
       material.gpuInit(ctx,Path("orkshader://manip"))
       material.rasterstate.blending = blending
       material.rasterstate.culltest = culltest
       material.rasterstate.depthtest = tokens.LEQUALS
       permu.technique = material.shader.technique("std_mono_fwd")
-      pipeline = material.fxcache.findFxInst(permu) # graphics pipeline
+      pipeline = material.fxcache.findFxInst(permu) 
       pipeline.bindParam( material.param("mvp"), tokens.RCFD_Camera_MVP_Mono)
-      return material, pipeline
+      self.materials.add(material) # retain material
+      return  pipeline
     ###################################
-    self.material_cube, pipeline_cube = createMaterialAndPipeline(tokens.OFF,tokens.PASS_FRONT)
-    self.material_frustumF, pipeline_frustumF = createMaterialAndPipeline(tokens.ALPHA,tokens.PASS_FRONT)
-    self.material_frustumB, pipeline_frustumB = createMaterialAndPipeline(tokens.ALPHA,tokens.PASS_BACK)
+    pipeline_cube = createPipeline(tokens.OFF,tokens.PASS_FRONT)
+    pipeline_frustumF = createPipeline(tokens.ALPHA,tokens.PASS_FRONT)
+    pipeline_frustumB = createPipeline(tokens.ALPHA,tokens.PASS_BACK)
     ###################################
     cube_prim = primitives.CubePrimitive()
     cube_prim.size = 1
