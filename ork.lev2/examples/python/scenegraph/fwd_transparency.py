@@ -24,7 +24,6 @@ class PyOrkApp(object):
   #   made available
   ##############################################
   def onGpuInit(self,ctx):
-    FBI = ctx.FBI() # framebuffer interface
     ###################################
     # material setup
     ###################################
