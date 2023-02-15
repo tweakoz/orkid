@@ -12,7 +12,7 @@ from orkengine.lev2 import *
 tokens = CrcStringProxy()
 RENDERMODEL = "ForwardPBR"
 ################################################################################
-class PyOrkApp(object):
+class FwdTransparency(object):
   ################################################
   def __init__(self):
     super().__init__()
@@ -110,6 +110,5 @@ class PyOrkApp(object):
     self.cube_node.worldTransform.translation = vec3(0,0,math.sin(updinfo.absolutetime))
     ###################################
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
-  ############################################
-app = PyOrkApp()
-app.ezapp.mainThreadLoop()
+###############################################################################
+FwdTransparency().ezapp.mainThreadLoop()
