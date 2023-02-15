@@ -41,8 +41,8 @@ class FwdTransparency(object):
     pipeline_frustumB = createPipeline(blending=tokens.ALPHA,culltest=tokens.PASS_BACK)
     ###################################
     cube_prim = primitives.CubePrimitive()
-    cube_prim.size = 1
-    cube_prim.topColor = vec4(0.5,1.0,0.5,1)
+    cube_prim.size = 1.5
+    cube_prim.topColor = vec4(1,0,1,1)
     cube_prim.bottomColor = vec4(0.5,0.0,0.5,1)
     cube_prim.leftColor = vec4(0.0,0.5,0.5,1)
     cube_prim.rightColor = vec4(1.0,0.5,0.5,1)
