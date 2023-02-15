@@ -24,7 +24,7 @@ class PyOrkApp(object):
     permu = FxCachePermutation()
     permu.rendering_model = RENDERMODEL
     ###################################
-    def createPipeline(blending,culltest):
+    def createPipeline(blending=None,culltest=None):
       material = FreestyleMaterial()
       material.gpuInit(ctx,Path("orkshader://manip"))
       material.rasterstate.blending = blending
@@ -36,9 +36,9 @@ class PyOrkApp(object):
       self.materials.add(material) # retain material
       return  pipeline
     ###################################
-    pipeline_cube = createPipeline(tokens.OFF,tokens.PASS_FRONT)
-    pipeline_frustumF = createPipeline(tokens.ALPHA,tokens.PASS_FRONT)
-    pipeline_frustumB = createPipeline(tokens.ALPHA,tokens.PASS_BACK)
+    pipeline_cube = createPipeline(blending=tokens.OFF,culltest=tokens.PASS_FRONT)
+    pipeline_frustumF = createPipeline(blending=tokens.ALPHA,culltest=tokens.PASS_FRONT)
+    pipeline_frustumB = createPipeline(blending=tokens.ALPHA,culltest=tokens.PASS_BACK)
     ###################################
     cube_prim = primitives.CubePrimitive()
     cube_prim.size = 1
@@ -72,14 +72,14 @@ class PyOrkApp(object):
     self.scene = self.ezapp.createScene(sceneparams)
     layer1 = self.scene.createLayer("layer1")
     ###################################
-    def createNode(name, prim, pipeline, sortkey):
+    def createNode(name=None, prim=None, pipeline=None, sortkey=None):
       node = prim.createNode(name,layer1,pipeline)
       node.sortkey = sortkey
       return node
     ###################################
-    self.cube_node = createNode("cube",cube_prim,pipeline_cube,1)
-    self.frustum_nodeB = createNode("frustumB",frustum_prim,pipeline_frustumB,2)
-    self.frustum_nodeF = createNode("frustumF",frustum_prim,pipeline_frustumF,3)
+    self.cube_node = createNode(name="cube",prim=cube_prim,pipeline=pipeline_cube,sortkey=1)
+    self.frustum_nodeB = createNode(name="frustumB",prim=frustum_prim,pipeline=pipeline_frustumB,sortkey=2)
+    self.frustum_nodeF = createNode(name="frustumF",prim=frustum_prim,pipeline=pipeline_frustumF,sortkey=3)
     ###################################
     self.camera = CameraData()
     self.camera.perspective(0.1, 100.0, 45.0)
@@ -95,7 +95,7 @@ class PyOrkApp(object):
                        vec3(0, 0, 0), # tgt
                        vec3(0, 1, 0)) # up
     ###################################
-    def nodesetxf(node,trans,orient,scale):
+    def nodesetxf(node=None,trans=None,orient=None,scale=None):
       node.worldTransform.translation = trans 
       node.worldTransform.orientation = orient 
       node.worldTransform.scale = scale
@@ -104,8 +104,8 @@ class PyOrkApp(object):
     orient = quat()
     scale = 1+(1+math.sin(updinfo.absolutetime*2))
     ###################################
-    nodesetxf(self.frustum_nodeF,trans,orient,scale)
-    nodesetxf(self.frustum_nodeB,trans,orient,scale)
+    nodesetxf(node=self.frustum_nodeF,trans=trans,orient=orient,scale=scale)
+    nodesetxf(node=self.frustum_nodeB,trans=trans,orient=orient,scale=scale)
     ###################################
     self.cube_node.worldTransform.translation = vec3(0,0,math.sin(updinfo.absolutetime))
     ###################################
