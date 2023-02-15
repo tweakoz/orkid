@@ -70,14 +70,14 @@ class PyOrkApp(object):
     self.scene = self.ezapp.createScene(sceneparams)
     layer1 = self.scene.createLayer("layer1")
     ###################################
-    def createNode(name, prim, layer, pipeline, sortkey):
-      node = prim.createNode(name,layer,pipeline)
+    def createNode(name, prim, pipeline, sortkey):
+      node = prim.createNode(name,layer1,pipeline)
       node.sortkey = sortkey
       return node
     ###################################
-    self.cube_node = createNode("cube",cube_prim,layer1,pipeline_cube,1)
-    self.frustum_nodeB = createNode("frustumB",frustum_prim,layer1,pipeline_frustumB,2)
-    self.frustum_nodeF = createNode("frustumF",frustum_prim,layer1,pipeline_frustumF,3)
+    self.cube_node = createNode("cube",cube_prim,pipeline_cube,1)
+    self.frustum_nodeB = createNode("frustumB",frustum_prim,pipeline_frustumB,2)
+    self.frustum_nodeF = createNode("frustumF",frustum_prim,pipeline_frustumF,3)
     ###################################
     self.camera = CameraData()
     self.camera.perspective(0.1, 100.0, 45.0)
