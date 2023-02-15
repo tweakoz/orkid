@@ -60,7 +60,6 @@ struct IMPL {
     auto FBI                     = targ->FBI();
     auto this_buf                = FBI->GetThisBuffer();
     auto RSI                     = targ->RSI();
-    const auto TOPCPD            = CIMPL->topCPD();
     auto tgt_rect                = targ->mainSurfaceRectAtOrigin();
     auto& ddprops                = drawdata._properties;
     //////////////////////////////////////////////////////
@@ -84,6 +83,7 @@ struct IMPL {
       /////////////////////////////////////////////////////////////////////////////////////////
       auto DB             = RCFD.GetDB();
       auto CPD            = CIMPL->topCPD();
+      CPD.assignLayers(_layername);
       CPD._clearColor     = node->_clearColor;
       CPD._irendertarget  = &rt;
       CPD._cameraMatrices = ddprops["defcammtx"_crcu].get<const CameraMatrices*>();

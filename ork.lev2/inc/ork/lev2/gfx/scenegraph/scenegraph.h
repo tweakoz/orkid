@@ -187,11 +187,11 @@ struct Scene {
   uint64_t pickWithRay(fray3_constptr_t ray);
   uint64_t pickWithScreenCoord(cameradata_ptr_t cam, fvec2 screencoord);
 
-  template <typename T> T* tryRenderNodeAs() {
-    return dynamic_cast<T*>(_renderNode);
+  template <typename T> std::shared_ptr<T> tryRenderNodeAs() {
+    return std::dynamic_pointer_cast<T>(_renderNode);
   }
-  template <typename T> T* tryOutputNodeAs() {
-    return dynamic_cast<T*>(_outputNode);
+  template <typename T> std::shared_ptr<T> tryOutputNodeAs() {
+    return std::dynamic_pointer_cast<T>(_outputNode);
   }
 
   dbufcontext_ptr_t _dbufcontext_SG;

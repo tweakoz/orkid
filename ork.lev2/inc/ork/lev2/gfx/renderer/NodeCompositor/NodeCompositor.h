@@ -132,7 +132,7 @@ private:
 ///   3. OutputCompositingNode: output to a sink (screen,VR, etc..)
 ///////////////////////////////////////////////////////////////////////////////
 
-class NodeCompositingTechnique final : public CompositingTechnique {
+struct NodeCompositingTechnique final : public CompositingTechnique {
   DeclareConcreteX(NodeCompositingTechnique, CompositingTechnique);
 
 public:

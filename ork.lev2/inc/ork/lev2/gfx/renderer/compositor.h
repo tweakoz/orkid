@@ -48,7 +48,7 @@ struct CompositingMorphable : public dataflow::morphable {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CompositingTechnique : public ork::Object {
+struct CompositingTechnique : public ork::Object {
   RttiDeclareAbstract(CompositingTechnique, ork::Object);
 
 public:
