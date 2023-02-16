@@ -135,8 +135,8 @@ public:
   virtual void EndPass(Context* pTARG)                                                                         = 0;
   virtual int BeginBlock(Context* pTARG, const RenderContextInstData& MatCtx = RenderContextInstData::Default) = 0;
   virtual void EndBlock(Context* pTARG)                                                                        = 0;
-  fxinstancecache_constptr_t fxInstanceCache(fxcachepermutation_set_constptr_t perms=nullptr) const;
-  virtual fxinstancecache_constptr_t _doFxInstanceCache(fxcachepermutation_set_constptr_t perms) const { return nullptr; }
+  fxpipelinecache_constptr_t fxInstanceCache(fxpipelinepermutation_set_constptr_t perms=nullptr) const;
+  virtual fxpipelinecache_constptr_t _doFxInstanceCache(fxpipelinepermutation_set_constptr_t perms) const { return nullptr; }
 
   void SetTexture(ETextureDest edest, const TextureContext& htex);
   const TextureContext& GetTexture(ETextureDest edest) const;
@@ -180,7 +180,7 @@ public:
   void PopDebug();
   bool IsDebug();
 
-  //virtual fxinstance_ptr_t createFxStateInstance(FxStateInstanceConfig& cfg) const;
+  //virtual fxpipeline_ptr_t createFxPipeline(FxPipelineConfig& cfg) const;
 
   //////////////////////////////////////////////////////////////////////////////
   SRasterState swapRasterState(SRasterState rstate);

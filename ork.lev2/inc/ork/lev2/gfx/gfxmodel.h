@@ -162,7 +162,7 @@ struct XgmSubMeshInst {
 
   const XgmSubMesh* _submesh = nullptr;
   bool _enabled = true;
-  fxinstancecache_constptr_t _fxinstancecache;
+  fxpipelinecache_constptr_t _fxpipelinecache;
 };
 
 using xgmsubmeshinst_ptr_t = std::shared_ptr<XgmSubMeshInst>;

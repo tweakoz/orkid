@@ -62,7 +62,7 @@ RCFD.cimpl = compimpl # bind compositor to RCFD
 # create an fxinst (a graphics pipeline)
 ###################################
 
-permu = FxCachePermutation()
+permu = FxPipelinePermutation()
 permu.rendering_model = "FORWARD_UNLIT"
 permu.technique = tek
 fxinst = material.fxcache.findFxInst(permu)

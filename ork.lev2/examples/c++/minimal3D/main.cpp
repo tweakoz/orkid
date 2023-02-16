@@ -88,7 +88,7 @@ struct Resources {
   CameraMatrices _cammatrices;
   freestyle_mtl_ptr_t _material;
   primitives::frustum_ptr_t _frustum_prim;
-  fxinstance_ptr_t _fxinst;
+  fxpipeline_ptr_t _fxinst;
   rcfd_ptr_t _RCFD; // renderer per/frame data
   rcid_ptr_t _RCID;
 

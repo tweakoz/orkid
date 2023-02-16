@@ -13,7 +13,7 @@
 namespace ork::lev2 {
 static logchannel_ptr_t logchan_fxcache = logger()->createChannel("fxcache",fvec3(0.7,0.7,0.5),false);
 ///////////////////////////////////////////////////////////////////////////////
-uint64_t FxCachePermutation::genIndex() const {
+uint64_t FxPipelinePermutation::genIndex() const {
   uint64_t index = 0;
   index += (uint64_t(_stereo) << 1);
   index += (uint64_t(_instanced) << 2);
@@ -25,7 +25,7 @@ uint64_t FxCachePermutation::genIndex() const {
   return index;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void FxCachePermutation::dump() const {
+void FxPipelinePermutation::dump() const {
   logchan_fxcache->log(
       "configdump: rendering_model<0x%zx> stereo<%d> instanced<%d> skinned<%d>",
       uint64_t(_rendering_model),
@@ -34,20 +34,20 @@ void FxCachePermutation::dump() const {
       int(_skinned));
 }
 ///////////////////////////////////////////////////////////////////////////////
-void FxCachePermutationSet::add(fxcachepermutation_constptr_t perm){
+void FxPipelinePermutationSet::add(fxpipelinepermutation_constptr_t perm){
   __permutations.insert(perm);
 }
 /////////////////////////////////////////////////////////////////////////
-FxStateInstance::FxStateInstance(const FxCachePermutation& config)
+FxPipeline::FxPipeline(const FxPipelinePermutation& config)
     : __permutation(config) {
 }
 /////////////////////////////////////////////////////////////////////////
-void FxStateInstance::bindParam(fxparam_constptr_t p, varval_t v){
+void FxPipeline::bindParam(fxparam_constptr_t p, varval_t v){
   OrkAssert(p!=nullptr);
   _params[p] = v;
 }
 /////////////////////////////////////////////////////////////////////////
-void FxStateInstance::wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_t drawcall) {
+void FxPipeline::wrappedDrawCall(const RenderContextInstData& RCID, void_lambda_t drawcall) {
   int inumpasses = beginBlock(RCID);
   for (int ipass = 0; ipass < inumpasses; ipass++) {
     if (beginPass(RCID, ipass)) {
@@ -58,13 +58,13 @@ void FxStateInstance::wrappedDrawCall(const RenderContextInstData& RCID, void_la
   endBlock(RCID);
 }
 ///////////////////////////////////////////////////////////////////////////////
-int FxStateInstance::beginBlock(const RenderContextInstData& RCID) {
+int FxPipeline::beginBlock(const RenderContextInstData& RCID) {
   auto context    = RCID._RCFD->GetTarget();
   auto FXI        = context->FXI();
   return FXI->BeginBlock(_technique, RCID);
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool FxStateInstance::beginPass(const RenderContextInstData& RCID, int ipass) {
+bool FxPipeline::beginPass(const RenderContextInstData& RCID, int ipass) {
   auto context          = RCID._RCFD->GetTarget();
   auto MTXI             = context->MTXI();
   auto FXI              = context->FXI();
@@ -218,23 +218,23 @@ bool FxStateInstance::beginPass(const RenderContextInstData& RCID, int ipass) {
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void FxStateInstance::endPass(const RenderContextInstData& RCID) {
+void FxPipeline::endPass(const RenderContextInstData& RCID) {
   auto context = RCID._RCFD->GetTarget();
   context->FXI()->EndPass();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void FxStateInstance::endBlock(const RenderContextInstData& RCID) {
+void FxPipeline::endBlock(const RenderContextInstData& RCID) {
   auto context = RCID._RCFD->GetTarget();
   context->FXI()->EndBlock();
 }
 ///////////////////////////////////////////////////////////////////////////////
-fxinstance_ptr_t FxStateInstanceCache::findfxinst(const RenderContextInstData& RCID) const {
+fxpipeline_ptr_t FxPipelineCache::findfxinst(const RenderContextInstData& RCID) const {
   auto RCFD       = RCID._RCFD;
   auto context    = RCFD->_target;
   auto fxi        = context->FXI();
   bool stereo = RCFD->hasCPD() ? RCFD->topCPD().isStereoOnePass() : false;
   /////////////////
-  FxCachePermutation permu;
+  FxPipelinePermutation permu;
   permu._stereo          = stereo;
   permu._skinned         = RCID._isSkinned;
   permu._instanced       = RCID._isInstanced;
@@ -245,8 +245,8 @@ fxinstance_ptr_t FxStateInstanceCache::findfxinst(const RenderContextInstData& R
   return findfxinst(permu);
 }
 ///////////////////////////////////////////////////////////////////////////////
-fxinstance_ptr_t FxStateInstanceCache::findfxinst(const FxCachePermutation& permu) const {
-  fxinstance_ptr_t fxinst;
+fxpipeline_ptr_t FxPipelineCache::findfxinst(const FxPipelinePermutation& permu) const {
+  fxpipeline_ptr_t fxinst;
   uint64_t index = permu.genIndex();
   auto it = _lut.find(index);
   if (it != _lut.end()) {

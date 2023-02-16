@@ -116,7 +116,7 @@ virtual void  drawSphere (btScalar radius, const btTransform &transform, const b
     //mDBRecs[i]; //._bulletSystem = system
   std::vector<BulletDebugDrawDBData> mDBRecs;
   lev2::pbrmaterial_ptr_t _pbrmaterial;
-  lev2::fxinstancecache_constptr_t _fxcache;
+  lev2::fxpipelinecache_constptr_t _fxcache;
 
 
   //////////////////////////

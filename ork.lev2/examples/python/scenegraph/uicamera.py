@@ -21,11 +21,11 @@ class UiCamera(object):
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     self.uicam = ui.EzUiCam()
-    self.uicam.fov = 90*constants.DTOR
+    self.uicam.fov = 45*constants.DTOR
     self.uicam.constrainZ = True
   ##############################################
   def onGpuInit(self,ctx):
-    permu = FxCachePermutation()
+    permu = FxPipelinePermutation()
     permu.rendering_model = RENDERMODEL
     ###################################
     def createPipeline(blending=None,culltest=None):
@@ -86,9 +86,9 @@ class UiCamera(object):
     self.frustum_nodeF = createNode(name="frustumF",prim=frustum_prim,pipeline=pipeline_frustumF,sortkey=3)
 
     self.grid_data = GridDrawableData()
-    self.grid_data.extent = 100.0
+    self.grid_data.extent = 10.0
     self.grid_data.majorTileDim = 1.0
-    self.grid_data.minorTileDim = 0.1
+    self.grid_data.minorTileDim = 0.5
     self.grid_data.texturepath = "lev2://textures/gridcell_blue.png"
     self.grid_node = layer1.createGridNode("grid",self.grid_data)
     self.grid_node.sortkey = 1
@@ -110,7 +110,7 @@ class UiCamera(object):
       if uievent.code == tokens.PUSH.hashed:
         print("PUSH")
       elif uievent.code == tokens.DRAG.hashed:
-        print("PUSH")
+        print("DRAG")
       elif uievent.code == tokens.MOVE.hashed:
         print("MOVE")
       elif uievent.code == tokens.RELEASE.hashed:

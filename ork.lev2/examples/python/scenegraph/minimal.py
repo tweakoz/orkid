@@ -43,16 +43,16 @@ class PyOrkApp(object):
     self.material.rasterstate.depthtest = tokens.LEQUALS
     assert(tek)
     ###################################
-    # create an fxinst (a graphics pipeline)
+    # create a graphics pipeline
     ###################################
-    permu = FxCachePermutation()
+    permu = FxPipelinePermutation()
     permu.rendering_model = "DeferredPBR"
     permu.technique = tek
-    fxinst = self.material.fxcache.findFxInst(permu)
+    pipeline = self.material.fxcache.findFxInst(permu)
     ###################################
     # explicit shader parameters
     ###################################
-    fxinst.bindParam( self.material.param("mvp"),
+    pipeline.bindParam( self.material.param("mvp"),
                       tokens.RCFD_Camera_MVP_Mono)
     ###################################
     # frustum primitive
@@ -79,7 +79,7 @@ class PyOrkApp(object):
     sceneparams.preset = "DeferredPBR"
     self.scene = self.ezapp.createScene(sceneparams)
     layer = self.scene.createLayer("layer1")
-    self.primnode = frustum_prim.createNode("node1",layer,fxinst)
+    self.primnode = frustum_prim.createNode("node1",layer,pipeline)
     ###################################
     # create camera
     ###################################

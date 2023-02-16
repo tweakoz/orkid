@@ -47,7 +47,7 @@ InstancedModelDrawable::~InstancedModelDrawable() {
 ///////////////////////////////////////////////////////////////////////////////
 struct IMDIMPL_SUBMESH {
   const XgmSubMesh* _xgmsubmesh = nullptr;
-  fxinstancecache_constptr_t _fxcache;
+  fxpipelinecache_constptr_t _fxcache;
 };
 struct IMDIMPL_MODEL {
   std::vector<IMDIMPL_SUBMESH> _submeshes;

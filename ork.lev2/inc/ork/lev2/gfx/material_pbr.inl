@@ -87,7 +87,7 @@ public:
   void forceEmissive();
 
   ////////////////////////////////////////////
-  fxinstancecache_constptr_t _doFxInstanceCache(fxcachepermutation_set_constptr_t perms) const final;
+  fxpipelinecache_constptr_t _doFxInstanceCache(fxpipelinepermutation_set_constptr_t perms) const final;
   ////////////////////////////////////////////
   //void setupCamera(const RenderContextFrameData& RCFD);
   ////////////////////////////////////////////

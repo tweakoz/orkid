@@ -63,7 +63,8 @@ template <typename T> struct Vector3 final
   void rotateOnY(T rad);
   void rotateOnZ(T rad);
 
-  T angle(const Vector3& vec) const; 
+  T angle(const Vector3& vec) const; // radians 
+  T orientedAngle(const Vector3& vec, const Vector3& refaxis) const; // radians 
 
   Vector3 saturated() const;
   Vector3 clamped(T min, T max) const;

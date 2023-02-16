@@ -88,7 +88,7 @@ vec4 grid_output(vec3 pos){
 	float gMinor = filteredGrid(paramMinor,dpdxMinor,dpdyMinor,0.02);	
 	vec3 basecolor = vec3(0.1,0.1,0.1);
 	vec3 majorcolor = vec3(1,1,1);
-	vec3 minorcolor = vec3(.5,.5,.5);
+	vec3 minorcolor = vec3(0.5,0.5,0.5);
 
 	vec3 color = mix(minorcolor,basecolor,gMinor);
 	vec4 oc =  vec4(mix(majorcolor,color,gMajor),1.0-gMajor);

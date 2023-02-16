@@ -10,18 +10,34 @@ import math, sys, os
 from orkengine.core import *
 from orkengine.lev2 import *
 tokens = CrcStringProxy()
+constants = mathconstants()
 RENDERMODEL = "ForwardPBR"
 ################################################################################
-class FwdTransparency(object):
+class UiCamera(object):
   ################################################
   def __init__(self):
     super().__init__()
     self.ezapp = OrkEzApp.create(self)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
+    self.uicam = ui.EzUiCam()
+    self.uicam.fov = 45*constants.DTOR
+    self.uicam.constrainZ = True
+    ###################################
+    # initial view
+    ###################################
+    self.uicam.lookAt( vec3(10,5,10), # eye
+                       vec3(0,0,0), # tgt
+                       vec3(0,1,0)) # up
+    ###################################
+    self.camera = CameraData()
+    self.camera.perspective(0.1, 100.0, 45.0)
+    self.cameralut = CameraDataLut()
+    self.cameralut.addCamera("spawncam",self.camera)
+    self.camera.copyFrom( self.uicam.cameradata )
   ##############################################
   def onGpuInit(self,ctx):
-    permu = FxCachePermutation()
+    permu = FxPipelinePermutation()
     permu.rendering_model = RENDERMODEL
     ###################################
     def createPipeline(blending=None,culltest=None):
@@ -80,35 +96,40 @@ class FwdTransparency(object):
     self.cube_node = createNode(name="cube",prim=cube_prim,pipeline=pipeline_cube,sortkey=1)
     self.frustum_nodeB = createNode(name="frustumB",prim=frustum_prim,pipeline=pipeline_frustumB,sortkey=2)
     self.frustum_nodeF = createNode(name="frustumF",prim=frustum_prim,pipeline=pipeline_frustumF,sortkey=3)
-    ###################################
-    self.camera = CameraData()
-    self.camera.perspective(0.1, 100.0, 45.0)
-    self.cameralut = CameraDataLut()
-    self.cameralut.addCamera("spawncam",self.camera)
+
+    self.grid_data = GridDrawableData()
+    self.grid_data.extent = 10.0
+    self.grid_data.majorTileDim = 1.0
+    self.grid_data.minorTileDim = 0.5
+    self.grid_data.texturepath = "lev2://textures/gridcell_blue.png"
+    self.grid_node = layer1.createGridNode("grid",self.grid_data)
+    self.grid_node.sortkey = 1
+  ##############################################
+  def onUiEvent(self,uievent):
+    clone = uievent.clone()
+    handled = self.uicam.uiEventHandler(uievent)
+    if handled:
+      self.uicam.updateMatrices()
+      self.camera.copyFrom( self.uicam.cameradata )
   ################################################
   def onUpdate(self,updinfo):
-    θ    = updinfo.absolutetime * math.pi * 2.0 * 0.1
-    ###################################
-    distance = 10.0
-    eye = vec3(math.sin(θ), 1.0, -math.cos(θ)) * distance
-    self.camera.lookAt(eye, # eye
-                       vec3(0, 0, 0), # tgt
-                       vec3(0, 1, 0)) # up
-    ###################################
     def nodesetxf(node=None,trans=None,orient=None,scale=None):
       node.worldTransform.translation = trans 
       node.worldTransform.orientation = orient 
       node.worldTransform.scale = scale
     ###################################
-    trans = vec3(0,0,0)
+    Y = 3
+    ###################################
+    trans = vec3(0,Y,0)
     orient = quat()
     scale = 1+(1+math.sin(updinfo.absolutetime*2))
     ###################################
     nodesetxf(node=self.frustum_nodeF,trans=trans,orient=orient,scale=scale)
     nodesetxf(node=self.frustum_nodeB,trans=trans,orient=orient,scale=scale)
     ###################################
-    self.cube_node.worldTransform.translation = vec3(0,0,math.sin(updinfo.absolutetime))
+    self.cube_node.worldTransform.translation = vec3(0,Y,math.sin(updinfo.absolutetime))
     ###################################
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
 ###############################################################################
-FwdTransparency().ezapp.mainThreadLoop()
+UiCamera().ezapp.mainThreadLoop()
+

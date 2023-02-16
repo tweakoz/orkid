@@ -132,7 +132,7 @@ void pyinit_scenegraph(py::module& module_lev2) {
                  std::string named, //
                  fvec3_ptr_t a,
                  fvec3_ptr_t b,
-                 fxinstance_ptr_t fxinst) -> node_ptr_t { //
+                 fxpipeline_ptr_t fxinst) -> node_ptr_t { //
                 auto drawable = std::make_shared<CallbackDrawable>(nullptr);
                 drawable->SetRenderCallback([a, b, fxinst](lev2::RenderContextInstData& RCID) { //
                   auto context = RCID.context();

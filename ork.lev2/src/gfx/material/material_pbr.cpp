@@ -55,8 +55,8 @@ pbrmaterial_ptr_t default3DMaterial(Context* ctx) {
 
 //////////////////////////////////////////////////////
 
-static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,const PBRMaterial*mtl);
-using cache_impl_t = FxStateInstanceCacheImpl<PBRMaterial>;
+static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,const PBRMaterial*mtl);
+using cache_impl_t = FxPipelineCacheImpl<PBRMaterial>;
 
 using pbrcache_impl_ptr_t = std::shared_ptr<cache_impl_t>;
 
@@ -67,7 +67,7 @@ static pbrcache_impl_ptr_t _getpbrcache(){
 
 ////////////////////////////////////////////
 
-static FxStateInstance::statelambda_t _createBasicStateLambda(const PBRMaterial* mtl){
+static FxPipeline::statelambda_t _createBasicStateLambda(const PBRMaterial* mtl){
   return [mtl](const RenderContextInstData& RCID, int ipass) {
     auto context          = RCID._RCFD->GetTarget();
     auto MTXI             = context->MTXI();
@@ -137,9 +137,9 @@ static FxStateInstance::statelambda_t _createBasicStateLambda(const PBRMaterial*
 
 ////////////////////////////////////////////
 
-static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,const PBRMaterial*mtl){
+static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,const PBRMaterial*mtl){
 
-  fxinstance_ptr_t fxinst;
+  fxpipeline_ptr_t fxinst;
 
   switch (mtl->_variant) {
     case "skybox.forward"_crcu: { // FORWARD SKYBOX VARIANT
@@ -168,7 +168,7 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
       OrkAssert(permu._skinned==false);
       //////////////////////////////////////////////////////////
       if(permu._stereo and mtl->_tek_FWD_SKYBOX_ST){
-        auto fxinst_stereo        = std::make_shared<FxStateInstance>(permu);
+        auto fxinst_stereo        = std::make_shared<FxPipeline>(permu);
         fxinst_stereo->_technique = mtl->_tek_FWD_SKYBOX_ST;
         fxinst_stereo->bindParam(mtl->_paramIVPL, "RCFD_Camera_IVP_Left"_crcsh);
         fxinst_stereo->bindParam(mtl->_paramIVPR, "RCFD_Camera_IVP_Right"_crcsh);
@@ -177,7 +177,7 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
         fxinst = fxinst_stereo;
       }
       else if(mtl->_tek_FWD_SKYBOX_MO){
-        auto fxinst_stereo        = std::make_shared<FxStateInstance>(permu);
+        auto fxinst_stereo        = std::make_shared<FxPipeline>(permu);
         fxinst_stereo->_technique = mtl->_tek_FWD_SKYBOX_MO;
         fxinst_stereo->bindParam(mtl->_paramIVP, "RCFD_Camera_IVP_Mono"_crcsh);
         fxinst_stereo->addStateLambda(skybox_lambda);
@@ -193,14 +193,14 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
         case "PICKING"_crcu: {
           OrkAssert(permu._stereo == false);
           if (permu._instanced and mtl->_tek_PIK_RI_IN) {
-            fxinst                     = std::make_shared<FxStateInstance>(permu);
+            fxinst                     = std::make_shared<FxPipeline>(permu);
             fxinst->_technique         = mtl->_tek_PIK_RI_IN;
             fxinst->bindParam(mtl->_paramMVP, "RCFD_Camera_Pick"_crcsh);
           }
           ////////////////
           else { // non-instanced
             if (not permu._skinned and mtl->_tek_PIK_RI_NI) {
-              fxinst                     = std::make_shared<FxStateInstance>(permu);
+              fxinst                     = std::make_shared<FxPipeline>(permu);
               fxinst->_technique         = mtl->_tek_PIK_RI_NI;
               fxinst->bindParam(mtl->_paramMVP, "RCFD_Camera_Pick"_crcsh);
             }
@@ -241,7 +241,7 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
             }
             //////////////////////////////////
             if(tek){
-              fxinst = std::make_shared<FxStateInstance>(permu);
+              fxinst = std::make_shared<FxPipeline>(permu);
               fxinst->_technique = tek;
               fxinst->addStateLambda(common_lambda);
               fxinst->addStateLambda([mtl](const RenderContextInstData& RCID, int ipass) {
@@ -282,7 +282,7 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
             }
             //////////////////////////////////
             if(tek){
-              fxinst = std::make_shared<FxStateInstance>(permu);
+              fxinst = std::make_shared<FxPipeline>(permu);
               fxinst->_technique = tek;
               fxinst->addStateLambda(common_lambda);
               fxinst->addStateLambda([mtl](const RenderContextInstData& RCID, int ipass) {
@@ -306,7 +306,7 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
         case "FORWARD_UNLIT"_crcu:
         case 0:
           if(mtl->_tek_FWD_UNLIT_NI_MO){
-            fxinst             = std::make_shared<FxStateInstance>(permu);
+            fxinst             = std::make_shared<FxPipeline>(permu);
             fxinst->_technique = mtl->_tek_FWD_UNLIT_NI_MO;
             //////////////////////////////////
             fxinst->addStateLambda([mtl](const RenderContextInstData& RCID, int ipass) {
@@ -393,7 +393,7 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
           if(permu._stereo){
             if (permu._instanced and not permu._skinned) {
               if(mtl->_tek_FWD_CT_NM_RI_IN_ST){
-                fxinst          = std::make_shared<FxStateInstance>(permu);
+                fxinst          = std::make_shared<FxPipeline>(permu);
                 fxinst->_technique         = mtl->_tek_FWD_CT_NM_RI_IN_ST;
                 fxinst->bindParam(mtl->_paramMVPL, "RCFD_Camera_MVP_Left"_crcsh);
                 fxinst->bindParam(mtl->_paramMVPR, "RCFD_Camera_MVP_Right"_crcsh);
@@ -404,7 +404,7 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
             }
             else if (not permu._instanced and not permu._skinned) {
               if(mtl->_tek_FWD_CT_NM_RI_NI_ST){
-                fxinst          = std::make_shared<FxStateInstance>(permu);
+                fxinst          = std::make_shared<FxPipeline>(permu);
                 fxinst->_technique         = mtl->_tek_FWD_CT_NM_RI_NI_ST;
                 fxinst->bindParam(mtl->_paramMVPL, "RCFD_Camera_MVP_Left"_crcsh);
                 fxinst->bindParam(mtl->_paramMVPR, "RCFD_Camera_MVP_Right"_crcsh);
@@ -415,7 +415,7 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
             }
             else if (not permu._instanced and permu._skinned) {
               if(mtl->_tek_FWD_CT_NM_SK_NI_ST){
-                fxinst          = std::make_shared<FxStateInstance>(permu);
+                fxinst          = std::make_shared<FxPipeline>(permu);
                 fxinst->_technique         = mtl->_tek_FWD_CT_NM_SK_NI_ST;
                 fxinst->bindParam(mtl->_paramMVPL, "RCFD_Camera_MVP_Left"_crcsh);
                 fxinst->bindParam(mtl->_paramMVPR, "RCFD_Camera_MVP_Right"_crcsh);
@@ -428,7 +428,7 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
           else{
             if (permu._instanced and not permu._skinned) {
               if(mtl->_tek_FWD_CT_NM_RI_IN_MO){
-                fxinst          = std::make_shared<FxStateInstance>(permu);
+                fxinst          = std::make_shared<FxPipeline>(permu);
                 fxinst->_technique         = mtl->_tek_FWD_CT_NM_RI_IN_MO;
                 fxinst->bindParam(mtl->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
                 fxinst->addStateLambda(_createBasicStateLambda(mtl));
@@ -438,7 +438,7 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
             }
             if (not permu._instanced and not permu._skinned) {
               if(mtl->_tek_FWD_CT_NM_RI_NI_MO){
-                fxinst          = std::make_shared<FxStateInstance>(permu);
+                fxinst          = std::make_shared<FxPipeline>(permu);
                 fxinst->_technique         = mtl->_tek_FWD_CT_NM_RI_NI_MO;
                 fxinst->bindParam(mtl->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
                 fxinst->addStateLambda(_createBasicStateLambda(mtl));
@@ -455,7 +455,7 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
         case "DEPTH_PREPASS"_crcu:
           if (permu._instanced and not permu._skinned and not permu._stereo) {
             if(mtl->_tek_FWD_DEPTHPREPASS_IN_MO){
-              fxinst                     = std::make_shared<FxStateInstance>(permu);
+              fxinst                     = std::make_shared<FxPipeline>(permu);
               fxinst->_technique         = mtl->_tek_FWD_DEPTHPREPASS_IN_MO;
               fxinst->bindParam(mtl->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
               fxinst->addStateLambda(_createBasicStateLambda(mtl));
@@ -506,7 +506,7 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
         case "FORWARD_PBR"_crcu: {
           if (not permu._instanced and not permu._skinned and not permu._stereo) {
             if(mtl->_tek_FWD_CV_EMI_RI_NI_MO){
-              fxinst                     = std::make_shared<FxStateInstance>(permu);
+              fxinst                     = std::make_shared<FxPipeline>(permu);
               fxinst->_technique         = mtl->_tek_FWD_CV_EMI_RI_NI_MO;
               fxinst->bindParam(mtl->_paramMVP,"RCFD_Camera_MVP_Mono"_crcsh);
               fxinst->addStateLambda(_createBasicStateLambda(mtl));
@@ -519,7 +519,7 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
         case "DEFERRED_PBR"_crcu: {
           if (not permu._instanced and not permu._skinned and not permu._stereo) {
             if(mtl->_tek_GBU_CV_EMI_RI_NI_MO){
-              fxinst                     = std::make_shared<FxStateInstance>(permu);
+              fxinst                     = std::make_shared<FxPipeline>(permu);
               fxinst->_technique         = mtl->_tek_GBU_CV_EMI_RI_NI_MO;
               fxinst->bindParam(mtl->_paramMVP,"RCFD_Camera_MVP_Mono"_crcsh);
               fxinst->addStateLambda(_createBasicStateLambda(mtl));
@@ -570,7 +570,7 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu,c
 
 ///////////////////////////////////////////////////////////////////////////////
 
-fxinstancecache_constptr_t PBRMaterial::_doFxInstanceCache(fxcachepermutation_set_constptr_t perms) const { // final
+fxpipelinecache_constptr_t PBRMaterial::_doFxInstanceCache(fxpipelinepermutation_set_constptr_t perms) const { // final
   return _getpbrcache()->getCache(this);
 }
 

@@ -50,7 +50,7 @@ class PyOrkApp(object):
     ###################################
     # create an fxinst (a graphics pipeline)
     ###################################
-    permu = FxCachePermutation()
+    permu = FxPipelinePermutation()
     permu.rendering_model = RENDERMODEL
     permu.technique = self.material_frustum.shader.technique("std_mono_fwd")
     fxinst_frustum = self.material_frustum.fxcache.findFxInst(permu)

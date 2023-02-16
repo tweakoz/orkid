@@ -113,7 +113,7 @@ struct GridRenderImpl {
   PBRMaterial* _pbrmaterial;
 
   texture_ptr_t _colortexture;
-  fxinstancecache_constptr_t _fxcache;
+  fxpipelinecache_constptr_t _fxcache;
   bool _initted = false;
 
 };

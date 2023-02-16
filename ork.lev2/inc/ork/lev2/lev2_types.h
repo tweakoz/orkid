@@ -180,18 +180,18 @@ struct FxShaderParamBuffer;
 struct FxShaderParamBufferMapping;
 typedef std::shared_ptr<FxShaderParamBufferMapping> parambuffermappingptr_t;
 ///////////////////////////////////////////////////////////////////////////////
-struct FxStateInstance;
-struct FxStateInstanceCache;
-struct FxCachePermutation;
-struct FxCachePermutationSet;
+struct FxPipeline;
+struct FxPipelineCache;
+struct FxPipelinePermutation;
+struct FxPipelinePermutationSet;
 //
-using fxinstance_ptr_t = std::shared_ptr<FxStateInstance>;
-using fxinstancecache_ptr_t = std::shared_ptr<FxStateInstanceCache>;
-using fxinstancecache_constptr_t = std::shared_ptr<const FxStateInstanceCache>;
-using fxcachepermutation_ptr_t = std::shared_ptr<FxCachePermutation>;
-using fxcachepermutation_constptr_t = std::shared_ptr<const FxCachePermutation>;
-using fxcachepermutation_set_ptr_t = std::shared_ptr<FxCachePermutationSet>;
-using fxcachepermutation_set_constptr_t = std::shared_ptr<const FxCachePermutationSet>;
+using fxpipeline_ptr_t = std::shared_ptr<FxPipeline>;
+using fxpipelinecache_ptr_t = std::shared_ptr<FxPipelineCache>;
+using fxpipelinecache_constptr_t = std::shared_ptr<const FxPipelineCache>;
+using fxpipelinepermutation_ptr_t = std::shared_ptr<FxPipelinePermutation>;
+using fxpipelinepermutation_constptr_t = std::shared_ptr<const FxPipelinePermutation>;
+using fxpipelinepermutation_set_ptr_t = std::shared_ptr<FxPipelinePermutationSet>;
+using fxpipelinepermutation_set_constptr_t = std::shared_ptr<const FxPipelinePermutationSet>;
 ///////////////////////////////////////////////////////////////////////////////
 struct InputGroup;
 struct InputManager;

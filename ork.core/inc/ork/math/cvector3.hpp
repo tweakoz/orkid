@@ -518,6 +518,16 @@ T ork::Vector3<T>::angle(const Vector3& vec) const{
 
 ////////////////////////////////////////////////////////////////////////////////
 
+template <typename T>
+T ork::Vector3<T>::orientedAngle(const Vector3& vec, const Vector3& refaxis) const{
+  const base_t& a = *this;
+  const base_t& b = vec;
+
+  return T(glm::orientedAngle(a,b,refaxis));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 template <typename T> void Vector3<T>::rotateOnX(T rad) {
   T previousY = this->y;
   T previousZ = this->z;

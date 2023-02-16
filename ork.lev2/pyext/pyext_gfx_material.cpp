@@ -28,7 +28,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
   // materialinst params proxy
   /////////////////////////////////////////////////////////////////////////////////
   struct matinst_param_proxy {
-    fxinstance_ptr_t _materialinst;
+    fxpipeline_ptr_t _materialinst;
   };
   using matinst_param_proxy_ptr_t = std::shared_ptr<matinst_param_proxy>;
   auto materialinst_params_type   =                                                               //
@@ -77,46 +77,46 @@ void pyinit_gfx_material(py::module& module_lev2) {
   type_codec->registerStdCodec<matinst_param_proxy_ptr_t>(materialinst_params_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto fxcachepermu_type =                                                     //
-      py::class_<FxCachePermutation, fxcachepermutation_ptr_t>(module_lev2, "FxCachePermutation") //
+      py::class_<FxPipelinePermutation, fxpipelinepermutation_ptr_t>(module_lev2, "FxPipelinePermutation") //
           .def(py::init<>())
           .def_property("rendering_model",
-              [](fxcachepermutation_ptr_t permu) -> uint32_t { //
+              [](fxpipelinepermutation_ptr_t permu) -> uint32_t { //
                 return permu->_rendering_model;
               },
-              [](fxcachepermutation_ptr_t permu, std::string model) { //
+              [](fxpipelinepermutation_ptr_t permu, std::string model) { //
                 permu->_rendering_model = CrcString(model.c_str()).hashed();
               }
           )
           .def_property("technique",
-              [](fxcachepermutation_ptr_t permu) -> pyfxtechnique_ptr_t { //
+              [](fxpipelinepermutation_ptr_t permu) -> pyfxtechnique_ptr_t { //
                 return permu->_forced_technique;
               },
-              [](fxcachepermutation_ptr_t permu, pyfxtechnique_ptr_t tek) { //
+              [](fxpipelinepermutation_ptr_t permu, pyfxtechnique_ptr_t tek) { //
                 permu->_forced_technique = tek.get();
               }
           );
-  type_codec->registerStdCodec<fxcachepermutation_ptr_t>(fxcachepermu_type);
+  type_codec->registerStdCodec<fxpipelinepermutation_ptr_t>(fxcachepermu_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto fxcache_type =                                                     //
-      py::class_<FxStateInstanceCache, fxinstancecache_ptr_t>(module_lev2, "FxStateInstanceCache") //
+      py::class_<FxPipelineCache, fxpipelinecache_ptr_t>(module_lev2, "FxPipelineCache") //
           .def(
               "findFxInst",                                                                    //
-              [](fxinstancecache_ptr_t cache, rcid_ptr_t RCID) -> fxinstance_ptr_t { //
+              [](fxpipelinecache_ptr_t cache, rcid_ptr_t RCID) -> fxpipeline_ptr_t { //
                 return cache->findfxinst(*RCID);
               })
           .def(
               "findFxInst",                                                                    //
-              [](fxinstancecache_ptr_t cache, 
-                 fxcachepermutation_ptr_t permu ) -> fxinstance_ptr_t { //
+              [](fxpipelinecache_ptr_t cache, 
+                 fxpipelinepermutation_ptr_t permu ) -> fxpipeline_ptr_t { //
                 return cache->findfxinst(*permu);
               });
-  type_codec->registerStdCodec<fxinstancecache_ptr_t>(fxcache_type);
+  type_codec->registerStdCodec<fxpipelinecache_ptr_t>(fxcache_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto materialinst_type =                                                     //
-      py::class_<FxStateInstance, fxinstance_ptr_t>(module_lev2, "FxStateInstance") //
+      py::class_<FxPipeline, fxpipeline_ptr_t>(module_lev2, "FxPipeline") //
           .def(
               "bindParam",                                                                    //
-              [](fxinstance_ptr_t fxinst, //
+              [](fxpipeline_ptr_t fxinst, //
                  pyfxparam_ptr_t param, //
                  py::object inp_value) { //
                 if( py::isinstance<CrcString>(inp_value) ){
@@ -140,7 +140,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
               })
           .def(
               "wrappedDrawCall",                                                                    //
-              [](fxinstance_ptr_t fxinst, //
+              [](fxpipeline_ptr_t fxinst, //
                  rcid_ptr_t rcid, //
                  py::object method
                  ){
@@ -152,7 +152,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
               })
           .def(
               "__setattr__",                                                                    //
-              [type_codec](fxinstance_ptr_t instance, const std::string& key, py::object val) { //
+              [type_codec](fxpipeline_ptr_t instance, const std::string& key, py::object val) { //
                 auto varmap_val = type_codec->decode(val);
                 if (key == "technique")
                   instance->_technique = varmap_val.get<fxtechnique_constptr_t>();
@@ -167,9 +167,9 @@ void pyinit_gfx_material(py::module& module_lev2) {
               })
           .def(
               "__getattr__",                                                                  //
-              [type_codec](fxinstance_ptr_t instance, const std::string& key) -> py::object { //
+              [type_codec](fxpipeline_ptr_t instance, const std::string& key) -> py::object { //
                 // OrkAssert(instance->_vars.hasKey(key));
-                FxStateInstance::varval_t varval;
+                FxPipeline::varval_t varval;
                 // auto varmap_val = instance->_vars.valueForKey(key);
                 if (key == "param") {
                   auto proxy           = std::make_shared<matinst_param_proxy>();
@@ -182,7 +182,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
                 }
                 return py::none(); // ;
               });
-  type_codec->registerStdCodec<fxinstance_ptr_t>(materialinst_type);
+  type_codec->registerStdCodec<fxpipeline_ptr_t>(materialinst_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto freestyle_type = //
       py::class_<FreestyleMaterial, GfxMaterial, freestyle_mtl_ptr_t>(module_lev2, "FreestyleMaterial")
@@ -194,7 +194,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
           }))
           .def_property_readonly(
               "fxcache",                                    //
-              [](freestyle_mtl_ptr_t material) -> fxinstancecache_constptr_t { //
+              [](freestyle_mtl_ptr_t material) -> fxpipelinecache_constptr_t { //
                 return material->fxInstanceCache(); // material
               })
           .def_property_readonly(

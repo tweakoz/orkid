@@ -60,7 +60,7 @@ void pyinit_primitives(py::module& module_lev2) {
           [](primitives::cube_ptr_t prim,
              std::string named, //
              scenegraph::layer_ptr_t layer,
-             fxinstance_ptr_t mtl_inst) -> scenegraph::drawable_node_ptr_t { //
+             fxpipeline_ptr_t mtl_inst) -> scenegraph::drawable_node_ptr_t { //
             auto node                                                 //
                 = prim->createNode(named, layer, mtl_inst);
             node->_userdata->makeValueForKey<primitives::cube_ptr_t>("_primitive") = prim; // hold on to reference
@@ -113,7 +113,7 @@ void pyinit_primitives(py::module& module_lev2) {
               [](primitives::frustum_ptr_t prim,
                  std::string named, //
                  scenegraph::layer_ptr_t layer,
-                 fxinstance_ptr_t mtl_inst) -> scenegraph::drawable_node_ptr_t { //
+                 fxpipeline_ptr_t mtl_inst) -> scenegraph::drawable_node_ptr_t { //
                 auto node                                                 //
                     = prim->createNode(named, layer, mtl_inst);
                 node->_userdata->makeValueForKey<primitives::frustum_ptr_t>("_primitive") = prim; // hold on to reference

@@ -59,7 +59,7 @@ void GfxMaterial::Describe() {
 
 /////////////////////////////////////////////////////////////////////////
 
-fxinstancecache_constptr_t GfxMaterial::fxInstanceCache(fxcachepermutation_set_constptr_t perms) const{
+fxpipelinecache_constptr_t GfxMaterial::fxInstanceCache(fxpipelinepermutation_set_constptr_t perms) const{
   return _doFxInstanceCache(perms);
 }
 

@@ -40,6 +40,62 @@ void OrkGlobalEnableMousePointer();
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void EzUiCam::lookAt(fvec3 eye, fvec3 tgt, fvec3 up ){
+    fmtx4 VMATRIX;
+    VMATRIX.lookAt(eye,tgt,up);
+
+    if(_constrainZ){
+
+      VMATRIX = VMATRIX.inverse();
+      fvec3 znormal = VMATRIX.zNormal();
+
+      OrkAssert(up.dotWith(fvec3(0,1,0))>0.99); // in constrainZ, up should be up
+
+      /////////////////////////
+      // compute SIGNED/ORIENTED heading
+      /////////////////////////
+
+      auto heading_n = fvec3(znormal.x,0,znormal.z).normalized();
+      auto heading_ref = fvec3(0,0,-1);
+      auto hrXhn = heading_ref.crossWith(heading_n);
+      hrXhn.y = -fabs(hrXhn.y);
+      float heading = heading_ref.orientedAngle(heading_n,hrXhn);
+
+      /////////////////////////
+      // compute SIGNED/ORIENTED elevation
+      /////////////////////////
+
+      auto znXhn = znormal.crossWith(heading_n);
+      float elevation = znormal.orientedAngle(heading_n,znXhn);
+      bool is_up = (znormal.y >= 0);
+      elevation = fabs(elevation) * (is_up?-1:1);
+
+      /////////////////////////
+
+      QuatElevation.fromAxisAngle(fvec4(1,0,0,elevation));
+      QuatHeading.fromAxisAngle(fvec4(0,1,0,heading));
+      QuatC = QuatElevation.multiply(QuatHeading);
+    }
+    else{
+
+      fvec3 xnormal = VMATRIX.xNormal();
+      fvec3 ynormal = VMATRIX.yNormal();
+      fvec3 znormal = VMATRIX.zNormal();
+
+      fmtx4 matrot, imatrot;
+      matrot.fromNormalVectors(xnormal, ynormal, znormal);
+      imatrot.inverseOf(matrot);
+      QuatC.fromMatrix(imatrot);
+    }
+
+    mfLoc = (tgt-eye).magnitude();
+    mvCenter = tgt;
+    updateMatrices();
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void EzUiCam::describeX(object::ObjectClass* clazz) {
   clazz->floatProperty("Aperature", float_range{0.0f, 90.0f}, &EzUiCam::_fov);
   clazz->floatProperty("MaxFar", float_range{1.0f, 100000.0f}, &EzUiCam::far_max);
@@ -54,10 +110,10 @@ void EzUiCam::describeX(object::ObjectClass* clazz) {
 struct UiCamPrivate {
   UiCamPrivate() {
     _material = std::make_shared<FreestyleMaterial>();
-    FxCachePermutation perm;
-    _materialinst_mono   = std::make_shared<FxStateInstance>(perm); // _material
+    FxPipelinePermutation perm;
+    _materialinst_mono   = std::make_shared<FxPipeline>(perm); // _material
     perm._stereo = true;
-    _materialinst_stereo = std::make_shared<FxStateInstance>(perm); // _material
+    _materialinst_stereo = std::make_shared<FxPipeline>(perm); // _material
 
   }
   void gpuUpdate(Context* ctx) {
@@ -72,8 +128,8 @@ struct UiCamPrivate {
   }
   bool _doGpuInit = true;
   freestyle_mtl_ptr_t _material;
-  fxinstance_ptr_t _materialinst_mono;
-  fxinstance_ptr_t _materialinst_stereo;
+  fxpipeline_ptr_t _materialinst_mono;
+  fxpipeline_ptr_t _materialinst_stereo;
 };
 using uicamprivate_t = std::shared_ptr<UiCamPrivate>;
 
@@ -110,9 +166,9 @@ EzUiCam::EzUiCam()
   fquat QuatX, QuatY;
   QuatX.fromAxisAngle(fvec4(_pushNX, -15*DTOR));
   QuatY.fromAxisAngle(fvec4(_pushNY, 180*DTOR));
-  QuatL = QuatL.multiply(QuatX);
-  QuatM = QuatM.multiply(QuatY);
-  QuatC = QuatL.multiply(QuatM);
+  QuatElevation = QuatElevation.multiply(QuatX);
+  QuatHeading = QuatHeading.multiply(QuatY);
+  QuatC = QuatElevation.multiply(QuatHeading);
 
 }
 
@@ -532,9 +588,9 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
             //printf( "dy <%g> dx <%g> dz <%g>\n", _pushNX.x, _pushNX.y, _pushNX.z );
 
             if(_constrainZ){
-              QuatL = QuatL.multiply(QuatX);
-              QuatM = QuatM.multiply(QuatY);
-              QuatC = QuatL.multiply(QuatM);
+              QuatElevation = QuatElevation.multiply(QuatX);
+              QuatHeading = QuatHeading.multiply(QuatY);
+              QuatC = QuatElevation.multiply(QuatHeading);
             }
             else{
               QuatC = QuatC.multiply(QuatY);

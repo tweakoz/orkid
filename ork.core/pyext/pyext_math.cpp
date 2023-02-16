@@ -81,6 +81,8 @@ void pyinit_math(py::module& module_core) {
                              [](const fvec3& vec) -> float { return vec.y; })
           .def_property("z", [](fvec3& vec,float val) { return vec.z = val; }, //
                              [](const fvec3& vec) -> float { return vec.z; })
+          .def("angle", &fvec3::angle)
+          .def("orientedAngle", &fvec3::orientedAngle)
           .def("dot", &fvec3::dotWith)
           .def("cross", &fvec3::crossWith)
           .def("mag", &fvec3::magnitude)
@@ -286,6 +288,26 @@ void pyinit_math(py::module& module_core) {
           .def("decompose", &fmtx4::decompose)
           .def("toRotMatrix3", &fmtx4::rotMatrix33)
 	        .def("toGlm", &fmtx4::asGlmMat4)
+          .def(
+              "getColumn",
+              [](fmtx4_ptr_t mtx, int column) -> fvec4 { //
+                return mtx->column(column);
+              })
+          .def(
+              "setColumn",
+              [](fmtx4_ptr_t mtx, int column, fvec4 c) { //
+                return mtx->setColumn(column,c);
+              })
+          .def(
+              "getRow",
+              [](fmtx4_ptr_t mtx, int row) -> fvec4 { //
+                return mtx->row(row);
+              })
+          .def(
+              "setRow",
+              [](fmtx4_ptr_t mtx, int row, fvec4 c) { //
+                return mtx->setRow(row,c);
+              })
           .def(
               "compose",
               [](fmtx4_ptr_t mtx, const fvec3& pos, const fquat& rot, float scale) { //

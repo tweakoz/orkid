@@ -226,7 +226,7 @@ struct ForwardPbrNodeImpl {
   rtgroup_ptr_t _rtg_resolve_msaa;
   fmtx4 _viewOffsetMatrix;
   pbrmaterial_ptr_t _skybox_material;
-  fxinstancecache_constptr_t _skybox_fxcache;
+  fxpipelinecache_constptr_t _skybox_fxcache;
 
   FreestyleMaterial _blit2screenmtl;
   const FxShaderTechnique* _fxtechnique1x1;

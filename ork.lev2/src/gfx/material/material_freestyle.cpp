@@ -23,16 +23,16 @@ FreestyleMaterial::~FreestyleMaterial() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu, //
+static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu, //
                                                const FreestyleMaterial*mtl){
 
-  fxinstance_ptr_t fxinst = nullptr;
+  fxpipeline_ptr_t fxinst = nullptr;
 
   switch (mtl->_variant) {
     case "FORWARD_UNLIT"_crcu:
     case "CUSTOM"_crcu:
     case 0: { // free-freestyle
-      fxinst             = std::make_shared<FxStateInstance>(permu);
+      fxinst             = std::make_shared<FxPipeline>(permu);
 
       fxinst->addStateLambda([mtl](const RenderContextInstData& RCID, int ipass) {
         auto _this       = (FreestyleMaterial*)mtl;
@@ -56,7 +56,7 @@ static fxinstance_ptr_t _createFxStateInstance(const FxCachePermutation& permu, 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-using cache_impl_t = FxStateInstanceCacheImpl<FreestyleMaterial>;
+using cache_impl_t = FxPipelineCacheImpl<FreestyleMaterial>;
 
 using freestylecache_impl_ptr_t = std::shared_ptr<cache_impl_t>;
 
@@ -65,7 +65,7 @@ static freestylecache_impl_ptr_t _getfreestylecache(){
   return _gcache;
 }
 
-fxinstancecache_constptr_t FreestyleMaterial::_doFxInstanceCache(fxcachepermutation_set_constptr_t perms) const { // final
+fxpipelinecache_constptr_t FreestyleMaterial::_doFxInstanceCache(fxpipelinepermutation_set_constptr_t perms) const { // final
   return _getfreestylecache()->getCache(this);
 }
 

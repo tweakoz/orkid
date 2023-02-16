@@ -98,6 +98,11 @@ void pyinit_ui(py::module& module_lev2) {
           .def("uiEventHandler", [](ezuicam_ptr_t cam, ui::event_ptr_t event) -> bool {
             return cam->UIEventHandler(event);
           })
+          .def(
+              "lookAt",
+              [](ezuicam_ptr_t uic, fvec3 eye, fvec3 tgt, fvec3 up) { //
+                uic->lookAt(eye,tgt,up);
+              })
           .def("updateMatrices", [](ezuicam_ptr_t cam) {
             cam->updateMatrices();
           })
@@ -117,6 +122,25 @@ void pyinit_ui(py::module& module_lev2) {
               },
               [](ezuicam_ptr_t uic, float fov) { //
                 uic->_fov = fov;
+              })
+          .def_property_readonly(
+              "center",
+              [](ezuicam_ptr_t uic) -> fvec3 { //
+                return uic->mvCenter;
+              })
+          .def_property_readonly(
+              "orientation",
+              [](ezuicam_ptr_t uic) -> fquat { //
+                return uic->QuatC;
+              })
+          .def_property(
+              "loc",
+              [](ezuicam_ptr_t uic) -> fvec3 { //
+                return uic->CamLoc;
+              },
+              [](ezuicam_ptr_t uic, fvec3 loc) { //
+                uic->CamLoc = loc;
+                uic->PrevCamLoc = loc;
               })
           .def_property(
               "constrainZ",

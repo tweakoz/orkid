@@ -39,7 +39,7 @@ struct FreestyleMaterial final : public GfxMaterial {
   // new interface (WIP)
   ////////////////////////////////////////////
 
-  fxinstancecache_constptr_t _doFxInstanceCache(fxcachepermutation_set_constptr_t perms) const final;
+  fxpipelinecache_constptr_t _doFxInstanceCache(fxpipelinepermutation_set_constptr_t perms) const final;
 
   void begin(const FxShaderTechnique* tek, const RenderContextFrameData& RCFD);
   void begin(const FxShaderTechnique* tekMono, const FxShaderTechnique* tekStereo, const RenderContextFrameData& RCFD);

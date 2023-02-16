@@ -18,9 +18,9 @@
 
 namespace ork::lev2 {
 
-struct FxStateInstance;
-using fxinstance_ptr_t      = std::shared_ptr<FxStateInstance>;
-using fxinstance_constptr_t = std::shared_ptr<const FxStateInstance>;
+struct FxPipeline;
+using fxpipeline_ptr_t      = std::shared_ptr<FxPipeline>;
+using fxinstance_constptr_t = std::shared_ptr<const FxPipeline>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -30,11 +30,11 @@ using fxinstance_constptr_t = std::shared_ptr<const FxStateInstance>;
                               COUNT };*/
 
 ///////////////////////////////////////////////////////////////////////////////
-// FxStateInstance : instance of a material "class"
+// FxPipeline : instance of a material "class"
 //  with independent parameter values
 ///////////////////////////////////////////////////////////////////////////////
 
-struct FxCachePermutation {
+struct FxPipelinePermutation {
 
   void dump() const;
   uint64_t genIndex() const;
@@ -47,16 +47,16 @@ struct FxCachePermutation {
 
 };
 
-struct FxCachePermutationSet {
-  void add(fxcachepermutation_constptr_t perm);
-  std::unordered_set<fxcachepermutation_constptr_t> __permutations;
+struct FxPipelinePermutationSet {
+  void add(fxpipelinepermutation_constptr_t perm);
+  std::unordered_set<fxpipelinepermutation_constptr_t> __permutations;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct FxStateInstance {
+struct FxPipeline {
 
-  FxStateInstance(const FxCachePermutation& config);
+  FxPipeline(const FxPipelinePermutation& config);
 
   int beginBlock(const RenderContextInstData& RCID);
   bool beginPass(const RenderContextInstData& RCID, int ipass);
@@ -74,7 +74,7 @@ struct FxStateInstance {
 
   GfxMaterial* _material = nullptr;
   fxtechnique_constptr_t _technique = nullptr;
-  const FxCachePermutation __permutation;
+  const FxPipelinePermutation __permutation;
   std::unordered_map<fxparam_constptr_t, varval_t> _params;
   std::vector<statelambda_t> _statelambdas;
   fxparam_constptr_t _parInstanceMatrixMap = nullptr;
@@ -84,31 +84,31 @@ struct FxStateInstance {
 
 };
 
-struct FxStateInstanceCache {
+struct FxPipelineCache {
 
-  using cache_miss_fn_t = std::function<fxinstance_ptr_t(const FxCachePermutation&)>;
-  fxinstance_ptr_t findfxinst(const RenderContextInstData& RCID) const;
-  fxinstance_ptr_t findfxinst(const FxCachePermutation& permu) const;
+  using cache_miss_fn_t = std::function<fxpipeline_ptr_t(const FxPipelinePermutation&)>;
+  fxpipeline_ptr_t findfxinst(const RenderContextInstData& RCID) const;
+  fxpipeline_ptr_t findfxinst(const FxPipelinePermutation& permu) const;
   cache_miss_fn_t _on_miss;
-  mutable std::unordered_map<uint64_t,fxinstance_ptr_t> _lut;
+  mutable std::unordered_map<uint64_t,fxpipeline_ptr_t> _lut;
   svar64_t _impl;
 };
 
 template <typename MtlClass>
-  struct FxStateInstanceCacheImpl{
+  struct FxPipelineCacheImpl{
 
-  FxStateInstanceCacheImpl(){}
+  FxPipelineCacheImpl(){}
 
-  fxinstancecache_constptr_t getCache(const MtlClass* material){
+  fxpipelinecache_constptr_t getCache(const MtlClass* material){
 
-    fxinstancecache_constptr_t rval;
+    fxpipelinecache_constptr_t rval;
 
     auto it = _fxcachemap.find(material);
     if(it==_fxcachemap.end()){
-      auto newcache = std::make_shared<FxStateInstanceCache>();
+      auto newcache = std::make_shared<FxPipelineCache>();
       newcache->_impl.set<const MtlClass*>(material);
-      newcache->_on_miss = [=](const FxCachePermutation& permu) -> fxinstance_ptr_t {
-        return _createFxStateInstance(permu,material);
+      newcache->_on_miss = [=](const FxPipelinePermutation& permu) -> fxpipeline_ptr_t {
+        return _createFxPipeline(permu,material);
       };
       rval = newcache;
       _fxcachemap[material] = newcache;
@@ -120,7 +120,7 @@ template <typename MtlClass>
     return rval;    
   }
 
-  std::unordered_map<const MtlClass*,fxinstancecache_ptr_t> _fxcachemap;
+  std::unordered_map<const MtlClass*,fxpipelinecache_ptr_t> _fxcachemap;
 };
 
 } // namespace ork::lev2

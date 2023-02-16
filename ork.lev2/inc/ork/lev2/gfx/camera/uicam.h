@@ -107,7 +107,7 @@ public:
 
   fmtx4 mCamRot;
 
-  fquat QuatC, QuatL, QuatM, QuatCPushed;
+  fquat QuatC, QuatHeading, QuatElevation, QuatCPushed;
 
   fmtx4 lookatmatrix;
   fmtx4 eyematrixROT;
@@ -247,6 +247,12 @@ public: //
 
   void DollyBegin(const CamEvTrackData& ed);
   void DollyEnd();
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  void lookAt(fvec3 eye, fvec3 tgt, fvec3 up );
+
+  //////////////////////////////////////////////////////////////////////////////
 
   EzUiCam();
 };
