@@ -15,8 +15,7 @@ sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
 from common.cameras import *
 from common.shaders import *
 from common.primitives import createFrustumPrim
-
-tokens = CrcStringProxy()
+from common.scenegraph import createSceneGraph
 
 ################################################################################
 
@@ -41,10 +40,7 @@ class MinimalSceneGraphApp(object):
     # create scenegraph
     ###################################
 
-    sceneparams = VarMap()
-    sceneparams.preset = "DeferredPBR"
-    self.scene = self.ezapp.createScene(sceneparams)
-    layer = self.scene.createLayer("layer1")
+    createSceneGraph(app=self,rendermodel="DeferredPBR")
 
     ###################################
     # create frustum primitive / sgnode
@@ -62,7 +58,7 @@ class MinimalSceneGraphApp(object):
                                techname = "std_mono",
                                rendermodel = "DeferredPBR" )
 
-    self.primnode = frustum_prim.createNode("node1",layer,pipeline)
+    self.primnode = frustum_prim.createNode("node1",self.layer1,pipeline)
 
   ################################################
   # update:

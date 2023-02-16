@@ -12,6 +12,7 @@ sys.path.append((thisdir()/"..").normalized.as_string)# add parent dir to path
 from common.cameras import setupUiCamera
 from common.shaders import createPipeline
 from common.primitives import createCubePrim, createFrustumPrim, createGridData
+from common.scenegraph import createSceneGraph
 
 #########################################
 
@@ -39,15 +40,12 @@ class UiCamera(object):
 
   def onGpuInit(self,ctx):
 
-    sceneparams = VarMap()
-    sceneparams.preset = RENDERMODEL
-    self.scene = self.ezapp.createScene(sceneparams)
-    layer1 = self.scene.createLayer("layer1")
+    createSceneGraph(app=self,rendermodel=RENDERMODEL)
 
     ###################################
 
     def createNode(name=None, prim=None, pipeline=None, sortkey=None):
-      node = prim.createNode(name,layer1,pipeline)
+      node = prim.createNode(name,self.layer1,pipeline)
       node.sortkey = sortkey
       return node
 
@@ -88,7 +86,7 @@ class UiCamera(object):
     ###################################
 
     self.grid_data = createGridData()
-    self.grid_node = layer1.createGridNode("grid",self.grid_data)
+    self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
     self.grid_node.sortkey = 1
 
   ##############################################
