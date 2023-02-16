@@ -54,7 +54,7 @@ class UiCamera(object):
     ###################################
 
     cube_prim = createCubePrim(ctx=ctx,size=2.0)
-    pipeline_cube = createPipeline( app = self, ctx = ctx )
+    pipeline_cube = createPipeline( app = self, ctx = ctx, rendermodel=RENDERMODEL )
     self.cube_node = createNode(name="cube",prim=cube_prim,pipeline=pipeline_cube,sortkey=1)
 
     ###################################
@@ -71,10 +71,12 @@ class UiCamera(object):
 
     pipeline_frustumF = createPipeline( app = self,
                                         ctx = ctx,
+                                        rendermodel=RENDERMODEL,
                                         blending = tokens.ALPHA )
 
     pipeline_frustumB = createPipeline( app = self,
                                         ctx = ctx,
+                                        rendermodel=RENDERMODEL,
                                         blending = tokens.ALPHA,
                                         culltest = tokens.PASS_BACK)
 

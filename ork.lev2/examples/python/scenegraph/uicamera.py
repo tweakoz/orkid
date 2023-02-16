@@ -18,7 +18,7 @@ from common.scenegraph import createSceneGraph
 
 tokens = CrcStringProxy()
 constants = mathconstants()
-RENDERMODEL = "ForwardPBR"
+RENDERMODEL = "DeferredPBR"
 
 ################################################################################
 
@@ -39,7 +39,10 @@ class UiCamera(object):
 
     createSceneGraph(app=self,rendermodel=RENDERMODEL)
 
-    pipeline_cube = createPipeline(app=self,ctx=ctx)
+    pipeline_cube = createPipeline(app=self,
+                                   ctx=ctx,
+                                   techname = "std_mono",
+                                   rendermodel=RENDERMODEL)
     cube_prim = createCubePrim(ctx=ctx,size=1.0)
     self.cube_node = cube_prim.createNode("cube",self.layer1,pipeline_cube)
     self.cube_node.sortkey = 1
