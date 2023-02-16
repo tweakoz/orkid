@@ -139,7 +139,7 @@ static FxPipeline::statelambda_t _createBasicStateLambda(const PBRMaterial* mtl)
 
 static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,const PBRMaterial*mtl){
 
-  fxpipeline_ptr_t fxinst;
+  fxpipeline_ptr_t pipeline;
 
   switch (mtl->_variant) {
     case "skybox.forward"_crcu: { // FORWARD SKYBOX VARIANT
@@ -168,21 +168,21 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
       OrkAssert(permu._skinned==false);
       //////////////////////////////////////////////////////////
       if(permu._stereo and mtl->_tek_FWD_SKYBOX_ST){
-        auto fxinst_stereo        = std::make_shared<FxPipeline>(permu);
-        fxinst_stereo->_technique = mtl->_tek_FWD_SKYBOX_ST;
-        fxinst_stereo->bindParam(mtl->_paramIVPL, "RCFD_Camera_IVP_Left"_crcsh);
-        fxinst_stereo->bindParam(mtl->_paramIVPR, "RCFD_Camera_IVP_Right"_crcsh);
-        fxinst_stereo->addStateLambda(skybox_lambda);
-        fxinst_stereo->_material = (GfxMaterial*)mtl;
-        fxinst = fxinst_stereo;
+        auto pipeline_stereo        = std::make_shared<FxPipeline>(permu);
+        pipeline_stereo->_technique = mtl->_tek_FWD_SKYBOX_ST;
+        pipeline_stereo->bindParam(mtl->_paramIVPL, "RCFD_Camera_IVP_Left"_crcsh);
+        pipeline_stereo->bindParam(mtl->_paramIVPR, "RCFD_Camera_IVP_Right"_crcsh);
+        pipeline_stereo->addStateLambda(skybox_lambda);
+        pipeline_stereo->_material = (GfxMaterial*)mtl;
+        pipeline = pipeline_stereo;
       }
       else if(mtl->_tek_FWD_SKYBOX_MO){
-        auto fxinst_stereo        = std::make_shared<FxPipeline>(permu);
-        fxinst_stereo->_technique = mtl->_tek_FWD_SKYBOX_MO;
-        fxinst_stereo->bindParam(mtl->_paramIVP, "RCFD_Camera_IVP_Mono"_crcsh);
-        fxinst_stereo->addStateLambda(skybox_lambda);
-        fxinst_stereo->_material = (GfxMaterial*)mtl;
-        fxinst = fxinst_stereo;
+        auto pipeline_stereo        = std::make_shared<FxPipeline>(permu);
+        pipeline_stereo->_technique = mtl->_tek_FWD_SKYBOX_MO;
+        pipeline_stereo->bindParam(mtl->_paramIVP, "RCFD_Camera_IVP_Mono"_crcsh);
+        pipeline_stereo->addStateLambda(skybox_lambda);
+        pipeline_stereo->_material = (GfxMaterial*)mtl;
+        pipeline = pipeline_stereo;
       }
       //////////////////////////////////////////////////////////
       break;
@@ -193,20 +193,20 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
         case "PICKING"_crcu: {
           OrkAssert(permu._stereo == false);
           if (permu._instanced and mtl->_tek_PIK_RI_IN) {
-            fxinst                     = std::make_shared<FxPipeline>(permu);
-            fxinst->_technique         = mtl->_tek_PIK_RI_IN;
-            fxinst->bindParam(mtl->_paramMVP, "RCFD_Camera_Pick"_crcsh);
+            pipeline                     = std::make_shared<FxPipeline>(permu);
+            pipeline->_technique         = mtl->_tek_PIK_RI_IN;
+            pipeline->bindParam(mtl->_paramMVP, "RCFD_Camera_Pick"_crcsh);
           }
           ////////////////
           else { // non-instanced
             if (not permu._skinned and mtl->_tek_PIK_RI_NI) {
-              fxinst                     = std::make_shared<FxPipeline>(permu);
-              fxinst->_technique         = mtl->_tek_PIK_RI_NI;
-              fxinst->bindParam(mtl->_paramMVP, "RCFD_Camera_Pick"_crcsh);
+              pipeline                     = std::make_shared<FxPipeline>(permu);
+              pipeline->_technique         = mtl->_tek_PIK_RI_NI;
+              pipeline->bindParam(mtl->_paramMVP, "RCFD_Camera_Pick"_crcsh);
             }
             ////////////////
           }
-          // OrkAssert(fxinst->_technique != nullptr);
+          // OrkAssert(pipeline->_technique != nullptr);
           break;
         }
         //////////////////////////////////////////
@@ -241,10 +241,10 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
             }
             //////////////////////////////////
             if(tek){
-              fxinst = std::make_shared<FxPipeline>(permu);
-              fxinst->_technique = tek;
-              fxinst->addStateLambda(common_lambda);
-              fxinst->addStateLambda([mtl](const RenderContextInstData& RCID, int ipass) {
+              pipeline = std::make_shared<FxPipeline>(permu);
+              pipeline->_technique = tek;
+              pipeline->addStateLambda(common_lambda);
+              pipeline->addStateLambda([mtl](const RenderContextInstData& RCID, int ipass) {
                 auto _this       = (PBRMaterial*)mtl;
                 auto RCFD        = RCID._RCFD;
                 auto context     = RCFD->GetTarget();
@@ -282,10 +282,10 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
             }
             //////////////////////////////////
             if(tek){
-              fxinst = std::make_shared<FxPipeline>(permu);
-              fxinst->_technique = tek;
-              fxinst->addStateLambda(common_lambda);
-              fxinst->addStateLambda([mtl](const RenderContextInstData& RCID, int ipass) {
+              pipeline = std::make_shared<FxPipeline>(permu);
+              pipeline->_technique = tek;
+              pipeline->addStateLambda(common_lambda);
+              pipeline->addStateLambda([mtl](const RenderContextInstData& RCID, int ipass) {
                 auto _this       = (PBRMaterial*)mtl;
                 auto RCFD        = RCID._RCFD;
                 auto context     = RCFD->GetTarget();
@@ -299,17 +299,17 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
               });
             }
           }
-          // OrkAssert(fxinst->_technique != nullptr);
+          // OrkAssert(pipeline->_technique != nullptr);
           break;
         } // "DEFERRED_PB"_crcuR
         //////////////////////////////////////////
         case "FORWARD_UNLIT"_crcu:
         case 0:
           if(mtl->_tek_FWD_UNLIT_NI_MO){
-            fxinst             = std::make_shared<FxPipeline>(permu);
-            fxinst->_technique = mtl->_tek_FWD_UNLIT_NI_MO;
+            pipeline             = std::make_shared<FxPipeline>(permu);
+            pipeline->_technique = mtl->_tek_FWD_UNLIT_NI_MO;
             //////////////////////////////////
-            fxinst->addStateLambda([mtl](const RenderContextInstData& RCID, int ipass) {
+            pipeline->addStateLambda([mtl](const RenderContextInstData& RCID, int ipass) {
               auto _this       = (PBRMaterial*)mtl;
               auto RCFD        = RCID._RCFD;
               auto context     = RCFD->GetTarget();
@@ -393,73 +393,73 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
           if(permu._stereo){
             if (permu._instanced and not permu._skinned) {
               if(mtl->_tek_FWD_CT_NM_RI_IN_ST){
-                fxinst          = std::make_shared<FxPipeline>(permu);
-                fxinst->_technique         = mtl->_tek_FWD_CT_NM_RI_IN_ST;
-                fxinst->bindParam(mtl->_paramMVPL, "RCFD_Camera_MVP_Left"_crcsh);
-                fxinst->bindParam(mtl->_paramMVPR, "RCFD_Camera_MVP_Right"_crcsh);
-                fxinst->addStateLambda(_createBasicStateLambda(mtl));
-                fxinst->addStateLambda(lighting_lambda);
-                fxinst->addStateLambda(rsi_lambda);
+                pipeline          = std::make_shared<FxPipeline>(permu);
+                pipeline->_technique         = mtl->_tek_FWD_CT_NM_RI_IN_ST;
+                pipeline->bindParam(mtl->_paramMVPL, "RCFD_Camera_MVP_Left"_crcsh);
+                pipeline->bindParam(mtl->_paramMVPR, "RCFD_Camera_MVP_Right"_crcsh);
+                pipeline->addStateLambda(_createBasicStateLambda(mtl));
+                pipeline->addStateLambda(lighting_lambda);
+                pipeline->addStateLambda(rsi_lambda);
               }
             }
             else if (not permu._instanced and not permu._skinned) {
               if(mtl->_tek_FWD_CT_NM_RI_NI_ST){
-                fxinst          = std::make_shared<FxPipeline>(permu);
-                fxinst->_technique         = mtl->_tek_FWD_CT_NM_RI_NI_ST;
-                fxinst->bindParam(mtl->_paramMVPL, "RCFD_Camera_MVP_Left"_crcsh);
-                fxinst->bindParam(mtl->_paramMVPR, "RCFD_Camera_MVP_Right"_crcsh);
-                fxinst->addStateLambda(_createBasicStateLambda(mtl));
-                fxinst->addStateLambda(lighting_lambda);
-                fxinst->addStateLambda(rsi_lambda);
+                pipeline          = std::make_shared<FxPipeline>(permu);
+                pipeline->_technique         = mtl->_tek_FWD_CT_NM_RI_NI_ST;
+                pipeline->bindParam(mtl->_paramMVPL, "RCFD_Camera_MVP_Left"_crcsh);
+                pipeline->bindParam(mtl->_paramMVPR, "RCFD_Camera_MVP_Right"_crcsh);
+                pipeline->addStateLambda(_createBasicStateLambda(mtl));
+                pipeline->addStateLambda(lighting_lambda);
+                pipeline->addStateLambda(rsi_lambda);
               }
             }
             else if (not permu._instanced and permu._skinned) {
               if(mtl->_tek_FWD_CT_NM_SK_NI_ST){
-                fxinst          = std::make_shared<FxPipeline>(permu);
-                fxinst->_technique         = mtl->_tek_FWD_CT_NM_SK_NI_ST;
-                fxinst->bindParam(mtl->_paramMVPL, "RCFD_Camera_MVP_Left"_crcsh);
-                fxinst->bindParam(mtl->_paramMVPR, "RCFD_Camera_MVP_Right"_crcsh);
-                fxinst->addStateLambda(_createBasicStateLambda(mtl));
-                fxinst->addStateLambda(lighting_lambda);
-                fxinst->addStateLambda(rsi_lambda);
+                pipeline          = std::make_shared<FxPipeline>(permu);
+                pipeline->_technique         = mtl->_tek_FWD_CT_NM_SK_NI_ST;
+                pipeline->bindParam(mtl->_paramMVPL, "RCFD_Camera_MVP_Left"_crcsh);
+                pipeline->bindParam(mtl->_paramMVPR, "RCFD_Camera_MVP_Right"_crcsh);
+                pipeline->addStateLambda(_createBasicStateLambda(mtl));
+                pipeline->addStateLambda(lighting_lambda);
+                pipeline->addStateLambda(rsi_lambda);
               }
             }
           }
           else{
             if (permu._instanced and not permu._skinned) {
               if(mtl->_tek_FWD_CT_NM_RI_IN_MO){
-                fxinst          = std::make_shared<FxPipeline>(permu);
-                fxinst->_technique         = mtl->_tek_FWD_CT_NM_RI_IN_MO;
-                fxinst->bindParam(mtl->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
-                fxinst->addStateLambda(_createBasicStateLambda(mtl));
-                fxinst->addStateLambda(lighting_lambda);
-                fxinst->addStateLambda(rsi_lambda);
+                pipeline          = std::make_shared<FxPipeline>(permu);
+                pipeline->_technique         = mtl->_tek_FWD_CT_NM_RI_IN_MO;
+                pipeline->bindParam(mtl->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
+                pipeline->addStateLambda(_createBasicStateLambda(mtl));
+                pipeline->addStateLambda(lighting_lambda);
+                pipeline->addStateLambda(rsi_lambda);
               }
             }
             if (not permu._instanced and not permu._skinned) {
               if(mtl->_tek_FWD_CT_NM_RI_NI_MO){
-                fxinst          = std::make_shared<FxPipeline>(permu);
-                fxinst->_technique         = mtl->_tek_FWD_CT_NM_RI_NI_MO;
-                fxinst->bindParam(mtl->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
-                fxinst->addStateLambda(_createBasicStateLambda(mtl));
-                fxinst->addStateLambda(lighting_lambda);
-                fxinst->addStateLambda(rsi_lambda);
+                pipeline          = std::make_shared<FxPipeline>(permu);
+                pipeline->_technique         = mtl->_tek_FWD_CT_NM_RI_NI_MO;
+                pipeline->bindParam(mtl->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
+                pipeline->addStateLambda(_createBasicStateLambda(mtl));
+                pipeline->addStateLambda(lighting_lambda);
+                pipeline->addStateLambda(rsi_lambda);
               }
             }            
           }
 
 
-          // OrkAssert(fxinst->_technique != nullptr);
+          // OrkAssert(pipeline->_technique != nullptr);
           break;
         }
         case "DEPTH_PREPASS"_crcu:
           if (permu._instanced and not permu._skinned and not permu._stereo) {
             if(mtl->_tek_FWD_DEPTHPREPASS_IN_MO){
-              fxinst                     = std::make_shared<FxPipeline>(permu);
-              fxinst->_technique         = mtl->_tek_FWD_DEPTHPREPASS_IN_MO;
-              fxinst->bindParam(mtl->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
-              fxinst->addStateLambda(_createBasicStateLambda(mtl));
-              fxinst->addStateLambda([mtl](const RenderContextInstData& RCID, int ipass) {
+              pipeline                     = std::make_shared<FxPipeline>(permu);
+              pipeline->_technique         = mtl->_tek_FWD_DEPTHPREPASS_IN_MO;
+              pipeline->bindParam(mtl->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
+              pipeline->addStateLambda(_createBasicStateLambda(mtl));
+              pipeline->addStateLambda([mtl](const RenderContextInstData& RCID, int ipass) {
                 auto _this   = (PBRMaterial*)mtl;
                 auto RCFD    = RCID._RCFD;
                 auto context = RCFD->GetTarget();
@@ -474,7 +474,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
               });
             }
           }
-          // OrkAssert(fxinst->_technique != nullptr);
+          // OrkAssert(pipeline->_technique != nullptr);
           break;
         default:
           OrkAssert(false);
@@ -506,12 +506,12 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
         case "FORWARD_PBR"_crcu: {
           if (not permu._instanced and not permu._skinned and not permu._stereo) {
             if(mtl->_tek_FWD_CV_EMI_RI_NI_MO){
-              fxinst                     = std::make_shared<FxPipeline>(permu);
-              fxinst->_technique         = mtl->_tek_FWD_CV_EMI_RI_NI_MO;
-              fxinst->bindParam(mtl->_paramMVP,"RCFD_Camera_MVP_Mono"_crcsh);
-              fxinst->addStateLambda(_createBasicStateLambda(mtl));
-              fxinst->addStateLambda(no_cull_stateblock);
-              OrkAssert(fxinst->_technique != nullptr);
+              pipeline                     = std::make_shared<FxPipeline>(permu);
+              pipeline->_technique         = mtl->_tek_FWD_CV_EMI_RI_NI_MO;
+              pipeline->bindParam(mtl->_paramMVP,"RCFD_Camera_MVP_Mono"_crcsh);
+              pipeline->addStateLambda(_createBasicStateLambda(mtl));
+              pipeline->addStateLambda(no_cull_stateblock);
+              OrkAssert(pipeline->_technique != nullptr);
             }
           }
           break;
@@ -519,12 +519,12 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
         case "DEFERRED_PBR"_crcu: {
           if (not permu._instanced and not permu._skinned and not permu._stereo) {
             if(mtl->_tek_GBU_CV_EMI_RI_NI_MO){
-              fxinst                     = std::make_shared<FxPipeline>(permu);
-              fxinst->_technique         = mtl->_tek_GBU_CV_EMI_RI_NI_MO;
-              fxinst->bindParam(mtl->_paramMVP,"RCFD_Camera_MVP_Mono"_crcsh);
-              fxinst->addStateLambda(_createBasicStateLambda(mtl));
-              fxinst->addStateLambda(no_cull_stateblock);
-              OrkAssert(fxinst->_technique != nullptr);
+              pipeline                     = std::make_shared<FxPipeline>(permu);
+              pipeline->_technique         = mtl->_tek_GBU_CV_EMI_RI_NI_MO;
+              pipeline->bindParam(mtl->_paramMVP,"RCFD_Camera_MVP_Mono"_crcsh);
+              pipeline->addStateLambda(_createBasicStateLambda(mtl));
+              pipeline->addStateLambda(no_cull_stateblock);
+              OrkAssert(pipeline->_technique != nullptr);
             }
           }
           break;
@@ -548,24 +548,24 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
       break;
   }
 
-  if (fxinst and fxinst->_technique) {
+  if (pipeline and pipeline->_technique) {
 
-    fxinst->bindParam(mtl->_paramMROT,"RCFD_Model_Rot"_crcsh);
+    pipeline->bindParam(mtl->_paramMROT,"RCFD_Model_Rot"_crcsh);
 
-    fxinst->bindParam(mtl->_paramMapColor,mtl->_texColor);
-    fxinst->bindParam(mtl->_paramMapNormal,mtl->_texNormal);
-    fxinst->bindParam(mtl->_paramMapMtlRuf,mtl->_texMtlRuf);
+    pipeline->bindParam(mtl->_paramMapColor,mtl->_texColor);
+    pipeline->bindParam(mtl->_paramMapNormal,mtl->_texNormal);
+    pipeline->bindParam(mtl->_paramMapMtlRuf,mtl->_texMtlRuf);
 
-    fxinst->bindParam(mtl->_parMetallicFactor,mtl->_metallicFactor);
-    fxinst->bindParam(mtl->_parRoughnessFactor,mtl->_roughnessFactor);
+    pipeline->bindParam(mtl->_parMetallicFactor,mtl->_metallicFactor);
+    pipeline->bindParam(mtl->_parRoughnessFactor,mtl->_roughnessFactor);
 
-    fxinst->_parInstanceMatrixMap = mtl->_paramInstanceMatrixMap;
-    fxinst->_parInstanceIdMap     = mtl->_paramInstanceIdMap;
-    fxinst->_parInstanceColorMap  = mtl->_paramInstanceColorMap;
-    fxinst->_material             = (GfxMaterial*)mtl;
+    pipeline->_parInstanceMatrixMap = mtl->_paramInstanceMatrixMap;
+    pipeline->_parInstanceIdMap     = mtl->_paramInstanceIdMap;
+    pipeline->_parInstanceColorMap  = mtl->_paramInstanceColorMap;
+    pipeline->_material             = (GfxMaterial*)mtl;
   }
 
-  return fxinst;
+  return pipeline;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -897,11 +897,11 @@ void PBRMaterial::forceEmissive() {
 
 int PBRMaterial::BeginBlock(Context* context, const RenderContextInstData& RCID) {
   auto fxi   = context->FXI();
-  auto fxcache = RCID._fx_instance_cache;
+  auto fxcache = RCID._pipeline_cache;
   OrkAssert(fxcache);
-  auto fxinstance = fxcache->findfxinst(RCID);
-  OrkAssert(fxinstance);
-  auto tek = fxinstance->_technique;
+  auto pipelineance = fxcache->findPipeline(RCID);
+  OrkAssert(pipelineance);
+  auto tek = pipelineance->_technique;
   OrkAssert(tek);
 
   int numpasses = fxi->BeginBlock(tek, RCID);

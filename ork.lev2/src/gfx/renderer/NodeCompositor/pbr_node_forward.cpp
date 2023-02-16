@@ -58,7 +58,7 @@ struct ForwardPbrNodeImpl {
       buf1->_debugName = "ForwardRt0";
       _skybox_material = std::make_shared<PBRMaterial>(context);
       _skybox_material->_variant = "skybox.forward"_crcu;
-      _skybox_fxcache = _skybox_material->fxInstanceCache();
+      _skybox_fxcache = _skybox_material->pipelineCache();
       _enumeratedLights = std::make_shared<EnumeratedLights>();
 
       if(_ginitdata->_msaa_samples>1){
@@ -172,9 +172,9 @@ struct ForwardPbrNodeImpl {
 
         RCFD._renderingmodel = "CUSTOM"_crcu;
         RenderContextInstData RCID(&RCFD);
-        RCID._fx_instance_cache = _skybox_fxcache;
-        auto fxinst = _skybox_fxcache->findfxinst(RCID);
-        fxinst->wrappedDrawCall(RCID,[GBI](){
+        RCID._pipeline_cache = _skybox_fxcache;
+        auto pipeline = _skybox_fxcache->findPipeline(RCID);
+        pipeline->wrappedDrawCall(RCID,[GBI](){
           GBI->render2dQuadEML(fvec4(-1, -1, 2, 2), //
                                fvec4(0, 0, 1, 1), //
                                fvec4(0, 0, 1, 1), //

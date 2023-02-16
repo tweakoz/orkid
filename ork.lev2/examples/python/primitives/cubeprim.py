@@ -54,11 +54,11 @@ lev2apppoll() # process opq
 # create fx instance
 ###################################
 
-fxinst = material.createFxInstance()
-fxinst.technique = material.shader.technique("texvtxcolor_noalpha")
-fxinst.param[par_mvp] = tokens.RCFD_Camera_MVP_Mono
-#fxinst.param[param_v4parref] = self.v4parref
-fxinst.param[par_tex] = texture
+pipeline = material.createFxInstance()
+pipeline.technique = material.shader.technique("texvtxcolor_noalpha")
+pipeline.param[par_mvp] = tokens.RCFD_Camera_MVP_Mono
+#pipeline.param[param_v4parref] = self.v4parref
+pipeline.param[par_tex] = texture
 
 ###################################
 
@@ -100,7 +100,7 @@ FBI.rtGroupPush(rtg)
 FBI.clear(vec4(0.6,0.6,0.7,1),1.0)
 ctx.debugMarker("yo")
 
-# todo - rework using fxinst
+# todo - rework using pipeline
 #material.bindTechnique(tek)
 #RCFD = RenderContextFrameData(ctx)
 

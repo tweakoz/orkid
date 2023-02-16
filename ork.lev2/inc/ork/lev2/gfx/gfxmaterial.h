@@ -135,7 +135,7 @@ public:
   virtual void EndPass(Context* pTARG)                                                                         = 0;
   virtual int BeginBlock(Context* pTARG, const RenderContextInstData& MatCtx = RenderContextInstData::Default) = 0;
   virtual void EndBlock(Context* pTARG)                                                                        = 0;
-  fxpipelinecache_constptr_t fxInstanceCache(fxpipelinepermutation_set_constptr_t perms=nullptr) const;
+  fxpipelinecache_constptr_t pipelineCache(fxpipelinepermutation_set_constptr_t perms=nullptr) const;
   virtual fxpipelinecache_constptr_t _doFxInstanceCache(fxpipelinepermutation_set_constptr_t perms) const { return nullptr; }
 
   void SetTexture(ETextureDest edest, const TextureContext& htex);

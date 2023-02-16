@@ -49,7 +49,7 @@ RCID.forceTechnique(tek)
 RCID.genMatrix(lambda: mtx4())
 
 ###################################
-# create simple compositor (needed for fxinst based rendering)
+# create simple compositor (needed for pipeline based rendering)
 ###################################
 
 compdata = CompositingData()
@@ -59,14 +59,14 @@ CPD.cameramatrices = CameraMatrices()
 RCFD.cimpl = compimpl # bind compositor to RCFD
 
 ###################################
-# create an fxinst (a graphics pipeline)
+# create an pipeline (a graphics pipeline)
 ###################################
 
 permu = FxPipelinePermutation()
 permu.rendering_model = "FORWARD_UNLIT"
 permu.technique = tek
-fxinst = material.fxcache.findFxInst(permu)
-fxinst.bindParam(par_mvp,tokens.RCFD_Camera_MVP_Mono)
+pipeline = material.fxcache.findPipeline(permu)
+pipeline.bindParam(par_mvp,tokens.RCFD_Camera_MVP_Mono)
 
 ###################################
 # setup primitive
@@ -123,7 +123,7 @@ ctx.debugMarker("yo")
 # render frustum primitive
 ###################################
 
-fxinst.wrappedDrawCall(RCID, lambda: frustum_prim.renderEML(ctx) )
+pipeline.wrappedDrawCall(RCID, lambda: frustum_prim.renderEML(ctx) )
 
 ###################################
 # render overlay text

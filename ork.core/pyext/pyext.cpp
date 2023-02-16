@@ -6,6 +6,8 @@
 ////////////////////////////////////////////////////////////////
 
 #include "pyext.h"
+#include <boost/filesystem.hpp>
+
 ///////////////////////////////////////////////////////////////////////////////
 struct CorePythonApplication  {
 
@@ -33,6 +35,41 @@ static void _coreappinit() {
   rtti::Class::InitializeClasses();
 }
 
+static file::Path _thispath() {
+
+  auto inspect   = py::module::import("inspect");
+  auto os   = py::module::import("os");
+  auto path = os.attr("path");
+  auto fn_abspath = path.attr("abspath");
+  auto fn_stack = py::cast<py::function>(inspect.attr("stack"));
+
+  auto the_stack = py::cast<py::list>(fn_stack());
+  auto i0 = the_stack[0];
+  auto i1 = py::cast<py::list>(i0)[1];
+  auto abs_path = fn_abspath(i1);
+  auto abs_path_str = py::cast<std::string>(abs_path);
+
+  return file::Path(abs_path_str);
+}
+
+static file::Path _thisdir() {
+
+  auto inspect   = py::module::import("inspect");
+  auto os   = py::module::import("os");
+  auto path = os.attr("path");
+  auto fn_dirname = path.attr("dirname");
+  auto fn_abspath = path.attr("abspath");
+  auto fn_stack = py::cast<py::function>(inspect.attr("stack"));
+
+  auto the_stack = py::cast<py::list>(fn_stack());
+  auto i0 = the_stack[0];
+  auto i1 = py::cast<py::list>(i0)[1];
+  auto abs_path = fn_abspath(i1);
+  auto directory = fn_dirname(abs_path);
+  auto abs_path_str = py::cast<std::string>(directory);
+  return file::Path(abs_path_str);
+}
+
 static PoolString _addpoolstring(std::string str) {
   return AddPooledString(str.c_str());
 }
@@ -43,6 +80,8 @@ PYBIND11_MODULE(_core, module_core) {
   module_core.doc() = "Orkid Core Library (math,kernel,reflection,ect..)";
   /////////////////////////////////////////////////////////////////////////////////
   module_core.def("coreappinit", &_coreappinit);
+  module_core.def("thispath", &_thispath);
+  module_core.def("thisdir", &_thisdir);
   module_core.def("addpoolstring", &_addpoolstring);
   /////////////////////////////////////////////////////////////////////////////////
   // core decoder tyoes
@@ -92,17 +131,32 @@ PYBIND11_MODULE(_core, module_core) {
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<PoolString>(module_core, "PoolString") //
       .def("__repr__", [](const PoolString& s) -> std::string {
-        fxstring<64> fxs;
+        fxstring<512> fxs;
         fxs.format("PoolString(%s)", s.c_str());
         return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<file::Path>(module_core, "Path")
       .def(py::init<std::string>())
+      .def_property_readonly("normalized",[](const file::Path& a) -> file::Path {
+        auto as_bfs =  a.toBFS();
+        file::Path b;
+        b.fromBFS(as_bfs.normalize());
+        return b;
+      })
+      .def_property_readonly("as_string",[](const file::Path& a) -> std::string {
+        return a.c_str();
+      })
       .def("isAbsolute", &file::Path::isAbsolute)
       .def("IsRelative", &file::Path::isRelative)
+      .def("__truediv__", [](const file::Path& a, std::string b) -> file::Path {
+        return (a/b);
+      })
+      .def("__str__", [](const file::Path& s) -> std::string {
+        return s.c_str();
+      })
       .def("__repr__", [](const file::Path& s) -> std::string {
-        fxstring<64> fxs;
+        fxstring<512> fxs;
         fxs.format("Path(%s)", s.c_str());
         return fxs.c_str();
       });

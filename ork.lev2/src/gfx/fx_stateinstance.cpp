@@ -228,7 +228,7 @@ void FxPipeline::endBlock(const RenderContextInstData& RCID) {
   context->FXI()->EndBlock();
 }
 ///////////////////////////////////////////////////////////////////////////////
-fxpipeline_ptr_t FxPipelineCache::findfxinst(const RenderContextInstData& RCID) const {
+fxpipeline_ptr_t FxPipelineCache::findPipeline(const RenderContextInstData& RCID) const {
   auto RCFD       = RCID._RCFD;
   auto context    = RCFD->_target;
   auto fxi        = context->FXI();
@@ -242,22 +242,22 @@ fxpipeline_ptr_t FxPipelineCache::findfxinst(const RenderContextInstData& RCID) 
   permu._rendering_model = RCFD->_renderingmodel._modelID;
   //permu.dump();
   /////////////////
-  return findfxinst(permu);
+  return findPipeline(permu);
 }
 ///////////////////////////////////////////////////////////////////////////////
-fxpipeline_ptr_t FxPipelineCache::findfxinst(const FxPipelinePermutation& permu) const {
-  fxpipeline_ptr_t fxinst;
+fxpipeline_ptr_t FxPipelineCache::findPipeline(const FxPipelinePermutation& permu) const {
+  fxpipeline_ptr_t pipeline;
   uint64_t index = permu.genIndex();
   auto it = _lut.find(index);
   if (it != _lut.end()) {
-    fxinst = it->second;
+    pipeline = it->second;
   }
   else{ // miss
     OrkAssert(_on_miss);
-    logchan_fxcache->log( "fxlut<%p> findfxinst onmiss index<%zu>", this, index );
-    fxinst = _on_miss(permu);
-    _lut[index] = fxinst;
+    logchan_fxcache->log( "fxlut<%p> findPipeline onmiss index<%zu>", this, index );
+    pipeline = _on_miss(permu);
+    _lut[index] = pipeline;
   }
-  return fxinst;
+  return pipeline;
 }///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

@@ -48,20 +48,20 @@ class PyOrkApp(object):
     self.material_cube.rasterstate.culltest = tokens.PASS_FRONT
     self.material_cube.rasterstate.depthtest = tokens.LEQUALS
     ###################################
-    # create an fxinst (a graphics pipeline)
+    # create an pipeline
     ###################################
     permu = FxPipelinePermutation()
     permu.rendering_model = RENDERMODEL
     permu.technique = self.material_frustum.shader.technique("std_mono_fwd")
-    fxinst_frustum = self.material_frustum.fxcache.findFxInst(permu)
+    pipeline_frustum = self.material_frustum.fxcache.findPipeline(permu)
     permu.technique = self.material_cube.shader.technique("std_mono_fwd")
-    fxinst_cube = self.material_cube.fxcache.findFxInst(permu)
+    pipeline_cube = self.material_cube.fxcache.findPipeline(permu)
     ###################################
     # explicit shader parameters
     ###################################
-    fxinst_frustum.bindParam( self.material_frustum.param("mvp"),
+    pipeline_frustum.bindParam( self.material_frustum.param("mvp"),
                               tokens.RCFD_Camera_MVP_Mono)
-    fxinst_cube.bindParam(    self.material_cube.param("mvp"),
+    pipeline_cube.bindParam(    self.material_cube.param("mvp"),
                               tokens.RCFD_Camera_MVP_Mono)
     ###################################
     # frustum primitive
@@ -83,7 +83,8 @@ class PyOrkApp(object):
     frustum_prim.frustum = frustum
     frustum_prim.gpuInit(ctx)
     ###################################
-
+    # cube primitive
+    ###################################
     cube_prim = primitives.CubePrimitive()
     cube_prim.size = 1
     cube_prim.topColor = vec4(0.5,1.0,0.5,1)
@@ -100,8 +101,8 @@ class PyOrkApp(object):
     sceneparams.preset = RENDERMODEL
     self.scene = self.ezapp.createScene(sceneparams)
     layer1 = self.scene.createLayer("layer1")
-    self.frustum_node = frustum_prim.createNode("frustum",layer1,fxinst_frustum)
-    self.cube_node = cube_prim.createNode("cube",layer1,fxinst_cube)
+    self.frustum_node = frustum_prim.createNode("frustum",layer1,pipeline_frustum)
+    self.cube_node = cube_prim.createNode("cube",layer1,pipeline_cube)
     self.cube_node.sortkey = 1
     self.frustum_node.sortkey = 2
     ###################################

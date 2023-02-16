@@ -95,11 +95,11 @@ skinning_test_ptr_t createTest2B(GpuResources* gpurec) {
         auto context                      = RCID.context();
         static pbrmaterial_ptr_t material = default3DMaterial(context);
         material->_variant                = "vertexcolor"_crcu;
-        auto fxcache                      = material->fxInstanceCache();
+        auto fxcache                      = material->pipelineCache();
         OrkAssert(fxcache);
         RenderContextInstData RCIDCOPY = RCID;
         RCIDCOPY._isSkinned            = false;
-        RCIDCOPY._fx_instance_cache    = fxcache;
+        RCIDCOPY._pipeline_cache    = fxcache;
         _gpurec->drawTarget(RCIDCOPY,_target);
       });
       _dbgdraw_node = gpurec->_sg_layer->createDrawableNode("skdebugnode", drw);

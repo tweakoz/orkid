@@ -33,7 +33,7 @@ struct GridRenderImpl {
     _pbrmaterial->_roughnessFactor = 1.0f;
     _pbrmaterial->_baseColor       = fvec3(1, 1, 1);
 
-    _fxcache = _pbrmaterial->fxInstanceCache();
+    _fxcache = _pbrmaterial->pipelineCache();
 
     _initted                   = true;
   }
@@ -96,9 +96,9 @@ struct GridRenderImpl {
     }
     context->PushModColor(modcolor);
 
-    auto fxinst = _fxcache->findfxinst(RCID);
-    OrkAssert(fxinst);
-    fxinst->wrappedDrawCall(RCID, [&]() {
+    auto pipeline = _fxcache->findPipeline(RCID);
+    OrkAssert(pipeline);
+    pipeline->wrappedDrawCall(RCID, [&]() {
       gbi->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES, 6);
     });
 

@@ -73,7 +73,7 @@ void InstancedModelDrawable::bindModel(model_ptr_t model) {
     for (int ics = 0; ics < inumclusset; ics++) {
       auto xgmsub = mesh->subMesh(ics);
       IMDIMPL_SUBMESH submesh_impl;
-      submesh_impl._fxcache = xgmsub->_material->fxInstanceCache();
+      submesh_impl._fxcache = xgmsub->_material->pipelineCache();
       submesh_impl._xgmsubmesh = xgmsub;
       impl->_submeshes.push_back(submesh_impl);
     }
@@ -131,7 +131,7 @@ void InstancedModelDrawable::enqueueToRenderQueue(
     auto impl        = _impl.getShared<IMDIMPL_MODEL>();
     bool isPick      = FBI->isPickState();
     bool isStereo    = RCID._RCFD->isStereo();
-    int fxinst_index = isStereo ? 1 : (isPick ? 2 : 0);
+    int pipeline_index = isStereo ? 1 : (isPick ? 2 : 0);
     ////////////////////////////////////////////////////////
     bool updatetex = true; //( (_drawcount++) < 5000);
     ////////////////////////////////////////////////////////
@@ -180,16 +180,16 @@ void InstancedModelDrawable::enqueueToRenderQueue(
       auto xgmsub = sub._xgmsubmesh;
       auto fxlut = sub._fxcache;
       OrkAssert(fxlut);
-      auto fxinst = fxlut->findfxinst(RCID);
-      OrkAssert(fxinst);
-      fxinst->wrappedDrawCall(RCID, [&]() {
+      auto pipeline = fxlut->findPipeline(RCID);
+      OrkAssert(pipeline);
+      pipeline->wrappedDrawCall(RCID, [&]() {
         auto idata = instances_copy;
         ////////////////////////////////////
         // bind instancetex to sampler
         ////////////////////////////////////
-        FXI->BindParamCTex(fxinst->_parInstanceMatrixMap, _instanceMatrixTex.get());
-        FXI->BindParamCTex(fxinst->_parInstanceIdMap, _instanceIdTex.get());
-        FXI->BindParamCTex(fxinst->_parInstanceColorMap, _instanceColorTex.get());
+        FXI->BindParamCTex(pipeline->_parInstanceMatrixMap, _instanceMatrixTex.get());
+        FXI->BindParamCTex(pipeline->_parInstanceIdMap, _instanceIdTex.get());
+        FXI->BindParamCTex(pipeline->_parInstanceColorMap, _instanceColorTex.get());
         ////////////////////////////////////
         int inumclus = xgmsub->_clusters.size();
         for (int ic = 0; ic < inumclus; ic++) {

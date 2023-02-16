@@ -100,15 +100,15 @@ void pyinit_gfx_material(py::module& module_lev2) {
   auto fxcache_type =                                                     //
       py::class_<FxPipelineCache, fxpipelinecache_ptr_t>(module_lev2, "FxPipelineCache") //
           .def(
-              "findFxInst",                                                                    //
+              "findPipeline",                                                                    //
               [](fxpipelinecache_ptr_t cache, rcid_ptr_t RCID) -> fxpipeline_ptr_t { //
-                return cache->findfxinst(*RCID);
+                return cache->findPipeline(*RCID);
               })
           .def(
-              "findFxInst",                                                                    //
+              "findPipeline",                                                                    //
               [](fxpipelinecache_ptr_t cache, 
                  fxpipelinepermutation_ptr_t permu ) -> fxpipeline_ptr_t { //
-                return cache->findfxinst(*permu);
+                return cache->findPipeline(*permu);
               });
   type_codec->registerStdCodec<fxpipelinecache_ptr_t>(fxcache_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -116,23 +116,23 @@ void pyinit_gfx_material(py::module& module_lev2) {
       py::class_<FxPipeline, fxpipeline_ptr_t>(module_lev2, "FxPipeline") //
           .def(
               "bindParam",                                                                    //
-              [](fxpipeline_ptr_t fxinst, //
+              [](fxpipeline_ptr_t pipeline, //
                  pyfxparam_ptr_t param, //
                  py::object inp_value) { //
                 if( py::isinstance<CrcString>(inp_value) ){
-                  fxinst->bindParam(param.get(),py::cast<crcstring_ptr_t>(inp_value));
+                  pipeline->bindParam(param.get(),py::cast<crcstring_ptr_t>(inp_value));
                 }
                 else if( py::isinstance<float>(inp_value) ){
-                  fxinst->bindParam(param.get(),py::cast<float>(inp_value));
+                  pipeline->bindParam(param.get(),py::cast<float>(inp_value));
                 }
                 else if( py::isinstance<fvec2>(inp_value) ){
-                  fxinst->bindParam(param.get(),py::cast<fvec2>(inp_value));
+                  pipeline->bindParam(param.get(),py::cast<fvec2>(inp_value));
                 }
                 else if( py::isinstance<fvec3>(inp_value) ){
-                  fxinst->bindParam(param.get(),py::cast<fvec3>(inp_value));
+                  pipeline->bindParam(param.get(),py::cast<fvec3>(inp_value));
                 }
                 else if( py::isinstance<fvec4>(inp_value) ){
-                  fxinst->bindParam(param.get(),py::cast<fvec4>(inp_value));
+                  pipeline->bindParam(param.get(),py::cast<fvec4>(inp_value));
                 }
                 else{
                   OrkAssert(false);
@@ -140,12 +140,12 @@ void pyinit_gfx_material(py::module& module_lev2) {
               })
           .def(
               "wrappedDrawCall",                                                                    //
-              [](fxpipeline_ptr_t fxinst, //
+              [](fxpipeline_ptr_t pipeline, //
                  rcid_ptr_t rcid, //
                  py::object method
                  ){
                 auto py_callback = method.cast<pybind11::object>();
-                fxinst->wrappedDrawCall(*rcid,[py_callback](){
+                pipeline->wrappedDrawCall(*rcid,[py_callback](){
                   py::gil_scoped_acquire acquire;
                   py_callback();
                 });
@@ -195,7 +195,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
           .def_property_readonly(
               "fxcache",                                    //
               [](freestyle_mtl_ptr_t material) -> fxpipelinecache_constptr_t { //
-                return material->fxInstanceCache(); // material
+                return material->pipelineCache(); // material
               })
           .def_property_readonly(
               "rasterstate",                                    //

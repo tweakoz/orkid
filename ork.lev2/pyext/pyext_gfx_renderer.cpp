@@ -42,10 +42,10 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
                            return RenderContextInstData::create(the_rcfd);
                          }))
                          .def(
-                             "fxinst",                                                         //
+                             "pipeline",                                                         //
                              [](rcid_ptr_t the_rcid, material_ptr_t mtl) -> fxpipeline_ptr_t { //
-                               auto cache = mtl->fxInstanceCache();
-                               return cache->findfxinst(*the_rcid);
+                               auto cache = mtl->pipelineCache();
+                               return cache->findPipeline(*the_rcid);
                              })
                          .def(
                              "genMatrix",                                 //
@@ -65,10 +65,10 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
                              });
   /*.def_property("fxcache",
       [](rcid_ptr_t the_rcid) -> fxpipelinecache_constptr_t { //
-        return the_rcid->_fx_instance_cache;
+        return the_rcid->_pipeline_cache;
       },
       [](rcid_ptr_t the_rcid, fxpipelinecache_constptr_t cache) { //
-        the_rcid->_fx_instance_cache = cache;
+        the_rcid->_pipeline_cache = cache;
       }
   )*/
   type_codec->registerStdCodec<rcid_ptr_t>(rcid_type_t);

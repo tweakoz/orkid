@@ -63,10 +63,10 @@ struct GpuResources {
 
       auto RCFD    = RCID._RCFD;
       auto context = RCFD->_target;
-      auto fxcache = RCID._fx_instance_cache;
+      auto fxcache = RCID._pipeline_cache;
 
-      auto fxinst = fxcache->findfxinst(RCID);
-      OrkAssert(fxinst);
+      auto pipeline = fxcache->findPipeline(RCID);
+      OrkAssert(pipeline);
 
       using vertex_t = SVtxV12N12B12T8C4;
 
@@ -95,7 +95,7 @@ struct GpuResources {
 
       context->PushModColor(fvec4::White());
       context->MTXI()->PushMMatrix(fmtx4::Identity());
-      fxinst->wrappedDrawCall(RCID, [&]() { context->GBI()->DrawPrimitiveEML(vw, PrimitiveType::LINES); });
+      pipeline->wrappedDrawCall(RCID, [&]() { context->GBI()->DrawPrimitiveEML(vw, PrimitiveType::LINES); });
       context->MTXI()->PopMMatrix();
       context->PopModColor();
     };

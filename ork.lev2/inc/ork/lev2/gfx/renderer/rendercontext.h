@@ -84,7 +84,7 @@ struct RenderContextInstData {
   const RenderContextFrameData* _RCFD       = nullptr;
   rcfd_ptr_t                    _held_rcfd  = nullptr;
   const XgmMaterialStateInst* mMaterialInst = nullptr;
-  fxpipelinecache_constptr_t _fx_instance_cache;
+  fxpipelinecache_constptr_t _pipeline_cache;
 
   float mEngineParamFloats[kMaxEngineParamFloats];
 };

@@ -93,7 +93,7 @@ ctx.debugMarker("yo")
 
 RCFD = RenderContextFrameData(ctx)
 
-# TODO : rework using fxinst
+# TODO : rework using pipeline
 #sh._mtl.bindTechnique(sh._tek_frustum)
 #sh.beginNoise(RCFD,0.0)
 #sh.bindMvpMatrix(mvp_matrix)

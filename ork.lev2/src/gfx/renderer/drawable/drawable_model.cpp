@@ -288,7 +288,7 @@ void ModelRenderable::Render(const IRenderer* renderer) const {
   //RCID.SetMaterialIndex(0);
   RCID.SetRenderer(renderer);
   RCID.setRenderable(this);
-  RCID._fx_instance_cache = _submeshinst->_fxpipelinecache;
+  RCID._pipeline_cache = _submeshinst->_fxpipelinecache;
   // context->debugMarker(FormatString("toolrenderer::RenderModel isskinned<%d> owner_as_ent<%p>", int(model->isSkinned()),
   // as_ent));
   ///////////////////////////////////////

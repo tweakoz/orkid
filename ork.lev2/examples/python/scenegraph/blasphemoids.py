@@ -16,10 +16,11 @@ from orkengine.lev2 import *
 from ork import host
 tokens = CrcStringProxy()
 ################################################################################
-from pathlib import Path as plpath
-this_dir = plpath(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(str(this_dir))
-import _simsetup
+#from pathlib import Path as plpath
+#this_dir = plpath(os.path.dirname(os.path.abspath(__file__)))
+#sys.path.append(str(this_dir))
+#import _simsetup
+thispath_to_syspath() # add file directory to syspath
 ################################################################################
 parser = argparse.ArgumentParser(description='scenegraph example')
 parser.add_argument('--numinstances', metavar="numinstances", help='number of mesh instances' )

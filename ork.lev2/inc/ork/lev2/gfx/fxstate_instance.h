@@ -20,7 +20,7 @@ namespace ork::lev2 {
 
 struct FxPipeline;
 using fxpipeline_ptr_t      = std::shared_ptr<FxPipeline>;
-using fxinstance_constptr_t = std::shared_ptr<const FxPipeline>;
+using pipelineance_constptr_t = std::shared_ptr<const FxPipeline>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -87,8 +87,8 @@ struct FxPipeline {
 struct FxPipelineCache {
 
   using cache_miss_fn_t = std::function<fxpipeline_ptr_t(const FxPipelinePermutation&)>;
-  fxpipeline_ptr_t findfxinst(const RenderContextInstData& RCID) const;
-  fxpipeline_ptr_t findfxinst(const FxPipelinePermutation& permu) const;
+  fxpipeline_ptr_t findPipeline(const RenderContextInstData& RCID) const;
+  fxpipeline_ptr_t findPipeline(const FxPipelinePermutation& permu) const;
   cache_miss_fn_t _on_miss;
   mutable std::unordered_map<uint64_t,fxpipeline_ptr_t> _lut;
   svar64_t _impl;

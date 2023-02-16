@@ -26,15 +26,15 @@ FreestyleMaterial::~FreestyleMaterial() {
 static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu, //
                                                const FreestyleMaterial*mtl){
 
-  fxpipeline_ptr_t fxinst = nullptr;
+  fxpipeline_ptr_t pipeline = nullptr;
 
   switch (mtl->_variant) {
     case "FORWARD_UNLIT"_crcu:
     case "CUSTOM"_crcu:
     case 0: { // free-freestyle
-      fxinst             = std::make_shared<FxPipeline>(permu);
+      pipeline             = std::make_shared<FxPipeline>(permu);
 
-      fxinst->addStateLambda([mtl](const RenderContextInstData& RCID, int ipass) {
+      pipeline->addStateLambda([mtl](const RenderContextInstData& RCID, int ipass) {
         auto _this       = (FreestyleMaterial*)mtl;
         auto RCFD        = RCID._RCFD;
         auto context     = RCFD->GetTarget();
@@ -49,9 +49,9 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu, //
       break;
   }
   if(permu._forced_technique){
-    fxinst->_technique = permu._forced_technique;
+    pipeline->_technique = permu._forced_technique;
   }
-  return fxinst;
+  return pipeline;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

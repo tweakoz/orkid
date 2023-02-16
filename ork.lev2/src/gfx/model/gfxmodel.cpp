@@ -82,7 +82,7 @@ XgmSubMeshInst::XgmSubMeshInst(const XgmSubMesh* submesh)
     : _submesh(submesh)
     , _enabled(true) {
 
-  _fxpipelinecache = submesh->_material->fxInstanceCache();
+  _fxpipelinecache = submesh->_material->pipelineCache();
   OrkAssert(_fxpipelinecache);
 }
 
@@ -258,10 +258,10 @@ void XgmModel::RenderRigid(
   int inummesh                 = numMeshes();
   int inumclusset              = XgmMesh.numSubMeshes();
 
-  auto fxcache = RCID._fx_instance_cache;
+  auto fxcache = RCID._pipeline_cache;
   OrkAssert(fxcache);
-  auto fxinst = fxcache->findfxinst(RCID);
-  OrkAssert(fxinst);
+  auto pipeline = fxcache->findPipeline(RCID);
+  OrkAssert(pipeline);
 
   pTARG->debugPushGroup(
       FormatString("XgmModel::RenderRigid stereo1pass<%d> inummesh<%d> inumclusset<%d>", int(stereo1pass), inummesh, inumclusset));
@@ -270,9 +270,9 @@ void XgmModel::RenderRigid(
   pTARG->PushModColor(ModColor);
   {
     //////////////////////////////////////////////
-    // fxinst wrapped draw call
+    // pipeline wrapped draw call
     //////////////////////////////////////////////
-    fxinst->wrappedDrawCall(RCID, [&]() {
+    pipeline->wrappedDrawCall(RCID, [&]() {
       auto vtxbuffer = cluster->_vertexBuffer;
       int inumprim   = cluster->numPrimGroups();
       for (int iprim = 0; iprim < inumprim; iprim++) {
@@ -301,9 +301,9 @@ void XgmModel::RenderSkinned(
   static constexpr size_t kMatrixBlockSize = 1024;
   static auto matrix_block = new fmtx4[kMatrixBlockSize];
 
-  auto fxcache = RCID._fx_instance_cache;
-  auto fxinst  = fxcache->findfxinst(RCID);
-  auto pmat    = fxinst->_material;
+  auto fxcache = RCID._pipeline_cache;
+  auto pipeline  = fxcache->findPipeline(RCID);
+  auto pmat    = pipeline->_material;
 
   auto R           = RCID.GetRenderer();
   auto RCFD        = pTARG->topRenderContextFrameData();
@@ -350,12 +350,12 @@ void XgmModel::RenderSkinned(
 
       if (0 != mtl) {
 
-        auto fxcache = RCID._fx_instance_cache;
+        auto fxcache = RCID._pipeline_cache;
         OrkAssert(fxcache);
-        auto fxinst = fxcache->findfxinst(RCID);
-        OrkAssert(fxinst);
+        auto pipeline = fxcache->findPipeline(RCID);
+        OrkAssert(pipeline);
 
-        fxinst->wrappedDrawCall(RCID, [&]() {
+        pipeline->wrappedDrawCall(RCID, [&]() {
           size_t inumjoints = cluster->mJoints.size();
 
           OrkAssert(miBonesPerCluster <= kMatrixBlockSize);
@@ -412,13 +412,13 @@ void XgmModel::RenderSkinned(
     material->_variant = "vertexcolor"_crcu;
     material->_rasterstate.SetDepthTest(ork::lev2::EDepthTest::OFF);
     material->_rasterstate.SetZWriteMask(true);
-    auto fxcache = material->fxInstanceCache();
+    auto fxcache = material->pipelineCache();
     OrkAssert(fxcache);
     RenderContextInstData RCIDCOPY = RCID;
     RCIDCOPY._isSkinned = false;
-    RCIDCOPY._fx_instance_cache = fxcache;
-    auto fxinst = fxcache->findfxinst(RCIDCOPY);
-    OrkAssert(fxinst);
+    RCIDCOPY._pipeline_cache = fxcache;
+    auto pipeline = fxcache->findPipeline(RCIDCOPY);
+    OrkAssert(pipeline);
 
     //////////////
 
@@ -510,7 +510,7 @@ void XgmModel::RenderSkinned(
         }
         vw.UnLock(pTARG);
         pTARG->MTXI()->PushMMatrix(fmtx4::Identity());
-        fxinst->wrappedDrawCall(RCID, [&]() {
+        pipeline->wrappedDrawCall(RCID, [&]() {
           pTARG->GBI()->DrawPrimitiveEML(vw, PrimitiveType::LINES, numlines);
         });
         pTARG->MTXI()->PopMMatrix();
@@ -519,7 +519,7 @@ void XgmModel::RenderSkinned(
         fmtx4 joint_head     = worldpose._world_bindrela_matrices[ij];
          joint_head = joint_head * mSkeleton._bindMatrices[ij];
         pTARG->MTXI()->PushMMatrix(joint_head);
-        fxinst->wrappedDrawCall(RCID, [&]() {
+        pipeline->wrappedDrawCall(RCID, [&]() {
             auto& axis =  GfxPrimitives::GetRef().mVtxBuf_Axis;
             pTARG->GBI()->DrawPrimitiveEML(axis);
         });

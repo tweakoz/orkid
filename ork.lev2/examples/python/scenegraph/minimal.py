@@ -6,18 +6,14 @@
 # see http://www.boost.org/LICENSE_1_0.txt
 ################################################################################
 import math, sys, os
-#########################################
-# Our intention is not to 'install' anything just for running the examples
-#  so we will just hack the sys,path
-#########################################
 from pathlib import Path
-this_dir = Path(os.path.dirname(os.path.abspath(__file__)))
-pyex_dir = (this_dir/"..").resolve()
-sys.path.append(str(pyex_dir))
-from common.shaders import Shader
-#########################################
 from orkengine.core import *
 from orkengine.lev2 import *
+sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
+from common.cameras import *
+from common.shaders import *
+from common.primitives import createFrustumPrim
+#########################################
 tokens = CrcStringProxy()
 ################################################################################
 class PyOrkApp(object):
@@ -26,6 +22,7 @@ class PyOrkApp(object):
     super().__init__()
     self.ezapp = OrkEzApp.create(self)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
+    self.materials = set()
   ################################################
   # gpu data init:
   #  called on main thread when graphics context is
@@ -33,45 +30,20 @@ class PyOrkApp(object):
   ##############################################
   def onGpuInit(self,ctx):
     FBI = ctx.FBI() # framebuffer interface
-    ###################################
-    # material setup
-    ###################################
-    self.material = FreestyleMaterial()
-    self.material.gpuInit(ctx,Path("orkshader://manip"))
-    tek = self.material.shader.technique("std_mono")
-    self.material.rasterstate.culltest = tokens.PASS_FRONT
-    self.material.rasterstate.depthtest = tokens.LEQUALS
-    assert(tek)
-    ###################################
-    # create a graphics pipeline
-    ###################################
-    permu = FxPipelinePermutation()
-    permu.rendering_model = "DeferredPBR"
-    permu.technique = tek
-    pipeline = self.material.fxcache.findFxInst(permu)
-    ###################################
-    # explicit shader parameters
-    ###################################
-    pipeline.bindParam( self.material.param("mvp"),
-                      tokens.RCFD_Camera_MVP_Mono)
+
+    pipeline = createPipeline( app = self,
+                               ctx = ctx,
+                               techname = "std_mono",
+                               rendermodel = "DeferredPBR" )
+
     ###################################
     # frustum primitive
     ###################################
-    frustum = Frustum()
-    vmatrix = ctx.lookAt( vec3(0,0,-1),
-                          vec3(0,0,0),
-                          vec3(0,1,0) )
+    vmatrix = ctx.lookAt( vec3(0,0,-1), # eye
+                          vec3(0,0,0),  # tgt
+                          vec3(0,1,0) ) # up
     pmatrix = ctx.perspective(45,1,0.1,3)
-    frustum.set(vmatrix,pmatrix)
-    frustum_prim = primitives.FrustumPrimitive()
-    frustum_prim.topColor = vec4(0.2,1.0,0.2,1)
-    frustum_prim.bottomColor = vec4(0.5,0.5,0.5,1)
-    frustum_prim.leftColor = vec4(0.2,0.2,1.0,1)
-    frustum_prim.rightColor = vec4(1.0,0.2,0.2,1)
-    frustum_prim.nearColor = vec4(0.0,0.0,0.0,1)
-    frustum_prim.farColor = vec4(1.0,1.0,1.0,1)
-    frustum_prim.frustum = frustum
-    frustum_prim.gpuInit(ctx)
+    frustum_prim = createFrustumPrim(ctx=ctx,vmatrix=vmatrix,pmatrix=pmatrix,alpha=0.35)
     ###################################
     # create scenegraph and sg node
     ###################################

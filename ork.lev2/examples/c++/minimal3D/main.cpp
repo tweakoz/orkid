@@ -45,7 +45,7 @@ struct Resources {
     _RCID->forceTechnique(fxtechnique);
 
     ///////////////////////////////////////////////////
-    // create simple compositor (needed for fxinst based rendering)
+    // create simple compositor (needed for pipeline based rendering)
     ///////////////////////////////////////////////////
 
     _compdata = std::make_shared<CompositingData>();
@@ -62,9 +62,9 @@ struct Resources {
     };
 
     ///////////////////////////////////////////////////
-    auto fxcache = _material->fxInstanceCache();
-    _fxinst = fxcache->findfxinst(*_RCID);
-    _fxinst->_params[fxparameterMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
+    auto fxcache = _material->pipelineCache();
+    _pipeline = fxcache->findPipeline(*_RCID);
+    _pipeline->_params[fxparameterMVP] = "RCFD_Camera_MVP_Mono"_crcsh;
     ///////////////////////////////////////////////////
     // init frustum primitive
     ///////////////////////////////////////////////////
@@ -88,7 +88,7 @@ struct Resources {
   CameraMatrices _cammatrices;
   freestyle_mtl_ptr_t _material;
   primitives::frustum_ptr_t _frustum_prim;
-  fxpipeline_ptr_t _fxinst;
+  fxpipeline_ptr_t _pipeline;
   rcfd_ptr_t _RCFD; // renderer per/frame data
   rcid_ptr_t _RCID;
 
@@ -168,7 +168,7 @@ int main(int argc, char** argv,char** envp) {
     // push compositing pass data
     resources->_compimpl->pushCPD(resources->_CPD);
     {
-      resources->_fxinst->wrappedDrawCall(*resources->_RCID,[=](){
+      resources->_pipeline->wrappedDrawCall(*resources->_RCID,[=](){
         resources->_frustum_prim->renderEML(context);
       });
     }
