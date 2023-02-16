@@ -147,6 +147,8 @@ struct Device {
   std::vector<fvec3> _calibnyvect;
   std::vector<fvec3> _calibnzvect;
 
+  bool _do_calibration = true;
+
   svar512_t _private;
 
 protected:

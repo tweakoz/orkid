@@ -120,44 +120,48 @@ void Device::_updatePosesCommon() {
       break;
     case 1: // calibrating
       if (_calibstateFrame >= 30) {
-        fvec3 avgpos;
-        fvec3 nxaccum, nyaccum, nzaccum;
-        float avgang = 0.0f;
-        for (size_t i = 0; i < _calibposvect.size(); i++) {
-          avgpos += _calibposvect[i];
-          nxaccum += _calibnxvect[i];
-          nyaccum += _calibnyvect[i];
-          nzaccum += _calibnzvect[i];
+        if(_do_calibration){
+          fvec3 avgpos;
+          fvec3 nxaccum, nyaccum, nzaccum;
+          float avgang = 0.0f;
+          for (size_t i = 0; i < _calibposvect.size(); i++) {
+            avgpos += _calibposvect[i];
+            nxaccum += _calibnxvect[i];
+            nyaccum += _calibnyvect[i];
+            nzaccum += _calibnzvect[i];
+          }
+          avgpos *= (1.0f / float(_calibposvect.size()));
+          fvec3 ny    = fvec3(0, 1, 0);
+          fvec2 nz_xz = nzaccum.xz().normalized();
+          fvec3 nz    = fvec3(nz_xz.x, 0.0f, nz_xz.y).normalized();
+          fvec3 nx    = ny.crossWith(nz);
+          // printf("nx<%g %g %g>\n", nx.x, nx.y, nx.z);
+          // printf("ny<%g %g %g>\n", ny.x, ny.y, ny.z);
+          // printf("nz<%g %g %g>\n", nz.x, nz.y, nz.z);
+          // printf("avgpos<%g %g %g>\n", avgpos.x, avgpos.y, avgpos.z);
+          fmtx4 avgrotmtx;
+          avgrotmtx.fromNormalVectors(nx, ny, nz);
+          fmtx4 avgtramtx;
+          avgtramtx.setTranslation(avgpos);
+          fmtx4 refmtx = fmtx4::multiply_ltor(avgtramtx,avgrotmtx);
+          _baseMatrix.setTranslation(hmd.inverse().translation());
+          deco::prints(hmd.dump4x3cn(), true);
+          deco::prints(hmd.inverse().dump4x3cn(), true);
+          deco::printf(fvec3::Yellow(), "vrstate: calibrated\n");
         }
-        avgpos *= (1.0f / float(_calibposvect.size()));
-        fvec3 ny    = fvec3(0, 1, 0);
-        fvec2 nz_xz = nzaccum.xz().normalized();
-        fvec3 nz    = fvec3(nz_xz.x, 0.0f, nz_xz.y).normalized();
-        fvec3 nx    = ny.crossWith(nz);
-        // printf("nx<%g %g %g>\n", nx.x, nx.y, nx.z);
-        // printf("ny<%g %g %g>\n", ny.x, ny.y, ny.z);
-        // printf("nz<%g %g %g>\n", nz.x, nz.y, nz.z);
-        // printf("avgpos<%g %g %g>\n", avgpos.x, avgpos.y, avgpos.z);
-        fmtx4 avgrotmtx;
-        avgrotmtx.fromNormalVectors(nx, ny, nz);
-        fmtx4 avgtramtx;
-        avgtramtx.setTranslation(avgpos);
-        fmtx4 refmtx = fmtx4::multiply_ltor(avgtramtx,avgrotmtx);
-        //_baseMatrix.setTranslation(hmd.inverse().translation());
-        // deco::prints(hmd.dump4x3cn(), true);
-        // deco::prints(hmd.inverse().dump4x3cn(), true);
-        deco::printf(fvec3::Yellow(), "vrstate: calibrated\n");
         // deco::prints(avgrotmtx.dump4x3cn(), true);
         // deco::prints(refmtx.dump4x3cn(), true);
         // deco::prints(_baseMatrix.dump4x3cn(), true);
         _calibstate = 2;
       } else {
-        _calibposvect.push_back(hmdpos);
-        fvec3 nx, ny, nz;
-        hmd.toNormalVectors(nx, ny, nz);
-        _calibnxvect.push_back(nx);
-        _calibnyvect.push_back(ny);
-        _calibnzvect.push_back(nz);
+        if(_do_calibration){
+          _calibposvect.push_back(hmdpos);
+          fvec3 nx, ny, nz;
+          hmd.toNormalVectors(nx, ny, nz);
+          _calibnxvect.push_back(nx);
+          _calibnyvect.push_back(ny);
+          _calibnzvect.push_back(nz);
+        }
         _calibstateFrame++;
       }
       break;

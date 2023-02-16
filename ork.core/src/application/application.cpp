@@ -86,13 +86,20 @@ AppInitData::opts_var_map_ptr_t AppInitData::parse(){
   if (_commandline_vars->count("ssaa")) {
     this->_ssaa_samples = vars["ssaa"].as<int>();
   }
-  if (_commandline_vars->count("vsync")) {
-    if(vars["vsync"].as<bool>()){
+  // https://download.nvidia.com/XFree86/Linux-x86_64/525.78.0/README/openglenvvariables.html
+  if (_commandline_vars->count("nvsync")) {
+    if(vars["nvsync"].as<bool>()){
       genviron.set("__GL_SYNC_TO_VBLANK", "1");
-      int vsport = vars["vsport"].as<int>();
+      int vsport = vars["nvsport"].as<int>();
       genviron.set("__GL_SYNC_DISPLAY_DEVICE", FormatString("DFP-%d",vsport));
     }
   }
+  if (_commandline_vars->count("nvmfa")) {
+      int vmfa = vars["nvmfa"].as<int>();
+      genviron.set("__GL_MaxFramesAllowed", FormatString("%d",vmfa));
+  }
+
+  genviron.dump();
 
   printf("_msaa_samples<%d>\n", this->_msaa_samples);
   return _commandline_vars;
