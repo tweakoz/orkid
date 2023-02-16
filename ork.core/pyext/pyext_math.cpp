@@ -510,7 +510,7 @@ void pyinit_math(py::module& module_core) {
             [](decompxf_ptr_t dcxf, fvec3 inp) { dcxf->_translation = inp; })
           .def_property("orientation", 
             [](decompxf_const_ptr_t dcxf) -> fquat { return dcxf->_rotation; },
-            [](decompxf_ptr_t dcxf, fquat inp) { dcxf->_rotation; })
+            [](decompxf_ptr_t dcxf, fquat inp) { dcxf->_rotation=inp; })
           .def_property("scale", 
             [](decompxf_const_ptr_t dcxf) -> float { return dcxf->_uniformScale; },
             [](decompxf_ptr_t dcxf, float sc) { dcxf->_uniformScale = sc; })
