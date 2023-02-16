@@ -41,7 +41,7 @@ void OrkGlobalEnableMousePointer();
 ///////////////////////////////////////////////////////////////////////////////
 
 void EzUiCam::describeX(object::ObjectClass* clazz) {
-  clazz->floatProperty("Aperature", float_range{0.0f, 90.0f}, &EzUiCam::aper);
+  clazz->floatProperty("Aperature", float_range{0.0f, 90.0f}, &EzUiCam::_fov);
   clazz->floatProperty("MaxFar", float_range{1.0f, 100000.0f}, &EzUiCam::far_max);
   clazz->floatProperty("MinNear", float_range{0.01f, 10000.0f}, &EzUiCam::near_min);
 
@@ -82,7 +82,7 @@ using uicamprivate_t = std::shared_ptr<UiCamPrivate>;
 EzUiCam::EzUiCam()
     : UiCamera()
     , meRotMode(EROT_SCREENXY)
-    , aper(40*DTOR)
+    , _fov(40*DTOR)
     , tx(0.0f)
     , ty(0.0f)
     , tz(0.0f)
@@ -141,7 +141,7 @@ void EzUiCam::draw(Context* context) const {
     FontMan::DrawText(context, 41, 57, "zfoverzn %f", (_camcamdata.GetFar() / _camcamdata.GetNear()));
     FontMan::DrawText(context, 41, 69, "Loc(m) %f Speed(m/f) %f", mfLoc, CurVelMag);
     FontMan::DrawText(context, 41, 81, "RotMode %s", (meRotMode == EROT_SCREENZ) ? "ScreenZ" : "ScreenXY");
-    FontMan::DrawText(context, 41, 93, "Aper %f", aper);
+    FontMan::DrawText(context, 41, 93, "Aper %f", _fov);
     FontMan::DrawText(context, 41, 105, "Name %s", GetName().c_str());
     FontMan::endTextBlock(context);
     context->PopModColor();
@@ -304,6 +304,8 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
   static int ipushx = 0;
   static int ipushy = 0;
   static f32 flerp  = 0.0f;
+
+  bool do_wheel = false;
 
   _vpdim = EV->_vpdim;
 
@@ -614,6 +616,8 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
 
       mDoZoom = false;
 
+      do_wheel = true;
+
       break;
     }
     default:
@@ -622,7 +626,7 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
 
   updateMatrices();
 
-  return (mDoPan || mDoRotate || mDoDolly);
+  return (mDoPan || mDoRotate || mDoDolly || do_wheel);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -696,7 +700,7 @@ void EzUiCam::updateMatrices(void) {
   fvec3 vtarget = fvec3(0.0f, 0.0f, 0.0f).transform(matxf);
   fvec3 vup     = fvec4(0.0f, 1.0f, 0.0f, 0.0f).transform(matxf).xyz();
 
-  _camcamdata.Persp(fnear, ffar, aper);
+  _camcamdata.Persp(fnear, ffar, _fov);
   _camcamdata.Lookat(veye, vtarget, vup);
 
   // printf("near<%g> far<%g> mfLoc<%g>\n", fnear, ffar, mfLoc);

@@ -87,6 +87,9 @@ struct BillboardStringDrawable;
 struct OverlayStringDrawable;
 struct InstancedBillboardStringDrawable;
 ///////////////////////////////////////////////////////////////////////////////
+struct GridDrawableData;
+struct GridDrawableInst;
+///////////////////////////////////////////////////////////////////////////////
 struct DrawableBufItem;
 struct DrawableBuffer;
 struct DrawBufContext;
@@ -297,6 +300,7 @@ using inputmanager_ptr_t       = std::shared_ptr<InputManager>;
 using inputmanager_const_ptr_t = std::shared_ptr<const InputManager>;
 ///////////////////////////////////////////////////////////////////////////////
 using uidrawevent_constptr_t = std::shared_ptr<const ::ork::ui::DrawEvent>;
+using uidrawevent_ptr_t = std::shared_ptr<::ork::ui::DrawEvent>;
 ///////////////////////////////////////////////////////////////////////////////
 using rendervar_t = svar64_t;
 using rendervar_usermap_t = orklut<CrcString, rendervar_t>;
@@ -320,6 +324,8 @@ using pointlight_constptr_t = std::shared_ptr<const PointLight>;
 using spotlight_ptr_t      = std::shared_ptr<SpotLight>;
 using spotlight_constptr_t = std::shared_ptr<const SpotLight>;
 
+using griddrawableinstptr_t = std::shared_ptr<GridDrawableInst> ;
+using griddrawabledataptr_t = std::shared_ptr<GridDrawableData> ;
 
 using matrix_lamda_t = std::function<fmtx4()>;
 

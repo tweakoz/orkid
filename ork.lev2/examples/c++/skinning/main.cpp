@@ -54,7 +54,7 @@ int main(int argc, char** argv, char** envp) {
     ///////////////////////////////////////
     // compute camera data
     ///////////////////////////////////////
-    gpurec->_uicamera->aper = 45.0 * DTOR;
+    gpurec->_uicamera->_fov = 45.0 * DTOR;
     gpurec->_uicamera->updateMatrices();
 
     (*gpurec->_camdata) = gpurec->_uicamera->_camcamdata;

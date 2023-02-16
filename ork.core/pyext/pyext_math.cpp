@@ -495,6 +495,24 @@ void pyinit_math(py::module& module_core) {
           .def("__str__", dcxf2str)
           .def("__repr__", dcxf2str);
   type_codec->registerStdCodec<decompxf_ptr_t>(dcxf_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  struct MathConstantsProxy {};
+  using mathconstantsproxy_ptr_t = std::shared_ptr<MathConstantsProxy>;
+  auto mathconstantsproxy_type   =                                                        //
+      py::class_<MathConstantsProxy, mathconstantsproxy_ptr_t>(module_core, "mathconstants") //
+          .def(py::init<>())
+          .def(
+              "__getattr__",                                                           //
+              [type_codec](mathconstantsproxy_ptr_t proxy, const std::string& key) -> py::object { //
+
+                svar64_t value; 
+                value.set<void*>(nullptr);
+                if(key == "DTOR"){
+                  value.set<float>(DTOR);
+                }
+                return type_codec->encode(value);
+              });
+  type_codec->registerStdCodec<mathconstantsproxy_ptr_t>(mathconstantsproxy_type);
 }
 
 } // namespace ork

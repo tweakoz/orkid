@@ -9,6 +9,7 @@
 #include <ork/lev2/input/inputdevice.h>
 #include <ork/lev2/gfx/terrain/terrain_drawable.h>
 #include <ork/lev2/gfx/camera/cameradata.h>
+#include <ork/lev2/gfx/scenegraph/sgnode_grid.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -163,6 +164,11 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
                 camera->Lookat(eye, tgt, up);
               })
           .def(
+              "copyFrom",                                                        //
+              [](cameradata_ptr_t camera, cameradata_ptr_t src_camera) { //
+                *camera = *src_camera;
+              })
+          .def(
               "projectDepthRay",                                              //
               [](cameradata_ptr_t camera, fvec2_ptr_t pos2d) -> fray3_ptr_t { //
                 auto cammat = camera->computeMatrices(1280.0 / 720.0);
@@ -272,6 +278,27 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
               [](terraindrawabledata_ptr_t drw, fvec3 val) { drw->_rock1 = val; })
           .def("writeHmapPath", [](terraindrawabledata_ptr_t drw, std::string path) { drw->_writeHmapPath(path); });
   type_codec->registerStdCodec<terraindrawabledata_ptr_t>(terdrawdata_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto griddrawdata_type = //
+      py::class_<GridDrawableData, griddrawabledataptr_t>(module_lev2, "GridDrawableData")
+          .def(py::init<>())
+          .def_property(
+              "texturepath",
+              [](griddrawabledataptr_t drw) -> std::string { return drw->_colortexpath; },
+              [](griddrawabledataptr_t drw, std::string val) { drw->_colortexpath = val; })
+          .def_property(
+              "extent",
+              [](griddrawabledataptr_t drw) -> float { return drw->_extent; },
+              [](griddrawabledataptr_t drw, float val) { drw->_extent = val; })
+          .def_property(
+              "majorTileDim",
+              [](griddrawabledataptr_t drw) -> float { return drw->_majorTileDim; },
+              [](griddrawabledataptr_t drw, float val) { drw->_majorTileDim = val; })
+          .def_property(
+              "minorTileDim",
+              [](griddrawabledataptr_t drw) -> float { return drw->_minorTileDim; },
+              [](griddrawabledataptr_t drw, float val) { drw->_minorTileDim = val; });
+  type_codec->registerStdCodec<griddrawabledataptr_t>(griddrawdata_type);
   /////////////////////////////////////////////////////////////////////////////////
   /*auto terdrawinst_type = //
       py::class_<TerrainDrawableInst, terraindrawableinst_ptr_t>(module_lev2, "TerrainDrawableInst")

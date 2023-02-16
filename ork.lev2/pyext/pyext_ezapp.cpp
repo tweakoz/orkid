@@ -21,75 +21,6 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
   };
 
   /////////////////////////////////////////////////////////////////////////////////
-  using drawevent_ptr_t = std::shared_ptr<ui::DrawEvent>;
-  py::class_<ui::DrawEvent, drawevent_ptr_t>(module_lev2, "DrawEvent")       //
-      .def_property_readonly("context", [](drawevent_ptr_t event) -> ctx_t { //
-        return ctx_t(event->GetTarget());
-      });
-  /////////////////////////////////////////////////////////////////////////////////
-  auto uievent_type = //
-      py::class_<ui::Event, ui::event_ptr_t>(module_lev2, "UiEvent")
-          .def_property_readonly(
-              "x",                            //
-              [](ui::event_ptr_t ev) -> int { //
-                return ev->miX;
-              })
-          .def_property_readonly(
-              "y",                            //
-              [](ui::event_ptr_t ev) -> int { //
-                return ev->miY;
-              })
-          .def_property_readonly(
-              "code",                         //
-              [](ui::event_ptr_t ev) -> int { //
-                return int(ev->_eventcode);
-              })
-          .def_property_readonly(
-              "shift",                        //
-              [](ui::event_ptr_t ev) -> int { //
-                return int(ev->mbSHIFT);
-              })
-          .def_property_readonly(
-              "alt",                          //
-              [](ui::event_ptr_t ev) -> int { //
-                return int(ev->mbALT);
-              })
-          .def_property_readonly(
-              "ctrl",                         //
-              [](ui::event_ptr_t ev) -> int { //
-                return int(ev->mbCTRL);
-              })
-          .def_property_readonly(
-              "left",                         //
-              [](ui::event_ptr_t ev) -> int { //
-                return int(ev->mbLeftButton);
-              })
-          .def_property_readonly(
-              "middle",                       //
-              [](ui::event_ptr_t ev) -> int { //
-                return int(ev->mbMiddleButton);
-              })
-          .def_property_readonly(
-              "right",                        //
-              [](ui::event_ptr_t ev) -> int { //
-                return int(ev->mbRightButton);
-              });
-  type_codec->registerStdCodec<ui::event_ptr_t>(uievent_type);
-  /////////////////////////////////////////////////////////////////////////////////
-  auto updata_type =                                                              //
-      py::class_<ui::UpdateData, ui::updatedata_ptr_t>(module_lev2, "UpdateData") //
-          .def_property_readonly(
-              "absolutetime",                             //
-              [](ui::updatedata_ptr_t updata) -> double { //
-                return updata->_abstime;
-              })
-          .def_property_readonly(
-              "deltatime",                                //
-              [](ui::updatedata_ptr_t updata) -> double { //
-                return updata->_dt;
-              });
-  type_codec->registerStdCodec<ui::updatedata_ptr_t>(updata_type);
-  /////////////////////////////////////////////////////////////////////////////////
   auto bind_scene = [](orkezapp_ptr_t app, scenegraph::scene_ptr_t scene){
     app->onDraw([=](ui::drawevent_constptr_t drwev) { //
       ork::opq::mainSerialQueue()->Process();
@@ -111,7 +42,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             auto appinitdata = std::make_shared<AppInitData>();
             auto rval                                              = OrkEzApp::create(appinitdata);
             auto d_ev                                              = std::make_shared<ui::DrawEvent>(nullptr);
-            rval->_vars.makeValueForKey<drawevent_ptr_t>("drawev") = d_ev;
+            rval->_vars.makeValueForKey<uidrawevent_ptr_t>("drawev") = d_ev;
             ////////////////////////////////////////////////////////////////////
             if (py::hasattr(appinstance, "onGpuInit")) {
               auto gpuinitfn //
@@ -138,7 +69,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 ork::opq::mainSerialQueue()->Process();
                 py::gil_scoped_acquire acquire;
                 auto pyfn       = rval->_vars.typedValueForKey<py::function>("drawfn");
-                auto mydrev     = rval->_vars.typedValueForKey<drawevent_ptr_t>("drawev");
+                auto mydrev     = rval->_vars.typedValueForKey<uidrawevent_ptr_t>("drawev");
                 *mydrev.value() = *drwev;
                 try {
                   pyfn.value()(drwev);

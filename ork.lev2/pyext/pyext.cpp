@@ -16,6 +16,7 @@ void pyinit_primitives(py::module& module_lev2);
 void pyinit_scenegraph(py::module& module_lev2);
 void pyinit_meshutil(py::module& module_lev2);
 void pyinit_gfx_qtez(py::module& module_lev2);
+void pyinit_ui(py::module& module_lev2);
 
 void ClassInit();
 void GfxInit(const std::string& gfxlayer);
@@ -106,5 +107,6 @@ PYBIND11_MODULE(_lev2, module_lev2) {
   pyinit_scenegraph(module_lev2);
   pyinit_meshutil(module_lev2);
   pyinit_gfx_qtez(module_lev2);
+  pyinit_ui(module_lev2);
   //////////////////////////////////////////////////////////////////////////////
 };

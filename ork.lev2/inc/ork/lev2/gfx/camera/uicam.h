@@ -201,7 +201,8 @@ public: //
 
   CamEvTrackData mEvTrackData;
 
-  float aper;
+  float _fov; // radians
+  
   float tx, ty, tz;
   float far_max;
   float near_min;
