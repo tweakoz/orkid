@@ -46,7 +46,7 @@ class instance_set_class(_simsetup.InstanceSet):
   ########################################################
   def update(self,deltatime):
     self.clupdate()
-    index = random.randint(0,numinstances)
+    index = random.randint(0,numinstances-1)
     color = vec4(random.uniform(0,4),
                  random.uniform(0,4),
                  random.uniform(0,4),
