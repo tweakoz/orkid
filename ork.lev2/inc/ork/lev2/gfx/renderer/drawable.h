@@ -402,7 +402,7 @@ struct InstancedDrawable : public Drawable {
   drawablebufitem_ptr_t enqueueOnLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const final;
 
   static constexpr size_t k_texture_dimension_x = 4096;
-  static constexpr size_t k_texture_dimension_y = 64;
+  static constexpr size_t k_texture_dimension_y = 256;
   static constexpr size_t k_max_instances       = k_texture_dimension_x * k_texture_dimension_y / 4;
 
   mutable texture_ptr_t _instanceMatrixTex;
