@@ -7,22 +7,18 @@
 # see http://www.boost.org/LICENSE_1_0.txt
 ################################################################################
 import math, random, argparse, os, sys
-import numpy as np
-from scipy import linalg as la
-import pyopencl as cl
-mf = cl.mem_flags
+#import numpy as np
+#from scipy import linalg as la
 from orkengine.core import *
 from orkengine.lev2 import *
-from ork import host
 ################################################################################
-from pathlib import Path
-this_dir = Path(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(str(this_dir))
+sys.path.append((thisdir()).normalized.as_string)
 import _simsetup
 ################################################################################
 parser = argparse.ArgumentParser(description='scenegraph example')
 parser.add_argument('--numinstances', metavar="numinstances", help='number of mesh instances' )
 parser.add_argument('--vrmode', action="store_true", help='run in vr' )
+parser.add_argument('--cldev', metavar="cldev", help='OpenCL device #' )
 ################################################################################
 args = vars(parser.parse_args())
 vrmode = (args["vrmode"]==True)
@@ -30,6 +26,13 @@ if args["numinstances"]==None:
   numinstances = 10000
 else:
   numinstances = int(args["numinstances"])
+if args["cldev"]==None:
+  os.environ["PYOPENCL_CTX"]='0'
+else:
+  os.environ["PYOPENCL_CTX"]=args["cldev"]
+################################################################################
+import pyopencl as cl
+mf = cl.mem_flags
 ################################################################################
 class instance_set_class(_simsetup.InstanceSet):
   def __init__(self,model,layer):
@@ -44,9 +47,9 @@ class instance_set_class(_simsetup.InstanceSet):
   def update(self,deltatime):
     self.clupdate()
     index = random.randint(0,numinstances)
-    color = vec4(random.uniform(0,1),
-                 random.uniform(0,1),
-                 random.uniform(0,1),
+    color = vec4(random.uniform(0,4),
+                 random.uniform(0,4),
+                 random.uniform(0,4),
                  1)
     self.instancecolors[index] = color
 ################################################################################
@@ -55,5 +58,4 @@ class OpenClSimApp(_simsetup.SimApp):
   def __init__(self):
     super().__init__(vrmode,instance_set_class)
 ################################################
-app = OpenClSimApp()
-app.qtapp.mainThreadLoop()
+OpenClSimApp().ezapp.mainThreadLoop()

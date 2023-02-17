@@ -37,7 +37,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
   py::class_<OrkEzApp, orkezapp_ptr_t>(module_lev2, "OrkEzApp") //
       .def_static(
           "create",
-          [type_codec,bind_scene](py::object appinstance) { //
+          [type_codec](py::object appinstance) { //
 
             auto appinitdata = std::make_shared<AppInitData>();
             auto rval                                              = OrkEzApp::create(appinitdata);

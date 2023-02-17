@@ -73,15 +73,26 @@ class SimApp(object):
     setupUiCamera(app=self,eye=vec3(0,0.5,3))
   ##############################################
   def onGpuInit(self,ctx):
-    createSceneGraph(app=self,rendermodel="DeferredPBR")
+    params_dict = {
+      "SkyboxIntensity": float(4),
+      "SpecularIntensity": float(4),
+    }
+    createSceneGraph(app=self,rendermodel="DeferredPBR",params_dict=params_dict)
     model = Model("src://environ/objects/misc/ref/uvsph.glb")
     self.instanceset = self.instance_set_class(model,self.layer1)
   ################################################
   def onUpdate(self,updinfo):
-    ###################################
     self.instanceset.update(updinfo.deltatime)
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
+  ################################################
+  def onUiEvent(self,uievent):
+    handled = self.uicam.uiEventHandler(uievent)
+    if handled:
+      self.camera.copyFrom( self.uicam.cameradata )
+  ################################################
+
 ################################################
+
 class ClKernel(object):
   def __init__(self):
     super().__init__()
@@ -91,7 +102,10 @@ class ClKernel(object):
     ################################################################################
     # Create OpenCL context and compile CL kernel
     ################################################################################
-    self.ctx = cl.create_some_context()
+    platform = cl.get_platforms()
+    my_gpu_devices = platform[0].get_devices(device_type=cl.device_type.GPU)
+    self.ctx = cl.Context(devices=my_gpu_devices)
+    #self.ctx = cl.create_some_context()
     self.queue = cl.CommandQueue(self.ctx)
     self.prg = cl.Program(self.ctx,
     """
