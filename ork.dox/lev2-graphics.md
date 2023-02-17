@@ -9,8 +9,8 @@
   * RenderTarget Management (FBO's, etc..)
   * Buffer Management (Textures, Geometry, UBO, SSBO)
   * Image/Texture Loaders (leveraging OpenImageIO). 
-  * *material* pass based primitive drawing.
-     * The combination of [material pass, primitive type and Framebuffer output] will map to pipeline objects
+  * *pipeline* based primitive drawing.
+     * The combination of [material pass, geometry/primitive types and Framebuffer topology] will map to pipeline objects
      * Instancing support
   * Custom Shader Language (GLFX) - will be portable across all device APIs.
   * Compute Shader support. 
