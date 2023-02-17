@@ -7,15 +7,10 @@
 # see http://www.boost.org/LICENSE_1_0.txt
 ################################################################################
 import math, random, argparse, os, sys
-import numpy as np
-from scipy import linalg as la
-from numba import jit
 from orkengine.core import *
 from orkengine.lev2 import *
 ################################################################################
-from pathlib import Path
-this_dir = Path(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(str(this_dir))
+sys.path.append((thisdir()).normalized.as_string)
 import _simsetup
 ################################################################################
 parser = argparse.ArgumentParser(description='scenegraph example')
@@ -28,6 +23,10 @@ if args["numinstances"]==None:
   numinstances = 10000
 else:
   numinstances = int(args["numinstances"])
+################################################################################
+import numpy as np
+from scipy import linalg as la
+from numba import jit
 ################################################################################
 #@vectorize(['float32(float32, float32)'], target='cuda')
 @jit(nopython=True,parallel=True)
@@ -43,12 +42,12 @@ class instance_set_class(_simsetup.InstanceSet):
     super().__init__(model,numinstances,layer)
   ########################################################
   def update(self,deltatime):
-    matrix_update(self.instancematrices,self.deltas)
+    matrix_update(self.instancematrices,self.delta_rots)
+    matrix_update(self.instancematrices,self.delta_tras)
 ################################################################################
 class NumbaSimApp(_simsetup.SimApp):
   ################################################
   def __init__(self):
     super().__init__(vrmode,instance_set_class)
-################################################
-app = NumbaSimApp()
-app.qtapp.mainThreadLoop()
+###############################################################################
+NumbaSimApp().ezapp.mainThreadLoop()

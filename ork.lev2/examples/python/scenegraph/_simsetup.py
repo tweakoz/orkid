@@ -1,9 +1,15 @@
-import random, os
+import random, os, sys
 import numpy as np
 from orkengine.core import *
 from orkengine.lev2 import *
 import pyopencl as cl
 mf = cl.mem_flags
+################################################################################
+sys.path.append((thisdir()/"..").normalized.as_string)
+from common.cameras import *
+from common.shaders import *
+from common.primitives import createCubePrim, createGridData
+from common.scenegraph import createSceneGraph
 ################################################################################
 class InstanceSet(object):
   ########################################################
@@ -23,7 +29,7 @@ class InstanceSet(object):
       #####################################
       incraxis = vec3(random.uniform(-1,1),
                       random.uniform(-1,1),
-                      random.uniform(-1,1)).normal()
+                      random.uniform(-1,1)).normalized()
       incrmagn = random.uniform(-0.05,0.05)
       rot = quat(incraxis,incrmagn)
       as_mtx4 = mtx4()
@@ -60,26 +66,16 @@ class SimApp(object):
   ################################################
   def __init__(self,vrmode,instance_set_class):
     super().__init__()
-    self.sceneparams = VarMap()
-    self.sceneparams.preset = "PBRVR" if vrmode else "PBR"
-    self.qtapp = OrkEzApp.create(self)
-    self.qtapp.setRefreshPolicy(RefreshFastest, 0)
+    self.ezapp = OrkEzApp.create(self)
+    self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.instanceset=None
     self.instance_set_class = instance_set_class
+    setupUiCamera(app=self,eye=vec3(0,0.5,3))
   ##############################################
   def onGpuInit(self,ctx):
-    self.layer = self.scene.createLayer("layer1")
+    createSceneGraph(app=self,rendermodel="DeferredPBR")
     model = Model("src://environ/objects/misc/ref/uvsph.glb")
-    self.instanceset = self.instance_set_class(model,self.layer)
-    ###################################
-    self.camera = CameraData()
-    self.cameralut = CameraDataLut()
-    self.cameralut.addCamera("spawncam",self.camera)
-    ###################################
-    self.camera.perspective(0.1, 150.0, 45.0)
-    self.camera.lookAt(vec3(0,0,5), # eye
-                       vec3(0, 0, 0), # tgt
-                       vec3(0, 1, 0)) # up
+    self.instanceset = self.instance_set_class(model,self.layer1)
   ################################################
   def onUpdate(self,updinfo):
     ###################################
