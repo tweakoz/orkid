@@ -1,1 +1,1 @@
-__all__ = ["core","lev2","lev2qt"]
+__all__ = ["core","lev2"]

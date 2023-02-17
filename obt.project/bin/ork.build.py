@@ -169,4 +169,9 @@ with buildtrace.NestedBuildTrace({ "op": "ork.build.py"}) as nested:
 
   cmd += ["install"]
 
-  sys.exit( Command(cmd).exec() )
+  rval = Command(cmd).exec()
+
+  if rval==0 and ork.host.IsDarwin:
+    rval = Command(["obt.osx.macho.fixup.libs.py","--orklibs", "--orkpymods"]).exec()
+
+sys.exit(rval)

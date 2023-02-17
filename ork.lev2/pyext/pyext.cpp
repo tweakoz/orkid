@@ -93,6 +93,8 @@ void lev2apppoll() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+namespace ork {
+
 PYBIND11_MODULE(_lev2, module_lev2) {
   // module_lev2.attr("__name__") = "lev2";
 
@@ -110,3 +112,5 @@ PYBIND11_MODULE(_lev2, module_lev2) {
   pyinit_ui(module_lev2);
   //////////////////////////////////////////////////////////////////////////////
 };
+
+} // namespace ork
