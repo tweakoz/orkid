@@ -131,9 +131,6 @@ bool XgmModel::_loadAssimp(XgmModel* mdl, datablock_ptr_t inp_datablock) {
 
   basehasher->accumulateString("version-x121322"); 
 
-  if(FORCE_MODEL_REGEN())
-    basehasher->accumulateItem<int>(rand());
-
   inp_datablock->accumlateHash(basehasher);
   /////////////////////////////////////
   // include asset vars as hash mutator 
@@ -162,7 +159,7 @@ bool XgmModel::_loadAssimp(XgmModel* mdl, datablock_ptr_t inp_datablock) {
   basehasher->finish();
   uint64_t hashkey   = basehasher->result();
   auto xgm_datablock = DataBlockCache::findDataBlock(hashkey);
-  if (not xgm_datablock) {
+  if (not xgm_datablock or FORCE_MODEL_REGEN()) {
     xgm_datablock = meshutil::assimpToXgm(inp_datablock);
     DataBlockCache::setDataBlock(hashkey, xgm_datablock);
   }
