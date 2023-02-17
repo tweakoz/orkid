@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include "pyext.h"
+#include <ork/kernel/environment.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -32,6 +33,9 @@ extern context_ptr_t gloadercontext;
 orkezapp_ptr_t lev2appinit() {
 
   ork::SetCurrentThreadName("main");
+
+  
+  ork::genviron.init_from_global_env();
 
   static std::shared_ptr<lev2::ThreadGfxContext> _gthreadgfxctx;
   static std::vector<std::string> _dynaargs_storage;

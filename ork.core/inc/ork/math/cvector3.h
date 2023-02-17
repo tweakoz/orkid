@@ -215,6 +215,11 @@ template <typename T> struct Vector3 final
   void setARGBU32(U32 uval);
   void setABGRU32(U32 uval);
 
+  Vector3<T> absolute() const;
+  Vector3<T> minXYZ( const Vector3<T>& rhs ) const;
+  Vector3<T> maxXYZ( const Vector3<T>& rhs ) const;
+
+
   uint64_t RGBAU64() const;
   void setRGBAU64(uint64_t v);
 

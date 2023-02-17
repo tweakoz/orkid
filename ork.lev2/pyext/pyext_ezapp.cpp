@@ -7,6 +7,7 @@
 
 #include "pyext.h"
 #include <ork/kernel/string/deco.inl>
+#include <ork/kernel/environment.h>
 #include <iostream>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -38,6 +39,8 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
       .def_static(
           "create",
           [type_codec](py::object appinstance) { //
+
+            ork::genviron.init_from_global_env();
 
             auto appinitdata = std::make_shared<AppInitData>();
             auto rval                                              = OrkEzApp::create(appinitdata);

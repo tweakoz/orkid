@@ -30,6 +30,30 @@ template <typename T> Vector3<T> Vector3<T>::saturated() const {
   return this->clamped(0, 1);
 }
 
+template <typename T> Vector3<T> Vector3<T>::absolute() const {
+  Vector3<T> as_abs;
+  as_abs.x = fabs(this->x);
+  as_abs.y = fabs(this->y);
+  as_abs.z = fabs(this->z);
+  return as_abs;
+}
+
+template <typename T> Vector3<T> Vector3<T>::minXYZ(const Vector3<T>& rhs) const {
+  Vector3<T> rval;
+  rval.x = std::min(this->x,rhs.x);
+  rval.y = std::min(this->y,rhs.y);
+  rval.z = std::min(this->z,rhs.z);
+  return rval;
+}
+
+template <typename T> Vector3<T> Vector3<T>::maxXYZ(const Vector3<T>& rhs) const {
+  Vector3<T> rval;
+  rval.x = std::max(this->x,rhs.x);
+  rval.y = std::max(this->y,rhs.y);
+  rval.z = std::max(this->z,rhs.z);
+  return rval;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> const Vector3<T>& Vector3<T>::Black() {

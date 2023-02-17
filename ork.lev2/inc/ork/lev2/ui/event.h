@@ -74,6 +74,7 @@ struct Event final // RawEvent
   int miLastX          = 0;
   int miLastY          = 0;
   int miMWY            = 0;
+  int miMWX            = 0;
   int miState          = 0;
   int miKeyCode        = 0;
   int miNumHits        = 0;

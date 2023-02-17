@@ -11,6 +11,7 @@
 #include <ork/kernel/prop.h>
 #include <ork/kernel/string/StringBlock.h>
 #include <ork/kernel/string/string.h>
+#include <ork/kernel/environment.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/gfxmodel.h>
@@ -30,10 +31,14 @@ datablock_ptr_t assimpToXgm(datablock_ptr_t inp_datablock);
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
-static logchannel_ptr_t logchan_mioR = logger()->createChannel("gfxmodelIOREAD",fvec3(0.8,0.8,0.4), false);
+static bool FORCE_MODEL_REGEN(){
+  return genviron.has("ORKID_LEV2_FORCE_MODEL_REGEN");
+}
+static logchannel_ptr_t logchan_mioR = logger()->createChannel("gfxmodelIOREAD",fvec3(0.8,0.8,0.4),false);
 static logchannel_ptr_t logchan_mioW = logger()->createChannel("gfxmodelIOWRITE",fvec3(0.8,0.7,0.4));
 ///////////////////////////////////////////////////////////////////////////////
 bool SaveXGM(const AssetPath& Filename, const lev2::XgmModel* mdl) {
+
   //logchan_mioR->log("Writing Xgm<%p> to path<%s>d, (void*) mdl, Filename.c_str());
   auto datablock = writeXgmToDatablock(mdl);
   if (datablock) {
@@ -56,6 +61,10 @@ asset::loadrequest_ptr_t XgmModel::_getLoadRequest(){
 ///////////////////////////////////////////////////////////////////////////////
 
 bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename, const asset::vars_t& vars) {
+
+  if(not logchan_mioR->_enabled)
+    logchan_mioR->_enabled = FORCE_MODEL_REGEN();
+
   bool rval        = false;
   auto ActualPath  = Filename.toAbsolute();
   mdl->msModelName = AddPooledString(Filename.c_str());
@@ -121,6 +130,10 @@ bool XgmModel::_loadAssimp(XgmModel* mdl, datablock_ptr_t inp_datablock) {
   basehasher->accumulateString("assimp2xgm");
 
   basehasher->accumulateString("version-x121322"); 
+
+  if(FORCE_MODEL_REGEN())
+    basehasher->accumulateItem<int>(rand());
+
   inp_datablock->accumlateHash(basehasher);
   /////////////////////////////////////
   // include asset vars as hash mutator 
@@ -256,6 +269,9 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
     HeaderStream->GetItem(mdl->mAABoundXYZ);
     HeaderStream->GetItem(mdl->mAABoundWHD);
     HeaderStream->GetItem(mdl->mBoundingRadius);
+
+    logchan_mioR->log( "boundingCenter<%g %g %g>", mdl->mBoundingCenter.x, mdl->mBoundingCenter.y, mdl->mBoundingCenter.z );
+    logchan_mioR->log( "boundingRadius<%g>", mdl->mBoundingRadius);
     // END HACK
     ///////////////////////////////////
     int inummeshes = 0, inummats = 0;

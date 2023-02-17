@@ -650,25 +650,43 @@ bool EzUiCam::UIEventHandler(ui::event_constptr_t EV) {
 
 
       printf( "mw - zmoveamt<%g> isalt<%d>\n", zmoveamt,int(isalt) );
+
+      int mousedelta = EV->miMWY;
+
+      #if defined(__APPLE__)
+      if(isshift){
+        mousedelta = EV->miMWX;
+      }
+      #endif
+
       if (isalt) {
         fvec4 Center = mvCenter;
-        fvec4 Delta  = _pushNZ * zmoveamt * EV->miMWY;
+        fvec4 Delta  = _pushNZ * zmoveamt * mousedelta;
         mvCenter += Delta;
       } else {
         fvec3 Pos = mvCenter;
         fvec3 UpVector;
         fvec3 RightVector;
+
         _curMatrices.GetPixelLengthVectors(Pos, _vpdim, UpVector, RightVector);
+
+        //printf( "UpVector<%g %g %g>\n", UpVector.x, UpVector.y, UpVector.z );
+        //printf( "RightVector<%g %g %g>\n", RightVector.x, RightVector.y, RightVector.z );
+
         float CameraFactor   = RightVector.magnitude() * 20.0f; // 20 pixels of movement
         constexpr float kmin = 0.2f;
-        constexpr float kmax = 20000.0f;
+        constexpr float kmax = 1e6f;
         mfLoc                = std::clamp(mfLoc, kmin, kmax);
-        float DeltaInMeters  = float(-EV->miMWY) * CameraFactor * zmoveamt;
+        float DeltaInMeters  = float(-mousedelta) * CameraFactor * zmoveamt;
+        //printf( "mousedelta<%d>\n", mousedelta );
+        //printf( "CameraFactor<%g>\n", CameraFactor );
+        //printf( "DeltaInMeters<%g>\n", DeltaInMeters );
         mfLoc += DeltaInMeters;
         mfLoc = std::clamp(mfLoc, kmin, kmax);
-              printf( "mfLoc<%g>\n", mfLoc );
 
       }
+
+      printf( "mfLoc<%g>\n", mfLoc );
 
       mDoZoom = false;
 

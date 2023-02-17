@@ -238,7 +238,10 @@ static void _glfw_callback_scroll(GLFWwindow* window, double xoffset, double yof
   auto ctx = (CtxGLFW*)glfwGetWindowUserPointer(window);
   auto uiev = ctx->uievent();
   uiev->_eventcode = ui::EventCode::MOUSEWHEEL;
+
   uiev->miMWY = int(yoffset);
+  uiev->miMWX = int(xoffset);
+
   _fire_ui_event(ctx);                    
 }
 ///////////////////////////////////////////////////////////////////////////////

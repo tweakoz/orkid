@@ -24,6 +24,9 @@ public:
 	Environment();
 
 	void init_from_envp(char** envp);
+	void init_from_global_env();
+
+
 	void set( const std::string& k, const std::string& v );
 	bool has( const std::string& k ) const;
 	bool get( const std::string& k, std::string& vout ) const;

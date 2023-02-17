@@ -121,6 +121,16 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
         auto modl_asset = asset::AssetManager<XgmModelAsset>::load(loadreq);
         return modl_asset->_model.atomicCopy();
       }))
+      .def_property_readonly(
+          "boundingCenter", //
+          [](model_ptr_t model) -> fvec3 { //
+            return model->boundingCenter();
+          })
+      .def_property_readonly(
+          "boundingRadius", //
+          [](model_ptr_t model) -> float { //
+            return model->GetBoundingRadius();
+          })
       .def(
           "createNode",         //
           [](model_ptr_t model, //

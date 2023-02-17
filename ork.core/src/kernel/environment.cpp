@@ -10,13 +10,14 @@
 #include <assert.h>
 #include <string.h>
 
+//#if defined(__APPLE__)
+extern char** environ;
+//#endif
+
 namespace ork {
 
 Environment genviron;
 
-#if defined(__APPLE__)
-extern char** environ;
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 // environment variable utils
@@ -25,6 +26,27 @@ extern char** environ;
 Environment::Environment()
 {
 
+}
+///////////////////////////////////////////////////////////////////////////////
+
+void Environment::init_from_global_env(){
+    for( char** env=environ; *env!=0; env++ )
+    {
+       char* this_env = *env;
+
+        if( this_env )
+        {
+            std::string estr(this_env);
+            const char* pbeg = estr.c_str();
+            const char* peq = strstr(pbeg,"=");
+            assert(peq[0]=='=');
+            size_t klen = peq-pbeg;
+            std::string key = estr.substr(0,klen);
+            std::string val = estr.substr(klen+1,estr.length());
+            mEnvMap[key] = val;
+            //printf( "split<%s> k<%s> v<%s>\n", peq, key.c_str(), val.c_str() );
+        }
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

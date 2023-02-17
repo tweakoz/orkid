@@ -872,11 +872,43 @@ datablock_ptr_t assimpToXgm(datablock_ptr_t inp_datablock) {
   auto vmax = tmesh._vertexExtents.Max();
   auto smin = tmesh._skeletonExtents.Min();
   auto smax = tmesh._skeletonExtents.Max();
+  auto center = (vmax+vmin)*0.5f;
+  
+  /////////////////////////
+  // compute aabb
+  /////////////////////////
 
-  //deco::logchan_meshutilassimp->log(fvec3::White(), "vtxext min<%g %g %g>\n", vmin.x, vmin.y, vmin.z);
-  //deco::logchan_meshutilassimp->log(fvec3::White(), "vtxext max<%g %g %g>\n", vmax.x, vmax.y, vmax.z);
-  //deco::logchan_meshutilassimp->log(fvec3::Yellow(), "sklext min<%g %g %g>\n", smin.x, smin.y, smin.z);
-  //deco::logchan_meshutilassimp->log(fvec3::Yellow(), "sklext max<%g %g %g>\n", smax.x, smax.y, smax.z);
+  auto abs_vmaxdelta = (vmax-center).absolute();
+  auto abs_vmindelta = (vmin-center).absolute();
+  auto abs_max = abs_vmaxdelta.maxXYZ(abs_vmindelta);
+
+  /////////////////////////
+  // compute radius
+  /////////////////////////
+
+  float radius = 0.0f;
+  float vmax_mag = (vmax-center).magnitude();
+  float vmin_mag = (vmin-center).magnitude();
+  if(vmax_mag>radius)
+    radius = vmax_mag;
+  if(vmin_mag>radius)
+    radius = vmin_mag;
+
+  /////////////////////////
+
+  logchan_meshutilassimp->log("vtxext min<%g %g %g>", vmin.x, vmin.y, vmin.z);
+  logchan_meshutilassimp->log("vtxext max<%g %g %g>", vmax.x, vmax.y, vmax.z);
+  logchan_meshutilassimp->log("vtxext abs_max<%g %g %g>", abs_max.x, abs_max.y, abs_max.z );
+  logchan_meshutilassimp->log("vtxext ctr<%g %g %g>", center.x, center.y, center.z);
+  logchan_meshutilassimp->log("vtxext aactr<%g %g %g>", center.x, center.y, center.z);
+  logchan_meshutilassimp->log("vtxext radius<%g>", radius);
+  logchan_meshutilassimp->log("sklext min<%g %g %g>", smin.x, smin.y, smin.z);
+  logchan_meshutilassimp->log("sklext max<%g %g %g>", smax.x, smax.y, smax.z);
+
+  xgmmdlout.mBoundingCenter = center;
+  xgmmdlout.mBoundingRadius = radius;
+  xgmmdlout.mAABoundXYZ = center;
+  xgmmdlout.mAABoundWHD = abs_max;
 
   return writeXgmToDatablock(&xgmmdlout);
 }

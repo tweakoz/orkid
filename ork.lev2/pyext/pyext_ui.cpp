@@ -116,6 +116,14 @@ void pyinit_ui(py::module& module_lev2) {
                 return camdata;
               })
           .def_property(
+              "base_zmoveamt",
+              [](ezuicam_ptr_t uic) -> float { //
+                return uic->_base_zmoveamt;
+              },
+              [](ezuicam_ptr_t uic, float zamt) { //
+                uic->_base_zmoveamt = zamt;
+              })
+          .def_property(
               "fov",
               [](ezuicam_ptr_t uic) -> float { //
                 return uic->_fov;
