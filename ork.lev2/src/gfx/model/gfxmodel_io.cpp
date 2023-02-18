@@ -129,7 +129,7 @@ bool XgmModel::_loadAssimp(XgmModel* mdl, datablock_ptr_t inp_datablock) {
   auto basehasher = DataBlock::createHasher();
   basehasher->accumulateString("assimp2xgm");
 
-  basehasher->accumulateString("version-x121322"); 
+  basehasher->accumulateString("version-x021723"); 
 
   inp_datablock->accumlateHash(basehasher);
   /////////////////////////////////////
@@ -291,13 +291,15 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
         size_t datasize = 0;
         EmbTexStream->GetItem(datasize);
         auto texturedata = EmbTexStream->GetCurrent();
-        auto texdatcopy  = malloc(datasize);
-        memcpy_fast(texdatcopy, texturedata, datasize);
-        EmbTexStream->advance(datasize);
         auto embtex         = new EmbeddedTexture;
-        embtex->_srcdata    = texdatcopy;
-        embtex->_srcdatalen = datasize;
         embtexmap[texname]  = embtex;
+        if(datasize){
+          auto texdatcopy  = malloc(datasize);
+          memcpy_fast(texdatcopy, texturedata, datasize);
+          EmbTexStream->advance(datasize);
+          embtex->_srcdata    = texdatcopy;
+        }
+        embtex->_srcdatalen = datasize;
         // logchan_mioR->log("embtex<%zu:%s> datasiz<%zu> dataptr<%p>d, i, texname, datasize, texturedata);
       }
     }
@@ -645,14 +647,20 @@ datablock_ptr_t writeXgmToDatablock(const lev2::XgmModel* mdl) {
     textureStream->AddItem<size_t>(embtexmap.size());
     for (auto item : embtexmap) {
       std::string texname   = item.first;
+      logchan_mioW->log("WriteXgm: writetex<%s>", texname.c_str());
       EmbeddedTexture* ptex = item.second;
       int istring           = chunkwriter.stringIndex(texname.c_str());
       textureStream->AddItem<int>(istring);
       auto ddsblock    = ptex->_ddsdestdatablock;
-      size_t blocksize = ddsblock->length();
-      textureStream->AddItem<size_t>(blocksize);
-      auto data = (const void*)ddsblock->data();
-      textureStream->AddData(data, blocksize);
+      if(ddsblock){
+        size_t blocksize = ddsblock->length();
+        textureStream->AddItem<size_t>(blocksize);
+        auto data = (const void*)ddsblock->data();
+        textureStream->AddData(data, blocksize);
+      }
+      else{
+        textureStream->AddItem<size_t>(0);
+      }
     }
   }
 

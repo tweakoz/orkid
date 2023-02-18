@@ -15,9 +15,11 @@
 #include <ork/file/cas.inl>
 #include <ork/kernel/spawner.h>
 #include <ork/lev2/gfx/image.h>
+#include <ork/util/logger.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
+static logchannel_ptr_t logchan_embtex = logger()->createChannel("gfxmodel-embtex",fvec3(0.8,0.8,0.6),false);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -110,9 +112,14 @@ void EmbeddedTexture::fetchDDSdata() {
   uint64_t hashkey  = basehasher->result();
   _ddsdestdatablock = DataBlockCache::findDataBlock(hashkey);
 
+
+  logchan_embtex->log("_ddsdestdatablock<%p>", _ddsdestdatablock.get() );
+
   if (_ddsdestdatablock) {
+    logchan_embtex->log("_ddsdestdatablock<%p>::a", _ddsdestdatablock.get() );
     chunkfile::InputStream istr(_ddsdestdatablock->data(0), _ddsdestdatablock->length());
   } else {
+    logchan_embtex->log("_ddsdestdatablock<%p>::b", _ddsdestdatablock.get() );
     _ddsdestdatablock = compressTexture(hashkey);
     DataBlockCache::setDataBlock(hashkey, _ddsdestdatablock);
   }

@@ -109,9 +109,13 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
       auto it                     = embtexmap.find(texname);
       if (it != embtexmap.end()) {
         rval = it->second;
+        logchan_meshutilassimp->log("findtex: texname<%s> found! ptr<%p> _compressionPending<%d>", texname.c_str(), rval, int(rval->_compressionPending) );
         if (rval->_compressionPending) {
           rval->_usage = usage;
           rval->fetchDDSdata();
+        }
+        else{
+          //OrkAssert(false);
         }
       } else {
         // find by path
