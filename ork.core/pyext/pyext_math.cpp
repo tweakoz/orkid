@@ -493,16 +493,22 @@ void pyinit_math(py::module& module_core) {
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   auto dcxf2str = [](const DecompTransform& dcxf) -> std::string {
-    fxstring<64> fxs;
-    auto o = dcxf._translation;
-    auto r = dcxf._rotation;
-    float s = dcxf._uniformScale;
-    fxs.format("dcxf p(%g,%g,%g) o(%g,%g,%g,%g) s:%g", o.x, o.y, o.z, r.w, r.x, r.y, r.z, s);
+    std::string fxs;
+    if(dcxf._usedirectmatrix){
+      auto str = dcxf._directmatrix.dump4x3cn();
+      fxs = FormatString("Transform(precomposed) mtx(%s)", str.c_str() );
+    }
+    else{
+      auto o = dcxf._translation;
+      auto r = dcxf._rotation;
+      float s = dcxf._uniformScale;
+      fxs = FormatString("Transform(decomposed) p(%g,%g,%g) o(%g,%g,%g,%g) s:%g", o.x, o.y, o.z, r.w, r.x, r.y, r.z, s);
+    }
     return fxs.c_str();
   };
   //
   auto dcxf_type = //
-      py::class_<DecompTransform, decompxf_ptr_t>(module_core, "DecompTransform")
+      py::class_<DecompTransform, decompxf_ptr_t>(module_core, "Transform")
           //////////////////////////////////////////////////////////////////////////
           .def(py::init<>())
           .def_property("translation", 
@@ -514,8 +520,16 @@ void pyinit_math(py::module& module_core) {
           .def_property("scale", 
             [](decompxf_const_ptr_t dcxf) -> float { return dcxf->_uniformScale; },
             [](decompxf_ptr_t dcxf, float sc) { dcxf->_uniformScale = sc; })
+          .def_property("directMatrix", 
+            [](decompxf_const_ptr_t dcxf) -> fmtx4 { return dcxf->_directmatrix; },
+            [](decompxf_ptr_t dcxf, fmtx4 inp) { 
+              dcxf->_directmatrix = inp;
+              dcxf->_usedirectmatrix = true;
+            })
+          .def_property_readonly("composed", [](decompxf_const_ptr_t dcxf) -> fmtx4 { return dcxf->composed(); })
           .def("__str__", dcxf2str)
           .def("__repr__", dcxf2str);
+  dcxf_type.doc() = "Transform (de-composed, or pre-composed : set directMatrix to use pre-composed)";
   type_codec->registerStdCodec<decompxf_ptr_t>(dcxf_type);
   /////////////////////////////////////////////////////////////////////////////////
   struct MathConstantsProxy {};
