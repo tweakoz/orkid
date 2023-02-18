@@ -74,8 +74,8 @@ class SimApp(object):
   ##############################################
   def onGpuInit(self,ctx):
     params_dict = {
-      "SkyboxIntensity": float(4),
-      "SpecularIntensity": float(4),
+      "SkyboxIntensity": float(1),
+      "SpecularIntensity": float(1),
     }
     createSceneGraph(app=self,rendermodel="DeferredPBR",params_dict=params_dict)
     model = Model("src://environ/objects/misc/ref/uvsph.glb")

@@ -34,7 +34,10 @@ struct TextureInitData {
 
 class TextureInterface {
 public:
+
   virtual void TexManInit(void) = 0;
+
+  texture_ptr_t createColorTexture(fvec4 color, int w, int h);
 
   virtual bool destroyTexture(texture_ptr_t ptex)                           = 0;
   virtual bool LoadTexture(const AssetPath& fname, texture_ptr_t ptex)      = 0;

@@ -97,6 +97,9 @@ template <typename T> struct Vector4 final
   Vector3<T> yzx() const {
     return Vector3<T>(this->y, this->z, this->x);
   }
+  Vector4<T> rgba_to_abgr() const {
+    return Vector4<T>(this->w, this->z, this->y, this->x);
+  }
 
   static Vector4 zero() {
     return Vector4(T(0), T(0), T(0), T(0));

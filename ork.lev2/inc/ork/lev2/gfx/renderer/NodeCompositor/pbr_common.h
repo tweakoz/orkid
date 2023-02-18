@@ -110,7 +110,7 @@ struct CommonStuff : public ork::Object {
   asset::vars_t _texAssetVarMap;
   float _environmentIntensity = 1.0f;
   float _environmentMipBias   = 0.0f;
-  float _environmentMipScale  = 0.0f;
+  float _environmentMipScale  = 1.0f;
   float _diffuseLevel         = 1.0f;
   float _specularLevel        = 1.0f;
   float _specularMipBias      = 0.0f;

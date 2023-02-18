@@ -26,6 +26,8 @@ parser.add_argument('--vrmode', action="store_true", help='run in vr' )
 parser.add_argument('--showgrid', action="store_true", help='show grid' )
 parser.add_argument("-f", '--forceregen', action="store_true", help='force asset regeneration' )
 parser.add_argument("-m", "--model", type=str, required=False, default="data://tests/pbr1/pbr1", help='asset to load')
+parser.add_argument("-i", "--lightintensity", type=float, default=1.0, help='light intensity')
+parser.add_argument("-d", "--camdist", type=float, default=0.0, help='camera distance')
 
 ################################################################################
 
@@ -33,6 +35,8 @@ args = vars(parser.parse_args())
 vrmode = (args["vrmode"]==True)
 showgrid = args["showgrid"]
 modelpath = args["model"]
+lightintens = args["lightintensity"]
+camdist = args["camdist"]
 
 if args["forceregen"]:
   os.environ["ORKID_LEV2_FORCE_MODEL_REGEN"] = "1"
@@ -54,15 +58,26 @@ class SceneGraphApp(object):
 
   def onGpuInit(self,ctx):
 
-    createSceneGraph(app=self,rendermodel="PBRVR" if vrmode else "DeferredPBR")
+    params_dict = {
+      "SkyboxIntensity": float(lightintens),
+      "DiffuseIntensity": lightintens*float(1),
+      "SpecularIntensity": lightintens*float(1),
+    }
+
+    createSceneGraph( app=self,
+                      params_dict=params_dict,
+                      rendermodel="PBRVR" if vrmode else "DeferredPBR")
 
     self.model = Model(modelpath)
     self.sgnode = self.model.createNode("node",self.layer1)
 
     center = self.model.boundingCenter
-    radius = self.model.boundingRadius
+    radius = self.model.boundingRadius*2.5
 
-    self.uicam.lookAt( center-vec3(0,0,radius*4), 
+    if camdist!=0.0:
+      radius = camdist
+
+    self.uicam.lookAt( center-vec3(0,0,radius), 
                        center, 
                        vec3(0,1,0) )
 

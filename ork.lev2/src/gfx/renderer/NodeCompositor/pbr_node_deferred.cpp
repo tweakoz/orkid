@@ -175,8 +175,11 @@ struct PbrNodeImpl {
     _context._lightingmtl.bindParamFloat(_context._parSpecularLevel, _context._specularLevel);
     _context._lightingmtl.bindParamFloat(_context._parDiffuseLevel, _context._diffuseLevel);
     /////////////////////////
+
+    float num_mips = pbrcommon->envSpecularTexture()->_num_mips;
+
     _context._lightingmtl.bindParamFloat(_context._parEnvironmentMipBias, pbrcommon->environmentMipBias());
-    _context._lightingmtl.bindParamFloat(_context._parEnvironmentMipScale, pbrcommon->environmentMipScale());
+    _context._lightingmtl.bindParamFloat(_context._parEnvironmentMipScale, pbrcommon->environmentMipScale()*num_mips);
     _context._lightingmtl.bindParamFloat(_context._parSpecularMipBias, pbrcommon->_specularMipBias );
     /////////////////////////
     _context._lightingmtl._rasterstate.SetZWriteMask(false);

@@ -80,7 +80,7 @@ class SceneGraphApp(object):
 
     models = []
     models += [Model("data://tests/pbr1/pbr1")]
-    models += [Model("data://tests/pbr_calib.gltf")]
+    models += [Model("data://tests/pbr_calib.glb")]
     models += [Model("src://environ/objects/misc/ref/torus.glb")]
 
     ###################################

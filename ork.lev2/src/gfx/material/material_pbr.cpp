@@ -79,6 +79,8 @@ static FxPipeline::statelambda_t _createBasicStateLambda(const PBRMaterial* mtl)
     bool is_stereo        = CPD.isStereoOnePass();
     auto pbrcommon        = RCID._RCFD->_pbrcommon;
 
+    float num_mips = pbrcommon->envSpecularTexture()->_num_mips;
+
     FXI->BindParamVect3(mtl->_paramAmbientLevel, pbrcommon->_ambientLevel);
     FXI->BindParamFloat(mtl->_paramSpecularLevel, pbrcommon->_specularLevel);
     FXI->BindParamFloat(mtl->_parSpecularMipBias, pbrcommon->_specularMipBias);
@@ -88,7 +90,7 @@ static FxPipeline::statelambda_t _createBasicStateLambda(const PBRMaterial* mtl)
     FXI->BindParamCTex(mtl->_parMapDiffuseEnv, pbrcommon->envDiffuseTexture().get());
     FXI->BindParamCTex(mtl->_parMapBrdfIntegration, pbrcommon->_brdfIntegrationMap.get());
     FXI->BindParamFloat(mtl->_parEnvironmentMipBias, pbrcommon->_environmentMipBias);
-    FXI->BindParamFloat(mtl->_parEnvironmentMipScale, pbrcommon->_environmentMipScale);
+    FXI->BindParamFloat(mtl->_parEnvironmentMipScale, pbrcommon->_environmentMipScale*num_mips);
     FXI->BindParamFloat(mtl->_parDepthFogDistance, pbrcommon->_depthFogDistance);
     FXI->BindParamFloat(mtl->_parDepthFogPower, pbrcommon->_depthFogPower);
 
@@ -857,19 +859,20 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
     OrkAssert(_texColor != nullptr);
   }
   if (_texNormal == nullptr) {
-    auto loadreq = std::make_shared<asset::LoadRequest>();
-    loadreq->_asset_path = "src://effect_textures/default_normal";
-    _asset_texnormal = asset::AssetManager<lev2::TextureAsset>::load(loadreq);
-    _texNormal       = _asset_texnormal->GetTexture();
-    // logchan_pbr->log("substituted blue for non-existant normal texture");
+    static auto defntex = targ->TXI()->createColorTexture(fvec4(0.5,0.5,1,1),8,8);
+    _texNormal       = defntex;
     OrkAssert(_texNormal != nullptr);
   }
   if (_texMtlRuf == nullptr) {
-    auto loadreq = std::make_shared<asset::LoadRequest>();
-    loadreq->_asset_path = "src://effect_textures/white";
-    _asset_mtlruf = asset::AssetManager<lev2::TextureAsset>::load(loadreq);
-    _texMtlRuf    = _asset_mtlruf->GetTexture();
-    // logchan_pbr->log("substituted white for non-existant mtlrufao texture");
+
+    static auto defmrtex = targ->TXI()->createColorTexture(fvec4(1,1,0,1),8,8);
+    _texMtlRuf    = defmrtex;
+
+    if(_metallicFactor!=0.0f){
+      static auto metallictex = targ->TXI()->createColorTexture(fvec4(1,0,1,1),8,8);
+      _texMtlRuf    = metallictex;
+    }
+
     OrkAssert(_texMtlRuf != nullptr);
   }
   if (_texEmissive) {
