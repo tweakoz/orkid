@@ -26,6 +26,7 @@ parser.add_argument('--vrmode', action="store_true", help='run in vr' )
 parser.add_argument('--showgrid', action="store_true", help='show grid' )
 parser.add_argument('--showskeleton', action="store_true", help='show skeleton' )
 parser.add_argument("-f", '--forceregen', action="store_true", help='force asset regeneration' )
+parser.add_argument('--forwardpbr', action="store_true", help='use forward pbr renderer' )
 parser.add_argument("-m", "--model", type=str, required=False, default="data://tests/pbr1/pbr1", help='asset to load')
 parser.add_argument("-i", "--lightintensity", type=float, default=1.0, help='light intensity')
 parser.add_argument("-d", "--camdist", type=float, default=0.0, help='camera distance')
@@ -38,6 +39,7 @@ showgrid = args["showgrid"]
 modelpath = args["model"]
 lightintens = args["lightintensity"]
 camdist = args["camdist"]
+fwdpbr = args["forwardpbr"]
 
 if args["forceregen"]:
   os.environ["ORKID_LEV2_FORCE_MODEL_REGEN"] = "1"
@@ -68,9 +70,15 @@ class SceneGraphApp(object):
       "SpecularIntensity": lightintens*float(1),
     }
 
+    rendermodel = "DeferredPBR"
+    if fwdpbr:
+      rendermodel = "ForwardPBR"
+    if vrmode:
+      rendermodel = "PBRVR"
+
     createSceneGraph( app=self,
                       params_dict=params_dict,
-                      rendermodel="PBRVR" if vrmode else "DeferredPBR")
+                      rendermodel=rendermodel )
 
     self.model = Model(modelpath)
     self.sgnode = self.model.createNode("node",self.layer1)

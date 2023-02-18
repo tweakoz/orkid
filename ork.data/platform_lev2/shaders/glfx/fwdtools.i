@@ -42,11 +42,9 @@ libblock lib_fwd
       return (diffuse_term + specular_term) * atten * ndotl;
   }
   /////////////////////////////////////////////////////////
-  vec3 pbrEnvironmentLightingXXX(PbrData pbd){
+  vec3 pbrEnvironmentLightingXXX(PbrData pbd, vec3 eyepos){
 
     vec3 out_color;
-
-    vec3 eyepos = bool(gl_ViewportIndex) ? EyePostionR : EyePostionL;
 
     vec3 wpos = pbd._wpos;
     vec3 metalbase = vec3(0.04);
@@ -119,7 +117,7 @@ libblock lib_fwd
 
   /////////////////////////////////////////////////////////
 
-  vec3 forward_lighting(vec3 modcolor){
+  vec3 _forward_lighting(vec3 modcolor, vec3 eyepos){
 
     const float inverse_255 = 1.0/255.0;
 
@@ -144,7 +142,7 @@ libblock lib_fwd
       //return modcolor*pbd._albedo;
     //}
 
-    vec3 env_lighting = pbrEnvironmentLightingXXX(pbd);
+    vec3 env_lighting = pbrEnvironmentLightingXXX(pbd,eyepos);
 
     ///////////////////////////////////////////////
     // point lighting
@@ -166,4 +164,15 @@ libblock lib_fwd
     //           rufmtlamb.y * RoughnessFactor, //
     //           0);    
   }
+  vec3 forward_lighting_mono(vec3 modcolor){
+    vec3 eyepos = EyePostion;
+    return _forward_lighting(modcolor,eyepos);
+  }
+
+  vec3 forward_lighting_stereo(vec3 modcolor){
+    vec3 eyepos = bool(gl_ViewportIndex) ? EyePostionR : EyePostionL;
+    return _forward_lighting(modcolor,eyepos);
+  }
+
+
 }

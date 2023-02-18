@@ -594,21 +594,14 @@ vertex_shader vs_forward_skinned_stereo
   gl_ViewportMask[0] = 1;
   gl_SecondaryViewportMaskNV[0] = 2;
 }
+//////////////////////////////////////
 fragment_shader ps_forward_test 
 	: iface_forward
 	: lib_math
   : lib_brdf
   : lib_def
   : lib_fwd {
- 	out_color = vec4(forward_lighting(ModColor.xyz),1);
-}
-fragment_shader ps_forward_test_stereo
-  : iface_forward
-  : lib_math
-  : lib_brdf
-  : lib_def
-  : lib_fwd {
-  out_color = vec4(forward_lighting(ModColor.xyz),1);
+ 	out_color = vec4(forward_lighting_mono(ModColor.xyz),1);
 }
 fragment_shader ps_forward_test_instanced_mono
   : iface_forward
@@ -616,7 +609,16 @@ fragment_shader ps_forward_test_instanced_mono
   : lib_brdf
   : lib_def
   : lib_fwd {
-  out_color = vec4(forward_lighting(frg_modcolor.xyz),1);
+  out_color = vec4(forward_lighting_mono(frg_modcolor.xyz),1);
+}
+//////////////////////////////////////
+fragment_shader ps_forward_test_stereo
+  : iface_forward
+  : lib_math
+  : lib_brdf
+  : lib_def
+  : lib_fwd {
+  out_color = vec4(forward_lighting_stereo(ModColor.xyz),1);
 }
 fragment_shader ps_forward_test_instanced_stereo
 	: iface_forward
@@ -626,7 +628,7 @@ fragment_shader ps_forward_test_instanced_stereo
   : lib_fwd 
   : extension(GL_NV_stereo_view_rendering)
   : extension(GL_NV_viewport_array2) {
- 	out_color = vec4(forward_lighting(frg_modcolor.xyz),1);
+ 	out_color = vec4(forward_lighting_stereo(frg_modcolor.xyz),1);
 }
 
 ///////////////////////////////////////////////////////////////
