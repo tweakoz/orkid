@@ -88,8 +88,10 @@ AppInitData::opts_var_map_ptr_t AppInitData::parse(){
   }
   // https://download.nvidia.com/XFree86/Linux-x86_64/525.78.0/README/openglenvvariables.html
   if (_commandline_vars->count("nvsync")) {
-    if(vars["nvsync"].as<bool>()){
-      genviron.set("__GL_SYNC_TO_VBLANK", "1");
+
+    bool do_vsync = vars["nvsync"].as<bool>();
+    genviron.set("__GL_SYNC_TO_VBLANK", do_vsync ? "1" : "0" );
+    if(do_vsync){
       int vsport = vars["nvsport"].as<int>();
       genviron.set("__GL_SYNC_DISPLAY_DEVICE", FormatString("DFP-%d",vsport));
     }

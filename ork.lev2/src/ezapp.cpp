@@ -82,7 +82,7 @@ boost::program_options::options_description_easy_init OrkEzApp::createDefaultOpt
       ("height", po::value<int>()->default_value(720), "window height")//
       ("usevr", po::bool_switch()->default_value(false), "use vr output")
       ("nvmfa", po::value<int>()->default_value(1), "max prerender frames (NVidia)")
-      ("nvsync", po::bool_switch()->default_value(true), "force vsync (NVidia)")
+      ("nvsync", po::value<bool>()->default_value(true), "force vsync (NVidia)")
       ("nvsport", po::value<int>()->default_value(0), "vsync port # (0..3 -> DFP-0..DFP-3) (NVidia)");
 
   return rval;
