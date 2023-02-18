@@ -24,6 +24,7 @@ from common.scenegraph import createSceneGraph
 parser = argparse.ArgumentParser(description='scenegraph example')
 parser.add_argument('--vrmode', action="store_true", help='run in vr' )
 parser.add_argument('--showgrid', action="store_true", help='show grid' )
+parser.add_argument('--showskeleton', action="store_true", help='show skeleton' )
 parser.add_argument("-f", '--forceregen', action="store_true", help='force asset regeneration' )
 parser.add_argument("-m", "--model", type=str, required=False, default="data://tests/pbr1/pbr1", help='asset to load')
 parser.add_argument("-i", "--lightintensity", type=float, default=1.0, help='light intensity')
@@ -40,6 +41,9 @@ camdist = args["camdist"]
 
 if args["forceregen"]:
   os.environ["ORKID_LEV2_FORCE_MODEL_REGEN"] = "1"
+
+if args["showskeleton"]:
+  os.environ["ORKID_LEV2_SHOW_SKELETON"] = "1"
 
 
 ################################################################################

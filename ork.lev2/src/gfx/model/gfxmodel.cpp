@@ -8,6 +8,7 @@
 #include <ork/pch.h>
 #include <ork/kernel/orklut.hpp>
 #include <ork/kernel/prop.h>
+#include <ork/kernel/environment.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
@@ -19,6 +20,10 @@
 template class ork::orklut<ork::PoolString, ork::lev2::XgmMesh*>;
 int eggtestcount = 0;
 namespace ork { namespace lev2 {
+
+static bool SHOW_SKELETON(){
+  return genviron.has("ORKID_LEV2_SHOW_SKELETON");
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -51,7 +56,7 @@ XgmModelInst::XgmModelInst(const XgmModel* Model)
     , mMaterialStateInst(*this)
     , mbSkinned(false)
     , mBlenderZup(false)
-    , _drawSkeleton(true) {
+    , _drawSkeleton(false) {
 
   OrkAssert(Model != 0);
   miNumChannels = Model->skeleton().numJoints();
@@ -403,7 +408,7 @@ void XgmModel::RenderSkinned(
   ////////////////////////////////////////
   // Draw Skeleton
 
-  if (minst->_drawSkeleton) {
+  if (minst->_drawSkeleton or SHOW_SKELETON()) {
     const auto& worldpose = minst->_worldPose;
     pTARG->debugPushGroup("DrawSkeleton");
     pTARG->PushModColor(fvec4::White());
