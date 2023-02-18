@@ -169,10 +169,13 @@ libblock lib_fwd
     return _forward_lighting(modcolor,eyepos);
   }
 
+}
+
+libblock lib_fwd_stereo{
+
   vec3 forward_lighting_stereo(vec3 modcolor){
     vec3 eyepos = bool(gl_ViewportIndex) ? EyePostionR : EyePostionL;
     return _forward_lighting(modcolor,eyepos);
   }
 
-
-}
+} 

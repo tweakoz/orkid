@@ -617,7 +617,8 @@ fragment_shader ps_forward_test_stereo
   : lib_math
   : lib_brdf
   : lib_def
-  : lib_fwd {
+  : lib_fwd 
+  : lib_fwd_stereo {
   out_color = vec4(forward_lighting_stereo(ModColor.xyz),1);
 }
 fragment_shader ps_forward_test_instanced_stereo
@@ -626,6 +627,7 @@ fragment_shader ps_forward_test_instanced_stereo
   : lib_brdf
   : lib_def
   : lib_fwd 
+  : lib_fwd_stereo
   : extension(GL_NV_stereo_view_rendering)
   : extension(GL_NV_viewport_array2) {
  	out_color = vec4(forward_lighting_stereo(frg_modcolor.xyz),1);
