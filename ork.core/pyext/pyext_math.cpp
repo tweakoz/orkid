@@ -142,15 +142,19 @@ void pyinit_math(py::module& module_core) {
           .def(py::init<fvec3>())
           .def(py::init<fvec3, float>())
           .def(py::init<uint32_t>())
-          .def_property("x", [](fvec4& vec,float val) { return vec.x = val; }, //
-                             [](const fvec4& vec) -> float { return vec.x; })
+          .def_property("x", [](const fvec4& vec) -> float { return vec.x; },
+                             [](fvec4& vec,float val) { return vec.x = val; } //
+                             )
 
-          .def_property("y", [](fvec4& vec,float val) { return vec.y = val; }, //
-                             [](const fvec4& vec) -> float { return vec.y; })
-          .def_property("z", [](fvec4& vec,float val) { return vec.z = val; }, //
-                             [](const fvec4& vec) -> float { return vec.z; })
-          .def_property("w", [](fvec4& vec,float val) { return vec.w = val; }, //
-                             [](const fvec4& vec) -> float { return vec.w; })
+          .def_property("y", [](const fvec4& vec) -> float { return vec.y; },
+                             [](fvec4& vec,float val) { return vec.y = val; } //
+                             )
+          .def_property("z", [](const fvec4& vec) -> float { return vec.z; },
+                             [](fvec4& vec,float val) { return vec.z = val; } //
+                             )
+          .def_property("w", [](const fvec4& vec) -> float { return vec.w; },
+                             [](fvec4& vec,float val) { return vec.w = val; } //
+                             )
           .def("dot", &fvec4::dotWith)
           .def("cross", &fvec4::crossWith)
           .def("mag", &fvec4::magnitude)
@@ -312,6 +316,11 @@ void pyinit_math(py::module& module_core) {
               "compose",
               [](fmtx4_ptr_t mtx, const fvec3& pos, const fquat& rot, float scale) { //
                 mtx->compose(pos, rot, scale);
+              })
+          .def(
+              "dump",
+              [](fmtx4_ptr_t mtx, std::string name) { //
+                mtx->dump(name);
               })
           .def_static("perspective", &fmtx4::createPerspectiveMatrix)
           .def_static(

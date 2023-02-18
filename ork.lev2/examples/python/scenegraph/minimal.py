@@ -14,7 +14,7 @@ from orkengine.lev2 import *
 sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
 from common.cameras import *
 from common.shaders import *
-from common.primitives import createFrustumPrim
+from common.primitives import createFrustumPrim, createGridData
 from common.scenegraph import createSceneGraph
 
 ################################################################################
@@ -26,7 +26,7 @@ class MinimalSceneGraphApp(object):
     self.ezapp = OrkEzApp.create(self)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
-    setupUiCamera( app=self )
+    setupUiCamera( app=self, eye = vec3(10,10,10), constrainZ=True, up=vec3(0,1,0))
 
   ################################################
   # gpu data init:
@@ -46,10 +46,11 @@ class MinimalSceneGraphApp(object):
     # create frustum primitive / sgnode
     ###################################
 
-    vmatrix = ctx.lookAt( vec3(0,0,-1), # eye
-                          vec3(0,0,0),  # tgt
-                          vec3(0,1,0) ) # up
-    pmatrix = ctx.perspective(45,1,0.1,3)
+    pmatrix = ctx.perspective(45,1,0.25,3)
+
+    vmatrix = mtx4.lookAt(vec3(0, 0, 0),  # eye
+                          vec3(0, 0, -1), # tgt
+                          vec3(0, 1, 0))  # up
 
     frustum_prim = createFrustumPrim(ctx=ctx,vmatrix=vmatrix,pmatrix=pmatrix)
 
@@ -59,6 +60,14 @@ class MinimalSceneGraphApp(object):
                                rendermodel = "DeferredPBR" )
 
     self.primnode = frustum_prim.createNode("node1",self.layer1,pipeline)
+
+    ###################################
+    # create grid
+    ###################################
+
+    self.grid_data = createGridData()
+    self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
+    self.grid_node.sortkey = 1
 
   ################################################
   # update:
@@ -74,18 +83,28 @@ class MinimalSceneGraphApp(object):
   def onUpdate(self,updinfo):
     θ    = updinfo.absolutetime * math.pi * 2.0 * 0.1
     ###################################
-    distance = 10.0
-    eye = vec3(math.sin(θ), 1.0, -math.cos(θ)) * distance
-    self.camera.lookAt(eye, # eye
-                       vec3(0, 0, 0), # tgt
-                       vec3(0, 1, 0)) # up
-    ###################################
-    xf = self.primnode.worldTransform
-    xf.translation = vec3(0,0,0) 
-    xf.orientation = quat() 
-    xf.scale = 1+(1+math.sin(updinfo.absolutetime*2))
+
+    x = math.sin(θ)*10
+    z = -math.cos(θ)*10
+    y = 5+math.sin(θ*1.7)*2
+
+    m_world_to_view = mtx4.lookAt(vec3(x, y, z), # eye
+                                  vec3(0, 0, 0),  # tgt
+                                  vec3(0, 1, 0))  # up
+
+    m_view_to_world =  m_world_to_view.inverse()
+
+    self.primnode.worldTransform.directMatrix = m_view_to_world
+
     ###################################
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
+
+  ##############################################
+
+  def onUiEvent(self,uievent):
+    handled = self.uicam.uiEventHandler(uievent)
+    if handled:
+      self.camera.copyFrom( self.uicam.cameradata )
 
 ###############################################################################
 

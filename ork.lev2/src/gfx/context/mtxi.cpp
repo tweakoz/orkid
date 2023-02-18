@@ -242,6 +242,8 @@ fmtx4 MatrixStackInterface::Persp(float fovy, float aspect, float fnear, float f
     ffar = fnear + 1;
   }
 
+  //printf( "FOVY<%g> ASPECT<%g> NEAR<%g> FAR<%g>\n", fovy, aspect, fnear, ffar );
+
   float xmin, xmax, ymin, ymax;
   ymax = fnear * tanf(fovy * DTOR * 0.5f);
   ymin = -ymax;

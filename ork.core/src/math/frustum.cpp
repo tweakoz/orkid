@@ -85,7 +85,7 @@ void Frustum::set( const mtx44_type& IVPMatrix )
 {
 	float minv = -1.0f;
 	float maxv = 1.0f;
-	float minz = 0.0f;
+	float minz = -1.0f;
 	float maxz = 1.0f;
 
 	vec4_type Vx0y0(minv, maxv, minz);
@@ -93,10 +93,18 @@ void Frustum::set( const mtx44_type& IVPMatrix )
 	vec4_type Vx1y1(maxv, minv, minz);
 	vec4_type Vx0y1(minv, minv, minz);
 
+    //IVPMatrix.dump("IVPMatrix");
+    //IVPMatrix.inverse().dump("PMatrix");
+
 	mtx44_type::unProject( IVPMatrix, Vx0y0, mNearCorners[0] );
 	mtx44_type::unProject( IVPMatrix, Vx1y0, mNearCorners[1] );
 	mtx44_type::unProject( IVPMatrix, Vx1y1, mNearCorners[2] );
 	mtx44_type::unProject( IVPMatrix, Vx0y1, mNearCorners[3] );
+
+    //printf( "CalcCorners NC0<%g %g %g>\n", mNearCorners[0].x, mNearCorners[0].y, mNearCorners[0].z );
+    //printf( "CalcCorners NC1<%g %g %g>\n", mNearCorners[1].x, mNearCorners[1].y, mNearCorners[1].z );
+    //printf( "CalcCorners NC2<%g %g %g>\n", mNearCorners[2].x, mNearCorners[2].y, mNearCorners[2].z );
+    //printf( "CalcCorners NC3<%g %g %g>\n", mNearCorners[3].x, mNearCorners[3].y, mNearCorners[3].z );
 
 	Vx0y0.z = maxz;
 	Vx1y0.z = maxz;

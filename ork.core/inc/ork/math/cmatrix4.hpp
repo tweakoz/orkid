@@ -121,16 +121,20 @@ template <typename T> void Matrix44<T>::setToIdentity() {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void Matrix44<T>::dump(std::string name) const {
-  orkprintf("Matrix %p %s\n{	", this, name.c_str());
+  orkprintf("Matrix %p %s\n{\n", this, name.c_str());
 
-  for (int j = 0; j < 4; j++) {
+  Vector4<T> col0 = column(0);
+  Vector4<T> col1 = column(1);
+  Vector4<T> col2 = column(2);
+  Vector4<T> col3 = column(3);
 
-    for (int i = 0; i < 4; i++) {
-      orkprintf("%f ", elemXY(i,j));
-    }
+  orkprintf("   |   col0  |   col1  |   col2  |   col3  |\n" );
+  orkprintf("   | %+0.4f | %+0.4f | %+0.4f | %+0.4f |\n", col0.x, col1.x, col2.x, col3.x );
+  orkprintf("   | %+0.4f | %+0.4f | %+0.4f | %+0.4f |\n", col0.y, col1.y, col2.y, col3.y );
+  orkprintf("   | %+0.4f | %+0.4f | %+0.4f | %+0.4f |\n", col0.z, col1.z, col2.z, col3.z );
+  orkprintf("   | %+0.4f | %+0.4f | %+0.4f | %+0.4f |\n", col0.w, col1.w, col2.w, col3.w );
 
-    orkprintf("\n	");
-  }
+  orkprintf("\n	");
 
   orkprintf("\n}\n");
 }
