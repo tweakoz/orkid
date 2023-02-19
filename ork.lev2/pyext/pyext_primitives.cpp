@@ -10,6 +10,21 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::lev2 {
+
+
+template <typename T> std::function<scenegraph::drawable_node_ptr_t (T,std::string, scenegraph::layer_ptr_t, fxpipeline_ptr_t)> createNodeLambdaFromPrimType() {
+  return 
+  [](T prim,
+     std::string named, //
+     scenegraph::layer_ptr_t layer,
+     fxpipeline_ptr_t mtl_inst) -> scenegraph::drawable_node_ptr_t { //
+    auto node                                                 //
+        = prim->createNode(named, layer, mtl_inst);
+    node->_userdata->template makeValueForKey<T>("_primitive") = prim; // hold on to reference
+    return node;
+  };
+}
+
 void pyinit_primitives(py::module& module_lev2) {
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
@@ -55,17 +70,7 @@ void pyinit_primitives(py::module& module_lev2) {
 
       .def("gpuInit", [](primitives::CubePrimitive& prim, ctx_t& context) { prim.gpuInit(context.get()); })
       .def("renderEML", [](primitives::CubePrimitive& prim, ctx_t& context) { prim.renderEML(context.get()); })
-      .def(
-          "createNode",
-          [](primitives::cube_ptr_t prim,
-             std::string named, //
-             scenegraph::layer_ptr_t layer,
-             fxpipeline_ptr_t mtl_inst) -> scenegraph::drawable_node_ptr_t { //
-            auto node                                                 //
-                = prim->createNode(named, layer, mtl_inst);
-            node->_userdata->makeValueForKey<primitives::cube_ptr_t>("_primitive") = prim; // hold on to reference
-            return node;
-          });
+      .def("createNode", createNodeLambdaFromPrimType<primitives::cube_ptr_t>());
   type_codec->registerStdCodec<primitives::cube_ptr_t>(cubeprim_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto frusprim_type = //
@@ -108,18 +113,22 @@ void pyinit_primitives(py::module& module_lev2) {
 
           .def("gpuInit", [](primitives::frustum_ptr_t prim, ctx_t& context) { prim->gpuInit(context.get()); })
           .def("renderEML", [](primitives::frustum_ptr_t prim, ctx_t& context) { prim->renderEML(context.get()); })
-          .def(
-              "createNode",
-              [](primitives::frustum_ptr_t prim,
-                 std::string named, //
-                 scenegraph::layer_ptr_t layer,
-                 fxpipeline_ptr_t mtl_inst) -> scenegraph::drawable_node_ptr_t { //
-                auto node                                                 //
-                    = prim->createNode(named, layer, mtl_inst);
-                node->_userdata->makeValueForKey<primitives::frustum_ptr_t>("_primitive") = prim; // hold on to reference
-                return node;
-              });
+          .def("createNode", createNodeLambdaFromPrimType<primitives::frustum_ptr_t>());
   type_codec->registerStdCodec<primitives::frustum_ptr_t>(frusprim_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto pointsprim_type = //
+      py::class_<primitives::PointsPrimitive<SVtxV12C4>, primitives::points_v12c4_ptr_t>(primitives, "PointsPrimitiveC4")
+          .def("create", [](int numpoints){
+            return std::make_shared<primitives::PointsPrimitive<SVtxV12C4>>(numpoints);
+          })
+          .def("lock", [](primitives::points_v12c4_ptr_t prim, ctx_t& context) -> void* {
+            return (void*) prim->lock(context.get());
+          })
+          .def("unlock", [](primitives::points_v12c4_ptr_t prim, ctx_t& context){
+            return prim->unlock(context.get());
+          })
+          .def( "createNode", createNodeLambdaFromPrimType<primitives::points_v12c4_ptr_t>() );
+  type_codec->registerStdCodec<primitives::points_v12c4_ptr_t>(pointsprim_type);
   /////////////////////////////////////////////////////////////////////////////////
 }
 } // namespace ork::lev2
