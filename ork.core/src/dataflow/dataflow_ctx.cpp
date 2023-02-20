@@ -149,11 +149,11 @@ void dgcontext::Clear() {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-bool dgqueue::IsPending(dgmoduleinst_ptr_t mod) {
-  return (pending.find(mod) != pending.end());
+bool dgqueue::isPending(dgmoduleinst_ptr_t mod) {
+  return (_pending.find(mod) != _pending.end());
 }
 //////////////////////////////////////////////////////////
-int dgqueue::NumDownstream(dgmoduleinst_ptr_t mod) {
+int dgqueue::numDownstream(dgmoduleinst_ptr_t mod) {
   int inumoutcon = 0;
   int inumouts   = mod->numOutputs();
   for (int io = 0; io < inumouts; io++) {
@@ -163,7 +163,7 @@ int dgqueue::NumDownstream(dgmoduleinst_ptr_t mod) {
   return inumoutcon;
 }
 //////////////////////////////////////////////////////////
-int dgqueue::NumPendingDownstream(dgmoduleinst_ptr_t mod) {
+int dgqueue::numPendingDownstream(dgmoduleinst_ptr_t mod) {
   int inumoutcon = 0;
   int inumouts   = mod->numOutputs();
   for (int io = 0; io < inumouts; io++) {
@@ -172,7 +172,7 @@ int dgqueue::NumPendingDownstream(dgmoduleinst_ptr_t mod) {
     for (size_t ic = 0; ic < inumcon; ic++) {
       auto pinplug        = poutplug->connected(ic);
       dgmoduleinst_ptr_t pconmod = std::dynamic_pointer_cast<DgModuleInst>(pinplug->_owning_module);
-      inumoutcon += int(IsPending(pconmod));
+      inumoutcon += int(isPending(pconmod));
     }
   }
   return inumoutcon;
@@ -180,30 +180,30 @@ int dgqueue::NumPendingDownstream(dgmoduleinst_ptr_t mod) {
 //////////////////////////////////////////////////////////
 void dgqueue::addModule(dgmoduleinst_ptr_t mod) {
   mod->_key.mDepth    = 0;
-  mod->_key.mSerial   = -1;
+  mod->_key._serial   = NOSERIAL;
   int inumo            = mod->numOutputs();
   mod->_key.mModifier = s8(-inumo);
   for (int io = 0; io < inumo; io++) {
     mod->output(io)->_register = nullptr;
   }
-  pending.insert(mod);
+  _pending.insert(mod);
 }
 //////////////////////////////////////////////////////////
 void dgqueue::pruneRegisters(dgmoduleinst_ptr_t pmod) {
-  mCompCtx.prune(pmod);
+  _dgcontext->prune(pmod);
 }
 //////////////////////////////////////////////////////////
-void dgqueue::QueModule(dgmoduleinst_ptr_t pmod, int irecd) {
-  if (pending.find(pmod) != pending.end()) // is pmod pending ?
+void dgqueue::enqueueModule(dgmoduleinst_ptr_t pmod, int irecd) {
+  if (_pending.find(pmod) != _pending.end()) // is pmod pending ?
   {
-    if (mModStack.size()) { // check the top of stack for registers to prune
-      dgmoduleinst_ptr_t prev = mModStack.top();
+    if (_modulestack.size()) { // check the top of stack for registers to prune
+      dgmoduleinst_ptr_t prev = _modulestack.top();
       pruneRegisters(prev);
     }
-    mModStack.push(pmod);
+    _modulestack.push(pmod);
     ///////////////////////////////////
-    pmod->_key.mSerial = s8(mSerial++);
-    pending.erase(pmod);
+    pmod->_key._serial = ++_serial;
+    _pending.erase(pmod);
     ///////////////////////////////////
     int inuminps = pmod->numInputs();
     int inumouts = pmod->numOutputs();
@@ -219,7 +219,7 @@ void dgqueue::QueModule(dgmoduleinst_ptr_t pmod, int irecd) {
       outpluginst_ptr_t poutplug = pmod->output(io);
       if (poutplug->isConnected() || (inumincon != 0)) // if it has input or output connections
       {
-        mCompCtx.alloc(poutplug);
+        _dgcontext->alloc(poutplug);
       }
     }
     ///////////////////////////////////
@@ -251,22 +251,22 @@ void dgqueue::QueModule(dgmoduleinst_ptr_t pmod, int irecd) {
           auto pinp = poutplug->connected(ic);
           if (pinp && pinp->_owning_module != pmod) {
             dgmoduleinst_ptr_t dmod = std::dynamic_pointer_cast<DgModuleInst>(pinp->_owning_module);
-            if (false == HasPendingInputs(dmod)) {
-              QueModule(dmod, irecd + 1);
+            if (false == hasPendingInputs(dmod)) {
+              enqueueModule(dmod, irecd + 1);
             }
           }
         }
       }
     }
-    if (pending.size() != 0) {
+    if (_pending.size() != 0) {
       pruneRegisters(pmod);
     }
     ///////////////////////////////////
-    mModStack.pop();
+    _modulestack.pop();
   }
 }
 //////////////////////////////////////////////////////////
-void dgqueue::DumpOutputs(dgmoduleinst_ptr_t mod) const {
+void dgqueue::dumpOutputs(dgmoduleinst_ptr_t mod) const {
   int inump = mod->numOutputs();
   for (int ip = 0; ip < inump; ip++) {
     outpluginst_ptr_t poutplug = mod->output(ip);
@@ -277,7 +277,7 @@ void dgqueue::DumpOutputs(dgmoduleinst_ptr_t mod) const {
     printf("  mod<%s> out<%d> reg<%s:%d>\n", mod->name().c_str(), ip, regb.c_str(), reg_index);
   }
 }
-void dgqueue::DumpInputs(dgmoduleinst_ptr_t mod) const {
+void dgqueue::dumpInputs(dgmoduleinst_ptr_t mod) const {
   int inumins = mod->numInputs();
   for (int ip = 0; ip < inumins; ip++) {
     const auto pinplug = mod->input(ip);
@@ -300,7 +300,7 @@ void dgqueue::DumpInputs(dgmoduleinst_ptr_t mod) const {
     }
   }
 }
-bool dgqueue::HasPendingInputs(dgmoduleinst_ptr_t mod) {
+bool dgqueue::hasPendingInputs(dgmoduleinst_ptr_t mod) {
   bool bhaspending = false;
   int inumins      = mod->numInputs();
   for (int ip = 0; ip < inumins; ip++) {
@@ -308,12 +308,12 @@ bool dgqueue::HasPendingInputs(dgmoduleinst_ptr_t mod) {
     if (pinplug->connected()) {
       outpluginst_ptr_t pout                    = pinplug->connected();
       dgmoduleinst_ptr_t pconcon                = std::dynamic_pointer_cast<DgModuleInst>(pout->_owning_module);
-      std::set<dgmoduleinst_ptr_t>::iterator it = pending.find(pconcon);
+      std::set<dgmoduleinst_ptr_t>::iterator it = _pending.find(pconcon);
       if (pconcon == mod &&
           typeid(float) == pinplug->GetDataTypeId()) // connected to self and a float plug, must be an internal loop rate plug
       {                                              // pending.erase(it);
         // it = pending.end();
-      } else if (it != pending.end()) {
+      } else if (it != _pending.end()) {
         bhaspending = true;
       }
     }
@@ -321,9 +321,9 @@ bool dgqueue::HasPendingInputs(dgmoduleinst_ptr_t mod) {
   return bhaspending;
 }
 //////////////////////////////////////////////////////////
-dgqueue::dgqueue(graphinst_ptr_t pg, dgcontext& ctx)
-    : mSerial(0)
-    , mCompCtx(ctx) {
+dgqueue::dgqueue(graphinst_ptr_t pg, dgcontext_ptr_t ctx)
+    : _dgcontext(ctx)
+    , _serial(NOSERIAL) {
   /////////////////////////////////////////
   // add all modules
   /////////////////////////////////////////

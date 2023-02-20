@@ -30,6 +30,8 @@ class scheduler;
 class cluster;
 struct dgregister;
 struct dyn_external;
+struct dgqueue;
+struct dgcontext;
 
 struct GraphData;
 struct GraphInst;
@@ -47,6 +49,9 @@ struct DgModuleData;
 struct DgModuleInst;
 
 struct MorphableData;
+
+using dgqueue_ptr_t = std::shared_ptr<dgqueue>;
+using dgcontext_ptr_t = std::shared_ptr<dgcontext>;
 
 using moduledata_ptr_t = std::shared_ptr<ModuleData>;
 using moduledata_constptr_t = std::shared_ptr<const ModuleData>;
@@ -73,13 +78,15 @@ typedef int Affinity;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+constexpr size_t NOSERIAL = 0xffffffffffffffff;
+
 struct nodekey {
-  int mSerial;
+  size_t _serial;
   int mDepth;
   int mModifier;
 
   nodekey()
-      : mSerial(-1)
+      : _serial(NOSERIAL)
       , mDepth(-1)
       , mModifier(-1) {
   }
@@ -189,26 +196,24 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 struct dgqueue {
-  std::set<dgmoduleinst_ptr_t> pending;
-  int mSerial;
-  std::stack<dgmoduleinst_ptr_t> mModStack;
-  dgcontext& mCompCtx;
   //////////////////////////////////////////////////////////
-  bool IsPending(dgmoduleinst_ptr_t mod);
-  size_t NumPending() {
-    return pending.size();
-  }
-  int NumDownstream(dgmoduleinst_ptr_t mod);
-  int NumPendingDownstream(dgmoduleinst_ptr_t mod);
+  dgqueue(graphinst_ptr_t pg, dgcontext_ptr_t ctx);
+  //////////////////////////////////////////////////////////
+  bool isPending(dgmoduleinst_ptr_t mod);
+  size_t numPending();
+  int numDownstream(dgmoduleinst_ptr_t mod);
+  int numPendingDownstream(dgmoduleinst_ptr_t mod);
   void addModule(dgmoduleinst_ptr_t mod);
   void pruneRegisters(dgmoduleinst_ptr_t pmod);
-  void QueModule(dgmoduleinst_ptr_t pmod, int irecd);
-  bool HasPendingInputs(dgmoduleinst_ptr_t mod);
-  void DumpInputs(dgmoduleinst_ptr_t mod) const;
-  void DumpOutputs(dgmoduleinst_ptr_t mod) const;
+  void enqueueModule(dgmoduleinst_ptr_t pmod, int irecd);
+  bool hasPendingInputs(dgmoduleinst_ptr_t mod);
+  void dumpInputs(dgmoduleinst_ptr_t mod) const;
+  void dumpOutputs(dgmoduleinst_ptr_t mod) const;
   //////////////////////////////////////////////////////////
-  dgqueue(graphinst_ptr_t pg, dgcontext& ctx);
-  //////////////////////////////////////////////////////////
+  dgcontext_ptr_t _dgcontext;
+  size_t _serial = NOSERIAL;
+  std::set<dgmoduleinst_ptr_t> _pending;
+  std::stack<dgmoduleinst_ptr_t> _modulestack;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
