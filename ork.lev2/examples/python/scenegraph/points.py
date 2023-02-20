@@ -115,9 +115,9 @@ class PointsPrimApp(object):
     # fill in points
     ##################
 
-    data_ptr = numpy.array(points_prim.lock(ctx), copy=False)
+    data_ptr = points_prim.lock(ctx) # return V12C4 array view
+
     for i in range(NUMPOINTS):
-      VTX = data_ptr[i] # V12, C4
 
       x = random.uniform(-1,1)
       y = random.uniform(-1,1)
@@ -127,14 +127,15 @@ class PointsPrimApp(object):
       y = numpy.sign(y)*pow(y,4)
       z = numpy.sign(z)*pow(z,4)
 
+      VTX = data_ptr[i] # V12, C4
+
       VTX[0] = x*2    # float x
       VTX[1] = 2+y*2  # float y 
       VTX[2] = z*2    # float z 
 
-
       VTX[3] = 0x00004040 # uint32_t color (abgr)
 
-    points_prim.unlock(ctx)
+    points_prim.unlock(ctx) # unlock array view (writes to GPU)
 
     ##################
     # create shading pipeline
