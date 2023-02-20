@@ -18,7 +18,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::dataflow {
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
+template <typename T>
 dgregisterblock::dgregisterblock(const std::string& name, int isize)
     : mBlock(isize)
     , mName(name) {
@@ -29,6 +29,7 @@ dgregisterblock::dgregisterblock(const std::string& name, int isize)
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
+template <typename T>
 dgregister* dgregisterblock::Alloc() {
   dgregister* reg = mBlock.allocate();
   OrkAssert(reg != 0);
@@ -36,12 +37,14 @@ dgregister* dgregisterblock::Alloc() {
   return reg;
 }
 ///////////////////////////////////////////////////////////////////////////////
+template <typename T>
 void dgregisterblock::Free(dgregister* preg) {
   preg->_downstream_dependents.clear();
   mBlock.deallocate(preg);
   mAllocated.erase(preg);
 }
 ///////////////////////////////////////////////////////////////////////////////
+template <typename T>
 void dgregisterblock::Clear() {
   orkvector<dgregister*> deallocvec;
 
@@ -54,7 +57,8 @@ void dgregisterblock::Clear() {
 ///////////////////////////////////////////////////////////////////////////////
 // bind a module to a register
 ///////////////////////////////////////////////////////////////////////////////
-void dgregister::bindModule(dgmoduledata_ptr_t pmod) {
+template <typename T>
+void dgregister::bindModule(dgmoduleinst_ptr_t pmod) {
   if (pmod) {
 
     mpOwner = pmod;
@@ -67,12 +71,12 @@ void dgregister::bindModule(dgmoduledata_ptr_t pmod) {
 
     int inumouts = pmod->numOutputs();
     for (int io = 0; io < inumouts; io++) {
-      auto poutplug = pmod->output(io);
+      outpluginst_ptr_t poutplug = pmod->output(io);
       size_t inumcon             = poutplug->numConnections();
       for (size_t ic = 0; ic < inumcon; ic++) {
         auto pconnected = poutplug->connected(ic);
-        if (pconnected && pconnected->_parent_module != pmod) { // it is dependent on pmod
-          auto childmod = std::dynamic_pointer_cast<DgModuleData>(pconnected->_parent_module);
+        if (pconnected && pconnected->_owning_module != pmod) { // it is dependent on pmod
+          dgmoduleinst_ptr_t childmod = std::dynamic_pointer_cast<DgModuleInst>(pconnected->_owning_module);
           _downstream_dependents.insert(childmod);
         }
       }
@@ -80,7 +84,8 @@ void dgregister::bindModule(dgmoduledata_ptr_t pmod) {
   }
 }
 //////////////////////////////////
-dgregister::dgregister(dgmoduledata_ptr_t pmod, int idx)
+template <typename T>
+dgregister::dgregister(dgmoduleinst_ptr_t pmod, int idx)
     : mIndex(idx)
     , mpOwner(0)
     , mpBlock(nullptr) {
@@ -89,7 +94,8 @@ dgregister::dgregister(dgmoduledata_ptr_t pmod, int idx)
 ///////////////////////////////////////////////////////////////////////////////
 // prune no longer needed registers
 ///////////////////////////////////////////////////////////////////////////////
-void dgcontext::prune(dgmoduledata_ptr_t pmod) { // we are done with pmod, prune registers associated with it
+template <typename T>
+void dgcontext::prune(dgmoduleinst_ptr_t pmod) { // we are done with pmod, prune registers associated with it
 
   // check all register sets
   for (auto itc : mRegisterSets) {
@@ -123,18 +129,19 @@ void dgcontext::prune(dgmoduledata_ptr_t pmod) { // we are done with pmod, prune
   }
 }
 //////////////////////////////////////////////////////////
-dgregister* dgcontext::alloc(outplugdata_ptr_t poutplug) {
+template <typename T>
+void dgcontext::alloc(outpluginst_ptr_t poutplug) {
   const std::type_info* tinfo = &poutplug->GetDataTypeId();
   auto itc                    = mRegisterSets.find(tinfo);
   if (itc != mRegisterSets.end()) {
     dgregisterblock* regs = itc->second;
     dgregister* preg      = regs->Alloc();
-    preg->mpOwner         = std::dynamic_pointer_cast<DgModuleData>(poutplug->_parent_module);
-    return preg;
+    preg->mpOwner         = std::dynamic_pointer_cast<DgModuleInst>(poutplug->_owning_module);
+    poutplug->_register = preg;
   }
-  return nullptr;
 }
 //////////////////////////////////////////////////////////
+template <typename T>
 void dgcontext::SetRegisters(const std::type_info* pinfo, dgregisterblock* pregs) {
   mRegisterSets[pinfo] = pregs;
 }
@@ -144,6 +151,7 @@ dgregisterblock* dgcontext::GetRegisters(const std::type_info* pinfo) {
   return (it == mRegisterSets.end()) ? 0 : it->second;
 }
 //////////////////////////////////////////////////////////
+template <typename T>
 void dgcontext::Clear() {
   for (auto it : mRegisterSets) {
     dgregisterblock* pregs = it.second;
@@ -151,6 +159,7 @@ void dgcontext::Clear() {
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
+template <typename T>
 void dgcontext::assignSchedulerToGraphInst(graphinst_ptr_t gi, scheduler_ptr_t sched){
   if (gi->_scheduler) {
     sched->RemoveGraph(gi);

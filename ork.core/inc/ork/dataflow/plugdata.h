@@ -67,9 +67,13 @@ public:
     return mTypeId;
   }
 
+  template <typename T> std::shared_ptr<T> typedModuleData(){
+    return std::dynamic_pointer_cast<T>(_parent_module);
+  }
+
+  moduledata_ptr_t _parent_module;
   EPlugDir mePlugDir;
   EPlugRate mePlugRate;
-  moduledata_ptr_t _module;
   bool mbDirty;
   const std::type_info& mTypeId;
   std::string mPlugName;
@@ -78,11 +82,14 @@ public:
   }
 };
 
+template <typename T> std::shared_ptr<T> typedPlugData(plugdata_ptr_t p){
+    return std::dynamic_pointer_cast<T>(p);
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct InPlugData : public PlugData {
-
-public:
 
   DeclareAbstractX(InPlugData, PlugData);
 
@@ -91,34 +98,20 @@ public:
   InPlugData(moduledata_ptr_t pmod, EPlugRate epr, const std::type_info& tid, const char* pname);
   ~InPlugData();
 
-  bool isConnected() const {
-    return (mExternalOutput != 0);
-  }
-  bool isMorphable() const {
-    return (mpMorphable != 0);
-  }
-
-  outplugdata_ptr_t GetExternalOutput() const {
-    return mExternalOutput;
-  }
+  bool isConnected() const;
+  bool isMorphable() const;
 
   void SafeConnect(graphdata_ptr_t gr, outplugdata_ptr_t vt);
   void Disconnect();
-  void SetMorphable(morphable_ptr_t pmorph) {
-    mpMorphable = pmorph;
-  }
-  morphable_ptr_t GetMorphable() const {
-    return mpMorphable;
-  }
-
-  outplugdata_ptr_t mExternalOutput;                       // which EXTERNAL output plug are we connected to
-  orkvector<outplugdata_ptr_t> mInternalOutputConnections; // which output plugs IN THE SAME MODULE are connected to me ?
-  morphable_ptr_t mpMorphable;
 
   void ConnectInternal(outplugdata_ptr_t vt);
   void ConnectExternal(outplugdata_ptr_t vt);
 
   void DoSetDirty(bool bv) override; // virtual
+
+  outplugdata_ptr_t _connectedOutput;                       // which EXTERNAL output plug are we connected to
+  orkvector<outplugdata_ptr_t> mInternalOutputConnections; // which output plugs IN THE SAME MODULE are connected to me ?
+  morphable_ptr_t mpMorphable;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -137,19 +130,19 @@ public:
   }
 
   bool isConnected() const {
-    return (numExternalOutputConnections() != 0);
+    return (numConnections() != 0);
   }
 
-  size_t numExternalOutputConnections() const {
-    return mExternalInputConnections.size();
+  size_t numConnections() const {
+    return _connections.size();
   }
-  inplugdata_ptr_t externalOutputConnection(size_t idx) const {
-    return mExternalInputConnections[idx];
+  inplugdata_ptr_t connected(size_t idx) const {
+    return _connections[idx];
   }
 
   void disconnect(inplugdata_ptr_t pinplug);
 
-  mutable orkvector<inplugdata_ptr_t> mExternalInputConnections;
+  mutable orkvector<inplugdata_ptr_t> _connections;
 
 };
 

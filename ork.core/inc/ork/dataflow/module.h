@@ -42,6 +42,8 @@ public:
   void removeInput(inplugdata_ptr_t plg);
   void removeOutput(outplugdata_ptr_t plg);
   ////////////////////////////////////////////
+  void addDependency(outplugdata_ptr_t pout, inplugdata_ptr_t pin);
+  ////////////////////////////////////////////
   template <typename T> std::shared_ptr<inplugdata<T>> typedInput(int idx) {
     inplugdata_ptr_t plug = input(idx);
     return std::dynamic_pointer_cast<T>(plug);
@@ -51,8 +53,10 @@ public:
     outplugdata_ptr_t plug = output(idx);
     return std::dynamic_pointer_cast<T>(plug);
   }
+  ////////////////////////////////////////////
 
-  std::string mName;
+  std::string _name;
+  graphdata_ptr_t _graphdata;
   dataflow::node_hash mModuleHash;
   morphable_ptr_t mpMorphable;
   int _numStaticInputs;
@@ -60,8 +64,11 @@ public:
   std::set<inplugdata_ptr_t> mStaticInputs;
   std::set<outplugdata_ptr_t> mStaticOutputs;
 
-  void AddDependency(OutPlugData& pout, InPlugData& pin);
 };
+
+template <typename T> std::shared_ptr<T> typedModuleData(object_ptr_t m){
+  return std::dynamic_pointer_cast<T>(m);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -84,6 +91,7 @@ public:
   Affinity mAffinity;
   graphdata_ptr_t _parent;
   fvec2 mgvpos;
+  bool _prunable = true;
 
 protected:
   virtual void _doDivideWork(const scheduler& sch, cluster* clus);
@@ -119,13 +127,15 @@ struct ModuleInst {
 
 };
 
+template <typename T> std::shared_ptr<T> typedModuleInst(moduleinst_ptr_t m){
+  return std::dynamic_pointer_cast<T>(m);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct DgModuleInst : public ModuleInst {
 
   DgModuleInst(const DgModuleData& absdata);
-
-  nodekey _key;
 
 };
 

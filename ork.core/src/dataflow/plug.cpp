@@ -26,6 +26,13 @@
 namespace ork::dataflow {
 ///////////////////////////////////////////////////////////////////////////////
 
+bool InPlugData::isConnected() const {
+  return (_connectedOutput != 0);
+}
+bool InPlugData::isMorphable() const {
+  return (mpMorphable != 0);
+}
+
 bool gbGRAPHLIVE = false;
 void plugroot::describeX(class_t* clazz) {
 }

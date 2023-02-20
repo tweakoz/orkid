@@ -30,7 +30,9 @@ class scheduler;
 class cluster;
 struct dgregister;
 struct dyn_external;
-struct dgqueue;
+
+struct Topology;
+struct DgSorter;
 struct dgcontext;
 
 struct GraphData;
@@ -50,11 +52,10 @@ struct DgModuleInst;
 
 struct MorphableData;
 
-using dgqueue_ptr_t = std::shared_ptr<dgqueue>;
+using dgsorter_ptr_t = std::shared_ptr<DgSorter>;
 using dgcontext_ptr_t = std::shared_ptr<dgcontext>;
 
 using moduledata_ptr_t = std::shared_ptr<ModuleData>;
-using moduledata_constptr_t = std::shared_ptr<const ModuleData>;
 using moduleinst_ptr_t = std::shared_ptr<ModuleInst>;
 using dgmoduledata_ptr_t = std::shared_ptr<DgModuleData>;
 using dgmoduleinst_ptr_t = std::shared_ptr<DgModuleInst>;
@@ -71,26 +72,18 @@ using outpluginst_ptr_t = std::shared_ptr<OutPlugInst>;
 
 using morphable_ptr_t = std::shared_ptr<MorphableData>;
 
+using moduledata_constptr_t = std::shared_ptr<const ModuleData>;
+using inplugdata_constptr_t = std::shared_ptr<const InPlugData>;
+using outplugdata_constptr_t = std::shared_ptr<const OutPlugData>;
+
+using scheduler_ptr_t = std::shared_ptr<scheduler>;
+
+using topology_ptr_t = std::shared_ptr<Topology>;
+
 template <typename vartype> class plug;
 template <typename vartype> class inplug;
 template <typename vartype> class outplug;
 typedef int Affinity;
-
-///////////////////////////////////////////////////////////////////////////////
-
-constexpr size_t NOSERIAL = 0xffffffffffffffff;
-
-struct nodekey {
-  size_t _serial;
-  int mDepth;
-  int mModifier;
-
-  nodekey()
-      : _serial(NOSERIAL)
-      , mDepth(-1)
-      , mModifier(-1) {
-  }
-};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -136,13 +129,13 @@ class dgregisterblock;
 
 struct dgregister {
   int mIndex;
-  std::set<dgmoduleinst_ptr_t> _downstream_dependents;
-  dgmoduleinst_ptr_t mpOwner;
+  std::set<dgmoduledata_ptr_t> _downstream_dependents;
+  dgmoduledata_ptr_t mpOwner;
   dgregisterblock* mpBlock;
   //////////////////////////////////
-  void bindModule(dgmoduleinst_ptr_t pmod);
+  void bindModule(dgmoduledata_ptr_t pmod);
   //////////////////////////////////
-  dgregister(dgmoduleinst_ptr_t pmod = 0, int idx = -1);
+  dgregister(dgmoduledata_ptr_t pmod = 0, int idx = -1);
   //////////////////////////////////
 };
 
@@ -174,6 +167,10 @@ private:
 
 struct dgcontext {
 public:
+
+  void assignSchedulerToGraphInst(graphinst_ptr_t gi, scheduler_ptr_t sched);
+
+
   void SetRegisters(const std::type_info* pinfo, dgregisterblock*);
   dgregisterblock* GetRegisters(const std::type_info* pinfo);
   void Clear();
@@ -183,93 +180,106 @@ public:
   template <typename T> void SetRegisters(dgregisterblock* pregs) {
     SetRegisters(&typeid(T), pregs);
   }
-  void prune(dgmoduleinst_ptr_t mod);
-  void alloc(outpluginst_ptr_t poutplug);
-  void setProbeModule(dgmoduleinst_ptr_t pmod) {
-    _probemodule = pmod;
-  }
+  void prune(dgmoduledata_ptr_t mod);
+  dgregister* alloc(outplugdata_ptr_t poutplug);
 
   orkmap<const std::type_info*, dgregisterblock*> mRegisterSets;
-  dgmoduleinst_ptr_t _probemodule;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+// DgSorter : state tracking to help topo-sort dgmodules into execution order
+///////////////////////////////////////////////////////////////////////////////
 
-struct dgqueue {
+struct DgSorter {
+
+  static constexpr size_t NOSERIAL = 0xffffffffffffffff;
+
+  struct NodeInfo {
+    
+    size_t _serial;
+    int mDepth;
+    int mModifier;
+
+    NodeInfo()
+        : _serial(NOSERIAL)
+        , mDepth(-1)
+        , mModifier(-1) {
+    }
+  };
+
+  struct PlugInfo {
+    PlugInfo(){}
+
+    dgregister* _register = nullptr;
+  };
+
   //////////////////////////////////////////////////////////
-  dgqueue(graphinst_ptr_t pg, dgcontext_ptr_t ctx);
+  DgSorter(const GraphData* pg, dgcontext_ptr_t ctx);
   //////////////////////////////////////////////////////////
-  bool isPending(dgmoduleinst_ptr_t mod);
-  size_t numPending();
-  int numDownstream(dgmoduleinst_ptr_t mod);
-  int numPendingDownstream(dgmoduleinst_ptr_t mod);
-  void addModule(dgmoduleinst_ptr_t mod);
-  void pruneRegisters(dgmoduleinst_ptr_t pmod);
-  void enqueueModule(dgmoduleinst_ptr_t pmod, int irecd);
-  bool hasPendingInputs(dgmoduleinst_ptr_t mod);
-  void dumpInputs(dgmoduleinst_ptr_t mod) const;
-  void dumpOutputs(dgmoduleinst_ptr_t mod) const;
+  bool isPending(dgmoduledata_ptr_t mod) const;
+  size_t numPending() const;
+  int numDownstream(dgmoduledata_ptr_t mod) const;
+  int numPendingDownstream(dgmoduledata_ptr_t mod) const;
+  void addModule(dgmoduledata_ptr_t mod);
+  void pruneRegisters(dgmoduledata_ptr_t pmod);
+  void enqueueModule(dgmoduledata_ptr_t pmod, int irecd);
+  bool hasPendingInputs(dgmoduledata_ptr_t mod) const;
+  void dumpInputs(dgmoduledata_ptr_t mod) const;
+  void dumpOutputs(dgmoduledata_ptr_t mod) const;
+  topology_ptr_t generateTopology(dgcontext_ptr_t ctx);
   //////////////////////////////////////////////////////////
   dgcontext_ptr_t _dgcontext;
-  size_t _serial = NOSERIAL;
-  std::set<dgmoduleinst_ptr_t> _pending;
-  std::stack<dgmoduleinst_ptr_t> _modulestack;
+  const GraphData* _graphdata;
+  size_t _serial;
+  std::set<dgmoduledata_ptr_t> _pending;
+  std::stack<dgmoduledata_ptr_t> _modulestack;
+
+  std::map<dgmoduledata_ptr_t,NodeInfo> _nodeinfomap;
+  std::map<plugdata_ptr_t,PlugInfo> _pluginfomap;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+
+struct Topology {
+  std::vector<dgmoduledata_ptr_t> _flattened;
+  uint64_t _hash = 0;
+};
 
 struct GraphData : public ork::Object {
 
   DeclareConcreteX(GraphData, ork::Object);
 
 public:
+
+  static void addModule(graphdata_ptr_t gd, const std::string& named, dgmoduledata_ptr_t pchild);
+  static void removeModule(graphdata_ptr_t gd, dgmoduledata_ptr_t pchild);
+
+
   GraphData();
   ~GraphData();
-  // GraphData(const GraphData& oth);
 
-  virtual bool CanConnect(const inplugdata_ptr_t pin, const outplugdata_ptr_t pout) const;
-  bool IsComplete() const;
-  bool IsTopologyDirty() const {
-    return mbTopologyIsDirty;
-  }
-  dgmoduledata_ptr_t GetChild(const std::string& named) const;
-  dgmoduledata_ptr_t GetChild(size_t indexed) const;
-  const orklut<std::string, ork::Object*>& Modules() {
-    return mModules;
-  }
-  size_t GetNumChildren() const {
-    return mModules.size();
-  }
+  virtual bool canConnect(inplugdata_constptr_t pin, outplugdata_constptr_t pout) const;
+  bool isComplete() const;
+  bool isTopologyDirty() const;
+  dgmoduledata_ptr_t module(const std::string& named) const;
+  dgmoduledata_ptr_t module(size_t indexed) const;
+  size_t numModules() const;
 
-  void AddChild(const std::string& named, dgmoduledata_ptr_t pchild);
-  void AddChild(const char* named, dgmoduledata_ptr_t pchild);
-  void RemoveChild(dgmoduledata_ptr_t pchild);
-  void SetTopologyDirty(bool bv) {
-    mbTopologyIsDirty = bv;
-  }
-  recursive_mutex& GetMutex() {
-    return mMutex;
-  }
+  void markTopologyDirty(bool bv);
 
-  const orklut<int, dgmoduledata_ptr_t>& LockTopoSortedChildrenForRead(int lid) const;
-  orklut<int, dgmoduledata_ptr_t>& LockTopoSortedChildrenForWrite(int lid);
-  void UnLockTopoSortedChildren() const;
-  virtual void Clear() {
-  }
+  virtual void clear();
   void OnGraphChanged();
-
-protected:
-  LockedResource<orklut<int, dgmoduledata_ptr_t>> mChildrenTopoSorted;
-  orklut<std::string, ork::Object*> mModules;
-  bool mbTopologyIsDirty;
-  recursive_mutex mMutex;
 
   bool SerializeConnections(ork::reflect::serdes::ISerializer& ser) const;
   bool DeserializeConnections(ork::reflect::serdes::IDeserializer& deser);
   bool preDeserialize(reflect::serdes::IDeserializer&) override;
   bool postDeserialize(reflect::serdes::IDeserializer&) override;
+
+
+  orklut<std::string, object_ptr_t> _modules;
+  bool _topologyDirty;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -282,31 +292,24 @@ struct GraphInst {
   ////////////////////////////////////////////
   GraphInst();
   ~GraphInst();
-  GraphInst(const GraphInst& oth);
   ////////////////////////////////////////////
   size_t numModules() const;
   dgmoduleinst_ptr_t module(size_t indexed) const;
   ////////////////////////////////////////////
-  void BindExternal(dyn_external* pexternal);
-  void UnBindExternal();
-  dyn_external* GetExternal() const;
   void Clear();
   ////////////////////////////////////////////
-  bool IsPending() const;
-  bool IsDirty(void) const;
+  bool isPending() const;
+  bool isDirty(void) const;
   ////////////////////////////////////////////
-  void SetPending(bool bv);
-  ////////////////////////////////////////////
-  void RefreshTopology(dgcontext& ctx);
-  ////////////////////////////////////////////
-  void SetScheduler(scheduler* psch);
-  scheduler* GetScheduler() const {
-    return mScheduler;
-  }
+  void setPending(bool bv);
   ////////////////////////////////////////////
 
-  dyn_external* mExternal;
-  scheduler* mScheduler;
+  graphdata_ptr_t _graphdata;
+  topology_ptr_t _topology;
+  scheduler_ptr_t _scheduler;
+
+  std::vector<dgmoduleinst_ptr_t> _module_insts;
+
   bool mbInProgress;
   std::priority_queue<dgmoduledata_ptr_t> mModuleQueue;
   std::set<int> mOutputRegisters;
@@ -328,28 +331,28 @@ struct GraphInst {
 #define DeclareFloatXfPlug(name)                                                                                                   \
   float mf##name = 0.0f;                                                                                                                  \
   mutable ork::dataflow::floatxfinplug InpPlugName(name);                                                                                  \
-  ork::Object* InpAccessor##name() {                                                                                               \
+  object_ptr_t InpAccessor##name() {                                                                                               \
     return &InpPlugName(name);                                                                                                     \
   }
 
 #define DeclareVect3XfPlug(name)                                                                                                   \
   ork::fvec3 mv##name;                                                                                                             \
   mutable ork::dataflow::vect3xfinplug InpPlugName(name);                                                                                  \
-  ork::Object* InpAccessor##name() {                                                                                               \
+  object_ptr_t InpAccessor##name() {                                                                                               \
     return &InpPlugName(name);                                                                                                     \
   }
 
 #define DeclareFloatOutPlug(name)                                                                                                  \
   float OutDataName(name) = 0.0f;                                                                                                         \
   mutable ork::dataflow::outplug<float> OutPlugName(name);                                                                                 \
-  ork::Object* PlgAccessor##name() {                                                                                               \
+  object_ptr_t PlgAccessor##name() {                                                                                               \
     return &OutPlugName(name);                                                                                                     \
   }
 
 #define DeclareVect3OutPlug(name)                                                                                                  \
   ork::fvec3 OutDataName(name);                                                                                                    \
   mutable ork::dataflow::outplug<ork::fvec3> OutPlugName(name);                                                                            \
-  ork::Object* PlgAccessor##name() {                                                                                               \
+  object_ptr_t PlgAccessor##name() {                                                                                               \
     return &OutPlugName(name);                                                                                                     \
   }
 

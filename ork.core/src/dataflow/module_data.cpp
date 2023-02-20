@@ -38,12 +38,12 @@ namespace ork::dataflow {
 ///////////////////////////////////////////////////////////////////////////////
 void ModuleData::describeX(class_t* clazz) {
 }
-ModuleData::module()
+ModuleData::ModuleData()
     : mpMorphable(nullptr)
-    , mNumStaticInputs(0)
-    , mNumStaticOutputs(0) {
+    , _numStaticInputs(0)
+    , _numStaticOutputs(0) {
 }
-ModuleData::~module() {
+ModuleData::~ModuleData() {
 }
 
 void ModuleData::UpdateHash() {
@@ -69,55 +69,52 @@ moduledata_ptr_t ModuleData::child(int idx) const {
   return nullptr;
 }
 ////////////////////////////////////////////
-void ModuleData::OnTopologyUpdate(void) {
+void ModuleData::onTopologyUpdate(void) {
 }
-void ModuleData::OnStart() {
+void ModuleData::onStart() {
 }
-bool ModuleData::IsMorphable() const {
+bool ModuleData::isMorphable() const {
   return (mpMorphable != 0);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ModuleData::SetInputDirty(inplugdata_ptr_t plg) {
-  DoSetInputDirty(plg);
-}
-///////////////////////////////////////////////////////////////////////////////
-void ModuleData::SetOutputDirty(outplugdata_ptr_t plg) {
-  DoSetOutputDirty(plg);
-}
-///////////////////////////////////////////////////////////////////////////////
-void ModuleData::AddDependency(outplugbase& pout, inplugbase& pin) {
-  pin.ConnectInternal(&pout);
+void ModuleData::addDependency(outplugdata_ptr_t pout, inplugdata_ptr_t pin) {
+  //pin->connectInternal(&pout);
   // DepPlugSet::value_type v( & pin, & pout );
   // mDependencies.insert( v );
 }
+///////////////////////////////////////////////////////////////////////////////
 void ModuleData::addInput(inplugdata_ptr_t plg) {
   auto it = mStaticInputs.find(plg);
   if (it == mStaticInputs.end()) {
     mStaticInputs.insert(plg);
-    mNumStaticInputs++;
+    _numStaticInputs++;
   }
 }
+///////////////////////////////////////////////////////////////////////////////
 void ModuleData::addOutput(outplugdata_ptr_t plg) {
   auto it = mStaticOutputs.find(plg);
   if (it == mStaticOutputs.end()) {
     mStaticOutputs.insert(plg);
-    mNumStaticOutputs++;
+    _numStaticOutputs++;
   }
 }
+///////////////////////////////////////////////////////////////////////////////
 void ModuleData::removeInput(inplugdata_ptr_t plg) {
   auto it = mStaticInputs.find(plg);
   if (it != mStaticInputs.end()) {
     mStaticInputs.erase(it);
-    mNumStaticInputs--;
+    _numStaticInputs--;
   }
 }
+///////////////////////////////////////////////////////////////////////////////
 void ModuleData::removeOutput(outplugdata_ptr_t plg) {
   auto it = mStaticOutputs.find(plg);
   if (it != mStaticOutputs.end()) {
     mStaticOutputs.erase(it);
-    mNumStaticOutputs--;
+    _numStaticOutputs--;
   }
 }
+///////////////////////////////////////////////////////////////////////////////
 inplugdata_ptr_t ModuleData::staticInput(int idx) const {
   int size = mStaticInputs.size();
   auto it  = mStaticInputs.begin();
@@ -127,6 +124,7 @@ inplugdata_ptr_t ModuleData::staticInput(int idx) const {
   inplugdata_ptr_t rval = (it != mStaticInputs.end()) ? *it : nullptr;
   return rval;
 }
+///////////////////////////////////////////////////////////////////////////////
 outplugdata_ptr_t ModuleData::staticOutput(int idx) const {
   int size = mStaticOutputs.size();
   auto it  = mStaticOutputs.begin();
@@ -153,11 +151,13 @@ bool ModuleData::isDirty() const {
   }
   return rval;
 }
-inplugdata_ptr_t input(int idx) {
-  return 0;
+///////////////////////////////////////////////////////////////////////////////
+inplugdata_ptr_t ModuleData::input(int idx) {
+  return nullptr;
 }
-outplugdata_ptr_t output(int idx) {
-  return 0;
+///////////////////////////////////////////////////////////////////////////////
+outplugdata_ptr_t ModuleData::output(int idx) {
+  return nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
 inplugdata_ptr_t ModuleData::inputNamed(const PoolString& named) {
@@ -169,7 +169,7 @@ inplugdata_ptr_t ModuleData::inputNamed(const PoolString& named) {
       return rval;
     }
   }
-  return 0;
+  return nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
 outplugdata_ptr_t ModuleData::outputNamed(const PoolString& named) {

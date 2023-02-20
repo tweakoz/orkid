@@ -209,8 +209,8 @@ void psys_graph::PrepForStart() {
 
   ///////////////////////////////////////////////////
 
-  mdflowctx.Clear();
-  RefreshTopology(mdflowctx);
+  _topology = _graphdata->generateTopology();
+
   Reset(0);
 }
 
