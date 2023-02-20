@@ -236,6 +236,7 @@ using animdecompmatrixchannel_ptr_t = std::shared_ptr<XgmDecompMatrixAnimChannel
 using material_ptr_t           = std::shared_ptr<GfxMaterial>;
 using material_constptr_t      = std::shared_ptr<const GfxMaterial>;
 using pbrmaterial_ptr_t = std::shared_ptr<PBRMaterial>;
+using pbrmaterial_constptr_t = std::shared_ptr<const PBRMaterial>;
 using textureassetptr_t        = std::shared_ptr<TextureAsset>;
 using xgmmodelassetptr_t       = std::shared_ptr<XgmModelAsset>;
 using xgmanimassetptr_t        = std::shared_ptr<XgmAnimAsset>;

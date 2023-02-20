@@ -9,18 +9,26 @@ def createPipeline( app=None,
                     blending=tokens.OFF,
                     culltest=tokens.PASS_FRONT,
                     shaderfile=Path("orkshader://manip"),
+                    shadertext=None,
                     techname = "std_mono_fwd" ):
-    permu = FxPipelinePermutation()
-    permu.rendering_model = rendermodel
     material = FreestyleMaterial()
-    material.gpuInit(ctx,shaderfile)
+    if shadertext!=None:
+      material.gpuInitFromShaderText(ctx,"myshader",shadertext)
+    else:
+      material.gpuInit(ctx,shaderfile)
+    #
     material.rasterstate.blending = blending
     material.rasterstate.culltest = culltest
     material.rasterstate.depthtest = tokens.LEQUALS
+    #
+    permu = FxPipelinePermutation()
+    permu.rendering_model = rendermodel
     permu.technique = material.shader.technique(techname)
+    #
     pipeline = material.fxcache.findPipeline(permu) 
     pipeline.bindParam( material.param("mvp"), tokens.RCFD_Camera_MVP_Mono)
-    app.materials.add(material) # retain material
+    #
+    pipeline.sharedMaterial = material;
     return  pipeline
 
 ################################################################################

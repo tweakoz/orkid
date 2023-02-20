@@ -28,17 +28,17 @@ void pyinit_gfx_material(py::module& module_lev2) {
   // materialinst params proxy
   /////////////////////////////////////////////////////////////////////////////////
   struct matinst_param_proxy {
-    fxpipeline_ptr_t _materialinst;
+    fxpipeline_ptr_t _pipeline;
   };
   using matinst_param_proxy_ptr_t = std::shared_ptr<matinst_param_proxy>;
   auto materialinst_params_type   =                                                               //
-      py::class_<matinst_param_proxy, matinst_param_proxy_ptr_t>(module_lev2, "FxInstanceParams") //
+      py::class_<matinst_param_proxy, matinst_param_proxy_ptr_t>(module_lev2, "FxPipelineParams") //
           .def(
               "__repr__",
               [](matinst_param_proxy_ptr_t proxy) -> std::string {
                 std::string output;
-                output += FormatString("FxInstanceParams<%p>{\n", proxy.get());
-                for (auto item : proxy->_materialinst->_params) {
+                output += FormatString("FxPipelineParams<%p>{\n", proxy.get());
+                for (auto item : proxy->_pipeline->_params) {
                   const auto& k = item.first;
                   const auto& v = item.second;
                   auto vstr     = v.typestr();
@@ -53,7 +53,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
                 auto var_key = type_codec->decode(key);
                 auto var_val = type_codec->decode(val);
                 if (auto as_param = var_key.tryAs<fxparam_constptr_t>()) {
-                  proxy->_materialinst->_params[as_param.value()] = var_val;
+                  proxy->_pipeline->_params[as_param.value()] = var_val;
                 } else {
                   OrkAssert(false);
                 }
@@ -63,8 +63,8 @@ void pyinit_gfx_material(py::module& module_lev2) {
               [type_codec](matinst_param_proxy_ptr_t proxy, py::object key) -> py::object { //
                 auto var_key = type_codec->decode(key);
                 if (auto as_param = var_key.tryAs<fxparam_constptr_t>()) {
-                  auto it = proxy->_materialinst->_params.find(as_param.value());
-                  if (it != proxy->_materialinst->_params.end()) {
+                  auto it = proxy->_pipeline->_params.find(as_param.value());
+                  if (it != proxy->_pipeline->_params.end()) {
                     auto var_val = it->second;
                     return type_codec->encode(var_val);
                   }
@@ -122,8 +122,9 @@ void pyinit_gfx_material(py::module& module_lev2) {
                 if( py::isinstance<CrcString>(inp_value) ){
                   pipeline->bindParam(param.get(),py::cast<crcstring_ptr_t>(inp_value));
                 }
-                else if( py::isinstance<float>(inp_value) ){
-                  pipeline->bindParam(param.get(),py::cast<float>(inp_value));
+                else if( py::isinstance<py::float_>(inp_value) ){
+                  float fvalue = py::cast<float>(inp_value);
+                  pipeline->bindParam(param.get(),fvalue);
                 }
                 else if( py::isinstance<fvec2>(inp_value) ){
                   pipeline->bindParam(param.get(),py::cast<fvec2>(inp_value));
@@ -152,10 +153,13 @@ void pyinit_gfx_material(py::module& module_lev2) {
               })
           .def(
               "__setattr__",                                                                    //
-              [type_codec](fxpipeline_ptr_t instance, const std::string& key, py::object val) { //
+              [type_codec](fxpipeline_ptr_t pipeline, const std::string& key, py::object val) { //
                 auto varmap_val = type_codec->decode(val);
                 if (key == "technique")
-                  instance->_technique = varmap_val.get<fxtechnique_constptr_t>();
+                  pipeline->_technique = varmap_val.get<fxtechnique_constptr_t>();
+                else if(key=="sharedMaterial"){
+                  pipeline->_sharedMaterial = py::cast<material_ptr_t>(val); 
+                }
                 else {
                   OrkAssert(false);
                   // instance->_vars.setValueForKey(key, varmap_val);
@@ -167,18 +171,21 @@ void pyinit_gfx_material(py::module& module_lev2) {
               })
           .def(
               "__getattr__",                                                                  //
-              [type_codec](fxpipeline_ptr_t instance, const std::string& key) -> py::object { //
-                // OrkAssert(instance->_vars.hasKey(key));
+              [type_codec](fxpipeline_ptr_t pipeline, const std::string& key) -> py::object { //
+                // OrkAssert(pipeline->_vars.hasKey(key));
                 FxPipeline::varval_t varval;
-                // auto varmap_val = instance->_vars.valueForKey(key);
+                // auto varmap_val = pipeline->_vars.valueForKey(key);
                 if (key == "param") {
                   auto proxy           = std::make_shared<matinst_param_proxy>();
-                  proxy->_materialinst = instance;
+                  proxy->_pipeline = pipeline;
                   varval.set<matinst_param_proxy_ptr_t>(proxy);
                   return type_codec->encode(varval);
                 } else if (key == "technique") {
-                  varval.set<fxtechnique_constptr_t>(instance->_technique);
+                  varval.set<fxtechnique_constptr_t>(pipeline->_technique);
                   return type_codec->encode(varval);
+                }
+                else if(key=="sharedMaterial"){
+                  return type_codec->encode(pipeline->_sharedMaterial); 
                 }
                 return py::none(); // ;
               });

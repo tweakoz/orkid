@@ -19,6 +19,65 @@ from common.scenegraph import createSceneGraph
 
 ################################################################################
 
+SHADERTEXT = """
+////////////////////////////////////////
+fxconfig fxcfg_default { glsl_version = "330"; }
+////////////////////////////////////////
+uniform_set ublock_vtx {
+  mat4 mvp;
+  float pointsize;
+}
+////////////////////////////////////////
+uniform_set ublock_frg {
+  vec4 modcolor;
+}
+////////////////////////////////////////
+vertex_interface iface_vtx_points : ublock_vtx {
+  inputs {
+    vec4 pos : POSITION;
+    vec4 col : COLOR0;
+  }
+  outputs {
+    vec3 frg_col;
+  }
+}
+////////////////////////////////////////
+fragment_interface iface_frg_points : ublock_frg {
+  inputs {
+    vec3 frg_col;
+  }
+  outputs { layout(location = 0) vec4 out_clr; }
+}
+////////////////////////////////////////
+state_block sb_points : default {
+ CullTest  = OFF;  
+ DepthTest  = LEQUALS;  
+ DepthMask  = ON;  
+}
+////////////////////////////////////////
+vertex_shader vs_points : iface_vtx_points {
+  frg_col = col.xyz;
+  gl_Position = mvp * vec4(pos.x,pos.y,pos.z,1);
+  gl_PointSize = pointsize;
+}
+////////////////////////////////////////
+fragment_shader ps_points : iface_frg_points {
+  out_clr = vec4(frg_col.xyz, 1);
+}
+
+////////////////////////////////////////
+technique tek_points_fwd {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_points;
+    fragment_shader = ps_points;
+    state_block     = sb_points;
+  }
+}
+"""
+
+################################################################################
+
 class PointsPrimApp(object):
 
   def __init__(self):
@@ -43,28 +102,54 @@ class PointsPrimApp(object):
     createSceneGraph(app=self,rendermodel="ForwardPBR")
 
     ###################################
-    # create points primitive / sgnode
+    # create points primitive 
     ###################################
 
     NUMPOINTS = 262144
 
     points_prim = createPointsPrimV12C4(ctx=ctx,numpoints=NUMPOINTS)
 
+    ##################
+    # fill in points
+    ##################
+
     data_ptr = numpy.array(points_prim.lock(ctx), copy=False)
     for i in range(NUMPOINTS):
-      VTX = data_ptr[i]
-      VTX[0] = random.uniform(-2,2)  # float x
-      VTX[1] = random.uniform(0,4)  # float y 
-      VTX[2] = random.uniform(-2,2)  # float z 
-      VTX[3] = 0xffffffff # uint32_t color
+      VTX = data_ptr[i] # V12, C4
 
-    print(data_ptr)
+      x = random.uniform(-1,1)
+      y = random.uniform(-1,1)
+      z = random.uniform(-1,1)
+
+      x = numpy.sign(x)*x*x
+      y = numpy.sign(y)*y*y
+      z = numpy.sign(z)*z*z
+
+      VTX[0] = x*2    # float x
+      VTX[1] = 2+y*2  # float y 
+      VTX[2] = z*2    # float z 
+
+
+      VTX[3] = 0x0000ffff # uint32_t color (abgr)
+
     points_prim.unlock(ctx)
+
+    ##################
+    # create shading pipeline
+    ##################
 
     pipeline = createPipeline( app = self,
                                ctx = ctx,
-                               techname = "std_mono_fwd",
+                               shadertext = SHADERTEXT,
+                               techname = "tek_points_fwd",
                                rendermodel = "ForwardPBR" )
+
+    pointsize_param = pipeline.sharedMaterial.param("pointsize")
+    pipeline.bindParam( pointsize_param, float(1.5) ) # set pointsize
+
+    ##################
+    # create points sg node
+    ##################
 
     self.primnode = points_prim.createNode("node1",self.layer1,pipeline)
 

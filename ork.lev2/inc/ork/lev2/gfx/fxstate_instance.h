@@ -73,6 +73,7 @@ struct FxPipeline {
   void bindParam(fxparam_constptr_t p, varval_t v);
 
   GfxMaterial* _material = nullptr;
+  material_ptr_t _sharedMaterial = nullptr;
   fxtechnique_constptr_t _technique = nullptr;
   const FxPipelinePermutation __permutation;
   std::unordered_map<fxparam_constptr_t, varval_t> _params;
