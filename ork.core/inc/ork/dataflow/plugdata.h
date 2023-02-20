@@ -80,29 +80,6 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct PlugInst  {
-
-public:
-
-  PlugInst(moduleinst_ptr_t minst, plugdata_ptr_t plugdata);
-
-  const std::type_info& GetDataTypeId() const {
-    return mTypeId;
-  }
-
-  EPlugDir mePlugDir;
-  EPlugRate mePlugRate;
-  moduledata_ptr_t _module;
-  bool mbDirty;
-  const std::type_info& mTypeId;
-  std::string mPlugName;
-
-  virtual void DoSetDirty(bool bv) {
-  }
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 struct InPlugData : public PlugData {
 
 public:
@@ -151,9 +128,6 @@ struct OutPlugData : public PlugData {
   DeclareAbstractX(OutPlugData, PlugData);
 
 public:
-  dataflow::node_hash& RefHash() {
-    return mOutputHash;
-  }
 
   OutPlugData(moduledata_ptr_t pmod, EPlugRate epr, const std::type_info& tid, const char* pname);
   ~OutPlugData();
@@ -162,31 +136,21 @@ public:
     return 0;
   }
 
-  bool IsConnected() const {
-    return (GetNumExternalOutputConnections() != 0);
+  bool isConnected() const {
+    return (numExternalOutputConnections() != 0);
   }
 
-  size_t GetNumExternalOutputConnections() const {
+  size_t numExternalOutputConnections() const {
     return mExternalInputConnections.size();
   }
-  inplugdata_ptr_t GetExternalOutputConnection(size_t idx) const {
+  inplugdata_ptr_t externalOutputConnection(size_t idx) const {
     return mExternalInputConnections[idx];
   }
 
-  dgregister* GetRegister() const {
-    return mpRegister;
-  }
-  void SetRegister(dgregister* preg) {
-    mpRegister = preg;
-  }
-  void Disconnect(inplugdata_ptr_t pinplug);
+  void disconnect(inplugdata_ptr_t pinplug);
 
   mutable orkvector<inplugdata_ptr_t> mExternalInputConnections;
 
-  void DoSetDirty(bool bv) override; // virtual
-
-  dataflow::node_hash mOutputHash;
-  dgregister* mpRegister;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

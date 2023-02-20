@@ -65,6 +65,33 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct DgModuleData : public ModuleData {
+
+  DeclareAbstractX(DgModuleData, ModuleData);
+
+public:
+  DgModuleData();
+  void divideWork(const scheduler& sch, cluster* clus);
+  bool isGroup() const;
+  ////////////////////////////////////////////
+  // bool IsOutputDirty( const outplugdata_ptr_t pplug ) const;
+  ////////////////////////////////////////////
+  virtual void Compute(workunit* wu) = 0;
+  virtual void combineWork(const cluster* clus) = 0;
+  virtual void releaseWorkUnit(workunit* wu);
+  virtual graphdata_ptr_t childGraph() const;
+
+  Affinity mAffinity;
+  graphdata_ptr_t _parent;
+  fvec2 mgvpos;
+
+protected:
+  virtual void _doDivideWork(const scheduler& sch, cluster* clus);
+
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct ModuleInst {
 
   ModuleInst(moduledata_constptr_t absdata);
@@ -94,37 +121,11 @@ struct ModuleInst {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct DgModuleData : public ModuleData {
-
-  DeclareAbstractX(DgModuleData, ModuleData);
-
-public:
-  DgModuleData();
-  void divideWork(const scheduler& sch, cluster* clus);
-  bool isGroup() const;
-  ////////////////////////////////////////////
-  // bool IsOutputDirty( const outplugdata_ptr_t pplug ) const;
-  ////////////////////////////////////////////
-  virtual void Compute(workunit* wu) = 0;
-  virtual void combineWork(const cluster* clus) = 0;
-  virtual void releaseWorkUnit(workunit* wu);
-  virtual graphdata_ptr_t childGraph() const;
-
-  Affinity mAffinity;
-  graphdata_ptr_t _parent;
-  nodekey mKey;
-  fvec2 mgvpos;
-
-protected:
-  virtual void _doDivideWork(const scheduler& sch, cluster* clus);
-
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 struct DgModuleInst : public ModuleInst {
 
   DgModuleInst(const DgModuleData& absdata);
+
+  nodekey _key;
 
 };
 

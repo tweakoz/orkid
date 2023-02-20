@@ -129,11 +129,11 @@ class dgregisterblock;
 
 struct dgregister {
   int mIndex;
-  std::set<dgmoduleinst_ptr_t> mChildren;
+  std::set<dgmoduleinst_ptr_t> _downstream_dependents;
   dgmoduleinst_ptr_t mpOwner;
   dgregisterblock* mpBlock;
   //////////////////////////////////
-  void SetModule(dgmoduleinst_ptr_t pmod);
+  void bindModule(dgmoduleinst_ptr_t pmod);
   //////////////////////////////////
   dgregister(dgmoduleinst_ptr_t pmod = 0, int idx = -1);
   //////////////////////////////////
@@ -165,7 +165,7 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class dgcontext {
+struct dgcontext {
 public:
   void SetRegisters(const std::type_info* pinfo, dgregisterblock*);
   dgregisterblock* GetRegisters(const std::type_info* pinfo);
@@ -176,37 +176,36 @@ public:
   template <typename T> void SetRegisters(dgregisterblock* pregs) {
     SetRegisters(&typeid(T), pregs);
   }
-  void Prune(dgmoduledata_ptr_t mod);
-  void Alloc(outplugdata_ptr_t poutplug);
-  void SetProbeModule(dgmoduledata_ptr_t pmod) {
-    mpProbeModule = pmod;
+  void prune(dgmoduleinst_ptr_t mod);
+  void alloc(outpluginst_ptr_t poutplug);
+  void setProbeModule(dgmoduleinst_ptr_t pmod) {
+    _probemodule = pmod;
   }
 
-private:
   orkmap<const std::type_info*, dgregisterblock*> mRegisterSets;
-  dgmoduledata_ptr_t mpProbeModule;
+  dgmoduleinst_ptr_t _probemodule;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct dgqueue {
-  std::set<dgmoduledata_ptr_t> pending;
+  std::set<dgmoduleinst_ptr_t> pending;
   int mSerial;
-  std::stack<dgmoduledata_ptr_t> mModStack;
+  std::stack<dgmoduleinst_ptr_t> mModStack;
   dgcontext& mCompCtx;
   //////////////////////////////////////////////////////////
-  bool IsPending(dgmoduledata_ptr_t mod);
+  bool IsPending(dgmoduleinst_ptr_t mod);
   size_t NumPending() {
     return pending.size();
   }
-  int NumDownstream(dgmoduledata_ptr_t mod);
-  int NumPendingDownstream(dgmoduledata_ptr_t mod);
-  void AddModule(dgmoduledata_ptr_t mod);
-  void PruneRegisters(dgmoduledata_ptr_t pmod);
-  void QueModule(dgmoduledata_ptr_t pmod, int irecd);
-  bool HasPendingInputs(dgmoduledata_ptr_t mod);
-  void DumpInputs(dgmoduledata_ptr_t mod) const;
-  void DumpOutputs(dgmoduledata_ptr_t mod) const;
+  int NumDownstream(dgmoduleinst_ptr_t mod);
+  int NumPendingDownstream(dgmoduleinst_ptr_t mod);
+  void AddModule(dgmoduleinst_ptr_t mod);
+  void pruneRegisters(dgmoduleinst_ptr_t pmod);
+  void QueModule(dgmoduleinst_ptr_t pmod, int irecd);
+  bool HasPendingInputs(dgmoduleinst_ptr_t mod);
+  void DumpInputs(dgmoduleinst_ptr_t mod) const;
+  void DumpOutputs(dgmoduleinst_ptr_t mod) const;
   //////////////////////////////////////////////////////////
   dgqueue(const GraphInst* pg, dgcontext& ctx);
   //////////////////////////////////////////////////////////
@@ -375,7 +374,8 @@ struct GraphInst {
 
 
 #include "enum.h"
-#include "plug.h"
+#include "plugdata.h"
+#include "pluginst.h"
 #include "module.h"
 
 ///////////////////////////////////////////////////////////////////////////////
