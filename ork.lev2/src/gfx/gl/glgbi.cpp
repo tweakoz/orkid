@@ -786,8 +786,10 @@ void GlGeometryBufferInterface::DrawPrimitiveEML(const VertexBufferBase& VBuf, P
   ////////////////////////////////////////////////////////////////////
   GL_ERRORCHECK();
   bool bOK = BindVertexStreamSource(VBuf);
-  if (false == bOK)
+  if (false == bOK){
+    OrkAssert(false);
     return;
+  }
   ////////////////////////////////////////////////////////////////////
 
   // glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
@@ -855,6 +857,7 @@ void GlGeometryBufferInterface::DrawPrimitiveEML(const VertexBufferBase& VBuf, P
                         //OrkAssert( false );
                         break;*/
       default:
+        OrkAssert(false);
         break;
     }
     GL_ERRORCHECK();

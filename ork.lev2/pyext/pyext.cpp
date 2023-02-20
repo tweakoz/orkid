@@ -13,10 +13,15 @@
 namespace ork::lev2 {
 
 void pyinit_gfx(py::module& module_lev2);
+void pyinit_gfx_compositor(py::module& module_lev2);
+void pyinit_gfx_material(py::module& module_lev2);
+void pyinit_gfx_shader(py::module& module_lev2);
+void pyinit_gfx_renderer(py::module& module_lev2);
+void pyinit_gfx_qtez(py::module& module_lev2);
+void pyinit_gfx_buffers(py::module& module_lev2);
 void pyinit_primitives(py::module& module_lev2);
 void pyinit_scenegraph(py::module& module_lev2);
 void pyinit_meshutil(py::module& module_lev2);
-void pyinit_gfx_qtez(py::module& module_lev2);
 void pyinit_ui(py::module& module_lev2);
 
 void ClassInit();
@@ -108,6 +113,11 @@ PYBIND11_MODULE(_lev2, module_lev2) {
   module_lev2.def("lev2appinit", &lev2appinit);
   module_lev2.def("lev2apppoll", &lev2apppoll);
   //////////////////////////////////////////////////////////////////////////////
+  pyinit_gfx_material(module_lev2);
+  pyinit_gfx_shader(module_lev2);
+  pyinit_gfx_renderer(module_lev2);
+  pyinit_gfx_compositor(module_lev2);
+  pyinit_gfx_buffers(module_lev2);
   pyinit_gfx(module_lev2);
   pyinit_primitives(module_lev2);
   pyinit_scenegraph(module_lev2);

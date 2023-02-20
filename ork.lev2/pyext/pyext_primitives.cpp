@@ -6,11 +6,13 @@
 ////////////////////////////////////////////////////////////////
 
 #include "pyext.h"
+#include <pybind11/numpy.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::lev2 {
 
+using shape_t = pybind11::detail::any_container<ssize_t>;
 
 template <typename T> std::function<scenegraph::drawable_node_ptr_t (T,std::string, scenegraph::layer_ptr_t, fxpipeline_ptr_t)> createNodeLambdaFromPrimType() {
   return 
@@ -121,8 +123,9 @@ void pyinit_primitives(py::module& module_lev2) {
           .def("create", [](int numpoints){
             return std::make_shared<primitives::PointsPrimitive<SVtxV12C4>>(numpoints);
           })
-          .def("lock", [](primitives::points_v12c4_ptr_t prim, ctx_t& context) -> void* {
-            return (void*) prim->lock(context.get());
+          .def("lock", [](primitives::points_v12c4_ptr_t prim, ctx_t& context) -> py::array_t<SVtxV12C4> {
+            auto buffer = prim->lock(context.get());
+            return py::array_t<SVtxV12C4>(prim->_numpoints,buffer,py::none());
           })
           .def("unlock", [](primitives::points_v12c4_ptr_t prim, ctx_t& context){
             return prim->unlock(context.get());

@@ -9,20 +9,13 @@
 #include <ork/lev2/input/inputdevice.h>
 #include <ork/lev2/gfx/terrain/terrain_drawable.h>
 #include <ork/lev2/gfx/camera/cameradata.h>
+#include <ork/lev2/gfx/gfxvtxbuf.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::lev2 {
-void pyinit_gfx_compositor(py::module& module_lev2);
-void pyinit_gfx_material(py::module& module_lev2);
-void pyinit_gfx_shader(py::module& module_lev2);
-void pyinit_gfx_renderer(py::module& module_lev2);
 void pyinit_gfx(py::module& module_lev2) {
   auto type_codec = python::TypeCodec::instance();
-  pyinit_gfx_material(module_lev2);
-  pyinit_gfx_shader(module_lev2);
-  pyinit_gfx_renderer(module_lev2);
-  pyinit_gfx_compositor(module_lev2);
   /////////////////////////////////////////////////////////////////////////////////
   auto refresh_policy_type = //
       py::enum_<ERefreshPolicy>(module_lev2, "RefreshPolicy")
