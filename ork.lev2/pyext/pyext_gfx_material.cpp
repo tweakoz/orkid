@@ -18,6 +18,14 @@ void pyinit_gfx_material(py::module& module_lev2) {
   auto material_type = //
       py::class_<GfxMaterial, material_ptr_t>(module_lev2, "Material")
           .def_property("name", &GfxMaterial::GetName, &GfxMaterial::SetName)
+          /*.def_property(
+              "rasterstate",                                    //
+              [](material_ptr_t material) -> SRasterState  { //
+                return material->_rasterstate; 
+              },
+              [](material_ptr_t material, SRasterState rstate)  { //
+                material->_rasterstate=rstate; 
+              })*/
           .def("__repr__", [](material_ptr_t m) -> std::string {
             fxstring<64> fxs;
             fxs.format("GfxMaterial(%p:%s)", m.get(), m->mMaterialName.c_str());
@@ -206,7 +214,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
               })
           .def_property_readonly(
               "rasterstate",                                    //
-              [](freestyle_mtl_ptr_t material) -> const SRasterState&  { //
+              [](freestyle_mtl_ptr_t material) -> SRasterState&  { //
                 return material->_rasterstate; 
               })
           .def(

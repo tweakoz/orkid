@@ -6,6 +6,7 @@ tokens = CrcStringProxy()
 def createPipeline( app=None,
                     ctx=None,
                     rendermodel="ForwardPBR",
+                    depthtest=tokens.LEQUALS,
                     blending=tokens.OFF,
                     culltest=tokens.PASS_FRONT,
                     shaderfile=Path("orkshader://manip"),
@@ -19,7 +20,7 @@ def createPipeline( app=None,
     #
     material.rasterstate.blending = blending
     material.rasterstate.culltest = culltest
-    material.rasterstate.depthtest = tokens.LEQUALS
+    material.rasterstate.depthtest = depthtest
     #
     permu = FxPipelinePermutation()
     permu.rendering_model = rendermodel

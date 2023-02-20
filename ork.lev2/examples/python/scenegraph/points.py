@@ -49,12 +49,6 @@ fragment_interface iface_frg_points : ublock_frg {
   outputs { layout(location = 0) vec4 out_clr; }
 }
 ////////////////////////////////////////
-state_block sb_points : default {
- CullTest  = OFF;  
- DepthTest  = LEQUALS;  
- DepthMask  = ON;  
-}
-////////////////////////////////////////
 vertex_shader vs_points : iface_vtx_points {
   frg_col = col.xyz;
   gl_Position = mvp * vec4(pos.x,pos.y,pos.z,1);
@@ -71,7 +65,7 @@ technique tek_points_fwd {
   pass p0 {
     vertex_shader   = vs_points;
     fragment_shader = ps_points;
-    state_block     = sb_points;
+    state_block     = default;
   }
 }
 """
@@ -102,6 +96,14 @@ class PointsPrimApp(object):
     createSceneGraph(app=self,rendermodel="ForwardPBR")
 
     ###################################
+    # create grid
+    ###################################
+
+    self.grid_data = createGridData()
+    self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
+    self.grid_node.sortkey = 1
+
+    ###################################
     # create points primitive 
     ###################################
 
@@ -121,16 +123,16 @@ class PointsPrimApp(object):
       y = random.uniform(-1,1)
       z = random.uniform(-1,1)
 
-      x = numpy.sign(x)*x*x
-      y = numpy.sign(y)*y*y
-      z = numpy.sign(z)*z*z
+      x = numpy.sign(x)*pow(x,4)
+      y = numpy.sign(y)*pow(y,4)
+      z = numpy.sign(z)*pow(z,4)
 
       VTX[0] = x*2    # float x
       VTX[1] = 2+y*2  # float y 
       VTX[2] = z*2    # float z 
 
 
-      VTX[3] = 0x0000ffff # uint32_t color (abgr)
+      VTX[3] = 0x00004040 # uint32_t color (abgr)
 
     points_prim.unlock(ctx)
 
@@ -141,25 +143,21 @@ class PointsPrimApp(object):
     pipeline = createPipeline( app = self,
                                ctx = ctx,
                                shadertext = SHADERTEXT,
+                               blending=tokens.ADDITIVE,
+                               depthtest=tokens.LEQUALS,
                                techname = "tek_points_fwd",
                                rendermodel = "ForwardPBR" )
 
     pointsize_param = pipeline.sharedMaterial.param("pointsize")
-    pipeline.bindParam( pointsize_param, float(1.5) ) # set pointsize
+    pipeline.bindParam( pointsize_param, float(2.0) ) # set pointsize
 
     ##################
     # create points sg node
     ##################
 
     self.primnode = points_prim.createNode("node1",self.layer1,pipeline)
+    self.primnode.sortkey = 2;
 
-    ###################################
-    # create grid
-    ###################################
-
-    self.grid_data = createGridData()
-    self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
-    self.grid_node.sortkey = 1
 
   ################################################
 
