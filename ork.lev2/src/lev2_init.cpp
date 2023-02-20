@@ -108,7 +108,7 @@ void ClassInit() {
   XgmVect4AnimChannel::GetClassStatic();
   XgmDecompMatrixAnimChannel::GetClassStatic();
 
-  particle::ParticleModule::GetClassStatic();
+  /*particle::ParticleModule::GetClassStatic();
   particle::ParticlePool::GetClassStatic();
   particle::ExtConnector::GetClassStatic();
 
@@ -131,9 +131,9 @@ void ClassInit() {
   particle::SpriteRenderer::GetClassStatic();
 
   ork::dataflow::floatxfitembase::GetClassStatic();
-  ork::dataflow::floatxfmsbcurve::GetClassStatic();
+  ork::dataflow::floatxfmsbcurve::GetClassStatic();*/
 
-  dataflow::outplug<proctex::ImgBase>::GetClassStatic();
+  /*dataflow::outplug<proctex::ImgBase>::GetClassStatic();
   dataflow::inplug<proctex::ImgBase>::GetClassStatic();
 
   proctex::ProcTex::GetClassStatic();
@@ -162,7 +162,7 @@ void ClassInit() {
   proctex::SphRefract::GetClassStatic();
   proctex::H2N::GetClassStatic();
   proctex::UvMap::GetClassStatic();
-  proctex::Kaled::GetClassStatic();
+  proctex::Kaled::GetClassStatic();*/
 
   RegisterClassX(PointLightData);
 
@@ -185,7 +185,7 @@ void ClassInit() {
 
   RegisterClassX(PostCompositingNode);
   RegisterClassX(ScaleBiasCompositingNode);
-  RegisterClassX(PtxCompositingNode);
+  //RegisterClassX(PtxCompositingNode);
   RegisterClassX(Op2CompositingNode);
   RegisterClassX(NodeCompositingTechnique);
   RegisterClassX(PBRMaterial);
