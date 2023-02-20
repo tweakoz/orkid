@@ -25,7 +25,7 @@ namespace ork { namespace dataflow {
 ///////////////////////////////////////////////////////////////////////////////
 void graph_data::describeX(object::ObjectClass* clazz) {
 
-  clazz
+/*  clazz
       ->directMapProperty(
           "Modules",             //
           &graph_data::mModules) //
@@ -45,6 +45,7 @@ void graph_data::describeX(object::ObjectClass* clazz) {
   clazz->annotate(
       "editor.object.ops", //
       ConstString("dfgraph:dflowgraphedit import:dflowgraphimport export:dflowgraphexport"));
+      */
 }
 ///////////////////////////////////////////////////////////////////////////////
 graph_data::graph_data()
@@ -260,9 +261,6 @@ bool graph_data::IsComplete() const {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void graph_inst::describeX(object::ObjectClass* clazz) {
-}
-///////////////////////////////////////////////////////////////////////////////
 graph_inst::graph_inst()
     : mExternal(0) 
     , mScheduler(0)
@@ -285,6 +283,7 @@ graph_inst::graph_inst(const graph_inst& oth)
     , mScheduler(0)
     , mbInProgress(false) {
 }
+/*
 ///////////////////////////////////////////////////////////////////////////////
 void graph_inst::doNotify(const ork::event::Event* event) {
   if (auto pev = dynamic_cast<const ItemRemovalEvent*>(event)) {
@@ -305,6 +304,7 @@ void graph_inst::doNotify(const ork::event::Event* event) {
     }
   }
 }
+*/
 ///////////////////////////////////////////////////////////////////////////////
 void graph_inst::Clear() {
   while (false == mModuleQueue.empty())

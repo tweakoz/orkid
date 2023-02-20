@@ -25,8 +25,46 @@ namespace ork { namespace dataflow {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef PoolString MorphKey;
-typedef PoolString MorphGroup;
+class workunit;
+class scheduler;
+class cluster;
+struct dgregister;
+
+struct GraphData;
+struct GraphInst;
+struct InPlugData;
+struct OutPlugData;
+
+struct ModuleData;
+struct ModuleInst;
+struct DgModuleData;
+struct DgModuleInst;
+
+struct MorphableData;
+
+using moduledata_ptr_t = std::shared_ptr<ModuleData>;
+using moduledata_constptr_t = std::shared_ptr<const ModuleData>;
+using moduleinst_ptr_t = std::shared_ptr<ModuleInst>;
+using dgmoduledata_ptr_t = std::shared_ptr<DgModuleData>;
+using dgmoduleinst_ptr_t = std::shared_ptr<DgModuleInst>;
+
+using graphdata_ptr_t = std::shared_ptr<GraphData>;
+using graphinst_ptr_t = std::shared_ptr<GraphInst>;
+
+using inplugdata_ptr_t = std::shared_ptr<InPlugData>;
+using outplugdata_ptr_t = std::shared_ptr<OutPlugData>;
+
+using morphable_ptr_t = std::shared_ptr<MorphableData>;
+
+template <typename vartype> class plug;
+template <typename vartype> class inplug;
+template <typename vartype> class outplug;
+typedef int Affinity;
+
+///////////////////////////////////////////////////////////////////////////////
+
+typedef std::string MorphKey;
+typedef std::string MorphGroup;
 
 enum EMorphEventType { EMET_WRITE = 0, EMET_MORPH, EMET_END };
 
@@ -84,25 +122,6 @@ struct nodekey {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename vartype> class plug;
-template <typename vartype> class inplug;
-template <typename vartype> class outplug;
-class module;
-class graph_data;
-class graph_inst;
-class inplugbase;
-class outplugbase;
-typedef int Affinity;
-
-///////////////////////////////////////////////////////////////////////////////
-
-class workunit;
-class scheduler;
-class cluster;
-struct dgregister;
-
-///////////////////////////////////////////////////////////////////////////////
-
 class node_hash {
 public:
   node_hash() {
@@ -144,48 +163,23 @@ template <typename T> int MaxFanout(void);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class plugroot : public ork::Object {
-  DeclareAbstractX(plugroot, ork::Object);
+class PlugData : public ork::Object {
+  DeclareAbstractX(PlugData, ork::Object);
 
 public:
-  plugroot(module* pmod, EPlugDir edir, EPlugRate epr, const std::type_info& tid, const char* pname);
-  EPlugDir GetPlugDirection() const {
-    return mePlugDir;
-  }
-  module* GetModule() const {
-    return mModule;
-  }
-  bool IsDirty() const {
-    return mbDirty;
-  }
-  void SetDirty(bool bv);
-  const ork::PoolString& GetName() const {
-    return mPlugName;
-  }
-  void SetName(const ork::PoolString& newname) {
-    mPlugName = newname;
-  }
-  void SetModule(module* newmod) {
-    mModule = newmod;
-  }
-  void SetRate(EPlugRate newrate) {
-    mePlugRate = newrate;
-  }
+
+  PlugData(moduledata_ptr_t pmod, EPlugDir edir, EPlugRate epr, const std::type_info& tid, const char* pname);
+
   const std::type_info& GetDataTypeId() const {
     return mTypeId;
   }
 
-  EPlugRate GetPlugRate() const {
-    return mePlugRate;
-  }
-
-private:
   EPlugDir mePlugDir;
   EPlugRate mePlugRate;
-  module* mModule;
+  moduledata_ptr_t _module;
   bool mbDirty;
   const std::type_info& mTypeId;
-  ork::PoolString mPlugName;
+  std::string mPlugName;
 
   virtual void DoSetDirty(bool bv) {
   }
@@ -193,57 +187,60 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class inplugbase : public plugroot {
-  friend class module;
-  DeclareAbstractX(inplugbase, plugroot);
+struct InPlugData : public PlugData {
 
 public:
-  bool IsConnected() const {
+
+  DeclareAbstractX(InPlugData, PlugData);
+
+public:
+
+  InPlugData(moduledata_ptr_t pmod, EPlugRate epr, const std::type_info& tid, const char* pname);
+  ~InPlugData();
+
+  bool isConnected() const {
     return (mExternalOutput != 0);
   }
-  bool IsMorphable() const {
+  bool isMorphable() const {
     return (mpMorphable != 0);
   }
 
-  inplugbase(module* pmod, EPlugRate epr, const std::type_info& tid, const char* pname);
-  ~inplugbase();
-  outplugbase* GetExternalOutput() const {
+  outplugdata_ptr_t GetExternalOutput() const {
     return mExternalOutput;
   }
-  void SafeConnect(graph_data& gr, outplugbase* vt);
+
+  void SafeConnect(graphdata_ptr_t gr, outplugdata_ptr_t vt);
   void Disconnect();
-  void SetMorphable(morphable* pmorph) {
+  void SetMorphable(morphable_ptr_t pmorph) {
     mpMorphable = pmorph;
   }
-  morphable* GetMorphable() const {
+  morphable_ptr_t GetMorphable() const {
     return mpMorphable;
   }
 
-protected:
-  outplugbase* mExternalOutput;                       // which EXTERNAL output plug are we connected to
-  orkvector<outplugbase*> mInternalOutputConnections; // which output plugs IN THE SAME MODULE are connected to me ?
-  morphable* mpMorphable;
+  outplugdata_ptr_t mExternalOutput;                       // which EXTERNAL output plug are we connected to
+  orkvector<outplugdata_ptr_t> mInternalOutputConnections; // which output plugs IN THE SAME MODULE are connected to me ?
+  morphable_ptr_t mpMorphable;
 
-  void ConnectInternal(outplugbase* vt);
-  void ConnectExternal(outplugbase* vt);
+  void ConnectInternal(outplugdata_ptr_t vt);
+  void ConnectExternal(outplugdata_ptr_t vt);
 
-private:
   void DoSetDirty(bool bv) override; // virtual
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class outplugbase : public plugroot {
-  friend class inplugbase;
-  DeclareAbstractX(outplugbase, plugroot);
+struct OutPlugData : public PlugData {
+
+  DeclareAbstractX(OutPlugData, PlugData);
 
 public:
   dataflow::node_hash& RefHash() {
     return mOutputHash;
   }
 
-  outplugbase(module* pmod, EPlugRate epr, const std::type_info& tid, const char* pname);
-  ~outplugbase();
+  OutPlugData(moduledata_ptr_t pmod, EPlugRate epr, const std::type_info& tid, const char* pname);
+  ~OutPlugData();
 
   virtual int MaxFanOut() const {
     return 0;
@@ -256,7 +253,7 @@ public:
   size_t GetNumExternalOutputConnections() const {
     return mExternalInputConnections.size();
   }
-  inplugbase* GetExternalOutputConnection(size_t idx) const {
+  inplugdata_ptr_t GetExternalOutputConnection(size_t idx) const {
     return mExternalInputConnections[idx];
   }
 
@@ -266,12 +263,10 @@ public:
   void SetRegister(dgregister* preg) {
     mpRegister = preg;
   }
-  void Disconnect(inplugbase* pinplug);
+  void Disconnect(inplugdata_ptr_t pinplug);
 
-protected:
-  mutable orkvector<inplugbase*> mExternalInputConnections;
+  mutable orkvector<inplugdata_ptr_t> mExternalInputConnections;
 
-private:
   void DoSetDirty(bool bv) override; // virtual
 
   dataflow::node_hash mOutputHash;
@@ -281,29 +276,29 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename vartype> //
-class outplug : public outplugbase {
-  DeclareTemplateConcreteX(outplug<vartype>, outplugbase);
+class outplug : public OutPlugData {
+  DeclareTemplateConcreteX(outplug<vartype>, OutPlugData);
 
 public:
   void operator=(const outplug<vartype>& oth) {
     new (this) outplug<vartype>(oth);
   }
   outplug(const outplug<vartype>& oth)
-      : outplugbase(oth.GetModule(), oth.GetPlugRate(), oth.GetDataTypeId(), oth.GetName().c_str())
+      : OutPlugData(oth.GetModule(), oth.GetPlugRate(), oth.GetDataTypeId(), oth.GetName().c_str())
       , mOutputData(oth.mOutputData) {
   }
 
   outplug()
-      : outplugbase(0, EPR_EVENT, typeid(vartype), 0)
+      : OutPlugData(0, EPR_EVENT, typeid(vartype), 0)
       , mOutputData(0) {
   }
 
-  outplug(module* pmod, EPlugRate epr, const vartype* def, const char* pname)
-      : outplugbase(pmod, epr, typeid(vartype), pname)
+  outplug(moduledata_ptr_t pmod, EPlugRate epr, const vartype* def, const char* pname)
+      : OutPlugData(pmod, epr, typeid(vartype), pname)
       , mOutputData(def) {
   }
-  outplug(module* pmod, EPlugRate epr, const vartype* def, const std::type_info& tinfo, const char* pname)
-      : outplugbase(pmod, epr, tinfo, pname)
+  outplug(moduledata_ptr_t pmod, EPlugRate epr, const vartype* def, const std::type_info& tinfo, const char* pname)
+      : OutPlugData(pmod, epr, tinfo, pname)
       , mOutputData(def) {
   }
   int MaxFanOut() const override {
@@ -326,12 +321,12 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename vartype> class inplug : public inplugbase {
-  DeclareTemplateAbstractX(inplug<vartype>, inplugbase);
+template <typename vartype> class inplug : public InPlugData {
+  DeclareTemplateAbstractX(inplug<vartype>, InPlugData);
 
 public:
-  explicit inplug(module* pmod, EPlugRate epr, vartype& def, const char* pname)
-      : inplugbase(pmod, epr, typeid(vartype), pname)
+  explicit inplug(moduledata_ptr_t pmod, EPlugRate epr, vartype& def, const char* pname)
+      : InPlugData(pmod, epr, typeid(vartype), pname)
       , mDefault(def) {
   }
 
@@ -354,7 +349,7 @@ public:
   ///////////////////////////////////////////////////////////////
 
   template <typename T> void GetTypedInput(outplug<T>*& oval) {
-    outplugbase* oplug = mExternalOutput;
+    outplugdata_ptr_t oplug = mExternalOutput;
     oval               = rtti::downcast<outplug<T>*>(oplug);
   }
 
@@ -380,7 +375,7 @@ class floatinplug : public inplug<float> {
   DeclareAbstractX(floatinplug, inplug<float>);
 
 public:
-  floatinplug(module* pmod, EPlugRate epr, float& def, const char* pname)
+  floatinplug(moduledata_ptr_t pmod, EPlugRate epr, float& def, const char* pname)
       : inplug<float>(pmod, epr, def, pname) {
   }
 
@@ -399,7 +394,7 @@ class vect3inplug : public inplug<fvec3> {
   DeclareAbstractX(vect3inplug, inplug<fvec3>);
 
 public:
-  vect3inplug(module* pmod, EPlugRate epr, fvec3& def, const char* pname)
+  vect3inplug(moduledata_ptr_t pmod, EPlugRate epr, fvec3& def, const char* pname)
       : inplug<fvec3>(pmod, epr, def, pname) {
   }
 
@@ -418,7 +413,7 @@ template <typename xf> class floatinplugxf : public floatinplug {
   DeclareTemplateAbstractX(floatinplugxf<xf>, floatinplug);
 
 public:
-  explicit floatinplugxf(module* pmod, EPlugRate epr, float& def, const char* pname)
+  explicit floatinplugxf(moduledata_ptr_t pmod, EPlugRate epr, float& def, const char* pname)
       : floatinplug(pmod, epr, def, pname)
       , mtransform() {
   }
@@ -453,7 +448,7 @@ template <typename xf> class vect3inplugxf : public vect3inplug {
   DeclareTemplateAbstractX(vect3inplugxf<xf>, vect3inplug);
 
 public:
-  explicit vect3inplugxf(module* pmod, EPlugRate epr, fvec3& def, const char* pname)
+  explicit vect3inplugxf(moduledata_ptr_t pmod, EPlugRate epr, fvec3& def, const char* pname)
       : vect3inplug(pmod, epr, def, pname)
       , mtransform() {
   }
@@ -607,7 +602,7 @@ public:
   ~floatxf();
 
 private:
-  orklut<ork::PoolString, ork::Object*> mTransforms;
+  orklut<std::string, ork::Object*> mTransforms;
   int miTest;
 };
 
@@ -650,12 +645,16 @@ typedef vect3inplugxf<vect3xf> vect3xfinplug;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class module : public ork::Object {
-  DeclareAbstractX(module, ork::Object);
+struct ModuleData : public ork::Object {
 
 public:
-  module();
-  ~module();
+
+  DeclareAbstractX(ModuleData, ork::Object);
+
+public:
+
+  ModuleData();
+  ~ModuleData();
 
   ////////////////////////////////////////////
   const dataflow::node_hash& GetModuleHash() {
@@ -665,48 +664,41 @@ public:
     mModuleHash = dataflow::node_hash();
   }
   ////////////////////////////////////////////
-  const PoolString& GetName() const {
+  const std::string& GetName() const {
     return mName;
   }
-  void SetName(const PoolString& val) {
+  void SetName(const std::string& val) {
     mName = val;
   }
-  virtual void DoSetInputDirty(inplugbase* plg) {
-  }
-  virtual void DoSetOutputDirty(outplugbase* plg) {
-  }
-  void SetInputDirty(inplugbase* plg);
-  void SetOutputDirty(outplugbase* plg);
-  virtual bool IsDirty(void) const;
   ////////////////////////////////////////////
-  virtual int GetNumInputs() const {
-    return mNumStaticInputs;
+  virtual int numInputs() const {
+    return _numStaticInputs;
   }
-  virtual int GetNumOutputs() const {
-    return mNumStaticOutputs;
+  virtual int numOutputs() const {
+    return _numStaticOutputs;
   }
-  virtual inplugbase* GetInput(int idx) const {
-    return GetStaticInput(idx);
+  virtual inplugdata_ptr_t input(int idx) const {
+    return staticInput(idx);
   }
-  virtual outplugbase* GetOutput(int idx) const {
-    return GetStaticOutput(idx);
+  virtual outplugdata_ptr_t GetOutput(int idx) const {
+    return staticOutput(idx);
   }
-  inplugbase* GetStaticInput(int idx) const;
-  outplugbase* GetStaticOutput(int idx) const;
-  inplugbase* GetInputNamed(const PoolString& named);
-  outplugbase* GetOutputNamed(const PoolString& named);
+  inplugdata_ptr_t staticInput(int idx) const;
+  outplugdata_ptr_t staticOutput(int idx) const;
+  inplugdata_ptr_t inputNamed(const std::string& named);
+  outplugdata_ptr_t outputNamed(const std::string& named);
   ////////////////////////////////////////////
   virtual int GetNumChildren() const {
     return 0;
   }
-  virtual module* GetChild(int idx) const {
+  virtual moduledata_ptr_t GetChild(int idx) const {
     return 0;
   }
-  module* GetChildNamed(const ork::PoolString& named) const;
+  moduledata_ptr_t GetChildNamed(const std::string& named) const;
   ////////////////////////////////////////////
-  template <typename T> void GetTypedInput(int idx, inplug<T>*& oval) {
-    inplugbase* oplug = GetInput(idx);
-    oval              = rtti::downcast<inplug<T>*>(oplug);
+  template <typename T> std::shared_ptr<inplug<T>> typedInput(int idx) {
+    inplugdata_ptr_t plug = input(idx);
+    return std::dynamic_pointer_cast<T>(plug);
   }
   ////////////////////////////////////////////
   virtual void OnTopologyUpdate(void) {
@@ -715,46 +707,65 @@ public:
   }
   ////////////////////////////////////////////
   template <typename T> void GetTypedOutput(int idx, outplug<T>*& oval) {
-    outplugbase* oplug = GetOutput(idx);
+    outplugdata_ptr_t oplug = GetOutput(idx);
     oval               = rtti::downcast<outplug<T>*>(oplug);
   }
   ////////////////////////////////////////////
-  void SetMorphable(morphable* pmorph) {
+  void SetMorphable(morphable_ptr_t pmorph) {
     mpMorphable = pmorph;
   }
-  morphable* GetMorphable() const {
+  morphable_ptr_t GetMorphable() const {
     return mpMorphable;
   }
   bool IsMorphable() const {
     return (mpMorphable != 0);
   }
   ////////////////////////////////////////////
-  void AddInput(inplugbase* plg);
-  void AddOutput(outplugbase* plg);
-  void RemoveInput(inplugbase* plg);
-  void RemoveOutput(outplugbase* plg);
+  void AddInput(inplugdata_ptr_t plg);
+  void AddOutput(outplugdata_ptr_t plg);
+  void RemoveInput(inplugdata_ptr_t plg);
+  void RemoveOutput(outplugdata_ptr_t plg);
 
 protected:
-  PoolString mName;
+  std::string mName;
   dataflow::node_hash mModuleHash;
-  morphable* mpMorphable;
-  int mNumStaticInputs;
-  int mNumStaticOutputs;
-  std::set<inplugbase*> mStaticInputs;
-  std::set<outplugbase*> mStaticOutputs;
+  morphable_ptr_t mpMorphable;
+  int _numStaticInputs;
+  int _numStaticOutputs;
+  std::set<inplugdata_ptr_t> mStaticInputs;
+  std::set<outplugdata_ptr_t> mStaticOutputs;
 
-  void AddDependency(outplugbase& pout, inplugbase& pin);
+  void AddDependency(OutPlugData& pout, InPlugData& pin);
+};
+
+struct ModuleInst  {
+
+  ModuleInst(moduledata_constptr_t absdata) : _abstract_module_data(absdata) {}
+  moduledata_constptr_t _abstract_module_data;
+
+  virtual void DoSetInputDirty(inplugdata_ptr_t plg) {
+  }
+  virtual void DoSetOutputDirty(outplugdata_ptr_t plg) {
+  }
+  int numOutputs() const {
+    return _abstract_module_data->numOutputs();
+  }
+  void SetInputDirty(inplugdata_ptr_t plg);
+  void SetOutputDirty(outplugdata_ptr_t plg);
+  virtual bool IsDirty(void) const;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class dgmodule : public module {
-  DeclareAbstractX(dgmodule, module);
+struct DgModuleData : public ModuleData {
+
+  DeclareAbstractX(DgModuleData, ModuleData);
 
 public:
-  dgmodule();
+  DgModuleData();
   ////////////////////////////////////////////
-  void SetParent(graph_data* par) {
+  void SetParent(graphdata_ptr_t par) {
     _parent = par;
   }
   nodekey& Key() {
@@ -763,11 +774,11 @@ public:
   const nodekey& Key() const {
     return mKey;
   }
-  graph_data* GetParent() const {
+  graphdata_ptr_t GetParent() const {
     return _parent;
   }
   ////////////////////////////////////////////
-  // bool IsOutputDirty( const outplugbase* pplug ) const;
+  // bool IsOutputDirty( const outplugdata_ptr_t pplug ) const;
   ////////////////////////////////////////////
   virtual void Compute(workunit* wu) = 0;
   ////////////////////////////////////////////
@@ -783,7 +794,7 @@ public:
   ////////////////////////////////////////////
   virtual void ReleaseWorkUnit(workunit* wu);
   ////////////////////////////////////////////
-  virtual graph_data* GetChildGraph() const {
+  virtual graphdata_ptr_t GetChildGraph() const {
     return 0;
   }
   bool IsGroup() const {
@@ -802,39 +813,47 @@ protected:
 
 private:
   Affinity mAffinity;
-  graph_data* _parent;
+  graphdata_ptr_t _parent;
   nodekey mKey;
   fvec2 mgvpos;
 };
+
+
+struct DgModuleInst : public ModuleInst {
+
+  DgModuleInst(const DgModuleData& absdata);
+
+};
+
 
 class dyn_external {
 public:
   struct FloatBinding {
     const float* mpSource;
-    orklut<PoolString, float>::iterator mIterator;
+    orklut<std::string, float>::iterator mIterator;
   };
   struct Vect3Binding {
     const fvec3* mpSource;
-    orklut<PoolString, fvec3>::iterator mIterator;
+    orklut<std::string, fvec3>::iterator mIterator;
   };
 
-  const orklut<PoolString, FloatBinding>& GetFloatBindings() const {
+  const orklut<std::string, FloatBinding>& GetFloatBindings() const {
     return mFloatBindings;
   }
-  orklut<PoolString, FloatBinding>& GetFloatBindings() {
+  orklut<std::string, FloatBinding>& GetFloatBindings() {
     return mFloatBindings;
   }
 
-  const orklut<PoolString, Vect3Binding>& GetVect3Bindings() const {
+  const orklut<std::string, Vect3Binding>& GetVect3Bindings() const {
     return mVect3Bindings;
   }
-  orklut<PoolString, Vect3Binding>& GetVect3Bindings() {
+  orklut<std::string, Vect3Binding>& GetVect3Bindings() {
     return mVect3Bindings;
   }
 
 private:
-  orklut<PoolString, FloatBinding> mFloatBindings;
-  orklut<PoolString, Vect3Binding> mVect3Bindings;
+  orklut<std::string, FloatBinding> mFloatBindings;
+  orklut<std::string, Vect3Binding> mVect3Bindings;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -859,13 +878,13 @@ class dgregisterblock;
 
 struct dgregister {
   int mIndex;
-  std::set<dgmodule*> mChildren;
-  dgmodule* mpOwner;
+  std::set<dgmoduleinst_ptr_t> mChildren;
+  dgmoduleinst_ptr_t mpOwner;
   dgregisterblock* mpBlock;
   //////////////////////////////////
-  void SetModule(dgmodule* pmod);
+  void SetModule(dgmoduleinst_ptr_t pmod);
   //////////////////////////////////
-  dgregister(dgmodule* pmod = 0, int idx = -1);
+  dgregister(dgmoduleinst_ptr_t pmod = 0, int idx = -1);
   //////////////////////////////////
 };
 
@@ -906,39 +925,39 @@ public:
   template <typename T> void SetRegisters(dgregisterblock* pregs) {
     SetRegisters(&typeid(T), pregs);
   }
-  void Prune(dgmodule* mod);
-  void Alloc(outplugbase* poutplug);
-  void SetProbeModule(dgmodule* pmod) {
+  void Prune(dgmoduledata_ptr_t mod);
+  void Alloc(outplugdata_ptr_t poutplug);
+  void SetProbeModule(dgmoduledata_ptr_t pmod) {
     mpProbeModule = pmod;
   }
 
 private:
   orkmap<const std::type_info*, dgregisterblock*> mRegisterSets;
-  dgmodule* mpProbeModule;
+  dgmoduledata_ptr_t mpProbeModule;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct dgqueue {
-  std::set<dgmodule*> pending;
+  std::set<dgmoduledata_ptr_t> pending;
   int mSerial;
-  std::stack<dgmodule*> mModStack;
+  std::stack<dgmoduledata_ptr_t> mModStack;
   dgcontext& mCompCtx;
   //////////////////////////////////////////////////////////
-  bool IsPending(dgmodule* mod);
+  bool IsPending(dgmoduledata_ptr_t mod);
   size_t NumPending() {
     return pending.size();
   }
-  int NumDownstream(dgmodule* mod);
-  int NumPendingDownstream(dgmodule* mod);
-  void AddModule(dgmodule* mod);
-  void PruneRegisters(dgmodule* pmod);
-  void QueModule(dgmodule* pmod, int irecd);
-  bool HasPendingInputs(dgmodule* mod);
-  void DumpInputs(dgmodule* mod) const;
-  void DumpOutputs(dgmodule* mod) const;
+  int NumDownstream(dgmoduledata_ptr_t mod);
+  int NumPendingDownstream(dgmoduledata_ptr_t mod);
+  void AddModule(dgmoduledata_ptr_t mod);
+  void PruneRegisters(dgmoduledata_ptr_t pmod);
+  void QueModule(dgmoduledata_ptr_t pmod, int irecd);
+  bool HasPendingInputs(dgmoduledata_ptr_t mod);
+  void DumpInputs(dgmoduledata_ptr_t mod) const;
+  void DumpOutputs(dgmoduledata_ptr_t mod) const;
   //////////////////////////////////////////////////////////
-  dgqueue(const graph_inst* pg, dgcontext& ctx);
+  dgqueue(const GraphInst* pg, dgcontext& ctx);
   //////////////////////////////////////////////////////////
 };
 
@@ -946,31 +965,32 @@ struct dgqueue {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-class graph_data : public ork::Object {
-  DeclareConcreteX(graph_data, ork::Object);
+struct GraphData : public ork::Object {
+
+  DeclareConcreteX(GraphData, ork::Object);
 
 public:
-  graph_data();
-  ~graph_data();
-  // graph_data(const graph_data& oth);
+  GraphData();
+  ~GraphData();
+  // GraphData(const GraphData& oth);
 
-  virtual bool CanConnect(const inplugbase* pin, const outplugbase* pout) const;
+  virtual bool CanConnect(const inplugdata_ptr_t pin, const outplugdata_ptr_t pout) const;
   bool IsComplete() const;
   bool IsTopologyDirty() const {
     return mbTopologyIsDirty;
   }
-  dgmodule* GetChild(const PoolString& named) const;
-  dgmodule* GetChild(size_t indexed) const;
-  const orklut<ork::PoolString, ork::Object*>& Modules() {
+  dgmoduledata_ptr_t GetChild(const std::string& named) const;
+  dgmoduledata_ptr_t GetChild(size_t indexed) const;
+  const orklut<std::string, ork::Object*>& Modules() {
     return mModules;
   }
   size_t GetNumChildren() const {
     return mModules.size();
   }
 
-  void AddChild(const PoolString& named, dgmodule* pchild);
-  void AddChild(const char* named, dgmodule* pchild);
-  void RemoveChild(dgmodule* pchild);
+  void AddChild(const std::string& named, dgmoduledata_ptr_t pchild);
+  void AddChild(const char* named, dgmoduledata_ptr_t pchild);
+  void RemoveChild(dgmoduledata_ptr_t pchild);
   void SetTopologyDirty(bool bv) {
     mbTopologyIsDirty = bv;
   }
@@ -978,16 +998,16 @@ public:
     return mMutex;
   }
 
-  const orklut<int, dgmodule*>& LockTopoSortedChildrenForRead(int lid) const;
-  orklut<int, dgmodule*>& LockTopoSortedChildrenForWrite(int lid);
+  const orklut<int, dgmoduledata_ptr_t>& LockTopoSortedChildrenForRead(int lid) const;
+  orklut<int, dgmoduledata_ptr_t>& LockTopoSortedChildrenForWrite(int lid);
   void UnLockTopoSortedChildren() const;
   virtual void Clear() {
   }
   void OnGraphChanged();
 
 protected:
-  LockedResource<orklut<int, dgmodule*>> mChildrenTopoSorted;
-  orklut<ork::PoolString, ork::Object*> mModules;
+  LockedResource<orklut<int, dgmoduledata_ptr_t>> mChildrenTopoSorted;
+  orklut<std::string, ork::Object*> mModules;
   bool mbTopologyIsDirty;
   recursive_mutex mMutex;
 
@@ -999,22 +1019,20 @@ protected:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class graph_inst : public graph_data {
-  DeclareConcreteX(graph_inst, graph_data);
+struct GraphInst {
 
-public:
   const std::set<int>& OutputRegisters() const {
     return mOutputRegisters;
   }
   ////////////////////////////////////////////
-  graph_inst();
-  ~graph_inst();
-  graph_inst(const graph_inst& oth);
+  GraphInst();
+  ~GraphInst();
+  GraphInst(const GraphInst& oth);
   ////////////////////////////////////////////
   void BindExternal(dyn_external* pexternal);
   void UnBindExternal();
   dyn_external* GetExternal() const;
-  void Clear() override;
+  void Clear();
   ////////////////////////////////////////////
   bool IsPending() const;
   bool IsDirty(void) const;
@@ -1029,17 +1047,13 @@ public:
   }
   ////////////////////////////////////////////
 
-protected:
   dyn_external* mExternal;
   scheduler* mScheduler;
-
   bool mbInProgress;
-
-  std::priority_queue<dgmodule*> mModuleQueue;
-
+  std::priority_queue<dgmoduledata_ptr_t> mModuleQueue;
   std::set<int> mOutputRegisters;
 
-  void doNotify(const ork::event::Event* event) final; // virtual
+  //void doNotify(const ork::event::Event* event); // virtual
 };
 
 ///////////////////////////////////////////////////////////////////////////////

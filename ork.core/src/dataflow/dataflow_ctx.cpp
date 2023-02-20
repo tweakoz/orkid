@@ -61,7 +61,7 @@ void dgregisterblock::Clear()
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void dgregister::SetModule( dgmodule*pmod )
+void dgregister::SetModule( dgmoduleinst_ptr_t pmod )
 {	
 	if( pmod )
 	{
@@ -73,7 +73,7 @@ void dgregister::SetModule( dgmodule*pmod )
 		//  and mark it as a dependency
 		/////////////////////////////////////////
 		
-		int inumouts = pmod->GetNumOutputs();
+		int inumouts = pmod->numOutputs();
 		for( int io=0; io<inumouts; io++ )
 		{	
 			const outplugbase* poutplug = pmod->GetOutput(io);
@@ -85,7 +85,7 @@ void dgregister::SetModule( dgmodule*pmod )
 
 				if( pinp && pinp->GetModule()!=pmod ) // it is dependent on pmod
 				{
-					dgmodule* childmod = rtti::autocast( pinp->GetModule() );
+					dgmoduleinst_ptr_t childmod = rtti::autocast( pinp->GetModule() );
 					mChildren.insert( childmod );
 				}
 			}
@@ -93,7 +93,7 @@ void dgregister::SetModule( dgmodule*pmod )
 	}
 }
 //////////////////////////////////
-dgregister::dgregister( dgmodule*pmod, int idx ) 
+dgregister::dgregister( dgmoduleinst_ptr_t pmod, int idx ) 
 	: mIndex(idx)
 	, mpOwner(0)
 	, mpBlock(nullptr)
@@ -103,7 +103,7 @@ dgregister::dgregister( dgmodule*pmod, int idx )
 ///////////////////////////////////////////////////////////////////////////////
 // prune no longer needed registers
 ///////////////////////////////////////////////////////////////////////////////
-void dgcontext::Prune(dgmodule* pmod) // we are done with pmod, prune registers associated with it
+void dgcontext::Prune(dgmoduleinst_ptr_t pmod) // we are done with pmod, prune registers associated with it
 {
 	// check all register sets
 	for( auto itc : mRegisterSets )
@@ -167,11 +167,11 @@ void dgcontext::Clear()
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-bool dgqueue::IsPending( dgmodule* mod)
+bool dgqueue::IsPending( dgmoduleinst_ptr_t mod)
 {	return (pending.find(mod)!=pending.end());
 }
 //////////////////////////////////////////////////////////
-int dgqueue::NumDownstream( dgmodule* mod )
+int dgqueue::NumDownstream( dgmoduleinst_ptr_t mod )
 {	int inumoutcon = 0;
 	int inumouts = mod->GetNumOutputs();
 	for( int io=0; io<inumouts; io++ )
@@ -181,7 +181,7 @@ int dgqueue::NumDownstream( dgmodule* mod )
 	return inumoutcon;		
 }
 //////////////////////////////////////////////////////////
-int dgqueue::NumPendingDownstream( dgmodule* mod )
+int dgqueue::NumPendingDownstream( dgmoduleinst_ptr_t mod )
 {	int inumoutcon = 0;
 	int inumouts = mod->GetNumOutputs();
 	for( int io=0; io<inumouts; io++ )
@@ -189,14 +189,14 @@ int dgqueue::NumPendingDownstream( dgmodule* mod )
 		size_t inumcon = poutplug->GetNumExternalOutputConnections();
 		for( size_t ic=0; ic<inumcon; ic++ )
 		{	inplugbase* pinplug = poutplug->GetExternalOutputConnection(ic);
-			dgmodule* pconmod = rtti::autocast(pinplug->GetModule());
+			dgmoduleinst_ptr_t pconmod = rtti::autocast(pinplug->GetModule());
 			inumoutcon += int(IsPending(pconmod));
 		}
 	}
 	return inumoutcon;		
 }
 //////////////////////////////////////////////////////////
-void dgqueue::AddModule( dgmodule* mod )
+void dgqueue::AddModule( dgmoduleinst_ptr_t mod )
 {	mod->Key().mDepth=0;
 	mod->Key().mSerial = -1;
 	int inumo = mod->GetNumOutputs();
@@ -208,17 +208,17 @@ void dgqueue::AddModule( dgmodule* mod )
 	pending.insert(mod);
 }
 //////////////////////////////////////////////////////////
-void dgqueue::PruneRegisters(dgmodule* pmod )
+void dgqueue::PruneRegisters(dgmoduleinst_ptr_t pmod )
 {	mCompCtx.Prune(pmod);
 }
 //////////////////////////////////////////////////////////
-void dgqueue::QueModule( dgmodule* pmod, int irecd )
+void dgqueue::QueModule( dgmoduleinst_ptr_t pmod, int irecd )
 {	
 	if( pending.find(pmod) != pending.end() ) // is pmod pending ?
 	{	
 		if( mModStack.size() )
 		{	// check the top of stack for registers to prune
-			dgmodule* prev = mModStack.top();
+			dgmoduleinst_ptr_t prev = mModStack.top();
 			PruneRegisters(prev);
 		}
 		mModStack.push(pmod);
@@ -254,7 +254,7 @@ void dgqueue::QueModule( dgmodule* pmod, int irecd )
 				for( size_t ic=0; ic<inumcon; ic++ )
 				{	inplugbase* pinp = poutplug->GetExternalOutputConnection(ic);
 					if( pinp && pinp->GetModule()!=pmod )
-					{	dgmodule* dmod = rtti::autocast( pinp->GetModule() );
+					{	dgmoduleinst_ptr_t dmod = rtti::autocast( pinp->GetModule() );
 						preg->mChildren.insert(dmod);
 					}
 				}
@@ -271,7 +271,7 @@ void dgqueue::QueModule( dgmodule* pmod, int irecd )
 				for( size_t ic=0; ic<inumcon; ic++ )
 				{	inplugbase* pinp = poutplug->GetExternalOutputConnection(ic);
 					if( pinp && pinp->GetModule()!=pmod )
-					{	dgmodule* dmod = rtti::autocast( pinp->GetModule() );
+					{	dgmoduleinst_ptr_t dmod = rtti::autocast( pinp->GetModule() );
 						if( false == HasPendingInputs( dmod ) )
 						{	QueModule( dmod, irecd+1 );
 						}
@@ -288,7 +288,7 @@ void dgqueue::QueModule( dgmodule* pmod, int irecd )
 	}
 }
 //////////////////////////////////////////////////////////
-void dgqueue::DumpOutputs( dgmodule* mod ) const
+void dgqueue::DumpOutputs( dgmoduleinst_ptr_t mod ) const
 {	int inump = mod->GetNumOutputs();
 	for( int ip=0; ip<inump; ip++ )
 	{	const outplugbase* poutplug = mod->GetOutput(ip);
@@ -299,13 +299,13 @@ void dgqueue::DumpOutputs( dgmodule* mod ) const
 		printf( "  mod<%s> out<%d> reg<%s:%d>\n", mod->GetName().c_str(), ip, regb.c_str(), reg_index );
 	}
 }
-void dgqueue::DumpInputs( dgmodule* mod ) const
+void dgqueue::DumpInputs( dgmoduleinst_ptr_t mod ) const
 {	int inumins = mod->GetNumInputs();
 	for( int ip=0; ip<inumins; ip++ )
 	{	const inplugbase* pinplug = mod->GetInput(ip);
 		if( pinplug->GetExternalOutput() )
 		{	const outplugbase* poutplug = pinplug->GetExternalOutput();
-			dgmodule* pconcon = rtti::autocast(poutplug->GetModule());
+			dgmoduleinst_ptr_t pconcon = rtti::autocast(poutplug->GetModule());
 			dgregister* preg = poutplug->GetRegister();	
 			if( preg )
 			{
@@ -317,15 +317,15 @@ void dgqueue::DumpInputs( dgmodule* mod ) const
 		}
 	}
 }
-bool dgqueue::HasPendingInputs( dgmodule* mod )
+bool dgqueue::HasPendingInputs( dgmoduleinst_ptr_t mod )
 {	bool bhaspending = false;
 	int inumins = mod->GetNumInputs();
 	for( int ip=0; ip<inumins; ip++ )
 	{	const inplugbase* pinplug = mod->GetInput(ip);
 		if( pinplug->GetExternalOutput() )
 		{	const outplugbase* pout = pinplug->GetExternalOutput();
-			dgmodule* pconcon = rtti::autocast(pout->GetModule());
-			std::set<dgmodule*>::iterator it = pending.find(pconcon);
+			dgmoduleinst_ptr_t pconcon = rtti::autocast(pout->GetModule());
+			std::set<dgmoduleinst_ptr_t>::iterator it = pending.find(pconcon);
 			if( pconcon == mod && typeid(float)==pinplug->GetDataTypeId() ) // connected to self and a float plug, must be an internal loop rate plug
 			{	//pending.erase(it);
 				//it = pending.end();
@@ -346,7 +346,7 @@ dgqueue::dgqueue( const graph_inst* pg, dgcontext& ctx )
 	/////////////////////////////////////////
 	size_t inumchild = pg->GetNumChildren();
 	for( size_t ic=0; ic<inumchild; ic++ )
-	{	dgmodule* pmod = pg->GetChild((int)ic);
+	{	dgmoduleinst_ptr_t pmod = pg->GetChild((int)ic);
 		AddModule( pmod );	
 	}
 	/////////////////////////////////////////
@@ -356,7 +356,7 @@ dgqueue::dgqueue( const graph_inst* pg, dgcontext& ctx )
 	while( inumchg != 0 )
 	{	inumchg = 0;
 		for( size_t ic=0; ic<inumchild; ic++ )
-		{	dgmodule* pmod = pg->GetChild(ic);
+		{	dgmoduleinst_ptr_t pmod = pg->GetChild(ic);
 			int inumouts = pmod->GetNumOutputs();
 			for( int op=0; op<inumouts; op++ )
 			{	const outplugbase* poutplug = pmod->GetOutput(op);
@@ -364,7 +364,7 @@ dgqueue::dgqueue( const graph_inst* pg, dgcontext& ctx )
 				int ilo = 0;
 				for( size_t ic=0; ic<inumcon; ic++ )
 				{	inplugbase* pin = poutplug->GetExternalOutputConnection(ic);
-					dgmodule* pcon = rtti::autocast(pin->GetModule());
+					dgmoduleinst_ptr_t pcon = rtti::autocast(pin->GetModule());
 					int itd = pcon->Key().mDepth-1;
 					if( itd < ilo ) ilo = itd;
 				}

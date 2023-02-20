@@ -44,14 +44,14 @@ class workunit
 {
 	Affinity			mAffinity;
 	technique			mTechnique;
-	dgmodule*			mpModule;
+	dgmoduleinst_ptr_t			mpModule;
 	int					mModuleWuIndex;
 	cluster*			mCluster;
 	anyp				mContextData;
 	
 public:
 
-	workunit( dgmodule* pmod, cluster* pclus, int imwuidx=-1 );
+	workunit( dgmoduleinst_ptr_t pmod, cluster* pclus, int imwuidx=-1 );
 
 	void			SetAffinity( const Affinity& afn ) { mAffinity=afn; }
 	const Affinity&	GetAffinity() const { return mAffinity; }
@@ -59,7 +59,7 @@ public:
 	int				GetModuleWuIndex() const { return mModuleWuIndex; }
 	void			SetModuleWuIndex( int idx ) { mModuleWuIndex=idx; }
 
-	dgmodule*		GetModule() const { return mpModule; }
+	dgmoduleinst_ptr_t		GetModule() const { return mpModule; }
 
 	void			SetContextData( anyp pd ) { mContextData=pd; }
 	const anyp&		GetContextData() const { return mContextData; }
@@ -80,7 +80,7 @@ class cluster
 	int						miNumWorkUnits;
 
 	/////////////////////////////////////
-	LockedResource< orkset<dgmodule*> >				mModules;
+	LockedResource< orkset<dgmoduleinst_ptr_t> >				mModules;
 	LockedResource< orkvector<workunit*> >			mWorkUnits;
 	/////////////////////////////////////
 
@@ -96,10 +96,10 @@ public:
 	int				GetSerialNumber() const { return miSerialNumber; }
 	void			AddWorkUnit(workunit*wu); 
 	void			NotifyWorkUnitFinished(workunit*wu);
-	void			AddModule( dgmodule*pmod);
+	void			AddModule( dgmoduleinst_ptr_t pmod);
 	void			SetSerialNumber( int isn ) { miSerialNumber=isn; }
 
-	const orkset<dgmodule*>		LockModulesForRead();
+	const orkset<dgmoduleinst_ptr_t>		LockModulesForRead();
 	void						UnLockModules() const;
 
 	LockedResource< orkvector<workunit*> >& GetWorkUnits() { return mWorkUnits; }
@@ -167,7 +167,7 @@ public:
 
 class scheduler
 {
-	typedef orkset<graph_inst*> graph_set_t;
+	typedef orkset<graphinst_ptr_t> graph_set_t;
 	typedef orkset<processor*> proc_set_t;
 	/////////////////////////////////////////////
 	LockedResource< graph_set_t >	mGraphSet;
@@ -195,7 +195,7 @@ public:
 
 	void terminate();
 
-	void QueueModule( module* pmod );
+	void QueueModule( moduleinst_ptr_t pmod );
 
 	void AddProcessor( processor* proc );
 	LockedResource< proc_set_t >& GetProcessors() { return mProcessors; }
@@ -203,8 +203,8 @@ public:
 	//////////////////////////
 	// ANY Thread
 
-	void AddGraph( graph_inst* graf );
-	void RemoveGraph( graph_inst* graf );
+	void AddGraph( graphinst_ptr_t graf );
+	void RemoveGraph( graphinst_ptr_t graf );
 
 	int GetNumProcessors( const Affinity& affin ) const;
 
