@@ -104,7 +104,7 @@ struct ModuleInst {
   outpluginst_ptr_t staticOutput(int idx) const;
   inpluginst_ptr_t inputNamed(const std::string& named);
   outpluginst_ptr_t outputNamed(const std::string& named);
-
+  std::string name() const;
 
   void setInputDirty(inpluginst_ptr_t plg);
   void setOutputDirty(outpluginst_ptr_t plg);

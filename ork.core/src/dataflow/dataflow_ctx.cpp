@@ -178,7 +178,7 @@ int dgqueue::NumPendingDownstream(dgmoduleinst_ptr_t mod) {
   return inumoutcon;
 }
 //////////////////////////////////////////////////////////
-void dgqueue::AddModule(dgmoduleinst_ptr_t mod) {
+void dgqueue::addModule(dgmoduleinst_ptr_t mod) {
   mod->_key.mDepth    = 0;
   mod->_key.mSerial   = -1;
   int inumo            = mod->numOutputs();
@@ -219,7 +219,7 @@ void dgqueue::QueModule(dgmoduleinst_ptr_t pmod, int irecd) {
       outpluginst_ptr_t poutplug = pmod->output(io);
       if (poutplug->isConnected() || (inumincon != 0)) // if it has input or output connections
       {
-        mCompCtx.Alloc(poutplug);
+        mCompCtx.alloc(poutplug);
       }
     }
     ///////////////////////////////////
@@ -227,14 +227,14 @@ void dgqueue::QueModule(dgmoduleinst_ptr_t pmod, int irecd) {
     ///////////////////////////////////
     for (int io = 0; io < inumouts; io++) {
       outpluginst_ptr_t poutplug = pmod->output(io);
-      dgregister* preg      = poutplug->GetRegister();
+      dgregister* preg      = poutplug->_register;
       if (preg) {
         size_t inumcon = poutplug->numConnections();
         for (size_t ic = 0; ic < inumcon; ic++) {
           auto pinp = poutplug->connected(ic);
           if (pinp && pinp->_owning_module != pmod) {
             dgmoduleinst_ptr_t dmod = std::dynamic_pointer_cast<DgModuleInst>(pinp->_owning_module);
-            preg->mChildren.insert(dmod);
+            preg->_downstream_dependents.insert(dmod);
           }
         }
       }
@@ -245,7 +245,7 @@ void dgqueue::QueModule(dgmoduleinst_ptr_t pmod, int irecd) {
     ///////////////////////////////////
     for (int io = 0; io < inumouts; io++) {
       outpluginst_ptr_t poutplug = pmod->output(io);
-      if (poutplug->GetRegister()) {
+      if (poutplug->_register) {
         size_t inumcon = poutplug->numConnections();
         for (size_t ic = 0; ic < inumcon; ic++) {
           auto pinp = poutplug->connected(ic);
@@ -270,30 +270,30 @@ void dgqueue::DumpOutputs(dgmoduleinst_ptr_t mod) const {
   int inump = mod->numOutputs();
   for (int ip = 0; ip < inump; ip++) {
     outpluginst_ptr_t poutplug = mod->output(ip);
-    dgregister* preg           = poutplug->GetRegister();
+    dgregister* preg           = poutplug->_register;
     dgregisterblock* pblk      = (preg != nullptr) ? preg->mpBlock : nullptr;
-    std::string regb           = (pblk != nullptr) ? pblk->GetName() : "";
+    std::string regb           = (pblk != nullptr) ? pblk->name() : "";
     int reg_index              = (preg != nullptr) ? preg->mIndex : -1;
-    printf("  mod<%s> out<%d> reg<%s:%d>\n", mod->GetName().c_str(), ip, regb.c_str(), reg_index);
+    printf("  mod<%s> out<%d> reg<%s:%d>\n", mod->name().c_str(), ip, regb.c_str(), reg_index);
   }
 }
 void dgqueue::DumpInputs(dgmoduleinst_ptr_t mod) const {
   int inumins = mod->numInputs();
   for (int ip = 0; ip < inumins; ip++) {
-    const auto pinplug = mod->GetInput(ip);
+    const auto pinplug = mod->input(ip);
     if (pinplug->connected()) {
       outpluginst_ptr_t poutplug = pinplug->connected();
       dgmoduleinst_ptr_t pconcon = std::dynamic_pointer_cast<DgModuleInst>(poutplug->_owning_module);
-      dgregister* preg           = poutplug->GetRegister();
+      dgregister* preg           = poutplug->_register;
       if (preg) {
         dgregisterblock* pblk = preg->mpBlock;
-        std::string regb      = (pblk != nullptr) ? pblk->GetName() : "";
+        std::string regb      = (pblk != nullptr) ? pblk->name() : "";
         int reg_index         = preg->mIndex;
         printf(
             "  mod<%s> inp<%d> -< module<%s> reg<%s:%d>\n",
-            mod->GetName().c_str(),
+            mod->name().c_str(),
             ip,
-            pconcon->GetName().c_str(),
+            pconcon->name().c_str(),
             regb.c_str(),
             reg_index);
       }
@@ -304,7 +304,7 @@ bool dgqueue::HasPendingInputs(dgmoduleinst_ptr_t mod) {
   bool bhaspending = false;
   int inumins      = mod->numInputs();
   for (int ip = 0; ip < inumins; ip++) {
-    const auto pinplug = mod->GetInput(ip);
+    const auto pinplug = mod->input(ip);
     if (pinplug->connected()) {
       outpluginst_ptr_t pout                    = pinplug->connected();
       dgmoduleinst_ptr_t pconcon                = std::dynamic_pointer_cast<DgModuleInst>(pout->_owning_module);
@@ -321,15 +321,16 @@ bool dgqueue::HasPendingInputs(dgmoduleinst_ptr_t mod) {
   return bhaspending;
 }
 //////////////////////////////////////////////////////////
-dgqueue::dgqueue(const graph_inst* pg, dgcontext& ctx)
+dgqueue::dgqueue(graphinst_ptr_t pg, dgcontext& ctx)
     : mSerial(0)
-    , mCompCtx(ctx) { /////////////////////////////////////////
+    , mCompCtx(ctx) {
+  /////////////////////////////////////////
   // add all modules
   /////////////////////////////////////////
-  size_t inumchild = pg->GetNumChildren();
-  for (size_t ic = 0; ic < inumchild; ic++) {
-    dgmoduleinst_ptr_t pmod = pg->GetChild((int)ic);
-    AddModule(pmod);
+  size_t inummodules = pg->numModules();
+  for (size_t im = 0; im < inummodules; im++) {
+    dgmoduleinst_ptr_t pmod = pg->module(im);
+    addModule(pmod);
   }
   /////////////////////////////////////////
   // compute depths iteratively
@@ -337,8 +338,8 @@ dgqueue::dgqueue(const graph_inst* pg, dgcontext& ctx)
   int inumchg = -1;
   while (inumchg != 0) {
     inumchg = 0;
-    for (size_t ic = 0; ic < inumchild; ic++) {
-      dgmoduleinst_ptr_t pmod = pg->GetChild(ic);
+    for (size_t im = 0; im < inummodules; im++) {
+      dgmoduleinst_ptr_t pmod = pg->module(im);
       int inumouts            = pmod->numOutputs();
       for (int op = 0; op < inumouts; op++) {
         outpluginst_ptr_t poutplug = pmod->output(op);

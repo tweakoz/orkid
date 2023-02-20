@@ -153,7 +153,7 @@ public:
     return mAllocated;
   }
   void Clear();
-  const std::string& GetName() const {
+  const std::string& name() const {
     return mName;
   }
 
@@ -200,14 +200,14 @@ struct dgqueue {
   }
   int NumDownstream(dgmoduleinst_ptr_t mod);
   int NumPendingDownstream(dgmoduleinst_ptr_t mod);
-  void AddModule(dgmoduleinst_ptr_t mod);
+  void addModule(dgmoduleinst_ptr_t mod);
   void pruneRegisters(dgmoduleinst_ptr_t pmod);
   void QueModule(dgmoduleinst_ptr_t pmod, int irecd);
   bool HasPendingInputs(dgmoduleinst_ptr_t mod);
   void DumpInputs(dgmoduleinst_ptr_t mod) const;
   void DumpOutputs(dgmoduleinst_ptr_t mod) const;
   //////////////////////////////////////////////////////////
-  dgqueue(const GraphInst* pg, dgcontext& ctx);
+  dgqueue(graphinst_ptr_t pg, dgcontext& ctx);
   //////////////////////////////////////////////////////////
 };
 
@@ -278,6 +278,9 @@ struct GraphInst {
   GraphInst();
   ~GraphInst();
   GraphInst(const GraphInst& oth);
+  ////////////////////////////////////////////
+  size_t numModules() const;
+  dgmoduleinst_ptr_t module(size_t indexed) const;
   ////////////////////////////////////////////
   void BindExternal(dyn_external* pexternal);
   void UnBindExternal();
