@@ -76,14 +76,14 @@ void dgregister::SetModule( dgmoduleinst_ptr_t pmod )
 		int inumouts = pmod->numOutputs();
 		for( int io=0; io<inumouts; io++ )
 		{	
-			const outplugbase* poutplug = pmod->GetOutput(io);
-			size_t inumcon = poutplug->GetNumExternalOutputConnections(); 
+			outpluginst_ptr_t poutplug = pmod->output(io);
+			size_t inumcon = poutplug->numExternalOutputConnections(); 
 			
 			for( size_t ic=0; ic<inumcon; ic++ )
 			{	
-				inplugbase* pinp = poutplug->GetExternalOutputConnection(ic);
+				inplugbase* pinp = poutplug->externalOutputConnection(ic);
 
-				if( pinp && pinp->GetModule()!=pmod ) // it is dependent on pmod
+				if( pinp && pinp->module()!=pmod ) // it is dependent on pmod
 				{
 					dgmoduleinst_ptr_t childmod = rtti::autocast( pinp->GetModule() );
 					mChildren.insert( childmod );
@@ -175,7 +175,7 @@ int dgqueue::NumDownstream( dgmoduleinst_ptr_t mod )
 {	int inumoutcon = 0;
 	int inumouts = mod->GetNumOutputs();
 	for( int io=0; io<inumouts; io++ )
-	{	const outplugbase* poutplug = mod->GetOutput(io);
+	{	outpluginst_ptr_t poutplug = mod->output(io);
 		inumoutcon+=(int)poutplug->GetNumExternalOutputConnections();
 	}
 	return inumoutcon;		
@@ -185,7 +185,7 @@ int dgqueue::NumPendingDownstream( dgmoduleinst_ptr_t mod )
 {	int inumoutcon = 0;
 	int inumouts = mod->GetNumOutputs();
 	for( int io=0; io<inumouts; io++ )
-	{	const outplugbase* poutplug = mod->GetOutput(io);
+	{	outpluginst_ptr_t poutplug = mod->output(io);
 		size_t inumcon = poutplug->GetNumExternalOutputConnections();
 		for( size_t ic=0; ic<inumcon; ic++ )
 		{	inplugbase* pinplug = poutplug->GetExternalOutputConnection(ic);
@@ -203,7 +203,7 @@ void dgqueue::AddModule( dgmoduleinst_ptr_t mod )
 	mod->Key().mModifier = s8(-inumo);
 	for( int io=0; io<inumo; io++ )
 	{
-		mod->GetOutput(io)->SetRegister(0);
+		mod->output(io)->SetRegister(0);
 	}
 	pending.insert(mod);
 }
@@ -237,7 +237,7 @@ void dgqueue::QueModule( dgmoduleinst_ptr_t pmod, int irecd )
 			inumincon += int( pinpplug->IsConnected() );
 		}
 		for( int io=0; io<inumouts; io++ )
-		{	outplugbase* poutplug = pmod->GetOutput(io);
+		{	outplugbase* poutplug = pmod->output(io);
 			if( poutplug->IsConnected() || (inumincon!=0) ) // if it has input or output connections
 			{	
 				mCompCtx.Alloc(poutplug);
@@ -247,7 +247,7 @@ void dgqueue::QueModule( dgmoduleinst_ptr_t pmod, int irecd )
 		// add dependants to register 
 		///////////////////////////////////
 		for( int io=0; io<inumouts; io++ )
-		{	outplugbase* poutplug = pmod->GetOutput(io);
+		{	outplugbase* poutplug = pmod->output(io);
 			dgregister* preg = poutplug->GetRegister();
 			if( preg )
 			{	size_t inumcon = poutplug->GetNumExternalOutputConnections(); 
@@ -265,7 +265,7 @@ void dgqueue::QueModule( dgmoduleinst_ptr_t pmod, int irecd )
 		//  add connected with no other pending deps
 		///////////////////////////////////
 		for( int io=0; io<inumouts; io++ )
-		{	const outplugbase* poutplug = pmod->GetOutput(io);
+		{	outpluginst_ptr_t poutplug = pmod->output(io);
 			if( poutplug->GetRegister() )
 			{	size_t inumcon = poutplug->GetNumExternalOutputConnections(); 
 				for( size_t ic=0; ic<inumcon; ic++ )
@@ -291,7 +291,7 @@ void dgqueue::QueModule( dgmoduleinst_ptr_t pmod, int irecd )
 void dgqueue::DumpOutputs( dgmoduleinst_ptr_t mod ) const
 {	int inump = mod->GetNumOutputs();
 	for( int ip=0; ip<inump; ip++ )
-	{	const outplugbase* poutplug = mod->GetOutput(ip);
+	{	outpluginst_ptr_t poutplug = mod->output(ip);
 		dgregister* preg = poutplug->GetRegister();	
 		dgregisterblock* pblk = (preg!=nullptr) ? preg->mpBlock : nullptr;
 		std::string regb = (pblk!=nullptr) ? pblk->GetName() : "";
@@ -304,7 +304,7 @@ void dgqueue::DumpInputs( dgmoduleinst_ptr_t mod ) const
 	for( int ip=0; ip<inumins; ip++ )
 	{	const inplugbase* pinplug = mod->GetInput(ip);
 		if( pinplug->GetExternalOutput() )
-		{	const outplugbase* poutplug = pinplug->GetExternalOutput();
+		{	outpluginst_ptr_t poutplug = pinplug->GetExternalOutput();
 			dgmoduleinst_ptr_t pconcon = rtti::autocast(poutplug->GetModule());
 			dgregister* preg = poutplug->GetRegister();	
 			if( preg )
@@ -323,7 +323,7 @@ bool dgqueue::HasPendingInputs( dgmoduleinst_ptr_t mod )
 	for( int ip=0; ip<inumins; ip++ )
 	{	const inplugbase* pinplug = mod->GetInput(ip);
 		if( pinplug->GetExternalOutput() )
-		{	const outplugbase* pout = pinplug->GetExternalOutput();
+		{	outpluginst_ptr_t pout = pinplug->GetExternalOutput();
 			dgmoduleinst_ptr_t pconcon = rtti::autocast(pout->GetModule());
 			std::set<dgmoduleinst_ptr_t>::iterator it = pending.find(pconcon);
 			if( pconcon == mod && typeid(float)==pinplug->GetDataTypeId() ) // connected to self and a float plug, must be an internal loop rate plug
@@ -359,7 +359,7 @@ dgqueue::dgqueue( const graph_inst* pg, dgcontext& ctx )
 		{	dgmoduleinst_ptr_t pmod = pg->GetChild(ic);
 			int inumouts = pmod->GetNumOutputs();
 			for( int op=0; op<inumouts; op++ )
-			{	const outplugbase* poutplug = pmod->GetOutput(op);
+			{	outpluginst_ptr_t poutplug = pmod->output(op);
 				size_t inumcon = poutplug->GetNumExternalOutputConnections();
 				int ilo = 0;
 				for( size_t ic=0; ic<inumcon; ic++ )

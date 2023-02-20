@@ -46,12 +46,42 @@ ModuleData::module()
 ModuleData::~module() {
 }
 
+void ModuleData::UpdateHash() {
+  mModuleHash = dataflow::node_hash();
+}
+int ModuleData::numInputs() const {
+  return _numStaticInputs;
+}
+int ModuleData::numOutputs() const {
+  return _numStaticOutputs;
+}
+inplugdata_ptr_t ModuleData::input(int idx) const {
+    return staticInput(idx);
+  }
+outplugdata_ptr_t ModuleData:: output(int idx) const {
+    return staticOutput(idx);
+  }
+
+int ModuleData::numChildren() const {
+  return 0;
+}
+moduledata_ptr_t ModuleData::child(int idx) const {
+  return nullptr;
+}
+////////////////////////////////////////////
+void ModuleData::OnTopologyUpdate(void) {
+}
+void ModuleData::OnStart() {
+}
+bool ModuleData::IsMorphable() const {
+  return (mpMorphable != 0);
+}
 ///////////////////////////////////////////////////////////////////////////////
-void ModuleData::SetInputDirty(inplugbase* plg) {
+void ModuleData::SetInputDirty(inplugdata_ptr_t plg) {
   DoSetInputDirty(plg);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ModuleData::SetOutputDirty(outplugbase* plg) {
+void ModuleData::SetOutputDirty(outplugdata_ptr_t plg) {
   DoSetOutputDirty(plg);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -60,80 +90,80 @@ void ModuleData::AddDependency(outplugbase& pout, inplugbase& pin) {
   // DepPlugSet::value_type v( & pin, & pout );
   // mDependencies.insert( v );
 }
-void ModuleData::AddInput(inplugbase* plg) {
+void ModuleData::addInput(inplugdata_ptr_t plg) {
   auto it = mStaticInputs.find(plg);
   if (it == mStaticInputs.end()) {
     mStaticInputs.insert(plg);
     mNumStaticInputs++;
   }
 }
-void ModuleData::AddOutput(outplugbase* plg) {
+void ModuleData::addOutput(outplugdata_ptr_t plg) {
   auto it = mStaticOutputs.find(plg);
   if (it == mStaticOutputs.end()) {
     mStaticOutputs.insert(plg);
     mNumStaticOutputs++;
   }
 }
-void ModuleData::RemoveInput(inplugbase* plg) {
+void ModuleData::removeInput(inplugdata_ptr_t plg) {
   auto it = mStaticInputs.find(plg);
   if (it != mStaticInputs.end()) {
     mStaticInputs.erase(it);
     mNumStaticInputs--;
   }
 }
-void ModuleData::RemoveOutput(outplugbase* plg) {
+void ModuleData::removeOutput(outplugdata_ptr_t plg) {
   auto it = mStaticOutputs.find(plg);
   if (it != mStaticOutputs.end()) {
     mStaticOutputs.erase(it);
     mNumStaticOutputs--;
   }
 }
-inplugbase* ModuleData::GetStaticInput(int idx) const {
+inplugdata_ptr_t ModuleData::staticInput(int idx) const {
   int size = mStaticInputs.size();
   auto it  = mStaticInputs.begin();
   for (int i = 0; i < idx; i++) {
     it++;
   }
-  inplugbase* rval = (it != mStaticInputs.end()) ? *it : nullptr;
+  inplugdata_ptr_t rval = (it != mStaticInputs.end()) ? *it : nullptr;
   return rval;
 }
-outplugbase* ModuleData::GetStaticOutput(int idx) const {
+outplugdata_ptr_t ModuleData::staticOutput(int idx) const {
   int size = mStaticOutputs.size();
   auto it  = mStaticOutputs.begin();
   for (int i = 0; i < idx; i++) {
     it++;
   }
-  outplugbase* rval = (it != mStaticOutputs.end()) ? *it : nullptr;
+  outplugdata_ptr_t rval = (it != mStaticOutputs.end()) ? *it : nullptr;
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool ModuleData::IsDirty() const {
+bool ModuleData::isDirty() const {
   bool rval   = false;
-  int inumout = this->GetNumOutputs();
+  int inumout = this->numOutputs();
   for (int i = 0; i < inumout; i++) {
-    outplugbase* poutput = GetOutput(i);
+    outplugdata_ptr_t poutput = output(i);
     rval |= poutput->IsDirty();
   }
   if (false == rval) {
-    int inumchi = GetNumChildren();
+    int inumchi = numChildren();
     for (int ic = 0; ic < inumchi; ic++) {
-      module* pchild = GetChild(ic);
-      rval |= pchild->IsDirty();
+      module* pchild = child(ic);
+      rval |= pchild->isDirty();
     }
   }
   return rval;
 }
-inplugbase* GetInput(int idx) {
+inplugdata_ptr_t input(int idx) {
   return 0;
 }
-outplugbase* GetOutput(int idx) {
+outplugdata_ptr_t output(int idx) {
   return 0;
 }
 ///////////////////////////////////////////////////////////////////////////////
-inplugbase* ModuleData::GetInputNamed(const PoolString& named) {
+inplugdata_ptr_t ModuleData::inputNamed(const PoolString& named) {
   int inuminp = GetNumInputs();
   for (int ip = 0; ip < inuminp; ip++) {
-    inplugbase* rval = GetInput(ip);
+    inplugdata_ptr_t rval = input(ip);
     OrkAssert(rval != nullptr);
     if (named == rval->GetName()) {
       return rval;
@@ -142,11 +172,11 @@ inplugbase* ModuleData::GetInputNamed(const PoolString& named) {
   return 0;
 }
 ///////////////////////////////////////////////////////////////////////////////
-outplugbase* ModuleData::GetOutputNamed(const PoolString& named) {
+outplugdata_ptr_t ModuleData::outputNamed(const PoolString& named) {
   int inumout = GetNumOutputs();
   printf("module<%p> numouts<%d>\n", (void*) this, inumout);
   for (int ip = 0; ip < inumout; ip++) {
-    outplugbase* rval = GetOutput(ip);
+    outplugdata_ptr_t rval = output(ip);
     OrkAssert(rval != nullptr);
     if (named == rval->GetName()) {
       return rval;
@@ -155,10 +185,10 @@ outplugbase* ModuleData::GetOutputNamed(const PoolString& named) {
   return 0;
 }
 ///////////////////////////////////////////////////////////////////////////////
-module* ModuleData::GetChildNamed(const ork::PoolString& named) const {
-  int inumchi = GetNumChildren();
+module* ModuleData::childNamed(const ork::PoolString& named) const {
+  int inumchi = numChildren();
   for (int ic = 0; ic < inumchi; ic++) {
-    module* rval = GetChild(ic);
+    module* rval = child(ic);
     if (named == rval->GetName()) {
       return rval;
     }
@@ -173,8 +203,8 @@ it!=mDependencies.end(); it++ )
         {
                 const DepPlugSet::value_type& v = *it;
 
-                inplugbase* pin = v.first;
-                const outplugbase* pout = v.second;
+                inplugdata_ptr_t pin = v.first;
+                const outplugdata_ptr_t pout = v.second;
 
                 if( pout == pplug )
                 {
@@ -197,20 +227,26 @@ DgModuleData::dgmodule()
     , mKey() {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void DgModuleData::DivideWork(const scheduler& sch, cluster* clus) {
+void DgModuleData::divideWork(const scheduler& sch, cluster* clus) {
   clus->AddModule(this);
-  DoDivideWork(sch, clus);
+  _doDivideWork(sch, clus);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void DgModuleData::DoDivideWork(const scheduler& sch, cluster* clus) {
+void DgModuleData::_doDivideWork(const scheduler& sch, cluster* clus) {
   workunit* wu = new workunit(this, clus, 0);
   wu->SetAffinity(GetAffinity());
   clus->AddWorkUnit(wu);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void DgModuleData::ReleaseWorkUnit(workunit* wu) {
+void DgModuleData::releaseWorkUnit(workunit* wu) {
   OrkAssert(wu->GetModule() == this);
   delete wu;
+}
+bool DgModuleData::isGroup() const {
+  return GetChildGraph() != 0;
+}
+graphdata_ptr_t DgModuleData::childGraph() const {
+  return nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
 } //namespace ork::dataflow {
