@@ -14,7 +14,7 @@ from orkengine.lev2 import *
 sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
 from common.cameras import *
 from common.shaders import *
-from common.primitives import createPointsPrimC4, createGridData
+from common.primitives import createPointsPrimV12C4, createGridData
 from common.scenegraph import createSceneGraph
 
 ################################################################################
@@ -48,13 +48,13 @@ class PointsPrimApp(object):
 
     NUMPOINTS = 262144
 
-    points_prim = createPointsPrimC4(ctx=ctx,numpoints=NUMPOINTS)
+    points_prim = createPointsPrimV12C4(ctx=ctx,numpoints=NUMPOINTS)
 
     data_ptr = numpy.array(points_prim.lock(ctx), copy=False)
     for i in range(NUMPOINTS):
       VTX = data_ptr[i]
       VTX[0] = random.uniform(-2,2)  # float x
-      VTX[1] = random.uniform(-2,2)  # float y 
+      VTX[1] = random.uniform(0,4)  # float y 
       VTX[2] = random.uniform(-2,2)  # float z 
       VTX[3] = 0xffffffff # uint32_t color
 
@@ -72,9 +72,9 @@ class PointsPrimApp(object):
     # create grid
     ###################################
 
-    #self.grid_data = createGridData()
-    #self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
-    #self.grid_node.sortkey = 1
+    self.grid_data = createGridData()
+    self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
+    self.grid_node.sortkey = 1
 
   ################################################
 

@@ -119,7 +119,7 @@ void pyinit_primitives(py::module& module_lev2) {
   type_codec->registerStdCodec<primitives::frustum_ptr_t>(frusprim_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto pointsprim_type = //
-      py::class_<primitives::PointsPrimitive<SVtxV12C4>, primitives::points_v12c4_ptr_t>(primitives, "PointsPrimitiveC4")
+      py::class_<primitives::PointsPrimitive<SVtxV12C4>, primitives::points_v12c4_ptr_t>(primitives, "PointsPrimitiveV12C4")
           .def("create", [](int numpoints){
             return std::make_shared<primitives::PointsPrimitive<SVtxV12C4>>(numpoints);
           })

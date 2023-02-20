@@ -29,9 +29,8 @@ def createFrustumPrim( ctx=None, vmatrix=None, pmatrix=None, alpha = 1.0 ):
   return frustum_prim
 
 
-def createPointsPrimC4(ctx=None,numpoints=0):
-  points_prim = primitives.PointsPrimitiveC4.create(numpoints)
-  return points_prim
+def createPointsPrimV12C4(ctx=None,numpoints=0):
+  return primitives.PointsPrimitiveV12C4.create(numpoints)
 
 def createGridData(extent=10.0,majordim=1,minordim=0.1):
   grid_data = GridDrawableData()
