@@ -24,6 +24,8 @@ DgSorter::DgSorter(const GraphData* pg, dgcontext_ptr_t ctx)
     , _graphdata(pg)
     , _serial(NOSERIAL) {
 
+  _logchannel = logger()->createChannel("dgsorter",fvec3(0.8,0.8,0.4),false);
+
   /////////////////////////////////////////
   // add all modules
   /////////////////////////////////////////
@@ -54,16 +56,16 @@ DgSorter::DgSorter(const GraphData* pg, dgcontext_ptr_t ctx)
         for (size_t ic = 0; ic < inumcon; ic++) {
           auto pin  = poutplug->connected(ic);
           auto pcon = typedModuleData<DgModuleData>(pin->_parent_module);
-          int itd   = node_info.mDepth - 1;
+          int itd   = node_info._depth - 1;
           if (itd < ilo)
             ilo = itd;
         }
-        if (node_info.mDepth > ilo && ilo != 0) {
-          node_info.mDepth = s8(ilo);
+        if (node_info._depth > ilo && ilo != 0) {
+          node_info._depth = s8(ilo); // TODO: whats the s8 for again? - its important
           inumchg++;
         }
       }
-      // printf( " mod<%s> comp_depth<%d>\n", pmod->GetName().c_str(), pmod->_key.mDepth );
+      _logchannel->log( " mod<%s> comp_depth<%d>", pmod->_name.c_str(), node_info._depth );
     }
   }
 }
@@ -114,10 +116,10 @@ int DgSorter::numPendingDownstream(dgmoduledata_ptr_t mod) const {
 void DgSorter::addModule(dgmoduledata_ptr_t mod) {
 
   auto& node_info = _nodeinfomap[mod];
-  node_info.mDepth    = 0;
+  node_info._depth    = 0;
   node_info._serial   = NOSERIAL;
   int inumo           = mod->numOutputs();
-  node_info.mModifier = s8(-inumo);
+  node_info._modifier = s8(-inumo); // TODO: whats the s8 for again? - its important
   for (int io = 0; io < inumo; io++) {
     auto plug_out = mod->output(io);
     auto& plug_info = _pluginfomap[plug_out];
@@ -254,7 +256,7 @@ void DgSorter::dumpOutputs(dgmoduledata_ptr_t mod) const {
     dgregisterblock* pblk      = (preg != nullptr) ? preg->mpBlock : nullptr;
     std::string regb           = (pblk != nullptr) ? pblk->name() : "";
     int reg_index              = (preg != nullptr) ? preg->mIndex : -1;
-    printf("  mod<%s> out<%d> reg<%s:%d>\n", mod->_name.c_str(), ip, regb.c_str(), reg_index);
+    _logchannel->log("  mod<%s> out<%d> reg<%s:%d>", mod->_name.c_str(), ip, regb.c_str(), reg_index);
   }
 }
 
@@ -275,8 +277,8 @@ void DgSorter::dumpInputs(dgmoduledata_ptr_t mod) const {
         dgregisterblock* pblk = preg->mpBlock;
         std::string regb      = (pblk != nullptr) ? pblk->name() : "";
         int reg_index         = preg->mIndex;
-        printf(
-            "  mod<%s> inp<%d> -< module<%s> reg<%s:%d>\n",
+        _logchannel->log(
+            "  mod<%s> inp<%d> -< module<%s> reg<%s:%d>",
             mod->_name.c_str(),
             ip,
             pconcon->_name.c_str(),
@@ -308,7 +310,7 @@ topology_ptr_t DgSorter::generateTopology(dgcontext_ptr_t ctx) {
 
           const auto& node_info = it_node_info->second;
 
-          int ikey = (node_info.mDepth * 16) + node_info.mModifier;
+          int ikey = (node_info._depth * 16) + node_info._modifier;
 
           pending_and_ready.insert(std::make_pair(ikey, pmod));
         }

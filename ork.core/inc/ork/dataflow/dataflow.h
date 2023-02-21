@@ -20,6 +20,7 @@
 #include <ork/kernel/orkpool.h>
 #include <ork/event/Event.h>
 #include <ork/rtti/RTTIX.inl>
+#include <ork/util/logger.h>
 
 namespace ork { namespace dataflow {
 
@@ -198,13 +199,13 @@ struct DgSorter {
   struct NodeInfo {
     
     size_t _serial;
-    int mDepth;
-    int mModifier;
+    int _depth;
+    int _modifier;
 
     NodeInfo()
         : _serial(NOSERIAL)
-        , mDepth(-1)
-        , mModifier(-1) {
+        , _depth(-1)
+        , _modifier(-1) {
     }
   };
 
@@ -237,6 +238,7 @@ struct DgSorter {
 
   std::map<dgmoduledata_ptr_t,NodeInfo> _nodeinfomap;
   std::map<plugdata_ptr_t,PlugInfo> _pluginfomap;
+  logchannel_ptr_t _logchannel;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -536,6 +536,7 @@ TEST(dflow_a)
 
   auto dgctx = std::make_shared<dgcontext>();
   auto dgsorter = std::make_shared<DgSorter>(gdata.get(),dgctx);
+  dgsorter->_logchannel->_enabled = true;
 
   auto topo = dgsorter->generateTopology(dgctx);
   OrkAssert(topo);
