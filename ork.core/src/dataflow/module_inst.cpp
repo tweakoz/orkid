@@ -22,25 +22,66 @@
 namespace ork::dataflow {
 ///////////////////////////////////////////////////////////////////////////////
 
-ModuleInst::ModuleInst(moduledata_constptr_t absdata) : _abstract_module_data(absdata) {}
-
-void ModuleInst::DoSetInputDirty(inplugdata_ptr_t plg) {
+ModuleInst::ModuleInst(moduledata_constptr_t absdata)
+    : _abstract_module_data(absdata) {
+}
+int ModuleInst::numOutputs() const {
+  return _abstract_module_data->numOutputs();
+}
+void ModuleInst::_doSetInputDirty(inpluginst_ptr_t plg) {
+}
+void ModuleInst::_doSetOutputDirty(outpluginst_ptr_t plg) {
+}
+void ModuleInst::setInputDirty(inpluginst_ptr_t plg) {
+  _doSetInputDirty(plg);
+}
+void ModuleInst::setOutputDirty(outpluginst_ptr_t plg) {
+  _doSetOutputDirty(plg);
+}
+bool ModuleInst::isDirty(void) const {
+  bool rval   = false;
+  int inumout = this->numOutputs();
+  for (int i = 0; i < inumout; i++) {
+    rval |= output(i)->isDirty();
   }
-void ModuleInst::DoSetOutputDirty(outplugdata_ptr_t plg) {
-  }
-  int ModuleInst::numOutputs() const {
-    return _abstract_module_data->numOutputs();
-  }
-  void ModuleInst::SetInputDirty(inplugdata_ptr_t plg){
-
-  }
-  void ModuleInst::SetOutputDirty(outplugdata_ptr_t plg){
-
-  }
-bool ModuleInst::isDirty(void) const{
-
-  }
+  /*if (false == rval) {
+    int inumchi = numChildren();
+    for (int ic = 0; ic < inumchi; ic++) {
+      module* pchild = child(ic);
+      rval |= pchild->isDirty();
+    }
+  }*/
+  return rval;
+}
+inpluginst_ptr_t ModuleInst::input(int idx) const{
+  return mStaticInputs[idx];
+}
+outpluginst_ptr_t ModuleInst::output(int idx) const{
+  return mStaticOutputs[idx];
+}
 
 ///////////////////////////////////////////////////////////////////////////////
-} //namespace ork::dataflow {
+DgModuleInst::DgModuleInst(dgmoduledata_constptr_t absdata)
+  : ModuleInst(absdata)
+  , _dgmodule_data(absdata) {
+}
+///////////////////////////////////////////////////////////////////////////////
+void DgModuleInst::divideWork(scheduler_ptr_t sch, cluster* clus) {
+  //clus->AddModule(this);
+  _doDivideWork(sch, clus);
+}
+///////////////////////////////////////////////////////////////////////////////
+void DgModuleInst::_doDivideWork(scheduler_ptr_t sch, cluster* clus) {
+  //workunit* wu = new workunit(this, clus, 0);
+  //wu->SetAffinity(_dgmodule_data->GetAffinity());
+  //clus->AddWorkUnit(wu);
+}
+///////////////////////////////////////////////////////////////////////////////
+void DgModuleInst::releaseWorkUnit(workunit* wu) {
+  //OrkAssert(wu->GetModule() == this);
+  delete wu;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+} // namespace ork::dataflow
 ///////////////////////////////////////////////////////////////////////////////

@@ -23,9 +23,6 @@
 #include <ork/math/cmatrix4.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
-template class ork::orklut<ork::PoolString, ork::dataflow::ModuleData*>;
-
-///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::dataflow::ModuleData, "dflow/ModuleData");
 ImplementReflectionX(ork::dataflow::DgModuleData, "dflow/DgModuleData");
 
@@ -62,12 +59,12 @@ outplugdata_ptr_t ModuleData:: output(int idx) const {
     return staticOutput(idx);
   }
 
-int ModuleData::numChildren() const {
+/*int ModuleData::numChildren() const {
   return 0;
 }
 moduledata_ptr_t ModuleData::child(int idx) const {
   return nullptr;
-}
+}*/
 ////////////////////////////////////////////
 void ModuleData::onTopologyUpdate(void) {
 }
@@ -135,61 +132,25 @@ outplugdata_ptr_t ModuleData::staticOutput(int idx) const {
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool ModuleData::isDirty() const {
-  bool rval   = false;
-  int inumout = this->numOutputs();
-  for (int i = 0; i < inumout; i++) {
-    outplugdata_ptr_t poutput = output(i);
-    rval |= poutput->IsDirty();
-  }
-  if (false == rval) {
-    int inumchi = numChildren();
-    for (int ic = 0; ic < inumchi; ic++) {
-      module* pchild = child(ic);
-      rval |= pchild->isDirty();
-    }
-  }
-  return rval;
-}
-///////////////////////////////////////////////////////////////////////////////
-inplugdata_ptr_t ModuleData::input(int idx) {
-  return nullptr;
-}
-///////////////////////////////////////////////////////////////////////////////
-outplugdata_ptr_t ModuleData::output(int idx) {
-  return nullptr;
-}
-///////////////////////////////////////////////////////////////////////////////
-inplugdata_ptr_t ModuleData::inputNamed(const PoolString& named) {
-  int inuminp = GetNumInputs();
+inplugdata_ptr_t ModuleData::inputNamed(const std::string& named) const {
+  int inuminp = numInputs();
   for (int ip = 0; ip < inuminp; ip++) {
     inplugdata_ptr_t rval = input(ip);
     OrkAssert(rval != nullptr);
-    if (named == rval->GetName()) {
+    if (named == rval->_name) {
       return rval;
     }
   }
   return nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
-outplugdata_ptr_t ModuleData::outputNamed(const PoolString& named) {
-  int inumout = GetNumOutputs();
+outplugdata_ptr_t ModuleData::outputNamed(const std::string& named) const {
+  int inumout = numOutputs();
   printf("module<%p> numouts<%d>\n", (void*) this, inumout);
   for (int ip = 0; ip < inumout; ip++) {
     outplugdata_ptr_t rval = output(ip);
     OrkAssert(rval != nullptr);
-    if (named == rval->GetName()) {
-      return rval;
-    }
-  }
-  return 0;
-}
-///////////////////////////////////////////////////////////////////////////////
-module* ModuleData::childNamed(const ork::PoolString& named) const {
-  int inumchi = numChildren();
-  for (int ic = 0; ic < inumchi; ic++) {
-    module* rval = child(ic);
-    if (named == rval->GetName()) {
+    if (named == rval->_name) {
       return rval;
     }
   }
@@ -221,29 +182,12 @@ void DgModuleData::describeX(class_t* clazz) {
   // ork::reflect::annotatePropertyForEditor<dgmodule>("mgvpos", "editor.visible", "false");
 }
 ///////////////////////////////////////////////////////////////////////////////
-DgModuleData::dgmodule()
+DgModuleData::DgModuleData()
     : mAffinity(dataflow::scheduler::CpuAffinity)
-    , _parent(0)
-    , mKey() {
-}
-///////////////////////////////////////////////////////////////////////////////
-void DgModuleData::divideWork(const scheduler& sch, cluster* clus) {
-  clus->AddModule(this);
-  _doDivideWork(sch, clus);
-}
-///////////////////////////////////////////////////////////////////////////////
-void DgModuleData::_doDivideWork(const scheduler& sch, cluster* clus) {
-  workunit* wu = new workunit(this, clus, 0);
-  wu->SetAffinity(GetAffinity());
-  clus->AddWorkUnit(wu);
-}
-///////////////////////////////////////////////////////////////////////////////
-void DgModuleData::releaseWorkUnit(workunit* wu) {
-  OrkAssert(wu->GetModule() == this);
-  delete wu;
+    , _parent(nullptr){
 }
 bool DgModuleData::isGroup() const {
-  return GetChildGraph() != 0;
+  return childGraph() != nullptr;
 }
 graphdata_ptr_t DgModuleData::childGraph() const {
   return nullptr;

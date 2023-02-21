@@ -113,7 +113,8 @@
 			"hash_set": "cpp",
 			"source_location": "cpp",
 			"rope": "cpp",
-			"slist": "cpp"
+			"slist": "cpp",
+			"*.macros": "cpp"
 		}
 	}
 }

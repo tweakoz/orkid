@@ -26,25 +26,25 @@ public:
 
   void doGpuInit(lev2::Context* pTARG, int w, int h) final;
   void DoRender(CompositorDrawData& drawdata) final;
-  proctex::ProcTex& getTemplate() const {
-    return _template;
-  }
+  //proctex::ProcTex& getTemplate() const {
+    //return _template;
+  //}
   int bufferDim() const {
     return _bufferDim;
   }
 
   void SetTextureAccessor(ork::rtti::ICastable* const& tex);
   void GetTextureAccessor(ork::rtti::ICastable*& tex) const;
-  ork::Object* _accessTemplate() {
-    return &_template;
-  }
+  //ork::Object* _accessTemplate() {
+    //return &_template;
+  //}
 
   lev2::rtbuffer_ptr_t GetOutput() const final;
 
   ork::lev2::TextureAsset* mReturnTexture = nullptr;
   ork::lev2::TextureAsset* mSendTexture   = nullptr;
   ork::PoolString mDynTexPath;
-  mutable proctex::ProcTex _template;
+  //mutable proctex::ProcTex _template;
   int _bufferDim = 256;
 
   svar256_t _impl;

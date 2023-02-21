@@ -20,6 +20,25 @@ void TouchCoreClasses() {
   asset::Asset::GetClassStatic();
   TransformNode::GetClassStatic();
   DecompTransform::GetClassStatic();
+
+  ork::dataflow::PlugData::GetClassStatic();
+  ork::dataflow::InPlugData::GetClassStatic();
+  ork::dataflow::OutPlugData::GetClassStatic();
+
+  ork::dataflow::floatxf::GetClassStatic();
+  ork::dataflow::vect3xf::GetClassStatic();
+  ork::dataflow::floatxfitembase::GetClassStatic();
+
+  ork::dataflow::inplugdata<float>::GetClassStatic();
+  ork::dataflow::floatinplugdata::GetClassStatic();
+
+  ork::dataflow::inplugdata<ork::fvec3>::GetClassStatic();
+  ork::dataflow::vect3inplugdata::GetClassStatic();
+
+  ork::dataflow::outplugdata<float>::GetClassStatic();
+  ork::dataflow::outplugdata<ork::fvec3>::GetClassStatic();
+  ork::dataflow::floatxfinplug::GetClassStatic();
+  ork::dataflow::vect3xfinplug::GetClassStatic();
 }
 
 } // namespace ork

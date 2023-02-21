@@ -72,14 +72,11 @@ public:
   }
 
   moduledata_ptr_t _parent_module;
-  EPlugDir mePlugDir;
-  EPlugRate mePlugRate;
-  bool mbDirty;
+  EPlugDir _plugdir;
+  EPlugRate _plugrate;
   const std::type_info& mTypeId;
-  std::string mPlugName;
+  std::string _name;
 
-  virtual void DoSetDirty(bool bv) {
-  }
 };
 
 template <typename T> std::shared_ptr<T> typedPlugData(plugdata_ptr_t p){
@@ -101,16 +98,8 @@ public:
   bool isConnected() const;
   bool isMorphable() const;
 
-  void SafeConnect(graphdata_ptr_t gr, outplugdata_ptr_t vt);
-  void Disconnect();
-
-  void ConnectInternal(outplugdata_ptr_t vt);
-  void ConnectExternal(outplugdata_ptr_t vt);
-
-  void DoSetDirty(bool bv) override; // virtual
-
   outplugdata_ptr_t _connectedOutput;                       // which EXTERNAL output plug are we connected to
-  orkvector<outplugdata_ptr_t> mInternalOutputConnections; // which output plugs IN THE SAME MODULE are connected to me ?
+  orkvector<outplugdata_ptr_t> _internalOutputConnections; // which output plugs IN THE SAME MODULE are connected to me ?
   morphable_ptr_t mpMorphable;
 };
 
@@ -140,7 +129,7 @@ public:
     return _connections[idx];
   }
 
-  void disconnect(inplugdata_ptr_t pinplug);
+  void _disconnect(inplugdata_ptr_t pinplug);
 
   mutable orkvector<inplugdata_ptr_t> _connections;
 
@@ -154,10 +143,10 @@ class outplugdata : public OutPlugData {
 
 public:
   void operator=(const outplugdata<vartype>& oth) {
-    new (this) outplug<vartype>(oth);
+    new (this) outplugdata<vartype>(oth);
   }
   outplugdata(const outplugdata<vartype>& oth)
-      : OutPlugData(oth.GetModule(), oth.GetPlugRate(), oth.GetDataTypeId(), oth.GetName().c_str())
+      : OutPlugData(oth._parent_module, oth._plugrate, oth.GetDataTypeId(), oth._name.c_str())
       {
   }
 
@@ -207,10 +196,10 @@ public:
 
   ////////////////////////////////////////////
 
-  void connect(outplug<vartype>* vt) {
+  void connect(outplugdata<vartype>* vt) {
     connectExternal(vt);
   }
-  void connect(outplug<vartype>& vt) {
+  void connect(outplugdata<vartype>& vt) {
     connectExternal(&vt);
   }
 
@@ -224,7 +213,7 @@ public:
 
   /*inline const vartype& GetValue() // virtual
   {
-    outplug<vartype>* connected = 0;
+    outplugdata<vartype>* connected = 0;
     GetTypedInput(connected);
     return (connected != 0) ? (connected->GetValue()) : mDefault;
   }*/
@@ -272,7 +261,7 @@ public:
 
   /*inline const float& GetValue() // virtual
   {
-    outplug<float>* connected = 0;
+    outplugdata<float>* connected = 0;
     GetTypedInput(connected);
     mtransformed = mtransform.transform((connected != 0) ? (connected->GetValue()) : mDefault);
     return mtransformed;
@@ -303,7 +292,7 @@ public:
 
   /*inline const fvec3& GetValue() // virtual
   {
-    outplug<fvec3>* connected = 0;
+    outplugdata<fvec3>* connected = 0;
     typedInput(connected);
     mtransformed = mtransform.transform((connected != 0) ? (connected->GetValue()) : mDefault);
     return mtransformed;

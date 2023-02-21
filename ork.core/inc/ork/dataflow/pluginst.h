@@ -14,7 +14,8 @@ namespace ork::dataflow {
 struct PlugInst {
 
   PlugInst(moduleinst_ptr_t minst, plugdata_ptr_t plugdata);
-
+  virtual ~PlugInst();
+  
   const std::type_info& GetDataTypeId() const {
     return _plugdata->mTypeId;
   }
@@ -34,6 +35,7 @@ struct InPlugInst : public PlugInst {
   ~InPlugInst();
   outpluginst_ptr_t connected() const;
   bool isConnected() const;
+  bool isDirty() const;
 
   void _doSetDirty(bool bv) override; // virtual
 };
@@ -49,6 +51,7 @@ struct OutPlugInst : public PlugInst {
   size_t numConnections() const;
   inpluginst_ptr_t connected(size_t idx) const;
   void _doSetDirty(bool bv) override; // virtual
+  bool isDirty() const;
 
   outplugdata_ptr_t _outplugdata;
   dataflow::node_hash _outputhash;

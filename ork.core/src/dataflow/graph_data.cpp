@@ -96,6 +96,28 @@ bool GraphData::canConnect(inplugdata_constptr_t pin, outplugdata_constptr_t pou
   return ((&pin->GetDataTypeId()) == (&pout->GetDataTypeId()));
 }
 ///////////////////////////////////////////////////////////////////////////////
+void GraphData::safeConnect(inplugdata_ptr_t inp,
+                             outplugdata_ptr_t outp) { 
+  bool ok = canConnect(inp, outp);
+  OrkAssert(ok);
+  inp->_connectedOutput = outp;
+  outp->_connections.push_back(inp);
+}
+///////////////////////////////////////////////////////////////////////////////
+void GraphData::disconnect(inplugdata_ptr_t inp) {
+  if (inp->_connectedOutput) {
+    inp->_connectedOutput->_disconnect(inp);
+  }
+  inp->_connectedOutput = nullptr;
+}
+///////////////////////////////////////////////////////////////////////////////
+void GraphData::disconnect(outplugdata_ptr_t output) {
+  for(auto input : output->_connections ){
+    input->_connectedOutput = nullptr;
+  }
+  output->_connections.clear();
+}
+///////////////////////////////////////////////////////////////////////////////
 bool GraphData::SerializeConnections(ork::reflect::serdes::ISerializer& ser) const {
   for (orklut<std::string, object_ptr_t>::const_iterator it = _modules.begin(); it != _modules.end(); it++) {
     object_ptr_t pobj                  = it->second;

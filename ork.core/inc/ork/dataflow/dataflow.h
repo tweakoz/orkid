@@ -73,6 +73,7 @@ using outpluginst_ptr_t = std::shared_ptr<OutPlugInst>;
 using morphable_ptr_t = std::shared_ptr<MorphableData>;
 
 using moduledata_constptr_t = std::shared_ptr<const ModuleData>;
+using dgmoduledata_constptr_t = std::shared_ptr<const DgModuleData>;
 using inplugdata_constptr_t = std::shared_ptr<const InPlugData>;
 using outplugdata_constptr_t = std::shared_ptr<const OutPlugData>;
 
@@ -271,6 +272,14 @@ public:
 
   virtual void clear();
   void OnGraphChanged();
+
+  void safeConnect(inplugdata_ptr_t inp, outplugdata_ptr_t outp);
+  void disconnect(inplugdata_ptr_t inp);
+  void disconnect(outplugdata_ptr_t inp);
+
+  //void connectInternal(outplugdata_ptr_t vt);
+  //void connectExternal(outplugdata_ptr_t vt);
+
 
   bool SerializeConnections(ork::reflect::serdes::ISerializer& ser) const;
   bool DeserializeConnections(ork::reflect::serdes::IDeserializer& deser);

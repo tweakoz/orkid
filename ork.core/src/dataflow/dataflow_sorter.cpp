@@ -76,6 +76,12 @@ bool DgSorter::isPending(dgmoduledata_ptr_t mod) const {
 
 //////////////////////////////////////////////////////////
 
+size_t DgSorter::numPending() const {
+  return _pending.size();
+}
+
+//////////////////////////////////////////////////////////
+
 int DgSorter::numDownstream(dgmoduledata_ptr_t mod) const {
   int inumoutcon = 0;
   int inumouts   = mod->numOutputs();

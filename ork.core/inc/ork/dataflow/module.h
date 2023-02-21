@@ -20,18 +20,18 @@ public:
   ////////////////////////////////////////////
   virtual void UpdateHash();
   ////////////////////////////////////////////
-  virtual int numChildren() const;
-  virtual moduledata_ptr_t child(int idx) const;
+  //virtual int numChildren() const;
+  //virtual moduledata_ptr_t child(int idx) const;
   virtual int numInputs() const;
   virtual int numOutputs() const;
   virtual inplugdata_ptr_t input(int idx) const;
   virtual outplugdata_ptr_t output(int idx) const;
   inplugdata_ptr_t staticInput(int idx) const;
   outplugdata_ptr_t staticOutput(int idx) const;
-  inplugdata_ptr_t inputNamed(const std::string& named);
-  outplugdata_ptr_t outputNamed(const std::string& named);
+  inplugdata_ptr_t inputNamed(const std::string& named) const;
+  outplugdata_ptr_t outputNamed(const std::string& named) const;
   ////////////////////////////////////////////
-  moduledata_ptr_t childNamed(const std::string& named) const;
+//  moduledata_ptr_t childNamed(const std::string& named) const;
   ////////////////////////////////////////////
   virtual void onTopologyUpdate(void);
   virtual void onStart();
@@ -78,14 +78,10 @@ struct DgModuleData : public ModuleData {
 
 public:
   DgModuleData();
-  void divideWork(const scheduler& sch, cluster* clus);
   bool isGroup() const;
   ////////////////////////////////////////////
   // bool IsOutputDirty( const outplugdata_ptr_t pplug ) const;
   ////////////////////////////////////////////
-  virtual void Compute(workunit* wu) = 0;
-  virtual void combineWork(const cluster* clus) = 0;
-  virtual void releaseWorkUnit(workunit* wu);
   virtual graphdata_ptr_t childGraph() const;
 
   Affinity mAffinity;
@@ -94,7 +90,7 @@ public:
   bool _prunable = true;
 
 protected:
-  virtual void _doDivideWork(const scheduler& sch, cluster* clus);
+  //virtual void _doDivideWork(const scheduler& sch, cluster* clus);
 
 };
 
@@ -116,14 +112,13 @@ struct ModuleInst {
 
   void setInputDirty(inpluginst_ptr_t plg);
   void setOutputDirty(outpluginst_ptr_t plg);
-
   virtual void _doSetInputDirty(inpluginst_ptr_t plg);
   virtual void _doSetOutputDirty(outpluginst_ptr_t plg);
   virtual bool isDirty(void) const;
 
   moduledata_constptr_t _abstract_module_data;
-  std::set<inplugdata_ptr_t> mStaticInputs;
-  std::set<outplugdata_ptr_t> mStaticOutputs;
+  std::vector<inpluginst_ptr_t> mStaticInputs;
+  std::vector<outpluginst_ptr_t> mStaticOutputs;
 
 };
 
@@ -135,7 +130,16 @@ template <typename T> std::shared_ptr<T> typedModuleInst(moduleinst_ptr_t m){
 
 struct DgModuleInst : public ModuleInst {
 
-  DgModuleInst(const DgModuleData& absdata);
+  DgModuleInst(dgmoduledata_constptr_t absdata);
+
+  void divideWork(scheduler_ptr_t sch, cluster* clus);
+
+  virtual void _doDivideWork(scheduler_ptr_t sch, cluster* clus);
+  virtual void Compute(workunit* wu) = 0;
+  virtual void combineWork(const cluster* clus) = 0;
+  virtual void releaseWorkUnit(workunit* wu);
+
+  dgmoduledata_constptr_t _dgmodule_data;
 
 };
 

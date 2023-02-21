@@ -26,7 +26,7 @@ namespace ork { namespace dataflow {
 const Affinity scheduler::CpuAffinity = 0xffff;
 const Affinity scheduler::GpuAffinity = 0x10000;
 
-workunit::workunit( dgmodule* pmod, cluster* pclus, int imwuidx )
+workunit::workunit( dgmoduleinst_ptr_t pmod, cluster* pclus, int imwuidx )
 	: mAffinity( 0 )
 	, mpModule( pmod )
 	, mModuleWuIndex(imwuidx)
@@ -87,12 +87,12 @@ void cluster::NotifyWorkUnitFinished(workunit*wu)
 	int icount = GetNumWorkUnits();
 	if( (miNumWorkUnitsDone+1) == icount )
 	{
-		const orkset<dgmodule*>& Modules = mModules.LockForRead();
+		const orkset<dgmoduleinst_ptr_t>& Modules = mModules.LockForRead();
 
-		for( orkset<dgmodule*>::const_iterator it=Modules.begin(); it!=Modules.end(); it++ )
+		for( orkset<dgmoduleinst_ptr_t>::const_iterator it=Modules.begin(); it!=Modules.end(); it++ )
 		{
-			dgmodule* pmod = (*it);
-			pmod->CombineWork( this );
+			dgmoduleinst_ptr_t pmod = (*it);
+			//pmod->CombineWork( this );
 		}
 		mModules.UnLock();
 		//mSequence->NotifyClusterFinished(this);
@@ -101,9 +101,9 @@ void cluster::NotifyWorkUnitFinished(workunit*wu)
 	OrkAssert( miNumWorkUnitsDone<=icount );
 }
 
-void cluster::AddModule(dgmodule*pmod)
+void cluster::AddModule(dgmoduleinst_ptr_t pmod)
 {
-	orkset<dgmodule*>& Modules = mModules.LockForWrite();
+	orkset<dgmoduleinst_ptr_t>& Modules = mModules.LockForWrite();
 	{
 		Modules.insert(pmod);
 	}
@@ -275,9 +275,9 @@ void scheduler::Process()
 	{
 		for( graph_set_t::const_iterator it=GraphSet.begin(); it!=GraphSet.end(); it++ )
 		{
-			graph_inst* graf =(*it);
+			graphinst_ptr_t graf =(*it);
 
-			const orklut<int,dgmodule*>& toposorted = graf->LockTopoSortedChildrenForRead(0);
+			/*const orklut<int,dgmoduleinst_ptr_t>& toposorted = graf->LockTopoSortedChildrenForRead(0);
 			{
 				size_t inum = toposorted.size();
 
@@ -287,7 +287,7 @@ void scheduler::Process()
 
 					OrkAssert( inum==inum2 );
 
-					dgmodule* pmod = toposorted.GetItemAtIndex( (int) itopo ).second;
+					dgmoduleinst_ptr_t pmod = toposorted.GetItemAtIndex( (int) itopo ).second;
 
 					bool bmoddirty = pmod->IsDirty();
 
@@ -324,7 +324,7 @@ void scheduler::Process()
 				}
 				graf->UnLockTopoSortedChildren();
 				ork::msleep(1);
-			}
+			}*/
 		}
 	}
 	mGraphSet.UnLock();
@@ -353,14 +353,14 @@ int scheduler::GetNumProcessors( const Affinity& affin ) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void scheduler::QueueModule( module* pmod )
+void scheduler::QueueModule( moduleinst_ptr_t pmod )
 {
 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void scheduler::AddGraph( graph_inst* graf )
+void scheduler::AddGraph( graphinst_ptr_t graf )
 {
 	graph_set_t& gset = mGraphSet.LockForWrite();
 	graph_set_t::const_iterator it = gset.find(graf);
@@ -371,7 +371,7 @@ void scheduler::AddGraph( graph_inst* graf )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void scheduler::RemoveGraph( graph_inst* graf )
+void scheduler::RemoveGraph( graphinst_ptr_t graf )
 {
 	graph_set_t& gset = mGraphSet.LockForWrite();
 	graph_set_t::iterator it = gset.find(graf);
