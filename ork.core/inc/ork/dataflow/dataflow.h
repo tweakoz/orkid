@@ -328,39 +328,39 @@ struct GraphInst {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#define OutPlugName(name) mPlugOut##name
-#define InpPlugName(name) mPlugInp##name
-#define OutDataName(name) mOutData##name
-#define ConstructOutPlug(name, epr) OutPlugName(name)(this, epr, &mOutData##name, #name)
-#define ConstructOutTypPlug(name, epr, typ) OutPlugName(name)(this, epr, &mOutData##name, typ, #name)
+#define OutPlugName(name) _plugOut_##name
+#define OutDataName(name) _plugOutData_##name
+#define InpPlugName(name) _plugInp_##name
+#define ConstructOutPlug(name, epr) OutPlugName(name)(this, epr, &OutDataName(name), #name)
+#define ConstructOutTypPlug(name, epr, typ) OutPlugName(name)(this, epr, &OutDataName(name), typ, #name)
 #define ConstructInpPlug(name, epr, def) InpPlugName(name)(this, epr, def, #name)
 
 ///////////
 
 #define DeclareFloatXfPlug(name)                                                                                                   \
   float mf##name = 0.0f;                                                                                                                  \
-  mutable ork::dataflow::floatxfinplug InpPlugName(name);                                                                                  \
+  mutable ork::dataflow::floatxfinplugdata InpPlugName(name);                                                                                  \
   object_ptr_t InpAccessor##name() {                                                                                               \
     return &InpPlugName(name);                                                                                                     \
   }
 
 #define DeclareVect3XfPlug(name)                                                                                                   \
   ork::fvec3 mv##name;                                                                                                             \
-  mutable ork::dataflow::vect3xfinplug InpPlugName(name);                                                                                  \
+  mutable ork::dataflow::vect3xfinplugdata InpPlugName(name);                                                                                  \
   object_ptr_t InpAccessor##name() {                                                                                               \
     return &InpPlugName(name);                                                                                                     \
   }
 
 #define DeclareFloatOutPlug(name)                                                                                                  \
-  float OutDataName(name) = 0.0f;                                                                                                         \
-  mutable ork::dataflow::outplug<float> OutPlugName(name);                                                                                 \
-  object_ptr_t PlgAccessor##name() {                                                                                               \
-    return &OutPlugName(name);                                                                                                     \
+  float OutDataName(name);                                                                                                         \
+  mutable floatoutplug_ptr_t OutPlugName(name);                                                                                 \
+  object_ptr_t _plugAccessor##name() {                                                                                               \
+    return OutPlugName(name);                                                                                                     \
   }
 
 #define DeclareVect3OutPlug(name)                                                                                                  \
   ork::fvec3 OutDataName(name);                                                                                                    \
-  mutable ork::dataflow::outplug<ork::fvec3> OutPlugName(name);                                                                            \
+  mutable ork::dataflow::outplugdata<ork::fvec3> OutPlugName(name);                                                                            \
   object_ptr_t PlgAccessor##name() {                                                                                               \
     return &OutPlugName(name);                                                                                                     \
   }

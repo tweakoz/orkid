@@ -445,5 +445,7 @@ private:
 using floatxfinplug = floatinplugxfdata<floatxf> ;
 using vect3xfinplug = vect3inplugxfdata<vect3xf>;
 
+using floatoutplug_ptr_t = std::shared_ptr<ork::dataflow::outplugdata<float>>;
+
 
 } //namespace ork { namespace dataflow {
