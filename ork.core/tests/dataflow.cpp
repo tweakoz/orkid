@@ -20,18 +20,25 @@
 
 ////////////////////////////////////////////////////////////
 
-namespace ork { namespace dataflow { namespace test {
+namespace ork { namespace dataflow {
+namespace test {
 ////////////////////////////////////////////////////////////
-struct ImgBase{};
-struct Img32 : public ImgBase{};
-struct Img64 : public ImgBase{};
+struct ImgBase {};
+struct Img32 : public ImgBase {};
+struct Img64 : public ImgBase {};
+struct Buffer {};
+Buffer gBuffer;
 ////////////////////////////////////////////////////////////
-} // test
+} // namespace test
 ////////////////////////////////////////////////////////////
 
-template<> void outplugdata<ork::dataflow::test::ImgBase>::describeX(class_t* clazz){}
-template<> void inplugdata<ork::dataflow::test::ImgBase>::describeX(class_t* clazz){}
-template<> int MaxFanout<ork::dataflow::test::ImgBase>() { return 0; }
+template <> void outplugdata<ork::dataflow::test::ImgBase>::describeX(class_t* clazz) {
+}
+template <> void inplugdata<ork::dataflow::test::ImgBase>::describeX(class_t* clazz) {
+}
+template <> int MaxFanout<ork::dataflow::test::ImgBase>() {
+  return 0;
+}
 
 ////////////////////////////////////////////////////////////
 namespace test {
@@ -40,226 +47,195 @@ namespace test {
 typedef ork::dataflow::outplugdata<ImgBase> ImgOutPlug;
 typedef ork::dataflow::inplugdata<ImgBase> ImgInPlug;
 
-struct BaseModuleData : public DgModuleData
-{
-	DeclareAbstractX( BaseModuleData, DgModuleData );
+struct BaseModuleData : public DgModuleData {
+  DeclareAbstractX(BaseModuleData, DgModuleData);
+
 public:
-	BaseModuleData() {}
+  BaseModuleData() {
+  }
 };
 
-void BaseModuleData::describeX(class_t* clazz)
-{}
-
+void BaseModuleData::describeX(class_t* clazz) {
+}
 
 ////////////////////////////////////////////////////////////
 
 using float_ptr_t = std::shared_ptr<float>;
 
-struct GlobalModuleData : public BaseModuleData
-{
-	DeclareConcreteX( GlobalModuleData, BaseModuleData );
+struct GlobalModuleData : public BaseModuleData {
+  DeclareConcreteX(GlobalModuleData, BaseModuleData);
 
 public: //
-
-  GlobalModuleData(){
+  GlobalModuleData() {
     _outputA = std::make_shared<float>(0.0f);
     _outputB = std::make_shared<float>(0.5f);
     _outputC = std::make_shared<float>(1.0f);
   }
 
-	static std::shared_ptr<GlobalModuleData> createShared(){
-		auto gmd = std::make_shared<GlobalModuleData>();
-    createOutputPlug<float>(gmd,EPR_UNIFORM,gmd->_outputA,"OutputA");
-    createOutputPlug<float>(gmd,EPR_UNIFORM,gmd->_outputB,"OutputB");
-    createOutputPlug<float>(gmd,EPR_UNIFORM,gmd->_outputC,"OutputC");
+  static std::shared_ptr<GlobalModuleData> createShared() {
+    auto gmd = std::make_shared<GlobalModuleData>();
+    createOutputPlug<float>(gmd, EPR_UNIFORM, gmd->_outputA, "OutputA");
+    createOutputPlug<float>(gmd, EPR_UNIFORM, gmd->_outputB, "OutputB");
+    createOutputPlug<float>(gmd, EPR_UNIFORM, gmd->_outputC, "OutputC");
     return gmd;
-	}
+  }
 
   float_ptr_t _outputA;
   float_ptr_t _outputB;
   float_ptr_t _outputC;
-
 };
 
-void GlobalModuleData::describeX(class_t* clazz)
-{}
+void GlobalModuleData::describeX(class_t* clazz) {
+}
 
-struct Buffer{};
-
-Buffer gBuffer;
+////////////////////////////////////////////////////////////
 
 struct ImgModuleData : public BaseModuleData {
 
-	DeclareConcreteX( ImgModuleData, BaseModuleData );
+  DeclareConcreteX(ImgModuleData, BaseModuleData);
 
 public: //
+  static Img32 g_no_connection;
 
-	static Img32 g_no_connection;
-
-	/*Buffer& GetWriteBuffer( graphinst_ptr_t ptex )
-	{	ImgOutPlug* outplug = 0;
-		GetTypedOutput<ImgBase>(0,outplug);
-		const ImgBase& base = outplug->GetValue();
-		//printf( "MOD<%p> WBI<%d>\n", this, base.miBufferIndex );
-		return gBuffer;
-		//return ptex.GetBuffer(outplug->GetValue().miBufferIndex);
-	}*/
-
+  /*Buffer& GetWriteBuffer( graphinst_ptr_t ptex )
+  {	ImgOutPlug* outplug = 0;
+      GetTypedOutput<ImgBase>(0,outplug);
+      const ImgBase& base = outplug->GetValue();
+      //printf( "MOD<%p> WBI<%d>\n", this, base.miBufferIndex );
+      return gBuffer;
+      //return ptex.GetBuffer(outplug->GetValue().miBufferIndex);
+  }*/
 };
 
 Img32 ImgModuleData::g_no_connection;
 
-void ImgModuleData::describeX(class_t* clazz)
-{
+void ImgModuleData::describeX(class_t* clazz) {
 }
 
 ////////////////////////////////////////////////////////////
 
-using img32_ptr_t = std::shared_ptr<Img32>;
-using img32_outplug_t = outplugdata<Img32>;
+using img32_ptr_t         = std::shared_ptr<Img32>;
+using img32_outplug_t     = outplugdata<Img32>;
 using img32_outplug_ptr_t = std::shared_ptr<img32_outplug_t>;
-using img32_inplug_t = inplugdata<Img32>;
-using img32_inplug_ptr_t = std::shared_ptr<img32_inplug_t>;
-
+using img32_inplug_t      = inplugdata<Img32>;
+using img32_inplug_ptr_t  = std::shared_ptr<img32_inplug_t>;
 
 ////////////////////////////////////////////////////////////
 
-struct Img32ModuleData : public ImgModuleData
-{
-	DeclareConcreteX( Img32ModuleData, ImgModuleData );
+using img64_ptr_t         = std::shared_ptr<Img64>;
+using img64_outplug_t     = outplugdata<Img64>;
+using img64_outplug_ptr_t = std::shared_ptr<img64_outplug_t>;
+using img64_inplug_t      = inplugdata<Img64>;
+using img64_inplug_ptr_t  = std::shared_ptr<img64_inplug_t>;
+
+////////////////////////////////////////////////////////////
+
+struct Img32ModuleData : public ImgModuleData {
+  DeclareConcreteX(Img32ModuleData, ImgModuleData);
 
 public: //
+  Img32ModuleData()
+      : ImgModuleData() {
 
-	Img32ModuleData()
-		: ImgModuleData() {
-
-      _image_out = std::shared_ptr<Img32>();
-		
-	}
+    _image_out = std::shared_ptr<Img32>();
+  }
 
   img32_ptr_t _image_out;
 
 protected:
-
-  static void sharedConstructor(moduledata_ptr_t subclass_instance){
+  static void sharedConstructor(moduledata_ptr_t subclass_instance) {
     auto as_im32mod = std::dynamic_pointer_cast<Img32ModuleData>(subclass_instance);
-    createOutputPlug<Img32>(subclass_instance,EPR_UNIFORM,as_im32mod->_image_out,"Output");
+    createOutputPlug<Img32>(subclass_instance, EPR_UNIFORM, as_im32mod->_image_out, "Output");
   }
-
 };
 
-void Img32ModuleData::describeX(class_t* clazz)
-{
+void Img32ModuleData::describeX(class_t* clazz) {
 }
 
 ////////////////////////////////////////////////////////////
 
-struct GradientModuleData : public Img32ModuleData
-{
-	DeclareConcreteX( GradientModuleData, Img32ModuleData );
+struct Img64ModuleData : public ImgModuleData {
+  DeclareConcreteX(Img64ModuleData, ImgModuleData);
 
 public: //
+  Img64ModuleData()
+      : ImgModuleData() {
 
+    _image_out = std::shared_ptr<Img64>();
+  }
 
-	GradientModuleData()
-		: Img32ModuleData() {
+  img64_ptr_t _image_out;
 
-      _image_input_A = std::shared_ptr<Img32>();
-      _image_input_B = std::shared_ptr<Img32>();
+protected:
+  static void sharedConstructor(moduledata_ptr_t subclass_instance) {
+    auto as_im64mod = std::dynamic_pointer_cast<Img64ModuleData>(subclass_instance);
+    createOutputPlug<Img64>(subclass_instance, EPR_UNIFORM, as_im64mod->_image_out, "Output");
+  }
+};
 
-	}
+void Img64ModuleData::describeX(class_t* clazz) {
+}
 
-  static std::shared_ptr<GradientModuleData> createShared(){
+////////////////////////////////////////////////////////////
+
+struct GradientModuleData : public Img32ModuleData {
+  DeclareConcreteX(GradientModuleData, Img32ModuleData);
+
+public: //
+  GradientModuleData()
+      : Img32ModuleData() {
+
+    _image_input_A = std::shared_ptr<Img32>();
+    _image_input_B = std::shared_ptr<Img32>();
+  }
+
+  static std::shared_ptr<GradientModuleData> createShared() {
     auto gmd = std::make_shared<GradientModuleData>();
     Img32ModuleData::sharedConstructor(gmd);
-    createInputPlug<Img32>(gmd,EPR_UNIFORM,gmd->_image_input_A,"InputA");
-    createInputPlug<Img32>(gmd,EPR_UNIFORM,gmd->_image_input_B,"InputB");
+    createInputPlug<Img32>(gmd, EPR_UNIFORM, gmd->_image_input_A, "InputA");
+    createInputPlug<Img32>(gmd, EPR_UNIFORM, gmd->_image_input_B, "InputB");
     return gmd;
   }
 
   img32_ptr_t _image_input_A;
   img32_ptr_t _image_input_B;
-
 };
 
-void GradientModuleData::describeX(class_t* clazz)
-{
+void GradientModuleData::describeX(class_t* clazz) {
+}
 
+struct Op1ModuleData : public Img32ModuleData
+{
+	DeclareConcreteX( Op1ModuleData, Img32ModuleData );
+
+public: //
+
+	Op1ModuleData()
+      : Img32ModuleData() {
+	    _image_input = std::shared_ptr<Img32>();
+		_paramA = std::make_shared<float>(0.0f);
+		_paramB = std::make_shared<float>(0.0f);
+  	}
+
+  static std::shared_ptr<Op1ModuleData> createShared() {
+    auto gmd = std::make_shared<Op1ModuleData>();
+    Img32ModuleData::sharedConstructor(gmd);
+    createInputPlug<Img32>(gmd, EPR_UNIFORM, gmd->_image_input, "Input");
+    createInputPlug<float>(gmd, EPR_UNIFORM, gmd->_paramA, "ParamA");
+    createInputPlug<float>(gmd, EPR_UNIFORM, gmd->_paramB, "ParamB");
+    return gmd;
+  }
+
+  img32_ptr_t _image_input;
+  float_ptr_t _paramA;
+  float_ptr_t _paramB;
+};
+
+void Op1ModuleData::describeX(class_t* clazz){
 }
 
 ////////////////////////////////////////////////////////////
 #if 0
-
-////////////////////////////////////////////////////////////
-
-struct Img64Module : public ImgModule
-{
-	RttiDeclareAbstract( Img64Module, ImgModule );
-
-public: //
-
-	DeclareImg64OutPlug( ImgOut );
-
-	Img64Module()
-		: ConstructOutTypPlug( ImgOut,dataflow::EPR_UNIFORM, typeid(Img64) )
-		, ImgModule()
-	{
-
-	}
-
-	dataflow::outplugbase* GetOutput(int idx) override { return & mPlugOutImgOut; }
-
-};
-
-void Img64Module::Describe()
-{
-	RegisterObjOutPlug( Img64Module, ImgOut );
-}
-
-
-
-
-////////////////////////////////////////////////////////////
-
-struct Op1Module : public Img32Module
-{
-	RttiDeclareConcrete( Op1Module, Img32Module );
-
-public: //
-
-	DeclareImgInpPlug( Input );
-	DeclareFloatXfPlug( FloatInp );
-
-	void Compute( workunit* wu ) override
-	{
-		auto inpa = mPlugInpInput.GetValue();
-	}
-
-	inplugbase* GetInput(int idx) override
-	{	ork::dataflow::inplugbase* rval = nullptr;
-		switch( idx )
-		{	case 0:	rval = & mPlugInpInput; break;
-			case 1:	rval = & mPlugInpFloatInp; break;
-		}
-		return rval;
-	}
-
-	void CombineWork( const cluster* c ) override {}
-
-	Op1Module()
-		: ConstructInpPlug( Input,dataflow::EPR_UNIFORM,gNoCon )
-		, ConstructInpPlug( FloatInp,dataflow::EPR_UNIFORM,mfFloatInp )
-	{
-
-	}
-
-};
-
-void Op1Module::Describe()
-{
-	RegisterObjInpPlug( Op1Module, Input );
-	RegisterFloatXfPlug( Op1Module, FloatInp, -16.0f, 16.0f, ged::OutPlugChoiceDelegate );
-}
 
 ////////////////////////////////////////////////////////////
 
@@ -500,42 +476,62 @@ TEST(dflow_1)
 
 class TestGraphData : public GraphData {
 public:
+  DeclareConcreteX(TestGraphData, GraphData);
 
-	DeclareConcreteX(TestGraphData, GraphData);
-
-	bool canConnect( inplugdata_constptr_t pin, outplugdata_constptr_t pout ) const final {
-		return true;
-	}
-
+  bool canConnect(inplugdata_constptr_t pin, outplugdata_constptr_t pout) const final {
+    return true;
+  }
 };
 
-void TestGraphData::describeX(class_t* clazz){
-
+void TestGraphData::describeX(class_t* clazz) {
 }
 
-TEST(dflow_a)
-{
-	auto gdata = std::make_shared<TestGraphData>();
-	auto gl = GlobalModuleData::createShared();
-	auto grA = GradientModuleData::createShared();
-  auto grB = GradientModuleData::createShared();
+TEST(dflow_a) {
+  auto gdata = std::make_shared<TestGraphData>();
+  auto gl    = GlobalModuleData::createShared();
+  auto grA   = GradientModuleData::createShared();
+  auto grB   = GradientModuleData::createShared();
+  auto op1   = Op1ModuleData::createShared();
 
-	GraphData::addModule(gdata,"a",gl);
-	GraphData::addModule(gdata,"grA",grA);
-  GraphData::addModule(gdata,"grB",grB);
+  GraphData::addModule(gdata, "globals", gl);
+  GraphData::addModule(gdata, "gradientA", grA);
+  GraphData::addModule(gdata, "gradientB", grB);
+  GraphData::addModule(gdata, "op1", op1);
 
-  auto gl_out = gl->outputNamed("OutputA");
-  auto gra_out = grA->outputNamed("Output");
+  auto gl_out    = gl->outputNamed("OutputA");
+  auto gra_out   = grA->outputNamed("Output");
   auto grb_inp_a = grB->inputNamed("InputA");
+  auto grb_out = grB->outputNamed("Output");
+  auto op1_inp = op1->inputNamed("Input");
+  auto op1_out = op1->outputNamed("Output");
+  auto op1_parama = op1->inputNamed("ParamA");
+  auto op1_paramb = op1->inputNamed("ParamB");
 
   OrkAssert(gl_out);
   OrkAssert(gra_out);
   OrkAssert(grb_inp_a);
+  OrkAssert(grb_out);
+  OrkAssert(op1_inp);
+  OrkAssert(op1_out);
+  OrkAssert(op1_parama);
+  OrkAssert(op1_paramb);
 
-  gdata->safeConnect(grb_inp_a,gra_out);
+  gdata->safeConnect(grb_inp_a, gra_out);
+  gdata->safeConnect(op1_inp, grb_out);
+  gdata->safeConnect(op1_parama, gl_out);
+  gdata->safeConnect(op1_paramb, gl_out);
 
   auto dgctx = std::make_shared<dgcontext>();
-  auto dgsorter = std::make_shared<DgSorter>(gdata.get(),dgctx);
+
+  dgregisterblock float_regs("ptex_float", 4);
+  dgregisterblock img32_regs("ptex_img32", 16);
+  dgregisterblock img64_regs("ptex_img64", 4);
+
+  dgctx->SetRegisters<float>(&float_regs);
+  dgctx->SetRegisters<Img32>(&img32_regs);
+  dgctx->SetRegisters<Img64>(&img64_regs);
+
+  auto dgsorter                   = std::make_shared<DgSorter>(gdata.get(), dgctx);
   dgsorter->_logchannel->_enabled = true;
 
   auto topo = dgsorter->generateTopology(dgctx);
@@ -550,38 +546,57 @@ TEST(dflow_a)
   dgsorter->dumpInputs(grB);
   dgsorter->dumpOutputs(grB);
 
+  dgsorter->dumpInputs(op1);
+  dgsorter->dumpOutputs(op1);
 }
-
 
 ////////////////////////////////////////////////////////////
 
-}}} // namespace ork::dataflow::test
+} // namespace test
+}} // namespace ork::dataflow
 
-template<>
-int ork::dataflow::MaxFanout<ork::dataflow::test::Img32>(){
+////////////////////////////////////////////////////////////
+
+template <> int ork::dataflow::MaxFanout<ork::dataflow::test::Img32>() {
   return 0;
 }
 
-template<>
-void ork::dataflow::outplugdata<ork::dataflow::test::Img32>::describeX(class_t* clazz){
-
+template <> void ork::dataflow::outplugdata<ork::dataflow::test::Img32>::describeX(class_t* clazz) {
 }
 
-template<>
-void ork::dataflow::inplugdata<ork::dataflow::test::Img32>::describeX(class_t* clazz){
-  
+template <> void ork::dataflow::inplugdata<ork::dataflow::test::Img32>::describeX(class_t* clazz) {
 }
 
+template <> int ork::dataflow::MaxFanout<ork::dataflow::test::Img64>() {
+  return 0;
+}
 
-ImplementTemplateReflectionX(ork::dataflow::outplugdata<ork::dataflow::test::Img32>,"dflowtest/outplugimg32");
-ImplementTemplateReflectionX(ork::dataflow::inplugdata<ork::dataflow::test::Img32>,"dflowtest/inplugimg32");
+template <> void ork::dataflow::outplugdata<ork::dataflow::test::Img64>::describeX(class_t* clazz) {
+}
 
-ImplementReflectionX(ork::dataflow::test::BaseModuleData,"dflowtest/BaseModule");
-ImplementReflectionX(ork::dataflow::test::GlobalModuleData,"dflowtest/GlobalModule");
-ImplementReflectionX(ork::dataflow::test::TestGraphData,"dflowtest/TestGraphData");
-ImplementReflectionX(ork::dataflow::test::ImgModuleData,"dflowtest/ImgModule");
-ImplementReflectionX(ork::dataflow::test::Img32ModuleData,"dflowtest/Img32Module");
-ImplementReflectionX(ork::dataflow::test::GradientModuleData,"dflowtest/GradientModule");
+template <> void ork::dataflow::inplugdata<ork::dataflow::test::Img64>::describeX(class_t* clazz) {
+}
+
+////////////////////////////////////////////////////////////
+
+ImplementTemplateReflectionX(ork::dataflow::outplugdata<ork::dataflow::test::Img32>, "dflowtest/outplugimg32");
+ImplementTemplateReflectionX(ork::dataflow::inplugdata<ork::dataflow::test::Img32>, "dflowtest/inplugimg32");
+
+ImplementTemplateReflectionX(ork::dataflow::outplugdata<ork::dataflow::test::Img64>, "dflowtest/outplugimg64");
+ImplementTemplateReflectionX(ork::dataflow::inplugdata<ork::dataflow::test::Img64>, "dflowtest/inplugimg64");
+
+ImplementReflectionX(ork::dataflow::test::BaseModuleData, "dflowtest/BaseModule");
+ImplementReflectionX(ork::dataflow::test::GlobalModuleData, "dflowtest/GlobalModule");
+
+ImplementReflectionX(ork::dataflow::test::ImgModuleData, "dflowtest/ImgModule");
+ImplementReflectionX(ork::dataflow::test::Img32ModuleData, "dflowtest/Img32Module");
+ImplementReflectionX(ork::dataflow::test::Img64ModuleData, "dflowtest/Img64Module");
+
+ImplementReflectionX(ork::dataflow::test::TestGraphData, "dflowtest/TestGraphData");
+ImplementReflectionX(ork::dataflow::test::GradientModuleData, "dflowtest/GradientModule");
+ImplementReflectionX(ork::dataflow::test::Op1ModuleData, "dflowtest/Op1Module");
+
+////////////////////////////////////////////////////////////
 
 /*INSTANTIATE_TRANSPARENT_RTTI(ork::dataflow::test::Op1Module,"dflowtest/Op1Module");
 INSTANTIATE_TRANSPARENT_RTTI(ork::dataflow::test::Op2Module,"dflowtest/Op2Module");
