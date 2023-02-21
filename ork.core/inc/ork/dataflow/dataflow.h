@@ -132,13 +132,14 @@ class dgregisterblock;
 struct dgregister {
   int mIndex;
   std::set<dgmoduledata_ptr_t> _downstream_dependents;
-  dgmoduledata_ptr_t mpOwner;
+  plugdata_ptr_t _plug;
   dgregisterblock* mpBlock;
   //////////////////////////////////
-  void bindModule(dgmoduledata_ptr_t pmod);
+  void bindPlug(plugdata_ptr_t pmod);
   //////////////////////////////////
-  dgregister(dgmoduledata_ptr_t pmod = 0, int idx = -1);
+  dgregister(plugdata_ptr_t p = 0, int idx = -1);
   //////////////////////////////////
+  std::string name() const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -173,19 +174,19 @@ public:
   void assignSchedulerToGraphInst(graphinst_ptr_t gi, scheduler_ptr_t sched);
 
 
-  void SetRegisters(const std::type_info* pinfo, dgregisterblock*);
-  dgregisterblock* GetRegisters(const std::type_info* pinfo);
+  void setRegisters(const std::type_info* pinfo, dgregisterblock*);
+  dgregisterblock* registers(const std::type_info* pinfo);
   void Clear();
-  template <typename T> dgregisterblock* GetRegisters() {
-    return GetRegisters(&typeid(T));
+  template <typename T> dgregisterblock* registers() {
+    return registers(&typeid(T));
   }
-  template <typename T> void SetRegisters(dgregisterblock* pregs) {
-    SetRegisters(&typeid(T), pregs);
+  template <typename T> void setRegisters(dgregisterblock* pregs) {
+    setRegisters(&typeid(T), pregs);
   }
-  void prune(dgmoduledata_ptr_t mod);
+  orkvector<dgregister*> prune(dgmoduledata_ptr_t mod);
   dgregister* alloc(outplugdata_ptr_t poutplug);
 
-  orkmap<const std::type_info*, dgregisterblock*> mRegisterSets;
+  orkmap<const std::type_info*, dgregisterblock*> _registerSets;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -223,7 +224,7 @@ struct DgSorter {
   int numDownstream(dgmoduledata_ptr_t mod) const;
   int numPendingDownstream(dgmoduledata_ptr_t mod) const;
   void addModule(dgmoduledata_ptr_t mod);
-  void pruneRegisters(dgmoduledata_ptr_t pmod);
+  orkvector<dgregister*> pruneRegisters(dgmoduledata_ptr_t pmod);
   void enqueueModule(dgmoduledata_ptr_t pmod, int irecd);
   bool hasPendingInputs(dgmoduledata_ptr_t mod) const;
   void dumpInputs(dgmoduledata_ptr_t mod) const;
@@ -239,6 +240,7 @@ struct DgSorter {
   std::map<dgmoduledata_ptr_t,NodeInfo> _nodeinfomap;
   std::map<plugdata_ptr_t,PlugInfo> _pluginfomap;
   logchannel_ptr_t _logchannel;
+  logchannel_ptr_t _logchannel_reg;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

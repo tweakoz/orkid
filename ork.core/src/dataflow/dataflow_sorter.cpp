@@ -24,7 +24,8 @@ DgSorter::DgSorter(const GraphData* pg, dgcontext_ptr_t ctx)
     , _graphdata(pg)
     , _serial(NOSERIAL) {
 
-  _logchannel = logger()->createChannel("dgsorter",fvec3(0.8,0.8,0.4),false);
+  _logchannel = logger()->createChannel("dgsorter-std", fvec3(0.8, 0.8, 0.4), false);
+  _logchannel_reg = logger()->createChannel("dgsorter-reg", fvec3(0.4, 0.9, 0.2), false);
 
   /////////////////////////////////////////
   // add all modules
@@ -40,6 +41,8 @@ DgSorter::DgSorter(const GraphData* pg, dgcontext_ptr_t ctx)
   // compute depths iteratively
   /////////////////////////////////////////
 
+  _logchannel->log("compute depths: ");
+
   int inumchg = -1;
   while (inumchg != 0) {
     inumchg = 0;
@@ -48,11 +51,11 @@ DgSorter::DgSorter(const GraphData* pg, dgcontext_ptr_t ctx)
 
       auto& node_info = _nodeinfomap[pmod];
 
-      int inumouts            = pmod->numOutputs();
+      int inumouts = pmod->numOutputs();
       for (int op = 0; op < inumouts; op++) {
-        auto poutplug = pmod->output(op);
-        size_t inumcon             = poutplug->numConnections();
-        int ilo                    = 0;
+        auto poutplug  = pmod->output(op);
+        size_t inumcon = poutplug->numConnections();
+        int ilo        = 0;
         for (size_t ic = 0; ic < inumcon; ic++) {
           auto pin  = poutplug->connected(ic);
           auto pcon = typedModuleData<DgModuleData>(pin->_parent_module);
@@ -65,9 +68,11 @@ DgSorter::DgSorter(const GraphData* pg, dgcontext_ptr_t ctx)
           inumchg++;
         }
       }
-      _logchannel->log( " mod<%s> comp_depth<%d>", pmod->_name.c_str(), node_info._depth );
+      _logchannel->log(" mod<%s> comp_depth<%d>", pmod->_name.c_str(), node_info._depth);
     }
   }
+
+  _logchannel->log("//////////////////////");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -115,14 +120,14 @@ int DgSorter::numPendingDownstream(dgmoduledata_ptr_t mod) const {
 
 void DgSorter::addModule(dgmoduledata_ptr_t mod) {
 
-  auto& node_info = _nodeinfomap[mod];
+  auto& node_info     = _nodeinfomap[mod];
   node_info._depth    = 0;
   node_info._serial   = NOSERIAL;
   int inumo           = mod->numOutputs();
   node_info._modifier = s8(-inumo); // TODO: whats the s8 for again? - its important
   for (int io = 0; io < inumo; io++) {
-    auto plug_out = mod->output(io);
-    auto& plug_info = _pluginfomap[plug_out];
+    auto plug_out       = mod->output(io);
+    auto& plug_info     = _pluginfomap[plug_out];
     plug_info._register = nullptr;
   }
   _pending.insert(mod);
@@ -130,8 +135,26 @@ void DgSorter::addModule(dgmoduledata_ptr_t mod) {
 
 //////////////////////////////////////////////////////////
 
-void DgSorter::pruneRegisters(dgmoduledata_ptr_t pmod) {
-  _dgcontext->prune(pmod);
+orkvector<dgregister*> DgSorter::pruneRegisters(dgmoduledata_ptr_t pmod) {
+  auto pruned = _dgcontext->prune(pmod);
+  for (auto reg_item : pruned) {
+    auto plug = reg_item->_plug;
+    auto modul = plug->_parent_module;
+    _logchannel_reg->log(
+        "PRUNE: module<%s> plug<%s> pruned register<%s>", //
+        modul->_name.c_str(), //
+        plug->_name.c_str(), //
+        reg_item->name().c_str());
+
+    auto it_plug_info          = _pluginfomap.find(plug);
+    OrkAssert(it_plug_info != _pluginfomap.end());
+    auto& plug_info       = it_plug_info->second;
+    if(plug_info._register==reg_item){
+      plug_info = PlugInfo();
+    }
+
+  }
+  return pruned;
 }
 
 //////////////////////////////////////////////////////////
@@ -159,6 +182,9 @@ bool DgSorter::hasPendingInputs(dgmoduledata_ptr_t mod) const {
 
 //////////////////////////////////////////////////////////
 void DgSorter::enqueueModule(dgmoduledata_ptr_t pmod, int irecd) {
+
+  _logchannel->log("TOPO: module<%s> enqueued..", pmod->_name.c_str());
+
   if (_pending.find(pmod) != _pending.end()) { // is pmod pending ?
 
     if (_modulestack.size()) { // check the top of stack for registers to prune
@@ -168,7 +194,7 @@ void DgSorter::enqueueModule(dgmoduledata_ptr_t pmod, int irecd) {
     _modulestack.push(pmod);
 
     ///////////////////////////////////
-    auto& node_info = _nodeinfomap[pmod];
+    auto& node_info   = _nodeinfomap[pmod];
     node_info._serial = ++_serial;
     _pending.erase(pmod);
 
@@ -176,6 +202,8 @@ void DgSorter::enqueueModule(dgmoduledata_ptr_t pmod, int irecd) {
 
     int inuminps = pmod->numInputs();
     int inumouts = pmod->numOutputs();
+
+    _logchannel->log("TOPO: module<%s> numin<%d> numout<%d>", pmod->_name.c_str(), inuminps, inumouts);
 
     ///////////////////////////////////
     // assign new registers
@@ -189,8 +217,13 @@ void DgSorter::enqueueModule(dgmoduledata_ptr_t pmod, int irecd) {
     for (int io = 0; io < inumouts; io++) {
       auto poutplug = pmod->output(io);
       if (poutplug->isConnected() || (inumincon != 0)) { // if it has input or output connections
-        auto& plug_info = _pluginfomap[poutplug];
+        auto& plug_info     = _pluginfomap[poutplug];
         plug_info._register = _dgcontext->alloc(poutplug);
+        _logchannel_reg->log(
+            "ASSIGN module<%s> outplug<%s> assigned register<%s>", //
+            pmod->_name.c_str(),                                 //
+            poutplug->_name.c_str(),                             //
+            plug_info._register->name().c_str());
       }
     }
 
@@ -200,8 +233,8 @@ void DgSorter::enqueueModule(dgmoduledata_ptr_t pmod, int irecd) {
 
     for (int io = 0; io < inumouts; io++) {
       outplugdata_ptr_t poutplug = pmod->output(io);
-      auto& plug_info = _pluginfomap[poutplug];
-      auto preg       = plug_info._register;
+      auto& plug_info            = _pluginfomap[poutplug];
+      auto preg                  = plug_info._register;
       if (preg) {
         size_t inumcon = poutplug->numConnections();
         for (size_t ic = 0; ic < inumcon; ic++) {
@@ -214,14 +247,17 @@ void DgSorter::enqueueModule(dgmoduledata_ptr_t pmod, int irecd) {
       }
     }
 
+    _logchannel->log("TOPO: module<%s> completed..", pmod->_name.c_str());
+
     ///////////////////////////////////
     // completed "pmod"
-    //  add connected with no other pending deps
+    //  add downstream modules connected to pmod's outputs
+    //  that have no other pending dependencies
     ///////////////////////////////////
 
     for (int io = 0; io < inumouts; io++) {
       outplugdata_ptr_t poutplug = pmod->output(io);
-      auto& plug_info = _pluginfomap[poutplug];
+      auto& plug_info            = _pluginfomap[poutplug];
       if (plug_info._register) {
         size_t inumcon = poutplug->numConnections();
         for (size_t ic = 0; ic < inumcon; ic++) {
@@ -235,9 +271,15 @@ void DgSorter::enqueueModule(dgmoduledata_ptr_t pmod, int irecd) {
         }
       }
     }
+
+    ///////////////////////////////////
+    // prune registers
+    ///////////////////////////////////
+
     if (_pending.size() != 0) {
       pruneRegisters(pmod);
     }
+
     ///////////////////////////////////
     _modulestack.pop();
   }
@@ -246,16 +288,18 @@ void DgSorter::enqueueModule(dgmoduledata_ptr_t pmod, int irecd) {
 //////////////////////////////////////////////////////////
 
 void DgSorter::dumpOutputs(dgmoduledata_ptr_t mod) const {
+  _logchannel->log("///////////////////////////");
+  _logchannel->log("output dump");
   int inump = mod->numOutputs();
   for (int ip = 0; ip < inump; ip++) {
     outplugdata_ptr_t poutplug = mod->output(ip);
-    auto it_plug_info = _pluginfomap.find(poutplug);
-    OrkAssert(it_plug_info!=_pluginfomap.end());
-    auto& plug_info = it_plug_info->second;
-    dgregister* preg           = plug_info._register;
-    dgregisterblock* pblk      = (preg != nullptr) ? preg->mpBlock : nullptr;
-    std::string regb           = (pblk != nullptr) ? pblk->name() : "";
-    int reg_index              = (preg != nullptr) ? preg->mIndex : -1;
+    auto it_plug_info          = _pluginfomap.find(poutplug);
+    OrkAssert(it_plug_info != _pluginfomap.end());
+    auto& plug_info       = it_plug_info->second;
+    dgregister* preg      = plug_info._register;
+    dgregisterblock* pblk = (preg != nullptr) ? preg->mpBlock : nullptr;
+    std::string regb      = (pblk != nullptr) ? pblk->name() : "";
+    int reg_index         = (preg != nullptr) ? preg->mIndex : -1;
     _logchannel->log("  mod<%s> out<%d> reg<%s:%d>", mod->_name.c_str(), ip, regb.c_str(), reg_index);
   }
 }
@@ -263,27 +307,30 @@ void DgSorter::dumpOutputs(dgmoduledata_ptr_t mod) const {
 //////////////////////////////////////////////////////////
 
 void DgSorter::dumpInputs(dgmoduledata_ptr_t mod) const {
+  _logchannel->log("///////////////////////////");
+  _logchannel->log("input dump");
   int inumins = mod->numInputs();
   for (int ip = 0; ip < inumins; ip++) {
     const auto pinplug = mod->input(ip);
     if (pinplug->_connectedOutput) {
-      auto poutplug = pinplug->_connectedOutput;
-      auto pconcon  = typedModuleData<DgModuleData>(poutplug->_parent_module);
+      auto poutplug     = pinplug->_connectedOutput;
+      auto pconcon      = typedModuleData<DgModuleData>(poutplug->_parent_module);
       auto it_plug_info = _pluginfomap.find(poutplug);
-      auto& plug_info = it_plug_info->second;
-      OrkAssert(it_plug_info!=_pluginfomap.end());
-      dgregister* preg           = plug_info._register;
+      auto& plug_info   = it_plug_info->second;
+      OrkAssert(it_plug_info != _pluginfomap.end());
+      dgregister* preg = plug_info._register;
       if (preg) {
         dgregisterblock* pblk = preg->mpBlock;
         std::string regb      = (pblk != nullptr) ? pblk->name() : "";
         int reg_index         = preg->mIndex;
         _logchannel->log(
-            "  mod<%s> inp<%d> -< module<%s> reg<%s:%d>",
-            mod->_name.c_str(),
-            ip,
-            pconcon->_name.c_str(),
-            regb.c_str(),
-            reg_index);
+            "  mod<%s> inp<%d:%s> <<< module<%s> out<%s> reg<%s:%d>", //
+            mod->_name.c_str(), //
+            ip, //
+            pinplug->_name.c_str(), //
+            pconcon->_name.c_str(), //
+            poutplug->_name.c_str(), //
+            regb.c_str(), reg_index); 
       }
     }
   }
@@ -292,53 +339,53 @@ void DgSorter::dumpInputs(dgmoduledata_ptr_t mod) const {
 ///////////////////////////////////////////////////////////////////////////////
 topology_ptr_t DgSorter::generateTopology(dgcontext_ptr_t ctx) {
 
-  if( not _graphdata->isComplete() ){
+  if (not _graphdata->isComplete()) {
     return nullptr;
   }
 
   auto new_topo = std::make_shared<Topology>();
 
   using dgmodlut_t = std::multimap<int, dgmoduledata_ptr_t>;
-    
-    while (this->numPending()) {
-      dgmodlut_t pending_and_ready;
 
-      for (dgmoduledata_ptr_t pmod : this->_pending) {
-        if (not hasPendingInputs(pmod)) {
+  while (this->numPending()) {
+    dgmodlut_t pending_and_ready;
 
-          auto it_node_info = _nodeinfomap.find(pmod);
+    for (dgmoduledata_ptr_t pmod : this->_pending) {
+      if (not hasPendingInputs(pmod)) {
 
-          const auto& node_info = it_node_info->second;
+        auto it_node_info = _nodeinfomap.find(pmod);
 
-          int ikey = (node_info._depth * 16) + node_info._modifier;
+        const auto& node_info = it_node_info->second;
 
-          pending_and_ready.insert(std::make_pair(ikey, pmod));
-        }
+        int ikey = (node_info._depth * 16) + node_info._modifier;
+
+        pending_and_ready.insert(std::make_pair(ikey, pmod));
       }
+    }
 
-      for (const auto& next : pending_and_ready) {
-        this->enqueueModule(next.second, 0);
-      }
-      ///////////////////////////////////////
+    for (const auto& next : pending_and_ready) {
+      this->enqueueModule(next.second, 0);
     }
     ///////////////////////////////////////
-    // SORT into flattened
-    ///////////////////////////////////////
-    size_t num_modules = _graphdata->numModules();
-    std::multimap<size_t,dgmoduledata_ptr_t> sorted;
-    for (size_t ic = 0; ic < num_modules; ic++) {
-      auto module = _graphdata->module(ic);
-      auto it_node_info = _nodeinfomap.find(module);
-      const auto& node_info = it_node_info->second;
-      size_t iserial = node_info._serial;
-      sorted.insert(std::make_pair(iserial, module));
-    }
-    for( auto item : sorted ){
-      new_topo->_flattened.push_back(item.second);
-    }
-    ///////////////////////////////////////
-    ///////////////////////////////////////
-  
+  }
+  ///////////////////////////////////////
+  // SORT into flattened
+  ///////////////////////////////////////
+  size_t num_modules = _graphdata->numModules();
+  std::multimap<size_t, dgmoduledata_ptr_t> sorted;
+  for (size_t ic = 0; ic < num_modules; ic++) {
+    auto module           = _graphdata->module(ic);
+    auto it_node_info     = _nodeinfomap.find(module);
+    const auto& node_info = it_node_info->second;
+    size_t iserial        = node_info._serial;
+    sorted.insert(std::make_pair(iserial, module));
+  }
+  for (auto item : sorted) {
+    new_topo->_flattened.push_back(item.second);
+  }
+  ///////////////////////////////////////
+  ///////////////////////////////////////
+
   return new_topo;
 }
 ///////////////////////////////////////////////////////////////////////////////

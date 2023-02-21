@@ -527,12 +527,13 @@ TEST(dflow_a) {
   dgregisterblock img32_regs("ptex_img32", 16);
   dgregisterblock img64_regs("ptex_img64", 4);
 
-  dgctx->SetRegisters<float>(&float_regs);
-  dgctx->SetRegisters<Img32>(&img32_regs);
-  dgctx->SetRegisters<Img64>(&img64_regs);
+  dgctx->setRegisters<float>(&float_regs);
+  dgctx->setRegisters<Img32>(&img32_regs);
+  dgctx->setRegisters<Img64>(&img64_regs);
 
   auto dgsorter                   = std::make_shared<DgSorter>(gdata.get(), dgctx);
   dgsorter->_logchannel->_enabled = true;
+  dgsorter->_logchannel_reg->_enabled = true;
 
   auto topo = dgsorter->generateTopology(dgctx);
   OrkAssert(topo);

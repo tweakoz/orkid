@@ -54,11 +54,10 @@ void dgregisterblock::Clear() {
 ///////////////////////////////////////////////////////////////////////////////
 // bind a module to a register
 ///////////////////////////////////////////////////////////////////////////////
-void dgregister::bindModule(dgmoduledata_ptr_t pmod) {
-  if (pmod) {
-
-    mpOwner = pmod;
-
+void dgregister::bindPlug(plugdata_ptr_t plug) {
+  if (plug) {
+    _plug = plug;
+    auto pmod = _plug->_parent_module;
     /////////////////////////////////////////
     // for each output,
     //  find any modules connected to this module
@@ -67,8 +66,8 @@ void dgregister::bindModule(dgmoduledata_ptr_t pmod) {
 
     int inumouts = pmod->numOutputs();
     for (int io = 0; io < inumouts; io++) {
-      auto poutplug = pmod->output(io);
-      size_t inumcon             = poutplug->numConnections();
+      auto poutplug  = pmod->output(io);
+      size_t inumcon = poutplug->numConnections();
       for (size_t ic = 0; ic < inumcon; ic++) {
         auto pconnected = poutplug->connected(ic);
         if (pconnected && pconnected->_parent_module != pmod) { // it is dependent on pmod
@@ -80,19 +79,28 @@ void dgregister::bindModule(dgmoduledata_ptr_t pmod) {
   }
 }
 //////////////////////////////////
-dgregister::dgregister(dgmoduledata_ptr_t pmod, int idx)
+dgregister::dgregister(plugdata_ptr_t plug, int idx)
     : mIndex(idx)
-    , mpOwner(0)
+    , _plug(nullptr)
     , mpBlock(nullptr) {
-  bindModule(pmod);
+  bindPlug(plug);
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+std::string dgregister::name() const {
+  return mpBlock->name() + FormatString("-%d", mIndex);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // prune no longer needed registers
 ///////////////////////////////////////////////////////////////////////////////
-void dgcontext::prune(dgmoduledata_ptr_t pmod) { // we are done with pmod, prune registers associated with it
+orkvector<dgregister*> dgcontext::prune(dgmoduledata_ptr_t pmod) { // we are done with pmod, prune registers associated with it
+
+  orkvector<dgregister*> deallocvec_accum;
 
   // check all register sets
-  for (auto itc : mRegisterSets) {
+  for (auto itc : _registerSets) {
 
     dgregisterblock* regs                = itc.second;
     const orkset<dgregister*>& allocated = regs->Allocated();
@@ -110,7 +118,9 @@ void dgcontext::prune(dgmoduledata_ptr_t pmod) { // we are done with pmod, prune
 
       bool b_didfeed_pmod = (itfind != reg->_downstream_dependents.end());
 
-      if (b_didfeed_pmod and reg->mpOwner->_prunable) {
+      auto owner_module = typedModuleData<DgModuleData>(reg->_plug->_parent_module);
+
+      if (b_didfeed_pmod and owner_module->_prunable) {
         reg->_downstream_dependents.erase(itfind);
       }
       if (0 == reg->_downstream_dependents.size()) {
@@ -119,45 +129,47 @@ void dgcontext::prune(dgmoduledata_ptr_t pmod) { // we are done with pmod, prune
     }
     for (dgregister* free_reg : deallocvec) {
       regs->Free(free_reg);
+      deallocvec_accum.push_back(free_reg);
     }
   }
+  return deallocvec_accum;
 }
 //////////////////////////////////////////////////////////
 dgregister* dgcontext::alloc(outplugdata_ptr_t poutplug) {
   const std::type_info* tinfo = &poutplug->GetDataTypeId();
-  auto itc                    = mRegisterSets.find(tinfo);
-  if (itc != mRegisterSets.end()) {
+  auto itc                    = _registerSets.find(tinfo);
+  if (itc != _registerSets.end()) {
     dgregisterblock* regs = itc->second;
     dgregister* preg      = regs->Alloc();
-    preg->mpOwner         = std::dynamic_pointer_cast<DgModuleData>(poutplug->_parent_module);
+    preg->_plug = poutplug;
     return preg;
   }
   return nullptr;
 }
 //////////////////////////////////////////////////////////
-void dgcontext::SetRegisters(const std::type_info* pinfo, dgregisterblock* pregs) {
-  mRegisterSets[pinfo] = pregs;
+void dgcontext::setRegisters(const std::type_info* pinfo, dgregisterblock* pregs) {
+  _registerSets[pinfo] = pregs;
 }
 //////////////////////////////////////////////////////////
-dgregisterblock* dgcontext::GetRegisters(const std::type_info* pinfo) {
-  auto it = mRegisterSets.find(pinfo);
-  return (it == mRegisterSets.end()) ? 0 : it->second;
+dgregisterblock* dgcontext::registers(const std::type_info* pinfo) {
+  auto it = _registerSets.find(pinfo);
+  return (it == _registerSets.end()) ? 0 : it->second;
 }
 //////////////////////////////////////////////////////////
 void dgcontext::Clear() {
-  for (auto it : mRegisterSets) {
+  for (auto it : _registerSets) {
     dgregisterblock* pregs = it.second;
     pregs->Clear();
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void dgcontext::assignSchedulerToGraphInst(graphinst_ptr_t gi, scheduler_ptr_t sched){
+void dgcontext::assignSchedulerToGraphInst(graphinst_ptr_t gi, scheduler_ptr_t sched) {
   if (gi->_scheduler) {
     sched->RemoveGraph(gi);
   }
   if (sched) {
     sched->AddGraph(gi);
-  } 
+  }
   gi->_scheduler = sched;
 }
 
