@@ -229,7 +229,7 @@ struct DgSorter {
   bool hasPendingInputs(dgmoduledata_ptr_t mod) const;
   void dumpInputs(dgmoduledata_ptr_t mod) const;
   void dumpOutputs(dgmoduledata_ptr_t mod) const;
-  topology_ptr_t generateTopology(dgcontext_ptr_t ctx);
+  topology_ptr_t generateTopology();
   //////////////////////////////////////////////////////////
   dgcontext_ptr_t _dgcontext;
   const GraphData* _graphdata;

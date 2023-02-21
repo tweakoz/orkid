@@ -204,18 +204,16 @@ public: //
 void GradientModuleData::describeX(class_t* clazz) {
 }
 
-struct Op1ModuleData : public Img32ModuleData
-{
-	DeclareConcreteX( Op1ModuleData, Img32ModuleData );
+struct Op1ModuleData : public Img32ModuleData {
+  DeclareConcreteX(Op1ModuleData, Img32ModuleData);
 
 public: //
-
-	Op1ModuleData()
+  Op1ModuleData()
       : Img32ModuleData() {
-	    _image_input = std::shared_ptr<Img32>();
-		_paramA = std::make_shared<float>(0.0f);
-		_paramB = std::make_shared<float>(0.0f);
-  	}
+    _image_input = std::shared_ptr<Img32>();
+    _paramA      = std::make_shared<float>(0.0f);
+    _paramB      = std::make_shared<float>(0.0f);
+  }
 
   static std::shared_ptr<Op1ModuleData> createShared() {
     auto gmd = std::make_shared<Op1ModuleData>();
@@ -231,7 +229,7 @@ public: //
   float_ptr_t _paramB;
 };
 
-void Op1ModuleData::describeX(class_t* clazz){
+void Op1ModuleData::describeX(class_t* clazz) {
 }
 
 ////////////////////////////////////////////////////////////
@@ -487,56 +485,84 @@ void TestGraphData::describeX(class_t* clazz) {
 }
 
 TEST(dflow_a) {
+
+  /////////////////////////////////
+  // create dataflow graph
+  /////////////////////////////////
+
   auto gdata = std::make_shared<TestGraphData>();
-  auto gl    = GlobalModuleData::createShared();
-  auto grA   = GradientModuleData::createShared();
-  auto grB   = GradientModuleData::createShared();
-  auto op1   = Op1ModuleData::createShared();
 
-  GraphData::addModule(gdata, "globals", gl);
-  GraphData::addModule(gdata, "gradientA", grA);
-  GraphData::addModule(gdata, "gradientB", grB);
+  /////////////////////////////////
+  // create dataflow modules
+  /////////////////////////////////
+
+  auto gl  = GlobalModuleData::createShared();
+  auto grA = GradientModuleData::createShared();
+  auto grB = GradientModuleData::createShared();
+  auto op1 = Op1ModuleData::createShared();
+
   GraphData::addModule(gdata, "op1", op1);
+  GraphData::addModule(gdata, "gradientB", grB);
+  GraphData::addModule(gdata, "gradientA", grA);
+  GraphData::addModule(gdata, "globals", gl);
 
-  auto gl_out    = gl->outputNamed("OutputA");
-  auto gra_out   = grA->outputNamed("Output");
-  auto grb_inp_a = grB->inputNamed("InputA");
-  auto grb_out = grB->outputNamed("Output");
-  auto op1_inp = op1->inputNamed("Input");
-  auto op1_out = op1->outputNamed("Output");
+  /////////////////////////////////
+  // get dataflow plugs from modules
+  /////////////////////////////////
+
+  auto gl_out     = gl->outputNamed("OutputA");
+  auto gra_out    = grA->outputNamed("Output");
+  auto grb_inp_a  = grB->inputNamed("InputA");
+  auto grb_out    = grB->outputNamed("Output");
+  auto op1_inp    = op1->inputNamed("Input");
+  auto op1_out    = op1->outputNamed("Output");
   auto op1_parama = op1->inputNamed("ParamA");
   auto op1_paramb = op1->inputNamed("ParamB");
 
-  OrkAssert(gl_out);
-  OrkAssert(gra_out);
-  OrkAssert(grb_inp_a);
-  OrkAssert(grb_out);
-  OrkAssert(op1_inp);
-  OrkAssert(op1_out);
-  OrkAssert(op1_parama);
-  OrkAssert(op1_paramb);
+  /////////////////////////////////
+  // link dataflow graph
+  /////////////////////////////////
 
   gdata->safeConnect(grb_inp_a, gra_out);
   gdata->safeConnect(op1_inp, grb_out);
   gdata->safeConnect(op1_parama, gl_out);
   gdata->safeConnect(op1_paramb, gl_out);
 
+  /////////////////////////////////
+  // create a dependency graph context
+  /////////////////////////////////
+
   auto dgctx = std::make_shared<dgcontext>();
 
-  dgregisterblock float_regs("ptex_float", 4);
-  dgregisterblock img32_regs("ptex_img32", 16);
-  dgregisterblock img64_regs("ptex_img64", 4);
+  // create dg register sets
+
+  dgregisterblock float_regs("ptex_float", 4);  // 4 float32 registers
+  dgregisterblock img32_regs("ptex_img32", 16); // 16 Image32 registers
+  dgregisterblock img64_regs("ptex_img64", 4);  // 4 Image64 registers
+
+  /////////////////////////////////
+  // assign dg register sets to context
+  /////////////////////////////////
 
   dgctx->setRegisters<float>(&float_regs);
   dgctx->setRegisters<Img32>(&img32_regs);
   dgctx->setRegisters<Img64>(&img64_regs);
 
-  auto dgsorter                   = std::make_shared<DgSorter>(gdata.get(), dgctx);
-  dgsorter->_logchannel->_enabled = true;
+  /////////////////////////////////
+  // generate a topology sorted execution list
+  //  from dataflow graph
+  /////////////////////////////////
+
+  auto dgsorter                       = std::make_shared<DgSorter>(gdata.get(), dgctx);
+  dgsorter->_logchannel->_enabled     = true;
   dgsorter->_logchannel_reg->_enabled = true;
 
-  auto topo = dgsorter->generateTopology(dgctx);
+  auto topo = dgsorter->generateTopology();
   OrkAssert(topo);
+
+  /////////////////////////////////
+  // misc dump output
+  /////////////////////////////////
 
   dgsorter->dumpInputs(gl);
   dgsorter->dumpOutputs(gl);

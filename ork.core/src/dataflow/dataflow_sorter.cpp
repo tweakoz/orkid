@@ -337,7 +337,7 @@ void DgSorter::dumpInputs(dgmoduledata_ptr_t mod) const {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-topology_ptr_t DgSorter::generateTopology(dgcontext_ptr_t ctx) {
+topology_ptr_t DgSorter::generateTopology() {
 
   if (not _graphdata->isComplete()) {
     return nullptr;
@@ -380,9 +380,19 @@ topology_ptr_t DgSorter::generateTopology(dgcontext_ptr_t ctx) {
     size_t iserial        = node_info._serial;
     sorted.insert(std::make_pair(iserial, module));
   }
+  _logchannel->log("///////////////////////////");
+  _logchannel->log("TOPO: flattened");
+  _logchannel->log("///////////////////////////");
+
+  int index = 0;
   for (auto item : sorted) {
+    _logchannel->log("TOPO: index<%d> module<%s>", index, item.second->_name.c_str() );
     new_topo->_flattened.push_back(item.second);
+    index++;
   }
+
+  _logchannel->log("///////////////////////////");
+
   ///////////////////////////////////////
   ///////////////////////////////////////
 
