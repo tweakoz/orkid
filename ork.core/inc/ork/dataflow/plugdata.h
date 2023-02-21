@@ -139,47 +139,23 @@ public:
 
 template <typename vartype> //
 class outplugdata : public OutPlugData {
-  DeclareTemplateConcreteX(outplugdata<vartype>, OutPlugData);
+  DeclareTemplateAbstractX(outplugdata<vartype>, OutPlugData);
 
 public:
-  void operator=(const outplugdata<vartype>& oth) {
-    new (this) outplugdata<vartype>(oth);
-  }
-  outplugdata(const outplugdata<vartype>& oth)
-      : OutPlugData(oth._parent_module, oth._plugrate, oth.GetDataTypeId(), oth._name.c_str())
-      {
-  }
 
-  outplugdata()
-      : OutPlugData(0, EPR_EVENT, typeid(vartype), 0)
-      {
-  }
+  using data_type_t = vartype;
+  using data_type_ptr_t = std::shared_ptr<vartype>;
 
-  outplugdata(moduledata_ptr_t pmod, EPlugRate epr, const vartype default_value, const char* pname)
+  explicit outplugdata(moduledata_ptr_t pmod, EPlugRate epr, data_type_ptr_t default_value, const char* pname)
       : OutPlugData(pmod, epr, typeid(vartype), pname)
-      , _default(default_value)
-      {
-  }
-  outplugdata(moduledata_ptr_t pmod, EPlugRate epr, const vartype default_value, const std::type_info& tinfo, const char* pname)
-      : OutPlugData(pmod, epr, tinfo, pname)
       , _default(default_value) {
   }
+
   int MaxFanOut() const override {
     return MaxFanout<vartype>();
   }
-  ///////////////////////////////////////////////////////////////
-  //void connectData(const vartype* pd) {
-    //mOutputData = pd;
-  //}
-  ///////////////////////////////////////////////////////////////
-  // Internal value access (will not ever give effective value)
- // const vartype& internalData() const;
-  ///////////////////////////////////////////////////////////////
-  //const vartype&  value() const; // virtual
-                                   ///////////////////////////////////////////////////////////////
 
-  vartype _default;
-  //const vartype* mOutputData;
+  data_type_ptr_t _default;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -189,7 +165,10 @@ template <typename vartype> struct inplugdata : public InPlugData {
 
 public:
 
-  explicit inplugdata(moduledata_ptr_t pmod, EPlugRate epr, vartype& def, const char* pname)
+  using data_type_t = vartype;
+  using data_type_ptr_t = std::shared_ptr<vartype>;
+
+  explicit inplugdata(moduledata_ptr_t pmod, EPlugRate epr, data_type_ptr_t def, const char* pname)
       : InPlugData(pmod, epr, typeid(vartype), pname)
       , _default(def) {
   }
@@ -205,23 +184,8 @@ public:
 
   ///////////////////////////////////////////////////////////////
 
-  //template <typename T> std::shared_ptr<T> typedOutput() {
-    //return std::dynamic_ptr_cast<T>(mExternalOutput);
-  //}
+  data_type_ptr_t _default;
 
-  ///////////////////////////////////////////////////////////////
-
-  /*inline const vartype& GetValue() // virtual
-  {
-    outplugdata<vartype>* connected = 0;
-    GetTypedInput(connected);
-    return (connected != 0) ? (connected->GetValue()) : mDefault;
-  }*/
-
-  ///////////////////////////////////////////////////////////////
-
-  vartype& _default; // its a reference to prevent large plugs taking up memory
-                     // in the unconnected state it can connect to a global dummy
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -230,7 +194,7 @@ struct floatinplugdata : public inplugdata<float> {
   DeclareAbstractX(floatinplugdata, inplugdata<float>);
 
 public:
-  floatinplugdata(moduledata_ptr_t pmod, EPlugRate epr, float& def, const char* pname)
+  floatinplugdata(moduledata_ptr_t pmod, EPlugRate epr, data_type_ptr_t def, const char* pname)
       : inplugdata<float>(pmod, epr, def, pname) {
   }
 };
@@ -241,7 +205,7 @@ struct vect3inplugdata : public inplugdata<fvec3> {
   DeclareAbstractX(vect3inplugdata, inplugdata<fvec3>);
 
 public:
-  vect3inplugdata(moduledata_ptr_t pmod, EPlugRate epr, fvec3& def, const char* pname)
+  vect3inplugdata(moduledata_ptr_t pmod, EPlugRate epr, data_type_ptr_t def, const char* pname)
       : inplugdata<fvec3>(pmod, epr, def, pname) {
   }
 };
@@ -253,7 +217,7 @@ template <typename xf> struct floatinplugxfdata : public floatinplugdata {
   DeclareTemplateAbstractX(floatinplugxfdata<xf>, floatinplugdata);
 
 public:
-  explicit floatinplugxfdata(moduledata_ptr_t pmod, EPlugRate epr, float& def, const char* pname)
+  explicit floatinplugxfdata(moduledata_ptr_t pmod, EPlugRate epr, data_type_ptr_t def, const char* pname)
       : floatinplugdata(pmod, epr, def, pname)
       , mtransform() {
   }
@@ -277,7 +241,7 @@ template <typename xf> struct vect3inplugxfdata : public vect3inplugdata {
   DeclareTemplateAbstractX(vect3inplugxfdata<xf>, vect3inplugdata);
 
 public:
-  explicit vect3inplugxfdata(moduledata_ptr_t pmod, EPlugRate epr, fvec3& def, const char* pname)
+  explicit vect3inplugxfdata(moduledata_ptr_t pmod, EPlugRate epr, data_type_ptr_t def, const char* pname)
       : vect3inplugdata(pmod, epr, def, pname)
       , mtransform() {
   }

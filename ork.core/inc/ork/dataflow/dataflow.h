@@ -326,54 +326,24 @@ struct GraphInst {
   //void doNotify(const ork::event::Event* event); // virtual
 };
 
-///////////////////////////////////////////////////////////////////////////////
-
-#define OutPlugName(name) _plugOut_##name
-#define OutDataName(name) _plugOutData_##name
-#define InpPlugName(name) _plugInp_##name
-#define ConstructOutPlug(name, epr) OutPlugName(name)(this, epr, &OutDataName(name), #name)
-#define ConstructOutTypPlug(name, epr, typ) OutPlugName(name)(this, epr, &OutDataName(name), typ, #name)
-#define ConstructInpPlug(name, epr, def) InpPlugName(name)(this, epr, def, #name)
-
 ///////////
 
-#define DeclareFloatXfPlug(name)                                                                                                   \
-  float mf##name = 0.0f;                                                                                                                  \
-  mutable ork::dataflow::floatxfinplugdata InpPlugName(name);                                                                                  \
-  object_ptr_t InpAccessor##name() {                                                                                               \
-    return &InpPlugName(name);                                                                                                     \
-  }
+#if 0 // TODO
+template <typename class_t, typename data_t, typename deleg_t> //
+inline void implementFloatXfPlugReflectionX(object::ObjectClass* clazz, //
+                                            typename class_t::&data_t member, //
+                                            std::string name, //
+                                            typename data_t mmin, //
+                                            typename data_t mmax, //
+                                            typename deleg_t deleg) { //
+  clazz->directProperty(name, &member) //
+       ->annotate<ConstString>("editor.class", "ged.factory.plug") //
+       ->annotate<deleg_t>("ged.plug.delegate", deleg) //
+       ->annotate<data_t>("editor.range.min", mmin) //
+       ->annotate<data_t>("editor.range.max", mmax);
+}
 
-#define DeclareVect3XfPlug(name)                                                                                                   \
-  ork::fvec3 mv##name;                                                                                                             \
-  mutable ork::dataflow::vect3xfinplugdata InpPlugName(name);                                                                                  \
-  object_ptr_t InpAccessor##name() {                                                                                               \
-    return &InpPlugName(name);                                                                                                     \
-  }
-
-#define DeclareFloatOutPlug(name)                                                                                                  \
-  float OutDataName(name);                                                                                                         \
-  mutable floatoutplug_ptr_t OutPlugName(name);                                                                                 \
-  object_ptr_t _plugAccessor##name() {                                                                                               \
-    return OutPlugName(name);                                                                                                     \
-  }
-
-#define DeclareVect3OutPlug(name)                                                                                                  \
-  ork::fvec3 OutDataName(name);                                                                                                    \
-  mutable ork::dataflow::outplugdata<ork::fvec3> OutPlugName(name);                                                                            \
-  object_ptr_t PlgAccessor##name() {                                                                                               \
-    return &OutPlugName(name);                                                                                                     \
-  }
-
-///////////
-
-#define RegisterFloatXfPlug(cls, name, mmin, mmax, deleg)                                                                          \
-  ork::reflect::RegisterProperty(#name, &cls::InpAccessor##name);                                                                  \
-  ork::reflect::annotatePropertyForEditor<cls>(#name, "editor.class", "ged.factory.plug");                                         \
-  ork::reflect::annotatePropertyForEditor<cls>(#name, "ged.plug.delegate", #deleg);                                                \
-  ork::reflect::annotatePropertyForEditor<cls>(#name, "editor.range.min", #mmin);                                                  \
-  ork::reflect::annotatePropertyForEditor<cls>(#name, "editor.range.max", #mmax);
-
+#endif
 #define RegisterVect3XfPlug(cls, name, mmin, mmax, deleg)                                                                          \
   ork::reflect::RegisterProperty(#name, &cls::InpAccessor##name);                                                                  \
   ork::reflect::annotatePropertyForEditor<cls>(#name, "editor.class", "ged.factory.plug");                                         \

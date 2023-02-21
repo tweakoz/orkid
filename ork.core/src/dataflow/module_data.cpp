@@ -36,9 +36,7 @@ namespace ork::dataflow {
 void ModuleData::describeX(class_t* clazz) {
 }
 ModuleData::ModuleData()
-    : mpMorphable(nullptr)
-    , _numStaticInputs(0)
-    , _numStaticOutputs(0) {
+    : mpMorphable(nullptr) {
 }
 ModuleData::~ModuleData() {
 }
@@ -46,25 +44,37 @@ ModuleData::~ModuleData() {
 void ModuleData::UpdateHash() {
   mModuleHash = dataflow::node_hash();
 }
+///////////////////////////////////////////////////////////////////////////////
 int ModuleData::numInputs() const {
-  return _numStaticInputs;
+  return _inputs.size();
 }
 int ModuleData::numOutputs() const {
-  return _numStaticOutputs;
+  return _outputs.size();
 }
+///////////////////////////////////////////////////////////////////////////////
 inplugdata_ptr_t ModuleData::input(int idx) const {
-    return staticInput(idx);
-  }
-outplugdata_ptr_t ModuleData:: output(int idx) const {
-    return staticOutput(idx);
-  }
-
-/*int ModuleData::numChildren() const {
-  return 0;
+  return _inputs[idx];
 }
-moduledata_ptr_t ModuleData::child(int idx) const {
+outplugdata_ptr_t ModuleData::output(int idx) const {
+  return _outputs[idx];
+}
+///////////////////////////////////////////////////////////////////////////////
+inplugdata_ptr_t ModuleData::inputNamed(const std::string& named) const {
+  for( auto item : _inputs ){
+    if (named == item->_name) {
+      return item;
+    }
+  }
   return nullptr;
-}*/
+}
+outplugdata_ptr_t ModuleData::outputNamed(const std::string& named) const {
+  for( auto item : _outputs ){
+    if (named == item->_name) {
+      return item;
+    }
+  }
+  return nullptr;
+}
 ////////////////////////////////////////////
 void ModuleData::onTopologyUpdate(void) {
 }
@@ -81,81 +91,27 @@ void ModuleData::addDependency(outplugdata_ptr_t pout, inplugdata_ptr_t pin) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ModuleData::addInput(inplugdata_ptr_t plg) {
-  auto it = mStaticInputs.find(plg);
-  if (it == mStaticInputs.end()) {
-    mStaticInputs.insert(plg);
-    _numStaticInputs++;
-  }
+  _inputs.push_back(plg);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ModuleData::addOutput(outplugdata_ptr_t plg) {
-  auto it = mStaticOutputs.find(plg);
-  if (it == mStaticOutputs.end()) {
-    mStaticOutputs.insert(plg);
-    _numStaticOutputs++;
-  }
+  _outputs.push_back(plg);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ModuleData::removeInput(inplugdata_ptr_t plg) {
-  auto it = mStaticInputs.find(plg);
-  if (it != mStaticInputs.end()) {
-    mStaticInputs.erase(it);
-    _numStaticInputs--;
+  auto it = std::find(_inputs.begin(),_inputs.end(),plg);
+  if (it != _inputs.end()) {
+    _inputs.erase(it);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ModuleData::removeOutput(outplugdata_ptr_t plg) {
-  auto it = mStaticOutputs.find(plg);
-  if (it != mStaticOutputs.end()) {
-    mStaticOutputs.erase(it);
-    _numStaticOutputs--;
+  auto it = std::find(_outputs.begin(),_outputs.end(),plg);
+  if (it != _outputs.end()) {
+    _outputs.erase(it);
   }
 }
-///////////////////////////////////////////////////////////////////////////////
-inplugdata_ptr_t ModuleData::staticInput(int idx) const {
-  int size = mStaticInputs.size();
-  auto it  = mStaticInputs.begin();
-  for (int i = 0; i < idx; i++) {
-    it++;
-  }
-  inplugdata_ptr_t rval = (it != mStaticInputs.end()) ? *it : nullptr;
-  return rval;
-}
-///////////////////////////////////////////////////////////////////////////////
-outplugdata_ptr_t ModuleData::staticOutput(int idx) const {
-  int size = mStaticOutputs.size();
-  auto it  = mStaticOutputs.begin();
-  for (int i = 0; i < idx; i++) {
-    it++;
-  }
-  outplugdata_ptr_t rval = (it != mStaticOutputs.end()) ? *it : nullptr;
-  return rval;
-}
-///////////////////////////////////////////////////////////////////////////////
-inplugdata_ptr_t ModuleData::inputNamed(const std::string& named) const {
-  int inuminp = numInputs();
-  for (int ip = 0; ip < inuminp; ip++) {
-    inplugdata_ptr_t rval = input(ip);
-    OrkAssert(rval != nullptr);
-    if (named == rval->_name) {
-      return rval;
-    }
-  }
-  return nullptr;
-}
-///////////////////////////////////////////////////////////////////////////////
-outplugdata_ptr_t ModuleData::outputNamed(const std::string& named) const {
-  int inumout = numOutputs();
-  printf("module<%p> numouts<%d>\n", (void*) this, inumout);
-  for (int ip = 0; ip < inumout; ip++) {
-    outplugdata_ptr_t rval = output(ip);
-    OrkAssert(rval != nullptr);
-    if (named == rval->_name) {
-      return rval;
-    }
-  }
-  return 0;
-}
+
 /*bool ModuleData::IsOutputDirty(const ork::dataflow::outplugbase *pplug) const
 {
         bool bv = false;

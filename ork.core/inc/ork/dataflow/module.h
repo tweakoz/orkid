@@ -20,17 +20,28 @@ public:
   ////////////////////////////////////////////
   virtual void UpdateHash();
   ////////////////////////////////////////////
-  //virtual int numChildren() const;
-  //virtual moduledata_ptr_t child(int idx) const;
-  virtual int numInputs() const;
-  virtual int numOutputs() const;
+  int numInputs() const;
+  int numOutputs() const;
   virtual inplugdata_ptr_t input(int idx) const;
   virtual outplugdata_ptr_t output(int idx) const;
-  inplugdata_ptr_t staticInput(int idx) const;
-  outplugdata_ptr_t staticOutput(int idx) const;
-  inplugdata_ptr_t inputNamed(const std::string& named) const;
-  outplugdata_ptr_t outputNamed(const std::string& named) const;
+  virtual inplugdata_ptr_t inputNamed(const std::string& named) const;
+  virtual outplugdata_ptr_t outputNamed(const std::string& named) const;
   ////////////////////////////////////////////
+  template <typename plug_type,typename... A> static //
+  std::shared_ptr<inplugdata<plug_type>> createInputPlug(moduledata_ptr_t m, A&&... args){
+    using plug_impl_type = inplugdata<plug_type>;
+    auto plg = std::make_shared<plug_impl_type>(m,std::forward<A>(args)...);
+    m->addInput(plg);
+    return plg;
+  }
+  ////////////////////////////////////////////
+  template <typename plug_type,typename... A> static //
+  std::shared_ptr<outplugdata<plug_type>> createOutputPlug(moduledata_ptr_t m, A&&... args){
+    using plug_impl_type = outplugdata<plug_type>;
+    auto plg = std::make_shared<plug_impl_type>(m,std::forward<A>(args)...);
+    m->addOutput(plg);
+    return plg;
+  }
 //  moduledata_ptr_t childNamed(const std::string& named) const;
   ////////////////////////////////////////////
   virtual void onTopologyUpdate(void);
@@ -44,12 +55,14 @@ public:
   ////////////////////////////////////////////
   void addDependency(outplugdata_ptr_t pout, inplugdata_ptr_t pin);
   ////////////////////////////////////////////
-  template <typename T> std::shared_ptr<inplugdata<T>> typedInput(int idx) {
+  template <typename T> //
+  std::shared_ptr<inplugdata<T>> typedInput(int idx) {
     inplugdata_ptr_t plug = input(idx);
     return std::dynamic_pointer_cast<T>(plug);
   }
   ////////////////////////////////////////////
-  template <typename T> std::shared_ptr<outplug<T>> typedOutput(int idx) {
+  template <typename T> //
+  std::shared_ptr<outplug<T>> typedOutput(int idx) {
     outplugdata_ptr_t plug = output(idx);
     return std::dynamic_pointer_cast<T>(plug);
   }
@@ -61,8 +74,8 @@ public:
   morphable_ptr_t mpMorphable;
   int _numStaticInputs;
   int _numStaticOutputs;
-  std::set<inplugdata_ptr_t> mStaticInputs;
-  std::set<outplugdata_ptr_t> mStaticOutputs;
+  std::vector<inplugdata_ptr_t> _inputs;
+  std::vector<outplugdata_ptr_t> _outputs;
 
 };
 
