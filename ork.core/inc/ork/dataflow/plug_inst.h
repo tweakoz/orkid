@@ -75,11 +75,13 @@ public:
 
   inline explicit outpluginst( const outplugdata<vartype>* data ) //
       : OutPlugInst(data) //
-      , _typed_data(data) { //
+      , _typed_plugdata(data) { //
+
+      _value = std::make_shared<data_type_t>();
   }
 
-  data_type_ptr_t _default;
-  const outplugdata<vartype>* _typed_data;
+  data_type_ptr_t _value;
+  const outplugdata<vartype>* _typed_plugdata;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -93,11 +95,13 @@ public:
 
   inline explicit inpluginst( const inplugdata<vartype>* data ) //
       : InPlugInst(data) //
-      , _typed_data(data) { //
+      , _typed_plugdata(data) { //
   }
 
+  virtual data_type_ptr_t value() const;
+
   data_type_ptr_t _default;
-  const inplugdata<vartype>* _typed_data;
+  const inplugdata<vartype>* _typed_plugdata;
 
 };
 

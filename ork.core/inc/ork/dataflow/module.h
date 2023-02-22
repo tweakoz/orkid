@@ -137,12 +137,14 @@ struct DgModuleInst : public ModuleInst {
   DgModuleInst(const DgModuleData* _this);
   virtual ~DgModuleInst();
 
-  void divideWork(scheduler_ptr_t sch, cluster* clus);
-
-  virtual void _doDivideWork(scheduler_ptr_t sch, cluster* clus);
-  virtual void Compute(workunit* wu) {}
-  virtual void combineWork(const cluster* clus) {}
-  virtual void releaseWorkUnit(workunit* wu);
+  virtual void compute(GraphInst* inst) {}
+  virtual void onLink(GraphInst* inst) {}
+    
+  //void divideWork(scheduler_ptr_t sch, cluster* clus);
+  //virtual void _doDivideWork(scheduler_ptr_t sch, cluster* clus);
+  //virtual void Compute(workunit* wu) {}
+  //virtual void combineWork(const cluster* clus) {}
+  //virtual void releaseWorkUnit(workunit* wu);
 
   const DgModuleData* _dgmodule_data;
 

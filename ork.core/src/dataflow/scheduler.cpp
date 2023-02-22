@@ -154,7 +154,7 @@ void processor::ProcessorThreadMain()
 
 		if( curworkunit )
 		{
-			curworkunit->GetModule()->Compute( curworkunit );
+			//curworkunit->GetModule()->Compute( curworkunit );
 			curworkunit->GetCluster()->NotifyWorkUnitFinished(curworkunit);
 			orkprintf( "processor<%s> finished wu<%p>\n", mName.c_str(), curworkunit );
 			curworkunit = 0;

@@ -42,6 +42,11 @@ template <> int MaxFanout<ork::dataflow::test::ImgBase>() {
 namespace test {
 ////////////////////////////////////////////////////////////
 
+struct ImageGenTestImpl {
+
+};
+
+
 typedef ork::dataflow::outplugdata<ImgBase> ImgOutPlug;
 typedef ork::dataflow::inplugdata<ImgBase> ImgInPlug;
 
@@ -99,6 +104,17 @@ struct GlobalModuleInst : public BaseModuleInst {
   GlobalModuleInst(const GlobalModuleData* data)
       : BaseModuleInst(data) {
   }
+  void onLink(GraphInst* inst) final{
+    
+  }
+  void compute(GraphInst* inst) final {
+    int numinp = numInputs();
+    int numout = numOutputs();
+
+    printf( "COMPUTE GlobalModuleInst<%p:%s>\n", (void*) this, _dgmodule_data->_name.c_str() );
+
+
+  }
 };
 
 dgmoduleinst_ptr_t GlobalModuleData::createInstance() const {
@@ -118,7 +134,7 @@ public: //
   {	ImgOutPlug* outplug = 0;
       GetTypedOutput<ImgBase>(0,outplug);
       const ImgBase& base = outplug->GetValue();
-      //printf( "MOD<%p> WBI<%d>\n", this, base.miBufferIndex );
+      //printf( "MOD<%p> WBI<%d>\n", (void*) this, base.miBufferIndex );
       return gBuffer;
       //return ptex.GetBuffer(outplug->GetValue().miBufferIndex);
   }*/
@@ -245,6 +261,14 @@ struct GradientModuleInst : public Img32ModuleInst {
   GradientModuleInst(const GradientModuleData* data)
       : Img32ModuleInst(data) {
   }
+  void onLink(GraphInst* inst) final{
+    
+  }
+  void compute(GraphInst* inst) final {
+    int numinp = numInputs();
+    int numout = numOutputs();
+    printf( "COMPUTE GradientModuleInst<%p:%s>\n", (void*) this, _dgmodule_data->_name.c_str() );
+  }
 };
 
 dgmoduleinst_ptr_t GradientModuleData::createInstance() const {
@@ -286,6 +310,14 @@ void Op1ModuleData::describeX(class_t* clazz) {
 struct Op1ModuleInst : public Img32ModuleInst {
   Op1ModuleInst(const Op1ModuleData* data)
       : Img32ModuleInst(data) {
+  }
+  void onLink(GraphInst* inst) final{
+    
+  }
+  void compute(GraphInst* inst) final {
+    int numinp = numInputs();
+    int numout = numOutputs();
+    printf( "COMPUTE Op1ModuleInst<%p:%s>\n", (void*) this, _dgmodule_data->_name.c_str() );
   }
 };
 
@@ -332,6 +364,14 @@ struct Op2ModuleInst : public Img32ModuleInst {
   Op2ModuleInst(const Op2ModuleData* data)
       : Img32ModuleInst(data) {
   }
+  void onLink(GraphInst* inst) final{
+    
+  }
+  void compute(GraphInst* inst) final {
+    int numinp = numInputs();
+    int numout = numOutputs();
+    printf( "COMPUTE Op2ModuleInst<%p:%s>\n", (void*) this, _dgmodule_data->_name.c_str() );
+  }
 };
 
 dgmoduleinst_ptr_t Op2ModuleData::createInstance() const {
@@ -377,12 +417,12 @@ struct TestDataSet {
     _grA = GradientModuleData::createShared();
     _grB = GradientModuleData::createShared();
     _op1 = Op1ModuleData::createShared();
-    _op2 = Op2ModuleData::createShared();
-    _op3 = Op2ModuleData::createShared();
+    _op2A = Op2ModuleData::createShared();
+    _op2B = Op2ModuleData::createShared();
 
     GraphData::addModule(_testgraphdata, "op1", _op1);
-    GraphData::addModule(_testgraphdata, "op2", _op2);
-    GraphData::addModule(_testgraphdata, "op3", _op3);
+    GraphData::addModule(_testgraphdata, "op2A", _op2A);
+    GraphData::addModule(_testgraphdata, "op2B", _op2B);
     GraphData::addModule(_testgraphdata, "gradientB", _grB);
     GraphData::addModule(_testgraphdata, "gradientA", _grA);
     GraphData::addModule(_testgraphdata, "globals", _gl);
@@ -408,17 +448,17 @@ struct TestDataSet {
     _op1_parama = _op1->inputNamed("ParamA");
     _op1_paramb = _op1->inputNamed("ParamB");
     //
-    _op2_inpA   = _op2->inputNamed("InputA");
-    _op2_inpB   = _op2->inputNamed("InputB");
-    _op2_out    = _op2->outputNamed("Output");
-    _op2_parama = _op2->inputNamed("ParamA");
-    _op2_paramb = _op2->inputNamed("ParamB");
+    _op2_inpA   = _op2A->inputNamed("InputA");
+    _op2_inpB   = _op2A->inputNamed("InputB");
+    _op2_out    = _op2A->outputNamed("Output");
+    _op2_parama = _op2A->inputNamed("ParamA");
+    _op2_paramb = _op2A->inputNamed("ParamB");
     //
-    _op3_inpA   = _op3->inputNamed("InputA");
-    _op3_inpB   = _op3->inputNamed("InputB");
-    _op3_out    = _op3->outputNamed("Output");
-    _op3_parama = _op3->inputNamed("ParamA");
-    _op3_paramb = _op3->inputNamed("ParamB");
+    _op2B_inpA   = _op2B->inputNamed("InputA");
+    _op2B_inpB   = _op2B->inputNamed("InputB");
+    _op2B_out    = _op2B->outputNamed("Output");
+    _op2B_parama = _op2B->inputNamed("ParamA");
+    _op2B_paramb = _op2B->inputNamed("ParamB");
 
     /////////////////////////////////
     // create a dependency graph context
@@ -459,10 +499,10 @@ struct TestDataSet {
     _testgraphdata->safeConnect(_op2_parama, _gl_outC);
     _testgraphdata->safeConnect(_op2_paramb, _gl_outA);
     //
-    _testgraphdata->safeConnect(_op3_inpA, _grb_out);
-    _testgraphdata->safeConnect(_op3_inpB, _op2_out);
-    _testgraphdata->safeConnect(_op3_parama, _gl_outC);
-    _testgraphdata->safeConnect(_op3_paramb, _gl_outA);
+    _testgraphdata->safeConnect(_op2B_inpA, _grb_out);
+    _testgraphdata->safeConnect(_op2B_inpB, _op2_out);
+    _testgraphdata->safeConnect(_op2B_parama, _gl_outC);
+    _testgraphdata->safeConnect(_op2B_paramb, _gl_outA);
   }
 
   /////////////////////////////////////////////////////
@@ -472,11 +512,11 @@ struct TestDataSet {
     linkConfig1(); // start with config1 as a reference
 
     _testgraphdata->disconnect(_op2_inpA);
-    _testgraphdata->disconnect(_op3_inpA);
-    _testgraphdata->disconnect(_op3_inpB);
-    _testgraphdata->safeConnect(_op3_inpA, _grb_out);
-    _testgraphdata->safeConnect(_op3_inpB, _grb_out);
-    _testgraphdata->safeConnect(_op2_inpA, _op3_out);
+    _testgraphdata->disconnect(_op2B_inpA);
+    _testgraphdata->disconnect(_op2B_inpB);
+    _testgraphdata->safeConnect(_op2B_inpA, _grb_out);
+    _testgraphdata->safeConnect(_op2B_inpB, _grb_out);
+    _testgraphdata->safeConnect(_op2_inpA, _op2B_out);
   }
 
   /////////////////////////////////////////////////////
@@ -493,8 +533,8 @@ struct TestDataSet {
   dgmoduledata_ptr_t _grA;
   dgmoduledata_ptr_t _grB;
   dgmoduledata_ptr_t _op1;
-  dgmoduledata_ptr_t _op2;
-  dgmoduledata_ptr_t _op3;
+  dgmoduledata_ptr_t _op2A;
+  dgmoduledata_ptr_t _op2B;
 
   outplugdata_ptr_t _gl_outA;
   outplugdata_ptr_t _gl_outB;
@@ -519,20 +559,20 @@ struct TestDataSet {
   inplugdata_ptr_t _op2_inpB;
   outplugdata_ptr_t _op2_out;
 
-  inplugdata_ptr_t _op3_parama;
-  inplugdata_ptr_t _op3_paramb;
-  inplugdata_ptr_t _op3_inpA;
-  inplugdata_ptr_t _op3_inpB;
-  outplugdata_ptr_t _op3_out;
+  inplugdata_ptr_t _op2B_parama;
+  inplugdata_ptr_t _op2B_paramb;
+  inplugdata_ptr_t _op2B_inpA;
+  inplugdata_ptr_t _op2B_inpB;
+  outplugdata_ptr_t _op2B_out;
 };
 
 TEST(dflow_a) {
 
-  printf("////////////////////////////////////////////////////////////\n");
-  printf("////// ORDERING TEST\n");
-  printf("////////////////////////////////////////////////////////////\n");
-
   {
+    printf("////////////////////////////////////////////////////////////\n");
+    printf("////// ORDERING TEST\n");
+    printf("////////////////////////////////////////////////////////////\n");
+
     auto test_data = std::make_shared<TestDataSet>();
     test_data->linkConfig1();
 
@@ -547,8 +587,8 @@ TEST(dflow_a) {
         test_data->_grA, //
         test_data->_grB, //
         test_data->_op1, //
-        test_data->_op2, //
-        test_data->_op3};
+        test_data->_op2A, //
+        test_data->_op2B};
     CHECK(expected_order == topo->_flattened);
 
     /////////////////////////////////
@@ -572,12 +612,11 @@ TEST(dflow_a) {
   // reordered
   /////////////////////////////////
 
-  printf("////////////////////////////////////////////////////////////\n");
-  printf("////// ORDERING TEST 2\n");
-  printf("////////////////////////////////////////////////////////////\n");
-
   {
-
+    printf("////////////////////////////////////////////////////////////\n");
+    printf("////// ORDERING TEST 2\n");
+    printf("////////////////////////////////////////////////////////////\n");
+  
     auto test_data = std::make_shared<TestDataSet>();
     test_data->linkConfig2();
     auto topo = test_data->_dgsorter->generateTopology();
@@ -586,26 +625,28 @@ TEST(dflow_a) {
         test_data->_grA, //
         test_data->_grB, //
         test_data->_op1, //
-        test_data->_op3, //
-        test_data->_op2};
+        test_data->_op2B, //
+        test_data->_op2A};
     CHECK(expected_order == topo->_flattened);
   }
 
   /////////////////////////////////
   // GraphInst Test
   /////////////////////////////////
-
-  printf("////////////////////////////////////////////////////////////\n");
-  printf("////// GRAPHINST TEST 2\n");
-  printf("////////////////////////////////////////////////////////////\n");
-
   {
+    printf("////////////////////////////////////////////////////////////\n");
+    printf("////// GRAPHINST COMPUTE TEST\n");
+    printf("////////////////////////////////////////////////////////////\n");
 
     auto test_data = std::make_shared<TestDataSet>();
     test_data->linkConfig2();
     auto gi   = std::make_shared<GraphInst>(test_data->_testgraphdata);
     auto topo = test_data->_dgsorter->generateTopology();
     gi->updateTopology(topo);
+
+    auto impl = gi->_impl.makeShared<ImageGenTestImpl>();
+
+    gi->compute();
   }
 }
 
@@ -632,6 +673,11 @@ template <> inpluginst_ptr_t inplugdata<test::Img32>::createInstance() const {
 template <> outpluginst_ptr_t outplugdata<test::Img32>::createInstance() const {
   return std::make_shared<outpluginst<test::Img32>>(this);
 }
+template <> 
+std::shared_ptr<test::Img32> inpluginst<test::Img32>::value() const{
+  return _default;
+}
+
 template struct outplugdata<test::Img32>;
 template struct inplugdata<test::Img32>;
 ///////////////////////////////////////////////////////////////////////////////
@@ -650,6 +696,10 @@ template <> inpluginst_ptr_t inplugdata<test::Img64>::createInstance() const {
 }
 template <> outpluginst_ptr_t outplugdata<test::Img64>::createInstance() const {
   return std::make_shared<outpluginst<test::Img64>>(this);
+}
+template <> 
+std::shared_ptr<test::Img64> inpluginst<test::Img64>::value() const{
+  return _default;
 }
 template struct outplugdata<test::Img64>;
 template struct inplugdata<test::Img64>;

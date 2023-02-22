@@ -315,6 +315,8 @@ struct GraphInst {
   ////////////////////////////////////////////
   void setPending(bool bv);
   ////////////////////////////////////////////
+  void compute();
+  ////////////////////////////////////////////
 
   graphdata_ptr_t _graphdata;
   topology_ptr_t _topology;
@@ -326,6 +328,8 @@ struct GraphInst {
   std::vector<dgmoduledata_ptr_t> _ordered_module_datas;
   std::vector<dgmoduleinst_ptr_t> _ordered_module_insts;
   std::set<int> _outputRegisters;
+
+  svar64_t _impl;
 
   //void doNotify(const ork::event::Event* event); // virtual
 };

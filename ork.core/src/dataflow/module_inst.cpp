@@ -25,8 +25,11 @@ namespace ork::dataflow {
 ModuleInst::ModuleInst(const ModuleData* absdata)
     : _abstract_module_data(absdata) {
 }
+int ModuleInst::numInputs() const {
+  return _inputs.size();
+}
 int ModuleInst::numOutputs() const {
-  return _abstract_module_data->numOutputs();
+  return _outputs.size();
 }
 void ModuleInst::_doSetInputDirty(inpluginst_ptr_t plg) {
 }
@@ -68,23 +71,6 @@ DgModuleInst::DgModuleInst(const DgModuleData* absdata)
 DgModuleInst::~DgModuleInst(){
 
 }
-///////////////////////////////////////////////////////////////////////////////
-void DgModuleInst::divideWork(scheduler_ptr_t sch, cluster* clus) {
-  //clus->AddModule(this);
-  _doDivideWork(sch, clus);
-}
-///////////////////////////////////////////////////////////////////////////////
-void DgModuleInst::_doDivideWork(scheduler_ptr_t sch, cluster* clus) {
-  //workunit* wu = new workunit(this, clus, 0);
-  //wu->SetAffinity(_dgmodule_data->GetAffinity());
-  //clus->AddWorkUnit(wu);
-}
-///////////////////////////////////////////////////////////////////////////////
-void DgModuleInst::releaseWorkUnit(workunit* wu) {
-  //OrkAssert(wu->GetModule() == this);
-  delete wu;
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::dataflow
 ///////////////////////////////////////////////////////////////////////////////
