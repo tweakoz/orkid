@@ -54,10 +54,10 @@ bool ModuleInst::isDirty(void) const {
   return rval;
 }
 inpluginst_ptr_t ModuleInst::input(int idx) const{
-  return mStaticInputs[idx];
+  return _inputs[idx];
 }
 outpluginst_ptr_t ModuleInst::output(int idx) const{
-  return mStaticOutputs[idx];
+  return _outputs[idx];
 }
 ///////////////////////////////////////////////////////////////////////////////
 DgModuleInst::DgModuleInst(const DgModuleData* absdata)
@@ -66,9 +66,13 @@ DgModuleInst::DgModuleInst(const DgModuleData* absdata)
 
   for( auto input : absdata->_inputs ){
     auto plug_inst = input->createInstance();
+    OrkAssert(plug_inst);
+    _inputs.push_back(plug_inst);
   }
   for( auto output : absdata->_outputs ){
     auto plug_inst = output->createInstance();
+    OrkAssert(plug_inst);
+    _outputs.push_back(plug_inst);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////

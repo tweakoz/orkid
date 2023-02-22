@@ -117,8 +117,6 @@ struct ModuleInst {
   int numInputs() const;
   inpluginst_ptr_t input(int idx) const;
   outpluginst_ptr_t output(int idx) const;
-  inpluginst_ptr_t staticInput(int idx) const;
-  outpluginst_ptr_t staticOutput(int idx) const;
   inpluginst_ptr_t inputNamed(const std::string& named);
   outpluginst_ptr_t outputNamed(const std::string& named);
   std::string name() const;
@@ -130,8 +128,8 @@ struct ModuleInst {
   virtual bool isDirty(void) const;
 
   const ModuleData* _abstract_module_data;
-  std::vector<inpluginst_ptr_t> mStaticInputs;
-  std::vector<outpluginst_ptr_t> mStaticOutputs;
+  std::vector<inpluginst_ptr_t> _inputs;
+  std::vector<outpluginst_ptr_t> _outputs;
 
 };
 

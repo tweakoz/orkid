@@ -48,9 +48,6 @@ PlugData::PlugData(moduledata_ptr_t pmod, EPlugDir edir, EPlugRate epr, const st
     , _name(pname ? pname : "noname") {
   printf("PlugData<%p> pmod<%p> construct name<%s>\n", (void*) this, (void*) pmod.get(), _name.c_str());
 }
-pluginst_ptr_t PlugData::createInstance() const{
-  return nullptr;
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 void InPlugData::describeX(class_t* clazz) {
@@ -70,6 +67,9 @@ InPlugData::InPlugData(moduledata_ptr_t pmod, EPlugRate epr, const std::type_inf
 }
 InPlugData::~InPlugData(){
 
+}
+inpluginst_ptr_t InPlugData::createInstance() const{
+  return nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
 /*void InPlugData::DoSetDirty(bool bd) {
@@ -102,27 +102,29 @@ void OutPlugData::_disconnect(inplugdata_ptr_t pinplug){
     _connections.erase(it);
   }
 }
+outpluginst_ptr_t OutPlugData::createInstance() const{
+  return nullptr;
+}
+///////////////////////////////////////////////////////////////////////////////
+// plugdata<float>
 ///////////////////////////////////////////////////////////////////////////////
 template <> int MaxFanout<float>() {
   return 0;
 }
 template <> void inplugdata<float>::describeX(class_t* clazz) {
 }
+template <> inpluginst_ptr_t inplugdata<float>::createInstance() const{
+  return std::make_shared<inpluginst<float>>(this);
+}
 template <> void outplugdata<float>::describeX(class_t* clazz) {
 }
+template <> outpluginst_ptr_t outplugdata<float>::createInstance() const{
+  return std::make_shared<outpluginst<float>>(this);
+}
+
 template class outplugdata<float>;
 ///////////////////////////////////////////////////////////////////////////////
-/*template <> const float& outplugdata<float>::GetInternalData() const {
-  static const float kdefault = 0.0f;
-  if (0 == mOutputData)
-    return kdefault;
-  return *mOutputData;
-}
-///////////////////////////////////////////////////////////////////////////////
-template <> const float& outplugdata<float>::GetValue() const {
-  return GetInternalData();
-}*/
-
+// plugdata<fvec3>
 ///////////////////////////////////////////////////////////////////////////////
 template <> int MaxFanout<fvec3>() {
   return 0;
@@ -131,19 +133,13 @@ template <> void inplugdata<fvec3>::describeX(class_t* clazz) {
 }
 template <> void outplugdata<fvec3>::describeX(class_t* clazz) {
 }
+template <> inpluginst_ptr_t inplugdata<fvec3>::createInstance() const{
+  return std::make_shared<inpluginst<fvec3>>(this);
+}
+template <> outpluginst_ptr_t outplugdata<fvec3>::createInstance() const{
+  return std::make_shared<outpluginst<fvec3>>(this);
+}
 template class outplugdata<fvec3>;
-///////////////////////////////////////////////////////////////////////////////
-/*template <> const fvec3& outplugdata<fvec3>::GetInternalData() const {
-  static const fvec3 kdefault;
-  if (0 == mOutputData) {
-    return kdefault;
-  }
-  return *mOutputData;
-}*/
-///////////////////////////////////////////////////////////////////////////////
-/*template <> const fvec3& outplugdata<fvec3>::GetValue() const {
-  return GetInternalData();
-}*/
 ///////////////////////////////////////////////////////////////////////////////
 void floatinplugdata::describeX(class_t* clazz) {
   /*ork::reflect::RegisterProperty(
@@ -284,6 +280,7 @@ void morphable::HandleMorphEvent(const morph_event* me) {
       break;
   }
 }
+
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::dataflow

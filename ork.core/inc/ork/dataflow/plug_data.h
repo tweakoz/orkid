@@ -71,8 +71,6 @@ public:
     return std::dynamic_pointer_cast<T>(_parent_module);
   }
 
-  virtual pluginst_ptr_t createInstance() const;
-
   moduledata_ptr_t _parent_module;
   EPlugDir _plugdir;
   EPlugRate _plugrate;
@@ -99,6 +97,8 @@ public:
 
   bool isConnected() const;
   bool isMorphable() const;
+
+  virtual inpluginst_ptr_t createInstance() const;
 
   outplugdata_ptr_t _connectedOutput;                       // which EXTERNAL output plug are we connected to
   orkvector<outplugdata_ptr_t> _internalOutputConnections; // which output plugs IN THE SAME MODULE are connected to me ?
@@ -133,6 +133,8 @@ public:
 
   void _disconnect(inplugdata_ptr_t pinplug);
 
+  virtual outpluginst_ptr_t createInstance() const;
+
   mutable orkvector<inplugdata_ptr_t> _connections;
 
 };
@@ -148,14 +150,19 @@ public:
   using data_type_t = vartype;
   using data_type_ptr_t = std::shared_ptr<vartype>;
 
-  explicit outplugdata(moduledata_ptr_t pmod, EPlugRate epr, data_type_ptr_t default_value, const char* pname)
-      : OutPlugData(pmod, epr, typeid(vartype), pname)
-      , _default(default_value) {
+  inline explicit outplugdata( moduledata_ptr_t pmod, //
+                               EPlugRate epr, //
+                               data_type_ptr_t default_value, //
+                               const char* pname) //
+      : OutPlugData(pmod, epr, typeid(vartype), pname) //
+      , _default(default_value) { //
   }
 
-  int MaxFanOut() const override {
+  inline int MaxFanOut() const override {
     return MaxFanout<vartype>();
   }
+
+  outpluginst_ptr_t createInstance() const override;
 
   data_type_ptr_t _default;
 };
@@ -170,21 +177,15 @@ public:
   using data_type_t = vartype;
   using data_type_ptr_t = std::shared_ptr<vartype>;
 
-  explicit inplugdata(moduledata_ptr_t pmod, EPlugRate epr, data_type_ptr_t def, const char* pname)
-      : InPlugData(pmod, epr, typeid(vartype), pname)
-      , _default(def) {
+  inline explicit inplugdata( moduledata_ptr_t pmod, //
+                              EPlugRate epr, //
+                              data_type_ptr_t def, //
+                              const char* pname) //
+      : InPlugData(pmod, epr, typeid(vartype), pname) //
+      , _default(def) { //
   }
 
-  ////////////////////////////////////////////
-
-  void connect(outplugdata<vartype>* vt) {
-    connectExternal(vt);
-  }
-  void connect(outplugdata<vartype>& vt) {
-    connectExternal(&vt);
-  }
-
-  ///////////////////////////////////////////////////////////////
+  inpluginst_ptr_t createInstance() const override;
 
   data_type_ptr_t _default;
 

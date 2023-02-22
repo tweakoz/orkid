@@ -59,4 +59,43 @@ struct OutPlugInst : public PlugInst {
   dataflow::node_hash _outputhash;
   dgregister* _register = nullptr;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename vartype> //
+class outpluginst : public OutPlugInst {
+
+public:
+
+  using data_type_t = vartype;
+  using data_type_ptr_t = std::shared_ptr<vartype>;
+
+  inline explicit outpluginst( const outplugdata<vartype>* data ) //
+      : OutPlugInst(data) //
+      , _typed_data(data) { //
+  }
+
+  data_type_ptr_t _default;
+  const outplugdata<vartype>* _typed_data;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename vartype> struct inpluginst : public InPlugInst {
+
+public:
+
+  using data_type_t = vartype;
+  using data_type_ptr_t = std::shared_ptr<vartype>;
+
+  inline explicit inpluginst( const inplugdata<vartype>* data ) //
+      : InPlugInst(data) //
+      , _typed_data(data) { //
+  }
+
+  data_type_ptr_t _default;
+  const inplugdata<vartype>* _typed_data;
+
+};
+
 } // namespace ork::dataflow

@@ -16,8 +16,6 @@
 #include <ork/application/application.h>
 #include <ork/reflect/properties/register.h>
 
-#if 1
-
 ////////////////////////////////////////////////////////////
 
 namespace ork { namespace dataflow {
@@ -616,48 +614,66 @@ TEST(dflow_a) {
 } // namespace test
 }} // namespace ork::dataflow
 
-////////////////////////////////////////////////////////////
-
-template <> int ork::dataflow::MaxFanout<ork::dataflow::test::Img32>() {
+///////////////////////////////////////////////////////////////////////////////
+// plugdata<Img32>
+///////////////////////////////////////////////////////////////////////////////
+namespace ork::dataflow {
+template <> int MaxFanout<test::Img32>() {
   return 0;
 }
-
-template <> void ork::dataflow::outplugdata<ork::dataflow::test::Img32>::describeX(class_t* clazz) {
+template <> void outplugdata<test::Img32>::describeX(class_t* clazz) {
 }
 
-template <> void ork::dataflow::inplugdata<ork::dataflow::test::Img32>::describeX(class_t* clazz) {
+template <> void inplugdata<test::Img32>::describeX(class_t* clazz) {
 }
-
-template <> int ork::dataflow::MaxFanout<ork::dataflow::test::Img64>() {
+template <> inpluginst_ptr_t inplugdata<test::Img32>::createInstance() const {
+  return std::make_shared<inpluginst<test::Img32>>(this);
+}
+template <> outpluginst_ptr_t outplugdata<test::Img32>::createInstance() const {
+  return std::make_shared<outpluginst<test::Img32>>(this);
+}
+template struct outplugdata<test::Img32>;
+template struct inplugdata<test::Img32>;
+///////////////////////////////////////////////////////////////////////////////
+// plugdata<Img64>
+///////////////////////////////////////////////////////////////////////////////
+template <> int MaxFanout<test::Img64>() {
   return 0;
 }
-
-template <> void ork::dataflow::outplugdata<ork::dataflow::test::Img64>::describeX(class_t* clazz) {
+template <> void outplugdata<test::Img64>::describeX(class_t* clazz) {
 }
 
-template <> void ork::dataflow::inplugdata<ork::dataflow::test::Img64>::describeX(class_t* clazz) {
+template <> void inplugdata<test::Img64>::describeX(class_t* clazz) {
 }
-
+template <> inpluginst_ptr_t inplugdata<test::Img64>::createInstance() const {
+  return std::make_shared<inpluginst<test::Img64>>(this);
+}
+template <> outpluginst_ptr_t outplugdata<test::Img64>::createInstance() const {
+  return std::make_shared<outpluginst<test::Img64>>(this);
+}
+template struct outplugdata<test::Img64>;
+template struct inplugdata<test::Img64>;
+} // namespace ork::dataflow
 ////////////////////////////////////////////////////////////
 
-ImplementTemplateReflectionX(ork::dataflow::outplugdata<ork::dataflow::test::Img32>, "dflowtest/outplugimg32");
-ImplementTemplateReflectionX(ork::dataflow::inplugdata<ork::dataflow::test::Img32>, "dflowtest/inplugimg32");
+using namespace ork::dataflow;
 
-ImplementTemplateReflectionX(ork::dataflow::outplugdata<ork::dataflow::test::Img64>, "dflowtest/outplugimg64");
-ImplementTemplateReflectionX(ork::dataflow::inplugdata<ork::dataflow::test::Img64>, "dflowtest/inplugimg64");
+ImplementTemplateReflectionX(outplugdata<test::Img32>, "dflowtest/outplugimg32");
+ImplementTemplateReflectionX(inplugdata<test::Img32>, "dflowtest/inplugimg32");
 
-ImplementReflectionX(ork::dataflow::test::BaseModuleData, "dflowtest/BaseModule");
-ImplementReflectionX(ork::dataflow::test::GlobalModuleData, "dflowtest/GlobalModule");
+ImplementTemplateReflectionX(outplugdata<test::Img64>, "dflowtest/outplugimg64");
+ImplementTemplateReflectionX(inplugdata<test::Img64>, "dflowtest/inplugimg64");
 
-ImplementReflectionX(ork::dataflow::test::ImgModuleData, "dflowtest/ImgModule");
-ImplementReflectionX(ork::dataflow::test::Img32ModuleData, "dflowtest/Img32Module");
-ImplementReflectionX(ork::dataflow::test::Img64ModuleData, "dflowtest/Img64Module");
+ImplementReflectionX(test::BaseModuleData, "dflowtest/BaseModule");
+ImplementReflectionX(test::GlobalModuleData, "dflowtest/GlobalModule");
 
-ImplementReflectionX(ork::dataflow::test::TestGraphData, "dflowtest/TestGraphData");
-ImplementReflectionX(ork::dataflow::test::GradientModuleData, "dflowtest/GradientModule");
-ImplementReflectionX(ork::dataflow::test::Op1ModuleData, "dflowtest/Op1Module");
-ImplementReflectionX(ork::dataflow::test::Op2ModuleData, "dflowtest/Op2Module");
+ImplementReflectionX(test::ImgModuleData, "dflowtest/ImgModule");
+ImplementReflectionX(test::Img32ModuleData, "dflowtest/Img32Module");
+ImplementReflectionX(test::Img64ModuleData, "dflowtest/Img64Module");
+
+ImplementReflectionX(test::TestGraphData, "dflowtest/TestGraphData");
+ImplementReflectionX(test::GradientModuleData, "dflowtest/GradientModule");
+ImplementReflectionX(test::Op1ModuleData, "dflowtest/Op1Module");
+ImplementReflectionX(test::Op2ModuleData, "dflowtest/Op2Module");
 
 ////////////////////////////////////////////////////////////
-
-#endif
