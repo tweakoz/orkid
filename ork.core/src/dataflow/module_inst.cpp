@@ -62,6 +62,16 @@ inpluginst_ptr_t ModuleInst::input(int idx) const{
 outpluginst_ptr_t ModuleInst::output(int idx) const{
   return _outputs[idx];
 }
+inpluginst_ptr_t ModuleInst::inputNamed(const std::string& named) const {
+  auto it = _inputsByName.find(named);
+  OrkAssert(it!=_inputsByName.end());
+  return it->second;
+}
+outpluginst_ptr_t ModuleInst::outputNamed(const std::string& named) const {
+  auto it = _outputsByName.find(named);
+  OrkAssert(it!=_outputsByName.end());
+  return it->second;
+}
 ///////////////////////////////////////////////////////////////////////////////
 DgModuleInst::DgModuleInst(const DgModuleData* absdata)
   : ModuleInst(absdata)

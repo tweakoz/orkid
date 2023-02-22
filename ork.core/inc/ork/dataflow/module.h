@@ -110,8 +110,8 @@ struct ModuleInst {
   int numInputs() const;
   inpluginst_ptr_t input(int idx) const;
   outpluginst_ptr_t output(int idx) const;
-  inpluginst_ptr_t inputNamed(const std::string& named);
-  outpluginst_ptr_t outputNamed(const std::string& named);
+  inpluginst_ptr_t inputNamed(const std::string& named) const;
+  outpluginst_ptr_t outputNamed(const std::string& named) const;
   std::string name() const;
 
   void setInputDirty(inpluginst_ptr_t plg);
@@ -123,6 +123,8 @@ struct ModuleInst {
   const ModuleData* _abstract_module_data;
   std::vector<inpluginst_ptr_t> _inputs;
   std::vector<outpluginst_ptr_t> _outputs;
+  std::unordered_map<std::string,inpluginst_ptr_t> _inputsByName;
+  std::unordered_map<std::string,outpluginst_ptr_t> _outputsByName;
 
 };
 

@@ -42,10 +42,7 @@ template <> int MaxFanout<ork::dataflow::test::ImgBase>() {
 namespace test {
 ////////////////////////////////////////////////////////////
 
-struct ImageGenTestImpl {
-
-};
-
+struct ImageGenTestImpl {};
 
 typedef ork::dataflow::outplugdata<ImgBase> ImgOutPlug;
 typedef ork::dataflow::inplugdata<ImgBase> ImgInPlug;
@@ -104,20 +101,25 @@ struct GlobalModuleInst : public BaseModuleInst {
   GlobalModuleInst(const GlobalModuleData* data)
       : BaseModuleInst(data) {
   }
-  void onLink(GraphInst* inst) final{
+  void onLink(GraphInst* inst) final {
     int numinp = numInputs();
     int numout = numOutputs();
 
     auto impl = inst->_impl.getShared<ImageGenTestImpl>();
 
-    printf( "LINK GlobalModuleInst<%p:%s> numinp<%d> numout<%d>\n", (void*) this, _dgmodule_data->_name.c_str(), numinp, numout );
+    printf("LINK GlobalModuleInst<%p:%s> numinp<%d> numout<%d>\n", (void*)this, _dgmodule_data->_name.c_str(), numinp, numout);
+
+    _output_A = outputNamed("OutputA");
+    _output_B = outputNamed("OutputB");
+    _output_C = outputNamed("OutputC");
   }
   void compute(GraphInst* inst) final {
 
-    printf( "COMPUTE GlobalModuleInst<%p:%s>\n", (void*) this, _dgmodule_data->_name.c_str() );
-
-
+    printf("COMPUTE GlobalModuleInst<%p:%s>\n", (void*)this, _dgmodule_data->_name.c_str());
   }
+  outpluginst_ptr_t _output_A;
+  outpluginst_ptr_t _output_B;
+  outpluginst_ptr_t _output_C;
 };
 
 dgmoduleinst_ptr_t GlobalModuleData::createInstance() const {
@@ -264,15 +266,19 @@ struct GradientModuleInst : public Img32ModuleInst {
   GradientModuleInst(const GradientModuleData* data)
       : Img32ModuleInst(data) {
   }
-  void onLink(GraphInst* inst) final{
-    auto impl = inst->_impl.getShared<ImageGenTestImpl>();
+  void onLink(GraphInst* inst) final {
+    auto impl  = inst->_impl.getShared<ImageGenTestImpl>();
     int numinp = numInputs();
     int numout = numOutputs();
-    printf( "LINK GradientModuleInst<%p:%s> numinp<%d> numout<%d>\n", (void*) this, _dgmodule_data->_name.c_str(), numinp, numout );
+    printf("LINK GradientModuleInst<%p:%s> numinp<%d> numout<%d>\n", (void*)this, _dgmodule_data->_name.c_str(), numinp, numout);
+    _input_imageA = inputNamed("InputA");
+    _input_imageB = inputNamed("InputB");
   }
   void compute(GraphInst* inst) final {
-    printf( "COMPUTE GradientModuleInst<%p:%s>\n", (void*) this, _dgmodule_data->_name.c_str() );
+    printf("COMPUTE GradientModuleInst<%p:%s>\n", (void*)this, _dgmodule_data->_name.c_str());
   }
+  inpluginst_ptr_t _input_imageA;
+  inpluginst_ptr_t _input_imageB;
 };
 
 dgmoduleinst_ptr_t GradientModuleData::createInstance() const {
@@ -315,15 +321,21 @@ struct Op1ModuleInst : public Img32ModuleInst {
   Op1ModuleInst(const Op1ModuleData* data)
       : Img32ModuleInst(data) {
   }
-  void onLink(GraphInst* inst) final{
-    auto impl = inst->_impl.getShared<ImageGenTestImpl>();
+  void onLink(GraphInst* inst) final {
+    auto impl  = inst->_impl.getShared<ImageGenTestImpl>();
     int numinp = numInputs();
     int numout = numOutputs();
-    printf( "LINK Op1ModuleInst<%p:%s> numinp<%d> numout<%d>\n", (void*) this, _dgmodule_data->_name.c_str(), numinp, numout );
+    _input_image = inputNamed("Input");
+    _input_paramA = inputNamed("ParamA");
+    _input_paramB = inputNamed("ParamB");
+    printf("LINK Op1ModuleInst<%p:%s> numinp<%d> numout<%d>\n", (void*)this, _dgmodule_data->_name.c_str(), numinp, numout);
   }
   void compute(GraphInst* inst) final {
-    printf( "COMPUTE Op1ModuleInst<%p:%s>\n", (void*) this, _dgmodule_data->_name.c_str() );
+    printf("COMPUTE Op1ModuleInst<%p:%s>\n", (void*)this, _dgmodule_data->_name.c_str());
   }
+  inpluginst_ptr_t _input_image;
+  inpluginst_ptr_t _input_paramA;
+  inpluginst_ptr_t _input_paramB;
 };
 
 dgmoduleinst_ptr_t Op1ModuleData::createInstance() const {
@@ -369,16 +381,23 @@ struct Op2ModuleInst : public Img32ModuleInst {
   Op2ModuleInst(const Op2ModuleData* data)
       : Img32ModuleInst(data) {
   }
-  void onLink(GraphInst* inst) final{
-    auto impl = inst->_impl.getShared<ImageGenTestImpl>();
+  void onLink(GraphInst* inst) final {
+    auto impl  = inst->_impl.getShared<ImageGenTestImpl>();
     int numinp = numInputs();
     int numout = numOutputs();
-    printf( "LINK Op2ModuleInst<%p:%s> numinp<%d> numout<%d>\n", (void*) this, _dgmodule_data->_name.c_str(), numinp, numout );
-
+    printf("LINK Op2ModuleInst<%p:%s> numinp<%d> numout<%d>\n", (void*)this, _dgmodule_data->_name.c_str(), numinp, numout);
+    _input_imageA = inputNamed("InputA");
+    _input_imageB = inputNamed("InputB");
+    _input_paramA = inputNamed("ParamA");
+    _input_paramB = inputNamed("ParamB");
   }
   void compute(GraphInst* inst) final {
-    printf( "COMPUTE Op2ModuleInst<%p:%s>\n", (void*) this, _dgmodule_data->_name.c_str() );
+    printf("COMPUTE Op2ModuleInst<%p:%s>\n", (void*)this, _dgmodule_data->_name.c_str());
   }
+  inpluginst_ptr_t _input_imageA;
+  inpluginst_ptr_t _input_imageB;
+  inpluginst_ptr_t _input_paramA;
+  inpluginst_ptr_t _input_paramB;
 };
 
 dgmoduleinst_ptr_t Op2ModuleData::createInstance() const {
@@ -420,10 +439,10 @@ struct TestDataSet {
     // create dataflow modules
     /////////////////////////////////
 
-    _gl  = GlobalModuleData::createShared();
-    _grA = GradientModuleData::createShared();
-    _grB = GradientModuleData::createShared();
-    _op1 = Op1ModuleData::createShared();
+    _gl   = GlobalModuleData::createShared();
+    _grA  = GradientModuleData::createShared();
+    _grB  = GradientModuleData::createShared();
+    _op1  = Op1ModuleData::createShared();
     _op2A = Op2ModuleData::createShared();
     _op2B = Op2ModuleData::createShared();
 
@@ -575,100 +594,91 @@ struct TestDataSet {
 
 TEST(dflow_a) {
 
-  {
-    printf("////////////////////////////////////////////////////////////\n");
-    printf("////// ORDERING TEST\n");
-    printf("////////////////////////////////////////////////////////////\n");
+  printf("////////////////////////////////////////////////////////////\n");
+  printf("////// ORDERING TEST\n");
+  printf("////////////////////////////////////////////////////////////\n");
 
-    auto test_data = std::make_shared<TestDataSet>();
-    test_data->linkConfig1();
-
-    /////////////////////////////////
-    // generate a topology sorted execution list
-    //  from dataflow graph
-    /////////////////////////////////
-
-    auto topo = test_data->_dgsorter->generateTopology();
-    std::vector<dgmoduledata_ptr_t> expected_order{
-        test_data->_gl,  //
-        test_data->_grA, //
-        test_data->_grB, //
-        test_data->_op1, //
-        test_data->_op2A, //
-        test_data->_op2B};
-    CHECK(expected_order == topo->_flattened);
-
-    /////////////////////////////////
-    // misc dump output
-    /////////////////////////////////
-
-    test_data->_dgsorter->dumpInputs(test_data->_gl);
-    test_data->_dgsorter->dumpOutputs(test_data->_gl);
-
-    test_data->_dgsorter->dumpInputs(test_data->_grA);
-    test_data->_dgsorter->dumpOutputs(test_data->_grA);
-
-    test_data->_dgsorter->dumpInputs(test_data->_grB);
-    test_data->_dgsorter->dumpOutputs(test_data->_grB);
-
-    test_data->_dgsorter->dumpInputs(test_data->_op1);
-    test_data->_dgsorter->dumpOutputs(test_data->_op1);
-  }
+  auto test_data = std::make_shared<TestDataSet>();
+  test_data->linkConfig1();
 
   /////////////////////////////////
-  // reordered
+  // generate a topology sorted execution list
+  //  from dataflow graph
   /////////////////////////////////
 
-  {
-    printf("////////////////////////////////////////////////////////////\n");
-    printf("////// ORDERING TEST 2\n");
-    printf("////////////////////////////////////////////////////////////\n");
-  
-    auto test_data = std::make_shared<TestDataSet>();
-    test_data->linkConfig2();
-    auto topo = test_data->_dgsorter->generateTopology();
-    std::vector<dgmoduledata_ptr_t> expected_order{
-        test_data->_gl,  //
-        test_data->_grA, //
-        test_data->_grB, //
-        test_data->_op1, //
-        test_data->_op2B, //
-        test_data->_op2A};
-    CHECK(expected_order == topo->_flattened);
-  }
+  auto topo = test_data->_dgsorter->generateTopology();
+  std::vector<dgmoduledata_ptr_t> expected_order{
+      test_data->_gl,   //
+      test_data->_grA,  //
+      test_data->_grB,  //
+      test_data->_op1,  //
+      test_data->_op2A, //
+      test_data->_op2B};
+  CHECK(expected_order == topo->_flattened);
 
   /////////////////////////////////
-  // GraphInst Test
+  // misc dump output
   /////////////////////////////////
-  {
-    printf("////////////////////////////////////////////////////////////\n");
-    printf("////// GRAPHINST COMPUTE TEST\n");
-    printf("////////////////////////////////////////////////////////////\n");
 
-    auto test_data = std::make_shared<TestDataSet>();
-    test_data->linkConfig2();
-    auto gi   = std::make_shared<GraphInst>(test_data->_testgraphdata);
-    auto topo = test_data->_dgsorter->generateTopology();
-    gi->updateTopology(topo);
+  test_data->_dgsorter->dumpInputs(test_data->_gl);
+  test_data->_dgsorter->dumpOutputs(test_data->_gl);
 
-    auto impl = gi->_impl.makeShared<ImageGenTestImpl>();
+  test_data->_dgsorter->dumpInputs(test_data->_grA);
+  test_data->_dgsorter->dumpOutputs(test_data->_grA);
 
-    printf("////// computing.. \n");
+  test_data->_dgsorter->dumpInputs(test_data->_grB);
+  test_data->_dgsorter->dumpOutputs(test_data->_grB);
 
-    gi->compute();
+  test_data->_dgsorter->dumpInputs(test_data->_op1);
+  test_data->_dgsorter->dumpOutputs(test_data->_op1);
+}
 
-    printf("////// computing.. \n");
+TEST(dflow_b) {
+  printf("////////////////////////////////////////////////////////////\n");
+  printf("////// ORDERING TEST 2\n");
+  printf("////////////////////////////////////////////////////////////\n");
 
-    gi->compute();
+  auto test_data = std::make_shared<TestDataSet>();
+  test_data->linkConfig2();
+  auto topo = test_data->_dgsorter->generateTopology();
+  std::vector<dgmoduledata_ptr_t> expected_order{
+      test_data->_gl,   //
+      test_data->_grA,  //
+      test_data->_grB,  //
+      test_data->_op1,  //
+      test_data->_op2B, //
+      test_data->_op2A};
+  CHECK(expected_order == topo->_flattened);
+}
 
-    printf("////// computing.. \n");
+TEST(dflow_c) {
+  printf("////////////////////////////////////////////////////////////\n");
+  printf("////// GRAPHINST COMPUTE TEST\n");
+  printf("////////////////////////////////////////////////////////////\n");
 
-    gi->compute();
+  auto test_data = std::make_shared<TestDataSet>();
+  test_data->linkConfig2();
+  auto gi   = std::make_shared<GraphInst>(test_data->_testgraphdata);
+  auto topo = test_data->_dgsorter->generateTopology();
+  gi->updateTopology(topo);
 
-    printf("////// computing.. \n");
+  auto impl = gi->_impl.makeShared<ImageGenTestImpl>();
 
-    gi->compute();
-  }
+  printf("////// computing.. \n");
+
+  gi->compute();
+
+  printf("////// computing.. \n");
+
+  gi->compute();
+
+  printf("////// computing.. \n");
+
+  gi->compute();
+
+  printf("////// computing.. \n");
+
+  gi->compute();
 }
 
 ////////////////////////////////////////////////////////////
@@ -694,8 +704,7 @@ template <> inpluginst_ptr_t inplugdata<test::Img32>::createInstance() const {
 template <> outpluginst_ptr_t outplugdata<test::Img32>::createInstance() const {
   return std::make_shared<outpluginst<test::Img32>>(this);
 }
-template <> 
-std::shared_ptr<test::Img32> inpluginst<test::Img32>::value() const{
+template <> std::shared_ptr<test::Img32> inpluginst<test::Img32>::value() const {
   return _default;
 }
 
@@ -718,8 +727,7 @@ template <> inpluginst_ptr_t inplugdata<test::Img64>::createInstance() const {
 template <> outpluginst_ptr_t outplugdata<test::Img64>::createInstance() const {
   return std::make_shared<outpluginst<test::Img64>>(this);
 }
-template <> 
-std::shared_ptr<test::Img64> inpluginst<test::Img64>::value() const{
+template <> std::shared_ptr<test::Img64> inpluginst<test::Img64>::value() const {
   return _default;
 }
 template struct outplugdata<test::Img64>;

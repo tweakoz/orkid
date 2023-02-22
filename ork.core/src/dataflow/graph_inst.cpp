@@ -55,6 +55,7 @@ void GraphInst::updateTopology(topology_ptr_t topo){
       auto plug_inst = input->createInstance();
       OrkAssert(plug_inst);
       inst_module->_inputs.push_back(plug_inst);
+      inst_module->_inputsByName[input->_name] = plug_inst;
       input2dataLUT[plug_inst]=input;
     }
   }
@@ -73,6 +74,7 @@ void GraphInst::updateTopology(topology_ptr_t topo){
       auto plug_inst = output->createInstance();
       OrkAssert(plug_inst);
       inst_module->_outputs.push_back(plug_inst);
+      inst_module->_outputsByName[output->_name] = plug_inst;
       output2dataLUT[plug_inst]=output;
       data2outputLUT[output]=plug_inst;
     }
