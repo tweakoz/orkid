@@ -64,6 +64,7 @@ using dgmoduledata_ptr_t = std::shared_ptr<DgModuleData>;
 using dgmoduleinst_ptr_t = std::shared_ptr<DgModuleInst>;
 
 using graphdata_ptr_t = std::shared_ptr<GraphData>;
+using graphdata_const_ptr_t = std::shared_ptr<const GraphData>;
 using graphinst_ptr_t = std::shared_ptr<GraphInst>;
 
 using plugdata_ptr_t = std::shared_ptr<PlugData>;
@@ -260,6 +261,8 @@ public:
 
   static void addModule(graphdata_ptr_t gd, const std::string& named, dgmoduledata_ptr_t pchild);
   static void removeModule(graphdata_ptr_t gd, dgmoduledata_ptr_t pchild);
+  static bool serializeConnections(graphdata_const_ptr_t gd, ork::reflect::serdes::ISerializer& ser);
+  static bool deserializeConnections(graphdata_ptr_t gd, ork::reflect::serdes::IDeserializer& deser);
 
 
   GraphData();
@@ -285,8 +288,6 @@ public:
   //void connectExternal(outplugdata_ptr_t vt);
 
 
-  bool SerializeConnections(ork::reflect::serdes::ISerializer& ser) const;
-  bool DeserializeConnections(ork::reflect::serdes::IDeserializer& deser);
   bool preDeserialize(reflect::serdes::IDeserializer&) override;
   bool postDeserialize(reflect::serdes::IDeserializer&) override;
 

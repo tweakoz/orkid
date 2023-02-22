@@ -118,8 +118,8 @@ void GraphData::disconnect(outplugdata_ptr_t output) {
   output->_connections.clear();
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool GraphData::SerializeConnections(ork::reflect::serdes::ISerializer& ser) const {
-  for (orklut<std::string, object_ptr_t>::const_iterator it = _modules.begin(); it != _modules.end(); it++) {
+bool GraphData::serializeConnections(graphdata_const_ptr_t gd, ork::reflect::serdes::ISerializer& ser) {
+  for (auto it = gd->_modules.begin(); it != gd->_modules.end(); it++) {
     object_ptr_t pobj                  = it->second;
     auto pdgmodule = std::dynamic_pointer_cast<DgModuleData>(pobj);
     if (pdgmodule) {
@@ -128,7 +128,7 @@ bool GraphData::SerializeConnections(ork::reflect::serdes::ISerializer& ser) con
   }
   /////////////////////////////////////////////
   int inumlinks = 0;
-  for (auto item : _modules ) {
+  for (auto item : gd->_modules ) {
     auto pmodule = std::dynamic_pointer_cast<DgModuleData>(item.second);
     if (pmodule) {
       int inuminputplugs = pmodule->numInputs();
@@ -145,7 +145,7 @@ bool GraphData::SerializeConnections(ork::reflect::serdes::ISerializer& ser) con
   }
   // ser.serializeElement(inumlinks);
   /////////////////////////////////////////////
-  for (auto item : _modules ) {
+  for (auto item : gd->_modules ) {
     auto pmodule = std::dynamic_pointer_cast<DgModuleData>(item.second);
     if (pmodule) {
       int inuminputplugs = pmodule->numInputs();
@@ -166,15 +166,13 @@ bool GraphData::SerializeConnections(ork::reflect::serdes::ISerializer& ser) con
   return true;
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool GraphData::DeserializeConnections(ork::reflect::serdes::IDeserializer& deser) {
-  return false;
-  #if 0
-  for (orklut<std::string, object_ptr_t>::const_iterator it = _modules.begin(); it != _modules.end(); it++) {
+bool GraphData::deserializeConnections(graphdata_ptr_t gd, ork::reflect::serdes::IDeserializer& deser) {
+  for (auto it = gd->_modules.begin(); it != gd->_modules.end(); it++) {
     object_ptr_t pobj                  = it->second;
     auto pdgmodule = std::dynamic_pointer_cast<DgModuleData>(pobj);
     if (pdgmodule) {
       pdgmodule->_name = it->first;
-      pdgmodule->SetParent(this);
+      pdgmodule->_parent = gd;
     }
   }
   /////////////////////////////////////////////
@@ -187,28 +185,27 @@ bool GraphData::DeserializeConnections(ork::reflect::serdes::IDeserializer& dese
     std::string inp_plg_name;
     std::string out_mod_name;
     std::string out_plg_name;
-    // deser.deserialize(inp_mod_name);
-    // deser.deserialize(inp_plg_name);
-    // deser.deserialize(out_mod_name);
-    // deser.deserialize(out_plg_name);
+    //deser.deserialize(inp_mod_name);
+    //deser.deserialize(inp_plg_name);
+    //deser.deserialize(out_mod_name);
+    //deser.deserialize(out_plg_name);
     /////////////////////////
     // make the connection
     /////////////////////////
-    auto it_inp = _modules.find(inp_mod_name);
-    auto it_out = _modules.find(out_mod_name);
-    if (it_inp != _modules.end() && it_out != _modules.end()) {
+    auto it_inp = gd->_modules.find(inp_mod_name);
+    auto it_out = gd->_modules.find(out_mod_name);
+    if (it_inp != gd->_modules.end() && it_out != gd->_modules.end()) {
       auto pinp_mod = typedModuleData<DgModuleData>(it_inp->second);
       auto pout_mod = typedModuleData<DgModuleData>(it_out->second);
-      auto inp_plug  = typedPlugData<InPlugData>(pinp_mod->GetInputNamed(inp_plg_name));
-      auto out_plug = typedPlugData<OutPlugData>(pout_mod->GetOutputNamed(out_plg_name));
+      auto inp_plug  = typedPlugData<InPlugData>(pinp_mod->inputNamed(inp_plg_name));
+      auto out_plug = typedPlugData<OutPlugData>(pout_mod->outputNamed(out_plg_name));
       if (inp_plug != nullptr && out_plug != nullptr) {
-        inp_plug->SafeConnect(*this, out_plug);
+        gd->safeConnect(inp_plug, out_plug);
       }
     }
   }
   /////////////////////////////////////////////
   return true;
-  #endif
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool GraphData::preDeserialize(reflect::serdes::IDeserializer&) {
