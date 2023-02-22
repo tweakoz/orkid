@@ -46,7 +46,6 @@ public:
   ////////////////////////////////////////////
   virtual void onTopologyUpdate(void);
   virtual void onStart();
-  bool isMorphable() const;
   ////////////////////////////////////////////
   void addInput(inplugdata_ptr_t plg);
   void addOutput(outplugdata_ptr_t plg);
@@ -71,9 +70,6 @@ public:
   std::string _name;
   graphdata_ptr_t _graphdata;
   dataflow::node_hash mModuleHash;
-  morphable_ptr_t mpMorphable;
-  int _numStaticInputs;
-  int _numStaticOutputs;
   std::vector<inplugdata_ptr_t> _inputs;
   std::vector<outplugdata_ptr_t> _outputs;
 
@@ -101,9 +97,6 @@ public:
   graphdata_ptr_t _parent;
   fvec2 mgvpos;
   bool _prunable = true;
-
-protected:
-  //virtual void _doDivideWork(const scheduler& sch, cluster* clus);
 
 };
 

@@ -41,10 +41,10 @@ InPlugInst::~InPlugInst(){
 }
 
 outpluginst_ptr_t InPlugInst::connected() const{
-    return nullptr;
+    return _connectedOutput;
 }
 bool InPlugInst::isConnected() const{
-    return false;
+    return (_connectedOutput!=nullptr);
 }
 bool InPlugInst::isDirty() const{
     return false;

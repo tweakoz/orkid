@@ -35,8 +35,7 @@ namespace ork::dataflow {
 ///////////////////////////////////////////////////////////////////////////////
 void ModuleData::describeX(class_t* clazz) {
 }
-ModuleData::ModuleData()
-    : mpMorphable(nullptr) {
+ModuleData::ModuleData(){
 }
 ModuleData::~ModuleData() {
 }
@@ -79,9 +78,6 @@ outplugdata_ptr_t ModuleData::outputNamed(const std::string& named) const {
 void ModuleData::onTopologyUpdate(void) {
 }
 void ModuleData::onStart() {
-}
-bool ModuleData::isMorphable() const {
-  return (mpMorphable != 0);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ModuleData::addDependency(outplugdata_ptr_t pout, inplugdata_ptr_t pin) {

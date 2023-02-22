@@ -63,17 +63,6 @@ outpluginst_ptr_t ModuleInst::output(int idx) const{
 DgModuleInst::DgModuleInst(const DgModuleData* absdata)
   : ModuleInst(absdata)
   , _dgmodule_data(absdata) {
-
-  for( auto input : absdata->_inputs ){
-    auto plug_inst = input->createInstance();
-    OrkAssert(plug_inst);
-    _inputs.push_back(plug_inst);
-  }
-  for( auto output : absdata->_outputs ){
-    auto plug_inst = output->createInstance();
-    OrkAssert(plug_inst);
-    _outputs.push_back(plug_inst);
-  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 DgModuleInst::~DgModuleInst(){

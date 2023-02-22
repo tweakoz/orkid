@@ -41,6 +41,9 @@ struct InPlugInst : public PlugInst {
   bool isDirty() const;
 
   void _doSetDirty(bool bv) override; // virtual
+
+  outpluginst_ptr_t _connectedOutput;                       
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
