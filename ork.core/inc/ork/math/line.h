@@ -183,18 +183,8 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> struct Ray3 {
-  typedef Vector3<T> vec3_type;
 
-  vec3_type mOrigin;
-  vec3_type mDirection;
-  vec3_type mInverseDirection;
-  bool mbSignX;
-  bool mbSignY;
-  bool mbSignZ;
-  T mdot_dd;
-  T mdot_do;
-  T mdot_oo;
-  int mID;
+  using vec3_type = Vector3<T>;
 
   Ray3()
       : mID(-1) {
@@ -232,6 +222,50 @@ template <typename T> struct Ray3 {
     b.lerp(x0y1, x1y1, fx);
     lerp(t, b, fy);
   }
+
+  bool intersectSegment(
+      const TLineSegment3<T>& segment,      //
+      vec3_type& intersect_out,          //
+      float coplanar_threshold   = 0.7f, //
+      float length_error_threshold = 1e-3f //
+  ) const { //
+
+    auto da = mDirection; // Unnormalized direction of the ray
+    auto db = segment.mEnd - segment.mStart;
+    auto dc = segment.mStart - mOrigin;
+
+    if (fabs(dc.dotWith(da.crossWith(db))) >= coplanar_threshold) // Lines are not coplanar
+      return false;
+
+    T s = dc.crossWith(db).dotWith(da.crossWith(db)) / da.crossWith(db).magnitudeSquared();
+
+    if (s >= T(0.0) && s <= T(1.0)) { // intersection ?
+
+      intersect_out = mOrigin + s * da;
+
+      // See if this lies on the segment
+      if( ((intersect_out - segment.mStart).magnitudeSquared() //
+        + (intersect_out - segment.mEnd).magnitudeSquared()) //
+        <= //
+          (segment.mEnd-segment.mStart).magnitudeSquared() //
+          + length_error_threshold) {
+          return true;
+      }
+    }
+
+    return false;
+  }
+
+  vec3_type mOrigin;
+  vec3_type mDirection;
+  vec3_type mInverseDirection;
+  bool mbSignX;
+  bool mbSignY;
+  bool mbSignZ;
+  T mdot_dd;
+  T mdot_do;
+  T mdot_oo;
+  int mID;
 };
 
 using fray3            = Ray3<float>;
@@ -241,12 +275,15 @@ using fray3_constptr_t = std::shared_ptr<const fray3>;
 using dray3_ptr_t      = std::shared_ptr<dray3>;
 using dray3_constptr_t = std::shared_ptr<const dray3>;
 
+using LineSegment2 = TLineSegment2<float>;
+using LineSegment3 = TLineSegment3<float>;
+using LineSegment2Helper = TLineSegment2Helper<float>;
+
+using flineseg2 = TLineSegment2<float>;
+using flineseg3 = TLineSegment3<float>;
+
 ///////////////////////////////////////////////////////////////////////////////
 // temporary till all code done being refactored
-
-typedef TLineSegment2<float> LineSegment2;
-typedef TLineSegment3<float> LineSegment3;
-typedef TLineSegment2Helper<float> LineSegment2Helper;
 
 struct Ray3HitTest {
   int miSphTests;

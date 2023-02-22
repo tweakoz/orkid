@@ -103,7 +103,7 @@ size_t InPlugData::computeMinDepth(dgmoduledata_constptr_t to_module ) const{
       depth = min_depth;
     }
   }
-  printf( "InPlugData<%p:%s> this_module<%s> computeMinDepth dest_module<%s>, depth<%zx>\n",
+  if(0)printf( "InPlugData<%p:%s> this_module<%s> computeMinDepth dest_module<%s>, depth<%zx>\n",
           this, 
           this->_name.c_str(),
           this->_parent_module->_name.c_str(),

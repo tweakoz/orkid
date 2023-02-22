@@ -36,12 +36,12 @@ vertex_interface iface_vtx : ublock_vtx {
   inputs {
     vec4 pos : POSITION;
     vec3 nrm : NORMAL;
-    vec2 uv0 : TEXCOORD0;
+    vec3 uvQ : BINORMAL;
   }
   outputs {
     vec3 world_nrm;
     vec3 world_pos;
-    vec2 frg_uv;
+    vec3 frg_uvq;
   }
 }
 ////////////////////////////////////////
@@ -49,7 +49,7 @@ fragment_interface iface_frg : ublock_frg {
   inputs {
     vec3 world_nrm;
     vec3 world_pos;
-    vec2 frg_uv;
+    vec3 frg_uvq;
   }
   outputs { layout(location = 0) vec4 out_clr; }
 }
@@ -58,28 +58,32 @@ vertex_shader vs_pseudowire : iface_vtx {
   gl_Position =  mvp * pos;
   world_pos = (m * pos).xyz;
   world_nrm = (m * vec4(nrm,0)).xyz;
-  frg_uv = uv0;
+  frg_uvq = uvQ;
 }
 ////////////////////////////////////////
 fragment_shader ps_pseudowire : iface_frg {
   
     float intens = 0.0;
-    float width = 4.0;
+    float width = 12.0;
 
-    vec2 dx = dFdx(frg_uv);
-    vec2 dy = dFdy(frg_uv);
-    vec2 df = fwidth(frg_uv);
+    // https://www.reedbeta.com/blog/quadrilateral-interpolation-part-1/
+    vec2 UV = frg_uvq.xy / frg_uvq.z;
+
+    //vec2 param_space = mod(UV*10,1);
+    vec2 param_space = UV;
+
+    vec2 df = fwidth(param_space);
     float dd = min(df.x,df.y);
     
     width *= dd;
 
-    if(frg_uv.x<width)
+    if(param_space.x<width)
         intens += 1;
-    if(frg_uv.y<width)
+    if(param_space.y<width)
         intens += 1;
-    if((1-frg_uv.x)<width)
+    if((1-param_space.x)<width)
         intens += 1;
-    if((1-frg_uv.y)<width)
+    if((1-param_space.y)<width)
         intens += 1;
     if(intens>0)
         intens = 1;
