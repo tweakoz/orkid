@@ -48,6 +48,9 @@ PlugData::PlugData(moduledata_ptr_t pmod, EPlugDir edir, EPlugRate epr, const st
     , _name(pname ? pname : "noname") {
   printf("PlugData<%p> pmod<%p> construct name<%s>\n", (void*) this, (void*) pmod.get(), _name.c_str());
 }
+pluginst_ptr_t PlugData::createInstance() const{
+  return nullptr;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 void InPlugData::describeX(class_t* clazz) {

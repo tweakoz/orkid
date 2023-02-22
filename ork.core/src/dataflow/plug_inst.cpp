@@ -22,7 +22,8 @@
 namespace ork::dataflow {
 ///////////////////////////////////////////////////////////////////////////////
 
-PlugInst::PlugInst(moduleinst_ptr_t minst, plugdata_ptr_t plugdata){
+PlugInst::PlugInst(const PlugData* plugdata)
+  : _plugdata(plugdata) {
 
 }
 
@@ -30,8 +31,8 @@ PlugInst::~PlugInst(){
 
 }
 
-InPlugInst::InPlugInst(moduleinst_ptr_t pmod, inplugdata_ptr_t data)
-    : PlugInst(pmod,data) {
+InPlugInst::InPlugInst(const PlugData* plugdata)
+    : PlugInst(plugdata) {
 
 }
 
@@ -52,8 +53,8 @@ void InPlugInst::_doSetDirty(bool bv) { // override
 
 }
 
-OutPlugInst::OutPlugInst(moduleinst_ptr_t pmod, outplugdata_ptr_t data)
-    : PlugInst(pmod,data) {
+OutPlugInst::OutPlugInst(const PlugData* plugdata)
+    : PlugInst(plugdata) {
 
 }
 OutPlugInst::~OutPlugInst(){

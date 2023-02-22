@@ -71,6 +71,8 @@ public:
     return std::dynamic_pointer_cast<T>(_parent_module);
   }
 
+  virtual pluginst_ptr_t createInstance() const;
+
   moduledata_ptr_t _parent_module;
   EPlugDir _plugdir;
   EPlugRate _plugrate;

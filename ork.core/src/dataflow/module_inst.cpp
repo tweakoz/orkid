@@ -22,7 +22,7 @@
 namespace ork::dataflow {
 ///////////////////////////////////////////////////////////////////////////////
 
-ModuleInst::ModuleInst(moduledata_constptr_t absdata)
+ModuleInst::ModuleInst(const ModuleData* absdata)
     : _abstract_module_data(absdata) {
 }
 int ModuleInst::numOutputs() const {
@@ -59,11 +59,21 @@ inpluginst_ptr_t ModuleInst::input(int idx) const{
 outpluginst_ptr_t ModuleInst::output(int idx) const{
   return mStaticOutputs[idx];
 }
-
 ///////////////////////////////////////////////////////////////////////////////
-DgModuleInst::DgModuleInst(dgmoduledata_constptr_t absdata)
+DgModuleInst::DgModuleInst(const DgModuleData* absdata)
   : ModuleInst(absdata)
   , _dgmodule_data(absdata) {
+
+  for( auto input : absdata->_inputs ){
+    auto plug_inst = input->createInstance();
+  }
+  for( auto output : absdata->_outputs ){
+    auto plug_inst = output->createInstance();
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+DgModuleInst::~DgModuleInst(){
+
 }
 ///////////////////////////////////////////////////////////////////////////////
 void DgModuleInst::divideWork(scheduler_ptr_t sch, cluster* clus) {

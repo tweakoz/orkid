@@ -148,6 +148,10 @@ bool DgModuleData::isGroup() const {
 graphdata_ptr_t DgModuleData::childGraph() const {
   return nullptr;
 }
+dgmoduleinst_ptr_t DgModuleData::createInstance() const{
+  return nullptr;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 } //namespace ork::dataflow {
 ///////////////////////////////////////////////////////////////////////////////

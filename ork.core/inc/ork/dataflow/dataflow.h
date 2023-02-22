@@ -368,8 +368,8 @@ inline void implementFloatXfPlugReflectionX(object::ObjectClass* clazz, //
 
 
 #include "enum.h"
-#include "plugdata.h"
-#include "pluginst.h"
+#include "plug_data.h"
+#include "plug_inst.h"
 #include "module.h"
 
 ///////////////////////////////////////////////////////////////////////////////

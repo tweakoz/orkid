@@ -93,7 +93,7 @@ public:
   DgModuleData();
   bool isGroup() const;
   ////////////////////////////////////////////
-  // bool IsOutputDirty( const outplugdata_ptr_t pplug ) const;
+  virtual dgmoduleinst_ptr_t createInstance() const;
   ////////////////////////////////////////////
   virtual graphdata_ptr_t childGraph() const;
 
@@ -111,7 +111,7 @@ protected:
 
 struct ModuleInst {
 
-  ModuleInst(moduledata_constptr_t absdata);
+  ModuleInst(const ModuleData* _this);
   
   int numOutputs() const;
   int numInputs() const;
@@ -129,7 +129,7 @@ struct ModuleInst {
   virtual void _doSetOutputDirty(outpluginst_ptr_t plg);
   virtual bool isDirty(void) const;
 
-  moduledata_constptr_t _abstract_module_data;
+  const ModuleData* _abstract_module_data;
   std::vector<inpluginst_ptr_t> mStaticInputs;
   std::vector<outpluginst_ptr_t> mStaticOutputs;
 
@@ -143,16 +143,17 @@ template <typename T> std::shared_ptr<T> typedModuleInst(moduleinst_ptr_t m){
 
 struct DgModuleInst : public ModuleInst {
 
-  DgModuleInst(dgmoduledata_constptr_t absdata);
+  DgModuleInst(const DgModuleData* _this);
+  virtual ~DgModuleInst();
 
   void divideWork(scheduler_ptr_t sch, cluster* clus);
 
   virtual void _doDivideWork(scheduler_ptr_t sch, cluster* clus);
-  virtual void Compute(workunit* wu) = 0;
-  virtual void combineWork(const cluster* clus) = 0;
+  virtual void Compute(workunit* wu) {}
+  virtual void combineWork(const cluster* clus) {}
   virtual void releaseWorkUnit(workunit* wu);
 
-  dgmoduledata_constptr_t _dgmodule_data;
+  const DgModuleData* _dgmodule_data;
 
 };
 

@@ -58,6 +58,13 @@ public:
 void BaseModuleData::describeX(class_t* clazz) {
 }
 
+struct BaseModuleInst : public DgModuleInst {
+
+  BaseModuleInst(const BaseModuleData* data)
+      : DgModuleInst(data) {
+  }
+};
+
 ////////////////////////////////////////////////////////////
 
 using float_ptr_t = std::shared_ptr<float>;
@@ -80,12 +87,24 @@ public: //
     return gmd;
   }
 
+  dgmoduleinst_ptr_t createInstance() const final;
+
   float_ptr_t _outputA;
   float_ptr_t _outputB;
   float_ptr_t _outputC;
 };
 
 void GlobalModuleData::describeX(class_t* clazz) {
+}
+
+struct GlobalModuleInst : public BaseModuleInst {
+  GlobalModuleInst(const GlobalModuleData* data)
+      : BaseModuleInst(data) {
+  }
+};
+
+dgmoduleinst_ptr_t GlobalModuleData::createInstance() const {
+  return std::make_shared<GlobalModuleInst>(this);
 }
 
 ////////////////////////////////////////////////////////////
@@ -111,6 +130,12 @@ Img32 ImgModuleData::g_no_connection;
 
 void ImgModuleData::describeX(class_t* clazz) {
 }
+
+struct ImgModuleInst : public BaseModuleInst {
+  ImgModuleInst(const ImgModuleData* data)
+      : BaseModuleInst(data) {
+  }
+};
 
 ////////////////////////////////////////////////////////////
 
@@ -152,6 +177,12 @@ protected:
 void Img32ModuleData::describeX(class_t* clazz) {
 }
 
+struct Img32ModuleInst : public ImgModuleInst {
+  Img32ModuleInst(const Img32ModuleData* data)
+      : ImgModuleInst(data) {
+  }
+};
+
 ////////////////////////////////////////////////////////////
 
 struct Img64ModuleData : public ImgModuleData {
@@ -176,6 +207,12 @@ protected:
 void Img64ModuleData::describeX(class_t* clazz) {
 }
 
+struct Img64ModuleInst : public ImgModuleInst {
+  Img64ModuleInst(const Img64ModuleData* data)
+      : ImgModuleInst(data) {
+  }
+};
+
 ////////////////////////////////////////////////////////////
 
 struct GradientModuleData : public Img32ModuleData {
@@ -197,11 +234,23 @@ public: //
     return gmd;
   }
 
+  dgmoduleinst_ptr_t createInstance() const final;
+
   img32_ptr_t _image_input_A;
   img32_ptr_t _image_input_B;
 };
 
 void GradientModuleData::describeX(class_t* clazz) {
+}
+
+struct GradientModuleInst : public Img32ModuleInst {
+  GradientModuleInst(const GradientModuleData* data)
+      : Img32ModuleInst(data) {
+  }
+};
+
+dgmoduleinst_ptr_t GradientModuleData::createInstance() const {
+  return std::make_shared<GradientModuleInst>(this);
 }
 
 ////////////////////////////////////////////////////////////
@@ -226,12 +275,24 @@ public: //
     return gmd;
   }
 
+  dgmoduleinst_ptr_t createInstance() const final;
+
   img32_ptr_t _image_input;
   float_ptr_t _paramA;
   float_ptr_t _paramB;
 };
 
 void Op1ModuleData::describeX(class_t* clazz) {
+}
+
+struct Op1ModuleInst : public Img32ModuleInst {
+  Op1ModuleInst(const Op1ModuleData* data)
+      : Img32ModuleInst(data) {
+  }
+};
+
+dgmoduleinst_ptr_t Op1ModuleData::createInstance() const {
+  return std::make_shared<Op1ModuleInst>(this);
 }
 
 ////////////////////////////////////////////////////////////
@@ -258,6 +319,8 @@ public: //
     return gmd;
   }
 
+  dgmoduleinst_ptr_t createInstance() const final;
+
   img32_ptr_t _image_inputA;
   img32_ptr_t _image_inputB;
   float_ptr_t _paramA;
@@ -265,6 +328,16 @@ public: //
 };
 
 void Op2ModuleData::describeX(class_t* clazz) {
+}
+
+struct Op2ModuleInst : public Img32ModuleInst {
+  Op2ModuleInst(const Op2ModuleData* data)
+      : Img32ModuleInst(data) {
+  }
+};
+
+dgmoduleinst_ptr_t Op2ModuleData::createInstance() const {
+  return std::make_shared<Op2ModuleInst>(this);
 }
 
 ////////////////////////////////////////////////////////////
@@ -471,12 +544,13 @@ TEST(dflow_a) {
     /////////////////////////////////
 
     auto topo = test_data->_dgsorter->generateTopology();
-    std::vector<dgmoduledata_ptr_t> expected_order{ test_data->_gl, //
-                                                    test_data->_grA, //
-                                                    test_data->_grB, //
-                                                    test_data->_op1, //
-                                                    test_data->_op2, //
-                                                    test_data->_op3}; 
+    std::vector<dgmoduledata_ptr_t> expected_order{
+        test_data->_gl,  //
+        test_data->_grA, //
+        test_data->_grB, //
+        test_data->_op1, //
+        test_data->_op2, //
+        test_data->_op3};
     CHECK(expected_order == topo->_flattened);
 
     /////////////////////////////////
@@ -494,7 +568,6 @@ TEST(dflow_a) {
 
     test_data->_dgsorter->dumpInputs(test_data->_op1);
     test_data->_dgsorter->dumpOutputs(test_data->_op1);
-
   }
 
   /////////////////////////////////
@@ -510,14 +583,14 @@ TEST(dflow_a) {
     auto test_data = std::make_shared<TestDataSet>();
     test_data->linkConfig2();
     auto topo = test_data->_dgsorter->generateTopology();
-    std::vector<dgmoduledata_ptr_t> expected_order{ test_data->_gl, //
-                                                    test_data->_grA, //
-                                                    test_data->_grB, //
-                                                    test_data->_op1, //
-                                                    test_data->_op3, //
-                                                    test_data->_op2}; 
+    std::vector<dgmoduledata_ptr_t> expected_order{
+        test_data->_gl,  //
+        test_data->_grA, //
+        test_data->_grB, //
+        test_data->_op1, //
+        test_data->_op3, //
+        test_data->_op2};
     CHECK(expected_order == topo->_flattened);
-
   }
 
   /////////////////////////////////
@@ -532,7 +605,7 @@ TEST(dflow_a) {
 
     auto test_data = std::make_shared<TestDataSet>();
     test_data->linkConfig2();
-    auto gi = std::make_shared<GraphInst>(test_data->_testgraphdata);
+    auto gi   = std::make_shared<GraphInst>(test_data->_testgraphdata);
     auto topo = test_data->_dgsorter->generateTopology();
     gi->updateTopology(topo);
   }

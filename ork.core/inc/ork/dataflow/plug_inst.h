@@ -13,7 +13,7 @@ namespace ork::dataflow {
 
 struct PlugInst {
 
-  PlugInst(moduleinst_ptr_t minst, plugdata_ptr_t plugdata);
+  PlugInst(const PlugData* plugdata);
   virtual ~PlugInst();
   
   const std::type_info& GetDataTypeId() const {
@@ -22,16 +22,19 @@ struct PlugInst {
   virtual void _doSetDirty(bool bv) {
   }
 
-  plugdata_ptr_t _plugdata;
-  moduleinst_ptr_t _owning_module;
+  const PlugData* _plugdata;
   bool mbDirty;
 };
+
+template <typename T> std::shared_ptr<T> typedPlugInst(pluginst_ptr_t p){
+    return std::dynamic_pointer_cast<T>(p);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct InPlugInst : public PlugInst {
 
-  InPlugInst(moduleinst_ptr_t pmod, inplugdata_ptr_t data);
+  InPlugInst(const PlugData* plugdata);
   ~InPlugInst();
   outpluginst_ptr_t connected() const;
   bool isConnected() const;
@@ -44,7 +47,7 @@ struct InPlugInst : public PlugInst {
 
 struct OutPlugInst : public PlugInst {
 
-  OutPlugInst(moduleinst_ptr_t pmod, outplugdata_ptr_t data);
+  OutPlugInst(const PlugData* plugdata);
   ~OutPlugInst();
 
   bool isConnected() const;
@@ -53,7 +56,6 @@ struct OutPlugInst : public PlugInst {
   void _doSetDirty(bool bv) override; // virtual
   bool isDirty() const;
 
-  outplugdata_ptr_t _outplugdata;
   dataflow::node_hash _outputhash;
   dgregister* _register = nullptr;
 };
