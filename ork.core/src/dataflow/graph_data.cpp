@@ -238,7 +238,7 @@ void GraphData::OnGraphChanged() {
 
   for (auto item : _modules) {
     auto module = typedModuleData<DgModuleData>(item.second);
-    printf("graph<%p> module<%p> name<%s>\n", (void*) this, (void*) module.get(), item.first.c_str());
+    //printf("graph<%p> module<%p> name<%s>\n", (void*) this, (void*) module.get(), item.first.c_str());
     module->_name = item.first
 ;  }
 }

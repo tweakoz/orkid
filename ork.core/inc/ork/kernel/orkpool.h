@@ -31,7 +31,7 @@ public:
 	{
 		pointer beg = &(*m_data.begin());
 		pointer end = &(*m_data.rbegin());
-		printf( "newpool<%p> beg<%p> end<%p> siz<%d>\n", (void*) this, (void*) beg,  (void*) end, count );
+		//printf( "newpool<%p> beg<%p> end<%p> siz<%d>\n", (void*) this, (void*) beg,  (void*) end, count );
 		OrkAssert(count > 0);
 		clear();
 	}

@@ -37,9 +37,28 @@ DgSorter::DgSorter(const GraphData* pg, dgcontext_ptr_t ctx)
     addModule(pmod);
   }
 
-  /////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////
+  // find the "top" of graph iteratively
+  //  here the "top" is defined as any node with 0 connected inputs
+  /////////////////////////////////////////////////////////////////
+
+  std::unordered_set<dgmoduledata_ptr_t> top_nodes;
+  for (size_t im = 0; im < inummodules; im++) {
+    dgmoduledata_ptr_t pmod = pg->module(im);
+    int num_connected = 0;
+    for (auto input : pmod->_inputs ) {
+      if( input->isConnected() ){
+        num_connected++;
+      }
+    }
+    if( num_connected==0 )
+      top_nodes.insert(pmod);
+  }
+
+  /////////////////////////////////////////////////////////////////
   // compute depths (from "top" of graph) iteratively
-  /////////////////////////////////////////
+  //  here the "top" is defined as any node with 0 connected inputs
+  /////////////////////////////////////////////////////////////////
 
   _logchannel->log("compute depths: ");
 
@@ -55,6 +74,7 @@ DgSorter::DgSorter(const GraphData* pg, dgcontext_ptr_t ctx)
       for (int op = 0; op < inumouts; op++) {
         auto poutplug  = pmod->output(op);
         size_t inumcon = poutplug->numConnections();
+        /////////////////////////
         int ilo        = 0;
         for (size_t ic = 0; ic < inumcon; ic++) {
           auto pin  = poutplug->connected(ic);
@@ -63,10 +83,12 @@ DgSorter::DgSorter(const GraphData* pg, dgcontext_ptr_t ctx)
           if (itd < ilo)
             ilo = itd;
         }
+        /////////////////////////
         if (node_info._depth > ilo && ilo != 0) {
           node_info._depth = s16(ilo); // TODO: whats the s16 for again? - its important
           inumchg++;
         }
+        /////////////////////////
       }
       _logchannel->log(" mod<%s> comp_depth<%d>", pmod->_name.c_str(), node_info._depth);
     }

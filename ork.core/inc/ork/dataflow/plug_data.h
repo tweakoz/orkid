@@ -90,6 +90,8 @@ struct InPlugData : public PlugData {
 
   DeclareAbstractX(InPlugData, PlugData);
 
+  static constexpr size_t NOPATH = 0xffffffffffffffff;
+
 public:
 
   InPlugData(moduledata_ptr_t pmod, EPlugRate epr, const std::type_info& tid, const char* pname);
@@ -97,7 +99,7 @@ public:
 
   bool isConnected() const;
   bool isMorphable() const;
-
+  size_t computeMinDepth(dgmoduledata_constptr_t to_module ) const;
   virtual inpluginst_ptr_t createInstance() const;
 
   outplugdata_ptr_t _connectedOutput;                       // which EXTERNAL output plug are we connected to

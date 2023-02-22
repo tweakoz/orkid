@@ -46,7 +46,7 @@ PlugData::PlugData(moduledata_ptr_t pmod, EPlugDir edir, EPlugRate epr, const st
     , _parent_module(pmod)
     , mTypeId(tid)
     , _name(pname ? pname : "noname") {
-  printf("PlugData<%p> pmod<%p> construct name<%s>\n", (void*) this, (void*) pmod.get(), _name.c_str());
+  //printf("PlugData<%p> pmod<%p> construct name<%s>\n", (void*) this, (void*) pmod.get(), _name.c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -71,6 +71,43 @@ InPlugData::~InPlugData(){
 inpluginst_ptr_t InPlugData::createInstance() const{
   return nullptr;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+size_t InPlugData::computeMinDepth(dgmoduledata_constptr_t to_module ) const{
+  size_t depth = NOPATH;
+  if(to_module==_parent_module){
+    depth = 0;
+  }
+  else if(isConnected()){
+    auto upstream_plug = _connectedOutput;
+    auto upstream_module = upstream_plug->_parent_module;
+    if(upstream_module==to_module){
+      depth = 1;
+    }
+    else{
+      size_t min_depth = NOPATH;
+      for( auto upstream_input : upstream_module->_inputs ){
+        size_t this_path_depth = upstream_input->computeMinDepth(to_module);
+        if(this_path_depth!=NOPATH){
+          this_path_depth += 1;
+          if(this_path_depth<min_depth){
+            min_depth = this_path_depth;
+          }
+        }
+      }
+      depth = min_depth;
+    }
+  }
+  printf( "InPlugData<%p:%s> this_module<%s> computeMinDepth dest_module<%s>, depth<%zx>\n",
+          this, 
+          this->_name.c_str(),
+          this->_parent_module->_name.c_str(),
+          to_module->_name.c_str(),
+          depth );
+  return depth;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 /*void InPlugData::DoSetDirty(bool bd) {
   if (bd) {

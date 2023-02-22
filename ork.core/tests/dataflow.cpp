@@ -573,7 +573,42 @@ struct TestDataSet {
   outplugdata_ptr_t _op2B_out;
 };
 
-TEST(dflow_a) {
+TEST(dflow_depthcalc1) {
+  printf("////////////////////////////////////////////////////////////\n");
+  printf("////// DEPTHCALC TEST 1\n");
+  printf("////////////////////////////////////////////////////////////\n");
+
+  auto test_data = std::make_shared<TestDataSet>();
+  test_data->linkConfig1();
+  size_t depth = test_data->_op2B_inpA->computeMinDepth(test_data->_gl);
+  CHECK(depth==InPlugData::NOPATH);
+}
+
+TEST(dflow_depthcalc2) {
+  printf("////////////////////////////////////////////////////////////\n");
+  printf("////// DEPTHCALC TEST 2\n");
+  printf("////////////////////////////////////////////////////////////\n");
+
+  auto test_data = std::make_shared<TestDataSet>();
+  test_data->linkConfig1();
+  size_t depth = test_data->_op2B_inpB->computeMinDepth(test_data->_gl);
+  CHECK(depth==2);
+}
+
+TEST(dflow_depthcalc3) {
+  printf("////////////////////////////////////////////////////////////\n");
+  printf("////// DEPTHCALC TEST 3\n");
+  printf("////////////////////////////////////////////////////////////\n");
+
+  auto test_data = std::make_shared<TestDataSet>();
+  test_data->linkConfig1();
+  test_data->_testgraphdata->disconnect(test_data->_op2_parama);
+  test_data->_testgraphdata->disconnect(test_data->_op2_paramb);
+  size_t depth = test_data->_op2B_inpB->computeMinDepth(test_data->_gl);
+  CHECK(depth==3);
+}
+
+TEST(dflow_order1) {
 
   printf("////////////////////////////////////////////////////////////\n");
   printf("////// ORDERING TEST\n");
@@ -614,7 +649,7 @@ TEST(dflow_a) {
   test_data->_dgsorter->dumpOutputs(test_data->_op1);
 }
 
-TEST(dflow_b) {
+TEST(dflow_order2) {
   printf("////////////////////////////////////////////////////////////\n");
   printf("////// ORDERING TEST 2\n");
   printf("////////////////////////////////////////////////////////////\n");
@@ -632,7 +667,7 @@ TEST(dflow_b) {
   CHECK(expected_order == topo->_flattened);
 }
 
-TEST(dflow_c) {
+TEST(dflow_compute1) {
   printf("////////////////////////////////////////////////////////////\n");
   printf("////// GRAPHINST COMPUTE TEST\n");
   printf("////////////////////////////////////////////////////////////\n");
