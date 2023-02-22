@@ -73,6 +73,10 @@ inpluginst_ptr_t InPlugData::createInstance() const{
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// compute minimum depth to target module (recursively)
+//  this does not differentiate across different plug types
+//  all paths to target module via different plug types are considered
+///////////////////////////////////////////////////////////////////////////////
 
 size_t InPlugData::computeMinDepth(dgmoduledata_constptr_t to_module ) const{
   size_t depth = NOPATH;
