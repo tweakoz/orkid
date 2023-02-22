@@ -474,10 +474,15 @@ edge_ptr_t submesh::MergeEdge(const edge& ed, int ipolyindex) {
 ///////////////////////////////////////////////////////////////////////////////
 void submesh::addQuad(fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec4 c) {
   vertex muvtx[4];
-  muvtx[0].set(p0, fvec3(), fvec3(), fvec2(), c);
-  muvtx[1].set(p1, fvec3(), fvec3(), fvec2(), c);
-  muvtx[2].set(p2, fvec3(), fvec3(), fvec2(), c);
-  muvtx[3].set(p3, fvec3(), fvec3(), fvec2(), c);
+
+  fvec3 B = (p0-p1).normalized();
+  fvec3 T = (p2-p0).normalized();
+  fvec3 N = B.crossWith(T);
+
+  muvtx[0].set(p0, N, fvec3(), fvec2(), c);
+  muvtx[1].set(p1, N, fvec3(), fvec2(), c);
+  muvtx[2].set(p2, N, fvec3(), fvec2(), c);
+  muvtx[3].set(p3, N, fvec3(), fvec2(), c);
   auto v0 = newMergeVertex(muvtx[0]);
   auto v1 = newMergeVertex(muvtx[1]);
   auto v2 = newMergeVertex(muvtx[2]);

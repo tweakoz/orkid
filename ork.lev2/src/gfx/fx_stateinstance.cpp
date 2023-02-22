@@ -126,6 +126,10 @@ bool FxPipeline::beginPass(const RenderContextInstData& RCID, int ipass) {
           FXI->BindParamMatrix(param, MVP);
           break;
         }
+        case "RCFD_M"_crcu: {
+          FXI->BindParamMatrix(param, worldmatrix);
+          break;
+        }
         case "RCFD_Camera_MVP_Mono"_crcu: {
           if (monocams) {
             FXI->BindParamMatrix(param, monocams->MVPMONO(worldmatrix));

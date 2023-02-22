@@ -114,7 +114,8 @@
 			"source_location": "cpp",
 			"rope": "cpp",
 			"slist": "cpp",
-			"*.macros": "cpp"
+			"*.macros": "cpp",
+			"*.glsl": "cpp"
 		}
 	}
 }
