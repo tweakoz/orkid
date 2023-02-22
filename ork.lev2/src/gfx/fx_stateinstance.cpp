@@ -74,6 +74,7 @@ bool FxPipeline::beginPass(const RenderContextInstData& RCID, int ipass) {
   bool is_picking       = CPD.isPicking();
   bool is_stereo        = CPD.isStereoOnePass();
   auto pbrcommon = RCID._RCFD->_pbrcommon;
+  auto modcolor = context->RefModColor();
 
   bool rval = FXI->BindPass(ipass);
   if (not rval)
@@ -124,6 +125,10 @@ bool FxPipeline::beginPass(const RenderContextInstData& RCID, int ipass) {
           auto as_mtx4p    = it->second.get<fmtx4_ptr_t>();
           const fmtx4& MVP = *(as_mtx4p.get());
           FXI->BindParamMatrix(param, MVP);
+          break;
+        }
+        case "RCFD_MODCOLOR"_crcu: {
+          FXI->BindParamVect4(param, modcolor);
           break;
         }
         case "RCFD_M"_crcu: {

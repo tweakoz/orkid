@@ -86,7 +86,8 @@ fragment_shader ps_pseudowire : iface_frg {
     else
         intens = 0;
 
-    out_clr = vec4(intens,intens,intens,1);
+
+    out_clr = vec4(modcolor.xyz*intens,1);
 }
 
 ////////////////////////////////////////
@@ -159,7 +160,9 @@ class PointsPrimApp(object):
                                rendermodel = "ForwardPBR" )
 
     param_world = pipeline.sharedMaterial.param("m")
+    param_modcolor = pipeline.sharedMaterial.param("modcolor")
     pipeline.bindParam( param_world, tokens.RCFD_M )
+    pipeline.bindParam( param_modcolor, tokens.RCFD_MODCOLOR )
 
     ##################
     # create sg node
@@ -189,6 +192,13 @@ class PointsPrimApp(object):
     ###################################
 
     nodesetxf(node=self.primnode,trans=trans,orient=orient,scale=scale)
+
+    r = 0.5+math.sin(updinfo.absolutetime*1.2)*0.5
+    g = 0.5+math.sin(updinfo.absolutetime*1.7)*0.5
+    b = 0.5+math.sin(updinfo.absolutetime*1.9)*0.5
+
+    self.primnode.modcolor = vec4(r,g,b,1)
+
 
     ###################################
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes

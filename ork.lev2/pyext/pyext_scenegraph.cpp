@@ -28,6 +28,15 @@ void pyinit_scenegraph(py::module& module_lev2) {
               [](node_ptr_t node, decompxf_ptr_t mtx) { //
                 node->_dqxfdata._worldTransform = mtx;
               })
+          .def_property(
+              "modcolor",                     //
+              [](node_ptr_t node) -> fvec4 { //
+                return node->_dqxfdata._modcolor;
+              },
+              [](node_ptr_t node, fvec4 color) { //
+                node->_dqxfdata._modcolor = color;
+                node->_dqxfdata._use_modcolor = true;
+              })
           .def_property_readonly(
               "user",                                       //
               [](node_ptr_t node) -> varmap::varmap_ptr_t { //

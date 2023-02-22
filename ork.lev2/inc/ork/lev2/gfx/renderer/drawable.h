@@ -64,6 +64,8 @@ private:
 struct DrawQueueXfData {
   DrawQueueXfData();
   decompxf_ptr_t _worldTransform;
+  fvec4 _modcolor;
+  bool _use_modcolor = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////

@@ -65,8 +65,11 @@ drawablebufitem_ptr_t CallbackDrawable::enqueueOnLayer(const DrawQueueXfData& xf
 void CallbackDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const {
   ork::opq::assertOnQueue2(opq::mainSerialQueue());
 
+  const auto& DQDATA = item->mXfData;
+
   lev2::CallbackRenderable& renderable = renderer->enqueueCallback();
-  auto matrix                   = item->mXfData._worldTransform->composed();
+  auto matrix                   = DQDATA._worldTransform->composed();
+
   // auto str                             = matrix.dump4x3cn();
   // printf("XFX: %s\n", str.c_str());
   renderable.SetMatrix(matrix);
@@ -75,7 +78,7 @@ void CallbackDrawable::enqueueToRenderQueue(drawablebufitem_constptr_t item, lev
   renderable.SetSortKey(_sortkey);
   renderable.SetDrawableDataA(GetUserDataA());
   renderable.SetDrawableDataB(GetUserDataB());
-  renderable.SetModColor(renderer->GetTarget()->RefModColor());
+  renderable.SetModColor(DQDATA._modcolor);
   renderable._drawable = this;
 }
 /////////////////////////////////////////////////////////////////////

@@ -115,7 +115,9 @@
 			"rope": "cpp",
 			"slist": "cpp",
 			"*.macros": "cpp",
-			"*.glsl": "cpp"
+			"*.glsl": "cpp",
+			"*.isph": "cpp",
+			"format": "cpp"
 		}
 	}
 }
