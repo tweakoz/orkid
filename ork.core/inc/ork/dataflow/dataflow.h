@@ -30,6 +30,7 @@ class workunit;
 class scheduler;
 class cluster;
 struct dgregister;
+struct dgregisterblock;
 struct dyn_external;
 
 struct Topology;
@@ -55,6 +56,7 @@ struct MorphableData;
 
 using dgsorter_ptr_t = std::shared_ptr<DgSorter>;
 using dgcontext_ptr_t = std::shared_ptr<dgcontext>;
+using dgregisterblock_ptr_t = std::shared_ptr<dgregisterblock>;
 
 using moduledata_ptr_t = std::shared_ptr<ModuleData>;
 using moduleinst_ptr_t = std::shared_ptr<ModuleInst>;
@@ -127,8 +129,6 @@ private:
 // It knows the dependent clients downstream of it self (for managing the
 //  lifetime of given data attached to the register
 
-class dgregisterblock;
-
 struct dgregister {
   int mIndex;
   std::set<dgmoduledata_ptr_t> _downstream_dependents;
@@ -146,7 +146,7 @@ struct dgregister {
 
 // a dgregisterblock is a pool of registers for a given machine
 
-class dgregisterblock {
+struct dgregisterblock {
 public:
   dgregisterblock(const std::string& name, int isize);
 
@@ -299,20 +299,19 @@ public:
 
 struct GraphInst {
 
-  const std::set<int>& OutputRegisters() const {
-    return mOutputRegisters;
-  }
   ////////////////////////////////////////////
-  GraphInst();
-  ~GraphInst();
+  GraphInst(graphdata_ptr_t gdata);
+  virtual ~GraphInst();
   ////////////////////////////////////////////
   size_t numModules() const;
   dgmoduleinst_ptr_t module(size_t indexed) const;
   ////////////////////////////////////////////
-  void Clear();
+  void clear();
   ////////////////////////////////////////////
   bool isPending() const;
   bool isDirty(void) const;
+  ////////////////////////////////////////////
+  void updateTopology(topology_ptr_t topo);
   ////////////////////////////////////////////
   void setPending(bool bv);
   ////////////////////////////////////////////
@@ -323,9 +322,10 @@ struct GraphInst {
 
   std::vector<dgmoduleinst_ptr_t> _module_insts;
 
-  bool mbInProgress;
-  std::priority_queue<dgmoduledata_ptr_t> mModuleQueue;
-  std::set<int> mOutputRegisters;
+  bool _inProgress;
+  std::vector<dgmoduledata_ptr_t> _ordered_module_datas;
+  std::vector<dgmoduleinst_ptr_t> _ordered_module_insts;
+  std::set<int> _outputRegisters;
 
   //void doNotify(const ork::event::Event* event); // virtual
 };

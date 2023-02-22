@@ -14,73 +14,40 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace dataflow {
 ///////////////////////////////////////////////////////////////////////////////
-GraphInst::GraphInst()
-    : _scheduler(nullptr)
-    , mbInProgress(false) {
+GraphInst::GraphInst(graphdata_ptr_t gdata)
+    : _graphdata(gdata)
+    , _scheduler(nullptr)
+    , _inProgress(false) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 GraphInst::~GraphInst() {
 }
-/*
 ///////////////////////////////////////////////////////////////////////////////
-void GraphInst::doNotify(const ork::event::Event* event) {
-  if (auto pev = dynamic_cast<const ItemRemovalEvent*>(event)) {
-    if (pev->mProperty == GraphInst::GetClassStatic()->Description().property("Modules")) {
-      std::string ps = pev->mKey.get<std::string>();
-      object_ptr_t pobj  = pev->mOldValue.get<object_ptr_t>();
-      delete pobj;
-      return;
-    }
-  } else if (auto pev = dynamic_cast<const MapItemCreationEvent*>(event)) {
-    if (pev->mProperty == GraphInst::GetClassStatic()->Description().property("Modules")) {
-      std::string psname    = pev->mKey.get<std::string>();
-      object_ptr_t pnewobj = pev->mNewItem.get<object_ptr_t>();
-      dgmoduledata_ptr_t pdgmod     = rtti::autocast(pnewobj);
-
-      pdgmod->SetParent(this);
-      pdgmod->SetName(psname);
-    }
-  }
-}
-*/
-///////////////////////////////////////////////////////////////////////////////
-void GraphInst::Clear() {
-  while (false == mModuleQueue.empty())
-    mModuleQueue.pop();
+void GraphInst::clear() {
+  _ordered_module_datas.clear();
+  _ordered_module_insts.clear();
   _scheduler        = nullptr;
-  mbInProgress      = false;
+  _inProgress      = false;
+}
+///////////////////////////////////////////////////////////////////////////////
+void GraphInst::updateTopology(topology_ptr_t topo){
+  _ordered_module_datas = topo->_flattened;
+  for( auto item : _ordered_module_datas ){
+    
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool GraphInst::isDirty(void) const {
-  for (auto item : _module_insts ) {
-    auto module = typedModuleInst<DgModuleInst>(item);
-    if(module->isDirty())
-      return true;
-  }
   return false;
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool GraphInst::isPending() const {
-  return mbInProgress;
+  return _inProgress;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void GraphInst::setPending(bool bv) {
-  mbInProgress = bv;
+  _inProgress = bv;
 }
-///////////////////////////////////////////////////////////////////////////////
-/*void graph::SetModuleDirty( module* pmod )
-{
-    OrkAssert( _topologyDirty == false );
-    //std::deque<module*>::const_iterator it = std::find( mModuleQueue.begin(), mModuleQueue.end(), pmod );
-    //if( it == mModuleQueue.end() ) // NOT IN QUEUE ALREADY, so ADD IT
-    //{
-    //mModuleQueue.push_back( pmod );
-    //}
-    //if( _scheduler )
-    //{
-    //  _scheduler->QueueModule( pmod );
-    //}
-}*/
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::dataflow
 ///////////////////////////////////////////////////////////////////////////////
