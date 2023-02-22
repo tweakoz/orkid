@@ -105,11 +105,14 @@ struct GlobalModuleInst : public BaseModuleInst {
       : BaseModuleInst(data) {
   }
   void onLink(GraphInst* inst) final{
-    
-  }
-  void compute(GraphInst* inst) final {
     int numinp = numInputs();
     int numout = numOutputs();
+
+    auto impl = inst->_impl.getShared<ImageGenTestImpl>();
+
+    printf( "LINK GlobalModuleInst<%p:%s> numinp<%d> numout<%d>\n", (void*) this, _dgmodule_data->_name.c_str(), numinp, numout );
+  }
+  void compute(GraphInst* inst) final {
 
     printf( "COMPUTE GlobalModuleInst<%p:%s>\n", (void*) this, _dgmodule_data->_name.c_str() );
 
@@ -262,11 +265,12 @@ struct GradientModuleInst : public Img32ModuleInst {
       : Img32ModuleInst(data) {
   }
   void onLink(GraphInst* inst) final{
-    
-  }
-  void compute(GraphInst* inst) final {
+    auto impl = inst->_impl.getShared<ImageGenTestImpl>();
     int numinp = numInputs();
     int numout = numOutputs();
+    printf( "LINK GradientModuleInst<%p:%s> numinp<%d> numout<%d>\n", (void*) this, _dgmodule_data->_name.c_str(), numinp, numout );
+  }
+  void compute(GraphInst* inst) final {
     printf( "COMPUTE GradientModuleInst<%p:%s>\n", (void*) this, _dgmodule_data->_name.c_str() );
   }
 };
@@ -312,11 +316,12 @@ struct Op1ModuleInst : public Img32ModuleInst {
       : Img32ModuleInst(data) {
   }
   void onLink(GraphInst* inst) final{
-    
-  }
-  void compute(GraphInst* inst) final {
+    auto impl = inst->_impl.getShared<ImageGenTestImpl>();
     int numinp = numInputs();
     int numout = numOutputs();
+    printf( "LINK Op1ModuleInst<%p:%s> numinp<%d> numout<%d>\n", (void*) this, _dgmodule_data->_name.c_str(), numinp, numout );
+  }
+  void compute(GraphInst* inst) final {
     printf( "COMPUTE Op1ModuleInst<%p:%s>\n", (void*) this, _dgmodule_data->_name.c_str() );
   }
 };
@@ -365,11 +370,13 @@ struct Op2ModuleInst : public Img32ModuleInst {
       : Img32ModuleInst(data) {
   }
   void onLink(GraphInst* inst) final{
-    
-  }
-  void compute(GraphInst* inst) final {
+    auto impl = inst->_impl.getShared<ImageGenTestImpl>();
     int numinp = numInputs();
     int numout = numOutputs();
+    printf( "LINK Op2ModuleInst<%p:%s> numinp<%d> numout<%d>\n", (void*) this, _dgmodule_data->_name.c_str(), numinp, numout );
+
+  }
+  void compute(GraphInst* inst) final {
     printf( "COMPUTE Op2ModuleInst<%p:%s>\n", (void*) this, _dgmodule_data->_name.c_str() );
   }
 };
@@ -645,6 +652,20 @@ TEST(dflow_a) {
     gi->updateTopology(topo);
 
     auto impl = gi->_impl.makeShared<ImageGenTestImpl>();
+
+    printf("////// computing.. \n");
+
+    gi->compute();
+
+    printf("////// computing.. \n");
+
+    gi->compute();
+
+    printf("////// computing.. \n");
+
+    gi->compute();
+
+    printf("////// computing.. \n");
 
     gi->compute();
   }
