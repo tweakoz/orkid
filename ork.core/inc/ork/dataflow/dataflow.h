@@ -125,7 +125,7 @@ struct DgNodeInfo {
       , _modifier(-1) {
   }
   int computeSorkKey() const{
-    return (_depth * 16) + _modifier;
+    return (_depth<<12) + _modifier;
   }
 };
 

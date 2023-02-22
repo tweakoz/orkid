@@ -64,7 +64,7 @@ DgSorter::DgSorter(const GraphData* pg, dgcontext_ptr_t ctx)
             ilo = itd;
         }
         if (node_info._depth > ilo && ilo != 0) {
-          node_info._depth = s8(ilo); // TODO: whats the s8 for again? - its important
+          node_info._depth = s16(ilo); // TODO: whats the s16 for again? - its important
           inumchg++;
         }
       }
@@ -95,7 +95,7 @@ void DgSorter::addModule(dgmoduledata_ptr_t mod) {
   node_info._depth    = 0;
   node_info._serial   = NOSERIAL;
   int inumo           = mod->numOutputs();
-  node_info._modifier = s8(-inumo); // TODO: whats the s8 for again? - its important
+  node_info._modifier = s16(-inumo); // TODO: whats the s16 for again? - its important
   for (int io = 0; io < inumo; io++) {
     auto plug_out       = mod->output(io);
     auto& plug_info     = _pluginfomap[plug_out];
