@@ -19,7 +19,7 @@
 namespace ork::dataflow {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-dgregisterblock::dgregisterblock(const std::string& name, int isize)
+DgRegisterBlock::DgRegisterBlock(const std::string& name, int isize)
     : mBlock(isize)
     , mName(name) {
   for (int io = 0; io < isize; io++) {
@@ -29,32 +29,32 @@ dgregisterblock::dgregisterblock(const std::string& name, int isize)
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-dgregister* dgregisterblock::Alloc() {
-  dgregister* reg = mBlock.allocate();
+DgRegister* DgRegisterBlock::Alloc() {
+  DgRegister* reg = mBlock.allocate();
   OrkAssert(reg != 0);
   mAllocated.insert(reg);
   return reg;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void dgregisterblock::Free(dgregister* preg) {
+void DgRegisterBlock::Free(DgRegister* preg) {
   preg->_downstream_dependents.clear();
   mBlock.deallocate(preg);
   mAllocated.erase(preg);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void dgregisterblock::Clear() {
-  orkvector<dgregister*> deallocvec;
+void DgRegisterBlock::Clear() {
+  orkvector<DgRegister*> deallocvec;
 
-  for (dgregister* reg : mAllocated)
+  for (DgRegister* reg : mAllocated)
     deallocvec.push_back(reg);
 
-  for (dgregister* reg : deallocvec)
+  for (DgRegister* reg : deallocvec)
     Free(reg);
 }
 ///////////////////////////////////////////////////////////////////////////////
 // bind a module to a register
 ///////////////////////////////////////////////////////////////////////////////
-void dgregister::bindPlug(plugdata_ptr_t plug) {
+void DgRegister::bindPlug(plugdata_ptr_t plug) {
   if (plug) {
     _plug = plug;
     auto pmod = _plug->_parent_module;
@@ -79,7 +79,7 @@ void dgregister::bindPlug(plugdata_ptr_t plug) {
   }
 }
 //////////////////////////////////
-dgregister::dgregister(plugdata_ptr_t plug, int idx)
+DgRegister::DgRegister(plugdata_ptr_t plug, int idx)
     : mIndex(idx)
     , _plug(nullptr)
     , mpBlock(nullptr) {
@@ -88,23 +88,23 @@ dgregister::dgregister(plugdata_ptr_t plug, int idx)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-std::string dgregister::name() const {
-  return mpBlock->name() + FormatString("-%d", mIndex);
+std::string DgRegister::name() const {
+  return mpBlock->name() + FormatString(":%d", mIndex);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // prune no longer needed registers
 ///////////////////////////////////////////////////////////////////////////////
-orkvector<dgregister*> dgcontext::prune(dgmoduledata_ptr_t pmod) { // we are done with pmod, prune registers associated with it
+orkvector<DgRegister*> dgcontext::prune(dgmoduledata_ptr_t pmod) { // we are done with pmod, prune registers associated with it
 
-  orkvector<dgregister*> deallocvec_accum;
+  orkvector<DgRegister*> deallocvec_accum;
 
   // check all register sets
   for (auto itc : _registerSets) {
 
-    dgregisterblock* regs                = itc.second;
-    const orkset<dgregister*>& allocated = regs->Allocated();
-    orkvector<dgregister*> deallocvec;
+    dgregisterblock_ptr_t regs                = itc.second;
+    const orkset<DgRegister*>& allocated = regs->Allocated();
+    orkvector<DgRegister*> deallocvec;
 
     // check all allocated registers
 
@@ -127,7 +127,7 @@ orkvector<dgregister*> dgcontext::prune(dgmoduledata_ptr_t pmod) { // we are don
         deallocvec.push_back(reg);
       }
     }
-    for (dgregister* free_reg : deallocvec) {
+    for (DgRegister* free_reg : deallocvec) {
       regs->Free(free_reg);
       deallocvec_accum.push_back(free_reg);
     }
@@ -135,30 +135,30 @@ orkvector<dgregister*> dgcontext::prune(dgmoduledata_ptr_t pmod) { // we are don
   return deallocvec_accum;
 }
 //////////////////////////////////////////////////////////
-dgregister* dgcontext::alloc(outplugdata_ptr_t poutplug) {
+DgRegister* dgcontext::alloc(outplugdata_ptr_t poutplug) {
   const std::type_info* tinfo = &poutplug->GetDataTypeId();
   auto itc                    = _registerSets.find(tinfo);
   if (itc != _registerSets.end()) {
-    dgregisterblock* regs = itc->second;
-    dgregister* preg      = regs->Alloc();
+    dgregisterblock_ptr_t regs = itc->second;
+    DgRegister* preg      = regs->Alloc();
     preg->_plug = poutplug;
     return preg;
   }
   return nullptr;
 }
 //////////////////////////////////////////////////////////
-void dgcontext::setRegisters(const std::type_info* pinfo, dgregisterblock* pregs) {
+void dgcontext::_setRegisters(const std::type_info* pinfo, dgregisterblock_ptr_t pregs) {
   _registerSets[pinfo] = pregs;
 }
 //////////////////////////////////////////////////////////
-dgregisterblock* dgcontext::registers(const std::type_info* pinfo) {
+dgregisterblock_ptr_t dgcontext::registers(const std::type_info* pinfo) {
   auto it = _registerSets.find(pinfo);
   return (it == _registerSets.end()) ? 0 : it->second;
 }
 //////////////////////////////////////////////////////////
 void dgcontext::Clear() {
   for (auto it : _registerSets) {
-    dgregisterblock* pregs = it.second;
+    dgregisterblock_ptr_t pregs = it.second;
     pregs->Clear();
   }
 }

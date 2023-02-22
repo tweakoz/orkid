@@ -29,8 +29,8 @@ namespace ork { namespace dataflow {
 class workunit;
 class scheduler;
 class cluster;
-struct dgregister;
-struct dgregisterblock;
+struct DgRegister;
+struct DgRegisterBlock;
 struct dyn_external;
 
 struct Topology;
@@ -56,7 +56,7 @@ struct MorphableData;
 
 using dgsorter_ptr_t = std::shared_ptr<DgSorter>;
 using dgcontext_ptr_t = std::shared_ptr<dgcontext>;
-using dgregisterblock_ptr_t = std::shared_ptr<dgregisterblock>;
+using dgregisterblock_ptr_t = std::shared_ptr<DgRegisterBlock>;
 
 using moduledata_ptr_t = std::shared_ptr<ModuleData>;
 using moduleinst_ptr_t = std::shared_ptr<ModuleInst>;
@@ -111,49 +111,61 @@ private:
   boost::Crc64 mValue;
 };
 
+constexpr size_t NOSERIAL = 0xffffffffffffffff;
+
+struct DgNodeInfo {
+  
+  size_t _serial;
+  int _depth;
+  int _modifier;
+
+  DgNodeInfo()
+      : _serial(NOSERIAL)
+      , _depth(-1)
+      , _modifier(-1) {
+  }
+  int computeSorkKey() const{
+    return (_depth * 16) + _modifier;
+  }
+};
+
+struct DgPlugInfo {
+  DgPlugInfo(){}
+  DgRegister* _register = nullptr;
+};
 
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-// dgqueue (dependency graph queue)
-//  this will topologically sort and queue modules in a graph so that:
-//  1. all modules are computed
-//	2. no module is computed before its inputs
-//  3. modules are computed soon after their parents
-//  4. minimal temp registers are used
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
-// a dgregister is an abstraction of the concept machine register
+// a DgRegister is an abstraction of the concept "machine register"
 //  where the dgcontext is a thread and the dggraph is the program
 // It knows the dependent clients downstream of it self (for managing the
 //  lifetime of given data attached to the register
+///////////////////////////////////////////////////////////////////////////////
 
-struct dgregister {
+struct DgRegister {
   int mIndex;
   std::set<dgmoduledata_ptr_t> _downstream_dependents;
   plugdata_ptr_t _plug;
-  dgregisterblock* mpBlock;
+  DgRegisterBlock* mpBlock;
   //////////////////////////////////
   void bindPlug(plugdata_ptr_t pmod);
   //////////////////////////////////
-  dgregister(plugdata_ptr_t p = 0, int idx = -1);
+  DgRegister(plugdata_ptr_t p = 0, int idx = -1);
   //////////////////////////////////
   std::string name() const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+// a DgRegisterBlock is a pool of registers for a given machine
+//  there will typically be 1 register block per datatype in a dataflow graph
+///////////////////////////////////////////////////////////////////////////////
 
-// a dgregisterblock is a pool of registers for a given machine
-
-struct dgregisterblock {
+struct DgRegisterBlock {
 public:
-  dgregisterblock(const std::string& name, int isize);
+  DgRegisterBlock(const std::string& name, int isize);
 
-  dgregister* Alloc();
-  void Free(dgregister* preg);
-  const orkset<dgregister*>& Allocated() const {
+  DgRegister* Alloc();
+  void Free(DgRegister* preg);
+  const orkset<DgRegister*>& Allocated() const {
     return mAllocated;
   }
   void Clear();
@@ -162,8 +174,8 @@ public:
   }
 
 private:
-  ork::pool<dgregister> mBlock;
-  orkset<dgregister*> mAllocated;
+  ork::pool<DgRegister> mBlock;
+  orkset<DgRegister*> mAllocated;
   std::string mName;
 };
 
@@ -174,58 +186,42 @@ public:
 
   void assignSchedulerToGraphInst(graphinst_ptr_t gi, scheduler_ptr_t sched);
 
-
-  void setRegisters(const std::type_info* pinfo, dgregisterblock*);
-  dgregisterblock* registers(const std::type_info* pinfo);
+  void _setRegisters(const std::type_info* pinfo, dgregisterblock_ptr_t);
+  dgregisterblock_ptr_t registers(const std::type_info* pinfo);
   void Clear();
-  template <typename T> dgregisterblock* registers() {
+  template <typename T> dgregisterblock_ptr_t registers() {
     return registers(&typeid(T));
   }
-  template <typename T> void setRegisters(dgregisterblock* pregs) {
-    setRegisters(&typeid(T), pregs);
+  template <typename T> //
+  dgregisterblock_ptr_t createRegisters(const std::string& name, int count) {
+    auto regs = std::make_shared<DgRegisterBlock>(name, count);  
+    _setRegisters(&typeid(T), regs);
+    return regs;
   }
-  orkvector<dgregister*> prune(dgmoduledata_ptr_t mod);
-  dgregister* alloc(outplugdata_ptr_t poutplug);
+  orkvector<DgRegister*> prune(dgmoduledata_ptr_t mod);
+  DgRegister* alloc(outplugdata_ptr_t poutplug);
 
-  orkmap<const std::type_info*, dgregisterblock*> _registerSets;
+  orkmap<const std::type_info*, dgregisterblock_ptr_t> _registerSets;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 // DgSorter : state tracking to help topo-sort dgmodules into execution order
+//  this will topologically sort modules in a graph so that:
+//  1. all modules are computed
+//  2. no module is computed before its inputs
+//  3. modules are computed soon after their parents (to maximize "cache" locality)
+//  4. minimal registers are used
 ///////////////////////////////////////////////////////////////////////////////
 
 struct DgSorter {
-
-  static constexpr size_t NOSERIAL = 0xffffffffffffffff;
-
-  struct NodeInfo {
-    
-    size_t _serial;
-    int _depth;
-    int _modifier;
-
-    NodeInfo()
-        : _serial(NOSERIAL)
-        , _depth(-1)
-        , _modifier(-1) {
-    }
-  };
-
-  struct PlugInfo {
-    PlugInfo(){}
-
-    dgregister* _register = nullptr;
-  };
 
   //////////////////////////////////////////////////////////
   DgSorter(const GraphData* pg, dgcontext_ptr_t ctx);
   //////////////////////////////////////////////////////////
   bool isPending(dgmoduledata_ptr_t mod) const;
   size_t numPending() const;
-  int numDownstream(dgmoduledata_ptr_t mod) const;
-  int numPendingDownstream(dgmoduledata_ptr_t mod) const;
   void addModule(dgmoduledata_ptr_t mod);
-  orkvector<dgregister*> pruneRegisters(dgmoduledata_ptr_t pmod);
+  orkvector<DgRegister*> pruneRegisters(dgmoduledata_ptr_t pmod);
   void enqueueModule(dgmoduledata_ptr_t pmod, int irecd);
   bool hasPendingInputs(dgmoduledata_ptr_t mod) const;
   void dumpInputs(dgmoduledata_ptr_t mod) const;
@@ -238,8 +234,8 @@ struct DgSorter {
   std::set<dgmoduledata_ptr_t> _pending;
   std::stack<dgmoduledata_ptr_t> _modulestack;
 
-  std::map<dgmoduledata_ptr_t,NodeInfo> _nodeinfomap;
-  std::map<plugdata_ptr_t,PlugInfo> _pluginfomap;
+  std::map<dgmoduledata_ptr_t,DgNodeInfo> _nodeinfomap;
+  std::map<plugdata_ptr_t,DgPlugInfo> _pluginfomap;
   logchannel_ptr_t _logchannel;
   logchannel_ptr_t _logchannel_reg;
 };
@@ -284,10 +280,6 @@ public:
   void disconnect(inplugdata_ptr_t inp);
   void disconnect(outplugdata_ptr_t inp);
 
-  //void connectInternal(outplugdata_ptr_t vt);
-  //void connectExternal(outplugdata_ptr_t vt);
-
-
   bool preDeserialize(reflect::serdes::IDeserializer&) override;
   bool postDeserialize(reflect::serdes::IDeserializer&) override;
 
@@ -331,8 +323,6 @@ struct GraphInst {
   std::set<int> _outputRegisters;
 
   svar64_t _impl;
-
-  //void doNotify(const ork::event::Event* event); // virtual
 };
 
 ///////////

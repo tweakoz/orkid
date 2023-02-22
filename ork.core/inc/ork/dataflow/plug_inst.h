@@ -60,7 +60,7 @@ struct OutPlugInst : public PlugInst {
   bool isDirty() const;
 
   dataflow::node_hash _outputhash;
-  dgregister* _register = nullptr;
+  DgRegister* _register = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

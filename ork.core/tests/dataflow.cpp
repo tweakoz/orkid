@@ -18,29 +18,35 @@
 
 ////////////////////////////////////////////////////////////
 
-namespace ork { namespace dataflow {
+namespace ork::dataflow {
 namespace test {
+
 ////////////////////////////////////////////////////////////
+// create a bunch of mock procedural-image payload and plug types
+// They are not actually functional, but serve to test the 
+//   the dataflow infrastructure
+////////////////////////////////////////////////////////////
+
 struct ImgBase {};
 struct Img32 : public ImgBase {};
 struct Img64 : public ImgBase {};
 struct Buffer {};
-Buffer gBuffer;
-////////////////////////////////////////////////////////////
-} // namespace test
-////////////////////////////////////////////////////////////
-
-template <> void outplugdata<ork::dataflow::test::ImgBase>::describeX(class_t* clazz) {
-}
-template <> void inplugdata<ork::dataflow::test::ImgBase>::describeX(class_t* clazz) {
-}
-template <> int MaxFanout<ork::dataflow::test::ImgBase>() {
-  return 0;
-}
 
 ////////////////////////////////////////////////////////////
-namespace test {
+
+using img32_ptr_t         = std::shared_ptr<Img32>;
+using img32_outplug_t     = outplugdata<Img32>;
+using img32_outplug_ptr_t = std::shared_ptr<img32_outplug_t>;
+using img32_inplug_t      = inplugdata<Img32>;
+using img32_inplug_ptr_t  = std::shared_ptr<img32_inplug_t>;
+
 ////////////////////////////////////////////////////////////
+
+using img64_ptr_t         = std::shared_ptr<Img64>;
+using img64_outplug_t     = outplugdata<Img64>;
+using img64_outplug_ptr_t = std::shared_ptr<img64_outplug_t>;
+using img64_inplug_t      = inplugdata<Img64>;
+using img64_inplug_ptr_t  = std::shared_ptr<img64_inplug_t>;
 
 struct ImageGenTestImpl {};
 
@@ -155,22 +161,6 @@ struct ImgModuleInst : public BaseModuleInst {
       : BaseModuleInst(data) {
   }
 };
-
-////////////////////////////////////////////////////////////
-
-using img32_ptr_t         = std::shared_ptr<Img32>;
-using img32_outplug_t     = outplugdata<Img32>;
-using img32_outplug_ptr_t = std::shared_ptr<img32_outplug_t>;
-using img32_inplug_t      = inplugdata<Img32>;
-using img32_inplug_ptr_t  = std::shared_ptr<img32_inplug_t>;
-
-////////////////////////////////////////////////////////////
-
-using img64_ptr_t         = std::shared_ptr<Img64>;
-using img64_outplug_t     = outplugdata<Img64>;
-using img64_outplug_ptr_t = std::shared_ptr<img64_outplug_t>;
-using img64_inplug_t      = inplugdata<Img64>;
-using img64_inplug_ptr_t  = std::shared_ptr<img64_inplug_t>;
 
 ////////////////////////////////////////////////////////////
 
@@ -492,19 +482,13 @@ struct TestDataSet {
 
     _dgcontext = std::make_shared<dgcontext>();
 
-    // create dg register sets
-
-    _floatregs = std::make_shared<dgregisterblock>("ptex_float", 4);  // 4 float32 registers
-    _img32regs = std::make_shared<dgregisterblock>("ptex_img32", 16); // 16 Image32 registers
-    _img64regs = std::make_shared<dgregisterblock>("ptex_img64", 4);  // 4 Image64 registers
-
     /////////////////////////////////
-    // assign dg register sets to context
+    // assign/create dg register sets to context
     /////////////////////////////////
 
-    _dgcontext->setRegisters<float>(_floatregs.get());
-    _dgcontext->setRegisters<Img32>(_img32regs.get());
-    _dgcontext->setRegisters<Img64>(_img64regs.get());
+    _dgcontext->createRegisters<float>("ptex_float", 4);  // 4 float32 registers
+    _dgcontext->createRegisters<Img32>("ptex_img32", 16); // 16 Image32 registers
+    _dgcontext->createRegisters<Img64>("ptex_img32", 16); // 4 Image64 registers
 
     _dgsorter                            = std::make_shared<DgSorter>(_testgraphdata.get(), _dgcontext);
     _dgsorter->_logchannel->_enabled     = true;
@@ -550,9 +534,6 @@ struct TestDataSet {
   testgraphdata_ptr_t _testgraphdata;
 
   dgcontext_ptr_t _dgcontext;
-  dgregisterblock_ptr_t _floatregs;
-  dgregisterblock_ptr_t _img32regs;
-  dgregisterblock_ptr_t _img64regs;
   dgsorter_ptr_t _dgsorter;
 
   dgmoduledata_ptr_t _gl;
@@ -683,13 +664,24 @@ TEST(dflow_c) {
 
 ////////////////////////////////////////////////////////////
 
-} // namespace test
-}} // namespace ork::dataflow
+} // namespace ork::dataflow::test -> ork::dataflow
+
+///////////////////////////////////////////////////////////////////////////////
+// plugdata<ImgBase>
+///////////////////////////////////////////////////////////////////////////////
+
+template <> int MaxFanout<test::ImgBase>() {
+  return 0;
+}
+template <> void outplugdata<test::ImgBase>::describeX(class_t* clazz) {
+}
+template <> void inplugdata<test::ImgBase>::describeX(class_t* clazz) {
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // plugdata<Img32>
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork::dataflow {
+
 template <> int MaxFanout<test::Img32>() {
   return 0;
 }
@@ -710,9 +702,11 @@ template <> std::shared_ptr<test::Img32> inpluginst<test::Img32>::value() const 
 
 template struct outplugdata<test::Img32>;
 template struct inplugdata<test::Img32>;
+
 ///////////////////////////////////////////////////////////////////////////////
 // plugdata<Img64>
 ///////////////////////////////////////////////////////////////////////////////
+
 template <> int MaxFanout<test::Img64>() {
   return 0;
 }
@@ -733,6 +727,7 @@ template <> std::shared_ptr<test::Img64> inpluginst<test::Img64>::value() const 
 template struct outplugdata<test::Img64>;
 template struct inplugdata<test::Img64>;
 } // namespace ork::dataflow
+
 ////////////////////////////////////////////////////////////
 
 using namespace ork::dataflow;
