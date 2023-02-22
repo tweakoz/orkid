@@ -64,7 +64,14 @@ vertex_shader vs_pseudowire : iface_vtx {
 fragment_shader ps_pseudowire : iface_frg {
   
     float intens = 0.0;
-    float width = 0.01;
+    float width = 4.0;
+
+    vec2 dx = dFdx(frg_uv);
+    vec2 dy = dFdy(frg_uv);
+    vec2 df = fwidth(frg_uv);
+    float dd = min(df.x,df.y);
+    
+    width *= dd;
 
     if(frg_uv.x<width)
         intens += 1;
