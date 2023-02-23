@@ -490,6 +490,9 @@ struct TestDataSet {
     _dgcontext->createRegisters<Img32>("ptex_img32", 16); // 16 Image32 registers
     _dgcontext->createRegisters<Img64>("ptex_img32", 16); // 4 Image64 registers
 
+  }
+
+  void initialSort(){
     _dgsorter                            = std::make_shared<DgSorter>(_testgraphdata.get(), _dgcontext);
     _dgsorter->_logchannel->_enabled     = true;
     _dgsorter->_logchannel_reg->_enabled = true;
@@ -580,6 +583,7 @@ TEST(dflow_depthcalc1) {
 
   auto test_data = std::make_shared<TestDataSet>();
   test_data->linkConfig1();
+  test_data->initialSort();
   size_t depth = test_data->_op2B_inpA->computeMinDepth(test_data->_gl);
   CHECK(depth==InPlugData::NOPATH);
 }
@@ -591,6 +595,7 @@ TEST(dflow_depthcalc2) {
 
   auto test_data = std::make_shared<TestDataSet>();
   test_data->linkConfig1();
+  test_data->initialSort();
   size_t depth = test_data->_op2B_inpB->computeMinDepth(test_data->_gl);
   CHECK(depth==2);
 }
@@ -604,6 +609,7 @@ TEST(dflow_depthcalc3) {
   test_data->linkConfig1();
   test_data->_testgraphdata->disconnect(test_data->_op2_parama);
   test_data->_testgraphdata->disconnect(test_data->_op2_paramb);
+  test_data->initialSort();
   size_t depth = test_data->_op2B_inpB->computeMinDepth(test_data->_gl);
   CHECK(depth==3);
 }
@@ -616,6 +622,7 @@ TEST(dflow_order1) {
 
   auto test_data = std::make_shared<TestDataSet>();
   test_data->linkConfig1();
+  test_data->initialSort();
 
   /////////////////////////////////
   // generate a topology sorted execution list
@@ -656,6 +663,7 @@ TEST(dflow_order2) {
 
   auto test_data = std::make_shared<TestDataSet>();
   test_data->linkConfig2();
+  test_data->initialSort();
   auto topo = test_data->_dgsorter->generateTopology();
   std::vector<dgmoduledata_ptr_t> expected_order{
       test_data->_gl,   //
@@ -674,11 +682,12 @@ TEST(dflow_compute1) {
 
   auto test_data = std::make_shared<TestDataSet>();
   test_data->linkConfig2();
+  test_data->initialSort();
   auto gi   = std::make_shared<GraphInst>(test_data->_testgraphdata);
+  auto impl = gi->_impl.makeShared<ImageGenTestImpl>();
   auto topo = test_data->_dgsorter->generateTopology();
   gi->updateTopology(topo);
 
-  auto impl = gi->_impl.makeShared<ImageGenTestImpl>();
 
   printf("////// computing.. \n");
 

@@ -90,6 +90,8 @@ public:
   bool isGroup() const;
   ////////////////////////////////////////////
   virtual dgmoduleinst_ptr_t createInstance() const;
+  size_t computeMinDepth() const;
+  size_t computeMaxDepth() const;
   ////////////////////////////////////////////
   virtual graphdata_ptr_t childGraph() const;
 

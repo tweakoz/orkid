@@ -24,7 +24,7 @@ DgSorter::DgSorter(const GraphData* pg, dgcontext_ptr_t ctx)
     , _graphdata(pg)
     , _serial(NOSERIAL) {
 
-  _logchannel = logger()->createChannel("dgsorter-std", fvec3(0.8, 0.8, 0.4), false);
+  _logchannel = logger()->createChannel("dgsorter-std", fvec3(0.8, 0.8, 0.4), true);
   _logchannel_reg = logger()->createChannel("dgsorter-reg", fvec3(0.4, 0.9, 0.2), false);
 
   /////////////////////////////////////////
@@ -38,59 +38,38 @@ DgSorter::DgSorter(const GraphData* pg, dgcontext_ptr_t ctx)
   }
 
   /////////////////////////////////////////////////////////////////
-  // find the "top" of graph iteratively
+  // compute depth of nodes in the graph
+  //  find the "top" of graph 
   //  here the "top" is defined as any node with 0 connected inputs
   /////////////////////////////////////////////////////////////////
+
+  _logchannel->log("compute depths: ");
 
   std::unordered_set<dgmoduledata_ptr_t> top_nodes;
   for (size_t im = 0; im < inummodules; im++) {
     dgmoduledata_ptr_t pmod = pg->module(im);
+    size_t min_depth = pmod->computeMinDepth();
+    size_t max_depth = pmod->computeMaxDepth();
+    auto& node_info = _nodeinfomap[pmod];
+    node_info._depth = max_depth;
+
     int num_connected = 0;
     for (auto input : pmod->_inputs ) {
       if( input->isConnected() ){
         num_connected++;
       }
     }
-    if( num_connected==0 )
+
+    bool is_top = ( num_connected==0 );
+
+    _logchannel->log(" mod<%s> is_top<%d> min_depth<%zd> max_depth<%zd>", pmod->_name.c_str(), int(is_top), min_depth, max_depth );
+
+    if( is_top ){
       top_nodes.insert(pmod);
-  }
-
-  /////////////////////////////////////////////////////////////////
-  // compute depths (from "top" of graph) iteratively
-  //  here the "top" is defined as any node with 0 connected inputs
-  /////////////////////////////////////////////////////////////////
-
-  _logchannel->log("compute depths: ");
-
-  int inumchg = -1;
-  while (inumchg != 0) {
-    inumchg = 0;
-    for (size_t im = 0; im < inummodules; im++) {
-      dgmoduledata_ptr_t pmod = pg->module(im);
-
-      auto& node_info = _nodeinfomap[pmod];
-
-      int inumouts = pmod->numOutputs();
-      for (int op = 0; op < inumouts; op++) {
-        auto poutplug  = pmod->output(op);
-        size_t inumcon = poutplug->numConnections();
-        /////////////////////////
-        int ilo        = 0;
-        for (size_t ic = 0; ic < inumcon; ic++) {
-          auto pin  = poutplug->connected(ic);
-          auto pcon = typedModuleData<DgModuleData>(pin->_parent_module);
-          int itd   = node_info._depth - 1;
-          if (itd < ilo)
-            ilo = itd;
-        }
-        /////////////////////////
-        if (node_info._depth > ilo && ilo != 0) {
-          node_info._depth = s16(ilo); // TODO: whats the s16 for again? - its important
-          inumchg++;
-        }
-        /////////////////////////
-      }
-      _logchannel->log(" mod<%s> comp_depth<%d>", pmod->_name.c_str(), node_info._depth);
+      OrkAssert(min_depth==0);
+    }
+    else{
+      OrkAssert(min_depth>=0);
     }
   }
 

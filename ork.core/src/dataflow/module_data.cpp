@@ -147,6 +147,36 @@ graphdata_ptr_t DgModuleData::childGraph() const {
 dgmoduleinst_ptr_t DgModuleData::createInstance() const{
   return nullptr;
 }
+size_t DgModuleData::computeMinDepth() const{
+    size_t min_depth = InPlugData::NOPATH;
+    for( auto upstream_input : _inputs ){
+      auto upstream_plug = upstream_input->_connectedOutput;
+      if(upstream_plug){
+        auto upstream_module = typedModuleData<DgModuleData>(upstream_plug->_parent_module);
+        size_t upstream_depth = upstream_module->computeMinDepth()+1;
+        if(upstream_depth<min_depth){
+          min_depth = upstream_depth;
+        }
+      }
+    }
+    if(min_depth==InPlugData::NOPATH)
+      return 0;
+    return min_depth;
+}
+size_t DgModuleData::computeMaxDepth() const{
+    size_t max_depth = 0;
+    for( auto upstream_input : _inputs ){
+      auto upstream_plug = upstream_input->_connectedOutput;
+      if(upstream_plug){
+        auto upstream_module = typedModuleData<DgModuleData>(upstream_plug->_parent_module);
+        size_t upstream_depth = upstream_module->computeMaxDepth()+1;
+        if(upstream_depth>max_depth){
+          max_depth = upstream_depth;
+        }
+      }
+    }
+    return max_depth;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 } //namespace ork::dataflow {
