@@ -80,6 +80,16 @@ GlobalModuleData::GlobalModuleData(){
 
 }
 
+std::shared_ptr<GlobalModuleData> GlobalModuleData::createShared() {
+    auto data = std::make_shared<GlobalModuleData>();
+    //ParticlePoolData::sharedConstructor(gmd);
+    //createInputPlug<Img32>(gmd, EPR_UNIFORM, gmd->_image_input, "Input");
+    //createInputPlug<float>(gmd, EPR_UNIFORM, gmd->_paramA, "ParamA");
+    //createInputPlug<float>(gmd, EPR_UNIFORM, gmd->_paramB, "ParamB");
+    createOutputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, data->_timeBase, "TimeBase");
+    return data;
+}
+
 dflow::dgmoduleinst_ptr_t GlobalModuleData::createInstance() const {
   return std::make_shared<GlobalModuleInst>(this);
 }
