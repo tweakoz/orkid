@@ -23,11 +23,13 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
 
   /////////////////////////////////////////////////////////////////////////////////
   auto bind_scene = [](orkezapp_ptr_t app, scenegraph::scene_ptr_t scene){
-    app->onDraw([=](ui::drawevent_constptr_t drwev) { //
-      ork::opq::mainSerialQueue()->Process();
-      auto context = drwev->GetTarget();
-      scene->renderOnContext(context);
-    });
+    if(not app->_userSpecifiedOnDraw){
+      app->onDraw([=](ui::drawevent_constptr_t drwev) { //
+        ork::opq::mainSerialQueue()->Process();
+        auto context = drwev->GetTarget();
+        scene->renderOnContext(context);
+      });
+    }
     app->onResize([=](int w, int h) {
       scene->_compositorImpl->compositingContext().Resize(w, h);
     });
@@ -68,6 +70,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               auto drawfn //
                   = py::cast<py::function>(appinstance.attr("onDraw"));
               rval->_vars.makeValueForKey<py::function>("drawfn") = drawfn;
+              rval->_userSpecifiedOnDraw = true;
               rval->onDraw([=](ui::drawevent_constptr_t drwev) { //
                 ork::opq::mainSerialQueue()->Process();
                 py::gil_scoped_acquire acquire;
@@ -127,6 +130,18 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               auto scene = std::make_shared<scenegraph::Scene>(params);
               bind_scene(app,scene);
               return scene;
+          })
+      ///////////////////////////////////////////////////////
+      .def(
+          "processMainSerialQueue",
+          [](orkezapp_ptr_t app) { //
+            ork::opq::mainSerialQueue()->Process();
+          })
+      ///////////////////////////////////////////////////////
+      .def(
+          "renderSceneGraph",
+          [](orkezapp_ptr_t app) { //
+            ork::opq::mainSerialQueue()->Process();
           })
       ///////////////////////////////////////////////////////
       .def(

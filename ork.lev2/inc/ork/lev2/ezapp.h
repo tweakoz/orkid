@@ -186,6 +186,7 @@ public:
   ///////////////////////////////////
 public:
 
+  bool _userSpecifiedOnDraw = false;
   file::Path _orkidWorkspaceDir;
   appinitdata_ptr_t _initdata;
   EzMainWin* _mainWindow;
