@@ -22,17 +22,15 @@
 #include <ork/lev2/lev2_asset.h>
 #include <signal.h>
 
-namespace dflow = ::ork::dataflow;
+///////////////////////////////////////////////////////////////////////////////
 
+namespace dflow = ::ork::dataflow;
 namespace ork::lev2::particle {
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct GlobalModuleInst : dflow::DgModuleInst {
 
-  //DeclareFloatOutPlug(Random);
-  //DeclareVect3OutPlug(RandomNormal);
-  //DeclareFloatOutPlug(Noise);
-  //DeclareFloatOutPlug(SlowNoise);
-  //DeclareFloatOutPlug(FastNoise);
 
   GlobalModuleInst(const GlobalModuleData* data)
     : dflow::DgModuleInst(data)
@@ -93,15 +91,21 @@ struct GlobalModuleInst : dflow::DgModuleInst {
 
 using globalmoduleinst_ptr_t = std::shared_ptr<GlobalModuleInst>;
 
+///////////////////////////////////////////////////////////////////////////////
+
 void GlobalModuleData::describeX(class_t* clazz) {
 
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 GlobalModuleData::GlobalModuleData(){
   _timeBase = std::make_shared<float>(0.0f);
 
 
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 std::shared_ptr<GlobalModuleData> GlobalModuleData::createShared() {
     auto data = std::make_shared<GlobalModuleData>();
@@ -111,14 +115,23 @@ std::shared_ptr<GlobalModuleData> GlobalModuleData::createShared() {
     createOutputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, data->_relTime, "RelTime");
     createOutputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, data->_relTimeD10, "RelTimeDiv10");
     createOutputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, data->_relTimeD100, "RelTimeDiv100");
+    //DeclareFloatOutPlug(Random);
+    //DeclareVect3OutPlug(RandomNormal);
+    //DeclareFloatOutPlug(Noise);
+    //DeclareFloatOutPlug(SlowNoise);
+    //DeclareFloatOutPlug(FastNoise);
     return data;
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 dflow::dgmoduleinst_ptr_t GlobalModuleData::createInstance() const {
   return std::make_shared<GlobalModuleInst>(this);
 }
 
-}
+///////////////////////////////////////////////////////////////////////////////
+} // namespace ork::lev2::particle {
+///////////////////////////////////////////////////////////////////////////////
 
 namespace ptcl = ork::lev2::particle;
 
