@@ -80,33 +80,39 @@ class PointsPrimApp(object):
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     setupUiCamera( app=self, eye = vec3(6,6,6), constrainZ=True, up=vec3(0,1,0))
-    self.NUMPOINTS = 16384
+    self.NUMPOINTS = 65536
 
-  def updatePoints(self,context, paramA):
+  def updatePoints(self,context, abstime):
 
     ##################
     # fill in points
     ##################
 
+    paramA = 4+math.sin(abstime*2)*4
+    paramB = 1+math.sin(abstime*2.3)*0.15
+    paramC = 1+math.sin(abstime*2.7)*0.05
+    paramD = 1+math.sin(abstime*2.9)*0.025
+
     data_ptr = self.points_prim.lock(context) # return V12C4 array view
 
-    for i in range(self.NUMPOINTS):
+    data_ptr['color'] = numpy.ones(self.NUMPOINTS, dtype=numpy.uint32)*0x00004040
+    data_ptr['x'] = numpy.random.uniform(-1,1, self.NUMPOINTS).astype(numpy.float32)
+    data_ptr['y'] = numpy.random.uniform(-1,1, self.NUMPOINTS).astype(numpy.float32)
+    data_ptr['z'] = numpy.random.uniform(-1,1, self.NUMPOINTS).astype(numpy.float32)
 
-      x = random.uniform(-1,1)
-      y = random.uniform(-1,1)
-      z = random.uniform(-1,1)
+    def do_axis(named):
+      S = numpy.copy(numpy.sign(data_ptr[named]))
+      A = numpy.copy(numpy.abs(data_ptr[named]))
+      P = numpy.copy(numpy.power(A,paramA))
+      P = numpy.copy(numpy.power(P,paramB))
+      P = numpy.copy(numpy.power(P,paramC))
+      data_ptr[named] = P*S
+      if named == 'y':
+        data_ptr['y'] += numpy.ones(self.NUMPOINTS, dtype=numpy.float32)
 
-      x = numpy.sign(x)*pow(x,1/paramA)
-      y = numpy.sign(y)*pow(y,1/paramA)
-      z = numpy.sign(z)*pow(z,1/paramA)
-
-      VTX = data_ptr[i] # V12, C4
-
-      VTX[0] = x*2    # float x
-      VTX[1] = 2+y*2  # float y 
-      VTX[2] = z*2    # float z 
-
-      VTX[3] = 0x00004040 # uint32_t color (abgr)
+    do_axis('x')
+    do_axis('y')
+    do_axis('z')
 
     self.points_prim.unlock(context) # unlock array view (writes to GPU)
   
@@ -153,7 +159,7 @@ class PointsPrimApp(object):
                                rendermodel = "ForwardPBR" )
 
     pointsize_param = pipeline.sharedMaterial.param("pointsize")
-    pipeline.bindParam( pointsize_param, float(4.0) ) # set pointsize
+    pipeline.bindParam( pointsize_param, float(2.0) ) # set pointsize
 
     ##################
     # create points sg node
@@ -174,9 +180,7 @@ class PointsPrimApp(object):
   def onDraw(self,drawevent):
     context = drawevent.context
     self.ezapp.processMainSerialQueue()
-
-    paramA = 4+math.sin(self.abstime*0.1)*0.1
-    self.updatePoints(context,paramA )
+    self.updatePoints(context,self.abstime )
     self.scene.renderOnContext(context);
 
   ##############################################
