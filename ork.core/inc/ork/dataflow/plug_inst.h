@@ -64,15 +64,15 @@ struct OutPlugInst : public PlugInst {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename vartype> //
+template <typename traits> //
 class outpluginst : public OutPlugInst {
 
 public:
 
-  using data_type_t = vartype;
-  using data_type_ptr_t = std::shared_ptr<vartype>;
+  using data_type_t = typename traits::inst_type_t;
+  using data_type_ptr_t = std::shared_ptr<data_type_t>;
 
-  inline explicit outpluginst( const outplugdata<vartype>* data ) //
+  inline explicit outpluginst( const outplugdata<traits>* data ) //
       : OutPlugInst(data) //
       , _typed_plugdata(data) { //
 
@@ -80,21 +80,22 @@ public:
   }
 
   data_type_ptr_t _value;
-  const outplugdata<vartype>* _typed_plugdata;
+  const outplugdata<traits>* _typed_plugdata;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename vartype> struct inpluginst : public InPlugInst {
+template <typename traits> struct inpluginst : public InPlugInst {
 
 public:
 
-  using data_type_t = vartype;
-  using data_type_ptr_t = std::shared_ptr<vartype>;
+  using data_type_t = typename traits::inst_type_t;
+  using data_type_ptr_t = std::shared_ptr<data_type_t>;
 
-  inline explicit inpluginst( const inplugdata<vartype>* data ) //
+  inline explicit inpluginst( const inplugdata<traits>* data ) //
       : InPlugInst(data) //
       , _typed_plugdata(data) { //
+        _default = std::make_shared<data_type_t>();
   }
 
   virtual data_type_ptr_t value() const {
@@ -102,8 +103,14 @@ public:
   }
 
   data_type_ptr_t _default;
-  const inplugdata<vartype>* _typed_plugdata;
+  const inplugdata<traits>* _typed_plugdata;
 
 };
+
+using float_out_pluginst_t = outpluginst<FloatPlugTraits>;
+using float_out_pluginst_ptr_t = std::shared_ptr<float_out_pluginst_t>;
+
+using float_inp_pluginst_t = inpluginst<FloatPlugTraits>;
+using float_inp_pluginst_ptr_t = std::shared_ptr<float_inp_pluginst_t>;
 
 } // namespace ork::dataflow

@@ -246,23 +246,18 @@ struct GradientModuleData : public Img32ModuleData {
 public: //
   GradientModuleData()
       : Img32ModuleData() {
-
-    _image_input_A = std::shared_ptr<Img32>();
-    _image_input_B = std::shared_ptr<Img32>();
   }
 
   static std::shared_ptr<GradientModuleData> createShared() {
     auto gmd = std::make_shared<GradientModuleData>();
     Img32ModuleData::sharedConstructor(gmd);
-    createInputPlug<Img32PlugTraits>(gmd, EPR_UNIFORM, gmd->_image_input_A, "InputA");
-    createInputPlug<Img32PlugTraits>(gmd, EPR_UNIFORM, gmd->_image_input_B, "InputB");
+    createInputPlug<Img32PlugTraits>(gmd, EPR_UNIFORM, "InputA");
+    createInputPlug<Img32PlugTraits>(gmd, EPR_UNIFORM, "InputB");
     return gmd;
   }
 
   dgmoduleinst_ptr_t createInstance() const final;
 
-  img32_ptr_t _image_input_A;
-  img32_ptr_t _image_input_B;
 };
 
 void GradientModuleData::describeX(class_t* clazz) {
@@ -299,25 +294,19 @@ struct Op1ModuleData : public Img32ModuleData {
 public: //
   Op1ModuleData()
       : Img32ModuleData() {
-    _image_input = std::shared_ptr<Img32>();
-    _paramA      = std::make_shared<float>(0.0f);
-    _paramB      = std::make_shared<float>(0.0f);
   }
 
   static std::shared_ptr<Op1ModuleData> createShared() {
     auto gmd = std::make_shared<Op1ModuleData>();
     Img32ModuleData::sharedConstructor(gmd);
-    createInputPlug<Img32PlugTraits>(gmd, EPR_UNIFORM, gmd->_image_input, "Input");
-    createInputPlug<FloatPlugTraits>(gmd, EPR_UNIFORM, gmd->_paramA, "ParamA");
-    createInputPlug<FloatPlugTraits>(gmd, EPR_UNIFORM, gmd->_paramB, "ParamB");
+    createInputPlug<Img32PlugTraits>(gmd, EPR_UNIFORM, "Input");
+    createInputPlug<FloatPlugTraits>(gmd, EPR_UNIFORM, "ParamA");
+    createInputPlug<FloatPlugTraits>(gmd, EPR_UNIFORM, "ParamB");
     return gmd;
   }
 
   dgmoduleinst_ptr_t createInstance() const final;
 
-  img32_ptr_t _image_input;
-  float_ptr_t _paramA;
-  float_ptr_t _paramB;
 };
 
 void Op1ModuleData::describeX(class_t* clazz) {
@@ -356,28 +345,20 @@ struct Op2ModuleData : public Img32ModuleData {
 public: //
   Op2ModuleData()
       : Img32ModuleData() {
-    _image_inputA = std::shared_ptr<Img32>();
-    _image_inputB = std::shared_ptr<Img32>();
-    _paramA       = std::make_shared<float>(0.0f);
-    _paramB       = std::make_shared<float>(0.0f);
   }
 
   static std::shared_ptr<Op2ModuleData> createShared() {
     auto gmd = std::make_shared<Op2ModuleData>();
     Img32ModuleData::sharedConstructor(gmd);
-    createInputPlug<Img32PlugTraits>(gmd, EPR_UNIFORM, gmd->_image_inputA, "InputA");
-    createInputPlug<Img32PlugTraits>(gmd, EPR_UNIFORM, gmd->_image_inputB, "InputB");
-    createInputPlug<FloatPlugTraits>(gmd, EPR_UNIFORM, gmd->_paramA, "ParamA");
-    createInputPlug<FloatPlugTraits>(gmd, EPR_UNIFORM, gmd->_paramB, "ParamB");
+    createInputPlug<Img32PlugTraits>(gmd, EPR_UNIFORM, "InputA");
+    createInputPlug<Img32PlugTraits>(gmd, EPR_UNIFORM, "InputB");
+    createInputPlug<FloatPlugTraits>(gmd, EPR_UNIFORM, "ParamA");
+    createInputPlug<FloatPlugTraits>(gmd, EPR_UNIFORM, "ParamB");
     return gmd;
   }
 
   dgmoduleinst_ptr_t createInstance() const final;
 
-  img32_ptr_t _image_inputA;
-  img32_ptr_t _image_inputB;
-  float_ptr_t _paramA;
-  float_ptr_t _paramB;
 };
 
 void Op2ModuleData::describeX(class_t* clazz) {

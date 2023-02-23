@@ -33,6 +33,18 @@ struct ParticlePoolModuleInst : dflow::DgModuleInst {
 
     }
   ParticleBufferInst _particle_buffer;
+
+  void compute(dflow::GraphInst* inst) final {
+
+  }
+
+  void onLink(dflow::GraphInst* inst) final {
+    _output = outputNamed("ParticleBuffer");
+    OrkAssert(_output);
+  }
+
+  dflow::outpluginst_ptr_t _output;
+
      //void Compute(float dt) final;
   //void Reset() final;
   //void DoLink() final;

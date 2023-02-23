@@ -37,7 +37,10 @@ TEST(particles_a) {
   auto topo = dg_sorter->generateTopology();
   auto graphinst = std::make_shared<GraphInst>(graphdata);
   graphinst->updateTopology(topo);
-  graphinst->compute();
+
+  for( int i=0; i<100; i++ ){
+    graphinst->compute();
+  }
 
 }
 

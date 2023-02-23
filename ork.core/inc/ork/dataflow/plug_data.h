@@ -38,6 +38,7 @@ struct Vec3XfPlugTraits{
   static constexpr size_t max_fanout = 0;
 };
 
+
 struct morph_event : public event::Event {
 public:
   EMorphEventType meType;
@@ -205,15 +206,11 @@ public:
 
   inline explicit inplugdata( moduledata_ptr_t pmod, //
                               EPlugRate epr, //
-                              data_type_ptr_t def, //
                               const char* pname) //
-      : InPlugData(pmod, epr, typeid(traits), pname) //
-      , _default(def) { //
+      : InPlugData(pmod, epr, typeid(traits), pname) { //
   }
 
   inpluginst_ptr_t createInstance() const override;
-
-  data_type_ptr_t _default;
 
 };
 
@@ -223,8 +220,8 @@ struct floatinplugdata : public inplugdata<FloatPlugTraits> {
   DeclareAbstractX(floatinplugdata, inplugdata<FloatPlugTraits>);
 
 public:
-  floatinplugdata(moduledata_ptr_t pmod, EPlugRate epr, data_type_ptr_t def, const char* pname)
-      : inplugdata<FloatPlugTraits>(pmod, epr, def, pname) {
+  floatinplugdata(moduledata_ptr_t pmod, EPlugRate epr, const char* pname)
+      : inplugdata<FloatPlugTraits>(pmod, epr, pname) {
   }
 };
 
@@ -234,8 +231,8 @@ struct vect3inplugdata : public inplugdata<Vec3fPlugTraits> {
   DeclareAbstractX(vect3inplugdata, inplugdata<Vec3fPlugTraits>);
 
 public:
-  vect3inplugdata(moduledata_ptr_t pmod, EPlugRate epr, data_type_ptr_t def, const char* pname)
-      : inplugdata<Vec3fPlugTraits>(pmod, epr, def, pname) {
+  vect3inplugdata(moduledata_ptr_t pmod, EPlugRate epr, const char* pname)
+      : inplugdata<Vec3fPlugTraits>(pmod, epr, pname) {
   }
 };
 
@@ -246,8 +243,8 @@ template <typename transform_type> struct floatinplugxfdata : public floatinplug
   DeclareTemplateAbstractX(floatinplugxfdata<transform_type>, floatinplugdata);
 
 public:
-  explicit floatinplugxfdata(moduledata_ptr_t pmod, EPlugRate epr, data_type_ptr_t def, const char* pname)
-      : floatinplugdata(pmod, epr, def, pname)
+  explicit floatinplugxfdata(moduledata_ptr_t pmod, EPlugRate epr, const char* pname)
+      : floatinplugdata(pmod, epr, pname)
       , mtransform() {
   }
   ///////////////////////////////////////////////////////////////
@@ -270,8 +267,8 @@ template <typename transform_type> struct vect3inplugxfdata : public vect3inplug
   DeclareTemplateAbstractX(vect3inplugxfdata<transform_type>, vect3inplugdata);
 
 public:
-  explicit vect3inplugxfdata(moduledata_ptr_t pmod, EPlugRate epr, data_type_ptr_t def, const char* pname)
-      : vect3inplugdata(pmod, epr, def, pname){
+  explicit vect3inplugxfdata(moduledata_ptr_t pmod, EPlugRate epr, const char* pname)
+      : vect3inplugdata(pmod, epr, pname){
   }
 
   ///////////////////////////////////////////////////////////////

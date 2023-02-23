@@ -102,22 +102,10 @@ public:
   dflow::dgmoduleinst_ptr_t createInstance() const final;
 
   float_ptr_t _timeBase;
-
-  float_ptr_t _noiseRat;
-  float_ptr_t _noisePrv;
-  float_ptr_t _noiseNew;
-  float_ptr_t _noiseBas;
-  float_ptr_t _noiseTim;
-
-  float_ptr_t _slowNoiseRat;
-  float_ptr_t _slowNoisePrv;
-  float_ptr_t _slowNoiseBas;
-  float_ptr_t _slowNoiseTim;
-
-  float_ptr_t _fastNoiseRat;
-  float_ptr_t _fastNoisePrv;
-  float_ptr_t _fastNoiseBas;
-  float_ptr_t _fastNoiseTim;
+  float_ptr_t _timeScale;
+  float_ptr_t _relTime;
+  float_ptr_t _relTimeD10;
+  float_ptr_t _relTimeD100;
 
 public:
   GlobalModuleData();

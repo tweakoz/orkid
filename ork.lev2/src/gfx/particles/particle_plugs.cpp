@@ -67,10 +67,5 @@ dflow::outpluginst_ptr_t ptcl::particlebuf_outplugdata_t::createInstance() const
   return std::make_shared<ptcl::particlebuf_outpluginst_t>(this);
 }
 
-template <> 
-std::shared_ptr<ptcl::ParticleBufferData> dflow::inpluginst<ptcl::ParticleBufferData>::value() const{
-  return _default;
-}
-
 ImplementTemplateReflectionX(ptcl::particlebuf_outplugdata_t, "psys::ptclbufoutplug");
 ImplementTemplateReflectionX(ptcl::particlebuf_inplugdata_t, "psys::ptclbufinpplug");

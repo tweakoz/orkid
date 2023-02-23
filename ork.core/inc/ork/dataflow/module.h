@@ -27,17 +27,17 @@ public:
   virtual inplugdata_ptr_t inputNamed(const std::string& named) const;
   virtual outplugdata_ptr_t outputNamed(const std::string& named) const;
   ////////////////////////////////////////////
-  template <typename plug_type,typename... A> static //
-  std::shared_ptr<inplugdata<plug_type>> createInputPlug(moduledata_ptr_t m, A&&... args){
-    using plug_impl_type = inplugdata<plug_type>;
+  template <typename plug_traits,typename... A> static //
+  std::shared_ptr<inplugdata<plug_traits>> createInputPlug(moduledata_ptr_t m, A&&... args){
+    using plug_impl_type = inplugdata<plug_traits>;
     auto plg = std::make_shared<plug_impl_type>(m,std::forward<A>(args)...);
     m->addInput(plg);
     return plg;
   }
   ////////////////////////////////////////////
-  template <typename plug_type,typename... A> static //
-  std::shared_ptr<outplugdata<plug_type>> createOutputPlug(moduledata_ptr_t m, A&&... args){
-    using plug_impl_type = outplugdata<plug_type>;
+  template <typename plug_traits,typename... A> static //
+  std::shared_ptr<outplugdata<plug_traits>> createOutputPlug(moduledata_ptr_t m, A&&... args){
+    using plug_impl_type = outplugdata<plug_traits>;
     auto plg = std::make_shared<plug_impl_type>(m,std::forward<A>(args)...);
     m->addOutput(plg);
     return plg;
@@ -54,16 +54,16 @@ public:
   ////////////////////////////////////////////
   void addDependency(outplugdata_ptr_t pout, inplugdata_ptr_t pin);
   ////////////////////////////////////////////
-  template <typename T> //
-  std::shared_ptr<inplugdata<T>> typedInput(int idx) {
+  template <typename plug_traits> //
+  std::shared_ptr<inplugdata<plug_traits>> typedInput(int idx) {
     inplugdata_ptr_t plug = input(idx);
-    return std::dynamic_pointer_cast<T>(plug);
+    return std::dynamic_pointer_cast<inplugdata<plug_traits>>(plug);
   }
   ////////////////////////////////////////////
-  template <typename T> //
-  std::shared_ptr<outplug<T>> typedOutput(int idx) {
+  template <typename plug_traits> //
+  std::shared_ptr<outplugdata<plug_traits>> typedOutput(int idx) {
     outplugdata_ptr_t plug = output(idx);
-    return std::dynamic_pointer_cast<T>(plug);
+    return std::dynamic_pointer_cast<outplugdata<plug_traits>>(plug);
   }
   ////////////////////////////////////////////
 
@@ -141,14 +141,41 @@ struct DgModuleInst : public ModuleInst {
   DgModuleInst(const DgModuleData* _this);
   virtual ~DgModuleInst();
 
-  virtual void compute(GraphInst* inst) {}
   virtual void onLink(GraphInst* inst) {}
+  virtual void onStage(GraphInst* inst) {}
+  virtual void onActivate(GraphInst* inst) {}
+  virtual void compute(GraphInst* inst) {}
     
   //void divideWork(scheduler_ptr_t sch, cluster* clus);
   //virtual void _doDivideWork(scheduler_ptr_t sch, cluster* clus);
   //virtual void Compute(workunit* wu) {}
   //virtual void combineWork(const cluster* clus) {}
   //virtual void releaseWorkUnit(workunit* wu);
+
+  ////////////////////////////////////////////
+  template <typename plug_traits> //
+  std::shared_ptr<inpluginst<plug_traits>> typedInput(int idx) const {
+    inpluginst_ptr_t plug = input(idx);
+    return std::dynamic_pointer_cast<inpluginst<plug_traits>>(plug);
+  }
+  ////////////////////////////////////////////
+  template <typename plug_traits> //
+  std::shared_ptr<outpluginst<plug_traits>> typedOutput(int idx) const {
+    outpluginst_ptr_t plug = output(idx);
+    return std::dynamic_pointer_cast<outpluginst<plug_traits>>(plug);
+  }
+  ////////////////////////////////////////////
+  template <typename plug_traits> //
+  std::shared_ptr<inpluginst<plug_traits>> typedInputNamed(const std::string& named) const {
+    inpluginst_ptr_t plug = inputNamed(named);
+    return std::dynamic_pointer_cast<inpluginst<plug_traits>>(plug);
+  }
+  ////////////////////////////////////////////
+  template <typename plug_traits> //
+  std::shared_ptr<outpluginst<plug_traits>> typedOutputNamed(const std::string& named) const {
+    outpluginst_ptr_t plug = outputNamed(named);
+    return std::dynamic_pointer_cast<outpluginst<plug_traits>>(plug);
+  }
 
   const DgModuleData* _dgmodule_data;
 
