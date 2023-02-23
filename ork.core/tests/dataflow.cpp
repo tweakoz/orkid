@@ -32,20 +32,36 @@ struct Img32 : public ImgBase {};
 struct Img64 : public ImgBase {};
 struct Buffer {};
 
+struct ImgBasePlugTraits{
+  using data_type_t = ImgBase;
+  using inst_type_t = ImgBase;
+  static constexpr size_t max_fanout = 0;
+};
+struct Img32PlugTraits{
+  using data_type_t = Img32;
+  using inst_type_t = Img32;
+  static constexpr size_t max_fanout = 0;
+};
+struct Img64PlugTraits{
+  using data_type_t = Img64;
+  using inst_type_t = Img64;
+  static constexpr size_t max_fanout = 0;
+};
+
 ////////////////////////////////////////////////////////////
 
 using img32_ptr_t         = std::shared_ptr<Img32>;
-using img32_outplug_t     = outplugdata<Img32>;
+using img32_outplug_t     = outplugdata<Img32PlugTraits>;
 using img32_outplug_ptr_t = std::shared_ptr<img32_outplug_t>;
-using img32_inplug_t      = inplugdata<Img32>;
+using img32_inplug_t      = inplugdata<Img32PlugTraits>;
 using img32_inplug_ptr_t  = std::shared_ptr<img32_inplug_t>;
 
 ////////////////////////////////////////////////////////////
 
 using img64_ptr_t         = std::shared_ptr<Img64>;
-using img64_outplug_t     = outplugdata<Img64>;
+using img64_outplug_t     = outplugdata<Img64PlugTraits>;
 using img64_outplug_ptr_t = std::shared_ptr<img64_outplug_t>;
-using img64_inplug_t      = inplugdata<Img64>;
+using img64_inplug_t      = inplugdata<Img64PlugTraits>;
 using img64_inplug_ptr_t  = std::shared_ptr<img64_inplug_t>;
 
 struct ImageGenTestImpl {};
@@ -87,9 +103,9 @@ public: //
 
   static std::shared_ptr<GlobalModuleData> createShared() {
     auto gmd = std::make_shared<GlobalModuleData>();
-    createOutputPlug<float>(gmd, EPR_UNIFORM, gmd->_outputA, "OutputA");
-    createOutputPlug<float>(gmd, EPR_UNIFORM, gmd->_outputB, "OutputB");
-    createOutputPlug<float>(gmd, EPR_UNIFORM, gmd->_outputC, "OutputC");
+    createOutputPlug<FloatPlugTraits>(gmd, EPR_UNIFORM, gmd->_outputA, "OutputA");
+    createOutputPlug<FloatPlugTraits>(gmd, EPR_UNIFORM, gmd->_outputB, "OutputB");
+    createOutputPlug<FloatPlugTraits>(gmd, EPR_UNIFORM, gmd->_outputC, "OutputC");
     return gmd;
   }
 
@@ -179,7 +195,7 @@ public: //
 protected:
   static void sharedConstructor(moduledata_ptr_t subclass_instance) {
     auto as_im32mod = std::dynamic_pointer_cast<Img32ModuleData>(subclass_instance);
-    createOutputPlug<Img32>(subclass_instance, EPR_UNIFORM, as_im32mod->_image_out, "Output");
+    createOutputPlug<Img32PlugTraits>(subclass_instance, EPR_UNIFORM, as_im32mod->_image_out, "Output");
   }
 };
 
@@ -209,7 +225,7 @@ public: //
 protected:
   static void sharedConstructor(moduledata_ptr_t subclass_instance) {
     auto as_im64mod = std::dynamic_pointer_cast<Img64ModuleData>(subclass_instance);
-    createOutputPlug<Img64>(subclass_instance, EPR_UNIFORM, as_im64mod->_image_out, "Output");
+    createOutputPlug<Img64PlugTraits>(subclass_instance, EPR_UNIFORM, as_im64mod->_image_out, "Output");
   }
 };
 
@@ -238,8 +254,8 @@ public: //
   static std::shared_ptr<GradientModuleData> createShared() {
     auto gmd = std::make_shared<GradientModuleData>();
     Img32ModuleData::sharedConstructor(gmd);
-    createInputPlug<Img32>(gmd, EPR_UNIFORM, gmd->_image_input_A, "InputA");
-    createInputPlug<Img32>(gmd, EPR_UNIFORM, gmd->_image_input_B, "InputB");
+    createInputPlug<Img32PlugTraits>(gmd, EPR_UNIFORM, gmd->_image_input_A, "InputA");
+    createInputPlug<Img32PlugTraits>(gmd, EPR_UNIFORM, gmd->_image_input_B, "InputB");
     return gmd;
   }
 
@@ -291,9 +307,9 @@ public: //
   static std::shared_ptr<Op1ModuleData> createShared() {
     auto gmd = std::make_shared<Op1ModuleData>();
     Img32ModuleData::sharedConstructor(gmd);
-    createInputPlug<Img32>(gmd, EPR_UNIFORM, gmd->_image_input, "Input");
-    createInputPlug<float>(gmd, EPR_UNIFORM, gmd->_paramA, "ParamA");
-    createInputPlug<float>(gmd, EPR_UNIFORM, gmd->_paramB, "ParamB");
+    createInputPlug<Img32PlugTraits>(gmd, EPR_UNIFORM, gmd->_image_input, "Input");
+    createInputPlug<FloatPlugTraits>(gmd, EPR_UNIFORM, gmd->_paramA, "ParamA");
+    createInputPlug<FloatPlugTraits>(gmd, EPR_UNIFORM, gmd->_paramB, "ParamB");
     return gmd;
   }
 
@@ -349,10 +365,10 @@ public: //
   static std::shared_ptr<Op2ModuleData> createShared() {
     auto gmd = std::make_shared<Op2ModuleData>();
     Img32ModuleData::sharedConstructor(gmd);
-    createInputPlug<Img32>(gmd, EPR_UNIFORM, gmd->_image_inputA, "InputA");
-    createInputPlug<Img32>(gmd, EPR_UNIFORM, gmd->_image_inputB, "InputB");
-    createInputPlug<float>(gmd, EPR_UNIFORM, gmd->_paramA, "ParamA");
-    createInputPlug<float>(gmd, EPR_UNIFORM, gmd->_paramB, "ParamB");
+    createInputPlug<Img32PlugTraits>(gmd, EPR_UNIFORM, gmd->_image_inputA, "InputA");
+    createInputPlug<Img32PlugTraits>(gmd, EPR_UNIFORM, gmd->_image_inputB, "InputB");
+    createInputPlug<FloatPlugTraits>(gmd, EPR_UNIFORM, gmd->_paramA, "ParamA");
+    createInputPlug<FloatPlugTraits>(gmd, EPR_UNIFORM, gmd->_paramB, "ParamB");
     return gmd;
   }
 
@@ -714,73 +730,58 @@ TEST(dflow_compute1) {
 // plugdata<ImgBase>
 ///////////////////////////////////////////////////////////////////////////////
 
-template <> int MaxFanout<test::ImgBase>() {
-  return 0;
+template <> void outplugdata<test::ImgBasePlugTraits>::describeX(class_t* clazz) {
 }
-template <> void outplugdata<test::ImgBase>::describeX(class_t* clazz) {
-}
-template <> void inplugdata<test::ImgBase>::describeX(class_t* clazz) {
+template <> void inplugdata<test::ImgBasePlugTraits>::describeX(class_t* clazz) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // plugdata<Img32>
 ///////////////////////////////////////////////////////////////////////////////
 
-template <> int MaxFanout<test::Img32>() {
-  return 0;
-}
-template <> void outplugdata<test::Img32>::describeX(class_t* clazz) {
+template <> void outplugdata<test::Img32PlugTraits>::describeX(class_t* clazz) {
 }
 
-template <> void inplugdata<test::Img32>::describeX(class_t* clazz) {
+template <> void inplugdata<test::Img32PlugTraits>::describeX(class_t* clazz) {
 }
-template <> inpluginst_ptr_t inplugdata<test::Img32>::createInstance() const {
-  return std::make_shared<inpluginst<test::Img32>>(this);
+template <> inpluginst_ptr_t inplugdata<test::Img32PlugTraits>::createInstance() const {
+  return std::make_shared<inpluginst<test::Img32PlugTraits>>(this);
 }
-template <> outpluginst_ptr_t outplugdata<test::Img32>::createInstance() const {
-  return std::make_shared<outpluginst<test::Img32>>(this);
-}
-template <> std::shared_ptr<test::Img32> inpluginst<test::Img32>::value() const {
-  return _default;
+template <> outpluginst_ptr_t outplugdata<test::Img32PlugTraits>::createInstance() const {
+  return std::make_shared<outpluginst<test::Img32PlugTraits>>(this);
 }
 
-template struct outplugdata<test::Img32>;
-template struct inplugdata<test::Img32>;
+template struct outplugdata<test::Img32PlugTraits>;
+template struct inplugdata<test::Img32PlugTraits>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // plugdata<Img64>
 ///////////////////////////////////////////////////////////////////////////////
 
-template <> int MaxFanout<test::Img64>() {
-  return 0;
-}
-template <> void outplugdata<test::Img64>::describeX(class_t* clazz) {
+template <> void outplugdata<test::Img64PlugTraits>::describeX(class_t* clazz) {
 }
 
-template <> void inplugdata<test::Img64>::describeX(class_t* clazz) {
+template <> void inplugdata<test::Img64PlugTraits>::describeX(class_t* clazz) {
 }
-template <> inpluginst_ptr_t inplugdata<test::Img64>::createInstance() const {
-  return std::make_shared<inpluginst<test::Img64>>(this);
+template <> inpluginst_ptr_t inplugdata<test::Img64PlugTraits>::createInstance() const {
+  return std::make_shared<inpluginst<test::Img64PlugTraits>>(this);
 }
-template <> outpluginst_ptr_t outplugdata<test::Img64>::createInstance() const {
-  return std::make_shared<outpluginst<test::Img64>>(this);
+template <> outpluginst_ptr_t outplugdata<test::Img64PlugTraits>::createInstance() const {
+  return std::make_shared<outpluginst<test::Img64PlugTraits>>(this);
 }
-template <> std::shared_ptr<test::Img64> inpluginst<test::Img64>::value() const {
-  return _default;
-}
-template struct outplugdata<test::Img64>;
-template struct inplugdata<test::Img64>;
+template struct outplugdata<test::Img64PlugTraits>;
+template struct inplugdata<test::Img64PlugTraits>;
 } // namespace ork::dataflow
 
 ////////////////////////////////////////////////////////////
 
 using namespace ork::dataflow;
 
-ImplementTemplateReflectionX(outplugdata<test::Img32>, "dflowtest/outplugimg32");
-ImplementTemplateReflectionX(inplugdata<test::Img32>, "dflowtest/inplugimg32");
+ImplementTemplateReflectionX(outplugdata<test::Img32PlugTraits>, "dflowtest/outplugimg32");
+ImplementTemplateReflectionX(inplugdata<test::Img32PlugTraits>, "dflowtest/inplugimg32");
 
-ImplementTemplateReflectionX(outplugdata<test::Img64>, "dflowtest/outplugimg64");
-ImplementTemplateReflectionX(inplugdata<test::Img64>, "dflowtest/inplugimg64");
+ImplementTemplateReflectionX(outplugdata<test::Img64PlugTraits>, "dflowtest/outplugimg64");
+ImplementTemplateReflectionX(inplugdata<test::Img64PlugTraits>, "dflowtest/inplugimg64");
 
 ImplementReflectionX(test::BaseModuleData, "dflowtest/BaseModule");
 ImplementReflectionX(test::GlobalModuleData, "dflowtest/GlobalModule");

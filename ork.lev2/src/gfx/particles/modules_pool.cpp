@@ -64,7 +64,7 @@ std::shared_ptr<ParticlePoolData> ParticlePoolData::createShared() {
     //createInputPlug<Img32>(gmd, EPR_UNIFORM, gmd->_image_input, "Input");
     //createInputPlug<float>(gmd, EPR_UNIFORM, gmd->_paramA, "ParamA");
     //createInputPlug<float>(gmd, EPR_UNIFORM, gmd->_paramB, "ParamB");
-    createOutputPlug<ParticleBufferData>(data, dflow::EPR_UNIFORM, data->_bufferdata, "ParticleBuffer");
+    createOutputPlug<ParticleBufferPlugTraits>(data, dflow::EPR_UNIFORM, data->_bufferdata, "ParticleBuffer");
     return data;
 }
 

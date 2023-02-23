@@ -77,15 +77,5 @@ OutPlugInst::~OutPlugInst(){
     return false;
   }
 
-template <> 
-std::shared_ptr<float> inpluginst<float>::value() const{
-  return _default;
-}
-
-template <> 
-std::shared_ptr<fvec3> inpluginst<fvec3>::value() const{
-  return _default;
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 } //namespace ork::dataflow {

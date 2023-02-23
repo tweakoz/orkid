@@ -42,9 +42,9 @@ void PlugData::describeX(class_t* clazz) {
 
 PlugData::PlugData(moduledata_ptr_t pmod, EPlugDir edir, EPlugRate epr, const std::type_info& tid, const char* pname)
     : _plugdir(edir)
-    , _plugrate(epr)
     , _parent_module(pmod)
     , mTypeId(tid)
+    , _plugrate(epr)
     , _name(pname ? pname : "noname") {
   //printf("PlugData<%p> pmod<%p> construct name<%s>\n", (void*) this, (void*) pmod.get(), _name.c_str());
 }
@@ -149,38 +149,41 @@ outpluginst_ptr_t OutPlugData::createInstance() const{
 ///////////////////////////////////////////////////////////////////////////////
 // plugdata<float>
 ///////////////////////////////////////////////////////////////////////////////
-template <> int MaxFanout<float>() {
-  return 0;
+template <> void inplugdata<FloatPlugTraits>::describeX(class_t* clazz) {
 }
-template <> void inplugdata<float>::describeX(class_t* clazz) {
+template <> inpluginst_ptr_t inplugdata<FloatPlugTraits>::createInstance() const{
+  return std::make_shared<inpluginst<FloatPlugTraits>>(this);
 }
-template <> inpluginst_ptr_t inplugdata<float>::createInstance() const{
-  return std::make_shared<inpluginst<float>>(this);
+template <> void outplugdata<FloatPlugTraits>::describeX(class_t* clazz) {
 }
-template <> void outplugdata<float>::describeX(class_t* clazz) {
-}
-template <> outpluginst_ptr_t outplugdata<float>::createInstance() const{
-  return std::make_shared<outpluginst<float>>(this);
+template <> outpluginst_ptr_t outplugdata<FloatPlugTraits>::createInstance() const{
+  return std::make_shared<outpluginst<FloatPlugTraits>>(this);
 }
 
-template class outplugdata<float>;
+template struct outplugdata<FloatPlugTraits>;
 ///////////////////////////////////////////////////////////////////////////////
 // plugdata<fvec3>
 ///////////////////////////////////////////////////////////////////////////////
-template <> int MaxFanout<fvec3>() {
-  return 0;
+template <> void inplugdata<Vec3fPlugTraits>::describeX(class_t* clazz) {
 }
-template <> void inplugdata<fvec3>::describeX(class_t* clazz) {
+template <> void outplugdata<Vec3fPlugTraits>::describeX(class_t* clazz) {
 }
-template <> void outplugdata<fvec3>::describeX(class_t* clazz) {
+template <> inpluginst_ptr_t inplugdata<Vec3fPlugTraits>::createInstance() const{
+  return std::make_shared<inpluginst<Vec3fPlugTraits>>(this);
 }
-template <> inpluginst_ptr_t inplugdata<fvec3>::createInstance() const{
-  return std::make_shared<inpluginst<fvec3>>(this);
+template <> outpluginst_ptr_t outplugdata<Vec3fPlugTraits>::createInstance() const{
+  return std::make_shared<outpluginst<Vec3fPlugTraits>>(this);
 }
-template <> outpluginst_ptr_t outplugdata<fvec3>::createInstance() const{
-  return std::make_shared<outpluginst<fvec3>>(this);
+template struct outplugdata<Vec3fPlugTraits>;
+///////////////////////////////////////////////////////////////////////////////
+template <> void inplugdata<FloatXfPlugTraits>::describeX(class_t* clazz) {
 }
-template class outplugdata<fvec3>;
+template <> void outplugdata<FloatXfPlugTraits>::describeX(class_t* clazz) {
+}
+template <> void inplugdata<Vec3XfPlugTraits>::describeX(class_t* clazz) {
+}
+template <> void outplugdata<Vec3XfPlugTraits>::describeX(class_t* clazz) {
+}
 ///////////////////////////////////////////////////////////////////////////////
 void floatinplugdata::describeX(class_t* clazz) {
   /*ork::reflect::RegisterProperty(
@@ -190,7 +193,7 @@ void floatinplugdata::describeX(class_t* clazz) {
   ork::reflect::annotatePropertyForEditor<floatinplug>("value", "editor.visible", "false");*/
 }
 ///////////////////////////////////////////////////////////////////////////////
-template <> void floatinplugxfdata<floatxf>::describeX(class_t* clazz) {
+template <> void floatinplugxfdata<floatxfdata>::describeX(class_t* clazz) {
   // ork::reflect::RegisterProperty("xf", &floatinplugxfdata<floatxf>::XfAccessor);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -203,28 +206,32 @@ void vect3inplugdata::describeX(class_t* clazz) {
 */
 }
 ///////////////////////////////////////////////////////////////////////////////
-template <> void vect3inplugxfdata<vect3xf>::describeX(class_t* clazz) {
+template <> void vect3inplugxfdata<fvec3xfdata>::describeX(class_t* clazz) {
   // ork::reflect::RegisterProperty("xf", &vect3inplugxfdata<vect3xf>::XfAccessor);
 }
+template struct vect3inplugxfdata<fvec3xfdata>;
+///////////////////////////////////////////////////////////////////////////////
+//template <> void vect3inplugxfdata<floatxfdata>::describeX(class_t* clazz) {
+//}
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void modscabias::describeX(object::ObjectClass* clazz) {
+void modscabiasdata::describeX(object::ObjectClass* clazz) {
   /*clazz->floatProperty("mod", float_range{0.0f, 16.0f}, &modscabias::mfMod);
   clazz->floatProperty("scale", float_range{-16.0f, 16.0f}, &modscabias::mfScale);
   clazz->floatProperty("bias", float_range{-16.0f, 16.0f}, &modscabias::mfBias);
 */
 }
-void floatxfitembase::describeX(class_t* clazz) {
+void floatxfitembasedata::describeX(class_t* clazz) {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void floatxfmsbcurve::describeX(object::ObjectClass* clazz) {
+void floatxfmsbcurvedata::describeX(object::ObjectClass* clazz) {
   /*
   ork::reflect::RegisterProperty("curve", &floatxfmsbcurve::CurveAccessor);
   ork::reflect::RegisterProperty("ModScaleBias", &floatxfmsbcurve::ModScaleBiasAccessor);
 
-  ork::reflect::RegisterProperty("domodscabia", &floatxfmsbcurve::mbDoModScaBia);
-  ork::reflect::RegisterProperty("docurve", &floatxfmsbcurve::mbDoCurve);
+  ork::reflect::RegisterProperty("domodscabia", &floatxfmsbcurve::_domodscalebias);
+  ork::reflect::RegisterProperty("docurve", &floatxfmsbcurve::_docurve);
 
   static const char* EdGrpStr = "sort:// domodscabia docurve ModScaleBias curve";
 
@@ -234,61 +241,58 @@ void floatxfmsbcurve::describeX(object::ObjectClass* clazz) {
 */
 }
 ///////////////////////////////////////////////////////////////////////////////
-float floatxfmsbcurve::transform(float input) const {
-  if (mbDoModScaBia || mbDoCurve) {
-    float fsca    = (scale() * input) + bias();
-    float modout  = (mod() > 0.0f) ? fmodf(fsca, mod()) : fsca;
+float floatxfmsbcurvedata::transform(float input) const {
+  if (_domodscalebias || _docurve) {
+    float fsca    = (_modscalebias._scale * input) + _modscalebias._bias;
+    float modout  = (_modscalebias._mod > 0.0f) ? fmodf(fsca, _modscalebias._mod) : fsca;
     float biasout = modout;
     input         = biasout;
   }
-  if (mbDoCurve) {
+  if (_docurve) {
     float clampout = (input < 0.0f) ? 0.0f : (input > 1.0f) ? 1.0f : input;
-    input          = mMultiCurve1d.Sample(clampout);
+    input          = _multicurve.Sample(clampout);
   }
   return input;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void floatxfmodstep::describeX(object::ObjectClass* clazz) {
-  /*clazz->floatProperty("Mod", float_range{0.0f, 16.0f}, &floatxfmodstep::mMod);
-  clazz->intProperty("Step", int_range{1, 128}, &floatxfmodstep::miSteps);
-  clazz->floatProperty("OutputBias", float_range{-16.0f, 16.0f}, &floatxfmodstep::mOutputBias);
-  clazz->floatProperty("OutputScale", float_range{-1600.0f, 1600.0f}, &floatxfmodstep::mOutputScale);
+void floatxfmodstepdata::describeX(object::ObjectClass* clazz) {
+  /*clazz->floatProperty("Mod", float_range{0.0f, 16.0f}, &floatxfmodstep::_mod);
+  clazz->intProperty("Step", int_range{1, 128}, &floatxfmodstep::_steps);
+  clazz->floatProperty("OutputBias", float_range{-16.0f, 16.0f}, &floatxfmodstep::_outputBias);
+  clazz->floatProperty("OutputScale", float_range{-1600.0f, 1600.0f}, &floatxfmodstep::_outputScale);
 */
 }
 ///////////////////////////////////////////////////////////////////////////////
-float floatxfmodstep::transform(float input) const {
-  int isteps = miSteps > 0 ? miSteps : 1;
+float floatxfmodstepdata::transform(float input) const {
+  int isteps = _steps > 0 ? _steps : 1;
 
   float fclamped = (input < 0.0f) ? 0.0f : (input > 1.0f) ? 1.0f : input;
-  input          = (mMod > 0.0f) ? (fmodf(input, mMod) / mMod) : fclamped;
+  input          = (_mod > 0.0f) ? (fmodf(input, _mod) / _mod) : fclamped;
   float finpsc   = input * float(isteps); // 0..1 -> 0..4
   int iinpsc     = int(std::floor(finpsc));
   float fout     = float(iinpsc) / float(isteps);
-  return (fout * mOutputScale) + mOutputBias;
+  return (fout * _outputScale) + _outputBias;
 }
 ///////////////////////////////////////////////////////////////////////////////
-floatxf::floatxf()
-    : miTest(0) {
+floatxfdata::floatxfdata()
+    : _test(0) {
 }
 ///////////////////////////////////////////////////////////////////////////////
-floatxf::~floatxf() {
+floatxfdata::~floatxfdata() {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void floatxf::describeX(class_t* clazz) {
+void floatxfdata::describeX(class_t* clazz) {
   /*
-  ork::reflect::RegisterMapProperty("Transforms", &floatxf::mTransforms);
+  ork::reflect::RegisterMapProperty("Transforms", &floatxf::_transforms);
   ork::reflect::annotatePropertyForEditor<floatxf>("Transforms", "editor.factorylistbase", "dflow/floatxfitembase");
   ork::reflect::annotatePropertyForEditor<floatxf>("Transforms", "editor.map.policy.impexp", "true");
   */
 }
 ///////////////////////////////////////////////////////////////////////////////
-float floatxf::transform(float input) const {
-  if (!mTransforms.Empty()) {
-    for (auto itxf : mTransforms) {
-      floatxfitembase* pitem = rtti::autocast(itxf.second);
-      if (pitem) {
-        input = pitem->transform(input);
-      }
+float floatxfdata::transform(float input) const {
+  if (!_transforms.Empty()) {
+    for (auto xf : _transforms) {
+      input = xf.second->transform(input);
     }
   }
   return input;
@@ -296,14 +300,14 @@ float floatxf::transform(float input) const {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void vect3xf::describeX(class_t* clazz) {
+void fvec3xfdata::describeX(class_t* clazz) {
 }
 ///////////////////////////////////////////////////////////////////////////////
-fvec3 vect3xf::transform(const fvec3& input) const {
+fvec3 fvec3xfdata::transform(const fvec3& input) const {
   fvec3 output;
-  output.x = (mTransformX.transform(input.x));
-  output.y = (mTransformX.transform(input.y));
-  output.z = (mTransformX.transform(input.z));
+  output.x = (_transformX.transform(input.x));
+  output.y = (_transformY.transform(input.y));
+  output.z = (_transformZ.transform(input.z));
   return output;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -326,20 +330,23 @@ void morphable::HandleMorphEvent(const morph_event* me) {
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::dataflow
 ///////////////////////////////////////////////////////////////////////////////
-ImplementReflectionX(ork::dataflow::PlugData, "dflow/plugdata");
-ImplementReflectionX(ork::dataflow::InPlugData, "dflow/inpplugdata");
-ImplementReflectionX(ork::dataflow::OutPlugData, "dflow/outplugdata");
 
-ImplementReflectionX(ork::dataflow::floatxf, "dflow/floatxf");
-ImplementReflectionX(ork::dataflow::vect3xf, "dflow/vect3xf");
-ImplementReflectionX(ork::dataflow::floatxfitembase, "dflow/floatxfitembase");
+namespace dflow = ork::dataflow;
 
-ImplementReflectionX(ork::dataflow::floatinplugdata, "dflow/floatinplugdata");
-ImplementReflectionX(ork::dataflow::vect3inplugdata, "dflow/vect3inplugdata");
+ImplementReflectionX(dflow::PlugData, "dflow/plugdata");
+ImplementReflectionX(dflow::InPlugData, "dflow/inpplugdata");
+ImplementReflectionX(dflow::OutPlugData, "dflow/outplugdata");
 
-ImplementTemplateReflectionX(ork::dataflow::outplugdata<float>, "dflow/outplugdata<float>");
-ImplementTemplateReflectionX(ork::dataflow::inplugdata<float>, "dflow/inplugdata<float>");
-ImplementTemplateReflectionX(ork::dataflow::outplugdata<ork::fvec3>, "dflow/outplugdata<vec3>");
-ImplementTemplateReflectionX(ork::dataflow::inplugdata<ork::fvec3>, "dflow/inplugdata<vec3>");
-ImplementTemplateReflectionX(ork::dataflow::floatxfinplugdata, "dflow/floatxfinplugdata");
-ImplementTemplateReflectionX(ork::dataflow::vect3xfinplugdata, "dflow/vect3xfinplugdata");
+ImplementReflectionX(dflow::floatxfdata, "dflow/floatxfdata");
+ImplementReflectionX(dflow::fvec3xfdata, "dflow/fvec3xfdata");
+ImplementReflectionX(dflow::floatxfitembasedata, "dflow/floatxfitembasedata");
+
+ImplementReflectionX(dflow::floatinplugdata, "dflow/floatinplugdata");
+ImplementReflectionX(dflow::vect3inplugdata, "dflow/vect3inplugdata");
+
+ImplementTemplateReflectionX(dflow::outplugdata<dflow::FloatPlugTraits>, "dflow/outplugdata<float>");
+ImplementTemplateReflectionX(dflow::inplugdata<dflow::FloatPlugTraits>, "dflow/inplugdata<float>");
+ImplementTemplateReflectionX(dflow::outplugdata<dflow::Vec3fPlugTraits>, "dflow/outplugdata<vec3>");
+ImplementTemplateReflectionX(dflow::inplugdata<dflow::Vec3fPlugTraits>, "dflow/inplugdata<vec3>");
+ImplementTemplateReflectionX(dflow::floatxfinplugdata, "dflow/floatxfinplugdata");
+ImplementTemplateReflectionX(dflow::vect3xfinplugdata, "dflow/vect3xfinplugdata");

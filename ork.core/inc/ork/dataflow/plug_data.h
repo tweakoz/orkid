@@ -12,7 +12,33 @@ namespace ork::dataflow {
 typedef std::string MorphKey;
 typedef std::string MorphGroup;
 
-class morph_event : public event::Event {
+struct floatxfdata;
+struct floatxfinst;
+struct fvec3xfdata;
+struct fvec3xfinst;
+
+struct FloatPlugTraits{
+  using data_type_t = float;
+  using inst_type_t = float;
+  static constexpr size_t max_fanout = 0;
+};
+struct Vec3fPlugTraits{
+  using data_type_t = fvec3;
+  using inst_type_t = fvec3;
+  static constexpr size_t max_fanout = 0;
+};
+struct FloatXfPlugTraits{
+  using data_type_t = floatxfdata;
+  using inst_type_t = floatxfinst;
+  static constexpr size_t max_fanout = 0;
+};
+struct Vec3XfPlugTraits{
+  using data_type_t = fvec3xfdata;
+  using inst_type_t = fvec3xfinst;
+  static constexpr size_t max_fanout = 0;
+};
+
+struct morph_event : public event::Event {
 public:
   EMorphEventType meType;
   float mfMorphValue;
@@ -49,10 +75,6 @@ struct morphable {
   static const int kmaxweights = 2;
   morphitem mMorphItems[kmaxweights];
 };
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename T> int MaxFanout(void);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -118,7 +140,7 @@ public:
   OutPlugData(moduledata_ptr_t pmod, EPlugRate epr, const std::type_info& tid, const char* pname);
   ~OutPlugData();
 
-  virtual int MaxFanOut() const {
+  virtual size_t maxFanOut() const {
     return 0;
   }
 
@@ -143,25 +165,26 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename vartype> //
-class outplugdata : public OutPlugData {
-  DeclareTemplateAbstractX(outplugdata<vartype>, OutPlugData);
+template <typename traits> //
+struct outplugdata : public OutPlugData {
+  DeclareTemplateAbstractX(outplugdata<traits>, OutPlugData);
 
 public:
 
-  using data_type_t = vartype;
-  using data_type_ptr_t = std::shared_ptr<vartype>;
+  using traits_t = traits;
+  using data_type_t = typename traits_t::data_type_t;
+  using data_type_ptr_t = std::shared_ptr<data_type_t>;
 
   inline explicit outplugdata( moduledata_ptr_t pmod, //
                                EPlugRate epr, //
                                data_type_ptr_t default_value, //
                                const char* pname) //
-      : OutPlugData(pmod, epr, typeid(vartype), pname) //
+      : OutPlugData(pmod, epr, typeid(data_type_t), pname) //
       , _default(default_value) { //
   }
 
-  inline int MaxFanOut() const override {
-    return MaxFanout<vartype>();
+  inline size_t maxFanOut() const override {
+    return traits::max_fanout;
   }
 
   outpluginst_ptr_t createInstance() const override;
@@ -171,19 +194,20 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename vartype> struct inplugdata : public InPlugData {
-  DeclareTemplateAbstractX(inplugdata<vartype>, InPlugData);
+template <typename traits> struct inplugdata : public InPlugData {
+  DeclareTemplateAbstractX(inplugdata<traits>, InPlugData);
 
 public:
 
-  using data_type_t = vartype;
-  using data_type_ptr_t = std::shared_ptr<vartype>;
+  using traits_t = traits;
+  using data_type_t = typename traits_t::inst_type_t;
+  using data_type_ptr_t = std::shared_ptr<data_type_t>;
 
   inline explicit inplugdata( moduledata_ptr_t pmod, //
                               EPlugRate epr, //
                               data_type_ptr_t def, //
                               const char* pname) //
-      : InPlugData(pmod, epr, typeid(vartype), pname) //
+      : InPlugData(pmod, epr, typeid(traits), pname) //
       , _default(def) { //
   }
 
@@ -195,31 +219,31 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct floatinplugdata : public inplugdata<float> {
-  DeclareAbstractX(floatinplugdata, inplugdata<float>);
+struct floatinplugdata : public inplugdata<FloatPlugTraits> {
+  DeclareAbstractX(floatinplugdata, inplugdata<FloatPlugTraits>);
 
 public:
   floatinplugdata(moduledata_ptr_t pmod, EPlugRate epr, data_type_ptr_t def, const char* pname)
-      : inplugdata<float>(pmod, epr, def, pname) {
+      : inplugdata<FloatPlugTraits>(pmod, epr, def, pname) {
   }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct vect3inplugdata : public inplugdata<fvec3> {
-  DeclareAbstractX(vect3inplugdata, inplugdata<fvec3>);
+struct vect3inplugdata : public inplugdata<Vec3fPlugTraits> {
+  DeclareAbstractX(vect3inplugdata, inplugdata<Vec3fPlugTraits>);
 
 public:
   vect3inplugdata(moduledata_ptr_t pmod, EPlugRate epr, data_type_ptr_t def, const char* pname)
-      : inplugdata<fvec3>(pmod, epr, def, pname) {
+      : inplugdata<Vec3fPlugTraits>(pmod, epr, def, pname) {
   }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename xf> struct floatinplugxfdata : public floatinplugdata {
+template <typename transform_type> struct floatinplugxfdata : public floatinplugdata {
 
-  DeclareTemplateAbstractX(floatinplugxfdata<xf>, floatinplugdata);
+  DeclareTemplateAbstractX(floatinplugxfdata<transform_type>, floatinplugdata);
 
 public:
   explicit floatinplugxfdata(moduledata_ptr_t pmod, EPlugRate epr, data_type_ptr_t def, const char* pname)
@@ -236,25 +260,18 @@ public:
     return mtransformed;
   }*/
 
-  xf mtransform;
+  transform_type mtransform;
   //mutable float mtransformed;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename xf> struct vect3inplugxfdata : public vect3inplugdata {
-  DeclareTemplateAbstractX(vect3inplugxfdata<xf>, vect3inplugdata);
+template <typename transform_type> struct vect3inplugxfdata : public vect3inplugdata {
+  DeclareTemplateAbstractX(vect3inplugxfdata<transform_type>, vect3inplugdata);
 
 public:
   explicit vect3inplugxfdata(moduledata_ptr_t pmod, EPlugRate epr, data_type_ptr_t def, const char* pname)
-      : vect3inplugdata(pmod, epr, def, pname)
-      , mtransform() {
-  }
-
-  ///////////////////////////////////////////////////////////////
-
-  xf& GetTransform() {
-    return mtransform;
+      : vect3inplugdata(pmod, epr, def, pname){
   }
 
   ///////////////////////////////////////////////////////////////
@@ -267,157 +284,94 @@ public:
     return mtransformed;
   }*/
 
-private:
-  xf mtransform;
-  mutable fvec3 mtransformed;
-  ork::Object* XfAccessor() {
-    return &mtransform;
-  }
+  transform_type _transform;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-struct modscabias : public ork::Object {
-  DeclareConcreteX(modscabias, ork::Object);
+struct modscabiasdata : public ork::Object {
+  DeclareConcreteX(modscabiasdata, ork::Object);
 
 public:
 
-  modscabias()
-      : _mod(1.0f)
-      , _scale(1.0f)
-      , _bias(0.0f) {
-  }
-
-  float _mod;
-  float _scale;
-  float _bias;
+  float _mod = 0.0f;
+  float _scale = 1.0f;
+  float _bias = 0.0f;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct floatxfitembase : public ork::Object {
-  DeclareAbstractX(floatxfitembase, ork::Object);
+struct floatxfitembasedata : public ork::Object {
+  DeclareAbstractX(floatxfitembasedata, ork::Object);
 
 public:
   virtual float transform(float inp) const = 0;
 };
 
+using floatxfitembasedata_ptr_t = std::shared_ptr<floatxfitembasedata>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
-struct floatxfmsbcurve : public floatxfitembase {
-  DeclareConcreteX(floatxfmsbcurve, floatxfitembase);
-
+struct floatxfmsbcurvedata : public floatxfitembasedata {
+  DeclareConcreteX(floatxfmsbcurvedata, floatxfitembasedata);
 public:
-  float mod() const {
-    return mModScaleBias._mod;
-  }
-  float scale() const {
-    return mModScaleBias._scale;
-  }
-  float bias() const {
-    return mModScaleBias._bias;
-  }
-
-  void detMod(float val) {
-    mModScaleBias._mod = val;
-  }
-  void detScale(float val) {
-    mModScaleBias._scale = (val);
-  }
-  void detBias(float val) {
-    mModScaleBias._bias = (val);
-  }
-
-  floatxfmsbcurve()
-      : mbDoModScaBia(false)
-      , mbDoCurve(false) {
-  }
 
   float transform(float input) const override; // virtual
 
-  ork::MultiCurve1D mMultiCurve1d;
-  modscabias mModScaleBias;
-  bool mbDoModScaBia;
-  bool mbDoCurve;
+  ork::MultiCurve1D _multicurve;
+  modscabiasdata _modscalebias;
+  bool _domodscalebias = false;
+  bool _docurve = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class floatxfmodstep : public floatxfitembase {
-  DeclareConcreteX(floatxfmodstep, floatxfitembase);
+struct floatxfmodstepdata : public floatxfitembasedata {
+  DeclareConcreteX(floatxfmodstepdata, floatxfitembasedata);
 
 public:
-  floatxfmodstep()
-      : mMod(1.0f)
-      , miSteps(4)
-      , mOutputScale(1.0f)
-      , mOutputBias(1.0f) {
-  }
 
   float transform(float input) const override; // virtual
 
-private:
-  float mMod;
-  int miSteps;
-  float mOutputScale;
-  float mOutputBias;
+  float _mod = 1.0f;
+  int _steps = 4;
+  float _outputScale = 1.0f;
+  float _outputBias = 1.0f;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class floatxf : public ork::Object {
-  DeclareAbstractX(floatxf, ork::Object);
+struct floatxfdata : public ork::Object {
+  DeclareAbstractX(floatxfdata, ork::Object);
 
 public:
   float transform(float inp) const;
-  floatxf();
-  ~floatxf();
+  floatxfdata();
+  ~floatxfdata();
 
-private:
-  orklut<std::string, ork::Object*> mTransforms;
-  int miTest;
+  orklut<std::string, floatxfitembasedata_ptr_t> _transforms;
+  int _test = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class vect3xf : public ork::Object {
-  DeclareConcreteX(vect3xf, ork::Object);
-
+struct fvec3xfdata : public ork::Object {
+  DeclareConcreteX(fvec3xfdata, ork::Object);
 public:
-  const floatxf& GetTransformX() const {
-    return mTransformX;
-  }
-  const floatxf& GetTransformY() const {
-    return mTransformY;
-  }
-  const floatxf& GetTransformZ() const {
-    return mTransformZ;
-  }
 
   fvec3 transform(const fvec3& input) const;
 
-private:
-  ork::Object* TransformXAccessor() {
-    return &mTransformX;
-  }
-  ork::Object* TransformYAccessor() {
-    return &mTransformY;
-  }
-  ork::Object* TransformZAccessor() {
-    return &mTransformZ;
-  }
-
-  floatxf mTransformX;
-  floatxf mTransformY;
-  floatxf mTransformZ;
+  floatxfdata _transformX;
+  floatxfdata _transformY;
+  floatxfdata _transformZ;
 };
 
-using floatxfinplugdata = floatinplugxfdata<floatxf> ;
-using floatxfoutplugdata = floatinplugxfdata<floatxf> ;
-using vect3xfinplugdata = vect3inplugxfdata<vect3xf>;
 
-using floatoutplug_ptr_t = std::shared_ptr<outplugdata<float>>;
+using floatoutplug_ptr_t = std::shared_ptr<outplugdata<FloatPlugTraits>>;
+using floatinpplug_ptr_t = std::shared_ptr<inplugdata<FloatPlugTraits>>;
+
+using floatxfinplugdata = floatinplugxfdata<floatxfdata> ;
+using vect3xfinplugdata = vect3inplugxfdata<fvec3xfdata>;
 using floatxfinplugdata_ptr_t = std::shared_ptr<floatxfinplugdata>;
-using floatxfoutplugdata_ptr_t = std::shared_ptr<floatxfoutplugdata>;
 
 
 } //namespace ork { namespace dataflow {

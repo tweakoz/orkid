@@ -26,6 +26,7 @@ using pool_t = Pool<particle_t>;
 using pool_ptr_t = std::shared_ptr<pool_t>;
 using float_ptr_t = std::shared_ptr<float>;
 
+
 struct ParticleBufferData {
 };
 using particlebufferdata_ptr_t = std::shared_ptr<ParticleBufferData>;
@@ -36,16 +37,21 @@ struct ParticleBufferInst {
   pool_ptr_t _pool;
 };
 
-using particlebuf_inplugdata_t = dflow::inplugdata<ParticleBufferData>;
-using particlebuf_inplugdata_ptr_t = std::shared_ptr<particlebuf_inplugdata_t>;
+struct ParticleBufferPlugTraits{
+  using data_type_t = ParticleBufferData;
+  using inst_type_t = ParticleBufferInst;
+  static constexpr size_t max_fanout = 1;
+};
 
-using particlebuf_outplugdata_t = dflow::outplugdata<ParticleBufferData>;
+
+using particlebuf_inplugdata_t = dflow::inplugdata<ParticleBufferPlugTraits>;
+using particlebuf_inplugdata_ptr_t = std::shared_ptr<particlebuf_inplugdata_t>;
+using particlebuf_outplugdata_t = dflow::outplugdata<ParticleBufferPlugTraits>;
 using particlebuf_outplugdata_ptr_t = std::shared_ptr<particlebuf_outplugdata_t>;
 
-using particlebuf_inpluginst_t = dflow::inpluginst<ParticleBufferData>;
+using particlebuf_inpluginst_t = dflow::inpluginst<ParticleBufferPlugTraits>;
 using particlebuf_inpluginst_ptr_t = std::shared_ptr<particlebuf_inpluginst_t>;
-
-using particlebuf_outpluginst_t = dflow::outpluginst<ParticleBufferData>;
+using particlebuf_outpluginst_t = dflow::outpluginst<ParticleBufferPlugTraits>;
 using particlebuf_outpluginst_ptr_t = std::shared_ptr<particlebuf_outpluginst_t>;
 
 struct ModuleData;

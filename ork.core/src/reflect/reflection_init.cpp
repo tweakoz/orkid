@@ -11,6 +11,8 @@
 #include <ork/asset/Asset.h>
 #include <ork/dataflow/dataflow.h>
 
+namespace dflow = ork::dataflow;
+
 namespace ork {
 
 void TouchCoreClasses() {
@@ -21,24 +23,26 @@ void TouchCoreClasses() {
   TransformNode::GetClassStatic();
   DecompTransform::GetClassStatic();
 
-  ork::dataflow::PlugData::GetClassStatic();
-  ork::dataflow::InPlugData::GetClassStatic();
-  ork::dataflow::OutPlugData::GetClassStatic();
+  dflow::PlugData::GetClassStatic();
+  dflow::InPlugData::GetClassStatic();
+  dflow::OutPlugData::GetClassStatic();
 
-  ork::dataflow::floatxf::GetClassStatic();
-  ork::dataflow::vect3xf::GetClassStatic();
-  ork::dataflow::floatxfitembase::GetClassStatic();
+  dflow::floatxfdata::GetClassStatic();
+  dflow::fvec3xfdata::GetClassStatic();
+  dflow::floatxfitembasedata::GetClassStatic();
 
-  ork::dataflow::inplugdata<float>::GetClassStatic();
-  ork::dataflow::floatinplugdata::GetClassStatic();
+  dflow::inplugdata<dflow::FloatPlugTraits>::GetClassStatic();
+  dflow::outplugdata<dflow::FloatPlugTraits>::GetClassStatic();
+  dflow::floatinplugdata::GetClassStatic();
 
-  ork::dataflow::inplugdata<ork::fvec3>::GetClassStatic();
-  ork::dataflow::vect3inplugdata::GetClassStatic();
+  dflow::inplugdata<dflow::Vec3fPlugTraits>::GetClassStatic();
+  dflow::outplugdata<dflow::Vec3fPlugTraits>::GetClassStatic();
+  dflow::vect3inplugdata::GetClassStatic();
 
-  ork::dataflow::outplugdata<float>::GetClassStatic();
-  ork::dataflow::outplugdata<ork::fvec3>::GetClassStatic();
-  ork::dataflow::floatxfinplugdata::GetClassStatic();
-  ork::dataflow::vect3xfinplugdata::GetClassStatic();
+  //dflow::vect3inplugxfdata<dflow::fvec3xfdata>::GetClassStatic();
+
+  dflow::floatxfinplugdata::GetClassStatic();
+  dflow::vect3xfinplugdata::GetClassStatic();
 }
 
 } // namespace ork

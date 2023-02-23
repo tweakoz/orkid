@@ -97,7 +97,9 @@ public:
       , _typed_plugdata(data) { //
   }
 
-  virtual data_type_ptr_t value() const;
+  virtual data_type_ptr_t value() const {
+    return _default;
+  }
 
   data_type_ptr_t _default;
   const inplugdata<vartype>* _typed_plugdata;

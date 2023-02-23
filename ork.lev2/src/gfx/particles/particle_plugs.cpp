@@ -72,11 +72,5 @@ std::shared_ptr<ptcl::ParticleBufferData> dflow::inpluginst<ptcl::ParticleBuffer
   return _default;
 }
 
-namespace ork::dataflow {
-template <> int MaxFanout<ptcl::ParticleBufferData>() {
-  return 1;
-}
-} // namespace dflow
-
 ImplementTemplateReflectionX(ptcl::particlebuf_outplugdata_t, "psys::ptclbufoutplug");
 ImplementTemplateReflectionX(ptcl::particlebuf_inplugdata_t, "psys::ptclbufinpplug");
