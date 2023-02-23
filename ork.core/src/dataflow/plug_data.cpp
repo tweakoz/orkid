@@ -341,5 +341,5 @@ ImplementTemplateReflectionX(ork::dataflow::outplugdata<float>, "dflow/outplugda
 ImplementTemplateReflectionX(ork::dataflow::inplugdata<float>, "dflow/inplugdata<float>");
 ImplementTemplateReflectionX(ork::dataflow::outplugdata<ork::fvec3>, "dflow/outplugdata<vec3>");
 ImplementTemplateReflectionX(ork::dataflow::inplugdata<ork::fvec3>, "dflow/inplugdata<vec3>");
-ImplementTemplateReflectionX(ork::dataflow::floatxfinplug, "dflow/floatxfinplug");
-ImplementTemplateReflectionX(ork::dataflow::vect3xfinplug, "dflow/vect3xfinplug");
+ImplementTemplateReflectionX(ork::dataflow::floatxfinplugdata, "dflow/floatxfinplugdata");
+ImplementTemplateReflectionX(ork::dataflow::vect3xfinplugdata, "dflow/vect3xfinplugdata");

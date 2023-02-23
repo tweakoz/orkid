@@ -101,11 +101,11 @@ class PointsPrimApp(object):
     data_ptr['z'] = numpy.random.uniform(-1,1, self.NUMPOINTS).astype(numpy.float32)
 
     def do_axis(named):
-      S = numpy.copy(numpy.sign(data_ptr[named]))
-      A = numpy.copy(numpy.abs(data_ptr[named]))
-      P = numpy.copy(numpy.power(A,paramA))
-      P = numpy.copy(numpy.power(P,paramB))
-      P = numpy.copy(numpy.power(P,paramC))
+      S = numpy.sign(data_ptr[named])
+      A = numpy.abs(data_ptr[named])
+      P = numpy.power(A,paramA)
+      P = numpy.power(P,paramB)
+      P = numpy.power(P,paramC)
       data_ptr[named] = P*S
       if named == 'y':
         data_ptr['y'] += numpy.ones(self.NUMPOINTS, dtype=numpy.float32)

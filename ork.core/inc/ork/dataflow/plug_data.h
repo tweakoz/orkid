@@ -411,10 +411,13 @@ private:
   floatxf mTransformZ;
 };
 
-using floatxfinplug = floatinplugxfdata<floatxf> ;
-using vect3xfinplug = vect3inplugxfdata<vect3xf>;
+using floatxfinplugdata = floatinplugxfdata<floatxf> ;
+using floatxfoutplugdata = floatinplugxfdata<floatxf> ;
+using vect3xfinplugdata = vect3inplugxfdata<vect3xf>;
 
-using floatoutplug_ptr_t = std::shared_ptr<ork::dataflow::outplugdata<float>>;
+using floatoutplug_ptr_t = std::shared_ptr<outplugdata<float>>;
+using floatxfinplugdata_ptr_t = std::shared_ptr<floatxfinplugdata>;
+using floatxfoutplugdata_ptr_t = std::shared_ptr<floatxfoutplugdata>;
 
 
 } //namespace ork { namespace dataflow {

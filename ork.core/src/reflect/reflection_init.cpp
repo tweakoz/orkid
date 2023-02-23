@@ -37,8 +37,8 @@ void TouchCoreClasses() {
 
   ork::dataflow::outplugdata<float>::GetClassStatic();
   ork::dataflow::outplugdata<ork::fvec3>::GetClassStatic();
-  ork::dataflow::floatxfinplug::GetClassStatic();
-  ork::dataflow::vect3xfinplug::GetClassStatic();
+  ork::dataflow::floatxfinplugdata::GetClassStatic();
+  ork::dataflow::vect3xfinplugdata::GetClassStatic();
 }
 
 } // namespace ork
