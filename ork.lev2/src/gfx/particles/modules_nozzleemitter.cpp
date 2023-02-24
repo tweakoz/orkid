@@ -45,14 +45,14 @@ struct NozzleEmitterInst : public DgModuleInst {
 
   particlebuf_inpluginst_ptr_t _input_buffer;
 
-  float_inp_pluginst_ptr_t _input_lifespan;
-  float_inp_pluginst_ptr_t _input_emissionrate;
-  float_inp_pluginst_ptr_t _input_emissionvelocity;
-  float_inp_pluginst_ptr_t _input_dispersionangle;
+  floatxf_inp_pluginst_ptr_t _input_lifespan;
+  floatxf_inp_pluginst_ptr_t _input_emissionrate;
+  floatxf_inp_pluginst_ptr_t _input_emissionvelocity;
+  floatxf_inp_pluginst_ptr_t _input_dispersionangle;
 
-  fvec3_inp_pluginst_ptr_t _input_direction;
-  fvec3_inp_pluginst_ptr_t _input_offset;
-  fvec3_inp_pluginst_ptr_t _input_offset_velocity;
+  fvec3xf_inp_pluginst_ptr_t _input_direction;
+  fvec3xf_inp_pluginst_ptr_t _input_offset;
+  fvec3xf_inp_pluginst_ptr_t _input_offset_velocity;
 
   particlebuf_outpluginst_ptr_t _output_buffer;
 
@@ -79,14 +79,14 @@ void NozzleEmitterInst::onLink(GraphInst* inst) {
 
   _input_buffer = typedInputNamed<ParticleBufferPlugTraits>("ParticleBuffer");
 
-  _input_lifespan = typedInputNamed<FloatPlugTraits>("LifeSpan");
-  _input_emissionrate = typedInputNamed<FloatPlugTraits>("EmissionRate");
-  _input_emissionvelocity = typedInputNamed<FloatPlugTraits>("EmissionVelocity");
-  _input_dispersionangle = typedInputNamed<FloatPlugTraits>("DispersionAngle");
+  _input_lifespan = typedInputNamed<FloatXfPlugTraits>("LifeSpan");
+  _input_emissionrate = typedInputNamed<FloatXfPlugTraits>("EmissionRate");
+  _input_emissionvelocity = typedInputNamed<FloatXfPlugTraits>("EmissionVelocity");
+  _input_dispersionangle = typedInputNamed<FloatXfPlugTraits>("DispersionAngle");
 
-  _input_direction = typedInputNamed<Vec3fPlugTraits>("Direction");
-  _input_offset = typedInputNamed<Vec3fPlugTraits>("Offset");
-  _input_offset_velocity = typedInputNamed<Vec3fPlugTraits>("OffsetVelocity");
+  _input_direction = typedInputNamed<Vec3XfPlugTraits>("Direction");
+  _input_offset = typedInputNamed<Vec3XfPlugTraits>("Offset");
+  _input_offset_velocity = typedInputNamed<Vec3XfPlugTraits>("OffsetVelocity");
 
    /////////////////
    // outputs

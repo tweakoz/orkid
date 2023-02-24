@@ -113,6 +113,7 @@ public:
   inline explicit inpluginst( const inplugdata<traits>* data ) //
       : InPlugInst(data) //
       , _typed_plugdata(data) { //
+        _value = std::make_shared<data_type_t>();
         //_value = data->_value;
   }
 
@@ -173,6 +174,9 @@ struct fvec3xfinpluginst : public inpluginst<Vec3fPlugTraits> {
 using float_inp_pluginst_t = inpluginst<FloatPlugTraits>;
 using float_inp_pluginst_ptr_t = std::shared_ptr<float_inp_pluginst_t>;
 
+using floatxf_inp_pluginst_t = inpluginst<FloatXfPlugTraits>;
+using floatxf_inp_pluginst_ptr_t = std::shared_ptr<floatxf_inp_pluginst_t>;
+
 using float_out_pluginst_t = outpluginst<FloatPlugTraits>;
 using float_out_pluginst_ptr_t = std::shared_ptr<float_out_pluginst_t>;
 
@@ -180,6 +184,9 @@ using float_out_pluginst_ptr_t = std::shared_ptr<float_out_pluginst_t>;
 
 using fvec3_inp_pluginst_t = inpluginst<Vec3fPlugTraits>;
 using fvec3_inp_pluginst_ptr_t = std::shared_ptr<fvec3_inp_pluginst_t>;
+
+using fvec3xf_inp_pluginst_t = inpluginst<Vec3XfPlugTraits>;
+using fvec3xf_inp_pluginst_ptr_t = std::shared_ptr<fvec3xf_inp_pluginst_t>;
 
 using fvec3_out_pluginst_t = outpluginst<Vec3fPlugTraits>;
 using fvec3_out_pluginst_ptr_t = std::shared_ptr<fvec3_out_pluginst_t>;
