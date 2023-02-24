@@ -9,6 +9,7 @@
 #include <utpp/UnitTest++.h>
 #include <ork/lev2/gfx/particle/modular_particles2.h>
 #include <ork/lev2/gfx/particle/modular_emitters.h>
+#include <ork/lev2/gfx/particle/modular_forces.h>
 #include <ork/dataflow/module.inl>
 #include <ork/dataflow/plug_data.inl>
 #include <ork/dataflow/plug_inst.inl>
@@ -30,9 +31,11 @@ TEST(particles_a) {
   auto ptcl_pool    = ParticlePoolData::createShared();
   auto ptcl_globals = GlobalModuleData::createShared();
   auto ptcl_emitter = NozzleEmitterData::createShared();
+  auto ptcl_gravity = GravityModuleData::createShared();
   GraphData::addModule(graphdata, "G", ptcl_globals);
   GraphData::addModule(graphdata, "P", ptcl_pool);
   GraphData::addModule(graphdata, "E", ptcl_emitter);
+  GraphData::addModule(graphdata, "GRAV", ptcl_gravity);
 
   ////////////////////////////////////////////////////
 
@@ -42,12 +45,27 @@ TEST(particles_a) {
   // connect and init plugs
   ////////////////////////////////////////////////////
 
-  auto P_out    = ptcl_pool->outputNamed("ParticleBuffer");
-  auto E_inp    = ptcl_emitter->inputNamed("ParticleBuffer");
-  auto E_rate    = ptcl_emitter->typedInputNamed<FloatXfPlugTraits>("EmissionRate");
+  auto E_rate     = ptcl_emitter->typedInputNamed<FloatXfPlugTraits>("EmissionRate");
+  auto GR_G       = ptcl_gravity->typedInputNamed<FloatXfPlugTraits>("G");
+  auto GR_Mass    = ptcl_gravity->typedInputNamed<FloatXfPlugTraits>("Mass");
+  auto GR_OthMass = ptcl_gravity->typedInputNamed<FloatXfPlugTraits>("OthMass");
+  auto GR_MinDist = ptcl_gravity->typedInputNamed<FloatXfPlugTraits>("MinDistance");
+  auto GR_Center  = ptcl_gravity->typedInputNamed<Vec3XfPlugTraits>("Center");
 
-  graphdata->safeConnect(E_inp,P_out);
+  auto P_out  = ptcl_pool->outputNamed("ParticleBuffer");
+  auto E_inp  = ptcl_emitter->inputNamed("ParticleBuffer");
+  auto E_out  = ptcl_emitter->outputNamed("ParticleBuffer");
+  auto GR_inp = ptcl_gravity->inputNamed("ParticleBuffer");
+
+  graphdata->safeConnect(E_inp, P_out);
+  graphdata->safeConnect(GR_inp, E_out);
+
   E_rate->setValue(100.0f);
+  GR_G->setValue(1);
+  GR_Mass->setValue(1.0f);
+  GR_OthMass->setValue(1.0f);
+  GR_MinDist->setValue(1);
+  GR_Center->setValue(fvec3(1, 2, 3));
 
   ////////////////////////////////////////////////////
 
