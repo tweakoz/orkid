@@ -7,6 +7,8 @@
 
 #include "pyext.h"
 #include <boost/filesystem.hpp>
+#include <ork/kernel/environment.h>
+#include <ork/event/Event.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 struct CorePythonApplication  {
@@ -23,9 +25,43 @@ struct CorePythonApplication  {
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 void pyinit_math(py::module& module_core);
+void pyinit_dataflow(py::module& module_core);
 
 static void _coreappinit() {
   SetCurrentThreadName("main");
+  ork::genviron.init_from_global_env();
+
+  static std::vector<std::string> _dynaargs_storage;
+  static std::vector<char*> _dynaargs_refs;
+
+  py::object python_exec = py::module_::import("sys").attr("executable");
+  py::object argv_list = py::module_::import("sys").attr("argv");
+
+  auto exec_as_str = py::cast<std::string>(python_exec);
+  //printf( "exec_as_str<%s>\n", exec_as_str.c_str() );
+
+  _dynaargs_storage.push_back(exec_as_str);
+
+  for (auto item : argv_list) {
+    auto as_str = py::cast<std::string>(item);
+    _dynaargs_storage.push_back(as_str);
+    //printf( "as_str<%s>\n", as_str.c_str() );
+  }
+  //OrkAssert(false);
+
+  for( std::string& item : _dynaargs_storage ){
+    char* ref = item.data();
+    _dynaargs_refs.push_back(ref);
+  }
+
+  int argc      = _dynaargs_refs.size();
+  char** argv = _dynaargs_refs.data();
+
+  for( int i=0; i<argc; i++ ){
+    printf( "dynarg<%d:%s>\n", i, argv[i] );
+  }
+
+  static auto init_data = std::make_shared<AppInitData>(argc,argv);
 
   static CorePythonApplication the_app;
 
@@ -187,7 +223,29 @@ PYBIND11_MODULE(_core, module_core) {
               });
   type_codec->registerStdCodec<varmap::varmap_ptr_t>(varmaptype_t);
   /////////////////////////////////////////////////////////////////////////////////
+  auto updata_type =                                                              //
+      py::class_<ui::UpdateData, ui::updatedata_ptr_t>(module_core, "UpdateData") //
+          .def(py::init<>())
+          .def_property(
+              "absolutetime",                             //
+              [](ui::updatedata_ptr_t updata) -> double { //
+                return updata->_abstime;
+              },
+              [](ui::updatedata_ptr_t updata, double val) { //
+                updata->_abstime = val;
+              })
+          .def_property(
+              "deltatime",                                //
+              [](ui::updatedata_ptr_t updata) -> double { //
+                return updata->_dt;
+              },
+              [](ui::updatedata_ptr_t updata, double val) { //
+                updata->_dt = val;
+              });
+  type_codec->registerStdCodec<ui::updatedata_ptr_t>(updata_type);
+  /////////////////////////////////////////////////////////////////////////////////
   pyinit_math(module_core);
+  pyinit_dataflow(module_core);
   /////////////////////////////////////////////////////////////////////////////////
 }; // PYBIND11_MODULE(_core, module_core) {
 

@@ -377,27 +377,27 @@ fvec3xfinplugdata::fvec3xfinplugdata(moduledata_ptr_t pmod, EPlugRate epr, const
 
 namespace dflow = ork::dataflow;
 
-ImplementReflectionX(dflow::PlugData, "dflow/plugdata");
-ImplementReflectionX(dflow::InPlugData, "dflow/inpplugdata");
-ImplementReflectionX(dflow::OutPlugData, "dflow/outplugdata");
+ImplementReflectionX(dflow::PlugData, "dflow::plugdata");
+ImplementReflectionX(dflow::InPlugData, "dflow::inpplugdata");
+ImplementReflectionX(dflow::OutPlugData, "dflow::outplugdata");
 
-ImplementReflectionX(dflow::floatxfdata, "dflow/floatxfdata");
-ImplementReflectionX(dflow::fvec3xfdata, "dflow/fvec3xfdata");
-ImplementReflectionX(dflow::floatxfitembasedata, "dflow/floatxfitembasedata");
+ImplementReflectionX(dflow::floatxfdata, "dflow::floatxfdata");
+ImplementReflectionX(dflow::fvec3xfdata, "dflow::fvec3xfdata");
+ImplementReflectionX(dflow::floatxfitembasedata, "dflow::floatxfitembasedata");
 
-ImplementReflectionX(dflow::floatinplugdata, "dflow/floatinplugdata");
-ImplementReflectionX(dflow::vect3inplugdata, "dflow/vect3inplugdata");
+ImplementReflectionX(dflow::floatinplugdata, "dflow::floatinplugdata");
+ImplementReflectionX(dflow::vect3inplugdata, "dflow::vect3inplugdata");
 
-ImplementReflectionX(dflow::floatxfinplugdata, "dflow/floatxfinplugdata");
-ImplementReflectionX(dflow::fvec3xfinplugdata, "dflow/fvec3xfinplugdata");
+ImplementReflectionX(dflow::floatxfinplugdata, "dflow::floatxfinplugdata");
+ImplementReflectionX(dflow::fvec3xfinplugdata, "dflow::fvec3xfinplugdata");
 
-ImplementTemplateReflectionX(dflow::outplugdata<dflow::FloatPlugTraits>, "dflow/outplugdata<float>");
-ImplementTemplateReflectionX(dflow::inplugdata<dflow::FloatPlugTraits>, "dflow/inplugdata<float>");
-//ImplementTemplateReflectionX(dflow::inplugdata<dflow::FloatXfPlugTraits>, "dflow/inplugdata<floatxf>");
+ImplementTemplateReflectionX(dflow::outplugdata<dflow::FloatPlugTraits>, "dflow::outplugdata<float>");
+ImplementTemplateReflectionX(dflow::inplugdata<dflow::FloatPlugTraits>, "dflow::inplugdata<float>");
+//ImplementTemplateReflectionX(dflow::inplugdata<dflow::FloatXfPlugTraits>, "dflow::inplugdata<floatxf>");
 
-ImplementTemplateReflectionX(dflow::outplugdata<dflow::Vec3fPlugTraits>, "dflow/outplugdata<vec3>");
-ImplementTemplateReflectionX(dflow::inplugdata<dflow::Vec3fPlugTraits>, "dflow/inplugdata<vec3>");
+ImplementTemplateReflectionX(dflow::outplugdata<dflow::Vec3fPlugTraits>, "dflow::outplugdata<vec3>");
+ImplementTemplateReflectionX(dflow::inplugdata<dflow::Vec3fPlugTraits>, "dflow::inplugdata<vec3>");
 
-ImplementTemplateReflectionX(dflow::inplugdata<dflow::FloatXfPlugTraits>, "dflow/inplugdata<vec3>");
-ImplementTemplateReflectionX(dflow::inplugdata<dflow::Vec3XfPlugTraits>, "dflow/inplugdata<vec3>");
-//ImplementTemplateReflectionX(dflow::inplugdata<dflow::Vec3XfPlugTraits>, "dflow/inplugdata<vec3xf>");
+ImplementTemplateReflectionX(dflow::inplugdata<dflow::FloatXfPlugTraits>, "dflow::inplugdata<floatxf>");
+ImplementTemplateReflectionX(dflow::inplugdata<dflow::Vec3XfPlugTraits>, "dflow::inplugdata<vec3xf>");
+//ImplementTemplateReflectionX(dflow::inplugdata<dflow::Vec3XfPlugTraits>, "dflow::inplugdata<vec3xf>");

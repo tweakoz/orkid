@@ -23,26 +23,37 @@ void TouchCoreClasses() {
   TransformNode::GetClassStatic();
   DecompTransform::GetClassStatic();
 
+  dflow::GraphData::GetClassStatic();
+
+  dflow::ModuleData::GetClassStatic();
+  dflow::DgModuleData::GetClassStatic();
+
   dflow::PlugData::GetClassStatic();
   dflow::InPlugData::GetClassStatic();
   dflow::OutPlugData::GetClassStatic();
+
+
+  dflow::floatinplugdata::GetClassStatic();
+  dflow::vect3inplugdata::GetClassStatic();
+  dflow::floatxfinplugdata::GetClassStatic();
+  dflow::fvec3xfinplugdata::GetClassStatic();
 
   dflow::floatxfdata::GetClassStatic();
   dflow::fvec3xfdata::GetClassStatic();
   dflow::floatxfitembasedata::GetClassStatic();
 
   dflow::inplugdata<dflow::FloatPlugTraits>::GetClassStatic();
+  dflow::inplugdata<dflow::FloatXfPlugTraits>::GetClassStatic();
   dflow::outplugdata<dflow::FloatPlugTraits>::GetClassStatic();
+
   dflow::floatinplugdata::GetClassStatic();
 
   dflow::inplugdata<dflow::Vec3fPlugTraits>::GetClassStatic();
+  dflow::inplugdata<dflow::Vec3XfPlugTraits>::GetClassStatic();
   dflow::outplugdata<dflow::Vec3fPlugTraits>::GetClassStatic();
   dflow::vect3inplugdata::GetClassStatic();
 
   //dflow::vect3inplugxfdata<dflow::fvec3xfdata>::GetClassStatic();
-
-  dflow::floatxfinplugdata::GetClassStatic();
-  dflow::fvec3xfinplugdata::GetClassStatic();
 }
 
 } // namespace ork

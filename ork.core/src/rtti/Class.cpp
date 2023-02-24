@@ -76,8 +76,8 @@ void Class::InitializeClasses() {
       if (counter == 2) {
         //__asm__ volatile("int $0x03");
       }
-      // orkprintf("InitClass class<%p:%s>\n", clazz, clazz->Name().c_str());
       clazz->Initialize();
+       //orkprintf("InitClass class<%p:%s>\n", clazz, clazz->Name().c_str());
     }
   }
 }

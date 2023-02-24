@@ -78,20 +78,6 @@ void pyinit_ui(py::module& module_lev2) {
               });
   type_codec->registerStdCodec<ui::event_ptr_t>(uievent_type);
   /////////////////////////////////////////////////////////////////////////////////
-  auto updata_type =                                                              //
-      py::class_<ui::UpdateData, ui::updatedata_ptr_t>(module_lev2, "UpdateData") //
-          .def_property_readonly(
-              "absolutetime",                             //
-              [](ui::updatedata_ptr_t updata) -> double { //
-                return updata->_abstime;
-              })
-          .def_property_readonly(
-              "deltatime",                                //
-              [](ui::updatedata_ptr_t updata) -> double { //
-                return updata->_dt;
-              });
-  type_codec->registerStdCodec<ui::updatedata_ptr_t>(updata_type);
-  /////////////////////////////////////////////////////////////////////////////////
   auto ezuicam_type = //
       py::class_<EzUiCam, ezuicam_ptr_t>(uimodule, "EzUiCam")
           .def(py::init<>())

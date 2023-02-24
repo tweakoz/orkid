@@ -25,8 +25,8 @@
 #include <ork/dataflow/module.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
-ImplementReflectionX(ork::dataflow::ModuleData, "dflow/ModuleData");
-ImplementReflectionX(ork::dataflow::DgModuleData, "dflow/DgModuleData");
+ImplementReflectionX(ork::dataflow::ModuleData, "dflow::ModuleData");
+ImplementReflectionX(ork::dataflow::DgModuleData, "dflow::DgModuleData");
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::dataflow {
@@ -146,8 +146,11 @@ bool DgModuleData::isGroup() const {
 graphdata_ptr_t DgModuleData::childGraph() const {
   return nullptr;
 }
+dgmoduledata_ptr_t DgModuleData::createShared(){
+    return std::make_shared<DgModuleData>();
+}
 dgmoduleinst_ptr_t DgModuleData::createInstance() const{
-  return nullptr;
+  return std::make_shared<DgModuleInst>(this);
 }
 size_t DgModuleData::computeMinDepth() const{
     size_t min_depth = InPlugData::NOPATH;

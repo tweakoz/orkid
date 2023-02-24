@@ -73,7 +73,9 @@ public:
   DgModuleData();
   bool isGroup() const;
   ////////////////////////////////////////////
+  static dgmoduledata_ptr_t createShared();
   virtual dgmoduleinst_ptr_t createInstance() const;
+  ////////////////////////////////////////////
   size_t computeMinDepth() const;
   size_t computeMaxDepth() const;
   ////////////////////////////////////////////
