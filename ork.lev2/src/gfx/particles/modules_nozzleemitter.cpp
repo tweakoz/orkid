@@ -98,7 +98,7 @@ void NozzleEmitterInst::onLink(GraphInst* inst) {
 
   if (_input_buffer->_connectedOutput) {
     _pool = _input_buffer->value()._pool;
-    _output_buffer->setValue(_pool);
+    _output_buffer->value_ptr()->_pool = _pool;
   } else {
     OrkAssert(false);
   }

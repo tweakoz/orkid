@@ -19,26 +19,30 @@ struct fvec3xfinpluginst;
 
 struct FloatPlugTraits{
   using elemental_data_type = float;
-  using data_type_t = float;
-  using inst_type_t = float;
+  using elemental_inst_type = float;
+  using data_impl_type_t = float;
+  using inst_impl_type_t = float;
   static constexpr size_t max_fanout = 0;
 };
 struct Vec3fPlugTraits{
   using elemental_data_type = fvec3;
-  using data_type_t = fvec3;
-  using inst_type_t = fvec3;
+  using elemental_inst_type = fvec3;
+  using data_impl_type_t = fvec3;
+  using inst_impl_type_t = fvec3;
   static constexpr size_t max_fanout = 0;
 };
 struct FloatXfPlugTraits{
   using elemental_data_type = float;
-  using data_type_t = floatxfinplugdata;
-  using inst_type_t = floatxfinpluginst;
+  using elemental_inst_type = float;
+  using data_impl_type_t = floatxfinplugdata;
+  using inst_impl_type_t = floatxfinpluginst;
   static constexpr size_t max_fanout = 0;
 };
 struct Vec3XfPlugTraits{
   using elemental_data_type = fvec3;
-  using data_type_t = fvec3xfinplugdata;
-  using inst_type_t = fvec3xfinpluginst;
+  using elemental_inst_type = fvec3;
+  using data_impl_type_t = fvec3xfinplugdata;
+  using inst_impl_type_t = fvec3xfinpluginst;
   static constexpr size_t max_fanout = 0;
 };
 
@@ -177,7 +181,7 @@ struct outplugdata : public OutPlugData {
 public:
 
   using traits_t = traits;
-  using data_type_t = typename traits_t::data_type_t;
+  using data_type_t = typename traits_t::elemental_data_type;
   using data_type_ptr_t = std::shared_ptr<data_type_t>;
 
   inline explicit outplugdata( moduledata_ptr_t pmod, //
@@ -222,7 +226,7 @@ public:
                               EPlugRate epr, //
                               const char* pname) //
       : InPlugData(pmod, epr, typeid(traits), pname) { //
-        //_value = std::make_shared<data_type_t>();
+        _value = std::make_shared<data_type_t>();
   }
 
   inline const data_type_t& value() const {

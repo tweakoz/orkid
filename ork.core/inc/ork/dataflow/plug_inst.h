@@ -69,7 +69,7 @@ class outpluginst : public OutPlugInst {
 
 public:
 
-  using data_type_t = typename traits::inst_type_t;
+  using data_type_t = typename traits::elemental_inst_type;
   using data_type_ptr_t = std::shared_ptr<data_type_t>;
   using data_type_const_ptr_t = std::shared_ptr<const data_type_t>;
 
@@ -106,7 +106,7 @@ template <typename traits> struct inpluginst : public InPlugInst {
 
 public:
 
-  using data_type_t = typename traits::inst_type_t;
+  using data_type_t = typename traits::elemental_inst_type;
   using data_type_ptr_t = std::shared_ptr<data_type_t>;
   using data_type_const_ptr_t = std::shared_ptr<const data_type_t>;
 
@@ -153,6 +153,7 @@ struct floatxfinpluginst : public inpluginst<FloatPlugTraits> {
   const float& value() const final;
 
   const floatxfinplugdata* _data = nullptr;
+  mutable float _xfvalue;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -164,6 +165,7 @@ struct fvec3xfinpluginst : public inpluginst<Vec3fPlugTraits> {
   const fvec3& value() const final;
 
   const fvec3xfinplugdata* _data = nullptr;
+  mutable fvec3 _xfvalue;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

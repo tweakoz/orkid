@@ -30,16 +30,24 @@ struct ParticleBufferData {};
 using particlebufferdata_ptr_t = std::shared_ptr<ParticleBufferData>;
 
 struct ParticleBufferInst {
-  ParticleBufferInst(pool_ptr_t p=nullptr) 
-    : _pool(p) {
+
+
+  ParticleBufferInst() {
+      _pool = std::make_shared<pool_t>();
   }
+
+  ParticleBufferInst& operator = (const ParticleBufferData& data){
+    return *this;
+  }
+
   pool_ptr_t _pool;
 };
 
 struct ParticleBufferPlugTraits {
   using elemental_data_type = ParticleBufferData;
-  using data_type_t                  = ParticleBufferData;
-  using inst_type_t                  = ParticleBufferInst;
+  using elemental_inst_type = ParticleBufferInst;
+  using data_impl_type_t                  = ParticleBufferData;
+  using inst_impl_type_t                  = ParticleBufferInst;
   static constexpr size_t max_fanout = 1;
 };
 

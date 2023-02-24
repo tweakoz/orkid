@@ -32,7 +32,7 @@ struct ParticlePoolModuleInst : dflow::DgModuleInst {
       : dflow::DgModuleInst(data)
       , _ppd(data) {
   }
-  ParticleBufferInst _particle_buffer;
+//  ParticleBufferInst _particle_buffer;
 
   void compute(dflow::GraphInst* inst, ui::updatedata_ptr_t updata) final {
   }

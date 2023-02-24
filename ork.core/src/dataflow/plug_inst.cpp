@@ -85,7 +85,8 @@ OutPlugInst::~OutPlugInst(){
     }
 
   const float& floatxfinpluginst::value() const {
-    return inpluginst<FloatPlugTraits>::value();
+    _xfvalue = inpluginst<FloatPlugTraits>::value();
+    return _xfvalue;
   }
 
   fvec3xfinpluginst::fvec3xfinpluginst(const fvec3xfinplugdata* d)
@@ -95,7 +96,10 @@ OutPlugInst::~OutPlugInst(){
     }
 
   const fvec3& fvec3xfinpluginst::value() const {
-    return inpluginst<Vec3fPlugTraits>::value();
+
+    _xfvalue = inpluginst<Vec3fPlugTraits>::value();
+
+    return _xfvalue;
   }
 
 ///////////////////////////////////////////////////////////////////////////////

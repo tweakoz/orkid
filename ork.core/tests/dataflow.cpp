@@ -34,18 +34,21 @@ struct Buffer {};
 
 struct ImgBasePlugTraits{
   using elemental_data_type = ImgBase;
+  using elemental_inst_type = ImgBase;
   using data_type_t = ImgBase;
   using inst_type_t = ImgBase;
   static constexpr size_t max_fanout = 0;
 };
 struct Img32PlugTraits{
   using elemental_data_type = Img32;
+  using elemental_inst_type = Img32;
   using data_type_t = Img32;
   using inst_type_t = Img32;
   static constexpr size_t max_fanout = 0;
 };
 struct Img64PlugTraits{
   using elemental_data_type = Img64;
+  using elemental_inst_type = Img64;
   using data_type_t = Img64;
   using inst_type_t = Img64;
   static constexpr size_t max_fanout = 0;
