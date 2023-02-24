@@ -32,15 +32,13 @@ using particlebufferdata_ptr_t = std::shared_ptr<ParticleBufferData>;
 struct ParticleBufferInst {
 
 
-  ParticleBufferInst() {
+  ParticleBufferInst(std::shared_ptr<ParticleBufferData> data)
+    : _data(data) {
       _pool = std::make_shared<pool_t>();
   }
 
-  ParticleBufferInst& operator = (const ParticleBufferData& data){
-    return *this;
-  }
-
   pool_ptr_t _pool;
+  std::shared_ptr<ParticleBufferData> _data;
 };
 
 struct ParticleBufferPlugTraits {
@@ -49,6 +47,7 @@ struct ParticleBufferPlugTraits {
   using data_impl_type_t                  = ParticleBufferData;
   using inst_impl_type_t                  = ParticleBufferInst;
   static constexpr size_t max_fanout = 1;
+  static std::shared_ptr<ParticleBufferInst> data_to_inst(std::shared_ptr<ParticleBufferData> inp);
 };
 
 using particlebuf_inplugdata_t      = dflow::inplugdata<ParticleBufferPlugTraits>;

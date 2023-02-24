@@ -47,7 +47,7 @@ TEST(particles_a) {
   auto E_rate    = ptcl_emitter->typedInputNamed<FloatXfPlugTraits>("EmissionRate");
 
   graphdata->safeConnect(E_inp,P_out);
-  E_rate->setValue(10.0f);
+  E_rate->setValue(11.0f);
 
   ////////////////////////////////////////////////////
 

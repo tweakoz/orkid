@@ -23,6 +23,7 @@ struct FloatPlugTraits {
   using data_impl_type_t             = float;
   using inst_impl_type_t             = float;
   static constexpr size_t max_fanout = 0;
+  static std::shared_ptr<float> data_to_inst(std::shared_ptr<float> inp);
 };
 struct Vec3fPlugTraits {
   using elemental_data_type          = fvec3;
@@ -30,6 +31,7 @@ struct Vec3fPlugTraits {
   using data_impl_type_t             = fvec3;
   using inst_impl_type_t             = fvec3;
   static constexpr size_t max_fanout = 0;
+  static std::shared_ptr<fvec3> data_to_inst(std::shared_ptr<fvec3> inp);
 };
 struct FloatXfPlugTraits {
   using elemental_data_type          = float;
@@ -37,6 +39,7 @@ struct FloatXfPlugTraits {
   using data_impl_type_t             = floatxfinplugdata;
   using inst_impl_type_t             = floatxfinpluginst;
   static constexpr size_t max_fanout = 0;
+  static std::shared_ptr<float> data_to_inst(std::shared_ptr<float> inp);
 };
 struct Vec3XfPlugTraits {
   using elemental_data_type          = fvec3;
@@ -44,6 +47,7 @@ struct Vec3XfPlugTraits {
   using data_impl_type_t             = fvec3xfinplugdata;
   using inst_impl_type_t             = fvec3xfinpluginst;
   static constexpr size_t max_fanout = 0;
+  static std::shared_ptr<fvec3> data_to_inst(std::shared_ptr<fvec3> inp);
 };
 
 struct morph_event : public event::Event {

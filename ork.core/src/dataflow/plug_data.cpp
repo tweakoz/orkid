@@ -18,6 +18,19 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::dataflow {
 bool gbGRAPHLIVE = false;
+
+std::shared_ptr<float> FloatPlugTraits::data_to_inst(std::shared_ptr<float> inp){
+  return inp;
+}
+std::shared_ptr<float> FloatXfPlugTraits::data_to_inst(std::shared_ptr<float> inp){
+  return inp;
+}
+std::shared_ptr<fvec3> Vec3fPlugTraits::data_to_inst(std::shared_ptr<fvec3> inp){
+  return inp;
+}
+std::shared_ptr<fvec3> Vec3XfPlugTraits::data_to_inst(std::shared_ptr<fvec3> inp){
+  return inp;
+}
 ///////////////////////////////////////////////////////////////////////////////
 void PlugData::describeX(class_t* clazz) {
 }

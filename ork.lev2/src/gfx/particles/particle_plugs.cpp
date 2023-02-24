@@ -18,6 +18,9 @@ namespace dflow = ::ork::dataflow;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::particle {
 ///////////////////////////////////////////////////////////////////////////////
+std::shared_ptr<ParticleBufferInst> ParticleBufferPlugTraits::data_to_inst(std::shared_ptr<ParticleBufferData> inp){
+  return std::make_shared<ParticleBufferInst>(inp);
+}
 
 
 

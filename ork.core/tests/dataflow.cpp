@@ -41,6 +41,9 @@ struct ImgBasePlugTraits{
   using data_type_t = ImgBase;
   using inst_type_t = ImgBase;
   static constexpr size_t max_fanout = 0;
+  static std::shared_ptr<ImgBase> data_to_inst(std::shared_ptr<ImgBase> inp){
+    return inp;
+  }
 };
 struct Img32PlugTraits{
   using elemental_data_type = Img32;
@@ -48,6 +51,9 @@ struct Img32PlugTraits{
   using data_type_t = Img32;
   using inst_type_t = Img32;
   static constexpr size_t max_fanout = 0;
+  static std::shared_ptr<Img32> data_to_inst(std::shared_ptr<Img32> inp){
+    return inp;
+  }
 };
 struct Img64PlugTraits{
   using elemental_data_type = Img64;
@@ -55,6 +61,9 @@ struct Img64PlugTraits{
   using data_type_t = Img64;
   using inst_type_t = Img64;
   static constexpr size_t max_fanout = 0;
+  static std::shared_ptr<Img64> data_to_inst(std::shared_ptr<Img64> inp){
+    return inp;  
+  }
 };
 
 ////////////////////////////////////////////////////////////

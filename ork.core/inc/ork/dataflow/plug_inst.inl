@@ -8,7 +8,7 @@ outpluginst<traits>::outpluginst(const outplugdata<traits>* data) //
     : OutPlugInst(data)                                           //
     , _typed_plugdata(data) {                                     //
 
-  _value = std::make_shared<data_type_t>();
+  _value = traits::data_to_inst(data->_value);
 }
 
 template <typename traits> //
@@ -37,7 +37,8 @@ template <typename traits>
 inpluginst<traits>::inpluginst(const inplugdata<traits>* data) //
     : InPlugInst(data)                                         //
     , _typed_plugdata(data) {                                  //
-  _value = std::make_shared<data_type_t>();
+  //_value = std::make_shared<data_type_t>();
+  _value = traits::data_to_inst(data->_value);
   //_value = data->_value;
 }
 
