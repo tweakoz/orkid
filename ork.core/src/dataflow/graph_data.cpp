@@ -93,7 +93,8 @@ dgmoduledata_ptr_t GraphData::module(size_t indexed) const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool GraphData::canConnect(inplugdata_constptr_t pin, outplugdata_constptr_t pout) const {
-  return ((&pin->GetDataTypeId()) == (&pout->GetDataTypeId()));
+  return true; // TODO fixme
+  //((&pin->GetDataTypeId()) == (&pout->GetDataTypeId()));
 }
 ///////////////////////////////////////////////////////////////////////////////
 void GraphData::safeConnect(inplugdata_ptr_t inp,

@@ -10,6 +10,16 @@
 #include <ork/kernel/string/PoolString.h>
 #include <ork/kernel/svariant.h>
 
+namespace ork::ui {
+
+  struct UpdateData {
+    double _dt      = 0.0;
+    double _abstime = 0.0;
+  };
+  using updatedata_ptr_t = std::shared_ptr<UpdateData>;
+
+}
+
 namespace ork { namespace event {
 
 class Event {

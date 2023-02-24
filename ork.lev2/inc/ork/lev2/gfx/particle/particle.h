@@ -296,6 +296,8 @@ struct Context {
   }
 };
 
+using context_ptr_t = std::shared_ptr<Context>;
+
 inline Char4 PoolString2Char4(const PoolString& ps) {
   Char4 rval;
 
@@ -353,7 +355,7 @@ public:
   EmitterDirection meDirection;
   float mDispersionAngle;
 
-  virtual void ComputePosDir(float fi, fvec3& pos, fvec3& dir) = 0;
+  virtual void computePosDir(float fi, fvec3& pos, fvec3& dir) = 0;
 };
 
 enum class ParticleItemAlignment {

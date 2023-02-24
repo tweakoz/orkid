@@ -135,7 +135,7 @@ struct GlobalModuleInst : public BaseModuleInst {
     _output_B = outputNamed("OutputB");
     _output_C = outputNamed("OutputC");
   }
-  void compute(GraphInst* inst) final {
+  void compute(GraphInst* inst,ui::updatedata_ptr_t updata) final {
 
     printf("COMPUTE GlobalModuleInst<%p:%s>\n", (void*)this, _dgmodule_data->_name.c_str());
   }
@@ -275,7 +275,7 @@ struct GradientModuleInst : public Img32ModuleInst {
     _input_imageA = inputNamed("InputA");
     _input_imageB = inputNamed("InputB");
   }
-  void compute(GraphInst* inst) final {
+  void compute(GraphInst* inst,ui::updatedata_ptr_t updata) final {
     printf("COMPUTE GradientModuleInst<%p:%s>\n", (void*)this, _dgmodule_data->_name.c_str());
   }
   inpluginst_ptr_t _input_imageA;
@@ -325,7 +325,7 @@ struct Op1ModuleInst : public Img32ModuleInst {
     _input_paramB = inputNamed("ParamB");
     printf("LINK Op1ModuleInst<%p:%s> numinp<%d> numout<%d>\n", (void*)this, _dgmodule_data->_name.c_str(), numinp, numout);
   }
-  void compute(GraphInst* inst) final {
+  void compute(GraphInst* inst,ui::updatedata_ptr_t updata) final {
     printf("COMPUTE Op1ModuleInst<%p:%s>\n", (void*)this, _dgmodule_data->_name.c_str());
   }
   inpluginst_ptr_t _input_image;
@@ -378,7 +378,7 @@ struct Op2ModuleInst : public Img32ModuleInst {
     _input_paramA = inputNamed("ParamA");
     _input_paramB = inputNamed("ParamB");
   }
-  void compute(GraphInst* inst) final {
+  void compute(GraphInst* inst,ui::updatedata_ptr_t updata) final {
     printf("COMPUTE Op2ModuleInst<%p:%s>\n", (void*)this, _dgmodule_data->_name.c_str());
   }
   inpluginst_ptr_t _input_imageA;
@@ -688,19 +688,26 @@ TEST(dflow_compute1) {
 
   printf("////// computing.. \n");
 
-  gi->compute();
+  auto updata = std::make_shared<ui::UpdateData>();
+  updata->_dt = 0.1f;
+  updata->_abstime = 0.0f;
+
+  gi->compute(updata);
 
   printf("////// computing.. \n");
 
-  gi->compute();
+  updata->_abstime += updata->_dt;
+  gi->compute(updata);
 
   printf("////// computing.. \n");
 
-  gi->compute();
+  updata->_abstime += updata->_dt;
+  gi->compute(updata);
 
   printf("////// computing.. \n");
 
-  gi->compute();
+  updata->_abstime += updata->_dt;
+  gi->compute(updata);
 }
 
 ////////////////////////////////////////////////////////////

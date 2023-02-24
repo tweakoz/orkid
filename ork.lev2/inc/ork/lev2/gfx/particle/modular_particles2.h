@@ -20,38 +20,36 @@
 namespace ork::lev2::particle {
 ///////////////////////////////////////////////////////////////////////////////
 
-namespace dflow = ::ork::dataflow;
-using particle_t = BasicParticle;
-using pool_t = Pool<particle_t>;
-using pool_ptr_t = std::shared_ptr<pool_t>;
+namespace dflow   = ::ork::dataflow;
+using particle_t  = BasicParticle;
+using pool_t      = Pool<particle_t>;
+using pool_ptr_t  = std::shared_ptr<pool_t>;
 using float_ptr_t = std::shared_ptr<float>;
 
-
-struct ParticleBufferData {
-};
+struct ParticleBufferData {};
 using particlebufferdata_ptr_t = std::shared_ptr<ParticleBufferData>;
 
 struct ParticleBufferInst {
-  ParticleBufferInst() {
+  ParticleBufferInst(pool_ptr_t p=nullptr) 
+    : _pool(p) {
   }
   pool_ptr_t _pool;
 };
 
-struct ParticleBufferPlugTraits{
-  using data_type_t = ParticleBufferData;
-  using inst_type_t = ParticleBufferInst;
+struct ParticleBufferPlugTraits {
+  using data_type_t                  = ParticleBufferData;
+  using inst_type_t                  = ParticleBufferInst;
   static constexpr size_t max_fanout = 1;
 };
 
-
-using particlebuf_inplugdata_t = dflow::inplugdata<ParticleBufferPlugTraits>;
-using particlebuf_inplugdata_ptr_t = std::shared_ptr<particlebuf_inplugdata_t>;
-using particlebuf_outplugdata_t = dflow::outplugdata<ParticleBufferPlugTraits>;
+using particlebuf_inplugdata_t      = dflow::inplugdata<ParticleBufferPlugTraits>;
+using particlebuf_inplugdata_ptr_t  = std::shared_ptr<particlebuf_inplugdata_t>;
+using particlebuf_outplugdata_t     = dflow::outplugdata<ParticleBufferPlugTraits>;
 using particlebuf_outplugdata_ptr_t = std::shared_ptr<particlebuf_outplugdata_t>;
 
-using particlebuf_inpluginst_t = dflow::inpluginst<ParticleBufferPlugTraits>;
-using particlebuf_inpluginst_ptr_t = std::shared_ptr<particlebuf_inpluginst_t>;
-using particlebuf_outpluginst_t = dflow::outpluginst<ParticleBufferPlugTraits>;
+using particlebuf_inpluginst_t      = dflow::inpluginst<ParticleBufferPlugTraits>;
+using particlebuf_inpluginst_ptr_t  = std::shared_ptr<particlebuf_inpluginst_t>;
+using particlebuf_outpluginst_t     = dflow::outpluginst<ParticleBufferPlugTraits>;
 using particlebuf_outpluginst_ptr_t = std::shared_ptr<particlebuf_outpluginst_t>;
 
 struct ModuleData;
@@ -66,26 +64,17 @@ public:
   ModuleData();
 
   static void sharedConstructor(ptclmoduledata_ptr_t subclass_instance) {
-    //auto as_basemod = std::dynamic_pointer_cast<ModuleData>(subclass_instance);
-    //createOutputPlug<Img32>(subclass_instance, EPR_UNIFORM, as_im32mod->_image_out, "Output");
   }
 
-  //virtual void DoLink() {
-  //}
-  //ork::lev2::particle::Context* mpParticleContext;
-  //Module* mpTemplateModule;
-
   void Link(ork::lev2::particle::Context* pctx);
-  //virtual void Reset() {
-  //}
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ParticleModuleData : public ModuleData {
   DeclareAbstractX(ParticleModuleData, ModuleData);
-public:
 
+public:
   ParticleModuleData();
 
   static particlebufferdata_ptr_t _no_connection;
@@ -96,8 +85,8 @@ public:
 
 struct GlobalModuleData : public ModuleData {
   DeclareConcreteX(GlobalModuleData, ModuleData);
-public:
 
+public:
   static std::shared_ptr<GlobalModuleData> createShared();
   dflow::dgmoduleinst_ptr_t createInstance() const final;
 
@@ -112,14 +101,12 @@ struct ParticlePoolData : public ParticleModuleData {
   DeclareConcreteX(ParticlePoolData, ParticleModuleData);
 
 public:
-
-  static std::shared_ptr<ParticlePoolData> createShared();
-
   ParticlePoolData();
+  static std::shared_ptr<ParticlePoolData> createShared();
   dflow::dgmoduleinst_ptr_t createInstance() const final;
 
   float _unitAge = 1.0f;
-  int _poolSize = 40;
+  int _poolSize  = 40;
   dflow::floatxfinplugdata_ptr_t _pathInterval;
   dflow::floatxfinplugdata_ptr_t _pathProbability;
   particlebuf_outplugdata_ptr_t _poolOutput;
@@ -127,7 +114,6 @@ public:
   std::string _pathIntervalQueueID;
   Char4 _pathStochasticQueueID4;
   Char4 _pathIntervalQueueID4;
-
 };
 
 struct ParticlePoolRenderBuffer {
@@ -138,10 +124,10 @@ struct ParticlePoolRenderBuffer {
   void SetCapacity(int inum);
 
   particle_t* _particles = nullptr;
-  int _maxParticles = 0;
-  int _numParticles = 0;
+  int _maxParticles      = 0;
+  int _numParticles      = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-} //namespace ork::lev2::particle {
+} // namespace ork::lev2::particle
 ///////////////////////////////////////////////////////////////////////////////

@@ -156,7 +156,7 @@ struct DgModuleInst : public ModuleInst {
   virtual void onLink(GraphInst* inst) {}
   virtual void onStage(GraphInst* inst) {}
   virtual void onActivate(GraphInst* inst) {}
-  virtual void compute(GraphInst* inst) {}
+  virtual void compute(GraphInst* inst,ui::updatedata_ptr_t updata) {}
     
   //void divideWork(scheduler_ptr_t sch, cluster* clus);
   //virtual void _doDivideWork(scheduler_ptr_t sch, cluster* clus);

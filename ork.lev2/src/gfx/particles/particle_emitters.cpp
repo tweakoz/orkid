@@ -149,7 +149,7 @@ void SpiralEmitterData::describeX(class_t* clazz) {
     fvec3 dir, pos, disp, vbin, vtan, yo;
     for (int ic = 0; ic < icount; ic++) {
       float fi = float(ic) / float(icount);
-      ComputePosDir(fi, pos, dir);
+      computePosDir(fi, pos, dir);
       pos += ctx.mPosition;
       BasicParticle* __restrict ptc = the_pool.FastAlloc();
       if (ptc) {

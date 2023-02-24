@@ -123,9 +123,9 @@ void GraphInst::activate(){
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void GraphInst::compute(){
+void GraphInst::compute(ui::updatedata_ptr_t updata){
   for( auto item : _ordered_module_insts ){
-    item->compute(this);
+    item->compute(this,updata);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////

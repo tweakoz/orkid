@@ -31,63 +31,68 @@ namespace ork::lev2::particle {
 
 struct GlobalModuleInst : dflow::DgModuleInst {
 
-
   GlobalModuleInst(const GlobalModuleData* data)
-    : dflow::DgModuleInst(data)
-    , _gmd(data) {
+      : dflow::DgModuleInst(data)
+      , _gmd(data) {
+  }
 
+  void compute(dflow::GraphInst* inst, ui::updatedata_ptr_t updata) final {
+
+    if (_first_compute) {
+      _timebasebase  = updata->_abstime;
+      _first_compute = false;
     }
+    float time = updata->_abstime - _timebasebase;
 
-  void compute(dflow::GraphInst* inst) final {
+    float reltime = time                           //
+                        * _inputTimeScale->value() //
+                    + _inputTimeBase->value();
 
-    float time = _outtimer.SecsSinceStart();
-
-    float reltime = time //
-                  * _inputTimeScale->value() //
-                  + _inputTimeBase->value();
-
-    float reltimediv10 = reltime*0.1f;
-    float reltimediv100 = reltime*0.01f;
+    float reltimediv10  = reltime * 0.1f;
+    float reltimediv100 = reltime * 0.01f;
 
     _outputRelTime->setValue(reltime);
     _outputRelTimeDiv10->setValue(reltimediv10);
     _outputRelTimeDiv100->setValue(reltimediv100);
 
-    printf( "computing particle globals<%p> reltime<%g>\n",this, reltime);
+    printf("computing particle globals<%p> reltime<%g>\n", this, reltime);
 
     /**(_outputTimeBase->_value) = *(_gmd->_timeBase);
-    *(_outputNoiseRat->_value) = *(_gmd->_noiseRat);
-    *(_outputNoisePrv->_value) = *(_gmd->_noisePrv);
-    *(_outputNoiseNew->_value) = *(_gmd->_noiseNew);
-    *(_outputNoiseBas->_value) = *(_gmd->_noiseBas);
-    *(_outputNoiseTim->_value) = *(_gmd->_noiseTim);*/
+     *(_outputNoiseRat->_value) = *(_gmd->_noiseRat);
+     *(_outputNoisePrv->_value) = *(_gmd->_noisePrv);
+     *(_outputNoiseNew->_value) = *(_gmd->_noiseNew);
+     *(_outputNoiseBas->_value) = *(_gmd->_noiseBas);
+     *(_outputNoiseTim->_value) = *(_gmd->_noiseTim);*/
   }
 
   void onLink(dflow::GraphInst* inst) final {
-    _inputTimeBase = typedInputNamed<dflow::FloatPlugTraits>("TimeBase");
-    _inputTimeScale = typedInputNamed<dflow::FloatPlugTraits>("TimeScale");
-    _outputRelTime = typedOutputNamed<dflow::FloatPlugTraits>("RelTime");
-    _outputRelTimeDiv10 = typedOutputNamed<dflow::FloatPlugTraits>("RelTimeDiv10");
+
+    auto ptcl_context = inst->_impl.getShared<Context>();
+
+    _inputTimeBase       = typedInputNamed<dflow::FloatPlugTraits>("TimeBase");
+    _inputTimeScale      = typedInputNamed<dflow::FloatPlugTraits>("TimeScale");
+    _outputRelTime       = typedOutputNamed<dflow::FloatPlugTraits>("RelTime");
+    _outputRelTimeDiv10  = typedOutputNamed<dflow::FloatPlugTraits>("RelTimeDiv10");
     _outputRelTimeDiv100 = typedOutputNamed<dflow::FloatPlugTraits>("RelTimeDiv100");
 
-    _inputTimeBase->_value = _gmd->typedInputNamed<dflow::FloatPlugTraits>("TimeBase")->_value;
+    _inputTimeBase->_value  = _gmd->typedInputNamed<dflow::FloatPlugTraits>("TimeBase")->_value;
     _inputTimeScale->_value = _gmd->typedInputNamed<dflow::FloatPlugTraits>("TimeScale")->_value;
   }
 
   void onActivate(dflow::GraphInst* inst) final {
-    _outtimer.Start();
   }
 
   const GlobalModuleData* _gmd;
 
-  float _timebase = 0.0f;
+  bool _first_compute = true;
+  float _timebase     = 0.0f;
+  float _timebasebase = 0.0f;
 
   dflow::float_inp_pluginst_ptr_t _inputTimeBase;
   dflow::float_inp_pluginst_ptr_t _inputTimeScale;
   dflow::float_out_pluginst_ptr_t _outputRelTime;
   dflow::float_out_pluginst_ptr_t _outputRelTimeDiv10;
   dflow::float_out_pluginst_ptr_t _outputRelTimeDiv100;
-  Timer _outtimer;
 
   float _noiseRat = 0.0f;
   float _noisePrv = 0.0f;
@@ -104,8 +109,6 @@ struct GlobalModuleInst : dflow::DgModuleInst {
   float _fastNoisePrv = 0.0f;
   float _fastNoiseBas = 0.0f;
   float _fastNoiseTim = 0.0f;
-
-   
 };
 
 using globalmoduleinst_ptr_t = std::shared_ptr<GlobalModuleInst>;
@@ -113,35 +116,33 @@ using globalmoduleinst_ptr_t = std::shared_ptr<GlobalModuleInst>;
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlobalModuleData::describeX(class_t* clazz) {
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-GlobalModuleData::GlobalModuleData(){
-
+GlobalModuleData::GlobalModuleData() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 std::shared_ptr<GlobalModuleData> GlobalModuleData::createShared() {
-    auto data = std::make_shared<GlobalModuleData>();
+  auto data = std::make_shared<GlobalModuleData>();
 
-    auto timebase = createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "TimeBase");
-    auto timescale = createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "TimeScale");
-    auto reltime = createOutputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "RelTime");
-    auto reltimediv10 = createOutputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "RelTimeDiv10");
-    auto reltimediv100 = createOutputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "RelTimeDiv100");
+  auto timebase      = createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "TimeBase");
+  auto timescale     = createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "TimeScale");
+  auto reltime       = createOutputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "RelTime");
+  auto reltimediv10  = createOutputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "RelTimeDiv10");
+  auto reltimediv100 = createOutputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "RelTimeDiv100");
 
-    timebase->setValue(0.0f);
-    timescale->setValue(1.0f);
+  timebase->setValue(0.0f);
+  timescale->setValue(1.0f);
 
-    //DeclareFloatOutPlug(Random);
-    //DeclareVect3OutPlug(RandomNormal);
-    //DeclareFloatOutPlug(Noise);
-    //DeclareFloatOutPlug(SlowNoise);
-    //DeclareFloatOutPlug(FastNoise);
-    return data;
+  // DeclareFloatOutPlug(Random);
+  // DeclareVect3OutPlug(RandomNormal);
+  // DeclareFloatOutPlug(Noise);
+  // DeclareFloatOutPlug(SlowNoise);
+  // DeclareFloatOutPlug(FastNoise);
+  return data;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -151,7 +152,7 @@ dflow::dgmoduleinst_ptr_t GlobalModuleData::createInstance() const {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} // namespace ork::lev2::particle {
+} // namespace ork::lev2::particle
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ptcl = ork::lev2::particle;

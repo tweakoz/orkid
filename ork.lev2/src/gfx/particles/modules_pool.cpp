@@ -29,63 +29,58 @@ namespace ork::lev2::particle {
 struct ParticlePoolModuleInst : dflow::DgModuleInst {
 
   ParticlePoolModuleInst(const ParticlePoolData* data)
-    : dflow::DgModuleInst(data){
-
-    }
+      : dflow::DgModuleInst(data)
+      , _ppd(data) {
+  }
   ParticleBufferInst _particle_buffer;
 
-  void compute(dflow::GraphInst* inst) final {
-
+  void compute(dflow::GraphInst* inst, ui::updatedata_ptr_t updata) final {
   }
 
   void onLink(dflow::GraphInst* inst) final {
-    _output = outputNamed("ParticleBuffer");
+
+    auto ptcl_context = inst->_impl.getShared<Context>();
+
+    _output = typedOutputNamed<ParticleBufferPlugTraits>("ParticleBuffer");
     OrkAssert(_output);
+    auto buffer   = _output->_value;
+    buffer->_pool = std::make_shared<pool_t>();
+    buffer->_pool->Init(_ppd->_poolSize);
   }
 
-  dflow::outpluginst_ptr_t _output;
+  particlebuf_outpluginst_ptr_t _output;
+  const ParticlePoolData* _ppd;
+  // void Compute(float dt) final;
+  // void Reset() final;
+  // void DoLink() final;
+  // DeclareFloatOutPlug(UnitAge);
+  // DeclareFloatXfPlug(PathInterval);
+  // DeclareFloatXfPlug(PathProbability);
+  // DeclarePoolOutPlug(Output);
 
-     //void Compute(float dt) final;
-  //void Reset() final;
-  //void DoLink() final;
-  //DeclareFloatOutPlug(UnitAge);
-  //DeclareFloatXfPlug(PathInterval);
-  //DeclareFloatXfPlug(PathProbability);
-  //DeclarePoolOutPlug(Output);
-
-  //EventQueue* mPathStochasticEventQueue = nullptr;
-  //EventQueue* mPathIntervalEventQueue   = nullptr;
-
+  // EventQueue* mPathStochasticEventQueue = nullptr;
+  // EventQueue* mPathIntervalEventQueue   = nullptr;
 };
 
 using poolmoduleinst_ptr_t = std::shared_ptr<ParticlePoolModuleInst>;
 
-
 void ParticlePoolData::describeX(class_t* clazz) {
-
 }
 
-ParticlePoolData::ParticlePoolData(){
-
-
+ParticlePoolData::ParticlePoolData() {
 }
 
 std::shared_ptr<ParticlePoolData> ParticlePoolData::createShared() {
-    auto data = std::make_shared<ParticlePoolData>();
-    //ParticlePoolData::sharedConstructor(gmd);
-    //createInputPlug<Img32>(gmd, EPR_UNIFORM, gmd->_image_input, "Input");
-    //createInputPlug<float>(gmd, EPR_UNIFORM, gmd->_paramA, "ParamA");
-    //createInputPlug<float>(gmd, EPR_UNIFORM, gmd->_paramB, "ParamB");
-    createOutputPlug<ParticleBufferPlugTraits>(data, dflow::EPR_UNIFORM, "ParticleBuffer");
-    return data;
+  auto data = std::make_shared<ParticlePoolData>();
+  createOutputPlug<ParticleBufferPlugTraits>(data, dflow::EPR_UNIFORM, "ParticleBuffer");
+  return data;
 }
-
 
 dflow::dgmoduleinst_ptr_t ParticlePoolData::createInstance() const {
   return std::make_shared<ParticlePoolModuleInst>(this);
 }
 
-}
+} // namespace ork::lev2::particle
 
 namespace ptcl = ork::lev2::particle;
 

@@ -154,6 +154,7 @@ template <> void inplugdata<FloatPlugTraits>::describeX(class_t* clazz) {
 template <> inpluginst_ptr_t inplugdata<FloatPlugTraits>::createInstance() const{
   return std::make_shared<inpluginst<FloatPlugTraits>>(this);
 }
+
 template <> void outplugdata<FloatPlugTraits>::describeX(class_t* clazz) {
 }
 template <> outpluginst_ptr_t outplugdata<FloatPlugTraits>::createInstance() const{
@@ -161,6 +162,14 @@ template <> outpluginst_ptr_t outplugdata<FloatPlugTraits>::createInstance() con
 }
 
 template struct outplugdata<FloatPlugTraits>;
+///////////////////////////////////////////////////////////////////////////////
+// plugdata<floatxf>
+///////////////////////////////////////////////////////////////////////////////
+template <> void inplugdata<FloatXfPlugTraits>::describeX(class_t* clazz) {
+}
+template <> inpluginst_ptr_t inplugdata<FloatXfPlugTraits>::createInstance() const{
+  return std::make_shared<inpluginst<FloatXfPlugTraits>>(this);
+}
 ///////////////////////////////////////////////////////////////////////////////
 // plugdata<fvec3>
 ///////////////////////////////////////////////////////////////////////////////
@@ -176,13 +185,12 @@ template <> outpluginst_ptr_t outplugdata<Vec3fPlugTraits>::createInstance() con
 }
 template struct outplugdata<Vec3fPlugTraits>;
 ///////////////////////////////////////////////////////////////////////////////
-template <> void inplugdata<FloatXfPlugTraits>::describeX(class_t* clazz) {
-}
-template <> void outplugdata<FloatXfPlugTraits>::describeX(class_t* clazz) {
-}
+// plugdata<fvec3xf>
+///////////////////////////////////////////////////////////////////////////////
 template <> void inplugdata<Vec3XfPlugTraits>::describeX(class_t* clazz) {
 }
-template <> void outplugdata<Vec3XfPlugTraits>::describeX(class_t* clazz) {
+template <> inpluginst_ptr_t inplugdata<Vec3XfPlugTraits>::createInstance() const{
+  return std::make_shared<inpluginst<Vec3XfPlugTraits>>(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void floatinplugdata::describeX(class_t* clazz) {
@@ -346,7 +354,10 @@ ImplementReflectionX(dflow::vect3inplugdata, "dflow/vect3inplugdata");
 
 ImplementTemplateReflectionX(dflow::outplugdata<dflow::FloatPlugTraits>, "dflow/outplugdata<float>");
 ImplementTemplateReflectionX(dflow::inplugdata<dflow::FloatPlugTraits>, "dflow/inplugdata<float>");
+ImplementTemplateReflectionX(dflow::inplugdata<dflow::FloatXfPlugTraits>, "dflow/inplugdata<floatxf>");
+
 ImplementTemplateReflectionX(dflow::outplugdata<dflow::Vec3fPlugTraits>, "dflow/outplugdata<vec3>");
 ImplementTemplateReflectionX(dflow::inplugdata<dflow::Vec3fPlugTraits>, "dflow/inplugdata<vec3>");
+ImplementTemplateReflectionX(dflow::inplugdata<dflow::Vec3XfPlugTraits>, "dflow/inplugdata<vec3xf>");
 ImplementTemplateReflectionX(dflow::floatxfinplugdata, "dflow/floatxfinplugdata");
 ImplementTemplateReflectionX(dflow::vect3xfinplugdata, "dflow/vect3xfinplugdata");

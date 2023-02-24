@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <ork/event/Event.h>
 #include <ork/object/Object.h>
 #include <ork/kernel/string/ArrayString.h>
 #include <ork/kernel/prop.h>
@@ -311,7 +312,7 @@ struct GraphInst {
   void link();
   void stage();
   void activate();
-  void compute();
+  void compute(ui::updatedata_ptr_t updata);
   ////////////////////////////////////////////
 
   graphdata_ptr_t _graphdata;

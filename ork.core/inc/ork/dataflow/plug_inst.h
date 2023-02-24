@@ -144,10 +144,58 @@ public:
 
 };
 
+///////////////////////////////////////////////////////////////////////////////
+
+struct floatxfinst {
+
+  //float transform(float inp) const;
+  //floatxfdata();
+  //~floatxfdata();
+  //orklut<std::string, floatxfitembasedata_ptr_t> _transforms;
+  //int _test = 0;
+
+  operator float() const{
+    return 0.0f;
+  }
+
+  const floatxfdata* _data = nullptr;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct fvec3xfinst {
+
+  operator fvec3() const{
+    return fvec3();
+  }
+  //fvec3 transform(const fvec3& input) const;
+  //floatxfdata _transformX;
+  //floatxfdata _transformY;
+  //floatxfdata _transformZ;
+
+  const fvec3xfdata* _data = nullptr;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 using float_out_pluginst_t = outpluginst<FloatPlugTraits>;
 using float_out_pluginst_ptr_t = std::shared_ptr<float_out_pluginst_t>;
 
 using float_inp_pluginst_t = inpluginst<FloatPlugTraits>;
 using float_inp_pluginst_ptr_t = std::shared_ptr<float_inp_pluginst_t>;
+
+using floatxf_inp_pluginst_t = inpluginst<FloatXfPlugTraits>;
+using floatxf_inp_pluginst_ptr_t = std::shared_ptr<floatxf_inp_pluginst_t>;
+
+//
+
+using fvec3_out_pluginst_t = outpluginst<Vec3fPlugTraits>;
+using fvec3_out_pluginst_ptr_t = std::shared_ptr<fvec3_out_pluginst_t>;
+
+using fvec3_inp_pluginst_t = inpluginst<Vec3fPlugTraits>;
+using fvec3_inp_pluginst_ptr_t = std::shared_ptr<fvec3_inp_pluginst_t>;
+
+using fvec3xf_inp_pluginst_t = inpluginst<Vec3XfPlugTraits>;
+using fvec3xf_inp_pluginst_ptr_t = std::shared_ptr<fvec3xf_inp_pluginst_t>;
 
 } // namespace ork::dataflow
