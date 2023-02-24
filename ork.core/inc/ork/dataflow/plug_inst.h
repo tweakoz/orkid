@@ -71,12 +71,29 @@ public:
 
   using data_type_t = typename traits::inst_type_t;
   using data_type_ptr_t = std::shared_ptr<data_type_t>;
+  using data_type_const_ptr_t = std::shared_ptr<const data_type_t>;
 
   inline explicit outpluginst( const outplugdata<traits>* data ) //
       : OutPlugInst(data) //
       , _typed_plugdata(data) { //
 
       _value = std::make_shared<data_type_t>();
+  }
+
+  virtual data_type_const_ptr_t value_ptr() const {
+    return _value;
+  }
+
+  virtual data_type_ptr_t value_ptr() {
+    return _value;
+  }
+
+  virtual const data_type_t& value() const {
+    return (*_value);
+  }
+
+  virtual void setValue(const data_type_t& v) {
+    (*_value) = v;
   }
 
   data_type_ptr_t _value;
@@ -91,18 +108,38 @@ public:
 
   using data_type_t = typename traits::inst_type_t;
   using data_type_ptr_t = std::shared_ptr<data_type_t>;
+  using data_type_const_ptr_t = std::shared_ptr<const data_type_t>;
 
   inline explicit inpluginst( const inplugdata<traits>* data ) //
       : InPlugInst(data) //
       , _typed_plugdata(data) { //
-        _default = std::make_shared<data_type_t>();
+        _value = data->_value;
   }
 
-  virtual data_type_ptr_t value() const {
-    return _default;
+  inline data_type_const_ptr_t value_ptr() const {
+    return _value;
   }
 
-  data_type_ptr_t _default;
+  inline data_type_ptr_t value_ptr() {
+    return _value;
+  }
+
+  inline const data_type_t& value() const {
+
+    if(_connectedOutput){
+      auto out_plug = typedPlugInst<outpluginst<traits>>(_connectedOutput);
+      OrkAssert(out_plug);
+      return out_plug->value();
+    }
+
+    return (*_value);
+  }
+
+  inline void setValue(const data_type_t& v) {
+    (*_value) = v;
+  }
+
+  data_type_ptr_t _value;
   const inplugdata<traits>* _typed_plugdata;
 
 };

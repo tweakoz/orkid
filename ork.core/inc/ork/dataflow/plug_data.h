@@ -177,20 +177,30 @@ public:
   using data_type_ptr_t = std::shared_ptr<data_type_t>;
 
   inline explicit outplugdata( moduledata_ptr_t pmod, //
-                               EPlugRate epr, //
-                               data_type_ptr_t default_value, //
+                               EPlugRate epr,
                                const char* pname) //
-      : OutPlugData(pmod, epr, typeid(data_type_t), pname) //
-      , _default(default_value) { //
+      : OutPlugData(pmod, epr, typeid(data_type_t), pname) { //
+
+      _value = std::make_shared<data_type_t>();
+
   }
 
   inline size_t maxFanOut() const override {
     return traits::max_fanout;
   }
 
+  inline const data_type_t& value() const {
+    return (*_value);
+  }
+
+  inline void setValue(const data_type_t& v) {
+    (*_value) = v;
+  }
+
+
   outpluginst_ptr_t createInstance() const override;
 
-  data_type_ptr_t _default;
+  data_type_ptr_t _value;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -208,8 +218,18 @@ public:
                               EPlugRate epr, //
                               const char* pname) //
       : InPlugData(pmod, epr, typeid(traits), pname) { //
+        _value = std::make_shared<data_type_t>();
   }
 
+  inline const data_type_t& value() const {
+    return (*_value);
+  }
+
+  inline void setValue(const data_type_t& v) {
+    (*_value) = v;
+  }
+
+  data_type_ptr_t _value;
   inpluginst_ptr_t createInstance() const override;
 
 };

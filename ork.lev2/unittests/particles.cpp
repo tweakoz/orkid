@@ -22,6 +22,8 @@ TEST(particles_a) {
   auto ptcl_pool = ParticlePoolData::createShared();
   auto ptcl_globals = GlobalModuleData::createShared();
 
+  ptcl_pool->_poolSize = 1024;
+
   GraphData::addModule(graphdata, "G", ptcl_globals);
   GraphData::addModule(graphdata, "P", ptcl_pool);
 
@@ -40,6 +42,7 @@ TEST(particles_a) {
 
   for( int i=0; i<100; i++ ){
     graphinst->compute();
+    usleep(1000);
   }
 
 }

@@ -66,6 +66,18 @@ public:
     return std::dynamic_pointer_cast<outplugdata<plug_traits>>(plug);
   }
   ////////////////////////////////////////////
+  template <typename plug_traits> //
+  std::shared_ptr<inplugdata<plug_traits>> typedInputNamed(const std::string& named) const {
+    inplugdata_ptr_t plug = inputNamed(named);
+    return std::dynamic_pointer_cast<inplugdata<plug_traits>>(plug);
+  }
+  ////////////////////////////////////////////
+  template <typename plug_traits> //
+  std::shared_ptr<outplugdata<plug_traits>> typedOutputNamed(const std::string& named) const {
+    outplugdata_ptr_t plug = outputNamed(named);
+    return std::dynamic_pointer_cast<outplugdata<plug_traits>>(plug);
+  }
+  ////////////////////////////////////////////
 
   std::string _name;
   graphdata_ptr_t _graphdata;

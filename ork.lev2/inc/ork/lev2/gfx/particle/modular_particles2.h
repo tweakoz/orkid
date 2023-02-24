@@ -101,12 +101,6 @@ public:
   static std::shared_ptr<GlobalModuleData> createShared();
   dflow::dgmoduleinst_ptr_t createInstance() const final;
 
-  float_ptr_t _timeBase;
-  float_ptr_t _timeScale;
-  float_ptr_t _relTime;
-  float_ptr_t _relTimeD10;
-  float_ptr_t _relTimeD100;
-
 public:
   GlobalModuleData();
 };

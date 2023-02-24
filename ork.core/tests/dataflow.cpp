@@ -103,9 +103,9 @@ public: //
 
   static std::shared_ptr<GlobalModuleData> createShared() {
     auto gmd = std::make_shared<GlobalModuleData>();
-    createOutputPlug<FloatPlugTraits>(gmd, EPR_UNIFORM, gmd->_outputA, "OutputA");
-    createOutputPlug<FloatPlugTraits>(gmd, EPR_UNIFORM, gmd->_outputB, "OutputB");
-    createOutputPlug<FloatPlugTraits>(gmd, EPR_UNIFORM, gmd->_outputC, "OutputC");
+    createOutputPlug<FloatPlugTraits>(gmd, EPR_UNIFORM, "OutputA");
+    createOutputPlug<FloatPlugTraits>(gmd, EPR_UNIFORM, "OutputB");
+    createOutputPlug<FloatPlugTraits>(gmd, EPR_UNIFORM, "OutputC");
     return gmd;
   }
 
@@ -195,7 +195,7 @@ public: //
 protected:
   static void sharedConstructor(moduledata_ptr_t subclass_instance) {
     auto as_im32mod = std::dynamic_pointer_cast<Img32ModuleData>(subclass_instance);
-    createOutputPlug<Img32PlugTraits>(subclass_instance, EPR_UNIFORM, as_im32mod->_image_out, "Output");
+    createOutputPlug<Img32PlugTraits>(subclass_instance, EPR_UNIFORM, "Output");
   }
 };
 
@@ -225,7 +225,7 @@ public: //
 protected:
   static void sharedConstructor(moduledata_ptr_t subclass_instance) {
     auto as_im64mod = std::dynamic_pointer_cast<Img64ModuleData>(subclass_instance);
-    createOutputPlug<Img64PlugTraits>(subclass_instance, EPR_UNIFORM, as_im64mod->_image_out, "Output");
+    createOutputPlug<Img64PlugTraits>(subclass_instance, EPR_UNIFORM, "Output");
   }
 };
 
