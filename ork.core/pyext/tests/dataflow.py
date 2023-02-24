@@ -6,6 +6,16 @@ coreappinit()
 
 dflow = dataflow
 
+#####################################################
+# create graph
+#####################################################
+
+graphdata = dflow.GraphData.createShared()
+
+#####################################################
+# create/define modules
+#####################################################
+
 a = dflow.LambdaModule.createShared()
 b = dflow.LambdaModule.createShared()
 
@@ -19,25 +29,42 @@ b.onCompute(onBCompute)
 a.onLink(lambda m,gi : print("link A: module<%s> gi<%s> impl<%s>" % (m,gi,gi.impl)) )
 b.onLink(lambda m,gi : print("link B: module<%s> gi<%s> impl<%s>" % (m,gi,gi.impl)) )
 
-aout = a.createUniformFloatOutputPlug("outputX")
-binp = b.createUniformFloatXfInputPlug("inputX")
-graphdata = dflow.GraphData.createShared()
+#####################################################
+# add modules to graph
+#####################################################
 
 graphdata.addModule(a,"A")
 graphdata.addModule(b,"B")
+
+#####################################################
+# make connections between modules
+#####################################################
+
+aout = a.createUniformFloatOutputPlug("outputX")
+binp = b.createUniformFloatXfInputPlug("inputX")
 graphdata.safeConnect(binp,aout)
 
-ctx = dflow.DgContext.createShared()
+#####################################################
+# generate execution topology
+#####################################################
 
+ctx = dflow.DgContext.createShared()
 ctx.createFloatRegisterBlock("floats",16)
 ctx.createVec3RegisterBlock("fvec3s",16)
-
 sorter = dflow.DgSorter.createShared(graphdata,ctx)
 topo = sorter.generateTopology()
 
+#####################################################
+# instantiate graph, bind topology
+#####################################################
+
 graphinst = graphdata.createGraphInst()
 graphinst.impl = 10.0
-graphinst.updateTopology(topo)
+graphinst.bindTopology(topo)
+
+#####################################################
+# execute graph
+#####################################################
 
 updata = UpdateData()
 updata.absolutetime = 0

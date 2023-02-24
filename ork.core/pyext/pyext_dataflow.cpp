@@ -146,7 +146,7 @@ void pyinit_dataflow(py::module& module_core) {
   /////////////////////////////////////////////////////////////////////////////
   auto graphinst_type = //
       py::class_<GraphInst, graphinst_ptr_t>(dfgmodule, "GraphInst")
-          .def("updateTopology", [](graphinst_ptr_t g, topology_ptr_t t) { g->updateTopology(t); })
+          .def("bindTopology", [](graphinst_ptr_t g, topology_ptr_t t) { g->updateTopology(t); })
           .def("compute", [](graphinst_ptr_t g, ui::updatedata_ptr_t updata) { g->compute(updata); })
           .def_property("impl", 
               [](graphinst_ptr_t g ) -> py::object { //
