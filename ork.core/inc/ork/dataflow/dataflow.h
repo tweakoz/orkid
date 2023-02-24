@@ -23,7 +23,7 @@
 #include <ork/rtti/RTTIX.inl>
 #include <ork/util/logger.h>
 
-namespace ork { namespace dataflow {
+namespace ork::dataflow {
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -371,12 +371,11 @@ inline void implementFloatXfPlugReflectionX(object::ObjectClass* clazz, //
   ork::reflect::RegisterProperty(#name, &cls::OutAccessor##name);                                                                  \
   ork::reflect::annotatePropertyForEditor<cls>(#name, "editor.visible", "false");
 
-}} // namespace ork::dataflow
+} // namespace ork::dataflow
 
 
-#include "enum.h"
-#include "plug_data.h"
-#include "plug_inst.h"
-#include "module.h"
+//#include "plug_data.h"
+//#include "plug_inst.h"
+//#include "module.h"
 
 ///////////////////////////////////////////////////////////////////////////////

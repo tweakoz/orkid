@@ -14,6 +14,7 @@
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/kernel/string/deco.inl>
 #include <ork/util/logger.h>
+#include <ork/math/misc_math.h>
 
 using namespace std::string_literals;
 

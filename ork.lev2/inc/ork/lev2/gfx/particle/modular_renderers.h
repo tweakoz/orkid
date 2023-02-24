@@ -8,19 +8,22 @@
 #pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
-#include "modular_particles2.h"
-///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::particle {
 /////////////////////////////////////////
 
-struct GravityModuleData : public ParticleModuleData {
-  DeclareConcreteX(GravityModuleData, ParticleModuleData);
+struct RendererModuleData : public ParticleModuleData {
+  DeclareAbstractX(RendererModuleData, ParticleModuleData);
 public:
-  GravityModuleData();
-  static std::shared_ptr<GravityModuleData> createShared();
-  dflow::dgmoduleinst_ptr_t createInstance() const final;
+  RendererModuleData();
 };
 
+struct SpriteRendererData : public RendererModuleData {
+  DeclareConcreteX(SpriteRendererData, RendererModuleData);
+public:
+  SpriteRendererData();
+  static std::shared_ptr<SpriteRendererData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance() const final;
+};
 
 /////////////////////////////////////////
 } //namespace ork::lev2::particle {

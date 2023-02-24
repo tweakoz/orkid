@@ -8,12 +8,12 @@
 #include <ork/pch.h>
 
 #include <ork/application/application.h>
-#include <ork/dataflow/dataflow.h>
-#include <ork/dataflow/scheduler.h>
 #include <ork/reflect/properties/register.h>
 #include <ork/kernel/orklut.hpp>
 #include <ork/reflect/properties/AccessorTyped.hpp>
 #include <ork/reflect/properties/DirectTypedMap.hpp>
+
+#include <ork/dataflow/all.h>
 #include <ork/dataflow/module.inl>
 
 ///////////////////////////////////////////////////////////////////////////////

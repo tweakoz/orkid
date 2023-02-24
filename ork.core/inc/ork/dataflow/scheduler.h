@@ -12,7 +12,6 @@
 #include <ork/kernel/prop.h>
 #include <ork/rtti/downcast.h>
 #include <ork/kernel/mutex.h>
-#include <ork/dataflow/dataflow.h>
 #include <ork/kernel/any.h>
 
 namespace ork { namespace lev2 { class OffscreenBuffer; } }

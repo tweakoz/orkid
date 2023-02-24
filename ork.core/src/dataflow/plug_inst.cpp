@@ -8,7 +8,7 @@
 #include <ork/pch.h>
 
 #include <ork/application/application.h>
-#include <ork/dataflow/dataflow.h>
+#include <ork/dataflow/all.h>
 #include <ork/dataflow/plug_inst.inl>
 
 ///////////////////////////////////////////////////////////////////////////////

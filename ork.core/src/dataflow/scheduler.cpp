@@ -9,8 +9,7 @@
 #include <ork/pch.h>
 
 #include <ork/application/application.h>
-#include <ork/dataflow/dataflow.h>
-#include <ork/dataflow/scheduler.h>
+#include <ork/dataflow/all.h>
 #include <ork/reflect/properties/register.h>
 #include <ork/kernel/orklut.hpp>
 #include <ork/kernel/string/string.h>

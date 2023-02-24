@@ -8,10 +8,10 @@
 #include <ork/pch.h>
 
 #include <ork/application/application.h>
-#include <ork/dataflow/dataflow.h>
 #include <ork/reflect/properties/registerX.inl>
 
 
+#include <ork/dataflow/all.h>
 #include <ork/dataflow/plug_data.inl>
 #include <ork/dataflow/plug_inst.inl>
 

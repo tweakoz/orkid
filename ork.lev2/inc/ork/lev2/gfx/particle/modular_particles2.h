@@ -12,7 +12,7 @@
 #include <ork/lev2/gfx/gfxvtxbuf.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/gfxmodel.h>
-#include <ork/dataflow/dataflow.h>
+#include <ork/dataflow/all.h>
 #include <ork/math/gradient.h>
 #include <ork/kernel/any.h>
 

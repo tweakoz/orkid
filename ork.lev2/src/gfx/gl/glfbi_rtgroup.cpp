@@ -7,6 +7,7 @@
 
 #include "gl.h"
 #include <ork/kernel/string/deco.inl>
+#include <ork/math/misc_math.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/gfx/material_freestyle.h>

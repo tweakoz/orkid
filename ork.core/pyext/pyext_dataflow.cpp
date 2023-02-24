@@ -6,8 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include "pyext.h"
-#include <ork/dataflow/dataflow.h>
-#include <ork/dataflow/plug_data.h>
+#include <ork/dataflow/all.h>
 #include <ork/dataflow/plug_data.inl>
 #include <ork/dataflow/module.inl>
 ///////////////////////////////////////////////////////////////////////////////

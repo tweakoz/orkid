@@ -12,7 +12,7 @@
 #include <limits>
 
 #include <ork/kernel/timer.h>
-#include <ork/dataflow/dataflow.h>
+#include <ork/dataflow/all.h>
 #include <ork/dataflow/module.inl>
 #include <ork/dataflow/plug_data.inl>
 #include <ork/dataflow/plug_inst.inl>

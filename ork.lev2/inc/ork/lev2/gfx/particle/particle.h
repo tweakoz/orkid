@@ -8,11 +8,12 @@
 #pragma once
 
 #include <ork/object/Object.h>
+#include <ork/kernel/tempstring.h>
 #include <ork/kernel/string/ArrayString.h>
-#include <ork/dataflow/dataflow.h>
 #include <ork/math/cvector4.h>
 #include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/kernel/fixedlut.h>
+#include <ork/rtti/RTTIX.inl>
 
 namespace ork { namespace lev2 { namespace particle {
 

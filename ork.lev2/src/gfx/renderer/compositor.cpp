@@ -67,7 +67,7 @@ CompositingSceneItem::CompositingSceneItem()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingMorphable::WriteMorphTarget(dataflow::MorphKey name, float flerpval) {
+/*void CompositingMorphable::WriteMorphTarget(dataflow::MorphKey name, float flerpval) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -79,7 +79,7 @@ void CompositingMorphable::RecallMorphTarget(dataflow::MorphKey name) {
 
 void CompositingMorphable::Morph1D(const dataflow::morph_event* pme) {
 }
-
+*/
 ///////////////////////////////////////////////////////////////////////////////
 
 void PickingCompositorTechnique::gpuInit(lev2::Context* pTARG, int w, int h) {

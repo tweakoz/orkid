@@ -9,7 +9,7 @@
 #include <ork/math/multicurve.h>
 #include <ork/math/TransformNode.h>
 #include <ork/asset/Asset.h>
-#include <ork/dataflow/dataflow.h>
+#include <ork/dataflow/all.h>
 
 namespace dflow = ork::dataflow;
 

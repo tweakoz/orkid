@@ -8,7 +8,7 @@
 #include <ork/pch.h>
 #include <ork/kernel/timer.h>
 #include <ork/kernel/opq.h>
-#include <ork/dataflow/dataflow.h>
+#include <ork/dataflow/all.h>
 #include <ork/lev2/init.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>

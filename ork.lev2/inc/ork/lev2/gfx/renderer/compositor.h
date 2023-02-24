@@ -8,7 +8,7 @@
 #pragma once
 
 #include <ork/rtti/RTTIX.inl>
-#include <ork/dataflow/dataflow.h>
+//#include <ork/dataflow/all.h>
 #include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/renderer/frametek.h>
@@ -40,11 +40,11 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct CompositingMorphable : public dataflow::morphable {
+/*struct CompositingMorphable : public dataflow::morphable {
   void WriteMorphTarget(dataflow::MorphKey name, float flerpval); // virtual
   void RecallMorphTarget(dataflow::MorphKey name);                // virtual
   void Morph1D(const dataflow::morph_event* pevent);              // virtual
-};
+};*/
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -328,7 +328,7 @@ private:
   float mfLastTime      = 0.0f;
   int miActiveSceneItem = 0;
 
-  CompositingMorphable _morphable;
+  //CompositingMorphable _morphable;
   CompositingContext _compcontext;
   compositingpassdatastack_t _stack;
 };
