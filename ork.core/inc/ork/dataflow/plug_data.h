@@ -12,29 +12,33 @@ namespace ork::dataflow {
 typedef std::string MorphKey;
 typedef std::string MorphGroup;
 
-struct floatxfdata;
-struct floatxfinst;
-struct fvec3xfdata;
-struct fvec3xfinst;
+struct floatxfinplugdata;
+struct floatxfinpluginst;
+struct fvec3xfinplugdata;
+struct fvec3xfinpluginst;
 
 struct FloatPlugTraits{
+  using elemental_data_type = float;
   using data_type_t = float;
   using inst_type_t = float;
   static constexpr size_t max_fanout = 0;
 };
 struct Vec3fPlugTraits{
+  using elemental_data_type = fvec3;
   using data_type_t = fvec3;
   using inst_type_t = fvec3;
   static constexpr size_t max_fanout = 0;
 };
 struct FloatXfPlugTraits{
-  using data_type_t = floatxfdata;
-  using inst_type_t = floatxfinst;
+  using elemental_data_type = float;
+  using data_type_t = floatxfinplugdata;
+  using inst_type_t = floatxfinpluginst;
   static constexpr size_t max_fanout = 0;
 };
 struct Vec3XfPlugTraits{
-  using data_type_t = fvec3xfdata;
-  using inst_type_t = fvec3xfinst;
+  using elemental_data_type = fvec3;
+  using data_type_t = fvec3xfinplugdata;
+  using inst_type_t = fvec3xfinpluginst;
   static constexpr size_t max_fanout = 0;
 };
 
@@ -87,7 +91,7 @@ public:
   PlugData(moduledata_ptr_t pmod, EPlugDir edir, EPlugRate epr, const std::type_info& tid, const char* pname);
 
   const std::type_info& GetDataTypeId() const {
-    return mTypeId;
+    return _typeID;
   }
 
   template <typename T> std::shared_ptr<T> typedModuleData(){
@@ -97,7 +101,7 @@ public:
   moduledata_ptr_t _parent_module;
   EPlugDir _plugdir;
   EPlugRate _plugrate;
-  const std::type_info& mTypeId;
+  const std::type_info& _typeID;
   std::string _name;
 
 };
@@ -211,14 +215,14 @@ template <typename traits> struct inplugdata : public InPlugData {
 public:
 
   using traits_t = traits;
-  using data_type_t = typename traits_t::inst_type_t;
+  using data_type_t = typename traits_t::elemental_data_type;
   using data_type_ptr_t = std::shared_ptr<data_type_t>;
 
   inline explicit inplugdata( moduledata_ptr_t pmod, //
                               EPlugRate epr, //
                               const char* pname) //
       : InPlugData(pmod, epr, typeid(traits), pname) { //
-        _value = std::make_shared<data_type_t>();
+        //_value = std::make_shared<data_type_t>();
   }
 
   inline const data_type_t& value() const {
@@ -254,54 +258,6 @@ public:
   vect3inplugdata(moduledata_ptr_t pmod, EPlugRate epr, const char* pname)
       : inplugdata<Vec3fPlugTraits>(pmod, epr, pname) {
   }
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename transform_type> struct floatinplugxfdata : public floatinplugdata {
-
-  DeclareTemplateAbstractX(floatinplugxfdata<transform_type>, floatinplugdata);
-
-public:
-  explicit floatinplugxfdata(moduledata_ptr_t pmod, EPlugRate epr, const char* pname)
-      : floatinplugdata(pmod, epr, pname)
-      , mtransform() {
-  }
-  ///////////////////////////////////////////////////////////////
-
-  /*inline const float& GetValue() // virtual
-  {
-    outplugdata<float>* connected = 0;
-    GetTypedInput(connected);
-    mtransformed = mtransform.transform((connected != 0) ? (connected->GetValue()) : mDefault);
-    return mtransformed;
-  }*/
-
-  transform_type mtransform;
-  //mutable float mtransformed;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename transform_type> struct vect3inplugxfdata : public vect3inplugdata {
-  DeclareTemplateAbstractX(vect3inplugxfdata<transform_type>, vect3inplugdata);
-
-public:
-  explicit vect3inplugxfdata(moduledata_ptr_t pmod, EPlugRate epr, const char* pname)
-      : vect3inplugdata(pmod, epr, pname){
-  }
-
-  ///////////////////////////////////////////////////////////////
-
-  /*inline const fvec3& GetValue() // virtual
-  {
-    outplugdata<fvec3>* connected = 0;
-    typedInput(connected);
-    mtransformed = mtransform.transform((connected != 0) ? (connected->GetValue()) : mDefault);
-    return mtransformed;
-  }*/
-
-  transform_type _transform;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -382,13 +338,43 @@ public:
   floatxfdata _transformZ;
 };
 
+///////////////////////////////////////////////////////////////////////////////
+
+struct floatxfinplugdata : public floatinplugdata {
+
+  DeclareAbstractX(floatxfinplugdata, floatinplugdata);
+
+public:
+  explicit floatxfinplugdata(moduledata_ptr_t pmod, EPlugRate epr, const char* pname)
+      : floatinplugdata(pmod, epr, pname) {
+  }
+
+  inpluginst_ptr_t createInstance() const final;
+
+  floatxfdata _transformdata;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct fvec3xfinplugdata : public vect3inplugdata {
+  DeclareAbstractX(fvec3xfinplugdata, vect3inplugdata);
+
+public:
+  explicit fvec3xfinplugdata(moduledata_ptr_t pmod, EPlugRate epr, const char* pname)
+      : vect3inplugdata(pmod, epr, pname){
+  }
+
+  inpluginst_ptr_t createInstance() const final;
+
+  fvec3xfdata _transformdata;
+};
+
+///////////////////////////////////////////////////////////////////////////////
 
 using floatoutplug_ptr_t = std::shared_ptr<outplugdata<FloatPlugTraits>>;
 using floatinpplug_ptr_t = std::shared_ptr<inplugdata<FloatPlugTraits>>;
 
-using floatxfinplugdata = floatinplugxfdata<floatxfdata> ;
-using vect3xfinplugdata = vect3inplugxfdata<fvec3xfdata>;
 using floatxfinplugdata_ptr_t = std::shared_ptr<floatxfinplugdata>;
-
+using fvec3xfinplugdata_ptr_t = std::shared_ptr<fvec3xfinplugdata>;
 
 } //namespace ork { namespace dataflow {

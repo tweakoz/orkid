@@ -37,6 +37,7 @@ struct ParticleBufferInst {
 };
 
 struct ParticleBufferPlugTraits {
+  using elemental_data_type = ParticleBufferData;
   using data_type_t                  = ParticleBufferData;
   using inst_type_t                  = ParticleBufferInst;
   static constexpr size_t max_fanout = 1;

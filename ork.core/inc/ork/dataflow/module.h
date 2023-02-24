@@ -165,28 +165,28 @@ struct DgModuleInst : public ModuleInst {
   //virtual void releaseWorkUnit(workunit* wu);
 
   ////////////////////////////////////////////
-  template <typename plug_traits> //
-  std::shared_ptr<inpluginst<plug_traits>> typedInput(int idx) const {
+  template <typename plug_type> //
+  std::shared_ptr<inpluginst<plug_type>> typedInput(int idx) const {
     inpluginst_ptr_t plug = input(idx);
-    return std::dynamic_pointer_cast<inpluginst<plug_traits>>(plug);
+    return std::dynamic_pointer_cast<inpluginst<plug_type>>(plug);
   }
   ////////////////////////////////////////////
-  template <typename plug_traits> //
-  std::shared_ptr<outpluginst<plug_traits>> typedOutput(int idx) const {
+  template <typename plug_type> //
+  std::shared_ptr<outpluginst<plug_type>> typedOutput(int idx) const {
     outpluginst_ptr_t plug = output(idx);
-    return std::dynamic_pointer_cast<outpluginst<plug_traits>>(plug);
+    return std::dynamic_pointer_cast<outpluginst<plug_type>>(plug);
   }
   ////////////////////////////////////////////
-  template <typename plug_traits> //
-  std::shared_ptr<inpluginst<plug_traits>> typedInputNamed(const std::string& named) const {
+  template <typename plug_type> //
+  std::shared_ptr<inpluginst<plug_type>> typedInputNamed(const std::string& named) const {
     inpluginst_ptr_t plug = inputNamed(named);
-    return std::dynamic_pointer_cast<inpluginst<plug_traits>>(plug);
+    return std::dynamic_pointer_cast<inpluginst<plug_type>>(plug);
   }
   ////////////////////////////////////////////
-  template <typename plug_traits> //
-  std::shared_ptr<outpluginst<plug_traits>> typedOutputNamed(const std::string& named) const {
+  template <typename plug_type> //
+  std::shared_ptr<outpluginst<plug_type>> typedOutputNamed(const std::string& named) const {
     outpluginst_ptr_t plug = outputNamed(named);
-    return std::dynamic_pointer_cast<outpluginst<plug_traits>>(plug);
+    return std::dynamic_pointer_cast<outpluginst<plug_type>>(plug);
   }
 
   const DgModuleData* _dgmodule_data;

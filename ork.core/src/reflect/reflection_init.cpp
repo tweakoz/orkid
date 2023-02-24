@@ -42,7 +42,7 @@ void TouchCoreClasses() {
   //dflow::vect3inplugxfdata<dflow::fvec3xfdata>::GetClassStatic();
 
   dflow::floatxfinplugdata::GetClassStatic();
-  dflow::vect3xfinplugdata::GetClassStatic();
+  dflow::fvec3xfinplugdata::GetClassStatic();
 }
 
 } // namespace ork

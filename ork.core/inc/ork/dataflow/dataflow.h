@@ -55,6 +55,8 @@ struct DgModuleInst;
 
 struct MorphableData;
 
+template <typename T> struct inpluginst;
+
 using dgsorter_ptr_t = std::shared_ptr<DgSorter>;
 using dgcontext_ptr_t = std::shared_ptr<dgcontext>;
 using dgregisterblock_ptr_t = std::shared_ptr<DgRegisterBlock>;

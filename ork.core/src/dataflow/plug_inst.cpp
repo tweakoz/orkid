@@ -77,5 +77,26 @@ OutPlugInst::~OutPlugInst(){
     return false;
   }
 
+
+  floatxfinpluginst::floatxfinpluginst(const floatxfinplugdata* d)
+    : inpluginst<FloatPlugTraits>(d)
+    ,_data(d) {
+
+    }
+
+  const float& floatxfinpluginst::value() const {
+    return inpluginst<FloatPlugTraits>::value();
+  }
+
+  fvec3xfinpluginst::fvec3xfinpluginst(const fvec3xfinplugdata* d)
+    : inpluginst<Vec3fPlugTraits>(d)
+    , _data(d) {
+
+    }
+
+  const fvec3& fvec3xfinpluginst::value() const {
+    return inpluginst<Vec3fPlugTraits>::value();
+  }
+
 ///////////////////////////////////////////////////////////////////////////////
 } //namespace ork::dataflow {

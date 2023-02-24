@@ -41,10 +41,10 @@ void PlugData::describeX(class_t* clazz) {
 }*/
 
 PlugData::PlugData(moduledata_ptr_t pmod, EPlugDir edir, EPlugRate epr, const std::type_info& tid, const char* pname)
-    : _plugdir(edir)
-    , _parent_module(pmod)
-    , mTypeId(tid)
+    : _parent_module(pmod)
+    , _plugdir(edir)
     , _plugrate(epr)
+    , _typeID(tid)
     , _name(pname ? pname : "noname") {
   //printf("PlugData<%p> pmod<%p> construct name<%s>\n", (void*) this, (void*) pmod.get(), _name.c_str());
 }
@@ -201,7 +201,7 @@ void floatinplugdata::describeX(class_t* clazz) {
   ork::reflect::annotatePropertyForEditor<floatinplug>("value", "editor.visible", "false");*/
 }
 ///////////////////////////////////////////////////////////////////////////////
-template <> void floatinplugxfdata<floatxfdata>::describeX(class_t* clazz) {
+void floatxfinplugdata::describeX(class_t* clazz) {
   // ork::reflect::RegisterProperty("xf", &floatinplugxfdata<floatxf>::XfAccessor);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -214,10 +214,9 @@ void vect3inplugdata::describeX(class_t* clazz) {
 */
 }
 ///////////////////////////////////////////////////////////////////////////////
-template <> void vect3inplugxfdata<fvec3xfdata>::describeX(class_t* clazz) {
+void fvec3xfinplugdata::describeX(class_t* clazz) {
   // ork::reflect::RegisterProperty("xf", &vect3inplugxfdata<vect3xf>::XfAccessor);
 }
-template struct vect3inplugxfdata<fvec3xfdata>;
 ///////////////////////////////////////////////////////////////////////////////
 //template <> void vect3inplugxfdata<floatxfdata>::describeX(class_t* clazz) {
 //}
@@ -320,6 +319,12 @@ fvec3 fvec3xfdata::transform(const fvec3& input) const {
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+inpluginst_ptr_t floatxfinplugdata::createInstance() const {
+  return nullptr;
+}
+inpluginst_ptr_t fvec3xfinplugdata::createInstance() const {
+  return nullptr;
+}
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void morphable::HandleMorphEvent(const morph_event* me) {
@@ -352,12 +357,16 @@ ImplementReflectionX(dflow::floatxfitembasedata, "dflow/floatxfitembasedata");
 ImplementReflectionX(dflow::floatinplugdata, "dflow/floatinplugdata");
 ImplementReflectionX(dflow::vect3inplugdata, "dflow/vect3inplugdata");
 
+ImplementReflectionX(dflow::floatxfinplugdata, "dflow/floatxfinplugdata");
+ImplementReflectionX(dflow::fvec3xfinplugdata, "dflow/fvec3xfinplugdata");
+
 ImplementTemplateReflectionX(dflow::outplugdata<dflow::FloatPlugTraits>, "dflow/outplugdata<float>");
 ImplementTemplateReflectionX(dflow::inplugdata<dflow::FloatPlugTraits>, "dflow/inplugdata<float>");
-ImplementTemplateReflectionX(dflow::inplugdata<dflow::FloatXfPlugTraits>, "dflow/inplugdata<floatxf>");
+//ImplementTemplateReflectionX(dflow::inplugdata<dflow::FloatXfPlugTraits>, "dflow/inplugdata<floatxf>");
 
 ImplementTemplateReflectionX(dflow::outplugdata<dflow::Vec3fPlugTraits>, "dflow/outplugdata<vec3>");
 ImplementTemplateReflectionX(dflow::inplugdata<dflow::Vec3fPlugTraits>, "dflow/inplugdata<vec3>");
-ImplementTemplateReflectionX(dflow::inplugdata<dflow::Vec3XfPlugTraits>, "dflow/inplugdata<vec3xf>");
-ImplementTemplateReflectionX(dflow::floatxfinplugdata, "dflow/floatxfinplugdata");
-ImplementTemplateReflectionX(dflow::vect3xfinplugdata, "dflow/vect3xfinplugdata");
+
+ImplementTemplateReflectionX(dflow::inplugdata<dflow::FloatXfPlugTraits>, "dflow/inplugdata<vec3>");
+ImplementTemplateReflectionX(dflow::inplugdata<dflow::Vec3XfPlugTraits>, "dflow/inplugdata<vec3>");
+//ImplementTemplateReflectionX(dflow::inplugdata<dflow::Vec3XfPlugTraits>, "dflow/inplugdata<vec3xf>");
