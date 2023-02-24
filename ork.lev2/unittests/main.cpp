@@ -42,6 +42,7 @@ struct TestApplication {
     rtti::Class::InitializeClasses();
     lev2::GfxInit("");
     auto target = lev2::gloadercontext.get();
+    OrkAssert(target!=nullptr);
     _l2ctx_track = std::make_shared<lev2::ThreadGfxContext>(target);
     target->makeCurrentContext();
   }

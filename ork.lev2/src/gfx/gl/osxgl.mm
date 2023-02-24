@@ -136,7 +136,7 @@ void ContextGL::GLinit()
 
 std::string GetGlErrorString( void );
 
-void OpenGlContextInit() {
+context_ptr_t OpenGlContextInit() {
 	///////////////////////////////////////////////////////////
 	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
 	///////////////////////////////////////////////////////////
@@ -147,6 +147,7 @@ void OpenGlContextInit() {
   auto target = std::make_shared<ContextGL>();
   target->initializeLoaderContext();
   GfxEnv::initializeWithContext(target);
+  return target;
 }
 
 /////////////////////////////////////////////////////////////////////////
