@@ -55,12 +55,20 @@ void pyinit_dataflow(py::module& module_core) {
       py::class_<LambdaModuleData, DgModuleData, lambdamoduledata_ptr_t>(dfgmodule, "LambdaModule")
           .def_static("createShared", []() -> lambdamoduledata_ptr_t { return LambdaModuleData::createShared(); })
           .def(
-              "setComputeLambda",
+              "onCompute",
               [](lambdamoduledata_ptr_t m, py::object pylambda) { //
                 m->_computeLambda = [m,pylambda](graphinst_ptr_t gi, //
                                                  ui::updatedata_ptr_t ud) { //
                   py::gil_scoped_acquire acquire;
                   pylambda(m,gi,ud);
+                };
+              })
+          .def(
+              "onLink",
+              [](lambdamoduledata_ptr_t m, py::object pylambda) { //
+                m->_linkLambda = [m,pylambda](graphinst_ptr_t gi) { //
+                  py::gil_scoped_acquire acquire;
+                  pylambda(m,gi);
                 };
               })
           .def("__repr__", [](lambdamoduledata_ptr_t m) -> std::string {
@@ -123,7 +131,7 @@ void pyinit_dataflow(py::module& module_core) {
   /////////////////////////////////////////////////////////////////////////////
   auto topology_type = //
       py::class_<Topology, topology_ptr_t>(dfgmodule, "Topology").def("__repr__", [](topology_ptr_t t) -> std::string {
-        return FormatString("DataFlowTopology(%p)", (void*)t.get());
+        return FormatString("Topology(%p)", (void*)t.get());
       });
   type_codec->registerStdCodec<topology_ptr_t>(topology_type);
   /////////////////////////////////////////////////////////////////////////////
