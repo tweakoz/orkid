@@ -6,9 +6,18 @@ coreappinit()
 
 dflow = dataflow
 
-a = dflow.DgModuleData.createShared()
-b = dflow.DgModuleData.createShared()
+a = dflow.LambdaModule.createShared()
+b = dflow.LambdaModule.createShared()
 print(a,b)
+
+def onACompute(m,gi,updata):
+  print("compute A: module<%s> gi<%s> upd<%s> impl<%s>" % (m,gi,updata,gi.impl))
+def onBCompute(m,gi,updata):
+  print("compute B: module<%s> gi<%s> upd<%s> impl<%s>" % (m,gi,updata,gi.impl))
+
+a.setComputeLambda(onACompute)
+b.setComputeLambda(onBCompute)
+
 aout = a.createUniformFloatOutputPlug("outputX")
 binp = b.createUniformFloatXfInputPlug("inputX")
 print(aout)
@@ -33,8 +42,9 @@ ctx.createVec3RegisterBlock("fvec3s",16)
 sorter = dflow.DgSorter.createShared(graphdata,ctx)
 topo = sorter.generateTopology()
 
-graphinst = dflow.GraphInst.createShared(graphdata)
+graphinst = graphdata.createGraphInst()
 graphinst.updateTopology(topo)
+graphinst.impl = 10.0
 
 updata = UpdateData()
 updata.absolutetime = 0

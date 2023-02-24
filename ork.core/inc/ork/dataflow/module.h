@@ -90,6 +90,22 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct LambdaModuleData : public DgModuleData {
+  DeclareAbstractX(LambdaModuleData, DgModuleData);
+public:
+  LambdaModuleData();
+  static std::shared_ptr<LambdaModuleData> createShared();
+  dgmoduleinst_ptr_t createInstance() const final;
+
+  using compute_lamda_t = std::function<void(graphinst_ptr_t,ui::updatedata_ptr_t)>;
+  using link_lamda_t = std::function<void(graphinst_ptr_t)>;
+
+  compute_lamda_t _computeLambda;
+  link_lamda_t _linkLambda;
+
+};
+///////////////////////////////////////////////////////////////////////////////
+
 struct ModuleInst {
 
   ModuleInst(const ModuleData* _this);

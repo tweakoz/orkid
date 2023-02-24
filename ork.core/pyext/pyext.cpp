@@ -241,7 +241,10 @@ PYBIND11_MODULE(_core, module_core) {
               },
               [](ui::updatedata_ptr_t updata, double val) { //
                 updata->_dt = val;
-              });
+              })
+          .def("__repr__", [](ui::updatedata_ptr_t updata) -> std::string {
+            return FormatString("updata[abs:%g dt:%g]", updata->_abstime, updata->_dt );
+          });
   type_codec->registerStdCodec<ui::updatedata_ptr_t>(updata_type);
   /////////////////////////////////////////////////////////////////////////////////
   pyinit_math(module_core);

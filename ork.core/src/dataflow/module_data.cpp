@@ -25,10 +25,6 @@
 #include <ork/dataflow/module.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
-ImplementReflectionX(ork::dataflow::ModuleData, "dflow::ModuleData");
-ImplementReflectionX(ork::dataflow::DgModuleData, "dflow::DgModuleData");
-
-///////////////////////////////////////////////////////////////////////////////
 namespace ork::dataflow {
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -183,6 +179,62 @@ size_t DgModuleData::computeMaxDepth() const{
     return max_depth;
 }
 
+//////////////////////////////////////////////////////////////////////////
+
+struct LambdaModuleInst : public DgModuleInst {
+
+  LambdaModuleInst(const LambdaModuleData* lmd)
+      : DgModuleInst(lmd)
+      , _lmd(lmd) {
+  }
+
+  ////////////////////////////////////////////////////
+
+  void onLink(GraphInst* inst) final {
+    _lmd->_linkLambda(inst->_sharedThis);
+  }
+
+  ////////////////////////////////////////////////////
+
+  void compute(GraphInst* inst, ui::updatedata_ptr_t updata) final {
+    _lmd->_computeLambda(inst->_sharedThis,updata);
+  }
+
+  const LambdaModuleData* _lmd;
+  std::shared_ptr<LambdaModuleInst> _sharedThis;
+};
+
+//////////////////////////////////////////////////////////////////////////
+
+void LambdaModuleData::describeX(class_t* clazz) {
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+LambdaModuleData::LambdaModuleData() {
+  _linkLambda = [](graphinst_ptr_t){};
+  _computeLambda = [](graphinst_ptr_t,ui::updatedata_ptr_t){};
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+std::shared_ptr<LambdaModuleData> LambdaModuleData::createShared() {
+  auto data = std::make_shared<LambdaModuleData>();
+  return data;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+dgmoduleinst_ptr_t LambdaModuleData::createInstance() const {
+  auto inst = std::make_shared<LambdaModuleInst>(this);
+  inst->_sharedThis = inst;
+  return inst;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 } //namespace ork::dataflow {
 ///////////////////////////////////////////////////////////////////////////////
+
+ImplementReflectionX(ork::dataflow::ModuleData, "dflow::ModuleData");
+ImplementReflectionX(ork::dataflow::DgModuleData, "dflow::DgModuleData");
+ImplementReflectionX(ork::dataflow::LambdaModuleData, "dflow::LambdaModuleData");

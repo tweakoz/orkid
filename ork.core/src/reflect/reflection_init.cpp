@@ -27,6 +27,7 @@ void TouchCoreClasses() {
 
   dflow::ModuleData::GetClassStatic();
   dflow::DgModuleData::GetClassStatic();
+  dflow::LambdaModuleData::GetClassStatic();
 
   dflow::PlugData::GetClassStatic();
   dflow::InPlugData::GetClassStatic();

@@ -52,6 +52,7 @@ struct ModuleData;
 struct ModuleInst;
 struct DgModuleData;
 struct DgModuleInst;
+struct LambdaModuleData;
 
 struct MorphableData;
 
@@ -65,6 +66,7 @@ using moduledata_ptr_t = std::shared_ptr<ModuleData>;
 using moduleinst_ptr_t = std::shared_ptr<ModuleInst>;
 using dgmoduledata_ptr_t = std::shared_ptr<DgModuleData>;
 using dgmoduleinst_ptr_t = std::shared_ptr<DgModuleInst>;
+using lambdamoduledata_ptr_t = std::shared_ptr<LambdaModuleData>;
 
 using graphdata_ptr_t = std::shared_ptr<GraphData>;
 using graphdata_const_ptr_t = std::shared_ptr<const GraphData>;
@@ -262,6 +264,7 @@ public:
   static void removeModule(graphdata_ptr_t gd, dgmoduledata_ptr_t pchild);
   static bool serializeConnections(graphdata_const_ptr_t gd, ork::reflect::serdes::ISerializer& ser);
   static bool deserializeConnections(graphdata_ptr_t gd, ork::reflect::serdes::IDeserializer& deser);
+  static graphinst_ptr_t createGraphInst(graphdata_ptr_t gd);
 
 
   GraphData();
@@ -318,6 +321,7 @@ struct GraphInst {
   ////////////////////////////////////////////
 
   graphdata_ptr_t _graphdata;
+  graphinst_ptr_t _sharedThis;
   topology_ptr_t _topology;
   scheduler_ptr_t _scheduler;
 
@@ -327,6 +331,8 @@ struct GraphInst {
   std::vector<dgmoduledata_ptr_t> _ordered_module_datas;
   std::vector<dgmoduleinst_ptr_t> _ordered_module_insts;
   std::set<int> _outputRegisters;
+
+
 
   svar64_t _impl;
 };
