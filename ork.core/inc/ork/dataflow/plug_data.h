@@ -17,35 +17,34 @@ struct floatxfinpluginst;
 struct fvec3xfinplugdata;
 struct fvec3xfinpluginst;
 
-struct FloatPlugTraits{
-  using elemental_data_type = float;
-  using elemental_inst_type = float;
-  using data_impl_type_t = float;
-  using inst_impl_type_t = float;
+struct FloatPlugTraits {
+  using elemental_data_type          = float;
+  using elemental_inst_type          = float;
+  using data_impl_type_t             = float;
+  using inst_impl_type_t             = float;
   static constexpr size_t max_fanout = 0;
 };
-struct Vec3fPlugTraits{
-  using elemental_data_type = fvec3;
-  using elemental_inst_type = fvec3;
-  using data_impl_type_t = fvec3;
-  using inst_impl_type_t = fvec3;
+struct Vec3fPlugTraits {
+  using elemental_data_type          = fvec3;
+  using elemental_inst_type          = fvec3;
+  using data_impl_type_t             = fvec3;
+  using inst_impl_type_t             = fvec3;
   static constexpr size_t max_fanout = 0;
 };
-struct FloatXfPlugTraits{
-  using elemental_data_type = float;
-  using elemental_inst_type = float;
-  using data_impl_type_t = floatxfinplugdata;
-  using inst_impl_type_t = floatxfinpluginst;
+struct FloatXfPlugTraits {
+  using elemental_data_type          = float;
+  using elemental_inst_type          = float;
+  using data_impl_type_t             = floatxfinplugdata;
+  using inst_impl_type_t             = floatxfinpluginst;
   static constexpr size_t max_fanout = 0;
 };
-struct Vec3XfPlugTraits{
-  using elemental_data_type = fvec3;
-  using elemental_inst_type = fvec3;
-  using data_impl_type_t = fvec3xfinplugdata;
-  using inst_impl_type_t = fvec3xfinpluginst;
+struct Vec3XfPlugTraits {
+  using elemental_data_type          = fvec3;
+  using elemental_inst_type          = fvec3;
+  using data_impl_type_t             = fvec3xfinplugdata;
+  using inst_impl_type_t             = fvec3xfinpluginst;
   static constexpr size_t max_fanout = 0;
 };
-
 
 struct morph_event : public event::Event {
 public:
@@ -91,29 +90,18 @@ struct PlugData : public ork::Object {
   DeclareAbstractX(PlugData, ork::Object);
 
 public:
-
   PlugData(moduledata_ptr_t pmod, EPlugDir edir, EPlugRate epr, const std::type_info& tid, const char* pname);
 
-  const std::type_info& GetDataTypeId() const {
-    return _typeID;
-  }
+  const std::type_info& GetDataTypeId() const;
 
-  template <typename T> std::shared_ptr<T> typedModuleData(){
-    return std::dynamic_pointer_cast<T>(_parent_module);
-  }
+  template <typename T> std::shared_ptr<T> typedModuleData();
 
   moduledata_ptr_t _parent_module;
   EPlugDir _plugdir;
   EPlugRate _plugrate;
   const std::type_info& _typeID;
   std::string _name;
-
 };
-
-template <typename T> std::shared_ptr<T> typedPlugData(plugdata_ptr_t p){
-    return std::dynamic_pointer_cast<T>(p);
-}
-
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -124,16 +112,15 @@ struct InPlugData : public PlugData {
   static constexpr size_t NOPATH = 0xffffffffffffffff;
 
 public:
-
   InPlugData(moduledata_ptr_t pmod, EPlugRate epr, const std::type_info& tid, const char* pname);
   ~InPlugData();
 
   bool isConnected() const;
   bool isMorphable() const;
-  size_t computeMinDepth(dgmoduledata_constptr_t to_module ) const;
+  size_t computeMinDepth(dgmoduledata_constptr_t to_module) const;
   virtual inpluginst_ptr_t createInstance() const;
 
-  outplugdata_ptr_t _connectedOutput;                       // which EXTERNAL output plug are we connected to
+  outplugdata_ptr_t _connectedOutput;                      // which EXTERNAL output plug are we connected to
   orkvector<outplugdata_ptr_t> _internalOutputConnections; // which output plugs IN THE SAME MODULE are connected to me ?
   morphable_ptr_t mpMorphable;
 };
@@ -145,31 +132,19 @@ struct OutPlugData : public PlugData {
   DeclareAbstractX(OutPlugData, PlugData);
 
 public:
-
   OutPlugData(moduledata_ptr_t pmod, EPlugRate epr, const std::type_info& tid, const char* pname);
   ~OutPlugData();
 
-  virtual size_t maxFanOut() const {
-    return 0;
-  }
-
-  bool isConnected() const {
-    return (numConnections() != 0);
-  }
-
-  size_t numConnections() const {
-    return _connections.size();
-  }
-  inplugdata_ptr_t connected(size_t idx) const {
-    return _connections[idx];
-  }
+  virtual size_t maxFanOut() const;
+  bool isConnected() const;
+  size_t numConnections() const;
+  inplugdata_ptr_t connected(size_t idx) const;
 
   void _disconnect(inplugdata_ptr_t pinplug);
 
   virtual outpluginst_ptr_t createInstance() const;
 
   mutable orkvector<inplugdata_ptr_t> _connections;
-
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -179,32 +154,18 @@ struct outplugdata : public OutPlugData {
   DeclareTemplateAbstractX(outplugdata<traits>, OutPlugData);
 
 public:
-
-  using traits_t = traits;
-  using data_type_t = typename traits_t::elemental_data_type;
+  using traits_t        = traits;
+  using data_type_t     = typename traits_t::elemental_data_type;
   using data_type_ptr_t = std::shared_ptr<data_type_t>;
 
-  inline explicit outplugdata( moduledata_ptr_t pmod, //
-                               EPlugRate epr,
-                               const char* pname) //
-      : OutPlugData(pmod, epr, typeid(data_type_t), pname) { //
+  explicit outplugdata(
+      moduledata_ptr_t pmod, //
+      EPlugRate epr,
+      const char* pname);
 
-      _value = std::make_shared<data_type_t>();
-
-  }
-
-  inline size_t maxFanOut() const override {
-    return traits::max_fanout;
-  }
-
-  inline const data_type_t& value() const {
-    return (*_value);
-  }
-
-  inline void setValue(const data_type_t& v) {
-    (*_value) = v;
-  }
-
+  size_t maxFanOut() const override;
+  const data_type_t& value() const;
+  void setValue(const data_type_t& v);
 
   outpluginst_ptr_t createInstance() const override;
 
@@ -217,29 +178,20 @@ template <typename traits> struct inplugdata : public InPlugData {
   DeclareTemplateAbstractX(inplugdata<traits>, InPlugData);
 
 public:
-
-  using traits_t = traits;
-  using data_type_t = typename traits_t::elemental_data_type;
+  using traits_t        = traits;
+  using data_type_t     = typename traits_t::elemental_data_type;
   using data_type_ptr_t = std::shared_ptr<data_type_t>;
 
-  inline explicit inplugdata( moduledata_ptr_t pmod, //
-                              EPlugRate epr, //
-                              const char* pname) //
-      : InPlugData(pmod, epr, typeid(traits), pname) { //
-        _value = std::make_shared<data_type_t>();
-  }
+  explicit inplugdata(
+      moduledata_ptr_t pmod, //
+      EPlugRate epr,         //
+      const char* pname);
 
-  inline const data_type_t& value() const {
-    return (*_value);
-  }
-
-  inline void setValue(const data_type_t& v) {
-    (*_value) = v;
-  }
+  const data_type_t& value() const;
+  void setValue(const data_type_t& v);
 
   data_type_ptr_t _value;
   inpluginst_ptr_t createInstance() const override;
-
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -269,10 +221,9 @@ struct modscabiasdata : public ork::Object {
   DeclareConcreteX(modscabiasdata, ork::Object);
 
 public:
-
-  float _mod = 0.0f;
+  float _mod   = 0.0f;
   float _scale = 1.0f;
-  float _bias = 0.0f;
+  float _bias  = 0.0f;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -290,14 +241,14 @@ using floatxfitembasedata_ptr_t = std::shared_ptr<floatxfitembasedata>;
 
 struct floatxfmsbcurvedata : public floatxfitembasedata {
   DeclareConcreteX(floatxfmsbcurvedata, floatxfitembasedata);
-public:
 
+public:
   float transform(float input) const override; // virtual
 
   ork::MultiCurve1D _multicurve;
   modscabiasdata _modscalebias;
   bool _domodscalebias = false;
-  bool _docurve = false;
+  bool _docurve        = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -306,13 +257,12 @@ struct floatxfmodstepdata : public floatxfitembasedata {
   DeclareConcreteX(floatxfmodstepdata, floatxfitembasedata);
 
 public:
-
   float transform(float input) const override; // virtual
 
-  float _mod = 1.0f;
-  int _steps = 4;
+  float _mod         = 1.0f;
+  int _steps         = 4;
   float _outputScale = 1.0f;
-  float _outputBias = 1.0f;
+  float _outputBias  = 1.0f;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -333,8 +283,8 @@ public:
 
 struct fvec3xfdata : public ork::Object {
   DeclareConcreteX(fvec3xfdata, ork::Object);
-public:
 
+public:
   fvec3 transform(const fvec3& input) const;
 
   floatxfdata _transformX;
@@ -349,9 +299,7 @@ struct floatxfinplugdata : public floatinplugdata {
   DeclareAbstractX(floatxfinplugdata, floatinplugdata);
 
 public:
-  explicit floatxfinplugdata(moduledata_ptr_t pmod, EPlugRate epr, const char* pname)
-      : floatinplugdata(pmod, epr, pname) {
-  }
+  explicit floatxfinplugdata(moduledata_ptr_t pmod, EPlugRate epr, const char* pname);
 
   inpluginst_ptr_t createInstance() const final;
 
@@ -364,9 +312,7 @@ struct fvec3xfinplugdata : public vect3inplugdata {
   DeclareAbstractX(fvec3xfinplugdata, vect3inplugdata);
 
 public:
-  explicit fvec3xfinplugdata(moduledata_ptr_t pmod, EPlugRate epr, const char* pname)
-      : vect3inplugdata(pmod, epr, pname){
-  }
+  explicit fvec3xfinplugdata(moduledata_ptr_t pmod, EPlugRate epr, const char* pname);
 
   inpluginst_ptr_t createInstance() const final;
 
@@ -381,4 +327,4 @@ using floatinpplug_ptr_t = std::shared_ptr<inplugdata<FloatPlugTraits>>;
 using floatxfinplugdata_ptr_t = std::shared_ptr<floatxfinplugdata>;
 using fvec3xfinplugdata_ptr_t = std::shared_ptr<fvec3xfinplugdata>;
 
-} //namespace ork { namespace dataflow {
+} // namespace ork::dataflow

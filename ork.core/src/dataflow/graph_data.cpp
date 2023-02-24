@@ -15,6 +15,9 @@
 #include <ork/reflect/properties/AccessorTyped.hpp>
 #include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/reflect/properties/registerX.inl>
+#include <ork/dataflow/module.inl>
+#include <ork/dataflow/plug_data.inl>
+
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::dataflow::GraphData, "dflow/graphdata");
 ///////////////////////////////////////////////////////////////////////////////

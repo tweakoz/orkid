@@ -14,6 +14,7 @@
 #include <ork/kernel/orklut.hpp>
 #include <ork/reflect/properties/AccessorTyped.hpp>
 #include <ork/reflect/properties/DirectTypedMap.hpp>
+#include <ork/dataflow/module.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::dataflow {

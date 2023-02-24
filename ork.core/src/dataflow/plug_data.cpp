@@ -9,18 +9,11 @@
 
 #include <ork/application/application.h>
 #include <ork/dataflow/dataflow.h>
-#include <ork/dataflow/scheduler.h>
-#include <ork/kernel/orklut.hpp>
-#include <ork/reflect/properties/AccessorTyped.hpp>
-#include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/reflect/properties/registerX.inl>
 
-#include <ork/math/cvector2.hpp>
-#include <ork/math/cvector3.hpp>
-#include <ork/math/cvector4.hpp>
-#include <ork/math/quaternion.hpp>
-#include <ork/math/cmatrix3.hpp>
-#include <ork/math/cmatrix4.hpp>
+
+#include <ork/dataflow/plug_data.inl>
+#include <ork/dataflow/plug_inst.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::dataflow {
@@ -48,6 +41,10 @@ PlugData::PlugData(moduledata_ptr_t pmod, EPlugDir edir, EPlugRate epr, const st
     , _name(pname ? pname : "noname") {
   //printf("PlugData<%p> pmod<%p> construct name<%s>\n", (void*) this, (void*) pmod.get(), _name.c_str());
 }
+
+  const std::type_info& PlugData::GetDataTypeId() const {
+    return _typeID;
+  }
 
 ///////////////////////////////////////////////////////////////////////////////
 void InPlugData::describeX(class_t* clazz) {
@@ -146,7 +143,21 @@ void OutPlugData::_disconnect(inplugdata_ptr_t pinplug){
 outpluginst_ptr_t OutPlugData::createInstance() const{
   return nullptr;
 }
-///////////////////////////////////////////////////////////////////////////////
+   size_t OutPlugData::maxFanOut() const {
+    return 0;
+  }
+
+  bool OutPlugData::isConnected() const {
+    return (numConnections() != 0);
+  }
+
+  size_t OutPlugData::numConnections() const {
+    return _connections.size();
+  }
+  inplugdata_ptr_t OutPlugData::connected(size_t idx) const {
+    return _connections[idx];
+  }
+  ///////////////////////////////////////////////////////////////////////////////
 // plugdata<float>
 ///////////////////////////////////////////////////////////////////////////////
 template <> void inplugdata<FloatPlugTraits>::describeX(class_t* clazz) {
@@ -339,6 +350,13 @@ void morphable::HandleMorphEvent(const morph_event* me) {
   }
 }
 
+floatxfinplugdata::floatxfinplugdata(moduledata_ptr_t pmod, EPlugRate epr, const char* pname)
+      : floatinplugdata(pmod, epr, pname) {
+  }
+
+fvec3xfinplugdata::fvec3xfinplugdata(moduledata_ptr_t pmod, EPlugRate epr, const char* pname)
+      : vect3inplugdata(pmod, epr, pname) {
+  }
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::dataflow

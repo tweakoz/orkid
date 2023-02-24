@@ -13,6 +13,9 @@
 
 #include <ork/kernel/timer.h>
 #include <ork/dataflow/dataflow.h>
+#include <ork/dataflow/module.inl>
+#include <ork/dataflow/plug_data.inl>
+#include <ork/dataflow/plug_inst.inl>
 #include <ork/application/application.h>
 #include <ork/reflect/properties/register.h>
 

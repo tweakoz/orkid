@@ -22,6 +22,8 @@
 #include <ork/math/cmatrix3.hpp>
 #include <ork/math/cmatrix4.hpp>
 
+#include <ork/dataflow/module.inl>
+
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::dataflow::ModuleData, "dflow/ModuleData");
 ImplementReflectionX(ork::dataflow::DgModuleData, "dflow/DgModuleData");

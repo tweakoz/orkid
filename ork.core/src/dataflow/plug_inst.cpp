@@ -9,14 +9,7 @@
 
 #include <ork/application/application.h>
 #include <ork/dataflow/dataflow.h>
-#include <ork/dataflow/scheduler.h>
-
-#include <ork/math/cvector2.hpp>
-#include <ork/math/cvector3.hpp>
-#include <ork/math/cvector4.hpp>
-#include <ork/math/quaternion.hpp>
-#include <ork/math/cmatrix3.hpp>
-#include <ork/math/cmatrix4.hpp>
+#include <ork/dataflow/plug_inst.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::dataflow {

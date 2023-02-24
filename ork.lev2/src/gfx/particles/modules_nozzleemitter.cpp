@@ -5,8 +5,12 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
+#include <ork/pch.h>
+#include <ork/reflect/properties/registerX.inl>
 #include <ork/lev2/gfx/particle/modular_particles2.h>
 #include <ork/lev2/gfx/particle/modular_emitters.h>
+#include <ork/dataflow/module.inl>
+#include <ork/dataflow/plug_data.inl>
 
 using namespace ork::dataflow;
 
@@ -135,7 +139,7 @@ void NozzleEmitterInst::_emit(float fdt) {
 
   float femitvel                 = _input_emissionvelocity->value();
   float lifespan                 = std::clamp<float>(_input_lifespan->value(), 0.01f, 10.0f);
-  float emissionrate = 50.0f; //             = _input_emissionrate->value();
+  float emissionrate              = _input_emissionrate->value();
   _emitter_context.mPool              = _pool.get();
   _emitter_context.mfEmissionRate     = emissionrate;
   _emitter_context.mKey               = (void*)this;

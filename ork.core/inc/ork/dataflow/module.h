@@ -28,21 +28,9 @@ public:
   virtual outplugdata_ptr_t outputNamed(const std::string& named) const;
   ////////////////////////////////////////////
   template <typename plug_traits,typename... A> static //
-  std::shared_ptr<inplugdata<plug_traits>> createInputPlug(moduledata_ptr_t m, A&&... args){
-    using plug_impl_type = inplugdata<plug_traits>;
-    auto plg = std::make_shared<plug_impl_type>(m,std::forward<A>(args)...);
-    m->addInput(plg);
-    return plg;
-  }
-  ////////////////////////////////////////////
+  std::shared_ptr<inplugdata<plug_traits>> createInputPlug(moduledata_ptr_t m, A&&... args);
   template <typename plug_traits,typename... A> static //
-  std::shared_ptr<outplugdata<plug_traits>> createOutputPlug(moduledata_ptr_t m, A&&... args){
-    using plug_impl_type = outplugdata<plug_traits>;
-    auto plg = std::make_shared<plug_impl_type>(m,std::forward<A>(args)...);
-    m->addOutput(plg);
-    return plg;
-  }
-//  moduledata_ptr_t childNamed(const std::string& named) const;
+  std::shared_ptr<outplugdata<plug_traits>> createOutputPlug(moduledata_ptr_t m, A&&... args);
   ////////////////////////////////////////////
   virtual void onTopologyUpdate(void);
   virtual void onStart();
@@ -55,28 +43,16 @@ public:
   void addDependency(outplugdata_ptr_t pout, inplugdata_ptr_t pin);
   ////////////////////////////////////////////
   template <typename plug_traits> //
-  std::shared_ptr<inplugdata<plug_traits>> typedInput(int idx) {
-    inplugdata_ptr_t plug = input(idx);
-    return std::dynamic_pointer_cast<inplugdata<plug_traits>>(plug);
-  }
+  std::shared_ptr<inplugdata<plug_traits>> typedInput(int idx);
   ////////////////////////////////////////////
   template <typename plug_traits> //
-  std::shared_ptr<outplugdata<plug_traits>> typedOutput(int idx) {
-    outplugdata_ptr_t plug = output(idx);
-    return std::dynamic_pointer_cast<outplugdata<plug_traits>>(plug);
-  }
+  std::shared_ptr<outplugdata<plug_traits>> typedOutput(int idx);
   ////////////////////////////////////////////
   template <typename plug_traits> //
-  std::shared_ptr<inplugdata<plug_traits>> typedInputNamed(const std::string& named) const {
-    inplugdata_ptr_t plug = inputNamed(named);
-    return std::dynamic_pointer_cast<inplugdata<plug_traits>>(plug);
-  }
+  std::shared_ptr<inplugdata<plug_traits>> typedInputNamed(const std::string& named) const;
   ////////////////////////////////////////////
   template <typename plug_traits> //
-  std::shared_ptr<outplugdata<plug_traits>> typedOutputNamed(const std::string& named) const {
-    outplugdata_ptr_t plug = outputNamed(named);
-    return std::dynamic_pointer_cast<outplugdata<plug_traits>>(plug);
-  }
+  std::shared_ptr<outplugdata<plug_traits>> typedOutputNamed(const std::string& named) const;
   ////////////////////////////////////////////
 
   std::string _name;
@@ -86,10 +62,6 @@ public:
   std::vector<outplugdata_ptr_t> _outputs;
 
 };
-
-template <typename T> std::shared_ptr<T> typedModuleData(object_ptr_t m){
-  return std::dynamic_pointer_cast<T>(m);
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -142,10 +114,6 @@ struct ModuleInst {
 
 };
 
-template <typename T> std::shared_ptr<T> typedModuleInst(moduleinst_ptr_t m){
-  return std::dynamic_pointer_cast<T>(m);
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 struct DgModuleInst : public ModuleInst {
@@ -166,28 +134,14 @@ struct DgModuleInst : public ModuleInst {
 
   ////////////////////////////////////////////
   template <typename plug_type> //
-  std::shared_ptr<inpluginst<plug_type>> typedInput(int idx) const {
-    inpluginst_ptr_t plug = input(idx);
-    return std::dynamic_pointer_cast<inpluginst<plug_type>>(plug);
-  }
-  ////////////////////////////////////////////
+  std::shared_ptr<inpluginst<plug_type>> typedInput(int idx) const;
   template <typename plug_type> //
-  std::shared_ptr<outpluginst<plug_type>> typedOutput(int idx) const {
-    outpluginst_ptr_t plug = output(idx);
-    return std::dynamic_pointer_cast<outpluginst<plug_type>>(plug);
-  }
-  ////////////////////////////////////////////
+  std::shared_ptr<outpluginst<plug_type>> typedOutput(int idx) const;
   template <typename plug_type> //
-  std::shared_ptr<inpluginst<plug_type>> typedInputNamed(const std::string& named) const {
-    inpluginst_ptr_t plug = inputNamed(named);
-    return std::dynamic_pointer_cast<inpluginst<plug_type>>(plug);
-  }
-  ////////////////////////////////////////////
+  std::shared_ptr<inpluginst<plug_type>> typedInputNamed(const std::string& named) const;
   template <typename plug_type> //
-  std::shared_ptr<outpluginst<plug_type>> typedOutputNamed(const std::string& named) const {
-    outpluginst_ptr_t plug = outputNamed(named);
-    return std::dynamic_pointer_cast<outpluginst<plug_type>>(plug);
-  }
+  std::shared_ptr<outpluginst<plug_type>> typedOutputNamed(const std::string& named) const;
+  ////////////////////////////////////////////
 
   const DgModuleData* _dgmodule_data;
 

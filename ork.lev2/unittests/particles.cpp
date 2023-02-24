@@ -9,6 +9,9 @@
 #include <utpp/UnitTest++.h>
 #include <ork/lev2/gfx/particle/modular_particles2.h>
 #include <ork/lev2/gfx/particle/modular_emitters.h>
+#include <ork/dataflow/module.inl>
+#include <ork/dataflow/plug_data.inl>
+#include <ork/dataflow/plug_inst.inl>
 
 ////////////////////////////////////////////////////////////////
 
@@ -44,7 +47,7 @@ TEST(particles_a) {
   auto E_rate    = ptcl_emitter->typedInputNamed<FloatXfPlugTraits>("EmissionRate");
 
   graphdata->safeConnect(E_inp,P_out);
-  //E_rate->setValue(10.0f);
+  E_rate->setValue(10.0f);
 
   ////////////////////////////////////////////////////
 

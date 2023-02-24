@@ -7,28 +7,9 @@
 
 #include <ork/pch.h>
 #include <ork/reflect/properties/registerX.inl>
-#include <ork/lev2/gfx/gfxmodel.h>
-#include <ork/lev2/gfx/texman.h>
-#include <ork/lev2/gfx/renderer/renderer.h>
-#include <ork/lev2/gfx/camera/cameradata.h>
-#include <ork/lev2/gfx/gfxprimitives.h>
-#include <ork/lev2/gfx/gfxmaterial_test.h>
-#include <ork/reflect/enum_serializer.inl>
-
-#include <ork/reflect/properties/DirectTyped.hpp>
-#include <ork/reflect/properties/DirectTypedMap.hpp>
-#include <ork/kernel/orklut.hpp>
-
 #include <ork/lev2/gfx/particle/modular_particles2.h>
-//#include <ork/kernel/fixedlut.hpp>
-
-///////////////////////////////////////////////////////////////////////////////
-
-#include <ork/stream/FileInputStream.h>
-#include <ork/stream/StringInputStream.h>
-#include <ork/reflect/serialize/JsonDeserializer.h>
-#include <ork/reflect/serialize/JsonSerializer.h>
-#include <ork/lev2/lev2_asset.h>
+#include <ork/dataflow/plug_data.inl>
+#include <ork/dataflow/plug_inst.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -5,8 +5,12 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
+#include <ork/pch.h>
+#include <ork/reflect/properties/registerX.inl>
 #include <ork/lev2/gfx/particle/modular_particles2.h>
 #include <ork/lev2/gfx/particle/modular_emitters.h>
+#include <ork/dataflow/module.inl>
+#include <ork/dataflow/plug_data.inl>
 
 namespace dflow = ::ork::dataflow;
 namespace ork::lev2::particle {
