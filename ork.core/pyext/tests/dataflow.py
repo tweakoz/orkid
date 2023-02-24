@@ -59,7 +59,7 @@ topo = sorter.generateTopology()
 #####################################################
 
 graphinst = graphdata.createGraphInst()
-graphinst.impl = 10.0
+graphinst.impl = 10.0 # graphinst user defined data, should be able to set to any type
 graphinst.bindTopology(topo)
 
 #####################################################
