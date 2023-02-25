@@ -69,6 +69,8 @@ def createParticleData():
 
   # basic module settings
 
+  print(emitter.inputs)
+
   emitter.inputs.LifeSpan = 10
   emitter.inputs.EmissionRate = 800
   emitter.inputs.EmissionVelocity = 1
@@ -77,7 +79,7 @@ def createParticleData():
   gravity.inputs.G = 1
   gravity.inputs.Mass = 1
   gravity.inputs.OthMass = 1
-  gravity.inputs.MinDist = 1
+  gravity.inputs.MinDistance = 1
   gravity.inputs.Center = vec3(0,0,0)
   turbulence.inputs.Amount = vec3(1.5,1.5,1.5)
   vortex.inputs.VortexStrength = 1.0

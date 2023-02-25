@@ -21,51 +21,112 @@ void pyinit_dataflow(py::module& module_core) {
     dgmoduledata_ptr_t _module;
   };
   using input_proxy_ptr_t = std::shared_ptr<input_proxy>;
-  auto input_proxy_type   =                                                               //
+  auto input_proxy_type   =                                                //
       py::class_<input_proxy, input_proxy_ptr_t>(dfgmodule, "input_proxy") //
-          .def("__repr__", [](input_proxy_ptr_t proxy) -> std::string {
-            std::string out_str;
-            out_str += FormatString("ModuleInputProxy: \n");
-            for( auto i : proxy->_module->_inputs){
-              auto clazzname = i->objectClass()->Name();
-              out_str += FormatString(" input %s:  %s\n", i->_name.c_str(), clazzname.c_str() );
-            }
-            return out_str;
-          })
           .def(
-              "__getattr__",                                                                //
+              "__repr__",
+              [](input_proxy_ptr_t proxy) -> std::string {
+                std::string out_str;
+                out_str += FormatString("ModuleInputProxy: \n");
+                for (auto i : proxy->_module->_inputs) {
+                  auto clazzname = i->objectClass()->Name();
+                  out_str += FormatString(" input %s:  %s\n", i->_name.c_str(), clazzname.c_str());
+                }
+                return out_str;
+              })
+          .def(
+              "__getattr__",                                                         //
               [type_codec](input_proxy_ptr_t proxy, std::string key) -> py::object { //
-                auto m = proxy->_module;
-                auto input = m->inputNamed(key);
+                auto m         = proxy->_module;
+                auto input     = m->inputNamed(key);
                 auto clazzname = input->objectClass()->Name();
-                printf( "inputNamed<%s:%s>\n", key.c_str(), clazzname.c_str() );
-                if(input){
+                printf("inputNamed<%s:%s>\n", key.c_str(), clazzname.c_str());
+                if (input) {
                   return type_codec->encode(input);
                 }
                 return py::none();
+              })
+          .def(
+              "__setattr__",                                                             //
+              [type_codec](input_proxy_ptr_t proxy, std::string key, py::object value) { //
+                auto m         = proxy->_module;
+                auto input     = m->inputNamed(key);
+                OrkAssert(input);
+                auto clazzname = input->objectClass()->Name();
+                printf("SET inputNamed<%s:%s>\n", key.c_str(), clazzname.c_str());
+                OrkAssert(input);
+                auto decoded_value = type_codec->decode(value);
+
+                ////////////////////////////////////////////////
+                // TODO a cleaner way to do this would be nice..
+                //   lots of permutations
+                ////////////////////////////////////////////////
+
+                auto set_float = [input](float value) {
+                  auto finplug = std::dynamic_pointer_cast<inplugdata<FloatPlugTraits>>(input);
+                  if (finplug) {
+                    finplug->setValue(value);
+                  } else {
+                    auto xfinplug = std::dynamic_pointer_cast<inplugdata<FloatXfPlugTraits>>(input);
+                    if (xfinplug) {
+                      xfinplug->setValue(value);
+                    } else {
+                      OrkAssert(false);
+                    }
+                  }
+                };
+                auto set_fvec3 = [input](fvec3 value) {
+                  auto finplug = std::dynamic_pointer_cast<inplugdata<Vec3fPlugTraits>>(input);
+                  if (finplug) {
+                    finplug->setValue(value);
+                  } else {
+                    auto xfinplug = std::dynamic_pointer_cast<inplugdata<Vec3XfPlugTraits>>(input);
+                    if (xfinplug) {
+                      xfinplug->setValue(value);
+                    } else {
+                      OrkAssert(false);
+                    }
+                  }
+                };
+
+                if (auto as_float = decoded_value.tryAs<float>()) {
+                  set_float(as_float.value());
+                } else if (auto as_int = decoded_value.tryAs<int>()) {
+                  set_float(as_int.value());
+                } else if (auto as_fvec3 = decoded_value.tryAs<fvec3>()) {
+                  set_fvec3(as_fvec3.value());
+                } else if (auto as_fvec3 = decoded_value.tryAs<fvec3_ptr_t>()) {
+                  set_fvec3(*as_fvec3.value());
+                } else {
+                  OrkAssert(false);
+                }
+
+                ////////////////////////////////////////////////
               });
   /////////////////////////////////////////////////////////////////////////////
   struct output_proxy {
     dgmoduledata_ptr_t _module;
   };
   using output_proxy_ptr_t = std::shared_ptr<output_proxy>;
-  auto output_proxy_type   =                                                               //
+  auto output_proxy_type   =                                                  //
       py::class_<output_proxy, output_proxy_ptr_t>(dfgmodule, "output_proxy") //
-          .def("__repr__", [](output_proxy_ptr_t proxy) -> std::string {
-            std::string out_str;
-            out_str += FormatString("ModuleOutputProxy: \n");
-            for( auto i : proxy->_module->_outputs){
-              auto clazzname = i->objectClass()->Name();
-              out_str += FormatString(" output %s:  %s\n", i->_name.c_str(), clazzname.c_str() );
-            }
-            return out_str;
-          })
           .def(
-              "__getattr__",                                                                //
+              "__repr__",
+              [](output_proxy_ptr_t proxy) -> std::string {
+                std::string out_str;
+                out_str += FormatString("ModuleOutputProxy: \n");
+                for (auto i : proxy->_module->_outputs) {
+                  auto clazzname = i->objectClass()->Name();
+                  out_str += FormatString(" output %s:  %s\n", i->_name.c_str(), clazzname.c_str());
+                }
+                return out_str;
+              })
+          .def(
+              "__getattr__",                                                          //
               [type_codec](output_proxy_ptr_t proxy, std::string key) -> py::object { //
-                auto m = proxy->_module;
+                auto m     = proxy->_module;
                 auto input = m->outputNamed(key);
-                if(input){
+                if (input) {
                   return type_codec->encode(input);
                 }
                 return py::none();
@@ -94,16 +155,20 @@ void pyinit_dataflow(py::module& module_core) {
               [](dgmoduledata_ptr_t m, std::string named) -> outplugdata_ptr_t {
                 return m->createOutputPlug<Vec3fPlugTraits>(m, EPR_UNIFORM, named.c_str());
               })
-          .def_property_readonly("inputs", [](dgmoduledata_ptr_t m) -> input_proxy_ptr_t {
-            auto proxy = std::make_shared<input_proxy>();
-            proxy->_module = m;
-            return proxy;
-          })
-          .def_property_readonly("outputs", [](dgmoduledata_ptr_t m) -> output_proxy_ptr_t {
-            auto proxy = std::make_shared<output_proxy>();
-            proxy->_module = m;
-            return proxy;
-          })
+          .def_property_readonly(
+              "inputs",
+              [](dgmoduledata_ptr_t m) -> input_proxy_ptr_t {
+                auto proxy     = std::make_shared<input_proxy>();
+                proxy->_module = m;
+                return proxy;
+              })
+          .def_property_readonly(
+              "outputs",
+              [](dgmoduledata_ptr_t m) -> output_proxy_ptr_t {
+                auto proxy     = std::make_shared<output_proxy>();
+                proxy->_module = m;
+                return proxy;
+              })
           .def_property_readonly("mindepth", [](dgmoduledata_ptr_t m) -> size_t { return m->computeMinDepth(); })
           .def_property_readonly("maxdepth", [](dgmoduledata_ptr_t m) -> size_t { return m->computeMaxDepth(); })
           .def("__repr__", [](dgmoduledata_ptr_t m) -> std::string {
