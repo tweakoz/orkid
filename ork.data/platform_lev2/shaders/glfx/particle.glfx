@@ -27,6 +27,7 @@ uniform_set ublock_vtx {
   vec4 NoiseShift;
   vec4 NoiseFreq;
   vec4 NoiseAmp;
+  vec2 Rtg_InvDim;
 }
 
 uniform_set ublock_frg {
@@ -167,16 +168,19 @@ libblock lib_billboard {
     Output outp;
 
     float ang = 0.0; //inp.inp_ang_siz.x;
-    float siz = .003; //inp.inp_ang_siz.y;
+    float size_pixels = 4.0;  //inp.inp_ang_siz.y;
+
+    float sizX = size_pixels*Rtg_InvDim.x;
+    float sizY = size_pixels*Rtg_InvDim.y; 
 
     vec4 wpos = MatM*vec4(inp.inp_pos,1);
     vec4 hpos = MatVP*wpos;
     vec4 dpos = hpos/hpos.w;
 
-    vec3 p0  = dpos.xyz + vec3(-siz,-siz,0);
-    vec3 p1  = dpos.xyz + vec3(+siz,-siz,0);
-    vec3 p2  = dpos.xyz + vec3(+siz,+siz,0);
-    vec3 p3  = dpos.xyz + vec3(-siz,+siz,0);
+    vec3 p0  = dpos.xyz + vec3(-sizX,-sizY,0);
+    vec3 p1  = dpos.xyz + vec3(+sizX,-sizY,0);
+    vec3 p2  = dpos.xyz + vec3(+sizX,+sizY,0);
+    vec3 p3  = dpos.xyz + vec3(-sizX,+sizY,0);
 
     outp.pos0 = vec4(p0, 1.0);
     outp.pos1 = vec4(p1, 1.0);

@@ -166,6 +166,8 @@ struct CompositingPassData {
   bool _ispicking = false;
   std::vector<std::string> _layernames;
   std::unordered_set<std::string> _layernameset;
+  int _width = 0;
+  int _height = 0;
 };
 
 typedef std::stack<lev2::CompositingPassData> compositingpassdatastack_t;

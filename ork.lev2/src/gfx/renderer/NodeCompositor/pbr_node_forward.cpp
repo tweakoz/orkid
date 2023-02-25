@@ -136,6 +136,8 @@ struct ForwardPbrNodeImpl {
       CPD._irendertarget  = &rt;
       CPD._cameraMatrices = ddprops["defcammtx"_crcu].get<const CameraMatrices*>();
       CPD.SetDstRect(tgt_rect);
+      CPD._width = newwidth;
+      CPD._height = newheight;
       ///////////////////////////////////////////////////////////////////////////
       if (DB) {
 

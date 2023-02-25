@@ -295,6 +295,7 @@ struct SpriteRendererInst : public DgModuleInst {
         auto fxparameterIV = _testmaterial->param("MatIV");
         auto fxparameterIVP = _testmaterial->param("MatIVP");
         auto fxparameterVP = _testmaterial->param("MatVP");
+        auto fxparameterInvDim = _testmaterial->param("Rtg_InvDim");
         auto pipeline_cache = _testmaterial->pipelineCache();
         _pipeline = pipeline_cache->findPipeline(RCID);
         _pipeline->_technique = fxtechnique;
@@ -303,6 +304,7 @@ struct SpriteRendererInst : public DgModuleInst {
         _pipeline->bindParam(fxparameterVP, "RCFD_Camera_VP_Mono"_crcsh);
         _pipeline->bindParam(fxparameterIV, "RCFD_Camera_IV_Mono"_crcsh);
         _pipeline->bindParam(fxparameterM, "RCFD_M"_crcsh);
+        _pipeline->bindParam(fxparameterInvDim, "CPD_Rtg_InvDim"_crcsh);
       }
 
       _pipeline->wrappedDrawCall(RCID, [&]() {
