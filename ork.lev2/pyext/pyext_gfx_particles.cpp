@@ -41,7 +41,15 @@ void pyinit_gfx_particles(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////
   auto poolmoduledata_type = //
       py::class_<ptc::ParticlePoolData, ptc::ModuleData, ptc::poolmodule_ptr_t>(ptc_module, "Pool")
-      .def_static("createShared", []() -> ptc::poolmodule_ptr_t { return ptc::ParticlePoolData::createShared(); });
+      .def_static("createShared", []() -> ptc::poolmodule_ptr_t { return ptc::ParticlePoolData::createShared(); })
+      .def_property("pool_size", 
+        [](ptc::poolmodule_ptr_t  m) -> int { //
+          return m->_poolSize;
+        },
+        [](ptc::poolmodule_ptr_t  m, int count) { //
+          return m->_poolSize = count;
+        }
+        );
   type_codec->registerStdCodec<ptc::poolmodule_ptr_t>(poolmoduledata_type);
   /////////////////////////////////////////////////////////////////////////////
   auto nzlmoduledata_type = //

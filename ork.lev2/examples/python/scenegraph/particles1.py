@@ -26,7 +26,7 @@ class ParticlesApp(object):
     self.ezapp = OrkEzApp.create(self)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
-    setupUiCamera( app=self, eye = vec3(6,6,6), constrainZ=True, up=vec3(0,1,0))
+    setupUiCamera( app=self, eye = vec3(0,0,30), constrainZ=True, up=vec3(0,1,0))
 
   ################################################
   # gpu data init:

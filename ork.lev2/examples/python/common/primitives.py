@@ -57,6 +57,8 @@ def createParticleData():
   vortex     = graphdata.create("VORT",particles.Vortex)
   sprites    = graphdata.create("SPRI",particles.SpriteRenderer)
 
+  ptc_pool.pool_size = 8192
+
   # connect modules in a chain configuration
 
   print(emitter.inputs)

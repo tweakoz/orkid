@@ -95,8 +95,8 @@ void pyinit_dataflow(py::module& module_core) {
                   set_float(as_int.value());
                 } else if (auto as_fvec3 = decoded_value.tryAs<fvec3>()) {
                   set_fvec3(as_fvec3.value());
-                } else if (auto as_fvec3 = decoded_value.tryAs<fvec3_ptr_t>()) {
-                  set_fvec3(*as_fvec3.value());
+                } else if (auto as_fvec3_ptr = decoded_value.tryAs<fvec3_ptr_t>()) {
+                  set_fvec3(*as_fvec3_ptr.value());
                 } else {
                   OrkAssert(false);
                 }
