@@ -100,6 +100,7 @@ target_include_directories (ork_lev2 PRIVATE ${COREINCD} )
 
 target_link_libraries(ork_lev2 PUBLIC ${libs} )
 target_link_libraries(ork_lev2 PRIVATE assimp audiofile )
+target_link_libraries(ork_lev2 LINK_PRIVATE boost_filesystem )
 
 ###################################
 # intel specific
