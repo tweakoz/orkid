@@ -327,6 +327,12 @@ void IoContainerNode::emit(shaderbuilder::BackEnd& backend) const {
     if (node->_inlineStruct) {
       node->_inlineStruct->emit(backend);
     }
+    else if (node->_arraySize) {
+      codegen.output("[");
+      codegen.output(FormatString("%d",node->_arraySize));
+      codegen.output("]");
+    }
+    
     codegen.output(";");
     codegen.endLine();
   }

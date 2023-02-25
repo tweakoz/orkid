@@ -287,7 +287,19 @@ struct SpriteRendererInst : public DgModuleInst {
       if (nullptr == _testmaterial) {
         _testmaterial = std::make_shared<FreestyleMaterial>();
         _testmaterial->gpuInit(context,"orkshader://particle");
+        auto fxtechnique    = _testmaterial->technique("tbasicparticle");
+        auto fxparameterMVP = _testmaterial->param("MatMVP");
+        auto pipeline_cache = _testmaterial->pipelineCache();
+        _pipeline = pipeline_cache->findPipeline(RCID);
+        _pipeline->_technique = fxtechnique;
+        _pipeline->bindParam(fxparameterMVP, "RCFD_Camera_MVP_Mono"_crcsh);
       }
+
+      _pipeline->wrappedDrawCall(RCID, [&]() {
+        //context->MTXI()->PushMMatrix(fmtx4::multiply_ltor(MatScale, mtx));
+        context->GBI()->DrawPrimitiveEML(vw, ork::lev2::PrimitiveType::POINTS, ivertexlockcount);
+        //context->MTXI()->PopMMatrix();
+      });
 
       /*
 
@@ -367,6 +379,7 @@ struct SpriteRendererInst : public DgModuleInst {
   PoolString mActiveMaterial;
 
   freestyle_mtl_ptr_t _testmaterial;
+  fxpipeline_ptr_t _pipeline;
   particlebuf_inpluginst_ptr_t _input_buffer;
   triple_buf_ptr_t _triple_buf;
   pool_ptr_t _pool;

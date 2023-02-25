@@ -77,22 +77,22 @@ vertex_interface vface_bill : ublock_vtx {
     vec4 uv1 : TEXCOORD1;
   }
   outputs {
-    vec4 geo_clr;
-    vec4 geo_uv0;
-    vec4 geo_uv1;
+    vec4 geo_clr[1];
+    vec4 geo_uv0[1];
+    vec4 geo_uv1[1];
   }
 }
 vertex_shader vs_vtxcolor : vface_bill {
   gl_Position = position;
-  geo_clr     = vtxcolor;
-  geo_uv0     = uv0;
-  geo_uv1     = uv1;
+  geo_clr[0]     = vtxcolor;
+  geo_uv0[0]     = uv0;
+  geo_uv1[0]     = uv1;
 }
 vertex_shader vs_vtxtexcolor : vface_bill {
   gl_Position = position;
-  geo_clr     = vtxcolor.rgba;
-  geo_uv0     = uv0;
-  geo_uv1     = uv1;
+  geo_clr[0]     = vtxcolor.rgba;
+  geo_uv0[0]     = uv0;
+  geo_uv1[0]     = uv1;
 }
 ///////////////////////////////////////////////////////////////
 geometry_interface gface_base {
@@ -100,8 +100,16 @@ geometry_interface gface_base {
   outputs { layout(triangle_strip, max_vertices = 4); }
 }
 ///////////////////////////////////////////////////////////////
-geometry_interface gface_bill : gface_base : vface_bill // import vtxshader outputs
+geometry_interface gface_bill 
+  //: vface_bill // import vtxshader outputs
+  : ublock_vtx
+  : gface_base 
 {
+  inputs {
+    vec4 geo_clr[1];
+    vec4 geo_uv0[1];
+    vec4 geo_uv1[1];
+  }
   outputs {
     vec4 frg_clr;
     vec4 frg_uv0;
@@ -180,7 +188,7 @@ libblock lib_billboard {
       int itexframe   = int(ftexframe) % texcnt;
       int ifrX        = itexframe % texanimdim;
       int ifrY        = itexframe / texanimdim;
-      float ftexs     = 1.0f / ftexanimdim;
+      float ftexs     = 1.0 / ftexanimdim;
       float fu0       = float(ifrX) * ftexs;
       float fu1       = float(ifrX + 1) * ftexs;
       float fv0       = float(ifrY) * ftexs;
@@ -403,9 +411,9 @@ fragment_shader ps_modtexclr : fface_psys {
 
   out_clr.a = alp;
   out_rufmtl = vec4(0,1,0,0);
-  out_normal_mdl = vec4(0,0,5.00);
+  out_normal_mdl = vec4(0,0,5,0);
 
-  if (alp == 0.0f)
+  if (alp == 0.0)
     discard;
 }
 fragment_shader ps_volume : fface_psys {
