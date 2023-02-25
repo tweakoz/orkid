@@ -47,11 +47,13 @@ particles_drawable_data_ptr_t createParticleData(){
   auto ptcl_globals = GlobalModuleData::createShared();
   auto ptcl_emitter = NozzleEmitterData::createShared();
   auto ptcl_gravity = GravityModuleData::createShared();
+  auto ptcl_turbulence = TurbulenceModuleData::createShared();
   auto ptcl_sprites = SpriteRendererData::createShared();
   GraphData::addModule(graphdata, "G", ptcl_globals);
   GraphData::addModule(graphdata, "P", ptcl_pool);
   GraphData::addModule(graphdata, "E", ptcl_emitter);
   GraphData::addModule(graphdata, "GRAV", ptcl_gravity);
+  GraphData::addModule(graphdata, "TURB", ptcl_turbulence);
   GraphData::addModule(graphdata, "SPRITE", ptcl_sprites);
 
   ////////////////////////////////////////////////////
@@ -72,6 +74,7 @@ particles_drawable_data_ptr_t createParticleData(){
   auto GR_OthMass = ptcl_gravity->typedInputNamed<FloatXfPlugTraits>("OthMass");
   auto GR_MinDist = ptcl_gravity->typedInputNamed<FloatXfPlugTraits>("MinDistance");
   auto GR_Center  = ptcl_gravity->typedInputNamed<Vec3XfPlugTraits>("Center");
+  auto TURB_Amount  = ptcl_turbulence->typedInputNamed<Vec3XfPlugTraits>("Amount");
 
   E_life->setValue(10.0f);
   E_rate->setValue(800.0f);
@@ -83,6 +86,7 @@ particles_drawable_data_ptr_t createParticleData(){
   GR_OthMass->setValue(1.0f);
   GR_MinDist->setValue(1);
   GR_Center->setValue(fvec3(0,0,0));
+  TURB_Amount->setValue(fvec3(1.5,1.5,1.5));
 
   ///////////////////////////////////////////////////////////////
   // particle buffer IO
@@ -93,11 +97,14 @@ particles_drawable_data_ptr_t createParticleData(){
   auto E_out   = ptcl_emitter->outputNamed("ParticleBuffer");
   auto GR_inp  = ptcl_gravity->inputNamed("ParticleBuffer");
   auto GR_out  = ptcl_gravity->outputNamed("ParticleBuffer");
+  auto TURB_inp  = ptcl_turbulence->inputNamed("ParticleBuffer");
+  auto TURB_out  = ptcl_turbulence->outputNamed("ParticleBuffer");
   auto SPR_inp = ptcl_sprites->inputNamed("ParticleBuffer");
 
   graphdata->safeConnect(E_inp, P_out);
   graphdata->safeConnect(GR_inp, E_out);
-  graphdata->safeConnect(SPR_inp, GR_out);
+  graphdata->safeConnect(TURB_inp, GR_out);
+  graphdata->safeConnect(SPR_inp, TURB_out);
 
   ///////////////////////////////////////////////////////////////
 

@@ -21,6 +21,13 @@ public:
   dflow::dgmoduleinst_ptr_t createInstance() const final;
 };
 
+struct TurbulenceModuleData : public ParticleModuleData {
+  DeclareConcreteX(TurbulenceModuleData, ParticleModuleData);
+public:
+  TurbulenceModuleData();
+  static std::shared_ptr<TurbulenceModuleData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance() const final;
+};
 
 /////////////////////////////////////////
 } //namespace ork::lev2::particle {
