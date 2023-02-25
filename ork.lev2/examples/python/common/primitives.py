@@ -61,8 +61,6 @@ def createParticleData():
 
   # connect modules in a chain configuration
 
-  print(emitter.inputs)
-
   graphdata.connect( emitter.inputs.pool,    ptc_pool.outputs.pool )
   graphdata.connect( gravity.inputs.pool,    emitter.outputs.pool )
   graphdata.connect( turbulence.inputs.pool, gravity.outputs.pool )
@@ -70,8 +68,6 @@ def createParticleData():
   graphdata.connect( sprites.inputs.pool,    vortex.outputs.pool )
 
   # basic module settings
-
-  print(emitter.inputs)
 
   emitter.inputs.LifeSpan = 10
   emitter.inputs.EmissionRate = 800
