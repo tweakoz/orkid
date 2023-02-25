@@ -10,6 +10,7 @@
 #include <ork/lev2/gfx/particle/modular_particles2.h>
 #include <ork/lev2/gfx/particle/modular_forces.h>
 #include <ork/lev2/gfx/particle/modular_renderers.h>
+#include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/dataflow/module.inl>
 #include <ork/dataflow/plug_data.inl>
 
@@ -119,11 +120,12 @@ struct SpriteRendererInst : public DgModuleInst {
 
     fmtx4 mtx;
 
-    float input_rot = 0.0f; //mPlugInpRot.GetValue();
+    float input_rot  = 0.0f; // mPlugInpRot.GetValue();
     float anim_frame = 0.0f; // mPlugInpAnimFrame.GetValue()
     float input_size = 5.0f;
 
     if (icnt) {
+      printf("NPARTICLES<%d>\n", icnt);
       lev2::VtxWriter<SVtxV12C4T16> vw;
       vw.Lock(context, &vertex_buffer, ivertexlockcount);
       { // ork::fcolor4 CL;
@@ -138,10 +140,10 @@ struct SpriteRendererInst : public DgModuleInst {
             fvec3 PX = nx;
             fvec3 NY = ny * -1.0f;
             fvec3 PY = ny;
-            NX_NY         = (NX + NY);
-            PX_NY         = (PX + NY);
-            PX_PY         = (PX + PY);
-            NX_PY         = (NX + PY);
+            NX_NY    = (NX + NY);
+            PX_NY    = (PX + NY);
+            PX_PY    = (PX + PY);
+            NX_PY    = (NX + PY);
             break;
           }
           case ParticleItemAlignment::XZ: {
@@ -207,7 +209,7 @@ struct SpriteRendererInst : public DgModuleInst {
           static ork::fixedlut<float, const particle::BasicParticle*, 20000> SortedParticles(EKEYPOLICY_MULTILUT);
           SortedParticles.clear();
           for (int i = 0; i < icnt; i++) {
-            auto ptcl = render_buffer->_particles + i;
+            auto ptcl  = render_buffer->_particles + i;
             fvec4 proj = ptcl->mPosition.transform(MVP);
             proj.perspectiveDivideInPlace();
             float fv = proj.z;
@@ -216,15 +218,15 @@ struct SpriteRendererInst : public DgModuleInst {
           for (int i = (icnt - 1); i >= 0; i--) {
             auto ptcl = SortedParticles.GetItemAtIndex(i).second;
             //////////////////////////////////////////////////////
-            float fage      = ptcl->mfAge;
-            float funitage  = (fage / ptcl->mfLifeSpan);
-            float clamped_unitage = std::clamp<float>(funitage,0,1);
-            float fiunitage = (1.0f - clamped_unitage);
-            float fsize     = input_size; //mPlugInpSize.GetValue();
+            float fage            = ptcl->mfAge;
+            float funitage        = (fage / ptcl->mfLifeSpan);
+            float clamped_unitage = std::clamp<float>(funitage, 0, 1);
+            float fiunitage       = (1.0f - clamped_unitage);
+            float fsize           = input_size; // mPlugInpSize.GetValue();
             //////////////////////////////////////////////////////
-            fvec4 color(1,1,1,1);
-            //if (pGRAD)
-              //color = (pGRAD->Sample(mOutDataUnitAge) * mCurFGI).saturated();
+            fvec4 color(1, 1, 1, 1);
+            // if (pGRAD)
+            // color = (pGRAD->Sample(mOutDataUnitAge) * mCurFGI).saturated();
             U32 ucolor = color.VtxColorAsU32();
             //////////////////////////////////////////////////////
             float fang  = input_rot * DTOR;
@@ -252,16 +254,16 @@ struct SpriteRendererInst : public DgModuleInst {
           auto pbase = render_buffer->_particles;
 
           for (int i = 0; i < icnt; i++) {
-            auto ptcl         = pbase + i;
-            float fage        = ptcl->mfAge;
-            float flspan      = (ptcl->mfLifeSpan != 0.0f) ? ptcl->mfLifeSpan : 0.01f;
-            float clamped_unitage = std::clamp<float>((fage / flspan),0,1);
-            auto _OUTRANDOM = ptcl->mfRandom;
-            float fiunitage   = (1.0f - clamped_unitage);
-            float fsize       = input_size;
-            fvec4 color(1,1,1,1);
-            //if (pGRAD)
-              //color = (pGRAD->Sample(clamped_unitage) * mCurFGI).saturated();
+            auto ptcl             = pbase + i;
+            float fage            = ptcl->mfAge;
+            float flspan          = (ptcl->mfLifeSpan != 0.0f) ? ptcl->mfLifeSpan : 0.01f;
+            float clamped_unitage = std::clamp<float>((fage / flspan), 0, 1);
+            auto _OUTRANDOM       = ptcl->mfRandom;
+            float fiunitage       = (1.0f - clamped_unitage);
+            float fsize           = input_size;
+            fvec4 color(1, 1, 1, 1);
+            // if (pGRAD)
+            // color = (pGRAD->Sample(clamped_unitage) * mCurFGI).saturated();
             U32 ucolor = color.VtxColorAsU32();
             float fang = input_rot * DTOR;
             //////////////////////////////////////////////////////
@@ -271,9 +273,9 @@ struct SpriteRendererInst : public DgModuleInst {
             bool is_texanim  = (miAnimTexDim > 1);
 
             fvec2 uv0(fang, fsize);
-            fvec2 uv1 = is_texanim //
-                      ? fvec2(ftexframe, 0.0f) //
-                      : fvec2(clamped_unitage, _OUTRANDOM) ;
+            fvec2 uv1 = is_texanim                   //
+                            ? fvec2(ftexframe, 0.0f) //
+                            : fvec2(clamped_unitage, _OUTRANDOM);
 
             vw.AddVertex(SVtxV12C4T16(ptcl->mPosition, uv0, uv1, ucolor));
           }
@@ -281,6 +283,11 @@ struct SpriteRendererInst : public DgModuleInst {
         ////////////////////////////////////////////////////////////////////
       }
       vw.UnLock(context);
+
+      if (nullptr == _testmaterial) {
+        _testmaterial = std::make_shared<FreestyleMaterial>();
+        _testmaterial->gpuInit(context,"orkshader://particle");
+      }
 
       /*
 
@@ -359,6 +366,7 @@ struct SpriteRendererInst : public DgModuleInst {
   PoolString mActiveGradient;
   PoolString mActiveMaterial;
 
+  freestyle_mtl_ptr_t _testmaterial;
   particlebuf_inpluginst_ptr_t _input_buffer;
   triple_buf_ptr_t _triple_buf;
   pool_ptr_t _pool;

@@ -144,7 +144,7 @@ void SpiralEmitterData::describeX(class_t* clazz) {
     if (std::isnan(ctx.mfEmitterMark)) {
       ctx.mfEmitterMark = 0.0f;
     }
-    printf("emitrate<%f> deltat<%f> deltap<%f> mark<%f>\n", ctx.mfEmissionRate, ctx.mfDeltaTime, fdeltap, ctx.mfEmitterMark);
+    //printf("emitrate<%f> deltat<%f> deltap<%f> mark<%f>\n", ctx.mfEmissionRate, ctx.mfDeltaTime, fdeltap, ctx.mfEmitterMark);
     int icount = int(ctx.mfEmitterMark);
     fvec3 dir, pos, disp, vbin, vtan, yo;
     for (int ic = 0; ic < icount; ic++) {

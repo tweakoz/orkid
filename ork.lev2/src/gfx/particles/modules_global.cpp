@@ -44,7 +44,7 @@ struct GlobalModuleInst : dflow::DgModuleInst {
     _outputRelTimeDiv10->setValue(reltimediv10);
     _outputRelTimeDiv100->setValue(reltimediv100);
 
-    printf("computing particle globals<%p> reltime<%g>\n", this, reltime);
+   // printf("computing particle globals<%p> reltime<%g>\n", this, reltime);
 
     /**(_outputTimeBase->_value) = *(_gmd->_timeBase);
      *(_outputNoiseRat->_value) = *(_gmd->_noiseRat);
