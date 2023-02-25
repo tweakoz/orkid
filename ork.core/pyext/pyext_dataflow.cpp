@@ -110,6 +110,7 @@ void pyinit_dataflow(py::module& module_core) {
           on_compute(this, gi, udata);
         };
       }
+      _pyclazz = module_clazz;
     }
 
     py::object _pyclazz;
