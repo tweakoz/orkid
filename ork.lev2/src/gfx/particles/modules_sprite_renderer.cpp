@@ -285,15 +285,24 @@ struct SpriteRendererInst : public DgModuleInst {
       if (nullptr == _testmaterial) {
         _testmaterial = std::make_shared<FreestyleMaterial>();
         _testmaterial->gpuInit(context,"orkshader://particle");
-        _testmaterial->_rasterstate.SetBlending(Blending::OFF);
+        _testmaterial->_rasterstate.SetBlending(Blending::ADDITIVE);
         _testmaterial->_rasterstate.SetCullTest(ECullTest::OFF);
         _testmaterial->_rasterstate.SetDepthTest(EDepthTest::OFF);
-        auto fxtechnique    = _testmaterial->technique("tparticle_nogs");
+        //auto fxtechnique    = _testmaterial->technique("tparticle_nogs");
+        auto fxtechnique    = _testmaterial->technique("tbasicparticle");
+        auto fxparameterM = _testmaterial->param("MatM");
         auto fxparameterMVP = _testmaterial->param("MatMVP");
+        auto fxparameterIV = _testmaterial->param("MatIV");
+        auto fxparameterIVP = _testmaterial->param("MatIVP");
+        auto fxparameterVP = _testmaterial->param("MatVP");
         auto pipeline_cache = _testmaterial->pipelineCache();
         _pipeline = pipeline_cache->findPipeline(RCID);
         _pipeline->_technique = fxtechnique;
         _pipeline->bindParam(fxparameterMVP, "RCFD_Camera_MVP_Mono"_crcsh);
+        _pipeline->bindParam(fxparameterIVP, "RCFD_Camera_IVP_Mono"_crcsh);
+        _pipeline->bindParam(fxparameterVP, "RCFD_Camera_VP_Mono"_crcsh);
+        _pipeline->bindParam(fxparameterIV, "RCFD_Camera_IV_Mono"_crcsh);
+        _pipeline->bindParam(fxparameterM, "RCFD_M"_crcsh);
       }
 
       _pipeline->wrappedDrawCall(RCID, [&]() {

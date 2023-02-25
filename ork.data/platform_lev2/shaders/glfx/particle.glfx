@@ -10,6 +10,9 @@ uniform_set ublock_vtx {
   mat4 MatM;
   mat4 MatV;
   mat4 MatP;
+  mat4 MatVP;
+  mat4 MatIV;
+  mat4 MatIVP;
   mat4 MatMV;
   mat4 MatMVP;
   mat4 MatMVPL;
@@ -151,8 +154,6 @@ geometry_shader gs_identity : gface_bill {
 ///////////////////////////////////////////////////////////////
 libblock lib_billboard {
   struct Input {
-    vec4 inp_clr;
-    vec4 inp_uv1;
     vec4 inp_ang_siz;
     vec3 inp_pos;
   };
@@ -161,91 +162,55 @@ libblock lib_billboard {
     vec4 pos1;
     vec4 pos2;
     vec4 pos3;
-    vec4 uv0;
-    vec4 uv1;
-    vec4 uv2;
-    vec4 uv3;
   };
-  Output Compute(Input inp, mat4 mvp) {
+  Output Compute(Input inp) {
     Output outp;
 
-    float ftexanimdim = User2.x;
-    int texanimdim    = int(ftexanimdim);
-    int texcnt        = int(User2.y);
+    float ang = 0.0; //inp.inp_ang_siz.x;
+    float siz = .003; //inp.inp_ang_siz.y;
 
-    bool is_texanim = texanimdim > 1;
+    vec4 wpos = MatM*vec4(inp.inp_pos,1);
+    vec4 hpos = MatVP*wpos;
+    vec4 dpos = hpos/hpos.w;
 
-    float ang = inp.inp_ang_siz.x;
-    float siz = 5; //inp.inp_ang_siz.y;
+    vec3 p0  = dpos.xyz + vec3(-siz,-siz,0);
+    vec3 p1  = dpos.xyz + vec3(+siz,-siz,0);
+    vec3 p2  = dpos.xyz + vec3(+siz,+siz,0);
+    vec3 p3  = dpos.xyz + vec3(-siz,+siz,0);
 
-    vec3 nxny = User0.xyz;
-    vec3 nxpy = User1.xyz;
+    outp.pos0 = vec4(p0, 1.0);
+    outp.pos1 = vec4(p1, 1.0);
+    outp.pos2 = vec4(p2, 1.0);
+    outp.pos3 = vec4(p3, 1.0);
 
-    float sinfr = sin(ang) * siz;
-    float cosfr = cos(ang) * siz;
-    vec3 rota   = (nxny * cosfr) + (nxpy * sinfr);
-    vec3 rotb   = (nxpy * cosfr) - (nxny * sinfr);
-
-    vec3 ctr = inp.inp_pos;
-    vec3 p0  = ctr + rota;
-    vec3 p1  = ctr + rotb;
-    vec3 p2  = ctr - rota;
-    vec3 p3  = ctr - rotb;
-
-    outp.pos0 = mvp * vec4(p0, 1.0);
-    outp.pos1 = mvp * vec4(p1, 1.0);
-    outp.pos2 = mvp * vec4(p2, 1.0);
-    outp.pos3 = mvp * vec4(p3, 1.0);
-
-    outp.uv0 = vec4(0.0, 0.0, 0.0, 0.0);
-    outp.uv1 = vec4(1.0, 0.0, 0.0, 0.0);
-    outp.uv2 = vec4(1.0, 1.0, 0.0, 0.0);
-    outp.uv3 = vec4(0.0, 1.0, 0.0, 0.0);
-
-    /*if (is_texanim) {
-      float ftexframe = frg_uv1.x;
-      int itexframe   = int(ftexframe) % texcnt;
-      int ifrX        = itexframe % texanimdim;
-      int ifrY        = itexframe / texanimdim;
-      float ftexs     = 1.0 / ftexanimdim;
-      float fu0       = float(ifrX) * ftexs;
-      float fu1       = float(ifrX + 1) * ftexs;
-      float fv0       = float(ifrY) * ftexs;
-      float fv1       = float(ifrY + 1) * ftexs;
-      outp.uv0        = vec4(fu0, fv0, 0.0, 0.0);
-      outp.uv1        = vec4(fu1, fv0, 0.0, 0.0);
-      outp.uv2        = vec4(fu1, fv1, 0.0, 0.0);
-      outp.uv3        = vec4(fu0, fv1, 0.0, 0.0);
-    }*/
     return outp;
   }
 }
 geometry_shader gs_billboardquad : lib_billboard : gface_bill {
   Input inp;
-  inp.inp_clr     = geo_clr[0];
   inp.inp_ang_siz = geo_uv0[0];
-  inp.inp_uv1     = geo_uv1[0];
   inp.inp_pos     = gl_in[0].gl_Position.xyz;
-  Output outp     = Compute(inp, MatMVP);
+  Output outp     = Compute(inp);
   gl_Position     = outp.pos0;
-  frg_uv0         = outp.uv0;
-  frg_uv1         = geo_uv1[0];
+  frg_uv0         = vec4(0,0,0,0);
+  frg_uv1         = vec4(0,0,0,0);
   frg_clr         = geo_clr[0];
   EmitVertex();
   gl_Position = outp.pos1;
-  frg_uv0     = outp.uv1;
-  frg_uv1     = geo_uv1[0];
-  frg_clr     = geo_clr[0];
+  frg_uv0         = vec4(0,0,0,0);
+  frg_uv1         = vec4(0,0,0,0);
+  frg_clr         = geo_clr[0];
   EmitVertex();
   gl_Position = outp.pos3;
-  frg_uv0     = outp.uv3;
-  frg_uv1     = geo_uv1[0];
-  frg_clr     = geo_clr[0];
+  frg_uv0         = vec4(0,0,0,0);
+  frg_uv1         = vec4(0,0,0,0);
+  frg_clr         = geo_clr[0];
   EmitVertex();
   gl_Position = outp.pos2;
-  frg_uv0     = outp.uv2;
-  frg_uv1     = geo_uv1[0];
-  frg_clr     = geo_clr[0];
+  frg_uv0         = vec4(0,0,0,0);
+  frg_uv1         = vec4(0,0,0,0);
+  frg_clr         = geo_clr[0];
+
   EmitVertex();
   EndPrimitive();
 }
@@ -468,7 +433,8 @@ technique tbasicparticle {
   pass p0 {
     vertex_shader   = vs_vtxtexcolor;
     geometry_shader = gs_billboardquad;
-    fragment_shader = ps_modtexclr;
+    fragment_shader = ps_solid;
+    //fragment_shader = ps_modtexclr;
     state_block     = sb_default;
   }
 }

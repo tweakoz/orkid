@@ -144,6 +144,24 @@ bool FxPipeline::beginPass(const RenderContextInstData& RCID, int ipass) {
           }
           break;
         }
+        case "RCFD_Camera_VP_Mono"_crcu: {
+          if (monocams) {
+            FXI->BindParamMatrix(param, monocams->VPMONO());
+          } else {
+            auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVPMatrix());
+            FXI->BindParamMatrix(param, MVP);
+          }
+          break;
+        }
+        case "RCFD_Camera_IV_Mono"_crcu: {
+          if (monocams) {
+            FXI->BindParamMatrix(param, monocams->GetIVMatrix());
+          } else {
+            auto MVP = fmtx4::multiply_ltor(worldmatrix, MTXI->RefVMatrix().inverse());
+            FXI->BindParamMatrix(param, MVP);
+          }
+          break;
+        }
         case "RCFD_Camera_IVP_Mono"_crcu: {
           if (monocams) {
             FXI->BindParamMatrix(param, monocams->VPMONO().inverse());
