@@ -31,7 +31,7 @@ struct TurbulenceModuleInst : public DgModuleInst {
     /////////////////
 
     _input_buffer = typedInputNamed<ParticleBufferPlugTraits>("ParticleBuffer");
-    _input_amount           = typedInputNamed<Vec3XfPlugTraits>("Amount");
+    _input_amount = typedInputNamed<Vec3XfPlugTraits>("Amount");
 
     /////////////////
     // outputs
@@ -50,20 +50,20 @@ struct TurbulenceModuleInst : public DgModuleInst {
   ////////////////////////////////////////////////////
 
   void compute(GraphInst* inst, ui::updatedata_ptr_t updata) final {
-    fvec3 amt    = _input_amount->value();
-    float dt      = updata->_dt;
+    fvec3 amt = _input_amount->value();
+    float dt  = updata->_dt;
 
     for (int i = 0; i < _pool->GetNumAlive(); i++) {
       BasicParticle* particle = _pool->GetActiveParticle(i);
-    float furx              = ((std::rand() % 256) / 256.0f) - 0.5f;
-    float fury              = ((std::rand() % 256) / 256.0f) - 0.5f;
-    float furz              = ((std::rand() % 256) / 256.0f) - 0.5f;
-    /////////////////////////////////////////
-    F32 randX = amt.x * furx;
-    F32 randY = amt.y * fury;
-    F32 randZ = amt.z * furz;
-    ork::fvec4 accel(randX, randY, randZ);
-    particle->mVelocity += accel * dt;
+      float furx              = ((std::rand() % 256) / 256.0f) - 0.5f;
+      float fury              = ((std::rand() % 256) / 256.0f) - 0.5f;
+      float furz              = ((std::rand() % 256) / 256.0f) - 0.5f;
+      /////////////////////////////////////////
+      F32 randX = amt.x * furx;
+      F32 randY = amt.y * fury;
+      F32 randZ = amt.z * furz;
+      ork::fvec4 accel(randX, randY, randZ);
+      particle->mVelocity += accel * dt;
     }
   }
 
@@ -95,6 +95,9 @@ std::shared_ptr<TurbulenceModuleData> TurbulenceModuleData::createShared() {
   createInputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "ParticleBuffer");
   createOutputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "ParticleBuffer");
 
+  //RegisterFloatXfPlug(TurbulenceModule, AmountX, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
+  //RegisterFloatXfPlug(TurbulenceModule, AmountY, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
+  //RegisterFloatXfPlug(TurbulenceModule, AmountZ, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
   createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Amount");
 
   return data;

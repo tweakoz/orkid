@@ -121,6 +121,12 @@ std::shared_ptr<GravityModuleData> GravityModuleData::createShared() {
   createInputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "ParticleBuffer");
   createOutputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "ParticleBuffer");
 
+  //RegisterFloatXfPlug(GravityModule, G, -10.0f, 10.0f, ged::OutPlugChoiceDelegate);
+  //RegisterFloatXfPlug(GravityModule, Mass, -10.0f, 10.0f, ged::OutPlugChoiceDelegate);
+  //RegisterFloatXfPlug(GravityModule, OthMass, -10.0f, 10.0f, ged::OutPlugChoiceDelegate);
+  //RegisterFloatXfPlug(GravityModule, MinDistance, 0.0f, 100.0f, ged::OutPlugChoiceDelegate);
+  //RegisterVect3XfPlug(GravityModule, Center, -1000.0f, 1000.0f, ged::OutPlugChoiceDelegate);
+
   createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "G");
   createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "Mass");
   createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "OthMass");

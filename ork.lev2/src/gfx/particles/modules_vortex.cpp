@@ -52,22 +52,22 @@ struct VortexModuleInst : public DgModuleInst {
   ////////////////////////////////////////////////////
 
   void compute(GraphInst* inst, ui::updatedata_ptr_t updata) final {
-    float vortexstrength = _input_vortex_strength->value();
+    float vortexstrength  = _input_vortex_strength->value();
     float outwardstrength = _input_outward_strength->value();
-    float falloff = _input_falloff->value();
-    float dt  = updata->_dt;
+    float falloff         = _input_falloff->value();
+    float dt              = updata->_dt;
 
     for (int i = 0; i < _pool->GetNumAlive(); i++) {
       BasicParticle* particle = _pool->GetActiveParticle(i);
-        fvec3 Pos2D = particle->mPosition;
-        Pos2D.y     = (0.0f);
-        fvec3 N     = particle->mPosition.normalized();
-        fvec3 Dir   = N.crossWith(fvec3::unitY());
-        float fstr  = 1.0f / (1.0f + falloff / Pos2D.magnitude());
-        fvec3 Force = Dir * (vortexstrength * fstr);
-        Force += N * (outwardstrength * fstr);
+      fvec3 Pos2D             = particle->mPosition;
+      Pos2D.y                 = (0.0f);
+      fvec3 N                 = particle->mPosition.normalized();
+      fvec3 Dir               = N.crossWith(fvec3::unitY());
+      float fstr              = 1.0f / (1.0f + falloff / Pos2D.magnitude());
+      fvec3 Force             = Dir * (vortexstrength * fstr);
+      Force += N * (outwardstrength * fstr);
 
-        particle->mVelocity += Force * dt;
+      particle->mVelocity += Force * dt;
     }
   }
 
@@ -100,6 +100,10 @@ std::shared_ptr<VortexModuleData> VortexModuleData::createShared() {
 
   createInputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "ParticleBuffer");
   createOutputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "ParticleBuffer");
+
+  //RegisterFloatXfPlug(VortexModule, Falloff, 0.0f, 10.0f, ged::OutPlugChoiceDelegate);
+  //RegisterFloatXfPlug(VortexModule, VortexStrength, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
+  //RegisterFloatXfPlug(VortexModule, OutwardStrength, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
 
   createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "VortexStrength");
   createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "OutwardStrength");

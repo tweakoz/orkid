@@ -189,6 +189,14 @@ NozzleEmitterData::NozzleEmitterData() {
 std::shared_ptr<NozzleEmitterData> NozzleEmitterData::createShared() {
   auto data = std::make_shared<NozzleEmitterData>();
 
+  //RegisterFloatXfPlug(NozzleEmitter, Lifespan, 0.0f, 20.0f, ged::OutPlugChoiceDelegate);
+  //RegisterFloatXfPlug(NozzleEmitter, EmissionRate, 0.0f, 400.0f, ged::OutPlugChoiceDelegate);
+  //RegisterFloatXfPlug(NozzleEmitter, EmissionVelocity, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
+  //RegisterFloatXfPlug(NozzleEmitter, DispersionAngle, 0.0f, 1.0f, ged::OutPlugChoiceDelegate);
+  //RegisterVect3XfPlug(NozzleEmitter, Offset, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
+  //RegisterVect3XfPlug(NozzleEmitter, Direction, -1.0f, 1.0f, ged::OutPlugChoiceDelegate);
+  //RegisterVect3XfPlug(NozzleEmitter, OffsetVelocity, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
+
   createInputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "ParticleBuffer");
   createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "LifeSpan");
   createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionRate");

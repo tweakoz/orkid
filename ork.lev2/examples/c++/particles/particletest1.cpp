@@ -84,7 +84,7 @@ particles_drawable_data_ptr_t createParticleData(){
   E_life->setValue(10.0f);
   E_rate->setValue(800.0f);
   E_vel->setValue(1.0f);
-  E_ang->setValue(PI);
+  E_ang->setValue(45);
   E_pos->setValue(fvec3(1,2,3));
   GR_G->setValue(1);
   GR_Mass->setValue(1.0f);
