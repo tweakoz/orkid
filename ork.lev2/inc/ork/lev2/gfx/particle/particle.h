@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <ork/lev2/lev2_types.h>
 #include <ork/object/Object.h>
 #include <ork/kernel/tempstring.h>
 #include <ork/kernel/string/ArrayString.h>
@@ -287,6 +288,8 @@ struct Context {
 
   EventQueueLut mEventQueueLut;
   float mfCurrentTime;
+  drawable_ptr_t _drawable;
+  rcid_lambda_t _rcidlambda;
 
   EventQueue* MergeQueue(Char4 qname);
   EventQueue* FindQueue(Char4 qname);

@@ -126,14 +126,15 @@ public:
 
 struct ParticlePoolRenderBuffer {
 
-  ParticlePoolRenderBuffer();
+  ParticlePoolRenderBuffer(int index);
   ~ParticlePoolRenderBuffer();
-  void Update(const pool_t& pool);
-  void SetCapacity(int inum);
+  void update(const pool_t& pool);
+  void setCapacity(int inum);
 
   particle_t* _particles = nullptr;
   int _maxParticles      = 0;
   int _numParticles      = 0;
+  int _index = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

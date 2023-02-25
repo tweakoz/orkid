@@ -13,6 +13,8 @@
 #include <ork/dataflow/module.inl>
 #include <ork/dataflow/plug_data.inl>
 
+#include <ork/util/triple_buffer.h>
+
 using namespace ork::dataflow;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -21,12 +23,28 @@ namespace ork::lev2::particle {
 
 struct SpriteRendererInst : public DgModuleInst {
 
-public:
+  using triple_buf_t     = concurrent_triple_buffer<ParticlePoolRenderBuffer>;
+  using triple_buf_ptr_t = std::shared_ptr<triple_buf_t>;
+
   SpriteRendererInst(const SpriteRendererData* smd)
       : DgModuleInst(smd) {
+
+    _triple_buf = std::make_shared<triple_buf_t>();
   }
 
   void onLink(GraphInst* inst) final {
+
+    _input_buffer = typedInputNamed<ParticleBufferPlugTraits>("ParticleBuffer");
+
+    if (_input_buffer->_connectedOutput) {
+      _pool = _input_buffer->value()._pool;
+    } else {
+      OrkAssert(false);
+    }
+
+    auto ptcl_context = inst->_impl.getShared<Context>();
+
+    ptcl_context->_rcidlambda = [this](const RenderContextInstData& RCID) { this->_render(RCID); };
 
     /*if( mbImageSequence && mTexture && mTexture->IsLoaded() )
     {
@@ -61,6 +79,14 @@ public:
   }
   void compute(GraphInst* inst, ui::updatedata_ptr_t updata) final {
 
+    auto ptcl_context = inst->_impl.getShared<Context>();
+    auto drawable     = ptcl_context->_drawable;
+    OrkAssert(drawable);
+    auto output_buffer = _triple_buf->begin_push();
+
+    output_buffer->update(*_pool);
+
+    _triple_buf->end_push(output_buffer);
     /*  MaterialBase* pMTLBASE = 0;
     if (mpTemplateModule) {
       SpriteRenderer* ptemplate_module                     = 0;
@@ -77,52 +103,41 @@ public:
     }*/
   }
 
-  void _drawParticle(const ork::lev2::particle::BasicParticle* ptcl) {
-  }
+  void _render(const ork::lev2::RenderContextInstData& RCID) {
 
-  void _render(
-      const fmtx4& mtx,
-      const ork::lev2::RenderContextInstData& rcid,
-      const ParticlePoolRenderBuffer& buffer,
-      ork::lev2::Context* targ) {
-
-/*
-    gtarg = targ;
-
-    auto RCFD                   = targ->topRenderContextFrameData();
+    auto render_buffer          = _triple_buf->begin_pull();
+    auto context                = RCID.context();
+    auto RCFD                   = context->topRenderContextFrameData();
     const auto& CPD             = RCFD->topCPD();
     const CameraMatrices* cmtcs = CPD.cameraMatrices();
     const CameraData& cdata     = cmtcs->_camdat;
-    MaterialBase* pMTLBASE      = 0;
-    //////////////////////////////////////////
-    mpVB        = &GfxEnv::GetSharedDynamicVB();
-    float Scale = 1.0f;
-    ork::fmtx4 MatScale;
-    MatScale.setScale(Scale, Scale, Scale);
-    const fmtx4& MVP = targ->MTXI()->RefMVPMatrix();
-    ///////////////////////////////////////////////////////////////
-    mCurFGI = mPlugInpGradientIntensity.GetValue();
-    ///////////////////////////////////////////////////////////////
-    // compute particle dynamic vertex buffer
-    //////////////////////////////////////////
-    int icnt             = buffer.miNumParticles;
+    const fmtx4& MVP            = context->MTXI()->RefMVPMatrix();
+    auto& vertex_buffer         = GfxEnv::GetSharedDynamicVB();
+
+    int icnt             = render_buffer->_numParticles;
     int ivertexlockcount = icnt;
-    // int ivertexlockbase = mpVB->GetNumVertices();
+
+    fmtx4 mtx;
+
+    float input_rot = 0.0f; //mPlugInpRot.GetValue();
+    float anim_frame = 0.0f; // mPlugInpAnimFrame.GetValue()
+    float input_size = 5.0f;
+
     if (icnt) {
       lev2::VtxWriter<SVtxV12C4T16> vw;
-      vw.Lock(targ, mpVB, ivertexlockcount);
+      vw.Lock(context, &vertex_buffer, ivertexlockcount);
       { // ork::fcolor4 CL;
         switch (meAlignment) {
           case ParticleItemAlignment::BILLBOARD: {
             ork::fmtx4 matrs(mtx);
             matrs.setTranslation(0.0f, 0.0f, 0.0f);
             matrs.transpose();
-            ork::fvec3 nx = cdata.xNormal().transform(matrs);
-            ork::fvec3 ny = cdata.yNormal().transform(matrs);
-            ork::fvec3 NX = nx * -1.0f;
-            ork::fvec3 PX = nx;
-            ork::fvec3 NY = ny * -1.0f;
-            ork::fvec3 PY = ny;
+            fvec3 nx = cdata.xNormal().transform(matrs);
+            fvec3 ny = cdata.yNormal().transform(matrs);
+            fvec3 NX = nx * -1.0f;
+            fvec3 PX = nx;
+            fvec3 NY = ny * -1.0f;
+            fvec3 PY = ny;
             NX_NY         = (NX + NY);
             PX_NY         = (PX + NY);
             PX_PY         = (PX + PY);
@@ -130,24 +145,24 @@ public:
             break;
           }
           case ParticleItemAlignment::XZ: {
-            NX_NY = ork::fvec3(-1.0f, 0.0f, -1.0f);
-            PX_NY = ork::fvec3(+1.0f, 0.0f, -1.0f);
-            PX_PY = ork::fvec3(+1.0f, 0.0f, +1.0f);
-            NX_PY = ork::fvec3(-1.0f, 0.0f, +1.0f);
+            NX_NY = fvec3(-1.0f, 0.0f, -1.0f);
+            PX_NY = fvec3(+1.0f, 0.0f, -1.0f);
+            PX_PY = fvec3(+1.0f, 0.0f, +1.0f);
+            NX_PY = fvec3(-1.0f, 0.0f, +1.0f);
             break;
           }
           case ParticleItemAlignment::XY: {
-            NX_NY = ork::fvec3(-1.0f, -1.0f, 0.0f);
-            PX_NY = ork::fvec3(+1.0f, -1.0f, 0.0f);
-            PX_PY = ork::fvec3(+1.0f, +1.0f, 0.0f);
-            NX_PY = ork::fvec3(-1.0f, +1.0f, 0.0f);
+            NX_NY = fvec3(-1.0f, -1.0f, 0.0f);
+            PX_NY = fvec3(+1.0f, -1.0f, 0.0f);
+            PX_PY = fvec3(+1.0f, +1.0f, 0.0f);
+            NX_PY = fvec3(-1.0f, +1.0f, 0.0f);
             break;
           }
           case ParticleItemAlignment::YZ: {
-            NX_NY = ork::fvec3(0.0f, -1.0f, -1.0f);
-            PX_NY = ork::fvec3(0.0f, +1.0f, -1.0f);
-            PX_PY = ork::fvec3(0.0f, +1.0f, +1.0f);
-            NX_PY = ork::fvec3(0.0f, -1.0f, +1.0f);
+            NX_NY = fvec3(0.0f, -1.0f, -1.0f);
+            PX_NY = fvec3(0.0f, +1.0f, -1.0f);
+            PX_PY = fvec3(0.0f, +1.0f, +1.0f);
+            NX_PY = fvec3(0.0f, -1.0f, +1.0f);
             break;
           }
         }
@@ -156,66 +171,63 @@ public:
         mfTexs   = 1.0f / 1.0f; // float(miAnimTexDim);
         miTexCnt = (miAnimTexDim * miAnimTexDim);
         mfTexs   = 1.0f / float(miAnimTexDim);
-        uvr0     = ork::fvec2(0.0f, 0.0f);
-        uvr1     = ork::fvec2(mfTexs, 0.0f);
-        uvr2     = ork::fvec2(mfTexs, mfTexs);
-        uvr3     = ork::fvec2(0.0f, mfTexs);
+        uvr0     = fvec2(0.0f, 0.0f);
+        uvr1     = fvec2(mfTexs, 0.0f);
+        uvr2     = fvec2(mfTexs, mfTexs);
+        uvr3     = fvec2(0.0f, mfTexs);
 
         ////////////////////////////////////////////////////////////////////
 
-        ork::Gradient<ork::fvec4>* pGRAD = 0;
+        /*Gradient<fvec4>* pGRAD = 0;
         if (mpTemplateModule) {
           SpriteRenderer* ptemplate_module = 0;
           ptemplate_module                 = rtti::autocast(mpTemplateModule);
           const PoolString& active_g       = ptemplate_module->mActiveGradient;
           const PoolString& active_m       = ptemplate_module->mActiveMaterial;
 
-          orklut<PoolString, ork::Object*>::const_iterator itG = mGradients.find(active_g);
+          orklut<PoolString, Object*>::const_iterator itG = mGradients.find(active_g);
           if (itG != mGradients.end()) {
             pGRAD = rtti::autocast(itG->second);
           }
-          orklut<PoolString, ork::Object*>::const_iterator itM = mMaterials.find(active_m);
+          orklut<PoolString, Object*>::const_iterator itM = mMaterials.find(active_m);
           if (itM != mMaterials.end()) {
             pMTLBASE = rtti::autocast(itM->second);
           }
-        }
+        }*/
+
         ////////////////////////////////////////////////////////////////////
 
         bool bsort = mbSort;
 
-        if (meBlendMode >= ork::lev2::Blending::ADDITIVE && meBlendMode <= Blending::ALPHA_SUBTRACTIVE) {
+        if (meBlendMode >= Blending::ADDITIVE && meBlendMode <= Blending::ALPHA_SUBTRACTIVE) {
           bsort = false;
         }
 
         if (bsort) {
-          static ork::fixedlut<float, const ork::lev2::particle::BasicParticle*, 20000> SortedParticles(EKEYPOLICY_MULTILUT);
+          static ork::fixedlut<float, const particle::BasicParticle*, 20000> SortedParticles(EKEYPOLICY_MULTILUT);
           SortedParticles.clear();
           for (int i = 0; i < icnt; i++) {
-            const ork::lev2::particle::BasicParticle* ptcl = buffer.mpParticles + i;
-            {
-              fvec4 proj = ptcl->mPosition.transform(MVP);
-              proj.perspectiveDivideInPlace();
-              float fv = proj.z;
-              SortedParticles.AddSorted(fv, ptcl);
-            }
+            auto ptcl = render_buffer->_particles + i;
+            fvec4 proj = ptcl->mPosition.transform(MVP);
+            proj.perspectiveDivideInPlace();
+            float fv = proj.z;
+            SortedParticles.AddSorted(fv, ptcl);
           }
           for (int i = (icnt - 1); i >= 0; i--) {
-            const ork::lev2::particle::BasicParticle* __restrict ptcl = SortedParticles.GetItemAtIndex(i).second;
+            auto ptcl = SortedParticles.GetItemAtIndex(i).second;
             //////////////////////////////////////////////////////
             float fage      = ptcl->mfAge;
             float funitage  = (fage / ptcl->mfLifeSpan);
-            mOutDataUnitAge = funitage;
-            mOutDataUnitAge = (mOutDataUnitAge < 0.0f) ? 0.0f : mOutDataUnitAge;
-            mOutDataUnitAge = (mOutDataUnitAge > 1.0f) ? 1.0f : mOutDataUnitAge;
-            float fiunitage = (1.0f - mOutDataUnitAge);
-            float fsize     = mPlugInpSize.GetValue();
+            float clamped_unitage = std::clamp<float>(funitage,0,1);
+            float fiunitage = (1.0f - clamped_unitage);
+            float fsize     = input_size; //mPlugInpSize.GetValue();
             //////////////////////////////////////////////////////
-            fvec4 color;
-            if (pGRAD)
-              color = (pGRAD->Sample(mOutDataUnitAge) * mCurFGI).saturated();
+            fvec4 color(1,1,1,1);
+            //if (pGRAD)
+              //color = (pGRAD->Sample(mOutDataUnitAge) * mCurFGI).saturated();
             U32 ucolor = color.VtxColorAsU32();
             //////////////////////////////////////////////////////
-            float fang  = mPlugInpRot.GetValue() * DTOR;
+            float fang  = input_rot * DTOR;
             float sinfr = sinf(fang) * fsize;
             float cosfr = cosf(fang) * fsize;
             fvec3 rota  = (NX_NY * cosfr) + (NX_PY * sinfr);
@@ -226,81 +238,91 @@ public:
             fvec3 p3    = ptcl->mPosition - rotb;
             //////////////////////////////////////////////////////
             float flastframe = float(miTexCnt - 1);
-            float ftexframe  = mPlugInpAnimFrame.GetValue() * flastframe;
+            float ftexframe  = anim_frame * flastframe;
             ftexframe        = (ftexframe < 0.0f) ? 0.0f : (ftexframe >= flastframe) ? flastframe : ftexframe;
             ork::fvec2 uvA(funitage, 1.0f); // float(miAnimTexDim) );
             //////////////////////////////////////////////////////
-            vw.AddVertex(ork::lev2::SVtxV12C4T16(p0, uvr0, uvA, ucolor));
-            // vw.AddVertex( ork::lev2::SVtxV12C4T16(p1,uvr1,uvA, ucolor) );
-            // vw.AddVertex( ork::lev2::SVtxV12C4T16(p2,uvr2,uvA, ucolor) );
-            // vw.AddVertex( ork::lev2::SVtxV12C4T16(p0,uvr0,uvA, ucolor) );
-            // vw.AddVertex( ork::lev2::SVtxV12C4T16(p2,uvr2,uvA, ucolor) );
-            // vw.AddVertex( ork::lev2::SVtxV12C4T16(p3,uvr3,uvA, ucolor) );
+            vw.AddVertex(SVtxV12C4T16(p0, uvr0, uvA, ucolor));
           }
         }
         ////////////////////////////////////////////////////////////////////
         else // no sort
         ////////////////////////////////////////////////////////////////////
         {
-          const ork::lev2::particle::BasicParticle* __restrict pbase = buffer.mpParticles;
+          auto pbase = render_buffer->_particles;
 
           for (int i = 0; i < icnt; i++) {
-            const ork::lev2::particle::BasicParticle* __restrict ptcl = pbase + i;
-            float fage                                                = ptcl->mfAge;
-            float flspan                                              = (ptcl->mfLifeSpan != 0.0f) ? ptcl->mfLifeSpan : 0.01f;
-            mOutDataUnitAge                                           = (fage / flspan);
-            mOutDataUnitAge                                           = (mOutDataUnitAge < 0.0f) ? 0.0f : mOutDataUnitAge;
-            mOutDataUnitAge                                           = (mOutDataUnitAge > 1.0f) ? 1.0f : mOutDataUnitAge;
-            mOutDataPtcRandom                                         = ptcl->mfRandom;
-            float fiunitage                                           = (1.0f - mOutDataUnitAge);
-            float fsize                                               = mPlugInpSize.GetValue();
-            fvec4 color;
-            if (pGRAD)
-              color = (pGRAD->Sample(mOutDataUnitAge) * mCurFGI).saturated();
+            auto ptcl         = pbase + i;
+            float fage        = ptcl->mfAge;
+            float flspan      = (ptcl->mfLifeSpan != 0.0f) ? ptcl->mfLifeSpan : 0.01f;
+            float clamped_unitage = std::clamp<float>((fage / flspan),0,1);
+            auto _OUTRANDOM = ptcl->mfRandom;
+            float fiunitage   = (1.0f - clamped_unitage);
+            float fsize       = input_size;
+            fvec4 color(1,1,1,1);
+            //if (pGRAD)
+              //color = (pGRAD->Sample(clamped_unitage) * mCurFGI).saturated();
             U32 ucolor = color.VtxColorAsU32();
-            float fang = mPlugInpRot.GetValue() * DTOR;
+            float fang = input_rot * DTOR;
             //////////////////////////////////////////////////////
             float flastframe = float(miTexCnt - 1);
-            float ftexframe  = mPlugInpAnimFrame.GetValue() * flastframe;
+            float ftexframe  = anim_frame * flastframe;
             ftexframe        = (ftexframe < 0.0f) ? 0.0f : (ftexframe >= flastframe) ? flastframe : ftexframe;
             bool is_texanim  = (miAnimTexDim > 1);
 
-            ork::fvec2 uv0(fang, fsize);
-            ork::fvec2 uv1 = is_texanim ? ork::fvec2(ftexframe, 0.0f) : ork::fvec2(mOutDataUnitAge, mOutDataPtcRandom);
+            fvec2 uv0(fang, fsize);
+            fvec2 uv1 = is_texanim //
+                      ? fvec2(ftexframe, 0.0f) //
+                      : fvec2(clamped_unitage, _OUTRANDOM) ;
 
-            vw.AddVertex(ork::lev2::SVtxV12C4T16(ptcl->mPosition, uv0, uv1, ucolor));
+            vw.AddVertex(SVtxV12C4T16(ptcl->mPosition, uv0, uv1, ucolor));
           }
         }
         ////////////////////////////////////////////////////////////////////
       }
-      vw.UnLock(targ);
+      vw.UnLock(context);
 
-      //////////////////////////////////////////
-      // setup particle material
-      //////////////////////////////////////////
+      /*
 
-      if (pMTLBASE) {
-        auto bound_mtl = (lev2::GfxMaterial3DSolid*)pMTLBASE->Bind(targ);
+          MaterialBase* pMTLBASE      = 0;
+          //////////////////////////////////////////
+          float Scale = 1.0f;
+          ork::fmtx4 MatScale;
+          MatScale.setScale(Scale, Scale, Scale);
+          ///////////////////////////////////////////////////////////////
+          mCurFGI = mPlugInpGradientIntensity.GetValue();
+          ///////////////////////////////////////////////////////////////
+          // compute particle dynamic vertex buffer
+          //////////////////////////////////////////
 
-        if (bound_mtl) {
-          fvec4 user0 = NX_NY;
-          fvec4 user1 = NX_PY;
-          fvec4 user2(float(miAnimTexDim), float(miTexCnt), 0.0f);
+            //////////////////////////////////////////
+            // setup particle material
+            //////////////////////////////////////////
 
-          bound_mtl->SetUser0(user0);
-          bound_mtl->SetUser1(user1);
-          bound_mtl->SetUser2(user2);
+            if (pMTLBASE) {
+              auto bound_mtl = (lev2::GfxMaterial3DSolid*)pMTLBASE->Bind(targ);
 
-          bound_mtl->_rasterstate.SetBlending(meBlendMode);
-          targ->MTXI()->PushMMatrix(fmtx4::multiply_ltor(MatScale, mtx));
-          targ->GBI()->DrawPrimitive(bound_mtl, vw, ork::lev2::PrimitiveType::POINTS, ivertexlockcount);
-          mpVB = 0;
-          targ->MTXI()->PopMMatrix();
-        }
-      }
+              if (bound_mtl) {
+                fvec4 user0 = NX_NY;
+                fvec4 user1 = NX_PY;
+                fvec4 user2(float(miAnimTexDim), float(miTexCnt), 0.0f);
 
-    } // if( icnt )
-    */
+                bound_mtl->SetUser0(user0);
+                bound_mtl->SetUser1(user1);
+                bound_mtl->SetUser2(user2);
+
+                bound_mtl->_rasterstate.SetBlending(meBlendMode);
+                targ->MTXI()->PushMMatrix(fmtx4::multiply_ltor(MatScale, mtx));
+                targ->GBI()->DrawPrimitive(bound_mtl, vw, ork::lev2::PrimitiveType::POINTS, ivertexlockcount);
+                mpVB = 0;
+                targ->MTXI()->PopMMatrix();
+              }
+            }
+
+           // if( icnt )
+          */
+    }
+    _triple_buf->end_pull(render_buffer);
   }
 
   //////////////////////////////////////////////////
@@ -329,7 +351,6 @@ public:
   ork::fvec3 PX_NY;
   ork::fvec3 PX_PY;
   ork::fvec3 NX_PY;
-  ork::lev2::CVtxBuffer<ork::lev2::SVtxV12C4T16>* mpVB;
 
   //////////////////////////////////////////////////
 
@@ -337,6 +358,10 @@ public:
   orklut<PoolString, ork::Object*> mMaterials;
   PoolString mActiveGradient;
   PoolString mActiveMaterial;
+
+  particlebuf_inpluginst_ptr_t _input_buffer;
+  triple_buf_ptr_t _triple_buf;
+  pool_ptr_t _pool;
 };
 
 void RendererModuleData::describeX(class_t* clazz) {

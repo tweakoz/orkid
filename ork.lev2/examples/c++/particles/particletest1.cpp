@@ -19,8 +19,14 @@
 #include <ork/lev2/gfx/renderer/compositor.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
 #include <ork/lev2/gfx/material_freestyle.h>
-#include <ork/lev2/vr/vr.h>
-
+///////////////////////////////////////////////////////////////////////////////
+#include <ork/lev2/gfx/scenegraph/sgnode_particles.h>
+#include <ork/lev2/gfx/particle/modular_emitters.h>
+#include <ork/lev2/gfx/particle/modular_forces.h>
+#include <ork/lev2/gfx/particle/modular_renderers.h>
+#include <ork/dataflow/module.inl>
+#include <ork/dataflow/plug_data.inl>
+#include <ork/dataflow/plug_inst.inl>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
@@ -31,6 +37,71 @@ using namespace std::string_literals;
 using namespace ork;
 using namespace ork::lev2;
 using namespace ork::lev2::pbr::deferrednode;
+
+///////////////////////////////////////////////////////////////////
+
+particles_drawable_data_ptr_t createParticleData(){
+
+  using namespace ork::dataflow;
+  using namespace particle;
+
+  ////////////////////////////////////////////////////
+  // create particlesystem dataflow graph
+  ////////////////////////////////////////////////////
+
+  auto graphdata = std::make_shared<GraphData>();
+
+  auto ptcl_pool    = ParticlePoolData::createShared();
+  auto ptcl_globals = GlobalModuleData::createShared();
+  auto ptcl_emitter = NozzleEmitterData::createShared();
+  auto ptcl_gravity = GravityModuleData::createShared();
+  auto ptcl_sprites = SpriteRendererData::createShared();
+  GraphData::addModule(graphdata, "G", ptcl_globals);
+  GraphData::addModule(graphdata, "P", ptcl_pool);
+  GraphData::addModule(graphdata, "E", ptcl_emitter);
+  GraphData::addModule(graphdata, "GRAV", ptcl_gravity);
+  GraphData::addModule(graphdata, "SPRITE", ptcl_sprites);
+
+  ////////////////////////////////////////////////////
+
+  ptcl_pool->_poolSize = 1024; // set num particles in pool
+
+  ////////////////////////////////////////////////////
+  // connect and init plugs
+  ////////////////////////////////////////////////////
+
+  auto E_rate     = ptcl_emitter->typedInputNamed<FloatXfPlugTraits>("EmissionRate");
+  auto GR_G       = ptcl_gravity->typedInputNamed<FloatXfPlugTraits>("G");
+  auto GR_Mass    = ptcl_gravity->typedInputNamed<FloatXfPlugTraits>("Mass");
+  auto GR_OthMass = ptcl_gravity->typedInputNamed<FloatXfPlugTraits>("OthMass");
+  auto GR_MinDist = ptcl_gravity->typedInputNamed<FloatXfPlugTraits>("MinDistance");
+  auto GR_Center  = ptcl_gravity->typedInputNamed<Vec3XfPlugTraits>("Center");
+
+  auto P_out   = ptcl_pool->outputNamed("ParticleBuffer");
+  auto E_inp   = ptcl_emitter->inputNamed("ParticleBuffer");
+  auto E_out   = ptcl_emitter->outputNamed("ParticleBuffer");
+  auto GR_inp  = ptcl_gravity->inputNamed("ParticleBuffer");
+  auto GR_out  = ptcl_gravity->outputNamed("ParticleBuffer");
+  auto SPR_inp = ptcl_sprites->inputNamed("ParticleBuffer");
+
+  graphdata->safeConnect(E_inp, P_out);
+  graphdata->safeConnect(GR_inp, E_out);
+  graphdata->safeConnect(SPR_inp, GR_out);
+
+  E_rate->setValue(100.0f);
+  GR_G->setValue(1);
+  GR_Mass->setValue(1.0f);
+  GR_OthMass->setValue(1.0f);
+  GR_MinDist->setValue(1);
+  GR_Center->setValue(fvec3(1, 2, 3));
+
+
+  auto pdd = std::make_shared<ParticlesDrawableData>();
+  pdd->_graphdata = graphdata;
+
+  return pdd;
+
+}
 
 ///////////////////////////////////////////////////////////////////
 
@@ -54,15 +125,23 @@ struct GpuResources {
     auto sg_compdata = _sg_scene->_compositorData;
 
     //////////////////////////////////////////////
+    // create particle graph
+    //////////////////////////////////////////////
+
+    _particles_drawdata = createParticleData();
+    _particlesDrawable = _particles_drawdata->createDrawable();
+
+    //////////////////////////////////////////////
     // scenegraph nodes
     //////////////////////////////////////////////
 
-    //_lightsnode  = sg_layer->createDrawableNode("lightmeshes-node", _lights_drawable);
-    //_spikee_node = sg_layer->createDrawableNode("meshes-node", _spikee_instanced_drawable);
+    _particle_node  = sg_layer->createDrawableNode("particle-node", _particlesDrawable);
 
-    //ctx->debugPopGroup();
   }
 
+
+  particles_drawable_data_ptr_t _particles_drawdata;
+  drawable_ptr_t _particlesDrawable;
   scenegraph::node_ptr_t _particle_node;
 
   varmap::varmap_ptr_t _sg_params;
@@ -70,6 +149,7 @@ struct GpuResources {
 
   cameradata_ptr_t _camdata;
   cameradatalut_ptr_t _camlut;
+
 };
 
 ///////////////////////////////////////////////////////////////////

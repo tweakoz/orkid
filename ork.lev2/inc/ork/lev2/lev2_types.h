@@ -98,6 +98,7 @@ struct IRenderable;
 struct RenderContextInstData;
 struct RenderContextFrameData;
 struct RenderContextInstModelData;
+using rcid_lambda_t = std::function<void(const RenderContextInstData&)>;
 ///////////////////////////////////////////////////////////////////////////////
 struct IRenderer;
 struct FrameRenderer;
