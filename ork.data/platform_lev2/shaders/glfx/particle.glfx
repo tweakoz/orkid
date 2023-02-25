@@ -69,6 +69,27 @@ state_block sb_additive : sb_default { BlendMode = ADDITIVE; }
 ///////////////////////////////////////////////////////////////
 state_block sb_alpadd : sb_default { BlendMode = ALPHA_ADDITIVE; }
 ///////////////////////////////////////////////////////////////
+vertex_interface vface_nogs : ublock_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec4 vtxcolor : COLOR0;
+    vec4 uv0 : TEXCOORD0;
+    vec4 uv1 : TEXCOORD1;
+  }
+  outputs {
+    vec4 frg_clr;
+    vec4 frg_uv0;
+    vec4 frg_uv1;
+  }
+}
+vertex_shader vs_vtxtexcolornogs : vface_nogs {
+  gl_Position = MatMVP*position;
+  gl_PointSize = 8.0;
+  frg_clr     = vtxcolor.rgba;
+  frg_uv0     = uv0;
+  frg_uv1     = uv1;
+}
+///////////////////////////////////////////////////////////////
 vertex_interface vface_bill : ublock_vtx {
   inputs {
     vec4 position : POSITION;
@@ -77,22 +98,22 @@ vertex_interface vface_bill : ublock_vtx {
     vec4 uv1 : TEXCOORD1;
   }
   outputs {
-    vec4 geo_clr[1];
-    vec4 geo_uv0[1];
-    vec4 geo_uv1[1];
+    vec4 geo_clr;
+    vec4 geo_uv0;
+    vec4 geo_uv1;
   }
 }
 vertex_shader vs_vtxcolor : vface_bill {
   gl_Position = position;
-  geo_clr[0]     = vtxcolor;
-  geo_uv0[0]     = uv0;
-  geo_uv1[0]     = uv1;
+  geo_clr     = vtxcolor;
+  geo_uv0     = uv0;
+  geo_uv1     = uv1;
 }
 vertex_shader vs_vtxtexcolor : vface_bill {
   gl_Position = position;
-  geo_clr[0]     = vtxcolor.rgba;
-  geo_uv0[0]     = uv0;
-  geo_uv1[0]     = uv1;
+  geo_clr     = vtxcolor.rgba;
+  geo_uv0     = uv0;
+  geo_uv1     = uv1;
 }
 ///////////////////////////////////////////////////////////////
 geometry_interface gface_base {
@@ -147,8 +168,6 @@ libblock lib_billboard {
   };
   Output Compute(Input inp, mat4 mvp) {
     Output outp;
-    frg_clr = inp.inp_clr;
-    frg_uv1 = inp.inp_uv1;
 
     float ftexanimdim = User2.x;
     int texanimdim    = int(ftexanimdim);
@@ -157,7 +176,7 @@ libblock lib_billboard {
     bool is_texanim = texanimdim > 1;
 
     float ang = inp.inp_ang_siz.x;
-    float siz = inp.inp_ang_siz.y;
+    float siz = 5; //inp.inp_ang_siz.y;
 
     vec3 nxny = User0.xyz;
     vec3 nxpy = User1.xyz;
@@ -183,7 +202,7 @@ libblock lib_billboard {
     outp.uv2 = vec4(1.0, 1.0, 0.0, 0.0);
     outp.uv3 = vec4(0.0, 1.0, 0.0, 0.0);
 
-    if (is_texanim) {
+    /*if (is_texanim) {
       float ftexframe = frg_uv1.x;
       int itexframe   = int(ftexframe) % texcnt;
       int ifrX        = itexframe % texanimdim;
@@ -197,7 +216,7 @@ libblock lib_billboard {
       outp.uv1        = vec4(fu1, fv0, 0.0, 0.0);
       outp.uv2        = vec4(fu1, fv1, 0.0, 0.0);
       outp.uv3        = vec4(fu0, fv1, 0.0, 0.0);
-    }
+    }*/
     return outp;
   }
 }
@@ -210,15 +229,23 @@ geometry_shader gs_billboardquad : lib_billboard : gface_bill {
   Output outp     = Compute(inp, MatMVP);
   gl_Position     = outp.pos0;
   frg_uv0         = outp.uv0;
+  frg_uv1         = geo_uv1[0];
+  frg_clr         = geo_clr[0];
   EmitVertex();
   gl_Position = outp.pos1;
   frg_uv0     = outp.uv1;
+  frg_uv1     = geo_uv1[0];
+  frg_clr     = geo_clr[0];
   EmitVertex();
   gl_Position = outp.pos3;
   frg_uv0     = outp.uv3;
+  frg_uv1     = geo_uv1[0];
+  frg_clr     = geo_clr[0];
   EmitVertex();
   gl_Position = outp.pos2;
   frg_uv0     = outp.uv2;
+  frg_uv1     = geo_uv1[0];
+  frg_clr     = geo_clr[0];
   EmitVertex();
   EndPrimitive();
 }
@@ -239,9 +266,9 @@ geometry_shader gs_billboardquad_stereo : gface_bill_stereo : extension(GL_NV_st
   gl_ViewportMask[0]            = 1;
   gl_SecondaryViewportMaskNV[0] = 2;
   Input inp;
-  inp.inp_clr            = geo_clr[0];
-  inp.inp_ang_siz        = geo_uv0[0];
-  inp.inp_uv1            = geo_uv1[0];
+  inp.inp_clr            = geo_clr;
+  inp.inp_ang_siz        = geo_uv0;
+  inp.inp_uv1            = geo_uv1;
   inp.inp_pos            = gl_in[0].gl_Position.xyz;
   Output outpL           = Compute(inp, MatMVPL);
   Output outpR           = Compute(inp, MatMVPR);
@@ -273,10 +300,10 @@ vertex_interface vface_streak : ublock_vtx {
     vec4 uv0 : TEXCOORD0;
   }
   outputs {
-    vec4 geo_cnrm[1];
-    vec4 geo_vel[1];
-    vec4 geo_clr[1];
-    vec4 geo_lw[1];
+    vec4 geo_cnrm;
+    vec4 geo_vel;
+    vec4 geo_clr;
+    vec4 geo_lw;
   }
 }
 ///////////////////////////////////////////////////////////////
@@ -308,10 +335,10 @@ libblock lib_streak {
   };
   StreakOutput Compute(mat4 mvp) {
     StreakOutput outp;
-    vec3 vel  = geo_vel[0].xyz;
-    vec3 cnrm = geo_cnrm[0].xyz;
-    float wid = geo_lw[0].x;
-    float len = geo_lw[0].y;
+    vec3 vel  = geo_vel.xyz;
+    vec3 cnrm = geo_cnrm.xyz;
+    float wid = geo_lw.x;
+    float len = geo_lw.y;
 
     vec3 pos = gl_in[0].gl_Position.xyz;
 
@@ -333,7 +360,7 @@ libblock lib_streak {
 }
 geometry_shader gs_streak : gface_streak : lib_streak {
   StreakOutput outp = Compute(MatMVP);
-  frg_clr     = geo_clr[0];
+  frg_clr     = geo_clr;
   gl_Position = outp.pos0;
   frg_uv0     = vec4(0.0, 0.0, 0.0, 0.0);
   EmitVertex();
@@ -403,16 +430,18 @@ fragment_shader ps_modtex : fface_psys {
   if (out_clr.a == 0.0f)
     discard;
 }
+fragment_shader ps_solid : fface_psys{
+  vec3 C = vec3(1,1,0)*(1+sin(frg_clr.a*PI2*4))*0.5;
+  out_clr = vec4(C,1);
+}
 fragment_shader ps_modtexclr : fface_psys {
+
   vec4 texc = texture(ColorMap, frg_uv0.xy);
   out_clr   = texc * modcolor * frg_clr;
-
   float alp = out_clr.r * User0.r + out_clr.g * User0.g + out_clr.b * User0.b + out_clr.a * User0.a;
-
   out_clr.a = alp;
   out_rufmtl = vec4(0,1,0,0);
   out_normal_mdl = vec4(0,0,5,0);
-
   if (alp == 0.0)
     discard;
 }
@@ -426,6 +455,14 @@ fragment_shader ps_volume : fface_psys {
   out_normal_mdl = vec4(0,0,0,5.0);
 }
 ///////////////////////////////////////////////////////////////
+technique tparticle_nogs {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxtexcolornogs;
+    fragment_shader = ps_solid;
+    state_block     = sb_default;
+  }
+}
 technique tbasicparticle {
   fxconfig = fxcfg_default;
   pass p0 {

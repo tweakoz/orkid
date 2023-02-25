@@ -14,8 +14,8 @@ struct ParticlesDrawableInst {
   ParticlesDrawableInst(const ParticlesDrawableData* pdd) : _data(pdd) {
     _updata = std::make_shared<ui::UpdateData>();
     _updata->_abstime = 0.0f;
-    _updata->_dt = 0.01f;
-
+    _updata->_dt = 0.003f;
+    _timer.Start();
   }
   ///////////////////////////////////////////////////////////////
   void gpuInit(lev2::Context* ctx) {
@@ -41,7 +41,11 @@ struct ParticlesDrawableInst {
   }
   ///////////////////////////////////////////////////////////////
   void _update(){
-    _updata->_abstime += _updata->_dt;
+    float abs_time = _timer.SecsSinceStart();
+    _updata->_dt = abs_time - _updata->_abstime;
+    _updata->_abstime = abs_time;
+
+
     _graphinst->compute(_updata);
   }
   ///////////////////////////////////////////////////////////////
@@ -74,6 +78,7 @@ struct ParticlesDrawableInst {
   ui::updatedata_ptr_t _updata;
   fxpipelinecache_constptr_t _fxcache;
   bool _initted = false;
+  Timer _timer;
 
 };
 

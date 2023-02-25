@@ -60,7 +60,6 @@ struct NozzleEmitterInst : public DgModuleInst {
 
   particlebuf_outpluginst_ptr_t _output_buffer;
 
-
   pool_ptr_t _pool;
   float _updaterate = 30.0f;
 };
@@ -75,33 +74,33 @@ NozzleEmitterInst::NozzleEmitterInst(const NozzleEmitterData* ned)
 ///////////////////////////////////////////////////////////////////////////////
 void NozzleEmitterInst::onLink(GraphInst* inst) {
 
-   auto ptcl_context = inst->_impl.getShared<Context>();
+  auto ptcl_context = inst->_impl.getShared<Context>();
 
-   /////////////////
-   // inputs
-   /////////////////
+  /////////////////
+  // inputs
+  /////////////////
 
   _input_buffer = typedInputNamed<ParticleBufferPlugTraits>("ParticleBuffer");
 
-  _input_lifespan = typedInputNamed<FloatXfPlugTraits>("LifeSpan");
-  _input_emissionrate = typedInputNamed<FloatXfPlugTraits>("EmissionRate");
+  _input_lifespan         = typedInputNamed<FloatXfPlugTraits>("LifeSpan");
+  _input_emissionrate     = typedInputNamed<FloatXfPlugTraits>("EmissionRate");
   _input_emissionvelocity = typedInputNamed<FloatXfPlugTraits>("EmissionVelocity");
-  _input_dispersionangle = typedInputNamed<FloatXfPlugTraits>("DispersionAngle");
+  _input_dispersionangle  = typedInputNamed<FloatXfPlugTraits>("DispersionAngle");
 
-  _input_direction = typedInputNamed<Vec3XfPlugTraits>("Direction");
-  _input_offset = typedInputNamed<Vec3XfPlugTraits>("Offset");
+  _input_direction       = typedInputNamed<Vec3XfPlugTraits>("Direction");
+  _input_offset          = typedInputNamed<Vec3XfPlugTraits>("Offset");
   _input_offset_velocity = typedInputNamed<Vec3XfPlugTraits>("OffsetVelocity");
 
-   /////////////////
-   // outputs
-   /////////////////
+  /////////////////
+  // outputs
+  /////////////////
 
   _output_buffer = typedOutputNamed<ParticleBufferPlugTraits>("ParticleBuffer");
 
-   /////////////////
+  /////////////////
 
   if (_input_buffer->_connectedOutput) {
-    _pool = _input_buffer->value()._pool;
+    _pool                              = _input_buffer->value()._pool;
     _output_buffer->value_ptr()->_pool = _pool;
   } else {
     OrkAssert(false);
@@ -110,7 +109,7 @@ void NozzleEmitterInst::onLink(GraphInst* inst) {
 ///////////////////////////////////////////////////////////////////////////////
 void NozzleEmitterInst::compute(GraphInst* inst, ui::updatedata_ptr_t updata) {
 
-  if(_pool==nullptr)
+  if (_pool == nullptr)
     return;
 
   _timeAccumulator += updata->_dt;
@@ -132,14 +131,13 @@ void NozzleEmitterInst::compute(GraphInst* inst, ui::updatedata_ptr_t updata) {
     _reap(fdelta);
     _emit(fdelta);
   }
-
 }
 ///////////////////////////////////////////////////////////////////////////////
 void NozzleEmitterInst::_emit(float fdt) {
 
-  float femitvel                 = _input_emissionvelocity->value();
-  float lifespan                 = std::clamp<float>(_input_lifespan->value(), 0.01f, 10.0f);
-  float emissionrate              = _input_emissionrate->value();
+  float femitvel                      = _input_emissionvelocity->value();
+  float lifespan                      = std::clamp<float>(_input_lifespan->value(), 0.01f, 10.0f);
+  float emissionrate                  = _input_emissionrate->value();
   _emitter_context.mPool              = _pool.get();
   _emitter_context.mfEmissionRate     = emissionrate;
   _emitter_context.mKey               = (void*)this;
@@ -147,10 +145,10 @@ void NozzleEmitterInst::_emit(float fdt) {
   _emitter_context.mfDeltaTime        = fdt;
   _emitter_context.mfEmissionVelocity = femitvel;
   _emitter_context.mDispersion        = _input_dispersionangle->value();
-  _directedEmitter.meDirection   = EmitterDirection::CONSTANT;
-  fvec3 dir                      = _input_direction->value();
-  _emitter_context.mPosition          = fvec3(0.0f, 0.0f, 0.0f); // mPlugInpOffset.GetValue();
-  fvec3 offsetVel                = _input_offset_velocity->value();
+  _directedEmitter.meDirection        = EmitterDirection::CONSTANT;
+  fvec3 dir                           = _input_direction->value();
+  _emitter_context.mPosition          = _input_offset->value();
+  fvec3 offsetVel                     = _input_offset_velocity->value();
   _emitter_context.mOffsetVelocity    = offsetVel;
   _directedEmitter.Emit(_emitter_context);
 }
@@ -165,7 +163,7 @@ void NozzleEmitterInst::_reap(float fdt) {
 
 //////////////////////////////////////////////////////////////////////////
 
-NozzleDirectedEmitter::NozzleDirectedEmitter(NozzleEmitterInst*  emitterModule)
+NozzleDirectedEmitter::NozzleDirectedEmitter(NozzleEmitterInst* emitterModule)
     : _emitterModule(emitterModule) {
 }
 

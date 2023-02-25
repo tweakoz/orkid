@@ -13,7 +13,6 @@
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/dataflow/module.inl>
 #include <ork/dataflow/plug_data.inl>
-
 #include <ork/util/triple_buffer.h>
 
 using namespace ork::dataflow;
@@ -125,7 +124,6 @@ struct SpriteRendererInst : public DgModuleInst {
     float input_size = 5.0f;
 
     if (icnt) {
-      printf("NPARTICLES<%d>\n", icnt);
       lev2::VtxWriter<SVtxV12C4T16> vw;
       vw.Lock(context, &vertex_buffer, ivertexlockcount);
       { // ork::fcolor4 CL;
@@ -261,7 +259,7 @@ struct SpriteRendererInst : public DgModuleInst {
             auto _OUTRANDOM       = ptcl->mfRandom;
             float fiunitage       = (1.0f - clamped_unitage);
             float fsize           = input_size;
-            fvec4 color(1, 1, 1, 1);
+            fvec4 color(1, 1, 1, clamped_unitage);
             // if (pGRAD)
             // color = (pGRAD->Sample(clamped_unitage) * mCurFGI).saturated();
             U32 ucolor = color.VtxColorAsU32();
@@ -287,7 +285,10 @@ struct SpriteRendererInst : public DgModuleInst {
       if (nullptr == _testmaterial) {
         _testmaterial = std::make_shared<FreestyleMaterial>();
         _testmaterial->gpuInit(context,"orkshader://particle");
-        auto fxtechnique    = _testmaterial->technique("tbasicparticle");
+        _testmaterial->_rasterstate.SetBlending(Blending::OFF);
+        _testmaterial->_rasterstate.SetCullTest(ECullTest::OFF);
+        _testmaterial->_rasterstate.SetDepthTest(EDepthTest::OFF);
+        auto fxtechnique    = _testmaterial->technique("tparticle_nogs");
         auto fxparameterMVP = _testmaterial->param("MatMVP");
         auto pipeline_cache = _testmaterial->pipelineCache();
         _pipeline = pipeline_cache->findPipeline(RCID);

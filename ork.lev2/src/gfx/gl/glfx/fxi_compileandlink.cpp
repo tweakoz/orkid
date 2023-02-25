@@ -11,7 +11,7 @@
 #include <ork/kernel/prop.h>
 #include <ork/kernel/string/string.h>
 
-constexpr bool _DEBUG_SHADER_COMPILE = false;
+constexpr bool _DEBUG_SHADER_COMPILE = true;
 
 namespace ork::lev2::glslfx {
 ///////////////////////////////////////////////////////////////////////////////
@@ -135,7 +135,8 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
       GL_ERRORCHECK();
     }
 
-    if (pgeoshader && pgeoshader->IsCompiled()) {
+    if (pgeoshader) {
+      OrkAssert(pgeoshader->IsCompiled());
       glAttachShader(prgo, pgeoshader->mShaderObjectId);
       GL_ERRORCHECK();
     }
@@ -149,21 +150,37 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
 
     StreamInterface* vtx_iface = pvtxshader->_inputInterface;
     StreamInterface* frg_iface = pfrgshader->_inputInterface;
+
     if (_DEBUG_SHADER_COMPILE) {
       auto tek = pass->_technique;
-      printf(
-          "	link tek<%s> pass<%s> vtxshader<%s> interface<%p>\n",
-          tek->_name.c_str(),
-          pass->_name.c_str(),
-          pvtxshader->mName.c_str(),
-          (void*)vtx_iface);
-      printf(
-          "	link tek<%s> pass<%s>frgshader<%s> interface<%p>\n",
-          tek->_name.c_str(),
-          pass->_name.c_str(),
-          pfrgshader->mName.c_str(),
-          (void*)frg_iface);
+      if (pvtxshader) {
+        printf(
+            "link tek<%s> pass<%s> vtxshader<%s> interface<%p>\n",
+            tek->_name.c_str(),
+            pass->_name.c_str(),
+            pvtxshader->mName.c_str(),
+            (void*)vtx_iface);
+      }
+      if (pgeoshader) {
+        StreamInterface* geo_iface = pgeoshader->_inputInterface;
+        printf(
+            "link tek<%s> pass<%s> geoshader<%s> interface<%p>\n",
+            tek->_name.c_str(),
+            pass->_name.c_str(),
+            pgeoshader->mName.c_str(),
+            (void*)geo_iface);
+      }
+      if (pfrgshader) {
+
+        printf(
+            "link tek<%s> pass<%s>frgshader<%s> interface<%p>\n",
+            tek->_name.c_str(),
+            pass->_name.c_str(),
+            pfrgshader->mName.c_str(),
+            (void*)frg_iface);
+      }
     }
+
     if (nullptr == vtx_iface) {
       printf("	vtxshader<%s> has no interface!\n", pvtxshader->mName.c_str());
       OrkAssert(false);
@@ -183,9 +200,9 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
     for (const auto& itp : vtx_iface->_inputAttributes) {
       Attribute* pattr = itp.second;
       int iloc         = pattr->mLocation;
-      // printf( "	vtxattr<%s> loc<%d> dir<%s> sem<%s>\n",
-      // pattr->mName.c_str(), iloc, pattr->mDirection.c_str(),
-      // pattr->mSemantic.c_str() );
+       printf( "	vtxattr<%s> loc<%d> dir<%s> sem<%s>\n",
+       pattr->mName.c_str(), iloc, pattr->mDirection.c_str(),
+       pattr->mSemantic.c_str() );
       glBindAttribLocation(prgo, iloc, pattr->mName.c_str());
       GL_ERRORCHECK();
       pass->_vtxAttributeById[iloc]                    = pattr;
@@ -224,6 +241,12 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
     if (linkstat != GL_TRUE) {
       if (pvtxshader)
         pvtxshader->dumpFinalText();
+      if (ptecshader)
+        ptecshader->dumpFinalText();
+      if (pteeshader)
+        pteeshader->dumpFinalText();
+      if (pgeoshader)
+        pgeoshader->dumpFinalText();
       if (pfrgshader)
         pfrgshader->dumpFinalText();
       char infoLog[1 << 16];

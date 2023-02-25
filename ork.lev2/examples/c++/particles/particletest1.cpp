@@ -12,13 +12,7 @@
 #include <ork/kernel/string/deco.inl>
 #include <ork/kernel/timer.h>
 #include <ork/lev2/ezapp.h>
-#include <ork/lev2/gfx/renderer/drawable.h>
-#include <ork/lev2/lev2_asset.h>
-#include <ork/lev2/gfx/gfxmodel.h>
-#include <ork/lev2/gfx/lighting/gfx_lighting.h>
-#include <ork/lev2/gfx/renderer/compositor.h>
-#include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
-#include <ork/lev2/gfx/material_freestyle.h>
+#include <ork/lev2/gfx/camera/uicam.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/scenegraph/sgnode_particles.h>
 #include <ork/lev2/gfx/particle/modular_emitters.h>
@@ -28,9 +22,7 @@
 #include <ork/dataflow/plug_data.inl>
 #include <ork/dataflow/plug_inst.inl>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
-#include <ork/lev2/gfx/renderer/NodeCompositor/unlit_node.h>
 ///////////////////////////////////////////////////////////////////////////////
 
 using namespace std::string_literals;
@@ -64,18 +56,37 @@ particles_drawable_data_ptr_t createParticleData(){
 
   ////////////////////////////////////////////////////
 
-  ptcl_pool->_poolSize = 1024; // set num particles in pool
+  ptcl_pool->_poolSize = 8192; // set num particles in pool
 
   ////////////////////////////////////////////////////
   // connect and init plugs
   ////////////////////////////////////////////////////
 
+  auto E_life     = ptcl_emitter->typedInputNamed<FloatXfPlugTraits>("LifeSpan");
   auto E_rate     = ptcl_emitter->typedInputNamed<FloatXfPlugTraits>("EmissionRate");
+  auto E_vel     = ptcl_emitter->typedInputNamed<FloatXfPlugTraits>("EmissionVelocity");
+  auto E_ang     = ptcl_emitter->typedInputNamed<FloatXfPlugTraits>("DispersionAngle");
+  auto E_pos     = ptcl_emitter->typedInputNamed<Vec3XfPlugTraits>("Offset");
   auto GR_G       = ptcl_gravity->typedInputNamed<FloatXfPlugTraits>("G");
   auto GR_Mass    = ptcl_gravity->typedInputNamed<FloatXfPlugTraits>("Mass");
   auto GR_OthMass = ptcl_gravity->typedInputNamed<FloatXfPlugTraits>("OthMass");
   auto GR_MinDist = ptcl_gravity->typedInputNamed<FloatXfPlugTraits>("MinDistance");
   auto GR_Center  = ptcl_gravity->typedInputNamed<Vec3XfPlugTraits>("Center");
+
+  E_life->setValue(10.0f);
+  E_rate->setValue(800.0f);
+  E_vel->setValue(1.0f);
+  E_ang->setValue(PI);
+  E_pos->setValue(fvec3(1,2,3));
+  GR_G->setValue(1);
+  GR_Mass->setValue(1.0f);
+  GR_OthMass->setValue(1.0f);
+  GR_MinDist->setValue(1);
+  GR_Center->setValue(fvec3(0,0,0));
+
+  ///////////////////////////////////////////////////////////////
+  // particle buffer IO
+  ///////////////////////////////////////////////////////////////
 
   auto P_out   = ptcl_pool->outputNamed("ParticleBuffer");
   auto E_inp   = ptcl_emitter->inputNamed("ParticleBuffer");
@@ -88,12 +99,7 @@ particles_drawable_data_ptr_t createParticleData(){
   graphdata->safeConnect(GR_inp, E_out);
   graphdata->safeConnect(SPR_inp, GR_out);
 
-  E_rate->setValue(100.0f);
-  GR_G->setValue(1);
-  GR_Mass->setValue(1.0f);
-  GR_OthMass->setValue(1.0f);
-  GR_MinDist->setValue(1);
-  GR_Center->setValue(fvec3(1, 2, 3));
+  ///////////////////////////////////////////////////////////////
 
 
   auto pdd = std::make_shared<ParticlesDrawableData>();
@@ -137,6 +143,14 @@ struct GpuResources {
 
     _particle_node  = sg_layer->createDrawableNode("particle-node", _particlesDrawable);
 
+    //////////////////////////////////////////////
+
+
+  _uicamera                 = std::make_shared<EzUiCam>();
+  _uicamera->_constrainZ    = true;
+  _uicamera->_base_zmoveamt = 2.0f;
+  _uicamera->mfLoc          = 25.0f;
+
   }
 
 
@@ -149,6 +163,7 @@ struct GpuResources {
 
   cameradata_ptr_t _camdata;
   cameradatalut_ptr_t _camlut;
+  lev2::ezuicam_ptr_t _uicamera;
 
 };
 
@@ -196,14 +211,9 @@ int main(int argc, char** argv, char** envp) {
     ///////////////////////////////////////
     // compute camera data
     ///////////////////////////////////////
-    float phase    = abstime * PI2 * 0.01f;
-    float distance = 10.0f;
-    auto eye       = fvec3(sinf(phase), 1.0f, -cosf(phase)) * distance;
-    fvec3 tgt(0, 0, 0);
-    fvec3 up(0, 1, 0);
-    gpurec->_camdata->Lookat(eye, tgt, up);
-    gpurec->_camdata->Persp(1, 50.0, 45.0);
-
+    gpurec->_uicamera->_fov = 45.0 * DTOR;
+    gpurec->_uicamera->updateMatrices();
+    (*gpurec->_camdata) = gpurec->_uicamera->_camcamdata;
     ////////////////////////////////////////
     // enqueue scenegraph to renderer
     ////////////////////////////////////////
@@ -220,6 +230,11 @@ int main(int argc, char** argv, char** envp) {
     RenderContextFrameData RCFD(context); // renderer per/frame data
     RCFD.setUserProperty("vrcam"_crc, (const CameraData*) gpurec->_camdata.get() );
     gpurec->_sg_scene->renderOnContext(context, RCFD);
+  });
+  //////////////////////////////////////////////////////////
+  ezapp->onUiEvent([&](ui::event_constptr_t ev) -> ui::HandlerResult {
+    bool handled = gpurec->_uicamera->UIEventHandler(ev);
+    return ui::HandlerResult();
   });
   //////////////////////////////////////////////////////////
   ezapp->onResize([&](int w, int h) {
