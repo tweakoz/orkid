@@ -20,6 +20,7 @@ void pyinit_gfx_shader(py::module& module_lev2);
 void pyinit_gfx_renderer(py::module& module_lev2);
 void pyinit_gfx_qtez(py::module& module_lev2);
 void pyinit_gfx_buffers(py::module& module_lev2);
+void pyinit_gfx_particles(py::module& module_lev2);
 void pyinit_primitives(py::module& module_lev2);
 void pyinit_scenegraph(py::module& module_lev2);
 void pyinit_meshutil(py::module& module_lev2);
@@ -125,6 +126,7 @@ PYBIND11_MODULE(_lev2, module_lev2) {
   pyinit_scenegraph(module_lev2);
   pyinit_meshutil(module_lev2);
   pyinit_gfx_qtez(module_lev2);
+  pyinit_gfx_particles(module_lev2);
   pyinit_ui(module_lev2);
   //////////////////////////////////////////////////////////////////////////////
 };

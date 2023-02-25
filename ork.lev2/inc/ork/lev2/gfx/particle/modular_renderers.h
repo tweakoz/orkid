@@ -27,6 +27,8 @@ public:
   dflow::dgmoduleinst_ptr_t createInstance() const final;
 };
 
+using spritemodule_ptr_t = std::shared_ptr<SpriteRendererData>;
+
 /////////////////////////////////////////
 
 struct MaterialBase : public ork::Object {

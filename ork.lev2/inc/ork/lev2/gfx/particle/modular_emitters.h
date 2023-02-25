@@ -21,6 +21,8 @@ public:
   dflow::dgmoduleinst_ptr_t createInstance() const final;
 };
 
+using ringemittermodule_ptr_t = std::shared_ptr<RingEmitterData>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct NozzleEmitterData : public ParticleModuleData {
@@ -32,6 +34,8 @@ public:
   static std::shared_ptr<NozzleEmitterData> createShared();
   dflow::dgmoduleinst_ptr_t createInstance() const final;
 };
+
+using nozzleemittermodule_ptr_t = std::shared_ptr<NozzleEmitterData>;
 
 /////////////////////////////////////////
 } // namespace ork::lev2::particle {

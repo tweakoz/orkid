@@ -50,20 +50,22 @@ def createParticleData():
 
   # instantiate modules
 
-  ptc_pool   = graphdata.create("POOL",particles.ParticlePoolData)
-  emitter    = graphdata.create("EMIT",particles.NozzleEmitterData)
-  gravity    = graphdata.create("POOL",particles.GravityModuleData)
-  turbulence = graphdata.create("GRAV",particles.TurbulenceModuleData)
-  vortex     = graphdata.create("VORT",particles.VortexModuleData)
-  sprites    = graphdata.create("SPRI",particles.SpriteRendererData)
+  ptc_pool   = graphdata.create("POOL",particles.Pool)
+  emitter    = graphdata.create("EMIT",particles.NozzleEmitter)
+  gravity    = graphdata.create("POOL",particles.Gravity)
+  turbulence = graphdata.create("GRAV",particles.Turbulence)
+  vortex     = graphdata.create("VORT",particles.Vortex)
+  sprites    = graphdata.create("SPRI",particles.SpriteRenderer)
 
   # connect modules in a chain configuration
 
-  graphdata.connect(emitter.pool,ptc_pool.pool)
-  graphdata.connect(gravity.pool,emitter.pool)
-  graphdata.connect(turbulence.pool,gravity.pool)
-  graphdata.connect(vortex.pool,turbulence.pool)
-  graphdata.connect(sprites.pool,vortex.pool)
+  print(emitter.inputs)
+
+  graphdata.connect( emitter.inputs.pool,    ptc_pool.outputs.pool )
+  graphdata.connect( gravity.inputs.pool,    emitter.outputs.pool )
+  graphdata.connect( turbulence.inputs.pool, gravity.outputs.pool )
+  graphdata.connect( vortex.inputs.pool,     turbulence.outputs.pool )
+  graphdata.connect( sprites.inputs.pool,    vortex.outputs.pool )
 
   # basic module settings
 

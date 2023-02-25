@@ -31,6 +31,11 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/NodeCompositorScreen.h>
 #include <ork/lev2/gfx/scenegraph/scenegraph.h>
 ///////////////////////////////////////////////////////////////////////////////
+#include <ork/lev2/gfx/particle/modular_particles2.h>
+#include <ork/lev2/gfx/particle/modular_emitters.h>
+#include <ork/lev2/gfx/particle/modular_forces.h>
+#include <ork/lev2/gfx/particle/modular_renderers.h>
+///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/unlit_node.h>
@@ -108,8 +113,20 @@ void ClassInit() {
   XgmVect4AnimChannel::GetClassStatic();
   XgmDecompMatrixAnimChannel::GetClassStatic();
 
-  /*particle::ParticleModule::GetClassStatic();
-  particle::ParticlePool::GetClassStatic();
+  particle::ParticleModuleData::GetClassStatic();
+  particle::ParticlePoolData::GetClassStatic();
+  particle::GlobalModuleData::GetClassStatic();
+  particle::RingEmitterData::GetClassStatic();
+  particle::GravityModuleData::GetClassStatic();
+  particle::TurbulenceModuleData::GetClassStatic();
+  particle::VortexModuleData::GetClassStatic();
+  particle::RendererModuleData::GetClassStatic();
+  particle::SpriteRendererData::GetClassStatic();
+
+  particle::particlebuf_outplugdata_t::GetClassStatic();
+  particle::particlebuf_inplugdata_t::GetClassStatic();
+
+  /*
   particle::ExtConnector::GetClassStatic();
 
   particle::Constants::GetClassStatic();
@@ -117,17 +134,9 @@ void ClassInit() {
   particle::Vec3Op2Module::GetClassStatic();
   particle::Vec3SplitModule::GetClassStatic();
 
-  particle::Global::GetClassStatic();
-
-  particle::RingEmitter::GetClassStatic();
   particle::ReEmitter::GetClassStatic();
 
-  particle::GravityModule::GetClassStatic();
-  particle::TurbulenceModule::GetClassStatic();
-  particle::VortexModule::GetClassStatic();
 
-  particle::RendererModule::GetClassStatic();
-  particle::SpriteRenderer::GetClassStatic();
   particle::SpriteRenderer::GetClassStatic();
 
   ork::dataflow::floatxfitembase::GetClassStatic();

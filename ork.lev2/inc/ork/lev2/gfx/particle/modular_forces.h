@@ -21,6 +21,8 @@ public:
   dflow::dgmoduleinst_ptr_t createInstance() const final;
 };
 
+using gravitymodule_ptr_t = std::shared_ptr<GravityModuleData>;
+
 struct TurbulenceModuleData : public ParticleModuleData {
   DeclareConcreteX(TurbulenceModuleData, ParticleModuleData);
 public:
@@ -29,6 +31,9 @@ public:
   dflow::dgmoduleinst_ptr_t createInstance() const final;
 };
 
+using turbulencemodule_ptr_t = std::shared_ptr<TurbulenceModuleData>;
+
+
 struct VortexModuleData : public ParticleModuleData {
   DeclareConcreteX(VortexModuleData, ParticleModuleData);
 public:
@@ -36,6 +41,9 @@ public:
   static std::shared_ptr<VortexModuleData> createShared();
   dflow::dgmoduleinst_ptr_t createInstance() const final;
 };
+
+using vortexmodule_ptr_t = std::shared_ptr<VortexModuleData>;
+
 
 /////////////////////////////////////////
 } //namespace ork::lev2::particle {

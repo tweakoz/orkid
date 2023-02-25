@@ -61,7 +61,8 @@ using particlebuf_outpluginst_t     = dflow::outpluginst<ParticleBufferPlugTrait
 using particlebuf_outpluginst_ptr_t = std::shared_ptr<particlebuf_outpluginst_t>;
 
 struct ModuleData;
-using ptclmoduledata_ptr_t = std::shared_ptr<ModuleData>;
+
+using moduledata_ptr_t = std::shared_ptr<ModuleData>;
 
 struct ModuleData : public dflow::DgModuleData {
 
@@ -71,11 +72,10 @@ public:
   ////////////////////////////////////////////////////////////
   ModuleData();
 
-  static void sharedConstructor(ptclmoduledata_ptr_t subclass_instance) {
+  static void sharedConstructor(moduledata_ptr_t subclass_instance) {
   }
-
-  void Link(ork::lev2::particle::Context* pctx);
 };
+
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -89,6 +89,8 @@ public:
   particlebufferdata_ptr_t _bufferdata;
 };
 
+using ptcmoduledata_ptr_t = std::shared_ptr<ParticleModuleData>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct GlobalModuleData : public ModuleData {
@@ -101,6 +103,8 @@ public:
 public:
   GlobalModuleData();
 };
+
+using globalmodule_ptr_t = std::shared_ptr<GlobalModuleData>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -123,6 +127,8 @@ public:
   Char4 _pathStochasticQueueID4;
   Char4 _pathIntervalQueueID4;
 };
+
+using poolmodule_ptr_t = std::shared_ptr<ParticlePoolData>;
 
 struct ParticlePoolRenderBuffer {
 

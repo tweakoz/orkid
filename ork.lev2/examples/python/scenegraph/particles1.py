@@ -13,7 +13,7 @@ from orkengine.core import *
 from orkengine.lev2 import *
 sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
 from common.cameras import *
-from common.primitives import createParticlesData
+from common.primitives import createParticleData
 from common.scenegraph import createSceneGraph
 
 
@@ -46,7 +46,7 @@ class ParticlesApp(object):
     # create particle drawable 
     ###################################
 
-    ptc_data = createParticlesData()
+    ptc_data = createParticleData()
     ptc_drawable = ptc_data.createDrawable()
 
     ##################
