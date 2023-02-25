@@ -48,12 +48,14 @@ particles_drawable_data_ptr_t createParticleData(){
   auto ptcl_emitter = NozzleEmitterData::createShared();
   auto ptcl_gravity = GravityModuleData::createShared();
   auto ptcl_turbulence = TurbulenceModuleData::createShared();
+  auto ptcl_vortex = VortexModuleData::createShared();
   auto ptcl_sprites = SpriteRendererData::createShared();
   GraphData::addModule(graphdata, "G", ptcl_globals);
   GraphData::addModule(graphdata, "P", ptcl_pool);
   GraphData::addModule(graphdata, "E", ptcl_emitter);
   GraphData::addModule(graphdata, "GRAV", ptcl_gravity);
   GraphData::addModule(graphdata, "TURB", ptcl_turbulence);
+  GraphData::addModule(graphdata, "VORTEX", ptcl_vortex);
   GraphData::addModule(graphdata, "SPRITE", ptcl_sprites);
 
   ////////////////////////////////////////////////////
@@ -75,6 +77,9 @@ particles_drawable_data_ptr_t createParticleData(){
   auto GR_MinDist = ptcl_gravity->typedInputNamed<FloatXfPlugTraits>("MinDistance");
   auto GR_Center  = ptcl_gravity->typedInputNamed<Vec3XfPlugTraits>("Center");
   auto TURB_Amount  = ptcl_turbulence->typedInputNamed<Vec3XfPlugTraits>("Amount");
+  auto VORTEX_Strength  = ptcl_vortex->typedInputNamed<FloatXfPlugTraits>("VortexStrength");
+  auto VORTEX_Outward  = ptcl_vortex->typedInputNamed<FloatXfPlugTraits>("OutwardStrength");
+  auto VORTEX_Falloff  = ptcl_vortex->typedInputNamed<FloatXfPlugTraits>("Falloff");
 
   E_life->setValue(10.0f);
   E_rate->setValue(800.0f);
@@ -87,7 +92,9 @@ particles_drawable_data_ptr_t createParticleData(){
   GR_MinDist->setValue(1);
   GR_Center->setValue(fvec3(0,0,0));
   TURB_Amount->setValue(fvec3(1.5,1.5,1.5));
-
+  VORTEX_Strength->setValue(1.0f);
+  VORTEX_Outward->setValue(0.0f);
+  VORTEX_Falloff->setValue(1.0f);
   ///////////////////////////////////////////////////////////////
   // particle buffer IO
   ///////////////////////////////////////////////////////////////
@@ -99,12 +106,15 @@ particles_drawable_data_ptr_t createParticleData(){
   auto GR_out  = ptcl_gravity->outputNamed("ParticleBuffer");
   auto TURB_inp  = ptcl_turbulence->inputNamed("ParticleBuffer");
   auto TURB_out  = ptcl_turbulence->outputNamed("ParticleBuffer");
+  auto VORTEX_inp  = ptcl_vortex->inputNamed("ParticleBuffer");
+  auto VORTEX_out  = ptcl_vortex->outputNamed("ParticleBuffer");
   auto SPR_inp = ptcl_sprites->inputNamed("ParticleBuffer");
 
   graphdata->safeConnect(E_inp, P_out);
   graphdata->safeConnect(GR_inp, E_out);
   graphdata->safeConnect(TURB_inp, GR_out);
-  graphdata->safeConnect(SPR_inp, TURB_out);
+  graphdata->safeConnect(VORTEX_inp, GR_out);
+  graphdata->safeConnect(SPR_inp, VORTEX_out);
 
   ///////////////////////////////////////////////////////////////
 

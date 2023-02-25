@@ -29,6 +29,14 @@ public:
   dflow::dgmoduleinst_ptr_t createInstance() const final;
 };
 
+struct VortexModuleData : public ParticleModuleData {
+  DeclareConcreteX(VortexModuleData, ParticleModuleData);
+public:
+  VortexModuleData();
+  static std::shared_ptr<VortexModuleData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance() const final;
+};
+
 /////////////////////////////////////////
 } //namespace ork::lev2::particle {
 ///////////////////////////////////////////////////////////////////////////////
