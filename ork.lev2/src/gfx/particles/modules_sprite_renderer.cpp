@@ -34,7 +34,7 @@ struct SpriteRendererInst : public DgModuleInst {
 
   void onLink(GraphInst* inst) final {
 
-    _input_buffer = typedInputNamed<ParticleBufferPlugTraits>("ParticleBuffer");
+    _input_buffer = typedInputNamed<ParticleBufferPlugTraits>("pool");
 
     if (_input_buffer->_connectedOutput) {
       _pool = _input_buffer->value()._pool;
@@ -418,7 +418,7 @@ SpriteRendererData::SpriteRendererData() {
 std::shared_ptr<SpriteRendererData> SpriteRendererData::createShared() {
   auto data = std::make_shared<SpriteRendererData>();
 
-  createInputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "ParticleBuffer");
+  createInputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "pool");
 
   createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "Size");
   createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "Rot");

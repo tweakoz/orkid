@@ -16,25 +16,30 @@ graphdata = dflow.GraphData.createShared()
 # create/define modules
 #####################################################
 
-a = dflow.LambdaModule.createShared()
-b = dflow.LambdaModule.createShared()
+# "A" via python subclass of c++ class trampoline (PyLambdaModule)
+# TODO trampoline handling of module_instance->self 
+# https://github.com/pybind/pybind11/issues/1145
+# https://github.com/pybind/pybind11/issues/1333
 
-def onACompute(m,gi,updata):
-  print("compute A: module<%s> gi<%s> upd<%s> impl<%s>" % (m,gi,updata,gi.impl))
+class ModuleA(dflow.PyLambdaModule):
+  def onLink(module_instance,gi):
+    print("Linking A! <%s>" % module_instance)
+  def onCompute(module_instance,gi,updata):
+    print("compute A: module<%s> gi<%s> upd<%s> impl<%s>" % (module_instance,gi,updata,gi.impl))
+
+a = graphdata.create("A",ModuleA)
+
+#####################################################
+
+# "B" via raw methods
+
+b = graphdata.create("B",dflow.LambdaModule)
+
 def onBCompute(m,gi,updata):
   print("compute B: module<%s> gi<%s> upd<%s> impl<%s>" % (m,gi,updata,gi.impl))
 
-a.onCompute(onACompute)
 b.onCompute(onBCompute)
-a.onLink(lambda m,gi : print("link A: module<%s> gi<%s> impl<%s>" % (m,gi,gi.impl)) )
 b.onLink(lambda m,gi : print("link B: module<%s> gi<%s> impl<%s>" % (m,gi,gi.impl)) )
-
-#####################################################
-# add modules to graph
-#####################################################
-
-graphdata.addModule(a,"A")
-graphdata.addModule(b,"B")
 
 #####################################################
 # make connections between modules
@@ -42,7 +47,7 @@ graphdata.addModule(b,"B")
 
 aout = a.createUniformFloatOutputPlug("outputX")
 binp = b.createUniformFloatXfInputPlug("inputX")
-graphdata.safeConnect(binp,aout)
+graphdata.connect(binp,aout)
 
 #####################################################
 # generate execution topology

@@ -80,7 +80,7 @@ void NozzleEmitterInst::onLink(GraphInst* inst) {
   // inputs
   /////////////////
 
-  _input_buffer = typedInputNamed<ParticleBufferPlugTraits>("ParticleBuffer");
+  _input_buffer = typedInputNamed<ParticleBufferPlugTraits>("pool");
 
   _input_lifespan         = typedInputNamed<FloatXfPlugTraits>("LifeSpan");
   _input_emissionrate     = typedInputNamed<FloatXfPlugTraits>("EmissionRate");
@@ -95,7 +95,7 @@ void NozzleEmitterInst::onLink(GraphInst* inst) {
   // outputs
   /////////////////
 
-  _output_buffer = typedOutputNamed<ParticleBufferPlugTraits>("ParticleBuffer");
+  _output_buffer = typedOutputNamed<ParticleBufferPlugTraits>("pool");
 
   /////////////////
 
@@ -197,7 +197,7 @@ std::shared_ptr<NozzleEmitterData> NozzleEmitterData::createShared() {
   //RegisterVect3XfPlug(NozzleEmitter, Direction, -1.0f, 1.0f, ged::OutPlugChoiceDelegate);
   //RegisterVect3XfPlug(NozzleEmitter, OffsetVelocity, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
 
-  createInputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "ParticleBuffer");
+  createInputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "pool");
   createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "LifeSpan");
   createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionRate");
   createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionVelocity");
@@ -206,7 +206,7 @@ std::shared_ptr<NozzleEmitterData> NozzleEmitterData::createShared() {
   createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Offset");
   createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "OffsetVelocity");
 
-  createOutputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "ParticleBuffer");
+  createOutputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "pool");
   return data;
 }
 

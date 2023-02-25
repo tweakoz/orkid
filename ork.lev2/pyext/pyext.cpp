@@ -15,6 +15,7 @@ namespace ork::lev2 {
 void pyinit_gfx(py::module& module_lev2);
 void pyinit_gfx_compositor(py::module& module_lev2);
 void pyinit_gfx_material(py::module& module_lev2);
+void pyinit_gfx_drawables(py::module& module_lev2);
 void pyinit_gfx_shader(py::module& module_lev2);
 void pyinit_gfx_renderer(py::module& module_lev2);
 void pyinit_gfx_qtez(py::module& module_lev2);
@@ -119,6 +120,7 @@ PYBIND11_MODULE(_lev2, module_lev2) {
   pyinit_gfx_compositor(module_lev2);
   pyinit_gfx_buffers(module_lev2);
   pyinit_gfx(module_lev2);
+  pyinit_gfx_drawables(module_lev2);
   pyinit_primitives(module_lev2);
   pyinit_scenegraph(module_lev2);
   pyinit_meshutil(module_lev2);

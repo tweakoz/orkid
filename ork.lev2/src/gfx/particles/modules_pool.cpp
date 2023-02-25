@@ -82,7 +82,7 @@ struct ParticlePoolModuleInst : dflow::DgModuleInst {
 
     auto ptcl_context = inst->_impl.getShared<Context>();
 
-    _output = typedOutputNamed<ParticleBufferPlugTraits>("ParticleBuffer");
+    _output = typedOutputNamed<ParticleBufferPlugTraits>("pool");
     OrkAssert(_output);
     auto buffer   = _output->_value;
     buffer->_pool = std::make_shared<pool_t>();
@@ -113,7 +113,7 @@ ParticlePoolData::ParticlePoolData() {
 
 std::shared_ptr<ParticlePoolData> ParticlePoolData::createShared() {
   auto data = std::make_shared<ParticlePoolData>();
-  createOutputPlug<ParticleBufferPlugTraits>(data, dflow::EPR_UNIFORM, "ParticleBuffer");
+  createOutputPlug<ParticleBufferPlugTraits>(data, dflow::EPR_UNIFORM, "pool");
   return data;
 }
 

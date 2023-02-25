@@ -30,14 +30,14 @@ struct TurbulenceModuleInst : public DgModuleInst {
     // inputs
     /////////////////
 
-    _input_buffer = typedInputNamed<ParticleBufferPlugTraits>("ParticleBuffer");
+    _input_buffer = typedInputNamed<ParticleBufferPlugTraits>("pool");
     _input_amount = typedInputNamed<Vec3XfPlugTraits>("Amount");
 
     /////////////////
     // outputs
     /////////////////
 
-    _output_buffer = typedOutputNamed<ParticleBufferPlugTraits>("ParticleBuffer");
+    _output_buffer = typedOutputNamed<ParticleBufferPlugTraits>("pool");
 
     if (_input_buffer->_connectedOutput) {
       _pool                              = _input_buffer->value()._pool;
@@ -92,8 +92,8 @@ TurbulenceModuleData::TurbulenceModuleData() {
 std::shared_ptr<TurbulenceModuleData> TurbulenceModuleData::createShared() {
   auto data = std::make_shared<TurbulenceModuleData>();
 
-  createInputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "ParticleBuffer");
-  createOutputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "ParticleBuffer");
+  createInputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "pool");
+  createOutputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "pool");
 
   //RegisterFloatXfPlug(TurbulenceModule, AmountX, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
   //RegisterFloatXfPlug(TurbulenceModule, AmountY, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);

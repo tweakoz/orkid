@@ -1,5 +1,6 @@
 from orkengine.core import *
 from orkengine.lev2 import *
+dflow = dataflow
 
 def createCubePrim( ctx=None, size=1.0 ):
   cube_prim = primitives.CubePrimitive()
@@ -40,3 +41,50 @@ def createGridData(extent=10.0,majordim=1,minordim=0.1):
   grid_data.texturepath = "lev2://textures/gridcell_blue.png"
   return grid_data
 
+
+def createParticleData():
+
+  # create a dataflow graph
+
+  graphdata = dflow.GraphData.createShared()
+
+  # instantiate modules
+
+  ptc_pool   = graphdata.create("POOL",particles.ParticlePoolData)
+  emitter    = graphdata.create("EMIT",particles.NozzleEmitterData)
+  gravity    = graphdata.create("POOL",particles.GravityModuleData)
+  turbulence = graphdata.create("GRAV",particles.TurbulenceModuleData)
+  vortex     = graphdata.create("VORT",particles.VortexModuleData)
+  sprites    = graphdata.create("SPRI",particles.SpriteRendererData)
+
+  # connect modules in a chain configuration
+
+  graphdata.connect(emitter.pool,ptc_pool.pool)
+  graphdata.connect(gravity.pool,emitter.pool)
+  graphdata.connect(turbulence.pool,gravity.pool)
+  graphdata.connect(vortex.pool,turbulence.pool)
+  graphdata.connect(sprites.pool,vortex.pool)
+
+  # basic module settings
+
+  emitter.inputs.LifeSpan = 10
+  emitter.inputs.EmissionRate = 800
+  emitter.inputs.EmissionVelocity = 1
+  emitter.inputs.DispersionAngle = 45
+  emitter.inputs.Offset = vec3(1,2,3)
+  gravity.inputs.G = 1
+  gravity.inputs.Mass = 1
+  gravity.inputs.OthMass = 1
+  gravity.inputs.MinDist = 1
+  gravity.inputs.Center = vec3(0,0,0)
+  turbulence.inputs.Amount = vec3(1.5,1.5,1.5)
+  vortex.inputs.VortexStrength = 1.0
+  vortex.inputs.OutwardStrength = 1.0
+  vortex.inputs.Falloff = 1.0
+
+  # create and return ParticlesDrawableData object
+
+  ptc_data = ParticlesDrawableData()
+  ptc_data.graphdata = graphdata
+
+  return ptc_data

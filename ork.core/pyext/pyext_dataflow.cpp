@@ -50,29 +50,87 @@ void pyinit_dataflow(py::module& module_core) {
 
   type_codec->registerStdCodec<dgmoduledata_ptr_t>(dgmoduledata_type);
   /////////////////////////////////////////////////////////////////////////////
+  // todo use trampoline method from https://pybind11.readthedocs.io/en/stable/advanced/classes.html
+  //  to allow python subclass of c++ class
+  //  so onCompute and onLink can be "virtual" python methods
+  /////////////////////////////////////////////////////////////////////////////
   auto lambdamoduledata_type = //
       py::class_<LambdaModuleData, DgModuleData, lambdamoduledata_ptr_t>(dfgmodule, "LambdaModule")
           .def_static("createShared", []() -> lambdamoduledata_ptr_t { return LambdaModuleData::createShared(); })
           .def(
               "onCompute",
               [](lambdamoduledata_ptr_t m, py::object pylambda) { //
-                m->_computeLambda = [m,pylambda](graphinst_ptr_t gi, //
-                                                 ui::updatedata_ptr_t ud) { //
+                m->_computeLambda = [m, pylambda](
+                                        graphinst_ptr_t gi,        //
+                                        ui::updatedata_ptr_t ud) { //
                   py::gil_scoped_acquire acquire;
-                  pylambda(m,gi,ud);
+                  pylambda(m, gi, ud);
                 };
               })
           .def(
               "onLink",
-              [](lambdamoduledata_ptr_t m, py::object pylambda) { //
-                m->_linkLambda = [m,pylambda](graphinst_ptr_t gi) { //
+              [](lambdamoduledata_ptr_t m, py::object pylambda) {    //
+                m->_linkLambda = [m, pylambda](graphinst_ptr_t gi) { //
                   py::gil_scoped_acquire acquire;
-                  pylambda(m,gi);
+                  pylambda(m, gi);
                 };
               })
           .def("__repr__", [](lambdamoduledata_ptr_t m) -> std::string {
             return FormatString("LambdaModuleData(%p)", (void*)m.get());
           });
+  /////////////////////////////////////////////////////////////////////////////
+  // todo use trampoline method from https://pybind11.readthedocs.io/en/stable/advanced/classes.html
+  //  to allow python subclass of c++ class
+  //  so onCompute and onLink can be "virtual" python methods
+  /////////////////////////////////////////////////////////////////////////////
+  struct PyLambdaModuleData : public LambdaModuleData {
+
+    //////////////////////////////////////////
+    // python subclass support via trampoline
+    //////////////////////////////////////////
+
+    PyLambdaModuleData() {
+    }
+
+    void assignClass(py::object module_clazz) {
+      bool has_link    = py::hasattr(module_clazz, "onLink");
+      bool has_compute = py::hasattr(module_clazz, "onCompute");
+
+      if (has_link) {
+        auto on_link = module_clazz.attr("onLink");
+        _linkLambda  = [this, on_link](graphinst_ptr_t gi) { //
+          on_link(this, gi);
+        };
+      }
+      if (has_compute) {
+        auto on_compute = module_clazz.attr("onCompute");
+        _computeLambda  = [this, on_compute](
+                             graphinst_ptr_t gi,           //
+                             ui::updatedata_ptr_t udata) { //
+          on_compute(this, gi, udata);
+        };
+      }
+    }
+
+    py::object _pyclazz;
+    py::object _self;
+  };
+  using pylambdamoduledata_ptr_t = std::shared_ptr<PyLambdaModuleData>;
+  auto pylambdamoduledata_type   = //
+      py::class_<PyLambdaModuleData, LambdaModuleData, pylambdamoduledata_ptr_t>(dfgmodule, "PyLambdaModule")
+          .def_static("__dflow_trampoline", []() -> bool { return true; })
+          .def_static("createShared", []() -> pylambdamoduledata_ptr_t { return std::make_shared<PyLambdaModuleData>(); })
+          .def(
+              "hackself",
+              [type_codec](pylambdamoduledata_ptr_t m) {
+                m->_self    = type_codec->encode(m);
+                m->_pyclazz = m->_self.attr("__class__");
+                OrkAssert(false);
+              })
+          .def("__repr__", [](pylambdamoduledata_ptr_t m) -> std::string {
+            return FormatString("PyLambdaModuleData(%p)", (void*)m.get());
+          });
+  type_codec->registerStdCodec<pylambdamoduledata_ptr_t>(pylambdamoduledata_type);
   /////////////////////////////////////////////////////////////////////////////
   auto inplugdata_type = //
       py::class_<InPlugData, inplugdata_ptr_t>(dfgmodule, "InPlugData").def("__repr__", [](inplugdata_ptr_t p) -> std::string {
@@ -93,15 +151,35 @@ void pyinit_dataflow(py::module& module_core) {
   auto graphdata_type = //
       py::class_<GraphData, graphdata_ptr_t>(dfgmodule, "GraphData")
           .def_static("createShared", []() -> graphdata_ptr_t { return std::make_shared<GraphData>(); })
-          .def("createGraphInst", [](graphdata_ptr_t g) -> graphinst_ptr_t { //
-            return GraphData::createGraphInst(g);
-          })
-          .def("addModule", [](graphdata_ptr_t g, dgmoduledata_ptr_t m, std::string named) { GraphData::addModule(g, named, m); })
           .def(
-              "safeConnect",
-              [](graphdata_ptr_t g, inplugdata_ptr_t input, outplugdata_ptr_t output) { g->safeConnect(input, output); })
+              "createGraphInst",
+              [](graphdata_ptr_t g) -> graphinst_ptr_t { //
+                return GraphData::createGraphInst(g);
+              })
+          ///////////////////////////////
+          .def("addModule", [](graphdata_ptr_t g, dgmoduledata_ptr_t m, std::string named) { GraphData::addModule(g, named, m); })
+          ///////////////////////////////
+          .def(
+              "create",
+              [type_codec](graphdata_ptr_t g, std::string named, py::object module_clazz) -> dgmoduledata_ptr_t {
+                auto create_shared                = module_clazz.attr("createShared");
+                dgmoduledata_ptr_t typed_instance = py::cast<dgmoduledata_ptr_t>(create_shared());
+                OrkAssert(typed_instance);
+                GraphData::addModule(g, named, typed_instance);
+                bool has_trampoline = py::hasattr(module_clazz, "__dflow_trampoline");
+                if (has_trampoline) {
+                  auto as_pylambda = std::dynamic_pointer_cast<PyLambdaModuleData>(typed_instance);
+                  as_pylambda->assignClass(module_clazz);
+                }
+                return typed_instance;
+              })
+          ///////////////////////////////
+          .def(
+              "connect", [](graphdata_ptr_t g, inplugdata_ptr_t input, outplugdata_ptr_t output) { g->safeConnect(input, output); })
+          ///////////////////////////////
           .def("disconnect", [](graphdata_ptr_t g, inplugdata_ptr_t input) { g->disconnect(input); })
           .def("disconnect", [](graphdata_ptr_t g, outplugdata_ptr_t output) { g->disconnect(output); })
+          ///////////////////////////////
           .def("__repr__", [](graphdata_ptr_t g) -> std::string { return FormatString("GraphData(%p)", (void*)g.get()); });
   type_codec->registerStdCodec<graphdata_ptr_t>(graphdata_type);
   /////////////////////////////////////////////////////////////////////////////
@@ -147,17 +225,17 @@ void pyinit_dataflow(py::module& module_core) {
       py::class_<GraphInst, graphinst_ptr_t>(dfgmodule, "GraphInst")
           .def("bindTopology", [](graphinst_ptr_t g, topology_ptr_t t) { g->updateTopology(t); })
           .def("compute", [](graphinst_ptr_t g, ui::updatedata_ptr_t updata) { g->compute(updata); })
-          .def_property("impl", 
-              [](graphinst_ptr_t g ) -> py::object { //
-                if(auto as_pyobj = g->_impl.tryAs<py::object>()){
+          .def_property(
+              "impl",
+              [](graphinst_ptr_t g) -> py::object { //
+                if (auto as_pyobj = g->_impl.tryAs<py::object>()) {
                   return as_pyobj.value();
-                }
-                else{
+                } else {
                   return py::none();
                 }
               },
-              [](graphinst_ptr_t g, py::object impl ) { //
-                  g->_impl.set<py::object>(impl);
+              [](graphinst_ptr_t g, py::object impl) { //
+                g->_impl.set<py::object>(impl);
               })
           .def("__repr__", [](graphinst_ptr_t g) -> std::string { return FormatString("GraphInst(%p)", (void*)g.get()); });
   type_codec->registerStdCodec<graphinst_ptr_t>(graphinst_type);

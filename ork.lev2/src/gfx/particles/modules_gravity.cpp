@@ -30,7 +30,7 @@ struct GravityModuleInst : public DgModuleInst {
     // inputs
     /////////////////
 
-    _input_buffer = typedInputNamed<ParticleBufferPlugTraits>("ParticleBuffer");
+    _input_buffer = typedInputNamed<ParticleBufferPlugTraits>("pool");
 
     _input_g           = typedInputNamed<FloatXfPlugTraits>("G");
     _input_mass        = typedInputNamed<FloatXfPlugTraits>("Mass");
@@ -43,7 +43,7 @@ struct GravityModuleInst : public DgModuleInst {
     // outputs
     /////////////////
 
-    _output_buffer = typedOutputNamed<ParticleBufferPlugTraits>("ParticleBuffer");
+    _output_buffer = typedOutputNamed<ParticleBufferPlugTraits>("pool");
 
     if (_input_buffer->_connectedOutput) {
       _pool                              = _input_buffer->value()._pool;
@@ -118,8 +118,8 @@ GravityModuleData::GravityModuleData() {
 std::shared_ptr<GravityModuleData> GravityModuleData::createShared() {
   auto data = std::make_shared<GravityModuleData>();
 
-  createInputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "ParticleBuffer");
-  createOutputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "ParticleBuffer");
+  createInputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "pool");
+  createOutputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "pool");
 
   //RegisterFloatXfPlug(GravityModule, G, -10.0f, 10.0f, ged::OutPlugChoiceDelegate);
   //RegisterFloatXfPlug(GravityModule, Mass, -10.0f, 10.0f, ged::OutPlugChoiceDelegate);

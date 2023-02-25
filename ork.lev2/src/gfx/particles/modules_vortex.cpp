@@ -30,7 +30,7 @@ struct VortexModuleInst : public DgModuleInst {
     // inputs
     /////////////////
 
-    _input_buffer           = typedInputNamed<ParticleBufferPlugTraits>("ParticleBuffer");
+    _input_buffer           = typedInputNamed<ParticleBufferPlugTraits>("pool");
     _input_vortex_strength  = typedInputNamed<FloatXfPlugTraits>("VortexStrength");
     _input_outward_strength = typedInputNamed<FloatXfPlugTraits>("OutwardStrength");
     _input_falloff          = typedInputNamed<FloatXfPlugTraits>("Falloff");
@@ -39,7 +39,7 @@ struct VortexModuleInst : public DgModuleInst {
     // outputs
     /////////////////
 
-    _output_buffer = typedOutputNamed<ParticleBufferPlugTraits>("ParticleBuffer");
+    _output_buffer = typedOutputNamed<ParticleBufferPlugTraits>("pool");
 
     if (_input_buffer->_connectedOutput) {
       _pool                              = _input_buffer->value()._pool;
@@ -98,8 +98,8 @@ VortexModuleData::VortexModuleData() {
 std::shared_ptr<VortexModuleData> VortexModuleData::createShared() {
   auto data = std::make_shared<VortexModuleData>();
 
-  createInputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "ParticleBuffer");
-  createOutputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "ParticleBuffer");
+  createInputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "pool");
+  createOutputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "pool");
 
   //RegisterFloatXfPlug(VortexModule, Falloff, 0.0f, 10.0f, ged::OutPlugChoiceDelegate);
   //RegisterFloatXfPlug(VortexModule, VortexStrength, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);

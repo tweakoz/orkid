@@ -99,16 +99,16 @@ particles_drawable_data_ptr_t createParticleData(){
   // particle buffer IO
   ///////////////////////////////////////////////////////////////
 
-  auto P_out   = ptcl_pool->outputNamed("ParticleBuffer");
-  auto E_inp   = ptcl_emitter->inputNamed("ParticleBuffer");
-  auto E_out   = ptcl_emitter->outputNamed("ParticleBuffer");
-  auto GR_inp  = ptcl_gravity->inputNamed("ParticleBuffer");
-  auto GR_out  = ptcl_gravity->outputNamed("ParticleBuffer");
-  auto TURB_inp  = ptcl_turbulence->inputNamed("ParticleBuffer");
-  auto TURB_out  = ptcl_turbulence->outputNamed("ParticleBuffer");
-  auto VORTEX_inp  = ptcl_vortex->inputNamed("ParticleBuffer");
-  auto VORTEX_out  = ptcl_vortex->outputNamed("ParticleBuffer");
-  auto SPR_inp = ptcl_sprites->inputNamed("ParticleBuffer");
+  auto P_out   = ptcl_pool->outputNamed("pool");
+  auto E_inp   = ptcl_emitter->inputNamed("pool");
+  auto E_out   = ptcl_emitter->outputNamed("pool");
+  auto GR_inp  = ptcl_gravity->inputNamed("pool");
+  auto GR_out  = ptcl_gravity->outputNamed("pool");
+  auto TURB_inp  = ptcl_turbulence->inputNamed("pool");
+  auto TURB_out  = ptcl_turbulence->outputNamed("pool");
+  auto VORTEX_inp  = ptcl_vortex->inputNamed("pool");
+  auto VORTEX_out  = ptcl_vortex->outputNamed("pool");
+  auto SPR_inp = ptcl_sprites->inputNamed("pool");
 
   graphdata->safeConnect(E_inp, P_out);
   graphdata->safeConnect(GR_inp, E_out);
