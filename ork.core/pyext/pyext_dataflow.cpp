@@ -52,9 +52,6 @@ void pyinit_dataflow(py::module& module_core) {
                 auto m         = proxy->_module;
                 auto input     = m->inputNamed(key);
                 OrkAssert(input);
-                auto clazzname = input->objectClass()->Name();
-                printf("SET inputNamed<%s:%s>\n", key.c_str(), clazzname.c_str());
-                OrkAssert(input);
                 auto decoded_value = type_codec->decode(value);
 
                 ////////////////////////////////////////////////

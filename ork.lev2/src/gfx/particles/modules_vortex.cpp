@@ -61,7 +61,9 @@ struct VortexModuleInst : public DgModuleInst {
       BasicParticle* particle = _pool->GetActiveParticle(i);
       fvec3 Pos2D             = particle->mPosition;
       Pos2D.y                 = (0.0f);
-      fvec3 N                 = particle->mPosition.normalized();
+      fvec3 N                 = particle->mPosition;
+      N.y = 0.0f;
+      N = N.normalized();
       fvec3 Dir               = N.crossWith(fvec3::unitY());
       float fstr              = 1.0f / (1.0f + falloff / Pos2D.magnitude());
       fvec3 Force             = Dir * (vortexstrength * fstr);
