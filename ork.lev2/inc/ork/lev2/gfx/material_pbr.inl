@@ -8,7 +8,7 @@
 #pragma once
 
 #include <ork/lev2/gfx/gfxmaterial.h>
-#include <ork/lev2/gfx/fxstate_instance.h>
+#include <ork/lev2/gfx/fx_pipeline.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/lev2_asset.h>
@@ -87,7 +87,7 @@ public:
   void forceEmissive();
 
   ////////////////////////////////////////////
-  fxpipelinecache_constptr_t _doFxInstanceCache(fxpipelinepermutation_set_constptr_t perms) const final;
+  fxpipelinecache_constptr_t _doFxPipelineCache(fxpipelinepermutation_set_constptr_t perms) const final;
   ////////////////////////////////////////////
   //void setupCamera(const RenderContextFrameData& RCFD);
   ////////////////////////////////////////////

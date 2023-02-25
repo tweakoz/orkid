@@ -572,7 +572,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
 
 ///////////////////////////////////////////////////////////////////////////////
 
-fxpipelinecache_constptr_t PBRMaterial::_doFxInstanceCache(fxpipelinepermutation_set_constptr_t perms) const { // final
+fxpipelinecache_constptr_t PBRMaterial::_doFxPipelineCache(fxpipelinepermutation_set_constptr_t perms) const { // final
   return _getpbrcache()->getCache(this);
 }
 

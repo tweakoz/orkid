@@ -10,7 +10,7 @@
 #include <ork/math/frustum.h>
 #include <ork/math/polar.h>
 #include <ork/lev2/gfx/scenegraph/scenegraph.h>
-#include <ork/lev2/gfx/fxstate_instance.h>
+#include <ork/lev2/gfx/fx_pipeline.h>
 #include <ork/lev2/gfx/meshutil/meshutil.h>
 #include <fstream>
 

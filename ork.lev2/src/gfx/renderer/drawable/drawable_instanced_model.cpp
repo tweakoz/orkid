@@ -11,7 +11,7 @@
 #include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/gfx/gfxmodel.h>
-#include <ork/lev2/gfx/fxstate_instance.h>
+#include <ork/lev2/gfx/fx_pipeline.h>
 
 #include <ork/kernel/orklut.hpp>
 #include <ork/reflect/properties/DirectTypedMap.hpp>

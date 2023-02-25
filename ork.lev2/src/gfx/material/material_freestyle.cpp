@@ -65,7 +65,7 @@ static freestylecache_impl_ptr_t _getfreestylecache(){
   return _gcache;
 }
 
-fxpipelinecache_constptr_t FreestyleMaterial::_doFxInstanceCache(fxpipelinepermutation_set_constptr_t perms) const { // final
+fxpipelinecache_constptr_t FreestyleMaterial::_doFxPipelineCache(fxpipelinepermutation_set_constptr_t perms) const { // final
   return _getfreestylecache()->getCache(this);
 }
 

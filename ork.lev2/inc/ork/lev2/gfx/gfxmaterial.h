@@ -15,7 +15,7 @@
 #include <ork/lev2/gfx/renderer/rendercontext.h>
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/gfx/gfxrasterstate.h>
-#include <ork/lev2/gfx/fxstate_instance.h>
+#include <ork/lev2/gfx/fx_pipeline.h>
 #include <ork/kernel/varmap.inl>
 
 namespace ork {
@@ -136,7 +136,7 @@ public:
   virtual int BeginBlock(Context* pTARG, const RenderContextInstData& MatCtx = RenderContextInstData::Default) = 0;
   virtual void EndBlock(Context* pTARG)                                                                        = 0;
   fxpipelinecache_constptr_t pipelineCache(fxpipelinepermutation_set_constptr_t perms=nullptr) const;
-  virtual fxpipelinecache_constptr_t _doFxInstanceCache(fxpipelinepermutation_set_constptr_t perms) const { return nullptr; }
+  virtual fxpipelinecache_constptr_t _doFxPipelineCache(fxpipelinepermutation_set_constptr_t perms) const { return nullptr; }
 
   void SetTexture(ETextureDest edest, const TextureContext& htex);
   const TextureContext& GetTexture(ETextureDest edest) const;

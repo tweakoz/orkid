@@ -9,7 +9,7 @@
 #include <ork/lev2/gfx/meshutil/rigid_primitive.inl>
 #include <ork/math/frustum.h>
 #include <ork/lev2/gfx/scenegraph/scenegraph.h>
-#include <ork/lev2/gfx/fxstate_instance.h>
+#include <ork/lev2/gfx/fx_pipeline.h>
 
 namespace ork::lev2::primitives {
 //////////////////////////////////////////////////////////////////////////////

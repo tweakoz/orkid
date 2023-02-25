@@ -26,7 +26,7 @@
 #include <ork/lev2/glfw/ctx_glfw.h>
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/material_freestyle.h>
-#include <ork/lev2/gfx/fxstate_instance.h>
+#include <ork/lev2/gfx/fx_pipeline.h>
 #include <ork/reflect/properties/registerX.inl>
 
 ImplementReflectionX(ork::lev2::EzUiCam, "EzUiCam");
