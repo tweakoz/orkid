@@ -57,7 +57,7 @@ def createParticleData():
   vortex     = graphdata.create("VORT",particles.Vortex)
   sprites    = graphdata.create("SPRI",particles.SpriteRenderer)
 
-  ptc_pool.pool_size = 8192
+  ptc_pool.pool_size = 8192 # max number of particles in pool
 
   # connect modules in a chain configuration
 
@@ -67,19 +67,28 @@ def createParticleData():
   graphdata.connect( vortex.inputs.pool,     turbulence.outputs.pool )
   graphdata.connect( sprites.inputs.pool,    vortex.outputs.pool )
 
-  # basic module settings
+  # emitter module settings
 
   emitter.inputs.LifeSpan = 10
   emitter.inputs.EmissionRate = 800
   emitter.inputs.EmissionVelocity = 1
   emitter.inputs.DispersionAngle = 45
   emitter.inputs.Offset = vec3(1,2,3)
+
+  # gravity module settings
+
   gravity.inputs.G = 1
   gravity.inputs.Mass = 1
   gravity.inputs.OthMass = 1
   gravity.inputs.MinDistance = 1
   gravity.inputs.Center = vec3(0,0,0)
+
+  # turbulence module settings
+
   turbulence.inputs.Amount = vec3(1.5,1.5,1.5)
+
+  # vortex module settins
+
   vortex.inputs.VortexStrength = 1.0
   vortex.inputs.OutwardStrength = 1.0
   vortex.inputs.Falloff = 1.0
