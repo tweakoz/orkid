@@ -34,6 +34,7 @@ uniform_set ublock_vtx {
 
 uniform_set ublock_frg {
   vec4 modcolor;
+  vec4 flatcolor;
   vec4 User0;
   sampler2D ColorMap;
   sampler3D VolumeMap;
@@ -179,7 +180,7 @@ libblock lib_billboard {
   Output Compute(Input inp) {
     Output outp;
 
-    float ang         = 0.0; // inp.inp_ang_siz.x;
+    float ang         = inp.inp_ang_siz.x;
     float size_pixels = inp.inp_ang_siz.y;
 
     float sizX = size_pixels * Rtg_InvDim.x;
@@ -409,9 +410,9 @@ fragment_shader ps_modtex : fface_psys {
   if (out_clr.a == 0.0f)
     discard;
 }
-fragment_shader ps_solid : fface_psys {
-  vec3 C  = vec3(1, .5, 0) * (1 - frg_clr.a);
-  out_clr = vec4(C, 1);
+fragment_shader ps_flat : fface_psys {
+  vec3 C  = flatcolor.xyz * (1 - frg_clr.a);
+  out_clr = vec4(C, flatcolor.w);
 }
 fragment_shader ps_modtexclr : fface_psys {
 
@@ -438,8 +439,17 @@ technique tparticle_nogs {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_vtxtexcolornogs;
-    fragment_shader = ps_solid;
+    fragment_shader = ps_flat;
     state_block     = sb_default;
+  }
+}
+technique tflatparticle {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxtexcolor;
+    geometry_shader = gs_billboardquad;
+    fragment_shader = ps_flat;
+    state_block = sb_default;
   }
 }
 technique tbasicparticle {
@@ -447,8 +457,7 @@ technique tbasicparticle {
   pass p0 {
     vertex_shader   = vs_vtxtexcolor;
     geometry_shader = gs_billboardquad;
-    fragment_shader = ps_solid;
-    // fragment_shader = ps_modtexclr;
+    fragment_shader = ps_modtexclr;
     state_block = sb_default;
   }
 }

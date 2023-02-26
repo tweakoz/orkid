@@ -61,6 +61,10 @@ void ParticlePoolRenderBuffer::update(const pool_t& the_pool) {
   }
 }
 
+
 ///////////////////////////////////////////////////////////////////////////////
-} //namespace ork::lev2::particle {
+} //namespace lev2::particle {
 /////////////////////////////////////////
+
+namespace ptcl = ork::lev2::particle;
+

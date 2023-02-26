@@ -23,6 +23,42 @@ void pyinit_gfx_particles(py::module& module_lev2) {
   auto type_codec = python::TypeCodec::instance();
 
   /////////////////////////////////////////////////////////////////////////////
+  auto mtl_base_type = //
+      py::class_<ptc::MaterialBase, ptc::basematerial_ptr_t>(ptc_module, "MaterialBase");
+ type_codec->registerStdCodec<ptc::basematerial_ptr_t>(mtl_base_type);
+  /////////////////////////////////////////////////////////////////////////////
+  auto mtl_flat_type = //
+      py::class_<ptc::FlatMaterial, ptc::MaterialBase, ptc::flatmaterial_ptr_t>(ptc_module, "FlatMaterial")
+      .def_static("createShared", []() -> ptc::flatmaterial_ptr_t { return ptc::FlatMaterial::createShared(); })
+      .def_property("color", 
+        [](ptc::flatmaterial_ptr_t  m) -> fvec4 { //
+          return m->_color;
+        },
+        [](ptc::flatmaterial_ptr_t  m, fvec4 color) { //
+          m->_color = color;
+        });
+  type_codec->registerStdCodec<ptc::flatmaterial_ptr_t>(mtl_flat_type);
+  /////////////////////////////////////////////////////////////////////////////
+  auto mtl_grad_type = //
+      py::class_<ptc::GradientMaterial, ptc::MaterialBase, ptc::gradientmaterial_ptr_t>(ptc_module, "GradientMaterial")
+      .def_static("createShared", []() -> ptc::gradientmaterial_ptr_t { return ptc::GradientMaterial::createShared(); });
+  type_codec->registerStdCodec<ptc::gradientmaterial_ptr_t>(mtl_grad_type);
+  /////////////////////////////////////////////////////////////////////////////
+  auto mtl_tex_type = //
+      py::class_<ptc::TextureMaterial, ptc::MaterialBase, ptc::texturematerial_ptr_t>(ptc_module, "TextureMaterial")
+      .def_static("createShared", []() -> ptc::texturematerial_ptr_t { return ptc::TextureMaterial::createShared(); });
+  type_codec->registerStdCodec<ptc::texturematerial_ptr_t>(mtl_tex_type);
+  /////////////////////////////////////////////////////////////////////////////
+  auto mtl_texgrid_type = //
+      py::class_<ptc::TexGridMaterial, ptc::MaterialBase, ptc::texgridmaterial_ptr_t>(ptc_module, "TexGridMaterial")
+      .def_static("createShared", []() -> ptc::texgridmaterial_ptr_t { return ptc::TexGridMaterial::createShared(); });
+  type_codec->registerStdCodec<ptc::texgridmaterial_ptr_t>(mtl_texgrid_type);
+  /////////////////////////////////////////////////////////////////////////////
+  auto mtl_texvol_type = //
+      py::class_<ptc::VolTexMaterial, ptc::MaterialBase, ptc::voltexmaterial_ptr_t>(ptc_module, "VolTexMaterial")
+      .def_static("createShared", []() -> ptc::voltexmaterial_ptr_t { return ptc::VolTexMaterial::createShared(); });
+  type_codec->registerStdCodec<ptc::voltexmaterial_ptr_t>(mtl_texvol_type);
+  /////////////////////////////////////////////////////////////////////////////
   auto moduledata_type = //
       py::class_<ptc::ModuleData, dflow::DgModuleData, ptc::moduledata_ptr_t>(ptc_module, "Module")
       .def("__repr__", [](ptc::moduledata_ptr_t m) -> std::string {
@@ -79,6 +115,12 @@ void pyinit_gfx_particles(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////
   auto spritemoduledata_type = //
       py::class_<ptc::SpriteRendererData, ptc::ModuleData, ptc::spritemodule_ptr_t>(ptc_module, "SpriteRenderer")
+      .def_property("material",[](ptc::spritemodule_ptr_t r)->ptc::basematerial_ptr_t{
+        return r->_material;
+      },
+      [](ptc::spritemodule_ptr_t r, ptc::basematerial_ptr_t m){
+        r->_material = m;
+      })      
       .def_static("createShared", []() -> ptc::spritemodule_ptr_t { return ptc::SpriteRendererData::createShared(); });
   type_codec->registerStdCodec<ptc::spritemodule_ptr_t>(spritemoduledata_type);
 }

@@ -49,17 +49,17 @@ class ParticlesApp(object):
     createSceneGraph(app=self,rendermodel="ForwardPBR")
 
     ###################################
-    # create particle drawable 
+    # create particle data 
     ###################################
 
     self.ptc_data = createParticleData()
-    ptc_drawable = self.ptc_data.drawable_data.createDrawable()
 
     self.emitterplugs = self.ptc_data.emitter.inputs
     self.emitter2plugs = self.ptc_data.emitter2.inputs
     self.vortexplugs = self.ptc_data.vortex.inputs
     self.gravityplugs = self.ptc_data.gravity.inputs
     self.turbulenceplugs = self.ptc_data.turbulence.inputs
+    self.spriteplugs = self.ptc_data.sprites.inputs
 
     self.emitterplugs.LifeSpan = 20
     self.emitterplugs.EmissionRate = 0
@@ -70,12 +70,18 @@ class ParticlesApp(object):
     emitter_pos.z = 0
     self.emitterplugs.Offset = emitter_pos
 
+    self.material = particles.FlatMaterial.createShared();
+    self.ptc_data.sprites.material = self.material
+
     ##################
     # create particle sg node
     ##################
 
+    ptc_drawable = self.ptc_data.drawable_data.createDrawable()
     self.particlenode = self.layer1.createDrawableNode("particle-node",ptc_drawable)
     self.particlenode.sortkey = 2;
+    self.color = vec4(1, .5, 0, 1)
+    self.counter = 0.0
 
   ################################################
   def configA(self,abstime):
@@ -86,6 +92,7 @@ class ParticlesApp(object):
     self.vortexplugs.Falloff = 0
     self.gravityplugs.G = .5
     self.turbulenceplugs.Amount = vec3(0,0,0)
+    self.spriteplugs.Size = 5
 
   ################################################
   def configB(self,abstime):
@@ -96,6 +103,7 @@ class ParticlesApp(object):
     self.vortexplugs.Falloff = 0
     self.gravityplugs.G = 1
     self.turbulenceplugs.Amount = vec3(2,2,2)
+    self.spriteplugs.Size = 5
 
   ################################################
   def configC(self,abstime):
@@ -106,12 +114,20 @@ class ParticlesApp(object):
     self.vortexplugs.Falloff = 0
     self.gravityplugs.G = 1.1
     self.turbulenceplugs.Amount = vec3(8,8,8)
+    self.spriteplugs.Size = 8
 
   ################################################
 
   def onUpdate(self,updinfo):
     abstime = updinfo.absolutetime
+    self.counter += updinfo.deltatime
     INDEX = int(math.fmod(abstime,24)/8)
+
+    r = 0.5+math.sin(abstime*0.35)*0.5
+    g = 0.5+math.sin(abstime*0.45)*0.5
+    b = 0.5+math.sin(abstime*0.55)*0.5
+    self.material.color = vec4(r,g,b, 1)
+
     if(INDEX==0):
         self.configA(abstime)
     elif(INDEX==1):
