@@ -61,6 +61,15 @@ class ParticlesApp(object):
     self.gravityplugs = self.ptc_data.gravity.inputs
     self.turbulenceplugs = self.ptc_data.turbulence.inputs
 
+    self.emitterplugs.LifeSpan = 20
+    self.emitterplugs.EmissionRate = 0
+    self.emitterplugs.DispersionAngle = 0
+    emitter_pos = vec3()
+    emitter_pos.x = 0
+    emitter_pos.y = 2
+    emitter_pos.z = 0
+    self.emitterplugs.Offset = emitter_pos
+
     ##################
     # create particle sg node
     ##################
@@ -68,32 +77,47 @@ class ParticlesApp(object):
     self.particlenode = self.layer1.createDrawableNode("particle-node",ptc_drawable)
     self.particlenode.sortkey = 2;
 
+  ################################################
+  def configA(self,abstime):
+    self.emitter2plugs.EmitterSpinRate = math.sin(abstime*0.25)*10
+    self.emitter2plugs.LifeSpan = 5
+    self.vortexplugs.VortexStrength = 2
+    self.vortexplugs.OutwardStrength = -2
+    self.vortexplugs.Falloff = 0
+    self.gravityplugs.G = .5
+    self.turbulenceplugs.Amount = vec3(0,0,0)
+
+  ################################################
+  def configB(self,abstime):
+    self.emitter2plugs.EmitterSpinRate = math.sin(abstime*0.25)*1
+    self.emitter2plugs.LifeSpan = 2
+    self.vortexplugs.VortexStrength = .5
+    self.vortexplugs.OutwardStrength = -.5
+    self.vortexplugs.Falloff = 0
+    self.gravityplugs.G = 1
+    self.turbulenceplugs.Amount = vec3(2,2,2)
+
+  ################################################
+  def configC(self,abstime):
+    self.emitter2plugs.EmitterSpinRate = math.sin(abstime)*30
+    self.emitter2plugs.LifeSpan = 5
+    self.vortexplugs.VortexStrength = 0
+    self.vortexplugs.OutwardStrength = 1
+    self.vortexplugs.Falloff = 0
+    self.gravityplugs.G = 1.1
+    self.turbulenceplugs.Amount = vec3(8,8,8)
 
   ################################################
 
   def onUpdate(self,updinfo):
     abstime = updinfo.absolutetime
-
-    self.emitterplugs.LifeSpan = 20
-    self.emitterplugs.EmissionRate = (math.sin(abstime*6)+1)*800
-    self.emitterplugs.DispersionAngle = (math.sin(abstime*0.37)+1)*75
-    emitter_pos = vec3()
-    emitter_pos.x = 0
-    emitter_pos.y = (math.sin(abstime)+1)*2
-    emitter_pos.z = 0
-    self.emitterplugs.Offset = emitter_pos
-
-    #self.emitter2plugs.EmissionRate = 0
-    self.emitter2plugs.EmitterSpinRate = math.sin(abstime*0.25)*2
-    self.emitter2plugs.LifeSpan = 5
-
-    self.vortexplugs.VortexStrength = .5
-    self.vortexplugs.OutwardStrength = -.1
-    self.vortexplugs.Falloff = 0
-
-    self.gravityplugs.G = .1
-
-    self.turbulenceplugs.Amount = vec3(1,1,1)
+    INDEX = int(math.fmod(abstime,24)/8)
+    if(INDEX==0):
+        self.configA(abstime)
+    elif(INDEX==1):
+        self.configB(abstime)
+    else:
+        self.configC(abstime)
 
     ########################################
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
