@@ -44,7 +44,6 @@ struct NozzleEmitterInst : public ParticleModuleInst {
   fvec3 _curOffset;
 
   NozzleDirectedEmitter _directedEmitter;
-  // Pool<BasicParticle> mDeadPool;
   EmitterCtx _emitter_context;
 
 
@@ -74,29 +73,19 @@ NozzleEmitterInst::NozzleEmitterInst(const NozzleEmitterData* ned)
 
 ///////////////////////////////////////////////////////////////////////////////
 void NozzleEmitterInst::onLink(GraphInst* inst) {
-
   _onLink(inst);
-
-  /////////////////
-  // inputs
-  /////////////////
-
   _input_lifespan         = typedInputNamed<FloatXfPlugTraits>("LifeSpan");
   _input_emissionrate     = typedInputNamed<FloatXfPlugTraits>("EmissionRate");
   _input_emissionvelocity = typedInputNamed<FloatXfPlugTraits>("EmissionVelocity");
   _input_dispersionangle  = typedInputNamed<FloatXfPlugTraits>("DispersionAngle");
-
   _input_direction       = typedInputNamed<Vec3XfPlugTraits>("Direction");
   _input_offset          = typedInputNamed<Vec3XfPlugTraits>("Offset");
   _input_offset_velocity = typedInputNamed<Vec3XfPlugTraits>("OffsetVelocity");
-
-  /////////////////
-
 }
 ///////////////////////////////////////////////////////////////////////////////
 void NozzleEmitterInst::compute(GraphInst* inst, ui::updatedata_ptr_t updata) {
 
-  if (_pool == nullptr)
+  if(_pool == nullptr)
     return;
 
   _timeAccumulator += updata->_dt;

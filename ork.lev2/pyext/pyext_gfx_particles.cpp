@@ -57,6 +57,11 @@ void pyinit_gfx_particles(py::module& module_lev2) {
       .def_static("createShared", []() -> ptc::nozzleemittermodule_ptr_t { return ptc::NozzleEmitterData::createShared(); });
   type_codec->registerStdCodec<ptc::nozzleemittermodule_ptr_t>(nzlmoduledata_type);
   /////////////////////////////////////////////////////////////////////////////
+  auto ringmoduledata_type = //
+      py::class_<ptc::RingEmitterData, ptc::ModuleData, ptc::ringemittermodule_ptr_t>(ptc_module, "RingEmitter")
+      .def_static("createShared", []() -> ptc::ringemittermodule_ptr_t { return ptc::RingEmitterData::createShared(); });
+  type_codec->registerStdCodec<ptc::ringemittermodule_ptr_t>(ringmoduledata_type);
+  /////////////////////////////////////////////////////////////////////////////
   auto grvmoduledata_type = //
       py::class_<ptc::GravityModuleData, ptc::ModuleData, ptc::gravitymodule_ptr_t>(ptc_module, "Gravity")
       .def_static("createShared", []() -> ptc::gravitymodule_ptr_t { return ptc::GravityModuleData::createShared(); });

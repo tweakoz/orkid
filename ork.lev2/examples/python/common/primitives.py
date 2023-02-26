@@ -53,7 +53,8 @@ def createParticleData():
       # instantiate modules
 
       self.ptc_pool   = self.graphdata.create("POOL",particles.Pool)
-      self.emitter    = self.graphdata.create("EMIT",particles.NozzleEmitter)
+      self.emitter    = self.graphdata.create("EMITN",particles.NozzleEmitter)
+      self.emitter2    = self.graphdata.create("EMITR",particles.RingEmitter)
       self.gravity    = self.graphdata.create("POOL",particles.Gravity)
       self.turbulence = self.graphdata.create("GRAV",particles.Turbulence)
       self.vortex     = self.graphdata.create("VORT",particles.Vortex)
@@ -64,7 +65,8 @@ def createParticleData():
       # connect modules in a chain configuration
 
       self.graphdata.connect( self.emitter.inputs.pool,    self.ptc_pool.outputs.pool )
-      self.graphdata.connect( self.gravity.inputs.pool,    self.emitter.outputs.pool )
+      self.graphdata.connect( self.emitter2.inputs.pool,    self.emitter.outputs.pool )
+      self.graphdata.connect( self.gravity.inputs.pool,    self.emitter2.outputs.pool )
       self.graphdata.connect( self.turbulence.inputs.pool, self.gravity.outputs.pool )
       self.graphdata.connect( self.vortex.inputs.pool,     self.turbulence.outputs.pool )
       self.graphdata.connect( self.sprites.inputs.pool,    self.vortex.outputs.pool )
@@ -76,6 +78,14 @@ def createParticleData():
       self.emitter.inputs.EmissionVelocity = 1
       self.emitter.inputs.DispersionAngle = 45
       self.emitter.inputs.Offset = vec3(1,2,3)
+
+      self.emitter2.inputs.LifeSpan = 10
+      self.emitter2.inputs.EmissionRate = 800
+      self.emitter2.inputs.EmissionRadius = 2
+      self.emitter2.inputs.EmitterSpinRate = 1
+      self.emitter2.inputs.EmissionVelocity = 1
+      self.emitter2.inputs.DispersionAngle = 45
+      self.emitter2.inputs.Offset = vec3(0,4,0)
 
       # gravity module settings
 

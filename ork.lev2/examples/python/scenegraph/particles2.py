@@ -18,8 +18,10 @@ from common.scenegraph import createSceneGraph
 
 ################################################################################
 parser = argparse.ArgumentParser(description='scenegraph particles example')
+parser.add_argument('--dynaplugs', action="store_true", help='dynamic plug update' )
 
 args = vars(parser.parse_args())
+dynaplugs = args["dynaplugs"]
 
 ################################################################################
 
@@ -54,12 +56,10 @@ class ParticlesApp(object):
     ptc_drawable = self.ptc_data.drawable_data.createDrawable()
 
     self.emitterplugs = self.ptc_data.emitter.inputs
+    self.emitter2plugs = self.ptc_data.emitter2.inputs
     self.vortexplugs = self.ptc_data.vortex.inputs
     self.gravityplugs = self.ptc_data.gravity.inputs
     self.turbulenceplugs = self.ptc_data.turbulence.inputs
-
-    self.emitterplugs.EmissionVelocity = 0.1
-    self.turbulenceplugs.Amount = vec3(1,1,1)*5
 
     ##################
     # create particle sg node
@@ -72,7 +72,32 @@ class ParticlesApp(object):
   ################################################
 
   def onUpdate(self,updinfo):
+    abstime = updinfo.absolutetime
+
+    self.emitterplugs.LifeSpan = 20
+    self.emitterplugs.EmissionRate = (math.sin(abstime*6)+1)*800
+    self.emitterplugs.DispersionAngle = (math.sin(abstime*0.37)+1)*75
+    emitter_pos = vec3()
+    emitter_pos.x = 0
+    emitter_pos.y = (math.sin(abstime)+1)*2
+    emitter_pos.z = 0
+    self.emitterplugs.Offset = emitter_pos
+
+    #self.emitter2plugs.EmissionRate = 0
+    self.emitter2plugs.EmitterSpinRate = math.sin(abstime*0.25)*2
+    self.emitter2plugs.LifeSpan = 5
+
+    self.vortexplugs.VortexStrength = .5
+    self.vortexplugs.OutwardStrength = -.1
+    self.vortexplugs.Falloff = 0
+
+    self.gravityplugs.G = .1
+
+    self.turbulenceplugs.Amount = vec3(1,1,1)
+
+    ########################################
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
+    ########################################
 
   ##############################################
 
