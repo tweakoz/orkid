@@ -12,20 +12,21 @@
 #include <ork/dataflow/module.inl>
 #include <ork/dataflow/plug_data.inl>
 
-namespace dflow = ::ork::dataflow;
+using namespace ork::dataflow;
 namespace ork::lev2::particle {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct RingEmitterInst : public dflow::DgModuleInst {
+struct RingEmitterInst : public ParticleModuleInst {
 
   RingEmitterInst(const RingEmitterData* rmd);
 
-  // void DoLink() final;
-  // void Compute(float dt) final;
-  // void Emit(float fdt);
-  // void Reap(float fdt);
-  // void Reset() final;
+  void onLink(GraphInst* inst) final {
+    _onLink(inst);
+  }
+  void compute(GraphInst* inst, ui::updatedata_ptr_t updata) final;
+  void _emit(float fdt);
+  void _reap(float fdt);
 
   // lev2::particle::EventQueue* mDeathEventQueue = nullptr;
   // float mfPhase = 0.0f;
@@ -52,7 +53,10 @@ using ringemitterinst_ptr_t = std::shared_ptr<RingEmitterInst>;
 ///////////////////////////////////////////////////////////////////////////////
 
 RingEmitterInst::RingEmitterInst(const RingEmitterData* rmd)
-    : dflow::DgModuleInst(rmd) {
+    : ParticleModuleInst(rmd) {
+}
+
+void RingEmitterInst::compute(GraphInst* inst, ui::updatedata_ptr_t updata) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -90,43 +94,31 @@ void RingDirectedEmitter::computePosDir(float fi, fvec3& pos, fvec3& dir) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void RingEmitterData::describeX(class_t* clazz) {
-
 }
 
 RingEmitterData::RingEmitterData() {
+}
+
+std::shared_ptr<RingEmitterData> RingEmitterData::createShared() {
+  auto data = std::make_shared<RingEmitterData>();
+  _initShared(data);
 
   //////////////////////////////////////////////////
   // inputs
   //////////////////////////////////////////////////
 
-  // dataflow::inplugbase* GetInput(int idx) const final;
-  // DeclarePoolInpPlug(Input);
-  // DeclareFloatXfPlug(Lifespan);
-  // DeclareFloatXfPlug(EmissionRadius);
-  // DeclareFloatXfPlug(EmissionRate);
-  // DeclareFloatXfPlug(EmissionVelocity);
-  // DeclareFloatXfPlug(EmitterSpinRate);
-  // DeclareFloatXfPlug(DispersionAngle);
-  // DeclareFloatXfPlug(OffsetX);
-  // DeclareFloatXfPlug(OffsetY);
-  // DeclareFloatXfPlug(OffsetZ);
-  // DeclareVect3XfPlug(Direction);
-
-  //////////////////////////////////////////////////
-  // outputs
-  //////////////////////////////////////////////////
-
-  // dataflow::outplugbase* GetOutput(int idx) const final;
-  // DeclarePoolOutPlug(Output);
+  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "LifeSpan");
+  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionRate");
+  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionVelocity");
+  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "DispersionAngle");
+  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionRadius");
+  createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmitterSpinRate");
+  createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Direction");
+  createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Offset");
+  return data;
 }
 
-std::shared_ptr<RingEmitterData> RingEmitterData::createShared() {
-    auto data = std::make_shared<RingEmitterData>();
-    createOutputPlug<ParticleBufferPlugTraits>(data, dflow::EPR_UNIFORM, "ParticleBuffer");
-    return data;
-}
-
-dflow::dgmoduleinst_ptr_t RingEmitterData::createInstance() const {
+dgmoduleinst_ptr_t RingEmitterData::createInstance() const {
   return std::make_shared<RingEmitterInst>(this);
 }
 

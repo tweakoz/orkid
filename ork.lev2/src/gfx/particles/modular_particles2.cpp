@@ -7,28 +7,14 @@
 
 #include <ork/pch.h>
 #include <ork/reflect/properties/registerX.inl>
-#include <ork/lev2/gfx/gfxmodel.h>
-#include <ork/lev2/gfx/texman.h>
-#include <ork/lev2/gfx/renderer/renderer.h>
-#include <ork/lev2/gfx/camera/cameradata.h>
-#include <ork/lev2/gfx/gfxprimitives.h>
-#include <ork/lev2/gfx/gfxmaterial_test.h>
-#include <ork/reflect/enum_serializer.inl>
 
 #include <ork/reflect/properties/DirectTyped.hpp>
 #include <ork/reflect/properties/DirectTypedMap.hpp>
 #include <ork/kernel/orklut.hpp>
 
 #include <ork/lev2/gfx/particle/modular_particles2.h>
-//#include <ork/kernel/fixedlut.hpp>
-
-///////////////////////////////////////////////////////////////////////////////
-
-#include <ork/stream/FileInputStream.h>
-#include <ork/stream/StringInputStream.h>
-#include <ork/reflect/serialize/JsonDeserializer.h>
-#include <ork/reflect/serialize/JsonSerializer.h>
-#include <ork/lev2/lev2_asset.h>
+#include <ork/dataflow/module.inl>
+#include <ork/dataflow/plug_data.inl>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -58,6 +44,29 @@ void ParticleModuleData::describeX(class_t* clazz) {
 }
 
 ParticleModuleData::ParticleModuleData() {
+}
+
+void ParticleModuleData:: _initShared(dflow::dgmoduledata_ptr_t data){
+  createInputPlug<ParticleBufferPlugTraits>(data, dflow::EPR_UNIFORM, "pool");
+  createOutputPlug<ParticleBufferPlugTraits>(data, dflow::EPR_UNIFORM, "pool");
+}
+
+ParticleModuleInst::ParticleModuleInst(const ParticleModuleData* data)
+  : DgModuleInst(data){
+
+}
+
+void ParticleModuleInst::_onLink(dflow::GraphInst* inst){
+  auto ptcl_context = inst->_impl.getShared<Context>();
+  _input_buffer = typedInputNamed<ParticleBufferPlugTraits>("pool");
+  _output_buffer = typedOutputNamed<ParticleBufferPlugTraits>("pool");
+  if (_input_buffer->_connectedOutput) {
+    _pool                              = _input_buffer->value()._pool;
+    _output_buffer->value_ptr()->_pool = _pool;
+  } else {
+    OrkAssert(false);
+  }
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////

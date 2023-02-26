@@ -21,27 +21,20 @@ using namespace ork::dataflow;
 namespace ork::lev2::particle {
 /////////////////////////////////////////
 
-struct SpriteRendererInst : public DgModuleInst {
+struct SpriteRendererInst : public ParticleModuleInst {
 
   using triple_buf_t     = concurrent_triple_buffer<ParticlePoolRenderBuffer>;
   using triple_buf_ptr_t = std::shared_ptr<triple_buf_t>;
 
   SpriteRendererInst(const SpriteRendererData* smd)
-      : DgModuleInst(smd) {
+      : ParticleModuleInst(smd) {
 
     _triple_buf = std::make_shared<triple_buf_t>();
   }
 
   void onLink(GraphInst* inst) final {
 
-    _input_buffer = typedInputNamed<ParticleBufferPlugTraits>("pool");
-
-    if (_input_buffer->_connectedOutput) {
-      _pool = _input_buffer->value()._pool;
-    } else {
-      OrkAssert(false);
-    }
-
+    _onLink(inst);
     auto ptcl_context = inst->_impl.getShared<Context>();
 
     ptcl_context->_rcidlambda = [this](const RenderContextInstData& RCID) { this->_render(RCID); };
@@ -392,9 +385,7 @@ struct SpriteRendererInst : public DgModuleInst {
 
   freestyle_mtl_ptr_t _testmaterial;
   fxpipeline_ptr_t _pipeline;
-  particlebuf_inpluginst_ptr_t _input_buffer;
   triple_buf_ptr_t _triple_buf;
-  pool_ptr_t _pool;
 };
 
 void RendererModuleData::describeX(class_t* clazz) {
@@ -418,7 +409,7 @@ SpriteRendererData::SpriteRendererData() {
 std::shared_ptr<SpriteRendererData> SpriteRendererData::createShared() {
   auto data = std::make_shared<SpriteRendererData>();
 
-  createInputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "pool");
+  _initShared(data);
 
   createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "Size");
   createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "Rot");

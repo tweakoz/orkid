@@ -28,7 +28,7 @@ struct NozzleDirectedEmitter : public DirectedEmitter {
   NozzleEmitterInst* _emitterModule;
 };
 
-struct NozzleEmitterInst : public DgModuleInst {
+struct NozzleEmitterInst : public ParticleModuleInst {
 
   NozzleEmitterInst(const NozzleEmitterData* ned);
 
@@ -47,7 +47,6 @@ struct NozzleEmitterInst : public DgModuleInst {
   // Pool<BasicParticle> mDeadPool;
   EmitterCtx _emitter_context;
 
-  particlebuf_inpluginst_ptr_t _input_buffer;
 
   floatxf_inp_pluginst_ptr_t _input_lifespan;
   floatxf_inp_pluginst_ptr_t _input_emissionrate;
@@ -58,29 +57,29 @@ struct NozzleEmitterInst : public DgModuleInst {
   fvec3xf_inp_pluginst_ptr_t _input_offset;
   fvec3xf_inp_pluginst_ptr_t _input_offset_velocity;
 
-  particlebuf_outpluginst_ptr_t _output_buffer;
 
-  pool_ptr_t _pool;
   float _updaterate = 30.0f;
+  std::mt19937 _randgen;
+  std::uniform_int_distribution<> _distribution;
+  std::function<void(float min, float max)> _rangedf;
 };
 
 //////////////////////////////////////////////////////////////////////////
 
 NozzleEmitterInst::NozzleEmitterInst(const NozzleEmitterData* ned)
-    : DgModuleInst(ned)
-    , _directedEmitter(this) {
+    : ParticleModuleInst(ned)
+    , _directedEmitter(this){
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 void NozzleEmitterInst::onLink(GraphInst* inst) {
 
-  auto ptcl_context = inst->_impl.getShared<Context>();
+  _onLink(inst);
 
   /////////////////
   // inputs
   /////////////////
-
-  _input_buffer = typedInputNamed<ParticleBufferPlugTraits>("pool");
 
   _input_lifespan         = typedInputNamed<FloatXfPlugTraits>("LifeSpan");
   _input_emissionrate     = typedInputNamed<FloatXfPlugTraits>("EmissionRate");
@@ -92,19 +91,7 @@ void NozzleEmitterInst::onLink(GraphInst* inst) {
   _input_offset_velocity = typedInputNamed<Vec3XfPlugTraits>("OffsetVelocity");
 
   /////////////////
-  // outputs
-  /////////////////
 
-  _output_buffer = typedOutputNamed<ParticleBufferPlugTraits>("pool");
-
-  /////////////////
-
-  if (_input_buffer->_connectedOutput) {
-    _pool                              = _input_buffer->value()._pool;
-    _output_buffer->value_ptr()->_pool = _pool;
-  } else {
-    OrkAssert(false);
-  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void NozzleEmitterInst::compute(GraphInst* inst, ui::updatedata_ptr_t updata) {
@@ -188,7 +175,7 @@ NozzleEmitterData::NozzleEmitterData() {
 
 std::shared_ptr<NozzleEmitterData> NozzleEmitterData::createShared() {
   auto data = std::make_shared<NozzleEmitterData>();
-
+  _initShared(data);
   //RegisterFloatXfPlug(NozzleEmitter, Lifespan, 0.0f, 20.0f, ged::OutPlugChoiceDelegate);
   //RegisterFloatXfPlug(NozzleEmitter, EmissionRate, 0.0f, 400.0f, ged::OutPlugChoiceDelegate);
   //RegisterFloatXfPlug(NozzleEmitter, EmissionVelocity, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
@@ -197,7 +184,6 @@ std::shared_ptr<NozzleEmitterData> NozzleEmitterData::createShared() {
   //RegisterVect3XfPlug(NozzleEmitter, Direction, -1.0f, 1.0f, ged::OutPlugChoiceDelegate);
   //RegisterVect3XfPlug(NozzleEmitter, OffsetVelocity, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
 
-  createInputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "pool");
   createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "LifeSpan");
   createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionRate");
   createInputPlug<FloatXfPlugTraits>(data, EPR_UNIFORM, "EmissionVelocity");
@@ -206,7 +192,6 @@ std::shared_ptr<NozzleEmitterData> NozzleEmitterData::createShared() {
   createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "Offset");
   createInputPlug<Vec3XfPlugTraits>(data, EPR_UNIFORM, "OffsetVelocity");
 
-  createOutputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "pool");
   return data;
 }
 

@@ -60,6 +60,9 @@ class ParticlesApp(object):
     self.gravityplugs = self.ptc_data.gravity.inputs
     self.turbulenceplugs = self.ptc_data.turbulence.inputs
 
+    self.emitterplugs.EmissionVelocity = 0.1
+    self.turbulenceplugs.Amount = vec3(1,1,1)*5
+
     ##################
     # create particle sg node
     ##################

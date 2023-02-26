@@ -15,6 +15,7 @@
 #include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/kernel/fixedlut.h>
 #include <ork/rtti/RTTIX.inl>
+#include <random>
 
 namespace ork { namespace lev2 { namespace particle {
 
@@ -350,6 +351,12 @@ struct EmitterCtx {
   EmitterCtx();
 };
 
+struct RandGen{
+  RandGen();
+  std::mt19937 _randgen;
+  std::uniform_int_distribution<> _distribution;
+  float ranged_rand(float min, float max);
+};
 class DirectedEmitter {
 public:
   void Emit(EmitterCtx& ctx);
@@ -358,6 +365,7 @@ public:
   void Reap(EmitterCtx& ctx);
   EmitterDirection meDirection;
   float mDispersionAngle;
+  RandGen _randgen;
 
   virtual void computePosDir(float fi, fvec3& pos, fvec3& dir) = 0;
 };

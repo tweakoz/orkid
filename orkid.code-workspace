@@ -117,7 +117,8 @@
 			"*.macros": "cpp",
 			"*.glsl": "cpp",
 			"*.isph": "cpp",
-			"format": "cpp"
+			"format": "cpp",
+			"fft": "cpp"
 		}
 	}
 }

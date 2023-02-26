@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
+#include <ork/math/audiomath.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/particle/particle.h>
 #include <ork/lev2/gfx/particle/particle.hpp>
@@ -135,6 +136,19 @@ void SpiralEmitterData::describeX(class_t* clazz) {
 
   ///////////////////////////////////////////////////////////////////////////////
 
+  RandGen::RandGen()
+    : _randgen(10)
+    , _distribution(0,2000000000){
+
+    }
+  float RandGen::ranged_rand(float fmin, float fmax){
+    constexpr double inv = 1.0 / double(2000000000);
+    double unit = double(_distribution(_randgen)) * inv;
+    return ork::audiomath::lerp(fmin, fmax, unit);
+  }
+
+  ///////////////////////////////////////////////////////////////////////////////
+
   void DirectedEmitter::EmitCB(EmitterCtx& ctx) {
     if (0 == ctx.mPool)
       return;
@@ -176,8 +190,8 @@ void SpiralEmitterData::describeX(class_t* clazz) {
           vbin = dir.crossWith(fvec3::Red());
         vbin.normalizeInPlace();
         vtan     = vbin.crossWith(dir);
-        float fu = ((std::rand() % 256) / 256.0f) - 0.5f;
-        float fv = ((std::rand() % 256) / 256.0f) - 0.5f;
+        float fu = _randgen.ranged_rand(-0.5,0.5);
+        float fv = _randgen.ranged_rand(-0.5,0.5);
         disp     = (vbin * fu) + (vtan * fv);
         yo.lerp(dir, disp, ctx.mDispersion);
         dir                = yo.normalized();
@@ -209,8 +223,7 @@ void SpiralEmitterData::describeX(class_t* clazz) {
       Event ev = ctx.mSpawnQueue->DequeueEvent();
       //////////////////////////////////////////////////
       // prababalistic spawning
-      int iran   = rand() % 100;
-      float fran = float(iran) * 0.01f;
+      float fran   = _randgen.ranged_rand(0,1);
       //////////////////////////////////////////////////
       if (fran < ctx.mfSpawnProbability) {
         //////////////////////////////////////////////
