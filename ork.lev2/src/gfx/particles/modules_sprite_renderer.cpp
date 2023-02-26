@@ -164,52 +164,55 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
       U32 ucolor  = color.VtxColorAsU32();
       float fang  = input_rot * DTOR;
 
+      ///////////////////////////////////////////////////////////////
+      // default particle fetcher
+      ///////////////////////////////////////////////////////////////
+
+      using fetcher_t = std::function<const particle::BasicParticle*(size_t index)>;
+
+      auto pbase  = render_buffer->_particles;
+      fetcher_t get_particle = [&](size_t index)->const particle::BasicParticle*{
+          return pbase + index;
+      };
+
+      ///////////////////////////////////////////////////////////////
+      // depth sort ?
+      ///////////////////////////////////////////////////////////////
+
       if (bsort) {
-        static ork::fixedlut<float, const particle::BasicParticle*, 20000> SortedParticles(EKEYPOLICY_MULTILUT);
+        static ork::fixedlut<float, const particle::BasicParticle*, 32768> SortedParticles(EKEYPOLICY_MULTILUT);
         SortedParticles.clear();
-        for (int i = 0; i < icnt; i++) {
-          auto ptcl  = render_buffer->_particles + i;
+        for (size_t i = 0; i < icnt; i++) {
+          auto ptcl  = pbase + i;
           fvec4 proj = ptcl->mPosition.transform(MVP);
           proj.perspectiveDivideInPlace();
           float fv = proj.z;
           SortedParticles.AddSorted(fv, ptcl);
         }
-        //////////////////////////////////////////////////////
-        for (int i = (icnt - 1); i >= 0; i--) {
-          auto ptcl = SortedParticles.GetItemAtIndex(i).second;
-          //////////////////////////////////////////////////////
-          float fage            = ptcl->mfAge;
-          float funitage        = (fage / ptcl->mfLifeSpan);
-          float clamped_unitage = std::clamp<float>(funitage, 0, 1);
-          float fiunitage       = (1.0f - clamped_unitage);
-          auto _OUTRANDOM       = ptcl->mfRandom;
-          //////////////////////////////////////////////////////
-          fvec2 uv0(fang, input_size);
-          fvec2 uv1(clamped_unitage, _OUTRANDOM);
-          //////////////////////////////////////////////////////
-          vw.AddVertex(SVtxV12C4T16(ptcl->mPosition, uv0, uv1, ucolor));
-        }
+        // override fetcher
+        size_t ilast = (icnt - 1);
+        get_particle = [&](size_t index)->const particle::BasicParticle*{
+          return SortedParticles.GetItemAtIndex(ilast-index).second;
+        };
       }
-      ////////////////////////////////////////////////////////////////////
-      else // no sort
-      ////////////////////////////////////////////////////////////////////
-      {
-        auto pbase  = render_buffer->_particles;
+
+      //////////////////////////////////////////////////////
+      // particle loop
+      //////////////////////////////////////////////////////
+
+      for (size_t i = 0; i < icnt; i++) {
+        auto ptcl = get_particle(i);
         //////////////////////////////////////////////////////
-        for (int i = 0; i < icnt; i++) {
-          auto ptcl             = pbase + i;
-          //////////////////////////////////////////////////////
-          float fage            = ptcl->mfAge;
-          float flspan          = (ptcl->mfLifeSpan != 0.0f) ? ptcl->mfLifeSpan : 0.01f;
-          float clamped_unitage = std::clamp<float>((fage / flspan), 0, 1);
-          float fiunitage       = (1.0f - clamped_unitage);
-          auto _OUTRANDOM       = ptcl->mfRandom;
-          //////////////////////////////////////////////////////
-          fvec2 uv0(fang, input_size);
-          fvec2 uv1(clamped_unitage, _OUTRANDOM);
-          //////////////////////////////////////////////////////
-          vw.AddVertex(SVtxV12C4T16(ptcl->mPosition, uv0, uv1, ucolor));
-        }
+        float fage            = ptcl->mfAge;
+        float flspan          = (ptcl->mfLifeSpan != 0.0f) ? ptcl->mfLifeSpan : 0.01f;
+        float clamped_unitage = std::clamp<float>((fage / flspan), 0, 1);
+        float fiunitage       = (1.0f - clamped_unitage);
+        auto _OUTRANDOM       = ptcl->mfRandom;
+        //////////////////////////////////////////////////////
+        fvec2 uv0(fang, input_size);
+        fvec2 uv1(clamped_unitage, _OUTRANDOM);
+        //////////////////////////////////////////////////////
+        vw.AddVertex(SVtxV12C4T16(ptcl->mPosition, uv0, uv1, ucolor));
       }
       ////////////////////////////////////////////////////////////////////
     }
