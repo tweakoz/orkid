@@ -137,6 +137,22 @@ class ParticlesApp(object):
       self.counter = 0.0
 
   ################################################
+  def configD(self,abstime):
+    self.emitter2plugs.EmitterSpinRate = math.sin(abstime)*30
+    self.emitter2plugs.LifeSpan = 7
+    self.vortexplugs.VortexStrength = 3
+    self.vortexplugs.OutwardStrength = -1
+    self.vortexplugs.Falloff = 0
+    self.gravityplugs.G = 1.1
+    self.turbulenceplugs.Amount = vec3(12,12,12)
+    #self.ptc_data.sprites.material = self.material2
+    self.ptc_data.streaks.material = self.material
+    self.emitter2plugs.Offset = vec3(0,math.sin(abstime*17.7)*4,0)
+    if self.counter>5:
+      self.tgt_size = random.uniform(16,32)
+      self.counter = 0.0
+
+  ################################################
 
   def onUpdate(self,updinfo):
     abstime = updinfo.absolutetime
@@ -152,13 +168,15 @@ class ParticlesApp(object):
 
     ##########################################
 
-    INDEX = int(math.fmod(abstime,24)/8)
+    INDEX = int(math.fmod(abstime,32)/8)
     if(INDEX==0):
         self.configA(abstime)
     elif(INDEX==1):
         self.configB(abstime)
-    else:
+    elif(INDEX==2):
         self.configC(abstime)
+    else:
+        self.configD(abstime)
 
 
     ########################################
