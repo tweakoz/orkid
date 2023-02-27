@@ -26,7 +26,9 @@ struct StreakRendererInst : public ParticleModuleInst {
 
   using triple_buf_t           = concurrent_triple_buffer<ParticlePoolRenderBuffer>;
   using triple_buf_ptr_t       = std::shared_ptr<triple_buf_t>;
-  using streak_vtx_t           = SVtxV12N12B12T8C4;
+  using streak_vtx_t           = SVtxV12N12B12T16;
+  using streak_vtxbuf_t = DynamicVertexBuffer<streak_vtx_t>;
+  using streak_vtxbuf_ptr_t = std::shared_ptr<streak_vtxbuf_t>;
   using streak_vertex_writer_t = lev2::VtxWriter<streak_vtx_t>;
 
   StreakRendererInst(const StreakRendererData* srd);
@@ -37,15 +39,19 @@ struct StreakRendererInst : public ParticleModuleInst {
   floatxf_inp_pluginst_ptr_t _input_length;
   floatxf_inp_pluginst_ptr_t _input_width;
   triple_buf_ptr_t _triple_buf;
+  streak_vtxbuf_ptr_t _vertexBuffer;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
+static constexpr size_t KMAXSTREAKS = 512<<10; 
 StreakRendererInst::StreakRendererInst(const StreakRendererData* srd)
     : ParticleModuleInst(srd)
     , _srd(srd) {
   OrkAssert(srd);
   _triple_buf = std::make_shared<triple_buf_t>();
+  _vertexBuffer = std::make_shared<streak_vtxbuf_t>(KMAXSTREAKS,0,PrimitiveType::POINTS);
+  _vertexBuffer->SetRingLock(true);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -56,8 +62,8 @@ void StreakRendererInst::onLink(GraphInst* inst) {
   ptcl_context->_rcidlambda = [this](const RenderContextInstData& RCID) { this->_render(RCID); };
   _input_length             = typedInputNamed<FloatXfPlugTraits>("Length");
   _input_width              = typedInputNamed<FloatXfPlugTraits>("Width");
-  _input_length->setValue(24);
-  _input_width->setValue(4);
+  //_input_length->setValue(.01);
+  //_input_width->setValue(.01);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -84,7 +90,6 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   const CameraMatrices* cmtcs = CPD.cameraMatrices();
   const CameraData& cdata     = cmtcs->_camdat;
   const fmtx4& MVP            = context->MTXI()->RefMVPMatrix();
-  auto& vertex_buffer         = GfxEnv::GetSharedDynamicVB2();
 
   auto material = _srd->_material;
 
@@ -105,7 +110,7 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     fvec3 obj_nrmz = fvec4(cdata.zNormal(), 0.0f).transform(mtx_iw).normalized();
     ////////////////////////////////////////////////////////////////////////////
     streak_vertex_writer_t vw;
-    vw.Lock(context, &vertex_buffer, icnt);
+    vw.Lock(context, _vertexBuffer.get(), icnt);
     {
       ////////////////////////////////////////////////
       // uniform properties
@@ -124,7 +129,7 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
         // varying properties
         ////////////////////////////////////////////////
         float fage = ptcl->mfAge;
-        // mOutDataUnitAge = std::clamp((fage / ptcl->mfLifeSpan), 0.0f, 1.0f);
+        float unit_age = std::clamp((fage / ptcl->mfLifeSpan), 0.0f, 1.0f);
         //
         // fvec4 color   = mGradient.Sample(mOutDataUnitAge) * fgi;
         ////////////////////////////////////////////////
@@ -132,32 +137,21 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
             ptcl->mPosition,             //
             obj_nrmz,                    //
             ptcl->mVelocity,             //
-            ork::fvec2(fwidth, flength), //
-            ucolor));
+            ork::fvec2(flength, fwidth), //
+            ork::fvec2(unit_age,ptcl->mfRandom)));
         ////////////////////////////////////////////////
       }
     }
 
+    material->pipeline(true)->wrappedDrawCall(RCID, [&]() {
+      material->update(RCID);
+      context->GBI()->DrawPrimitiveEML(vw, ork::lev2::PrimitiveType::POINTS);
+    });
+
     vw.UnLock(context);
-    ////////////////////////////////////////////////////////////////////////////
-    // setup particle material
-    //////////////////////////////////////////
-    /*mpMaterial->SetUser0(mAlphaMux);
-    mpMaterial->SetColorMode(ork::lev2::GfxMaterial3DSolid::EMODE_USER);
-    mpMaterial->_rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_GREATER, 0.0f);
-    mpMaterial->_rasterstate.SetDepthTest(ork::lev2::EDepthTest::LEQUALS);
-    mpMaterial->_rasterstate.SetBlending(meBlendMode);
-    mpMaterial->_rasterstate.SetZWriteMask(false);
-    mpMaterial->_rasterstate.SetCullTest(ork::lev2::ECullTest::OFF);
-    mpMaterial->_rasterstate.SetPointSize(32.0f);
-    mpMaterial->SetTexture(GetTexture());
-    //////////////////////////////////////////
-    // Draw Particles
-    //////////////////////////////////////////
-    targ->MTXI()->PushMMatrix(fmtx4::multiply_ltor(mtx_scale, mtx));
-    targ->GBI()->DrawPrimitive(mpMaterial, vw, ork::lev2::PrimitiveType::POINTS, icnt);
-    targ->MTXI()->PopMMatrix();*/
-    //////////////////////////////////////////
+
+    _triple_buf->end_pull(render_buffer);
+
   } // icnt
 }
 

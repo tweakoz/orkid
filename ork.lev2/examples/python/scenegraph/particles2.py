@@ -59,7 +59,7 @@ class ParticlesApp(object):
     self.vortexplugs = self.ptc_data.vortex.inputs
     self.gravityplugs = self.ptc_data.gravity.inputs
     self.turbulenceplugs = self.ptc_data.turbulence.inputs
-    self.spriteplugs = self.ptc_data.sprites.inputs
+    #self.spriteplugs = self.ptc_data.sprites.inputs
 
     self.emitterplugs.LifeSpan = 20
     self.emitterplugs.EmissionRate = 0
@@ -97,7 +97,8 @@ class ParticlesApp(object):
     self.vortexplugs.Falloff = 0
     self.gravityplugs.G = .5
     self.turbulenceplugs.Amount = vec3(0,0,0)
-    self.ptc_data.sprites.material = self.material
+    #self.ptc_data.sprites.material = self.material
+    self.ptc_data.streaks.material = self.material
     self.emitter2plugs.Offset = vec3(0,3,0)
     if self.counter>1:
       self.tgt_size = random.uniform(4,8)
@@ -112,7 +113,8 @@ class ParticlesApp(object):
     self.vortexplugs.Falloff = 0
     self.gravityplugs.G = 1
     self.turbulenceplugs.Amount = vec3(2,2,2)
-    self.ptc_data.sprites.material = self.material
+    #self.ptc_data.sprites.material = self.material
+    self.ptc_data.streaks.material = self.material
     self.emitter2plugs.Offset = vec3(0,math.sin(abstime*1.5)*2,0)
     if self.counter>4:
       self.tgt_size = random.uniform(16,24)
@@ -127,7 +129,8 @@ class ParticlesApp(object):
     self.vortexplugs.Falloff = 0
     self.gravityplugs.G = 1.1
     self.turbulenceplugs.Amount = vec3(8,8,8)
-    self.ptc_data.sprites.material = self.material2
+    #self.ptc_data.sprites.material = self.material2
+    self.ptc_data.streaks.material = self.material
     self.emitter2plugs.Offset = vec3(0,math.sin(abstime*9.7)*3,0)
     if self.counter>5:
       self.tgt_size = random.uniform(16,32)
@@ -145,7 +148,7 @@ class ParticlesApp(object):
     self.material.color = vec4(r,g,b, 1)
     self.material2.color = vec4(r,g,b, 1)
     self.cur_size = (self.cur_size*0.99) + (self.tgt_size*0.01)
-    self.spriteplugs.Size = self.cur_size
+    #self.spriteplugs.Size = self.cur_size
 
     ##########################################
 

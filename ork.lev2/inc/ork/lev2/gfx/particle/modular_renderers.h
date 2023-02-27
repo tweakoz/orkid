@@ -23,8 +23,11 @@ public:
   virtual void gpuInit(const RenderContextInstData& RCID) = 0;
   virtual void update(const RenderContextInstData& RCID){}
   MaterialBase();
+  fxpipeline_ptr_t pipeline(bool streaks);
   freestyle_mtl_ptr_t _material;
   fxpipeline_ptr_t _pipeline;
+  fxtechnique_constptr_t _tek_sprites;
+  fxtechnique_constptr_t _tek_streaks;
   vtx_set_t _vertexSetter;
   fxparam_constptr_t _parammodcolor;
   fvec4 _color;

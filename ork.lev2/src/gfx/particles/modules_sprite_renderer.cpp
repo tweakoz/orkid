@@ -219,10 +219,10 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
     }
     vw.UnLock(context);
 
-    material->_pipeline->wrappedDrawCall(RCID, [&]() {
+    material->pipeline(false)->wrappedDrawCall(RCID, [&]() {
       material->update(RCID);
       // context->MTXI()->PushMMatrix(fmtx4::multiply_ltor(MatScale, mtx));
-      context->GBI()->DrawPrimitiveEML(vw, ork::lev2::PrimitiveType::POINTS, ivertexlockcount);
+      context->GBI()->DrawPrimitiveEML(vw, ork::lev2::PrimitiveType::POINTS);
       // context->MTXI()->PopMMatrix();
     });
   }

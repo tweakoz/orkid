@@ -42,7 +42,7 @@ def createGridData(extent=10.0,majordim=1,minordim=0.1):
   return grid_data
 
 
-def createParticleData():
+def createParticleData( use_streaks = True ):
 
   class ImplObject(object):
     def __init__(self):
@@ -58,8 +58,11 @@ def createParticleData():
       self.gravity    = self.graphdata.create("POOL",particles.Gravity)
       self.turbulence = self.graphdata.create("GRAV",particles.Turbulence)
       self.vortex     = self.graphdata.create("VORT",particles.Vortex)
-      self.sprites    = self.graphdata.create("SPRI",particles.SpriteRenderer)
-      self.streaks    = self.graphdata.create("STRK",particles.StreakRenderer)
+
+      if use_streaks:
+        self.streaks    = self.graphdata.create("STRK",particles.StreakRenderer)
+      else:
+        self.sprites    = self.graphdata.create("SPRI",particles.SpriteRenderer)
 
       self.ptc_pool.pool_size = 16384 # max number of particles in pool
 
@@ -70,8 +73,13 @@ def createParticleData():
       self.graphdata.connect( self.gravity.inputs.pool,    self.emitter2.outputs.pool )
       self.graphdata.connect( self.turbulence.inputs.pool, self.gravity.outputs.pool )
       self.graphdata.connect( self.vortex.inputs.pool,     self.turbulence.outputs.pool )
-      self.graphdata.connect( self.sprites.inputs.pool,    self.vortex.outputs.pool )
-      self.graphdata.connect( self.streaks.inputs.pool,    self.sprites.outputs.pool )
+
+      if use_streaks:
+        self.graphdata.connect( self.streaks.inputs.pool,    self.vortex.outputs.pool )
+        self.streaks.inputs.Length = .1
+        self.streaks.inputs.Width = .01
+      else:
+        self.graphdata.connect( self.sprites.inputs.pool,    self.vortex.outputs.pool )
 
       # emitter module settings
 
