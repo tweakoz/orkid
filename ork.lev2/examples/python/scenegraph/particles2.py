@@ -32,7 +32,10 @@ class ParticlesApp(object):
     self.ezapp = OrkEzApp.create(self)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
-    setupUiCamera( app=self, eye = vec3(0,0,30), constrainZ=True, up=vec3(0,1,0))
+    setupUiCamera( app=self, 
+                   eye = vec3(0.5,-0.2,-2.5).normalized()*20, 
+                   constrainZ=True, 
+                   up=vec3(0,1,0))
 
   ################################################
   # gpu data init:
@@ -91,6 +94,7 @@ class ParticlesApp(object):
   ################################################
   def configA(self,abstime):
     self.emitter2plugs.EmitterSpinRate = math.sin(abstime*0.25)*10
+    self.emitter2plugs.EmissionRate = 800
     self.emitter2plugs.LifeSpan = 5
     self.vortexplugs.VortexStrength = 2
     self.vortexplugs.OutwardStrength = -2
@@ -107,6 +111,7 @@ class ParticlesApp(object):
   ################################################
   def configB(self,abstime):
     self.emitter2plugs.EmitterSpinRate = math.sin(abstime*0.25)*1
+    self.emitter2plugs.EmissionRate = 800
     self.emitter2plugs.LifeSpan = 2
     self.vortexplugs.VortexStrength = .5
     self.vortexplugs.OutwardStrength = -.5
@@ -123,6 +128,7 @@ class ParticlesApp(object):
   ################################################
   def configC(self,abstime):
     self.emitter2plugs.EmitterSpinRate = math.sin(abstime)*30
+    self.emitter2plugs.EmissionRate = 800
     self.emitter2plugs.LifeSpan = 5
     self.vortexplugs.VortexStrength = 0
     self.vortexplugs.OutwardStrength = 1
@@ -139,6 +145,7 @@ class ParticlesApp(object):
   ################################################
   def configD(self,abstime):
     self.emitter2plugs.EmitterSpinRate = math.sin(abstime)*30
+    self.emitter2plugs.EmissionRate = 1600
     self.emitter2plugs.LifeSpan = 7
     self.vortexplugs.VortexStrength = 3
     self.vortexplugs.OutwardStrength = -1

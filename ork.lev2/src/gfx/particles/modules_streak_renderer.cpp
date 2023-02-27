@@ -83,7 +83,6 @@ void StreakRendererInst::compute(
 
 void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
 
-  auto render_buffer          = _triple_buf->begin_pull();
   auto context                = RCID.context();
   auto RCFD                   = context->topRenderContextFrameData();
   const auto& CPD             = RCFD->topCPD();
@@ -103,6 +102,7 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   ///////////////////////////////////////////////////////////////
   // compute particle dynamic vertex buffer
   //////////////////////////////////////////
+  auto render_buffer          = _triple_buf->begin_pull();
   int icnt = render_buffer->_numParticles;
   if (icnt) {
     ork::fmtx4 mtx_iw;
@@ -142,15 +142,15 @@ void StreakRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
         ////////////////////////////////////////////////
       }
     }
+    vw.UnLock(context);
+    _triple_buf->end_pull(render_buffer);
 
     material->pipeline(true)->wrappedDrawCall(RCID, [&]() {
       material->update(RCID);
       context->GBI()->DrawPrimitiveEML(vw, ork::lev2::PrimitiveType::POINTS);
     });
 
-    vw.UnLock(context);
 
-    _triple_buf->end_pull(render_buffer);
 
   } // icnt
 }
