@@ -146,6 +146,8 @@ public:
     return mbRingLock;
   }
 
+  int _ring_lock_index  = 0;
+
   ///////////////////////////////////////////////////////////////
 
   static vtxbufferbase_ptr_t CreateVertexBuffer(EVtxStreamFormat eformat, int inumverts, bool bstatic);

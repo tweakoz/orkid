@@ -20,6 +20,9 @@
 namespace ork::lev2::particle {
 ///////////////////////////////////////////////////////////////////////////////
 
+using vertex_t = SVtxV12C4T16;
+using vertex_writer_t = lev2::VtxWriter<vertex_t>;
+
 namespace dflow   = ::ork::dataflow;
 using particle_t  = BasicParticle;
 using pool_t      = Pool<particle_t>;
@@ -76,21 +79,6 @@ public:
   }
 };
 
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct ParticleModuleData : public ModuleData {
-  DeclareAbstractX(ParticleModuleData, ModuleData);
-
-public:
-  ParticleModuleData();
-
-  static particlebufferdata_ptr_t _no_connection;
-  particlebufferdata_ptr_t _bufferdata;
-};
-
-using ptcmoduledata_ptr_t = std::shared_ptr<ParticleModuleData>;
-
 ///////////////////////////////////////////////////////////////////////////////
 
 struct GlobalModuleData : public ModuleData {
@@ -105,6 +93,31 @@ public:
 };
 
 using globalmodule_ptr_t = std::shared_ptr<GlobalModuleData>;
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct ParticleModuleData : public ModuleData {
+  DeclareAbstractX(ParticleModuleData, ModuleData);
+public:
+
+  ParticleModuleData();
+  static void _initShared(dflow::dgmoduledata_ptr_t sub);
+
+  static particlebufferdata_ptr_t _no_connection;
+  particlebufferdata_ptr_t _bufferdata;
+};
+
+using ptcmoduledata_ptr_t = std::shared_ptr<ParticleModuleData>;
+
+
+struct ParticleModuleInst : public dflow::DgModuleInst {
+
+  ParticleModuleInst(const ParticleModuleData* data);
+  void _onLink(dflow::GraphInst* inst);
+  particlebuf_inpluginst_ptr_t _input_buffer;
+  particlebuf_outpluginst_ptr_t _output_buffer;
+  pool_ptr_t _pool;
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 

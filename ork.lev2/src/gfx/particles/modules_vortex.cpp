@@ -16,37 +16,26 @@ using namespace ork::dataflow;
 
 namespace ork::lev2::particle {
 
-struct VortexModuleInst : public DgModuleInst {
+struct VortexModuleInst : public ParticleModuleInst {
 
   VortexModuleInst(const VortexModuleData* gmd)
-      : DgModuleInst(gmd) {
+      : ParticleModuleInst(gmd) {
   }
 
   ////////////////////////////////////////////////////
 
   void onLink(GraphInst* inst) final {
 
+    _onLink(inst);
+
     /////////////////
     // inputs
     /////////////////
 
-    _input_buffer           = typedInputNamed<ParticleBufferPlugTraits>("pool");
     _input_vortex_strength  = typedInputNamed<FloatXfPlugTraits>("VortexStrength");
     _input_outward_strength = typedInputNamed<FloatXfPlugTraits>("OutwardStrength");
     _input_falloff          = typedInputNamed<FloatXfPlugTraits>("Falloff");
 
-    /////////////////
-    // outputs
-    /////////////////
-
-    _output_buffer = typedOutputNamed<ParticleBufferPlugTraits>("pool");
-
-    if (_input_buffer->_connectedOutput) {
-      _pool                              = _input_buffer->value()._pool;
-      _output_buffer->value_ptr()->_pool = _pool;
-    } else {
-      OrkAssert(false);
-    }
   }
 
   ////////////////////////////////////////////////////
@@ -61,7 +50,9 @@ struct VortexModuleInst : public DgModuleInst {
       BasicParticle* particle = _pool->GetActiveParticle(i);
       fvec3 Pos2D             = particle->mPosition;
       Pos2D.y                 = (0.0f);
-      fvec3 N                 = particle->mPosition.normalized();
+      fvec3 N                 = particle->mPosition;
+      N.y = 0.0f;
+      N = N.normalized();
       fvec3 Dir               = N.crossWith(fvec3::unitY());
       float fstr              = 1.0f / (1.0f + falloff / Pos2D.magnitude());
       fvec3 Force             = Dir * (vortexstrength * fstr);
@@ -73,14 +64,10 @@ struct VortexModuleInst : public DgModuleInst {
 
   ////////////////////////////////////////////////////
 
-  particlebuf_inpluginst_ptr_t _input_buffer;
-  particlebuf_outpluginst_ptr_t _output_buffer;
-
   floatxf_inp_pluginst_ptr_t _input_vortex_strength;
   floatxf_inp_pluginst_ptr_t _input_outward_strength;
   floatxf_inp_pluginst_ptr_t _input_falloff;
 
-  pool_ptr_t _pool;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -98,8 +85,7 @@ VortexModuleData::VortexModuleData() {
 std::shared_ptr<VortexModuleData> VortexModuleData::createShared() {
   auto data = std::make_shared<VortexModuleData>();
 
-  createInputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "pool");
-  createOutputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "pool");
+  _initShared(data);
 
   //RegisterFloatXfPlug(VortexModule, Falloff, 0.0f, 10.0f, ged::OutPlugChoiceDelegate);
   //RegisterFloatXfPlug(VortexModule, VortexStrength, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);

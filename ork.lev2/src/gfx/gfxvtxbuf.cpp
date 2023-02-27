@@ -155,14 +155,42 @@ void VtxWriterBase::Lock(GeometryBufferInterface* GBI, VertexBufferBase* pVB, in
   int imax       = pVB->GetMax();
   ////////////////////////////////////////////
   OrkAssert(icount != 0);
-  int inewbase = ivbase + icount;
+  ///////////////////////////////////////////
+  // ringbuffer lock ?
+  ///////////////////////////////////////////
   if (bringlock) {
+    int inewbase = pVB->_ring_lock_index + icount;
+
+
     if (inewbase > imax) {
-      //printf( "ringcyc vb<%p> ivbase<%d> icount<%d> imax<%d> \n", pVB, ivbase, icount, imax );
       ivbase   = 0;
-      inewbase = icount;
+      pVB->_ring_lock_index = 0;
+      if(0)printf( "ringcyc vb<%p> rli<%d> inewbase<%d> icount<%d> imax<%d> \n",  //
+              pVB, //
+              pVB->_ring_lock_index, //
+              inewbase, //
+              icount, //
+              imax );
     }
-  } else {
+    else{
+      ivbase = pVB->_ring_lock_index;
+    }
+    pVB->_ring_lock_index += icount;
+    miWriteBase    = ivbase;
+    miWriteCounter = 0;
+    miWriteMax     = icount;
+    mpVB           = pVB;
+  }
+  ///////////////////////////////////////////
+  // standard lock
+  ///////////////////////////////////////////
+  else {
+    int inewbase = ivbase + icount;
+    pVB->SetNumVertices(inewbase);
+    miWriteBase    = ivbase;
+    miWriteCounter = 0;
+    miWriteMax     = icount;
+    mpVB           = pVB;
     OrkAssert((ivbase + icount) <= imax);
   }
   ////////////////////////////////////////////
@@ -170,12 +198,6 @@ void VtxWriterBase::Lock(GeometryBufferInterface* GBI, VertexBufferBase* pVB, in
   OrkAssert(pdata != 0);
   ////////////////////////////////////////////
   mpBase         = (char*)pdata;
-  miWriteBase    = ivbase;
-  miWriteCounter = 0;
-  miWriteMax     = icount;
-  mpVB           = pVB;
-  ////////////////////////////////////////////
-  pVB->SetNumVertices(inewbase);
 }
 void VtxWriterBase::UnLock(Context* pT, u32 ulflgs) {
   UnLock(pT->GBI(), ulflgs);

@@ -16,35 +16,23 @@ using namespace ork::dataflow;
 
 namespace ork::lev2::particle {
 
-struct TurbulenceModuleInst : public DgModuleInst {
+struct TurbulenceModuleInst : public ParticleModuleInst {
 
   TurbulenceModuleInst(const TurbulenceModuleData* gmd)
-      : DgModuleInst(gmd) {
+      : ParticleModuleInst(gmd) {
   }
 
   ////////////////////////////////////////////////////
 
   void onLink(GraphInst* inst) final {
 
+    _onLink(inst);
     /////////////////
     // inputs
     /////////////////
 
-    _input_buffer = typedInputNamed<ParticleBufferPlugTraits>("pool");
     _input_amount = typedInputNamed<Vec3XfPlugTraits>("Amount");
 
-    /////////////////
-    // outputs
-    /////////////////
-
-    _output_buffer = typedOutputNamed<ParticleBufferPlugTraits>("pool");
-
-    if (_input_buffer->_connectedOutput) {
-      _pool                              = _input_buffer->value()._pool;
-      _output_buffer->value_ptr()->_pool = _pool;
-    } else {
-      OrkAssert(false);
-    }
   }
 
   ////////////////////////////////////////////////////
@@ -55,9 +43,9 @@ struct TurbulenceModuleInst : public DgModuleInst {
 
     for (int i = 0; i < _pool->GetNumAlive(); i++) {
       BasicParticle* particle = _pool->GetActiveParticle(i);
-      float furx              = ((std::rand() % 256) / 256.0f) - 0.5f;
-      float fury              = ((std::rand() % 256) / 256.0f) - 0.5f;
-      float furz              = ((std::rand() % 256) / 256.0f) - 0.5f;
+      float furx              = _randgen.ranged_rand(-.5,.5);
+      float fury              = _randgen.ranged_rand(-.5,.5);
+      float furz              = _randgen.ranged_rand(-.5,.5);
       /////////////////////////////////////////
       F32 randX = amt.x * furx;
       F32 randY = amt.y * fury;
@@ -69,12 +57,9 @@ struct TurbulenceModuleInst : public DgModuleInst {
 
   ////////////////////////////////////////////////////
 
-  particlebuf_inpluginst_ptr_t _input_buffer;
-  particlebuf_outpluginst_ptr_t _output_buffer;
-
   fvec3xf_inp_pluginst_ptr_t _input_amount;
 
-  pool_ptr_t _pool;
+  RandGen _randgen;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -92,8 +77,7 @@ TurbulenceModuleData::TurbulenceModuleData() {
 std::shared_ptr<TurbulenceModuleData> TurbulenceModuleData::createShared() {
   auto data = std::make_shared<TurbulenceModuleData>();
 
-  createInputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "pool");
-  createOutputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "pool");
+  _initShared(data);
 
   //RegisterFloatXfPlug(TurbulenceModule, AmountX, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);
   //RegisterFloatXfPlug(TurbulenceModule, AmountY, -100.0f, 100.0f, ged::OutPlugChoiceDelegate);

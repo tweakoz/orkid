@@ -27,11 +27,15 @@ void pyinit_math(py::module& module_core) {
           //////////////////////////////////////////////////////////////////////////
           .def(py::init<>())
           .def(py::init<float, float>())
-          .def_property("x", [](fvec2& vec,float val) { return vec.x = val; }, //
-                             [](const fvec2& vec) -> float { return vec.x; })
+          .def_property(
+              "x",
+              [](fvec2& vec, float val) { return vec.x = val; }, //
+              [](const fvec2& vec) -> float { return vec.x; })
 
-          .def_property("y", [](fvec2& vec,float val) { return vec.y = val; }, //
-                             [](const fvec2& vec) -> float { return vec.y; })
+          .def_property(
+              "y",
+              [](fvec2& vec, float val) { return vec.y = val; }, //
+              [](const fvec2& vec) -> float { return vec.y; })
           .def("dot", &fvec2::dotWith)
           .def("perp", &fvec2::perpDotWith)
           .def("mag", &fvec2::magnitude)
@@ -74,13 +78,22 @@ void pyinit_math(py::module& module_core) {
           //////////////////////////////////////////////////////////////////////////
           .def(py::init<>())
           .def(py::init<float, float, float>())
-          .def_property("x", [](fvec3& vec,float val) { return vec.x = val; }, //
-                             [](const fvec3& vec) -> float { return vec.x; })
+          .def_property(
+              "x",
+              [](const fvec3& vec) -> float { return vec.x; },  //
+              [](fvec3& vec, float val) { return vec.x = val; } //
+              )
 
-          .def_property("y", [](fvec3& vec,float val) { return vec.y = val; }, //
-                             [](const fvec3& vec) -> float { return vec.y; })
-          .def_property("z", [](fvec3& vec,float val) { return vec.z = val; }, //
-                             [](const fvec3& vec) -> float { return vec.z; })
+          .def_property(
+              "y",
+              [](const fvec3& vec) -> float { return vec.y; },  //
+              [](fvec3& vec, float val) { return vec.y = val; } //
+              )
+          .def_property(
+              "z",
+              [](const fvec3& vec) -> float { return vec.z; },   //
+              [](fvec3& vec, float val) { return vec.z = val; } //
+              )
           .def("angle", &fvec3::angle)
           .def("orientedAngle", &fvec3::orientedAngle)
           .def("dot", &fvec3::dotWith)
@@ -95,9 +108,7 @@ void pyinit_math(py::module& module_core) {
           .def("clamped", &fvec3::clamped)
           .def("normalized", &fvec3::normalized)
           .def("normalize", &fvec3::normalizeInPlace)
-          .def("transform", [](fvec3& v, fmtx4 matrix) -> fvec3 {
-            return fvec4(v,1).transform(matrix).xyz();
-           })
+          .def("transform", [](fvec3& v, fmtx4 matrix) -> fvec3 { return fvec4(v, 1).transform(matrix).xyz(); })
           .def("rotx", &fvec3::rotateOnX)
           .def("roty", &fvec3::rotateOnY)
           .def("rotz", &fvec3::rotateOnZ)
@@ -142,19 +153,19 @@ void pyinit_math(py::module& module_core) {
           .def(py::init<fvec3>())
           .def(py::init<fvec3, float>())
           .def(py::init<uint32_t>())
-          .def_property("x", [](const fvec4& vec) -> float { return vec.x; },
-                             [](fvec4& vec,float val) { return vec.x = val; } //
-                             )
+          .def_property(
+              "x", [](const fvec4& vec) -> float { return vec.x; }, [](fvec4& vec, float val) { return vec.x = val; } //
+              )
 
-          .def_property("y", [](const fvec4& vec) -> float { return vec.y; },
-                             [](fvec4& vec,float val) { return vec.y = val; } //
-                             )
-          .def_property("z", [](const fvec4& vec) -> float { return vec.z; },
-                             [](fvec4& vec,float val) { return vec.z = val; } //
-                             )
-          .def_property("w", [](const fvec4& vec) -> float { return vec.w; },
-                             [](fvec4& vec,float val) { return vec.w = val; } //
-                             )
+          .def_property(
+              "y", [](const fvec4& vec) -> float { return vec.y; }, [](fvec4& vec, float val) { return vec.y = val; } //
+              )
+          .def_property(
+              "z", [](const fvec4& vec) -> float { return vec.z; }, [](fvec4& vec, float val) { return vec.z = val; } //
+              )
+          .def_property(
+              "w", [](const fvec4& vec) -> float { return vec.w; }, [](fvec4& vec, float val) { return vec.w = val; } //
+              )
           .def("dot", &fvec4::dotWith)
           .def("cross", &fvec4::crossWith)
           .def("mag", &fvec4::magnitude)
@@ -251,7 +262,7 @@ void pyinit_math(py::module& module_core) {
           .def(py::init<>())
           .def(py::init<const fmtx3&>())
           .def(py::init<const fquat&>())
-          .def("setScale", (void (fmtx3::*)(float, float, float)) & fmtx3::setScale)
+          .def("setScale", (void(fmtx3::*)(float, float, float)) & fmtx3::setScale)
           .def("fromQuaternion", &fmtx3::fromQuaternion)
           .def("zNormal", &fmtx3::xNormal)
           .def("yNormal", &fmtx3::yNormal)
@@ -291,7 +302,7 @@ void pyinit_math(py::module& module_core) {
           .def("inverseOf", &fmtx4::inverseOf)
           .def("decompose", &fmtx4::decompose)
           .def("toRotMatrix3", &fmtx4::rotMatrix33)
-	        .def("toGlm", &fmtx4::asGlmMat4)
+          .def("toGlm", &fmtx4::asGlmMat4)
           .def(
               "getColumn",
               [](fmtx4_ptr_t mtx, int column) -> fvec4 { //
@@ -300,7 +311,7 @@ void pyinit_math(py::module& module_core) {
           .def(
               "setColumn",
               [](fmtx4_ptr_t mtx, int column, fvec4 c) { //
-                return mtx->setColumn(column,c);
+                return mtx->setColumn(column, c);
               })
           .def(
               "getRow",
@@ -310,7 +321,7 @@ void pyinit_math(py::module& module_core) {
           .def(
               "setRow",
               [](fmtx4_ptr_t mtx, int row, fvec4 c) { //
-                return mtx->setRow(row,c);
+                return mtx->setRow(row, c);
               })
           .def(
               "compose",
@@ -503,15 +514,14 @@ void pyinit_math(py::module& module_core) {
   /////////////////////////////////////////////////////////////////////////////////
   auto dcxf2str = [](const DecompTransform& dcxf) -> std::string {
     std::string fxs;
-    if(dcxf._usedirectmatrix){
+    if (dcxf._usedirectmatrix) {
       auto str = dcxf._directmatrix.dump4x3cn();
-      fxs = FormatString("Transform(precomposed) mtx(%s)", str.c_str() );
-    }
-    else{
-      auto o = dcxf._translation;
-      auto r = dcxf._rotation;
+      fxs      = FormatString("Transform(precomposed) mtx(%s)", str.c_str());
+    } else {
+      auto o  = dcxf._translation;
+      auto r  = dcxf._rotation;
       float s = dcxf._uniformScale;
-      fxs = FormatString("Transform(decomposed) p(%g,%g,%g) o(%g,%g,%g,%g) s:%g", o.x, o.y, o.z, r.w, r.x, r.y, r.z, s);
+      fxs     = FormatString("Transform(decomposed) p(%g,%g,%g) o(%g,%g,%g,%g) s:%g", o.x, o.y, o.z, r.w, r.x, r.y, r.z, s);
     }
     return fxs.c_str();
   };
@@ -520,21 +530,25 @@ void pyinit_math(py::module& module_core) {
       py::class_<DecompTransform, decompxf_ptr_t>(module_core, "Transform")
           //////////////////////////////////////////////////////////////////////////
           .def(py::init<>())
-          .def_property("translation", 
-            [](decompxf_const_ptr_t dcxf) -> fvec3 { return dcxf->_translation; },
-            [](decompxf_ptr_t dcxf, fvec3 inp) { dcxf->_translation = inp; })
-          .def_property("orientation", 
-            [](decompxf_const_ptr_t dcxf) -> fquat { return dcxf->_rotation; },
-            [](decompxf_ptr_t dcxf, fquat inp) { dcxf->_rotation=inp; })
-          .def_property("scale", 
-            [](decompxf_const_ptr_t dcxf) -> float { return dcxf->_uniformScale; },
-            [](decompxf_ptr_t dcxf, float sc) { dcxf->_uniformScale = sc; })
-          .def_property("directMatrix", 
-            [](decompxf_const_ptr_t dcxf) -> fmtx4 { return dcxf->_directmatrix; },
-            [](decompxf_ptr_t dcxf, fmtx4 inp) { 
-              dcxf->_directmatrix = inp;
-              dcxf->_usedirectmatrix = true;
-            })
+          .def_property(
+              "translation",
+              [](decompxf_const_ptr_t dcxf) -> fvec3 { return dcxf->_translation; },
+              [](decompxf_ptr_t dcxf, fvec3 inp) { dcxf->_translation = inp; })
+          .def_property(
+              "orientation",
+              [](decompxf_const_ptr_t dcxf) -> fquat { return dcxf->_rotation; },
+              [](decompxf_ptr_t dcxf, fquat inp) { dcxf->_rotation = inp; })
+          .def_property(
+              "scale",
+              [](decompxf_const_ptr_t dcxf) -> float { return dcxf->_uniformScale; },
+              [](decompxf_ptr_t dcxf, float sc) { dcxf->_uniformScale = sc; })
+          .def_property(
+              "directMatrix",
+              [](decompxf_const_ptr_t dcxf) -> fmtx4 { return dcxf->_directmatrix; },
+              [](decompxf_ptr_t dcxf, fmtx4 inp) {
+                dcxf->_directmatrix    = inp;
+                dcxf->_usedirectmatrix = true;
+              })
           .def_property_readonly("composed", [](decompxf_const_ptr_t dcxf) -> fmtx4 { return dcxf->composed(); })
           .def("__str__", dcxf2str)
           .def("__repr__", dcxf2str);
@@ -543,16 +557,15 @@ void pyinit_math(py::module& module_core) {
   /////////////////////////////////////////////////////////////////////////////////
   struct MathConstantsProxy {};
   using mathconstantsproxy_ptr_t = std::shared_ptr<MathConstantsProxy>;
-  auto mathconstantsproxy_type   =                                                        //
+  auto mathconstantsproxy_type   =                                                           //
       py::class_<MathConstantsProxy, mathconstantsproxy_ptr_t>(module_core, "mathconstants") //
           .def(py::init<>())
           .def(
-              "__getattr__",                                                           //
+              "__getattr__",                                                                       //
               [type_codec](mathconstantsproxy_ptr_t proxy, const std::string& key) -> py::object { //
-
-                svar64_t value; 
+                svar64_t value;
                 value.set<void*>(nullptr);
-                if(key == "DTOR"){
+                if (key == "DTOR") {
                   value.set<float>(DTOR);
                 }
                 return type_codec->encode(value);

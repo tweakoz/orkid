@@ -191,14 +191,17 @@ void InterfaceNode::parseIos(GlSlFxParser* parser,
     auto try_array = view.token(i)->text;
 
     if (try_array == "[") { // array ?
+      io->_isArray = true;
       if (view.token(i + 1)->text == "]") {
         // unsized array
         io->_arraySize = -1;
         i += 2; // advance []
+        io->_isSizedArray = false;
       } else {
         assert(view.token(i + 2)->text == "]");
         io->_arraySize = atoi(view.token(i + 1)->text.c_str());
         i += 3; // advance [n]
+        io->_isSizedArray = true;
       }
     }
 
@@ -313,6 +316,14 @@ void InterfaceNode::emitInterface(shaderbuilder::BackEnd& backend) const {
 void IoContainerNode::emit(shaderbuilder::BackEnd& backend) const {
   auto& codegen = backend._codegen;
   for (auto node : _nodes) {
+    if(0){
+      codegen.beginLine();
+      codegen.output( "// " );
+      codegen.output( node->_name + ": ");
+      codegen.output( "arraysize: " );
+      codegen.output( FormatString("%d",node->_arraySize) );
+      codegen.endLine();
+    }
     codegen.beginLine();
     if (node->_layout)
       node->_layout->emit(backend);
@@ -322,15 +333,24 @@ void IoContainerNode::emit(shaderbuilder::BackEnd& backend) const {
       codegen.output("in ");
     if (_direction == "out")
       codegen.output("out ");
-    codegen.output(node->_typeName + " ");
-    codegen.output(node->_name + " ");
+    
     if (node->_inlineStruct) {
+      codegen.output(node->_typeName + " ");
+      codegen.output(node->_name + " ");
       node->_inlineStruct->emit(backend);
     }
-    else if (node->_arraySize) {
+    else if (node->_isArray) {
+      codegen.output(node->_typeName + " ");
+      codegen.output(node->_name );
       codegen.output("[");
-      codegen.output(FormatString("%d",node->_arraySize));
+      if(node->_isSizedArray){
+        codegen.output(FormatString("%d",node->_arraySize));
+      }
       codegen.output("]");
+    }
+    else{
+      codegen.output(node->_typeName + " ");
+      codegen.output(node->_name + " ");
     }
     
     codegen.output(";");

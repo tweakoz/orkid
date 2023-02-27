@@ -16,21 +16,21 @@ using namespace ork::dataflow;
 
 namespace ork::lev2::particle {
 
-struct GravityModuleInst : public DgModuleInst {
+struct GravityModuleInst : public ParticleModuleInst {
 
   GravityModuleInst(const GravityModuleData* gmd)
-      : DgModuleInst(gmd) {
+      : ParticleModuleInst(gmd) {
   }
 
   ////////////////////////////////////////////////////
 
   void onLink(GraphInst* inst) final {
 
+  _onLink(inst);
+
     /////////////////
     // inputs
     /////////////////
-
-    _input_buffer = typedInputNamed<ParticleBufferPlugTraits>("pool");
 
     _input_g           = typedInputNamed<FloatXfPlugTraits>("G");
     _input_mass        = typedInputNamed<FloatXfPlugTraits>("Mass");
@@ -39,18 +39,6 @@ struct GravityModuleInst : public DgModuleInst {
 
     _input_center = typedInputNamed<Vec3XfPlugTraits>("Center");
 
-    /////////////////
-    // outputs
-    /////////////////
-
-    _output_buffer = typedOutputNamed<ParticleBufferPlugTraits>("pool");
-
-    if (_input_buffer->_connectedOutput) {
-      _pool                              = _input_buffer->value()._pool;
-      _output_buffer->value_ptr()->_pool = _pool;
-    } else {
-      OrkAssert(false);
-    }
   }
 
   ////////////////////////////////////////////////////
@@ -91,16 +79,12 @@ struct GravityModuleInst : public DgModuleInst {
 
   ////////////////////////////////////////////////////
 
-  particlebuf_inpluginst_ptr_t _input_buffer;
-  particlebuf_outpluginst_ptr_t _output_buffer;
-
   floatxf_inp_pluginst_ptr_t _input_g;
   floatxf_inp_pluginst_ptr_t _input_mass;
   floatxf_inp_pluginst_ptr_t _input_othermass;
   floatxf_inp_pluginst_ptr_t _input_mindistance;
   fvec3xf_inp_pluginst_ptr_t _input_center;
 
-  pool_ptr_t _pool;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -118,8 +102,7 @@ GravityModuleData::GravityModuleData() {
 std::shared_ptr<GravityModuleData> GravityModuleData::createShared() {
   auto data = std::make_shared<GravityModuleData>();
 
-  createInputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "pool");
-  createOutputPlug<ParticleBufferPlugTraits>(data, EPR_UNIFORM, "pool");
+  _initShared(data);
 
   //RegisterFloatXfPlug(GravityModule, G, -10.0f, 10.0f, ged::OutPlugChoiceDelegate);
   //RegisterFloatXfPlug(GravityModule, Mass, -10.0f, 10.0f, ged::OutPlugChoiceDelegate);

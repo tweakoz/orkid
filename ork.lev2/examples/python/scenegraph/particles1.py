@@ -7,7 +7,7 @@
 # see http://www.boost.org/LICENSE_1_0.txt
 ################################################################################
 
-import math, sys, os, random, numpy
+import math, sys, os, random, numpy, argparse
 from pathlib import Path
 from orkengine.core import *
 from orkengine.lev2 import *
@@ -16,6 +16,10 @@ from common.cameras import *
 from common.primitives import createParticleData
 from common.scenegraph import createSceneGraph
 
+################################################################################
+parser = argparse.ArgumentParser(description='scenegraph particles example')
+
+args = vars(parser.parse_args())
 
 ################################################################################
 
@@ -46,8 +50,16 @@ class ParticlesApp(object):
     # create particle drawable 
     ###################################
 
-    ptc_data = createParticleData()
-    ptc_drawable = ptc_data.createDrawable()
+    self.ptc_data = createParticleData()
+    ptc_drawable = self.ptc_data.drawable_data.createDrawable()
+
+    self.emitterplugs = self.ptc_data.emitter.inputs
+    self.vortexplugs = self.ptc_data.vortex.inputs
+    self.gravityplugs = self.ptc_data.gravity.inputs
+    self.turbulenceplugs = self.ptc_data.turbulence.inputs
+
+    self.emitterplugs.EmissionVelocity = 0.1
+    self.turbulenceplugs.Amount = vec3(1,1,1)*5
 
     ##################
     # create particle sg node

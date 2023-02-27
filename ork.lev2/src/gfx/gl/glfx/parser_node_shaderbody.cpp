@@ -64,26 +64,51 @@ void ShaderBody::emit(shaderbuilder::BackEnd& backend) const {
   const auto& stddefs = topnode->_stddefines;
   for (auto l : _lines) {
     codegen.beginLine();
+    //////////////////////////////////////////////
     for (int in = 0; in < l->_indent; in++)
       codegen.incIndent();
-    for (auto t : l->_tokens) {
-      auto it_def = stddefs.find(t->text);
+    //////////////////////////////////////////////
+    size_t num_tokens = l->_tokens.size();
+    for( size_t i=0; i<num_tokens; i++ ) {
+      auto tok0 = l->_tokens[i];
+      auto it_def = stddefs.find(tok0->text);
       if (it_def != stddefs.end()) {
         codegen.output(it_def->second + " ");
-      } else
-        codegen.output(t->text + " ");
-      if (t->text == "{") {
+      } else{
+          bool write_tok = true;
+          if(i<(num_tokens-3)){
+            auto tok1 = l->_tokens[i+1];
+            auto tok2 = l->_tokens[i+2];
+            auto tok3 = l->_tokens[i+3];
+            if (tok1->text == "[" and tok3->text == "]") {
+              codegen.output(tok0->text);
+              codegen.output(tok1->text);
+              codegen.output(tok2->text);
+              codegen.output(tok3->text+" ");
+              write_tok = false;
+              i += 3;
+            }
+          }
+          if(write_tok) {
+            codegen.output(tok0->text + " ");
+          }
+      }
+      /////////////////////////
+      if (tok0->text == "{") {
         codegen.endLine();
         codegen.incIndent();
         codegen.beginLine();
-      } else if (t->text == "}") {
+      } else if (tok0->text == "}") {
         codegen.endLine();
         codegen.decIndent();
         codegen.beginLine();
       }
+      /////////////////////////
     }
+    //////////////////////////////////////////////
     for (int in = 0; in < l->_indent; in++)
       codegen.decIndent();
+    //////////////////////////////////////////////
     codegen.endLine();
   }
 }

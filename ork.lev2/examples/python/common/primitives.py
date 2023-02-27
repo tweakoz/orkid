@@ -42,51 +42,82 @@ def createGridData(extent=10.0,majordim=1,minordim=0.1):
   return grid_data
 
 
-def createParticleData():
+def createParticleData( use_streaks = True ):
 
-  # create a dataflow graph
+  class ImplObject(object):
+    def __init__(self):
+      super().__init__()
+      # create a dataflow graph
+      self.graphdata = dflow.GraphData.createShared()
 
-  graphdata = dflow.GraphData.createShared()
+      # instantiate modules
 
-  # instantiate modules
+      self.ptc_pool   = self.graphdata.create("POOL",particles.Pool)
+      self.emitter    = self.graphdata.create("EMITN",particles.NozzleEmitter)
+      self.emitter2    = self.graphdata.create("EMITR",particles.RingEmitter)
+      self.gravity    = self.graphdata.create("POOL",particles.Gravity)
+      self.turbulence = self.graphdata.create("GRAV",particles.Turbulence)
+      self.vortex     = self.graphdata.create("VORT",particles.Vortex)
 
-  ptc_pool   = graphdata.create("POOL",particles.Pool)
-  emitter    = graphdata.create("EMIT",particles.NozzleEmitter)
-  gravity    = graphdata.create("POOL",particles.Gravity)
-  turbulence = graphdata.create("GRAV",particles.Turbulence)
-  vortex     = graphdata.create("VORT",particles.Vortex)
-  sprites    = graphdata.create("SPRI",particles.SpriteRenderer)
+      if use_streaks:
+        self.streaks    = self.graphdata.create("STRK",particles.StreakRenderer)
+      else:
+        self.sprites    = self.graphdata.create("SPRI",particles.SpriteRenderer)
 
-  ptc_pool.pool_size = 8192
+      self.ptc_pool.pool_size = 16384 # max number of particles in pool
 
-  # connect modules in a chain configuration
+      # connect modules in a chain configuration
 
-  graphdata.connect( emitter.inputs.pool,    ptc_pool.outputs.pool )
-  graphdata.connect( gravity.inputs.pool,    emitter.outputs.pool )
-  graphdata.connect( turbulence.inputs.pool, gravity.outputs.pool )
-  graphdata.connect( vortex.inputs.pool,     turbulence.outputs.pool )
-  graphdata.connect( sprites.inputs.pool,    vortex.outputs.pool )
+      self.graphdata.connect( self.emitter.inputs.pool,    self.ptc_pool.outputs.pool )
+      self.graphdata.connect( self.emitter2.inputs.pool,    self.emitter.outputs.pool )
+      self.graphdata.connect( self.gravity.inputs.pool,    self.emitter2.outputs.pool )
+      self.graphdata.connect( self.turbulence.inputs.pool, self.gravity.outputs.pool )
+      self.graphdata.connect( self.vortex.inputs.pool,     self.turbulence.outputs.pool )
 
-  # basic module settings
+      if use_streaks:
+        self.graphdata.connect( self.streaks.inputs.pool,    self.vortex.outputs.pool )
+        self.streaks.inputs.Length = .1
+        self.streaks.inputs.Width = .01
+      else:
+        self.graphdata.connect( self.sprites.inputs.pool,    self.vortex.outputs.pool )
 
-  emitter.inputs.LifeSpan = 10
-  emitter.inputs.EmissionRate = 800
-  emitter.inputs.EmissionVelocity = 1
-  emitter.inputs.DispersionAngle = 45
-  emitter.inputs.Offset = vec3(1,2,3)
-  gravity.inputs.G = 1
-  gravity.inputs.Mass = 1
-  gravity.inputs.OthMass = 1
-  gravity.inputs.MinDistance = 1
-  gravity.inputs.Center = vec3(0,0,0)
-  turbulence.inputs.Amount = vec3(1.5,1.5,1.5)
-  vortex.inputs.VortexStrength = 1.0
-  vortex.inputs.OutwardStrength = 1.0
-  vortex.inputs.Falloff = 1.0
+      # emitter module settings
 
-  # create and return ParticlesDrawableData object
+      self.emitter.inputs.LifeSpan = 10
+      self.emitter.inputs.EmissionRate = 800
+      self.emitter.inputs.EmissionVelocity = 1
+      self.emitter.inputs.DispersionAngle = 45
+      self.emitter.inputs.Offset = vec3(1,2,3)
 
-  ptc_data = ParticlesDrawableData()
-  ptc_data.graphdata = graphdata
+      self.emitter2.inputs.LifeSpan = 10
+      self.emitter2.inputs.EmissionRate = 800
+      self.emitter2.inputs.EmissionRadius = 2
+      self.emitter2.inputs.EmitterSpinRate = 1
+      self.emitter2.inputs.EmissionVelocity = 1
+      self.emitter2.inputs.DispersionAngle = 45
+      self.emitter2.inputs.Offset = vec3(0,4,0)
 
-  return ptc_data
+      # gravity module settings
+
+      self.gravity.inputs.G = 1
+      self.gravity.inputs.Mass = 1
+      self.gravity.inputs.OthMass = 1
+      self.gravity.inputs.MinDistance = 1
+      self.gravity.inputs.Center = vec3(0,0,0)
+
+      # turbulence module settings
+
+      self.turbulence.inputs.Amount = vec3(1.5,1.5,1.5)
+
+      # vortex module settins
+
+      self.vortex.inputs.VortexStrength = 1.0
+      self.vortex.inputs.OutwardStrength = 1.0
+      self.vortex.inputs.Falloff = 1.0
+
+      # create and return ParticlesDrawableData object
+
+      self.drawable_data = ParticlesDrawableData()
+      self.drawable_data.graphdata = self.graphdata
+
+  return ImplObject()

@@ -48,7 +48,7 @@ struct FreestyleMaterial final : public GfxMaterial {
   void gpuInitFromShaderText(Context* targ, const std::string& shadername, const std::string& shadertext);
 
   const FxShaderTechnique* technique(std::string named);
-  const FxShaderParam* param(std::string named);
+  fxparam_constptr_t param(std::string named);
   const FxShaderParamBlock* paramBlock(std::string named);
 
   ////////////////////////////////////////////
@@ -60,22 +60,22 @@ struct FreestyleMaterial final : public GfxMaterial {
 
   void commit();
   void bindTechnique(const FxShaderTechnique* tek);
-  void bindParamInt(const FxShaderParam* par, int value);
-  void bindParamFloat(const FxShaderParam* par, float value);
-  void bindParamFloatArray(const FxShaderParam* par, const float* value, size_t len);
-  void bindParamCTex(const FxShaderParam* par, const Texture* tex);
-  void bindParamVec2(const FxShaderParam* par, const fvec2& v);
-  void bindParamVec3(const FxShaderParam* par, const fvec3& v);
-  void bindParamVec4(const FxShaderParam* par, const fvec4& v);
-  void bindParamQuat(const FxShaderParam* par, const fquat& v);
-  void bindParamPlane(const FxShaderParam* par, const fplane& v);
-  void bindParamVec2Array(const FxShaderParam* par, const fvec2* v, size_t len);
-  void bindParamVec3Array(const FxShaderParam* par, const fvec3* v, size_t len);
-  void bindParamVec4Array(const FxShaderParam* par, const fvec4* v, size_t len);
-  void bindParamU64(const FxShaderParam* par, uint64_t v); // binds as uvec4 (4 32bit uint vector)
-  void bindParamMatrix(const FxShaderParam* par, const fmtx4& m);
-  void bindParamMatrix(const FxShaderParam* par, const fmtx3& m);
-  void bindParamMatrixArray(const FxShaderParam* par, const fmtx4* m, size_t len);
+  void bindParamInt(fxparam_constptr_t par, int value);
+  void bindParamFloat(fxparam_constptr_t par, float value);
+  void bindParamFloatArray(fxparam_constptr_t par, const float* value, size_t len);
+  void bindParamCTex(fxparam_constptr_t par, const Texture* tex);
+  void bindParamVec2(fxparam_constptr_t par, const fvec2& v);
+  void bindParamVec3(fxparam_constptr_t par, const fvec3& v);
+  void bindParamVec4(fxparam_constptr_t par, const fvec4& v);
+  void bindParamQuat(fxparam_constptr_t par, const fquat& v);
+  void bindParamPlane(fxparam_constptr_t par, const fplane& v);
+  void bindParamVec2Array(fxparam_constptr_t par, const fvec2* v, size_t len);
+  void bindParamVec3Array(fxparam_constptr_t par, const fvec3* v, size_t len);
+  void bindParamVec4Array(fxparam_constptr_t par, const fvec4* v, size_t len);
+  void bindParamU64(fxparam_constptr_t par, uint64_t v); // binds as uvec4 (4 32bit uint vector)
+  void bindParamMatrix(fxparam_constptr_t par, const fmtx4& m);
+  void bindParamMatrix(fxparam_constptr_t par, const fmtx3& m);
+  void bindParamMatrixArray(fxparam_constptr_t par, const fmtx4* m, size_t len);
 
   ////////////////////////////////////////////
 
@@ -84,7 +84,7 @@ struct FreestyleMaterial final : public GfxMaterial {
   const FxShaderTechnique* _selectedTEK = nullptr;
 
   std::set<const FxShaderTechnique*> _techniques;
-  std::set<const FxShaderParam*> _params;
+  std::set<fxparam_constptr_t> _params;
   std::set<const FxShaderParamBlock*> _paramBlocks;
 
   ////////////////////////////////////////////
