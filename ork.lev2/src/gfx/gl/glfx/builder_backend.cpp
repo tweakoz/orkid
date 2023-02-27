@@ -56,7 +56,8 @@ void BackendCodeGen::beginLine() {
     endLine();
 
   int lineno = _lines.size();
-  _curline   = FormatString("/*%03d*/ ", lineno+1);
+  _curline = (lineno==0) ? "" : FormatString("/*%03d*/ ", lineno+1);
+  //_curline = "";
   for (int i = 0; i < _indentLevel; i++)
     _curline += "  ";
 }

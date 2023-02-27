@@ -73,6 +73,9 @@ class ParticlesApp(object):
     self.material = particles.FlatMaterial.createShared();
     self.ptc_data.sprites.material = self.material
 
+    self.cur_size = 1
+    self.tgt_size = 1
+
     ##################
     # create particle sg node
     ##################
@@ -92,7 +95,6 @@ class ParticlesApp(object):
     self.vortexplugs.Falloff = 0
     self.gravityplugs.G = .5
     self.turbulenceplugs.Amount = vec3(0,0,0)
-    self.spriteplugs.Size = 5
 
   ################################################
   def configB(self,abstime):
@@ -103,7 +105,6 @@ class ParticlesApp(object):
     self.vortexplugs.Falloff = 0
     self.gravityplugs.G = 1
     self.turbulenceplugs.Amount = vec3(2,2,2)
-    self.spriteplugs.Size = 5
 
   ################################################
   def configC(self,abstime):
@@ -114,7 +115,6 @@ class ParticlesApp(object):
     self.vortexplugs.Falloff = 0
     self.gravityplugs.G = 1.1
     self.turbulenceplugs.Amount = vec3(8,8,8)
-    self.spriteplugs.Size = 8
 
   ################################################
 
@@ -127,6 +127,18 @@ class ParticlesApp(object):
     g = 0.5+math.sin(abstime*0.45)*0.5
     b = 0.5+math.sin(abstime*0.55)*0.5
     self.material.color = vec4(r,g,b, 1)
+
+    ##########################################
+
+    if self.counter>3:
+      self.tgt_size = random.uniform(1,10)
+      self.counter = 0.0
+      print( "New Target Size: %g" % self.tgt_size )
+
+    self.cur_size = (self.cur_size*0.999) + (self.tgt_size*0.001)
+    self.spriteplugs.Size = self.cur_size
+
+    ##########################################
 
     if(INDEX==0):
         self.configA(abstime)

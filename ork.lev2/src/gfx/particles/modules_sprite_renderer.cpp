@@ -206,7 +206,6 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
         float fage            = ptcl->mfAge;
         float flspan          = (ptcl->mfLifeSpan != 0.0f) ? ptcl->mfLifeSpan : 0.01f;
         float clamped_unitage = std::clamp<float>((fage / flspan), 0, 1);
-        float fiunitage       = (1.0f - clamped_unitage);
         auto _OUTRANDOM       = ptcl->mfRandom;
         //////////////////////////////////////////////////////
         fvec2 uv0(fang, input_size);

@@ -901,6 +901,8 @@ struct InterfaceIoNode : public AstNode {
   interfacelayoutnode_ptr_t _layout = nullptr;
   std::set<std::string> _qualifiers;
   int _arraySize = 0;
+  bool _isArray = false;
+  bool _isSizedArray = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
