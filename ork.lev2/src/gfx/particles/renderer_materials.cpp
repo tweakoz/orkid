@@ -24,12 +24,30 @@ namespace ork::lev2::particle {
 void MaterialBase::describeX(class_t* clazz) {
 }
 ///////////////////////////////////////////////////////////////////////////////
+MaterialBase::MaterialBase(){
+  _color = fvec4(1, .5, 0, 1);
+  _vertexSetter = []( vertex_writer_t& vw, //
+                      const BasicParticle* ptc, //
+                      float fang, //
+                      float size, //
+                      uint32_t ucolor ){ //
+
+    float fage            = ptc->mfAge;
+    float flspan          = (ptc->mfLifeSpan != 0.0f) ? ptc->mfLifeSpan : 0.01f;
+    float clamped_unitage = std::clamp<float>((fage / flspan), 0, 1);
+    //////////////////////////////////////////////////////
+    fvec2 uv0(fang, size);
+    fvec2 uv1(clamped_unitage, ptc->mfRandom);
+    //////////////////////////////////////////////////////
+    vw.AddVertex(vertex_t(ptc->mPosition, uv0, uv1, ucolor));
+  };
+}
+///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void FlatMaterial::describeX(class_t* clazz) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 FlatMaterial::FlatMaterial() {
-  _color = fvec4(1, .5, 0, 1);
 }
 std::shared_ptr<FlatMaterial> FlatMaterial::createShared(){
   return std::make_shared<FlatMaterial>();
@@ -50,7 +68,7 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
   auto fxparameterIVP    = _material->param("MatIVP");
   auto fxparameterVP     = _material->param("MatVP");
   auto fxparameterInvDim = _material->param("Rtg_InvDim");
-  _paramflatcolor = _material->param("flatcolor");
+  _parammodcolor = _material->param("modcolor");
   auto pipeline_cache    = _material->pipelineCache();
   _pipeline              = pipeline_cache->findPipeline(RCID);
   _pipeline->_technique  = fxtechnique;
@@ -64,7 +82,7 @@ void FlatMaterial::gpuInit(const RenderContextInstData& RCID) {
 void FlatMaterial::update(const RenderContextInstData& RCID) {
   auto context = RCID.context();
   auto FXI              = context->FXI();
-  FXI->BindParamVect4(_paramflatcolor, _color);
+  FXI->BindParamVect4(_parammodcolor, _color);
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -147,7 +165,7 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
   auto fxparameterIVP    = _material->param("MatIVP");
   auto fxparameterVP     = _material->param("MatVP");
   auto fxparameterInvDim = _material->param("Rtg_InvDim");
-  _paramflatcolor = _material->param("flatcolor");
+  _parammodcolor = _material->param("modcolor");
   auto pipeline_cache    = _material->pipelineCache();
   _pipeline              = pipeline_cache->findPipeline(RCID);
   _pipeline->_technique  = fxtechnique;
@@ -161,7 +179,7 @@ void GradientMaterial::gpuInit(const RenderContextInstData& RCID) {
 void GradientMaterial::update(const RenderContextInstData& RCID) {
   auto context = RCID.context();
   auto FXI              = context->FXI();
-  FXI->BindParamVect4(_paramflatcolor, _color);
+  FXI->BindParamVect4(_parammodcolor, _color);
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -173,24 +191,18 @@ void TextureMaterial::describeX(class_t* clazz) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 TextureMaterial::TextureMaterial() {
-  // ork::lev2::Context* targ = lev2::contextForCurrentThread();
-  //_material               = new GfxMaterial3DSolid(targ, "orkshader://particle", "tbasicparticle");
-  //_material->SetColorMode(GfxMaterial3DSolid::EMODE_USER);
 }
 std::shared_ptr<TextureMaterial> TextureMaterial::createShared(){
   return std::make_shared<TextureMaterial>();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void TextureMaterial::update(const RenderContextInstData& RCID) {
-  /*if (gtarg && _texture) {
-    lev2::TextureAnimationBase* texanim = _texture->GetTexAnim();
-
-    if (texanim) {
-      TextureAnimationInst tai(texanim);
-      tai.SetCurrentTime(ftexframe);
-      gtarg->TXI()->UpdateAnimatedTexture(_texture, &tai);
-    }
-  }*/
+  if(_texture){
+    auto context = RCID.context();
+    auto FXI              = context->FXI();
+    FXI->BindParamCTex(_paramColorMap, _texture.get());
+    FXI->BindParamVect4(_parammodcolor, _color );
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void TextureMaterial::gpuInit(const RenderContextInstData& RCID) {
@@ -208,6 +220,9 @@ void TextureMaterial::gpuInit(const RenderContextInstData& RCID) {
   auto fxparameterIVP    = _material->param("MatIVP");
   auto fxparameterVP     = _material->param("MatVP");
   auto fxparameterInvDim = _material->param("Rtg_InvDim");
+  _paramColorMap = _material->param("ColorMap");
+  _parammodcolor = _material->param("modcolor");
+
   auto pipeline_cache    = _material->pipelineCache();
   _pipeline              = pipeline_cache->findPipeline(RCID);
   _pipeline->_technique  = fxtechnique;

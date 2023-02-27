@@ -99,6 +99,13 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   const fmtx4& MVP            = context->MTXI()->RefMVPMatrix();
   auto& vertex_buffer         = GfxEnv::GetSharedDynamicVB();
 
+  auto material = _smd->_material;
+
+  if (nullptr == material->_pipeline) {
+    material->gpuInit(RCID);
+    OrkAssert(material->_pipeline);
+  }
+
   int icnt             = render_buffer->_numParticles;
   int ivertexlockcount = icnt;
 
@@ -108,8 +115,10 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
   float anim_frame = 0.0f; // mPlugInpAnimFrame.GetValue()
   float input_size = _input_size->value();
 
+
+
   if (icnt) {
-    lev2::VtxWriter<SVtxV12C4T16> vw;
+    vertex_writer_t vw;
     vw.Lock(context, &vertex_buffer, ivertexlockcount);
     { // ork::fcolor4 CL;
       switch (meAlignment) {
@@ -201,28 +210,12 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
       //////////////////////////////////////////////////////
 
       for (size_t i = 0; i < icnt; i++) {
-        auto ptcl = get_particle(i);
-        //////////////////////////////////////////////////////
-        float fage            = ptcl->mfAge;
-        float flspan          = (ptcl->mfLifeSpan != 0.0f) ? ptcl->mfLifeSpan : 0.01f;
-        float clamped_unitage = std::clamp<float>((fage / flspan), 0, 1);
-        auto _OUTRANDOM       = ptcl->mfRandom;
-        //////////////////////////////////////////////////////
-        fvec2 uv0(fang, input_size);
-        fvec2 uv1(clamped_unitage, _OUTRANDOM);
-        //////////////////////////////////////////////////////
-        vw.AddVertex(SVtxV12C4T16(ptcl->mPosition, uv0, uv1, ucolor));
+        material->_vertexSetter(vw,get_particle(i),fang,input_size,ucolor);
       }
+
       ////////////////////////////////////////////////////////////////////
     }
     vw.UnLock(context);
-
-    auto material = _smd->_material;
-
-    if (nullptr == material->_pipeline) {
-      material->gpuInit(RCID);
-      OrkAssert(material->_pipeline);
-    }
 
     material->_pipeline->wrappedDrawCall(RCID, [&]() {
       material->update(RCID);

@@ -24,19 +24,19 @@ void pyinit_gfx_particles(py::module& module_lev2) {
 
   /////////////////////////////////////////////////////////////////////////////
   auto mtl_base_type = //
-      py::class_<ptc::MaterialBase, ptc::basematerial_ptr_t>(ptc_module, "MaterialBase");
+      py::class_<ptc::MaterialBase, ptc::basematerial_ptr_t>(ptc_module, "MaterialBase")
+      .def_property("color", 
+        [](ptc::basematerial_ptr_t  m) -> fvec4 { //
+          return m->_color;
+        },
+        [](ptc::basematerial_ptr_t  m, fvec4 color) { //
+          m->_color = color;
+        });
  type_codec->registerStdCodec<ptc::basematerial_ptr_t>(mtl_base_type);
   /////////////////////////////////////////////////////////////////////////////
   auto mtl_flat_type = //
       py::class_<ptc::FlatMaterial, ptc::MaterialBase, ptc::flatmaterial_ptr_t>(ptc_module, "FlatMaterial")
-      .def_static("createShared", []() -> ptc::flatmaterial_ptr_t { return ptc::FlatMaterial::createShared(); })
-      .def_property("color", 
-        [](ptc::flatmaterial_ptr_t  m) -> fvec4 { //
-          return m->_color;
-        },
-        [](ptc::flatmaterial_ptr_t  m, fvec4 color) { //
-          m->_color = color;
-        });
+      .def_static("createShared", []() -> ptc::flatmaterial_ptr_t { return ptc::FlatMaterial::createShared(); });
   type_codec->registerStdCodec<ptc::flatmaterial_ptr_t>(mtl_flat_type);
   /////////////////////////////////////////////////////////////////////////////
   auto mtl_grad_type = //
@@ -46,7 +46,15 @@ void pyinit_gfx_particles(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////
   auto mtl_tex_type = //
       py::class_<ptc::TextureMaterial, ptc::MaterialBase, ptc::texturematerial_ptr_t>(ptc_module, "TextureMaterial")
-      .def_static("createShared", []() -> ptc::texturematerial_ptr_t { return ptc::TextureMaterial::createShared(); });
+      .def_static("createShared", []() -> ptc::texturematerial_ptr_t { return ptc::TextureMaterial::createShared(); })
+      .def_property("texture", 
+        [](ptc::texturematerial_ptr_t  m) -> texture_ptr_t { //
+          return m->_texture;
+        },
+        [](ptc::texturematerial_ptr_t  m, texture_ptr_t t) { //
+          return m->_texture = t;
+        }
+        );
   type_codec->registerStdCodec<ptc::texturematerial_ptr_t>(mtl_tex_type);
   /////////////////////////////////////////////////////////////////////////////
   auto mtl_texgrid_type = //

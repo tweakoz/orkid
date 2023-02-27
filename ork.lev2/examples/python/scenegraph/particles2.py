@@ -71,7 +71,9 @@ class ParticlesApp(object):
     self.emitterplugs.Offset = emitter_pos
 
     self.material = particles.FlatMaterial.createShared();
-    self.ptc_data.sprites.material = self.material
+    self.material2 = particles.TextureMaterial.createShared();
+
+    self.material2.texture = Texture.load("src://effect_textures/spinner");
 
     self.cur_size = 1
     self.tgt_size = 1
@@ -95,6 +97,11 @@ class ParticlesApp(object):
     self.vortexplugs.Falloff = 0
     self.gravityplugs.G = .5
     self.turbulenceplugs.Amount = vec3(0,0,0)
+    self.ptc_data.sprites.material = self.material
+    self.emitter2plugs.Offset = vec3(0,3,0)
+    if self.counter>1:
+      self.tgt_size = random.uniform(4,8)
+      self.counter = 0.0
 
   ################################################
   def configB(self,abstime):
@@ -105,6 +112,11 @@ class ParticlesApp(object):
     self.vortexplugs.Falloff = 0
     self.gravityplugs.G = 1
     self.turbulenceplugs.Amount = vec3(2,2,2)
+    self.ptc_data.sprites.material = self.material
+    self.emitter2plugs.Offset = vec3(0,math.sin(abstime*1.5)*2,0)
+    if self.counter>4:
+      self.tgt_size = random.uniform(16,24)
+      self.counter = 0.0
 
   ################################################
   def configC(self,abstime):
@@ -115,37 +127,36 @@ class ParticlesApp(object):
     self.vortexplugs.Falloff = 0
     self.gravityplugs.G = 1.1
     self.turbulenceplugs.Amount = vec3(8,8,8)
+    self.ptc_data.sprites.material = self.material2
+    self.emitter2plugs.Offset = vec3(0,math.sin(abstime*9.7)*3,0)
+    if self.counter>5:
+      self.tgt_size = random.uniform(16,32)
+      self.counter = 0.0
 
   ################################################
 
   def onUpdate(self,updinfo):
     abstime = updinfo.absolutetime
     self.counter += updinfo.deltatime
-    INDEX = int(math.fmod(abstime,24)/8)
 
     r = 0.5+math.sin(abstime*0.35)*0.5
     g = 0.5+math.sin(abstime*0.45)*0.5
     b = 0.5+math.sin(abstime*0.55)*0.5
     self.material.color = vec4(r,g,b, 1)
-
-    ##########################################
-
-    if self.counter>3:
-      self.tgt_size = random.uniform(1,10)
-      self.counter = 0.0
-      print( "New Target Size: %g" % self.tgt_size )
-
-    self.cur_size = (self.cur_size*0.999) + (self.tgt_size*0.001)
+    self.material2.color = vec4(r,g,b, 1)
+    self.cur_size = (self.cur_size*0.99) + (self.tgt_size*0.01)
     self.spriteplugs.Size = self.cur_size
 
     ##########################################
 
+    INDEX = int(math.fmod(abstime,24)/8)
     if(INDEX==0):
         self.configA(abstime)
     elif(INDEX==1):
         self.configB(abstime)
     else:
         self.configC(abstime)
+
 
     ########################################
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes

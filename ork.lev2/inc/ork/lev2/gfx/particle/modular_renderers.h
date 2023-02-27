@@ -11,16 +11,23 @@
 namespace ork::lev2::particle {
 /////////////////////////////////////////
 
+using vtx_set_t = std::function<void( vertex_writer_t& vw, //
+                                       const BasicParticle* ptc, //
+                                       float fang, //
+                                       float size, //
+                                       uint32_t ucolor )>;
+
 struct MaterialBase : public ork::Object {
   DeclareAbstractX(MaterialBase, ork::Object);
 public:
   virtual void gpuInit(const RenderContextInstData& RCID) = 0;
   virtual void update(const RenderContextInstData& RCID){}
-  MaterialBase()
-      : _material(nullptr) {
-  }
+  MaterialBase();
   freestyle_mtl_ptr_t _material;
   fxpipeline_ptr_t _pipeline;
+  vtx_set_t _vertexSetter;
+  fxparam_constptr_t _parammodcolor;
+  fvec4 _color;
 };
 
 using basematerial_ptr_t = std::shared_ptr<MaterialBase>;
@@ -34,8 +41,6 @@ public:
   FlatMaterial();
   void update(const RenderContextInstData& RCID) final;
   void gpuInit(const RenderContextInstData& RCID) final;
-  fvec4 _color;
-  fxparam_constptr_t _paramflatcolor;
 };
 
 using flatmaterial_ptr_t = std::shared_ptr<FlatMaterial>;
@@ -66,6 +71,7 @@ public:
   void update(const RenderContextInstData& RCID) final;
   void gpuInit(const RenderContextInstData& RCID) final;
   texture_ptr_t _texture;
+  fxparam_constptr_t _paramColorMap;
 };
 
 using texturematerial_ptr_t = std::shared_ptr<TextureMaterial>;

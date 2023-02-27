@@ -20,6 +20,9 @@
 namespace ork::lev2::particle {
 ///////////////////////////////////////////////////////////////////////////////
 
+using vertex_t = SVtxV12C4T16;
+using vertex_writer_t = lev2::VtxWriter<vertex_t>;
+
 namespace dflow   = ::ork::dataflow;
 using particle_t  = BasicParticle;
 using pool_t      = Pool<particle_t>;
