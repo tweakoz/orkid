@@ -13,6 +13,7 @@
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/dataflow/module.inl>
 #include <ork/dataflow/plug_data.inl>
+#include <ork/dataflow/plug_inst.inl>
 #include <ork/util/triple_buffer.h>
 
 using namespace ork::dataflow;
@@ -73,6 +74,7 @@ void SpriteRendererInst::onLink(GraphInst* inst) {
   auto ptcl_context         = inst->_impl.getShared<Context>();
   ptcl_context->_rcidlambda = [this](const RenderContextInstData& RCID) { this->_render(RCID); };
   _input_size               = typedInputNamed<FloatXfPlugTraits>("Size");
+  _input_size->setValue(4);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
