@@ -128,6 +128,19 @@ public:
 
 using spritemodule_ptr_t = std::shared_ptr<SpriteRendererData>;
 
+/////////////////////////////////////////
+
+struct StreakRendererData : public RendererModuleData {
+  DeclareConcreteX(StreakRendererData, RendererModuleData);
+public:
+  StreakRendererData();
+  static std::shared_ptr<StreakRendererData> createShared();
+  dflow::dgmoduleinst_ptr_t createInstance() const final;
+
+  basematerial_ptr_t _material;
+};
+
+using streakmodule_ptr_t = std::shared_ptr<StreakRendererData>;
 
 /////////////////////////////////////////
 } //namespace ork::lev2::particle {

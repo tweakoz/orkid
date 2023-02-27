@@ -98,8 +98,8 @@ using globalmodule_ptr_t = std::shared_ptr<GlobalModuleData>;
 
 struct ParticleModuleData : public ModuleData {
   DeclareAbstractX(ParticleModuleData, ModuleData);
-
 public:
+
   ParticleModuleData();
   static void _initShared(dflow::dgmoduledata_ptr_t sub);
 

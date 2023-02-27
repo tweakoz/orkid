@@ -5,9 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 //////////////////////////////////////////////////////////////// 
 
-
-#ifndef _ORK_MATH_GRADIENT_H
-#define _ORK_MATH_GRADIENT_H
+#pragma once 
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -22,14 +20,10 @@ namespace reflect { class IDeserializer; }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class  GradientBase : public ork::Object
-{
+struct GradientBase : public ork::Object {
 	RttiDeclareConcrete(GradientBase, ork::Object);
-
 public: 
-
 	GradientBase();
-
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -41,51 +35,26 @@ template <typename T> struct GradLut : public orklut<float,T>
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> class  Gradient : public GradientBase
-{
+template <typename T> //
+struct Gradient : public GradientBase { //
+
 	DECLARE_TRANSPARENT_TEMPLATE_RTTI(Gradient<T>, GradientBase);
 
-	GradLut<T> mData;
-
-	bool preDeserialize( ork::reflect::serdes::IDeserializer& deser );
-
 public: 
 
-	const orklut<float,T>& Data() const { return mData; }
-	orklut<float,T>& Data() { return mData; }
+  Gradient();
 
-	Gradient();
+	void addDataPoint( float flerp, const T& data );
+	T sample( float atlerp );
 
-	void AddDataPoint( float flerp, const T& data );
-	T Sample( float atlerp );
+  bool preDeserialize( ork::reflect::serdes::IDeserializer& deser );
+
+  GradLut<T> _data;
 
 };
 
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename T> class  GradientD2 : public GradientBase
-{
-	DECLARE_TRANSPARENT_TEMPLATE_RTTI(GradientD2<T>, GradientBase);
-
-	GradLut< ork::Object* > mData;
-
-	bool preDeserialize( ork::reflect::serdes::IDeserializer& deser );
-
-public: 
-
-	//const orklut<float,T>& Data() const { return mData; }
-	//orklut<float,T>& Data() { return mData; }
-
-	GradientD2();
-	~GradientD2();
-	
-	//void AddDataPoint( float flerpX, const T& data );
-	//T Sample( float atlerp );
-
-};
+using gradient_fvec4 = Gradient<ork::fvec4>;
 
 ///////////////////////////////////////////////////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////////////////////
-
-#endif

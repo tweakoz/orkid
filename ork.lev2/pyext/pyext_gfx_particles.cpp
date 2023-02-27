@@ -130,7 +130,17 @@ void pyinit_gfx_particles(py::module& module_lev2) {
         r->_material = m;
       })      
       .def_static("createShared", []() -> ptc::spritemodule_ptr_t { return ptc::SpriteRendererData::createShared(); });
-  type_codec->registerStdCodec<ptc::spritemodule_ptr_t>(spritemoduledata_type);
+  /////////////////////////////////////////////////////////////////////////////
+  auto streakmoduledata_type = //
+      py::class_<ptc::StreakRendererData, ptc::ModuleData, ptc::streakmodule_ptr_t>(ptc_module, "StreakRenderer")
+      .def_property("material",[](ptc::streakmodule_ptr_t r)->ptc::basematerial_ptr_t{
+        return r->_material;
+      },
+      [](ptc::streakmodule_ptr_t r, ptc::basematerial_ptr_t m){
+        r->_material = m;
+      })      
+      .def_static("createShared", []() -> ptc::streakmodule_ptr_t { return ptc::StreakRendererData::createShared(); });
+  type_codec->registerStdCodec<ptc::streakmodule_ptr_t>(streakmoduledata_type);
 }
 
 } //namespace ork::lev2 {

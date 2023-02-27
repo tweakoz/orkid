@@ -59,6 +59,7 @@ def createParticleData():
       self.turbulence = self.graphdata.create("GRAV",particles.Turbulence)
       self.vortex     = self.graphdata.create("VORT",particles.Vortex)
       self.sprites    = self.graphdata.create("SPRI",particles.SpriteRenderer)
+      self.streaks    = self.graphdata.create("STRK",particles.StreakRenderer)
 
       self.ptc_pool.pool_size = 16384 # max number of particles in pool
 
@@ -70,6 +71,7 @@ def createParticleData():
       self.graphdata.connect( self.turbulence.inputs.pool, self.gravity.outputs.pool )
       self.graphdata.connect( self.vortex.inputs.pool,     self.turbulence.outputs.pool )
       self.graphdata.connect( self.sprites.inputs.pool,    self.vortex.outputs.pool )
+      self.graphdata.connect( self.streaks.inputs.pool,    self.sprites.outputs.pool )
 
       # emitter module settings
 

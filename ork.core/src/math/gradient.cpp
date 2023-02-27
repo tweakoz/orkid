@@ -31,20 +31,21 @@ GradientBase::GradientBase() {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> Gradient<T>::Gradient() {
-  mData.AddSorted(0.0f, T());
-  mData.AddSorted(1.0f, T());
+  _data.AddSorted(0.0f, T());
+  _data.AddSorted(1.0f, T());
 }
 
 template <typename T> bool Gradient<T>::preDeserialize(ork::reflect::serdes::IDeserializer& deser) {
-  mData.clear();
+  _data.clear();
   return true;
 }
 
-template <typename T> void Gradient<T>::AddDataPoint(float flerp, const T& data) {
-  mData.AddSorted(flerp, data);
+template <typename T> void Gradient<T>::addDataPoint(float flerp, const T& data) {
+  _data.AddSorted(flerp, data);
 }
 
-template <typename T> T Gradient<T>::Sample(float fu) {
+template <typename T> T Gradient<T>::sample(float fu) {
+
   if (fu < 0.0f)
     return T();
   if (fu > 1.0f)
@@ -55,18 +56,18 @@ template <typename T> T Gradient<T>::Sample(float fu) {
   bool bdone = false;
   int isega  = 0;
   int isegb  = 0;
-  int inumv  = int(mData.size());
+  int inumv  = int(_data.size());
   while (false == bdone) {
     isegb = (isega + 1);
     OrkAssert(isegb < inumv);
-    if ((fu >= mData.GetItemAtIndex(isega).first) && (fu <= mData.GetItemAtIndex(isegb).first)) {
+    if ((fu >= _data.GetItemAtIndex(isega).first) && (fu <= _data.GetItemAtIndex(isegb).first)) {
       bdone = true;
     } else {
       isega++;
     }
   }
-  const std::pair<float, T>& VA = mData.GetItemAtIndex(isega);
-  const std::pair<float, T>& VB = mData.GetItemAtIndex(isegb);
+  const std::pair<float, T>& VA = _data.GetItemAtIndex(isega);
+  const std::pair<float, T>& VB = _data.GetItemAtIndex(isegb);
   float dU                      = VB.first - VA.first;
   float Base                    = VA.first;
   float fsu                     = (fu - Base) / dU;
@@ -76,7 +77,7 @@ template <typename T> T Gradient<T>::Sample(float fu) {
 }
 
 template <typename T> void Gradient<T>::Describe() {
-  /*ork::reflect::RegisterMapProperty( "points", & Gradient<T>::mData );
+  /*ork::reflect::RegisterMapProperty( "points", & Gradient<T>::_data );
   ork::reflect::annotatePropertyForEditor<Gradient>( "points", "editor.visible", "false" );
   ork::reflect::annotateClassForEditor< Gradient >( "editor.class", ConstString("ged.factory.gradient") );
 */
@@ -84,43 +85,12 @@ template <typename T> void Gradient<T>::Describe() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> GradientD2<T>::GradientD2() {
-  Gradient<T>* g0 = new Gradient<T>;
-  Gradient<T>* g1 = new Gradient<T>;
-  mData.AddSorted(0.0f, g0);
-  mData.AddSorted(1.0f, g1);
-}
-
-template <typename T> GradientD2<T>::~GradientD2() {
-  for (size_t i = 0; i < mData.size(); i++) {
-    ork::Object* pobj = mData.GetItemAtIndex(i).second;
-    delete pobj;
-  }
-}
-
-template <typename T> bool GradientD2<T>::preDeserialize(ork::reflect::serdes::IDeserializer& deser) {
-  mData.clear();
-  return true;
-}
-
-template <typename T> void GradientD2<T>::Describe() {
-  // ork::reflect::RegisterMapProperty( "points", & GradientD2<T>::mData );
-  // ork::reflect::annotatePropertyForEditor<GradientD2>( "points", "editor.visible", "false" );
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 } // namespace ork
 
-typedef ork::Gradient<ork::fvec4> GradientV4;
-typedef ork::GradientD2<ork::fvec4> GradientD2V4;
 INSTANTIATE_TRANSPARENT_RTTI(ork::GradientBase, "GradientBase");
-INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI(GradientV4, "GradientV4");
-INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI(GradientD2V4, "GradientD2V4");
+INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI(ork::gradient_fvec4, "GradientV4");
 
 template class ork::orklut<float, ork::fvec4>;
 // template class ork::orklut<float, ork::orklut<float,ork::fvec4> >;
-template struct ork::GradLut<ork::fvec4>;
+template struct ork::Gradient<ork::fvec4>;
 // template class ork::GradLut< ork::GradLut<ork::fvec4> >; //ork::orklut<float,ork::fvec4>;
-template class ork::Gradient<ork::fvec4>;
-template class ork::GradientD2<ork::fvec4>;

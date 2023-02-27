@@ -26,7 +26,6 @@
 
 ImplementReflectionX(ork::lev2::particle::RendererModule, "psys::RendererModule");
 ImplementReflectionX(ork::lev2::particle::SpriteRenderer, "psys::SpriteRenderer");
-ImplementReflectionX(ork::lev2::particle::StreakRenderer, "psys::StreakRenderer");
 ImplementReflectionX(ork::lev2::particle::ModelRenderer, "psys::ModelRenderer");
 ImplementReflectionX(ork::lev2::particle::MaterialBase, "psys::MaterialBase");
 ImplementReflectionX(ork::lev2::particle::TextureMaterial, "psys::TextureMaterial");
@@ -36,7 +35,6 @@ ImplementReflectionX(ork::lev2::particle::VolTexMaterial, "psys::VolTexMaterial"
 namespace ork { namespace lev2 { namespace particle {
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef ork::lev2::SVtxV12N12B12T8C4 vtx_t;
 
 void RendererModule::describeX(class_t* clazz) {
   // RegisterObjInpPlug(RendererModule, Input);
@@ -553,183 +551,6 @@ void SpriteRenderer::Render(
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void StreakRenderer::describeX(class_t* clazz) {
-  /*RegisterFloatXfPlug(StreakRenderer, Length, -10.0f, 10.0f, ged::OutPlugChoiceDelegate);
-  RegisterFloatXfPlug(StreakRenderer, Width, -10.0f, 10.0f, ged::OutPlugChoiceDelegate);
-  RegisterFloatXfPlug(StreakRenderer, GradientIntensity, 0.0f, 10.0f, ged::OutPlugChoiceDelegate);
-  ork::reflect::RegisterProperty("Gradient", &StreakRenderer::GradientAccessor);
-  ork::reflect::RegisterProperty("BlendMode", &StreakRenderer::meBlendMode);
-  ork::reflect::RegisterProperty("Texture", &StreakRenderer::GetTextureAccessor, &StreakRenderer::SetTextureAccessor);
-
-  ork::reflect::RegisterProperty("DepthSort", &StreakRenderer::mbSort);
-  ork::reflect::RegisterProperty("AlphaMux", &StreakRenderer::mAlphaMux);
-  // ork::reflect::annotatePropertyForEditor<StreakRenderer>("Gradient", "editor.class", "ged.factory.gradient" );
-
-  ork::reflect::annotatePropertyForEditor<StreakRenderer>("BlendMode", "editor.class", "ged.factory.enum");
-  ork::reflect::annotatePropertyForEditor<StreakRenderer>("Texture", "editor.class", "ged.factory.assetlist");
-  ork::reflect::annotatePropertyForEditor<StreakRenderer>("Texture", "editor.assettype", "lev2tex");
-  ork::reflect::annotatePropertyForEditor<StreakRenderer>("Texture", "editor.assetclass", "lev2tex");
-  static const char* EdGrpStr =
-      "grp://StreakRenderer Input DepthSort AlphaMux Length Width BlendMode Gradient GradientIntensity Texture ";
-  reflect::annotateClassForEditor<StreakRenderer>("editor.prop.groups", EdGrpStr);
-*/}
-  ///////////////////////////////////////////////////////////////////////////////
-  StreakRenderer::StreakRenderer()
-      : ConstructInpPlug(Length, dataflow::EPR_UNIFORM, mfLength)
-      , ConstructInpPlug(Width, dataflow::EPR_UNIFORM, mfWidth)
-      , ConstructOutPlug(UnitAge, dataflow::EPR_UNIFORM)
-      , ConstructInpPlug(GradientIntensity, dataflow::EPR_UNIFORM, mfGradientIntensity) {
-    mfLength                 = (1.0f);
-    mfWidth                  = (1.0f);
-    mfGradientIntensity      = (1.0f);
-    auto target = lev2::contextForCurrentThread();
-    mpMaterial               = new GfxMaterial3DSolid(target, "orkshader://particle", "tstreakparticle");
-  }
-  ///////////////////////////////////////////////////////////////////////////////
-  void StreakRenderer::SetTextureAccessor(ork::rtti::ICastable* const& tex) {
-    mTexture = tex ? ork::rtti::autocast(tex) : 0;
-  }
-  ///////////////////////////////////////////////////////////////////////////////
-  void StreakRenderer::GetTextureAccessor(ork::rtti::ICastable*& tex) const {
-    tex = mTexture;
-  }
-  ///////////////////////////////////////////////////////////////////////////////
-  ork::lev2::Texture* StreakRenderer::GetTexture() const {
-    return (mTexture == 0) ? 0 : mTexture->GetTexture().get();
-  }
-  ///////////////////////////////////////////////////////////////////////////////
-  dataflow::inplugbase* StreakRenderer::GetInput(int idx) const {
-    dataflow::inplugbase* rval = 0;
-    switch (idx) {
-      case 0:
-        rval = &mPlugInpInput;
-        break;
-      case 1:
-        rval = &mPlugInpLength;
-        break;
-      case 2:
-        rval = &mPlugInpWidth;
-        break;
-      case 3:
-        rval = &mPlugInpGradientIntensity;
-        break;
-    }
-    return rval;
-  }
-  ///////////////////////////////////////////////////////////////////////////////
-  dataflow::outplugbase* StreakRenderer::GetOutput(int idx) const {
-    dataflow::outplugbase* rval = 0;
-    switch (idx) {
-      case 0:
-        rval = &OutPlugName(UnitAge);
-        break;
-    }
-    return rval;
-  }
-  ///////////////////////////////////////////////////////////////////////////////
-  void StreakRenderer::Render(
-      const fmtx4& mtx,
-      const ork::lev2::RenderContextInstData& rcid,
-      const ParticlePoolRenderBuffer& buffer,
-      ork::lev2::Context* targ) {
-
-    const RenderContextFrameData* RCFD = targ->topRenderContextFrameData();
-    const auto& CPD                    = RCFD->topCPD();
-    const CameraMatrices* cmtcs        = CPD.cameraMatrices();
-    const CameraData& cdata            = cmtcs->_camdat;
-    //////////////////////////////////////////
-    ork::lev2::CVtxBuffer<vtx_t>& vtxbuf = lev2::GfxEnv::GetSharedDynamicVB2();
-    float Scale                          = 1.0f;
-    ork::fmtx4 mtx_scale;
-    mtx_scale.setScale(Scale, Scale, Scale);
-    ///////////////////////////////////////////////////////////////
-    float fgi = mPlugInpGradientIntensity.GetValue();
-    ///////////////////////////////////////////////////////////////
-    // compute particle dynamic vertex buffer
-    //////////////////////////////////////////
-    int icnt = buffer.miNumParticles;
-    if (icnt) { ////////////////////////////////////////////////////////////////////////////
-      ork::fmtx4 mtx_iw;
-      mtx_iw.inverseOf(mtx);
-      fvec3 obj_nrmz = fvec4(cdata.zNormal(), 0.0f).transform(mtx_iw).normalized();
-      ////////////////////////////////////////////////////////////////////////////
-      lev2::VtxWriter<vtx_t> vw;
-      vw.Lock(targ, &vtxbuf, icnt);
-      {
-
-        ////////////////////////////////////////////////
-        // uniform properties
-        ////////////////////////////////////////////////
-        const ork::lev2::particle::BasicParticle* __restrict ptclbase = buffer.mpParticles;
-
-        if (mbSort) {
-          static ork::fixedlut<float, const ork::lev2::particle::BasicParticle*, 20000> SortedParticles(EKEYPOLICY_MULTILUT);
-          SortedParticles.clear();
-          const fmtx4& MVP = targ->MTXI()->RefMVPMatrix();
-          for (int i = 0; i < icnt; i++) {
-            const ork::lev2::particle::BasicParticle* ptcl = buffer.mpParticles + i;
-            {
-              fvec4 proj = ptcl->mPosition.transform(MVP);
-              proj.perspectiveDivideInPlace();
-              float fv = proj.z;
-              SortedParticles.AddSorted(fv, ptcl);
-            }
-          }
-          for (int i = (icnt - 1); i >= 0; i--) {
-            const ork::lev2::particle::BasicParticle* __restrict ptcl = SortedParticles.GetItemAtIndex(i).second;
-            ////////////////////////////////////////////////
-            // varying properties
-            ////////////////////////////////////////////////
-            float fage      = ptcl->mfAge;
-            mOutDataUnitAge = std::clamp((fage / ptcl->mfLifeSpan), 0.0f, 1.0f);
-            //
-            float fwidth  = mPlugInpWidth.GetValue();
-            float flength = mPlugInpLength.GetValue();
-            fvec4 color   = mGradient.Sample(mOutDataUnitAge) * fgi;
-            ////////////////////////////////////////////////
-            vw.AddVertex(vtx_t(ptcl->mPosition, obj_nrmz, ptcl->mVelocity, ork::fvec2(fwidth, flength), color.VtxColorAsU32()));
-            ////////////////////////////////////////////////
-          }
-        } else {
-          for (int i = 0; i < icnt; i++) {
-            const ork::lev2::particle::BasicParticle* __restrict ptcl = ptclbase + i;
-            ////////////////////////////////////////////////
-            // varying properties
-            ////////////////////////////////////////////////
-            float fage      = ptcl->mfAge;
-            mOutDataUnitAge = std::clamp((fage / ptcl->mfLifeSpan), 0.0f, 1.0f);
-            //
-            float fwidth  = mPlugInpWidth.GetValue();
-            float flength = mPlugInpLength.GetValue();
-            fvec4 color   = mGradient.Sample(mOutDataUnitAge) * fgi;
-            ////////////////////////////////////////////////
-            vw.AddVertex(vtx_t(ptcl->mPosition, obj_nrmz, ptcl->mVelocity, ork::fvec2(fwidth, flength), color.VtxColorAsU32()));
-            ////////////////////////////////////////////////
-          }
-        }
-      }
-      vw.UnLock(targ);
-      ////////////////////////////////////////////////////////////////////////////
-      // setup particle material
-      //////////////////////////////////////////
-      mpMaterial->SetUser0(mAlphaMux);
-      mpMaterial->SetColorMode(ork::lev2::GfxMaterial3DSolid::EMODE_USER);
-      mpMaterial->_rasterstate.SetAlphaTest(ork::lev2::EALPHATEST_GREATER, 0.0f);
-      mpMaterial->_rasterstate.SetDepthTest(ork::lev2::EDepthTest::LEQUALS);
-      mpMaterial->_rasterstate.SetBlending(meBlendMode);
-      mpMaterial->_rasterstate.SetZWriteMask(false);
-      mpMaterial->_rasterstate.SetCullTest(ork::lev2::ECullTest::OFF);
-      mpMaterial->_rasterstate.SetPointSize(32.0f);
-      mpMaterial->SetTexture(GetTexture());
-      //////////////////////////////////////////
-      // Draw Particles
-      //////////////////////////////////////////
-      targ->MTXI()->PushMMatrix(fmtx4::multiply_ltor(mtx_scale,mtx));
-      targ->GBI()->DrawPrimitive(mpMaterial, vw, ork::lev2::PrimitiveType::POINTS, icnt);
-      targ->MTXI()->PopMMatrix();
-      //////////////////////////////////////////
-    } // if( icnt )
-  }
 
   ///////////////////////////////////////////////////////////////////////////////
   ///////////////////////////////////////////////////////////////////////////////
