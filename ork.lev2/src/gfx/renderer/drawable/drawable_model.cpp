@@ -131,7 +131,7 @@ void ModelDrawable::bindModelAsset(xgmmodelassetptr_t asset) {
   bindModel(_asset->_model.atomicCopy());
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ModelDrawable::bindModel(model_ptr_t model) {
+void ModelDrawable::bindModel(xgmmodel_ptr_t model) {
   logchan_model->log("drw<%s> bindModel(%p)", _name.c_str(), (void*) model.get() );
   _model         = model;
   auto modelinst = std::make_shared<XgmModelInst>(_model.get());

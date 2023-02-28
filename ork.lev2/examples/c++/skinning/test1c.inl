@@ -94,7 +94,7 @@ skinning_test_ptr_t createTest1C(GpuResources* gpurec) {
     xgmanimassetptr_t _char_animasset;   // retain anim
     xgmmodelassetptr_t _char_modelasset; // retain model
     GpuResources* _gpurec = nullptr;
-    model_ptr_t _model    = nullptr;
+    xgmmodel_ptr_t _model    = nullptr;
     model_drawable_ptr_t _char_drawable;
     lev2::xgmaniminst_ptr_t _char_animinst;
     scenegraph::node_ptr_t _char_node;

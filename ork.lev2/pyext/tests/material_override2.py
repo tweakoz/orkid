@@ -13,7 +13,7 @@ from orkengine.lev2 import *
 
 ################################################################################
 
-sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
+sys.path.append((thisdir()/".."/".."/"examples"/"python").normalized.as_string) # add parent dir to path
 from common.cameras import *
 from common.shaders import *
 from common.primitives import createGridData
@@ -22,17 +22,10 @@ from common.scenegraph import createSceneGraph
 ################################################################################
 
 parser = argparse.ArgumentParser(description='scenegraph example')
-parser.add_argument('--numinstances', metavar="numinstances", help='number of mesh instances' )
-parser.add_argument('--vrmode', action="store_true", help='run in vr' )
 
 ################################################################################
 
 args = vars(parser.parse_args())
-vrmode = (args["vrmode"]==True)
-if args["numinstances"]==None:
-  numinstances = 100
-else:
-  numinstances = int(args["numinstances"])
 
 ################################################################################
 
@@ -43,22 +36,24 @@ class modelinst(object):
     super().__init__()
     self.model = model
     self.sgnode = model.createNode("node%d"%index,layer)
-    self.pos = vec3(random.uniform(-25.0,25),
-                    random.uniform(1,3),
-                    random.uniform(-25.0,25))
+
+    x = (index % 7)-3
+    z = int(index/7)-3
+
+    self.sgnode.worldTransform.translation = vec3(x*2,1,z*2)
+    self.sgnode.worldTransform.scale = 1
+
     self.rot = quat(vec3(0,1,0),0)
     incraxis = vec3(random.uniform(-1,1),
                     random.uniform(-1,1),
                     random.uniform(-1,1)).normalized()
     incrmagn = random.uniform(-0.01,0.01)
     self.rotincr = quat(incraxis,incrmagn)
-    self.scale = random.uniform(0.5,0.7)
-    self.sgnode.worldTransform.translation = self.pos 
-    self.sgnode.worldTransform.scale = self.scale
+
 
   def update(self,deltatime):
     self.rot = self.rot*self.rotincr
-    self.sgnode.worldTransform.orientation = self.rot 
+    #self.sgnode.worldTransform.orientation = self.rot 
 
 ################################################################################
 
@@ -69,24 +64,20 @@ class SceneGraphApp(object):
     self.ezapp = OrkEzApp.create(self)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
-    setupUiCamera(app=self,eye=vec3(0,0.5,3))
+    setupUiCamera(app=self,eye=vec3(0,12,15))
     self.modelinsts=[]
 
   ##############################################
 
   def onGpuInit(self,ctx):
 
-    createSceneGraph(app=self,rendermodel="PBRVR" if vrmode else "DeferredPBR")
-
-    models = []
-    models += [XgmModel("data://tests/pbr1/pbr1")]
-    models += [XgmModel("data://tests/pbr_calib.glb")]
-    models += [XgmModel("src://environ/objects/misc/ref/torus.glb")]
+    createSceneGraph(app=self,rendermodel="DeferredPBR")
 
     ###################################
 
-    for i in range(numinstances):
-      model = models[i%len(models)]
+    model = XgmModel("data://tests/pbr_calib.glb")
+
+    for i in range(49):
       self.modelinsts += [modelinst(model,self.layer1,i)]
 
     ###################################

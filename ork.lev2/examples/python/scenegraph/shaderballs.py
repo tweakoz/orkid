@@ -40,7 +40,7 @@ class modelinst(object):
     self.sgnode = model.createNode("node%d"%index,layer)
 
     x = (index%7)-3
-    z = (index/7)-3
+    z = int(index/7)-3
 
     self.sgnode.worldTransform.translation = vec3(x*2,1,z*2)
     self.sgnode.worldTransform.scale = 1
@@ -77,7 +77,7 @@ class SceneGraphApp(object):
 
     ###################################
 
-    model = Model("data://tests/pbr_calib.glb")
+    model = XgmModel("data://tests/pbr_calib.glb")
 
     for i in range(49):
       self.modelinsts += [modelinst(model,self.layer1,i)]

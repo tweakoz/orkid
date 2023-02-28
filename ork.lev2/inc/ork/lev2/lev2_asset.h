@@ -76,7 +76,7 @@ public:
     OrkAssert(this);
     return _model.atomicCopy().get();
   }
-  model_ptr_t getSharedModel() { // todo unsafe
+  xgmmodel_ptr_t getSharedModel() { // todo unsafe
     OrkAssert(this);
     return _model.atomicCopy();
   }
@@ -85,7 +85,7 @@ public:
     return _model.atomicCopy().get();
   }
 
-  LockedResource<model_ptr_t> _model;
+  LockedResource<xgmmodel_ptr_t> _model;
 };
 
 struct XgmModelLoader final : public ork::asset::FileAssetLoader {

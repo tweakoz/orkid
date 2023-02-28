@@ -319,8 +319,8 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
       }
     }
 
-    material_override_map_ptr_t override_map;
-    if( auto try_override_map = mdl->_varmap.typedValueForKey<material_override_map_ptr_t>("override.material.map") ){
+    xgmmaterial_override_map_ptr_t override_map;
+    if( auto try_override_map = mdl->_varmap.typedValueForKey<xgmmaterial_override_map_ptr_t>("override.material.map") ){
       override_map = try_override_map.value();
     }
 
@@ -378,7 +378,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
     }
     ///////////////////////////////////
     for (int imesh = 0; imesh < inummeshes; imesh++) {
-      XgmMesh* Mesh = new XgmMesh;
+      auto Mesh = std::make_shared<XgmMesh>();
 
       int itestmeshindex    = -1;
       int itestmeshname     = -1;
@@ -403,7 +403,7 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
         HeaderStream->GetItem(itestclussetindex);
         OrkAssert(ics == itestclussetindex);
 
-        XgmSubMesh* submesh = new XgmSubMesh;
+        auto submesh = std::make_shared<XgmSubMesh>();
         Mesh->AddSubMesh(submesh);
         XgmSubMesh& xgm_sub_mesh = *submesh;
 

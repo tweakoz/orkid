@@ -47,7 +47,7 @@ class SceneGraphApp(object):
 
     createSceneGraph(app=self,rendermodel="DeferredPBR")
 
-    model = Model("data://tests/pbr_calib.glb")
+    model =XgmModel("data://tests/pbr_calib.glb")
 
     ###################################
 

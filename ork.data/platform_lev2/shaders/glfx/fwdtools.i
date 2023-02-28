@@ -60,7 +60,7 @@ libblock lib_fwd
     // pixel was written to in the gbuffer
     float metallic = clamp(pbd._metallic,0.02,0.99);
     float roughness = pbd._roughness;
-    float roughnessE = roughness*roughness;
+    float roughnessE = roughness;//*roughness;
     float roughnessL = clamp(roughnessE,0.01,1.0);
     float dialetric = 1.0-metallic;
     /////////////////////////
