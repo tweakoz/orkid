@@ -30,6 +30,7 @@ parser.add_argument('--forwardpbr', action="store_true", help='use forward pbr r
 parser.add_argument("-m", "--model", type=str, required=False, default="data://tests/pbr1/pbr1", help='asset to load')
 parser.add_argument("-i", "--lightintensity", type=float, default=1.0, help='light intensity')
 parser.add_argument("-d", "--camdist", type=float, default=0.0, help='camera distance')
+parser.add_argument("-e", "--envmap", type=str, default="", help='environment map')
 
 ################################################################################
 
@@ -40,6 +41,7 @@ modelpath = args["model"]
 lightintens = args["lightintensity"]
 camdist = args["camdist"]
 fwdpbr = args["forwardpbr"]
+envmap = args["envmap"]
 
 if args["forceregen"]:
   os.environ["ORKID_LEV2_FORCE_MODEL_REGEN"] = "1"
@@ -68,7 +70,11 @@ class SceneGraphApp(object):
       "SkyboxIntensity": float(lightintens),
       "DiffuseIntensity": lightintens*float(1),
       "SpecularIntensity": lightintens*float(1),
+      "depthFogDistance": float(10000),
     }
+
+    if envmap != "":
+      params_dict["SkyboxTexPathStr"] = envmap
 
     rendermodel = "DeferredPBR"
     if fwdpbr:

@@ -407,6 +407,14 @@ using model_constptr_t = std::shared_ptr<const XgmModel>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct  MaterialOverrideMap{
+  std::unordered_map<std::string,material_ptr_t> _mtl_map;
+};
+
+using material_override_map_ptr_t = std::shared_ptr<MaterialOverrideMap>;
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct XgmModelInst final {
 
   XgmModelInst(const XgmModel* Model);

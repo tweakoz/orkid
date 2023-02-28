@@ -31,6 +31,14 @@ LoadRequest::LoadRequest(const AssetPath& p) //
 
 ///////////////////////////////////////////////////////////////////////////////
 
+LoadRequest::LoadRequest(const AssetPath& p,const vars_t& vars) //
+  : _asset_path(p)
+  , _asset_vars(vars) { //
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+
 void LoadRequest::incrementPartialLoadCount(){
   _partial_load_counter.fetch_add(1);
 }

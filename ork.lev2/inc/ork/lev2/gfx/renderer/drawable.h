@@ -345,6 +345,7 @@ struct ModelDrawableData : public DrawableData {
   ModelDrawableData(AssetPath path);
   drawable_ptr_t createDrawable() const final;
   AssetPath _assetpath;
+  asset::vars_t _asset_vars;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -371,8 +372,12 @@ struct ModelDrawable : public Drawable {
   void setEngineParamFloat(int idx, float fv);
   float getEngineParamFloat(int idx) const;
   void enqueueToRenderQueue(drawablebufitem_constptr_t, lev2::IRenderer* renderer) const final;
-  void bindModelAsset(AssetPath assetpath);
+
+  asset::loadrequest_ptr_t bindModelAsset(AssetPath assetpath);
+  asset::loadrequest_ptr_t bindModelAsset(AssetPath assetpath,asset::vars_t asset_vars);
+  void bindModelAsset(asset::loadrequest_ptr_t loadreq);
   void bindModelAsset(xgmmodelassetptr_t asset);
+
   void bindModel(model_ptr_t model);
 
   const ModelDrawableData* _data = nullptr;

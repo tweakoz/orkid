@@ -318,6 +318,12 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
         use_normalviz = true;
       }
     }
+
+    material_override_map_ptr_t override_map;
+    if( auto try_override_map = mdl->_varmap.typedValueForKey<material_override_map_ptr_t>("override.material.map") ){
+      override_map = try_override_map.value();
+    }
+
     ///////////////////////////////////
     for (int imat = 0; imat < inummats; imat++) {
       int iimat = 0, imatname = 0, imatclass = 0;
@@ -334,24 +340,41 @@ bool XgmModel::_loadXGM(XgmModel* mdl, datablock_ptr_t datablock) {
 
       static const int kdefaulttranssortpass = 100;
 
-      ///////////////////////////////////////////////////////////
-      // check xgm reader annotation
-      ///////////////////////////////////////////////////////////
-
-      auto anno = pmatclass->annotation("xgm.reader");
-      if (auto as_reader = anno.tryAs<chunkfile::materialreader_t>()) {
-        auto pmat = as_reader.value()(materialread_ctx);
-        pmat->SetName(AddPooledString(pmatname));
-        mdl->AddMaterial(pmat);
-        pmat->gpuInit(context);
+      bool do_original_shader = true;
+      if(override_map){
+        auto it = override_map->_mtl_map.find(pmatname);
+        if(it != override_map->_mtl_map.end() ){
+          auto pmat = it->second;
+          pmat->SetName(AddPooledString(pmatname));
+          mdl->AddMaterial(pmat);
+          pmat->gpuInit(context);
+          do_original_shader = false;
+        }
       }
 
       ///////////////////////////////////////////////////////////
-      // material class not supported in XGM
-      ///////////////////////////////////////////////////////////
-      else {
-        OrkAssert(false);
+
+      if(do_original_shader){
+        ///////////////////////////////////////////////////////////
+        // check xgm reader annotation
+        ///////////////////////////////////////////////////////////
+
+        auto anno = pmatclass->annotation("xgm.reader");
+        if (auto as_reader = anno.tryAs<chunkfile::materialreader_t>()) {
+          auto pmat = as_reader.value()(materialread_ctx);
+          pmat->SetName(AddPooledString(pmatname));
+          mdl->AddMaterial(pmat);
+          pmat->gpuInit(context);
+        }
+        ///////////////////////////////////////////////////////////
+        // material class not supported in XGM
+        ///////////////////////////////////////////////////////////
+        else {
+          OrkAssert(false);
+        }
+
       }
+
     }
     ///////////////////////////////////
     for (int imesh = 0; imesh < inummeshes; imesh++) {
