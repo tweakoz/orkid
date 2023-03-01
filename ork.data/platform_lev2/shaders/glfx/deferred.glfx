@@ -593,6 +593,9 @@ libblock lib_deferred
 
     if( gbd._mask==1 ){
       vec3 albedo = gbd._albedo;
+      albedo.x = pow(albedo.x,1.25);
+      albedo.y = pow(albedo.y,1.25);
+      albedo.z = pow(albedo.z,1.25);
       /////////////////////////
       if( gbd._emissive==1 )
         return albedo;
@@ -601,7 +604,7 @@ libblock lib_deferred
       /////////////////////////
       vec3 wpos = gbd._wpos;
       /////////////////////////
-      float metallic = clamp(pow(gbd._metallic,0.65),0.02,0.99);
+      float metallic = clamp(pow(gbd._metallic,0.75),0.02,0.99);
       float dialetric = 1.0-metallic;
       float roughnessL = pow(gbd._roughness,0.65);
       float roughness = clamp(roughnessL,0.01,1.0);
