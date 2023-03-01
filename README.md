@@ -47,6 +47,8 @@ Example Content (most of it old, updates coming soon.)
 
 Other (video) examples of content:
 
+[PBR ShaderBalls](https://www.youtube.com/watch?v=LtlVotV_9vg_)
+
 [SceneGraph-Picking](https://youtu.be/d39JF4ApsVw)
 
 [Deferred-PBR-SpotLightProjectors-1](https://www.youtube.com/watch?v=AwhDNZPhcBk)

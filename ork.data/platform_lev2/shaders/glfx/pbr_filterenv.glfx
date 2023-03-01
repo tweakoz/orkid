@@ -77,7 +77,7 @@ fragment_shader ps_filterSpecularEnvMap
 	vec3 o = vec3(0,0,0);
 	float w = 0;
 	//////////////////////////////////
-	float ruf = roughness*roughness;
+	float ruf = 0; //roughness;//*roughness;
 	//////////////////////////////////
 	for( uint i=0; i<1024; i++){
 		vec2 e = hammersley(i,1024);
@@ -86,7 +86,7 @@ fragment_shader ps_filterSpecularEnvMap
 		float ndotl = satdot(n, l);
 		if(ndotl > 0.0){
 			vec2 luv = env_equirectangularN2UV(l);
-		  o += texture(prefiltmap, luv).rgb * ndotl;
+		  o += textureLod(prefiltmap, luv,0).rgb * ndotl;
 		  w += ndotl;
 		}
 	}
@@ -116,8 +116,8 @@ fragment_shader ps_filterDiffuseEnvMap
 		vec3 h = importanceSampleGGXN(e,n,2);
 		vec2 luv = env_equirectangularN2UV(normalize(n+h));
 		vec2 xuv = env_equirectangularN2UV(normalize(n-h));
-	  o += texture(prefiltmap, luv).rgb;
-		o += texture(prefiltmap, xuv).rgb;
+	  o += textureLod(prefiltmap, luv,0).rgb;
+		o += textureLod(prefiltmap, xuv,0).rgb;
 	  w += 2;
 	}
 	//////////////////////////////////
