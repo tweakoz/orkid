@@ -424,7 +424,7 @@ texture_ptr_t PBRMaterial::filterDiffuseEnvMap(texture_ptr_t rawenvmap, Context*
       Image im;
       im.initWithNormalizedFloatBuffer(w, h, 4, (const float*)captureb->_data);
       CompressedImage cim;
-      im.compressDefault(cim);
+      im.compressRGBA(cim);
       compressed_levels.push_back(cim);
 
       rawenvmap->_varmap.makeValueForKey<std::shared_ptr<RtGroup>>(FormatString("alt-tex-diffenv-group-mip%d", imip))   = outgroup;

@@ -22,10 +22,12 @@ from common.scenegraph import createSceneGraph
 ################################################################################
 
 parser = argparse.ArgumentParser(description='scenegraph example')
+parser.add_argument("-e", "--envmap", type=str, default="", help='environment map')
 
 ################################################################################
 
 args = vars(parser.parse_args())
+envmap = args["envmap"]
 
 ################################################################################
 
@@ -60,6 +62,8 @@ class SceneGraphApp(object):
       "SpecularIntensity": float(1),
       "DepthFogDistance": float(10000)
     }
+    if envmap != "":
+      params_dict["SkyboxTexPathStr"] = envmap
     createSceneGraph(app=self,
                      rendermodel="DeferredPBR",
                      params_dict=params_dict)
