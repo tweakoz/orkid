@@ -96,7 +96,10 @@ class SceneGraphApp(object):
       mtl_cloned = subinst.material.clone()
       mtl_cloned.metallicFactor = float(x/8.0)
       mtl_cloned.roughnessFactor = float(z/8.0)
-      mtl_cloned.baseColor = vec4(1,0,0,1)
+      r = random.uniform(0,1)
+      g = random.uniform(0,1)
+      b = random.uniform(0,1)
+      mtl_cloned.baseColor = vec4(r,g,b,1)
       subinst.overrideMaterial(mtl_cloned)
 
       ######################

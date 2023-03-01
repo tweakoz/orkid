@@ -22,10 +22,12 @@ from common.scenegraph import createSceneGraph
 ################################################################################
 
 parser = argparse.ArgumentParser(description='scenegraph example')
+parser.add_argument("-e", "--envmap", type=str, default="", help='environment map')
 
 ################################################################################
 
 args = vars(parser.parse_args())
+envmap = args["envmap"]
 
 ################################################################################
 
@@ -62,6 +64,9 @@ class SceneGraphApp(object):
       "SpecularIntensity": float(1),
       "DepthFogDistance": float(10000)
     }
+    if envmap != "":
+      params_dict["SkyboxTexPathStr"] = envmap
+
     createSceneGraph(app=self,
                      rendermodel="DeferredPBR",
                      params_dict=params_dict)
@@ -98,7 +103,10 @@ class SceneGraphApp(object):
       mtl_cloned = subinst.material.clone()
       mtl_cloned.metallicFactor = float(x/8.0)
       mtl_cloned.roughnessFactor = float(z/8.0)
-      mtl_cloned.baseColor = vec4(1,0,0,1)
+      r = random.uniform(0,1)
+      g = random.uniform(0,1)
+      b = random.uniform(0,1)
+      mtl_cloned.baseColor = vec4(r,g,b,1)
       subinst.overrideMaterial(mtl_cloned)
 
       ######################
