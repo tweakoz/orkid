@@ -234,7 +234,7 @@ libblock lib_pbr_frg : lib_gbuf_encode {
 	void ps_common_n(vec4 modc, vec3 N,vec2 UV,bool emissive) {
 		vec3 normal = normalize(frg_tbn*N);
 		vec3 rufmtlamb = texture(MtlRufMap,UV).xyz;
-		float mtl = rufmtlamb.z * MetallicFactor;
+		float mtl = rufmtlamb.x * MetallicFactor;
 		float ruf = rufmtlamb.y * RoughnessFactor;
 		vec3 color = (modc*frg_clr*texture(ColorMap,UV)).xyz;
 		out_gbuf = packGbuffer(color,normal,ruf,mtl,emissive);
