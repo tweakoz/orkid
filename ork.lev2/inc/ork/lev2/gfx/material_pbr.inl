@@ -58,6 +58,10 @@ public:
 
   ////////////////////////////////////////////
 
+  pbrmaterial_ptr_t clone() const;
+
+  ////////////////////////////////////////////
+
   static FxShaderParamBuffer* pointLightDataBuffer(Context* targ);
   static FxShaderParamBuffer* boneDataBuffer(Context* targ);
 

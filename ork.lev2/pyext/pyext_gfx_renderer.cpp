@@ -110,51 +110,6 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
   py::class_<PointLight, Light, pointlight_ptr_t>(module_lev2, "PointLight");
   py::class_<SpotLight, Light, spotlight_ptr_t>(module_lev2, "SpotLight");
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<XgmModel, model_ptr_t>(module_lev2, "Model") //
-      .def(py::init([](const std::string& model_path) -> model_ptr_t {
-        auto loadreq    = std::make_shared<asset::LoadRequest>(model_path.c_str());
-        auto modl_asset = asset::AssetManager<XgmModelAsset>::load(loadreq);
-        return modl_asset->_model.atomicCopy();
-      }))
-      .def_property_readonly(
-          "boundingCenter", //
-          [](model_ptr_t model) -> fvec3 { //
-            return model->boundingCenter();
-          })
-      .def_property_readonly(
-          "boundingRadius", //
-          [](model_ptr_t model) -> float { //
-            return model->GetBoundingRadius();
-          })
-      .def(
-          "createNode",         //
-          [](model_ptr_t model, //
-             std::string named,
-             scenegraph::layer_ptr_t layer) -> scenegraph::node_ptr_t { //
-            auto drw        = std::make_shared<ModelDrawable>(nullptr);
-            drw->_modelinst = std::make_shared<XgmModelInst>(model.get());
-
-            auto node = layer->createDrawableNode(named, drw);
-            node->_userdata->makeValueForKey<model_ptr_t>("pyext.retain.model", model);
-            return node;
-          })
-      .def(
-          "createInstancedNode", //
-          [](model_ptr_t model,  //
-             int numinstances,
-             std::string named,
-             scenegraph::layer_ptr_t layer) -> scenegraph::drawable_node_ptr_t { //
-            auto drw = std::make_shared<InstancedModelDrawable>();
-            drw->bindModel(model);
-            auto node = layer->createDrawableNode(named, drw);
-            drw->resize(numinstances);
-            auto instdata = drw->_instancedata;
-            for (int i = 0; i < numinstances; i++) {
-              instdata->_worldmatrices[i].compose(fvec3(0, 0, 0), fquat(), 0.0f);
-            }
-            return node;
-          });
-  /////////////////////////////////////////////////////////////////////////////////
   auto camdattype = //
       py::class_<CameraData, cameradata_ptr_t>(module_lev2, "CameraData")
           .def(py::init([]() -> cameradata_ptr_t { return std::make_shared<CameraData>(); }))

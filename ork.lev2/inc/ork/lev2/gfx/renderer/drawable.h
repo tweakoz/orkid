@@ -345,6 +345,7 @@ struct ModelDrawableData : public DrawableData {
   ModelDrawableData(AssetPath path);
   drawable_ptr_t createDrawable() const final;
   AssetPath _assetpath;
+  asset::vars_t _asset_vars;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -371,15 +372,19 @@ struct ModelDrawable : public Drawable {
   void setEngineParamFloat(int idx, float fv);
   float getEngineParamFloat(int idx) const;
   void enqueueToRenderQueue(drawablebufitem_constptr_t, lev2::IRenderer* renderer) const final;
-  void bindModelAsset(AssetPath assetpath);
+
+  asset::loadrequest_ptr_t bindModelAsset(AssetPath assetpath);
+  asset::loadrequest_ptr_t bindModelAsset(AssetPath assetpath,asset::vars_t asset_vars);
+  void bindModelAsset(asset::loadrequest_ptr_t loadreq);
   void bindModelAsset(xgmmodelassetptr_t asset);
-  void bindModel(model_ptr_t model);
+
+  void bindModel(xgmmodel_ptr_t model);
 
   const ModelDrawableData* _data = nullptr;
   xgmmodelinst_ptr_t _modelinst;
   xgmworldpose_ptr_t _worldpose;
   xgmmodelassetptr_t _asset;
-  model_ptr_t _model;
+  xgmmodel_ptr_t _model;
 
   float _scale             = 1.0f;
   bool _showBoundingSphere = false;
@@ -423,13 +428,13 @@ struct InstancedModelDrawable final : public InstancedDrawable {
   ~InstancedModelDrawable();
   void enqueueToRenderQueue(drawablebufitem_constptr_t item, lev2::IRenderer* renderer) const override;
   void bindModelAsset(AssetPath assetpath);
-  void bindModel(model_ptr_t model);
+  void bindModel(xgmmodel_ptr_t model);
   void gpuInit(Context* ctx) const;
 
   const InstancedModelDrawableData* _data = nullptr;
 
   xgmmodelassetptr_t _asset;
-  model_ptr_t _model;
+  xgmmodel_ptr_t _model;
   svar16_t _impl;
 };
 

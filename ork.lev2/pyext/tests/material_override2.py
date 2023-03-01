@@ -13,7 +13,7 @@ from orkengine.lev2 import *
 
 ################################################################################
 
-sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
+sys.path.append((thisdir()/".."/".."/"examples"/"python").normalized.as_string) # add parent dir to path
 from common.cameras import *
 from common.shaders import *
 from common.primitives import createGridData
@@ -48,8 +48,10 @@ class SceneGraphApp(object):
     self.ezapp = OrkEzApp.create(self)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
-    setupUiCamera(app=self,eye=vec3(0,12,15))
     self.nodes=[]
+    self.camera = CameraData()
+    self.cameralut = CameraDataLut()
+    self.cameralut.addCamera("spawncam",self.camera)
 
   ##############################################
 
@@ -110,16 +112,17 @@ class SceneGraphApp(object):
     self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
     self.grid_node.sortkey = 1
 
-  ##############################################
-
-  def onUiEvent(self,uievent):
-    handled = self.uicam.uiEventHandler(uievent)
-    if handled:
-      self.camera.copyFrom( self.uicam.cameradata )
-
   ################################################
 
   def onUpdate(self,updinfo):
+    phase = updinfo.absolutetime * 0.2
+    x =  math.sin(phase)*10    
+    z = -math.cos(phase)*10    
+    ###################################
+    self.camera.perspective(0.1, 50.0, 35.0*constants.DTOR)
+    self.camera.lookAt(vec3(x,5,z)*2.5, # eye
+                       vec3(0, 0, 0), # tgt
+                       vec3(0, 1, 0)) # up
     self.scene.updateScene(self.cameralut) 
 
 ###############################################################################

@@ -177,10 +177,6 @@ libblock lib_gbuf_decode {
     ///////////////////////////////
     return decoded;
   }
-  /////////////////////////////////////////////////////////
-  GBufData decodeGBUF2(WPosData wpd) {
-    return decodeGBUF(wpd);
-  }
 }
 libblock lib_gbuf_encode {
   /////////////////////////////////////////////////////////
@@ -191,7 +187,7 @@ libblock lib_gbuf_encode {
     ////////////////////
     // convert
     ////////////////////
-    uint r = ucolor.r&0x00000fffu; // 12 bits
+    uint r = ucolor.r&0x00000fffu; // 12 bits (12)
     uint g = ucolor.g&0x00000fffu; // 12 bits (24)
     uint b = ucolor.b&0x00000fffu; // 12 bits (36)
     uint unx = uint((normed.x+1.0)*32767.5)&0xffffu; // 16 bits (52)

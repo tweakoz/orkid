@@ -43,11 +43,14 @@ py::object PyCodecImpl::encode(const varval_t& val) const {
       return py::bool_(as_bool.value());
     } else if (auto as_float = val.tryAs<float>()) {
       return py::float_(as_float.value());
+    } else if (auto as_double = val.tryAs<double>()) {
+      return py::float_(as_double.value());
     } else if (auto as_int = val.tryAs<int>()) {
       return py::int_(as_int.value());
     } else if (auto as_str = val.tryAs<std::string>()) {
       return py::str(as_str.value());
     } else {
+      printf( "UNKNOWNTYPE<%s>\n", val.typeName() );
       OrkAssert(false);
       throw std::runtime_error("pycodec-encode: unregistered type");
     }

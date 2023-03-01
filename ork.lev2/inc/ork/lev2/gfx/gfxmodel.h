@@ -83,8 +83,6 @@ public:
   }
 };
 
-using xgmprimgroup_ptr_t = std::shared_ptr<XgmPrimGroup>;
-
 ///////////////////////////////////////////////////////////////////////////////
 
 struct XgmCluster final { // Run Time Cluster
@@ -121,9 +119,6 @@ struct XgmCluster final { // Run Time Cluster
   Sphere mBoundingSphere;
 };
 
-using xgmcluster_ptr_t      = std::shared_ptr<XgmCluster>;
-using xgmcluster_ptr_list_t = std::vector<xgmcluster_ptr_t>;
-
 ///////////////////////////////////////////////////////////////////////////////
 
 struct XgmSubMesh final // Run Time Cluster Set
@@ -152,7 +147,6 @@ struct XgmSubMesh final // Run Time Cluster Set
   void dump() const;
 }; // namespace ork::lev2
 
-using xgmsubmesh_ptr_t = std::shared_ptr<XgmSubMesh>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -160,12 +154,15 @@ struct XgmSubMeshInst {
 
   XgmSubMeshInst(const XgmSubMesh* submesh);
 
+  material_ptr_t material() const;
+  void overrideMaterial(material_ptr_t m);
+
   const XgmSubMesh* _submesh = nullptr;
   bool _enabled = true;
   fxpipelinecache_constptr_t _fxpipelinecache;
+  material_ptr_t _override_material;
 };
 
-using xgmsubmeshinst_ptr_t = std::shared_ptr<XgmSubMeshInst>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -201,10 +198,10 @@ struct XgmMesh final {
   bool CheckFlags(U32 flags) const {
     return ((flags & muFlags) == flags);
   }
-  const XgmSubMesh* subMesh(int idx) const {
+  xgmsubmesh_constptr_t subMesh(int idx) const {
     return mSubMeshes[idx];
   }
-  XgmSubMesh* subMesh(int idx) {
+  xgmsubmesh_ptr_t subMesh(int idx) {
     return mSubMeshes[idx];
   }
   const PoolString& meshName() const {
@@ -220,14 +217,14 @@ struct XgmMesh final {
   void ReserveSubMeshes(int icount) {
     mSubMeshes.reserve(icount);
   }
-  void AddSubMesh(XgmSubMesh* psubmesh) {
+  void AddSubMesh(xgmsubmesh_ptr_t psubmesh) {
     psubmesh->_parentmesh = this;
     mSubMeshes.push_back(psubmesh);
   }
   void dump() const;
   /////////////////////////////////////
 
-  orkvector<XgmSubMesh*> mSubMeshes;
+  orkvector<xgmsubmesh_ptr_t> mSubMeshes;
   fvec4 mvBoundingBoxMin;
   fvec4 mvBoundingBoxMax;
   U32 muFlags;
@@ -238,6 +235,7 @@ struct XgmMesh final {
   int miMeshIndex;
 };
 
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct XgmModel final {
@@ -247,7 +245,7 @@ struct XgmModel final {
   void ReserveMeshes(int icount) {
     mMeshes.reserve(icount);
   }
-  void AddMesh(const PoolString& name, XgmMesh* pmesh) {
+  void AddMesh(const PoolString& name, xgmmesh_ptr_t pmesh) {
     mMeshes.AddSorted(name, pmesh);
   }
 
@@ -281,17 +279,17 @@ struct XgmModel final {
     return mSkeleton;
   }
 
-  const XgmMesh* mesh(int idx) const {
+  xgmmesh_constptr_t mesh(int idx) const {
     return mMeshes.GetItemAtIndex(idx).second;
   }
-  XgmMesh* mesh(int idx) {
+  xgmmesh_ptr_t mesh(int idx) {
     return mMeshes.GetItemAtIndex(idx).second;
   }
 
-  const XgmMesh* mesh(const PoolString& name) const {
+  xgmmesh_constptr_t mesh(const PoolString& name) const {
     return mMeshes.find(name)->second;
   }
-  XgmMesh* mesh(const PoolString& name) {
+  xgmmesh_ptr_t mesh(const PoolString& name) {
     return mMeshes.find(name)->second;
   }
   int meshIndex(const PoolString& name) const;
@@ -386,7 +384,7 @@ struct XgmModel final {
 
   asset::loadrequest_ptr_t _getLoadRequest();
 
-  orklut<PoolString, XgmMesh*> mMeshes;
+  orklut<PoolString, xgmmesh_ptr_t> mMeshes;
   orkvector<material_ptr_t> mvMaterials;
   int miBonesPerCluster;
   XgmSkeleton mSkeleton;
@@ -402,8 +400,13 @@ struct XgmModel final {
   XgmModelAsset* _asset = nullptr;
 };
 
-using model_ptr_t      = std::shared_ptr<XgmModel>;
-using model_constptr_t = std::shared_ptr<const XgmModel>;
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct  XgmMaterialOverrideMap{
+  std::unordered_map<std::string,material_ptr_t> _mtl_map;
+};
+
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -427,8 +430,8 @@ struct XgmModelInst final {
   void enableMesh(const PoolString& ps);
   void disableMesh(const PoolString& ps);
 
-  void enableMesh(const XgmMesh* mesh);
-  void disableMesh(const XgmMesh* mesh);
+  void enableMesh(xgmmesh_constptr_t mesh);
+  void disableMesh(xgmmesh_constptr_t mesh);
 
   void enableAllMeshes();
   void disableAllMeshes();
@@ -460,8 +463,6 @@ struct XgmModelInst final {
 
 };
 
-using xgmmodelinst_ptr_t      = std::shared_ptr<XgmModelInst>;
-using xgmmodelinst_constptr_t = std::shared_ptr<const XgmModelInst>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

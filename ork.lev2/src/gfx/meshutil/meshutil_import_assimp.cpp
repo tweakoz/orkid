@@ -716,7 +716,7 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
   //auto& out_embtexmap = out_model._varmap.makeValueForKey<lev2::embtexmap_t>("embtexmap") = inp_embtexmap;
 
   out_model.ReserveMeshes(inp_model.RefSubMeshLut().size());
-  ork::lev2::XgmMesh* out_mesh = new ork::lev2::XgmMesh;
+  auto out_mesh = std::make_shared<ork::lev2::XgmMesh>();
   out_mesh->SetMeshName("Mesh1"_pool);
   out_model.AddMesh("Mesh1"_pool, out_mesh);
 
@@ -823,7 +823,7 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
       auto pbr_material = subrec._pbrmaterial;
       auto clusterizer  = subrec._clusterizer;
 
-      auto xgm_submesh       = new ork::lev2::XgmSubMesh;
+      auto xgm_submesh       = std::make_shared<ork::lev2::XgmSubMesh>();
       xgm_submesh->_material = pbr_material;
       out_mesh->AddSubMesh(xgm_submesh);
       subindex++;

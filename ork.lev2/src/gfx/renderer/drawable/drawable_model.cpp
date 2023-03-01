@@ -7,14 +7,39 @@
 
 #include <ork/pch.h>
 #include <ork/kernel/opq.h>
+#include <ork/kernel/orklut.hpp>
+#include <ork/kernel/string/string.h>
+#include <ork/reflect/properties/DirectTypedMap.h>
+#include <ork/reflect/properties/DirectTypedMap.hpp>
+#include <ork/reflect/properties/registerX.inl>
+#include <ork/util/logger.h>
+#include <ork/lev2/lev2_asset.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/gfx/gfxmodel.h>
-#include <ork/util/logger.h>
 
 namespace ork::lev2 {
 static logchannel_ptr_t logchan_model = logger()->createChannel("model",fvec3(0.9,0.2,0.9),false);
+///////////////////////////////////////////////////////////////////////////////
+
+void ModelDrawableData::describeX(object::ObjectClass* clazz){
+  clazz->directProperty("assetpath", &ModelDrawableData::_assetpath);
+  clazz->directMapProperty("assetvars", &ModelDrawableData::_assetvars);
+}
+
+ModelDrawableData::ModelDrawableData(AssetPath path) : _assetpath(path) {
+}
+///////////////////////////////////////////////////////////////////////////////
+drawable_ptr_t ModelDrawableData::createDrawable() const {
+  auto drw = std::make_shared<ModelDrawable>(nullptr);
+  drw->_data = this;
+  drw->bindModelAsset(_assetpath);
+  drw->_modcolor = _modcolor;
+  drw->_name = _assetpath.c_str();
+  return drw;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 ModelDrawable::ModelDrawable(DrawableOwner* pent) {
   for (int i = 0; i < kMaxEngineParamFloats; i++)
@@ -47,13 +72,27 @@ void ModelDrawable::bindModelInst(xgmmodelinst_ptr_t minst) {
   SetUserDataA(ap);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ModelDrawable::bindModelAsset(AssetPath assetpath) {
+asset::loadrequest_ptr_t ModelDrawable::bindModelAsset(AssetPath assetpath) {
+  auto load_req = std::make_shared<asset::LoadRequest>(assetpath);
+  bindModelAsset(load_req);
+  return load_req;
+}
+///////////////////////////////////////////////////////////////////////////////
+asset::loadrequest_ptr_t ModelDrawable::bindModelAsset( AssetPath assetpath, asset::vars_t asset_vars){
+
+  auto load_req = std::make_shared<asset::LoadRequest>(assetpath);
+  load_req->_asset_vars = asset_vars;
+  bindModelAsset(load_req);
+  return load_req;
+}
+///////////////////////////////////////////////////////////////////////////////
+void ModelDrawable::bindModelAsset( asset::loadrequest_ptr_t load_req){
+
+  auto assetpath = load_req->_asset_path;
 
   logchan_model->log("drw<%s> bindModelAsset(%s)", _name.c_str(), assetpath.c_str() );
 
   ork::opq::assertOnQueue(opq::mainSerialQueue());
-
-  auto load_req = std::make_shared<asset::LoadRequest>(assetpath);
 
   if (_data) {
 
@@ -86,12 +125,13 @@ void ModelDrawable::bindModelAsset(AssetPath assetpath) {
   _asset = asset::AssetManager<XgmModelAsset>::load(load_req);
   bindModel(_asset->_model.atomicCopy());
 }
+///////////////////////////////////////////////////////////////////////////////
 void ModelDrawable::bindModelAsset(xgmmodelassetptr_t asset) {
   _asset = asset;
   bindModel(_asset->_model.atomicCopy());
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ModelDrawable::bindModel(model_ptr_t model) {
+void ModelDrawable::bindModel(xgmmodel_ptr_t model) {
   logchan_model->log("drw<%s> bindModel(%p)", _name.c_str(), (void*) model.get() );
   _model         = model;
   auto modelinst = std::make_shared<XgmModelInst>(_model.get());
@@ -312,3 +352,4 @@ uint32_t ModelRenderable::ComposeSortKey(const IRenderer* renderer) const {
 }
 /////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
+ImplementReflectionX(ork::lev2::ModelDrawableData, "ModelDrawableData");

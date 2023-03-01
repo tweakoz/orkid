@@ -13,52 +13,21 @@ from orkengine.lev2 import *
 
 ################################################################################
 
-sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
+sys.path.append((thisdir()/".."/".."/"examples"/"python").normalized.as_string) # add parent dir to path
 from common.cameras import *
 from common.shaders import *
+from common.misc import *
 from common.primitives import createGridData
 from common.scenegraph import createSceneGraph
 
 ################################################################################
 
 parser = argparse.ArgumentParser(description='scenegraph example')
-parser.add_argument('--numinstances', metavar="numinstances", help='number of mesh instances' )
-parser.add_argument('--vrmode', action="store_true", help='run in vr' )
 
 ################################################################################
 
 args = vars(parser.parse_args())
-vrmode = (args["vrmode"]==True)
-if args["numinstances"]==None:
-  numinstances = 100
-else:
-  numinstances = int(args["numinstances"])
-
-################################################################################
-
-class modelinst(object):
-
-  def __init__(self,model,layer, index):
-
-    super().__init__()
-    self.model = model
-    self.sgnode = model.createNode("node%d"%index,layer)
-    self.pos = vec3(random.uniform(-25.0,25),
-                    random.uniform(1,3),
-                    random.uniform(-25.0,25))
-    self.rot = quat(vec3(0,1,0),0)
-    incraxis = vec3(random.uniform(-1,1),
-                    random.uniform(-1,1),
-                    random.uniform(-1,1)).normalized()
-    incrmagn = random.uniform(-0.01,0.01)
-    self.rotincr = quat(incraxis,incrmagn)
-    self.scale = random.uniform(0.5,0.7)
-    self.sgnode.worldTransform.translation = self.pos 
-    self.sgnode.worldTransform.scale = self.scale
-
-  def update(self,deltatime):
-    self.rot = self.rot*self.rotincr
-    self.sgnode.worldTransform.orientation = self.rot 
+numinstances = 500
 
 ################################################################################
 
@@ -76,17 +45,32 @@ class SceneGraphApp(object):
 
   def onGpuInit(self,ctx):
 
-    createSceneGraph(app=self,rendermodel="PBRVR" if vrmode else "DeferredPBR")
+    createSceneGraph(app=self,rendermodel="DeferredPBR")
 
-    models = []
-    models += [XgmModel("data://tests/pbr1/pbr1")]
-    models += [XgmModel("data://tests/pbr_calib.glb")]
-    models += [XgmModel("src://environ/objects/misc/ref/torus.glb")]
+    model =XgmModel("data://tests/pbr_calib.glb")
+    print(model)
+    print(model.materials)
+    print(model.meshes)
+    for mesh in model.meshes:
+      print(mesh.submeshes)
+      print(mesh.boundingRadius)
+      print(mesh.boundingCenter)
+      for submesh in mesh.submeshes:
+        print(submesh)
+        print(submesh.material)
+        print(submesh.material.colorMapName)
+        print(submesh.material.normalMapName)
+        print(submesh.material.mtlRufMapName)
+        print(submesh.material.amboccMapName)
+        print(submesh.material.emissiveMapName)
+        print(submesh.material.texColor)
+        print(submesh.material.texNormal)
+        print(submesh.material.texMtlRuf)
+        print(submesh.material.texEmissive)
 
     ###################################
 
     for i in range(numinstances):
-      model = models[i%len(models)]
       self.modelinsts += [modelinst(model,self.layer1,i)]
 
     ###################################

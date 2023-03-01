@@ -96,6 +96,67 @@ MsaaSamples intToMsaaEnum( int samples ){
   return rval;
 }
 
+std::string EBufferFormatToName(EBufferFormat fmt){
+  std::string rval;
+  switch(fmt){
+    case EBufferFormat::NONE:
+      rval = "NONE";
+      break;
+    case EBufferFormat::R8:
+      rval = "R8";
+      break;
+    case EBufferFormat::R16:
+      rval = "R16";
+      break;
+    case EBufferFormat::BGR5A1:
+      rval = "BGR5A1";
+      break;
+    case EBufferFormat::BGR8:
+      rval = "BGR8";
+      break;
+    case EBufferFormat::RGB8:
+      rval = "RGB8";
+      break;
+    case EBufferFormat::BGRA8:
+      rval = "BGRA8";
+      break;
+    case EBufferFormat::RGBA8:
+      rval = "RGBA8";
+      break;
+    case EBufferFormat::RGBA16F:
+      rval = "RGBA16F";
+      break;
+    case EBufferFormat::RGBA32F:
+      rval = "RGBA32F";
+      break;
+    case EBufferFormat::YUV420P:
+      rval = "YUV420P";
+      break;
+    case EBufferFormat::Z32:
+      rval = "Z32";
+      break;
+    case EBufferFormat::RGBA_BPTC_UNORM:
+      rval = "RGBA_BPTC_UNORM";
+      break;
+    case EBufferFormat::SRGB_ALPHA_BPTC_UNORM:
+      rval = "SRGB_ALPHA_BPTC_UNORM";
+      break;
+    case EBufferFormat::S3TC_DXT1:
+      rval = "S3TC_DXT1";
+      break;
+    case EBufferFormat::S3TC_DXT3:
+      rval = "S3TC_DXT3";
+      break;
+    case EBufferFormat::S3TC_DXT5:
+      rval = "S3TC_DXT5";
+      break;
+    default:
+      OrkAssert(false);
+      break;
+  }
+  return rval;
+}
+
 
 extern std::atomic<int> __FIND_IT;
 int G_MSAASAMPLES = 4;

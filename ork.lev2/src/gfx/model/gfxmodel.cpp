@@ -17,7 +17,7 @@
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/material_freestyle.h>
 
-template class ork::orklut<ork::PoolString, ork::lev2::XgmMesh*>;
+template class ork::orklut<ork::PoolString, ork::lev2::xgmmesh_ptr_t>;
 int eggtestcount = 0;
 namespace ork { namespace lev2 {
 
@@ -35,15 +35,12 @@ XgmModel::XgmModel()
 }
 
 XgmModel::~XgmModel() {
-  for (orklut<PoolString, XgmMesh*>::iterator it = mMeshes.begin(); it != mMeshes.end(); it++)
-    delete it->second;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 int XgmModel::meshIndex(const PoolString& name) const {
-  orklut<PoolString, XgmMesh*>::const_iterator it = mMeshes.find(name);
-
+  auto it = mMeshes.find(name);
   return (it == mMeshes.end()) ? -1 : int(it - mMeshes.begin());
 }
 
@@ -75,7 +72,7 @@ XgmModelInst::XgmModelInst(const XgmModel* Model)
     int numsubmeshes = mesh->numSubMeshes();
     for (int j = 0; j < numsubmeshes; j++) {
       auto submesh = mesh->subMesh(j);
-      auto smi     = std::make_shared<XgmSubMeshInst>(submesh);
+      auto smi     = std::make_shared<XgmSubMeshInst>(submesh.get());
       _submeshinsts.push_back(smi);
     }
   }
@@ -88,6 +85,17 @@ XgmSubMeshInst::XgmSubMeshInst(const XgmSubMesh* submesh)
     , _enabled(true) {
 
   _fxpipelinecache = submesh->_material->pipelineCache();
+  OrkAssert(_fxpipelinecache);
+}
+
+material_ptr_t XgmSubMeshInst::material() const {
+  if(_override_material) return _override_material;
+  return _submesh->_material;
+}
+
+void XgmSubMeshInst::overrideMaterial(material_ptr_t m){
+  _override_material = m;
+  _fxpipelinecache = m->pipelineCache();
   OrkAssert(_fxpipelinecache);
 }
 
@@ -112,20 +120,20 @@ void XgmModelInst::disableMesh(const PoolString& ps) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmModelInst::enableMesh(const XgmMesh* mesh) {
+void XgmModelInst::enableMesh(xgmmesh_constptr_t mesh) {
   for (auto submeshinst : _submeshinsts) {
     auto item_mesh = submeshinst->_submesh->_parentmesh;
-    if (item_mesh == mesh)
+    if (item_mesh == mesh.get())
       submeshinst->_enabled = true;
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmModelInst::disableMesh(const XgmMesh* mesh) {
+void XgmModelInst::disableMesh(xgmmesh_constptr_t mesh) {
   for (auto submeshinst : _submeshinsts) {
     auto item_mesh = submeshinst->_submesh->_parentmesh;
-    if (item_mesh == mesh)
+    if (item_mesh == mesh.get())
       submeshinst->_enabled = false;
   }
 }
@@ -215,9 +223,8 @@ XgmMesh::XgmMesh(XgmMesh* pMesh) {
   mSubMeshes.reserve(inumsubmeshes);
 
   for (int i = 0; i < inumsubmeshes; i++) {
-    XgmSubMesh* psrcmesh  = pMesh->subMesh(i);
-    XgmSubMesh* pdestmesh = subMesh(i);
-    new (pdestmesh) XgmSubMesh(*psrcmesh);
+    auto psrcmesh  = pMesh->subMesh(i);
+    mSubMeshes[i] = std::make_shared<XgmSubMesh>(*psrcmesh);
   }
 }
 
@@ -231,8 +238,6 @@ XgmMesh::XgmMesh()
 }
 
 XgmMesh::~XgmMesh() {
-  for (orkvector<XgmSubMesh*>::iterator it = mSubMeshes.begin(); it != mSubMeshes.end(); it++)
-    delete (*it);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

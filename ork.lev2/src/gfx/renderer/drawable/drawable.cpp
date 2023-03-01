@@ -27,7 +27,6 @@
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::DrawableOwner, "DrawableOwner");
 
 ImplementReflectionX(ork::lev2::DrawableData, "DrawableData");
-ImplementReflectionX(ork::lev2::ModelDrawableData, "ModelDrawableData");
 
 namespace ork::lev2 {
 
@@ -40,26 +39,6 @@ void DrawableData::describeX(object::ObjectClass* clazz){
 DrawableData::DrawableData(){
   _modcolor = fvec4(1,1,1,1);
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
-void ModelDrawableData::describeX(object::ObjectClass* clazz){
-  clazz->directProperty("assetpath", &ModelDrawableData::_assetpath);
-  clazz->directMapProperty("assetvars", &ModelDrawableData::_assetvars);
-}
-
-ModelDrawableData::ModelDrawableData(AssetPath path) : _assetpath(path) {
-}
-///////////////////////////////////////////////////////////////////////////////
-drawable_ptr_t ModelDrawableData::createDrawable() const {
-  auto drw = std::make_shared<ModelDrawable>(nullptr);
-  drw->_data = this;
-  drw->bindModelAsset(_assetpath);
-  drw->_modcolor = _modcolor;
-  drw->_name = _assetpath.c_str();
-  return drw;
-}
-
 
 ///////////////////////////////////////////////////////////////////////////////
 

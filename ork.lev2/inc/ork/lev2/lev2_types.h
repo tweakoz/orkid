@@ -127,11 +127,36 @@ using standardcompositorframe_ptr_t = std::shared_ptr<StandardCompositorFrame>;
 // class Manip;
 // class ManipManager;
 ///////////////////////////////////////////////////////////////////////////////
-struct XgmMesh;
+struct XgmPrimGroup;
 struct XgmCluster;
 struct XgmSubMesh;
-struct XgmModelInst;
+struct XgmSubMeshInst;
+struct XgmMesh;
 struct XgmModel;
+struct XgmModelInst;
+struct XgmMaterialOverrideMap;
+
+using xgmprimgroup_ptr_t = std::shared_ptr<XgmPrimGroup>;
+
+using xgmcluster_ptr_t      = std::shared_ptr<XgmCluster>;
+using xgmcluster_ptr_list_t = std::vector<xgmcluster_ptr_t>;
+
+using xgmsubmesh_ptr_t = std::shared_ptr<XgmSubMesh>;
+using xgmsubmesh_constptr_t = std::shared_ptr<const XgmSubMesh>;
+
+using xgmsubmeshinst_ptr_t = std::shared_ptr<XgmSubMeshInst>;
+
+using xgmmesh_ptr_t = std::shared_ptr<XgmMesh>;
+using xgmmesh_constptr_t = std::shared_ptr<const XgmMesh>;
+
+using xgmmodel_ptr_t      = std::shared_ptr<XgmModel>;
+using xgmmodel_constptr_t = std::shared_ptr<const XgmModel>;
+
+using xgmmodelinst_ptr_t      = std::shared_ptr<XgmModelInst>;
+using xgmmodelinst_constptr_t = std::shared_ptr<const XgmModelInst>;
+
+using xgmmaterial_override_map_ptr_t = std::shared_ptr<XgmMaterialOverrideMap>;
+
 ///////////////////////////////////////////////////////////////////////////////
 struct XgmAnim;
 struct XgmAnimMask;

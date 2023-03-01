@@ -77,7 +77,7 @@ fragment_shader ps_filterSpecularEnvMap
 	vec3 o = vec3(0,0,0);
 	float w = 0;
 	//////////////////////////////////
-	float ruf = roughness;//*roughness;
+	float ruf = roughness*roughness;
 	//////////////////////////////////
 	for( uint i=0; i<1024; i++){
 		vec2 e = hammersley(i,1024);

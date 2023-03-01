@@ -26,6 +26,7 @@ struct LoadRequest{
 
   LoadRequest();
   LoadRequest(const AssetPath& p);
+  LoadRequest(const AssetPath& p,const vars_t& _asset_vars);
 
   void incrementPartialLoadCount();
   void decrementPartialLoadCount();

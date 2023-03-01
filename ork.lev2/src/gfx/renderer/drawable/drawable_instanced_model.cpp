@@ -46,13 +46,13 @@ InstancedModelDrawable::~InstancedModelDrawable() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 struct IMDIMPL_SUBMESH {
-  const XgmSubMesh* _xgmsubmesh = nullptr;
+  xgmsubmesh_constptr_t _xgmsubmesh = nullptr;
   fxpipelinecache_constptr_t _fxcache;
 };
 struct IMDIMPL_MODEL {
   std::vector<IMDIMPL_SUBMESH> _submeshes;
 };
-using imdimpl_model_ptr_t = std::shared_ptr<IMDIMPL_MODEL>;
+using imdimpl_xgmmodel_ptr_t = std::shared_ptr<IMDIMPL_MODEL>;
 
 ///////////////////////////////////////////////////////////////////////////////
 void InstancedModelDrawable::bindModelAsset(AssetPath assetpath) {
@@ -61,11 +61,11 @@ void InstancedModelDrawable::bindModelAsset(AssetPath assetpath) {
   bindModel(_asset->_model.atomicCopy());
 }
 ///////////////////////////////////////////////////////////////////////////////
-void InstancedModelDrawable::bindModel(model_ptr_t model) {
+void InstancedModelDrawable::bindModel(xgmmodel_ptr_t model) {
   _model = model;
   // generate material instance data
   auto impl = std::make_shared<IMDIMPL_MODEL>();
-  _impl.set<imdimpl_model_ptr_t>(impl);
+  _impl.set<imdimpl_xgmmodel_ptr_t>(impl);
   int inummeshes = _model->numMeshes();
   for (int imesh = 0; imesh < inummeshes; imesh++) {
     auto mesh       = _model->mesh(imesh);
@@ -97,7 +97,7 @@ void InstancedModelDrawable::enqueueToRenderQueue(
   ////////////////////////////////////////////////////////////////////
   if (not _model)
     return;
-  if (not _impl.isA<imdimpl_model_ptr_t>())
+  if (not _impl.isA<imdimpl_xgmmodel_ptr_t>())
     return;
   ////////////////////////////////////////////////////////////////////
   auto context                         = renderer->GetTarget();
