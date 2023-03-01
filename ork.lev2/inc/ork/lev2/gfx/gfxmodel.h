@@ -83,8 +83,6 @@ public:
   }
 };
 
-using xgmprimgroup_ptr_t = std::shared_ptr<XgmPrimGroup>;
-
 ///////////////////////////////////////////////////////////////////////////////
 
 struct XgmCluster final { // Run Time Cluster
@@ -121,9 +119,6 @@ struct XgmCluster final { // Run Time Cluster
   Sphere mBoundingSphere;
 };
 
-using xgmcluster_ptr_t      = std::shared_ptr<XgmCluster>;
-using xgmcluster_ptr_list_t = std::vector<xgmcluster_ptr_t>;
-
 ///////////////////////////////////////////////////////////////////////////////
 
 struct XgmSubMesh final // Run Time Cluster Set
@@ -159,9 +154,13 @@ struct XgmSubMeshInst {
 
   XgmSubMeshInst(const XgmSubMesh* submesh);
 
+  material_ptr_t material() const;
+  void overrideMaterial(material_ptr_t m);
+
   const XgmSubMesh* _submesh = nullptr;
   bool _enabled = true;
   fxpipelinecache_constptr_t _fxpipelinecache;
+  material_ptr_t _override_material;
 };
 
 

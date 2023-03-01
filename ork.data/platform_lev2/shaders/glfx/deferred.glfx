@@ -502,7 +502,7 @@ libblock lib_deferred
   }
   /////////////////////////////////////////////////////////
   vec3 pbrEnvironmentLightingSDF(WPosData wpd){
-    GBufData gbd = decodeGBUF2(wpd);
+    GBufData gbd = decodeGBUF(wpd);
     float depth_fogval = saturateF(pow(gbd._fogZ*DepthFogDistance,DepthFogPower));
     if(depth_fogval>=1.0) depth_fogval= 0.0;
     else 
@@ -576,7 +576,7 @@ libblock lib_deferred
   /////////////////////////////////////////////////////////
   vec3 pbrEnvironmentLighting(WPosData wpd){
 
-    GBufData gbd = decodeGBUF2(wpd);
+    GBufData gbd = decodeGBUF(wpd);
 
     vec2 uv   = wpd._muv;
     vec3 view_epos0 = posatdepth(wpd,0.0);
@@ -588,34 +588,33 @@ libblock lib_deferred
     vec3 out_color;
 
     if( gbd._mask==1 ){
-      vec3 wpos = gbd._wpos;
-      vec3 metalbase = vec3(0.04);
-      /////////////////////////
-      //vec3 albedo = gbd._wnrm;
       vec3 albedo = gbd._albedo;
-      /////////////////////////
-      vec3 rawn = gbd._wnrm;
       /////////////////////////
       if( gbd._emissive==1 )
         return albedo;
       /////////////////////////
       // pixel was written to in the gbuffer
-      float metallic = clamp(gbd._metallic,0.02,0.99);
-      float roughness = gbd._roughness;
-      float roughnessE = roughness;//*roughness;
-      float roughnessL = clamp(roughnessE,0.01,1.0);
+      /////////////////////////
+      vec3 wpos = gbd._wpos;
+      /////////////////////////
+      vec3 metalbase = vec3(0.04);
+      float metallic = clamp(pow(gbd._metallic,0.5),0.02,0.99);
       float dialetric = 1.0-metallic;
+      float roughnessL = pow(gbd._roughness,0.5);
+      float roughness = clamp(roughnessL,0.01,1.0);
+      float smoothness = 1.0-roughness;
       /////////////////////////
       vec3 basecolor = albedo;
       vec3 diffcolor = mix(basecolor,vec3(0),metallic);
       /////////////////////////
       vec3 epos = posatdepth(wpd,0.0);
       vec3 edir = normalize(wpos-epos);
-      vec3 n    = rawn; //normalize(rawn*2-vec3(1));
-      vec3 refl = normalize(reflect(edir,n));
+      vec3 N    = gbd._wnrm; 
+      vec3 refl = normalize(reflect(edir,N));
       /////////////////////////
-      float costheta = clamp(dot(n, edir),0.01,1.0);
-      vec2 brdf  = textureLod(MapBrdfIntegration, vec2(costheta,pow(roughnessL,0.25)),0).rg;
+      float costheta = clamp(dot(N, edir),0.01,1.0);
+      vec2 brdf_coord = vec2(costheta,smoothness);
+      vec2 brdf  = textureLod(MapBrdfIntegration, brdf_coord,0).rg;
       ///////////////////////////
       // somethings wrong with the brdf output here
       //   we get speckled black noise
@@ -626,36 +625,34 @@ libblock lib_deferred
       brdf = clamp(brdf,vec2(.001),vec2(1));
       /////////////////////////
       vec3 F0 = mix(metalbase,basecolor,metallic);
-      vec3 G0 = mix(metalbase,basecolor,1.0-metallic);
-      vec3 F        = fresnelSchlickRoughness(costheta, F0, roughnessL);
-      vec3 invF     = (vec3(1)-F);
-      vec3 diffn = vec3(n.x,n.y,n.z);
+      vec3 G0 = mix(basecolor,vec3(1),dialetric);
+      vec3 F        = fresnelSchlickRoughness(costheta, F0, roughness);
+      //vec3 G        = fresnelSchlickRoughness(costheta, G0, roughness);
       /////////////////////////
       float ambocc = 1.0;
-      float ambientshade = ambocc*clamp(dot(n,-edir),0,1)*0.3+0.7;
+      float ambientshade = ambocc*clamp(dot(N,-edir),0,1)*0.3+0.7;
       vec3 ambient = AmbientLevel*ambientshade;
-      vec3 diffuse_env = env_equirectangular(diffn,MapDiffuseEnv,0)*SkyboxLevel*DiffuseLevel;
+      vec3 diffuse_env = env_equirectangular(N,MapDiffuseEnv,0)*SkyboxLevel*DiffuseLevel;
       vec3 diffuse_light = ambient+diffuse_env;
       /////////////////////////
-      vec3 diffuse = clamp(basecolor*diffuse_light*dialetric*ambocc,0,10000);
+      vec3 diffuse = clamp(roughness*diffcolor*diffuse_light*ambocc,0,10000);
       /////////////////////////
-      float spec_miplevel = clamp(SpecularMipBias + (roughnessL*EnvironmentMipScale), 0, 13);
+      float spec_miplevel = clamp(SpecularMipBias + (roughness*EnvironmentMipScale)*0.5, 0.0, 5.0);
       refl = vec3(refl.x,-refl.y,refl.z);
       vec3 spec_env = env_equirectangularFlipV(refl,
                                                MapSpecularEnv,
                                                spec_miplevel);
-      vec3 specular_light = ambient+spec_env;
-      //vec3 specularC = specular_light*G0*SpecularLevel*SkyboxLevel;
-      vec3 specularC = specular_light*F0*SpecularLevel*SkyboxLevel;
+
+      vec3 specularC = mix(spec_env*F0,spec_env*G0*smoothness,dialetric);
+                     //+ diffuse_env*F0;
+
       vec3 specularMask = (F*brdf.x+brdf.y);
-      vec3 specular = specularMask*specularC;
+      vec3 specular = specularMask*specularC*SpecularLevel*SkyboxLevel;
       //vec3 ambient = invF*AmbientLevel;
       /////////////////////////
       vec3 finallitcolor = saturateV(diffuse+specular);
       float depth_fogval = saturateF(pow(gbd._fogZ*DepthFogDistance,DepthFogPower));
       vec3 skyboxColor = env_equirectangularFlipV(skybox_n,MapSpecularEnv,0)*SkyboxLevel;
-      //out_color = vec3(0,roughnessL,metallic); 
-      //out_color = spec_env; 
       out_color = mix(finallitcolor,skyboxColor,depth_fogval);
     }
     else {

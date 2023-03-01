@@ -86,7 +86,7 @@ class SceneGraphApp(object):
                       params_dict=params_dict,
                       rendermodel=rendermodel )
 
-    self.model = Model(modelpath)
+    self.model = XgmModel(modelpath)
     self.sgnode = self.model.createNode("node",self.layer1)
 
     center = self.model.boundingCenter

@@ -88,6 +88,17 @@ XgmSubMeshInst::XgmSubMeshInst(const XgmSubMesh* submesh)
   OrkAssert(_fxpipelinecache);
 }
 
+material_ptr_t XgmSubMeshInst::material() const {
+  if(_override_material) return _override_material;
+  return _submesh->_material;
+}
+
+void XgmSubMeshInst::overrideMaterial(material_ptr_t m){
+  _override_material = m;
+  _fxpipelinecache = m->pipelineCache();
+  OrkAssert(_fxpipelinecache);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 XgmModelInst::~XgmModelInst() {

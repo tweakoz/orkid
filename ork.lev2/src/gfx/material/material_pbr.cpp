@@ -651,15 +651,19 @@ void PBRMaterial::describeX(class_t* c) {
         // logchan_pbr->log(" embtex<%p> datablock<%p> len<%zu>", embtex, datablock.get(), datablock->length());
         if (0 == strcmp(token, "colormap")) {
           mtl->_texColor = tex;
+          mtl->_colorMapName = texname;
         }
         if (0 == strcmp(token, "normalmap")) {
           mtl->_texNormal = tex;
+          mtl->_normalMapName = texname;
         }
         if (0 == strcmp(token, "mtlrufmap")) {
           mtl->_texMtlRuf = tex;
+          mtl->_mtlRufMapName = texname;
         }
         if (0 == strcmp(token, "emissivemap")) {
           mtl->_texEmissive = tex;
+          mtl->_emissiveMapName = texname;
         }
       }
     }
@@ -1051,6 +1055,14 @@ void PBRMaterial::begin(const RenderContextFrameData& RCFD) {
 ////////////////////////////////////////////
 
 void PBRMaterial::end(const RenderContextFrameData& RCFD) {
+}
+
+////////////////////////////////////////////
+
+pbrmaterial_ptr_t PBRMaterial::clone() const {
+  auto copy = std::make_shared<PBRMaterial>();
+  *copy = *this;
+  return copy;
 }
 
 ////////////////////////////////////////////

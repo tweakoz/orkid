@@ -246,12 +246,13 @@ void pyinit_gfx(py::module& module_lev2) {
               [](const tex_t& tex) -> std::string {
                 fxstring<256> fxs;
                 fxs.format(
-                    "Texture(%p:\"%s\") w<%d> h<%d> d<%d>",
+                    "Texture(%p:\"%s\") w<%d> h<%d> d<%d> fmt<%s>",
                     tex.get(),
                     tex->_debugName.c_str(),
                     tex->_width,
                     tex->_height,
-                    tex->_depth);
+                    tex->_depth,
+                    EBufferFormatToName(tex->_texFormat).c_str());
                 return fxs.c_str();
               })
           .def_static("load", [](std::string path) -> tex_t { return Texture::LoadUnManaged(path); });

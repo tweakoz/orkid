@@ -91,7 +91,10 @@ enum ETextureType {
 enum struct EBufferFormat : crc_enum_t {
   CrcEnum(R8),
   CrcEnum(R16),
+  CrcEnum(BGR5A1),
+  CrcEnum(BGR8),
   CrcEnum(RGB8),
+  CrcEnum(BGRA8),
   CrcEnum(RGBA8),
   CrcEnum(RG16F),
   CrcEnum(RG32F),
@@ -113,9 +116,13 @@ enum struct EBufferFormat : crc_enum_t {
   CrcEnum(SRGB_ALPHA_BPTC_UNORM),
   CrcEnum(RGBA_ASTC_4X4),
   CrcEnum(SRGB_ASTC_4X4),
+  CrcEnum(S3TC_DXT1),
+  CrcEnum(S3TC_DXT3),
+  CrcEnum(S3TC_DXT5),
   CrcEnum(NONE)
 };
 
+std::string EBufferFormatToName(EBufferFormat fmt);
 ///////////////////////////////////////////////////////////////////////////////
 
 enum struct PrimitiveType : crc_enum_t {

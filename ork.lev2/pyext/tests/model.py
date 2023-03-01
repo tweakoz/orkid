@@ -48,13 +48,25 @@ class SceneGraphApp(object):
     createSceneGraph(app=self,rendermodel="DeferredPBR")
 
     model =XgmModel("data://tests/pbr_calib.glb")
+    print(model)
+    print(model.materials)
+    print(model.meshes)
     for mesh in model.meshes:
+      print(mesh.submeshes)
+      print(mesh.boundingRadius)
+      print(mesh.boundingCenter)
       for submesh in mesh.submeshes:
-        copy = submesh.material.clone()
-        copy.texColor = Texture.load("src://effect_textures/white.dds")
-        copy.texNormal = Texture.load("src://effect_textures/default_normal.dds")
-        copy.texMtlRuf = Texture.load("src://effect_textures/green.dds")
-        submesh.material = copy
+        print(submesh)
+        print(submesh.material)
+        print(submesh.material.colorMapName)
+        print(submesh.material.normalMapName)
+        print(submesh.material.mtlRufMapName)
+        print(submesh.material.amboccMapName)
+        print(submesh.material.emissiveMapName)
+        print(submesh.material.texColor)
+        print(submesh.material.texNormal)
+        print(submesh.material.texMtlRuf)
+        print(submesh.material.texEmissive)
 
     ###################################
 

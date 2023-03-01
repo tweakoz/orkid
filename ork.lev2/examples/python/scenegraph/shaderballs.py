@@ -22,40 +22,22 @@ from common.scenegraph import createSceneGraph
 ################################################################################
 
 parser = argparse.ArgumentParser(description='scenegraph example')
-parser.add_argument('--vrmode', action="store_true", help='run in vr' )
 
 ################################################################################
 
 args = vars(parser.parse_args())
-vrmode = (args["vrmode"]==True)
 
 ################################################################################
 
-class modelinst(object):
+class NODE(object):
 
   def __init__(self,model,layer, index):
 
     super().__init__()
     self.model = model
     self.sgnode = model.createNode("node%d"%index,layer)
-
-    x = (index%7)-3
-    z = int(index/7)-3
-
-    self.sgnode.worldTransform.translation = vec3(x*2,1,z*2)
+    self.modelinst = self.sgnode.user.pyext_retain_modelinst
     self.sgnode.worldTransform.scale = 1
-
-    self.rot = quat(vec3(0,1,0),0)
-    incraxis = vec3(random.uniform(-1,1),
-                    random.uniform(-1,1),
-                    random.uniform(-1,1)).normalized()
-    incrmagn = random.uniform(-0.01,0.01)
-    self.rotincr = quat(incraxis,incrmagn)
-
-
-  def update(self,deltatime):
-    self.rot = self.rot*self.rotincr
-    #self.sgnode.worldTransform.orientation = self.rot 
 
 ################################################################################
 
@@ -67,20 +49,60 @@ class SceneGraphApp(object):
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     setupUiCamera(app=self,eye=vec3(0,12,15))
-    self.modelinsts=[]
+    self.nodes=[]
 
   ##############################################
 
   def onGpuInit(self,ctx):
 
-    createSceneGraph(app=self,rendermodel="PBRVR" if vrmode else "DeferredPBR")
+    params_dict = {
+      "SkyboxIntensity": float(2),
+      "SpecularIntensity": float(1),
+      "DepthFogDistance": float(10000)
+    }
+    createSceneGraph(app=self,
+                     rendermodel="DeferredPBR",
+                     params_dict=params_dict)
 
     ###################################
 
     model = XgmModel("data://tests/pbr_calib.glb")
 
-    for i in range(49):
-      self.modelinsts += [modelinst(model,self.layer1,i)]
+    for mesh in model.meshes:
+      for submesh in mesh.submeshes:
+        copy = submesh.material.clone()
+        copy.texColor = Texture.load("src://effect_textures/white.dds")
+        copy.texNormal = Texture.load("src://effect_textures/default_normal.dds")
+        copy.texMtlRuf = Texture.load("src://effect_textures/white.dds")
+        submesh.material = copy
+
+    for i in range(81):
+      node = NODE(model,self.layer1,i)
+
+      x = (i % 9)
+      z = int(i/9)
+
+      ######################
+      # set transform
+      ######################
+
+      node.sgnode.worldTransform.translation = vec3((x-4)*2,1,(z-4)*2)
+
+      ######################
+      # override material for submeshinst
+      ######################
+
+      subinst = node.modelinst.submeshinsts[0]
+      mtl_cloned = subinst.material.clone()
+      mtl_cloned.metallicFactor = float(x/8.0)
+      mtl_cloned.roughnessFactor = float(z/8.0)
+      mtl_cloned.baseColor = vec4(1,0,0,1)
+      subinst.overrideMaterial(mtl_cloned)
+
+      ######################
+
+
+      self.nodes += [node]
 
     ###################################
 
@@ -98,10 +120,6 @@ class SceneGraphApp(object):
   ################################################
 
   def onUpdate(self,updinfo):
-
-    for minst in self.modelinsts:
-      minst.update(updinfo.deltatime)
-
     self.scene.updateScene(self.cameralut) 
 
 ###############################################################################

@@ -29,13 +29,14 @@ args = vars(parser.parse_args())
 
 ################################################################################
 
-class modelinst(object):
+class NODE(object):
 
   def __init__(self,model,layer, index):
 
     super().__init__()
     self.model = model
     self.sgnode = model.createNode("node%d"%index,layer)
+    self.modelinst = self.sgnode.user.pyext_retain_modelinst
 
     x = (index % 7)-3
     z = int(index/7)-3
@@ -65,20 +66,42 @@ class SceneGraphApp(object):
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
     setupUiCamera(app=self,eye=vec3(0,12,15))
-    self.modelinsts=[]
+    self.nodes=[]
 
   ##############################################
 
   def onGpuInit(self,ctx):
 
-    createSceneGraph(app=self,rendermodel="DeferredPBR")
+    params_dict = {
+      "SkyboxIntensity": float(2),
+      "SpecularIntensity": float(1),
+    }
+    createSceneGraph(app=self,
+                     rendermodel="DeferredPBR",
+                     params_dict=params_dict)
 
     ###################################
 
     model = XgmModel("data://tests/pbr_calib.glb")
 
+    for mesh in model.meshes:
+      for submesh in mesh.submeshes:
+        copy = submesh.material.clone()
+        copy.texColor = Texture.load("src://effect_textures/white.dds")
+        copy.texNormal = Texture.load("src://effect_textures/default_normal.dds")
+        copy.texMtlRuf = Texture.load("src://effect_textures/cyan.dds")
+        submesh.material = copy
+
     for i in range(49):
-      self.modelinsts += [modelinst(model,self.layer1,i)]
+      node = NODE(model,self.layer1,i)
+      x = (i % 7)
+      z = int(i/7)
+      subinst = node.modelinst.submeshinsts[0]
+      mtl_cloned = subinst.material.clone()
+      mtl_cloned.metallicFactor = float(x/7.0)
+      mtl_cloned.roughnessFactor = float(z/7.0)
+      subinst.overrideMaterial(mtl_cloned)
+      self.nodes += [node]
 
     ###################################
 
@@ -97,7 +120,7 @@ class SceneGraphApp(object):
 
   def onUpdate(self,updinfo):
 
-    for minst in self.modelinsts:
+    for minst in self.nodes:
       minst.update(updinfo.deltatime)
 
     self.scene.updateScene(self.cameralut) 
