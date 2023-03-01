@@ -62,7 +62,7 @@ btTransform orkmtx4tobtmtx4(const ork::fmtx4& mtx) {
 
 ork::fmtx4 btmtx4toorkmtx4(const btTransform& mtx) {
   ork::fmtx4 rval;
-  ork::fvec3 position = !mtx.getOrigin();
+  ork::fvec3 position = btv3toorkv3(mtx.getOrigin());
   rval.setTranslation(position);
   const btMatrix3x3& mtx33 = mtx.getBasis();
   for (int i = 0; i < 3; i++) {

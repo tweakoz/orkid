@@ -335,7 +335,7 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
       if (auto try_diffuseLevel = params->typedValueForKey<float>("DiffuseIntensity")) {
         pbrcommon->_diffuseLevel = try_diffuseLevel.value();
       }
-      if (auto try_ambientLevel = params->typedValueForKey<float>("AmbientIntensity")) {
+      if (auto try_ambientLevel = params->typedValueForKey<fvec3>("AmbientLight")) {
         pbrcommon->_ambientLevel = try_ambientLevel.value();
       }
       if (auto try_skyboxLevel = params->typedValueForKey<float>("SkyboxIntensity")) {

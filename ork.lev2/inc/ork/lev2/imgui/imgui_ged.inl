@@ -501,9 +501,9 @@ inline void DirectTransformPropUI( //
       useSnap = !useSnap;
     ImGui::Checkbox("", &useSnap);
     ImGui::SameLine();
-    static ork::fvec3 config_snaptrans = false;
-    static ork::fvec3 config_snaprot   = false;
-    static ork::fvec3 config_snapscale = false;
+    static ork::fvec3 config_snaptrans;
+    static ork::fvec3 config_snaprot;
+    static ork::fvec3 config_snapscale;
     switch (mCurrentGizmoOperation) {
       case ImGuizmo::TRANSLATE:
         snap = config_snaptrans;

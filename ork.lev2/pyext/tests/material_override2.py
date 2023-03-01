@@ -60,9 +60,10 @@ class SceneGraphApp(object):
   def onGpuInit(self,ctx):
 
     params_dict = {
-      "SkyboxIntensity": float(2),
+      "SkyboxIntensity": float(3),
       "SpecularIntensity": float(1),
       "DiffuseIntensity": float(1),
+      "AmbientLight": vec3(0.1),
       "DepthFogDistance": float(10000)
     }
     if envmap != "":
@@ -105,8 +106,8 @@ class SceneGraphApp(object):
 
       subinst = node.modelinst.submeshinsts[0]
       mtl_cloned = subinst.material.clone()
-      mtl_cloned.metallicFactor = float(x/8.0)
-      mtl_cloned.roughnessFactor = float(z/8.0)
+      mtl_cloned.metallicFactor = float(z/8.0)
+      mtl_cloned.roughnessFactor = 1.0-float(x/8.0)
       r = random.uniform(0,1)
       g = random.uniform(0,1)
       b = random.uniform(0,1)
