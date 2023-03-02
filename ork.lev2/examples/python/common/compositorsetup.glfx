@@ -78,13 +78,6 @@ libblock lib_deferred
   : lib_def
   : lib_mmnoise {
   /////////////////////////////////////////////////////////
-  vec3 baselighting(WPosData wpd) {
-    GBufData gbd = decodeGBUF(wpd);
-    // sunlight ///////////////
-    vec3 l = vec3((0.5 + dot(gbd._wnrm, vec3(0, 1, 0)) * 0.5)) * 0.25;
-    ///////////////////////////
-    return gbd._albedo * l;
-  }
   vec3 pbrEnvironmentLighting(WPosData wpd){
     GBufData gbd = decodeGBUF(wpd);
     vec2 uv   = wpd._muv;
