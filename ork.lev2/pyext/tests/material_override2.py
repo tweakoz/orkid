@@ -60,16 +60,16 @@ class SceneGraphApp(object):
   def onGpuInit(self,ctx):
 
     params_dict = {
-      "SkyboxIntensity": float(3),
+      "SkyboxIntensity": float(2),
       "SpecularIntensity": float(1),
       "DiffuseIntensity": float(1),
-      "AmbientLight": vec3(0.1),
+      "AmbientLight": vec3(0),
       "DepthFogDistance": float(10000)
     }
     if envmap != "":
       params_dict["SkyboxTexPathStr"] = envmap
     else:
-      params_dict["SkyboxTexPathStr"] = "src://envmaps/blender_studio.dds"
+      params_dict["SkyboxTexPathStr"] = "src://envmaps/blender_night.dds"
 
     createSceneGraph(app=self,
                      rendermodel="DeferredPBR",

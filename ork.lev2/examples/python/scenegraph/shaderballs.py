@@ -58,12 +58,18 @@ class SceneGraphApp(object):
   def onGpuInit(self,ctx):
 
     params_dict = {
-      "SkyboxIntensity": float(2),
+      "SkyboxIntensity": float(3),
       "SpecularIntensity": float(1),
+      "DiffuseIntensity": float(1),
+      "AmbientLight": vec3(0.1),
       "DepthFogDistance": float(10000)
     }
+
     if envmap != "":
       params_dict["SkyboxTexPathStr"] = envmap
+    else:
+      params_dict["SkyboxTexPathStr"] = "src://envmaps/blender_night.dds"
+
     createSceneGraph(app=self,
                      rendermodel="DeferredPBR",
                      params_dict=params_dict)
@@ -72,6 +78,7 @@ class SceneGraphApp(object):
 
     model = XgmModel("data://tests/pbr_calib.glb")
 
+    random.seed(12)
     for mesh in model.meshes:
       for submesh in mesh.submeshes:
         copy = submesh.material.clone()

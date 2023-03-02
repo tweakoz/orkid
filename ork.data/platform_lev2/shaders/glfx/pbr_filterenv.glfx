@@ -21,7 +21,7 @@ uniform_set ub_vtx {
 ///////////////////////////////////////////////////////////////
 uniform_set ub_frg {
     sampler2D prefiltmap;
-		vec2 InvViewportSize; // inverse target size
+		vec2 imgdim; // target size
 		float roughness;
   float EnvironmentMipBias;
   float EnvironmentMipScale;
@@ -70,17 +70,19 @@ fragment_shader ps_filterSpecularEnvMap
 	: lib_math
 	: lib_envmapping
 	: lib_brdf {
-
-	vec3 n = env_equirectangularUV2N(frg_uv0);
+	
+	vec2 fcoord = gl_FragCoord.xy;
+	fcoord *= vec2(1.0/(imgdim.x-1),1.0/(imgdim.y-1));//a
+	vec3 n = env_equirectangularUV2N(fcoord);
 	vec3 r = n;
 	vec3 v = r;
 	vec3 o = vec3(0,0,0);
 	float w = 0;
 	//////////////////////////////////
-	float ruf = 0; //roughness;//*roughness;
+	float ruf = 4.3/imgdim.x;//*roughness; xyze
 	//////////////////////////////////
-	for( uint i=0; i<1024; i++){
-		vec2 e = hammersley(i,1024);
+	for( uint i=0; i<8192; i++){
+		vec2 e = hammersley(i,8192);
 		vec3 h = importanceSampleGGXN(e,n,ruf);
 		vec3 l = normalize(2.0 * dot(v, h) * h - v);
 		float ndotl = satdot(n, l);
@@ -91,7 +93,9 @@ fragment_shader ps_filterSpecularEnvMap
 		}
 	}
 	//////////////////////////////////
-	o = o/w;
+	o = o/w; 
+	vec2 luv = env_equirectangularN2UV(n);
+	//o = textureLod(prefiltmap, frg_uv0,0).rgb;
 	out_clr = vec4(o,1);
 }
 ///////////////////////////////////////////////////////////////
@@ -111,17 +115,18 @@ fragment_shader ps_filterDiffuseEnvMap
 	float w = 0.0;
 	float incr = 0.01;
 	//////////////////////////////////
-	for( uint i=0; i<1024; i++){
-		vec2 e = hammersley(i,1024);
+	for( uint i=0; i<8192; i++){
+		vec2 e = hammersley(i,8192);
 		vec3 h = importanceSampleGGXN(e,n,2);
-		vec2 luv = env_equirectangularN2UV(normalize(n+h));
-		vec2 xuv = env_equirectangularN2UV(normalize(n-h));
+		vec2 luv = env_equirectangularN2UV(normalize(n+h*2));
+		vec2 xuv = env_equirectangularN2UV(normalize(n-h*2));
 	  o += textureLod(prefiltmap, luv,0).rgb;
 		o += textureLod(prefiltmap, xuv,0).rgb;
 	  w += 2;
 	}
 	//////////////////////////////////
 	out_clr = vec4(o/w,1);
+	//out_clr = textureLod(prefiltmap, frg_uv0,0);
 }
 ///////////////////////////////////////////////////////////////
 technique tek_filterSpecularMap {

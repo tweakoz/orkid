@@ -19,23 +19,22 @@
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
-AppInitData::AppInitData(int argc, char** argv, char** envp){
-    _argc = argc;
-    _argv = argv;
-    _envp = envp;
-    _commandline_vars = std::make_shared<opts_var_map_t>();
-    _fsinit = std::make_shared<StdFileSystemInitalizer>(*this);
+AppInitData::AppInitData(int argc, char** argv, char** envp) {
+  _argc             = argc;
+  _argv             = argv;
+  _envp             = envp;
+  _commandline_vars = std::make_shared<opts_var_map_t>();
+  _fsinit           = std::make_shared<StdFileSystemInitalizer>(*this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-AppInitData::~AppInitData(){
-  
+AppInitData::~AppInitData() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-AppInitData::opts_desc_ptr_t AppInitData::commandLineOptions(const char* header_text){
+AppInitData::opts_desc_ptr_t AppInitData::commandLineOptions(const char* header_text) {
   _commandline_desc = std::make_shared<opts_desc_t>(header_text);
   _commandline_vars = std::make_shared<opts_var_map_t>();
   return _commandline_desc;
@@ -43,16 +42,16 @@ AppInitData::opts_desc_ptr_t AppInitData::commandLineOptions(const char* header_
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const po::variable_value& AppInitData::commandLineOption(const std::string& named){
+const po::variable_value& AppInitData::commandLineOption(const std::string& named) {
   return (*_commandline_vars)[named];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-AppInitData::opts_var_map_ptr_t AppInitData::parse(){
-  if(_commandline_desc){
-    auto cmdline = po::parse_command_line(_argc,_argv,*_commandline_desc);
-    po::store(cmdline,*_commandline_vars);
+AppInitData::opts_var_map_ptr_t AppInitData::parse() {
+  if (_commandline_desc) {
+    auto cmdline = po::parse_command_line(_argc, _argv, *_commandline_desc);
+    po::store(cmdline, *_commandline_vars);
     po::notify(*_commandline_vars);
   }
   if (_commandline_vars->count("help")) {
@@ -65,20 +64,20 @@ AppInitData::opts_var_map_ptr_t AppInitData::parse(){
     this->_fullscreen = vars["fullscreen"].as<bool>();
   }
   if (_commandline_vars->count("offscreen")) {
-    this->_offscreen = vars["offscreen"].as<bool>();
+    this->_offscreen  = vars["offscreen"].as<bool>();
     this->_fullscreen = false;
   }
   if (_commandline_vars->count("top")) {
-    this->_top          = vars["top"].as<int>();
+    this->_top = vars["top"].as<int>();
   }
   if (_commandline_vars->count("left")) {
-    this->_left         = vars["left"].as<int>();
+    this->_left = vars["left"].as<int>();
   }
   if (_commandline_vars->count("width")) {
-    this->_width        = vars["width"].as<int>();
+    this->_width = vars["width"].as<int>();
   }
   if (_commandline_vars->count("height")) {
-    this->_height       = vars["height"].as<int>();
+    this->_height = vars["height"].as<int>();
   }
   if (_commandline_vars->count("msaa")) {
     this->_msaa_samples = vars["msaa"].as<int>();
@@ -90,15 +89,15 @@ AppInitData::opts_var_map_ptr_t AppInitData::parse(){
   if (_commandline_vars->count("nvsync")) {
 
     bool do_vsync = vars["nvsync"].as<bool>();
-    genviron.set("__GL_SYNC_TO_VBLANK", do_vsync ? "1" : "0" );
-    if(do_vsync){
+    genviron.set("__GL_SYNC_TO_VBLANK", do_vsync ? "1" : "0");
+    if (do_vsync) {
       int vsport = vars["nvsport"].as<int>();
-      genviron.set("__GL_SYNC_DISPLAY_DEVICE", FormatString("DFP-%d",vsport));
+      genviron.set("__GL_SYNC_DISPLAY_DEVICE", FormatString("DFP-%d", vsport));
     }
   }
   if (_commandline_vars->count("nvmfa")) {
-      int vmfa = vars["nvmfa"].as<int>();
-      genviron.set("__GL_MaxFramesAllowed", FormatString("%d",vmfa));
+    int vmfa = vars["nvmfa"].as<int>();
+    genviron.set("__GL_MaxFramesAllowed", FormatString("%d", vmfa));
   }
 
   genviron.dump();
@@ -107,9 +106,10 @@ AppInitData::opts_var_map_ptr_t AppInitData::parse(){
   return _commandline_vars;
 }
 
-StdFileSystemInitalizer::StdFileSystemInitalizer(const AppInitData& appinitdata) : _initdata(appinitdata) {
-  //printf("CPA\n");
-  // OldSchool::SetGlobalStringVariable("temp://", CreateFormattedString("ork.data/temp/"));
+StdFileSystemInitalizer::StdFileSystemInitalizer(const AppInitData& appinitdata)
+    : _initdata(appinitdata) {
+  // printf("CPA\n");
+  //  OldSchool::SetGlobalStringVariable("temp://", CreateFormattedString("ork.data/temp/"));
 
   // printf("CPB\n");
   //////////////////////////////////////////
@@ -119,6 +119,8 @@ StdFileSystemInitalizer::StdFileSystemInitalizer(const AppInitData& appinitdata)
   static auto WorkingDirContext = std::make_shared<FileDevContext>();
 
   auto base_dir  = file::Path::orkroot_dir();
+  auto src_core  = base_dir / "ork.core";
+  auto src_lev2  = base_dir / "ork.lev2";
   auto data_dir  = base_dir / "ork.data";
   auto lev2_base = data_dir / "platform_lev2";
   auto srcd_base = data_dir / "src";
@@ -131,6 +133,9 @@ StdFileSystemInitalizer::StdFileSystemInitalizer(const AppInitData& appinitdata)
   auto SrcPlatformLevel2FileContext   = FileEnv::createContextForUriBase("src://", srcd_base);
   auto LocPlatformMorkDataFileContext = FileEnv::createContextForUriBase("miniorkdata://", srcd_base);
   auto DataDirContext                 = FileEnv::createContextForUriBase("data://", data_dir);
+  auto OrkidDirContext                = FileEnv::createContextForUriBase("orkid://", base_dir);
+  auto OrkidCoreContext               = FileEnv::createContextForUriBase("ork_core://", src_core);
+  auto OrkidLev2Context               = FileEnv::createContextForUriBase("ork_lev2://", src_lev2);
 
   //////////////
   // we dont want to see lev2:// in choice manager
@@ -141,18 +146,17 @@ StdFileSystemInitalizer::StdFileSystemInitalizer(const AppInitData& appinitdata)
 StdFileSystemInitalizer::~StdFileSystemInitalizer() {
 }
 
-  //po::options_description desc("Allowed options");
-  //desc.add_options()                                                //
-    //  ("help", "produce help message")                              //
-      //("test", po::value<std::string>(), "test name (list,vo,nvo)") //
-      //("port", po::value<std::string>(), "midiport name (list)")    //
-      //("program", po::value<std::string>(), "program name")         //
-      //("hidpi", "hidpi mode");
+// po::options_description desc("Allowed options");
+// desc.add_options()                                                //
+//   ("help", "produce help message")                              //
+//("test", po::value<std::string>(), "test name (list,vo,nvo)") //
+//("port", po::value<std::string>(), "midiport name (list)")    //
+//("program", po::value<std::string>(), "program name")         //
+//("hidpi", "hidpi mode");
 
-  //po::variables_map vars;
-  //po::store(po::parse_command_line(argc, argv, desc), vars);
-  //po::notify(vars);
-
+// po::variables_map vars;
+// po::store(po::parse_command_line(argc, argv, desc), vars);
+// po::notify(vars);
 
 PoolString addPooledStringFromStdString(const std::string& str) {
   return StringPoolContext::AddPooledString(PieceString(str.c_str()));

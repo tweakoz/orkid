@@ -34,7 +34,7 @@ libblock lib_envmapping {
   vec3 env_equirectangular(vec3 normal, sampler2D envtex, float miplevel) {
     vec3 n = vec3(normal.x,normal.y,normal.z);
     vec2 uv = env_equirectangularN2UV(n);
-    return textureLod(envtex, uv, miplevel).xyz;
+    return textureLod(envtex, vec2(-uv.x,-uv.y), miplevel).xyz;
   }
   vec3 env_equirectangularFlipV(vec3 normal, sampler2D envtex, float miplevel) {
     vec3 n = vec3(normal.x,normal.y,normal.z);
