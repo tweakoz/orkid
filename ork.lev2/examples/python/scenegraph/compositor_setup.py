@@ -73,16 +73,12 @@ class MinimalSceneGraphApp(object):
     # create scenegraph with custom compositor setup
     ###################################################
 
-    params_dict = {
-      "preset": "USER",
-      "compositordata": comp_data
-    }
-
-
     createSceneGraph(app=self,
                      rendermodel="DeferredPBR",
-                     params_dict=params_dict)
-
+                     params_dict={
+                      "preset": "USER",
+                      "compositordata": comp_data
+                    })
 
     ###################################
     # create grid
