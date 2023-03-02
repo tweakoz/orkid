@@ -110,12 +110,6 @@ fragment_interface iface_f2uv {
   outputs { vec4 out_clr; }
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_baselight : iface_f2uv : lib_deferred {
-  WPosData wpd = monoWPD();
- vec3 c = baselighting(wpd);
-  out_clr    = vec4(0,0,0,0);//vec4(c*1.0/25.0, 1);
-}
-///////////////////////////////////////////////////////////////
 fragment_shader ps_environment : iface_f2uv : lib_deferred  {
   WPosData wpd = monoWPD();
   out_clr = vec4(pbrEnvironmentLighting(wpd),1);
@@ -124,15 +118,6 @@ fragment_shader ps_environment : iface_f2uv : lib_deferred  {
 // StateBlocks
 ///////////////////////////////////////////////////////////////
 state_block sb_default : default {}
-///////////////////////////////////////////////////////////////
-technique baselight {
-  fxconfig = fxcfg_default;
-  pass p0 {
-    vertex_shader   = vs_passthru2uv;
-    fragment_shader = ps_baselight;
-    state_block     = sb_default;
-  }
-}
 ///////////////////////////////////////////////////////////////
 technique environmentlighting {
   fxconfig = fxcfg_default;
