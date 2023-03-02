@@ -91,7 +91,7 @@ libblock lib_deferred
     vec3 view_epos0 = posatdepth(wpd,0.0);
     vec3 view_epos1 = posatdepth(wpd,1.0);
     vec3 VIEW_N = normalize(view_epos1-view_epos0);
-    vec3 skybox_n = vec3(VIEW_N.x,-VIEW_N.y,VIEW_N.z);
+    vec3 skybox_n = vec3(VIEW_N.x,VIEW_N.y,VIEW_N.z);
     vec3 skyboxColor = env_equirectangularFlipV(skybox_n,MapSpecularEnv,EnvironmentMipBias)*SkyboxLevel;
     vec3 out_color = skybox_n;
     if( gbd._mask==1 ){
