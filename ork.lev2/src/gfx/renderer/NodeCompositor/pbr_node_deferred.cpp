@@ -260,5 +260,10 @@ rtgroup_ptr_t DeferredCompositingNodePbr::GetOutputGroup() const {
   auto& CTX = _impl.get<std::shared_ptr<PbrNodeImpl>>()->_context;
   return CTX._rtgGbuffer;
 }
+void DeferredCompositingNodePbr::overrideShader( std::string path ){
+  auto& CTX = _impl.get<std::shared_ptr<PbrNodeImpl>>()->_context;
+  CTX._shadername = path;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::deferrednode

@@ -62,7 +62,7 @@ class MinimalSceneGraphApp(object):
     pbr_common.skyboxLevel = .5
     pbr_common.depthFogDistance = 100
     pbr_common.depthFogPower = 1
-    comp_tek.renderNode.overrideShader("orkshader://deferred")
+    comp_tek.renderNode.overrideShader("ork_lev2://examples/python/common/compositorsetup.glfx")
 
     print(comp_sceneitem)
     print(comp_tek)

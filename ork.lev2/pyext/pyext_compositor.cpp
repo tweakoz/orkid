@@ -214,7 +214,7 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
             return node->_pbrcommon;
           })
           .def("overrideShader", [](defpbrnode_ptr_t node, std::string shaderpath)  { //
-            return node->_shader_path = shaderpath;
+            return node->overrideShader(shaderpath);
           })
           .def("__repr__", [](defpbrnode_ptr_t node) -> std::string {
             fxstring<64> fxs;

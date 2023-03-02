@@ -69,6 +69,7 @@ void DeferredContext::gpuInit(Context* target) {
   if (nullptr == _rtgGbuffer) {
     _brdfIntegrationMap = PBRMaterial::brdfIntegrationMap(target);
     //////////////////////////////////////////////////////////////
+    printf( "LOADING DeferredContext SHADER<%s>\n", _shadername.c_str() );
     _lightingmtl.gpuInit(target, _shadername);
     _tekBaseLighting       = _lightingmtl.technique("baselight");
     _tekBaseLightingStereo = _lightingmtl.technique("baselight_stereo");
@@ -164,6 +165,9 @@ void DeferredContext::gpuInit(Context* target) {
     auto mtl_load_req2 = std::make_shared<asset::LoadRequest>("src://effect_textures/voltex_pn2");
     _whiteTexture = asset::AssetManager<TextureAsset>::load(mtl_load_req1);
     _voltexA      = asset::AssetManager<TextureAsset>::load(mtl_load_req2);
+
+    printf( "SHADER<%s> Load Complete\n", _shadername.c_str() );
+
   }
   target->debugPopGroup();
 }
