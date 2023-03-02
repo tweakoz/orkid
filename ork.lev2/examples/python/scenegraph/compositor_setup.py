@@ -37,20 +37,45 @@ class MinimalSceneGraphApp(object):
   def onGpuInit(self,ctx):
 
     ###################################
-    # create scenegraph
+    # create compositor
     ###################################
 
-    cd = CompositingData()
+    comp_tek = NodeCompositingTechnique()
+    comp_tek.renderNode = DeferredPbrRenderNode()
+    comp_tek.outputNode = ScreenOutputNode()
+
+    comp_data = CompositingData()
+    comp_scene = comp_data.createScene("scene1")
+    comp_sceneitem = comp_scene.createSceneItem("item1")
+    comp_sceneitem.technique = comp_tek
+
+    # OVERRIDES
+
+    pbr_common = comp_tek.renderNode.pbr_common
+    pbr_common.requestSkyboxTexture("src://envmaps/tozenv_hellscape")
+    pbr_common.environmentIntensity = 1
+    pbr_common.environmentMipBias = 10
+    pbr_common.environmentMipScale = 1
+    pbr_common.diffuseLevel = 1
+    pbr_common.specularLevel = 1
+    pbr_common.specularMipBias = 1
+    pbr_common.skyboxLevel = .5
+    pbr_common.depthFogDistance = 100
+    pbr_common.depthFogPower = 1
+    comp_tek.renderNode.overrideShader("orkshader://deferred")
+
+    print(comp_sceneitem)
+    print(comp_tek)
+    print(pbr_common)
+    #assert(False)
+
+    ###################################################
+    # create scenegraph with custom compositor setup
+    ###################################################
 
     params_dict = {
-      "SkyboxTexPathStr": "src://envmaps/blender_night.dds",
-      "SkyboxIntensity": float(2),
-      "SpecularIntensity": float(1),
-      "DiffuseIntensity": float(1),
-      "AmbientLight": vec3(0),
-      "DepthFogDistance": float(10000),
       "preset": "USER",
-      "compositordata": cd
+      "compositordata": comp_data
     }
 
 
@@ -58,20 +83,6 @@ class MinimalSceneGraphApp(object):
                      rendermodel="DeferredPBR",
                      params_dict=params_dict)
 
-    ###################################
-    # create frustum primitive / sgnode
-    ###################################
-
-    pmatrix = ctx.perspective(45,1,0.25,3)
-    vmatrix = mtx4.lookAt(vec3(0, 0, 0),  # eye
-                          vec3(0, 0, -1), # tgt
-                          vec3(0, 1, 0))  # up
-    frustum_prim = createFrustumPrim(ctx=ctx,vmatrix=vmatrix,pmatrix=pmatrix)
-    pipeline = createPipeline( app = self,
-                               ctx = ctx,
-                               techname = "std_mono",
-                               rendermodel = "DeferredPBR" )
-    self.primnode = frustum_prim.createNode("node1",self.layer1,pipeline)
 
     ###################################
     # create grid
@@ -84,16 +95,6 @@ class MinimalSceneGraphApp(object):
   ################################################
 
   def onUpdate(self,updinfo):
-    θ    = updinfo.absolutetime * math.pi * 2.0 * 0.1
-    ###################################
-    x = math.sin(θ)*10
-    z = -math.cos(θ)*10
-    y = 5+math.sin(θ*1.7)*2
-    m_world_to_view = mtx4.lookAt(vec3(x, y, z), # eye
-                                  vec3(0, 0, 0),  # tgt
-                                  vec3(0, 1, 0))  # up
-    m_view_to_world =  m_world_to_view.inverse()
-    self.primnode.worldTransform.directMatrix = m_view_to_world
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
 
   ##############################################

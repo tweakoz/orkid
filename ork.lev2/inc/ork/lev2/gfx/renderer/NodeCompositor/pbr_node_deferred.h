@@ -203,6 +203,7 @@ public:
   svar256_t _impl;
 
   pbr::commonstuff_ptr_t _pbrcommon;
+  std::string _shader_path;
 
 };
 

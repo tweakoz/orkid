@@ -26,6 +26,26 @@ public:
   CompositingScene();
   compositingsceneitem_constptr_t findItem(const std::string& named) const;
   std::unordered_map<std::string, compositingsceneitem_ptr_t> _items;
+  CompositingData* _parent = nullptr;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct CompositingSceneItem : public ork::Object {
+  DeclareConcreteX(CompositingSceneItem, ork::Object);
+
+public:
+  CompositingSceneItem();
+
+  compositortechnique_ptr_t technique() const {
+    return _technique;
+  }
+
+  template <typename T> std::shared_ptr<T> tryTechniqueAs() const {
+    return std::dynamic_pointer_cast<T>(_technique);
+  }
+
+  compositortechnique_ptr_t _technique;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -303,25 +323,6 @@ private:
   //CompositingMorphable _morphable;
   CompositingContext _compcontext;
   compositingpassdatastack_t _stack;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct CompositingSceneItem : public ork::Object {
-  DeclareConcreteX(CompositingSceneItem, ork::Object);
-
-public:
-  CompositingSceneItem();
-
-  compositortechnique_ptr_t technique() const {
-    return _technique;
-  }
-
-  template <typename T> std::shared_ptr<T> tryTechniqueAs() const {
-    return std::dynamic_pointer_cast<T>(_technique);
-  }
-
-  compositortechnique_ptr_t _technique;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

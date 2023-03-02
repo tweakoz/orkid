@@ -49,7 +49,7 @@ struct PbrNodeImpl {
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   PbrNodeImpl(DeferredCompositingNodePbr* node)
       : _camname(AddPooledString("Camera"))
-      , _context(node, "orkshader://deferred", KMAXLIGHTS)
+      , _context(node, node->_shader_path, KMAXLIGHTS)
       , _lightProcessor(_context, node) {
     _enumeratedLights = std::make_shared<EnumeratedLights>();
   }
@@ -231,6 +231,7 @@ struct PbrNodeImpl {
 
 ///////////////////////////////////////////////////////////////////////////////
 DeferredCompositingNodePbr::DeferredCompositingNodePbr() {
+  _shader_path = "orkshader://deferred";
   _renderingmodel = RenderingModel("DEFERRED_PBR"_crcu);
   _impl           = std::make_shared<PbrNodeImpl>(this);
   _pbrcommon = std::make_shared<pbr::CommonStuff>();
