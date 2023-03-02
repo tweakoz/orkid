@@ -3,12 +3,6 @@
 ///////////////////////////////////////////////////////////////
 fxconfig fxcfg_default {
   import "mathtools.i";
-  import "misctools.i";
-  import "envtools.i";
-  //import "brdftools.i";
-  //import "deftools.i";
-  //import "gbuftools.i";
-	import "picktools.i";
 	import "pbrtools.i";
 }
 ///////////////////////////////////////////////////////////////
