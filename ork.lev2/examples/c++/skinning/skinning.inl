@@ -166,7 +166,7 @@ inline GpuResources::GpuResources(
   _sg_scene        = std::make_shared<scenegraph::Scene>(_sg_params);
   _sg_layer    = _sg_scene->createLayer("default");
   auto sg_compdata = _sg_scene->_compositorData;
-  auto nodetek     = sg_compdata->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
+  auto nodetek     = sg_compdata->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
   auto rendnode    = nodetek->tryRenderNodeAs<ork::lev2::pbr::deferrednode::DeferredCompositingNodePbr>();
   _pbrcommon   = rendnode->_pbrcommon;
 

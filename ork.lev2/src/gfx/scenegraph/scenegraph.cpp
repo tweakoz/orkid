@@ -283,18 +283,18 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
 
   if (preset == "Unlit") {
     _compositorPreset = _compositorData->presetUnlit(outRTG);
-    auto nodetek  = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
+    auto nodetek  = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outrnode = nodetek->tryRenderNodeAs<compositor::UnlitNode>();
   }
   if (preset == "ForwardPBR") {
     _compositorPreset = _compositorData->presetForwardPBR(outRTG);
-    auto nodetek  = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
+    auto nodetek  = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outrnode = nodetek->tryRenderNodeAs<pbr::ForwardNode>();
     pbrcommon = outrnode->_pbrcommon;
   }
   else if (preset == "DeferredPBR") {
     _compositorPreset = _compositorData->presetDeferredPBR(outRTG);
-    auto nodetek  = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
+    auto nodetek  = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outpnode = nodetek->tryOutputNodeAs<RtGroupOutputCompositingNode>();
     auto outrnode = nodetek->tryRenderNodeAs<pbr::deferrednode::DeferredCompositingNodePbr>();
 
@@ -307,12 +307,12 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     pbrcommon = outrnode->_pbrcommon;
   } else if (preset == "PBRVR") {
     _compositorPreset = _compositorData->presetPBRVR();
-    auto nodetek  = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
+    auto nodetek  = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outrnode = nodetek->tryRenderNodeAs<pbr::deferrednode::DeferredCompositingNodePbr>();
     pbrcommon = outrnode->_pbrcommon;
   } else if (preset == "FWDPBRVR") {
     _compositorPreset = _compositorData->presetForwardPBRVR();
-    auto nodetek  = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
+    auto nodetek  = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outrnode = nodetek->tryRenderNodeAs<pbr::ForwardNode>();
     pbrcommon = outrnode->_pbrcommon;
   } else if (preset == "USER"){
@@ -360,7 +360,7 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
   //////////////////////////////////////////////
 
   _compositorData->mbEnable = true;
-  _compositorTechnique       = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
+  _compositorTechnique       = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
 
   _outputNode = _compositorTechnique->tryOutputNodeAs<OutputCompositingNode>();
   _renderNode = _compositorTechnique->tryRenderNodeAs<RenderCompositingNode>();

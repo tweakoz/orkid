@@ -20,22 +20,12 @@ namespace ork::lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CompositingScene : public ork::Object {
+struct CompositingScene : public ork::Object {
   DeclareConcreteX(CompositingScene, ork::Object);
-
 public:
   CompositingScene();
-
-  const orklut<PoolString, ork::Object*>& items() const {
-    return _items;
-  }
-  orklut<PoolString, ork::Object*>& items() {
-    return _items;
-  }
-  const CompositingSceneItem* findItem(const PoolString& named) const;
-
-private:
-  orklut<PoolString, ork::Object*> _items;
+  compositingsceneitem_constptr_t findItem(const std::string& named) const;
+  std::unordered_map<std::string, compositingsceneitem_ptr_t> _items;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -234,27 +224,7 @@ public:
   RenderPresetContext presetPBRVR();
   RenderPresetContext presetForwardPBRVR();
 
-  const orklut<PoolString, ork::Object*>& GetGroups() const {
-    return _groups;
-  }
-  const orklut<PoolString, ork::Object*>& GetScenes() const {
-    return _scenes;
-  }
-  orklut<PoolString, ork::Object*>& groups() {
-    return _groups;
-  }
-  orklut<PoolString, ork::Object*>& scenes() {
-    return _scenes;
-  }
-
-  const CompositingScene* findScene(const PoolString& named) const;
-
-  PoolString& GetActiveScene() const {
-    return _activeScene;
-  }
-  PoolString& GetActiveItem() const {
-    return _activeItem;
-  }
+  compositingscene_constptr_t findScene(const std::string& named) const;
 
   bool IsEnabled() const {
     return mbEnable && mToggle;
@@ -264,12 +234,12 @@ public:
     mToggle = !mToggle;
   }
 
-  template <typename T> std::shared_ptr<T> tryNodeTechnique(PoolString scenename, PoolString itemname) const;
+  template <typename T> std::shared_ptr<T> tryNodeTechnique(std::string scenename, //
+                                                            std::string itemname) const;
 
-  orklut<PoolString, ork::Object*> _groups;
-  orklut<PoolString, ork::Object*> _scenes;
-  mutable PoolString _activeScene;
-  mutable PoolString _activeItem;
+  std::unordered_map<std::string, compositingscene_ptr_t> _scenes;
+  mutable std::string _activeScene;
+  mutable std::string _activeItem;
   mutable bool mToggle = true;
   bool mbEnable        = true;
 
@@ -302,7 +272,7 @@ struct CompositingImpl {
   const CompositingContext& compositingContext() const;
   CompositingContext& compositingContext();
 
-  const CompositingSceneItem* compositingItem(int isceneidx, int itemidx) const;
+  compositingsceneitem_ptr_t compositingItem(int isceneidx, int itemidx) const;
 
   void update(float dt);
 
@@ -337,7 +307,7 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CompositingSceneItem : public ork::Object {
+struct CompositingSceneItem : public ork::Object {
   DeclareConcreteX(CompositingSceneItem, ork::Object);
 
 public:
@@ -355,14 +325,15 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-template <typename T> std::shared_ptr<T> CompositingData::tryNodeTechnique(PoolString scenename, PoolString itemname) const {
+template <typename T> std::shared_ptr<T> CompositingData::tryNodeTechnique( std::string scenename, //
+                                                                            std::string itemname) const { //
   std::shared_ptr<T> rval  = nullptr;
   auto its = _scenes.find(scenename);
   if (its != _scenes.end()) {
-    auto scene = (CompositingScene*)its->second;
-    auto iti   = scene->items().find(itemname);
-    if (iti != scene->items().end()) {
-      auto sceneitem = (CompositingSceneItem*)iti->second;
+    auto scene = its->second;
+    auto iti   = scene->_items.find(itemname);
+    if (iti != scene->_items.end()) {
+      auto sceneitem = iti->second;
       rval           = std::dynamic_pointer_cast<T>(sceneitem->_technique);
     }
   }

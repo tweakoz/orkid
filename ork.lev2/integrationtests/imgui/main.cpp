@@ -83,7 +83,7 @@ int main(int argc, char** argv, char** envp) {
     renderer->setContext(ctx);
     compdata->presetDeferredPBR();
     compdata->mbEnable = true;
-    compdata->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
+    compdata->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
 
     compimpl         = compdata->createImpl();
     passdata = std::make_shared<lev2::CompositingPassData>();

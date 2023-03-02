@@ -1,152 +1,108 @@
 #!/usr/bin/env python3
+
 ################################################################################
 # lev2 sample which renders a scenegraph to a window
 # Copyright 1996-2020, Michael T. Mayers.
 # Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 # see http://www.boost.org/LICENSE_1_0.txt
 ################################################################################
+
 import math, sys, os
-#########################################
-# Our intention is not to 'install' anything just for running the examples
-#  so we will just hack the sys,path
-#########################################
 from pathlib import Path
-this_dir = Path(os.path.dirname(os.path.abspath(__file__)))
-pyex_dir = (this_dir/"..").resolve()
-sys.path.append(str(pyex_dir))
-from common.shaders import Shader
-#########################################
 from orkengine.core import *
 from orkengine.lev2 import *
-tokens = CrcStringProxy()
-RENDERMODEL = "ForwardPBR"
+sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
+from common.cameras import *
+from common.shaders import *
+from common.primitives import createGridData
+from common.scenegraph import createSceneGraph
+
 ################################################################################
-class PyOrkApp(object):
-  ################################################
+
+class MinimalSceneGraphApp(object):
+
   def __init__(self):
     super().__init__()
     self.ezapp = OrkEzApp.create(self)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
+    self.materials = set()
+    setupUiCamera( app=self, eye = vec3(10,10,10), constrainZ=True, up=vec3(0,1,0))
+
   ################################################
   # gpu data init:
   #  called on main thread when graphics context is
   #   made available
   ##############################################
+
   def onGpuInit(self,ctx):
-    FBI = ctx.FBI() # framebuffer interface
+
     ###################################
-    # material setup
+    # create scenegraph
     ###################################
-    self.material_frustum = FreestyleMaterial()
-    self.material_frustum.gpuInit(ctx,Path("orkshader://manip"))
-    self.material_frustum.rasterstate.culltest = tokens.PASS_FRONT
-    self.material_frustum.rasterstate.depthtest = tokens.LEQUALS
-    self.material_frustum.rasterstate.blending = tokens.ALPHA
+
+    cd = CompositingData()
+
+    params_dict = {
+      "SkyboxTexPathStr": "src://envmaps/blender_night.dds",
+      "SkyboxIntensity": float(2),
+      "SpecularIntensity": float(1),
+      "DiffuseIntensity": float(1),
+      "AmbientLight": vec3(0),
+      "DepthFogDistance": float(10000),
+      "preset": "USER",
+      "compositordata": cd
+    }
+
+
+    createSceneGraph(app=self,
+                     rendermodel="DeferredPBR",
+                     params_dict=params_dict)
+
     ###################################
-    self.material_cube = FreestyleMaterial()
-    self.material_cube.gpuInit(ctx,Path("orkshader://manip"))
-    self.material_cube.rasterstate.culltest = tokens.PASS_FRONT
-    self.material_cube.rasterstate.depthtest = tokens.LEQUALS
+    # create frustum primitive / sgnode
     ###################################
-    # create an pipeline
+
+    pmatrix = ctx.perspective(45,1,0.25,3)
+    vmatrix = mtx4.lookAt(vec3(0, 0, 0),  # eye
+                          vec3(0, 0, -1), # tgt
+                          vec3(0, 1, 0))  # up
+    frustum_prim = createFrustumPrim(ctx=ctx,vmatrix=vmatrix,pmatrix=pmatrix)
+    pipeline = createPipeline( app = self,
+                               ctx = ctx,
+                               techname = "std_mono",
+                               rendermodel = "DeferredPBR" )
+    self.primnode = frustum_prim.createNode("node1",self.layer1,pipeline)
+
     ###################################
-    permu = FxPipelinePermutation()
-    permu.rendering_model = RENDERMODEL
-    permu.technique = self.material_frustum.shader.technique("std_mono_fwd")
-    pipeline_frustum = self.material_frustum.fxcache.findPipeline(permu)
-    permu.technique = self.material_cube.shader.technique("std_mono_fwd")
-    pipeline_cube = self.material_cube.fxcache.findPipeline(permu)
+    # create grid
     ###################################
-    # explicit shader parameters
-    ###################################
-    pipeline_frustum.bindParam( self.material_frustum.param("mvp"),
-                              tokens.RCFD_Camera_MVP_Mono)
-    pipeline_cube.bindParam(    self.material_cube.param("mvp"),
-                              tokens.RCFD_Camera_MVP_Mono)
-    ###################################
-    # frustum primitive
-    ###################################
-    frustum = Frustum()
-    vmatrix = ctx.lookAt( vec3(0,0,-1),
-                          vec3(0,0,0),
-                          vec3(0,1,0) )
-    pmatrix = ctx.perspective(45,1,0.1,3)
-    frustum.set(vmatrix,pmatrix)
-    frustum_prim = primitives.FrustumPrimitive()
-    alpha = 0.25
-    frustum_prim.topColor = vec4(0.2,1.0,0.2,alpha)
-    frustum_prim.bottomColor = vec4(0.5,0.5,0.5,alpha)
-    frustum_prim.leftColor = vec4(0.2,0.2,1.0,alpha)
-    frustum_prim.rightColor = vec4(1.0,0.2,0.2,alpha)
-    frustum_prim.nearColor = vec4(0.0,0.0,0.0,alpha)
-    frustum_prim.farColor = vec4(1.0,1.0,1.0,alpha)
-    frustum_prim.frustum = frustum
-    frustum_prim.gpuInit(ctx)
-    ###################################
-    # cube primitive
-    ###################################
-    cube_prim = primitives.CubePrimitive()
-    cube_prim.size = 1
-    cube_prim.topColor = vec4(0.5,1.0,0.5,1)
-    cube_prim.bottomColor = vec4(0.5,0.0,0.5,1)
-    cube_prim.leftColor = vec4(0.0,0.5,0.5,1)
-    cube_prim.rightColor = vec4(1.0,0.5,0.5,1)
-    cube_prim.frontColor = vec4(0.5,0.5,1.0,1)
-    cube_prim.backColor = vec4(0.5,0.5,0.0,1)
-    cube_prim.gpuInit(ctx)
-    ###################################
-    # create scenegraph and sg node
-    ###################################
-    sceneparams = VarMap()
-    sceneparams.preset = RENDERMODEL
-    self.scene = self.ezapp.createScene(sceneparams)
-    layer1 = self.scene.createLayer("layer1")
-    self.frustum_node = frustum_prim.createNode("frustum",layer1,pipeline_frustum)
-    self.cube_node = cube_prim.createNode("cube",layer1,pipeline_cube)
-    self.cube_node.sortkey = 1
-    self.frustum_node.sortkey = 2
-    ###################################
-    # compositor setup
-    ###################################
-    cimpl = self.scene.compositorimpl
-    cdata = self.scene.compositordata
-    onode = self.scene.compositoroutputnode
-    rnode = self.scene.compositorrendernode
-    rnode.layers = "layer1,layer2"
-    ###################################
-    # create camera
-    ###################################
-    self.camera = CameraData()
-    self.camera.perspective(0.1, 100.0, 45.0)
-    self.cameralut = CameraDataLut()
-    self.cameralut.addCamera("spawncam",self.camera)
+
+    self.grid_data = createGridData()
+    self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
+    self.grid_node.sortkey = 1
+
   ################################################
-  # update:
-  # technically this runs from the orkid update thread
-  #  but since mainThreadLoop() is called,
-  #  the main thread will surrender the GIL completely
-  #  until ezapp.mainThreadLoop() returns.
-  #  This is useful for doing background computation.
-  #   (eg. the scene is updated from python, whilst
-  #        concurrently c++ is rendering..)
-  ################################################
+
   def onUpdate(self,updinfo):
     θ    = updinfo.absolutetime * math.pi * 2.0 * 0.1
     ###################################
-    distance = 10.0
-    eye = vec3(math.sin(θ), 1.0, -math.cos(θ)) * distance
-    self.camera.lookAt(eye, # eye
-                       vec3(0, 0, 0), # tgt
-                       vec3(0, 1, 0)) # up
-    ###################################
-    xf = self.frustum_node.worldTransform
-    xf.translation = vec3(0,0,0) 
-    xf.orientation = quat() 
-    xf.scale = 1+(1+math.sin(updinfo.absolutetime*2))
-    ###################################
-    self.cube_node.worldTransform.translation = vec3(0,0,math.sin(updinfo.absolutetime))
-    ###################################
+    x = math.sin(θ)*10
+    z = -math.cos(θ)*10
+    y = 5+math.sin(θ*1.7)*2
+    m_world_to_view = mtx4.lookAt(vec3(x, y, z), # eye
+                                  vec3(0, 0, 0),  # tgt
+                                  vec3(0, 1, 0))  # up
+    m_view_to_world =  m_world_to_view.inverse()
+    self.primnode.worldTransform.directMatrix = m_view_to_world
     self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
-  ############################################
-app = PyOrkApp()
-app.ezapp.mainThreadLoop()
+
+  ##############################################
+
+  def onUiEvent(self,uievent):
+    handled = self.uicam.uiEventHandler(uievent)
+    if handled:
+      self.camera.copyFrom( self.uicam.cameradata )
+
+###############################################################################
+
+MinimalSceneGraphApp().ezapp.mainThreadLoop()

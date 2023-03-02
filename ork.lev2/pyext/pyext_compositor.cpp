@@ -67,6 +67,10 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
   auto compositordata_type = //
       py::class_<CompositingData, compositordata_ptr_t>(module_lev2, "CompositingData")
           .def(py::init<>())
+          .def("presetDeferredPBR", 
+               [](compositordata_ptr_t cdata) {
+                cdata->presetDeferredPBR();
+          })
           .def("__repr__", [](compositordata_ptr_t d) -> std::string {
             fxstring<64> fxs;
             fxs.format("CompositingData(%p)", d.get());

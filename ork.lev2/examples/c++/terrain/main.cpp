@@ -86,7 +86,7 @@ int main(int argc, char** argv, char** envp) {
       compositordata->presetDeferredPBR();
 
     compositordata->mbEnable     = true;
-    auto nodetek                = compositordata->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
+    auto nodetek                = compositordata->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto rendnode               = nodetek->tryRenderNodeAs<pbr::deferrednode::DeferredCompositingNodePbr>();
     auto pbrcommon              = rendnode->_pbrcommon;
     pbrcommon->_depthFogDistance = 4000.0f;
