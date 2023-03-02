@@ -27,8 +27,11 @@ namespace ork::ui{
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 struct ImGuiTexturedWindow;
+struct MovieContext;
+using moviecontext_ptr_t = std::shared_ptr<MovieContext>;
 ///////////////////////////////////////////////////////////////////////////////
 struct Context;
+using gfxcontext_lambda_t = std::function<void(Context*)>;
 struct Texture;
 struct IpcTexture;
 struct RtGroup;

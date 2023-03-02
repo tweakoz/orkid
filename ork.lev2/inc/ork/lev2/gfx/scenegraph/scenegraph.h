@@ -208,6 +208,7 @@ struct Scene {
   RenderPresetContext _compositorPreset;
   std::vector<DrawableKvPair> _staticDrawables; //! global drawables owned by the scenegraph, not owned by nodes...
   Timer _profile_timer;
+  gfxcontext_lambda_t _on_render_complete;
   
   using layer_map_t = std::map<std::string, layer_ptr_t>;
 

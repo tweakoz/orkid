@@ -127,6 +127,11 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
       .def(
           "createScene",
           [bind_scene](orkezapp_ptr_t app, varmap::varmap_ptr_t params) -> scenegraph::scene_ptr_t { //
+
+              if(app->_movie_record_frame_lambda){
+                params->makeValueForKey<gfxcontext_lambda_t>("onRenderComplete",app->_movie_record_frame_lambda);
+              }
+
               auto scene = std::make_shared<scenegraph::Scene>(params);
               bind_scene(app,scene);
               return scene;
@@ -148,6 +153,12 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
           "setRefreshPolicy",
           [](orkezapp_ptr_t app, ERefreshPolicy policy, int fps) { //
             app->setRefreshPolicy(RefreshPolicyItem{policy, fps});
+          })
+      ///////////////////////////////////////////////////////
+      .def(
+          "enableMovieRecording",
+          [](orkezapp_ptr_t app, std::string path) { //
+              app->enableMovieRecording(path);
           })
       .def(
           "mainThreadLoop",

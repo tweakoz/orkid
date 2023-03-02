@@ -180,7 +180,8 @@ public:
   bool isExiting() const;
 
   ///////////////////////////////////
-
+  void enableMovieRecording(file::Path output_path);
+  gfxcontext_lambda_t _movie_record_frame_lambda;
   //void stdDraw(const StdDraw& DATA);
 
   ///////////////////////////////////
@@ -206,6 +207,7 @@ public:
   std::shared_ptr<EzViewport> _ezviewport;
   ork::opq::opq_ptr_t _rthreadq;
   EzMainWin::onupdateexit_t _onAppEarlyTerminated = nullptr;
+  moviecontext_ptr_t _moviecontext;
 };
 
 } // namespace ork::lev2

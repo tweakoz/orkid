@@ -279,7 +279,14 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     outRTG = try_rtgroup.value();
   }
 
+  if (auto try_orcl = params->typedValueForKey<gfxcontext_lambda_t>("onRenderComplete")) {
+    this->_on_render_complete = try_orcl.value();
+  }
+
+
   pbr::commonstuff_ptr_t pbrcommon;
+
+
 
   if (preset == "Unlit") {
     _compositorPreset = _compositorData->presetUnlit(outRTG);
@@ -544,6 +551,11 @@ void Scene::_renderIMPL(Context* context,RenderContextFrameData& RCFD){
     _compositorImpl->composite(drawdata);
     _compositorImpl->popCPD();
     context->popRenderContextFrameData();
+
+
+    if(_on_render_complete){
+      _on_render_complete(context);
+    }
 
     ////////////////////////////////////////////////////////////////////////////
     // debug picking here, so it shows up in renderdoc (within frame boundaries)

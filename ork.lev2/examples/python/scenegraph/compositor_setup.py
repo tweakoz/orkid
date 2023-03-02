@@ -19,12 +19,14 @@ from common.scenegraph import createSceneGraph
 
 ################################################################################
 
-class MinimalSceneGraphApp(object):
+class CompositorSetupApp(object):
 
   def __init__(self):
     super().__init__()
     self.ezapp = OrkEzApp.create(self)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
+    #self.ezapp.enableMovieRecording("test.mp4")
+
     self.materials = set()
     setupUiCamera( app=self, eye = vec3(10,10,10), constrainZ=True, up=vec3(0,1,0))
 
@@ -102,4 +104,4 @@ class MinimalSceneGraphApp(object):
 
 ###############################################################################
 
-MinimalSceneGraphApp().ezapp.mainThreadLoop()
+CompositorSetupApp().ezapp.mainThreadLoop()
