@@ -97,7 +97,7 @@ fragment_shader ps_environment //
   vec3 skyboxColor = env_equirectangularFlipV(skybox_n, MapSpecularEnv, EnvironmentMipBias) * SkyboxLevel;
   vec3 out_color   = skybox_n;
   if (gbd._mask == 1) {
-    out_color = vec3(pow(gbd._fogZ * 0.01, 2));
+    out_color = vec3(pow(gbd._fogZ * 0.01*DiffuseLevel, 2));
   }
   colorOUT = vec4(out_color, 1);
 }

@@ -582,9 +582,9 @@ void OrkEzApp::enableMovieRecording(file::Path output_path){
         CaptureBuffer capbuf;
         bool ok = fbi->captureAsFormat(nullptr, &capbuf, EBufferFormat::RGB8);
         mctx->writeFrame(capbuf);
-        int ircount = _render_count.load();
-        int iucount = _update_count.load();
-        printf( "movie write frame<%d> ircount<%d> iucount<%d>\n", mctx->_frame, ircount, iucount );
+        //int ircount = _render_count.load();
+        //int iucount = _update_count.load();
+        //printf( "movie write frame<%d> ircount<%d> iucount<%d>\n", mctx->_frame, ircount, iucount );
       };
 }
 ///////////////////////////////////////////////////////////////////////////////

@@ -27,6 +27,7 @@ void pyinit_meshutil(py::module& module_lev2);
 void pyinit_gfx_xgmmodel(py::module& module_lev2);
 void pyinit_ui(py::module& module_lev2);
 void pyinit_gfx_pbr(py::module& module_lev2);
+void pyinit_midi(py::module& module_lev2);
 
 
 void ClassInit();
@@ -133,6 +134,7 @@ PYBIND11_MODULE(_lev2, module_lev2) {
   pyinit_gfx_xgmmodel(module_lev2);
   pyinit_gfx_pbr(module_lev2);
   pyinit_ui(module_lev2);
+  pyinit_midi(module_lev2);
   //////////////////////////////////////////////////////////////////////////////
 };
 
