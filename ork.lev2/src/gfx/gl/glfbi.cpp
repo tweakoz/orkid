@@ -244,8 +244,8 @@ void GlFrameBufferInterface::_initializeContext(OffscreenBuffer* pBuf) {
 void GlFrameBufferInterface::_setScissor(int iX, int iY, int iW, int iH) {
   iX = OldStlSchoolClampToRange(iX, 0, 16384);
   iY = OldStlSchoolClampToRange(iY, 0, 16384);
-  iW = OldStlSchoolClampToRange(iW, 24, 16384);
-  iH = OldStlSchoolClampToRange(iH, 24, 16384);
+  iW = OldStlSchoolClampToRange(iW, 1, 16384);
+  iH = OldStlSchoolClampToRange(iH, 1, 16384);
 
   // printf("setScissor<%d %d %d %d>\n", iX, iY, iW, iH);
   GL_ERRORCHECK();
@@ -268,8 +268,8 @@ void GlFrameBufferInterface::_setScissor(int iX, int iY, int iW, int iH) {
 void GlFrameBufferInterface::_setViewport(int iX, int iY, int iW, int iH) {
   iX = OldStlSchoolClampToRange(iX, 0, 16384);
   iY = OldStlSchoolClampToRange(iY, 0, 16384);
-  iW = OldStlSchoolClampToRange(iW, 32, 16384);
-  iH = OldStlSchoolClampToRange(iH, 32, 16384);
+  iW = OldStlSchoolClampToRange(iW, 1, 16384);
+  iH = OldStlSchoolClampToRange(iH, 1, 16384);
 
   // printf("setViewport<%d %d %d %d>\n", iX, iY, iW, iH);
 
@@ -458,7 +458,7 @@ bool GlFrameBufferInterface::captureAsFormat(const RtBuffer* rtb, CaptureBuffer*
     h = capbuf->_captureH;
   }
 
-  // printf("captureAsFormat w<%d> h<%d>\n", w, h);
+  printf("captureAsFormat w<%d> h<%d>\n", w, h);
 
   bool fmtmatch = (capbuf->format() == destfmt);
   bool sizmatch = (capbuf->width() == w);

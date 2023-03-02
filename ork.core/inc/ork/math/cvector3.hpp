@@ -158,6 +158,12 @@ Vector3<T>::Vector3(T _x, T _y, T _z)
 }
 
 template <typename T>
+Vector3<T>::Vector3(T _a)
+    : base_t(_a,_a,_a) {
+}
+
+
+template <typename T>
 Vector3<T>::Vector3(const kln::point& klein_point)
   : base_t(T(klein_point.x()), T(klein_point.y()), T(klein_point.z()) ){
 

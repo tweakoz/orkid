@@ -73,7 +73,7 @@ void Image::initFromInMemoryFile(std::string fmtguess, const void* srcdata, size
   in->read_image(TypeDesc::UINT8, &pixels[0]);
   in->close();
 
-  if(1){
+  if(0){
   deco::printf(_image_deco, "///////////////////////////////////\n");
    deco::printf(_image_deco, "// Image::initFromInMemoryFile()\n");
    deco::printf(_image_deco, "// _width<%zu>\n", _width);
@@ -317,10 +317,10 @@ CompressedImageMipChain Image::compressedMipChainBC7() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Image::compressRGBA(CompressedImage& imgout) const {
-  deco::printf(_image_deco, "///////////////////////////////////\n");
-  deco::printf(_image_deco, "// Image::compressRGBA(%s)\n", _debugName.c_str());
-  deco::printf(_image_deco, "// imgout._width<%zu>\n", _width);
-  deco::printf(_image_deco, "// imgout._height<%zu>\n", _height);
+  //deco::printf(_image_deco, "///////////////////////////////////\n");
+  deco::printf(_image_deco, "// Image::compressRGBA(%s) w<%zu> h<%zu>\n", _debugName.c_str(), _width, _height);
+  //deco::printf(_image_deco, "// imgout._width<%zu>\n", _width);
+  //deco::printf(_image_deco, "// imgout._height<%zu>\n", _height);
   imgout._format = EBufferFormat::RGBA8;
   OrkAssert((_numcomponents == 1) or (_numcomponents == 3) or (_numcomponents == 4));
   imgout._width          = _width;
@@ -381,7 +381,7 @@ void Image::compressRGBA(CompressedImage& imgout) const {
   float time = timer.SecsSinceStart();
   float MPPS = float(_width * _height) * 1e-6 / time;
   deco::printf(_image_deco, "// compression time<%g> MPPS<%g>\n", time, MPPS);
-  deco::printf(_image_deco, "///////////////////////////////////\n");
+  //deco::printf(_image_deco, "///////////////////////////////////\n");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

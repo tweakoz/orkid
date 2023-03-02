@@ -62,10 +62,14 @@ class SceneGraphApp(object):
     params_dict = {
       "SkyboxIntensity": float(2),
       "SpecularIntensity": float(1),
+      "DiffuseIntensity": float(1),
+      "AmbientLight": vec3(0),
       "DepthFogDistance": float(10000)
     }
     if envmap != "":
       params_dict["SkyboxTexPathStr"] = envmap
+    else:
+      params_dict["SkyboxTexPathStr"] = "src://envmaps/blender_night.dds"
 
     createSceneGraph(app=self,
                      rendermodel="DeferredPBR",
@@ -83,6 +87,7 @@ class SceneGraphApp(object):
         copy.texMtlRuf = Texture.load("src://effect_textures/white.dds")
         submesh.material = copy
 
+    random.seed(12)
     for i in range(81):
       node = NODE(model,self.layer1,i)
 
@@ -101,8 +106,8 @@ class SceneGraphApp(object):
 
       subinst = node.modelinst.submeshinsts[0]
       mtl_cloned = subinst.material.clone()
-      mtl_cloned.metallicFactor = float(x/8.0)
-      mtl_cloned.roughnessFactor = float(z/8.0)
+      mtl_cloned.metallicFactor = float(z/8.0)
+      mtl_cloned.roughnessFactor = 1.0-float(x/8.0)
       r = random.uniform(0,1)
       g = random.uniform(0,1)
       b = random.uniform(0,1)

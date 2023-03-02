@@ -139,8 +139,8 @@ void pyinit_scenegraph(py::module& module_lev2) {
               "createLineNode",
               [](layer_ptr_t layer, //
                  std::string named, //
-                 fvec3_ptr_t a,
-                 fvec3_ptr_t b,
+                 fvec3 a,
+                 fvec3 b,
                  fxpipeline_ptr_t pipeline) -> node_ptr_t { //
                 auto drawable = std::make_shared<CallbackDrawable>(nullptr);
                 drawable->SetRenderCallback([a, b, pipeline](lev2::RenderContextInstData& RCID) { //
@@ -148,8 +148,8 @@ void pyinit_scenegraph(py::module& module_lev2) {
                   pipeline->wrappedDrawCall(RCID, [a, b, context]() {
                     auto& VB = GfxEnv::GetSharedDynamicVB2();
                     VtxWriter<SVtxV12N12B12T8C4> vw;
-                    auto v0 = SVtxV12N12B12T8C4(*a.get(), fvec3(), fvec3(), fvec2(), 0xffffffff);
-                    auto v1 = SVtxV12N12B12T8C4(*b.get(), fvec3(), fvec3(), fvec2(), 0xffffffff);
+                    auto v0 = SVtxV12N12B12T8C4(a, fvec3(), fvec3(), fvec2(), 0xffffffff);
+                    auto v1 = SVtxV12N12B12T8C4(b, fvec3(), fvec3(), fvec2(), 0xffffffff);
                     vw.Lock(context, &VB, 6);
                     vw.AddVertex(v0);
                     vw.AddVertex(v1);

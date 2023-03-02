@@ -329,7 +329,7 @@ BulletShapeBaseInst* BulletShapeBaseData::CreateShape(const ShapeCreateData& dat
       btVector3 bbmax;
 
       rval->_collisionShape->getAabb(ident, bbmin, bbmax);
-      rval->mBoundingBox.SetMinMax(!bbmin, !bbmax);
+      rval->mBoundingBox.SetMinMax(btv3toorkv3(bbmin), btv3toorkv3(bbmax));
     }
   }
 

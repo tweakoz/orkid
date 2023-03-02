@@ -44,9 +44,9 @@ bool EditTransform(const ork::lev2::CameraData& camera, ork::fmtx4& matrix) {
   ImGui::Checkbox("", &useSnap);
   ImGui::SameLine();
   ork::fvec3 snap;
-  static ork::fvec3 config_snaptrans = false;
-  static ork::fvec3 config_snaprot   = false;
-  static ork::fvec3 config_snapscale = false;
+  static ork::fvec3 config_snaptrans;
+  static ork::fvec3 config_snaprot  ;
+  static ork::fvec3 config_snapscale;
   switch (mCurrentGizmoOperation) {
     case ImGuizmo::TRANSLATE:
       snap = config_snaptrans;

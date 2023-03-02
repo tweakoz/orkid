@@ -77,12 +77,11 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
   py::class_<LightData, lightdata_ptr_t>(module_lev2, "LightData")
       .def_property(
           "color",                                       //
-          [](lightdata_ptr_t lightdata) -> fvec3_ptr_t { //
-            auto color = std::make_shared<fvec3>(lightdata->mColor);
-            return color;
+          [](lightdata_ptr_t lightdata) -> fvec3 { //
+            return lightdata->mColor;
           },
-          [](lightdata_ptr_t lightdata, fvec3_ptr_t color) { //
-            lightdata->mColor = *color.get();
+          [](lightdata_ptr_t lightdata, fvec3 color) { //
+            lightdata->mColor = color;
           });
   py::class_<PointLightData, LightData, pointlightdata_ptr_t>(module_lev2, "PointLightData")
       .def(py::init<>())

@@ -205,6 +205,7 @@ public:
   bool isFile() const;
   bool isFolder() const;
   bool isSymLink() const;
+  HashType hashFileContents() const;
 
   //////////////////////////////////////
 
