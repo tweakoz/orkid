@@ -46,6 +46,13 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
             [](pbr::commonstuff_ptr_t pbc, float v) {
               pbc->_environmentMipScale = v;
             })
+          .def_property("ambientLevel",
+            [](pbr::commonstuff_ptr_t pbc) -> fvec3 {
+              return pbc->_ambientLevel;
+            },
+            [](pbr::commonstuff_ptr_t pbc, fvec3 v) {
+              pbc->_ambientLevel = v;
+            })
           .def_property("diffuseLevel",
             [](pbr::commonstuff_ptr_t pbc) -> float {
               return pbc->_diffuseLevel;
