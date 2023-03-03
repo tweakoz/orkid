@@ -275,8 +275,8 @@ void CpuLightProcessor::_renderUnshadowedUnTexturedPointLights(
     //////////////////////////////////////////////////
     // set number of lights for tile
     //////////////////////////////////////////////////
-    _deferredContext._lightingmtl.bindParamInt(_deferredContext._parNumLights, chunksize);
-    _deferredContext._lightingmtl.commit();
+    _deferredContext._lightingmtl->bindParamInt(_deferredContext._parNumLights, chunksize);
+    _deferredContext._lightingmtl->commit();
     //////////////////////////////////////////////////
     // accumulate light for tile
     //////////////////////////////////////////////////

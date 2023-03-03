@@ -58,7 +58,7 @@ struct DeferredContext {
   void bindRasterState(Context* ctx, ECullTest culltest, EDepthTest depthtest, Blending blending);
   ////////////////////////////////////////////////////////////////////
   RenderCompositingNode* _node;
-  FreestyleMaterial _lightingmtl;
+  freestyle_mtl_ptr_t _lightingmtl;
   CompositingPassData _accumCPD;
   CompositingPassData _decalCPD;
   fvec4 _clearColor;
@@ -200,7 +200,8 @@ public:
   lev2::rtbuffer_ptr_t GetOutput() const final;
   lev2::rtgroup_ptr_t GetOutputGroup() const final;
   void overrideShader( std::string path );
-  
+  pbr_deferred_context_ptr_t deferredContext();
+
   svar256_t _impl;
 
   pbr::commonstuff_ptr_t _pbrcommon;

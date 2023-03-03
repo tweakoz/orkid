@@ -272,6 +272,11 @@ void pyinit_gfx_material(py::module& module_lev2) {
           .def("clone", [](pbrmaterial_ptr_t m) -> pbrmaterial_ptr_t {
             return m->clone();
           })
+          .def_property_readonly(
+              "freestyle",
+              [](pbrmaterial_ptr_t m) -> freestyle_mtl_ptr_t {
+                return m->_as_freestyle;
+              })
           .def(
               "gpuInit",
               [](pbrmaterial_ptr_t m, ctx_t& c) {

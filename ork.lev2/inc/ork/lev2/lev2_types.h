@@ -283,6 +283,11 @@ using rtbuffer_ptr_t = std::shared_ptr<RtBuffer>;
 struct FreestyleMaterial;
 using freestyle_mtl_ptr_t = std::shared_ptr<FreestyleMaterial>;
 using test_mtl_ptr_t = std::shared_ptr<GfxMaterial3DSolid>;
+///////////////////////////////////////////////////////////////////////////////
+namespace pbr::deferrednode{
+struct DeferredContext;
+};
+using pbr_deferred_context_ptr_t = std::shared_ptr<pbr::deferrednode::DeferredContext>;
 
 ///////////////////////////////////////////////////////////////////////////////
 using xgmskeleton_ptr_t = std::shared_ptr<XgmSkeleton>;

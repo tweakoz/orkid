@@ -204,6 +204,17 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
   type_codec->registerStdCodec<unlit_ptr_t>(unlitnode_type);
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
+  auto defpbrctx_type = //
+      py::class_<pbr::deferrednode::DeferredContext, pbr_deferred_context_ptr_t>(module_lev2, "DeferredPbrContext")
+      .def_property_readonly("lightingMaterial", [](pbr_deferred_context_ptr_t ctx) -> freestyle_mtl_ptr_t { //
+        return ctx->_lightingmtl;
+      })
+      .def("gpuInit", [](pbr_deferred_context_ptr_t ctx, ctx_t gfx_ctx) { //
+        ctx->gpuInit(gfx_ctx.get());
+      });
+  type_codec->registerStdCodec<pbr_deferred_context_ptr_t>(defpbrctx_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////
   using defpbrnode_ptr_t = std::shared_ptr<pbr::deferrednode::DeferredCompositingNodePbr>;
   auto defpbrnode_type = //
       py::class_<pbr::deferrednode::DeferredCompositingNodePbr, RenderCompositingNode, defpbrnode_ptr_t>(module_lev2, "DeferredPbrRenderNode")
@@ -212,6 +223,9 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
           }))
           .def_property_readonly("pbr_common", [](defpbrnode_ptr_t node) -> pbr::commonstuff_ptr_t { //
             return node->_pbrcommon;
+          })
+          .def_property_readonly("context", [](defpbrnode_ptr_t node) -> pbr_deferred_context_ptr_t { //
+            return node->deferredContext();
           })
           .def("overrideShader", [](defpbrnode_ptr_t node, std::string shaderpath)  { //
             return node->overrideShader(shaderpath);

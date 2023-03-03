@@ -62,6 +62,12 @@ class CompositorSetupApp(object):
     comp_tek.renderNode = DeferredPbrRenderNode()
     comp_tek.outputNode = ScreenOutputNode()
 
+    self.deferred_context = comp_tek.renderNode.context
+    self.deferred_context.gpuInit(ctx) # early init
+    lighting_mtl = self.deferred_context.lightingMaterial
+
+    print(lighting_mtl)
+
     comp_data = CompositingData()
     comp_scene = comp_data.createScene("scene1")
     comp_sceneitem = comp_scene.createSceneItem("item1")

@@ -743,8 +743,11 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   auto loadreq = std::make_shared<asset::LoadRequest>();
   loadreq->_asset_path = _shaderpath;
 
-  _asset_shader = ork::asset::AssetManager<FxShaderAsset>::load(loadreq);
-  _shader       = _asset_shader->GetFxShader();
+  _as_freestyle = std::make_shared<FreestyleMaterial>();
+  _as_freestyle->gpuInit(targ,_shaderpath);
+  _asset_shader = _as_freestyle->_shaderasset;
+  _shader       = _as_freestyle->_shader;
+  
 
   // specials
 
