@@ -32,6 +32,44 @@ void DrawableDataKvPair::describeX(object::ObjectClass* clazz){
   clazz->directProperty("Layer", &DrawableDataKvPair::_layername);
   clazz->directObjectProperty("DrawableData", &DrawableDataKvPair::_drawabledata);
 }
+
+Synchro::Synchro(){
+
+  _updcount.store(0);
+  _rencount.store(0);
+}
+
+Synchro::~Synchro(){
+  terminate();
+}
+void Synchro::terminate(){
+  printf( "Synchro<%p> terminating...\n", this );
+}
+
+///////////////////////////////////////////////////
+
+bool Synchro::beginUpdate(){
+  return (_updcount.load()==_rencount.load());
+}
+
+///////////////////////////////////////////////////
+
+void Synchro::endUpdate(){
+  _updcount++;
+}
+
+///////////////////////////////////////////////////
+
+bool Synchro::beginRender(){
+  return ((_updcount.load()-1)==_rencount.load());
+}
+
+///////////////////////////////////////////////////
+
+void Synchro::endRender(){
+  _rencount++;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 Node::Node(std::string named)
@@ -202,6 +240,9 @@ Scene::Scene(varmap::varmap_ptr_t params) {
 ///////////////////////////////////////////////////////////////////////////////
 
 Scene::~Scene() {
+  if(_synchro){
+    _synchro->terminate();
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -416,6 +457,15 @@ layer_ptr_t Scene::findLayer(std::string named) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras,on_enqueue_fn_t on_enqueue) {
+
+  if(_synchro){
+    bool OK = _synchro->beginUpdate();
+    if(not OK){
+      return;
+    }
+  }
+
+
   auto DB = _dbufcontext_SG->acquireForWriteLocked();
   DB->Reset();
   DB->copyCameras(*cameras.get());
@@ -499,6 +549,11 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras,on_enqueue_fn_t on_enq
   }
 
   _dbufcontext_SG->releaseFromWriteLocked(DB);
+
+  if(_synchro){
+    _synchro->endUpdate();
+  }
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -507,6 +562,13 @@ void Scene::_renderIMPL(Context* context,RenderContextFrameData& RCFD){
 
   if (_dogpuinit) {
     gpuInit(context);
+  }
+
+  if(_synchro){
+    bool OK = _synchro->beginRender();
+    if( not OK ){
+      return;
+    }
   }
 
   auto DB = _dbufcontext_SG->acquireForReadLocked();
@@ -570,6 +632,10 @@ void Scene::_renderIMPL(Context* context,RenderContextFrameData& RCFD){
     context->endFrame();
   }
   _dbufcontext_SG->releaseFromReadLocked(DB);
+
+  if(_synchro){
+    _synchro->endRender();
+  }
 
 }
 

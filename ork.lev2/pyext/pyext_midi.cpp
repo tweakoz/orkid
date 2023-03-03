@@ -15,8 +15,13 @@ namespace ork::lev2 {
 static py::object ON_MIDI_PYLAMBDA;
 
 void on_midi_input_message(double deltatime, midi::message_t* message, void* userData){
-  py::gil_scoped_acquire acquire;
-  ON_MIDI_PYLAMBDA(deltatime,*message);
+
+  midi::message_t copy = *message;
+  auto op = [=](){
+    py::gil_scoped_acquire acquire;
+    ON_MIDI_PYLAMBDA(deltatime,*message);
+  };
+  opq::mainSerialQueue()->enqueue(op);
 }
 
 void pyinit_midi(py::module& module_lev2) {
