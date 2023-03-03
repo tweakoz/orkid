@@ -587,6 +587,9 @@ void OrkEzApp::enableMovieRecording(file::Path output_path){
         //printf( "movie write frame<%d> ircount<%d> iucount<%d>\n", mctx->_frame, ircount, iucount );
       };
 }
+void OrkEzApp::finishMovieRecording(){
+  _moviecontext->terminate();
+}
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::setRefreshPolicy(RefreshPolicyItem policy) {
   if(_mainWindow)

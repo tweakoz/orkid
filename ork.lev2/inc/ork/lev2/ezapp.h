@@ -181,6 +181,7 @@ public:
 
   ///////////////////////////////////
   void enableMovieRecording(file::Path output_path);
+  void finishMovieRecording();
   gfxcontext_lambda_t _movie_record_frame_lambda;
   //void stdDraw(const StdDraw& DATA);
 

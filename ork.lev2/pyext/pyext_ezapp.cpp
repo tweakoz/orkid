@@ -40,11 +40,30 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
   py::class_<OrkEzApp, orkezapp_ptr_t>(module_lev2, "OrkEzApp") //
       .def_static(
           "create",
-          [type_codec](py::object appinstance) { //
+          [type_codec](py::object appinstance,py::kwargs kwargs) { //
 
             ork::genviron.init_from_global_env();
 
             auto appinitdata = std::make_shared<AppInitData>();
+
+            if (kwargs) {
+              for (auto item : kwargs) {
+                auto key = py::cast<std::string>(item.first);
+                if (key == "left") {
+                  appinitdata->_left = py::cast<int>(item.second);
+                } else if (key == "top") {
+                  appinitdata->_top = py::cast<int>(item.second);
+                } else if (key == "width") {
+                  appinitdata->_width = py::cast<int>(item.second);
+                } else if (key == "height") {
+                  appinitdata->_height = py::cast<int>(item.second);
+                } else if (key == "fullscreen") {
+                  appinitdata->_fullscreen = py::cast<bool>(item.second);
+                }
+              }
+            }
+
+
             auto rval                                              = OrkEzApp::create(appinitdata);
             auto d_ev                                              = std::make_shared<ui::DrawEvent>(nullptr);
             rval->_vars.makeValueForKey<uidrawevent_ptr_t>("drawev") = d_ev;
@@ -58,11 +77,6 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                 py::gil_scoped_acquire acquire;
                 auto pyfn = rval->_vars.typedValueForKey<py::function>("gpuinitfn");
                 pyfn.value()(ctx_t(ctx));
-                // try {
-                // pyfn.value()(ctx_t(ctx));
-                //} catch (std::exception& e) {
-                // OrkAssert(false);
-                //}
               });
             }
             ////////////////////////////////////////////////////////////////////
@@ -159,6 +173,18 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
           "enableMovieRecording",
           [](orkezapp_ptr_t app, std::string path) { //
               app->enableMovieRecording(path);
+          })
+      ///////////////////////////////////////////////////////
+      .def(
+          "finishMovieRecording",
+          [](orkezapp_ptr_t app) { //
+              app->finishMovieRecording();
+          })
+      ///////////////////////////////////////////////////////
+      .def(
+          "signalExit",
+          [](orkezapp_ptr_t app) { //
+              app->signalExit();
           })
       .def(
           "mainThreadLoop",

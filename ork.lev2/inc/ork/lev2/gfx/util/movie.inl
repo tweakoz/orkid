@@ -170,6 +170,10 @@ struct MovieContext {
   /////////////////////////////////////////////////////////////////////////////////////////
   void writeFrame(CaptureBuffer& capbuf) {
 
+    if(_terminated){
+      return;
+    }
+
     bool downsample_2x2 = false;
 
 #if defined(__APPLE__)
@@ -181,12 +185,8 @@ struct MovieContext {
     }
     downsample_2x2 = true;
 #else
-    if (capbuf.miW != _width) {
-      return;
-    }
-    if (capbuf.miH != _height) {
-      return;
-    }
+    OrkAssert(capbuf.miW == _width);
+    OrkAssert(capbuf.miH == _height);
 #endif
     ///////////////////////////////////////
     // blit into scaling buffer
