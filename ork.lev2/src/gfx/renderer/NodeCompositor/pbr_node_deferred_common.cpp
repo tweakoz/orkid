@@ -166,6 +166,13 @@ void DeferredContext::gpuInit(Context* target) {
     auto mtl_load_req2 = std::make_shared<asset::LoadRequest>("src://effect_textures/voltex_pn2");
     _whiteTexture = asset::AssetManager<TextureAsset>::load(mtl_load_req1);
     _voltexA      = asset::AssetManager<TextureAsset>::load(mtl_load_req2);
+    //////////////////////////////////////////////////////////////
+    // new pipeline stuff.
+    //////////////////////////////////////////////////////////////
+    auto fxcache = _lightingmtl->pipelineCache();
+    FxPipelinePermutation permu;
+    permu._forced_technique = _tekEnvironmentLighting;
+    _pipeline_envlighting_model0_mono = fxcache->findPipeline(permu);
 
     printf( "SHADER<%s> Load Complete\n", _shadername.c_str() );
 

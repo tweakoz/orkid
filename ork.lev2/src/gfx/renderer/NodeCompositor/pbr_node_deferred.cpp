@@ -127,27 +127,30 @@ struct PbrNodeImpl {
     _context->_lightingmtl->_rasterstate.SetDepthTest(EDepthTest::OFF);
     _context->_lightingmtl->_rasterstate.SetCullTest(ECullTest::OFF);
 
-
     int pbr_model = RCFD.getUserProperty("pbr_model"_crc).get<int>();
+
+    fxpipeline_ptr_t baselighting_pipeline = _context->_pipeline_envlighting_model0_mono;
 
     switch( pbr_model ){
       case 1:
-      _context->_lightingmtl->begin(
-          is_stereo //
-              ? _context->_tekEnvironmentLightingSDFStereo
-              : _context->_tekEnvironmentLightingSDF,
-          RCFD);
+        OrkAssert(false);
         break;
       case 0:
       default:
-      _context->_lightingmtl->begin(
-          is_stereo //
-              ? _context->_tekEnvironmentLightingStereo
-              : _context->_tekEnvironmentLighting,
-          RCFD);
+        OrkAssert(not is_stereo);
         break;
     }
+
     //////////////////////////////////////////////////////
+    // defaults..
+    //////////////////////////////////////////////////////
+
+    /////////////////////////
+    // pipeline wrapped (overrides here)
+    /////////////////////////
+
+    RenderContextInstData dummy_rcid(&RCFD);
+    baselighting_pipeline->wrappedDrawCall(dummy_rcid,[=](){
 
     _context->_lightingmtl->bindParamFloat(_context->_parDepthFogDistance, 1.0f / pbrcommon->depthFogDistance());
     _context->_lightingmtl->bindParamFloat(_context->_parDepthFogPower, pbrcommon->depthFogPower());
@@ -156,9 +159,6 @@ struct PbrNodeImpl {
 
     _context->_lightingmtl->bindParamCTex(_context->_parMapGBuf, _context->_rtgGbuffer->GetMrt(0)->texture());
 
-    //_context->_lightingmtl->bindParamCTex(_context->_parMapGBufAlbAo, _context->_rtgGbuffer->GetMrt(0)->texture());
-    //_context->_lightingmtl->bindParamCTex(_context->_parMapGBufNrmL, _context->_rtgGbuffer->GetMrt(1)->texture());
-    //_context->_lightingmtl->bindParamCTex(_context->_parMapGBufRufMtlAlpha, _context->_rtgGbuffer->GetMrt(2)->texture());
     _context->_lightingmtl->bindParamCTex(_context->_parMapDepth, _context->_rtgGbuffer->_depthTexture);
 
     _context->_lightingmtl->bindParamCTex(_context->_parMapSpecularEnv, pbrcommon->envSpecularTexture().get());
@@ -185,13 +185,14 @@ struct PbrNodeImpl {
     _context->_lightingmtl->_rasterstate.SetZWriteMask(false);
     _context->_lightingmtl->_rasterstate.SetDepthTest(EDepthTest::OFF);
     _context->_lightingmtl->_rasterstate.SetAlphaTest(EALPHATEST_OFF);
-    /////////////////////////
+
     _context->bindViewParams(VD);
-    /////////////////////////
     _context->_lightingmtl->commit();
     RSI->BindRasterState(_context->_lightingmtl->_rasterstate);
-    DWI->quad2DEMLTiled(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0), 16);
-    _context->_lightingmtl->end(RCFD);
+
+      DWI->quad2DEMLTiled(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0), 16);
+    });
+
     targ->debugPopGroup(); // BaseLighting
 
     /////////////////////////////////

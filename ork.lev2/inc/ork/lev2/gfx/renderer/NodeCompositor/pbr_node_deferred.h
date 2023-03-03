@@ -59,6 +59,8 @@ struct DeferredContext {
   ////////////////////////////////////////////////////////////////////
   RenderCompositingNode* _node;
   freestyle_mtl_ptr_t _lightingmtl;
+
+  fxpipeline_ptr_t _pipeline_envlighting_model0_mono;
   CompositingPassData _accumCPD;
   CompositingPassData _decalCPD;
   fvec4 _clearColor;

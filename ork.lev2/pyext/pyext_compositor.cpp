@@ -209,6 +209,9 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
       .def_property_readonly("lightingMaterial", [](pbr_deferred_context_ptr_t ctx) -> freestyle_mtl_ptr_t { //
         return ctx->_lightingmtl;
       })
+      .def_property_readonly("pipeline_envlighting_model0_mono", [](pbr_deferred_context_ptr_t ctx) -> fxpipeline_ptr_t { //
+        return ctx->_pipeline_envlighting_model0_mono;
+      })
       .def("gpuInit", [](pbr_deferred_context_ptr_t ctx, ctx_t gfx_ctx) { //
         ctx->gpuInit(gfx_ctx.get());
       });
