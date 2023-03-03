@@ -50,6 +50,8 @@ struct CameraData {
 
   void Ortho(float left, float right, float top, float bottom,float fnear, float ffar);
 
+  void fromPoseMatrix(const fmtx4& posemtx);
+  
   fvec3 mEye;
   fvec3 mTarget;
   fvec3 mUp;

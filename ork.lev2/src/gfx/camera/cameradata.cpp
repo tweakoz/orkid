@@ -174,6 +174,13 @@ void CameraData::Lookat(const fvec3& eye, const fvec3& tgt, const fvec3& up) {
   mUp     = up;
 }
 ////////////////////////////////////////////////////////////////////////////////
+void CameraData::fromPoseMatrix(const fmtx4& posemtx ){
+  auto eye = posemtx.translation();
+  auto tgt = eye + posemtx.column(2).xyz().normalized();
+  auto up = posemtx.column(1).xyz().normalized();
+  Lookat(eye,tgt,up);
+}
+////////////////////////////////////////////////////////////////////////////////
 CameraMatrices CameraData::computeMatrices(float faspect) const {
   CameraMatrices rval;
   ///////////////////////////////
