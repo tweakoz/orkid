@@ -1062,6 +1062,7 @@ void PBRMaterial::end(const RenderContextFrameData& RCFD) {
 pbrmaterial_ptr_t PBRMaterial::clone() const {
   auto copy = std::make_shared<PBRMaterial>();
   *copy = *this;
+  copy->_initialTarget = nullptr;
   return copy;
 }
 

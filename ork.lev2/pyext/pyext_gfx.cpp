@@ -10,6 +10,7 @@
 #include <ork/lev2/gfx/terrain/terrain_drawable.h>
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/gfxvtxbuf.h>
+#include <ork/math/cvector4.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -149,11 +150,20 @@ void pyinit_gfx(py::module& module_lev2) {
           })
       .def("add", [](vw_vtxa_t& vw, vtxa_t& vtx) { vw.AddVertex(vtx); });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<txi_t>(module_lev2, "TextureInterface").def("__repr__", [](const txi_t& txi) -> std::string {
-    fxstring<256> fxs;
-    fxs.format("TXI(%p)", txi.get());
-    return fxs.c_str();
-  });
+  py::class_<txi_t>(module_lev2, "TextureInterface")
+      .def(
+          "createColorTexture",
+          [](const txi_t& the_txi, //
+             fvec4 color, //
+             int w, //
+             int h ) -> texture_ptr_t { //
+            return the_txi->createColorTexture(color, w, h); //
+          })
+      .def("__repr__", [](const txi_t& txi) -> std::string {
+        fxstring<256> fxs;
+        fxs.format("TXI(%p)", txi.get());
+        return fxs.c_str();
+      });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<rsi_t>(module_lev2, "RasterStateInterface").def("__repr__", [](const rsi_t& rsi) -> std::string {
     fxstring<256> fxs;
@@ -162,38 +172,38 @@ void pyinit_gfx(py::module& module_lev2) {
   });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<SRasterState>(module_lev2, "RasterState") //
-    .def_property(
-        "culltest",
-        [](const SRasterState& state) -> crcstring_ptr_t { //
-          auto crcstr = std::make_shared<CrcString>(uint64_t(state._culltest));
-          return crcstr;
-        },
-        [](SRasterState& state, crcstring_ptr_t ctest) { //
-          state._culltest = ECullTest(ctest->hashed());
-        })
-    .def_property(
-        "depthtest",
-        [](const SRasterState& state) -> crcstring_ptr_t { //
-          auto crcstr = std::make_shared<CrcString>(uint64_t(state._depthtest));
-          return crcstr;
-        },
-        [](SRasterState& state, crcstring_ptr_t ctest) { //
-          state._depthtest = EDepthTest(ctest->hashed());
-        })
-    .def_property(
-        "blending",
-        [](const SRasterState& state) -> crcstring_ptr_t { //
-          auto crcstr = std::make_shared<CrcString>(uint64_t(state._blending));
-          return crcstr;
-        },
-        [](SRasterState& state, crcstring_ptr_t ctest) { //
-          state._blending = Blending(ctest->hashed());
-        })
-    .def("__repr__", [](const SRasterState& state) -> std::string {
-      fxstring<256> fxs;
-      fxs.format("RasterState()");
-      return fxs.c_str();
-    });
+      .def_property(
+          "culltest",
+          [](const SRasterState& state) -> crcstring_ptr_t { //
+            auto crcstr = std::make_shared<CrcString>(uint64_t(state._culltest));
+            return crcstr;
+          },
+          [](SRasterState& state, crcstring_ptr_t ctest) { //
+            state._culltest = ECullTest(ctest->hashed());
+          })
+      .def_property(
+          "depthtest",
+          [](const SRasterState& state) -> crcstring_ptr_t { //
+            auto crcstr = std::make_shared<CrcString>(uint64_t(state._depthtest));
+            return crcstr;
+          },
+          [](SRasterState& state, crcstring_ptr_t ctest) { //
+            state._depthtest = EDepthTest(ctest->hashed());
+          })
+      .def_property(
+          "blending",
+          [](const SRasterState& state) -> crcstring_ptr_t { //
+            auto crcstr = std::make_shared<CrcString>(uint64_t(state._blending));
+            return crcstr;
+          },
+          [](SRasterState& state, crcstring_ptr_t ctest) { //
+            state._blending = Blending(ctest->hashed());
+          })
+      .def("__repr__", [](const SRasterState& state) -> std::string {
+        fxstring<256> fxs;
+        fxs.format("RasterState()");
+        return fxs.c_str();
+      });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<RtBuffer, rtb_t>(module_lev2, "RtBuffer")
       .def(

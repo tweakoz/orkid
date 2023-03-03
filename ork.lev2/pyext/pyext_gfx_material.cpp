@@ -272,6 +272,11 @@ void pyinit_gfx_material(py::module& module_lev2) {
           .def("clone", [](pbrmaterial_ptr_t m) -> pbrmaterial_ptr_t {
             return m->clone();
           })
+          .def(
+              "gpuInit",
+              [](pbrmaterial_ptr_t m, ctx_t& c) {
+                m->gpuInit(c.get());
+              })
           .def_property(
               "metallicFactor",
               [](pbrmaterial_ptr_t m) -> float { //
@@ -353,10 +358,13 @@ void pyinit_gfx_material(py::module& module_lev2) {
               [](pbrmaterial_ptr_t m) -> std::string { //
                 return m->_emissiveMapName;
               })
-          .def_property_readonly(
+          .def_property(
               "shaderpath",
               [](pbrmaterial_ptr_t m) -> std::string { //
                 return m->_shaderpath.c_str();
+              },
+              [](pbrmaterial_ptr_t m, std::string p)  { //
+                m->_shaderpath = p;
               });
   type_codec->registerStdCodec<pbrmaterial_ptr_t>(pbr_type);
   /////////////////////////////////////////////////////////////////////////////////
