@@ -213,7 +213,7 @@ void pyinit_gfx(py::module& module_lev2) {
             fxs.format("RtBuffer(%p)", rtb.get());
             return fxs.c_str();
           })
-      .def_property_readonly("texture", [](rtb_t& rtb) -> tex_t { return tex_t(rtb->texture()); });
+      .def_property_readonly("texture", [](rtb_t& rtb) -> texture_ptr_t { return texture_ptr_t(rtb->texture()); });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<RtGroup, rtg_t>(module_lev2, "RtGroup")
       .def("resize", [](rtg_t& rtg, int w, int h) { rtg.get()->Resize(w, h); })
@@ -225,7 +225,7 @@ void pyinit_gfx(py::module& module_lev2) {
             return fxs.c_str();
           })
       .def("buffer", [](const rtg_t& rtg, int irtb) -> rtb_t { return rtg->GetMrt(irtb); });
-  //.def("texture", [](const rtg_t& rtg, int irtb) -> tex_t { return rtg->GetMrt(irtb)->texture(); });
+  //.def("texture", [](const rtg_t& rtg, int irtb) -> texture_ptr_t { return rtg->GetMrt(irtb)->texture(); });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<CaptureBuffer>(module_lev2, "CaptureBuffer", pybind11::buffer_protocol())
       .def(py::init<>())
@@ -250,10 +250,10 @@ void pyinit_gfx(py::module& module_lev2) {
       });
   /////////////////////////////////////////////////////////////////////////////////
   auto texture_type = //
-      py::class_<lev2::Texture, tex_t>(module_lev2, "Texture")
+      py::class_<Texture, texture_ptr_t>(module_lev2, "Texture")
           .def(
               "__repr__",
-              [](const tex_t& tex) -> std::string {
+              [](const texture_ptr_t& tex) -> std::string {
                 fxstring<256> fxs;
                 fxs.format(
                     "Texture(%p:\"%s\") w<%d> h<%d> d<%d> fmt<%s>",
@@ -265,9 +265,9 @@ void pyinit_gfx(py::module& module_lev2) {
                     EBufferFormatToName(tex->_texFormat).c_str());
                 return fxs.c_str();
               })
-          .def_static("load", [](std::string path) -> tex_t { return Texture::LoadUnManaged(path); });
+          .def_static("load", [](std::string path) -> texture_ptr_t { return Texture::LoadUnManaged(path); });
   // using rawtexptr_t = Texture*;
-  type_codec->registerStdCodec<tex_t>(texture_type);
+  type_codec->registerStdCodec<texture_ptr_t>(texture_type);
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<PixelFetchContext>(module_lev2, "PixelFetchContext")
       .def(py::init<>())

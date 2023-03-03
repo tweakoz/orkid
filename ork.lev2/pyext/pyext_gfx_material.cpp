@@ -143,7 +143,11 @@ void pyinit_gfx_material(py::module& module_lev2) {
                 else if( py::isinstance<fvec4>(inp_value) ){
                   pipeline->bindParam(param.get(),py::cast<fvec4>(inp_value));
                 }
+                else if( py::isinstance<Texture>(inp_value) ){
+                  pipeline->bindParam(param.get(),py::cast<texture_ptr_t>(inp_value));
+                }
                 else{
+                  py::print("Bad Param Type: ", inp_value);
                   OrkAssert(false);
                 }
               })
@@ -253,7 +257,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
               [](freestyle_mtl_ptr_t m, pyfxparam_ptr_t& p, const fmtx4& value) { m->bindParamMatrix(p.get(), value); })
           .def(
               "bindParamTexture",
-              [](freestyle_mtl_ptr_t m, pyfxparam_ptr_t& p, const tex_t& value) { m->bindParamCTex(p.get(), value.get()); })
+              [](freestyle_mtl_ptr_t m, pyfxparam_ptr_t& p, const texture_ptr_t& value) { m->bindParamCTex(p.get(), value.get()); })
           .def(
               "begin",
               [](freestyle_mtl_ptr_t m, pyfxtechnique_ptr_t tek, RenderContextFrameData& rcfd) { m->begin(tek.get(), rcfd); })
