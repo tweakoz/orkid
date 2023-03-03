@@ -21,6 +21,7 @@ extern bool _macosUseHIDPI;
 struct MovieContext {
 
   MovieContext() {
+    _filename = "GeneratedVideo.mp4";
   }
 
   void init(int width, int height) {
@@ -49,7 +50,6 @@ struct MovieContext {
 
     // Preparing the data concerning the format and codec in order to write properly the header, frame data and end of file.
 
-    _filename = "GeneratedVideo.mp4";
 
     _format = (AVOutputFormat *) av_guess_format(nullptr, _filename.c_str(), nullptr);
 
@@ -285,6 +285,12 @@ struct MovieContext {
   }
   void terminate() {
     
+    if(_terminated){
+      return;
+    }
+
+    _terminated = true;
+    
     printf( "terminating movie stream\n");
 
     bool end_of_stream = false;
@@ -331,6 +337,7 @@ struct MovieContext {
   int _got_output                = 0;
   int _fps                       = 60;
   AVPacket _avpacket;
+  bool _terminated = false;
 };
 
 } // namespace ork::lev2

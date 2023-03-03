@@ -32,6 +32,44 @@ void DrawableDataKvPair::describeX(object::ObjectClass* clazz){
   clazz->directProperty("Layer", &DrawableDataKvPair::_layername);
   clazz->directObjectProperty("DrawableData", &DrawableDataKvPair::_drawabledata);
 }
+
+Synchro::Synchro(){
+
+  _updcount.store(0);
+  _rencount.store(0);
+}
+
+Synchro::~Synchro(){
+  terminate();
+}
+void Synchro::terminate(){
+  printf( "Synchro<%p> terminating...\n", this );
+}
+
+///////////////////////////////////////////////////
+
+bool Synchro::beginUpdate(){
+  return (_updcount.load()==_rencount.load());
+}
+
+///////////////////////////////////////////////////
+
+void Synchro::endUpdate(){
+  _updcount++;
+}
+
+///////////////////////////////////////////////////
+
+bool Synchro::beginRender(){
+  return ((_updcount.load()-1)==_rencount.load());
+}
+
+///////////////////////////////////////////////////
+
+void Synchro::endRender(){
+  _rencount++;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 Node::Node(std::string named)
@@ -202,6 +240,9 @@ Scene::Scene(varmap::varmap_ptr_t params) {
 ///////////////////////////////////////////////////////////////////////////////
 
 Scene::~Scene() {
+  if(_synchro){
+    _synchro->terminate();
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -279,22 +320,29 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     outRTG = try_rtgroup.value();
   }
 
+  if (auto try_orcl = params->typedValueForKey<gfxcontext_lambda_t>("onRenderComplete")) {
+    this->_on_render_complete = try_orcl.value();
+  }
+
+
   pbr::commonstuff_ptr_t pbrcommon;
+
+
 
   if (preset == "Unlit") {
     _compositorPreset = _compositorData->presetUnlit(outRTG);
-    auto nodetek  = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
+    auto nodetek  = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outrnode = nodetek->tryRenderNodeAs<compositor::UnlitNode>();
   }
   if (preset == "ForwardPBR") {
     _compositorPreset = _compositorData->presetForwardPBR(outRTG);
-    auto nodetek  = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
+    auto nodetek  = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outrnode = nodetek->tryRenderNodeAs<pbr::ForwardNode>();
     pbrcommon = outrnode->_pbrcommon;
   }
   else if (preset == "DeferredPBR") {
     _compositorPreset = _compositorData->presetDeferredPBR(outRTG);
-    auto nodetek  = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
+    auto nodetek  = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outpnode = nodetek->tryOutputNodeAs<RtGroupOutputCompositingNode>();
     auto outrnode = nodetek->tryRenderNodeAs<pbr::deferrednode::DeferredCompositingNodePbr>();
 
@@ -307,12 +355,12 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     pbrcommon = outrnode->_pbrcommon;
   } else if (preset == "PBRVR") {
     _compositorPreset = _compositorData->presetPBRVR();
-    auto nodetek  = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
+    auto nodetek  = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outrnode = nodetek->tryRenderNodeAs<pbr::deferrednode::DeferredCompositingNodePbr>();
     pbrcommon = outrnode->_pbrcommon;
   } else if (preset == "FWDPBRVR") {
     _compositorPreset = _compositorData->presetForwardPBRVR();
-    auto nodetek  = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
+    auto nodetek  = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outrnode = nodetek->tryRenderNodeAs<pbr::ForwardNode>();
     pbrcommon = outrnode->_pbrcommon;
   } else if (preset == "USER"){
@@ -360,7 +408,7 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
   //////////////////////////////////////////////
 
   _compositorData->mbEnable = true;
-  _compositorTechnique       = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
+  _compositorTechnique       = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
 
   _outputNode = _compositorTechnique->tryOutputNodeAs<OutputCompositingNode>();
   _renderNode = _compositorTechnique->tryRenderNodeAs<RenderCompositingNode>();
@@ -409,6 +457,15 @@ layer_ptr_t Scene::findLayer(std::string named) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras,on_enqueue_fn_t on_enqueue) {
+
+  if(_synchro){
+    bool OK = _synchro->beginUpdate();
+    if(not OK){
+      return;
+    }
+  }
+
+
   auto DB = _dbufcontext_SG->acquireForWriteLocked();
   DB->Reset();
   DB->copyCameras(*cameras.get());
@@ -492,6 +549,11 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras,on_enqueue_fn_t on_enq
   }
 
   _dbufcontext_SG->releaseFromWriteLocked(DB);
+
+  if(_synchro){
+    _synchro->endUpdate();
+  }
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -500,6 +562,13 @@ void Scene::_renderIMPL(Context* context,RenderContextFrameData& RCFD){
 
   if (_dogpuinit) {
     gpuInit(context);
+  }
+
+  if(_synchro){
+    bool OK = _synchro->beginRender();
+    if( not OK ){
+      return;
+    }
   }
 
   auto DB = _dbufcontext_SG->acquireForReadLocked();
@@ -545,6 +614,11 @@ void Scene::_renderIMPL(Context* context,RenderContextFrameData& RCFD){
     _compositorImpl->popCPD();
     context->popRenderContextFrameData();
 
+
+    if(_on_render_complete){
+      _on_render_complete(context);
+    }
+
     ////////////////////////////////////////////////////////////////////////////
     // debug picking here, so it shows up in renderdoc (within frame boundaries)
     ////////////////////////////////////////////////////////////////////////////
@@ -558,6 +632,10 @@ void Scene::_renderIMPL(Context* context,RenderContextFrameData& RCFD){
     context->endFrame();
   }
   _dbufcontext_SG->releaseFromReadLocked(DB);
+
+  if(_synchro){
+    _synchro->endRender();
+  }
 
 }
 

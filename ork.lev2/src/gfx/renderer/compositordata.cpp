@@ -80,13 +80,13 @@ RenderPresetContext CompositingData::presetUnlit(rtgroup_ptr_t outputgrp) {
   else
     o1 = t1->createOutputNode<ScreenOutputCompositingNode>();
 
-  auto s1 = new CompositingScene;
-  auto i1 = new CompositingSceneItem;
+  auto s1 = std::make_shared<CompositingScene>();
+  auto i1 = std::make_shared<CompositingSceneItem>();
   i1->_technique = t1;
-  s1->items().AddSorted("item1"_pool, i1);
-  _activeScene = "scene1"_pool;
-  _activeItem  = "item1"_pool;
-  _scenes.AddSorted("scene1"_pool, s1);
+  s1->_items["item1"]=i1;
+  _activeScene = "scene1";
+  _activeItem  = "item1";
+  _scenes["scene1"]=s1;
 
   RenderPresetContext rval;
   rval._nodetek    = t1;
@@ -104,13 +104,13 @@ void CompositingData::presetPicking() {
   auto o1 = t1->createOutputNode<RtGroupOutputCompositingNode>();
   auto r1 = t1->createRenderNode<PickingCompositingNode>();
 
-  auto s1 = new CompositingScene;
-  auto i1 = new CompositingSceneItem;
+  auto s1 = std::make_shared<CompositingScene>();
+  auto i1 = std::make_shared<CompositingSceneItem>();
   i1->_technique = t1;
-  s1->items().AddSorted("item1"_pool, i1);
-  _activeScene = "scene1"_pool;
-  _activeItem  = "item1"_pool;
-  _scenes.AddSorted("scene1"_pool, s1);
+  s1->_items["item1"]=i1;
+  _activeScene = "scene1";
+  _activeItem  = "item1";
+  _scenes["scene1"]=s1;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -139,13 +139,13 @@ RenderPresetContext CompositingData::presetDeferredPBR(rtgroup_ptr_t outputgrp) 
 
   auto load_req = pbr_common->requestSkyboxTexture("src://envmaps/tozenv_nebula");
 
-  auto s1 = new CompositingScene;
-  auto i1 = new CompositingSceneItem;
+  auto s1 = std::make_shared<CompositingScene>();
+  auto i1 = std::make_shared<CompositingSceneItem>();
   i1->_technique = t1;
-  s1->items().AddSorted("item1"_pool, i1);
-  _activeScene = "scene1"_pool;
-  _activeItem  = "item1"_pool;
-  _scenes.AddSorted("scene1"_pool, s1);
+  s1->_items["item1"]=i1;
+  _activeScene = "scene1";
+  _activeItem  = "item1";
+  _scenes["scene1"]=s1;
 
   rval._nodetek    = t1;
   rval._outputnode = selected_output_node;
@@ -166,13 +166,13 @@ RenderPresetContext CompositingData::presetPBRVR() {
 
   auto load_req = pbr_common->requestSkyboxTexture("src://envmaps/tozenv_nebula");
 
-  auto s1 = new CompositingScene;
-  auto i1 = new CompositingSceneItem;
+  auto s1 = std::make_shared<CompositingScene>();
+  auto i1 = std::make_shared<CompositingSceneItem>();
   i1->_technique = t1;
-  s1->items().AddSorted("item1"_pool, i1);
-  _activeScene = "scene1"_pool;
-  _activeItem  = "item1"_pool;
-  _scenes.AddSorted("scene1"_pool, s1);
+  s1->_items["item1"]=i1;
+  _activeScene = "scene1";
+  _activeItem  = "item1";
+  _scenes["scene1"]=s1;
 
   rval._nodetek    = t1;
   rval._outputnode = o1;
@@ -198,13 +198,13 @@ RenderPresetContext CompositingData::presetForwardPBR(rtgroup_ptr_t outputgrp) {
 
   auto load_req = r1->_pbrcommon->requestSkyboxTexture("src://envmaps/tozenv_nebula");
 
-  auto s1 = new CompositingScene;
-  auto i1 = new CompositingSceneItem;
+  auto s1 = std::make_shared<CompositingScene>();
+  auto i1 = std::make_shared<CompositingSceneItem>();
   i1->_technique = t1;
-  s1->items().AddSorted("item1"_pool, i1);
-  _activeScene = "scene1"_pool;
-  _activeItem  = "item1"_pool;
-  _scenes.AddSorted("scene1"_pool, s1);
+  s1->_items["item1"]=i1;
+  _activeScene = "scene1";
+  _activeItem  = "item1";
+  _scenes["scene1"]=s1;
 
   rval._nodetek    = t1;
   rval._outputnode = selected_output_node;
@@ -223,13 +223,13 @@ RenderPresetContext CompositingData::presetForwardPBRVR() {
 
   auto load_req = r1->_pbrcommon->requestSkyboxTexture("src://envmaps/tozenv_nebula");
 
-  auto s1 = new CompositingScene;
-  auto i1 = new CompositingSceneItem;
+  auto s1 = std::make_shared<CompositingScene>();
+  auto i1 = std::make_shared<CompositingSceneItem>();
   i1->_technique = t1;
-  s1->items().AddSorted("item1"_pool, i1);
-  _activeScene = "scene1"_pool;
-  _activeItem  = "item1"_pool;
-  _scenes.AddSorted("scene1"_pool, s1);
+  s1->_items["item1"]=i1;
+  _activeScene = "scene1";
+  _activeItem  = "item1";
+  _scenes["scene1"]=s1;
 
   rval._nodetek    = t1;
   rval._outputnode = o1;
@@ -240,22 +240,22 @@ RenderPresetContext CompositingData::presetForwardPBRVR() {
 
 //////////////////////////////////////////////////////////////////////////////
 
-const CompositingScene* CompositingData::findScene(const PoolString& named) const {
-  const CompositingScene* rval = nullptr;
+compositingscene_constptr_t CompositingData::findScene(const std::string& named) const {
+  compositingscene_constptr_t rval = nullptr;
   auto it                      = _scenes.find(named);
   if (it != _scenes.end()) {
-    rval = dynamic_cast<const CompositingScene*>(it->second);
+    rval = it->second;
   }
   return rval;
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-const CompositingSceneItem* CompositingScene::findItem(const PoolString& named) const {
-  const CompositingSceneItem* rval = nullptr;
+compositingsceneitem_constptr_t CompositingScene::findItem(const std::string& named) const {
+  compositingsceneitem_constptr_t rval = nullptr;
   auto it                          = _items.find(named);
   if (it != _items.end()) {
-    rval = dynamic_cast<const CompositingSceneItem*>(it->second);
+    rval = it->second;
   }
   return rval;
 }

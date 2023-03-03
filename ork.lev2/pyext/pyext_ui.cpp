@@ -42,6 +42,11 @@ void pyinit_ui(py::module& module_lev2) {
                 return ev->miY;
               })
           .def_property_readonly(
+              "keycode",                            //
+              [](ui::event_ptr_t ev) -> int { //
+                return ev->miKeyCode;
+              })
+          .def_property_readonly(
               "code",                         //
               [](ui::event_ptr_t ev) -> uint64_t { //
                 return uint64_t(ev->_eventcode);

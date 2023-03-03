@@ -59,30 +59,26 @@ CompositingImpl::~CompositingImpl() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const CompositingSceneItem* CompositingImpl::compositingItem(int isceneidx, int itemidx) const {
-  const CompositingSceneItem* rval               = nullptr;
-  const CompositingScene* pscene                 = nullptr;
+compositingsceneitem_ptr_t CompositingImpl::compositingItem(int isceneidx, int itemidx) const {
+  compositingsceneitem_ptr_t rval               = nullptr;
+  compositingscene_constptr_t pscene                 = nullptr;
   const auto& CDATA                              = compositingData();
-  const orklut<PoolString, ork::Object*>& Groups = CDATA.GetGroups();
-  const orklut<PoolString, ork::Object*>& Scenes = CDATA.GetScenes();
-  int inumgroups                                 = Groups.size();
-  int inumscenes                                 = Scenes.size();
-  if (inumscenes && isceneidx >= 0) {
-    int idx = isceneidx % inumscenes;
-    auto it = Scenes.find(CDATA.GetActiveScene());
-    if (it != Scenes.end()) {
-      ork::Object* pOBJ = it->second;
-      if (pOBJ)
-        pscene = rtti::autocast(pOBJ);
-    }
+  const auto& scenemap = CDATA._scenes;
+  auto it = scenemap.begin();
+  while(isceneidx >= 0) {
+      if (it == scenemap.end()) {
+      }
+      else{
+        pscene = it->second;
+        it++;
+      }
+      isceneidx--;
   }
   if (pscene && itemidx >= 0) {
-    const auto& Items = pscene->items();
-    auto it           = Items.find(CDATA.GetActiveItem());
-    if (it != Items.end()) {
-      ork::Object* pOBJ = it->second;
-      if (pOBJ)
-        rval = rtti::autocast(pOBJ);
+    const auto& scene_items = pscene->_items;
+    auto it           = scene_items.find(CDATA._activeItem);
+    if (it != scene_items.end()) {
+      rval = it->second;
     }
   }
   return rval;

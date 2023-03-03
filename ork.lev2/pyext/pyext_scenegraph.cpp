@@ -18,6 +18,11 @@ void pyinit_scenegraph(py::module& module_lev2) {
   auto sgmodule   = module_lev2.def_submodule("scenegraph", "SceneGraph operations");
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
+  auto synchro_type =                                   //
+      py::class_<Synchro, synchro_ptr_t>(sgmodule, "Synchro");
+  type_codec->registerStdCodec<synchro_ptr_t>(synchro_type);
+
+  /////////////////////////////////////////////////////////////////////////////////
   auto node_type =                                   //
       py::class_<Node, node_ptr_t>(sgmodule, "Node") //
           .def_property(
@@ -215,6 +220,12 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 OrkAssert(SG != nullptr);
                 OrkAssert(ray != nullptr);
                 return SG->pickWithRay(ray);
+              })
+          .def(
+              "enableSynchro",                                      //
+              [](scene_ptr_t SG) -> synchro_ptr_t { //
+                SG->_synchro = std::make_shared<Synchro>();
+                return SG->_synchro;
               })
           .def("pickWithScreenCoord", [](scene_ptr_t SG, cameradata_ptr_t cam, fvec2_ptr_t scoord) -> uint64_t { //
             OrkAssert(SG != nullptr);

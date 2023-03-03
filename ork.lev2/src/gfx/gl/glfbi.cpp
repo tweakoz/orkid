@@ -458,7 +458,7 @@ bool GlFrameBufferInterface::captureAsFormat(const RtBuffer* rtb, CaptureBuffer*
     h = capbuf->_captureH;
   }
 
-  printf("captureAsFormat w<%d> h<%d>\n", w, h);
+  //printf("captureAsFormat w<%d> h<%d>\n", w, h);
 
   bool fmtmatch = (capbuf->format() == destfmt);
   bool sizmatch = (capbuf->width() == w);

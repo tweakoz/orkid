@@ -199,10 +199,12 @@ public:
 
   lev2::rtbuffer_ptr_t GetOutput() const final;
   lev2::rtgroup_ptr_t GetOutputGroup() const final;
-
+  void overrideShader( std::string path );
+  
   svar256_t _impl;
 
   pbr::commonstuff_ptr_t _pbrcommon;
+  std::string _shader_path;
 
 };
 
