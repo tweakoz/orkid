@@ -277,6 +277,11 @@ void pyinit_gfx_material(py::module& module_lev2) {
             return m->clone();
           })
           .def_property_readonly(
+              "fxcache",                                    //
+              [](pbrmaterial_ptr_t m) -> fxpipelinecache_constptr_t { //
+                return m->pipelineCache(); // material
+              })
+          .def_property_readonly(
               "freestyle",
               [](pbrmaterial_ptr_t m) -> freestyle_mtl_ptr_t {
                 return m->_as_freestyle;

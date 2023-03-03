@@ -128,6 +128,12 @@ bool FxPipeline::beginPass(const RenderContextInstData& RCID, int ipass) {
           FXI->BindParamMatrix(param, MVP);
           break;
         }
+        case "RCFD_TIME"_crcu: {
+          auto RCFD = RCID._RCFD;
+          float time = RCFD->getUserProperty("time"_crc).get<float>();
+          FXI->BindParamFloat(param, time);
+          break;
+        }
         case "CPD_Rtg_Dim"_crcu: {
           FXI->BindParamVect2(param, fvec2(W,H));
           break;
