@@ -68,7 +68,10 @@ struct FxPipeline {
   using varval_t = varmap::VarMap::value_type;
   using statelambda_t = std::function<void(const RenderContextInstData& RCID, int ipass)>;
 
+  void _set_typed_param(const RenderContextInstData& RCID, fxparam_constptr_t p, varval_t val);
   void addStateLambda(statelambda_t sl){_statelambdas.push_back(sl);}
+
+  using varval_generator_t = std::function<varval_t()>;
 
   void bindParam(fxparam_constptr_t p, varval_t v);
 

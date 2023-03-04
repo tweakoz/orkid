@@ -297,6 +297,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
                 const auto& CPD  = RCFD->topCPD();
                 auto monocams    = CPD._cameraMatrices;
                 auto worldmatrix = RCID.worldMatrix();
+                FXI->BindParamMatrix(_this->_paramM, worldmatrix);
                 FXI->BindParamMatrix(_this->_paramMVP, monocams->MVPMONO(worldmatrix));
               });
             }

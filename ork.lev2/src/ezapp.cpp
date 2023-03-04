@@ -484,13 +484,13 @@ int OrkEzApp::mainThreadLoop() {
     ////////////////////////////////////////
 
     while (not checkAppState(KAPPSTATEFLAG_JOINED)) {
-      double this_time = _update_timer.SecsSinceStart();
+      double this_time = _update_timer.SecsSinceStart()*_timescale;
       double raw_delta = this_time - _update_prevtime;
       _update_prevtime = this_time;
       _update_timeaccumulator += raw_delta;
-      double step = 1.0 / 240.0;
+      double step = 1.0 / 60.0;
 
-      while (_update_timeaccumulator >= step) {
+      if(_update_timeaccumulator >= step) {
 
         bool do_update = bool(_mainWindow->_onUpdate);
 

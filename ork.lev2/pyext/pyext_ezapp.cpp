@@ -59,6 +59,8 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   appinitdata->_height = py::cast<int>(item.second);
                 } else if (key == "fullscreen") {
                   appinitdata->_fullscreen = py::cast<bool>(item.second);
+                } else if (key == "ssaa") {
+                  appinitdata->_ssaa_samples = py::cast<int>(item.second);
                 }
               }
             }
@@ -137,6 +139,11 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             ////////////////////////////////////////////////////////////////////
             return rval;
           })
+      ///////////////////////////////////////////////////////
+      .def_property(
+          "timescale",
+          [](orkezapp_ptr_t app) -> float { return app->_timescale; },
+          [](orkezapp_ptr_t app, float val) { app->_timescale = val; })
       ///////////////////////////////////////////////////////
       .def(
           "createScene",

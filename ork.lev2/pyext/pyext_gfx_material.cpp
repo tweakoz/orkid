@@ -124,7 +124,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
       py::class_<FxPipeline, fxpipeline_ptr_t>(module_lev2, "FxPipeline") //
           .def(
               "bindParam",                                                                    //
-              [](fxpipeline_ptr_t pipeline, //
+              [type_codec](fxpipeline_ptr_t pipeline, //
                  pyfxparam_ptr_t param, //
                  py::object inp_value) { //
                 if( py::isinstance<CrcString>(inp_value) ){
@@ -145,6 +145,15 @@ void pyinit_gfx_material(py::module& module_lev2) {
                 }
                 else if( py::isinstance<Texture>(inp_value) ){
                   pipeline->bindParam(param.get(),py::cast<texture_ptr_t>(inp_value));
+                }
+                else if( py::hasattr(inp_value, "__call__")){
+                  FxPipeline::varval_generator_t L = [inp_value,type_codec]() -> FxPipeline::varval_t {
+                    py::gil_scoped_acquire acquire;
+                    py::object generated = inp_value();
+                    FxPipeline::varval_t asv = type_codec->decode(generated);
+                    return asv;
+                  };
+                  pipeline->bindParam(param.get(),L);
                 }
                 else{
                   py::print("Bad Param Type: ", inp_value);

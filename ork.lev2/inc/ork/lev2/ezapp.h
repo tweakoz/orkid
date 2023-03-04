@@ -209,6 +209,7 @@ public:
   ork::opq::opq_ptr_t _rthreadq;
   EzMainWin::onupdateexit_t _onAppEarlyTerminated = nullptr;
   moviecontext_ptr_t _moviecontext;
+  float _timescale = 1.0f;
 };
 
 } // namespace ork::lev2
