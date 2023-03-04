@@ -574,6 +574,9 @@ void Scene::_renderIMPL(Context* context,RenderContextFrameData& RCFD){
   auto DB = _dbufcontext_SG->acquireForReadLocked();
 
   RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
+
+  RCFD.setUserProperty("time"_crc,_currentTime);
+
   RCFD._cimpl = _compositorImpl;
 
   _renderer->setContext(context);

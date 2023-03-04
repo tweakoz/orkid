@@ -73,9 +73,10 @@ void pyinit_gfx_shader(py::module& module_lev2) {
       py::class_<pyfxparam_ptr_t>(module_lev2, "FxShaderParam")
           .def_property_readonly("name", [](const pyfxparam_ptr_t& p) -> std::string { return p->_name; })
           .def("__repr__", [](const pyfxparam_ptr_t& p) -> std::string {
-            fxstring<256> fxs;
-            fxs.format("FxShader(%p:%s)", p.get(), p->_name.c_str());
-            return fxs.c_str();
+            if(p.get()){
+              return FormatString("FxShaderParam(%p:%s)", p.get(), p->_name.c_str());
+            }
+            return FormatString("FxShaderParam(nil)");
           });
   type_codec->registerRawPtrCodec<pyfxparam_ptr_t, fxparam_constptr_t>(param_type);
   /////////////////////////////////////////////////////////////////////////////////

@@ -102,10 +102,10 @@ void SimpleLightProcessor::_updatePointLightUBOparams(Context* ctx, const pointl
   }
   FXI->unmapParamBuffer(mapping.get());
   FXI->bindParamBlockBuffer(_deferredContext._lightblock, _lightbuffer);
-  _deferredContext._lightingmtl.bindParamFloat(_deferredContext._parDepthFogDistance, 1.0f / _deferredContext._depthFogDistance);
-  _deferredContext._lightingmtl.bindParamFloat(_deferredContext._parDepthFogPower, _deferredContext._depthFogPower);
-  _deferredContext._lightingmtl.bindParamInt(_deferredContext._parNumLights, numlights);
-  _deferredContext._lightingmtl.commit();
+  _deferredContext._lightingmtl->bindParamFloat(_deferredContext._parDepthFogDistance, 1.0f / _deferredContext._depthFogDistance);
+  _deferredContext._lightingmtl->bindParamFloat(_deferredContext._parDepthFogPower, _deferredContext._depthFogPower);
+  _deferredContext._lightingmtl->bindParamInt(_deferredContext._parNumLights, numlights);
+  _deferredContext._lightingmtl->commit();
   ctx->debugPopGroup();
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -133,10 +133,10 @@ void SimpleLightProcessor::_updateSpotLightUBOparams(Context* ctx, const spotlig
   }
   FXI->unmapParamBuffer(mapping.get());
   FXI->bindParamBlockBuffer(_deferredContext._lightblock, _lightbuffer);
-  _deferredContext._lightingmtl.bindParamFloat(_deferredContext._parDepthFogDistance, 1.0f / _deferredContext._depthFogDistance);
-  _deferredContext._lightingmtl.bindParamFloat(_deferredContext._parDepthFogPower, _deferredContext._depthFogPower);
-  _deferredContext._lightingmtl.bindParamInt(_deferredContext._parNumLights, numlights);
-  _deferredContext._lightingmtl.commit();
+  _deferredContext._lightingmtl->bindParamFloat(_deferredContext._parDepthFogDistance, 1.0f / _deferredContext._depthFogDistance);
+  _deferredContext._lightingmtl->bindParamFloat(_deferredContext._parDepthFogPower, _deferredContext._depthFogPower);
+  _deferredContext._lightingmtl->bindParamInt(_deferredContext._parNumLights, numlights);
+  _deferredContext._lightingmtl->commit();
   ctx->debugPopGroup();
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -302,7 +302,7 @@ void SimpleLightProcessor::_renderShadowedTexturedSpotLights(
   /////////////////////////////////////
 
   context->debugPushGroup("SimpleLightProcessor::_renderShadowedTexturedSpotLights::accum");
-  auto& lightmtl = _deferredContext._lightingmtl;
+  auto lightmtl = _deferredContext._lightingmtl;
 
   for (auto texture_item : enumlights->_tex2shadowedspotlightmap) {
     auto cookie  = texture_item.first;
@@ -310,9 +310,9 @@ void SimpleLightProcessor::_renderShadowedTexturedSpotLights(
 
     _deferredContext.beginShadowedSpotLighting(drawdata, VD, cookie);
 
-    lightmtl.bindParamFloat(_deferredContext._parDepthFogDistance, 1.0f / _deferredContext._depthFogDistance);
-    lightmtl.bindParamFloat(_deferredContext._parDepthFogPower, _deferredContext._depthFogPower);
-    lightmtl.commit();
+    lightmtl->bindParamFloat(_deferredContext._parDepthFogDistance, 1.0f / _deferredContext._depthFogDistance);
+    lightmtl->bindParamFloat(_deferredContext._parDepthFogPower, _deferredContext._depthFogPower);
+    lightmtl->commit();
 
     ///////////////////////////////////////////////////////////////////
     // TODO we would need texture arrays and all shadow buffers to be the same
@@ -337,12 +337,12 @@ void SimpleLightProcessor::_renderShadowedTexturedSpotLights(
       mapping->ref<fmtx4>(offset_mtx2) = light->shadowMatrix();
       FXI->unmapParamBuffer(mapping.get());
       FXI->bindParamBlockBuffer(_deferredContext._lightblock, _lightbuffer);
-      lightmtl.bindParamCTex(_deferredContext._parMapShadowDepth, shadowtex);
+      lightmtl->bindParamCTex(_deferredContext._parMapShadowDepth, shadowtex);
       fvec4 shadowp;
       shadowp.x = (1.0f / float(light->_shadowmapDim));
       shadowp.y = (1.0f / 9.0f);
       shadowp.z = light->shadowDepthBias();
-      lightmtl.bindParamVec4(_deferredContext._parShadowParams, shadowp);
+      lightmtl->bindParamVec4(_deferredContext._parShadowParams, shadowp);
       // offset_cd += sizeof(fvec4);
       // offset_mtx += sizeof(fmtx4);
       // offset_rad += sizeof(float);

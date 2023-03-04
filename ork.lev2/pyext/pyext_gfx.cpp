@@ -10,6 +10,7 @@
 #include <ork/lev2/gfx/terrain/terrain_drawable.h>
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/gfxvtxbuf.h>
+#include <ork/math/cvector4.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -149,11 +150,20 @@ void pyinit_gfx(py::module& module_lev2) {
           })
       .def("add", [](vw_vtxa_t& vw, vtxa_t& vtx) { vw.AddVertex(vtx); });
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<txi_t>(module_lev2, "TextureInterface").def("__repr__", [](const txi_t& txi) -> std::string {
-    fxstring<256> fxs;
-    fxs.format("TXI(%p)", txi.get());
-    return fxs.c_str();
-  });
+  py::class_<txi_t>(module_lev2, "TextureInterface")
+      .def(
+          "createColorTexture",
+          [](const txi_t& the_txi, //
+             fvec4 color, //
+             int w, //
+             int h ) -> texture_ptr_t { //
+            return the_txi->createColorTexture(color, w, h); //
+          })
+      .def("__repr__", [](const txi_t& txi) -> std::string {
+        fxstring<256> fxs;
+        fxs.format("TXI(%p)", txi.get());
+        return fxs.c_str();
+      });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<rsi_t>(module_lev2, "RasterStateInterface").def("__repr__", [](const rsi_t& rsi) -> std::string {
     fxstring<256> fxs;
@@ -162,38 +172,38 @@ void pyinit_gfx(py::module& module_lev2) {
   });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<SRasterState>(module_lev2, "RasterState") //
-    .def_property(
-        "culltest",
-        [](const SRasterState& state) -> crcstring_ptr_t { //
-          auto crcstr = std::make_shared<CrcString>(uint64_t(state._culltest));
-          return crcstr;
-        },
-        [](SRasterState& state, crcstring_ptr_t ctest) { //
-          state._culltest = ECullTest(ctest->hashed());
-        })
-    .def_property(
-        "depthtest",
-        [](const SRasterState& state) -> crcstring_ptr_t { //
-          auto crcstr = std::make_shared<CrcString>(uint64_t(state._depthtest));
-          return crcstr;
-        },
-        [](SRasterState& state, crcstring_ptr_t ctest) { //
-          state._depthtest = EDepthTest(ctest->hashed());
-        })
-    .def_property(
-        "blending",
-        [](const SRasterState& state) -> crcstring_ptr_t { //
-          auto crcstr = std::make_shared<CrcString>(uint64_t(state._blending));
-          return crcstr;
-        },
-        [](SRasterState& state, crcstring_ptr_t ctest) { //
-          state._blending = Blending(ctest->hashed());
-        })
-    .def("__repr__", [](const SRasterState& state) -> std::string {
-      fxstring<256> fxs;
-      fxs.format("RasterState()");
-      return fxs.c_str();
-    });
+      .def_property(
+          "culltest",
+          [](const SRasterState& state) -> crcstring_ptr_t { //
+            auto crcstr = std::make_shared<CrcString>(uint64_t(state._culltest));
+            return crcstr;
+          },
+          [](SRasterState& state, crcstring_ptr_t ctest) { //
+            state._culltest = ECullTest(ctest->hashed());
+          })
+      .def_property(
+          "depthtest",
+          [](const SRasterState& state) -> crcstring_ptr_t { //
+            auto crcstr = std::make_shared<CrcString>(uint64_t(state._depthtest));
+            return crcstr;
+          },
+          [](SRasterState& state, crcstring_ptr_t ctest) { //
+            state._depthtest = EDepthTest(ctest->hashed());
+          })
+      .def_property(
+          "blending",
+          [](const SRasterState& state) -> crcstring_ptr_t { //
+            auto crcstr = std::make_shared<CrcString>(uint64_t(state._blending));
+            return crcstr;
+          },
+          [](SRasterState& state, crcstring_ptr_t ctest) { //
+            state._blending = Blending(ctest->hashed());
+          })
+      .def("__repr__", [](const SRasterState& state) -> std::string {
+        fxstring<256> fxs;
+        fxs.format("RasterState()");
+        return fxs.c_str();
+      });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<RtBuffer, rtb_t>(module_lev2, "RtBuffer")
       .def(
@@ -203,7 +213,7 @@ void pyinit_gfx(py::module& module_lev2) {
             fxs.format("RtBuffer(%p)", rtb.get());
             return fxs.c_str();
           })
-      .def_property_readonly("texture", [](rtb_t& rtb) -> tex_t { return tex_t(rtb->texture()); });
+      .def_property_readonly("texture", [](rtb_t& rtb) -> texture_ptr_t { return texture_ptr_t(rtb->texture()); });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<RtGroup, rtg_t>(module_lev2, "RtGroup")
       .def("resize", [](rtg_t& rtg, int w, int h) { rtg.get()->Resize(w, h); })
@@ -215,7 +225,7 @@ void pyinit_gfx(py::module& module_lev2) {
             return fxs.c_str();
           })
       .def("buffer", [](const rtg_t& rtg, int irtb) -> rtb_t { return rtg->GetMrt(irtb); });
-  //.def("texture", [](const rtg_t& rtg, int irtb) -> tex_t { return rtg->GetMrt(irtb)->texture(); });
+  //.def("texture", [](const rtg_t& rtg, int irtb) -> texture_ptr_t { return rtg->GetMrt(irtb)->texture(); });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<CaptureBuffer>(module_lev2, "CaptureBuffer", pybind11::buffer_protocol())
       .def(py::init<>())
@@ -240,10 +250,10 @@ void pyinit_gfx(py::module& module_lev2) {
       });
   /////////////////////////////////////////////////////////////////////////////////
   auto texture_type = //
-      py::class_<lev2::Texture, tex_t>(module_lev2, "Texture")
+      py::class_<Texture, texture_ptr_t>(module_lev2, "Texture")
           .def(
               "__repr__",
-              [](const tex_t& tex) -> std::string {
+              [](const texture_ptr_t& tex) -> std::string {
                 fxstring<256> fxs;
                 fxs.format(
                     "Texture(%p:\"%s\") w<%d> h<%d> d<%d> fmt<%s>",
@@ -255,9 +265,9 @@ void pyinit_gfx(py::module& module_lev2) {
                     EBufferFormatToName(tex->_texFormat).c_str());
                 return fxs.c_str();
               })
-          .def_static("load", [](std::string path) -> tex_t { return Texture::LoadUnManaged(path); });
+          .def_static("load", [](std::string path) -> texture_ptr_t { return Texture::LoadUnManaged(path); });
   // using rawtexptr_t = Texture*;
-  type_codec->registerStdCodec<tex_t>(texture_type);
+  type_codec->registerStdCodec<texture_ptr_t>(texture_type);
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<PixelFetchContext>(module_lev2, "PixelFetchContext")
       .def(py::init<>())

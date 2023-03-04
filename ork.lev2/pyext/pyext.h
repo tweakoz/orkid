@@ -46,7 +46,6 @@ using gbi_t               = ork::python::unmanaged_ptr<GeometryBufferInterface>;
 using fxi_t               = ork::python::unmanaged_ptr<FxInterface>;
 using rsi_t               = ork::python::unmanaged_ptr<RasterStateInterface>;
 using txi_t               = ork::python::unmanaged_ptr<TextureInterface>;
-using tex_t               = ork::lev2::texture_ptr_t;
 using rtb_t               = ork::lev2::rtbuffer_ptr_t;
 using rtg_t               = ork::lev2::rtgroup_ptr_t;
 using font_t              = ork::python::unmanaged_ptr<Font>;

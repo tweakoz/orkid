@@ -123,6 +123,11 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
                 camera->Lookat(eye, tgt, up);
               })
           .def(
+              "fromPoseMatrix",                                                        //
+              [](cameradata_ptr_t camera, fmtx4 posemtx) { //
+                camera->fromPoseMatrix(posemtx);
+              })
+          .def(
               "copyFrom",                                                        //
               [](cameradata_ptr_t camera, cameradata_ptr_t src_camera) { //
                 *camera = *src_camera;

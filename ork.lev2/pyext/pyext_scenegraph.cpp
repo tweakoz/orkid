@@ -227,6 +227,14 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 SG->_synchro = std::make_shared<Synchro>();
                 return SG->_synchro;
               })
+          .def_property(
+              "scenetime",                     //
+              [](scene_ptr_t SG) -> float { //
+                return SG->_currentTime;
+              },
+              [](scene_ptr_t SG, float time) { //
+                SG->_currentTime = time;
+              })
           .def("pickWithScreenCoord", [](scene_ptr_t SG, cameradata_ptr_t cam, fvec2_ptr_t scoord) -> uint64_t { //
             OrkAssert(SG != nullptr);
             OrkAssert(scoord != nullptr);

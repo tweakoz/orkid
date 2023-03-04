@@ -64,44 +64,21 @@ int FxPipeline::beginBlock(const RenderContextInstData& RCID) {
   return FXI->BeginBlock(_technique, RCID);
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool FxPipeline::beginPass(const RenderContextInstData& RCID, int ipass) {
+void FxPipeline::_set_typed_param(const RenderContextInstData& RCID, fxparam_constptr_t param, varval_t val){
   auto context          = RCID._RCFD->GetTarget();
-  auto MTXI             = context->MTXI();
   auto FXI              = context->FXI();
-  auto RSI              = context->RSI();
+  auto worldmatrix = RCID.worldMatrix();
   const auto& CPD       = RCID._RCFD->topCPD();
+  int W = CPD._width;
+  int H = CPD._height;
+  auto MTXI             = context->MTXI();
+  auto RSI              = context->RSI();
   const auto& RCFDPROPS = RCID._RCFD->userProperties();
   bool is_picking       = CPD.isPicking();
   bool is_stereo        = CPD.isStereoOnePass();
   auto pbrcommon = RCID._RCFD->_pbrcommon;
   auto modcolor = context->RefModColor();
-  int W = CPD._width;
-  int H = CPD._height;
-  bool rval = FXI->BindPass(ipass);
-  if (not rval)
-    return rval;
 
-  ///////////////////////////////
-  // run state lambdas
-  ///////////////////////////////
-
-  for( auto& item: _statelambdas ){
-    item(RCID,ipass);
-  }
-
-  ///////////////////////////////
-  // run individual state items
-  ///////////////////////////////
-
-  auto worldmatrix = RCID.worldMatrix();
-
-  auto stereocams = CPD._stereoCameraMatrices;
-  auto monocams   = CPD._cameraMatrices;
-
-
-  for (auto item : _params) {
-    fxparam_constptr_t param = item.first;
-    const auto& val          = item.second;
     ////////////////////////////////////////////////////////////
     // try to order these by commonalitiy
     //  or find a quicker dispatch method
@@ -116,8 +93,40 @@ bool FxPipeline::beginPass(const RenderContextInstData& RCID, int ipass) {
     } else if (auto as_texture = val.tryAs<texture_ptr_t>()) {
       auto texture = as_texture.value();
       FXI->BindParamCTex(param, texture.get());
-    } else if (auto as_crcstr = val.tryAs<crcstring_ptr_t>()) {
+    }
+    else if (auto as_float_ = val.tryAs<float>()) {
+      FXI->BindParamFloat(param, as_float_.value());
+    } else if (auto as_fvec4_ = val.tryAs<fvec4>()) {
+      FXI->BindParamVect4(param, as_fvec4_.value());
+    } else if (auto as_fvec3 = val.tryAs<fvec3>()) {
+      FXI->BindParamVect3(param, as_fvec3.value());
+    } else if (auto as_fvec2 = val.tryAs<fvec2>()) {
+      FXI->BindParamVect2(param, as_fvec2.value());
+    } else if (auto as_fmtx3 = val.tryAs<fmtx3>()) {
+      FXI->BindParamMatrix(param, as_fmtx3.value());
+    } else if (auto as_instancedata_ = val.tryAs<instanceddrawinstancedata_ptr_t>()) {
+      OrkAssert(false);
+    } else if (auto as_fquat = val.tryAs<fquat_ptr_t>()) {
+      const auto& Q = *as_fquat.value().get();
+      fvec4 as_vec4(Q.x, Q.y, Q.z, Q.w);
+      FXI->BindParamVect4(param, as_vec4);
+    } else if (auto as_fplane3 = val.tryAs<fplane3_ptr_t>()) {
+      const auto& P = *as_fplane3.value().get();
+      fvec4 as_vec4(P.n, P.d);
+      FXI->BindParamVect4(param, as_vec4);
+    } 
+    ///////////////////////////////////////////////////////////////////
+    else if (auto as_varval_generator = val.tryAs<varval_generator_t>()) {
+      auto gen = as_varval_generator.value();
+      _set_typed_param(RCID,param,gen());
+    }
+    ///////////////////////////////////////////////////////////////////
+    else if (auto as_crcstr = val.tryAs<crcstring_ptr_t>()) {
       const auto& crcstr = *as_crcstr.value().get();
+
+      auto stereocams = CPD._stereoCameraMatrices;
+      auto monocams   = CPD._cameraMatrices;
+
       switch (crcstr.hashed()) {
 
         case "RCFD_Camera_Pick"_crcu: {
@@ -126,6 +135,12 @@ bool FxPipeline::beginPass(const RenderContextInstData& RCID, int ipass) {
           auto as_mtx4p    = it->second.get<fmtx4_ptr_t>();
           const fmtx4& MVP = *(as_mtx4p.get());
           FXI->BindParamMatrix(param, MVP);
+          break;
+        }
+        case "RCFD_TIME"_crcu: {
+          auto RCFD = RCID._RCFD;
+          float time = RCFD->getUserProperty("time"_crc).get<float>();
+          FXI->BindParamFloat(param, time);
           break;
         }
         case "CPD_Rtg_Dim"_crcu: {
@@ -225,29 +240,37 @@ bool FxPipeline::beginPass(const RenderContextInstData& RCID, int ipass) {
           OrkAssert(false);
           break;
       }
-    } else if (auto as_float_ = val.tryAs<float>()) {
-      FXI->BindParamFloat(param, as_float_.value());
-    } else if (auto as_fvec4_ = val.tryAs<fvec4>()) {
-      FXI->BindParamVect4(param, as_fvec4_.value());
-    } else if (auto as_fvec3 = val.tryAs<fvec3>()) {
-      FXI->BindParamVect3(param, as_fvec3.value());
-    } else if (auto as_fvec2 = val.tryAs<fvec2>()) {
-      FXI->BindParamVect2(param, as_fvec2.value());
-    } else if (auto as_fmtx3 = val.tryAs<fmtx3>()) {
-      FXI->BindParamMatrix(param, as_fmtx3.value());
-    } else if (auto as_instancedata_ = val.tryAs<instanceddrawinstancedata_ptr_t>()) {
-      OrkAssert(false);
-    } else if (auto as_fquat = val.tryAs<fquat_ptr_t>()) {
-      const auto& Q = *as_fquat.value().get();
-      fvec4 as_vec4(Q.x, Q.y, Q.z, Q.w);
-      FXI->BindParamVect4(param, as_vec4);
-    } else if (auto as_fplane3 = val.tryAs<fplane3_ptr_t>()) {
-      const auto& P = *as_fplane3.value().get();
-      fvec4 as_vec4(P.n, P.d);
-      FXI->BindParamVect4(param, as_vec4);
-    } else {
+    } 
+    else {
       OrkAssert(false);
     }
+}
+///////////////////////////////////////////////////////////////////////////////
+bool FxPipeline::beginPass(const RenderContextInstData& RCID, int ipass) {
+  auto context          = RCID._RCFD->GetTarget();
+  auto FXI              = context->FXI();
+
+  bool rval = FXI->BindPass(ipass);
+  if (not rval)
+    return rval;
+
+  ///////////////////////////////
+  // run state lambdas
+  ///////////////////////////////
+
+  for( auto& item: _statelambdas ){
+    item(RCID,ipass);
+  }
+
+  ///////////////////////////////
+  // run individual state items
+  ///////////////////////////////
+
+
+  for (auto item : _params) {
+    fxparam_constptr_t param = item.first;
+    const auto& val          = item.second;
+    _set_typed_param(RCID,param,val);
   }
   return rval;
 }

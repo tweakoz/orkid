@@ -4,6 +4,7 @@
 fxconfig fxcfg_default {
   import "mathtools.i";
 	import "pbrtools.i";
+	import "envtools.i";
 }
 ///////////////////////////////////////////////////////////////
 technique PIK_RI_NI {

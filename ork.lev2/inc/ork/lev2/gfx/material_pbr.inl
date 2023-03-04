@@ -96,6 +96,7 @@ public:
   //void setupCamera(const RenderContextFrameData& RCFD);
   ////////////////////////////////////////////
   fxshaderasset_constptr_t _asset_shader;
+  freestyle_mtl_ptr_t _as_freestyle;
   textureassetptr_t _asset_texcolor;
   textureassetptr_t _asset_texnormal;
   textureassetptr_t _asset_mtlruf;
