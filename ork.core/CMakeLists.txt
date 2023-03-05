@@ -52,9 +52,9 @@ ork_std_target_opts(ork_core)
 enable_python_on_target(ork_core)
 target_link_libraries(ork_core LINK_PRIVATE ork_utpp zmq  )
 
-IF(!${APPLE})
+#IF(!${APPLE})
 target_link_libraries(ork_core LINK_PRIVATE boost_filesystem  )
-ENDIF()
+#ENDIF()
 
 target_include_directories (ork_core PRIVATE ${INCD} )
 

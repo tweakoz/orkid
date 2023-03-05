@@ -101,9 +101,9 @@ target_include_directories (ork_lev2 PRIVATE ${COREINCD} )
 target_link_libraries(ork_lev2 PUBLIC ${libs} )
 target_link_libraries(ork_lev2 PRIVATE assimp audiofile )
 
-IF(!${APPLE})
+#IF(!${APPLE})
 target_link_libraries(ork_lev2 LINK_PRIVATE boost_filesystem  )
-ENDIF()
+#ENDIF()
 
 ###################################
 # intel specific
