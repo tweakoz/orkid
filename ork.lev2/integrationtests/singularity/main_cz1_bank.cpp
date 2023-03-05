@@ -15,7 +15,7 @@ int main(int argc, char** argv,char**envp) {
   ////////////////////////////////////////////////
   // main bus effect
   ////////////////////////////////////////////////
-  synth::instance()->_masterGain = decibel_to_linear_amp_ratio(30.0f);
+  synth::instance()->_masterGain = decibel_to_linear_amp_ratio(0.0f);
   auto mainbus      = synth::instance()->outputBus("main");
   auto bussource    = mainbus->createScopeSource();
   //auto fxprog       = std::make_shared<ProgramData>();
@@ -27,9 +27,7 @@ int main(int argc, char** argv,char**envp) {
   // output effect
   /////////////////
   if (1) { // create mixbus effect ?
-     auto fxlayer = fxpreset_niceverb();
-    // auto fxlayer = fxpreset_echoverb();
-    //auto fxlayer = fxpreset_pitchchorus();
+     auto fxlayer = fxpreset_fdn4reverb();
     mainbus->setBusDSP(fxlayer);
   }
   ////////////////////////////////////////////////
@@ -98,10 +96,6 @@ int main(int argc, char** argv,char**envp) {
     layersource->connect(scope3->_sink);
     layersource->connect(analyzer3->_sink);
     //////////////////////////////////////
-    for (int n = 0; n <= 24; n += 3) {
-      //enqueue_audio_event(prg, count * 0.5, 0.5, 48 + n);
-      count++;
-    }
   }
   //////////////////////////////////////////////////////////////////////////////
   app->setRefreshPolicy({EREFRESH_FASTEST, 0});

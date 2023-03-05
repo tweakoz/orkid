@@ -20,6 +20,8 @@ int main(int argc, char** argv,char**envp) {
   ////////////////////////////////////////////////
   auto mainbus   = synth::instance()->outputBus("main");
   auto bussource = mainbus->createScopeSource();
+  auto fxlayer = fxpreset_fdn4reverb();
+  mainbus->setBusDSP(fxlayer);
   ////////////////////////////////////////////////
   // UI layout
   ////////////////////////////////////////////////

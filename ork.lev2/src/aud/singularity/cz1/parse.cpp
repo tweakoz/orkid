@@ -309,7 +309,6 @@ void make_dco(CZLAYERDATACTX czctx,
   auto dconame    = FormatString("dco%d", dcochannel);
   auto dcoampname = FormatString("amp%d", dcochannel);
   auto dcostage   = layerdata->stageByName("DCO");
-  assert(false);
   auto ampstage   = layerdata->stageByName("AMP");
   auto dco        = dcostage->appendTypedBlock<CZX>(dconame, oscdata, dcochannel);
   auto amp        = ampstage->appendTypedBlock<AMP_MONOIO>(dcoampname);
@@ -320,7 +319,7 @@ void make_dco(CZLAYERDATACTX czctx,
   //////////////////////////////////////
   auto pitch_mod        = dco->_paramd[0]->_mods;
   pitch_mod->_src1      = DCOENV;
-  pitch_mod->_src1Depth = 1.0f;
+  pitch_mod->_src1Depth = 0.0f;
   /////////////////////////////////////////////////
   auto modulation_index        = dco->_paramd[1]->_mods;
   modulation_index->_src1      = DCWENV;
@@ -334,8 +333,8 @@ void make_dco(CZLAYERDATACTX czctx,
   if (dcochannel == 1) { // add detune
     auto DETUNE              = layerdata->appendController<CustomControllerData>("DCO1DETUNE");
     pitch_mod->_src2         = DETUNE;
-    pitch_mod->_src2MinDepth = 1.0;
-    pitch_mod->_src2MaxDepth = 1.0;
+    pitch_mod->_src2MinDepth = 0.0;
+    pitch_mod->_src2MaxDepth = 0.0;
     DETUNE->_onkeyon         = [czprogdata](
         CustomControllerInst* cci, //
         const KeyOnInfo& KOI) {    //
@@ -549,7 +548,6 @@ czxprogdata_ptr_t parse_czprogramdata(CzData* outd, prgdata_ptr_t prgout, std::v
   ////////////////////////////////////
 
 
-  OrkAssert(false);
   /////////////////////////////////////////////////
   auto layerdata           = prgout->newLayer();
   layerdata->_layerLinGain = 0.25;

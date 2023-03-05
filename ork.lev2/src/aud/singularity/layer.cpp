@@ -117,6 +117,81 @@ Layer::~Layer() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void Layer::reset() {
+  _layerdata = nullptr;
+  _curnote   = 0;
+  _keepalive = 0;
+
+  // todo pool controllers
+  _ctrlBlock = nullptr;
+
+  _controlMap.clear();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Layer::keyOn(int note, int velocity, lyrdata_ptr_t ld, outbus_ptr_t obus){
+  this->reset();
+  this->_HKF._miscText   = "";
+  this->_HKF._note       = note;
+  this->_HKF._vel        = velocity;
+  this->_HKF._layerdata  = ld;
+  this->_HKF._layerIndex = this->_ldindex;
+  this->_HKF._useFm4     = false;
+
+  this->_layerBasePitch = clip_float(note * 100, -0, 12700);
+
+  this->_ignoreRelease = ld->_ignRels;
+  this->_curnote       = note;
+  this->_layerdata     = ld;
+  this->_outbus        = obus;
+  this->_layerLinGain  = ld->_layerLinGain;
+
+  this->_curvel = velocity;
+
+  this->_layerTime = 0.0f;
+
+  this->retain();
+
+  //printf( "LAYER KEYON<%d>\n", note );
+  /////////////////////////////////////////////
+  // controllers
+  /////////////////////////////////////////////
+
+  if (ld->_ctrlBlock) {
+    this->_ctrlBlock = std::make_shared<ControlBlockInst>();
+    this->_ctrlBlock->keyOn(this->_koi, ld->_ctrlBlock);
+  }
+
+  ///////////////////////////////////////
+
+  this->_alg = this->_layerdata->_algdata->createAlgInst();
+  // assert(_alg);
+  if (this->_alg) {
+    this->_alg->keyOn(this->_koi);
+  }
+
+  this->_HKF._alg = this->_alg;
+
+  ///////////////////////////////////////
+
+  this->_lyrPhase = 0;
+  this->_sinrepPH = 0.0f;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Layer::keyOff(){
+  if (this->_ctrlBlock)
+    this->_ctrlBlock->keyOff();
+  if (this->_ignoreRelease)
+    return;
+  if (this->_alg)
+    this->_alg->keyOff();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void Layer::resize(int numframes) {
   for (int i = 0; i < kmaxdspblocksperstage; i++) {
     _oschsynctracks[i]->resize(numframes);
@@ -351,19 +426,6 @@ controller_t Layer::getSRC2(dspparammod_constptr_t mods) {
   };
 
   return it;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void Layer::reset() {
-  _layerdata = nullptr;
-  _curnote   = 0;
-  _keepalive = 0;
-
-  // todo pool controllers
-  _ctrlBlock = nullptr;
-
-  _controlMap.clear();
 }
 
 } // namespace ork::audio::singularity

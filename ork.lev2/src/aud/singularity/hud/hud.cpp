@@ -10,12 +10,14 @@
 #include <ork/lev2/aud/singularity/hud.h>
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/ezapp.h> // todo move updatedata_ptr_t out..
+#include <ork/util/logger.h>
 
 using namespace ork;
 using namespace ork::lev2;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::audio::singularity {
+static logchannel_ptr_t logchan_hud = logger()->createChannel("singul.hud", fvec3(1, 0.6, .8), true);
 float hud_contentscale() {
   return _HIDPI() ? 2.0 : 1.0;
 }
@@ -81,8 +83,11 @@ HudLayoutGroup::HudLayoutGroup() //
       {'/', 52},
   };
   _handledkeymap = _notemap;
-  for (int i = 0; i <= 9; i++)
+  for (int i = 0; i <= 9; i++){
     _handledkeymap['0' + i] = 0;
+  }
+  _handledkeymap['['] = 0;
+  _handledkeymap[']'] = 0;
 
   _evrouter = [this](ui::event_constptr_t ev) -> ui::Widget* { //
     switch (ev->_eventcode) {
@@ -104,10 +109,24 @@ HudLayoutGroup::HudLayoutGroup() //
 
   _evhandler = [this](ui::event_constptr_t ev) -> ui::HandlerResult { //
     bool was_handled = false;
-    printf("hudlg evh\n");
+    //printf("hudlg evh\n");
     switch (ev->_eventcode) {
       case ui::EventCode::KEY_DOWN: {
+        printf( "ev->miKeyCode<%d>\n", ev->miKeyCode );
         switch (ev->miKeyCode) {
+
+          case '[': {
+            synth::instance()->_masterGain *= 0.95;
+            logchan_hud->log("MasterGain<%g>", synth::instance()->_masterGain );
+            was_handled = true;
+            break;
+          }
+          case ']': {
+            synth::instance()->_masterGain *= 1.0/0.95;
+            logchan_hud->log("MasterGain<%g>", synth::instance()->_masterGain );
+            was_handled = true;
+            break;
+          }
           case '5': {
             synth::instance()->nextEffect();
             was_handled = true;
@@ -218,8 +237,7 @@ void HudLayoutGroup::onUpdateThreadTick(ui::updatedata_ptr_t updata) {
     }
   }
   if ((_updcount & 0xff) == 0) {
-    printf("Synth CPULOAD<%0.1f%%>\n", syn->_cpuload * 100.0f);
-    fflush(stdout);
+    logchan_hud->log("Synth CPULOAD<%0.1f%%>", syn->_cpuload * 100.0f);
   }
   _updcount++;
 }

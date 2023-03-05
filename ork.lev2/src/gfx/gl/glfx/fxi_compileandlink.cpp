@@ -197,6 +197,8 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
     // printf( "	binding vertex attributes count<%d>\n",
     // int(vtx_iface->mAttributes.size()) );
 
+    static int counter = 0;
+
     for (const auto& itp : vtx_iface->_inputAttributes) {
       Attribute* pattr = itp.second;
       int iloc         = pattr->mLocation;
@@ -207,6 +209,10 @@ bool Interface::compilePipelineVTG(rootcontainer_ptr_t container) {
       GL_ERRORCHECK();
       pass->_vtxAttributeById[iloc]                    = pattr;
       pass->_vtxAttributesBySemantic[pattr->mSemantic] = pattr;
+      counter++;
+      if(counter>100){
+        OrkAssert(false);
+      }
     }
 
     //////////////////////////

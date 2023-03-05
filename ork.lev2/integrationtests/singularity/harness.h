@@ -54,7 +54,7 @@ inline void enqueue_audio_event(
   if (time < s->_timeaccum) {
     time = s->_timeaccum;
   }
-  printf("time<%g> note<%d> program<%s>\n", time, midinote, prog->_name.c_str());
+  //printf("time<%g> note<%d> program<%s>\n", time, midinote, prog->_name.c_str());
 
   s->addEvent(time, [=]() {
     // NOTE ON

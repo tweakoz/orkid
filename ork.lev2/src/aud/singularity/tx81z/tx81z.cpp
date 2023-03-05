@@ -485,14 +485,14 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
           float keyamp = decibel_to_linear_amp_ratio(db_falloff);
 
-          if (0)
-            printf("uls<%g> numoct<%g> dbfalloff<%g> keyamp<%g>\n", unit_levscale, number_octaves, db_falloff, keyamp);
-
           //////////////////////////////////
           // final level
           //////////////////////////////////
 
           float final_amp = baselev * velamp * keyamp;
+
+          //if (1)
+            //printf("uls<%g> numoct<%g> dbfalloff<%g> keyamp<%g> final_amp<%g>\n", unit_levscale, number_octaves, db_falloff, keyamp, final_amp);
 
           /////////////////////////////////
 
