@@ -18,6 +18,11 @@ void pyinit_scenegraph(py::module& module_lev2) {
   auto sgmodule   = module_lev2.def_submodule("scenegraph", "SceneGraph operations");
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
+  auto synchro_type =                                   //
+      py::class_<Synchro, synchro_ptr_t>(sgmodule, "Synchro");
+  type_codec->registerStdCodec<synchro_ptr_t>(synchro_type);
+
+  /////////////////////////////////////////////////////////////////////////////////
   auto node_type =                                   //
       py::class_<Node, node_ptr_t>(sgmodule, "Node") //
           .def_property(
@@ -139,8 +144,8 @@ void pyinit_scenegraph(py::module& module_lev2) {
               "createLineNode",
               [](layer_ptr_t layer, //
                  std::string named, //
-                 fvec3_ptr_t a,
-                 fvec3_ptr_t b,
+                 fvec3 a,
+                 fvec3 b,
                  fxpipeline_ptr_t pipeline) -> node_ptr_t { //
                 auto drawable = std::make_shared<CallbackDrawable>(nullptr);
                 drawable->SetRenderCallback([a, b, pipeline](lev2::RenderContextInstData& RCID) { //
@@ -148,8 +153,8 @@ void pyinit_scenegraph(py::module& module_lev2) {
                   pipeline->wrappedDrawCall(RCID, [a, b, context]() {
                     auto& VB = GfxEnv::GetSharedDynamicVB2();
                     VtxWriter<SVtxV12N12B12T8C4> vw;
-                    auto v0 = SVtxV12N12B12T8C4(*a.get(), fvec3(), fvec3(), fvec2(), 0xffffffff);
-                    auto v1 = SVtxV12N12B12T8C4(*b.get(), fvec3(), fvec3(), fvec2(), 0xffffffff);
+                    auto v0 = SVtxV12N12B12T8C4(a, fvec3(), fvec3(), fvec2(), 0xffffffff);
+                    auto v1 = SVtxV12N12B12T8C4(b, fvec3(), fvec3(), fvec2(), 0xffffffff);
                     vw.Lock(context, &VB, 6);
                     vw.AddVertex(v0);
                     vw.AddVertex(v1);
@@ -215,6 +220,20 @@ void pyinit_scenegraph(py::module& module_lev2) {
                 OrkAssert(SG != nullptr);
                 OrkAssert(ray != nullptr);
                 return SG->pickWithRay(ray);
+              })
+          .def(
+              "enableSynchro",                                      //
+              [](scene_ptr_t SG) -> synchro_ptr_t { //
+                SG->_synchro = std::make_shared<Synchro>();
+                return SG->_synchro;
+              })
+          .def_property(
+              "scenetime",                     //
+              [](scene_ptr_t SG) -> float { //
+                return SG->_currentTime;
+              },
+              [](scene_ptr_t SG, float time) { //
+                SG->_currentTime = time;
               })
           .def("pickWithScreenCoord", [](scene_ptr_t SG, cameradata_ptr_t cam, fvec2_ptr_t scoord) -> uint64_t { //
             OrkAssert(SG != nullptr);

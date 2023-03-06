@@ -11,7 +11,7 @@ import math, sys, os, argparse, asyncio
 from pathlib import Path
 from orkengine.core import *
 from orkengine.lev2 import *
-sys.path.append((thisdir()/"..").normalized.as_string) # add parent dir to path
+sys.path.append((thisdir()/".."/".."/"examples"/"python").normalized.as_string) # add parent dir to path
 from common.cameras import *
 from common.shaders import *
 from common.primitives import createGridData
@@ -19,7 +19,20 @@ from common.scenegraph import createSceneGraph
 
 ################################################################################
 
+midictrl = -1 
+
 parser = argparse.ArgumentParser(description='scenegraph example')
+parser.add_argument("-m", "--movie", action="store_true", help='do movie record' )
+parser.add_argument("-c", "--midictrl", type=int, default=-1, help='midi controller index')
+parser.add_argument("-l", "--listmidictrl", action="store_true", help='list midi controllers' )
+
+args = vars(parser.parse_args())
+if args["listmidictrl"]:
+  for item in midi.InputContext().inputs:
+    print(item)
+  sys.exit(0)
+
+midictrl = args["midictrl"]
 
 class CompositorSetupApp(object):
 
@@ -27,6 +40,8 @@ class CompositorSetupApp(object):
     super().__init__()
     self.ezapp = OrkEzApp.create(self)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
+    if args["movie"]:
+      self.ezapp.enableMovieRecording("test.mp4")
 
     self.materials = set()
     setupUiCamera( app=self, eye = vec3(10,10,10), constrainZ=True, up=vec3(0,1,0))
@@ -47,6 +62,13 @@ class CompositorSetupApp(object):
     comp_tek.renderNode = DeferredPbrRenderNode()
     comp_tek.outputNode = ScreenOutputNode()
 
+    self.deferred_context = comp_tek.renderNode.context
+    self.deferred_context.gpuInit(ctx) # early init
+    lighting_mtl = self.deferred_context.lightingMaterial
+    self.envlighting_pipeline = self.deferred_context.pipeline_envlighting_model0_mono
+    print(lighting_mtl)
+    print(self.envlighting_pipeline)
+    
     comp_data = CompositingData()
     comp_scene = comp_data.createScene("scene1")
     comp_sceneitem = comp_scene.createSceneItem("item1")
@@ -83,6 +105,8 @@ class CompositorSetupApp(object):
                       "compositordata": comp_data
                     })
 
+    self.scene.enableSynchro()
+
     ###################################
     # create grid
     ###################################
@@ -90,6 +114,22 @@ class CompositorSetupApp(object):
     self.grid_data = createGridData()
     self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
     self.grid_node.sortkey = 1
+
+    if midictrl>=0:
+      def _ON_MIDI(t,m):
+        if m[0]==176:
+          c = m[1]
+          v = m[2]
+          if c==0: # controller 0
+            pbr_common.ambientLevel = vec3(float(v)/127.0)
+          if c==1: # controller 1
+            pbr_common.diffuseLevel = float(v)/127.0
+          if c==2: # controller 2
+            pbr_common.specularLevel = float(v)/127.0
+
+        print(m)
+      self.midi = midi.InputContext()
+      self.midi.startInputByIndex(2,_ON_MIDI)
 
   ################################################
 

@@ -246,8 +246,8 @@ struct CpuNodeImpl {
       //////////////////////////////////////////////////
       // set number of lights for tile
       //////////////////////////////////////////////////
-      _context._lightingmtl.bindParamInt(_context._parNumLights, chunksize);
-      _context._lightingmtl.commit();
+      _context._lightingmtl->bindParamInt(_context._parNumLights, chunksize);
+      _context._lightingmtl->commit();
       //////////////////////////////////////////////////
       // accumulate light for tile
       //////////////////////////////////////////////////

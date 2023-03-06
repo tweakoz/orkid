@@ -63,7 +63,7 @@ uitestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
   //////////////////////////////////////////////////////////
   compdata->presetUnlit();
   compdata->mbEnable  = true;
-  auto nodetek        = compdata->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
+  auto nodetek        = compdata->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
   auto outpnode       = nodetek->tryOutputNodeAs<RtGroupOutputCompositingNode>();
   auto compositorimpl = compdata->createImpl();
   compositorimpl->bindLighting(lightmgr.get());

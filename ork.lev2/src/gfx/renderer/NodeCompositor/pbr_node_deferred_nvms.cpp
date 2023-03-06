@@ -70,8 +70,8 @@ struct NVMSIMPL {
         mapped->ref<fvec4>(base + i * sizeof(fvec4)) = fvec4();
       mapped->unmap();
 
-      _lightprojectshader = _context._lightingmtl.computeShader("compute_projectlights");
-      _lightcollectshader = _context._lightingmtl.computeShader("compute_collectlights");
+      _lightprojectshader = _context._lightingmtl->computeShader("compute_projectlights");
+      _lightcollectshader = _context._lightingmtl->computeShader("compute_collectlights");
     }
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -229,8 +229,8 @@ struct NVMSIMPL {
       //////////////////////////////////////////////////
       // set number of lights for tile
       //////////////////////////////////////////////////
-      _context._lightingmtl.bindParamInt(_context._parNumLights, chunksize);
-      _context._lightingmtl.commit();
+      _context._lightingmtl->bindParamInt(_context._parNumLights, chunksize);
+      _context._lightingmtl->commit();
       //////////////////////////////////////////////////
       // accumulate light for tile
       //////////////////////////////////////////////////

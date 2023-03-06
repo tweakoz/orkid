@@ -297,6 +297,7 @@ static fxpipeline_ptr_t _createFxPipeline(const FxPipelinePermutation& permu,con
                 const auto& CPD  = RCFD->topCPD();
                 auto monocams    = CPD._cameraMatrices;
                 auto worldmatrix = RCID.worldMatrix();
+                FXI->BindParamMatrix(_this->_paramM, worldmatrix);
                 FXI->BindParamMatrix(_this->_paramMVP, monocams->MVPMONO(worldmatrix));
               });
             }
@@ -743,8 +744,11 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   auto loadreq = std::make_shared<asset::LoadRequest>();
   loadreq->_asset_path = _shaderpath;
 
-  _asset_shader = ork::asset::AssetManager<FxShaderAsset>::load(loadreq);
-  _shader       = _asset_shader->GetFxShader();
+  _as_freestyle = std::make_shared<FreestyleMaterial>();
+  _as_freestyle->gpuInit(targ,_shaderpath);
+  _asset_shader = _as_freestyle->_shaderasset;
+  _shader       = _as_freestyle->_shader;
+  
 
   // specials
 
@@ -1062,6 +1066,7 @@ void PBRMaterial::end(const RenderContextFrameData& RCFD) {
 pbrmaterial_ptr_t PBRMaterial::clone() const {
   auto copy = std::make_shared<PBRMaterial>();
   *copy = *this;
+  copy->_initialTarget = nullptr;
   return copy;
 }
 

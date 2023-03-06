@@ -36,6 +36,7 @@ template <typename T> struct Vector3 final
 
   Vector3();
   explicit Vector3(T _x, T _y, T _z); 
+  explicit Vector3(T _a); 
   Vector3(const base_t& vec);        
   Vector3(const Vector3& vec);        
   Vector3(const Vector4<T>& vec);
@@ -44,9 +45,6 @@ template <typename T> struct Vector3 final
   Vector3(const kln::point& klein_point);
   Vector3(const kln::direction& klein_direction);
 
-  Vector3(U32 uval) {
-    setRGBAU32(uval);
-  }
   ~Vector3(){}; 
 
   base_t asGlmVec3() const {

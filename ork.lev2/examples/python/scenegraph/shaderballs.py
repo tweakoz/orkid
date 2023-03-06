@@ -22,10 +22,12 @@ from common.scenegraph import createSceneGraph
 ################################################################################
 
 parser = argparse.ArgumentParser(description='scenegraph example')
+parser.add_argument("-e", "--envmap", type=str, default="", help='environment map')
 
 ################################################################################
 
 args = vars(parser.parse_args())
+envmap = args["envmap"]
 
 ################################################################################
 
@@ -56,10 +58,18 @@ class SceneGraphApp(object):
   def onGpuInit(self,ctx):
 
     params_dict = {
-      "SkyboxIntensity": float(2),
+      "SkyboxIntensity": float(3),
       "SpecularIntensity": float(1),
+      "DiffuseIntensity": float(1),
+      "AmbientLight": vec3(0.1),
       "DepthFogDistance": float(10000)
     }
+
+    if envmap != "":
+      params_dict["SkyboxTexPathStr"] = envmap
+    else:
+      params_dict["SkyboxTexPathStr"] = "src://envmaps/blender_night.dds"
+
     createSceneGraph(app=self,
                      rendermodel="DeferredPBR",
                      params_dict=params_dict)
@@ -68,6 +78,7 @@ class SceneGraphApp(object):
 
     model = XgmModel("data://tests/pbr_calib.glb")
 
+    random.seed(12)
     for mesh in model.meshes:
       for submesh in mesh.submeshes:
         copy = submesh.material.clone()
@@ -96,7 +107,10 @@ class SceneGraphApp(object):
       mtl_cloned = subinst.material.clone()
       mtl_cloned.metallicFactor = float(x/8.0)
       mtl_cloned.roughnessFactor = float(z/8.0)
-      mtl_cloned.baseColor = vec4(1,0,0,1)
+      r = random.uniform(0,1)
+      g = random.uniform(0,1)
+      b = random.uniform(0,1)
+      mtl_cloned.baseColor = vec4(r,g,b,1)
       subinst.overrideMaterial(mtl_cloned)
 
       ######################

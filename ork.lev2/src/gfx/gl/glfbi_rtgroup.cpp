@@ -53,8 +53,8 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
   int iw = rtgroup->width();
   int ih = rtgroup->height();
 
-  iw = (iw < 16) ? 16 : iw;
-  ih = (ih < 16) ? 16 : ih;
+  //iw = (iw < 16) ? 16 : iw;
+  //ih = (ih < 16) ? 16 : ih;
 
   GL_ERRORCHECK();
 

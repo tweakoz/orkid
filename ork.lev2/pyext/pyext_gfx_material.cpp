@@ -124,7 +124,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
       py::class_<FxPipeline, fxpipeline_ptr_t>(module_lev2, "FxPipeline") //
           .def(
               "bindParam",                                                                    //
-              [](fxpipeline_ptr_t pipeline, //
+              [type_codec](fxpipeline_ptr_t pipeline, //
                  pyfxparam_ptr_t param, //
                  py::object inp_value) { //
                 if( py::isinstance<CrcString>(inp_value) ){
@@ -143,7 +143,20 @@ void pyinit_gfx_material(py::module& module_lev2) {
                 else if( py::isinstance<fvec4>(inp_value) ){
                   pipeline->bindParam(param.get(),py::cast<fvec4>(inp_value));
                 }
+                else if( py::isinstance<Texture>(inp_value) ){
+                  pipeline->bindParam(param.get(),py::cast<texture_ptr_t>(inp_value));
+                }
+                else if( py::hasattr(inp_value, "__call__")){
+                  FxPipeline::varval_generator_t L = [inp_value,type_codec]() -> FxPipeline::varval_t {
+                    py::gil_scoped_acquire acquire;
+                    py::object generated = inp_value();
+                    FxPipeline::varval_t asv = type_codec->decode(generated);
+                    return asv;
+                  };
+                  pipeline->bindParam(param.get(),L);
+                }
                 else{
+                  py::print("Bad Param Type: ", inp_value);
                   OrkAssert(false);
                 }
               })
@@ -253,7 +266,7 @@ void pyinit_gfx_material(py::module& module_lev2) {
               [](freestyle_mtl_ptr_t m, pyfxparam_ptr_t& p, const fmtx4& value) { m->bindParamMatrix(p.get(), value); })
           .def(
               "bindParamTexture",
-              [](freestyle_mtl_ptr_t m, pyfxparam_ptr_t& p, const tex_t& value) { m->bindParamCTex(p.get(), value.get()); })
+              [](freestyle_mtl_ptr_t m, pyfxparam_ptr_t& p, const texture_ptr_t& value) { m->bindParamCTex(p.get(), value.get()); })
           .def(
               "begin",
               [](freestyle_mtl_ptr_t m, pyfxtechnique_ptr_t tek, RenderContextFrameData& rcfd) { m->begin(tek.get(), rcfd); })
@@ -272,6 +285,21 @@ void pyinit_gfx_material(py::module& module_lev2) {
           .def("clone", [](pbrmaterial_ptr_t m) -> pbrmaterial_ptr_t {
             return m->clone();
           })
+          .def_property_readonly(
+              "fxcache",                                    //
+              [](pbrmaterial_ptr_t m) -> fxpipelinecache_constptr_t { //
+                return m->pipelineCache(); // material
+              })
+          .def_property_readonly(
+              "freestyle",
+              [](pbrmaterial_ptr_t m) -> freestyle_mtl_ptr_t {
+                return m->_as_freestyle;
+              })
+          .def(
+              "gpuInit",
+              [](pbrmaterial_ptr_t m, ctx_t& c) {
+                m->gpuInit(c.get());
+              })
           .def_property(
               "metallicFactor",
               [](pbrmaterial_ptr_t m) -> float { //
@@ -353,10 +381,13 @@ void pyinit_gfx_material(py::module& module_lev2) {
               [](pbrmaterial_ptr_t m) -> std::string { //
                 return m->_emissiveMapName;
               })
-          .def_property_readonly(
+          .def_property(
               "shaderpath",
               [](pbrmaterial_ptr_t m) -> std::string { //
                 return m->_shaderpath.c_str();
+              },
+              [](pbrmaterial_ptr_t m, std::string p)  { //
+                m->_shaderpath = p;
               });
   type_codec->registerStdCodec<pbrmaterial_ptr_t>(pbr_type);
   /////////////////////////////////////////////////////////////////////////////////

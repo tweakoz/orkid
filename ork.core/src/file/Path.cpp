@@ -1225,6 +1225,23 @@ bool Path::isSymLink() const {
   return (ist == 0) ? bool(S_ISLNK(file_stat.st_mode)) : false;
 }
 
+Path::HashType Path::hashFileContents() const{
+  if(not isFile()){
+    printf( "FILE<%s> not found!\n", toAbsolute().c_str() );
+  }
+  OrkAssert(isFile());
+  auto abs =   toAbsolute();
+  File f(abs,EFM_READ);
+  void* buffer = nullptr;
+  size_t length = 0;
+  auto status = f.Load(&buffer,length);
+  OrkAssert(EFEC_FILE_OK==status);
+  U32 uval = Crc32::HashMemory(buffer, length);
+  delete[] buffer;
+  return HashType(uval);
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 // using BFS goes against ork::Path's memory policy of not using the
 //  heap, but were not trying to run on the DS or PSP anymore

@@ -12,7 +12,7 @@ void pyinit_math(py::module& module_core) {
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
   auto fvec2_type = //
-      py::class_<fvec2, fvec2_ptr_t>(module_core, "vec2", pybind11::buffer_protocol())
+      py::class_<fvec2>(module_core, "vec2", pybind11::buffer_protocol())
           //////////////////////////////////////////////////////////////////////////
           .def_buffer([](fvec2& vec) -> pybind11::buffer_info {
             auto data = vec.asArray(); // Pointer to buffer
@@ -59,11 +59,10 @@ void pyinit_math(py::module& module_core) {
             fxs.format("vec2(%g,%g)", v.x, v.y);
             return fxs.c_str();
           });
-  type_codec->registerStdCodec<fvec2_ptr_t>(fvec2_type);
   type_codec->registerStdCodec<fvec2>(fvec2_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto fvec3_type = //
-      py::class_<fvec3, fvec3_ptr_t>(module_core, "vec3", pybind11::buffer_protocol())
+      py::class_<fvec3>(module_core, "vec3", pybind11::buffer_protocol())
           //////////////////////////////////////////////////////////////////////////
           .def_buffer([](fvec3& vec) -> pybind11::buffer_info {
             auto data = vec.asArray(); // Pointer to buffer
@@ -77,6 +76,7 @@ void pyinit_math(py::module& module_core) {
           })
           //////////////////////////////////////////////////////////////////////////
           .def(py::init<>())
+          .def(py::init<float>())
           .def(py::init<float, float, float>())
           .def_property(
               "x",
@@ -118,7 +118,7 @@ void pyinit_math(py::module& module_core) {
           .def(py::self - py::self)
           .def(py::self * py::self)
           .def(py::self * float())
-          .def("set", [](fvec3_ptr_t me, fvec3_ptr_t other) { (*me.get()) = (*other.get()); })
+          .def("set", [](fvec3& me, const fvec3& other) { me = other; })
           .def(
               "__str__",
               [](const fvec3& v) -> std::string {
@@ -131,11 +131,10 @@ void pyinit_math(py::module& module_core) {
             fxs.format("vec3(%g,%g,%g)", v.x, v.y, v.z);
             return fxs.c_str();
           });
-  type_codec->registerStdCodec<fvec3_ptr_t>(fvec3_type);
   type_codec->registerStdCodec<fvec3>(fvec3_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto fvec4_type = //
-      py::class_<fvec4, fvec4_ptr_t>(module_core, "vec4", pybind11::buffer_protocol())
+      py::class_<fvec4>(module_core, "vec4", pybind11::buffer_protocol())
           //////////////////////////////////////////////////////////////////////////
           .def_buffer([](fvec4& vec) -> pybind11::buffer_info {
             auto data = vec.asArray(); // Pointer to buffer
@@ -201,11 +200,10 @@ void pyinit_math(py::module& module_core) {
             fxs.format("vec4(%g,%g,%g,%g)", v.x, v.y, v.z, v.w);
             return fxs.c_str();
           });
-  type_codec->registerStdCodec<fvec4_ptr_t>(fvec4_type);
   type_codec->registerStdCodec<fvec4>(fvec4_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto fquat_type = //
-      py::class_<fquat, fquat_ptr_t>(module_core, "quat", pybind11::buffer_protocol())
+      py::class_<fquat>(module_core, "quat", pybind11::buffer_protocol())
           //////////////////////////////////////////////////////////////////////////
           .def_buffer([](fquat& quat) -> pybind11::buffer_info {
             auto data = quat.asArray(); // Pointer to buffer
@@ -242,11 +240,10 @@ void pyinit_math(py::module& module_core) {
             fxs.format("quat(%g,%g,%g,%g)", v.x, v.y, v.z, v.w);
             return fxs.c_str();
           });
-  type_codec->registerStdCodec<fquat_ptr_t>(fquat_type);
   type_codec->registerStdCodec<fquat>(fquat_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto mtx3_type = //
-      py::class_<fmtx3, fmtx3_ptr_t>(module_core, "mtx3", pybind11::buffer_protocol())
+      py::class_<fmtx3>(module_core, "mtx3", pybind11::buffer_protocol())
           //////////////////////////////////////////////////////////////////////////
           .def_buffer([](fmtx3& mtx) -> pybind11::buffer_info {
             auto data = mtx.asArray(); // Pointer to buffer
@@ -273,11 +270,10 @@ void pyinit_math(py::module& module_core) {
             auto str = mtx.dumpcn();
             return str.c_str();
           });
-  type_codec->registerStdCodec<fmtx3_ptr_t>(mtx3_type);
   type_codec->registerStdCodec<fmtx3>(mtx3_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto mtx4_type = //
-      py::class_<fmtx4, fmtx4_ptr_t>(module_core, "mtx4", pybind11::buffer_protocol())
+      py::class_<fmtx4>(module_core, "mtx4", pybind11::buffer_protocol())
           //////////////////////////////////////////////////////////////////////////
           .def_buffer([](fmtx4& mtx) -> pybind11::buffer_info {
             auto data = mtx.asArray(); // Pointer to buffer
@@ -305,111 +301,110 @@ void pyinit_math(py::module& module_core) {
           .def("toGlm", &fmtx4::asGlmMat4)
           .def(
               "getColumn",
-              [](fmtx4_ptr_t mtx, int column) -> fvec4 { //
-                return mtx->column(column);
+              [](fmtx4 mtx, int column) -> fvec4 { //
+                return mtx.column(column);
               })
           .def(
               "setColumn",
-              [](fmtx4_ptr_t mtx, int column, fvec4 c) { //
-                return mtx->setColumn(column, c);
+              [](fmtx4 mtx, int column, fvec4 c) { //
+                return mtx.setColumn(column, c);
               })
           .def(
               "getRow",
-              [](fmtx4_ptr_t mtx, int row) -> fvec4 { //
-                return mtx->row(row);
+              [](fmtx4 mtx, int row) -> fvec4 { //
+                return mtx.row(row);
               })
           .def(
               "setRow",
-              [](fmtx4_ptr_t mtx, int row, fvec4 c) { //
-                return mtx->setRow(row, c);
+              [](fmtx4 mtx, int row, fvec4 c) { //
+                return mtx.setRow(row, c);
               })
           .def(
               "compose",
-              [](fmtx4_ptr_t mtx, const fvec3& pos, const fquat& rot, float scale) { //
-                mtx->compose(pos, rot, scale);
+              [](fmtx4 mtx, const fvec3& pos, const fquat& rot, float scale) { //
+                mtx.compose(pos, rot, scale);
               })
           .def(
               "dump",
-              [](fmtx4_ptr_t mtx, std::string name) { //
-                mtx->dump(name);
+              [](fmtx4 mtx, std::string name) { //
+                mtx.dump(name);
               })
           .def_static("perspective", &fmtx4::createPerspectiveMatrix)
           .def_static(
               "composed",
-              [](const fvec3& pos, const fquat& rot, float scale) -> fmtx4_ptr_t {
-                auto rval = std::make_shared<fmtx4>();
-                rval->compose(pos, rot, scale);
+              [](const fvec3& pos, const fquat& rot, float scale) -> fmtx4 {
+                fmtx4 rval;
+                rval.compose(pos, rot, scale);
                 return rval;
               })
           .def_static(
               "deltaMatrix",
-              [](fmtx4_ptr_t from, fmtx4_ptr_t to) -> fmtx4_ptr_t {
-                auto rval = std::make_shared<fmtx4>();
-                rval->correctionMatrix(*from.get(), *to.get());
+              [](fmtx4 from, fmtx4 to) -> fmtx4 {
+                fmtx4 rval;
+                rval.correctionMatrix(from, to);
                 return rval;
               })
           .def_static(
               "rotMatrix",
-              [](const fquat& q) -> fmtx4_ptr_t {
-                auto rval = std::make_shared<fmtx4>();
-                rval->fromQuaternion(q);
+              [](const fquat& q) -> fmtx4 {
+                fmtx4 rval;
+                rval.fromQuaternion(q);
                 return rval;
               })
           .def_static(
               "rotMatrix",
-              [](const fvec3& axis, float angle) -> fmtx4_ptr_t {
-                auto rval = std::make_shared<fmtx4>();
-                rval->fromQuaternion(fquat(axis, angle));
+              [](const fvec3& axis, float angle) -> fmtx4 {
+                fmtx4 rval;
+                rval.fromQuaternion(fquat(axis, angle));
                 return rval;
               })
           .def_static(
               "transMatrix",
-              [](float x, float y, float z) -> fmtx4_ptr_t {
-                auto rval = std::make_shared<fmtx4>();
-                rval->setTranslation(x, y, z);
+              [](float x, float y, float z) -> fmtx4 {
+                fmtx4 rval;
+                rval.setTranslation(x, y, z);
                 return rval;
               })
           .def_static(
               "transMatrix",
-              [](const fvec3& t) -> fmtx4_ptr_t {
-                auto rval = std::make_shared<fmtx4>();
-                rval->setTranslation(t.x, t.y, t.z);
+              [](const fvec3& t) -> fmtx4 {
+                fmtx4 rval;
+                rval.setTranslation(t.x, t.y, t.z);
                 return rval;
               })
           .def_static(
               "scaleMatrix",
-              [](float x, float y, float z) -> fmtx4_ptr_t {
-                auto rval = std::make_shared<fmtx4>();
-                rval->setScale(x, y, z);
+              [](float x, float y, float z) -> fmtx4 {
+                fmtx4 rval;
+                rval.setScale(x, y, z);
                 return rval;
               })
           .def_static(
               "scaleMatrix",
-              [](const fvec3& scale) -> fmtx4_ptr_t {
-                auto rval = std::make_shared<fmtx4>();
-                rval->setScale(scale.x, scale.y, scale.z);
+              [](const fvec3& scale) -> fmtx4 {
+                fmtx4 rval;
+                rval.setScale(scale.x, scale.y, scale.z);
                 return rval;
               })
           .def_static(
               "unproject",
-              [](fmtx4_ptr_t rIMVP, const fvec3& ClipCoord, fvec3& rVObj) -> bool {
-                return fmtx4::unProject(*rIMVP.get(), ClipCoord, rVObj);
+              [](fmtx4 rIMVP, const fvec3& ClipCoord, fvec3& rVObj) -> bool {
+                return fmtx4::unProject(rIMVP, ClipCoord, rVObj);
               })
           .def_static(
               "lookAt",
-              [](const fvec3& eye, const fvec3& tgt, fvec3& up) -> fmtx4_ptr_t {
-                auto rval = std::make_shared<fmtx4>();
-                rval->lookAt(eye, tgt, up);
+              [](const fvec3& eye, const fvec3& tgt, fvec3& up) -> fmtx4 {
+                fmtx4 rval;
+                rval.lookAt(eye, tgt, up);
                 return rval;
               })
           //.def("lookAt", &fmtx4::decompose)
           .def(py::self * py::self)
           .def(py::self == py::self)
-          .def("__repr__", [](fmtx4_ptr_t mtx) -> std::string {
-            auto str = mtx->dump4x3cn();
+          .def("__repr__", [](fmtx4 mtx) -> std::string {
+            auto str = mtx.dump4x3cn();
             return str.c_str();
           });
-  type_codec->registerStdCodec<fmtx4_ptr_t>(mtx4_type);
   type_codec->registerStdCodec<fmtx4>(mtx4_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto frustum_type =

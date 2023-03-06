@@ -10,6 +10,7 @@
 #include <boost/program_options.hpp>
 #include <ork/kernel/environment.h>
 #include <ork/util/logger.h>
+#include <ork/lev2/gfx/util/movie.inl>
 
 using namespace std::string_literals;
 
@@ -176,9 +177,11 @@ EzViewport::EzViewport(EzMainWin* mainwin)
 }
 /////////////////////////////////////////////////
 void EzViewport::DoInit(ork::lev2::Context* pTARG) {
+
   pTARG->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
   FontMan::gpuInit(pTARG);
   _initstate.store(1);
+
 }
 /////////////////////////////////////////////////
 void EzViewport::DoDraw(ui::drawevent_constptr_t drwev) {
@@ -416,6 +419,7 @@ void OrkEzApp::onGpuInit(EzMainWin::ongpuinit_t cb) {
 void OrkEzApp::onGpuExit(EzMainWin::ongpuexit_t cb) {
   if(_mainWindow)
     _mainWindow->_onGpuExit = cb;
+  _moviecontext = nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onUiEvent(EzMainWin::onuieventcb_t cb) {
@@ -480,13 +484,13 @@ int OrkEzApp::mainThreadLoop() {
     ////////////////////////////////////////
 
     while (not checkAppState(KAPPSTATEFLAG_JOINED)) {
-      double this_time = _update_timer.SecsSinceStart();
+      double this_time = _update_timer.SecsSinceStart()*_timescale;
       double raw_delta = this_time - _update_prevtime;
       _update_prevtime = this_time;
       _update_timeaccumulator += raw_delta;
-      double step = 1.0 / 240.0;
+      double step = 1.0 / 60.0;
 
-      while (_update_timeaccumulator >= step) {
+      if(_update_timeaccumulator >= step) {
 
         bool do_update = bool(_mainWindow->_onUpdate);
 
@@ -537,6 +541,11 @@ int OrkEzApp::mainThreadLoop() {
   glfw_ctx->_onGpuInit = [this, update_thread_impl](lev2::Context* context) {
     if (_mainWindow->_onGpuInit) {
       _mainWindow->_onGpuInit(context);
+
+      if( _moviecontext ){
+        _moviecontext->init(_initdata->_width,_initdata->_height);
+      }
+
     }
 
     _updateThread.start(update_thread_impl);
@@ -549,6 +558,9 @@ int OrkEzApp::mainThreadLoop() {
 
   glfw_ctx->_onGpuExit = [this](lev2::Context* context) {
     joinUpdate();
+    if( _moviecontext ){
+      _moviecontext->terminate();
+    }
 
     if (_mainWindow->_onGpuExit) {
       _mainWindow->_onGpuExit(context);
@@ -558,6 +570,25 @@ int OrkEzApp::mainThreadLoop() {
   ///////////////////////////////
 
   return glfw_ctx->runloop();
+}
+///////////////////////////////////////////////////////////////////////////////
+void OrkEzApp::enableMovieRecording(file::Path output_path){
+    _moviecontext = std::make_shared<MovieContext>();
+    _moviecontext->_filename = output_path.toAbsolute().c_str();
+
+    auto mctx = _moviecontext.get();
+    _movie_record_frame_lambda = [mctx,this](lev2::Context* ctx){
+        auto fbi = ctx->FBI();
+        CaptureBuffer capbuf;
+        bool ok = fbi->captureAsFormat(nullptr, &capbuf, EBufferFormat::RGB8);
+        mctx->writeFrame(capbuf);
+        //int ircount = _render_count.load();
+        //int iucount = _update_count.load();
+        //printf( "movie write frame<%d> ircount<%d> iucount<%d>\n", mctx->_frame, ircount, iucount );
+      };
+}
+void OrkEzApp::finishMovieRecording(){
+  _moviecontext->terminate();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::setRefreshPolicy(RefreshPolicyItem policy) {

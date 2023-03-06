@@ -22,7 +22,7 @@ ImplementReflectionX(ork::audio::singularity::BlockModulationData, "SynBlockModu
 ImplementReflectionX(ork::audio::singularity::DspParamData, "SynDspParam");
 
 namespace ork::audio::singularity {
-static logchannel_ptr_t logchan_modulation = logger()->createChannel("singul.mod", fvec3(1, 0.3, 1));
+static logchannel_ptr_t logchan_modulation = logger()->createChannel("singul.mod", fvec3(1, 0.3, 1), false);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -38,8 +38,8 @@ void BlockModulationData::describeX(class_t* clazz) {
 ///////////////////////////////////////////////////////////////////////////////
 
 BlockModulationData::BlockModulationData() {
-  _evaluator = [](DspParam& cec) -> //
-      float { return cec._data->_coarse; };
+  _evaluator = [](DspParam& param_inst) -> //
+      float { return param_inst._data->_coarse; };
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -101,15 +101,15 @@ void DspParamData::useDefaultEvaluator() {
   _edit_keytrack_max      = 1.0f;
   _edit_keytrack_numsteps = 402;
   _edit_keytrack_shape    = 1.0f;
-  _mods->_evaluator       = [this](DspParam& cec) -> float {
-    float kt = _keyTrack * cec._keyOff;
-    float vt = -_velTrack * cec._unitVel;
+  _mods->_evaluator       = [this](DspParam& param_inst) -> float {
+    float kt = _keyTrack * param_inst._keyOff;
+    float vt = -_velTrack * param_inst._unitVel;
     float rv = _coarse     //
                + _fine     //
-               + cec._C1() //
-               + cec._C2() //
+               + param_inst._C1() //
+               + param_inst._C2() //
                + kt + vt;
-    // printf("cec._keyOff<%g> rv<%g>\n", cec._keyOff, rv);
+     //printf("defaulteval rv<%g>\n", rv);
     return rv;
   };
 }
@@ -118,16 +118,16 @@ void DspParamData::useDefaultEvaluator() {
 
 void DspParamData::useAmplitudeEvaluator() {
   _evaluatorid      = "amplitude";
-  _mods->_evaluator = [this](DspParam& cec) -> float {
-    cec._kval  = _keyTrack * cec._keyOff;
-    cec._vval  = lerp(-_velTrack, 0.0f, cec._unitVel);
-    cec._s1val = cec._C1();
-    cec._s2val = cec._C2();
+  _mods->_evaluator = [this](DspParam& param_inst) -> float {
+    param_inst._kval  = _keyTrack * param_inst._keyOff;
+    param_inst._vval  = lerp(-_velTrack, 0.0f, param_inst._unitVel);
+    param_inst._s1val = param_inst._C1();
+    param_inst._s2val = param_inst._C2();
     float x    = (_coarse) //
-              + cec._s1val //
-              + cec._s2val //
-              + cec._kval  //
-              + cec._vval;
+              + param_inst._s1val //
+              + param_inst._s2val //
+              + param_inst._kval  //
+              + param_inst._vval;
     // printf("vt<%f> kt<%f> x<%f>\n", _velTrack, _keyTrack, x);
     return x;
   };
@@ -149,27 +149,35 @@ void DspParamData::usePitchEvaluator() {
   _edit_keytrack_min      = -200.0f;
   _edit_keytrack_max      = 200.0f;
   _edit_keytrack_numsteps = 400;
+  _keyTrack = 100.0;
 
-  _mods->_evaluator = [this](DspParam& cec) -> float {
-    float kt       = _keyTrack * cec._keyOff;
-    float vt       = _velTrack * cec._unitVel;
-    float totcents = 6000 // 60(midi-middle-C) * 100 cents
+  _mods->_evaluator = [this](DspParam& param_inst) -> float {
+
+    float kt       = _keyTrack * param_inst._keyOff;
+    float vt       = _velTrack * param_inst._unitVel;
+    float totcents = param_inst._keyRaw*100 // 60(midi-middle-C) * 100 cents
                      + (_coarse)   //
                      + _fine       //
-                     + cec._C1()   //
-                     + cec._C2()   //
+                     + param_inst._C1()   //
+                     + param_inst._C2()   //
                      + kt          //
                      + vt;
     // float ratio = cents_to_linear_freq_ratio(totcents);
     // printf( "rat<%f>\n", ratio);
-    /*
-    printf( "cec._coarse<%f>\n", cec._coarse);
-    printf( "cec._fine<%f>\n", cec._fine);
-    printf( "c1<%f>\n", cec._C1());
-    printf( "c2<%f>\n", cec._C2());
-    printf( "vt<%f>\n", vt);
-    printf( "totcents<%f>\n", totcents);
-    */
+    
+    if(param_inst._update_count==0){
+      logchan_modulation->log( "keyRaw<%d>", param_inst._keyRaw);
+      logchan_modulation->log( "keyOff<%f>", param_inst._keyOff);
+      logchan_modulation->log( "coarse<%f>", _coarse);
+      logchan_modulation->log( "fine<%f>", _fine);
+      logchan_modulation->log( "c1<%f>", param_inst._C1());
+      logchan_modulation->log( "c2<%f>", param_inst._C2());
+      logchan_modulation->log( "vt<%f>", vt);
+      logchan_modulation->log( "kt<%f>", kt);
+      logchan_modulation->log( "totcents<%f>", totcents);
+    }
+
+    param_inst._update_count++;
     return totcents;
   };
 }
@@ -178,14 +186,14 @@ void DspParamData::usePitchEvaluator() {
 
 void DspParamData::useFrequencyEvaluator() {
   _evaluatorid      = "frequency";
-  _mods->_evaluator = [this](DspParam& cec) -> float {
-    float ktcents  = _keyTrack * cec._keyOff;
-    cec._vval      = _velTrack * cec._unitVel;
-    float vtcents  = cec._vval;
-    float totcents = cec._C1() + cec._C2() + ktcents + vtcents;
+  _mods->_evaluator = [this](DspParam& param_inst) -> float {
+    float ktcents  = _keyTrack * param_inst._keyOff;
+    param_inst._vval      = _velTrack * param_inst._unitVel;
+    float vtcents  = param_inst._vval;
+    float totcents = param_inst._C1() + param_inst._C2() + ktcents + vtcents;
     float ratio    = cents_to_linear_freq_ratio(totcents);
-    // printf( "vtcents<%f> ratio<%f>\n", vtcents, ratio );
-    // printf( "ratio<%f>\n", ratio);
+     printf( "vtcents<%f> ratio<%f>\n", vtcents, ratio );
+     printf( "ratio<%f>\n", ratio);
     return _coarse * ratio;
   };
 }
@@ -194,16 +202,16 @@ void DspParamData::useFrequencyEvaluator() {
 
 void DspParamData::useKrzPosEvaluator() {
   _evaluatorid      = "krzpos";
-  _mods->_evaluator = [this](DspParam& cec) -> float {
-    cec._kval  = _keyTrack * cec._keyOff;
-    cec._vval  = _velTrack * cec._unitVel;
-    cec._s1val = cec._C1();
-    cec._s2val = cec._C2();
+  _mods->_evaluator = [this](DspParam& param_inst) -> float {
+    param_inst._kval  = _keyTrack * param_inst._keyOff;
+    param_inst._vval  = _velTrack * param_inst._unitVel;
+    param_inst._s1val = param_inst._C1();
+    param_inst._s2val = param_inst._C2();
     float x    = (_coarse) //
-              + cec._s1val //
-              + cec._s2val //
-              + cec._kval  //
-              + cec._vval;
+              + param_inst._s1val //
+              + param_inst._s2val //
+              + param_inst._kval  //
+              + param_inst._vval;
     return clip_float(x, -100, 100);
   };
 }
@@ -212,12 +220,12 @@ void DspParamData::useKrzPosEvaluator() {
 
 void DspParamData::useKrzEvnOddEvaluator() {
   _evaluatorid      = "krzevnodd";
-  _mods->_evaluator = [this](DspParam& cec) -> float {
-    float kt = _keyTrack * cec._keyOff;
-    float vt = lerp(-_velTrack, 0.0f, cec._unitVel);
+  _mods->_evaluator = [this](DspParam& param_inst) -> float {
+    float kt = _keyTrack * param_inst._keyOff;
+    float vt = lerp(-_velTrack, 0.0f, param_inst._unitVel);
     float x  = (_coarse)  //
-              + cec._C1() //
-              + cec._C2() //
+              + param_inst._C1() //
+              + param_inst._C2() //
               + kt        //
               + vt;
     // printf( "vt<%f> kt<%f> x<%f>\n", vt, kt, x );
@@ -233,17 +241,20 @@ DspParam::DspParam() {
 }
 
 void DspParam::reset() {
-  _evaluator = [](DspParam& cec) { return 0.0f; };
+  _evaluator = [](DspParam& param_inst) { return 0.0f; };
   _C1        = []() { return 0.0f; };
   _C2        = []() { return 0.0f; };
 }
 
 void DspParam::keyOn(int ikey, int ivel) {
 
-   //logchan_modulation->log( "DspParam::keyOn: ikey<%d> ivel<%d>", ikey, ivel );
 
-  _keyOff  = float(ikey - _data->_keystartNote);
+  _update_count = 0;
+  _keyRaw  = ikey;
+  _keyOff  = float(60 - _data->_keystartNote);
   _unitVel = float(ivel) / 127.0f;
+
+   logchan_modulation->log( "DspParam::keyOn: ikey<%d> ivel<%d> keystart<%d> _keyOff<%g>", ikey, ivel, _data->_keystartNote, _keyOff );
 
   if (false == _data->_keystartBipolar) {
     if (_keyOff < 0)

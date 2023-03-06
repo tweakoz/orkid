@@ -23,6 +23,7 @@
 #include <ork/lev2/ui/panel.h>
 #include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/lev2/ui/event.h>
+#include <ork/lev2/ezapp.h>
 
 namespace ork::audio::singularity {
 
@@ -190,6 +191,7 @@ struct HudLayoutGroup final : public ui::LayoutGroup {
   std::map<char, int> _notemap;
   std::map<char, int> _handledkeymap;
   std::map<int, programInst*> _activenotes;
+  lev2::orkezapp_ptr_t _ezapp;
   int _updcount    = 0;
   int _velocity    = 127;
   int _octaveshift = 0;

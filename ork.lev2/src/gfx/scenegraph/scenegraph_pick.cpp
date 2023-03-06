@@ -67,8 +67,8 @@ void PickBuffer::mydraw(fray3_constptr_t ray) {
     _compdata = new CompositingData;
     _compdata->presetPicking();
 
-    auto csi     = _compdata->findScene("scene1"_pool);
-    auto itm     = csi->findItem("item1"_pool);
+    auto csi     = _compdata->findScene("scene1");
+    auto itm     = csi->findItem("item1");
     auto tek     = itm->tryTechniqueAs<NodeCompositingTechnique>();
     auto rtgnode = tek->tryOutputNodeAs<RtGroupOutputCompositingNode>();
     auto piknode = tek->tryRenderNodeAs<PickingCompositingNode>();

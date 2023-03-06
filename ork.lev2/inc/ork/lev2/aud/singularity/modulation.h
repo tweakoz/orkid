@@ -90,6 +90,7 @@ struct DspParam : public ork::Object {
 
   controller_t _C1;
   controller_t _C2;
+  int _keyRaw = 0;
   float _keyOff  = 0.0f;
   float _unitVel = 0.0f;
 
@@ -99,6 +100,7 @@ struct DspParam : public ork::Object {
   float _vval  = 0.0f;
 
   evalit_t _evaluator;
+  int _update_count = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

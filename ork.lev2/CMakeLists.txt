@@ -58,7 +58,7 @@ add_library (ork_lev2 SHARED ${orksrcs} )
 ork_std_target_opts(ork_lev2)
 
 set( libs ork_core )
-list(APPEND libs OpenImageIO OpenImageIO_Util portaudio rtmidi )
+list(APPEND libs OpenImageIO OpenImageIO_Util portaudio rtmidi avformat avcodec swscale avutil )
 
 IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
   list(APPEND libs ispc_texcomp  )

@@ -27,8 +27,11 @@ namespace ork::ui{
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 struct ImGuiTexturedWindow;
+struct MovieContext;
+using moviecontext_ptr_t = std::shared_ptr<MovieContext>;
 ///////////////////////////////////////////////////////////////////////////////
 struct Context;
+using gfxcontext_lambda_t = std::function<void(Context*)>;
 struct Texture;
 struct IpcTexture;
 struct RtGroup;
@@ -105,7 +108,8 @@ struct FrameRenderer;
 struct FrameTechniqueBase;
 struct DefaultRenderer;
 ///////////////////////////////////////////////////////////////////////////////
-class CompositingSceneItem;
+struct CompositingScene;
+struct CompositingSceneItem;
 struct CompositorDrawData;
 struct CompositingContext;
 struct CompositingMorphable;
@@ -237,6 +241,11 @@ using compositingpassdata_ptr_t = std::shared_ptr<CompositingPassData>;
 using compositordata_ptr_t   = std::shared_ptr<CompositingData>;
 using compositordata_constptr_t = std::shared_ptr<const CompositingData>;
 using compositorimpl_ptr_t   = std::shared_ptr<CompositingImpl>;
+using compositingscene_ptr_t   = std::shared_ptr<CompositingScene>;
+using compositingscene_constptr_t   = std::shared_ptr<const CompositingScene>;
+
+using compositingsceneitem_ptr_t   = std::shared_ptr<CompositingSceneItem>;
+using compositingsceneitem_constptr_t   = std::shared_ptr<const CompositingSceneItem>;
 
 using compositortechnique_ptr_t   = std::shared_ptr<CompositingTechnique>;
 using nodecompositortechnique_ptr_t   = std::shared_ptr<NodeCompositingTechnique>;
@@ -274,6 +283,11 @@ using rtbuffer_ptr_t = std::shared_ptr<RtBuffer>;
 struct FreestyleMaterial;
 using freestyle_mtl_ptr_t = std::shared_ptr<FreestyleMaterial>;
 using test_mtl_ptr_t = std::shared_ptr<GfxMaterial3DSolid>;
+///////////////////////////////////////////////////////////////////////////////
+namespace pbr::deferrednode{
+struct DeferredContext;
+};
+using pbr_deferred_context_ptr_t = std::shared_ptr<pbr::deferrednode::DeferredContext>;
 
 ///////////////////////////////////////////////////////////////////////////////
 using xgmskeleton_ptr_t = std::shared_ptr<XgmSkeleton>;

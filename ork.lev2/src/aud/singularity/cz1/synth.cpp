@@ -20,10 +20,13 @@
 #include <ork/lev2/aud/singularity/alg_amp.h>
 #include <ork/lev2/aud/singularity/dsp_mix.h>
 #include <ork/kernel/string/string.h>
+#include <ork/util/logger.h>
 
 using namespace ork;
 
 namespace ork::audio::singularity {
+
+static logchannel_ptr_t logchan_czx = logger()->createChannel("singul.czx", fvec3(1, 0.6, .8), false);
 
 inline double sinc(double i) { // ph --1 .. +1
   if (i == 0.0)
@@ -71,20 +74,20 @@ void CZX::compute(DspBuffer& dspbuf) // final
   constexpr double kscale    = double(1 << 24);
   constexpr double kinvscale = 1.0 / kscale;
   //////////////////////////////////////////
-  double lyrcents = _layer->_layerBasePitch;
   /////////////////////////
   // read modulation data
   // TODO - krate computation
   /////////////////////////
-  float centoff  = _param[0].eval();
+  float pitch_cents  = _param[0].eval();
   float modindex = std::clamp(_param[1].eval(), 0.0f, 1.0f);
   modindex       = powf(modindex, 0.5);
-  _fval[0]       = centoff;
-  double note     = (lyrcents + centoff) * 0.01;
+  _fval[0]       = pitch_cents;
+  double note     = (pitch_cents) * 0.01;
   double frq     = midi_note_to_frequency(note) * _oscdata->_octaveScale;
   double per     = SR / frq;
 
-  // printf("osc<%p> frq<%g>\n", this, frq);
+  if(_updatecount==0)
+    logchan_czx->log("osc<%p> pitch_cents<%g> note<%g> frq<%g>", this, pitch_cents, note, frq);
 
   /////////////////////////
   // printf("centoff<%g>\n", centoff);
@@ -274,6 +277,7 @@ void CZX::compute(DspBuffer& dspbuf) // final
     // outsamples[i] = double_linphase;
   }
   ////////////////////////////////////////////////
+  _updatecount++;
 } // namespace ork::audio::singularity
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -301,6 +305,8 @@ void CZX::doKeyOn(const KeyOnInfo& koi) // final
 
   for (int i = 0; i < 8; i++)
     _waveoutputs[i] = 0.0f;
+
+  _updatecount = 0;
 }
 ///////////////////////////////////////////////////////////////////////////////
 

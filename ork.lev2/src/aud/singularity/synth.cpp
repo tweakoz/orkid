@@ -16,10 +16,12 @@
 #include <ork/lev2/aud/singularity/krzobjects.h>
 #include <ork/lev2/aud/singularity/dspblocks.h>
 #include <ork/lev2/aud/singularity/fxgen.h>
+#include <ork/util/logger.h>
 
 extern int WTF;
 
 namespace ork::audio::singularity {
+static logchannel_ptr_t logchan_synth = logger()->createChannel("singul.syn", fvec3(1, 0.6, .8), true);
 ///////////////////////////////////////////////////////////////////////////////
 void synth::nextEffect() {
   _eventmap.atomicOp([this](eventmap_t& emap) { //
@@ -42,6 +44,7 @@ void synth::nextEffect() {
         assert(nextpreset->_algdata != nullptr); // did you add presets ?
         bus.second->setBusDSP(nextpreset);
         bus.second->_fxname = it->first;
+        logchan_synth->log( "switched to effect<%s>", it->first.c_str() );
       }
     }));
   });
@@ -288,7 +291,7 @@ programInst* synth::liveKeyOn(int note, int velocity, prgdata_constptr_t pdata) 
   pi->_progdata = pdata;
 
   addEvent(0.0f, [note, velocity, pdata, this, pi]() {
-    printf("liveKeyOn note<%d>\n", note);
+    logchan_synth->log("liveKeyOn note<%d>", note);
 
     int clampn = std::clamp(note, 0, 127);
     int clampv = std::clamp(velocity, 0, 127);
@@ -336,7 +339,7 @@ programInst* synth::keyOn(int note, int velocity, prgdata_constptr_t pdata) {
     piset.erase(it);
   });
   pi->_progdata = pdata;
-  // printf("syn allocProgInst<%p>\n", pi);
+  //printf("syn KEYON<%d>\n", note);
 
   int clampn = std::clamp(note, 0, 127);
   int clampv = std::clamp(velocity, 0, 127);
@@ -376,7 +379,7 @@ void synth::keyOff(programInst* pinst) {
 
 void synth::resize(int numframes) {
   if (numframes > _numFrames) {
-    printf( "RESIZE<%d>\n", numframes );
+    logchan_synth->log( "RESIZE NUMFRAMES<%d>", numframes );
     _tempbus->resize(numframes);
     _ibuf.resize(numframes);
     _obuf.resize(numframes);
@@ -646,8 +649,6 @@ programInst::~programInst() {
 void synth::_keyOnLayer(layer_ptr_t l, int note, int velocity, lyrdata_ptr_t ld) {
   std::lock_guard<std::mutex> lock(l->_mutex);
 
-  l->reset();
-
   assert(ld != nullptr);
 
   l->_koi._layer     = l;
@@ -655,69 +656,18 @@ void synth::_keyOnLayer(layer_ptr_t l, int note, int velocity, lyrdata_ptr_t ld)
   l->_koi._vel       = velocity;
   l->_koi._layerdata = ld;
 
-  l->_HKF._miscText   = "";
-  l->_HKF._note       = note;
-  l->_HKF._vel        = velocity;
-  l->_HKF._layerdata  = ld;
-  l->_HKF._layerIndex = l->_ldindex;
-  l->_HKF._useFm4     = false;
+  auto obus = outputBus(ld->_outbus);
 
-  l->_layerBasePitch = clip_float(note * 100, -0, 12700);
+  l->keyOn(note,velocity,ld,obus);
 
-  l->_ignoreRelease = ld->_ignRels;
-  l->_curnote       = note;
-  l->_layerdata     = ld;
-  l->_outbus        = this->outputBus(ld->_outbus);
-  l->_layerLinGain  = ld->_layerLinGain;
-
-  l->_curvel = velocity;
-
-  l->_layerTime = 0.0f;
-
-  l->retain();
-
-  /////////////////////////////////////////////
-  // controllers
-  /////////////////////////////////////////////
-
-  if (ld->_ctrlBlock) {
-    l->_ctrlBlock = std::make_shared<ControlBlockInst>();
-    l->_ctrlBlock->keyOn(l->_koi, ld->_ctrlBlock);
-  }
-
-  ///////////////////////////////////////
-
-  l->_alg = l->_layerdata->_algdata->createAlgInst();
-  // assert(_alg);
-  if (l->_alg) {
-    l->_alg->keyOn(l->_koi);
-  }
-
-  l->_HKF._alg = l->_alg;
-
-  ///////////////////////////////////////
-
-  l->_lyrPhase = 0;
-  l->_sinrepPH = 0.0f;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 void synth::_keyOffLayer(layer_ptr_t l) {
   l->_lyrPhase = 1;
   this->releaseLayer(l);
-
-  ///////////////////////////////////////
-
-  if (l->_ctrlBlock)
-    l->_ctrlBlock->keyOff();
-
-  ///////////////////////////////////////
-
-  if (l->_ignoreRelease)
-    return;
-
-  ///////////////////////////////////////
-
-  if (l->_alg)
-    l->_alg->keyOff();
+  l->keyOff();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

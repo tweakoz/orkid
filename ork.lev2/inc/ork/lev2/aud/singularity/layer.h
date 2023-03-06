@@ -98,6 +98,9 @@ struct Layer {
   }
   bool isHudLayer() const;
 
+  void keyOn(int note, int velocity, lyrdata_ptr_t ld, outbus_ptr_t obus);
+  void keyOff();
+
   std::mutex _mutex;
 
   int _dspwritebase;

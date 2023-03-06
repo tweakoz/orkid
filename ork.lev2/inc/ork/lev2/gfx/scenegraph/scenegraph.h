@@ -160,6 +160,20 @@ struct DrawableKvPair  : public ork::Object {
 
 using drawabledatakvpair_ptr_t = std::shared_ptr<DrawableDataKvPair>;
 
+struct Synchro {
+  Synchro();
+  ~Synchro();
+  void terminate();
+  bool beginUpdate();
+  void endUpdate();
+  bool beginRender();
+  void endRender();
+  std::atomic<int> _updcount;
+  std::atomic<int> _rencount;
+};
+
+using synchro_ptr_t = std::shared_ptr<Synchro>;
+
 struct Scene {
 
   Scene();
@@ -208,6 +222,9 @@ struct Scene {
   RenderPresetContext _compositorPreset;
   std::vector<DrawableKvPair> _staticDrawables; //! global drawables owned by the scenegraph, not owned by nodes...
   Timer _profile_timer;
+  gfxcontext_lambda_t _on_render_complete;
+  synchro_ptr_t _synchro;
+  float _currentTime = 0.0f;
   
   using layer_map_t = std::map<std::string, layer_ptr_t>;
 

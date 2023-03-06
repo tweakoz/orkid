@@ -23,8 +23,10 @@
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_deferred.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/unlit_node.h>
+#include <ork/util/logger.h>
 ///////////////////////////////////////////////////////////////////////////////
 namespace po = boost::program_options;
+static logchannel_ptr_t logchan_harness = logger()->createChannel("singul.harness", fvec3(1, 0.6, .8), true);
 ///////////////////////////////////////////////////////////////////////////////
 #if defined(__APPLE__)
 namespace ork::lev2 {
@@ -109,7 +111,7 @@ singularitytestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
   //////////////////////////////////////////////////////////
   compdata->presetUnlit();
   compdata->mbEnable  = true;
-  auto nodetek        = compdata->tryNodeTechnique<NodeCompositingTechnique>("scene1"_pool, "item1"_pool);
+  auto nodetek        = compdata->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
   auto outpnode       = nodetek->tryOutputNodeAs<RtGroupOutputCompositingNode>();
   auto compositorimpl = compdata->createImpl();
   compositorimpl->bindLighting(lightmgr.get());
@@ -498,9 +500,22 @@ prgdata_constptr_t testpattern(
   } else if (testpatternname == "slow") {
     for (int i = 0; i < 12; i++) {        // note length
       for (int n = 0; n <= 64; n += 12) { // note
-        enqueue_audio_event(program, count * 3.0, 2.0, 36 + n, 128);
+        enqueue_audio_event( program, // prog
+                             count * 3.0, // time
+                             2.0, // duration
+                             36 + n, // note
+                             128); // vel
         count++;
       }
+    }
+  } else if (testpatternname == "pscan") {
+    auto bankdata = syndat->_bankdata;
+    int count = 0;
+    for( auto program_item : bankdata->_programs ){
+      auto program = program_item.second;
+      logchan_harness->log("enqueuing seq1 for program<%s>", program->_name.c_str() );
+      seq1(180.0f, count*4, program);
+      count++;
     }
   } else if (testpatternname == "vo") {
     for (int i = 0; i < 12; i++) {                             // note length

@@ -177,7 +177,7 @@ void PhysicsDebugger::render(const RenderContextInstData& _RCID, lineqptr_t line
 
   auto pcamdata = context->topRenderContextFrameData()->topCPD().cameraMatrices();
 
-  fvec3 szn = 0;
+  fvec3 szn = fvec3(0);
 
   DynamicVertexBuffer<vtx_t>& vb = GfxEnv::GetSharedDynamicVB();
 

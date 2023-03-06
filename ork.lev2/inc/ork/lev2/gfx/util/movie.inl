@@ -21,12 +21,13 @@ extern bool _macosUseHIDPI;
 struct MovieContext {
 
   MovieContext() {
+    _filename = "GeneratedVideo.mp4";
   }
 
   void init(int width, int height) {
 
-    _width  = width;
-    _height = height;
+    _width  = 3840;
+    _height = 2160;
 
     //av_register_all();
     //avcodec_register_all();
@@ -36,11 +37,11 @@ struct MovieContext {
     ////////////////////////
 
     _swscontext = sws_getContext(
-        width,
-        height,
+        _width,
+        _height,
         AV_PIX_FMT_RGB24,
-        width,
-        height,
+        _width,
+        _height,
         AV_PIX_FMT_YUV420P,
         SWS_FAST_BILINEAR,
         NULL,
@@ -49,7 +50,6 @@ struct MovieContext {
 
     // Preparing the data concerning the format and codec in order to write properly the header, frame data and end of file.
 
-    _filename = "GeneratedVideo.mp4";
 
     _format = (AVOutputFormat *) av_guess_format(nullptr, _filename.c_str(), nullptr);
 
@@ -79,7 +79,7 @@ struct MovieContext {
 
     auto codecpar = _stream->codecpar;
 
-    int bitrate = 16000;
+    int bitrate = 64000;
     codecpar->codec_id = _format->video_codec;
     codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
     codecpar->width = _width;
@@ -127,15 +127,15 @@ struct MovieContext {
     // Allocating memory for each RGB frame, which will be lately converted to YUV:
     _rgb_pic         = av_frame_alloc();
     _rgb_pic->format = AV_PIX_FMT_RGB24;
-    _rgb_pic->width  = width;
-    _rgb_pic->height = height;
+    _rgb_pic->width  = _width;
+    _rgb_pic->height = _height;
     ret              = av_frame_get_buffer(_rgb_pic, 1);
 
     // Allocating memory for each conversion output YUV frame:
     _yuv_pic         = av_frame_alloc();
     _yuv_pic->format = AV_PIX_FMT_YUV420P;
-    _yuv_pic->width  = width;
-    _yuv_pic->height = height;
+    _yuv_pic->width  = _width;
+    _yuv_pic->height = _height;
     ret              = av_frame_get_buffer(_yuv_pic, 1);
 
     // After the format, code and general frame data is set, we write the video in the frame generation loop:
@@ -170,6 +170,10 @@ struct MovieContext {
   /////////////////////////////////////////////////////////////////////////////////////////
   void writeFrame(CaptureBuffer& capbuf) {
 
+    if(_terminated){
+      return;
+    }
+
     bool downsample_2x2 = false;
 
 #if defined(__APPLE__)
@@ -181,12 +185,8 @@ struct MovieContext {
     }
     downsample_2x2 = true;
 #else
-    if (capbuf.miW != _width) {
-      return;
-    }
-    if (capbuf.miH != _height) {
-      return;
-    }
+    OrkAssert(capbuf.miW == _width);
+    OrkAssert(capbuf.miH == _height);
 #endif
     ///////////////////////////////////////
     // blit into scaling buffer
@@ -285,6 +285,12 @@ struct MovieContext {
   }
   void terminate() {
     
+    if(_terminated){
+      return;
+    }
+
+    _terminated = true;
+    
     printf( "terminating movie stream\n");
 
     bool end_of_stream = false;
@@ -331,6 +337,7 @@ struct MovieContext {
   int _got_output                = 0;
   int _fps                       = 60;
   AVPacket _avpacket;
+  bool _terminated = false;
 };
 
 } // namespace ork::lev2
