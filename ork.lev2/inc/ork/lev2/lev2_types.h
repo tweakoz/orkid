@@ -25,13 +25,19 @@ using matrix_lamda_t = std::function<fmtx4()>;
 ///////////////////////////////////////////////////////////////////////////////
 
 struct Context;
-using gfxcontext_lambda_t = std::function<void(Context*)>;
-using context_ptr_t          = std::shared_ptr<Context>;
 class TextureInterface;
 class CTXBASE;
 class GfxEnv;
+class DisplayBuffer;
 class Window;
-class OffscreenBuffer;
+class AppWindow;
+//
+using gfxcontext_lambda_t = std::function<void(Context*)>;
+using context_ptr_t          = std::shared_ptr<Context>;
+using ctxbase_ptr_t          = std::shared_ptr<CTXBASE>;
+using displaybuffer_ptr_t  = std::shared_ptr<DisplayBuffer>;
+using window_ptr_t           = std::shared_ptr<Window>;
+using appwindow_ptr_t        = std::shared_ptr<AppWindow>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -21,9 +21,9 @@ using namespace ork::lev2;
 
 int main(int argc, char** argv,char** envp) {
   auto init_data = std::make_shared<ork::AppInitData>(argc,argv,envp);
-  auto qtapp  = OrkEzApp::create(init_data);
-  auto qtwin  = qtapp->_mainWindow;
-  auto gfxwin = qtwin->_gfxwin;
+  auto ezapp  = OrkEzApp::create(init_data);
+  auto ezwin  = ezapp->_mainWindow;
+  auto appwin = ezwin->_appwin;
 
   terraindrawabledata_ptr_t terrainData;
   drawable_ptr_t terrainDraw;
@@ -37,7 +37,7 @@ int main(int argc, char** argv,char** envp) {
   // gpuInit handler, called once on main(rendering) thread
   //  at startup time
   //////////////////////////////////////////////////////////
-  qtapp->onGpuInit([&](Context* ctx) {
+  ezapp->onGpuInit([&](Context* ctx) {
   
     #if defined(ENABLE_OPENVR)
     auto vrdev = orkidvr::openvr::openvr_device();
@@ -76,7 +76,7 @@ int main(int argc, char** argv,char** envp) {
   // update handler (called on update thread)
   //  it will never be called before onGpuInit() is complete...
   //////////////////////////////////////////////////////////
-  qtapp->onUpdate([&](ui::updatedata_ptr_t updata) {
+  ezapp->onUpdate([&](ui::updatedata_ptr_t updata) {
     double dt      = updata->_dt;
     double abstime = updata->_abstime;
     ///////////////////////////////////////
@@ -96,15 +96,15 @@ int main(int argc, char** argv,char** envp) {
   //////////////////////////////////////////////////////////
   // draw handler (called on main(rendering) thread)
   //////////////////////////////////////////////////////////
-  qtapp->onDraw([&](ui::drawevent_constptr_t drwev) { //
+  ezapp->onDraw([&](ui::drawevent_constptr_t drwev) { //
     sg_scene->renderOnContext(drwev->GetTarget());
   });
   //////////////////////////////////////////////////////////
-  qtapp->onResize([&](int w, int h) {
+  ezapp->onResize([&](int w, int h) {
     //
     sg_scene->_compositorImpl->compositingContext().Resize(w, h);
   });
   //////////////////////////////////////////////////////////
-  qtapp->setRefreshPolicy({EREFRESH_FASTEST, -1});
-  return qtapp->mainThreadLoop();
+  ezapp->setRefreshPolicy({EREFRESH_FASTEST, -1});
+  return ezapp->mainThreadLoop();
 }

@@ -90,24 +90,24 @@ singularitytestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
   //////////////////////////////////////////////////////////////////////////////
   // boot up debug HUD
   //////////////////////////////////////////////////////////////////////////////
-  auto qtapp  = std::make_shared<SingularityTestApp>(init_data);
-  auto qtwin  = qtapp->_mainWindow;
-  auto gfxwin = qtwin->_gfxwin;
+  auto ezapp  = std::make_shared<SingularityTestApp>(init_data);
+  auto ezwin  = ezapp->_mainWindow;
+  auto appwin = ezwin->_appwin;
   //////////////////////////////////////////////////////////
   // a wee bit convoluted, TODO: fixme
-  auto hudvplayout       = qtapp->_topLayoutGroup->layoutAndAddChild(qtapp->_hudvp);
-  qtapp->_hudvp->_layout = hudvplayout;
+  auto hudvplayout       = ezapp->_topLayoutGroup->layoutAndAddChild(ezapp->_hudvp);
+  ezapp->_hudvp->_layout = hudvplayout;
   //////////////////////////////////////////////////////////
-  // create references to various items scoped by qtapp
+  // create references to various items scoped by ezapp
   //////////////////////////////////////////////////////////
-  auto renderer = qtapp->_vars.makeSharedForKey<DefaultRenderer>("renderer");
-  auto lmd      = qtapp->_vars.makeSharedForKey<LightManagerData>("lmgrdata");
-  auto lightmgr = qtapp->_vars.makeSharedForKey<LightManager>("lmgr", *lmd);
-  auto compdata = qtapp->_vars.makeSharedForKey<CompositingData>("compdata");
-  auto material = qtapp->_vars.makeSharedForKey<FreestyleMaterial>("material");
-  auto CPD      = qtapp->_vars.makeSharedForKey<CompositingPassData>("CPD");
-  auto cameras  = qtapp->_vars.makeSharedForKey<CameraDataLut>("cameras");
-  auto camdata  = qtapp->_vars.makeSharedForKey<CameraData>("camdata");
+  auto renderer = ezapp->_vars.makeSharedForKey<DefaultRenderer>("renderer");
+  auto lmd      = ezapp->_vars.makeSharedForKey<LightManagerData>("lmgrdata");
+  auto lightmgr = ezapp->_vars.makeSharedForKey<LightManager>("lmgr", *lmd);
+  auto compdata = ezapp->_vars.makeSharedForKey<CompositingData>("compdata");
+  auto material = ezapp->_vars.makeSharedForKey<FreestyleMaterial>("material");
+  auto CPD      = ezapp->_vars.makeSharedForKey<CompositingPassData>("CPD");
+  auto cameras  = ezapp->_vars.makeSharedForKey<CameraDataLut>("cameras");
+  auto camdata  = ezapp->_vars.makeSharedForKey<CameraData>("camdata");
   //////////////////////////////////////////////////////////
   compdata->presetUnlit();
   compdata->mbEnable  = true;
@@ -118,7 +118,7 @@ singularitytestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
   CPD->addStandardLayers();
   (*cameras)["spawncam"] = camdata;
   //////////////////////////////////////////////////////////
-  qtapp->onGpuInit([=](Context* ctx) {
+  ezapp->onGpuInit([=](Context* ctx) {
     renderer->setContext(ctx);
     const FxShaderTechnique* fxtechnique = nullptr;
     const FxShaderParam* fxparameterMVP  = nullptr;
@@ -134,16 +134,16 @@ singularitytestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
   });
   //////////////////////////////////////////////////////////
   auto dbufcontext = std::make_shared<DrawBufContext>();
-  qtapp->onUpdate([=](ui::updatedata_ptr_t updata) {
+  ezapp->onUpdate([=](ui::updatedata_ptr_t updata) {
     ///////////////////////////////////////
     auto DB = dbufcontext->acquireForWriteLocked();
     DB->Reset();
     DB->copyCameras(*cameras);
-    qtapp->_hudvp->onUpdateThreadTick(updata);
+    ezapp->_hudvp->onUpdateThreadTick(updata);
     dbufcontext->releaseFromWriteLocked(DB);
   });
   //////////////////////////////////////////////////////////
-  qtapp->onDraw([=](ui::drawevent_constptr_t drwev) {
+  ezapp->onDraw([=](ui::drawevent_constptr_t drwev) {
     ////////////////////////////////////////////////
     auto DB = dbufcontext->acquireForReadLocked();
     if (nullptr == DB)
@@ -168,22 +168,22 @@ singularitytestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
     compositorimpl->pushCPD(*CPD);
     context->beginFrame();
     mtxi->PushUIMatrix();
-    // qtapp->_hudvp->Draw(drwev);
-    qtapp->_ezviewport->_topLayoutGroup->Draw(drwev);
+    // ezapp->_hudvp->Draw(drwev);
+    ezapp->_ezviewport->_topLayoutGroup->Draw(drwev);
     mtxi->PopUIMatrix();
     context->endFrame();
     ////////////////////////////////////////////////////
     dbufcontext->releaseFromReadLocked(DB);
   });
   //////////////////////////////////////////////////////////
-  qtapp->onResize([=](int w, int h) { //
+  ezapp->onResize([=](int w, int h) { //
                                       // printf("GOTRESIZE<%d %d>\n", w, h);
-                                      // qtapp->_ezviewport->_topLayoutGroup->SetSize(w, h);
-    qtapp->_hudvp->SetSize(w, h);
+                                      // ezapp->_ezviewport->_topLayoutGroup->SetSize(w, h);
+    ezapp->_hudvp->SetSize(w, h);
   });
   //////////////////////////////////////////////////////////
   const int64_t trackMAX = (4095 << 16);
-  qtapp->onUiEvent([=](ui::event_constptr_t ev) -> ui::HandlerResult {
+  ezapp->onUiEvent([=](ui::event_constptr_t ev) -> ui::HandlerResult {
     bool isalt  = ev->mbALT;
     bool isctrl = ev->mbCTRL;
     switch (ev->_eventcode) {
@@ -198,13 +198,13 @@ singularitytestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
         }
         break;
       default:
-        return qtapp->_hudvp->handleUiEvent(ev);
+        return ezapp->_hudvp->handleUiEvent(ev);
         break;
     }
     ui::HandlerResult rval;
     return rval;
   });
-  return qtapp;
+  return ezapp;
 }
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -217,9 +217,9 @@ singularitybenchapp_ptr_t createBenchmarkApp(appinitdata_ptr_t initdata, prgdata
   /////////////////////////////////////////
   auto uicontext                  = std::make_shared<ui::Context>();
   auto app                        = std::make_shared<SingularityBenchMarkApp>(initdata);
-  auto qtwin                      = app->_mainWindow;
-  auto gfxwin                     = qtwin->_gfxwin;
-  gfxwin->mRootWidget->_uicontext = uicontext.get();
+  auto ezwin                      = app->_mainWindow;
+  auto appwin                     = ezwin->_appwin;
+  appwin->mRootWidget->_uicontext = uicontext.get();
   //////////////////////////////////////////////////////////////////////////////
   app->onGpuInit([=](Context* ctx) { //
     app->_material = std::make_shared<ork::lev2::FreestyleMaterial>();

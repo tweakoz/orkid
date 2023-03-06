@@ -117,7 +117,7 @@ FrameTechniqueBase::FrameTechniqueBase(int iW, int iH)
 void FrameTechniqueBase::Init(Context* targ) {
 
   auto fbi                = targ->FBI();
-  OffscreenBuffer* parent = fbi->GetThisBuffer();
+  DisplayBuffer* parent = fbi->GetThisBuffer();
   targ                    = parent ? parent->context() : targ;
   auto clear_color        = fbi->GetClearColor();
 

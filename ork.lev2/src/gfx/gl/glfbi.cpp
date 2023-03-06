@@ -185,7 +185,7 @@ void GlFrameBufferInterface::_doEndFrame(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlFrameBufferInterface::_initializeContext(OffscreenBuffer* pBuf) {
+void GlFrameBufferInterface::_initializeContext(DisplayBuffer* pBuf) {
   ///////////////////////////////////////////
   // create texture surface
 

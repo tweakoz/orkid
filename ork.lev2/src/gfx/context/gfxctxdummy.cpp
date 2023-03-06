@@ -92,7 +92,7 @@ ContextDummy::ContextDummy()
 void ContextDummy::initializeWindowContext(Window* pWin, CTXBASE* pctxbase) {
 }
 
-void ContextDummy::initializeOffscreenContext(OffscreenBuffer* pBuf) {
+void ContextDummy::initializeOffscreenContext(DisplayBuffer* pBuf) {
 }
 
 void ContextDummy::initializeLoaderContext() {

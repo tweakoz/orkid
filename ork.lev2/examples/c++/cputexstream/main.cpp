@@ -93,19 +93,19 @@ using resources_ptr_t = std::shared_ptr<Resources>;
 
 int main(int argc, char** argv,char** envp) {
   auto init_data = std::make_shared<ork::AppInitData>(argc,argv,envp);
-  auto qtapp  = OrkEzApp::create(init_data);
-  auto qtwin  = qtapp->_mainWindow;
-  auto gfxwin = qtwin->_gfxwin;
+  auto ezapp  = OrkEzApp::create(init_data);
+  auto ezwin  = ezapp->_mainWindow;
+  auto appwin = ezwin->_appwin;
   Timer timer;
   timer.Start();
   resources_ptr_t resources;
   //////////////////////////////////////////////////////////
-  qtapp->onGpuInit([&](Context* ctx) {
+  ezapp->onGpuInit([&](Context* ctx) {
     resources = std::make_shared<Resources>(ctx);
   });
   //////////////////////////////////////////////////////////
   int framecounter = 0;
-  qtapp->onDraw([&](ui::drawevent_constptr_t drwev) {
+  ezapp->onDraw([&](ui::drawevent_constptr_t drwev) {
     auto context        = drwev->GetTarget();
     auto fbi            = context->FBI(); // FrameBufferInterface
     auto fxi            = context->FXI(); // FX Interface
@@ -134,7 +134,7 @@ int main(int argc, char** argv,char** envp) {
     resources->_material->begin(resources->_fxtechnique, RCFD);
     resources->_material->bindParamMatrix(resources->_fxparameterMVP, fmtx4::Identity());
     resources->_material->bindParamCTex(resources->_fxparameterTexture, resources->_texture.get());
-    gfxwin->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+    appwin->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
     resources->_material->end(RCFD);
     context->endFrame();
 
@@ -152,9 +152,9 @@ int main(int argc, char** argv,char** envp) {
   });
 
   //////////////////////////////////////////////////////////
-  qtapp->onResize([&](int w, int h) { printf("GOTRESIZE<%d %d>\n", w, h); });
+  ezapp->onResize([&](int w, int h) { printf("GOTRESIZE<%d %d>\n", w, h); });
   //////////////////////////////////////////////////////////
-  qtapp->onUiEvent([&](ui::event_constptr_t ev) -> ui::HandlerResult {
+  ezapp->onUiEvent([&](ui::event_constptr_t ev) -> ui::HandlerResult {
     switch (ev->_eventcode) {
       case ui::EventCode::DOUBLECLICK:
         OrkAssert(false);
@@ -166,11 +166,11 @@ int main(int argc, char** argv,char** envp) {
     return rval;
   });
   //////////////////////////////////////////////////////////
-  qtapp->onGpuExit([&](Context* ctx) {
+  ezapp->onGpuExit([&](Context* ctx) {
     resources = nullptr;
   });
   //////////////////////////////////////////////////////////
-  qtapp->setRefreshPolicy({EREFRESH_FASTEST, -1});
-  int rval = qtapp->mainThreadLoop();
+  ezapp->setRefreshPolicy({EREFRESH_FASTEST, -1});
+  int rval = ezapp->mainThreadLoop();
   opq::concurrentQueue()->drain();
 }

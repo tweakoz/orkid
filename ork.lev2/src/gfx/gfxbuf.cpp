@@ -17,17 +17,17 @@
 #include <ork/lev2/ui/viewport.h>
 #include <ork/rtti/downcast.h>
 
-ImplementReflectionX(ork::lev2::OffscreenBuffer, "ork::lev2::OffscreenBuffer");
+ImplementReflectionX(ork::lev2::DisplayBuffer, "ork::lev2::DisplayBuffer");
 
 namespace ork { namespace lev2 {
 
 /////////////////////////////////////////////////////////////////////////
 
-void OffscreenBuffer::describeX(object::ObjectClass* clazz) {
+void DisplayBuffer::describeX(object::ObjectClass* clazz) {
 }
 
-OffscreenBuffer::OffscreenBuffer(
-    OffscreenBuffer* Parent,
+DisplayBuffer::DisplayBuffer(
+    DisplayBuffer* Parent,
     int iX,
     int iY,
     int iW,
@@ -43,16 +43,16 @@ OffscreenBuffer::OffscreenBuffer(
     , _name(name) {
 }
 
-OffscreenBuffer::~OffscreenBuffer() {
+DisplayBuffer::~DisplayBuffer() {
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void OffscreenBuffer::Resize(int ix, int iy, int iw, int ih) {
+void DisplayBuffer::Resize(int ix, int iy, int iw, int ih) {
 
-  // TODO: OffscreenBuffer is probably completely superseded
+  // TODO: DisplayBuffer is probably completely superseded
   //  by RtBuffer (RenderTargetBuffer)
-  // OffscreenBuffer was originally intended for pbuffers..
+  // DisplayBuffer was originally intended for pbuffers..
   //  though maybe no if we need offscreen hardware backed devices
   //  for commandline tools
 
@@ -67,7 +67,7 @@ void OffscreenBuffer::Resize(int ix, int iy, int iw, int ih) {
 /////////////////////////////////////////////////////////////////////////
 
 Window::Window(int iX, int iY, int iW, int iH, const std::string& name, void* pdata)
-    : OffscreenBuffer(0, iX, iY, iW, iH, EBufferFormat::RGBA8, name)
+    : DisplayBuffer(0, iX, iY, iW, iH, EBufferFormat::RGBA8, name)
     , mpCTXBASE(0) {
   gGfxEnv.SetMainWindow(this);
 }
@@ -80,25 +80,25 @@ Window::~Window() {
 
 /////////////////////////////////////////////////////////////////////////
 
-void OffscreenBuffer::BeginFrame(void) {
+void DisplayBuffer::BeginFrame(void) {
   _sharedcontext->beginFrame();
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void OffscreenBuffer::EndFrame(void) {
+void DisplayBuffer::EndFrame(void) {
   _sharedcontext->endFrame();
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-Context* OffscreenBuffer::context(void) const {
+Context* DisplayBuffer::context(void) const {
   return _sharedcontext.get();
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void OffscreenBuffer::initContext() {
+void DisplayBuffer::initContext() {
   auto ctxclazz  = GfxEnv::GetRef().contextClass();
   _sharedcontext = std::dynamic_pointer_cast<Context>(ctxclazz->createShared());
   _sharedcontext->initializeOffscreenContext(this);
@@ -117,14 +117,14 @@ void Window::initContext() {
 
 /////////////////////////////////////////////////////////////////////////
 
-void OffscreenBuffer::Render2dQuadEML(const fvec4& QuadRect, const fvec4& UvRect, const fvec4& UvRect2) {
+void DisplayBuffer::Render2dQuadEML(const fvec4& QuadRect, const fvec4& UvRect, const fvec4& UvRect2) {
   auto ctx = context();
   ctx->GBI()->render2dQuadEML(QuadRect, UvRect, UvRect2);
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void OffscreenBuffer::Render2dQuadsEML(size_t count, const fvec4* QuadRects, const fvec4* UvRects, const fvec4* UvRect2s) {
+void DisplayBuffer::Render2dQuadsEML(size_t count, const fvec4* QuadRects, const fvec4* UvRects, const fvec4* UvRect2s) {
 
   auto ctx = context();
 
@@ -169,7 +169,7 @@ void OffscreenBuffer::Render2dQuadsEML(size_t count, const fvec4* QuadRects, con
 
 /////////////////////////////////////////////////////////////////////////
 
-void OffscreenBuffer::RenderMatOrthoQuad(
+void DisplayBuffer::RenderMatOrthoQuad(
     const SRect& vprect,
     const SRect& QuadRect,
     GfxMaterial* pmat,
@@ -243,7 +243,7 @@ void OffscreenBuffer::RenderMatOrthoQuad(
 
 /////////////////////////////////////////////////////////////////////////
 
-void OffscreenBuffer::RenderMatOrthoQuad(
+void DisplayBuffer::RenderMatOrthoQuad(
     const SRect& vprect,
     const SRect& QuadRect,
     GfxMaterial* pmat,

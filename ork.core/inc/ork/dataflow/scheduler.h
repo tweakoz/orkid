@@ -14,7 +14,7 @@
 #include <ork/kernel/mutex.h>
 #include <ork/kernel/any.h>
 
-namespace ork { namespace lev2 { class OffscreenBuffer; } }
+namespace ork { namespace lev2 { class DisplayBuffer; } }
 
 namespace ork { namespace dataflow {
 
@@ -115,7 +115,7 @@ public:
 
 struct gpgpucontext
 {
-	orkmap< std::string, ork::lev2::OffscreenBuffer* >	mOffscreenBuffers;
+	orkmap< std::string, ork::lev2::DisplayBuffer* >	mDisplayBuffers;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

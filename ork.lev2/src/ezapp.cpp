@@ -307,18 +307,18 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
   //////////////////////////////////////////////
 
   if(not initdata->_offscreen){
-    _mainWindow = new EzMainWin(*this);
+    _mainWindow = std::make_shared<EzMainWin>(*this);
 
     //////////////////////////////////////
     // create leve gfxwindow
     //////////////////////////////////////
-    _mainWindow->_gfxwin = new AppWindow(nullptr);
-    GfxEnv::GetRef().RegisterWinContext(_mainWindow->_gfxwin);
+    _mainWindow->_appwin = std::make_shared<AppWindow>(nullptr);
+    GfxEnv::GetRef().RegisterWinContext(_mainWindow->_appwin.get());
     //////////////////////////////////////
     //////////////////////////////////////
-    _ezviewport                       = std::make_shared<EzViewport>(_mainWindow);
+    _ezviewport                       = std::make_shared<EzViewport>(_mainWindow.get());
     _ezviewport->_uicontext           = _uicontext.get();
-    _mainWindow->_gfxwin->mRootWidget = _ezviewport.get();
+    _mainWindow->_appwin->mRootWidget = _ezviewport.get();
     _ezviewport->_topLayoutGroup =
         _uicontext->makeTop<ui::LayoutGroup>("top-layoutgroup", 0, 0, _initdata->_width, _initdata->_height);
     _topLayoutGroup = _ezviewport->_topLayoutGroup;
@@ -328,7 +328,7 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
     _mainq    = ork::opq::mainSerialQueue();
     _rthreadq = std::make_shared<opq::OperationsQueue>(0, "renderSerialQueue");
     /////////////////////////////////////////////
-    _mainWindow->_ctqt = new CtxGLFW(_mainWindow->_gfxwin);
+    _mainWindow->_ctqt = new CtxGLFW(_mainWindow->_appwin.get());
     _mainWindow->_ctqt->initWithData(_initdata);
     /////////////////////////////////////////////
     // mainthread runloop callback

@@ -87,7 +87,7 @@ public:
 
   bool _update_rendersync                   = false;
   Context* _curframecontext                 = nullptr;
-  AppWindow* _gfxwin                        = nullptr;
+  appwindow_ptr_t _appwin                        = nullptr;
   CtxGLFW* _ctqt                            = nullptr;
   drawcb_t _onDraw                          = nullptr;
   onresizecb_t _onResize                    = nullptr;
@@ -187,7 +187,7 @@ public:
   bool _userSpecifiedOnDraw = false;
   file::Path _orkidWorkspaceDir;
   appinitdata_ptr_t _initdata;
-  EzMainWin* _mainWindow;
+  ezmainwin_ptr_t _mainWindow;
   std::map<std::string, filedevctx_ptr_t> _fdevctxmap;
   ork::Timer _update_timer;
   double _update_prevtime        = 0;

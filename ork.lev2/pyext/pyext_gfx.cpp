@@ -386,5 +386,17 @@ void pyinit_gfx(py::module& module_lev2) {
           .def_static("instance", []() -> inputmanager_ptr_t { return InputManager::instance(); })
           .def("inputGroup", [](inputmanager_ptr_t mgr, std::string named) { return mgr->inputGroup(named); });
   type_codec->registerStdCodec<inputmanager_ptr_t>(inpmgr_typ);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto displaybuffer_typ = //
+      py::class_<DisplayBuffer, displaybuffer_ptr_t>(module_lev2, "DisplayBuffer");
+  type_codec->registerStdCodec<displaybuffer_ptr_t>(displaybuffer_typ);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto window_typ = //
+      py::class_<Window, DisplayBuffer, window_ptr_t>(module_lev2, "DisplayWindow");
+  type_codec->registerStdCodec<window_ptr_t>(window_typ);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto appwindow_typ = //
+      py::class_<AppWindow, Window, appwindow_ptr_t>(module_lev2, "AppWindow");
+  type_codec->registerStdCodec<appwindow_ptr_t>(appwindow_typ);
 } // namespace ork::lev2
 } // namespace ork::lev2

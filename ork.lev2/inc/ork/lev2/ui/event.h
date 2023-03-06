@@ -57,7 +57,7 @@ struct EventCooked {
 
 struct Event final // RawEvent
 {
-  lev2::OffscreenBuffer* mpGfxWin = nullptr;
+  lev2::DisplayBuffer* mpGfxWin = nullptr;
   Coordinate mUICoord;
 
   Context* _uicontext  = nullptr;

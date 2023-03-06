@@ -20,9 +20,9 @@ using namespace ork::lev2::pbr::deferrednode;
 
 int main(int argc, char** argv,char** envp) {
   auto init_data = std::make_shared<ork::AppInitData>(argc,argv,envp);
-  auto qtapp  = OrkEzApp::create(init_data);
-  auto qtwin  = qtapp->_mainWindow;
-  auto gfxwin = qtwin->_gfxwin;
+  auto ezapp  = OrkEzApp::create(init_data);
+  auto ezwin  = ezapp->_mainWindow;
+  auto appwin = ezwin->_appwin;
 
   //////////////////////////////////////////////////////////
   // create scenegraph
@@ -52,7 +52,7 @@ int main(int argc, char** argv,char** envp) {
   // gpuInit handler, called once on main(rendering) thread
   //  at startup time
   //////////////////////////////////////////////////////////
-  qtapp->onGpuInit([&](Context* ctx) {
+  ezapp->onGpuInit([&](Context* ctx) {
     sg_scene = std::make_shared<scenegraph::Scene>();
     drw->bindModelAsset("data://src/environ/objects/misc/ref/uvsph");
     auto sg_layer = sg_scene->createLayer("default");
@@ -64,7 +64,7 @@ int main(int argc, char** argv,char** envp) {
   //////////////////////////////////////////////////////////
   auto cameralut = std::make_shared<CameraDataLut>();
   auto camera    = cameralut->create("spawncam");
-  qtapp->onUpdate([&](ui::updatedata_ptr_t updata) {
+  ezapp->onUpdate([&](ui::updatedata_ptr_t updata) {
     double dt      = updata->_dt;
     double abstime = updata->_abstime;
     ///////////////////////////////////////
@@ -113,18 +113,18 @@ int main(int argc, char** argv,char** envp) {
   //////////////////////////////////////////////////////////
   // draw handler (called on main(rendering) thread)
   //////////////////////////////////////////////////////////
-  qtapp->onDraw([&](ui::drawevent_constptr_t drwev) { //
+  ezapp->onDraw([&](ui::drawevent_constptr_t drwev) { //
     sg_scene->renderOnContext(drwev->GetTarget());
   });
   //////////////////////////////////////////////////////////
-  qtapp->onResize([&](int w, int h) {
+  ezapp->onResize([&](int w, int h) {
     //
     sg_scene->_compositorImpl->compositingContext().Resize(w, h);
   });
-  qtapp->onGpuExit([&](Context* ctx) {
+  ezapp->onGpuExit([&](Context* ctx) {
     sg_scene = nullptr;
   });
   //////////////////////////////////////////////////////////
-  qtapp->setRefreshPolicy({EREFRESH_FASTEST, -1});
-  return qtapp->mainThreadLoop();
+  ezapp->setRefreshPolicy({EREFRESH_FASTEST, -1});
+  return ezapp->mainThreadLoop();
 }

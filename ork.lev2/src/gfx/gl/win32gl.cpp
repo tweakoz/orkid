@@ -267,7 +267,7 @@ void ContextGL::InitializeContext( Window *pWin, CTXBASE* pctxbase )
 
 /////////////////////////////////////////////////////////////////////////
 
-void ContextGL::InitializeContext( OffscreenBuffer *pBuf )
+void ContextGL::InitializeContext( DisplayBuffer *pBuf )
 {
 	GlWinPlatformObject* shmaster = GlWinPlatformObject::gShareMaster;
 

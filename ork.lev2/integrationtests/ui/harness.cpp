@@ -41,25 +41,25 @@ uitestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
   //////////////////////////////////////////////////////////////////////////////
   // boot up debug HUD
   //////////////////////////////////////////////////////////////////////////////
-  //static auto& qti = qtinit(argc, argv,init_data);
-  //QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
-  auto qtapp                      = std::make_shared<UiTestApp>(init_data);
-  auto qtwin                      = qtapp->_mainWindow;
-  auto gfxwin                     = qtwin->_gfxwin;
-  auto uicontext                  = qtapp->_uicontext;
-  gfxwin->mRootWidget->_uicontext = uicontext.get();
+  //static auto& ezi = ezinit(argc, argv,init_data);
+  //QApplication::setAttribute(ez::AA_DisableHighDpiScaling);
+  auto ezapp                      = std::make_shared<UiTestApp>(init_data);
+  auto ezwin                      = ezapp->_mainWindow;
+  auto appwin                     = ezwin->_appwin;
+  auto uicontext                  = ezapp->_uicontext;
+  appwin->mRootWidget->_uicontext = uicontext.get();
   //////////////////////////////////////////////////////////
-  // create references to various items scoped by qtapp
+  // create references to various items scoped by ezapp
   //////////////////////////////////////////////////////////
-  auto renderer = qtapp->_vars.makeSharedForKey<DefaultRenderer>("renderer");
-  auto lmd      = qtapp->_vars.makeSharedForKey<LightManagerData>("lmgrdata");
-  auto lightmgr = qtapp->_vars.makeSharedForKey<LightManager>("lmgr", *lmd);
-  auto compdata = qtapp->_vars.makeSharedForKey<CompositingData>("compdata");
-  auto material = qtapp->_vars.makeSharedForKey<FreestyleMaterial>("material");
-  auto CPD      = qtapp->_vars.makeSharedForKey<CompositingPassData>("CPD");
-  auto cameras  = qtapp->_vars.makeSharedForKey<CameraDataLut>("cameras");
-  auto camdata  = qtapp->_vars.makeSharedForKey<CameraData>("camdata");
-  auto dbufcontext = qtapp->_vars.makeSharedForKey<DrawBufContext>("dbufcontext");
+  auto renderer = ezapp->_vars.makeSharedForKey<DefaultRenderer>("renderer");
+  auto lmd      = ezapp->_vars.makeSharedForKey<LightManagerData>("lmgrdata");
+  auto lightmgr = ezapp->_vars.makeSharedForKey<LightManager>("lmgr", *lmd);
+  auto compdata = ezapp->_vars.makeSharedForKey<CompositingData>("compdata");
+  auto material = ezapp->_vars.makeSharedForKey<FreestyleMaterial>("material");
+  auto CPD      = ezapp->_vars.makeSharedForKey<CompositingPassData>("CPD");
+  auto cameras  = ezapp->_vars.makeSharedForKey<CameraDataLut>("cameras");
+  auto camdata  = ezapp->_vars.makeSharedForKey<CameraData>("camdata");
+  auto dbufcontext = ezapp->_vars.makeSharedForKey<DrawBufContext>("dbufcontext");
   //////////////////////////////////////////////////////////
   compdata->presetUnlit();
   compdata->mbEnable  = true;
@@ -70,7 +70,7 @@ uitestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
   CPD->addStandardLayers();
   (*cameras)["spawncam"] = camdata;
   //////////////////////////////////////////////////////////
-  qtapp->onGpuInit([=](Context* ctx) {
+  ezapp->onGpuInit([=](Context* ctx) {
     renderer->setContext(ctx);
     const FxShaderTechnique* fxtechnique = nullptr;
     const FxShaderParam* fxparameterMVP  = nullptr;
@@ -85,18 +85,18 @@ uitestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
     deco::printf(fvec3::Yellow(), "  fxparameterMODC<%p>\n", fxparameterMODC);
   });
   //////////////////////////////////////////////////////////
-  qtapp->onUpdate([=](ui::updatedata_ptr_t updata) {
+  ezapp->onUpdate([=](ui::updatedata_ptr_t updata) {
     ///////////////////////////////////////
     auto DB = dbufcontext->acquireForWriteLocked();
     if (DB) {
       DB->Reset();
       DB->copyCameras(*cameras);
-      // qtapp->_ezviewport->onUpdateThreadTick(updata);
+      // ezapp->_ezviewport->onUpdateThreadTick(updata);
       dbufcontext->releaseFromWriteLocked(DB);
     }
   });
   //////////////////////////////////////////////////////////
-  qtapp->onDraw([=](ui::drawevent_constptr_t drwev) {
+  ezapp->onDraw([=](ui::drawevent_constptr_t drwev) {
     ////////////////////////////////////////////////
     auto DB = dbufcontext->acquireForReadLocked();
     if (nullptr == DB)
@@ -121,21 +121,21 @@ uitestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
     compositorimpl->pushCPD(*CPD);
     context->beginFrame();
     mtxi->PushUIMatrix();
-    qtapp->_uicontext->draw(drwev);
+    ezapp->_uicontext->draw(drwev);
     mtxi->PopUIMatrix();
     context->endFrame();
     ////////////////////////////////////////////////////
     dbufcontext->releaseFromReadLocked(DB);
   });
   //////////////////////////////////////////////////////////
-  qtapp->onResize([=](int w, int h) { //
+  ezapp->onResize([=](int w, int h) { //
     // printf("GOTRESIZE<%d %d>\n", w, h);
-    qtapp->_ezviewport->SetSize(w, h);
-    qtapp->_ezviewport->_topLayoutGroup->SetSize(w, h);
+    ezapp->_ezviewport->SetSize(w, h);
+    ezapp->_ezviewport->_topLayoutGroup->SetSize(w, h);
   });
   //////////////////////////////////////////////////////////
   const int64_t trackMAX = (4095 << 16);
-  qtapp->onUiEvent([=](ui::event_constptr_t ev) -> ui::HandlerResult {
+  ezapp->onUiEvent([=](ui::event_constptr_t ev) -> ui::HandlerResult {
     bool isalt  = ev->mbALT;
     bool isctrl = ev->mbCTRL;
     switch (ev->_eventcode) {
@@ -151,13 +151,13 @@ uitestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
       default:
         //OrkAssert(false);
         // return uicontext->handleEvent(ev);
-        // return qtapp->_ezviewport->HandleUiEvent(ev);
+        // return ezapp->_ezviewport->HandleUiEvent(ev);
         break;
     }
     ui::HandlerResult rval;
     return rval;
   });
-  return qtapp;
+  return ezapp;
 }
 //////////////////////////////////////////////////////////////////////////////
 TestViewport::TestViewport()

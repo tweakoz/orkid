@@ -194,7 +194,7 @@ void ContextGL::initializeWindowContext( Window *pWin, CTXBASE* pctxbase  ) {
 
 /////////////////////////////////////////////////////////////////////////
 
-void ContextGL::initializeOffscreenContext( OffscreenBuffer *pBuf )
+void ContextGL::initializeOffscreenContext( DisplayBuffer *pBuf )
 {
   meTargetType = TargetType::OFFSCREEN;
 

@@ -352,7 +352,7 @@ float _currentDPI() {
 }
 /////////////////////////////////////////////////////////////////////////
 
-void ContextGL::initializeOffscreenContext(OffscreenBuffer* pBuf) {
+void ContextGL::initializeOffscreenContext(DisplayBuffer* pBuf) {
 
   meTargetType = TargetType::OFFSCREEN;
 

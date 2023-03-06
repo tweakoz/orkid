@@ -169,7 +169,7 @@ public:
   ///////////////////////////////////////////////////////////////////////
 
   virtual void initializeWindowContext(Window* pWin, CTXBASE* pctxbase) = 0;
-  virtual void initializeOffscreenContext(OffscreenBuffer* pBuf)        = 0;
+  virtual void initializeOffscreenContext(DisplayBuffer* pBuf)        = 0;
   virtual void initializeLoaderContext()                                = 0;
 
   ///////////////////////////////////////////////////////////////////////
@@ -368,14 +368,14 @@ struct OrthoQuad {
   float mfrot;
 };
 
-class OffscreenBuffer : public ork::Object {
-  DeclareAbstractX(OffscreenBuffer, ork::Object);
+class DisplayBuffer : public ork::Object {
+  DeclareAbstractX(DisplayBuffer, ork::Object);
 
 public:
   //////////////////////////////////////////////
 
-  OffscreenBuffer(
-      OffscreenBuffer* Parent,
+  DisplayBuffer(
+      DisplayBuffer* Parent,
       int iX,
       int iY,
       int iW,
@@ -383,7 +383,7 @@ public:
       EBufferFormat efmt      = EBufferFormat::RGBA8,
       const std::string& name = "NoName");
 
-  virtual ~OffscreenBuffer();
+  virtual ~DisplayBuffer();
 
   //////////////////////////////////////////////
 
@@ -405,7 +405,7 @@ public:
   const fcolor4& GetClearColor() const {
     return mClearColor;
   }
-  OffscreenBuffer* GetParent(void) const {
+  DisplayBuffer* GetParent(void) const {
     return _parent;
   }
   TargetType GetTargetType(void) const {
@@ -502,7 +502,7 @@ protected:
   context_ptr_t _sharedcontext;
   ui::Widget* _rootWidget  = nullptr;
   Texture* _texture        = nullptr;
-  OffscreenBuffer* _parent = nullptr;
+  DisplayBuffer* _parent = nullptr;
   RtGroup* _parentRtGroup  = nullptr;
   void* _IMPL              = nullptr;
 
@@ -520,7 +520,7 @@ protected:
 ///
 /// ////////////////////////////////////////////////////////////////////////////
 
-class Window : public OffscreenBuffer {
+class Window : public DisplayBuffer {
 public:
   //////////////////////////////////////////////
 
@@ -555,7 +555,7 @@ public:
 /// ////////////////////////////////////////////////////////////////////////////
 
 class GfxEnv : public NoRttiSingleton<GfxEnv> {
-  friend class OffscreenBuffer;
+  friend class DisplayBuffer;
   friend class Window;
   friend struct Context;
   //////////////////////////////////////////////////////////////////////////////
@@ -575,7 +575,7 @@ public:
 
   //////////////////////////////////////////////////////////////////////////////
 
-  OffscreenBuffer* GetMainWindow(void) {
+  DisplayBuffer* GetMainWindow(void) {
     return mpMainWindow;
   }
   void SetMainWindow(Window* pWin) {
@@ -633,9 +633,9 @@ protected:
 
   Window* mpMainWindow;
 
-  orkvector<OffscreenBuffer*> mvActivePBuffers;
-  orkvector<OffscreenBuffer*> mvActiveWindows;
-  orkvector<OffscreenBuffer*> mvInactiveWindows;
+  orkvector<DisplayBuffer*> mvActivePBuffers;
+  orkvector<DisplayBuffer*> mvActiveWindows;
+  orkvector<DisplayBuffer*> mvInactiveWindows;
 
   DynamicVertexBuffer<SVtxV12C4T16> mVtxBufSharedVect;
   DynamicVertexBuffer<SVtxV12N12B12T8C4> mVtxBufSharedVect2;

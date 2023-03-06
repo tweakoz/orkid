@@ -43,11 +43,11 @@ int main(int argc, char** argv, char** envp) {
   imgui::initModule(init_data);
   ecs::initModule(init_data); // ecs registration
 
-  auto qtapp  = OrkEzApp::create(init_data);
-  auto qtwin  = qtapp->_mainWindow;
-  auto gfxwin = qtwin->_gfxwin;
+  auto ezapp  = OrkEzApp::create(init_data);
+  auto ezwin  = ezapp->_mainWindow;
+  auto appwin = ezwin->_appwin;
 
-  auto this_dir = qtapp->_orkidWorkspaceDir //
+  auto this_dir = ezapp->_orkidWorkspaceDir //
                   / "ork.ecs"               //
                   / "examples"              //
                   / "c++"                   //
@@ -163,7 +163,7 @@ int main(int argc, char** argv, char** envp) {
   //  at startup time
   //////////////////////////////////////////////////////////
 
-  qtapp->onGpuInit([&](Context* ctx) {
+  ezapp->onGpuInit([&](Context* ctx) {
 
   });
 
@@ -173,7 +173,7 @@ int main(int argc, char** argv, char** envp) {
 
   sys_ref_t _sgsystem; // retain because we use in onUpdate handler
 
-  qtapp->onUpdateInit([&]() {
+  ezapp->onUpdateInit([&]() {
     printf("ONUPDATEINIT!\n");
 
     controller->startSimulation(); // start simulation
@@ -203,7 +203,7 @@ int main(int argc, char** argv, char** envp) {
             global_node);                  // opaque node handle to destroy
       });                                  // controller->realtimeDelayedOperation(4,[=](){
     });                                    // controller->realtimeDelayedOperation(1,[=](){
-  });                                      // qtapp->onUpdateInit([&]() {
+  });                                      // ezapp->onUpdateInit([&]() {
 
   //////////////////////////////////////////////////////////
   // update handler (called on update thread)
@@ -211,7 +211,7 @@ int main(int argc, char** argv, char** envp) {
   //  it will never be called after onUpdateExit() is invoked...
   //////////////////////////////////////////////////////////
 
-  qtapp->onUpdate([&](ui::updatedata_ptr_t updata) {
+  ezapp->onUpdate([&](ui::updatedata_ptr_t updata) {
     double dt      = updata->_dt;
     double abstime = updata->_abstime;
     ////////////////////////////
@@ -242,7 +242,7 @@ int main(int argc, char** argv, char** envp) {
   sframe_outer->_use_imgui_docking = true;
   auto sframe_ecs                  = std::make_shared<StandardCompositorFrame>();
 
-  qtapp->onDraw([&](ui::drawevent_constptr_t drwev) { //
+  ezapp->onDraw([&](ui::drawevent_constptr_t drwev) { //
     auto context             = drwev->GetTarget();
     sframe_outer->_drawEvent = drwev;
     sframe_ecs->_drawEvent   = drwev;
@@ -290,14 +290,14 @@ int main(int argc, char** argv, char** envp) {
     sframe_outer->render();
     context->endFrame();
 
-    // qtwin->withStandardCompositorFrameRender(drawEvent, sframe);
+    // ezwin->withStandardCompositorFrameRender(drawEvent, sframe);
   });
 
   //////////////////////////////////////////////////////////
   // when resizing the app - we need to resize the entire rendering pipe
   //////////////////////////////////////////////////////////
 
-  qtapp->onResize([&](int w, int h) {
+  ezapp->onResize([&](int w, int h) {
     DataTable fbsize_data;
     fbsize_data["width"_tok]  = w;
     fbsize_data["height"_tok] = h;
@@ -309,7 +309,7 @@ int main(int argc, char** argv, char** envp) {
   //  at app exit, always called before onGpuExit()
   //////////////////////////////////////////////////////////
 
-  qtapp->onUpdateExit([&]() {
+  ezapp->onUpdateExit([&]() {
     printf("ONUPDATEEXIT!\n");
     controller->updateExit();
   });
@@ -319,7 +319,7 @@ int main(int argc, char** argv, char** envp) {
   //  at app exit, always called after onUpdateExit()
   //////////////////////////////////////////////////////////
 
-  qtapp->onGpuExit([&](Context* ctx) {
+  ezapp->onGpuExit([&](Context* ctx) {
     printf("ONGPUEXIT!\n");
     controller->gpuExit(ctx); // clean up controller's GPU resources
     controller = nullptr;     // release controller
@@ -329,6 +329,6 @@ int main(int argc, char** argv, char** envp) {
   // main thread run loop
   //////////////////////////////////////////////////////////
 
-  qtapp->setRefreshPolicy({EREFRESH_FASTEST, -1});
-  return qtapp->mainThreadLoop();
+  ezapp->setRefreshPolicy({EREFRESH_FASTEST, -1});
+  return ezapp->mainThreadLoop();
 }

@@ -66,8 +66,8 @@ int main(int argc, char** argv, char** envp) {
   }
 
   auto ezapp  = OrkEzApp::create(init_data);
-  auto qtwin  = ezapp->_mainWindow;
-  auto gfxwin = qtwin->_gfxwin;
+  auto ezwin  = ezapp->_mainWindow;
+  auto appwin = ezwin->_appwin;
 
   auto this_dir = ezapp->_orkidWorkspaceDir //
                   / "ork.ecs"               //

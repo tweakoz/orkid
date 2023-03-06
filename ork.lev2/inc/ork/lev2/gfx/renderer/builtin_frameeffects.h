@@ -16,9 +16,9 @@ namespace ork { namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class TexBuffer : public OffscreenBuffer {
+class TexBuffer : public DisplayBuffer {
 public:
-  TexBuffer(OffscreenBuffer* parent, EBufferFormat efmt, int iW, int iH);
+  TexBuffer(DisplayBuffer* parent, EBufferFormat efmt, int iW, int iH);
 };
 
 ///////////////////////////////////////////////////////////////////////////

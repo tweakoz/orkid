@@ -674,7 +674,7 @@ struct Kaled : public Img32Module {
 public:
   Kaled();
   void compute(ProcTex& ptex) final;
-  void ComputeVB(lev2::OffscreenBuffer& buffer);
+  void ComputeVB(lev2::DisplayBuffer& buffer);
   void addvtx(float fx, float fy, float fu, float fv);
 
   typedef ork::lev2::SVtxV12C4T16 vtxt;

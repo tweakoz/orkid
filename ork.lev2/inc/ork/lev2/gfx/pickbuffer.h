@@ -22,7 +22,7 @@
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-class PickBuffer //: public ork::lev2::OffscreenBuffer
+class PickBuffer //: public ork::lev2::DisplayBuffer
 {
 public:
   PickBuffer(ui::Surface* surf, Context* ctx, int iW, int iH);

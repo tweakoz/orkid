@@ -310,7 +310,7 @@ private:
   void _doEndFrame(void) final {
   }
   void initializeWindowContext(Window* pWin, CTXBASE* pctxbase) final; // make a window
-  void initializeOffscreenContext(OffscreenBuffer* pBuf) final;        // make a pbuffer
+  void initializeOffscreenContext(DisplayBuffer* pBuf) final;        // make a pbuffer
   void initializeLoaderContext() final;
   void _doResizeMainSurface(int iW, int iH) final;
 

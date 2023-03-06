@@ -280,9 +280,9 @@ int main(int argc, char** argv,char** envp) {
   SdfSubOne::GetClassStatic();
   SdfSubTwo::GetClassStatic();
 
-  auto qtapp  = OrkEzApp::create(init_data);
-  auto qtwin  = qtapp->_mainWindow;
-  auto gfxwin = qtwin->_gfxwin;
+  auto ezapp  = OrkEzApp::create(init_data);
+  auto ezwin  = ezapp->_mainWindow;
+  auto appwin = ezwin->_appwin;
   std::shared_ptr<GpuResources> gpurec;
   //////////////////////////////////////////////////////////
   ork::Timer timer;
@@ -295,7 +295,7 @@ int main(int argc, char** argv,char** envp) {
 
   auto _sdfsceneparams = std::make_shared<SdfSceneData>();
   //////////////////////////////////////////////////////////
-  auto this_dir = qtapp->_orkidWorkspaceDir //
+  auto this_dir = ezapp->_orkidWorkspaceDir //
                   / "ork.lev2"              //
                   / "examples"              //
                   / "c++"                   //
@@ -304,7 +304,7 @@ int main(int argc, char** argv,char** envp) {
   // gpuInit handler, called once on main(rendering) thread
   //  at startup time
   //////////////////////////////////////////////////////////
-  qtapp->onGpuInit([&](Context* ctx) {
+  ezapp->onGpuInit([&](Context* ctx) {
     gpurec = std::make_shared<GpuResources>(ctx, this_dir);
     /////////////////////////////////////
     // our callback renderable just renders a full screen quad
@@ -344,7 +344,7 @@ int main(int argc, char** argv,char** envp) {
       material.bindParamFloat(sub->_parIntensityA, _sdfsceneparams->_intensitya);
       material.bindParamFloat(sub->_parIntensityB, _sdfsceneparams->_intensityb);
 
-      gfxwin->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
+      appwin->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 1, 1));
       material.end(*RCFD);
     };
     ///////////////////////////////////////
@@ -357,7 +357,7 @@ int main(int argc, char** argv,char** envp) {
   //  it will never be called before onGpuInit() is complete...
   //////////////////////////////////////////////////////////
   auto sframe = std::make_shared<StandardCompositorFrame>();
-  qtapp->onUpdate([&](ui::updatedata_ptr_t updata) {
+  ezapp->onUpdate([&](ui::updatedata_ptr_t updata) {
     double dt      = updata->_dt;
     double abstime = updata->_abstime;
     ///////////////////////////////////////
@@ -384,7 +384,7 @@ int main(int argc, char** argv,char** envp) {
   // draw handler (called on main(rendering) thread)
   //////////////////////////////////////////////////////////
 
-  qtapp->onDraw([&](ui::drawevent_constptr_t drawEvent) {
+  ezapp->onDraw([&](ui::drawevent_constptr_t drawEvent) {
     sframe->_drawEvent = drawEvent;
 
     auto context = drawEvent->GetTarget();
@@ -467,7 +467,7 @@ int main(int argc, char** argv,char** envp) {
     printf( "ged-post-edit invoked on obj<%p>!\n", (void*) obj.get() );
   });
   //////////////////////////////////////////////////////////
-  qtapp->onResize([&](int w, int h) {
+  ezapp->onResize([&](int w, int h) {
     lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
     //
     gpurec->_compositorimpl->compositingContext().Resize(w, h);
@@ -475,8 +475,8 @@ int main(int argc, char** argv,char** envp) {
     _height = h;
     lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
   });
-  qtapp->onGpuExit([&](Context* ctx) { gpurec = nullptr; });
+  ezapp->onGpuExit([&](Context* ctx) { gpurec = nullptr; });
   //////////////////////////////////////////////////////////
-  qtapp->setRefreshPolicy({EREFRESH_FASTEST, -1});
-  return qtapp->mainThreadLoop();
+  ezapp->setRefreshPolicy({EREFRESH_FASTEST, -1});
+  return ezapp->mainThreadLoop();
 }

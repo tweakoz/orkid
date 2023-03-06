@@ -212,7 +212,10 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
           });
   /////////////////////////////////////////////////////////////////////////////////
   auto ezmainwin_type = //
-      py::class_<EzMainWin, ezmainwin_ptr_t>(module_lev2, "EzMainWin");
+      py::class_<EzMainWin, ezmainwin_ptr_t>(module_lev2, "EzMainWin")
+      .def_property_readonly("mainwin",[]() -> ezmainwin_ptr_t {
+
+      });
   type_codec->registerStdCodec<ezmainwin_ptr_t>(ezmainwin_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto ezviewport_type = //

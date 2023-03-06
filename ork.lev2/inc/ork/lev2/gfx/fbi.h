@@ -47,10 +47,10 @@ public:
 
   ///////////////////////////////////////////////////////
 
-  OffscreenBuffer* GetThisBuffer() {
+  DisplayBuffer* GetThisBuffer() {
     return _thisBuffer;
   }
-  void SetThisBuffer(OffscreenBuffer* pbuf) {
+  void SetThisBuffer(DisplayBuffer* pbuf) {
     _thisBuffer = pbuf;
   }
 
@@ -146,7 +146,7 @@ public:
 
   Context& _target;
   Texture* _bufferTex          = nullptr;
-  OffscreenBuffer* _thisBuffer = nullptr;
+  DisplayBuffer* _thisBuffer = nullptr;
   RtGroup* _currentRtGroup     = nullptr;
   PickBuffer* _pickbuffer      = nullptr;
 

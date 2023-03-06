@@ -52,9 +52,9 @@ int main(int argc, char** argv, char** envp) {
 
   bool use_forward = vars["forward"].as<bool>();
 
-  auto qtapp        = OrkEzApp::create(init_data);
-  auto qtwin        = qtapp->_mainWindow;
-  auto gfxwin       = qtwin->_gfxwin;
+  auto ezapp        = OrkEzApp::create(init_data);
+  auto ezwin        = ezapp->_mainWindow;
+  auto appwin       = ezwin->_appwin;
   Texture* envlight = nullptr;
   hfdrawableinstptr_t _terrainInst;
   auto _terrainData = std::make_shared<TerrainDrawableData>();
@@ -77,7 +77,7 @@ int main(int argc, char** argv, char** envp) {
   // gpuInit handler, called once on main(rendering) thread
   //  at startup time
   //////////////////////////////////////////////////////////
-  qtapp->onGpuInit([&](Context* ctx) {
+  ezapp->onGpuInit([&](Context* ctx) {
 
     compositordata = std::make_shared<CompositingData>();
     if(use_forward)
@@ -117,7 +117,7 @@ int main(int argc, char** argv, char** envp) {
   // onUpdateInit (always called after onGpuInit() is complete...)
   //////////////////////////////////////////////////////////
   auto dbufcontext = std::make_shared<DrawBufContext>();
-  qtapp->onUpdate([&](ui::updatedata_ptr_t updata) {
+  ezapp->onUpdate([&](ui::updatedata_ptr_t updata) {
     double dt      = updata->_dt;
     double abstime = updata->_abstime;
     ///////////////////////////////////////
@@ -143,7 +143,7 @@ int main(int argc, char** argv, char** envp) {
   //////////////////////////////////////////////////////////
   // draw handler (called on main(rendering) thread)
   //////////////////////////////////////////////////////////
-  qtapp->onDraw([&](ui::drawevent_constptr_t drwev) {
+  ezapp->onDraw([&](ui::drawevent_constptr_t drwev) {
     auto DB = dbufcontext->acquireForReadLocked();
     if (nullptr == DB)
       return;
@@ -190,11 +190,11 @@ int main(int argc, char** argv, char** envp) {
     dbufcontext->releaseFromReadLocked(DB);
   });
   //////////////////////////////////////////////////////////
-  qtapp->onResize([&](int w, int h) {
+  ezapp->onResize([&](int w, int h) {
     //
     compositorimpl->compositingContext().Resize(w, h);
   });
   //////////////////////////////////////////////////////////
-  qtapp->setRefreshPolicy({EREFRESH_FASTEST, -1});
-  return qtapp->mainThreadLoop();
+  ezapp->setRefreshPolicy({EREFRESH_FASTEST, -1});
+  return ezapp->mainThreadLoop();
 }

@@ -50,7 +50,7 @@ int main(int argc, char** argv, char** envp) {
 
   auto ezapp = OrkEzApp::create(initdata);
   auto ezwin = ezapp->_mainWindow;
-  auto gfxwin = ezwin->_gfxwin;
+  auto appwin = ezwin->_appwin;
   ezwin->_update_rendersync = false;
 
   /////////////////////////////////////////////////////////////////////////
