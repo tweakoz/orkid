@@ -219,7 +219,7 @@ singularitybenchapp_ptr_t createBenchmarkApp(appinitdata_ptr_t initdata, prgdata
   auto app                        = std::make_shared<SingularityBenchMarkApp>(initdata);
   auto ezwin                      = app->_mainWindow;
   auto appwin                     = ezwin->_appwin;
-  appwin->mRootWidget->_uicontext = uicontext.get();
+  appwin->_rootWidget->_uicontext = uicontext.get();
   //////////////////////////////////////////////////////////////////////////////
   app->onGpuInit([=](Context* ctx) { //
     app->_material = std::make_shared<ork::lev2::FreestyleMaterial>();

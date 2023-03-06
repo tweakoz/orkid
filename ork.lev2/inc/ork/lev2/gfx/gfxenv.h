@@ -368,7 +368,7 @@ struct OrthoQuad {
   float mfrot;
 };
 
-class DisplayBuffer : public ork::Object {
+struct DisplayBuffer : public ork::Object {
   DeclareAbstractX(DisplayBuffer, ork::Object);
 
 public:
@@ -391,7 +391,7 @@ public:
     return _parentRtGroup;
   }
   ui::Widget* GetRootWidget(void) const {
-    return _rootWidget;
+    return _rootWidget.get();
   }
   bool IsDirty(void) const {
     return mbDirty;
@@ -462,9 +462,6 @@ public:
   void SetTexture(Texture* ptex) {
     _texture = ptex;
   }
-  void SetRootWidget(ui::Widget* pwidg) {
-    _rootWidget = pwidg;
-  }
 
   //////////////////////////////////////////////
 
@@ -498,9 +495,8 @@ public:
   virtual void EndFrame(void);
   virtual void initContext();
 
-protected:
   context_ptr_t _sharedcontext;
-  ui::Widget* _rootWidget  = nullptr;
+  uiwidget_ptr_t _rootWidget  = nullptr;
   Texture* _texture        = nullptr;
   DisplayBuffer* _parent = nullptr;
   RtGroup* _parentRtGroup  = nullptr;
@@ -520,7 +516,7 @@ protected:
 ///
 /// ////////////////////////////////////////////////////////////////////////////
 
-class Window : public DisplayBuffer {
+struct Window : public DisplayBuffer {
 public:
   //////////////////////////////////////////////
 
@@ -555,8 +551,8 @@ public:
 /// ////////////////////////////////////////////////////////////////////////////
 
 class GfxEnv : public NoRttiSingleton<GfxEnv> {
-  friend class DisplayBuffer;
-  friend class Window;
+  friend struct DisplayBuffer;
+  friend struct Window;
   friend struct Context;
   //////////////////////////////////////////////////////////////////////////////
 

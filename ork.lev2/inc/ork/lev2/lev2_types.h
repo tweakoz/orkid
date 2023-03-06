@@ -28,9 +28,9 @@ struct Context;
 class TextureInterface;
 class CTXBASE;
 class GfxEnv;
-class DisplayBuffer;
-class Window;
-class AppWindow;
+struct DisplayBuffer;
+struct Window;
+struct AppWindow;
 //
 using gfxcontext_lambda_t = std::function<void(Context*)>;
 using context_ptr_t          = std::shared_ptr<Context>;

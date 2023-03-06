@@ -228,7 +228,7 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
   type_codec->registerStdCodec<ezmainwin_ptr_t>(ezmainwin_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto ezviewport_type = //
-      py::class_<EzViewport, ezviewport_ptr_t>(module_lev2, "EzViewport");
+      py::class_<EzViewport, ui::Viewport, ezviewport_ptr_t>(module_lev2, "EzViewport");
   type_codec->registerStdCodec<ezviewport_ptr_t>(ezviewport_type);
   /////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

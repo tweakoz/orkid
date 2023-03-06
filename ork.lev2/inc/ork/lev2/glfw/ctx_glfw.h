@@ -82,12 +82,11 @@ struct CtxGLFW : public CTXBASE {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class AppWindow : public ork::lev2::Window {
+struct AppWindow : public ork::lev2::Window {
 public:
   bool mbinit;
-  ui::Widget* mRootWidget;
 
-  AppWindow(ui::Widget* root_widget);
+  AppWindow(uiwidget_ptr_t root_widget);
   ~AppWindow();
 
   virtual void Draw(void);

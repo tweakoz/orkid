@@ -17,10 +17,11 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-AppWindow::AppWindow(ui::Widget* prw)
+AppWindow::AppWindow(uiwidget_ptr_t prw)
     : Window(0, 0, 1280, 720, "yo")
-    , mbinit(true)
-    , mRootWidget(prw) {
+    , mbinit(true){
+
+    _rootWidget = prw;
 
     if(_HIDPI()){
       SetBufferWidth(1280*2);
@@ -29,34 +30,31 @@ AppWindow::AppWindow(ui::Widget* prw)
 }
 ///////////////////////////////////////////////////////////////////////////////
 AppWindow::~AppWindow() {
-  if (mRootWidget) {
-    delete mRootWidget;
-  }
 }
 ///////////////////////////////////////////////////////////////////////////////
 void AppWindow::Draw(void) {
   int iw = GetContextW();
   int ih = GetContextH();
-  mRootWidget->SetRect(0, 0, iw, ih);
+  _rootWidget->SetRect(0, 0, iw, ih);
 
   auto drwev = std::make_shared<ui::DrawEvent>(context());
-  mRootWidget->Draw(drwev);
+  _rootWidget->Draw(drwev);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void AppWindow::GotFocus(void) {
-  if (mRootWidget and mRootWidget->_uicontext) {
+  if (_rootWidget and _rootWidget->_uicontext) {
     auto uievent        = std::make_shared<ui::Event>();
     uievent->_eventcode = ork::ui::EventCode::GOT_KEYFOCUS;
-    mRootWidget->_uicontext->handleEvent(uievent);
+    _rootWidget->_uicontext->handleEvent(uievent);
   }
   mbHasFocus = true;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void AppWindow::LostFocus(void) {
-  if (mRootWidget and mRootWidget->_uicontext) {
+  if (_rootWidget and _rootWidget->_uicontext) {
     auto uievent        = std::make_shared<ui::Event>();
     uievent->_eventcode = ork::ui::EventCode::LOST_KEYFOCUS;
-    mRootWidget->_uicontext->handleEvent(uievent);
+    _rootWidget->_uicontext->handleEvent(uievent);
   }
   mbHasFocus = false;
 }
@@ -70,8 +68,7 @@ void AppWindow::OnShow() {
     /////////////////////////////////////////////////////////////////////
     int iw = GetContextW();
     int ih = GetContextH();
-    mRootWidget->SetRect(0, 0, iw, ih);
-    SetRootWidget(mRootWidget);
+    _rootWidget->SetRect(0, 0, iw, ih);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////

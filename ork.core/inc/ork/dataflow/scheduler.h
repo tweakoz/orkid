@@ -14,7 +14,7 @@
 #include <ork/kernel/mutex.h>
 #include <ork/kernel/any.h>
 
-namespace ork { namespace lev2 { class DisplayBuffer; } }
+namespace ork { namespace lev2 { struct DisplayBuffer; } }
 
 namespace ork { namespace dataflow {
 

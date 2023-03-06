@@ -318,7 +318,7 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
     //////////////////////////////////////
     _ezviewport                       = std::make_shared<EzViewport>(_mainWindow.get());
     _ezviewport->_uicontext           = _uicontext.get();
-    _mainWindow->_appwin->mRootWidget = _ezviewport.get();
+    _mainWindow->_appwin->_rootWidget = _ezviewport;
     _ezviewport->_topLayoutGroup =
         _uicontext->makeTop<ui::LayoutGroup>("top-layoutgroup", 0, 0, _initdata->_width, _initdata->_height);
     _topLayoutGroup = _ezviewport->_topLayoutGroup;

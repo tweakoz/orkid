@@ -53,7 +53,7 @@ simpleuiapp_ptr_t createSimpleUiApp(appinitdata_ptr_t initdata ) {
   auto ezwin                      = ezapp->_mainWindow;
   auto appwin                     = ezwin->_appwin;
   auto uicontext                  = ezapp->_uicontext;
-  appwin->mRootWidget->_uicontext = uicontext.get();
+  appwin->_rootWidget->_uicontext = uicontext.get();
   //////////////////////////////////////////////////////////
   // create references to various items scoped by ezapp
   //////////////////////////////////////////////////////////

@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 //#include <ork/math/raytracer.h>
+#include <ork/lev2/lev2_types.h>
 #include <ork/dataflow/dataflow.h>
 #include <ork/dataflow/scheduler.h>
 #include <ork/math/frustum.h>
@@ -41,6 +42,7 @@ private:
   void Render1();
   void Render2();
 
+  ork::lev2::appwindow_ptr_t _appwin;
   int miNumAviFrames                         = 0;
   int miFrameIndex                           = 0;
   u32* mpFrameBuffer                         = nullptr;

@@ -119,23 +119,23 @@ PYBIND11_MODULE(_lev2, module_lev2) {
   module_lev2.def("lev2appinit", &lev2appinit);
   module_lev2.def("lev2apppoll", &lev2apppoll);
   //////////////////////////////////////////////////////////////////////////////
+  pyinit_ui(module_lev2);
+  pyinit_gfx(module_lev2);
+  pyinit_meshutil(module_lev2);
+  pyinit_midi(module_lev2);
+  pyinit_primitives(module_lev2);
+  pyinit_scenegraph(module_lev2);
+  pyinit_gfx_buffers(module_lev2);
+  pyinit_gfx_camera(module_lev2);
+  pyinit_gfx_compositor(module_lev2);
+  pyinit_gfx_drawables(module_lev2);
   pyinit_gfx_material(module_lev2);
   pyinit_gfx_shader(module_lev2);
   pyinit_gfx_renderer(module_lev2);
-  pyinit_gfx_compositor(module_lev2);
-  pyinit_gfx_buffers(module_lev2);
-  pyinit_gfx(module_lev2);
-  pyinit_gfx_drawables(module_lev2);
-  pyinit_primitives(module_lev2);
-  pyinit_scenegraph(module_lev2);
-  pyinit_meshutil(module_lev2);
   pyinit_gfx_qtez(module_lev2);
   pyinit_gfx_particles(module_lev2);
   pyinit_gfx_xgmmodel(module_lev2);
   pyinit_gfx_pbr(module_lev2);
-  pyinit_gfx_camera(module_lev2);
-  pyinit_ui(module_lev2);
-  pyinit_midi(module_lev2);
   //////////////////////////////////////////////////////////////////////////////
 };
 

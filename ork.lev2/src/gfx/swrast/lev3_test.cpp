@@ -120,8 +120,8 @@ DemoApp::DemoApp(int iw, int ih)
 
   ////////////////////
 
-  MyViewport* gpvp   = new MyViewport("yo");
-  AppWindow* pgfxwin = new AppWindow(gpvp);
+  auto gpvp   = std::make_shared<MyViewport>("yo");
+  _appwin = std::make_shared<AppWindow>(gpvp);
 
   //CtxGLFW* pctqt = new CtxGLFW(pgfxwin, nullptr);
 
@@ -136,9 +136,9 @@ DemoApp::DemoApp(int iw, int ih)
   // viewnum++;
 
 
-  GfxEnv::GetRef().RegisterWinContext(pgfxwin);
+  GfxEnv::GetRef().RegisterWinContext(_appwin.get());
 
-  gpvp->Init(pgfxwin->context());
+  gpvp->Init(_appwin->context());
 
   //mpTimer->connect(mpTimer, SIGNAL(timeout()), pctqt->window(), SLOT(repaint()));
   //mpTimer->setSingleShot(false);

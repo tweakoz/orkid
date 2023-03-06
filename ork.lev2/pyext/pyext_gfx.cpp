@@ -396,7 +396,10 @@ void pyinit_gfx(py::module& module_lev2) {
   type_codec->registerStdCodec<window_ptr_t>(window_typ);
   /////////////////////////////////////////////////////////////////////////////////
   auto appwindow_typ = //
-      py::class_<AppWindow, Window, appwindow_ptr_t>(module_lev2, "AppWindow");
+      py::class_<AppWindow, Window, appwindow_ptr_t>(module_lev2, "AppWindow")
+      .def_property_readonly("rootWidget", [](appwindow_ptr_t appwin) -> uiwidget_ptr_t { //
+        return appwin->_rootWidget;
+      });
   type_codec->registerStdCodec<appwindow_ptr_t>(appwindow_typ);
 } // namespace ork::lev2
 } // namespace ork::lev2
