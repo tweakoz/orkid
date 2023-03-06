@@ -58,7 +58,6 @@ struct Layout {
   layout_ptr_t childLayout(Widget* w);
 
   void setMargin(int margin);
-  void setAllBoundingMargins(int margin);
 
   void centerIn(Layout* other);
   bool isAnchorAllowed(guide_ptr_t guide) const;
