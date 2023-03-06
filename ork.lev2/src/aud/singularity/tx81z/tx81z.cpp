@@ -19,26 +19,28 @@
 using namespace ork;
 namespace ork::audio::singularity {
 
-///////////////////////////////////////////
-static const float openv_declevels[16] = {
-    0,
-    .0625,
-    .125,
-    .25,
-    .35,
-    .4,
-    .45,
-    .5,
-    .55,
-    .6,
-    .65,
-    .7,
-    .75,
-    .8,
-    .9,
-    1,
+constexpr float amp_table[100] = {
+0.000254, 0.000254, 0.000254, 0.000254, 0.000254,  // 0
+0.000254, 0.000254, 0.000254, 0.000254, 0.000254,  // 5
+0.000254, 0.000254, 0.000339, 0.000403, 0.000473,  // 10
+0.000562, 0.000624, 0.000653, 0.000804, 0.000881,
+0.001084, 0.001189, 0.001288, 0.001429, 0.001603,  // 20
+0.001758, 0.001862, 0.002018, 0.002265, 0.002427,
+0.00263,  0.002917, 0.003199, 0.003508, 0.003846,  // 30
+0.004217, 0.004519, 0.004898, 0.00537,  0.005957,
+0.006383, 0.007161, 0.007674, 0.008318, 0.009016,  // 40
+0.00955,  0.010351, 0.01122,  0.012303, 0.01349,
+0.014791, 0.015849, 0.017179, 0.019055, 0.020654,  // 50
+0.022909, 0.024831, 0.027227, 0.029174, 0.031989,
+0.034674, 0.038019, 0.04217,  0.045709, 0.050119,  // 60
+0.054325, 0.058884, 0.063826, 0.069984, 0.075858,
+0.083176, 0.090157, 0.096605, 0.108393, 0.116145,  // 70
+0.125893, 0.139637, 0.151356, 0.165959, 0.179887,
+0.194984, 0.213796, 0.234423, 0.254097, 0.275423,  // 80
+0.298538, 0.327341, 0.363078, 0.389045, 0.42658,
+0.462381, 0.506991, 0.555904, 0.60256,  0.668344,  // 90
+0.724436, 0.776247, 0.851138, 0.933254, 1 
 };
-
 ////////////////////////////////////////////////////////////////////////////////
 // Compact TX81z frequiency ratio decoding
 // https://mgregory22.me/tx81z/freqratios.html
@@ -293,11 +295,13 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
       // map base operator level
       //////////////////////////////////
 
-      float a       = logf(2.0f) * 0.08f;
-      float b       = 90.0f * a;
-      float baselev = expf(a * float(outLevel) - b); // / 1.86607;
-      baselev       = powf(baselev, 1.0f);
-
+      //float a       = logf(2.0f) * 0.08f;
+      //float b       = 90.0f * a;
+      //float baselev = expf(a * float(outLevel) - b); // / 1.86607;
+      //baselev       = powf(baselev, 1.0f);
+      if(outLevel>99)
+        outLevel = 99;
+      float baselev = amp_table[outLevel];
       /*printf(
           "prog<%s> op<%d> outLevel<%d> a<%g> b<%g> baselev<%g>\n", //
           name.c_str(),
@@ -331,13 +335,11 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
         keyprod                = [coarse](float inpkey) { return coarse; };
 
         zpmprg->addHudInfo(FormatString(
-            "OP%d waveform<%d> fixed-frequency<%g> outlev<%d> a<%g> b<%g> baselev<%g>", //
+            "OP%d waveform<%d> fixed-frequency<%g> outlev<%d> baselev<%g>", //
             opindex,
             waveform,
             fixedfrq,
             outLevel,
-            a,
-            b,
             baselev));
 
       } else {
@@ -355,13 +357,11 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
         };
 
         zpmprg->addHudInfo(FormatString(
-            "OP%d waveform<%d> ratio<%g> outlev<%d> a<%g> b<%g> baselev<%g>", //
+            "OP%d waveform<%d> ratio<%g> outlev<%d> baselev<%g>", //
             opindex,
             waveform,
             ratio,
             outLevel,
-            a,
-            b,
             baselev));
       }
 
@@ -375,66 +375,26 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
         auto ENVELOPE = layerdata->appendController<YmEnvData>(envname);
         auto OPAMP    = layerdata->appendController<CustomControllerData>(opaname);
 
-        float decaylevl = openv_declevels[susLev];
-        float ddec      = fabs(1.0f - decaylevl);
-
-        ///////////////////////////////////////////////
-        // convert exponential decay rate to decay time
         ///////////////////////////////////////////////
 
-        auto expdecayrate2time = [](float decrate,           // decay rate: frac/sec
-                                    float deslev) -> float { // desired linear level
-          if (decrate == 0.0f) {
-            return 0.0f;
-          }
-          return logf(deslev) / logf(decrate); // return: time to reach deslev
-        };
+        ENVELOPE->_attackRate = atkRate;
 
-        auto procrate = [](float inprate, float a, float b) -> float {
-          if (inprate == 0.0f)
-            return 1.0;
-          else {
-            float dt    = a * expf(b * inprate);
-            float alpha = -logf(2.0f) / dt;
-            return expf(alpha);
-          }
-        };
-
-        ///////////////////////////////////////////////
-        auto decrateFromIndex = [](float index) -> float { //
-          float dec = powf(0.9955, 30.0f * (index * 0.03f));
-          float res = powf(dec, 1.0f / float(frames_per_controlpass));
-          return res;
-        };
-        auto relrateFromIndex = [](float index) -> float { //
-          float dec = powf(0.985, 15.0f * (index * 0.06f));
-          float res = powf(dec, 1.0f / float(frames_per_controlpass));
-          return res;
-        };
-        ///////////////////////////////////////////////
-        float atktime         = 10.0f * expf(-0.35377f * atkRate);
-        ENVELOPE->_attackTime = atktime;
-
-        ENVELOPE->_decay1Rate  = decrateFromIndex(dec1Rate);
-        ENVELOPE->_decay1Level = decaylevl;
-        ENVELOPE->_decay2Rate  = decrateFromIndex(dec2Rate);
-        ENVELOPE->_releaseRate = relrateFromIndex(relRate);
+        ENVELOPE->_decay1Rate  = dec1Rate; 
+        ENVELOPE->_decay1Level = susLev;
+        ENVELOPE->_decay2Rate  = dec2Rate; 
+        ENVELOPE->_releaseRate = relRate;
         ENVELOPE->_egshift     = egShift;
         ENVELOPE->_rateScale   = ratScaling;
+        ENVELOPE->_levScale   = levScaling;
 
         zpmprg->addHudInfo(FormatString(
-            "OP%d atk<%d:%g> dc1<%d:%g> suslev<%d:%g> dc2<%d:%g> rel<%d:%g> egShift<%d> levsca<%d>", //
+            "OP%d atk<%d> dc1<%d> suslev<%d> dc2<%d> rel<%d> egShift<%d> levsca<%d>", //
             opindex,
             atkRate,
-            atktime,
             dec1Rate,
-            ENVELOPE->_decay1Rate,
             susLev,
-            decaylevl,
             dec2Rate,
-            ENVELOPE->_decay2Rate,
             relRate,
-            ENVELOPE->_releaseRate,
             egShift,
             levScaling));
 
@@ -565,7 +525,7 @@ void configureTx81zAlgorithm(
   auto opmix = stage_opmix->appendTypedBlock<PMXMix>("opmixer");
   opmix->addDspChannel(0);
   /////////////////////////////////////////////////
-  float basemodindex = 12.5f;
+  float basemodindex = 32.5f;
   op0->_modIndex     = basemodindex;
   op1->_modIndex     = basemodindex;
   op2->_modIndex     = basemodindex;

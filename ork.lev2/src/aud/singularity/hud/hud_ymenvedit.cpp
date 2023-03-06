@@ -68,7 +68,7 @@ hudpanel_ptr_t createEnvYmEditView(
   relrateitem.applyBounds({guidev0, guideh4, guidevb, guidehr, 2});
   //
   atkshapeitem._widget->_label = "AttackShape";
-  atktimeitem._widget->_label  = "AttackTime(s)";
+  atktimeitem._widget->_label  = "AttackRate(x)";
   dc1rateitem._widget->_label  = "Decay1Rate(x)";
   dc1levelitem._widget->_label = "DecayLevel";
   dc2rateitem._widget->_label  = "Decay2Rate(x)";
@@ -80,14 +80,14 @@ hudpanel_ptr_t createEnvYmEditView(
   relrateitem._widget->_font   = "i13";
   //
   atkshapeitem._widget->setParams(251, ymenvdata->_attackShape, 0, 10, 2.0);
-  atktimeitem._widget->setParams(251, ymenvdata->_attackTime, 0, 60, 2.0);
+  atktimeitem._widget->setParams(251, ymenvdata->_attackRate, 0, 60, 2.0);
   dc1rateitem._widget->setParams(1001, ymenvdata->_decay1Rate, 0.99, 0.9999, 0.1);
   dc1levelitem._widget->setParams(101, ymenvdata->_decay1Level, 0, 1, 1.0);
   dc2rateitem._widget->setParams(1001, ymenvdata->_decay2Rate, 0.99, 0.9999, 0.1);
   relrateitem._widget->setParams(1001, ymenvdata->_releaseRate, 0.99, 0.9999, 0.1);
   //
   atkshapeitem._widget->_onupdate = [ymenvdata](float v) { ymenvdata->_attackShape = v; };
-  atktimeitem._widget->_onupdate  = [ymenvdata](float v) { ymenvdata->_attackTime = v; };
+  atktimeitem._widget->_onupdate  = [ymenvdata](float v) { ymenvdata->_attackRate = v; };
   dc1rateitem._widget->_onupdate  = [ymenvdata](float v) { ymenvdata->_decay1Rate = v; };
   dc1levelitem._widget->_onupdate = [ymenvdata](float v) { ymenvdata->_decay1Level = v; };
   dc2rateitem._widget->_onupdate  = [ymenvdata](float v) { ymenvdata->_decay2Rate = v; };

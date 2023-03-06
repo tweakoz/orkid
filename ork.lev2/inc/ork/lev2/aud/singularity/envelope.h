@@ -140,14 +140,17 @@ struct YmEnvData : public ControllerData {
   YmEnvData();
   ControllerInst* instantiate(layer_ptr_t layer) const final;
 
-  float _attackTime  = 2.0f; //
-  float _attackShape = 0.5f; //
-  float _decay1Rate  = 0.5f; // exponential decay rate (/sec)
-  float _decay1Level = 0.5f;
-  float _decay2Rate  = 0.5f; // exponential decay rate (/sec)
-  float _releaseRate = 0.5f; // exponential decay rate (/sec)
+  int _attackRate = 0; 
+  int _decay1Rate  = 0; 
+  int _decay1Level = 0;
+  int _decay2Rate  = 0; 
+  int _releaseRate = 0; 
   int _egshift       = 0;
   int _rateScale     = 0;
+  int _levScale     = 0;
+
+  float _attackShape = 0; //
+
   envadjust_method_t _envadjust;
 };
 
@@ -161,7 +164,7 @@ struct YmEnvInst : public ControllerInst {
   ////////////////////////////
   bool isValid() const;
   const YmEnvData* _data = nullptr;
-  int _curseg            = 0;
+  uint32_t _curseg            = 0;
   KeyOnInfo _koi;
   float _rawout         = 0.0f;
   float _prcout         = 0.0f;
@@ -170,6 +173,9 @@ struct YmEnvInst : public ControllerInst {
   float _dec1ratefactor = 0.0f;
   float _dec2ratefactor = 0.0f;
   float _relratefactor  = 0.0f;
+  float _sustainLevel = 0.0f;
+  bool _disable_dec1 = false;
+  bool _disable_dec2 = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
