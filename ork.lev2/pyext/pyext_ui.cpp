@@ -94,7 +94,31 @@ void pyinit_ui(py::module& module_lev2) {
   type_codec->registerStdCodec<ui::HandlerResult>(evhandlerrestult_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto widget_type = //
-      py::class_<ui::Widget, uiwidget_ptr_t >(uimodule, "UiWidget");
+      py::class_<ui::Widget, uiwidget_ptr_t >(uimodule, "UiWidget")
+      .def_property_readonly("name", [](uiwidget_ptr_t widget) -> std::string { //
+        return widget->GetName();
+      })
+      .def_property_readonly("x", [](uiwidget_ptr_t widget) -> int { //
+        return widget->x();
+      })
+      .def_property_readonly("y", [](uiwidget_ptr_t widget) -> int { //
+        return widget->y();
+      })
+      .def_property_readonly("width", [](uiwidget_ptr_t widget) -> int { //
+        return widget->width();
+      })
+      .def_property_readonly("height", [](uiwidget_ptr_t widget) -> int { //
+        return widget->height();
+      })
+      .def("setPos", [](uiwidget_ptr_t widget, int x, int y)  { //
+        widget->SetPos(x,y);
+      })
+      .def("setSize", [](uiwidget_ptr_t widget, int w, int h)  { //
+        widget->SetSize(w,h);
+      })
+      .def("setRect", [](uiwidget_ptr_t widget, int x, int y, int w, int h)  { //
+        widget->SetRect(x,y,w,h);
+      });
   type_codec->registerStdCodec<uiwidget_ptr_t>(widget_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto group_type = //
@@ -105,6 +129,9 @@ void pyinit_ui(py::module& module_lev2) {
       py::class_<ui::LayoutGroup, ui::Group, uilayoutgroup_ptr_t >(uimodule, "UiLayoutGroup")
       .def_property_readonly("layout", [](uilayoutgroup_ptr_t lgrp) -> uilayout_ptr_t { //
         return lgrp->_layout;
+      })
+      .def("layoutAndAddChild", [](uilayoutgroup_ptr_t lgrp, uiwidget_ptr_t w) -> uilayout_ptr_t { //
+        return lgrp->layoutAndAddChild(w);
       });
   type_codec->registerStdCodec<uilayoutgroup_ptr_t>(layoutgroup_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -118,23 +145,41 @@ void pyinit_ui(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto layout_type = //
       py::class_<ui::anchor::Layout, uilayout_ptr_t >(uimodule, "UiLayout")
-      .def_property_readonly("top", [](uilayout_ptr_t layout) -> uiguide_ptr_t { //
+      .def_property("top", [](uilayout_ptr_t layout) -> uiguide_ptr_t { //
         return layout->top();
+      },
+      [](uilayout_ptr_t layout, uiguide_ptr_t g){
+        return layout->_top = g;
       })
-      .def_property_readonly("bottom", [](uilayout_ptr_t layout) -> uiguide_ptr_t { //
+      .def_property("bottom", [](uilayout_ptr_t layout) -> uiguide_ptr_t { //
         return layout->bottom();
+      },
+      [](uilayout_ptr_t layout, uiguide_ptr_t g){
+        layout->_bottom = g;
       })
-      .def_property_readonly("left", [](uilayout_ptr_t layout) -> uiguide_ptr_t { //
+      .def_property("left", [](uilayout_ptr_t layout) -> uiguide_ptr_t { //
         return layout->left();
+      },
+      [](uilayout_ptr_t layout, uiguide_ptr_t g){
+        layout->_left = g;
       })
-      .def_property_readonly("right", [](uilayout_ptr_t layout) -> uiguide_ptr_t { //
+      .def_property("right", [](uilayout_ptr_t layout) -> uiguide_ptr_t { //
         return layout->right();
+      },
+      [](uilayout_ptr_t layout, uiguide_ptr_t g){
+        layout->_right = g;
       })
-      .def_property_readonly("centerH", [](uilayout_ptr_t layout) -> uiguide_ptr_t { //
+      .def_property("centerH", [](uilayout_ptr_t layout) -> uiguide_ptr_t { //
         return layout->centerH();
+      },
+      [](uilayout_ptr_t layout, uiguide_ptr_t g){
+        layout->_centerH = g;
       })
-      .def_property_readonly("centerV", [](uilayout_ptr_t layout) -> uiguide_ptr_t { //
+      .def_property("centerV", [](uilayout_ptr_t layout) -> uiguide_ptr_t { //
         return layout->centerV();
+      },
+      [](uilayout_ptr_t layout, uiguide_ptr_t g){
+        layout->_centerV = g;
       });
   type_codec->registerStdCodec<uilayout_ptr_t>(layout_type);
   /////////////////////////////////////////////////////////////////////////////////
