@@ -22,7 +22,7 @@ def setupUiCamera( app = None,
   ###################################
   # ui cam
   ###################################
-  app.uicam = ui.EzUiCam()
+  app.uicam = EzUiCam()
   app.uicam.fov = fov_deg*constants.DTOR
   app.uicam.constrainZ = constrainZ
   ###################################

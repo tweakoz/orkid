@@ -6,8 +6,12 @@
 ////////////////////////////////////////////////////////////////
 
 #include "pyext.h"
-#include <ork/lev2/gfx/camera/cameradata.h>
-#include <ork/lev2/gfx/camera/uicam.h>
+#include <ork/lev2/ui/widget.h>
+#include <ork/lev2/ui/group.h>
+#include <ork/lev2/ui/surface.h>
+#include <ork/lev2/ui/viewport.h>
+#include <ork/lev2/ui/layoutgroup.inl>
+#include <ork/lev2/ui/anchor.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -16,11 +20,6 @@ namespace ork::lev2 {
 void pyinit_ui(py::module& module_lev2) {
   auto uimodule   = module_lev2.def_submodule("ui", "ui operations");
   auto type_codec = python::TypeCodec::instance();
-  /////////////////////////////////////////////////////////////////////////////////
-  py::class_<ui::DrawEvent, uidrawevent_ptr_t>(module_lev2, "DrawEvent")       //
-      .def_property_readonly("context", [](uidrawevent_ptr_t event) -> ctx_t { //
-        return ctx_t(event->GetTarget());
-      });
   /////////////////////////////////////////////////////////////////////////////////
   auto uievent_type = //
       py::class_<ui::Event, ui::event_ptr_t>(module_lev2, "UiEvent")
@@ -83,78 +82,40 @@ void pyinit_ui(py::module& module_lev2) {
               });
   type_codec->registerStdCodec<ui::event_ptr_t>(uievent_type);
   /////////////////////////////////////////////////////////////////////////////////
-  auto ezuicam_type = //
-      py::class_<EzUiCam, ezuicam_ptr_t>(uimodule, "EzUiCam")
-          .def(py::init<>())
-          .def("uiEventHandler", [](ezuicam_ptr_t cam, ui::event_ptr_t event) -> bool {
-            return cam->UIEventHandler(event);
-          })
-          .def(
-              "lookAt",
-              [](ezuicam_ptr_t uic, fvec3 eye, fvec3 tgt, fvec3 up) { //
-                uic->lookAt(eye,tgt,up);
-              })
-          .def("updateMatrices", [](ezuicam_ptr_t cam) {
-            cam->updateMatrices();
-          })
-          .def_property_readonly(
-              "cameradata",
-              [](ezuicam_ptr_t uic) -> cameradata_ptr_t { //
-                // TODO: this is not efficient
-                //  get ezuicam to use shared ptrs instead of by value
-                auto camdata = std::make_shared<CameraData>();
-                *camdata = uic->_camcamdata;
-                return camdata;
-              })
-          .def_property(
-              "base_zmoveamt",
-              [](ezuicam_ptr_t uic) -> float { //
-                return uic->_base_zmoveamt;
-              },
-              [](ezuicam_ptr_t uic, float zamt) { //
-                uic->_base_zmoveamt = zamt;
-              })
-          .def_property(
-              "fov",
-              [](ezuicam_ptr_t uic) -> float { //
-                return uic->_fov;
-              },
-              [](ezuicam_ptr_t uic, float fov) { //
-                uic->_fov = fov;
-              })
-          .def_property_readonly(
-              "center",
-              [](ezuicam_ptr_t uic) -> fvec3 { //
-                return uic->mvCenter;
-              })
-          .def_property_readonly(
-              "orientation",
-              [](ezuicam_ptr_t uic) -> fquat { //
-                return uic->QuatC;
-              })
-          .def_property(
-              "loc",
-              [](ezuicam_ptr_t uic) -> fvec3 { //
-                return uic->CamLoc;
-              },
-              [](ezuicam_ptr_t uic, fvec3 loc) { //
-                uic->CamLoc = loc;
-                uic->PrevCamLoc = loc;
-              })
-          .def_property(
-              "constrainZ",
-              [](ezuicam_ptr_t uic) -> bool { //
-                return uic->_constrainZ;
-              },
-              [](ezuicam_ptr_t uic, bool c) { //
-                uic->_constrainZ = c;
-              })
-          ;
-  type_codec->registerStdCodec<ezuicam_ptr_t>(ezuicam_type);
+  auto drwev_type = py::class_<ui::DrawEvent, uidrawevent_ptr_t>(module_lev2, "DrawEvent")       //
+      .def_property_readonly("context", [](uidrawevent_ptr_t event) -> ctx_t { //
+        return ctx_t(event->GetTarget());
+      });
+  type_codec->registerStdCodec<uidrawevent_ptr_t>(drwev_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto evhandlerrestult_type = //
       py::class_<ui::HandlerResult>(uimodule, "UiHandlerResult")
           .def(py::init<>());
+  type_codec->registerStdCodec<ui::HandlerResult>(evhandlerrestult_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto widget_type = //
+      py::class_<ui::Widget, uiwidget_ptr_t >(uimodule, "UiWidget");
+  type_codec->registerStdCodec<uiwidget_ptr_t>(widget_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto group_type = //
+      py::class_<ui::Group, ui::Widget, uigroup_ptr_t >(uimodule, "UiGroup");
+  type_codec->registerStdCodec<uigroup_ptr_t>(group_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto layoutgroup_type = //
+      py::class_<ui::LayoutGroup, ui::Group, uilayoutgroup_ptr_t >(uimodule, "UiLayoutGroup");
+  type_codec->registerStdCodec<uilayoutgroup_ptr_t>(layoutgroup_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto surface_type = //
+      py::class_<ui::Surface, ui::Group, uisurface_ptr_t >(uimodule, "UiSurface");
+  type_codec->registerStdCodec<uisurface_ptr_t>(surface_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto viewport_type = //
+      py::class_<ui::Viewport, ui::Surface, uiviewport_ptr_t >(uimodule, "UiViewport");
+  type_codec->registerStdCodec<uiviewport_ptr_t>(viewport_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto layout_type = //
+      py::class_<ui::anchor::Layout, uilayout_ptr_t >(uimodule, "UiLayout");
+  type_codec->registerStdCodec<uilayout_ptr_t>(layout_type);
   /////////////////////////////////////////////////////////////////////////////////
 }
 

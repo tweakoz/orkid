@@ -16,11 +16,10 @@ namespace ork::lev2 {
 
 void pyinit_gfx_qtez(py::module& module_lev2) {
   auto type_codec = python::TypeCodec::instance();
-
-  auto base_init_qtapp = []() {
-
-  };
-
+  /////////////////////////////////////////////////////////////////////////////////
+  auto ezappcontext_type = //
+      py::class_<EzAppContext, ezappctx_ptr_t>(module_lev2, "EzAppContext");
+  type_codec->registerStdCodec<ezappctx_ptr_t>(ezappcontext_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto bind_scene = [](orkezapp_ptr_t app, scenegraph::scene_ptr_t scene){
     if(not app->_userSpecifiedOnDraw){
@@ -211,6 +210,15 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             }
             return rval;
           });
+  /////////////////////////////////////////////////////////////////////////////////
+  auto ezmainwin_type = //
+      py::class_<EzMainWin, ezmainwin_ptr_t>(module_lev2, "EzMainWin");
+  type_codec->registerStdCodec<ezmainwin_ptr_t>(ezmainwin_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto ezviewport_type = //
+      py::class_<EzViewport, ezviewport_ptr_t>(module_lev2, "EzViewport");
+  type_codec->registerStdCodec<ezviewport_ptr_t>(ezviewport_type);
+  /////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
 
 } // namespace ork::lev2

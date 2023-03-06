@@ -30,12 +30,8 @@ void initModule(appinitdata_ptr_t initdata);
 }
 
 namespace ork::lev2 {
-class EzAppContext;
-class OrkEzApp;
-using ezappctx_ptr_t   = std::shared_ptr<EzAppContext>;
-using orkezapp_ptr_t = std::shared_ptr<OrkEzApp>;
 ////////////////////////////////////////////////////////////////////////////////
-class EzAppContext {
+struct EzAppContext {
 
 public:
   static ezappctx_ptr_t get(appinitdata_ptr_t appinitdata = nullptr);
@@ -52,7 +48,7 @@ private:
   stringpoolctx_ptr_t _stringpoolctx;
 };
 ////////////////////////////////////////////////////////////////////////////////
-class EzMainWin {
+struct EzMainWin {
 public:
   typedef std::function<void(ui::drawevent_constptr_t)> drawcb_t;
   typedef std::function<void(int w, int h)> onresizecb_t;
@@ -128,7 +124,7 @@ struct StdDraw {
   const DrawableBuffer* DB;
 };
 ////////////////////////////////////////////////////////////////////////////////
-class OrkEzAppBase {
+struct OrkEzAppBase {
 public:
   OrkEzAppBase(ezappctx_ptr_t ezapp);
   virtual ~OrkEzAppBase() {}
@@ -139,7 +135,7 @@ public:
   std::atomic<int> _render_count;
 };
 ////////////////////////////////////////////////////////////////////////////////
-class OrkEzApp : public OrkEzAppBase {
+struct OrkEzApp : public OrkEzAppBase {
   
 public:
   ///////////////////////////////////
