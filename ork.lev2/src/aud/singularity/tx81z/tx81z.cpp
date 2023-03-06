@@ -402,17 +402,17 @@ void parse_tx81z(Tx81zData* outd, const file::Path& path) {
 
         ///////////////////////////////////////////////
         auto decrateFromIndex = [](float index) -> float { //
-          float dec = powf(0.9925, 30.0f * (index * 0.03f));
+          float dec = powf(0.9955, 30.0f * (index * 0.03f));
           float res = powf(dec, 1.0f / float(frames_per_controlpass));
           return res;
         };
         auto relrateFromIndex = [](float index) -> float { //
-          float dec = powf(0.970, 15.0f * (index * 0.06f));
+          float dec = powf(0.985, 15.0f * (index * 0.06f));
           float res = powf(dec, 1.0f / float(frames_per_controlpass));
           return res;
         };
         ///////////////////////////////////////////////
-        float atktime         = 14.0f * expf(-0.35377f * atkRate);
+        float atktime         = 10.0f * expf(-0.35377f * atkRate);
         ENVELOPE->_attackTime = atktime;
 
         ENVELOPE->_decay1Rate  = decrateFromIndex(dec1Rate);
@@ -565,7 +565,7 @@ void configureTx81zAlgorithm(
   auto opmix = stage_opmix->appendTypedBlock<PMXMix>("opmixer");
   opmix->addDspChannel(0);
   /////////////////////////////////////////////////
-  float basemodindex = 3.5f;
+  float basemodindex = 12.5f;
   op0->_modIndex     = basemodindex;
   op1->_modIndex     = basemodindex;
   op2->_modIndex     = basemodindex;

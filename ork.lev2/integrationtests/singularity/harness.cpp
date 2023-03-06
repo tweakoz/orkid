@@ -514,7 +514,7 @@ prgdata_constptr_t testpattern(
     for( auto program_item : bankdata->_programs ){
       auto program = program_item.second;
       logchan_harness->log("enqueuing seq1 for program<%s>", program->_name.c_str() );
-      seq1(120.0f, count*4, program);
+      seq1(180.0f, count*4, program);
       count++;
     }
   } else if (testpatternname == "vo") {

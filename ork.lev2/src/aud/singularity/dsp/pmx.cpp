@@ -132,7 +132,7 @@ void PMX::doKeyOn(const KeyOnInfo& koi) { // final
   if (_pmxdata->_txprogramdata) {
     auto name = _pmxdata->_txprogramdata->_name;
     int alg   = _pmxdata->_txprogramdata->_alg;
-     printf("keyon prog<%s> alg<%d>\n", name.c_str(), alg);
+     //printf("keyon prog<%s> alg<%d>\n", name.c_str(), alg);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////

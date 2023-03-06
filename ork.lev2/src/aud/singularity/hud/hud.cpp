@@ -88,6 +88,7 @@ HudLayoutGroup::HudLayoutGroup() //
   }
   _handledkeymap['['] = 0;
   _handledkeymap[']'] = 0;
+  _handledkeymap[256] = 0;
 
   _evrouter = [this](ui::event_constptr_t ev) -> ui::Widget* { //
     switch (ev->_eventcode) {
@@ -115,6 +116,10 @@ HudLayoutGroup::HudLayoutGroup() //
         printf( "ev->miKeyCode<%d>\n", ev->miKeyCode );
         switch (ev->miKeyCode) {
 
+          case 256: { // escape 
+            _ezapp->signalExit();
+            break;
+          }
           case '[': {
             synth::instance()->_masterGain *= 0.95;
             logchan_hud->log("MasterGain<%g>", synth::instance()->_masterGain );

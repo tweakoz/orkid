@@ -26,8 +26,8 @@ struct MovieContext {
 
   void init(int width, int height) {
 
-    _width  = 2560;
-    _height = 1440;
+    _width  = 3840;
+    _height = 2160;
 
     //av_register_all();
     //avcodec_register_all();
@@ -79,7 +79,7 @@ struct MovieContext {
 
     auto codecpar = _stream->codecpar;
 
-    int bitrate = 16000;
+    int bitrate = 64000;
     codecpar->codec_id = _format->video_codec;
     codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
     codecpar->width = _width;
