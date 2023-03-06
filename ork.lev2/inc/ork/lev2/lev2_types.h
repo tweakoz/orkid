@@ -435,6 +435,7 @@ namespace ork::ui{
   struct Viewport;
   namespace anchor {
     struct Layout;
+	struct Guide;
   }
 }
 using uidrawevent_constptr_t = std::shared_ptr<const ::ork::ui::DrawEvent>;
@@ -445,6 +446,7 @@ using uilayoutgroup_ptr_t = std::shared_ptr<::ork::ui::LayoutGroup>;
 using uisurface_ptr_t = std::shared_ptr<::ork::ui::Surface>;
 using uiviewport_ptr_t = std::shared_ptr<::ork::ui::Viewport>;
 using uilayout_ptr_t = std::shared_ptr<::ork::ui::anchor::Layout>;
+using uiguide_ptr_t = std::shared_ptr<::ork::ui::anchor::Guide>;
 ///////////////////////////////////////////////////////////////////////////////
 // MESHUTIL
 ///////////////////////////////////////////////////////////////////////////////

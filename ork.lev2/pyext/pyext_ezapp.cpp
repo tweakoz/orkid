@@ -8,6 +8,7 @@
 #include "pyext.h"
 #include <ork/kernel/string/deco.inl>
 #include <ork/kernel/environment.h>
+#include <ork/lev2/ui/layoutgroup.inl>
 #include <iostream>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -144,6 +145,14 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
           [](orkezapp_ptr_t app) -> float { return app->_timescale; },
           [](orkezapp_ptr_t app, float val) { app->_timescale = val; })
       ///////////////////////////////////////////////////////
+      .def_property_readonly(
+          "mainwin",
+          [](orkezapp_ptr_t app) -> ezmainwin_ptr_t { return app->_mainWindow; })
+      ///////////////////////////////////////////////////////
+      .def_property_readonly("topLayoutGroup", [](orkezapp_ptr_t ezapp) -> uilayoutgroup_ptr_t { //
+        return ezapp->_topLayoutGroup;
+      })
+      ///////////////////////////////////////////////////////
       .def(
           "createScene",
           [bind_scene](orkezapp_ptr_t app, varmap::varmap_ptr_t params) -> scenegraph::scene_ptr_t { //
@@ -213,8 +222,8 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto ezmainwin_type = //
       py::class_<EzMainWin, ezmainwin_ptr_t>(module_lev2, "EzMainWin")
-      .def_property_readonly("mainwin",[]() -> ezmainwin_ptr_t {
-
+      .def_property_readonly("appwin",[](ezmainwin_ptr_t mwin) -> appwindow_ptr_t {
+        return mwin->_appwin;
       });
   type_codec->registerStdCodec<ezmainwin_ptr_t>(ezmainwin_type);
   /////////////////////////////////////////////////////////////////////////////////

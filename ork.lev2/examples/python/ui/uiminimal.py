@@ -25,6 +25,17 @@ class MinimalUiApp(object):
     super().__init__()
     self.ezapp = OrkEzApp.create(self)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
+    print(self.ezapp.mainwin)
+    print(self.ezapp.mainwin.appwin)
+    print(self.ezapp.topLayoutGroup)
+    print(self.ezapp.topLayoutGroup.layout)
+    print(self.ezapp.topLayoutGroup.layout.top)
+    print(self.ezapp.topLayoutGroup.layout.bottom)
+    print(self.ezapp.topLayoutGroup.layout.left)
+    print(self.ezapp.topLayoutGroup.layout.right)
+    print(self.ezapp.topLayoutGroup.layout.centerH)
+    print(self.ezapp.topLayoutGroup.layout.centerV)
+    assert(False)
     self.materials = set()
     setupUiCamera( app=self, 
                    eye = vec3(10,10,10), 

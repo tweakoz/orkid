@@ -102,7 +102,10 @@ void pyinit_ui(py::module& module_lev2) {
   type_codec->registerStdCodec<uigroup_ptr_t>(group_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto layoutgroup_type = //
-      py::class_<ui::LayoutGroup, ui::Group, uilayoutgroup_ptr_t >(uimodule, "UiLayoutGroup");
+      py::class_<ui::LayoutGroup, ui::Group, uilayoutgroup_ptr_t >(uimodule, "UiLayoutGroup")
+      .def_property_readonly("layout", [](uilayoutgroup_ptr_t lgrp) -> uilayout_ptr_t { //
+        return lgrp->_layout;
+      });
   type_codec->registerStdCodec<uilayoutgroup_ptr_t>(layoutgroup_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto surface_type = //
@@ -114,8 +117,42 @@ void pyinit_ui(py::module& module_lev2) {
   type_codec->registerStdCodec<uiviewport_ptr_t>(viewport_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto layout_type = //
-      py::class_<ui::anchor::Layout, uilayout_ptr_t >(uimodule, "UiLayout");
+      py::class_<ui::anchor::Layout, uilayout_ptr_t >(uimodule, "UiLayout")
+      .def_property_readonly("top", [](uilayout_ptr_t layout) -> uiguide_ptr_t { //
+        return layout->top();
+      })
+      .def_property_readonly("bottom", [](uilayout_ptr_t layout) -> uiguide_ptr_t { //
+        return layout->bottom();
+      })
+      .def_property_readonly("left", [](uilayout_ptr_t layout) -> uiguide_ptr_t { //
+        return layout->left();
+      })
+      .def_property_readonly("right", [](uilayout_ptr_t layout) -> uiguide_ptr_t { //
+        return layout->right();
+      })
+      .def_property_readonly("centerH", [](uilayout_ptr_t layout) -> uiguide_ptr_t { //
+        return layout->centerH();
+      })
+      .def_property_readonly("centerV", [](uilayout_ptr_t layout) -> uiguide_ptr_t { //
+        return layout->centerV();
+      });
   type_codec->registerStdCodec<uilayout_ptr_t>(layout_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto guide_type = //
+      py::class_<ui::anchor::Guide, uiguide_ptr_t >(uimodule, "UiGuide")
+      .def_property_readonly("margin", [](uiguide_ptr_t guide) -> int { //
+        return guide->_margin;
+      })
+      .def_property_readonly("sign", [](uiguide_ptr_t guide) -> int { //
+        return guide->_sign;
+      })
+      .def_property_readonly("fixed", [](uiguide_ptr_t guide) -> int { //
+        return guide->_fixed;
+      })
+      .def_property_readonly("proportion", [](uiguide_ptr_t guide) -> float { //
+        return guide->_proportion;
+      });
+  type_codec->registerStdCodec<uiguide_ptr_t>(guide_type);
   /////////////////////////////////////////////////////////////////////////////////
 }
 
