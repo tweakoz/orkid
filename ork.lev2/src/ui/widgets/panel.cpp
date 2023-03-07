@@ -124,7 +124,7 @@ void Panel::DoDraw(ui::drawevent_constptr_t drwev) {
   mtxi->PopUIMatrix();
 
   if (_child)
-    _child->Draw(drwev);
+    _child->draw(drwev);
 }
 
 /////////////////////////////////////////////////////////////////////////

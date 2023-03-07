@@ -142,7 +142,7 @@ public:
   }
 
   void ExtDraw(lev2::Context* pTARG);
-  virtual void Draw(ui::drawevent_constptr_t drwev);
+  virtual void draw(ui::drawevent_constptr_t drwev);
 
   bool IsKeyDepressed(int ch);
   bool IsHotKeyDepressed(const char* pact);

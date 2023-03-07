@@ -168,8 +168,8 @@ singularitytestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
     compositorimpl->pushCPD(*CPD);
     context->beginFrame();
     mtxi->PushUIMatrix();
-    // ezapp->_hudvp->Draw(drwev);
-    ezapp->_ezviewport->_topLayoutGroup->Draw(drwev);
+    // ezapp->_hudvp->draw(drwev);
+    ezapp->_ezviewport->_topLayoutGroup->draw(drwev);
     mtxi->PopUIMatrix();
     context->endFrame();
     ////////////////////////////////////////////////////

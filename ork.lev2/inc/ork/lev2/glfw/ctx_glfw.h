@@ -89,7 +89,7 @@ public:
   AppWindow(uiwidget_ptr_t root_widget);
   ~AppWindow();
 
-  virtual void Draw(void);
+  virtual void draw(void);
   virtual void GotFocus(void);
   virtual void LostFocus(void);
   virtual void Hide(void) {

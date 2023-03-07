@@ -184,33 +184,25 @@ void EzViewport::_doGpuInit(ork::lev2::Context* pTARG) {
 }
 /////////////////////////////////////////////////
 void EzViewport::DoDraw(ui::drawevent_constptr_t drwev) {
-  //lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
-
   //////////////////////////////////////////////////////
   // ensure onUpdateInit called before onGpuInit!
   //////////////////////////////////////////////////////
-
   auto ezapp = (OrkEzApp*)OrkEzAppBase::get();
   if (not ezapp->checkAppState(KAPPSTATEFLAG_UPDRUNNING))
     return;
-
+  ///////////////////////////
   drwev->GetTarget()->makeCurrentContext();
-
+  ///////////////////////////
   while (ezapp->_rthreadq->Process()) {
   }
-
+  ///////////////////////////
   if (_mainwin->_onDraw) {
-    //double a_time           = _mainwin->_render_timer.SecsSinceStart();
     _mainwin->_onDraw(drwev);
-
     auto ctxbase = drwev->GetTarget()->mCtxBase;
     drwev->GetTarget()->swapBuffers(ctxbase);
-
-    //double b_time           = _mainwin->_render_timer.SecsSinceStart();
-
-    //printf( "RTIME<%g msec>\n", (b_time-a_time)*1000.0 );
     ezapp->_render_count.fetch_add(1);
   }
+  ///////////////////////////
   double this_time           = _mainwin->_render_timer.SecsSinceStart();
   _mainwin->_render_prevtime = this_time;
   if (this_time >= 5.0) {
@@ -221,8 +213,7 @@ void EzViewport::DoDraw(ui::drawevent_constptr_t drwev) {
   } else {
     _mainwin->_render_state_numiters += 1.0;
   }
-
-  //lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
+  ///////////////////////////
 }
 /////////////////////////////////////////////////
 void EzViewport::DoSurfaceResize() {

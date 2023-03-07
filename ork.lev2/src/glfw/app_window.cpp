@@ -32,13 +32,12 @@ AppWindow::AppWindow(uiwidget_ptr_t prw)
 AppWindow::~AppWindow() {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void AppWindow::Draw(void) {
+void AppWindow::draw(void) {
   int iw = GetContextW();
   int ih = GetContextH();
   _rootWidget->SetRect(0, 0, iw, ih);
-
   auto drwev = std::make_shared<ui::DrawEvent>(context());
-  _rootWidget->Draw(drwev);
+  _rootWidget->draw(drwev);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void AppWindow::GotFocus(void) {

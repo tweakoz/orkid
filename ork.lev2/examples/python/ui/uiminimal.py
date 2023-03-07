@@ -40,6 +40,13 @@ class MinimalUiApp(object):
     print(self.ezapp.topLayoutGroup.layout.centerV)
     print(self.ezapp.uicontext)
     #assert(False)
+    # make a panel/group widget that has 4 children
+    # convert ezviewport to that format
+    # for the single view case have the ezviewport 
+    # only have 1 view dest
+    # for the quad case, each child is capable of acting as a 
+    # scenegraph "view" destination
+    # assign the quad panel top to the rootWidget
     self.materials = set()
     setupUiCamera( app=self, 
                    eye = vec3(10,10,10), 
@@ -51,6 +58,7 @@ class MinimalUiApp(object):
   def onGpuInit(self,ctx):
     sceneparams = VarMap()
     sceneparams.preset = "DeferredPBR"
+    # assign the "views" as a part of params
     self.scene = self.ezapp.createScene(sceneparams)
     self.layer1 = self.scene.createLayer("layer1")
     self.rendernode = self.scene.compositorrendernode

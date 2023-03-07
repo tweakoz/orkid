@@ -116,9 +116,9 @@ bool Context::hasMouseFocus(const Widget* w) const {
 }
 //////////////////////////////////////
 void Context::draw(drawevent_constptr_t drwev) {
-  _top->Draw(drwev);
+  _top->draw(drwev);
   if (_overlayWidget) {
-    _overlayWidget->Draw(drwev);
+    _overlayWidget->draw(drwev);
   }
 }
 /////////////////////////////////////////////////////////////////////////

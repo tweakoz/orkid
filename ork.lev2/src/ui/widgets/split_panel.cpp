@@ -140,10 +140,10 @@ void SplitPanel::DoDraw(ui::drawevent_constptr_t drwev) {
   tgt->PopModColor();
 
   if (_child1)
-    _child1->Draw(drwev);
+    _child1->draw(drwev);
 
   if (_child2)
-    _child2->Draw(drwev);
+    _child2->draw(drwev);
 }
 
 /////////////////////////////////////////////////////////////////////////

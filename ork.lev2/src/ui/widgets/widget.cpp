@@ -288,7 +288,7 @@ void Widget::SetDirty() {
     _parent->_dirty = true;
 }
 /////////////////////////////////////////////////////////////////////////
-void Widget::Draw(ui::drawevent_constptr_t drwev) {
+void Widget::draw(ui::drawevent_constptr_t drwev) {
   _drawEvent = drwev;
   _target    = drwev->GetTarget();
 

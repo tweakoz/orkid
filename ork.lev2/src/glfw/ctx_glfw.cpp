@@ -615,13 +615,12 @@ void CtxGLFW::SlotRepaint() {
       if (this->_target) {
         _target->makeCurrentContext();
         auto gfxwin = _uievent->mpGfxWin;
-        auto vp     = gfxwin ? gfxwin->GetRootWidget() : nullptr;
-
         _uievent->mpGfxWin = (Window*) _target->FBI()->GetThisBuffer();
         auto drwev = std::make_shared<ui::DrawEvent>(this->_target);
 
-        if (vp)
-          vp->Draw(drwev);
+        auto widget     = gfxwin ? gfxwin->GetRootWidget() : nullptr;
+        if (widget)
+          widget->draw(drwev);
       }
     //}
     //this->mDrawLock--;
