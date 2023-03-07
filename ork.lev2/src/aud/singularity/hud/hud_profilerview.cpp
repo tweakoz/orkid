@@ -20,7 +20,7 @@ namespace ork::audio::singularity {
 struct ProfilerView final : public ui::Surface {
   ProfilerView();
   void DoRePaintSurface(ui::drawevent_constptr_t drwev) override;
-  void DoInit(lev2::Context* pt) override;
+  void _doGpuInit(lev2::Context* pt) override;
   ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
   ork::lev2::CTXBASE* _ctxbase = nullptr;
   int _updatecount             = 0;
@@ -175,7 +175,7 @@ void ProfilerView::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   // drawHudLines(this, context, lines);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ProfilerView::DoInit(lev2::Context* pt) {
+void ProfilerView::_doGpuInit(lev2::Context* pt) {
   _pickbuffer = new lev2::PickBuffer(this, pt, width(), height());
   _ctxbase    = pt->GetCtxBase();
 }

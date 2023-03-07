@@ -20,7 +20,7 @@ namespace ork::audio::singularity {
 struct ScopeSurf final : public ui::Surface {
   ScopeSurf();
   void DoRePaintSurface(ui::drawevent_constptr_t drwev) override;
-  void DoInit(lev2::Context* pt) override;
+  void _doGpuInit(lev2::Context* pt) override;
   ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
   ork::lev2::CTXBASE* _ctxbase = nullptr;
   concurrent_triple_buffer<ScopeBuffer> _scopebuffers;
@@ -351,7 +351,7 @@ void ScopeSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   drawHudLines(this, context, lines);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ScopeSurf::DoInit(lev2::Context* pt) {
+void ScopeSurf::_doGpuInit(lev2::Context* pt) {
   _pickbuffer = new lev2::PickBuffer(this, pt, width(), height());
   _ctxbase    = pt->GetCtxBase();
 }

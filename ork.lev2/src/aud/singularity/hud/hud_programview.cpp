@@ -20,7 +20,7 @@ namespace ork::audio::singularity {
 struct ProgramView final : public ui::Surface {
   ProgramView();
   void DoRePaintSurface(ui::drawevent_constptr_t drwev) override;
-  void DoInit(lev2::Context* pt) override;
+  void _doGpuInit(lev2::Context* pt) override;
   ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
   ork::lev2::CTXBASE* _ctxbase = nullptr;
   int _updatecount             = 0;
@@ -109,7 +109,7 @@ void ProgramView::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   // drawHudLines(this, context, lines);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ProgramView::DoInit(lev2::Context* pt) {
+void ProgramView::_doGpuInit(lev2::Context* pt) {
   _pickbuffer = new lev2::PickBuffer(this, pt, width(), height());
   _ctxbase    = pt->GetCtxBase();
 }

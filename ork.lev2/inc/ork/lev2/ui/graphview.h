@@ -38,7 +38,7 @@ using graphchannel_ptr_t = std::shared_ptr<GraphChannel>;
 struct GraphView : public ui::Surface {
   GraphView();
   void DoRePaintSurface(ui::drawevent_constptr_t drwev) override;
-  void DoInit(lev2::Context* pt) override;
+  void _doGpuInit(lev2::Context* pt) override;
   ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
 
   graphchannel_ptr_t channel(std::string named);

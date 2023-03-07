@@ -110,7 +110,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 struct EzViewport : public ui::Viewport {
   EzViewport(EzMainWin* mainwin);
-  void DoInit(ork::lev2::Context* pTARG) final;
+  void _doGpuInit(ork::lev2::Context* pTARG) final;
   void DoDraw(ui::drawevent_constptr_t drwev) final;
   void DoSurfaceResize() final;
   ui::HandlerResult DoOnUiEvent(ui::event_constptr_t ev) final;

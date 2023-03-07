@@ -70,7 +70,7 @@ public:
   Widget(const std::string& name, int x = 0, int y = 0, int w = 0, int h = 0);
   ~Widget();
 
-  void Init(lev2::Context* pTARG);
+  void gpuInit(lev2::Context* pTARG);
 
   template <typename T> std::shared_ptr<T> pushEventFilter() {
     auto filter = std::make_shared<T>(*this);
@@ -203,7 +203,7 @@ public:
 
 private:
   friend struct ui::Context;
-  virtual void DoInit(lev2::Context* pTARG) {
+  virtual void _doGpuInit(lev2::Context* pTARG) {
   }
   virtual void DoDraw(ui::drawevent_constptr_t drwev) = 0;
   virtual HandlerResult DoOnUiEvent(event_constptr_t Ev);

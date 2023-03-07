@@ -36,8 +36,8 @@ Widget::Widget(const std::string& name, int x, int y, int w, int h)
 Widget::~Widget() {
 }
 ///////////////////////////////////////////////////////////
-void Widget::Init(lev2::Context* pT) {
-  DoInit(pT);
+void Widget::gpuInit(lev2::Context* pT) {
+  _doGpuInit(pT);
 }
 ///////////////////////////////////////////////////////////
 void Widget::setGeometry(Rect newgeo) {
@@ -294,7 +294,7 @@ void Widget::Draw(ui::drawevent_constptr_t drwev) {
 
   if (_needsinit) {
     ork::lev2::FontMan::GetRef();
-    Init(_target);
+    gpuInit(_target);
     _needsinit = false;
   }
 
@@ -332,8 +332,7 @@ float Widget::logicalY() const {
 /////////////////////////////////////////////////////////////////////////
 void Widget::ExtDraw(lev2::Context* pTARG) {
   if (_needsinit) {
-    ork::lev2::FontMan::GetRef();
-    Init(_target);
+    gpuInit(_target);
     _needsinit = false;
   }
   _target = pTARG;

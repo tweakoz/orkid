@@ -176,10 +176,9 @@ EzViewport::EzViewport(EzMainWin* mainwin)
   _mainwin->_render_prevtime = _mainwin->_render_timer.SecsSinceStart();
 }
 /////////////////////////////////////////////////
-void EzViewport::DoInit(ork::lev2::Context* pTARG) {
+void EzViewport::_doGpuInit(ork::lev2::Context* pTARG) {
 
   pTARG->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
-  FontMan::gpuInit(pTARG);
   _initstate.store(1);
 
 }

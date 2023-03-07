@@ -27,7 +27,7 @@ GraphView::GraphView()
   _grid._hiliteColor = fvec3(0.3, 0, 0.3);
 }
 /////////////////////////////////////////////////////////////////////////
-void GraphView::DoInit(lev2::Context* pTARG) {
+void GraphView::_doGpuInit(lev2::Context* pTARG) {
 }
 /////////////////////////////////////////////////////////////////////////
 HandlerResult GraphView::DoOnUiEvent(event_constptr_t ev) {

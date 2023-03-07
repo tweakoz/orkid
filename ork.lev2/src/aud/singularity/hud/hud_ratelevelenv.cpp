@@ -17,7 +17,7 @@ namespace ork::audio::singularity {
 struct RateLevelSurf final : public ui::Surface {
   RateLevelSurf();
   void DoRePaintSurface(ui::drawevent_constptr_t drwev) override;
-  void DoInit(lev2::Context* pt) override;
+  void _doGpuInit(lev2::Context* pt) override;
   ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
   void setTimeWidth(float w) {
     _timewidthsamples = int(frames_per_controlpass * w);
@@ -436,7 +436,7 @@ void RateLevelSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void RateLevelSurf::DoInit(lev2::Context* pt) {
+void RateLevelSurf::_doGpuInit(lev2::Context* pt) {
   _pickbuffer = new lev2::PickBuffer(this, pt, width(), height());
   _ctxbase    = pt->GetCtxBase();
 }

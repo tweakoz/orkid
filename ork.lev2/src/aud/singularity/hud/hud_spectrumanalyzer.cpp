@@ -47,7 +47,7 @@ struct FFT_Context {
 struct SpectraSurf final : public ui::Surface {
   SpectraSurf();
   void DoRePaintSurface(ui::drawevent_constptr_t drwev) override;
-  void DoInit(lev2::Context* pt) override;
+  void _doGpuInit(lev2::Context* pt) override;
   ui::HandlerResult DoOnUiEvent(ui::event_constptr_t EV) override;
   ork::lev2::CTXBASE* _ctxbase = nullptr;
   concurrent_triple_buffer<ScopeBuffer> _scopebuffers;
@@ -323,7 +323,7 @@ void SpectraSurf::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   drawHudLines(this, context, lines);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void SpectraSurf::DoInit(lev2::Context* pt) {
+void SpectraSurf::_doGpuInit(lev2::Context* pt) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 ui::HandlerResult SpectraSurf::DoOnUiEvent(ui::event_constptr_t EV) {
