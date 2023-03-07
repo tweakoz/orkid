@@ -153,6 +153,10 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
         return ezapp->_topLayoutGroup;
       })
       ///////////////////////////////////////////////////////
+      .def_property_readonly("uicontext", [](orkezapp_ptr_t ezapp) -> ui::context_ptr_t { //
+        return ezapp->_uicontext;
+      })
+      ///////////////////////////////////////////////////////
       .def(
           "createScene",
           [bind_scene](orkezapp_ptr_t app, varmap::varmap_ptr_t params) -> scenegraph::scene_ptr_t { //

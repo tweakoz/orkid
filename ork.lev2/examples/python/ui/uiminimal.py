@@ -38,7 +38,8 @@ class MinimalUiApp(object):
     print(self.ezapp.topLayoutGroup.layout.right)
     print(self.ezapp.topLayoutGroup.layout.centerH)
     print(self.ezapp.topLayoutGroup.layout.centerV)
-    assert(False)
+    print(self.ezapp.uicontext)
+    #assert(False)
     self.materials = set()
     setupUiCamera( app=self, 
                    eye = vec3(10,10,10), 
@@ -48,7 +49,11 @@ class MinimalUiApp(object):
   ##############################################
 
   def onGpuInit(self,ctx):
-    createSceneGraph(app=self,rendermodel="DeferredPBR")
+    sceneparams = VarMap()
+    sceneparams.preset = "DeferredPBR"
+    self.scene = self.ezapp.createScene(sceneparams)
+    self.layer1 = self.scene.createLayer("layer1")
+    self.rendernode = self.scene.compositorrendernode
     self.grid_data = createGridData()
     self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
     self.grid_node.sortkey = 1

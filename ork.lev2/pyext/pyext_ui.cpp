@@ -21,6 +21,16 @@ void pyinit_ui(py::module& module_lev2) {
   auto uimodule   = module_lev2.def_submodule("ui", "ui operations");
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////
+  auto uicontext_type = //
+      py::class_<ui::Context, ui::context_ptr_t>(module_lev2, "UiContext")
+      .def_property_readonly("hasKeyboardFocus",[](ui::context_ptr_t uictx)->bool{
+        return uictx->hasKeyboardFocus();
+      })
+      .def("hasMouseFocus",[](ui::context_ptr_t uictx, uiwidget_ptr_t w)->bool{
+        return uictx->hasMouseFocus(w.get());
+      });
+  type_codec->registerStdCodec<ui::context_ptr_t>(uicontext_type);
+  /////////////////////////////////////////////////////////////////////////////////
   auto uievent_type = //
       py::class_<ui::Event, ui::event_ptr_t>(module_lev2, "UiEvent")
           .def(
