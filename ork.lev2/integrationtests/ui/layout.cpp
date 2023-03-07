@@ -65,31 +65,8 @@ int main(int argc, char** argv, char** envp) {
   l3->bottom()->anchorTo(root_layout->bottom()); // 20,21
   l3->right()->anchorTo(root_layout->right());   // 22
   //////////////////////////////////////
-  auto makegrid = [](layoutgroup_ptr_t layout_widget, fvec4 color) {
-    auto lname  = layout_widget->GetName();
-    auto layout = layout_widget->_layout;
-    for (int x = 0; x < 4; x++) {
-      float fxa = float(x) / 4.0f;
-      float fxb = float(x + 1) / 4.0f;
-      auto gxa  = layout->proportionalVerticalGuide(fxa); // 23,27,31,35
-      auto gxb  = layout->proportionalVerticalGuide(fxb); // 24,28,32,36
-      for (int y = 0; y < 4; y++) {
-        float fya   = float(y) / 4.0f;
-        float fyb   = float(y + 1) / 4.0f;
-        auto gya    = layout->proportionalHorizontalGuide(fya); // 25,29,33,37
-        auto gyb    = layout->proportionalHorizontalGuide(fyb); // 26,30,34,38
-        auto name   = lname + FormatString("-ch-%d", (y * 4 + x));
-        auto chitem = layout_widget->makeChild<EvTestBox>(name, color);
-        chitem._layout->setMargin(2);
-        chitem._layout->top()->anchorTo(gya);
-        chitem._layout->left()->anchorTo(gxa);
-        chitem._layout->bottom()->anchorTo(gyb);
-        chitem._layout->right()->anchorTo(gxb);
-      }
-    }
-  };
-  makegrid(w2._widget, fvec4(1, 1, 1, 1));
-  makegrid(panel_w1, fvec4(0.25, 0, 0.4, 1));
+  w2._widget->makeGridOfWidgets<EvTestBox>(4,4,"yo",fvec4(1, 1, 1, 1));
+  panel_w1->makeGridOfWidgets<EvTestBox>(8,8,"yo",fvec4(0.25, 0, 0.4, 1));
   //////////////////////////////////////
   root_layout->dump();
   // exit(0);

@@ -41,12 +41,39 @@ struct LayoutGroup : public Group {
   anchor::layout_ptr_t _layout;
 
   //////////////////////////////////////
-  template <typename T, typename... A> LayoutItem<T> makeChild(A&&... args) {
+  template <typename T, typename... A> //
+  LayoutItem<T> makeChild(A&&... args) {
     LayoutItem<T> rval;
     rval._widget = std::make_shared<T>(std::forward<A>(args)...);
     rval._layout = _layout->childLayout(rval._widget.get());
     addChild(rval._widget);
     return rval;
+  }
+  //////////////////////////////////////
+  template <typename T, typename... A> //
+  std::vector<LayoutItem<T>> makeGridOfWidgets(int w, int h, A&&... args) {
+    std::vector<LayoutItem<T>> widgets;
+    for (int x = 0; x < w; x++) {
+      float fxa = float(x) / float(w);
+      float fxb = float(x + 1) / float(w);
+      auto gxa  = _layout->proportionalVerticalGuide(fxa); // 23,27,31,35
+      auto gxb  = _layout->proportionalVerticalGuide(fxb); // 24,28,32,36
+      for (int y = 0; y < h; y++) {
+        float fya   = float(y) / float(h);
+        float fyb   = float(y + 1) / float(h);
+        auto gya    = _layout->proportionalHorizontalGuide(fya); // 25,29,33,37
+        auto gyb    = _layout->proportionalHorizontalGuide(fyb); // 26,30,34,38
+        auto name   = _name + FormatString("-ch-%d", (y * w + x));
+        auto chitem = this->makeChild<T>(std::forward<A>(args)...);
+        widgets.push_back(chitem);
+        chitem._layout->setMargin(2);
+        chitem._layout->top()->anchorTo(gya);
+        chitem._layout->left()->anchorTo(gxa);
+        chitem._layout->bottom()->anchorTo(gyb);
+        chitem._layout->right()->anchorTo(gxb);
+      }
+    }
+    return widgets;
   }
   //////////////////////////////////////
   inline anchor::layout_ptr_t layoutAndAddChild(widget_ptr_t w) {
