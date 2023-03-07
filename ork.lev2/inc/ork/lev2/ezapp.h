@@ -31,6 +31,10 @@ void initModule(appinitdata_ptr_t initdata);
 
 namespace ork::lev2 {
 ////////////////////////////////////////////////////////////////////////////////
+static constexpr uint64_t KAPPSTATEFLAG_UPDRUNNING = 1 << 0;
+static constexpr uint64_t KAPPSTATEFLAG_JOINED     = 1 << 1;
+////////////////////////////////////////////////////////////////////////////////
+
 struct EzAppContext {
 
 public:
@@ -108,11 +112,11 @@ public:
 
 };
 ///////////////////////////////////////////////////////////////////////////////
-struct EzViewport : public ui::Viewport {
-  EzViewport(EzMainWin* mainwin);
+struct EzTopWidget : public ui::Group {
+  EzTopWidget(EzMainWin* mainwin);
   void _doGpuInit(ork::lev2::Context* pTARG) final;
   void DoDraw(ui::drawevent_constptr_t drwev) final;
-  void DoSurfaceResize() final;
+  void _doOnResized() final;
   ui::HandlerResult DoOnUiEvent(ui::event_constptr_t ev) final;
   EzMainWin* _mainwin;
   ui::layoutgroup_ptr_t _topLayoutGroup;
@@ -201,7 +205,7 @@ public:
   ui::updatedata_ptr_t _update_data;
   ui::context_ptr_t _uicontext;
   ui::layoutgroup_ptr_t _topLayoutGroup;
-  std::shared_ptr<EzViewport> _ezviewport;
+  eztopwidget_ptr_t _eztopwidget;
   ork::opq::opq_ptr_t _rthreadq;
   EzMainWin::onupdateexit_t _onAppEarlyTerminated = nullptr;
   moviecontext_ptr_t _moviecontext;

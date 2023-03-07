@@ -58,7 +58,7 @@ struct LayoutGroup : public Group {
 
 private:
   void DoDraw(ui::drawevent_constptr_t drwev) override;
-  void OnResize() override;
+  void _doOnResized() override;
   void DoLayout() override;
 };
 

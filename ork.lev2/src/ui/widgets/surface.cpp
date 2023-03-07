@@ -50,7 +50,7 @@ void Surface::GetPixel(int ix, int iy, lev2::PixelFetchContext& ctx) {
 
 /////////////////////////////////////////////////////////////////////////
 
-void Surface::OnResize(void) {
+void Surface::_doOnResized(void) {
   /*printf( "Surface<%s>::OnResize x<%d> y<%d> w<%d> h<%d>\n", _name.c_str(), miX, miY, _geometry._w, _geometry._h );
 
   if( _rtgroup )

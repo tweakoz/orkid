@@ -149,6 +149,10 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
           "mainwin",
           [](orkezapp_ptr_t app) -> ezmainwin_ptr_t { return app->_mainWindow; })
       ///////////////////////////////////////////////////////
+      .def_property_readonly("topWidget", [](orkezapp_ptr_t ezapp) -> eztopwidget_ptr_t { //
+        return ezapp->_eztopwidget;
+      })
+      ///////////////////////////////////////////////////////
       .def_property_readonly("topLayoutGroup", [](orkezapp_ptr_t ezapp) -> uilayoutgroup_ptr_t { //
         return ezapp->_topLayoutGroup;
       })
@@ -231,9 +235,9 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
       });
   type_codec->registerStdCodec<ezmainwin_ptr_t>(ezmainwin_type);
   /////////////////////////////////////////////////////////////////////////////////
-  auto ezviewport_type = //
-      py::class_<EzViewport, ui::Viewport, ezviewport_ptr_t>(module_lev2, "EzViewport");
-  type_codec->registerStdCodec<ezviewport_ptr_t>(ezviewport_type);
+  auto eztopwidget_type = //
+      py::class_<EzTopWidget, ui::Group, eztopwidget_ptr_t>(module_lev2, "EzTopWidget");
+  type_codec->registerStdCodec<eztopwidget_ptr_t>(eztopwidget_type);
   /////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
 

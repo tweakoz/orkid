@@ -163,7 +163,7 @@ public:
 
   // CWidgetFlags &GetFlagsRef( void ) { return mWidgetFlags; }
 
-  virtual void OnResize(void);
+  virtual void _doOnResized(void);
   HandlerResult OnUiEvent(event_constptr_t Ev);
 
   bool hasMouseFocus() const;

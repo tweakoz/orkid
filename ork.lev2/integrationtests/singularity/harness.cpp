@@ -169,7 +169,7 @@ singularitytestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
     context->beginFrame();
     mtxi->PushUIMatrix();
     // ezapp->_hudvp->draw(drwev);
-    ezapp->_ezviewport->_topLayoutGroup->draw(drwev);
+    ezapp->_eztopwidget->_topLayoutGroup->draw(drwev);
     mtxi->PopUIMatrix();
     context->endFrame();
     ////////////////////////////////////////////////////
@@ -178,7 +178,7 @@ singularitytestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
   //////////////////////////////////////////////////////////
   ezapp->onResize([=](int w, int h) { //
                                       // printf("GOTRESIZE<%d %d>\n", w, h);
-                                      // ezapp->_ezviewport->_topLayoutGroup->SetSize(w, h);
+                                      // ezapp->_eztopwidget->_topLayoutGroup->SetSize(w, h);
     ezapp->_hudvp->SetSize(w, h);
   });
   //////////////////////////////////////////////////////////

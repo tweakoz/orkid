@@ -299,7 +299,7 @@ void Widget::draw(ui::drawevent_constptr_t drwev) {
   }
 
   if (mSizeDirty) {
-    OnResize();
+    _doOnResized();
     mPosDirty     = false;
     mSizeDirty    = false;
     _prevGeometry = _geometry;
@@ -377,7 +377,7 @@ void Widget::ReLayout() {
   DoLayout();
 }
 /////////////////////////////////////////////////////////////////////////
-void Widget::OnResize(void) {
+void Widget::_doOnResized(void) {
   // printf("Widget<%s>::OnResize x<%d> y<%d> w<%d> h<%d>\n", _name.c_str(), miX, miY, miW, miH);
 }
 /////////////////////////////////////////////////////////////////////////

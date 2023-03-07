@@ -51,7 +51,7 @@ public:
 
 protected:
   void RenderCached();
-  void OnResize(void) override;
+  void _doOnResized(void) override;
   virtual void DoSurfaceResize() {
   }
 

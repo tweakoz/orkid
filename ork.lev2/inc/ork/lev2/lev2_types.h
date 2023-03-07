@@ -414,11 +414,11 @@ using imguitexwin_ptr_t      = std::shared_ptr<ImGuiTexturedWindow>;
 struct EzAppContext;
 struct OrkEzApp;
 struct EzMainWin;
-struct EzViewport;
+struct EzTopWidget;
 using ezappctx_ptr_t   = std::shared_ptr<EzAppContext>;
 using orkezapp_ptr_t = std::shared_ptr<OrkEzApp>;
 using ezmainwin_ptr_t = std::shared_ptr<EzMainWin>;
-using ezviewport_ptr_t = std::shared_ptr<EzViewport>;
+using eztopwidget_ptr_t = std::shared_ptr<EzTopWidget>;
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

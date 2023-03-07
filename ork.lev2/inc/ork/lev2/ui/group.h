@@ -21,7 +21,7 @@ struct Group : public Widget {
   void removeChild(widget_ptr_t w);
   void removeChild(Widget* w);
   /////////////////////////////
-  void OnResize() override;
+  void _doOnResized() override;
   void DoLayout() override;
   /////////////////////////////
   Widget* doRouteUiEvent(event_constptr_t Ev) override;

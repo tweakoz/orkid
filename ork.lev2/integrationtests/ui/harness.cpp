@@ -91,7 +91,7 @@ uitestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
     if (DB) {
       DB->Reset();
       DB->copyCameras(*cameras);
-      // ezapp->_ezviewport->onUpdateThreadTick(updata);
+      // ezapp->_eztopwidget->onUpdateThreadTick(updata);
       dbufcontext->releaseFromWriteLocked(DB);
     }
   });
@@ -130,8 +130,8 @@ uitestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
   //////////////////////////////////////////////////////////
   ezapp->onResize([=](int w, int h) { //
     // printf("GOTRESIZE<%d %d>\n", w, h);
-    ezapp->_ezviewport->SetSize(w, h);
-    ezapp->_ezviewport->_topLayoutGroup->SetSize(w, h);
+    ezapp->_eztopwidget->SetSize(w, h);
+    ezapp->_eztopwidget->_topLayoutGroup->SetSize(w, h);
   });
   //////////////////////////////////////////////////////////
   const int64_t trackMAX = (4095 << 16);
@@ -151,7 +151,7 @@ uitestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
       default:
         //OrkAssert(false);
         // return uicontext->handleEvent(ev);
-        // return ezapp->_ezviewport->HandleUiEvent(ev);
+        // return ezapp->_eztopwidget->HandleUiEvent(ev);
         break;
     }
     ui::HandlerResult rval;

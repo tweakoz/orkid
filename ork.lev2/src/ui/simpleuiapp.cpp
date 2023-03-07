@@ -97,7 +97,7 @@ simpleuiapp_ptr_t createSimpleUiApp(appinitdata_ptr_t initdata ) {
     if (DB) {
       DB->Reset();
       DB->copyCameras(*cameras);
-      // ezapp->_ezviewport->onUpdateThreadTick(updata);
+      // ezapp->_eztopwidget->onUpdateThreadTick(updata);
       dbufcontext->releaseFromWriteLocked(DB);
     }
   });
@@ -136,9 +136,9 @@ simpleuiapp_ptr_t createSimpleUiApp(appinitdata_ptr_t initdata ) {
   //////////////////////////////////////////////////////////
   ezapp->onResize([=](int w, int h) { //
     // printf("GOTRESIZE<%d %d>\n", w, h);
-    ezapp->_ezviewport->SetSize(w, h);
+    ezapp->_eztopwidget->SetSize(w, h);
     ezapp->_uicontext->_top->SetSize(w, h);
-    // ezapp->_ezviewport->_topLayoutGroup->SetSize(w, h);
+    // ezapp->_eztopwidget->_topLayoutGroup->SetSize(w, h);
   });
   //////////////////////////////////////////////////////////
   ezapp->onUiEvent([=](ui::event_constptr_t ev) -> ui::HandlerResult {
@@ -157,7 +157,7 @@ simpleuiapp_ptr_t createSimpleUiApp(appinitdata_ptr_t initdata ) {
       default:
         //OrkAssert(false);
         // return uicontext->handleEvent(ev);
-        // return ezapp->_ezviewport->HandleUiEvent(ev);
+        // return ezapp->_eztopwidget->HandleUiEvent(ev);
         break;
     }
     ui::HandlerResult rval;

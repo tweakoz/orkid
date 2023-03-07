@@ -24,8 +24,6 @@ namespace ork::lev2 {
 extern bool g_allow_HIDPI;
 void ClassInit();
 void GfxInit(const std::string& gfxlayer);
-constexpr uint64_t KAPPSTATEFLAG_UPDRUNNING = 1 << 0;
-constexpr uint64_t KAPPSTATEFLAG_JOINED     = 1 << 1;
 
 static logchannel_ptr_t logchan_ezapp = logger()->createChannel("ezapp", fvec3(0.7, 0.7, 0.9));
 
@@ -163,76 +161,7 @@ void OrkEzApp::enqueueWindowResize(int w, int h){
     _mainWindow->enqueueWindowResize(w, h);
   }
 }
-///////////////////////////////////////////////////////////////////////////////
 
-EzViewport::EzViewport(EzMainWin* mainwin)
-    : ui::Viewport("ezviewport", 1, 1, 1, 1, fvec3(0, 0, 0), 1.0f)
-    , _mainwin(mainwin) {
-  _geometry._w = 1;
-  _geometry._h = 1;
-  _initstate.store(0);
-  lev2::DrawableBuffer::ClearAndSyncWriters();
-  _mainwin->_render_timer.Start();
-  _mainwin->_render_prevtime = _mainwin->_render_timer.SecsSinceStart();
-}
-/////////////////////////////////////////////////
-void EzViewport::_doGpuInit(ork::lev2::Context* pTARG) {
-
-  pTARG->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
-  _initstate.store(1);
-
-}
-/////////////////////////////////////////////////
-void EzViewport::DoDraw(ui::drawevent_constptr_t drwev) {
-  //////////////////////////////////////////////////////
-  // ensure onUpdateInit called before onGpuInit!
-  //////////////////////////////////////////////////////
-  auto ezapp = (OrkEzApp*)OrkEzAppBase::get();
-  if (not ezapp->checkAppState(KAPPSTATEFLAG_UPDRUNNING))
-    return;
-  ///////////////////////////
-  drwev->GetTarget()->makeCurrentContext();
-  ///////////////////////////
-  while (ezapp->_rthreadq->Process()) {
-  }
-  ///////////////////////////
-  if (_mainwin->_onDraw) {
-    _mainwin->_onDraw(drwev);
-    auto ctxbase = drwev->GetTarget()->mCtxBase;
-    drwev->GetTarget()->swapBuffers(ctxbase);
-    ezapp->_render_count.fetch_add(1);
-  }
-  ///////////////////////////
-  double this_time           = _mainwin->_render_timer.SecsSinceStart();
-  _mainwin->_render_prevtime = this_time;
-  if (this_time >= 5.0) {
-    double FPS = _mainwin->_render_state_numiters / this_time;
-    logchan_ezapp->log("FPS<%g>", FPS);
-    _mainwin->_render_state_numiters  = 0.0;
-    _mainwin->_render_timer.Start();
-  } else {
-    _mainwin->_render_state_numiters += 1.0;
-  }
-  ///////////////////////////
-}
-/////////////////////////////////////////////////
-void EzViewport::DoSurfaceResize() {
-  if (_mainwin->_onResize) {
-    _mainwin->_onResize(width(), height());
-  }
-  _topLayoutGroup->SetSize(width(), height());
-}
-/////////////////////////////////////////////////
-ui::HandlerResult EzViewport::DoOnUiEvent(ui::event_constptr_t ev) {
-  if (_mainwin->_onUiEvent) {
-    auto hacked_event      = std::make_shared<ui::Event>();
-    *hacked_event          = *ev;
-    hacked_event->_vpdim.x = width();
-    hacked_event->_vpdim.y = height();
-    return _mainwin->_onUiEvent(hacked_event);
-  } else
-    return ui::HandlerResult();
-}
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 bool OrkEzApp::checkAppState(uint64_t singlebitmask) const {
@@ -306,12 +235,12 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
     GfxEnv::GetRef().RegisterWinContext(_mainWindow->_appwin.get());
     //////////////////////////////////////
     //////////////////////////////////////
-    _ezviewport                       = std::make_shared<EzViewport>(_mainWindow.get());
-    _ezviewport->_uicontext           = _uicontext.get();
-    _mainWindow->_appwin->_rootWidget = _ezviewport;
-    _ezviewport->_topLayoutGroup =
+    _eztopwidget                       = std::make_shared<EzTopWidget>(_mainWindow.get());
+    _eztopwidget->_uicontext           = _uicontext.get();
+    _mainWindow->_appwin->_rootWidget = _eztopwidget;
+    _eztopwidget->_topLayoutGroup =
         _uicontext->makeTop<ui::LayoutGroup>("top-layoutgroup", 0, 0, _initdata->_width, _initdata->_height);
-    _topLayoutGroup = _ezviewport->_topLayoutGroup;
+    _topLayoutGroup = _eztopwidget->_topLayoutGroup;
     /////////////////////////////////////////////
     _updq     = ork::opq::updateSerialQueue();
     _conq     = ork::opq::concurrentQueue();
@@ -337,7 +266,7 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
     /////////////////////////////////////////////
     if (not genviron.has("ORKID_DISABLE_DBLOCK_PROGRESS")) {
       auto handler = [this](opq::progressdata_ptr_t data) { //
-        if (_ezviewport->_initstate.load() == 1) {
+        if (_eztopwidget->_initstate.load() == 1) {
           _mainWindow->_ctqt->progressHandler(data);
         } else {
         }
@@ -413,7 +342,7 @@ void OrkEzApp::onGpuExit(EzMainWin::ongpuexit_t cb) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OrkEzApp::onUiEvent(EzMainWin::onuieventcb_t cb) {
-  _ezviewport->_topLayoutGroup->_evhandler = cb;
+  _eztopwidget->_topLayoutGroup->_evhandler = cb;
   if(_mainWindow)
     _mainWindow->_onUiEvent                  = cb;
 }
@@ -584,112 +513,6 @@ void OrkEzApp::finishMovieRecording(){
 void OrkEzApp::setRefreshPolicy(RefreshPolicyItem policy) {
   if(_mainWindow)
     _mainWindow->_ctqt->_setRefreshPolicy(policy);
-}
-///////////////////////////////////////////////////////////////////////////////
-EzMainWin::EzMainWin(OrkEzApp& app)
-    : _app(app) {
-  _execsceneparams   = std::make_shared<varmap::VarMap>();
-  _update_rendersync = app._initdata->_update_rendersync;
-}
-///////////////////////////////////////////////////////////////////////////////
-void EzMainWin::enqueueWindowResize(int w, int h){
-  _ctqt->enqueueWindowResize(w, h);
-}
-///////////////////////////////////////////////////////////////////////////////
-void EzMainWin::_updateEnqueueLockedAndReleaseFrame(DrawableBuffer* dbuf) {
-  // if(_app._initdata->_update_rendersync){
-  // DrawableBuffer::releaseFromWriteLocked(dbuf);
-  //}
-  // else{
-  // DrawableBuffer::releaseFromWrite(dbuf);
-  //}
-}
-///////////////////////////////////////////////////////////////////////////////
-void EzMainWin::_updateEnqueueUnlockedAndReleaseFrame(DrawableBuffer* dbuf) {
-  // if(_app._initdata->_update_rendersync){
-  // DrawableBuffer::releaseFromWriteLocked(dbuf);
-  //}
-  // else{
-  // DrawableBuffer::releaseFromWrite(dbuf);
-  //}
-}
-///////////////////////////////////////////////////////////////////////////////
-const DrawableBuffer* EzMainWin::_tryAcquireDrawBuffer(ui::drawevent_constptr_t drawEvent) {
-  //_curframecontext = drawEvent->GetTarget();
-
-  // if(_app._initdata->_update_rendersync){
-  // return DrawableBuffer::acquireForReadLocked();
-  //}
-  // else {
-  // return DrawableBuffer::acquireForRead(7);
-  //
-  return nullptr;
-}
-///////////////////////////////////////////////////////////////////////////////
-DrawableBuffer* EzMainWin::_tryAcquireUpdateBuffer() {
-  DrawableBuffer* rval = nullptr;
-  // if(_app._initdata->_update_rendersync){
-  // rval = DrawableBuffer::acquireForWriteLocked();
-  //}
-  // else {
-  // rval = DrawableBuffer::acquireForWrite(7);
-  //}
-  // rval->Reset();
-  return rval;
-}
-///////////////////////////////////////////////////////////////////////////////
-void EzMainWin::_releaseAcquireUpdateBuffer(DrawableBuffer*db){
-  // if(_app._initdata->_update_rendersync){
-  //    DrawableBuffer::releaseFromWriteLocked(db);
-  //}
-  // else {
-  // DrawableBuffer::releaseFromWrite(db);
-  //}
-}
-///////////////////////////////////////////////////////////////////////////////
-void EzMainWin::_beginFrame(const DrawableBuffer* dbuf) {
-  auto try_ctx = dbuf->getUserProperty("CONTEXT"_crcu);
-  _curframecontext->beginFrame();
-}
-///////////////////////////////////////////////////////////////////////////////
-void EzMainWin::_endFrame(const DrawableBuffer* dbuf) {
-  if (_update_rendersync) {
-    // auto do_rlock = dbuf->getUserProperty("RENDERLOCK"_crcu);
-    // if (auto as_lock = do_rlock.tryAs<atom_rlock_ptr_t>()) {
-    // as_lock.value()->store(1);
-    //}
-  }
-  _curframecontext->endFrame();
-  // if(_app._initdata->_update_rendersync){
-  // DrawableBuffer::releaseFromReadLocked(dbuf);
-  //}
-  // else{
-  // DrawableBuffer::releaseFromRead(dbuf);
-  //}
-}
-///////////////////////////////////////////////////////////////////////////////
-void EzMainWin::withAcquiredUpdateDrawBuffer(int debugcode, std::function<void(const AcquiredUpdateDrawBuffer&)> l) {
-  DrawableBuffer* DB = nullptr;
-
-  if (_update_rendersync) {
-    // DB = DrawableBuffer::acquireForWriteLocked();
-  } else {
-    // DB = DrawableBuffer::acquireForWrite(debugcode);
-  }
-
-  if (DB) {
-    DB->Reset();
-    AcquiredUpdateDrawBuffer udb;
-    udb._DB = DB;
-    l(udb);
-    if (_update_rendersync)
-      _updateEnqueueLockedAndReleaseFrame(DB);
-    else
-      _updateEnqueueUnlockedAndReleaseFrame(DB);
-  }
-}
-///////////////////////////////////////////////////////////////////////////////
-EzMainWin::~EzMainWin() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 

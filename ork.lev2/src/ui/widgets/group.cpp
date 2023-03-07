@@ -53,11 +53,11 @@ void Group::drawChildren(ui::drawevent_constptr_t drwev) {
   }
 }
 /////////////////////////////////////////////////////////////////////////
-void Group::OnResize() {
+void Group::_doOnResized() {
   // printf( "Group<%s>::OnResize x<%d> y<%d> w<%d> h<%d>\n", _name.c_str(), miX, miY, miW, miH );
   for (auto& it : _children) {
     if (it->mSizeDirty)
-      it->OnResize();
+      it->_doOnResized();
   }
 }
 /////////////////////////////////////////////////////////////////////////
@@ -93,7 +93,7 @@ LayoutGroup::LayoutGroup(const std::string& name, int x, int y, int w, int h)
   _layout = std::make_shared<anchor::Layout>(this);
 }
 /////////////////////////////////////////////////////////////////////////
-void LayoutGroup::OnResize() {
+void LayoutGroup::_doOnResized() {
 }
 /////////////////////////////////////////////////////////////////////////
 void LayoutGroup::DoLayout() {
