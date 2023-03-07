@@ -16,7 +16,7 @@ namespace ork::ui {
 // LayoutGroup :  collection of widgets which are layed out...
 ////////////////////////////////////////////////////////////////////
 
-template <typename T> struct LayoutItem {
+struct LayoutItemBase {
 
   inline void applyBounds(const anchor::Bounds& bounds) {
     if (bounds._top)
@@ -30,8 +30,14 @@ template <typename T> struct LayoutItem {
     _layout->setMargin(bounds._margin);
   }
 
-  std::shared_ptr<T> _widget;
+  std::shared_ptr<Widget> _widget;
   anchor::layout_ptr_t _layout;
+};
+
+template <typename T> struct LayoutItem : public LayoutItemBase {
+  std::shared_ptr<T> typedWidget(){
+    return dynamic_pointer_cast<T>(_widget);
+  }
 };
 
 struct LayoutGroup : public Group {

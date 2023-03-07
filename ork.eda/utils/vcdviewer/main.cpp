@@ -112,7 +112,7 @@ int main(int argc, char** argv, char** envp) {
 
     auto labclr = (i & 1) ? fvec4(0.1, 0.1, 0.1, 1.0) : fvec4(0.2, 0.2, 0.2, 1.0);
 
-    auto w  = w_tracks._widget->makeChild<Label>(sigtrack._name, labclr, label);
+    auto w  = w_tracks.typedWidget()->makeChild<Label>(sigtrack._name, labclr, label);
     auto wl = w._layout;
     wl->top()->anchorTo(gtop);
     wl->bottom()->anchorTo(gbot);
@@ -121,18 +121,18 @@ int main(int argc, char** argv, char** envp) {
 
     auto trkclr = (i & 1) ? fvec4(0.1, 0.0, 0.1, 1.0) : fvec4(0.0, 0.0, 0.1, 1.0);
 
-    auto t  = w_tracks._widget->makeChild<SignalTrackWidget>(sigtrack._signal, trkclr);
+    auto t  = w_tracks.typedWidget()->makeChild<SignalTrackWidget>(sigtrack._signal, trkclr);
     auto tl = t._layout;
     tl->top()->anchorTo(gtop);
     tl->bottom()->anchorTo(gbot);
     tl->left()->anchorTo(selx_guide);
     tl->right()->anchorTo(l_tracks->right());
 
-    viewparams->_sigtracks.push_back(t._widget);
+    viewparams->_sigtracks.push_back(t.typedWidget());
   }
   //////////////////////////////////////
   auto overlay = Overlay::instance();
-  auto ol      = w_tracks._widget->layoutAndAddChild(overlay);
+  auto ol      = w_tracks.typedWidget()->layoutAndAddChild(overlay);
   ol->top()->anchorTo(l_tracks->top());
   ol->bottom()->anchorTo(l_tracks->bottom());
   ol->left()->anchorTo(l_tracks->left());

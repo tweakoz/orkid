@@ -27,7 +27,7 @@ hudpanel_ptr_t createEnvYmEditView(
   auto hudpanel    = std::make_shared<HudPanel>();
   auto envviewitem = vp->makeChild<ui::LayoutGroup>("ymenvview", 0, 0, 0, 0);
   envviewitem.applyBounds(bounds);
-  vp->addChild(envviewitem._widget);
+  vp->addChild(envviewitem.typedWidget());
   auto ymenvdata = std::dynamic_pointer_cast<YmEnvData>(envdata);
   OrkAssert(ymenvdata);
   ////////////////////////////////////////////////
@@ -50,15 +50,15 @@ hudpanel_ptr_t createEnvYmEditView(
   ////////////////////////////////////////////////
   //
   auto hdrstr     = FormatString("YmEnv: %s", ymenvdata->_name.c_str());
-  auto headeritem = envviewitem._widget->makeChild<ui::Label>("header", color, hdrstr);
+  auto headeritem = envviewitem.typedWidget()->makeChild<ui::Label>("header", color, hdrstr);
   headeritem.applyBounds({guidevt, guidehl, guidev0, guidehr, 2});
   //
-  auto atkshapeitem = envviewitem._widget->makeChild<ui::Dial>("atkshape", color);
-  auto atktimeitem  = envviewitem._widget->makeChild<ui::Dial>("atktime", color);
-  auto dc1rateitem  = envviewitem._widget->makeChild<ui::Dial>("dc1rate", color);
-  auto dc1levelitem = envviewitem._widget->makeChild<ui::Dial>("dc1level", color);
-  auto dc2rateitem  = envviewitem._widget->makeChild<ui::Dial>("dc2rate", color);
-  auto relrateitem  = envviewitem._widget->makeChild<ui::Dial>("relrate", color);
+  auto atkshapeitem = envviewitem.typedWidget()->makeChild<ui::Dial>("atkshape", color);
+  auto atktimeitem  = envviewitem.typedWidget()->makeChild<ui::Dial>("atktime", color);
+  auto dc1rateitem  = envviewitem.typedWidget()->makeChild<ui::Dial>("dc1rate", color);
+  auto dc1levelitem = envviewitem.typedWidget()->makeChild<ui::Dial>("dc1level", color);
+  auto dc2rateitem  = envviewitem.typedWidget()->makeChild<ui::Dial>("dc2rate", color);
+  auto relrateitem  = envviewitem.typedWidget()->makeChild<ui::Dial>("relrate", color);
   //
   atkshapeitem.applyBounds({guidev0, guidehl, guidevb, guideh0, 2});
   atktimeitem.applyBounds({guidev0, guideh0, guidevb, guideh1, 2});
@@ -67,31 +67,31 @@ hudpanel_ptr_t createEnvYmEditView(
   dc2rateitem.applyBounds({guidev0, guideh3, guidevb, guideh4, 2});
   relrateitem.applyBounds({guidev0, guideh4, guidevb, guidehr, 2});
   //
-  atkshapeitem._widget->_label = "AttackShape";
-  atktimeitem._widget->_label  = "AttackRate(x)";
-  dc1rateitem._widget->_label  = "Decay1Rate(x)";
-  dc1levelitem._widget->_label = "DecayLevel";
-  dc2rateitem._widget->_label  = "Decay2Rate(x)";
-  relrateitem._widget->_label  = "ReleaseRata(x)";
-  atktimeitem._widget->_font   = "i13";
-  dc1rateitem._widget->_font   = "i13";
-  dc1levelitem._widget->_font  = "i13";
-  dc2rateitem._widget->_font   = "i13";
-  relrateitem._widget->_font   = "i13";
+  atkshapeitem.typedWidget()->_label = "AttackShape";
+  atktimeitem.typedWidget()->_label  = "AttackRate(x)";
+  dc1rateitem.typedWidget()->_label  = "Decay1Rate(x)";
+  dc1levelitem.typedWidget()->_label = "DecayLevel";
+  dc2rateitem.typedWidget()->_label  = "Decay2Rate(x)";
+  relrateitem.typedWidget()->_label  = "ReleaseRata(x)";
+  atktimeitem.typedWidget()->_font   = "i13";
+  dc1rateitem.typedWidget()->_font   = "i13";
+  dc1levelitem.typedWidget()->_font  = "i13";
+  dc2rateitem.typedWidget()->_font   = "i13";
+  relrateitem.typedWidget()->_font   = "i13";
   //
-  atkshapeitem._widget->setParams(251, ymenvdata->_attackShape, 0, 10, 2.0);
-  atktimeitem._widget->setParams(251, ymenvdata->_attackRate, 0, 60, 2.0);
-  dc1rateitem._widget->setParams(1001, ymenvdata->_decay1Rate, 0.99, 0.9999, 0.1);
-  dc1levelitem._widget->setParams(101, ymenvdata->_decay1Level, 0, 1, 1.0);
-  dc2rateitem._widget->setParams(1001, ymenvdata->_decay2Rate, 0.99, 0.9999, 0.1);
-  relrateitem._widget->setParams(1001, ymenvdata->_releaseRate, 0.99, 0.9999, 0.1);
+  atkshapeitem.typedWidget()->setParams(251, ymenvdata->_attackShape, 0, 10, 2.0);
+  atktimeitem.typedWidget()->setParams(251, ymenvdata->_attackRate, 0, 60, 2.0);
+  dc1rateitem.typedWidget()->setParams(1001, ymenvdata->_decay1Rate, 0.99, 0.9999, 0.1);
+  dc1levelitem.typedWidget()->setParams(101, ymenvdata->_decay1Level, 0, 1, 1.0);
+  dc2rateitem.typedWidget()->setParams(1001, ymenvdata->_decay2Rate, 0.99, 0.9999, 0.1);
+  relrateitem.typedWidget()->setParams(1001, ymenvdata->_releaseRate, 0.99, 0.9999, 0.1);
   //
-  atkshapeitem._widget->_onupdate = [ymenvdata](float v) { ymenvdata->_attackShape = v; };
-  atktimeitem._widget->_onupdate  = [ymenvdata](float v) { ymenvdata->_attackRate = v; };
-  dc1rateitem._widget->_onupdate  = [ymenvdata](float v) { ymenvdata->_decay1Rate = v; };
-  dc1levelitem._widget->_onupdate = [ymenvdata](float v) { ymenvdata->_decay1Level = v; };
-  dc2rateitem._widget->_onupdate  = [ymenvdata](float v) { ymenvdata->_decay2Rate = v; };
-  relrateitem._widget->_onupdate  = [ymenvdata](float v) { ymenvdata->_releaseRate = v; };
+  atkshapeitem.typedWidget()->_onupdate = [ymenvdata](float v) { ymenvdata->_attackShape = v; };
+  atktimeitem.typedWidget()->_onupdate  = [ymenvdata](float v) { ymenvdata->_attackRate = v; };
+  dc1rateitem.typedWidget()->_onupdate  = [ymenvdata](float v) { ymenvdata->_decay1Rate = v; };
+  dc1levelitem.typedWidget()->_onupdate = [ymenvdata](float v) { ymenvdata->_decay1Level = v; };
+  dc2rateitem.typedWidget()->_onupdate  = [ymenvdata](float v) { ymenvdata->_decay2Rate = v; };
+  relrateitem.typedWidget()->_onupdate  = [ymenvdata](float v) { ymenvdata->_releaseRate = v; };
   ///////////////////////////////////////////////////////////////////////
   return hudpanel;
 }

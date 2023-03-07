@@ -40,7 +40,7 @@ signalscope_ptr_t create_oscilloscope(
   auto scopesurf   = std::make_shared<ScopeSurf>();
   auto uipanelitem = vp->makeChild<ui::Panel>("scope", 0, 0, 32, 32);
   uipanelitem.applyBounds(bounds);
-  hudpanel->_uipanel                = uipanelitem._widget;
+  hudpanel->_uipanel                = uipanelitem.typedWidget();
   hudpanel->_panelLayout            = uipanelitem._layout;
   hudpanel->_uipanel->_closeEnabled = false;
   hudpanel->_uipanel->_moveEnabled  = false;

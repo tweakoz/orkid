@@ -39,6 +39,13 @@ class MinimalUiApp(object):
     print(self.ezapp.topLayoutGroup.layout.centerH)
     print(self.ezapp.topLayoutGroup.layout.centerV)
     print(self.ezapp.uicontext)
+
+    self.ezapp.topLayoutGroup.makeGrid( width = 2,
+                                        height = 2,
+                                        margin = 1,
+                                        uiclass = ui.UiBox,
+                                        args = ["box",vec4(1,0,1,1)] )
+
     #assert(False)
     # make a panel/group widget that has 4 children
     # convert ezviewport to that format

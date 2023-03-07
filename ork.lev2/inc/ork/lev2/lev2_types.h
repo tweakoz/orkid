@@ -433,6 +433,9 @@ namespace ork::ui{
   struct LayoutGroup;
   struct Surface;
   struct Viewport;
+  struct Box;
+  struct EvTestBox;
+  struct LayoutItemBase;
   namespace anchor {
     struct Layout;
 	struct Guide;
@@ -443,8 +446,11 @@ using uidrawevent_ptr_t = std::shared_ptr<::ork::ui::DrawEvent>;
 using uiwidget_ptr_t = std::shared_ptr<::ork::ui::Widget>;
 using uigroup_ptr_t = std::shared_ptr<::ork::ui::Group>;
 using uilayoutgroup_ptr_t = std::shared_ptr<::ork::ui::LayoutGroup>;
+using uilayoutitem_ptr_t = std::shared_ptr<::ork::ui::LayoutItemBase>;
 using uisurface_ptr_t = std::shared_ptr<::ork::ui::Surface>;
 using uiviewport_ptr_t = std::shared_ptr<::ork::ui::Viewport>;
+using uibox_ptr_t = std::shared_ptr<::ork::ui::Box>;
+using uievtestbox_ptr_t = std::shared_ptr<::ork::ui::EvTestBox>;
 using uilayout_ptr_t = std::shared_ptr<::ork::ui::anchor::Layout>;
 using uiguide_ptr_t = std::shared_ptr<::ork::ui::anchor::Guide>;
 ///////////////////////////////////////////////////////////////////////////////

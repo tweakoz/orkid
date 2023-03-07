@@ -12,6 +12,7 @@
 #include <ork/lev2/ui/viewport.h>
 #include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/lev2/ui/anchor.h>
+#include <ork/lev2/ui/box.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -142,6 +143,46 @@ void pyinit_ui(py::module& module_lev2) {
       })
       .def("layoutAndAddChild", [](uilayoutgroup_ptr_t lgrp, uiwidget_ptr_t w) -> uilayout_ptr_t { //
         return lgrp->layoutAndAddChild(w);
+      })
+      .def("makeGrid", [](uilayoutgroup_ptr_t lgrp, py::kwargs kwargs ) -> py::list { //
+        py::list rval;
+            if (kwargs) {
+              int width = 0;
+              int height = 0;
+              int margin = 0;
+              py::list args;
+              py::object uigrid_factory;
+              int args_parsed = 0;
+              for (auto item : kwargs) {
+                auto key = py::cast<std::string>(item.first);
+                if (key == "width") {
+                  width = py::cast<int>(item.second);
+                  args_parsed++;
+                }
+                else if (key == "height") {
+                  height = py::cast<int>(item.second);
+                  args_parsed++;
+                }
+                else if (key == "margin") {
+                  margin = py::cast<int>(item.second);
+                  args_parsed++;
+                }
+                else if (key == "uiclass") {
+                  auto uiclass_obj = py::cast<py::object>(item.second);
+                  bool has_uifactory   = py::hasattr(uiclass_obj, "uigridfactory");
+                  OrkAssert(has_uifactory);
+                  uigrid_factory = uiclass_obj.attr("uigridfactory");
+                  args_parsed++;
+                }
+                else if (key == "args") {
+                  args = py::cast<py::list>(item.second);
+                  args_parsed++;
+                }
+              }
+              OrkAssert(args_parsed==5);
+              rval = uigrid_factory(lgrp,width,height,margin,args);
+            }
+        return rval;
       });
   type_codec->registerStdCodec<uilayoutgroup_ptr_t>(layoutgroup_type);
   /////////////////////////////////////////////////////////////////////////////////
@@ -152,6 +193,35 @@ void pyinit_ui(py::module& module_lev2) {
   auto viewport_type = //
       py::class_<ui::Viewport, ui::Surface, uiviewport_ptr_t >(uimodule, "UiViewport");
   type_codec->registerStdCodec<uiviewport_ptr_t>(viewport_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto box_type = //
+      py::class_<ui::Box, ui::Widget, uibox_ptr_t >(uimodule, "UiBox")
+      .def_static("uigridfactory", [type_codec](uilayoutgroup_ptr_t lg, int w, int h, int m, py::list args) -> py::list { //
+        py::list rval;
+        //////////////////////////////
+        // decode args
+        //////////////////////////////
+        std::vector<svar64_t> decoded_args;
+        for( auto list_item : args ){
+          auto item_val = py::cast<py::object>(list_item);
+          svar64_t val = type_codec->decode(item_val);
+          decoded_args.push_back(val);
+        }
+        //////////////////////////////
+        // invoke
+        //////////////////////////////
+        auto name = decoded_args[0].get<std::string>();
+        auto color = decoded_args[1].get<fvec4>();
+        auto layoutitems = lg->makeGridOfWidgets<ui::Box>(w,h,name,color);
+        for( auto item : layoutitems ){
+          auto shared_item = std::make_shared<ui::LayoutItemBase>();
+          shared_item->_widget = item._widget;
+          shared_item->_layout = item._layout;
+          rval.append(shared_item);
+        }
+        return rval;
+      });
+  type_codec->registerStdCodec<uibox_ptr_t>(box_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto layout_type = //
       py::class_<ui::anchor::Layout, uilayout_ptr_t >(uimodule, "UiLayout")
@@ -250,6 +320,16 @@ void pyinit_ui(py::module& module_lev2) {
         return guide->_proportion;
       });
   type_codec->registerStdCodec<uiguide_ptr_t>(guide_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto litem_type = //
+      py::class_<ui::LayoutItemBase, uilayoutitem_ptr_t >(uimodule, "LayoutItem")
+      .def_property_readonly("widget", [](uilayoutitem_ptr_t item) -> uiwidget_ptr_t { //
+        return item->_widget;
+      })
+      .def_property_readonly("layout", [](uilayoutitem_ptr_t item) -> uilayout_ptr_t { //
+        return item->_layout;
+      });
+  type_codec->registerStdCodec<uilayoutitem_ptr_t>(litem_type);
   /////////////////////////////////////////////////////////////////////////////////
 }
 

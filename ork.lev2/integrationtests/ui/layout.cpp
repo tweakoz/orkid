@@ -24,12 +24,12 @@ int main(int argc, char** argv, char** envp) {
   auto w1                  = vp->makeChild<SplitPanel>("w1");
   auto w2                  = vp->makeChild<LayoutGroup>("w2", 0, 0, 0, 0);
   auto w3                  = vp->makeChild<EvTestBox>("w3", fvec4(0, 1, 0, 1));
-  w1._widget->_moveEnabled = false;
+  w1.typedWidget()->_moveEnabled = false;
   //////////////////////////////////////
   auto panel_w0 = std::make_shared<EvTestBox>("panel-w0", fvec4(0, 1, 1, 1));
   auto panel_w1 = std::make_shared<LayoutGroup>("panel-w1");
-  w1._widget->setChild1(panel_w0);
-  w1._widget->setChild2(panel_w1);
+  w1.typedWidget()->setChild1(panel_w0);
+  w1.typedWidget()->setChild2(panel_w1);
   //////////////////////////////////////
   auto root_layout = vp->_layout;
   auto l0          = w0._layout;
@@ -65,7 +65,7 @@ int main(int argc, char** argv, char** envp) {
   l3->bottom()->anchorTo(root_layout->bottom()); // 20,21
   l3->right()->anchorTo(root_layout->right());   // 22
   //////////////////////////////////////
-  w2._widget->makeGridOfWidgets<EvTestBox>(4,4,"yo",fvec4(1, 1, 1, 1));
+  w2.typedWidget()->makeGridOfWidgets<EvTestBox>(4,4,"yo",fvec4(1, 1, 1, 1));
   panel_w1->makeGridOfWidgets<EvTestBox>(8,8,"yo",fvec4(0.25, 0, 0.4, 1));
   //////////////////////////////////////
   root_layout->dump();

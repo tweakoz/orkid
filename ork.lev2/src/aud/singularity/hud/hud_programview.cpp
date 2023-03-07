@@ -37,7 +37,7 @@ hudpanel_ptr_t createProgramView(
   auto programview = std::make_shared<ProgramView>();
   auto uipanelitem = vp->makeChild<ui::Panel>("progview", 0, 0, 32, 32);
   uipanelitem.applyBounds(bounds);
-  hudpanel->_uipanel                = uipanelitem._widget;
+  hudpanel->_uipanel                = uipanelitem.typedWidget();
   hudpanel->_panelLayout            = uipanelitem._layout;
   hudpanel->_uipanel->_closeEnabled = false;
   hudpanel->_uipanel->_moveEnabled  = false;
