@@ -29,61 +29,46 @@ class MinimalUiApp(object):
     print(self.ezapp.mainwin.appwin)
     print(self.ezapp.topWidget)
     print(self.ezapp.topWidget.name)
-    print(self.ezapp.topLayoutGroup.name)
-    print(self.ezapp.topLayoutGroup)
-    print(self.ezapp.topLayoutGroup.layout)
-    print(self.ezapp.topLayoutGroup.layout.top)
-    print(self.ezapp.topLayoutGroup.layout.bottom)
-    print(self.ezapp.topLayoutGroup.layout.left)
-    print(self.ezapp.topLayoutGroup.layout.right)
-    print(self.ezapp.topLayoutGroup.layout.centerH)
-    print(self.ezapp.topLayoutGroup.layout.centerV)
+
+    lg_group = self.ezapp.topLayoutGroup
+
+    print(lg_group.name)
+    print(lg_group)
+    print(lg_group.layout)
+    print(lg_group.layout.top)
+    print(lg_group.layout.bottom)
+    print(lg_group.layout.left)
+    print(lg_group.layout.right)
+    print(lg_group.layout.centerH)
+    print(lg_group.layout.centerV)
     print(self.ezapp.uicontext)
 
-    self.ezapp.topLayoutGroup.makeGrid( width = 2,
-                                        height = 2,
-                                        margin = 1,
-                                        uiclass = ui.UiBox,
-                                        args = ["box",vec4(1,0,1,1)] )
+    griditems = lg_group.makeGrid( width = 2,
+                                   height = 2,
+                                   margin = 1,
+                                   uiclass = ui.UiBox,
+                                   args = ["box",vec4(1,0,1,1)] )
 
-    #assert(False)
-    # make a panel/group widget that has 4 children
-    # convert ezviewport to that format
-    # for the single view case have the ezviewport 
-    # only have 1 view dest
-    # for the quad case, each child is capable of acting as a 
-    # scenegraph "view" destination
-    # assign the quad panel top to the rootWidget
-    self.materials = set()
-    setupUiCamera( app=self, 
-                   eye = vec3(10,10,10), 
-                   constrainZ=True, 
-                   up=vec3(0,1,0))
+    #self.ezapp.topWidget = lg_group
+
 
   ##############################################
 
   def onGpuInit(self,ctx):
-    sceneparams = VarMap()
-    sceneparams.preset = "DeferredPBR"
-    # assign the "views" as a part of params
-    self.scene = self.ezapp.createScene(sceneparams)
-    self.layer1 = self.scene.createLayer("layer1")
-    self.rendernode = self.scene.compositorrendernode
-    self.grid_data = createGridData()
-    self.grid_node = self.layer1.createGridNode("grid",self.grid_data)
-    self.grid_node.sortkey = 1
+    pass
 
   ################################################
 
   def onUpdate(self,updinfo):
-    self.scene.updateScene(self.cameralut) # update and enqueue all scenenodes
+    pass
 
   ##############################################
 
   def onUiEvent(self,uievent):
-    handled = self.uicam.uiEventHandler(uievent)
-    if handled:
-      self.camera.copyFrom( self.uicam.cameradata )
+    pass
+    #handled = self.uicam.uiEventHandler(uievent)
+    #if handled:
+    #  self.camera.copyFrom( self.uicam.cameradata )
 
 ###############################################################################
 
