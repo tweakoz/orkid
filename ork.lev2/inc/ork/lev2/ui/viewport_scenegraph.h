@@ -9,6 +9,7 @@
 
 #include <ork/lev2/ui/ui.h>
 #include <ork/lev2/ui/viewport.h>
+#include <ork/lev2/gfx/scenegraph/scenegraph.h>
 
 namespace ork { namespace ui {
 
@@ -17,7 +18,7 @@ struct SceneGraphViewport : public Viewport {
 public:
   SceneGraphViewport(const std::string& name, int x=0, int y=0, int w=0, int h=0);
   void DoRePaintSurface(ui::drawevent_constptr_t drwev) final;
-
+  lev2::scenegraph::scene_ptr_t _scenegraph;
 };
 
 }} // namespace ork::ui

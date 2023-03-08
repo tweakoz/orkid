@@ -304,7 +304,16 @@ void pyinit_ui(py::module& module_lev2) {
                   rval.append(shared_item);
                 }
                 return rval;
-              });
+              })
+          //////////////////////////////////
+          .def_property(
+              "scenegraph",
+              [](uisgviewport_ptr_t sgview) -> lev2::scenegraph::scene_ptr_t { //
+                return sgview->_scenegraph;
+              },
+              [](uisgviewport_ptr_t sgview, lev2::scenegraph::scene_ptr_t sg) 
+                { return sgview->_scenegraph = sg; 
+                });
   type_codec->registerStdCodec<uisgviewport_ptr_t>(sgviewport_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto layout_type = //
@@ -315,7 +324,7 @@ void pyinit_ui(py::module& module_lev2) {
               [](uilayout_ptr_t layout) -> uiguide_ptr_t { //
                 return layout->top();
               },
-              [](uilayout_ptr_t layout, uiguide_ptr_t g) { return layout->_top = g; })
+              [](uilayout_ptr_t layout, uiguide_ptr_t g) { layout->_top = g; })
           //////////////////////////////////
           .def_property(
               "bottom",

@@ -22,21 +22,33 @@ class UiSgQuadViewTestApp(object):
 
   def __init__(self):
     super().__init__()
+
     self.ezapp = OrkEzApp.create(self)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
+
+    # enable UI draw mode
     self.ezapp.topWidget.enableUiDraw()
+
+    # make a grid of scenegraph viewports
+
     lg_group = self.ezapp.topLayoutGroup
-    griditems = lg_group.makeGrid( width = 2,
-                                   height = 2,
-                                   margin = 1,
-                                   uiclass = ui.UiSceneGraphViewport,
-                                   args = ["box",vec4(1,0,1,1)] )
+    self.griditems = lg_group.makeGrid( width = 2,
+                                        height = 2,
+                                        margin = 1,
+                                        uiclass = ui.UiSceneGraphViewport,
+                                        args = ["box",vec4(1,0,1,1)] )
 
   ##############################################
 
   def onGpuInit(self,ctx):
-    self.cameralut = self.ezapp.vars.cameras
+
+    # get dbufcontext (to share across all viewports)
+
     self.dbufcontext = self.ezapp.vars.dbufcontext
+
+    # create cameras    
+
+    self.cameralut = self.ezapp.vars.cameras
 
     self.cameraA, self.uicamA = setupUiCameraX( cameralut=self.cameralut,
                                                 camname="cameraA")
@@ -49,7 +61,8 @@ class UiSgQuadViewTestApp(object):
 
     self.cameraD, self.uicamD = setupUiCameraX( cameralut=self.cameralut,
                                                 camname="cameraD")
-    
+    # create scenegraph    
+
     sg_params = VarMap()
     sg_params.SkyboxIntensity = 1.0
     sg_params.preset = "DeferredPBR"
@@ -62,16 +75,17 @@ class UiSgQuadViewTestApp(object):
     self.grid_node.sortkey = 1
     self.rendernode = self.scenegraph.compositorrendernode
 
+    # assign shared scenegraph to all sg viewports
 
-    #griditems[0].scenegraph = sg
-    #griditems[1].scenegraph = sg
-    #griditems[2].scenegraph = sg
-    #griditems[3].scenegraph = sg
+    self.griditems[0].widget.scenegraph = self.scenegraph
+    self.griditems[1].widget.scenegraph = self.scenegraph
+    self.griditems[2].widget.scenegraph = self.scenegraph
+    self.griditems[3].widget.scenegraph = self.scenegraph
 
   ################################################
 
   def onUpdate(self,updinfo):
-    self.scenegraph.updateScene(self.cameralut) # update and enqueue all scenenodes
+    self.scenegraph.updateScene(self.cameralut) 
     pass
 
 ###############################################################################
