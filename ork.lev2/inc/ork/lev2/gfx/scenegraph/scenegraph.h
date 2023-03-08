@@ -190,10 +190,10 @@ struct Scene {
 
   void enqueueToRenderer(cameradatalut_ptr_t cameras,on_enqueue_fn_t on_enqueue=[](DrawableBuffer* DB){});
   void renderOnContext(Context* ctx);
-  void renderOnContext(Context* ctx,RenderContextFrameData& RCFD);
+  void renderOnContext(Context* ctx,rcfd_ptr_t RCFD);
   void renderWithStandardCompositorFrame(standardcompositorframe_ptr_t sframe);
 
-  void _renderIMPL(Context* ctx,RenderContextFrameData& RCFD);
+  void _renderIMPL(Context* ctx,rcfd_ptr_t RCFD);
 
   void gpuInit(Context* ctx);
   void gpuExit(Context* ctx);

@@ -146,7 +146,7 @@ struct RenderContextFrameData {
   compositorimpl_ptr_t _cimpl;
   LightManager* _lightmgr = nullptr;
   usermap_t _userProperties;
-  Context* const _target = nullptr;
+  Context* _target = nullptr;
   const IRenderer* _renderer;
   RenderingModel _renderingmodel;
   pbr::commonstuff_ptr_t _pbrcommon;

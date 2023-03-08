@@ -31,6 +31,10 @@ void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   auto mtxi   = tgt->MTXI();
   auto fbi    = tgt->FBI();
     fbi->Clear(_clearColor,1.0f);
+
+  auto acq_draw_buffer = drwev->_acqdbuf;
+  //auto DB = _dbufcontext_SG->acquireForReadLocked();
+
 }
 // Surface::DoDraw()
 

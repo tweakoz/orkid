@@ -562,7 +562,7 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras,on_enqueue_fn_t on_enq
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Scene::_renderIMPL(Context* context,RenderContextFrameData& RCFD){
+void Scene::_renderIMPL(Context* context,rcfd_ptr_t RCFD){
 
   if (_dogpuinit) {
     gpuInit(context);
@@ -577,15 +577,15 @@ void Scene::_renderIMPL(Context* context,RenderContextFrameData& RCFD){
 
   auto DB = _dbufcontext_SG->acquireForReadLocked();
 
-  RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
+  RCFD->setUserProperty("DB"_crc, lev2::rendervar_t(DB));
 
-  RCFD.setUserProperty("time"_crc,_currentTime);
+  RCFD->setUserProperty("time"_crc,_currentTime);
 
-  RCFD._cimpl = _compositorImpl;
+  RCFD->_cimpl = _compositorImpl;
 
   _renderer->setContext(context);
 
-  context->pushRenderContextFrameData(&RCFD);
+  context->pushRenderContextFrameData(RCFD.get());
   auto fbi  = context->FBI();  // FrameBufferInterface
   auto fxi  = context->FXI();  // FX Interface
   auto mtxi = context->MTXI(); // matrix Interface
@@ -608,7 +608,7 @@ void Scene::_renderIMPL(Context* context,RenderContextFrameData& RCFD){
   fbi->setScissor(tgtrect);
   if (1) {
     context->beginFrame();
-    FrameRenderer framerenderer(RCFD, [&]() {});
+    FrameRenderer framerenderer(*RCFD, [&]() {});
     CompositorDrawData drawdata(framerenderer);
     drawdata._properties["primarycamindex"_crcu].set<int>(0);
     drawdata._properties["cullcamindex"_crcu].set<int>(0);
@@ -663,7 +663,7 @@ void Scene::renderWithStandardCompositorFrame(standardcompositorframe_ptr_t sfra
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Scene::renderOnContext(Context* context, RenderContextFrameData& RCFD) {
+void Scene::renderOnContext(Context* context, rcfd_ptr_t RCFD) {
   _renderIMPL(context,RCFD);
 }
 
@@ -671,8 +671,8 @@ void Scene::renderOnContext(Context* context, RenderContextFrameData& RCFD) {
 
 void Scene::renderOnContext(Context* context) {
   // from SceneGraphSystem::_onRender
-  RenderContextFrameData RCFD(context); // renderer per/frame data
-  _renderIMPL(context,RCFD);
+  auto rcfd = std::make_shared<RenderContextFrameData>(context); // renderer per/frame data
+  _renderIMPL(context,rcfd);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
