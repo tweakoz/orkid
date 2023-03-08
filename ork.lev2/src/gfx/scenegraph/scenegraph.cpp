@@ -646,6 +646,79 @@ void Scene::_renderIMPL(Context* context,rcfd_ptr_t RCFD){
 
 }
 
+void Scene::_renderWithAcquiredRenderDrawBuffer(acqdrawbuffer_constptr_t acqbuf){
+
+  auto DB = acqbuf->_DB;
+  auto rcfd = acqbuf->_RCFD;
+  auto context = rcfd->context();
+
+  if (_dogpuinit) {
+    gpuInit(context);
+  }
+
+  rcfd->setUserProperty("DB"_crc, lev2::rendervar_t(DB));
+
+  rcfd->setUserProperty("time"_crc,_currentTime);
+
+  rcfd->_cimpl = _compositorImpl;
+
+  _renderer->setContext(context);
+
+  context->pushRenderContextFrameData(rcfd.get());
+  auto fbi  = context->FBI();  // FrameBufferInterface
+  auto fxi  = context->FXI();  // FX Interface
+  auto mtxi = context->MTXI(); // matrix Interface
+  auto gbi  = context->GBI();  // GeometryBuffer Interface
+  ///////////////////////////////////////
+  // compositor setup
+  ///////////////////////////////////////
+  float TARGW = fbi->GetVPW();
+  float TARGH = fbi->GetVPH();
+  lev2::UiViewportRenderTarget rt(nullptr);
+  auto tgtrect           = ViewportRect(0, 0, TARGW, TARGH);
+  _topCPD->_irendertarget = &rt;
+  _topCPD->SetDstRect(tgtrect);
+  _compositorImpl->pushCPD(*_topCPD);
+  ///////////////////////////////////////
+  // Draw!
+  ///////////////////////////////////////
+  fbi->SetClearColor(fvec4(0, 0, 0, 1));
+  fbi->setViewport(tgtrect);
+  fbi->setScissor(tgtrect);
+  if (1) {
+    //context->beginFrame();
+    FrameRenderer framerenderer(*rcfd, [&]() {});
+    CompositorDrawData drawdata(framerenderer);
+    drawdata._properties["primarycamindex"_crcu].set<int>(0);
+    drawdata._properties["cullcamindex"_crcu].set<int>(0);
+    drawdata._properties["irenderer"_crcu].set<lev2::IRenderer*>(_renderer.get());
+    drawdata._properties["simrunning"_crcu].set<bool>(true);
+    drawdata._properties["DB"_crcu].set<const DrawableBuffer*>(DB);
+    drawdata._cimpl = _compositorImpl;
+    _compositorImpl->assemble(drawdata);
+    _compositorImpl->composite(drawdata);
+    _compositorImpl->popCPD();
+    context->popRenderContextFrameData();
+
+
+    if(_on_render_complete){
+      _on_render_complete(context);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // debug picking here, so it shows up in renderdoc (within frame boundaries)
+    ////////////////////////////////////////////////////////////////////////////
+    if (0) {
+      auto r   = std::make_shared<fray3>(fvec3(0, 0, 5), fvec3(0, 0, -1));
+      auto val = pickWithRay(r);
+      // printf("%zx\n", val);
+    }
+    ////////////////////////////////////////////////////////////////////////////
+
+    //context->endFrame();
+  }  
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void Scene::renderWithStandardCompositorFrame(standardcompositorframe_ptr_t sframe){

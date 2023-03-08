@@ -194,6 +194,7 @@ struct Scene {
   void renderWithStandardCompositorFrame(standardcompositorframe_ptr_t sframe);
 
   void _renderIMPL(Context* ctx,rcfd_ptr_t RCFD);
+  void _renderWithAcquiredRenderDrawBuffer(acqdrawbuffer_constptr_t acqbuf);
 
   void gpuInit(Context* ctx);
   void gpuExit(Context* ctx);
