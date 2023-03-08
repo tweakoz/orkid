@@ -51,12 +51,7 @@ void Surface::GetPixel(int ix, int iy, lev2::PixelFetchContext& ctx) {
 /////////////////////////////////////////////////////////////////////////
 
 void Surface::_doOnResized(void) {
-  /*printf( "Surface<%s>::OnResize x<%d> y<%d> w<%d> h<%d>\n", _name.c_str(), miX, miY, _geometry._w, _geometry._h );
-
-  if( _rtgroup )
-  {
-      _rtgroup->Resize(width(),height());
-  }*/
+  //printf( "Surface<%s>::OnResize x<%d> y<%d> w<%d> h<%d>\n", _name.c_str(), x(), y(), width(), height() );
   DoSurfaceResize();
   SetDirty();
 }
@@ -84,7 +79,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   int isurfw = width();
   int isurfh = height();
   if (irtgw != isurfw || irtgh != isurfh) {
-    // printf( "resize surface rtgroup<%d %d>\n", isurfw, isurfh);
+     printf( "resize surface rtgroup<%d %d>\n", isurfw, isurfh);
     _rtgroup->Resize(isurfw, isurfh);
     mNeedsSurfaceRepaint = true;
   }

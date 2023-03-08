@@ -26,6 +26,7 @@ SceneGraphViewport::SceneGraphViewport(const std::string& name, int x, int y, in
 
 } 
 
+// Surface::DoDraw()
 
 /////////////////////////////////////////////////////////////////////////
 
