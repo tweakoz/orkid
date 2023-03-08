@@ -436,6 +436,7 @@ namespace ork::ui{
   struct Box;
   struct EvTestBox;
   struct LambdaBox;
+  struct SceneGraphViewport;
   struct LayoutItemBase;
   namespace anchor {
     struct Layout;
@@ -450,6 +451,7 @@ using uilayoutgroup_ptr_t = std::shared_ptr<::ork::ui::LayoutGroup>;
 using uilayoutitem_ptr_t = std::shared_ptr<::ork::ui::LayoutItemBase>;
 using uisurface_ptr_t = std::shared_ptr<::ork::ui::Surface>;
 using uiviewport_ptr_t = std::shared_ptr<::ork::ui::Viewport>;
+using uisgviewport_ptr_t = std::shared_ptr<::ork::ui::SceneGraphViewport>;
 using uibox_ptr_t = std::shared_ptr<::ork::ui::Box>;
 using uievtestbox_ptr_t = std::shared_ptr<::ork::ui::EvTestBox>;
 using uilambdabox_ptr_t = std::shared_ptr<::ork::ui::LambdaBox>;

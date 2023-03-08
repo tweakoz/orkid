@@ -23,30 +23,16 @@ class MinimalUiApp(object):
     super().__init__()
     self.ezapp = OrkEzApp.create(self)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
-    print(self.ezapp.mainwin)
-    print(self.ezapp.mainwin.appwin)
-    print(self.ezapp.topWidget)
-    print(self.ezapp.topWidget.name)
     self.ezapp.topWidget.enableUiDraw()
 
     lg_group = self.ezapp.topLayoutGroup
 
-    print(lg_group.name)
-    print(lg_group)
-    print(lg_group.layout)
-    print(lg_group.layout.top)
-    print(lg_group.layout.bottom)
-    print(lg_group.layout.left)
-    print(lg_group.layout.right)
-    print(lg_group.layout.centerH)
-    print(lg_group.layout.centerV)
-    print(self.ezapp.uicontext)
 
     griditems = lg_group.makeGrid( width = 2,
                                    height = 2,
                                    margin = 1,
-                                   uiclass = ui.UiBox,
-                                   args = ["box",vec4(1,0,1,1)] )
+                                   uiclass = ui.UiSceneGraphViewport,
+                                   args = ["sgvp"] )
 
     #self.ezapp.topWidget = lg_group
 

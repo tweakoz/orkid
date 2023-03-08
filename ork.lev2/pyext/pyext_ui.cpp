@@ -10,6 +10,7 @@
 #include <ork/lev2/ui/group.h>
 #include <ork/lev2/ui/surface.h>
 #include <ork/lev2/ui/viewport.h>
+#include <ork/lev2/ui/viewport_scenegraph.h>
 #include <ork/lev2/ui/layoutgroup.inl>
 #include <ork/lev2/ui/anchor.h>
 #include <ork/lev2/ui/box.h>
@@ -217,11 +218,11 @@ void pyinit_ui(py::module& module_lev2) {
   auto box_type = //
       py::class_<ui::Box, ui::Widget, uibox_ptr_t>(uimodule, "UiBox")
           .def_static(
-              "uigridfactory", [decodeUIargs](uilayoutgroup_ptr_t lg, int w, int h, int m, py::list py_args) -> py::list { //
+              "uigridfactory", [decodeUIargs](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
                 auto decoded_args = decodeUIargs(py_args);
                 auto name         = decoded_args[0].get<std::string>();
                 auto color        = decoded_args[1].get<fvec4>();
-                auto layoutitems  = lg->makeGridOfWidgets<ui::Box>(w, h, name, color);
+                auto layoutitems  = lg->makeGridOfWidgets<ui::Box>(grid_w, grid_h, name, color);
                 py::list rval;
                 for (auto item : layoutitems) {
                   auto shared_item     = std::make_shared<ui::LayoutItemBase>();
@@ -236,11 +237,11 @@ void pyinit_ui(py::module& module_lev2) {
   auto evtestbox_type = //
       py::class_<ui::EvTestBox, ui::Widget, uievtestbox_ptr_t>(uimodule, "UiEvTestBox")
           .def_static(
-              "uigridfactory", [decodeUIargs](uilayoutgroup_ptr_t lg, int w, int h, int m, py::list py_args) -> py::list { //
+              "uigridfactory", [decodeUIargs](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
                 auto decoded_args = decodeUIargs(py_args);
                 auto name         = decoded_args[0].get<std::string>();
                 auto color        = decoded_args[1].get<fvec4>();
-                auto layoutitems  = lg->makeGridOfWidgets<ui::EvTestBox>(w, h, name, color);
+                auto layoutitems  = lg->makeGridOfWidgets<ui::EvTestBox>(grid_w, grid_h, name, color);
                 py::list rval;
                 for (auto item : layoutitems) {
                   auto shared_item     = std::make_shared<ui::LayoutItemBase>();
@@ -256,11 +257,11 @@ void pyinit_ui(py::module& module_lev2) {
       py::class_<ui::LambdaBox, ui::Widget, uilambdabox_ptr_t>(uimodule, "UiLambdaBox")
           .def_static(
               "uigridfactory",
-              [decodeUIargs](uilayoutgroup_ptr_t lg, int w, int h, int m, py::list py_args) -> py::list { //
+              [decodeUIargs](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
                 auto decoded_args = decodeUIargs(py_args);
                 auto name         = decoded_args[0].get<std::string>();
                 auto color        = decoded_args[1].get<fvec4>();
-                auto layoutitems  = lg->makeGridOfWidgets<ui::LambdaBox>(w, h, name, color);
+                auto layoutitems  = lg->makeGridOfWidgets<ui::LambdaBox>(grid_w, grid_h, name, color);
                 py::list rval;
                 for (auto item : layoutitems) {
                   auto shared_item     = std::make_shared<ui::LayoutItemBase>();
@@ -279,6 +280,26 @@ void pyinit_ui(py::module& module_lev2) {
             };
           });
   type_codec->registerStdCodec<uilambdabox_ptr_t>(lambdabox_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto sgviewport_type = //
+      py::class_<ui::SceneGraphViewport, ui::Widget, uisgviewport_ptr_t>(uimodule, "UiSceneGraphViewport")
+          .def_static(
+              "uigridfactory",
+              [decodeUIargs](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //
+                auto decoded_args = decodeUIargs(py_args);
+                auto name         = decoded_args[0].get<std::string>();
+                auto layoutitems  = lg->makeGridOfWidgets<ui::SceneGraphViewport>(grid_w, grid_h, name);
+                py::list rval;
+                for (auto item : layoutitems) {
+                  auto shared_item     = std::make_shared<ui::LayoutItemBase>();
+                  printf( "item._widget<%p>\n", (void*) item._widget.get() );
+                  shared_item->_widget = item._widget;
+                  shared_item->_layout = item._layout;
+                  rval.append(shared_item);
+                }
+                return rval;
+              });
+  type_codec->registerStdCodec<uisgviewport_ptr_t>(sgviewport_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto layout_type = //
       py::class_<ui::anchor::Layout, uilayout_ptr_t>(uimodule, "UiLayout")
