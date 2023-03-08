@@ -62,6 +62,7 @@ void Surface::RePaintSurface(ui::drawevent_constptr_t drwev) {
 
 void Surface::_doGpuInit(lev2::Context* context) {
   _rtgroup  = std::make_shared<lev2::RtGroup>(context, 8,8, lev2::MsaaSamples::MSAA_1X);
+  _rtgroup->_name = FormatString("ui::Surface<%p>", (void*) this);
   auto mrt0 = _rtgroup->createRenderTarget(lev2::EBufferFormat::RGBA8);
 }
 

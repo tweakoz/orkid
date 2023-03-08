@@ -108,6 +108,7 @@ struct RtGroup final {
   bool _autoclear  = true;
   fvec4 _clearColor;
   bool _depthOnly = false;
+  std::string _name;
 
 };
 

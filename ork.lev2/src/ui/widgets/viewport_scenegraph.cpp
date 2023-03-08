@@ -32,6 +32,7 @@ SceneGraphViewport::SceneGraphViewport(const std::string& name, int x, int y, in
 void SceneGraphViewport::_doGpuInit(lev2::Context* context) {
   Viewport::_doGpuInit(context);
   _outputnode = std::make_shared<lev2::RtGroupOutputCompositingNode>(_rtgroup);
+  _rtgroup->_name = FormatString("ui::SceneGraphViewport<%p>", (void*) this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -49,12 +50,15 @@ void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     auto DB = acqbuf->_DB;
     auto rcfd = acqbuf->_RCFD;
 
-    auto orig_onode = _scenegraph->_outputNode;
+    auto comptek = _scenegraph->_compositorTechnique;
 
-    _scenegraph->_outputNode = _outputnode;
+    auto orig_onode = comptek->_outputNode;
+
+    
+    comptek->_outputNode = _outputnode;
     _scenegraph->_renderWithAcquiredRenderDrawBuffer(acqbuf);
 
-    _scenegraph->_outputNode = orig_onode;
+    comptek->_outputNode = orig_onode;
 
     ////////////////////////////////////////////////////
 

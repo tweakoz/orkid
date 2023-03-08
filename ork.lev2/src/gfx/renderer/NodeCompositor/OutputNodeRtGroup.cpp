@@ -142,6 +142,11 @@ void RtGroupOutputCompositingNode::composite(CompositorDrawData& drawdata) {
   auto gbi = context->GBI();
   RtGroup* output_rtg = _static_rtg.get();
 
+  printf( "composite into rtg<%s> w<%d> h<%d>\n", //
+           output_rtg->_name.c_str(), //
+           output_rtg->width(), //
+           output_rtg->height() );
+
   if (output_rtg) {
     if (auto try_final = drawdata._properties["final_out"_crcu].tryAs<RtBuffer*>()) {
       auto src_buffer = try_final.value();
