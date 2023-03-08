@@ -116,6 +116,7 @@ struct EzTopWidget : public ui::Group {
   EzTopWidget(EzMainWin* mainwin);
   void _doGpuInit(ork::lev2::Context* pTARG) final;
   void DoDraw(ui::drawevent_constptr_t drwev) final;
+  void enableUiDraw();
   void _doOnResized() final;
   ui::HandlerResult DoOnUiEvent(ui::event_constptr_t ev) final;
   EzMainWin* _mainwin;

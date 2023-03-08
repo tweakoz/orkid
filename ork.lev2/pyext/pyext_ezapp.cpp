@@ -236,7 +236,12 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
   type_codec->registerStdCodec<ezmainwin_ptr_t>(ezmainwin_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto eztopwidget_type = //
-      py::class_<EzTopWidget, ui::Group, eztopwidget_ptr_t>(module_lev2, "EzTopWidget");
+      py::class_<EzTopWidget, ui::Group, eztopwidget_ptr_t>(module_lev2, "EzTopWidget")
+      .def(
+          "enableUiDraw",
+          [](eztopwidget_ptr_t ezw) { //
+              ezw->enableUiDraw();
+          });
   type_codec->registerStdCodec<eztopwidget_ptr_t>(eztopwidget_type);
   /////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

@@ -34,6 +34,41 @@ void EzTopWidget::_doGpuInit(ork::lev2::Context* pTARG) {
 
 }
 /////////////////////////////////////////////////
+void EzTopWidget::enableUiDraw(){
+  auto ezapp = (OrkEzApp*)OrkEzAppBase::get();
+  ezapp->onDraw([=](ui::drawevent_constptr_t drwev) {
+    ////////////////////////////////////////////////
+    auto DB = dbufcontext->acquireForReadLocked();
+    if (nullptr == DB)
+      return;
+    ////////////////////////////////////////////////
+    auto context = drwev->GetTarget();
+    auto fbi     = context->FBI();  // FrameBufferInterface
+    auto fxi     = context->FXI();  // FX Interface
+    auto mtxi    = context->MTXI(); // FX Interface
+    fbi->SetClearColor(fvec4(0.0, 0.0, 0.1, 1));
+    ////////////////////////////////////////////////////
+    // draw the synth HUD
+    ////////////////////////////////////////////////////
+    RenderContextFrameData RCFD(context); // renderer per/frame data
+    RCFD._cimpl = compositorimpl;
+    RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
+    context->pushRenderContextFrameData(&RCFD);
+    lev2::UiViewportRenderTarget rt(nullptr);
+    auto tgtrect        = context->mainSurfaceRectAtOrigin();
+    CPD->_irendertarget = &rt;
+    CPD->SetDstRect(tgtrect);
+    compositorimpl->pushCPD(*CPD);
+    context->beginFrame();
+    mtxi->PushUIMatrix();
+    ezapp->_uicontext->draw(drwev);
+    mtxi->PopUIMatrix();
+    context->endFrame();
+    ////////////////////////////////////////////////////
+    dbufcontext->releaseFromReadLocked(DB);
+  });  
+}
+/////////////////////////////////////////////////
 void EzTopWidget::DoDraw(ui::drawevent_constptr_t drwev) {
   //////////////////////////////////////////////////////
   // ensure onUpdateInit called before onGpuInit!
