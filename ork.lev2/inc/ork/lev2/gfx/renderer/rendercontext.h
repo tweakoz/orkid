@@ -98,7 +98,7 @@ typedef svar64_t rendervar_t;
 
 struct RenderContextFrameData {
 
-  RenderContextFrameData(Context* ptarg);
+  RenderContextFrameData(Context* ptarg=nullptr);
 
   RenderContextFrameData(const RenderContextFrameData&) = delete;
   RenderContextFrameData& operator=(const RenderContextFrameData&) = delete;

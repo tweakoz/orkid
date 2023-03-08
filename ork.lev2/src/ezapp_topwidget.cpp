@@ -44,6 +44,8 @@ void EzTopWidget::enableUiDraw(){
   auto dbufcontext = ezapp->_vars.makeSharedForKey<DrawBufContext>("dbufcontext");
   auto cameras  = ezapp->_vars.makeSharedForKey<CameraDataLut>("cameras");
   auto camdata  = ezapp->_vars.makeSharedForKey<CameraData>("camdata");
+  auto rcfd  = ezapp->_vars.makeSharedForKey<RenderContextFrameData>("RCFD");
+  /////////////////////////////////////////////////////////////////////
   compdata->presetUnlit();
   compdata->mbEnable  = true;
   auto nodetek        = compdata->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
@@ -53,9 +55,13 @@ void EzTopWidget::enableUiDraw(){
   CPD->addStandardLayers();
   (*cameras)["spawncam"] = camdata;
   /////////////////////////////////////////////////////////////////////
+  auto update_buffer = std::make_shared<AcquiredUpdateDrawBuffer>();
+  auto draw_buffer = std::make_shared<AcquiredRenderDrawBuffer>();
+  /////////////////////////////////////////////////////////////////////
   ezapp->onUpdate([=](ui::updatedata_ptr_t updata) {
     auto DB = dbufcontext->acquireForWriteLocked();
     if (DB) {
+      update_buffer->_DB = DB;
       DB->Reset();
       DB->copyCameras(*cameras);
       // ezapp->_eztopwidget->onUpdateThreadTick(updata);
@@ -75,12 +81,15 @@ void EzTopWidget::enableUiDraw(){
     auto mtxi    = context->MTXI(); // FX Interface
     fbi->SetClearColor(fvec4(0.0, 0.0, 0.1, 1));
     ////////////////////////////////////////////////////
-    // draw the synth HUD
+    rcfd->_cimpl = compositorimpl;
+    rcfd->setUserProperty("DB"_crc, lev2::rendervar_t(DB));
+    context->pushRenderContextFrameData(rcfd.get());
+    draw_buffer->_DB = DB;
+    draw_buffer->_RCFD = rcfd;
+
+    auto mutable_drwev = std::const_pointer_cast<ui::DrawEvent>(drwev);
+    mutable_drwev->_acqdbuf = draw_buffer; 
     ////////////////////////////////////////////////////
-    RenderContextFrameData RCFD(context); // renderer per/frame data
-    RCFD._cimpl = compositorimpl;
-    RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
-    context->pushRenderContextFrameData(&RCFD);
     lev2::UiViewportRenderTarget rt(nullptr);
     auto tgtrect        = context->mainSurfaceRectAtOrigin();
     CPD->_irendertarget = &rt;
