@@ -14,3 +14,5 @@ def createSceneGraph( app=None,
     app.scene = app.ezapp.createScene(sceneparams)
     app.layer1 = app.scene.createLayer("layer1")
     app.rendernode = app.scene.compositorrendernode
+
+    return app.scene
