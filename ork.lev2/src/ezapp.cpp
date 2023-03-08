@@ -206,6 +206,8 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
   __priv_gapp.store(this);
   atexit(atexit_app);
 
+  _vars = std::make_shared<varmap::VarMap>();
+
   /////////////////////////////////////////////
   if (initdata->_envp) {
     genviron.init_from_envp(initdata->_envp);

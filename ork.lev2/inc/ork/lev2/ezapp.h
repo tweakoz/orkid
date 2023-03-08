@@ -201,7 +201,7 @@ public:
   ork::opq::opq_ptr_t _mainq;
   ork::opq::opq_ptr_t _updq;
   ork::opq::opq_ptr_t _conq;
-  varmap::VarMap _vars;
+  varmap::varmap_ptr_t _vars;
   std::atomic<uint64_t> _appstate;
   ui::updatedata_ptr_t _update_data;
   ui::context_ptr_t _uicontext;

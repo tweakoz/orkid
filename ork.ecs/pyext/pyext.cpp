@@ -48,17 +48,17 @@ ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance) {
   auto args = std::make_shared<PseudoArgs>();
   auto rval = ork::lev2::OrkEzApp::create(init_data);
   auto d_ev = std::make_shared<ork::ui::DrawEvent>(nullptr);
-  rval->_vars.makeValueForKey<drawevent_ptr_t>("drawev") = d_ev;
-  rval->_vars.makeValueForKey<pseudoargs_ptr_t>("args") = args;
+  rval->_vars->makeValueForKey<drawevent_ptr_t>("drawev") = d_ev;
+  rval->_vars->makeValueForKey<pseudoargs_ptr_t>("args") = args;
   ////////////////////////////////////////////////////////////////////
   if (py::hasattr(appinstance, "onGpuInit")) {
     auto gpuinitfn //
         = py::cast<py::function>(appinstance.attr("onGpuInit"));
-    rval->_vars.makeValueForKey<py::function>("gpuinitfn") = gpuinitfn;
+    rval->_vars->makeValueForKey<py::function>("gpuinitfn") = gpuinitfn;
     rval->onGpuInit([=](lev2::Context* ctx) { //
       ctx->makeCurrentContext();
       py::gil_scoped_acquire acquire;
-      auto pyfn = rval->_vars.typedValueForKey<py::function>("gpuinitfn");
+      auto pyfn = rval->_vars->typedValueForKey<py::function>("gpuinitfn");
       pyfn.value()(ctx_t(ctx));
     });
   }
@@ -66,10 +66,10 @@ ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance) {
   if (py::hasattr(appinstance, "onUpdate")) {
     auto updfn //
         = py::cast<py::function>(appinstance.attr("onUpdate"));
-    rval->_vars.makeValueForKey<py::function>("updatefn") = updfn;
+    rval->_vars->makeValueForKey<py::function>("updatefn") = updfn;
     rval->onUpdate([=](ork::ui::updatedata_ptr_t updata) { //
       py::gil_scoped_acquire acquire;
-      auto pyfn = rval->_vars.typedValueForKey<py::function>("updatefn");
+      auto pyfn = rval->_vars->typedValueForKey<py::function>("updatefn");
       try {
         pyfn.value()(updata);
       } catch (std::exception& e) {
@@ -82,10 +82,10 @@ ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance) {
   if (py::hasattr(appinstance, "onUpdateInit")) {
     auto updfn //
         = py::cast<py::function>(appinstance.attr("onUpdateInit"));
-    rval->_vars.makeValueForKey<py::function>("updateinitfn") = updfn;
+    rval->_vars->makeValueForKey<py::function>("updateinitfn") = updfn;
     rval->onUpdateInit([=]() { //
       py::gil_scoped_acquire acquire;
-      auto pyfn = rval->_vars.typedValueForKey<py::function>("updateinitfn");
+      auto pyfn = rval->_vars->typedValueForKey<py::function>("updateinitfn");
       try {
         pyfn.value()();
       } catch (std::exception& e) {
@@ -98,10 +98,10 @@ ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance) {
   if (py::hasattr(appinstance, "onUiEvent")) {
     auto uievfn //
         = py::cast<py::function>(appinstance.attr("onUiEvent"));
-    rval->_vars.makeValueForKey<py::function>("uievfn") = uievfn;
+    rval->_vars->makeValueForKey<py::function>("uievfn") = uievfn;
     rval->onUiEvent([=](ork::ui::event_constptr_t ev) -> ui::HandlerResult { //
       py::gil_scoped_acquire acquire;
-      auto pyfn = rval->_vars.typedValueForKey<py::function>("uievfn");
+      auto pyfn = rval->_vars->typedValueForKey<py::function>("uievfn");
       try {
         pyfn.value()(ev);
       } catch (std::exception& e) {
@@ -115,12 +115,12 @@ ork::lev2::orkezapp_ptr_t ecsappcreate(py::object appinstance) {
   if (py::hasattr(appinstance, "onDraw")) {
     auto drawfn //
         = py::cast<py::function>(appinstance.attr("onDraw"));
-    rval->_vars.makeValueForKey<py::function>("drawfn") = drawfn;
+    rval->_vars->makeValueForKey<py::function>("drawfn") = drawfn;
     rval->onDraw([=](ui::drawevent_constptr_t drwev) { //
       ork::opq::mainSerialQueue()->Process();
       py::gil_scoped_acquire acquire;
-      auto pyfn       = rval->_vars.typedValueForKey<py::function>("drawfn");
-      auto mydrev     = rval->_vars.typedValueForKey<drawevent_ptr_t>("drawev");
+      auto pyfn       = rval->_vars->typedValueForKey<py::function>("drawfn");
+      auto mydrev     = rval->_vars->typedValueForKey<drawevent_ptr_t>("drawev");
       *mydrev.value() = *drwev;
       try {
         pyfn.value()(drwev);

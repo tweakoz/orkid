@@ -35,15 +35,25 @@ class UiSgQuadViewTestApp(object):
   ##############################################
 
   def onGpuInit(self,ctx):
-    self.camlut = CameraDataLut()
-    self.cameraA, self.uicamA = setupUiCameraX(cameralut=self.camlut,camname="cameraA")
-    self.cameraB, self.uicamB = setupUiCameraX(cameralut=self.camlut,camname="cameraB")
-    self.cameraC, self.uicamC = setupUiCameraX(cameralut=self.camlut,camname="cameraC")
-    self.cameraD, self.uicamD = setupUiCameraX(cameralut=self.camlut,camname="cameraD")
+    self.cameralut = self.ezapp.vars.cameras
+    self.dbufcontext = self.ezapp.vars.dbufcontext
+
+    self.cameraA, self.uicamA = setupUiCameraX( cameralut=self.cameralut,
+                                                camname="cameraA")
+
+    self.cameraB, self.uicamB = setupUiCameraX( cameralut=self.cameralut,
+                                                camname="cameraB")
+
+    self.cameraC, self.uicamC = setupUiCameraX( cameralut=self.cameralut,
+                                                camname="cameraC")
+
+    self.cameraD, self.uicamD = setupUiCameraX( cameralut=self.cameralut,
+                                                camname="cameraD")
     
     sg_params = VarMap()
     sg_params.SkyboxIntensity = 1.0
     sg_params.preset = "DeferredPBR"
+    sg_params.dbufcontext = self.dbufcontext
 
     self.scenegraph = scenegraph.Scene(sg_params)
     self.grid_data = createGridData()
@@ -52,10 +62,17 @@ class UiSgQuadViewTestApp(object):
     self.grid_node.sortkey = 1
     self.rendernode = self.scenegraph.compositorrendernode
 
+
     #griditems[0].scenegraph = sg
     #griditems[1].scenegraph = sg
     #griditems[2].scenegraph = sg
     #griditems[3].scenegraph = sg
+
+  ################################################
+
+  def onUpdate(self,updinfo):
+    self.scenegraph.updateScene(self.cameralut) # update and enqueue all scenenodes
+    pass
 
 ###############################################################################
 

@@ -401,5 +401,10 @@ void pyinit_gfx(py::module& module_lev2) {
         return appwin->_rootWidget;
       });
   type_codec->registerStdCodec<appwindow_ptr_t>(appwindow_typ);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto dbufcontext_type = //
+      py::class_<DrawBufContext, dbufcontext_ptr_t>(module_lev2, "DrawBufContext");
+  type_codec->registerStdCodec<dbufcontext_ptr_t>(dbufcontext_type);
+  /////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
 } // namespace ork::lev2

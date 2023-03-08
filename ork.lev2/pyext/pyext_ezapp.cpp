@@ -68,16 +68,16 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
 
             auto rval                                              = OrkEzApp::create(appinitdata);
             auto d_ev                                              = std::make_shared<ui::DrawEvent>(nullptr);
-            rval->_vars.makeValueForKey<uidrawevent_ptr_t>("drawev") = d_ev;
+            rval->_vars->makeValueForKey<uidrawevent_ptr_t>("drawev") = d_ev;
             ////////////////////////////////////////////////////////////////////
             if (py::hasattr(appinstance, "onGpuInit")) {
               auto gpuinitfn //
                   = py::cast<py::function>(appinstance.attr("onGpuInit"));
-              rval->_vars.makeValueForKey<py::function>("gpuinitfn") = gpuinitfn;
+              rval->_vars->makeValueForKey<py::function>("gpuinitfn") = gpuinitfn;
               rval->onGpuInit([=](Context* ctx) { //
                 ctx->makeCurrentContext();
                 py::gil_scoped_acquire acquire;
-                auto pyfn = rval->_vars.typedValueForKey<py::function>("gpuinitfn");
+                auto pyfn = rval->_vars->typedValueForKey<py::function>("gpuinitfn");
                 pyfn.value()(ctx_t(ctx));
               });
             }
@@ -85,13 +85,13 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             if (py::hasattr(appinstance, "onDraw")) {
               auto drawfn //
                   = py::cast<py::function>(appinstance.attr("onDraw"));
-              rval->_vars.makeValueForKey<py::function>("drawfn") = drawfn;
+              rval->_vars->makeValueForKey<py::function>("drawfn") = drawfn;
               rval->_userSpecifiedOnDraw = true;
               rval->onDraw([=](ui::drawevent_constptr_t drwev) { //
                 ork::opq::mainSerialQueue()->Process();
                 py::gil_scoped_acquire acquire;
-                auto pyfn       = rval->_vars.typedValueForKey<py::function>("drawfn");
-                auto mydrev     = rval->_vars.typedValueForKey<uidrawevent_ptr_t>("drawev");
+                auto pyfn       = rval->_vars->typedValueForKey<py::function>("drawfn");
+                auto mydrev     = rval->_vars->typedValueForKey<uidrawevent_ptr_t>("drawev");
                 *mydrev.value() = *drwev;
                 try {
                   pyfn.value()(drwev);
@@ -106,10 +106,10 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             if (py::hasattr(appinstance, "onUpdate")) {
               auto updfn //
                   = py::cast<py::function>(appinstance.attr("onUpdate"));
-              rval->_vars.makeValueForKey<py::function>("updatefn") = updfn;
+              rval->_vars->makeValueForKey<py::function>("updatefn") = updfn;
               rval->onUpdate([=](ui::updatedata_ptr_t updata) { //
                 py::gil_scoped_acquire acquire;
-                auto pyfn = rval->_vars.typedValueForKey<py::function>("updatefn");
+                auto pyfn = rval->_vars->typedValueForKey<py::function>("updatefn");
                 try {
                   pyfn.value()(updata);
                 } catch (std::exception& e) {
@@ -123,10 +123,10 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               bool using_scene = py::hasattr(appinstance, "sceneparams");
               auto uievfn //
                   = py::cast<py::function>(appinstance.attr("onUiEvent"));
-              rval->_vars.makeValueForKey<py::function>("uievfn") = uievfn;
+              rval->_vars->makeValueForKey<py::function>("uievfn") = uievfn;
               rval->onUiEvent([=](ui::event_constptr_t ev) -> ui::HandlerResult { //
                 py::gil_scoped_acquire acquire;
-                auto pyfn = rval->_vars.typedValueForKey<py::function>("uievfn");
+                auto pyfn = rval->_vars->typedValueForKey<py::function>("uievfn");
                 try {
                   pyfn.value()(ev);
                 } catch (std::exception& e) {
@@ -144,6 +144,10 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
           "timescale",
           [](orkezapp_ptr_t app) -> float { return app->_timescale; },
           [](orkezapp_ptr_t app, float val) { app->_timescale = val; })
+      ///////////////////////////////////////////////////////
+      .def_property_readonly("vars", [](orkezapp_ptr_t ezapp) -> varmap::varmap_ptr_t { //
+        return ezapp->_vars;
+      })
       ///////////////////////////////////////////////////////
       .def_property_readonly(
           "mainwin",

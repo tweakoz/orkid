@@ -294,6 +294,10 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
   _dbufcontext_SG = std::make_shared<DrawBufContext>();
   _dbufcontext_SG->_name = "DBC.SceneGraph";
 
+  if (auto try_dbufcontext = params->typedValueForKey<dbufcontext_ptr_t>("dbufcontext")) {
+    _dbufcontext_SG = try_dbufcontext.value();
+  }
+
   _renderer = std::make_shared<DefaultRenderer>();
   _lightManagerData = std::make_shared<LightManagerData>();
   _lightManager     = std::make_shared<LightManager>(*_lightManagerData.get());

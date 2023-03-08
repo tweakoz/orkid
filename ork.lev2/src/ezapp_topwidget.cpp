@@ -37,14 +37,14 @@ void EzTopWidget::_doGpuInit(ork::lev2::Context* pTARG) {
 void EzTopWidget::enableUiDraw(){
   auto ezapp = (OrkEzApp*)OrkEzAppBase::get();
   /////////////////////////////////////////////////////////////////////
-  auto lmd      = ezapp->_vars.makeSharedForKey<LightManagerData>("lmgrdata");
-  auto lightmgr = ezapp->_vars.makeSharedForKey<LightManager>("lmgr", *lmd);
-  auto compdata = ezapp->_vars.makeSharedForKey<CompositingData>("compdata");
-  auto CPD      = ezapp->_vars.makeSharedForKey<CompositingPassData>("CPD");
-  auto dbufcontext = ezapp->_vars.makeSharedForKey<DrawBufContext>("dbufcontext");
-  auto cameras  = ezapp->_vars.makeSharedForKey<CameraDataLut>("cameras");
-  auto camdata  = ezapp->_vars.makeSharedForKey<CameraData>("camdata");
-  auto rcfd  = ezapp->_vars.makeSharedForKey<RenderContextFrameData>("RCFD");
+  auto lmd      = ezapp->_vars->makeSharedForKey<LightManagerData>("lmgrdata");
+  auto lightmgr = ezapp->_vars->makeSharedForKey<LightManager>("lmgr", *lmd);
+  auto compdata = ezapp->_vars->makeSharedForKey<CompositingData>("compdata");
+  auto CPD      = ezapp->_vars->makeSharedForKey<CompositingPassData>("CPD");
+  auto dbufcontext = ezapp->_vars->makeSharedForKey<DrawBufContext>("dbufcontext");
+  auto cameras  = ezapp->_vars->makeSharedForKey<CameraDataLut>("cameras");
+  auto camdata  = ezapp->_vars->makeSharedForKey<CameraData>("camdata");
+  auto rcfd  = ezapp->_vars->makeSharedForKey<RenderContextFrameData>("RCFD");
   /////////////////////////////////////////////////////////////////////
   compdata->presetUnlit();
   compdata->mbEnable  = true;
@@ -58,16 +58,18 @@ void EzTopWidget::enableUiDraw(){
   auto update_buffer = std::make_shared<AcquiredUpdateDrawBuffer>();
   auto draw_buffer = std::make_shared<AcquiredRenderDrawBuffer>();
   /////////////////////////////////////////////////////////////////////
-  ezapp->onUpdate([=](ui::updatedata_ptr_t updata) {
-    auto DB = dbufcontext->acquireForWriteLocked();
-    if (DB) {
-      update_buffer->_DB = DB;
-      DB->Reset();
-      DB->copyCameras(*cameras);
-      // ezapp->_eztopwidget->onUpdateThreadTick(updata);
-      dbufcontext->releaseFromWriteLocked(DB);
-    }
-  });
+  if(ezapp->_mainWindow->_onUpdate==nullptr){
+    ezapp->onUpdate([=](ui::updatedata_ptr_t updata) {
+      auto DB = dbufcontext->acquireForWriteLocked();
+      if (DB) {
+        update_buffer->_DB = DB;
+        DB->Reset();
+        DB->copyCameras(*cameras);
+        //   ezapp->_eztopwidget->onUpdateThreadTick(updata);
+        dbufcontext->releaseFromWriteLocked(DB);
+      }
+    });
+  }
   /////////////////////////////////////////////////////////////////////
   ezapp->onDraw([=](ui::drawevent_constptr_t drwev) {
     ////////////////////////////////////////////////
