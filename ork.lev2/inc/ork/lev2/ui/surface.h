@@ -49,12 +49,6 @@ public:
     return _pickbuffer;
   }
 
-protected:
-  void RenderCached();
-  void _doOnResized(void) override;
-  virtual void DoSurfaceResize() {
-  }
-
   orkstack<lev2::FrameTechniqueBase*> mpActiveFrameTek;
   bool mbClear;
   fcolor3 _clearColor;
@@ -63,6 +57,12 @@ protected:
   bool mNeedsSurfaceRepaint;
   lev2::PickBuffer* _pickbuffer;
 
+protected:
+  void _doGpuInit(lev2::Context* pTARG) override;
+  void RenderCached();
+  void _doOnResized(void) override;
+  virtual void DoSurfaceResize() {
+  }
   void DoDraw(ui::drawevent_constptr_t drwev) override;
   virtual void DoRePaintSurface(ui::drawevent_constptr_t drwev) {
   }

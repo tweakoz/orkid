@@ -269,6 +269,7 @@ struct CompositingData;
 struct CompositingTechnique;
 struct NodeCompositingTechnique;
 class OutputCompositingNode;
+class RtGroupOutputCompositingNode;
 class RenderCompositingNode;
 class PostCompositingNode;
 struct AcquiredUpdateDrawBuffer;
@@ -285,6 +286,7 @@ using compositingsceneitem_constptr_t   = std::shared_ptr<const CompositingScene
 using compositortechnique_ptr_t   = std::shared_ptr<CompositingTechnique>;
 using nodecompositortechnique_ptr_t   = std::shared_ptr<NodeCompositingTechnique>;
 using compositoroutnode_ptr_t   = std::shared_ptr<OutputCompositingNode>;
+using compositoroutnode_rtgroup_ptr_t   = std::shared_ptr<RtGroupOutputCompositingNode>;
 using compositorrendernode_ptr_t   = std::shared_ptr<RenderCompositingNode>;
 using compositorpostnode_ptr_t   = std::shared_ptr<PostCompositingNode>;
 using standardcompositorframe_ptr_t = std::shared_ptr<StandardCompositorFrame>;

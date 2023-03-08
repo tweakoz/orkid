@@ -60,6 +60,11 @@ void Surface::RePaintSurface(ui::drawevent_constptr_t drwev) {
   DoRePaintSurface(drwev);
 }
 
+void Surface::_doGpuInit(lev2::Context* context) {
+  _rtgroup  = std::make_shared<lev2::RtGroup>(context, 8,8, lev2::MsaaSamples::MSAA_1X);
+  auto mrt0 = _rtgroup->createRenderTarget(lev2::EBufferFormat::RGBA8);
+}
+
 void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   auto tgt    = drwev->GetTarget();
   auto mtxi   = tgt->MTXI();
@@ -68,11 +73,6 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   auto rsi    = tgt->RSI();
   auto& primi = lev2::GfxPrimitives::GetRef();
   auto defmtl = lev2::defaultUIMaterial();
-
-  if (nullptr == _rtgroup) {
-    _rtgroup  = std::make_shared<lev2::RtGroup>(tgt, _geometry._w, _geometry._h, lev2::MsaaSamples::MSAA_1X);
-    auto mrt0 = _rtgroup->createRenderTarget(lev2::EBufferFormat::RGBA8);
-  }
   ///////////////////////////////////////
   int irtgw  = _rtgroup->width();
   int irtgh  = _rtgroup->height();

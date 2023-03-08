@@ -7,6 +7,7 @@
 
 #include <ork/pch.h>
 #include <ork/lev2/gfx/gfxenv.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/OutputNodeRtGroup.h>
 #include <ork/lev2/ui/viewport_scenegraph.h>
 #include <ork/lev2/ui/event.h>
 
@@ -26,6 +27,15 @@ SceneGraphViewport::SceneGraphViewport(const std::string& name, int x, int y, in
 
 } 
 
+///////////////////////////////////////////////////////////////////////////////
+
+void SceneGraphViewport::_doGpuInit(lev2::Context* context) {
+  Viewport::_doGpuInit(context);
+  _outputnode = std::make_shared<lev2::RtGroupOutputCompositingNode>(_rtgroup);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
   if(_scenegraph){
@@ -39,7 +49,12 @@ void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     auto DB = acqbuf->_DB;
     auto rcfd = acqbuf->_RCFD;
 
+    auto orig_onode = _scenegraph->_outputNode;
+
+    _scenegraph->_outputNode = _outputnode;
     _scenegraph->_renderWithAcquiredRenderDrawBuffer(acqbuf);
+
+    _scenegraph->_outputNode = orig_onode;
 
     ////////////////////////////////////////////////////
 
