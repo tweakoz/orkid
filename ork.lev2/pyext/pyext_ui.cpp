@@ -197,7 +197,13 @@ void pyinit_ui(py::module& module_lev2) {
   type_codec->registerStdCodec<uilayoutgroup_ptr_t>(layoutgroup_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto surface_type = //
-      py::class_<ui::Surface, ui::Group, uisurface_ptr_t>(uimodule, "UiSurface");
+      py::class_<ui::Surface, ui::Group, uisurface_ptr_t>(uimodule, "UiSurface")
+          .def_property(
+              "clearColor",
+              [](uisurface_ptr_t surface) -> fvec3 { //
+                return surface->GetClearColorRef();
+              },
+              [](uisurface_ptr_t surface, fvec3 c) { return surface->GetClearColorRef() = c; });
   type_codec->registerStdCodec<uisurface_ptr_t>(surface_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto viewport_type = //
@@ -282,7 +288,7 @@ void pyinit_ui(py::module& module_lev2) {
   type_codec->registerStdCodec<uilambdabox_ptr_t>(lambdabox_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto sgviewport_type = //
-      py::class_<ui::SceneGraphViewport, ui::Widget, uisgviewport_ptr_t>(uimodule, "UiSceneGraphViewport")
+      py::class_<ui::SceneGraphViewport, ui::Viewport, uisgviewport_ptr_t>(uimodule, "UiSceneGraphViewport")
           .def_static(
               "uigridfactory",
               [decodeUIargs](uilayoutgroup_ptr_t lg, int grid_w, int grid_h, int m, py::list py_args) -> py::list { //

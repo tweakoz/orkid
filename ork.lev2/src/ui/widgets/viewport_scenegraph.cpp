@@ -26,6 +26,12 @@ SceneGraphViewport::SceneGraphViewport(const std::string& name, int x, int y, in
 
 } 
 
+void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
+  auto tgt    = drwev->GetTarget();
+  auto mtxi   = tgt->MTXI();
+  auto fbi    = tgt->FBI();
+    fbi->Clear(_clearColor,1.0f);
+}
 // Surface::DoDraw()
 
 /////////////////////////////////////////////////////////////////////////

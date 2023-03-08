@@ -34,6 +34,10 @@ class MinimalUiApp(object):
                                    uiclass = ui.UiSceneGraphViewport,
                                    args = ["sgvp"] )
 
+    griditems[0].widget.clearColor = vec3(1,0,1)*0.1
+    griditems[1].widget.clearColor = vec3(1,0,1)*0.2
+    griditems[2].widget.clearColor = vec3(1,0,1)*0.3
+    griditems[3].widget.clearColor = vec3(1,0,1)*0.4
     #self.ezapp.topWidget = lg_group
 
 

@@ -16,6 +16,7 @@ struct SceneGraphViewport : public Viewport {
   RttiDeclareAbstract(SceneGraphViewport, Viewport);
 public:
   SceneGraphViewport(const std::string& name, int x=0, int y=0, int w=0, int h=0);
+  void DoRePaintSurface(ui::drawevent_constptr_t drwev) final;
 
 };
 

@@ -32,7 +32,7 @@ class UiTestApp(object):
     griditems[1].widget.onPressed(lambda: print("GRIDITEM1 PUSHED"))
     griditems[2].widget.onPressed(lambda: print("GRIDITEM2 PUSHED"))
     griditems[3].widget.onPressed(lambda: print("GRIDITEM3 PUSHED"))
-
+    
     print(self.ezapp.mainwin)
     print(self.ezapp.mainwin.appwin)
     print(self.ezapp.topWidget)
