@@ -138,8 +138,8 @@ int main(int argc, char** argv, char** envp) {
     sframe->withAcquiredUpdateDrawBuffer(
       0,
       initdata->_update_rendersync,
-      [cameras](const AcquiredUpdateDrawBuffer& udb){
-        udb._DB->copyCameras(*cameras);
+      [cameras](acqupdatebuffer_constptr_t udb){
+        udb->_DB->copyCameras(*cameras);
     });
   });
 
@@ -158,7 +158,7 @@ int main(int argc, char** argv, char** envp) {
     //   (typically post-compositor)
     //////////////////////////////////////////////////////////////////
 
-    sframe->onImguiRender = [](const AcquiredRenderDrawBuffer& rdb) {
+    sframe->onImguiRender = [](acqdrawbuffer_constptr_t rdb) {
       ImGui::ShowDemoWindow();
     };
 

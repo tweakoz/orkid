@@ -288,6 +288,15 @@ using compositoroutnode_ptr_t   = std::shared_ptr<OutputCompositingNode>;
 using compositorrendernode_ptr_t   = std::shared_ptr<RenderCompositingNode>;
 using compositorpostnode_ptr_t   = std::shared_ptr<PostCompositingNode>;
 using standardcompositorframe_ptr_t = std::shared_ptr<StandardCompositorFrame>;
+//
+using acqupdatebuffer_ptr_t = std::shared_ptr<AcquiredUpdateDrawBuffer>;
+using acqdrawbuffer_ptr_t = std::shared_ptr<AcquiredRenderDrawBuffer>;
+using acqdrawbuffer_constptr_t = std::shared_ptr<const AcquiredRenderDrawBuffer>;
+using acqdrawbuffer_lambda_t = std::function<void(acqdrawbuffer_constptr_t)>;
+//
+using acqupdatebuffer_ptr_t = std::shared_ptr<AcquiredUpdateDrawBuffer>;
+using acqupdatebuffer_constptr_t = std::shared_ptr<const AcquiredUpdateDrawBuffer>;
+using acqupdatebuffer_lambda_t = std::function<void(acqupdatebuffer_constptr_t)>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // XgmModel

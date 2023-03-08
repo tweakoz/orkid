@@ -341,20 +341,7 @@ template <typename T> std::shared_ptr<T> CompositingData::tryNodeTechnique( std:
   return rval;
 }
 ////////////////////////////////////////////////////////////////////////////////
-struct AcquiredUpdateDrawBuffer{
-  DrawableBuffer* _DB = nullptr;
-};
-////////////////////////////////////////////////////////////////////////////////
-using acqupdatebuffer_lambda_t = std::function<void(const AcquiredUpdateDrawBuffer&)>;
-////////////////////////////////////////////////////////////////////////////////
-struct AcquiredRenderDrawBuffer{
-  AcquiredRenderDrawBuffer( rcfd_ptr_t rcfd );
-  const DrawableBuffer* _DB;
-  rcfd_ptr_t _RCFD;
-};
-////////////////////////////////////////////////////////////////////////////////
 struct StandardCompositorFrame {
-  using acqrf_lambda_t = std::function<void(const AcquiredRenderDrawBuffer& acq)>;
 
   StandardCompositorFrame(uidrawevent_constptr_t drawEvent = nullptr);
   void withAcquiredUpdateDrawBuffer(int debugcode, bool rendersync, acqupdatebuffer_lambda_t l);
@@ -374,12 +361,15 @@ struct StandardCompositorFrame {
   compositorimpl_ptr_t compositor;
   compositingpassdata_ptr_t passdata;
   irenderer_ptr_t renderer;
-  acqrf_lambda_t onPreCompositorRender;
-  acqrf_lambda_t onImguiRender;
   bool _use_imgui_docking = false;
-  acqrf_lambda_t onPostCompositorRender;
   rendervar_usermap_t _userprops;
   bool _updrendersync = false;
+
+  acqupdatebuffer_ptr_t _updatebuffer;
+  acqdrawbuffer_ptr_t _drawbuffer;
+  acqdrawbuffer_lambda_t onPreCompositorRender;
+  acqdrawbuffer_lambda_t onImguiRender;
+  acqdrawbuffer_lambda_t onPostCompositorRender;
 };
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
