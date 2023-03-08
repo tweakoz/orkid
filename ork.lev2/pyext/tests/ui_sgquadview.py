@@ -82,6 +82,32 @@ class UiSgQuadViewTestApp(object):
     self.griditems[2].widget.scenegraph = self.scenegraph
     self.griditems[3].widget.scenegraph = self.scenegraph
 
+    self.griditems[0].widget.cameraName = "cameraA"
+    self.griditems[1].widget.cameraName = "cameraB"
+    self.griditems[2].widget.cameraName = "cameraC"
+    self.griditems[3].widget.cameraName = "cameraD"
+
+    self.uicamA.lookAt( vec3(0,1,0),
+                        vec3(0,1,1),
+                        vec3(0,1,0))
+
+    self.uicamB.lookAt( vec3(0,1,0),
+                        vec3(1,1,0),
+                        vec3(0,1,0))
+
+    self.uicamC.lookAt( vec3(0,1,0),
+                        vec3(0,1,-1),
+                        vec3(0,1,0))
+
+    self.uicamD.lookAt( vec3(0,1,0),
+                        vec3(-1,1,0),
+                        vec3(0,1,0))
+    
+    self.uicamA.updateMatrices()
+    self.uicamB.updateMatrices()
+    self.uicamC.updateMatrices()
+    self.uicamD.updateMatrices()
+
   ################################################
 
   def onUpdate(self,updinfo):

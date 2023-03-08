@@ -50,6 +50,8 @@ void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     auto DB = acqbuf->_DB;
     auto rcfd = acqbuf->_RCFD;
 
+    auto cimpl = _scenegraph->_compositorImpl;
+    cimpl->_cameraName = _cameraname;
     auto comptek = _scenegraph->_compositorTechnique;
 
     auto orig_onode = comptek->_outputNode;

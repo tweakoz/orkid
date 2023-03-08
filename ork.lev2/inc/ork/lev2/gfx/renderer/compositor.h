@@ -308,6 +308,8 @@ struct CompositingImpl {
   const CompositingPassData& popCPD();
   bool hasCPD() const;
 
+  std::string _cameraName = "spawncam";
+
 private:
   const CompositingData& _compositingData;
   compositordata_constptr_t _shared_compositingData;

@@ -21,6 +21,7 @@ public:
   void _doGpuInit(lev2::Context* pTARG) final;
   lev2::scenegraph::scene_ptr_t _scenegraph;
   lev2::compositoroutnode_rtgroup_ptr_t _outputnode;
+  std::string _cameraname = "spawncam";
 };
 
 }} // namespace ork::ui

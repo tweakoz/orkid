@@ -313,6 +313,15 @@ void pyinit_ui(py::module& module_lev2) {
               },
               [](uisgviewport_ptr_t sgview, lev2::scenegraph::scene_ptr_t sg) 
                 { return sgview->_scenegraph = sg; 
+                })
+          //////////////////////////////////
+          .def_property(
+              "cameraName",
+              [](uisgviewport_ptr_t sgview) -> std::string { //
+                return sgview->_cameraname;
+              },
+              [](uisgviewport_ptr_t sgview, std::string camname) 
+                { return sgview->_cameraname = camname; 
                 });
   type_codec->registerStdCodec<uisgviewport_ptr_t>(sgviewport_type);
   /////////////////////////////////////////////////////////////////////////////////
