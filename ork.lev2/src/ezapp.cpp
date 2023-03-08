@@ -361,10 +361,6 @@ void OrkEzApp::onUpdateExit(EzMainWin::onupdateexit_t cb) {
   if(_mainWindow)
     _mainWindow->_onUpdateExit = cb;
 }
-/////////////////////////////////////////////////////////////////////////////////
-//void OrkEzApp::onUpdateWithScene(EzMainWin::onupdatewithscene_t cb) {
-  //_mainWindow->_onUpdateWithScene = cb;
-//}
 ///////////////////////////////////////////////////////////////////////////////
 filedevctx_ptr_t OrkEzApp::newFileDevContext(std::string uriproto, const file::Path& basepath) {
   return FileEnv::createContextForUriBase(uriproto, basepath);

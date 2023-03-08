@@ -27,6 +27,7 @@ class MinimalUiApp(object):
     print(self.ezapp.mainwin.appwin)
     print(self.ezapp.topWidget)
     print(self.ezapp.topWidget.name)
+    self.ezapp.topWidget.enableUiDraw()
 
     lg_group = self.ezapp.topLayoutGroup
 

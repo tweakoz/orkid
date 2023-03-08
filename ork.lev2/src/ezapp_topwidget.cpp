@@ -36,6 +36,33 @@ void EzTopWidget::_doGpuInit(ork::lev2::Context* pTARG) {
 /////////////////////////////////////////////////
 void EzTopWidget::enableUiDraw(){
   auto ezapp = (OrkEzApp*)OrkEzAppBase::get();
+  /////////////////////////////////////////////////////////////////////
+  auto lmd      = ezapp->_vars.makeSharedForKey<LightManagerData>("lmgrdata");
+  auto lightmgr = ezapp->_vars.makeSharedForKey<LightManager>("lmgr", *lmd);
+  auto compdata = ezapp->_vars.makeSharedForKey<CompositingData>("compdata");
+  auto CPD      = ezapp->_vars.makeSharedForKey<CompositingPassData>("CPD");
+  auto dbufcontext = ezapp->_vars.makeSharedForKey<DrawBufContext>("dbufcontext");
+  auto cameras  = ezapp->_vars.makeSharedForKey<CameraDataLut>("cameras");
+  auto camdata  = ezapp->_vars.makeSharedForKey<CameraData>("camdata");
+  compdata->presetUnlit();
+  compdata->mbEnable  = true;
+  auto nodetek        = compdata->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
+  auto outpnode       = nodetek->tryOutputNodeAs<ScreenOutputCompositingNode>();
+  auto compositorimpl = compdata->createImpl();
+  compositorimpl->bindLighting(lightmgr.get());
+  CPD->addStandardLayers();
+  (*cameras)["spawncam"] = camdata;
+  /////////////////////////////////////////////////////////////////////
+  ezapp->onUpdate([=](ui::updatedata_ptr_t updata) {
+    auto DB = dbufcontext->acquireForWriteLocked();
+    if (DB) {
+      DB->Reset();
+      DB->copyCameras(*cameras);
+      // ezapp->_eztopwidget->onUpdateThreadTick(updata);
+      dbufcontext->releaseFromWriteLocked(DB);
+    }
+  });
+  /////////////////////////////////////////////////////////////////////
   ezapp->onDraw([=](ui::drawevent_constptr_t drwev) {
     ////////////////////////////////////////////////
     auto DB = dbufcontext->acquireForReadLocked();
