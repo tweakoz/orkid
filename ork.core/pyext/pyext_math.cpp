@@ -29,13 +29,12 @@ void pyinit_math(py::module& module_core) {
           .def(py::init<float, float>())
           .def_property(
               "x",
-              [](fvec2& vec, float val) { return vec.x = val; }, //
-              [](const fvec2& vec) -> float { return vec.x; })
-
+              [](const fvec2& vec) -> float { return vec.x; },
+              [](fvec2& vec, float val) { return vec.x = val; }) //
           .def_property(
               "y",
-              [](fvec2& vec, float val) { return vec.y = val; }, //
-              [](const fvec2& vec) -> float { return vec.y; })
+              [](const fvec2& vec) -> float { return vec.y; },
+              [](fvec2& vec, float val) { return vec.y = val; }) //
           .def("dot", &fvec2::dotWith)
           .def("perp", &fvec2::perpDotWith)
           .def("mag", &fvec2::magnitude)
@@ -108,7 +107,7 @@ void pyinit_math(py::module& module_core) {
           .def("clamped", &fvec3::clamped)
           .def("normalized", &fvec3::normalized)
           .def("normalize", &fvec3::normalizeInPlace)
-          .def("transform", [](fvec3& v, fmtx4 matrix) -> fvec3 { return fvec4(v, 1).transform(matrix).xyz(); })
+          .def("transform", [](const fvec3& v, fmtx4 matrix) -> fvec3 { return fvec4(v, 1).transform(matrix).xyz(); })
           .def("rotx", &fvec3::rotateOnX)
           .def("roty", &fvec3::rotateOnY)
           .def("rotz", &fvec3::rotateOnZ)
@@ -306,8 +305,8 @@ void pyinit_math(py::module& module_core) {
               })
           .def(
               "setColumn",
-              [](fmtx4 mtx, int column, fvec4 c) { //
-                return mtx.setColumn(column, c);
+              [](fmtx4& mtx, int column, fvec4 c) { //
+                mtx.setColumn(column, c);
               })
           .def(
               "getRow",
@@ -316,13 +315,18 @@ void pyinit_math(py::module& module_core) {
               })
           .def(
               "setRow",
-              [](fmtx4 mtx, int row, fvec4 c) { //
-                return mtx.setRow(row, c);
+              [](fmtx4& mtx, int row, fvec4 c) { //
+                mtx.setRow(row, c);
               })
           .def(
               "compose",
-              [](fmtx4 mtx, const fvec3& pos, const fquat& rot, float scale) { //
+              [](fmtx4& mtx, const fvec3& pos, const fquat& rot, float scale) { //
                 mtx.compose(pos, rot, scale);
+              })
+          .def(
+              "compose",
+              [](fmtx4& mtx, const fvec3& pos, const fquat& rot, const fvec3& vscale) { //
+                mtx.compose(pos, rot, vscale);
               })
           .def(
               "dump",
