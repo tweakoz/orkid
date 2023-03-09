@@ -34,6 +34,7 @@ namespace ork { namespace lev2 {
 CompositingImpl::CompositingImpl(const CompositingData& data)
     : _compositingData(data) {
 
+
   // on link ?
   mfTimeAccum       = 0.0f;
   mfLastTime        = 0.0f;
@@ -45,7 +46,8 @@ CompositingImpl::CompositingImpl(const CompositingData& data)
 
   _defaultCameraMatrices = new CameraMatrices;
 
-  _compcontext.Resize(data._defaultW,data._defaultH);
+  _compcontext = std::make_shared<CompositingContext>();
+  _compcontext->Resize(data._defaultW,data._defaultH);
 }
 
 CompositingImpl::CompositingImpl(compositordata_constptr_t data)
@@ -94,12 +96,12 @@ bool CompositingImpl::IsEnabled() const {
 
 void CompositingImpl::gpuInit(lev2::Context* ctx){
   int scene_item = 0;
-  _compcontext.Init(ctx);
+  _compcontext->Init(ctx);
   if (auto item = compositingItem(0, scene_item)) {
-    _compcontext._compositingTechnique = item->technique();
-    int w = _compcontext.miWidth;
-    int h = _compcontext.miHeight;
-    _compcontext._compositingTechnique->gpuInit(ctx,w,h);
+    _compcontext->_compositingTechnique = item->technique();
+    int w = _compcontext->miWidth;
+    int h = _compcontext->miHeight;
+    _compcontext->_compositingTechnique->gpuInit(ctx,w,h);
   }
 
 }
@@ -112,7 +114,7 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   lev2::RenderContextFrameData& RCFD = the_renderer.framedata();
   lev2::Context* target              = RCFD.GetTarget();
 
-  float aspectratio = float(_compcontext.miWidth)/float(_compcontext.miHeight);
+  float aspectratio = float(_compcontext->miWidth)/float(_compcontext->miHeight);
 
   // todo - compute CameraMatrices per rendertarget/pass !
 
@@ -125,7 +127,7 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   /////////////////////////////////////////////////////////
   int scene_item = 0;
   if (auto item = compositingItem(0, scene_item)) {
-    _compcontext._compositingTechnique = item->technique();
+    _compcontext->_compositingTechnique = item->technique();
   }
 
   /////////////////////////////////
@@ -160,7 +162,7 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   /////////////////////////////////////////////////////////////////////////////
 
   DB->invokePreRenderCallbacks(RCFD);
-  return _compcontext.assemble(drawdata);
+  return _compcontext->assemble(drawdata);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -168,8 +170,8 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
 void CompositingImpl::composite(lev2::CompositorDrawData& drawdata) {
   int scene_item = 0;
   if (auto pCSI = compositingItem(0, scene_item)) {
-    _compcontext._compositingTechnique = pCSI->technique();
-    _compcontext.composite(drawdata);
+    _compcontext->_compositingTechnique = pCSI->technique();
+    _compcontext->composite(drawdata);
   }
 }
 
@@ -206,13 +208,13 @@ const CompositingPassData& CompositingImpl::popCPD() {
 ///////////////////////////////////////////////////////////////////////////////
 
 const CompositingContext& CompositingImpl::compositingContext() const {
-  return _compcontext;
+  return *_compcontext;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 CompositingContext& CompositingImpl::compositingContext() {
-  return _compcontext;
+  return *_compcontext;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

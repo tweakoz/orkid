@@ -310,7 +310,6 @@ struct CompositingImpl {
 
   std::string _cameraName = "spawncam";
 
-private:
   const CompositingData& _compositingData;
   compositordata_constptr_t _shared_compositingData;
 
@@ -323,7 +322,7 @@ private:
   int miActiveSceneItem = 0;
 
   //CompositingMorphable _morphable;
-  CompositingContext _compcontext;
+  compositorctx_ptr_t _compcontext;
   compositingpassdatastack_t _stack;
 };
 

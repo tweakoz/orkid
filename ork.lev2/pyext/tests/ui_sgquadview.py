@@ -7,14 +7,51 @@
 # see http://www.boost.org/LICENSE_1_0.txt
 ################################################################################
 
-import sys
+import sys, math, random
 from orkengine.core import *
 from orkengine.lev2 import *
 sys.path.append((thisdir()/".."/".."/"examples"/"python").normalized.as_string) # add parent dir to path
 from common.cameras import *
 from common.shaders import *
-from common.primitives import createGridData
+from common.primitives import createGridData, createCubePrim
 from common.scenegraph import createSceneGraph
+
+################################################################################
+
+class panel:
+  def __init__(self,cam,uicam):
+    self.cur_eye = vec3(0,0,0)
+    self.cur_tgt = vec3(0,0,0)
+    self.dst_eye = vec3(0,0,0)
+    self.dst_tgt = vec3(0,0,0)
+    self.counter = 0
+    self.camera = cam 
+    self.uicam = uicam 
+
+  def update(self):
+    def genpos():
+      r = vec3(0)
+      r.x = random.uniform(-10,10)
+      r.z = random.uniform(-10,10)
+      r.y = random.uniform(  0,10)
+      return r 
+    
+    if self.counter<=0:
+      self.counter = int(random.uniform(1,100))
+      self.dst_eye = genpos()
+      self.dst_tgt = vec3(0,random.uniform(  0,2),0)
+
+    self.cur_eye = self.cur_eye*0.999 + self.dst_eye*0.001
+    self.cur_tgt = self.cur_tgt*0.999 + self.dst_tgt*0.001
+    self.uicam.lookAt( self.cur_eye,
+                        self.cur_tgt,
+                        vec3(0,1,0))
+
+    self.counter = self.counter-1
+
+    self.uicam.updateMatrices()
+
+    self.camera.copyFrom( self.uicam.cameradata )
 
 ################################################################################
 
@@ -42,25 +79,9 @@ class UiSgQuadViewTestApp(object):
 
   def onGpuInit(self,ctx):
 
-    # get dbufcontext (to share across all viewports)
-
     self.dbufcontext = self.ezapp.vars.dbufcontext
-
-    # create cameras    
-
     self.cameralut = self.ezapp.vars.cameras
 
-    self.cameraA, self.uicamA = setupUiCameraX( cameralut=self.cameralut,
-                                                camname="cameraA")
-
-    self.cameraB, self.uicamB = setupUiCameraX( cameralut=self.cameralut,
-                                                camname="cameraB")
-
-    self.cameraC, self.uicamC = setupUiCameraX( cameralut=self.cameralut,
-                                                camname="cameraC")
-
-    self.cameraD, self.uicamD = setupUiCameraX( cameralut=self.cameralut,
-                                                camname="cameraD")
     # create scenegraph    
 
     sg_params = VarMap()
@@ -74,46 +95,45 @@ class UiSgQuadViewTestApp(object):
     self.grid_node = self.layer.createGridNode("grid",self.grid_data)
     self.grid_node.sortkey = 1
     self.rendernode = self.scenegraph.compositorrendernode
+    cube_prim = createCubePrim(ctx=ctx,size=2.0)
+    pipeline_cube = createPipeline( app = self, ctx = ctx, rendermodel="DeferredPBR" )
+    self.cube_node = cube_prim.createNode("cube",self.layer,pipeline_cube)
 
-    # assign shared scenegraph to all sg viewports
+    # assign shared scenegraph and creat cameras for all sg viewports
 
-    self.griditems[0].widget.scenegraph = self.scenegraph
-    self.griditems[1].widget.scenegraph = self.scenegraph
-    self.griditems[2].widget.scenegraph = self.scenegraph
-    self.griditems[3].widget.scenegraph = self.scenegraph
+    def createPanel(camname, griditem):
+      camera, uicam = setupUiCameraX( cameralut=self.cameralut,
+                                        camname=camname)
+      griditem.widget.cameraName = camname
+      griditem.widget.scenegraph = self.scenegraph
+      return panel(camera, uicam)
 
-    self.griditems[0].widget.cameraName = "cameraA"
-    self.griditems[1].widget.cameraName = "cameraB"
-    self.griditems[2].widget.cameraName = "cameraC"
-    self.griditems[3].widget.cameraName = "cameraD"
-
-    self.uicamA.lookAt( vec3(0,1,0),
-                        vec3(0,1,1),
-                        vec3(0,1,0))
-
-    self.uicamB.lookAt( vec3(0,1,0),
-                        vec3(1,1,0),
-                        vec3(0,1,0))
-
-    self.uicamC.lookAt( vec3(0,1,0),
-                        vec3(0,1,-1),
-                        vec3(0,1,0))
-
-    self.uicamD.lookAt( vec3(0,1,0),
-                        vec3(-1,1,0),
-                        vec3(0,1,0))
+    self.panels = [
+      createPanel("cameraA",self.griditems[0]),
+      createPanel("cameraB",self.griditems[1]),
+      createPanel("cameraC",self.griditems[2]),
+      createPanel("cameraD",self.griditems[3]),
+    ]
     
-    self.uicamA.updateMatrices()
-    self.uicamB.updateMatrices()
-    self.uicamC.updateMatrices()
-    self.uicamD.updateMatrices()
-
   ################################################
 
   def onUpdate(self,updinfo):
-    self.scenegraph.updateScene(self.cameralut) 
-    pass
 
+    abstime = updinfo.absolutetime
+
+    cube_y = 0.4+math.sin(abstime)*0.2
+    self.cube_node.worldTransform.translation = vec3(0,cube_y,0) 
+    self.cube_node.worldTransform.orientation = quat(vec3(0,1,0),abstime*90*constants.DTOR) 
+    self.cube_node.worldTransform.scale = 0.1
+
+    for p in self.panels:
+      p.update()
+
+    self.scenegraph.updateScene(self.cameralut) 
+
+    for g in self.griditems:
+      g.widget.setDirty()
+    
 ###############################################################################
 
 UiSgQuadViewTestApp().ezapp.mainThreadLoop()

@@ -133,6 +133,11 @@ void pyinit_ui(py::module& module_lev2) {
                 widget->SetPos(x, y);
               })
           .def(
+              "setDirty",
+              [](uiwidget_ptr_t widget) { //
+                widget->SetDirty();
+              })
+          .def(
               "setSize",
               [](uiwidget_ptr_t widget, int w, int h) { //
                 widget->SetSize(w, h);

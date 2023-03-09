@@ -52,6 +52,7 @@ void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
     auto cimpl = _scenegraph->_compositorImpl;
     cimpl->_cameraName = _cameraname;
+    cimpl->_compcontext->Resize(width(),height());
     auto comptek = _scenegraph->_compositorTechnique;
 
     auto orig_onode = comptek->_outputNode;
