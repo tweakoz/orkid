@@ -79,7 +79,7 @@ void PickBuffer::mydraw(fray3_constptr_t ray) {
   }
   ///////////////////////////////////////////////////////////////////////////
   ork::lev2::RenderContextFrameData RCFD(_context); //
-  RCFD._cimpl = _compimpl;
+  RCFD.pushCompositor(_compimpl);
   _pixelfetchctx.mUserData.set<ork::lev2::RenderContextFrameData*>(&RCFD);
   ///////////////////////////////////////////////////////////////////////////
 

@@ -117,7 +117,7 @@ simpleuiapp_ptr_t createSimpleUiApp(appinitdata_ptr_t initdata ) {
     // draw the synth HUD
     ////////////////////////////////////////////////////
     RenderContextFrameData RCFD(context); // renderer per/frame data
-    RCFD._cimpl = compositorimpl;
+    RCFD.pushCompositor(compositorimpl);
     RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
     context->pushRenderContextFrameData(&RCFD);
     lev2::UiViewportRenderTarget rt(nullptr);

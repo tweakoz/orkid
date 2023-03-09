@@ -51,6 +51,7 @@ void EzTopWidget::enableUiDraw(){
   auto nodetek        = compdata->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
   auto outpnode       = nodetek->tryOutputNodeAs<ScreenOutputCompositingNode>();
   auto compositorimpl = compdata->createImpl();
+  compositorimpl->_name = "EzTopWidget::compositorimpl";
   compositorimpl->bindLighting(lightmgr.get());
   CPD->addStandardLayers();
   (*cameras)["spawncam"] = camdata;
@@ -83,7 +84,8 @@ void EzTopWidget::enableUiDraw(){
     auto mtxi    = context->MTXI(); // FX Interface
     fbi->SetClearColor(fvec4(0.0, 0.0, 0.1, 1));
     ////////////////////////////////////////////////////
-    rcfd->_cimpl = compositorimpl;
+    rcfd->_name = "EzTopWidget::rcfd";
+    rcfd->pushCompositor(compositorimpl);
     rcfd->setUserProperty("DB"_crc, lev2::rendervar_t(DB));
     rcfd->_target = context;
     context->pushRenderContextFrameData(rcfd.get());
@@ -102,6 +104,7 @@ void EzTopWidget::enableUiDraw(){
     ezapp->_uicontext->draw(drwev);
     mtxi->PopUIMatrix();
     context->endFrame();
+    rcfd->popCompositor();
     ////////////////////////////////////////////////////
     dbufcontext->releaseFromReadLocked(DB);
   });  

@@ -581,7 +581,7 @@ void Scene::_renderIMPL(Context* context,rcfd_ptr_t RCFD){
 
   RCFD->setUserProperty("time"_crc,_currentTime);
 
-  RCFD->_cimpl = _compositorImpl;
+  RCFD->pushCompositor(_compositorImpl);
 
   _renderer->setContext(context);
 
@@ -640,6 +640,8 @@ void Scene::_renderIMPL(Context* context,rcfd_ptr_t RCFD){
   }
   _dbufcontext_SG->releaseFromReadLocked(DB);
 
+  RCFD->popCompositor();
+
   if(_synchro){
     _synchro->endRender();
   }
@@ -660,7 +662,7 @@ void Scene::_renderWithAcquiredRenderDrawBuffer(acqdrawbuffer_constptr_t acqbuf)
 
   rcfd->setUserProperty("time"_crc,_currentTime);
 
-  rcfd->_cimpl = _compositorImpl;
+  rcfd->pushCompositor(_compositorImpl);
 
   _renderer->setContext(context);
 
@@ -717,6 +719,9 @@ void Scene::_renderWithAcquiredRenderDrawBuffer(acqdrawbuffer_constptr_t acqbuf)
 
     //context->endFrame();
   }  
+
+  rcfd->popCompositor();
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////

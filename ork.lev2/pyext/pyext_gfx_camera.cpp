@@ -75,6 +75,14 @@ void pyinit_gfx_camera(py::module& module_lev2) {
                 uic->PrevCamLoc = loc;
               })
           .def_property(
+              "distance",
+              [](ezuicam_ptr_t uic) -> float { //
+                return uic->mfLoc;
+              },
+              [](ezuicam_ptr_t uic, float loc) { //
+                uic->mfLoc = loc;
+              })
+          .def_property(
               "constrainZ",
               [](ezuicam_ptr_t uic) -> bool { //
                 return uic->_constrainZ;

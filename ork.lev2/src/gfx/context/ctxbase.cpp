@@ -101,7 +101,7 @@ void CTXBASE::progressHandler(opq::progressdata_ptr_t data) {
       TOPCPD.SetDstRect(tgtrect);
       static CompositingData _gdata;
       static auto _gimpl = _gdata.createImpl();
-      RCFD._cimpl        = _gimpl;
+      RCFD.pushCompositor(_gimpl);
       _gimpl->pushCPD(TOPCPD);
       /////////////////////////////////
       auto FBI  = _target->FBI();
@@ -174,6 +174,7 @@ void CTXBASE::progressHandler(opq::progressdata_ptr_t data) {
       _target->endFrame();
       _target->popRenderContextFrameData();
       _gimpl->popCPD();
+      RCFD.popCompositor();
 
     } else {
       auto pimpl = _pimpl_progress.makeShared<CtxBaseProgressPimpl>(_target);

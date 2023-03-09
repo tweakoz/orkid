@@ -162,7 +162,7 @@ void StandardCompositorFrame::render() {
 
     /////////////////////////////////////////////
 
-    _drawbuffer->_RCFD->_cimpl = this->compositor;
+    _drawbuffer->_RCFD->pushCompositor(this->compositor);
     _drawbuffer->_RCFD->setUserProperty("DB"_crc, lev2::rendervar_t(_drawbuffer->_DB));
 
     /////////////////////////////////////////////
@@ -244,6 +244,9 @@ void StandardCompositorFrame::render() {
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
       }
     }
+
+    _drawbuffer->_RCFD->popCompositor();
+
     /////////////////////////////////////////////
 
     _dbufcontextSFRAME->releaseFromReadLocked(DB);

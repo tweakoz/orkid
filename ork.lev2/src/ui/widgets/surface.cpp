@@ -73,7 +73,6 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   auto fxi    = tgt->FXI();
   auto rsi    = tgt->RSI();
   auto& primi = lev2::GfxPrimitives::GetRef();
-  auto defmtl = lev2::defaultUIMaterial();
   ///////////////////////////////////////
   int irtgw  = _rtgroup->width();
   int irtgh  = _rtgroup->height();
@@ -107,7 +106,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   lev2::SRasterState defstate;
   rsi->BindRasterState(defstate);
 
-  lev2::material_ptr_t material = defmtl;
+  lev2::material_ptr_t material = lev2::defaultUIMaterial();;
   if (_rtgroup) {
     static auto texmtl = std::make_shared<lev2::GfxMaterialUITextured>(tgt);
     auto ptex          = _rtgroup->GetMrt(0)->texture();

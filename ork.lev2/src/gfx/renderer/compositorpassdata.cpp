@@ -33,6 +33,21 @@ CompositingPassData CompositingPassData::FromRCFD(const RenderContextFrameData& 
 
 ///////////////////////////////////////////////////////////////////////////////
 
+const ViewportRect& CompositingPassData::GetDstRect() const {
+  return mDstRect;
+}
+const ViewportRect& CompositingPassData::GetMrtRect() const {
+  return mMrtRect;
+}
+void CompositingPassData::SetDstRect(const ViewportRect& rect) {
+  mDstRect = rect;
+}
+void CompositingPassData::SetMrtRect(const ViewportRect& rect) {
+  mMrtRect = rect;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void CompositingPassData::defaultSetup(CompositorDrawData& drawdata) {
   this->AddLayer("All");
   this->mbDrawSource = true;

@@ -51,7 +51,7 @@ struct Resources {
     _compdata = std::make_shared<CompositingData>();
     _compimpl = std::make_shared<CompositingImpl>(*_compdata);
     _CPD._cameraMatrices = & _cammatrices;
-    _RCFD->_cimpl = _compimpl; // bind compositor to _RCFD
+    _RCFD->pushCompositor(_compimpl); // bind compositor to _RCFD
 
     ///////////////////////////////////////////////////
     // primitive instance is always rendered at origin

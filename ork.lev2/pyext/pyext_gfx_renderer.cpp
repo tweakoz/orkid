@@ -25,10 +25,9 @@ void pyinit_gfx_renderer(py::module& module_lev2) {
                          .def(py::init([](ctx_t& ctx) -> rcfd_ptr_t { //
                            return std::make_shared<RenderContextFrameData>(ctx.get());
                          }))
-                         .def_property(
-                             "cimpl",
-                             [](rcfd_ptr_t the_rcfd) -> compositorimpl_ptr_t { return the_rcfd->_cimpl; },
-                             [](rcfd_ptr_t the_rcfd, compositorimpl_ptr_t c) { the_rcfd->_cimpl = c; })
+                         .def_property_readonly(
+                             "topCompositor",
+                             [](rcfd_ptr_t the_rcfd) -> compositorimpl_ptr_t { return the_rcfd->topCompositor(); })
                          .def("setRenderingModel", [](rcfd_ptr_t the_rcfd, std::string rendermodel) { //
                            auto as_crc               = CrcString(rendermodel.c_str());
                            the_rcfd->_renderingmodel = (uint32_t)as_crc._hashed;

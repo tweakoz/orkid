@@ -111,7 +111,7 @@ uitestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
     // draw the synth HUD
     ////////////////////////////////////////////////////
     RenderContextFrameData RCFD(context); // renderer per/frame data
-    RCFD._cimpl = compositorimpl;
+    RCFD.pushCompositor(compositorimpl);
     RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
     context->pushRenderContextFrameData(&RCFD);
     lev2::UiViewportRenderTarget rt(nullptr);

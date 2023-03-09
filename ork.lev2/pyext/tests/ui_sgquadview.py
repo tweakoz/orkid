@@ -43,9 +43,10 @@ class panel:
 
     self.cur_eye = self.cur_eye*0.999 + self.dst_eye*0.001
     self.cur_tgt = self.cur_tgt*0.999 + self.dst_tgt*0.001
+    self.uicam.distance = 1
     self.uicam.lookAt( self.cur_eye,
-                        self.cur_tgt,
-                        vec3(0,1,0))
+                       self.cur_tgt,
+                       vec3(0,1,0))
 
     self.counter = self.counter-1
 

@@ -35,11 +35,24 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 RenderContextFrameData::RenderContextFrameData(Context* ptarg)
-    : _cimpl(nullptr)
-    , _lightmgr(0)
+    : _lightmgr(0)
     , _target(ptarg) {
     setUserProperty("time"_crc,0.0f);
     setUserProperty("pbr_model"_crc,0);
+}
+
+void RenderContextFrameData::pushCompositor(compositorimpl_ptr_t c){
+  __cimplstack.push(c);
+}
+compositorimpl_ptr_t RenderContextFrameData::popCompositor(){
+  __cimplstack.pop();
+  return topCompositor();
+}
+compositorimpl_ptr_t RenderContextFrameData::topCompositor() const {
+  if(__cimplstack.empty()){
+    return nullptr;
+  }
+  return __cimplstack.top();
 }
 
 void RenderContextFrameData::setUserProperty(CrcString key, rendervar_t val) {
@@ -75,21 +88,20 @@ const DrawableBuffer* RenderContextFrameData::GetDB() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 const CompositingPassData& RenderContextFrameData::topCPD() const {
-  OrkAssert(_cimpl != nullptr);
-  return _cimpl->topCPD();
+  return topCompositor()->topCPD();
 }
 bool RenderContextFrameData::hasCPD() const {
   bool rval = false;
-  if (_cimpl != nullptr) {
-    rval = _cimpl->hasCPD();
+  if (topCompositor() != nullptr) {
+    rval = topCompositor()->hasCPD();
   }
   return rval;
 }
 
 bool RenderContextFrameData::isStereo() const {
   bool stereo = false;
-  if (_cimpl != nullptr) {
-    if (_cimpl->hasCPD()) {
+  if (topCompositor() != nullptr) {
+    if (topCompositor()->hasCPD()) {
       const auto& CPD = topCPD();
       stereo          = CPD.isStereoOnePass();
     }

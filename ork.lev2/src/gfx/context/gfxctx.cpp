@@ -101,7 +101,7 @@ Context::Context()
   static CompositingData _gdata;
   static auto _gimpl = _gdata.createImpl();
   static auto RCFD   = new RenderContextFrameData(this);
-  RCFD->_cimpl       = _gimpl;
+  RCFD->pushCompositor(_gimpl);
   _defaultrcfd       = RCFD;
   pushRenderContextFrameData(_defaultrcfd);
 }

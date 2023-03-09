@@ -130,18 +130,10 @@ struct CompositingPassData {
   std::vector<std::string> getLayerNames() const;
   void updateCompositingSize(int w, int h);
   bool isPicking() const;
-  const ViewportRect& GetDstRect() const {
-    return mDstRect;
-  }
-  const ViewportRect& GetMrtRect() const {
-    return mMrtRect;
-  }
-  void SetDstRect(const ViewportRect& rect) {
-    mDstRect = rect;
-  }
-  void SetMrtRect(const ViewportRect& rect) {
-    mMrtRect = rect;
-  }
+  const ViewportRect& GetDstRect() const;
+  const ViewportRect& GetMrtRect() const;
+  void SetDstRect(const ViewportRect& rect);
+  void SetMrtRect(const ViewportRect& rect);
   void assignLayers(const std::string& layers);
   void AddLayer(const std::string& layername);
   bool HasLayer(const std::string& layername) const;
@@ -324,6 +316,7 @@ struct CompositingImpl {
   //CompositingMorphable _morphable;
   compositorctx_ptr_t _compcontext;
   compositingpassdatastack_t _stack;
+  std::string _name;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
