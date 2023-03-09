@@ -21,7 +21,7 @@ from common.scenegraph import createSceneGraph
 class panel:
   def __init__(self,cam,uicam):
     self.cur_eye = vec3(0,0,0)
-    self.cur_tgt = vec3(0,0,0)
+    self.cur_tgt = vec3(0,0,1)
     self.dst_eye = vec3(0,0,0)
     self.dst_tgt = vec3(0,0,0)
     self.counter = 0
@@ -37,12 +37,12 @@ class panel:
       return r 
     
     if self.counter<=0:
-      self.counter = int(random.uniform(1,100))
+      self.counter = int(random.uniform(1,1000))
       self.dst_eye = genpos()
       self.dst_tgt = vec3(0,random.uniform(  0,2),0)
 
-    self.cur_eye = self.cur_eye*0.999 + self.dst_eye*0.001
-    self.cur_tgt = self.cur_tgt*0.999 + self.dst_tgt*0.001
+    self.cur_eye = self.cur_eye*0.9999 + self.dst_eye*0.0001
+    self.cur_tgt = self.cur_tgt*0.9999 + self.dst_tgt*0.0001
     self.uicam.distance = 1
     self.uicam.lookAt( self.cur_eye,
                        self.cur_tgt,
