@@ -79,7 +79,6 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   int isurfw = width();
   int isurfh = height();
   if (irtgw != isurfw || irtgh != isurfh) {
-     printf( "resize surface rtgroup<%d %d>\n", isurfw, isurfh);
     _rtgroup->Resize(isurfw, isurfh);
     mNeedsSurfaceRepaint = true;
   }

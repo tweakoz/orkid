@@ -16,8 +16,10 @@
 #include <ork/pch.h>
 
 #include <ork/lev2/gfx/dbgfontman.h>
+#include <ork/util/logger.h>
 
 namespace ork::lev2 {
+static logchannel_ptr_t logchan_rtgroup = logger()->createChannel("GLRTG", fvec3(0.8, 0.2, 0.5), true);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -68,6 +70,8 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
     rtg_impl = as_impl.value();
   }
   else{
+
+    logchan_rtgroup->log( "create new FBO iw<%d> ih<%d>", iw, ih);
 
     rtg_impl = std::make_shared<GlRtGroupImpl>();
     rtg_impl->_standard = std::make_shared<GlFboObject>();
@@ -150,6 +154,9 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
   OrkAssert(rtg_impl);
 
   if (rtgroup->IsSizeDirty()) {
+
+    logchan_rtgroup->log( "resize FBO iw<%d> ih<%d>", iw, ih);
+
     //////////////////////////////////////////
     // initialize depth renderbuffer
     if (rtgroup->_needsDepth) {
@@ -163,6 +170,12 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* rtgroup) {
         glRenderbufferStorageMultisample(GL_RENDERBUFFER, numsamples, GL_DEPTH_COMPONENT32, iw, ih);
       }
       GL_ERRORCHECK();
+
+      if(rtg_impl->_standard->_depthTexture!=0){
+        glDeleteTextures( 1, &rtg_impl->_standard->_depthTexture );
+        rtg_impl->_standard->_depthTexture = 0;
+      }
+
       glGenTextures(1, &rtg_impl->_standard->_depthTexture);
       glBindTexture(texture_target_2D, rtg_impl->_standard->_depthTexture);
 

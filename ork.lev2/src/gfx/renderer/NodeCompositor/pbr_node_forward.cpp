@@ -127,7 +127,6 @@ struct ForwardPbrNodeImpl {
     RtGroupRenderTarget rt(_rtg.get());
     {
       FBI->SetAutoClear(false); // explicit clear
-      context->beginFrame();
       /////////////////////////////////////////////////////////////////////////////////////////
       auto DB             = RCFD.GetDB();
       auto CPD            = CIMPL->topCPD();
@@ -152,22 +151,9 @@ struct ForwardPbrNodeImpl {
         auto MTXI = context->MTXI();
         FBI->Clear(pbrcommon->_clearColor, 1.0f);
 
-
-        /////////////////////////////////////////////////////
-        // Depth Prepass
-        /////////////////////////////////////////////////////
-
-        //context->debugPushGroup("ForwardPBR::depth-pre pass");
-        //RCFD._renderingmodel = RenderingModel("DEPTH_PREPASS"_crcu);
-        //irenderer->drawEnqueuedRenderables();
-        //context->debugPopGroup();
-        //FBI->PopRtGroup();
-
         /////////////////////////////////////////////////////
         // Render Skybox first so AA can blend with it
         /////////////////////////////////////////////////////
-
-        //FBI->PushRtGroup(_rtg.get());
 
         context->debugPushGroup("ForwardPBR::skybox pass");
         _rtg->_depthOnly = false;
@@ -185,8 +171,6 @@ struct ForwardPbrNodeImpl {
         context->debugPopGroup();
 
         ///////////////////////////////////////////////////////////////////////////
-
-        //auto& pointlights_untextured = _enumeratedLights._untexturedpointlights;
 
         RCFD.setUserProperty("enumeratedlights"_crcu,_enumeratedLights);
         
@@ -214,8 +198,6 @@ struct ForwardPbrNodeImpl {
           FBI->msaaBlit(_rtg,_rtg_resolve_msaa);
         }
       }
-      /////////////////////////////////////////////////////////////////////////////////////////
-      context->endFrame();
     }
     context->debugPopGroup();
   }
