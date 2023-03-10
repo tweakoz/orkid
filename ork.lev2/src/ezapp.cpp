@@ -227,7 +227,6 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
 
   //////////////////////////////////////////////
 
-  if(not initdata->_offscreen){
     _mainWindow = std::make_shared<EzMainWin>(*this);
 
     //////////////////////////////////////
@@ -260,6 +259,10 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
       //////////////////////////////
       opq::TrackCurrent opqtest(_mainq);
       _mainq->Process();
+
+      if(this->_onRunLoopIteration){
+        this->_onRunLoopIteration();
+      }
       //////////////////////////////
     };
 
@@ -277,7 +280,6 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
     }
 
     _mainWindow->_ctqt->Show();
-  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

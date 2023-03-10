@@ -59,6 +59,8 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   appinitdata->_height = py::cast<int>(item.second);
                 } else if (key == "fullscreen") {
                   appinitdata->_fullscreen = py::cast<bool>(item.second);
+                } else if (key == "offscreen") {
+                  appinitdata->_offscreen = py::cast<bool>(item.second);
                 } else if (key == "ssaa") {
                   appinitdata->_ssaa_samples = py::cast<int>(item.second);
                 }
@@ -215,7 +217,24 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
           })
       .def(
           "mainThreadLoop",
-          [](orkezapp_ptr_t app) -> int { //
+          [](orkezapp_ptr_t app,py::kwargs kwargs) -> int { //
+
+            if (kwargs) {
+              for (auto item : kwargs) {
+                auto key = py::cast<std::string>(item.first);
+                if (key == "on_iter") {
+                 auto py_val = py::cast<py::object>(item.second);
+                 OrkAssert(py::hasattr(py_val, "__call__"));
+                  app->_onRunLoopIteration = [py_val](){
+                      py::gil_scoped_acquire acquire_gil;
+                      py_val();
+                  };
+                }
+              }
+            }
+
+
+
             auto wrapped = [&]() -> int {
               py::gil_scoped_release release_gil;
               // The main thread is now owned by C++

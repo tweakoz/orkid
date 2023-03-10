@@ -7,7 +7,7 @@
 # see http://www.boost.org/LICENSE_1_0.txt
 ################################################################################
 
-import sys, math, random
+import sys, math, random, signal
 from orkengine.core import *
 from orkengine.lev2 import *
 sys.path.append((thisdir()/".."/".."/"examples"/"python").normalized.as_string) # add parent dir to path
@@ -61,7 +61,7 @@ class UiSgQuadViewTestApp(object):
   def __init__(self):
     super().__init__()
 
-    self.ezapp = OrkEzApp.create(self)
+    self.ezapp = OrkEzApp.create(self,offscreen=True)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
 
     # enable UI draw mode
@@ -75,6 +75,12 @@ class UiSgQuadViewTestApp(object):
                                         margin = 1,
                                         uiclass = ui.UiSceneGraphViewport,
                                         args = ["box",vec4(1,0,1,1)] )
+
+    def onCtrlC(signum, frame):
+      print("signalling EXIT to ezapp")
+      self.ezapp.signalExit()
+
+    signal.signal(signal.SIGINT, onCtrlC)
 
   ##############################################
 
@@ -140,4 +146,10 @@ class UiSgQuadViewTestApp(object):
     
 ###############################################################################
 
-UiSgQuadViewTestApp().ezapp.mainThreadLoop()
+def onRunLoopIteration():
+  # we just need this in-python runloop iteration 
+  #  in order to catch ctrl-c from python
+  #  so the python signal handler can trigger it's designated callback
+  pass
+
+UiSgQuadViewTestApp().ezapp.mainThreadLoop(on_iter=onRunLoopIteration)
