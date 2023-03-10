@@ -41,8 +41,8 @@ class panel:
       self.dst_eye = genpos()
       self.dst_tgt = vec3(0,random.uniform(  0,2),0)
 
-    self.cur_eye = self.cur_eye*0.9999 + self.dst_eye*0.0001
-    self.cur_tgt = self.cur_tgt*0.9999 + self.dst_tgt*0.0001
+    self.cur_eye = self.cur_eye*0.9995 + self.dst_eye*0.0005
+    self.cur_tgt = self.cur_tgt*0.9995 + self.dst_tgt*0.0005
     self.uicam.distance = 1
     self.uicam.lookAt( self.cur_eye,
                        self.cur_tgt,

@@ -56,7 +56,7 @@ void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
     auto comptek = _scenegraph->_compositorTechnique;
 
     auto orig_onode = comptek->_outputNode;
-
+    comptek->_renderNode->_bufferKey = (uint64_t) this;
     
     comptek->_outputNode = _outputnode;
     _scenegraph->_renderWithAcquiredRenderDrawBuffer(acqbuf);
