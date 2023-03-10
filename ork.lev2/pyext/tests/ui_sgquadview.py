@@ -154,7 +154,7 @@ class UiSgQuadViewTestApp(object):
       createPanel("cameraD",self.griditems[3]),
     ]
     
-    self.panels[0].griditem.widget.decoupleFromUiSize(128,64)
+    self.panels[0].griditem.widget.decoupleFromUiSize(4096,4096)
     self.panels[0].griditem.widget.aspect_from_rtgroup = True
 
   ################################################

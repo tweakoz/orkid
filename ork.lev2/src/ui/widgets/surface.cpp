@@ -162,7 +162,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
       float out_aspect = float(_geometry._w) / float(_geometry._h);
       float aspectt    = inp_aspect / out_aspect;
 
-      printf("inp_aspect<%g> out_aspect<%g> aspectt<%g>\n", inp_aspect, out_aspect, aspectt);
+      //printf("inp_aspect<%g> out_aspect<%g> aspectt<%g>\n", inp_aspect, out_aspect, aspectt);
 
       if (aspectt > 1.0) { // wider than UI (vertical letterbox)
 
