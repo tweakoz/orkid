@@ -57,6 +57,8 @@ public:
   bool mNeedsSurfaceRepaint;
   lev2::PickBuffer* _pickbuffer;
 
+  void_lambda_t _postRenderCallback;
+  
 protected:
   void _doGpuInit(lev2::Context* pTARG) override;
   void RenderCached();

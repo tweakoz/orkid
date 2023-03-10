@@ -7,7 +7,7 @@
 # see http://www.boost.org/LICENSE_1_0.txt
 ################################################################################
 
-import sys, math, random, signal
+import sys, math, random, signal, numpy, ork.path
 from orkengine.core import *
 from orkengine.lev2 import *
 sys.path.append((thisdir()/".."/".."/"examples"/"python").normalized.as_string) # add parent dir to path
@@ -15,6 +15,10 @@ from common.cameras import *
 from common.shaders import *
 from common.primitives import createGridData, createCubePrim
 from common.scenegraph import createSceneGraph
+from PIL import Image
+
+save_images = False 
+do_offscreen = False 
 
 ################################################################################
 
@@ -61,7 +65,7 @@ class UiSgQuadViewTestApp(object):
   def __init__(self):
     super().__init__()
 
-    self.ezapp = OrkEzApp.create(self,offscreen=True)
+    self.ezapp = OrkEzApp.create(self,offscreen=do_offscreen)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
 
     # enable UI draw mode
@@ -112,11 +116,33 @@ class UiSgQuadViewTestApp(object):
     # assign shared scenegraph and creat cameras for all sg viewports
 
     def createPanel(camname, griditem):
+
       camera, uicam = setupUiCameraX( cameralut=self.cameralut,
                                         camname=camname)
       griditem.widget.cameraName = camname
       griditem.widget.scenegraph = self.scenegraph
-      return panel(camera, uicam)
+
+      the_panel = panel(camera, uicam)
+
+      if save_images:
+        the_panel.capbuf = CaptureBuffer()
+        the_panel.frame_index = 0
+
+        def _on_render():
+          rtgroup = griditem.widget.rtgroup
+          rtbuffer = rtgroup.buffer(0) #rtg's MRT buffer 0
+          FBI = ctx.FBI()
+          FBI.captureAsFormat(rtbuffer,the_panel.capbuf,"RGBA8")
+          as_np = numpy.array(the_panel.capbuf,dtype=numpy.uint8).reshape( rtgroup.height, rtgroup.width, 4 )
+          img = Image.fromarray(as_np, 'RGBA')
+          flipped = img.transpose(Image.FLIP_TOP_BOTTOM)
+          out_path = ork.path.temp()/("%s-%003d.png"%(camname,the_panel.frame_index))
+          flipped.save(out_path)
+          the_panel.frame_index += 1
+
+        griditem.widget.onPostRender(_on_render)
+
+      return the_panel
 
     self.panels = [
       createPanel("cameraA",self.griditems[0]),

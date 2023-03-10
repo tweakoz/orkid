@@ -89,6 +89,11 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
     mNeedsSurfaceRepaint = false;
     _dirty               = false;
   }
+
+  if(_postRenderCallback){
+    _postRenderCallback();
+  }
+  
   ///////////////////////////////////
   // pickbuffer debug ?
   ///////////////////////////////////

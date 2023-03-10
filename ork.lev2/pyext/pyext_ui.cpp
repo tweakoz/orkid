@@ -203,6 +203,20 @@ void pyinit_ui(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   auto surface_type = //
       py::class_<ui::Surface, ui::Group, uisurface_ptr_t>(uimodule, "UiSurface")
+          .def(
+              "onPostRender",
+              [](uisurface_ptr_t surface, py::object callback) { //
+                 OrkAssert(py::hasattr(callback, "__call__"));
+                  surface->_postRenderCallback = [callback](){
+                      py::gil_scoped_acquire acquire_gil;
+                      callback();
+                  };
+             })
+          .def_property_readonly(
+              "rtgroup",
+              [](uisurface_ptr_t surface) -> rtgroup_ptr_t { //
+                return surface->_rtgroup;
+              })
           .def_property(
               "clearColor",
               [](uisurface_ptr_t surface) -> fvec3 { //
