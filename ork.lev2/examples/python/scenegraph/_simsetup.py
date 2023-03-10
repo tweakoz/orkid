@@ -35,7 +35,7 @@ class InstanceSet(object):
       as_mtx4 = mtx4()
       trans = vec3(random.uniform(-1,1),
                    random.uniform(-1,1),
-                   random.uniform(-1,1))*0.001
+                   random.uniform(-1,1))*0.027
       as_mtx4.compose(trans,rot,1.0)
       tramtx = mtx4.transMatrix(trans)
       rotmtx = mtx4.rotMatrix(rot)
@@ -70,11 +70,11 @@ class SimApp(object):
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.instanceset=None
     self.instance_set_class = instance_set_class
-    setupUiCamera(app=self,eye=vec3(0,0.5,3))
+    setupUiCamera(app=self,eye=vec3(30))
   ##############################################
   def onGpuInit(self,ctx):
     params_dict = {
-      "SkyboxIntensity": float(1),
+      "SkyboxIntensity": float(2),
       "SpecularIntensity": float(1),
     }
     createSceneGraph(app=self,rendermodel="DeferredPBR",params_dict=params_dict)

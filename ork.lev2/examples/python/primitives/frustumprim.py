@@ -21,7 +21,7 @@ HEIGHT = 720
 # setup context, shaders
 ###################################
 
-lev2appinit()
+ezapp = lev2appinit()
 ctx = GfxEnv.loadingContext()
 FBI = ctx.FBI()
 GBI = ctx.GBI()
@@ -56,7 +56,7 @@ compdata = CompositingData()
 compimpl = CompositingImpl(compdata)
 CPD = CompositingPassData()
 CPD.cameramatrices = CameraMatrices()
-RCFD.cimpl = compimpl # bind compositor to RCFD
+RCFD.pushCompositor(compimpl)  # bind compositor to RCFD
 
 ###################################
 # create an pipeline (a graphics pipeline)

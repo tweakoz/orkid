@@ -26,15 +26,15 @@ namespace ork::editor {
 
 struct EditorContext {
 
-  EditorContext(const lev2::AcquiredRenderDrawBuffer& rdb)
+  EditorContext(lev2::acqdrawbuffer_constptr_t rdb)
       : _rdb(rdb) {
   }
 
   inline lev2::cameradata_constptr_t getCamera() {
-    return (lev2::cameradata_constptr_t)_rdb._DB->cameraData("spawncam");
+    return (lev2::cameradata_constptr_t)_rdb->_DB->cameraData("spawncam");
   }
 
-  const lev2::AcquiredRenderDrawBuffer& _rdb;
+  lev2::acqdrawbuffer_constptr_t _rdb;
 
   mutable int _depth = -1;
   mutable varmap::VarMap _varmap;

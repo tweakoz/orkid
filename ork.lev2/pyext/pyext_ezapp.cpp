@@ -59,6 +59,8 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
                   appinitdata->_height = py::cast<int>(item.second);
                 } else if (key == "fullscreen") {
                   appinitdata->_fullscreen = py::cast<bool>(item.second);
+                } else if (key == "offscreen") {
+                  appinitdata->_offscreen = py::cast<bool>(item.second);
                 } else if (key == "ssaa") {
                   appinitdata->_ssaa_samples = py::cast<int>(item.second);
                 }
@@ -68,16 +70,16 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
 
             auto rval                                              = OrkEzApp::create(appinitdata);
             auto d_ev                                              = std::make_shared<ui::DrawEvent>(nullptr);
-            rval->_vars.makeValueForKey<uidrawevent_ptr_t>("drawev") = d_ev;
+            rval->_vars->makeValueForKey<uidrawevent_ptr_t>("drawev") = d_ev;
             ////////////////////////////////////////////////////////////////////
             if (py::hasattr(appinstance, "onGpuInit")) {
               auto gpuinitfn //
                   = py::cast<py::function>(appinstance.attr("onGpuInit"));
-              rval->_vars.makeValueForKey<py::function>("gpuinitfn") = gpuinitfn;
+              rval->_vars->makeValueForKey<py::function>("gpuinitfn") = gpuinitfn;
               rval->onGpuInit([=](Context* ctx) { //
                 ctx->makeCurrentContext();
                 py::gil_scoped_acquire acquire;
-                auto pyfn = rval->_vars.typedValueForKey<py::function>("gpuinitfn");
+                auto pyfn = rval->_vars->typedValueForKey<py::function>("gpuinitfn");
                 pyfn.value()(ctx_t(ctx));
               });
             }
@@ -85,13 +87,13 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             if (py::hasattr(appinstance, "onDraw")) {
               auto drawfn //
                   = py::cast<py::function>(appinstance.attr("onDraw"));
-              rval->_vars.makeValueForKey<py::function>("drawfn") = drawfn;
+              rval->_vars->makeValueForKey<py::function>("drawfn") = drawfn;
               rval->_userSpecifiedOnDraw = true;
               rval->onDraw([=](ui::drawevent_constptr_t drwev) { //
                 ork::opq::mainSerialQueue()->Process();
                 py::gil_scoped_acquire acquire;
-                auto pyfn       = rval->_vars.typedValueForKey<py::function>("drawfn");
-                auto mydrev     = rval->_vars.typedValueForKey<uidrawevent_ptr_t>("drawev");
+                auto pyfn       = rval->_vars->typedValueForKey<py::function>("drawfn");
+                auto mydrev     = rval->_vars->typedValueForKey<uidrawevent_ptr_t>("drawev");
                 *mydrev.value() = *drwev;
                 try {
                   pyfn.value()(drwev);
@@ -106,10 +108,10 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
             if (py::hasattr(appinstance, "onUpdate")) {
               auto updfn //
                   = py::cast<py::function>(appinstance.attr("onUpdate"));
-              rval->_vars.makeValueForKey<py::function>("updatefn") = updfn;
+              rval->_vars->makeValueForKey<py::function>("updatefn") = updfn;
               rval->onUpdate([=](ui::updatedata_ptr_t updata) { //
                 py::gil_scoped_acquire acquire;
-                auto pyfn = rval->_vars.typedValueForKey<py::function>("updatefn");
+                auto pyfn = rval->_vars->typedValueForKey<py::function>("updatefn");
                 try {
                   pyfn.value()(updata);
                 } catch (std::exception& e) {
@@ -123,10 +125,10 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
               bool using_scene = py::hasattr(appinstance, "sceneparams");
               auto uievfn //
                   = py::cast<py::function>(appinstance.attr("onUiEvent"));
-              rval->_vars.makeValueForKey<py::function>("uievfn") = uievfn;
+              rval->_vars->makeValueForKey<py::function>("uievfn") = uievfn;
               rval->onUiEvent([=](ui::event_constptr_t ev) -> ui::HandlerResult { //
                 py::gil_scoped_acquire acquire;
-                auto pyfn = rval->_vars.typedValueForKey<py::function>("uievfn");
+                auto pyfn = rval->_vars->typedValueForKey<py::function>("uievfn");
                 try {
                   pyfn.value()(ev);
                 } catch (std::exception& e) {
@@ -144,6 +146,10 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
           "timescale",
           [](orkezapp_ptr_t app) -> float { return app->_timescale; },
           [](orkezapp_ptr_t app, float val) { app->_timescale = val; })
+      ///////////////////////////////////////////////////////
+      .def_property_readonly("vars", [](orkezapp_ptr_t ezapp) -> varmap::varmap_ptr_t { //
+        return ezapp->_vars;
+      })
       ///////////////////////////////////////////////////////
       .def_property_readonly(
           "mainwin",
@@ -211,7 +217,24 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
           })
       .def(
           "mainThreadLoop",
-          [](orkezapp_ptr_t app) -> int { //
+          [](orkezapp_ptr_t app,py::kwargs kwargs) -> int { //
+
+            if (kwargs) {
+              for (auto item : kwargs) {
+                auto key = py::cast<std::string>(item.first);
+                if (key == "on_iter") {
+                 auto py_val = py::cast<py::object>(item.second);
+                 OrkAssert(py::hasattr(py_val, "__call__"));
+                  app->_onRunLoopIteration = [py_val](){
+                      py::gil_scoped_acquire acquire_gil;
+                      py_val();
+                  };
+                }
+              }
+            }
+
+
+
             auto wrapped = [&]() -> int {
               py::gil_scoped_release release_gil;
               // The main thread is now owned by C++
@@ -236,7 +259,12 @@ void pyinit_gfx_qtez(py::module& module_lev2) {
   type_codec->registerStdCodec<ezmainwin_ptr_t>(ezmainwin_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto eztopwidget_type = //
-      py::class_<EzTopWidget, ui::Group, eztopwidget_ptr_t>(module_lev2, "EzTopWidget");
+      py::class_<EzTopWidget, ui::Group, eztopwidget_ptr_t>(module_lev2, "EzTopWidget")
+      .def(
+          "enableUiDraw",
+          [](eztopwidget_ptr_t ezw) { //
+              ezw->enableUiDraw();
+          });
   type_codec->registerStdCodec<eztopwidget_ptr_t>(eztopwidget_type);
   /////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

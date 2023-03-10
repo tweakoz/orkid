@@ -148,6 +148,15 @@ technique std_mono
 		state_block=sb_m1;
 	}
 }
+technique std_mono_deferred
+{
+  fxconfig=fxcfg_default;
+  pass p0
+  { vertex_shader=vs_vtxcolor_mono;
+    fragment_shader=ps_deferred_emissive_fragclr;
+    state_block=sb_m1;
+  }
+}
 technique std_mono_fwd
 {
   fxconfig=fxcfg_default;

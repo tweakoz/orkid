@@ -250,7 +250,7 @@ int main(int argc, char** argv, char** envp) {
     context->beginFrame();
     controller->renderWithStandardCompositorFrame(sframe_ecs);
     ///////////////////////////////////////////////////////////////////////
-    sframe_outer->onImguiRender = [&](const AcquiredRenderDrawBuffer& rdb) {
+    sframe_outer->onImguiRender = [&](acqdrawbuffer_constptr_t rdb) {
       ImGuiStyle& style       = ImGui::GetStyle();
       style.WindowRounding    = 5.3f;
       style.FrameRounding     = 2.3f;

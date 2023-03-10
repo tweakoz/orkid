@@ -116,6 +116,7 @@ struct EzTopWidget : public ui::Group {
   EzTopWidget(EzMainWin* mainwin);
   void _doGpuInit(ork::lev2::Context* pTARG) final;
   void DoDraw(ui::drawevent_constptr_t drwev) final;
+  void enableUiDraw();
   void _doOnResized() final;
   ui::HandlerResult DoOnUiEvent(ui::event_constptr_t ev) final;
   EzMainWin* _mainwin;
@@ -200,7 +201,7 @@ public:
   ork::opq::opq_ptr_t _mainq;
   ork::opq::opq_ptr_t _updq;
   ork::opq::opq_ptr_t _conq;
-  varmap::VarMap _vars;
+  varmap::varmap_ptr_t _vars;
   std::atomic<uint64_t> _appstate;
   ui::updatedata_ptr_t _update_data;
   ui::context_ptr_t _uicontext;
@@ -210,6 +211,7 @@ public:
   EzMainWin::onupdateexit_t _onAppEarlyTerminated = nullptr;
   moviecontext_ptr_t _moviecontext;
   float _timescale = 1.0f;
+  void_lambda_t _onRunLoopIteration;
 };
 
 } // namespace ork::lev2

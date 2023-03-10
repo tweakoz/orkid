@@ -206,6 +206,8 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
   __priv_gapp.store(this);
   atexit(atexit_app);
 
+  _vars = std::make_shared<varmap::VarMap>();
+
   /////////////////////////////////////////////
   if (initdata->_envp) {
     genviron.init_from_envp(initdata->_envp);
@@ -225,7 +227,6 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
 
   //////////////////////////////////////////////
 
-  if(not initdata->_offscreen){
     _mainWindow = std::make_shared<EzMainWin>(*this);
 
     //////////////////////////////////////
@@ -258,6 +259,10 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
       //////////////////////////////
       opq::TrackCurrent opqtest(_mainq);
       _mainq->Process();
+
+      if(this->_onRunLoopIteration){
+        this->_onRunLoopIteration();
+      }
       //////////////////////////////
     };
 
@@ -275,7 +280,6 @@ OrkEzApp::OrkEzApp(appinitdata_ptr_t initdata)
     }
 
     _mainWindow->_ctqt->Show();
-  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -361,10 +365,6 @@ void OrkEzApp::onUpdateExit(EzMainWin::onupdateexit_t cb) {
   if(_mainWindow)
     _mainWindow->_onUpdateExit = cb;
 }
-/////////////////////////////////////////////////////////////////////////////////
-//void OrkEzApp::onUpdateWithScene(EzMainWin::onupdatewithscene_t cb) {
-  //_mainWindow->_onUpdateWithScene = cb;
-//}
 ///////////////////////////////////////////////////////////////////////////////
 filedevctx_ptr_t OrkEzApp::newFileDevContext(std::string uriproto, const file::Path& basepath) {
   return FileEnv::createContextForUriBase(uriproto, basepath);

@@ -396,7 +396,7 @@ int main(int argc, char** argv,char** envp) {
     //   (typically post-compositor)
     //////////////////////////////////////////////////////////////////
 
-    sframe->onImguiRender = [&](const AcquiredRenderDrawBuffer& rdb) {
+    sframe->onImguiRender = [&](acqdrawbuffer_constptr_t rdb) {
 
       ImGuiStyle& style = ImGui::GetStyle();
       style.WindowRounding = 5.3f;

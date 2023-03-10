@@ -34,6 +34,82 @@ void EzTopWidget::_doGpuInit(ork::lev2::Context* pTARG) {
 
 }
 /////////////////////////////////////////////////
+void EzTopWidget::enableUiDraw(){
+  auto ezapp = (OrkEzApp*)OrkEzAppBase::get();
+  /////////////////////////////////////////////////////////////////////
+  auto lmd      = ezapp->_vars->makeSharedForKey<LightManagerData>("lmgrdata");
+  auto lightmgr = ezapp->_vars->makeSharedForKey<LightManager>("lmgr", *lmd);
+  auto compdata = ezapp->_vars->makeSharedForKey<CompositingData>("compdata");
+  auto CPD      = ezapp->_vars->makeSharedForKey<CompositingPassData>("CPD");
+  auto dbufcontext = ezapp->_vars->makeSharedForKey<DrawBufContext>("dbufcontext");
+  auto cameras  = ezapp->_vars->makeSharedForKey<CameraDataLut>("cameras");
+  auto camdata  = ezapp->_vars->makeSharedForKey<CameraData>("camdata");
+  auto rcfd  = ezapp->_vars->makeSharedForKey<RenderContextFrameData>("RCFD");
+  /////////////////////////////////////////////////////////////////////
+  compdata->presetUnlit();
+  compdata->mbEnable  = true;
+  auto nodetek        = compdata->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
+  auto outpnode       = nodetek->tryOutputNodeAs<ScreenOutputCompositingNode>();
+  auto compositorimpl = compdata->createImpl();
+  compositorimpl->_name = "EzTopWidget::compositorimpl";
+  compositorimpl->bindLighting(lightmgr.get());
+  CPD->addStandardLayers();
+  (*cameras)["spawncam"] = camdata;
+  /////////////////////////////////////////////////////////////////////
+  auto update_buffer = std::make_shared<AcquiredUpdateDrawBuffer>();
+  auto draw_buffer = std::make_shared<AcquiredRenderDrawBuffer>();
+  /////////////////////////////////////////////////////////////////////
+  if(ezapp->_mainWindow->_onUpdate==nullptr){
+    ezapp->onUpdate([=](ui::updatedata_ptr_t updata) {
+      auto DB = dbufcontext->acquireForWriteLocked();
+      if (DB) {
+        update_buffer->_DB = DB;
+        DB->Reset();
+        DB->copyCameras(*cameras);
+        //   ezapp->_eztopwidget->onUpdateThreadTick(updata);
+        dbufcontext->releaseFromWriteLocked(DB);
+      }
+    });
+  }
+  /////////////////////////////////////////////////////////////////////
+  ezapp->onDraw([=](ui::drawevent_constptr_t drwev) {
+    ////////////////////////////////////////////////
+    auto DB = dbufcontext->acquireForReadLocked();
+    if (nullptr == DB)
+      return;
+    ////////////////////////////////////////////////
+    auto context = drwev->GetTarget();
+    auto fbi     = context->FBI();  // FrameBufferInterface
+    auto fxi     = context->FXI();  // FX Interface
+    auto mtxi    = context->MTXI(); // FX Interface
+    fbi->SetClearColor(fvec4(0.0, 0.0, 0.1, 1));
+    ////////////////////////////////////////////////////
+    rcfd->_name = "EzTopWidget::rcfd";
+    rcfd->pushCompositor(compositorimpl);
+    rcfd->setUserProperty("DB"_crc, lev2::rendervar_t(DB));
+    rcfd->_target = context;
+    context->pushRenderContextFrameData(rcfd.get());
+    draw_buffer->_DB = DB;
+    draw_buffer->_RCFD = rcfd;
+    auto mutable_drwev = std::const_pointer_cast<ui::DrawEvent>(drwev);
+    mutable_drwev->_acqdbuf = draw_buffer; 
+    ////////////////////////////////////////////////////
+    lev2::UiViewportRenderTarget rt(nullptr);
+    auto tgtrect        = context->mainSurfaceRectAtOrigin();
+    CPD->_irendertarget = &rt;
+    CPD->SetDstRect(tgtrect);
+    compositorimpl->pushCPD(*CPD);
+    context->beginFrame();
+    mtxi->PushUIMatrix();
+    ezapp->_uicontext->draw(drwev);
+    mtxi->PopUIMatrix();
+    context->endFrame();
+    rcfd->popCompositor();
+    ////////////////////////////////////////////////////
+    dbufcontext->releaseFromReadLocked(DB);
+  });  
+}
+/////////////////////////////////////////////////
 void EzTopWidget::DoDraw(ui::drawevent_constptr_t drwev) {
   //////////////////////////////////////////////////////
   // ensure onUpdateInit called before onGpuInit!

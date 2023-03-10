@@ -130,18 +130,10 @@ struct CompositingPassData {
   std::vector<std::string> getLayerNames() const;
   void updateCompositingSize(int w, int h);
   bool isPicking() const;
-  const ViewportRect& GetDstRect() const {
-    return mDstRect;
-  }
-  const ViewportRect& GetMrtRect() const {
-    return mMrtRect;
-  }
-  void SetDstRect(const ViewportRect& rect) {
-    mDstRect = rect;
-  }
-  void SetMrtRect(const ViewportRect& rect) {
-    mMrtRect = rect;
-  }
+  const ViewportRect& GetDstRect() const;
+  const ViewportRect& GetMrtRect() const;
+  void SetDstRect(const ViewportRect& rect);
+  void SetMrtRect(const ViewportRect& rect);
   void assignLayers(const std::string& layers);
   void AddLayer(const std::string& layername);
   bool HasLayer(const std::string& layername) const;
@@ -308,7 +300,8 @@ struct CompositingImpl {
   const CompositingPassData& popCPD();
   bool hasCPD() const;
 
-private:
+  std::string _cameraName = "spawncam";
+
   const CompositingData& _compositingData;
   compositordata_constptr_t _shared_compositingData;
 
@@ -321,8 +314,9 @@ private:
   int miActiveSceneItem = 0;
 
   //CompositingMorphable _morphable;
-  CompositingContext _compcontext;
+  compositorctx_ptr_t _compcontext;
   compositingpassdatastack_t _stack;
+  std::string _name;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -341,20 +335,7 @@ template <typename T> std::shared_ptr<T> CompositingData::tryNodeTechnique( std:
   return rval;
 }
 ////////////////////////////////////////////////////////////////////////////////
-struct AcquiredUpdateDrawBuffer{
-  DrawableBuffer* _DB = nullptr;
-};
-////////////////////////////////////////////////////////////////////////////////
-using acqupdatebuffer_lambda_t = std::function<void(const AcquiredUpdateDrawBuffer&)>;
-////////////////////////////////////////////////////////////////////////////////
-struct AcquiredRenderDrawBuffer{
-  AcquiredRenderDrawBuffer( rcfd_ptr_t rcfd );
-  const DrawableBuffer* _DB;
-  rcfd_ptr_t _RCFD;
-};
-////////////////////////////////////////////////////////////////////////////////
 struct StandardCompositorFrame {
-  using acqrf_lambda_t = std::function<void(const AcquiredRenderDrawBuffer& acq)>;
 
   StandardCompositorFrame(uidrawevent_constptr_t drawEvent = nullptr);
   void withAcquiredUpdateDrawBuffer(int debugcode, bool rendersync, acqupdatebuffer_lambda_t l);
@@ -374,12 +355,15 @@ struct StandardCompositorFrame {
   compositorimpl_ptr_t compositor;
   compositingpassdata_ptr_t passdata;
   irenderer_ptr_t renderer;
-  acqrf_lambda_t onPreCompositorRender;
-  acqrf_lambda_t onImguiRender;
   bool _use_imgui_docking = false;
-  acqrf_lambda_t onPostCompositorRender;
   rendervar_usermap_t _userprops;
   bool _updrendersync = false;
+
+  acqupdatebuffer_ptr_t _updatebuffer;
+  acqdrawbuffer_ptr_t _drawbuffer;
+  acqdrawbuffer_lambda_t onPreCompositorRender;
+  acqdrawbuffer_lambda_t onImguiRender;
+  acqdrawbuffer_lambda_t onPostCompositorRender;
 };
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

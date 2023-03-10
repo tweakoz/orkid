@@ -92,7 +92,7 @@ int main(int argc, char** argv, char** envp) {
 
     ///////////////// end render 3d content /////////////////////
 
-    sframe_imgui->onImguiRender = [&](const AcquiredRenderDrawBuffer& rdb) {
+    sframe_imgui->onImguiRender = [&](acqdrawbuffer_constptr_t rdb) {
       ImGuiStyle& style       = ImGui::GetStyle();
       style.WindowRounding    = 5.3f;
       style.FrameRounding     = 2.3f;

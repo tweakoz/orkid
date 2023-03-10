@@ -409,4 +409,8 @@ rendervar_t DrawableBuffer::getUserProperty(CrcString key) const {
   return rval;
 }
 ////////////////////////////////////////////////////////////////
+AcquiredRenderDrawBuffer::AcquiredRenderDrawBuffer(rcfd_ptr_t rcfd) {
+  _RCFD = rcfd;
+}
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

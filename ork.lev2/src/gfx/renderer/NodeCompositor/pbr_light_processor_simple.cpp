@@ -149,7 +149,7 @@ void SimpleLightProcessor::_renderUnshadowedUntexturedPointLights(
   auto FXI      = context->FXI();
   auto this_buf = context->FBI()->GetThisBuffer();
   context->debugPushGroup("SimpleLightProcessor::_renderUnshadowedUntexturedPointLights");
-  _deferredContext.beginPointLighting(drawdata, VD, nullptr);
+  _deferredContext.beginPointLighting(_defcompnode, drawdata, VD, nullptr);
   _updatePointLightUBOparams(context, enumlights->_untexturedpointlights, VD._camposmono);
   int numlights = enumlights->_untexturedpointlights.size();
   //printf("numlights<%d>\n", numlights );
@@ -176,7 +176,7 @@ void SimpleLightProcessor::_renderUnshadowedTexturedPointLights(
   for (auto texture_item : enumlights->_tex2pointlightmap) {
     auto texture = texture_item.first;
     int lidx     = 0;
-    _deferredContext.beginPointLighting(drawdata, VD, texture);
+    _deferredContext.beginPointLighting(_defcompnode, drawdata, VD, texture);
     _updatePointLightUBOparams(context, texture_item.second, VD._camposmono);
     int numlights = texture_item.second.size();
     //////////////////////////////////////////////////
@@ -203,7 +203,7 @@ void SimpleLightProcessor::_renderUnshadowedTexturedSpotLights(
   for (auto texture_item : enumlights->_tex2spotlightmap) {
     auto texture = texture_item.first;
     int lidx     = 0;
-    _deferredContext.beginSpotLighting(drawdata, VD, texture);
+    _deferredContext.beginSpotLighting(_defcompnode, drawdata, VD, texture);
     _updateSpotLightUBOparams(context, texture_item.second, VD._camposmono);
     int numlights = texture_item.second.size();
     //////////////////////////////////////////////////
@@ -230,7 +230,7 @@ void SimpleLightProcessor::_renderTexturedSpotDecals(
   for (auto texture_item : enumlights->_tex2spotdecalmap) {
     auto texture = texture_item.first;
     int lidx     = 0;
-    _deferredContext.beginSpotDecaling(drawdata, VD, texture);
+    _deferredContext.beginSpotDecaling(_defcompnode, drawdata, VD, texture);
     _updateSpotLightUBOparams(context, texture_item.second, VD._camposmono);
     int numlights = texture_item.second.size();
     //////////////////////////////////////////////////
@@ -308,7 +308,7 @@ void SimpleLightProcessor::_renderShadowedTexturedSpotLights(
     auto cookie  = texture_item.first;
     auto& lights = texture_item.second;
 
-    _deferredContext.beginShadowedSpotLighting(drawdata, VD, cookie);
+    _deferredContext.beginShadowedSpotLighting(_defcompnode, drawdata, VD, cookie);
 
     lightmtl->bindParamFloat(_deferredContext._parDepthFogDistance, 1.0f / _deferredContext._depthFogDistance);
     lightmtl->bindParamFloat(_deferredContext._parDepthFogPower, _deferredContext._depthFogPower);

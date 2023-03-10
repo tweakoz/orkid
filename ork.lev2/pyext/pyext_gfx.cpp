@@ -217,6 +217,8 @@ void pyinit_gfx(py::module& module_lev2) {
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<RtGroup, rtg_t>(module_lev2, "RtGroup")
       .def("resize", [](rtg_t& rtg, int w, int h) { rtg.get()->Resize(w, h); })
+      .def_property_readonly("width", [](const rtg_t& rtg) -> int { return int(rtg->width()); })
+      .def_property_readonly("height", [](const rtg_t& rtg) -> int { return int(rtg->height()); })
       .def(
           "__repr__",
           [](const rtg_t& rtg) -> std::string {
@@ -401,5 +403,10 @@ void pyinit_gfx(py::module& module_lev2) {
         return appwin->_rootWidget;
       });
   type_codec->registerStdCodec<appwindow_ptr_t>(appwindow_typ);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto dbufcontext_type = //
+      py::class_<DrawBufContext, dbufcontext_ptr_t>(module_lev2, "DrawBufContext");
+  type_codec->registerStdCodec<dbufcontext_ptr_t>(dbufcontext_type);
+  /////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
 } // namespace ork::lev2

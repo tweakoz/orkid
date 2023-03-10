@@ -62,6 +62,10 @@ struct PbrNodeImpl {
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   void _render(DeferredCompositingNodePbr* node, CompositorDrawData& drawdata) {
+
+    auto rtg_gbuffer = _context->_rtgs_gbuffer->fetch(node->_bufferKey);
+    auto rtg_laccum = _context->_rtgs_laccum->fetch(node->_bufferKey);
+
     _timer.Start();
     EASY_BLOCK("pbr-_render");
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
@@ -75,13 +79,13 @@ struct PbrNodeImpl {
     auto DWI                     = targ->DWI();
     const auto TOPCPD            = CIMPL->topCPD();
     /////////////////////////////////////////////////
-    RCFD.setUserProperty("rtg_gbuffer"_crc,_context->_rtgGbuffer);
-    RCFD.setUserProperty("rtb_gbuffer"_crc,_context->_rtbGbuffer);
-    RCFD.setUserProperty("rtb_accum"_crc,_context->_rtbLightAccum );
+    RCFD.setUserProperty("rtg_gbuffer"_crc,rtg_gbuffer);
+    RCFD.setUserProperty("rtb_gbuffer"_crc,rtg_gbuffer->GetMrt(0));
+    RCFD.setUserProperty("rtb_accum"_crc,rtg_laccum->GetMrt(0) );
     RCFD._renderingmodel = node->_renderingmodel;
     RCFD._pbrcommon = pbrcommon;
     //////////////////////////////////////////////////////
-    _context->renderUpdate(drawdata);
+    _context->renderUpdate(node, drawdata);
     auto VD = drawdata.computeViewData();
     _context->updateDebugLights(VD);
     _context->_clearColor = pbrcommon->_clearColor;
@@ -89,14 +93,14 @@ struct PbrNodeImpl {
     bool is_stereo = VD._isStereo;
     /////////////////////////////////////////////////////////////////////////////////////////
     targ->debugPushGroup("Deferred::render");
-    _context->renderGbuffer(drawdata, VD);
+    _context->renderGbuffer(node, drawdata, VD);
     targ->debugPushGroup("Deferred::LightAccum");
     _context->_accumCPD = TOPCPD;
     /////////////////////////////////////////////////////////////////
     auto vprect   = ViewportRect(0, 0, _context->_width, _context->_height);
     auto quadrect = SRect(0, 0, _context->_width, _context->_height);
     _context->_accumCPD.SetDstRect(vprect);
-    _context->_accumCPD._irendertarget        = _context->_accumRT;
+    _context->_accumCPD._irendertarget        = rtg_laccum->_rendertarget.get();
     _context->_accumCPD._cameraMatrices       = nullptr;
     _context->_accumCPD._stereoCameraMatrices = nullptr;
     _context->_accumCPD._stereo1pass          = false;
@@ -107,9 +111,9 @@ struct PbrNodeImpl {
     float skybox_level                       = pbrcommon->skyboxLevel() * pbrcommon->environmentIntensity();
     CIMPL->pushCPD(_context->_accumCPD); // base lighting
     FBI->SetAutoClear(true);
-    FBI->PushRtGroup(_context->_rtgLaccum.get());
-    // targ->beginFrame();
+    FBI->PushRtGroup(rtg_laccum.get());
     FBI->Clear(fvec4(0.1, 0.2, 0.3, 1), 1.0f);
+
     //////////////////////////////////////////////////////////////////
     if (auto lmgr = CIMPL->lightManager()) {
       EASY_BLOCK("lights-1");
@@ -157,9 +161,9 @@ struct PbrNodeImpl {
 
     /////////////////////////
 
-    _context->_lightingmtl->bindParamCTex(_context->_parMapGBuf, _context->_rtgGbuffer->GetMrt(0)->texture());
+    _context->_lightingmtl->bindParamCTex(_context->_parMapGBuf, rtg_gbuffer->GetMrt(0)->texture());
 
-    _context->_lightingmtl->bindParamCTex(_context->_parMapDepth, _context->_rtgGbuffer->_depthTexture);
+    _context->_lightingmtl->bindParamCTex(_context->_parMapDepth, rtg_gbuffer->_depthTexture);
 
     _context->_lightingmtl->bindParamCTex(_context->_parMapSpecularEnv, pbrcommon->envSpecularTexture().get());
     _context->_lightingmtl->bindParamCTex(_context->_parMapDiffuseEnv, pbrcommon->envDiffuseTexture().get());
@@ -210,13 +214,10 @@ struct PbrNodeImpl {
     /////////////////////////////////
 
     CIMPL->popCPD(); // base lighting
-    // targ->endFrame();
     FBI->PopRtGroup(); // deferredRtg
 
     targ->debugPopGroup(); // "Deferred::LightAccum"
     targ->debugPopGroup(); // "Deferred::render"
-     //float totaltime = _timer.SecsSinceStart();
-     //printf( "Deferred::_render totaltime<%g>\n", totaltime );
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   PoolString _camname;
@@ -259,13 +260,12 @@ pbr_deferred_context_ptr_t DeferredCompositingNodePbr::deferredContext(){
 }
 ///////////////////////////////////////////////////////////////////////////////
 rtbuffer_ptr_t DeferredCompositingNodePbr::GetOutput() const {
-  auto CTX = _impl.get<std::shared_ptr<PbrNodeImpl>>()->_context;
-  return CTX->_rtbLightAccum;
+  return GetOutputGroup()->GetMrt(0);
 }
 ///////////////////////////////////////////////////////////////////////////////
 rtgroup_ptr_t DeferredCompositingNodePbr::GetOutputGroup() const {
   auto CTX = _impl.get<std::shared_ptr<PbrNodeImpl>>()->_context;
-  return CTX->_rtgGbuffer;
+  return CTX->_rtgs_laccum->fetch(_bufferKey);
 }
 void DeferredCompositingNodePbr::overrideShader( std::string path ){
   auto CTX = _impl.get<std::shared_ptr<PbrNodeImpl>>()->_context;

@@ -105,6 +105,9 @@ fmtx4 GlMatrixStackInterface::Ortho( float left, float right, float top, float b
 		rval.setElemYX( 1,3, TransY );
 		rval.setElemYX( 2,3, TransZ );
 		rval.setElemYX( 3,3, one );
+
+  //rval.dump("ORTHO");
+
 	}
 	else
 	{	/*

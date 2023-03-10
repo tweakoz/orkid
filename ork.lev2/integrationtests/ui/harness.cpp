@@ -51,15 +51,15 @@ uitestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
   //////////////////////////////////////////////////////////
   // create references to various items scoped by ezapp
   //////////////////////////////////////////////////////////
-  auto renderer = ezapp->_vars.makeSharedForKey<DefaultRenderer>("renderer");
-  auto lmd      = ezapp->_vars.makeSharedForKey<LightManagerData>("lmgrdata");
-  auto lightmgr = ezapp->_vars.makeSharedForKey<LightManager>("lmgr", *lmd);
-  auto compdata = ezapp->_vars.makeSharedForKey<CompositingData>("compdata");
-  auto material = ezapp->_vars.makeSharedForKey<FreestyleMaterial>("material");
-  auto CPD      = ezapp->_vars.makeSharedForKey<CompositingPassData>("CPD");
-  auto cameras  = ezapp->_vars.makeSharedForKey<CameraDataLut>("cameras");
-  auto camdata  = ezapp->_vars.makeSharedForKey<CameraData>("camdata");
-  auto dbufcontext = ezapp->_vars.makeSharedForKey<DrawBufContext>("dbufcontext");
+  auto renderer = ezapp->_vars->makeSharedForKey<DefaultRenderer>("renderer");
+  auto lmd      = ezapp->_vars->makeSharedForKey<LightManagerData>("lmgrdata");
+  auto lightmgr = ezapp->_vars->makeSharedForKey<LightManager>("lmgr", *lmd);
+  auto compdata = ezapp->_vars->makeSharedForKey<CompositingData>("compdata");
+  auto material = ezapp->_vars->makeSharedForKey<FreestyleMaterial>("material");
+  auto CPD      = ezapp->_vars->makeSharedForKey<CompositingPassData>("CPD");
+  auto cameras  = ezapp->_vars->makeSharedForKey<CameraDataLut>("cameras");
+  auto camdata  = ezapp->_vars->makeSharedForKey<CameraData>("camdata");
+  auto dbufcontext = ezapp->_vars->makeSharedForKey<DrawBufContext>("dbufcontext");
   //////////////////////////////////////////////////////////
   compdata->presetUnlit();
   compdata->mbEnable  = true;
@@ -111,7 +111,7 @@ uitestapp_ptr_t createEZapp(appinitdata_ptr_t init_data) {
     // draw the synth HUD
     ////////////////////////////////////////////////////
     RenderContextFrameData RCFD(context); // renderer per/frame data
-    RCFD._cimpl = compositorimpl;
+    RCFD.pushCompositor(compositorimpl);
     RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
     context->pushRenderContextFrameData(&RCFD);
     lev2::UiViewportRenderTarget rt(nullptr);

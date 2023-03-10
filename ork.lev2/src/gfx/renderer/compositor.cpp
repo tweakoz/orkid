@@ -93,14 +93,13 @@ void PickingCompositorTechnique::composite(CompositorDrawData& drawdata) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-AcquiredRenderDrawBuffer::AcquiredRenderDrawBuffer(rcfd_ptr_t rcfd) {
-  _RCFD = rcfd;
-}
-///////////////////////////////////////////////////////////////////////////////
 StandardCompositorFrame::StandardCompositorFrame(uidrawevent_constptr_t drawEvent)
     : _drawEvent(drawEvent) {
   _dbufcontextSFRAME = std::make_shared<DrawBufContext>();
   _dbufcontextSFRAME->_name = "DBC.StandardCompositorFrame";
+
+  _updatebuffer = std::make_shared<AcquiredUpdateDrawBuffer>();
+  _drawbuffer = std::make_shared<AcquiredRenderDrawBuffer>();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void StandardCompositorFrame::pushEmptyUpdateDrawBuf(){
@@ -121,9 +120,8 @@ void StandardCompositorFrame::withAcquiredUpdateDrawBuffer(
 
     if (DB) {
       DB->Reset();
-      AcquiredUpdateDrawBuffer udb;
-      udb._DB = DB;
-      l(udb);
+      _updatebuffer->_DB = DB;
+      l(_updatebuffer);
       if (rendersync)
         _updateEnqueueLockedAndReleaseFrame(rendersync, DB);
       else
@@ -159,13 +157,13 @@ void StandardCompositorFrame::render() {
     if (nullptr == _RCFD) {
       _RCFD = std::make_shared<RenderContextFrameData>(context);
     }
-    AcquiredRenderDrawBuffer acq(_RCFD);
-    acq._DB = DB;
+    _drawbuffer->_RCFD = _RCFD;
+    _drawbuffer->_DB = DB;
 
     /////////////////////////////////////////////
 
-    acq._RCFD->_cimpl = this->compositor;
-    acq._RCFD->setUserProperty("DB"_crc, lev2::rendervar_t(acq._DB));
+    _drawbuffer->_RCFD->pushCompositor(this->compositor);
+    _drawbuffer->_RCFD->setUserProperty("DB"_crc, lev2::rendervar_t(_drawbuffer->_DB));
 
     /////////////////////////////////////////////
     // copy in frame global user properties
@@ -174,12 +172,12 @@ void StandardCompositorFrame::render() {
     for (auto item : _userprops) {
       const auto& K = item.first;
       const auto& V = item.second;
-      acq._RCFD->setUserProperty(K, V);
+      _drawbuffer->_RCFD->setUserProperty(K, V);
     }
 
     /////////////////////////////////////////////
 
-    context->pushRenderContextFrameData(acq._RCFD.get());
+    context->pushRenderContextFrameData(_drawbuffer->_RCFD.get());
 
     ///////////////////////////////////////
     // compositor setup
@@ -201,19 +199,19 @@ void StandardCompositorFrame::render() {
       /////////////////////////////////////////////
 
       if (this->onPreCompositorRender)
-        this->onPreCompositorRender(acq);
+        this->onPreCompositorRender(_drawbuffer);
 
       /////////////////////////////////////////////
 
-      context->pushRenderContextFrameData(acq._RCFD.get());
+      context->pushRenderContextFrameData(_drawbuffer->_RCFD.get());
 
-      FrameRenderer framerenderer(*acq._RCFD, [&]() {});
+      FrameRenderer framerenderer(*_drawbuffer->_RCFD, [&]() {});
       CompositorDrawData drawdata(framerenderer);
       drawdata._properties["primarycamindex"_crcu].set<int>(0);
       drawdata._properties["cullcamindex"_crcu].set<int>(0);
       drawdata._properties["irenderer"_crcu].set<lev2::IRenderer*>(this->renderer.get());
       drawdata._properties["simrunning"_crcu].set<bool>(true);
-      drawdata._properties["DB"_crcu].set<const DrawableBuffer*>(acq._DB);
+      drawdata._properties["DB"_crcu].set<const DrawableBuffer*>(_drawbuffer->_DB);
       drawdata._cimpl = this->compositor;
       this->compositor->assemble(drawdata);
       this->compositor->composite(drawdata);
@@ -223,7 +221,7 @@ void StandardCompositorFrame::render() {
       /////////////////////////////////////////////
 
       if (this->onPostCompositorRender)
-        this->onPostCompositorRender(acq);
+        this->onPostCompositorRender(_drawbuffer);
 
       /////////////////////////////////////////////
 
@@ -240,12 +238,15 @@ void StandardCompositorFrame::render() {
           OrkidDockSpace(&docking_enable);
         }
 
-        this->onImguiRender(acq);
+        this->onImguiRender(_drawbuffer);
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
       }
     }
+
+    _drawbuffer->_RCFD->popCompositor();
+
     /////////////////////////////////////////////
 
     _dbufcontextSFRAME->releaseFromReadLocked(DB);

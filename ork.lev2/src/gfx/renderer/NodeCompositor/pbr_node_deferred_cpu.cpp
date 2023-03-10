@@ -42,7 +42,8 @@ struct CpuNodeImpl {
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   CpuNodeImpl(DeferredCompositingNode* node)
-      : _camname(AddPooledString("Camera"))
+      : _node(node)
+      , _camname(AddPooledString("Camera"))
       , _context(node, "orkshader://deferred", KMAXLIGHTS)
       , _lighttiles(KMAXTILECOUNT)
       , _lightbuffer(nullptr) {
@@ -72,16 +73,16 @@ struct CpuNodeImpl {
     }
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  void _render(DeferredCompositingNode* node, CompositorDrawData& drawdata) {
+  void _render(CompositorDrawData& drawdata) {
     //_timer.Start();
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();
     auto targ                    = RCFD.GetTarget();
     //////////////////////////////////////////////////////
-    _context.renderUpdate(drawdata);
+    _context.renderUpdate(_node, drawdata);
     auto VD = drawdata.computeViewData();
     _context.updateDebugLights(VD);
-    _context._clearColor = node->_clearColor;
+    _context._clearColor = _node->_clearColor;
     //////////////////////////////////////////////////////////////////
     // clear lighttiles
     //////////////////////////////////////////////////////////////////
@@ -90,11 +91,11 @@ struct CpuNodeImpl {
       _lighttiles[i]->atomicOp([](pllist_t& item) { item.clear(); });
     /////////////////////////////////////////////////////////////////////////////////////////
     targ->debugPushGroup("Deferred::render");
-    _context.renderGbuffer(drawdata, VD);
+    _context.renderGbuffer(_node, drawdata, VD);
     auto depthclusterbase = _context.captureDepthClusters(drawdata, VD);
     targ->debugPushGroup("Deferred::LightAccum");
     printf( "WTF1\n");
-    _context.renderBaseLighting(drawdata, VD);
+    _context.renderBaseLighting(_node, drawdata, VD);
     this->renderPointLights(drawdata, VD);
     targ->debugPopGroup(); // "Deferred::LightAccum"
     targ->debugPopGroup(); // "Deferred::render"
@@ -108,7 +109,7 @@ struct CpuNodeImpl {
     auto FXI                     = framerenderer.framedata().GetTarget()->FXI();
     auto this_buf                = framerenderer.framedata().GetTarget()->FBI()->GetThisBuffer();
     /////////////////////////////////////////////////////////////////
-    _context.beginPointLighting(drawdata, VD, nullptr);
+    _context.beginPointLighting(_node, drawdata, VD, nullptr);
     FXI->bindParamBlockBuffer(_context._lightblock, _lightbuffer);
     /////////////////////////////////////
     // float time_tile_cpa = _timer.SecsSinceStart();
@@ -276,6 +277,7 @@ struct CpuNodeImpl {
   typedef std::vector<const PointLight*> pllist_t;
   typedef ork::LockedResource<pllist_t> locked_pllist_t;
 
+  DeferredCompositingNode* _node = nullptr;
   DeferredContext _context;
   int _sequence = 0;
   std::atomic<int> _lightjobcount;
@@ -305,13 +307,13 @@ void DeferredCompositingNode::doGpuInit(lev2::Context* pTARG, int iW, int iH) {
 ///////////////////////////////////////////////////////////////////////////////
 void DeferredCompositingNode::DoRender(CompositorDrawData& drawdata) {
   auto impl = _impl.get<std::shared_ptr<CpuNodeImpl>>();
-  impl->_render(this, drawdata);
+  impl->_render(drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
 rtbuffer_ptr_t DeferredCompositingNode::GetOutput() const {
   static int i = 0;
   i++;
-  return _impl.get<std::shared_ptr<CpuNodeImpl>>()->_context._rtgLaccum->GetMrt(0);
+  return _impl.get<std::shared_ptr<CpuNodeImpl>>()->_context._rtgs_laccum->fetch(_bufferKey)->GetMrt(0);
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::deferrednode

@@ -181,12 +181,19 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
                [](compositorimpl_ptr_t ci) {
                 ci->popCPD();
           })
+          .def_property_readonly("context", [](compositorimpl_ptr_t ci) -> compositorctx_ptr_t { //
+            return ci->_compcontext;
+          })
           .def("__repr__", [](compositorimpl_ptr_t i) -> std::string {
             fxstring<64> fxs;
             fxs.format("CompositingImpl(%p)", i.get());
             return fxs.c_str();
           });
   type_codec->registerStdCodec<compositorimpl_ptr_t>(compositorimpl_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  auto compositorctx_type = //
+      py::class_<CompositingContext, compositorctx_ptr_t>(module_lev2, "CompositingContext");
+  type_codec->registerStdCodec<compositorctx_ptr_t>(compositorctx_type);
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////

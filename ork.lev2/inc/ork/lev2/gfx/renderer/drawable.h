@@ -256,6 +256,20 @@ struct DrawBufContext {
   std::shared_ptr<DrawableBuffer> _lockeddrawablebuffer;
 };
 
+////////////////////////////////////////////////////////////////////////////////
+
+struct AcquiredUpdateDrawBuffer{
+  DrawableBuffer* _DB = nullptr;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct AcquiredRenderDrawBuffer{
+  AcquiredRenderDrawBuffer( rcfd_ptr_t rcfd=nullptr );
+  const DrawableBuffer* _DB;
+  rcfd_ptr_t _RCFD;
+};
+
 ///////////////////////////////////////////////////////////////////////////
 
 struct Drawable {

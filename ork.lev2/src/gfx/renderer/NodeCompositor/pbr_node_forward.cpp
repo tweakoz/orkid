@@ -23,6 +23,7 @@
 
 ImplementReflectionX(ork::lev2::pbr::ForwardNode, "PbrForwardNode");
 
+
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::lev2{
@@ -42,40 +43,50 @@ struct ForwardPbrNodeImpl {
       : _node(node)
       , _camname("Camera")
       , _layername("None") { //
+      
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ~ForwardPbrNodeImpl() {
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  void init(lev2::Context* context) {
-    if (nullptr == _rtg) {
+  void init(lev2::Context* context, int iw, int ih) {
+
+    if (nullptr == _rtgs_main) {
+
+      _rtgs_main = std::make_shared<RtgSet>(context,intToMsaaEnum(_ginitdata->_msaa_samples));
+      _rtgs_main->addBuffer("ForwardRt0", EBufferFormat::RGBA8);
 
       _layername = _node->_layers;
 
       printf( "PBRFWD_MSAA<%d>\n", int(_ginitdata->_msaa_samples) );
-      _rtg             = std::make_shared<RtGroup>(context, 8, 8, intToMsaaEnum(_ginitdata->_msaa_samples));
-      auto buf1        = _rtg->createRenderTarget(EBufferFormat::RGBA8);
-      buf1->_debugName = "ForwardRt0";
+      //_rtg             = std::make_shared<RtGroup>(context, 8, 8, intToMsaaEnum(_ginitdata->_msaa_samples));
+      //auto buf1        = _rtg->createRenderTarget(EBufferFormat::RGBA8);
+      //buf1->_debugName = "ForwardRt0";
       _skybox_material = std::make_shared<PBRMaterial>(context);
       _skybox_material->_variant = "skybox.forward"_crcu;
       _skybox_fxcache = _skybox_material->pipelineCache();
       _enumeratedLights = std::make_shared<EnumeratedLights>();
 
       if(_ginitdata->_msaa_samples>1){
-        _rtg_resolve_msaa = std::make_shared<RtGroup>(context, 8, 8, MsaaSamples::MSAA_1X);
+        _rtgs_resolve_msaa = std::make_shared<RtgSet>(context,MsaaSamples::MSAA_1X);
+        _rtgs_resolve_msaa->addBuffer("MsaaDownsampleBuffer",EBufferFormat::RGBA8);
+        //_rtg_resolve_msaa = std::make_shared<RtGroup>(context, 8, 8, MsaaSamples::MSAA_1X);
+        //auto dsbuf        = _rtg_resolve_msaa->createRenderTarget(EBufferFormat::RGBA8);
+        //dsbuf->_debugName = "MsaaDownsampleBuffer";
         _blit2screenmtl.gpuInit(context, "orkshader://solid");
         _fxtechnique1x1 = _blit2screenmtl.technique("texcolor");
         _fxpMVP         = _blit2screenmtl.param("MatMVP");
         _fxpColorMap    = _blit2screenmtl.param("ColorMap");
-        auto dsbuf        = _rtg_resolve_msaa->createRenderTarget(EBufferFormat::RGBA8);
-        dsbuf->_debugName = "MsaaDownsampleBuffer";
       }
 
     }
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  void _render(CompositorDrawData& drawdata) {
+  void _render(ForwardNode* node, CompositorDrawData& drawdata) {
     EASY_BLOCK("pbr-_render");
+
+    uint64_t rtg_key = node->_bufferKey;
+    auto rtg_main = _rtgs_main->fetch(rtg_key);
 
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();
@@ -103,9 +114,8 @@ struct ForwardPbrNodeImpl {
     //////////////////////////////////////////////////////
     // Resize RenderTargets
     //////////////////////////////////////////////////////
-    if (_rtg->width() != newwidth or _rtg->height() != newheight) {
-      _rtg->Resize(newwidth, newheight);
-      //_rtg_donly->Resize(newwidth, newheight);
+    if (rtg_main->width() != newwidth or rtg_main->height() != newheight) {
+      rtg_main->Resize(newwidth, newheight);
     }
 
     /////////////////////////////////////////////////
@@ -122,12 +132,11 @@ struct ForwardPbrNodeImpl {
     //////////////////////////////////////////////////////
     //////////////////////////////////////////////////////
     //////////////////////////////////////////////////////
-    _rtg->_autoclear = false;
+    rtg_main->_autoclear = false;
     context->debugPushGroup("ForwardPBR::render");
-    RtGroupRenderTarget rt(_rtg.get());
+    RtGroupRenderTarget rt(rtg_main.get());
     {
       FBI->SetAutoClear(false); // explicit clear
-      context->beginFrame();
       /////////////////////////////////////////////////////////////////////////////////////////
       auto DB             = RCFD.GetDB();
       auto CPD            = CIMPL->topCPD();
@@ -145,32 +154,18 @@ struct ForwardPbrNodeImpl {
         // clear
         ///////////////////////////////////////////////////////////////////////////
 
-        //_rtg->_depthOnly = true;
         context->debugMarker(FormatString("ForwardPBR::preclear"));
-        FBI->PushRtGroup(_rtg.get());
+        FBI->PushRtGroup(rtg_main.get());
         CIMPL->pushCPD(CPD);
         auto MTXI = context->MTXI();
         FBI->Clear(pbrcommon->_clearColor, 1.0f);
-
-
-        /////////////////////////////////////////////////////
-        // Depth Prepass
-        /////////////////////////////////////////////////////
-
-        //context->debugPushGroup("ForwardPBR::depth-pre pass");
-        //RCFD._renderingmodel = RenderingModel("DEPTH_PREPASS"_crcu);
-        //irenderer->drawEnqueuedRenderables();
-        //context->debugPopGroup();
-        //FBI->PopRtGroup();
 
         /////////////////////////////////////////////////////
         // Render Skybox first so AA can blend with it
         /////////////////////////////////////////////////////
 
-        //FBI->PushRtGroup(_rtg.get());
-
         context->debugPushGroup("ForwardPBR::skybox pass");
-        _rtg->_depthOnly = false;
+        rtg_main->_depthOnly = false;
 
         RCFD._renderingmodel = "CUSTOM"_crcu;
         RenderContextInstData RCID(&RCFD);
@@ -185,8 +180,6 @@ struct ForwardPbrNodeImpl {
         context->debugPopGroup();
 
         ///////////////////////////////////////////////////////////////////////////
-
-        //auto& pointlights_untextured = _enumeratedLights._untexturedpointlights;
 
         RCFD.setUserProperty("enumeratedlights"_crcu,_enumeratedLights);
         
@@ -210,12 +203,10 @@ struct ForwardPbrNodeImpl {
 
         CIMPL->popCPD();
 
-        if(_rtg_resolve_msaa){
-          FBI->msaaBlit(_rtg,_rtg_resolve_msaa);
+        if(_rtgs_resolve_msaa){
+          FBI->msaaBlit(rtg_main,_rtgs_resolve_msaa->fetch(rtg_key));
         }
       }
-      /////////////////////////////////////////////////////////////////////////////////////////
-      context->endFrame();
     }
     context->debugPopGroup();
   }
@@ -223,9 +214,10 @@ struct ForwardPbrNodeImpl {
   ForwardNode* _node;
   std::string _camname, _layername;
   enumeratedlights_ptr_t _enumeratedLights;
-  rtgroup_ptr_t _rtg;
-  rtgroup_ptr_t _rtg_donly;
-  rtgroup_ptr_t _rtg_resolve_msaa;
+
+  rtgset_ptr_t _rtgs_main;
+  rtgset_ptr_t _rtgs_resolve_msaa;
+
   fmtx4 _viewOffsetMatrix;
   pbrmaterial_ptr_t _skybox_material;
   fxpipelinecache_constptr_t _skybox_fxcache;
@@ -249,19 +241,19 @@ ForwardNode::~ForwardNode() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ForwardNode::doGpuInit(lev2::Context* pTARG, int iW, int iH) {
-  _impl.get<std::shared_ptr<ForwardPbrNodeImpl>>()->init(pTARG);
+  _impl.get<std::shared_ptr<ForwardPbrNodeImpl>>()->init(pTARG,iW,iH);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ForwardNode::DoRender(CompositorDrawData& drawdata) {
   auto impl = _impl.get<std::shared_ptr<ForwardPbrNodeImpl>>();
-  impl->_render(drawdata);
+  impl->_render(this, drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
 rtgroup_ptr_t ForwardNode::GetOutputGroup() const {
   auto fwd_impl = _impl.get<std::shared_ptr<ForwardPbrNodeImpl>>();
-  auto rtg_output = fwd_impl->_rtg;
-  if(fwd_impl->_rtg_resolve_msaa){
-    rtg_output = fwd_impl->_rtg_resolve_msaa;
+  auto rtg_output = fwd_impl->_rtgs_main->fetch(_bufferKey);
+  if(fwd_impl->_rtgs_resolve_msaa){
+    rtg_output = fwd_impl->_rtgs_resolve_msaa->fetch(_bufferKey);
   }
   return rtg_output;
 }

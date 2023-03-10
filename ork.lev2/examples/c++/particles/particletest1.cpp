@@ -242,11 +242,12 @@ int main(int argc, char** argv, char** envp) {
   //////////////////////////////////////////////////////////
   // draw handler (called on main(rendering) thread)
   //////////////////////////////////////////////////////////
+  auto rcfd = std::make_shared<RenderContextFrameData>();
   ezapp->onDraw([&](ui::drawevent_constptr_t drwev) {
     auto context = drwev->GetTarget();
-    RenderContextFrameData RCFD(context); // renderer per/frame data
-    RCFD.setUserProperty("vrcam"_crc, (const CameraData*) gpurec->_camdata.get() );
-    gpurec->_sg_scene->renderOnContext(context, RCFD);
+    rcfd->_target = context; // renderer per/frame data
+    rcfd->setUserProperty("vrcam"_crc, (const CameraData*) gpurec->_camdata.get() );
+    gpurec->_sg_scene->renderOnContext(context, rcfd);
   });
   //////////////////////////////////////////////////////////
   ezapp->onUiEvent([&](ui::event_constptr_t ev) -> ui::HandlerResult {

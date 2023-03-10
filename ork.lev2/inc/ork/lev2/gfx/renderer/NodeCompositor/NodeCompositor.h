@@ -61,6 +61,7 @@ public:
 
   RenderingModel _renderingmodel;
   std::string _layers;
+  uint64_t _bufferKey = 0;
   
 private:
   virtual void doGpuInit(lev2::Context* pTARG, int w, int h) = 0;

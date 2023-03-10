@@ -75,11 +75,11 @@ CommonStuff::CommonStuff() {
              Context* targ, //
              datablock_constptr_t inp_datablock) -> datablock_ptr_t {
 
-    /*printf(
+    printf(
         "EnvironmentTexture Irradiance PreProcessor tex<%p:%s> datablocklen<%zu>...\n",
         tex.get(),
         tex->_debugName.c_str(),
-        inp_datablock->length());*/
+        inp_datablock->length());
 
     auto hasher = DataBlock::createHasher();
     hasher->accumulateString("irradiancemap-v1");

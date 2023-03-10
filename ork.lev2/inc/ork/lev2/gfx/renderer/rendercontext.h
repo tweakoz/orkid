@@ -98,7 +98,7 @@ typedef svar64_t rendervar_t;
 
 struct RenderContextFrameData {
 
-  RenderContextFrameData(Context* ptarg);
+  RenderContextFrameData(Context* ptarg=nullptr);
 
   RenderContextFrameData(const RenderContextFrameData&) = delete;
   RenderContextFrameData& operator=(const RenderContextFrameData&) = delete;
@@ -143,13 +143,20 @@ struct RenderContextFrameData {
 
   //////////////////////////////////////
 
-  compositorimpl_ptr_t _cimpl;
+  void pushCompositor(compositorimpl_ptr_t c);  
+  compositorimpl_ptr_t popCompositor();  
+  compositorimpl_ptr_t topCompositor() const;
+
+  //////////////////////////////////////
+
+  std::stack<compositorimpl_ptr_t> __cimplstack;
   LightManager* _lightmgr = nullptr;
   usermap_t _userProperties;
-  Context* const _target = nullptr;
+  Context* _target = nullptr;
   const IRenderer* _renderer;
   RenderingModel _renderingmodel;
   pbr::commonstuff_ptr_t _pbrcommon;
+  std::string _name;
 };
 
 typedef std::function<void(RenderContextFrameData&)> PreRenderCallback_t;

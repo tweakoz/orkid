@@ -294,6 +294,10 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
   _dbufcontext_SG = std::make_shared<DrawBufContext>();
   _dbufcontext_SG->_name = "DBC.SceneGraph";
 
+  if (auto try_dbufcontext = params->typedValueForKey<dbufcontext_ptr_t>("dbufcontext")) {
+    _dbufcontext_SG = try_dbufcontext.value();
+  }
+
   _renderer = std::make_shared<DefaultRenderer>();
   _lightManagerData = std::make_shared<LightManagerData>();
   _lightManager     = std::make_shared<LightManager>(*_lightManagerData.get());
@@ -558,7 +562,7 @@ void Scene::enqueueToRenderer(cameradatalut_ptr_t cameras,on_enqueue_fn_t on_enq
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Scene::_renderIMPL(Context* context,RenderContextFrameData& RCFD){
+void Scene::_renderIMPL(Context* context,rcfd_ptr_t RCFD){
 
   if (_dogpuinit) {
     gpuInit(context);
@@ -573,15 +577,15 @@ void Scene::_renderIMPL(Context* context,RenderContextFrameData& RCFD){
 
   auto DB = _dbufcontext_SG->acquireForReadLocked();
 
-  RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
+  RCFD->setUserProperty("DB"_crc, lev2::rendervar_t(DB));
 
-  RCFD.setUserProperty("time"_crc,_currentTime);
+  RCFD->setUserProperty("time"_crc,_currentTime);
 
-  RCFD._cimpl = _compositorImpl;
+  RCFD->pushCompositor(_compositorImpl);
 
   _renderer->setContext(context);
 
-  context->pushRenderContextFrameData(&RCFD);
+  context->pushRenderContextFrameData(RCFD.get());
   auto fbi  = context->FBI();  // FrameBufferInterface
   auto fxi  = context->FXI();  // FX Interface
   auto mtxi = context->MTXI(); // matrix Interface
@@ -604,7 +608,7 @@ void Scene::_renderIMPL(Context* context,RenderContextFrameData& RCFD){
   fbi->setScissor(tgtrect);
   if (1) {
     context->beginFrame();
-    FrameRenderer framerenderer(RCFD, [&]() {});
+    FrameRenderer framerenderer(*RCFD, [&]() {});
     CompositorDrawData drawdata(framerenderer);
     drawdata._properties["primarycamindex"_crcu].set<int>(0);
     drawdata._properties["cullcamindex"_crcu].set<int>(0);
@@ -636,10 +640,66 @@ void Scene::_renderIMPL(Context* context,RenderContextFrameData& RCFD){
   }
   _dbufcontext_SG->releaseFromReadLocked(DB);
 
+  RCFD->popCompositor();
+
   if(_synchro){
     _synchro->endRender();
   }
 
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Scene::_renderWithAcquiredRenderDrawBuffer(acqdrawbuffer_constptr_t acqbuf){
+  auto DB = acqbuf->_DB;
+  auto rcfd = acqbuf->_RCFD;
+  auto context = rcfd->context();
+  if (_dogpuinit) {
+    gpuInit(context);
+  }
+  rcfd->setUserProperty("DB"_crc, lev2::rendervar_t(DB));
+  rcfd->setUserProperty("time"_crc,_currentTime);
+  rcfd->pushCompositor(_compositorImpl);
+  _renderer->setContext(context);
+  context->pushRenderContextFrameData(rcfd.get());
+  auto fbi  = context->FBI();  // FrameBufferInterface
+  auto fxi  = context->FXI();  // FX Interface
+  auto mtxi = context->MTXI(); // matrix Interface
+  auto gbi  = context->GBI();  // GeometryBuffer Interface
+  ///////////////////////////////////////
+  // compositor setup
+  ///////////////////////////////////////
+  float TARGW = fbi->GetVPW();
+  float TARGH = fbi->GetVPH();
+  lev2::UiViewportRenderTarget rt(nullptr);
+  auto tgtrect           = ViewportRect(0, 0, TARGW, TARGH);
+  _topCPD->_irendertarget = &rt;
+  _topCPD->SetDstRect(tgtrect);
+  _compositorImpl->pushCPD(*_topCPD);
+  ///////////////////////////////////////
+  // Draw!
+  ///////////////////////////////////////
+  if (1) {
+    fbi->SetClearColor(fvec4(0, 0, 0, 1));
+    fbi->setViewport(tgtrect);
+    fbi->setScissor(tgtrect);
+    FrameRenderer framerenderer(*rcfd, [&]() {});
+    CompositorDrawData drawdata(framerenderer);
+    drawdata._properties["primarycamindex"_crcu].set<int>(0);
+    drawdata._properties["cullcamindex"_crcu].set<int>(0);
+    drawdata._properties["irenderer"_crcu].set<lev2::IRenderer*>(_renderer.get());
+    drawdata._properties["simrunning"_crcu].set<bool>(true);
+    drawdata._properties["DB"_crcu].set<const DrawableBuffer*>(DB);
+    drawdata._cimpl = _compositorImpl;
+    _compositorImpl->assemble(drawdata);
+    _compositorImpl->composite(drawdata);
+  }  
+  _compositorImpl->popCPD();
+  context->popRenderContextFrameData();
+  if(_on_render_complete){
+    _on_render_complete(context);
+  }
+  rcfd->popCompositor();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -659,7 +719,7 @@ void Scene::renderWithStandardCompositorFrame(standardcompositorframe_ptr_t sfra
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Scene::renderOnContext(Context* context, RenderContextFrameData& RCFD) {
+void Scene::renderOnContext(Context* context, rcfd_ptr_t RCFD) {
   _renderIMPL(context,RCFD);
 }
 
@@ -667,8 +727,8 @@ void Scene::renderOnContext(Context* context, RenderContextFrameData& RCFD) {
 
 void Scene::renderOnContext(Context* context) {
   // from SceneGraphSystem::_onRender
-  RenderContextFrameData RCFD(context); // renderer per/frame data
-  _renderIMPL(context,RCFD);
+  auto rcfd = std::make_shared<RenderContextFrameData>(context); // renderer per/frame data
+  _renderIMPL(context,rcfd);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

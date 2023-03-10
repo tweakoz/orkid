@@ -154,6 +154,7 @@ struct DrawEvent {
 
   lev2::Context* _target;
   svar64_t _userData;
+  lev2::acqdrawbuffer_constptr_t _acqdbuf;
 };
 
 using drawevent_constptr_t = std::shared_ptr<const DrawEvent>;

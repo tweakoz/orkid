@@ -51,18 +51,19 @@ void Surface::GetPixel(int ix, int iy, lev2::PixelFetchContext& ctx) {
 /////////////////////////////////////////////////////////////////////////
 
 void Surface::_doOnResized(void) {
-  /*printf( "Surface<%s>::OnResize x<%d> y<%d> w<%d> h<%d>\n", _name.c_str(), miX, miY, _geometry._w, _geometry._h );
-
-  if( _rtgroup )
-  {
-      _rtgroup->Resize(width(),height());
-  }*/
+  //printf( "Surface<%s>::OnResize x<%d> y<%d> w<%d> h<%d>\n", _name.c_str(), x(), y(), width(), height() );
   DoSurfaceResize();
   SetDirty();
 }
 
 void Surface::RePaintSurface(ui::drawevent_constptr_t drwev) {
   DoRePaintSurface(drwev);
+}
+
+void Surface::_doGpuInit(lev2::Context* context) {
+  _rtgroup  = std::make_shared<lev2::RtGroup>(context, 8,8, lev2::MsaaSamples::MSAA_1X);
+  _rtgroup->_name = FormatString("ui::Surface<%p>", (void*) this);
+  auto mrt0 = _rtgroup->createRenderTarget(lev2::EBufferFormat::RGBA8);
 }
 
 void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
@@ -72,19 +73,12 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   auto fxi    = tgt->FXI();
   auto rsi    = tgt->RSI();
   auto& primi = lev2::GfxPrimitives::GetRef();
-  auto defmtl = lev2::defaultUIMaterial();
-
-  if (nullptr == _rtgroup) {
-    _rtgroup  = std::make_shared<lev2::RtGroup>(tgt, _geometry._w, _geometry._h, lev2::MsaaSamples::MSAA_1X);
-    auto mrt0 = _rtgroup->createRenderTarget(lev2::EBufferFormat::RGBA8);
-  }
   ///////////////////////////////////////
   int irtgw  = _rtgroup->width();
   int irtgh  = _rtgroup->height();
   int isurfw = width();
   int isurfh = height();
   if (irtgw != isurfw || irtgh != isurfh) {
-    // printf( "resize surface rtgroup<%d %d>\n", isurfw, isurfh);
     _rtgroup->Resize(isurfw, isurfh);
     mNeedsSurfaceRepaint = true;
   }
@@ -95,6 +89,11 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
     mNeedsSurfaceRepaint = false;
     _dirty               = false;
   }
+
+  if(_postRenderCallback){
+    _postRenderCallback();
+  }
+  
   ///////////////////////////////////
   // pickbuffer debug ?
   ///////////////////////////////////
@@ -111,7 +110,7 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   lev2::SRasterState defstate;
   rsi->BindRasterState(defstate);
 
-  lev2::material_ptr_t material = defmtl;
+  lev2::material_ptr_t material = lev2::defaultUIMaterial();;
   if (_rtgroup) {
     static auto texmtl = std::make_shared<lev2::GfxMaterialUITextured>(tgt);
     auto ptex          = _rtgroup->GetMrt(0)->texture();

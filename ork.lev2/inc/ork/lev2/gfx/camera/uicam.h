@@ -123,7 +123,7 @@ public:
   fvec4 vec_billboardUp;
   fvec4 vec_billboardRight;
 
-  float mfLoc;
+  float mfLoc = 0.1;
 
   float _base_zmoveamt = 0.3;
 

@@ -153,7 +153,7 @@ int main(int argc, char** argv, char** envp) {
     renderer.get()->setContext(context);
 
     RenderContextFrameData RCFD(context); // renderer per/frame data
-    RCFD._cimpl = compositorimpl;
+    RCFD.pushCompositor(compositorimpl);
     RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
     context->pushRenderContextFrameData(&RCFD);
     auto fbi = context->FBI(); // FrameBufferInterface

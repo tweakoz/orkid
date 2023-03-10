@@ -264,11 +264,13 @@ struct CompositorDrawData;
 struct CompositingContext;
 struct CompositingMorphable;
 struct CompositingPassData;
+struct CompositingContext;
 struct CompositingImpl;
 struct CompositingData;
 struct CompositingTechnique;
 struct NodeCompositingTechnique;
 class OutputCompositingNode;
+class RtGroupOutputCompositingNode;
 class RenderCompositingNode;
 class PostCompositingNode;
 struct AcquiredUpdateDrawBuffer;
@@ -278,6 +280,7 @@ using compositingpassdata_ptr_t = std::shared_ptr<CompositingPassData>;
 using compositordata_ptr_t   = std::shared_ptr<CompositingData>;
 using compositordata_constptr_t = std::shared_ptr<const CompositingData>;
 using compositorimpl_ptr_t   = std::shared_ptr<CompositingImpl>;
+using compositorctx_ptr_t   = std::shared_ptr<CompositingContext>;
 using compositingscene_ptr_t   = std::shared_ptr<CompositingScene>;
 using compositingscene_constptr_t   = std::shared_ptr<const CompositingScene>;
 using compositingsceneitem_ptr_t   = std::shared_ptr<CompositingSceneItem>;
@@ -285,9 +288,19 @@ using compositingsceneitem_constptr_t   = std::shared_ptr<const CompositingScene
 using compositortechnique_ptr_t   = std::shared_ptr<CompositingTechnique>;
 using nodecompositortechnique_ptr_t   = std::shared_ptr<NodeCompositingTechnique>;
 using compositoroutnode_ptr_t   = std::shared_ptr<OutputCompositingNode>;
+using compositoroutnode_rtgroup_ptr_t   = std::shared_ptr<RtGroupOutputCompositingNode>;
 using compositorrendernode_ptr_t   = std::shared_ptr<RenderCompositingNode>;
 using compositorpostnode_ptr_t   = std::shared_ptr<PostCompositingNode>;
 using standardcompositorframe_ptr_t = std::shared_ptr<StandardCompositorFrame>;
+//
+using acqupdatebuffer_ptr_t = std::shared_ptr<AcquiredUpdateDrawBuffer>;
+using acqdrawbuffer_ptr_t = std::shared_ptr<AcquiredRenderDrawBuffer>;
+using acqdrawbuffer_constptr_t = std::shared_ptr<const AcquiredRenderDrawBuffer>;
+using acqdrawbuffer_lambda_t = std::function<void(acqdrawbuffer_constptr_t)>;
+//
+using acqupdatebuffer_ptr_t = std::shared_ptr<AcquiredUpdateDrawBuffer>;
+using acqupdatebuffer_constptr_t = std::shared_ptr<const AcquiredUpdateDrawBuffer>;
+using acqupdatebuffer_lambda_t = std::function<void(acqupdatebuffer_constptr_t)>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // XgmModel
@@ -435,6 +448,8 @@ namespace ork::ui{
   struct Viewport;
   struct Box;
   struct EvTestBox;
+  struct LambdaBox;
+  struct SceneGraphViewport;
   struct LayoutItemBase;
   namespace anchor {
     struct Layout;
@@ -449,8 +464,10 @@ using uilayoutgroup_ptr_t = std::shared_ptr<::ork::ui::LayoutGroup>;
 using uilayoutitem_ptr_t = std::shared_ptr<::ork::ui::LayoutItemBase>;
 using uisurface_ptr_t = std::shared_ptr<::ork::ui::Surface>;
 using uiviewport_ptr_t = std::shared_ptr<::ork::ui::Viewport>;
+using uisgviewport_ptr_t = std::shared_ptr<::ork::ui::SceneGraphViewport>;
 using uibox_ptr_t = std::shared_ptr<::ork::ui::Box>;
 using uievtestbox_ptr_t = std::shared_ptr<::ork::ui::EvTestBox>;
+using uilambdabox_ptr_t = std::shared_ptr<::ork::ui::LambdaBox>;
 using uilayout_ptr_t = std::shared_ptr<::ork::ui::anchor::Layout>;
 using uiguide_ptr_t = std::shared_ptr<::ork::ui::anchor::Guide>;
 ///////////////////////////////////////////////////////////////////////////////
