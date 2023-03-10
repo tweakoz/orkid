@@ -51,7 +51,7 @@ void Surface::GetPixel(int ix, int iy, lev2::PixelFetchContext& ctx) {
 /////////////////////////////////////////////////////////////////////////
 
 void Surface::_doOnResized(void) {
-  //printf( "Surface<%s>::OnResize x<%d> y<%d> w<%d> h<%d>\n", _name.c_str(), x(), y(), width(), height() );
+  // printf( "Surface<%s>::OnResize x<%d> y<%d> w<%d> h<%d>\n", _name.c_str(), x(), y(), width(), height() );
   DoSurfaceResize();
   SetDirty();
 }
@@ -61,9 +61,17 @@ void Surface::RePaintSurface(ui::drawevent_constptr_t drwev) {
 }
 
 void Surface::_doGpuInit(lev2::Context* context) {
-  _rtgroup  = std::make_shared<lev2::RtGroup>(context, 8,8, lev2::MsaaSamples::MSAA_1X);
-  _rtgroup->_name = FormatString("ui::Surface<%p>", (void*) this);
-  auto mrt0 = _rtgroup->createRenderTarget(lev2::EBufferFormat::RGBA8);
+  _rtgroup        = std::make_shared<lev2::RtGroup>(context, 8, 8, lev2::MsaaSamples::MSAA_1X);
+  _rtgroup->_name = FormatString("ui::Surface<%p>", (void*)this);
+  auto mrt0       = _rtgroup->createRenderTarget(lev2::EBufferFormat::RGBA8);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Surface::decoupleFromUiSize(int w, int h) {
+  _decoupled_width       = w;
+  _decoupled_height      = h;
+  _decouple_from_ui_size = true;
 }
 
 void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
@@ -74,14 +82,28 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   auto rsi    = tgt->RSI();
   auto& primi = lev2::GfxPrimitives::GetRef();
   ///////////////////////////////////////
-  int irtgw  = _rtgroup->width();
-  int irtgh  = _rtgroup->height();
-  int isurfw = width();
-  int isurfh = height();
-  if (irtgw != isurfw || irtgh != isurfh) {
-    _rtgroup->Resize(isurfw, isurfh);
-    mNeedsSurfaceRepaint = true;
+  if (_decouple_from_ui_size) {
+    int irtgw  = _rtgroup->width();
+    int irtgh  = _rtgroup->height();
+    int isurfw = _decoupled_width;
+    int isurfh = _decoupled_height;
+
+    if (irtgw != isurfw or irtgh != isurfh) {
+      _rtgroup->Resize(isurfw, isurfh);
+      mNeedsSurfaceRepaint = true;
+    }
+  } else {
+    int irtgw  = _rtgroup->width();
+    int irtgh  = _rtgroup->height();
+    int isurfw = width();
+    int isurfh = height();
+
+    if (irtgw != isurfw or irtgh != isurfh) {
+      _rtgroup->Resize(isurfw, isurfh);
+      mNeedsSurfaceRepaint = true;
+    }
   }
+
   if (mNeedsSurfaceRepaint || IsDirty()) {
     fbi->PushRtGroup(_rtgroup.get());
     RePaintSurface(drwev);
@@ -90,10 +112,10 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
     _dirty               = false;
   }
 
-  if(_postRenderCallback){
+  if (_postRenderCallback) {
     _postRenderCallback();
   }
-  
+
   ///////////////////////////////////
   // pickbuffer debug ?
   ///////////////////////////////////
@@ -110,7 +132,8 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   lev2::SRasterState defstate;
   rsi->BindRasterState(defstate);
 
-  lev2::material_ptr_t material = lev2::defaultUIMaterial();;
+  lev2::material_ptr_t material = lev2::defaultUIMaterial();
+  ;
   if (_rtgroup) {
     static auto texmtl = std::make_shared<lev2::GfxMaterialUITextured>(tgt);
     auto ptex          = _rtgroup->GetMrt(0)->texture();
@@ -128,19 +151,71 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
 
     // printf( "Surface<%s>::Draw wx<%d> wy<%d> w<%d> h<%d>\n", _name.c_str(), ix_root, iy_root, _geometry._w, _geometry._h );
 
-    primi.RenderQuadAtZ(
-        material.get(),
-        tgt,
-        ix_root,
-        ix_root + _geometry._w, // x0, x1
-        iy_root,
-        iy_root + _geometry._h, // y0, y1
-        0.0f,                   // z
-        0.0f,
-        1.0f, // u0, u1
-        1.0f,
-        0.0f // v0, v1
-    );
+    if (_decouple_from_ui_size and _aspect_from_rtgroup) {
+
+      float u0 = 0.0f;
+      float u1 = 1.0f;
+      float v0 = 1.0f;
+      float v1 = 0.0f;
+
+      float inp_aspect = float(_decoupled_width) / float(_decoupled_height);
+      float out_aspect = float(_geometry._w) / float(_geometry._h);
+      float aspectt    = inp_aspect / out_aspect;
+
+      printf("inp_aspect<%g> out_aspect<%g> aspectt<%g>\n", inp_aspect, out_aspect, aspectt);
+
+      if (aspectt > 1.0) { // wider than UI (vertical letterbox)
+
+        int hdiff = _geometry._h - int(float(_geometry._h)/aspectt);
+        int oy0 = hdiff/2;
+        int oy1 = -hdiff/2;
+
+        primi.RenderQuadAtZ(
+            material.get(),
+            tgt,
+            ix_root,
+            ix_root + _geometry._w, // x0, x1
+            iy_root + oy0,
+            iy_root + _geometry._h + oy1, // y0, y1
+            0.0f,                   // z
+            u0,
+            u1,
+            v0,
+            v1);
+
+      } else {
+        int wdiff = _geometry._w - int(float(_geometry._w)*aspectt);
+        int ox0 = wdiff/2;
+        int ox1 = -wdiff/2;
+
+        primi.RenderQuadAtZ(
+            material.get(),
+            tgt,
+            ix_root + ox0,
+            ix_root + _geometry._w + ox1, // x0, x1
+            iy_root,
+            iy_root + _geometry._h, // y0, y1
+            0.0f,                   // z
+            u0,
+            u1,
+            v0,
+            v1);
+      }
+    } else {
+      primi.RenderQuadAtZ(
+          material.get(),
+          tgt,
+          ix_root,
+          ix_root + _geometry._w, // x0, x1
+          iy_root,
+          iy_root + _geometry._h, // y0, y1
+          0.0f,                   // z
+          0.0f,
+          1.0f, // u0, u1
+          1.0f,
+          0.0f // v0, v1
+      );
+    }
   }
   mtxi->PopUIMatrix();
   tgt->PopModColor();

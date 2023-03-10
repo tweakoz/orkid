@@ -212,6 +212,21 @@ void pyinit_ui(py::module& module_lev2) {
                       callback();
                   };
              })
+          //////////////////////////////////
+          .def("decoupleFromUiSize",
+                [](uisurface_ptr_t surface, int w, int h) { //
+                return surface->decoupleFromUiSize(w,h);
+              })
+          //////////////////////////////////
+          .def_property(
+              "aspect_from_rtgroup",
+              [](uisurface_ptr_t surface) -> bool { //
+                return surface->_aspect_from_rtgroup;
+              },
+              [](uisurface_ptr_t surface, bool x)  { //
+                return surface->_aspect_from_rtgroup = x;
+              }
+              )
           .def_property_readonly(
               "rtgroup",
               [](uisurface_ptr_t surface) -> rtgroup_ptr_t { //

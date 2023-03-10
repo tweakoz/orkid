@@ -116,6 +116,8 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
 
   float aspectratio = float(_compcontext->miWidth)/float(_compcontext->miHeight);
 
+  //printf( "CI W<%d> H<%d> aspect<%g>\n", _compcontext->miWidth, _compcontext->miHeight, aspectratio );
+
   // todo - compute CameraMatrices per rendertarget/pass !
 
   // lev2::rendervar_t passdata;

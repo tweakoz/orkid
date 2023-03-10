@@ -66,7 +66,7 @@ class UiSgQuadViewTestApp(object):
     super().__init__()
 
     self.ezapp = OrkEzApp.create(self,offscreen=do_offscreen)
-    self.ezapp.setRefreshPolicy(RefreshFastest, 0)
+    self.ezapp.setRefreshPolicy(RefreshFixedFPS, 30)
 
     # enable UI draw mode
     self.ezapp.topWidget.enableUiDraw()
@@ -100,7 +100,8 @@ class UiSgQuadViewTestApp(object):
     sg_params.DiffuseIntensity = 1.0
     sg_params.SpecularIntensity = 1.0
     sg_params.AmbientLevel = vec3(.125)
-    sg_params.preset = "DeferredPBR"
+    #sg_params.preset = "DeferredPBR"
+    sg_params.preset = "ForwardPBR"
     sg_params.dbufcontext = self.dbufcontext
 
     self.scenegraph = scenegraph.Scene(sg_params)
@@ -110,7 +111,8 @@ class UiSgQuadViewTestApp(object):
     self.grid_node.sortkey = 1
     self.rendernode = self.scenegraph.compositorrendernode
     cube_prim = createCubePrim(ctx=ctx,size=2.0)
-    pipeline_cube = createPipeline( app = self, ctx = ctx, rendermodel="DeferredPBR", techname="std_mono_deferred" )
+    #pipeline_cube = createPipeline( app = self, ctx = ctx, rendermodel="DeferredPBR", techname="std_mono_deferred" )
+    pipeline_cube = createPipeline( app = self, ctx = ctx, rendermodel="FORWARD_PBR", techname="std_mono_fwd" )
     self.cube_node = cube_prim.createNode("cube",self.layer,pipeline_cube)
 
     # assign shared scenegraph and creat cameras for all sg viewports
@@ -142,6 +144,7 @@ class UiSgQuadViewTestApp(object):
 
         griditem.widget.onPostRender(_on_render)
 
+      the_panel.griditem = griditem
       return the_panel
 
     self.panels = [
@@ -151,6 +154,9 @@ class UiSgQuadViewTestApp(object):
       createPanel("cameraD",self.griditems[3]),
     ]
     
+    self.panels[0].griditem.widget.decoupleFromUiSize(128,64)
+    self.panels[0].griditem.widget.aspect_from_rtgroup = True
+
   ################################################
 
   def onUpdate(self,updinfo):

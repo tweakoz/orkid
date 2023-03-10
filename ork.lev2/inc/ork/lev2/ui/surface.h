@@ -41,6 +41,8 @@ public:
 
   void RePaintSurface(ui::drawevent_constptr_t drwev);
 
+  void decoupleFromUiSize(int w, int h);
+
   void MarkSurfaceDirty() {
     mNeedsSurfaceRepaint = true;
     SetDirty();
@@ -58,7 +60,12 @@ public:
   lev2::PickBuffer* _pickbuffer;
 
   void_lambda_t _postRenderCallback;
-  
+
+  bool _aspect_from_rtgroup = false;
+  bool _decouple_from_ui_size = false;
+  int _decoupled_width = 0;
+  int _decoupled_height = 0;
+
 protected:
   void _doGpuInit(lev2::Context* pTARG) override;
   void RenderCached();

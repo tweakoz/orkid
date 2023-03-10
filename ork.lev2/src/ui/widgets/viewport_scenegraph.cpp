@@ -35,6 +35,7 @@ void SceneGraphViewport::_doGpuInit(lev2::Context* context) {
   _rtgroup->_name = FormatString("ui::SceneGraphViewport<%p>", (void*) this);
 }
 
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
@@ -52,7 +53,12 @@ void SceneGraphViewport::DoRePaintSurface(ui::drawevent_constptr_t drwev) {
 
     auto cimpl = _scenegraph->_compositorImpl;
     cimpl->_cameraName = _cameraname;
-    cimpl->_compcontext->Resize(width(),height());
+    if(_decouple_from_ui_size){
+      cimpl->_compcontext->Resize(_decoupled_width,_decoupled_height);
+    }
+    else{
+      cimpl->_compcontext->Resize(width(),height());
+    }
     auto comptek = _scenegraph->_compositorTechnique;
 
     auto orig_onode = comptek->_outputNode;
