@@ -9,6 +9,7 @@
 
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
+#include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <ork/lev2/gfx/rtgroup.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -45,19 +46,19 @@ RtGroup::~RtGroup() {
 ///////////////////////////////////////////////////////////////////////////////
 
 rtgroup_ptr_t RtGroup::clone() const {
-  auto _this = (RtGroup*) this;
+  auto _this = (RtGroup*)this;
 
-  auto rval = std::make_shared<RtGroup>(_parentTarget,miW,miH,_msaa_samples);
-  for( int i=0; i<kmaxmrts; i++ )
+  auto rval = std::make_shared<RtGroup>(_parentTarget, miW, miH, _msaa_samples);
+  for (int i = 0; i < kmaxmrts; i++)
     rval->mMrt[i] = _this->mMrt[i];
-  rval->mDepth = _this->mDepth;
-  rval->mNumMrts = _this->mNumMrts;
+  rval->mDepth      = _this->mDepth;
+  rval->mNumMrts    = _this->mNumMrts;
   rval->mbSizeDirty = _this->mbSizeDirty;
-  rval->_impl = _this->_impl;
+  rval->_impl       = _this->_impl;
   rval->_needsDepth = _this->_needsDepth;
-  rval->_autoclear = _this->_autoclear;
+  rval->_autoclear  = _this->_autoclear;
   rval->_clearColor = _this->_clearColor;
-  rval->_depthOnly = _this->_depthOnly;
+  rval->_depthOnly  = _this->_depthOnly;
   return rval;
 }
 
@@ -99,6 +100,41 @@ void RtGroup::Resize(int iw, int ih) {
       }
     }
   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+RtgSet::RtgSet(Context* ctx, MsaaSamples s, bool do_rendertarget)
+    : _context(ctx)
+    , _msaasamples(s)
+    , _do_rendertarget(do_rendertarget) {
+}
+
+rtgroup_ptr_t RtgSet::fetch(uint64_t key) {
+  rtgroup_ptr_t rval = nullptr;
+  auto it            = _rtgs.find(key);
+  if (it == _rtgs.end()) {
+    rval = std::make_shared<RtGroup>(_context, 8, 8, _msaasamples);
+    rval->_autoclear = _autoclear;
+    if(_do_rendertarget){
+      rval->_rendertarget = std::make_shared<RtGroupRenderTarget>(rval.get());
+    }
+    for (auto item : _bufrecs) {
+      auto buffer        = rval->createRenderTarget(item._format);
+      buffer->_debugName = item._name;
+    }
+    _rtgs[key] = rval;
+  } else {
+    rval = it->second;
+  }
+  return rval;
+}
+
+void RtgSet::addBuffer(std::string name, EBufferFormat fmt) {
+  BufRec br;
+  br._name   = name;
+  br._format = fmt;
+  _bufrecs.push_back(br);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

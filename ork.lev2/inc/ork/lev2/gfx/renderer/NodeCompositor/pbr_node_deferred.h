@@ -38,20 +38,20 @@ struct DeferredContext {
   ////////////////////////////////////////////////////////////////////
   void gpuInit(Context* target);
   const uint32_t* captureDepthClusters(const CompositorDrawData& drawdata, const ViewData& VD);
-  void renderUpdate(CompositorDrawData& drawdata);
-  void renderGbuffer(CompositorDrawData& drawdata, const ViewData& VD);
-  void renderBaseLighting(CompositorDrawData& drawdata, const ViewData& VD);
+  void renderUpdate(RenderCompositingNode* node, CompositorDrawData& drawdata);
+  void renderGbuffer(RenderCompositingNode* node, CompositorDrawData& drawdata, const ViewData& VD);
+  void renderBaseLighting(RenderCompositingNode* node, CompositorDrawData& drawdata, const ViewData& VD);
   ////////////////////////////////////////////////////////////////////
-  void beginPointLighting(CompositorDrawData& drawdata, const ViewData& VD, Texture* cookietexture);
+  void beginPointLighting(RenderCompositingNode* node, CompositorDrawData& drawdata, const ViewData& VD, Texture* cookietexture);
   void endPointLighting(CompositorDrawData& drawdata, const ViewData& VD);
   ////////////////////////////////////////////////////////////////////
-  void beginSpotLighting(CompositorDrawData& drawdata, const ViewData& VD, Texture* cookietexture);
+  void beginSpotLighting(RenderCompositingNode* node, CompositorDrawData& drawdata, const ViewData& VD, Texture* cookietexture);
   void endSpotLighting(CompositorDrawData& drawdata, const ViewData& VD);
   ////////////////////////////////////////////////////////////////////
-  void beginShadowedSpotLighting(CompositorDrawData& drawdata, const ViewData& VD, Texture* cookietexture);
+  void beginShadowedSpotLighting(RenderCompositingNode* node, CompositorDrawData& drawdata, const ViewData& VD, Texture* cookietexture);
   void endShadowedSpotLighting(CompositorDrawData& drawdata, const ViewData& VD);
   ////////////////////////////////////////////////////////////////////
-  void beginSpotDecaling(CompositorDrawData& drawdata, const ViewData& VD, Texture* cookietexture);
+  void beginSpotDecaling(RenderCompositingNode* node, CompositorDrawData& drawdata, const ViewData& VD, Texture* cookietexture);
   void endSpotDecaling(CompositorDrawData& drawdata, const ViewData& VD);
   ////////////////////////////////////////////////////////////////////
   void bindViewParams(const ViewData& VD);
@@ -145,21 +145,25 @@ struct DeferredContext {
 
   ////////////////////////////////////////////////////////////////////
 
-  RtGroupRenderTarget* _accumRT      = nullptr;
-  RtGroupRenderTarget* _gbuffRT      = nullptr;
-  RtGroupRenderTarget* _decalRT      = nullptr;
-  RtGroupRenderTarget* _clusterRT    = nullptr;
+  //RtGroupRenderTarget* _accumRT      = nullptr;
+  //RtGroupRenderTarget* _gbuffRT      = nullptr;
+  //RtGroupRenderTarget* _decalRT      = nullptr;
+  //RtGroupRenderTarget* _clusterRT    = nullptr;
   lev2::texture_ptr_t _brdfIntegrationMap = nullptr;
 
   CaptureBuffer _clustercapture;
-  rtgroup_ptr_t _rtgGbuffer      = nullptr;
+  //rtgroup_ptr_t _rtgGbuffer      = nullptr;
+
+  rtgset_ptr_t _rtgs_gbuffer;
+  rtgset_ptr_t _rtgs_laccum;
+
   rtgroup_ptr_t _rtgDecal        = nullptr;
   rtgroup_ptr_t _rtgDepthCluster = nullptr;
-  rtgroup_ptr_t _rtgLaccum       = nullptr;
+  //rtgroup_ptr_t _rtgLaccum       = nullptr;
 
-  rtbuffer_ptr_t _rtbGbuffer      = nullptr;
+  //rtbuffer_ptr_t _rtbGbuffer      = nullptr;
   rtbuffer_ptr_t _rtbDepthCluster = nullptr;
-  rtbuffer_ptr_t _rtbLightAccum   = nullptr;
+  //rtbuffer_ptr_t _rtbLightAccum   = nullptr;
 
   std::string _layername;
   float _specularLevel    = 1.0f;

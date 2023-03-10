@@ -28,59 +28,6 @@ ImplementReflectionX(ork::lev2::pbr::ForwardNode, "PbrForwardNode");
 
 namespace ork::lev2{
 extern appinitdata_ptr_t _ginitdata;
-
-struct RtgSet {
-  
-  struct BufRec{
-    std::string _name;
-    EBufferFormat _format;
-  };
-
-  RtgSet(Context* ctx, MsaaSamples s)
-    : _context(ctx)
-    , _msaasamples(s){
-
-  }
-
-  rtgroup_ptr_t fetch(uint64_t key){
-      rtgroup_ptr_t rval = nullptr;
-      auto it = _rtgs.find(key);
-      if(it==_rtgs.end()){
-        rval = std::make_shared<RtGroup>(_context,8,8,_msaasamples);
-        for( auto item : _bufrecs ){
-          auto buffer = rval->createRenderTarget(item._format);
-          buffer->_debugName = item._name;
-        }
-        _rtgs[key] = rval;
-      }
-      else{
-        rval = it->second;
-      }
-      return rval;
-  }
-  
-
-  void addBuffer(std::string name, EBufferFormat fmt){
-    BufRec br;
-    br._name = name;
-    br._format = fmt;
-    _bufrecs.push_back(br);
-  }
-
-  Context* _context = nullptr;
-  MsaaSamples _msaasamples;
-  std::unordered_map<uint64_t,rtgroup_ptr_t> _rtgs;
-  std::vector<BufRec> _bufrecs;
-
-
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-using rtgset_ptr_t = std::shared_ptr<RtgSet>;
-
-
-
 } // namespace ork::lev2{
 
 ///////////////////////////////////////////////////////////////////////////////

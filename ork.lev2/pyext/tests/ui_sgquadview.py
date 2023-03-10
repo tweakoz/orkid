@@ -90,7 +90,7 @@ class UiSgQuadViewTestApp(object):
     sg_params.DiffuseIntensity = 1.0
     sg_params.SpecularIntensity = 1.0
     sg_params.AmbientLevel = vec3(.5)
-    sg_params.preset = "ForwardPBR"
+    sg_params.preset = "DeferredPBR"
     sg_params.dbufcontext = self.dbufcontext
 
     self.scenegraph = scenegraph.Scene(sg_params)

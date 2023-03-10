@@ -205,7 +205,7 @@ void CpuLightProcessor::_renderUnshadowedUnTexturedPointLights(
   size_t lidxbase  = 0;
   /////////////////////////////////////
   auto& lightmtl = _deferredContext._lightingmtl;
-  _deferredContext.beginPointLighting(drawdata, VD, nullptr);
+  _deferredContext.beginPointLighting(_defcompnode,drawdata, VD, nullptr);
   FXI->bindParamBlockBuffer(_deferredContext._lightblock, _lightbuffer);
   while (num_pending_tiles) {
     /////////////////////////////////////

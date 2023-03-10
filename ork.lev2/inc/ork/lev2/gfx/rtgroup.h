@@ -110,7 +110,31 @@ struct RtGroup final {
   bool _depthOnly = false;
   std::string _name;
 
+  rendertarget_rtgroup_ptr_t _rendertarget;
+
 };
+
+struct RtgSet {
+  
+  RtgSet(Context* ctx, MsaaSamples s, bool do_rendertarget=false);
+  rtgroup_ptr_t fetch(uint64_t key);
+  void addBuffer(std::string name, EBufferFormat fmt);
+
+  struct BufRec{
+    std::string _name;
+    EBufferFormat _format;
+  };
+
+  Context* _context = nullptr;
+  MsaaSamples _msaasamples;
+  std::unordered_map<uint64_t,rtgroup_ptr_t> _rtgs;
+  std::vector<BufRec> _bufrecs;
+  bool _do_rendertarget;
+  bool _autoclear = true;
+
+};
+
+using rtgset_ptr_t = std::shared_ptr<RtgSet>;
 
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2
