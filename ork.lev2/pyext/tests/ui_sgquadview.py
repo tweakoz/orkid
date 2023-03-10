@@ -89,7 +89,7 @@ class UiSgQuadViewTestApp(object):
     sg_params.SkyboxIntensity = 3.0
     sg_params.DiffuseIntensity = 1.0
     sg_params.SpecularIntensity = 1.0
-    sg_params.AmbientLevel = vec3(.5)
+    sg_params.AmbientLevel = vec3(.125)
     sg_params.preset = "DeferredPBR"
     sg_params.dbufcontext = self.dbufcontext
 
@@ -100,7 +100,7 @@ class UiSgQuadViewTestApp(object):
     self.grid_node.sortkey = 1
     self.rendernode = self.scenegraph.compositorrendernode
     cube_prim = createCubePrim(ctx=ctx,size=2.0)
-    pipeline_cube = createPipeline( app = self, ctx = ctx, rendermodel="DeferredPBR" )
+    pipeline_cube = createPipeline( app = self, ctx = ctx, rendermodel="DeferredPBR", techname="std_mono_deferred" )
     self.cube_node = cube_prim.createNode("cube",self.layer,pipeline_cube)
 
     # assign shared scenegraph and creat cameras for all sg viewports
