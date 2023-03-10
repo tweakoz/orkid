@@ -23,7 +23,7 @@ void SceneGraphViewport::Describe() {
 ///////////////////////////////////////////////////////////////////////////////
 
 SceneGraphViewport::SceneGraphViewport(const std::string& name, int x, int y, int w, int h)
-    : Viewport(name, x, y, w, h, fvec4(1,0,0,1), 1.0f) {
+    : Viewport(name, x, y, w, h, fvec4(1,0,1,1), 1.0f) {
 
 } 
 

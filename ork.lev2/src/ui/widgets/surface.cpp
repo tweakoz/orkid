@@ -132,7 +132,8 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
   lev2::SRasterState defstate;
   rsi->BindRasterState(defstate);
 
-  lev2::material_ptr_t material = lev2::defaultUIMaterial();
+  lev2::material_ptr_t ui_material = lev2::defaultUIMaterial();
+  lev2::material_ptr_t material = ui_material;
   ;
   if (_rtgroup) {
     static auto texmtl = std::make_shared<lev2::GfxMaterialUITextured>(tgt);
@@ -158,12 +159,30 @@ void Surface::DoDraw(ui::drawevent_constptr_t drwev) {
       float v0 = 1.0f;
       float v1 = 0.0f;
 
+     tgt->PushModColor(fcolor4::Black());
+
+      primi.RenderQuadAtZ(
+          ui_material.get(),
+          tgt,
+          ix_root,
+          ix_root + _geometry._w, // x0, x1
+          iy_root,
+          iy_root + _geometry._h, // y0, y1
+          0.0f,                   // z
+          0.0f,
+          1.0f, // u0, u1
+          1.0f,
+          0.0f // v0, v1
+      );
+
+     tgt->PopModColor();
+
       float inp_aspect = float(_decoupled_width) / float(_decoupled_height);
       float out_aspect = float(_geometry._w) / float(_geometry._h);
       float aspectt    = inp_aspect / out_aspect;
 
       //printf("inp_aspect<%g> out_aspect<%g> aspectt<%g>\n", inp_aspect, out_aspect, aspectt);
-
+  
       if (aspectt > 1.0) { // wider than UI (vertical letterbox)
 
         int hdiff = _geometry._h - int(float(_geometry._h)/aspectt);
