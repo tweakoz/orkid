@@ -84,7 +84,7 @@ vertexpool::vertexpool() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-vertex_ptr_t vertexpool::newMergeVertex(const vertex& vtx) {
+vertex_ptr_t vertexpool::mergeVertex(const vertex& vtx) {
   vertex_ptr_t rval;
   U64 vhash = vtx.Hash();
   auto it   = _vtxmap.find(vhash);

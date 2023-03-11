@@ -33,24 +33,6 @@ typedef orkmap<std::string, svar64_t> AnnotationMap;
 struct XgmClusterizer;
 struct XgmClusterizerDiced;
 struct XgmClusterizerStd;
-struct edge;
-struct vertex;
-struct vertexpool;
-struct poly;
-struct submesh;
-
-using edge_ptr_t       = std::shared_ptr<edge>;
-using vertex_ptr_t     = std::shared_ptr<vertex>;
-using vertexpool_ptr_t = std::shared_ptr<vertexpool>;
-using poly_ptr_t       = std::shared_ptr<poly>;
-using submesh_ptr_t    = std::shared_ptr<submesh>;
-
-using edge_constptr_t       = std::shared_ptr<const edge>;
-using vertex_constptr_t     = std::shared_ptr<const vertex>;
-using vertexpool_constptr_t = std::shared_ptr<const vertexpool>;
-using poly_constptr_t       = std::shared_ptr<const poly>;
-using submesh_constptr_t    = std::shared_ptr<const submesh>;
-
 ///////////////////////////////////////////////////////////////////////////////
 
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -153,7 +135,7 @@ struct vertex {
 struct vertexpool {
 
   vertexpool();
-  vertex_ptr_t newMergeVertex(const vertex& vtx);
+  vertex_ptr_t mergeVertex(const vertex& vtx);
 
   const vertex& GetVertex(size_t ivid) const {
     return *_orderedVertices[ivid].get();
@@ -220,7 +202,7 @@ struct poly {
   U64 HashIndices(void) const;
 
   vertex_ptr_t _vertices[kmaxsidesperpoly];
-  edge_ptr_t mEdges[kmaxsidesperpoly];
+  edge_ptr_t _edges[kmaxsidesperpoly];
   int miNumSides;
   const AnnoMap* mAnnotationSet;
 };
@@ -304,7 +286,7 @@ struct submesh {
 
   //////////////////////////////////////////////////////////////////////////////
 
-  vertex_ptr_t newMergeVertex(const vertex& vtx);
+  vertex_ptr_t mergeVertex(const vertex& vtx);
   edge_ptr_t MergeEdge(const edge& ed, int ipolyindex = -1);
   void MergePoly(const poly& ply);
   void MergeSubMesh(const submesh& oth);
@@ -405,7 +387,14 @@ struct submesh {
 };
 
 void submeshTriangulate(const submesh& inpsubmesh, submesh& outsmesh);
-void submeshTrianglesToQuads(const submesh& inpsubmesh, submesh& outsmesh);
+
+void submeshTrianglesToQuads(const submesh& inpsubmesh, 
+                             submesh& outsmesh, 
+                             float area_tolerance = 100.0f, // 1:100 .. 100:1
+                             bool exclude_non_coplanar = true, //
+                             bool exclude_non_rectangular = false //
+                             );
+
 void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath);
 // void SubDivQuads(submesh* poutsmesh) const;
 // void SubDivTriangles(submesh* poutsmesh) const;

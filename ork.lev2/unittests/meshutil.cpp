@@ -25,7 +25,7 @@ TEST(MergeVertex) {
 
   submesh& group = testmesh.MergeSubMesh("default");
 
-  auto v1 = group.newMergeVertex(vtx1);
+  auto v1 = group.mergeVertex(vtx1);
 
   vertex vtx2;
 
@@ -39,7 +39,7 @@ TEST(MergeVertex) {
   vtx2.mJointNames[0] = "test";
   vtx2.mJointNames[0].clear();
 
-  auto v2 = group.newMergeVertex(vtx2);
+  auto v2 = group.mergeVertex(vtx2);
 
   CHECK_EQUAL(v1, v2);
 }

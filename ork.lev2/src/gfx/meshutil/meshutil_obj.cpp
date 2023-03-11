@@ -472,7 +472,7 @@ void Mesh::ReadFromWavefrontObj(const file::Path& BasePath) {
         ToolVertex.mNrm                = nrm;
         ToolVertex.mUV[0].mMapTexCoord = uv0;
 
-        vertex_cache[iv] = smesh.newMergeVertex(ToolVertex);
+        vertex_cache[iv] = smesh.mergeVertex(ToolVertex);
       }
 
       switch (inumv) {

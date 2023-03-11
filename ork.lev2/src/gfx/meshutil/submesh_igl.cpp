@@ -317,17 +317,17 @@ submesh_ptr_t IglMesh::toSubMesh() const {
   for (int f = 0; f < numFaces; f++) {
     switch (sidesPerFace) {
       case 3: {
-        auto o0 = subm->newMergeVertex(generateVertex(f, 0));
-        auto o1 = subm->newMergeVertex(generateVertex(f, 1));
-        auto o2 = subm->newMergeVertex(generateVertex(f, 2));
+        auto o0 = subm->mergeVertex(generateVertex(f, 0));
+        auto o1 = subm->mergeVertex(generateVertex(f, 1));
+        auto o2 = subm->mergeVertex(generateVertex(f, 2));
         subm->MergePoly(poly(o0, o1, o2));
         break;
       }
       case 4: {
-        auto o0 = subm->newMergeVertex(generateVertex(f, 0));
-        auto o1 = subm->newMergeVertex(generateVertex(f, 1));
-        auto o2 = subm->newMergeVertex(generateVertex(f, 2));
-        auto o3 = subm->newMergeVertex(generateVertex(f, 3));
+        auto o0 = subm->mergeVertex(generateVertex(f, 0));
+        auto o1 = subm->mergeVertex(generateVertex(f, 1));
+        auto o2 = subm->mergeVertex(generateVertex(f, 2));
+        auto o3 = subm->mergeVertex(generateVertex(f, 3));
         subm->MergePoly(poly(o0, o1, o2, o3));
         break;
       }

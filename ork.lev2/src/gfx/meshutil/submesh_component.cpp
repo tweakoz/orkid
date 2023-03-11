@@ -284,7 +284,7 @@ poly::poly(vertex_ptr_t ia, vertex_ptr_t ib, vertex_ptr_t ic, vertex_ptr_t id)
   if (id)
     miNumSides++;
   for (int i = 4; i < kmaxsidesperpoly; i++) {
-    mEdges[i] = nullptr;
+    _edges[i] = nullptr;
   }
 }
 
@@ -295,7 +295,7 @@ poly::poly(const vertex_ptr_t verts[], int numSides)
     , mAnnotationSet(0) {
   for (int i = 0; i < numSides; i++) {
     _vertices[i] = verts[i];
-    mEdges[i]    = nullptr;
+    _edges[i]    = nullptr;
   }
 }
 ///////////////////////////////////////////////////////////////////////////////

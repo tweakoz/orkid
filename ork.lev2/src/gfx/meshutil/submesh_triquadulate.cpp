@@ -25,9 +25,9 @@ void submeshTriangulate(const submesh& inpmesh, submesh& outmesh) {
         auto v0 = ply._vertices[0];
         auto v1 = ply._vertices[1];
         auto v2 = ply._vertices[2];
-        auto m0 = outmesh._vtxpool.newMergeVertex(*v0);
-        auto m1 = outmesh._vtxpool.newMergeVertex(*v1);
-        auto m2 = outmesh._vtxpool.newMergeVertex(*v2);
+        auto m0 = outmesh._vtxpool.mergeVertex(*v0);
+        auto m1 = outmesh._vtxpool.mergeVertex(*v1);
+        auto m2 = outmesh._vtxpool.mergeVertex(*v2);
         outmesh.MergePoly(poly(m0, m1, m2));
         break;
       }
@@ -36,10 +36,10 @@ void submeshTriangulate(const submesh& inpmesh, submesh& outmesh) {
         auto v1 = ply._vertices[1];
         auto v2 = ply._vertices[2];
         auto v3 = ply._vertices[3];
-        auto m0 = outmesh._vtxpool.newMergeVertex(*v0);
-        auto m1 = outmesh._vtxpool.newMergeVertex(*v1);
-        auto m2 = outmesh._vtxpool.newMergeVertex(*v2);
-        auto m3 = outmesh._vtxpool.newMergeVertex(*v3);
+        auto m0 = outmesh._vtxpool.mergeVertex(*v0);
+        auto m1 = outmesh._vtxpool.mergeVertex(*v1);
+        auto m2 = outmesh._vtxpool.mergeVertex(*v2);
+        auto m3 = outmesh._vtxpool.mergeVertex(*v3);
         outmesh.MergePoly(poly(m0, m1, m2));
         outmesh.MergePoly(poly(m2, m3, m0));
         break;
@@ -52,7 +52,12 @@ void submeshTriangulate(const submesh& inpmesh, submesh& outmesh) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void submeshTrianglesToQuads(const submesh& inpmesh, submesh& outmesh) {
+void submeshTrianglesToQuads(const submesh& inpmesh, //
+                             submesh& outmesh, //
+                             float area_tolerance, //
+                             bool exclude_non_coplanar, //
+                             bool exclude_non_rectangular ) { //
+
   ///////////////////////////////////////
 
   fplane3 P0, P1;
@@ -64,13 +69,17 @@ void submeshTrianglesToQuads(const submesh& inpmesh, submesh& outmesh) {
   int inumtri = inpmesh.GetNumPolys(3);
 
   for (int ip = 0; ip < inumtri; ip++) {
-    bool basquad = false;
+    bool was_quadified = false;
 
     const poly& inpoly = inpmesh.RefPoly(ip);
 
     auto v0 = inpoly._vertices[0];
     auto v1 = inpoly._vertices[1];
     auto v2 = inpoly._vertices[2];
+
+    ici[0] = outmesh.mergeVertex(*v0);
+    ici[1] = outmesh.mergeVertex(*v1);
+    ici[2] = outmesh.mergeVertex(*v2);
 
     VPos[0] = v0->mPos;
     VPos[1] = v1->mPos;
@@ -87,6 +96,7 @@ void submeshTrianglesToQuads(const submesh& inpmesh, submesh& outmesh) {
 
     /////////////////////////
     // get other triangles connected to this via any of its edges
+    /////////////////////////
 
     orkset<int> ConnectedPolySet;
     orkset<int> ConnectedPolySetA;
@@ -96,58 +106,67 @@ void submeshTrianglesToQuads(const submesh& inpmesh, submesh& outmesh) {
     inpmesh.GetConnectedPolys(edge(v1, v2), ConnectedPolySetB);
     inpmesh.GetConnectedPolys(edge(v2, v0), ConnectedPolySetC);
 
-    for (orkset<int>::iterator it = ConnectedPolySetA.begin(); it != ConnectedPolySetA.end(); it++) {
-      ConnectedPolySet.insert(*it);
+    for ( int conpoly : ConnectedPolySetA ) {
+      ConnectedPolySet.insert(conpoly);
     }
-    for (orkset<int>::iterator it = ConnectedPolySetB.begin(); it != ConnectedPolySetB.end(); it++) {
-      ConnectedPolySet.insert(*it);
+    for (int conpoly : ConnectedPolySetB) {
+      ConnectedPolySet.insert(conpoly);
     }
-    for (orkset<int>::iterator it = ConnectedPolySetC.begin(); it != ConnectedPolySetC.end(); it++) {
-      ConnectedPolySet.insert(*it);
+    for (int conpoly : ConnectedPolySetC) {
+      ConnectedPolySet.insert(conpoly);
     }
 
     /////////////////////////////////////////////////////////////////////////////
     // for each connected poly, test if it matches our quad critera
+    /////////////////////////////////////////////////////////////////////////////
 
-    for (orkset<int>::iterator it = ConnectedPolySet.begin(); it != ConnectedPolySet.end(); it++) {
-      int iotherpoly = *it;
+    for ( int iotherpoly : ConnectedPolySet ) { //
 
-      const poly& ply = inpmesh.RefPoly(iotherpoly);
+      const poly& other_poly = inpmesh.RefPoly(iotherpoly);
 
-      int inumsides = ply.GetNumSides();
+      int inumsides = other_poly.GetNumSides();
 
-      if ((inumsides == 3) && (iotherpoly != ip)) // if not the same triangle
-      {
+      if ((inumsides == 3) && (iotherpoly != ip)) { // if not the same triangle
+
         ////////////////////////////////////////
 
         IndexTestContext itestctx;
 
-        auto v3 = ply._vertices[0];
-        auto v4 = ply._vertices[1];
-        auto v5 = ply._vertices[2];
+        auto v3 = other_poly._vertices[0];
+        auto v4 = other_poly._vertices[1];
+        auto v5 = other_poly._vertices[2];
 
         VPos[3] = v3->mPos;
         VPos[4] = v4->mPos;
         VPos[5] = v5->mPos;
+        ici[3] = outmesh.mergeVertex(*v3);
+        ici[4] = outmesh.mergeVertex(*v4);
+        ici[5] = outmesh.mergeVertex(*v5);
 
         P1.CalcPlaneFromTriangle(VPos[3], VPos[4], VPos[5]);
         // fvec4 VArea345[3] = { VPos[3],VPos[4],VPos[5] };
 
-        float fArea345 = fvec4::calcTriangularArea(VPos[3], VPos[4], VPos[5], P1.GetNormal());
+        bool coplanar_check = P0.IsCoPlanar(P1);
 
-        /*if( 0 != _isnan( fArea345 ) )
-        {
-            fArea345 = 0.0f;
-        }*/
+        if (coplanar_check or (not exclude_non_coplanar)) {
 
-        float DelArea = fabs(fArea012 - fArea345);
-        float AvgArea = (fArea012 + fArea345) * float(0.5f);
+          float fArea345 = fvec4::calcTriangularArea(VPos[3], VPos[4], VPos[5], P1.GetNormal());
 
-        if (P0.IsCoPlanar(P1)) {
-          if ((DelArea / AvgArea) < float(0.01f)) // are the areas within 1% of each other ?
+          /*if( 0 != _isnan( fArea345 ) )
           {
+              fArea345 = 0.0f;
+          }*/
+
+          float DelArea = fabs(fArea012 - fArea345);
+          float AvgArea = (fArea012 + fArea345) * float(0.5f);
+          bool area_checkA = (DelArea / AvgArea) < area_tolerance;
+          bool area_checkB = (AvgArea / DelArea) < area_tolerance;
+
+          if (area_checkA or area_checkB) { 
+
             ////////////////////////////////////////////
             // count number of unique indices in the 2 triangles, for quads this should be 4
+            ////////////////////////////////////////////
 
             orkset<int> TestForQuadIdxSet;
             std::multimap<int, int> TestForQuadIdxMap;
@@ -159,14 +178,15 @@ void submeshTrianglesToQuads(const submesh& inpmesh, submesh& outmesh) {
               TestForQuadIdxSet.insert(idx);
             }
 
-            int inumidxinset = (int)TestForQuadIdxSet.size();
+            int inumidxinset = (int) TestForQuadIdxSet.size();
 
             ////////////////////////////////////////////
 
-            if (4 == inumidxinset) // its a quad with a shared edge
-            {
+            if (4 == inumidxinset) { // is it a quad with a shared edge ?
+
               ////////////////////////////////////////////
               // find the shared edges
+              ////////////////////////////////////////////
 
               int imc = 0;
 
@@ -192,6 +212,7 @@ void submeshTrianglesToQuads(const submesh& inpmesh, submesh& outmesh) {
 
               ////////////////////////////////////////////
               // find corner edges (unshared)
+              ////////////////////////////////////////////
 
               for (int ii = 0; ii < 6; ii++) {
                 if (itestctx.PairedIndicesCombined.find(ii) == itestctx.PairedIndicesCombined.end()) {
@@ -201,6 +222,7 @@ void submeshTrianglesToQuads(const submesh& inpmesh, submesh& outmesh) {
 
               ////////////////////////////////////////////
               // test if the quad is rectangular, if so add it
+              ////////////////////////////////////////////
 
               if ((itestctx.CornerIndices.size() == 2) && (itestctx.PairedIndicesCombined.size() == 4)) {
                 orkset<int>::iterator itcorner = itestctx.CornerIndices.begin();
@@ -215,7 +237,9 @@ void submeshTrianglesToQuads(const submesh& inpmesh, submesh& outmesh) {
                 int ilo1     = (*itpair1++);
                 int ihi1     = (*itpair1);
 
+                ////////////////////////////////////////////
                 // AD are corners
+                ////////////////////////////////////////////
 
                 fvec4 VDelAC = (VPos[icorner0] - VPos[ilo0]).normalized();
                 fvec4 VDelAB = (VPos[icorner0] - VPos[ilo1]).normalized();
@@ -226,9 +250,13 @@ void submeshTrianglesToQuads(const submesh& inpmesh, submesh& outmesh) {
                 float fdotACAB = VDelAC.dotWith(VDelAB); // quad is rectangular if V01 is perpendicular to V02
                 float fdotDCBD = VDelDC.dotWith(VDelBD); // quad is rectangular if V01 is perpendicular to V02
 
+                ////////////////////////////////////////////
                 // make sure its a rectangular quad by comparing edge directions
+                ////////////////////////////////////////////
 
-                if ((fdotACBD > float(0.999f)) && (fabs(fdotACAB) < float(0.02f)) && (fabs(fdotDCBD) < float(0.02f))) {
+                bool rect_check = (fdotACBD > float(0.999f)) && (fabs(fdotACAB) < float(0.02f)) && (fabs(fdotDCBD) < float(0.02f));
+
+                if(rect_check or (not exclude_non_rectangular) ) {
                   auto v0 = ici[icorner0];
                   auto v1 = ici[ilo0];
                   auto v2 = ici[ilo1];
@@ -236,6 +264,7 @@ void submeshTrianglesToQuads(const submesh& inpmesh, submesh& outmesh) {
 
                   //////////////////////////////////////
                   // ensure good winding order
+                  ////////////////////////////////////////////
 
                   fplane3 P3;
                   P3.CalcPlaneFromTriangle(VPos[icorner0], VPos[ilo0], VPos[ilo1]);
@@ -246,10 +275,10 @@ void submeshTrianglesToQuads(const submesh& inpmesh, submesh& outmesh) {
 
                   if ((float(1.0f) - fdot) < float(0.001f)) {
                     outmesh.MergePoly(poly(v0, v1, v3, v2));
-                    basquad = true;
+                    was_quadified = true;
                   } else if ((float(1.0f) + fdot) < float(0.001f)) {
                     outmesh.MergePoly(poly(v0, v2, v3, v1));
-                    basquad = true;
+                    was_quadified = true;
                   }
                 }
               }
@@ -260,10 +289,19 @@ void submeshTrianglesToQuads(const submesh& inpmesh, submesh& outmesh) {
 
     } // for( set<int>::iterator it=ConnectedPolySet.begin(); it!=ConnectedPolySet.end(); it++ )
 
-    if (false == basquad) {
-      outmesh.MergePoly(poly(ici[0], ici[1], ici[2]));
+    ////////////////////////////////////////////
+    // if not quadified, add the triangle
+    ////////////////////////////////////////////
+
+    if (false == was_quadified) {
+      auto p = poly(ici[0], ici[1], ici[2]);
+      if(p.GetNumSides()==3){
+        outmesh.MergePoly(p);
+      }
     }
-  }
+
+  } // for (int ip = 0; ip < inumtri; ip++) {
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////

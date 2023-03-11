@@ -92,9 +92,9 @@ bool XgmSkinnedClusterBuilder::addTriangle(const XgmClusterTri& Triangle) {
     }
   }
   if (bAddTriangle) {
-    auto v0 = _submesh.newMergeVertex(Triangle._vertex[0]);
-    auto v1 = _submesh.newMergeVertex(Triangle._vertex[1]);
-    auto v2 = _submesh.newMergeVertex(Triangle._vertex[2]);
+    auto v0 = _submesh.mergeVertex(Triangle._vertex[0]);
+    auto v1 = _submesh.mergeVertex(Triangle._vertex[1]);
+    auto v2 = _submesh.mergeVertex(Triangle._vertex[2]);
     poly the_poly(v0, v1, v2);
     _submesh.MergePoly(the_poly);
   }

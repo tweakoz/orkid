@@ -67,7 +67,7 @@ void Mesh::MergeSubMesh(const Mesh& src, const submesh& pgrp, const char* newnam
     for (int iv = 0; iv < inumpv; iv++) {
       int ivi               = ply.GetVertexID(iv);
       const vertex& vtx     = pgrp.RefVertexPool().GetVertex(ivi);
-      auto newvtx           = pnewgroup->newMergeVertex(vtx);
+      auto newvtx           = pnewgroup->mergeVertex(vtx);
       NewPoly._vertices[iv] = newvtx;
     }
     NewPoly.SetAnnoMap(ply.GetAnnoMap());
@@ -128,7 +128,7 @@ void MergeToolMeshQueueItem::DoIt(int ithread) const {
     for (int i = 0; i < inumv; i++) {
 
       auto src  = ply._vertices[i];
-      merged[i] = mpDestSubMesh->newMergeVertex(*src);
+      merged[i] = mpDestSubMesh->mergeVertex(*src);
     }
     poly polyA(merged, inumv);
     polyA.SetAnnoMap(ply.GetAnnoMap());
@@ -263,7 +263,7 @@ void Mesh::MergeToolMeshAs(const Mesh& sr, const char* pgroupname) {
       }
       vertex_ptr_t merged[kmaxsidesperpoly];
       for (int i = 0; i < inumv; i++)
-        merged[i] = dest_group.newMergeVertex(*ply._vertices[i]);
+        merged[i] = dest_group.mergeVertex(*ply._vertices[i]);
       poly npoly(merged, inumv);
       npoly.SetAnnoMap(ply.GetAnnoMap());
       dest_group.MergePoly(npoly);

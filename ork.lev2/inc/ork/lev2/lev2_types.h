@@ -482,6 +482,11 @@ namespace ork::meshutil{
 	struct MaterialGroup;
 	struct MaterialInfo;
 	struct MaterialBindingItem;
+  struct vertex;
+  struct vertexpool;
+  struct poly;
+  struct edge;
+  struct uvmapcoord;
 
 	using material_semanticmap_t = orkmap<std::string, MaterialBindingItem>;
 
@@ -494,6 +499,16 @@ namespace ork::meshutil{
 	using materialgroup_ptr_t = std::shared_ptr<MaterialGroup>;
 	using material_info_ptr_t = std::shared_ptr<MaterialInfo>;
 	using material_info_map_t = std::map<std::string, material_info_ptr_t>;
+
+  using vertex_ptr_t = std::shared_ptr<vertex>;
+  using vertex_constptr_t     = std::shared_ptr<const vertex>;
+  using vertexpool_ptr_t = std::shared_ptr<vertexpool>;
+  using vertexpool_constptr_t = std::shared_ptr<const vertexpool>;
+  using poly_ptr_t = std::shared_ptr<poly>;
+  using poly_constptr_t       = std::shared_ptr<const poly>;
+  using edge_ptr_t = std::shared_ptr<edge>;
+  using edge_constptr_t = std::shared_ptr<const edge>;
+  using uvmapcoord_ptr_t = std::shared_ptr<uvmapcoord>;
 
 #if defined(ENABLE_IGL)
   struct IglMesh;

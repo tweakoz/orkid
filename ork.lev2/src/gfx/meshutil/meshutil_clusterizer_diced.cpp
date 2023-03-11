@@ -35,9 +35,9 @@ void XgmClusterizerDiced::Begin() {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool XgmClusterizerDiced::addTriangle(const XgmClusterTri& Triangle, const MeshConfigurationFlags& flags) {
-  auto v0 = _preDicedMesh.newMergeVertex(Triangle._vertex[0]);
-  auto v1 = _preDicedMesh.newMergeVertex(Triangle._vertex[1]);
-  auto v2 = _preDicedMesh.newMergeVertex(Triangle._vertex[2]);
+  auto v0 = _preDicedMesh.mergeVertex(Triangle._vertex[0]);
+  auto v1 = _preDicedMesh.mergeVertex(Triangle._vertex[1]);
+  auto v2 = _preDicedMesh.mergeVertex(Triangle._vertex[2]);
   poly the_poly(v0, v1, v2);
   _preDicedMesh.MergePoly(the_poly);
   return true;
