@@ -113,4 +113,15 @@ print(submesh)
 print(submesh.isConvexHull)
 ################################################################################
 print("###############################")
-
+print("# vtxpool")
+print("###############################")
+print(submesh.vertexpool)
+ordered_verts = submesh.vertexpool.orderedVertices
+print(len(ordered_verts))
+print(ordered_verts[0])
+print(ordered_verts[0].position)
+print(ordered_verts[0].normal)
+print(ordered_verts[0].uvc(0).uv)
+print(ordered_verts[0].uvc(0).binormal)
+print(ordered_verts[0].uvc(0).tangent)
+print(ordered_verts[0].color(0))
