@@ -85,9 +85,7 @@ void pyinit_meshutil(py::module& module_lev2) {
       .def(
           "__repr__",
           [](iglmesh_ptr_t iglmesh) -> std::string {
-            fxstring<64> fxs;
-            fxs.format("IglMesh(%p)", iglmesh.get());
-            return fxs.c_str();
+            return FormatString("IglMesh(%p) numv<%d> numf<%d>", iglmesh.get(), int(iglmesh->_verts.size()), int(iglmesh->_faces.size()));
           })
       .def_property(
           "vertices",
@@ -150,6 +148,12 @@ void pyinit_meshutil(py::module& module_lev2) {
           [](iglmesh_constptr_t iglm) -> unique_edges_ptr_t { //
             return iglm->uniqueEdges();
           })
+      .def_property_readonly(
+          "piecewiseConstantWindingNumber",
+          [](iglmesh_constptr_t iglm) -> bool { //
+            return iglm->piecewiseConstantWindingNumber();
+          })
+          
       .def_property_readonly(
           "manifoldExtraction",
           [](iglmesh_constptr_t iglm) -> manifold_extraction_ptr_t { //
@@ -365,6 +369,16 @@ void pyinit_meshutil(py::module& module_lev2) {
           "polygroups",                              //
           [](mesh_ptr_t the_mesh) -> submesh_lut_t { //
             return the_mesh->_submeshesByPolyGroup;
+          })
+      .def_property_readonly(
+          "submesh_list",                              //
+          [](mesh_ptr_t the_mesh) -> py::list { //
+            py::list rval;
+            for( auto item : the_mesh->_submeshesByPolyGroup ){
+                auto subm = item.second;
+                rval.append(subm);
+            }
+            return rval;
           })
       .def("readFromWavefrontObj", [](mesh_ptr_t the_mesh, std::string pth) { //
         the_mesh->ReadFromWavefrontObj(pth);

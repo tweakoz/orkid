@@ -17,8 +17,14 @@
 #include <Eigen/Core>
 
 #include <igl/copyleft/cgal/mesh_boolean.h>
+#include <igl/copyleft/cgal/piecewise_constant_winding_number.h>
 
 namespace ork::meshutil {
+
+bool IglMesh::piecewiseConstantWindingNumber() const {
+  return igl::copyleft::cgal::piecewise_constant_winding_number(_verts,_faces); //
+} 
+
 //////////////////////////////////////////////////////////////////////////////
 bool IglMesh::booleanOf(iglmesh_constptr_t a, BooleanOperation operation, iglmesh_constptr_t b ){
 

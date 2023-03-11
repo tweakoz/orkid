@@ -71,6 +71,7 @@ struct IglMesh {
   double averageEdgeLength() const;
   unique_edges_ptr_t uniqueEdges() const;
   manifold_extraction_ptr_t extractManifolds() const;
+  bool piecewiseConstantWindingNumber() const;
   ////////////////////////////////
   Eigen::MatrixXd computeFaceNormals() const;
   Eigen::MatrixXd computeVertexNormals() const;
