@@ -1,7 +1,14 @@
 project (orklev2 CXX)
 include (GenerateExportHeader)
 
-FIND_PACKAGE(embree 3 REQUIRED)
+find_package(embree 3 REQUIRED)
+#find_package(CGAL REQUIRED)
+#find_package(igl REQUIRED)
+
+set( LIBIGL_DIR $ENV{OBT_STAGE}/builds/igl )
+set( LIBIGL_INCLUDE_DIR ${LIBIGL_DIR}/igl/include )
+set( CGAL_INCLUDE_DIR ${LIBIGL_DIR}/.build/_deps/cgal-src/include )
+
 ###################################
 
 set( SRCD ${CMAKE_CURRENT_SOURCE_DIR}/src )
@@ -101,6 +108,8 @@ list(APPEND libs  mpfr gmp )
 
 target_include_directories (ork_lev2 PRIVATE ${INCD} )
 target_include_directories (ork_lev2 PRIVATE ${COREINCD} )
+target_include_directories (ork_lev2 PRIVATE ${CGAL_INCLUDE_DIR} )
+
 
 target_link_libraries(ork_lev2 PUBLIC ${libs} )
 target_link_libraries(ork_lev2 PRIVATE assimp audiofile )

@@ -72,6 +72,9 @@ void pyinit_meshutil(py::module& module_lev2) {
   //////////////////////////////////////////////////////////////////////////////
   #if defined(ENABLE_IGL)
   py::class_<IglMesh, iglmesh_ptr_t>(meshutil, "IglMesh") //
+      .def(py::init([](){    //
+        return std::make_shared<IglMesh>();
+      }))
       .def(py::init([](const Eigen::MatrixXd& verts,      //
                        const Eigen::MatrixXi& faces) {    //
         return std::make_shared<IglMesh>(verts, faces);
@@ -241,6 +244,12 @@ void pyinit_meshutil(py::module& module_lev2) {
           "ambientOcclusion",
           [](iglmesh_constptr_t inpmesh, int numsamples) -> Eigen::VectorXd { //
             return inpmesh->ambientOcclusion(numsamples);
+          })
+      .def(
+          "booleanOf",
+          [](iglmesh_ptr_t inpmesh, iglmesh_constptr_t a, crcstring_ptr_t operation, iglmesh_constptr_t b) -> bool { //
+            auto iglmesh_operation = BooleanOperation(operation->hashed());
+            return inpmesh->booleanOf(a,iglmesh_operation,b);
           })
       .def(
           "faceNormals",

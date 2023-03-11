@@ -494,5 +494,12 @@ namespace ork::meshutil{
 	using materialgroup_ptr_t = std::shared_ptr<MaterialGroup>;
 	using material_info_ptr_t = std::shared_ptr<MaterialInfo>;
 	using material_info_map_t = std::map<std::string, material_info_ptr_t>;
+
+#if defined(ENABLE_IGL)
+  struct IglMesh;
+  using iglmesh_ptr_t          = std::shared_ptr<IglMesh>;
+  using iglmesh_constptr_t    = std::shared_ptr<const IglMesh>;
+#endif
+
 }
 ///////////////////////////////////////////////////////////////////////////////

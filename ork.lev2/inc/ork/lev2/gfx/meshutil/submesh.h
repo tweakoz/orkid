@@ -51,12 +51,6 @@ using vertexpool_constptr_t = std::shared_ptr<const vertexpool>;
 using poly_constptr_t       = std::shared_ptr<const poly>;
 using submesh_constptr_t    = std::shared_ptr<const submesh>;
 
-#if defined(ENABLE_IGL)
-struct IglMesh;
-using iglmesh_ptr_t    = std::shared_ptr<IglMesh>;
-using iglmesh_constptr_t    = std::shared_ptr<const IglMesh>;
-#endif
-
 ///////////////////////////////////////////////////////////////////////////////
 
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"

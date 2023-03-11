@@ -7,6 +7,11 @@
 
 #pragma once
 
+#if defined(__APPLE__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdtor-name"
+#endif
+
 #include <ork/lev2/config.h>
 
 #if defined(ENABLE_IGL)
@@ -16,6 +21,15 @@
 #include <ork/lev2/gfx/meshutil/submesh.h>
 
 namespace ork::meshutil {
+
+enum class BooleanOperation : uint64_t  {
+  CrcEnum(PLUS),
+  CrcEnum(INTERSECTION),
+  CrcEnum(MINUS),
+  CrcEnum(XOR),
+  CrcEnum(RESOLVE),
+};
+
 struct IglPrincipleCurvature {
   Eigen::VectorXd H;        // mean curvature (magnitude)
   Eigen::MatrixXd PD1, PD2; // directions
@@ -73,6 +87,7 @@ struct IglMesh {
   iglmesh_ptr_t reOriented() const;
   iglmesh_ptr_t triangulated() const;
   submesh_ptr_t toSubMesh() const;
+  bool booleanOf( iglmesh_constptr_t a, BooleanOperation operation, iglmesh_constptr_t b );
   ////////////////////////////////
   Eigen::MatrixXd _verts;
   Eigen::MatrixXi _faces;
