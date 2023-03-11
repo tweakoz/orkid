@@ -26,6 +26,22 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
           .def_property_readonly("vertexpool", [](submesh_ptr_t submesh) -> vertexpool_ptr_t {            
             return submesh->_vtxpool;
           })
+          .def_property_readonly("polys", [](submesh_ptr_t submesh) -> py::list {            
+              py::list pyl;
+              for( auto item : submesh->_polymap ){
+                auto p = item.second;
+                pyl.append(p);
+              }
+              return pyl;
+          })
+          .def_property_readonly("edges", [](submesh_ptr_t submesh) -> py::list {            
+              py::list pyl;
+              for( auto item : submesh->_edgemap ){
+                auto e = item.second;
+                pyl.append(e);
+              }
+              return pyl;
+          })
 #if defined(ENABLE_IGL)
           .def("igl_test", [](submesh_ptr_t submesh) { return submesh->igl_test(); })
 #endif //#if defined(ENABLE_IGL)

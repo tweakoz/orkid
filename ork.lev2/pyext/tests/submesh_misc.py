@@ -125,3 +125,27 @@ print(ordered_verts[0].uvc(0).uv)
 print(ordered_verts[0].uvc(0).binormal)
 print(ordered_verts[0].uvc(0).tangent)
 print(ordered_verts[0].color(0))
+################################################################################
+print("###############################")
+print("# polys")
+print("###############################")
+polys = submesh.polys
+print(len(polys))
+p = polys[0]
+print(p)
+print(p.numSides)
+print(p.normal)
+print(p.plane)
+print(p.vertexIndex(0))
+print(p.vertex(0).position)
+################################################################################
+print("###############################")
+print("# edges")
+print("###############################")
+edges = submesh.edges
+print(len(edges))
+e = edges[0]
+print(e)
+print(e.numConnectedPolys)
+print(e.connectedPolys)
+print(e.vertices)

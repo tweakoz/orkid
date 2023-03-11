@@ -56,10 +56,43 @@ void pyinit_meshutil_component(py::module& module_meshutil) {
     });
   type_codec->registerStdCodec<uvmapcoord>(uvc_type);
   /////////////////////////////////////////////////////////////////////////////////
-  auto edge_type = py::class_<edge,edge_ptr_t>(module_meshutil, "Edge").def(py::init<>());
+  auto edge_type = py::class_<edge,edge_ptr_t>(module_meshutil, "Edge").def(py::init<>())
+    .def_property_readonly("numConnectedPolys", [](edge_ptr_t e) -> int {            
+      return e->GetNumConnectedPolys();
+    })
+    .def_property_readonly("connectedPolys", [](edge_ptr_t e) -> py::list {            
+      py::list pyl;
+      for( int i=0; i<e->miNumConnectedPolys; i++ ){
+        int c = e->miConnectedPolys[i];
+        pyl.append(c);
+      }
+      return pyl;
+    })
+    .def_property_readonly("vertices", [](edge_ptr_t e) -> py::list {            
+      py::list pyl;
+      pyl.append(e->_vertexA);
+      pyl.append(e->_vertexB);
+      return pyl;
+    });
   type_codec->registerStdCodec<edge_ptr_t>(vtxpool_type);
   /////////////////////////////////////////////////////////////////////////////////
-  auto poly_type = py::class_<poly,poly_ptr_t>(module_meshutil, "Poly");
+  auto poly_type = py::class_<poly,poly_ptr_t>(module_meshutil, "Poly")
+    .def_property_readonly("numSides", [](poly_ptr_t p) -> int {            
+      return p->GetNumSides();
+    })
+    .def_property_readonly("normal", [](poly_ptr_t p) -> fvec3 {            
+      return p->ComputeNormal();
+    })
+    .def_property_readonly("plane", [](poly_ptr_t p) -> fplane3_ptr_t {            
+      auto pl = std::make_shared<fplane3>(p->computePlane());
+      return pl;
+    })
+    .def("vertexIndex", [](poly_ptr_t p, int i) -> int {            
+      return p->GetVertexID(i);
+    })
+    .def("vertex", [](poly_ptr_t p, int i) -> vertex_ptr_t {            
+      return p->_vertices[i];
+    });
   type_codec->registerStdCodec<poly_ptr_t>(poly_type);
 }
 }
