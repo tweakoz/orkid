@@ -20,6 +20,9 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
   auto submesh_type =
       py::class_<submesh, submesh_ptr_t>(module_meshutil, "SubMesh")
           .def(py::init<>())
+          .def_property_readonly("isConvexHull", [](submesh_ptr_t submesh) -> bool {
+            return submesh->isConvexHull();
+          })
 #if defined(ENABLE_IGL)
           .def("igl_test", [](submesh_ptr_t submesh) { return submesh->igl_test(); })
 #endif //#if defined(ENABLE_IGL)
@@ -128,7 +131,7 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                  fvec4 c) { return submesh->addQuad(p0, p1, p2, p3, n0, n1, n2, n3, uv0, uv1, uv2, uv3, c); })
           .def("__repr__", [](submesh_ptr_t sm) -> std::string {
             std::string rval = FormatString("Submesh<%p>\n", (void*)sm.get());
-            rval += FormatString("  num_verticess<%d>\n", (int)sm->_vtxpool._vtxmap.size());
+            rval += FormatString("  num_vertices<%d>\n", (int)sm->_vtxpool._vtxmap.size());
             rval += FormatString("  num_polys<%d>\n", (int)sm->_polymap.size());
             rval += FormatString("  num_triangles<%d>\n", (int)sm->GetNumPolys(3));
             rval += FormatString("  num_quads<%d>\n", (int)sm->GetNumPolys(4));

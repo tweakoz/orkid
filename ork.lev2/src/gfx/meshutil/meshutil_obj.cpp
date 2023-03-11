@@ -427,10 +427,10 @@ void Mesh::ReadFromWavefrontObj(const file::Path& BasePath) {
   int inumuvs      = ObjVT.size();
   int inumpolys    = ObjPolys.size();
 
-  printf("readobj inumverts<%d>\n", inumvertices);
-  printf("readobj inumnormals<%d>\n", inumnormals);
-  printf("readobj inumuvs<%d>\n", inumuvs);
-  printf("readobj inumpolys<%d>\n", inumpolys);
+ // printf("readobj inumverts<%d>\n", inumvertices);
+ // printf("readobj inumnormals<%d>\n", inumnormals);
+ // printf("readobj inumuvs<%d>\n", inumuvs);
+ // printf("readobj inumpolys<%d>\n", inumpolys);
 
   /////////////////////////////////////////////
   /////////////////////////////////////////////

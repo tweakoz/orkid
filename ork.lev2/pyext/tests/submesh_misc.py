@@ -12,6 +12,7 @@ from PIL import Image
 import numpy as np
 from ork.deco import Deco
 deco = Deco()
+coreappinit() # setup filesystem
 ################################################################################
 frustum = Frustum(mtx4.lookAt(vec3(0,0,-1),vec3(0,0,0),vec3(0,1,0)),
                   mtx4.perspective(45,1,0.1,3))
@@ -91,3 +92,25 @@ print(deco.white("reoriented.irregularVertexCount: ")+str(reoriented.irregularVe
 #print(deco.white("TriMesh.parameterizeHarmonic:")+"\n%s"%reoriented.parameterizeHarmonic())
 #print(deco.white("TriMesh.parameterizeLCSM:")+"\n%s"%tri_iglmesh.parameterizeLCSM())
 tsubmesh.writeWavefrontObj("submesh_tris.obj")
+
+################################################################################
+print("###############################")
+print("IS BOX CONVEX HULL?")
+print("###############################")
+a = meshutil.Mesh()
+a.readFromWavefrontObj("data://tests/simple_obj/box.obj")
+submesh = a.submesh_list[0]
+print(submesh)
+print(submesh.isConvexHull)
+################################################################################
+print("###############################")
+print("IS MONKEY CONVEX HULL?")
+print("###############################")
+a = meshutil.Mesh()
+a.readFromWavefrontObj("data://tests/simple_obj/monkey.obj")
+submesh = a.submesh_list[0]
+print(submesh)
+print(submesh.isConvexHull)
+################################################################################
+print("###############################")
+

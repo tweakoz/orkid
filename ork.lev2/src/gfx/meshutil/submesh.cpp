@@ -445,7 +445,7 @@ void submesh::MergePoly(const poly& ply) {
     // add n sided counters
     _polyTypeCounter[inumv]++;
     //////////////////////////////////////////////////
-    float farea = ply.ComputeArea(_vtxpool, ork::fmtx4::Identity());
+    float farea = ply.ComputeArea(ork::fmtx4::Identity());
     _surfaceArea += farea;
   }
   _aaBoxDirty = true;
@@ -568,6 +568,33 @@ void submesh::addQuad(
   auto v3 = mergeVertex(muvtx[3]);
   MergePoly(poly(v0, v1, v2, v3));
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+bool submesh::isConvexHull() const {
+
+  int front = 0;
+  int back = 0;
+  for( auto p : _orderedPolys ){
+    auto pl = p->computePlane();
+    for( auto p2 : _orderedPolys ){
+      if(p!=p2){
+        for( auto v : p2->_vertices){
+          bool is_front = pl.IsPointInFront(v->mPos);
+          if(is_front){
+            front++;
+          }
+          else{
+            back++;
+          }
+        }
+      }
+    }
+  }
+  printf( "front<%d> back<%d>\n", front, back );
+  return (front>0) and (back==0);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 /*
 void SubMesh::GenIndexBuffers( void )

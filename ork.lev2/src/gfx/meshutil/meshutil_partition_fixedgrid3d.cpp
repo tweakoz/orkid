@@ -83,7 +83,7 @@ void GridGraph::PreMergeMesh(const submesh& MeshIn) {
     }
 
     ///////////////////////////////
-    float thisarea = ply.ComputeArea(InVPool, fmtx4::Identity());
+    float thisarea = ply.ComputeArea(fmtx4::Identity());
     thisareamax    = std::max(thisareamax, thisarea);
     thisareamin    = std::min(thisareamin, thisarea);
     thisareaavg += thisarea;

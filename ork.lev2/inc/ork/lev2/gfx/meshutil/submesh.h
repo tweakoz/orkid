@@ -200,11 +200,12 @@ struct poly {
   // vertex counter-clockwise around the poly from the given one
   // int VertexCCW(int vert) const;
 
-  vertex ComputeCenter(const vertexpool& vpool) const;
-  float ComputeEdgeLength(const vertexpool& vpool, const fmtx4& MatRange, int iedge) const;
-  float ComputeArea(const vertexpool& vpool, const fmtx4& MatRange) const;
-  fvec3 ComputeNormal(const vertexpool& vpool) const;
-
+  vertex ComputeCenter() const;
+  float ComputeEdgeLength(const fmtx4& MatRange, int iedge) const;
+  float ComputeArea(const fmtx4& MatRange) const;
+  fvec3 ComputeNormal() const;
+  fplane3 computePlane() const;
+  
   U64 HashIndices(void) const;
 
   std::vector<vertex_ptr_t> _vertices;
@@ -309,6 +310,8 @@ struct submesh {
   /////////////////////////////////////////////////////////////////////////
 
   const AABox& aabox() const; /// compute axis aligned bounding box from the current state of the vertex pool
+
+  bool isConvexHull() const;
 
   //////////////////////////////////////////////////////////////////////////////
 

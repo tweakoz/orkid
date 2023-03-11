@@ -348,8 +348,7 @@ int poly::VertexCCW(int vert) const {
 }
 */
 ///////////////////////////////////////////////////////////////////////////////
-
-vertex poly::ComputeCenter(const vertexpool& vpool) const {
+vertex poly::ComputeCenter() const {
   int inumv = GetNumSides();
   vertex vcenter;
   vcenter.mPos = fvec4(0.0f, 0.0f, 0.0f);
@@ -379,7 +378,7 @@ vertex poly::ComputeCenter(const vertexpool& vpool) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-float poly::ComputeArea(const vertexpool& vpool, const fmtx4& MatRange) const {
+float poly::ComputeArea(const fmtx4& MatRange) const {
   float farea     = 0.0f;
   ork::fvec3 base = _vertices[0]->mPos.transform(MatRange);
   ork::fvec3 prev = _vertices[1]->mPos.transform(MatRange);
@@ -395,7 +394,7 @@ float poly::ComputeArea(const vertexpool& vpool, const fmtx4& MatRange) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-float poly::ComputeEdgeLength(const vertexpool& vpool, const fmtx4& MatRange, int iedge) const {
+float poly::ComputeEdgeLength(const fmtx4& MatRange, int iedge) const {
   int inumvtx = _vertices.size();
   auto v0     = _vertices[(iedge + 0) % inumvtx];
   auto v1     = _vertices[(iedge + 1) % inumvtx];
@@ -405,7 +404,17 @@ float poly::ComputeEdgeLength(const vertexpool& vpool, const fmtx4& MatRange, in
 
 ///////////////////////////////////////////////////////////////////////////////
 
-fvec3 poly::ComputeNormal(const vertexpool& vpool) const {
+fplane3 poly::computePlane() const{
+  OrkAssert(_vertices.size()>=3);
+  auto v0 = _vertices[0];
+  auto v1 = _vertices[1];
+  auto v2 = _vertices[2];
+  return fplane3(v0->mPos,v1->mPos,v2->mPos);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+fvec3 poly::ComputeNormal() const {
   fvec3 rval(0, 0, 0);
   int inumvtx = _vertices.size();
   auto v0 = _vertices[0]->mPos;
