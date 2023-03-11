@@ -25,7 +25,7 @@ XgmRigidClusterBuilder::XgmRigidClusterBuilder(const XgmClusterizer& clusterizer
 ///////////////////////////////////////////////////////////////////////////////
 
 bool XgmRigidClusterBuilder::addTriangle(const XgmClusterTri& Triangle) {
-  size_t ivcount = _submesh.RefVertexPool().GetNumVertices();
+  size_t ivcount = _submesh._vtxpool->GetNumVertices();
   int iicount    = (int)_submesh.GetNumPolys();
 
   static const int kvtresh  = (1 << 16) - 4;
@@ -55,13 +55,13 @@ lev2::vtxbufferbase_ptr_t buildTypedVertexBuffer(
     const meshutil::submesh& inp_submesh,
     std::function<vtx_t(const meshutil::vertex&)> genOutVertex) {
   using vtxbuf_t       = lev2::StaticVertexBuffer<vtx_t>;
-  const auto& vpool    = inp_submesh.RefVertexPool();
-  int NumVertexIndices = vpool.GetNumVertices();
+  auto vpool    = inp_submesh._vtxpool;
+  int NumVertexIndices = vpool->GetNumVertices();
   auto out_vbuf        = std::make_shared<vtxbuf_t>(NumVertexIndices, 0, ork::lev2::PrimitiveType::MULTI);
   lev2::VtxWriter<vtx_t> vwriter;
   vwriter.Lock(&context, out_vbuf.get(), NumVertexIndices);
   for (int iv = 0; iv < NumVertexIndices; iv++)
-    vwriter.AddVertex(genOutVertex(vpool.GetVertex(iv)));
+    vwriter.AddVertex(genOutVertex(vpool->GetVertex(iv)));
   vwriter.UnLock(&context);
   out_vbuf->SetNumVertices(NumVertexIndices);
   return std::static_pointer_cast<lev2::VertexBufferBase>(out_vbuf);

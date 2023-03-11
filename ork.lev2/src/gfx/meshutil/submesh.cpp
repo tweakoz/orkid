@@ -20,10 +20,16 @@ static logchannel_ptr_t logchan_submesh = logger()->createChannel("meshutil.subm
 const vertexpool vertexpool::EmptyPool;
 
 /////////////////////////////////////////////////////////////////////////
-submesh::submesh(const vertexpool& vpool)
+submesh::submesh(vertexpool_ptr_t vpool)
     : _surfaceArea(0)
-    , _vtxpool(vpool)
     , _mergeEdges(true) {
+
+    if(nullptr==vpool){
+      vpool = std::make_shared<vertexpool>();
+    }
+
+    _vtxpool = vpool;
+
   for (int i = 0; i < 8; i++)
     _polyTypeCounter[i] = 0;
 }
@@ -230,9 +236,9 @@ void submesh::ExportPolyAnnotations(annopolylut& apl) const {
 const AABox& submesh::aabox() const {
   if (_aaBoxDirty) {
     _aaBox.BeginGrow();
-    int inumvtx = (int)RefVertexPool().GetNumVertices();
+    int inumvtx = (int)_vtxpool->GetNumVertices();
     for (int i = 0; i < inumvtx; i++) {
-      const vertex& v = RefVertexPool().GetVertex(i);
+      const vertex& v = _vtxpool->GetVertex(i);
       _aaBox.Grow(v.mPos);
     }
     _aaBox.EndGrow();
@@ -249,7 +255,7 @@ const edge& submesh::RefEdge(U64 edgekey) const {
 ///////////////////////////////////////////////////////////////////////////////
 vertex_ptr_t submesh::mergeVertex(const vertex& vtx) {
   _aaBoxDirty = true;
-  return _vtxpool.mergeVertex(vtx);
+  return _vtxpool->mergeVertex(vtx);
 }
 ///////////////////////////////////////////////////////////////////////////////
 poly& submesh::RefPoly(int i) {
@@ -348,7 +354,7 @@ void submesh::MergeSubMesh(const submesh& inp_mesh) {
     std::vector<vertex_ptr_t> new_vertices;
     for (int iv = 0; iv < input_poly.GetNumSides(); iv++) {
       int ivi               = input_poly.GetVertexID(iv);
-      const vertex& src_vtx = inp_mesh.RefVertexPool().GetVertex(ivi);
+      const vertex& src_vtx = inp_mesh._vtxpool->GetVertex(ivi);
       new_vertices.push_back(mergeVertex(src_vtx));
     }
     poly_ptr_t new_poly = std::make_shared<poly>(new_vertices);
@@ -430,8 +436,8 @@ void submesh::MergePoly(const poly& ply) {
         int i1  = (i + 1) % inumv;
         int iv0 = ply.GetVertexID(i0);
         int iv1 = ply.GetVertexID(i1);
-        auto v0 = _vtxpool._orderedVertices[iv0];
-        auto v1 = _vtxpool._orderedVertices[iv1];
+        auto v0 = _vtxpool->_orderedVertices[iv0];
+        auto v1 = _vtxpool->_orderedVertices[iv1];
 
         edge Edge(v0, v1);
         nply._edges.push_back(MergeEdge(Edge, ipolyindex));
@@ -599,7 +605,7 @@ bool submesh::isConvexHull() const {
 /*
 void SubMesh::GenIndexBuffers( void )
 {
-    int inumvtx = RefVertexPool().VertexPool.size();
+    int inumvtx = _vtxpool->VertexPool.size();
 
     orkvector<int> TrianglePolyIndices;
     orkvector<int> QuadPolyIndices;

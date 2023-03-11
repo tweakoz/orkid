@@ -599,7 +599,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
         /////////////////////////////////////////////
         // int meshout_numtris = out_submesh.GetNumPolys(3);
         // int meshout_numquads = out_submesh.GetNumPolys(4);
-        // int meshout_numverts = out_submesh.RefVertexPool().GetNumVertices();
+        // int meshout_numverts = out_submesh._vtxpool.GetNumVertices();
         // logchan_meshutilassimp->log( "meshout_numtris<%d>\n", meshout_numtris );
         // logchan_meshutilassimp->log( "meshout_numquads<%d>\n", meshout_numquads );
         // logchan_meshutilassimp->log( "meshout_numverts<%d>\n", meshout_numverts );
@@ -776,12 +776,12 @@ void clusterizeToolMeshToXgmMesh(const ork::meshutil::Mesh& inp_model, ork::lev2
     ork::meshutil::XgmClusterTri clustertri;
     clusterizer->Begin();
 
-    const auto& vertexpool = inp_submesh->RefVertexPool();
+    auto vertexpool = inp_submesh->_vtxpool;
     const auto& polys      = inp_submesh->RefPolys();
     for (const auto& poly : polys) {
       assert(poly->GetNumSides() == 3);
       for (int i = 0; i < 3; i++)
-        clustertri._vertex[i] = vertexpool.GetVertex(poly->GetVertexID(i));
+        clustertri._vertex[i] = vertexpool->GetVertex(poly->GetVertexID(i));
       clusterizer->addTriangle(clustertri, materialGroup->mMeshConfigurationFlags);
     }
 

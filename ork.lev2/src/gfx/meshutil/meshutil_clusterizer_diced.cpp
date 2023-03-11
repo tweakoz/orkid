@@ -142,9 +142,9 @@ void XgmClusterizerDiced::End() {
 
       XgmClusterTri ClusTri;
 
-      ClusTri._vertex[0] = pgrp.RefVertexPool().GetVertex(ply.GetVertexID(0));
-      ClusTri._vertex[1] = pgrp.RefVertexPool().GetVertex(ply.GetVertexID(1));
-      ClusTri._vertex[2] = pgrp.RefVertexPool().GetVertex(ply.GetVertexID(2));
+      ClusTri._vertex[0] = pgrp._vtxpool->GetVertex(ply.GetVertexID(0));
+      ClusTri._vertex[1] = pgrp._vtxpool->GetVertex(ply.GetVertexID(1));
+      ClusTri._vertex[2] = pgrp._vtxpool->GetVertex(ply.GetVertexID(2));
 
       bool bOK = new_builder->addTriangle(ClusTri);
 
@@ -173,7 +173,7 @@ void XgmClusterizerDiced::End() {
     fvec3 vmax   = bbox.Max();
     float fdist  = (vmax - vmin).magnitude();
 
-    int inumv = (int)builder->_submesh.RefVertexPool().GetNumVertices();
+    int inumv = (int)builder->_submesh._vtxpool->GetNumVertices();
     orkprintf(
         "clus<%d> inumv<%d> bbmin<%g %g %g> bbmax<%g %g %g> diag<%g>\n",
         ic,

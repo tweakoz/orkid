@@ -50,12 +50,12 @@ void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath) {
   orkvector<objmesh> ObjMeshPool;
   orkmap<std::string, objmat> ObjMaterialPool;
 
-  int inumv = inpsubmesh._vtxpool.GetNumVertices();
+  int inumv = inpsubmesh._vtxpool->GetNumVertices();
   ///////////////////////////////////////////////////
   objmat OutMaterial;
   ///////////////////////////////////////////////////
   for (int iv0 = 0; iv0 < inumv; iv0++) {
-    const vertex& invtx = inpsubmesh._vtxpool.GetVertex(iv0);
+    const vertex& invtx = inpsubmesh._vtxpool->GetVertex(iv0);
     ObjVertexPool.push_back(invtx.mPos);
     ObjNormalPool.push_back(invtx.mNrm);
     ObjUv0Pool.push_back(invtx.mUV[0].mMapTexCoord);

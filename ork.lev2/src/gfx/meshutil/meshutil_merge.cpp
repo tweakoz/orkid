@@ -59,24 +59,24 @@ void Mesh::MergeSubMesh(const Mesh& src, const submesh& pgrp, const char* newnam
     _submeshesByPolyGroup[newname] = pnewgroup;
   }
   int inumpingroup = pgrp.GetNumPolys();
-  const auto& inp_pool = pgrp.RefVertexPool();
+  auto inp_pool = pgrp._vtxpool;
   for (int i = 0; i < inumpingroup; i++) {
     const poly& input_poly = pgrp.RefPoly(i);
     int inumpv      = input_poly.GetNumSides();
     poly_ptr_t new_poly;
     switch(inumpv){
       case 3:{
-        auto newvtx0           = pnewgroup->mergeVertex(inp_pool.GetVertex(input_poly.GetVertexID(0)));
-        auto newvtx1           = pnewgroup->mergeVertex(inp_pool.GetVertex(input_poly.GetVertexID(1)));
-        auto newvtx2           = pnewgroup->mergeVertex(inp_pool.GetVertex(input_poly.GetVertexID(2)));
+        auto newvtx0           = pnewgroup->mergeVertex(inp_pool->GetVertex(input_poly.GetVertexID(0)));
+        auto newvtx1           = pnewgroup->mergeVertex(inp_pool->GetVertex(input_poly.GetVertexID(1)));
+        auto newvtx2           = pnewgroup->mergeVertex(inp_pool->GetVertex(input_poly.GetVertexID(2)));
         new_poly = std::make_shared<poly>(newvtx0,newvtx1,newvtx2);
         break;
       }
       case 4:{
-        auto newvtx0           = pnewgroup->mergeVertex(inp_pool.GetVertex(input_poly.GetVertexID(0)));
-        auto newvtx1           = pnewgroup->mergeVertex(inp_pool.GetVertex(input_poly.GetVertexID(1)));
-        auto newvtx2           = pnewgroup->mergeVertex(inp_pool.GetVertex(input_poly.GetVertexID(2)));
-        auto newvtx3           = pnewgroup->mergeVertex(inp_pool.GetVertex(input_poly.GetVertexID(3)));
+        auto newvtx0           = pnewgroup->mergeVertex(inp_pool->GetVertex(input_poly.GetVertexID(0)));
+        auto newvtx1           = pnewgroup->mergeVertex(inp_pool->GetVertex(input_poly.GetVertexID(1)));
+        auto newvtx2           = pnewgroup->mergeVertex(inp_pool->GetVertex(input_poly.GetVertexID(2)));
+        auto newvtx3           = pnewgroup->mergeVertex(inp_pool->GetVertex(input_poly.GetVertexID(3)));
         new_poly = std::make_shared<poly>(newvtx0,newvtx1,newvtx2,newvtx3);
         break;
       }
@@ -267,7 +267,7 @@ void Mesh::MergeToolMeshAs(const Mesh& sr, const char* pgroupname) {
       std::vector<vertex_ptr_t> new_vertices;
       for (int iv = 0; iv < input_poly.GetNumSides(); iv++) {
         int ivi               = input_poly.GetVertexID(iv);
-        const vertex& src_vtx = src_group.RefVertexPool().GetVertex(ivi);
+        const vertex& src_vtx = src_group._vtxpool->GetVertex(ivi);
         new_vertices.push_back(dest_group.mergeVertex(src_vtx));
       }
       poly_ptr_t new_poly = std::make_shared<poly>(new_vertices);

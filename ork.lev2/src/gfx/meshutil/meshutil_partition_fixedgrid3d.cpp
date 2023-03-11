@@ -56,7 +56,7 @@ void GridGraph::BeginPreMerge() {
 ////////////////////////////////////////////////////
 
 void GridGraph::PreMergeMesh(const submesh& MeshIn) {
-  const vertexpool& InVPool = MeshIn.RefVertexPool();
+  auto InVPool = MeshIn._vtxpool;
   const auto& polys         = MeshIn.RefPolys();
 
   int inumpolys = int(polys.size());
@@ -78,7 +78,7 @@ void GridGraph::PreMergeMesh(const submesh& MeshIn) {
     int inumsides = ply.GetNumSides();
     for (int iv = 0; iv < inumsides; iv++) {
       int ivi         = ply.GetVertexID(iv);
-      const vertex& v = InVPool.GetVertex(ivi);
+      const vertex& v = InVPool->GetVertex(ivi);
       maab.Grow(v.mPos);
     }
 
@@ -260,7 +260,7 @@ void GridGraph::EndPreMerge() {
 ////////////////////////////////////////////////////
 
 void GridGraph::MergeMesh(const submesh& MeshIn, Mesh& MeshOut) {
-  const vertexpool& InVPool = MeshIn.RefVertexPool();
+  auto InVPool = MeshIn._vtxpool;
   const auto& polys         = MeshIn.RefPolys();
 
   int inumpolys = int(polys.size());
@@ -283,14 +283,14 @@ void GridGraph::MergeMesh(const submesh& MeshIn, Mesh& MeshOut) {
     AABox thaab;
     thaab.BeginGrow();
     for (int iv = 0; iv < ply.GetNumSides(); iv++) {
-      const fvec3& vpos = InVPool.GetVertex(ply.GetVertexID(iv)).mPos;
+      const fvec3& vpos = InVPool->GetVertex(ply.GetVertexID(iv)).mPos;
       thaab.Grow(vpos);
     }
     thaab.EndGrow();
 
-    fvec3 pntA = InVPool.GetVertex(ply.GetVertexID(0)).mPos;
-    fvec3 pntB = InVPool.GetVertex(ply.GetVertexID(1)).mPos;
-    fvec3 pntC = InVPool.GetVertex(ply.GetVertexID(2)).mPos;
+    fvec3 pntA = InVPool->GetVertex(ply.GetVertexID(0)).mPos;
+    fvec3 pntB = InVPool->GetVertex(ply.GetVertexID(1)).mPos;
+    fvec3 pntC = InVPool->GetVertex(ply.GetVertexID(2)).mPos;
     fvec3 dirA = (pntA - pntB).normalized();
     fvec3 dirB = (pntA - pntC).normalized();
     fvec3 pnrm = dirA.crossWith(dirB);
@@ -338,7 +338,7 @@ void GridGraph::MergeMesh(const submesh& MeshIn, Mesh& MeshOut) {
 
           int inumv = ply.GetNumSides();
           for (int iv = 0; iv < inumv; iv++) {
-            srcp.AddVertex(InVPool.GetVertex(ply.GetVertexID(iv)));
+            srcp.AddVertex(InVPool->GetVertex(ply.GetVertexID(iv)));
           }
 
           ginuminners++;

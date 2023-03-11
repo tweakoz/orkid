@@ -115,8 +115,8 @@ template <typename vtx_t> void RigidPrimitive<vtx_t>::fromSubMesh(const submesh&
   //////////////////////////////////////////////////////////////
   meshutil::XgmClusterizerStd clusterizer;
   meshutil::MeshConfigurationFlags meshflags;
-  const auto& vpool = submeshTris.RefVertexPool();
-  int numverts      = vpool.GetNumVertices();
+  auto vpool = submeshTris._vtxpool;
+  int numverts      = vpool->GetNumVertices();
   int inumpolys     = submeshTris.GetNumPolys(3);
   clusterizer.Begin();
   for (int p = 0; p < inumpolys; p++) {

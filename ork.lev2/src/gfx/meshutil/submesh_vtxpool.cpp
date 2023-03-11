@@ -57,7 +57,7 @@ U64 annopolyposlut::HashItem(const submesh& tmesh, const poly& ply) const {
   int inumpv = ply.GetNumSides();
   for (int iv = 0; iv < inumpv; iv++) {
     int ivi           = ply.GetVertexID(iv);
-    const vertex& vtx = tmesh.RefVertexPool().GetVertex(ivi);
+    const vertex& vtx = tmesh._vtxpool->GetVertex(ivi);
     crc64.accumulateItem(vtx.mPos);
     crc64.accumulateItem(vtx.mNrm);
   }

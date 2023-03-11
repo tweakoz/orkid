@@ -23,6 +23,9 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
           .def_property_readonly("isConvexHull", [](submesh_ptr_t submesh) -> bool {
             return submesh->isConvexHull();
           })
+          .def_property_readonly("vertexpool", [](submesh_ptr_t submesh) -> vertexpool_ptr_t {            
+            return submesh->_vtxpool;
+          })
 #if defined(ENABLE_IGL)
           .def("igl_test", [](submesh_ptr_t submesh) { return submesh->igl_test(); })
 #endif //#if defined(ENABLE_IGL)
@@ -89,7 +92,7 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
           .def("toIglMesh", [](submesh_ptr_t submesh, int numsides) -> iglmesh_ptr_t { return submesh->toIglMesh(numsides); })
 #endif //#if defined(ENABLE_IGL)
           .def("numPolys", [](submesh_constptr_t submesh, int numsides) -> int { return submesh->GetNumPolys(numsides); })
-          .def("numVertices", [](submesh_constptr_t submesh) -> int { return submesh->_vtxpool.GetNumVertices(); })
+          .def("numVertices", [](submesh_constptr_t submesh) -> int { return submesh->_vtxpool->GetNumVertices(); })
           .def(
               "writeWavefrontObj",
               [](submesh_constptr_t submesh, const std::string& outpath) { return submeshWriteObj(*submesh, outpath); })
@@ -131,7 +134,7 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                  fvec4 c) { return submesh->addQuad(p0, p1, p2, p3, n0, n1, n2, n3, uv0, uv1, uv2, uv3, c); })
           .def("__repr__", [](submesh_ptr_t sm) -> std::string {
             std::string rval = FormatString("Submesh<%p>\n", (void*)sm.get());
-            rval += FormatString("  num_vertices<%d>\n", (int)sm->_vtxpool._vtxmap.size());
+            rval += FormatString("  num_vertices<%d>\n", (int)sm->_vtxpool->_vtxmap.size());
             rval += FormatString("  num_polys<%d>\n", (int)sm->_polymap.size());
             rval += FormatString("  num_triangles<%d>\n", (int)sm->GetNumPolys(3));
             rval += FormatString("  num_quads<%d>\n", (int)sm->GetNumPolys(4));

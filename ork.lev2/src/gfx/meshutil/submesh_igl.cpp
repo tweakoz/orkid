@@ -56,9 +56,9 @@ IglMesh::IglMesh(const Eigen::MatrixXd& verts, const Eigen::MatrixXi& faces)
 }
 //////////////////////////////////////////////////////////////////////////////
 IglMesh::IglMesh(const submesh& inp_submesh, int numsides)
-    : _verts(inp_submesh._vtxpool.GetNumVertices(), 3)
+    : _verts(inp_submesh._vtxpool->GetNumVertices(), 3)
     , _faces(inp_submesh.GetNumPolys(numsides), numsides) {
-  size_t numverts = inp_submesh._vtxpool.GetNumVertices();
+  size_t numverts = inp_submesh._vtxpool->GetNumVertices();
   size_t numfaces = inp_submesh.GetNumPolys(numsides);
   _verts          = Eigen::MatrixXd(numverts, 3);
   _normals        = Eigen::MatrixXd(numverts, 3);
@@ -71,7 +71,7 @@ IglMesh::IglMesh(const submesh& inp_submesh, int numsides)
   // fill in vertices
   ///////////////////////////////////////////////
   for (int v = 0; v < numverts; v++) {
-    const auto& inpvtx = inp_submesh._vtxpool.GetVertex(v);
+    const auto& inpvtx = inp_submesh._vtxpool->GetVertex(v);
     const auto& inpuv  = inpvtx.mUV[0];
     _verts.row(v) << inpvtx.mPos.x, inpvtx.mPos.y, inpvtx.mPos.z;
     _normals.row(v) << inpvtx.mNrm.x, inpvtx.mNrm.y, inpvtx.mNrm.z;

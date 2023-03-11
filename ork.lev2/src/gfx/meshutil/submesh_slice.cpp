@@ -23,7 +23,7 @@ void submeshSliceWithPlane(const submesh& inpsubmesh, //
 
   std::unordered_set<vertex_ptr_t> front_verts, back_verts, planar_verts;
 
-  for( auto item : inpsubmesh._vtxpool._vtxmap ){
+  for( auto item : inpsubmesh._vtxpool->_vtxmap ){
     auto vertex = item.second;
     const auto& pos = vertex->mPos;
     float point_distance = slicing_plane.pointDistance(pos);
@@ -103,7 +103,7 @@ void submeshClipWithPlane(const submesh& inpsubmesh, //
 
   std::unordered_set<vertex_ptr_t> front_verts, back_verts, planar_verts;
 
-  for( auto item : inpsubmesh._vtxpool._vtxmap ){
+  for( auto item : inpsubmesh._vtxpool->_vtxmap ){
     auto vertex = item.second;
     const auto& pos = vertex->mPos;
     float point_distance = slicing_plane.pointDistance(pos);
@@ -163,7 +163,7 @@ void submeshClipWithPlane(const submesh& inpsubmesh, //
       mupoly_clip_adapter clipped_back;
       int inumv = input_poly->GetNumSides();
       for (int iv = 0; iv < inumv; iv++) {
-        auto v = inpsubmesh._vtxpool.GetVertex(input_poly->GetVertexID(iv));
+        auto v = inpsubmesh._vtxpool->GetVertex(input_poly->GetVertexID(iv));
         clip_input.AddVertex(v);
       }
 

@@ -42,7 +42,7 @@ bool XgmSkinnedClusterBuilder::addTriangle(const XgmClusterTri& Triangle) {
   // make sure triangle will absolutely fit in the vertex buffer
   ///////////////////////////////////////
 
-  size_t ivcount = _submesh.RefVertexPool().GetNumVertices();
+  size_t ivcount = _submesh._vtxpool->GetNumVertices();
 
   static const size_t kvtresh = (2 << 16) - 4;
 
@@ -134,13 +134,13 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12B12T8I4W4(lev2::Context& 
   lev2::VtxWriter<vtx_t> vwriter;
   const float kVertexScale(1.0f);
   const fvec2 UVScale(1.0f, 1.0f);
-  int NumVertexIndices = _submesh.RefVertexPool().GetNumVertices();
+  int NumVertexIndices = _submesh._vtxpool->GetNumVertices();
   _vertexBuffer        = std::make_shared<vtxbuf_t>(NumVertexIndices, 0, ork::lev2::PrimitiveType::MULTI);
   vwriter.Lock(&context, _vertexBuffer.get(), NumVertexIndices);
 
   for (int iv = 0; iv < NumVertexIndices; iv++) {
     vtx_t OutVtx;
-    const meshutil::vertex& InVtx = _submesh.RefVertexPool().GetVertex(iv);
+    const meshutil::vertex& InVtx = _submesh._vtxpool->GetVertex(iv);
     OutVtx.mPosition              = InVtx.mPos * kVertexScale;
     OutVtx.mUV0                   = InVtx.mUV[0].mMapTexCoord * UVScale;
     OutVtx.mNormal                = InVtx.mNrm;
@@ -216,13 +216,13 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12T8I4W4(lev2::Context& con
   lev2::VtxWriter<vtx_t> vwriter;
   const float kVertexScale(1.0f);
   const fvec2 UVScale(1.0f, 1.0f);
-  int NumVertexIndices = _submesh.RefVertexPool().GetNumVertices();
+  int NumVertexIndices = _submesh._vtxpool->GetNumVertices();
 
   _vertexBuffer = std::make_shared<vtxbuf_t>(NumVertexIndices, 0, ork::lev2::PrimitiveType::MULTI);
   vwriter.Lock(&context, _vertexBuffer.get(), NumVertexIndices);
   for (int iv = 0; iv < NumVertexIndices; iv++) {
     vtx_t OutVtx;
-    const meshutil::vertex& InVtx = _submesh.RefVertexPool().GetVertex(iv);
+    const meshutil::vertex& InVtx = _submesh._vtxpool->GetVertex(iv);
     OutVtx.mPosition              = InVtx.mPos * kVertexScale;
     OutVtx.mUV0                   = InVtx.mUV[0].mMapTexCoord * UVScale;
     OutVtx.mNormal                = InVtx.mNrm;
@@ -266,12 +266,12 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N6I1T4(lev2::Context& contex
   lev2::VtxWriter<vtx_t> vwriter;
   const float kVertexScale(1.0f);
   const fvec2 UVScale(1.0f, 1.0f);
-  int NumVertexIndices = _submesh.RefVertexPool().GetNumVertices();
+  int NumVertexIndices = _submesh._vtxpool->GetNumVertices();
   _vertexBuffer        = std::make_shared<vtxbuf_t>(NumVertexIndices, 0, ork::lev2::PrimitiveType::MULTI);
   vwriter.Lock(&context, _vertexBuffer.get(), NumVertexIndices);
   for (int iv = 0; iv < NumVertexIndices; iv++) {
     vtx_t OutVtx;
-    const meshutil::vertex& InVtx = _submesh.RefVertexPool().GetVertex(iv);
+    const meshutil::vertex& InVtx = _submesh._vtxpool->GetVertex(iv);
 
     OutVtx.mX = InVtx.mPos.x * kVertexScale;
     OutVtx.mY = InVtx.mPos.y * kVertexScale;

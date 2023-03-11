@@ -357,11 +357,11 @@ void FlatSubMesh::fromSubmesh(const submesh& mesh){
   ////////////////////////////////////////////////////////
   _aabox = mesh.aabox();
   ////////////////////////////////////////////////////////
-  const auto& vpool = mesh.RefVertexPool();
+  auto vpool = mesh._vtxpool;
   ////////////////////////////////////////////////////////
   mesh.FindNSidedPolys(TrianglePolyIndices, 3);
   mesh.FindNSidedPolys(QuadPolyIndices, 4);
-  int inumv   = (int)vpool.GetNumVertices();
+  int inumv   = (int)vpool->GetNumVertices();
   int inumtri = int(TrianglePolyIndices.size());
   int inumqua = int(QuadPolyIndices.size());
   ////////////////////////////////////////////////////////
@@ -371,7 +371,7 @@ void FlatSubMesh::fromSubmesh(const submesh& mesh){
   // generate vertices
   ////////////////////////////////////////////////////////
   for (int iv0 = 0; iv0 < inumv; iv0++) {
-    const vertex& invtx = vpool.GetVertex(iv0);
+    const vertex& invtx = vpool->GetVertex(iv0);
     OutVertex.mPosition = invtx.mPos;
     OutVertex.mNormal   = invtx.mNrm;
     OutVertex.mBiNormal = invtx.mUV[0].mMapBiNormal;

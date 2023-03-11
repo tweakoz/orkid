@@ -237,7 +237,7 @@ struct annopolyposlut : public annopolylut {
 
 struct submesh {
 
-  submesh(const vertexpool& vpool = vertexpool::EmptyPool);
+  submesh(vertexpool_ptr_t vpool = nullptr);
   ~submesh();
 
   //////////////////////////////////////////////////////////////////////////////
@@ -273,15 +273,6 @@ struct submesh {
     assert(false);
     static T rval;
     return rval;
-  }
-
-  //////////////////////////////////////////////////////////////////////////////
-
-  const vertexpool& RefVertexPool() const {
-    return _vtxpool;
-  }
-  void SetVertexPool(const vertexpool& vpool) {
-    _vtxpool = vpool;
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -381,7 +372,7 @@ struct submesh {
   std::string name;
   AnnotationMap _annotations;
   float _surfaceArea;
-  vertexpool _vtxpool;
+  vertexpool_ptr_t _vtxpool;
   std::unordered_map<uint64_t, edge_ptr_t, HashU6432> _edgemap;
   std::unordered_map<uint64_t, poly_ptr_t, HashU6432> _polymap;
   orkvector<poly_ptr_t> _orderedPolys;
