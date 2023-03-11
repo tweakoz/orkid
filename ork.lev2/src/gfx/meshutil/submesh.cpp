@@ -24,7 +24,7 @@ submesh::submesh(const vertexpool& vpool)
     : _surfaceArea(0)
     , _vtxpool(vpool)
     , _mergeEdges(true) {
-  for (int i = 0; i < kmaxsidesperpoly; i++)
+  for (int i = 0; i < 8; i++)
     _polyTypeCounter[i] = 0;
 }
 /////////////////////////////////////////////////////////////////////////
@@ -281,8 +281,9 @@ int submesh::GetNumPolys(int inumsides) const {
   if (0 == inumsides) {
     iret = (int)_orderedPolys.size();
   } else {
-    OrkAssert(inumsides < kmaxsidesperpoly);
-    iret = _polyTypeCounter[inumsides];
+    auto it = _polyTypeCounter.find(inumsides);
+    OrkAssert(it!=_polyTypeCounter.end());
+    iret = it->second;
   }
   return iret;
 }
@@ -319,8 +320,8 @@ void submesh::GetAdjacentPolys(int ply, orkset<int>& output) const {
 edge_constptr_t submesh::edgeBetween(int aind, int bind) const {
   const poly& a = RefPoly(aind);
   const poly& b = RefPoly(bind);
-  for (int eaind = 0; eaind < a.miNumSides; eaind++)
-    for (int ebind = 0; ebind < b.miNumSides; ebind++)
+  for (int eaind = 0; eaind < a.GetNumSides(); eaind++)
+    for (int ebind = 0; ebind < b.GetNumSides(); ebind++)
       if (a._edges[eaind] == b._edges[ebind])
         return std::const_pointer_cast<const edge>(a._edges[eaind]);
   return nullptr;
@@ -343,17 +344,16 @@ void submesh::MergeSubMesh(const submesh& inp_mesh) {
   float ftimeA     = float(OldSchool::GetRef().GetLoResTime());
   int inumpingroup = inp_mesh.GetNumPolys();
   for (int i = 0; i < inumpingroup; i++) {
-    const poly& ply = inp_mesh.RefPoly(i);
-    int inumpv      = ply.GetNumSides();
-    poly NewPoly;
-    NewPoly.miNumSides = inumpv;
-    for (int iv = 0; iv < inumpv; iv++) {
-      int ivi               = ply.GetVertexID(iv);
+    const poly& input_poly = inp_mesh.RefPoly(i);
+    std::vector<vertex_ptr_t> new_vertices;
+    for (int iv = 0; iv < input_poly.GetNumSides(); iv++) {
+      int ivi               = input_poly.GetVertexID(iv);
       const vertex& src_vtx = inp_mesh.RefVertexPool().GetVertex(ivi);
-      NewPoly._vertices[iv] = mergeVertex(src_vtx);
+      new_vertices.push_back(mergeVertex(src_vtx));
     }
-    NewPoly.SetAnnoMap(ply.GetAnnoMap());
-    MergePoly(NewPoly);
+    poly_ptr_t new_poly = std::make_shared<poly>(new_vertices);
+    new_poly->SetAnnoMap(input_poly.GetAnnoMap());
+    MergePoly(*new_poly);
   }
   logchan_submesh->log("inumpingroup<%d> numoutpolys<%d>", inumpingroup, GetNumPolys() );
   float ftimeB = float(OldSchool::GetRef().GetLoResTime());
@@ -365,8 +365,10 @@ void submesh::MergePoly(const poly& ply) {
   int ipolyindex = GetNumPolys();
   poly nply      = ply;
   int inumv      = ply.GetNumSides();
-  OrkAssert(inumv <= kmaxsidesperpoly);
   OrkAssert(inumv >= 3 );
+  for( auto v : ply._vertices ){
+    OrkAssert(v!=nullptr);
+  }
   ///////////////////////////////
   // zero area poly removal
   switch (inumv) {
@@ -411,8 +413,8 @@ void submesh::MergePoly(const poly& ply) {
   U64 ucrc   = ply.HashIndices();
   auto itfhm = _polymap.find(ucrc);
   ///////////////////////////////
-  if (itfhm == _polymap.end()) // no match
-  {
+  if (itfhm == _polymap.end()) { // no match
+
     int inewpi = (int)_orderedPolys.size();
     //////////////////////////////////////////////////
     // connect to vertices
@@ -432,7 +434,7 @@ void submesh::MergePoly(const poly& ply) {
         auto v1 = _vtxpool._orderedVertices[iv1];
 
         edge Edge(v0, v1);
-        nply._edges[i] = MergeEdge(Edge, ipolyindex);
+        nply._edges.push_back(MergeEdge(Edge, ipolyindex));
       }
     }
     nply.SetAnnoMap(ply.GetAnnoMap());

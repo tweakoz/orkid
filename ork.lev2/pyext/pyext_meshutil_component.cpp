@@ -18,7 +18,7 @@ void pyinit_meshutil_component(py::module& module_meshutil) {
   auto vtxpool_type = py::class_<vertexpool,vertexpool_ptr_t>(module_meshutil, "VertexPool").def(py::init<>());
   type_codec->registerStdCodec<vertexpool_ptr_t>(vtxpool_type);
   /////////////////////////////////////////////////////////////////////////////////
-  auto poly_type = py::class_<poly,poly_ptr_t>(module_meshutil, "Poly").def(py::init<>());
+  auto poly_type = py::class_<poly,poly_ptr_t>(module_meshutil, "Poly");
   type_codec->registerStdCodec<poly_ptr_t>(poly_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto edge_type = py::class_<edge,edge_ptr_t>(module_meshutil, "Edge").def(py::init<>());

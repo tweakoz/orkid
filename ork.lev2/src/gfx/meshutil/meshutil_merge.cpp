@@ -59,19 +59,33 @@ void Mesh::MergeSubMesh(const Mesh& src, const submesh& pgrp, const char* newnam
     _submeshesByPolyGroup[newname] = pnewgroup;
   }
   int inumpingroup = pgrp.GetNumPolys();
+  const auto& inp_pool = pgrp.RefVertexPool();
   for (int i = 0; i < inumpingroup; i++) {
-    const poly& ply = pgrp.RefPoly(i);
-    int inumpv      = ply.GetNumSides();
-    poly NewPoly;
-    NewPoly.miNumSides = inumpv;
-    for (int iv = 0; iv < inumpv; iv++) {
-      int ivi               = ply.GetVertexID(iv);
-      const vertex& vtx     = pgrp.RefVertexPool().GetVertex(ivi);
-      auto newvtx           = pnewgroup->mergeVertex(vtx);
-      NewPoly._vertices[iv] = newvtx;
+    const poly& input_poly = pgrp.RefPoly(i);
+    int inumpv      = input_poly.GetNumSides();
+    poly_ptr_t new_poly;
+    switch(inumpv){
+      case 3:{
+        auto newvtx0           = pnewgroup->mergeVertex(inp_pool.GetVertex(input_poly.GetVertexID(0)));
+        auto newvtx1           = pnewgroup->mergeVertex(inp_pool.GetVertex(input_poly.GetVertexID(1)));
+        auto newvtx2           = pnewgroup->mergeVertex(inp_pool.GetVertex(input_poly.GetVertexID(2)));
+        new_poly = std::make_shared<poly>(newvtx0,newvtx1,newvtx2);
+        break;
+      }
+      case 4:{
+        auto newvtx0           = pnewgroup->mergeVertex(inp_pool.GetVertex(input_poly.GetVertexID(0)));
+        auto newvtx1           = pnewgroup->mergeVertex(inp_pool.GetVertex(input_poly.GetVertexID(1)));
+        auto newvtx2           = pnewgroup->mergeVertex(inp_pool.GetVertex(input_poly.GetVertexID(2)));
+        auto newvtx3           = pnewgroup->mergeVertex(inp_pool.GetVertex(input_poly.GetVertexID(3)));
+        new_poly = std::make_shared<poly>(newvtx0,newvtx1,newvtx2,newvtx3);
+        break;
+      }
+      default:
+        OrkAssert(false);
+        break;
     }
-    NewPoly.SetAnnoMap(ply.GetAnnoMap());
-    pnewgroup->MergePoly(NewPoly);
+    new_poly->SetAnnoMap(input_poly.GetAnnoMap());
+    pnewgroup->MergePoly(*new_poly);
   }
   float ftimeB = float(OldSchool::GetRef().GetLoResTime());
   float ftime  = (ftimeB - ftimeA);
@@ -115,22 +129,16 @@ void MergeToolMeshQueueItem::DoIt(int ithread) const {
   float ftimeA = float(OldSchool::GetRef().GetLoResTime());
   int inump    = mpSourceSubMesh->GetNumPolys();
   for (int i = 0; i < inump; i++) {
-    if (i == 0x194 && inump == 0x145b) {
-      orkprintf("yo\n");
-    }
     const poly& ply = mpSourceSubMesh->RefPoly(i);
     int inumv       = ply.GetNumSides();
-    if (inumv > kmaxsidesperpoly) {
-      OrkAssert(false);
-      continue;
-    }
-    vertex_ptr_t merged[kmaxsidesperpoly];
+
+    std::vector<vertex_ptr_t> merged;
     for (int i = 0; i < inumv; i++) {
 
       auto src  = ply._vertices[i];
-      merged[i] = mpDestSubMesh->mergeVertex(*src);
+      merged.push_back(mpDestSubMesh->mergeVertex(*src));
     }
-    poly polyA(merged, inumv);
+    poly polyA(merged);
     polyA.SetAnnoMap(ply.GetAnnoMap());
     mpDestSubMesh->MergePoly(polyA);
   }
@@ -255,18 +263,16 @@ void Mesh::MergeToolMeshAs(const Mesh& sr, const char* pgroupname) {
     const submesh& src_group = *itpg->second;
     int inump                = src_group.GetNumPolys();
     for (int ip = 0; ip < inump; ip++) {
-      const poly& ply = src_group.RefPoly(ip);
-      int inumv       = ply.GetNumSides();
-      if (inumv > kmaxsidesperpoly) {
-        OrkAssert(false);
-        continue;
+      const poly& input_poly = src_group.RefPoly(ip);
+      std::vector<vertex_ptr_t> new_vertices;
+      for (int iv = 0; iv < input_poly.GetNumSides(); iv++) {
+        int ivi               = input_poly.GetVertexID(iv);
+        const vertex& src_vtx = src_group.RefVertexPool().GetVertex(ivi);
+        new_vertices.push_back(dest_group.mergeVertex(src_vtx));
       }
-      vertex_ptr_t merged[kmaxsidesperpoly];
-      for (int i = 0; i < inumv; i++)
-        merged[i] = dest_group.mergeVertex(*ply._vertices[i]);
-      poly npoly(merged, inumv);
-      npoly.SetAnnoMap(ply.GetAnnoMap());
-      dest_group.MergePoly(npoly);
+      poly_ptr_t new_poly = std::make_shared<poly>(new_vertices);
+      new_poly->SetAnnoMap(input_poly.GetAnnoMap());
+      dest_group.MergePoly(*new_poly);
     }
   }
 }

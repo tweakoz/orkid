@@ -482,14 +482,25 @@ void Mesh::ReadFromWavefrontObj(const file::Path& BasePath) {
                            (vertex_cache[2] == vertex_cache[0]);
 
           if (false == bzeroarea) {
-            poly ToolPoly(vertex_cache[0], vertex_cache[1], vertex_cache[2]);
-            smesh.MergePoly(ToolPoly);
+            bool ok = (vertex_cache[0] != nullptr);
+            ok &= (vertex_cache[1] != nullptr);
+            ok &= (vertex_cache[2] != nullptr);
+            if (ok) {
+              poly ToolPoly(vertex_cache[0], vertex_cache[1], vertex_cache[2]);
+              smesh.MergePoly(ToolPoly);
+            }
           }
           break;
         }
         case 4: {
-          poly ToolPoly(vertex_cache[0], vertex_cache[1], vertex_cache[2], vertex_cache[3]);
-          smesh.MergePoly(ToolPoly);
+          bool ok = (vertex_cache[0] != nullptr);
+          ok &= (vertex_cache[1] != nullptr);
+          ok &= (vertex_cache[2] != nullptr);
+          ok &= (vertex_cache[3] != nullptr);
+          if (ok) {
+            poly ToolPoly(vertex_cache[0], vertex_cache[1], vertex_cache[2], vertex_cache[3]);
+            smesh.MergePoly(ToolPoly);
+          }
           break;
         }
         default:

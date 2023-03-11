@@ -14,14 +14,11 @@ mesh.readFromWavefrontObj("data://tests/simple_obj/monkey.obj")
 
 submesh = mesh.submesh_list[0]
 
-as_tris = submesh.triangulate()
-as_quads = as_tris.quadulate(area_tolerance=100.0, #
-                             exclude_non_coplanar=False, #
-                             exclude_non_rectangular=False, #
-                             )
+slicing_plane = plane(vec3(0,1,0),0)
 
-print(submesh)
-print(as_tris)
-print(as_quads)
+sliced = submesh.sliceWithPlane(slicing_plane)
+print(sliced)
 
-as_quads.writeWavefrontObj(str(ork.path.temp()/"monkey_quadulated_out.obj"));
+sliced["front"].writeWavefrontObj(str(ork.path.temp()/"monkey_slice_front_out.obj"));
+sliced["back"].writeWavefrontObj(str(ork.path.temp()/"monkey_slice_back_out.obj"));
+sliced["intersects"].writeWavefrontObj(str(ork.path.temp()/"monkey_slice_isect_out.obj"));

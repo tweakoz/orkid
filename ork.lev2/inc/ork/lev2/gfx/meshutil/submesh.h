@@ -169,7 +169,6 @@ struct AnnoMap {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static const int kmaxsidesperpoly = 5;
 
 struct poly {
 
@@ -182,12 +181,19 @@ struct poly {
   int GetVertexID(int i) const;
 
   poly(
-      vertex_ptr_t ia = nullptr, //
-      vertex_ptr_t ib = nullptr,
-      vertex_ptr_t ic = nullptr,
-      vertex_ptr_t id = nullptr);
+      vertex_ptr_t ia, //
+      vertex_ptr_t ib,
+      vertex_ptr_t ic);
 
-  poly(const vertex_ptr_t verts[], int numSides);
+  poly(
+      vertex_ptr_t ia, //
+      vertex_ptr_t ib,
+      vertex_ptr_t ic,
+      vertex_ptr_t id);
+
+  poly(const std::vector<vertex_ptr_t>& vertices);
+
+  //poly(const vertex_ptr_t verts[], int numSides);
 
   // vertex clockwise around the poly from the given one
   // int VertexCW(int vert) const;
@@ -201,9 +207,9 @@ struct poly {
 
   U64 HashIndices(void) const;
 
-  vertex_ptr_t _vertices[kmaxsidesperpoly];
-  edge_ptr_t _edges[kmaxsidesperpoly];
-  int miNumSides;
+  std::vector<vertex_ptr_t> _vertices;
+  std::vector<edge_ptr_t> _edges;
+
   const AnnoMap* mAnnotationSet;
 };
 
@@ -376,7 +382,7 @@ struct submesh {
   std::unordered_map<uint64_t, edge_ptr_t, HashU6432> _edgemap;
   std::unordered_map<uint64_t, poly_ptr_t, HashU6432> _polymap;
   orkvector<poly_ptr_t> _orderedPolys;
-  int _polyTypeCounter[kmaxsidesperpoly];
+  std::unordered_map<int,int> _polyTypeCounter;
   bool _mergeEdges;
 
   /////////////////////////////////////
@@ -394,6 +400,13 @@ void submeshTrianglesToQuads(const submesh& inpsubmesh,
                              bool exclude_non_coplanar = true, //
                              bool exclude_non_rectangular = false //
                              );
+
+void submeshSliceWithPlane(const submesh& inpsubmesh, //
+                           fplane3& slicing_plane, //
+                           submesh& outsmeshFront, //
+                           submesh& outsmeshBack,
+                           submesh& outsmeshIntersects
+                           );
 
 void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath);
 // void SubDivQuads(submesh* poutsmesh) const;

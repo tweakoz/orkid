@@ -256,48 +256,76 @@ void poly::SetAnnoMap(const AnnoMap* pmap) {
 ////////////////////////////////////////////////////////////////
 
 int poly::GetNumSides(void) const {
-  return miNumSides;
+  return _vertices.size();
 }
 
 ////////////////////////////////////////////////////////////////
 
 int poly::GetVertexID(int i) const {
-  OrkAssert(i < miNumSides);
+  OrkAssert(i < GetNumSides());
   return _vertices[i]->_poolindex;
 }
 
 ////////////////////////////////////////////////////////////////
 
-poly::poly(vertex_ptr_t ia, vertex_ptr_t ib, vertex_ptr_t ic, vertex_ptr_t id)
-    : miNumSides(0)
-    , mAnnotationSet(0) {
-  _vertices[0] = ia;
-  _vertices[1] = ib;
-  _vertices[2] = ic;
-  _vertices[3] = id;
-  if (ia)
-    miNumSides++;
-  if (ib)
-    miNumSides++;
-  if (ic)
-    miNumSides++;
-  if (id)
-    miNumSides++;
-  for (int i = 4; i < kmaxsidesperpoly; i++) {
-    _edges[i] = nullptr;
-  }
+poly::poly(vertex_ptr_t ia, vertex_ptr_t ib, vertex_ptr_t ic)
+    : mAnnotationSet(0) {
+
+  OrkAssert(ia);
+  OrkAssert(ib);
+  OrkAssert(ic);
+
+  _vertices.push_back(ia);
+  _vertices.push_back(ib);
+  _vertices.push_back(ic);
+
+  //auto eab = std::make_shared<edge>(ia,ib);
+  //auto ebc = std::make_shared<edge>(ib,ic);
+  //auto eca = std::make_shared<edge>(ic,ia);
+  //for (int i = 4; i < kmaxsidesperpoly; i++) {
+    //_edges[i] = nullptr;
+  //}
 }
 
 ////////////////////////////////////////////////////////////////
 
-poly::poly(const vertex_ptr_t verts[], int numSides)
-    : miNumSides(numSides)
-    , mAnnotationSet(0) {
-  for (int i = 0; i < numSides; i++) {
-    _vertices[i] = verts[i];
-    _edges[i]    = nullptr;
-  }
+poly::poly(vertex_ptr_t ia, vertex_ptr_t ib, vertex_ptr_t ic, vertex_ptr_t id)
+    : mAnnotationSet(0) {
+
+  OrkAssert(ia);
+  OrkAssert(ib);
+  OrkAssert(ic);
+  OrkAssert(id);
+
+  _vertices.push_back(ia);
+  _vertices.push_back(ib);
+  _vertices.push_back(ic);
+  _vertices.push_back(id);
+
+  //for (int i = 4; i < kmaxsidesperpoly; i++) {
+    //_edges[i] = nullptr;
+  //}
 }
+
+////////////////////////////////////////////////////////////////
+
+poly::poly(const std::vector<vertex_ptr_t>& vertices)
+    : mAnnotationSet(0) {
+
+  OrkAssert(vertices.size()<=5);
+  OrkAssert(vertices.size()>=3);
+
+  for( int i=0; i<vertices.size(); i++ ){
+    auto in_vertex = vertices[i];
+    OrkAssert(in_vertex);
+    _vertices.push_back(in_vertex);
+  }
+
+  //for (int i = 4; i < kmaxsidesperpoly; i++) {
+    //_edges[i] = nullptr;
+  //}
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 /*   // disabled during submesh refactor
 
@@ -356,7 +384,7 @@ float poly::ComputeArea(const vertexpool& vpool, const fmtx4& MatRange) const {
   ork::fvec3 base = _vertices[0]->mPos.transform(MatRange);
   ork::fvec3 prev = _vertices[1]->mPos.transform(MatRange);
   // compute area polygon as area of triangle fan
-  for (int i = 2; i < miNumSides; i++) {
+  for (int i = 2; i < _vertices.size(); i++) {
     ork::fvec3 next = _vertices[i]->mPos.transform(MatRange);
     // area of triangle 1/2 length of cross product the vector of any two edges
     farea += (prev - base).crossWith(next - base).magnitude() * 0.5f;
@@ -368,9 +396,9 @@ float poly::ComputeArea(const vertexpool& vpool, const fmtx4& MatRange) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 float poly::ComputeEdgeLength(const vertexpool& vpool, const fmtx4& MatRange, int iedge) const {
-  int inumvtx = miNumSides;
-  auto v0     = _vertices[(iedge + 0) % miNumSides];
-  auto v1     = _vertices[(iedge + 1) % miNumSides];
+  int inumvtx = _vertices.size();
+  auto v0     = _vertices[(iedge + 0) % inumvtx];
+  auto v1     = _vertices[(iedge + 1) % inumvtx];
   float elen  = (v0->mPos.transform(MatRange) - v1->mPos.transform(MatRange)).magnitude();
   return elen;
 }
@@ -379,10 +407,11 @@ float poly::ComputeEdgeLength(const vertexpool& vpool, const fmtx4& MatRange, in
 
 fvec3 poly::ComputeNormal(const vertexpool& vpool) const {
   fvec3 rval(0, 0, 0);
+  int inumvtx = _vertices.size();
   auto v0 = _vertices[0]->mPos;
   auto v1 = _vertices[1]->mPos;
-  for (int i = 2; i < miNumSides; i++) {
-    auto v2 = _vertices[i % miNumSides]->mPos;
+  for (int i = 2; i < inumvtx; i++) {
+    auto v2 = _vertices[i % inumvtx]->mPos;
     rval += (v0 - v1).crossWith(v2 - v1);
     v0 = v1;
     v1 = v2;
@@ -413,17 +442,14 @@ U64 poly::HashIndices(void) const {
       }
     }
   };
-  int myarray[kmaxsidesperpoly];
+  std::vector<int> my_array;
   int inumv = GetNumSides();
   for (int i = 0; i < inumv; i++) {
-    myarray[i] = _vertices[i]->_poolindex;
+    my_array.push_back(_vertices[i]->_poolindex);
   }
-  for (int i = inumv; i < kmaxsidesperpoly; i++) {
-    myarray[i] = 0;
-  }
-  bubblesort::doit(myarray, inumv);
+  bubblesort::doit(my_array.data(), inumv);
   boost::Crc64 crc64;
-  crc64.accumulate((const void*)&myarray[0], sizeof(int) * inumv);
+  crc64.accumulate((const void*)my_array.data(), sizeof(int) * inumv);
   U64 ucrc = crc64.result();
   return ucrc;
 }
