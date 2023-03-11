@@ -8,7 +8,6 @@
 #pragma once
 
 #include "NodeCompositor.h"
-#include <ork/lev2/gfx/meshutil/rigid_primitive.inl>
 #include <ork/lev2/gfx/material_freestyle.h>
 
 namespace ork::lev2 {

@@ -6,14 +6,11 @@
 ////////////////////////////////////////////////////////////////
 
 #include "pyext.h"
-#include <ork/lev2/gfx/meshutil/rigid_primitive.inl>
-#include <pybind11/eigen.h>
 #include <ork/lev2/gfx/meshutil/igl.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
 using namespace meshutil;
-using rigidprim_t = RigidPrimitive<SVtxV12N12B12T8C4>;
 void pyinit_meshutil_submesh(py::module& module_meshutil) {
   auto type_codec = python::TypeCodec::instance();
   /////////////////////////////////////////////////////////////////////////////////

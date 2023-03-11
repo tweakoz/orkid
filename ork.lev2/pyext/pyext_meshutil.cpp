@@ -82,6 +82,15 @@ void pyinit_meshutil(py::module& module_lev2) {
         prim->fromSubMesh(*submesh, context.get());
         return prim;
       }))
+      .def("createNode", [](rigidprim_t& prim, //
+                            std::string named, //
+                            scenegraph::layer_ptr_t layer, //
+                            fxpipeline_ptr_t mtl_inst) -> scenegraph::drawable_node_ptr_t { // 
+            auto node                                                 //
+                = prim.createNode(named, layer, mtl_inst);
+            //node->_userdata->template makeValueForKey<T>("_primitive") = prim; // hold on to reference
+            return node;
+      })
       .def("fromSubMesh", [](rigidprim_t& prim, submesh_ptr_t submesh, Context* context) { prim.fromSubMesh(*submesh, context); })
       .def("renderEML", [](rigidprim_t& prim, ctx_t context) { prim.renderEML(context.get()); });
   /////////////////////////////////////////////////////////////////////////////////

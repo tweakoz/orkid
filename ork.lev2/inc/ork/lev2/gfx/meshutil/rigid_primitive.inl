@@ -23,6 +23,8 @@
 #include <ork/kernel/datablock.h>
 #include <ork/lev2/gfx/meshutil/submesh.h>
 #include <ork/lev2/gfx/meshutil/clusterizer.h>
+#include <ork/lev2/gfx/scenegraph/scenegraph.h>
+
 namespace ork::meshutil {
 ///////////////////////////////////////////////////////////////////////////////
 typedef orkmap<std::string, svar64_t> AnnotationMap;
@@ -67,6 +69,27 @@ template <typename vtx_t> struct RigidPrimitive {
   void writeToChunks(const lev2::XgmSubMesh& xsubmesh, chunkfile::OutputStream* hdrstream, chunkfile::OutputStream* geostream);
   void gpuLoadFromChunks(lev2::Context* context, chunkfile::InputStream* hdrstream, chunkfile::InputStream* geostream);
 
+  //////////////////////////////////////////////////////////////////////////////
+  inline lev2::scenegraph::drawable_node_ptr_t createNode(
+      std::string named, //
+      lev2::scenegraph::layer_ptr_t layer,
+      lev2::fxpipeline_ptr_t pipeline) {
+
+    OrkAssert(pipeline);
+
+    _pipeline = pipeline;
+
+    auto drw = std::make_shared<lev2::CallbackDrawable>(nullptr);
+    drw->SetRenderCallback([=](lev2::RenderContextInstData& RCID) { //
+      auto context = RCID.context();
+      _pipeline->wrappedDrawCall(RCID, //
+                                 [this, context]() { //
+                                  this->renderEML(context); //
+                                });
+    });
+    return layer->createDrawableNode(named, drw);
+  }
+  lev2::fxpipeline_ptr_t _pipeline;
   cluster_ptr_list_t _gpuClusters;
 };
 ///////////////////////////////////////////////////////////////////////////////
