@@ -408,6 +408,12 @@ void submeshSliceWithPlane(const submesh& inpsubmesh, //
                            submesh& outsmeshIntersects
                            );
 
+void submeshClipWithPlane(const submesh& inpsubmesh, //
+                           fplane3& slicing_plane, //
+                           submesh& outsmeshFront, //
+                           submesh& outsmeshBack
+                           );
+
 void submeshWriteObj(const submesh& inpsubmesh, const file::Path& BasePath);
 // void SubDivQuads(submesh* poutsmesh) const;
 // void SubDivTriangles(submesh* poutsmesh) const;

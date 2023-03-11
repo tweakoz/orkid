@@ -44,6 +44,22 @@ void submeshTriangulate(const submesh& inpmesh, submesh& outmesh) {
         outmesh.MergePoly(poly(m2, m3, m0));
         break;
       }
+      case 5: {
+        auto v0 = ply._vertices[0];
+        auto v1 = ply._vertices[1];
+        auto v2 = ply._vertices[2];
+        auto v3 = ply._vertices[3];
+        auto v4 = ply._vertices[4];
+        auto m0 = outmesh._vtxpool.mergeVertex(*v0);
+        auto m1 = outmesh._vtxpool.mergeVertex(*v1);
+        auto m2 = outmesh._vtxpool.mergeVertex(*v2);
+        auto m3 = outmesh._vtxpool.mergeVertex(*v3);
+        auto m4 = outmesh._vtxpool.mergeVertex(*v4);
+        outmesh.MergePoly(poly(m0, m1, m2));
+        outmesh.MergePoly(poly(m2, m3, m0));
+        outmesh.MergePoly(poly(m0, m3, m4));
+        break;
+      }
       default:
         OrkAssert(false);
     }

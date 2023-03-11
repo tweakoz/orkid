@@ -12,7 +12,7 @@ tokens = CrcStringProxy()
 
 coreappinit() # setup filesystem
 a = meshutil.Mesh()
-a.readFromWavefrontObj("data://tests/simple_obj/box.obj")
+a.readFromWavefrontObj("data://tests/simple_obj/cylinder.obj")
 b = meshutil.Mesh()
 b.readFromWavefrontObj("data://tests/simple_obj/icosphere.obj")
 
@@ -28,9 +28,9 @@ print( b_igl.isVertexManifold )
 print( a_igl.isEdgeManifold )
 print( b_igl.isEdgeManifold )
 
-#c_igl.booleanOf(a_igl,tokens.XOR,b_igl)
+c_igl.booleanOf(a_igl,tokens.RESOLVE,b_igl)
 
-#c_igl.toSubMesh().writeWavefrontObj("output.obj")
+c_igl.toSubMesh().writeWavefrontObj("output.obj")
 #print(a_igl)
 #print(b_igl)
-#print(c_igl)
+print(c_igl)

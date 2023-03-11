@@ -22,3 +22,9 @@ print(sliced)
 sliced["front"].writeWavefrontObj(str(ork.path.temp()/"monkey_slice_front_out.obj"));
 sliced["back"].writeWavefrontObj(str(ork.path.temp()/"monkey_slice_back_out.obj"));
 sliced["intersects"].writeWavefrontObj(str(ork.path.temp()/"monkey_slice_isect_out.obj"));
+
+clipped = submesh.clipWithPlane(slicing_plane)
+print(clipped)
+
+clipped["front"].triangulate().writeWavefrontObj(str(ork.path.temp()/"monkey_clipped_front_out.obj"));
+clipped["back"].triangulate().writeWavefrontObj(str(ork.path.temp()/"monkey_clipped_back_out.obj"));

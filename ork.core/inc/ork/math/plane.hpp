@@ -320,24 +320,38 @@ template <typename T> template <typename PolyType> bool Plane<T>::ClipPoly(const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T>
-template <typename PolyType>
-bool Plane<T>::ClipPoly(const PolyType& PolyToClip, PolyType& OutPolyFront, PolyType& OutPolyBack) {
-  const int inuminverts                         = PolyToClip.GetNumVertices();
-  const typename PolyType::VertexType& StartVtx = PolyToClip.GetVertex(0);
-  bool IsVtxAIn                                 = IsPointInFront(StartVtx.Pos());
-  // get the side of each vert to the plane
+template <typename T> //
+template <typename PolyType> //
+bool Plane<T>::ClipPoly(const PolyType& input_poly, //
+                        PolyType& out_front_poly, //
+                        PolyType& out_back_poly) { //
+
+  const int inuminverts                         = input_poly.GetNumVertices();
+  OrkAssert(input_poly.GetNumVertices()>=3);
+
+  //printf( "clip poly num verts<%d>\n", inuminverts );
+
   for (int iva = 0; iva < inuminverts; iva++) {
+    //printf( "  iva<%d> of inuminverts<%d>\n", iva, inuminverts );
     int ivb                                 = ((iva == inuminverts - 1) ? 0 : iva + 1);
-    const typename PolyType::VertexType& vA = PolyToClip.GetVertex(iva);
-    const typename PolyType::VertexType& vB = PolyToClip.GetVertex(ivb);
-    if (IsVtxAIn) {
-      OutPolyFront.AddVertex(vA);
+    const auto& vA = input_poly.GetVertex(iva);
+    const auto& vB = input_poly.GetVertex(ivb);
+
+    // get the side of each vert to the plane
+    bool is_vertex_a_front = IsPointInFront(vA.Pos());
+    bool is_vertex_b_front = IsPointInFront(vB.Pos());
+
+    //printf( "  is_vertex_a_front<%d> is_vertex_b_front<%d>\n", int(is_vertex_a_front), int(is_vertex_b_front) );
+
+    if (is_vertex_a_front) {
+      out_front_poly.AddVertex(vA);
+      //printf("  add a to front cnt<%d>\n", out_front_poly.GetNumVertices());
     } else {
-      OutPolyBack.AddVertex(vA);
+      out_back_poly.AddVertex(vA);
+      //printf("  add a to back cnt<%d>\n", out_back_poly.GetNumVertices());
     }
-    bool IsVtxBIn = IsPointInFront(vB.Pos());
-    if (IsVtxBIn != IsVtxAIn) {
+
+    if (is_vertex_b_front != is_vertex_a_front) {
       Vector3<T> vPos;
       T isectdist;
       TLineSegment3<T> lseg(vA.Pos(), vB.Pos());
@@ -347,12 +361,35 @@ bool Plane<T>::ClipPoly(const PolyType& PolyToClip, PolyType& OutPolyFront, Poly
         T fScalar = (Abs(fDist) < Epsilon()) ? T(0.0) : fDist2 / fDist;
         typename PolyType::VertexType LerpedVertex;
         LerpedVertex.lerp(vA, vB, fScalar);
-        OutPolyFront.AddVertex(LerpedVertex);
-        OutPolyBack.AddVertex(LerpedVertex);
+        out_front_poly.AddVertex(LerpedVertex);
+        out_back_poly.AddVertex(LerpedVertex);
+        //printf("  add l to front cnt<%d>\n", out_front_poly.GetNumVertices());
+        //printf("  add l to front cnt<%d>\n", out_back_poly.GetNumVertices());
+      }
+      else{
+        TLineSegment3<T> lseg2(vB.Pos(), vA.Pos());
+        if (Intersect(lseg2, isectdist, vPos)) {
+          T fDist   = (vB.Pos() - vA.Pos()).magnitude();
+          T fDist2  = (vB.Pos() - vPos).magnitude();
+          T fScalar = (Abs(fDist) < Epsilon()) ? T(0.0) : fDist2 / fDist;
+          typename PolyType::VertexType LerpedVertex;
+          LerpedVertex.lerp(vB, vA, fScalar);
+          out_front_poly.AddVertex(LerpedVertex);
+          out_back_poly.AddVertex(LerpedVertex);
+          //printf("  add l2 to front cnt<%d>\n", out_front_poly.GetNumVertices());
+          //printf("  add l2 to front cnt<%d>\n", out_back_poly.GetNumVertices());
+        }
+
       }
     }
-    IsVtxAIn = IsVtxBIn;
   }
+
+  int numfront = out_front_poly.GetNumVertices();
+  int numback = out_back_poly.GetNumVertices();
+
+  OrkAssert(numfront==0 or numfront>=3);
+  OrkAssert(numback==0 or numback>=3);
+  OrkAssert((numfront+numback)>=inuminverts);
   return true;
 }
 

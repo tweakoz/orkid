@@ -70,6 +70,18 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
                 rval["intersects"] = res_isect;
                 return rval;
               })
+          .def(
+              "clipWithPlane",
+              [](submesh_constptr_t inpsubmesh, 
+                 fplane3_ptr_t plane ) -> py::dict {
+                submesh_ptr_t res_front = std::make_shared<submesh>();
+                submesh_ptr_t res_back = std::make_shared<submesh>();
+                submeshClipWithPlane(*inpsubmesh,*plane,*res_front,*res_back);
+                py::dict rval;
+                rval["front"] = res_front;
+                rval["back"] = res_back;
+                return rval;
+              })
 #if defined(ENABLE_IGL)
           .def("toIglMesh", [](submesh_ptr_t submesh, int numsides) -> iglmesh_ptr_t { return submesh->toIglMesh(numsides); })
 #endif //#if defined(ENABLE_IGL)

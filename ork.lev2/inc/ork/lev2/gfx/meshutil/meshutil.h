@@ -371,4 +371,26 @@ struct FlatSubMesh {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct mupoly_clip_adapter {
+  typedef vertex VertexType;
+
+  orkvector<VertexType> mVerts;
+
+  mupoly_clip_adapter() {
+  }
+
+  void AddVertex(const VertexType& v) {
+    mVerts.push_back(v);
+  }
+  const VertexType& GetVertex(int idx) const {
+    return mVerts[idx];
+  }
+
+  size_t GetNumVertices() const {
+    return mVerts.size();
+  }
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 } // namespace ork::meshutil
