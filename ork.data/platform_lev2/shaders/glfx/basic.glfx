@@ -10,19 +10,8 @@ fxconfig fxcfg_default {
 ///////////////////////////////////////////////////////////////
 
 uniform_set ub_vtx {
-  mat4 WVPMatrix;
-  mat4 WVPMatrixL;
-  mat4 WVPMatrixR;
-  mat4 VPMatrix;
-  mat4 PMatrix;
-  mat4 WMatrix;
-  mat4 WVMatrix;
-  mat4 VMatrix;
-  mat4 IWMatrix;
-  mat3 WRotMatrix;
-  mat4 DiffuseMapMatrix;
-  mat4 NormalMapMatrix;
-  mat4 SpecularMapMatrix;
+  mat4 mvp;
+  mat4 m;
 
   vec4 modcolor;
   float time;
@@ -135,13 +124,13 @@ vertex_shader vs_vtxtexcolor : iface_rigid {
 
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_wnormal : iface_rigid {
-  vec4 cpos  = WVMatrix * position;
-  vec3 wnorm = normalize(WRotMatrix * normal);
+  vec4 hpos  = mvp * position;
+  vec3 wnorm = normalize((m * vec4(normal,0)).xyz);
   ///////////////////////////
-  frg_clr     = vec4(wnorm.xyz, 1.0);
+  frg_clr     = vec4(wnorm, 1.0);
   frg_uv0     = uv0;
-  frg_nrmd    = vec4(wnorm, -cpos.z);
-  gl_Position = WVPMatrix * position;
+  frg_nrmd    = vec4(wnorm, -hpos.z/hpos.w);
+  gl_Position = hpos;
   ///////////////////////////
 }
 

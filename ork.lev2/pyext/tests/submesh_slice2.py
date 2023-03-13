@@ -38,7 +38,7 @@ class SceneGraphApp(object):
     self.ezapp = OrkEzApp.create(self)
     self.ezapp.setRefreshPolicy(RefreshFastest, 0)
     self.materials = set()
-    setupUiCamera(app=self,eye=vec3(0,0.5,3))
+    setupUiCamera(app=self,eye=vec3(0,1,5),tgt=vec3(0,1,0))
     self.modelinsts=[]
 
   ##############################################
@@ -56,12 +56,16 @@ class SceneGraphApp(object):
     clipped_bot = clipped["back"].triangulate()
 
     self.prim_top = meshutil.RigidPrimitive(clipped_top,ctx)
-    self.prim_bot = meshutil.RigidPrimitive(clipped_top,ctx)
+    self.prim_bot = meshutil.RigidPrimitive(clipped_bot,ctx)
 
     pipeline = createPipeline( app = self,
                                ctx = ctx,
                                rendermodel = "ForwardPBR",
-                               techname="std_mono_fwd" )
+                               shaderfile=Path("orkshader://basic"),
+                               techname="tek_wnormal" )
+
+    material = pipeline.sharedMaterial
+    pipeline.bindParam( material.param("m"), tokens.RCFD_M)
 
     self.prim_node_top = self.prim_top.createNode("top",self.layer1,pipeline)
     self.prim_node_bot = self.prim_bot.createNode("bot",self.layer1,pipeline)
@@ -84,8 +88,8 @@ class SceneGraphApp(object):
   def onUpdate(self,updinfo):
     θ = updinfo.absolutetime * math.pi * 2.0 * 0.1
     y = 0.5+math.sin(θ*1.7)*0.5
-    self.prim_node_top.worldTransform.translation = vec3(0,y,1)
-    self.prim_node_bot.worldTransform.translation = vec3(0,-y,1)
+    self.prim_node_top.worldTransform.translation = vec3(0,1+y,1)
+    self.prim_node_bot.worldTransform.translation = vec3(0,1-y,1)
 
     self.scene.updateScene(self.cameralut) 
 
