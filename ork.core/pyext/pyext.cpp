@@ -229,6 +229,11 @@ PYBIND11_MODULE(_core, module_core) {
       .def_property_readonly("hash",[](datablock_ptr_t db) -> uint64_t {
         return db->hash();
       })
+      .def("__str__", [](datablock_ptr_t db) -> std::string {
+        fxstring<512> fxs;
+        fxs.format("DataBlock(%s) len<%d>", (void*) db.get(), (int) db->length() );
+        return fxs.c_str();
+      })
       .def("__repr__", [](datablock_ptr_t db) -> std::string {
         fxstring<512> fxs;
         fxs.format("DataBlock(%s)", (void*) db.get());
