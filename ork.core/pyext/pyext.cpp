@@ -199,7 +199,7 @@ PYBIND11_MODULE(_core, module_core) {
       });
 
   /////////////////////////////////////////////////////////////////////////////////
-  py::class_<DataBlock,datablock_ptr_t>(module_core, "DataBlock")
+  auto dblock_type = py::class_<DataBlock,datablock_ptr_t>(module_core, "DataBlock")
       .def(py::init<>())
       .def("addData",[](datablock_ptr_t db, py::buffer data) {
         py::buffer_info info = data.request();
@@ -239,6 +239,7 @@ PYBIND11_MODULE(_core, module_core) {
         fxs.format("DataBlock(%p)", (void*) db.get());
         return fxs.c_str();
       });
+  type_codec->registerStdCodec<datablock_ptr_t>(dblock_type);
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<Object>(module_core, "Object") //
       .def("clazz", [](Object* o) -> std::string {
