@@ -92,10 +92,10 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
           .def(
               "clipWithPlane",
               [](submesh_constptr_t inpsubmesh, 
-                 fplane3_ptr_t plane ) -> py::dict {
+                 fplane3_ptr_t plane, bool close_mesh=false ) -> py::dict {
                 submesh_ptr_t res_front = std::make_shared<submesh>();
                 submesh_ptr_t res_back = std::make_shared<submesh>();
-                submeshClipWithPlane(*inpsubmesh,*plane,*res_front,*res_back);
+                submeshClipWithPlane(*inpsubmesh,*plane, close_mesh, *res_front,*res_back);
                 py::dict rval;
                 rval["front"] = res_front;
                 rval["back"] = res_back;
@@ -116,6 +116,42 @@ void pyinit_meshutil_submesh(py::module& module_meshutil) {
               "addQuad",
               [](submesh_ptr_t submesh, fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec4 c) {
                 return submesh->addQuad(p0, p1, p2, p3, c);
+              })
+          .def(
+              "mergeVertex",
+              [](submesh_ptr_t submesh, vertex_constptr_t vin) ->  vertex_ptr_t{
+                return submesh->mergeVertex(*vin);
+              })
+          .def(
+              "makeVertex",
+              [](submesh_ptr_t submesh, py::kwargs kwargs) ->  vertex_ptr_t{
+                auto vin = std::make_shared<vertex>();
+                for (auto item : kwargs) {
+                  auto key = py::cast<std::string>(item.first);
+                  if (key == "position") {
+                    vin->mPos = py::cast<fvec3>(item.second);
+                  }
+                  else if (key == "normal") {
+                    vin->mNrm = py::cast<fvec3>(item.second);
+                  }
+                  else if (key == "color0") {
+                    vin->mCol[0] = py::cast<fvec4>(item.second);
+                  }
+                  else{
+                    OrkAssert(false);
+                  }
+                }
+                return submesh->mergeVertex(*vin);
+              })
+          .def(
+              "makeTriangle",
+              [](submesh_ptr_t submesh, vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc) ->  poly_ptr_t{
+                return submesh->mergeTriangle(va,vb,vc);
+              })
+          .def(
+              "makeQuad",
+              [](submesh_ptr_t submesh, vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc, vertex_ptr_t vd) ->  poly_ptr_t{
+                return submesh->mergeQuad(va,vb,vc,vd);
               })
           .def(
               "addQuad",

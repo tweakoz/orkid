@@ -7,7 +7,7 @@
 
 #pragma once 
 
-#define ENABLE_IGL
+//#define ENABLE_IGL
 
 #if defined(ORK_ARCHITECTURE_X86_64)
   #if defined(LINUX)

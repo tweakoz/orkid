@@ -588,7 +588,7 @@ void Mesh::readFromAssimp(datablock_ptr_t datablock) {
             outvtx[1]                             = out_submesh.mergeVertex(muverts[1]);
             outvtx[2]                             = out_submesh.mergeVertex(muverts[2]);
             ork::meshutil::poly new_poly(outvtx[0],outvtx[1],outvtx[2]);
-            out_submesh.MergePoly(new_poly);
+            out_submesh.mergePoly(new_poly);
           } else {
             logchan_meshutilassimp->log("non triangle");
           }

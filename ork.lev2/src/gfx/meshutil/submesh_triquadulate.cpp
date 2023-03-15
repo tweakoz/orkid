@@ -28,7 +28,7 @@ void submeshTriangulate(const submesh& inpmesh, submesh& outmesh) {
         auto m0 = outmesh._vtxpool->mergeVertex(*v0);
         auto m1 = outmesh._vtxpool->mergeVertex(*v1);
         auto m2 = outmesh._vtxpool->mergeVertex(*v2);
-        outmesh.MergePoly(poly(m0, m1, m2));
+        outmesh.mergeTriangle(m0, m1, m2);
         break;
       }
       case 4: {
@@ -40,8 +40,8 @@ void submeshTriangulate(const submesh& inpmesh, submesh& outmesh) {
         auto m1 = outmesh._vtxpool->mergeVertex(*v1);
         auto m2 = outmesh._vtxpool->mergeVertex(*v2);
         auto m3 = outmesh._vtxpool->mergeVertex(*v3);
-        outmesh.MergePoly(poly(m0, m1, m2));
-        outmesh.MergePoly(poly(m2, m3, m0));
+        outmesh.mergeTriangle(m0, m1, m2);
+        outmesh.mergeTriangle(m2, m3, m0);
         break;
       }
       case 5: {
@@ -55,9 +55,9 @@ void submeshTriangulate(const submesh& inpmesh, submesh& outmesh) {
         auto m2 = outmesh._vtxpool->mergeVertex(*v2);
         auto m3 = outmesh._vtxpool->mergeVertex(*v3);
         auto m4 = outmesh._vtxpool->mergeVertex(*v4);
-        outmesh.MergePoly(poly(m0, m1, m2));
-        outmesh.MergePoly(poly(m2, m3, m0));
-        outmesh.MergePoly(poly(m0, m3, m4));
+        outmesh.mergeTriangle(m0, m1, m2);
+        outmesh.mergeTriangle(m2, m3, m0);
+        outmesh.mergeTriangle(m0, m3, m4);
         break;
       }
       default:
@@ -290,10 +290,10 @@ void submeshTrianglesToQuads(const submesh& inpmesh, //
                   //////////////////////////////////////
 
                   if ((float(1.0f) - fdot) < float(0.001f)) {
-                    outmesh.MergePoly(poly(v0, v1, v3, v2));
+                    outmesh.mergeQuad(v0, v1, v3, v2);
                     was_quadified = true;
                   } else if ((float(1.0f) + fdot) < float(0.001f)) {
-                    outmesh.MergePoly(poly(v0, v2, v3, v1));
+                    outmesh.mergeQuad(v0, v2, v3, v1);
                     was_quadified = true;
                   }
                 }
@@ -310,10 +310,7 @@ void submeshTrianglesToQuads(const submesh& inpmesh, //
     ////////////////////////////////////////////
 
     if (false == was_quadified) {
-      auto p = poly(ici[0], ici[1], ici[2]);
-      if(p.GetNumSides()==3){
-        outmesh.MergePoly(p);
-      }
+      outmesh.mergeTriangle(ici[0], ici[1], ici[2]);
     }
 
   } // for (int ip = 0; ip < inumtri; ip++) {

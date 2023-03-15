@@ -127,7 +127,7 @@ vertex_shader vs_wnormal : iface_rigid {
   vec4 hpos  = mvp * position;
   vec3 wnorm = normalize((m * vec4(normal,0)).xyz);
   ///////////////////////////
-  frg_clr     = vec4(wnorm, 1.0);
+  frg_clr     = vec4(vec3(.5)+wnorm*0.5, 1.0);
   frg_uv0     = uv0;
   frg_nrmd    = vec4(wnorm, -hpos.z/hpos.w);
   gl_Position = hpos;

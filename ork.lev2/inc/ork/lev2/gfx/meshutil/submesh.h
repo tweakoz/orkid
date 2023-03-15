@@ -286,7 +286,9 @@ struct submesh {
 
   vertex_ptr_t mergeVertex(const vertex& vtx);
   edge_ptr_t MergeEdge(const edge& ed, int ipolyindex = -1);
-  void MergePoly(const poly& ply);
+  poly_ptr_t mergePoly(const poly& ply);
+  poly_ptr_t mergeTriangle(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc);
+  poly_ptr_t mergeQuad(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc, vertex_ptr_t vd);
   void MergeSubMesh(const submesh& oth);
 
   //////////////////////////////////////////////////////////////////////////////
@@ -404,6 +406,7 @@ void submeshSliceWithPlane(const submesh& inpsubmesh, //
 
 void submeshClipWithPlane(const submesh& inpsubmesh, //
                            fplane3& slicing_plane, //
+                           bool close_mesh,
                            submesh& outsmeshFront, //
                            submesh& outsmeshBack
                            );

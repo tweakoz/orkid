@@ -397,9 +397,9 @@ void GridGraph::MergeMesh(const submesh& MeshIn, Mesh& MeshOut) {
                           polyb.SetAnnoMap(ply.GetAnnoMap());
                           polyc.SetAnnoMap(ply.GetAnnoMap());
 
-                          node_submesh.MergePoly(polya);
-                          node_submesh.MergePoly(polyb);
-                          node_submesh.MergePoly(polyc);
+                          node_submesh.mergePoly(polya);
+                          node_submesh.mergePoly(polyb);
+                          node_submesh.mergePoly(polyc);
                           break;
                         }
                         case 3:
@@ -414,7 +414,7 @@ void GridGraph::MergeMesh(const submesh& MeshIn, Mesh& MeshOut) {
                             auto vb = node_submesh.mergeVertex(poly_bak.GetVertex(ic));
                             poly polya(v0, va, vb);
                             polya.SetAnnoMap(ply.GetAnnoMap());
-                            node_submesh.MergePoly(polya);
+                            node_submesh.mergePoly(polya);
                           }
                           break;
                         }
@@ -427,7 +427,7 @@ void GridGraph::MergeMesh(const submesh& MeshIn, Mesh& MeshOut) {
 								auto v3 = node_submesh.mergeVertex( poly_bak.GetVertex(3) );
 								poly polya( v0, v1, v2, v3 );
 								polya.SetAnnoMap(ply.GetAnnoMap());
-								node_submesh.MergePoly( polya );
+								node_submesh.mergePoly( polya );
 								break;
 							}
 #endif

@@ -1,13 +1,13 @@
 project (orklev2 CXX)
 include (GenerateExportHeader)
 
-find_package(embree 3 REQUIRED)
+#find_package(embree 3 REQUIRED)
 #find_package(CGAL REQUIRED)
 #find_package(igl REQUIRED)
 
-set( LIBIGL_DIR $ENV{OBT_STAGE}/builds/igl )
-set( LIBIGL_INCLUDE_DIR ${LIBIGL_DIR}/igl/include )
-set( CGAL_INCLUDE_DIR ${LIBIGL_DIR}/.build/_deps/cgal-src/include )
+#set( LIBIGL_DIR $ENV{OBT_STAGE}/builds/igl )
+#set( LIBIGL_INCLUDE_DIR ${LIBIGL_DIR}/igl/include )
+#set( CGAL_INCLUDE_DIR ${LIBIGL_DIR}/.build/_deps/cgal-src/include )
 
 ###################################
 
@@ -69,7 +69,7 @@ set( libs ork_core )
 list(APPEND libs OpenImageIO OpenImageIO_Util )
 list(APPEND libs portaudio rtmidi  )
 list(APPEND libs avformat avcodec swscale avutil )
-list(APPEND libs embree )
+#list(APPEND libs embree )
 
 IF( "${ARCHITECTURE}" STREQUAL "x86_64" )
   list(APPEND libs ispc_texcomp  )

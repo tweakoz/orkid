@@ -487,7 +487,7 @@ void Mesh::ReadFromWavefrontObj(const file::Path& BasePath) {
             ok &= (vertex_cache[2] != nullptr);
             if (ok) {
               poly ToolPoly(vertex_cache[0], vertex_cache[1], vertex_cache[2]);
-              smesh.MergePoly(ToolPoly);
+              smesh.mergePoly(ToolPoly);
             }
           }
           break;
@@ -499,7 +499,7 @@ void Mesh::ReadFromWavefrontObj(const file::Path& BasePath) {
           ok &= (vertex_cache[3] != nullptr);
           if (ok) {
             poly ToolPoly(vertex_cache[0], vertex_cache[1], vertex_cache[2], vertex_cache[3]);
-            smesh.MergePoly(ToolPoly);
+            smesh.mergePoly(ToolPoly);
           }
           break;
         }

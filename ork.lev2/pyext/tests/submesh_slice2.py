@@ -50,8 +50,8 @@ class SceneGraphApp(object):
     mesh = meshutil.Mesh()
     mesh.readFromWavefrontObj("data://tests/simple_obj/monkey.obj")
     submesh = mesh.submesh_list[0]
-    slicing_plane = plane(vec3(0,1,0),0)
-    clipped = submesh.clipWithPlane(slicing_plane)
+    slicing_plane = plane(vec3(0,0,1),0)
+    clipped = submesh.clipWithPlane(slicing_plane,True)
     clipped_top = clipped["front"].triangulate()
     clipped_bot = clipped["back"].triangulate()
 

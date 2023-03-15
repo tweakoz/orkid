@@ -85,7 +85,7 @@ void Mesh::MergeSubMesh(const Mesh& src, const submesh& pgrp, const char* newnam
         break;
     }
     new_poly->SetAnnoMap(input_poly.GetAnnoMap());
-    pnewgroup->MergePoly(*new_poly);
+    pnewgroup->mergePoly(*new_poly);
   }
   float ftimeB = float(OldSchool::GetRef().GetLoResTime());
   float ftime  = (ftimeB - ftimeA);
@@ -140,7 +140,7 @@ void MergeToolMeshQueueItem::DoIt(int ithread) const {
     }
     poly polyA(merged);
     polyA.SetAnnoMap(ply.GetAnnoMap());
-    mpDestSubMesh->MergePoly(polyA);
+    mpDestSubMesh->mergePoly(polyA);
   }
   float ftimeB = float(OldSchool::GetRef().GetLoResTime());
   float ftime  = (ftimeB - ftimeA);
@@ -272,7 +272,7 @@ void Mesh::MergeToolMeshAs(const Mesh& sr, const char* pgroupname) {
       }
       poly_ptr_t new_poly = std::make_shared<poly>(new_vertices);
       new_poly->SetAnnoMap(input_poly.GetAnnoMap());
-      dest_group.MergePoly(*new_poly);
+      dest_group.mergePoly(*new_poly);
     }
   }
 }

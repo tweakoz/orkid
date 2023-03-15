@@ -168,7 +168,7 @@ submesh_ptr_t submeshFromEigen(
         auto o0 = rval->mergeVertex(generateVertex(f, 0));
         auto o1 = rval->mergeVertex(generateVertex(f, 1));
         auto o2 = rval->mergeVertex(generateVertex(f, 2));
-        rval->MergePoly(poly(o0, o1, o2));
+        rval->mergePoly(poly(o0, o1, o2));
         break;
       }
       case 4: {
@@ -176,7 +176,7 @@ submesh_ptr_t submeshFromEigen(
         auto o1 = rval->mergeVertex(generateVertex(f, 1));
         auto o2 = rval->mergeVertex(generateVertex(f, 2));
         auto o3 = rval->mergeVertex(generateVertex(f, 3));
-        rval->MergePoly(poly(o0, o1, o2, o3));
+        rval->mergePoly(poly(o0, o1, o2, o3));
         break;
       }
       default:
@@ -359,7 +359,7 @@ void submesh::MergeSubMesh(const submesh& inp_mesh) {
     }
     poly_ptr_t new_poly = std::make_shared<poly>(new_vertices);
     new_poly->SetAnnoMap(input_poly.GetAnnoMap());
-    MergePoly(*new_poly);
+    mergePoly(*new_poly);
   }
   logchan_submesh->log("inumpingroup<%d> numoutpolys<%d>", inumpingroup, GetNumPolys() );
   float ftimeB = float(OldSchool::GetRef().GetLoResTime());
@@ -367,7 +367,15 @@ void submesh::MergeSubMesh(const submesh& inp_mesh) {
   logchan_submesh->log("<<PROFILE>> <<submesh::MergeSubMesh %f seconds>>", ftime);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void submesh::MergePoly(const poly& ply) {
+poly_ptr_t submesh::mergeTriangle(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc){
+  return mergePoly(poly(va,vb,vc));
+}
+poly_ptr_t submesh::mergeQuad(vertex_ptr_t va, vertex_ptr_t vb, vertex_ptr_t vc, vertex_ptr_t vd){
+  return mergePoly(poly(va,vb,vc,vd));
+}
+///////////////////////////////////////////////////////////////////////////////
+poly_ptr_t submesh::mergePoly(const poly& ply) {
+  poly_ptr_t rval;
   int ipolyindex = GetNumPolys();
   poly nply      = ply;
   int inumv      = ply.GetNumSides();
@@ -383,12 +391,13 @@ void submesh::MergePoly(const poly& ply) {
           (ply._vertices[1]->_poolindex == ply._vertices[2]->_poolindex) ||
           (ply._vertices[2]->_poolindex == ply._vertices[0]->_poolindex)) {
         logchan_submesh->log(
-            "Mesh::MergePoly() removing zero area tri<%d %d %d>",
+            "Mesh::mergePoly() removing zero area tri<%d %d %d>",
             ply._vertices[0]->_poolindex,
             ply._vertices[1]->_poolindex,
             ply._vertices[2]->_poolindex);
 
-        return;
+
+        return nullptr;
       }
       break;
     }
@@ -400,13 +409,13 @@ void submesh::MergePoly(const poly& ply) {
           (ply._vertices[1]->_poolindex == ply._vertices[3]->_poolindex) ||
           (ply._vertices[2]->_poolindex == ply._vertices[3]->_poolindex)) {
         logchan_submesh->log(
-            "Mesh::MergePoly() removing zero area quad<%d %d %d %d>",
+            "Mesh::mergePoly() removing zero area quad<%d %d %d %d>",
             ply._vertices[0]->_poolindex,
             ply._vertices[1]->_poolindex,
             ply._vertices[2]->_poolindex,
             ply._vertices[3]->_poolindex);
 
-        return;
+        return nullptr;
       }
       break;
     }
@@ -416,6 +425,7 @@ void submesh::MergePoly(const poly& ply) {
   }
   //////////////////////////////
   // dupe check
+  //////////////////////////////
   U64 ucrc   = ply.HashIndices();
   auto itfhm = _polymap.find(ucrc);
   ///////////////////////////////
@@ -453,8 +463,13 @@ void submesh::MergePoly(const poly& ply) {
     //////////////////////////////////////////////////
     float farea = ply.ComputeArea(ork::fmtx4::Identity());
     _surfaceArea += farea;
+    rval = new_poly;
+    _aaBoxDirty = true;
   }
-  _aaBoxDirty = true;
+  else{
+    rval = itfhm->second;
+  }
+  return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
 edge_ptr_t submesh::MergeEdge(const edge& ed, int ipolyindex) {
@@ -496,7 +511,7 @@ void submesh::addQuad(fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec4 c) {
   auto v1 = mergeVertex(muvtx[1]);
   auto v2 = mergeVertex(muvtx[2]);
   auto v3 = mergeVertex(muvtx[3]);
-  MergePoly(poly(v0, v1, v2, v3));
+  mergePoly(poly(v0, v1, v2, v3));
 }
 void submesh::addQuad(fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec2 uv0, fvec2 uv1, fvec2 uv2, fvec2 uv3, fvec4 c) {
   vertex muvtx[4];
@@ -514,7 +529,7 @@ void submesh::addQuad(fvec3 p0, fvec3 p1, fvec3 p2, fvec3 p3, fvec2 uv0, fvec2 u
   auto v1 = mergeVertex(muvtx[1]);
   auto v2 = mergeVertex(muvtx[2]);
   auto v3 = mergeVertex(muvtx[3]);
-  MergePoly(poly(v0, v1, v2, v3));
+  mergePoly(poly(v0, v1, v2, v3));
 }
 void submesh::addQuad(
     fvec3 p0,
@@ -542,7 +557,7 @@ void submesh::addQuad(
   auto v1 = mergeVertex(muvtx[1]);
   auto v2 = mergeVertex(muvtx[2]);
   auto v3 = mergeVertex(muvtx[3]);
-  MergePoly(poly(v0, v1, v2, v3));
+  mergePoly(poly(v0, v1, v2, v3));
 }
 void submesh::addQuad(
     fvec3 p0,
@@ -572,7 +587,7 @@ void submesh::addQuad(
   auto v1 = mergeVertex(muvtx[1]);
   auto v2 = mergeVertex(muvtx[2]);
   auto v3 = mergeVertex(muvtx[3]);
-  MergePoly(poly(v0, v1, v2, v3));
+  mergePoly(poly(v0, v1, v2, v3));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
