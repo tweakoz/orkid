@@ -231,12 +231,12 @@ PYBIND11_MODULE(_core, module_core) {
       })
       .def("__str__", [](datablock_ptr_t db) -> std::string {
         fxstring<512> fxs;
-        fxs.format("DataBlock(%s) len<%d>", (void*) db.get(), (int) db->length() );
+        fxs.format("DataBlock(%p) len<%d>", (void*) db.get(), (int) db->length() );
         return fxs.c_str();
       })
       .def("__repr__", [](datablock_ptr_t db) -> std::string {
         fxstring<512> fxs;
-        fxs.format("DataBlock(%s)", (void*) db.get());
+        fxs.format("DataBlock(%p)", (void*) db.get());
         return fxs.c_str();
       });
   /////////////////////////////////////////////////////////////////////////////////
