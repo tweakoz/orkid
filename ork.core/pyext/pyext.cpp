@@ -9,6 +9,7 @@
 #include <boost/filesystem.hpp>
 #include <ork/kernel/environment.h>
 #include <ork/event/Event.h>
+#include <ork/kernel/datablock.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 struct CorePythonApplication  {
@@ -197,6 +198,42 @@ PYBIND11_MODULE(_core, module_core) {
         return fxs.c_str();
       });
 
+  /////////////////////////////////////////////////////////////////////////////////
+  py::class_<DataBlock,datablock_ptr_t>(module_core, "DataBlock")
+      .def(py::init<>())
+      .def("addData",[](datablock_ptr_t db, py::buffer data) {
+        py::buffer_info info = data.request();
+        OrkAssert(info.format == py::format_descriptor<uint8_t>::format());
+        auto src = (const uint8_t*) info.ptr;
+
+        printf( "ndim<%d>\n", info.ndim );
+        switch( info.ndim ){
+          case 3:{
+            size_t length = info.shape[0];
+            size_t width = info.shape[1];
+            size_t depth = info.shape[2];
+            printf( "length<%zu>\n", length );
+            printf( "width<%zu>\n", width );
+            printf( "depth<%zu>\n", depth );
+            size_t numbytes = length*width*depth;
+            db->addData(src,numbytes);
+            break;
+          }
+          default:
+            OrkAssert(false);
+        }
+      })
+      .def_property_readonly("size",[](datablock_ptr_t db) -> size_t {
+        return db->length();
+      })
+      .def_property_readonly("hash",[](datablock_ptr_t db) -> uint64_t {
+        return db->hash();
+      })
+      .def("__repr__", [](datablock_ptr_t db) -> std::string {
+        fxstring<512> fxs;
+        fxs.format("DataBlock(%s)", (void*) db.get());
+        return fxs.c_str();
+      });
   /////////////////////////////////////////////////////////////////////////////////
   py::class_<Object>(module_core, "Object") //
       .def("clazz", [](Object* o) -> std::string {
