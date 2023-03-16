@@ -211,15 +211,15 @@ PYBIND11_MODULE(_core, module_core) {
         OrkAssert(info.format == py::format_descriptor<uint8_t>::format());
         auto src = (const uint8_t*) info.ptr;
 
-        printf( "ndim<%d>\n", info.ndim );
+        //printf( "ndim<%d>\n", info.ndim );
         switch( info.ndim ){
           case 3:{
             size_t length = info.shape[0];
             size_t width = info.shape[1];
             size_t depth = info.shape[2];
-            printf( "length<%zu>\n", length );
-            printf( "width<%zu>\n", width );
-            printf( "depth<%zu>\n", depth );
+           // printf( "length<%zu>\n", length );
+           // printf( "width<%zu>\n", width );
+            //printf( "depth<%zu>\n", depth );
             size_t numbytes = length*width*depth;
             db->addData(src,numbytes);
             break;
