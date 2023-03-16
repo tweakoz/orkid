@@ -147,6 +147,11 @@ PYBIND11_MODULE(_core, module_core) {
               [](crcstring_ptr_t s) -> uint64_t { //
                 return s->hashed();
               })
+          .def_property_readonly(
+              "hashedi",
+              [](crcstring_ptr_t s) -> int { //
+                return int(s->hashed());
+              })
           .def("__repr__", [](crcstring_ptr_t s) -> std::string {
             fxstring<64> fxs;
             fxs.format("CrcString(0x%zx:%zu)", s->hashed(), s->hashed());
